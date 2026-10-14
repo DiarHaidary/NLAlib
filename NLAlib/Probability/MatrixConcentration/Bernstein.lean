@@ -13,12 +13,18 @@ public import NLAlib.Probability.MatrixConcentration.MGFBound
 /-!
 # The matrix Bernstein inequality
 
-For independent centred random Hermitian matrices with `X k ≤ L • 1` almost surely and variance
-`v = ‖∑ E X k²‖`, `P(t ≤ λ_max (∑ X k)) ≤ d exp (-(t²/2) / (v + L t / 3))` and
-`E λ_max (∑ X k) ≤ √(2 v log d) + L log d / 3` (Tropp 2015, Theorem 6.6.1). Rectangular summands go
-through the dilation, with `v` the larger of the two variances and dimension `m + n`
-(Tropp 2015, Theorem 6.1.1); for square Hermitian summands this is also the two-sided
-Hermitian form. The `1 × 1` case is Bernstein's inequality for bounded centred real variables.
+For independent centred random Hermitian $d \times d$ matrices with
+$\mathbf{X}_k \preceq L\mathbf{I}$ almost surely and variance
+$v = \|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$,
+$$\mathbb{P}\Bigl(\lambda_{\max}\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
+\le d \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)$$
+and
+$$\mathbb{E}\, \lambda_{\max}\Bigl(\sum_k \mathbf{X}_k\Bigr)
+\le \sqrt{2 v \log d} + \frac{L \log d}{3}$$
+(Tropp 2015, Theorem 6.6.1). Rectangular summands go through the dilation, with $v$ the larger of
+the two variances and dimension $\lvert m\rvert + \lvert n\rvert$ (Tropp 2015, Theorem 6.1.1); for
+square Hermitian summands this is also the two-sided Hermitian form. The $1 \times 1$ case is
+Bernstein's inequality for bounded centred real variables.
 
 ## Main results
 
@@ -47,7 +53,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### Scalar inequalities -/
 
-/-- The derivative of `u + (eᵘ - 1 - u)/3 - (1 - u/3)(eᵘ - 1)`. -/
+/-- The derivative of $u + (e^u - 1 - u)/3 - (1 - u/3)(e^u - 1)$. -/
 private theorem hasDerivAt_bernsteinAux' (u : ℝ) :
     HasDerivAt (fun u => u + (Real.exp u - 1 - u) / 3 - (1 - u / 3) * (Real.exp u - 1))
       ((1 - Real.exp u * (1 - u)) / 3) u := by
@@ -57,7 +63,7 @@ private theorem hasDerivAt_bernsteinAux' (u : ℝ) :
   refine (((hasDerivAt_id' u).add h1).sub h3).congr_deriv ?_
   ring
 
-/-- The derivative of `u²/2 - (1 - u/3)(eᵘ - 1 - u)`. -/
+/-- The derivative of $u^2/2 - (1 - u/3)(e^u - 1 - u)$. -/
 private theorem hasDerivAt_bernsteinAux (u : ℝ) :
     HasDerivAt (fun u => u ^ 2 / 2 - (1 - u / 3) * (Real.exp u - 1 - u))
       (u + (Real.exp u - 1 - u) / 3 - (1 - u / 3) * (Real.exp u - 1)) u := by
@@ -68,8 +74,8 @@ private theorem hasDerivAt_bernsteinAux (u : ℝ) :
   push_cast
   ring
 
-/-- `u²/2 - (1 - u/3)(eᵘ - 1 - u) ≥ 0` for every real `u`: its derivative is monotone and
-vanishes at `0`, where the function vanishes. -/
+/-- $u^2/2 - (1 - u/3)(e^u - 1 - u) \ge 0$ for every real $u$: its derivative is monotone and
+vanishes at $0$, where the function vanishes. -/
 private theorem bernsteinAux_nonneg (u : ℝ) :
     0 ≤ u ^ 2 / 2 - (1 - u / 3) * (Real.exp u - 1 - u) := by
   set g : ℝ → ℝ := fun u => u ^ 2 / 2 - (1 - u / 3) * (Real.exp u - 1 - u) with hg
@@ -107,8 +113,10 @@ private theorem bernsteinAux_nonneg (u : ℝ) :
     have := hmon (Set.mem_Ici.mpr le_rfl) (Set.mem_Ici.mpr hu) hu
     linarith
 
-/-- The one-sided Bernstein bound for the exponential ([Tropp2015], Lemma 6.6.2): for `x ≤ L`
-and `0 < θ` with `Lθ < 3`, `e^{θx} ≤ 1 + θx + (θ²/2)/(1 - Lθ/3) x²`. -/
+/-- The one-sided Bernstein bound for the exponential: for $x \le L$ and $0 < \theta$ with
+$L\theta < 3$,
+$$e^{\theta x} \le 1 + \theta x + \frac{\theta^2/2}{1 - L\theta/3}\, x^2\,.$$
+[Tropp2015, Lemma 6.6.2]. -/
 theorem exp_mul_le_bernstein {L θ x : ℝ} (hθ : 0 < θ) (hθL : L * θ < 3) (hx : x ≤ L) :
     Real.exp (θ * x) ≤ 1 + θ * x + θ ^ 2 / 2 / (1 - L * θ / 3) * x ^ 2 := by
   have hux : θ * x ≤ L * θ := by nlinarith
@@ -123,21 +131,23 @@ theorem exp_mul_le_bernstein {L θ x : ℝ} (hθ : 0 < θ) (hθL : L * θ < 3) (
   have h3 : θ ^ 2 / 2 / (1 - L * θ / 3) * x ^ 2 = (θ * x) ^ 2 / 2 / (1 - L * θ / 3) := by ring
   linarith
 
-/-- On `(0, 3/L)`, `Lθ < 3`: the Bernstein coefficient `(θ²/2)/(1 - Lθ/3)` has a positive
-denominator. -/
+/-- On $(0, 3/L)$, $L\theta < 3$: the Bernstein coefficient $(\theta^2/2)/(1 - L\theta/3)$ has a
+positive denominator. -/
 theorem mul_lt_three_of_mem_Ioo {L θ : ℝ} (hL : 0 < L) (hθ : θ ∈ Set.Ioo 0 (3 / L)) :
     L * θ < 3 := by
   have := hθ.2
   rw [lt_div_iff₀ hL] at this
   linarith
 
-/-- On `(0, 3/L)`, the Bernstein coefficient `(θ²/2)/(1 - Lθ/3)` is nonnegative. -/
+/-- On $(0, 3/L)$, the Bernstein coefficient $(\theta^2/2)/(1 - L\theta/3)$ is nonnegative. -/
 theorem sq_div_two_div_nonneg_of_mem_Ioo {L θ : ℝ} (hL : 0 < L) (hθ : θ ∈ Set.Ioo 0 (3 / L)) :
     0 ≤ θ ^ 2 / 2 / (1 - L * θ / 3) :=
   div_nonneg (by positivity) (by linarith [mul_lt_three_of_mem_Ioo hL hθ])
 
-/-- The choice of `θ` in the Bernstein tail: `θ = t / (v + Lt/3)`, or `θ = 3/(2L)` when `v = 0`,
-gives `-θt + g(θ) v ≤ -(t²/2)/(v + Lt/3)`. -/
+/-- The choice of $\theta$ in the Bernstein tail: for $L > 0$, $v \ge 0$ and $t > 0$, some
+$\theta \in (0, 3/L)$ ($\theta = t / (v + Lt/3)$, or $\theta = 3/(2L)$ when $v = 0$) gives
+$-\theta t + g(\theta) v \le -(t^2/2)/(v + Lt/3)$, with $g(\theta) = (\theta^2/2)/(1 - L\theta/3)$.
+-/
 theorem exists_bernstein_exponent {L v t : ℝ} (hL : 0 < L) (hv : 0 ≤ v) (ht : 0 < t) :
     ∃ θ ∈ Set.Ioo 0 (3 / L),
       -θ * t + θ ^ 2 / 2 / (1 - L * θ / 3) * v ≤ -(t ^ 2 / 2) / (v + L * t / 3) := by
@@ -160,8 +170,8 @@ theorem exists_bernstein_exponent {L v t : ℝ} (hL : 0 < L) (hv : 0 ≤ v) (ht 
     field_simp
     ring
 
-/-- The Bernstein mean optimisation: if `x ≤ θ⁻¹ (a + g(θ) v)` on `(0, 3/L)`, then
-`x ≤ √(2 v a) + L a / 3` (substitute `θ = u / (1 + L u / 3)`). -/
+/-- The Bernstein mean optimisation: if $x \le \theta^{-1} (a + g(\theta) v)$ on $(0, 3/L)$, then
+$x \le \sqrt{2 v a} + L a / 3$ (substitute $\theta = u / (1 + L u / 3)$). -/
 private theorem le_of_forall_bernstein_mean {x a v L : ℝ} (hL : 0 < L) (ha : 0 ≤ a)
     (hv : 0 ≤ v) (h : ∀ θ ∈ Set.Ioo 0 (3 / L),
       x ≤ θ⁻¹ * (a + θ ^ 2 / 2 / (1 - L * θ / 3) * v)) :
@@ -188,7 +198,7 @@ private theorem le_of_forall_bernstein_mean {x a v L : ℝ} (hL : 0 < L) (ha : 0
   rw [h2] at key
   linarith
 
-/-! ### Integrability, the dilation and `1 × 1` matrices -/
+/-! ### Integrability, the dilation and $1 \times 1$ matrices -/
 
 /-- A square-integrable random matrix times its conjugate transpose is integrable. -/
 private theorem integrable_mul_conjTranspose {m : Type*} [Fintype m] [DecidableEq m]
@@ -207,9 +217,9 @@ private theorem integrable_conjTranspose_mul {m : Type*} [Fintype m]
       hS.1) (ae_of_all _ fun ω => ?_)
   rw [← specNorm_eq_norm, ← specNorm_eq_norm, specNorm_conjTranspose_mul_self]
 
-/-- The Hermitian dilation as a continuous real-linear map, through which integrals, `Lᵖ`
+/-- The Hermitian dilation as a continuous real-linear map, through which integrals, $L^p$
 membership and measurability pass to `dilation`. It is only real-linear: the lower-left block
-`Aᴴ` is conjugate-linear in `A`. -/
+$\mathbf{A}^{\mathsf{H}}$ is conjugate-linear in $\mathbf{A}$. -/
 noncomputable def dilationCLM (m : Type*) [Fintype m] :
     Matrix m n 𝕜 →L[ℝ] Matrix (m ⊕ n) (m ⊕ n) 𝕜 :=
   LinearMap.toContinuousLinearMap
@@ -224,7 +234,7 @@ theorem dilationCLM_apply {m : Type*} [Fintype m] (A : Matrix m n 𝕜) :
     dilationCLM m A = dilation A :=
   rfl
 
-/-- The dilation of a random matrix in `Lᵖ` is in `Lᵖ`. -/
+/-- The dilation of a random matrix in $L^p$ is in $L^p$. -/
 theorem memLp_dilation {m : Type*} [Fintype m] [DecidableEq m] {p : ENNReal} {S : Ω → Matrix m n 𝕜}
     (hS : MemLp S p μ) : MemLp (fun ω => dilation (S ω)) p μ :=
   (dilationCLM (𝕜 := 𝕜) (n := n) m).comp_memLp' hS
@@ -248,8 +258,11 @@ theorem integral_dilation_eq_zero {m : Type*} [Fintype m] [DecidableEq m] {S : �
     (hS : Integrable S μ) (h0 : ∫ ω, S ω ∂μ = 0) : ∫ ω, dilation (S ω) ∂μ = 0 := by
   rw [integral_dilation hS, h0, dilation_zero]
 
-/-- The integral of the square of a dilation is block diagonal: for a square-integrable `S`,
-`E (dilation S)² = fromBlocks (E S Sᴴ) 0 0 (E Sᴴ S)`. -/
+/-- The integral of the square of a dilation is block diagonal: for a square-integrable
+$\mathbf{S}$,
+$$\mathbb{E} \begin{bmatrix} \mathbf{0} & \mathbf{S} \\ \mathbf{S}^{\mathsf{H}} & \mathbf{0}
+\end{bmatrix}^2 = \begin{bmatrix} \mathbb{E}\mathbf{S}\mathbf{S}^{\mathsf{H}} & \mathbf{0} \\
+\mathbf{0} & \mathbb{E}\mathbf{S}^{\mathsf{H}}\mathbf{S} \end{bmatrix}\,.$$ -/
 theorem integral_dilation_sq {m : Type*} [Fintype m] [DecidableEq m]
     {S : Ω → Matrix m n 𝕜} (hS : MemLp S 2 μ) :
     ∫ ω, dilation (S ω) ^ 2 ∂μ =
@@ -272,8 +285,11 @@ theorem integral_dilation_sq {m : Type*} [Fintype m] [DecidableEq m]
   rw [B.integral_comp_comm (h1.prodMk h2), integral_pair h1 h2]
   rfl
 
-/-- **The Bernstein matrix MGF bound** ([Tropp2015], Lemma 6.6.2): a centred random matrix with
-`X ≤ L • 1` almost surely has `E exp (θ X) ≤ exp (θ²/2 / (1 - Lθ/3) • E X²)` for `0 < θ < 3/L`. -/
+/-- **The Bernstein matrix MGF bound**: for $L > 0$, a centred, square-integrable random matrix
+with $\mathbf{X} \preceq L\mathbf{I}$ almost surely has
+$$\mathbb{E} e^{\theta \mathbf{X}} \preceq
+\exp\Bigl(\frac{\theta^2/2}{1 - L\theta/3}\, \mathbb{E}\mathbf{X}^2\Bigr)$$
+for $0 < \theta < 3/L$. [Tropp2015, Lemma 6.6.2]. -/
 theorem hasMatrixMGFBound_of_integral_eq_zero_of_le [IsProbabilityMeasure μ]
     {X : Ω → Matrix n n 𝕜} (hL : 0 < L) (hX2 : MemLp X 2 μ) (hmean : ∫ ω, X ω ∂μ = 0)
     (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -327,7 +343,12 @@ section Hermitian
 
 variable {X : ι → Ω → Matrix n n 𝕜}
 
-/-- **Matrix Bernstein**, Hermitian summands ([Tropp2015], Theorem 6.6.1). -/
+/-- **Matrix Bernstein**, Hermitian summands: for finitely many independent, centred,
+square-integrable random matrices with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
+$v = \|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$ and $t \ge 0$,
+$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
+\le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
+[Tropp2015, Theorem 6.6.1]. -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein [Nonempty n] (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {t : ℝ} (ht : 0 ≤ t) :
@@ -353,7 +374,10 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein [Nonempty n] (hind : iIn
   exact (add_le_add_right (mul_le_mul_of_nonneg_left
     ((le_abs_self _).trans (hV.abs_eigenvalue_le_specNorm 0)) hg) _).trans hexp
 
-/-- **Matrix Bernstein** for the mean, Hermitian summands ([Tropp2015], Theorem 6.6.1). -/
+/-- **Matrix Bernstein** for the mean, Hermitian summands: under the hypotheses of the tail,
+$$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
+\le \sqrt{2 v \log \lvert n\rvert} + \frac{L \log \lvert n\rvert}{3}\,.$$
+[Tropp2015, Theorem 6.6.1]. -/
 theorem integral_eigenvalue_zero_sum_le_bernstein [Nonempty n] (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -388,8 +412,14 @@ section Rectangular
 
 variable {m : Type*} [Fintype m] [DecidableEq m] {S : ι → Ω → Matrix m n 𝕜}
 
-/-- **Matrix Bernstein**, rectangular summands ([Tropp2015], Theorem 6.1.1), with variance
-`v = max ‖∑ E S Sᴴ‖ ‖∑ E Sᴴ S‖`. For square Hermitian summands this is the two-sided form. -/
+/-- **Matrix Bernstein**, rectangular summands: for finitely many independent, centred,
+square-integrable random matrices $\mathbf{S}_k$ with $\|\mathbf{S}_k\|_2 \le L$ almost surely,
+$L > 0$ and $t \ge 0$,
+$$\mathbb{P}\Bigl(\Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \ge t\Bigr)
+\le (\lvert m\rvert + \lvert n\rvert) \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)$$
+with variance $v = \max\bigl(\|\sum_k \mathbb{E}\mathbf{S}_k\mathbf{S}_k^{\mathsf{H}}\|_2,
+\|\sum_k \mathbb{E}\mathbf{S}_k^{\mathsf{H}}\mathbf{S}_k\|_2\bigr)$.
+[Tropp2015, Theorem 6.1.1]. For square Hermitian summands this is the two-sided form. -/
 theorem measureReal_specNorm_sum_ge_le_bernstein [Nonempty n]
     (hind : iIndepFun S μ) (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ)
     (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0) (hle : ∀ k, ∀ᵐ ω ∂μ, specNorm (S k ω) ≤ L) {t : ℝ}
@@ -411,7 +441,10 @@ theorem measureReal_specNorm_sum_ge_le_bernstein [Nonempty n]
     Finset.sum_const_zero, specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
   exact h
 
-/-- **Matrix Bernstein** for the mean, rectangular summands ([Tropp2015], Theorem 6.1.1). -/
+/-- **Matrix Bernstein** for the mean, rectangular summands: under the hypotheses of the tail, with
+the same $v$ and $d = \lvert m\rvert + \lvert n\rvert$,
+$$\mathbb{E} \Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \le \sqrt{2 v \log d} + \frac{L \log d}{3}\,.$$
+[Tropp2015, Theorem 6.1.1]. -/
 theorem integral_specNorm_sum_le_bernstein [Nonempty n] (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, specNorm (S k ω) ≤ L) :
@@ -435,8 +468,11 @@ theorem integral_specNorm_sum_le_bernstein [Nonempty n] (hind : iIndepFun S μ)
 
 end Rectangular
 
-/-- **Bernstein's inequality** for bounded centred real variables, the `1 × 1` case of matrix
-Bernstein: `P(t ≤ ∑ X k) ≤ exp (-(t²/2) / (∑ E X k² + L t / 3))`. -/
+/-- **Bernstein's inequality** for bounded centred real variables, the $1 \times 1$ case of matrix
+Bernstein: for finitely many independent, centred, square-integrable $X_k \le L$ almost surely,
+$L > 0$ and $t \ge 0$,
+$$\mathbb{P}\Bigl(\sum_k X_k \ge t\Bigr)
+\le \exp\Bigl(\frac{-t^2/2}{\sum_k \mathbb{E}[X_k^2] + L t / 3}\Bigr)\,.$$ -/
 theorem measureReal_sum_ge_le_bernstein {X : ι → Ω → ℝ} (hind : iIndepFun X μ) (hL : 0 < L)
     (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L) {t : ℝ} (ht : 0 ≤ t) :

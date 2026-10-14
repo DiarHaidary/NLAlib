@@ -12,13 +12,14 @@ public import Mathlib.Analysis.Calculus.ContDiff.Convolution
 # Smoothing Lipschitz functions by convolution with a bump function
 
 Convolution with a normed bump function (a probability kernel) preserves the Lipschitz constant,
-and on a finite-dimensional space it turns a `K`-Lipschitz function into a `C^∞` one, again
-`K`-Lipschitz and uniformly within any `ε > 0` of the original. Upstream candidates for
+and on a finite-dimensional space it turns a $K$-Lipschitz function into a $C^\infty$ one, again
+$K$-Lipschitz and uniformly within any $\varepsilon > 0$ of the original. Upstream candidates for
 `Mathlib.Analysis.Calculus.BumpFunction.Convolution`.
 
 ## Main results
 
-* `ContDiffBump.lipschitzWith_normed_convolution`: `φ.normed μ ⋆ g` is `K`-Lipschitz when `g` is.
+* `ContDiffBump.lipschitzWith_normed_convolution`: $\tilde\varphi \star g$ is $K$-Lipschitz when
+  $g$ is, for the normed bump function $\tilde\varphi$ (`φ.normed μ`).
 * `LipschitzWith.exists_contDiff_lipschitzWith_dist_le`: uniform smooth approximation of a
   Lipschitz function with the same Lipschitz constant.
 -/
@@ -35,8 +36,9 @@ namespace ContDiffBump
 
 variable [MeasurableSpace G] [BorelSpace G] {μ : Measure G} [μ.IsAddHaarMeasure]
 
-/-- Convolution with a normed bump function preserves the Lipschitz constant: if `g` is
-`K`-Lipschitz, so is `φ.normed μ ⋆[lsmul ℝ ℝ, μ] g`. -/
+/-- Convolution with a normed bump function preserves the Lipschitz constant: if $g$ is
+$K$-Lipschitz, so is $\tilde\varphi \star g$, where $\tilde\varphi$ is the bump function $\varphi$
+normed against the Haar measure $\mu$ (`φ.normed μ`). -/
 theorem lipschitzWith_normed_convolution {c : G} (φ : ContDiffBump c) {g : G → F} {K : ℝ≥0}
     (hg : LipschitzWith K g) : LipschitzWith K (φ.normed μ ⋆[lsmul ℝ ℝ, μ] g) := by
   have hex : ConvolutionExists (φ.normed μ) g (lsmul ℝ ℝ) μ :=
@@ -56,9 +58,10 @@ theorem lipschitzWith_normed_convolution {c : G} (φ : ContDiffBump c) {g : G �
 
 end ContDiffBump
 
-/-- **Smoothing a Lipschitz function**: on a finite-dimensional space, a `K`-Lipschitz function
-is uniformly within `ε` of a `C^∞` function that is again `K`-Lipschitz (convolve with a normed
-bump function supported in a ball of radius `ε / (K + 1)`). -/
+/-- **Smoothing a Lipschitz function**: on a finite-dimensional space, a $K$-Lipschitz function
+$f$ is uniformly within $\varepsilon > 0$ of a $C^\infty$ function $g$ that is again
+$K$-Lipschitz: $\operatorname{dist}(g(x), f(x)) \le \varepsilon$ for all $x$ (convolve with a
+normed bump function supported in a ball of radius $\varepsilon / (K + 1)$). -/
 theorem LipschitzWith.exists_contDiff_lipschitzWith_dist_le [CompleteSpace F] {f : G → F} {K : ℝ≥0}
     (hf : LipschitzWith K f) {ε : ℝ} (hε : 0 < ε) :
     ∃ g : G → F, ContDiff ℝ ∞ g ∧ LipschitzWith K g ∧ ∀ x, dist (g x) (f x) ≤ ε := by

@@ -14,12 +14,13 @@ public import NLAlib.Matrix.Majorization.DoublyStochastic
 
 A symmetric gauge function is a norm on finitely supported real sequences that is invariant under
 permutations of the indices and under changes of sign of the entries. By von Neumann's theorem
-these are exactly the functions `Φ` for which `A ↦ Φ (singular values of A)` is a unitarily
-invariant norm, and one gauge gives such a norm on matrices of every shape at once; see
+these are exactly the functions $\Phi$ for which
+$\mathbf{A} \mapsto \Phi\bigl(\sigma_0(\mathbf{A}), \sigma_1(\mathbf{A}), \dots\bigr)$ is a
+unitarily invariant norm, and one gauge gives such a norm on matrices of every shape at once; see
 `NLAlib.Matrix.Norms.UnitarilyInvariant`.
 
 The carrier is `ℕ →₀ ℝ`, the type of Mathlib's `LinearMap.singularValues`, and the structure
-extends Mathlib's `Seminorm`. The `ℓ^q` and Ky Fan gauges are in
+extends Mathlib's `Seminorm`. The $\ell^q$ and Ky Fan gauges are in
 `NLAlib.Matrix.Norms.GaugeExamples`.
 
 ## Main definitions
@@ -32,7 +33,7 @@ extends Mathlib's `Seminorm`. The `ℓ^q` and Ky Fan gauges are in
 * `NLAlib.SymmetricGauge.le_of_forall_sum_le`: gauges respect weak majorization (Fan dominance
   for sequences).
 * `NLAlib.SymmetricGauge.apply_single_mul_abs_le`, `NLAlib.SymmetricGauge.le_apply_single_mul_sum`:
-  every gauge lies between multiples of the `ℓ^∞` and `ℓ^1` gauges.
+  every gauge lies between multiples of the $\ell^\infty$ and $\ell^1$ gauges.
 -/
 
 @[expose] public section
@@ -222,7 +223,9 @@ private theorem le_of_abs_le_of_eq_off (s : Finset ℕ) :
         · exact hs i fun hmem => (Finset.mem_insert.mp hmem).elim hia hi
     exact h1.trans h2
 
-/-- **A gauge is monotone in the absolute values of the entries.**
+/-- **A gauge is monotone in the absolute values of the entries.** If
+$\lvert \mathbf{x}_i \rvert \le \lvert \mathbf{y}_i \rvert$ for every $i$ then
+$\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$.
 [HornJohnson2013, Theorem 5.4.19 and §7.4.7].
 Port of `NLAlib.SymmetricGauge.value_le_of_nonneg_of_le`. -/
 theorem le_of_abs_le {x y : ℕ →₀ ℝ} (h : ∀ i, |x i| ≤ |y i|) : Φ x ≤ Φ y := by
@@ -231,9 +234,11 @@ theorem le_of_abs_le {x y : ℕ →₀ ℝ} (h : ∀ i, |x i| ≤ |y i|) : Φ x 
   rw [Finset.notMem_union] at hi
   rw [Finsupp.notMem_support_iff.mp hi.1, Finsupp.notMem_support_iff.mp hi.2]
 
-/-- **Fan dominance for sequences.** If `y` is non-increasing and every sum of absolute values of
-entries of `x` over an index set `S` is at most the sum of the first `S.card` entries of `y`, then
-`Φ x ≤ Φ y`: gauges respect weak majorization.
+/-- **Fan dominance for sequences.** If $\mathbf{y}$ is non-increasing and every sum of absolute
+values of entries of $\mathbf{x}$ over a finite index set $S$ is at most the sum of the first
+$\lvert S \rvert$ entries of $\mathbf{y}$,
+$\sum_{i \in S} \lvert \mathbf{x}_i \rvert \le \sum_{i < \lvert S \rvert} \mathbf{y}_i$, then
+$\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$: gauges respect weak majorization.
 [HornJohnson2013, Theorem 7.4.8.4]; [Bhatia1997, Theorem IV.1.6 context].
 Port of `NLAlib.SymmetricGauge.value_le_of_weaklyMajorized`. -/
 theorem le_of_forall_sum_le {x y : ℕ →₀ ℝ} (hy : Antitone y)
@@ -268,13 +273,15 @@ theorem le_of_forall_sum_le {x y : ℕ →₀ ℝ} (hy : Antitone y)
 
 /-! ### Comparison with the extreme gauges -/
 
-/-- The value of a gauge at the first unit coordinate sequence is positive. By `apply_single` it
-is the value at every unit coordinate sequence. -/
+/-- The value of a gauge at the first unit coordinate sequence $\mathbf{e}_0$ is positive:
+$\Phi(\mathbf{e}_0) > 0$. By `apply_single` it is the value at every unit coordinate sequence. -/
 theorem apply_single_pos : 0 < Φ (Finsupp.single 0 1) := by
   refine lt_of_le_of_ne (apply_nonneg Φ _) fun h => ?_
   exact one_ne_zero (Finsupp.single_eq_zero.mp (Φ.eq_zero_iff.mp h.symm))
 
-/-- A gauge takes the same value at every unit coordinate sequence. -/
+/-- A gauge takes the same value at every unit coordinate sequence:
+$\Phi(a\mathbf{e}_i) = \lvert a \rvert \, \Phi(\mathbf{e}_0)$, with $\mathbf{e}_i$ the $i$-th unit
+coordinate sequence. -/
 theorem apply_single (i : ℕ) (a : ℝ) : Φ (Finsupp.single i a) = |a| * Φ (Finsupp.single 0 1) := by
   have h : Finsupp.single i a =
       a • (Finsupp.single 0 (1 : ℝ)).equivMapDomain (Equiv.swap 0 i) := by
@@ -282,7 +289,8 @@ theorem apply_single (i : ℕ) (a : ℝ) : Φ (Finsupp.single i a) = |a| * Φ (F
       mul_one]
   rw [h, map_smul_eq_mul, map_equivMapDomain, Real.norm_eq_abs]
 
-/-- Every gauge dominates a multiple of the `ℓ^∞` gauge: `Φ(e₀) |x i| ≤ Φ x`.
+/-- Every gauge dominates a multiple of the $\ell^\infty$ gauge:
+$\Phi(\mathbf{e}_0) \lvert \mathbf{x}_i \rvert \le \Phi(\mathbf{x})$ for every $i$.
 [HornJohnson2013, §7.4.7]. -/
 theorem apply_single_mul_abs_le (x : ℕ →₀ ℝ) (i : ℕ) : Φ (Finsupp.single 0 1) * |x i| ≤ Φ x := by
   rw [mul_comm, ← Φ.apply_single i (x i)]
@@ -292,7 +300,8 @@ theorem apply_single_mul_abs_le (x : ℕ →₀ ℝ) (i : ℕ) : Φ (Finsupp.sin
   · rw [Finsupp.single_eq_of_ne hj, abs_zero]
     exact abs_nonneg _
 
-/-- Every gauge is dominated by a multiple of the `ℓ^1` gauge: `Φ x ≤ Φ(e₀) ∑ |x i|`.
+/-- Every gauge is dominated by a multiple of the $\ell^1$ gauge:
+$\Phi(\mathbf{x}) \le \Phi(\mathbf{e}_0) \sum_i \lvert \mathbf{x}_i \rvert$.
 [HornJohnson2013, §7.4.7]. -/
 theorem le_apply_single_mul_sum (x : ℕ →₀ ℝ) :
     Φ x ≤ Φ (Finsupp.single 0 1) * ∑ i ∈ x.support, |x i| := by

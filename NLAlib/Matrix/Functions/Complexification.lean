@@ -11,14 +11,14 @@ public import NLAlib.Matrix.Functions.Exponential
 public import NLAlib.Matrix.Spectral.SingularValues
 
 /-!
-# Transfer from `𝕜` to `ℂ`
+# Transfer from $\Bbbk$ to $\mathbb{C}$
 
 Many results on functions of Hermitian matrices are theorems about complex C⋆-algebras. To state
-them over an arbitrary `RCLike` field (in particular over `ℝ`), a matrix over `𝕜` is sent to the
-complex matrix with the same real and imaginary parts, `NLAlib.complexify A`. The map is an
-injective star algebra homomorphism over `ℝ` compatible with traces, the Loewner order, the
-functional calculus and the exponential, so a statement about Hermitian matrices that holds over
-`ℂ` holds over `𝕜`.
+them over an arbitrary `RCLike` field $\Bbbk$ (in particular over $\mathbb{R}$), a matrix
+$\mathbf{A}$ over $\Bbbk$ is sent to the complex matrix with the same real and imaginary parts,
+`NLAlib.complexify`. The map is an injective star algebra homomorphism over $\mathbb{R}$
+compatible with traces, the Loewner order, the functional calculus and the exponential, so a
+statement about Hermitian matrices that holds over $\mathbb{C}$ holds over $\Bbbk$.
 
 ## Main definitions
 
@@ -28,7 +28,7 @@ functional calculus and the exponential, so a statement about Hermitian matrices
 
 * `NLAlib.complexify_mul`, `NLAlib.complexify_conjTranspose`: it is a star-ring homomorphism.
 * `NLAlib.complexify_inv`: it commutes with the inverse.
-* `NLAlib.complexify_eq_self`: over `ℂ` it is the identity.
+* `NLAlib.complexify_eq_self`: over $\mathbb{C}$ it is the identity.
 * `NLAlib.charpoly_complexify`, `NLAlib.toComplex_mem_spectrum_complexify`: characteristic
   polynomial and eigenvalues.
 * `NLAlib.re_trace_complexify`, `NLAlib.complexify_le_complexify_iff`.
@@ -37,7 +37,7 @@ functional calculus and the exponential, so a statement about Hermitian matrices
 * `NLAlib.continuous_complexify`: it is continuous.
 * `NLAlib.complexify_cfc`, `NLAlib.complexify_exp`.
 * `NLAlib.continuousOn_cfc_log`: the matrix logarithm is continuous on the positive definite
-  matrices over `𝕜`, by transfer from `ℂ`.
+  matrices over $\Bbbk$, by transfer from $\mathbb{C}$.
 -/
 
 @[expose] public section
@@ -50,7 +50,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*}
 
 /-- The **complexification** of a matrix over an `RCLike` field: the complex matrix with the same
-real and imaginary parts. Over `ℂ` it is the identity, over `ℝ` the inclusion.
+real and imaginary parts. Over $\mathbb{C}$ it is the identity, over $\mathbb{R}$ the inclusion.
 Port of `NLAlib.realMatrixComplexification`, there for real matrices. -/
 noncomputable def complexify (A : Matrix m n 𝕜) : Matrix m n ℂ :=
   A.map RCLike.toComplex
@@ -112,7 +112,8 @@ theorem complexify_pow [Fintype n] [DecidableEq n] (A : Matrix n n 𝕜) (k : �
     complexify (A ^ k) = complexify A ^ k := by
   rw [complexify_eq_mapMatrix, complexify_eq_mapMatrix, map_pow]
 
-/-- The complexification commutes with the inverse. For a singular matrix both sides are `0`. -/
+/-- The complexification commutes with the inverse. For a singular matrix both sides are
+$\mathbf{0}$. -/
 @[simp]
 theorem complexify_inv [Fintype n] [DecidableEq n] (A : Matrix n n 𝕜) :
     complexify A⁻¹ = (complexify A)⁻¹ := by
@@ -140,7 +141,7 @@ theorem complexify_diagonal [DecidableEq n] (d : n → 𝕜) :
     complexify (Matrix.diagonal d) = Matrix.diagonal fun i => RCLike.toComplex (d i) := by
   exact Matrix.diagonal_map (map_zero _)
 
-/-- Over `ℂ` the complexification is the identity. -/
+/-- Over $\mathbb{C}$ the complexification is the identity. -/
 @[simp]
 theorem complexify_eq_self (A : Matrix m n ℂ) : complexify A = A := by
   ext i j
@@ -152,12 +153,12 @@ theorem _root_.Commute.complexify [Fintype n] {A B : Matrix n n 𝕜} (h : Commu
   rw [commute_iff_eq, ← complexify_mul, ← complexify_mul, h.eq]
 
 /-- The characteristic polynomial of the complexification is the image of the characteristic
-polynomial under the embedding of `𝕜` into `ℂ`. -/
+polynomial under the embedding of $\Bbbk$ into $\mathbb{C}$. -/
 theorem charpoly_complexify [Fintype n] [DecidableEq n] (A : Matrix n n 𝕜) :
     (complexify A).charpoly = A.charpoly.map (RCLike.toComplex : 𝕜 →⋆ₐ[ℝ] ℂ).toRingHom :=
   Matrix.charpoly_map A (RCLike.toComplex : 𝕜 →⋆ₐ[ℝ] ℂ).toRingHom
 
-/-- An eigenvalue of a matrix over `𝕜` is, embedded in `ℂ`, an eigenvalue of the
+/-- An eigenvalue of a matrix over $\Bbbk$ is, embedded in $\mathbb{C}$, an eigenvalue of the
 complexification. -/
 theorem toComplex_mem_spectrum_complexify [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 A) : RCLike.toComplex μ ∈ spectrum ℂ (complexify A) := by
@@ -275,8 +276,8 @@ theorem specNorm_complexify [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     hP.specNorm_eq_eigenvalue_zero, eigenvalue_complexify]
 
 /-- The complexification preserves the singular values, so every unitarily invariant quantity of
-a real matrix can be computed over `ℂ`. Port of `NLAlib.singularValues_map_ofReal`, there for the
-inclusion of `ℝ` in an `RCLike` field. -/
+a real matrix can be computed over $\mathbb{C}$. Port of `NLAlib.singularValues_map_ofReal`, there
+for the inclusion of $\mathbb{R}$ in an `RCLike` field. -/
 @[simp]
 theorem singularValues_complexify [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     singularValues (complexify A) = singularValues A := by
@@ -314,7 +315,8 @@ private theorem decomplexify_complexify (A : Matrix n n 𝕜) : decomplexify (co
     RCLike.im_toComplex, RCLike.re_add_im]
 
 /-- **The matrix logarithm is continuous on the positive definite matrices**, over any `RCLike`
-field: the transfer to `ℂ` of Mathlib's `CFC.continuousOn_log`, which needs a C⋆-algebra. -/
+field: the transfer to $\mathbb{C}$ of Mathlib's `CFC.continuousOn_log`, which needs a
+C⋆-algebra. -/
 theorem continuousOn_cfc_log [Fintype n] [DecidableEq n] :
     ContinuousOn (fun A : Matrix n n 𝕜 => cfc Real.log A) {A | A.PosDef} := by
   have hlog : ContinuousOn (fun B : Matrix n n ℂ => cfc Real.log B) {B | B.PosDef} := by

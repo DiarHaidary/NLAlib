@@ -11,16 +11,19 @@ public import Mathlib.MeasureTheory.Integral.Prod
 /-!
 # Resampling one coordinate of a product measure
 
-For a product `Measure.pi P` of probability measures, replacing the `i`-th coordinate by an
-independent draw from `P i` preserves the product. The integration lemmas that follow (Fubini in
-the resampled coordinate, integrability and measurability of the partial integral) are the steps
-of every argument that conditions on all coordinates but one: tensorization of entropy, bounded
-differences, Efron–Stein. Upstream candidate for `Mathlib/MeasureTheory/Constructions/Pi.lean`.
+For a product $P = \bigotimes_j P_j$ (`Measure.pi P`) of probability measures, replacing the
+$i$-th coordinate by an independent draw from $P_i$ preserves the product. The integration lemmas
+that follow (Fubini in the resampled coordinate, integrability and measurability of the partial
+integral) are the steps of every argument that conditions on all coordinates but one: tensorization
+of entropy, bounded differences, Efron–Stein. Upstream candidate for
+`Mathlib/MeasureTheory/Constructions/Pi.lean`.
 
 ## Main results
 
 * `MeasureTheory.measurePreserving_update_pi`.
-* `MeasureTheory.integral_integral_update_pi`: `∫ ∫ F (update x i t) dP i dPi = ∫ F dPi`.
+* `MeasureTheory.integral_integral_update_pi`:
+  $\int \int F(x^{(i \leftarrow t)}) \, dP_i(t) \, dP(x) = \int F \, dP$, where
+  $x^{(i \leftarrow t)}$ is $x$ with its $i$-th coordinate replaced by $t$.
 -/
 
 @[expose] public section
@@ -69,15 +72,18 @@ theorem measurePreserving_update_pi (i : ι) :
     ← Finset.mul_prod_erase Finset.univ (fun j => P j (s j)) (Finset.mem_univ i), mul_comm,
     Finset.sdiff_singleton_eq_erase]
 
-/-- If `F` is integrable for the product, so is `F` with the `i`-th coordinate resampled. -/
+/-- If $F$ is integrable for the product, so is $F$ with the $i$-th coordinate resampled,
+$(x, t) \mapsto F(x^{(i \leftarrow t)})$ for $P \otimes P_i$. -/
 theorem integrable_comp_update_pi (i : ι) {F : (∀ j, X j) → ℝ}
     (hF : Integrable F (Measure.pi P)) :
     Integrable (fun p : (∀ j, X j) × X i => F (Function.update p.1 i p.2))
       ((Measure.pi P).prod (P i)) :=
   ((measurePreserving_update_pi P i).integrable_comp hF.aestronglyMeasurable).2 hF
 
-/-- Fubini in the resampled coordinate: integrating `F (update x i t)` over `t` and then over `x`
-gives the integral of `F`. -/
+/-- Fubini in the resampled coordinate: integrating $F(x^{(i \leftarrow t)})$ ($x$ with its $i$-th
+coordinate replaced by $t$) over $t$ against $P_i$ and then over $x$ against the product $P$ gives
+the integral of an integrable $F$:
+$\int \int F(x^{(i \leftarrow t)}) \, dP_i(t) \, dP(x) = \int F \, dP$. -/
 theorem integral_integral_update_pi (i : ι) {F : (∀ j, X j) → ℝ}
     (hF : Integrable F (Measure.pi P)) :
     ∫ x, ∫ t, F (Function.update x i t) ∂(P i) ∂(Measure.pi P) = ∫ x, F x ∂(Measure.pi P) := by
@@ -90,14 +96,15 @@ theorem integral_integral_update_pi (i : ι) {F : (∀ j, X j) → ℝ}
           (by rw [hmp.map_eq]; exact hF.aestronglyMeasurable)).symm
     _ = ∫ x, F x ∂(Measure.pi P) := by rw [hmp.map_eq]
 
-/-- For almost every `x`, the section `t ↦ F (update x i t)` of an integrable `F` is
+/-- For almost every $x$, the section $t \mapsto F(x^{(i \leftarrow t)})$ of an integrable $F$ is
 integrable. -/
 theorem ae_integrable_comp_update_pi (i : ι) {F : (∀ j, X j) → ℝ}
     (hF : Integrable F (Measure.pi P)) :
     ∀ᵐ x ∂(Measure.pi P), Integrable (fun t => F (Function.update x i t)) (P i) :=
   (integrable_comp_update_pi P i hF).prod_right_ae
 
-/-- The partial integral `x ↦ ∫ F (update x i t) dP i` of an integrable `F` is integrable. -/
+/-- The partial integral $x \mapsto \int F(x^{(i \leftarrow t)}) \, dP_i(t)$ of an integrable $F$
+is integrable. -/
 theorem integrable_integral_update_pi (i : ι) {F : (∀ j, X j) → ℝ}
     (hF : Integrable F (Measure.pi P)) :
     Integrable (fun x => ∫ t, F (Function.update x i t) ∂(P i)) (Measure.pi P) :=

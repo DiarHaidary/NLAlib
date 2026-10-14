@@ -13,10 +13,13 @@ public import NLAlib.Matrix.Functions.Complexification
 /-!
 # Operator convex functions
 
-Operator convexity of `f` on an interval is the predicate `NLAlib.OperatorConvexOn s f`. Operator
-convex functions satisfy the operator Jensen inequality `f(Kᴴ A K) ≤ Kᴴ f(A) K` for an isometry
-`K` (Hansen–Pedersen), proved by dilating the isometry to a unitary and pinching. `-log t` and
-`t⁻¹` are operator convex by Mathlib's C⋆-algebra facts; `t log t` is `t f(1/t)` for `f = -log`.
+Operator convexity of $f$ on an interval $s$ is the predicate `NLAlib.OperatorConvexOn`. Operator
+convex functions satisfy the operator Jensen inequality
+$f(\mathbf{K}^{\mathsf{H}}\mathbf{A}\mathbf{K})
+\preceq \mathbf{K}^{\mathsf{H}} f(\mathbf{A}) \mathbf{K}$ for an isometry $\mathbf{K}$
+(Hansen–Pedersen), proved by dilating the isometry to a unitary and pinching. $-\log t$ and
+$t^{-1}$ are operator convex by Mathlib's C⋆-algebra facts; $t \log t$ is $t f(1/t)$ for
+$f = -\log$.
 
 ## Main definitions
 
@@ -39,17 +42,18 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
 
-/-- A function is **operator convex** on a convex set `s` of reals if
-`f(a A + b B) ≤ a f(A) + b f(B)` for all weights `a + b = 1` and all Hermitian matrices `A`, `B`
-of every size with spectrum in `s`. It is stated for complex matrices indexed by `Fin d`; the
-consequences below hold over any `RCLike` field and any index type.
+/-- A function $f$ is **operator convex** on a convex set $s$ of reals if
+$f(a\mathbf{A} + b\mathbf{B}) \preceq a f(\mathbf{A}) + b f(\mathbf{B})$ for all weights
+$a, b \ge 0$ with $a + b = 1$ and all Hermitian matrices $\mathbf{A}$, $\mathbf{B}$ of every size
+with spectrum in $s$. It is stated for complex matrices indexed by `Fin d`; the consequences below
+hold over any `RCLike` field and any index type.
 [Bhatia1997, §V.1]; [Tropp2015, Definition 8.4.1]. Port of `NLAlib.OperatorConvexOn`. -/
 def OperatorConvexOn (s : Set ℝ) (f : ℝ → ℝ) : Prop :=
   Convex ℝ s ∧ ∀ (d : ℕ) (A B : Matrix (Fin d) (Fin d) ℂ), A.IsHermitian → B.IsHermitian →
     spectrum ℝ A ⊆ s → spectrum ℝ B ⊆ s → ∀ a b : ℝ, 0 ≤ a → 0 ≤ b → a + b = 1 →
       cfc f (a • A + b • B) ≤ a • cfc f A + b • cfc f B
 
-/-- An operator convex function is convex. -/
+/-- An operator convex function on $s$ is convex on $s$. -/
 theorem OperatorConvexOn.convexOn {s : Set ℝ} {f : ℝ → ℝ} (hf : OperatorConvexOn s f) :
     ConvexOn ℝ s f := by
   refine ⟨hf.1, fun x hx y hy a b ha hb hab => ?_⟩
@@ -64,7 +68,10 @@ theorem OperatorConvexOn.convexOn {s : Set ℝ} {f : ℝ → ℝ} (hf : Operator
   rw [hsum, cfc_algebraMap, cfc_algebraMap, cfc_algebraMap, hsum] at h
   exact algebraMap_le_algebraMap.mp h
 
-/-- **Operator convexity for matrices over any field and index type.** -/
+/-- **Operator convexity for matrices over any field and index type.** If $f$ is operator convex
+on $s$ and $\mathbf{A}$, $\mathbf{B}$ are Hermitian with spectra in $s$, then
+$f(a\mathbf{A} + b\mathbf{B}) \preceq a f(\mathbf{A}) + b f(\mathbf{B})$ for $a, b \ge 0$ with
+$a + b = 1$. -/
 theorem OperatorConvexOn.cfc_smul_add_smul_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian)
     (hAs : spectrum ℝ A ⊆ s) (hBs : spectrum ℝ B ⊆ s) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
@@ -94,7 +101,7 @@ theorem OperatorConvexOn.cfc_smul_add_smul_le {s : Set ℝ} {f : ℝ → ℝ}
   rw [hadd, hcfc _ hAB, hcfc _ hA, hcfc _ hB, hadd] at h
   exact hle _ _ h
 
-/-- `t ↦ t²` is operator convex on `ℝ`. [Bhatia1997, Example V.1.3]. -/
+/-- $t \mapsto t^2$ is operator convex on $\mathbb{R}$. [Bhatia1997, Example V.1.3]. -/
 theorem operatorConvexOn_sq : OperatorConvexOn Set.univ fun x : ℝ => x ^ 2 := by
   refine ⟨convex_univ, fun d A B hA hB _ _ a b ha hb hab => ?_⟩
   have hAB : (a • A + b • B).IsHermitian :=
@@ -110,7 +117,7 @@ theorem operatorConvexOn_sq : OperatorConvexOn Set.univ fun x : ℝ => x ^ 2 := 
   rw [hid]
   exact smul_nonneg (mul_nonneg ha hb) (Matrix.posSemidef_conjTranspose_mul_self _).nonneg
 
-/-- `t ↦ t⁻¹` is operator convex on `(0, ∞)`. [Bhatia1997, §V.1]. -/
+/-- $t \mapsto t^{-1}$ is operator convex on $(0, \infty)$. [Bhatia1997, §V.1]. -/
 theorem operatorConvexOn_inv : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => x⁻¹ := by
   refine ⟨convex_Ioi 0, fun d A B hA hB hAs hBs a b ha hb hab => ?_⟩
   open scoped Matrix.Norms.L2Operator in
@@ -127,7 +134,8 @@ theorem operatorConvexOn_inv : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => x⁻�
     cfc_ringInverse_id _ hABp.isUnit hABp.isSelfAdjoint]
   exact hc.2 hAp hBp ha hb hab
 
-/-- **`t ↦ -log t` is operator convex on `(0, ∞)`.**
+/-- **The negative logarithm is operator convex**: $t \mapsto -\log t$ is operator convex on
+$(0, \infty)$.
 [Bhatia1997, §V.2]; [Tropp2015, §8.4].
 Port of `NLAlib.operatorConvexOn_neg_log`. -/
 theorem operatorConvexOn_neg_log : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => -Real.log x := by
@@ -145,15 +153,16 @@ theorem operatorConvexOn_neg_log : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => -
 
 /-! ### The operator Jensen inequality -/
 
-/-- The functional calculus of the indicator of `sᶜ` vanishes on a matrix with spectrum in
-`s`. -/
+/-- The functional calculus of the indicator of the complement of $s$ vanishes on a matrix with
+spectrum in $s$. -/
 private theorem cfc_indicator_compl_eq_zero {A : Matrix n n 𝕜} {s : Set ℝ}
     (hAs : spectrum ℝ A ⊆ s) : cfc (sᶜ.indicator (1 : ℝ → ℝ)) A = 0 := by
   rw [← cfc_zero ℝ A]
   exact cfc_congr fun x hx => Set.indicator_of_notMem (Set.notMem_compl_iff.mpr (hAs hx)) _
 
-/-- The spectrum of a Hermitian matrix lies in `s` when the functional calculus of the
-indicator of `sᶜ` vanishes on it. This locates spectra from identities for `cfc`. -/
+/-- The spectrum of a Hermitian matrix lies in $s$ when the functional calculus of the
+indicator of the complement of $s$ vanishes on it. This locates spectra from identities for
+`cfc`. -/
 private theorem spectrum_subset_of_cfc_indicator_compl_eq_zero {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {s : Set ℝ} (h : cfc (sᶜ.indicator (1 : ℝ → ℝ)) A = 0) :
     spectrum ℝ A ⊆ s := by
@@ -165,7 +174,9 @@ private theorem spectrum_subset_of_cfc_indicator_compl_eq_zero {A : Matrix n n �
   rw [Set.indicator_of_mem (Set.mem_compl hxs)] at h0
   exact one_ne_zero h0
 
-/-- Unitary conjugation keeps the spectrum of a Hermitian matrix in `s`. -/
+/-- Unitary conjugation keeps the spectrum of a Hermitian matrix in $s$: if the spectrum of
+$\mathbf{A}$ lies in $s$ and $\mathbf{U}$ has orthonormal columns, so does that of
+$\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}$. -/
 private theorem spectrum_mul_mul_conjTranspose_subset {U A : Matrix n n 𝕜}
     (hU : HasOrthonormalCols U) (hA : A.IsHermitian) {s : Set ℝ} (hAs : spectrum ℝ A ⊆ s) :
     spectrum ℝ (U * A * Uᴴ) ⊆ s := by
@@ -174,7 +185,8 @@ private theorem spectrum_mul_mul_conjTranspose_subset {U A : Matrix n n 𝕜}
   rw [cfc_mul_mul_conjTranspose hU rfl hA, cfc_indicator_compl_eq_zero hAs, Matrix.mul_zero,
     Matrix.zero_mul]
 
-/-- Averaging a block matrix with its conjugate by the reflection `1 ⊕ (-1)` removes the
+/-- Averaging a block matrix with its conjugate by the reflection
+$\begin{bmatrix} \mathbf{I} & \mathbf{0} \\ \mathbf{0} & -\mathbf{I} \end{bmatrix}$ removes the
 off-diagonal blocks. -/
 private theorem half_smul_add_half_smul_reflection (Y : Matrix (m ⊕ n) (m ⊕ n) 𝕜) :
     (1 / 2 : ℝ) • Y + (1 / 2 : ℝ) • (Matrix.fromBlocks (1 : Matrix m m 𝕜) 0 0 (-1 : Matrix n n 𝕜) *
@@ -188,8 +200,9 @@ private theorem half_smul_add_half_smul_reflection (Y : Matrix (m ⊕ n) (m ⊕ 
     add_neg_cancel, ← add_smul]
   norm_num
 
-/-- **Pinching.** For an operator convex `f`, `f` of a diagonal block is below the diagonal
-block of `f`. -/
+/-- **Pinching.** For an operator convex $f$ and Hermitian $\mathbf{X}$ with spectrum in $s$,
+$f$ of the lower right diagonal block of $\mathbf{X}$ is below the lower right diagonal block of
+$f(\mathbf{X})$. -/
 private theorem OperatorConvexOn.cfc_toBlocks₂₂_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {X : Matrix (m ⊕ n) (m ⊕ n) 𝕜} (hX : X.IsHermitian)
     (hXs : spectrum ℝ X ⊆ s) : cfc f X.toBlocks₂₂ ≤ (cfc f X).toBlocks₂₂ := by
@@ -209,7 +222,9 @@ private theorem OperatorConvexOn.cfc_toBlocks₂₂_le {s : Set ℝ} {f : ℝ �
   rw [Matrix.le_iff]
   exact h.submatrix (Sum.inr : n → m ⊕ n)
 
-/-- The dilation `[[1 - K Kᴴ, K], [Kᴴ, 0]]` of an isometry `K` is unitary. -/
+/-- The dilation
+$\begin{bmatrix} \mathbf{I} - \mathbf{K}\mathbf{K}^{\mathsf{H}} & \mathbf{K} \\
+\mathbf{K}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$ of an isometry $\mathbf{K}$ is unitary. -/
 private theorem hasOrthonormalCols_fromBlocks_one_sub {K : Matrix m n 𝕜}
     (hK : HasOrthonormalCols K) :
     HasOrthonormalCols (Matrix.fromBlocks (1 - K * Kᴴ) K Kᴴ 0) := by
@@ -229,7 +244,8 @@ private theorem hasOrthonormalCols_fromBlocks_one_sub {K : Matrix m n 𝕜}
 
 omit [DecidableEq n] in
 /-- The lower right block of the conjugation of a block diagonal matrix by the dilation of
-`K` is the compression by `K`. -/
+$\mathbf{K}$ is the compression by $\mathbf{K}$: for diagonal blocks $\mathbf{A}$, $\mathbf{B}$ it
+is $\mathbf{K}^{\mathsf{H}}\mathbf{A}\mathbf{K}$. -/
 private theorem toBlocks₂₂_fromBlocks_one_sub_mul_mul (K : Matrix m n 𝕜) (A : Matrix m m 𝕜)
     (B : Matrix n n 𝕜) :
     (Matrix.fromBlocks (1 - K * Kᴴ) K Kᴴ 0 * Matrix.fromBlocks A 0 0 B *
@@ -238,11 +254,13 @@ private theorem toBlocks₂₂_fromBlocks_one_sub_mul_mul (K : Matrix m n 𝕜) 
     Matrix.toBlocks_fromBlocks₂₂, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_zero,
     Matrix.mul_zero, Matrix.zero_mul, add_zero]
 
-/-- **The operator Jensen inequality for an isometry** (Hansen–Pedersen). If `f` is operator
-convex on `s`, `A` is Hermitian with spectrum in `s`, and `K` has orthonormal columns, then
-`f(Kᴴ A K) ≤ Kᴴ f(A) K`.
+/-- **The operator Jensen inequality for an isometry** (Hansen–Pedersen). If $f$ is operator
+convex on $s$, $\mathbf{A}$ is Hermitian with spectrum in $s$, and $\mathbf{K}$ has orthonormal
+columns, then
+$$f(\mathbf{K}^{\mathsf{H}}\mathbf{A}\mathbf{K})
+  \preceq \mathbf{K}^{\mathsf{H}} f(\mathbf{A}) \mathbf{K} \,.$$
 [Tropp2015, Theorem 8.5.2]; [Bhatia1997, Theorem V.2.3].
-Port of `NLAlib.OperatorConvexOn.cfc_conjTranspose_mul_mul_le`, there over `ℂ`.
+Port of `NLAlib.OperatorConvexOn.cfc_conjTranspose_mul_mul_le`, there over $\mathbb{C}$.
 Result: operator-jensen -/
 theorem OperatorConvexOn.cfc_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {A : Matrix m m 𝕜} (hA : A.IsHermitian)
@@ -277,7 +295,8 @@ theorem OperatorConvexOn.cfc_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ →
     toBlocks₂₂_fromBlocks_one_sub_mul_mul] at h
 
 omit [Fintype n] [DecidableEq m] [DecidableEq n] in
-/-- A block diagonal matrix times a stack of blocks is the stack of the products. -/
+/-- A block diagonal matrix with blocks $\mathbf{B}_i$ times the stack of blocks $\mathbf{K}_i$
+is the stack of the products $\mathbf{B}_i\mathbf{K}_i$. -/
 private theorem blockDiagonal_mul_of {ι : Type*} [Fintype ι] [DecidableEq ι]
     (B : ι → Matrix m m 𝕜) (K : ι → Matrix m n 𝕜) :
     Matrix.blockDiagonal B * (Matrix.of fun (p : m × ι) (j : n) => K p.2 p.1 j) =
@@ -291,7 +310,8 @@ private theorem blockDiagonal_mul_of {ι : Type*} [Fintype ι] [DecidableEq ι]
   · exact fun h => absurd (Finset.mem_univ i) h
 
 omit [Fintype n] [DecidableEq m] [DecidableEq n] in
-/-- The Gram product of two stacks of blocks is the sum of the Gram products of the blocks. -/
+/-- The Gram product of two stacks of blocks is the sum of the Gram products of the blocks:
+$\sum_i \mathbf{K}_i^{\mathsf{H}}\mathbf{L}_i$. -/
 private theorem conjTranspose_of_mul_of {ι : Type*} [Fintype ι] (K L : ι → Matrix m n 𝕜) :
     (Matrix.of fun (p : m × ι) (j : n) => K p.2 p.1 j)ᴴ *
       (Matrix.of fun (p : m × ι) (j : n) => L p.2 p.1 j) = ∑ i, (K i)ᴴ * L i := by
@@ -299,10 +319,13 @@ private theorem conjTranspose_of_mul_of {ι : Type*} [Fintype ι] (K L : ι → 
   rw [Matrix.mul_apply, Fintype.sum_prod_type_right, Matrix.sum_apply]
   simp only [Matrix.conjTranspose_apply, Matrix.of_apply, Matrix.mul_apply]
 
-/-- **The operator Jensen inequality.** If `f` is operator convex on `s`, the `A i` are Hermitian
-with spectrum in `s`, and `∑ i, (K i)ᴴ * K i = 1`, then
-`f(∑ Kᵢᴴ Aᵢ Kᵢ) ≤ ∑ Kᵢᴴ f(Aᵢ) Kᵢ`.
-[Tropp2015, Theorem 8.5.2]. Port of `NLAlib.operator_jensen`, there for two terms over `ℂ`.
+/-- **The operator Jensen inequality.** If $f$ is operator convex on $s$, the $\mathbf{A}_i$ are
+Hermitian with spectrum in $s$, and $\sum_i \mathbf{K}_i^{\mathsf{H}}\mathbf{K}_i = \mathbf{I}$,
+a finite sum, then
+$$f\Bigl(\sum_i \mathbf{K}_i^{\mathsf{H}}\mathbf{A}_i\mathbf{K}_i\Bigr)
+  \preceq \sum_i \mathbf{K}_i^{\mathsf{H}} f(\mathbf{A}_i) \mathbf{K}_i \,.$$
+[Tropp2015, Theorem 8.5.2]. Port of `NLAlib.operator_jensen`, there for two terms over
+$\mathbb{C}$.
 Result: operator-jensen -/
 theorem OperatorConvexOn.cfc_sum_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {ι : Type*} [Fintype ι] {A : ι → Matrix m m 𝕜}
@@ -330,31 +353,37 @@ theorem OperatorConvexOn.cfc_sum_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ
   have h := hf.cfc_conjTranspose_mul_mul_le hD hDs hS
   rwa [cfc_blockDiagonal hA, hsum, hsum] at h
 
-/-! ### Operator convexity of `t log t`
+/-! ### Operator convexity of $t \log t$
 
-`t log t = t f(1/t)` for `f = -log`, and `X ↦ X^{1/2} f(X⁻¹) X^{1/2}` is convex whenever `f` is
-operator convex, by the operator Jensen inequality with `K i = √(a i) • X i^{1/2} X^{-1/2}`. -/
+$t \log t = t f(1/t)$ for $f = -\log$, and
+$\mathbf{X} \mapsto \mathbf{X}^{1/2} f(\mathbf{X}^{-1}) \mathbf{X}^{1/2}$ is convex whenever $f$ is
+operator convex, by the operator Jensen inequality with
+$\mathbf{K}_i = \sqrt{a_i}\, \mathbf{X}_i^{1/2} \mathbf{X}^{-1/2}$. -/
 
-/-- Products of functions of one matrix. -/
+/-- Products of functions of one matrix:
+$\varphi(\mathbf{X}) \psi(\mathbf{X}) = (\varphi\psi)(\mathbf{X})$. -/
 private theorem cfc_mul_cfc (X : Matrix n n 𝕜) (φ ψ : ℝ → ℝ) :
     cfc φ X * cfc ψ X = cfc (fun x => φ x * ψ x) X :=
   (cfc_mul φ ψ X (X.finite_real_spectrum.continuousOn _)
     (X.finite_real_spectrum.continuousOn _)).symm
 
-/-- `X^{1/2} φ(X) X^{1/2} = (t φ(t))(X)` for positive definite `X`. -/
+/-- $\mathbf{X}^{1/2} \varphi(\mathbf{X}) \mathbf{X}^{1/2} = g(\mathbf{X})$ with
+$g(t) = t \varphi(t)$, for positive definite $\mathbf{X}$. -/
 private theorem cfc_sqrt_mul_cfc_mul_cfc_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) (φ : ℝ → ℝ) :
     cfc Real.sqrt X * cfc φ X * cfc Real.sqrt X = cfc (fun x => x * φ x) X := by
   rw [cfc_mul_cfc, cfc_mul_cfc]
   refine cfc_congr fun x hx => ?_
   rw [mul_right_comm, Real.mul_self_sqrt (le_of_lt (hX.spectrum_subset_Ioi hx))]
 
-/-- A function equal to `1` on the positive reals gives `1` on a positive definite matrix. -/
+/-- A function equal to $1$ on the positive reals gives $\mathbf{I}$ on a positive definite
+matrix. -/
 private theorem cfc_eq_one_of_forall_pos {X : Matrix n n 𝕜} (hX : X.PosDef) {φ : ℝ → ℝ}
     (h : ∀ x : ℝ, 0 < x → φ x = 1) : cfc φ X = 1 := by
   rw [← cfc_const_one ℝ X hX.isHermitian.isSelfAdjoint]
   exact cfc_congr fun x hx => h x (hX.spectrum_subset_Ioi hx)
 
-/-- `-log` of the inverse is the logarithm. -/
+/-- $-\log$ of the inverse is the logarithm: $-\log(\mathbf{X}^{-1}) = \log(\mathbf{X})$ for
+Hermitian $\mathbf{X}$, the inverse taken in the functional calculus. -/
 private theorem cfc_neg_log_cfc_inv {X : Matrix n n 𝕜} (hX : X.IsHermitian) :
     cfc (fun x : ℝ => -Real.log x) (cfc (fun x : ℝ => x⁻¹) X) = cfc Real.log X := by
   rw [← cfc_comp' (fun x : ℝ => -Real.log x) (fun x : ℝ => x⁻¹) X
@@ -363,7 +392,10 @@ private theorem cfc_neg_log_cfc_inv {X : Matrix n n 𝕜} (hX : X.IsHermitian) :
   exact cfc_congr fun x _ => by simp only [Real.log_inv, neg_neg]
 
 omit [DecidableEq n] in
-/-- The congruence by `√c • X^{1/2} r` in terms of the congruence by `r`. -/
+/-- The congruence by $\sqrt{c}\,\mathbf{S}\mathbf{r}$ in terms of the congruence by
+$\mathbf{r}$: for Hermitian $\mathbf{S}$, $\mathbf{r}$ and $c \ge 0$,
+$(\sqrt{c}\,\mathbf{S}\mathbf{r})^{\mathsf{H}} \mathbf{N} (\sqrt{c}\,\mathbf{S}\mathbf{r})
+= c\, \mathbf{r}\mathbf{S}\mathbf{N}\mathbf{S}\mathbf{r}$. -/
 private theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S r : Matrix n n 𝕜}
     (hS : Sᴴ = S) (hr : rᴴ = r) (N : Matrix n n 𝕜) :
     (√c • (S * r))ᴴ * N * (√c • (S * r)) = c • (r * (S * N * S) * r) := by
@@ -371,15 +403,16 @@ private theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S r : 
   simp only [Matrix.smul_mul, Matrix.mul_smul, smul_smul, Real.mul_self_sqrt hc,
     Matrix.mul_assoc]
 
-/-- `X^{1/2} X^{1/2} = X` for positive definite `X`, in terms of `cfc`. -/
+/-- $\mathbf{X}^{1/2} \mathbf{X}^{1/2} = \mathbf{X}$ for positive definite $\mathbf{X}$, in terms
+of `cfc`. -/
 private theorem cfc_sqrt_mul_cfc_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) :
     cfc Real.sqrt X * cfc Real.sqrt X = X := by
   rw [cfc_mul_cfc]
   refine (cfc_congr fun x hx => ?_).trans (cfc_id' ℝ X hX.isHermitian.isSelfAdjoint)
   exact Real.mul_self_sqrt (le_of_lt (hX.spectrum_subset_Ioi hx))
 
-/-- The inverse square root `r` of a positive definite `X`, with the identities used in the
-proof of operator convexity of `t log t`. -/
+/-- The inverse square root $\mathbf{r}$ of a positive definite $\mathbf{X}$, with the identities
+used in the proof of operator convexity of $t \log t$. -/
 private theorem exists_inv_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) :
     ∃ r : Matrix n n 𝕜, rᴴ = r ∧ cfc Real.sqrt X * r = 1 ∧ r * cfc Real.sqrt X = 1 ∧
       r * X * r = 1 ∧ cfc (fun x : ℝ => -Real.log x) (r * r) = cfc Real.log X := by
@@ -399,7 +432,8 @@ private theorem exists_inv_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) :
     rw [Matrix.mul_assoc, Matrix.mul_assoc, hsr, Matrix.mul_one, hrs]
   · rw [hrr, cfc_neg_log_cfc_inv hX.isHermitian]
 
-/-- Convexity of `X ↦ X log X` on positive definite matrices over any field. -/
+/-- Convexity of $\mathbf{X} \mapsto \mathbf{X}\log(\mathbf{X})$ on positive definite matrices
+over any field. -/
 private theorem cfc_mul_log_smul_add_smul_le {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosDef) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hab : a + b = 1)
     (hX : (a • A + b • B).PosDef) :
@@ -459,7 +493,7 @@ private theorem cfc_mul_log_smul_add_smul_le {A B : Matrix n n 𝕜} (hA : A.Pos
     Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_smul, Matrix.smul_mul, hR,
     hR] at h2
 
-/-- `t ↦ t log t` is operator convex on `(0, ∞)`. [Bhatia1997, §V.2]. -/
+/-- $t \mapsto t \log t$ is operator convex on $(0, \infty)$. [Bhatia1997, §V.2]. -/
 theorem operatorConvexOn_mul_log : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => x * Real.log x := by
   refine ⟨convex_Ioi 0, fun d A B hA hB hAs hBs a b ha hb hab => ?_⟩
   have hAp : A.PosDef := hA.posDef_iff_eigenvalue_pos.mpr (hA.spectrum_subset_iff.mp hAs)

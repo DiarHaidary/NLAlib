@@ -10,13 +10,16 @@ public import NLAlib.Probability.MatrixConcentration.Chernoff
 /-!
 # The matrix Chernoff inequalities for sums of independent matrices
 
-For independent random positive semidefinite matrices `0 ≤ X k ≤ L • 1`, with
-`μmax = λ_max (∑ E X k)` and `μmin = λ_min (∑ E X k)`, the largest eigenvalue of the sum
-exceeds `(1 + δ) μmax`, and the smallest falls below `(1 - δ) μmin`, with the Chernoff
-probabilities (Tropp 2015, Theorem 5.1.1), and the means satisfy
-`E λ_max ≤ (e - 1) μmax + L log d`, `E λ_min ≥ (1 - e⁻¹) μmin - L log d`. When the summands have
-mean sum the identity, the sum is within `ε` of the identity in spectral norm outside probability
-`2 d e^{-ε² / (3L)}`, the form row-sampling arguments use.
+For independent random positive semidefinite matrices
+$\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ of size $d = \lvert n\rvert$, with
+$\mu_{\max}$ and $\mu_{\min}$ the largest and smallest eigenvalues of
+$\sum_k \mathbb{E}\mathbf{X}_k$, the largest eigenvalue of the sum exceeds
+$(1 + \delta) \mu_{\max}$, and the smallest falls below $(1 - \delta) \mu_{\min}$, with the
+Chernoff probabilities (Tropp 2015, Theorem 5.1.1), and the means satisfy
+$\mathbb{E} \lambda_{\max} \le (e - 1) \mu_{\max} + L \log d$ and
+$\mathbb{E} \lambda_{\min} \ge (1 - e^{-1}) \mu_{\min} - L \log d$. When the summands have mean
+sum the identity, the sum is within $\varepsilon$ of the identity in spectral norm outside
+probability $2 d\, e^{-\varepsilon^2 / (3L)}$, the form row-sampling arguments use.
 
 ## Main results
 
@@ -44,7 +47,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {n : Type*} [Fintype n] [DecidableEq n] {ι : Type*} [Fintype ι] {X : ι → Ω → Matrix n n 𝕜}
   {L : ℝ}
 
-/-- The hypotheses of the trace-form Chernoff tails for `Y = ∑ X k` and `V = ∑ E X k`. -/
+/-- The hypotheses of the trace-form Chernoff tails for $\mathbf{Y} = \sum_k \mathbf{X}_k$ and
+$\mathbf{V} = \sum_k \mathbb{E}\mathbf{X}_k$. -/
 private theorem chernoff_sum_hyps (hind : iIndepFun X μ) (hXm : ∀ k, AEMeasurable (X k) μ)
     (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -68,7 +72,12 @@ private theorem integral_pos_of_ae_pos [IsProbabilityMeasure μ] {f : Ω → ℝ
       Function.support f =ᵐ[μ] Set.univ), measure_univ]
   exact one_pos
 
-/-- **Matrix Chernoff, upper tail** ([Tropp2015], Theorem 5.1.1). -/
+/-- **Matrix Chernoff, upper tail**: for finitely many independent, almost everywhere measurable
+random matrices with $\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
+$\mu_{\max} = \lambda_0(\sum_k \mathbb{E}\mathbf{X}_k)$ and $\delta \ge 0$,
+$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge (1 + \delta) \mu_{\max}\Bigr)
+\le \lvert n\rvert \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\mu_{\max} / L}\,.$$
+[Tropp2015, Theorem 5.1.1]. -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff [Nonempty n] (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {δ : ℝ} (hδ : 0 ≤ δ) :
@@ -80,7 +89,12 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff [Nonempty n] (hind : iInd
   exact measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le hY hV hL (fun θ _ => hint θ)
     (fun θ _ => htr θ) hδ
 
-/-- **Matrix Chernoff, lower tail** ([Tropp2015], Theorem 5.1.1), for `0 ≤ δ < 1`. -/
+/-- **Matrix Chernoff, lower tail**: under the hypotheses of the upper tail, with
+$\mu_{\min} = \lambda_j(\sum_k \mathbb{E}\mathbf{X}_k)$ the smallest eigenvalue
+($j + 1 = \lvert n\rvert$) and $0 \le \delta < 1$,
+$$\mathbb{P}\Bigl(\lambda_j\Bigl(\sum_k \mathbf{X}_k\Bigr) \le (1 - \delta) \mu_{\min}\Bigr)
+\le \lvert n\rvert \Bigl(\frac{e^{-\delta}}{(1 - \delta)^{1-\delta}}\Bigr)^{\mu_{\min} / L}\,.$$
+[Tropp2015, Theorem 5.1.1]. -/
 theorem measureReal_eigenvalue_sum_le_le_chernoff (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {j : ℕ} (hj : j + 1 = Fintype.card n)
@@ -93,7 +107,10 @@ theorem measureReal_eigenvalue_sum_le_le_chernoff (hind : iIndepFun X μ)
   exact measureReal_eigenvalue_le_le_chernoff_of_integral_le hY hV hL hj (fun θ _ => hint θ)
     (fun θ _ => htr θ) hδ0 hδ1
 
-/-- Matrix Chernoff, upper tail, simplified: `≤ d e^{-δ² μmax / (3L)}` for `0 ≤ δ ≤ 1`. -/
+/-- Matrix Chernoff, upper tail, simplified: for $0 \le \delta \le 1$,
+$\mathbb{P}(\lambda_0(\sum_k \mathbf{X}_k) \ge (1 + \delta) \mu_{\max})
+\le \lvert n\rvert\, e^{-\delta^2 \mu_{\max} / (3L)}$, with
+$\mu_{\max} = \lambda_0(\sum_k \mathbb{E}\mathbf{X}_k)$. -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ ≤ 1) :
@@ -104,7 +121,10 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : 
   exact measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le hY hV hL
     (fun θ _ => hint θ) (fun θ _ => htr θ) hδ0 hδ1
 
-/-- Matrix Chernoff, lower tail, simplified: `≤ d e^{-δ² μmin / (2L)}` for `0 ≤ δ < 1`. -/
+/-- Matrix Chernoff, lower tail, simplified: for $0 \le \delta < 1$ and $j + 1 = \lvert n\rvert$,
+$\mathbb{P}(\lambda_j(\sum_k \mathbf{X}_k) \le (1 - \delta) \mu_{\min})
+\le \lvert n\rvert\, e^{-\delta^2 \mu_{\min} / (2L)}$, with
+$\mu_{\min} = \lambda_j(\sum_k \mathbb{E}\mathbf{X}_k)$. -/
 theorem measureReal_eigenvalue_sum_le_le_card_mul_exp (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {j : ℕ} (hj : j + 1 = Fintype.card n)
@@ -116,8 +136,11 @@ theorem measureReal_eigenvalue_sum_le_le_card_mul_exp (hind : iIndepFun X μ)
   exact measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le hY hV hL hj
     (fun θ _ => hint θ) (fun θ _ => htr θ) hδ0 hδ1
 
-/-- Matrix Chernoff for the mean of the largest eigenvalue ([Tropp2015], Theorem 5.1.1):
-`E λ_max (∑ X k) ≤ (e - 1) μmax + L log d`. -/
+/-- Matrix Chernoff for the mean of the largest eigenvalue: under the hypotheses of the tails,
+$$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
+\le (e - 1) \mu_{\max} + L \log \lvert n\rvert$$
+with $\mu_{\max} = \lambda_0(\sum_k \mathbb{E}\mathbf{X}_k)$.
+[Tropp2015, Theorem 5.1.1]. -/
 theorem integral_eigenvalue_zero_sum_le_chernoff [Nonempty n] (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -148,9 +171,13 @@ theorem integral_eigenvalue_zero_sum_le_chernoff [Nonempty n] (hind : iIndepFun 
         field_simp
         ring
 
-/-- Matrix Chernoff for the mean of the smallest eigenvalue ([Tropp2015], Theorem 5.1.1):
-`E λ_min (∑ X k) ≥ (1 - e⁻¹) μmin - L log d`. The summands are bounded, so the sum is
-integrable and the integral is not a junk value. -/
+/-- Matrix Chernoff for the mean of the smallest eigenvalue: under the hypotheses of the tails,
+with $j + 1 = \lvert n\rvert$,
+$$\mathbb{E}\, \lambda_j\Bigl(\sum_k \mathbf{X}_k\Bigr)
+\ge (1 - e^{-1}) \mu_{\min} - L \log \lvert n\rvert$$
+with $\mu_{\min} = \lambda_j(\sum_k \mathbb{E}\mathbf{X}_k)$.
+[Tropp2015, Theorem 5.1.1]. The summands are bounded, so the sum is integrable and the integral
+is not a junk value. -/
 theorem le_integral_eigenvalue_sum_chernoff (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {j : ℕ} (hj : j + 1 = Fintype.card n) :
@@ -194,8 +221,11 @@ theorem le_integral_eigenvalue_sum_chernoff (hind : iIndepFun X μ)
         mul_le_mul_of_nonpos_left hlog (neg_nonpos.mpr hL.le)
 
 /-- **Spectral approximation of the identity by a sum of bounded positive semidefinite
-matrices**: if `∑ E X k = 1`, then `P(ε ≤ ‖∑ X k - 1‖) ≤ 2 d e^{-ε² / (3L)}` for `0 ≤ ε < 1`; the
-form row-sampling and subspace-embedding arguments use. -/
+matrices**: under the hypotheses of the tails, if $\sum_k \mathbb{E}\mathbf{X}_k = \mathbf{I}$,
+then for $0 \le \varepsilon < 1$
+$$\mathbb{P}\Bigl(\Bigl\|\sum_k \mathbf{X}_k - \mathbf{I}\Bigr\|_2 \ge \varepsilon\Bigr)
+\le 2 \lvert n\rvert\, e^{-\varepsilon^2 / (3L)}\,,$$
+the form row-sampling and subspace-embedding arguments use. -/
 theorem measureReal_specNorm_sum_sub_one_ge_le [Nonempty n] (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜))

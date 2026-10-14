@@ -10,10 +10,11 @@ public import NLAlib.Matrix.Factorizations.GaussState
 /-!
 # The Cholesky factorization
 
-`NLAlib.IsCholesky A L` says that `A = L * Lᴴ` with `L` lower triangular with positive diagonal.
-A matrix has a Cholesky factorization exactly when it is positive definite, and the factor is
-unique. A positive semidefinite matrix has a factorization with nonnegative diagonal, and after a
-symmetric permutation one whose nonzero columns are the first `rank A`.
+`NLAlib.IsCholesky A L` says that $\mathbf{A} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ with
+$\mathbf{L}$ lower triangular with positive diagonal. A matrix has a Cholesky factorization exactly
+when it is positive definite, and the factor is unique. A positive semidefinite matrix has a
+factorization with nonnegative diagonal, and after a symmetric permutation one whose nonzero
+columns are the first $\operatorname{rank} \mathbf{A}$.
 
 ## Main definitions
 
@@ -38,9 +39,10 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [LinearOrder n] [Fintype n]
 
-/-- `IsCholesky A L`: **`A = L * Lᴴ` is a Cholesky factorization**, with `L` lower triangular
-with positive diagonal. [GolubVanLoan2013, Theorem 4.2.7]; [HornJohnson2013, Corollary 7.2.9].
-Port of `NLAlib.IsCholesky`, there over `ℝ`. -/
+/-- `IsCholesky A L`: **$\mathbf{A} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ is a Cholesky
+factorization**, with $\mathbf{L}$ lower triangular with positive (real) diagonal.
+[GolubVanLoan2013, Theorem 4.2.7]; [HornJohnson2013, Corollary 7.2.9].
+Port of `NLAlib.IsCholesky`, there over $\mathbb{R}$. -/
 structure IsCholesky (A L : Matrix n n 𝕜) : Prop where
   /-- The factor is lower triangular. -/
   isLowerTriangular : L.IsLowerTriangular
@@ -53,7 +55,8 @@ section
 
 variable [DecidableEq n] {A L : Matrix n n 𝕜}
 
-/-- A Cholesky factor is invertible. Port of `NLAlib.IsCholesky.isUnit_det`. -/
+/-- A Cholesky factor is invertible: $\det \mathbf{L}$ is a unit.
+Port of `NLAlib.IsCholesky.isUnit_det`. -/
 theorem IsCholesky.isUnit_det (h : IsCholesky A L) : IsUnit L.det :=
   h.isLowerTriangular.isUnit_det_iff.mpr fun i => (h.apply_self_pos i).ne'.isUnit
 
@@ -67,7 +70,8 @@ theorem IsCholesky.posDef (h : IsCholesky A L) : A.PosDef := by
     (Matrix.vecMul_injective_iff_isUnit.mpr ((Matrix.isUnit_iff_isUnit_det L).mpr h.isUnit_det))
 
 omit [DecidableEq n] in
-/-- **The Cholesky factor is unique.** [GolubVanLoan2013, Theorem 4.2.7].
+/-- **The Cholesky factor is unique**: two Cholesky factors of the same matrix are equal.
+[GolubVanLoan2013, Theorem 4.2.7].
 Port of `NLAlib.IsCholesky.unique`. -/
 theorem IsCholesky.unique {L' : Matrix n n 𝕜} (h : IsCholesky A L) (h' : IsCholesky A L') :
     L = L' := by
@@ -120,7 +124,8 @@ theorem IsCholesky.unique {L' : Matrix n n 𝕜} (h : IsCholesky A L) (h' : IsCh
         rw [← Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hL', Matrix.one_mul]
     _ = L' := by rw [hD1, Matrix.mul_one]
 
-/-- The determinant is the product of the squared diagonal of the Cholesky factor.
+/-- The determinant is the product of the squared diagonal of the Cholesky factor:
+$\det \mathbf{A} = \prod_i \mathbf{L}_{i,i}^2$.
 Port of `NLAlib.det_eq_prod_sq_diag_of_cholesky`. -/
 theorem IsCholesky.det_eq_prod (h : IsCholesky A L) : A.det = ∏ i, L i i ^ 2 := by
   rw [h.eq_mul_conjTranspose, Matrix.det_mul, Matrix.det_conjTranspose,
@@ -128,7 +133,8 @@ theorem IsCholesky.det_eq_prod (h : IsCholesky A L) : A.det = ∏ i, L i i ^ 2 :
   refine Finset.prod_congr rfl fun i _ => ?_
   rw [(IsSelfAdjoint.of_nonneg (h.apply_self_pos i).le).star_eq, sq]
 
-/-- **Solving through a Cholesky factorization**: `A x = b` exactly when `Lᴴ x = L⁻¹ b`. -/
+/-- **Solving through a Cholesky factorization**: $\mathbf{A}\mathbf{x} = \mathbf{b}$ exactly
+when $\mathbf{L}^{\mathsf{H}}\mathbf{x} = \mathbf{L}^{-1}\mathbf{b}$. -/
 theorem IsCholesky.mulVec_eq_iff (h : IsCholesky A L) {x b : n → 𝕜} :
     A *ᵥ x = b ↔ Lᴴ *ᵥ x = L⁻¹ *ᵥ b := by
   have hL := h.isUnit_det
@@ -147,9 +153,9 @@ section Recursion
 
 variable {n : ℕ}
 
-/-- The Cholesky factor computed by elimination: column `j` is the pivot column of step `j`
+/-- The Cholesky factor computed by elimination: column $j$ is the pivot column of step $j$
 divided by the square root of the pivot. A zero pivot gives a zero column.
-Port of `NLAlib.cholesky`, there by recursion on the dimension over `ℝ`. -/
+Port of `NLAlib.cholesky`, there by recursion on the dimension over $\mathbb{R}$. -/
 noncomputable def choleskyLower (A : Matrix (Fin n) (Fin n) 𝕜) : Matrix (Fin n) (Fin n) 𝕜 :=
   Matrix.of fun i j =>
     if j ≤ i then gaussState A j i j / ((√(RCLike.re (gaussState A j j j)) : ℝ) : 𝕜) else 0
@@ -186,7 +192,9 @@ private theorem gaussState_apply_eq_zero_of_posSemidef {A : Matrix (Fin n) (Fin 
       exact ih (by have := i.2; omega) l
 
 /-- The diagonal of the factor computed by elimination on a Hermitian matrix is the square root
-of the real part of the pivot (zero when the pivot is negative). -/
+of the real part of the pivot: $\mathbf{L}_{i,i} = \sqrt{\operatorname{Re} \mathbf{A}^{(i)}_{i,i}}$,
+with $\mathbf{A}^{(i)}$ the state after $i$ steps (`NLAlib.gaussState`) and $\sqrt{t} = 0$ for
+$t < 0$. -/
 theorem _root_.Matrix.IsHermitian.choleskyLower_apply_self {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : A.IsHermitian) (i : Fin n) :
     choleskyLower A i i = ((√(RCLike.re (gaussState A i i i)) : ℝ) : 𝕜) := by
@@ -194,7 +202,8 @@ theorem _root_.Matrix.IsHermitian.choleskyLower_apply_self {A : Matrix (Fin n) (
   nth_rewrite 1 [← (hA.gaussState i).coe_re_apply_self i]
   rw [← RCLike.ofReal_div, Real.div_sqrt]
 
-/-- The diagonal entry of the computed factor is positive exactly when the pivot is. -/
+/-- For a Hermitian matrix, the diagonal entry $\mathbf{L}_{i,i}$ of the computed factor is
+positive exactly when the pivot $\mathbf{A}^{(i)}_{i,i}$ is. -/
 theorem _root_.Matrix.IsHermitian.choleskyLower_apply_self_pos_iff
     {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) (i : Fin n) :
     0 < choleskyLower A i i ↔ 0 < gaussState A i i i := by
@@ -269,7 +278,8 @@ private theorem eq_choleskyLower_mul_conjTranspose_of {A : Matrix (Fin n) (Fin n
     simp only [Finset.mem_filter, Finset.mem_univ, true_and, Fin.le_def] at hil ⊢
     omega
 
-/-- Elimination factors a positive semidefinite matrix.
+/-- Elimination factors a positive semidefinite matrix:
+$\mathbf{A} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$ for the computed factor $\mathbf{L}$.
 Port of `NLAlib.eq_cholesky_mul_transpose_of_posSemidef`. -/
 theorem _root_.Matrix.PosSemidef.eq_choleskyLower_mul_conjTranspose
     {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.PosSemidef) :
@@ -300,8 +310,8 @@ theorem _root_.Matrix.IsHermitian.forall_choleskyLower_apply_self_pos_iff
       fun j i hj => absurd hj (hp j).ne'⟩
 
 /-- Diagonal pivoting on a positive semidefinite matrix: a simultaneous permutation of rows and
-columns after which the computed factor has exactly `rank A` positive diagonal entries, the
-first ones, and zero columns after them. -/
+columns after which the computed factor has exactly $\operatorname{rank} \mathbf{A}$ positive
+diagonal entries, the first ones, and zero columns after them. -/
 private theorem exists_perm_choleskyLower {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.PosSemidef) :
     ∃ σ : Equiv.Perm (Fin n),
       (∀ i : Fin n, 0 < choleskyLower (A.submatrix σ σ) i i ↔ (i : ℕ) < A.rank) ∧
@@ -397,8 +407,8 @@ theorem _root_.Matrix.PosDef.existsUnique_isCholesky (hA : A.PosDef) :
   obtain ⟨L, hL⟩ := (exists_isCholesky_iff_posDef A).mpr hA
   exact ⟨L, hL, fun L' hL' => hL'.unique hL⟩
 
-/-- A positive semidefinite matrix is `L * Lᴴ` for a lower triangular `L` with nonnegative
-diagonal. Port of `NLAlib.exists_eq_mul_transpose_of_posSemidef`. -/
+/-- A positive semidefinite matrix is $\mathbf{L}\mathbf{L}^{\mathsf{H}}$ for a lower triangular
+$\mathbf{L}$ with nonnegative diagonal. Port of `NLAlib.exists_eq_mul_transpose_of_posSemidef`. -/
 theorem _root_.Matrix.PosSemidef.exists_eq_mul_conjTranspose_of_isLowerTriangular
     (hA : A.PosSemidef) :
     ∃ L : Matrix n n 𝕜, L.IsLowerTriangular ∧ (∀ i, 0 ≤ L i i) ∧ A = L * Lᴴ := by
@@ -413,9 +423,11 @@ theorem _root_.Matrix.PosSemidef.exists_eq_mul_conjTranspose_of_isLowerTriangula
   ext i j
   simp only [Matrix.submatrix_apply, OrderIso.apply_symm_apply]
 
-/-- **Pivoted Cholesky.** A positive semidefinite matrix has, after a symmetric permutation, a
-factorization `L * Lᴴ` with `L` lower triangular whose first `rank A` diagonal entries are
-positive and whose remaining columns vanish. [Higham2002, Theorem 10.9].
+/-- **Pivoted Cholesky.** A positive semidefinite matrix $\mathbf{A}$ has, after a symmetric
+permutation $\sigma$ of rows and columns, a factorization $\mathbf{L}\mathbf{L}^{\mathsf{H}}$ with
+$\mathbf{L}$ lower triangular with nonnegative diagonal, whose first
+$\operatorname{rank} \mathbf{A}$ diagonal entries are positive and whose remaining columns vanish.
+[Higham2002, Theorem 10.9].
 Port of `NLAlib.isPivotedCholesky_choleskyPivoted`, with the rank statements
 `NLAlib.choleskyPivoted_apply_self_pos_iff_lt_rank` and
 `NLAlib.choleskyPivoted_apply_eq_zero_of_rank_le`, which the prototype leaves unproved. -/

@@ -15,7 +15,7 @@ public import NLAlib.Matrix.Majorization.Schur
 The trace of a product is bounded by the sum of the products of the sorted eigenvalues (for
 Hermitian matrices) or singular values (in general). From these follow the Hoffman–Wielandt
 inequality for Hermitian matrices and Mirsky's inequality in the Frobenius norm: sorted
-eigenvalues and sorted singular values are `1`-Lipschitz in the Frobenius norm, as vectors.
+eigenvalues and sorted singular values are $1$-Lipschitz in the Frobenius norm, as vectors.
 
 ## Main results
 
@@ -34,8 +34,8 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-- Abel summation for the trace of a product with a real diagonal matrix whose diagonal is
-non-increasing: bounds on the traces of the leading principal blocks of `C` give a bound on
-`re tr (C * diagonal μ)`. -/
+non-increasing: bounds on the traces of the leading principal blocks of $\mathbf{C}$ give a bound
+on $\operatorname{Re} \operatorname{tr}(\mathbf{C}\operatorname{diag}(\mu_i))$. -/
 private theorem re_trace_mul_diagonal_add_le {N : ℕ} (C : Matrix (Fin N) (Fin N) 𝕜)
     {μ g : ℕ → ℝ} (hμ : ∀ i j, i ≤ j → j < N → μ j ≤ μ i)
     (h : ∀ k (hk : k ≤ N), RCLike.re (C.submatrix (Fin.castLE hk) (Fin.castLE hk)).trace ≤
@@ -63,18 +63,20 @@ private theorem re_trace_mul_diagonal_add_le {N : ℕ} (C : Matrix (Fin N) (Fin 
     (fun i _ j hj hij => hμ i j hij hj) (fun k hk => (hpart k hk).trans_le (h k hk)) hc
   rwa [hμf, htot] at key
 
-/-- A sum of nonnegative terms that vanish from index `N` on is at most the sum over
-`Finset.range N`. -/
+/-- A sum of nonnegative terms that vanish from index $N$ on is at most the sum of the first $N$:
+$\sum_{i \in S} t_i \le \sum_{i < N} t_i$. -/
 private theorem sum_le_sum_range_of_forall_eq_zero {t : ℕ → ℝ} {N : ℕ} (h0 : ∀ i, 0 ≤ t i)
     (hz : ∀ i, N ≤ i → t i = 0) (S : Finset ℕ) : ∑ i ∈ S, t i ≤ ∑ i ∈ Finset.range N, t i := by
   refine (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_union_left (s₂ := Finset.range N))
     fun i _ _ => h0 i).trans_eq (Finset.sum_subset Finset.subset_union_right fun i _ hi => ?_).symm
   exact hz i (not_lt.mp fun hlt => hi (Finset.mem_range.mpr hlt))
 
-/-- **The trace inequality for Hermitian matrices.** `re tr (A B) ≤ ∑ λ_i(A) λ_i(B)`, the
-eigenvalues of each matrix in non-increasing order.
+/-- **The trace inequality for Hermitian matrices.**
+$$\operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B})
+  \le \sum_{i < \lvert n \rvert} \lambda_i(\mathbf{A}) \, \lambda_i(\mathbf{B}) \,,$$
+the eigenvalues of each matrix in non-increasing order.
 [HornJohnson2013, Theorem 4.3.53].
-Port of `NLAlib.trace_mul_le_sum_eigenvalues₀_mul`, there over `ℝ`.
+Port of `NLAlib.trace_mul_le_sum_eigenvalues₀_mul`, there over $\mathbb{R}$.
 Result: von-neumann-trace-inequality -/
 theorem _root_.Matrix.IsHermitian.re_trace_mul_le_sum_eigenvalue_mul {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) :
@@ -106,8 +108,11 @@ theorem _root_.Matrix.IsHermitian.re_trace_mul_le_sum_eigenvalue_mul {A B : Matr
   rw [hAB]
   exact key.trans_eq (Finset.sum_congr rfl fun i _ => mul_comm _ _)
 
-/-- The lower trace inequality for Hermitian matrices: `∑ λ_i(A) λ_{n-1-i}(B) ≤ re tr (A B)`,
-the eigenvalues of `A` in non-increasing and those of `B` in non-decreasing order.
+/-- The lower trace inequality for Hermitian matrices:
+$$\sum_{i < \lvert n \rvert} \lambda_i(\mathbf{A}) \, \lambda_{\lvert n \rvert - 1 - i}(\mathbf{B})
+  \le \operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B}) \,,$$
+the eigenvalues of $\mathbf{A}$ in non-increasing and those of $\mathbf{B}$ in non-decreasing
+order.
 [HornJohnson2013, Theorem 4.3.53]. -/
 theorem _root_.Matrix.IsHermitian.sum_eigenvalue_mul_rev_le_re_trace_mul {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) :
@@ -125,7 +130,10 @@ theorem _root_.Matrix.IsHermitian.sum_eigenvalue_mul_rev_le_re_trace_mul {A B : 
   rw [h'] at h
   exact neg_le_neg_iff.mp h
 
-/-- von Neumann's trace inequality for the real part of the trace. -/
+/-- von Neumann's trace inequality for the real part of the trace:
+$\operatorname{Re} \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B})
+\le \sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A}) \,
+\sigma_i(\mathbf{B})$. -/
 private theorem re_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matrix m n 𝕜) :
     RCLike.re (Aᴴ * B).trace ≤
       ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
@@ -155,9 +163,13 @@ private theorem re_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matr
   rw [hAB]
   exact key.trans_eq (Finset.sum_congr rfl fun i _ => mul_comm _ _)
 
-/-- **von Neumann's trace inequality.** `|tr (Aᴴ B)| ≤ ∑ σ_i(A) σ_i(B)`.
+/-- **von Neumann's trace inequality.**
+$$\lvert \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B}) \rvert
+  \le \sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})
+  \,.$$
 [HornJohnson2013, Theorem 7.4.1.1].
-Port of `NLAlib.frobInner_le_sum_singularValues_mul`, there over `ℝ` and for the real part.
+Port of `NLAlib.frobInner_le_sum_singularValues_mul`, there over $\mathbb{R}$ and for the real
+part.
 Result: von-neumann-trace-inequality -/
 theorem norm_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matrix m n 𝕜) :
     ‖(Aᴴ * B).trace‖ ≤
@@ -169,9 +181,10 @@ theorem norm_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matrix m n
   simpa only [singularValues_smul, hc, one_mul] using h
 
 /-- von Neumann's trace inequality for the Frobenius inner product:
-`|⟨A, B⟩_F| ≤ ∑ σ_i(A) σ_i(B)`.
+$\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
+\le \sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})$.
 [HornJohnson2013, Theorem 7.4.1.1].
-Port of `NLAlib.abs_frobInner_le_sum_singularValues_mul`, there over `ℝ`.
+Port of `NLAlib.abs_frobInner_le_sum_singularValues_mul`, there over $\mathbb{R}$.
 Result: von-neumann-trace-inequality -/
 theorem abs_frobInner_le_sum_singularValues_mul (A B : Matrix m n 𝕜) :
     |frobInner A B| ≤
@@ -180,10 +193,12 @@ theorem abs_frobInner_le_sum_singularValues_mul (A B : Matrix m n 𝕜) :
   exact (RCLike.abs_re_le_norm _).trans
     (norm_trace_conjTranspose_mul_le_sum_singularValues_mul A B)
 
-/-- **Hoffman–Wielandt for Hermitian matrices.** The sorted eigenvalues are `1`-Lipschitz in the
-Frobenius norm: `∑ (λ_i(A) - λ_i(B))² ≤ ‖A - B‖_F²`, over any set of indices.
+/-- **Hoffman–Wielandt for Hermitian matrices.** The sorted eigenvalues are $1$-Lipschitz in the
+Frobenius norm: for Hermitian $\mathbf{A}$, $\mathbf{B}$ and any finite set $S$ of indices,
+$$\sum_{i \in S} \bigl(\lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B})\bigr)^2
+  \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2 \,.$$
 [HornJohnson2013, Corollary 6.3.8].
-Port of `NLAlib.sum_sq_eigenvalues₀_sub_le_frobSq_sub`, there over `ℝ`.
+Port of `NLAlib.sum_sq_eigenvalues₀_sub_le_frobSq_sub`, there over $\mathbb{R}$.
 Result: hoffman-wielandt -/
 theorem sum_sq_eigenvalue_sub_le_frobNorm_sub_sq {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) (S : Finset ℕ) :
@@ -202,10 +217,12 @@ theorem sum_sq_eigenvalue_sub_le_frobNorm_sub_sq {A B : Matrix n n 𝕜} (hA : A
       frobInner, hA.eq, hsq]
     linarith
 
-/-- **Mirsky's inequality** in the Frobenius norm. The sorted singular values are `1`-Lipschitz:
-`∑ (σ_i(A) - σ_i(B))² ≤ ‖A - B‖_F²`, over any set of indices.
+/-- **Mirsky's inequality** in the Frobenius norm. The sorted singular values are $1$-Lipschitz:
+for any finite set $S$ of indices,
+$$\sum_{i \in S} \bigl(\sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B})\bigr)^2
+  \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2 \,.$$
 [HornJohnson2013, Corollary 7.4.1.3].
-Port of `NLAlib.sum_sq_singularValues_add_sub_le_frobSq`, there over `ℝ`.
+Port of `NLAlib.sum_sq_singularValues_add_sub_le_frobSq`, there over $\mathbb{R}$.
 Result: mirsky-inequality -/
 theorem sum_sq_singularValues_sub_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S : Finset ℕ) :
     ∑ i ∈ S, (singularValues A i - singularValues B i) ^ 2 ≤ frobNorm (A - B) ^ 2 := by
@@ -233,9 +250,12 @@ theorem sum_sq_singularValues_sub_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S 
         (le_min B.rank_le_card_height B.rank_le_card_width), hsq]
     linarith
 
-/-- The Frobenius inner product with a matrix of rank at most `r` is bounded through the
-spectral norm: `⟨X, E⟩_F ≤ √r ‖X‖_F ‖E‖₂`.
-Port of `NLAlib.frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le`, there over `ℝ`. -/
+/-- The Frobenius inner product with a matrix of rank at most $r$ is bounded through the
+spectral norm: if $\operatorname{rank} \mathbf{X} \le r$ then
+$\langle \mathbf{X}, \mathbf{E} \rangle_{\mathsf{F}}
+\le \sqrt{r} \, \|\mathbf{X}\|_{\mathsf{F}} \|\mathbf{E}\|_2$.
+Port of `NLAlib.frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le`, there over
+$\mathbb{R}$. -/
 theorem frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le {X : Matrix m n 𝕜} {r : ℕ}
     (hX : X.rank ≤ r) (E : Matrix m n 𝕜) :
     frobInner X E ≤ √(r : ℝ) * frobNorm X * specNorm E := by

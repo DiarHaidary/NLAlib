@@ -10,18 +10,20 @@ public import NLAlib.Probability.Distributions.Gaussian
 /-!
 # The squared norm of a standard Gaussian vector
 
-The squared norm of a standard Gaussian vector in `ℝⁿ` is `χ²_n`. This file gives its Laplace
-transform and the Laurent–Massart lower tail. The upper tail is the sub-Gaussian-vector bound
-`NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le` at proxy `1`, which is Laurent and
-Massart's exactly.
+The squared norm of a standard Gaussian vector in $\mathbb{R}^n$ is $\chi^2$ with
+$d = \lvert n \rvert$ degrees of freedom. This file gives its Laplace transform and the
+Laurent–Massart lower tail. The upper tail is the sub-Gaussian-vector bound
+`NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le` at proxy $1$, which is Laurent and
+Massart's exactly. Below $\mathbf{X}$ is a standard Gaussian vector and $d = \lvert n \rvert$.
 
 ## Main results
 
-* `NLAlib.integral_exp_mul_norm_sq_of_hasLaw_gaussianVector`: `E exp (θ‖X‖²) = (1 - 2θ)^{-n/2}`.
+* `NLAlib.integral_exp_mul_norm_sq_of_hasLaw_gaussianVector`:
+  $\mathbb{E}\, e^{\theta \|\mathbf{X}\|^2} = (1 - 2\theta)^{-d/2}$.
 * `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector`:
-  `P(‖X‖² ≤ n - 2√(n t)) ≤ e^{-t}`.
+  $\mathbb{P}(\|\mathbf{X}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$.
 * `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector`: the small ball
-  `P(‖X‖² ≤ u) ≤ (e u / n)^{n/2}`.
+  $\mathbb{P}(\|\mathbf{X}\|^2 \le u) \le (e u / d)^{d/2}$.
 -/
 
 @[expose] public section
@@ -60,7 +62,9 @@ private theorem integral_exp_mul_norm_sq_gaussianVector {θ : ℝ} (hθ : 2 * θ
   congr 1
   ring
 
-/-- The Laplace transform of `χ²_n`: `E exp (θ ‖X‖²) = (1 - 2θ)^{-n/2}` for `θ < 1/2`. -/
+/-- The Laplace transform of $\chi^2$: for a standard Gaussian vector $\mathbf{X}$ and
+$\theta < 1/2$, $\mathbb{E}\, e^{\theta \|\mathbf{X}\|^2} = (1 - 2\theta)^{-d/2}$, where
+$d = \lvert n \rvert$. -/
 theorem integral_exp_mul_norm_sq_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
     {θ : ℝ} (hθ : 2 * θ < 1) :
     ∫ ω, rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2) ∂μ = (1 - 2 * θ) ^ (-(Fintype.card n / 2 : ℝ)) := by
@@ -75,7 +79,8 @@ private theorem log_one_sub_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
   norm_num at this
   linarith
 
-/-- The Chernoff bound for the lower tail with the exact Laplace transform. -/
+/-- The Chernoff bound for the lower tail with the exact Laplace transform: for $s \ge 0$,
+$\mathbb{P}(\|\mathbf{X}\|^2 \le c) \le e^{s c} (1 + 2s)^{-\lvert n \rvert / 2}$. -/
 private theorem measureReal_norm_sq_le_le_exp_mul_rpow (hX : HasLaw X (gaussianVector n) μ)
     (c : ℝ) {s : ℝ} (hs : 0 ≤ s) :
     μ.real {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ c} ≤
@@ -89,9 +94,10 @@ private theorem measureReal_norm_sq_le_le_exp_mul_rpow (hX : HasLaw X (gaussianV
     (neg_nonpos.2 hs) hint
   rwa [mgf, hlap, neg_neg] at h
 
-/-- **The lower tail of `χ²_n`** (Laurent and Massart 2000, Lemma 1):
-`P(‖X‖² ≤ n - 2√(n t)) ≤ e^{-t}`. The dimension must be positive: for `n = 0` the event is
-everything.
+/-- **The lower tail of $\chi^2$** (Laurent and Massart 2000, Lemma 1): for a standard Gaussian
+vector $\mathbf{X}$ of dimension $d = \lvert n \rvert \ge 1$ and $t \ge 0$,
+$\mathbb{P}(\|\mathbf{X}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$. The dimension must be positive: for
+$d = 0$ the event is everything.
 Result: laurent-massart -/
 theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
     (hn : 0 < Fintype.card n) {t : ℝ} (ht : 0 ≤ t) :
@@ -130,7 +136,8 @@ theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hX : HasLaw X (gaussian
       mul_nonpos_of_nonneg_of_nonpos hs (mul_nonpos_of_nonneg_of_nonpos hN.le (by linarith))
     nlinarith
 
-/-- A standard Gaussian vector of positive dimension is almost surely nonzero. -/
+/-- A standard Gaussian vector of positive dimension is almost surely nonzero:
+$\mathbb{P}(\|\mathbf{X}\|^2 \le 0) = 0$. -/
 private theorem measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector
     (hX : HasLaw X (gaussianVector n) μ) (hn : 0 < Fintype.card n) :
     μ.real {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ 0} = 0 := by
@@ -148,12 +155,13 @@ private theorem measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector
   rw [(hX.eval i).measureReal_eq (p := fun x => x = 0) (measurableSet_singleton 0)]
   rw [measureReal_def, Set.ofPred_eq_eq_singleton, measure_singleton, ENNReal.toReal_zero]
 
-/-- **Small-ball bound for `χ²_n`**: `P(‖X‖² ≤ u) ≤ (e u / n)^{n/2}` for `u ≥ 0`. Chernoff's
-bound with the parameter `s = (n / u - 1) / 2`. It decays like `u^{n/2}` as `u → 0`, which
-`NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (better for thresholds near `n`) does
-not see; it is at least `1` for `u ≥ n` and for `n = 0`.
-Port of `NLAlib.measureReal_sum_sq_le_le_gaussianVector`, there for `Fin d`, `d ≥ 1` and
-`u ≤ d`.
+/-- **Small-ball bound for $\chi^2$**: for a standard Gaussian vector $\mathbf{X}$ of dimension
+$d = \lvert n \rvert$ and $u \ge 0$, $\mathbb{P}(\|\mathbf{X}\|^2 \le u) \le (e u / d)^{d/2}$.
+Chernoff's bound with the parameter $s = (d / u - 1) / 2$. It decays like $u^{d/2}$ as
+$u \to 0$, which `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (better for thresholds
+near $d$) does not see; it is at least $1$ for $u \ge d$ and for $d = 0$.
+Port of `NLAlib.measureReal_sum_sq_le_le_gaussianVector`, there for `Fin d`, $d \ge 1$ and
+$u \le d$.
 Result: chi-square-small-ball -/
 theorem measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector
     (hX : HasLaw X (gaussianVector n) μ) {u : ℝ} (hu : 0 ≤ u) :

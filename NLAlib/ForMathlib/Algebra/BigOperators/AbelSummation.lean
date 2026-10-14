@@ -13,16 +13,16 @@ public import Mathlib.Tactic.Linarith
 /-!
 # Abel's inequality for sums against a non-increasing weight
 
-If the partial sums of `b` are dominated by those of `c`, a non-increasing weight `a` preserves
-the domination: `∑ i < N, a i * b i ≤ ∑ i < N, a i * c i`, provided the weight is nonnegative or
-the total sums of `b` and `c` agree. Mathlib has the summation by parts identity
+If the partial sums of $b$ are dominated by those of $c$, a non-increasing weight $a$ preserves
+the domination: $\sum_{i < N} a_i b_i \le \sum_{i < N} a_i c_i$, provided the weight is
+nonnegative or the total sums of $b$ and $c$ agree. Mathlib has the summation by parts identity
 (`Finset.sum_range_by_parts`) and not this inequality. Upstream candidates for
 `Mathlib.Algebra.Order.BigOperators.Ring.Finset`.
 
 ## Main results
 
 * `Finset.sum_range_mul_add_le_sum_range_mul_of_antitoneOn`: the general form, with a lower bound
-  `t` on the weight and the slack term `t * (∑ c - ∑ b)`.
+  $t$ on the weight and the slack term $t \bigl(\sum_{i < N} c_i - \sum_{i < N} b_i\bigr)$.
 * `Finset.sum_range_mul_le_sum_range_mul_of_antitoneOn_of_nonneg`: nonnegative weight.
 * `Finset.sum_range_mul_le_sum_range_mul_of_antitoneOn_of_sum_eq`: equal total sums.
 -/
@@ -33,10 +33,12 @@ namespace Finset
 
 variable {R : Type*} [CommRing R] [LinearOrder R] [IsStrictOrderedRing R] {a b c : ℕ → R} {N : ℕ}
 
-/-- **Abel's inequality**, with a slack term. If `a` is non-increasing below `N` and bounded
-below by `t` there, and the partial sums of `b` are at most those of `c` up to `N`, then
-`∑ i < N, a i * b i + t * (∑ i < N, c i - ∑ i < N, b i) ≤ ∑ i < N, a i * c i`. The cases `t = 0`
-and equal total sums are `Finset.sum_range_mul_le_sum_range_mul_of_antitoneOn_of_nonneg` and
+/-- **Abel's inequality**, with a slack term. If $(a_i)$ is non-increasing on $i < N$ and
+bounded below by $t$ there, and $\sum_{i < k} b_i \le \sum_{i < k} c_i$ for every $k \le N$, then
+$$\sum_{i < N} a_i b_i + t \Bigl(\sum_{i < N} c_i - \sum_{i < N} b_i\Bigr)
+  \le \sum_{i < N} a_i c_i \,.$$
+The cases $t = 0$ and equal total sums are
+`Finset.sum_range_mul_le_sum_range_mul_of_antitoneOn_of_nonneg` and
 `Finset.sum_range_mul_le_sum_range_mul_of_antitoneOn_of_sum_eq`. -/
 theorem sum_range_mul_add_le_sum_range_mul_of_antitoneOn (ha : AntitoneOn a (Set.Iio N))
     (h : ∀ k ≤ N, ∑ i ∈ range k, b i ≤ ∑ i ∈ range k, c i) {t : R} (ht : ∀ i < N, t ≤ a i) :
@@ -55,18 +57,19 @@ theorem sum_range_mul_add_le_sum_range_mul_of_antitoneOn (ha : AntitoneOn a (Set
     rw [sum_range_succ, sum_range_succ, sum_range_succ, sum_range_succ]
     nlinarith [mul_nonneg (sub_nonneg.mpr h3) (sub_nonneg.mpr h2)]
 
-/-- **Abel's inequality** for a nonnegative weight. If `a` is non-increasing and nonnegative
-below `N`, and the partial sums of `b` are at most those of `c` up to `N`, then
-`∑ i < N, a i * b i ≤ ∑ i < N, a i * c i`. -/
+/-- **Abel's inequality** for a nonnegative weight. If $(a_i)$ is non-increasing and nonnegative
+on $i < N$, and $\sum_{i < k} b_i \le \sum_{i < k} c_i$ for every $k \le N$, then
+$\sum_{i < N} a_i b_i \le \sum_{i < N} a_i c_i$. -/
 theorem sum_range_mul_le_sum_range_mul_of_antitoneOn_of_nonneg (ha : AntitoneOn a (Set.Iio N))
     (h : ∀ k ≤ N, ∑ i ∈ range k, b i ≤ ∑ i ∈ range k, c i) (ha0 : ∀ i < N, 0 ≤ a i) :
     ∑ i ∈ range N, a i * b i ≤ ∑ i ∈ range N, a i * c i := by
   have key := sum_range_mul_add_le_sum_range_mul_of_antitoneOn ha h ha0
   rwa [zero_mul, add_zero] at key
 
-/-- **Abel's inequality** for equal total sums. If `a` is non-increasing below `N`, the partial
-sums of `b` are at most those of `c` up to `N`, and the two sums up to `N` agree, then
-`∑ i < N, a i * b i ≤ ∑ i < N, a i * c i`, with no sign condition on `a`. -/
+/-- **Abel's inequality** for equal total sums. If $(a_i)$ is non-increasing on $i < N$,
+$\sum_{i < k} b_i \le \sum_{i < k} c_i$ for every $k \le N$, and
+$\sum_{i < N} b_i = \sum_{i < N} c_i$, then $\sum_{i < N} a_i b_i \le \sum_{i < N} a_i c_i$, with
+no sign condition on $a$. -/
 theorem sum_range_mul_le_sum_range_mul_of_antitoneOn_of_sum_eq (ha : AntitoneOn a (Set.Iio N))
     (h : ∀ k ≤ N, ∑ i ∈ range k, b i ≤ ∑ i ∈ range k, c i)
     (hsum : ∑ i ∈ range N, b i = ∑ i ∈ range N, c i) :

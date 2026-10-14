@@ -11,14 +11,14 @@ public import Mathlib.Probability.Moments.Variance
 /-!
 # Tail probabilities and moments
 
-Tail bounds in NLAlib are failure probabilities in `ℝ`, with non-strict events:
+Tail bounds in NLAlib are failure probabilities in $\mathbb{R}$, with non-strict events:
 `μ.real {ω | t ≤ f ω} ≤ bound` (`docs/PORT_PROBABILITY.md` D3). Mathlib's Chernoff bound
 `ProbabilityTheory.measure_ge_le_exp_mul_mgf` and Markov's inequality
 `MeasureTheory.mul_meas_ge_le_integral_of_nonneg` already have this form; the union bound and the
 complement are `MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_biUnion_finset_le`
 and `MeasureTheory.probReal_compl_eq_one_sub`. This file adds Markov's inequality in quotient
-form, Chebyshev's inequality in `ℝ`, the two-sided tail, and the passage from a tail bound to
-integrability and to a bound on the mean.
+form, Chebyshev's inequality in $\mathbb{R}$, the two-sided tail, and the passage from a tail bound
+to integrability and to a bound on the mean.
 
 ## Main results
 
@@ -39,17 +39,19 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- **Markov's inequality** as a failure probability: `P(t ≤ f) ≤ E f / t` for nonnegative
-integrable `f` and `t > 0`. Integrability is needed: otherwise `∫ f = 0`.
+/-- **Markov's inequality** as a failure probability: $\mu\{t \le f\} \le (\int f \, d\mu) / t$ for
+$f$ integrable and nonnegative almost everywhere, and $t > 0$. Integrability is needed: otherwise
+the Bochner integral $\int f \, d\mu$ is $0$.
 Result: markov-inequality -/
 theorem measureReal_ge_le_integral_div {f : Ω → ℝ} (hf0 : 0 ≤ᵐ[μ] f) (hf : Integrable f μ)
     {t : ℝ} (ht : 0 < t) : μ.real {ω | t ≤ f ω} ≤ (∫ ω, f ω ∂μ) / t := by
   rw [le_div_iff₀ ht, mul_comm]
   exact mul_meas_ge_le_integral_of_nonneg hf0 hf t
 
-/-- **Markov's inequality for a moment**: `P(t ≤ |X|) ≤ E |X| ^ p / t ^ p` for `t, p > 0`. Every
-tail derived from a moment bound ends here. Integrability of `|X| ^ p` is needed: otherwise its
-integral is `0`. -/
+/-- **Markov's inequality for a moment**:
+$\mu\{t \le \lvert X\rvert\} \le (\int \lvert X\rvert^p \, d\mu) / t^p$ for real $t, p > 0$. Every
+tail derived from a moment bound ends here. Integrability of $\lvert X\rvert^p$ is needed:
+otherwise its integral is $0$. -/
 theorem measureReal_abs_ge_le_integral_rpow_div {X : Ω → ℝ} {p : ℝ} (hp : 0 < p)
     (hX : Integrable (fun ω => |X ω| ^ p) μ) {t : ℝ} (ht : 0 < t) :
     μ.real {ω | t ≤ |X ω|} ≤ (∫ ω, |X ω| ^ p ∂μ) / t ^ p := by
@@ -61,7 +63,9 @@ theorem measureReal_abs_ge_le_integral_rpow_div {X : Ω → ℝ} {p : ℝ} (hp :
     (Filter.Eventually.of_forall fun ω => Real.rpow_nonneg (abs_nonneg _) p) hX
     (Real.rpow_pos_of_pos ht p)
 
-/-- **Chebyshev's inequality** as a failure probability: `P(t ≤ |X - E X|) ≤ Var X / t²`.
+/-- **Chebyshev's inequality** as a failure probability: for a finite measure $\mu$, $X \in L^2$
+and $t > 0$, $\mu\{t \le \lvert X - \mathbb{E} X\rvert\} \le \operatorname{Var} X / t^2$, with
+$\mathbb{E} X = \int X \, d\mu$.
 Result: chebyshev-inequality -/
 theorem measureReal_ge_le_variance_div_sq [IsFiniteMeasure μ] {X : Ω → ℝ} (hX : MemLp X 2 μ)
     {t : ℝ} (ht : 0 < t) :
@@ -69,7 +73,8 @@ theorem measureReal_ge_le_variance_div_sq [IsFiniteMeasure μ] {X : Ω → ℝ} 
   exact ENNReal.toReal_le_of_le_ofReal (div_nonneg (variance_nonneg X μ) (sq_nonneg t))
     (meas_ge_le_variance_div_sq hX ht)
 
-/-- A two-sided tail is at most the sum of the upper and the lower tail. -/
+/-- A two-sided tail is at most the sum of the upper and the lower tail:
+$\mu\{t \le \lvert X\rvert\} \le \mu\{t \le X\} + \mu\{X \le -t\}$. -/
 theorem measureReal_abs_ge_le_add (X : Ω → ℝ) (t : ℝ) :
     μ.real {ω | t ≤ |X ω|} ≤ μ.real {ω | t ≤ X ω} + μ.real {ω | X ω ≤ -t} := by
   have h : {ω | t ≤ |X ω|} = {ω | t ≤ X ω} ∪ {ω | X ω ≤ -t} := by
@@ -110,8 +115,9 @@ private theorem integral_le_of_measureReal_ge_le_of_nonneg [IsProbabilityMeasure
   rw [integral_eq_lintegral_of_nonneg_ae hf0 hf.aestronglyMeasurable]
   exact ENNReal.toReal_le_of_le_ofReal (add_nonneg ha hF0) hbound
 
-/-- A nonnegative random variable whose tail beyond `a` is bounded by a function integrable on
-`(a, ∞)` is integrable. A bound on the strict tail `{t < f}` follows from one on `{t ≤ f}` by
+/-- On a finite measure space, a nonnegative random variable $f$ whose tail beyond $a$ is bounded
+by a function $F$ integrable on $(a, \infty)$, $\mu\{t \le f\} \le F(t)$ for $t > a$, is
+integrable. A bound on the strict tail $\{t < f\}$ follows from one on $\{t \le f\}$ by
 monotonicity, so the hypothesis is stated in the non-strict form that tail theorems produce. -/
 theorem integrable_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ} (hf : AEMeasurable f μ)
     (hf0 : 0 ≤ᵐ[μ] f) {a : ℝ} {F : ℝ → ℝ} (hF : IntegrableOn F (Set.Ioi a))
@@ -124,10 +130,11 @@ theorem integrable_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ} (h
   exact hbound.trans_lt (ENNReal.add_lt_top.2
     ⟨ENNReal.mul_lt_top (measure_lt_top μ _) ENNReal.ofReal_lt_top, ENNReal.ofReal_lt_top⟩)
 
-/-- **The layer-cake bound**: the mean of a nonnegative random variable is at most `a` plus the
-integral over `(a, ∞)` of a bound on its tail. Applied to `f ^ p`, whose tail at `t` is the tail of
-`f` at `t ^ (1 / p)`, it bounds the moments of `f`. Integrability of `f` is
-`integrable_of_measureReal_ge_le`. -/
+/-- **The layer-cake bound**: under a probability measure, if $f \ge 0$ almost everywhere and
+$\mathbb{P}\{t \le f\} \le F(t)$ for all $t > a$, with $F$ integrable on $(a, \infty)$, then
+$$\mathbb{E} f \le a + \int_a^\infty F(t) \, dt\,.$$
+Applied to $f^p$, whose tail at $t$ is the tail of $f$ at $t^{1/p}$, it bounds the moments of $f$.
+Integrability of $f$ is `integrable_of_measureReal_ge_le`. -/
 theorem integral_le_of_measureReal_ge_le [IsProbabilityMeasure μ] {f : Ω → ℝ}
     (hf : AEMeasurable f μ) (hf0 : 0 ≤ᵐ[μ] f) {a : ℝ} {F : ℝ → ℝ}
     (hF : IntegrableOn F (Set.Ioi a)) (htail : ∀ t, a < t → μ.real {ω | t ≤ f ω} ≤ F t) :

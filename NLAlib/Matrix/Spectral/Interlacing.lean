@@ -11,9 +11,9 @@ public import NLAlib.Matrix.Spectral.CourantFischer
 /-!
 # Cauchy interlacing
 
-The eigenvalues of a compression `Qᴴ * A * Q` of a Hermitian matrix by a matrix `Q` with
-orthonormal columns interlace those of `A`. Principal submatrices `A.submatrix s s` are the case
-where `Q` selects coordinates.
+The eigenvalues of a compression $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ of a Hermitian
+matrix by a matrix $\mathbf{Q}$ with orthonormal columns interlace those of $\mathbf{A}$. Principal
+submatrices `A.submatrix s s` are the case where $\mathbf{Q}$ selects coordinates.
 
 Index shifts are written with an auxiliary natural number and an equation between cardinalities,
 never with subtraction.
@@ -42,8 +42,11 @@ private theorem finrank_map_mulVecLin [DecidableEq p] {Q : Matrix n p 𝕜}
     Module.finrank 𝕜 (S.map Q.mulVecLin) = Module.finrank 𝕜 S :=
   (Submodule.equivMapOfInjective Q.mulVecLin hQ.mulVec_injective S).finrank_eq.symm
 
-/-- **Poincaré separation, upper.** For Hermitian `A` and `Q` with orthonormal columns, the
-`k`-th eigenvalue of the compression `Qᴴ * A * Q` is at most the `k`-th eigenvalue of `A`.
+/-- **Poincaré separation, upper.** For Hermitian $\mathbf{A}$ and $\mathbf{Q}$ with orthonormal
+columns indexed by $p$, the $k$-th eigenvalue of the compression
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is at most the $k$-th eigenvalue of $\mathbf{A}$:
+$\lambda_k(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) \le \lambda_k(\mathbf{A})$ for
+$k < \lvert p \rvert$.
 [HornJohnson2013, Corollary 4.3.37].
 Port of `Matrix.IsHermitian.eigenvalues₀_compression_le`.
 Result: poincare-separation, cauchy-interlacing -/
@@ -58,9 +61,11 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_conjTranspose_mul_mul_le [Decidable
   rw [Matrix.mulVecLin_apply, hQ.norm_toLp_mulVec, ← quadForm_conjTranspose_mul_mul]
   exact hBS y hy
 
-/-- **Poincaré separation, lower.** For Hermitian `A` of size `card p + d` and `Q` with
-orthonormal columns indexed by `p`, the `(k + d)`-th eigenvalue of `A` is at most the `k`-th
-eigenvalue of the compression `Qᴴ * A * Q`.
+/-- **Poincaré separation, lower.** For Hermitian $\mathbf{A}$ of size $\lvert p \rvert + d$ and
+$\mathbf{Q}$ with orthonormal columns indexed by $p$, the $(k + d)$-th eigenvalue of $\mathbf{A}$
+is at most the $k$-th eigenvalue of the compression:
+$\lambda_{k+d}(\mathbf{A}) \le \lambda_k(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})$ for
+$k < \lvert p \rvert$.
 [HornJohnson2013, Corollary 4.3.37].
 Port of `Matrix.IsHermitian.eigenvalues₀_le_eigenvalues₀_compression`.
 Result: poincare-separation, cauchy-interlacing -/
@@ -77,8 +82,10 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_conjTranspose_mul_mul
   rw [Matrix.mulVecLin_apply, hQ.norm_toLp_mulVec, ← quadForm_conjTranspose_mul_mul]
   exact hBW y hy
 
-/-- **Cauchy interlacing, upper.** The `k`-th eigenvalue of a principal submatrix of a Hermitian
-matrix is at most the `k`-th eigenvalue of the matrix.
+/-- **Cauchy interlacing, upper.** The $k$-th eigenvalue of a principal submatrix of a Hermitian
+matrix is at most the $k$-th eigenvalue of the matrix: for an injective $s : p \to n$ and
+$k < \lvert p \rvert$, $\lambda_k(\mathbf{A}_{s,s}) \le \lambda_k(\mathbf{A})$, where
+$\mathbf{A}_{s,s}$ is `A.submatrix s s`.
 [HornJohnson2013, Theorem 4.3.17].
 Port of `Matrix.IsHermitian.eigenvalues₀_submatrix_le`.
 Result: cauchy-interlacing -/
@@ -89,8 +96,9 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_submatrix_le {A : Matrix n n 𝕜}
   rw [← conjTranspose_selectionMatrix_mul_mul_selectionMatrix]
   exact hA.eigenvalue_conjTranspose_mul_mul_le (hasOrthonormalCols_selectionMatrix hs) hk
 
-/-- **Cauchy interlacing, lower.** For a principal submatrix of size `card p` of a Hermitian
-matrix of size `card p + d`, `λ_{k+d}(A) ≤ λ_k(A.submatrix s s)`.
+/-- **Cauchy interlacing, lower.** For a principal submatrix $\mathbf{A}_{s,s}$ (`A.submatrix s s`,
+$s : p \to n$ injective) of a Hermitian matrix of size $\lvert p \rvert + d$,
+$\lambda_{k+d}(\mathbf{A}) \le \lambda_k(\mathbf{A}_{s,s})$ for $k < \lvert p \rvert$.
 [HornJohnson2013, Theorem 4.3.17].
 Port of `Matrix.IsHermitian.eigenvalues₀_le_eigenvalues₀_submatrix`.
 Result: cauchy-interlacing -/
@@ -103,8 +111,9 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_submatrix {A : Matrix
   exact hA.eigenvalue_le_eigenvalue_conjTranspose_mul_mul
     (hasOrthonormalCols_selectionMatrix hs) hk hd
 
-/-- **Cauchy interlacing for deleting one row and column**: `λ_{k+1}(A) ≤ λ_k(A')`, where `A'` is
-`A` with row and column `i` removed. [HornJohnson2013, Theorem 4.3.17]. -/
+/-- **Cauchy interlacing for deleting one row and column**:
+$\lambda_{k+1}(\mathbf{A}) \le \lambda_k(\mathbf{A}')$ for $k + 1 < \lvert n \rvert$, where
+$\mathbf{A}'$ is $\mathbf{A}$ with row and column $i$ removed. [HornJohnson2013, Theorem 4.3.17]. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_succ_le_eigenvalue_submatrix_ne [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (i : n) {k : ℕ} (hk : k + 1 < Fintype.card n) :
     eigenvalue A (k + 1) ≤
@@ -114,9 +123,11 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_succ_le_eigenvalue_submatrix_ne [De
     omega
   exact hA.eigenvalue_le_eigenvalue_submatrix Subtype.val_injective (by omega) hd
 
-/-- The largest eigenvalue of a compression `Bᴴ * A * B` of a positive semidefinite matrix `A` by
-any matrix `B` is at most the largest eigenvalue of `A` times the squared spectral norm of `B`.
-That the compression is itself positive semidefinite is Mathlib's
+/-- The largest eigenvalue of a compression $\mathbf{B}^{\mathsf{H}}\mathbf{A}\mathbf{B}$ of a
+positive semidefinite matrix $\mathbf{A}$ by any matrix $\mathbf{B}$ is at most the largest
+eigenvalue of $\mathbf{A}$ times the squared spectral norm of $\mathbf{B}$:
+$\lambda_0(\mathbf{B}^{\mathsf{H}}\mathbf{A}\mathbf{B}) \le \lambda_0(\mathbf{A})
+\|\mathbf{B}\|_2^2$. That the compression is itself positive semidefinite is Mathlib's
 `Matrix.PosSemidef.conjTranspose_mul_mul_same`. -/
 theorem _root_.Matrix.PosSemidef.eigenvalue_zero_conjTranspose_mul_mul_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (B : Matrix n p 𝕜) :

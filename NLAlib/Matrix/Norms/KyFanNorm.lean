@@ -12,7 +12,8 @@ public import NLAlib.Matrix.Majorization.Lidskii
 /-!
 # Ky Fan norms
 
-The Ky Fan `k`-norm `NLAlib.kyFanNorm k A` is the sum of the `k` largest singular values. Its
+The Ky Fan $k$-norm `NLAlib.kyFanNorm k A`, written $\|\mathbf{A}\|_{(k)}$, is the sum of the
+$k$ largest singular values, $\|\mathbf{A}\|_{(k)} = \sum_{i < k} \sigma_i(\mathbf{A})$. Its
 definition, Ky Fan's maximum principle and the triangle inequality are in
 `NLAlib.Matrix.Majorization.KyFan`. This file gives the rest of its API: definiteness and
 homogeneity, invariance, the comparisons with the spectral and Frobenius norms, the perturbation
@@ -50,7 +51,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 theorem kyFanNorm_zero (k : ℕ) : kyFanNorm k (0 : Matrix m n 𝕜) = 0 := by
   simp only [kyFanNorm, singularValues_zero, Pi.zero_apply, Finset.sum_const_zero]
 
-/-- For `k ≠ 0` the Ky Fan `k`-norm is definite. Port of `NLAlib.kyFanNorm_eq_zero_iff`. -/
+/-- For $k \ne 0$ the Ky Fan $k$-norm is definite: $\|\mathbf{A}\|_{(k)} = 0$ iff
+$\mathbf{A} = \mathbf{0}$. Port of `NLAlib.kyFanNorm_eq_zero_iff`. -/
 theorem kyFanNorm_eq_zero_iff {k : ℕ} (hk : k ≠ 0) {A : Matrix m n 𝕜} :
     kyFanNorm k A = 0 ↔ A = 0 := by
   refine ⟨fun h => specNorm_eq_zero_iff.mp (le_antisymm ?_ (specNorm_nonneg A)), fun h => ?_⟩
@@ -58,7 +60,8 @@ theorem kyFanNorm_eq_zero_iff {k : ℕ} (hk : k ≠ 0) {A : Matrix m n 𝕜} :
     exact kyFanNorm_mono_left A (Nat.one_le_iff_ne_zero.mpr hk)
   · rw [h, kyFanNorm_zero]
 
-/-- Ky Fan norms are absolutely homogeneous. Port of `NLAlib.kyFanNorm_smul`. -/
+/-- Ky Fan norms are absolutely homogeneous:
+$\|c\mathbf{A}\|_{(k)} = \lvert c \rvert \|\mathbf{A}\|_{(k)}$. Port of `NLAlib.kyFanNorm_smul`. -/
 theorem kyFanNorm_smul (k : ℕ) (c : 𝕜) (A : Matrix m n 𝕜) :
     kyFanNorm k (c • A) = ‖c‖ * kyFanNorm k A := by
   rw [kyFanNorm, kyFanNorm, Finset.mul_sum]
@@ -101,14 +104,16 @@ theorem HasOrthonormalCols.kyFanNorm_mul_conjTranspose_right [DecidableEq n] {Q 
 
 /-! ### Comparison and products -/
 
-/-- The spectral norm is at most every Ky Fan `k`-norm with `k ≠ 0`.
+/-- The spectral norm is at most every Ky Fan $k$-norm with $k \ne 0$:
+$\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{(k)}$.
 Port of `NLAlib.specNorm_le_kyFanNorm`. -/
 theorem specNorm_le_kyFanNorm {k : ℕ} (hk : k ≠ 0) (A : Matrix m n 𝕜) :
     specNorm A ≤ kyFanNorm k A := by
   rw [← kyFanNorm_one]
   exact kyFanNorm_mono_left A (Nat.one_le_iff_ne_zero.mpr hk)
 
-/-- The Ky Fan `k`-norm is at most `√k` times the Frobenius norm. -/
+/-- The Ky Fan $k$-norm is at most $\sqrt{k}$ times the Frobenius norm:
+$\|\mathbf{A}\|_{(k)} \le \sqrt{k} \, \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem kyFanNorm_le_sqrt_mul_frobNorm (k : ℕ) (A : Matrix m n 𝕜) :
     kyFanNorm k A ≤ √(k : ℝ) * frobNorm A := by
   refine (sq_le_sq₀ (kyFanNorm_nonneg k A) (by positivity)).mp ?_
@@ -121,13 +126,15 @@ theorem kyFanNorm_le_sqrt_mul_frobNorm (k : ℕ) (A : Matrix m n 𝕜) :
   rw [mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
   exact h1.trans (mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg k))
 
-/-- Ky Fan norms are submultiplicative against the spectral norm of a left factor. -/
+/-- Ky Fan norms are submultiplicative against the spectral norm of a left factor:
+$\|\mathbf{A}\mathbf{B}\|_{(k)} \le \|\mathbf{A}\|_2 \|\mathbf{B}\|_{(k)}$. -/
 theorem kyFanNorm_mul_le_specNorm_mul (k : ℕ) (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) :
     kyFanNorm k (A * B) ≤ specNorm A * kyFanNorm k B := by
   rw [kyFanNorm, kyFanNorm, Finset.mul_sum]
   exact Finset.sum_le_sum fun i _ => singularValues_mul_le_specNorm_mul A B i
 
-/-- Ky Fan norms are submultiplicative against the spectral norm of a right factor. -/
+/-- Ky Fan norms are submultiplicative against the spectral norm of a right factor:
+$\|\mathbf{A}\mathbf{B}\|_{(k)} \le \|\mathbf{A}\|_{(k)} \|\mathbf{B}\|_2$. -/
 theorem kyFanNorm_mul_le_mul_specNorm (k : ℕ) (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) :
     kyFanNorm k (A * B) ≤ kyFanNorm k A * specNorm B := by
   rw [kyFanNorm, kyFanNorm, Finset.sum_mul]
@@ -135,7 +142,9 @@ theorem kyFanNorm_mul_le_mul_specNorm (k : ℕ) (A : Matrix m p 𝕜) (B : Matri
 
 /-! ### Perturbation of singular values and eigenvalues -/
 
-/-- The reverse triangle inequality for Ky Fan norms. -/
+/-- The reverse triangle inequality for Ky Fan norms:
+$\lvert \|\mathbf{A}\|_{(k)} - \|\mathbf{B}\|_{(k)} \rvert \le \|\mathbf{A} - \mathbf{B}\|_{(k)}$.
+-/
 theorem abs_kyFanNorm_sub_kyFanNorm_le (k : ℕ) (A B : Matrix m n 𝕜) :
     |kyFanNorm k A - kyFanNorm k B| ≤ kyFanNorm k (A - B) := by
   have h1 := kyFanNorm_add_le k (A - B) B
@@ -144,8 +153,9 @@ theorem abs_kyFanNorm_sub_kyFanNorm_le (k : ℕ) (A B : Matrix m n 𝕜) :
   rw [← neg_sub A B, kyFanNorm_neg] at h2
   exact abs_sub_le_iff.mpr ⟨by linarith, by linarith⟩
 
-/-- **Singular value perturbation in the Ky Fan norms.** For any set `S` of indices,
-`∑ i ∈ S, |σ_i(A) - σ_i(B)| ≤ ‖A - B‖_(|S|)`.
+/-- **Singular value perturbation in the Ky Fan norms.** For any finite set $S$ of indices,
+$$\sum_{i \in S} \lvert \sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B}) \rvert
+  \le \|\mathbf{A} - \mathbf{B}\|_{(\lvert S \rvert)}\,.$$
 [HornJohnson1991, Theorem 3.4.5]. The form of
 `sum_abs_singularValues_add_sub_le_kyFanNorm` for a difference. -/
 theorem sum_abs_singularValues_sub_le_kyFanNorm_sub (A B : Matrix m n 𝕜) (S : Finset ℕ) :
@@ -153,9 +163,9 @@ theorem sum_abs_singularValues_sub_le_kyFanNorm_sub (A B : Matrix m n 𝕜) (S :
   have h := sum_abs_singularValues_add_sub_le_kyFanNorm B (A - B) S
   rwa [add_sub_cancel] at h
 
-/-- For a Hermitian matrix, the sum of the `k` largest absolute values of the eigenvalues is the
-Ky Fan `k`-norm. This is the bridge from majorization statements about eigenvalues to Ky Fan
-norms. -/
+/-- For a Hermitian matrix, the sum of the $k$ largest absolute values of the eigenvalues is the
+Ky Fan $k$-norm $\|\mathbf{A}\|_{(k)}$. This is the bridge from majorization statements about
+eigenvalues to Ky Fan norms. -/
 theorem _root_.Matrix.IsHermitian.sumLargest_abs_eigenvalue {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (k : ℕ) :
     sumLargest (fun i : Fin (Fintype.card n) => |eigenvalue A i|) k = kyFanNorm k A := by
@@ -166,8 +176,11 @@ theorem _root_.Matrix.IsHermitian.sumLargest_abs_eigenvalue {A : Matrix n n 𝕜
     sumLargest_fin_eq_sum_range ((singularValues_antitone A).antitoneOn _),
     ← kyFanNorm_min_card k A, min_self, kyFanNorm]
 
-/-- **Eigenvalue perturbation in the Ky Fan norms.** For Hermitian `A`, `B` and any set `S` of
-indices, `∑ i ∈ S, |λ_i(A) - λ_i(B)| ≤ ‖A - B‖_(|S|)`. [Bhatia1997, Theorem III.4.4]. -/
+/-- **Eigenvalue perturbation in the Ky Fan norms.** For Hermitian $\mathbf{A}$, $\mathbf{B}$
+and any finite set $S$ of indices, eigenvalues non-increasing and indexed from $0$,
+$$\sum_{i \in S} \lvert \lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B}) \rvert
+  \le \|\mathbf{A} - \mathbf{B}\|_{(\lvert S \rvert)}\,.$$
+[Bhatia1997, Theorem III.4.4]. -/
 theorem sum_abs_eigenvalue_sub_le_kyFanNorm_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) (S : Finset ℕ) :
     ∑ i ∈ S, |eigenvalue A i - eigenvalue B i| ≤ kyFanNorm S.card (A - B) := by
@@ -197,8 +210,10 @@ theorem sum_abs_eigenvalue_sub_le_kyFanNorm_sub {A B : Matrix n n 𝕜} (hA : A.
 
 /-! ### Attainment -/
 
-/-- The Ky Fan `k`-norm is attained as a Frobenius inner product with a matrix of rank at most
-`k` and spectral norm at most one; with `frobInner_le_kyFanNorm_of_rank_le_of_specNorm_le_one` this
+/-- The Ky Fan $k$-norm is attained as a Frobenius inner product with a matrix of rank at most
+$k$ and spectral norm at most one: there is $\mathbf{P}$ with $\operatorname{rank} \mathbf{P} \le
+k$, $\|\mathbf{P}\|_2 \le 1$ and $\langle \mathbf{A}, \mathbf{P} \rangle_{\mathsf{F}}
+= \|\mathbf{A}\|_{(k)}$; with `frobInner_le_kyFanNorm_of_rank_le_of_specNorm_le_one` this
 is its variational characterisation. [HornJohnson1991, Theorem 3.4.1]. -/
 theorem exists_rank_le_specNorm_le_one_frobInner_eq_kyFanNorm (k : ℕ) (A : Matrix m n 𝕜) :
     ∃ P : Matrix m n 𝕜, P.rank ≤ k ∧ specNorm P ≤ 1 ∧ frobInner A P = kyFanNorm k A := by

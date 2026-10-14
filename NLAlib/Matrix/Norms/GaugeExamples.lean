@@ -9,26 +9,26 @@ public import Mathlib.Analysis.Normed.Lp.PiLp
 public import NLAlib.Matrix.Norms.SymmetricGauge
 
 /-!
-# The `ℓ^q` and Ky Fan gauges
+# The $\ell^q$ and Ky Fan gauges
 
 The two families of symmetric gauge functions behind the named matrix norms:
-`NLAlib.lpGauge q`, the `ℓ^q` norm of a finitely supported sequence for `1 ≤ q`, and
-`NLAlib.kyFanGauge k`, the sum of the `k` largest absolute values for `k ≠ 0`. Their matrix norms
+`NLAlib.lpGauge q`, the $\ell^q$ norm of a finitely supported sequence for $1 \le q \le \infty$, and
+`NLAlib.kyFanGauge k`, the sum of the $k$ largest absolute values for $k \ne 0$. Their matrix norms
 are the Schatten and Ky Fan norms (`NLAlib.lpGauge_matrixNorm` and `NLAlib.kyFanGauge_matrixNorm`
 in `NLAlib.Matrix.Norms.UnitarilyInvariant`).
 
 ## Main definitions
 
-* `NLAlib.lpGauge q`: the `ℓ^q` gauge, `1 ≤ q`.
-* `NLAlib.kyFanGauge k`: the sum of the `k` largest absolute values, `k ≠ 0`.
+* `NLAlib.lpGauge q`: the $\ell^q$ gauge, $1 \le q \le \infty$.
+* `NLAlib.kyFanGauge k`: the sum of the $k$ largest absolute values, $k \ne 0$.
 
 ## Main results
 
 * `NLAlib.lpGauge_apply_of_ne_top`, `NLAlib.lpGauge_top_apply`, `NLAlib.lpGauge_one_apply`: the
-  values of the `ℓ^q` gauges.
+  values of the $\ell^q$ gauges.
 * `NLAlib.lpGauge_apply_eq_norm_toLp`: the bridge to Mathlib's `PiLp` norms on `Fin N → ℝ`.
 * `NLAlib.sum_abs_le_kyFanGauge`, `NLAlib.kyFanGauge_apply_of_antitone`: the Ky Fan gauge bounds
-  every sum of `k` absolute values, and is the sum of the first `k` entries of a non-increasing
+  every sum of $k$ absolute values, and is the sum of the first $k$ entries of a non-increasing
   sequence.
 -/
 
@@ -128,8 +128,9 @@ private theorem lpFun_mapRange_abs {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →�
     rw [Finsupp.sum_mapRange_index fun i => by rw [abs_zero, Real.zero_rpow hpos.ne']]
     simp only [abs_abs]
 
-/-- The **`ℓ^q` gauge**, `1 ≤ q`: `(∑ |x i| ^ q) ^ (1 / q)`, and `sup |x i|` for `q = ⊤`. Its
-matrix norm is the Schatten `q`-norm. -/
+/-- The **$\ell^q$ gauge**, $1 \le q \le \infty$:
+$\bigl(\sum_i \lvert \mathbf{x}_i \rvert^q\bigr)^{1/q}$, and $\sup_i \lvert \mathbf{x}_i \rvert$
+for $q = \infty$. Its matrix norm is the Schatten $q$-norm. -/
 noncomputable def lpGauge (q : ℝ≥0∞) (hq : 1 ≤ q) : SymmetricGauge where
   toFun x := if q = ⊤ then ⨆ i, |x i| else (x.sum fun _ a => |a| ^ q.toReal) ^ q.toReal⁻¹
   map_zero' := by exact lpFun_zero hq
@@ -144,22 +145,23 @@ private theorem lpGauge_apply {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →₀ �
     lpGauge q hq x = lpFun q x :=
   rfl
 
-/-- The `ℓ^q` gauge for finite `q`. -/
+/-- The $\ell^q$ gauge for finite $q$:
+$\bigl(\sum_i \lvert \mathbf{x}_i \rvert^q\bigr)^{1/q}$, the sum over the support. -/
 theorem lpGauge_apply_of_ne_top {q : ℝ≥0∞} (hq : 1 ≤ q) (hq' : q ≠ ⊤) (x : ℕ →₀ ℝ) :
     lpGauge q hq x = (∑ i ∈ x.support, |x i| ^ q.toReal) ^ q.toReal⁻¹ := by
   rw [lpGauge_apply, lpFun, if_neg hq', Finsupp.sum]
 
-/-- The `ℓ^∞` gauge is the largest absolute value. -/
+/-- The $\ell^\infty$ gauge is the largest absolute value, $\sup_i \lvert \mathbf{x}_i \rvert$. -/
 theorem lpGauge_top_apply (x : ℕ →₀ ℝ) : lpGauge ⊤ le_top x = ⨆ i, |x i| := by
   rw [lpGauge_apply, lpFun, if_pos rfl]
 
-/-- The `ℓ^1` gauge is the sum of the absolute values. -/
+/-- The $\ell^1$ gauge is the sum of the absolute values, $\sum_i \lvert \mathbf{x}_i \rvert$. -/
 theorem lpGauge_one_apply (x : ℕ →₀ ℝ) : lpGauge 1 le_rfl x = ∑ i ∈ x.support, |x i| := by
   rw [lpGauge_apply_of_ne_top le_rfl ENNReal.one_ne_top]
   simp only [ENNReal.toReal_one, Real.rpow_one, inv_one]
 
-/-- The `ℓ^q` gauge of a sequence supported in the first `N` indices is the `PiLp` norm of its
-first `N` entries. This is the bridge to Mathlib's `ℓ^q` norms on `Fin N → ℝ`. -/
+/-- The $\ell^q$ gauge of a sequence supported in the first $N$ indices is the `PiLp` norm of its
+first $N$ entries. This is the bridge to Mathlib's $\ell^q$ norms on `Fin N → ℝ`. -/
 theorem lpGauge_apply_eq_norm_toLp {q : ℝ≥0∞} (hq : 1 ≤ q) {x : ℕ →₀ ℝ} {N : ℕ}
     (hx : ∀ i, N ≤ i → x i = 0) :
     lpGauge q hq x = ‖(WithLp.toLp q fun i : Fin N => x i : PiLp q fun _ : Fin N => ℝ)‖ := by
@@ -241,8 +243,9 @@ private theorem kyFanFun_mapRange_abs (k : ℕ) (x : ℕ →₀ ℝ) :
     kyFanFun k (x.mapRange abs abs_zero) = kyFanFun k x := by
   simp only [kyFanFun, Finsupp.mapRange_apply, abs_abs]
 
-/-- The **Ky Fan `k`-gauge**, `k ≠ 0`: the largest sum of `k` absolute values. Its matrix norm
-is the Ky Fan `k`-norm. -/
+/-- The **Ky Fan $k$-gauge**, $k \ne 0$: the largest sum of $k$ absolute values,
+$\max_{\lvert S \rvert \le k} \sum_{i \in S} \lvert \mathbf{x}_i \rvert$. Its matrix norm is the
+Ky Fan $k$-norm. -/
 noncomputable def kyFanGauge (k : ℕ) (hk : k ≠ 0) : SymmetricGauge where
   toFun x := ⨆ s : {s : Finset ℕ // s.card ≤ k}, ∑ i ∈ s.1, |x i|
   map_zero' := by exact kyFanFun_zero k
@@ -253,7 +256,7 @@ noncomputable def kyFanGauge (k : ℕ) (hk : k ≠ 0) : SymmetricGauge where
   map_equivMapDomain' := by exact kyFanFun_equivMapDomain k
   map_abs' := by exact kyFanFun_mapRange_abs k
 
-/-- Every sum of at most `k` absolute values is at most the Ky Fan `k`-gauge. -/
+/-- Every sum of at most $k$ absolute values is at most the Ky Fan $k$-gauge. -/
 theorem sum_abs_le_kyFanGauge {k : ℕ} (hk : k ≠ 0) (x : ℕ →₀ ℝ) {s : Finset ℕ}
     (hs : s.card ≤ k) : ∑ i ∈ s, |x i| ≤ kyFanGauge k hk x := by
   exact sum_abs_le_kyFanFun x hs
@@ -263,7 +266,7 @@ private theorem nonneg_of_antitone {x : ℕ →₀ ℝ} (hx : Antitone x) (i : �
   obtain ⟨N, hN, -⟩ := exists_forall_le_apply_eq_zero x x
   exact (hN (max i N) (le_max_right i N)).symm.trans_le (hx (le_max_left i N))
 
-/-- The Ky Fan `k`-gauge of a non-increasing sequence is the sum of its first `k` entries. A
+/-- The Ky Fan $k$-gauge of a non-increasing sequence is the sum of its first $k$ entries. A
 non-increasing finitely supported sequence is nonnegative, so no absolute values appear. -/
 theorem kyFanGauge_apply_of_antitone {k : ℕ} (hk : k ≠ 0) {x : ℕ →₀ ℝ} (hx : Antitone x) :
     kyFanGauge k hk x = ∑ i ∈ Finset.range k, x i := by

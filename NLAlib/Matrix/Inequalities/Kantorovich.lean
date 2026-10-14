@@ -11,14 +11,16 @@ public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 /-!
 # The Kantorovich and Wielandt inequalities
 
-For a positive definite matrix `A` with spectrum in `[a, b]`, the product of the quadratic forms
-of `A` and `A⁻¹` at a unit vector is at most `(a + b)² / (4 a b)`, and the bilinear form at two
-orthogonal vectors is controlled by `(b - a) / (b + a)`. These constants govern the convergence of
+For a positive definite matrix $\mathbf{A}$ with spectrum in $[a, b]$, the product of the
+quadratic forms of $\mathbf{A}$ and $\mathbf{A}^{-1}$ at a unit vector is at most
+$(a + b)^2 / (4ab)$, and the bilinear form at two orthogonal vectors is controlled by
+$(b - a) / (b + a)$. These constants govern the convergence of
 steepest descent and of the conjugate gradient method.
 
 ## Main results
 
-* `NLAlib.add_smul_inv_le_smul_one`: the operator form `A + (a b) A⁻¹ ≤ (a + b) • 1`.
+* `NLAlib.add_smul_inv_le_smul_one`: the operator form
+  $\mathbf{A} + ab\mathbf{A}^{-1} \preceq (a + b)\mathbf{I}$.
 * `NLAlib.re_quadForm_mul_re_quadForm_inv_le`: the Kantorovich inequality.
 * `Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_conditionNumber`: with the condition number.
 * `NLAlib.norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero`: the Wielandt inequality.
@@ -33,16 +35,17 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 omit [Fintype n] in
-/-- A matrix above a positive multiple of the identity is positive definite. -/
+/-- A matrix above a positive multiple of the identity is positive definite:
+$a\mathbf{I} \preceq \mathbf{A}$ with $a > 0$. -/
 private theorem posDef_of_smul_one_le {A : Matrix n n 𝕜} {a : ℝ} (ha : 0 < a)
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) : A.PosDef := by
   have h := (Matrix.PosDef.one.smul ha).add_posSemidef (Matrix.le_iff.mp h₁)
   rwa [add_sub_cancel] at h
 
-/-- **The Kantorovich inequality, operator form.** If `a • 1 ≤ A ≤ b • 1` with `0 < a`, then
-`A + (a b) A⁻¹ ≤ (a + b) • 1`.
+/-- **The Kantorovich inequality, operator form.** If $a\mathbf{I} \preceq \mathbf{A} \preceq
+b\mathbf{I}$ with $0 < a$, then $\mathbf{A} + ab\mathbf{A}^{-1} \preceq (a + b)\mathbf{I}$.
 [HornJohnson2013, §7.4.12].
-Port of `NLAlib.add_smul_inv_le_smul_one_of_sandwich`, there over `ℝ`. -/
+Port of `NLAlib.add_smul_inv_le_smul_one_of_sandwich`, there over $\mathbb{R}$. -/
 theorem add_smul_inv_le_smul_one {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 < a)
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) :
     A + (a * b) • A⁻¹ ≤ (a + b) • (1 : Matrix n n 𝕜) := by
@@ -65,10 +68,13 @@ theorem add_smul_inv_le_smul_one {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 < a)
     Matrix.mul_nonsing_inv _ hdet, smul_smul]
   module
 
-/-- **The Kantorovich inequality.** If `a • 1 ≤ A ≤ b • 1` with `0 < a`, then for every vector
-`x`, `(xᴴ A x) (xᴴ A⁻¹ x) ≤ (a + b)² / (4 a b) · ‖x‖⁴`.
+/-- **The Kantorovich inequality.** If $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ with
+$0 < a$, then for every vector $\mathbf{x}$
+$$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \,
+\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{x})
+  \le \frac{(a + b)^2}{4ab} \|\mathbf{x}\|^4\,.$$
 [HornJohnson2013, Theorem 7.4.41].
-Port of `NLAlib.quadForm_mul_quadForm_inv_le_of_sandwich`, there over `ℝ`.
+Port of `NLAlib.quadForm_mul_quadForm_inv_le_of_sandwich`, there over $\mathbb{R}$.
 Result: kantorovich-inequality -/
 theorem re_quadForm_mul_re_quadForm_inv_le {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 < a)
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) (x : n → 𝕜) :
@@ -93,10 +99,15 @@ theorem re_quadForm_mul_re_quadForm_inv_le {A : Matrix n n 𝕜} {a b : ℝ} (ha
     rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
     nlinarith [sq_nonneg (RCLike.re (quadForm A x) - a * b * RCLike.re (quadForm A⁻¹ x))]
 
-/-- **The Kantorovich inequality with the condition number**: for positive definite `A`,
-`(xᴴ A x) (xᴴ A⁻¹ x) ≤ (κ + 1)² / (4 κ) · ‖x‖⁴` with `κ = conditionNumber A`.
+/-- **The Kantorovich inequality with the condition number**: for positive definite
+$\mathbf{A}$ and every vector $\mathbf{x}$, with $\kappa = \kappa(\mathbf{A})$
+(`NLAlib.conditionNumber`),
+$$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \,
+\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{x})
+  \le \frac{(\kappa + 1)^2}{4\kappa} \|\mathbf{x}\|^4\,.$$
 [HornJohnson2013, Theorem 7.4.41].
-Port of `NLAlib.quadForm_mul_quadForm_inv_le_moorePenroseConditionNumber_sqrt`, there over `ℝ`.
+Port of `NLAlib.quadForm_mul_quadForm_inv_le_moorePenroseConditionNumber_sqrt`, there over
+$\mathbb{R}$.
 Result: kantorovich-inequality -/
 theorem _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_conditionNumber
     {A : Matrix n n 𝕜} (hA : A.PosDef) (x : n → 𝕜) :
@@ -198,10 +209,14 @@ private theorem sq_re_star_dotProduct_mulVec_le {A : Matrix n n 𝕜} {a b : ℝ
   rw [div_pow, mul_assoc, div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
   linarith [hsq']
 
-/-- **The Wielandt inequality.** If `a • 1 ≤ A ≤ b • 1` with `0 < a` and `x`, `y` are
-orthogonal, then `|xᴴ A y|² ≤ ((b - a) / (b + a))² (xᴴ A x) (yᴴ A y)`.
+/-- **The Wielandt inequality.** If $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ with
+$0 < a$ and $\mathbf{x}$, $\mathbf{y}$ are orthogonal, then
+$$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
+  \le \Bigl(\frac{b - a}{b + a}\Bigr)^2
+  \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
+  \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
 [HornJohnson2013, Theorem 7.4.34].
-Port of `NLAlib.sq_bilinear_le_sq_ratio_mul_quadForm_of_sandwich`, there over `ℝ`.
+Port of `NLAlib.sq_bilinear_le_sq_ratio_mul_quadForm_of_sandwich`, there over $\mathbb{R}$.
 Result: wielandt-inequality -/
 theorem norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero {A : Matrix n n 𝕜} {a b : ℝ}
     (ha : 0 < a) (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜))

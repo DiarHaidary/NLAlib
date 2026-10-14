@@ -13,15 +13,16 @@ public import NLAlib.Probability.MatrixIntegral
 /-!
 # Conditional expectations of matrix-valued functions
 
-The conditional expectation of a random matrix `X : Ω → Matrix m n 𝕜` given a σ-algebra `m` is
-Mathlib's `μ[X | m]`, under the same normed structure as the integral:
+The conditional expectation $\mathbb{E}[\mathbf{X} \mid \mathcal{G}]$ of a random matrix
+`X : Ω → Matrix l n 𝕜` given a σ-algebra $\mathcal{G}$ (`m` in Lean) is Mathlib's `μ[X | m]`,
+under the same normed structure as the integral:
 `open scoped Matrix.Norms.L2Operator` (`docs/design/Mathlib-deviations.md` entry 13;
 `NLAlib/Probability/MatrixIntegral.lean`). It is entrywise, commutes with the conjugate
 transpose, the trace, the Hermitian dilation and the functional calculus of a fixed Hermitian
 matrix, and preserves almost sure Hermitian, positive
 semidefinite and positive definite values. The conjugate transpose, Hermitian and positive
 semidefinite statements need no integrability, because a non-integrable function has conditional
-expectation `0`. Loewner monotonicity is Mathlib's `MeasureTheory.condExp_mono`, through
+expectation $\mathbf{0}$. Loewner monotonicity is Mathlib's `MeasureTheory.condExp_mono`, through
 `Matrix.instOrderClosedTopology` (`NLAlib/ForMathlib/LinearAlgebra/Matrix/PosDef.lean`), and is
 not restated.
 
@@ -49,8 +50,10 @@ variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Typ
   {l n : Type*} [Fintype l] [Fintype n] [DecidableEq l] [DecidableEq n]
 
 omit [DecidableEq l] in
-/-- The conditional expectation of a random matrix is entrywise.
-Proof: `ContinuousLinearMap.comp_condExp_comm` with the entry `(i, j)` as a real continuous
+/-- The conditional expectation of a random matrix is entrywise: for integrable $\mathbf{X}$,
+$\mathbb{E}[\mathbf{X} \mid \mathcal{G}]_{i,j} = \mathbb{E}[\mathbf{X}_{i,j} \mid \mathcal{G}]$
+almost everywhere.
+Proof: `ContinuousLinearMap.comp_condExp_comm` with the entry $(i, j)$ as a real continuous
 linear map. Easy. -/
 theorem _root_.Matrix.condExp_apply {X : Ω → Matrix l n 𝕜} (hX : Integrable X μ) (i : l)
     (j : n) : (fun ω => μ[X | m] ω i j) =ᵐ[μ] μ[fun ω => X ω i j | m] :=
@@ -67,12 +70,13 @@ private noncomputable def conjTransposeCLE : Matrix l n 𝕜 ≃L[ℝ] Matrix n 
       left_inv := Matrix.conjTranspose_conjTranspose
       right_inv := Matrix.conjTranspose_conjTranspose }
 
-/-- The conditional expectation commutes with the conjugate transpose. No integrability
-hypothesis.
+/-- The conditional expectation commutes with the conjugate transpose:
+$\mathbb{E}[\mathbf{X}^{\mathsf{H}} \mid \mathcal{G}] = \mathbb{E}[\mathbf{X} \mid
+\mathcal{G}]^{\mathsf{H}}$ almost everywhere. No integrability hypothesis.
 Proof: case split on `Integrable X μ`. If integrable, `ContinuousLinearMap.comp_condExp_comm`
 with the conjugate transpose as a real continuous linear map; if not, neither is
-`fun ω => (X ω)ᴴ` (the conjugate transpose is an isometric real linear equivalence), and both
-sides are `0` by `condExp_of_not_integrable`. Easy. -/
+$\omega \mapsto \mathbf{X}(\omega)^{\mathsf{H}}$ (the conjugate transpose is an isometric real
+linear equivalence), and both sides are $\mathbf{0}$ by `condExp_of_not_integrable`. Easy. -/
 theorem _root_.Matrix.condExp_conjTranspose (X : Ω → Matrix l n 𝕜) :
     μ[fun ω => (X ω)ᴴ | m] =ᵐ[μ] fun ω => (μ[X | m] ω)ᴴ := by
   by_cases hX : Integrable X μ
@@ -84,7 +88,9 @@ theorem _root_.Matrix.condExp_conjTranspose (X : Ω → Matrix l n 𝕜) :
     rw [condExp_of_not_integrable hX, condExp_of_not_integrable hXH]
     exact Filter.Eventually.of_forall fun ω => (Matrix.conjTranspose_zero).symm
 
-/-- The conditional expectation commutes with the trace.
+/-- The conditional expectation commutes with the trace: for integrable $\mathbf{X}$,
+$\operatorname{tr} \mathbb{E}[\mathbf{X} \mid \mathcal{G}]
+= \mathbb{E}[\operatorname{tr} \mathbf{X} \mid \mathcal{G}]$ almost everywhere.
 Proof: `ContinuousLinearMap.comp_condExp_comm` with `Matrix.traceLinearMap`. Easy. -/
 theorem _root_.Matrix.condExp_trace {X : Ω → Matrix n n 𝕜} (hX : Integrable X μ) :
     (fun ω => (μ[X | m] ω).trace) =ᵐ[μ] μ[fun ω => (X ω).trace | m] :=
@@ -110,7 +116,7 @@ theorem _root_.Matrix.ae_posSemidef_condExp {X : Ω → Matrix n n 𝕜}
 
 omit [Fintype l] [DecidableEq l] [Fintype n] [DecidableEq n] in
 /-- The conditional expectation of an integrable, almost surely positive function is almost surely
-positive. -/
+positive: $f > 0$ a.s. implies $\mathbb{E}[f \mid \mathcal{G}] > 0$ a.s. -/
 private theorem ae_pos_condExp (hm : m ≤ mΩ) [SigmaFinite (μ.trim hm)] {f : Ω → ℝ}
     (hf : Integrable f μ) (hpos : ∀ᵐ ω ∂μ, 0 < f ω) : ∀ᵐ ω ∂μ, 0 < μ[f | m] ω := by
   let S : Set Ω := {ω | μ[f | m] ω ≤ 0}
@@ -131,12 +137,14 @@ private theorem ae_pos_condExp (hm : m ≤ mΩ) [SigmaFinite (μ.trim hm)] {f : 
   exact not_le.mp hω
 
 /-- An integrable, almost surely positive definite random matrix has an almost surely positive
-definite conditional expectation, under a finite measure. This removes the hypothesis
-`(μ[exp X | m] ω).PosDef` from conditional Lieb.
-Proof: with `f = min (λ_min X) 1`, integrable and almost surely positive, `X ≥ f • 1`, so
-`μ[X | m] ≥ μ[f | m] • 1` by `condExp_mono`, and `μ[f | m] > 0` almost surely (the
-conditional expectation of an almost surely positive integrable function, on the set where it
-is `≤ 0`, integrates to a nonpositive number, so that set is null). Medium. -/
+definite conditional expectation, under a finite measure. This removes the hypothesis that
+$\mathbb{E}[e^{\mathbf{X}} \mid \mathcal{G}]$ is positive definite from conditional Lieb.
+Proof: with $f = \min(\lambda_{\min}(\mathbf{X}), 1)$, integrable and almost surely positive,
+$f \mathbf{I} \preceq \mathbf{X}$, so $\mathbb{E}[f \mid \mathcal{G}]\, \mathbf{I} \preceq
+\mathbb{E}[\mathbf{X} \mid \mathcal{G}]$ by `condExp_mono`, and $\mathbb{E}[f \mid \mathcal{G}] > 0$
+almost surely (the conditional expectation of an almost surely positive integrable function, on
+the set where it is at most $0$, integrates to a nonpositive number, so that set is null).
+Medium. -/
 theorem _root_.Matrix.ae_posDef_condExp (hm : m ≤ mΩ) [IsFiniteMeasure μ]
     {X : Ω → Matrix n n 𝕜} (hX : Integrable X μ) (h : ∀ᵐ ω ∂μ, (X ω).PosDef) :
     ∀ᵐ ω ∂μ, (μ[X | m] ω).PosDef := by
@@ -173,11 +181,16 @@ theorem _root_.Matrix.ae_posDef_condExp (hm : m ≤ mΩ) [IsFiniteMeasure μ]
   exact Matrix.PosDef.posDef_of_le (Matrix.PosDef.smul Matrix.PosDef.one h₃) h₁
 
 /-- **The functional calculus of a fixed Hermitian matrix commutes with the conditional
-expectation**: if `ω ↦ f ω x` is integrable for every `x`, then almost surely
-`μ[cfc (f ·) B | m] = cfc (fun x => μ[f · x | m]) B`. The conditional form of
-`Matrix.IsHermitian.cfc_integral`; as there, no continuity in `ω` or `x` is needed, since the
-spectrum of a matrix is finite. Proof: through a unitary diagonalisation `B = U diag(λ) Uᴴ`,
-`cfc g B` is a real-linear image of `(g (λ i))ᵢ`, and `comp_condExp_comm` passes it through. -/
+expectation**: for Hermitian $\mathbf{B}$, if $\omega \mapsto f_\omega(x)$ is integrable for every
+$x$, then almost surely
+$$\mathbb{E}[f_\omega(\mathbf{B}) \mid \mathcal{G}] = g(\mathbf{B}), \qquad
+g(x) = \mathbb{E}[f_\omega(x) \mid \mathcal{G}],$$
+where $f(\mathbf{B})$ is the functional calculus `cfc f B`. The conditional form of
+`Matrix.IsHermitian.cfc_integral`; as there, no continuity in $\omega$ or $x$ is needed, since the
+spectrum of a matrix is finite. Proof: through a unitary diagonalisation
+$\mathbf{B} = \mathbf{U} \operatorname{diag}(\lambda_i)_i \mathbf{U}^{\mathsf{H}}$,
+$g(\mathbf{B})$ is a real-linear image of $(g(\lambda_i))_i$, and `comp_condExp_comm` passes it
+through. -/
 theorem _root_.Matrix.IsHermitian.condExp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian)
     {f : Ω → ℝ → ℝ} (hf : ∀ x, Integrable (fun ω => f ω x) μ) :
     μ[fun ω => cfc (f ω) B | m] =ᵐ[μ] fun ω' => cfc (fun x => μ[fun ω => f ω x | m] ω') B := by
@@ -208,7 +221,9 @@ theorem _root_.Matrix.IsHermitian.condExp_cfc {B : Matrix n n 𝕜} (hB : B.IsHe
   exact congrArg Lc (funext h2)
 
 /-- The conditional expectation of the Hermitian dilation of an integrable random matrix is the
-dilation of its conditional expectation. The conditional form of `NLAlib.integral_dilation`.
+dilation of its conditional expectation:
+$\mathbb{E}[\mathcal{H}(\mathbf{S}) \mid \mathcal{G}] = \mathcal{H}(\mathbb{E}[\mathbf{S} \mid
+\mathcal{G}])$ almost everywhere. The conditional form of `NLAlib.integral_dilation`.
 Proof: `ContinuousLinearMap.comp_condExp_comm` with the dilation as a real continuous linear map.
 Easy. -/
 theorem _root_.Matrix.condExp_dilation {S : Ω → Matrix l n 𝕜} (hS : Integrable S μ) :
@@ -219,12 +234,18 @@ theorem _root_.Matrix.condExp_dilation {S : Ω → Matrix l n 𝕜} (hS : Integr
       map_smul' := dilation_smul_real } : Matrix l n 𝕜 →L[ℝ] _).comp_condExp_comm hS |>.symm
 
 /-- The conditional expectation of the square of a dilation is block diagonal, with the
-conditional expectations of `S Sᴴ` and `Sᴴ S` on the diagonal. The conditional form of the
+conditional expectations of $\mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
+$\mathbf{S}^{\mathsf{H}}\mathbf{S}$ on the diagonal: for $\mathbf{S} \in L^2$, almost everywhere
+$$\mathbb{E}[\mathcal{H}(\mathbf{S})^2 \mid \mathcal{G}] = \begin{bmatrix}
+\mathbb{E}[\mathbf{S}\mathbf{S}^{\mathsf{H}} \mid \mathcal{G}] & \mathbf{0} \\
+\mathbf{0} & \mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S} \mid \mathcal{G}] \end{bmatrix}.$$
+The conditional form of the
 `integral_dilation_sq` step of `NLAlib/Probability/MatrixConcentration/Bernstein.lean`.
 Proof: `dilation_mul_dilation`, then `ContinuousLinearMap.comp_condExp_comm` with the block
 diagonal embedding of `Matrix l l 𝕜 × Matrix n n 𝕜` and Mathlib's conditional expectation of a
-pair (`condExp` of `Prod.fst`, `Prod.snd` through `comp_condExp_comm`); `S Sᴴ` and `Sᴴ S` are
-integrable by Hölder from `MemLp S 2 μ`. Easy to medium. -/
+pair (`condExp` of `Prod.fst`, `Prod.snd` through `comp_condExp_comm`);
+$\mathbf{S}\mathbf{S}^{\mathsf{H}}$ and $\mathbf{S}^{\mathsf{H}}\mathbf{S}$ are integrable by
+Hölder from `MemLp S 2 μ`. Easy to medium. -/
 theorem _root_.Matrix.condExp_dilation_sq {S : Ω → Matrix l n 𝕜}
     (hS : MemLp S 2 μ) :
     μ[fun ω => dilation (S ω) ^ 2 | m] =ᵐ[μ] fun ω =>

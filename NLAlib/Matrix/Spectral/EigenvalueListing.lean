@@ -15,16 +15,17 @@ public import NLAlib.Matrix.Functions.Complexification
 # Listings of the eigenvalues of a matrix
 
 The eigenvalues of a matrix that need not be Hermitian are given by a listing:
-`NLAlib.IsEigenvalueListing A d` says that the family `d`, indexed by any finite type, lists the
-roots of the characteristic polynomial of `A` with multiplicity. Over `ℂ` every matrix has a
-listing; over a general field the existence of one says that the characteristic polynomial splits.
-This file has the predicate, its basic interface, and triangularisation by a similarity over
-any field; Schur's unitary triangularisation and what follows from it are in
-`NLAlib.Matrix.Spectral.Schur`.
+`NLAlib.IsEigenvalueListing A d` says that the family $\mathbf{d}$, indexed by any finite type,
+lists the roots of the characteristic polynomial of $\mathbf{A}$ with multiplicity. Over
+$\mathbb{C}$ every matrix has a listing; over a general field the existence of one says that the
+characteristic polynomial splits. This file has the predicate, its basic interface, and
+triangularisation by a similarity over any field; Schur's unitary triangularisation and what
+follows from it are in `NLAlib.Matrix.Spectral.Schur`.
 
 ## Main definitions
 
-* `NLAlib.IsEigenvalueListing`: `A.charpoly = ∏ i, (X - C (d i))`.
+* `NLAlib.IsEigenvalueListing`:
+  $\det(X\mathbf{I} - \mathbf{A}) = \prod_i (X - \mathbf{d}_i)$.
 
 ## Main results
 
@@ -66,10 +67,11 @@ variable {K : Type*} [Field K] {ι κ n : Type*} [Fintype ι] [Fintype κ] [Fint
 
 /-! ### Listings of the eigenvalues -/
 
-/-- `IsEigenvalueListing A d`: the family `d` **lists the eigenvalues** of `A` with algebraic
-multiplicity, `A.charpoly = ∏ i, (X - C (d i))`. Over `ℂ` every matrix has a listing; over a
-general field the existence of one says that the characteristic polynomial splits. For a
-Hermitian matrix the sorted `eigenvalue A` is a listing. -/
+/-- `IsEigenvalueListing A d`: the family $\mathbf{d}$ **lists the eigenvalues** of $\mathbf{A}$
+with algebraic multiplicity, $\det(X\mathbf{I} - \mathbf{A}) = \prod_i (X - \mathbf{d}_i)$. Over
+$\mathbb{C}$ every matrix has a listing; over a general field the existence of one says that the
+characteristic polynomial splits. For a Hermitian matrix the sorted `eigenvalue A` is a
+listing. -/
 def IsEigenvalueListing (A : Matrix n n K) (d : ι → K) : Prop :=
   A.charpoly = ∏ i, (X - C (d i))
 
@@ -78,15 +80,16 @@ theorem isEigenvalueListing_iff {A : Matrix n n K} {d : ι → K} :
     IsEigenvalueListing A d ↔ A.charpoly = ∏ i, (X - C (d i)) :=
   Iff.rfl
 
-/-- A listing has as many entries as the matrix has rows. -/
+/-- A listing has as many entries as the matrix has rows: $\lvert \iota \rvert = \lvert n \rvert$.
+-/
 theorem IsEigenvalueListing.card_eq {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : Fintype.card ι = Fintype.card n := by
   have h1 := congrArg Polynomial.natDegree h
   rw [Matrix.charpoly_natDegree_eq_dim, Polynomial.natDegree_finsetProd_X_sub_C_eq_card] at h1
   rw [h1, Finset.card_univ]
 
-/-- A monic polynomial that splits is the product of `X - C (d i)` over a family `d` indexed by
-any type with as many elements as its degree. -/
+/-- A monic polynomial $p$ that splits is the product of the $X - \mathbf{d}_i$ over a family
+$\mathbf{d}$ indexed by any type with as many elements as the degree of $p$. -/
 private theorem exists_eq_prod_X_sub_C {p : K[X]} (hp : p.Splits) (hm : p.Monic)
     (hdeg : p.natDegree = Fintype.card ι) : ∃ d : ι → K, p = ∏ i, (X - C (d i)) := by
   have hcard : Fintype.card ι = p.roots.toList.length := by
@@ -102,8 +105,10 @@ private theorem exists_eq_prod_X_sub_C {p : K[X]} (hp : p.Splits) (hm : p.Monic)
 theorem exists_isEigenvalueListing (A : Matrix n n ℂ) : ∃ d : n → ℂ, IsEigenvalueListing A d :=
   exists_eq_prod_X_sub_C (IsAlgClosed.splits _) A.charpoly_monic A.charpoly_natDegree_eq_dim
 
-/-- **Two listings of the eigenvalues differ by a relabelling.**
-Port of `NLAlib.exists_perm_eq_of_prod_X_sub_C_eq`, there over `ℂ` on one index type. -/
+/-- **Two listings of the eigenvalues differ by a relabelling**: if $\mathbf{a}$ and $\mathbf{b}$
+both list the eigenvalues of $\mathbf{A}$, then $\mathbf{a}_i = \mathbf{b}_{e(i)}$ for a
+bijection $e$.
+Port of `NLAlib.exists_perm_eq_of_prod_X_sub_C_eq`, there over $\mathbb{C}$ on one index type. -/
 theorem IsEigenvalueListing.exists_equiv_eq {A : Matrix n n K} {a : ι → K} {b : κ → K}
     (ha : IsEigenvalueListing A a) (hb : IsEigenvalueListing A b) :
     ∃ e : ι ≃ κ, a = b ∘ e := by
@@ -129,7 +134,7 @@ theorem IsEigenvalueListing.comp_equiv {A : Matrix n n K} {d : ι → K}
   rw [isEigenvalueListing_iff, h]
   exact (e.prod_comp fun i => X - C (d i)).symm
 
-/-- The spectrum is the set of listed eigenvalues. -/
+/-- The spectrum is the set of listed eigenvalues: $\{\mathbf{d}_i\}$. -/
 theorem IsEigenvalueListing.spectrum_eq_range {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : spectrum K A = Set.range d := by
   ext c
@@ -138,7 +143,8 @@ theorem IsEigenvalueListing.spectrum_eq_range {A : Matrix n n K} {d : ι → K}
   simp only [Finset.mem_univ, eval_sub, eval_X, eval_C, sub_eq_zero, true_and, Set.mem_range,
     eq_comm]
 
-/-- The trace is the sum of the listed eigenvalues.
+/-- The trace is the sum of the listed eigenvalues:
+$\operatorname{tr} \mathbf{A} = \sum_i \mathbf{d}_i$.
 Port of `NLAlib.trace_eq_sum_of_charpoly_eq_prod`. -/
 theorem IsEigenvalueListing.trace_eq_sum {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : A.trace = ∑ i, d i := by
@@ -146,7 +152,8 @@ theorem IsEigenvalueListing.trace_eq_sum {A : Matrix n n K} {d : ι → K}
   rw [Matrix.trace_eq_neg_charpoly_nextCoeff, h, ← Matrix.charpoly_diagonal,
     ← Matrix.trace_eq_neg_charpoly_nextCoeff, Matrix.trace_diagonal]
 
-/-- The determinant is the product of the listed eigenvalues. -/
+/-- The determinant is the product of the listed eigenvalues:
+$\det \mathbf{A} = \prod_i \mathbf{d}_i$. -/
 theorem IsEigenvalueListing.det_eq_prod {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : A.det = ∏ i, d i := by
   rw [Matrix.det_eq_sign_charpoly_coeff, h, ← h.card_eq, Polynomial.coeff_zero_eq_eval_zero,
@@ -159,7 +166,8 @@ theorem IsEigenvalueListing.splits_charpoly {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : A.charpoly.Splits :=
   h ▸ Splits.prod fun i _ => Splits.X_sub_C (d i)
 
-/-- The diagonal of an upper triangular matrix lists its eigenvalues. -/
+/-- The diagonal of an upper triangular matrix lists its eigenvalues: $\mathbf{T}_{i,i}$,
+$i \in n$. -/
 theorem _root_.Matrix.IsUpperTriangular.isEigenvalueListing_diag [LinearOrder n]
     {T : Matrix n n K} (hT : T.IsUpperTriangular) : IsEigenvalueListing T fun i => T i i :=
   Matrix.charpoly_of_isUpperTriangular T hT
@@ -183,7 +191,8 @@ theorem exists_isEigenvalueListing_of_forall_im_eq_zero {A : Matrix n n ℝ}
 
 /-! ### Triangularisation over a field -/
 
-/-- A listed eigenvalue has an eigenvector. -/
+/-- A listed eigenvalue has an eigenvector: $\mathbf{x} \ne \mathbf{0}$ with
+$\mathbf{A}\mathbf{x} = \mathbf{a}_i\mathbf{x}$. -/
 private theorem exists_mulVec_eq_smul {A : Matrix n n K} {a : ι → K}
     (ha : IsEigenvalueListing A a) (i : ι) : ∃ x : n → K, x ≠ 0 ∧ A *ᵥ x = a i • x := by
   have hdet : (Matrix.scalar n (a i) - A).det = 0 := by
@@ -195,8 +204,9 @@ private theorem exists_mulVec_eq_smul {A : Matrix n n K} {a : ι → K}
   rw [← h, Matrix.scalar_apply, ← Matrix.smul_one_eq_diagonal, Matrix.smul_mulVec,
     Matrix.one_mulVec]
 
-/-- If a product of factors `B - c • 1` kills an eigenvector of a matrix `A` commuting with `B`,
-then `A` and `B` have a common eigenvector for the same eigenvalue of `A`. -/
+/-- If a product of factors $\mathbf{B} - c\mathbf{I}$ kills an eigenvector of a matrix
+$\mathbf{A}$ commuting with $\mathbf{B}$, then $\mathbf{A}$ and $\mathbf{B}$ have a common
+eigenvector for the same eigenvalue of $\mathbf{A}$. -/
 private theorem exists_common_eigenvector_of_list_prod {A B : Matrix n n K} (hAB : Commute A B)
     {α : K} (l : List K) : ∀ x : n → K, x ≠ 0 → A *ᵥ x = α • x →
       (l.map fun c => B - c • (1 : Matrix n n K)).prod *ᵥ x = 0 →
@@ -218,8 +228,8 @@ private theorem exists_common_eigenvector_of_list_prod {A B : Matrix n n K} (hAB
         hAB.sub_right ((Commute.one_right A).smul_right c)
       rw [Matrix.mulVec_mulVec, hcomm.eq, ← Matrix.mulVec_mulVec, hAx, Matrix.mulVec_smul]
 
-/-- A matrix commuting with `A` whose characteristic polynomial splits has an eigenvector in
-every eigenspace of `A` that belongs to a listed eigenvalue. -/
+/-- A matrix commuting with $\mathbf{A}$ whose characteristic polynomial splits has an
+eigenvector in every eigenspace of $\mathbf{A}$ that belongs to a listed eigenvalue. -/
 private theorem exists_common_eigenvector {A B : Matrix n n K} (hAB : Commute A B) {a : ι → K}
     (ha : IsEigenvalueListing A a) (i : ι) (hB : B.charpoly.Splits) :
     ∃ y : n → K, y ≠ 0 ∧ A *ᵥ y = a i • y ∧ ∃ β : K, B *ᵥ y = β • y := by
@@ -244,7 +254,9 @@ private theorem exists_isUnit_det_apply_eq {y : n → K} (hy : y ≠ 0) (i₀ : 
   · rw [Matrix.submatrix_apply, Equiv.swap_apply_left, Matrix.updateCol_self, id]
 
 /-- Conjugating by an invertible matrix one of whose columns is an eigenvector puts a multiple of
-a coordinate vector in that column. -/
+a coordinate vector in that column: if the column $i_0$ of $\mathbf{S}$ is an eigenvector of
+$\mathbf{A}$ for $\alpha$, the column $i_0$ of $\mathbf{S}^{-1}\mathbf{A}\mathbf{S}$ is $\alpha$
+times the coordinate vector $\mathbf{e}_{i_0}$. -/
 private theorem inv_mul_mul_apply_of_mulVec_eq_smul {A S : Matrix n n K} (hS : IsUnit S.det)
     {i₀ : n} {α : K} (hA : (A *ᵥ fun i => S i i₀) = α • fun i => S i i₀) (i : n) :
     (S⁻¹ * A * S) i i₀ = if i = i₀ then α else 0 := by
@@ -260,17 +272,20 @@ private theorem inv_mul_mul_apply_of_mulVec_eq_smul {A S : Matrix n n K} (hS : I
 /-- **Similar matrices have the same characteristic polynomial**: conjugation by a pair of
 mutually inverse matrices over a commutative ring preserves it. For a unit of the matrix ring
 this is Mathlib's `Matrix.charpoly_units_conj'`; here the similarity is given by the equation
-`S' * S = 1`, as `S⁻¹` with `IsUnit S.det` or `Uᴴ` with `HasOrthonormalCols U` provide it. -/
+$\mathbf{S}'\mathbf{S} = \mathbf{I}$, as $\mathbf{S}^{-1}$ with `IsUnit S.det` or
+$\mathbf{U}^{\mathsf{H}}$ with `HasOrthonormalCols U` provide it. -/
 theorem charpoly_mul_mul_of_mul_eq_one {R : Type*} [CommRing R] {S S' : Matrix n n R}
     (hS : S' * S = 1) (M : Matrix n n R) : (S' * M * S).charpoly = M.charpoly := by
   rw [Matrix.charpoly_mul_comm, ← Matrix.mul_assoc, mul_eq_one_comm.mp hS, Matrix.one_mul]
 
 omit [Fintype n] in
-/-- **Deflation, block form.** A matrix whose column `i₀` is `α` times a coordinate vector is
-block upper triangular for the splitting of the indices into `i₀` and the others: reindexed by
-`Equiv.sumCompl (· = i₀)` it is `fromBlocks (diagonal fun _ => α) r 0 M'` with `M'` the matrix
-with the row and the column `i₀` deleted. This is the step of every triangularisation by
-induction on the size, after a similarity has put an eigenvector in the column `i₀`. -/
+/-- **Deflation, block form.** A matrix $\mathbf{M}$ whose column $i_0$ is $\alpha$ times a
+coordinate vector is block upper triangular for the splitting of the indices into $i_0$ and the
+others: reindexed by `Equiv.sumCompl (· = i₀)` it is
+$\begin{bmatrix} \alpha & \mathbf{r} \\ \mathbf{0} & \mathbf{M}' \end{bmatrix}$ with
+$\mathbf{M}'$ the matrix with the row and the column $i_0$ deleted. This is the step of every
+triangularisation by induction on the size, after a similarity has put an eigenvector in the
+column $i_0$. -/
 theorem submatrix_sumCompl_eq_fromBlocks {M : Matrix n n K} {i₀ : n} {α : K}
     (hcol : ∀ i, M i i₀ = if i = i₀ then α else 0) :
     M.submatrix (Equiv.sumCompl (· = i₀)) (Equiv.sumCompl (· = i₀)) =
@@ -285,8 +300,9 @@ theorem submatrix_sumCompl_eq_fromBlocks {M : Matrix n n K} {i₀ : n} {α : K}
     simp [hcol, hi]
   · simp
 
-/-- The characteristic polynomial of a matrix with a multiple of a coordinate vector in the
-column `i₀` loses a linear factor when the row and the column `i₀` are deleted. -/
+/-- The characteristic polynomial of a matrix with a multiple $\alpha$ of a coordinate vector in
+the column $i_0$ loses a linear factor $X - \alpha$ when the row and the column $i_0$ are
+deleted. -/
 private theorem charpoly_eq_X_sub_C_mul_charpoly_submatrix {M : Matrix n n K} {i₀ : n} {α : K}
     [DecidableEq {i // ¬i = i₀}] (hcol : ∀ i, M i i₀ = if i = i₀ then α else 0) :
     M.charpoly = (X - C α) *
@@ -297,10 +313,16 @@ private theorem charpoly_eq_X_sub_C_mul_charpoly_submatrix {M : Matrix n n K} {i
     pow_one]
 
 omit [DecidableEq n] in
-/-- Conjugating a block upper triangular matrix by block diagonal matrices `1 ⊕ S'` and `1 ⊕ S`,
-in the original indices: for `M` with block form `fromBlocks D r 0 M'` along `e : q ⊕ p ≃ n`,
-the product `(1 ⊕ S') * M * (1 ⊕ S)` has block form `fromBlocks D (r * S) 0 (S' * M' * S)`. The
-induction step of a triangularisation applies it with `S' = S⁻¹` or `S' = Sᴴ`. -/
+/-- Conjugating a block upper triangular matrix by block diagonal matrices
+$\operatorname{diag}(\mathbf{I}, \mathbf{S}')$ and $\operatorname{diag}(\mathbf{I}, \mathbf{S})$,
+in the original indices: for $\mathbf{M}$ with block form
+$\begin{bmatrix} \mathbf{D} & \mathbf{r} \\ \mathbf{0} & \mathbf{M}' \end{bmatrix}$ along
+$e : q \oplus p \simeq n$, the product
+$\operatorname{diag}(\mathbf{I}, \mathbf{S}') \, \mathbf{M} \operatorname{diag}(\mathbf{I},
+\mathbf{S})$ has block form
+$\begin{bmatrix} \mathbf{D} & \mathbf{r}\mathbf{S} \\ \mathbf{0} & \mathbf{S}'\mathbf{M}'\mathbf{S}
+\end{bmatrix}$. The induction step of a triangularisation applies it with
+$\mathbf{S}' = \mathbf{S}^{-1}$ or $\mathbf{S}' = \mathbf{S}^{\mathsf{H}}$. -/
 theorem fromBlocks_one_submatrix_mul_mul_fromBlocks_one {p q : Type*} [Fintype p]
     [Finite q] [DecidableEq q] (e : q ⊕ p ≃ n) {M : Matrix n n K} {D : Matrix q q K}
     {r : Matrix q p K} {M' : Matrix p p K} (hM : M.submatrix e e = Matrix.fromBlocks D r 0 M')
@@ -316,8 +338,8 @@ theorem fromBlocks_one_submatrix_mul_mul_fromBlocks_one {p q : Type*} [Fintype p
   simp
 
 omit [Fintype n] in
-/-- A block upper triangular matrix for the splitting of the indices into `i₀` and the others is
-upper triangular when its second diagonal block is and `i₀` is the least index. -/
+/-- A block upper triangular matrix for the splitting of the indices into $i_0$ and the others is
+upper triangular when its second diagonal block is and $i_0$ is the least index. -/
 theorem isUpperTriangular_fromBlocks_submatrix_sumCompl_symm [LinearOrder n] {i₀ : n}
     (hi₀ : ∀ j, i₀ ≤ j) (D : Matrix {i // i = i₀} {i // i = i₀} K)
     (r : Matrix {i // i = i₀} {i // ¬i = i₀} K) {T : Matrix {i // ¬i = i₀} {i // ¬i = i₀} K}
@@ -414,11 +436,14 @@ private theorem exists_triangular_pair_aux (k : ℕ) :
     · rw [key, fromBlocks_one_submatrix_mul_mul_fromBlocks_one _ hMB]
       exact isUpperTriangular_fromBlocks_submatrix_sumCompl_symm hi₀ _ _ hTB
 
-/-- **Triangularisation over a field.** Commuting matrices `A` and `B` over a field, where `a`
-lists the eigenvalues of `A` and the characteristic polynomial of `B` splits, are simultaneously
-similar to upper triangular matrices, with `a` on the diagonal of the first in the given order.
-With `B = A` this is triangularisation of one matrix whose characteristic polynomial splits.
-Over an `RCLike` field the similarity can be taken unitary:
+/-- **Triangularisation over a field.** Commuting matrices $\mathbf{A}$ and $\mathbf{B}$ over a
+field, where $\mathbf{a}$ lists the eigenvalues of $\mathbf{A}$ and the characteristic polynomial
+of $\mathbf{B}$ splits, are simultaneously similar to upper triangular matrices: there is an
+invertible $\mathbf{S}$ with $\mathbf{S}^{-1}\mathbf{A}\mathbf{S}$ and
+$\mathbf{S}^{-1}\mathbf{B}\mathbf{S}$ upper triangular and
+$(\mathbf{S}^{-1}\mathbf{A}\mathbf{S})_{i,i} = \mathbf{a}_i$ for every $i$. With
+$\mathbf{B} = \mathbf{A}$ this is triangularisation of one matrix whose characteristic polynomial
+splits. Over an `RCLike` field the similarity can be taken unitary:
 `NLAlib.IsEigenvalueListing.exists_hasOrthonormalCols_isUpperTriangular`.
 [HornJohnson2013, Theorem 2.3.3], there for commuting families of complex matrices. -/
 theorem IsEigenvalueListing.exists_isUpperTriangular_inv_mul_mul_of_commute [LinearOrder n]
@@ -432,14 +457,16 @@ theorem IsEigenvalueListing.exists_isUpperTriangular_inv_mul_mul_of_commute [Lin
 
 /-! ### Powers -/
 
-/-- The diagonal of a power of an upper triangular matrix. -/
+/-- The diagonal of a power of an upper triangular matrix:
+$(\mathbf{T}^k)_{i,i} = (\mathbf{T}_{i,i})^k$. -/
 private theorem pow_apply_self_of_isUpperTriangular [LinearOrder n] {T : Matrix n n K}
     (hT : T.IsUpperTriangular) (k : ℕ) (i : n) : (T ^ k) i i = T i i ^ k := by
   induction k with
   | zero => rw [pow_zero, pow_zero, Matrix.one_apply_eq]
   | succ k ih => rw [pow_succ, Matrix.IsUpperTriangular.mul_apply_self (hT.pow k) hT, ih, pow_succ]
 
-/-- The eigenvalues of a power are the powers of the eigenvalues. -/
+/-- The eigenvalues of a power are the powers of the eigenvalues: if $\mathbf{d}$ lists the
+eigenvalues of $\mathbf{A}$, then $(\mathbf{d}_i^k)_i$ lists those of $\mathbf{A}^k$. -/
 theorem IsEigenvalueListing.pow {A : Matrix n n K} {d : ι → K} (h : IsEigenvalueListing A d)
     (k : ℕ) : IsEigenvalueListing (A ^ k) (fun i => d i ^ k) := by
   classical

@@ -13,15 +13,20 @@ public import NLAlib.Probability.Distributions.Rademacher
 /-!
 # Second moments of quadratic forms
 
-For a random vector `X` in `𝕜ⁿ` with independent coordinates of mean zero, `E |X i|² = 1`,
-pseudo-variance `E X i² = s` and `E |X i|⁴ = m₄`, the quadratic form `Xᴴ A X` has mean `tr A`
-(Hutchinson; `NLAlib.IsIsotropic.integral_quadForm`) and
-
-`E |Xᴴ A X - tr A|² = ‖A‖_F² + |s|² re ⟨A, Aᵀ⟩_F + (m₄ - 2 - |s|²) ∑ |A i i|²`.
-
-One statement covers real probes (`s = 1`: Gaussian `m₄ = 3`, Rademacher `m₄ = 1`) and complex
-ones (`s = 0`: complex Gaussian `m₄ = 2`, Steinhaus `m₄ = 1`). For real symmetric `A` it is the
-variance `2 ‖A‖_F² + (m₄ - 3) ∑ A i i²`, stated with its Gaussian and Rademacher cases.
+For a random vector $\mathbf{X}$ in $\Bbbk^n$ with independent coordinates of mean zero,
+$\mathbb{E}\lvert \mathbf{X}_i\rvert^2 = 1$, pseudo-variance $\mathbb{E}[\mathbf{X}_i^2] = s$ and
+$\mathbb{E}\lvert \mathbf{X}_i\rvert^4 = m_4$, the quadratic form
+$\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ has mean $\operatorname{tr} \mathbf{A}$ (Hutchinson;
+`NLAlib.IsIsotropic.integral_quadForm`) and
+$$\mathbb{E}\lvert \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}
+{} - \operatorname{tr} \mathbf{A}\rvert^2
+= \|\mathbf{A}\|_{\mathsf{F}}^2 + \lvert s\rvert^2
+\langle \mathbf{A}, \mathbf{A}^{\mathsf{T}} \rangle_{\mathsf{F}} +
+(m_4 - 2 - \lvert s\rvert^2) \sum_i \lvert \mathbf{A}_{i,i}\rvert^2\,.$$
+One statement covers real probes ($s = 1$: Gaussian $m_4 = 3$, Rademacher $m_4 = 1$) and complex
+ones ($s = 0$: complex Gaussian $m_4 = 2$, Steinhaus $m_4 = 1$). For real symmetric $\mathbf{A}$
+it is the variance $2 \|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3) \sum_i \mathbf{A}_{i,i}^2$, stated
+with its Gaussian and Rademacher cases.
 
 ## Main results
 
@@ -68,7 +73,8 @@ private theorem quadForm_mul_star_quadForm (A : Matrix n n 𝕜) (x : n → 𝕜
   simp only [star_mul', star_star]
   ring
 
-/-- The monomial `conj (x i) x j x k conj (x l)` as a product over coordinates. -/
+/-- The monomial $\overline{\mathbf{x}_i}\, \mathbf{x}_j \mathbf{x}_k \overline{\mathbf{x}_l}$ as a
+product over coordinates. -/
 private theorem star_mul_mul_mul_star_eq_prod [DecidableEq n] (x : n → 𝕜) (i j k l : n) :
     star (x i) * x j * (x k * star (x l)) =
       ∏ m, (star (x m) ^ ((if m = i then 1 else 0) + (if m = l then 1 else 0)) *
@@ -85,7 +91,7 @@ private theorem integrable_star_mul_mul_mul_star (hL4 : ∀ i, MemLp (fun ω => 
   exact (memLp_star_mul (hL4 i) (hL4 j)).integrable_mul h
 
 /-- The product of one-coordinate moments behind the fourth mixed moment, from the table of
-moments `g m a b = E [conj (X m) ^ a * X m ^ b]`. -/
+moments $g(m, a, b) = \mathbb{E}[\overline{\mathbf{X}_m}^{\,a} \mathbf{X}_m^b]$. -/
 private theorem prod_moments_eq [DecidableEq n] (g : n → ℕ → ℕ → 𝕜) {s : 𝕜} {m₄ : ℝ}
     (e00 : ∀ m, g m 0 0 = 1) (e10 : ∀ m, g m 1 0 = 0) (e01 : ∀ m, g m 0 1 = 0)
     (e11 : ∀ m, g m 1 1 = 1) (e20 : ∀ m, g m 2 0 = star s) (e02 : ∀ m, g m 0 2 = s)
@@ -154,7 +160,9 @@ private theorem prod_moments_eq [DecidableEq n] (g : n → ℕ → ℕ → 𝕜)
         ring
 
 omit [Fintype n] in
-/-- The fourth mixed moment `E [conj (X i) X j X k conj (X l)]` of independent coordinates. -/
+/-- The fourth mixed moment
+$\mathbb{E}[\overline{\mathbf{X}_i}\, \mathbf{X}_j \mathbf{X}_k \overline{\mathbf{X}_l}]$ of
+independent coordinates. -/
 private theorem integral_star_mul_mul_mul_star [Finite n] [DecidableEq n]
     (hind : iIndepFun (fun i ω => X ω i) μ) (hL4 : ∀ i, MemLp (fun ω => X ω i) 4 μ)
     (hmean : ∀ i, ∫ ω, X ω i ∂μ = 0) (hvar : ∀ i, ∫ ω, ‖X ω i‖ ^ 2 ∂μ = 1) {s : 𝕜}
@@ -214,7 +222,8 @@ private theorem sum_contraction [DecidableEq n] (A : Matrix n n 𝕜) (c d : �
       Finset.mul_sum]
     exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- The second moment `E |Xᴴ A X|²` as an index contraction. -/
+/-- The second moment $\mathbb{E}\lvert \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}\rvert^2$ as an
+index contraction. -/
 private theorem integral_quadForm_mul_star (hind : iIndepFun (fun i ω => X ω i) μ)
     (hL4 : ∀ i, MemLp (fun ω => X ω i) 4 μ) (hmean : ∀ i, ∫ ω, X ω i ∂μ = 0)
     (hvar : ∀ i, ∫ ω, ‖X ω i‖ ^ 2 ∂μ = 1) {s : 𝕜} (hs : ∀ i, ∫ ω, X ω i ^ 2 ∂μ = s)
@@ -247,8 +256,16 @@ theorem memLp_quadForm (hL4 : ∀ i, MemLp (fun ω => X ω i) 4 μ) (A : Matrix 
   exact memLp_finsetSum _ fun i _ => memLp_finsetSum _ fun j _ =>
     (memLp_star_mul (hL4 i) (hL4 j)).const_mul (A i j)
 
-/-- **The second moment of a quadratic form** about its mean `tr A`, for independent
-coordinates with mean zero, `E |X i|² = 1`, `E X i² = s` and `E |X i|⁴ = m₄`. -/
+/-- **The second moment of a quadratic form** about its mean $\operatorname{tr} \mathbf{A}$: for
+independent coordinates, each in $L^4$, with mean zero,
+$\mathbb{E}\lvert \mathbf{X}_i\rvert^2 = 1$, $\mathbb{E}[\mathbf{X}_i^2] = s$ and
+$\mathbb{E}\lvert \mathbf{X}_i\rvert^4 = m_4$,
+$$\mathbb{E}\lvert \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}
+{} - \operatorname{tr} \mathbf{A}\rvert^2
+= \|\mathbf{A}\|_{\mathsf{F}}^2 + \lvert s\rvert^2
+\langle \mathbf{A}, \mathbf{A}^{\mathsf{T}} \rangle_{\mathsf{F}} +
+(m_4 - 2 - \lvert s\rvert^2) \sum_i \lvert \mathbf{A}_{i,i}\rvert^2\,,$$
+with $\langle \cdot, \cdot \rangle_{\mathsf{F}}$ the real Frobenius inner product. -/
 theorem integral_norm_quadForm_sub_trace_sq (hind : iIndepFun (fun i ω => X ω i) μ)
     (hL4 : ∀ i, MemLp (fun ω => X ω i) 4 μ) (hmean : ∀ i, ∫ ω, X ω i ∂μ = 0)
     (hvar : ∀ i, ∫ ω, ‖X ω i‖ ^ 2 ∂μ = 1) {s : 𝕜} (hs : ∀ i, ∫ ω, X ω i ^ 2 ∂μ = s)
@@ -300,8 +317,11 @@ theorem integral_norm_quadForm_sub_trace_sq (hind : iIndepFun (fun i ω => X ω 
   rw [hre, hc, hE, show ∀ x y z w : 𝕜, x + y + z + w - x = y + z + w from fun _ _ _ _ => by ring,
     map_add, map_add, RCLike.re_ofReal_mul, RCLike.re_ofReal_mul, e1, e2, e3]
 
-/-- The variance of a real quadratic form with symmetric `A`:
-`Var (Xᵀ A X) = 2 ‖A‖_F² + (m₄ - 3) ∑ A i i²`. -/
+/-- The variance of a real quadratic form with symmetric $\mathbf{A}$: for independent real
+coordinates, each in $L^4$, with $\mathbb{E}[\mathbf{X}_i] = 0$, $\mathbb{E}[\mathbf{X}_i^2] = 1$
+and $\mathbb{E}[\mathbf{X}_i^4] = m_4$,
+$\operatorname{Var}(\mathbf{X}^{\mathsf{T}}\mathbf{A}\mathbf{X})
+= 2 \|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3) \sum_i \mathbf{A}_{i,i}^2$. -/
 theorem variance_quadForm_of_isHermitian {X : Ω → n → ℝ} (hind : iIndepFun (fun i ω => X ω i) μ)
     (hL4 : ∀ i, MemLp (fun ω => X ω i) 4 μ) (hmean : ∀ i, ∫ ω, X ω i ∂μ = 0)
     (hvar : ∀ i, ∫ ω, X ω i ^ 2 ∂μ = 1) {m₄ : ℝ} (hm₄ : ∀ i, ∫ ω, X ω i ^ 4 ∂μ = m₄)
@@ -324,7 +344,9 @@ theorem variance_quadForm_of_isHermitian {X : Ω → n → ℝ} (hind : iIndepFu
   rw [variance_eq_integral (memLp_quadForm hL4 A).aestronglyMeasurable.aemeasurable, hmeanq, h]
   ring
 
-/-- Hutchinson's variance with a Gaussian probe: `Var (Xᵀ A X) = 2 ‖A‖_F²` for symmetric `A`. -/
+/-- Hutchinson's variance with a Gaussian probe:
+$\operatorname{Var}(\mathbf{X}^{\mathsf{T}}\mathbf{A}\mathbf{X}) = 2 \|\mathbf{A}\|_{\mathsf{F}}^2$
+for a standard Gaussian vector $\mathbf{X}$ and real symmetric $\mathbf{A}$. -/
 theorem variance_quadForm_of_hasLaw_gaussianVector {X : Ω → n → ℝ}
     (hX : HasLaw X (gaussianVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     variance (fun ω => quadForm A (X ω)) μ = 2 * frobNorm A ^ 2 := by
@@ -341,7 +363,9 @@ theorem variance_quadForm_of_hasLaw_gaussianVector {X : Ω → n → ℝ}
   ring
 
 /-- Hutchinson's variance with a Rademacher probe:
-`Var (Xᵀ A X) = 2 (‖A‖_F² - ∑ A i i²)` for symmetric `A`. -/
+$\operatorname{Var}(\mathbf{X}^{\mathsf{T}}\mathbf{A}\mathbf{X})
+= 2 (\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{i,i}^2)$ for a vector $\mathbf{X}$ of
+independent random signs and real symmetric $\mathbf{A}$. -/
 theorem variance_quadForm_of_hasLaw_rademacherVector {X : Ω → n → ℝ}
     (hX : HasLaw X (rademacherVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     variance (fun ω => quadForm A (X ω)) μ = 2 * (frobNorm A ^ 2 - ∑ i, A i i ^ 2) := by

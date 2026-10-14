@@ -17,7 +17,9 @@ matrices.
 
 ## Main results
 
-* `Matrix.conjTranspose_diagonal_ofReal`: `(diagonal fun i => (d i : 𝕜))ᴴ` is itself.
+* `Matrix.conjTranspose_diagonal_ofReal`:
+  $\operatorname{diag}(\mathbf{d})^{\mathsf{H}} = \operatorname{diag}(\mathbf{d})$ for real
+  $\mathbf{d}$.
 -/
 
 @[expose] public section
@@ -29,7 +31,8 @@ namespace Matrix
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [DecidableEq n]
 
 /-- A diagonal matrix with real entries, over an `RCLike` field, is its own conjugate
-transpose. -/
+transpose: $\operatorname{diag}(\mathbf{d})^{\mathsf{H}} = \operatorname{diag}(\mathbf{d})$ for
+$\mathbf{d}$ real. -/
 theorem conjTranspose_diagonal_ofReal (d : n → ℝ) :
     (diagonal fun i => ((d i : ℝ) : 𝕜))ᴴ = diagonal fun i => ((d i : ℝ) : 𝕜) := by
   rw [diagonal_conjTranspose]

@@ -12,19 +12,19 @@ public import NLAlib.Probability.SubGaussian.Moments
 /-!
 # Squares of sub-Gaussian random variables
 
-The exponential square moment `E exp (θ X²)` of a sub-Gaussian variable, and the fact that its
-centred square `X² - E X²` is sub-exponential, which is what Bernstein's inequality and the
-diagonal part of the Hanson–Wright inequality consume.
+The exponential square moment $\mathbb{E} e^{\theta X^2}$ of a sub-Gaussian variable, and the fact
+that its centred square $X^2 - \mathbb{E}[X^2]$ is sub-exponential, which is what Bernstein's
+inequality and the diagonal part of the Hanson–Wright inequality consume.
 
-The constants of the centred square, `32` and `4`, are the literature's and are written in the
+The constants of the centred square, $32$ and $4$, are the literature's and are written in the
 statement (`CONTRIBUTING.md` §5.2, "Numerical bounds").
 
 ## Main results
 
 * `ProbabilityTheory.HasSubgaussianMGF.integral_exp_mul_sq_le`:
-  `E exp (θ X²) ≤ (1 - 2θc)^{-1/2}`.
+  $\mathbb{E} e^{\theta X^2} \le (1 - 2\theta c)^{-1/2}$.
 * `ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral`: the centred square
-  is sub-exponential with variance proxy `32 c²` and scale `4 c`.
+  is sub-exponential with variance proxy $32 c^2$ and scale $4 c$.
 -/
 
 @[expose] public section
@@ -112,8 +112,8 @@ private lemma lintegral_exp_mul_sq_le (h : HasSubgaussianMGF X c μ) {θ : ℝ} 
         rw [lintegral_exp_mul_sq_gaussianReal (by linarith)]
         ring_nf
 
-/-- `exp (θ X²)` is integrable for a sub-Gaussian `X` when `2 θ c < 1` (in particular for every
-`θ ≤ 0`). -/
+/-- $e^{\theta X^2}$ is integrable for a sub-Gaussian $X$ with proxy $c$ when $2 \theta c < 1$ (in
+particular for every $\theta \le 0$). -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integrable_exp_mul_sq
     (h : HasSubgaussianMGF X c μ) {θ : ℝ} (hθ : 2 * θ * c < 1) :
     Integrable (fun ω => rexp (θ * X ω ^ 2)) μ := by
@@ -128,9 +128,9 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integrable_exp_mul_sq
   · refine ⟨hm, (hasFiniteIntegral_iff_ofReal (ae_of_all _ fun _ => (exp_pos _).le)).mpr ?_⟩
     exact (lintegral_exp_mul_sq_le h hθ0.le hθ).trans_lt ENNReal.ofReal_lt_top
 
-/-- `E exp (θ X²) ≤ (1 - 2θc)^{-1/2}` for a sub-Gaussian `X` and `0 ≤ θ < 1 / (2c)`: the value
-for a centred Gaussian of variance `c`, by Gaussian linearisation
-`exp (θ x²) = E_g exp (√(2θ) g x)`. -/
+/-- $\int e^{\theta X^2} \, d\mu \le (1 - 2\theta c)^{-1/2}$ for a sub-Gaussian $X$ with proxy $c$,
+$\theta \ge 0$ and $2\theta c < 1$: the value for a centred Gaussian of variance $c$, by Gaussian
+linearisation $e^{\theta x^2} = \mathbb{E}_g\, e^{\sqrt{2\theta}\, g x}$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_exp_mul_sq_le
     (h : HasSubgaussianMGF X c μ) {θ : ℝ} (hθ0 : 0 ≤ θ) (hθ : 2 * θ * c < 1) :
     ∫ ω, rexp (θ * X ω ^ 2) ∂μ ≤ 1 / √(1 - 2 * θ * c) := by
@@ -138,7 +138,7 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_exp_mul_sq_le
     (h.integrable_exp_mul_sq hθ).aestronglyMeasurable]
   exact ENNReal.toReal_le_of_le_ofReal (by positivity) (lintegral_exp_mul_sq_le h hθ0 hθ)
 
-/-! ### Moments and the series of `exp (θ X²)` -/
+/-! ### Moments and the series of $e^{\theta X^2}$ -/
 
 private lemma integral_pow_two_mul_le (h : HasSubgaussianMGF X c μ) (k : ℕ) :
     ∫ ω, X ω ^ (2 * (k + 1)) ∂μ ≤ 2 * (k + 1)! * (2 * c) ^ (k + 1) := by
@@ -305,9 +305,10 @@ private lemma mgf_sq_sub_integral_le [IsProbabilityMeasure μ] (h : HasSubgaussi
           gcongr
           nlinarith [sq_nonneg l]
 
-/-- The centred square of a sub-Gaussian variable is sub-exponential: if `X` has proxy `c`, then
-`X² - E X²` has variance proxy `32 c²` and scale `4 c`, the constants of Honorio and Jaakkola
-(2014), reached by summing the series of `exp (θ X²)` against `E X^{2k} ≤ 2 k! (2c)^k`. -/
+/-- The centred square of a sub-Gaussian variable is sub-exponential: if $X$ has proxy $c$ under a
+probability measure, then $X^2 - \mathbb{E}[X^2]$ has variance proxy $32 c^2$ and scale $4 c$, the
+constants of Honorio and Jaakkola (2014), reached by summing the series of $e^{\theta X^2}$ against
+$\mathbb{E}[X^{2k}] \le 2\, k!\, (2c)^k$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral
     [IsProbabilityMeasure μ] (h : HasSubgaussianMGF X c μ) :
     HasSubexponentialMGF (fun ω => X ω ^ 2 - ∫ ω', X ω' ^ 2 ∂μ) (32 * c ^ 2) (4 * c) μ := by

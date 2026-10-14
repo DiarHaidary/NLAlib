@@ -10,16 +10,16 @@ public import Mathlib.Probability.Moments.SubGaussian
 /-!
 # Sub-exponential random variables
 
-`NLAlib.HasSubexponentialMGF X v b μ` says that the moment generating function of `X` is at most
-`exp (v l² / 2)` on the window `b |l| < 1`, with `exp (l X)` integrable there. With `b = 0` the
-window is all of `ℝ` and this is Mathlib's `HasSubgaussianMGF X v μ`. Centred squares of
-sub-Gaussian variables are sub-exponential (`NLAlib/Probability/SubGaussian/Square.lean`), and
+`NLAlib.HasSubexponentialMGF X v b μ` says that the moment generating function of $X$ is at most
+$e^{v l^2 / 2}$ on the window $b \lvert l\rvert < 1$, with $e^{l X}$ integrable there. With $b = 0$
+the window is all of $\mathbb{R}$ and this is Mathlib's `HasSubgaussianMGF X v μ`. Centred squares
+of sub-Gaussian variables are sub-exponential (`NLAlib/Probability/SubGaussian/Square.lean`), and
 the tail of a sum of independent sub-exponential variables is Bernstein's inequality
 (`NLAlib/Probability/SubExponential/Tail.lean`).
 
 ## Main definitions
 
-* `NLAlib.HasSubexponentialMGF X v b μ`: variance proxy `v`, scale `b`.
+* `NLAlib.HasSubexponentialMGF X v b μ`: variance proxy $v$, scale $b$.
 
 ## Main results
 
@@ -27,7 +27,7 @@ the tail of a sum of independent sub-exponential variables is Bernstein's inequa
   independence.
 * `NLAlib.HasSubexponentialMGF.sum_of_iIndepFun`, `.sum_const_mul_of_iIndepFun`: sums and
   weighted sums of independent sub-exponential variables.
-* `NLAlib.hasSubexponentialMGF_zero_iff_hasSubgaussianMGF`: scale `0` is the sub-Gaussian case.
+* `NLAlib.hasSubexponentialMGF_zero_iff_hasSubgaussianMGF`: scale $0$ is the sub-Gaussian case.
 
 ## References
 
@@ -43,20 +43,21 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X : Ω → ℝ} {v b : ℝ≥0}
 
-/-- `X` has a sub-exponential moment generating function with variance proxy `v` and scale `b`
-under `μ`: for every `l` with `b * |l| < 1`, `exp (l * X)` is integrable and
-`mgf X μ l ≤ exp (v * l ^ 2 / 2)` ([Wainwright2019], Definition 2.7, with `ν² = v`, `α = b`).
-With `b = 0` the window is all of `ℝ` and this is `HasSubgaussianMGF X v μ`
+/-- $X$ has a sub-exponential moment generating function with variance proxy $v$ and scale $b$
+under $\mu$: for every real $l$ with $b \lvert l\rvert < 1$, $e^{l X}$ is integrable and
+$\int e^{l X} \, d\mu \le e^{v l^2 / 2}$.
+[Wainwright2019, Definition 2.7], with $\nu^2 = v$ and $\alpha = b$.
+With $b = 0$ the window is all of $\mathbb{R}$ and this is `HasSubgaussianMGF X v μ`
 (`hasSubexponentialMGF_zero_iff_hasSubgaussianMGF`). -/
 structure HasSubexponentialMGF (X : Ω → ℝ) (v b : ℝ≥0) (μ : Measure Ω) : Prop where
-  /-- `exp (l * X)` is integrable on the window. -/
+  /-- $e^{l X}$ is integrable on the window. -/
   integrable_exp_mul : ∀ l : ℝ, b * |l| < 1 → Integrable (fun ω => rexp (l * X ω)) μ
-  /-- The moment generating function is at most `exp (v * l ^ 2 / 2)` on the window. -/
+  /-- The moment generating function is at most $e^{v l^2 / 2}$ on the window. -/
   mgf_le : ∀ l : ℝ, b * |l| < 1 → mgf X μ l ≤ rexp (v * l ^ 2 / 2)
 
 namespace HasSubexponentialMGF
 
-/-- The window `b * |l| < 1` is an open neighbourhood of `0`. -/
+/-- The window $b \lvert l\rvert < 1$ is an open neighbourhood of $0$. -/
 private lemma isOpen_window (b : ℝ≥0) : IsOpen {l : ℝ | (b : ℝ) * |l| < 1} :=
   isOpen_lt (by fun_prop) continuous_const
 
@@ -72,7 +73,7 @@ private lemma zero_mem_interior_integrableExpSet (h : HasSubexponentialMGF X v b
 theorem aemeasurable (h : HasSubexponentialMGF X v b μ) : AEMeasurable X μ := by
   exact aemeasurable_of_mem_interior_integrableExpSet (zero_mem_interior_integrableExpSet h)
 
-/-- A sub-exponential variable lives on a measure of total mass at most `1`. -/
+/-- A sub-exponential variable lives on a measure of total mass at most $1$: $\mu(\Omega) \le 1$. -/
 theorem measure_univ_le_one (h : HasSubexponentialMGF X v b μ) : μ Set.univ ≤ 1 := by
   have : IsFiniteMeasure μ := by
     simpa [integrable_const_iff] using h.integrable_exp_mul 0 (by simp)
@@ -92,7 +93,8 @@ theorem memLp (h : HasSubexponentialMGF X v b μ) (p : ℝ≥0) : MemLp X p μ :
 theorem integrable (h : HasSubexponentialMGF X v b μ) : Integrable X μ := by
   exact integrable_of_mem_interior_integrableExpSet (zero_mem_interior_integrableExpSet h)
 
-/-- The cumulant generating function on the window. -/
+/-- The cumulant generating function on the window: $\log \int e^{l X} \, d\mu \le v l^2 / 2$ when
+$b \lvert l\rvert < 1$. -/
 theorem cgf_le (h : HasSubexponentialMGF X v b μ) {l : ℝ} (hl : b * |l| < 1) :
     cgf X μ l ≤ v * l ^ 2 / 2 := by
   calc cgf X μ l
@@ -136,7 +138,8 @@ theorem neg (h : HasSubexponentialMGF X v b μ) : HasSubexponentialMGF (fun ω =
     have := h.mgf_le (-l) (by rwa [abs_neg])
     rwa [neg_sq] at this
 
-/-- A scalar multiple of a sub-exponential variable. -/
+/-- A scalar multiple of a sub-exponential variable: $r X$ has variance proxy $r^2 v$ and scale
+$\lvert r\rvert b$. -/
 theorem const_mul (h : HasSubexponentialMGF X v b μ) (r : ℝ) :
     HasSubexponentialMGF (fun ω => r * X ω) (‖r‖₊ ^ 2 * v) (‖r‖₊ * b) μ := by
   have hw : ∀ l : ℝ, ((‖r‖₊ * b : ℝ≥0) : ℝ) * |l| < 1 → (b : ℝ) * |l * r| < 1 := by
@@ -154,7 +157,8 @@ theorem const_mul (h : HasSubexponentialMGF X v b μ) (r : ℝ) :
     simp only [NNReal.coe_mul, NNReal.coe_pow, coe_nnnorm, Real.norm_eq_abs, sq_abs]
     ring
 
-/-- The sum of two independent sub-exponential variables. -/
+/-- The sum of two independent sub-exponential variables: $X + Y$ has variance proxy $v + v'$ and
+scale $\max(b, b')$. -/
 theorem add_of_indepFun {Y : Ω → ℝ} {v' b' : ℝ≥0} (hX : HasSubexponentialMGF X v b μ)
     (hY : HasSubexponentialMGF Y v' b' μ) (hXY : IndepFun X Y μ) :
     HasSubexponentialMGF (fun ω => X ω + Y ω) (v + v') (max b b') μ := by
@@ -182,10 +186,10 @@ theorem add_of_indepFun {Y : Ω → ℝ} {v' b' : ℝ≥0} (hX : HasSubexponenti
       ring
 
 /-- The sum of two sub-exponential variables, with **no independence assumption**: for Hölder
-conjugate `p` and `q` (`1 / p + 1 / q = 1`), `X + Y` has variance proxy `max (p² v) (q² v')` and
-scale `max (p b) (q b')`. The proof is convexity of `exp` with weights `1 / p` and `1 / q`,
-`exp (l (X + Y)) ≤ exp (p l X) / p + exp (q l Y) / q`. For independent variables
-`add_of_indepFun` gives the better proxy `v + v'`. -/
+conjugate $p$ and $q$ ($1 / p + 1 / q = 1$), $X + Y$ has variance proxy $\max(p^2 v, q^2 v')$ and
+scale $\max(p b, q b')$. The proof is convexity of $\exp$ with weights $1 / p$ and $1 / q$,
+$e^{l (X + Y)} \le e^{p l X} / p + e^{q l Y} / q$. For independent variables
+`add_of_indepFun` gives the better proxy $v + v'$. -/
 theorem add {Y : Ω → ℝ} {v' b' : ℝ≥0} (hX : HasSubexponentialMGF X v b μ)
     (hY : HasSubexponentialMGF Y v' b' μ) {p q : ℝ≥0} (hpq : p.HolderConjugate q) :
     HasSubexponentialMGF (fun ω => X ω + Y ω) (max (p ^ 2 * v) (q ^ 2 * v'))
@@ -268,8 +272,8 @@ private lemma sum_of_iIndepFun_of_forall_aemeasurable {ι : Type*} {X : ι → �
     convert h_indep'
     rw [Finset.sum_apply]
 
-/-- The sum of independent sub-exponential variables: the variance proxies add and the scale is
-the largest scale. -/
+/-- The sum of independent sub-exponential variables: $\sum_{i \in s} X_i$ has variance proxy
+$\sum_{i \in s} v_i$ and scale $\max_{i \in s} b_i$. -/
 theorem sum_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ) {v b : ι → ℝ≥0}
     {s : Finset ι} (h : ∀ i ∈ s, HasSubexponentialMGF (X i) (v i) (b i) μ) :
     HasSubexponentialMGF (fun ω => ∑ i ∈ s, X i ω) (∑ i ∈ s, v i) (s.sup b) μ := by
@@ -280,7 +284,8 @@ theorem sum_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepF
   rw [Finset.sum_coe_sort, Finset.univ_eq_attach, Finset.sup_attach] at hs
   exact hs.congr (ae_of_all _ fun ω => Finset.sum_attach s (fun i => X i ω))
 
-/-- A weighted sum of independent sub-exponential variables. -/
+/-- A weighted sum of independent sub-exponential variables: $\sum_{i \in s} a_i X_i$ has variance
+proxy $\sum_{i \in s} a_i^2 v_i$ and scale $\max_{i \in s} \lvert a_i\rvert b_i$. -/
 theorem sum_const_mul_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ)
     {v b : ι → ℝ≥0} {s : Finset ι} (h : ∀ i ∈ s, HasSubexponentialMGF (X i) (v i) (b i) μ)
     (a : ι → ℝ) :
@@ -307,12 +312,13 @@ theorem integral_eq_zero [IsProbabilityMeasure μ] (h : HasSubexponentialMGF X v
 
 end HasSubexponentialMGF
 
-/-- A sub-Gaussian variable is sub-exponential with scale `0`. -/
+/-- A sub-Gaussian variable with proxy $c$ is sub-exponential with variance proxy $c$ and
+scale $0$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF {c : ℝ≥0}
     (h : HasSubgaussianMGF X c μ) : HasSubexponentialMGF X c 0 μ := by
   exact ⟨fun l _ => h.integrable_exp_mul l, fun l _ => h.mgf_le l⟩
 
-/-- Scale `0` is the sub-Gaussian case. -/
+/-- Scale $0$ is the sub-Gaussian case. -/
 theorem hasSubexponentialMGF_zero_iff_hasSubgaussianMGF :
     HasSubexponentialMGF X v 0 μ ↔ HasSubgaussianMGF X v μ := by
   refine ⟨fun h => ⟨fun l => h.integrable_exp_mul l (by simp), fun l => h.mgf_le l (by simp)⟩,

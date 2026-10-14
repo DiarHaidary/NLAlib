@@ -13,13 +13,14 @@ public import NLAlib.Probability.SubGaussian.Basic
 /-!
 # Sub-Gaussian random vectors
 
-`NLAlib.IsSubgaussianVector X c μ` says that every real linear functional `re (u ⬝ᵥ X)` of the
-random vector `X : Ω → n → 𝕜` is sub-Gaussian with proxy `c ‖u‖²`. Every real-linear functional
-of `𝕜ⁿ` has this form, so over `ℂ` the real and imaginary parts are constrained alike; over `ℝ`,
-`re` is the identity (`RCLike.re_to_real`). It is the hypothesis of the tails of `‖X‖²` and of the
-net argument for random matrices with sub-Gaussian rows.
+`NLAlib.IsSubgaussianVector X c μ` says that every real linear functional
+$\operatorname{Re}(\mathbf{u}^{\mathsf{T}}\mathbf{X})$ of the random vector `X : Ω → n → 𝕜` is
+sub-Gaussian with proxy $c \|\mathbf{u}\|^2$. Every real-linear functional of $\Bbbk^n$ has this
+form, so over $\mathbb{C}$ the real and imaginary parts are constrained alike; over $\mathbb{R}$,
+$\operatorname{Re}$ is the identity (`RCLike.re_to_real`). It is the hypothesis of the tails of
+$\|\mathbf{X}\|^2$ and of the net argument for random matrices with sub-Gaussian rows.
 
-Standard Gaussian and Rademacher vectors are sub-Gaussian vectors with proxy `1`, so are real
+Standard Gaussian and Rademacher vectors are sub-Gaussian vectors with proxy $1$, so are real
 vectors with independent sub-Gaussian coordinates, and linear images of sub-Gaussian vectors are
 sub-Gaussian vectors.
 
@@ -29,10 +30,10 @@ sub-Gaussian vectors.
 
 ## Main results
 
-* `NLAlib.IsSubgaussianVector.mulVec`: `A X` has proxy `c ‖A‖²`.
+* `NLAlib.IsSubgaussianVector.mulVec`: $\mathbf{A}\mathbf{X}$ has proxy $c \|\mathbf{A}\|_2^2$.
 * `NLAlib.IsSubgaussianVector.of_iIndepFun`: independent real sub-Gaussian coordinates.
 * `NLAlib.isSubgaussianVector_of_hasLaw_gaussianVector`,
-  `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`: proxy `1`.
+  `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`: proxy $1$.
 * `ProbabilityTheory.HasLaw.isSubgaussianVector_iff`: the property depends only on the law.
 -/
 
@@ -46,10 +47,13 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
   {𝕜 : Type*} [RCLike 𝕜] {X : Ω → n → 𝕜} {c : ℝ≥0}
 
-/-- `X` is a sub-Gaussian random vector with proxy `c` under `μ`: every real linear functional
-`re (u ⬝ᵥ X)` is sub-Gaussian with proxy `c ‖u‖²`. -/
+/-- $\mathbf{X}$ is a sub-Gaussian random vector with proxy $c$ under $\mu$: for every
+$\mathbf{u} \in \Bbbk^n$ the real linear functional
+$\operatorname{Re}(\mathbf{u}^{\mathsf{T}}\mathbf{X}) = \operatorname{Re} \sum_i \mathbf{u}_i
+\mathbf{X}_i$ (no conjugation) is sub-Gaussian with proxy $c \|\mathbf{u}\|^2$. -/
 structure IsSubgaussianVector (X : Ω → n → 𝕜) (c : ℝ≥0) (μ : Measure Ω) : Prop where
-  /-- Every real linear functional of `X` is sub-Gaussian with proxy `c ‖u‖²`. -/
+  /-- Every real linear functional $\operatorname{Re}(\mathbf{u}^{\mathsf{T}}\mathbf{X})$ is
+  sub-Gaussian with proxy $c \|\mathbf{u}\|^2$. -/
   hasSubgaussianMGF : ∀ u : n → 𝕜,
     HasSubgaussianMGF (fun ω => RCLike.re (u ⬝ᵥ X ω)) (c * ‖WithLp.toLp 2 u‖₊ ^ 2) μ
 
@@ -68,7 +72,8 @@ theorem congr {Y : Ω → n → 𝕜} (h : IsSubgaussianVector X c μ) (hXY : X 
   filter_upwards [hXY] with ω hω
   rw [hω]
 
-/-- The real part of each coordinate is sub-Gaussian with proxy `c`. -/
+/-- The real part $\operatorname{Re} \mathbf{X}_i$ of each coordinate is sub-Gaussian with
+proxy $c$. -/
 theorem hasSubgaussianMGF_re_apply (h : IsSubgaussianVector X c μ) (i : n) :
     HasSubgaussianMGF (fun ω => RCLike.re (X ω i)) c μ := by
   classical
@@ -95,7 +100,8 @@ theorem memLp_apply (h : IsSubgaussianVector X c μ) (i : n) (p : ℝ≥0) :
 theorem aemeasurable (h : IsSubgaussianVector X c μ) : AEMeasurable X μ :=
   aemeasurable_pi_lambda _ fun i => (h.memLp_apply i 1).aestronglyMeasurable.aemeasurable
 
-/-- A sub-Gaussian vector has mean zero. -/
+/-- A sub-Gaussian vector has mean zero under a probability measure: $\mathbb{E}[\mathbf{X}_i] = 0$
+for every coordinate $i$. -/
 theorem integral_apply_eq_zero [IsProbabilityMeasure μ] (h : IsSubgaussianVector X c μ)
     (i : n) : ∫ ω, X ω i ∂μ = 0 := by
   have hint : Integrable (fun ω => X ω i) μ :=
@@ -104,7 +110,8 @@ theorem integral_apply_eq_zero [IsProbabilityMeasure μ] (h : IsSubgaussianVecto
   · rw [← integral_re hint, (h.hasSubgaussianMGF_re_apply i).integral_eq_zero, map_zero]
   · rw [← integral_im hint, (h.hasSubgaussianMGF_im_apply i).integral_eq_zero, map_zero]
 
-/-- A linear image of a sub-Gaussian vector is a sub-Gaussian vector with proxy `c ‖A‖²`. -/
+/-- A linear image of a sub-Gaussian vector is a sub-Gaussian vector: if $\mathbf{X}$ has proxy
+$c$, then $\mathbf{A}\mathbf{X}$ has proxy $c \|\mathbf{A}\|_2^2$. -/
 theorem mulVec {m : Type*} [Fintype m] (h : IsSubgaussianVector X c μ) (A : Matrix m n 𝕜) :
     IsSubgaussianVector (fun ω => A *ᵥ X ω) (c * ‖specNorm A‖₊ ^ 2) μ := by
   refine ⟨fun u => ?_⟩
@@ -119,8 +126,8 @@ theorem mulVec {m : Type*} [Fintype m] (h : IsSubgaussianVector X c μ) (A : Mat
     Real.norm_of_nonneg (specNorm_nonneg A), ← Matrix.mulVec_transpose, ← specNorm_transpose]
   exact norm_toLp_mulVec_le Aᵀ u
 
-/-- A real vector with independent coordinates, each sub-Gaussian with proxy `c`, is a
-sub-Gaussian vector with proxy `c`. -/
+/-- A real vector with independent coordinates, each sub-Gaussian with proxy $c$, is a
+sub-Gaussian vector with proxy $c$. -/
 theorem of_iIndepFun {X : Ω → n → ℝ} (hind : iIndepFun (fun i ω => X ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) : IsSubgaussianVector X c μ := by
   refine ⟨fun u => ?_⟩
@@ -152,14 +159,14 @@ theorem _root_.ProbabilityTheory.HasLaw.isSubgaussianVector_iff {ν : Measure (n
   exact ⟨fun h => ⟨fun u => (key u _).mp (h.hasSubgaussianMGF u)⟩,
     fun h => ⟨fun u => (key u _).mpr (h.hasSubgaussianMGF u)⟩⟩
 
-/-- A standard Gaussian vector is a sub-Gaussian vector with proxy `1`. -/
+/-- A standard Gaussian vector is a sub-Gaussian vector with proxy $1$. -/
 theorem isSubgaussianVector_of_hasLaw_gaussianVector {X : Ω → n → ℝ}
     (hX : HasLaw X (gaussianVector n) μ) : IsSubgaussianVector X 1 μ := by
   refine ⟨fun u => ?_⟩
   simpa only [RCLike.re_to_real, one_mul] using
     hasSubgaussianMGF_of_hasLaw_gaussianReal (hasLaw_dotProduct_of_hasLaw_gaussianVector hX u)
 
-/-- A vector of independent random signs is a sub-Gaussian vector with proxy `1`. -/
+/-- A vector of independent random signs is a sub-Gaussian vector with proxy $1$. -/
 theorem isSubgaussianVector_of_hasLaw_rademacherVector {X : Ω → n → ℝ}
     (hX : HasLaw X (rademacherVector n) μ) : IsSubgaussianVector X 1 μ := by
   exact IsSubgaussianVector.of_iIndepFun hX.iIndepFun_eval

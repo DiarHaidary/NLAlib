@@ -15,8 +15,8 @@ A real square matrix is orthogonally similar to an upper quasi-triangular matrix
 triangular with diagonal blocks of size one and two, the blocks of size two having a pair of complex
 conjugate eigenvalues. A real normal matrix is orthogonally similar to a direct sum of real scalars
 and scaled rotations (for a skew-symmetric matrix the scalars vanish, for an orthogonal matrix the
-blocks are `±1` and rotations). A pair of real matrices is reduced by two orthogonal matrices to an
-upper quasi-triangular and an upper triangular matrix.
+blocks are $\pm 1$ and rotations). A pair of real matrices is reduced by two orthogonal matrices to
+an upper quasi-triangular and an upper triangular matrix.
 
 The three theorems are proved by the same deflation: a real matrix has an invariant subspace of
 dimension one or two, spanned by the real and imaginary parts of a complex eigenvector, whose
@@ -52,13 +52,16 @@ def IsRealSchurForm (T : Matrix (Fin k) (Fin k) ℝ) : Prop :=
 
 /-! ### Blocks indexed by `Fin (p + q)` -/
 
-/-- The matrix with blocks `S`, `C`, `D`, `T`, indexed by `Fin (p + q)`. -/
+/-- The matrix with blocks $\mathbf{S}$, $\mathbf{C}$, $\mathbf{D}$, $\mathbf{T}$,
+$\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{D} & \mathbf{T} \end{bmatrix}$, indexed by
+`Fin (p + q)`. -/
 private def finBlocks {p q : ℕ} (S : Matrix (Fin p) (Fin p) R) (C : Matrix (Fin p) (Fin q) R)
     (D : Matrix (Fin q) (Fin p) R) (T : Matrix (Fin q) (Fin q) R) :
     Matrix (Fin (p + q)) (Fin (p + q)) R :=
   (Matrix.fromBlocks S C D T).submatrix finSumFinEquiv.symm finSumFinEquiv.symm
 
-/-- The matrix with columns those of `Q₁` followed by those of `Q₂`, indexed by `Fin (p + q)`. -/
+/-- The matrix with columns those of $\mathbf{Q}_1$ followed by those of $\mathbf{Q}_2$,
+$[\mathbf{Q}_1 \; \mathbf{Q}_2]$, indexed by `Fin (p + q)`. -/
 private def finCols {m : Type*} {p q : ℕ} (Q₁ : Matrix m (Fin p) R) (Q₂ : Matrix m (Fin q) R) :
     Matrix m (Fin (p + q)) R :=
   (Matrix.fromCols Q₁ Q₂).submatrix id finSumFinEquiv.symm
@@ -116,8 +119,9 @@ private theorem hasOrthonormalCols_finCols {Q₁ : Matrix m (Fin p) ℝ} {Q₂ :
       Matrix.zero_mul]⟩
   exact h.submatrix (Equiv.refl m) finSumFinEquiv.symm.injective
 
-/-- Deflation: if `M * Z₁ = Q₁ * S` then in bases extending `Q₁` and `Z₁` the matrix `M` is
-block upper triangular with leading block `S`. -/
+/-- Deflation: if $\mathbf{M}\mathbf{Z}_1 = \mathbf{Q}_1\mathbf{S}$ then in bases extending
+$\mathbf{Q}_1$ and $\mathbf{Z}_1$ the matrix $\mathbf{M}$ is block upper triangular with leading
+block $\mathbf{S}$. -/
 private theorem conjTranspose_finCols_mul_mul_finCols {Q₁ Z₁ : Matrix m (Fin p) ℝ}
     {Q₂ : Matrix m (Fin q) ℝ} (hQ : HasOrthonormalCols (Matrix.fromCols Q₁ Q₂))
     {M : Matrix m m ℝ} {S : Matrix (Fin p) (Fin p) ℝ} (h : M * Z₁ = Q₁ * S)
@@ -145,7 +149,8 @@ end finCols
 /-! ### An invariant subspace of dimension one or two -/
 
 /-- Real and imaginary parts of a complex eigenvector, with the phase chosen so that they are
-orthogonal: `A (x + i y) = (a + i b) (x + i y)`. -/
+orthogonal: $\mathbf{A}(\mathbf{x} + i\mathbf{y}) = (a + ib)(\mathbf{x} + i\mathbf{y})$ with
+$\mathbf{x}^{\mathsf{T}}\mathbf{y} = 0$ and $\mathbf{x}$, $\mathbf{y}$ not both zero. -/
 private theorem exists_mulVec_eq_smul_sub_smul {n : Type*} [Fintype n] [Nonempty n]
     (A : Matrix n n ℝ) :
     ∃ (a b : ℝ) (x y : n → ℝ), (x ≠ 0 ∨ y ≠ 0) ∧ x ⬝ᵥ y = 0 ∧
@@ -396,7 +401,9 @@ private theorem exists_isRealSchurForm_conjTranspose_mul_mul (k : ℕ) :
         exact h2 i j fun h => hij (by rw [h])
 
 /-- **The real Schur form.** Every real square matrix is orthogonally similar to a matrix in real
-Schur form. [HornJohnson2013, Theorem 2.3.4]; [GolubVanLoan2013, Theorem 7.4.1].
+Schur form: $\mathbf{A} = \mathbf{Q}\mathbf{T}\mathbf{Q}^{\mathsf{T}}$ with $\mathbf{Q}$
+orthogonal and $\mathbf{T}$ in real Schur form. [HornJohnson2013, Theorem 2.3.4];
+[GolubVanLoan2013, Theorem 7.4.1].
 Port of `NLAlib.exists_orthogonal_real_schur`.
 Result: real-schur -/
 theorem exists_hasOrthonormalCols_isRealSchurForm (A : Matrix (Fin k) (Fin k) ℝ) :
@@ -406,7 +413,10 @@ theorem exists_hasOrthonormalCols_isRealSchurForm (A : Matrix (Fin k) (Fin k) �
   exact ⟨Q, Qᴴ * A * Q, hQ, hQ.eq_mul_mul_conjTranspose_iff.mpr rfl, hT⟩
 
 /-- **The real normal form.** Every real normal matrix is orthogonally similar to a direct sum of
-real scalars and blocks `[[a, b], [-b, a]]`. [HornJohnson2013, Theorem 2.5.8].
+real scalars and blocks $\begin{bmatrix} a & b \\ -b & a \end{bmatrix}$:
+$\mathbf{A} = \mathbf{Q}\mathbf{T}\mathbf{Q}^{\mathsf{T}}$ with $\mathbf{Q}$ orthogonal and
+$\mathbf{T}$ in real Schur form with $\mathbf{T}_{i,j} = -\mathbf{T}_{j,i}$ for $i \ne j$.
+[HornJohnson2013, Theorem 2.5.8].
 Port of `NLAlib.exists_orthogonal_real_normal_form`. -/
 theorem exists_hasOrthonormalCols_isRealSchurForm_of_isStarNormal
     {A : Matrix (Fin k) (Fin k) ℝ} (hA : IsStarNormal A) :
@@ -418,7 +428,8 @@ theorem exists_hasOrthonormalCols_isRealSchurForm_of_isStarNormal
 /-! ### The real QZ decomposition -/
 
 /-- The step of the real QZ decomposition: a pair of subspaces of dimension one or two, with
-orthonormal bases `Z₁` and `Q₁`, such that both matrices map the first into the second. -/
+orthonormal bases $\mathbf{Z}_1$ and $\mathbf{Q}_1$, such that both matrices map the first into
+the second. -/
 private theorem exists_mul_eq_mul_isUpperTriangular (hk : 0 < k)
     (A B : Matrix (Fin k) (Fin k) ℝ) :
     ∃ (p : ℕ) (Q₁ Z₁ : Matrix (Fin k) (Fin p) ℝ) (S R : Matrix (Fin p) (Fin p) ℝ),
@@ -457,7 +468,9 @@ private theorem exists_mul_eq_mul_isUpperTriangular (hk : 0 < k)
       rw [Matrix.mulVec_smul, hz, smul_zero, zero_smul]
 
 /-- **The real QZ decomposition.** Every pair of real square matrices is reduced by two
-orthogonal matrices to an upper quasi-triangular and an upper triangular matrix.
+orthogonal matrices to an upper quasi-triangular and an upper triangular matrix:
+$\mathbf{Q}^{\mathsf{T}}\mathbf{A}\mathbf{Z}$ is upper quasi-triangular and
+$\mathbf{Q}^{\mathsf{T}}\mathbf{B}\mathbf{Z}$ upper triangular.
 [GolubVanLoan2013, Theorem 7.7.2]. Port of `NLAlib.exists_orthogonal_qz_triangularization`. -/
 theorem exists_hasOrthonormalCols_isUpperQuasiTriangular_isUpperTriangular
     (A B : Matrix (Fin k) (Fin k) ℝ) :

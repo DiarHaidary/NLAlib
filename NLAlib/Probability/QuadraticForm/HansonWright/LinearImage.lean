@@ -16,15 +16,21 @@ public import NLAlib.Probability.SubGaussianVector.Basic
 /-!
 # Exponential moments of linear images of sub-Gaussian vectors
 
-For a random vector `X` with independent coordinates, each sub-Gaussian with proxy `c`, a linear
-form `v ⬝ᵥ X` has moment generating function at most `exp (c s² ‖v‖² / 2)` (the lower-integral
-form of `NLAlib.IsSubgaussianVector.of_iIndepFun`), and the squared norm of a linear image
-satisfies `E exp (θ ‖B X‖²) ≤ exp (9/8 · c θ ‖B‖_F²)` when `18 c θ ‖B‖² ≤ 1`. The second bound
-linearises the square against a standard Gaussian vector `g`,
-`exp (θ ‖y‖²) = E_g exp (√(2θ) y ⬝ᵥ g)` (`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`),
-applies the first bound to `X`, and computes the remaining Gaussian expectation
-`E_g exp (c θ ‖Bᵀ g‖²)` in an eigenbasis of `B Bᵀ`. Both bounds are steps of the off-diagonal
-part of the Hanson–Wright inequality (`NLAlib/Probability/QuadraticForm/HansonWright.lean`).
+For a real random vector $\mathbf{X}$ with independent coordinates, each sub-Gaussian with proxy
+$c$, a linear form $\langle \mathbf{v}, \mathbf{X} \rangle$ has moment generating function at most
+$e^{c s^2 \|\mathbf{v}\|^2 / 2}$ (the lower-integral form of
+`NLAlib.IsSubgaussianVector.of_iIndepFun`), and the squared norm of a linear image satisfies
+$\mathbb{E} e^{\theta \|\mathbf{B}\mathbf{X}\|^2}
+\le e^{9 c \theta \|\mathbf{B}\|_{\mathsf{F}}^2 / 8}$
+when $\theta \ge 0$ and $18 c \theta \|\mathbf{B}\|_2^2 \le 1$. The second bound linearises the
+square against a standard Gaussian vector $\mathbf{g}$,
+$e^{\theta \|\mathbf{y}\|^2} = \mathbb{E}_{\mathbf{g}}\,
+e^{\sqrt{2\theta} \langle \mathbf{y}, \mathbf{g} \rangle}$
+(`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), applies the first bound to $\mathbf{X}$,
+and computes the remaining Gaussian expectation
+$\mathbb{E}_{\mathbf{g}}\, e^{c \theta \|\mathbf{B}^{\mathsf{T}}\mathbf{g}\|^2}$ in an eigenbasis of
+$\mathbf{B}\mathbf{B}^{\mathsf{T}}$. Both bounds are steps of the off-diagonal part of the
+Hanson–Wright inequality (`NLAlib/Probability/QuadraticForm/HansonWright.lean`).
 
 ## Main results
 
@@ -46,10 +52,11 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n] {X : Ω → n → ℝ} {c : ℝ≥0}
 
-/-- The moment generating function of a linear form of independent coordinates, each
-sub-Gaussian with proxy `c`, written as a lower integral: `E exp (s (v ⬝ᵥ X)) ≤
-exp (c s² ‖v‖² / 2)`. It is `IsSubgaussianVector.of_iIndepFun` in the form the conditioning
-arguments of the Hanson–Wright inequality integrate. -/
+/-- The moment generating function of a linear form of independent real coordinates, each
+sub-Gaussian with proxy $c$, written as a lower integral: for every $\mathbf{v}$ and real $s$,
+$\mathbb{E} e^{s \langle \mathbf{v}, \mathbf{X} \rangle} \le e^{c s^2 \|\mathbf{v}\|^2 / 2}$. It is
+`IsSubgaussianVector.of_iIndepFun` in the form the conditioning arguments of the Hanson–Wright
+inequality integrate. -/
 theorem lintegral_exp_mul_dotProduct_le (hind : iIndepFun (fun i ω => X ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) (v : n → ℝ) (s : ℝ) :
     ∫⁻ ω, ENNReal.ofReal (rexp (s * (v ⬝ᵥ X ω))) ∂μ ≤
@@ -76,7 +83,9 @@ private lemma map_sum_mul_gaussianVector (b : OrthonormalBasis n ℝ (EuclideanS
   conv_rhs => rw [← h1, stdGaussian_eq_map_pi_orthonormalBasis b]
   rw [Measure.map_map (by fun_prop) (by fun_prop), ← hf]
 
-/-- In an eigenbasis of a symmetric `M`, the quadratic form is a weighted sum of squares. -/
+/-- In an eigenbasis of a symmetric $\mathbf{M}$, the quadratic form is a weighted sum of squares:
+the coordinates $z_i$ in the eigenbasis give $\sum_i \lambda_i z_i^2$, with $\lambda_i$ the
+eigenvalues in the order of `IsHermitian.eigenvalues`. -/
 private lemma quadForm_sum_mul_eigenvectorBasis [DecidableEq n] {M : Matrix n n ℝ}
     (hM : M.IsHermitian) (z : n → ℝ) :
     quadForm M (fun j => ∑ i, z i * hM.eigenvectorBasis i j) =
@@ -93,7 +102,7 @@ private lemma quadForm_sum_mul_eigenvectorBasis [DecidableEq n] {M : Matrix n n 
   rw [hv, ← quadForm_conjTranspose_mul_mul, hD, quadForm_diagonal]
   simp [Real.norm_eq_abs, sq_abs]
 
-/-- `E exp (a g²) ≤ exp (9 a / 8)` for a standard Gaussian `g` and `0 ≤ a ≤ 1/18`. -/
+/-- $\mathbb{E} e^{a g^2} \le e^{9 a / 8}$ for a standard Gaussian $g$ and $0 \le a \le 1/18$. -/
 private lemma integral_exp_mul_sq_gaussianReal_le {a : ℝ} (ha0 : 0 ≤ a) (ha : 18 * a ≤ 1) :
     ∫ x, rexp (a * x ^ 2) ∂(gaussianReal 0 1) ≤ rexp (9 / 8 * a) := by
   have hg : HasSubgaussianMGF id 1 (gaussianReal 0 1) :=
@@ -115,8 +124,10 @@ private lemma integral_exp_mul_sq_gaussianReal_le {a : ℝ} (ha0 : 0 ≤ a) (ha 
     _ = rexp (9 / 8 * a) * √(1 - 2 * a) := by
       rw [hsq, sqrt_mul h2a.le, sqrt_sq (exp_pos _).le, mul_comm]
 
-/-- The Gaussian case of the squared-norm bound: `E exp (τ ‖C g‖²) ≤ exp (9/8 · τ ‖C‖_F²)` for a
-standard Gaussian vector `g` and `18 τ ‖C‖² ≤ 1`, by diagonalising `Cᴴ C`. -/
+/-- The Gaussian case of the squared-norm bound:
+$\mathbb{E} e^{\tau \|\mathbf{C}\mathbf{g}\|^2} \le e^{9 \tau \|\mathbf{C}\|_{\mathsf{F}}^2 / 8}$
+for a standard Gaussian vector $\mathbf{g}$, $\tau \ge 0$ and $18 \tau \|\mathbf{C}\|_2^2 \le 1$, by
+diagonalising $\mathbf{C}^{\mathsf{H}}\mathbf{C}$. -/
 private lemma lintegral_exp_mul_norm_mulVec_sq_gaussianVector_le (C : Matrix m n ℝ) {τ : ℝ}
     (hτ : 0 ≤ τ) (hsmall : 18 * (τ * specNorm C ^ 2) ≤ 1) :
     ∫⁻ g, ENNReal.ofReal (rexp (τ * ‖WithLp.toLp 2 (C *ᵥ g)‖ ^ 2)) ∂(gaussianVector n) ≤
@@ -171,11 +182,14 @@ private lemma lintegral_exp_mul_norm_mulVec_sq_gaussianVector_le (C : Matrix m n
     _ = rexp (9 / 8 * (τ * frobNorm C ^ 2)) := by
       rw [← exp_sum, ← htr, Finset.mul_sum, Finset.mul_sum]
 
-/-- The squared norm of a linear image of independent coordinates, each sub-Gaussian with proxy
-`c`: `E exp (θ ‖B X‖²) ≤ exp (9/8 · c θ ‖B‖_F²)` for `θ ≥ 0` with `18 c θ ‖B‖² ≤ 1`, in
-`lintegral` form. The bound is in the Frobenius norm of `B`, with no dependence on the dimension;
-it is the moment generating function bound behind the tail of `‖B X‖²` of Hsu, Kakade and Zhang
-(2012, Theorem 2.1), in a cruder form valid for small `θ`. -/
+/-- The squared norm of a linear image of independent real coordinates, each sub-Gaussian with
+proxy $c$: for $\theta \ge 0$ with $18 c \theta \|\mathbf{B}\|_2^2 \le 1$,
+$$\mathbb{E} e^{\theta \|\mathbf{B}\mathbf{X}\|^2} \le
+e^{9 c \theta \|\mathbf{B}\|_{\mathsf{F}}^2 / 8}\,,$$
+in `lintegral` form. The bound is in the Frobenius norm of $\mathbf{B}$, with no dependence on
+the dimension; it is the moment generating function bound behind the tail of
+$\|\mathbf{B}\mathbf{X}\|^2$ of Hsu, Kakade and Zhang (2012, Theorem 2.1), in a cruder form valid
+for small $\theta$. -/
 theorem lintegral_exp_mul_norm_mulVec_sq_le (hind : iIndepFun (fun i ω => X ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) (B : Matrix m n ℝ) {θ : ℝ} (hθ : 0 ≤ θ)
     (hsmall : 18 * (c * θ * specNorm B ^ 2) ≤ 1) :

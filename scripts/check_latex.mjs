@@ -2,7 +2,9 @@
 // Docstring mathematics is LaTeX: every `$...$` and `$$...$$` span in a declaration docstring
 // (/-- ... -/) or module docstring (/-! ... -/) of NLAlib/ and NLAlibScaffold/ parses and renders
 // under KaTeX (the renderer used by the doc site), and no docstring has an unclosed `$`.
-// Backtick code spans, fenced code blocks and `\$` are not math. This checks syntax, not meaning:
+// Backtick code spans, fenced code blocks and `\$` are not math. A line inside a `$$` display may
+// not start with Markdown block syntax (`- `, `+ `, `* `, `#`, `>`, `1. `), which doc-gen4 would
+// read as a list, heading or quote and so split the formula. This checks syntax, not meaning:
 // a formula that renders can still be the wrong formula.
 //
 // Usage: node scripts/check_latex.mjs [root]    (root defaults to the repository root)
@@ -132,6 +134,18 @@ for (const lib of ['NLAlib', 'NLAlibScaffold']) {
       }
       for (const sp of spans) {
         nmath++;
+        // a line of a display must not start like a Markdown block (list item, heading, quote,
+        // numbered item), or doc-gen4 splits the formula before KaTeX sees it
+        if (sp.display) {
+          const lines = sp.tex.split('\n').slice(1);
+          lines.forEach((line, k) => {
+            if (/^\s*([-+*]\s|#|>|\d+[.)]\s)/.test(line)) {
+              const at = start + sp.offset + 2 + sp.tex.split('\n').slice(0, k + 1).join('\n').length;
+              console.log(`${rel}:${lineOf(at + 1)}: display line starts with Markdown syntax (${excerpt(line)})`);
+              bad++;
+            }
+          });
+        }
         try {
           katex.renderToString(sp.tex, { throwOnError: true, strict, displayMode: sp.display });
         } catch (e) {

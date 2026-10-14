@@ -13,10 +13,10 @@ public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 /-!
 # Powers of a matrix and the spectral radius
 
-The spectral radius is the limit of `‖Aᵏ‖₂^{1/k}` (Gelfand); the powers of `A` tend to zero
-exactly when it is less than one, in which case the Neumann series converges; a similarity
-brings the spectral norm within `ε` of it; and the powers stay bounded exactly when it is at
-most one and the eigenvalues of modulus one are semisimple.
+The spectral radius $\rho(\mathbf{A})$ is the limit of $\|\mathbf{A}^k\|_2^{1/k}$ (Gelfand); the
+powers of $\mathbf{A}$ tend to zero exactly when it is less than one, in which case the Neumann
+series converges; a similarity brings the spectral norm within $\varepsilon$ of it; and the powers
+stay bounded exactly when it is at most one and the eigenvalues of modulus one are semisimple.
 
 ## Main results
 
@@ -25,7 +25,8 @@ most one and the eigenvalues of modulus one are semisimple.
 * `NLAlib.exists_forall_specNorm_pow_le_mul_pow`: growth of the powers.
 * `NLAlib.tendsto_pow_zero_iff_specRadius_lt_one`.
 * `NLAlib.hasSum_pow_inv_one_sub_of_specRadius_lt_one`: the Neumann series.
-* `NLAlib.exists_specNorm_inv_mul_mul_le`: a similarity to within `ε` of the spectral radius.
+* `NLAlib.exists_specNorm_inv_mul_mul_le`: a similarity to within $\varepsilon$ of the spectral
+  radius.
 * `NLAlib.exists_forall_specNorm_pow_le_iff`: power-bounded matrices.
 -/
 
@@ -40,9 +41,10 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### Gelfand's formula and growth of the powers -/
 
-/-- **Gelfand's formula**: `‖Aᵏ‖₂^{1/k}` tends to the spectral radius.
+/-- **Gelfand's formula**: $\|\mathbf{A}^k\|_2^{1/k}$ tends to the spectral radius
+$\rho(\mathbf{A})$ as $k \to \infty$.
 [HornJohnson2013, Corollary 5.6.14].
-Port of `NLAlib.tendsto_norm_matrix_pow_rpow_spectralRadius`, there over `ℂ`.
+Port of `NLAlib.tendsto_norm_matrix_pow_rpow_spectralRadius`, there over $\mathbb{C}$.
 Result: gelfand-formula -/
 theorem tendsto_specNorm_pow_rpow_specRadius (A : Matrix n n 𝕜) :
     Tendsto (fun k : ℕ => specNorm (A ^ k) ^ (1 / (k : ℝ))) atTop (𝓝 (specRadius A)) := by
@@ -53,15 +55,17 @@ theorem tendsto_specNorm_pow_rpow_specRadius (A : Matrix n n 𝕜) :
   rw [Function.comp_apply, ENNReal.toReal_ofReal (Real.rpow_nonneg (norm_nonneg _) _),
     ← specNorm_eq_norm, ← complexify_pow, specNorm_complexify]
 
-/-- The spectral radius bounds the powers from below: `ρ(A)ᵏ ≤ ‖Aᵏ‖₂`. -/
+/-- The spectral radius $\rho(\mathbf{A})$ bounds the powers from below:
+$\rho(\mathbf{A})^k \le \|\mathbf{A}^k\|_2$, on a nonempty index type. -/
 theorem specRadius_pow_le_specNorm_pow [Nonempty n] (A : Matrix n n 𝕜) (k : ℕ) :
     specRadius A ^ k ≤ specNorm (A ^ k) := by
   rw [← specRadius_pow]
   exact specRadius_le_specNorm _
 
-/-- **Powers through a similarity**: `‖Aᵏ‖₂ ≤ κ(S) ‖S⁻¹ A S‖₂ᵏ` for every invertible `S`. With a
-similarity that brings the norm close to the spectral radius this bounds the transient growth of
-the powers. [TrefethenBau1997, Lecture 24 context]. -/
+/-- **Powers through a similarity**: $\|\mathbf{A}^k\|_2 \le \kappa(\mathbf{S})
+\|\mathbf{S}^{-1}\mathbf{A}\mathbf{S}\|_2^k$ for every invertible $\mathbf{S}$. With a similarity
+that brings the norm close to the spectral radius this bounds the transient growth of the powers.
+[TrefethenBau1997, Lecture 24 context]. -/
 theorem specNorm_pow_le_conditionNumber_mul (A : Matrix n n 𝕜) {S : Matrix n n 𝕜}
     (hS : IsUnit S.det) (k : ℕ) :
     specNorm (A ^ k) ≤ conditionNumber S * specNorm (S⁻¹ * A * S) ^ k := by
@@ -81,7 +85,9 @@ theorem specNorm_pow_le_conditionNumber_mul (A : Matrix n n 𝕜) {S : Matrix n 
           (specNorm_nonneg _)) (specNorm_nonneg _)
     _ = _ := by ring
 
-/-- **Growth of the powers**: for every `ε > 0`, `‖Aᵏ‖₂ ≤ C (ρ(A) + ε)ᵏ` for some `C`.
+/-- **Growth of the powers**: for every $\varepsilon > 0$ there is $C > 0$ with
+$\|\mathbf{A}^k\|_2 \le C (\rho(\mathbf{A}) + \varepsilon)^k$ for every $k$, where
+$\rho(\mathbf{A})$ is the spectral radius.
 [HornJohnson2013, Corollary 5.6.13].
 Port of `NLAlib.exists_prefix_norm_matrix_pow_le_spectralRadius_add`. -/
 theorem exists_forall_specNorm_pow_le_mul_pow (A : Matrix n n 𝕜) {ε : ℝ} (hε : 0 < ε) :
@@ -114,9 +120,10 @@ private theorem exists_forall_specNorm_pow_le_mul_pow_of_specRadius_lt_one {A : 
   exact ⟨C, _, hC, by linarith [specRadius_nonneg A], by linarith, h⟩
 /-! ### Convergent matrices and the Neumann series -/
 
-/-- **The powers of a matrix tend to zero exactly when its spectral radius is less than one.**
+/-- **The powers of a matrix tend to zero exactly when its spectral radius is less than one**:
+$\mathbf{A}^k \to \mathbf{0}$ if and only if $\rho(\mathbf{A}) < 1$.
 [HornJohnson2013, Theorem 5.6.12].
-Port of `NLAlib.tendsto_matrix_pow_zero_iff_spectralRadius_lt_one`, there over `ℂ`.
+Port of `NLAlib.tendsto_matrix_pow_zero_iff_spectralRadius_lt_one`, there over $\mathbb{C}$.
 Result: convergent-matrix -/
 theorem tendsto_pow_zero_iff_specRadius_lt_one (A : Matrix n n 𝕜) :
     Tendsto (fun k : ℕ => A ^ k) atTop (𝓝 0) ↔ specRadius A < 1 := by
@@ -138,7 +145,8 @@ theorem tendsto_pow_zero_iff_specRadius_lt_one (A : Matrix n n 𝕜) :
     refine tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => ?_
     exact squeeze_zero_norm (fun k => (norm_apply_le_specNorm (A ^ k) i j).trans (hC k)) hlim
 
-/-- **The Neumann series** converges to `(1 - A)⁻¹` when the spectral radius is less than one.
+/-- **The Neumann series** $\sum_{k \ge 0} \mathbf{A}^k$ converges to
+$(\mathbf{I} - \mathbf{A})^{-1}$ when the spectral radius $\rho(\mathbf{A})$ is less than one.
 [HornJohnson2013, Corollary 5.6.16].
 Port of `NLAlib.hasSum_matrix_pow_inv_of_spectralRadius_lt_one`. -/
 theorem hasSum_pow_inv_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜}
@@ -159,7 +167,8 @@ theorem hasSum_pow_inv_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜}
   rw [Matrix.inv_eq_left_inv (tendsto_nhds_unique hleft hright)]
   exact hs.hasSum
 
-/-- `1 - A` is invertible when the spectral radius of `A` is less than one.
+/-- $\mathbf{I} - \mathbf{A}$ is invertible when the spectral radius of $\mathbf{A}$ is less than
+one.
 Port of `NLAlib.isUnit_one_sub_of_matrix_spectralRadius_lt_one`. -/
 theorem isUnit_det_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜} (hA : specRadius A < 1) :
     IsUnit (1 - A).det := by
@@ -169,7 +178,7 @@ theorem isUnit_det_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜} (hA : spec
   have h1 := norm_le_specRadius_of_mem_spectrum hmem
   rw [norm_one] at h1
   exact absurd hA (not_lt.mpr h1)
-/-! ### Similarity to within `ε` -/
+/-! ### Similarity to within $\varepsilon$ -/
 
 omit [DecidableEq n] in
 private theorem specNorm_le_card_mul_of_forall_norm_apply_le {A : Matrix n n 𝕜} {c : ℝ}
@@ -184,7 +193,9 @@ private theorem specNorm_le_card_mul_of_forall_norm_apply_le {A : Matrix n n �
         rw [Finset.sum_const, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, nsmul_eq_mul]
         ring
 
-/-- **A similarity brings the spectral norm within `ε` of the spectral radius.**
+/-- **A similarity brings the spectral norm within $\varepsilon$ of the spectral radius**: for a
+complex $\mathbf{A}$ and $\varepsilon > 0$ there is an invertible $\mathbf{S}$ with
+$\|\mathbf{S}^{-1}\mathbf{A}\mathbf{S}\|_2 \le \rho(\mathbf{A}) + \varepsilon$.
 [HornJohnson2013, Lemma 5.6.10]. -/
 theorem exists_specNorm_inv_mul_mul_le (A : Matrix n n ℂ) {ε : ℝ} (hε : 0 < ε) :
     ∃ S : Matrix n n ℂ, IsUnit S.det ∧ specNorm (S⁻¹ * A * S) ≤ specRadius A + ε := by
@@ -357,10 +368,11 @@ private theorem exists_forall_norm_pow_apply_le_of_specRadius_le_one {A : Matrix
     exact iSup_le hprimary
   exact htop Submodule.mem_top
 
-/-- **Power-bounded matrices.** The powers of `A` are bounded exactly when the spectral radius is
-at most one and every eigenvalue of modulus one is semisimple.
+/-- **Power-bounded matrices.** The powers of $\mathbf{A}$ are bounded,
+$\sup_k \|\mathbf{A}^k\|_2 < \infty$, exactly when the spectral radius is at most one and every
+eigenvalue of modulus one (of $\mathbf{A}$ viewed over $\mathbb{C}$) is semisimple.
 [HornJohnson2013, Theorem 3.2.5.2].
-Port of `NLAlib.exists_bound_norm_matrix_pow_iff`, there over `ℂ`. -/
+Port of `NLAlib.exists_bound_norm_matrix_pow_iff`, there over $\mathbb{C}$. -/
 theorem exists_forall_specNorm_pow_le_iff (A : Matrix n n 𝕜) :
     (∃ C : ℝ, ∀ k : ℕ, specNorm (A ^ k) ≤ C) ↔
       specRadius A ≤ 1 ∧ ∀ μ : ℂ, ‖μ‖ = 1 →

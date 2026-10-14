@@ -13,22 +13,26 @@ public import NLAlib.RandomMatrix.Gaussian.Basic
 /-!
 # Orthogonal invariance of Gaussian matrices
 
-A standard Gaussian matrix `G` keeps its law under multiplication by matrices with orthonormal
-rows on the left and orthonormal columns on the right: `U G V` is a standard Gaussian matrix when
-`U Uᴴ = 1` and `Vᴴ V = 1`. Special cases: `U G`, `G V`, the conjugate transpose `Gᴴ`, submatrices on
-injective index maps, and `G x` for a unit vector `x`. Blocks `V₁ᴴ G` and `V₂ᴴ G` along orthogonal
+A standard Gaussian matrix $\mathbf{G}$ keeps its law under multiplication by matrices with
+orthonormal rows on the left and orthonormal columns on the right: $\mathbf{U}\mathbf{G}\mathbf{V}$
+is a standard Gaussian matrix when $\mathbf{U}\mathbf{U}^{\mathsf{H}} = \mathbf{I}$ and
+$\mathbf{V}^{\mathsf{H}}\mathbf{V} = \mathbf{I}$. Special cases: $\mathbf{U}\mathbf{G}$,
+$\mathbf{G}\mathbf{V}$, the conjugate transpose $\mathbf{G}^{\mathsf{H}}$, submatrices on injective
+index maps, and $\mathbf{G}\mathbf{x}$ for a unit vector $\mathbf{x}$. Blocks
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{G}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{G}$ along orthogonal
 frames are independent, which is how the randomized range finder splits a Gaussian test matrix.
 
 ## Main results
 
-* `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`: `A g` is a standard Gaussian vector when `A`
-  has orthonormal rows; every result below reduces to it.
+* `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`: $\mathbf{A}\mathbf{g}$ is a standard Gaussian
+  vector when $\mathbf{A}$ has orthonormal rows; every result below reduces to it.
 * `NLAlib.hasLaw_mul_mul_of_hasLaw_gaussianMatrix`: two-sided invariance.
 * `NLAlib.hasLaw_const_mul_of_hasLaw_gaussianMatrix`,
   `NLAlib.hasLaw_mul_const_of_hasLaw_gaussianMatrix`.
 * `NLAlib.hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`,
   `NLAlib.hasLaw_submatrix_of_hasLaw_gaussianMatrix`.
-* `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianMatrix`: `G x` for a unit vector `x`.
+* `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianMatrix`: $\mathbf{G}\mathbf{x}$ for a unit vector
+  $\mathbf{x}$.
 * `NLAlib.indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix`: independence of orthogonal blocks.
 -/
 
@@ -72,10 +76,11 @@ private theorem map_mulVec_gaussianVector [DecidableEq κ] {A : Matrix κ ι ℝ
     Measure.map_map (by fun_prop) (by fun_prop)] at h
   simpa only [Function.comp_def, WithLp.ofLp_toLp, Measure.map_id'] using h
 
-/-- **Coisometric images of a standard Gaussian vector**: if `A` has orthonormal rows
-(`A * Aᴴ = 1`), then `A *ᵥ Y` is a standard Gaussian vector whenever `Y` is. For a square `A` this
-is the orthogonal invariance of the standard Gaussian law; for a wide `A` it says that orthonormal
-linear forms of a standard Gaussian vector are independent standard Gaussians. -/
+/-- **Coisometric images of a standard Gaussian vector**: if $\mathbf{A}$ has orthonormal rows
+($\mathbf{A}\mathbf{A}^{\mathsf{H}} = \mathbf{I}$), then $\mathbf{A}\mathbf{y}$ is a standard
+Gaussian vector whenever $\mathbf{y}$ is. For a square $\mathbf{A}$ this is the orthogonal
+invariance of the standard Gaussian law; for a wide $\mathbf{A}$ it says that orthonormal linear
+forms of a standard Gaussian vector are independent standard Gaussians. -/
 theorem hasLaw_mulVec_of_hasLaw_gaussianVector [DecidableEq κ] {Y : Ω → ι → ℝ}
     (hY : HasLaw Y (gaussianVector ι) μ) {A : Matrix κ ι ℝ} (hA : HasOrthonormalCols Aᴴ) :
     HasLaw (fun ω => A *ᵥ Y ω) (gaussianVector κ) μ := by
@@ -114,8 +119,8 @@ private theorem hasOrthonormalCols_conjTranspose_kronecker [DecidableEq p] [Deci
   rw [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_kronecker,
     ← Matrix.mul_kronecker_mul, h₁, h₂, Matrix.one_kronecker_one]
 
-/-- **Orthogonal invariance**: for `U` with orthonormal rows and `V` with orthonormal columns,
-`U G V` is a standard Gaussian matrix. -/
+/-- **Orthogonal invariance**: for $\mathbf{U}$ with orthonormal rows and $\mathbf{V}$ with
+orthonormal columns, $\mathbf{U}\mathbf{G}\mathbf{V}$ is a standard Gaussian matrix. -/
 theorem hasLaw_mul_mul_of_hasLaw_gaussianMatrix [DecidableEq p] [DecidableEq q]
     (hX : HasLaw X (gaussianMatrix m n) μ) {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ)
     {V : Matrix n q ℝ} (hV : HasOrthonormalCols V) :
@@ -125,7 +130,7 @@ theorem hasLaw_mul_mul_of_hasLaw_gaussianMatrix [DecidableEq p] [DecidableEq q]
   exact hasLaw_mulVec_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
     (hasOrthonormalCols_conjTranspose_kronecker hU hV)
 
-/-- `U G` is a standard Gaussian matrix when `U` has orthonormal rows. -/
+/-- $\mathbf{U}\mathbf{G}$ is a standard Gaussian matrix when $\mathbf{U}$ has orthonormal rows. -/
 theorem hasLaw_const_mul_of_hasLaw_gaussianMatrix [DecidableEq p]
     (hX : HasLaw X (gaussianMatrix m n) μ) {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ) :
     HasLaw (fun ω => U * X ω) (gaussianMatrix p n) μ := by
@@ -133,7 +138,8 @@ theorem hasLaw_const_mul_of_hasLaw_gaussianMatrix [DecidableEq p]
   simpa only [Matrix.mul_one] using
     hasLaw_mul_mul_of_hasLaw_gaussianMatrix hX hU (hasOrthonormalCols_one (n := n))
 
-/-- `G V` is a standard Gaussian matrix when `V` has orthonormal columns. -/
+/-- $\mathbf{G}\mathbf{V}$ is a standard Gaussian matrix when $\mathbf{V}$ has orthonormal
+columns. -/
 theorem hasLaw_mul_const_of_hasLaw_gaussianMatrix [DecidableEq q]
     (hX : HasLaw X (gaussianMatrix m n) μ) {V : Matrix n q ℝ} (hV : HasOrthonormalCols V) :
     HasLaw (fun ω => X ω * V) (gaussianMatrix m q) μ := by
@@ -143,7 +149,8 @@ theorem hasLaw_mul_const_of_hasLaw_gaussianMatrix [DecidableEq q]
     exact hasOrthonormalCols_one
   simpa only [Matrix.one_mul] using hasLaw_mul_mul_of_hasLaw_gaussianMatrix hX h1 hV
 
-/-- The conjugate transpose (over `ℝ`, the transpose) of a Gaussian matrix is Gaussian. -/
+/-- The conjugate transpose (over $\mathbb{R}$, the transpose) of a Gaussian matrix is
+Gaussian. -/
 theorem hasLaw_conjTranspose_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ) :
     HasLaw (fun ω => (X ω)ᴴ) (gaussianMatrix n m) μ := by
   have := hX.isProbabilityMeasure
@@ -169,7 +176,8 @@ theorem hasLaw_submatrix_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix
     Function.comp_id, Function.id_comp] using
     hasLaw_mul_mul_of_hasLaw_gaussianMatrix hX hr' (hasOrthonormalCols_selectionMatrix hs)
 
-/-- `G x` is a standard Gaussian vector for a unit vector `x`. -/
+/-- $\mathbf{G}\mathbf{x}$ is a standard Gaussian vector for a unit vector $\mathbf{x}$
+($\|\mathbf{x}\| = 1$). -/
 theorem hasLaw_mulVec_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ)
     {x : n → ℝ} (hx : ‖WithLp.toLp 2 x‖ = 1) :
     HasLaw (fun ω => X ω *ᵥ x) (gaussianVector m) μ := by
@@ -183,8 +191,10 @@ theorem hasLaw_mulVec_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m 
   exact hasLaw_col_of_hasLaw_gaussianMatrix (hasLaw_mul_const_of_hasLaw_gaussianMatrix hX hV) ()
 
 omit [Fintype p] [Fintype q] in
-/-- **Independence of orthogonal blocks**: for frames `V₁` and `V₂` with `V₁ᴴ V₂ = 0`, the blocks
-`V₁ᴴ G` and `V₂ᴴ G` are independent (and each is a standard Gaussian matrix, by
+/-- **Independence of orthogonal blocks**: for frames (matrices with orthonormal columns)
+$\mathbf{V}_1$ and $\mathbf{V}_2$ with $\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, the
+blocks $\mathbf{V}_1^{\mathsf{H}}\mathbf{G}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{G}$ are
+independent (and each is a standard Gaussian matrix, by
 `hasLaw_const_mul_of_hasLaw_gaussianMatrix`). -/
 theorem indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix [Finite p] [Finite q]
     [DecidableEq p] [DecidableEq q] (hX : HasLaw X (gaussianMatrix m n) μ) {V₁ : Matrix m p ℝ}

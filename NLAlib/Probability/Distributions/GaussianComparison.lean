@@ -14,8 +14,9 @@ public import NLAlib.Probability.Distributions.GaussianIntegrationByParts
 # Gaussian interpolation and comparison
 
 Kahane's Gaussian interpolation inequality and the two expectation comparisons proved from it:
-the Sudakov–Fernique inequality `E max X ≤ E max Y` and Gordon's min-max inequality
-`E min max X ≤ E min max Y`, each for centred finite Gaussian families whose increments compare.
+the Sudakov–Fernique inequality $\mathbb{E}\max_t X_t \le \mathbb{E}\max_t Y_t$ and Gordon's
+min-max inequality $\mathbb{E}\min_u \max_t X_{ut} \le \mathbb{E}\min_u \max_t Y_{ut}$, each for
+centred finite Gaussian families whose increments compare.
 
 A finite Gaussian family is `X : T → Ω → ℝ` with `HasGaussianLaw (fun ω t => X t ω) μ`, the
 process form of Mathlib's `IsGaussianProcess` (for finite `T` the two are equivalent; the bridge
@@ -26,7 +27,7 @@ process need not be built on the space of the process it bounds. Second moments 
 written as integrals, the form a consumer computes from isotropy. No equal-variance hypothesis is
 needed in the expectation forms (unlike Slepian's tail comparison, which is not stated).
 
-Over an empty index set the suprema and infima are `0` (`Real.iSup_of_isEmpty`), and both sides
+Over an empty index set the suprema and infima are $0$ (`Real.iSup_of_isEmpty`), and both sides
 of each comparison vanish.
 
 ## Main results
@@ -61,8 +62,9 @@ private theorem abs_le_of_contDiff_two {F : (ι → ℝ) → ℝ} (hF : ContDiff
   linarith [abs_sub_abs_le_abs_sub (F x) (F 0)]
 
 omit [DecidableEq ι] in
-/-- A function of class `C²` with Hessian bounded by `C` of a Gaussian vector is integrable: it
-has quadratic growth and a Gaussian vector has every moment. -/
+/-- A function $F$ of class $C^2$ with Hessian bounded by $C$, $\|D^2 F(\mathbf{x})\| \le C$, of a
+Gaussian vector $\mathbf{X}$ is integrable: it has quadratic growth and a Gaussian vector has every
+moment. -/
 theorem integrable_comp_of_hasGaussianLaw_of_contDiff_two {X : Ω → ι → ℝ}
     (hX : HasGaussianLaw X μ) {F : (ι → ℝ) → ℝ} (hF : ContDiff ℝ 2 F) {C : ℝ}
     (hF2 : ∀ x, ‖iteratedFDeriv ℝ 2 F x‖ ≤ C) : Integrable (fun ω => F (X ω)) μ := by
@@ -91,8 +93,11 @@ private theorem norm_lincomb_le {a b : ℝ} (ha : |a| ≤ 1) (hb : |b| ≤ 1) (x
 variable {Ω₀ : Type*} {m₀ : MeasurableSpace Ω₀} {P : Measure Ω₀}
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- Along the rotation `Z θ = cos θ A + sin θ B`, `Cov (Z' θ i, Z θ j)` is
-`sin θ cos θ (E Bᵢ Bⱼ - E Aᵢ Aⱼ)` when the cross moments vanish. -/
+/-- Along the rotation $\mathbf{Z}(\theta) = \cos\theta\, \mathbf{A} + \sin\theta\, \mathbf{B}$,
+with derivative $\mathbf{Z}'(\theta) = -\sin\theta\, \mathbf{A} + \cos\theta\, \mathbf{B}$, the
+covariance $\operatorname{Cov}(\mathbf{Z}'(\theta)_i, \mathbf{Z}(\theta)_j)$ is
+$\sin\theta \cos\theta\, (\mathbb{E}[\mathbf{B}_i \mathbf{B}_j] - \mathbb{E}[\mathbf{A}_i
+\mathbf{A}_j])$ when $\mathbf{A}$ and $\mathbf{B}$ are centred and the cross moments vanish. -/
 private theorem covariance_rotation_eq [IsProbabilityMeasure P] {A B : Ω₀ → ι → ℝ}
     (hA : ∀ i, MemLp (fun ω => A ω i) 2 P) (hB : ∀ i, MemLp (fun ω => B ω i) 2 P)
     (hA0 : ∀ i, ∫ ω, A ω i ∂P = 0) (hB0 : ∀ i, ∫ ω, B ω i ∂P = 0)
@@ -129,8 +134,9 @@ private theorem covariance_rotation_eq [IsProbabilityMeasure P] {A B : Ω₀ →
     integral_const_mul, integral_const_mul, hcross, hcross]
   ring
 
-/-- `v ↦ ∂ᵢ F (R v)`, for `F` of class `C²` with bounded Hessian and `R` a contraction, is `C¹`
-with derivative `w ↦ D² F (R v) (R w) eᵢ`, bounded by the Hessian bound. -/
+/-- $v \mapsto \partial_i F(R v)$, for $F$ of class $C^2$ with bounded Hessian and $R$ a linear
+contraction, is $C^1$ with derivative $w \mapsto D^2 F(R v)(R w, \mathbf{e}_i)$, bounded by the
+Hessian bound. -/
 private theorem contDiff_one_fderiv_comp_apply {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] {F : (ι → ℝ) → ℝ} (hF : ContDiff ℝ 2 F) {C : ℝ}
     (hF2 : ∀ x, ‖iteratedFDeriv ℝ 2 F x‖ ≤ C) (R : E →L[ℝ] (ι → ℝ)) (hR : ∀ w, ‖R w‖ ≤ ‖w‖)
@@ -164,7 +170,7 @@ private theorem contDiff_one_fderiv_comp_apply {E : Type*} [NormedAddCommGroup E
       exact hF2 _
 
 /-- The Stein step of the interpolation: Gaussian integration by parts for the pair
-`(Z' θ i, Z θ)`, applied to `∂ᵢ F`. -/
+$(\mathbf{Z}'(\theta)_i, \mathbf{Z}(\theta))$, applied to $\partial_i F$. -/
 private theorem integral_rotation_mul_fderiv_eq {A B : Ω₀ → ι → ℝ}
     (hAB : HasGaussianLaw (fun ω => (A ω, B ω)) P)
     (hA0 : ∀ i, ∫ ω, A ω i ∂P = 0) (hB0 : ∀ i, ∫ ω, B ω i ∂P = 0)
@@ -225,8 +231,8 @@ private theorem integral_rotation_mul_fderiv_eq {A B : Ω₀ → ι → ℝ}
   exact covariance_rotation_eq hA hB hA0 hB0 hcross θ i j
 
 omit [DecidableEq ι] in
-/-- `θ ↦ E F (cos θ A + sin θ B)` is differentiable, with derivative
-`E [D F (Z θ) (Z' θ)]`. -/
+/-- $\theta \mapsto \mathbb{E} F(\cos\theta\, \mathbf{A} + \sin\theta\, \mathbf{B})$ is
+differentiable, with derivative $\mathbb{E}[DF(\mathbf{Z}(\theta))\, \mathbf{Z}'(\theta)]$. -/
 private theorem hasDerivAt_integral_rotation [IsProbabilityMeasure P] {A B : Ω₀ → ι → ℝ}
     (hA : MemLp A 2 P) (hB : MemLp B 2 P) {F : (ι → ℝ) → ℝ} (hF : ContDiff ℝ 2 F) {C : ℝ}
     (hF2 : ∀ x, ‖iteratedFDeriv ℝ 2 F x‖ ≤ C) (θ₀ : ℝ) :
@@ -288,7 +294,11 @@ private theorem hasDerivAt_integral_rotation [IsProbabilityMeasure P] {A B : Ω�
     exact (hdiff _).hasFDerivAt.comp_hasDerivAt θ hZd
 
 /-- The derivative of the interpolation, after integration by parts:
-`E [D F (Z θ) (Z' θ)] = sin θ cos θ E [∑ᵢⱼ Δᵢⱼ ∂ⱼ∂ᵢ F (Z θ)]`. -/
+$$\mathbb{E}[DF(\mathbf{Z}(\theta))\, \mathbf{Z}'(\theta)]
+= \sin\theta \cos\theta\, \mathbb{E}\Bigl[\sum_{i,j} \Delta_{ij}\, \partial_j \partial_i
+F(\mathbf{Z}(\theta))\Bigr],$$
+with $\Delta_{ij} = \mathbb{E}[\mathbf{B}_i \mathbf{B}_j] - \mathbb{E}[\mathbf{A}_i \mathbf{A}_j]$.
+-/
 private theorem integral_fderiv_rotation_eq {A B : Ω₀ → ι → ℝ}
     (hAB : HasGaussianLaw (fun ω => (A ω, B ω)) P)
     (hA0 : ∀ i, ∫ ω, A ω i ∂P = 0) (hB0 : ∀ i, ∫ ω, B ω i ∂P = 0)
@@ -370,8 +380,8 @@ private theorem iteratedFDeriv_two_apply_pair {F : (ι → ℝ) → ℝ} (x u v 
   rw [iteratedFDeriv_two_apply]
   rfl
 
-/-- Kahane's inequality for a jointly Gaussian pair on one space with vanishing cross
-moments. -/
+/-- Kahane's inequality for a jointly Gaussian pair $(\mathbf{A}, \mathbf{B})$ on one space,
+centred, with vanishing cross moments: $\mathbb{E} F(\mathbf{A}) \le \mathbb{E} F(\mathbf{B})$. -/
 private theorem integral_comp_le_integral_comp_of_hasGaussianLaw_pair {A B : Ω₀ → ι → ℝ}
     (hAB : HasGaussianLaw (fun ω => (A ω, B ω)) P)
     (hA0 : ∀ i, ∫ ω, A ω i ∂P = 0) (hB0 : ∀ i, ∫ ω, B ω i ∂P = 0)
@@ -406,12 +416,14 @@ private theorem integral_comp_le_integral_comp_of_hasGaussianLaw_pair {A B : Ω�
   simpa only [hΦ, Real.cos_zero, Real.sin_zero, Real.cos_pi_div_two, Real.sin_pi_div_two,
     one_mul, zero_mul, add_zero, zero_add] using h
 
-/-- **Gaussian interpolation** (Kahane's inequality): for centred Gaussian vectors `X`, `Y` and
-`F` of class `C²` with Hessian bounded by `C`, if
-`∑ i j, (E Yᵢ Yⱼ - E Xᵢ Xⱼ) ∂ᵢⱼF(x) ≥ 0` for every `x`, then `E F(X) ≤ E F(Y)`.
+/-- **Gaussian interpolation** (Kahane's inequality): for centred Gaussian vectors $\mathbf{X}$,
+$\mathbf{Y}$ in $\mathbb{R}^\iota$ and $F$ of class $C^2$ with Hessian bounded by $C$, if
+$$\sum_{i,j} \bigl(\mathbb{E}[\mathbf{Y}_i \mathbf{Y}_j] -
+\mathbb{E}[\mathbf{X}_i \mathbf{X}_j]\bigr) \, \partial_i \partial_j F(\mathbf{x}) \ge 0$$
+for every $\mathbf{x}$, then $\mathbb{E} F(\mathbf{X}) \le \mathbb{E} F(\mathbf{Y})$.
 [Vershynin2018, Lemma 7.2.7 and the proof of Theorem 7.2.1]; [Kahane1986]; there as an identity
-along the interpolating path `√t X + √(1 - t) Y`, here the inequality it gives, with `X` and `Y`
-on different probability spaces.
+along the interpolating path $\sqrt{t}\, \mathbf{X} + \sqrt{1 - t}\, \mathbf{Y}$, here the
+inequality it gives, with $\mathbf{X}$ and $\mathbf{Y}$ on different probability spaces.
 Result: gaussian-interpolation -/
 theorem integral_comp_le_integral_comp_of_hasGaussianLaw {X : Ω → ι → ℝ} {Y : Ω' → ι → ℝ}
     (hX : HasGaussianLaw X μ) (hY : HasGaussianLaw Y ν)
@@ -461,16 +473,19 @@ variable {U T : Type*} [Fintype U] [Fintype T]
 
 local notation "PR" j => ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : U × T => ℝ) j
 
-/-- block partition function `S_u(x) = ∑_t exp(β x_{ut})` -/
+/-- block partition function $S_u(\mathbf{x}) = \sum_t e^{\beta \mathbf{x}_{ut}}$ -/
 private noncomputable def gmmS (β : ℝ) (u : U) (x : U × T → ℝ) : ℝ := ∑ t, Real.exp (β * x (u, t))
-/-- `W(x) = ∑_u S_u(x)⁻¹` -/
+/-- $W(\mathbf{x}) = \sum_u S_u(\mathbf{x})^{-1}$ -/
 private noncomputable def gmmW (β : ℝ) (x : U × T → ℝ) : ℝ := ∑ u, (gmmS β u x)⁻¹
-/-- the smooth min-max `F_β(x) = -β⁻¹ log ∑_u (∑_t e^{β x_{ut}})⁻¹` -/
+/-- the smooth min-max
+$F_\beta(\mathbf{x}) = -\beta^{-1} \log \sum_u (\sum_t e^{\beta \mathbf{x}_{ut}})^{-1}$ -/
 private noncomputable def gmmF (β : ℝ) (x : U × T → ℝ) : ℝ := -β⁻¹ * Real.log (gmmW β x)
-/-- gradient `∂F/∂x_a = p_u q_{t|u}`, `a = (u,t)` -/
+/-- gradient $\partial F / \partial \mathbf{x}_a = p_u q_{t|u}$, $a = (u, t)$, with
+$p_u = S_u^{-1} / W$ -/
 private noncomputable def gmmg (β : ℝ) (a : U × T) (x : U × T → ℝ) : ℝ :=
   Real.exp (β * x a) * ((gmmS β a.1 x) ^ 2)⁻¹ * (gmmW β x)⁻¹
-/-- within-block weight `q_{s|u} = e^{β x_b}/S_u`, `u = a.1`, `b = (·, s)` -/
+/-- within-block weight $q_{s|u} = e^{\beta \mathbf{x}_b} / S_u$, where $u$ is the block of $a$
+and $b = (\cdot, s)$ -/
 private noncomputable def gmmq (β : ℝ) (a b : U × T) (x : U × T → ℝ) : ℝ :=
   Real.exp (β * x b) / gmmS β a.1 x
 /-- the Hessian of the smooth min-max -/
@@ -853,7 +868,7 @@ private theorem abs_iInf_iSup_le_norm [Fintype T] [Fintype U] (x : U × T → �
   refine (abs_iSup_le_norm _).trans ((pi_norm_le_iff_of_nonneg (norm_nonneg x)).2 fun t => ?_)
   exact norm_le_pi_norm x (u, t)
 
-/-- The maximum of a finite Gaussian family is integrable. -/
+/-- The maximum $\max_t X_t$ of a finite Gaussian family is integrable. -/
 theorem integrable_iSup_of_hasGaussianLaw {X : T → Ω → ℝ}
     (hX : HasGaussianLaw (fun ω t => X t ω) μ) : Integrable (fun ω => ⨆ t, X t ω) μ := by
   have := Fintype.ofFinite T
@@ -864,7 +879,7 @@ theorem integrable_iSup_of_hasGaussianLaw {X : T → Ω → ℝ}
   rw [Real.norm_eq_abs]
   exact abs_iSup_le_norm (fun t => X t ω)
 
-/-- The min-max `min_u max_t X u t` of a finite Gaussian family on `U × T` is integrable. -/
+/-- The min-max $\min_u \max_t X_{ut}$ of a finite Gaussian family on `U × T` is integrable. -/
 theorem integrable_iInf_iSup_of_hasGaussianLaw {X : U → T → Ω → ℝ}
     (hX : HasGaussianLaw (fun ω (p : U × T) => X p.1 p.2 ω) μ) :
     Integrable (fun ω => ⨅ u, ⨆ t, X u t ω) μ := by
@@ -892,7 +907,7 @@ private theorem integral_sub_sq_eq {X : T → Ω → ℝ} (hXm : ∀ t, MemLp (X
     integral_add i1 i2]
 
 omit [Finite T] [Finite U] in
-/-- The soft min-max is `C²` with Hessian bounded by `|U × T|² 4β`. -/
+/-- The soft min-max is $C^2$ with Hessian bounded by $4\beta \lvert U \times T \rvert^2$. -/
 private theorem contDiff_two_gmmF [Fintype T] [Fintype U] [Nonempty T] [Nonempty U] {β : ℝ}
     (hβ : 0 < β) :
     ContDiff ℝ 2 (gmmF (U := U) (T := T) β) ∧ ∀ x,
@@ -904,8 +919,8 @@ private theorem contDiff_two_gmmF [Fintype T] [Fintype U] [Nonempty T] [Nonempty
    norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj (gmmF_hasFDerivAt hβ.ne')
     (gmmg_hasFDerivAt β) (by positivity) (gmmH_abs_le hβ)⟩
 
-/-- The soft min-max comparison at inverse temperature `β`, from the interpolation
-inequality. -/
+/-- The soft min-max comparison at inverse temperature $\beta > 0$, from the interpolation
+inequality: $\mathbb{E} F_\beta(\mathbf{X}) \le \mathbb{E} F_\beta(\mathbf{Y})$. -/
 private theorem integral_gmmF_le [Fintype T] [Fintype U] [Nonempty T] [Nonempty U]
     {X : Ω → U × T → ℝ} {Y : Ω' → U × T → ℝ}
     (hX : HasGaussianLaw X μ) (hY : HasGaussianLaw Y ν)
@@ -937,7 +952,7 @@ private theorem integral_gmmF_le [Fintype T] [Fintype U] [Nonempty T] [Nonempty 
     (gmmF_hasFDerivAt hβ.ne') (gmmg_hasFDerivAt β), gmmH_symm]
   simp [Pi.single_apply, hΔ]
 
-/-- Gordon's inequality, stated before the Sudakov–Fernique inequality, which is its case `U`
+/-- Gordon's inequality, stated before the Sudakov–Fernique inequality, which is its case $U$
 a point. -/
 private theorem integral_iInf_iSup_le_aux {X : U → T → Ω → ℝ} {Y : U → T → Ω' → ℝ}
     (hX : HasGaussianLaw (fun ω (p : U × T) => X p.1 p.2 ω) μ)
@@ -993,8 +1008,9 @@ private theorem integral_iInf_iSup_le_aux {X : U → T → Ω → ℝ} {Y : U �
   rw [div_div_eq_mul_div, div_le_iff₀ (by linarith)]
   nlinarith
 
-/-- **The Sudakov–Fernique inequality**: for centred finite Gaussian families `X`, `Y` with
-`E (X s - X t)² ≤ E (Y s - Y t)²` for all `s`, `t`, `E max X ≤ E max Y`.
+/-- **The Sudakov–Fernique inequality**: for centred finite Gaussian families
+$(X_t)_{t \in T}$, $(Y_t)_{t \in T}$ with $\mathbb{E}(X_s - X_t)^2 \le \mathbb{E}(Y_s - Y_t)^2$
+for all $s, t$, $\mathbb{E}\max_t X_t \le \mathbb{E}\max_t Y_t$.
 [Vershynin2018, Theorem 7.2.11]; no equal-variance hypothesis (unlike Slepian's inequality), and
 the two families on different probability spaces.
 Result: sudakov-fernique -/
@@ -1012,9 +1028,11 @@ theorem integral_iSup_le_integral_iSup_of_hasGaussianLaw {X : T → Ω → ℝ} 
     (fun u u' _ _ h => absurd (Subsingleton.elim u u') h)
   simpa only [ciInf_const] using h
 
-/-- **Gordon's min-max inequality**: for centred finite Gaussian families on `U × T` whose
-increments are smaller for `X` within a block (`u` fixed) and larger for `X` across blocks,
-`E min_u max_t X ≤ E min_u max_t Y`.
+/-- **Gordon's min-max inequality**: for centred finite Gaussian families $(X_{ut})$,
+$(Y_{ut})$ indexed by `U × T` whose increments are smaller for $X$ within a block,
+$\mathbb{E}(X_{ut} - X_{us})^2 \le \mathbb{E}(Y_{ut} - Y_{us})^2$, and larger for $X$ across
+blocks, $\mathbb{E}(Y_{ut} - Y_{u's})^2 \le \mathbb{E}(X_{ut} - X_{u's})^2$ for $u \ne u'$,
+$$\mathbb{E}\min_u \max_t X_{ut} \le \mathbb{E}\min_u \max_t Y_{ut}\,.$$
 [Gordon1985]; [Vershynin2018, Exercise 7.2.14]; stated there with equal variances and as a tail
 comparison, here the expectation form from increments alone, with the two families on different
 probability spaces.

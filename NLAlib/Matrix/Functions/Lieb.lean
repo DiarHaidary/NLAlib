@@ -13,26 +13,31 @@ public import NLAlib.Matrix.Functions.TraceFunctions
 /-!
 # Lieb's concavity theorem
 
-For a fixed Hermitian `H`, the function `A ↦ tr exp (H + log A)` is concave on positive definite
-matrices. This is the theorem behind Tropp's master inequality for sums of independent random
-matrices. The proof follows Tropp: the relative entropy
-`D(A; H) = tr (A (log A - log H) - (A - H))` is nonnegative (Klein) and jointly convex (through
-the operator convexity of the matrix perspective), and `tr exp (H + log A)` is a partial maximum
-of an affine function minus a relative entropy.
+For a fixed Hermitian $\mathbf{H}$, the function
+$\mathbf{A} \mapsto \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ is concave on positive
+definite matrices. This is the theorem behind Tropp's master inequality for sums of independent
+random matrices. The proof follows Tropp: the relative entropy
+$D(\mathbf{A}; \mathbf{H}) = \operatorname{tr}(\mathbf{A}(\log(\mathbf{A}) - \log(\mathbf{H})) -
+(\mathbf{A} - \mathbf{H}))$ is nonnegative (Klein) and jointly convex (through the operator
+convexity of the matrix perspective), and $\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$
+is a partial maximum of an affine function minus a relative entropy.
 
 ## Main definitions
 
-* `NLAlib.relativeEntropy`: the matrix relative entropy `tr (A (log A - log H) - (A - H))`.
+* `NLAlib.relativeEntropy`: the matrix relative entropy
+  $\operatorname{tr}(\mathbf{A}(\log(\mathbf{A}) - \log(\mathbf{H})) - (\mathbf{A} - \mathbf{H}))$.
 
 ## Main results
 
 * `NLAlib.relativeEntropy_nonneg`: nonnegativity.
 * `NLAlib.convexOn_relativeEntropy`: joint convexity.
 * `NLAlib.isGreatest_re_trace_mul_cfc_log_sub`, `NLAlib.isGreatest_re_trace_exp_add_cfc_log`: the
-  variational formulas for `tr M` and `tr exp (H + log A)`.
+  variational formulas for $\operatorname{tr} \mathbf{M}$ and
+  $\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$.
 * `NLAlib.concaveOn_re_trace_exp_add_cfc_log`: Lieb's theorem.
-* `NLAlib.continuousOn_re_trace_exp_add_cfc_log`: continuity of `A ↦ tr exp (H + log A)` on the
-  positive definite matrices.
+* `NLAlib.continuousOn_re_trace_exp_add_cfc_log`: continuity of
+  $\mathbf{A} \mapsto \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ on the positive
+  definite matrices.
 * `NLAlib.relativeEntropy_eq`: the relative entropy expanded into traces.
 -/
 
@@ -46,24 +51,32 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The **matrix relative entropy** of two positive definite matrices,
-`D(A; H) = tr (A (log A - log H) - (A - H))`: the Bregman divergence of `A ↦ tr (A log A - A)`.
+$$D(\mathbf{A}; \mathbf{H}) = \operatorname{Re} \operatorname{tr}\bigl(\mathbf{A}(\log(\mathbf{A}) -
+  \log(\mathbf{H})) - (\mathbf{A} - \mathbf{H})\bigr) ,$$
+the Bregman divergence of
+$\mathbf{A} \mapsto \operatorname{tr}(\mathbf{A}\log(\mathbf{A}) - \mathbf{A})$. The definition
+takes any two square matrices; it is meant for positive definite ones.
 [Tropp2015, Definition 8.3.1]. Port of `NLAlib.relativeEntropy`. -/
 noncomputable def relativeEntropy (A H : Matrix n n 𝕜) : ℝ :=
   RCLike.re (A * (cfc Real.log A - cfc Real.log H) - (A - H)).trace
 
-/-- The relative entropy of a matrix with itself vanishes. -/
+/-- The relative entropy of a matrix with itself vanishes: $D(\mathbf{A}; \mathbf{A}) = 0$. -/
 @[simp]
 theorem relativeEntropy_self (A : Matrix n n 𝕜) : relativeEntropy A A = 0 := by
   rw [relativeEntropy, sub_self, sub_self, Matrix.mul_zero, sub_zero, Matrix.trace_zero, map_zero]
 
-/-- `A log A` as a function of `A`. -/
+/-- $\mathbf{A}\log(\mathbf{A})$ as a function of a Hermitian $\mathbf{A}$: it is $f(\mathbf{A})$
+for $f(x) = x \log x$. -/
 private theorem cfc_mul_log {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     cfc (fun x : ℝ => x * Real.log x) A = A * cfc Real.log A := by
   rw [cfc_mul (fun x : ℝ => x) Real.log A (A.finite_real_spectrum.continuousOn _)
     (A.finite_real_spectrum.continuousOn _), cfc_id' ℝ A hA.isSelfAdjoint]
 
 /-- The relative entropy expanded into four traces:
-`D(A; H) = tr (A log A) - tr (A log H) - tr A + tr H`. -/
+$$D(\mathbf{A}; \mathbf{H}) = \operatorname{tr}(\mathbf{A}\log(\mathbf{A})) -
+  \operatorname{tr}(\mathbf{A}\log(\mathbf{H})) - \operatorname{tr} \mathbf{A} +
+  \operatorname{tr} \mathbf{H} \,,$$
+each trace through its real part. -/
 theorem relativeEntropy_eq (A H : Matrix n n 𝕜) :
     relativeEntropy A H = RCLike.re (A * cfc Real.log A).trace -
       RCLike.re (A * cfc Real.log H).trace - RCLike.re A.trace + RCLike.re H.trace := by
@@ -72,8 +85,11 @@ theorem relativeEntropy_eq (A H : Matrix n n 𝕜) :
   ring
 
 /-- **The matrix relative entropy is nonnegative** (Klein's inequality): for positive definite
-`A` and `H`, `D(A; H) = tr (A (log A - log H) - (A - H)) ≥ 0`.
-[Tropp2015, Proposition 8.3.5]. Port of `NLAlib.relativeEntropy_nonneg`, there over `ℂ`.
+$\mathbf{A}$ and $\mathbf{H}$,
+$$D(\mathbf{A}; \mathbf{H}) = \operatorname{tr}\bigl(\mathbf{A}(\log(\mathbf{A}) -
+  \log(\mathbf{H})) - (\mathbf{A} - \mathbf{H})\bigr) \ge 0 \,.$$
+[Tropp2015, Proposition 8.3.5]. Port of `NLAlib.relativeEntropy_nonneg`, there over
+$\mathbb{C}$.
 Result: relative-entropy -/
 theorem relativeEntropy_nonneg {A H : Matrix n n 𝕜} (hA : A.PosDef) (hH : H.PosDef) :
     0 ≤ relativeEntropy A H := by
@@ -100,15 +116,21 @@ theorem relativeEntropy_nonneg {A H : Matrix n n 𝕜} (hA : A.PosDef) (hH : H.P
 
 /-! ### Joint convexity
 
-`D(A; H) = ⟨vec 1, ψ(A ⊗ 1, 1 ⊗ Hᵀ) vec 1⟩ - tr (A - H)` for the perspective `ψ` of `-log`: the
-Kronecker factors commute, are linear in `A` and `H`, and the perspective is jointly operator
-convex. -/
+$$D(\mathbf{A}; \mathbf{H}) = \langle \operatorname{vec} \mathbf{I},
+  \psi(\mathbf{A} \otimes \mathbf{I}, \mathbf{I} \otimes \mathbf{H}^{\mathsf{T}})
+  \operatorname{vec} \mathbf{I} \rangle - \operatorname{tr}(\mathbf{A} - \mathbf{H})$$
+for the perspective $\psi$ of $-\log$, $\otimes$ the Kronecker product and
+$\operatorname{vec} \mathbf{I}$ the vectorised identity: the Kronecker factors commute, are linear
+in $\mathbf{A}$ and $\mathbf{H}$, and the perspective is jointly operator convex. -/
 
-/-- The quadratic form of a matrix on `n × n` at the vectorised identity. -/
+/-- The quadratic form of a matrix indexed by `n × n` at the vectorised identity:
+$\operatorname{Re} \langle \operatorname{vec} \mathbf{I},
+\mathbf{M} \operatorname{vec} \mathbf{I} \rangle$. -/
 private noncomputable def kroneckerContraction (M : Matrix (n × n) (n × n) 𝕜) : ℝ :=
   RCLike.re (quadForm M fun p => if p.1 = p.2 then 1 else 0)
 
-/-- The contraction of `X ⊗ Yᵀ` is `tr (X Y)`. -/
+/-- The contraction of $\mathbf{X} \otimes \mathbf{Y}^{\mathsf{T}}$ is
+$\operatorname{Re} \operatorname{tr}(\mathbf{X}\mathbf{Y})$. -/
 private theorem kroneckerContraction_kronecker_transpose (X Y : Matrix n n 𝕜) :
     kroneckerContraction (X ⊗ₖ Yᵀ) = RCLike.re (X * Y).trace := by
   rw [kroneckerContraction, quadForm_eq_sum]
@@ -157,7 +179,10 @@ private theorem transpose_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
     Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc]
   rfl
 
-/-- The perspective of `-log` at the commuting pair `A ⊗ 1`, `1 ⊗ Hᵀ`. -/
+/-- The perspective of $-\log$ at the commuting pair $\mathbf{A} \otimes \mathbf{I}$,
+$\mathbf{I} \otimes \mathbf{H}^{\mathsf{T}}$ is
+$\mathbf{A}\log(\mathbf{A}) \otimes \mathbf{I} -
+\mathbf{A} \otimes \log(\mathbf{H})^{\mathsf{T}}$. -/
 private theorem matrixPerspective_neg_log_kronecker {A H : Matrix n n 𝕜} (hA : A.PosDef)
     (hH : H.PosDef) :
     matrixPerspective (fun x : ℝ => -Real.log x) (A ⊗ₖ (1 : Matrix n n 𝕜))
@@ -220,7 +245,8 @@ private theorem matrixPerspective_neg_log_kronecker {A H : Matrix n n 𝕜} (hA 
   congr 1
   ring
 
-/-- The relative entropy through the perspective of `-log` at `A ⊗ 1` and `1 ⊗ Hᵀ`.
+/-- The relative entropy through the perspective of $-\log$ at $\mathbf{A} \otimes \mathbf{I}$ and
+$\mathbf{I} \otimes \mathbf{H}^{\mathsf{T}}$.
 [Tropp2015, (8.8.1)]. -/
 private theorem relativeEntropy_eq_kroneckerContraction {A H : Matrix n n 𝕜} (hA : A.PosDef)
     (hH : H.PosDef) :
@@ -232,11 +258,13 @@ private theorem relativeEntropy_eq_kroneckerContraction {A H : Matrix n n 𝕜} 
     kroneckerContraction_kronecker_transpose, relativeEntropy_eq, Matrix.trace_sub, map_sub]
   ring
 
-/-- **The matrix relative entropy is jointly convex** (Lindblad): on the pairs `(A, H)` of positive
-definite matrices, `D(A; H) = tr (A (log A - log H) - (A - H))` is a convex function, so
-`D(a A₁ + b A₂; a H₁ + b H₂) ≤ a D(A₁; H₁) + b D(A₂; H₂)` for `a, b ≥ 0` with `a + b = 1`.
+/-- **The matrix relative entropy is jointly convex** (Lindblad): on the pairs
+$(\mathbf{A}, \mathbf{H})$ of positive definite matrices, $D(\mathbf{A}; \mathbf{H})$ is a convex
+function, so for $a, b \ge 0$ with $a + b = 1$
+$$D(a\mathbf{A}_1 + b\mathbf{A}_2; a\mathbf{H}_1 + b\mathbf{H}_2)
+  \le a D(\mathbf{A}_1; \mathbf{H}_1) + b D(\mathbf{A}_2; \mathbf{H}_2) \,.$$
 [Tropp2015, §8.3 and §8.8]; [Lindblad1974].
-Port of `NLAlib.convexOn_relativeEntropy`, there over `ℂ` on `Fin d`.
+Port of `NLAlib.convexOn_relativeEntropy`, there over $\mathbb{C}$ on `Fin d`.
 Result: relative-entropy -/
 theorem convexOn_relativeEntropy :
     ConvexOn ℝ {P : Matrix n n 𝕜 × Matrix n n 𝕜 | P.1.PosDef ∧ P.2.PosDef}
@@ -268,8 +296,10 @@ theorem convexOn_relativeEntropy :
 
 /-! ### The variational formulas and Lieb's theorem -/
 
-/-- **A variational formula for the trace.** For positive definite `M`,
-`tr M = max_T tr (T log M - T log T + T)` over positive definite `T`.
+/-- **A variational formula for the trace.** For positive definite $\mathbf{M}$,
+$$\operatorname{tr} \mathbf{M} = \max_{\mathbf{T}} \operatorname{tr}(\mathbf{T}\log(\mathbf{M}) -
+  \mathbf{T}\log(\mathbf{T}) + \mathbf{T})$$
+over positive definite $\mathbf{T}$, traces through their real parts.
 [Tropp2015, §8.3]. Port of `NLAlib.isGreatest_variational_trace`. -/
 theorem isGreatest_re_trace_mul_cfc_log_sub {M : Matrix n n 𝕜} (hM : M.PosDef) :
     IsGreatest
@@ -286,11 +316,14 @@ theorem isGreatest_re_trace_mul_cfc_log_sub {M : Matrix n n 𝕜} (hM : M.PosDef
     rw [Matrix.trace_add, Matrix.trace_sub, map_add, map_sub]
     linarith
 
-/-- **The variational formula behind Lieb's theorem**: for Hermitian `H`,
-`tr exp (H + log A) = max_T [tr (T H) + tr A - D(T; A)]` over positive definite `T`. The formula
-needs no hypothesis on `A`; it is used for positive definite `A`.
+/-- **The variational formula behind Lieb's theorem**: for Hermitian $\mathbf{H}$,
+$$\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A})) = \max_{\mathbf{T}}
+  \bigl[\operatorname{tr}(\mathbf{T}\mathbf{H}) + \operatorname{tr} \mathbf{A} -
+  D(\mathbf{T}; \mathbf{A})\bigr]$$
+over positive definite $\mathbf{T}$, traces through their real parts. The formula needs no
+hypothesis on $\mathbf{A}$; it is used for positive definite $\mathbf{A}$.
 [Tropp2015, §8.3].
-Port of `NLAlib.isGreatest_variational_traceExp`, there over `ℂ` on `Fin d`. -/
+Port of `NLAlib.isGreatest_variational_traceExp`, there over $\mathbb{C}$ on `Fin d`. -/
 theorem isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHermitian)
     (A : Matrix n n 𝕜) :
     IsGreatest
@@ -310,10 +343,11 @@ theorem isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHerm
       ring
   rwa [score] at hVar
 
-/-- **Lieb's concavity theorem.** For a fixed Hermitian `H`, `A ↦ tr exp (H + log A)` is concave
-on the positive definite matrices.
+/-- **Lieb's concavity theorem.** For a fixed Hermitian $\mathbf{H}$, the function
+$\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ is
+concave on the positive definite matrices.
 [Lieb1973]; [Tropp2015, Theorem 8.1.1].
-Port of `NLAlib.lieb_concavity`, there over `ℂ`.
+Port of `NLAlib.lieb_concavity`, there over $\mathbb{C}$.
 Result: lieb-concavity -/
 theorem concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHermitian) :
     ConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosDef}
@@ -341,9 +375,10 @@ theorem concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHermi
   rw [← hTA, ← hSB]
   linarith
 
-/-- The function `A ↦ tr exp (H + log A)` of Lieb's theorem is continuous on the positive
-definite matrices, for every `H`.
-Port of `NLAlib.continuousOn_traceExp_add_matrixLog`, there over `ℂ`. -/
+/-- The function
+$\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ of
+Lieb's theorem is continuous on the positive definite matrices, for every square $\mathbf{H}$.
+Port of `NLAlib.continuousOn_traceExp_add_matrixLog`, there over $\mathbb{C}$. -/
 theorem continuousOn_re_trace_exp_add_cfc_log (H : Matrix n n 𝕜) :
     ContinuousOn (fun A : Matrix n n 𝕜 => RCLike.re (exp (H + cfc Real.log A)).trace)
       {A | A.PosDef} := by

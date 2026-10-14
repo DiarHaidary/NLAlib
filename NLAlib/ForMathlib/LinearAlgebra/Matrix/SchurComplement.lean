@@ -28,11 +28,14 @@ namespace Matrix
 variable {K : Type*} [Field K] {n p q : Type*} [Fintype n] [Fintype p] [Fintype q]
   [DecidableEq n] [DecidableEq p] [DecidableEq q]
 
-/-- **Jacobi's complementary minor formula**, block form. For an invertible block matrix `M`, the
-determinant of the lower right block of `M⁻¹` is the determinant of the upper left block of `M`
-divided by `det M`. The upper left block may be singular and either block may be empty.
+/-- **Jacobi's complementary minor formula**, block form. For an invertible block matrix
+$\mathbf{M}$ indexed by $p \oplus q$, the determinant of the lower right block of
+$\mathbf{M}^{-1}$ is the determinant of the upper left block of $\mathbf{M}$ divided by
+$\det \mathbf{M}$:
+$\det\bigl((\mathbf{M}^{-1})_{22}\bigr) = \det(\mathbf{M}_{11}) / \det \mathbf{M}$. The upper left
+block may be singular and either block may be empty.
 [HornJohnson2013, §0.8.4]; here over any field.
-Port of `NLAlib.det_inverse_bottomRight_eq_topLeft_div_det`, there over `ℝ`.
+Port of `NLAlib.det_inverse_bottomRight_eq_topLeft_div_det`, there over $\mathbb{R}$.
 Result: jacobi-complementary-minors -/
 theorem det_inv_toBlocks₂₂ (M : Matrix (p ⊕ q) (p ⊕ q) K) (hM : IsUnit M) :
     M⁻¹.toBlocks₂₂.det = M.toBlocks₁₁.det / M.det := by
@@ -53,13 +56,14 @@ theorem det_inv_toBlocks₂₂ (M : Matrix (p ⊕ q) (p ⊕ q) K) (hM : IsUnit M
     mul_one] at h'
   rw [toBlocks_fromBlocks₂₂, toBlocks_fromBlocks₁₁, eq_div_iff hdet.ne_zero, mul_comm, h']
 
-/-- **Jacobi's complementary minor formula.** Let `er` and `ec` split the index type of an
-invertible `A` into a selected part `p` and its complement `q`, for rows and for columns. The
-minor of `A⁻¹` on rows `ec ∘ inr` and columns `er ∘ inr` is the minor of `A` on rows `er ∘ inl`
-and columns `ec ∘ inl`, times the sign of the permutation `ec.trans er.symm`, divided by `det A`.
-[HornJohnson2013, §0.8.4]; stated there for increasing index sets with the sign
-`(-1) ^ (sum of the selected indices)`, here for any finite index types over any field.
-Port of `NLAlib.det_inverse_complement_minor_eq_sign_mul_div`, there over `ℝ`.
+/-- **Jacobi's complementary minor formula.** Let the bijections $e_r, e_c : p \oplus q \simeq n$
+split the index type of an invertible $\mathbf{A}$ into a selected part $p$ and its complement
+$q$, for rows and for columns. The minor of $\mathbf{A}^{-1}$ on rows $e_c(q)$ and columns
+$e_r(q)$ is the minor of $\mathbf{A}$ on rows $e_r(p)$ and columns $e_c(p)$, times the sign of the
+permutation $e_r^{-1} \circ e_c$ (`ec.trans er.symm`), divided by $\det \mathbf{A}$.
+[HornJohnson2013, §0.8.4]; stated there for increasing index sets with the sign $(-1)^s$, $s$ the
+sum of the selected indices, here for any finite index types over any field.
+Port of `NLAlib.det_inverse_complement_minor_eq_sign_mul_div`, there over $\mathbb{R}$.
 Result: jacobi-complementary-minors -/
 theorem det_inv_submatrix_inr (A : Matrix n n K) (hA : IsUnit A) (er ec : p ⊕ q ≃ n) :
     (A⁻¹.submatrix (fun i => ec (Sum.inr i)) (fun j => er (Sum.inr j))).det =

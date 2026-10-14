@@ -14,12 +14,13 @@ public import NLAlib.Probability.SubGaussian.Basic
 /-!
 # Matrix series with sub-Gaussian coefficients
 
-For fixed Hermitian matrices `B k` and independent real coefficients `γ k` with
-`HasSubgaussianMGF (γ k) (c k)`, the series `∑ γ k • B k` satisfies
-`P(t ≤ λ_max) ≤ d exp (-t² / (2v))` with `v = ‖∑ c k B k²‖`, and
-`E λ_max ≤ √(2 v log d)`. Rectangular coefficients go through the dilation. Gaussian and
-Rademacher series are the case `c k = 1` (Tropp 2015, Theorem 4.1.1, which states the Gaussian and
-Rademacher cases; the sub-Gaussian form is the same proof).
+For fixed Hermitian $d \times d$ matrices $\mathbf{B}_k$ and independent real coefficients
+$\gamma_k$ with `HasSubgaussianMGF (γ k) (c k)`, the series $\sum_k \gamma_k \mathbf{B}_k$
+satisfies $\mathbb{P}(\lambda_{\max} \ge t) \le d\, e^{-t^2 / (2v)}$ with
+$v = \|\sum_k c_k \mathbf{B}_k^2\|_2$, and $\mathbb{E} \lambda_{\max} \le \sqrt{2 v \log d}$.
+Rectangular coefficients go through the dilation. Gaussian and Rademacher series are the case
+$c_k = 1$ (Tropp 2015, Theorem 4.1.1, which states the Gaussian and Rademacher cases; the
+sub-Gaussian form is the same proof).
 
 ## Main results
 
@@ -54,8 +55,9 @@ private theorem exp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian) (g : ℝ → 
   exact (cfc_comp' Real.exp g B ((B.finite_real_spectrum.image _).continuousOn _)
     (B.finite_real_spectrum.continuousOn _) hB).symm
 
-/-- A sub-Gaussian coefficient times a fixed Hermitian matrix has a matrix MGF bound:
-`E exp (θ γ B) ≤ exp (θ²/2 • c B²)`. -/
+/-- A sub-Gaussian coefficient times a fixed Hermitian matrix has a matrix MGF bound: if $\gamma$
+has proxy $c$, then $\mathbb{E} e^{\theta \gamma \mathbf{B}} \preceq e^{(\theta^2/2)\, c
+\mathbf{B}^2}$ for every real $\theta$. -/
 theorem hasMatrixMGFBound_smul_of_hasSubgaussianMGF {γ : Ω → ℝ} {c : ℝ≥0}
     (hγ : HasSubgaussianMGF γ c μ) {B : Matrix n n 𝕜} (hB : B.IsHermitian) :
     HasMatrixMGFBound (fun ω => γ ω • B) (fun θ => θ ^ 2 / 2) ((c : ℝ) • B ^ 2) Set.univ μ := by
@@ -99,7 +101,11 @@ private theorem isHermitian_sum_smul_sq [Fintype ι] (c : ι → ℝ≥0) {B : �
     (hB : ∀ k, (B k).IsHermitian) : (∑ k, (c k : ℝ) • B k ^ 2).IsHermitian :=
   isSelfAdjoint_sum _ fun k _ => (IsSelfAdjoint.all _).smul ((hB k).pow 2)
 
-/-- **The matrix series tail**, Hermitian coefficients ([Tropp2015], Theorem 4.1.1). -/
+/-- **The matrix series tail**, Hermitian coefficients: for independent real $\gamma_k$, each
+sub-Gaussian with proxy $c_k$, fixed Hermitian $\mathbf{B}_k$ and $t \ge 0$,
+$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr) \ge t\Bigr)
+\le \lvert n\rvert \exp\Bigl(-\frac{t^2}{2 \|\sum_k c_k \mathbf{B}_k^2\|_2}\Bigr)\,.$$
+[Tropp2015, Theorem 4.1.1]. -/
 theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ)
     (hγ : ∀ k, HasSubgaussianMGF (γ k) (c k) μ) {B : ι → Matrix n n 𝕜}
     (hB : ∀ k, (B k).IsHermitian) {t : ℝ} (ht : 0 ≤ t) :
@@ -131,7 +137,10 @@ theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFu
         field_simp
         ring
 
-/-- The matrix series mean, Hermitian coefficients ([Tropp2015], Theorem 4.1.1). -/
+/-- The matrix series mean, Hermitian coefficients: under the hypotheses of the tail,
+$$\mathbb{E}\, \lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr)
+\le \sqrt{2 \Bigl\|\sum_k c_k \mathbf{B}_k^2\Bigr\|_2 \log \lvert n\rvert}\,.$$
+[Tropp2015, Theorem 4.1.1]. -/
 theorem integral_eigenvalue_zero_sum_smul_le [Nonempty n] (hind : iIndepFun γ μ)
     (hγ : ∀ k, HasSubgaussianMGF (γ k) (c k) μ) {B : ι → Matrix n n 𝕜}
     (hB : ∀ k, (B k).IsHermitian) :
@@ -194,8 +203,14 @@ private theorem sum_smul_dilation_sq [DecidableEq m] [DecidableEq n] (a : ι →
 
 variable {B : ι → Matrix m n 𝕜}
 
-/-- **The matrix series tail**, rectangular coefficients ([Tropp2015], Theorem 4.1.1), with
-`v = max ‖∑ c k B k B kᴴ‖ ‖∑ c k B kᴴ B k‖`. -/
+/-- **The matrix series tail**, rectangular coefficients: for independent real $\gamma_k$, each
+sub-Gaussian with proxy $c_k$, fixed $\mathbf{B}_k$ with row index $m$ and column index $n$, and
+$t \ge 0$,
+$$\mathbb{P}\Bigl(\Bigl\|\sum_k \gamma_k \mathbf{B}_k\Bigr\|_2 \ge t\Bigr)
+\le (\lvert m\rvert + \lvert n\rvert)\, e^{-t^2 / (2v)}\,,$$
+with $v = \max\bigl(\|\sum_k c_k \mathbf{B}_k \mathbf{B}_k^{\mathsf{H}}\|_2,
+\|\sum_k c_k \mathbf{B}_k^{\mathsf{H}} \mathbf{B}_k\|_2\bigr)$.
+[Tropp2015, Theorem 4.1.1]. -/
 theorem measureReal_specNorm_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ)
     (hγ : ∀ k, HasSubgaussianMGF (γ k) (c k) μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ specNorm (∑ k, γ k ω • B k)} ≤
@@ -209,7 +224,11 @@ theorem measureReal_specNorm_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ
     specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
   exact h
 
-/-- The matrix series mean, rectangular coefficients ([Tropp2015], Theorem 4.1.1). -/
+/-- The matrix series mean, rectangular coefficients: under the hypotheses of the tail, with the
+same $v$,
+$\mathbb{E} \|\sum_k \gamma_k \mathbf{B}_k\|_2
+\le \sqrt{2 v \log(\lvert m\rvert + \lvert n\rvert)}$.
+[Tropp2015, Theorem 4.1.1]. -/
 theorem integral_specNorm_sum_smul_le [Nonempty n] (hind : iIndepFun γ μ)
     (hγ : ∀ k, HasSubgaussianMGF (γ k) (c k) μ) :
     ∫ ω, specNorm (∑ k, γ k ω • B k) ∂μ ≤

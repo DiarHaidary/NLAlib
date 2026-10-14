@@ -13,18 +13,19 @@ public import Mathlib.Order.Hom.PowersetCard
 # The Cauchy–Binet formula and compound matrices
 
 The determinant of a product of rectangular matrices as a sum over maximal square selections,
-and the compound matrix of all `k × k` minors with its multiplicativity. Upstream candidate for
+and the compound matrix of all $k \times k$ minors with its multiplicativity. Upstream candidate for
 `Mathlib.LinearAlgebra.Matrix.Determinant`.
 
 The Cauchy–Binet formula is stated without choosing an enumeration of each index subset: the
-term for a subset `s` is the determinant of the product of the two rectangular selections, which
-are indexed by `s` itself. `Matrix.det_mul_eq_det_submatrix_mul_det_submatrix` turns such a term
+term for a subset $s$ is the determinant of the product of the two rectangular selections, which
+are indexed by $s$ itself. `Matrix.det_mul_eq_det_submatrix_mul_det_submatrix` turns such a term
 into a product of two minors along any equivalence. Compound matrices need a sign convention, so
 they are defined for linearly ordered index types, with minors taken in increasing order.
 
 ## Main definitions
 
-* `Matrix.compound k A`: the `k`-th compound matrix of `A`, indexed by `Set.powersetCard`.
+* `Matrix.compound k A`: the $k$-th compound matrix of $\mathbf{A}$, indexed by
+  `Set.powersetCard`.
 
 ## Main results
 
@@ -47,9 +48,10 @@ section CauchyBinet
 
 variable [Fintype m] [Fintype n]
 
-/-- The determinant of a product `A * B` of an `m × n` and an `n × m` matrix, when `m` and `n`
-are in bijection, is the product of the determinants of the two matrices made square along the
-bijection. -/
+/-- The determinant of a product $\mathbf{A}\mathbf{B}$ of an $m \times n$ and an $n \times m$
+matrix, when $m$ and $n$ are in bijection by $e$, is the product of the determinants of the two
+matrices made square along $e$ (columns of $\mathbf{A}$ and rows of $\mathbf{B}$ reindexed by
+$e$). -/
 theorem det_mul_eq_det_submatrix_mul_det_submatrix [DecidableEq m]
     (A : Matrix m n R) (B : Matrix n m R) (e : m ≃ n) :
     (A * B).det = (A.submatrix id e).det * (B.submatrix e id).det := by
@@ -61,12 +63,15 @@ private theorem coeff_card_det_one_add_X_smul [DecidableEq m] (M : Matrix m m R)
     Finset.sum_singleton]
   exact det_submatrix_equiv_self (Equiv.subtypeUnivEquiv Finset.mem_univ) M
 
-/-- **The Cauchy–Binet formula.** For `A` of size `m × n` and `B` of size `n × m`, the
-determinant of `A * B` is the sum, over the subsets `s` of the middle index with as many elements
-as `m`, of the determinant of the product of the columns `s` of `A` with the rows `s` of `B`.
-When `n` has fewer elements than `m` the sum is empty and the determinant is zero.
+/-- **The Cauchy–Binet formula.** For $\mathbf{A}$ of size $m \times n$ and $\mathbf{B}$ of size
+$n \times m$,
+$$\det(\mathbf{A}\mathbf{B}) = \sum_{s \subseteq n,\ \lvert s \rvert = \lvert m \rvert}
+  \det(\mathbf{A}_{:,s} \mathbf{B}_{s,:}) \,,$$
+the sum over the subsets $s$ of the middle index with as many elements as $m$, of the
+determinant of the product of the columns $s$ of $\mathbf{A}$ with the rows $s$ of $\mathbf{B}$.
+When $n$ has fewer elements than $m$ the sum is empty and the determinant is zero.
 [HornJohnson2013, §0.8.7]; stated there with each term as a product of two minors, which is
-`Matrix.det_mul_eq_det_submatrix_mul_det_submatrix` applied to an enumeration of `s`. Here over
+`Matrix.det_mul_eq_det_submatrix_mul_det_submatrix` applied to an enumeration of $s$. Here over
 any commutative ring and any finite index types.
 Port of `NLAlib.det_mul_eq_sum_det_submatrix_mul_det_submatrix`.
 Result: cauchy-binet -/
@@ -87,8 +92,10 @@ theorem det_mul_eq_sum_powersetCard [DecidableEq m] (A : Matrix m n R) (B : Matr
     ← submatrix_mul _ _ _ _ _ Function.bijective_id]
 
 /-- A Gram determinant is the sum of the Gram determinants of the maximal row selections:
-`det (Aᴴ * A) = ∑ s, det (A_sᴴ * A_s)`, over the sets `s` of rows with as many elements as `A`
-has columns. Over `ℝ` or `ℂ` each term is the squared absolute value of a maximal minor.
+$\det(\mathbf{A}^{\mathsf{H}}\mathbf{A})
+= \sum_s \det(\mathbf{A}_{s,:}^{\mathsf{H}} \mathbf{A}_{s,:})$, over the sets $s$ of rows with as
+many elements as $\mathbf{A}$ has columns. Over $\mathbb{R}$ or $\mathbb{C}$ each term is the
+squared absolute value of a maximal minor.
 [HornJohnson2013, §0.8.7]. Port of `NLAlib.det_conjTranspose_mul_self_eq_sum_norm_sq` and
 `NLAlib.det_transpose_mul_self_eq_sum_det_sq`.
 Result: cauchy-binet -/
@@ -105,9 +112,9 @@ section Compound
 
 variable [LinearOrder l] [LinearOrder m] [LinearOrder n]
 
-/-- The `k`-th **compound matrix** of `A`: the matrix of all `k × k` minors of `A`, indexed by the
-`k`-element subsets of the row and column index types, each minor taken with its rows and columns
-in increasing order. [HornJohnson2013, §0.8.1]. -/
+/-- The $k$-th **compound matrix** of $\mathbf{A}$: the matrix of all $k \times k$ minors of
+$\mathbf{A}$, indexed by the $k$-element subsets of the row and column index types, each minor
+taken with its rows and columns in increasing order. [HornJohnson2013, §0.8.1]. -/
 noncomputable def compound (k : ℕ) (A : Matrix m n R) :
     Matrix (Set.powersetCard m k) (Set.powersetCard n k) R :=
   of fun s t =>
@@ -122,8 +129,9 @@ theorem compound_apply (k : ℕ) (A : Matrix m n R) (s : Set.powersetCard m k)
         (fun j => (Set.powersetCard.orderIsoOfFin t j : n))).det :=
   rfl
 
-/-- **Multiplicativity of compound matrices.** `compound k (A * B) = compound k A * compound k B`,
-the Cauchy–Binet formula for every `k × k` minor of a product.
+/-- **Multiplicativity of compound matrices.** Writing $C_k(\mathbf{A})$ for the $k$-th compound
+matrix (`compound k A`), $C_k(\mathbf{A}\mathbf{B}) = C_k(\mathbf{A}) C_k(\mathbf{B})$, the
+Cauchy–Binet formula for every $k \times k$ minor of a product.
 [HornJohnson2013, §0.8.1 and §0.8.7]. Port of `NLAlib.compoundMatrix_mul`.
 Result: cauchy-binet -/
 theorem compound_mul [Fintype m] (k : ℕ) (A : Matrix l m R) (B : Matrix m n R) :

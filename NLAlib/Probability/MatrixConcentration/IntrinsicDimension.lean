@@ -18,17 +18,21 @@ public import NLAlib.Probability.Tail
 /-!
 # Matrix concentration in the intrinsic dimension
 
-The matrix Chernoff and Bernstein inequalities with the ambient dimension `d` replaced by the
-intrinsic dimension `intrinsicDimension V = tr V / ‖V‖ ≤ rank V` of a variance proxy `V` (Tropp
-2015, chapter 7). The proxy is any deterministic `V` above the variance statistic in Loewner
-order (`∑ E X k ≤ M` for Chernoff, `∑ E X k² ≤ V` for Bernstein), entering after the trace, so a
-user trades `‖V‖` against `intrinsicDimension V`. The trace forms take a single random matrix with
-a trace MGF bound, as `NLAlib/Probability/MatrixConcentration/Chernoff.lean` does; the
-independent-sum forms are corollaries.
+The matrix Chernoff and Bernstein inequalities with the ambient dimension $d = \lvert n\rvert$
+replaced by the intrinsic dimension
+$\operatorname{intdim}(\mathbf{V}) = \operatorname{tr} \mathbf{V} / \|\mathbf{V}\|_2
+\le \operatorname{rank} \mathbf{V}$ (`intrinsicDimension`) of a variance proxy $\mathbf{V}$ (Tropp
+2015, chapter 7). The proxy is any deterministic $\mathbf{V}$ above the variance statistic in
+Loewner order ($\sum_k \mathbb{E}\mathbf{X}_k \preceq \mathbf{M}$ for Chernoff,
+$\sum_k \mathbb{E}\mathbf{X}_k^2 \preceq \mathbf{V}$ for Bernstein), entering after the trace, so a
+user trades $\|\mathbf{V}\|_2$ against $\operatorname{intdim}(\mathbf{V})$. The trace forms take a
+single random matrix with a trace MGF bound, as
+`NLAlib/Probability/MatrixConcentration/Chernoff.lean` does; the independent-sum forms are
+corollaries.
 
 The bounds are better than the dimensional ones (`ChernoffSum.lean`, `Bernstein.lean`) when
-`2 intdim M < d`, respectively `4 intdim V < d`, and the Bernstein tails hold only above the
-threshold `t ≥ √‖V‖ + L / 3`.
+$2 \operatorname{intdim}(\mathbf{M}) < d$, respectively $4 \operatorname{intdim}(\mathbf{V}) < d$,
+and the Bernstein tails hold only above the threshold $t \ge \sqrt{\|\mathbf{V}\|_2} + L / 3$.
 
 ## Main results
 
@@ -60,7 +64,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### Preliminaries -/
 
-/-- `δ ≤ (1 + δ) log (1 + δ)` for `δ > -1`. -/
+/-- $\delta \le (1 + \delta) \log(1 + \delta)$ for $\delta > -1$. -/
 private theorem le_one_add_mul_log_one_add {δ : ℝ} (hδ : 0 < 1 + δ) :
     δ ≤ (1 + δ) * Real.log (1 + δ) := by
   have h := Real.add_one_le_exp (-Real.log (1 + δ))
@@ -70,7 +74,7 @@ private theorem le_one_add_mul_log_one_add {δ : ℝ} (hδ : 0 < 1 + δ) :
   rw [mul_inv_cancel₀ hδ.ne'] at h2
   linarith
 
-/-- `e^u ≤ 4 (e^u - u - 1)` for `u ≥ 1`. -/
+/-- $e^u \le 4 (e^u - u - 1)$ for $u \ge 1$. -/
 private theorem exp_le_four_mul_exp_sub_sub_one {u : ℝ} (hu : 1 ≤ u) :
     Real.exp u ≤ 4 * (Real.exp u - u - 1) := by
   have h1 : u ≤ Real.exp (u - 1) := by linarith [Real.add_one_le_exp (u - 1)]
@@ -83,13 +87,13 @@ private theorem exp_le_four_mul_exp_sub_sub_one {u : ℝ} (hu : 1 ≤ u) :
   have h4 := mul_le_mul_of_nonneg_left he.le (by linarith : (0 : ℝ) ≤ u)
   linarith
 
-/-- `r (E - 1) / (X - 1) ≤ 2 r E / X` for `r, E ≥ 0` and `X ≥ 2`. -/
+/-- $r (E - 1) / (X - 1) \le 2 r E / X$ for $r, E \ge 0$ and $X \ge 2$. -/
 private theorem mul_sub_one_div_sub_one_le {r E X : ℝ} (hr : 0 ≤ r) (hE : 0 ≤ E) (hX : 2 ≤ X) :
     r * (E - 1) / (X - 1) ≤ 2 * r * E / X := by
   rw [div_le_div_iff₀ (by linarith) (by linarith)]
   nlinarith [mul_nonneg (mul_nonneg hr hE) (by linarith : (0 : ℝ) ≤ X - 2)]
 
-/-- `r (E - 1) / (e^u - u - 1) ≤ 4 r E / e^u` for `r, E ≥ 0` and `u ≥ 1`. -/
+/-- $r (E - 1) / (e^u - u - 1) \le 4 r E / e^u$ for $r, E \ge 0$ and $u \ge 1$. -/
 private theorem mul_sub_one_div_exp_sub_le {r E u : ℝ} (hr : 0 ≤ r) (hE : 0 ≤ E) (hu : 1 ≤ u) :
     r * (E - 1) / (Real.exp u - u - 1) ≤ 4 * r * E / Real.exp u := by
   have h4 := exp_le_four_mul_exp_sub_sub_one hu
@@ -98,7 +102,7 @@ private theorem mul_sub_one_div_exp_sub_le {r E u : ℝ} (hr : 0 ≤ r) (hE : 0 
   nlinarith [mul_le_mul_of_nonneg_left h4 (mul_nonneg hr hE),
     mul_nonneg hr (Real.exp_pos u).le]
 
-/-- `e^{c x} - 1` is convex. -/
+/-- $x \mapsto e^{c x} - 1$ is convex on $[0, \infty)$. -/
 private theorem convexOn_exp_mul_sub_one (c : ℝ) :
     ConvexOn ℝ (Set.Ici 0) fun x : ℝ => Real.exp (c * x) - 1 := by
   refine ⟨convex_Ici 0, fun x _ y _ a b ha hb hab => ?_⟩
@@ -114,7 +118,8 @@ private theorem intrinsicDimension_nonneg_of_posSemidef {V : Matrix n n 𝕜} (h
     0 ≤ intrinsicDimension V :=
   div_nonneg ((specNorm_nonneg V).trans hV.specNorm_le_re_trace) (specNorm_nonneg V)
 
-/-- `tr exp (c A) = ∑ e^{c λ_i}` for Hermitian `A`. -/
+/-- $\operatorname{tr} e^{c\mathbf{A}} = \sum_{i < \lvert n\rvert} e^{c \lambda_i(\mathbf{A})}$ for
+Hermitian $\mathbf{A}$. -/
 private theorem re_trace_exp_smul_eq_sum {A : Matrix n n 𝕜} (hA : A.IsHermitian) (c : ℝ) :
     RCLike.re (exp (c • A)).trace =
       ∑ i ∈ Finset.range (Fintype.card n), Real.exp (c * eigenvalue A i) := by
@@ -122,14 +127,17 @@ private theorem re_trace_exp_smul_eq_sum {A : Matrix n n 𝕜} (hA : A.IsHermiti
   rw [hcA.exp_eq_cfc, ← cfc_comp_smul c Real.exp A, hA.re_trace_cfc]
   simp only [smul_eq_mul]
 
-/-- `tr (e^{cA} - 1) = tr e^{cA} - d` for Hermitian `A`. -/
+/-- $\operatorname{tr}(e^{c\mathbf{A}} - \mathbf{I}) = \operatorname{tr} e^{c\mathbf{A}} - \lvert
+n\rvert$ for Hermitian $\mathbf{A}$. -/
 private theorem re_trace_cfc_exp_sub_one {A : Matrix n n 𝕜} (hA : A.IsHermitian) (c : ℝ) :
     RCLike.re (cfc (fun x => Real.exp (c * x) - 1) A).trace =
       RCLike.re (exp (c • A)).trace - Fintype.card n := by
   rw [hA.re_trace_cfc, re_trace_exp_smul_eq_sum hA, Finset.sum_sub_distrib, Finset.sum_const,
     Finset.card_range, nsmul_eq_mul, mul_one]
 
-/-- `tr (e^{cA} - cA - 1) = tr e^{cA} - c tr A - d` for Hermitian `A`. -/
+/-- $\operatorname{tr}(e^{c\mathbf{A}} - c\mathbf{A} - \mathbf{I})
+= \operatorname{tr} e^{c\mathbf{A}} - c \operatorname{tr} \mathbf{A} - \lvert n\rvert$ for
+Hermitian $\mathbf{A}$. -/
 private theorem re_trace_cfc_exp_sub_mul_sub_one {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (c : ℝ) :
     RCLike.re (cfc (fun x => Real.exp (c * x) - c * x - 1) A).trace =
@@ -138,8 +146,9 @@ private theorem re_trace_cfc_exp_sub_mul_sub_one {A : Matrix n n 𝕜} (hA : A.I
     Finset.sum_sub_distrib, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range,
     nsmul_eq_mul, mul_one, Finset.mul_sum]
 
-/-- The intrinsic dimension lemma for the trace exponential:
-`tr e^{cV} - d ≤ intdim V (e^{c ‖V‖} - 1)`. -/
+/-- The intrinsic dimension lemma for the trace exponential: for positive semidefinite
+$\mathbf{V}$, $\operatorname{tr} e^{c\mathbf{V}} - \lvert n\rvert
+\le \operatorname{intdim}(\mathbf{V}) (e^{c \|\mathbf{V}\|_2} - 1)$. -/
 private theorem re_trace_exp_smul_sub_card_le {V : Matrix n n 𝕜} (hV : V.PosSemidef) (c : ℝ) :
     RCLike.re (exp (c • V)).trace - Fintype.card n ≤
       intrinsicDimension V * (Real.exp (c * specNorm V) - 1) := by
@@ -147,7 +156,8 @@ private theorem re_trace_exp_smul_sub_card_le {V : Matrix n n 𝕜} (hV : V.PosS
   exact hV.re_trace_cfc_le_intrinsicDimension_mul (convexOn_exp_mul_sub_one c)
     (by simp only [mul_zero, Real.exp_zero, sub_self])
 
-/-- `e^{c λ_max A} - 1 ≤ tr e^{cA} - d` for positive semidefinite `A` and `c ≥ 0`. -/
+/-- $e^{c \lambda_0(\mathbf{A})} - 1 \le \operatorname{tr} e^{c\mathbf{A}} - \lvert n\rvert$ for
+positive semidefinite $\mathbf{A}$ and $c \ge 0$. -/
 private theorem exp_mul_eigenvalue_zero_sub_one_le {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     {c : ℝ} (hc : 0 ≤ c) :
     Real.exp (c * eigenvalue A 0) - 1 ≤ RCLike.re (exp (c • A)).trace - Fintype.card n := by
@@ -164,13 +174,17 @@ private theorem exp_mul_eigenvalue_zero_sub_one_le {A : Matrix n n 𝕜} (hA : A
 
 section Chernoff
 
-/-- **Intrinsic-dimension matrix Chernoff, trace form**: for an almost surely positive
-semidefinite `Y` with `E tr exp (θ Y) ≤ tr exp ((e^{θL} - 1)/L • V)` for every `θ > 0`, a nonzero
-positive semidefinite `V` and `δ ≥ L / λ_max V`,
-`P((1 + δ) λ_max V ≤ λ_max Y) ≤ 2 intdim V (e^δ / (1 + δ)^{1+δ})^{λ_max V / L}`.
+/-- **Intrinsic-dimension matrix Chernoff, trace form**: for $L > 0$, an almost surely positive
+semidefinite $\mathbf{Y}$ with $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$, a nonzero
+positive semidefinite $\mathbf{V}$ and $\delta \ge L / \lambda_0(\mathbf{V})$,
+$$\mathbb{P}\bigl(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr)
+\le 2 \operatorname{intdim}(\mathbf{V})
+\Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L}\,.$$
 [Tropp2015, Theorem 7.2.1]; there for independent sums, here from the trace bound alone, so any
-`Y` with that bound (sampling without replacement) gets the tail. `V ≠ 0` is needed: at `V = 0`
-the event is everything and the bound `0`. -/
+$\mathbf{Y}$ with that bound (sampling without replacement) gets the tail.
+$\mathbf{V} \ne \mathbf{0}$ is needed: at $\mathbf{V} = \mathbf{0}$ the event is everything and the
+bound $0$. -/
 theorem measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le
     [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜} {V : Matrix n n 𝕜}
     (hY : ∀ᵐ ω ∂μ, (Y ω).PosSemidef) (hV : V.PosSemidef) (hV0 : V ≠ 0) (hL : 0 < L)
@@ -239,8 +253,8 @@ theorem measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le
 
 variable {X : ι → Ω → Matrix n n 𝕜}
 
-/-- The hypotheses of the trace-form intrinsic Chernoff bound for `Y = ∑ X k` and the proxy
-`M`. -/
+/-- The hypotheses of the trace-form intrinsic Chernoff bound for
+$\mathbf{Y} = \sum_k \mathbf{X}_k$ and the proxy $\mathbf{M}$. -/
 private theorem chernoff_intrinsic_hyps [IsProbabilityMeasure μ] (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {M : Matrix n n 𝕜}
@@ -265,12 +279,17 @@ private theorem chernoff_intrinsic_hyps [IsProbabilityMeasure μ] (hind : iIndep
     exact re_trace_exp_le_re_trace_exp_of_le ((IsSelfAdjoint.all _).smul hS.isHermitian)
       (Matrix.le_iff.mpr (by rw [← smul_sub]; exact (Matrix.le_iff.mp hM).smul hc))
 
-/-- **Intrinsic-dimension matrix Chernoff**: for independent random positive semidefinite
-`0 ≤ X k ≤ L • 1`, a matrix `M ≠ 0` above `∑ E X k` and `δ ≥ L / λ_max M`,
-`P((1 + δ) λ_max M ≤ λ_max (∑ X k)) ≤ 2 intdim M (e^δ / (1 + δ)^{1+δ})^{λ_max M / L}`.
-[Tropp2015, Theorem 7.2.1]; here with any upper bound `M` in Loewner order in place of
-`∑ E X k`. Better than `measureReal_eigenvalue_zero_sum_ge_le_chernoff` when
-`2 intdim M < card n`, but only for `δ ≥ L / λ_max M`.
+/-- **Intrinsic-dimension matrix Chernoff**: for finitely many independent, almost everywhere
+measurable random matrices with $\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost
+surely, $L > 0$, a matrix $\mathbf{M} \ne \mathbf{0}$ with
+$\sum_k \mathbb{E}\mathbf{X}_k \preceq \mathbf{M}$ and $\delta \ge L / \lambda_0(\mathbf{M})$,
+$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge (1 + \delta) \lambda_0(\mathbf{M})
+\Bigr) \le 2 \operatorname{intdim}(\mathbf{M})
+\Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{M}) / L}\,.$$
+[Tropp2015, Theorem 7.2.1]; here with any upper bound $\mathbf{M}$ in Loewner order in place of
+$\sum_k \mathbb{E}\mathbf{X}_k$. Better than `measureReal_eigenvalue_zero_sum_ge_le_chernoff` when
+$2 \operatorname{intdim}(\mathbf{M}) < \lvert n\rvert$, but only for
+$\delta \ge L / \lambda_0(\mathbf{M})$.
 Result: intrinsic-matrix-chernoff -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDim (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
@@ -283,16 +302,20 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDim (hind : iInd
   exact measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le
     (Y := fun ω => ∑ k, X k ω) hY hMpsd hM0 hL (fun θ _ => hint θ) (fun θ hθ => htr θ hθ.le) hδ
 
-/-- **Intrinsic-dimension matrix Chernoff for the mean**: for independent random positive
-semidefinite `0 ≤ X k ≤ L • 1`, a matrix `M` above `∑ E X k` and every `θ > 0`,
-`E λ_max (∑ X k) ≤ (e^θ - 1)/θ · λ_max M + L/θ · log (2 intdim M)`.
-[Tropp2015, Theorem 7.2.1]; here with any upper bound `M` in Loewner order and a free `θ`. No
-`M ≠ 0`: at `M = 0` both sides are `0` (`Real.log 0 = 0`). Proof: for positive semidefinite `Y`,
-`e^{s λ_max Y} - 1 ≤ tr (e^{s Y} - 1)`; Jensen; the trace bound at `s = θ / L` and monotonicity
-after the trace; the intrinsic dimension lemma
+/-- **Intrinsic-dimension matrix Chernoff for the mean**: for summands $\mathbf{X}_k$ as in the
+tail, any matrix $\mathbf{M}$ with $\sum_k \mathbb{E}\mathbf{X}_k \preceq \mathbf{M}$ (possibly
+$\mathbf{0}$) and every $\theta > 0$,
+$$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
+\le \frac{e^\theta - 1}{\theta} \lambda_0(\mathbf{M}) +
+\frac{L}{\theta} \log\bigl(2 \operatorname{intdim}(\mathbf{M})\bigr)\,.$$
+[Tropp2015, Theorem 7.2.1]; here with any upper bound $\mathbf{M}$ in Loewner order and a free
+$\theta$. No $\mathbf{M} \ne \mathbf{0}$: at $\mathbf{M} = \mathbf{0}$ both sides are $0$
+(`Real.log 0 = 0`). Proof: for positive semidefinite $\mathbf{Y}$,
+$e^{s \lambda_0(\mathbf{Y})} - 1 \le \operatorname{tr}(e^{s\mathbf{Y}} - \mathbf{I})$; Jensen; the
+trace bound at $s = \theta / L$ and monotonicity after the trace; the intrinsic dimension lemma
 (`Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul`); then
-`1 + d (e^a - 1) ≤ 2 d e^a` from `Matrix.PosSemidef.one_le_intrinsicDimension` (case split on
-`M = 0`).
+$1 + D (e^a - 1) \le 2 D e^a$ for $D = \operatorname{intdim}(\mathbf{M})$, from
+`Matrix.PosSemidef.one_le_intrinsicDimension` (case split on $\mathbf{M} = \mathbf{0}$).
 Result: intrinsic-matrix-chernoff -/
 theorem integral_eigenvalue_zero_sum_le_chernoff_intrinsicDim (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
@@ -355,8 +378,11 @@ end Chernoff
 
 section Bernstein
 
-/-- The generalised Laplace bound with `ψ a = e^{θa} - θa - 1` for a centred `Y` with a trace
-bound `E tr e^{θY} ≤ tr e^{cV}`. -/
+/-- The generalised Laplace bound with $\psi(a) = e^{\theta a} - \theta a - 1$ for a centred
+$\mathbf{Y}$ with a trace bound $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{tr} e^{c\mathbf{V}}$: for $t > 0$,
+$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le \operatorname{intdim}(\mathbf{V})
+(e^{c \|\mathbf{V}\|_2} - 1) / (e^{\theta t} - \theta t - 1)$. -/
 private theorem bernstein_intrinsic_core [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜}
     {V : Matrix n n 𝕜} (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi : Integrable Y μ)
     (hmean : ∫ ω, Y ω ∂μ = 0) (hV : V.PosSemidef) {θ : ℝ} (hθ : 0 < θ)
@@ -416,12 +442,18 @@ private theorem bernstein_intrinsic_core [IsProbabilityMeasure μ] {Y : Ω → M
   exact (measureReal_eigenvalue_zero_ge_le_integral_re_trace_cfc_div hY hψ0 hψm hψint ht.le
     hψt).trans (div_le_div_of_nonneg_right hE hψt.le)
 
-/-- **Intrinsic-dimension matrix Bernstein, trace form**: for a centred, integrable, almost
-surely Hermitian `Y` with `E tr exp (θ Y) ≤ tr exp (θ²/2/(1 - Lθ/3) • V)` for `θ ∈ (0, 3/L)`, a
-positive semidefinite `V`, and `t ≥ √‖V‖ + L/3`,
-`P(t ≤ λ_max Y) ≤ 4 intdim V exp (-(t²/2) / (‖V‖ + L t / 3))`.
-[Tropp2015, Theorem 7.7.1]; here from the trace bound alone. No `V ≠ 0`: at `V = 0` the bound
-`0` holds because `E tr (e^{θY} - θY - 1) ≤ 0` forces `Y = 0` almost surely. -/
+/-- **Intrinsic-dimension matrix Bernstein, trace form**: for $L > 0$, a centred, integrable,
+almost surely Hermitian $\mathbf{Y}$ with
+$\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{tr} e^{((\theta^2/2)/(1 - L\theta/3))\, \mathbf{V}}$ for
+$\theta \in (0, 3/L)$, a positive semidefinite $\mathbf{V}$, and
+$t \ge \sqrt{\|\mathbf{V}\|_2} + L/3$,
+$$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le 4 \operatorname{intdim}(\mathbf{V})
+\exp\Bigl(\frac{-t^2/2}{\|\mathbf{V}\|_2 + L t / 3}\Bigr)\,.$$
+[Tropp2015, Theorem 7.7.1]; here from the trace bound alone. No $\mathbf{V} \ne \mathbf{0}$: at
+$\mathbf{V} = \mathbf{0}$ the bound $0$ holds because
+$\mathbb{E} \operatorname{tr}(e^{\theta\mathbf{Y}} - \theta\mathbf{Y} - \mathbf{I}) \le 0$ forces
+$\mathbf{Y} = \mathbf{0}$ almost surely. -/
 theorem measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDim_of_integral_le
     [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜} {V : Matrix n n 𝕜}
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi : Integrable Y μ) (hmean : ∫ ω, Y ω ∂μ = 0)
@@ -467,7 +499,8 @@ theorem measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDim_of_integral_le
   field_simp
   ring
 
-/-- The hypotheses of the trace-form intrinsic Bernstein bound for `Y = ∑ X k`. -/
+/-- The hypotheses of the trace-form intrinsic Bernstein bound for
+$\mathbf{Y} = \sum_k \mathbf{X}_k$. -/
 private theorem bernstein_intrinsic_hyps [IsProbabilityMeasure μ] {X : ι → Ω → Matrix n n 𝕜}
     (hind : iIndepFun X μ) (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ)
     (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0) (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜))
@@ -508,12 +541,17 @@ section Hermitian
 
 variable {X : ι → Ω → Matrix n n 𝕜}
 
-/-- **Intrinsic-dimension matrix Bernstein**, Hermitian summands: for independent centred
-`X k ≤ L • 1` in `L²`, a matrix `V` above `∑ E X k²` and `t ≥ √‖V‖ + L/3`,
-`P(t ≤ λ_max (∑ X k)) ≤ 4 intdim V exp (-(t²/2) / (‖V‖ + L t / 3))`.
-[Tropp2015, Corollary 7.3.2; Theorem 7.7.1]; here with any upper bound `V` in Loewner order and a
-one-sided bound on the summands. Better than `measureReal_eigenvalue_zero_sum_ge_le_bernstein`
-when `4 intdim V < card n`, and only for `t` above the threshold.
+/-- **Intrinsic-dimension matrix Bernstein**, Hermitian summands: for finitely many independent
+centred random matrices in $L^2$ with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
+a matrix $\mathbf{V}$ with $\sum_k \mathbb{E}\mathbf{X}_k^2 \preceq \mathbf{V}$ and
+$t \ge \sqrt{\|\mathbf{V}\|_2} + L/3$,
+$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
+\le 4 \operatorname{intdim}(\mathbf{V})
+\exp\Bigl(\frac{-t^2/2}{\|\mathbf{V}\|_2 + L t / 3}\Bigr)\,.$$
+[Tropp2015, Corollary 7.3.2; Theorem 7.7.1]; here with any upper bound $\mathbf{V}$ in Loewner
+order and a one-sided bound on the summands. Better than
+`measureReal_eigenvalue_zero_sum_ge_le_bernstein` when
+$4 \operatorname{intdim}(\mathbf{V}) < \lvert n\rvert$, and only for $t$ above the threshold.
 Result: intrinsic-matrix-bernstein -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
@@ -552,12 +590,18 @@ private theorem sum_integral_dilation_sq_le (hS2 : ∀ k, MemLp (S k) 2 μ) {V�
     by simpa only [Matrix.conjTranspose_zero, Matrix.zero_mul, sub_zero] using
       Matrix.le_iff.mp hV₂⟩
 
-/-- **Intrinsic-dimension matrix Bernstein**, rectangular summands: for independent centred
-`S k` in `L²` with `‖S k‖ ≤ L`, matrices `V₁ ≥ ∑ E S Sᴴ`, `V₂ ≥ ∑ E Sᴴ S`, `v = max ‖V₁‖ ‖V₂‖`
-and `t ≥ √v + L/3`, `P(t ≤ ‖∑ S k‖) ≤ 4 intdim (V₁ ⊕ V₂) exp (-(t²/2) / (v + L t / 3))`.
-[Tropp2015, Theorem 7.3.1]; through the Hermitian dilation, with any upper bounds `V₁`, `V₂`.
-Better than `measureReal_specNorm_sum_ge_le_bernstein` when
-`4 intdim (V₁ ⊕ V₂) < card m + card n`.
+/-- **Intrinsic-dimension matrix Bernstein**, rectangular summands: for finitely many independent
+centred random matrices $\mathbf{S}_k$ in $L^2$ with $\|\mathbf{S}_k\|_2 \le L$ almost surely,
+$L > 0$, matrices $\mathbf{V}_1 \succeq \sum_k \mathbb{E}\mathbf{S}_k\mathbf{S}_k^{\mathsf{H}}$
+and $\mathbf{V}_2 \succeq \sum_k \mathbb{E}\mathbf{S}_k^{\mathsf{H}}\mathbf{S}_k$,
+$v = \max(\|\mathbf{V}_1\|_2, \|\mathbf{V}_2\|_2)$ and $t \ge \sqrt{v} + L/3$,
+$$\mathbb{P}\Bigl(\Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \ge t\Bigr)
+\le 4 \operatorname{intdim}\begin{bmatrix} \mathbf{V}_1 & \mathbf{0} \\ \mathbf{0} &
+\mathbf{V}_2 \end{bmatrix} \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
+[Tropp2015, Theorem 7.3.1]; through the Hermitian dilation, with any upper bounds
+$\mathbf{V}_1$, $\mathbf{V}_2$. Better than `measureReal_specNorm_sum_ge_le_bernstein` when four
+times the intrinsic dimension of the block diagonal proxy is below
+$\lvert m\rvert + \lvert n\rvert$.
 Result: intrinsic-matrix-bernstein -/
 theorem measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)
@@ -580,10 +624,10 @@ theorem measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim (hind : iIndepFun 
 
 end Rectangular
 
-/-- The absolute constant of the intrinsic-dimension Bernstein means. [Tropp2015, Theorem 7.3.1]
-leaves it unspecified; the prototype's proof reached `20`, the proof here `8`, the value here.
-A smaller value is a better bound. Use only `intrinsicBernsteinMeanConstant_pos` and
-`intrinsicBernsteinMeanConstant_le`. -/
+/-- The absolute constant $C$ of the intrinsic-dimension Bernstein means.
+[Tropp2015, Theorem 7.3.1] leaves it unspecified; the prototype's proof reached $20$, the proof
+here $8$, the value here. A smaller value is a better bound. Use only
+`intrinsicBernsteinMeanConstant_pos` and `intrinsicBernsteinMeanConstant_le`. -/
 noncomputable irreducible_def intrinsicBernsteinMeanConstant : ℝ := 8
 
 /-- The intrinsic Bernstein mean constant is positive. -/
@@ -591,12 +635,13 @@ theorem intrinsicBernsteinMeanConstant_pos : 0 < intrinsicBernsteinMeanConstant 
   rw [intrinsicBernsteinMeanConstant_def]
   norm_num
 
-/-- An explicit upper bound on `intrinsicBernsteinMeanConstant`. -/
+/-- An explicit upper bound on `intrinsicBernsteinMeanConstant`: $C \le 8$. -/
 theorem intrinsicBernsteinMeanConstant_le : intrinsicBernsteinMeanConstant ≤ 8 := by
   exact intrinsicBernsteinMeanConstant_def.le
 
-/-- The Bernstein exponent beyond `μ₀` dominates a linear one:
-`-(t²/2)/(v + Lt/3) ≤ -c t` with `c = (μ₀/2)/(v + Lμ₀/3)`, for `t ≥ μ₀ > 0`. -/
+/-- The Bernstein exponent beyond $\mu_0$ dominates a linear one:
+$-(t^2/2)/(v + Lt/3) \le -c t$ with $c = (\mu_0/2)/(v + L\mu_0/3)$, for $t \ge \mu_0 > 0$,
+$v \ge 0$ and $L > 0$. -/
 private theorem bernstein_exponent_le_linear {v L μ₀ t : ℝ} (hv : 0 ≤ v) (hL : 0 < L)
     (hμ : 0 < μ₀) (ht : μ₀ ≤ t) :
     -(t ^ 2 / 2) / (v + L * t / 3) ≤ -(μ₀ / 2 / (v + L * μ₀ / 3)) * t := by
@@ -606,9 +651,11 @@ private theorem bernstein_exponent_le_linear {v L μ₀ t : ℝ} (hv : 0 ≤ v) 
   rw [neg_div, neg_mul, neg_le_neg_iff, div_mul_eq_mul_div, div_le_div_iff₀ hA hB]
   nlinarith [mul_le_mul_of_nonneg_left ht (mul_nonneg ht0.le hv)]
 
-/-- The scalar bookkeeping of the intrinsic Bernstein mean: with `μ₀ = 2 √(v ℓ) + 2 ℓ L` and
-`c = (μ₀/2)/(v + Lμ₀/3)`, `μ₀` is above the threshold and
-`μ₀ + 4 r e^{-c μ₀} / c ≤ 8 (√(v ℓ) + L ℓ)` when `e^{-ℓ} = 1/(1 + r)` and `ℓ ≥ 2/3`. -/
+/-- The scalar bookkeeping of the intrinsic Bernstein mean: with
+$\mu_0 = 2 \sqrt{v \ell} + 2 \ell L$ and $c = (\mu_0/2)/(v + L\mu_0/3)$, $\mu_0$ is above the
+threshold $\sqrt{v} + L/3$, $\mu_0, c > 0$ and
+$\mu_0 + 4 r e^{-c \mu_0} / c \le 8 (\sqrt{v \ell} + L \ell)$, when $v, L > 0$, $r \ge 0$,
+$e^{-\ell} = 1/(1 + r)$ and $\ell \ge 2/3$. -/
 private theorem bernstein_mean_scalar {v L ℓ r : ℝ} (hv : 0 < v) (hL : 0 < L) (hℓ : 2 / 3 ≤ ℓ)
     (hr : 0 ≤ r) (hexp : Real.exp (-ℓ) = 1 / (1 + r)) {μ₀ c : ℝ}
     (hμ : μ₀ = 2 * √(v * ℓ) + 2 * ℓ * L) (hc : c = μ₀ / 2 / (v + L * μ₀ / 3)) :
@@ -665,13 +712,15 @@ section Hermitian
 
 variable {X : ι → Ω → Matrix n n 𝕜}
 
-/-- **Intrinsic-dimension matrix Bernstein for the mean**, Hermitian summands: for independent
-centred `X k ≤ L • 1` in `L²` and a matrix `V` above `∑ E X k²`,
-`E λ_max (∑ X k) ≤ C (√(‖V‖ log (1 + intdim V)) + L log (1 + intdim V))` with
-`C = intrinsicBernsteinMeanConstant`. [Tropp2015, Corollary 7.3.2]; here with any upper bound `V`
-in Loewner order. Better than `integral_eigenvalue_zero_sum_le_bernstein` when `intdim V` is
-much smaller than `card n`; its constant is worse. Proof: integrate the tail above the
-threshold.
+/-- **Intrinsic-dimension matrix Bernstein for the mean**, Hermitian summands: for summands
+$\mathbf{X}_k$ and a proxy $\mathbf{V}$ as in the tail, with
+$D = \operatorname{intdim}(\mathbf{V})$,
+$$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
+\le C \Bigl(\sqrt{\|\mathbf{V}\|_2 \log(1 + D)} + L \log(1 + D)\Bigr)$$
+with $C$ = `intrinsicBernsteinMeanConstant`. [Tropp2015, Corollary 7.3.2]; here with any upper
+bound $\mathbf{V}$ in Loewner order. Better than `integral_eigenvalue_zero_sum_le_bernstein` when
+$\operatorname{intdim}(\mathbf{V})$ is much smaller than $\lvert n\rvert$; its constant is worse.
+Proof: integrate the tail above the threshold.
 Result: intrinsic-matrix-bernstein -/
 theorem integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
@@ -739,12 +788,15 @@ section Rectangular
 
 variable {m : Type*} [Fintype m] [DecidableEq m] {S : ι → Ω → Matrix m n 𝕜}
 
-/-- **Intrinsic-dimension matrix Bernstein for the mean**, rectangular summands: for independent
-centred `S k` in `L²` with `‖S k‖ ≤ L` and matrices `V₁ ≥ ∑ E S Sᴴ`, `V₂ ≥ ∑ E Sᴴ S`, with
-`v = max ‖V₁‖ ‖V₂‖` and `D = intdim (V₁ ⊕ V₂)`, `E ‖∑ S k‖ ≤ C (√(v log (1 + D)) + L log (1 + D))`
-with `C = intrinsicBernsteinMeanConstant`. [Tropp2015, Theorem 7.3.1]; here with any upper
-bounds `V₁`, `V₂`. Better than `integral_specNorm_sum_le_bernstein` when `D` is much smaller than
-`card m + card n`.
+/-- **Intrinsic-dimension matrix Bernstein for the mean**, rectangular summands: for summands
+$\mathbf{S}_k$ and proxies $\mathbf{V}_1$, $\mathbf{V}_2$ as in the tail, with
+$v = \max(\|\mathbf{V}_1\|_2, \|\mathbf{V}_2\|_2)$ and $D$ the
+intrinsic dimension of the block diagonal matrix with blocks $\mathbf{V}_1$, $\mathbf{V}_2$,
+$$\mathbb{E} \Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2
+\le C \Bigl(\sqrt{v \log(1 + D)} + L \log(1 + D)\Bigr)$$
+with $C$ = `intrinsicBernsteinMeanConstant`. [Tropp2015, Theorem 7.3.1]; here with any upper
+bounds $\mathbf{V}_1$, $\mathbf{V}_2$. Better than `integral_specNorm_sum_le_bernstein` when $D$
+is much smaller than $\lvert m\rvert + \lvert n\rvert$.
 Result: intrinsic-matrix-bernstein -/
 theorem integral_specNorm_sum_le_bernstein_intrinsicDim (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)

@@ -11,18 +11,19 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 /-!
 # Sine truncation
 
-The sine truncation `c sin (y / c) = y sinc (y / c)` of a real number `y` at scale `c`: it is at
-most `|y|` and `|c|` in absolute value, it does not increase the derivative of a function it is
-composed with, and it tends to `y` as the scale grows. Composing a `C¹` function with it gives a
+The sine truncation $c \sin(y / c) = y \operatorname{sinc}(y / c)$ of a real number $y$ at scale
+$c$: it is at most $\lvert y \rvert$ and $\lvert c \rvert$ in absolute value, it does not increase
+the derivative of a function it is composed with, and it tends to $y$ as the scale grows.
+Composing a $C^1$ function with it gives a
 bounded `C¹` approximation whose energy is at most that of the function, which is how an
 inequality for bounded test functions (a logarithmic Sobolev inequality) is extended to
 finite-energy ones. Upstream candidate for `Mathlib.Analysis.SpecialFunctions.Trigonometric.Sinc`.
 
 ## Main results
 
-* `Real.abs_mul_sin_inv_mul_le`: `|c sin (c⁻¹ y)| ≤ |y|`.
-* `norm_fderiv_mul_sin_inv_mul_le`: `‖D (c sin (c⁻¹ f)) x‖ ≤ ‖D f x‖`.
-* `Real.tendsto_natCast_add_one_mul_sin_inv_mul`: `(n + 1) sin (y / (n + 1)) → y`.
+* `Real.abs_mul_sin_inv_mul_le`: $\lvert c \sin(c^{-1} y) \rvert \le \lvert y \rvert$.
+* `norm_fderiv_mul_sin_inv_mul_le`: $\|D(c \sin(c^{-1} f))(x)\| \le \|Df(x)\|$.
+* `Real.tendsto_natCast_add_one_mul_sin_inv_mul`: $(n + 1) \sin(y / (n + 1)) \to y$.
 -/
 
 @[expose] public section
@@ -31,8 +32,8 @@ open Filter Topology
 
 namespace Real
 
-/-- The sine truncation at any scale `c` is at most `|y|` in absolute value:
-`|c sin (c⁻¹ y)| ≤ |y|`. -/
+/-- The sine truncation at any scale $c$ is at most $\lvert y \rvert$ in absolute value:
+$\lvert c \sin(c^{-1} y) \rvert \le \lvert y \rvert$. -/
 theorem abs_mul_sin_inv_mul_le (c y : ℝ) : |c * sin (c⁻¹ * y)| ≤ |y| := by
   rcases eq_or_ne c 0 with rfl | hc
   · simp
@@ -41,8 +42,8 @@ theorem abs_mul_sin_inv_mul_le (c y : ℝ) : |c * sin (c⁻¹ * y)| ≤ |y| := b
         mul_le_mul_of_nonneg_left abs_sin_le_abs (abs_nonneg c)
     _ = |y| := by rw [abs_mul, abs_inv, ← mul_assoc, mul_inv_cancel₀ (abs_ne_zero.2 hc), one_mul]
 
-/-- The sine truncations at scales `n + 1` converge pointwise to the identity:
-`(n + 1) sin (y / (n + 1)) → y`. -/
+/-- The sine truncations at scales $n + 1$ converge pointwise to the identity:
+$(n + 1) \sin(y / (n + 1)) \to y$ as $n \to \infty$. -/
 theorem tendsto_natCast_add_one_mul_sin_inv_mul (y : ℝ) :
     Tendsto (fun n : ℕ => ((n : ℝ) + 1) * sin (((n : ℝ) + 1)⁻¹ * y)) atTop (𝓝 y) := by
   have hs : Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹ * y) atTop (𝓝 0) := by
@@ -59,8 +60,8 @@ theorem tendsto_natCast_add_one_mul_sin_inv_mul (y : ℝ) :
 
 end Real
 
-/-- The sine truncation at any scale `c` does not increase the derivative of a function it is
-composed with: `‖D (c sin (c⁻¹ f)) x‖ ≤ ‖D f x‖` where `f` is differentiable. -/
+/-- The sine truncation at any scale $c$ does not increase the derivative of a function it is
+composed with: $\|D(c \sin(c^{-1} f))(x)\| \le \|Df(x)\|$ where $f$ is differentiable at $x$. -/
 theorem norm_fderiv_mul_sin_inv_mul_le {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     {f : F → ℝ} {x : F} (hf : DifferentiableAt ℝ f x) (c : ℝ) :
     ‖fderiv ℝ (fun x => c * Real.sin (c⁻¹ * f x)) x‖ ≤ ‖fderiv ℝ f x‖ := by

@@ -11,8 +11,9 @@ public import NLAlib.Matrix.Inequalities.Order
 /-!
 # The matrix perspective
 
-The perspective of `f : ℝ → ℝ` at a pair of positive definite matrices is
-`A^{1/2} f(A^{-1/2} H A^{-1/2}) A^{1/2}`. The perspective of an operator convex function is
+The perspective of a function $f$ from $\mathbb{R}$ to $\mathbb{R}$ at a pair of positive definite
+matrices is $\mathbf{A}^{1/2} f(\mathbf{A}^{-1/2}\mathbf{H}\mathbf{A}^{-1/2}) \mathbf{A}^{1/2}$.
+The perspective of an operator convex function is
 jointly operator convex (Effros; Ebadian, Nikoufar and Eshaghi Gordji), which is the source of
 the joint convexity of the matrix relative entropy.
 
@@ -23,7 +24,7 @@ the joint convexity of the matrix relative entropy.
 ## Main results
 
 * `NLAlib.matrixPerspective_mul_diagonal_mul_conjTranspose`: for two matrices diagonalised by
-  the same frame it is the scalar perspective `a f(h / a)` of the eigenvalues.
+  the same frame it is the scalar perspective $a f(h/a)$ of the eigenvalues.
 * `NLAlib.matrixPerspective_smul_one`: the case of multiples of the identity.
 * `NLAlib.matrixPerspective_smul_smul`: positive homogeneity.
 * `NLAlib.OperatorConvexOn.matrixPerspective_smul_add_smul_le`: joint operator convexity.
@@ -37,13 +38,17 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The **matrix perspective** `A^{1/2} f(A^{-1/2} H A^{-1/2}) A^{1/2}` of a function `f` at a
-positive definite `A` and a Hermitian `H`; the square root and the inverse give junk values when
-`A` is not positive definite. [Tropp2015, Definition 8.6.1]. Port of `NLAlib.matrixPerspective`. -/
+/-- The **matrix perspective**
+$$\psi_f(\mathbf{A}, \mathbf{H})
+  = \mathbf{A}^{1/2} f(\mathbf{A}^{-1/2}\mathbf{H}\mathbf{A}^{-1/2}) \mathbf{A}^{1/2}$$
+of a function $f$ at a positive definite $\mathbf{A}$ and a Hermitian $\mathbf{H}$; the square
+root and the inverse give junk values when $\mathbf{A}$ is not positive definite.
+[Tropp2015, Definition 8.6.1]. Port of `NLAlib.matrixPerspective`. -/
 noncomputable def matrixPerspective (f : ℝ → ℝ) (A H : Matrix n n 𝕜) : Matrix n n 𝕜 :=
   CFC.sqrt A * cfc f ((CFC.sqrt A)⁻¹ * H * (CFC.sqrt A)⁻¹) * CFC.sqrt A
 
-/-- The matrix perspective is Hermitian. -/
+/-- The matrix perspective $\psi_f(\mathbf{A}, \mathbf{H})$ is Hermitian, for any square
+$\mathbf{A}$, $\mathbf{H}$. -/
 theorem isHermitian_matrixPerspective (f : ℝ → ℝ) (A H : Matrix n n 𝕜) :
     (matrixPerspective f A H).IsHermitian := by
   have hS : (CFC.sqrt A).IsHermitian := (CFC.sqrt_nonneg A).isSelfAdjoint
@@ -52,14 +57,17 @@ theorem isHermitian_matrixPerspective (f : ℝ → ℝ) (A H : Matrix n n 𝕜) 
   have h := Matrix.isHermitian_mul_mul_conjTranspose (CFC.sqrt A) hC
   rwa [hS.eq] at h
 
-/-- The perspective at the identity is the function itself. -/
+/-- The perspective at the identity is the function itself:
+$\psi_f(\mathbf{I}, \mathbf{H}) = f(\mathbf{H})$. -/
 theorem matrixPerspective_one (f : ℝ → ℝ) (H : Matrix n n 𝕜) :
     matrixPerspective f 1 H = cfc f H := by
   rw [matrixPerspective, CFC.sqrt_one, inv_one, Matrix.one_mul, Matrix.mul_one, Matrix.one_mul,
     Matrix.mul_one]
 
 omit [DecidableEq n] in
-/-- A unitary conjugate of a positive diagonal matrix is positive definite. -/
+/-- A unitary conjugate of a positive diagonal matrix is positive definite:
+$\mathbf{U}\operatorname{diag}(\mathbf{a})\mathbf{U}^{\mathsf{H}}$ for $\mathbf{a} > 0$ entrywise.
+-/
 private theorem posDef_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n)
     {a : r → ℝ} (ha : ∀ i, 0 < a i) :
@@ -71,8 +79,13 @@ private theorem posDef_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [D
   rwa [Matrix.conjTranspose_conjTranspose] at h
 
 /-- **The perspective of two simultaneously diagonalised matrices** is the scalar perspective
-`a f(h / a)` of the eigenvalues: for a frame `U` with orthonormal columns and `card r = card n`,
-`ψ_f(U diag(a) Uᴴ, U diag(h) Uᴴ) = U diag(a f(h / a)) Uᴴ` when the `a i` are positive. -/
+$a f(h/a)$ of the eigenvalues: for a frame $\mathbf{U}$ with orthonormal columns and
+$\lvert r \rvert = \lvert n \rvert$, and real vectors $\mathbf{a}$, $\mathbf{h}$ with the
+$\mathbf{a}_i$ positive,
+$$\psi_f(\mathbf{U}\operatorname{diag}(\mathbf{a})\mathbf{U}^{\mathsf{H}},
+  \mathbf{U}\operatorname{diag}(\mathbf{h})\mathbf{U}^{\mathsf{H}})
+  = \mathbf{U}\operatorname{diag}\bigl(\mathbf{a}_i f(\mathbf{h}_i / \mathbf{a}_i)\bigr)
+  \mathbf{U}^{\mathsf{H}} \,.$$ -/
 theorem matrixPerspective_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n)
     (f : ℝ → ℝ) {a : r → ℝ} (ha : ∀ i, 0 < a i) (h : r → ℝ) :
@@ -105,7 +118,8 @@ theorem matrixPerspective_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
     field_simp
   rw [e, mul_right_comm, hs]
 
-/-- The perspective of two multiples of the identity is the scalar perspective `a f(h / a)`. -/
+/-- The perspective of two multiples of the identity is the scalar perspective:
+$\psi_f(a\mathbf{I}, h\mathbf{I}) = a f(h/a) \, \mathbf{I}$ for $a > 0$. -/
 theorem matrixPerspective_smul_one (f : ℝ → ℝ) {a : ℝ} (ha : 0 < a) (h : ℝ) :
     matrixPerspective f (a • (1 : Matrix n n 𝕜)) (h • (1 : Matrix n n 𝕜)) =
       (a * f (h / a)) • (1 : Matrix n n 𝕜) := by
@@ -117,7 +131,8 @@ theorem matrixPerspective_smul_one (f : ℝ → ℝ) {a : ℝ} (ha : 0 < a) (h :
   exact matrixPerspective_mul_diagonal_mul_conjTranspose hasOrthonormalCols_one rfl f
     (fun _ => ha) fun _ => h
 
-/-- The inverse of a nonzero real multiple of a matrix, singular or not. -/
+/-- The inverse of a nonzero real multiple of a matrix, singular or not:
+$(c\mathbf{M})^{-1} = c^{-1}\mathbf{M}^{-1}$. -/
 private theorem inv_real_smul {c : ℝ} (hc : c ≠ 0) (M : Matrix n n 𝕜) :
     (c • M)⁻¹ = c⁻¹ • M⁻¹ := by
   by_cases h : IsUnit M.det
@@ -130,7 +145,8 @@ private theorem inv_real_smul {c : ℝ} (hc : c ≠ 0) (M : Matrix n n 𝕜) :
     rw [Matrix.nonsing_inv_apply_not_isUnit _ h, Matrix.nonsing_inv_apply_not_isUnit _ h',
       smul_zero]
 
-/-- The perspective is positively homogeneous: `ψ_f(t A, t H) = t ψ_f(A, H)` for `t > 0`. -/
+/-- The perspective is positively homogeneous:
+$\psi_f(t\mathbf{A}, t\mathbf{H}) = t \, \psi_f(\mathbf{A}, \mathbf{H})$ for $t > 0$. -/
 theorem matrixPerspective_smul_smul (f : ℝ → ℝ) (A H : Matrix n n 𝕜) {t : ℝ} (ht : 0 < t) :
     matrixPerspective f (t • A) (t • H) = t • matrixPerspective f A H := by
   have hsqrt : CFC.sqrt (t • A) = √t • CFC.sqrt A := by
@@ -163,7 +179,10 @@ private theorem sqrt_and_inv {A : Matrix n n 𝕜} (hA : A.PosDef) :
     Matrix.nonsing_inv_mul _ hdet⟩
 
 omit [DecidableEq n] in
-/-- The congruence by `√c • (S * R)` in terms of the congruence by `R`. -/
+/-- The congruence by $\sqrt{c}\,\mathbf{S}\mathbf{R}$ in terms of the congruence by
+$\mathbf{R}$: for Hermitian $\mathbf{S}$, $\mathbf{R}$ and $c \ge 0$,
+$(\sqrt{c}\,\mathbf{S}\mathbf{R})^{\mathsf{H}} \mathbf{N} (\sqrt{c}\,\mathbf{S}\mathbf{R})
+= c\, \mathbf{R}\mathbf{S}\mathbf{N}\mathbf{S}\mathbf{R}$. -/
 private theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S R : Matrix n n 𝕜}
     (hS : Sᴴ = S) (hR : Rᴴ = R) (N : Matrix n n 𝕜) :
     (√c • (S * R))ᴴ * N * (√c • (S * R)) = c • (R * (S * N * S) * R) := by
@@ -171,8 +190,9 @@ private theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S R : 
   simp only [Matrix.smul_mul, Matrix.mul_smul, smul_smul, Real.mul_self_sqrt hc,
     Matrix.mul_assoc]
 
-/-- The operator Jensen inequality for the two-term family `K₁ = √a • S₁ R`, `K₂ = √b • S₂ R`
-with `R (a S₁² + b S₂²) R = 1`. -/
+/-- The operator Jensen inequality for the two-term family
+$\mathbf{K}_1 = \sqrt{a}\,\mathbf{S}_1\mathbf{R}$, $\mathbf{K}_2 = \sqrt{b}\,\mathbf{S}_2\mathbf{R}$
+with $\mathbf{R}(a\mathbf{S}_1^2 + b\mathbf{S}_2^2)\mathbf{R} = \mathbf{I}$. -/
 private theorem OperatorConvexOn.cfc_mul_smul_add_smul_mul_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {S₁ S₂ R B₁ B₂ : Matrix n n 𝕜} (hS₁ : S₁ᴴ = S₁) (hS₂ : S₂ᴴ = S₂)
     (hR : Rᴴ = R) (hB₁ : B₁.IsHermitian) (hB₂ : B₂.IsHermitian) (hB₁s : spectrum ℝ B₁ ⊆ s)
@@ -238,11 +258,13 @@ private theorem OperatorConvexOn.mul_cfc_mul_le {f : ℝ → ℝ} (hf : Operator
   have h2 := star_left_conjugate_le_conjugate h S
   rwa [Matrix.star_eq_conjTranspose, hS, hc hSR hRS] at h2
 
-/-- **The perspective of an operator convex function is jointly operator convex**: for positive
-definite `A₁`, `A₂`, `H₁`, `H₂` and weights `a + b = 1`,
-`ψ_f(a A₁ + b A₂, a H₁ + b H₂) ≤ a ψ_f(A₁, H₁) + b ψ_f(A₂, H₂)`.
+/-- **The perspective of an operator convex function is jointly operator convex**: for $f$
+operator convex on $(0, \infty)$, positive definite $\mathbf{A}_1$, $\mathbf{A}_2$,
+$\mathbf{H}_1$, $\mathbf{H}_2$ and weights $a, b \ge 0$ with $a + b = 1$,
+$$\psi_f(a\mathbf{A}_1 + b\mathbf{A}_2, a\mathbf{H}_1 + b\mathbf{H}_2)
+  \preceq a \, \psi_f(\mathbf{A}_1, \mathbf{H}_1) + b \, \psi_f(\mathbf{A}_2, \mathbf{H}_2) \,.$$
 [Tropp2015, Theorem 8.6.2].
-Port of `NLAlib.matrixPerspective_jointly_operatorConvex`, there over `ℂ` on `Fin d`.
+Port of `NLAlib.matrixPerspective_jointly_operatorConvex`, there over $\mathbb{C}$ on `Fin d`.
 Result: perspective-convexity -/
 theorem OperatorConvexOn.matrixPerspective_smul_add_smul_le {f : ℝ → ℝ}
     (hf : OperatorConvexOn (Set.Ioi 0) f) {A₁ A₂ H₁ H₂ : Matrix n n 𝕜} (hA₁ : A₁.PosDef)

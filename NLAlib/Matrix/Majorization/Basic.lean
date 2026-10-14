@@ -17,11 +17,13 @@ public import Mathlib.Order.Interval.Set.Basic
 /-!
 # Majorization of real vectors
 
-For real vectors `x y : ι → ℝ` on a finite index type, `NLAlib.Majorized x y` says that `x` is
-majorized by `y`: for every `k` the sum of the `k` largest entries of `x` is at most that of `y`,
-and the total sums agree. `NLAlib.WeaklyMajorized x y` drops the equality of the totals.
+For real vectors $\mathbf{x}$, $\mathbf{y}$ on a finite index type $\iota$, `NLAlib.Majorized`
+says that $\mathbf{x}$ is majorized by $\mathbf{y}$: for every $k$ the sum of the $k$ largest
+entries of $\mathbf{x}$ is at most that of $\mathbf{y}$, and the total sums agree.
+`NLAlib.WeaklyMajorized` drops the equality of the totals.
 
-The vectors need not be sorted: `NLAlib.sumLargest x k` is the largest sum of `k` entries of `x`,
+The vectors need not be sorted: `NLAlib.sumLargest`, written $S_k(\mathbf{x})$ here, is the
+largest sum of $k$ entries of $\mathbf{x}$,
 defined as a maximum over index sets, with no sorting and no chosen enumeration. For a sequence
 that is already non-increasing, such as the eigenvalues or singular values of a matrix, it is the
 partial sum (`NLAlib.sumLargest_fin_eq_sum_range`), and majorization is the family of partial-sum
@@ -30,16 +32,16 @@ in that partial-sum form; the predicates are for unsorted vectors and for the ge
 
 ## Main definitions
 
-* `NLAlib.sumLargest`: the sum of the `k` largest entries.
+* `NLAlib.sumLargest`: the sum of the $k$ largest entries.
 * `NLAlib.WeaklyMajorized`, `NLAlib.Majorized`: weak majorization and majorization.
 
 ## Main results
 
 * `NLAlib.sum_le_sumLargest`, `NLAlib.sumLargest_le`,
   `NLAlib.exists_card_eq_and_sum_eq_sumLargest`: `sumLargest` is the maximum over index sets of
-  size `k`.
+  size $k$.
 * `NLAlib.sumLargest_add_le`: subadditivity.
-* `NLAlib.convexOn_sumLargest_abs`: the sum of the `k` largest absolute values is convex.
+* `NLAlib.convexOn_sumLargest_abs`: the sum of the $k$ largest absolute values is convex.
 * `NLAlib.sumLargest_eq_sum_of_forall_le`: an index set whose entries dominate all the others
   attains the maximum.
 * `NLAlib.sumLargest_fin_eq_sum_range`, `NLAlib.sum_le_sum_range_card_of_antitone`: partial sums
@@ -60,31 +62,32 @@ variable {ι κ : Type*} [Fintype ι] [Fintype κ]
 
 /-! ### The sum of the largest entries -/
 
-/-- The **sum of the `k` largest entries** of a real vector: the maximum of `∑ i ∈ s, x i` over
-index sets `s` with `min k (card ι)` elements. For `k` at least the number of entries it is the
-total sum. No sorting is involved.
+/-- The **sum of the $k$ largest entries** of a real vector, $S_k(\mathbf{x})$: the maximum of
+$\sum_{i \in s} \mathbf{x}_i$ over index sets $s$ with $\min(k, \lvert \iota \rvert)$ elements.
+For $k$ at least the number of entries it is the total sum. No sorting is involved.
 [HornJohnson2013, §4.3.47]. Port of `NLAlib.sumLargest`, there through a sorting equivalence. -/
 noncomputable def sumLargest (x : ι → ℝ) (k : ℕ) : ℝ :=
   (Finset.univ.powersetCard (min k (Fintype.card ι))).sup'
     (Finset.powersetCard_nonempty.mpr (by simp)) fun s => ∑ i ∈ s, x i
 
-/-- A sum over an index set with `min k (card ι)` elements is at most the sum of the `k` largest
-entries. This is the form of `sum_le_sumLargest` for a `k` that is not syntactically a
-cardinality. -/
+/-- A sum over an index set with $\min(k, \lvert \iota \rvert)$ elements is at most the sum of the
+$k$ largest entries: $\sum_{i \in s} \mathbf{x}_i \le S_k(\mathbf{x})$. This is the form of
+`sum_le_sumLargest` for a $k$ that is not syntactically a cardinality. -/
 theorem sum_le_sumLargest_of_card_eq (x : ι → ℝ) {s : Finset ι} {k : ℕ}
     (hs : s.card = min k (Fintype.card ι)) : ∑ i ∈ s, x i ≤ sumLargest x k := by
   exact Finset.le_sup' (fun s => ∑ i ∈ s, x i)
     (Finset.mem_powersetCard.mpr ⟨Finset.subset_univ s, hs⟩)
 
-/-- A bound on every sum over `min k (card ι)` indices bounds the sum of the `k` largest
-entries. -/
+/-- A bound on every sum over $\min(k, \lvert \iota \rvert)$ indices bounds the sum of the $k$
+largest entries: if $\sum_{i \in s} \mathbf{x}_i \le c$ for all such $s$, then
+$S_k(\mathbf{x}) \le c$. -/
 theorem sumLargest_le {x : ι → ℝ} {k : ℕ} {c : ℝ}
     (h : ∀ s : Finset ι, s.card = min k (Fintype.card ι) → ∑ i ∈ s, x i ≤ c) :
     sumLargest x k ≤ c := by
   exact Finset.sup'_le _ _ fun s hs => h s (Finset.mem_powersetCard.mp hs).2
 
-/-- The maximum defining `sumLargest` is attained, for every `k`, on an index set with
-`min k (card ι)` elements. -/
+/-- The maximum defining `sumLargest` is attained, for every $k$, on an index set with
+$\min(k, \lvert \iota \rvert)$ elements. -/
 theorem exists_card_eq_min_and_sum_eq_sumLargest (x : ι → ℝ) (k : ℕ) :
     ∃ s : Finset ι, s.card = min k (Fintype.card ι) ∧ ∑ i ∈ s, x i = sumLargest x k := by
   have hne : (Finset.univ.powersetCard (min k (Fintype.card ι)) : Finset (Finset ι)).Nonempty :=
@@ -92,26 +95,29 @@ theorem exists_card_eq_min_and_sum_eq_sumLargest (x : ι → ℝ) (k : ℕ) :
   obtain ⟨s, hs, h⟩ := Finset.exists_mem_eq_sup' hne fun s : Finset ι => ∑ i ∈ s, x i
   exact ⟨s, (Finset.mem_powersetCard.mp hs).2, h.symm⟩
 
-/-- The maximum defining `sumLargest` is attained.
+/-- The maximum defining `sumLargest` is attained: for $k \le \lvert \iota \rvert$ there is an
+index set $s$ with $k$ elements and $\sum_{i \in s} \mathbf{x}_i = S_k(\mathbf{x})$.
 Port of `NLAlib.isGreatest_sumLargest`. -/
 theorem exists_card_eq_and_sum_eq_sumLargest (x : ι → ℝ) {k : ℕ} (hk : k ≤ Fintype.card ι) :
     ∃ s : Finset ι, s.card = k ∧ ∑ i ∈ s, x i = sumLargest x k := by
   obtain ⟨s, hs, h⟩ := exists_card_eq_min_and_sum_eq_sumLargest x k
   exact ⟨s, hs.trans (min_eq_left hk), h⟩
 
-/-- Truncating `k` at the number of entries does not change `sumLargest`. -/
+/-- Truncating $k$ at the number of entries does not change `sumLargest`:
+$S_{\min(k, \lvert \iota \rvert)}(\mathbf{x}) = S_k(\mathbf{x})$. -/
 @[simp]
 theorem sumLargest_min_card (x : ι → ℝ) (k : ℕ) :
     sumLargest x (min k (Fintype.card ι)) = sumLargest x k := by
   simp only [sumLargest, min_assoc, min_self]
 
-/-- The sum of the zero largest entries is zero. -/
+/-- The sum of the zero largest entries is zero: $S_0(\mathbf{x}) = 0$. -/
 @[simp]
 theorem sumLargest_zero (x : ι → ℝ) : sumLargest x 0 = 0 := by
   obtain ⟨s, hs, h⟩ := exists_card_eq_and_sum_eq_sumLargest x (Nat.zero_le (Fintype.card ι))
   rw [← h, Finset.card_eq_zero.mp hs, Finset.sum_empty]
 
-/-- Beyond the number of entries, `sumLargest` is the total sum.
+/-- Beyond the number of entries, `sumLargest` is the total sum: for $k \ge \lvert \iota \rvert$,
+$S_k(\mathbf{x}) = \sum_i \mathbf{x}_i$.
 Port of `NLAlib.sumLargest_eq_sum_of_card_le`. -/
 theorem sumLargest_of_card_le (x : ι → ℝ) {k : ℕ} (hk : Fintype.card ι ≤ k) :
     sumLargest x k = ∑ i, x i := by
@@ -119,7 +125,8 @@ theorem sumLargest_of_card_le (x : ι → ℝ) {k : ℕ} (hk : Fintype.card ι �
   rw [min_eq_right hk] at hs
   rw [← h, (Finset.card_eq_iff_eq_univ s).mp hs]
 
-/-- Any sum over an index set is at most the sum of that many largest entries.
+/-- Any sum over an index set is at most the sum of that many largest entries:
+$\sum_{i \in s} \mathbf{x}_i \le S_{\lvert s \rvert}(\mathbf{x})$.
 Port of `NLAlib.sum_le_sumLargest`. -/
 theorem sum_le_sumLargest (x : ι → ℝ) (s : Finset ι) : ∑ i ∈ s, x i ≤ sumLargest x s.card := by
   exact sum_le_sumLargest_of_card_eq x (min_eq_left s.card_le_univ).symm
@@ -142,19 +149,23 @@ theorem sumLargest_comp_equiv (x : ι → ℝ) (e : κ ≃ ι) (k : ℕ) :
   have h := sumLargest_comp_equiv_le (x ∘ e) e.symm k
   rwa [Function.comp_assoc, Equiv.self_comp_symm, Function.comp_id] at h
 
-/-- `sumLargest` is subadditive. Port of `NLAlib.sumLargest_add_le`. -/
+/-- `sumLargest` is subadditive:
+$S_k(\mathbf{x} + \mathbf{y}) \le S_k(\mathbf{x}) + S_k(\mathbf{y})$.
+Port of `NLAlib.sumLargest_add_le`. -/
 theorem sumLargest_add_le (x y : ι → ℝ) (k : ℕ) :
     sumLargest (x + y) k ≤ sumLargest x k + sumLargest y k := by
   refine sumLargest_le fun s hs => ?_
   simp only [Pi.add_apply, Finset.sum_add_distrib]
   exact add_le_add (sum_le_sumLargest_of_card_eq x hs) (sum_le_sumLargest_of_card_eq y hs)
 
-/-- `sumLargest` is monotone in the vector. -/
+/-- `sumLargest` is monotone in the vector: $\mathbf{x} \le \mathbf{y}$ entrywise gives
+$S_k(\mathbf{x}) \le S_k(\mathbf{y})$. -/
 theorem sumLargest_mono {x y : ι → ℝ} (h : x ≤ y) (k : ℕ) : sumLargest x k ≤ sumLargest y k := by
   refine sumLargest_le fun _ hs => ?_
   exact (Finset.sum_le_sum fun i _ => h i).trans (sum_le_sumLargest_of_card_eq y hs)
 
-/-- `sumLargest` is homogeneous for nonnegative scalars. -/
+/-- `sumLargest` is homogeneous for nonnegative scalars: $S_k(c\mathbf{x}) = c\,S_k(\mathbf{x})$
+for $c \ge 0$. -/
 theorem sumLargest_smul {c : ℝ} (hc : 0 ≤ c) (x : ι → ℝ) (k : ℕ) :
     sumLargest (c • x) k = c * sumLargest x k := by
   have hsum (s : Finset ι) : ∑ i ∈ s, (c • x) i = c * ∑ i ∈ s, x i := by
@@ -166,8 +177,9 @@ theorem sumLargest_smul {c : ℝ} (hc : 0 ≤ c) (x : ι → ℝ) (k : ℕ) :
     rw [← h, ← hsum]
     exact sum_le_sumLargest_of_card_eq (c • x) hs
 
-/-- The sum of the `k` largest absolute values of the entries is a convex function of a real
-vector. It is also invariant under permutations (`sumLargest_comp_equiv`), so with
+/-- The sum of the $k$ largest absolute values of the entries,
+$\mathbf{z} \mapsto S_k(\lvert \mathbf{z} \rvert)$, is a convex function of a real vector. It is
+also invariant under permutations (`sumLargest_comp_equiv`), so with
 `Majorized.le_of_convexOn_of_comp_perm` a majorization gives inequalities between sums of largest
 absolute values. -/
 theorem convexOn_sumLargest_abs (k : ℕ) :
@@ -185,9 +197,9 @@ theorem convexOn_sumLargest_abs (k : ℕ) :
     _ = a • sumLargest (fun i => |x i|) k + b • sumLargest (fun i => |y i|) k := by
         rw [sumLargest_smul ha, sumLargest_smul hb, smul_eq_mul, smul_eq_mul]
 
-/-- **Recognising the largest entries.** If an index set `t` with `min k (card ι)` elements
-carries entries that are all at least every entry outside it, the sum of the `k` largest entries
-is the sum over `t`. -/
+/-- **Recognising the largest entries.** If an index set $t$ with $\min(k, \lvert \iota \rvert)$
+elements carries entries that are all at least every entry outside it, the sum of the $k$ largest
+entries is the sum over $t$: $S_k(\mathbf{x}) = \sum_{i \in t} \mathbf{x}_i$. -/
 theorem sumLargest_eq_sum_of_forall_le {x : ι → ℝ} {t : Finset ι} {k : ℕ}
     (ht : t.card = min k (Fintype.card ι)) (h : ∀ i ∈ t, ∀ j ∉ t, x j ≤ x i) :
     sumLargest x k = ∑ i ∈ t, x i := by
@@ -207,8 +219,9 @@ theorem sumLargest_eq_sum_of_forall_le {x : ι → ℝ} {t : Finset ι} {k : ℕ
   have hsub := Finset.sum_sdiff_sub_sum_sdiff (s₁ := s) (s₂ := t) (f := x)
   linarith
 
-/-- For a non-increasing family indexed by `Fin N`, the sum of the `k` largest entries is the sum
-of the first `k`. Port of `NLAlib.sumLargest_eq_prefix_of_antitone`. -/
+/-- For a non-increasing family indexed by `Fin N`, the sum of the $k$ largest entries is the sum
+of the first $k$: $S_k(\mathbf{a}) = \sum_{i < \min(k, N)} \mathbf{a}_i$.
+Port of `NLAlib.sumLargest_eq_prefix_of_antitone`. -/
 theorem sumLargest_eq_sum_of_antitone {N : ℕ} {a : Fin N → ℝ} (ha : Antitone a) (k : ℕ) :
     sumLargest a k = ∑ i : Fin N, if (i : ℕ) < k then a i else 0 := by
   rw [← Finset.sum_filter]
@@ -217,9 +230,10 @@ theorem sumLargest_eq_sum_of_antitone {N : ℕ} {a : Fin N → ℝ} (ha : Antito
   · simp only [Finset.mem_filter, Finset.mem_univ, true_and, not_lt] at hi hj
     exact Fin.le_def.mpr (hi.le.trans hj)
 
-/-- **Partial sums of a sorted sequence.** If `f : ℕ → ℝ` is non-increasing below `N`, the sum of
-the `k` largest of its first `N` values is the partial sum up to `min k N`. This is the bridge
-between `sumLargest` and the ℕ-indexed eigenvalues and singular values. -/
+/-- **Partial sums of a sorted sequence.** If a real sequence $f$ is non-increasing below $N$, the
+sum of the $k$ largest of its first $N$ values is the partial sum
+$\sum_{i < \min(k, N)} f(i)$. This is the bridge between `sumLargest` and the $\mathbb{N}$-indexed
+eigenvalues and singular values. -/
 theorem sumLargest_fin_eq_sum_range {f : ℕ → ℝ} {N : ℕ} (hf : AntitoneOn f (Set.Iio N))
     (k : ℕ) : sumLargest (fun i : Fin N => f i) k = ∑ i ∈ Finset.range (min k N), f i := by
   have ha : Antitone fun i : Fin N => f i := fun i j hij =>
@@ -230,9 +244,10 @@ theorem sumLargest_fin_eq_sum_range {f : ℕ → ℝ} {N : ℕ} (hf : AntitoneOn
   ext i
   simp only [Finset.mem_filter, Finset.mem_range, lt_min_iff, and_comm]
 
-/-- A sum of values of a non-increasing sequence over an index set `s` is at most the sum of its
-first `s.card` values. This is `sum_le_sumLargest` for a sorted sequence indexed by `ℕ`, with no
-bound on the indices. -/
+/-- A sum of values of a non-increasing sequence over an index set $s$ is at most the sum of its
+first $\lvert s \rvert$ values: $\sum_{i \in s} f(i) \le \sum_{i < \lvert s \rvert} f(i)$. This is
+`sum_le_sumLargest` for a sorted sequence indexed by $\mathbb{N}$, with no bound on the
+indices. -/
 theorem sum_le_sum_range_card_of_antitone {f : ℕ → ℝ} (hf : Antitone f) (s : Finset ℕ) :
     ∑ i ∈ s, f i ≤ ∑ i ∈ Finset.range s.card, f i := by
   induction s using Finset.induction_on_max with
@@ -248,22 +263,25 @@ theorem sum_le_sum_range_card_of_antitone {f : ℕ → ℝ} (hf : Antitone f) (s
 
 /-! ### Majorization -/
 
-/-- `x` is **weakly majorized** by `y`: for every `k`, the sum of the `k` largest entries of `x`
-is at most that of `y`. [HornJohnson2013, Definition 4.3.41].
+/-- $\mathbf{x}$ is **weakly majorized** by $\mathbf{y}$: for every $k$, the sum of the $k$
+largest entries of $\mathbf{x}$ is at most that of $\mathbf{y}$,
+$S_k(\mathbf{x}) \le S_k(\mathbf{y})$. [HornJohnson2013, Definition 4.3.41].
 Port of `NLAlib.WeaklyMajorized`. -/
 def WeaklyMajorized (x y : ι → ℝ) : Prop :=
   ∀ k, sumLargest x k ≤ sumLargest y k
 
-/-- `x` is **majorized** by `y`: weak majorization together with equal total sums.
+/-- $\mathbf{x}$ is **majorized** by $\mathbf{y}$: weak majorization together with equal total
+sums.
 [HornJohnson2013, Definition 4.3.41]. Port of `NLAlib.Majorized`. -/
 structure Majorized (x y : ι → ℝ) : Prop where
-  /-- The sums of the `k` largest entries are ordered. -/
+  /-- The sums of the $k$ largest entries are ordered. -/
   weaklyMajorized : WeaklyMajorized x y
   /-- The total sums agree. -/
   sum_eq : ∑ i, x i = ∑ i, y i
 
-/-- Weak majorization tested on arbitrary index sets: every partial sum of `x` over an index set
-is at most the sum of that many largest entries of `y`.
+/-- Weak majorization tested on arbitrary index sets: $\mathbf{x}$ is weakly majorized by
+$\mathbf{y}$ if and only if $\sum_{i \in s} \mathbf{x}_i \le S_{\lvert s \rvert}(\mathbf{y})$ for
+every index set $s$.
 Port of `NLAlib.weaklyMajorized_iff_sum_le`. -/
 theorem weaklyMajorized_iff_forall_sum_le {x y : ι → ℝ} :
     WeaklyMajorized x y ↔ ∀ s : Finset ι, ∑ i ∈ s, x i ≤ sumLargest y s.card := by
@@ -327,8 +345,11 @@ theorem WeaklyMajorized.comp_equiv_right {x y : ι → ℝ} (h : WeaklyMajorized
   intro k
   exact (h k).trans (sumLargest_comp_equiv y e k).ge
 
-/-- For a majorized pair, every partial sum of `x` is at least the sum of the smallest entries
-of `y` of that count: the lower half of majorization.
+/-- For a majorized pair, every partial sum of $\mathbf{x}$ is at least the sum of the smallest
+entries of $\mathbf{y}$ of that count: for an index set $s$ and $\lvert s \rvert + d = \lvert \iota
+\rvert$,
+$\sum_i \mathbf{y}_i - S_d(\mathbf{y}) \le \sum_{i \in s} \mathbf{x}_i$. This is the lower half of
+majorization.
 Port of `NLAlib.Majorized.sum_sub_sumLargest_le_sum`. -/
 theorem Majorized.sum_sub_sumLargest_le_sum {x y : ι → ℝ} (h : Majorized x y) (s : Finset ι)
     {d : ℕ} (hd : s.card + d = Fintype.card ι) :
@@ -343,9 +364,9 @@ theorem Majorized.sum_sub_sumLargest_le_sum {x y : ι → ℝ} (h : Majorized x 
     (Finset.sum_add_sum_compl s x).trans h.sum_eq
   linarith
 
-/-- **Majorization of sorted sequences is the family of partial-sum inequalities.** For
-`f g : ℕ → ℝ` non-increasing below `N`, weak majorization of their first `N` values is
-`∑ i < k, f i ≤ ∑ i < k, g i` for all `k ≤ N`. -/
+/-- **Majorization of sorted sequences is the family of partial-sum inequalities.** For real
+sequences $f$, $g$ non-increasing below $N$, weak majorization of their first $N$ values is
+$\sum_{i < k} f(i) \le \sum_{i < k} g(i)$ for all $k \le N$. -/
 theorem weaklyMajorized_fin_iff_sum_range_le {f g : ℕ → ℝ} {N : ℕ}
     (hf : AntitoneOn f (Set.Iio N)) (hg : AntitoneOn g (Set.Iio N)) :
     WeaklyMajorized (fun i : Fin N => f i) (fun i : Fin N => g i) ↔
@@ -356,10 +377,10 @@ theorem weaklyMajorized_fin_iff_sum_range_le {f g : ℕ → ℝ} {N : ℕ}
   · rw [sumLargest_fin_eq_sum_range hf, sumLargest_fin_eq_sum_range hg]
     exact h _ (min_le_right k N)
 
-/-- **Weak majorization by a sorted sequence, tested on index sets.** If `f` is non-increasing
-below `N` and every sum of entries of `x` over an index set `S` is at most the sum of the first
-`S.card` values of `f`, then `x` is weakly majorized by the first `N` values of `f`. The vector
-`x` need not be sorted. -/
+/-- **Weak majorization by a sorted sequence, tested on index sets.** If $f$ is non-increasing
+below $N$ and every sum of entries of $\mathbf{x}$ over an index set $S$ is at most the sum of the
+first $\lvert S \rvert$ values of $f$, then $\mathbf{x}$ is weakly majorized by the first $N$ values
+of $f$. The vector $\mathbf{x}$ need not be sorted. -/
 theorem weaklyMajorized_fin_of_forall_sum_le {N : ℕ} {x : Fin N → ℝ} {f : ℕ → ℝ}
     (hf : AntitoneOn f (Set.Iio N))
     (h : ∀ S : Finset (Fin N), ∑ i ∈ S, x i ≤ ∑ i ∈ Finset.range S.card, f i) :
@@ -388,8 +409,9 @@ theorem majorized_comp_equiv_iff {x y : ι → ℝ} (e : κ ≃ ι) :
   · rw [hsum, hsum]
     exact h.sum_eq
 
-/-- **Sorting.** Every real vector on a finite index type is non-increasing after relabelling
-its indices by `Fin (card ι)`. With `sumLargest_comp_equiv` and `majorized_comp_equiv_iff` this
+/-- **Sorting.** Every real vector on a finite index type $\iota$ is non-increasing after
+relabelling its indices by `Fin` $\lvert \iota \rvert$. With `sumLargest_comp_equiv` and
+`majorized_comp_equiv_iff` this
 reduces a statement about `sumLargest` or majorization to sorted vectors. -/
 theorem exists_equiv_antitone_comp (a : ι → ℝ) :
     ∃ e : Fin (Fintype.card ι) ≃ ι, Antitone (a ∘ e) := by
@@ -399,8 +421,9 @@ theorem exists_equiv_antitone_comp (a : ι → ℝ) :
   have h := Tuple.monotone_sort (fun j => -a ((Fintype.equivFin ι).symm j)) hij
   simpa only [Function.comp_apply, neg_le_neg_iff, Equiv.trans_apply] using h
 
-/-- For a non-increasing family indexed by `Fin N`, the sum of the `i + 1` largest entries is the
-sum of the `i` largest plus the entry `i`. -/
+/-- For a non-increasing family indexed by `Fin N`, the sum of the $i + 1$ largest entries is the
+sum of the $i$ largest plus the entry $i$: $S_{i+1}(\mathbf{y}) = S_i(\mathbf{y}) + \mathbf{y}_i$.
+-/
 theorem sumLargest_succ_of_antitone {N : ℕ} {y : Fin N → ℝ} (hy : Antitone y) (i : Fin N) :
     sumLargest y (i + 1) = sumLargest y i + y i := by
   have h (k : Fin N) : (if (k : ℕ) < i + 1 then y k else 0) =

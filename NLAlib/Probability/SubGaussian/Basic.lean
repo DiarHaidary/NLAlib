@@ -15,10 +15,10 @@ public import NLAlib.Probability.Tail
 # Sub-Gaussian random variables
 
 API for Mathlib's `ProbabilityTheory.HasSubgaussianMGF X c μ` (the moment generating function of
-`X` is at most `exp (c t² / 2)`) that the probability layers use and Mathlib does not have:
-monotonicity in the proxy, the proxy of a scalar multiple in the form `‖r‖₊ ^ 2 * c`, mean zero
-and the second moment, lower and two-sided tails, weighted sums of independent variables, and
-the union bound for a maximum. Proxies are `ℝ≥0` throughout (`docs/PORT_PROBABILITY.md` D2).
+$X$ is at most $e^{c t^2 / 2}$) that the probability layers use and Mathlib does not have:
+monotonicity in the proxy, the proxy of a scalar multiple in the form $\lvert r\rvert^2 c$, mean
+zero and the second moment, lower and two-sided tails, weighted sums of independent variables,
+and the union bound for a maximum. Proxies are `ℝ≥0` throughout (`docs/PORT_PROBABILITY.md` D2).
 
 ## Main results
 
@@ -28,7 +28,8 @@ the union bound for a maximum. Proxies are `ℝ≥0` throughout (`docs/PORT_PROB
   second moment at most the proxy.
 * `ProbabilityTheory.HasSubgaussianMGF.measure_le_le`, `.measure_abs_ge_le`: lower and two-sided
   tails.
-* `ProbabilityTheory.HasSubgaussianMGF.sum_const_mul_of_iIndepFun`: `∑ aᵢ Xᵢ` has proxy `∑ aᵢ² cᵢ`.
+* `ProbabilityTheory.HasSubgaussianMGF.sum_const_mul_of_iIndepFun`: $\sum_i a_i X_i$ has proxy
+  $\sum_i a_i^2 c_i$.
 * `ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le`, `.measure_iSup_ge_le`,
   `.measure_exists_abs_ge_le`: the union bound for a maximum.
 -/
@@ -57,7 +58,8 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.mono (h : HasSubgaussianMGF X
   refine ⟨h.integrable_exp_mul, fun t => (h.mgf_le t).trans (exp_le_exp.mpr ?_)⟩
   gcongr
 
-/-- Mathlib's `HasSubgaussianMGF.const_mul` with the proxy written `‖r‖₊ ^ 2 * c`. -/
+/-- Mathlib's `HasSubgaussianMGF.const_mul` with the proxy of $r X$ written $\lvert r\rvert^2 c$
+(as `‖r‖₊ ^ 2 * c`). -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.const_mul' (h : HasSubgaussianMGF X c μ)
     (r : ℝ) : HasSubgaussianMGF (fun ω => r * X ω) (‖r‖₊ ^ 2 * c) μ := by
   convert h.const_mul r using 2
@@ -65,8 +67,8 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.const_mul' (h : HasSubgaussia
   simp only [NNReal.coe_mul, NNReal.coe_pow, coe_nnnorm, Real.norm_eq_abs, sq_abs]
   rfl
 
-/-- A sub-Gaussian variable has mean zero. A probability measure is needed: if `μ univ < 1` the
-moment generating function bound does not force the mean to vanish. -/
+/-- A sub-Gaussian variable has mean zero, $\mathbb{E}[X] = 0$. A probability measure is needed: if
+$\mu(\Omega) < 1$ the moment generating function bound does not force the mean to vanish. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_eq_zero [IsProbabilityMeasure μ]
     (h : HasSubgaussianMGF X c μ) : ∫ ω, X ω ∂μ = 0 := by
   have h0 : (0 : ℝ) ∈ interior (integrableExpSet X μ) := by
@@ -126,7 +128,8 @@ private lemma integral_sq_le_aux [IsProbabilityMeasure μ] (h : HasSubgaussianMG
     nlinarith
   exact le_of_mul_le_mul_left key (by positivity)
 
-/-- The second moment of a sub-Gaussian variable is at most its proxy. -/
+/-- The second moment of a sub-Gaussian variable is at most its proxy: $\mathbb{E}[X^2] \le c$ under
+a probability measure. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_sq_le [IsProbabilityMeasure μ]
     (h : HasSubgaussianMGF X c μ) : ∫ ω, X ω ^ 2 ∂μ ≤ c := by
   have hlim : Filter.Tendsto (fun u : ℝ => (c : ℝ) + (c : ℝ) ^ 2 * u / 2)
@@ -138,8 +141,9 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_sq_le [IsProbability
   have hu1 : u * (c + 1) < 1 := (lt_div_iff₀ (by positivity)).mp hu.2
   exact integral_sq_le_aux h hu.1 (by nlinarith [hu.1, c.2])
 
-/-- The lower tail of a sub-Gaussian variable. With `c = 0`, Lean's `t ^ 2 / 0 = 0` makes the
-bound `1`; the variable is then `0` almost everywhere. -/
+/-- The lower tail of a sub-Gaussian variable with proxy $c$: for $t \ge 0$,
+$\mu(X \le -t) \le e^{-t^2 / (2c)}$. With $c = 0$, Lean's $t^2 / 0 = 0$ makes the bound $1$; the
+variable is then $0$ almost everywhere. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_le_le (h : HasSubgaussianMGF X c μ)
     {t : ℝ} (ht : 0 ≤ t) : μ.real {ω | X ω ≤ -t} ≤ rexp (-t ^ 2 / (2 * c)) := by
   have hset : {ω | X ω ≤ -t} = {ω | t ≤ (-X) ω} := by
@@ -148,14 +152,15 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_le_le (h : HasSubgaus
   rw [hset]
   exact h.neg.measure_ge_le ht
 
-/-- The two-sided tail of a sub-Gaussian variable. -/
+/-- The two-sided tail of a sub-Gaussian variable with proxy $c$: for $t \ge 0$,
+$\mu(\lvert X\rvert \ge t) \le 2 e^{-t^2 / (2c)}$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_abs_ge_le
     (h : HasSubgaussianMGF X c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ |X ω|} ≤ 2 * rexp (-t ^ 2 / (2 * c)) := by
   linarith [measureReal_abs_ge_le_add (μ := μ) X t, h.measure_ge_le ht, h.measure_le_le ht]
 
-/-- A weighted sum of independent sub-Gaussian variables is sub-Gaussian with proxy
-`∑ aᵢ² cᵢ`. -/
+/-- A weighted sum $\sum_{i \in s} a_i X_i$ of independent variables, $X_i$ sub-Gaussian with proxy
+$c_i$, is sub-Gaussian with proxy $\sum_{i \in s} a_i^2 c_i$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.sum_const_mul_of_iIndepFun {ι : Type*}
     {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ) {c : ι → ℝ≥0} {s : Finset ι}
     (h : ∀ i ∈ s, HasSubgaussianMGF (X i) (c i) μ) (a : ι → ℝ) :
@@ -164,8 +169,9 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.sum_const_mul_of_iIndepFun {�
     h_indep.comp (fun i x => a i * x) fun i => measurable_const.mul measurable_id
   exact HasSubgaussianMGF.sum_of_iIndepFun hind fun i hi => (h i hi).const_mul' (a i)
 
-/-- The union bound for the maximum of finitely many sub-Gaussian variables with a common proxy.
-No independence is assumed. -/
+/-- The union bound for the maximum of finitely many sub-Gaussian variables with a common proxy
+$c$: for $t \ge 0$, $\mu(\exists i,\ X_i \ge t) \le \lvert \iota\rvert\, e^{-t^2 / (2c)}$. No
+independence is assumed. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le {ι : Type*} [Fintype ι]
     {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ∃ i, t ≤ X i ω} ≤ Fintype.card ι * rexp (-t ^ 2 / (2 * c)) := by
@@ -174,7 +180,8 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le {ι : Ty
   refine (Finset.sum_le_sum fun i _ => (h i).measure_ge_le ht).trans_eq ?_
   simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
-/-- The union bound for the maximum, with the event written through `⨆`. -/
+/-- The union bound for the maximum, with the event written through the supremum: for $t \ge 0$,
+$\mu(\max_i X_i \ge t) \le \lvert \iota\rvert\, e^{-t^2 / (2c)}$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_iSup_ge_le {ι : Type*} [Fintype ι]
     [Nonempty ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ ⨆ i, X i ω} ≤ Fintype.card ι * rexp (-t ^ 2 / (2 * c)) := by
@@ -190,7 +197,8 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_iSup_ge_le {ι : Type
   rw [hset]
   exact HasSubgaussianMGF.measure_exists_ge_le h ht
 
-/-- The union bound for the maximum of absolute values. -/
+/-- The union bound for the maximum of absolute values: for $t \ge 0$,
+$\mu(\exists i,\ \lvert X_i\rvert \ge t) \le 2 \lvert \iota\rvert\, e^{-t^2 / (2c)}$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_exists_abs_ge_le {ι : Type*}
     [Fintype ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ∃ i, t ≤ |X i ω|} ≤ 2 * Fintype.card ι * rexp (-t ^ 2 / (2 * c)) := by

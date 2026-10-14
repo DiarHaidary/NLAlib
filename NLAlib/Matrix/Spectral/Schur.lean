@@ -25,7 +25,7 @@ The eigenvalues of a matrix that need not be Hermitian are given by a listing,
 
 * `NLAlib.IsEigenvalueListing.exists_hasOrthonormalCols_isUpperTriangular`: Schur's theorem with
   a prescribed diagonal.
-* `NLAlib.exists_hasOrthonormalCols_isUpperTriangular`: Schur's theorem over `ℂ`.
+* `NLAlib.exists_hasOrthonormalCols_isUpperTriangular`: Schur's theorem over $\mathbb{C}$.
 * `NLAlib.IsEigenvalueListing.sum_norm_sq_le_frobNorm_sq`: Schur's inequality.
 * `NLAlib.IsEigenvalueListing.sum_norm_sq_eq_frobNorm_sq_iff`: equality exactly for normal
   matrices.
@@ -39,7 +39,8 @@ The eigenvalues of a matrix that need not be Hermitian are given by a listing,
 
 The similarity of `NLAlib.IsEigenvalueListing.exists_isUpperTriangular_inv_mul_mul_of_commute`,
 which triangularises a commuting pair over any field, is made unitary by a QR factorization. For
-a normal matrix `A` the pair `A`, `Aᴴ` gives a diagonal form.
+a normal matrix $\mathbf{A}$ the pair $\mathbf{A}$, $\mathbf{A}^{\mathsf{H}}$ gives a diagonal
+form.
 -/
 
 @[expose] public section
@@ -89,9 +90,11 @@ private theorem exists_schur_pair [LinearOrder n] {A B : Matrix n n 𝕜} {a : n
   · rw [key]
     exact (hRtri.mul hTB).mul hRtri.inv
 
-/-- **Schur triangularisation with a prescribed diagonal.** If `d` lists the eigenvalues of `A`,
-there is a unitary `U` with `Uᴴ A U` upper triangular with diagonal `d`, in the given order.
-Over `ℝ` this is orthogonal triangularisation of a matrix with real eigenvalues.
+/-- **Schur triangularisation with a prescribed diagonal.** If $\mathbf{d}$ lists the eigenvalues
+of $\mathbf{A}$, there is a unitary $\mathbf{U}$ with $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}$
+upper triangular with diagonal $\mathbf{d}$, in the given order:
+$(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U})_{i,i} = \mathbf{d}_i$. Over $\mathbb{R}$ this is
+orthogonal triangularisation of a matrix with real eigenvalues.
 [HornJohnson2013, Theorem 2.3.1].
 Port of `NLAlib.exists_unitary_schur_triangularization_with_charpoly`.
 Result: schur-triangularization -/
@@ -103,7 +106,8 @@ theorem IsEigenvalueListing.exists_hasOrthonormalCols_isUpperTriangular [LinearO
   exact ⟨U, hU, hT, hdiag⟩
 
 /-- **Schur's theorem.** Every square complex matrix is unitarily similar to an upper triangular
-matrix. [HornJohnson2013, Theorem 2.3.1]; [GolubVanLoan2013, Theorem 7.1.3].
+matrix: $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}$ is upper triangular for some unitary
+$\mathbf{U}$. [HornJohnson2013, Theorem 2.3.1]; [GolubVanLoan2013, Theorem 7.1.3].
 Port of `NLAlib.exists_unitary_schur_triangularization`. -/
 theorem exists_hasOrthonormalCols_isUpperTriangular [LinearOrder n] (A : Matrix n n ℂ) :
     ∃ U : Matrix n n ℂ, HasOrthonormalCols U ∧ (Uᴴ * A * U).IsUpperTriangular := by
@@ -111,18 +115,21 @@ theorem exists_hasOrthonormalCols_isUpperTriangular [LinearOrder n] (A : Matrix 
   obtain ⟨U, hU, hT, -⟩ := hd.exists_hasOrthonormalCols_isUpperTriangular
   exact ⟨U, hU, hT⟩
 
-/-- The diagonal of a triangular matrix unitarily similar to `A` lists the eigenvalues of `A`. -/
+/-- The diagonal of a triangular matrix unitarily similar to $\mathbf{A}$ lists the eigenvalues
+of $\mathbf{A}$: if $\mathbf{T} = \mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}$ is upper triangular
+with $\mathbf{U}$ unitary, the $\mathbf{T}_{i,i}$ list the eigenvalues. -/
 theorem isEigenvalueListing_of_isUpperTriangular_conjTranspose_mul_mul [LinearOrder n]
     {A U : Matrix n n 𝕜} (hU : HasOrthonormalCols U) (hT : (Uᴴ * A * U).IsUpperTriangular) :
     IsEigenvalueListing A fun i => (Uᴴ * A * U) i i := by
   rw [isEigenvalueListing_iff, ← Matrix.charpoly_of_isUpperTriangular _ hT,
     charpoly_mul_mul_of_mul_eq_one hU.conjTranspose_mul_self]
 
-/-- **Triangularisation with small off-diagonal part.** If `d` lists the eigenvalues of `A`,
-then for every `ε > 0` the matrix `A` is similar to an upper triangular matrix with diagonal `d`,
-in the given order, whose off-diagonal entries are smaller than `ε`. This is the step from the
-spectral radius to a norm in which the matrix is almost as small.
-[HornJohnson2013, Lemma 5.6.10], there over `ℂ`.
+/-- **Triangularisation with small off-diagonal part.** If $\mathbf{d}$ lists the eigenvalues of
+$\mathbf{A}$, then for every $\varepsilon > 0$ the matrix $\mathbf{A}$ is similar to an upper
+triangular matrix with diagonal $\mathbf{d}$, in the given order, whose off-diagonal entries have
+modulus less than $\varepsilon$. This is the step from the spectral radius to a norm in which the
+matrix is almost as small.
+[HornJohnson2013, Lemma 5.6.10], there over $\mathbb{C}$.
 Port of `NLAlib.exists_similarity_upper_triangular_small_entries`. -/
 theorem IsEigenvalueListing.exists_isUpperTriangular_inv_mul_mul_norm_apply_lt [LinearOrder n]
     {A : Matrix n n 𝕜} {d : n → 𝕜} (hd : IsEigenvalueListing A d) {ε : ℝ} (hε : 0 < ε) :
@@ -180,9 +187,9 @@ theorem IsEigenvalueListing.exists_isUpperTriangular_inv_mul_mul_norm_apply_lt [
     · rw [hT h, mul_zero, zero_mul, norm_zero]
       exact hε
 
-/-- **Triangularisation of a complex matrix with small off-diagonal part.** For every `ε > 0` a
-complex matrix is similar to an upper triangular matrix whose off-diagonal entries are smaller
-than `ε`. [HornJohnson2013, Lemma 5.6.10]. -/
+/-- **Triangularisation of a complex matrix with small off-diagonal part.** For every
+$\varepsilon > 0$ a complex matrix is similar to an upper triangular matrix whose off-diagonal
+entries have modulus less than $\varepsilon$. [HornJohnson2013, Lemma 5.6.10]. -/
 theorem exists_isUpperTriangular_inv_mul_mul_norm_apply_lt [LinearOrder n] (A : Matrix n n ℂ)
     {ε : ℝ} (hε : 0 < ε) :
     ∃ S : Matrix n n ℂ, IsUnit S.det ∧ (S⁻¹ * A * S).IsUpperTriangular ∧
@@ -231,7 +238,8 @@ private theorem exists_hasOrthonormalCols_diag_eq {A : Matrix n n 𝕜} {d : ι 
     exact ⟨U, e, hU, hdiag, fun h => absurd h hN⟩
 
 /-- **Schur's inequality**: the sum of the squared moduli of the eigenvalues is at most the
-squared Frobenius norm. [HornJohnson2013, §2.3].
+squared Frobenius norm, $\sum_i \lvert \mathbf{d}_i \rvert^2 \le \|\mathbf{A}\|_{\mathsf{F}}^2$
+for a listing $\mathbf{d}$ of the eigenvalues. [HornJohnson2013, §2.3].
 Port of `NLAlib.sum_norm_sq_schur_diagonal_le_frobSq`. -/
 theorem IsEigenvalueListing.sum_norm_sq_le_frobNorm_sq {A : Matrix n n 𝕜} {d : ι → 𝕜}
     (hd : IsEigenvalueListing A d) : ∑ i, ‖d i‖ ^ 2 ≤ frobNorm A ^ 2 := by
@@ -242,7 +250,9 @@ theorem IsEigenvalueListing.sum_norm_sq_le_frobNorm_sq {A : Matrix n n 𝕜} {d 
   exact le_add_of_nonneg_right
     (Finset.sum_nonneg fun i _ => Finset.sum_nonneg fun j _ => sq_nonneg _)
 
-/-- **Equality in Schur's inequality holds exactly for normal matrices.**
+/-- **Equality in Schur's inequality holds exactly for normal matrices**:
+$\sum_i \lvert \mathbf{d}_i \rvert^2 = \|\mathbf{A}\|_{\mathsf{F}}^2$ for a listing $\mathbf{d}$
+of the eigenvalues if and only if $\mathbf{A}$ is normal.
 [HornJohnson2013, Theorem 2.5.3].
 Port of `NLAlib.sum_norm_sq_characteristic_eq_frobSq_iff_normal`. -/
 theorem IsEigenvalueListing.sum_norm_sq_eq_frobNorm_sq_iff {A : Matrix n n 𝕜} {d : ι → 𝕜}
@@ -285,10 +295,12 @@ theorem IsEigenvalueListing.sum_norm_sq_eq_frobNorm_sq_iff {A : Matrix n n 𝕜}
 /-! ### Commuting matrices and density -/
 
 /-- **Eigenvalues of commuting matrices pair up, with a prescribed listing of the first.** If
-`a` lists the eigenvalues of `A`, and `B` commutes with `A` and has a characteristic polynomial
-that splits, then there is a listing `b` of the eigenvalues of `B` on the same index type such
-that the sums `a i + b i` and the products `a i * b i` list the eigenvalues of `A + B` and
-`A * B`. [HornJohnson2013, Theorem 2.4.8.1], there over `ℂ` without the prescribed listing.
+$\mathbf{a}$ lists the eigenvalues of $\mathbf{A}$, and $\mathbf{B}$ commutes with $\mathbf{A}$
+and has a characteristic polynomial that splits, then there is a listing $\mathbf{b}$ of the
+eigenvalues of $\mathbf{B}$ on the same index type such that the sums
+$\mathbf{a}_i + \mathbf{b}_i$ and the products $\mathbf{a}_i\mathbf{b}_i$ list the eigenvalues of
+$\mathbf{A} + \mathbf{B}$ and $\mathbf{A}\mathbf{B}$. [HornJohnson2013, Theorem 2.4.8.1], there
+over $\mathbb{C}$ without the prescribed listing.
 Port of `NLAlib.exists_paired_charpoly_factors_add_mul_of_commute`. -/
 theorem IsEigenvalueListing.exists_isEigenvalueListing_add_mul_of_commute {A B : Matrix n n K}
     {a : ι → K} (ha : IsEigenvalueListing A a) (h : Commute A B) (hB : B.charpoly.Splits) :
@@ -321,8 +333,9 @@ theorem IsEigenvalueListing.exists_isEigenvalueListing_add_mul_of_commute {A B :
   · simpa only [Function.comp_def, Equiv.apply_symm_apply] using hmul.comp_equiv e.symm
 
 /-- **Eigenvalues of commuting complex matrices pair up**: commuting complex matrices have
-listings of their eigenvalues whose sums and products list the eigenvalues of `A + B` and
-`A * B`. [HornJohnson2013, Theorem 2.4.8.1]. -/
+listings $\mathbf{a}$, $\mathbf{b}$ of their eigenvalues whose sums
+$\mathbf{a}_i + \mathbf{b}_i$ and products $\mathbf{a}_i\mathbf{b}_i$ list the eigenvalues of
+$\mathbf{A} + \mathbf{B}$ and $\mathbf{A}\mathbf{B}$. [HornJohnson2013, Theorem 2.4.8.1]. -/
 theorem exists_isEigenvalueListing_add_mul_of_commute {A B : Matrix n n ℂ} (h : Commute A B) :
     ∃ a b : n → ℂ, IsEigenvalueListing A a ∧ IsEigenvalueListing B b ∧
       IsEigenvalueListing (A + B) (fun i => a i + b i) ∧
@@ -331,9 +344,10 @@ theorem exists_isEigenvalueListing_add_mul_of_commute {A B : Matrix n n ℂ} (h 
   obtain ⟨b, hb⟩ := ha.exists_isEigenvalueListing_add_mul_of_commute h (IsAlgClosed.splits _)
   exact ⟨a, b, ha, hb⟩
 
-/-- Along the segment from `A` to a matrix `D` with separable characteristic polynomial, the
-characteristic polynomial is separable for all but finitely many parameters: the resultant of the
-characteristic polynomial and its derivative is a nonzero polynomial in the parameter. -/
+/-- Along the segment from $\mathbf{A}$ to a matrix $\mathbf{D}$ with separable characteristic
+polynomial, the characteristic polynomial is separable for all but finitely many parameters: the
+resultant of the characteristic polynomial and its derivative is a nonzero polynomial in the
+parameter. -/
 private theorem finite_setOf_not_separable_charpoly (A D : Matrix n n 𝕜)
     (hD : D.charpoly.Separable) : {t : 𝕜 | ¬(A + t • (D - A)).charpoly.Separable}.Finite := by
   let P : 𝕜[X][X] := (A.map C + (X : 𝕜[X]) • (D - A).map C).charpoly

@@ -14,7 +14,7 @@ Elimination without pivoting, `NLAlib.luLower` and `NLAlib.luUpper`, factors a m
 every zero pivot has only zeros below it (`NLAlib.eq_luLower_mul_luUpper`); nonzero pivots are
 not needed. This file states that as a realisation theorem for `NLAlib.IsLU`, and specialises it
 to partial pivoting, where every pivot is largest in absolute value among the entries below it:
-then the multipliers are at most one and row `i` of the upper factor grows by at most `2 ^ i`.
+then the multipliers are at most one and row $i$ of the upper factor grows by at most $2^i$.
 
 ## Main results
 
@@ -23,7 +23,7 @@ then the multipliers are at most one and row `i` of the upper factor grows by at
 * `NLAlib.isLU_luLower_luUpper_of_forall_norm_le`, `NLAlib.norm_luLower_apply_le_one`,
   `NLAlib.norm_luUpper_apply_le`: the factors computed with pivots of largest absolute value.
 * `NLAlib.exists_perm_isLU_luLower_luUpper_norm_le`: partial pivoting with the row-wise growth
-  bound `2 ^ i`.
+  bound $2^i$.
 -/
 
 @[expose] public section
@@ -42,7 +42,9 @@ theorem isLU_luLower_luUpper_of_forall_eq_zero {A : Matrix (Fin n) (Fin n) K}
   ⟨isUnitLowerTriangular_luLower A, isUpperTriangular_luUpper A, eq_luLower_mul_luUpper h⟩
 
 /-- Elimination computes the LU factorization when every pivot is largest in absolute value
-among the entries below it, as after the row exchanges of partial pivoting. -/
+among the entries below it, as after the row exchanges of partial pivoting:
+$\lvert \mathbf{B}^{(j)}_{i,j} \rvert \le \lvert \mathbf{B}^{(j)}_{j,j} \rvert$ for $j \le i$, with
+$\mathbf{B}^{(j)}$ the state after $j$ steps (`NLAlib.gaussState`). -/
 theorem isLU_luLower_luUpper_of_forall_norm_le {B : Matrix (Fin n) (Fin n) 𝕜}
     (hB : ∀ j i : Fin n, j ≤ i → ‖gaussState B j i j‖ ≤ ‖gaussState B j j j‖) :
     IsLU B (luLower B) (luUpper B) := by
@@ -51,7 +53,8 @@ theorem isLU_luLower_luUpper_of_forall_norm_le {B : Matrix (Fin n) (Fin n) 𝕜}
   rw [hj, norm_zero] at h
   exact norm_le_zero_iff.mp h
 
-/-- With pivots of largest absolute value, the multipliers are at most one in absolute value.
+/-- With pivots of largest absolute value, the multipliers are at most one in absolute value:
+$\lvert \mathbf{L}_{i,j} \rvert \le 1$ for the lower factor $\mathbf{L}$.
 [GolubVanLoan2013, §3.4.5]. -/
 theorem norm_luLower_apply_le_one {B : Matrix (Fin n) (Fin n) 𝕜}
     (hB : ∀ j i : Fin n, j ≤ i → ‖gaussState B j i j‖ ≤ ‖gaussState B j j j‖) (i j : Fin n) :
@@ -65,8 +68,10 @@ theorem norm_luLower_apply_le_one {B : Matrix (Fin n) (Fin n) 𝕜}
     exact zero_le_one
 
 /-- **Row-wise growth with partial pivoting.** With pivots of largest absolute value, the
-entries of row `i` of the upper factor exceed those of the matrix by a factor at most `2 ^ i`.
-[Higham2002, §9.3]; there as the growth factor bound `2 ^ (n - 1)`, which is the last row. -/
+entries of row $i$ of the upper factor $\mathbf{U}$ exceed those of the matrix by a factor at most
+$2^i$: if $\lvert \mathbf{B}_{i,j} \rvert \le M$ for all $i, j$, then
+$\lvert \mathbf{U}_{i,j} \rvert \le 2^i M$, rows indexed from $0$.
+[Higham2002, §9.3]; there as the growth factor bound $2^{n-1}$, which is the last row. -/
 theorem norm_luUpper_apply_le {B : Matrix (Fin n) (Fin n) 𝕜} {M : ℝ}
     (hM : ∀ i j, ‖B i j‖ ≤ M)
     (hB : ∀ j i : Fin n, j ≤ i → ‖gaussState B j i j‖ ≤ ‖gaussState B j j j‖) (i j : Fin n) :
@@ -77,10 +82,12 @@ theorem norm_luUpper_apply_le {B : Matrix (Fin n) (Fin n) 𝕜} {M : ℝ}
   · rw [norm_zero]
     exact mul_nonneg (pow_nonneg zero_le_two _) ((norm_nonneg _).trans (hM i j))
 
-/-- **Partial pivoting, row by row.** Every square matrix indexed by `Fin n` has a row
-permutation after which elimination computes an LU factorization whose multipliers are at most
-one in absolute value and whose upper factor has row `i` bounded by `2 ^ i` times the largest
-entry of the matrix. [GolubVanLoan2013, §3.4.5]; [Higham2002, §9.3].
+/-- **Partial pivoting, row by row.** Every square matrix $\mathbf{A}$ indexed by `Fin n` has a
+row permutation after which elimination computes an LU factorization whose multipliers are at
+most one in absolute value and whose upper factor has row $i$ bounded by $2^i$ times a bound on
+the entries of the matrix: if $\lvert \mathbf{A}_{i,j} \rvert \le M$ for all $i, j$, then
+$\lvert \mathbf{L}_{i,j} \rvert \le 1$ and $\lvert \mathbf{U}_{i,j} \rvert \le 2^i M$.
+[GolubVanLoan2013, §3.4.5]; [Higham2002, §9.3].
 `NLAlib.exists_perm_isLU_norm_le` is the uniform bound on any linearly ordered index type. -/
 theorem exists_perm_isLU_luLower_luUpper_norm_le (A : Matrix (Fin n) (Fin n) 𝕜) {M : ℝ}
     (hM : ∀ i j, ‖A i j‖ ≤ M) :

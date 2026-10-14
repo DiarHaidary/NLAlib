@@ -11,10 +11,11 @@ public import NLAlib.Matrix.Pseudoinverse.GeneralizedSchur
 /-!
 # The Nyström residual and elimination along pivots
 
-For a positive semidefinite matrix `A` and a selection `e : p → n` of indices, the Nyström
-residual `A - A_{:,e} (A_{e,e})⁺ A_{e,:}` is the largest positive semidefinite matrix below `A`
-whose columns at the selected indices vanish. Eliminating along a list of pivots
-(`l.foldl eliminationStep A`) produces the residual of the pivot set; this is the residual of a
+For a positive semidefinite matrix $\mathbf{A}$ and a selection `e : p → n` of indices, the
+Nyström residual $\mathbf{A} - \mathbf{A}_{:,e} (\mathbf{A}_{e,e})^{+} \mathbf{A}_{e,:}$ is the
+largest positive semidefinite matrix below $\mathbf{A}$ whose columns at the selected indices
+vanish. Eliminating along a list of pivots (`l.foldl eliminationStep A`) produces the residual of
+the pivot set; this is the residual of a
 partial pivoted Cholesky factorization. Averaging one step over a pivot drawn with probability
 proportional to the diagonal gives the expected step of randomly pivoted Cholesky.
 
@@ -23,7 +24,7 @@ proportional to the diagonal gives the expected step of randomly pivoted Cholesk
 * `Matrix.PosSemidef.sub_submatrix_mul_pinv_mul`, `Matrix.PosSemidef.sub_submatrix_mul_pinv_mul_le`,
   `Matrix.PosSemidef.sub_submatrix_mul_pinv_mul_apply`,
   `Matrix.PosSemidef.le_sub_submatrix_mul_pinv_mul`: the Nyström residual is positive
-  semidefinite, below `A`, zero on the selected columns, and the largest such matrix.
+  semidefinite, below $\mathbf{A}$, zero on the selected columns, and the largest such matrix.
 * `Matrix.PosSemidef.foldl_eliminationStep_eq_sub`: elimination along pivots is the Nyström
   residual.
 * `NLAlib.ker_mulVecLin_le_ker_eliminationStep`: an elimination step does not shrink the kernel.
@@ -58,8 +59,9 @@ private theorem posSemidef_fromBlocks_submatrix {p : Type*} {A : Matrix n n 𝕜
   rw [hblock]
   exact hA.submatrix _
 
-/-- **The Nyström residual is positive semidefinite**: for positive semidefinite `A` and a
-selection `e`, so is `A - A_{:,e} (A_{e,e})⁺ A_{e,:}`. It is a generalized Schur complement. -/
+/-- **The Nyström residual is positive semidefinite**: for positive semidefinite $\mathbf{A}$ and
+a selection $e$, so is $\mathbf{A} - \mathbf{A}_{:,e} (\mathbf{A}_{e,e})^{+} \mathbf{A}_{e,:}$.
+It is a generalized Schur complement. -/
 theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul {p : Type*} [Fintype p]
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) (e : p → n) :
     (A - A.submatrix id e * pinv (A.submatrix e e) * A.submatrix e id).PosSemidef := by
@@ -68,7 +70,8 @@ theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul {p : Type*} [Fintype
   rwa [Matrix.conjTranspose_submatrix, hA.isHermitian.eq] at h
 
 /-- The Nyström residual of a positive semidefinite matrix is below the matrix in the Loewner
-order. -/
+order: $\mathbf{A} - \mathbf{A}_{:,e} (\mathbf{A}_{e,e})^{+} \mathbf{A}_{e,:}
+\preceq \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul_le {p : Type*} [Fintype p]
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) (e : p → n) :
     A - A.submatrix id e * pinv (A.submatrix e e) * A.submatrix e id ≤ A := by
@@ -89,8 +92,10 @@ theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul_apply {p : Type*} [F
   rw [Matrix.sub_apply, sub_eq_zero]
   exact (congrFun (congrFun h i) k).symm
 
-/-- **The Nyström residual is the largest** positive semidefinite matrix below `A` whose columns
-at the selected indices vanish. -/
+/-- **The Nyström residual is the largest** positive semidefinite matrix below $\mathbf{A}$ whose
+columns at the selected indices vanish: if $\mathbf{M}$ is positive semidefinite,
+$\mathbf{M} \preceq \mathbf{A}$ and $\mathbf{M}_{i,e(k)} = 0$ for all $i$, $k$, then
+$\mathbf{M} \preceq \mathbf{A} - \mathbf{A}_{:,e} (\mathbf{A}_{e,e})^{+} \mathbf{A}_{e,:}$. -/
 theorem _root_.Matrix.PosSemidef.le_sub_submatrix_mul_pinv_mul {p : Type*} [Fintype p]
     {A M : Matrix n n 𝕜} (hM : M.PosSemidef) (e : p → n) (hMA : M ≤ A)
     (hMe : ∀ i k, M i (e k) = 0) :
@@ -131,8 +136,9 @@ private theorem eliminationStep_eq_sub_submatrix_mul_pinv_mul (A : Matrix n n �
   ring
 
 /-- **Elimination along a list of pivots is the Nyström residual.** For a positive semidefinite
-`A` and pivots `l`, the eliminated matrix is `A - A_{:,l} (A_{l,l})⁺ A_{l,:}`: it depends only on
-the set of pivots, and repeated pivots do nothing. This is the residual of the partial pivoted
+$\mathbf{A}$ and a list $l$ of pivots, the eliminated matrix is
+$\mathbf{A} - \mathbf{A}_{:,l} (\mathbf{A}_{l,l})^{+} \mathbf{A}_{l,:}$: it depends only on the
+set of pivots, and repeated pivots do nothing. This is the residual of the partial pivoted
 Cholesky factorization. [ChenEtAl2025, §2]. -/
 theorem _root_.Matrix.PosSemidef.foldl_eliminationStep_eq_sub
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) (l : List n) :
@@ -175,8 +181,9 @@ end Finite
 
 /-! ### The kernel under elimination -/
 
-/-- **An elimination step does not shrink the kernel**: `ker A ≤ ker (eliminationStep A t)`, for
-any square matrix over a field and any pivot, zero or not. For a positive semidefinite matrix
+/-- **An elimination step does not shrink the kernel**: the kernel of $\mathbf{A}$ is contained
+in the kernel of the matrix eliminated at $t$, for any square matrix over a field and any pivot,
+zero or not. For a positive semidefinite matrix
 this is the exhaustion of the column space by the pivots of a partial Cholesky factorization.
 [ChenEtAl2025, §2]. Port of `NLAlib.ker_mulVecLin_le_ker_eliminationStep`. -/
 theorem ker_mulVecLin_le_ker_eliminationStep {K : Type*} [Field K] [Fintype n]
@@ -190,8 +197,10 @@ theorem ker_mulVecLin_le_ker_eliminationStep {K : Type*} [Field K] [Fintype n]
 
 /-! ### Randomly pivoted Cholesky -/
 
-/-- **The expected step of randomly pivoted Cholesky.** Choosing the pivot `i` with probability
-`A i i / tr A` gives, on average, `A - A² / tr A`.
+/-- **The expected step of randomly pivoted Cholesky.** For positive semidefinite $\mathbf{A}$
+with $\operatorname{tr} \mathbf{A} \ne 0$, choosing the pivot $i$ with probability
+$\mathbf{A}_{i,i} / \operatorname{tr} \mathbf{A}$ gives, on average,
+$\mathbf{A} - \mathbf{A}^2 / \operatorname{tr} \mathbf{A}$.
 [ChenEtAl2025, §5].
 Port of `NLAlib.sum_choleskyPivotProbability_smul_eliminationStep_eq`. -/
 theorem _root_.Matrix.PosSemidef.sum_smul_eliminationStep [Fintype n] {A : Matrix n n 𝕜}
@@ -216,8 +225,10 @@ theorem _root_.Matrix.PosSemidef.sum_smul_eliminationStep [Fintype n] {A : Matri
     Finset.sum_sub_distrib, Matrix.sub_apply, hc, ← Finset.smul_sum, Matrix.mul_apply]
   rw [← Finset.sum_smul, ← Finset.sum_div, htr, div_self ht, one_smul]
 
-/-- **The expected trace after a step of randomly pivoted Cholesky**: choosing the pivot `i`
-with probability `A i i / tr A` leaves, on average, the trace `tr A - tr A² / tr A`.
+/-- **The expected trace after a step of randomly pivoted Cholesky**: for positive semidefinite
+$\mathbf{A}$ with $\operatorname{tr} \mathbf{A} \ne 0$, choosing the pivot $i$ with probability
+$\mathbf{A}_{i,i} / \operatorname{tr} \mathbf{A}$ leaves, on average, the trace
+$\operatorname{tr} \mathbf{A} - \operatorname{tr}(\mathbf{A}^2) / \operatorname{tr} \mathbf{A}$.
 [ChenEtAl2025, §5]. -/
 theorem _root_.Matrix.PosSemidef.sum_mul_re_trace_eliminationStep [Fintype n] {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (ht : RCLike.re A.trace ≠ 0) :

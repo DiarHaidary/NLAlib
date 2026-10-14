@@ -10,19 +10,24 @@ public import NLAlib.RandomMatrix.Haar.Basic
 /-!
 # Transfer between Gaussian and Haar test matrices
 
-For a fixed `A` and a Haar frame `Q`, the range projector of `A Q` has the law of the range
-projector of `A G` for a standard Gaussian `G` of the same shape: `polarFactor G = G T` with `T`
-invertible on the range, so `A G` and `A (polarFactor G)` have the same column space. Every
+For a fixed $\mathbf{A}$ and a Haar frame $\mathbf{Q}$, the range projector of
+$\mathbf{A}\mathbf{Q}$ has the law of the range projector of $\mathbf{A}\mathbf{G}$ for a standard
+Gaussian $\mathbf{G}$ of the same shape: `polarFactor G` is $\mathbf{G}\mathbf{T}$ with
+$\mathbf{T}$ invertible on the range, so $\mathbf{A}\mathbf{G}$ and $\mathbf{A}$ (`polarFactor G`)
+have the same column space. Every
 statistic of the column space of a sketch is a function of its range projector, so every
 range-finder statement proved for a Gaussian test matrix (expectations, tails, ranks) holds
 verbatim for a Haar test matrix, in every shape and rank.
 
 ## Main results
 
-* `NLAlib.hasLaw_rangeProjector_mul_of_hasLaw_haarFrame`: the law of `rangeProjector (A Q)`.
+* `NLAlib.hasLaw_rangeProjector_mul_of_hasLaw_haarFrame`: the law of
+  $\mathbf{P}_{\mathbf{A}\mathbf{Q}}$.
 * `NLAlib.integral_comp_rangeProjector_mul_of_hasLaw_haarFrame`: the expectation form, with values
   in any real Banach space.
-* `NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame`: `rank (A Q) = min (rank A) k` almost surely.
+* `NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame`:
+  $\operatorname{rank}(\mathbf{A}\mathbf{Q}) = \min(\operatorname{rank} \mathbf{A},
+  \lvert k \rvert)$ almost surely.
 -/
 
 @[expose] public section
@@ -35,17 +40,20 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k : Type*} [Fintype n]
   [Fintype k] {X : Ω → Matrix n k ℝ}
 
-/-- The range projector of `A * Q` is measurable in `Q`. -/
+/-- The range projector of $\mathbf{A}\mathbf{Q}$ is measurable in $\mathbf{Q}$. -/
 private theorem measurable_rangeProjector_mul {m : Type*} [Fintype m] (A : Matrix m n ℝ) :
     Measurable fun Q : Matrix n k ℝ => rangeProjector (A * Q) :=
   measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)
 
-/-- **Transfer between Gaussian and Haar test matrices**: the range projector of `A Q` for a Haar
-frame `Q` has the law of that of `A G` for a standard Gaussian `G`. Every shape and rank; no
-`card k ≤ card n` is needed. A statistic of `range (A Q)` is a measurable function of the
-projector, so it transfers by `HasLaw.comp`; this covers the residual `(1 - P) A` of the range
-finder, the power-iteration range finder (take `(A * Aᴴ) ^ q * A` for `A`) and the Nyström
-approximation of a positive semidefinite `A` (take `CFC.sqrt A` for `A`).
+/-- **Transfer between Gaussian and Haar test matrices**: the range projector
+$\mathbf{P}_{\mathbf{A}\mathbf{Q}}$ for a Haar frame $\mathbf{Q}$ has the law of
+$\mathbf{P}_{\mathbf{A}\mathbf{G}}$ for a standard Gaussian $\mathbf{G}$. Every shape and rank; no
+$\lvert k \rvert \le \lvert n \rvert$ is needed. A statistic of
+$\operatorname{range}(\mathbf{A}\mathbf{Q})$ is a measurable function of the projector, so it
+transfers by `HasLaw.comp`; this covers the residual $(\mathbf{I} - \mathbf{P})\mathbf{A}$ of the
+range finder, the power-iteration range finder (take
+$(\mathbf{A}\mathbf{A}^{\mathsf{H}})^q \mathbf{A}$ for $\mathbf{A}$) and the Nyström approximation
+of a positive semidefinite $\mathbf{A}$ (take $\mathbf{A}^{1/2}$, `CFC.sqrt A`, for $\mathbf{A}$).
 [HalkoMartinssonTropp2011, §4, §10], where the range finder is analysed for Gaussian test
 matrices.
 Result: gaussian-haar-range-transfer -/
@@ -60,11 +68,12 @@ theorem hasLaw_rangeProjector_mul_of_hasLaw_haarFrame [DecidableEq k] {m : Type*
   funext G
   exact rangeProjector_mul_polarFactor A G
 
-/-- **Expectations transfer between Gaussian and Haar test matrices**: for any statistic `f` of
-the range projector, with values in any real Banach space, `E f (P_{A Q}) = E f (P_{A G})` for a
-Haar frame `Q` and a standard Gaussian `G` on any two probability spaces. No integrability
-hypothesis: both sides integrate `f` against one law. This is the form a range-finder consumer
-applies, including to the power-iteration and Nyström sketches
+/-- **Expectations transfer between Gaussian and Haar test matrices**: for any strongly
+measurable statistic $f$ of the range projector, with values in any real Banach space,
+$\mathbb{E} f(\mathbf{P}_{\mathbf{A}\mathbf{Q}}) = \mathbb{E} f(\mathbf{P}_{\mathbf{A}\mathbf{G}})$
+for a Haar frame $\mathbf{Q}$ and a standard Gaussian $\mathbf{G}$ on any two probability spaces. No
+integrability hypothesis: both sides integrate `f` against one law. This is the form a range-finder
+consumer applies, including to the power-iteration and Nyström sketches
 (`hasLaw_rangeProjector_mul_of_hasLaw_haarFrame`). -/
 theorem integral_comp_rangeProjector_mul_of_hasLaw_haarFrame [DecidableEq k] {m : Type*}
     [Fintype m] (A : Matrix m n ℝ) {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
@@ -79,8 +88,10 @@ theorem integral_comp_rangeProjector_mul_of_hasLaw_haarFrame [DecidableEq k] {m 
   exact ((hasLaw_rangeProjector_mul_of_hasLaw_haarFrame A hX).integral_comp
     hf.aestronglyMeasurable).trans (hG'.integral_comp hf.aestronglyMeasurable).symm
 
-/-- **The rank of a Haar sketch**: `rank (A Q) = min (rank A) (card k)` almost surely, for a Haar
-frame `Q`, in every shape. The Haar twin of `ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix`. -/
+/-- **The rank of a Haar sketch**:
+$\operatorname{rank}(\mathbf{A}\mathbf{Q}) = \min(\operatorname{rank} \mathbf{A}, \lvert k \rvert)$
+almost surely, for an $n \times k$ Haar frame $\mathbf{Q}$, in every shape. The Haar twin of
+`ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix`. -/
 theorem ae_rank_mul_eq_min_of_hasLaw_haarFrame [DecidableEq k] {m : Type*} [Finite m]
     (A : Matrix m n ℝ) (hX : HasLaw X (haarFrame n k) μ) :
     ∀ᵐ ω ∂μ, (A * X ω).rank = min A.rank (Fintype.card k) := by

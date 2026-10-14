@@ -20,7 +20,8 @@ in real part has its eigenvalues in the right half plane, an irreducibly diagona
 matrix is nonsingular (Taussky), and a union of discs disjoint from the others contains as many
 eigenvalues as discs.
 
-The off-diagonal row sum is `gershgorinRadius A i`, as in Mathlib.
+The off-diagonal row sum $R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$ is
+`gershgorinRadius A i`, as in Mathlib.
 
 ## Main definitions
 
@@ -46,8 +47,9 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The **Gershgorin radius** of row `i`: the sum of the moduli of the off-diagonal entries of
-the row. The radius of column `j` is `gershgorinRadius Aᵀ j`. [HornJohnson2013, §6.1].
+/-- The **Gershgorin radius** of row $i$: the sum of the moduli of the off-diagonal entries of
+the row, $R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$. The radius of column
+$j$ is `gershgorinRadius Aᵀ j`. [HornJohnson2013, §6.1].
 Port of `NLAlib.gershgorinRowRadius`. -/
 def gershgorinRadius (A : Matrix n n 𝕜) (i : n) : ℝ :=
   ∑ j ∈ Finset.univ.erase i, ‖A i j‖
@@ -64,7 +66,10 @@ theorem gershgorinRadius_nonneg (A : Matrix n n 𝕜) (i : n) : 0 ≤ gershgorin
 /-! ### The circle theorem -/
 
 /-- **Gershgorin's circle theorem**, by rows: every eigenvalue lies in a disc centred at a
-diagonal entry with radius the off-diagonal row sum. [HornJohnson2013, Theorem 6.1.1].
+diagonal entry with radius the off-diagonal row sum: for $\mu$ in the spectrum of $\mathbf{A}$,
+$\lvert \mu - \mathbf{A}_{i,i} \rvert \le R_i(\mathbf{A})$ for some $i$, where
+$R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$.
+[HornJohnson2013, Theorem 6.1.1].
 Port of `NLAlib.exists_mem_gershgorinRowDisc_of_mem_spectrum`. -/
 theorem exists_norm_sub_le_sum_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 A) : ∃ i, ‖μ - A i i‖ ≤ gershgorinRadius A i := by
@@ -72,7 +77,9 @@ theorem exists_norm_sub_le_sum_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
   obtain ⟨i, hi⟩ := eigenvalue_mem_ball hμ
   exact ⟨i, mem_closedBall_iff_norm.mp hi⟩
 
-/-- Gershgorin's circle theorem, by columns.
+/-- Gershgorin's circle theorem, by columns: for $\mu$ in the spectrum of $\mathbf{A}$,
+$\lvert \mu - \mathbf{A}_{j,j} \rvert \le \sum_{i \ne j} \lvert \mathbf{A}_{i,j} \rvert$ for some
+$j$.
 Port of `NLAlib.exists_mem_gershgorinColumnDisc_of_mem_spectrum`. -/
 theorem exists_norm_sub_le_sum_col_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 A) : ∃ j, ‖μ - A j j‖ ≤ gershgorinRadius Aᵀ j := by
@@ -80,7 +87,8 @@ theorem exists_norm_sub_le_sum_col_of_mem_spectrum {A : Matrix n n 𝕜} {μ : �
     ← Matrix.mem_spectrum_iff_isRoot_charpoly] at hμ
   exact exists_norm_sub_le_sum_of_mem_spectrum hμ
 
-/-- Every eigenvalue is at most a row sum in absolute value.
+/-- Every eigenvalue is at most a row sum in absolute value: for $\mu$ in the spectrum,
+$\lvert \mu \rvert \le \sum_j \lvert \mathbf{A}_{i,j} \rvert$ for some $i$.
 Port of `NLAlib.exists_norm_le_row_sum_of_mem_spectrum`. -/
 theorem exists_norm_le_sum_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 A) : ∃ i, ‖μ‖ ≤ ∑ j, ‖A i j‖ := by
@@ -91,7 +99,10 @@ theorem exists_norm_le_sum_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
     _ ≤ gershgorinRadius A i + ‖A i i‖ := by gcongr
     _ = ∑ j, ‖A i j‖ := Finset.sum_erase_add _ _ (Finset.mem_univ i)
 
-/-- Every eigenvalue is at most a weighted row sum in absolute value, for any positive weights.
+/-- Every eigenvalue is at most a weighted row sum in absolute value, for any positive weights
+$\mathbf{p}$: for $\mu$ in the spectrum,
+$\lvert \mu \rvert \le \mathbf{p}_i^{-1} \sum_j \mathbf{p}_j \lvert \mathbf{A}_{i,j} \rvert$ for
+some $i$.
 [HornJohnson2013, Corollary 6.1.6].
 Port of `NLAlib.spectralRadius_le_max_weighted_row_sum`. -/
 theorem exists_norm_le_weighted_sum_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜}
@@ -128,7 +139,8 @@ private theorem exists_re_sub_le_re_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 
   linarith
 
 /-- Every eigenvalue of a Hermitian matrix is at least a diagonal entry minus the radius of its
-row. -/
+row: $\operatorname{Re} \mathbf{A}_{i,i} - R_i(\mathbf{A}) \le \lambda_k(\mathbf{A})$ for some
+$i$. -/
 private theorem exists_re_sub_le_eigenvalue {A : Matrix n n 𝕜} (hA : A.IsHermitian) {k : ℕ}
     (hk : k < Fintype.card n) :
     ∃ i, RCLike.re (A i i) - gershgorinRadius A i ≤ eigenvalue A k := by
@@ -137,8 +149,10 @@ private theorem exists_re_sub_le_eigenvalue {A : Matrix n n 𝕜} (hA : A.IsHerm
   exact ⟨i, by simpa using hi⟩
 
 /-- **A Hermitian strictly diagonally dominant matrix with positive diagonal is positive
-definite.** [HornJohnson2013, Theorem 6.1.10].
-Port of `NLAlib.posDef_of_isHermitian_of_row_radius_lt_diag`, there over `ℝ`. -/
+definite**: if $R_i(\mathbf{A}) < \operatorname{Re} \mathbf{A}_{i,i}$ for every $i$, where
+$R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$, then $\mathbf{A}$ is positive
+definite. [HornJohnson2013, Theorem 6.1.10].
+Port of `NLAlib.posDef_of_isHermitian_of_row_radius_lt_diag`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.posDef_of_forall_sum_lt_re {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (h : ∀ i, gershgorinRadius A i < RCLike.re (A i i)) :
     A.PosDef := by
@@ -148,7 +162,9 @@ theorem _root_.Matrix.IsHermitian.posDef_of_forall_sum_lt_re {A : Matrix n n �
   linarith [h i]
 
 /-- A Hermitian weakly diagonally dominant matrix with nonnegative diagonal is positive
-semidefinite. -/
+semidefinite: if $R_i(\mathbf{A}) \le \operatorname{Re} \mathbf{A}_{i,i}$ for every $i$, where
+$R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$, then
+$\mathbf{0} \preceq \mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.posSemidef_of_forall_sum_le_re {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (h : ∀ i, gershgorinRadius A i ≤ RCLike.re (A i i)) :
     A.PosSemidef := by
@@ -160,7 +176,9 @@ theorem _root_.Matrix.IsHermitian.posSemidef_of_forall_sum_le_re {A : Matrix n n
   · rw [eigenvalue_of_card_le A hk]
 
 /-- **A matrix whose diagonal dominates in real part has its eigenvalues in the open right half
-plane.** [HornJohnson2013, Theorem 6.1.10].
+plane**: if $R_i(\mathbf{A}) < \operatorname{Re} \mathbf{A}_{i,i}$ for every $i$, where
+$R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$, then
+$\operatorname{Re} \mu > 0$ for every $\mu$ in the spectrum. [HornJohnson2013, Theorem 6.1.10].
 Port of `NLAlib.re_pos_of_mem_spectrum_of_row_radius_lt_re_diag`. -/
 theorem re_pos_of_mem_spectrum_of_forall_sum_lt_re {A : Matrix n n 𝕜}
     (h : ∀ i, gershgorinRadius A i < RCLike.re (A i i)) {μ : 𝕜}
@@ -169,7 +187,9 @@ theorem re_pos_of_mem_spectrum_of_forall_sum_lt_re {A : Matrix n n 𝕜}
   linarith [h i]
 
 /-- At a coordinate of a null vector, the diagonal term is at most the weighted sum of the
-off-diagonal terms. -/
+off-diagonal terms: if $\mathbf{A}\mathbf{v} = \mathbf{0}$ then
+$\lvert \mathbf{A}_{i,i} \rvert \lvert \mathbf{v}_i \rvert \le
+\sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert \lvert \mathbf{v}_j \rvert$. -/
 private theorem norm_mul_norm_le_sum_of_mulVec_eq_zero {A : Matrix n n 𝕜} {v : n → 𝕜}
     (hv : A *ᵥ v = 0) (i : n) :
     ‖A i i‖ * ‖v i‖ ≤ ∑ j ∈ Finset.univ.erase i, ‖A i j‖ * ‖v j‖ := by
@@ -206,7 +226,11 @@ private theorem norm_eq_of_mulVec_eq_zero_of_apply_ne_zero {A : Matrix n n 𝕜}
   linarith [(mul_eq_zero.mp hterm).resolve_left (norm_ne_zero_iff.mpr hij)]
 
 /-- **Taussky's theorem.** An irreducible weakly diagonally dominant matrix with one strictly
-dominant row is nonsingular. [HornJohnson2013, Corollary 6.2.27].
+dominant row is nonsingular: if the matrix of moduli $(\lvert \mathbf{A}_{i,j} \rvert)$ is
+irreducible, $R_i(\mathbf{A}) \le \lvert \mathbf{A}_{i,i} \rvert$ for every $i$ and
+$R_i(\mathbf{A}) < \lvert \mathbf{A}_{i,i} \rvert$ for some $i$, where
+$R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$, then
+$\det \mathbf{A} \ne 0$. [HornJohnson2013, Corollary 6.2.27].
 Port of `NLAlib.det_ne_zero_of_irreducible_weak_diagonal_dominance`. -/
 theorem det_ne_zero_of_isIrreducible_of_forall_sum_le {A : Matrix n n 𝕜}
     (hI : (A.map fun x => ‖x‖).IsIrreducible)
@@ -239,7 +263,10 @@ theorem det_ne_zero_of_isIrreducible_of_forall_sum_le {A : Matrix n n 𝕜}
   exact (hbound.trans hsum).not_gt (mul_lt_mul_of_pos_right hs hpos)
 
 /-- A Hermitian irreducible weakly diagonally dominant matrix with positive diagonal and one
-strictly dominant row is positive definite. [HornJohnson2013, Corollary 6.2.27].
+strictly dominant row is positive definite: if the matrix of moduli is irreducible,
+$R_i(\mathbf{A}) \le \operatorname{Re} \mathbf{A}_{i,i}$ for every $i$ and
+$R_i(\mathbf{A}) < \operatorname{Re} \mathbf{A}_{i,i}$ for some $i$, then $\mathbf{A}$ is positive
+definite. [HornJohnson2013, Corollary 6.2.27].
 Port of `NLAlib.posDef_of_isHermitian_of_irreducible_weak_diagonal_dominance`. -/
 theorem _root_.Matrix.IsHermitian.posDef_of_isIrreducible_of_forall_sum_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hI : (A.map fun x => ‖x‖).IsIrreducible)
@@ -273,8 +300,8 @@ private theorem card_filter_roots_charpoly {A : Matrix n n ℂ} {d : n → ℂ}
   rw [hroots, ← Multiset.countP_eq_card_filter, Multiset.countP_map]
   rfl
 
-/-- The values at `card n + 1` points determine the characteristic polynomial among the
-products of `card n` monic linear factors. -/
+/-- The values at $\lvert n \rvert + 1$ points determine the characteristic polynomial among the
+products of $\lvert n \rvert$ monic linear factors. -/
 private theorem isEigenvalueListing_of_forall_eval_eq {A : Matrix n n ℂ} {d : n → ℂ}
     (h : ∀ j : Fin (Fintype.card n + 1), A.charpoly.eval (j : ℂ) = ∏ i, ((j : ℂ) - d i)) :
     IsEigenvalueListing A d := by
@@ -376,7 +403,11 @@ private theorem card_filter_roots_eq_of_preconnected {Ω : Type*} [TopologicalSp
 
 open Classical in
 /-- **A union of Gershgorin discs disjoint from the remaining discs contains exactly as many
-eigenvalues, with multiplicity, as it has discs.** [HornJohnson2013, Theorem 6.1.1].
+eigenvalues, with multiplicity, as it has discs**: for a complex matrix and a set $I$ of rows, if
+the union of the closed discs of centre $\mathbf{A}_{i,i}$ and radius
+$R_i(\mathbf{A}) = \sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert$ over $i \in I$ is disjoint from
+the union over $i \notin I$, it contains exactly $\lvert I \rvert$ roots of the characteristic
+polynomial, counted with multiplicity. [HornJohnson2013, Theorem 6.1.1].
 Port of `NLAlib.charpolyRootCountIn_gershgorinRowUnion_eq_card`. -/
 theorem card_roots_charpoly_filter_mem_iUnion_closedBall (A : Matrix n n ℂ) (I : Finset n)
     (h : Disjoint (⋃ i ∈ I, Metric.closedBall (A i i) (gershgorinRadius A i))

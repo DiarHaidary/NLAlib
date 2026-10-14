@@ -15,9 +15,10 @@ The squared moduli of the entries of a unitary matrix form a doubly stochastic m
 diagonal of a unitarily diagonalised matrix is the image of the diagonal factor under such a
 matrix. Hence the diagonal of a Hermitian matrix is majorized by its eigenvalues.
 
-The majorization statement compares two vectors on the index type `n`. It is stated for any
-unitary diagonalisation `A * U = U * diagonal d`; the form with Mathlib's `hA.eigenvalues` and
-the partial-sum form with `NLAlib.eigenvalue` are corollaries.
+The majorization statement compares two vectors on the index type $n$. It is stated for any
+unitary diagonalisation $\mathbf{A}\mathbf{U} = \mathbf{U}\operatorname{diag}(\mathbf{d})$; the
+form with Mathlib's `Matrix.IsHermitian.eigenvalues` and the partial-sum form with
+`NLAlib.eigenvalue` are corollaries.
 
 ## Main results
 
@@ -34,7 +35,9 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The matrix of squared moduli of the entries of a unitary matrix is doubly stochastic.
+/-- The matrix of squared moduli of the entries of a unitary matrix is doubly stochastic: for
+square $\mathbf{U}$ with orthonormal columns, $(\lvert \mathbf{U}_{i,j} \rvert^2)_{i,j}$ is doubly
+stochastic.
 [HornJohnson2013, §8.7]. Port of
 `NLAlib.norm_sq_entries_mem_doublyStochastic_of_hasOrthonormalCols`. -/
 theorem HasOrthonormalCols.norm_sq_mem_doublyStochastic {U : Matrix n n 𝕜}
@@ -52,7 +55,9 @@ theorem HasOrthonormalCols.norm_sq_mem_doublyStochastic {U : Matrix n n 𝕜}
     simpa only [Matrix.of_apply] using h
 
 /-- The diagonal of a unitarily diagonalised matrix is the image of the diagonal factor under the
-matrix of squared moduli of the unitary. -/
+matrix of squared moduli of the unitary: if
+$\mathbf{A}\mathbf{U} = \mathbf{U}\operatorname{diag}(\mathbf{d})$ then
+$\operatorname{Re} \mathbf{A}_{i,i} = \sum_j \lvert \mathbf{U}_{i,j} \rvert^2 \mathbf{d}_j$. -/
 private theorem re_apply_self_eq_sum_norm_sq_mul {A U : Matrix n n 𝕜} {d : n → ℝ}
     (hU : HasOrthonormalCols U) (h : A * U = U * Matrix.diagonal fun i => ((d i : ℝ) : 𝕜))
     (i : n) : RCLike.re (A i i) = ∑ j, ‖U i j‖ ^ 2 * d j := by
@@ -64,9 +69,10 @@ private theorem re_apply_self_eq_sum_norm_sq_mul {A U : Matrix n n 𝕜} {d : n 
   rw [mul_right_comm, RCLike.mul_conj, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul,
     RCLike.ofReal_re]
 
-/-- **Schur's theorem.** If `A * U = U * diagonal d` for a unitary `U` and real `d`, the diagonal
-of `A` is majorized by `d`: the diagonal of a Hermitian matrix is majorized by its eigenvalues,
-in any enumeration.
+/-- **Schur's theorem.** If $\mathbf{A}\mathbf{U} = \mathbf{U}\operatorname{diag}(\mathbf{d})$ for
+a unitary $\mathbf{U}$ and real $\mathbf{d}$, the real diagonal
+$(\operatorname{Re} \mathbf{A}_{i,i})_i$ is majorized by $\mathbf{d}$: the diagonal of a Hermitian
+matrix is majorized by its eigenvalues, in any enumeration.
 [HornJohnson2013, Theorem 4.3.45].
 Port of `NLAlib.majorized_diagonal_eigenvalues`.
 Result: schur-majorization -/
@@ -79,8 +85,9 @@ theorem majorized_re_diag_of_mul_eq_mul_diagonal {A U : Matrix n n 𝕜} {d : n 
   exact majorized_mulVec_of_mem_doublyStochastic d hU.norm_sq_mem_doublyStochastic
 
 /-- **Schur's theorem**, for Mathlib's enumeration of the eigenvalues: the real diagonal
-`(re A_{ii})_i` of a Hermitian matrix `A` is majorized by its eigenvalues listed as Mathlib's
-`hA.eigenvalues`, indexed by `n` rather than sorted.
+$(\operatorname{Re} \mathbf{A}_{i,i})_i$ of a Hermitian matrix $\mathbf{A}$ is majorized by its
+eigenvalues listed as Mathlib's `Matrix.IsHermitian.eigenvalues`, indexed by $n$ rather than
+sorted.
 [HornJohnson2013, Theorem 4.3.45].
 Result: schur-majorization -/
 theorem _root_.Matrix.IsHermitian.majorized_re_diag_eigenvalues {A : Matrix n n 𝕜}
@@ -93,8 +100,9 @@ theorem _root_.Matrix.IsHermitian.majorized_re_diag_eigenvalues {A : Matrix n n 
   rfl
 
 omit [DecidableEq n] in
-/-- Schur's theorem as partial sums: the sum of the `k` largest diagonal entries of a Hermitian
-matrix is at most the sum of its `k` largest eigenvalues.
+/-- Schur's theorem as partial sums: for every $k$, the sum of the $k$ largest diagonal entries
+$\operatorname{Re} \mathbf{A}_{i,i}$ of a Hermitian matrix (`NLAlib.sumLargest`) is at most
+$\sum_{i < k} \lambda_i(\mathbf{A})$, the sum of its $k$ largest eigenvalues.
 [HornJohnson2013, Theorem 4.3.45].
 Result: schur-majorization -/
 theorem _root_.Matrix.IsHermitian.sumLargest_re_diag_le_sum_eigenvalue {A : Matrix n n 𝕜}
@@ -115,7 +123,9 @@ theorem _root_.Matrix.IsHermitian.sumLargest_re_diag_le_sum_eigenvalue {A : Matr
   exact eigenvalue_of_card_le A (by omega)
 
 omit [DecidableEq n] in
-/-- Each diagonal entry of a Hermitian matrix lies between its extreme eigenvalues.
+/-- Each diagonal entry of a Hermitian matrix lies between its extreme eigenvalues:
+$\lambda_k(\mathbf{A}) \le \operatorname{Re} \mathbf{A}_{i,i} \le \lambda_0(\mathbf{A})$ for
+$k + 1 = \lvert n \rvert$.
 Port of `NLAlib.re_diagonal_mem_Icc_eigenvalues₀`. -/
 theorem _root_.Matrix.IsHermitian.re_apply_self_mem_Icc {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (i : n) {k : ℕ} (hk : k + 1 = Fintype.card n) :
@@ -133,7 +143,10 @@ theorem _root_.Matrix.IsHermitian.re_apply_self_mem_Icc {A : Matrix n n 𝕜} (h
   exact neg_le_neg_iff.mp h
 
 omit [DecidableEq n] in
-/-- For a convex function, the sum over the diagonal is at most the sum over the eigenvalues.
+/-- For a convex function, the sum over the diagonal is at most the sum over the eigenvalues: for
+Hermitian $\mathbf{A}$ and $\varphi$ convex on $\mathbb{R}$,
+$\sum_i \varphi(\operatorname{Re} \mathbf{A}_{i,i})
+\le \sum_{k < \lvert n \rvert} \varphi(\lambda_k(\mathbf{A}))$.
 [HornJohnson2013, Theorem 4.3.50 with 4.3.45]. -/
 theorem _root_.Matrix.IsHermitian.sum_convex_re_diag_le {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {φ : ℝ → ℝ} (hφ : ConvexOn ℝ Set.univ φ) :

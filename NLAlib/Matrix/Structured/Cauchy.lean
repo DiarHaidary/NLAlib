@@ -12,9 +12,10 @@ public import NLAlib.Matrix.Factorizations.Elimination
 /-!
 # Cauchy and Hilbert matrices
 
-The Cauchy matrix of two families `x`, `y` has entries `1 / (x i + y j)`. Its determinant is
-Cauchy's double product, which is positive for increasing positive families; the Hilbert matrix
-is the case `x i = i + 1`, `y j = j`.
+The Cauchy matrix of two families $\mathbf{x}$, $\mathbf{y}$ has entries
+$1 / (\mathbf{x}_i + \mathbf{y}_j)$. Its determinant is Cauchy's double product, which is positive
+for increasing families with positive denominators; the Hilbert matrix is the case
+$\mathbf{x}_i = i + 1$, $\mathbf{y}_j = j$, indices from $0$.
 
 ## Main definitions
 
@@ -39,12 +40,13 @@ namespace NLAlib
 
 variable {K : Type*} [Field K] {m n : Type*}
 
-/-- The **Cauchy matrix** of two families: entries `1 / (x i + y j)`.
-Port of `NLAlib.cauchyMatrix`, there over `ℝ`. -/
+/-- The **Cauchy matrix** of two families $\mathbf{x}$, $\mathbf{y}$ over a field: entries
+$1 / (\mathbf{x}_i + \mathbf{y}_j)$.
+Port of `NLAlib.cauchyMatrix`, there over $\mathbb{R}$. -/
 def cauchyMatrix (x : m → K) (y : n → K) : Matrix m n K :=
   Matrix.of fun i j => (x i + y j)⁻¹
 
-/-- Entries of a Cauchy matrix. -/
+/-- Entries of a Cauchy matrix: $(\mathbf{x}_i + \mathbf{y}_j)^{-1}$. -/
 @[simp]
 theorem cauchyMatrix_apply (x : m → K) (y : n → K) (i : m) (j : n) :
     cauchyMatrix x y i j = (x i + y j)⁻¹ :=
@@ -130,8 +132,11 @@ private theorem det_cauchyMatrix_aux {n : ℕ} (x y : Fin n → K) (h : ∀ i j,
       prod_Ioi_sub_succ y, hden, Finset.prod_div_distrib, Finset.prod_div_distrib]
     field_simp
 
-/-- **Cauchy's determinant.** For families with nonvanishing denominators,
-`det = ∏_{i < j} (x j - x i)(y j - y i) / ∏_{i, j} (x i + y j)`.
+/-- **Cauchy's determinant.** For families $\mathbf{x}, \mathbf{y}$ indexed by
+$\{0, \dots, n - 1\}$ with $\mathbf{x}_i + \mathbf{y}_j \ne 0$ for all $i, j$, the Cauchy matrix
+$\mathbf{C}$ has
+$$\det \mathbf{C} = \frac{\prod_{i < j} (\mathbf{x}_j - \mathbf{x}_i)(\mathbf{y}_j - \mathbf{y}_i)}
+  {\prod_{i, j} (\mathbf{x}_i + \mathbf{y}_j)}\,.$$
 [HornJohnson2013, §0.9.12]. Port of `NLAlib.det_cauchyMatrix_eq_prod_differences`. -/
 theorem det_cauchyMatrix {n : ℕ} (x y : Fin n → K) (h : ∀ i j, x i + y j ≠ 0) :
     (cauchyMatrix x y).det =
@@ -149,7 +154,7 @@ theorem det_cauchyMatrix_pos {n : ℕ} {x y : Fin n → ℝ} (hx : StrictMono x)
       mul_pos (sub_pos.mpr (hx (Finset.mem_Ioi.mp hj))) (sub_pos.mpr (hy (Finset.mem_Ioi.mp hj))))
     (Finset.prod_pos fun i _ => Finset.prod_pos fun j _ => h i j)
 
-/-- The **Hilbert matrix** of order `n`: entries `1 / (i + j + 1)`.
+/-- The **Hilbert matrix** of order $n$: real entries $1 / (i + j + 1)$, indices from $0$.
 Port of `NLAlib.hilbertMatrix`. -/
 noncomputable def hilbertMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => ((i : ℝ) + j + 1)⁻¹
@@ -210,8 +215,8 @@ private theorem posDef_cauchyMatrix_self_aux (k : ℕ) :
     exact sub_ne_zero.mpr fun h => i.2 (hinj h)
 
 /-- **A symmetric Cauchy matrix of distinct positive numbers is positive definite**: for an
-injective family `a` of positive reals on any finite index type, the matrix with entries
-`1 / (a i + a j)` is positive definite. [HornJohnson2013, §7.1.P19 context]. -/
+injective family $\mathbf{a}$ of positive reals on any finite index type, the matrix with entries
+$1 / (\mathbf{a}_i + \mathbf{a}_j)$ is positive definite. [HornJohnson2013, §7.1.P19 context]. -/
 theorem posDef_cauchyMatrix_self {ι : Type*} [Finite ι] {a : ι → ℝ} (ha : ∀ i, 0 < a i)
     (hinj : Function.Injective a) : (cauchyMatrix a a).PosDef := by
   cases nonempty_fintype ι

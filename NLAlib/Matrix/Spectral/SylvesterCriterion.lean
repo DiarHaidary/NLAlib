@@ -12,11 +12,11 @@ public import NLAlib.Matrix.Spectral.Schur
 /-!
 # Sylvester's criterion and principal minors
 
-A Hermitian matrix is positive definite exactly when its leading principal minors `principalMinor A
-(Finset.Iic i)` are positive, and positive semidefinite exactly when all its principal minors are
-nonnegative. The coefficients of the characteristic polynomial are the signed sums of the principal
-minors of each order (Mathlib's `Matrix.charpoly_coeff_eq_sum_minors` in the vocabulary of
-`principalMinor`), which are the elementary symmetric functions of the eigenvalues.
+A Hermitian matrix is positive definite exactly when its leading principal minors
+`principalMinor A (Finset.Iic i)` are positive, and positive semidefinite exactly when all its
+principal minors are nonnegative. The coefficients of the characteristic polynomial are the signed
+sums of the principal minors of each order (Mathlib's `Matrix.charpoly_coeff_eq_sum_minors` in the
+vocabulary of `principalMinor`), which are the elementary symmetric functions of the eigenvalues.
 
 ## Main results
 
@@ -72,8 +72,8 @@ private theorem posDef_and_posSemidef_of_posDef_submatrix [Fintype n] {p : Type*
     · exact (eigenvalue_of_card_le A (by omega)).ge
 
 omit [DecidableEq n] in
-/-- A nonempty initial segment `Iio i` of a finite linear order is `Iic j` for its largest
-element `j`. -/
+/-- A nonempty initial segment $\{j : j < i\}$ of a finite linear order is $\{l : l \le j\}$ for
+its largest element $j$. -/
 private theorem exists_Iio_eq_Iic [LinearOrder n] [LocallyFiniteOrderBot n] {i : n}
     (h : (Finset.Iio i).Nonempty) : ∃ j < i, Finset.Iio i = Finset.Iic j := by
   refine ⟨(Finset.Iio i).max' h, Finset.mem_Iio.mp (Finset.max'_mem _ h), ?_⟩
@@ -128,8 +128,10 @@ private theorem posDef_and_posSemidef_of_forall_re_principalMinor_Iio_pos [Finty
     exact congrArg Finset.card (Finset.eq_univ_of_forall fun x => Finset.mem_Iic.mpr (ht x))
 
 /-- **Sylvester's criterion.** A Hermitian matrix is positive definite exactly when its leading
-principal minors are positive. [HornJohnson2013, Theorem 7.2.5].
-Port of `NLAlib.posDef_iff_leadingMinor_pos`, there over `ℝ` on `Fin n`.
+principal minors are positive: $\operatorname{Re} \det \mathbf{A}_{s_i,s_i} > 0$ for every $i$,
+where $s_i = \{j : j \le i\}$ and $\mathbf{A}_{s,s}$ is the principal submatrix on $s$ (the minor
+is real; `principalMinor`). [HornJohnson2013, Theorem 7.2.5].
+Port of `NLAlib.posDef_iff_leadingMinor_pos`, there over $\mathbb{R}$ on `Fin n`.
 Result: sylvester-criterion -/
 theorem _root_.Matrix.IsHermitian.posDef_iff_forall_re_principalMinor_Iic_pos
     [Finite n] [LinearOrder n] [LocallyFiniteOrderBot n]
@@ -153,7 +155,9 @@ theorem _root_.Matrix.IsHermitian.posDef_iff_forall_re_principalMinor_Iic_pos
     rw [← principalMinor_univ, ← ht]
     exact h _
 
-/-- Sylvester's criterion with trailing principal minors.
+/-- Sylvester's criterion with trailing principal minors: a Hermitian matrix is positive definite
+exactly when $\operatorname{Re} \det \mathbf{A}_{s_i,s_i} > 0$ for every $i$, where
+$s_i = \{j : j \ge i\}$.
 Port of `NLAlib.posDef_iff_trailingMinor_pos`. -/
 theorem _root_.Matrix.IsHermitian.posDef_iff_forall_re_principalMinor_Ici_pos
     [Finite n] [LinearOrder n] [LocallyFiniteOrderTop n]
@@ -174,7 +178,9 @@ theorem _root_.Matrix.IsHermitian.posDef_iff_forall_re_principalMinor_Ici_pos
   exact hB.submatrix (e := (OrderDual.toDual : n → nᵒᵈ)) OrderDual.toDual.injective
 
 /-- A Hermitian matrix with positive proper leading principal minors and nonnegative
-determinant is positive semidefinite.
+determinant is positive semidefinite: if $\operatorname{Re} \det \mathbf{A}_{s,s} > 0$ for every
+$s = \{j : j < i\}$ and $\operatorname{Re} \det \mathbf{A} \ge 0$, then $\mathbf{A}$ is positive
+semidefinite.
 Port of `NLAlib.posSemidef_of_leadingMinor_pos_and_det_nonneg`. -/
 theorem _root_.Matrix.IsHermitian.posSemidef_of_forall_re_principalMinor_Iio_pos [Fintype n]
     [LinearOrder n] [LocallyFiniteOrderBot n] {A : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -185,9 +191,10 @@ theorem _root_.Matrix.IsHermitian.posSemidef_of_forall_re_principalMinor_Iio_pos
 /-! ### The characteristic polynomial -/
 
 /-- **The coefficients of the characteristic polynomial are signed sums of principal minors**:
-the coefficient of `X ^ j` is `(-1) ^ k` times the sum of the principal minors of order `k`,
-where `k + j` is the size. [HornJohnson2013, Theorem 1.2.16].
-Port of `NLAlib.signed_charpoly_coeff_eq_sum_principal_minors`, there over `ℝ`. -/
+for $k + j = \lvert n \rvert$ the coefficient of $X^j$ in $\det(X\mathbf{I} - \mathbf{A})$ is
+$$(-1)^k \sum_{\lvert s \rvert = k} \det \mathbf{A}_{s,s},$$
+the sum over the principal minors of order $k$. [HornJohnson2013, Theorem 1.2.16].
+Port of `NLAlib.signed_charpoly_coeff_eq_sum_principal_minors`, there over $\mathbb{R}$. -/
 theorem charpoly_coeff_eq_sum_principalMinor [Fintype n] {R : Type*} [CommRing R] (A : Matrix n n R)
     {k j : ℕ} (h : k + j = Fintype.card n) :
     A.charpoly.coeff j =
@@ -195,8 +202,11 @@ theorem charpoly_coeff_eq_sum_principalMinor [Fintype n] {R : Type*} [CommRing R
   obtain rfl : j = Fintype.card n - k := by omega
   exact Matrix.charpoly_coeff_eq_sum_minors A k (by omega)
 
-/-- **The sum of the principal minors of order `k` is the `k`-th elementary symmetric function
-of the eigenvalues.** [HornJohnson2013, Theorem 1.2.16].
+/-- **The sum of the principal minors of order $k$ is the $k$-th elementary symmetric function
+of the eigenvalues**: if $\mathbf{d}$ lists the eigenvalues of $\mathbf{A}$, then
+$$\sum_{\lvert s \rvert = k} \det \mathbf{A}_{s,s} = \sum_{\lvert s \rvert = k} \prod_{i \in s}
+  \mathbf{d}_i.$$
+[HornJohnson2013, Theorem 1.2.16].
 Port of `NLAlib.sum_det_principal_minors_eq_sum_prod_of_diagonalization`. -/
 theorem IsEigenvalueListing.sum_principalMinor_eq [Fintype n] {K : Type*} [Field K]
     {A : Matrix n n K} {d : n → K} (hd : IsEigenvalueListing A d) (k : ℕ) :
@@ -228,8 +238,8 @@ private theorem neg_one_pow_mul_re_charpoly_coeff [Fintype n] (A : Matrix n n �
   rw [charpoly_coeff_eq_sum_principalMinor A h, hre, ← mul_assoc, ← pow_add, ← two_mul,
     pow_mul, neg_one_sq, one_pow, one_mul, map_sum]
 
-/-- A monic real polynomial of degree `N` whose coefficients have the signs of those of
-`(X + 1) ^ N` evaluated at `-X` does not vanish at a negative number. -/
+/-- A monic real polynomial of degree $N$ whose coefficients have the signs of those of
+$(X + 1)^N$ evaluated at $-X$ does not vanish at a negative number. -/
 private theorem neg_one_pow_mul_eval_neg_pos {p : ℝ[X]} {N : ℕ} (hdeg : p.natDegree = N)
     (hp : p.Monic) (hcoeff : ∀ k j, k + j = N → 0 ≤ (-1) ^ k * p.coeff j) {t : ℝ}
     (ht : 0 < t) : 0 < (-1) ^ N * p.eval (-t) := by
@@ -249,8 +259,9 @@ private theorem neg_one_pow_mul_eval_neg_pos {p : ℝ[X]} {N : ℕ} (hdeg : p.na
     exact pow_pos ht _
 
 /-- A Hermitian matrix is positive semidefinite exactly when the coefficients of its
-characteristic polynomial alternate in sign.
-Port of `NLAlib.posSemidef_iff_signed_charpoly_coeff_nonneg`, there over `ℝ`. -/
+characteristic polynomial alternate in sign: $(-1)^k \operatorname{Re} c_j \ge 0$ whenever
+$k + j = \lvert n \rvert$, where $c_j$ is the coefficient of $X^j$.
+Port of `NLAlib.posSemidef_iff_signed_charpoly_coeff_nonneg`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.posSemidef_iff_forall_re_charpoly_coeff_nonneg [Fintype n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A.PosSemidef ↔
@@ -282,8 +293,9 @@ theorem _root_.Matrix.IsHermitian.posSemidef_iff_forall_re_charpoly_coeff_nonneg
     exact lt_irrefl _ hpos
 
 /-- **A Hermitian matrix is positive semidefinite exactly when all its principal minors are
-nonnegative.** Leading minors do not suffice. [HornJohnson2013, Theorem 7.2.5].
-Port of `NLAlib.posSemidef_iff_principal_minors_nonneg`, there over `ℝ`. -/
+nonnegative**: $\operatorname{Re} \det \mathbf{A}_{s,s} \ge 0$ for every set $s$ of indices.
+Leading minors do not suffice. [HornJohnson2013, Theorem 7.2.5].
+Port of `NLAlib.posSemidef_iff_principal_minors_nonneg`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.posSemidef_iff_forall_re_principalMinor_nonneg [Finite n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A.PosSemidef ↔ ∀ s : Finset n, 0 ≤ RCLike.re (principalMinor A s) := by

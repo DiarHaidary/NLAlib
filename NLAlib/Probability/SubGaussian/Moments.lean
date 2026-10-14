@@ -18,13 +18,16 @@ public import NLAlib.Probability.Tail
 
 The absolute moments of a sub-Gaussian variable, obtained by integrating its two-sided tail, and
 the maximal inequality for finitely many sub-Gaussian variables, which needs no independence.
-Integrability of `|X| ^ p` is Mathlib's `ProbabilityTheory.HasSubgaussianMGF.memLp`.
+Integrability of $\lvert X\rvert^p$ is Mathlib's `ProbabilityTheory.HasSubgaussianMGF.memLp`.
 
 ## Main results
 
-* `ProbabilityTheory.HasSubgaussianMGF.integral_abs_rpow_le`: `E |X| ^ p ≤ p (2c)^{p/2} Γ(p/2)`.
-* `ProbabilityTheory.HasSubgaussianMGF.integral_iSup_le`: `E max_i X_i ≤ √(2 c log N)`.
-* `ProbabilityTheory.HasSubgaussianMGF.integral_iSup_abs_le`: `E max_i |X_i| ≤ √(2 c log 2N)`.
+* `ProbabilityTheory.HasSubgaussianMGF.integral_abs_rpow_le`:
+  $\mathbb{E}\lvert X\rvert^p \le p (2c)^{p/2} \Gamma(p/2)$.
+* `ProbabilityTheory.HasSubgaussianMGF.integral_iSup_le`:
+  $\mathbb{E} \max_i X_i \le \sqrt{2 c \log N}$.
+* `ProbabilityTheory.HasSubgaussianMGF.integral_iSup_abs_le`:
+  $\mathbb{E} \max_i \lvert X_i\rvert \le \sqrt{2 c \log 2N}$.
 -/
 
 @[expose] public section
@@ -54,9 +57,10 @@ private lemma integral_Ioi_two_mul_exp_mul_rpow {c p : ℝ} (hc : 0 < c) (hp : 0
   rw [h1, h2, one_div (2 * c), inv_rpow (by positivity), rpow_neg (by positivity), inv_inv]
   ring
 
-/-- The absolute moments of a sub-Gaussian variable: `E |X| ^ p ≤ p (2c)^{p/2} Γ(p/2)` for
-`p > 0`. The right side is the integral of the two-sided tail bound `2 exp (-t² / (2c))` against
-`p t^{p-1} dt`, so it improves only with the tail. -/
+/-- The absolute moments of a sub-Gaussian variable with proxy $c$:
+$\int \lvert X\rvert^p \, d\mu \le p (2c)^{p/2} \Gamma(p/2)$ for real $p > 0$. The right side is
+the integral of the two-sided tail bound $2 e^{-t^2 / (2c)}$ against $p t^{p-1}\, dt$, so it
+improves only with the tail. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_abs_rpow_le
     (h : HasSubgaussianMGF X c μ) {p : ℝ} (hp : 0 < p) :
     ∫ ω, |X ω| ^ p ∂μ ≤ p * (2 * c) ^ (p / 2) * Real.Gamma (p / 2) := by
@@ -119,8 +123,9 @@ private lemma integrable_iSup_of_integrable {ι : Type*} [Finite ι]
     (ae_of_all _ fun ω => by
       simpa only [Real.norm_eq_abs, Finset.sum_apply] using abs_iSup_le_sum_abs (Y · ω))
 
-/-- Shared skeleton of the maximal inequalities for `M ω = ⨆ᵢ Yᵢ ω`: if `e^{sM} ≤ ∑ₖ Fₖ` pointwise
-with `∫ Fₖ ≤ b`, then `𝔼 M ≤ log(K b)/s`. -/
+/-- Shared skeleton of the maximal inequalities for $M(\omega) = \max_i Y_i(\omega)$: if
+$e^{sM} \le \sum_k F_k$ pointwise with $\mathbb{E} F_k \le b$ for each of the $K$ indices $k$, then
+$\mathbb{E} M \le \log(K b) / s$. -/
 private lemma integral_iSup_le_aux [IsProbabilityMeasure μ] {ι κ : Type*} [Finite ι]
     [Fintype κ] (Y : ι → Ω → ℝ) (hY : ∀ i, Integrable (Y i) μ)
     (F : κ → Ω → ℝ) (hF : ∀ k, Integrable (F k) μ) {s b : ℝ} (hs : 0 < s)
@@ -142,7 +147,7 @@ private lemma integral_iSup_le_aux [IsProbabilityMeasure μ] {ι κ : Type*} [Fi
     _ ≤ ∑ _k : κ, b := Finset.sum_le_sum fun k _ => hb k
     _ = Fintype.card κ * b := by simp
 
-/-- The parametrised maximal inequality `E max_i X_i ≤ log N / s + c s / 2`. -/
+/-- The parametrised maximal inequality $\mathbb{E} \max_i X_i \le \log N / s + c s / 2$. -/
 private lemma integral_iSup_le_div_add [IsProbabilityMeasure μ] {ι : Type*} [Fintype ι]
     [Nonempty ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {s : ℝ} (hs : 0 < s) :
     ∫ ω, ⨆ i, X i ω ∂μ ≤ log (Fintype.card ι) / s + c * s / 2 := by
@@ -162,7 +167,7 @@ private lemma integral_iSup_le_div_add [IsProbabilityMeasure μ] {ι : Type*} [F
   field_simp
 
 /-- The parametrised maximal inequality for absolute values,
-`E max_i |X_i| ≤ log (2N) / s + c s / 2`. -/
+$\mathbb{E} \max_i \lvert X_i\rvert \le \log(2N) / s + c s / 2$. -/
 private lemma integral_iSup_abs_le_div_add [IsProbabilityMeasure μ] {ι : Type*} [Fintype ι]
     [Nonempty ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {s : ℝ} (hs : 0 < s) :
     ∫ ω, ⨆ i, |X i ω| ∂μ ≤ log (2 * Fintype.card ι) / s + c * s / 2 := by
@@ -227,9 +232,9 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integrable_iSup {ι : Type*} 
     Integrable (fun ω => ⨆ i, X i ω) μ :=
   integrable_iSup_of_integrable X fun i => (h i).integrable
 
-/-- **The maximal inequality** (Boucheron–Lugosi–Massart, Theorem 2.5): the mean of the maximum
-of `N` sub-Gaussian variables with proxy `c` is at most `√(2 c log N)`. No independence is
-assumed.
+/-- **The maximal inequality**: the mean of the maximum of $N$ sub-Gaussian variables with common
+proxy $c$ is at most $\sqrt{2 c \log N}$, under a probability measure. No independence is assumed.
+[BoucheronLugosiMassart2013, Theorem 2.5].
 Result: subgaussian-maximal-inequality -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_iSup_le [IsProbabilityMeasure μ]
     {ι : Type*} [Fintype ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) :
@@ -246,7 +251,8 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integrable_iSup_abs {ι : Typ
     Integrable (fun ω => ⨆ i, |X i ω|) μ :=
   integrable_iSup_of_integrable (fun i ω => |X i ω|) fun i => (h i).integrable.abs
 
-/-- The maximal inequality for absolute values: `E max_i |X_i| ≤ √(2 c log 2N)`. -/
+/-- The maximal inequality for absolute values: for $N$ sub-Gaussian variables with common proxy
+$c$ under a probability measure, $\mathbb{E} \max_i \lvert X_i\rvert \le \sqrt{2 c \log 2N}$. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_iSup_abs_le [IsProbabilityMeasure μ]
     {ι : Type*} [Fintype ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) :
     ∫ ω, ⨆ i, |X i ω| ∂μ ≤ √(2 * c * Real.log (2 * Fintype.card ι)) := by

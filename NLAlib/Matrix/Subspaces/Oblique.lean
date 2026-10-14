@@ -11,24 +11,28 @@ public import NLAlib.Matrix.Subspaces.PrincipalAngles
 /-!
 # Oblique projections
 
-An idempotent matrix `P` projects onto its range along its kernel. It is an orthogonal projector
-exactly when its spectral norm is at most one; otherwise its norm is the secant of the largest
-principal angle between its range and the orthogonal complement of its kernel, and `P` and
-`1 - P` have the same norm. The oblique projector onto the column space of `X` along the
-orthogonal complement of the column space of `Y` is `X * (Yᴴ * X)⁻¹ * Yᴴ`.
+An idempotent matrix $\mathbf{P}$ projects onto its range along its kernel. It is an orthogonal
+projector exactly when its spectral norm is at most one; otherwise its norm is the secant of the
+largest principal angle between its range and the orthogonal complement of its kernel, and
+$\mathbf{P}$ and $\mathbf{I} - \mathbf{P}$ have the same norm. The oblique projector onto the
+column space of $\mathbf{X}$ along the orthogonal complement of the column space of $\mathbf{Y}$
+is $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$.
 
 ## Main results
 
 * `IsIdempotentElem.trace_eq_rank`: the trace of an idempotent matrix is its rank.
 * `IsIdempotentElem.one_le_specNorm`, `IsIdempotentElem.isStarProjection_iff_specNorm_le_one`.
-* `IsIdempotentElem.specNorm_sq`: `‖P‖₂² = 1 + ‖P - rangeProjector P‖₂²` for a nonzero idempotent.
-* `IsIdempotentElem.specNorm_one_sub`: `‖1 - P‖₂ = ‖P‖₂` for a nontrivial idempotent.
+* `IsIdempotentElem.specNorm_sq`: $\|\mathbf{P}\|_2^2 = 1 + \|\mathbf{P} -
+  \mathbf{P}_{\mathbf{P}}\|_2^2$ for a nonzero idempotent.
+* `IsIdempotentElem.specNorm_one_sub`: $\|\mathbf{I} - \mathbf{P}\|_2 = \|\mathbf{P}\|_2$ for a
+  nontrivial idempotent.
 * `IsIdempotentElem.pinv_eq_rangeProjector_conjTranspose_mul_rangeProjector`: the pseudoinverse
   of an idempotent.
 * `IsIdempotentElem.specNorm_mul_cos_principalAngle`: the secant formula.
 * `IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le`,
   `IsIdempotentElem.eq_mul_inv_mul_conjTranspose`: every idempotent is the oblique projector
-  `X * (Yᴴ * X)⁻¹ * Yᴴ` of a basis `X` of its range and a basis `Y` of the range of its adjoint.
+  $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ of a basis
+  $\mathbf{X}$ of its range and a basis $\mathbf{Y}$ of the range of its adjoint.
 * `NLAlib.HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose`: the norm of an oblique
   projector given by two frames.
 -/
@@ -43,7 +47,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n p : Type*} [Fintype n] [Fintype p]
 
 /-! ### Idempotent matrices -/
 
-/-- The trace of an idempotent matrix is its rank.
+/-- The trace of an idempotent matrix over a field is its rank:
+$\operatorname{tr} \mathbf{P} = \operatorname{rank} \mathbf{P}$.
 [HornJohnson2013, §3.1.P25 context]. Port of `NLAlib.trace_eq_rank_of_isIdempotentElem`. -/
 theorem _root_.IsIdempotentElem.trace_eq_rank {K : Type*} [Field K] {P : Matrix n n K}
     (hP : IsIdempotentElem P) : P.trace = P.rank := by
@@ -53,7 +58,9 @@ theorem _root_.IsIdempotentElem.trace_eq_rank {K : Type*} [Field K] {P : Matrix 
   rw [← Matrix.trace_toLin'_eq, Matrix.toLin'_apply']
   exact ((LinearMap.isProj_range_iff_isIdempotentElem P.mulVecLin).mpr hf).trace
 
-/-- An idempotent matrix fixes the column space of any matrix inside its range.
+/-- An idempotent matrix fixes the column space of any matrix inside its range:
+$\mathbf{P}\mathbf{X} = \mathbf{X}$ when the column space of $\mathbf{X}$ lies in the range of
+$\mathbf{P}$.
 Port of `NLAlib.mul_eq_of_range_le_of_isIdempotentElem`. -/
 theorem _root_.IsIdempotentElem.mul_eq_of_range_le {R : Type*} [CommSemiring R]
     {P : Matrix n n R} (hP : IsIdempotentElem P) {X : Matrix n p R}
@@ -63,8 +70,8 @@ theorem _root_.IsIdempotentElem.mul_eq_of_range_le {R : Type*} [CommSemiring R]
   obtain ⟨y, hy⟩ := h (show X *ᵥ x ∈ LinearMap.range X.mulVecLin from ⟨x, rfl⟩)
   rw [← Matrix.mulVec_mulVec, ← hy, Matrix.mulVecLin_apply, Matrix.mulVec_mulVec, hP.eq]
 
-/-- For a nonzero orthogonal projector `R` and `M` with columns in the range of `R`,
-`‖R + M Mᴴ‖₂ = 1 + ‖M‖₂²`. -/
+/-- For a nonzero orthogonal projector $\mathbf{R}$ and $\mathbf{M}$ with columns in the range of
+$\mathbf{R}$, $\|\mathbf{R} + \mathbf{M}\mathbf{M}^{\mathsf{H}}\|_2 = 1 + \|\mathbf{M}\|_2^2$. -/
 private theorem specNorm_add_mul_conjTranspose_self {R : Matrix n n 𝕜} (hR : IsStarProjection R)
     (h0 : R ≠ 0) {M : Matrix n p 𝕜} (hM : R * M = M) :
     specNorm (R + M * Mᴴ) = 1 + specNorm M ^ 2 := by
@@ -108,8 +115,9 @@ private theorem specNorm_add_mul_conjTranspose_self {R : Matrix n n 𝕜} (hR : 
     have h2 : specNorm (1 - R) ≤ 1 := hR.one_sub.specNorm_le_one
     linarith [hmax.trans (max_le le_rfl (h2.trans h1))]
 
-/-- The off-diagonal block `P - rangeProjector P` of an idempotent `P` carries the norms of `P`
-and of `1 - P`, and `P` is an orthogonal projector when it vanishes. -/
+/-- The off-diagonal block $\mathbf{P} - \mathbf{P}_{\mathbf{P}}$ of an idempotent $\mathbf{P}$
+carries the norms of $\mathbf{P}$ and of $\mathbf{I} - \mathbf{P}$, and $\mathbf{P}$ is an
+orthogonal projector when it vanishes. -/
 private theorem specNorm_sq_eq_and [DecidableEq n] {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) :
     (P ≠ 0 → specNorm P ^ 2 = 1 + specNorm (P - rangeProjector P) ^ 2) ∧
@@ -157,16 +165,17 @@ private theorem specNorm_sq_eq_and [DecidableEq n] {P : Matrix n n 𝕜}
   · rw [hPeq, h, add_zero]
     exact hQ
 
-/-- **The norm of an idempotent from its off-diagonal part.** A nonzero idempotent `P` is its
-range projector plus the part `P - rangeProjector P` that maps the orthogonal complement of the
-range into the range, and `‖P‖₂² = 1 + ‖P - rangeProjector P‖₂²`.
+/-- **The norm of an idempotent from its off-diagonal part.** A nonzero idempotent $\mathbf{P}$
+is its range projector $\mathbf{P}_{\mathbf{P}}$ plus the part
+$\mathbf{P} - \mathbf{P}_{\mathbf{P}}$ that maps the orthogonal complement of the range into the
+range, and $\|\mathbf{P}\|_2^2 = 1 + \|\mathbf{P} - \mathbf{P}_{\mathbf{P}}\|_2^2$.
 [Szyld2006]. -/
 theorem _root_.IsIdempotentElem.specNorm_sq {P : Matrix n n 𝕜} (hP : IsIdempotentElem P)
     (h0 : P ≠ 0) : specNorm P ^ 2 = 1 + specNorm (P - rangeProjector P) ^ 2 := by
   classical
   exact (specNorm_sq_eq_and hP).1 h0
 
-/-- A nonzero idempotent has spectral norm at least one.
+/-- A nonzero idempotent has spectral norm at least one: $1 \le \|\mathbf{P}\|_2$.
 Port of `NLAlib.one_le_specNorm_of_isIdempotentElem`. -/
 theorem _root_.IsIdempotentElem.one_le_specNorm {P : Matrix n n 𝕜} (hP : IsIdempotentElem P)
     (h : P ≠ 0) : 1 ≤ specNorm P := by
@@ -179,7 +188,8 @@ theorem _root_.IsIdempotentElem.one_le_specNorm {P : Matrix n n 𝕜} (hP : IsId
   rw [not_le] at hlt
   nlinarith
 
-/-- **An idempotent is an orthogonal projector exactly when it is a contraction.**
+/-- **An idempotent is an orthogonal projector exactly when it is a contraction**,
+$\|\mathbf{P}\|_2 \le 1$.
 [HornJohnson2013, §3.1.P25 context]; [Kato1995, §I.6.7]. -/
 theorem _root_.IsIdempotentElem.isStarProjection_iff_specNorm_le_one {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) : IsStarProjection P ↔ specNorm P ≤ 1 := by
@@ -194,29 +204,35 @@ theorem _root_.IsIdempotentElem.isStarProjection_iff_specNorm_le_one {P : Matrix
     have h3 := specNorm_nonneg (P - rangeProjector P)
     nlinarith
 
-/-- **An idempotent and its complement have the same norm**, when neither is zero.
+/-- **An idempotent and its complement have the same norm**, when neither is zero:
+$\|\mathbf{I} - \mathbf{P}\|_2 = \|\mathbf{P}\|_2$ for $\mathbf{P} \ne \mathbf{0}, \mathbf{I}$.
 [Kato1995, §I.6.7]; [Szyld2006]; [HornJohnson2013, Corollary 3.4.3.3].
-Port of `NLAlib.specNorm_one_sub_eq_of_idempotent_of_rank_pos_lt`, there over `ℝ`.
+Port of `NLAlib.specNorm_one_sub_eq_of_idempotent_of_rank_pos_lt`, there over $\mathbb{R}$.
 Result: oblique-projection-norm -/
 theorem _root_.IsIdempotentElem.specNorm_one_sub [DecidableEq n] {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : specNorm (1 - P) = specNorm P := by
   refine (sq_eq_sq₀ (specNorm_nonneg _) (specNorm_nonneg _)).mp ?_
   rw [hP.specNorm_sq h0, (specNorm_sq_eq_and hP).2.1 h1]
 
-/-- The pseudoinverse of an idempotent `P` is the product of the orthogonal projectors onto the
-range of `Pᴴ` and onto the range of `P`. This is how the norm of an oblique projector is read
-off the principal angles between those two ranges. -/
+/-- The pseudoinverse of an idempotent $\mathbf{P}$ is the product of the orthogonal projectors
+onto the range of $\mathbf{P}^{\mathsf{H}}$ and onto the range of $\mathbf{P}$:
+$\mathbf{P}^{+} = \mathbf{P}_{\mathbf{P}^{\mathsf{H}}}\mathbf{P}_{\mathbf{P}}$. This is how the norm
+of an oblique projector is read off the principal angles between those two ranges. -/
 theorem _root_.IsIdempotentElem.pinv_eq_rangeProjector_conjTranspose_mul_rangeProjector
     {P : Matrix n n 𝕜} (hP : IsIdempotentElem P) :
     pinv P = rangeProjector Pᴴ * rangeProjector P := by
   rw [← pinv_mul, ← mul_pinv, Matrix.mul_assoc, ← Matrix.mul_assoc P, hP.eq,
     ← Matrix.mul_assoc, pinv_mul_mul_pinv]
 
-/-- **The secant formula.** The spectral norm of a nonzero idempotent `P` is the secant of the
-largest principal angle between its range and the range of `Pᴴ` (the orthogonal complement of its
-kernel): `‖P‖₂ cos θ = 1`, and `θ < π / 2`.
+/-- **The secant formula.** The spectral norm of a nonzero idempotent $\mathbf{P}$ is the secant
+of the largest principal angle between its range and the range of $\mathbf{P}^{\mathsf{H}}$ (the
+orthogonal complement of its kernel): $\|\mathbf{P}\|_2 \cos \theta_j = 1$ with
+$\theta_j = \theta_j(\mathbf{P}, \mathbf{P}^{\mathsf{H}})$ and
+$j + 1 = \operatorname{rank} \mathbf{P}$; that $\theta_j < \pi / 2$ is
+`IsIdempotentElem.principalAngle_conjTranspose_lt`.
 [HornJohnson2013, Corollary 3.4.3.3]; [Szyld2006].
-Port of `NLAlib.specNorm_idempotent_eq_secant_of_range_frames`, there over `ℝ` with frames.
+Port of `NLAlib.specNorm_idempotent_eq_secant_of_range_frames`, there over $\mathbb{R}$ with
+frames.
 Result: oblique-projection-norm -/
 theorem _root_.IsIdempotentElem.specNorm_mul_cos_principalAngle {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {j : ℕ} (hj : j + 1 = P.rank) :
@@ -234,7 +250,8 @@ theorem _root_.IsIdempotentElem.specNorm_mul_cos_principalAngle {P : Matrix n n 
   rw [hcos, mul_inv_cancel₀ hne]
 
 /-- The largest principal angle between the range of a nonzero idempotent and the complement of
-its kernel is acute. -/
+its kernel is acute: $\theta_j(\mathbf{P}, \mathbf{P}^{\mathsf{H}}) < \pi / 2$ for
+$j + 1 = \operatorname{rank} \mathbf{P}$. -/
 theorem _root_.IsIdempotentElem.principalAngle_conjTranspose_lt {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {j : ℕ} (hj : j + 1 = P.rank) :
     principalAngle P Pᴴ j < Real.pi / 2 := by
@@ -249,8 +266,9 @@ theorem _root_.IsIdempotentElem.principalAngle_conjTranspose_lt {P : Matrix n n 
 
 variable [DecidableEq p]
 
-/-- `X * (Yᴴ * X)⁻¹ * Yᴴ` is idempotent when `Yᴴ * X` is invertible: it is the projector onto the
-column space of `X` along the orthogonal complement of the column space of `Y`. -/
+/-- $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ is idempotent when
+$\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ is invertible: it is the projector onto the column space of
+$\mathbf{X}$ along the orthogonal complement of the column space of $\mathbf{Y}$. -/
 theorem isIdempotentElem_mul_inv_mul_conjTranspose {X Y : Matrix n p 𝕜} (h : IsUnit (Yᴴ * X)) :
     IsIdempotentElem (X * (Yᴴ * X)⁻¹ * Yᴴ) := by
   have key : X * (Yᴴ * X)⁻¹ * Yᴴ * X = X := by
@@ -258,26 +276,31 @@ theorem isIdempotentElem_mul_inv_mul_conjTranspose {X Y : Matrix n p 𝕜} (h : 
       Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).mp h), Matrix.mul_one]
   rw [IsIdempotentElem, ← Matrix.mul_assoc, ← Matrix.mul_assoc, key]
 
-/-- The oblique projector `X * (Yᴴ * X)⁻¹ * Yᴴ` fixes `X`. -/
+/-- The oblique projector fixes $\mathbf{X}$:
+$\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}\mathbf{X} = \mathbf{X}$
+when $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ is invertible. -/
 theorem mul_inv_mul_conjTranspose_mul_self {X Y : Matrix n p 𝕜} (h : IsUnit (Yᴴ * X)) :
     X * (Yᴴ * X)⁻¹ * Yᴴ * X = X := by
   rw [Matrix.mul_assoc (X * (Yᴴ * X)⁻¹), Matrix.mul_assoc X,
     Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).mp h), Matrix.mul_one]
 
-/-- The oblique projector `X * (Yᴴ * X)⁻¹ * Yᴴ` annihilates the orthogonal complement of the
-column space of `Y`. -/
+/-- The oblique projector
+$\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ annihilates the
+orthogonal complement of the column space of $\mathbf{Y}$: it sends $\mathbf{v}$ with
+$\mathbf{Y}^{\mathsf{H}}\mathbf{v} = \mathbf{0}$ to $\mathbf{0}$. -/
 theorem mul_inv_mul_conjTranspose_mulVec_eq_zero (X Y : Matrix n p 𝕜) {v : n → 𝕜}
     (hv : Yᴴ *ᵥ v = 0) : (X * (Yᴴ * X)⁻¹ * Yᴴ) *ᵥ v = 0 := by
   rw [← Matrix.mulVec_mulVec, hv, Matrix.mulVec_zero]
 
-/-- **The overlap of two bases adapted to an idempotent is invertible.** If the columns of `X`
-are independent and lie in the range of an idempotent `P`, and the column space of `Y` contains
-the range of `Pᴴ` (the orthogonal complement of the kernel of `P`), then `Yᴴ * X` is invertible.
+/-- **The overlap of two bases adapted to an idempotent is invertible.** If the columns of
+$\mathbf{X}$ are independent and lie in the range of an idempotent $\mathbf{P}$, and the column
+space of $\mathbf{Y}$ contains the range of $\mathbf{P}^{\mathsf{H}}$ (the orthogonal complement of
+the kernel of $\mathbf{P}$), then $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ is invertible.
 Matrices with orthonormal columns are the case `HasOrthonormalCols.mulVec_injective`; no
-independence of the columns of `Y` is assumed, it follows.
+independence of the columns of $\mathbf{Y}$ is assumed, it follows.
 [HornJohnson2013, Corollary 3.4.3.3 context].
-Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, first half, there over `ℝ` for
-two frames spanning the two ranges. -/
+Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, first half, there over
+$\mathbb{R}$ for two frames spanning the two ranges. -/
 theorem _root_.IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {X Y : Matrix n p 𝕜} (hX : Function.Injective X.mulVec)
     (hXP : LinearMap.range X.mulVecLin ≤ LinearMap.range P.mulVecLin)
@@ -292,15 +315,17 @@ theorem _root_.IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le {P : Matrix
   rw [Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, hPX] at h'
   exact hX h'
 
-/-- **Every idempotent is an oblique projector of two bases.** If the columns of `X` are a basis
-of the range of an idempotent `P` and the columns of `Y` span the range of `Pᴴ` (the orthogonal
-complement of the kernel of `P`), then `P = X * (Yᴴ * X)⁻¹ * Yᴴ`, with `Yᴴ * X` invertible by
+/-- **Every idempotent is an oblique projector of two bases.** If the columns of $\mathbf{X}$ are
+a basis of the range of an idempotent $\mathbf{P}$ and the columns of $\mathbf{Y}$ span the range
+of $\mathbf{P}^{\mathsf{H}}$ (the orthogonal complement of the kernel of $\mathbf{P}$), then
+$\mathbf{P} = \mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$, with
+$\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ invertible by
 `IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le`. This is the converse of
-`NLAlib.isIdempotentElem_mul_inv_mul_conjTranspose`. Matrices with orthonormal columns are the
-case `HasOrthonormalCols.mulVec_injective`; for `P = 0` the bases have no columns.
+`NLAlib.isIdempotentElem_mul_inv_mul_conjTranspose`. Matrices with orthonormal columns are the case
+`HasOrthonormalCols.mulVec_injective`; for $\mathbf{P} = \mathbf{0}$ the bases have no columns.
 [HornJohnson2013, Corollary 3.4.3.3 context].
-Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, second half, there over `ℝ` for
-two frames. -/
+Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, second half, there over
+$\mathbb{R}$ for two frames. -/
 theorem _root_.IsIdempotentElem.eq_mul_inv_mul_conjTranspose {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {X Y : Matrix n p 𝕜} (hX : Function.Injective X.mulVec)
     (hXP : LinearMap.range X.mulVecLin = LinearMap.range P.mulVecLin)
@@ -318,16 +343,25 @@ theorem _root_.IsIdempotentElem.eq_mul_inv_mul_conjTranspose {P : Matrix n n �
     _ = X * (Yᴴ * X)⁻¹ * (Yᴴ * (X * C)) := by simp only [Matrix.mul_assoc]
     _ = X * (Yᴴ * X)⁻¹ * Yᴴ := by rw [← hC, hYP']
 
-/-- **The norm of an oblique projector between two frames**: for `U`, `V` with orthonormal
-columns and `Vᴴ * U` invertible, `‖U (Vᴴ U)⁻¹ Vᴴ‖₂ = ‖(Vᴴ U)⁻¹‖₂`, the reciprocal of the smallest
-singular value of `Vᴴ * U`, that is, the secant of the largest principal angle.
+/-- **The norm of an oblique projector between two frames**: for $\mathbf{U}$, $\mathbf{V}$ with
+orthonormal columns,
+$$\|\mathbf{U}(\mathbf{V}^{\mathsf{H}}\mathbf{U})^{-1}\mathbf{V}^{\mathsf{H}}\|_2
+  = \|(\mathbf{V}^{\mathsf{H}}\mathbf{U})^{-1}\|_2\,.$$
+No invertibility is assumed (Mathlib's inverse of a singular matrix is $\mathbf{0}$). When
+$\mathbf{V}^{\mathsf{H}}\mathbf{U}$ is invertible this is the reciprocal of its smallest singular
+value, that is, the secant of the largest principal angle
+(`HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose_mul_cos`).
 [Szyld2006]. -/
 theorem HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) :
     specNorm (U * (Vᴴ * U)⁻¹ * Vᴴ) = specNorm (Vᴴ * U)⁻¹ := by
   rw [Matrix.mul_assoc, hU.specNorm_mul_left, hV.specNorm_mul_conjTranspose_right]
 
-/-- The norm of an oblique projector between two frames, through the principal angle. -/
+/-- The norm of an oblique projector between two frames, through the principal angle: for
+$\mathbf{U}$, $\mathbf{V}$ with orthonormal columns indexed by $p$ and
+$\mathbf{V}^{\mathsf{H}}\mathbf{U}$ invertible,
+$\|\mathbf{U}(\mathbf{V}^{\mathsf{H}}\mathbf{U})^{-1}\mathbf{V}^{\mathsf{H}}\|_2
+\cos \theta_j(\mathbf{U}, \mathbf{V}) = 1$ for $j + 1 = \lvert p \rvert$. -/
 theorem HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose_mul_cos {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) (h : IsUnit (Vᴴ * U)) {j : ℕ}
     (hj : j + 1 = Fintype.card p) :

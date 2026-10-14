@@ -12,21 +12,30 @@ public import NLAlib.Matrix.Functions.Exponential
 /-!
 # The Golden–Thompson inequality
 
-For Hermitian `H` and `K`, `tr exp (H + K) ≤ tr (exp H · exp K)`. It replaces the scalar identity
-`e^{h + k} = e^h e^k` in the Ahlswede–Winter approach to matrix concentration.
+For Hermitian $\mathbf{H}$ and $\mathbf{K}$,
+$\operatorname{tr} \exp(\mathbf{H} + \mathbf{K})
+\le \operatorname{tr}(\exp(\mathbf{H})\exp(\mathbf{K}))$.
+It replaces the scalar identity $e^{h + k} = e^h e^k$ in the Ahlswede–Winter approach to matrix
+concentration.
 
 The proof is the classical one: the Lie product formula
-`(exp (H / n) exp (K / n)) ^ n → exp (H + K)` along `n = 2 ^ k`, and the trace inequality
-`tr (A B) ^ (2 ^ k) ≤ tr (A ^ (2 ^ k) B ^ (2 ^ k))` for positive semidefinite `A`, `B`. It works
-over any `RCLike` field and does not use Lieb's theorem.
+$(\exp(\mathbf{H}/n)\exp(\mathbf{K}/n))^n \to \exp(\mathbf{H} + \mathbf{K})$ along $n = 2^k$, and
+the trace inequality
+$\operatorname{tr} (\mathbf{A}\mathbf{B})^{2^k}
+\le \operatorname{tr}(\mathbf{A}^{2^k}\mathbf{B}^{2^k})$
+for positive semidefinite $\mathbf{A}$, $\mathbf{B}$. It works over any `RCLike` field and does
+not use Lieb's theorem.
 
 ## Main results
 
 * `NLAlib.tendsto_exp_smul_mul_exp_smul_pow`: the Lie product formula for matrices.
-* `Matrix.PosSemidef.re_trace_mul_pow_two_pow_le`: `tr (A B) ^ m ≤ tr (A ^ m B ^ m)` for
-  `m = 2 ^ k`.
+* `Matrix.PosSemidef.re_trace_mul_pow_two_pow_le`:
+  $\operatorname{tr} (\mathbf{A}\mathbf{B})^m \le \operatorname{tr}(\mathbf{A}^m\mathbf{B}^m)$ for
+  $m = 2^k$.
 * `NLAlib.re_trace_exp_add_le`: the Golden–Thompson inequality.
-* `Matrix.PosDef.re_trace_exp_add_cfc_log_le`: the form `tr exp (H + log X) ≤ tr (exp H · X)`.
+* `Matrix.PosDef.re_trace_exp_add_cfc_log_le`: the form
+  $\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{X}))
+  \le \operatorname{tr}(\exp(\mathbf{H})\mathbf{X})$.
 -/
 
 @[expose] public section
@@ -69,8 +78,8 @@ private theorem norm_pow_succ_sub_pow_succ_le {x y : 𝔸} {M : ℝ} (hx : ‖x�
 
 variable [NormedAlgebra 𝕂 𝔸] [NormOneClass 𝔸]
 
-/-- Two curves through `1` with the same derivative at `0` have the same limit of
-`F (1 / n) ^ n`. -/
+/-- Two curves $F$, $G$ through $1$ with the same derivative at $0$ have the same limit of
+$F(1/n)^n$: the difference $F(1/n)^n - G(1/n)^n$ tends to $0$. -/
 private theorem tendsto_pow_sub_pow_of_hasDerivAt {F G : 𝕂 → 𝔸} {D : 𝔸} (hF0 : F 0 = 1)
     (hG0 : G 0 = 1) (hF : HasDerivAt F D 0) (hG : HasDerivAt G D 0) :
     Tendsto (fun n : ℕ => F ((n : 𝕂)⁻¹) ^ n - G ((n : 𝕂)⁻¹) ^ n) atTop (𝓝 0) := by
@@ -128,7 +137,7 @@ private theorem tendsto_pow_sub_pow_of_hasDerivAt {F G : 𝕂 → 𝔸} {D : �
     _ < ε := half_lt_self hε
 
 /-- **The Lie product formula**, in the form
-`(exp (a / n) exp (b / n)) ^ n - exp ((a + b) / n) ^ n → 0`. -/
+$(\exp(a/n)\exp(b/n))^n - \exp((a + b)/n)^n \to 0$. -/
 private theorem tendsto_exp_smul_mul_exp_smul_pow_sub [CompleteSpace 𝔸] (a b : 𝔸) :
     Tendsto (fun n : ℕ => (exp ((n : 𝕂)⁻¹ • a) * exp ((n : 𝕂)⁻¹ • b)) ^ n -
       exp ((n : 𝕂)⁻¹ • (a + b)) ^ n) atTop (𝓝 0) := by
@@ -147,7 +156,8 @@ end LieProduct
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
-/-- The trace of a product of two positive semidefinite matrices is real and nonnegative. -/
+/-- The trace of a product of two positive semidefinite matrices has nonnegative real part:
+$\operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B}) \ge 0$. -/
 theorem _root_.Matrix.PosSemidef.re_trace_mul_nonneg {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
     (hB : B.PosSemidef) : 0 ≤ RCLike.re (A * B).trace := by
   classical
@@ -157,7 +167,9 @@ theorem _root_.Matrix.PosSemidef.re_trace_mul_nonneg {A B : Matrix n n 𝕜} (hA
 
 /-! ### Traces of powers of a product -/
 
-/-- `re tr (Yᴴ Z) ≤ (tr (Yᴴ Y) + tr (Zᴴ Z)) / 2`. -/
+/-- $\operatorname{Re} \operatorname{tr}(\mathbf{Y}^{\mathsf{H}}\mathbf{Z})
+\le (\operatorname{Re} \operatorname{tr}(\mathbf{Y}^{\mathsf{H}}\mathbf{Y}) +
+\operatorname{Re} \operatorname{tr}(\mathbf{Z}^{\mathsf{H}}\mathbf{Z})) / 2$. -/
 private theorem re_trace_conjTranspose_mul_le (Y Z : Matrix n n 𝕜) :
     RCLike.re (Yᴴ * Z).trace ≤ (RCLike.re (Yᴴ * Y).trace + RCLike.re (Zᴴ * Z).trace) / 2 := by
   have h := (RCLike.nonneg_iff.mp (Matrix.posSemidef_conjTranspose_mul_self (Y - Z)).trace_nonneg).1
@@ -183,9 +195,11 @@ private theorem trace_mul_pow_comm [DecidableEq n] (X Y : Matrix n n 𝕜) (k : 
         simp only [Matrix.mul_assoc]
     rw [h, Matrix.trace_mul_cycle, ← pow_succ']
 
-/-- For `m = 2 ^ j`: `re tr X ^ (2 m) ≤ tr (Xᴴ X) ^ m` for every `X`, and
-`tr (A B) ^ m ≤ tr (A ^ m B ^ m)` for positive semidefinite `A`, `B`. The two are proved
-together by induction on `j`. -/
+/-- For $m = 2^j$: $\operatorname{Re} \operatorname{tr} \mathbf{X}^{2m}
+\le \operatorname{Re} \operatorname{tr} (\mathbf{X}^{\mathsf{H}}\mathbf{X})^m$ for every
+$\mathbf{X}$, and $\operatorname{Re} \operatorname{tr} (\mathbf{A}\mathbf{B})^m
+\le \operatorname{Re} \operatorname{tr}(\mathbf{A}^m\mathbf{B}^m)$ for positive semidefinite
+$\mathbf{A}$, $\mathbf{B}$. The two are proved together by induction on $j$. -/
 private theorem re_trace_pow_two_pow_le_aux [DecidableEq n] (j : ℕ) :
     (∀ X : Matrix n n 𝕜,
       RCLike.re (X ^ 2 ^ (j + 1)).trace ≤ RCLike.re ((Xᴴ * X) ^ 2 ^ j).trace) ∧
@@ -227,16 +241,19 @@ private theorem re_trace_pow_two_pow_le_aux [DecidableEq n] (j : ℕ) :
 
 variable [DecidableEq n]
 
-/-- For positive semidefinite `A`, `B` and `m = 2 ^ k`, `tr (A B) ^ m ≤ tr (A ^ m B ^ m)`. With the
-Lie product formula this gives the Golden–Thompson inequality.
+/-- For positive semidefinite $\mathbf{A}$, $\mathbf{B}$ and $m = 2^k$,
+$\operatorname{Re} \operatorname{tr} (\mathbf{A}\mathbf{B})^m
+\le \operatorname{Re} \operatorname{tr}(\mathbf{A}^m\mathbf{B}^m)$. With the Lie product formula
+this gives the Golden–Thompson inequality.
 [Bhatia1997, §IX.2]. -/
 theorem _root_.Matrix.PosSemidef.re_trace_mul_pow_two_pow_le {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) (k : ℕ) :
     RCLike.re ((A * B) ^ 2 ^ k).trace ≤ RCLike.re (A ^ 2 ^ k * B ^ 2 ^ k).trace :=
   (re_trace_pow_two_pow_le_aux k).2 A B hA hB
 
-/-- **The Lie product formula** for matrices: `(exp (H / k) exp (K / k)) ^ k → exp (H + K)` as
-`k → ∞`, for any two square matrices over an `RCLike` field.
+/-- **The Lie product formula** for matrices:
+$(\exp(\mathbf{H}/k)\exp(\mathbf{K}/k))^k \to \exp(\mathbf{H} + \mathbf{K})$ as $k \to \infty$,
+for any two square matrices over an `RCLike` field.
 [Bhatia1997, §IX.1].
 Result: lie-product-formula -/
 theorem tendsto_exp_smul_mul_exp_smul_pow (H K : Matrix n n 𝕜) :
@@ -256,11 +273,12 @@ theorem tendsto_exp_smul_mul_exp_smul_pow (H K : Matrix n n 𝕜) :
     mul_inv_cancel₀ (Nat.cast_ne_zero.mpr hk.ne'), one_smul]
   abel
 
-/-- **The Golden–Thompson inequality.** For Hermitian `H` and `K`,
-`tr exp (H + K) ≤ tr (exp H · exp K)`.
+/-- **The Golden–Thompson inequality.** For Hermitian $\mathbf{H}$ and $\mathbf{K}$,
+$$\operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \mathbf{K})
+  \le \operatorname{Re} \operatorname{tr}(\exp(\mathbf{H})\exp(\mathbf{K})) \,.$$
 [Bhatia1997, §IX.3]; [Tropp2015, §3.1 notes].
-Port of the statement of `NLAlib.golden_thompson`, there over `ℂ` and derived from Lieb's theorem
-by pinching; the proof here is by the Lie product formula.
+Port of the statement of `NLAlib.golden_thompson`, there over $\mathbb{C}$ and derived from Lieb's
+theorem by pinching; the proof here is by the Lie product formula.
 Result: golden-thompson -/
 theorem re_trace_exp_add_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian) (hK : K.IsHermitian) :
     RCLike.re (exp (H + K)).trace ≤ RCLike.re (exp H * exp K).trace := by
@@ -282,9 +300,10 @@ theorem re_trace_exp_add_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian) (hK : K
     (hK.smul hc).posDef_exp.posSemidef k
   rwa [hsmul, hsmul] at h
 
-/-- The Golden–Thompson inequality with a logarithm: for Hermitian `H` and positive definite
-`X`, `tr exp (H + log X) ≤ tr (exp H · X)`.
-Port of `NLAlib.traceExp_add_matrixLog_le`, there over `ℂ`. -/
+/-- The Golden–Thompson inequality with a logarithm: for Hermitian $\mathbf{H}$ and positive
+definite $\mathbf{X}$, $\operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{X}))
+\le \operatorname{Re} \operatorname{tr}(\exp(\mathbf{H})\mathbf{X})$.
+Port of `NLAlib.traceExp_add_matrixLog_le`, there over $\mathbb{C}$. -/
 theorem _root_.Matrix.PosDef.re_trace_exp_add_cfc_log_le {H X : Matrix n n 𝕜}
     (hH : H.IsHermitian) (hX : X.PosDef) :
     RCLike.re (exp (H + cfc Real.log X)).trace ≤ RCLike.re (exp H * X).trace := by

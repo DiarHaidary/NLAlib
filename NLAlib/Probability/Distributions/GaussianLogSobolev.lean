@@ -15,14 +15,17 @@ public import NLAlib.Probability.LogSobolev
 /-!
 # Gross's logarithmic Sobolev inequality
 
-For the standard Gaussian, `Ent (g²) ≤ 2 E ‖∇g‖²` for every `C¹` function `g` with `g²` and
-`‖∇g‖²` integrable; then `g² log g²` is integrable too, so the entropy is not a junk value. The
+For the standard Gaussian, $\operatorname{Ent}(g^2) \le 2\, \mathbb{E}\|\nabla g\|^2$ for every
+$C^1$ function $g$ with $g^2$ and $\|\nabla g\|^2$ integrable, where
+$\operatorname{Ent}(f) = \mathbb{E}[f \log f] - \mathbb{E} f \log \mathbb{E} f$ is the entropy
+(`NLAlib.entropy`); then $g^2 \log g^2$ is integrable too, so the entropy is not a junk value. The
 one-dimensional inequality is proved first and tensorized. The standard Gaussian on a Euclidean
-space therefore satisfies `NLAlib.HasLogSobolev` with constant `1`.
+space therefore satisfies `NLAlib.HasLogSobolev` with constant $1$.
 
 ## Main results
 
-* `NLAlib.entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal`: Gross's inequality on `ℝ`.
+* `NLAlib.entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal`: Gross's inequality on
+  $\mathbb{R}$.
 * `NLAlib.entropy_sq_le_two_mul_integral_norm_fderiv_sq_stdGaussian`: on a Euclidean space.
 * `NLAlib.hasLogSobolev_stdGaussian`.
 
@@ -42,8 +45,8 @@ private lemma norm_fderiv_sq_eq (g : ℝ → ℝ) (x : ℝ) : ‖fderiv ℝ g x�
 
 /-! ### From compact support to the integrable case on the line -/
 
-/-- Smooth cutoffs `c n = χ (· / (n + 1))`: `C¹`, compactly supported, with values in `[0, 1]`
-and derivatives bounded uniformly in `n`, and eventually equal to `1` near every point. -/
+/-- Smooth cutoffs $c_n = \chi(\cdot / (n + 1))$: $C^1$, compactly supported, with values in
+$[0, 1]$ and derivatives bounded uniformly in $n$, and eventually equal to $1$ near every point. -/
 private lemma exists_cutoff : ∃ (c : ℕ → ℝ → ℝ) (K : ℝ), (∀ n, ContDiff ℝ 1 (c n)) ∧
     (∀ n, HasCompactSupport (c n)) ∧ (∀ n x, 0 ≤ c n x ∧ c n x ≤ 1) ∧
     (∀ n x, |deriv (c n) x| ≤ K) ∧ (∀ x, ∀ᶠ n in atTop, c n =ᶠ[𝓝 x] fun _ => 1) := by
@@ -86,8 +89,9 @@ private lemma exists_cutoff : ∃ (c : ℕ → ℝ → ℝ) (K : ℝ), (∀ n, C
     filter_upwards [(isOpen_lt continuous_abs continuous_const).mem_nhds hx] with y hy
     exact hc_one n y hy
 
-/-- Gross's inequality on `ℝ` for `g` with `g²`, `g² log g²` and `g'²` integrable, from the
-compactly supported case by a smooth cutoff `g χ(·/(n+1))` and dominated convergence. -/
+/-- Gross's inequality on $\mathbb{R}$ for $g$ with $g^2$, $g^2 \log g^2$ and $g'^2$ integrable,
+from the compactly supported case by a smooth cutoff $g\, \chi(\cdot / (n + 1))$ and dominated
+convergence. -/
 private lemma entropy_sq_le_gaussianReal_of_integrable {g : ℝ → ℝ} (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) (gaussianReal 0 1))
     (hglog : Integrable (fun x => g x ^ 2 * Real.log (g x ^ 2)) (gaussianReal 0 1))
@@ -160,8 +164,8 @@ private lemma entropy_sq_le_gaussianReal_of_integrable {g : ℝ → ℝ} (hg : C
 
 /-! ### Bounded test functions -/
 
-/-- A bounded `C¹` function with bounded derivative has `g²`, `g² log g²` and `‖∇g‖²` integrable
-under a finite measure. -/
+/-- A bounded $C^1$ function with bounded derivative has $g^2$, $g^2 \log g^2$ and
+$\|\nabla g\|^2$ integrable under a finite measure. -/
 private lemma integrable_of_abs_le_of_norm_fderiv_le {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] [MeasurableSpace F] [OpensMeasurableSpace F] {ν : Measure F}
     [IsFiniteMeasure ν] {g : F → ℝ} (hg : ContDiff ℝ 1 g) {M M' : ℝ} (hM : ∀ x, |g x| ≤ M)
@@ -188,8 +192,8 @@ private lemma integrable_of_abs_le_of_norm_fderiv_le {F : Type*} [NormedAddCommG
     rw [Real.norm_eq_abs, abs_pow, abs_norm]
     exact pow_le_pow_left₀ (norm_nonneg _) (hM' x) 2
 
-/-- The standard Gaussian on `ℝ` satisfies a logarithmic Sobolev inequality with constant `1`, from
-the case where `g² log g²` is integrable. -/
+/-- The standard Gaussian on $\mathbb{R}$ satisfies a logarithmic Sobolev inequality with constant
+$1$, from the case where $g^2 \log g^2$ is integrable. -/
 private lemma hasLogSobolev_gaussianReal : HasLogSobolev (gaussianReal 0 1) 1 := by
   refine ⟨fun g hg ⟨M, hM⟩ ⟨M', hM'⟩ => ?_⟩
   obtain ⟨h2, hlog, hd⟩ :=
@@ -200,8 +204,8 @@ private lemma hasLogSobolev_gaussianReal : HasLogSobolev (gaussianReal 0 1) 1 :=
 
 /-! ### Gross's inequality on the line -/
 
-/-- `g² log g²` is integrable for the standard Gaussian on `ℝ` when `g` is `C¹` with `g²` and
-`g'²` integrable. -/
+/-- $g^2 \log g^2$ is integrable for the standard Gaussian on $\mathbb{R}$ when $g$ is $C^1$ with
+$g^2$ and $g'^2$ integrable. -/
 theorem integrable_sq_mul_log_sq_gaussianReal {g : ℝ → ℝ} (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) (gaussianReal 0 1))
     (hdg : Integrable (fun x => deriv g x ^ 2) (gaussianReal 0 1)) :
@@ -209,8 +213,9 @@ theorem integrable_sq_mul_log_sq_gaussianReal {g : ℝ → ℝ} (hg : ContDiff �
   hasLogSobolev_gaussianReal.integrable_sq_mul_log_sq hg hg2
     (by simpa only [norm_fderiv_sq_eq] using hdg)
 
-/-- **Gross's logarithmic Sobolev inequality** on `ℝ`: `Ent (g²) ≤ 2 E g'²` for the standard
-Gaussian. -/
+/-- **Gross's logarithmic Sobolev inequality** on $\mathbb{R}$:
+$\operatorname{Ent}(g^2) \le 2\, \mathbb{E}[g'^2]$ for the standard Gaussian, for $g$ of class
+$C^1$ with $g^2$ and $g'^2$ integrable. -/
 theorem entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal {g : ℝ → ℝ} (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) (gaussianReal 0 1))
     (hdg : Integrable (fun x => deriv g x ^ 2) (gaussianReal 0 1)) :
@@ -220,7 +225,8 @@ theorem entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal {g : ℝ → ℝ} (
 
 /-! ### Tensorization and transport to a Euclidean space -/
 
-/-- Gross's inequality for the standard Gaussian on `ι → ℝ`, with `g² log g²` integrable. -/
+/-- Gross's inequality for the standard Gaussian on `ι → ℝ`, with $G^2 \log G^2$ integrable:
+$\operatorname{Ent}(G^2) \le 2\, \mathbb{E} \sum_i (\partial_i G)^2$. -/
 private lemma entropy_sq_le_gaussianVector {ι : Type*} [Fintype ι] [DecidableEq ι] {G : (ι → ℝ) → ℝ}
     (hG : ContDiff ℝ 1 G) (hG2 : Integrable (fun x => G x ^ 2) (gaussianVector ι))
     (hGlog : Integrable (fun x => G x ^ 2 * Real.log (G x ^ 2)) (gaussianVector ι))
@@ -269,7 +275,7 @@ private lemma entropy_sq_le_gaussianVector {ι : Type*} [Fintype ι] [DecidableE
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E]
 
-/-- Gross's inequality for the standard Gaussian on a Euclidean space, with `g² log g²`
+/-- Gross's inequality for the standard Gaussian on a Euclidean space, with $g^2 \log g^2$
 integrable: transport of the product case through an orthonormal basis. -/
 private lemma entropy_sq_le_stdGaussian_of_integrable {g : E → ℝ} (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) (stdGaussian E))
@@ -310,7 +316,7 @@ private lemma entropy_sq_le_stdGaussian_of_integrable {g : E → ℝ} (hg : Cont
     integral_map hLm hc2.aestronglyMeasurable, integral_map hLm hcd.aestronglyMeasurable]
   exact key
 
-/-- The standard Gaussian satisfies a logarithmic Sobolev inequality with constant `1`. -/
+/-- The standard Gaussian satisfies a logarithmic Sobolev inequality with constant $1$. -/
 theorem hasLogSobolev_stdGaussian : HasLogSobolev (stdGaussian E) 1 := by
   refine ⟨fun g hg ⟨M, hM⟩ ⟨M', hM'⟩ => ?_⟩
   obtain ⟨h2, hlog, hd⟩ :=
@@ -318,8 +324,8 @@ theorem hasLogSobolev_stdGaussian : HasLogSobolev (stdGaussian E) 1 := by
   rw [NNReal.coe_one, mul_one]
   exact entropy_sq_le_stdGaussian_of_integrable hg h2 hlog hd
 
-/-- `g² log g²` is integrable for the standard Gaussian on a Euclidean space when `g` is `C¹`
-with `g²` and `‖∇g‖²` integrable. -/
+/-- $g^2 \log g^2$ is integrable for the standard Gaussian on a Euclidean space when $g$ is $C^1$
+with $g^2$ and $\|\nabla g\|^2$ integrable. -/
 theorem integrable_sq_mul_log_sq_stdGaussian {g : E → ℝ} (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) (stdGaussian E))
     (hdg : Integrable (fun x => ‖fderiv ℝ g x‖ ^ 2) (stdGaussian E)) :
@@ -327,7 +333,8 @@ theorem integrable_sq_mul_log_sq_stdGaussian {g : E → ℝ} (hg : ContDiff ℝ 
   hasLogSobolev_stdGaussian.integrable_sq_mul_log_sq hg hg2 hdg
 
 /-- **Gross's logarithmic Sobolev inequality** for the standard Gaussian on a Euclidean space:
-`Ent (g²) ≤ 2 E ‖∇g‖²` ([BoucheronLugosiMassart2013], Theorem 5.4).
+$\operatorname{Ent}(g^2) \le 2\, \mathbb{E}\|\nabla g\|^2$ for $g$ of class $C^1$ with $g^2$ and
+$\|\nabla g\|^2$ integrable ([BoucheronLugosiMassart2013], Theorem 5.4).
 Result: gaussian-log-sobolev -/
 theorem entropy_sq_le_two_mul_integral_norm_fderiv_sq_stdGaussian {g : E → ℝ}
     (hg : ContDiff ℝ 1 g) (hg2 : Integrable (fun x => g x ^ 2) (stdGaussian E))

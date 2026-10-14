@@ -14,26 +14,34 @@ public import NLAlib.RandomMatrix.Gaussian.SpectralNorm
 /-!
 # Extreme singular values of Gaussian matrices
 
-For a standard Gaussian matrix `G : m × n` (`N = card m` rows, `n = card n` columns): Gordon's
-lower bound `√N - √n ≤ E σ_min(G)` (the upper bound `E ‖G‖ ≤ √N + √n` is in
+For a standard Gaussian $m \times n$ matrix $\mathbf{G}$ ($\lvert m \rvert$ rows, $\lvert n \rvert$
+columns): Gordon's lower bound
+$\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} \le \mathbb{E} \, \sigma_{\min}(\mathbf{G})$ (the
+upper bound $\mathbb{E} \|\mathbf{G}\|_2 \le \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert}$ is in
 `NLAlib/RandomMatrix/Gaussian/SpectralNorm.lean`), Gaussian concentration of every singular value
-with proxy `1`, the deviation tails `P(√N + √n + t ≤ ‖G‖) ≤ e^{-t²/2}` and
-`P(σ_min(G) ≤ √N - √n - t) ≤ e^{-t²/2}`, and the same conclusions as Loewner bounds on `Gᴴ G`,
+with proxy $1$, the deviation tails
+$\mathbb{P}(\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)
+\le e^{-t^2/2}$ and
+$\mathbb{P}(\sigma_{\min}(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)
+\le e^{-t^2/2}$, and the same conclusions as Loewner bounds on $\mathbf{G}^{\mathsf{H}}\mathbf{G}$,
 the shape of the subspace-embedding predicate.
 
-The smallest singular value of a matrix with `n` columns is `singularValues (X ω) k` with
-`k + 1 = card n`. When `n > N` it is the padding `0` and `√N - √n < 0`, so the lower bounds hold
-trivially and no tallness hypothesis is stated; the lower Loewner forms carry the hypothesis
-`t ≤ √N - √n` that makes the squared base meaningful.
+The smallest singular value of a matrix with column index $n$ is $\sigma_k$
+(`singularValues (X ω) k`) with $k + 1 = \lvert n \rvert$. When $\lvert n \rvert > \lvert m \rvert$
+it is the padding $0$ and $\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} < 0$, so the lower bounds
+hold trivially and no tallness hypothesis is stated; the lower Loewner forms carry the hypothesis
+$t \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert}$ that makes the squared base meaningful.
 
-Gordon's lower bound compares, over nets of the unit spheres, the process `⟨g, u⟩ + ⟨h, v⟩`
+Gordon's lower bound compares, over nets of the unit spheres, the process
+$\langle \mathbf{g}, \mathbf{u} \rangle + \langle \mathbf{h}, \mathbf{v} \rangle$
 (the `X` side of `NLAlib.integral_iInf_iSup_le_integral_iInf_iSup_of_hasGaussianLaw`) with
-`⟨v, G u⟩` (its `Y` side), and uses
+$\langle \mathbf{v}, \mathbf{G}\mathbf{u} \rangle$ (its `Y` side), and uses
 `NLAlib.le_integral_norm_sub_integral_norm_of_hasLaw_gaussianVector`.
 
 ## Main results
 
-* `NLAlib.le_integral_singularValues_of_hasLaw_gaussianMatrix`: `√N - √n ≤ E σ_min(G)`.
+* `NLAlib.le_integral_singularValues_of_hasLaw_gaussianMatrix`:
+  $\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} \le \mathbb{E} \, \sigma_{\min}(\mathbf{G})$.
 * `NLAlib.hasSubgaussianMGF_singularValues_sub_integral_of_hasLaw_gaussianMatrix`.
 * `NLAlib.measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix`: the deviation tails.
@@ -76,7 +84,9 @@ end Process
 
 section Gordon
 
-/-- Within a block (`u` fixed) the increments of `⟨g, u⟩ + ⟨h, t⟩` and `⟨t, G u⟩` agree. -/
+/-- Within a block ($\mathbf{u}$ fixed) the increments of
+$\langle \mathbf{g}, \mathbf{u} \rangle + \langle \mathbf{h}, \mathbf{t} \rangle$ and
+$\langle \mathbf{t}, \mathbf{G}\mathbf{u} \rangle$ agree. -/
 private theorem gordon_increment_same {u : n → ℝ} (hu : u ⬝ᵥ u = 1) (t s : m → ℝ) :
     (Sum.elim u t - Sum.elim u s) ⬝ᵥ (Sum.elim u t - Sum.elim u s) =
       ((fun p : m × n => t p.1 * u p.2) - fun p => s p.1 * u p.2) ⬝ᵥ
@@ -86,7 +96,8 @@ private theorem gordon_increment_same {u : n → ℝ} (hu : u ⬝ᵥ u = 1) (t s
   rw [dotProduct_comm s t, hu]
   ring
 
-/-- Across blocks the increments of `⟨t, G u⟩` are at most those of `⟨g, u⟩ + ⟨h, t⟩`. -/
+/-- Across blocks the increments of $\langle \mathbf{t}, \mathbf{G}\mathbf{u} \rangle$ are at most
+those of $\langle \mathbf{g}, \mathbf{u} \rangle + \langle \mathbf{h}, \mathbf{t} \rangle$. -/
 private theorem gordon_increment_le {u u' : n → ℝ} {t s : m → ℝ} (hu : u ⬝ᵥ u = 1)
     (hu' : u' ⬝ᵥ u' = 1) (ht : t ⬝ᵥ t = 1) (hs : s ⬝ᵥ s = 1) :
     ((fun p : m × n => t p.1 * u p.2) - fun p => s p.1 * u' p.2) ⬝ᵥ
@@ -103,7 +114,8 @@ private theorem gordon_increment_le {u u' : n → ℝ} {t s : m → ℝ} (hu : u
 
 variable {U T : Type*} [Finite U] [Finite T]
 
-/-- Gordon's min-max comparison for the Gaussian matrix against `⟨g, u⟩ + ⟨h, t⟩`. -/
+/-- Gordon's min-max comparison for the Gaussian matrix against
+$\langle \mathbf{g}, \mathbf{u} \rangle + \langle \mathbf{h}, \mathbf{t} \rangle$. -/
 private theorem integral_iInf_iSup_le_gordon (hX : HasLaw X (gaussianMatrix m n) μ)
     (u : U → n → ℝ) (t : T → m → ℝ) (hu : ∀ i, u i ⬝ᵥ u i = 1) (ht : ∀ j, t j ⬝ᵥ t j = 1) :
     ∫ z, ⨅ i, ⨆ j, Sum.elim (u i) (t j) ⬝ᵥ z ∂gaussianVector (n ⊕ m) ≤
@@ -140,7 +152,7 @@ private theorem integrable_iInf_iSup_gordon (hX : HasLaw X (gaussianMatrix m n) 
 
 end Gordon
 
-/-- Every singular value is `1`-Lipschitz for the Frobenius norm. -/
+/-- Every singular value is $1$-Lipschitz for the Frobenius norm. -/
 private theorem abs_singularValues_sub_le (k : ℕ) (A B : Matrix m n ℝ) :
     |singularValues A k - singularValues B k| ≤ ((1 : NNReal) : ℝ) * frobNorm (A - B) := by
   rw [NNReal.coe_one, one_mul]
@@ -152,7 +164,11 @@ theorem integrable_singularValues_of_hasLaw_gaussianMatrix (hX : HasLaw X (gauss
   integrable_comp_of_hasLaw_gaussianMatrix hX (f := fun A => singularValues A k)
     (abs_singularValues_sub_le k)
 
-/-- The comparison side: `√N - √n - ε √N ≤ E min_u max_t (⟨g, u⟩ + ⟨h, t⟩)` on `ε`-nets. -/
+/-- The comparison side:
+$\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - \varepsilon \sqrt{\lvert m \rvert}
+\le \mathbb{E} \min_{\mathbf{u}} \max_{\mathbf{t}}
+(\langle \mathbf{g}, \mathbf{u} \rangle + \langle \mathbf{h}, \mathbf{t} \rangle)$
+on $\varepsilon$-nets. -/
 private theorem le_integral_iInf_iSup_sumElim [Nonempty m] [Nonempty n]
     (hnm : Fintype.card n ≤ Fintype.card m) {U T : Type*} [Finite U] [Nonempty U] [Finite T]
     (u : U → n → ℝ) (t : T → m → ℝ) (hu : ∀ i, ‖WithLp.toLp 2 (u i)‖ = 1) {ε : ℝ} (hε : 0 ≤ ε)
@@ -199,7 +215,9 @@ private theorem le_integral_iInf_iSup_sumElim [Nonempty m] [Nonempty n]
           (hasGaussianLaw_dotProduct_of_hasLaw_gaussianVector hV
             fun p : U × T => Sum.elim (u p.1) (t p.2))) hpt
 
-/-- The matrix side: `min_u max_t ⟨t, G u⟩ ≤ σ_min(G) + ε ‖G‖` on `ε`-nets. -/
+/-- The matrix side:
+$\min_{\mathbf{u}} \max_{\mathbf{t}} \langle \mathbf{t}, \mathbf{G}\mathbf{u} \rangle
+\le \sigma_{\min}(\mathbf{G}) + \varepsilon \|\mathbf{G}\|_2$ on $\varepsilon$-nets. -/
 private theorem iInf_iSup_le_singularValues_add {U T : Type*} [Finite U]
     (G : Matrix m n ℝ) {k : ℕ} (hk : k + 1 = Fintype.card n) (u : U → n → ℝ) (t : T → m → ℝ)
     (ht : ∀ j, ‖WithLp.toLp 2 (t j)‖ = 1) {ε : ℝ} (hε : 0 ≤ ε)
@@ -226,7 +244,7 @@ private theorem iInf_iSup_le_singularValues_add {U T : Type*} [Finite U]
   rw [hxσ] at h2
   linarith
 
-/-- Gordon's lower bound on `ε`-nets, before `ε → 0`. -/
+/-- Gordon's lower bound on $\varepsilon$-nets, before $\varepsilon \to 0$. -/
 private theorem le_integral_singularValues_add (hX : HasLaw X (gaussianMatrix m n) μ) {k : ℕ}
     (hk : k + 1 = Fintype.card n) (hnm : Fintype.card n ≤ Fintype.card m) {ε : ℝ}
     (hε0 : 0 < ε) :
@@ -269,7 +287,7 @@ private theorem le_integral_singularValues_add (hX : HasLaw X (gaussianMatrix m 
   have h4 := mul_le_mul_of_nonneg_left (integral_specNorm_le_of_hasLaw_gaussianMatrix hX) hε0.le
   linarith
 
-/-- From `x - ε C ≤ c` for all `ε > 0`, `x ≤ c`. -/
+/-- From $x - \varepsilon C \le c$ for all $\varepsilon > 0$, $x \le c$. -/
 private theorem le_of_forall_sub_mul_le {x c C : ℝ} (h : ∀ ε : ℝ, 0 < ε → x - ε * C ≤ c) :
     x ≤ c := by
   have hlim : Filter.Tendsto (fun ε : ℝ => x - ε * C) (nhdsWithin 0 (Set.Ioi 0))
@@ -281,10 +299,13 @@ private theorem le_of_forall_sub_mul_le {x c C : ℝ} (h : ∀ ε : ℝ, 0 < ε 
     filter_upwards [self_mem_nhdsWithin] with ε hε
     exact h ε hε)
 
-/-- **Gordon's lower bound**: `√N - √n ≤ E σ_min(G)` for a standard Gaussian matrix `G : N × n`,
-`σ_min` the singular value of index `k` with `k + 1 = n`.
+/-- **Gordon's lower bound**:
+$\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} \le \mathbb{E} \, \sigma_k(\mathbf{G})$ for a
+standard Gaussian $m \times n$ matrix $\mathbf{G}$ and $k + 1 = \lvert n \rvert$, so that
+$\sigma_k = \sigma_{\min}$.
 [Vershynin2018, Exercise 7.3.4]; [DavidsonSzarek2001, Theorem II.13]; no tallness hypothesis
-(for `n > N` the left side is negative and `σ_k` is the padding `0`). The upper bound is
+(for $\lvert n \rvert > \lvert m \rvert$ the left side is negative and $\sigma_k$ is the padding
+$0$). The upper bound is
 `NLAlib.integral_specNorm_le_of_hasLaw_gaussianMatrix`.
 Result: gaussian-matrix-extreme-singular-values -/
 theorem le_integral_singularValues_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ)
@@ -297,7 +318,7 @@ theorem le_integral_singularValues_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaus
     exact Real.sqrt_le_sqrt (by exact_mod_cast (not_le.1 hnm).le)
 
 /-- Every singular value of a standard Gaussian matrix is sub-Gaussian about its mean with
-proxy `1`: Gaussian concentration (`NLAlib.hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix`)
+proxy $1$: Gaussian concentration (`NLAlib.hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix`)
 with the Frobenius-Lipschitz bound `NLAlib.abs_singularValues_sub_le_frobNorm`.
 [Vershynin2018, proof of Corollary 7.3.3]. -/
 theorem hasSubgaussianMGF_singularValues_sub_integral_of_hasLaw_gaussianMatrix
@@ -308,8 +329,9 @@ theorem hasSubgaussianMGF_singularValues_sub_integral_of_hasLaw_gaussianMatrix
     (f := fun A => singularValues A k) (abs_singularValues_sub_le k)
   rwa [one_pow] at h
 
-/-- The upper deviation tail of the spectral norm: `P(√N + √n + t ≤ ‖G‖) ≤ e^{-t²/2}` for
-`t ≥ 0`. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor `2` of the
+/-- The upper deviation tail of the spectral norm: for $t \ge 0$,
+$\mathbb{P}(\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)
+\le e^{-t^2/2}$. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor $2$ of the
 source's two-sided form. -/
 theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ)
     {t : ℝ} (ht : 0 ≤ t) :
@@ -326,9 +348,11 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaus
   simp only [Set.mem_ofPred_eq] at hω ⊢
   linarith
 
-/-- The lower deviation tail of the smallest singular value:
-`P(σ_min(G) ≤ √N - √n - t) ≤ e^{-t²/2}` for `t ≥ 0`. [Vershynin2018, Corollary 7.3.3];
-one-sided, hence without the factor `2` of the source's two-sided form. -/
+/-- The lower deviation tail of the smallest singular value: for $t \ge 0$ and
+$k + 1 = \lvert n \rvert$,
+$\mathbb{P}(\sigma_k(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)
+\le e^{-t^2/2}$. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor $2$ of the
+source's two-sided form. -/
 theorem measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) {k : ℕ} (hk : k + 1 = Fintype.card n) {t : ℝ}
     (ht : 0 ≤ t) :
@@ -348,8 +372,10 @@ theorem measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix
 
 variable [DecidableEq n]
 
-/-- The upper Gram bound: `Gᴴ G ≤ (√N + √n + t)² • 1` outside probability `e^{-t²/2}`, for
-`t ≥ 0`. [Vershynin2018, Corollary 7.3.3], one-sided and in Loewner form. -/
+/-- The upper Gram bound:
+$\mathbf{G}^{\mathsf{H}}\mathbf{G} \preceq (\sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} +
+t)^2 \mathbf{I}$ outside probability $e^{-t^2/2}$, for $t \ge 0$. [Vershynin2018, Corollary 7.3.3],
+one-sided and in Loewner form. -/
 theorem measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ¬ (X ω)ᴴ * X ω ≤
@@ -364,8 +390,11 @@ theorem measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_hasLaw_gaussian
   exact hω ((specNorm_sq_le_iff_conjTranspose_mul_self_le (sq_nonneg _)).1
     (pow_le_pow_left₀ (specNorm_nonneg _) hlt.le 2))
 
-/-- The lower Gram bound: `(√N - √n - t)² • 1 ≤ Gᴴ G` outside probability `e^{-t²/2}`, for
-`0 ≤ t ≤ √N - √n` (the base must be nonnegative, or squaring it would make the bound false).
+/-- The lower Gram bound:
+$(\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)^2 \mathbf{I}
+\preceq \mathbf{G}^{\mathsf{H}}\mathbf{G}$ outside probability $e^{-t^2/2}$, for
+$0 \le t \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert}$ (the base must be nonnegative, or
+squaring it would make the bound false).
 [Vershynin2018, Corollary 7.3.3], one-sided and in Loewner form. -/
 theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) {t : ℝ} (ht : 0 ≤ t)
@@ -389,8 +418,12 @@ theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussian
     exact hω ((smul_one_le_smul_one (pow_le_pow_left₀ hc hlt.le 2)).trans
       (sq_singularValues_last_smul_one_le (X ω) hk))
 
-/-- **The Gaussian Gram sandwich**: `(√N - √n - t)² • 1 ≤ Gᴴ G ≤ (√N + √n + t)² • 1` outside
-probability `2 e^{-t²/2}`, for `0 ≤ t ≤ √N - √n`; the shape of the subspace-embedding predicate.
+/-- **The Gaussian Gram sandwich**:
+$$(\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)^2 \mathbf{I}
+\preceq \mathbf{G}^{\mathsf{H}}\mathbf{G}
+\preceq (\sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)^2 \mathbf{I}$$
+outside probability $2 e^{-t^2/2}$, for $0 \le t
+\le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert}$; the shape of the subspace-embedding predicate.
 [Vershynin2018, Corollary 7.3.3], in Loewner form. -/
 theorem
 measureReal_not_smul_one_le_conjTranspose_mul_self_and_le_smul_one_le_of_hasLaw_gaussianMatrix

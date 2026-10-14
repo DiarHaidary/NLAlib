@@ -13,14 +13,14 @@ public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 /-!
 # Measurability of matrix-valued functions
 
-Matrices carry the product σ-algebra. This file provides the instance, which Mathlib does not
-have, the fact that it is the Borel σ-algebra of the product topology when the entries are
+Matrices carry the product $\sigma$-algebra. This file provides the instance, which Mathlib does not
+have, the fact that it is the Borel $\sigma$-algebra of the product topology when the entries are
 second countable, and measurability of the algebraic operations on matrices. Upstream candidate
 for a file `Mathlib.MeasureTheory.Constructions.Matrix`.
 
 ## Main definitions
 
-* `Matrix.instMeasurableSpace`: the product σ-algebra on matrices.
+* `Matrix.instMeasurableSpace`: the product $\sigma$-algebra on matrices.
 
 ## Main results
 
@@ -40,7 +40,7 @@ namespace Matrix
 
 variable {α β : Type*} {l m n : Type*}
 
-/-- The product σ-algebra on matrices. -/
+/-- The product $\sigma$-algebra on matrices. -/
 instance instMeasurableSpace [MeasurableSpace α] : MeasurableSpace (Matrix m n α) :=
   MeasurableSpace.pi
 

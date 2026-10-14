@@ -12,21 +12,21 @@ public import Mathlib.Probability.UniformOn
 /-!
 # Sampling an index from a finite probability vector
 
-`NLAlib.samplingMeasure p` is the law of a random index `i` drawn with probability `p i`, for
-weights `p : ι → ℝ≥0` on a finite type. The definition takes any weights, so statements carry no
-proof term; it is a probability measure when `∑ i, p i = 1`. Uniform sampling is the case
-`p = fun _ => (card ι)⁻¹`, which is Mathlib's `uniformOn Set.univ`, and the bridge to `PMF` is
-`NLAlib.samplingMeasure_toNNReal_eq_toMeasure`.
+`NLAlib.samplingMeasure p` is the law of a random index $i$ drawn with probability $p_i$, for
+weights $p_i \ge 0$ (`p : ι → ℝ≥0`) on a finite type. The definition takes any weights, so
+statements carry no proof term; it is a probability measure when $\sum_i p_i = 1$. Uniform
+sampling is the case $p_i = 1 / \lvert \iota \rvert$, which is Mathlib's `uniformOn Set.univ`, and
+the bridge to `PMF` is `NLAlib.samplingMeasure_toNNReal_eq_toMeasure`.
 
 ## Main definitions
 
-* `NLAlib.samplingMeasure p`: `∑ i, p i • dirac i`.
+* `NLAlib.samplingMeasure p`: $\sum_i p_i \delta_i$.
 
 ## Main results
 
 * `NLAlib.isProbabilityMeasure_samplingMeasure`.
-* `NLAlib.integral_samplingMeasure`: `∫ f = ∑ i, p i • f i`.
-* `NLAlib.measureReal_eq_of_hasLaw_samplingMeasure`: `P(X = i) = p i`.
+* `NLAlib.integral_samplingMeasure`: $\int f = \sum_i p_i f(i)$.
+* `NLAlib.measureReal_eq_of_hasLaw_samplingMeasure`: $\mathbb{P}(X = i) = p_i$.
 -/
 
 @[expose] public section
@@ -39,13 +39,14 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
   {ι : Type*} [Fintype ι] [MeasurableSpace ι] [MeasurableSingletonClass ι] (p : ι → ℝ≥0)
 
-/-- The law of a random index that equals `i` with probability `p i`. It is a probability
-measure when `∑ i, p i = 1` (`isProbabilityMeasure_samplingMeasure`); the definition takes any
-weights so that statements carry no proof term. -/
+/-- The law of a random index that equals $i$ with probability $p_i$, the measure
+$\sum_i p_i \delta_i$. It is a probability measure when $\sum_i p_i = 1$
+(`isProbabilityMeasure_samplingMeasure`); the definition takes any weights so that statements
+carry no proof term. -/
 noncomputable def samplingMeasure : Measure ι :=
   ∑ i, (p i : ℝ≥0∞) • Measure.dirac i
 
-/-- The sampling law is a finite measure, for any weights `p`. -/
+/-- The sampling law is a finite measure, for any weights $p_i$. -/
 instance isFiniteMeasure_samplingMeasure : IsFiniteMeasure (samplingMeasure p) := by
   constructor
   simp only [samplingMeasure, Measure.coe_finsetSum, Finset.sum_apply, Measure.smul_apply,
@@ -61,7 +62,8 @@ theorem isProbabilityMeasure_samplingMeasure (hp : ∑ i, p i = 1) :
     measure_univ, smul_eq_mul, mul_one]
   exact_mod_cast hp
 
-/-- The probability of a set of indices is the sum of their weights. -/
+/-- The probability of a set of indices is the sum of their weights: the measure of a finite set
+$s$ is $\sum_{i \in s} p_i$. -/
 theorem samplingMeasure_real_apply (s : Finset ι) :
     (samplingMeasure p).real (s : Set ι) = ∑ i ∈ s, (p i : ℝ) := by
   classical
@@ -77,7 +79,8 @@ theorem integrable_samplingMeasure {E : Type*} [NormedAddCommGroup E] (f : ι �
   exact integrable_finsetSum_measure.2 fun i _ =>
     (integrable_dirac (by simp)).smul_measure ENNReal.coe_ne_top
 
-/-- The integral against `samplingMeasure p` is the weighted sum. -/
+/-- The integral against `samplingMeasure p` is the weighted sum:
+$\int f = \sum_i p_i f(i)$, for $f$ with values in any real Banach space. -/
 theorem integral_samplingMeasure {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [CompleteSpace E] (f : ι → E) :
     ∫ i, f i ∂samplingMeasure p = ∑ i, (p i : ℝ) • f i := by
@@ -85,7 +88,7 @@ theorem integral_samplingMeasure {E : Type*} [NormedAddCommGroup E] [NormedSpace
     (integrable_dirac (by simp)).smul_measure ENNReal.coe_ne_top]
   simp only [integral_smul_measure, integral_dirac, ENNReal.coe_toReal]
 
-/-- A random index with law `samplingMeasure p` equals `i` with probability `p i`. -/
+/-- A random index with law `samplingMeasure p` equals $i$ with probability $p_i$. -/
 theorem measureReal_eq_of_hasLaw_samplingMeasure {X : Ω → ι}
     (hX : HasLaw X (samplingMeasure p) μ) (i : ι) : μ.real {ω | X ω = i} = p i := by
   have h := Measure.map_apply_of_aemeasurable hX.aemeasurable (measurableSet_singleton i)
@@ -95,7 +98,7 @@ theorem measureReal_eq_of_hasLaw_samplingMeasure {X : Ω → ι}
   rw [← hs, measureReal_def, measureReal_def, h]
   rfl
 
-/-- The mass of a single index is its weight. -/
+/-- The mass of a single index is its weight: the measure of $\{i\}$ is $p_i$. -/
 theorem samplingMeasure_singleton (i : ι) : samplingMeasure p {i} = p i := by
   classical
   simp only [samplingMeasure, Measure.coe_finsetSum, Finset.sum_apply, Measure.smul_apply,

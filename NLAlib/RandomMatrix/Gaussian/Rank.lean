@@ -15,9 +15,11 @@ public import NLAlib.RandomMatrix.Gaussian.Basic
 
 A nonzero polynomial in independent real coordinates with an atomless law is almost surely
 nonzero. Minors are polynomials in the entries, so a standard Gaussian matrix has full rank almost
-surely, and so does every Gaussian sketch `A G` up to the rank of `A`:
-`rank (A G) = min (rank A) (card n)` almost surely. In particular `(A G)ᴴ (A G)` is almost surely
-invertible when `card n ≤ rank A`.
+surely, and so does every Gaussian sketch $\mathbf{A}\mathbf{G}$ up to the rank of $\mathbf{A}$:
+$\operatorname{rank}(\mathbf{A}\mathbf{G}) = \min(\operatorname{rank} \mathbf{A}, \lvert n \rvert)$
+almost surely, for $\mathbf{G}$ of size $m \times n$. In particular
+$(\mathbf{A}\mathbf{G})^{\mathsf{H}}(\mathbf{A}\mathbf{G})$ is almost surely invertible when
+$\lvert n \rvert \le \operatorname{rank} \mathbf{A}$.
 
 ## Main results
 
@@ -37,7 +39,7 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n] {X : Ω → Matrix m n ℝ}
 
-/-- The `Fin n` case of `ae_eval_ne_zero_of_ne_zero`, by induction on `n`: split off the first
+/-- The `Fin n` case of `ae_eval_ne_zero_of_ne_zero`, by induction on $n$: split off the first
 coordinate, where the polynomial has finitely many roots. -/
 private theorem ae_eval_ne_zero_fin {ν : Measure ℝ} [IsProbabilityMeasure ν]
     [NullSingletonClass ν] :
@@ -124,7 +126,8 @@ theorem ae_eval_ne_zero_of_ne_zero {ι : Type*} [Fintype ι] {ν : Measure ℝ}
   rw [MvPolynomial.eval_rename] at hy
   exact hy
 
-/-- A matrix `A` with `q ≤ rank A` maps some `q` vectors to independent ones. -/
+/-- A matrix $\mathbf{A}$ with $q \le \operatorname{rank} \mathbf{A}$ maps some $q$ vectors to
+independent ones. -/
 private theorem exists_rank_mul_eq {l : Type*} [Finite l] (A : Matrix l m ℝ) {q : ℕ}
     (hq : q ≤ A.rank) : ∃ Z : Matrix m (Fin q) ℝ, (A * Z).rank = q := by
   have := Fintype.ofFinite l
@@ -145,7 +148,8 @@ private theorem exists_rank_mul_eq {l : Type*} [Finite l] (A : Matrix l m ℝ) {
   refine ⟨Z, ?_⟩
   simpa only [Matrix.rank_transpose, Fintype.card_fin] using hliRow.rank_matrix
 
-/-- The determinant of the Gram matrix of `A X E`, as a polynomial in the entries of `X`. -/
+/-- The determinant of the Gram matrix of $\mathbf{A}\mathbf{X}\mathbf{E}$, as a polynomial in the
+entries of $\mathbf{X}$. -/
 private theorem eval_det_gram {l k : Type*} [Fintype l] [Fintype k] [DecidableEq k]
     (A : Matrix l m ℝ) (E : Matrix n k ℝ) (G : Matrix m n ℝ) :
     MvPolynomial.eval (Function.uncurry G)
@@ -166,7 +170,10 @@ private theorem eval_det_gram {l k : Type*} [Fintype l] [Fintype k] [DecidableEq
     rfl
   rw [hA, hE, hX]
 
-/-- **The rank of a Gaussian sketch**: `rank (A G) = min (rank A) (card n)` almost surely. -/
+/-- **The rank of a Gaussian sketch**: for a fixed $\mathbf{A}$ and a standard Gaussian
+$m \times n$ matrix $\mathbf{G}$,
+$\operatorname{rank}(\mathbf{A}\mathbf{G}) = \min(\operatorname{rank} \mathbf{A}, \lvert n \rvert)$
+almost surely. -/
 theorem ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix {l : Type*} [Finite l] (A : Matrix l m ℝ)
     (hX : HasLaw X (gaussianMatrix m n) μ) :
     ∀ᵐ ω ∂μ, (A * X ω).rank = min A.rank (Fintype.card n) := by
@@ -204,7 +211,8 @@ theorem ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix {l : Type*} [Finite l] (A : 
   rw [← hrank (X ω) hω]
   exact Matrix.rank_mul_le_left _ _
 
-/-- A standard Gaussian matrix has full rank almost surely. -/
+/-- A standard Gaussian $m \times n$ matrix has full rank almost surely:
+$\operatorname{rank} \mathbf{G} = \min(\lvert m \rvert, \lvert n \rvert)$. -/
 theorem ae_rank_eq_min_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ) :
     ∀ᵐ ω ∂μ, (X ω).rank = min (Fintype.card m) (Fintype.card n) := by
   classical
@@ -212,7 +220,8 @@ theorem ae_rank_eq_min_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m
   rwa [Matrix.one_mul, Matrix.rank_one] at hω
 
 /-- The Gram matrix of a Gaussian sketch is almost surely invertible when the sketch is no wider
-than the rank of `A`. -/
+than the rank of $\mathbf{A}$: if $\lvert n \rvert \le \operatorname{rank} \mathbf{A}$, then
+$(\mathbf{A}\mathbf{G})^{\mathsf{H}}(\mathbf{A}\mathbf{G})$ is invertible almost surely. -/
 theorem ae_isUnit_conjTranspose_mul_self_mul_of_hasLaw_gaussianMatrix [DecidableEq n] {l : Type*}
     [Fintype l] {A : Matrix l m ℝ} (hA : Fintype.card n ≤ A.rank)
     (hX : HasLaw X (gaussianMatrix m n) μ) :

@@ -20,11 +20,13 @@ public import NLAlib.Probability.Entropy
 /-!
 # Logarithmic Sobolev inequalities and concentration
 
-`NLAlib.HasLogSobolev ν c` says that the law `ν` on a Euclidean space satisfies a logarithmic
-Sobolev inequality with constant `c`: `Ent_ν (g²) ≤ 2 c E_ν ‖∇g‖²` for every bounded `C¹` function
-`g` with bounded derivative. The class of test functions keeps every integral finite. Herbst's
-argument turns it into concentration: a Lipschitz function of a law with such an inequality is
-sub-Gaussian about its mean with proxy `c L²`. The standard Gaussian satisfies it with `c = 1`
+`NLAlib.HasLogSobolev ν c` says that the law $\nu$ on a Euclidean space satisfies a logarithmic
+Sobolev inequality with constant $c$:
+$\operatorname{Ent}_\nu(g^2) \le 2c\, \mathbb{E}_\nu \|\nabla g\|^2$ for every bounded $C^1$
+function $g$ with bounded derivative, where $\operatorname{Ent}$ is the entropy `NLAlib.entropy`.
+The class of test functions keeps every integral finite. Herbst's argument turns it into
+concentration: an $L$-Lipschitz function of a law with such an inequality is sub-Gaussian about
+its mean with proxy $c L^2$. The standard Gaussian satisfies it with $c = 1$
 (`NLAlib.hasLogSobolev_stdGaussian`).
 
 ## Main definitions
@@ -36,8 +38,8 @@ sub-Gaussian about its mean with proxy `c L²`. The standard Gaussian satisfies 
 * `NLAlib.HasLogSobolev.integrable_of_lipschitzWith`.
 * `NLAlib.HasLogSobolev.hasSubgaussianMGF_sub_integral`: concentration of Lipschitz functions.
 * `NLAlib.HasLogSobolev.integrable_sq_mul_log_sq`,
-  `NLAlib.HasLogSobolev.entropy_sq_le_of_integrable`: the inequality extends to every `C¹`
-  function `g` with `g²` and `‖∇g‖²` integrable, and `g² log g²` is then integrable.
+  `NLAlib.HasLogSobolev.entropy_sq_le_of_integrable`: the inequality extends to every $C^1$
+  function $g$ with $g^2$ and $\|\nabla g\|^2$ integrable, and $g^2 \log g^2$ is then integrable.
 -/
 
 @[expose] public section
@@ -50,10 +52,11 @@ namespace NLAlib
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E]
 
-/-- `ν` satisfies a logarithmic Sobolev inequality with constant `c`: for every bounded `C¹`
-function `g` with bounded derivative, `Ent_ν (g²) ≤ 2 c E_ν ‖∇g‖²`. -/
+/-- $\nu$ satisfies a logarithmic Sobolev inequality with constant $c$: for every bounded $C^1$
+function $g$ with bounded derivative,
+$\operatorname{Ent}_\nu(g^2) \le 2c\, \mathbb{E}_\nu \|\nabla g\|^2$. -/
 structure HasLogSobolev (ν : Measure E) (c : ℝ≥0) : Prop where
-  /-- The inequality, for bounded `C¹` test functions with bounded derivative. -/
+  /-- The inequality, for bounded $C^1$ test functions with bounded derivative. -/
   entropy_sq_le : ∀ g : E → ℝ, ContDiff ℝ 1 g → (∃ M, ∀ x, |g x| ≤ M) →
     (∃ M, ∀ x, ‖fderiv ℝ g x‖ ≤ M) →
     entropy ν (fun x => g x ^ 2) ≤ 2 * c * ∫ x, ‖fderiv ℝ g x‖ ^ 2 ∂ν
@@ -84,7 +87,8 @@ private theorem integrable_exp_mul_of_abs_le [TopologicalSpace Ω] [OpensMeasura
 private theorem exp_mul_sub (s m u : ℝ) : rexp (s * (u - m)) = rexp (s * u) * rexp (-(s * m)) := by
   rw [← exp_add]; ring_nf
 
-/-- From a sub-Gaussian bound on `X - m` to the uncentred bound on `E e^{s X}`. -/
+/-- From a sub-Gaussian bound on $X - m$ with proxy $q$ to the uncentred bound
+$\mathbb{E} e^{s X} \le e^{s m + q s^2 / 2}$. -/
 private theorem integral_exp_le_of_hasSubgaussianMGF {X : Ω → ℝ} {m : ℝ} {q : ℝ≥0}
     (hX : HasSubgaussianMGF (fun x => X x - m) q μ) (s : ℝ) :
     ∫ x, rexp (s * X x) ∂μ ≤ rexp (s * m + q * s ^ 2 / 2) := by
@@ -97,7 +101,8 @@ private theorem integral_exp_le_of_hasSubgaussianMGF {X : Ω → ℝ} {m : ℝ} 
     _ ≤ rexp (q * s ^ 2 / 2) * rexp (s * m) := mul_le_mul_of_nonneg_right h1 (exp_pos _).le
     _ = _ := by rw [← exp_add, add_comm]
 
-/-- From the uncentred bound on `E e^{s X}` to a sub-Gaussian bound on `X - m`. -/
+/-- From the uncentred bound $\mathbb{E} e^{s X} \le e^{s m + q s^2 / 2}$ (with $e^{s X}$
+integrable) for all $s$ to a sub-Gaussian bound on $X - m$ with proxy $q$. -/
 private theorem hasSubgaussianMGF_of_integral_exp_le {X : Ω → ℝ} {m : ℝ} {q : ℝ≥0}
     (h : ∀ s, Integrable (fun x => rexp (s * X x)) μ ∧
       ∫ x, rexp (s * X x) ∂μ ≤ rexp (s * m + q * s ^ 2 / 2)) :
@@ -113,8 +118,8 @@ private theorem hasSubgaussianMGF_of_integral_exp_le {X : Ω → ℝ} {m : ℝ} 
           mul_le_mul_of_nonneg_right (h s).2 (exp_pos _).le
       _ = rexp (q * s ^ 2 / 2) := by rw [← exp_add]; ring_nf
 
-/-- Fatou's lemma in the form used twice below: nonnegative integrable `F n → g` pointwise with
-`∫ F n ≤ b n → B` gives `g` integrable with `∫ g ≤ B`. -/
+/-- Fatou's lemma in the form used twice below: nonnegative integrable $F_n \to g$ pointwise with
+$\int F_n \le b_n \to B$ gives $g$ integrable with $\int g \le B$. -/
 private theorem integrable_and_integral_le_of_tendsto {F : ℕ → Ω → ℝ} {g : Ω → ℝ} {b : ℕ → ℝ}
     {B : ℝ} (hg : AEStronglyMeasurable g μ) (hint : ∀ n, Integrable (F n) μ)
     (hpos : ∀ n x, 0 ≤ F n x) (hconv : ∀ x, Tendsto (fun n => F n x) atTop (𝓝 (g x)))
@@ -140,8 +145,9 @@ private theorem integrable_and_integral_le_of_tendsto {F : ℕ → Ω → ℝ} {
   rw [← ENNReal.ofReal_le_ofReal_iff hB, ofReal_integral_eq_lintegral_ofReal hgi (ae_of_all _ hg0)]
   exact hle
 
-/-- A uniform bound for the mean of `F` from the uncentred sub-Gaussian bound, using a set of
-positive mass on which `F` is bounded. -/
+/-- A uniform bound for the mean of $F$ from the uncentred sub-Gaussian bound, using a set $A$ of
+positive mass on which $\lvert F\rvert \le a$:
+$\lvert \mathbb{E} F\rvert \le a + q/2 - \log \mathbb{P}(A)$. -/
 private theorem abs_integral_le_of_integral_exp_le [IsProbabilityMeasure μ] {F : Ω → ℝ}
     (hexp : ∀ s, Integrable (fun x => rexp (s * F x)) μ) {q : ℝ}
     (hraw : ∀ s, ∫ x, rexp (s * F x) ∂μ ≤ rexp (s * ∫ x, F x ∂μ + q * s ^ 2 / 2))
@@ -181,8 +187,8 @@ end Aux
 /-! ### Bounded smooth Lipschitz functions -/
 
 omit [FiniteDimensional ℝ E] in
-/-- Herbst's argument for a bounded `C¹` `L`-Lipschitz `f`: the predicate applied to
-`exp (s f / 2)` gives `Ent (e^{s f}) ≤ c L² s² / 2 · E e^{s f}`. -/
+/-- Herbst's argument for a bounded $C^1$ $L$-Lipschitz $f$: the predicate applied to
+$e^{s f / 2}$ gives $\operatorname{Ent}(e^{s f}) \le \frac{c L^2 s^2}{2}\, \mathbb{E} e^{s f}$. -/
 private theorem HasLogSobolev.hasSubgaussianMGF_of_bounded [IsProbabilityMeasure ν]
     (h : HasLogSobolev ν c) {f : E → ℝ} {L : ℝ≥0} (hf : LipschitzWith L f)
     (hfc : ContDiff ℝ 1 f) {M : ℝ} (hM : ∀ x, |f x| ≤ M) :
@@ -241,8 +247,9 @@ private theorem abs_clamp_le {a : ℝ} (ha : 0 ≤ a) (u : ℝ) :
       max_le (by linarith [abs_nonneg u]) ((min_le_right _ _).trans (le_abs_self u))⟩⟩
 
 omit [MeasurableSpace E] [BorelSpace E] in
-/-- An `L`-Lipschitz `f` is the pointwise limit of `C¹` `L`-Lipschitz functions `F n` with
-`|F n| ≤ n + 2` and `|F n| ≤ |f| + 1`: clamp to `[-(n + 1), n + 1]`, then mollify. -/
+/-- An $L$-Lipschitz $f$ is the pointwise limit of $C^1$ $L$-Lipschitz functions $F_n$ with
+$\lvert F_n\rvert \le n + 2$ and $\lvert F_n\rvert \le \lvert f\rvert + 1$: clamp to
+$[-(n + 1), n + 1]$, then mollify. -/
 private theorem exists_bounded_contDiff_lipschitzWith_tendsto {f : E → ℝ} {L : ℝ≥0}
     (hf : LipschitzWith L f) :
     ∃ F : ℕ → E → ℝ, (∀ n, ContDiff ℝ 1 (F n)) ∧ (∀ n, LipschitzWith L (F n)) ∧
@@ -311,9 +318,9 @@ theorem HasLogSobolev.integrable_of_lipschitzWith [IsProbabilityMeasure ν]
   exact hfa.mono' hf.continuous.aestronglyMeasurable
     (ae_of_all _ fun x => (Real.norm_eq_abs _).le)
 
-/-- **Concentration from a logarithmic Sobolev inequality**: a Lipschitz function of a law with
-a logarithmic Sobolev inequality with constant `c` is sub-Gaussian about its mean with proxy
-`c L²` (Herbst's argument, after smoothing and truncating `f`). -/
+/-- **Concentration from a logarithmic Sobolev inequality**: an $L$-Lipschitz function $f$ of a
+probability law with a logarithmic Sobolev inequality with constant $c$ is sub-Gaussian about its
+mean with proxy $c L^2$ (Herbst's argument, after smoothing and truncating $f$). -/
 theorem HasLogSobolev.hasSubgaussianMGF_sub_integral [IsProbabilityMeasure ν]
     (h : HasLogSobolev ν c) {f : E → ℝ} {L : ℝ≥0} (hf : LipschitzWith L f) :
     HasSubgaussianMGF (fun x => f x - ∫ y, f y ∂ν) (c * L ^ 2) ν := by
@@ -338,8 +345,8 @@ theorem HasLogSobolev.hasSubgaussianMGF_sub_integral [IsProbabilityMeasure ν]
 section FiniteEnergy
 
 omit [MeasurableSpace E] [BorelSpace E] in
-/-- Smooth cutoffs `χ n = φ ((n + 1)⁻¹ • ·)`: `C¹`, compactly supported, with values in `[0, 1]`
-and derivatives bounded uniformly in `n`, and eventually equal to `1` near every point. -/
+/-- Smooth cutoffs $\chi_n = \varphi(\cdot / (n + 1))$: $C^1$, compactly supported, with values in
+$[0, 1]$ and derivatives bounded uniformly in $n$, and eventually equal to $1$ near every point. -/
 private theorem exists_cutoff : ∃ (χ : ℕ → E → ℝ) (K : ℝ), (∀ n, ContDiff ℝ 1 (χ n)) ∧
     (∀ n, HasCompactSupport (χ n)) ∧ (∀ n x, 0 ≤ χ n x ∧ χ n x ≤ 1) ∧
     (∀ n x, ‖fderiv ℝ (χ n) x‖ ≤ K) ∧ (∀ x, ∀ᶠ n in atTop, χ n =ᶠ[𝓝 x] fun _ => 1) := by
@@ -387,8 +394,8 @@ private theorem exists_cutoff : ∃ (χ : ℕ → E → ℝ) (K : ℝ), (∀ n, 
       div_le_one (by positivity)]
     exact (show ‖y‖ < (n : ℝ) + 1 from hy).le
 
-/-- The inequality for a bounded `C¹` function of finite energy, from the defining class by the
-cutoffs `g χ n` and dominated convergence. -/
+/-- The inequality for a bounded $C^1$ function of finite energy, from the defining class by the
+cutoffs $g \chi_n$ and dominated convergence. -/
 private theorem HasLogSobolev.entropy_sq_le_of_abs_le [IsProbabilityMeasure ν]
     (h : HasLogSobolev ν c) {g : E → ℝ} (hg : ContDiff ℝ 1 g) {M : ℝ} (hM : ∀ x, |g x| ≤ M)
     (hdg : Integrable (fun x => ‖fderiv ℝ g x‖ ^ 2) ν) :
@@ -462,8 +469,9 @@ private theorem HasLogSobolev.entropy_sq_le_of_abs_le [IsProbabilityMeasure ν]
 variable [IsProbabilityMeasure ν] {g : E → ℝ}
 
 omit [FiniteDimensional ℝ E] [IsProbabilityMeasure ν] in
-/-- The sine truncations `g_N = (N + 1) sin (g / (N + 1))` of a finite-energy `C¹` function: they
-are bounded, `C¹`, with `g_N² ≤ g²` and `‖∇g_N‖² ≤ ‖∇g‖²`, and tend to `g` pointwise. -/
+/-- The sine truncations $g_N = (N + 1) \sin(g / (N + 1))$ of a finite-energy $C^1$ function: they
+are bounded, $C^1$, with $g_N^2 \le g^2$ and $\|\nabla g_N\|^2 \le \|\nabla g\|^2$, and tend to
+$g$ pointwise. -/
 private theorem sineTrunc_facts (hg : ContDiff ℝ 1 g) (hg2 : Integrable (fun x => g x ^ 2) ν)
     (hdg : Integrable (fun x => ‖fderiv ℝ g x‖ ^ 2) ν) (n : ℕ) :
     let gN : E → ℝ := fun x => ((n : ℝ) + 1) * Real.sin (((n : ℝ) + 1)⁻¹ * g x)
@@ -489,10 +497,11 @@ private theorem sineTrunc_facts (hg : ContDiff ℝ 1 g) (hg2 : Integrable (fun x
     exact hdf x
 
 /-- **A logarithmic Sobolev inequality controls the entropy of every finite-energy function.** If
-`ν` satisfies `HasLogSobolev ν c` and `g` is `C¹` with `g²` and `‖∇g‖²` integrable, then
-`g² log g²` is integrable, so `Ent_ν (g²)` is not a junk value. The proof applies the inequality
-to the bounded truncations `(N + 1) sin (g / (N + 1))`, whose energy is at most that of `g`, and
-uses Fatou's lemma. For the standard Gaussian this is
+a probability law $\nu$ satisfies `HasLogSobolev ν c` and $g$ is $C^1$ with $g^2$ and
+$\|\nabla g\|^2$ integrable, then $g^2 \log g^2$ is integrable, so $\operatorname{Ent}_\nu(g^2)$
+is not a junk value. The proof applies the inequality to the bounded truncations
+$(N + 1) \sin(g / (N + 1))$, whose energy is at most that of $g$, and uses Fatou's lemma. For the
+standard Gaussian this is
 `NLAlib.integrable_sq_mul_log_sq_stdGaussian`.
 Port of `NLAlib.HasEuclideanLogSobolev.integrable_sq_mul_log_sq`. -/
 theorem HasLogSobolev.integrable_sq_mul_log_sq (h : HasLogSobolev ν c) (hg : ContDiff ℝ 1 g)
@@ -559,11 +568,13 @@ theorem HasLogSobolev.integrable_sq_mul_log_sq (h : HasLogSobolev ν c) (hg : Co
     (ae_of_all _ hF0)).1 (ne_top_of_le_ne_top ENNReal.ofReal_ne_top (hFatou.trans hLiminf))
   exact (hFi.sub (integrable_const (1 : ℝ))).congr (ae_of_all _ fun x => by simp)
 
-/-- **The logarithmic Sobolev inequality for finite-energy functions.** If `ν` satisfies
-`HasLogSobolev ν c`, then `Ent_ν (g²) ≤ 2 c E_ν ‖∇g‖²` for every `C¹` function `g` with `g²` and
-`‖∇g‖²` integrable, not only for the bounded test functions of the definition; `g² log g²` is then
-integrable (`NLAlib.HasLogSobolev.integrable_sq_mul_log_sq`). The truncations
-`(N + 1) sin (g / (N + 1))` and dominated convergence. For the standard Gaussian this is
+/-- **The logarithmic Sobolev inequality for finite-energy functions.** If a probability law
+$\nu$ satisfies `HasLogSobolev ν c`, then
+$\operatorname{Ent}_\nu(g^2) \le 2c\, \mathbb{E}_\nu \|\nabla g\|^2$ for every $C^1$ function $g$
+with $g^2$ and $\|\nabla g\|^2$ integrable, not only for the bounded test functions of the
+definition; $g^2 \log g^2$ is then integrable (`NLAlib.HasLogSobolev.integrable_sq_mul_log_sq`).
+The truncations $(N + 1) \sin(g / (N + 1))$ and dominated convergence. For the standard Gaussian
+this is
 `NLAlib.entropy_sq_le_two_mul_integral_norm_fderiv_sq_stdGaussian`.
 Port of `NLAlib.HasEuclideanLogSobolev.inequality_of_integrable`. -/
 theorem HasLogSobolev.entropy_sq_le_of_integrable (h : HasLogSobolev ν c) (hg : ContDiff ℝ 1 g)

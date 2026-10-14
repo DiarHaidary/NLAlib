@@ -17,21 +17,29 @@ public import NLAlib.RandomMatrix.Gaussian.Rank
 /-!
 # Inverse moments of Gaussian matrices
 
-For a wide standard Gaussian matrix `G : r × k` (`r < k`), the moments of `(G Gᴴ)⁻¹` and of the
-pseudoinverse `G† = Gᴴ (G Gᴴ)⁻¹` that the randomized range finder consumes (Halko, Martinsson and
-Tropp 2011, Propositions 10.2 and 10.3): `E (G Gᴴ)⁻¹ = (k - r - 1)⁻¹ • 1`,
-`E ‖G†‖_F² = r / (k - r - 1)` and the fourth moment of `‖G†‖_F`. The spectral moments of `G†`
-(Proposition 10.4) are in `NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral`.
+For a wide standard Gaussian $r \times k$ matrix $\mathbf{G}$ ($\lvert r \rvert < \lvert k \rvert$),
+the moments of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ and of the pseudoinverse
+$\mathbf{G}^{+} = \mathbf{G}^{\mathsf{H}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ that the
+randomized range finder consumes (Halko, Martinsson and Tropp 2011, Propositions 10.2 and 10.3):
+$\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}
+= (\lvert k \rvert - \lvert r \rvert - 1)^{-1} \mathbf{I}$,
+$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^2
+= \lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)$ and the fourth moment of
+$\|\mathbf{G}^{+}\|_{\mathsf{F}}$. The spectral moments of $\mathbf{G}^{+}$ (Proposition 10.4) are
+in `NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral`.
 
-The route: by the Schur complement of one row, a diagonal entry of `(G Gᴴ)⁻¹` is the reciprocal
-of the squared distance from that row to the span of the others, which, conditionally on the
-others, is `χ²_{k-r+1}`; by rotation invariance every probe `u ⬝ (G Gᴴ)⁻¹ u` with `‖u‖ = 1` has the
-same law. The off-diagonal means follow from the probes at `(eᵢ ± eⱼ)/√2`. The fourth moment needs
-one more input, the off-diagonal second moment, from the independence of the regression
-coefficients of one row on the others and its residual.
+The route: by the Schur complement of one row, a diagonal entry of
+$(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is the reciprocal of the squared distance from that row
+to the span of the others, which, conditionally on the others, is
+$\chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$; by rotation invariance every probe
+$\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u}$ with
+$\|\mathbf{u}\| = 1$ has the same law. The off-diagonal means follow from the probes at
+$(\mathbf{e}_i \pm \mathbf{e}_j)/\sqrt{2}$. The fourth moment needs one more input, the
+off-diagonal second moment, from the independence of the regression coefficients of one row on
+the others and its residual.
 
-`(G Gᴴ)⁻¹` is Lean's `0` on the null set where `G` does not have full row rank, and `pinv` is
-total; the integrals are unaffected.
+$(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is Lean's $\mathbf{0}$ on the null set where
+$\mathbf{G}$ does not have full row rank, and `pinv` is total; the integrals are unaffected.
 
 ## Main results
 
@@ -40,7 +48,9 @@ total; the integrals are unaffected.
   `NLAlib.integral_frobNorm_pinv_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix`.
 * `NLAlib.integral_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussianMatrix`: the
-  moments of the probes, `E (u ⬝ (G Gᴴ)⁻¹ u)^q = E (1/χ²_{k-r+1})^q`.
+  moments of the probes,
+  $\mathbb{E} (\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u})^q
+  = \mathbb{E} (1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1})^q$.
 -/
 
 @[expose] public section
@@ -57,7 +67,8 @@ section Entries
 
 variable [DecidableEq r]
 
-/-- The rows of `G` other than row `i`, as the columns of a `k × (r - 1)` matrix. -/
+/-- The rows of $\mathbf{G}$ other than row $i$, as the columns of a
+$\lvert k \rvert \times (\lvert r \rvert - 1)$ matrix. -/
 private def otherRows (G : Matrix r k ℝ) (i : r) : Matrix k {j // j ≠ i} ℝ :=
   (G.submatrix Subtype.val id)ᴴ
 
@@ -66,9 +77,10 @@ private theorem otherRows_apply (G : Matrix r k ℝ) (i : r) (l : k) (j : {j // 
     otherRows G i l j = G j l := by
   simp only [otherRows, Matrix.conjTranspose_apply, Matrix.submatrix_apply, id_eq, star_trivial]
 
-/-- **The Schur complement of one row.** If the rows of `G` other than row `i` are linearly
-independent, the `i`-th column of `(G Gᴴ)⁻¹` is `s⁻¹ x`, with `s` the squared distance from row `i`
-to the span of the others and `x = eᵢ - c` for the regression coefficients `c`. -/
+/-- **The Schur complement of one row.** If the rows of $\mathbf{G}$ other than row $i$ are
+linearly independent, the $i$-th column of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is
+$s^{-1} \mathbf{x}$, with $s$ the squared distance from row $i$ to the span of the others and
+$\mathbf{x} = \mathbf{e}_i - \mathbf{c}$ for the regression coefficients $\mathbf{c}$. -/
 private theorem inv_mul_conjTranspose_mulVec_single [DecidableEq k] (G : Matrix r k ℝ) (i : r)
     (hH : Function.Injective (otherRows G i).mulVec) :
     (G * Gᴴ)⁻¹ *ᵥ Pi.single i 1 =
@@ -180,8 +192,10 @@ private theorem inv_mul_conjTranspose_apply_of_ne [DecidableEq k] (G : Matrix r 
   rwa [Matrix.mulVec_single_one, Matrix.col_apply, Pi.smul_apply, dif_neg hji, smul_eq_mul,
     mul_comm] at h
 
-/-- Off the null set where the other rows are dependent, the column space of the other rows has
-a complement of dimension `k - r + 1` with an orthonormal basis `V`, and `‖(1 - P) g‖ = ‖Vᴴ g‖`. -/
+/-- For $\mathbf{B}$ with independent columns, $\lvert t \rvert$ of them in dimension
+$\lvert k \rvert = \lvert t \rvert + d$, the column space of $\mathbf{B}$ has a complement of
+dimension $d$ with an orthonormal basis $\mathbf{V}$, and
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{g}\| = \|\mathbf{V}^{\mathsf{H}}\mathbf{g}\|$. -/
 private theorem exists_norm_one_sub_rangeProjector_mulVec_eq [DecidableEq k] {t : Type*} [Fintype t]
     (B : Matrix k t ℝ) (hB : Function.Injective B.mulVec) {d : ℕ}
     (hd : Fintype.card t + d = Fintype.card k) :
@@ -236,8 +250,8 @@ private theorem measurable_one_sub_rangeProjector_mulVec [DecidableEq k] {t : Ty
     ((continuous_id.matrix_conjTranspose).measurable.comp measurable_snd))).matrix_mulVec
     measurable_fst
 
-/-- **The law of a diagonal entry of `(G Gᴴ)⁻¹`**, as an identity of lower integrals: it is that
-of `1 / χ²_{k-r+1}`. -/
+/-- **The law of a diagonal entry of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$**, as an identity of
+lower integrals: it is that of $1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$. -/
 private theorem lintegral_comp_inv_mul_conjTranspose_apply_self
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r ≤ Fintype.card k) (i : r)
     {φ : ℝ → ℝ≥0∞} (hφ : Measurable φ) :
@@ -287,7 +301,7 @@ private theorem measurable_inv_mul_conjTranspose :
     Measurable fun G : Matrix r k ℝ => (G * Gᴴ)⁻¹ :=
   (measurable_id.matrix_mul (continuous_id.matrix_conjTranspose).measurable).matrix_inv
 
-/-- The law of `1 / χ²_d`. -/
+/-- The law of $1 / \chi^2_d$. -/
 private noncomputable abbrev invChiSq (d : ℕ) : Measure ℝ :=
   (gaussianVector (Fin d)).map fun z => (‖WithLp.toLp 2 z‖ ^ 2)⁻¹
 
@@ -298,7 +312,8 @@ private theorem hasLaw_of_lintegral_eq {Y : Ω → ℝ} (hY : AEMeasurable Y μ)
   refine ⟨hY, Measure.ext_of_lintegral _ fun φ hφ => ?_⟩
   rw [lintegral_map' hφ.aemeasurable hY, h φ hφ, lintegral_map hφ (by fun_prop)]
 
-/-- **The diagonal entries of `(G Gᴴ)⁻¹` are `1 / χ²_{k-r+1}`.** -/
+/-- **The diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are
+$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$.** -/
 private theorem hasLaw_inv_mul_conjTranspose_apply_self (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r ≤ Fintype.card k) (i : r) :
     HasLaw (fun ω => (X ω * (X ω)ᴴ)⁻¹ i i)
@@ -307,7 +322,7 @@ private theorem hasLaw_inv_mul_conjTranspose_apply_self (hX : HasLaw X (gaussian
     measurable_inv_mul_conjTranspose).comp_aemeasurable hX.aemeasurable)
     fun _ hφ => lintegral_comp_inv_mul_conjTranspose_apply_self hX hrk i hφ
 
-/-- A unit vector `u` is row `i` of an orthogonal matrix. -/
+/-- A unit vector $\mathbf{u}$ is row $i$ of an orthogonal matrix. -/
 private theorem exists_hasOrthonormalCols_conjTranspose_row_eq {u : r → ℝ}
     (hu : ‖WithLp.toLp 2 u‖ = 1) (i : r) :
     ∃ Q : Matrix r r ℝ, HasOrthonormalCols Qᴴ ∧ Q i = u := by
@@ -345,8 +360,10 @@ private theorem inv_mul_mul_conjTranspose_apply {Q : Matrix r r ℝ} (hQ : HasOr
   simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, star_trivial, dotProduct,
     Matrix.mulVec, Finset.mul_sum]
 
-/-- **Probes of `(G Gᴴ)⁻¹` are `1 / χ²_{k-r+1}`**: for a unit vector `u`, `u ⬝ (G Gᴴ)⁻¹ u` has the
-law of the diagonal entries. -/
+/-- **Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are
+$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$**: for a unit vector $\mathbf{u}$,
+$\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u}$ has the law of the
+diagonal entries. -/
 private theorem hasLaw_dotProduct_inv_mul_conjTranspose_mulVec
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r ≤ Fintype.card k)
     {u : r → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1) :
@@ -437,7 +454,7 @@ private theorem inv_mul_conjTranspose_apply_comm (G : Matrix r k ℝ) (i j : r) 
   have h := (isHermitian_inv_mul_conjTranspose G).apply i j
   rwa [star_trivial, eq_comm] at h
 
-/-- The quadratic form of `M` at `a eᵢ + b eⱼ`. -/
+/-- The quadratic form of $\mathbf{M}$ at $a \mathbf{e}_i + b \mathbf{e}_j$. -/
 private theorem dotProduct_mulVec_single_add_single (M : Matrix r r ℝ) (i j : r) (a b : ℝ) :
     (Pi.single i a + Pi.single j b) ⬝ᵥ (M *ᵥ (Pi.single i a + Pi.single j b)) =
       a * a * M i i + a * b * (M i j + M j i) + b * b * M j j := by
@@ -452,7 +469,7 @@ private theorem norm_toLp_single_add_single {i j : r} (hij : i ≠ j) (a b : ℝ
     Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm, add_zero, zero_add]
   ring
 
-/-- The probes at `(eᵢ ± eⱼ)/√2`. -/
+/-- The probes at $(\mathbf{e}_i \pm \mathbf{e}_j)/\sqrt{2}$. -/
 private theorem hasLaw_add_div_two_add_mul_inv_apply (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r ≤ Fintype.card k) {i j : r} (hij : i ≠ j) {ε : ℝ} (hε : ε ^ 2 = 1) :
     HasLaw (fun ω => ((X ω * (X ω)ᴴ)⁻¹ i i + (X ω * (X ω)ᴴ)⁻¹ j j) / 2 +
@@ -521,7 +538,7 @@ private theorem integral_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianMat
 /-! ### The off-diagonal second moment -/
 
 omit [DecidableEq r] in
-/-- An orthonormal frame adapted to the column space of `B` and its complement. -/
+/-- An orthonormal frame adapted to the column space of $\mathbf{B}$ and its complement. -/
 private theorem exists_frame_rangeProjector [DecidableEq k] {t : Type*} [Fintype t] [DecidableEq t]
     (B : Matrix k t ℝ) (hB : Function.Injective B.mulVec) {d : ℕ}
     (hd : Fintype.card t + d = Fintype.card k) :
@@ -545,8 +562,12 @@ private theorem exists_frame_rangeProjector [DecidableEq k] {t : Type*} [Fintype
     Matrix.mul_one, rangeProjector_mul_rangeProjector, sub_self, Matrix.zero_mul, Matrix.mul_zero]
 
 omit [DecidableEq r] in
-/-- For an orthonormal frame `[V₁ V₂]`, `V₁ᴴ g` and `V₂ᴴ g` are independent standard Gaussian
-vectors, so `E (b ⬝ V₁ᴴ g)² (‖V₂ᴴ g‖²)⁻² = ‖b‖² E (1/χ²_d)²`. -/
+/-- For an orthonormal frame $\begin{bmatrix} \mathbf{V}_1 & \mathbf{V}_2 \end{bmatrix}$,
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{g}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{g}$ are independent
+standard Gaussian vectors, so
+$\mathbb{E}\bigl[(\mathbf{b}^{\mathsf{T}}\mathbf{V}_1^{\mathsf{H}}\mathbf{g})^2
+\|\mathbf{V}_2^{\mathsf{H}}\mathbf{g}\|^{-4}\bigr] = \|\mathbf{b}\|^2 \,
+\mathbb{E}[(1/\chi^2_d)^2]$. -/
 private theorem lintegral_sq_dotProduct_mul_inv_sq {t : Type*} [Fintype t] [DecidableEq t]
     {d : ℕ} {V₁ : Matrix k t ℝ} {V₂ : Matrix k (Fin d) ℝ}
     (hV : HasOrthonormalCols (Matrix.fromCols V₁ V₂)) (b : t → ℝ) :
@@ -587,7 +608,7 @@ private theorem lintegral_sq_dotProduct_mul_inv_sq {t : Type*} [Fintype t] [Deci
   simp only [id_eq] at h
   rw [h, NNReal.coe_pow, coe_nnnorm]
 
-/-- `E (1/χ²_d)² = 1/((d-2)(d-4))`, as a lower integral. -/
+/-- $\mathbb{E}[(1/\chi^2_d)^2] = 1/((d-2)(d-4))$ for $d \ge 5$, as a lower integral. -/
 private theorem lintegral_inv_norm_sq_sq {d : ℕ} (hd : 5 ≤ d) :
     ∫⁻ η, ENNReal.ofReal (((‖WithLp.toLp 2 η‖ ^ 2)⁻¹) ^ 2) ∂(gaussianVector (Fin d)) =
       ENNReal.ofReal (1 / (((d : ℝ) - 2) * ((d : ℝ) - 4))) := by
@@ -599,8 +620,11 @@ private theorem lintegral_inv_norm_sq_sq {d : ℕ} (hd : 5 ≤ d) :
   rw [← ofReal_integral_eq_lintegral_ofReal hint (Filter.Eventually.of_forall fun η =>
     sq_nonneg _), integral_sq_of_hasLaw_invChiSq hlaw hd]
 
-/-- **The off-diagonal second moment**: `E ((G Gᴴ)⁻¹ⱼᵢ)² = 1 / ((k - r) (k - r - 1) (k - r - 3))`,
-by the Schur complement of row `i` and the independence of the regression coefficients and the
+/-- **The off-diagonal second moment**: for $j \ne i$ and $\lvert r \rvert + 4 \le \lvert k \rvert$,
+$$\mathbb{E}\bigl[((\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1})_{j,i}^2\bigr]
+= \frac{1}{(\lvert k \rvert - \lvert r \rvert)(\lvert k \rvert - \lvert r \rvert - 1)
+  (\lvert k \rvert - \lvert r \rvert - 3)} \,,$$
+by the Schur complement of row $i$ and the independence of the regression coefficients and the
 residual. -/
 private theorem lintegral_inv_mul_conjTranspose_apply_sq (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r + 4 ≤ Fintype.card k) {i j : r} (hji : j ≠ i) :
@@ -712,8 +736,9 @@ private theorem memLp_of_memLp_add_div_two {f g h : Ω → ℝ} (hf : MemLp f 2 
   exact hfgh.sub ((hf.add hg).const_mul 2⁻¹)
 
 omit [Fintype r] [Fintype k] [DecidableEq r] in
-/-- The polarisation behind the product moment: `x y = Q₊² + Q₋² - 2 z² - (x² + y²)/2` with
-`Q± = (x + y)/2 ± z`. -/
+/-- The polarisation behind the product moment:
+$x y = Q_+^2 + Q_-^2 - 2 z^2 - (x^2 + y^2)/2$ with $Q_\pm = (x + y)/2 \pm z$, integrated for
+square-integrable $x$, $y$, $z$. -/
 private theorem integral_mul_eq_of_memLp {x y z : Ω → ℝ} (hx : MemLp x 2 μ) (hy : MemLp y 2 μ)
     (hz : MemLp z 2 μ) :
     ∫ ω, x ω * y ω ∂μ =
@@ -757,8 +782,10 @@ private theorem memLp_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianMatrix
     (hasLaw_add_div_two_add_mul_inv_apply hX (by omega) hij (ε := 1) (by norm_num)) hd
   exact memLp_of_memLp_add_div_two (hdiag i) (hdiag j) hQ
 
-/-- `E (G Gᴴ)⁻¹ᵢᵢ (G Gᴴ)⁻¹ⱼⱼ` is `a` on the diagonal and `a - 2c` off it, with
-`a = E (1/χ²_{k-r+1})²` and `c = a / (k - r)` the off-diagonal second moment. -/
+/-- $\mathbb{E}\bigl[((\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1})_{i,i}
+((\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1})_{j,j}\bigr]$ is $a$ on the diagonal ($i = j$) and
+$a - 2c$ off it, with $a = \mathbb{E}[(1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1})^2]$ and
+$c = a / (\lvert k \rvert - \lvert r \rvert)$ the off-diagonal second moment. -/
 private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r + 4 ≤ Fintype.card k) (i j : r) :
     ∫ ω, (X ω * (X ω)ᴴ)⁻¹ i i * (X ω * (X ω)ᴴ)⁻¹ j j ∂μ =
@@ -794,8 +821,11 @@ private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (ga
 
 /-! ### The moments of the probes -/
 
-/-- **Probes of `(G Gᴴ)⁻¹` have the moments of `1 / χ²_{k-r+1}`**: for a unit vector `u` and
-`q < (k - r + 1)/2`, `(u ⬝ (G Gᴴ)⁻¹ u)^q` is integrable. -/
+/-- **Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ have the moments of
+$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$**: for a standard Gaussian $r \times k$ matrix
+$\mathbf{G}$ with $\lvert r \rvert \le \lvert k \rvert$, a unit vector $\mathbf{u}$ and
+$q < (\lvert k \rvert - \lvert r \rvert + 1)/2$,
+$(\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u})^q$ is integrable. -/
 theorem integrable_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r ≤ Fintype.card k)
     {u : r → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1) {q : ℝ}
@@ -808,9 +838,15 @@ theorem integrable_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussi
   exact integrable_rpow_of_hasLaw_invChiSq
     (hasLaw_dotProduct_inv_mul_conjTranspose_mulVec hX hrk hu) (by rwa [hcast])
 
-/-- **Probes of `(G Gᴴ)⁻¹` have the moments of `1 / χ²_{k-r+1}`**: for a unit vector `u` and
-`q < (k - r + 1)/2`, `E (u ⬝ (G Gᴴ)⁻¹ u)^q = 2^{-q} Γ((k - r + 1)/2 - q) / Γ((k - r + 1)/2)`. The
-diagonal entries of `(G Gᴴ)⁻¹` are the case `u = eᵢ`. -/
+/-- **Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ have the moments of
+$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$**: for a standard Gaussian $r \times k$ matrix
+$\mathbf{G}$ with $\lvert r \rvert \le \lvert k \rvert$, a unit vector $\mathbf{u}$ and
+$q < (\lvert k \rvert - \lvert r \rvert + 1)/2$, writing
+$\delta = \lvert k \rvert - \lvert r \rvert + 1$,
+$$\mathbb{E} (\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u})^q
+= \frac{2^{-q} \, \Gamma(\delta/2 - q)}{\Gamma(\delta/2)} \,.$$
+The diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are the case
+$\mathbf{u} = \mathbf{e}_i$. -/
 theorem integral_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r ≤ Fintype.card k)
     {u : r → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1) {q : ℝ}
@@ -829,14 +865,18 @@ end Entries
 
 /-! ### The mean and the Frobenius moments -/
 
-/-- `(G Gᴴ)⁻¹` is integrable for a standard Gaussian `G : r × k` with `r + 2 ≤ k`. -/
+/-- $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is integrable for a standard Gaussian $r \times k$
+matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
 theorem integrable_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix [DecidableEq r]
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹) μ := by
   classical
   exact Matrix.integrable_iff.2 fun i j => integrable_inv_mul_conjTranspose_apply hX hrk i j
 
-/-- **The mean of the inverse Wishart matrix**: `E (G Gᴴ)⁻¹ = (k - r - 1)⁻¹ • 1` for `r + 2 ≤ k`. -/
+/-- **The mean of the inverse Wishart matrix**: for a standard Gaussian $r \times k$ matrix
+$\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$,
+$\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}
+= (\lvert k \rvert - \lvert r \rvert - 1)^{-1} \mathbf{I}$. -/
 theorem integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix [DecidableEq r]
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     ∫ ω, (X ω * (X ω)ᴴ)⁻¹ ∂μ =
@@ -846,7 +886,8 @@ theorem integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix [DecidableEq r]
   rw [Matrix.integral_apply (fun i j => integrable_inv_mul_conjTranspose_apply hX hrk i j),
     integral_inv_mul_conjTranspose_apply hX hrk, Matrix.smul_apply, smul_eq_mul]
 
-/-- Almost surely `‖G†‖_F² = tr (G Gᴴ)⁻¹`. -/
+/-- Almost surely
+$\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 = \operatorname{tr} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$. -/
 private theorem ae_frobNorm_pinv_sq_eq_sum [DecidableEq r] (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r ≤ Fintype.card k) :
     ∀ᵐ ω ∂μ, frobNorm (pinv (X ω)) ^ 2 = ∑ i, (X ω * (X ω)ᴴ)⁻¹ i i := by
@@ -856,7 +897,8 @@ private theorem ae_frobNorm_pinv_sq_eq_sum [DecidableEq r] (hX : HasLaw X (gauss
   rw [frobNorm_pinv_sq_eq_re_trace_inv_of_injective_conjTranspose hinj, RCLike.re_to_real]
   rfl
 
-/-- `‖G†‖_F²` is integrable for `r + 2 ≤ k`. -/
+/-- $\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$ is integrable for a standard Gaussian $r \times k$ matrix
+with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
 theorem integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     Integrable (fun ω => frobNorm (pinv (X ω)) ^ 2) μ := by
@@ -866,7 +908,10 @@ theorem integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gau
   filter_upwards [ae_frobNorm_pinv_sq_eq_sum hX (by omega)] with ω hω
   rw [hω]
 
-/-- **`E ‖G†‖_F² = r / (k - r - 1)`** (Halko, Martinsson and Tropp, Proposition 10.2). -/
+/-- **$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^2
+= \lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)$** for a standard Gaussian $r \times k$
+matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$ (Halko, Martinsson and Tropp,
+Proposition 10.2). -/
 theorem integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     ∫ ω, frobNorm (pinv (X ω)) ^ 2 ∂μ =
@@ -888,14 +933,17 @@ private theorem memLp_frobNorm_pinv (hX : HasLaw X (gaussianMatrix r k) μ)
   (memLp_two_iff_integrable_sq (aestronglyMeasurable_frobNorm_pinv hX)).2
     (integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hX hrk)
 
-/-- `‖G†‖_F` is integrable for `r + 2 ≤ k`. -/
+/-- $\|\mathbf{G}^{+}\|_{\mathsf{F}}$ is integrable for a standard Gaussian $r \times k$ matrix
+with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
 theorem integrable_frobNorm_pinv_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     Integrable (fun ω => frobNorm (pinv (X ω))) μ := by
   have := hX.isProbabilityMeasure
   exact (memLp_frobNorm_pinv hX hrk).integrable one_le_two
 
-/-- `E ‖G†‖_F ≤ √(r / (k - r - 1))`, by Jensen. -/
+/-- $\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}
+\le \sqrt{\lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)}$ for a standard Gaussian
+$r \times k$ matrix with $\lvert r \rvert + 2 \le \lvert k \rvert$, by Jensen. -/
 theorem integral_frobNorm_pinv_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     ∫ ω, frobNorm (pinv (X ω)) ∂μ ≤
@@ -915,7 +963,8 @@ private theorem ae_frobNorm_pinv_pow_four_eq [DecidableEq r] (hX : HasLaw X (gau
   filter_upwards [ae_frobNorm_pinv_sq_eq_sum hX hrk] with ω hω
   rw [show 4 = 2 * 2 by rfl, pow_mul, hω, sq, Finset.sum_mul_sum]
 
-/-- `‖G†‖_F⁴` is integrable for `r + 4 ≤ k`. -/
+/-- $\|\mathbf{G}^{+}\|_{\mathsf{F}}^4$ is integrable for a standard Gaussian $r \times k$ matrix
+with $\lvert r \rvert + 4 \le \lvert k \rvert$. -/
 theorem integrable_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 4 ≤ Fintype.card k) :
     Integrable (fun ω => frobNorm (pinv (X ω)) ^ 4) μ := by
@@ -928,8 +977,12 @@ theorem integrable_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix
   filter_upwards [ae_frobNorm_pinv_pow_four_eq hX (by omega)] with ω hω
   rw [hω]
 
-/-- The fourth moment of `‖G†‖_F` (Halko, Martinsson and Tropp, Proposition 10.3):
-`E ‖G†‖_F⁴ = (r² (k - r) - 2 r (r - 1)) / ((k - r) (k - r - 1) (k - r - 3))` for `r + 4 ≤ k`. -/
+/-- The fourth moment of $\|\mathbf{G}^{+}\|_{\mathsf{F}}$ (Halko, Martinsson and Tropp,
+Proposition 10.3): for a standard Gaussian $r \times k$ matrix $\mathbf{G}$ with
+$\lvert r \rvert + 4 \le \lvert k \rvert$, writing $r$, $k$ for $\lvert r \rvert$,
+$\lvert k \rvert$,
+$$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^4
+= \frac{r^2 (k - r) - 2 r (r - 1)}{(k - r)(k - r - 1)(k - r - 3)} \,.$$ -/
 theorem integral_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 4 ≤ Fintype.card k) :
     ∫ ω, frobNorm (pinv (X ω)) ^ 4 ∂μ =

@@ -10,14 +10,15 @@ public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.Matrix.Functions.Complexification
 
 /-!
-# Descent of similarity from `ℂ` to `ℝ`
+# Descent of similarity from $\mathbb{C}$ to $\mathbb{R}$
 
-Real matrices that are similar over `ℂ` are similar over `ℝ`, and real matrices that are unitarily
-similar over `ℂ` are orthogonally similar over `ℝ`; both simultaneously for a family. If `S`
-intertwines the complexifications then so do its real and imaginary parts `X` and `Y`, and
-`X + t Y` is invertible for some real `t` because its determinant is a nonzero polynomial in `t`.
-For a unitary similarity the same real intertwiner also intertwines the adjoints, and its polar
-factor is the orthogonal similarity.
+Real matrices that are similar over $\mathbb{C}$ are similar over $\mathbb{R}$, and real matrices
+that are unitarily similar over $\mathbb{C}$ are orthogonally similar over $\mathbb{R}$; both
+simultaneously for a family. If $\mathbf{S}$ intertwines the complexifications then so do its
+real and imaginary parts $\mathbf{X}$ and $\mathbf{Y}$, and $\mathbf{X} + t\mathbf{Y}$ is
+invertible for some real $t$ because its determinant is a nonzero polynomial in $t$. For a
+unitary similarity the same real intertwiner also intertwines the adjoints, and its polar factor
+is the orthogonal similarity.
 
 ## Main results
 
@@ -35,7 +36,9 @@ variable {ι n : Type*} [Fintype n] [DecidableEq n]
 
 omit [DecidableEq n] in
 /-- The real and imaginary parts of a complex matrix intertwining two real matrices intertwine
-them. -/
+them: if $\mathbf{A}\mathbf{S} = \mathbf{S}\mathbf{B}$ over $\mathbb{C}$, then
+$\mathbf{A} \operatorname{Re}\mathbf{S} = (\operatorname{Re}\mathbf{S})\mathbf{B}$ and likewise for
+the imaginary part. -/
 private theorem mul_map_re_and_mul_map_im {A B : Matrix n n ℝ} {S : Matrix n n ℂ}
     (h : complexify A * S = S * complexify B) :
     A * S.map Complex.re = S.map Complex.re * B ∧ A * S.map Complex.im = S.map Complex.im * B := by
@@ -51,8 +54,9 @@ private theorem mul_map_re_and_mul_map_im {A B : Matrix n n ℝ} {S : Matrix n n
       Complex.mul_im, RCLike.re_toComplex, RCLike.im_toComplex, RCLike.re_to_real,
       RCLike.im_to_real, zero_mul, mul_zero, add_zero, zero_add] using hij
 
-/-- If `X + i Y` is invertible for real `X`, `Y` then `X + t Y` is invertible for some real `t`:
-the determinant of `X + t Y` is a nonzero polynomial in `t`. -/
+/-- If $\mathbf{X} + i\mathbf{Y}$ is invertible for real $\mathbf{X}$, $\mathbf{Y}$ then
+$\mathbf{X} + t\mathbf{Y}$ is invertible for some real $t$: the determinant of
+$\mathbf{X} + t\mathbf{Y}$ is a nonzero polynomial in $t$. -/
 private theorem exists_isUnit_det_add_smul {X Y : Matrix n n ℝ}
     (h : IsUnit (X.map ((↑) : ℝ → ℂ) + Complex.I • Y.map ((↑) : ℝ → ℂ)).det) :
     ∃ t : ℝ, IsUnit (X + t • Y).det := by
@@ -84,7 +88,10 @@ private theorem exists_isUnit_det_add_smul {X Y : Matrix n n ℝ}
   rw [ht, Polynomial.eval_zero]
   exact not_not.mp fun h0 => hcon t (isUnit_iff_ne_zero.mpr h0)
 
-/-- **Real matrices similar over `ℂ` are similar over `ℝ`**, simultaneously for a family.
+/-- **Real matrices similar over $\mathbb{C}$ are similar over $\mathbb{R}$**, simultaneously for
+a family: if $\mathbf{A}_i\mathbf{S} = \mathbf{S}\mathbf{B}_i$ for every $i$ with $\mathbf{S}$
+complex invertible, there is a real invertible $\mathbf{T}$ with
+$\mathbf{A}_i\mathbf{T} = \mathbf{T}\mathbf{B}_i$ for every $i$.
 [HornJohnson2013, Theorem 1.3.29].
 Port of `NLAlib.exists_real_similarity_of_complex_similarity`. -/
 theorem exists_real_similarity_of_complexify {A B : ι → Matrix n n ℝ} {S : Matrix n n ℂ}
@@ -101,8 +108,12 @@ theorem exists_real_similarity_of_complexify {A B : ι → Matrix n n ℝ} {S : 
   obtain ⟨h₁, h₂⟩ := mul_map_re_and_mul_map_im (h i)
   rw [Matrix.mul_add, Matrix.mul_smul, Matrix.add_mul, Matrix.smul_mul, h₁, h₂]
 
-/-- **Real matrices unitarily similar over `ℂ` are orthogonally similar over `ℝ`**,
-simultaneously for a family. [HornJohnson2013, Theorem 2.5.21].
+/-- **Real matrices unitarily similar over $\mathbb{C}$ are orthogonally similar over
+$\mathbb{R}$**, simultaneously for a family: if
+$\mathbf{A}_i = \mathbf{U}\mathbf{B}_i\mathbf{U}^{\mathsf{H}}$ for every $i$ with $\mathbf{U}$
+unitary, there is a real orthogonal $\mathbf{Q}$ with
+$\mathbf{A}_i = \mathbf{Q}\mathbf{B}_i\mathbf{Q}^{\mathsf{T}}$ for every $i$.
+[HornJohnson2013, Theorem 2.5.21].
 Port of `NLAlib.exists_real_orthogonal_similarity_of_complex_unitary_similarity`. -/
 theorem exists_real_orthogonal_of_complexify {A B : ι → Matrix n n ℝ} {U : Matrix n n ℂ}
     (hU : HasOrthonormalCols U) (h : ∀ i, complexify (A i) = U * complexify (B i) * Uᴴ) :

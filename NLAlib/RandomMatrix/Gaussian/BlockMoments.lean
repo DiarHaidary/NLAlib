@@ -12,14 +12,21 @@ public import NLAlib.RandomMatrix.Gaussian.SpectralNorm
 /-!
 # The block bound of the randomized range finder
 
-For a standard Gaussian test matrix `G : n × k`, orthogonal frames `V₁ : n × r`, `V₂ : n × s`
-(`V₁ᴴ V₂ = 0`) and a fixed `S`, the blocks `G₁ = V₁ᴴ G` and `G₂ = V₂ᴴ G` are independent standard
-Gaussian matrices, and `E ‖S G₂ G₁†‖_F² = ‖S‖_F² r / (k - r - 1)` (Halko, Martinsson and Tropp
-2011, proof of Theorem 10.5). The spectral-norm analogue (their Theorem 10.6) is Chevet's
-inequality with factors independent of the Gaussian matrix
+For a standard Gaussian $n \times k$ test matrix $\mathbf{G}$, frames (orthonormal columns)
+$\mathbf{V}_1$ of size $n \times r$ and $\mathbf{V}_2$ of size $n \times s$ with
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, and a fixed $\mathbf{S}$, the blocks
+$\mathbf{G}_1 = \mathbf{V}_1^{\mathsf{H}}\mathbf{G}$ and
+$\mathbf{G}_2 = \mathbf{V}_2^{\mathsf{H}}\mathbf{G}$ are independent standard Gaussian matrices,
+and
+$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_{\mathsf{F}}^2
+= \|\mathbf{S}\|_{\mathsf{F}}^2 \, r / (k - r - 1)$, writing $r$ and $k$ for the sizes of the
+index types (Halko, Martinsson and Tropp 2011, proof of Theorem 10.5). The spectral-norm analogue
+(their Theorem 10.6) is Chevet's inequality with factors independent of the Gaussian matrix
 (`NLAlib.integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun`) applied with
-`T = G₁†`, followed by the moments of `G₁†`:
-`E ‖S G₂ G₁†‖ ≤ ‖S‖ E ‖G₁†‖_F + ‖S‖_F E ‖G₁†‖`.
+$\mathbf{T} = \mathbf{G}_1^{+}$, followed by the moments of $\mathbf{G}_1^{+}$:
+$$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2
+\le \|\mathbf{S}\|_2 \, \mathbb{E} \|\mathbf{G}_1^{+}\|_{\mathsf{F}} +
+  \|\mathbf{S}\|_{\mathsf{F}} \, \mathbb{E} \|\mathbf{G}_1^{+}\|_2 \,.$$
 
 ## Main results
 
@@ -72,7 +79,13 @@ theorem integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix [DecidableE
   exact (integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk).const_mul _
 
 /-- **The range finder's block bound** (Halko, Martinsson and Tropp 2011, proof of
-Theorem 10.5): `E ‖S (V₂ᴴ G) (V₁ᴴ G)†‖_F² = ‖S‖_F² r / (k - r - 1)`. -/
+Theorem 10.5): for a standard Gaussian $n \times k$ matrix $\mathbf{G}$, frames $\mathbf{V}_1$
+($n \times r$) and $\mathbf{V}_2$ ($n \times s$) with
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, and $\lvert r \rvert + 2 \le \lvert k \rvert$,
+$$\mathbb{E} \|\mathbf{S} (\mathbf{V}_2^{\mathsf{H}}\mathbf{G})
+  (\mathbf{V}_1^{\mathsf{H}}\mathbf{G})^{+}\|_{\mathsf{F}}^2
+= \frac{\|\mathbf{S}\|_{\mathsf{F}}^2 \lvert r \rvert}{\lvert k \rvert - \lvert r \rvert - 1} \,.$$
+-/
 theorem integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix [DecidableEq r]
     [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ) {V₁ : Matrix n r ℝ}
     {V₂ : Matrix n s ℝ} (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
@@ -103,8 +116,12 @@ theorem integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix [DecidableE
   exact integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂ hrk Sᴴ
 
 /-- **The transposed block bound** (Halko, Martinsson and Tropp 2011, proof of Theorem 10.5,
-conjugate-transposed): `E ‖(Gᴴ V₁)† (Gᴴ V₂) S‖_F² = ‖S‖_F² r / (k - r - 1)`. This is the form
-the Nyström approximation's completion step uses. -/
+conjugate-transposed): under the hypotheses of
+`integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`,
+$$\mathbb{E} \|(\mathbf{G}^{\mathsf{H}}\mathbf{V}_1)^{+} (\mathbf{G}^{\mathsf{H}}\mathbf{V}_2)
+  \mathbf{S}\|_{\mathsf{F}}^2
+= \frac{\|\mathbf{S}\|_{\mathsf{F}}^2 \lvert r \rvert}{\lvert k \rvert - \lvert r \rvert - 1} \,.$$
+This is the form the Nyström approximation's completion step uses. -/
 theorem integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix [DecidableEq r]
     [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ) {V₁ : Matrix n r ℝ}
     {V₂ : Matrix n s ℝ} (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
@@ -126,10 +143,19 @@ theorem integrable_specNorm_mul_mul_pinv_of_hasLaw_gaussianMatrix [DecidableEq r
     (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
     (S := fun _ => S) measurable_const measurable_pinv (integrable_chevet_pinv hX hV₁ hrk S)
 
-/-- **The range finder's spectral block bound**: `E ‖S G₂ G₁†‖ ≤ ‖S‖ E ‖G₁†‖_F + ‖S‖_F E ‖G₁†‖`
-with the moments of `G₁†`, that is
-`E ‖S (V₂ᴴ G) (V₁ᴴ G)†‖ ≤ ‖S‖ √(r / (k - r - 1)) + ‖S‖_F e √((k + r - 1)/2) / (k - r)`.
-[HalkoMartinssonTropp2011, proof of Theorem 10.6], there with `e √k / (k - r)` in the second term;
+/-- **The range finder's spectral block bound**:
+$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2
+\le \|\mathbf{S}\|_2 \, \mathbb{E} \|\mathbf{G}_1^{+}\|_{\mathsf{F}} +
+\|\mathbf{S}\|_{\mathsf{F}} \, \mathbb{E} \|\mathbf{G}_1^{+}\|_2$ with
+$\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$ and the moments of $\mathbf{G}_1^{+}$, that
+is, under the hypotheses of `integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`,
+$$\mathbb{E} \|\mathbf{S} (\mathbf{V}_2^{\mathsf{H}}\mathbf{G})
+  (\mathbf{V}_1^{\mathsf{H}}\mathbf{G})^{+}\|_2
+\le \|\mathbf{S}\|_2 \sqrt{\frac{\lvert r \rvert}{\lvert k \rvert - \lvert r \rvert - 1}} +
+  \|\mathbf{S}\|_{\mathsf{F}} \frac{e}{\lvert k \rvert - \lvert r \rvert}
+  \sqrt{\frac{\lvert k \rvert + \lvert r \rvert - 1}{2}} \,.$$
+[HalkoMartinssonTropp2011, proof of Theorem 10.6], there with
+$e \sqrt{\lvert k \rvert} / (\lvert k \rvert - \lvert r \rvert)$ in the second term;
 `NLAlib.integral_specNorm_mul_mul_pinv_le_add_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix`
 is that form. -/
 theorem integral_specNorm_mul_mul_pinv_le_of_hasLaw_gaussianMatrix [DecidableEq r]
@@ -161,7 +187,11 @@ theorem integral_specNorm_mul_mul_pinv_le_of_hasLaw_gaussianMatrix [DecidableEq 
       (frobNorm_nonneg _))
 
 /-- The spectral block bound in the form of Halko, Martinsson and Tropp,
-`E ‖S (V₂ᴴ G) (V₁ᴴ G)†‖ ≤ ‖S‖ √(r / (k - r - 1)) + ‖S‖_F e √k / (k - r)`.
+$$\mathbb{E} \|\mathbf{S} (\mathbf{V}_2^{\mathsf{H}}\mathbf{G})
+  (\mathbf{V}_1^{\mathsf{H}}\mathbf{G})^{+}\|_2
+\le \|\mathbf{S}\|_2 \sqrt{\frac{\lvert r \rvert}{\lvert k \rvert - \lvert r \rvert - 1}} +
+  \|\mathbf{S}\|_{\mathsf{F}} \frac{e \sqrt{\lvert k \rvert}}{\lvert k \rvert - \lvert r \rvert}
+  \,.$$
 [HalkoMartinssonTropp2011, Theorem 10.6]. It is dominated by
 `NLAlib.integral_specNorm_mul_mul_pinv_le_of_hasLaw_gaussianMatrix` and proved from it; it keeps
 a name spelling its right side, as its moment bound

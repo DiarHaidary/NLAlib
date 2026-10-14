@@ -11,10 +11,10 @@ public import NLAlib.Probability.SubGaussian.Basic
 /-!
 # Gaussian concentration of Lipschitz functions
 
-A Lipschitz function `f` of a standard Gaussian vector is sub-Gaussian about its mean with proxy
-`L²`, where `L` is its Lipschitz constant for the Euclidean norm (Tsirelson, Ibragimov and
+A Lipschitz function $f$ of a standard Gaussian vector is sub-Gaussian about its mean with proxy
+$L^2$, where $L$ is its Lipschitz constant for the Euclidean norm (Tsirelson, Ibragimov and
 Sudakov); the constant is sharp. The general statement is for Mathlib's `stdGaussian E` on a
-Euclidean space; for `f : (n → ℝ) → ℝ` and `X` with law `gaussianVector n`, the Lipschitz
+Euclidean space; for `f : (n → ℝ) → ℝ` and $\mathbf{X}$ with law `gaussianVector n`, the Lipschitz
 hypothesis is stated on `EuclideanSpace ℝ n`, since `n → ℝ` carries the sup metric, and
 `NLAlib.lipschitzWith_ofLp_iff` turns it into the explicit inequality.
 
@@ -40,7 +40,10 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- Lipschitz for the Euclidean norm, as an inequality on `n → ℝ`. -/
+/-- Lipschitz for the Euclidean norm, as an inequality on `n → ℝ`: $f$ is $L$-Lipschitz on
+`EuclideanSpace ℝ n` if and only if
+$\lvert f(\mathbf{x}) - f(\mathbf{y})\rvert \le L \|\mathbf{x} - \mathbf{y}\|$ for all
+$\mathbf{x}, \mathbf{y}$. -/
 theorem lipschitzWith_ofLp_iff {n : Type*} [Fintype n] {f : (n → ℝ) → ℝ} {L : ℝ≥0} :
     LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) ↔
       ∀ x y, |f x - f y| ≤ L * ‖WithLp.toLp 2 (x - y)‖ := by
@@ -63,7 +66,8 @@ theorem integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian (hX : HasLaw X (s
     (hasLogSobolev_stdGaussian.integrable_of_lipschitzWith hf)
 
 /-- **Gaussian concentration of Lipschitz functions** ([BoucheronLugosiMassart2013],
-Theorem 5.6): `f (X) - E f (X)` is sub-Gaussian with proxy `L²`.
+Theorem 5.6): for $\mathbf{X}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
+$f(\mathbf{X}) - \mathbb{E} f(\mathbf{X})$ is sub-Gaussian with proxy $L^2$.
 Result: gaussian-lipschitz-concentration -/
 theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian
     (hX : HasLaw X (stdGaussian E) μ) (hf : LipschitzWith L f) :
@@ -82,8 +86,9 @@ section Vector
 
 variable {n : Type*} [Fintype n] {X : Ω → n → ℝ} {f : (n → ℝ) → ℝ} {L : ℝ≥0}
 
-/-- Gaussian concentration for a standard Gaussian vector in `ℝⁿ`, with `f` Lipschitz for the
-Euclidean norm. -/
+/-- Gaussian concentration for a standard Gaussian vector $\mathbf{X}$ in $\mathbb{R}^n$, with
+$f$ $L$-Lipschitz for the Euclidean norm: $f(\mathbf{X}) - \mathbb{E} f(\mathbf{X})$ is
+sub-Gaussian with proxy $L^2$. -/
 theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector
     (hX : HasLaw X (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) :
@@ -93,7 +98,7 @@ theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector
   exact hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian
     (f := fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) hY hf
 
-/-- A Lipschitz function of a standard Gaussian vector in `ℝⁿ` is integrable. -/
+/-- A Lipschitz function of a standard Gaussian vector in $\mathbb{R}^n$ is integrable. -/
 theorem integrable_comp_of_lipschitzWith_of_hasLaw_gaussianVector
     (hX : HasLaw X (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) :
@@ -103,9 +108,11 @@ theorem integrable_comp_of_lipschitzWith_of_hasLaw_gaussianVector
   exact integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian
     (f := fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) hY hf
 
-/-- The upper tail of a Lipschitz function of a standard Gaussian vector,
-`P(E f(X) + t ≤ f(X)) ≤ exp (-t² / (2L²))`, with the event in the form the random-matrix
-consumers use. -/
+/-- The upper tail of a Lipschitz function of a standard Gaussian vector: for $f$ $L$-Lipschitz
+for the Euclidean norm and $t \ge 0$,
+$$\mathbb{P}\bigl(\mathbb{E} f(\mathbf{X}) + t \le f(\mathbf{X})\bigr)
+\le \exp\Bigl(-\frac{t^2}{2L^2}\Bigr),$$
+with the event in the form the random-matrix consumers use. -/
 theorem measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
     (hX : HasLaw X (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) {t : ℝ}

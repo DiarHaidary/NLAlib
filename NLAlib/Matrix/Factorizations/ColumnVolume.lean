@@ -13,15 +13,17 @@ public import NLAlib.Matrix.Norms.UnitarilyInvariant
 /-!
 # The volume of a set of columns
 
-The volume of the columns of a matrix `C` is measured by the Gram determinant `det (Cᴴ C)`. This
-file computes how it changes when a column is exchanged or appended, and derives the singular
-value bounds that follow when no exchange with the columns of a second block increases it by much.
+The volume of the columns of a matrix $\mathbf{C}$ is measured by the Gram determinant
+$\det(\mathbf{C}^{\mathsf{H}}\mathbf{C})$. This file computes how it changes when a column is
+exchanged or appended, and derives the singular value bounds that follow when no exchange with the
+columns of a second block increases it by much.
 These are the estimates behind strong rank-revealing QR factorizations; the certificate that
 packages them for a column selection is in `NLAlib.Matrix.Factorizations.RankRevealing`.
 
-The second block is written `C T + D` with `D` orthogonal to the range of `C`, so that `T` holds
-the interpolation coefficients and `D` the residual. The hypothesis on the exchanges enters only
-through the budget `‖T‖_F² + ‖C⁺‖_F² ‖D‖_F²`.
+The second block is written $\mathbf{C}\mathbf{T} + \mathbf{D}$ with $\mathbf{D}$ orthogonal to
+the range of $\mathbf{C}$, so that $\mathbf{T}$ holds the interpolation coefficients and
+$\mathbf{D}$ the residual. The hypothesis on the exchanges enters only through the budget
+$\|\mathbf{T}\|_{\mathsf{F}}^2 + \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$.
 
 ## Main results
 
@@ -31,7 +33,7 @@ through the budget `‖T‖_F² + ‖C⁺‖_F² ‖D‖_F²`.
 * `NLAlib.frobNorm_sq_add_frobNorm_pinv_sq_mul_le`: the budget of a locally maximal selection.
 * `NLAlib.singularValues_fromCols_le_sqrt_mul`,
   `NLAlib.singularValues_le_sqrt_mul_singularValues_fromCols`: singular value bounds for
-  `[C, C T + D]` from a budget.
+  $\begin{bmatrix} \mathbf{C} & \mathbf{C}\mathbf{T} + \mathbf{D} \end{bmatrix}$ from a budget.
 -/
 
 @[expose] public section
@@ -45,16 +47,20 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m p q : Type*} [Fintype m] [Fintype p] [F
 /-! ### Volume under a column exchange -/
 
 omit [Fintype q] in
-/-- **The Gram determinant of independent columns is positive**: the squared volume `det (Cᴴ C)`
-of a matrix of full column rank. -/
+/-- **The Gram determinant of independent columns is positive**: the squared volume
+$\det(\mathbf{C}^{\mathsf{H}}\mathbf{C})$ of a matrix of full column rank is positive (its real
+part, as an element of the field). -/
 theorem re_det_conjTranspose_mul_self_pos [DecidableEq p] {C : Matrix m p 𝕜}
     (hC : Function.Injective C.mulVec) : 0 < RCLike.re (Cᴴ * C).det :=
   (RCLike.pos_iff.mp (posDef_conjTranspose_mul_self_iff.mpr hC).det_pos).1
 
-/-- **The Gram determinant after replacing a column.** If column `i` of `C` is replaced by
-`C t + d` with `d` orthogonal to the range of `C`, the Gram determinant is multiplied by
-`|t i|² + ‖d‖² ((Cᴴ C)⁻¹)_{ii}`. [GuEisenstat1996, Lemma 3.1].
-Port of `NLAlib.det_gram_updateCol_eq_det_mul`, there over `ℝ`. -/
+/-- **The Gram determinant after replacing a column.** If column $i$ of a matrix $\mathbf{C}$ of
+full column rank is replaced by $\mathbf{C}\mathbf{t} + \mathbf{d}$ with
+$\mathbf{C}^{\mathsf{H}}\mathbf{d} = \mathbf{0}$, the Gram determinant is multiplied by
+$$\lvert \mathbf{t}_i \rvert^2 + \|\mathbf{d}\|^2
+  \bigl((\mathbf{C}^{\mathsf{H}}\mathbf{C})^{-1}\bigr)_{i,i}\,.$$
+[GuEisenstat1996, Lemma 3.1].
+Port of `NLAlib.det_gram_updateCol_eq_det_mul`, there over $\mathbb{R}$. -/
 theorem re_det_conjTranspose_mul_self_updateCol [DecidableEq p] {C : Matrix m p 𝕜}
     (hC : Function.Injective C.mulVec) (i : p) (t : p → 𝕜) {d : m → 𝕜} (hd : Cᴴ *ᵥ d = 0) :
     RCLike.re ((C.updateCol i (C *ᵥ t + d))ᴴ * C.updateCol i (C *ᵥ t + d)).det =
@@ -117,9 +123,13 @@ theorem re_det_conjTranspose_mul_self_updateCol [DecidableEq p] {C : Matrix m p 
     RCLike.re_ofReal_mul, RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow,
     RCLike.ofReal_re]
 
-/-- **The Gram determinant after appending a column**: the volume is multiplied by the distance
-of the new column to the range of the old ones, `det (Gram [C, v]) = det (Gram C) ‖(1 - P_C) v‖²`.
-Port of `NLAlib.det_gram_fromCols_eq_mul_frobSq_sub_projector`, there over `ℝ`. -/
+/-- **The Gram determinant after appending a column**: the squared volume is multiplied by the
+squared distance of the new column $\mathbf{v}$ to the range of $\mathbf{C}$,
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{v}\|^2$, so that for
+$\mathbf{B} = \begin{bmatrix} \mathbf{C} & \mathbf{v} \end{bmatrix}$
+$$\det(\mathbf{B}^{\mathsf{H}}\mathbf{B}) = \det(\mathbf{C}^{\mathsf{H}}\mathbf{C})
+  \|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{v}\|^2\,.$$
+Port of `NLAlib.det_gram_fromCols_eq_mul_frobSq_sub_projector`, there over $\mathbb{R}$. -/
 theorem re_det_conjTranspose_mul_self_fromCols [DecidableEq m] [DecidableEq p]
     (C : Matrix m p 𝕜) (v : m → 𝕜) :
     RCLike.re ((Matrix.fromCols C (Matrix.replicateCol Unit v))ᴴ *
@@ -167,11 +177,15 @@ theorem re_det_conjTranspose_mul_self_fromCols [DecidableEq m] [DecidableEq p]
 
 /-! ### Bounds from a budget -/
 
-/-- **The budget of a locally maximal selection.** Let `C` have full column rank and let the
-other columns be `C T + D` with `D` orthogonal to the range of `C`. If
-`|T i j|² + ‖D_j‖² ((Cᴴ C)⁻¹)_{ii} ≤ f²` for all `i`, `j` (which by the volume formula says that
-no exchange increases the volume by more than `f²`), then
-`‖T‖_F² + ‖C⁺‖_F² ‖D‖_F² ≤ f² · p · q`. [GuEisenstat1996, Theorem 3.2].
+/-- **The budget of a locally maximal selection.** Let $\mathbf{C}$ have full column rank and
+let the other columns be $\mathbf{C}\mathbf{T} + \mathbf{D}$. If
+$$\lvert \mathbf{T}_{i,j} \rvert^2 + \|\mathbf{D}_{:,j}\|^2
+  \bigl((\mathbf{C}^{\mathsf{H}}\mathbf{C})^{-1}\bigr)_{i,i} \le f^2$$
+for all $i$, $j$ (which, for $\mathbf{D}$ orthogonal to the range of $\mathbf{C}$, says by the
+volume formula that no exchange increases the squared volume by a factor more than $f^2$), then
+$$\|\mathbf{T}\|_{\mathsf{F}}^2 + \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2
+  \le f^2 \lvert p \rvert \lvert q \rvert\,.$$
+[GuEisenstat1996, Theorem 3.2].
 Port of `NLAlib.frobSq_add_trace_inv_gram_mul_frobSq_le_of_maximum_volume`. -/
 theorem frobNorm_sq_add_frobNorm_pinv_sq_mul_le [DecidableEq p] {C : Matrix m p 𝕜}
     {T : Matrix p q 𝕜} {D : Matrix m q 𝕜} {f : ℝ} (hC : Function.Injective C.mulVec)
@@ -195,7 +209,8 @@ theorem frobNorm_sq_add_frobNorm_pinv_sq_mul_le [DecidableEq p] {C : Matrix m p 
     _ = _ := by ring
 
 /-- A singular value below the rank times the Frobenius norm of the pseudoinverse is at least
-one. -/
+one: $1 \le \sigma_i(\mathbf{C})^2 \|\mathbf{C}^{+}\|_{\mathsf{F}}^2$ for
+$i < \operatorname{rank} \mathbf{C}$. -/
 private theorem one_le_sq_singularValues_mul_frobNorm_pinv_sq (C : Matrix m p 𝕜) {i : ℕ}
     (hi : i < C.rank) : 1 ≤ singularValues C i ^ 2 * frobNorm (pinv C) ^ 2 := by
   have hpos : 0 < singularValues C i ^ 2 := pow_pos ((singularValues_pos_iff C).mpr hi) 2
@@ -207,10 +222,15 @@ private theorem one_le_sq_singularValues_mul_frobNorm_pinv_sq (C : Matrix m p �
         (mul_inv_cancel₀ hpos.ne').symm
     _ ≤ singularValues C i ^ 2 * frobNorm (pinv C) ^ 2 := by gcongr
 
-/-- **The selected columns capture the leading singular values**: with budget
-`b ≥ ‖T‖_F² + ‖C⁺‖_F² ‖D‖_F²`, `σ_i([C, C T + D]) ≤ √(1 + b) σ_i(C)` for `i` below the number of
-columns of `C`.
-Port of `NLAlib.singularValues_upper_block_le_sqrt_budget_mul`, there for a triangular `C`. -/
+/-- **The selected columns capture the leading singular values**: for $\mathbf{C}$ of full
+column rank, $\mathbf{C}^{\mathsf{H}}\mathbf{D} = \mathbf{0}$ and a budget
+$b \ge \|\mathbf{T}\|_{\mathsf{F}}^2 +
+\|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$,
+$$\sigma_i\bigl(\begin{bmatrix} \mathbf{C} & \mathbf{C}\mathbf{T} + \mathbf{D} \end{bmatrix}\bigr)
+  \le \sqrt{1 + b}\, \sigma_i(\mathbf{C})$$
+for $i < \lvert p \rvert$, the number of columns of $\mathbf{C}$.
+Port of `NLAlib.singularValues_upper_block_le_sqrt_budget_mul`, there for a triangular
+$\mathbf{C}$. -/
 theorem singularValues_fromCols_le_sqrt_mul {C : Matrix m p 𝕜} {T : Matrix p q 𝕜}
     {D : Matrix m q 𝕜} {b : ℝ} (hC : Function.Injective C.mulVec) (hD : Cᴴ * D = 0)
     (hb : frobNorm T ^ 2 + frobNorm (pinv C) ^ 2 * frobNorm D ^ 2 ≤ b) {i : ℕ}
@@ -295,8 +315,8 @@ private theorem sq_mul_add_le_one_add_mul {s X Y U V Fc Ft Fd b : ℝ} (hs : 0 �
   nlinarith [sq_nonneg U]
 
 omit [Fintype q] in
-/-- The subspace of vectors on `p ⊕ q` whose `q`-part lies in a subspace of dimension `d` has
-dimension `card p + d`. -/
+/-- The subspace of vectors on `p ⊕ q` whose $q$-part lies in a subspace of dimension $d$ has
+dimension $\lvert p \rvert + d$. -/
 private theorem exists_submodule_sum_finrank [Finite q] (Y : Submodule 𝕜 (q → 𝕜)) :
     ∃ S : Submodule 𝕜 (p ⊕ q → 𝕜), Module.finrank 𝕜 S = Fintype.card p + Module.finrank 𝕜 Y ∧
       ∀ z ∈ S, (fun b => z (Sum.inr b)) ∈ Y := by
@@ -314,9 +334,14 @@ private theorem exists_submodule_sum_finrank [Finite q] (Y : Submodule 𝕜 (q �
   exact ⟨Y.comap tail, by rw [e.finrank_eq, Module.finrank_prod,
     Module.finrank_fintype_fun_eq_card], fun z hz => hz⟩
 
-/-- **The residual is no larger than the trailing singular values allow**: with budget
-`b ≥ ‖T‖_F² + ‖C⁺‖_F² ‖D‖_F²`, `σ_j(D) ≤ √(1 + b) σ_{p+j}([C, C T + D])`.
-Port of `NLAlib.singularValues_trailing_le_sqrt_budget_mul`, there for a triangular `C`. -/
+/-- **The residual is no larger than the trailing singular values allow**: for $\mathbf{C}$ of
+full column rank, $\mathbf{C}^{\mathsf{H}}\mathbf{D} = \mathbf{0}$ and a budget
+$b \ge \|\mathbf{T}\|_{\mathsf{F}}^2 +
+\|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$,
+$$\sigma_j(\mathbf{D}) \le \sqrt{1 + b}\, \sigma_{\lvert p \rvert + j}
+  \bigl(\begin{bmatrix} \mathbf{C} & \mathbf{C}\mathbf{T} + \mathbf{D} \end{bmatrix}\bigr)$$
+for every $j$.
+Port of `NLAlib.singularValues_trailing_le_sqrt_budget_mul`, there for a triangular $\mathbf{C}$. -/
 theorem singularValues_le_sqrt_mul_singularValues_fromCols {C : Matrix m p 𝕜}
     {T : Matrix p q 𝕜} {D : Matrix m q 𝕜} {b : ℝ} (hC : Function.Injective C.mulVec)
     (hD : Cᴴ * D = 0) (hb : frobNorm T ^ 2 + frobNorm (pinv C) ^ 2 * frobNorm D ^ 2 ≤ b)

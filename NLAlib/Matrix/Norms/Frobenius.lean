@@ -13,9 +13,12 @@ public import Mathlib.Tactic.Positivity.Core
 /-!
 # The Frobenius norm and inner product
 
-`NLAlib.frobNorm A` is the Frobenius norm `√(∑ i j, ‖A i j‖ ^ 2)` and `NLAlib.frobInner A B` is
-the real Frobenius inner product `re (tr (Aᴴ B))`. They are named functions because Mathlib's
-matrix norms are scoped instances; `NLAlib.frobNorm_eq_norm` is the bridge.
+`NLAlib.frobNorm A` is the Frobenius norm
+$\|\mathbf{A}\|_{\mathsf{F}} = \bigl(\sum_{i,j} \lvert \mathbf{A}_{i,j} \rvert^2\bigr)^{1/2}$ and
+`NLAlib.frobInner A B` is the real Frobenius inner product
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}
+= \operatorname{Re} \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B})$. They are named functions
+because Mathlib's matrix norms are scoped instances; `NLAlib.frobNorm_eq_norm` is the bridge.
 
 The squared Frobenius norm has no name of its own: it is always written `frobNorm A ^ 2`.
 Statements that are naturally quadratic (Pythagoras, sums over entries or columns) are stated in
@@ -30,7 +33,7 @@ that form; `positivity` knows `frobNorm`, so `gcongr` passes between a bound and
 
 * `NLAlib.frobNorm_sq_eq_sum`, `NLAlib.frobNorm_sq_eq_re_trace`: the squared norm as an entry sum
   and as a trace.
-* `NLAlib.frobNorm_sq_eq_sum_sq`, `NLAlib.frobInner_eq_sum_mul`: the entry sums over `ℝ`.
+* `NLAlib.frobNorm_sq_eq_sum_sq`, `NLAlib.frobInner_eq_sum_mul`: the entry sums over $\mathbb{R}$.
 * `NLAlib.frobNorm_add_sq`, `NLAlib.frobNorm_add_sq_of_frobInner_eq_zero`: the polar identity and
   Pythagoras.
 * `NLAlib.abs_frobInner_le`: Cauchy–Schwarz.
@@ -48,32 +51,43 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-! ### The Frobenius inner product -/
 
-/-- The real **Frobenius inner product** `re (tr (Aᴴ B)) = ∑ i j, re (conj (A i j) * B i j)`. It
-is real-valued and real-bilinear; the `𝕜`-valued pairing is Mathlib's `(Aᴴ * B).trace`. -/
+/-- The real **Frobenius inner product**
+$$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}
+  = \operatorname{Re} \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B})
+  = \sum_{i,j} \operatorname{Re}\bigl(\overline{\mathbf{A}_{i,j}} \, \mathbf{B}_{i,j}\bigr)\,.$$
+It is real-valued and real-bilinear; the `𝕜`-valued pairing is Mathlib's `(Aᴴ * B).trace`. -/
 def frobInner (A B : Matrix m n 𝕜) : ℝ :=
   RCLike.re (Aᴴ * B).trace
 
-/-- `frobInner A B` unfolds to `re (Aᴴ * B).trace`. This is the only bridge between the two
-pairings. -/
+/-- `frobInner A B` unfolds to
+$\operatorname{Re} \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B})$. This is the only bridge
+between the two pairings. -/
 theorem frobInner_eq_re_trace (A B : Matrix m n 𝕜) : frobInner A B = RCLike.re (Aᴴ * B).trace :=
   rfl
 
-/-- The Frobenius inner product as a sum over entries. Port of `NLAlib.frobInner_eq_sum_re`. -/
+/-- The Frobenius inner product as a sum over entries:
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}
+= \sum_{i,j} \operatorname{Re}\bigl(\overline{\mathbf{A}_{i,j}} \, \mathbf{B}_{i,j}\bigr)$. Port of
+`NLAlib.frobInner_eq_sum_re`. -/
 theorem frobInner_eq_sum (A B : Matrix m n 𝕜) :
     frobInner A B = ∑ i, ∑ j, RCLike.re (star (A i j) * B i j) := by
   simp only [frobInner, Matrix.trace, Matrix.diag, Matrix.mul_apply, Matrix.conjTranspose_apply,
     map_sum]
   exact Finset.sum_comm
 
-/-- Over `ℝ` the Frobenius inner product is the sum of the products of the entries. This is
-`NLAlib.frobInner_eq_sum` with the conjugation and the real part removed, the form to rewrite
-with under an integral or a sum. Port of `NLAlib.frobInner_eq_sum_mul`. -/
+/-- Over $\mathbb{R}$ the Frobenius inner product is the sum of the products of the entries,
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \sum_{i,j} \mathbf{A}_{i,j}\mathbf{B}_{i,j}$.
+This is `NLAlib.frobInner_eq_sum` with the conjugation and the real part removed, the form to
+rewrite with under an integral or a sum. Port of `NLAlib.frobInner_eq_sum_mul`. -/
 theorem frobInner_eq_sum_mul (A B : Matrix m n ℝ) : frobInner A B = ∑ i, ∑ j, A i j * B i j := by
   simp only [frobInner_eq_sum, star_trivial, RCLike.re_to_real]
 
-/-- The Frobenius inner product as the real part of the trace of `A * Bᴴ`, by cyclicity of the
-trace: `re (tr (Aᴴ B)) = re (tr (A Bᴴ))`. The two traces are complex conjugates of each other, so
-only the real parts agree. Port of `NLAlib.frobInner_eq_re_trace_mul_conjTranspose`. -/
+/-- The Frobenius inner product as the real part of the trace of
+$\mathbf{A}\mathbf{B}^{\mathsf{H}}$, by cyclicity of the trace:
+$\operatorname{Re} \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B})
+= \operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B}^{\mathsf{H}})$. The two traces are
+complex conjugates of each other, so only the real parts agree. Port of
+`NLAlib.frobInner_eq_re_trace_mul_conjTranspose`. -/
 theorem frobInner_eq_re_trace_mul_conjTranspose (A B : Matrix m n 𝕜) :
     frobInner A B = RCLike.re (A * Bᴴ).trace := by
   rw [frobInner, Matrix.trace_mul_comm A, ← RCLike.conj_re (Bᴴ * A).trace, ← RCLike.star_def,
@@ -156,13 +170,16 @@ theorem frobInner_conjTranspose (A B : Matrix m n 𝕜) : frobInner Aᴴ Bᴴ = 
     Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
 
 /-- A left factor moves across the Frobenius inner product as its conjugate transpose:
-`⟨C A, B⟩ = ⟨A, Cᴴ B⟩`. Port of `NLAlib.frobInner_mul_mul`. -/
+$\langle \mathbf{C}\mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}
+= \langle \mathbf{A}, \mathbf{C}^{\mathsf{H}}\mathbf{B} \rangle_{\mathsf{F}}$. Port of
+`NLAlib.frobInner_mul_mul`. -/
 theorem frobInner_mul_left (C : Matrix l m 𝕜) (A : Matrix m n 𝕜) (B : Matrix l n 𝕜) :
     frobInner (C * A) B = frobInner A (Cᴴ * B) := by
   rw [frobInner, frobInner, Matrix.conjTranspose_mul, Matrix.mul_assoc]
 
 /-- A right factor moves across the Frobenius inner product as its conjugate transpose:
-`⟨A C, B⟩ = ⟨A, B Cᴴ⟩`. -/
+$\langle \mathbf{A}\mathbf{C}, \mathbf{B} \rangle_{\mathsf{F}}
+= \langle \mathbf{A}, \mathbf{B}\mathbf{C}^{\mathsf{H}} \rangle_{\mathsf{F}}$. -/
 theorem frobInner_mul_right (A : Matrix m n 𝕜) (C : Matrix n p 𝕜) (B : Matrix m p 𝕜) :
     frobInner (A * C) B = frobInner A (B * Cᴴ) := by
   rw [frobInner, frobInner, Matrix.conjTranspose_mul, Matrix.mul_assoc, Matrix.trace_mul_comm,
@@ -170,7 +187,9 @@ theorem frobInner_mul_right (A : Matrix m n 𝕜) (C : Matrix n p 𝕜) (B : Mat
 
 /-! ### The Frobenius norm -/
 
-/-- The **Frobenius norm** `√(∑ i j, ‖A i j‖ ^ 2)`. Its square is written `frobNorm A ^ 2`.
+/-- The **Frobenius norm**
+$\|\mathbf{A}\|_{\mathsf{F}} = \bigl(\sum_{i,j} \lvert \mathbf{A}_{i,j} \rvert^2\bigr)^{1/2}$. Its
+square is written `frobNorm A ^ 2`.
 [GolubVanLoan2013, §2.3.1]. -/
 noncomputable def frobNorm (A : Matrix m n 𝕜) : ℝ :=
   √(∑ i, ∑ j, ‖A i j‖ ^ 2)
@@ -179,33 +198,38 @@ noncomputable def frobNorm (A : Matrix m n 𝕜) : ℝ :=
 theorem frobNorm_nonneg (A : Matrix m n 𝕜) : 0 ≤ frobNorm A := by
   exact Real.sqrt_nonneg _
 
-/-- The squared Frobenius norm is the sum of the squared moduli of the entries.
+/-- The squared Frobenius norm is the sum of the squared moduli of the entries:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{i,j} \lvert \mathbf{A}_{i,j} \rvert^2$.
 Port of `NLAlib.frobSq_eq_sum_norm_sq`. -/
 theorem frobNorm_sq_eq_sum (A : Matrix m n 𝕜) : frobNorm A ^ 2 = ∑ i, ∑ j, ‖A i j‖ ^ 2 := by
   exact Real.sq_sqrt (Finset.sum_nonneg fun i _ => Finset.sum_nonneg fun j _ => sq_nonneg _)
 
 /-- The Frobenius norm is the Euclidean norm of the entries read as a vector indexed by
-`m × n`. -/
+$m \times n$. -/
 theorem frobNorm_eq_norm_toLp_uncurry (A : Matrix m n 𝕜) :
     frobNorm A = ‖WithLp.toLp 2 (Function.uncurry A)‖ := by
   rw [← Real.sqrt_sq (frobNorm_nonneg A), frobNorm_sq_eq_sum, EuclideanSpace.norm_eq,
     Fintype.sum_prod_type]
   rfl
 
-/-- Over `ℝ` the squared Frobenius norm is the sum of the squared entries. This is
+/-- Over $\mathbb{R}$ the squared Frobenius norm is the sum of the squared entries,
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{i,j} \mathbf{A}_{i,j}^2$. This is
 `NLAlib.frobNorm_sq_eq_sum` with the absolute values removed, the form to rewrite with under an
 integral or a sum. Port of `NLAlib.frobSq_eq_sum_sq`. -/
 theorem frobNorm_sq_eq_sum_sq (A : Matrix m n ℝ) : frobNorm A ^ 2 = ∑ i, ∑ j, A i j ^ 2 := by
   simp only [frobNorm_sq_eq_sum, Real.norm_eq_abs, sq_abs]
 
-/-- The Frobenius inner product of a matrix with itself is its squared Frobenius norm. -/
+/-- The Frobenius inner product of a matrix with itself is its squared Frobenius norm:
+$\langle \mathbf{A}, \mathbf{A} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_{\mathsf{F}}^2$. -/
 @[simp]
 theorem frobInner_self (A : Matrix m n 𝕜) : frobInner A A = frobNorm A ^ 2 := by
   rw [frobNorm_sq_eq_sum, frobInner_eq_sum]
   simp only [RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow, RCLike.ofReal_re]
 
-/-- The squared Frobenius norm is the real part of the trace of the Gram matrix.
-Port of `NLAlib.frobSq_eq_re_trace_conjTranspose_mul_self`. -/
+/-- The squared Frobenius norm is the real part of the trace of the Gram matrix:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \operatorname{Re}
+\operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{A})$. Port of
+`NLAlib.frobSq_eq_re_trace_conjTranspose_mul_self`. -/
 theorem frobNorm_sq_eq_re_trace (A : Matrix m n 𝕜) :
     frobNorm A ^ 2 = RCLike.re (Aᴴ * A).trace := by
   rw [← frobInner_self, frobInner]
@@ -223,8 +247,8 @@ theorem frobNorm_sq_eq_sum_row (A : Matrix m n 𝕜) :
   simp only [frobNorm_sq_eq_sum, EuclideanSpace.norm_sq_eq, Matrix.row_apply]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Bridge to Mathlib.** `frobNorm A` is the norm of `A` in the `Matrix.Norms.Frobenius`
-scope. Port of `NLAlib.frobNorm_eq_norm`. -/
+/-- **Bridge to Mathlib.** The Frobenius norm $\|\mathbf{A}\|_{\mathsf{F}}$ (`frobNorm`) is the
+norm of $\mathbf{A}$ in the `Matrix.Norms.Frobenius` scope. Port of `NLAlib.frobNorm_eq_norm`. -/
 theorem frobNorm_eq_norm (A : Matrix m n 𝕜) : frobNorm A = ‖A‖ := by
   rw [Matrix.frobenius_norm_def, frobNorm, Real.sqrt_eq_rpow]
   simp only [Real.rpow_two]
@@ -252,15 +276,19 @@ theorem frobNorm_sub_comm (A B : Matrix m n 𝕜) : frobNorm (A - B) = frobNorm 
   rw [frobNorm_eq_norm, frobNorm_eq_norm, norm_sub_rev]
 
 open scoped Matrix.Norms.Frobenius in
-/-- The Frobenius norm is absolutely homogeneous. -/
+/-- The Frobenius norm is absolutely homogeneous:
+$\|c\mathbf{A}\|_{\mathsf{F}} = \lvert c \rvert \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem frobNorm_smul (c : 𝕜) (A : Matrix m n 𝕜) : frobNorm (c • A) = ‖c‖ * frobNorm A := by
   rw [frobNorm_eq_norm, frobNorm_eq_norm, norm_smul]
 
-/-- The Frobenius norm is absolutely homogeneous for the real scalar action on a `𝕜`-matrix. -/
+/-- The Frobenius norm is absolutely homogeneous for the real scalar action on a `𝕜`-matrix:
+$\|a\mathbf{A}\|_{\mathsf{F}} = \lvert a \rvert \|\mathbf{A}\|_{\mathsf{F}}$ for real $a$. -/
 theorem frobNorm_real_smul (a : ℝ) (A : Matrix m n 𝕜) : frobNorm (a • A) = |a| * frobNorm A := by
   rw [RCLike.real_smul_eq_coe_smul (K := 𝕜), frobNorm_smul, RCLike.norm_ofReal]
 
-/-- **Cauchy–Schwarz** for the Frobenius inner product.
+/-- **Cauchy–Schwarz** for the Frobenius inner product:
+$\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
+\le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$.
 Port of `NLAlib.abs_frobInner_le_frobNorm_mul_frobNorm`. -/
 theorem abs_frobInner_le (A B : Matrix m n 𝕜) : |frobInner A B| ≤ frobNorm A * frobNorm B := by
   have hA : frobNorm A = √(∑ x : m × n, ‖A x.1 x.2‖ ^ 2) :=
@@ -279,7 +307,9 @@ theorem abs_frobInner_le (A B : Matrix m n 𝕜) : |frobInner A B| ≤ frobNorm 
     _ ≤ √(∑ x : m × n, ‖A x.1 x.2‖ ^ 2) * √(∑ x : m × n, ‖B x.1 x.2‖ ^ 2) :=
         Real.sum_mul_le_sqrt_mul_sqrt _ _ _
 
-/-- Cauchy–Schwarz without the absolute value. -/
+/-- Cauchy–Schwarz without the absolute value:
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}
+\le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$. -/
 theorem frobInner_le (A B : Matrix m n 𝕜) : frobInner A B ≤ frobNorm A * frobNorm B := by
   exact (le_abs_self _).trans (abs_frobInner_le A B)
 
@@ -309,27 +339,38 @@ theorem frobNorm_sum_le {ι : Type*} (s : Finset ι) (A : ι → Matrix m n 𝕜
   simp only [frobNorm_eq_norm]
   exact norm_sum_le s A
 
-/-- The polar identity: `‖A + B‖² = ‖A‖² + 2 ⟨A, B⟩ + ‖B‖²`. Port of `NLAlib.frobSq_add`. -/
+/-- The polar identity:
+$\|\mathbf{A} + \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
+2 \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} + \|\mathbf{B}\|_{\mathsf{F}}^2$.
+Port of `NLAlib.frobSq_add`. -/
 theorem frobNorm_add_sq (A B : Matrix m n 𝕜) :
     frobNorm (A + B) ^ 2 = frobNorm A ^ 2 + 2 * frobInner A B + frobNorm B ^ 2 := by
   rw [← frobInner_self, ← frobInner_self, ← frobInner_self, frobInner_add_left,
     frobInner_add_right, frobInner_add_right, frobInner_comm B A]
   ring
 
-/-- The polar identity for a difference. Port of `NLAlib.frobSq_sub`. -/
+/-- The polar identity for a difference:
+$\|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 -
+2 \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} + \|\mathbf{B}\|_{\mathsf{F}}^2$. Port of
+`NLAlib.frobSq_sub`. -/
 theorem frobNorm_sub_sq (A B : Matrix m n 𝕜) :
     frobNorm (A - B) ^ 2 = frobNorm A ^ 2 - 2 * frobInner A B + frobNorm B ^ 2 := by
   rw [← frobInner_self, ← frobInner_self, ← frobInner_self, frobInner_sub_left,
     frobInner_sub_right, frobInner_sub_right, frobInner_comm B A]
   ring
 
-/-- **Pythagoras** in the Frobenius norm.
+/-- **Pythagoras** in the Frobenius norm: if
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = 0$ then
+$\|\mathbf{A} + \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
+\|\mathbf{B}\|_{\mathsf{F}}^2$.
 Port of `NLAlib.frobSq_add_of_frobInner_eq_zero`. -/
 theorem frobNorm_add_sq_of_frobInner_eq_zero {A B : Matrix m n 𝕜} (h : frobInner A B = 0) :
     frobNorm (A + B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   rw [frobNorm_add_sq, h, mul_zero, add_zero]
 
-/-- Pythagoras for a difference. Port of `NLAlib.frobSq_sub_of_frobInner_eq_zero`. -/
+/-- Pythagoras for a difference: if $\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = 0$
+then $\|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
+\|\mathbf{B}\|_{\mathsf{F}}^2$. Port of `NLAlib.frobSq_sub_of_frobInner_eq_zero`. -/
 theorem frobNorm_sub_sq_of_frobInner_eq_zero {A B : Matrix m n 𝕜} (h : frobInner A B = 0) :
     frobNorm (A - B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   rw [frobNorm_sub_sq, h, mul_zero, sub_zero]
@@ -358,7 +399,9 @@ theorem frobNorm_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e₂ : 
   exact congrArg Real.sqrt ((e₁.sum_comp fun i => ∑ j, ‖A i (e₂ j)‖ ^ 2).trans
     (Finset.sum_congr rfl fun i _ => e₂.sum_comp fun j => ‖A i j‖ ^ 2))
 
-/-- The squared Frobenius norm of a diagonal matrix. Port of `NLAlib.frobSq_diagonal`. -/
+/-- The squared Frobenius norm of a diagonal matrix:
+$\|\operatorname{diag}(\mathbf{d})\|_{\mathsf{F}}^2 = \sum_i \lvert \mathbf{d}_i \rvert^2$. Port of
+`NLAlib.frobSq_diagonal`. -/
 theorem frobNorm_diagonal_sq [DecidableEq n] (d : n → 𝕜) :
     frobNorm (Matrix.diagonal d) ^ 2 = ∑ i, ‖d i‖ ^ 2 := by
   rw [frobNorm_sq_eq_sum]
@@ -366,28 +409,32 @@ theorem frobNorm_diagonal_sq [DecidableEq n] (d : n → 𝕜) :
   rw [Finset.sum_eq_single i (fun j _ hj => by simp [Matrix.diagonal_apply_ne _ (Ne.symm hj)])
     (fun h => (h (Finset.mem_univ i)).elim), Matrix.diagonal_apply_eq]
 
-/-- The squared Frobenius norm of the identity is the dimension.
+/-- The squared Frobenius norm of the identity is the dimension:
+$\|\mathbf{I}\|_{\mathsf{F}}^2 = \lvert n \rvert$.
 Port of `NLAlib.frobNorm_one_sq`. -/
 theorem frobNorm_one_sq [DecidableEq n] :
     frobNorm (1 : Matrix n n 𝕜) ^ 2 = Fintype.card n := by
   rw [← Matrix.diagonal_one, frobNorm_diagonal_sq]
   simp
 
-/-- The Frobenius norm of a rank-one matrix `u vᵀ` is the product of the Euclidean norms. -/
+/-- The Frobenius norm of a rank-one matrix is the product of the Euclidean norms:
+$\|\mathbf{u}\mathbf{v}^{\mathsf{T}}\|_{\mathsf{F}} = \|\mathbf{u}\| \|\mathbf{v}\|$. -/
 theorem frobNorm_vecMulVec (u : m → 𝕜) (v : n → 𝕜) :
     frobNorm (Matrix.vecMulVec u v) = ‖WithLp.toLp 2 u‖ * ‖WithLp.toLp 2 v‖ := by
   rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq,
     ← Real.sqrt_mul (Finset.sum_nonneg fun i _ => sq_nonneg _), frobNorm, Finset.sum_mul_sum]
   simp only [Matrix.vecMulVec_apply, norm_mul, mul_pow]
 
-/-- Every entry is bounded by the Frobenius norm. -/
+/-- Every entry is bounded by the Frobenius norm:
+$\lvert \mathbf{A}_{i,j} \rvert \le \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem norm_apply_le_frobNorm (A : Matrix m n 𝕜) (i : m) (j : n) : ‖A i j‖ ≤ frobNorm A := by
   refine Real.le_sqrt_of_sq_le ?_
   exact (Finset.single_le_sum (f := fun j => ‖A i j‖ ^ 2) (fun _ _ => sq_nonneg _)
     (Finset.mem_univ j)).trans (Finset.single_le_sum (f := fun i => ∑ j, ‖A i j‖ ^ 2)
     (fun _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _) (Finset.mem_univ i))
 
-/-- The Frobenius norm is compatible with the Euclidean vector norm.
+/-- The Frobenius norm is compatible with the Euclidean vector norm:
+$\|\mathbf{A}\mathbf{x}\| \le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{x}\|$.
 Port of `NLAlib.sum_norm_sq_mulVec_le_frobSq`. -/
 theorem norm_toLp_mulVec_le_frobNorm_mul (A : Matrix m n 𝕜) (x : n → 𝕜) :
     ‖WithLp.toLp 2 (A *ᵥ x)‖ ≤ frobNorm A * ‖WithLp.toLp 2 x‖ := by

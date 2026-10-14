@@ -14,9 +14,10 @@ public import NLAlib.Probability.MatrixConditionalExpectation
 # Conditional matrix moment generating function bounds
 
 `NLAlib.HasCondMatrixMGFBound m hm X g A s μ` is the conditional form of
-`NLAlib.HasMatrixMGFBound`: `X` is almost surely Hermitian and, conditionally on the
-σ-algebra `m`, `E[exp (θ X) | m] ≤ exp (g θ • A)` in the Loewner order almost surely, for every
-`θ ∈ s`, with `A` an `m`-measurable, almost surely Hermitian random matrix. It is spelled with
+`NLAlib.HasMatrixMGFBound`: $\mathbf{X}$ is almost surely Hermitian and, conditionally on the
+σ-algebra $m$, $\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq e^{g(\theta) \mathbf{A}}$ in the
+Loewner order almost surely, for every $\theta \in s$, with $\mathbf{A}$ an $m$-measurable, almost
+surely Hermitian random matrix. It is spelled with
 Mathlib's conditional expectation `μ[· | m]`, not with the conditional expectation kernel of
 Mathlib's `HasCondSubgaussianMGF`, so that no statement carries `[StandardBorelSpace Ω]`
 (`docs/design/Mathlib-deviations.md` entry 17); the bridge from `HasCondSubgaussianMGF` is
@@ -35,7 +36,7 @@ Bernstein bound `NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`.
 ## Main results
 
 * `NLAlib.condExp_re_trace_exp_const_add_le`, `NLAlib.condExp_re_trace_exp_add_le`:
-  conditional Lieb, for a fixed and for an `m`-measurable `H`.
+  conditional Lieb, for a fixed and for an $m$-measurable $\mathbf{H}$.
 * `NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`: the conditional Bernstein bound.
 * `NLAlib.hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF`: the bridge from Mathlib's
   conditionally sub-Gaussian scalars.
@@ -56,31 +57,35 @@ namespace NLAlib
 variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The random matrix `X` is almost surely Hermitian and, conditionally on `m`, its matrix
-moment generating function is bounded by `exp (g θ • A)` in the Loewner order, almost surely,
-for every `θ ∈ s`, with `A` an `m`-measurable, almost surely Hermitian random matrix. The
-conditional form of `NLAlib.HasMatrixMGFBound`. The hypothesis `hm` is a parameter, as in
-Mathlib's `HasCondSubgaussianMGF`: without it `μ[· | m]` would be `0` and the bound vacuous.
-The quantifier `∀ θ` is outside the almost-everywhere statement (the supermartingale uses one
-`θ`); `docs/design/Mathlib-deviations.md` entry 17. -/
+/-- The random matrix $\mathbf{X}$ is almost surely Hermitian and, conditionally on $m$, its
+matrix moment generating function is bounded in the Loewner order, almost surely,
+$\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq e^{g(\theta) \mathbf{A}}$ with
+$e^{\theta \mathbf{X}}$ integrable, for every $\theta \in s$, with $\mathbf{A}$ an $m$-measurable,
+almost surely Hermitian random matrix. The conditional form of `NLAlib.HasMatrixMGFBound`. The
+hypothesis `hm` ($m \le$ the ambient σ-algebra) is a parameter, as in Mathlib's
+`HasCondSubgaussianMGF`: without it `μ[· | m]` would be $0$ and the bound vacuous. The quantifier
+over $\theta$ is outside the almost-everywhere statement (the supermartingale uses one $\theta$);
+`docs/design/Mathlib-deviations.md` entry 17. -/
 structure HasCondMatrixMGFBound (m : MeasurableSpace Ω) (hm : m ≤ mΩ) (X : Ω → Matrix n n 𝕜)
     (g : ℝ → ℝ) (A : Ω → Matrix n n 𝕜) (s : Set ℝ) (μ : @Measure Ω mΩ) : Prop where
-  /-- `X` is almost surely Hermitian. -/
+  /-- $\mathbf{X}$ is almost surely Hermitian. -/
   ae_isHermitian : ∀ᵐ ω ∂μ, (X ω).IsHermitian
-  /-- The bounding matrix is `m`-measurable. -/
+  /-- The bounding matrix is $m$-measurable. -/
   stronglyMeasurable_bound : StronglyMeasurable[m] A
   /-- The bounding matrix is almost surely Hermitian. -/
   ae_isHermitian_bound : ∀ᵐ ω ∂μ, (A ω).IsHermitian
-  /-- `exp (θ X)` is integrable for `θ ∈ s`. -/
+  /-- $e^{\theta \mathbf{X}}$ is integrable for $\theta \in s$. -/
   integrable_exp : ∀ θ ∈ s, Integrable (fun ω => exp (θ • X ω)) μ
-  /-- The bound on the conditional matrix moment generating function. -/
+  /-- The bound on the conditional matrix moment generating function:
+  $\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq e^{g(\theta) \mathbf{A}}$ almost surely, for
+  $\theta \in s$. -/
   condExp_exp_le : ∀ θ ∈ s, μ[fun ω => exp (θ • X ω) | m] ≤ᵐ[μ] fun ω => exp (g θ • A ω)
 
 namespace HasCondMatrixMGFBound
 
 variable {hm : m ≤ mΩ} {X : Ω → Matrix n n 𝕜} {g : ℝ → ℝ} {A : Ω → Matrix n n 𝕜} {s : Set ℝ}
 
-/-- The bound depends only on the almost-everywhere class of `X`.
+/-- The bound depends only on the almost-everywhere class of $\mathbf{X}$.
 Proof: as `NLAlib.HasMatrixMGFBound.congr`, with `condExp_congr_ae`. Easy. -/
 theorem congr {Y : Ω → Matrix n n 𝕜} (h : HasCondMatrixMGFBound m hm X g A s μ)
     (hXY : X =ᵐ[μ] Y) : HasCondMatrixMGFBound m hm Y g A s μ := by
@@ -110,7 +115,7 @@ private theorem re_trace_exp_nonneg {M : Matrix n n 𝕜} (hM : M.IsHermitian) :
   exact Finset.sum_nonneg fun _ _ => (Real.exp_pos _).le
 
 omit [Fintype n] [DecidableEq n] in
-/-- Conditional expectations are monotone on an `m`-measurable set. -/
+/-- Conditional expectations are monotone on an $m$-measurable set. -/
 private theorem ae_condExp_le_condExp_of_mem (hm : m ≤ mΩ) {f g : Ω → ℝ} (hf : Integrable f μ)
     (hg : Integrable g μ) {C : Set Ω} (hC : MeasurableSet[m] C)
     (hle : ∀ᵐ ω ∂μ, ω ∈ C → f ω ≤ g ω) : ∀ᵐ ω ∂μ, ω ∈ C → μ[f | m] ω ≤ μ[g | m] ω := by
@@ -125,16 +130,21 @@ private theorem ae_condExp_le_condExp_of_mem (hm : m ≤ mΩ) {f g : Ω → ℝ}
 
 variable [IsProbabilityMeasure μ]
 
-/-- **Conditional Lieb inequality, fixed `H`**: for a fixed Hermitian `H`,
-`E[tr exp (H + X) | m] ≤ tr exp (H + log E[exp X | m])` almost surely. [Tropp2011, §2]; the
-conditional form of `NLAlib.integral_re_trace_exp_add_le` ([Tropp2015, Corollary 3.4.2]).
-No integrability of `tr exp (H + X)` is assumed: if it fails the left side is `0`.
-Proof: with `f = exp X`, almost surely positive definite, `tr exp (H + X) = φ (f)` for Lieb's
-concave map `φ = fun M => re (tr exp (H + log M))` on the positive definite cone
-(`NLAlib.concaveOn_re_trace_exp_add_cfc_log`), continuous there; the conditional mean
-`μ[f | m]` is almost surely positive definite (`Matrix.ae_posDef_condExp`), so
-`ConcaveOn.condExp_map_le_of_condExp_mem` applies. Integrability of `φ ∘ f` by the case split
-above. Medium. -/
+/-- **Conditional Lieb inequality, fixed $\mathbf{H}$**: for a fixed Hermitian $\mathbf{H}$ and
+an almost surely Hermitian $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under a probability
+measure,
+$$\mathbb{E}\bigl[\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \bigm| m\bigr]
+\le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E}[e^{\mathbf{X}} \mid m]}$$
+almost surely. [Tropp2011, §2]; the conditional form of `NLAlib.integral_re_trace_exp_add_le`
+([Tropp2015, Corollary 3.4.2]). No integrability of
+$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is assumed: if it fails the left side is $0$.
+Proof: with $\mathbf{F} = e^{\mathbf{X}}$, almost surely positive definite,
+$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} = \varphi(\mathbf{F})$ for Lieb's concave map
+$\varphi(\mathbf{M}) = \operatorname{Re} \operatorname{tr} e^{\mathbf{H} + \log \mathbf{M}}$ on the
+positive definite cone (`NLAlib.concaveOn_re_trace_exp_add_cfc_log`), continuous there; the
+conditional mean $\mathbb{E}[\mathbf{F} \mid m]$ is almost surely positive definite
+(`Matrix.ae_posDef_condExp`), so `ConcaveOn.condExp_map_le_of_condExp_mem` applies. Integrability
+of $\varphi \circ \mathbf{F}$ by the case split above. Medium. -/
 theorem condExp_re_trace_exp_const_add_le (hm : m ≤ mΩ) {H : Matrix n n 𝕜} (hH : H.IsHermitian)
     {X : Ω → Matrix n n 𝕜} (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian)
     (hint : Integrable (fun ω => exp (X ω)) μ) :
@@ -155,8 +165,9 @@ theorem condExp_re_trace_exp_const_add_le (hm : m ≤ mΩ) {H : Matrix n n 𝕜}
   exact h1
 
 omit [IsProbabilityMeasure μ] in
-/-- On the `m`-measurable set where `H` is within `δ` of a fixed Hermitian `p`, the conditional
-trace exponential with offset `H` is at most `e^δ` times the one with offset `p`. -/
+/-- On the $m$-measurable set where $\mathbf{H}$ is within $\delta$ of a fixed Hermitian
+$\mathbf{P}$ in the spectral norm, the conditional trace exponential with offset $\mathbf{H}$ is
+at most $e^\delta$ times the one with offset $\mathbf{P}$. -/
 private theorem ae_condExp_re_trace_exp_add_le_exp_mul (hm : m ≤ mΩ) {H X : Ω → Matrix n n 𝕜}
     (hHm : StronglyMeasurable[m] H) (hH : ∀ᵐ ω ∂μ, (H ω).IsHermitian)
     (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian) (hint : Integrable (fun ω => exp (X ω)) μ)
@@ -186,20 +197,26 @@ private theorem ae_condExp_re_trace_exp_add_le_exp_mul (hm : m ≤ mΩ) {H X : �
   rw [← hs']
   exact h hωC
 
-/-- **Conditional Lieb inequality**: for `H` `m`-measurable and almost surely Hermitian,
-`E[tr exp (H + X) | m] ≤ tr exp (H + log E[exp X | m])` almost surely. [Tropp2011, §2]; there
-for `H` measurable with respect to the past of a martingale. No integrability of
-`tr exp (H + X)` is assumed: if it fails the left side is `0` and the right side is nonnegative.
-Proof: if `tr exp (H + X)` is not integrable the left side is `0`. Otherwise take a dense
-sequence `uⱼ` of Hermitian matrices; `NLAlib.condExp_re_trace_exp_const_add_le` holds for all `uⱼ`
-on one null set. On the `m`-measurable set `{‖H - uⱼ‖ < δ}`,
-`tr exp (H + X) ≤ e^δ tr exp (uⱼ + X)` (`NLAlib.re_trace_exp_le_exp_specNorm_sub_mul`), and
-conditional expectations are monotone on `m`-measurable sets (`condExp_indicator`); the same
-perturbation bound on the right side gives the inequality up to a factor `e^{2δ}`, and `δ → 0`.
-This replaces the rounding of `H` to a grid suggested by the design note: no limit of conditional
+/-- **Conditional Lieb inequality**: for $\mathbf{H}$ $m$-measurable and almost surely Hermitian
+and an almost surely Hermitian $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under a probability
+measure,
+$$\mathbb{E}\bigl[\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \bigm| m\bigr]
+\le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E}[e^{\mathbf{X}} \mid m]}$$
+almost surely. [Tropp2011, §2]; there for $\mathbf{H}$ measurable with respect to the past of a
+martingale. No integrability of $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is assumed: if it
+fails the left side is $0$ and the right side is nonnegative.
+Proof: if $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is not integrable the left side is $0$.
+Otherwise take a dense sequence $\mathbf{U}_j$ of Hermitian matrices;
+`NLAlib.condExp_re_trace_exp_const_add_le` holds for all $\mathbf{U}_j$ on one null set. On the
+$m$-measurable set $\{\|\mathbf{H} - \mathbf{U}_j\|_2 < \delta\}$,
+$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \le e^\delta \operatorname{tr} e^{\mathbf{U}_j +
+\mathbf{X}}$ (`NLAlib.re_trace_exp_le_exp_specNorm_sub_mul`), and conditional expectations are
+monotone on $m$-measurable sets (`condExp_indicator`); the same perturbation bound on the right
+side gives the inequality up to a factor $e^{2\delta}$, and $\delta \to 0$. This replaces the
+rounding of $\mathbf{H}$ to a grid suggested by the design note: no limit of conditional
 expectations is taken. The conditional expectation kernel would not shorten it:
-`condExpKernel_ae_eq_condExp` holds per measurable set, so an `m`-measurable `H` is constant
-under `condExpKernel μ m ω'` only through the same approximation. -/
+`condExpKernel_ae_eq_condExp` holds per measurable set, so an $m$-measurable $\mathbf{H}$ is
+constant under `condExpKernel μ m ω'` only through the same approximation. -/
 theorem condExp_re_trace_exp_add_le (hm : m ≤ mΩ) {H X : Ω → Matrix n n 𝕜}
     (hHm : StronglyMeasurable[m] H) (hH : ∀ᵐ ω ∂μ, (H ω).IsHermitian)
     (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian) (hint : Integrable (fun ω => exp (X ω)) μ) :
@@ -253,16 +270,20 @@ theorem condExp_re_trace_exp_add_le (hm : m ≤ mΩ) {H X : Ω → Matrix n n �
     simpa only [Function.comp_def, mul_zero, Real.exp_zero, one_mul] using this
   exact ge_of_tendsto' hlim hbound
 
-/-- **The conditional Bernstein bound**: a conditionally centred, square-integrable random
-matrix with `X ≤ L • 1` almost surely has
-`E[exp (θ X) | m] ≤ exp (θ²/2 / (1 - Lθ/3) • E[X² | m])` for `0 < θ < 3/L`. The input of
-Freedman's inequality. [Tropp2011, §2]; the conditional form of
-`NLAlib.hasMatrixMGFBound_of_integral_eq_zero_of_le` ([Tropp2015, Lemma 6.6.2]).
-Proof: as the unconditional bound: the pointwise `exp (θ X) ≤ 1 + θ X + g θ X²` (P5a's
+/-- **The conditional Bernstein bound**: for $L > 0$, a conditionally centred
+($\mathbb{E}[\mathbf{X} \mid m] = \mathbf{0}$ almost surely), square-integrable random matrix with
+$\mathbf{X} \preceq L\mathbf{I}$ almost surely has
+$$\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq
+\exp\Bigl(\frac{\theta^2/2}{1 - L\theta/3}\, \mathbb{E}[\mathbf{X}^2 \mid m]\Bigr)$$
+almost surely, for $0 < \theta < 3/L$. The input of Freedman's inequality. [Tropp2011, §2]; the
+conditional form of `NLAlib.hasMatrixMGFBound_of_integral_eq_zero_of_le`
+([Tropp2015, Lemma 6.6.2]).
+Proof: as the unconditional bound: the pointwise
+$e^{\theta \mathbf{X}} \preceq \mathbf{I} + \theta \mathbf{X} + g(\theta) \mathbf{X}^2$ (P5a's
 `exp_mul_le_bernstein` through `exp_smul_le_one_add_smul_add_smul_sq`), `condExp_mono`,
 linearity (`condExp_add`, `condExp_smul`, `condExp_const hm`), `hmean`, then
-`1 + B ≤ exp B` (`Matrix.IsHermitian.one_add_le_exp`) for the a.s. Hermitian
-`B = g θ • μ[X² | m]`. Easy to medium. -/
+$\mathbf{I} + \mathbf{B} \preceq e^{\mathbf{B}}$ (`Matrix.IsHermitian.one_add_le_exp`) for the
+a.s. Hermitian $\mathbf{B} = g(\theta)\, \mathbb{E}[\mathbf{X}^2 \mid m]$. Easy to medium. -/
 theorem hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (hm : m ≤ mΩ) {X : Ω → Matrix n n 𝕜}
     {L : ℝ} (hL : 0 < L) (hX2 : MemLp X 2 μ) (hmean : μ[X | m] =ᵐ[μ] 0)
     (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -323,18 +344,23 @@ private theorem exp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian) (f : ℝ → 
     (B.finite_real_spectrum.continuousOn _) hB).symm
 
 omit [IsProbabilityMeasure μ] in
-/-- **The bridge from Mathlib's conditionally sub-Gaussian scalars**: if `γ` has a conditionally
-sub-Gaussian moment generating function with proxy `c` (Mathlib's `HasCondSubgaussianMGF`,
-through the conditional expectation kernel) and `B` is a fixed Hermitian matrix, then `γ • B`
-has the conditional matrix MGF bound `E[exp (θ γ B) | m] ≤ exp (θ²/2 • c B²)` for every `θ`.
+/-- **The bridge from Mathlib's conditionally sub-Gaussian scalars**: if $\gamma$ has a
+conditionally sub-Gaussian moment generating function with proxy $c$ (Mathlib's
+`HasCondSubgaussianMGF`, through the conditional expectation kernel) and $\mathbf{B}$ is a fixed
+Hermitian matrix, then $\gamma \mathbf{B}$ has the conditional matrix MGF bound
+$\mathbb{E}[e^{\theta \gamma \mathbf{B}} \mid m] \preceq e^{(\theta^2/2)\, c \mathbf{B}^2}$ for
+every real $\theta$, under a finite measure on a standard Borel space.
 The bridge of `docs/design/Mathlib-deviations.md` entry 17, and the only statement of the
 conditional interface that needs `[StandardBorelSpace Ω]`. With it, matrix Azuma-type tails
 follow from the master tail of `NLAlib/Probability/MatrixConcentration/Freedman.lean`.
-Proof: diagonalise `B = ∑ λᵢ Pᵢ` (spectral projections); `exp (θ γ B) = ∑ e^{θ λᵢ γ} Pᵢ`, so
-`μ[exp (θ γ B) | m] = ∑ μ[e^{θ λᵢ γ} | m] Pᵢ` almost surely by linearity, and each scalar
-conditional expectation is at most `e^{c θ² λᵢ² / 2}` almost surely by Mathlib's
-`HasCondSubgaussianMGF.ae_condExp_le` (finitely many `i`); the difference is a nonnegative
-combination of the `Pᵢ`. Integrability from `HasCondSubgaussianMGF.integrable_exp_mul`. Medium. -/
+Proof: diagonalise $\mathbf{B} = \sum_i \lambda_i \mathbf{P}_i$ (spectral projections);
+$e^{\theta \gamma \mathbf{B}} = \sum_i e^{\theta \lambda_i \gamma} \mathbf{P}_i$, so
+$\mathbb{E}[e^{\theta \gamma \mathbf{B}} \mid m]
+= \sum_i \mathbb{E}[e^{\theta \lambda_i \gamma} \mid m]\, \mathbf{P}_i$ almost surely by
+linearity, and each scalar conditional expectation is at most
+$e^{c \theta^2 \lambda_i^2 / 2}$ almost surely by Mathlib's `HasCondSubgaussianMGF.ae_condExp_le`
+(finitely many $i$); the difference is a nonnegative combination of the $\mathbf{P}_i$.
+Integrability from `HasCondSubgaussianMGF.integrable_exp_mul`. Medium. -/
 theorem hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF [StandardBorelSpace Ω]
     [IsFiniteMeasure μ] {hm : m ≤ mΩ} {γ : Ω → ℝ} {c : ℝ≥0}
     (hγ : HasCondSubgaussianMGF m hm γ c μ) {B : Matrix n n 𝕜} (hB : B.IsHermitian) :

@@ -15,14 +15,15 @@ public import NLAlib.RandomMatrix.Haar.Basic
 
 **Characterization**: a random matrix with almost surely orthonormal columns whose law is left
 orthogonally invariant is a Haar frame. Consequences: the Gram–Schmidt factor of a tall Gaussian
-matrix is a Haar frame (the QR construction), `Q V` is a Haar frame for a Haar frame `Q` and a
-fixed frame `V` (so any set of columns of a Haar frame is one), each column of a Haar frame is
+matrix is a Haar frame (the QR construction), $\mathbf{Q}\mathbf{V}$ is a Haar frame for a Haar
+frame $\mathbf{Q}$ and a fixed frame $\mathbf{V}$ (so any set of columns of a Haar frame is one),
+each column of a Haar frame is
 uniform on the sphere, and the square Haar frame is Mathlib's Haar measure on the orthogonal group.
 Comparing with the image of Mathlib's surface measure `Measure.toSphere` the same way identifies
 `uniformSphereVector n` with normalised surface measure (`docs/design/Mathlib-deviations.md`
 entry 16).
 
-The argument compares an invariant law `ν` with `haarFrame n n` itself, by Tonelli, so it needs
+The argument compares an invariant law $\nu$ with `haarFrame n n` itself, by Tonelli, so it needs
 neither the uniqueness of Haar measure nor the compactness of the orthogonal group; the
 compactness (`Matrix.compactSpace_unitaryGroup`) is used only to state the bridge to Mathlib's
 `haarMeasure` (`docs/design/Mathlib-deviations.md` entry 15).
@@ -52,7 +53,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k q : Type
 /-! ### The characterization -/
 
 omit [Fintype k] in
-/-- The law of `U x` for a square Haar frame `U` does not depend on the frame `x`. -/
+/-- The law of $\mathbf{U}\mathbf{x}$ for a square Haar frame $\mathbf{U}$ does not depend on the
+frame $\mathbf{x}$. -/
 private theorem map_mul_eq_of_hasOrthonormalCols [Finite k] [DecidableEq n] [DecidableEq k]
     {x y : Matrix n k ℝ} (hx : HasOrthonormalCols x) (hy : HasOrthonormalCols y) :
     (haarFrame n n).map (· * y) = (haarFrame n n).map (· * x) := by
@@ -67,8 +69,8 @@ private theorem map_mul_eq_of_hasOrthonormalCols [Finite k] [DecidableEq n] [Dec
     IsRightUnitarilyInvariant.map_mul_right_eq_self V hV]
 
 omit [Fintype k] in
-/-- **Averaging over the orthogonal group**: a left unitarily invariant probability law `ν` is the
-`ν`-average of the laws of `U x`, `U` a square Haar frame. -/
+/-- **Averaging over the orthogonal group**: a left unitarily invariant probability law $\nu$ is
+the $\nu$-average of the laws of $\mathbf{U}\mathbf{x}$, $\mathbf{U}$ a square Haar frame. -/
 private theorem apply_eq_lintegral_map_mul [DecidableEq n]
     (ν : Measure (Matrix n k ℝ)) [IsProbabilityMeasure ν] [IsLeftUnitarilyInvariant ν]
     {s : Set (Matrix n k ℝ)} (hs : MeasurableSet s) :
@@ -98,8 +100,9 @@ private theorem apply_eq_lintegral_map_mul [DecidableEq n]
     _ = _ := by simp only [houter]
 
 omit [Fintype k] in
-/-- A left unitarily invariant probability law concentrated on frames is the law of `U x₀`, for
-`U` a square Haar frame and `x₀` any fixed frame. -/
+/-- A left unitarily invariant probability law concentrated on frames is the law of
+$\mathbf{U}\mathbf{x}_0$, for $\mathbf{U}$ a square Haar frame and $\mathbf{x}_0$ any fixed
+frame. -/
 private theorem eq_map_mul_of_ae_hasOrthonormalCols [Finite k] [DecidableEq n] [DecidableEq k]
     (ν : Measure (Matrix n k ℝ)) [IsProbabilityMeasure ν] [IsLeftUnitarilyInvariant ν]
     (hν : ∀ᵐ x ∂ν, HasOrthonormalCols x) {x₀ : Matrix n k ℝ} (hx₀ : HasOrthonormalCols x₀) :
@@ -111,7 +114,8 @@ private theorem eq_map_mul_of_ae_hasOrthonormalCols [Finite k] [DecidableEq n] [
 
 /-- **Characterization of the Haar frame**: a random matrix with almost surely orthonormal
 columns whose law is a left unitarily invariant probability measure is a Haar frame. No
-`card k ≤ card n` is needed: without it there are no frames, and `hQ` cannot hold for a
+$\lvert k \rvert \le \lvert n \rvert$ is needed: without it there are no frames, and `hQ` cannot
+hold for a
 probability law. [Meckes2019, Ch. 1], as uniqueness of the invariant measure on the Stiefel
 manifold; here proved against `haarFrame n n` directly. Replaces the prototype's
 `measure_eq_haarFrameLaw_of_invariant`.
@@ -145,7 +149,8 @@ private theorem isLeftUnitarilyInvariant_map [DecidableEq n] {ρ : Measure (Matr
     IsLeftUnitarilyInvariant.map_mul_left_eq_self U hU]
 
 /-- **The QR construction of the Haar frame**: the Gram–Schmidt factor of a tall standard
-Gaussian matrix is a Haar frame. [Meckes2019, Ch. 1], there for square matrices; here any tall
+Gaussian matrix ($\lvert k \rvert \le \lvert n \rvert$) is a Haar frame. [Meckes2019, Ch. 1],
+there for square matrices; here any tall
 shape. Replaces the prototype's `gaussianMatrix_map_canonicalQRFrame`.
 Result: haar-frame-gram-schmidt -/
 theorem hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix [LinearOrder k] [LocallyFiniteOrderBot k]
@@ -163,9 +168,10 @@ theorem hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix [LinearOrder k] [LocallyFin
   rw [min_eq_right hk] at hω
   exact hasOrthonormalCols_gramSchmidtQ (mulVec_injective_iff_rank_eq.2 hω)
 
-/-- **Sub-frames of a Haar frame**: `Q V` is a Haar frame for a Haar frame `Q` and a fixed `V`
-with orthonormal columns; with `V = selectionMatrix s` for an injective `s`, any set of columns.
-Square `V` is right invariance (`isRightUnitarilyInvariant_haarFrame`). -/
+/-- **Sub-frames of a Haar frame**: $\mathbf{Q}\mathbf{V}$ is a Haar frame for an $n \times k$
+Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$, and a fixed $\mathbf{V}$ with
+orthonormal columns; with $\mathbf{V}$ = `selectionMatrix s` for an injective $s$, any set of
+columns. Square $\mathbf{V}$ is right invariance (`isRightUnitarilyInvariant_haarFrame`). -/
 theorem hasLaw_mul_const_of_hasLaw_haarFrame [DecidableEq k] [DecidableEq q]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) {V : Matrix k q ℝ}
     (hV : HasOrthonormalCols V) : HasLaw (fun ω => X ω * V) (haarFrame n q) μ := by
@@ -181,8 +187,9 @@ theorem hasLaw_mul_const_of_hasLaw_haarFrame [DecidableEq k] [DecidableEq q]
   filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame hX hk] with ω hω
   exact hω.mul hV
 
-/-- **A column of a Haar frame is uniform on the sphere**: it has law `uniformSphereVector n`,
-that of `g / ‖g‖` for a standard Gaussian `g`. [Meckes2019, Ch. 1]. -/
+/-- **A column of a Haar frame is uniform on the sphere**: for an $n \times k$ Haar frame with
+$\lvert k \rvert \le \lvert n \rvert$, each column has law `uniformSphereVector n`, that of
+$\mathbf{g} / \|\mathbf{g}\|$ for a standard Gaussian $\mathbf{g}$. [Meckes2019, Ch. 1]. -/
 theorem hasLaw_col_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (j : k) :
     HasLaw (fun ω i => X ω i j) (uniformSphereVector n) μ := by
@@ -201,8 +208,8 @@ theorem hasLaw_col_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFrame
 
 /-! ### The surface measure on the sphere -/
 
-/-- Mathlib's surface measure on the unit sphere, as a measure on the ambient space: the mass of
-`B` is `dim · vol ((0, 1) • (S ∩ B))`. -/
+/-- Mathlib's surface measure on the unit sphere $S$, as a measure on the ambient space: the mass
+of $B$ is $\dim \cdot \operatorname{vol}\bigl((0, 1) \cdot (S \cap B)\bigr)$. -/
 private theorem toSphere_map_val_apply {B : Set (EuclideanSpace ℝ n)} (hB : MeasurableSet B) :
     ((volume : Measure (EuclideanSpace ℝ n)).toSphere.map Subtype.val) B =
       Module.finrank ℝ (EuclideanSpace ℝ n) *
@@ -243,7 +250,7 @@ private theorem hasOrthonormalCols_replicateCol {v : n → ℝ} (hv : ‖WithLp.
 /-- **The uniform law on the sphere is normalised surface measure**: `uniformSphereVector n` is
 Mathlib's `Measure.toSphere` of the volume on `EuclideanSpace ℝ n`, normalised to mass one and
 pushed forward to `n → ℝ`. The bridge of `docs/design/Mathlib-deviations.md` entry 16. Needs
-nonempty `n`: for empty `n` the sphere is empty, while `uniformSphereVector n` is a point mass. -/
+nonempty $n$: for empty $n$ the sphere is empty, while `uniformSphereVector n` is a point mass. -/
 theorem uniformSphereVector_eq_map_toSphere [Nonempty n] :
     uniformSphereVector n =
       (((volume : Measure (EuclideanSpace ℝ n)).toSphere Set.univ)⁻¹ •

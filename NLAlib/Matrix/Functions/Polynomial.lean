@@ -13,19 +13,24 @@ public import NLAlib.Matrix.Spectral.SVD
 /-!
 # Polynomials in a matrix
 
-Real polynomials evaluated at a matrix, `Polynomial.aeval A p`. For a Hermitian matrix this is
-`cfc (p.eval ·) A` (Mathlib's `cfc_polynomial`), so its norm is the largest value of `|p|` on
-the eigenvalues: the fact behind every polynomial convergence bound for Krylov methods. For a
-rectangular matrix, polynomials in the two Gram matrices intertwine, `p(A Aᴴ) A = A p(Aᴴ A)`,
+Real polynomials $p$ evaluated at a matrix, $p(\mathbf{A})$, spelled `Polynomial.aeval`. For a
+Hermitian matrix this is the functional calculus of $p$ (Mathlib's `cfc_polynomial`), so its norm
+is the largest value of $\lvert p \rvert$ on the eigenvalues: the fact behind every polynomial
+convergence bound for Krylov methods. For a rectangular matrix, polynomials in the two Gram
+matrices intertwine,
+$p(\mathbf{A}\mathbf{A}^{\mathsf{H}})\mathbf{A} = \mathbf{A}\,p(\mathbf{A}^{\mathsf{H}}\mathbf{A})$,
 and act on the singular values.
 
 ## Main results
 
-* `Matrix.IsHermitian.exists_cfc_eq_aeval`: every function of `A` is a polynomial in `A`.
-* `Matrix.IsHermitian.specNorm_aeval_le`: `‖p(A)‖₂ ≤ max |p(λ_i)|`.
+* `Matrix.IsHermitian.exists_cfc_eq_aeval`: every function of $\mathbf{A}$ is a polynomial in
+  $\mathbf{A}$.
+* `Matrix.IsHermitian.specNorm_aeval_le`:
+  $\|p(\mathbf{A})\|_2 \le \max_i \lvert p(\lambda_i(\mathbf{A})) \rvert$.
 * `Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le`: the same bound for the quadratic form
-  of a polynomial weight `g(A)`, with `NLAlib.re_quadForm_aeval_mulVec_le` the case `g = X`.
-* `NLAlib.specNorm_cfc_sub_aeval_le`: polynomial approximation of `f(A)`.
+  of a polynomial weight $g(\mathbf{A})$, with `NLAlib.re_quadForm_aeval_mulVec_le` the case
+  $g(t) = t$.
+* `NLAlib.specNorm_cfc_sub_aeval_le`: polynomial approximation of $f(\mathbf{A})$.
 * `NLAlib.aeval_mul_conjTranspose_self_mul`: intertwining.
 * `NLAlib.IsSVD.mul_aeval_conjTranspose_mul_self`: a polynomial filter applied to an SVD.
 -/
@@ -42,7 +47,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n r : Type*} [Fintype m] [Fintype n] [F
 
 /-! ### Polynomials in a Hermitian matrix -/
 
-/-- A polynomial in a real diagonal matrix. Port of `NLAlib.aeval_diagonal_ofReal`. -/
+/-- A polynomial in a real diagonal matrix:
+$p(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(p(\mathbf{d}_i))$.
+Port of `NLAlib.aeval_diagonal_ofReal`. -/
 theorem aeval_diagonal (d : n → ℝ) (p : ℝ[X]) :
     aeval (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) p =
       Matrix.diagonal fun i => ((p.eval (d i) : ℝ) : 𝕜) := by
@@ -52,7 +59,10 @@ theorem aeval_diagonal (d : n → ℝ) (p : ℝ[X]) :
     exact fun i => RCLike.conj_ofReal (d i)
   rw [← cfc_polynomial p _ hD, cfc_diagonal]
 
-/-- A polynomial commutes with unitary conjugation. -/
+/-- A polynomial commutes with unitary conjugation:
+$p(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
+= \mathbf{U}\,p(\mathbf{A})\,\mathbf{U}^{\mathsf{H}}$ for $\mathbf{U}$ with orthonormal columns
+and as many columns as rows. -/
 theorem aeval_mul_mul_conjTranspose {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U)
     (hr : Fintype.card r = Fintype.card n) (A : Matrix r r 𝕜) (p : ℝ[X]) :
     aeval (U * A * Uᴴ) p = U * aeval A p * Uᴴ := by
@@ -71,7 +81,9 @@ theorem aeval_mul_mul_conjTranspose {U : Matrix n r 𝕜} (hU : HasOrthonormalCo
       Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, Matrix.smul_mul, Matrix.one_mul,
       Matrix.one_mul, Matrix.mul_smul, Matrix.smul_mul]
 
-/-- A function of a Hermitian matrix is the polynomial that agrees with it on the eigenvalues.
+/-- A function of a Hermitian matrix is the polynomial that agrees with it on the eigenvalues: if
+$p(x) = f(x)$ for every $x$ in the spectrum of $\mathbf{A}$, then
+$f(\mathbf{A}) = p(\mathbf{A})$.
 Port of `NLAlib.cfc_eq_aeval_of_forall_eval_eq`. -/
 theorem _root_.Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {f : ℝ → ℝ} {p : ℝ[X]} (h : ∀ x ∈ spectrum ℝ A, p.eval x = f x) :
@@ -81,7 +93,8 @@ theorem _root_.Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq {A : Matrix n n
   exact cfc_congr fun x hx => (h x hx).symm
 
 /-- **Every function of a Hermitian matrix is a polynomial in it** of degree less than the size:
-`f(A) b` lies in the Krylov space of `A` and `b`.
+$f(\mathbf{A}) = p(\mathbf{A})$ for a real polynomial $p$ of degree less than $\lvert n \rvert$,
+so $f(\mathbf{A})\mathbf{b}$ lies in the Krylov space of $\mathbf{A}$ and $\mathbf{b}$.
 Port of `NLAlib.cfc_eq_aeval_interpolate`. -/
 theorem _root_.Matrix.IsHermitian.exists_cfc_eq_aeval {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (f : ℝ → ℝ) : ∃ p : ℝ[X], p.degree < (Fintype.card n : WithBot ℕ) ∧ cfc f A = aeval A p := by
@@ -102,8 +115,10 @@ theorem _root_.Matrix.IsHermitian.aeval {A : Matrix n n 𝕜} (hA : A.IsHermitia
   rw [← cfc_polynomial p A hsa]
   exact cfc_predicate p.eval A
 
-/-- **The norm of a polynomial in a Hermitian matrix** is at most the largest value of `|p|` on
-its eigenvalues. [Saad2003, §6.11]; [Saad2011, §6.6]. Port of `NLAlib.specNorm_aeval_le`.
+/-- **The norm of a polynomial in a Hermitian matrix** is at most the largest value of
+$\lvert p \rvert$ on its eigenvalues: if $c \ge 0$ and $\lvert p(x) \rvert \le c$ for every $x$ in
+the spectrum of $\mathbf{A}$, then $\|p(\mathbf{A})\|_2 \le c$.
+[Saad2003, §6.11]; [Saad2011, §6.6]. Port of `NLAlib.specNorm_aeval_le`.
 Result: polynomial-spectral-bound -/
 theorem _root_.Matrix.IsHermitian.specNorm_aeval_le {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (p : ℝ[X]) {c : ℝ} (hc : 0 ≤ c) (h : ∀ x ∈ spectrum ℝ A, |p.eval x| ≤ c) :
@@ -112,8 +127,10 @@ theorem _root_.Matrix.IsHermitian.specNorm_aeval_le {A : Matrix n n 𝕜} (hA : 
   rw [← cfc_polynomial p A hsa]
   exact hA.specNorm_cfc_le hc h
 
-/-- The norm of a polynomial in a matrix with spectrum in `[a, b]` is at most the largest value
-of `|p|` on `[a, b]`. This is the form used with Chebyshev polynomials.
+/-- The norm of a polynomial in a matrix with spectrum in $[a, b]$ is at most the largest value
+of $\lvert p \rvert$ on $[a, b]$: if $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$, $c \ge 0$
+and $\lvert p(x) \rvert \le c$ on $[a, b]$, then $\|p(\mathbf{A})\|_2 \le c$. This is the form used
+with Chebyshev polynomials.
 [Saad2003, §6.11.3]. -/
 theorem specNorm_aeval_le_of_forall_mem_Icc {A : Matrix n n 𝕜} {a b : ℝ}
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) (p : ℝ[X]) {c : ℝ}
@@ -121,9 +138,12 @@ theorem specNorm_aeval_le_of_forall_mem_Icc {A : Matrix n n 𝕜} {a b : ℝ}
   exact (isHermitian_of_le_smul_one h₂).specNorm_aeval_le p hc fun x hx =>
     h x (spectrum_subset_Icc_of_le h₁ h₂ hx)
 
-/-- **The error of a polynomial approximation of `f(A)`** is at most the error of the scalar
-approximation on an interval containing the spectrum. This is the bound behind Krylov methods for
-`f(A) b`. [Higham2008, §13.2 context]; [Saad2003, §6.11]. -/
+/-- **The error of a polynomial approximation of $f(\mathbf{A})$** is at most the error of the
+scalar approximation on an interval containing the spectrum: if
+$a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$, $c \ge 0$ and
+$\lvert f(x) - p(x) \rvert \le c$ on $[a, b]$, then $\|f(\mathbf{A}) - p(\mathbf{A})\|_2 \le c$.
+This is the bound behind Krylov methods for $f(\mathbf{A})\mathbf{b}$.
+[Higham2008, §13.2 context]; [Saad2003, §6.11]. -/
 theorem specNorm_cfc_sub_aeval_le {A : Matrix n n 𝕜} {a b : ℝ}
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) {f : ℝ → ℝ} (p : ℝ[X])
     {c : ℝ} (hc : 0 ≤ c) (h : ∀ x ∈ Set.Icc a b, |f x - p.eval x| ≤ c) :
@@ -134,7 +154,9 @@ theorem specNorm_cfc_sub_aeval_le {A : Matrix n n 𝕜} {a b : ℝ}
     (A.finite_real_spectrum.continuousOn _)]
   exact hA.specNorm_cfc_le hc fun x hx => h x (spectrum_subset_Icc_of_le h₁ h₂ hx)
 
-/-- The trace of a polynomial in a Hermitian matrix. -/
+/-- The trace of a polynomial in a Hermitian matrix:
+$\operatorname{Re} \operatorname{tr} p(\mathbf{A})
+= \sum_{i < \lvert n \rvert} p(\lambda_i(\mathbf{A}))$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_aeval {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (p : ℝ[X]) :
     RCLike.re (Polynomial.aeval A p).trace =
@@ -143,13 +165,16 @@ theorem _root_.Matrix.IsHermitian.re_trace_aeval {A : Matrix n n 𝕜} (hA : A.I
   rw [← cfc_polynomial p A hsa]
   exact hA.re_trace_cfc p.eval
 
-/-- **The polynomial bound in a polynomial weight.** For Hermitian `A` with spectrum in `S`, a
-polynomial `g` that is nonnegative on `S` and a polynomial `p` with `|p| ≤ c` on `S`, the
-quadratic form of `g(A)` satisfies `(p(A) x)ᴴ g(A) (p(A) x) ≤ c ^ 2 * xᴴ g(A) x`. With `g = X`
-this is the energy-norm bound behind the conjugate gradient method
-(`NLAlib.re_quadForm_aeval_mulVec_le`), with `g = X ^ 2` the residual-norm bound behind MINRES,
-which holds for indefinite `A`. [Saad2003, Lemma 6.28 context].
-Port of `NLAlib.quadForm_aeval_aeval_mulVec_le`, there over `ℝ`. -/
+/-- **The polynomial bound in a polynomial weight.** For Hermitian $\mathbf{A}$ with spectrum in a
+set $S$, a real polynomial $g$ that is nonnegative on $S$ and a real polynomial $p$ with
+$\lvert p \rvert \le c$ on $S$, the quadratic form of $g(\mathbf{A})$ satisfies
+$$\operatorname{Re}\bigl((p(\mathbf{A})\mathbf{x})^{\mathsf{H}} g(\mathbf{A})
+  (p(\mathbf{A})\mathbf{x})\bigr)
+  \le c^2 \operatorname{Re}(\mathbf{x}^{\mathsf{H}} g(\mathbf{A}) \mathbf{x}) \,.$$
+With $g(t) = t$ this is the energy-norm bound behind the conjugate gradient method
+(`NLAlib.re_quadForm_aeval_mulVec_le`), with $g(t) = t^2$ the residual-norm bound behind MINRES,
+which holds for indefinite $\mathbf{A}$. [Saad2003, Lemma 6.28 context].
+Port of `NLAlib.quadForm_aeval_aeval_mulVec_le`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {S : Set ℝ} (hS : spectrum ℝ A ⊆ S) (g p : ℝ[X]) {c : ℝ}
     (hg : ∀ x ∈ S, 0 ≤ g.eval x) (hp : ∀ x ∈ S, |p.eval x| ≤ c) (x : n → 𝕜) :
@@ -177,11 +202,17 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le {A : Matrix 
     quadForm_smul_left, RCLike.re_ofReal_mul] at hq
   exact hq
 
-/-- The quadratic form of `p(A)` for positive semidefinite `A` is controlled by `|p|` on an
-interval containing the spectrum: the energy-norm bound for a polynomial error. This is
-`Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le` with the weight `g = X`.
+/-- The energy norm of $p(\mathbf{A})\mathbf{x}$ for positive semidefinite $\mathbf{A}$ is
+controlled by $\lvert p \rvert$ on an interval containing the spectrum: if $0 \le a$,
+$a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ and $\lvert p(x) \rvert \le c$ on $[a, b]$,
+then
+$$\operatorname{Re}\bigl((p(\mathbf{A})\mathbf{x})^{\mathsf{H}} \mathbf{A}
+  (p(\mathbf{A})\mathbf{x})\bigr)
+  \le c^2 \operatorname{Re}(\mathbf{x}^{\mathsf{H}} \mathbf{A} \mathbf{x}) \,.$$
+This is the energy-norm bound for a polynomial error,
+`Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le` with the weight $g(t) = t$.
 [Saad2003, Lemma 6.28 context].
-Port of `NLAlib.quadForm_aeval_mulVec_le`, there over `ℝ`. -/
+Port of `NLAlib.quadForm_aeval_mulVec_le`, there over $\mathbb{R}$. -/
 theorem re_quadForm_aeval_mulVec_le {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 ≤ a)
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) (p : ℝ[X]) {c : ℝ}
     (h : ∀ x ∈ Set.Icc a b, |p.eval x| ≤ c) (x : n → 𝕜) :
@@ -192,7 +223,8 @@ theorem re_quadForm_aeval_mulVec_le {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 �
 
 /-! ### Intertwining and singular values -/
 
-/-- Powers intertwine: if `B * A = A * C` then `B ^ j * A = A * C ^ j`.
+/-- Powers intertwine: if $\mathbf{B}\mathbf{A} = \mathbf{A}\mathbf{C}$ then
+$\mathbf{B}^j\mathbf{A} = \mathbf{A}\mathbf{C}^j$.
 Port of `NLAlib.pow_mul_eq_mul_pow_of_mul_eq`. -/
 theorem pow_mul_eq_mul_pow_of_mul_eq_mul {R : Type*} [Semiring R] {B : Matrix m m R}
     {A : Matrix m n R} {C : Matrix n n R} (h : B * A = A * C) (j : ℕ) :
@@ -202,7 +234,8 @@ theorem pow_mul_eq_mul_pow_of_mul_eq_mul {R : Type*} [Semiring R] {B : Matrix m 
   | succ j ih => rw [pow_succ, Matrix.mul_assoc, h, ← Matrix.mul_assoc, ih, Matrix.mul_assoc,
       ← pow_succ]
 
-/-- Polynomials intertwine: if `B * A = A * C` then `p(B) * A = A * p(C)`.
+/-- Polynomials intertwine: if $\mathbf{B}\mathbf{A} = \mathbf{A}\mathbf{C}$ then
+$p(\mathbf{B})\mathbf{A} = \mathbf{A}\,p(\mathbf{C})$ for every real polynomial $p$.
 Port of `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq`. -/
 theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {B : Matrix m m 𝕜} {A : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : B * A = A * C) (p : ℝ[X]) : aeval B p * A = A * aeval C p := by
@@ -212,16 +245,21 @@ theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {B : Matrix m m 𝕜} {A : Matrix m
     simp only [aeval_monomial, Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, Matrix.mul_smul,
       Matrix.one_mul, pow_mul_eq_mul_pow_of_mul_eq_mul h]
 
-/-- **Polynomials in the two Gram matrices intertwine**: `p(A Aᴴ) A = A p(Aᴴ A)`.
+/-- **Polynomials in the two Gram matrices intertwine**:
+$p(\mathbf{A}\mathbf{A}^{\mathsf{H}})\mathbf{A} = \mathbf{A}\,p(\mathbf{A}^{\mathsf{H}}\mathbf{A})$.
 Port of `NLAlib.aeval_conjGram_mul_eq_mul_aeval_conjGram`. -/
 theorem aeval_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (p : ℝ[X]) :
     aeval (A * Aᴴ) p * A = A * aeval (Aᴴ * A) p := by
   exact aeval_mul_eq_mul_aeval_of_mul_eq_mul (Matrix.mul_assoc A Aᴴ A) p
 
 omit [DecidableEq m] in
-/-- **A polynomial filter on an SVD.** If `A = U diag(σ) Vᴴ`, then
-`A p(Aᴴ A) = U diag(σ_i p(σ_i²)) Vᴴ`, up to the part of `p(Aᴴ A)` outside the row space, which
-`A` annihilates. Port of `NLAlib.rectDiag_mul_aeval_gram`, there for a rectangular diagonal. -/
+/-- **A polynomial filter on an SVD.** If
+$\mathbf{A} = \mathbf{U}\operatorname{diag}(\sigma_i)\mathbf{V}^{\mathsf{H}}$ is an SVD (in the
+sense of `NLAlib.IsSVD`), then
+$$\mathbf{A}\,p(\mathbf{A}^{\mathsf{H}}\mathbf{A})
+  = \mathbf{U}\operatorname{diag}\bigl(\sigma_i\, p(\sigma_i^2)\bigr)\mathbf{V}^{\mathsf{H}} \,:$$
+the part of $p(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ outside the row space is annihilated by
+$\mathbf{A}$. Port of `NLAlib.rectDiag_mul_aeval_gram`, there for a rectangular diagonal. -/
 theorem IsSVD.mul_aeval_conjTranspose_mul_self {A : Matrix m n 𝕜} {U : Matrix m r 𝕜}
     {σ : r → ℝ} {V : Matrix n r 𝕜} (h : IsSVD A U σ V) (p : ℝ[X]) :
     A * aeval (Aᴴ * A) p =
@@ -240,9 +278,10 @@ theorem IsSVD.mul_aeval_conjTranspose_mul_self {A : Matrix m n 𝕜} {U : Matrix
         simp only [RCLike.ofReal_mul]
 
 omit [DecidableEq n] in
-/-- **Singular values of a power-iterated matrix**: `(A Aᴴ)^q A` has singular values
-`σ_i ^ (2 q + 1)`. [HalkoMartinssonTropp2011, §4.5].
-Port of `NLAlib.singularValues_gram_pow_mul`, there over `ℝ`. -/
+/-- **Singular values of a power-iterated matrix**:
+$\sigma_i((\mathbf{A}\mathbf{A}^{\mathsf{H}})^q\mathbf{A}) = \sigma_i(\mathbf{A})^{2q + 1}$ for
+every $i$. [HalkoMartinssonTropp2011, §4.5].
+Port of `NLAlib.singularValues_gram_pow_mul`, there over $\mathbb{R}$. -/
 theorem singularValues_pow_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (q i : ℕ) :
     singularValues ((A * Aᴴ) ^ q * A) i = singularValues A i ^ (2 * q + 1) := by
   classical
@@ -264,7 +303,9 @@ theorem singularValues_pow_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (q i
       zero_pow (Nat.succ_ne_zero _)]
 
 omit [DecidableEq n] in
-/-- The rank of a power-iterated matrix is the rank of the matrix.
+/-- The rank of a power-iterated matrix is the rank of the matrix:
+$\operatorname{rank}((\mathbf{A}\mathbf{A}^{\mathsf{H}})^q\mathbf{A})
+= \operatorname{rank} \mathbf{A}$.
 Port of `NLAlib.rank_gram_pow_mul`. -/
 theorem rank_pow_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (q : ℕ) :
     ((A * Aᴴ) ^ q * A).rank = A.rank := by

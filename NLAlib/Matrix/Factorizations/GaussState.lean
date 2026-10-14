@@ -10,8 +10,9 @@ public import NLAlib.Matrix.Factorizations.Elimination
 /-!
 # Gaussian elimination in the natural order
 
-`NLAlib.gaussState A k` is the matrix after eliminating the first `k` pivots of a matrix indexed
-by `Fin n`, in the natural order. An algorithm is a total recursion; its breakdown is a zero
+`NLAlib.gaussState A k`, written $\mathbf{A}^{(k)}$ here, is the matrix after eliminating the
+first $k$ pivots of a matrix $\mathbf{A}$ indexed by `Fin n`, in the natural order; the $j$-th
+pivot is $\mathbf{A}^{(j)}_{j,j}$. An algorithm is a total recursion; its breakdown is a zero
 pivot, and its correctness theorem assumes nonzero pivots. The LU and Cholesky factors are read
 off this sequence.
 
@@ -48,9 +49,9 @@ namespace NLAlib
 
 variable {K : Type*} [Field K] {𝕜 : Type*} [RCLike 𝕜] {n : Type*}
 
-/-- **A principal minor through an elimination step.** Eliminating a nonzero pivot `t` inside
-`s` factors the pivot out of the principal minor on `s`: what remains is the principal minor of
-the eliminated matrix on `s.erase t`. -/
+/-- **A principal minor through an elimination step.** Eliminating a nonzero pivot
+$\mathbf{A}_{t,t}$ with $t \in s$ factors the pivot out of the principal minor on $s$: what remains
+is the principal minor of the eliminated matrix on $s \setminus \{t\}$. -/
 theorem principalMinor_eq_apply_self_mul_principalMinor_eliminationStep [DecidableEq n]
     {A : Matrix n n K} {s : Finset n} {t : n} (hts : t ∈ s) (ht : A t t ≠ 0) :
     principalMinor A s = A t t * principalMinor (eliminationStep A t) (s.erase t) := by
@@ -69,8 +70,8 @@ theorem principalMinor_eq_apply_self_mul_principalMinor_eliminationStep [Decidab
 
 /-! ### Elimination in the natural order -/
 
-/-- The matrix after eliminating the pivots `0, …, k - 1` of a matrix indexed by `Fin n`, in this
-order. Steps beyond `n` do nothing. -/
+/-- The matrix $\mathbf{A}^{(k)}$ after eliminating the pivots $0, \dots, k - 1$ of a matrix
+indexed by `Fin n`, in this order. Steps beyond $n$ do nothing. -/
 def gaussState {n : ℕ} (A : Matrix (Fin n) (Fin n) K) : ℕ → Matrix (Fin n) (Fin n) K
   | 0 => A
   | k + 1 => if h : k < n then eliminationStep (gaussState A k) ⟨k, h⟩ else gaussState A k
@@ -116,7 +117,7 @@ private theorem Iio_eq_filter_lt (i : Fin n) :
   ext l
   simp only [Finset.mem_Iio, Finset.mem_filter, Finset.mem_univ, true_and, Fin.lt_def]
 
-/-- Elimination in the natural order is elimination along the list `0, …, k - 1`. -/
+/-- Elimination in the natural order is elimination along the list $0, \dots, k - 1$. -/
 theorem gaussState_eq_foldl (A : Matrix (Fin n) (Fin n) K) (k : ℕ) :
     gaussState A k = ((List.finRange n).take k).foldl eliminationStep A := by
   induction k with
@@ -133,9 +134,12 @@ theorem gaussState_eq_foldl (A : Matrix (Fin n) (Fin n) K) (k : ℕ) :
       rw [gaussState_succ_of_le A (not_lt.mp h), ih, List.take_of_length_le hk,
         List.take_of_length_le (hk.trans k.le_succ)]
 
-/-- **The telescoping identity of elimination**: `A` is the current state plus the rank-one
-matrices removed so far. It holds with no assumption on the pivots, since a zero pivot removes
-nothing. -/
+/-- **The telescoping identity of elimination**: $\mathbf{A}$ is the current state plus the
+rank-one matrices removed so far,
+$$\mathbf{A} = \mathbf{A}^{(k)} + \sum_{j < \min(k, n)} \bigl(\mathbf{A}^{(j)}_{j,j}\bigr)^{-1}
+  \mathbf{A}^{(j)}_{:,j} \mathbf{A}^{(j)}_{j,:}\,,$$
+with $\mathbf{A}^{(k)}$ the state after $k$ steps and $0^{-1} = 0$. It holds with no assumption on
+the pivots, since a zero pivot removes nothing. -/
 theorem eq_gaussState_add_sum (A : Matrix (Fin n) (Fin n) K) (k : ℕ) :
     A = gaussState A k +
       ∑ j ∈ Finset.univ.filter (fun j : Fin n => (j : ℕ) < k),
@@ -157,7 +161,8 @@ theorem eq_gaussState_add_sum (A : Matrix (Fin n) (Fin n) K) (k : ℕ) :
       rw [hfil, gaussState_succ_of_le A (not_lt.mp h)]
       exact ih
 
-/-- While the pivots are nonzero, the rows already eliminated are zero. -/
+/-- While the pivots are nonzero, the rows already eliminated are zero: if the pivots
+$\mathbf{A}^{(l)}_{l,l}$, $l < k$, are nonzero, then $\mathbf{A}^{(k)}_{i,j} = 0$ for $i < k$. -/
 theorem gaussState_apply_eq_zero_of_lt_left (A : Matrix (Fin n) (Fin n) K) {k : ℕ}
     (hp : ∀ l : Fin n, (l : ℕ) < k → gaussState A l l l ≠ 0) {i : Fin n} (hi : (i : ℕ) < k)
     (j : Fin n) : gaussState A k i j = 0 := by
@@ -175,7 +180,8 @@ theorem gaussState_apply_eq_zero_of_lt_left (A : Matrix (Fin n) (Fin n) K) {k : 
     · rw [gaussState_succ_of_le A (not_lt.mp h)]
       exact ih hp' (by omega) j
 
-/-- While the pivots are nonzero, the columns already eliminated are zero. -/
+/-- While the pivots are nonzero, the columns already eliminated are zero: if the pivots
+$\mathbf{A}^{(l)}_{l,l}$, $l < k$, are nonzero, then $\mathbf{A}^{(k)}_{i,j} = 0$ for $j < k$. -/
 theorem gaussState_apply_eq_zero_of_lt_right (A : Matrix (Fin n) (Fin n) K) {k : ℕ}
     (hp : ∀ l : Fin n, (l : ℕ) < k → gaussState A l l l ≠ 0) (i : Fin n) {j : Fin n}
     (hj : (j : ℕ) < k) : gaussState A k i j = 0 := by
@@ -193,7 +199,9 @@ theorem gaussState_apply_eq_zero_of_lt_right (A : Matrix (Fin n) (Fin n) K) {k :
     · rw [gaussState_succ_of_le A (not_lt.mp h)]
       exact ih hp' i (by omega)
 
-/-- While the pivots are nonzero, each step lowers the rank by one. -/
+/-- While the pivots are nonzero, each step lowers the rank by one: for $k \le n$ with the pivots
+$\mathbf{A}^{(l)}_{l,l}$, $l < k$, nonzero,
+$\operatorname{rank} \mathbf{A}^{(k)} + k = \operatorname{rank} \mathbf{A}$. -/
 theorem rank_gaussState_add (A : Matrix (Fin n) (Fin n) K) {k : ℕ} (hk : k ≤ n)
     (hp : ∀ l : Fin n, (l : ℕ) < k → gaussState A l l l ≠ 0) :
     (gaussState A k).rank + k = A.rank := by
@@ -207,7 +215,7 @@ theorem rank_gaussState_add (A : Matrix (Fin n) (Fin n) K) {k : ℕ} (hk : k ≤
     change (eliminationStep (gaussState A k) ⟨k, h⟩).rank + 1 = (gaussState A k).rank at h1
     omega
 
-/-- Leading principal minors through `k` elimination steps at nonzero pivots. -/
+/-- Leading principal minors through $k$ elimination steps at nonzero pivots. -/
 private theorem principalMinor_filter_lt_eq (A : Matrix (Fin n) (Fin n) K) {m k : ℕ}
     (hk : k ≤ m) (hm : m ≤ n) (hp : ∀ l : Fin n, (l : ℕ) < k → gaussState A l l l ≠ 0) :
     principalMinor A (Finset.univ.filter fun l : Fin n => (l : ℕ) < m) =
@@ -253,7 +261,8 @@ private theorem principalMinor_filter_lt_eq_prod (A : Matrix (Fin n) (Fin n) K) 
       mul_comm]
 
 /-- **Pivots and leading principal minors.** While the earlier pivots are nonzero, the leading
-principal minor of order `i + 1` is the product of the first `i + 1` pivots.
+principal minor of order $i + 1$ is the product of the first $i + 1$ pivots
+$\mathbf{A}^{(l)}_{l,l}$, $l \le i$.
 Port of `NLAlib.leadingMinor_succ_eq_mul_leadingMinor_pivotSchur`, in closed form. -/
 theorem principalMinor_Iic_eq_prod_gaussState (A : Matrix (Fin n) (Fin n) K) (i : Fin n)
     (hp : ∀ l : Fin n, l < i → gaussState A l l l ≠ 0) :
@@ -262,7 +271,8 @@ theorem principalMinor_Iic_eq_prod_gaussState (A : Matrix (Fin n) (Fin n) K) (i 
   exact principalMinor_filter_lt_eq_prod A i.2 fun l hl => hp l (Fin.lt_def.mpr (by omega))
 
 /-- **A pivot is the ratio of consecutive leading principal minors**, while the earlier pivots
-are nonzero. -/
+are nonzero: the pivot $\mathbf{A}^{(i)}_{i,i}$ times the leading principal minor of order $i$ is
+the leading principal minor of order $i + 1$. -/
 theorem gaussState_apply_self_mul_principalMinor_Iio (A : Matrix (Fin n) (Fin n) K) (i : Fin n)
     (hp : ∀ l : Fin n, l < i → gaussState A l l l ≠ 0) :
     gaussState A i i i * principalMinor A (Finset.Iio i) = principalMinor A (Finset.Iic i) := by
@@ -270,8 +280,8 @@ theorem gaussState_apply_self_mul_principalMinor_Iio (A : Matrix (Fin n) (Fin n)
     principalMinor_filter_lt_eq_prod A i.2.le fun l hl => hp l (Fin.lt_def.mpr (by omega)),
     ← Iio_eq_filter_lt, ← Finset.Iio_insert, Finset.prod_insert Finset.notMem_Iio_self]
 
-/-- **The pivots up to `i` are nonzero exactly when the leading principal minors up to order
-`i + 1` are nonzero.** -/
+/-- **The pivots up to $i$ are nonzero exactly when the leading principal minors up to order
+$i + 1$ are nonzero.** -/
 theorem forall_gaussState_ne_zero_iff (A : Matrix (Fin n) (Fin n) K) (i : Fin n) :
     (∀ l : Fin n, l ≤ i → gaussState A l l l ≠ 0) ↔
       ∀ l : Fin n, l ≤ i → principalMinor A (Finset.Iic l) ≠ 0 := by
@@ -292,8 +302,8 @@ theorem forall_gaussState_ne_zero_iff (A : Matrix (Fin n) (Fin n) K) (i : Fin n)
       rw [principalMinor_Iic_eq_prod_gaussState A l hp] at hm
       exact Finset.prod_ne_zero_iff.mp hm l (Finset.mem_Iic.mpr le_rfl)
 
-/-- Elimination in the natural order preserves Hermitian matrices: every `gaussState A k` of a
-Hermitian `A` is Hermitian. -/
+/-- Elimination in the natural order preserves Hermitian matrices: every state
+$\mathbf{A}^{(k)}$ of a Hermitian $\mathbf{A}$ is Hermitian. -/
 theorem _root_.Matrix.IsHermitian.gaussState {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian)
     (k : ℕ) : (NLAlib.gaussState A k).IsHermitian := by
   induction k with
@@ -304,7 +314,7 @@ theorem _root_.Matrix.IsHermitian.gaussState {A : Matrix (Fin n) (Fin n) 𝕜} (
     · exact ih.eliminationStep _
     · exact ih
 
-/-- The pivots of a positive definite matrix are positive. -/
+/-- The pivots of a positive definite matrix are positive: $\mathbf{A}^{(i)}_{i,i} > 0$. -/
 theorem _root_.Matrix.PosDef.gaussState_apply_self_pos {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : A.PosDef) (i : Fin n) : 0 < gaussState A i i i := by
   have hpos : ∀ s : Finset (Fin n), 0 < principalMinor A s := fun s =>
@@ -338,7 +348,9 @@ theorem gaussState_eq_zero_of_le {A : Matrix (Fin n) (Fin n) K} {k : ℕ}
 
 /-! ### Pivoting -/
 
-/-- Elimination commutes with a reindexing of the rows that fixes the pivots used. -/
+/-- Elimination commutes with a reindexing of the rows that fixes the pivots used: if
+$\tau(l) = l$ for $l < k$, then $k$ steps on the rows of $\mathbf{A}$ reindexed by $\tau$ give
+$\mathbf{A}^{(k)}$ with its rows reindexed by $\tau$. -/
 theorem gaussState_submatrix_left (A : Matrix (Fin n) (Fin n) K) (τ : Fin n → Fin n) (k : ℕ)
     (hτ : ∀ l : Fin n, (l : ℕ) < k → τ l = l) :
     gaussState (A.submatrix τ id) k = (gaussState A k).submatrix τ id := by
@@ -354,7 +366,8 @@ theorem gaussState_submatrix_left (A : Matrix (Fin n) (Fin n) K) (τ : Fin n →
     · rw [gaussState_succ_of_le _ (not_lt.mp hk), ih', gaussState_succ_of_le _ (not_lt.mp hk)]
 
 /-- Elimination commutes with a simultaneous reindexing of the rows and columns that fixes the
-pivots used. -/
+pivots used: if $\tau(l) = l$ for $l < k$, then $k$ steps on $\mathbf{A}$ reindexed by $\tau$ give
+$\mathbf{A}^{(k)}$ reindexed by $\tau$. -/
 theorem gaussState_submatrix (A : Matrix (Fin n) (Fin n) K) (τ : Fin n → Fin n) (k : ℕ)
     (hτ : ∀ l : Fin n, (l : ℕ) < k → τ l = l) :
     gaussState (A.submatrix τ τ) k = (gaussState A k).submatrix τ τ := by
@@ -367,10 +380,12 @@ theorem gaussState_submatrix (A : Matrix (Fin n) (Fin n) K) (τ : Fin n → Fin 
         hτ ⟨k, hk⟩ (Nat.lt_succ_self k)]
     · rw [gaussState_succ_of_le _ (not_lt.mp hk), ih', gaussState_succ_of_le _ (not_lt.mp hk)]
 
-/-- **Greedy pivoting.** Let `s σ j i` score the candidate `i` for the pivot position `j` after
-the permutation `σ`, and suppose that composing `σ` with a permutation `τ` fixing the positions
-before `j` permutes the scores at step `j` by `τ`. Then some permutation makes every pivot among
-the first `k` maximal over the later positions: swap a maximiser into each position in turn.
+/-- **Greedy pivoting.** Let $s_\sigma(j, i)$ score the candidate $i$ for the pivot position $j$
+after the permutation $\sigma$, and suppose that composing $\sigma$ with a permutation $\tau$
+fixing the positions before $j$ permutes the scores at step $j$ by $\tau$:
+$s_{\sigma \circ \tau}(j, i) = s_\sigma(j, \tau(i))$. Then some permutation $\sigma$ makes every
+pivot among the first $k$ maximal over the later positions, $s_\sigma(j, i) \le s_\sigma(j, j)$ for
+$j < k$ and $j \le i$: swap a maximiser into each position in turn.
 This is the choice of pivots in partial pivoting and in diagonally pivoted Cholesky. -/
 theorem exists_perm_forall_le_apply_self (s : Equiv.Perm (Fin n) → Fin n → Fin n → ℝ)
     (hs : ∀ (σ τ : Equiv.Perm (Fin n)) (j : Fin n), (∀ l : Fin n, l < j → τ l = l) →

@@ -11,21 +11,22 @@ public import NLAlib.Matrix.Spectral.SingularValueInequalities
 /-!
 # Best low-rank approximation: the Eckart–Young theorem
 
-`NLAlib.truncatedSVD A k` is a best approximation of `A` of rank at most `k`, obtained by keeping
-the `k` largest singular triples of a singular value decomposition. Its error is
-`singularValues A k` in the spectral norm and `√(∑_{i ≥ k} σ_i²)` in the Frobenius norm, and no
-matrix of rank at most `k` does better in either norm.
+`NLAlib.truncatedSVD A k`, written $\llbracket \mathbf{A} \rrbracket_k$, is a best approximation of
+$\mathbf{A}$ of rank at most $k$, obtained by keeping the $k$ largest singular triples of a
+singular value decomposition. Its error is $\sigma_k(\mathbf{A})$ in the spectral norm and
+$\bigl(\sum_{i \ge k} \sigma_i(\mathbf{A})^2\bigr)^{1/2}$ in the Frobenius norm, and no matrix of
+rank at most $k$ does better in either norm.
 
-The best rank-`k` error is spelled `singularValues A k` in the spectral norm and
+The best rank-$k$ error is spelled `singularValues A k` in the spectral norm and
 `frobNorm (A - truncatedSVD A k)` in the Frobenius norm; `NLAlib.frobNorm_sub_truncatedSVD_sq`
 rewrites the latter as the tail sum of squared singular values.
 
-When `singularValues A (k - 1) = singularValues A k` the best approximation is not unique;
-`truncatedSVD A k` is one of them, built from a chosen decomposition.
+When $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$ the best approximation is not unique;
+$\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decomposition.
 
 ## Main definitions
 
-* `NLAlib.truncatedSVD`: a best approximation of rank at most `k`.
+* `NLAlib.truncatedSVD`: a best approximation of rank at most $k$.
 
 ## Main results
 
@@ -45,10 +46,12 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- The **truncated singular value decomposition**: a best approximation of `A` of rank at most
-`k`, obtained from a singular value decomposition `A = U Σ Vᴴ` by keeping the `k` largest
-singular values. The decomposition is chosen, so when `σ_{k-1} = σ_k` this is one of several
-best approximations. For `k ≥ rank A` it is `A`.
+/-- The **truncated singular value decomposition** $\llbracket \mathbf{A} \rrbracket_k$: a best
+approximation of $\mathbf{A}$ of rank at most $k$, obtained from a singular value decomposition
+$\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ by keeping the $k$ largest singular
+values. The decomposition is chosen, so when $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$
+this is one of several best approximations. For $k \ge \operatorname{rank} \mathbf{A}$ it is
+$\mathbf{A}$.
 [GolubVanLoan2013, Theorem 2.4.8]. Port of `NLAlib.truncatedSVD`. -/
 noncomputable def truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) : Matrix m n 𝕜 :=
   let h := exists_isSVD A (k := min (Fintype.card m) (Fintype.card n))
@@ -71,7 +74,7 @@ private theorem exists_isSVD_truncatedSVD (A : Matrix m n 𝕜) :
     (min_le_right _ _)).choose_spec.choose_spec, fun _ => rfl⟩
 
 /-- The truncation and its error have singular value decompositions with the same factors: the
-truncation keeps the entries `i < k` of the diagonal and the error keeps the others. -/
+truncation keeps the entries $i < k$ of the diagonal and the error keeps the others. -/
 private theorem exists_isSVD_truncatedSVD_sub (A : Matrix m n 𝕜) (k : ℕ) :
     ∃ (U : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜)
       (V : Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜),
@@ -106,7 +109,9 @@ private theorem exists_isSVD_truncatedSVD_sub (A : Matrix m n 𝕜) (k : ℕ) :
       · rw [sub_zero]
     rw [← hd, Matrix.mul_sub, Matrix.sub_mul, ← h.eq, ← hT k]
 
-/-- The conjugate transpose of the truncation annihilates the error. -/
+/-- The conjugate transpose of the truncation annihilates the error:
+$\llbracket \mathbf{A} \rrbracket_k^{\mathsf{H}} (\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k)
+= \mathbf{0}$. -/
 private theorem conjTranspose_truncatedSVD_mul_sub (A : Matrix m n 𝕜) (k : ℕ) :
     (truncatedSVD A k)ᴴ * (A - truncatedSVD A k) = 0 := by
   obtain ⟨U, V, hT, hE⟩ := exists_isSVD_truncatedSVD_sub A k
@@ -132,7 +137,9 @@ private theorem sum_Ico_singularValues_sq (A : Matrix m n 𝕜) (k : ℕ) :
   rw [(singularValues_eq_zero_iff A).mpr
     ((le_min A.rank_le_card_height A.rank_le_card_width).trans hi), zero_pow two_ne_zero]
 
-/-- The truncated SVD has rank at most `k`. Port of `NLAlib.IsSVD.rank_truncatedMatrix_le`. -/
+/-- The truncated SVD has rank at most $k$:
+$\operatorname{rank} \llbracket \mathbf{A} \rrbracket_k \le k$.
+Port of `NLAlib.IsSVD.rank_truncatedMatrix_le`. -/
 theorem rank_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) : (truncatedSVD A k).rank ≤ k := by
   obtain ⟨U, V, hT, -⟩ := exists_isSVD_truncatedSVD_sub A k
   rw [hT.rank_eq]
@@ -143,7 +150,9 @@ theorem rank_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) : (truncatedSVD A k
   by_contra hik
   exact hi.2 (if_neg hik)
 
-/-- The singular values of the truncated SVD are the first `k` singular values of `A`. -/
+/-- The singular values of the truncated SVD are the first $k$ singular values of $\mathbf{A}$:
+$\sigma_i(\llbracket \mathbf{A} \rrbracket_k) = \sigma_i(\mathbf{A})$ for $i < k$ and $0$ for
+$i \ge k$. -/
 theorem singularValues_truncatedSVD (A : Matrix m n 𝕜) (k i : ℕ) :
     singularValues (truncatedSVD A k) i = if i < k then singularValues A i else 0 := by
   obtain ⟨U, V, hT, -⟩ := exists_isSVD_truncatedSVD_sub A k
@@ -163,7 +172,8 @@ theorem singularValues_truncatedSVD (A : Matrix m n 𝕜) (k i : ℕ) :
   · rw [hT.singularValues_of_le (not_lt.mp hi), (singularValues_eq_zero_iff A).mpr
       ((le_min A.rank_le_card_height A.rank_le_card_width).trans (not_lt.mp hi)), ite_self]
 
-/-- Truncating at or beyond the rank returns the matrix. -/
+/-- Truncating at or beyond the rank returns the matrix: $\llbracket \mathbf{A} \rrbracket_k =
+\mathbf{A}$ for $\operatorname{rank} \mathbf{A} \le k$. -/
 theorem truncatedSVD_of_rank_le (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) :
     truncatedSVD A k = A := by
   obtain ⟨U, V, h, hT⟩ := exists_isSVD_truncatedSVD A
@@ -177,8 +187,8 @@ theorem truncatedSVD_of_rank_le (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤
   rw [hT k, hd]
   exact h.eq.symm
 
-/-- The truncated SVD has rank `min k (rank A)`: exactly `k` when `k` is at most the rank of `A`,
-and the rank of `A` otherwise. -/
+/-- The truncated SVD has rank $\min(k, \operatorname{rank} \mathbf{A})$: exactly $k$ when $k$ is
+at most the rank of $\mathbf{A}$, and the rank of $\mathbf{A}$ otherwise. -/
 theorem rank_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
     (truncatedSVD A k).rank = min k A.rank := by
   rcases le_total k A.rank with hk | hk
@@ -189,7 +199,8 @@ theorem rank_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
     exact ((singularValues_pos_iff A).mpr (hlt.trans_le hk)).ne' h0
   · rw [truncatedSVD_of_rank_le A hk, min_eq_right hk]
 
-/-- Truncating to rank zero gives the zero matrix. -/
+/-- Truncating to rank zero gives the zero matrix: $\llbracket \mathbf{A} \rrbracket_0 =
+\mathbf{0}$. -/
 @[simp]
 theorem truncatedSVD_zero (A : Matrix m n 𝕜) : truncatedSVD A 0 = 0 := by
   obtain ⟨U, V, -, hT⟩ := exists_isSVD_truncatedSVD A
@@ -197,7 +208,10 @@ theorem truncatedSVD_zero (A : Matrix m n 𝕜) : truncatedSVD A 0 = 0 := by
     Matrix.zero_mul]
 
 /-- **The squared Frobenius error of the truncated SVD is the tail sum of squared singular
-values.** This is the rewrite rule that turns the best rank-`k` Frobenius error into a sum.
+values**:
+$$\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2
+  = \sum_{k \le i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A})^2.$$
+This is the rewrite rule that turns the best rank-$k$ Frobenius error into a sum.
 [GolubVanLoan2013, §2.4]. Port of `NLAlib.frobSq_sub_truncatedSVD_eq_bestRankFrobSq`, there
 through a named `bestRankFrobSq`. -/
 theorem frobNorm_sub_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
@@ -214,8 +228,9 @@ theorem frobNorm_sub_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
       zero_pow two_ne_zero]
   · rw [if_neg (not_lt.mpr (Finset.mem_Ico.mp hi).1)]
 
-/-- The singular values of the truncation error are the singular values of `A` from the `k`-th
-on. -/
+/-- The singular values of the truncation error are the singular values of $\mathbf{A}$ from the
+$k$-th on: $\sigma_i(\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k) = \sigma_{k+i}(\mathbf{A})$.
+-/
 theorem singularValues_sub_truncatedSVD (A : Matrix m n 𝕜) (k i : ℕ) :
     singularValues (A - truncatedSVD A k) i = singularValues A (k + i) := by
   have hle := singularValues_add_le_singularValues_sub_of_rank_le A (rank_truncatedSVD_le A k)
@@ -237,32 +252,38 @@ theorem singularValues_sub_truncatedSVD (A : Matrix m n 𝕜) (k i : ℕ) :
         ((le_min A.rank_le_card_height A.rank_le_card_width).trans
           ((not_lt.mp hi).trans (Nat.le_add_left i k)))]
 
-/-- **The spectral error of the truncated SVD is the `k`-th singular value.**
+/-- **The spectral error of the truncated SVD is the $k$-th singular value**:
+$\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_2 = \sigma_k(\mathbf{A})$.
 [GolubVanLoan2013, Theorem 2.4.8]. Port of `NLAlib.specNorm_sub_truncatedSVD_eq`. -/
 @[simp]
 theorem specNorm_sub_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
     specNorm (A - truncatedSVD A k) = singularValues A k := by
   rw [← singularValues_zero_eq_specNorm, singularValues_sub_truncatedSVD, add_zero]
 
-/-- The truncated SVD and its error are orthogonal in the Frobenius inner product. -/
+/-- The truncated SVD and its error are orthogonal in the Frobenius inner product:
+$\langle \llbracket \mathbf{A} \rrbracket_k, \mathbf{A} - \llbracket \mathbf{A} \rrbracket_k
+\rangle_{\mathsf{F}} = 0$. -/
 theorem frobInner_truncatedSVD_sub (A : Matrix m n 𝕜) (k : ℕ) :
     frobInner (truncatedSVD A k) (A - truncatedSVD A k) = 0 := by
   rw [frobInner_eq_re_trace, conjTranspose_truncatedSVD_mul_sub, Matrix.trace_zero, map_zero]
 
-/-- Pythagoras for the truncated SVD: `‖A‖_F² = ‖A_k‖_F² + ‖A - A_k‖_F²`. -/
+/-- Pythagoras for the truncated SVD:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \|\llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2 +
+\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2$. -/
 theorem frobNorm_sq_eq_truncatedSVD_add (A : Matrix m n 𝕜) (k : ℕ) :
     frobNorm A ^ 2 = frobNorm (truncatedSVD A k) ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2 := by
   have h := frobNorm_add_sq_of_frobInner_eq_zero (frobInner_truncatedSVD_sub A k)
   rwa [add_sub_cancel] at h
 
-/-- The truncated SVD is the projection of `A` onto its own column space:
-`rangeProjector (truncatedSVD A k) * A = truncatedSVD A k`. -/
+/-- The truncated SVD is the projection of $\mathbf{A}$ onto its own column space:
+$\mathbf{P}_{\llbracket \mathbf{A} \rrbracket_k} \mathbf{A} = \llbracket \mathbf{A} \rrbracket_k$.
+-/
 theorem rangeProjector_truncatedSVD_mul (A : Matrix m n 𝕜) (k : ℕ) :
     rangeProjector (truncatedSVD A k) * A = truncatedSVD A k := by
   have h := rangeProjector_mul_eq_zero_iff.mpr (conjTranspose_truncatedSVD_mul_sub A k)
   rwa [Matrix.mul_sub, rangeProjector_mul_self, sub_eq_zero] at h
 
-/-- The column space of the truncated SVD is inside the column space of `A`. -/
+/-- The column space of the truncated SVD is inside the column space of $\mathbf{A}$. -/
 theorem range_mulVecLin_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
     LinearMap.range (truncatedSVD A k).mulVecLin ≤ LinearMap.range A.mulVecLin := by
   obtain ⟨U, V, h, hT⟩ := exists_isSVD_truncatedSVD A
@@ -275,8 +296,9 @@ theorem range_mulVecLin_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
 
 /-! ### Eckart–Young -/
 
-/-- **Eckart–Young in the spectral norm.** No matrix of rank at most `k` is closer to `A` in
-spectral norm than `singularValues A k`.
+/-- **Eckart–Young in the spectral norm.** No matrix of rank at most $k$ is closer to $\mathbf{A}$
+in spectral norm than $\sigma_k(\mathbf{A})$: if $\operatorname{rank} \mathbf{B} \le k$ then
+$\sigma_k(\mathbf{A}) \le \|\mathbf{A} - \mathbf{B}\|_2$.
 [GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9].
 Port of `NLAlib.singularValues_le_specNorm_sub_of_rank_le`.
 Result: eckart-young-spectral -/
@@ -285,8 +307,10 @@ theorem singularValues_le_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) {B : Mat
   have h := singularValues_add_le_singularValues_sub_of_rank_le A hB 0
   rwa [add_zero, singularValues_zero_eq_specNorm] at h
 
-/-- **Eckart–Young in the Frobenius norm**, tail-sum form. For every `B` of rank at most `k`,
-`∑_{i ≥ k} σ_i(A)² ≤ ‖A - B‖_F²`.
+/-- **Eckart–Young in the Frobenius norm**, tail-sum form. For every $\mathbf{B}$ of rank at most
+$k$,
+$$\sum_{k \le i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A})^2
+  \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2.$$
 [HornJohnson2013, §7.4.9]. Port of `NLAlib.bestRankFrobSq_le_frobSq_sub_of_rank_le`.
 Result: eckart-young-frobenius -/
 theorem sum_Ico_singularValues_sq_le_frobNorm_sub_sq_of_rank_le (A : Matrix m n 𝕜)
@@ -298,8 +322,10 @@ theorem sum_Ico_singularValues_sq_le_frobNorm_sub_sq_of_rank_le (A : Matrix m n 
   exact Finset.sum_le_sum fun i _ => pow_le_pow_left₀ (singularValues_nonneg A (k + i))
     (singularValues_add_le_singularValues_sub_of_rank_le A hB i) 2
 
-/-- **Eckart–Young in the Frobenius norm.** No matrix of rank at most `k` is closer to `A` in
-Frobenius norm than the truncated SVD.
+/-- **Eckart–Young in the Frobenius norm.** No matrix of rank at most $k$ is closer to
+$\mathbf{A}$ in Frobenius norm than the truncated SVD: if $\operatorname{rank} \mathbf{B} \le k$
+then $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}
+\le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
 [HornJohnson2013, §7.4.9]. Port of `NLAlib.isBestFrobRankApprox_truncatedSVD`, there through a
 predicate `IsBestFrobRankApprox`.
 Result: eckart-young-frobenius -/
@@ -309,8 +335,9 @@ theorem frobNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix m n 𝕜) {B : Matri
   rw [frobNorm_sub_truncatedSVD_sq]
   exact sum_Ico_singularValues_sq_le_frobNorm_sub_sq_of_rank_le A hB
 
-/-- Eckart–Young in the spectral norm as a least element: `singularValues A k` is the smallest
-spectral distance from `A` to a matrix of rank at most `k`.
+/-- Eckart–Young in the spectral norm as a least element: $\sigma_k(\mathbf{A})$ is the smallest
+spectral distance $\|\mathbf{A} - \mathbf{B}\|_2$ from $\mathbf{A}$ to a matrix $\mathbf{B}$ of
+rank at most $k$.
 Port of `NLAlib.isLeast_specNorm_sub_of_rank_le`.
 Result: eckart-young-spectral -/
 theorem isLeast_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
@@ -320,8 +347,9 @@ theorem isLeast_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
   rintro _ ⟨B, hB, rfl⟩
   exact singularValues_le_specNorm_sub_of_rank_le A hB
 
-/-- **Eckart–Young in the Frobenius norm**, as a least element: over the matrices `B` of rank at
-most `k`, the distance `‖A - B‖_F` has a least value, and it is `‖A - truncatedSVD A k‖_F`.
+/-- **Eckart–Young in the Frobenius norm**, as a least element: over the matrices $\mathbf{B}$ of
+rank at most $k$, the distance $\|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$ has a least value, and
+it is $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}$.
 Port of `NLAlib.bestRankFrobSq_eq_sInf`.
 Result: eckart-young-frobenius -/
 theorem isLeast_frobNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :

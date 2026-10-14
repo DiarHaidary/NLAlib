@@ -10,11 +10,15 @@ public import NLAlib.Probability.MatrixConcentration.MGFBound
 /-!
 # The matrix Chernoff inequalities: the trace form
 
-A random positive semidefinite matrix `0 ≤ X ≤ L • 1` has the matrix MGF bound
-`E exp (θ X) ≤ exp ((e^{θL} - 1)/L • E X)` (Tropp 2015, Lemma 5.4.1). The Chernoff tails follow
-from the trace form of such a bound alone: if `E tr exp (θ Y) ≤ tr exp ((e^{θL} - 1)/L • V)` for
-every `θ > 0` (resp. `θ < 0`), with `V` positive semidefinite, then the largest (resp. smallest)
-eigenvalue of `Y` has the Chernoff upper (resp. lower) tail relative to that of `V`. Sums of
+A random positive semidefinite matrix $\mathbf{0} \preceq \mathbf{X} \preceq L\mathbf{I}$ has the
+matrix MGF bound
+$\mathbb{E} e^{\theta \mathbf{X}} \preceq e^{((e^{\theta L} - 1)/L)\, \mathbb{E}\mathbf{X}}$ (Tropp
+2015, Lemma 5.4.1). The Chernoff tails follow from the trace form of such a bound alone: if
+$\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$ (resp.
+$\theta < 0$), with $\mathbf{V}$ positive semidefinite, then the largest (resp. smallest)
+eigenvalue of $\mathbf{Y}$ has the Chernoff upper (resp. lower) tail relative to that of
+$\mathbf{V}$. Sums of
 independent bounded positive semidefinite matrices are the main instance
 (`NLAlib/Probability/MatrixConcentration/ChernoffSum.lean`); sampling without replacement is
 another, which is why the tails are stated from the trace bound.
@@ -45,7 +49,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsProbabilit
 
 /-! ### Scalar inequalities -/
 
-/-- The chord bound for the exponential on `[0, L]`: `e^{θx} ≤ 1 + (e^{θL} - 1) x / L`. -/
+/-- The chord bound for the exponential on $[0, L]$:
+$e^{\theta x} \le 1 + (e^{\theta L} - 1) x / L$. -/
 private theorem exp_mul_le_one_add_chord {L θ x : ℝ} (hL : 0 < L) (hx0 : 0 ≤ x) (hxL : x ≤ L) :
     Real.exp (θ * x) ≤ 1 + (Real.exp (θ * L) - 1) / L * x := by
   have ht0 : 0 ≤ x / L := div_nonneg hx0 hL.le
@@ -59,7 +64,7 @@ private theorem exp_mul_le_one_add_chord {L θ x : ℝ} (hL : 0 < L) (hx0 : 0 �
   field_simp
   ring
 
-/-- `-δ - (1 - δ) log (1 - δ) ≤ -δ²/2` for `0 ≤ δ < 1`. -/
+/-- $-\delta - (1 - \delta) \log(1 - \delta) \le -\delta^2/2$ for $0 \le \delta < 1$. -/
 private theorem neg_sub_mul_log_one_sub_le {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ < 1) :
     -δ - (1 - δ) * Real.log (1 - δ) ≤ -(δ ^ 2 / 2) := by
   let g : ℝ → ℝ := fun t => (1 - t) * Real.log (1 - t) + t - t ^ 2 / 2
@@ -93,7 +98,8 @@ private theorem neg_sub_mul_log_one_sub_le {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : 
     not_false_eq_true, zero_pow, zero_div] at this
   linarith
 
-/-- `δ - (1 + δ) log (1 + δ) ≤ -δ²/3` for `0 ≤ δ ≤ 1`, from `log (1 + δ) ≥ 2δ / (δ + 2)`. -/
+/-- $\delta - (1 + \delta) \log(1 + \delta) \le -\delta^2/3$ for $0 \le \delta \le 1$, from
+$\log(1 + \delta) \ge 2\delta / (\delta + 2)$. -/
 private theorem sub_mul_log_one_add_le {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ ≤ 1) :
     δ - (1 + δ) * Real.log (1 + δ) ≤ -(δ ^ 2 / 3) := by
   have hlow := le_hasSum (Real.hasSum_log_one_add hδ0) 0 (fun n _ => by positivity)
@@ -110,9 +116,9 @@ private theorem sub_mul_log_one_add_le {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ �
     positivity
   nlinarith [mul_le_mul_of_nonneg_left hlow (show 0 ≤ 1 + δ by linarith)]
 
-/-- The Chernoff tail base in exponential form: for `s > -1`,
-`(e^s / (1 + s)^{1+s})^a = e^{(s - (1 + s) log (1 + s)) a}`. It turns the source form of the
-Chernoff tails into an exponent to optimise. -/
+/-- The Chernoff tail base in exponential form: for $s > -1$ and real $a$,
+$\bigl(e^s / (1 + s)^{1+s}\bigr)^a = e^{(s - (1 + s) \log(1 + s)) a}$. It turns the source form
+of the Chernoff tails into an exponent to optimise. -/
 theorem exp_div_rpow_rpow_eq_exp {s : ℝ} (hs : 0 < 1 + s) (a : ℝ) :
     (Real.exp s / (1 + s) ^ (1 + s)) ^ a = Real.exp ((s - (1 + s) * Real.log (1 + s)) * a) := by
   rw [Real.rpow_def_of_pos (div_pos (Real.exp_pos _) (Real.rpow_pos_of_pos hs _)),
@@ -121,7 +127,8 @@ theorem exp_div_rpow_rpow_eq_exp {s : ℝ} (hs : 0 < 1 + s) (a : ℝ) :
 
 /-! ### The matrix moment generating function -/
 
-/-- The chord bound for a matrix with `0 ≤ A ≤ L • 1`: `exp (θ A) ≤ 1 + (e^{θL} - 1)/L • A`. -/
+/-- The chord bound for a matrix with $\mathbf{0} \preceq \mathbf{A} \preceq L\mathbf{I}$, $L > 0$:
+$e^{\theta \mathbf{A}} \preceq \mathbf{I} + ((e^{\theta L} - 1)/L)\, \mathbf{A}$. -/
 private theorem exp_smul_le_one_add_chord {A : Matrix n n 𝕜} {L : ℝ} (hL : 0 < L) (θ : ℝ)
     (hA : A.PosSemidef) (hAL : A ≤ L • (1 : Matrix n n 𝕜)) :
     exp (θ • A) ≤ 1 + ((Real.exp (θ * L) - 1) / L) • A := by
@@ -145,7 +152,8 @@ private theorem exp_smul_le_one_add_chord {A : Matrix n n 𝕜} {L : ℝ} (hL : 
   exact cfc_le_cfc_of_forall_mem_Icc h0 hAL fun x hx => exp_mul_le_one_add_chord hL hx.1 hx.2
 
 omit [IsProbabilityMeasure μ] in
-/-- A random matrix with `0 ≤ X ≤ L • 1` almost surely is integrable. -/
+/-- A random matrix with $\mathbf{0} \preceq \mathbf{X} \preceq L\mathbf{I}$ almost surely is
+integrable. -/
 theorem integrable_of_posSemidef_of_le [IsFiniteMeasure μ] {X : Ω → Matrix n n 𝕜}
     (hXm : AEMeasurable X μ) {L : ℝ} (hpsd : ∀ᵐ ω ∂μ, (X ω).PosSemidef)
     (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) : Integrable X μ := by
@@ -155,7 +163,8 @@ theorem integrable_of_posSemidef_of_le [IsFiniteMeasure μ] {X : Ω → Matrix n
   exact h2.trans (smul_one_le_smul_one (le_abs_self L))
 
 omit [IsProbabilityMeasure μ] in
-/-- `exp (θ X)` is integrable when `0 ≤ X ≤ L • 1` almost surely. -/
+/-- $e^{\theta \mathbf{X}}$ is integrable when $\mathbf{0} \preceq \mathbf{X} \preceq L\mathbf{I}$
+almost surely. -/
 private theorem integrable_exp_smul_of_posSemidef_of_le [IsFiniteMeasure μ]
     {X : Ω → Matrix n n 𝕜} (hXm : AEMeasurable X μ) {L : ℝ}
     (hpsd : ∀ᵐ ω ∂μ, (X ω).PosSemidef) (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) (θ : ℝ) :
@@ -174,8 +183,12 @@ private theorem integrable_exp_smul_of_posSemidef_of_le [IsFiniteMeasure μ]
   rw [specNorm_eq_norm, norm_smul, Real.norm_eq_abs, ← specNorm_eq_norm]
   exact mul_le_mul_of_nonneg_left hX (abs_nonneg θ)
 
-/-- **The Chernoff matrix MGF bound** ([Tropp2015], Lemma 5.4.1): a random matrix with
-`0 ≤ X ≤ L • 1` almost surely has `E exp (θ X) ≤ exp ((e^{θL} - 1)/L • E X)` for every `θ`. -/
+/-- **The Chernoff matrix MGF bound**: for $L > 0$, an almost everywhere measurable random matrix
+with $\mathbf{0} \preceq \mathbf{X} \preceq L\mathbf{I}$ almost surely has
+$$\mathbb{E} e^{\theta \mathbf{X}} \preceq
+e^{((e^{\theta L} - 1)/L)\, \mathbb{E}\mathbf{X}}$$
+for every real $\theta$ (`HasMatrixMGFBound` on all of $\mathbb{R}$).
+[Tropp2015, Lemma 5.4.1]. -/
 theorem hasMatrixMGFBound_of_posSemidef_of_le {X : Ω → Matrix n n 𝕜} (hXm : AEMeasurable X μ)
     {L : ℝ} (hL : 0 < L) (hpsd : ∀ᵐ ω ∂μ, (X ω).PosSemidef)
     (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -199,8 +212,15 @@ theorem hasMatrixMGFBound_of_posSemidef_of_le {X : Ω → Matrix n n 𝕜} (hXm 
 
 variable {Y : Ω → Matrix n n 𝕜} {V : Matrix n n 𝕜} {L : ℝ}
 
-/-- **The matrix Chernoff upper tail** from a trace bound ([Tropp2015], Theorem 5.1.1):
-`P((1 + δ) λ_max V ≤ λ_max Y) ≤ d (e^δ / (1 + δ)^{1+δ})^{λ_max V / L}`. -/
+/-- **The matrix Chernoff upper tail** from a trace bound: if $\mathbf{Y}$ is almost surely
+Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
+$\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$, then for
+$\delta \ge 0$
+$$\mathbb{P}\bigl(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr)
+\le \lvert n\rvert \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L}
+\,.$$
+[Tropp2015, Theorem 5.1.1]. -/
 theorem measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le [Nonempty n]
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L)
     (hint : ∀ θ : ℝ, 0 < θ → Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
@@ -236,8 +256,15 @@ theorem measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le [Nonempty n]
         field_simp
         ring
 
-/-- **The matrix Chernoff lower tail** from a trace bound ([Tropp2015], Theorem 5.1.1):
-`P(λ_min Y ≤ (1 - δ) λ_min V) ≤ d (e^{-δ} / (1 - δ)^{1-δ})^{λ_min V / L}` for `0 ≤ δ < 1`. -/
+/-- **The matrix Chernoff lower tail** from a trace bound: if $\mathbf{Y}$ is almost surely
+Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
+$\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta < 0$, then for
+$0 \le \delta < 1$ and the smallest eigenvalue, index $k + 1 = \lvert n\rvert$,
+$$\mathbb{P}\bigl(\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})\bigr)
+\le \lvert n\rvert
+\Bigl(\frac{e^{-\delta}}{(1 - \delta)^{1-\delta}}\Bigr)^{\lambda_k(\mathbf{V}) / L}\,.$$
+[Tropp2015, Theorem 5.1.1]. -/
 theorem measureReal_eigenvalue_le_le_chernoff_of_integral_le (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian)
     (hV : V.PosSemidef) (hL : 0 < L) {k : ℕ} (hk : k + 1 = Fintype.card n)
     (hint : ∀ θ : ℝ, θ < 0 → Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
@@ -281,8 +308,11 @@ theorem measureReal_eigenvalue_le_le_chernoff_of_integral_le (hY : ∀ᵐ ω ∂
         field_simp
         ring
 
-/-- The simplified Chernoff upper tail from a trace bound, `≤ d e^{-δ² λ_max V / (3L)}` for
-`0 ≤ δ ≤ 1`; weaker than the source form in every regime and proved from it. -/
+/-- The simplified Chernoff upper tail from a trace bound: under the hypotheses of
+`measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le`, for $0 \le \delta \le 1$,
+$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V}))
+\le \lvert n\rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)}$; weaker than the source form in
+every regime and proved from it. -/
 theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty n]
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L)
     (hint : ∀ θ : ℝ, 0 < θ → Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
@@ -301,8 +331,12 @@ theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty 
         mul_le_mul_of_nonneg_right (sub_mul_log_one_add_le hδ0 hδ1) (div_nonneg hm hL.le)
     _ = -δ ^ 2 * eigenvalue V 0 / (3 * L) := by ring
 
-/-- The simplified Chernoff lower tail from a trace bound, `≤ d e^{-δ² λ_min V / (2L)}` for
-`0 ≤ δ < 1`; weaker than the source form in every regime and proved from it. -/
+/-- The simplified Chernoff lower tail from a trace bound: under the hypotheses of
+`measureReal_eigenvalue_le_le_chernoff_of_integral_le`, for $0 \le \delta < 1$ and
+$k + 1 = \lvert n\rvert$,
+$\mathbb{P}(\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V}))
+\le \lvert n\rvert\, e^{-\delta^2 \lambda_k(\mathbf{V}) / (2L)}$; weaker than the source form in
+every regime and proved from it. -/
 theorem measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L) {k : ℕ}
     (hk : k + 1 = Fintype.card n)

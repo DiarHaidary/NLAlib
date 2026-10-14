@@ -12,17 +12,17 @@ public import NLAlib.Probability.EntropyTensorization
 /-!
 # The bounded differences inequality
 
-A function `f` of independent coordinates `X ω i ∈ S i` whose value changes by at most `c i` when
-the `i`-th coordinate alone changes is sub-Gaussian about its mean with proxy `∑ c i² / 4`, and
-its upper tail is McDiarmid's `exp (-2t² / ∑ c i²)`. The proof is the entropy method: the
-tensorization of entropy over the product law of `X` (`NLAlib.entropy_pi_le_sum`), the entropy
+A function $f$ of independent coordinates $X_i \in S_i$ whose value changes by at most $c_i$ when
+the $i$-th coordinate alone changes is sub-Gaussian about its mean with proxy $\sum_i c_i^2 / 4$,
+and its upper tail is McDiarmid's $\exp(-2t^2 / \sum_i c_i^2)$. The proof is the entropy method:
+the tensorization of entropy over the product law of $X$ (`NLAlib.entropy_pi_le_sum`), the entropy
 form of Hoeffding's lemma on each fibre (`NLAlib.entropy_exp_mul_le_of_abs_sub_le`) and Herbst's
 argument (`NLAlib.hasSubgaussianMGF_sub_integral_of_entropy_le`).
 
 The coordinates live in arbitrary measurable spaces. No integrability is assumed: bounded
-differences on a finite product make `f` bounded. No probability hypothesis is assumed either:
+differences on a finite product make $f$ bounded. No probability hypothesis is assumed either:
 `iIndepFun` gives it (`ProbabilityTheory.iIndepFun.isProbabilityMeasure`). Lower and two-sided
-tails are the same statements for `-f`, with `NLAlib.measureReal_abs_ge_le_add`; they are not
+tails are the same statements for $-f$, with `NLAlib.measureReal_abs_ge_le_add`; they are not
 restated.
 
 ## Main results
@@ -49,7 +49,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {ι : Type*} 
   {f : (∀ i, S i) → ℝ} {c : ι → ℝ≥0}
 
 omit [∀ i, MeasurableSpace (S i)] in
-/-- Bounded differences bound the oscillation of `f` by `∑ c i`. -/
+/-- Bounded differences bound the oscillation of $f$ by $\sum_i c_i$:
+$\lvert f(y) - f(x)\rvert \le \sum_i c_i$. -/
 private theorem abs_sub_le_sum_of_abs_update_sub_le
     (hc : ∀ i x y, |f (Function.update x i y) - f x| ≤ c i) (x y : ∀ i, S i) :
     |f y - f x| ≤ ∑ i, (c i : ℝ) := by
@@ -66,7 +67,8 @@ private theorem abs_sub_le_sum_of_abs_update_sub_le
   simpa using key Finset.univ
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- A bounded measurable `F` makes `exp (s F)` and `exp (s F) log exp (s F)` integrable. -/
+/-- A bounded measurable $F$ makes $e^{sF}$ and $e^{sF} \log e^{sF}$ integrable under a finite
+measure. -/
 private theorem integrable_exp_mul_of_abs_le {α : Type*} {mα : MeasurableSpace α}
     {ρ : Measure α} [IsFiniteMeasure ρ] {F : α → ℝ} (hF : Measurable F) {B : ℝ}
     (hB : ∀ a, |F a| ≤ B) (s : ℝ) :
@@ -87,7 +89,8 @@ private theorem integrable_exp_mul_of_abs_le {α : Type*} {mα : MeasurableSpace
   · exact hb a
   · exact hsB a
 
-/-- Bounded differences on the product of the coordinate laws. -/
+/-- Bounded differences on the product of the coordinate laws: under `Measure.pi ν`,
+$f - \mathbb{E} f$ is sub-Gaussian with proxy $\sum_i c_i^2 / 4$. -/
 private theorem hasSubgaussianMGF_pi_sub_integral_of_abs_update_sub_le
     (ν : ∀ i, Measure (S i)) [∀ i, IsProbabilityMeasure (ν i)] (hf : Measurable f)
     (hc : ∀ i x y, |f (Function.update x i y) - f x| ≤ c i) :
@@ -129,19 +132,21 @@ private theorem hasSubgaussianMGF_pi_sub_integral_of_abs_update_sub_le
         push_cast
         ring
 
-/-- **The bounded differences inequality**: a measurable function `f` of independent coordinates
-whose value changes by at most `c i` when the `i`-th coordinate alone changes is sub-Gaussian
-about its mean, `f (X) - E f (X)`, with proxy `∑ c i² / 4`. [BoucheronLugosiMassart2013,
-Theorem 6.2]; [McDiarmid1989]. Coordinates in arbitrary measurable spaces; no integrability or
-probability hypothesis (`f` is bounded; `iIndepFun` gives a probability measure).
+/-- **The bounded differences inequality**: a measurable function $f$ of independent coordinates
+$X_i$ whose value changes by at most $c_i$ when the $i$-th coordinate alone changes,
+$\lvert f(x') - f(x)\rvert \le c_i$ whenever $x'$ differs from $x$ only in coordinate $i$, is
+sub-Gaussian about its mean, $f(X) - \mathbb{E} f(X)$, with proxy $\sum_i c_i^2 / 4$.
+[BoucheronLugosiMassart2013, Theorem 6.2]; [McDiarmid1989]. Coordinates in arbitrary measurable
+spaces; no integrability or probability hypothesis ($f$ is bounded; `iIndepFun` gives a
+probability measure).
 Proof: transport to the product `Measure.pi ν` of the coordinate laws (`iIndepFun` and `hX`
-give the law of `X`, `iIndepFun_iff_map_fun_eq_pi_map`). There, for each `s`, P4's
-`NLAlib.entropy_pi_le_sum` bounds the entropy of `e^{s f}` by the sum over `i` of the expected
-entropies in the `i`-th coordinate; on the fibre `y ↦ f (Function.update x i y)` the oscillation
-is at most `c i`, so `NLAlib.entropy_exp_mul_le_of_abs_sub_le` bounds each by
-`s² c i² / 8` times the fibre mean of `e^{s f}`, and `MeasureTheory.integral_integral_update_pi`
-reassembles `E e^{s f}`. Herbst's argument
-(`NLAlib.hasSubgaussianMGF_sub_integral_of_entropy_le`) with `c s² / 2 = s² ∑ c i² / 8`
+give the law of $X$, `iIndepFun_iff_map_fun_eq_pi_map`). There, for each $s$, P4's
+`NLAlib.entropy_pi_le_sum` bounds the entropy of $e^{s f}$ by the sum over $i$ of the expected
+entropies in the $i$-th coordinate; on the fibre $y \mapsto f(x \text{ with } x_i := y)$ the
+oscillation is at most $c_i$, so `NLAlib.entropy_exp_mul_le_of_abs_sub_le` bounds each by
+$s^2 c_i^2 / 8$ times the fibre mean of $e^{s f}$, and `MeasureTheory.integral_integral_update_pi`
+reassembles $\mathbb{E} e^{s f}$. Herbst's argument
+(`NLAlib.hasSubgaussianMGF_sub_integral_of_entropy_le`) with $c s^2 / 2 = s^2 \sum_i c_i^2 / 8$
 concludes. The fibre measurability and the product law are the work. Medium.
 Result: bounded-differences -/
 theorem hasSubgaussianMGF_sub_integral_of_abs_update_sub_le
@@ -159,13 +164,15 @@ theorem hasSubgaussianMGF_sub_integral_of_abs_update_sub_le
   rw [← hlaw, integral_map hXm hf.aestronglyMeasurable] at h
   exact h.of_map hXm
 
-/-- **McDiarmid's inequality**: for a measurable function `f` of independent coordinates with
-bounded differences `c i`, `P(t ≤ f (X) - E f (X)) ≤ exp (-2t² / ∑ c i²)` for `t ≥ 0`.
+/-- **McDiarmid's inequality**: for a measurable function $f$ of independent coordinates with
+bounded differences $c_i$ and $t \ge 0$,
+$$\mathbb{P}\bigl(t \le f(X) - \mathbb{E} f(X)\bigr)
+\le \exp\Bigl(-\frac{2t^2}{\sum_i c_i^2}\Bigr).$$
 [McDiarmid1989]; [BoucheronLugosiMassart2013, Theorem 6.2]. The source's constant. At
-`∑ c i² = 0` the bound is `exp 0 = 1` (Lean's `x / 0 = 0`), which is true.
+$\sum_i c_i^2 = 0$ the bound is $e^0 = 1$ (Lean's $x / 0 = 0$), which is true.
 Proof: `HasSubgaussianMGF.measure_ge_le` for
 `NLAlib.hasSubgaussianMGF_sub_integral_of_abs_update_sub_le`, with
-`t² / (2 · ∑ c i² / 4) = 2t² / ∑ c i²`. Easy.
+$t^2 / (2 \sum_i c_i^2 / 4) = 2t^2 / \sum_i c_i^2$. Easy.
 Result: mcdiarmid -/
 theorem measureReal_sub_integral_ge_le_mcdiarmid (hX : ∀ i, AEMeasurable (fun ω => X ω i) μ)
     (hind : iIndepFun (fun i ω => X ω i) μ) (hf : Measurable f)

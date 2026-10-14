@@ -16,18 +16,21 @@ public import NLAlib.Probability.Distributions.Gaussian
 /-!
 # Gaussian integration by parts
 
-For a Gaussian vector `X` in `ℝ^ι` (any mean, any covariance, possibly singular) and a function
-`f` of class `C¹` whose derivative grows at most polynomially, `‖Df(x)‖ ≤ C (1 + ‖x‖)^k`, Stein's
-identity in covariance form: `E [(X i - E X i) f(X)] = ∑ j, Cov(X i, X j) E [∂_j f(X)]`.
+For a Gaussian vector $\mathbf{X}$ in $\mathbb{R}^\iota$ (any mean, any covariance, possibly
+singular) and a function $f$ of class $C^1$ whose derivative grows at most polynomially,
+$\|Df(\mathbf{x})\| \le C (1 + \|\mathbf{x}\|)^k$, Stein's identity in covariance form:
+$$\mathbb{E}[(\mathbf{X}_i - \mathbb{E}\mathbf{X}_i) f(\mathbf{X})]
+= \sum_j \operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j)\, \mathbb{E}[\partial_j f(\mathbf{X})]\,.$$
 Polynomial growth gives every integrand Gaussian moments, so the identity is never between junk
 values.
 
-The bounded-derivative case `k = 0` is the tool behind the Gaussian interpolation inequality and
+The bounded-derivative case $k = 0$ is the tool behind the Gaussian interpolation inequality and
 hence every Gaussian comparison theorem
 (`NLAlib/Probability/Distributions/GaussianComparison.lean`), which applies it to the partial
-derivatives of a `C²` test function with bounded Hessian. The polynomial class is the one trace
-polynomials `x ↦ re tr (B (∑ x j • A j)^q)` belong to, as the Gaussian moment recursion of the
-noncommutative Khintchine inequality needs
+derivatives of a $C^2$ test function with bounded Hessian. The polynomial class is the one trace
+polynomials $\mathbf{x} \mapsto \operatorname{Re}\operatorname{tr}(\mathbf{B}(\sum_j \mathbf{x}_j
+\mathbf{A}_j)^q)$ belong to, as the Gaussian moment recursion of the noncommutative Khintchine
+inequality needs
 (`NLAlib/Probability/MatrixConcentration/Khintchine.lean`).
 
 ## Main results
@@ -37,7 +40,7 @@ noncommutative Khintchine inequality needs
 * `NLAlib.integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw`:
   the bounded-derivative case.
 * `NLAlib.integral_mul_eq_integral_deriv_gaussianReal_one`: the standard one-dimensional identity.
-* `NLAlib.integrable_one_add_norm_pow_of_memLp`: the dominating functions `(1 + ‖X‖) ^ j`.
+* `NLAlib.integrable_one_add_norm_pow_of_memLp`: the dominating functions $(1 + \|X\|)^j$.
 -/
 
 @[expose] public section
@@ -70,7 +73,9 @@ private theorem integrable_gaussianReal_one_iff (g : ℝ → ℝ) :
       (ae_of_all _ fun _ => gaussianPDF_lt_top)]
   simp [smul_eq_mul]
 
-/-- Stein's identity for the standard Gaussian, under integrability hypotheses. -/
+/-- Stein's identity for the standard Gaussian, under integrability hypotheses: for $h$
+differentiable with $h$, $x h(x)$ and $h'$ integrable against $\mathcal{N}(0, 1)$,
+$\mathbb{E}[g\, h(g)] = \mathbb{E}[h'(g)]$ for $g \sim \mathcal{N}(0, 1)$. -/
 theorem integral_mul_eq_integral_deriv_gaussianReal_one {h : ℝ → ℝ}
     (hh : Differentiable ℝ h) (hhi : Integrable h (gaussianReal 0 1))
     (hxh : Integrable (fun x => x * h x) (gaussianReal 0 1))
@@ -95,8 +100,9 @@ theorem integral_mul_eq_integral_deriv_gaussianReal_one {h : ℝ → ℝ}
       rw [← integral_neg]; congr 1; funext x; ring
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- A random variable with moments of every finite order has `(1 + ‖X‖) ^ j` integrable, for
-every `j`: the dominating function of every polynomial-growth integrand of a Gaussian vector. -/
+/-- On a finite measure space, a random variable $X$ with moments of every finite order has
+$(1 + \|X\|)^j$ integrable, for every $j$: the dominating function of every polynomial-growth
+integrand of a Gaussian vector. -/
 theorem integrable_one_add_norm_pow_of_memLp {E : Type*} [NormedAddCommGroup E]
     [IsFiniteMeasure μ] {X : Ω → E} (hX : ∀ p : ℝ≥0∞, p ≠ ∞ → MemLp X p μ) (j : ℕ) :
     Integrable (fun ω => (1 + ‖X ω‖) ^ j) μ := by
@@ -105,7 +111,7 @@ theorem integrable_one_add_norm_pow_of_memLp {E : Type*} [NormedAddCommGroup E]
   refine h.integrable_norm_pow'.congr (ae_of_all _ fun ω => ?_)
   simp only [Real.norm_eq_abs, abs_of_nonneg (by positivity : (0 : ℝ) ≤ 1 + ‖X ω‖)]
 
-/-- `(1 + |y|) ^ j` is integrable for the standard Gaussian. -/
+/-- $(1 + \lvert y\rvert)^j$ is integrable for the standard Gaussian. -/
 private theorem integrable_one_add_abs_pow_gaussianReal (j : ℕ) :
     Integrable (fun y : ℝ => (1 + |y|) ^ j) (gaussianReal 0 1) := by
   simpa only [id, Real.norm_eq_abs] using
@@ -113,7 +119,8 @@ private theorem integrable_one_add_abs_pow_gaussianReal (j : ℕ) :
       (fun p hp => memLp_id_gaussianReal' p hp) j
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- A function whose derivative grows like `C (1 + ‖x‖) ^ k` grows like `(1 + ‖x‖) ^ (k + 1)`. -/
+/-- A function whose derivative grows like $C (1 + \|x\|)^k$ grows like $(1 + \|x\|)^{k+1}$:
+$\lvert f(x)\rvert \le \lvert f(0)\rvert + C (1 + \|x\|)^{k+1}$. -/
 private theorem abs_le_of_norm_fderiv_le_pow {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] {f : E → ℝ} (hf : Differentiable ℝ f) {C : ℝ} {k : ℕ}
     (hdf : ∀ x, ‖fderiv ℝ f x‖ ≤ C * (1 + ‖x‖) ^ k) (x : E) :
@@ -134,7 +141,9 @@ private theorem abs_le_of_norm_fderiv_le_pow {E : Type*} [NormedAddCommGroup E]
   simp only [Real.norm_eq_abs, sub_zero] at h1
   linarith
 
-/-- Stein's identity for the standard Gaussian, for a derivative of polynomial growth. -/
+/-- Stein's identity for the standard Gaussian, for a derivative of polynomial growth:
+$\mathbb{E}[g\, h(g)] = \mathbb{E}[h'(g)]$ when $\lvert h'(y)\rvert \le K (1 + \lvert y\rvert)^k$.
+-/
 private theorem integral_mul_eq_integral_deriv_gaussianReal_one_of_le_pow {g : ℝ → ℝ}
     (hg : Differentiable ℝ g) {K : ℝ} {k : ℕ} (hK : ∀ y, ‖deriv g y‖ ≤ K * (1 + |y|) ^ k) :
     ∫ y, y * g y ∂gaussianReal 0 1 = ∫ y, deriv g y ∂gaussianReal 0 1 := by
@@ -164,8 +173,8 @@ private theorem integral_mul_eq_integral_deriv_gaussianReal_one_of_le_pow {g : �
       (measurable_deriv g).aestronglyMeasurable (ae_of_all _ hK)
   exact integral_mul_eq_integral_deriv_gaussianReal_one hg hgi hxg hdg
 
-/-- Stein's identity for `N(m, v)`, for a derivative of polynomial growth:
-`E [(x - m) h(x)] = v E [h'(x)]`. -/
+/-- Stein's identity for $\mathcal{N}(m, v)$, for a derivative of polynomial growth:
+$\mathbb{E}[(x - m) h(x)] = v\, \mathbb{E}[h'(x)]$ for $x \sim \mathcal{N}(m, v)$. -/
 private theorem integral_sub_mul_eq_mul_integral_deriv_gaussianReal_of_le_pow (m : ℝ)
     (v : ℝ≥0) {h : ℝ → ℝ} (hh : Differentiable ℝ h) {K : ℝ} {k : ℕ}
     (hK : ∀ x, ‖deriv h x‖ ≤ K * (1 + |x|) ^ k) :
@@ -214,8 +223,10 @@ private theorem integral_sub_mul_eq_mul_integral_deriv_gaussianReal_of_le_pow (m
     _ = v * ∫ y, deriv h (s * y + m) ∂gaussianReal 0 1 := by
         rw [integral_const_mul, ← mul_assoc, hss]
 
-/-- Integration against the law of an independent pair, iterated: for independent `U` and `W`
-and `F` continuous with `F (U, W)` integrable, `E F(U, W) = ∫ ∫ F (u, w) dU du dW`. -/
+/-- Integration against the law of an independent pair, iterated: for independent $U$ and $W$
+under a probability measure, and $F$ continuous with $F(U, W)$ integrable,
+$\mathbb{E} F(U, W) = \int \int F(u, w) \, d\mu_U(u) \, d\mu_W(w)$, where $\mu_U$ and $\mu_W$ are
+the laws of $U$ and $W$. -/
 theorem integral_comp_eq_integral_integral_of_indepFun {E : Type*}
     [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E]
     [IsProbabilityMeasure μ] {U : Ω → ℝ} {W : Ω → E} (hU : AEMeasurable U μ)
@@ -233,8 +244,10 @@ theorem integral_comp_eq_integral_integral_of_indepFun {E : Type*}
   exact integral_prod_symm F hint
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- The regression residual `X - X i • a` of a Gaussian vector is independent of `X i` when
-`Cov(X i, X j) = Var (X i) a j` for every `j`. -/
+/-- The regression residual $\mathbf{X} - \mathbf{X}_i \mathbf{a}$ of a Gaussian vector is
+independent of $\mathbf{X}_i$ when
+$\operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j) = \operatorname{Var}(\mathbf{X}_i)\, \mathbf{a}_j$
+for every $j$. -/
 theorem indepFun_residual_of_hasGaussianLaw [Finite ι] {X : Ω → ι → ℝ}
     (hX : HasGaussianLaw X μ) (i : ι) (a : ι → ℝ)
     (hcov : ∀ j, cov[fun ω => X ω i, fun ω => X ω j; μ] = Var[fun ω => X ω i; μ] * a j) :
@@ -266,7 +279,9 @@ theorem indepFun_residual_of_hasGaussianLaw [Finite ι] {X : Ω → ι → ℝ}
   · exact ae_of_all _ fun ω => by ext j; simp
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- `Cov(U, V) = Var U * (Cov(U, V) / Var U)`, also when `Var U = 0`. -/
+/-- $\operatorname{Cov}(U, V) = \operatorname{Var} U \cdot (\operatorname{Cov}(U, V) /
+\operatorname{Var} U)$ for $U \in L^2$ under a probability measure, also when
+$\operatorname{Var} U = 0$ (where the quotient is $0$ by convention). -/
 theorem covariance_eq_variance_mul_div [IsProbabilityMeasure μ] {U V : Ω → ℝ}
     (hU : MemLp U 2 μ) : cov[U, V; μ] = Var[U; μ] * (cov[U, V; μ] / Var[U; μ]) := by
   by_cases hσ : Var[U; μ] = 0
@@ -278,8 +293,9 @@ theorem covariance_eq_variance_mul_div [IsProbabilityMeasure μ] {U V : Ω → �
   · field_simp
 
 omit [DecidableEq ι] in
-/-- The one-dimensional identity along the line `u ↦ u • a + w`, for a derivative of polynomial
-growth. -/
+/-- The one-dimensional identity along the line $u \mapsto u \mathbf{a} + \mathbf{w}$, for a
+derivative of polynomial growth: $\mathbb{E}[(u - m) f(u \mathbf{a} + \mathbf{w})]
+= v\, \mathbb{E}[Df(u \mathbf{a} + \mathbf{w})\, \mathbf{a}]$ for $u \sim \mathcal{N}(m, v)$. -/
 private theorem integral_sub_mul_comp_smul_add_eq_gaussianReal_of_le_pow (m : ℝ) (v : ℝ≥0)
     {f : (ι → ℝ) → ℝ} (hdiff : Differentiable ℝ f) {C : ℝ} {k : ℕ}
     (hdf : ∀ x, ‖fderiv ℝ f x‖ ≤ C * (1 + ‖x‖) ^ k) (a w : ι → ℝ) :
@@ -307,8 +323,8 @@ private theorem integral_sub_mul_comp_smul_add_eq_gaussianReal_of_le_pow (m : �
   rwa [hderiv] at h
 
 omit [DecidableEq ι] in
-/-- For a Gaussian vector `X` and `f` whose derivative grows polynomially, `(X i - m) f(X)` is
-integrable. -/
+/-- For a Gaussian vector $\mathbf{X}$ and $f$ whose derivative grows polynomially,
+$(\mathbf{X}_i - m) f(\mathbf{X})$ is integrable. -/
 private theorem integrable_sub_mul_comp_of_le_pow {X : Ω → ι → ℝ} (hX : HasGaussianLaw X μ)
     {f : (ι → ℝ) → ℝ} (hdiff : Differentiable ℝ f) {C : ℝ} {k : ℕ}
     (hdf : ∀ x, ‖fderiv ℝ f x‖ ≤ C * (1 + ‖x‖) ^ k) (i : ι) (m : ℝ) :
@@ -337,13 +353,16 @@ private theorem integrable_sub_mul_comp_of_le_pow {X : Ω → ι → ℝ} (hX : 
         mul_le_mul h1 h2 (abs_nonneg _) (by positivity)
     _ = (1 + |m|) * (|f 0| + C) * (1 + ‖X ω‖) ^ (k + 2) := by ring
 
-/-- **Gaussian integration by parts** (Stein's identity, covariance form) for `f` of class `C¹`
-whose derivative grows at most polynomially, `‖Df(x)‖ ≤ C (1 + ‖x‖)^k`:
-`E [(X i - E X i) f(X)] = ∑ j, Cov(X i, X j) E [∂_j f(X)]`.
+/-- **Gaussian integration by parts** (Stein's identity, covariance form): for a Gaussian vector
+$\mathbf{X}$ in $\mathbb{R}^\iota$ and $f$ of class $C^1$ whose derivative grows at most
+polynomially, $\|Df(\mathbf{x})\| \le C (1 + \|\mathbf{x}\|)^k$,
+$$\mathbb{E}[(\mathbf{X}_i - \mathbb{E}\mathbf{X}_i) f(\mathbf{X})]
+= \sum_j \operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j)\, \mathbb{E}[\partial_j f(\mathbf{X})]\,.$$
 [Vershynin2018, Lemma 7.2.5]; stated there for a standard Gaussian, here any mean and any
-covariance, possibly singular. `‖x‖` is the sup norm of `ι → ℝ`; any norm gives the same class.
-Both integrands are integrable (Gaussian moments of every order), so the identity is never
-between junk values. Proof: the regression `X = X i • a + W` with `W` independent of `X i`
+covariance, possibly singular. $\|\mathbf{x}\|$ is the sup norm of `ι → ℝ`; any norm gives the
+same class. Both integrands are integrable (Gaussian moments of every order), so the identity is
+never between junk values. Proof: the regression $\mathbf{X} = \mathbf{X}_i \mathbf{a} + \mathbf{W}$
+with $\mathbf{W}$ independent of $\mathbf{X}_i$
 (`indepFun_residual_of_hasGaussianLaw`) reduces the identity to the one-dimensional Stein identity
 `integral_mul_eq_integral_deriv_gaussianReal_one` along each line, which takes only integrability;
 polynomial growth supplies it through `memLp_id_gaussianReal` and `HasGaussianLaw.memLp`.
@@ -428,11 +447,12 @@ theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGa
       rw [integral_const_mul, hcov, mul_assoc]
 
 /-- **Gaussian integration by parts** (Stein's identity, covariance form): for a Gaussian vector
-`X` and `f` of class `C¹` with derivative bounded by `C`,
-`E [(X i - E X i) f(X)] = ∑ j, Cov(X i, X j) E [∂_j f(X)]`.
-[Vershynin2018, Lemma 7.2.5]; stated there for a standard Gaussian, `E [g f(g)] = E f'(g)`; here
-any mean and any covariance, possibly singular, and no centring hypothesis (a centred consumer
-rewrites with `sub_zero`). The case `k = 0` of
+$\mathbf{X}$ in $\mathbb{R}^\iota$ and $f$ of class $C^1$ with $\|Df(\mathbf{x})\| \le C$,
+$$\mathbb{E}[(\mathbf{X}_i - \mathbb{E}\mathbf{X}_i) f(\mathbf{X})]
+= \sum_j \operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j)\, \mathbb{E}[\partial_j f(\mathbf{X})]\,.$$
+[Vershynin2018, Lemma 7.2.5]; stated there for a standard Gaussian,
+$\mathbb{E}[g f(g)] = \mathbb{E} f'(g)$; here any mean and any covariance, possibly singular, and
+no centring hypothesis (a centred consumer rewrites with `sub_zero`). The case $k = 0$ of
 `integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow`.
 Result: gaussian-integration-by-parts -/
 theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw

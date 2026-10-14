@@ -10,9 +10,9 @@ public import NLAlib.Probability.SubExponential.Basic
 /-!
 # Tails of sub-exponential random variables
 
-The tail of a sub-exponential variable, `P(t ≤ X) ≤ exp (-min (t²/(2v)) (t/(2b)))`, its two
-regimes, the lower and two-sided tails, and Bernstein's inequality for sums of independent
-sub-exponential variables.
+The tail of a sub-exponential variable,
+$\mathbb{P}(X \ge t) \le \exp(-\min(t^2 / (2v), t / (2b)))$, its two regimes, the lower and
+two-sided tails, and Bernstein's inequality for sums of independent sub-exponential variables.
 
 ## Main results
 
@@ -38,8 +38,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {X : Ω → �
 
 namespace HasSubexponentialMGF
 
-/-- The Chernoff bound at one tilt `l` of the closed window `b l ≤ 1`; the boundary `b l = 1` is
-reached by continuity from inside the open window. -/
+/-- The Chernoff bound at one tilt $l \ge 0$ of the closed window $b l \le 1$:
+$\mu(X \ge t) \le e^{-l t + v l^2 / 2}$; the boundary $b l = 1$ is reached by continuity from
+inside the open window. -/
 private lemma measure_ge_le_exp (h : HasSubexponentialMGF X v b μ) {t l : ℝ} (hl : 0 ≤ l)
     (hbl : b * l ≤ 1) : μ.real {ω | t ≤ X ω} ≤ rexp (-l * t + v * l ^ 2 / 2) := by
   have := h.isFiniteMeasure
@@ -74,8 +75,8 @@ private lemma measureReal_le_one (h : HasSubexponentialMGF X v b μ) (s : Set Ω
   rw [ENNReal.ofReal_one]
   exact (measure_mono (Set.subset_univ _)).trans h.measure_univ_le_one
 
-/-- The sub-Gaussian regime of the sub-exponential tail: for `b t ≤ v`,
-`P(t ≤ X) ≤ exp (-t² / (2v))`. With `b = 0` this is the sub-Gaussian tail. -/
+/-- The sub-Gaussian regime of the sub-exponential tail: for $t \ge 0$ with $b t \le v$,
+$\mu(X \ge t) \le e^{-t^2 / (2v)}$. With $b = 0$ this is the sub-Gaussian tail. -/
 theorem measure_ge_le_of_mul_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t)
     (hbt : b * t ≤ v) : μ.real {ω | t ≤ X ω} ≤ rexp (-t ^ 2 / (2 * v)) := by
   by_cases hv : (v : ℝ) = 0
@@ -92,9 +93,9 @@ theorem measure_ge_le_of_mul_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (h
     field_simp
     ring
 
-/-- The exponential regime of the sub-exponential tail: for `v ≤ b t`,
-`P(t ≤ X) ≤ exp (-t / (2b))`. No sign condition on `t` is needed: `v ≤ b t` forces `0 ≤ t` when
-`b > 0`, and the bound is `1` when `b = 0`. -/
+/-- The exponential regime of the sub-exponential tail: for $v \le b t$,
+$\mu(X \ge t) \le e^{-t / (2b)}$. No sign condition on $t$ is needed: $v \le b t$ forces
+$t \ge 0$ when $b > 0$, and the bound is $1$ when $b = 0$. -/
 theorem measure_ge_le_of_le_mul (h : HasSubexponentialMGF X v b μ) {t : ℝ}
     (hbt : v ≤ b * t) : μ.real {ω | t ≤ X ω} ≤ rexp (-t / (2 * b)) := by
   by_cases hb : (b : ℝ) = 0
@@ -112,10 +113,11 @@ theorem measure_ge_le_of_le_mul (h : HasSubexponentialMGF X v b μ) {t : ℝ}
       field_simp
       ring
 
-/-- **The sub-exponential tail** ([Wainwright2019], Proposition 2.9):
-`P(t ≤ X) ≤ exp (-min (t² / (2v)) (t / (2b)))`. If `b = 0` or `v = 0`, Lean's division by zero
-makes the exponent `0` and the bound `1`; the regime forms are the usable statements then (for a
-sub-Gaussian variable, `b = 0`, use `measure_ge_le_of_mul_le`).
+/-- **The sub-exponential tail**: if $X$ has variance proxy $v$ and scale $b$, then for $t \ge 0$
+$$\mu(X \ge t) \le \exp\Bigl(-\min\Bigl(\frac{t^2}{2v}, \frac{t}{2b}\Bigr)\Bigr)\,.$$
+[Wainwright2019, Proposition 2.9]. If $b = 0$ or $v = 0$, Lean's division by zero makes the
+exponent $0$ and the bound $1$; the regime forms are the usable statements then (for a
+sub-Gaussian variable, $b = 0$, use `measure_ge_le_of_mul_le`).
 Result: subexponential-tail -/
 theorem measure_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ X ω} ≤ rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
@@ -127,12 +129,14 @@ theorem measure_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ 
     rw [neg_div]
     exact exp_le_exp.mpr (neg_le_neg (min_le_right _ _))
 
-/-- The lower tail of a sub-exponential variable. -/
+/-- The lower tail of a sub-exponential variable: for $t \ge 0$,
+$\mu(X \le -t) \le \exp(-\min(t^2 / (2v), t / (2b)))$. -/
 theorem measure_le_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | X ω ≤ -t} ≤ rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
   simpa only [le_neg] using h.neg.measure_ge_le ht
 
-/-- The two-sided tail of a sub-exponential variable. -/
+/-- The two-sided tail of a sub-exponential variable: for $t \ge 0$,
+$\mu(\lvert X\rvert \ge t) \le 2 \exp(-\min(t^2 / (2v), t / (2b)))$. -/
 theorem measure_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ |X ω|} ≤ 2 * rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
   have := h.isFiniteMeasure
@@ -147,11 +151,12 @@ theorem measure_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 
     rw [two_mul]
     exact add_le_add (h.measure_ge_le ht) (h.measure_le_le ht)
 
-/-- **Bernstein's inequality** for independent sub-exponential variables: if the `X_i` are
-independent and, for `i ∈ s`, `X_i` is sub-exponential with parameters `(v_i, b_i)`
-(`HasSubexponentialMGF`), then for `t ≥ 0`
-`P(t ≤ ∑_{i ∈ s} X_i) ≤ exp (-min (t² / (2 ∑_{i ∈ s} v_i)) (t / (2 max_{i ∈ s} b_i)))`, with the
-convention of `measure_ge_le` when a denominator is `0`.
+/-- **Bernstein's inequality** for independent sub-exponential variables: if the $X_i$ are
+independent and, for $i \in s$, $X_i$ is sub-exponential with parameters $(v_i, b_i)$
+(`HasSubexponentialMGF`), then for $t \ge 0$
+$$\mu\Bigl(\sum_{i \in s} X_i \ge t\Bigr) \le \exp\Bigl(-\min\Bigl(\frac{t^2}{2 \sum_{i \in s} v_i},
+\frac{t}{2 \max_{i \in s} b_i}\Bigr)\Bigr),$$
+with the convention of `measure_ge_le` when a denominator is $0$.
 [Wainwright2019, §2.1.3].
 Result: bernstein-inequality -/
 theorem measure_sum_ge_le_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ)

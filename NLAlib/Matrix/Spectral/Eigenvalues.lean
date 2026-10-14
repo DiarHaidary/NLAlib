@@ -11,43 +11,44 @@ public import NLAlib.Matrix.Basic.Orthonormal
 /-!
 # Eigenvalues of Hermitian matrices
 
-`NLAlib.eigenvalue A k` is the `k`-th largest eigenvalue of a Hermitian matrix `A`, counted with
-multiplicity and indexed from `0`. It is a total function of the matrix and a natural number: it
-is `0` when `k` is at least the size of `A`, and `0` when `A` is not Hermitian. The values are
-sorted in non-increasing order on the valid range `k < Fintype.card n`.
+`NLAlib.eigenvalue A k` is $\lambda_k(\mathbf{A})$, the $k$-th largest eigenvalue of a Hermitian
+matrix $\mathbf{A}$, counted with multiplicity and indexed from $0$. It is a total function of the
+matrix and a natural number: it is $0$ when $k$ is at least the size of $\mathbf{A}$, and $0$ when
+$\mathbf{A}$ is not Hermitian. The values are sorted in non-increasing order on the valid range
+$k < \lvert n \rvert$.
 
 This is the library's spelling of an eigenvalue. Mathlib's `Matrix.IsHermitian.eigenvalues₀`
 (sorted, indexed by `Fin (Fintype.card n)`, taking the proof of Hermitian-ness as an argument) is
 the definition underneath, and `Matrix.IsHermitian.eigenvalue_eq_eigenvalues₀` is the bridge.
 Mathlib's `Matrix.IsHermitian.eigenvalues` is a different function: unsorted and indexed by `n`.
 
-The largest eigenvalue is `eigenvalue A 0`. Statements never mention a chosen eigenvector
-basis: a diagonalisation is an equation `A * U = U * Matrix.diagonal d` with
-`HasOrthonormalCols U`.
+The largest eigenvalue is $\lambda_0(\mathbf{A})$, `eigenvalue A 0`. Statements never mention a
+chosen eigenvector basis: a diagonalisation is an equation
+$\mathbf{A}\mathbf{U} = \mathbf{U} \operatorname{diag}(\mathbf{d})$ with `HasOrthonormalCols U`.
 
 ## Reading and writing statements about `eigenvalue A k`
 
 `eigenvalue` is a total function: it returns a number for every matrix and every natural number,
-including inputs for which "the `k`-th eigenvalue" does not exist. There the value is `0`, a
+including inputs for which "the $k$-th eigenvalue" does not exist. There the value is $0$, a
 *junk value*, in the way that `1 / 0 = 0` and `A⁻¹ = 0` for a singular `A` are in Mathlib. This
 cannot make a false theorem provable, because Lean checks every proof against this definition.
 What it does mean is that a statement is also a statement about the junk values, so the range of
 the index has to be read, and written, with care.
 
-**The example to remember.** `∃ k, -3 < eigenvalue A k` does not say that `A` has an eigenvalue
-above `-3`. It holds for every matrix: take `k ≥ Fintype.card n`, where the value is `0`. The
-statement that was meant is `∃ k < Fintype.card n, -3 < eigenvalue A k`.
+**The example to remember.** `∃ k, -3 < eigenvalue A k` does not say that $\mathbf{A}$ has an
+eigenvalue above $-3$. It holds for every matrix: take $k \ge \lvert n \rvert$, where the value is
+$0$. The statement that was meant is `∃ k < Fintype.card n, -3 < eigenvalue A k`.
 
 * An index quantified by `∃` needs `k < Fintype.card n`, or the witness can be out of range.
 * An index quantified by `∀` in a hypothesis needs it too. `∀ k, 0 < eigenvalue A k` is never
-  satisfied, since the value is `0` out of range, so a theorem that assumes it says nothing.
+  satisfied, since the value is $0$ out of range, so a theorem that assumes it says nothing.
 * An index quantified by `∀` in a conclusion, or left free, makes a claim about the padding too.
-  That is fine when the claim is true of `0`, and such statements are left unbounded on purpose.
+  That is fine when the claim is true of $0$, and such statements are left unbounded on purpose.
   Compare `Matrix.IsHermitian.posSemidef_iff_eigenvalue_nonneg`,
   `A.PosSemidef ↔ ∀ k, 0 ≤ eigenvalue A k`, with `Matrix.IsHermitian.posDef_iff_eigenvalue_pos`,
   `A.PosDef ↔ ∀ k < Fintype.card n, 0 < eigenvalue A k`: the strict one must carry the bound.
 * The same applies to a matrix that is not Hermitian, for which `eigenvalue A k = 0` for every
-  `k`. Theorems carry `A.IsHermitian` where the value matters. Identities such as
+  $k$. Theorems carry `A.IsHermitian` where the value matters. Identities such as
   `NLAlib.eigenvalue_neg` hold for every matrix, because both sides are junk together.
 
 `NLAlib.singularValues` is padded in the same way and is read by the same rules. The reasons for
@@ -79,9 +80,9 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n r : Type*} [Fintype n] [Fintype r]
 
 open Classical in
-/-- The `k`-th largest **eigenvalue** of a Hermitian matrix, counted with multiplicity, indexed
-from `0`. Non-increasing in `k` for `k < Fintype.card n`. The value is `0` for
-`k ≥ Fintype.card n`, and `0` for every `k` when `A` is not Hermitian. Mathlib's
+/-- The $k$-th largest **eigenvalue** $\lambda_k(\mathbf{A})$ of a Hermitian matrix, counted with
+multiplicity, indexed from $0$. Non-increasing in $k$ for $k < \lvert n \rvert$. The value is $0$
+for $k \ge \lvert n \rvert$, and $0$ for every $k$ when $\mathbf{A}$ is not Hermitian. Mathlib's
 `Matrix.IsHermitian.eigenvalues₀` is the same sequence indexed by `Fin (Fintype.card n)`;
 Mathlib's `Matrix.IsHermitian.eigenvalues` is unsorted.
 
@@ -90,12 +91,14 @@ The zeros are junk values: `∃ k, -3 < eigenvalue A k` is true of every matrix.
 noncomputable def eigenvalue (A : Matrix n n 𝕜) (k : ℕ) : ℝ :=
   if h : A.IsHermitian ∧ k < Fintype.card n then h.1.eigenvalues₀ ⟨k, h.2⟩ else 0
 
-/-- Beyond the size of the matrix the eigenvalue sequence is zero. -/
+/-- Beyond the size of the matrix the eigenvalue sequence is zero: $\lambda_k(\mathbf{A}) = 0$ for
+$k \ge \lvert n \rvert$. -/
 theorem eigenvalue_of_card_le (A : Matrix n n 𝕜) {k : ℕ} (hk : Fintype.card n ≤ k) :
     eigenvalue A k = 0 := by
   rw [eigenvalue, dif_neg fun h => absurd h.2 (Nat.not_lt.mpr hk)]
 
-/-- The eigenvalue sequence of a matrix that is not Hermitian is zero. -/
+/-- The eigenvalue sequence of a matrix that is not Hermitian is zero: $\lambda_k(\mathbf{A}) = 0$
+for every $k$. -/
 theorem eigenvalue_of_not_isHermitian {A : Matrix n n 𝕜} (hA : ¬ A.IsHermitian) (k : ℕ) :
     eigenvalue A k = 0 := by
   rw [eigenvalue, dif_neg fun h => hA h.1]
@@ -107,7 +110,8 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_eq_eigenvalues₀ [DecidableEq n] {
   rw [eigenvalue, dif_pos ⟨hA, i.isLt⟩]
   congr
 
-/-- The eigenvalues of a Hermitian matrix are non-increasing on the valid range. -/
+/-- The eigenvalues of a Hermitian matrix are non-increasing on the valid range:
+$\lambda_j(\mathbf{A}) \le \lambda_i(\mathbf{A})$ for $i \le j < \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {i j : ℕ} (hij : i ≤ j) (hj : j < Fintype.card n) :
     eigenvalue A j ≤ eigenvalue A i := by
@@ -127,7 +131,8 @@ theorem _root_.Matrix.IsHermitian.antitone_eigenvalue_coe {A : Matrix n n 𝕜}
   fun _ b hab => hA.eigenvalue_le_eigenvalue hab b.isLt
 
 /-- Mathlib's unsorted eigenvalues `hA.eigenvalues : n → ℝ` are a relabelling of the sorted
-sequence. -/
+sequence: there is a bijection $e$ from $n$ to `Fin (Fintype.card n)` with
+`hA.eigenvalues i` $= \lambda_{e(i)}(\mathbf{A})$. -/
 theorem _root_.Matrix.IsHermitian.exists_equiv_eigenvalue_eq [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     ∃ e : n ≃ Fin (Fintype.card n), ∀ i, hA.eigenvalues i = eigenvalue A (e i) := by
@@ -143,17 +148,23 @@ theorem _root_.Matrix.IsHermitian.hasOrthonormalCols_eigenvectorUnitary [Decidab
 /-! ### Diagonalisation -/
 
 omit [Fintype n] in
-/-- A matrix `U * diagonal d * Uᴴ` with real `d` is Hermitian. -/
+/-- A matrix $\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ with real
+$\mathbf{d}$ is Hermitian. -/
 private theorem isHermitian_mul_diagonal_mul_conjTranspose [DecidableEq r] (U : Matrix n r 𝕜)
     (d : r → ℝ) : (U * (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) * Uᴴ).IsHermitian := by
   refine Matrix.isHermitian_mul_mul_conjTranspose U ?_
   rw [Matrix.isHermitian_diagonal_iff]
   exact fun i => RCLike.conj_ofReal (d i)
 
-/-- **Spectral theorem**, in the form of an invariance equation: a Hermitian matrix has a matrix
-`U` of orthonormal eigenvectors, one column for each eigenvalue in order, with
-`A * U = U * diagonal (eigenvalue A)`. The matrix `U` has as many columns as rows, so
-`HasOrthonormalCols.mul_conjTranspose_self_of_card_eq` gives `U * Uᴴ = 1`.
+/-- **Spectral theorem**, in the form of an invariance equation: a Hermitian matrix $\mathbf{A}$
+has a matrix $\mathbf{U}$ of orthonormal eigenvectors, one column for each eigenvalue in order,
+with
+$$\mathbf{A}\mathbf{U} = \mathbf{U}
+  \operatorname{diag}\bigl(\lambda_0(\mathbf{A}), \dots,
+  \lambda_{\lvert n \rvert - 1}(\mathbf{A})\bigr).$$
+The matrix $\mathbf{U}$ has as many columns as rows, so
+`HasOrthonormalCols.mul_conjTranspose_self_of_card_eq` gives
+$\mathbf{U}\mathbf{U}^{\mathsf{H}} = \mathbf{I}$.
 [HornJohnson2013, Theorem 2.5.6]. Port of `NLAlib.mul_sortedEigenframe_eq_mul_diagonal`, there
 for a chosen `sortedEigenframe`. -/
 theorem _root_.Matrix.IsHermitian.exists_mul_eq_mul_diagonal {A : Matrix n n 𝕜}
@@ -180,8 +191,12 @@ theorem _root_.Matrix.IsHermitian.exists_mul_eq_mul_diagonal {A : Matrix n n �
   refine Eq.trans h ?_
   simp only [Function.comp_apply, Matrix.IsHermitian.eigenvalues, e, Equiv.symm_apply_apply, id]
 
-/-- **Spectral theorem**: a Hermitian matrix is `U * diagonal (eigenvalue A) * Uᴴ` for a matrix
-`U` with orthonormal columns indexed by `Fin (Fintype.card n)`.
+/-- **Spectral theorem**: a Hermitian matrix is
+$$\mathbf{A} = \mathbf{U}
+  \operatorname{diag}\bigl(\lambda_0(\mathbf{A}), \dots,
+  \lambda_{\lvert n \rvert - 1}(\mathbf{A})\bigr)
+  \mathbf{U}^{\mathsf{H}}$$
+for a matrix $\mathbf{U}$ with orthonormal columns indexed by `Fin (Fintype.card n)`.
 [HornJohnson2013, Theorem 2.5.6].
 Result: spectral-theorem-hermitian -/
 theorem _root_.Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTranspose {A : Matrix n n 𝕜}
@@ -196,9 +211,11 @@ theorem _root_.Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTranspose {A : 
     Matrix.mul_one]
 
 /-- **Spectral theorem**, with the eigenvectors and the eigenvalues indexed by the index type of
-the matrix: a Hermitian matrix is `U * diagonal d * Uᴴ` for a unitary `U` and a real `d`, in no
-particular order. `Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTranspose` is the form with
-the sorted eigenvalues, indexed by `Fin (Fintype.card n)`. -/
+the matrix: a Hermitian matrix is
+$\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ for a unitary $\mathbf{U}$ and
+a real $\mathbf{d}$, in no particular order.
+`Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTranspose` is the form with the sorted
+eigenvalues, indexed by `Fin (Fintype.card n)`. -/
 theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_eq_mul_diagonal_mul_conjTranspose
     [DecidableEq n] {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ (U : Matrix n n 𝕜) (d : n → ℝ), HasOrthonormalCols U ∧
@@ -207,7 +224,9 @@ theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_eq_mul_diagonal_mul_
   have h := hA.spectral_theorem
   rwa [Unitary.conjStarAlgAut_apply] at h
 
-/-- For each valid index there is a unit eigenvector with that eigenvalue. -/
+/-- For each valid index $k < \lvert n \rvert$ there is a unit eigenvector with that eigenvalue: a
+vector $\mathbf{u}$ with $\|\mathbf{u}\| = 1$ and $\mathbf{A}\mathbf{u} = \lambda_k(\mathbf{A})
+\mathbf{u}$. -/
 theorem _root_.Matrix.IsHermitian.exists_norm_eq_one_and_mulVec_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
     ∃ u : n → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ A *ᵥ u = eigenvalue A k • u := by
@@ -220,7 +239,8 @@ theorem _root_.Matrix.IsHermitian.exists_norm_eq_one_and_mulVec_eq {A : Matrix n
     simp only [Matrix.IsHermitian.eigenvalues, e, Equiv.symm_apply_apply]
 
 /-- A real eigenvalue of a Hermitian matrix, witnessed by a nonzero eigenvector, occurs in the
-eigenvalue sequence. -/
+eigenvalue sequence: if $\mathbf{u} \ne \mathbf{0}$ and $\mathbf{A}\mathbf{u} = c\mathbf{u}$ with
+$c$ real, then $c = \lambda_k(\mathbf{A})$ for some $k < \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.exists_eigenvalue_eq_of_mulVec_eq_smul {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {u : n → 𝕜} {c : ℝ} (hu : u ≠ 0) (h : A *ᵥ u = c • u) :
     ∃ k < Fintype.card n, eigenvalue A k = c := by
@@ -245,8 +265,10 @@ theorem _root_.Matrix.IsHermitian.exists_eigenvalue_eq_of_mulVec_eq_smul {A : Ma
   exact (RCLike.ofReal_injective (mul_right_cancel₀ hi h2)).symm
 
 /-- **The eigenvalues are determined by a sorted unitary diagonalisation.** If
-`A = U * diagonal μ * Uᴴ` with `U` having orthonormal columns indexed by `Fin q`, `q` the size of
-`A`, and `μ` non-increasing, then `μ` is the eigenvalue sequence of `A`.
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\mu}) \mathbf{U}^{\mathsf{H}}$ with
+$\mathbf{U}$ having orthonormal columns indexed by `Fin q`, $q$ the size of $\mathbf{A}$, and
+$\boldsymbol{\mu}$ non-increasing, then $\lambda_i(\mathbf{A}) = \boldsymbol{\mu}_i$ for every
+$i < q$.
 Port of `NLAlib.eigenvalues₀_eq_of_eq_mul_diagonal_mul`. -/
 theorem eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q : ℕ} {A : Matrix n n 𝕜}
     {U : Matrix n (Fin q) 𝕜} {μ : Fin q → ℝ} (hU : HasOrthonormalCols U)
@@ -279,8 +301,9 @@ theorem eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q : ℕ} {A : Matrix
   exact h2
 
 /-- **The eigenvalues are determined by any unitary diagonalisation**, up to order. If
-`A = U * diagonal d * Uᴴ` with `U` having orthonormal columns indexed by a type `r` with as many
-elements as `A` has rows, then the entries of `d` are the eigenvalues of `A` in some order. -/
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ with $\mathbf{U}$
+having orthonormal columns indexed by a type $r$ with as many elements as $\mathbf{A}$ has rows,
+then the entries of $\mathbf{d}$ are the eigenvalues of $\mathbf{A}$ in some order. -/
 theorem exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose [DecidableEq r]
     {A : Matrix n n 𝕜} {U : Matrix n r 𝕜} {d : r → ℝ} (hU : HasOrthonormalCols U)
     (hr : Fintype.card n = Fintype.card r)
@@ -306,7 +329,8 @@ theorem exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose [Decidab
 
 /-! ### Spectrum -/
 
-/-- Each eigenvalue of a Hermitian matrix lies in its real spectrum. -/
+/-- Each eigenvalue $\lambda_k(\mathbf{A})$, $k < \lvert n \rvert$, of a Hermitian matrix lies in
+its real spectrum. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_mem_spectrum [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
     eigenvalue A k ∈ spectrum ℝ A := by
@@ -314,7 +338,8 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_mem_spectrum [DecidableEq n] {A : M
   rw [hA.spectrum_real_eq_range_eigenvalues]
   exact ⟨e.symm ⟨k, hk⟩, by rw [he, Equiv.apply_symm_apply]⟩
 
-/-- The real spectrum of a Hermitian matrix is the set of its eigenvalues. -/
+/-- The real spectrum of a Hermitian matrix is the set of its eigenvalues
+$\{\lambda_k(\mathbf{A}) : k < \lvert n \rvert\}$. -/
 theorem _root_.Matrix.IsHermitian.spectrum_eq_image_eigenvalue [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     spectrum ℝ A = eigenvalue A '' Set.Iio (Fintype.card n) := by

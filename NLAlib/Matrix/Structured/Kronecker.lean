@@ -13,7 +13,8 @@ public import NLAlib.Matrix.Spectral.Schur
 /-!
 # Kronecker products
 
-The Kronecker product is Mathlib's `A ⊗ₖ B` (`Matrix.kroneckerMap (· * ·)`), with the mixed
+The Kronecker product $\mathbf{A} \otimes \mathbf{B}$ is Mathlib's `A ⊗ₖ B`
+(`Matrix.kroneckerMap (· * ·)`), with the mixed
 product rule `Matrix.mul_kronecker_mul` and the vectorisation identity
 `Matrix.kronecker_mulVec_vec`. This file adds the spectral facts: Kronecker products of frames,
 of singular value decompositions and of unitary diagonalisations, and the multiplicativity of the
@@ -66,7 +67,11 @@ private theorem mul_diagonal_mul_kronecker [Fintype r] [Fintype s] [DecidableEq 
     Matrix.conjTranspose_kronecker]
 
 /-- **The singular value decomposition of a Kronecker product** is the Kronecker product of the
-singular value decompositions, with singular values the products.
+singular value decompositions: if $\mathbf{A} = \mathbf{U} \operatorname{diag}(\sigma)
+\mathbf{V}^{\mathsf{H}}$ and $\mathbf{B} = \mathbf{P} \operatorname{diag}(\tau)
+\mathbf{W}^{\mathsf{H}}$ are singular value decompositions (`IsSVD`), then so is
+$\mathbf{A} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{P})
+\operatorname{diag}(\sigma_i \tau_j) (\mathbf{V} \otimes \mathbf{W})^{\mathsf{H}}$.
 [HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.IsSVD.kronecker_factorization`. -/
 theorem IsSVD.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] [Fintype r] [Fintype s]
     [DecidableEq r] [DecidableEq s] {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ}
@@ -81,8 +86,13 @@ theorem IsSVD.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] [Fintype
   rw [← hA.eq, ← hB.eq] at h
   simpa only [RCLike.ofReal_mul] using h
 
-/-- **Eigenvalues of a Kronecker product.** If `A = U diag(a) Uᴴ` and `B = V diag(b) Vᴴ`, then
-`A ⊗ B = (U ⊗ V) diag(a_i b_j) (U ⊗ V)ᴴ`. [HornJohnson1991, Theorem 4.2.12].
+/-- **Eigenvalues of a Kronecker product.** If
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{a}) \mathbf{U}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{V} \operatorname{diag}(\mathbf{b}) \mathbf{V}^{\mathsf{H}}$, then
+$$\mathbf{A} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{V})
+  \operatorname{diag}(\mathbf{a}_i \mathbf{b}_j) (\mathbf{U} \otimes \mathbf{V})^{\mathsf{H}}\,.$$
+The identity needs no hypothesis on $\mathbf{U}$, $\mathbf{V}$; for unitary ones it is a unitary
+diagonalisation with eigenvalues $\mathbf{a}_i \mathbf{b}_j$. [HornJohnson1991, Theorem 4.2.12].
 Port of `NLAlib.eq_eigenvectorUnitary_kronecker_mul_diagonal_mul_transpose`. -/
 theorem kronecker_eq_mul_diagonal_mul_conjTranspose [Fintype m] [Fintype n] [DecidableEq m]
     [DecidableEq n] {A U : Matrix m m 𝕜} {B V : Matrix n n 𝕜} {a : m → 𝕜} {b : n → 𝕜}
@@ -111,8 +121,12 @@ private theorem kronecker_one_add_one_kronecker_eq [Fintype r] [Fintype s] [Deci
           ← Matrix.mul_add, Matrix.diagonal_add]
         simp only [mul_one, one_mul]
 
-/-- **Eigenvalues of a Kronecker sum.** If `A = U diag(a) Uᴴ` and `B = V diag(b) Vᴴ` with `U`,
-`V` unitary, then `A ⊗ 1 + 1 ⊗ B = (U ⊗ V) diag(a_i + b_j) (U ⊗ V)ᴴ`.
+/-- **Eigenvalues of a Kronecker sum.** If
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{a}) \mathbf{U}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{V} \operatorname{diag}(\mathbf{b}) \mathbf{V}^{\mathsf{H}}$ with
+$\mathbf{U}$, $\mathbf{V}$ unitary, then
+$$\mathbf{A} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{V})
+  \operatorname{diag}(\mathbf{a}_i + \mathbf{b}_j) (\mathbf{U} \otimes \mathbf{V})^{\mathsf{H}}\,.$$
 [HornJohnson1991, Theorem 4.4.5]. Port of `NLAlib.multiset_eigenvalues_kronecker_sum`. -/
 theorem kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose [Fintype m] [Fintype n]
     [DecidableEq m] [DecidableEq n] {A U : Matrix m m 𝕜} {B V : Matrix n n 𝕜} {a : m → 𝕜}
@@ -169,7 +183,10 @@ private theorem exists_kronecker_similarity [Fintype m] [Fintype n] [DecidableEq
       Matrix.nonsing_inv_mul _ hF, Matrix.nonsing_inv_mul _ hG]
 
 /-- **The eigenvalues of a Kronecker product are the products of the eigenvalues**, for any two
-square matrices whose eigenvalues are listed. [HornJohnson1991, Theorem 4.2.12]. -/
+square matrices over a field whose eigenvalues are listed: if $\mathbf{a}$ lists the eigenvalues of
+$\mathbf{A}$ and $\mathbf{b}$ those of $\mathbf{B}$ (`IsEigenvalueListing`), then
+$(\mathbf{a}_i \mathbf{b}_j)_{(i,j)}$ lists those of $\mathbf{A} \otimes \mathbf{B}$.
+[HornJohnson1991, Theorem 4.2.12]. -/
 theorem IsEigenvalueListing.kronecker [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
     {K : Type*} [Field K] {A : Matrix m m K} {B : Matrix n n K} {a : m → K} {b : n → K}
     (hA : IsEigenvalueListing A a) (hB : IsEigenvalueListing B b) :
@@ -181,7 +198,10 @@ theorem IsEigenvalueListing.kronecker [Fintype m] [Fintype n] [DecidableEq m] [D
     charpoly_of_blockTriangular_toLex (blockTriangular_toLex_kronecker hS hT)]
   simp only [Matrix.kroneckerMap_apply, hdS, hdT]
 
-/-- **The eigenvalues of a Kronecker sum are the sums of the eigenvalues.**
+/-- **The eigenvalues of a Kronecker sum are the sums of the eigenvalues**: if $\mathbf{a}$ lists
+the eigenvalues of $\mathbf{A}$ and $\mathbf{b}$ those of $\mathbf{B}$ (`IsEigenvalueListing`), then
+$(\mathbf{a}_i + \mathbf{b}_j)_{(i,j)}$ lists those of
+$\mathbf{A} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{B}$.
 [HornJohnson1991, Theorem 4.4.5]. -/
 theorem IsEigenvalueListing.kronecker_one_add_one_kronecker [Fintype m] [Fintype n]
     [DecidableEq m] [DecidableEq n] {K : Type*} [Field K] {A : Matrix m m K} {B : Matrix n n K}
@@ -214,8 +234,10 @@ private theorem eigenvalue_zero_eq_of_eq_mul_diagonal_mul_conjTranspose [Fintype
   · rw [he i₀]
     exact hM.eigenvalue_le_eigenvalue (Nat.zero_le _) (e i₀).isLt
 
-/-- The largest eigenvalue of a Kronecker sum of Hermitian matrices is the sum of the largest
-eigenvalues. -/
+/-- The largest eigenvalue of a Kronecker sum of Hermitian matrices (of nonempty size) is the sum
+of the largest eigenvalues:
+$\lambda_0(\mathbf{A} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{B})
+= \lambda_0(\mathbf{A}) + \lambda_0(\mathbf{B})$. -/
 theorem eigenvalue_zero_kronecker_one_add_one_kronecker [Fintype m] [Fintype n] [DecidableEq m]
     [DecidableEq n] [Nonempty m] [Nonempty n] {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) :
@@ -235,7 +257,8 @@ theorem eigenvalue_zero_kronecker_one_add_one_kronecker [Fintype m] [Fintype n] 
         (hB.eigenvalue_le_eigenvalue (Nat.zero_le _) ij.2.isLt)
 
 /-- The largest eigenvalue of a Kronecker product of positive semidefinite matrices is the
-product of the largest eigenvalues. -/
+product of the largest eigenvalues:
+$\lambda_0(\mathbf{A} \otimes \mathbf{B}) = \lambda_0(\mathbf{A}) \lambda_0(\mathbf{B})$. -/
 theorem eigenvalue_zero_kronecker [Fintype m] [Fintype n] {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
     eigenvalue (A ⊗ₖ B) 0 = eigenvalue A 0 * eigenvalue B 0 := by
@@ -280,8 +303,9 @@ private theorem pi_norm_mul_apply [Fintype r] [Fintype s] (σ : r → ℝ) (τ :
     rw [mul_comm, ← norm_mul]
     exact norm_le_pi_norm (fun ij : r × s => σ ij.1 * τ ij.2) (i, j)
 
-/-- **The spectral norm is multiplicative on Kronecker products.**
-[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.specNorm_kronecker`, there over `ℝ`. -/
+/-- **The spectral norm is multiplicative on Kronecker products**:
+$\|\mathbf{A} \otimes \mathbf{B}\|_2 = \|\mathbf{A}\|_2 \|\mathbf{B}\|_2$.
+[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.specNorm_kronecker`, there over $\mathbb{R}$. -/
 theorem specNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     specNorm (A ⊗ₖ B) = specNorm A * specNorm B := by
@@ -291,7 +315,9 @@ theorem specNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : 
   exact pi_norm_mul_apply (fun i : Fin A.rank => singularValues A i) fun j : Fin B.rank =>
     singularValues B j
 
-/-- The Frobenius norm is multiplicative on Kronecker products.
+/-- The Frobenius norm is multiplicative on Kronecker products:
+$\|\mathbf{A} \otimes \mathbf{B}\|_{\mathsf{F}}
+= \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$.
 Port of `NLAlib.frobNorm_kronecker`. -/
 theorem frobNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
@@ -303,7 +329,8 @@ theorem frobNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : 
     Fintype.sum_prod_type, Finset.sum_mul_sum]
   simp only [mul_pow]
 
-/-- The nuclear norm is multiplicative on Kronecker products. -/
+/-- The nuclear norm is multiplicative on Kronecker products:
+$\|\mathbf{A} \otimes \mathbf{B}\|_* = \|\mathbf{A}\|_* \|\mathbf{B}\|_*$. -/
 theorem nuclearNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     nuclearNorm (A ⊗ₖ B) = nuclearNorm A * nuclearNorm B := by
@@ -312,8 +339,10 @@ theorem nuclearNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A
   rw [(hA.kronecker hB).nuclearNorm_eq_sum, hA.nuclearNorm_eq_sum, hB.nuclearNorm_eq_sum,
     Fintype.sum_prod_type, Finset.sum_mul_sum]
 
-/-- **The rank is multiplicative on Kronecker products.**
-[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.rank_kronecker`, there over `ℝ`. -/
+/-- **The rank is multiplicative on Kronecker products**:
+$\operatorname{rank}(\mathbf{A} \otimes \mathbf{B})
+= \operatorname{rank} \mathbf{A} \cdot \operatorname{rank} \mathbf{B}$.
+[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.rank_kronecker`, there over $\mathbb{R}$. -/
 theorem rank_kronecker [Finite m] [Fintype n] [Finite p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     (A ⊗ₖ B).rank = A.rank * B.rank := by
@@ -326,9 +355,9 @@ theorem rank_kronecker [Finite m] [Fintype n] [Finite p] [Fintype q] (A : Matrix
   refine congrArg Finset.card (Finset.ext fun ij => ?_)
   simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_product, mul_ne_zero_iff]
 
-/-- The Penrose identities pass to Kronecker products: if `A'` is the pseudoinverse of `A` and
-`B'` that of `B`, both recognised through `IsPinv`, then `A' ⊗ₖ B'` is the pseudoinverse of
-`A ⊗ₖ B`. -/
+/-- The Penrose identities pass to Kronecker products: if $\mathbf{A}'$ is the pseudoinverse of
+$\mathbf{A}$ and $\mathbf{B}'$ that of $\mathbf{B}$, both recognised through `IsPinv`, then
+$\mathbf{A}' \otimes \mathbf{B}'$ is the pseudoinverse of $\mathbf{A} \otimes \mathbf{B}$. -/
 theorem IsPinv.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] {A : Matrix m n 𝕜}
     {A' : Matrix n m 𝕜} {B : Matrix p q 𝕜} {B' : Matrix q p 𝕜} (hA : IsPinv A A')
     (hB : IsPinv B B') : IsPinv (A ⊗ₖ B) (A' ⊗ₖ B') := by
@@ -342,14 +371,16 @@ theorem IsPinv.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] {A : Ma
   · rw [← Matrix.mul_kronecker_mul]
     exact hA.isHermitian_right.kronecker hB.isHermitian_right
 
-/-- **The pseudoinverse of a Kronecker product** is the Kronecker product of the pseudoinverses.
-Port of `NLAlib.moorePenroseInverse_kronecker`, there over `ℝ`. -/
+/-- **The pseudoinverse of a Kronecker product** is the Kronecker product of the pseudoinverses:
+$(\mathbf{A} \otimes \mathbf{B})^{+} = \mathbf{A}^{+} \otimes \mathbf{B}^{+}$.
+Port of `NLAlib.moorePenroseInverse_kronecker`, there over $\mathbb{R}$. -/
 theorem pinv_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     pinv (A ⊗ₖ B) = pinv A ⊗ₖ pinv B :=
   ((isPinv_pinv A).kronecker (isPinv_pinv B)).pinv_eq
 
-/-- The condition number is multiplicative on Kronecker products. -/
+/-- The condition number is multiplicative on Kronecker products:
+$\kappa(\mathbf{A} \otimes \mathbf{B}) = \kappa(\mathbf{A}) \kappa(\mathbf{B})$. -/
 theorem conditionNumber_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     conditionNumber (A ⊗ₖ B) = conditionNumber A * conditionNumber B := by

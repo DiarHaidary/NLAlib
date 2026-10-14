@@ -15,8 +15,9 @@ public import NLAlib.Matrix.Norms.Compare
 
 An orthogonal projector is a contraction in both norms, splits the squared Frobenius norm
 (Pythagoras), and gives the best approximation from its range. The statements about
-`(1 - rangeProjector Y) * A`, the projection residual, are the ones range finders and low-rank
-approximation bounds consume.
+$(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}$, the projection residual, with
+$\mathbf{P}_{\mathbf{Y}}$ the orthogonal projector onto the range of $\mathbf{Y}$
+(`rangeProjector`), are the ones range finders and low-rank approximation bounds consume.
 
 ## Main results
 
@@ -25,8 +26,8 @@ approximation bounds consume.
 * `IsStarProjection.frobNorm_sq_eq_add`: Pythagoras.
 * `NLAlib.frobNorm_one_sub_rangeProjector_mul_le_frobNorm_sub_mul`,
   `NLAlib.specNorm_one_sub_rangeProjector_mul_le_specNorm_sub_mul`: the projection residual is
-  the smallest residual `A - B * X`.
-* `NLAlib.frobNorm_sub_mul_sq`: the exact error split for an arbitrary `X`.
+  the smallest residual $\mathbf{A} - \mathbf{B}\mathbf{X}$.
+* `NLAlib.frobNorm_sub_mul_sq`: the exact error split for an arbitrary $\mathbf{X}$.
 * `NLAlib.specNorm_one_sub_rangeProjector_mul_le_of_range_le`: a larger range gives a smaller
   residual.
 * `NLAlib.specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero`: a matrix with one
@@ -59,41 +60,48 @@ theorem _root_.IsStarProjection.specNorm_eq_one {P : Matrix m m 𝕜} (hP : IsSt
   have h0 : specNorm P ≠ 0 := fun h0 => h (specNorm_eq_zero_iff.1 h0)
   exact mul_left_cancel₀ h0 (by rw [mul_one, ← sq, ← hsq])
 
-/-- Left multiplication by an orthogonal projector does not increase the spectral norm. -/
+/-- Left multiplication by an orthogonal projector does not increase the spectral norm:
+$\|\mathbf{P}\mathbf{A}\|_2 \le \|\mathbf{A}\|_2$. -/
 theorem _root_.IsStarProjection.specNorm_mul_le {P : Matrix m m 𝕜} (hP : IsStarProjection P)
     (A : Matrix m n 𝕜) : specNorm (P * A) ≤ specNorm A := by
   exact (NLAlib.specNorm_mul_le P A).trans
     (mul_le_of_le_one_left (specNorm_nonneg A) hP.specNorm_le_one)
 
-/-- Left multiplication by an orthogonal projector does not increase the Frobenius norm.
+/-- Left multiplication by an orthogonal projector does not increase the Frobenius norm:
+$\|\mathbf{P}\mathbf{A}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$.
 Port of `NLAlib.frobSq_proj_le`. -/
 theorem _root_.IsStarProjection.frobNorm_mul_le {P : Matrix m m 𝕜} (hP : IsStarProjection P)
     (A : Matrix m n 𝕜) : frobNorm (P * A) ≤ frobNorm A := by
   exact (frobNorm_mul_le_specNorm_mul_frobNorm P A).trans
     (mul_le_of_le_one_left (frobNorm_nonneg A) hP.specNorm_le_one)
 
-/-- Right multiplication by an orthogonal projector does not increase the spectral norm. -/
+/-- Right multiplication by an orthogonal projector does not increase the spectral norm:
+$\|\mathbf{A}\mathbf{P}\|_2 \le \|\mathbf{A}\|_2$. -/
 theorem _root_.IsStarProjection.specNorm_mul_right_le {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (A : Matrix n m 𝕜) : specNorm (A * P) ≤ specNorm A := by
   exact (NLAlib.specNorm_mul_le A P).trans
     (mul_le_of_le_one_right (specNorm_nonneg A) hP.specNorm_le_one)
 
-/-- Right multiplication by an orthogonal projector does not increase the Frobenius norm. -/
+/-- Right multiplication by an orthogonal projector does not increase the Frobenius norm:
+$\|\mathbf{A}\mathbf{P}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem _root_.IsStarProjection.frobNorm_mul_right_le {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (A : Matrix n m 𝕜) : frobNorm (A * P) ≤ frobNorm A := by
   exact (frobNorm_mul_le_frobNorm_mul_specNorm A P).trans
     (mul_le_of_le_one_right (frobNorm_nonneg A) hP.specNorm_le_one)
 
 /-- The two parts of a matrix cut out by an orthogonal projector and its complement are
-orthogonal in the Frobenius inner product. Port of `NLAlib.frobInner_mul_residual`. -/
+orthogonal in the Frobenius inner product:
+$\langle \mathbf{P}\mathbf{A}, (\mathbf{I} - \mathbf{P})\mathbf{B} \rangle_{\mathsf{F}} = 0$. Port
+of `NLAlib.frobInner_mul_residual`. -/
 theorem _root_.IsStarProjection.frobInner_mul_one_sub_mul [DecidableEq m] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (A B : Matrix m n 𝕜) :
     frobInner (P * A) ((1 - P) * B) = 0 := by
   rw [frobInner_mul_left, hP.conjTranspose_eq, ← Matrix.mul_assoc, hP.mul_one_sub_self,
     Matrix.zero_mul, frobInner_zero_right]
 
-/-- **Pythagoras** for an orthogonal projector:
-`‖A‖_F² = ‖P A‖_F² + ‖(1 - P) A‖_F²`.
+/-- **Pythagoras** for an orthogonal projector $\mathbf{P}$:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \|\mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 +
+\|(\mathbf{I} - \mathbf{P})\mathbf{A}\|_{\mathsf{F}}^2$.
 Port of `NLAlib.frobSq_eq_frobSq_proj_add_residual`. -/
 theorem _root_.IsStarProjection.frobNorm_sq_eq_add [DecidableEq m] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (A : Matrix m n 𝕜) :
@@ -103,14 +111,16 @@ theorem _root_.IsStarProjection.frobNorm_sq_eq_add [DecidableEq m] {P : Matrix m
 
 /-! ### The range projector -/
 
-/-- The trace of the range projector of `A` is the rank of `A`. -/
+/-- The trace of the range projector is the rank:
+$\operatorname{tr} \mathbf{P}_{\mathbf{A}} = \operatorname{rank} \mathbf{A}$. -/
 theorem trace_rangeProjector (A : Matrix m n 𝕜) : (rangeProjector A).trace = A.rank := by
   obtain ⟨Q, hQ, hrange⟩ :=
     exists_hasOrthonormalCols_range_eq (p := Fin A.rank) A (Fintype.card_fin _)
   rw [← rangeProjector_inj.mpr hrange, hQ.rangeProjector_eq, Matrix.trace_mul_comm,
     hQ.conjTranspose_mul_self, Matrix.trace_one, Fintype.card_fin]
 
-/-- The squared Frobenius norm of the range projector of `A` is the rank of `A`. -/
+/-- The squared Frobenius norm of the range projector is the rank:
+$\|\mathbf{P}_{\mathbf{A}}\|_{\mathsf{F}}^2 = \operatorname{rank} \mathbf{A}$. -/
 theorem frobNorm_rangeProjector_sq (A : Matrix m n 𝕜) :
     frobNorm (rangeProjector A) ^ 2 = A.rank := by
   rw [frobNorm_sq_eq_re_trace, conjTranspose_rangeProjector, rangeProjector_mul_rangeProjector,
@@ -120,22 +130,27 @@ theorem frobNorm_rangeProjector_sq (A : Matrix m n 𝕜) :
 
 variable [DecidableEq m]
 
-/-- The projection residual has spectral norm at most that of the matrix.
+/-- The projection residual has spectral norm at most that of the matrix:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}\|_2 \le \|\mathbf{A}\|_2$.
 Port of `NLAlib.specNorm_sub_rangeProjector_mul_le`. -/
 theorem specNorm_one_sub_rangeProjector_mul_le (Y : Matrix m p 𝕜) (A : Matrix m n 𝕜) :
     specNorm ((1 - rangeProjector Y) * A) ≤ specNorm A := by
   exact (isStarProjection_one_sub_rangeProjector Y).specNorm_mul_le A
 
-/-- The projection residual has Frobenius norm at most that of the matrix.
+/-- The projection residual has Frobenius norm at most that of the matrix:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$.
 Port of `NLAlib.frobSq_sub_rangeProjector_mul_le`. -/
 theorem frobNorm_one_sub_rangeProjector_mul_le (Y : Matrix m p 𝕜) (A : Matrix m n 𝕜) :
     frobNorm ((1 - rangeProjector Y) * A) ≤ frobNorm A := by
   exact (isStarProjection_one_sub_rangeProjector Y).frobNorm_mul_le A
 
-/-- **The exact error split.** For any coefficient matrix `X`, the squared Frobenius error of
-`B * X` as an approximation of `A` is the squared projection residual plus the squared error
-inside the range of `B`. Port of `NLAlib.frobSq_sub_mul_eq`, there for `B` with orthonormal
-columns. -/
+/-- **The exact error split.** For any coefficient matrix $\mathbf{X}$, the squared Frobenius
+error of $\mathbf{B}\mathbf{X}$ as an approximation of $\mathbf{A}$ is the squared projection
+residual plus the squared error inside the range of $\mathbf{B}$:
+$$\|\mathbf{A} - \mathbf{B}\mathbf{X}\|_{\mathsf{F}}^2
+  = \|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_{\mathsf{F}}^2 +
+  \|\mathbf{P}_{\mathbf{B}}\mathbf{A} - \mathbf{B}\mathbf{X}\|_{\mathsf{F}}^2\,.$$
+Port of `NLAlib.frobSq_sub_mul_eq`, there for $\mathbf{B}$ with orthonormal columns. -/
 theorem frobNorm_sub_mul_sq (B : Matrix m p 𝕜) (A : Matrix m n 𝕜) (X : Matrix p n 𝕜) :
     frobNorm (A - B * X) ^ 2 =
       frobNorm ((1 - rangeProjector B) * A) ^ 2 + frobNorm (rangeProjector B * A - B * X) ^ 2 := by
@@ -157,7 +172,9 @@ private theorem one_sub_rangeProjector_mul_sub_mul (B : Matrix m p 𝕜) (A : Ma
     sub_zero]
 
 /-- **Best approximation in the Frobenius norm.** The projection residual is at most the
-residual of any approximation `B * X` with columns in the range of `B`.
+residual of any approximation $\mathbf{B}\mathbf{X}$ with columns in the range of $\mathbf{B}$:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_{\mathsf{F}}
+\le \|\mathbf{A} - \mathbf{B}\mathbf{X}\|_{\mathsf{F}}$.
 [GolubVanLoan2013, §5.3.1]. Port of `NLAlib.frobSq_residual_le_frobSq_sub_mul`. -/
 theorem frobNorm_one_sub_rangeProjector_mul_le_frobNorm_sub_mul (B : Matrix m p 𝕜)
     (A : Matrix m n 𝕜) (X : Matrix p n 𝕜) :
@@ -166,7 +183,9 @@ theorem frobNorm_one_sub_rangeProjector_mul_le_frobNorm_sub_mul (B : Matrix m p 
   exact frobNorm_one_sub_rangeProjector_mul_le B _
 
 /-- **Best approximation in the spectral norm.** The projection residual is at most the residual
-of any approximation `B * X` with columns in the range of `B`.
+of any approximation $\mathbf{B}\mathbf{X}$ with columns in the range of $\mathbf{B}$:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_2 \le \|\mathbf{A} -
+\mathbf{B}\mathbf{X}\|_2$.
 [HalkoMartinssonTropp2011, Proposition 8.5]. -/
 theorem specNorm_one_sub_rangeProjector_mul_le_specNorm_sub_mul (B : Matrix m p 𝕜)
     (A : Matrix m n 𝕜) (X : Matrix p n 𝕜) :
@@ -184,7 +203,10 @@ private theorem one_sub_rangeProjector_mul_one_sub_rangeProjector_mul {B : Matri
       rangeProjector_mul_rangeProjector_of_range_le h, sub_self, sub_zero]
   rw [← Matrix.mul_assoc, hmul]
 
-/-- A larger range gives a smaller projection residual, in spectral norm.
+/-- A larger range gives a smaller projection residual, in spectral norm: if the range of
+$\mathbf{Y}$ is contained in the range of $\mathbf{B}$ then
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_2
+\le \|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}\|_2$.
 [HalkoMartinssonTropp2011, Proposition 8.5].
 Port of `NLAlib.specNorm_sub_rangeProjector_mul_le_of_mul_eq`. -/
 theorem specNorm_one_sub_rangeProjector_mul_le_of_range_le {B : Matrix m p 𝕜} {Y : Matrix m l 𝕜}
@@ -193,7 +215,10 @@ theorem specNorm_one_sub_rangeProjector_mul_le_of_range_le {B : Matrix m p 𝕜}
   rw [← one_sub_rangeProjector_mul_one_sub_rangeProjector_mul h A]
   exact specNorm_one_sub_rangeProjector_mul_le B _
 
-/-- A larger range gives a smaller projection residual, in Frobenius norm.
+/-- A larger range gives a smaller projection residual, in Frobenius norm: if the range of
+$\mathbf{Y}$ is contained in the range of $\mathbf{B}$ then
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_{\mathsf{F}}
+\le \|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}\|_{\mathsf{F}}$.
 Port of `NLAlib.frobSq_sub_rangeProjector_mul_le_of_mul_eq`. -/
 theorem frobNorm_one_sub_rangeProjector_mul_le_of_range_le {B : Matrix m p 𝕜} {Y : Matrix m l 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) (A : Matrix m n 𝕜) :
@@ -203,8 +228,8 @@ theorem frobNorm_one_sub_rangeProjector_mul_le_of_range_le {B : Matrix m p 𝕜}
 
 /-! ### A matrix with a vanishing block -/
 
-/-- The scalar inequality behind the golden-ratio bound: the matrix `!![1, 1; 1, 0]` has norm
-`(1 + √5) / 2`. -/
+/-- The scalar inequality behind the golden-ratio bound: the matrix
+$\begin{bmatrix} 1 & 1 \\ 1 & 0 \end{bmatrix}$ has norm $(1 + \sqrt{5})/2$. -/
 private theorem add_sq_add_sq_le_goldenRatio_sq_mul (s t : ℝ) :
     (s + t) ^ 2 + s ^ 2 ≤ Real.goldenRatio ^ 2 * (s ^ 2 + t ^ 2) := by
   have h : Real.goldenRatio * (Real.goldenRatio ^ 2 * (s ^ 2 + t ^ 2) - ((s + t) ^ 2 + s ^ 2)) =
@@ -215,9 +240,14 @@ private theorem add_sq_add_sq_le_goldenRatio_sq_mul (s t : ℝ) :
     (mul_nonneg_iff_of_pos_left Real.goldenRatio_pos).mp (h ▸ sq_nonneg _)
   linarith
 
-/-- A matrix with three blocks of norm at most `d` and a vanishing fourth block, relative to two
-orthogonal projectors, has spectral norm at most `(1 + √5)/2 · d`. This is the step that gives the
-golden ratio in Wedin's bound for the pseudoinverse. [Wedin1973, Theorem 4.1].
+/-- A matrix with three blocks of norm at most $d$ and a vanishing fourth block, relative to two
+orthogonal projectors, has spectral norm at most $(1 + \sqrt{5}) d / 2$: for orthogonal
+projectors $\mathbf{P}$, $\mathbf{Q}$ with
+$(\mathbf{I} - \mathbf{Q})\mathbf{Z}(\mathbf{I} - \mathbf{P}) = \mathbf{0}$ and
+$\|\mathbf{Q}\mathbf{Z}\mathbf{P}\|_2$, $\|\mathbf{Q}\mathbf{Z}(\mathbf{I} - \mathbf{P})\|_2$,
+$\|(\mathbf{I} - \mathbf{Q})\mathbf{Z}\mathbf{P}\|_2$ all at most $d$,
+$\|\mathbf{Z}\|_2 \le (1 + \sqrt{5}) d / 2$. This is the step that gives the golden ratio in
+Wedin's bound for the pseudoinverse. [Wedin1973, Theorem 4.1].
 Port of `NLAlib.specNorm_le_goldenRatio_mul_of_zero_complement_block`. -/
 theorem specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero [DecidableEq n]
     {Z : Matrix m n 𝕜} {P : Matrix n n 𝕜} {Q : Matrix m m 𝕜} (hP : IsStarProjection P)

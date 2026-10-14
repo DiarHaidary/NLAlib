@@ -12,20 +12,23 @@ public import NLAlib.Probability.SubGaussianVector.Basic
 /-!
 # The squared norm of a sub-Gaussian random vector
 
-For a real sub-Gaussian vector `X` with proxy `c`, `E exp (θ ‖X‖²)` is at most the Laplace
-transform of `c χ²_n`, and the upper tail of `‖X‖²` is the Laurent–Massart bound
-`P(c (n + 2√(n t) + 2t) ≤ ‖X‖²) ≤ e^{-t}` (Hsu, Kakade and Zhang). For independent sub-Gaussian
-coordinates, the two-sided tail of `‖X‖²` about its mean is Bernstein's inequality for the
-centred squares.
+For a real sub-Gaussian vector $\mathbf{X}$ with proxy $c$, $\mathbb{E} e^{\theta \|\mathbf{X}\|^2}$
+is at most the Laplace transform of $c \chi^2_n$, and the upper tail of $\|\mathbf{X}\|^2$ is the
+Laurent–Massart bound
+$\mathbb{P}(\|\mathbf{X}\|^2 \ge c (n + 2\sqrt{n t} + 2t)) \le e^{-t}$ (Hsu, Kakade and Zhang).
+For independent sub-Gaussian coordinates, the two-sided tail of $\|\mathbf{X}\|^2$ about its mean
+is Bernstein's inequality for the centred squares.
 
-The statements are over `ℝ`: the proofs linearise with a standard Gaussian vector of the same
-dimension (`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), which exists over `ℝ` only in
-this library for now; the complex versions are the real ones in dimension `2 n`.
+The statements are over $\mathbb{R}$: the proofs linearise with a standard Gaussian vector of the
+same dimension (`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), which exists over
+$\mathbb{R}$ only in this library for now; the complex versions are the real ones in dimension
+$2 n$.
 
 ## Main results
 
-* `NLAlib.IsSubgaussianVector.integral_exp_mul_norm_sq_le`: `E exp (θ‖X‖²) ≤ (1 - 2θc)^{-n/2}`.
-* `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le`: the upper tail of `‖X‖²`.
+* `NLAlib.IsSubgaussianVector.integral_exp_mul_norm_sq_le`:
+  $\mathbb{E} e^{\theta \|\mathbf{X}\|^2} \le (1 - 2\theta c)^{-n/2}$.
+* `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le`: the upper tail of $\|\mathbf{X}\|^2$.
 * `NLAlib.measureReal_abs_norm_sq_sub_integral_ge_le`: the two-sided tail for independent
   coordinates.
 -/
@@ -43,7 +46,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [
 private lemma norm_sq_eq (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = ∑ i, x i ^ 2 :=
   EuclideanSpace.real_norm_sq_eq _
 
-/-- The Laplace transform of `χ²_n`, as an upper bound. -/
+/-- The Laplace transform of $\chi^2_n$, as an upper bound: for a standard Gaussian vector
+$\mathbf{g}$ and $0 \le a < 1/2$,
+$\mathbb{E} e^{a \|\mathbf{g}\|^2} \le (1 - 2a)^{-\lvert n\rvert/2}$. -/
 private lemma lintegral_exp_mul_norm_sq_gaussianVector_le {a : ℝ} (ha0 : 0 ≤ a)
     (ha : 2 * a < 1) :
     ∫⁻ g, ENNReal.ofReal (rexp (a * ‖WithLp.toLp 2 g‖ ^ 2)) ∂(gaussianVector n) ≤
@@ -116,7 +121,8 @@ private lemma lintegral_exp_mul_norm_sq_le (h : IsSubgaussianVector X c μ) {θ 
         rw [h2]
         exact lintegral_exp_mul_norm_sq_gaussianVector_le (by positivity) (by linarith)
 
-/-- The mean squared norm of a sub-Gaussian vector is at most `c n`. -/
+/-- The mean squared norm of a sub-Gaussian vector with proxy $c$ is at most $c \lvert n\rvert$:
+$\mathbb{E}\|\mathbf{X}\|^2 \le c \lvert n\rvert$ under a probability measure. -/
 theorem integral_norm_sq_le [IsProbabilityMeasure μ] (h : IsSubgaussianVector X c μ) :
     ∫ ω, ‖WithLp.toLp 2 (X ω)‖ ^ 2 ∂μ ≤ c * Fintype.card n := by
   have hi : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ := fun i => by
@@ -127,7 +133,8 @@ theorem integral_norm_sq_le [IsProbabilityMeasure μ] (h : IsSubgaussianVector X
         Finset.sum_le_sum fun i _ => (hi i).integral_sq_le
     _ = c * Fintype.card n := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_comm]
 
-/-- `exp (θ ‖X‖²)` is integrable for a sub-Gaussian vector when `2 θ c < 1`. -/
+/-- $e^{\theta \|\mathbf{X}\|^2}$ is integrable for a sub-Gaussian vector with proxy $c$ when
+$2 \theta c < 1$. -/
 theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector X c μ) {θ : ℝ}
     (hθ : 2 * θ * c < 1) : Integrable (fun ω => rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2)) μ := by
   have := (h.hasSubgaussianMGF 0).isFiniteMeasure
@@ -143,8 +150,9 @@ theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector X c μ) {θ : ℝ}
   · refine ⟨hm, (hasFiniteIntegral_iff_ofReal (ae_of_all _ fun _ => (exp_pos _).le)).mpr ?_⟩
     exact (h.lintegral_exp_mul_norm_sq_le hθ0.le hθ).trans_lt ENNReal.ofReal_lt_top
 
-/-- `E exp (θ ‖X‖²) ≤ (1 - 2θc)^{-n/2}` for a sub-Gaussian vector and `0 ≤ θ < 1 / (2c)`: the
-Laplace transform of `c χ²_n`, by Gaussian linearisation. -/
+/-- $\int e^{\theta \|\mathbf{X}\|^2} \, d\mu \le (1 - 2\theta c)^{-\lvert n\rvert/2}$ for a
+sub-Gaussian vector with proxy $c$, $\theta \ge 0$ and $2\theta c < 1$: the Laplace transform of
+$c \chi^2_n$, by Gaussian linearisation. -/
 theorem integral_exp_mul_norm_sq_le (h : IsSubgaussianVector X c μ) {θ : ℝ} (hθ0 : 0 ≤ θ)
     (hθ : 2 * θ * c < 1) :
     ∫ ω, rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2) ∂μ ≤
@@ -203,10 +211,12 @@ private lemma measure_norm_sq_ge_le_aux (h : IsSubgaussianVector X c μ) (hc0 : 
       simp only [ε]
       nlinarith [mul_le_mul_of_nonneg_left hlog hd.le]
 
-/-- **The upper tail of `‖X‖²`** for a sub-Gaussian vector (Hsu, Kakade and Zhang 2012,
-Theorem 2.1 with `A = 1`; for a standard Gaussian vector this is Laurent and Massart's bound).
-`c ≠ 0` is needed for the non-strict event: with `c = 0` the vector is `0` almost surely and the
-event is everything.
+/-- **The upper tail of $\|\mathbf{X}\|^2$** for a real sub-Gaussian vector with proxy
+$c \ne 0$: for $t \ge 0$, with $n = \lvert n\rvert$,
+$$\mu\bigl(\|\mathbf{X}\|^2 \ge c\,(n + 2\sqrt{n t} + 2t)\bigr) \le e^{-t}\,.$$
+Hsu, Kakade and Zhang 2012, Theorem 2.1 with $\mathbf{A} = \mathbf{I}$; for a standard Gaussian
+vector this is Laurent and Massart's bound. $c \ne 0$ is needed for the non-strict event: with
+$c = 0$ the vector is $\mathbf{0}$ almost surely and the event is everything.
 Result: hsu-kakade-zhang -/
 theorem measure_norm_sq_ge_le (h : IsSubgaussianVector X c μ) (hc : c ≠ 0) {t : ℝ}
     (ht : 0 ≤ t) :
@@ -234,9 +244,13 @@ theorem measure_norm_sq_ge_le (h : IsSubgaussianVector X c μ) (hc : c ≠ 0) {t
 
 end IsSubgaussianVector
 
-/-- The two-sided tail of `‖X‖²` about its mean for independent sub-Gaussian coordinates:
-Bernstein's inequality for the centred squares, whose variance proxy and scale are `32 c²` and
-`4 c`. -/
+/-- The two-sided tail of $\|\mathbf{X}\|^2$ about its mean for a real vector with independent
+coordinates, each sub-Gaussian with proxy $c$: for $t \ge 0$,
+$$\mu\bigl(\bigl\lvert \|\mathbf{X}\|^2 - \mathbb{E}\|\mathbf{X}\|^2 \bigr\rvert \ge t\bigr)
+\le 2 \exp\Bigl(-\min\Bigl(\frac{t^2}{2 \lvert n\rvert \cdot 32 c^2}, \frac{t}{2 \cdot 4c}\Bigr)
+\Bigr)\,,$$
+Bernstein's inequality for the centred squares, whose variance proxy and scale are $32 c^2$ and
+$4 c$. -/
 theorem measureReal_abs_norm_sq_sub_integral_ge_le (hind : iIndepFun (fun i ω => X ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ |‖WithLp.toLp 2 (X ω)‖ ^ 2 - ∫ ω', ‖WithLp.toLp 2 (X ω')‖ ^ 2 ∂μ|} ≤

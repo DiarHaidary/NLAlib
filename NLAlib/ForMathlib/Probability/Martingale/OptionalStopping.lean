@@ -10,9 +10,9 @@ public import Mathlib.Probability.Martingale.OptionalStopping
 /-!
 # Ville's maximal inequality
 
-For a nonnegative supermartingale `f` and `c > 0`, the probability that `f` ever reaches `c` is
-at most `E f 0 / c`. Mathlib has Doob's finite-horizon maximal inequality for nonnegative
-submartingales (`MeasureTheory.maximal_ineq`) and the optional stopping theorem
+For a nonnegative supermartingale $(f_k)_{k \ge 0}$ and $c > 0$, the probability that $f$ ever
+reaches $c$ is at most $\mathbb{E}[f_0] / c$. Mathlib has Doob's finite-horizon maximal inequality
+for nonnegative submartingales (`MeasureTheory.maximal_ineq`) and the optional stopping theorem
 (`MeasureTheory.Submartingale.expected_stoppedValue_mono`), but no infinite-horizon form for
 supermartingales. Upstream candidate for `Mathlib/Probability/Martingale/OptionalStopping.lean`.
 
@@ -30,14 +30,17 @@ namespace MeasureTheory
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- **Ville's maximal inequality**: a nonnegative supermartingale `f` reaches the level `c > 0` at
-some time with probability at most `E f 0 / c`. Due to Ville (1939); the time-uniform form of
+/-- **Ville's maximal inequality**: a nonnegative supermartingale $(f_k)_{k \ge 0}$ reaches the
+level $c > 0$ at some time with probability at most $\mathbb{E}[f_0] / c$; for a finite measure
+$\mu$, $\mu\{\omega : \exists k,\ f_k(\omega) \ge c\} \le \int f_0 \, d\mu / c$.
+Due to Ville (1939); the time-uniform form of
 Markov's inequality used for martingale tail bounds (the matrix Freedman inequality,
 `NLAlib/Probability/MatrixConcentration/Freedman.lean`).
-Proof: finite horizon `n` first, from Mathlib's `Submartingale.expected_stoppedValue_mono`
-applied to `hf.neg` with `σ = 0` and `τ = hittingBtwn f (Set.Ici c) 0 n`, at most `n` (on the
-event `{∃ k ≤ n, c ≤ f k}` the stopped value is at least `c`, elsewhere it is nonnegative), giving
-`c · μ {∃ k ≤ n, c ≤ f k} ≤ E f 0`; then `n → ∞` by continuity of the measure from below
+Proof: finite horizon $n$ first, from Mathlib's `Submartingale.expected_stoppedValue_mono`
+applied to `hf.neg` with $\sigma = 0$ and $\tau$ = `hittingBtwn f (Set.Ici c) 0 n`, at most $n$
+(on the event $\{\exists k \le n,\ f_k \ge c\}$ the stopped value is at least $c$, elsewhere it is
+nonnegative), giving $c \, \mu\{\exists k \le n,\ f_k \ge c\} \le \mathbb{E}[f_0]$; then
+$n \to \infty$ by continuity of the measure from below
 (`MeasureTheory.measure_iUnion_eq_iSup` on the increasing events). Medium.
 Result: ville-inequality -/
 theorem Supermartingale.measure_exists_ge_le [IsFiniteMeasure μ] {ℱ : Filtration ℕ mΩ}

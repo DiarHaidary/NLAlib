@@ -12,16 +12,16 @@ public import Mathlib.Topology.MetricSpace.CoveringNumbers
 # Nets of the unit sphere of a finite-dimensional normed space
 
 The volumetric bound on the size of a separated subset of the unit sphere of a finite-dimensional
-real normed space, and the finite `ε`-net of the sphere that it gives. Upstream candidates for
-`Mathlib.Topology.MetricSpace.CoveringNumbers`, or for a file next to it, since the proof compares
-Haar measures of balls.
+real normed space, and the finite $\varepsilon$-net of the sphere that it gives. Upstream candidates
+for `Mathlib.Topology.MetricSpace.CoveringNumbers`, or for a file next to it, since the proof
+compares Haar measures of balls.
 
 ## Main results
 
-* `Metric.card_le_of_subset_sphere_of_isSeparated`: an `ε`-separated finite subset of the unit
-  sphere has at most `(1 + 2 / ε) ^ d` points, `d` the real dimension.
-* `Metric.exists_finset_isCover_sphere_card_le`: the unit sphere has an `ε`-net of unit vectors
-  with at most `(1 + 2 / ε) ^ d` points.
+* `Metric.card_le_of_subset_sphere_of_isSeparated`: an $\varepsilon$-separated finite subset of
+  the unit sphere has at most $(1 + 2 / \varepsilon)^d$ points, $d$ the real dimension.
+* `Metric.exists_finset_isCover_sphere_card_le`: the unit sphere has an $\varepsilon$-net of unit
+  vectors with at most $(1 + 2 / \varepsilon)^d$ points.
 -/
 
 @[expose] public section
@@ -31,9 +31,10 @@ open scoped NNReal
 
 namespace Metric
 
-/-- **The volumetric packing bound.** An `ε`-separated finite subset of the unit sphere of a
-finite-dimensional real normed space of dimension `d` has at most `(1 + 2 / ε) ^ d` points, since
-the disjoint balls of radius `ε / 2` about its points lie in the ball of radius `1 + ε / 2`.
+/-- **The volumetric packing bound.** For $\varepsilon > 0$, an $\varepsilon$-separated finite
+subset of the unit sphere of a finite-dimensional real normed space of dimension $d$ has at most
+$(1 + 2 / \varepsilon)^d$ points, since the disjoint balls of radius $\varepsilon / 2$ about its
+points lie in the ball of radius $1 + \varepsilon / 2$.
 [Vershynin2018, Corollary 4.2.13]. -/
 theorem card_le_of_subset_sphere_of_isSeparated {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] [FiniteDimensional ℝ E] {ε : ℝ≥0} (hε : 0 < ε) (S : Finset E)
@@ -76,9 +77,9 @@ theorem card_le_of_subset_sphere_of_isSeparated {E : Type*} [NormedAddCommGroup 
       field_simp
       ring
 
-/-- **A finite net of the unit sphere.** A finite-dimensional real normed space of dimension `d`
-has a finite `ε`-net of its unit sphere, made of unit vectors, with at most `(1 + 2 / ε) ^ d`
-points: a separated subset of the sphere of largest size.
+/-- **A finite net of the unit sphere.** For $\varepsilon > 0$, a finite-dimensional real normed
+space of dimension $d$ has a finite $\varepsilon$-net of its unit sphere, made of unit vectors,
+with at most $(1 + 2 / \varepsilon)^d$ points: a separated subset of the sphere of largest size.
 [Vershynin2018, Corollary 4.2.13]. -/
 theorem exists_finset_isCover_sphere_card_le (E : Type*) [NormedAddCommGroup E]
     [NormedSpace ℝ E] [FiniteDimensional ℝ E] {ε : ℝ≥0} (hε : 0 < ε) :

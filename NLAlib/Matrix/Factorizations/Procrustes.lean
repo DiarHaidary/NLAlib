@@ -10,16 +10,19 @@ public import NLAlib.Matrix.Factorizations.PolarFrames
 /-!
 # Procrustes problems
 
-The orthogonal Procrustes problem asks for the unitary `U` that brings `U B` closest to `A` in
-the Frobenius norm. It is solved by an isometric polar factor of `A Bᴴ`, and the least value is
-`‖A‖_F² + ‖B‖_F² - 2 ‖A Bᴴ‖_*`. With a unitary factor on each side the least value is the
-distance between the sorted singular values.
+The orthogonal Procrustes problem asks for the unitary $\mathbf{U}$ that brings
+$\mathbf{U}\mathbf{B}$ closest to $\mathbf{A}$ in the Frobenius norm. It is solved by an isometric
+polar factor of $\mathbf{A}\mathbf{B}^{\mathsf{H}}$, and the least value is
+$\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2 -
+2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*$. With a unitary factor on each side the least value is
+the squared distance between the non-increasing sequences of singular values.
 
 ## Main results
 
 * `NLAlib.HasOrthonormalCols.frobInner_eq_nuclearNorm_of_mul_sqrt_eq`,
   `NLAlib.frobInner_polarFactor`: a polar factor attains the nuclear dual pairing.
-* `NLAlib.frobNorm_sub_mul_sq_of_mul_sqrt_eq`: the objective at a polar factor of `A Bᴴ`.
+* `NLAlib.frobNorm_sub_mul_sq_of_mul_sqrt_eq`: the objective at a polar factor of
+  $\mathbf{A}\mathbf{B}^{\mathsf{H}}$.
 * `NLAlib.isLeast_frobNorm_sub_mul_sq`: the orthogonal Procrustes problem.
 * `NLAlib.isLeast_frobNorm_sub_mul_mul_sq`: the two-sided Procrustes problem.
 -/
@@ -33,11 +36,13 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
 
 omit [DecidableEq m] in
-/-- **An isometric polar factor attains the nuclear dual pairing.** If `M = U |M|` with `U` of
-orthonormal columns and `|M| = CFC.sqrt (Mᴴ * M)`, then `⟨M, U⟩ = ‖M‖_*`. This is the case of
-equality in `NLAlib.abs_frobInner_le_nuclearNorm_mul_specNorm`. Rectangular, any rank.
+/-- **An isometric polar factor attains the nuclear dual pairing.** If
+$\mathbf{M} = \mathbf{U}(\mathbf{M}^{\mathsf{H}}\mathbf{M})^{1/2}$ with $\mathbf{U}$ of orthonormal
+columns, then $\langle \mathbf{M}, \mathbf{U} \rangle_{\mathsf{F}} = \|\mathbf{M}\|_*$. This is the
+case of equality in `NLAlib.abs_frobInner_le_nuclearNorm_mul_specNorm`. Rectangular, any rank.
 [HornJohnson2013, §7.4.4].
-Port of `NLAlib.frobInner_eq_nuclearNorm_of_polar`, there over `ℝ` for square matrices. -/
+Port of `NLAlib.frobInner_eq_nuclearNorm_of_polar`, there over $\mathbb{R}$ for square matrices.
+-/
 theorem HasOrthonormalCols.frobInner_eq_nuclearNorm_of_mul_sqrt_eq [DecidableEq n]
     {M U : Matrix m n 𝕜} (hU : HasOrthonormalCols U) (h : U * CFC.sqrt (Mᴴ * M) = M) :
     frobInner M U = nuclearNorm M := by
@@ -47,9 +52,10 @@ theorem HasOrthonormalCols.frobInner_eq_nuclearNorm_of_mul_sqrt_eq [DecidableEq 
   rw [← h, Matrix.trace_mul_comm, hU.conjTranspose_mul_cancel_left]
 
 omit [DecidableEq m] in
-/-- **The polar factor attains the nuclear dual pairing**: `⟨M, polarFactor M⟩ = ‖M‖_*`, for
-every shape and rank; the polar factor is then a partial isometry and need not have orthonormal
-columns. [HornJohnson2013, §7.4.4]. -/
+/-- **The polar factor attains the nuclear dual pairing**:
+$\langle \mathbf{M}, \mathbf{U} \rangle_{\mathsf{F}} = \|\mathbf{M}\|_*$ for the polar factor
+$\mathbf{U}$ of $\mathbf{M}$, for every shape and rank; the polar factor is then a partial
+isometry and need not have orthonormal columns. [HornJohnson2013, §7.4.4]. -/
 theorem frobInner_polarFactor [DecidableEq n] (M : Matrix m n 𝕜) :
     frobInner M (polarFactor M) = nuclearNorm M := by
   rw [nuclearNorm_eq_re_trace_sqrt, frobInner_eq_re_trace, polarFactor, ← Matrix.mul_assoc]
@@ -59,7 +65,11 @@ theorem frobInner_polarFactor [DecidableEq n] (M : Matrix m n 𝕜) :
     exact CFC.sqrt_mul_sqrt_self _ (Matrix.posSemidef_conjTranspose_mul_self M).nonneg
   rw [← hS, ← hSS, Matrix.mul_assoc, Matrix.trace_mul_comm, mul_pinv_mul_self]
 
-/-- The Procrustes objective through the inner product of `A Bᴴ` with the unitary factor. -/
+/-- The Procrustes objective through the inner product of $\mathbf{A}\mathbf{B}^{\mathsf{H}}$
+with the unitary factor: for unitary $\mathbf{U}$,
+$\|\mathbf{A} - \mathbf{U}\mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
+\|\mathbf{B}\|_{\mathsf{F}}^2 -
+2 \langle \mathbf{A}\mathbf{B}^{\mathsf{H}}, \mathbf{U} \rangle_{\mathsf{F}}$. -/
 private theorem frobNorm_sub_mul_sq_eq (A B : Matrix m n 𝕜) {U : Matrix m m 𝕜}
     (hU : HasOrthonormalCols U) :
     frobNorm (A - U * B) ^ 2 =
@@ -69,7 +79,12 @@ private theorem frobNorm_sub_mul_sq_eq (A B : Matrix m n 𝕜) {U : Matrix m m �
     ← Matrix.mul_assoc]
   ring
 
-/-- The Procrustes objective at a polar factor of `A Bᴴ`.
+/-- The Procrustes objective at a polar factor of $\mathbf{A}\mathbf{B}^{\mathsf{H}}$: for
+unitary $\mathbf{U}$ with
+$\mathbf{U}\bigl((\mathbf{A}\mathbf{B}^{\mathsf{H}})^{\mathsf{H}}
+\mathbf{A}\mathbf{B}^{\mathsf{H}}\bigr)^{1/2} = \mathbf{A}\mathbf{B}^{\mathsf{H}}$,
+$$\|\mathbf{A} - \mathbf{U}\mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
+  \|\mathbf{B}\|_{\mathsf{F}}^2 - 2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*\,.$$
 Port of `NLAlib.frobSq_sub_mul_eq_of_cross_polar`. -/
 theorem frobNorm_sub_mul_sq_of_mul_sqrt_eq {A B : Matrix m n 𝕜} {U : Matrix m m 𝕜}
     (hU : HasOrthonormalCols U)
@@ -77,10 +92,13 @@ theorem frobNorm_sub_mul_sq_of_mul_sqrt_eq {A B : Matrix m n 𝕜} {U : Matrix m
     frobNorm (A - U * B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 - 2 * nuclearNorm (A * Bᴴ) := by
   rw [frobNorm_sub_mul_sq_eq A B hU, hU.frobInner_eq_nuclearNorm_of_mul_sqrt_eq h]
 
-/-- **The orthogonal Procrustes problem.** The least value of `‖A - U B‖_F²` over unitary `U` is
-`‖A‖_F² + ‖B‖_F² - 2 ‖A Bᴴ‖_*`, attained at a polar factor of `A Bᴴ`.
+/-- **The orthogonal Procrustes problem.** The least value of
+$\|\mathbf{A} - \mathbf{U}\mathbf{B}\|_{\mathsf{F}}^2$ over unitary $\mathbf{U}$ is
+$$\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2 -
+  2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*\,,$$
+attained at a polar factor of $\mathbf{A}\mathbf{B}^{\mathsf{H}}$.
 [GolubVanLoan2013, §6.4.1]; [HornJohnson2013, §7.4.5].
-Port of `NLAlib.isLeast_frobSq_sub_orthogonal_mul`, there over `ℝ`.
+Port of `NLAlib.isLeast_frobSq_sub_orthogonal_mul`, there over $\mathbb{R}$.
 Result: procrustes -/
 theorem isLeast_frobNorm_sub_mul_sq (A B : Matrix m n 𝕜) :
     IsLeast ((fun U : Matrix m m 𝕜 => frobNorm (A - U * B) ^ 2) '' {U | HasOrthonormalCols U})
@@ -97,9 +115,13 @@ theorem isLeast_frobNorm_sub_mul_sq (A B : Matrix m n 𝕜) :
     rw [frobNorm_sub_mul_sq_eq A B hU']
     linarith
 
-/-- **The two-sided Procrustes problem.** The least value of `‖A - U B W‖_F²` over unitary `U`,
-`W` is `∑ (σ_i(A) - σ_i(B))²`. [HornJohnson2013, §7.4.1 context].
-Port of `NLAlib.isLeast_frobSq_sub_orthogonal_mul_mul`, there over `ℝ`. -/
+/-- **The two-sided Procrustes problem.** The least value of
+$\|\mathbf{A} - \mathbf{U}\mathbf{B}\mathbf{W}\|_{\mathsf{F}}^2$ over unitary $\mathbf{U}$,
+$\mathbf{W}$ is
+$$\sum_{i < \min(\lvert m \rvert, \lvert n \rvert)}
+  \bigl(\sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B})\bigr)^2\,,$$
+singular values non-increasing and indexed from $0$. [HornJohnson2013, §7.4.1 context].
+Port of `NLAlib.isLeast_frobSq_sub_orthogonal_mul_mul`, there over $\mathbb{R}$. -/
 theorem isLeast_frobNorm_sub_mul_mul_sq [DecidableEq n] (A B : Matrix m n 𝕜) :
     IsLeast
       ((fun P : Matrix m m 𝕜 × Matrix n n 𝕜 => frobNorm (A - P.1 * B * P.2) ^ 2) ''

@@ -12,14 +12,17 @@ public import NLAlib.RandomMatrix.Gaussian.Invariance
 /-!
 # Unitarily invariant laws of random matrices
 
-A law `ν` on `n × k` matrices is **left unitarily invariant** when `U Q` has law `ν` for `Q ~ ν`
-and every unitary (over `ℝ`, orthogonal) `U`, and **right unitarily invariant** when `Q V` does
-for every unitary `V`. These are the hypotheses of the characterization of the Haar frame
+A law $\nu$ on $n \times k$ matrices is **left unitarily invariant** when $\mathbf{U}\mathbf{Q}$
+has law $\nu$ for $\mathbf{Q} \sim \nu$ and every unitary (over $\mathbb{R}$, orthogonal)
+$\mathbf{U}$, and **right unitarily invariant** when $\mathbf{Q}\mathbf{V}$ does for every unitary
+$\mathbf{V}$. These are the hypotheses of the characterization of the Haar frame
 (`NLAlib/RandomMatrix/Haar/Uniqueness.lean`) and of the oblivious-embedding arguments for Gaussian
 and Haar sketches. The standard Gaussian matrix is invariant on both sides.
 
 Consequences proved here from invariance alone: a left invariant random matrix has mean zero, and
-`E [X B Xᴴ]` is a multiple of the identity, `(E tr (X B Xᴴ) / n) • 1`.
+$\mathbb{E}[\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}]$ is a multiple of the identity,
+$(\mathbb{E} \operatorname{tr}(\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}) / \lvert n \rvert) \,
+\mathbf{I}$.
 
 The classes are stated with `HasOrthonormalCols`, not with Mathlib's `SMulInvariantMeasure` of
 `Matrix.unitaryGroup` (which would need a global action on rectangular matrices):
@@ -35,7 +38,8 @@ The classes are stated with `HasOrthonormalCols`, not with Mathlib's `SMulInvari
 * `NLAlib.isLeftUnitarilyInvariant_gaussianMatrix`,
   `NLAlib.isRightUnitarilyInvariant_gaussianMatrix`.
 * `NLAlib.integral_eq_zero_of_isLeftUnitarilyInvariant`.
-* `NLAlib.integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant`: `E [X B Xᴴ]` is scalar.
+* `NLAlib.integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant`:
+  $\mathbb{E}[\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}]$ is scalar.
 -/
 
 @[expose] public section
@@ -50,19 +54,19 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### The interfaces -/
 
-/-- A law on `n × k` matrices is **left unitarily invariant** when `U Q` has the law of `Q` for
-every unitary (over `ℝ`, orthogonal) `U`. Mirrors Mathlib's `Measure.IsMulLeftInvariant`, with the
-unitary given as a matrix with orthonormal columns (`docs/design/Mathlib-deviations.md` entry 14;
-bridge `isLeftUnitarilyInvariant_iff`). Consumers use
+/-- A law on $n \times k$ matrices is **left unitarily invariant** when $\mathbf{U}\mathbf{Q}$ has
+the law of $\mathbf{Q}$ for every unitary (over $\mathbb{R}$, orthogonal) $\mathbf{U}$. Mirrors
+Mathlib's `Measure.IsMulLeftInvariant`, with the unitary given as a matrix with orthonormal columns
+(`docs/design/Mathlib-deviations.md` entry 14; bridge `isLeftUnitarilyInvariant_iff`). Consumers use
 `hasLaw_const_mul_of_isLeftUnitarilyInvariant`. -/
 class IsLeftUnitarilyInvariant [DecidableEq n] (ν : Measure (Matrix n k 𝕜)) : Prop where
   /-- Left multiplication by a unitary preserves the law. -/
   map_mul_left_eq_self : ∀ U : Matrix n n 𝕜, HasOrthonormalCols U → ν.map (U * ·) = ν
 
-/-- A law on `n × k` matrices is **right unitarily invariant** when `Q V` has the law of `Q` for
-every unitary (over `ℝ`, orthogonal) `V`. Mirrors Mathlib's `Measure.IsMulRightInvariant`
-(`docs/design/Mathlib-deviations.md` entry 14; bridge `isRightUnitarilyInvariant_iff`). Consumers
-use `hasLaw_mul_const_of_isRightUnitarilyInvariant`. -/
+/-- A law on $n \times k$ matrices is **right unitarily invariant** when $\mathbf{Q}\mathbf{V}$ has
+the law of $\mathbf{Q}$ for every unitary (over $\mathbb{R}$, orthogonal) $\mathbf{V}$. Mirrors
+Mathlib's `Measure.IsMulRightInvariant` (`docs/design/Mathlib-deviations.md` entry 14; bridge
+`isRightUnitarilyInvariant_iff`). Consumers use `hasLaw_mul_const_of_isRightUnitarilyInvariant`. -/
 class IsRightUnitarilyInvariant [DecidableEq k] (ν : Measure (Matrix n k 𝕜)) : Prop where
   /-- Right multiplication by a unitary preserves the law. -/
   map_mul_right_eq_self : ∀ V : Matrix k k 𝕜, HasOrthonormalCols V → ν.map (· * V) = ν
@@ -117,8 +121,9 @@ instance isRightUnitarilyInvariant_gaussianMatrix [DecidableEq k] :
 
 /-! ### Moments from invariance -/
 
-/-- **A left unitarily invariant random matrix has mean zero** (take `U = -1`). No integrability
-is needed: `∫ (-X) = -∫ X` holds for the Bochner integral in every case. -/
+/-- **A left unitarily invariant random matrix has mean zero** (take $\mathbf{U} = -\mathbf{I}$).
+No integrability is needed: $\int (-\mathbf{X}) = -\int \mathbf{X}$ holds for the Bochner integral
+in every case. -/
 theorem integral_eq_zero_of_isLeftUnitarilyInvariant [DecidableEq n] [DecidableEq k]
     {ν : Measure (Matrix n k 𝕜)} [IsLeftUnitarilyInvariant ν] {X : Ω → Matrix n k 𝕜}
     (hX : HasLaw X ν μ) : ∫ ω, X ω ∂μ = 0 := by
@@ -137,10 +142,16 @@ theorem integral_eq_zero_of_isLeftUnitarilyInvariant [DecidableEq n] [DecidableE
   rw [Matrix.zero_apply]
   linear_combination hij / 2
 
-/-- **`E [X B Xᴴ]` is scalar** for a left unitarily invariant `X`: it commutes with every unitary,
-so it is `(E tr (X B Xᴴ) / n) • 1`. The integrability hypothesis is needed: without it the left
-side is `0` while the trace may still be integrable. Applied to the Gaussian it gives
-`E [G B Gᴴ] = tr B • 1`; to the Haar frame, its second moments. [Meckes2019, Ch. 2] for Haar
+/-- **$\mathbb{E}[\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}]$ is scalar** for a left unitarily
+invariant $n \times k$ random matrix $\mathbf{X}$ with $\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}$
+integrable: it commutes with every unitary, so
+$$\mathbb{E}[\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}]
+= \frac{\mathbb{E} \operatorname{tr}(\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}})}{\lvert n \rvert}
+  \, \mathbf{I} \,.$$
+The integrability hypothesis is needed: without it the left side is $\mathbf{0}$ while the trace
+may still be integrable. Applied to the Gaussian it gives
+$\mathbb{E}[\mathbf{G}\mathbf{B}\mathbf{G}^{\mathsf{T}}] = (\operatorname{tr} \mathbf{B}) \,
+\mathbf{I}$; to the Haar frame, its second moments. [Meckes2019, Ch. 2] for Haar
 measure on the orthogonal group; here any left invariant law, over any `RCLike` field. -/
 theorem integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant [DecidableEq n]
     {ν : Measure (Matrix n k 𝕜)} [IsLeftUnitarilyInvariant ν] {X : Ω → Matrix n k 𝕜}

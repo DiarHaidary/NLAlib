@@ -14,10 +14,13 @@ public import NLAlib.Probability.MatrixIntegral
 # The variance of a sum of independent random matrices
 
 For independent random matrices the cross terms of the second moment of a sum vanish once one
-factor is centred: `E (∑ f (X k)) (∑ g (X k)) = ∑ E f (X k) g (X k)` when `E f (X k) = 0`. In
-particular the matrix variance is additive, `E (∑ X k)² = ∑ E (X k)²` for independent centred
-square-integrable `X k` (Tropp 2015, (2.2.5)), the identity that makes the variance statistic
-`‖∑ E (X k)²‖` of the matrix Bernstein inequality the variance of the sum. Expectations are
+factor is centred:
+$\mathbb{E}\bigl[(\sum_k f(X_k)) (\sum_k g(X_k))\bigr] = \sum_k \mathbb{E}[f(X_k)\, g(X_k)]$ when
+$\mathbb{E} f(X_k) = \mathbf{0}$. In particular the matrix variance is additive,
+$\mathbb{E}(\sum_k \mathbf{X}_k)^2 = \sum_k \mathbb{E}\mathbf{X}_k^2$ for independent centred
+square-integrable $\mathbf{X}_k$ (Tropp 2015, (2.2.5)), the identity that makes the variance
+statistic $\|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$ of the matrix Bernstein inequality the variance
+of the sum. Expectations are
 Bochner integrals under `open scoped Matrix.Norms.L2Operator`
 (`NLAlib/Probability/MatrixIntegral.lean`); square integrability is `MemLp _ 2 μ`, which does
 not depend on the norm chosen.
@@ -25,7 +28,8 @@ not depend on the norm chosen.
 ## Main results
 
 * `NLAlib.integral_sum_mul_sum_of_iIndepFun`: the cross terms vanish.
-* `NLAlib.integral_sum_sq_of_iIndepFun`: `E (∑ X k)² = ∑ E (X k)²` for centred summands.
+* `NLAlib.integral_sum_sq_of_iIndepFun`:
+  $\mathbb{E}(\sum_k \mathbf{X}_k)^2 = \sum_k \mathbb{E}\mathbf{X}_k^2$ for centred summands.
 * `NLAlib.integral_sum_sub_integral_sq_of_iIndepFun`: the variance of the sum is the sum of the
   variances.
 
@@ -73,10 +77,13 @@ private theorem integrable_mul_of_memLp (hY : MemLp Y 2 μ) (hZ : MemLp Z 2 μ) 
 
 variable [IsProbabilityMeasure μ] {α : Type*} {mα : MeasurableSpace α}
 
-/-- **The cross terms of an independent sum vanish.** For independent random variables `X k`
-and measurable matrix-valued `f`, `g` with `f (X k)` and `g (X k)` square integrable and
-`E f (X k) = 0`, `E (∑ f (X k)) (∑ g (X k)) = ∑ E f (X k) g (X k)`. [Tropp2015, (2.2.5)], where
-`f = g = id`, for Hermitian summands; here rectangular and over any `RCLike` field.
+/-- **The cross terms of an independent sum vanish.** For finitely many independent random
+variables $X_k$ under a probability measure and measurable matrix-valued $f$, $g$ with $f(X_k)$
+and $g(X_k)$ square integrable and $\mathbb{E} f(X_k) = \mathbf{0}$,
+$$\mathbb{E}\Bigl[\Bigl(\sum_k f(X_k)\Bigr) \Bigl(\sum_k g(X_k)\Bigr)\Bigr]
+= \sum_k \mathbb{E}\bigl[f(X_k)\, g(X_k)\bigr]\,.$$
+[Tropp2015, (2.2.5)], where $f = g = \mathrm{id}$, for Hermitian summands; here rectangular and
+over any `RCLike` field.
 Port of `NLAlib.integral_sum_mul_sum_eq_sum_integral_mul`, there over `ℂ` and `Fin`. -/
 theorem integral_sum_mul_sum_of_iIndepFun {X : ι → Ω → α} (hind : iIndepFun X μ)
     {f : α → Matrix l m 𝕜} {g : α → Matrix m n 𝕜} (hf : Measurable f) (hg : Measurable g)
@@ -104,9 +111,10 @@ end Product
 variable [IsProbabilityMeasure μ] {n : Type*} [Fintype n] [DecidableEq n]
   {X : ι → Ω → Matrix n n 𝕜}
 
-/-- **Additivity of the matrix variance.** For independent, centred, square-integrable random
-matrices, `E (∑ X k)² = ∑ E (X k)²`. [Tropp2015, (2.2.5)], there for Hermitian summands; the
-Hermitian hypothesis is not needed. -/
+/-- **Additivity of the matrix variance.** For finitely many independent, centred,
+square-integrable random square matrices,
+$\mathbb{E}(\sum_k \mathbf{X}_k)^2 = \sum_k \mathbb{E}\mathbf{X}_k^2$. [Tropp2015, (2.2.5)], there
+for Hermitian summands; the Hermitian hypothesis is not needed. -/
 theorem integral_sum_sq_of_iIndepFun (hind : iIndepFun X μ) (hX : ∀ k, MemLp (X k) 2 μ)
     (hX0 : ∀ k, ∫ ω, X k ω ∂μ = 0) :
     ∫ ω, (∑ k, X k ω) ^ 2 ∂μ = ∑ k, ∫ ω, X k ω ^ 2 ∂μ := by
@@ -114,8 +122,10 @@ theorem integral_sum_sq_of_iIndepFun (hind : iIndepFun X μ) (hX : ∀ k, MemLp 
   exact integral_sum_mul_sum_of_iIndepFun hind measurable_id measurable_id hX hX hX0
 
 /-- **The variance of an independent sum is the sum of the variances**, for square-integrable
-random matrices: `E (∑ X k - E ∑ X k)² = ∑ E (X k - E X k)²`. [Tropp2015, (2.2.5)], there for
-Hermitian summands; the Hermitian hypothesis is not needed.
+random square matrices:
+$$\mathbb{E}\Bigl(\sum_k \mathbf{X}_k - \mathbb{E} \sum_k \mathbf{X}_k\Bigr)^2
+= \sum_k \mathbb{E}(\mathbf{X}_k - \mathbb{E}\mathbf{X}_k)^2\,.$$
+[Tropp2015, (2.2.5)], there for Hermitian summands; the Hermitian hypothesis is not needed.
 Port of `NLAlib.variance_additivity`, there over `ℂ` and `Fin`. -/
 theorem integral_sum_sub_integral_sq_of_iIndepFun (hind : iIndepFun X μ)
     (hX : ∀ k, MemLp (X k) 2 μ) :

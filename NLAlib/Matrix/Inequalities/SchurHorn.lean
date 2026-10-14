@@ -13,16 +13,17 @@ public import NLAlib.Matrix.Basic.PlaneRotation
 # The Schur–Horn theorem
 
 Schur's theorem says that the diagonal of a Hermitian matrix is majorized by its eigenvalues
-(`NLAlib.Matrix.Majorization.Schur`). Horn's converse: every real vector majorized by `λ` is the
-diagonal of a real symmetric matrix with eigenvalues `λ`. Together they describe the set of
-diagonals of the unitary orbit of a Hermitian matrix.
+(`NLAlib.Matrix.Majorization.Schur`). Horn's converse: every real vector majorized by
+$\boldsymbol{\lambda}$ is the diagonal of a real symmetric matrix with eigenvalues
+$\boldsymbol{\lambda}$. Together they describe the set of diagonals of the unitary orbit of a
+Hermitian matrix.
 
 Horn's theorem is proved by induction on the number of diagonal entries still to be corrected.
 A rotation in two coordinates moves a diagonal entry of a real symmetric matrix to any value
-between two of its diagonal entries, changing no other diagonal entry than these two. If `d` is
-majorized by the diagonal, a rotation in two entries adjacent in the sorted order produces a
-chosen entry of `d`, and `d` is still majorized by the new diagonal; that entry is then left
-alone.
+between two of its diagonal entries, changing no other diagonal entry than these two. If
+$\mathbf{d}$ is majorized by the diagonal, a rotation in two entries adjacent in the sorted order
+produces a chosen entry of $\mathbf{d}$, and $\mathbf{d}$ is still majorized by the new diagonal;
+that entry is then left alone.
 
 ## Main results
 
@@ -41,8 +42,12 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The diagonal of `Q * diagonal λ * Qᴴ` is the image of `λ` under the matrix of squared moduli
-of the entries of `Q`. Port of `NLAlib.diagonal_conjugation_eq_sq_mulVec`, there over `ℝ`. -/
+/-- The diagonal of $\mathbf{Q} \operatorname{diag}(\boldsymbol{\lambda}) \mathbf{Q}^{\mathsf{H}}$,
+for real $\boldsymbol{\lambda}$, is the image of $\boldsymbol{\lambda}$ under the matrix of squared
+moduli of the entries of $\mathbf{Q}$:
+$\operatorname{Re}(\mathbf{Q} \operatorname{diag}(\boldsymbol{\lambda})
+\mathbf{Q}^{\mathsf{H}})_{i,i} = \sum_j \lvert \mathbf{Q}_{i,j} \rvert^2 \boldsymbol{\lambda}_j$.
+Port of `NLAlib.diagonal_conjugation_eq_sq_mulVec`, there over $\mathbb{R}$. -/
 theorem re_mul_diagonal_mul_conjTranspose_apply_self (Q : Matrix n n 𝕜) (lam : n → ℝ) (i : n) :
     RCLike.re ((Q * Matrix.diagonal (fun j => ((lam j : ℝ) : 𝕜)) * Qᴴ) i i) =
       ((Matrix.of fun i j => ‖Q i j‖ ^ 2) *ᵥ lam) i := by
@@ -55,7 +60,8 @@ theorem re_mul_diagonal_mul_conjTranspose_apply_self (Q : Matrix n n 𝕜) (lam 
 
 /-! ### Transfers between two entries of a vector -/
 
-/-- `transfer y i j δ` lowers the entry `i` of `y` by `δ` and raises the entry `j` by `δ`. -/
+/-- `transfer y i j δ` lowers the entry $i$ of $\mathbf{y}$ by $\delta$ and raises the entry $j$
+by $\delta$. -/
 private def transfer {ι : Type*} [DecidableEq ι] (y : ι → ℝ) (i j : ι) (δ : ℝ) : ι → ℝ :=
   fun k => y k - (if k = i then δ else 0) + if k = j then δ else 0
 
@@ -93,7 +99,7 @@ private theorem transfer_sub_eq_comp_swap {ι : Type*} [DecidableEq ι] (y : ι 
 
 /-! ### A transfer between adjacent entries of a sorted vector -/
 
-/-- The first `r` entries of a transfer of a sorted vector bound its `r` largest entries from
+/-- The first $r$ entries of a transfer of a sorted vector bound its $r$ largest entries from
 below. -/
 private theorem sumLargest_sub_add_le_sumLargest_transfer {N : ℕ} {y : Fin N → ℝ}
     (hy : Antitone y) (i j : Fin N) (δ : ℝ) (r : ℕ) :
@@ -106,9 +112,9 @@ private theorem sumLargest_sub_add_le_sumLargest_transfer {N : ℕ} {y : Fin N �
   rw [sum_transfer, sumLargest_eq_sum_of_antitone hy, Finset.sum_filter]
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
-/-- **Transfer between adjacent entries.** If `x` is majorized by a sorted vector `y`, it is
-still majorized after the entry `y i` is replaced by any entry `x p` of `x` and the difference is
-added to the next entry of `y`. -/
+/-- **Transfer between adjacent entries.** If $\mathbf{x}$ is majorized by a sorted vector
+$\mathbf{y}$, it is still majorized after the entry $\mathbf{y}_i$ is replaced by any entry
+$\mathbf{x}_p$ of $\mathbf{x}$ and the difference is added to the next entry of $\mathbf{y}$. -/
 private theorem majorized_transfer_of_antitone {N : ℕ} {x y : Fin N → ℝ} (hy : Antitone y)
     (h : Majorized x y) (p : Fin N) {i j : Fin N} (hij : (j : ℕ) = i + 1) :
     Majorized x (transfer y i j (y i - x p)) := by
@@ -152,8 +158,8 @@ private theorem majorized_transfer_of_antitone {N : ℕ} {x y : Fin N → ℝ} (
     rw [if_pos (Finset.mem_univ i), if_pos (Finset.mem_univ j), sub_add_cancel] at hsum
     rw [hsum, h.sum_eq]
 
-/-- An entry of a vector majorized by a sorted vector `y` lies between two adjacent entries of
-`y`, or equals one. -/
+/-- An entry of a vector majorized by a sorted vector $\mathbf{y}$ lies between two adjacent
+entries of $\mathbf{y}$, or equals one. -/
 private theorem exists_le_and_le_of_antitone {N : ℕ} {x y : Fin N → ℝ} (hy : Antitone y)
     (h : Majorized x y) (p : Fin N) :
     ∃ i j : Fin N, (i = j ∨ (j : ℕ) = i + 1) ∧ y j ≤ x p ∧ x p ≤ y i := by
@@ -191,9 +197,9 @@ private theorem exists_majorized_transfer_of_antitone {N : ℕ} {x y : Fin N →
     exact ⟨i, i, hj, hi, by rwa [transfer_self]⟩
   · exact ⟨i, j, hj, hi, majorized_transfer_of_antitone hy h p hij⟩
 
-/-- If `x` is majorized by `y` and agrees with it outside an index set `s`, then for every `p` in
-`s` a transfer between two entries of `y` in `s` puts the value `x p` on the diagonal, keeping
-`x` majorized. -/
+/-- If $\mathbf{x}$ is majorized by $\mathbf{y}$ and agrees with it outside an index set $s$,
+then for every $p$ in $s$ a transfer between two entries of $\mathbf{y}$ in $s$ puts the value
+$\mathbf{x}_p$ on the diagonal, keeping $\mathbf{x}$ majorized. -/
 private theorem exists_majorized_transfer {ι : Type*} [Fintype ι] [DecidableEq ι] {x y : ι → ℝ}
     (h : Majorized x y) {s : Finset ι} (hs : ∀ k ∉ s, x k = y k) {p : ι} (hp : p ∈ s) :
     ∃ i ∈ s, ∃ j ∈ s, y j ≤ x p ∧ x p ≤ y i ∧ Majorized x (transfer y i j (y i - x p)) := by
@@ -228,8 +234,8 @@ private theorem planeRotation_apply_eq_mulVec_single (u v : n → ℝ) (c s : �
   ext l
   rw [Matrix.col_apply, Matrix.conjTranspose_apply, star_trivial]
 
-/-- Conjugating a real symmetric matrix by a rotation in the coordinates `i`, `j` transfers
-between the diagonal entries `i` and `j` and fixes the other diagonal entries.
+/-- Conjugating a real symmetric matrix by a rotation in the coordinates $i$, $j$ transfers
+between the diagonal entries $i$ and $j$ and fixes the other diagonal entries.
 Port of `NLAlib.planeRotation_single_conjugation_diag`. -/
 private theorem diag_planeRotation_single_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {i j : n} (hij : i ≠ j) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) :
@@ -258,8 +264,8 @@ private theorem diag_planeRotation_single_mul_mul {A : Matrix n n ℝ} (hA : A.I
       (star_single_dotProduct_single hkj.symm), transfer_of_ne _ hki hkj,
       Matrix.mulVec_single_one, single_one_dotProduct, Matrix.col_apply, Matrix.diag_apply]
 
-/-- For a real symmetric matrix and any value `t` between two of its diagonal entries, a
-rotation in those two coordinates puts `t` in the first of the two diagonal positions. -/
+/-- For a real symmetric matrix and any value $t$ between two of its diagonal entries, a
+rotation in those two coordinates puts $t$ in the first of the two diagonal positions. -/
 private theorem exists_hasOrthonormalCols_diag_eq_transfer {A : Matrix n n ℝ}
     (hA : A.IsHermitian) (i j : n) {t : ℝ} (ht : t ∈ Set.uIcc (A i i) (A j j)) :
     ∃ R : Matrix n n ℝ, HasOrthonormalCols R ∧
@@ -283,9 +289,9 @@ private theorem exists_hasOrthonormalCols_diag_eq_transfer {A : Matrix n n ℝ}
 
 /-! ### Horn's theorem -/
 
-/-- One step of the proof of Horn's theorem: if `x` is majorized by the diagonal of a real
-symmetric matrix `A` and agrees with it outside `s`, an orthogonal similarity makes the diagonal
-agree with `x` at one more index `p` of `s`. -/
+/-- One step of the proof of Horn's theorem: if $\mathbf{x}$ is majorized by the diagonal of a
+real symmetric matrix $\mathbf{A}$ and agrees with it outside $s$, an orthogonal similarity makes
+the diagonal agree with $\mathbf{x}$ at one more index $p$ of $s$. -/
 private theorem exists_hasOrthonormalCols_majorized_diag {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {x : n → ℝ} (h : Majorized x A.diag) {s : Finset n} (hs : ∀ k ∉ s, x k = A k k) {p : n}
     (hp : p ∈ s) :
@@ -319,7 +325,7 @@ private theorem exists_hasOrthonormalCols_majorized_diag {A : Matrix n n ℝ} (h
       exact hs k hks
 
 /-- Horn's theorem for a real symmetric matrix in place of the diagonal one, by induction on the
-number of indices where `x` and the diagonal may differ. -/
+number of indices where $\mathbf{x}$ and the diagonal may differ. -/
 private theorem exists_hasOrthonormalCols_diag_eq_of_card_eq {x : n → ℝ} (m : ℕ) :
     ∀ s : Finset n, s.card = m → ∀ A : Matrix n n ℝ, A.IsHermitian → Majorized x A.diag →
       (∀ k ∉ s, x k = A k k) →
@@ -344,10 +350,10 @@ private theorem exists_hasOrthonormalCols_diag_eq_of_card_eq {x : n → ℝ} (m 
     rw [← hQx]
     simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
 
-/-- **Horn's theorem for a real symmetric matrix.** If `x` is majorized by the diagonal of a real
-symmetric matrix `A`, there is a real orthogonal matrix `Q` such that `Q * A * Qᴴ` has diagonal
-`x`. For a diagonal `A` this is Horn's theorem
-(`exists_hasOrthonormalCols_diag_eq_of_majorized`).
+/-- **Horn's theorem for a real symmetric matrix.** If $\mathbf{x}$ is majorized by the diagonal
+of a real symmetric matrix $\mathbf{A}$, there is a real orthogonal matrix $\mathbf{Q}$ such that
+$\mathbf{Q}\mathbf{A}\mathbf{Q}^{\mathsf{T}}$ has diagonal $\mathbf{x}$. For a diagonal
+$\mathbf{A}$ this is Horn's theorem (`exists_hasOrthonormalCols_diag_eq_of_majorized`).
 [HornJohnson2013, Theorem 4.3.48], there for a diagonal matrix. -/
 theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_diag_eq_of_majorized
     {A : Matrix n n ℝ} (hA : A.IsHermitian) {x : n → ℝ} (h : Majorized x A.diag) :
@@ -355,8 +361,9 @@ theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_diag_eq_of_majorized
   exists_hasOrthonormalCols_diag_eq_of_card_eq (Fintype.card n) Finset.univ Finset.card_univ A hA
     h fun k hk => absurd (Finset.mem_univ k) hk
 
-/-- **Horn's theorem.** If `d` is majorized by `λ`, there is a real orthogonal matrix `Q` such
-that `Q * diagonal λ * Qᴴ` has diagonal `d`.
+/-- **Horn's theorem.** If the real vector $\mathbf{d}$ is majorized by $\boldsymbol{\lambda}$,
+there is a real orthogonal matrix $\mathbf{Q}$ such that $\mathbf{Q}
+\operatorname{diag}(\boldsymbol{\lambda}) \mathbf{Q}^{\mathsf{T}}$ has diagonal $\mathbf{d}$.
 [HornJohnson2013, Theorem 4.3.48].
 Port of `NLAlib.exists_orthogonal_diagonal_eq_of_majorized`.
 Result: schur-horn -/
@@ -365,8 +372,9 @@ theorem exists_hasOrthonormalCols_diag_eq_of_majorized {d lam : n → ℝ} (h : 
   (Matrix.isHermitian_diagonal lam).exists_hasOrthonormalCols_diag_eq_of_majorized
     (by rwa [Matrix.diag_diagonal])
 
-/-- **The Schur–Horn theorem.** A real vector `d` is majorized by `λ` exactly when it is the
-diagonal of `Q * diagonal λ * Qᴴ` for some real orthogonal `Q`.
+/-- **The Schur–Horn theorem.** A real vector $\mathbf{d}$ is majorized by $\boldsymbol{\lambda}$
+exactly when it is the diagonal of $\mathbf{Q} \operatorname{diag}(\boldsymbol{\lambda})
+\mathbf{Q}^{\mathsf{T}}$ for some real orthogonal $\mathbf{Q}$.
 [HornJohnson2013, Theorems 4.3.45 and 4.3.48].
 Port of `NLAlib.majorized_iff_exists_orthogonal_diagonal_eq`.
 Result: schur-horn -/
@@ -382,7 +390,10 @@ theorem majorized_iff_exists_hasOrthonormalCols_diag_eq {d lam : n → ℝ} :
   exact h
 
 /-- **The diagonals of the unitary orbit of a Hermitian matrix** are exactly the vectors
-majorized by its eigenvalues.
+majorized by its eigenvalues: a real vector $\mathbf{d}$ is majorized by the eigenvalues of
+$\mathbf{A}$ (Mathlib's `Matrix.IsHermitian.eigenvalues`) iff
+$(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U})_{i,i} = \mathbf{d}_i$ for all $i$, for some unitary
+$\mathbf{U}$.
 [HornJohnson2013, Theorems 4.3.45 and 4.3.48].
 Result: schur-horn -/
 theorem _root_.Matrix.IsHermitian.majorized_iff_exists_diag_conj_eq {A : Matrix n n 𝕜}

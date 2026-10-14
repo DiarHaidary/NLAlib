@@ -22,8 +22,11 @@ file: `Procrustes.lean` imports it, and it imports both `Polar.lean` and `Orthon
 
 ## Main results
 
-* `NLAlib.polarFactor_mul_right`: `polarFactor (A V) = polarFactor A * V` for a coisometry `V`.
-* `NLAlib.rangeProjector_mul_polarFactor`: `range (A * polarFactor B) = range (A * B)`.
+* `NLAlib.polarFactor_mul_right`: the polar factor of $\mathbf{A}\mathbf{V}$ is
+  $\mathbf{U}\mathbf{V}$ for a coisometry $\mathbf{V}$, $\mathbf{U}$ the polar factor of
+  $\mathbf{A}$.
+* `NLAlib.rangeProjector_mul_polarFactor`: $\mathbf{A}\mathbf{U}$ and $\mathbf{A}\mathbf{B}$ have
+  the same range, $\mathbf{U}$ the polar factor of $\mathbf{B}$.
 * `NLAlib.specNorm_polarFactor_le_one`.
 * `NLAlib.polarFactor_replicateCol`: the polar factor of a column is the normalised column.
 * `NLAlib.HasOrthonormalCols.exists_mul_eq`: unitaries act transitively on frames.
@@ -42,9 +45,10 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n q : Type*} [Fintype l] [Fintype m] 
 
 /-! ### The polar factor -/
 
-/-- **The polar factor commutes with a coisometry on the right**: for `V` with orthonormal rows
-(`V Vᴴ = 1`; in particular any unitary), `polarFactor (A V) = polarFactor A * V`. The right-hand
-twin of `polarFactor_mul_left`. -/
+/-- **The polar factor commutes with a coisometry on the right**: for $\mathbf{V}$ with
+orthonormal rows ($\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{I}$; in particular any unitary), the
+polar factor of $\mathbf{A}\mathbf{V}$ is $\mathbf{U}\mathbf{V}$, with $\mathbf{U}$ the polar
+factor of $\mathbf{A}$. The right-hand twin of `polarFactor_mul_left`. -/
 theorem polarFactor_mul_right [DecidableEq n] [DecidableEq q] {V : Matrix n q 𝕜}
     (hV : HasOrthonormalCols Vᴴ) (A : Matrix m n 𝕜) :
     polarFactor (A * V) = polarFactor A * V := by
@@ -55,9 +59,11 @@ theorem polarFactor_mul_right [DecidableEq n] [DecidableEq q] {V : Matrix n q �
   rwa [Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_mul,
     Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_conjTranspose] at h'
 
-/-- **Right multiplication by a polar factor keeps the range**: the range projector of
-`A * polarFactor B` is that of `A * B`, for every shape and rank. The column spaces agree because
-`polarFactor B = B * pinv (CFC.sqrt (Bᴴ * B))` and `B = polarFactor B * CFC.sqrt (Bᴴ * B)`. -/
+/-- **Right multiplication by a polar factor keeps the range**: for $\mathbf{U}$ the polar factor
+of $\mathbf{B}$, $\mathbf{P}_{\mathbf{A}\mathbf{U}} = \mathbf{P}_{\mathbf{A}\mathbf{B}}$, for every
+shape and rank. The column spaces agree because
+$\mathbf{U} = \mathbf{B}\bigl((\mathbf{B}^{\mathsf{H}}\mathbf{B})^{1/2}\bigr)^{+}$ and
+$\mathbf{B} = \mathbf{U}(\mathbf{B}^{\mathsf{H}}\mathbf{B})^{1/2}$. -/
 theorem rangeProjector_mul_polarFactor [DecidableEq n] (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
     rangeProjector (A * polarFactor B) = rangeProjector (A * B) := by
   rw [rangeProjector_inj]
@@ -66,15 +72,16 @@ theorem rangeProjector_mul_polarFactor [DecidableEq n] (A : Matrix l m 𝕜) (B 
   · rw [polarFactor, Matrix.mul_assoc]
   · rw [Matrix.mul_assoc, polarFactor_mul_sqrt]
 
-/-- The polar factor of `B` has the range of `B`: `rangeProjector (polarFactor B) =
-rangeProjector B` (the case `A = 1` of `rangeProjector_mul_polarFactor`). -/
+/-- The polar factor $\mathbf{U}$ of $\mathbf{B}$ has the range of $\mathbf{B}$:
+$\mathbf{P}_{\mathbf{U}} = \mathbf{P}_{\mathbf{B}}$ (the case $\mathbf{A} = \mathbf{I}$ of
+`rangeProjector_mul_polarFactor`). -/
 theorem rangeProjector_polarFactor [DecidableEq n] (B : Matrix m n 𝕜) :
     rangeProjector (polarFactor B) = rangeProjector B := by
   classical
   simpa only [Matrix.one_mul] using rangeProjector_mul_polarFactor (1 : Matrix m m 𝕜) B
 
-/-- **The polar factor has spectral norm at most one**: it is a partial isometry, with norm `1`
-unless the matrix is `0`. -/
+/-- **The polar factor has spectral norm at most one**: it is a partial isometry, with norm $1$
+unless the matrix is $\mathbf{0}$. -/
 theorem specNorm_polarFactor_le_one [DecidableEq n] (A : Matrix m n 𝕜) :
     specNorm (polarFactor A) ≤ 1 := by
   have h : specNorm (polarFactor A) ^ 2 ≤ 1 ^ 2 := by
@@ -82,8 +89,9 @@ theorem specNorm_polarFactor_le_one [DecidableEq n] (A : Matrix m n 𝕜) :
     exact (isStarProjection_rangeProjector Aᴴ).specNorm_le_one
   exact (pow_le_pow_iff_left₀ (specNorm_nonneg _) zero_le_one two_ne_zero).mp h
 
-/-- **The polar factor of a column is the normalised column**: `polarFactor [x] = [x / ‖x‖]`, the
-real scalar `‖x‖⁻¹` acting on `x`. True at `x = 0`, where both sides are `0` (`0⁻¹ = 0`). -/
+/-- **The polar factor of a column is the normalised column**: the polar factor of the
+one-column matrix $\mathbf{x}$ is the one-column matrix $\|\mathbf{x}\|^{-1}\mathbf{x}$. True at
+$\mathbf{x} = \mathbf{0}$, where both sides are $\mathbf{0}$ ($0^{-1} = 0$). -/
 theorem polarFactor_replicateCol (x : m → 𝕜) :
     polarFactor (Matrix.replicateCol Unit x) =
       Matrix.replicateCol Unit ((‖WithLp.toLp 2 x‖⁻¹ : ℝ) • x) := by
@@ -105,8 +113,9 @@ theorem polarFactor_replicateCol (x : m → 𝕜) :
 
 /-! ### Frames under unitary maps -/
 
-/-- **Unitaries act transitively on frames**: two matrices with orthonormal columns and the same
-column index differ by a unitary factor on the left. Used by the two-sided Procrustes problem
+/-- **Unitaries act transitively on frames**: two matrices $\mathbf{X}$, $\mathbf{Y}$ with
+orthonormal columns and the same column index differ by a unitary factor on the left,
+$\mathbf{U}\mathbf{X} = \mathbf{Y}$. Used by the two-sided Procrustes problem
 (`NLAlib.isLeast_frobNorm_sub_mul_mul_sq`) and the Haar frame law
 (`docs/design/RandomMatrix-R5.md` §1, addition 5). -/
 theorem HasOrthonormalCols.exists_mul_eq [DecidableEq m] {r : Type*} [Finite r] [DecidableEq r]
@@ -130,8 +139,10 @@ theorem HasOrthonormalCols.exists_mul_eq [DecidableEq m] {r : Type*} [Finite r] 
   rw [Matrix.mul_fromCols] at h1
   exact (Matrix.fromCols_inj.eq_iff.mp h1).1
 
-/-- **A matrix fixed by every unitary conjugation is scalar**: if `U M Uᴴ = M` for every unitary
-`U`, then `M = (tr M / card n) • 1`. For empty `n` both sides are `0`. Unlike Mathlib's
+/-- **A matrix fixed by every unitary conjugation is scalar**: if
+$\mathbf{U}\mathbf{M}\mathbf{U}^{\mathsf{H}} = \mathbf{M}$ for every unitary $\mathbf{U}$, then
+$\mathbf{M} = (\operatorname{tr} \mathbf{M} / \lvert n \rvert) \mathbf{I}$. For empty $n$ both
+sides are $\mathbf{0}$. Unlike Mathlib's
 `Matrix.mem_range_scalar_of_commute_single`, the hypothesis quantifies over unitaries only
 (signed permutation matrices suffice). -/
 theorem eq_smul_one_of_forall_mul_mul_conjTranspose_eq [DecidableEq n] {M : Matrix n n 𝕜}
