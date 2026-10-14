@@ -1,10 +1,10 @@
 name: Explore data
 # Extracts the declaration data for nla-lib.org/explore (scripts/explore_data.sh), publishes it as
 # the asset `explore-data.json` of the rolling release `explore-data`, and asks the NLA-lib/explore
-# repository to rebuild the site.
+# repository to rebuild the site. Only `main` publishes: the site shows the library as merged.
 on:
   push:
-    branches: [main, scaffold]
+    branches: [main]
   workflow_dispatch:
 concurrency:
   # Only the newest run publishes.
