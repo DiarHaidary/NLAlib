@@ -257,3 +257,69 @@ inversion needs a condition on `n` too. A sharp form (`Q⊥`, or convex order af
 **Q7.** Sizes are `irreducible_def`s whose bodies are what S2's proofs reach. **Q8.** Two lower-layer
 skeleton files amend the brief's list; about 1000 lines against its 650. **Q9.** `hk` explicit in §3.4;
 §3.2's law lemma drops it (`hV` implies it).
+
+## 8. Amendments from the review (2026-10-14)
+
+Fable review of this note, all findings accepted by the orchestrator; finding 3 adopted as two new
+statements (`k ≈ n` is the regime the Haar family exists for). Where an item below contradicts §0
+to §7, it supersedes them. Skeletons: the four §4 files, every proof `sorry`.
+
+1. **§3.1, χ² lower tail: rule 6, not rule 4.** The new lower tail `exp ((n/2)(1 - β + log β))`
+   dominates both existing lower bounds: Laurent–Massart (`β = 1 - 2√(t/n)`, with
+   `log (1 - u) ≤ -u - u²/2`) and the small ball `(e u / n)^{n/2}` (`β = u/n`, the same Chernoff
+   parameter `s = (n/u - 1)/2`, after dropping `e^{-u/2} ≤ 1`); the private
+   `measureReal_norm_sq_le_le_exp_mul_rpow` (`ChiSquare.lean`) is the lower tail before
+   optimisation. Correction to §3.1's "NLAlib has only the lower Laurent–Massart form": it has
+   Laurent–Massart, the small ball and that private Chernoff bound. *Skeleton*: the lower tail's
+   docstring says so and that at the merge both older bounds are reproved from it and keep their
+   names; the upper tail's docstring says it is at least as good as Laurent–Massart's upper tail
+   at every threshold, which stays as `IsSubgaussianVector.measure_norm_sq_ge_le` at proxy `1`.
+2. **Haar upper half, deterministic.** `(S_H U)ᴴ (S_H U) ≤ (n/k) • (Uᴴ U)` a.s., no parameter
+   (`Q Qᴴ ≤ 1`). *Skeleton*: `ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`, for
+   every `U` and every shape (no `hk`: `ae_specNorm_le_one_of_hasLaw_haarFrame` holds in every
+   shape); `HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame` now has constants
+   `a_H`, `n/k` and failure `e^{-t²/2} + e^{-s²/2}`, with no `hsk` and no `k < n`; the `b_H` form
+   is kept, incomparable (rule 4), as `…_of_lt_sqrt_sub_sqrt` (named by its hypothesis `hsk`).
+   The §3 caveat "the upper half … is stated for `k < n` only" and §7 Q6's "the upper half needs
+   `k < n`" are withdrawn. The oblivious forms follow the same split:
+   `isObliviousSubspaceEmbedding_of_hasLaw_haarFrame` (`n/k`, added) and
+   `…_of_lt_sqrt_sub_sqrt` (`b_H`).
+3. **Lower half near `k = n`, complement route** (two statements in `Haar.lean`). `Q ~ P V₁`,
+   `Q⊥ := P V₂` (`hasLaw_mul_const_of_hasLaw_haarFrame` on a square Haar `P`, selection
+   matrices), `Uᴴ Q Qᴴ U = 1 - Uᴴ Q⊥ Q⊥ᴴ U`, the inverse-Gram step on an `n × (n - k)` Gaussian.
+   *Skeleton*: `HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq` and
+   `…hasSubspaceEmbedding_…_of_card_add_eq` (upper constant `n/k` by item 2). The codimension is
+   an auxiliary `c : ℕ` with `hc : card k + c = card n` (§5.3 "index shift"; it replaces `hk`),
+   so `√(n - k)` is `√c`; constant `(n/k)(1 - (√c + √p + t)² / (√n - √c - s)²)`, failure
+   `e^{-t²/2} + e^{-s²/2}`, for `t ≥ 0`, `0 ≤ s < √n - √c` (strict: at equality the denominator
+   is `0` and `x / 0 = 0` would make the constant `n/k`). No `t` condition: a negative constant
+   is vacuous. Docstrings: tends to `1` as `c/n → 0`, vacuous at `k = n/2`, incomparable with
+   `a_H` (rule 4). Oblivious forms of this route are not stated (`of_hasOrthonormalCols` and
+   `mono` give them when a consumer asks).
+4. **Citations.** JL (Gaussian): `[Woodruff2014, Lemma 18] (there ε² k / 16);
+   [MartinssonTropp2020, §8.6]`, exponent of Dasgupta and Gupta (D12); the JL lemma cites
+   `[Woodruff2014, Theorem 4]` (the f-point JLT). §3.2's "Lemma 2.2" is dropped (Dasgupta and
+   Gupta 2003 cited by name only). MT §8.7.2 is cited as "there `… - t/√k` for our `t`".
+   Vershynin's Lemma 5.3.2 (2020 draft) is cited "with an unspecified constant `c`".
+5. **Hypotheses.** The Haar moment and JL-moment `δ` are written with `((card n : ℝ) - card k)`.
+   The OSE size corollary drops `hδ1 : δ ≤ 1` (`δ ≥ 2` is trivial, `δ < 2` is the proof); the
+   OSI size corollary has `hε2 : ε ≤ 2` in place of `ε ≤ 1`. `jlDim_le` takes `0 < δ ≤ 2`, and
+   `jlDim`'s docstring states the junk value for `ε ≥ 3/2`. `[Nonempty k]` is not a hypothesis of
+   the size corollaries: `gaussianInjectionDim_pos` (`δ < 1`) gives it.
+6. **§3.2 routes; `k = n`.** No sphere-invariance lemma exists: the tails go through
+   `u = g / ‖g‖`, `W = [V, V⊥]ᴴ` from `HasOrthonormalCols.exists_fromCols` and
+   `hasLaw_mulVec_of_hasLaw_gaussianVector` (module docstring of `Sphere.lean`). The fourth
+   moment's `45°` rotation needs `card n ≥ 2`; `card n = 1` is `u = ±1` (docstring). At `k = n`:
+   `hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq`, `HasSubspaceEmbedding S_H U 1 1 0 μ`
+   for every `U`.
+7. Files correctly placed. §7: Q1 to Q5 and Q7 to Q9 stand (Q4: `p = 2` only); Q6 is replaced by
+   items 2 and 3.
+
+**Skeleton-level changes** (same meaning unless said): `ae_specNorm_eq_of_hasLaw_haarFrame` drops
+`[Nonempty k]` (both sides are `0` for empty `k`); the Sphere `integrable_…` lemma takes any `V`
+(no `hV`); the Gaussian isotropy docstring carries no MT locator (none in hand); the Haar OSI gets
+the new id `haar-sketch-osi`. **File list** (amends §4): `ChiSquareTails.lean` 4, `Sphere.lean` 6,
+`Sketching/Gaussian/Gaussian.lean` 26 (3 definitions, 9 size lemmas, 14 theorems),
+`Sketching/Gaussian/Haar.lean` 18 (the 12 of §3.4, its two `hsk` shapes renamed
+`…_of_lt_sqrt_sub_sqrt`; plus the a.s. upper half, the `n/k` embedding and OSE, the `k = n`
+embedding and the two complement statements).
