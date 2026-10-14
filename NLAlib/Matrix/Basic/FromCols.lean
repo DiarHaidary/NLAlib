@@ -38,12 +38,17 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n q r : Type*} [Fintype q] [Fintype r]
 `Matrix.fromCols_mulVec` (the action of `[A, B]` on a split vector), no range statement. -/
 theorem range_mulVecLin_le_range_fromCols_left (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
     LinearMap.range A.mulVecLin ≤ LinearMap.range (Matrix.fromCols A B).mulVecLin := by
-  sorry
+  rintro _ ⟨v, rfl⟩
+  refine ⟨Sum.elim v 0, ?_⟩
+  simp only [Matrix.mulVecLin_apply, Matrix.fromCols_mulVec_sumElim, Matrix.mulVec_zero,
+    add_zero]
 
 /-- The vector `y` lies in the column space of `[A, y]`, the matrix `A` with `y` appended as one
 column. -/
 theorem mem_range_mulVecLin_fromCols_replicateCol (A : Matrix n q 𝕜) (y : n → 𝕜) :
     y ∈ LinearMap.range (Matrix.fromCols A (Matrix.replicateCol Unit y)).mulVecLin := by
-  sorry
+  refine ⟨Sum.elim 0 fun _ => 1, ?_⟩
+  ext i
+  simp [Matrix.mulVec, dotProduct]
 
 end NLAlib

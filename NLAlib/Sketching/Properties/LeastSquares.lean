@@ -47,6 +47,20 @@ variable {𝕜 : Type*} [RCLike 𝕜] {k l n p q r : Type*} [Fintype k] [Fintype
   [Fintype p] [Fintype q] {S : Matrix k n 𝕜} {U : Matrix n p 𝕜}
   {A : Matrix n q 𝕜} {y : n → 𝕜} {x : q → 𝕜} {a b : ℝ}
 
+/-! ### Proof-local helpers -/
+
+open scoped ComplexOrder in
+/-- Scaling by a nonnegative real is monotone in the Loewner order. -/
+private theorem smul_le_smul_aux {G H : Matrix r r 𝕜} (h : G ≤ H) {c : ℝ} (hc : 0 ≤ c) :
+    c • G ≤ c • H := by
+  rw [Matrix.le_iff, ← smul_sub]
+  exact (Matrix.le_iff.mp h).smul hc
+
+/-- From `a ‖u‖² ≤ ‖v‖²` with `0 < a`, `‖u‖² ≤ ‖v‖² / a`. -/
+private theorem le_div_of_mul_le' {a u v : ℝ} (ha : 0 < a) (h : a * u ≤ v) : u ≤ v / a := by
+  rw [le_div_iff₀ ha, mul_comm]
+  exact h
+
 /-! ### Sketch-and-solve -/
 
 section LeastSquares
@@ -65,7 +79,19 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le (h : IsSubspaceEmbedding S U a
     (hy : y ∈ LinearMap.range U.mulVecLin) (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (y - A *ᵥ x)‖ ^ 2 ≤
       b / a * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  sorry
+  obtain ⟨x₀, hx₀⟩ := exists_isLeastSquaresSolution A y
+  have hAx : ∀ z, A *ᵥ z ∈ LinearMap.range U.mulVecLin := fun z => hA ⟨z, rfl⟩
+  have hv := isSubspaceEmbedding_iff_forall_mem_range.mp h
+  have h₁ := (hv _ (sub_mem hy (hAx x))).1
+  have h₂ := (hv _ (sub_mem hy (hAx x₀))).2
+  have h₃ : ‖WithLp.toLp 2 (S *ᵥ (y - A *ᵥ x))‖ ^ 2 ≤ ‖WithLp.toLp 2 (S *ᵥ (y - A *ᵥ x₀))‖ ^ 2 := by
+    have := hx x₀
+    rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_sub,
+      ← Matrix.mulVec_sub] at this
+    exact pow_le_pow_left₀ (norm_nonneg _) this 2
+  rw [hx₀.sub_mulVec_eq] at h₂ h₃
+  rw [div_mul_eq_mul_div]
+  exact le_div_of_mul_le' ha (h₁.trans (h₃.trans h₂))
 
 /-- **Sketch-and-solve**, unsquared: `‖y - A x‖ ≤ √(b / a) ‖(1 - P_A) y‖`.
 [MartinssonTropp2020, §10.3], unsquared there. -/
@@ -73,7 +99,12 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_le (h : IsSubspaceEmbedding S U a b)
     (hA : LinearMap.range A.mulVecLin ≤ LinearMap.range U.mulVecLin)
     (hy : y ∈ LinearMap.range U.mulVecLin) (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (y - A *ᵥ x)‖ ≤ √(b / a) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ := by
-  sorry
+  calc ‖WithLp.toLp 2 (y - A *ᵥ x)‖ = √(‖WithLp.toLp 2 (y - A *ᵥ x)‖ ^ 2) :=
+        (Real.sqrt_sq (norm_nonneg _)).symm
+    _ ≤ √(b / a * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2) :=
+        Real.sqrt_le_sqrt (h.norm_sub_mulVec_sq_le ha hA hy hx)
+    _ = √(b / a) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ := by
+        rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
 
 /-- **Sketch-and-solve** with an embedding of `range [A, y]`, the form in which the literature
 states it. [Woodruff2014, proof of Theorem 21]. -/
@@ -82,7 +113,8 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le_of_fromCols
     (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (y - A *ᵥ x)‖ ^ 2 ≤
       b / a * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  sorry
+  exact h.norm_sub_mulVec_sq_le ha (range_mulVecLin_le_range_fromCols_left A _)
+    (mem_range_mulVecLin_fromCols_replicateCol A y) hx
 
 end LeastSquares
 
@@ -94,7 +126,10 @@ with upper constant `b > 0` and `S * A * M` has orthonormal columns, then
 theorem IsSubspaceEmbedding.inv_smul_one_le_conjTranspose_mul_self [DecidableEq r]
     {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (hb : 0 < b)
     (hM : HasOrthonormalCols (S * A * M)) : b⁻¹ • (1 : Matrix r r 𝕜) ≤ (A * M)ᴴ * (A * M) := by
-  sorry
+  have hup := (h.mul_right M).upper
+  rw [← Matrix.mul_assoc S A M, hM.conjTranspose_mul_self] at hup
+  have h' := smul_le_smul_aux hup (inv_nonneg.mpr hb.le)
+  rwa [smul_smul, inv_mul_cancel₀ hb.ne', one_smul] at h'
 
 /-- **Sketch-and-precondition**, upper half of the spectral equivalence: if `S` embeds `range A`
 with lower constant `a > 0` and `S * A * M` has orthonormal columns, then
@@ -102,17 +137,37 @@ with lower constant `a > 0` and `S * A * M` has orthonormal columns, then
 theorem IsSubspaceEmbedding.conjTranspose_mul_self_le_inv_smul_one [DecidableEq r]
     {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (ha : 0 < a)
     (hM : HasOrthonormalCols (S * A * M)) : (A * M)ᴴ * (A * M) ≤ a⁻¹ • (1 : Matrix r r 𝕜) := by
-  sorry
+  have hlow : a • ((A * M)ᴴ * (A * M)) ≤ (S * (A * M))ᴴ * (S * (A * M)) := (h.mul_right M).lower
+  rw [← Matrix.mul_assoc S A M, hM.conjTranspose_mul_self] at hlow
+  have h' := smul_le_smul_aux hlow (inv_nonneg.mpr ha.le)
+  rwa [smul_smul, inv_mul_cancel₀ ha.ne', one_smul] at h'
 
 /-- **Sketch-and-precondition**: if `S` embeds `range A` with constants `a > 0`, `b ≥ 0` and
 `S * A * M` has orthonormal columns, the preconditioned matrix has `κ(A M)² ≤ b / a`.
 For empty `r`, `κ(A M) = 0` and the bound is `hb`; for nonempty `r` the hypotheses force
-`0 < b`. [MartinssonTropp2020, §10.5]; there for `M = R⁻¹` from a QR factorization of `S A`.
+`0 < b`. No rank hypothesis is needed: `A * M` has full column rank because `S * A * M` does, so
+`κ(A M)` is the classical `σ_max / σ_min` (`NLAlib.conditionNumber_of_injective`).
+[MartinssonTropp2020, §10.5]; there for `M = R⁻¹` from a QR factorization of `S A`.
 Result: sketch-and-precondition -/
 theorem IsSubspaceEmbedding.conditionNumber_mul_sq_le [Fintype r] [DecidableEq r] {M : Matrix q r 𝕜}
     (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hb : 0 ≤ b)
     (hM : HasOrthonormalCols (S * A * M)) : conditionNumber (A * M) ^ 2 ≤ b / a := by
-  sorry
+  rcases isEmpty_or_nonempty r with hr | hr
+  · rw [Subsingleton.elim (A * M) 0, conditionNumber_zero]
+    simpa using div_nonneg hb ha.le
+  · have hb₀ : 0 < b := by
+      rcases hb.lt_or_eq with hb₀ | rfl
+      · exact hb₀
+      exfalso
+      have hup := (h.mul_right M).upper
+      rw [← Matrix.mul_assoc S A M, hM.conjTranspose_mul_self, zero_smul] at hup
+      have h₁ : (1 : ℝ) • (1 : Matrix r r 𝕜) ≤ (0 : ℝ) • (1 : Matrix r r 𝕜) := by
+        rwa [one_smul, zero_smul]
+      exact absurd (smul_one_le_smul_one_iff.mp h₁) (by norm_num)
+    rw [← inv_div_inv]
+    exact conditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one (inv_pos.mpr hb₀)
+      (inv_nonneg.mpr ha.le) (h.inv_smul_one_le_conjTranspose_mul_self hb₀ hM)
+      (h.conjTranspose_mul_self_le_inv_smul_one ha hM)
 
 /-- **Sketch-and-precondition with QR**: for a thin QR factorization `S A = Q R` with `R`
 invertible, `κ(A R⁻¹)² ≤ b / a`. [MartinssonTropp2020, §10.5]. -/
@@ -120,7 +175,12 @@ theorem IsSubspaceEmbedding.conditionNumber_mul_inv_sq_le_of_isQR [LinearOrder q
     [DecidableEq q] {Q : Matrix k q 𝕜} {R : Matrix q q 𝕜} (h : IsSubspaceEmbedding S A a b)
     (ha : 0 < a) (hb : 0 ≤ b) (hQR : IsQR (S * A) Q R) (hR : IsUnit R) :
     conditionNumber (A * R⁻¹) ^ 2 ≤ b / a := by
-  sorry
+  have hQ : S * A * R⁻¹ = Q := by
+    rw [hQR.eq_mul, Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det R).mp hR), Matrix.mul_one]
+  refine h.conditionNumber_mul_sq_le ha hb ?_
+  rw [hQ]
+  exact hQR.hasOrthonormalCols
 
 /-! ### The error formula, from the injection alone -/
 
@@ -137,7 +197,19 @@ theorem IsSubspaceInjection.norm_mulVec_sub_rangeProjector_mulVec_sq_le
     (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (A *ᵥ x - rangeProjector A *ᵥ y)‖ ^ 2 ≤
       ‖WithLp.toLp 2 (S *ᵥ ((1 - rangeProjector A) *ᵥ y))‖ ^ 2 / a := by
-  sorry
+  obtain ⟨x₀, hx₀⟩ := exists_isLeastSquaresSolution A y
+  have hw : A *ᵥ x - rangeProjector A *ᵥ y = A *ᵥ (x - x₀) := by
+    rw [← hx₀.mulVec_eq_rangeProjector_mulVec, Matrix.mulVec_sub]
+  have hpy := hx.norm_sub_mulVec_sq_eq_add x₀
+  have e₁ : S *ᵥ y - (S * A) *ᵥ x₀ = S *ᵥ ((1 - rangeProjector A) *ᵥ y) := by
+    rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_sub, hx₀.sub_mulVec_eq]
+  have e₂ : (S * A) *ᵥ (x - x₀) = S *ᵥ (A *ᵥ x - rangeProjector A *ᵥ y) := by
+    rw [hw, Matrix.mulVec_mulVec]
+  rw [e₁, e₂] at hpy
+  have hinj := isSubspaceInjection_iff_forall_mem_range.mp h _ ⟨x - x₀, hw.symm⟩
+  refine le_div_of_mul_le' ha (hinj.trans ?_)
+  rw [hpy]
+  exact le_add_of_nonneg_left (sq_nonneg _)
 
 /-- **Sketch-and-solve error formula**: for every minimizer `x` of `‖S A x - S y‖`,
 `‖y - A x‖² ≤ ‖(1 - P_A) y‖² + ‖S (1 - P_A) y‖² / a`.
@@ -147,7 +219,13 @@ theorem IsSubspaceInjection.norm_sub_mulVec_sq_le (h : IsSubspaceInjection S A a
     (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (y - A *ᵥ x)‖ ^ 2 ≤ ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 +
       ‖WithLp.toLp 2 (S *ᵥ ((1 - rangeProjector A) *ᵥ y))‖ ^ 2 / a := by
-  sorry
+  obtain ⟨x₀, hx₀⟩ := exists_isLeastSquaresSolution A y
+  have hpy := hx₀.norm_sub_mulVec_sq_eq_add x
+  have e : A *ᵥ (x₀ - x) = -(A *ᵥ x - rangeProjector A *ᵥ y) := by
+    rw [Matrix.mulVec_sub, hx₀.mulVec_eq_rangeProjector_mulVec, neg_sub]
+  rw [hx₀.sub_mulVec_eq, e, WithLp.toLp_neg, norm_neg] at hpy
+  rw [hpy]
+  exact add_le_add_right (h.norm_mulVec_sub_rangeProjector_mulVec_sq_le ha hx) _
 
 /-- **Sketch-and-solve error formula, matrix right-hand side**, for the minimum-norm output
 `pinv (S A) (S Y)`, as generalized Nyström uses it:
@@ -158,7 +236,10 @@ theorem IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le [Fintype r]
     frobNorm (Y - A * (pinv (S * A) * (S * Y))) ^ 2 ≤
       frobNorm ((1 - rangeProjector A) * Y) ^ 2 +
         frobNorm (S * ((1 - rangeProjector A) * Y)) ^ 2 / a := by
-  sorry
+  rw [frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, Finset.sum_div,
+    ← Finset.sum_add_distrib]
+  refine Finset.sum_le_sum fun j _ => ?_
+  exact h.norm_sub_mulVec_sq_le ha (isLeastSquaresSolution_pinv_mulVec (S * A) (S *ᵥ Y.col j))
 
 end ErrorFormula
 
@@ -168,6 +249,12 @@ injection with constant `a > 0`, `‖X (S U)ᴴ†‖_F² ≤ ‖X‖_F² / a`. 
 theorem IsSubspaceInjection.frobNorm_mul_pinv_sq_le [DecidableEq p]
     (h : IsSubspaceInjection S U a) (hU : HasOrthonormalCols U) (ha : 0 < a)
     (X : Matrix l k 𝕜) : frobNorm (X * pinv ((S * U)ᴴ)) ^ 2 ≤ frobNorm X ^ 2 / a := by
-  sorry
+  have hp := specNorm_pinv_sq_le_inv_of_smul_one_le ha (hU.isSubspaceInjection_iff.mp h)
+  rw [div_eq_mul_inv]
+  calc frobNorm (X * pinv ((S * U)ᴴ)) ^ 2 ≤ (frobNorm X * specNorm (pinv ((S * U)ᴴ))) ^ 2 :=
+        pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_mul_le_frobNorm_mul_specNorm _ _) 2
+    _ = frobNorm X ^ 2 * specNorm (pinv (S * U)) ^ 2 := by
+        rw [pinv_conjTranspose, specNorm_conjTranspose, mul_pow]
+    _ ≤ frobNorm X ^ 2 * a⁻¹ := mul_le_mul_of_nonneg_left hp (sq_nonneg _)
 
 end NLAlib
