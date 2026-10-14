@@ -54,7 +54,9 @@ namespace IsPinv
 
 variable {A : Matrix m n 𝕜} {B C : Matrix n m 𝕜}
 
-/-- **Uniqueness of the pseudoinverse.** [HornJohnson2013, Problem 7.3.P7].
+/-- **Uniqueness of the pseudoinverse.** A matrix has at most one Moore–Penrose pseudoinverse:
+if `B` and `C` both satisfy the four Penrose identities for `A`, then `B = C`.
+[HornJohnson2013, Problem 7.3.P7].
 Port of `NLAlib.IsMoorePenroseInverse.unique`.
 Result: moore-penrose-uniqueness -/
 theorem unique (hB : IsPinv A B) (hC : IsPinv A C) : B = C := by

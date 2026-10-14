@@ -45,6 +45,7 @@ weights so that statements carry no proof term. -/
 noncomputable def samplingMeasure : Measure ι :=
   ∑ i, (p i : ℝ≥0∞) • Measure.dirac i
 
+/-- The sampling law is a finite measure, for any weights `p`. -/
 instance isFiniteMeasure_samplingMeasure : IsFiniteMeasure (samplingMeasure p) := by
   constructor
   simp only [samplingMeasure, Measure.coe_finsetSum, Finset.sum_apply, Measure.smul_apply,

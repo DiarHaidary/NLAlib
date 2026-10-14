@@ -52,6 +52,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [
 noncomputable def rademacherMeasure : Measure ℝ :=
   (2⁻¹ : ℝ≥0∞) • (Measure.dirac 1 + Measure.dirac (-1))
 
+/-- The Rademacher law is a probability measure. -/
 instance isProbabilityMeasure_rademacherMeasure : IsProbabilityMeasure rademacherMeasure := by
   constructor
   simp only [rademacherMeasure, Measure.smul_apply, Measure.add_apply, measure_univ,

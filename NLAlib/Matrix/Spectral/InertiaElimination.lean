@@ -141,7 +141,9 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks [DecidableEq m]
     hD.inertiaPos_conjTranspose_mul_mul (by rw [Matrix.det_fromBlocks_zero₂₁]; simp),
     hA.inertiaPos_fromBlocks_diagonal hS]
 
-/-- **Haynsworth inertia additivity**, negative index.
+/-- **Haynsworth inertia additivity**, negative index: for Hermitian `A` and `C` with `A`
+invertible, the number of negative eigenvalues of the block matrix `[A B; Bᴴ C]` is that of `A`
+plus that of the Schur complement `C - Bᴴ A⁻¹ B`.
 Port of `NLAlib.inertiaNeg_fromBlocks_eq_add_schur`.
 Result: haynsworth -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks [DecidableEq m]

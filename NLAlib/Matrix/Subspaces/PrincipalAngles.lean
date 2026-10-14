@@ -210,7 +210,9 @@ theorem cos_principalAngle (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ)
     (by linarith [singularValues_nonneg (rangeProjector X * rangeProjector Y) k])
     (singularValues_rangeProjector_mul_rangeProjector_le_one X Y k)
 
-/-- **Cosines for orthonormal frames**: the singular values of `Uᴴ * V`.
+/-- **Cosines for orthonormal frames**: for `U` and `V` with orthonormal columns, the cosines of
+the principal angles between their column spaces are the singular values of `Uᴴ * V`,
+`cos θ_k = σ_k(Uᴴ V)` for every `k`.
 [GolubVanLoan2013, §6.4.3]. Port of `NLAlib.cos_principalAngles`.
 Result: principal-angles -/
 theorem HasOrthonormalCols.cos_principalAngle [DecidableEq p] [DecidableEq q]

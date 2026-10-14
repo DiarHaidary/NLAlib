@@ -234,11 +234,17 @@ noncomputable def householderState (A : Matrix (Fin m) (Fin n) 𝕜) :
       ((householderState A k).1 * householderStep (householderState A k).2 k,
         householderStep (householderState A k).2 k * (householderState A k).2)
 
-/-- The unitary factor of Householder QR. Port of `NLAlib.householderQ`, there over `ℝ`. -/
+/-- The unitary factor of Householder QR of an `m × n` matrix `A`: the `m × m` product
+`Q = H_0 H_1 ⋯ H_{n-1}` of the reflectors of the `n` steps (`householderStep`, the identity at the
+steps `k ≥ min(m, n)`). It is unitary (`hasOrthonormalCols_householderQ`) and
+`Q * householderR A = A` (`householderQ_mul_householderR`).
+Port of `NLAlib.householderQ`, there over `ℝ`. -/
 noncomputable def householderQ (A : Matrix (Fin m) (Fin n) 𝕜) : Matrix (Fin m) (Fin m) 𝕜 :=
   (householderState A n).1
 
-/-- The upper trapezoidal factor of Householder QR. Port of `NLAlib.householderR`. -/
+/-- The upper trapezoidal factor of Householder QR of an `m × n` matrix `A`: the `m × n` matrix
+`R = H_{n-1} ⋯ H_1 H_0 A` left after the reflectors of the `n` steps have cleared each column below
+the diagonal (`isUpperTrapezoidal_householderR`). Port of `NLAlib.householderR`. -/
 noncomputable def householderR (A : Matrix (Fin m) (Fin n) 𝕜) : Matrix (Fin m) (Fin n) 𝕜 :=
   (householderState A n).2
 

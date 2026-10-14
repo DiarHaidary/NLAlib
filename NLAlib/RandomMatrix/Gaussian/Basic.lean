@@ -52,9 +52,11 @@ noncomputable abbrev gaussianMatrix (m n : Type*) [Fintype m] [Fintype n] :
     Measure (Matrix m n ℝ) :=
   Measure.pi fun _ : m => gaussianVector n
 
+/-- The standard Gaussian matrix law is a probability measure. -/
 instance isProbabilityMeasure_gaussianMatrix : IsProbabilityMeasure (gaussianMatrix m n) :=
   inferInstanceAs (IsProbabilityMeasure (Measure.pi fun _ : m => gaussianVector n))
 
+/-- The standard Gaussian matrix law is a Gaussian measure on `Matrix m n ℝ`. -/
 instance isGaussian_gaussianMatrix : IsGaussian (gaussianMatrix m n) := by
   let L : (m × n → ℝ) →L[ℝ] Matrix m n ℝ :=
     { toFun := fun v => Matrix.of (Function.curry v)

@@ -320,7 +320,8 @@ theorem isLeast_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
   rintro _ ⟨B, hB, rfl⟩
   exact singularValues_le_specNorm_sub_of_rank_le A hB
 
-/-- Eckart–Young in the Frobenius norm as a least element.
+/-- **Eckart–Young in the Frobenius norm**, as a least element: over the matrices `B` of rank at
+most `k`, the distance `‖A - B‖_F` has a least value, and it is `‖A - truncatedSVD A k‖_F`.
 Port of `NLAlib.bestRankFrobSq_eq_sInf`.
 Result: eckart-young-frobenius -/
 theorem isLeast_frobNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :

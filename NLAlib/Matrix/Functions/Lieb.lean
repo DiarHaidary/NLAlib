@@ -71,7 +71,8 @@ theorem relativeEntropy_eq (A H : Matrix n n 𝕜) :
     map_sub, map_sub, map_sub]
   ring
 
-/-- **The matrix relative entropy is nonnegative** (Klein's inequality).
+/-- **The matrix relative entropy is nonnegative** (Klein's inequality): for positive definite
+`A` and `H`, `D(A; H) = tr (A (log A - log H) - (A - H)) ≥ 0`.
 [Tropp2015, Proposition 8.3.5]. Port of `NLAlib.relativeEntropy_nonneg`, there over `ℂ`.
 Result: relative-entropy -/
 theorem relativeEntropy_nonneg {A H : Matrix n n 𝕜} (hA : A.PosDef) (hH : H.PosDef) :
@@ -231,7 +232,9 @@ private theorem relativeEntropy_eq_kroneckerContraction {A H : Matrix n n 𝕜} 
     kroneckerContraction_kronecker_transpose, relativeEntropy_eq, Matrix.trace_sub, map_sub]
   ring
 
-/-- **The matrix relative entropy is jointly convex** (Lindblad).
+/-- **The matrix relative entropy is jointly convex** (Lindblad): on the pairs `(A, H)` of positive
+definite matrices, `D(A; H) = tr (A (log A - log H) - (A - H))` is a convex function, so
+`D(a A₁ + b A₂; a H₁ + b H₂) ≤ a D(A₁; H₁) + b D(A₂; H₂)` for `a, b ≥ 0` with `a + b = 1`.
 [Tropp2015, §8.3 and §8.8]; [Lindblad1974].
 Port of `NLAlib.convexOn_relativeEntropy`, there over `ℂ` on `Fin d`.
 Result: relative-entropy -/

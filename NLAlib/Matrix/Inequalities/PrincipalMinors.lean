@@ -153,9 +153,9 @@ private theorem prod_powersetCard_prod_erase {M : Type*} [CommMonoid M] (f : Fin
   rw [Finset.prod_const, Finset.card_sdiff_of_subset (Finset.subset_univ s), Finset.card_univ,
     (Finset.mem_powersetCard.mp hs).2, ← hkd, Nat.add_sub_cancel_left]
 
-/-- **Szász's inequality.** Let `P k` be the product of all principal minors of size `k` of a
-positive semidefinite matrix of size `N`. Then
-`P (k + 1) ^ k ≤ P k ^ (N - k)`, stated with `k + d = N`.
+/-- **Szász's inequality.** For a positive semidefinite `N × N` matrix `A`, let `P_k` be the
+product of the principal minors `det A[s]` over all index sets `s` with `k` elements (`P_0 = 1`).
+Then `P_{k+1}^k ≤ P_k^{N-k}` for `k ≤ N`, stated with `k + d = N` and exponent `d`.
 [HornJohnson2013, Theorem 7.8.11].
 Port of `NLAlib.principalMinorProduct_succ_pow_le_of_posSemidef`, there over `ℝ`.
 Result: szasz-inequality -/

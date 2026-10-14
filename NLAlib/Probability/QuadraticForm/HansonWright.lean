@@ -179,7 +179,13 @@ theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => X
   ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_le_le ht).trans
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
-/-- **The Hanson–Wright inequality** ([Vershynin2018], Theorem 6.2.1).
+/-- **The Hanson–Wright inequality.** If the coordinates `X_i` of a real random vector `X` are
+independent and each satisfies the sub-Gaussian moment generating function bound with variance
+proxy `c` (`HasSubgaussianMGF`), then for every real square matrix `A` and every `t ≥ 0`,
+`P(t ≤ |Xᵀ A X - E Xᵀ A X|) ≤ 2 exp (-C min (t² / (c² ‖A‖_F²), t / (c ‖A‖₂)))` with the explicit
+constant `C = hansonWrightConstant`.
+[Vershynin2018, Theorem 6.2.1]; there with an unspecified absolute constant and the sub-Gaussian
+norm `K` of the coordinates, `c` playing the role of `K²`.
 Result: hanson-wright -/
 theorem measureReal_abs_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => X ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :

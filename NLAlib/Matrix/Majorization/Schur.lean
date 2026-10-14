@@ -78,7 +78,9 @@ theorem majorized_re_diag_of_mul_eq_mul_diagonal {A U : Matrix n n 𝕜} {d : n 
   rw [hx]
   exact majorized_mulVec_of_mem_doublyStochastic d hU.norm_sq_mem_doublyStochastic
 
-/-- Schur's theorem for Mathlib's enumeration of the eigenvalues.
+/-- **Schur's theorem**, for Mathlib's enumeration of the eigenvalues: the real diagonal
+`(re A_{ii})_i` of a Hermitian matrix `A` is majorized by its eigenvalues listed as Mathlib's
+`hA.eigenvalues`, indexed by `n` rather than sorted.
 [HornJohnson2013, Theorem 4.3.45].
 Result: schur-majorization -/
 theorem _root_.Matrix.IsHermitian.majorized_re_diag_eigenvalues {A : Matrix n n 𝕜}

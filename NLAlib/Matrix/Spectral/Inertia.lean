@@ -304,7 +304,9 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_conjTranspose_mul_mul [DecidableEq 
     Matrix.mul_nonsing_inv _ hS, Matrix.mul_one, ← Matrix.mul_assoc,
     Matrix.nonsing_inv_mul _ hS', Matrix.one_mul] at h
 
-/-- **Sylvester's law of inertia**, negative index.
+/-- **Sylvester's law of inertia**, negative index: congruence by an invertible matrix preserves
+the number of negative eigenvalues, `inertiaNeg (Sᴴ A S) = inertiaNeg A` for Hermitian `A` and
+invertible `S`.
 Port of `NLAlib.inertiaNeg_transpose_mul_mul`, there over `ℝ`.
 Result: sylvester-inertia -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_conjTranspose_mul_mul [DecidableEq n]

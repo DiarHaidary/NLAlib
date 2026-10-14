@@ -280,7 +280,8 @@ private theorem convexOn_max_zero_rpow {t : ℝ} (ht : 1 ≤ t) :
   exact (Real.rpow_le_rpow (le_max_right _ _) h (zero_le_one.trans ht)).trans
     ((convexOn_rpow ht).2 (le_max_right x 0) (le_max_right y 0) ha hb hab)
 
-/-- **The triangle inequality for Schatten norms**, `1 ≤ q`.
+/-- **The triangle inequality for Schatten norms**: for `1 ≤ q ≤ ∞` and matrices `A`, `B` of the
+same shape, `‖A + B‖_q ≤ ‖A‖_q + ‖B‖_q`.
 [Bhatia1997, §IV.2]. Port of `NLAlib.schattenNorm_add_le`, there over `ℝ`.
 Result: schatten-norm -/
 theorem schattenNorm_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (A B : Matrix m n 𝕜) :

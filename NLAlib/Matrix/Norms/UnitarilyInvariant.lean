@@ -190,7 +190,9 @@ theorem matrixNorm_le_of_forall_kyFanNorm_le {A : Matrix m n 𝕜} {B : Matrix l
   refine Φ.le_of_forall_sum_le (singularValues_antitone B) fun S => ?_
   exact (sum_abs_singularValues_le_kyFanNorm A S).trans (h S.card)
 
-/-- **The triangle inequality** for unitarily invariant norms.
+/-- **The triangle inequality** for unitarily invariant norms: for every symmetric gauge `Φ` and
+matrices `A`, `B` of the same shape, `‖A + B‖_Φ ≤ ‖A‖_Φ + ‖B‖_Φ`, where `‖A‖_Φ = Φ.matrixNorm A` is
+the gauge of the singular values of `A`.
 [HornJohnson2013, Theorem 7.4.7.2].
 Port of `NLAlib.SymmetricGauge.matrixValue_add_le`, there over `ℝ`.
 Result: unitarily-invariant-norm -/

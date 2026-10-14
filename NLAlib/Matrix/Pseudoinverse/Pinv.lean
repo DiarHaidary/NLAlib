@@ -59,7 +59,9 @@ private theorem IsSVD.isPinv [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m
     h.hasOrthonormalCols_right
   rwa [← h.eq, ← Matrix.mul_assoc] at h'
 
-/-- **Existence of the pseudoinverse.** Every matrix has a Moore–Penrose pseudoinverse.
+/-- **Existence of the pseudoinverse.** Every matrix `A`, of any shape and rank, has a Moore–Penrose
+pseudoinverse: some `B` satisfies the four Penrose identities `A B A = A`, `B A B = B`,
+`(A B)ᴴ = A B` and `(B A)ᴴ = B A`.
 [GolubVanLoan2013, §5.5.2]. Port of `NLAlib.exists_isMoorePenroseInverse`.
 Result: moore-penrose-existence -/
 theorem exists_isPinv (A : Matrix m n 𝕜) : ∃ B : Matrix n m 𝕜, IsPinv A B := by

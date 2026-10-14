@@ -147,8 +147,12 @@ theorem measure_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 
     rw [two_mul]
     exact add_le_add (h.measure_ge_le ht) (h.measure_le_le ht)
 
-/-- **Bernstein's inequality** for independent sub-exponential variables
-([Wainwright2019], §2.1.3).
+/-- **Bernstein's inequality** for independent sub-exponential variables: if the `X_i` are
+independent and, for `i ∈ s`, `X_i` is sub-exponential with parameters `(v_i, b_i)`
+(`HasSubexponentialMGF`), then for `t ≥ 0`
+`P(t ≤ ∑_{i ∈ s} X_i) ≤ exp (-min (t² / (2 ∑_{i ∈ s} v_i)) (t / (2 max_{i ∈ s} b_i)))`, with the
+convention of `measure_ge_le` when a denominator is `0`.
+[Wainwright2019, §2.1.3].
 Result: bernstein-inequality -/
 theorem measure_sum_ge_le_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ)
     {v b : ι → ℝ≥0} {s : Finset ι} (h : ∀ i ∈ s, HasSubexponentialMGF (X i) (v i) (b i) μ)
