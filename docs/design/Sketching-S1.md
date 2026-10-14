@@ -263,3 +263,59 @@ the predicate keeps (α), bridged by `exists_hasOrthonormalCols_range_le`, with 
 **Q5.** `FixedSubspace.lean` is split from `Oblivious.lean` (27 statements together; amends the brief's
 file list). **Q6.** `.toInjection` is named `…isObliviousSubspaceInjection` (§4). **Q7.** Transfer and
 composition take `AEMeasurable` sketches (`HasLaw` gives them). **Q8.** New result id `osi-def`.
+
+## 8. Amendments from the review (2026-10-14)
+
+Review of S0 and S1 (2026-10-14); all findings and the author decisions of §7 accepted by the
+orchestrator. Skeletons in `NLAlib/Sketching/Properties/`: `Isotropic` (10), `FixedSubspace` (12),
+`Oblivious` (15), `Injection` (6), `JohnsonLindenstrauss` (11), `MatrixMultiplication` (5),
+`TraceMoment` (6); 65 statements, every proof `sorry`.
+
+1. **JL citations.** `HasJLProperty` cites [Woodruff2014, proof of Lemma 18] and
+   [MartinssonTropp2020, §8.6] (Theorem 4 is the `f`-point JLT). The JL lemma cites
+   [Woodruff2014, Definition 3] with "there inner products on a finite set, here squared norms of
+   differences".
+2. **`[IsFiniteMeasure μ]` explicit** (`measureReal_mono` needs the larger set finite; `μ.real` of a
+   set of infinite measure is `0`). On the listed `HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le`,
+   `HasJLProperty.mono`, the six tails of `Injection`,
+   `HasGramTraceMoment.measure_specNorm_ge_le`; and, by §3's rule, on every other theorem that
+   compares two different events: `HasSubspaceEmbedding.hasSubspaceInjection` (false without it:
+   Lebesgue on `ℝ`, `S = 0` on `[0, 1]` and `2 • 1` elsewhere, `a = b = 1`, `δ = 0`),
+   `HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le`, the four `mono`/`of_range_le` of
+   `FixedSubspace`, the two oblivious constructors, `isObliviousSubspaceInjection`, the two
+   oblivious `mono`, `HasGramTraceMoment.hasSubspaceEmbedding` and
+   `isObliviousSubspaceEmbedding_of_hasGramTraceMoment`. Not on: the `HasLaw` lemmas;
+   `HasSubspaceInjection.hasSubspaceEmbedding` (the failure event is the union, `measureReal_union_le`);
+   the OSE/OSI-to-any-shape lemmas (the event depends only on the range, so the sets are equal); the
+   JL lemma (union bound); `HasJLMoment.hasJLProperty` (Markov); the §3.6 statements (each event is a
+   superlevel set of an integrable function at a positive level, or empty).
+3. **`measure_specNorm_ge_le` at `q = 0`** keeps `q : ℕ` unrestricted; the route splits on `q = 0`
+   (`specNorm_pow_le_re_trace_pow` needs `p ≠ 0`): there `re tr 1 = card p`, so `B ≥ card p · μ.real
+   univ`, and for empty `p` the event is empty (`specNorm = 0 < ε`).
+4. **JL moment to embeddings.** `HasJLMoment.hasSubspaceEmbedding` and `.isObliviousSubspaceEmbedding`
+   (`1 ∓ ε · dim`) cite [Woodruff2014, proof of Theorem 9] (Theorems 13 and 14). The oblivious form
+   needs no `d ≤ card n`: the proof uses an orthonormal basis indexed by `Fin (min d (card n))` and
+   `mono`.
+5. **`IsIsotropicSketch.mul`, `memLp` field**: entries of `S₂ S` are sums of products of independent
+   `L²` entries; the route is `IndepFun.comp` with `Matrix.measurable_apply`.
+6. **`CamanoEpperlyMeyerTropp2025`** is in `docs/references.bib` (arXiv:2508.21189, title and
+   authors from the PDF's first page).
+
+Author decisions adopted: failure events negate the guarantee (`docs/PORT_SKETCHING.md` §3 has the
+sentence); AMM over `ℝ` with constant `ε`, the complex counterexample `c (ξ₁ σx + ξ₂ σy)` in the
+docstrings, and "Woodruff has 3ε; 1 is optimal"; `p : ℝ` in `HasJLMoment`; oblivious constructors
+over orthonormal `U : Matrix n p 𝕜` with `hp : card p ≤ card n`.
+
+Skeleton-level changes, same meaning:
+
+- `IsIsotropicSketch.integral_conjTranspose_mul_mul` takes `[DecidableEq p]`: the integral of a
+  `Matrix p p 𝕜`-valued function needs the `L2Operator` normed group, which needs it.
+- `integrable_…` companions written out: `IsIsotropicSketch.integrable_norm_mulVec_sq`,
+  `.integrable_frobNorm_mul_sq`, `HasJLMoment.integrable_abs_norm_mulVec_sq_sub_rpow` (with
+  `hp : 0 < p`: at `p = 0`, `x = 0` the integrand is `1`), and
+  `HasJLMoment.integrable_frobNorm_conjTranspose_mul_sub_rpow` (no `hε`).
+- The `+ twin` lines are written out: `IsObliviousSubspaceInjection.hasSubspaceInjection`,
+  `.of_hasOrthonormalCols` (with `hiso`), `.mono`,
+  `.measure_not_isSubspaceInjection_le_of_indepFun`, `.mul` (with `[DecidableEq k]`, `ha₂`), and
+  the OSI forms of the three CEMT tails.
+- Instance placement as in S0 §8: `[Fintype p]`, `[Fintype q]` on the declarations that use them.

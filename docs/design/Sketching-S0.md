@@ -40,7 +40,8 @@ The upper half gets no name (D1): a one-sided upper statement is `IsSubspaceEmbe
 
 `namespace NLAlib`, `open scoped Matrix MatrixOrder`. Variables `{𝕜 : Type*} [RCLike 𝕜]
 {k l n p q r : Type*}`, `[Fintype _]` on each, `{S : Matrix k n 𝕜} {U : Matrix n p 𝕜}
-{V : Matrix n q 𝕜} {a a' b b' ε : ℝ}`; `[DecidableEq _]` only where `1` or `⁻¹` appears.
+{V : Matrix n q 𝕜} {a a' b b' ε : ℝ}`; `[DecidableEq _]` only where `1` or `⁻¹` appears, `[LinearOrder q]`
+where `IsQR` appears (§8).
 
 Degenerate cases (checked for each statement). `p` empty: every predicate holds; the singular-value
 form's `hj` is then unsatisfiable, the `specNorm` form needs `0 ≤ ε` for this case only. `k` empty or
@@ -251,3 +252,34 @@ Corollary 2.8 applies Theorem 2.7 with a matrix right-hand side).
 
 **Q4. `IsSubspaceInjection` is a `def`, not an `abbrev`**: an `abbrev` makes `simp` normal forms
 unstable (it sees `≤`); the range form is the documented interface.
+
+## 8. Amendments from the review (2026-10-14)
+
+Review of S0 and S1 (2026-10-14); all findings accepted by the orchestrator. Skeletons:
+`NLAlib/Matrix/Basic/FromCols.lean` (2), `NLAlib/Sketching/Properties/SubspaceEmbedding.lean` (27),
+`NLAlib/Sketching/Properties/LeastSquares.lean` (11), every proof `sorry`.
+
+1. **`IsQR` needs `[LinearOrder q]`** (`Matrix/Factorizations/QR.lean`, its variable line).
+   `conditionNumber_mul_inv_sq_le_of_isQR` takes `[LinearOrder q] [DecidableEq q]`; the §3
+   variable sentence is corrected.
+2. **Citations.** [MartinssonTropp2020, §8.1] defines the embedding with unsquared norms and §10.3
+   prints `‖A x̂ - b‖ ≤ (1 + ε) ‖A x⋆ - b‖` unsquared (after Sarlós); `(1 + ε) / (1 - ε)` is
+   Woodruff's proof of Theorem 21, in squared norms. The `IsSubspaceEmbedding` and sketch-and-solve
+   docstrings say "unsquared there" and attribute the ratio to Woodruff.
+3. **Real-scalar corollaries** `IsSubspaceInjection.smul_real`, `IsSubspaceEmbedding.smul_real`
+   (`c : ℝ`, constants `c ^ 2 * a`, `c ^ 2 * b`), after the `𝕜` forms: families scale by
+   `(√k)⁻¹ : ℝ`. §3.1 has 27 statements.
+4. **`conditionNumber_mul_sq_le` keeps `hb : 0 ≤ b`.** For nonempty `r`, `hM` and the upper half give
+   `1 ≤ b • (A M)ᴴ (A M)`, so `0 < b`; `b = 0` forces `r` empty, where `κ(A M) = 0` and the bound is
+   `hb`. The route splits on `IsEmpty r`; the docstring says so. Same for the QR corollary.
+5. **Preconditioning route**: both halves on `A * M` by `h.mul_right M` (not `of_range_le`), then
+   `hM` turns `(S A M)ᴴ (S A M)` into `1`.
+
+Skeleton-level changes, same meaning:
+
+- Instance placement. Mathlib's Loewner order on `Matrix p p 𝕜` needs no `Fintype p`, so the two
+  predicates and the lemmas that only mention them take no `[Fintype p]`; `[Fintype p]`,
+  `[Fintype q]`, `[Fintype r]` sit on the declarations that use `mulVecLin`, `specNorm`,
+  `frobNorm`, `singularValues` or a product over that index (`unusedFintypeInType`). In
+  `LeastSquares.lean`, `[DecidableEq n]` is a section variable of the sketch-and-solve and
+  error-formula sections only (`unusedDecidableInType`).

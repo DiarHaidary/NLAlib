@@ -427,6 +427,10 @@ Subject to §2; inherited from `PORT_PROBABILITY.md` §2 D2, D3, D5 and §3.
 - Tails in failure form, non-strict events, `μ.real`; never `1 - δ ≤ μ.real {good}`. Every
   expectation upper bound beside its `integrable_…` companion. `[IsProbabilityMeasure μ]` only
   where `HasLaw` with a probability law does not imply it.
+- A guarantee `X ≤ c` fails on `{c < X}`: a tail that negates a guarantee takes its exact failure
+  set, as `HasSubspaceEmbedding` does with `¬ IsSubspaceEmbedding`, so degenerate cases need no
+  hypothesis; threshold events (`{t ≤ X}`) stay non-strict. (`docs/design/Sketching-S1.md` §7 Q1,
+  adopted 2026-10-14.)
 - Euclidean norms `‖WithLp.toLp 2 x‖`; matrix norms by the Matrix layer's names (`specNorm`,
   `frobNorm`); matrix integrals under `open scoped Matrix.Norms.L2Operator` only (§5.1).
 - A fixed-`U` theorem assumes `HasOrthonormalCols U` only if its proof needs it; general `U`
