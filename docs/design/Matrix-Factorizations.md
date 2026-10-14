@@ -160,7 +160,7 @@ lemmas, `eliminationStep_mulVec`, `rank_eliminationStep_add_one`,
 `choleskyLower` and its realisation.
 
 `QR.lean`: `IsQR`; `conjTranspose_mul_eq`, `conjTranspose_mul_self`, `singularValues_eq`,
-`rank_eq`, `conditionNumber_eq`, `norm_det_sq`; at full column rank `injective_mulVec_iff`,
+`rank_eq`, `pseudoConditionNumber_eq`, `norm_det_sq`; at full column rank `injective_mulVec_iff`,
 `apply_self_pos`, `pinv_eq`, `mul_conjTranspose_eq_rangeProjector`, `span_col_image_Iic`,
 `isLeastSquaresSolution_iff`, `isCholesky`; `mul_diagonal`, `submatrix_rows`, `mul_left`,
 `unique`; `exists_isQR`, `exists_isQR_of_injective`, `existsUnique_isQR_of_injective`,
@@ -210,7 +210,7 @@ form (`frobNorm_sq_add_frobNorm_pinv_sq_mul_le`, `singularValues_fromCols_le_sqr
 - **Direct solvers and their error analysis** (later layer): the predicates, the recursions, the
   growth bound of partial pivoting.
 - **Least squares**: `IsQR.isLeastSquaresSolution_iff`, `IsQR.pinv_eq`,
-  `IsQR.conditionNumber_eq`; Cholesky of the normal equations through `IsQR.isCholesky`.
+  `IsQR.pseudoConditionNumber_eq`; Cholesky of the normal equations through `IsQR.isCholesky`.
 - **Eigenvalue algorithms**: Hessenberg and tridiagonal reduction, invariance under the QR step,
   the implicit Q theorem (shifted QR, and uniqueness of Lanczos and Arnoldi bases).
 - **Randomized algorithms**: `Matrix.PosSemidef.sum_smul_eliminationStep` and

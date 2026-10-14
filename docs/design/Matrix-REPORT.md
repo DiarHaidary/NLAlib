@@ -33,7 +33,7 @@ a review section and a stage report.
    "Decisions taken without approval". §3 below collects the ones that later layers inherit.
 2. **Measurability was first put in the layer**, although the brief's §4 says it is designed
    with Probability. The maintainer moved it on 2026-10-14: the statements (measurability of the
-   norms, singular values, eigenvalues, rank, `pinv`, `rangeProjector`, `conditionNumber`,
+   norms, singular values, eigenvalues, rank, `pinv`, `rangeProjector`, `pseudoConditionNumber`,
    `polarFactor` and `gramSchmidtQ`) are now `NLAlib/Probability/Measurability/Matrix.lean`,
    the first file of the Probability layer, and the Matrix layer has no measure theory. The
    product measurable space on `Matrix m n α`, a **global instance** (Mathlib has none) with a
@@ -63,8 +63,8 @@ a review section and a stage report.
 
 **False statements.** Eleven statements of the skeletons were false and were repaired, every one
 in a degenerate case: an empty index type or a negative constant
-(`specNorm_sub_smul_one_le_of_le`, `conditionNumber_le_div_of_smul_one_le_of_le_smul_one`,
-`conditionNumber_conjTranspose_mul_mul_le_div`, `Matrix.PosSemidef.re_det_add_le`,
+(`specNorm_sub_smul_one_le_of_le`, `pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one`,
+`pseudoConditionNumber_conjTranspose_mul_mul_le_div`, `Matrix.PosSemidef.re_det_add_le`,
 `specNorm_pow_le_re_trace_pow`, `specRadius_pow`, `specRadius_pow_le_specNorm_pow`, the
 coefficient bound of the rank-revealing selection), or a missing index bound
 (`eigenvalue_le_of_forall_mem`, the rank-revealing singular value bounds,
@@ -85,7 +85,7 @@ the layers above depend on the choice; "consumers" are the prototype's upper lay
 | norms | `specNorm`, `frobNorm` (square written `frobNorm A ^ 2`, no `frobSq`), `nuclearNorm`, `schattenNorm q`, `kyFanNorm k`, `Φ.matrixNorm` for `Φ : SymmetricGauge` | every error bound |
 | spectral bounds on a factor | Loewner inequalities on the Gram matrix, `a • 1 ≤ Tᴴ * T ≤ b • 1` | subspace embedding, preconditioning |
 | SVD and low rank | `IsSVD A U σ V` (thin, any column type), `truncatedSVD A k`, tail in `frobNorm_sub_truncatedSVD_sq`; `Spectral/ProjectedLowRank.lean` for the truncation step | randomized SVD, Nyström |
-| pseudoinverse and projector | `pinv A` (every shape and rank) recognised by `IsPinv`; `rangeProjector A`; residual `(1 - rangeProjector Y) * A`; `conditionNumber A : ℝ`; `IsLeastSquaresSolution A b x` | sketch-and-solve, least squares, range finders |
+| pseudoinverse and projector | `pinv A` (every shape and rank) recognised by `IsPinv`; `rangeProjector A`; residual `(1 - rangeProjector Y) * A`; `pseudoConditionNumber A : ℝ`; `IsLeastSquaresSolution A b x` | sketch-and-solve, least squares, range finders |
 | subspaces | the matrix `(1 - Q) * P` of two star projections in a norm; `principalAngle X Y k`; `tangentMatrix U Y` | subspace iteration, Davis–Kahan consumers |
 | majorization | `Majorized x y`, `WeaklyMajorized x y` on unsorted vectors through `sumLargest` | invariant-norm bounds |
 | functions of a Hermitian matrix | Mathlib's `cfc f A`; `NormedSpace.exp A`; `cfc Real.log A`; `A ^ r`; `CFC.sqrt A`; no `matrixExp`, `traceExp`, `lambdaMax` | matrix concentration (Lieb, Golden–Thompson, trace exponential), Krylov error bounds |
@@ -115,7 +115,7 @@ depart from Mathlib are set out, with justification and cost, in
    (`Matrix-Spectral.md` §7.1). This changed a row of §5.3 and a line of the brief.
 2. `frobSq` removed; the square is `frobNorm A ^ 2` (`Matrix-Norms.md` §7.1). Expectations of
    squared errors read `∫ ω, frobNorm (E ω) ^ 2 ∂μ`.
-3. One pseudoinverse `pinv` with `IsPinv`, a real-valued `conditionNumber` for every shape
+3. One pseudoinverse `pinv` with `IsPinv`, a real-valued `pseudoConditionNumber` for every shape
    (`Matrix-Pseudoinverse.md` §7.1 to §7.3). This contradicted an example in §5.2, now amended.
 4. The projector is primitive and the residual has no name (`Matrix-Foundations.md` §7.1).
 5. Unitarily invariant norms through `SymmetricGauge` on `ℕ →₀ ℝ` (`Matrix-InvariantNorms.md`

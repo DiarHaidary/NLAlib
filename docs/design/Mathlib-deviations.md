@@ -194,6 +194,14 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Status: kept (maintainer, 2026-10-14; `docs/PORT_PROBABILITY.md` D8).** The Matrix layer does
   not import it; the statements that use it are in `NLAlib/Probability/Measurability/Matrix.lean`.
   If Mathlib adds an instance, this one is deleted in its favour.
+- **Companion instance (2026-10-14).** Mathlib also has no `SecondCountableTopology (Matrix m n R)`,
+  so `MeasurableAdd₂` and `MeasurableMul₂` (which Mathlib derives from continuity under second
+  countability) were not found for matrices under the global topology, and `Measurable.add`,
+  `AEMeasurable.add` and `Measurable.mul` failed on matrix-valued functions unless a norm scope was
+  opened. `Matrix.instSecondCountableTopology` (`NLAlib/ForMathlib/Topology/Instances/Matrix.lean`,
+  countable index types, second countable entries, by `inferInstanceAs` from `m → n → R`) is the
+  instance Mathlib would add; it is a `Prop`, so it cannot create a diamond. Deleted when Mathlib
+  has it.
 
 ## 13. Integrals of matrix-valued functions
 
@@ -338,7 +346,7 @@ None of these was approved by the maintainer when it was made. Status is given p
 
 ## Additions where Mathlib has nothing
 
-`pinv` and `IsPinv`, `conditionNumber`, `IsLeastSquaresSolution`
+`pinv` and `IsPinv`, `pseudoConditionNumber`, `IsLeastSquaresSolution`
 (`isLeastSquaresSolution_iff_isMinOn` bridges to `IsMinOn`), `IsSVD` and `truncatedSVD`,
 `Majorized`, `SymmetricGauge`, the Schatten, nuclear and Ky Fan norms, `OperatorConvexOn`, the
 factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tangentMatrix`.

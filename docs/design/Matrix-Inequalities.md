@@ -41,12 +41,12 @@ determinant function is introduced.
 
 **Two-sided bounds are Loewner bounds** `a • 1 ≤ A`, `A ≤ b • 1`, as in M2; the Kantorovich and
 Wielandt inequalities take them as hypotheses, and one corollary restates Kantorovich with
-`conditionNumber A`.
+`pseudoConditionNumber A`.
 
 **Spectral equivalence** of a matrix `A` and a preconditioner `M` is the Loewner sandwich
-`a • M ≤ A ≤ b • M`. `M⁻¹ * A` is not Hermitian, so `eigenvalue` and `conditionNumber` say
+`a • M ≤ A ≤ b • M`. `M⁻¹ * A` is not Hermitian, so `eigenvalue` and `pseudoConditionNumber` say
 nothing about it; the statement a Krylov consumer needs is about the symmetrically preconditioned
-matrix: for any `C` with `Cᴴ * M * C = 1`, `conditionNumber (Cᴴ * A * C) ≤ b / a`. The
+matrix: for any `C` with `Cᴴ * M * C = 1`, `pseudoConditionNumber (Cᴴ * A * C) ≤ b / a`. The
 description through `spectrum ℝ (M⁻¹ * A) ⊆ Set.Icc a b` is one bridge lemma.
 
 **Block criteria without inverses**: the Cauchy–Schwarz test
@@ -172,7 +172,7 @@ private if the proof is ported.
 1. **The stage is restated over `𝕜`**, with determinants through `RCLike.re`.
 2. **`principalMinor` is a definition; the product of minors of a size is not.**
 3. **Spectral equivalence is the Loewner sandwich `a • M ≤ A ≤ b • M`**, with
-   `conditionNumber (Cᴴ * A * C) ≤ b / a` for `Cᴴ * M * C = 1` as its consequence and
+   `pseudoConditionNumber (Cᴴ * A * C) ≤ b / a` for `Cᴴ * M * C = 1` as its consequence and
    `spectrum ℝ (M⁻¹ * A) ⊆ Set.Icc a b` as one bridge; no `spectralRadius` statements.
 4. **Horn's theorem produces a real orthogonal matrix**; the orbit statement for a Hermitian
    matrix over `𝕜` is a corollary.
@@ -213,8 +213,8 @@ pair.
 
 **False statements found by the proof agents, and their repair.**
 
-- `conditionNumber_le_div_of_smul_one_le_of_le_smul_one` and
-  `conditionNumber_conjTranspose_mul_mul_le_div` fail for matrices of size zero with `b < 0`;
+- `pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one` and
+  `pseudoConditionNumber_conjTranspose_mul_mul_le_div` fail for matrices of size zero with `b < 0`;
   `(hb : 0 ≤ b)` was added, as in the M4 statement they rest on.
 - (Found while writing the skeleton.) `Matrix.PosSemidef.re_det_add_le` fails in size zero;
   `[Nonempty n]` was added.

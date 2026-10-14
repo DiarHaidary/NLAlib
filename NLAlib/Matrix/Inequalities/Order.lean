@@ -29,8 +29,8 @@ the spectrum of `M⁻¹ * A` (the generalized eigenvalues of the pair).
 * `Matrix.PosDef.inv_conjTranspose_mul_mul_le`: the inverse of a compression.
 * `Matrix.PosDef.exists_pos_smul_one_le`: a positive definite matrix dominates a positive
   multiple of the identity.
-* `NLAlib.conditionNumber_conjTranspose_mul_mul_le_div`: the condition number of a preconditioned
-  matrix.
+* `NLAlib.pseudoConditionNumber_conjTranspose_mul_mul_le_div`: the condition number of a
+  preconditioned matrix.
 * `Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset`: spectral equivalence through the
   generalized eigenvalues.
 * `NLAlib.convex_setOf_posDef`, `NLAlib.convex_setOf_posSemidef`: the positive definite and the
@@ -266,28 +266,28 @@ theorem _root_.Matrix.PosDef.exists_pos_smul_one_le [Finite n] {A : Matrix n n �
 
 /-! ### Spectral equivalence -/
 
-private theorem conditionNumber_le_div_aux [Nonempty n] {A : Matrix n n 𝕜} {a b : ℝ}
+private theorem pseudoConditionNumber_le_div_aux [Nonempty n] {A : Matrix n n 𝕜} {a b : ℝ}
     (ha : 0 < a) (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) :
-    conditionNumber A ≤ b / a := by
+    pseudoConditionNumber A ≤ b / a := by
   have hA : A.PosDef := by
     have h := (Matrix.PosDef.one.smul ha).add_posSemidef (Matrix.le_iff.mp h₁)
     rwa [add_sub_cancel] at h
   have hb : 0 ≤ b :=
     (hA.posSemidef.eigenvalue_nonneg 0).trans (hA.isHermitian.le_smul_one_iff.mp h₂)
-  rw [conditionNumber_of_isUnit hA.isUnit, div_eq_mul_inv]
+  rw [pseudoConditionNumber_of_isUnit hA.isUnit, div_eq_mul_inv]
   exact mul_le_mul ((hA.posSemidef.specNorm_le_iff hb).mpr h₂)
     ((hA.posSemidef.inv.specNorm_le_iff (inv_nonneg.mpr ha.le)).mpr
       (inv_le_inv_smul_one_of_smul_one_le ha h₁)) (specNorm_nonneg _) hb
 
 /-- A Hermitian matrix between `a • 1` and `b • 1` with `0 < a` has condition number at most
 `b / a`. -/
-theorem conditionNumber_le_div_of_smul_one_le_of_le_smul_one {A : Matrix n n 𝕜} {a b : ℝ}
+theorem pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one {A : Matrix n n 𝕜} {a b : ℝ}
     (ha : 0 < a) (hb : 0 ≤ b) (h₁ : a • (1 : Matrix n n 𝕜) ≤ A)
-    (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) : conditionNumber A ≤ b / a := by
+    (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) : pseudoConditionNumber A ≤ b / a := by
   rcases isEmpty_or_nonempty n with hn | hn
-  · rw [Subsingleton.elim A 0, conditionNumber_zero]
+  · rw [Subsingleton.elim A 0, pseudoConditionNumber_zero]
     exact div_nonneg hb ha.le
-  · exact conditionNumber_le_div_aux ha h₁ h₂
+  · exact pseudoConditionNumber_le_div_aux ha h₁ h₂
 
 /-- **Spectral equivalence, lower half, after a change of variables.** If `Cᴴ * M * C = 1`
 (for instance `C = M^{-1/2}`, or the inverse of a Cholesky factor), then `a • M ≤ A` exactly when
@@ -310,13 +310,13 @@ theorem le_smul_iff_conjTranspose_mul_mul_le_smul_one {A M C : Matrix n n 𝕜}
 `Cᴴ * M * C = 1`, the symmetrically preconditioned matrix `Cᴴ * A * C` has condition number at
 most `b / a`. This is the statement that conjugate gradient rates consume.
 Result: preconditioned-condition-number -/
-theorem conditionNumber_conjTranspose_mul_mul_le_div {A M C : Matrix n n 𝕜}
+theorem pseudoConditionNumber_conjTranspose_mul_mul_le_div {A M C : Matrix n n 𝕜}
     (hC : Cᴴ * M * C = 1) {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b) (h₁ : a • M ≤ A)
-    (h₂ : A ≤ b • M) : conditionNumber (Cᴴ * A * C) ≤ b / a := by
+    (h₂ : A ≤ b • M) : pseudoConditionNumber (Cᴴ * A * C) ≤ b / a := by
   rcases isEmpty_or_nonempty n with hn | hn
-  · rw [Subsingleton.elim (Cᴴ * A * C) 0, conditionNumber_zero]
+  · rw [Subsingleton.elim (Cᴴ * A * C) 0, pseudoConditionNumber_zero]
     exact div_nonneg hb ha.le
-  · exact conditionNumber_le_div_aux ha
+  · exact pseudoConditionNumber_le_div_aux ha
       ((smul_le_iff_smul_one_le_conjTranspose_mul_mul hC).mp h₁)
       ((le_smul_iff_conjTranspose_mul_mul_le_smul_one hC).mp h₂)
 
@@ -455,5 +455,15 @@ omit [Fintype n] [DecidableEq n] in
 theorem convex_setOf_posSemidef : Convex ℝ {A : Matrix n n 𝕜 | A.PosSemidef} := by
   intro A hA B hB a b ha hb _
   exact (hA.smul ha).add (hB.smul hb)
+
+/-! ### Deprecated aliases -/
+
+@[deprecated pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one (since := "2026-10-14")]
+alias conditionNumber_le_div_of_smul_one_le_of_le_smul_one :=
+  pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one
+
+@[deprecated pseudoConditionNumber_conjTranspose_mul_mul_le_div (since := "2026-10-14")]
+alias conditionNumber_conjTranspose_mul_mul_le_div :=
+  pseudoConditionNumber_conjTranspose_mul_mul_le_div
 
 end NLAlib

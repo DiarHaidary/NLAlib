@@ -48,7 +48,7 @@ form's `hj` is then unsatisfiable, the `specNorm` form needs `0 ≤ ε` for this
 `S = 0`: the injection holds iff `a ≤ 0` or `U = 0`, the upper half iff `0 ≤ b` or `U = 0` (in the
 docstrings). `a ≤ 0`: `isSubspaceInjection_of_nonpos`. Rank-deficient `U`: everything is about
 `range U`; only `injective_mulVec` assumes full rank. `ε = 0`: exact isometry; `ε ≥ 1`: the lower half
-is vacuous. Junk: `b / a` at `a = 0` is `0`, so consumers take `0 < a`; `pinv`, `conditionNumber` total.
+is vacuous. Junk: `b / a` at `a = 0` is `0`, so consumers take `0 < a`; `pinv`, `pseudoConditionNumber` total.
 
 ### 3.1 `Sketching/Properties/SubspaceEmbedding.lean`
 
@@ -153,12 +153,12 @@ theorem IsSubspaceEmbedding.conjTranspose_mul_self_le_inv_smul_one [DecidableEq 
     {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (ha : 0 < a)
     (hM : HasOrthonormalCols (S * A * M)) : (A * M)ᴴ * (A * M) ≤ a⁻¹ • (1 : Matrix r r 𝕜)
 /-- `κ(A M)² ≤ b / a`. [MartinssonTropp2020, §10.5]. Result: sketch-and-precondition -/
-theorem IsSubspaceEmbedding.conditionNumber_mul_sq_le [DecidableEq r] {M : Matrix q r 𝕜}
+theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le [DecidableEq r] {M : Matrix q r 𝕜}
     (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hb : 0 ≤ b)
-    (hM : HasOrthonormalCols (S * A * M)) : conditionNumber (A * M) ^ 2 ≤ b / a
-theorem IsSubspaceEmbedding.conditionNumber_mul_inv_sq_le_of_isQR [DecidableEq q]
+    (hM : HasOrthonormalCols (S * A * M)) : pseudoConditionNumber (A * M) ^ 2 ≤ b / a
+theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR [DecidableEq q]
     {Q : Matrix k q 𝕜} {R : Matrix q q 𝕜} (h : IsSubspaceEmbedding S A a b) (ha : 0 < a)
-    (hb : 0 ≤ b) (hQR : IsQR (S * A) Q R) (hR : IsUnit R) : conditionNumber (A * R⁻¹) ^ 2 ≤ b / a
+    (hb : 0 ≤ b) (hQR : IsQR (S * A) Q R) (hR : IsUnit R) : pseudoConditionNumber (A * R⁻¹) ^ 2 ≤ b / a
 /-- The sketched solution's error from the injection alone (CEMT Lemma 2.6, norm form). -/
 theorem IsSubspaceInjection.norm_mulVec_sub_rangeProjector_mulVec_sq_le
     (h : IsSubspaceInjection S A a) (ha : 0 < a) (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
@@ -184,7 +184,7 @@ theorem IsSubspaceInjection.frobNorm_mul_pinv_sq_le [DecidableEq p] (h : IsSubsp
 
 Proof routes: sketch-and-solve, `a ‖y - A x̃‖² ≤ ‖S (y - A x̃)‖² ≤ ‖S (y - A x⋆)‖² ≤ b ‖r‖²`;
 preconditioning, both halves on `A M` by `of_range_le`, then
-`conditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one` (empty `r`: `κ = 0`, hence `hb`); error
+`pseudoConditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one` (empty `r`: `κ = 0`, hence `hb`); error
 formula, for `w = A x̃ - P_A y ∈ range A` the sketched normal equations
 (`isLeastSquaresSolution_iff_conjTranspose_mulVec_sub_eq_zero`) make `S w` the projection of `S r` on
 `range (S A)`, so `a ‖w‖² ≤ ‖S w‖² ≤ ‖S r‖²`, then `IsLeastSquaresSolution.norm_sub_mulVec_sq_eq_add`;
@@ -260,7 +260,7 @@ Review of S0 and S1 (2026-10-14); all findings accepted by the orchestrator. Ske
 `NLAlib/Sketching/Properties/LeastSquares.lean` (11), every proof `sorry`.
 
 1. **`IsQR` needs `[LinearOrder q]`** (`Matrix/Factorizations/QR.lean`, its variable line).
-   `conditionNumber_mul_inv_sq_le_of_isQR` takes `[LinearOrder q] [DecidableEq q]`; the §3
+   `pseudoConditionNumber_mul_inv_sq_le_of_isQR` takes `[LinearOrder q] [DecidableEq q]`; the §3
    variable sentence is corrected.
 2. **Citations.** [MartinssonTropp2020, §8.1] defines the embedding with unsquared norms and §10.3
    prints `‖A x̂ - b‖ ≤ (1 + ε) ‖A x⋆ - b‖` unsquared (after Sarlós); `(1 + ε) / (1 - ε)` is
@@ -269,7 +269,7 @@ Review of S0 and S1 (2026-10-14); all findings accepted by the orchestrator. Ske
 3. **Real-scalar corollaries** `IsSubspaceInjection.smul_real`, `IsSubspaceEmbedding.smul_real`
    (`c : ℝ`, constants `c ^ 2 * a`, `c ^ 2 * b`), after the `𝕜` forms: families scale by
    `(√k)⁻¹ : ℝ`. §3.1 has 27 statements.
-4. **`conditionNumber_mul_sq_le` keeps `hb : 0 ≤ b`.** For nonempty `r`, `hM` and the upper half give
+4. **`pseudoConditionNumber_mul_sq_le` keeps `hb : 0 ≤ b`.** For nonempty `r`, `hM` and the upper half give
    `1 ≤ b • (A M)ᴴ (A M)`, so `0 < b`; `b = 0` forces `r` empty, where `κ(A M) = 0` and the bound is
    `hb`. The route splits on `IsEmpty r`; the docstring says so. Same for the QR corollary.
 5. **Preconditioning route**: both halves on `A * M` by `h.mul_right M` (not `of_range_le`), then

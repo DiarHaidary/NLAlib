@@ -25,7 +25,7 @@ bound carries the condition number of the eigenvector matrix (Bauer–Fike).
 * `Matrix.IsHermitian.abs_sub_rayleighQuotient_mul_le_norm_sq`: the quadratic residual bound.
 * `Matrix.IsHermitian.rayleighQuotient_sub_le_of_lt`,
   `Matrix.IsHermitian.le_rayleighQuotient_add_of_lt`: the Kato–Temple inequalities.
-* `NLAlib.exists_norm_sub_le_conditionNumber_mul_specNorm`: the Bauer–Fike theorem.
+* `NLAlib.exists_norm_sub_le_pseudoConditionNumber_mul_specNorm`: the Bauer–Fike theorem.
 -/
 
 @[expose] public section
@@ -221,10 +221,10 @@ variable [DecidableEq n]
 vector `x` and scalar `μ` some `d i` satisfies `‖d i - μ‖ ‖x‖ ≤ κ(V) ‖A x - μ x‖`.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
 Port of `NLAlib.exists_eigenvalue_distance_mul_euclidean_norm_le_residual`, there over `ℂ`. -/
-theorem exists_norm_sub_mul_norm_le_conditionNumber_mul [Nonempty n] {A V : Matrix n n 𝕜}
+theorem exists_norm_sub_mul_norm_le_pseudoConditionNumber_mul [Nonempty n] {A V : Matrix n n 𝕜}
     {d : n → 𝕜} (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) (x : n → 𝕜) (μ : 𝕜) :
     ∃ i, ‖d i - μ‖ * ‖WithLp.toLp 2 x‖ ≤
-      conditionNumber V * ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
+      pseudoConditionNumber V * ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
   have hdet : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
   obtain ⟨i, hi⟩ := Finite.exists_min fun j => ‖d j - μ‖
   refine ⟨i, ?_⟩
@@ -253,20 +253,20 @@ theorem exists_norm_sub_mul_norm_le_conditionNumber_mul [Nonempty n] {A V : Matr
     _ = specNorm V * (‖d i - μ‖ * ‖WithLp.toLp 2 (V⁻¹ *ᵥ x)‖) := by ring
     _ ≤ specNorm V * (specNorm V⁻¹ * ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖) :=
         mul_le_mul_of_nonneg_left (h1.trans (norm_toLp_mulVec_le _ _)) (specNorm_nonneg _)
-    _ = conditionNumber V * ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
-        rw [conditionNumber_of_isUnit hV, mul_assoc]
+    _ = pseudoConditionNumber V * ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
+        rw [pseudoConditionNumber_of_isUnit hV, mul_assoc]
 
 /-- **The Bauer–Fike theorem.** If `A * V = V * diagonal d` with `V` invertible, every eigenvalue
 `μ` of `A + E` is within `κ(V) ‖E‖₂` of some `d i`.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
 Port of `NLAlib.exists_eigenvalue_distance_le_euclidean_residual_div`, there over `ℂ`.
 Result: bauer-fike -/
-theorem exists_norm_sub_le_conditionNumber_mul_specNorm {A V E : Matrix n n 𝕜} {d : n → 𝕜}
+theorem exists_norm_sub_le_pseudoConditionNumber_mul_specNorm {A V E : Matrix n n 𝕜} {d : n → 𝕜}
     (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) {x : n → 𝕜} (hx : x ≠ 0) {μ : 𝕜}
     (hμ : (A + E) *ᵥ x = μ • x) :
-    ∃ i, ‖d i - μ‖ ≤ conditionNumber V * specNorm E := by
+    ∃ i, ‖d i - μ‖ ≤ pseudoConditionNumber V * specNorm E := by
   have : Nonempty n := not_isEmpty_iff.mp fun h => hx (Subsingleton.elim _ _)
-  obtain ⟨i, hi⟩ := exists_norm_sub_mul_norm_le_conditionNumber_mul hV hA x μ
+  obtain ⟨i, hi⟩ := exists_norm_sub_mul_norm_le_pseudoConditionNumber_mul hV hA x μ
   refine ⟨i, ?_⟩
   have hres : A *ᵥ x - μ • x = -(E *ᵥ x) := by
     rw [← hμ, Matrix.add_mulVec, sub_add_cancel_left]
@@ -276,7 +276,7 @@ theorem exists_norm_sub_le_conditionNumber_mul_specNorm {A V E : Matrix n n 𝕜
   rw [hres, WithLp.toLp_neg, norm_neg] at hi
   refine le_of_mul_le_mul_right (hi.trans ?_) hxpos
   rw [mul_assoc]
-  exact mul_le_mul_of_nonneg_left (norm_toLp_mulVec_le _ _) (conditionNumber_nonneg _)
+  exact mul_le_mul_of_nonneg_left (norm_toLp_mulVec_le _ _) (pseudoConditionNumber_nonneg _)
 
 /-- The diagonal entries of a diagonalisation are eigenvalues.
 Port of `NLAlib.mem_spectrum_of_diagonal_intertwining`. -/
@@ -298,5 +298,15 @@ theorem mem_spectrum_of_mul_eq_mul_diagonal {A V : Matrix n n 𝕜} {d : n → �
   simp only [Matrix.mulVec_mulVec, Matrix.mulVec_zero] at h1
   rwa [Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).mp hu),
     Matrix.one_mulVec] at h1
+
+/-! ### Deprecated aliases -/
+
+@[deprecated exists_norm_sub_mul_norm_le_pseudoConditionNumber_mul (since := "2026-10-14")]
+alias exists_norm_sub_mul_norm_le_conditionNumber_mul :=
+  exists_norm_sub_mul_norm_le_pseudoConditionNumber_mul
+
+@[deprecated exists_norm_sub_le_pseudoConditionNumber_mul_specNorm (since := "2026-10-14")]
+alias exists_norm_sub_le_conditionNumber_mul_specNorm :=
+  exists_norm_sub_le_pseudoConditionNumber_mul_specNorm
 
 end NLAlib

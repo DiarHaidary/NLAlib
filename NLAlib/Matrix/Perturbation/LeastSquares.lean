@@ -118,20 +118,20 @@ Port of `NLAlib.norm_least_squares_sub_le_relative_data`, there over `ℝ`.
 Result: least-squares-perturbation -/
 theorem IsLeastSquaresSolution.norm_sub_le_of_le {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A)
-    (hε : conditionNumber A * ε < 1) {b f : m → 𝕜} {x y : n → 𝕜}
+    (hε : pseudoConditionNumber A * ε < 1) {b f : m → 𝕜} {x y : n → 𝕜}
     (hf : ‖WithLp.toLp 2 f‖ ≤ ε * ‖WithLp.toLp 2 b‖) (hx : IsLeastSquaresSolution A b x)
     (hy : IsLeastSquaresSolution (A + E) (b + f) y) :
     ‖WithLp.toLp 2 (y - x)‖ ≤
-      specNorm (pinv A) / (1 - conditionNumber A * ε) *
+      specNorm (pinv A) / (1 - pseudoConditionNumber A * ε) *
         (ε * ‖WithLp.toLp 2 b‖ + ε * specNorm A * ‖WithLp.toLp 2 x‖ +
           specNorm (pinv A) * ε * specNorm A * ‖WithLp.toLp 2 (b - A *ᵥ x)‖) := by
-  have hκ : specNorm (pinv A) * specNorm E ≤ conditionNumber A * ε := by
+  have hκ : specNorm (pinv A) * specNorm E ≤ pseudoConditionNumber A * ε := by
     calc specNorm (pinv A) * specNorm E
         ≤ specNorm (pinv A) * (ε * specNorm A) :=
           mul_le_mul_of_nonneg_left hE (specNorm_nonneg _)
-      _ = conditionNumber A * ε := by rw [conditionNumber_def]; ring
+      _ = pseudoConditionNumber A * ε := by rw [pseudoConditionNumber_def]; ring
   have hp := hκ.trans_lt hε
-  have hpinv : specNorm (pinv (A + E)) ≤ specNorm (pinv A) / (1 - conditionNumber A * ε) :=
+  have hpinv : specNorm (pinv (A + E)) ≤ specNorm (pinv A) / (1 - pseudoConditionNumber A * ε) :=
     (specNorm_pinv_add_le_of_injective hA hp).trans
       (div_le_div_of_nonneg_left (specNorm_nonneg _) (sub_pos.mpr hε) (sub_le_sub_left hκ 1))
   have ht : ‖WithLp.toLp 2 f‖ + specNorm E * ‖WithLp.toLp 2 x‖ +
@@ -177,15 +177,15 @@ theorem norm_one_sub_rangeProjector_mulVec_sub_le [DecidableEq m] {A B : Matrix 
 Port of `NLAlib.norm_least_squares_residual_sub_le_relative_data`, there over `ℝ`. -/
 theorem norm_one_sub_rangeProjector_mulVec_sub_le_of_le [DecidableEq m] {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A)
-    (hε : conditionNumber A * ε < 1) {b f : m → 𝕜}
+    (hε : pseudoConditionNumber A * ε < 1) {b f : m → 𝕜}
     (hf : ‖WithLp.toLp 2 f‖ ≤ ε * ‖WithLp.toLp 2 b‖) :
     ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ b - (1 - rangeProjector (A + E)) *ᵥ (b + f))‖ ≤
-      (1 + conditionNumber A) * ε * ‖WithLp.toLp 2 b‖ := by
-  have hκ : specNorm (pinv A) * specNorm E ≤ conditionNumber A * ε := by
+      (1 + pseudoConditionNumber A) * ε * ‖WithLp.toLp 2 b‖ := by
+  have hκ : specNorm (pinv A) * specNorm E ≤ pseudoConditionNumber A * ε := by
     calc specNorm (pinv A) * specNorm E
         ≤ specNorm (pinv A) * (ε * specNorm A) :=
           mul_le_mul_of_nonneg_left hE (specNorm_nonneg _)
-      _ = conditionNumber A * ε := by rw [conditionNumber_def]; ring
+      _ = pseudoConditionNumber A * ε := by rw [pseudoConditionNumber_def]; ring
   have hB := injective_mulVec_add_of_specNorm_pinv_mul_lt_one hA (hκ.trans_lt hε)
   have hrank : A.rank = (A + E).rank := by
     rw [mulVec_injective_iff_rank_eq.mp hA, mulVec_injective_iff_rank_eq.mp hB]
@@ -194,7 +194,7 @@ theorem norm_one_sub_rangeProjector_mulVec_sub_le_of_le [DecidableEq m] {A E : M
   have h1 := mul_le_mul_of_nonneg_right hκ (norm_nonneg (WithLp.toLp 2 b))
   refine h.trans ?_
   calc specNorm (pinv A) * specNorm E * ‖WithLp.toLp 2 b‖ + ‖WithLp.toLp 2 f‖
-      ≤ conditionNumber A * ε * ‖WithLp.toLp 2 b‖ + ε * ‖WithLp.toLp 2 b‖ := add_le_add h1 hf
+      ≤ pseudoConditionNumber A * ε * ‖WithLp.toLp 2 b‖ + ε * ‖WithLp.toLp 2 b‖ := add_le_add h1 hf
     _ = _ := by ring
 
 end NLAlib

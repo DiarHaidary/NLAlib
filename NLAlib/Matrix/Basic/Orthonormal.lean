@@ -28,7 +28,9 @@ orthonormality and is always taken as a hypothesis in this form. Orthonormal row
 * `NLAlib.hasOrthonormalCols_iff_mem_unitaryGroup`: the bridge to `Matrix.unitaryGroup`.
 * `NLAlib.HasOrthonormalCols.norm_toLp_mulVec`: multiplication by `Q` preserves the Euclidean
   norm.
-* `NLAlib.HasOrthonormalCols.mulVec_injective`: `Q` has full column rank.
+* `NLAlib.HasOrthonormalCols.mulVec_injective`: `Q` has full column rank;
+  `NLAlib.HasOrthonormalCols.mulVec_injective_of_mul`: so does `B` when `S * B` has orthonormal
+  columns.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_self`: for square `Q`, also `Q * Qᴴ = 1`.
 -/
 
@@ -158,6 +160,18 @@ theorem mulVec_injective {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
   intro x y h
   have h' := congrArg (Qᴴ *ᵥ ·) h
   simpa only [Matrix.mulVec_mulVec, hQ.conjTranspose_mul_self, Matrix.one_mulVec] using h'
+
+/-- If a product `S * B` has orthonormal columns, the right factor `B` has full column rank:
+`B.mulVec` is injective. A sketched basis `S * A * M` with orthonormal columns thus certifies
+that `A * M` and `M` have full column rank. -/
+theorem mulVec_injective_of_mul [Fintype l] {S : Matrix l m 𝕜} {B : Matrix m n 𝕜}
+    (h : HasOrthonormalCols (S * B)) : Function.Injective B.mulVec := by
+  refine Function.Injective.of_comp (f := S.mulVec) ?_
+  have hcomp : S.mulVec ∘ B.mulVec = (S * B).mulVec := by
+    ext x : 1
+    simp only [Function.comp_apply, Matrix.mulVec_mulVec]
+  rw [hcomp]
+  exact h.mulVec_injective
 
 /-- `Qᴴ` undoes `Q` on vectors: `Qᴴ *ᵥ (Q *ᵥ x) = x`. -/
 theorem conjTranspose_mulVec_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (x : n → 𝕜) :

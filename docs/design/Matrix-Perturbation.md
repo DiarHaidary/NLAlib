@@ -32,7 +32,7 @@ No new definitions. The stage states theorems about objects of earlier stages:
 | gaps | `eigengap A k`, `singularGap A k`; mixed gaps written out, `eigenvalue A j - eigenvalue (A + E) (j + 1)` | M3 |
 | spectral separation of two blocks | Loewner bounds `a • 1 ≤ L`, `L ≤ b • 1` on one, eigenvalue conditions with valid indices on the other; or pairwise `δ ≤ |eigenvalue L i - eigenvalue M j|` | M2, M3 |
 | invariant subspace | `A * U = U * L` | M3 |
-| least squares | `IsLeastSquaresSolution A b x`, `pinv`, `rangeProjector`, `conditionNumber` | M4 |
+| least squares | `IsLeastSquaresSolution A b x`, `pinv`, `rangeProjector`, `pseudoConditionNumber` | M4 |
 
 ## 2. Interfaces
 
@@ -89,7 +89,7 @@ matrix: from `a • Aᴴ A ≤ (S A)ᴴ (S A) ≤ b • Aᴴ A` to bounds on the
 pseudoinverse and the condition number of `S A` (`Relative.lean`). Relative `sin Θ` theorems and
 componentwise relative bounds (`|E| ≤ ε |A|`) have no consumer and are not ported.
 
-**Linear systems and least squares use the real `conditionNumber`** and the predicate
+**Linear systems and least squares use the real `pseudoConditionNumber`** and the predicate
 `IsLeastSquaresSolution`; relative bounds are written without divisions where a denominator could
 vanish (`‖x - y‖ ‖b‖ ≤ κ ‖b - A y‖ ‖x‖`).
 
@@ -140,20 +140,20 @@ theorem SymmetricGauge.mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub (
 theorem specNorm_inv_add_sub_inv_le {A E : Matrix n n 𝕜} (hA : IsUnit A)
     (hE : specNorm (A⁻¹ * E) < 1) :
     specNorm ((A + E)⁻¹ - A⁻¹) ≤ specNorm A⁻¹ ^ 2 * specNorm E / (1 - specNorm (A⁻¹ * E))
-theorem norm_sub_le_conditionNumber_mul_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
-    {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : conditionNumber A * ε < 1)
+theorem norm_sub_le_pseudoConditionNumber_mul_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
+    {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : pseudoConditionNumber A * ε < 1)
     {x y b f : n → 𝕜} (hx : A *ᵥ x = b) (hy : (A + E) *ᵥ y = b + f)
     (hf : ‖WithLp.toLp 2 f‖ ≤ ε * ‖WithLp.toLp 2 b‖) :
     ‖WithLp.toLp 2 (y - x)‖ ≤
-      2 * ε * conditionNumber A / (1 - conditionNumber A * ε) * ‖WithLp.toLp 2 x‖
+      2 * ε * pseudoConditionNumber A / (1 - pseudoConditionNumber A * ε) * ‖WithLp.toLp 2 x‖
 
 theorem Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
     ∃ i, i < Fintype.card n ∧
       |eigenvalue A i - μ| * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖
-theorem exists_norm_sub_le_conditionNumber_mul_specNorm {A V E : Matrix n n 𝕜} {d : n → 𝕜}
+theorem exists_norm_sub_le_pseudoConditionNumber_mul_specNorm {A V E : Matrix n n 𝕜} {d : n → 𝕜}
     (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) {x : n → 𝕜} (hx : x ≠ 0) {μ : 𝕜}
-    (hμ : (A + E) *ᵥ x = μ • x) : ∃ i, ‖d i - μ‖ ≤ conditionNumber V * specNorm E
+    (hμ : (A + E) *ᵥ x = μ • x) : ∃ i, ‖d i - μ‖ ≤ pseudoConditionNumber V * specNorm E
 
 theorem pinv_sub_pinv (A B : Matrix m n 𝕜) :
     pinv B - pinv A =

@@ -29,7 +29,7 @@ consumer in this layer; it is recorded in the ledger as deferred to M6).
 | full row rank | `Function.Injective Aᴴ.mulVec` | — |
 | least-squares solution | `IsLeastSquaresSolution A b x := ∀ y, ‖toLp 2 (b - A *ᵥ x)‖ ≤ ‖toLp 2 (b - A *ᵥ y)‖` | — |
 | least-squares residual | `(1 - rangeProjector A) *ᵥ b`, no definition | M1's row |
-| condition number | `conditionNumber A : ℝ := specNorm A * specNorm (pinv A)`, any shape | `conditionNumber_of_isUnit` |
+| condition number | `pseudoConditionNumber A : ℝ := specNorm A * specNorm (pinv A)`, any shape | `pseudoConditionNumber_of_isUnit` |
 | generalized Schur complement | `C - Bᴴ * pinv A * B`, no definition | — |
 
 ## 2. Interfaces
@@ -57,7 +57,7 @@ by theorems. A sketch-and-solve theorem will read: if `x̂` satisfies
 `IsLeastSquaresSolution (S * A) (S *ᵥ b) x̂` and `S` embeds the range of `[A b]`, then
 `‖b - A x̂‖ ≤ (1 + ε) ‖(1 - rangeProjector A) *ᵥ b‖`.
 
-**`conditionNumber` is real-valued and defined for every matrix.** The contract's §5.2 gave
+**`pseudoConditionNumber` is real-valued and defined for every matrix.** The contract's §5.2 gave
 "`conditionNumber` is `⊤`" as its example of a junk value, following the prototype, which had an
 `ℝ≥0∞`-valued condition number for square matrices and a separate real-valued
 `moorePenroseConditionNumber`. One real-valued function replaces both: every use multiplies the
@@ -143,12 +143,12 @@ theorem norm_sub_mulVec_sq_eq_add_norm_mulVec_sub_pinv_sq [DecidableEq m] (A : M
       ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ b)‖ ^ 2 +
         ‖WithLp.toLp 2 (A *ᵥ (y - pinv A *ᵥ b))‖ ^ 2
 
-noncomputable def conditionNumber (A : Matrix m n 𝕜) : ℝ := specNorm A * specNorm (pinv A)
-theorem conditionNumber_eq_singularValues_div (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = A.rank) :
-    conditionNumber A = singularValues A 0 / singularValues A k
-theorem conditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one [DecidableEq n]
+noncomputable def pseudoConditionNumber (A : Matrix m n 𝕜) : ℝ := specNorm A * specNorm (pinv A)
+theorem pseudoConditionNumber_eq_singularValues_div (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = A.rank) :
+    pseudoConditionNumber A = singularValues A 0 / singularValues A k
+theorem pseudoConditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one [DecidableEq n]
     {A : Matrix m n 𝕜} {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b) (h₁ : a • (1 : Matrix n n 𝕜) ≤ Aᴴ * A)
-    (h₂ : Aᴴ * A ≤ b • (1 : Matrix n n 𝕜)) : conditionNumber A ^ 2 ≤ b / a
+    (h₂ : Aᴴ * A ≤ b • (1 : Matrix n n 𝕜)) : pseudoConditionNumber A ^ 2 ≤ b / a
 theorem isLeast_specNorm_not_injective_add (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) :
     IsLeast (specNorm '' {E : Matrix m n 𝕜 | ¬ Function.Injective (A + E).mulVec})
@@ -160,7 +160,7 @@ theorem posSemidef_fromBlocks_iff_pinv {A : Matrix m m 𝕜} {B : Matrix m n �
         (C - Bᴴ * pinv A * B).PosSemidef
 ```
 
-`conditionNumber` registers a `positivity` extension, as the norms do.
+`pseudoConditionNumber` registers a `positivity` extension, as the norms do.
 
 ## 4. Consumers
 
@@ -168,10 +168,10 @@ theorem posSemidef_fromBlocks_iff_pinv {A : Matrix m m 𝕜} {B : Matrix m n �
 |---|---|
 | `pinv`, projector identities | least squares; M5 (oblique projections, tangents); M6 pseudoinverse perturbation (Wedin); range finders (`Ω₁⁺`); sketch-and-solve; Nyström (`(Ωᴴ A Ω)⁺`); Kaczmarz |
 | `IsSVD.pinv_eq`, `specNorm_pinv` | M6; conditioning of sketched bases |
-| `specNorm_pinv_sq_le_inv_of_smul_one_le`, `conditionNumber_sq_le_div_…` | subspace embeddings: `‖(S U)⁺‖` and `κ(S U)`; preconditioned solvers (sketch-and-precondition) |
+| `specNorm_pinv_sq_le_inv_of_smul_one_le`, `pseudoConditionNumber_sq_le_div_…` | subspace embeddings: `‖(S U)⁺‖` and `κ(S U)`; preconditioned solvers (sketch-and-precondition) |
 | `frobNorm_pinv_sq_eq_re_trace_inv` | expected `‖Ω⁺‖_F²` for Gaussian `Ω` (range finder in Frobenius norm) |
 | `IsLeastSquaresSolution` | sketch-and-solve; LSQR and CGLS (Krylov); M6 least-squares perturbation; M9 QR solution |
-| `conditionNumber` | M6 linear systems and inverse perturbation; convergence rates of CG and Chebyshev |
+| `pseudoConditionNumber` | M6 linear systems and inverse perturbation; convergence rates of CG and Chebyshev |
 | distance to rank deficiency | M6; M9 rank-revealing factorizations |
 | generalized Schur complement | M7 block inequalities; Nyström and partial Cholesky |
 
@@ -185,7 +185,7 @@ Under `NLAlib/Matrix/Pseudoinverse/`:
    transformations, the SVD formula, full rank, the reverse-order law.
 3. `NormBounds.lean` (imports 2): singular values, spectral and Frobenius norms of `pinv`.
 4. `LeastSquares.lean` (imports 3): `IsLeastSquaresSolution` and its theory.
-5. `ConditionNumber.lean` (imports 3, M3 `LowRank`): `conditionNumber`, distance to rank
+5. `ConditionNumber.lean` (imports 3, M3 `LowRank`): `pseudoConditionNumber`, distance to rank
    deficiency.
 6. `GeneralizedSchur.lean` (imports 2, M1 `SchurComplement`): Albert's criterion with `pinv`, the
    partial minimum.
@@ -215,7 +215,7 @@ least squares (M9).
    `moorePenroseInverse` as an example of a definition name; `pinv` is what the subject calls it
    and statements such as `specNorm (pinv (S * A))` are read constantly.
 2. **No `pinvL`/`pinvR`.** Full-rank formulas are lemmas under `Function.Injective A.mulVec`.
-3. **`conditionNumber` is real-valued, for every shape**, replacing both prototype notions. This
+3. **`pseudoConditionNumber` is real-valued, for every shape**, replacing both prototype notions. This
    contradicts the example in CONTRIBUTING §5.2, which is amended.
 4. **`IsLeastSquaresSolution` is a named predicate** over `𝕜`, not Mathlib's `IsMinOn` spelled
    out at each use.
@@ -260,7 +260,7 @@ references check clean. Proofs by Opus agents, three to six minutes per file.
 
 **What changed from the design.**
 
-- `conditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one` was false as designed: with no
+- `pseudoConditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one` was false as designed: with no
   columns both Loewner hypotheses hold for every `a` and `b`, the left side is `0`, and `b / a` is
   negative for `b < 0 < a`. It now assumes `0 ≤ b`. §3 is amended.
 - `mul_pinv_mul_eq_of_range_le` is in `Pinv.lean`, for a rectangular `A`, with the iff
@@ -286,6 +286,18 @@ through a QR factorization (M9); perturbation of linear systems and of least-squ
 
 - M6 should state perturbation bounds for `pinv` and for least squares with
   `IsLeastSquaresSolution` and `rangeProjector`, and bounds for linear systems with the real
-  `conditionNumber`, assuming invertibility where the classical statement needs it.
+  `pseudoConditionNumber`, assuming invertibility where the classical statement needs it.
 - The sketching layer consumes `specNorm_pinv_sq_le_inv_of_smul_one_le` and
-  `conditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one` with `A = S * U`.
+  `pseudoConditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one` with `A = S * U`.
+
+## 10. Amendment (maintainer, 2026-10-14): `pseudoConditionNumber`
+
+`conditionNumber` is renamed `pseudoConditionNumber`, and every lemma whose name contained
+`conditionNumber` follows (`conditionNumber_conjTranspose` to
+`pseudoConditionNumber_conjTranspose`, and so on through the Matrix and Sketching layers). The
+value is unchanged, `specNorm A * specNorm (pinv A)`, but it is not the classical condition number
+on singular or rank-deficient matrices: a nonzero singular orthogonal projector has value `1`, where
+the classical one is infinite. The name says so. It agrees with `σ_max / σ_min` at full column rank
+(`pseudoConditionNumber_of_injective`) and with `‖A‖₂ ‖A⁻¹‖₂` for invertible `A`
+(`pseudoConditionNumber_of_isUnit`). The old names remain as deprecated aliases for one release.
+Mathlib has no condition number, so there is no deviation entry.

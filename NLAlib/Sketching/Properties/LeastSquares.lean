@@ -30,7 +30,7 @@ half of CEMT's Lemma 2.1. These are what the tail bounds for oblivious subspace 
 ## Main results
 
 * `NLAlib.IsSubspaceEmbedding.norm_sub_mulVec_sq_le`: sketch-and-solve.
-* `NLAlib.IsSubspaceEmbedding.conditionNumber_mul_sq_le`: sketch-and-precondition.
+* `NLAlib.IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le`: sketch-and-precondition.
 * `NLAlib.IsSubspaceInjection.norm_sub_mulVec_sq_le`: the sketch-and-solve error formula.
 * `NLAlib.IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le`: its matrix form.
 * `NLAlib.IsSubspaceInjection.frobNorm_mul_pinv_sq_le`: the deterministic half of CEMT
@@ -146,14 +146,14 @@ theorem IsSubspaceEmbedding.conjTranspose_mul_self_le_inv_smul_one [DecidableEq 
 `S * A * M` has orthonormal columns, the preconditioned matrix has `κ(A M)² ≤ b / a`.
 For empty `r`, `κ(A M) = 0` and the bound is `hb`; for nonempty `r` the hypotheses force
 `0 < b`. No rank hypothesis is needed: `A * M` has full column rank because `S * A * M` does, so
-`κ(A M)` is the classical `σ_max / σ_min` (`NLAlib.conditionNumber_of_injective`).
+`κ(A M)` is the classical `σ_max / σ_min` (`NLAlib.pseudoConditionNumber_of_injective`).
 [MartinssonTropp2020, §10.5]; there for `M = R⁻¹` from a QR factorization of `S A`.
 Result: sketch-and-precondition -/
-theorem IsSubspaceEmbedding.conditionNumber_mul_sq_le [Fintype r] [DecidableEq r] {M : Matrix q r 𝕜}
-    (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hb : 0 ≤ b)
-    (hM : HasOrthonormalCols (S * A * M)) : conditionNumber (A * M) ^ 2 ≤ b / a := by
+theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le [Fintype r] [DecidableEq r]
+    {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hb : 0 ≤ b)
+    (hM : HasOrthonormalCols (S * A * M)) : pseudoConditionNumber (A * M) ^ 2 ≤ b / a := by
   rcases isEmpty_or_nonempty r with hr | hr
-  · rw [Subsingleton.elim (A * M) 0, conditionNumber_zero]
+  · rw [Subsingleton.elim (A * M) 0, pseudoConditionNumber_zero]
     simpa using div_nonneg hb ha.le
   · have hb₀ : 0 < b := by
       rcases hb.lt_or_eq with hb₀ | rfl
@@ -165,20 +165,20 @@ theorem IsSubspaceEmbedding.conditionNumber_mul_sq_le [Fintype r] [DecidableEq r
         rwa [one_smul, zero_smul]
       exact absurd (smul_one_le_smul_one_iff.mp h₁) (by norm_num)
     rw [← inv_div_inv]
-    exact conditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one (inv_pos.mpr hb₀)
+    exact pseudoConditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one (inv_pos.mpr hb₀)
       (inv_nonneg.mpr ha.le) (h.inv_smul_one_le_conjTranspose_mul_self hb₀ hM)
       (h.conjTranspose_mul_self_le_inv_smul_one ha hM)
 
 /-- **Sketch-and-precondition with QR**: for a thin QR factorization `S A = Q R` with `R`
 invertible, `κ(A R⁻¹)² ≤ b / a`. [MartinssonTropp2020, §10.5]. -/
-theorem IsSubspaceEmbedding.conditionNumber_mul_inv_sq_le_of_isQR [LinearOrder q]
+theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR [LinearOrder q]
     [DecidableEq q] {Q : Matrix k q 𝕜} {R : Matrix q q 𝕜} (h : IsSubspaceEmbedding S A a b)
     (ha : 0 < a) (hb : 0 ≤ b) (hQR : IsQR (S * A) Q R) (hR : IsUnit R) :
-    conditionNumber (A * R⁻¹) ^ 2 ≤ b / a := by
+    pseudoConditionNumber (A * R⁻¹) ^ 2 ≤ b / a := by
   have hQ : S * A * R⁻¹ = Q := by
     rw [hQR.eq_mul, Matrix.mul_assoc,
       Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det R).mp hR), Matrix.mul_one]
-  refine h.conditionNumber_mul_sq_le ha hb ?_
+  refine h.pseudoConditionNumber_mul_sq_le ha hb ?_
   rw [hQ]
   exact hQR.hasOrthonormalCols
 
@@ -256,5 +256,15 @@ theorem IsSubspaceInjection.frobNorm_mul_pinv_sq_le [DecidableEq p]
     _ = frobNorm X ^ 2 * specNorm (pinv (S * U)) ^ 2 := by
         rw [pinv_conjTranspose, specNorm_conjTranspose, mul_pow]
     _ ≤ frobNorm X ^ 2 * a⁻¹ := mul_le_mul_of_nonneg_left hp (sq_nonneg _)
+
+/-! ### Deprecated aliases -/
+
+@[deprecated IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le (since := "2026-10-14")]
+alias IsSubspaceEmbedding.conditionNumber_mul_sq_le :=
+  IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le
+
+@[deprecated (since := "2026-10-14")]
+alias IsSubspaceEmbedding.conditionNumber_mul_inv_sq_le_of_isQR :=
+  IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR
 
 end NLAlib

@@ -17,14 +17,14 @@ The Kronecker product is Mathlib's `A ⊗ₖ B` (`Matrix.kroneckerMap (· * ·)`
 product rule `Matrix.mul_kronecker_mul` and the vectorisation identity
 `Matrix.kronecker_mulVec_vec`. This file adds the spectral facts: Kronecker products of frames,
 of singular value decompositions and of unitary diagonalisations, and the multiplicativity of the
-spectral, Frobenius and nuclear norms, the rank, the pseudoinverse and the condition number.
+spectral, Frobenius and nuclear norms, the rank, the pseudoinverse and the pseudo-condition number.
 
 ## Main results
 
 * `NLAlib.HasOrthonormalCols.kronecker`, `NLAlib.IsSVD.kronecker`.
 * `NLAlib.specNorm_kronecker`, `NLAlib.frobNorm_kronecker`, `NLAlib.nuclearNorm_kronecker`,
   `NLAlib.rank_kronecker`, `NLAlib.IsPinv.kronecker`, `NLAlib.pinv_kronecker`,
-  `NLAlib.conditionNumber_kronecker`.
+  `NLAlib.pseudoConditionNumber_kronecker`.
 * `NLAlib.kronecker_eq_mul_diagonal_mul_conjTranspose`,
   `NLAlib.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose`: eigenvalues of a
   Kronecker product and of a Kronecker sum.
@@ -349,11 +349,17 @@ theorem pinv_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matr
     pinv (A ⊗ₖ B) = pinv A ⊗ₖ pinv B :=
   ((isPinv_pinv A).kronecker (isPinv_pinv B)).pinv_eq
 
-/-- The condition number is multiplicative on Kronecker products. -/
-theorem conditionNumber_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
-    (B : Matrix p q 𝕜) :
-    conditionNumber (A ⊗ₖ B) = conditionNumber A * conditionNumber B := by
-  rw [conditionNumber, pinv_kronecker, specNorm_kronecker, specNorm_kronecker, conditionNumber,
-    conditionNumber, mul_mul_mul_comm]
+/-- The pseudo-condition number is multiplicative on Kronecker products. -/
+theorem pseudoConditionNumber_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q]
+    (A : Matrix m n 𝕜) (B : Matrix p q 𝕜) :
+    pseudoConditionNumber (A ⊗ₖ B) = pseudoConditionNumber A * pseudoConditionNumber B := by
+  rw [pseudoConditionNumber, pinv_kronecker, specNorm_kronecker, specNorm_kronecker,
+    pseudoConditionNumber, pseudoConditionNumber, mul_mul_mul_comm]
+
+/-! ### Deprecated aliases -/
+
+@[deprecated pseudoConditionNumber_kronecker (since := "2026-10-14")]
+alias conditionNumber_kronecker :=
+  pseudoConditionNumber_kronecker
 
 end NLAlib

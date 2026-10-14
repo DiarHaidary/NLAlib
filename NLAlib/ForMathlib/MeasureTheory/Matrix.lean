@@ -9,6 +9,7 @@ public import Mathlib.MeasureTheory.Constructions.BorelSpace.Basic
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Complex
 public import Mathlib.Topology.Instances.Matrix
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+public import NLAlib.ForMathlib.Topology.Instances.Matrix
 
 /-!
 # Measurability of matrix-valued functions
@@ -17,6 +18,12 @@ Matrices carry the product σ-algebra. This file provides the instance, which Ma
 have, the fact that it is the Borel σ-algebra of the product topology when the entries are
 second countable, and measurability of the algebraic operations on matrices. Upstream candidate
 for a file `Mathlib.MeasureTheory.Constructions.Matrix`.
+
+With `Matrix.instSecondCountableTopology` (`NLAlib.ForMathlib.Topology.Instances.Matrix`), imported
+here, Mathlib's own `Measurable.add`, `Measurable.sub`, `Measurable.smul`, `AEMeasurable.add` and,
+for square matrices, `Measurable.mul` apply to matrix-valued functions with entries in a second
+countable Borel space, under the global matrix topology and without opening a norm scope. The
+`Measurable.matrix_*` lemmas below need no topology on the entries.
 
 ## Main definitions
 
@@ -77,14 +84,16 @@ theorem Measurable.matrix_conjTranspose [MeasurableSpace α] [Star α]
     Measurable fun x => (f x)ᴴ := by
   exact Matrix.measurable_iff.2 fun i j => hstar.comp ((Matrix.measurable_apply j i).comp hf)
 
-/-- The sum of measurable matrix-valued functions is measurable. -/
+/-- The sum of measurable matrix-valued functions is measurable. It needs no topology on the
+entries; over a second countable Borel space Mathlib's `Measurable.add` applies directly. -/
 theorem Measurable.matrix_add [MeasurableSpace α] [Add α] [MeasurableAdd₂ α]
     {f g : β → Matrix m n α} (hf : Measurable f) (hg : Measurable g) :
     Measurable fun x => f x + g x := by
   exact Matrix.measurable_iff.2 fun i j =>
     ((Matrix.measurable_apply i j).comp hf).add ((Matrix.measurable_apply i j).comp hg)
 
-/-- The difference of measurable matrix-valued functions is measurable. -/
+/-- The difference of measurable matrix-valued functions is measurable. It needs no topology on
+the entries; over a second countable Borel space Mathlib's `Measurable.sub` applies directly. -/
 theorem Measurable.matrix_sub [MeasurableSpace α] [Sub α] [MeasurableSub₂ α]
     {f g : β → Matrix m n α} (hf : Measurable f) (hg : Measurable g) :
     Measurable fun x => f x - g x := by
@@ -96,7 +105,8 @@ theorem Measurable.matrix_neg [MeasurableSpace α] [Neg α] [MeasurableNeg α]
     {f : β → Matrix m n α} (hf : Measurable f) : Measurable fun x => -f x := by
   exact Matrix.measurable_iff.2 fun i j => ((Matrix.measurable_apply i j).comp hf).neg
 
-/-- A measurable scalar function times a measurable matrix-valued function is measurable. -/
+/-- A measurable scalar function times a measurable matrix-valued function is measurable. It
+needs no topology; over second countable Borel spaces Mathlib's `Measurable.smul` applies. -/
 theorem Measurable.matrix_smul {γ : Type*} [MeasurableSpace α] [MeasurableSpace γ] [SMul γ α]
     [MeasurableSMul₂ γ α] {c : β → γ} {f : β → Matrix m n α} (hc : Measurable c)
     (hf : Measurable f) : Measurable fun x => c x • f x := by
@@ -108,7 +118,9 @@ theorem Measurable.matrix_const_smul {γ : Type*} [MeasurableSpace α] [SMul γ 
     Measurable fun x => c • f x := by
   exact Matrix.measurable_iff.2 fun i j => ((Matrix.measurable_apply i j).comp hf).const_smul c
 
-/-- The product of measurable matrix-valued functions is measurable. -/
+/-- The product of measurable matrix-valued functions is measurable, for any shapes. It needs no
+topology on the entries; for square matrices over a second countable Borel space Mathlib's
+`Measurable.mul` applies directly. -/
 theorem Measurable.matrix_mul [MeasurableSpace α] [Fintype m] [NonUnitalNonAssocSemiring α]
     [MeasurableAdd₂ α] [MeasurableMul₂ α] {f : β → Matrix l m α} {g : β → Matrix m n α}
     (hf : Measurable f) (hg : Measurable g) : Measurable fun x => f x * g x := by
@@ -179,3 +191,35 @@ theorem Measurable.matrix_inv [MeasurableSpace α] [Fintype n] [DecidableEq n] [
   · exact measurable_const
   · exact measurable_const
   · exact (Matrix.measurable_apply a b).comp hf
+
+/-! ### Mathlib's arithmetic measurability lemmas on matrices
+
+These elaborate because of `Matrix.instSecondCountableTopology`; they are checked at every build.
+-/
+
+section Examples
+
+variable {Ω : Type*} [MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω} [Fintype m] [Fintype n]
+
+example {X Y : Ω → Matrix m n ℝ} (hX : Measurable X) (hY : Measurable Y) :
+    Measurable (X + Y) := hX.add hY
+
+example {X Y : Ω → Matrix m n ℝ} (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    AEMeasurable (X + Y) μ := hX.add hY
+
+example {X Y : Ω → Matrix n n ℝ} (hX : Measurable X) (hY : Measurable Y) :
+    Measurable (X * Y) := hX.mul hY
+
+example {X Y : Ω → Matrix m n ℂ} (hX : Measurable X) (hY : Measurable Y) :
+    Measurable fun ω => X ω + Y ω := hX.add hY
+
+example {X Y : Ω → Matrix n n ℂ} (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    AEMeasurable (X + Y) μ := hX.add hY
+
+example {X Y : Ω → Matrix n n ℂ} (hX : Measurable X) (hY : Measurable Y) :
+    Measurable fun ω => X ω * Y ω := hX.mul hY
+
+example {X : Ω → Matrix n n ℂ} {c : Ω → ℂ} (hX : Measurable X) (hc : Measurable c) :
+    Measurable fun ω => c ω • X ω := hc.smul hX
+
+end Examples

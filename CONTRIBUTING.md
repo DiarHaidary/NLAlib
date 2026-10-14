@@ -164,7 +164,7 @@ a root-level tail takes `measureReal_` (`measureReal_ge_le_variance_div_sq`,
 Never name a declaration after its source, its chapter, its author, a paper's lemma number or a
 project, and never after how good its bound is (`_sharp`, `_improved`; §5.2 "Numerical
 bounds"). The source goes in the docstring. Named quantities and tail expressions are definitions
-named for what they are (`bernsteinTail d v L t`, `conditionNumber A`), never inline formulas
+named for what they are (`bernsteinTail d v L t`, `pseudoConditionNumber A`), never inline formulas
 repeated across statements.
 
 Renames after the `v0.1` tag keep `@[deprecated (since := "YYYY-MM-DD")] alias old := new` for one
@@ -208,7 +208,7 @@ release.
   `HasSubgaussianMGF X c μ`; not `Measurable X` next to `HasLaw X ν μ`, which gives only
   `AEMeasurable`).
 - Definitions are total, Mathlib-style (`⁻¹` of a singular matrix is `0`, `eigenvalue A k` is `0`
-  for `k` out of range, `conditionNumber` of a singular matrix is the ratio to its smallest nonzero
+  for `k` out of range, `pseudoConditionNumber` of a singular matrix is the ratio to its smallest nonzero
   singular value); the theorem carries the hypothesis that excludes the junk value and the
   definition's docstring states the junk value. Real-valued quantities stay real-valued: a `⊤` in
   `ℝ≥0∞` costs coercions, `positivity` and `gcongr` at every use.
@@ -286,7 +286,7 @@ those layers are designed.
 | pseudoinverse | `pinv A`, every shape and rank; recognised through `IsPinv A B` (the four Penrose identities); full-rank formulas are lemmas, not definitions | `pinv_of_isUnit`; `mul_pinv : A * pinv A = rangeProjector A` |
 | full row rank | `Function.Injective Aᴴ.mulVec` | — |
 | least-squares solution | `IsLeastSquaresSolution A b x`; the optimal residual is `(1 - rangeProjector A) *ᵥ b` | `isLeastSquaresSolution_iff_isMinOn` |
-| condition number | `conditionNumber A : ℝ := specNorm A * specNorm (pinv A)`, any shape | `conditionNumber_of_isUnit` |
+| condition number | `pseudoConditionNumber A : ℝ := specNorm A * specNorm (pinv A)`, any shape; ignores zero singular values, so it is the classical `σ_max / σ_min` only at full column rank (renamed from `conditionNumber`, 2026-10-14) | `pseudoConditionNumber_of_isUnit`, `pseudoConditionNumber_of_injective` |
 | generalized Schur complement | `C - Bᴴ * pinv A * B`, no definition | — |
 | majorization | `Majorized x y`, `WeaklyMajorized x y` for `x y : ι → ℝ` on one finite index type, unsorted, through `sumLargest x k`; between sorted spectra, the partial-sum inequalities are stated directly | `majorized_iff_exists_doublyStochastic`; `sumLargest_fin_eq_sum_range` |
 | Ky Fan norm | `kyFanNorm k A`, the sum of the `k` largest singular values; eigenvalue partial sums are written `∑ i ∈ Finset.range k, eigenvalue A i` | `kyFanNorm_eq_sum_range`, `kyFanNorm_one` |
@@ -297,7 +297,7 @@ those layers are designed.
 | oblique projector | `P` with Mathlib's `IsIdempotentElem P`; from two bases, `X * (Yᴴ * X)⁻¹ * Yᴴ` | — |
 | matrix square root | Mathlib's `CFC.sqrt A`; no NLAlib definition | — |
 | principal minor | `principalMinor A s` for `s : Finset n`; determinants of Hermitian matrices are compared through `RCLike.re A.det` | `principalMinor_univ`, `Matrix.IsHermitian.det_eq_re_det` |
-| spectral equivalence | the Loewner sandwich `a • M ≤ A ≤ b • M`; its consequence is `conditionNumber (Cᴴ * A * C) ≤ b / a` for `Cᴴ * M * C = 1` | `Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset` |
+| spectral equivalence | the Loewner sandwich `a • M ≤ A ≤ b • M`; its consequence is `pseudoConditionNumber (Cᴴ * A * C) ≤ b / a` for `Cᴴ * M * C = 1` | `Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset` |
 | index shift in a statement | an auxiliary `d` with an equation, `hd : card p + d = card n`; never truncated subtraction | — |
 | Loewner order | `A ≤ B` under `open scoped MatrixOrder` | `Matrix.le_iff` |
 | PSD, PD, Hermitian | `A.PosSemidef`, `A.PosDef`, `A.IsHermitian` | Mathlib's |

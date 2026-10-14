@@ -20,6 +20,8 @@ candidates for `Mathlib.Analysis.Matrix.PosDef` and `Mathlib.Analysis.Matrix.Ord
 * `Matrix.PosSemidef.col_eq_zero_of_apply_self_eq_zero`: a zero diagonal entry forces a zero
   column; `Matrix.PosSemidef.row_eq_zero_of_apply_self_eq_zero` for the row.
 * `Matrix.PosSemidef.norm_apply_sq_le`: `‖A i j‖ ^ 2 ≤ re (A i i) * re (A j j)`.
+* `Matrix.PosSemidef.conjTranspose_mul_mul_same'`: congruence `Bᴴ * A * B` preserves positive
+  semidefiniteness, for a factor with any column index type.
 * `Matrix.PosSemidef.trace_mul_nonneg`, `Matrix.PosSemidef.trace_mul_eq_zero_iff`,
   `Matrix.IsHermitian.posSemidef_iff_trace_mul_nonneg`: the positive semidefinite cone is
   self-dual under the trace pairing.
@@ -93,6 +95,35 @@ theorem PosSemidef.two_mul_norm_apply_le {A : Matrix n n 𝕜} (hA : A.PosSemide
   have hj : 0 ≤ RCLike.re (A j j) := (RCLike.nonneg_iff.mp hA.diag_nonneg).1
   refine (sq_le_sq₀ (by positivity) (add_nonneg hi hj)).mp ?_
   nlinarith [hA.norm_apply_sq_le i j, sq_nonneg (RCLike.re (A i i) - RCLike.re (A j j))]
+
+/-! ### Congruence -/
+
+/-- **Congruence preserves positive semidefiniteness**, for a factor `B : Matrix n p 𝕜` with any
+column index type `p`, finite or not: if `A` is positive semidefinite then so is `Bᴴ * A * B`.
+Mathlib's `Matrix.PosSemidef.conjTranspose_mul_mul_same` is the same statement with `[Finite p]`;
+upstream, this version would replace it. It is what a statement about `U : Matrix n p 𝕜` with an
+arbitrary column type (a subspace embedding of `range U`) needs. -/
+theorem PosSemidef.conjTranspose_mul_mul_same' {p : Type*} {A : Matrix n n 𝕜} (hA : A.PosSemidef)
+    (B : Matrix n p 𝕜) : (Bᴴ * A * B).PosSemidef := by
+  refine ⟨isHermitian_conjTranspose_mul_mul B hA.1, fun x => ?_⟩
+  have key : (x.sum fun i xi => x.sum fun j xj => star xi * (Bᴴ * A * B) i j * xj) =
+      star (fun k => x.sum fun j xj => B k j * xj) ⬝ᵥ
+        (A *ᵥ fun k => x.sum fun j xj => B k j * xj) := by
+    simp only [Finsupp.sum, Matrix.mul_apply, Matrix.conjTranspose_apply, dotProduct,
+      Matrix.mulVec, Pi.star_apply, star_sum, star_mul', Finset.mul_sum, Finset.sum_mul]
+    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ =>
+      Finset.sum_comm).trans ?_
+    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_comm).trans ?_
+    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ =>
+      Finset.sum_comm).trans ?_
+    refine Finset.sum_comm.trans ?_
+    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_comm).trans ?_
+    refine Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => ?_
+    refine Finset.sum_comm.trans ?_
+    refine Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => ?_
+    ring
+  rw [key]
+  exact hA.dotProduct_mulVec_nonneg _
 
 /-! ### Trace -/
 

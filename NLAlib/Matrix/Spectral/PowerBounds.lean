@@ -21,7 +21,7 @@ most one and the eigenvalues of modulus one are semisimple.
 ## Main results
 
 * `NLAlib.tendsto_specNorm_pow_rpow_specRadius`: Gelfand's formula.
-* `NLAlib.specNorm_pow_le_conditionNumber_mul`: powers through a similarity.
+* `NLAlib.specNorm_pow_le_pseudoConditionNumber_mul`: powers through a similarity.
 * `NLAlib.exists_forall_specNorm_pow_le_mul_pow`: growth of the powers.
 * `NLAlib.tendsto_pow_zero_iff_specRadius_lt_one`.
 * `NLAlib.hasSum_pow_inv_one_sub_of_specRadius_lt_one`: the Neumann series.
@@ -62,11 +62,11 @@ theorem specRadius_pow_le_specNorm_pow [Nonempty n] (A : Matrix n n 𝕜) (k : �
 /-- **Powers through a similarity**: `‖Aᵏ‖₂ ≤ κ(S) ‖S⁻¹ A S‖₂ᵏ` for every invertible `S`. With a
 similarity that brings the norm close to the spectral radius this bounds the transient growth of
 the powers. [TrefethenBau1997, Lecture 24 context]. -/
-theorem specNorm_pow_le_conditionNumber_mul (A : Matrix n n 𝕜) {S : Matrix n n 𝕜}
+theorem specNorm_pow_le_pseudoConditionNumber_mul (A : Matrix n n 𝕜) {S : Matrix n n 𝕜}
     (hS : IsUnit S.det) (k : ℕ) :
-    specNorm (A ^ k) ≤ conditionNumber S * specNorm (S⁻¹ * A * S) ^ k := by
+    specNorm (A ^ k) ≤ pseudoConditionNumber S * specNorm (S⁻¹ * A * S) ^ k := by
   have hSu : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hS
-  rw [conditionNumber_of_isUnit hSu]
+  rw [pseudoConditionNumber_of_isUnit hSu]
   obtain ⟨u, rfl⟩ := hSu
   set S : Matrix n n 𝕜 := ↑u with hSdef
   have hpow : A ^ k = S * (S⁻¹ * A * S) ^ k * S⁻¹ := by
@@ -394,4 +394,11 @@ theorem exists_forall_specNorm_pow_le_iff (A : Matrix n n 𝕜) :
     rw [hij]
     exact (norm_le_pi_norm _ i).trans ((hC j k).trans
       (Finset.single_le_sum (fun j _ => hC0 j) (Finset.mem_univ j)))
+
+/-! ### Deprecated aliases -/
+
+@[deprecated specNorm_pow_le_pseudoConditionNumber_mul (since := "2026-10-14")]
+alias specNorm_pow_le_conditionNumber_mul :=
+  specNorm_pow_le_pseudoConditionNumber_mul
+
 end NLAlib

@@ -11,8 +11,8 @@ public import NLAlib.Matrix.Spectral.Weyl
 /-!
 # Multiplicative perturbations
 
-Bounds for the singular values, the pseudoinverse and the condition number of `S * A` in terms of
-those of `A`, when the Gram matrices are comparable:
+Bounds for the singular values, the pseudoinverse and the pseudo-condition number of `S * A` in
+terms of those of `A`, when the Gram matrices are comparable:
 `a • Aᴴ A ≤ (S A)ᴴ (S A) ≤ b • Aᴴ A`. This two-sided bound is what a subspace embedding
 guarantees, and the consequences here are what sketch-and-precondition and sketched least squares
 consume.
@@ -23,7 +23,7 @@ consume.
   singular values under comparable Gram matrices.
 * `NLAlib.rank_eq_of_smul_le_of_le_smul`: the rank is preserved.
 * `NLAlib.specNorm_pinv_sq_le_of_smul_le`: the pseudoinverse.
-* `NLAlib.conditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul`: the condition number.
+* `NLAlib.pseudoConditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul`: the pseudo-condition number.
 -/
 
 @[expose] public section
@@ -104,29 +104,36 @@ theorem specNorm_pinv_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n �
     rw [specNorm_pinv A hk, specNorm_pinv B (hk.trans hr'.symm), inv_pow, inv_pow, ← mul_inv]
     exact inv_anti₀ (mul_pos ha (pow_pos hA 2)) hle
 
-/-- **The condition number under comparable Gram matrices**: if
+/-- **The pseudo-condition number under comparable Gram matrices**: if
 `a • Aᴴ A ≤ Bᴴ B ≤ b • Aᴴ A` with `0 < a`, then `κ(B) ≤ √(b / a) κ(A)`.
 With `B = S * A` this is the conditioning of a sketched matrix. -/
-theorem conditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul {A : Matrix m n 𝕜}
+theorem pseudoConditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul {A : Matrix m n 𝕜}
     {B : Matrix l n 𝕜} {a b : ℝ} (ha : 0 < a) (h₁ : a • (Aᴴ * A) ≤ Bᴴ * B)
-    (h₂ : Bᴴ * B ≤ b • (Aᴴ * A)) : conditionNumber B ≤ √(b / a) * conditionNumber A := by
+    (h₂ : Bᴴ * B ≤ b • (Aᴴ * A)) :
+    pseudoConditionNumber B ≤ √(b / a) * pseudoConditionNumber A := by
   rcases Nat.eq_zero_or_pos A.rank with h0 | h0
   · rw [Matrix.rank_eq_zero.mp ((rank_eq_of_smul_le_of_le_smul ha h₁ h₂).trans h0),
-      conditionNumber_zero]
-    exact mul_nonneg (Real.sqrt_nonneg _) (conditionNumber_nonneg A)
+      pseudoConditionNumber_zero]
+    exact mul_nonneg (Real.sqrt_nonneg _) (pseudoConditionNumber_nonneg A)
   · obtain ⟨k, hk⟩ : ∃ k, k + 1 = A.rank := ⟨A.rank - 1, by omega⟩
     have hr := rank_eq_of_smul_le_of_le_smul ha h₁ h₂
     have hA := (singularValues_pos_iff A).mpr (by omega : k < A.rank)
     have hB := (singularValues_pos_iff B).mpr (by omega : k < B.rank)
     have hlo := mul_sq_singularValues_le_of_smul_le h₁ k
     have hhi := sq_singularValues_le_mul_of_le_smul h₂ 0
-    rw [conditionNumber_eq_singularValues_div A hk,
-      conditionNumber_eq_singularValues_div B (hk.trans hr.symm)]
+    rw [pseudoConditionNumber_eq_singularValues_div A hk,
+      pseudoConditionNumber_eq_singularValues_div B (hk.trans hr.symm)]
     rw [← Real.sqrt_sq (div_nonneg (singularValues_nonneg A 0) hA.le),
       ← Real.sqrt_mul' _ (sq_nonneg _)]
     apply Real.le_sqrt_of_sq_le
     rw [div_pow, div_pow, div_mul_div_comm,
       div_le_div_iff₀ (pow_pos hB 2) (mul_pos ha (pow_pos hA 2))]
     exact mul_le_mul hhi hlo (mul_pos ha (pow_pos hA 2)).le ((sq_nonneg _).trans hhi)
+
+/-! ### Deprecated aliases -/
+
+@[deprecated pseudoConditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul (since := "2026-10-14")]
+alias conditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul :=
+  pseudoConditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul
 
 end NLAlib

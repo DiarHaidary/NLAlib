@@ -111,7 +111,7 @@ The skeleton is the authority; this is the map.
 `Structured/Kronecker.lean`: `HasOrthonormalCols.kronecker`, `Matrix.IsHermitian.kronecker`,
 `IsSVD.kronecker`, `kronecker_eq_mul_diagonal_mul_conjTranspose`, the Kronecker sum, extreme
 eigenvalues, `specNorm_kronecker`, `frobNorm_kronecker`, `nuclearNorm_kronecker`,
-`rank_kronecker`, `pinv_kronecker`, `conditionNumber_kronecker`.
+`rank_kronecker`, `pinv_kronecker`, `pseudoConditionNumber_kronecker`.
 
 `Structured/Circulant.lean`: `circulant_mulVec_pow` (eigenvectors over any field),
 `mul_circulant_single_comm_iff`, `fourierMatrix` with unitarity,
@@ -330,7 +330,7 @@ block identity). Findings and their resolution:
 10. Added for the consumers: `specRadius_one_sub_inv_diagonal_mul_lt_one` (convergence of the
     Jacobi iteration), the inertia of a saddle-point matrix
     (`Matrix.PosDef.inertiaPos_fromBlocks_zero`, `inertiaNeg_fromBlocks_zero`),
-    `specNorm_pow_le_conditionNumber_mul` (powers through a similarity), the bridges
+    `specNorm_pow_le_pseudoConditionNumber_mul` (powers through a similarity), the bridges
     `specRadius_eq_toReal_spectralRadius`, `specRadius_complexify`, and the Hermitian-part
     lemmas over `𝕜`.
 11. Not taken: removing Cauchy and Hilbert matrices (the brief lists them) and Fuglede–Putnam;

@@ -22,8 +22,8 @@ system in terms of the condition number.
 * `NLAlib.isUnit_add_of_specNorm_inv_mul_lt_one`, `NLAlib.specNorm_inv_add_le`,
   `NLAlib.specNorm_inv_add_sub_inv_le`: perturbation of the inverse.
 * `NLAlib.norm_sub_le_specNorm_inv_mul_norm_sub_mulVec`: forward error from the residual.
-* `NLAlib.norm_sub_le_of_add_mulVec_eq`, `NLAlib.norm_sub_le_conditionNumber_mul_of_add_mulVec_eq`:
-  perturbation of a linear system.
+* `NLAlib.norm_sub_le_of_add_mulVec_eq`,
+  `NLAlib.norm_sub_le_pseudoConditionNumber_mul_of_add_mulVec_eq`: perturbation of a linear system.
 -/
 
 @[expose] public section
@@ -155,10 +155,10 @@ theorem SymmetricGauge.matrixNorm_inv_add_sub_inv_le (Φ : SymmetricGauge) {A E 
   exact (Φ.matrixNorm_mul_le_mul_specNorm _ _).trans
     (mul_le_mul_of_nonneg_right (Φ.matrixNorm_mul_le_specNorm_mul _ _) (specNorm_nonneg _))
 
-private theorem specNorm_inv_mul_specNorm_le_conditionNumber_mul {A E : Matrix n n 𝕜}
+private theorem specNorm_inv_mul_specNorm_le_pseudoConditionNumber_mul {A E : Matrix n n 𝕜}
     (hA : IsUnit A) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) :
-    specNorm A⁻¹ * specNorm E ≤ conditionNumber A * ε := by
-  rw [conditionNumber_of_isUnit hA]
+    specNorm A⁻¹ * specNorm E ≤ pseudoConditionNumber A * ε := by
+  rw [pseudoConditionNumber_of_isUnit hA]
   calc specNorm A⁻¹ * specNorm E ≤ specNorm A⁻¹ * (ε * specNorm A) :=
         mul_le_mul_of_nonneg_left hE (specNorm_nonneg _)
     _ = specNorm A * specNorm A⁻¹ * ε := by ring
@@ -167,17 +167,17 @@ private theorem specNorm_inv_mul_specNorm_le_conditionNumber_mul {A E : Matrix n
 `‖E‖₂ ≤ ε ‖A‖₂` and `κ(A) ε < 1`, then
 `‖(A + E)⁻¹ - A⁻¹‖₂ ≤ κ ε / (1 - κ ε) · ‖A⁻¹‖₂`.
 [GolubVanLoan2013, §2.6.2]; [Higham2002, §6.2]. -/
-theorem specNorm_inv_add_sub_inv_le_conditionNumber_mul {A E : Matrix n n 𝕜} (hA : IsUnit A)
-    {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : conditionNumber A * ε < 1) :
+theorem specNorm_inv_add_sub_inv_le_pseudoConditionNumber_mul {A E : Matrix n n 𝕜} (hA : IsUnit A)
+    {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : pseudoConditionNumber A * ε < 1) :
     specNorm ((A + E)⁻¹ - A⁻¹) ≤
-      conditionNumber A * ε / (1 - conditionNumber A * ε) * specNorm A⁻¹ := by
-  have hκ := specNorm_inv_mul_specNorm_le_conditionNumber_mul hA hE
-  have ht : specNorm (A⁻¹ * E) ≤ conditionNumber A * ε := (specNorm_mul_le _ _).trans hκ
+      pseudoConditionNumber A * ε / (1 - pseudoConditionNumber A * ε) * specNorm A⁻¹ := by
+  have hκ := specNorm_inv_mul_specNorm_le_pseudoConditionNumber_mul hA hE
+  have ht : specNorm (A⁻¹ * E) ≤ pseudoConditionNumber A * ε := (specNorm_mul_le _ _).trans hκ
   calc specNorm ((A + E)⁻¹ - A⁻¹)
       ≤ specNorm A⁻¹ ^ 2 * specNorm E / (1 - specNorm (A⁻¹ * E)) :=
         specNorm_inv_add_sub_inv_le hA (ht.trans_lt hε)
     _ = specNorm A⁻¹ * specNorm E / (1 - specNorm (A⁻¹ * E)) * specNorm A⁻¹ := by ring
-    _ ≤ conditionNumber A * ε / (1 - conditionNumber A * ε) * specNorm A⁻¹ := by
+    _ ≤ pseudoConditionNumber A * ε / (1 - pseudoConditionNumber A * ε) * specNorm A⁻¹ := by
         refine mul_le_mul_of_nonneg_right ?_ (specNorm_nonneg _)
         exact div_le_div₀ ((mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)).trans hκ) hκ
           (by linarith) (by linarith)
@@ -198,15 +198,15 @@ theorem norm_sub_le_specNorm_inv_mul_norm_sub_mulVec {A : Matrix n n 𝕜} (hA :
 /-- **Relative forward error from the relative residual**, without divisions:
 `‖x - y‖ ‖b‖ ≤ κ(A) ‖b - A y‖ ‖x‖`.
 [GolubVanLoan2013, §2.6.4]. Port of `NLAlib.norm_sub_div_le_conditionNumber_mul`. -/
-theorem norm_sub_mul_norm_le_conditionNumber_mul {A : Matrix n n 𝕜} (hA : IsUnit A)
+theorem norm_sub_mul_norm_le_pseudoConditionNumber_mul {A : Matrix n n 𝕜} (hA : IsUnit A)
     {x b : n → 𝕜} (hx : A *ᵥ x = b) (y : n → 𝕜) :
     ‖WithLp.toLp 2 (x - y)‖ * ‖WithLp.toLp 2 b‖ ≤
-      conditionNumber A * ‖WithLp.toLp 2 (b - A *ᵥ y)‖ * ‖WithLp.toLp 2 x‖ := by
+      pseudoConditionNumber A * ‖WithLp.toLp 2 (b - A *ᵥ y)‖ * ‖WithLp.toLp 2 x‖ := by
   have h₁ := norm_sub_le_specNorm_inv_mul_norm_sub_mulVec hA hx y
   have h₂ : ‖WithLp.toLp 2 b‖ ≤ specNorm A * ‖WithLp.toLp 2 x‖ := by
     rw [← hx]
     exact norm_toLp_mulVec_le A x
-  rw [conditionNumber_of_isUnit hA]
+  rw [pseudoConditionNumber_of_isUnit hA]
   calc ‖WithLp.toLp 2 (x - y)‖ * ‖WithLp.toLp 2 b‖
       ≤ specNorm A⁻¹ * ‖WithLp.toLp 2 (b - A *ᵥ y)‖ * (specNorm A * ‖WithLp.toLp 2 x‖) :=
         mul_le_mul h₁ h₂ (norm_nonneg _) (by positivity)
@@ -245,14 +245,14 @@ theorem norm_sub_le_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
 [GolubVanLoan2013, Theorem 2.6.2].
 Port of `NLAlib.norm_div_le_of_add_mulVec_add`.
 Result: linear-system-perturbation -/
-theorem norm_sub_le_conditionNumber_mul_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
-    {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : conditionNumber A * ε < 1)
+theorem norm_sub_le_pseudoConditionNumber_mul_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
+    {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : pseudoConditionNumber A * ε < 1)
     {x y b f : n → 𝕜} (hx : A *ᵥ x = b) (hy : (A + E) *ᵥ y = b + f)
     (hf : ‖WithLp.toLp 2 f‖ ≤ ε * ‖WithLp.toLp 2 b‖) :
     ‖WithLp.toLp 2 (y - x)‖ ≤
-      2 * ε * conditionNumber A / (1 - conditionNumber A * ε) * ‖WithLp.toLp 2 x‖ := by
-  have hκ := specNorm_inv_mul_specNorm_le_conditionNumber_mul hA hE
-  have ht : specNorm (A⁻¹ * E) ≤ conditionNumber A * ε := (specNorm_mul_le _ _).trans hκ
+      2 * ε * pseudoConditionNumber A / (1 - pseudoConditionNumber A * ε) * ‖WithLp.toLp 2 x‖ := by
+  have hκ := specNorm_inv_mul_specNorm_le_pseudoConditionNumber_mul hA hE
+  have ht : specNorm (A⁻¹ * E) ≤ pseudoConditionNumber A * ε := (specNorm_mul_le _ _).trans hκ
   have hb : ‖WithLp.toLp 2 b‖ ≤ specNorm A * ‖WithLp.toLp 2 x‖ := by
     rw [← hx]
     exact norm_toLp_mulVec_le A x
@@ -269,17 +269,32 @@ theorem norm_sub_le_conditionNumber_mul_of_add_mulVec_eq {A E : Matrix n n 𝕜}
       2 * ε * specNorm A * ‖WithLp.toLp 2 x‖ := by
     have h := mul_le_mul_of_nonneg_right hE (norm_nonneg (WithLp.toLp 2 x))
     linarith
-  have hden : 0 < 1 - conditionNumber A * ε := by linarith
+  have hden : 0 < 1 - pseudoConditionNumber A * ε := by linarith
   calc ‖WithLp.toLp 2 (y - x)‖
       ≤ specNorm A⁻¹ / (1 - specNorm (A⁻¹ * E)) *
           (‖WithLp.toLp 2 f‖ + specNorm E * ‖WithLp.toLp 2 x‖) :=
         norm_sub_le_of_add_mulVec_eq hA (ht.trans_lt hε) hx hy
-    _ ≤ specNorm A⁻¹ / (1 - conditionNumber A * ε) *
+    _ ≤ specNorm A⁻¹ / (1 - pseudoConditionNumber A * ε) *
           (2 * ε * specNorm A * ‖WithLp.toLp 2 x‖) :=
         mul_le_mul (div_le_div_of_nonneg_left (specNorm_nonneg _) hden (by linarith)) hsum
           (by positivity) (div_nonneg (specNorm_nonneg _) hden.le)
-    _ = 2 * ε * conditionNumber A / (1 - conditionNumber A * ε) * ‖WithLp.toLp 2 x‖ := by
-        rw [conditionNumber_of_isUnit hA]
+    _ = 2 * ε * pseudoConditionNumber A / (1 - pseudoConditionNumber A * ε) *
+          ‖WithLp.toLp 2 x‖ := by
+        rw [pseudoConditionNumber_of_isUnit hA]
         ring
+
+/-! ### Deprecated aliases -/
+
+@[deprecated specNorm_inv_add_sub_inv_le_pseudoConditionNumber_mul (since := "2026-10-14")]
+alias specNorm_inv_add_sub_inv_le_conditionNumber_mul :=
+  specNorm_inv_add_sub_inv_le_pseudoConditionNumber_mul
+
+@[deprecated norm_sub_mul_norm_le_pseudoConditionNumber_mul (since := "2026-10-14")]
+alias norm_sub_mul_norm_le_conditionNumber_mul :=
+  norm_sub_mul_norm_le_pseudoConditionNumber_mul
+
+@[deprecated norm_sub_le_pseudoConditionNumber_mul_of_add_mulVec_eq (since := "2026-10-14")]
+alias norm_sub_le_conditionNumber_mul_of_add_mulVec_eq :=
+  norm_sub_le_pseudoConditionNumber_mul_of_add_mulVec_eq
 
 end NLAlib

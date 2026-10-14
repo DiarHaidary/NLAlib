@@ -20,7 +20,8 @@ steepest descent and of the conjugate gradient method.
 
 * `NLAlib.add_smul_inv_le_smul_one`: the operator form `A + (a b) A⁻¹ ≤ (a + b) • 1`.
 * `NLAlib.re_quadForm_mul_re_quadForm_inv_le`: the Kantorovich inequality.
-* `Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_conditionNumber`: with the condition number.
+* `Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_pseudoConditionNumber`: with the
+  pseudo-condition number.
 * `NLAlib.norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero`: the Wielandt inequality.
 -/
 
@@ -94,14 +95,15 @@ theorem re_quadForm_mul_re_quadForm_inv_le {A : Matrix n n 𝕜} {a b : ℝ} (ha
     nlinarith [sq_nonneg (RCLike.re (quadForm A x) - a * b * RCLike.re (quadForm A⁻¹ x))]
 
 /-- **The Kantorovich inequality with the condition number**: for positive definite `A`,
-`(xᴴ A x) (xᴴ A⁻¹ x) ≤ (κ + 1)² / (4 κ) · ‖x‖⁴` with `κ = conditionNumber A`.
+`(xᴴ A x) (xᴴ A⁻¹ x) ≤ (κ + 1)² / (4 κ) · ‖x‖⁴` with `κ = pseudoConditionNumber A`.
 [HornJohnson2013, Theorem 7.4.41].
 Port of `NLAlib.quadForm_mul_quadForm_inv_le_moorePenroseConditionNumber_sqrt`, there over `ℝ`.
 Result: kantorovich-inequality -/
-theorem _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_conditionNumber
+theorem _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_pseudoConditionNumber
     {A : Matrix n n 𝕜} (hA : A.PosDef) (x : n → 𝕜) :
     RCLike.re (quadForm A x) * RCLike.re (quadForm A⁻¹ x) ≤
-      (conditionNumber A + 1) ^ 2 / (4 * conditionNumber A) * ‖WithLp.toLp 2 x‖ ^ 4 := by
+      (pseudoConditionNumber A + 1) ^ 2 / (4 * pseudoConditionNumber A) *
+        ‖WithLp.toLp 2 x‖ ^ 4 := by
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [Subsingleton.elim x 0, quadForm_zero_right]
     simp
@@ -113,7 +115,7 @@ theorem _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_conditionNumber
       hA.isHermitian.posDef_iff_eigenvalue_pos.mp hA 0 Fintype.card_pos
     have h := re_quadForm_mul_re_quadForm_inv_le ha
       ((hA.isHermitian.smul_one_le_iff hk).mpr le_rfl) (hA.isHermitian.le_smul_one_iff.mpr le_rfl) x
-    rw [hA.conditionNumber_eq hk]
+    rw [hA.pseudoConditionNumber_eq hk]
     convert h using 2
     field_simp
     ring
@@ -228,5 +230,11 @@ theorem norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero {A : Matrix n n 
         RCLike.ofReal_one, one_pow]
     rwa [Matrix.mulVec_smul, dotProduct_smul, smul_eq_mul, h1, RCLike.ofReal_re,
       quadForm_smul_right, h2, one_mul] at h
+
+/-! ### Deprecated aliases -/
+
+@[deprecated (since := "2026-10-14")]
+alias _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_conditionNumber :=
+  _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_pseudoConditionNumber
 
 end NLAlib

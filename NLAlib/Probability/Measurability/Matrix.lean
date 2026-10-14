@@ -21,8 +21,8 @@ public import NLAlib.Matrix.Factorizations.GramSchmidt
 For random matrices, the quantities of the Matrix layer must be measurable functions of the
 matrix. This file belongs to the Probability layer: the Matrix layer itself has no measure theory.
 Norms, singular values and eigenvalues are continuous, hence measurable. The rank, the
-pseudoinverse, the range projector, the condition number, the polar factor and the Gram–Schmidt
-factors are not continuous but are Borel measurable.
+pseudoinverse, the range projector, the pseudo-condition number, the polar factor and the
+Gram–Schmidt factors are not continuous but are Borel measurable.
 
 Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 
@@ -32,7 +32,7 @@ Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 * `NLAlib.measurable_singularValues`, `NLAlib.measurable_eigenvalue`.
 * `NLAlib.measurableSet_setOf_posDef`: the positive definite matrices form a measurable set.
 * `NLAlib.measurable_rank`, `NLAlib.measurable_pinv`, `NLAlib.measurable_rangeProjector`,
-  `NLAlib.measurable_conditionNumber`.
+  `NLAlib.measurable_pseudoConditionNumber`.
 * `NLAlib.measurable_polarFactor`, `NLAlib.measurable_gramSchmidtQ`.
 -/
 
@@ -142,9 +142,9 @@ theorem measurable_rangeProjector :
   rw [h]
   exact measurable_id.matrix_mul measurable_pinv
 
-/-- The condition number is measurable. -/
-theorem measurable_conditionNumber :
-    Measurable (conditionNumber : Matrix m n 𝕜 → ℝ) := by
+/-- The pseudo-condition number is measurable. -/
+theorem measurable_pseudoConditionNumber :
+    Measurable (pseudoConditionNumber : Matrix m n 𝕜 → ℝ) := by
   exact measurable_specNorm.mul (measurable_specNorm.comp measurable_pinv)
 
 open scoped Matrix.Norms.L2Operator MatrixOrder ComplexOrder Classical in
@@ -194,5 +194,11 @@ theorem measurable_gramSchmidtQ [LinearOrder n] [LocallyFiniteOrderBot n] :
     unfold InnerProductSpace.gramSchmidtNormed
     exact ((RCLike.continuous_ofReal (K := 𝕜)).measurable.comp h.norm).inv.smul h
   exact (PiLp.continuous_apply 2 (fun _ : m => 𝕜) i).measurable.comp hn
+
+/-! ### Deprecated aliases -/
+
+@[deprecated measurable_pseudoConditionNumber (since := "2026-10-14")]
+alias measurable_conditionNumber :=
+  measurable_pseudoConditionNumber
 
 end NLAlib

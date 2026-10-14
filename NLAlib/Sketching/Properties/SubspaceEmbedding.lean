@@ -79,41 +79,17 @@ section Aux
 
 open scoped ComplexOrder
 
-/-- Congruence preserves positive semidefiniteness for a factor with any column index type;
-Mathlib's `Matrix.PosSemidef.conjTranspose_mul_mul_same` asks that type to be finite. -/
-private theorem posSemidef_conjTranspose_mul_mul_same {A : Matrix n n 𝕜} (hA : A.PosSemidef)
-    (B : Matrix n p 𝕜) : (Bᴴ * A * B).PosSemidef := by
-  refine ⟨Matrix.isHermitian_conjTranspose_mul_mul B hA.1, fun x => ?_⟩
-  have key : (x.sum fun i xi => x.sum fun j xj => star xi * (Bᴴ * A * B) i j * xj) =
-      star (fun k => x.sum fun j xj => B k j * xj) ⬝ᵥ
-        (A *ᵥ fun k => x.sum fun j xj => B k j * xj) := by
-    simp only [Finsupp.sum, Matrix.mul_apply, Matrix.conjTranspose_apply, dotProduct,
-      Matrix.mulVec, Pi.star_apply, star_sum, star_mul', Finset.mul_sum, Finset.sum_mul]
-    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ =>
-      Finset.sum_comm).trans ?_
-    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_comm).trans ?_
-    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ =>
-      Finset.sum_comm).trans ?_
-    refine Finset.sum_comm.trans ?_
-    refine (Finset.sum_congr rfl fun _ _ => Finset.sum_comm).trans ?_
-    refine Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => ?_
-    refine Finset.sum_comm.trans ?_
-    refine Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => ?_
-    ring
-  rw [key]
-  exact hA.dotProduct_mulVec_nonneg _
-
 /-- Congruence preserves the Loewner order, for a factor with any column index type. -/
 private theorem conjTranspose_mul_mul_le {G H : Matrix n n 𝕜} (h : G ≤ H) (C : Matrix n p 𝕜) :
     Cᴴ * G * C ≤ Cᴴ * H * C := by
   rw [Matrix.le_iff, ← Matrix.sub_mul, ← Matrix.mul_sub]
-  exact posSemidef_conjTranspose_mul_mul_same (Matrix.le_iff.mp h) C
+  exact (Matrix.le_iff.mp h).conjTranspose_mul_mul_same' C
 
 /-- A Gram matrix is positive semidefinite, for any column index type. -/
 private theorem posSemidef_conjTranspose_mul_self (U : Matrix n p 𝕜) : (Uᴴ * U).PosSemidef := by
   classical
   simpa only [Matrix.mul_one] using
-    posSemidef_conjTranspose_mul_mul_same (Matrix.PosSemidef.one (n := n) (R := 𝕜)) U
+    (Matrix.PosSemidef.one (n := n) (R := 𝕜)).conjTranspose_mul_mul_same' U
 
 /-- Scaling by a nonnegative real is monotone in the Loewner order. -/
 private theorem smul_le_smul {G H : Matrix p p 𝕜} (h : G ≤ H) {c : ℝ} (hc : 0 ≤ c) :

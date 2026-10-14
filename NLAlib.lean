@@ -26,6 +26,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
+public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.Dilation

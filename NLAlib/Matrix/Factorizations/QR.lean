@@ -15,9 +15,10 @@ public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 
 `NLAlib.IsQR A Q R` says that `A = Q * R` with `Q` having orthonormal columns and `R` square upper
 triangular: the thin QR factorization of a matrix with at least as many rows as columns. `R` has
-the Gram matrix, singular values and condition number of `A`; when `A` has full column rank, `R`
-is invertible, `Q * Qᴴ` is the orthogonal projector onto the range, the least-squares problem is
-the triangular system `R x = Qᴴ b`, and the factorization with positive diagonal is unique.
+the Gram matrix, singular values and pseudo-condition number of `A`; when `A` has full column
+rank, `R` is invertible, `Q * Qᴴ` is the orthogonal projector onto the range, the least-squares
+problem is the triangular system `R x = Qᴴ b`, and the factorization with positive diagonal is
+unique.
 
 The full factorization, with a square unitary factor and an upper trapezoidal one, is stated for
 matrices indexed by `Fin`. Existence is read off Mathlib's
@@ -31,7 +32,7 @@ matrices indexed by `Fin`. Existence is read off Mathlib's
 
 * `NLAlib.exists_isQR`, `NLAlib.exists_isQR_of_injective`, `NLAlib.IsQR.unique`.
 * `NLAlib.IsQR.conjTranspose_mul_self`, `NLAlib.IsQR.singularValues_eq`,
-  `NLAlib.IsQR.conditionNumber_eq`.
+  `NLAlib.IsQR.pseudoConditionNumber_eq`.
 * `NLAlib.IsQR.pinv_eq`, `NLAlib.IsQR.mul_conjTranspose_eq_rangeProjector`.
 * `NLAlib.IsQR.isLeastSquaresSolution_backSubst`: the triangular solve.
 * `NLAlib.IsQR.isLeastSquaresSolution_iff`: least squares through QR.
@@ -97,11 +98,12 @@ theorem IsQR.singularValues_eq (h : IsQR A Q R) (k : ℕ) :
 theorem IsQR.rank_eq (h : IsQR A Q R) : R.rank = A.rank := by
   rw [h.eq_mul, h.hasOrthonormalCols.rank_mul]
 
-/-- `R` has the condition number of `A`.
+/-- `R` has the pseudo-condition number of `A`.
 Port of `NLAlib.moorePenroseConditionNumber_eq_of_qr`. -/
-theorem IsQR.conditionNumber_eq (h : IsQR A Q R) : conditionNumber R = conditionNumber A := by
+theorem IsQR.pseudoConditionNumber_eq (h : IsQR A Q R) :
+    pseudoConditionNumber R = pseudoConditionNumber A := by
   classical
-  rw [h.eq_mul, h.hasOrthonormalCols.conditionNumber_mul_left]
+  rw [h.eq_mul, h.hasOrthonormalCols.pseudoConditionNumber_mul_left]
 
 /-! ### Full column rank -/
 
@@ -454,5 +456,11 @@ theorem IsQR.isLeastSquaresSolution_backSubst {k : ℕ} {A Q : Matrix m (Fin k) 
     {R : Matrix (Fin k) (Fin k) 𝕜} (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) (b : m → 𝕜) :
     IsLeastSquaresSolution A b (backSubst R (Qᴴ *ᵥ b)) := by
   exact h.isLeastSquaresSolution_of_mulVec_eq (mulVec_backSubst h.isUpperTriangular hR _)
+
+/-! ### Deprecated aliases -/
+
+@[deprecated IsQR.pseudoConditionNumber_eq (since := "2026-10-14")]
+alias IsQR.conditionNumber_eq :=
+  IsQR.pseudoConditionNumber_eq
 
 end NLAlib
