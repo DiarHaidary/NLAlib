@@ -241,3 +241,85 @@ if no answer: §3.3 as written. Achlioptas 2003 is not in hand (brief §7.2).
 so an improvement of the constant changes no size statement. **Q8.** Two small skeleton files amend
 the brief's file list (§4). **Q9.** `9 ^ (card p * finrank ℝ 𝕜)` in §3.1 is `9 ^ card p` over `ℝ` and
 `81 ^ card p` over `ℂ` (real dimension of the net).
+
+## 8. Amendments from the review (2026-10-15)
+
+Fable review of this note, all findings accepted by the orchestrator; Q6 decided **yes**
+(Rademacher with Gaussian constants this round), as changed by items 1 to 3. The review verified
+every cited name, the citations, the arithmetic of `1/64`, `16 c²`, the Rademacher variance, the
+net factor `9^(card p · finrank ℝ 𝕜)` with its factor `2`, the OSE at `ε/2` and the sizes
+(`4 · 64 · log 9 ≈ 562.5 ≤ 576`), and confirmed Q1 (the R3-rows route is dominated by JL plus a
+net in every regime: dropped by rule 6, D12's last sentence amended in `docs/PORT_SKETCHING.md`).
+Where an item below contradicts §0 to §7, it supersedes them. Skeletons: the files of item 7,
+every proof `sorry`.
+
+1. **§3, `ε ≥ 1`: the lower JL event is not null.** For signs `S x = 0` has probability `2^{-k}`
+   (`x = (1, 1)/√2`), so "`ε ≥ 1`: the lower JL event is null" is false at `ε = 1`; it is empty
+   only for `ε > 1`. The Dasgupta–Gupta proof must cover `ε = 1` (lower Chernoff at `θ = 1/4`:
+   `(27/32)^k ≤ exp (-k/12)`). *Skeleton*: the module docstrings of `SubGaussian.lean` and
+   `Rademacher.lean` state the corrected degenerate case; the generic tail's docstring (item 2)
+   says its lower half covers `ε = 1`.
+2. **Q6 route (Achlioptas).** Upper half: `HasSubgaussianMGF ⟨ξ, x⟩ 1`
+   (`isSubgaussianVector_of_hasLaw_rademacherVector`) and `integral_exp_mul_sq_le` give
+   `E exp (θ Y²) ≤ (1 - 2θ)^{-1/2}`, then S2's arithmetic. Lower half: the fourth moment,
+   `E exp (-θ Y²) ≤ 1 - θ + 3θ²/2`, and
+   `θ (1 - ε) + log (1 - θ + 3θ²/2) ≤ -(ε²/4 - ε³/6)` at `θ = ε/(2(1 + ε))` on `(0, 1]` (margin
+   about `ε³/48` at small `ε`; on a grid it is at least `0.0176 ε³` on `(0, 1]`, so the review's
+   `0.0208 ε³` holds only near `0`, the inequality itself holds). `1 + v ≤ exp v` is too weak; the
+   second-order log term comes from `log (1 + u) ≤ u - u²/2 + u³/3` for `-1 < u ≤ 0`, new (S2 has
+   only the `u ≥ 0` version, the private `log_one_add_le_cubic` of `ChiSquareTails.lean`, shared at
+   the wrap-up). One generic theorem carries the probability, then a rows theorem and the
+   Rademacher instance (`E ⟨ξ, x⟩⁴ = Var (⟨ξ, x⟩²) + ‖x‖⁴` from
+   `variance_quadForm_of_hasLaw_rademacherVector` at `vecMulVec x x`). *Skeleton*:
+   - `Real.log_one_add_le_cubic_of_nonpos (h1 : -1 < u) (h0 : u ≤ 0)`, in the new
+     `NLAlib/ForMathlib/Analysis/SpecialFunctions/Log/Deriv.lean` (upstream candidate for
+     `Mathlib.Analysis.SpecialFunctions.Log.Deriv`); at the wrap-up it and the private `u ≥ 0`
+     lemma become one public statement for `-1 < u`.
+   - `measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun (hind : iIndepFun Y μ)
+     (hsub : ∀ i, HasSubgaussianMGF (Y i) 1 μ) (h2 : ∀ i, ∫ Y i ^ 2 = 1) (h4 : ∀ i, ∫ Y i ^ 4 ≤ 3)
+     (hε : 0 ≤ ε)`: `P(ε ≤ |(∑ Yᵢ²)/card ι - 1|) ≤ 2 exp (-card ι (ε²/4 - ε³/6))`, in the new
+     `NLAlib/Probability/SubGaussian/SquareSum.lean` (merges into `Square.lean` at the wrap-up).
+     It dominates S2's `χ²` relative deviation (same bound, weaker hypotheses), which can then be
+     reproved from it and keep its name (rule 6).
+   - `hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le (hind) (hsub : … 1 μ) (hiso)
+     (h4 : ∀ i x, ∫ (x ⬝ᵥ X ω i) ^ 4 ≤ 3 ‖x‖⁴) (hε : 0 ≤ ε)`, failure
+     `2 exp (-k (ε²/4 - ε³/6))`, in `SubGaussian.lean` (the rows theorem, named by its extra
+     hypothesis, rule 4).
+3. **Q6 makes the Bernstein sign JL not dominated** (at `c = 1`, `min (ε², ε)/64` beats
+   `ε²/4 - ε³/6` for `ε ≳ 1.43`). No Bernstein Rademacher instance is named (it is the rows theorem
+   at `c = 1` with `isSubgaussianVector_of_hasLaw_rademacherVector`); the docstrings of both say in
+   which regime each is better. §7 Q6's "later, rule 6 would deprecate the Bernstein instance" is
+   dropped. *Skeleton*: `hasJLProperty_of_hasLaw_rademacherMatrix (hX) (hε : 0 ≤ ε)` with
+   `2 exp (-k (ε²/4 - ε³/6))`; the Rademacher OSE and OSI with `hε : 0 ≤ ε` and failure
+   `2 · 9^d exp (-k (ε²/16 - ε³/48))` (§3.1 at `ε/2`). Sizes are S2's `jlDim`: since §6's reason for
+   cutting the Rademacher size twins (rows corollaries at `c = 1`) no longer holds, three are
+   stated, `hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le` (`0 < ε < 3/2`, `jlDim ε δ`) and
+   the OSE and OSI `…_of_jlDim_le` (`0 < ε < 3`, `jlDim (ε/2) (δ/9^d)`).
+4. **Citation.** The sign JL cites "[Woodruff2014, §2.1, after Theorem 6]; constants of
+   [Achlioptas2003, Theorem 1.1], locator to confirm (`docs/PORT_SKETCHING.md` §7.2)".
+   `Achlioptas2003` is added to `docs/references.bib` (§4's "cited by name only" is withdrawn).
+5. **Optional, not taken.** `subgaussianJLDim` could absorb `hεc` through
+   `log (2/δ)/(C min (ε²/c², ε/c))`; the current form is honest and stays.
+6. **§3.1 proof** starts with a case split on `IsEmpty p` (the net may be empty, `specNorm E = 0`,
+   every sketch is an embedding); recorded in the module docstring of
+   `JohnsonLindenstraussNet.lean`.
+7. **Files** (amends §4, under §8 of CONTRIBUTING). The Rademacher block moves out of
+   `SubGaussian.lean` into its own topic file, since with Q6 it has its own route and sizes and
+   the combined file would hold 32 statements:
+   1. `NLAlib/ForMathlib/Analysis/SpecialFunctions/Log/Deriv.lean` (1), new.
+   2. `NLAlib/Probability/SubGaussian/SquareSum.lean` (1), new; imports 1 and `Square.lean`.
+   3. `NLAlib/Probability/IndependentRows.lean` (1), as §3.2.
+   4. `NLAlib/Sketching/Properties/JohnsonLindenstraussNet.lean` (2), as §3.1.
+   5. `NLAlib/Sketching/Gaussian/SubGaussian.lean` (20: 3 definitions, 8 constant and size
+      lemmas, 9 theorems), §3.3 without its Rademacher block, plus item 2's rows theorem; imports
+      2, 3, 4, R3, `Properties/Isotropic`.
+   6. `NLAlib/Sketching/Gaussian/Rademacher.lean` (12: `rademacherMatrix`, its instance, isotropy,
+      JL, the integrable and exact second moment, the JL moment, OSE, OSI, three sizes); imports 5,
+      S2's `Gaussian.lean` (`jlDim`), `Distributions/Rademacher`, `QuadraticForm/Moments`.
+8. §7: Q1 to Q5 and Q7 to Q9 stand; Q6 is decided yes as above.
+
+**Skeleton-level changes** (same meaning): `iIndepFun_row_of_iIndepFun_entry` takes
+`[Finite m] [Finite n]` (the `unusedFintypeInType` linter); the size definitions take a real `c`,
+the rows theorems the proxy `c : ℝ≥0`, coerced; result ids `jl-subgaussian` (the three
+sub-Gaussian JL tails), `subgaussian-ose`, `rademacher-ose`, and the new `jl-rademacher` (the sign
+JL).

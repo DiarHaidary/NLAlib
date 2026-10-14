@@ -386,8 +386,11 @@ Gupta's exponent `k (ε ^ 2 / 4 - ε ^ 3 / 6)`, the Gaussian Gram tails, Tropp's
 CountSketch's `(d ^ 2 + d) / (m ε ^ 2)` (the proof's; attributed to Nelson and Nguyen, unconfirmed,
 §7). Named with an `irreducible_def` otherwise: `subgaussianJLConstant` (from P1's centred
 square `(32 c², 4 c)` and Bernstein; the prototype had `1 / (256 e²)`) and the SRHT flattening
-constant. Sub-Gaussian sample sizes
-are written in R3's shape (`Probability-REPORT.md` §4, item 17).
+constant. *Amended 2026-10-15* (`docs/design/Sketching-S3.md` §7 Q1, §8): sub-Gaussian
+embeddings and their sample sizes go through JL plus a net (`subgaussianJLDim`,
+`subgaussianEmbeddingDim`); R3's rows route (`Probability-REPORT.md` §4, item 17) is dominated
+in every regime and dropped (CONTRIBUTING §5.2, rule 6). Sign sketches carry Dasgupta and Gupta's
+exponent (Achlioptas) and S2's `jlDim`.
 
 **D13. The Haar sketch** is `(√(card n / card k)) • Qᴴ` for `HasLaw Q (haarFrame n k) μ` and
 `card k ≤ card n`. JL: `Qᴴ * x` for a unit `x` has the law of the first `k` coordinates of
