@@ -47,8 +47,8 @@ section Pi
 variable {ι : Type*} [Fintype ι] {E : ι → Type*} [∀ i, MeasurableSpace (E i)]
   {ν : ∀ i, Measure (E i)} {X : Ω → ∀ i, E i}
 
-/-- A random vector $\mathbf{X}$ has the product law `Measure.pi ν` exactly when its coordinates
-are independent and the $i$-th coordinate $\mathbf{X}_i$ has law $\nu_i$. The hypothesis that
+/-- A random variable $X$ in $\prod_i E_i$ has the product law `Measure.pi ν` exactly when its
+coordinates are independent and the $i$-th coordinate $X_i$ has law $\nu_i$. The hypothesis that
 $\mu$ is a probability measure is needed only for the reverse direction when the index type `ι` is
 empty. -/
 theorem hasLaw_pi_iff [IsProbabilityMeasure μ] [∀ i, IsProbabilityMeasure (ν i)] :

@@ -131,7 +131,7 @@ private lemma nine_le_exp : (9 : ℝ) ≤ Real.exp (9 / 4) := by
 omit [Fintype m] in
 /-- With a column, an isotropic sub-Gaussian vector has proxy at least $1$. -/
 private lemma one_le_of_isSubgaussianVector [Nonempty n] [IsProbabilityMeasure μ]
-    {Y : Ω → n → ℝ} (hsub : IsSubgaussianVector Y c μ) (hiso : IsIsotropic Y μ) :
+    {y : Ω → n → ℝ} (hsub : IsSubgaussianVector y c μ) (hiso : IsIsotropic y μ) :
     1 ≤ (c : ℝ) := by
   obtain ⟨j⟩ := ‹Nonempty n›
   have hu : ‖WithLp.toLp 2 (Pi.single j 1 : n → ℝ)‖ = 1 := by

@@ -415,6 +415,8 @@ theorem eigenvalue_add_le ...
    |---|---|---|
    | matrix, vector | `\mathbf{A}`, `\mathbf{x}`; entries `\mathbf{A}_{i,j}`, `\mathbf{x}_i` | bold upright |
    | scalars, indices, dimensions | `c`, `t`, `i`, `k`, `n`; the size of an index type `n` is `\lvert n \rvert` | italic |
+   | random variables | random scalar `X` (capital, italic); random vector `\mathbf{x}`, `\mathbf{g}` (lowercase bold, like every vector, and lowercase in the Lean too: `x : Ω → n → ℝ`); random matrix `\mathbf{G}`; a random process over an arbitrary index set stays `X_t` | |
+   | submatrix on index sets `s`, `t` (`s : Finset n`) | `\mathbf{A}_{s,t}`, principal `\mathbf{A}_{s,s}`, minor `\det \mathbf{A}_{s,s}` | |
    | identity, zero matrix | `\mathbf{I}`, `\mathbf{0}` | |
    | conjugate transpose, transpose | `\mathbf{A}^{\mathsf{H}}`, `\mathbf{A}^{\mathsf{T}}` | |
    | inverse, pseudoinverse | `\mathbf{A}^{-1}`, `\mathbf{A}^{+}` | |

@@ -81,12 +81,12 @@ private theorem map_mulVec_gaussianVector [DecidableEq κ] {A : Matrix κ ι ℝ
 Gaussian vector whenever $\mathbf{y}$ is. For a square $\mathbf{A}$ this is the orthogonal
 invariance of the standard Gaussian law; for a wide $\mathbf{A}$ it says that orthonormal linear
 forms of a standard Gaussian vector are independent standard Gaussians. -/
-theorem hasLaw_mulVec_of_hasLaw_gaussianVector [DecidableEq κ] {Y : Ω → ι → ℝ}
-    (hY : HasLaw Y (gaussianVector ι) μ) {A : Matrix κ ι ℝ} (hA : HasOrthonormalCols Aᴴ) :
-    HasLaw (fun ω => A *ᵥ Y ω) (gaussianVector κ) μ := by
+theorem hasLaw_mulVec_of_hasLaw_gaussianVector [DecidableEq κ] {y : Ω → ι → ℝ}
+    (hy : HasLaw y (gaussianVector ι) μ) {A : Matrix κ ι ℝ} (hA : HasOrthonormalCols Aᴴ) :
+    HasLaw (fun ω => A *ᵥ y ω) (gaussianVector κ) μ := by
   have hc : Continuous fun x : ι → ℝ => A *ᵥ x := continuous_const.matrix_mulVec continuous_id
   exact HasLaw.fun_comp (Y := (A *ᵥ ·)) ⟨hc.measurable.aemeasurable, map_mulVec_gaussianVector hA⟩
-    hY
+    hy
 
 end Vector
 

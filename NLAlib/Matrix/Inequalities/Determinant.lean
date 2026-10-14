@@ -309,8 +309,8 @@ theorem norm_det_le_prod_norm_col (B : Matrix n n 𝕜) :
 /-! ### Principal minors and the Hadamard–Fischer inequality -/
 
 /-- The **principal minor** of a square matrix on an index set: the determinant
-$\det \mathbf{A}[s]$ of the principal submatrix $\mathbf{A}[s]$ with rows and columns in $s$. The
-minor on the empty set is $1$.
+$\det \mathbf{A}_{s,s}$ of the principal submatrix $\mathbf{A}_{s,s}$ with rows and columns in $s$.
+The minor on the empty set is $1$.
 [HornJohnson2013, §0.7.1]. Port of `NLAlib.principalMinor`, there for real matrices. -/
 def principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) (s : Finset n) : R :=
   (A.submatrix (Subtype.val : ↥s → n) Subtype.val).det
@@ -346,7 +346,7 @@ theorem principalMinor_transpose {R : Type*} [CommRing R] (A : Matrix n n R) (s 
 
 omit [Fintype n] in
 /-- The principal minors of the conjugate transpose are the conjugates of those of the matrix:
-$\det \mathbf{A}^{\mathsf{H}}[s] = \overline{\det \mathbf{A}[s]}$. -/
+$\det (\mathbf{A}^{\mathsf{H}})_{s,s} = \overline{\det \mathbf{A}_{s,s}}$. -/
 @[simp]
 theorem principalMinor_conjTranspose {R : Type*} [CommRing R] [StarRing R] (A : Matrix n n R)
     (s : Finset n) : principalMinor Aᴴ s = star (principalMinor A s) := by
@@ -363,7 +363,7 @@ theorem det_submatrix_eq_principalMinor {R ι : Type*} [CommRing R] [Fintype ι]
   det_submatrix_eq_det_submatrix_val A hf fun x => by rw [← Finset.mem_coe, ← hs]
 
 /-- **The sum of all principal minors is $\det(\mathbf{I} + \mathbf{A})$:**
-$\sum_{s} \det \mathbf{A}[s] = \det(\mathbf{I} + \mathbf{A})$, over all index sets $s$, the empty
+$\sum_{s} \det \mathbf{A}_{s,s} = \det(\mathbf{I} + \mathbf{A})$, over all index sets $s$, the empty
 one included; over any commutative ring. This is the normalising constant of a determinantal
 point process with kernel $\mathbf{A}$. [HornJohnson2013, §1.2 context]. -/
 theorem sum_principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) :
@@ -375,7 +375,7 @@ theorem sum_principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) :
 
 omit [Fintype n] in
 /-- The principal minors of a positive semidefinite matrix are nonnegative:
-$0 \le \operatorname{Re} \det \mathbf{A}[s]$.
+$0 \le \operatorname{Re} \det \mathbf{A}_{s,s}$.
 Port of `NLAlib.principalMinor_nonneg`. -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_nonneg {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (s : Finset n) : 0 ≤ RCLike.re (principalMinor A s) :=
@@ -383,7 +383,7 @@ theorem _root_.Matrix.PosSemidef.re_principalMinor_nonneg {A : Matrix n n 𝕜}
 
 omit [Fintype n] in
 /-- The principal minors of a positive definite matrix are positive:
-$0 < \operatorname{Re} \det \mathbf{A}[s]$.
+$0 < \operatorname{Re} \det \mathbf{A}_{s,s}$.
 Port of `NLAlib.principalMinor_pos`. -/
 theorem _root_.Matrix.PosDef.re_principalMinor_pos {A : Matrix n n 𝕜} (hA : A.PosDef)
     (s : Finset n) : 0 < RCLike.re (principalMinor A s) :=
@@ -448,8 +448,9 @@ private theorem re_det_mul_re_det_inl_le {ι : Type*} [Fintype ι] [DecidableEq 
 omit [Fintype n] in
 /-- **The Hadamard–Fischer inequality** (Koteljanskii). For a positive semidefinite matrix
 $\mathbf{A}$ and index sets $s$, $t$, the principal minors satisfy
-$$\operatorname{Re} \det \mathbf{A}[s \cup t] \cdot \operatorname{Re} \det \mathbf{A}[s \cap t]
-  \le \operatorname{Re} \det \mathbf{A}[s] \cdot \operatorname{Re} \det \mathbf{A}[t]\,.$$
+$$\operatorname{Re} \det \mathbf{A}_{s \cup t, s \cup t}
+  \cdot \operatorname{Re} \det \mathbf{A}_{s \cap t, s \cap t}
+  \le \operatorname{Re} \det \mathbf{A}_{s,s} \cdot \operatorname{Re} \det \mathbf{A}_{t,t}\,.$$
 [HornJohnson2013, Theorem 7.8.9].
 Port of `NLAlib.det_principal_union_mul_inter_le_of_posSemidef`, there over $\mathbb{R}$.
 Result: koteljanskii-inequality -/
@@ -489,8 +490,8 @@ theorem _root_.Matrix.PosSemidef.re_principalMinor_union_mul_inter_le {A : Matri
 omit [Fintype n] in
 /-- **Fischer's inequality for principal minors.** For a positive semidefinite matrix
 $\mathbf{A}$ and disjoint index sets $s$, $t$,
-$\operatorname{Re} \det \mathbf{A}[s \cup t]
-\le \operatorname{Re} \det \mathbf{A}[s] \cdot \operatorname{Re} \det \mathbf{A}[t]$: the case
+$\operatorname{Re} \det \mathbf{A}_{s \cup t, s \cup t}
+\le \operatorname{Re} \det \mathbf{A}_{s,s} \cdot \operatorname{Re} \det \mathbf{A}_{t,t}$: the case
 $s \cap t = \emptyset$ of the Hadamard–Fischer inequality. [HornJohnson2013, Theorem 7.8.5].
 Result: fischer-inequality -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_union_le_of_disjoint {A : Matrix n n 𝕜}

@@ -93,9 +93,9 @@ private theorem re_det_pow_le_prod_erase {A : Matrix n n 𝕜} (hA : A.PosSemide
 
 omit [Fintype n] in
 /-- **A minor against its sub-minors.** For a positive semidefinite matrix $\mathbf{A}$ and an
-index set $t$ with $k + 1$ elements, writing $\det \mathbf{A}[s]$ for the principal minor on $s$,
-$$(\operatorname{Re} \det \mathbf{A}[t])^k
-  \le \prod_{i \in t} \operatorname{Re} \det \mathbf{A}[t \setminus \{i\}]\,.$$
+index set $t$ with $k + 1$ elements, writing $\det \mathbf{A}_{s,s}$ for the principal minor on $s$,
+$$(\operatorname{Re} \det \mathbf{A}_{t,t})^k
+  \le \prod_{i \in t} \operatorname{Re} \det \mathbf{A}_{t \setminus \{i\}, t \setminus \{i\}}\,.$$
 [HornJohnson2013, Theorem 7.8.11 (step)].
 Port of `NLAlib.principalMinor_pow_pred_le_prod_erase`, there over $\mathbb{R}$ for positive
 definite matrices. -/
@@ -158,9 +158,9 @@ private theorem prod_powersetCard_prod_erase {M : Type*} [CommMonoid M] (f : Fin
     (Finset.mem_powersetCard.mp hs).2, ← hkd, Nat.add_sub_cancel_left]
 
 /-- **Szász's inequality.** For a positive semidefinite $N \times N$ matrix $\mathbf{A}$, let
-$P_k$ be the product of the principal minors $\operatorname{Re} \det \mathbf{A}[s]$ over all index
-sets $s$ with $k$ elements ($P_0 = 1$). Then $P_{k+1}^k \le P_k^{N-k}$ for $k \le N$, stated with
-$k + d = N$ and exponent $d$.
+$P_k$ be the product of the principal minors $\operatorname{Re} \det \mathbf{A}_{s,s}$ over all
+index sets $s$ with $k$ elements ($P_0 = 1$). Then $P_{k+1}^k \le P_k^{N-k}$ for $k \le N$, stated
+with $k + d = N$ and exponent $d$.
 [HornJohnson2013, Theorem 7.8.11].
 Port of `NLAlib.principalMinorProduct_succ_pow_le_of_posSemidef`, there over $\mathbb{R}$.
 Result: szasz-inequality -/
@@ -174,8 +174,8 @@ theorem _root_.Matrix.PosSemidef.prod_re_principalMinor_succ_pow_le {A : Matrix 
 
 /-- The case $k + 1 = N$ of Szász's inequality, for positive semidefinite $\mathbf{A}$ of size
 $N$: $(\operatorname{Re} \det \mathbf{A})^{N-1}
-\le \prod_i \operatorname{Re} \det \mathbf{A}[\{i\}^{c}]$, with $\{i\}^{c}$ the complement of
-$i$.
+\le \prod_i \operatorname{Re} \det \mathbf{A}_{\{i\}^{c}, \{i\}^{c}}$, with $\{i\}^{c}$ the
+complement of $i$.
 [HornJohnson2013, Theorem 7.8.11].
 Port of `NLAlib.det_pow_card_pred_le_prod_complement_singleton`. -/
 theorem _root_.Matrix.PosSemidef.re_det_pow_le_prod_re_principalMinor_erase {A : Matrix n n 𝕜}

@@ -316,15 +316,15 @@ private theorem re_trace_sum_smul_pow_succ (A : ι → Matrix n n 𝕜) (x : ι 
   rw [Matrix.smul_mul, Matrix.trace_smul, RCLike.smul_re]
 
 /-- The moment recursion, coordinate by coordinate. -/
-private theorem integral_re_trace_sum_smul_pow_le_of_forall {X : Ω → ι → ℝ} (q : ℕ)
+private theorem integral_re_trace_sum_smul_pow_le_of_forall {x : Ω → ι → ℝ} (q : ℕ)
     (h1 : ∀ i, Integrable (fun ω =>
-      X ω i * RCLike.re (A i * (∑ j, X ω j • A j) ^ (2 * q + 1)).trace) μ)
-    (h2 : ∀ i, Integrable (fun ω => RCLike.re (A i ^ 2 * (∑ j, X ω j • A j) ^ (2 * q)).trace) μ)
-    (h : ∀ i, ∫ ω, X ω i * RCLike.re (A i * (∑ j, X ω j • A j) ^ (2 * q + 1)).trace ∂μ ≤
-      (2 * q + 1 : ℝ) * ∫ ω, RCLike.re (A i ^ 2 * (∑ j, X ω j • A j) ^ (2 * q)).trace ∂μ) :
-    ∫ ω, RCLike.re ((∑ i, X ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
+      x ω i * RCLike.re (A i * (∑ j, x ω j • A j) ^ (2 * q + 1)).trace) μ)
+    (h2 : ∀ i, Integrable (fun ω => RCLike.re (A i ^ 2 * (∑ j, x ω j • A j) ^ (2 * q)).trace) μ)
+    (h : ∀ i, ∫ ω, x ω i * RCLike.re (A i * (∑ j, x ω j • A j) ^ (2 * q + 1)).trace ∂μ ≤
+      (2 * q + 1 : ℝ) * ∫ ω, RCLike.re (A i ^ 2 * (∑ j, x ω j • A j) ^ (2 * q)).trace ∂μ) :
+    ∫ ω, RCLike.re ((∑ i, x ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
       (2 * q + 1 : ℝ) *
-        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, X ω i • A i) ^ (2 * q)).trace ∂μ := by
+        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, x ω i • A i) ^ (2 * q)).trace ∂μ := by
   simp only [re_trace_sum_smul_pow_succ, Finset.sum_mul, Matrix.trace_sum, map_sum]
   rw [integral_finsetSum _ fun i _ => h1 i, integral_finsetSum _ fun i _ => h2 i,
     Finset.mul_sum]
@@ -333,14 +333,14 @@ private theorem integral_re_trace_sum_smul_pow_le_of_forall {X : Ω → ι → �
 /-! ### Gaussian series -/
 
 /-- A continuous function of polynomial growth of a Gaussian vector is integrable. -/
-private theorem integrable_comp_of_hasGaussianLaw {X : Ω → ι → ℝ} (hX : HasGaussianLaw X μ)
+private theorem integrable_comp_of_hasGaussianLaw {g : Ω → ι → ℝ} (hg : HasGaussianLaw g μ)
     {F : (ι → ℝ) → ℝ} (hF : Continuous F) {K : ℝ} {k : ℕ}
-    (hb : ∀ x, |F x| ≤ K * (1 + ‖x‖) ^ k) : Integrable (fun ω => F (X ω)) μ := by
-  have hP := hX.isProbabilityMeasure
+    (hb : ∀ x, |F x| ≤ K * (1 + ‖x‖) ^ k) : Integrable (fun ω => F (g ω)) μ := by
+  have hP := hg.isProbabilityMeasure
   exact Integrable.mono'
-    ((integrable_one_add_norm_pow_of_memLp (fun p hp => hX.memLp hp) k).const_mul K)
-    (hF.comp_aestronglyMeasurable hX.aemeasurable.aestronglyMeasurable)
-    (ae_of_all _ fun ω => by simpa only [Real.norm_eq_abs] using hb (X ω))
+    ((integrable_one_add_norm_pow_of_memLp (fun p hp => hg.memLp hp) k).const_mul K)
+    (hF.comp_aestronglyMeasurable hg.aemeasurable.aestronglyMeasurable)
+    (ae_of_all _ fun ω => by simpa only [Real.norm_eq_abs] using hb (g ω))
 
 /-- A coordinate times a function of polynomial growth has polynomial growth. -/
 private theorem abs_apply_mul_le {F : (ι → ℝ) → ℝ} {K : ℝ} {k : ℕ}
@@ -468,16 +468,16 @@ theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_gaussianVector {g : Ω �
 
 /-- The headline from the recursion: $p = 0$ directly, $p = q + 1$ by the law-free step. -/
 private theorem integral_re_trace_sum_smul_pow_le_of_recursion [IsProbabilityMeasure μ]
-    {X : Ω → ι → ℝ} (hA : ∀ i, (A i).IsHermitian)
-    (hrec : ∀ q : ℕ, ∫ ω, RCLike.re ((∑ i, X ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
+    {x : Ω → ι → ℝ} (hA : ∀ i, (A i).IsHermitian)
+    (hrec : ∀ q : ℕ, ∫ ω, RCLike.re ((∑ i, x ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
       (2 * q + 1 : ℝ) *
-        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, X ω i • A i) ^ (2 * q)).trace ∂μ) (p : ℕ) :
-    ∫ ω, RCLike.re ((∑ i, X ω i • A i) ^ (2 * p)).trace ∂μ ≤
+        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, x ω i • A i) ^ (2 * q)).trace ∂μ) (p : ℕ) :
+    ∫ ω, RCLike.re ((∑ i, x ω i • A i) ^ (2 * p)).trace ∂μ ≤
       (2 * p - 1 : ℝ) ^ p * RCLike.re ((∑ i, A i ^ 2) ^ p).trace := by
   rcases p with _ | q
   · simp
   · have h := integral_re_trace_pow_le_of_recursion
-      (Y := fun ω => ∑ i, X ω i • A i) (ae_of_all _ fun ω => isHermitian_sum_smul hA (X ω))
+      (Y := fun ω => ∑ i, x ω i • A i) (ae_of_all _ fun ω => isHermitian_sum_smul hA (x ω))
       (posSemidef_sum_sq hA) q (hrec q)
     have e1 : 2 * (q + 1) = 2 * q + 2 := by ring
     have e2 : (2 * ((q + 1 : ℕ) : ℝ) - 1) = 2 * q + 1 := by push_cast; ring

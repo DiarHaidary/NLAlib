@@ -16,17 +16,17 @@ public import NLAlib.Probability.SubGaussianVector.Basic
 /-!
 # Exponential moments of linear images of sub-Gaussian vectors
 
-For a real random vector $\mathbf{X}$ with independent coordinates, each sub-Gaussian with proxy
-$c$, a linear form $\langle \mathbf{v}, \mathbf{X} \rangle$ has moment generating function at most
+For a real random vector $\mathbf{x}$ with independent coordinates, each sub-Gaussian with proxy
+$c$, a linear form $\langle \mathbf{v}, \mathbf{x} \rangle$ has moment generating function at most
 $e^{c s^2 \|\mathbf{v}\|^2 / 2}$ (the lower-integral form of
 `NLAlib.IsSubgaussianVector.of_iIndepFun`), and the squared norm of a linear image satisfies
-$\mathbb{E} e^{\theta \|\mathbf{B}\mathbf{X}\|^2}
+$\mathbb{E} e^{\theta \|\mathbf{B}\mathbf{x}\|^2}
 \le e^{9 c \theta \|\mathbf{B}\|_{\mathsf{F}}^2 / 8}$
 when $\theta \ge 0$ and $18 c \theta \|\mathbf{B}\|_2^2 \le 1$. The second bound linearises the
 square against a standard Gaussian vector $\mathbf{g}$,
 $e^{\theta \|\mathbf{y}\|^2} = \mathbb{E}_{\mathbf{g}}\,
 e^{\sqrt{2\theta} \langle \mathbf{y}, \mathbf{g} \rangle}$
-(`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), applies the first bound to $\mathbf{X}$,
+(`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), applies the first bound to $\mathbf{x}$,
 and computes the remaining Gaussian expectation
 $\mathbb{E}_{\mathbf{g}}\, e^{c \theta \|\mathbf{B}^{\mathsf{T}}\mathbf{g}\|^2}$ in an eigenbasis of
 $\mathbf{B}\mathbf{B}^{\mathsf{T}}$. Both bounds are steps of the off-diagonal part of the
@@ -50,16 +50,16 @@ open scoped NNReal Matrix
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
-  [Fintype n] {X : Ω → n → ℝ} {c : ℝ≥0}
+  [Fintype n] {x : Ω → n → ℝ} {c : ℝ≥0}
 
 /-- The moment generating function of a linear form of independent real coordinates, each
 sub-Gaussian with proxy $c$, written as a lower integral: for every $\mathbf{v}$ and real $s$,
-$\mathbb{E} e^{s \langle \mathbf{v}, \mathbf{X} \rangle} \le e^{c s^2 \|\mathbf{v}\|^2 / 2}$. It is
+$\mathbb{E} e^{s \langle \mathbf{v}, \mathbf{x} \rangle} \le e^{c s^2 \|\mathbf{v}\|^2 / 2}$. It is
 `IsSubgaussianVector.of_iIndepFun` in the form the conditioning arguments of the Hanson–Wright
 inequality integrate. -/
-theorem lintegral_exp_mul_dotProduct_le (hind : iIndepFun (fun i ω => X ω i) μ)
-    (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) (v : n → ℝ) (s : ℝ) :
-    ∫⁻ ω, ENNReal.ofReal (rexp (s * (v ⬝ᵥ X ω))) ∂μ ≤
+theorem lintegral_exp_mul_dotProduct_le (hind : iIndepFun (fun i ω => x ω i) μ)
+    (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (v : n → ℝ) (s : ℝ) :
+    ∫⁻ ω, ENNReal.ofReal (rexp (s * (v ⬝ᵥ x ω))) ∂μ ≤
       ENNReal.ofReal (rexp (c * s ^ 2 * ‖WithLp.toLp 2 v‖ ^ 2 / 2)) := by
   have hv := (IsSubgaussianVector.of_iIndepFun hind h).hasSubgaussianMGF v
   simp only [RCLike.re_to_real] at hv
@@ -184,45 +184,45 @@ private lemma lintegral_exp_mul_norm_mulVec_sq_gaussianVector_le (C : Matrix m n
 
 /-- The squared norm of a linear image of independent real coordinates, each sub-Gaussian with
 proxy $c$: for $\theta \ge 0$ with $18 c \theta \|\mathbf{B}\|_2^2 \le 1$,
-$$\mathbb{E} e^{\theta \|\mathbf{B}\mathbf{X}\|^2} \le
+$$\mathbb{E} e^{\theta \|\mathbf{B}\mathbf{x}\|^2} \le
 e^{9 c \theta \|\mathbf{B}\|_{\mathsf{F}}^2 / 8}\,,$$
 in `lintegral` form. The bound is in the Frobenius norm of $\mathbf{B}$, with no dependence on
 the dimension; it is the moment generating function bound behind the tail of
-$\|\mathbf{B}\mathbf{X}\|^2$ of Hsu, Kakade and Zhang (2012, Theorem 2.1), in a cruder form valid
+$\|\mathbf{B}\mathbf{x}\|^2$ of Hsu, Kakade and Zhang (2012, Theorem 2.1), in a cruder form valid
 for small $\theta$. -/
-theorem lintegral_exp_mul_norm_mulVec_sq_le (hind : iIndepFun (fun i ω => X ω i) μ)
-    (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) (B : Matrix m n ℝ) {θ : ℝ} (hθ : 0 ≤ θ)
+theorem lintegral_exp_mul_norm_mulVec_sq_le (hind : iIndepFun (fun i ω => x ω i) μ)
+    (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (B : Matrix m n ℝ) {θ : ℝ} (hθ : 0 ≤ θ)
     (hsmall : 18 * (c * θ * specNorm B ^ 2) ≤ 1) :
-    ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (B *ᵥ X ω)‖ ^ 2)) ∂μ ≤
+    ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (B *ᵥ x ω)‖ ^ 2)) ∂μ ≤
       ENNReal.ofReal (rexp (9 / 8 * (c * θ * frobNorm B ^ 2))) := by
   have := hind.isProbabilityMeasure
   set s := √(2 * θ)
   have hs : s ^ 2 = 2 * θ := sq_sqrt (by linarith)
-  have hpt : ∀ x : m → ℝ, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 x‖ ^ 2)) =
-      ∫⁻ g, ENNReal.ofReal (rexp (s * (x ⬝ᵥ g))) ∂(gaussianVector m) := by
-    intro x
+  have hpt : ∀ y : m → ℝ, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 y‖ ^ 2)) =
+      ∫⁻ g, ENNReal.ofReal (rexp (s * (y ⬝ᵥ g))) ∂(gaussianVector m) := by
+    intro y
     rw [lintegral_exp_mul_dotProduct_gaussianVector, hs]
     ring_nf
-  have hX : AEMeasurable X μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
+  have hx : AEMeasurable x μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
   have hcont : Continuous fun p : (n → ℝ) × (m → ℝ) => rexp (s * (B *ᵥ p.1 ⬝ᵥ p.2)) :=
     (continuous_const.mul ((continuous_const.matrix_mulVec continuous_fst).dotProduct
       continuous_snd)).rexp
-  have hpair : AEMeasurable (fun q : Ω × (m → ℝ) => (X q.1, q.2)) (μ.prod (gaussianVector m)) :=
-    hX.comp_fst.prodMk measurable_snd.aemeasurable
+  have hpair : AEMeasurable (fun q : Ω × (m → ℝ) => (x q.1, q.2)) (μ.prod (gaussianVector m)) :=
+    hx.comp_fst.prodMk measurable_snd.aemeasurable
   have hf : Measurable fun p : (n → ℝ) × (m → ℝ) =>
       ENNReal.ofReal (rexp (s * (B *ᵥ p.1 ⬝ᵥ p.2))) :=
     ENNReal.measurable_ofReal.comp hcont.measurable
   have hmeas : AEMeasurable (Function.uncurry fun ω (g : m → ℝ) =>
-      ENNReal.ofReal (rexp (s * (B *ᵥ X ω ⬝ᵥ g)))) (μ.prod (gaussianVector m)) := by
+      ENNReal.ofReal (rexp (s * (B *ᵥ x ω ⬝ᵥ g)))) (μ.prod (gaussianVector m)) := by
     have h' := hf.comp_aemeasurable hpair
     exact h'
-  have heq : ∀ ω (g : m → ℝ), B *ᵥ X ω ⬝ᵥ g = (Bᵀ *ᵥ g) ⬝ᵥ X ω := by
+  have heq : ∀ ω (g : m → ℝ), B *ᵥ x ω ⬝ᵥ g = (Bᵀ *ᵥ g) ⬝ᵥ x ω := by
     intro ω g
     rw [dotProduct_comm, Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose]
-  calc ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (B *ᵥ X ω)‖ ^ 2)) ∂μ
-      = ∫⁻ ω, ∫⁻ g, ENNReal.ofReal (rexp (s * (B *ᵥ X ω ⬝ᵥ g))) ∂(gaussianVector m) ∂μ := by
+  calc ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (B *ᵥ x ω)‖ ^ 2)) ∂μ
+      = ∫⁻ ω, ∫⁻ g, ENNReal.ofReal (rexp (s * (B *ᵥ x ω ⬝ᵥ g))) ∂(gaussianVector m) ∂μ := by
         simp only [hpt]
-    _ = ∫⁻ g, ∫⁻ ω, ENNReal.ofReal (rexp (s * (B *ᵥ X ω ⬝ᵥ g))) ∂μ ∂(gaussianVector m) :=
+    _ = ∫⁻ g, ∫⁻ ω, ENNReal.ofReal (rexp (s * (B *ᵥ x ω ⬝ᵥ g))) ∂μ ∂(gaussianVector m) :=
         lintegral_lintegral_swap hmeas
     _ ≤ ∫⁻ g, ENNReal.ofReal (rexp ((c * θ) * ‖WithLp.toLp 2 (Bᵀ *ᵥ g)‖ ^ 2))
           ∂(gaussianVector m) := by

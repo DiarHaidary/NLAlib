@@ -14,16 +14,16 @@ The squared norm of a standard Gaussian vector in $\mathbb{R}^n$ is $\chi^2$ wit
 $d = \lvert n \rvert$ degrees of freedom. This file gives its Laplace transform and the
 Laurent–Massart lower tail. The upper tail is the sub-Gaussian-vector bound
 `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le` at proxy $1$, which is Laurent and
-Massart's exactly. Below $\mathbf{X}$ is a standard Gaussian vector and $d = \lvert n \rvert$.
+Massart's exactly. Below $\mathbf{g}$ is a standard Gaussian vector and $d = \lvert n \rvert$.
 
 ## Main results
 
 * `NLAlib.integral_exp_mul_norm_sq_of_hasLaw_gaussianVector`:
-  $\mathbb{E}\, e^{\theta \|\mathbf{X}\|^2} = (1 - 2\theta)^{-d/2}$.
+  $\mathbb{E}\, e^{\theta \|\mathbf{g}\|^2} = (1 - 2\theta)^{-d/2}$.
 * `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector`:
-  $\mathbb{P}(\|\mathbf{X}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$.
+  $\mathbb{P}(\|\mathbf{g}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$.
 * `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector`: the small ball
-  $\mathbb{P}(\|\mathbf{X}\|^2 \le u) \le (e u / d)^{d/2}$.
+  $\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (e u / d)^{d/2}$.
 -/
 
 @[expose] public section
@@ -33,7 +33,7 @@ open MeasureTheory ProbabilityTheory Real
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
-  {X : Ω → n → ℝ}
+  {g : Ω → n → ℝ}
 
 private theorem integral_exp_mul_sq_gaussianReal {θ : ℝ} (hθ : 2 * θ < 1) :
     ∫ y, rexp (θ * y ^ 2) ∂(gaussianReal 0 1) = (1 - 2 * θ) ^ (-(1 / 2 : ℝ)) := by
@@ -62,14 +62,14 @@ private theorem integral_exp_mul_norm_sq_gaussianVector {θ : ℝ} (hθ : 2 * θ
   congr 1
   ring
 
-/-- The Laplace transform of $\chi^2$: for a standard Gaussian vector $\mathbf{X}$ and
-$\theta < 1/2$, $\mathbb{E}\, e^{\theta \|\mathbf{X}\|^2} = (1 - 2\theta)^{-d/2}$, where
+/-- The Laplace transform of $\chi^2$: for a standard Gaussian vector $\mathbf{g}$ and
+$\theta < 1/2$, $\mathbb{E}\, e^{\theta \|\mathbf{g}\|^2} = (1 - 2\theta)^{-d/2}$, where
 $d = \lvert n \rvert$. -/
-theorem integral_exp_mul_norm_sq_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
+theorem integral_exp_mul_norm_sq_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
     {θ : ℝ} (hθ : 2 * θ < 1) :
-    ∫ ω, rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2) ∂μ = (1 - 2 * θ) ^ (-(Fintype.card n / 2 : ℝ)) := by
+    ∫ ω, rexp (θ * ‖WithLp.toLp 2 (g ω)‖ ^ 2) ∂μ = (1 - 2 * θ) ^ (-(Fintype.card n / 2 : ℝ)) := by
   rw [← integral_exp_mul_norm_sq_gaussianVector hθ]
-  exact hX.integral_comp (f := fun x => rexp (θ * ‖WithLp.toLp 2 x‖ ^ 2)) (by fun_prop)
+  exact hg.integral_comp (f := fun x => rexp (θ * ‖WithLp.toLp 2 x‖ ^ 2)) (by fun_prop)
 
 private theorem log_one_sub_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
     Real.log (1 - u) ≤ -u - u ^ 2 / 2 := by
@@ -80,28 +80,28 @@ private theorem log_one_sub_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
   linarith
 
 /-- The Chernoff bound for the lower tail with the exact Laplace transform: for $s \ge 0$,
-$\mathbb{P}(\|\mathbf{X}\|^2 \le c) \le e^{s c} (1 + 2s)^{-\lvert n \rvert / 2}$. -/
-private theorem measureReal_norm_sq_le_le_exp_mul_rpow (hX : HasLaw X (gaussianVector n) μ)
+$\mathbb{P}(\|\mathbf{g}\|^2 \le c) \le e^{s c} (1 + 2s)^{-\lvert n \rvert / 2}$. -/
+private theorem measureReal_norm_sq_le_le_exp_mul_rpow (hg : HasLaw g (gaussianVector n) μ)
     (c : ℝ) {s : ℝ} (hs : 0 ≤ s) :
-    μ.real {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ c} ≤
+    μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ c} ≤
       rexp (s * c) * (1 + 2 * s) ^ (-(Fintype.card n / 2 : ℝ)) := by
-  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
-  have hlap := integral_exp_mul_norm_sq_of_hasLaw_gaussianVector hX (θ := -s) (by linarith)
+  have : IsProbabilityMeasure μ := hg.isProbabilityMeasure_iff.2 inferInstance
+  have hlap := integral_exp_mul_norm_sq_of_hasLaw_gaussianVector hg (θ := -s) (by linarith)
   rw [show 1 - 2 * -s = 1 + 2 * s by ring] at hlap
-  have hint : Integrable (fun ω => rexp (-s * ‖WithLp.toLp 2 (X ω)‖ ^ 2)) μ :=
+  have hint : Integrable (fun ω => rexp (-s * ‖WithLp.toLp 2 (g ω)‖ ^ 2)) μ :=
     Integrable.of_integral_ne_zero (by rw [hlap]; exact (Real.rpow_pos_of_pos (by linarith) _).ne')
-  have h := measure_le_le_exp_mul_mgf (X := fun ω => ‖WithLp.toLp 2 (X ω)‖ ^ 2) c
+  have h := measure_le_le_exp_mul_mgf (X := fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2) c
     (neg_nonpos.2 hs) hint
   rwa [mgf, hlap, neg_neg] at h
 
 /-- **The lower tail of $\chi^2$** (Laurent and Massart 2000, Lemma 1): for a standard Gaussian
-vector $\mathbf{X}$ of dimension $d = \lvert n \rvert \ge 1$ and $t \ge 0$,
-$\mathbb{P}(\|\mathbf{X}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$. The dimension must be positive: for
+vector $\mathbf{g}$ of dimension $d = \lvert n \rvert \ge 1$ and $t \ge 0$,
+$\mathbb{P}(\|\mathbf{g}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$. The dimension must be positive: for
 $d = 0$ the event is everything.
 Result: laurent-massart -/
-theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
+theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
     (hn : 0 < Fintype.card n) {t : ℝ} (ht : 0 ≤ t) :
-    μ.real {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ Fintype.card n - 2 * √(Fintype.card n * t)} ≤
+    μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ Fintype.card n - 2 * √(Fintype.card n * t)} ≤
       rexp (-t) := by
   have hN : (0 : ℝ) < Fintype.card n := by exact_mod_cast hn
   set N : ℝ := (Fintype.card n : ℝ)
@@ -117,7 +117,7 @@ theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hX : HasLaw X (gaussian
   rw [hc]
   rcases lt_or_ge u 1 with hu1 | hu1
   · have hs : 0 ≤ u / (2 * (1 - u)) := div_nonneg hu0 (by linarith)
-    refine (measureReal_norm_sq_le_le_exp_mul_rpow hX _ hs).trans ?_
+    refine (measureReal_norm_sq_le_le_exp_mul_rpow hg _ hs).trans ?_
     have h1u : 0 < 1 - u := by linarith
     rw [show 1 + 2 * (u / (2 * (1 - u))) = (1 - u)⁻¹ by field_simp; ring,
       Real.inv_rpow h1u.le, ← Real.rpow_neg h1u.le, neg_neg, Real.rpow_def_of_pos h1u,
@@ -129,7 +129,7 @@ theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hX : HasLaw X (gaussian
   · have hs : 0 ≤ (rexp (u ^ 2 / 2) - 1) / 2 := by
       have := Real.one_le_exp (by positivity : 0 ≤ u ^ 2 / 2)
       linarith
-    refine (measureReal_norm_sq_le_le_exp_mul_rpow hX _ hs).trans ?_
+    refine (measureReal_norm_sq_le_le_exp_mul_rpow hg _ hs).trans ?_
     rw [show 1 + 2 * ((rexp (u ^ 2 / 2) - 1) / 2) = rexp (u ^ 2 / 2) by ring, ← Real.exp_mul,
       ← Real.exp_add, Real.exp_le_exp, ht']
     have : (rexp (u ^ 2 / 2) - 1) / 2 * (N * (1 - u)) ≤ 0 :=
@@ -137,26 +137,26 @@ theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hX : HasLaw X (gaussian
     nlinarith
 
 /-- A standard Gaussian vector of positive dimension is almost surely nonzero:
-$\mathbb{P}(\|\mathbf{X}\|^2 \le 0) = 0$. -/
+$\mathbb{P}(\|\mathbf{g}\|^2 \le 0) = 0$. -/
 private theorem measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) (hn : 0 < Fintype.card n) :
-    μ.real {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ 0} = 0 := by
-  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
+    (hg : HasLaw g (gaussianVector n) μ) (hn : 0 < Fintype.card n) :
+    μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ 0} = 0 := by
+  have : IsProbabilityMeasure μ := hg.isProbabilityMeasure_iff.2 inferInstance
   obtain ⟨i⟩ := Fintype.card_pos_iff.mp hn
   have : NullSingletonClass (gaussianReal 0 1) := nullSingletonClass_gaussianReal one_ne_zero
-  have hsub : {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ 0} ⊆ {ω | X ω i = 0} := by
-    intro ω (hω : ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ 0)
-    have h0 : WithLp.toLp 2 (X ω) = 0 := norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp
+  have hsub : {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ 0} ⊆ {ω | g ω i = 0} := by
+    intro ω (hω : ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ 0)
+    have h0 : WithLp.toLp 2 (g ω) = 0 := norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp
       (le_antisymm hω (sq_nonneg _)))
-    change X ω i = 0
-    rw [← WithLp.ofLp_toLp 2 (X ω), h0]
+    change g ω i = 0
+    rw [← WithLp.ofLp_toLp 2 (g ω), h0]
     rfl
   refine le_antisymm ((measureReal_mono hsub).trans (le_of_eq ?_)) measureReal_nonneg
-  rw [(hX.eval i).measureReal_eq (p := fun x => x = 0) (measurableSet_singleton 0)]
+  rw [(hg.eval i).measureReal_eq (p := fun x => x = 0) (measurableSet_singleton 0)]
   rw [measureReal_def, Set.ofPred_eq_eq_singleton, measure_singleton, ENNReal.toReal_zero]
 
-/-- **Small-ball bound for $\chi^2$**: for a standard Gaussian vector $\mathbf{X}$ of dimension
-$d = \lvert n \rvert$ and $u \ge 0$, $\mathbb{P}(\|\mathbf{X}\|^2 \le u) \le (e u / d)^{d/2}$.
+/-- **Small-ball bound for $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
+$d = \lvert n \rvert$ and $u \ge 0$, $\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (e u / d)^{d/2}$.
 Chernoff's bound with the parameter $s = (d / u - 1) / 2$. It decays like $u^{d/2}$ as
 $u \to 0$, which `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (better for thresholds
 near $d$) does not see; it is at least $1$ for $u \ge d$ and for $d = 0$.
@@ -164,10 +164,10 @@ Port of `NLAlib.measureReal_sum_sq_le_le_gaussianVector`, there for `Fin d`, $d 
 $u \le d$.
 Result: chi-square-small-ball -/
 theorem measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) {u : ℝ} (hu : 0 ≤ u) :
-    μ.real {ω | ‖WithLp.toLp 2 (X ω)‖ ^ 2 ≤ u} ≤
+    (hg : HasLaw g (gaussianVector n) μ) {u : ℝ} (hu : 0 ≤ u) :
+    μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ u} ≤
       (rexp 1 * u / Fintype.card n) ^ (Fintype.card n / 2 : ℝ) := by
-  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
+  have : IsProbabilityMeasure μ := hg.isProbabilityMeasure_iff.2 inferInstance
   set d : ℝ := (Fintype.card n : ℝ)
   rcases (Nat.cast_nonneg (Fintype.card n) : (0 : ℝ) ≤ d).eq_or_lt with hd | hd
   · rw [show d = 0 from hd.symm, zero_div, Real.rpow_zero]
@@ -177,14 +177,14 @@ theorem measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector
     rw [le_div_iff₀ hd, one_mul]
     nlinarith [Real.add_one_le_exp 1]
   rcases hu.eq_or_lt with rfl | hu0
-  · rw [measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector hX (by exact_mod_cast hd),
+  · rw [measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector hg (by exact_mod_cast hd),
       mul_zero, zero_div, Real.zero_rpow (by positivity)]
   set s := (d / u - 1) / 2 with hs_def
   have hdu : 1 ≤ d / u := by rw [le_div_iff₀ hu0]; linarith
   have hs : 0 ≤ s := by rw [hs_def]; linarith
   have h1 : 1 + 2 * s = d / u := by rw [hs_def]; ring
   have hsu : s * u = (d - u) / 2 := by rw [hs_def]; field_simp
-  refine (measureReal_norm_sq_le_le_exp_mul_rpow hX u hs).trans ?_
+  refine (measureReal_norm_sq_le_le_exp_mul_rpow hg u hs).trans ?_
   rw [h1, hsu, Real.rpow_neg (by positivity), ← Real.inv_rpow (by positivity), inv_div,
     mul_div_assoc, Real.mul_rpow (Real.exp_pos 1).le (by positivity), Real.exp_one_rpow]
   gcongr

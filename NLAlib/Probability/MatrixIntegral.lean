@@ -39,7 +39,7 @@ Mathlib's `MeasureTheory.integral_mono_ae`, through `Matrix.instOrderClosedTopol
 * `Matrix.isHermitian_integral`, `Matrix.posSemidef_integral`, `Matrix.posDef_integral`.
 * `Matrix.IsHermitian.integrable_cfc`, `Matrix.IsHermitian.cfc_integral`: a random function of a
   fixed Hermitian matrix, with no continuity hypothesis.
-* `NLAlib.IsIsotropic.integral_vecMulVec`: $\mathbb{E}[\mathbf{X}\mathbf{X}^{\mathsf{H}}]
+* `NLAlib.IsIsotropic.integral_vecMulVec`: $\mathbb{E}[\mathbf{x}\mathbf{x}^{\mathsf{H}}]
   = \mathbf{I}$.
 -/
 
@@ -270,12 +270,12 @@ theorem _root_.Matrix.IsHermitian.cfc_integral {B : Matrix n n 𝕜} (hB : B.IsH
   (integrable_and_integral_cfc hB hf).2.symm
 
 /-- The second-moment matrix of an isotropic vector is the identity:
-$\mathbb{E}[\mathbf{X}\mathbf{X}^{\mathsf{H}}] = \mathbf{I}$. -/
-theorem IsIsotropic.integral_vecMulVec {X : Ω → n → 𝕜} (hX : IsIsotropic X μ) :
-    ∫ ω, Matrix.vecMulVec (X ω) (star (X ω)) ∂μ = 1 := by
+$\mathbb{E}[\mathbf{x}\mathbf{x}^{\mathsf{H}}] = \mathbf{I}$. -/
+theorem IsIsotropic.integral_vecMulVec {x : Ω → n → 𝕜} (hx : IsIsotropic x μ) :
+    ∫ ω, Matrix.vecMulVec (x ω) (star (x ω)) ∂μ = 1 := by
   ext i j
-  refine (Matrix.integral_apply (X := fun ω => Matrix.vecMulVec (X ω) (star (X ω)))
-    (fun i j => hX.integrable_mul_star i j) i j).trans ?_
-  exact (hX.integral_mul_star i j).trans Matrix.one_apply.symm
+  refine (Matrix.integral_apply (X := fun ω => Matrix.vecMulVec (x ω) (star (x ω)))
+    (fun i j => hx.integrable_mul_star i j) i j).trans ?_
+  exact (hx.integral_mul_star i j).trans Matrix.one_apply.symm
 
 end NLAlib

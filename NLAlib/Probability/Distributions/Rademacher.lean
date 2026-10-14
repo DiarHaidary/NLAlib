@@ -129,21 +129,21 @@ theorem integral_pow_four_of_hasLaw_rademacherMeasure {X : Ω → ℝ}
   norm_num
 
 /-- A vector of independent random signs is isotropic. -/
-theorem isIsotropic_of_hasLaw_rademacherVector [DecidableEq n] {X : Ω → n → ℝ}
-    (hX : HasLaw X (rademacherVector n) μ) : IsIsotropic X μ := by
-  refine IsIsotropic.of_iIndepFun hX.iIndepFun_eval (fun i => ?_)
-    (fun i => integral_of_hasLaw_rademacherMeasure (hX.eval i)) (fun i => ?_)
-  · exact ((hX.eval i).memLp_comp_iff aestronglyMeasurable_id).2
+theorem isIsotropic_of_hasLaw_rademacherVector [DecidableEq n] {x : Ω → n → ℝ}
+    (hx : HasLaw x (rademacherVector n) μ) : IsIsotropic x μ := by
+  refine IsIsotropic.of_iIndepFun hx.iIndepFun_eval (fun i => ?_)
+    (fun i => integral_of_hasLaw_rademacherMeasure (hx.eval i)) (fun i => ?_)
+  · exact ((hx.eval i).memLp_comp_iff aestronglyMeasurable_id).2
       ((memLp_two_iff_integrable_sq aestronglyMeasurable_id).2 (integrable_rademacherMeasure _))
   · simp only [Real.norm_eq_abs, sq_abs]
-    exact integral_sq_of_hasLaw_rademacherMeasure (hX.eval i)
+    exact integral_sq_of_hasLaw_rademacherMeasure (hx.eval i)
 
 /-- The squared coordinates of a vector of random signs are $1$ almost surely:
-$\mathbf{X}_i^2 = 1$ for all $i$, almost surely. -/
-theorem ae_sq_eq_one_of_hasLaw_rademacherVector {X : Ω → n → ℝ}
-    (hX : HasLaw X (rademacherVector n) μ) : ∀ᵐ ω ∂μ, ∀ i, X ω i ^ 2 = 1 := by
+$\mathbf{x}_i^2 = 1$ for all $i$, almost surely. -/
+theorem ae_sq_eq_one_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
+    (hx : HasLaw x (rademacherVector n) μ) : ∀ᵐ ω ∂μ, ∀ i, x ω i ^ 2 = 1 := by
   refine ae_all_iff.2 fun i => ?_
-  filter_upwards [ae_eq_one_or_neg_one_of_hasLaw_rademacherMeasure (hX.eval i)] with ω h
+  filter_upwards [ae_eq_one_or_neg_one_of_hasLaw_rademacherMeasure (hx.eval i)] with ω h
   rcases h with h | h <;> simp [h]
 
 /-! ### Sign-flip symmetry -/

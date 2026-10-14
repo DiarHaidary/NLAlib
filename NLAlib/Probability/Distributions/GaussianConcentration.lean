@@ -14,7 +14,7 @@ public import NLAlib.Probability.SubGaussian.Basic
 A Lipschitz function $f$ of a standard Gaussian vector is sub-Gaussian about its mean with proxy
 $L^2$, where $L$ is its Lipschitz constant for the Euclidean norm (Tsirelson, Ibragimov and
 Sudakov); the constant is sharp. The general statement is for Mathlib's `stdGaussian E` on a
-Euclidean space; for `f : (n → ℝ) → ℝ` and $\mathbf{X}$ with law `gaussianVector n`, the Lipschitz
+Euclidean space; for `f : (n → ℝ) → ℝ` and $\mathbf{g}$ with law `gaussianVector n`, the Lipschitz
 hypothesis is stated on `EuclideanSpace ℝ n`, since `n → ℝ` carries the sup metric, and
 `NLAlib.lipschitzWith_ofLp_iff` turns it into the explicit inequality.
 
@@ -57,68 +57,68 @@ theorem lipschitzWith_ofLp_iff {n : Type*} [Fintype n] {f : (n → ℝ) → ℝ}
 section Euclidean
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-  [MeasurableSpace E] [BorelSpace E] {X : Ω → E} {f : E → ℝ} {L : ℝ≥0}
+  [MeasurableSpace E] [BorelSpace E] {g : Ω → E} {f : E → ℝ} {L : ℝ≥0}
 
 /-- A Lipschitz function of a standard Gaussian vector is integrable. -/
-theorem integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian (hX : HasLaw X (stdGaussian E) μ)
-    (hf : LipschitzWith L f) : Integrable (fun ω => f (X ω)) μ := by
-  exact (hX.integrable_comp_iff hf.continuous.aestronglyMeasurable).2
+theorem integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian (hg : HasLaw g (stdGaussian E) μ)
+    (hf : LipschitzWith L f) : Integrable (fun ω => f (g ω)) μ := by
+  exact (hg.integrable_comp_iff hf.continuous.aestronglyMeasurable).2
     (hasLogSobolev_stdGaussian.integrable_of_lipschitzWith hf)
 
 /-- **Gaussian concentration of Lipschitz functions** ([BoucheronLugosiMassart2013],
-Theorem 5.6): for $\mathbf{X}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
-$f(\mathbf{X}) - \mathbb{E} f(\mathbf{X})$ is sub-Gaussian with proxy $L^2$.
+Theorem 5.6): for $\mathbf{g}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
+$f(\mathbf{g}) - \mathbb{E} f(\mathbf{g})$ is sub-Gaussian with proxy $L^2$.
 Result: gaussian-lipschitz-concentration -/
 theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian
-    (hX : HasLaw X (stdGaussian E) μ) (hf : LipschitzWith L f) :
-    HasSubgaussianMGF (fun ω => f (X ω) - ∫ ω', f (X ω') ∂μ) (L ^ 2) μ := by
+    (hg : HasLaw g (stdGaussian E) μ) (hf : LipschitzWith L f) :
+    HasSubgaussianMGF (fun ω => f (g ω) - ∫ ω', f (g ω') ∂μ) (L ^ 2) μ := by
   have h := hasLogSobolev_stdGaussian.hasSubgaussianMGF_sub_integral (E := E) hf
-  rw [one_mul, ← hX.map_eq] at h
-  have hint : ∫ ω', f (X ω') ∂μ = ∫ y, f y ∂μ.map X := by
-    rw [hX.map_eq]
-    exact hX.integral_comp hf.continuous.aestronglyMeasurable
+  rw [one_mul, ← hg.map_eq] at h
+  have hint : ∫ ω', f (g ω') ∂μ = ∫ y, f y ∂μ.map g := by
+    rw [hg.map_eq]
+    exact hg.integral_comp hf.continuous.aestronglyMeasurable
   rw [hint]
-  exact h.of_map hX.aemeasurable
+  exact h.of_map hg.aemeasurable
 
 end Euclidean
 
 section Vector
 
-variable {n : Type*} [Fintype n] {X : Ω → n → ℝ} {f : (n → ℝ) → ℝ} {L : ℝ≥0}
+variable {n : Type*} [Fintype n] {g : Ω → n → ℝ} {f : (n → ℝ) → ℝ} {L : ℝ≥0}
 
-/-- Gaussian concentration for a standard Gaussian vector $\mathbf{X}$ in $\mathbb{R}^n$, with
-$f$ $L$-Lipschitz for the Euclidean norm: $f(\mathbf{X}) - \mathbb{E} f(\mathbf{X})$ is
+/-- Gaussian concentration for a standard Gaussian vector $\mathbf{g}$ in $\mathbb{R}^n$, with
+$f$ $L$-Lipschitz for the Euclidean norm: $f(\mathbf{g}) - \mathbb{E} f(\mathbf{g})$ is
 sub-Gaussian with proxy $L^2$. -/
 theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ)
+    (hg : HasLaw g (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) :
-    HasSubgaussianMGF (fun ω => f (X ω) - ∫ ω', f (X ω') ∂μ) (L ^ 2) μ := by
-  have hY : HasLaw (fun ω => WithLp.toLp 2 (X ω)) (stdGaussian (EuclideanSpace ℝ n)) μ :=
-    HasLaw.comp (Y := WithLp.toLp 2) ⟨by fun_prop, map_pi_eq_stdGaussian⟩ hX
+    HasSubgaussianMGF (fun ω => f (g ω) - ∫ ω', f (g ω') ∂μ) (L ^ 2) μ := by
+  have hY : HasLaw (fun ω => WithLp.toLp 2 (g ω)) (stdGaussian (EuclideanSpace ℝ n)) μ :=
+    HasLaw.comp (Y := WithLp.toLp 2) ⟨by fun_prop, map_pi_eq_stdGaussian⟩ hg
   exact hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian
     (f := fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) hY hf
 
 /-- A Lipschitz function of a standard Gaussian vector in $\mathbb{R}^n$ is integrable. -/
 theorem integrable_comp_of_lipschitzWith_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ)
+    (hg : HasLaw g (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) :
-    Integrable (fun ω => f (X ω)) μ := by
-  have hY : HasLaw (fun ω => WithLp.toLp 2 (X ω)) (stdGaussian (EuclideanSpace ℝ n)) μ :=
-    HasLaw.comp (Y := WithLp.toLp 2) ⟨by fun_prop, map_pi_eq_stdGaussian⟩ hX
+    Integrable (fun ω => f (g ω)) μ := by
+  have hY : HasLaw (fun ω => WithLp.toLp 2 (g ω)) (stdGaussian (EuclideanSpace ℝ n)) μ :=
+    HasLaw.comp (Y := WithLp.toLp 2) ⟨by fun_prop, map_pi_eq_stdGaussian⟩ hg
   exact integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian
     (f := fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) hY hf
 
 /-- The upper tail of a Lipschitz function of a standard Gaussian vector: for $f$ $L$-Lipschitz
 for the Euclidean norm and $t \ge 0$,
-$$\mathbb{P}\bigl(\mathbb{E} f(\mathbf{X}) + t \le f(\mathbf{X})\bigr)
+$$\mathbb{P}\bigl(\mathbb{E} f(\mathbf{g}) + t \le f(\mathbf{g})\bigr)
 \le \exp\Bigl(-\frac{t^2}{2L^2}\Bigr),$$
 with the event in the form the random-matrix consumers use. -/
 theorem measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ)
+    (hg : HasLaw g (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) {t : ℝ}
     (ht : 0 ≤ t) :
-    μ.real {ω | ∫ ω', f (X ω') ∂μ + t ≤ f (X ω)} ≤ rexp (-t ^ 2 / (2 * L ^ 2)) := by
-  have h := (hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector hX
+    μ.real {ω | ∫ ω', f (g ω') ∂μ + t ≤ f (g ω)} ≤ rexp (-t ^ 2 / (2 * L ^ 2)) := by
+  have h := (hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector hg
     hf).measure_ge_le ht
   simp only [le_sub_iff_add_le', NNReal.coe_pow] at h
   exact h

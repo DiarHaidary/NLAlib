@@ -16,11 +16,11 @@ public import NLAlib.Probability.Distributions.Gaussian
 /-!
 # Gaussian integration by parts
 
-For a Gaussian vector $\mathbf{X}$ in $\mathbb{R}^\iota$ (any mean, any covariance, possibly
+For a Gaussian vector $\mathbf{g}$ in $\mathbb{R}^\iota$ (any mean, any covariance, possibly
 singular) and a function $f$ of class $C^1$ whose derivative grows at most polynomially,
 $\|Df(\mathbf{x})\| \le C (1 + \|\mathbf{x}\|)^k$, Stein's identity in covariance form:
-$$\mathbb{E}[(\mathbf{X}_i - \mathbb{E}\mathbf{X}_i) f(\mathbf{X})]
-= \sum_j \operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j)\, \mathbb{E}[\partial_j f(\mathbf{X})]\,.$$
+$$\mathbb{E}[(\mathbf{g}_i - \mathbb{E}\mathbf{g}_i) f(\mathbf{g})]
+= \sum_j \operatorname{Cov}(\mathbf{g}_i, \mathbf{g}_j)\, \mathbb{E}[\partial_j f(\mathbf{g})]\,.$$
 Polynomial growth gives every integrand Gaussian moments, so the identity is never between junk
 values.
 
@@ -244,35 +244,35 @@ theorem integral_comp_eq_integral_integral_of_indepFun {E : Type*}
   exact integral_prod_symm F hint
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- The regression residual $\mathbf{X} - \mathbf{X}_i \mathbf{a}$ of a Gaussian vector is
-independent of $\mathbf{X}_i$ when
-$\operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j) = \operatorname{Var}(\mathbf{X}_i)\, \mathbf{a}_j$
+/-- The regression residual $\mathbf{g} - \mathbf{g}_i \mathbf{a}$ of a Gaussian vector is
+independent of $\mathbf{g}_i$ when
+$\operatorname{Cov}(\mathbf{g}_i, \mathbf{g}_j) = \operatorname{Var}(\mathbf{g}_i)\, \mathbf{a}_j$
 for every $j$. -/
-theorem indepFun_residual_of_hasGaussianLaw [Finite ι] {X : Ω → ι → ℝ}
-    (hX : HasGaussianLaw X μ) (i : ι) (a : ι → ℝ)
-    (hcov : ∀ j, cov[fun ω => X ω i, fun ω => X ω j; μ] = Var[fun ω => X ω i; μ] * a j) :
-    IndepFun (fun ω => X ω i) (fun ω => X ω - X ω i • a) μ := by
+theorem indepFun_residual_of_hasGaussianLaw [Finite ι] {g : Ω → ι → ℝ}
+    (hg : HasGaussianLaw g μ) (i : ι) (a : ι → ℝ)
+    (hcov : ∀ j, cov[fun ω => g ω i, fun ω => g ω j; μ] = Var[fun ω => g ω i; μ] * a j) :
+    IndepFun (fun ω => g ω i) (fun ω => g ω - g ω i • a) μ := by
   have := Fintype.ofFinite ι
-  have hP := hX.isProbabilityMeasure
-  have hXm : ∀ j, MemLp (fun ω => X ω j) 2 μ := fun j =>
-    (hX.map_fun (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) j)).memLp_two
+  have hP := hg.isProbabilityMeasure
+  have hgm : ∀ j, MemLp (fun ω => g ω j) 2 μ := fun j =>
+    (hg.map_fun (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) j)).memLp_two
   set L : (ι → ℝ) →L[ℝ] (Unit → ℝ) × (ι → ℝ) :=
     (ContinuousLinearMap.pi fun _ : Unit =>
         ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) i).prod
       (ContinuousLinearMap.id ℝ (ι → ℝ) -
         (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) i).smulRight a) with hL
   have hjoint : HasGaussianLaw
-      (fun ω => (fun _ : Unit => X ω i, fun j => X ω j - X ω i * a j)) μ := by
-    have heq : (fun ω => (fun _ : Unit => X ω i, fun j => X ω j - X ω i * a j))
-        = fun ω => L (X ω) := by
+      (fun ω => (fun _ : Unit => g ω i, fun j => g ω j - g ω i * a j)) μ := by
+    have heq : (fun ω => (fun _ : Unit => g ω i, fun j => g ω j - g ω i * a j))
+        = fun ω => L (g ω) := by
       funext ω
       ext <;> simp [hL]
     rw [heq]
-    exact hX.map_fun L
-  have hind := hjoint.indepFun_of_covariance_eval (X := fun (_ : Unit) ω => X ω i)
-    (Y := fun j ω => X ω j - X ω i * a j) (fun _ j => by
-      rw [covariance_fun_sub_right (hXm i) (hXm j) ((hXm i).mul_const _),
-        covariance_mul_const_right, covariance_self (hXm i).aemeasurable, hcov]
+    exact hg.map_fun L
+  have hind := hjoint.indepFun_of_covariance_eval (X := fun (_ : Unit) ω => g ω i)
+    (Y := fun j ω => g ω j - g ω i * a j) (fun _ j => by
+      rw [covariance_fun_sub_right (hgm i) (hgm j) ((hgm i).mul_const _),
+        covariance_mul_const_right, covariance_self (hgm i).aemeasurable, hcov]
       ring)
   refine (hind.comp (measurable_pi_apply ()) measurable_id).congr ?_ ?_
   · exact Filter.EventuallyEq.rfl
@@ -323,79 +323,79 @@ private theorem integral_sub_mul_comp_smul_add_eq_gaussianReal_of_le_pow (m : �
   rwa [hderiv] at h
 
 omit [DecidableEq ι] in
-/-- For a Gaussian vector $\mathbf{X}$ and $f$ whose derivative grows polynomially,
-$(\mathbf{X}_i - m) f(\mathbf{X})$ is integrable. -/
-private theorem integrable_sub_mul_comp_of_le_pow {X : Ω → ι → ℝ} (hX : HasGaussianLaw X μ)
+/-- For a Gaussian vector $\mathbf{g}$ and $f$ whose derivative grows polynomially,
+$(\mathbf{g}_i - m) f(\mathbf{g})$ is integrable. -/
+private theorem integrable_sub_mul_comp_of_le_pow {g : Ω → ι → ℝ} (hg : HasGaussianLaw g μ)
     {f : (ι → ℝ) → ℝ} (hdiff : Differentiable ℝ f) {C : ℝ} {k : ℕ}
     (hdf : ∀ x, ‖fderiv ℝ f x‖ ≤ C * (1 + ‖x‖) ^ k) (i : ι) (m : ℝ) :
-    Integrable (fun ω => (X ω i - m) * f (X ω)) μ := by
-  have hP := hX.isProbabilityMeasure
+    Integrable (fun ω => (g ω i - m) * f (g ω)) μ := by
+  have hP := hg.isProbabilityMeasure
   have hC : 0 ≤ C := by simpa using (norm_nonneg _).trans (hdf 0)
-  have hXi_ae : AEMeasurable (fun ω => X ω i) μ :=
-    (hX.map_fun (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) i)).aemeasurable
+  have hgi_ae : AEMeasurable (fun ω => g ω i) μ :=
+    (hg.map_fun (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) i)).aemeasurable
   refine Integrable.mono'
-    ((integrable_one_add_norm_pow_of_memLp (fun p hp => hX.memLp hp) (k + 2)).const_mul
+    ((integrable_one_add_norm_pow_of_memLp (fun p hp => hg.memLp hp) (k + 2)).const_mul
       ((1 + |m|) * (|f 0| + C)))
-    ((hXi_ae.sub_const m).aestronglyMeasurable.mul
-      (hdiff.continuous.comp_aestronglyMeasurable hX.aemeasurable.aestronglyMeasurable))
+    ((hgi_ae.sub_const m).aestronglyMeasurable.mul
+      (hdiff.continuous.comp_aestronglyMeasurable hg.aemeasurable.aestronglyMeasurable))
     (ae_of_all _ fun ω => ?_)
   simp only [Real.norm_eq_abs, abs_mul]
-  have hXi : |X ω i| ≤ ‖X ω‖ := by simpa using norm_le_pi_norm (X ω) i
-  have h1 : |X ω i - m| ≤ (1 + |m|) * (1 + ‖X ω‖) := by
-    have := abs_sub (X ω i) m
-    nlinarith [abs_nonneg m, norm_nonneg (X ω)]
-  have h2 : |f (X ω)| ≤ (|f 0| + C) * (1 + ‖X ω‖) ^ (k + 1) := by
-    have h := abs_le_of_norm_fderiv_le_pow hdiff hdf (X ω)
-    have h3 : 1 ≤ (1 + ‖X ω‖) ^ (k + 1) := one_le_pow₀ (by linarith [norm_nonneg (X ω)])
+  have hgi : |g ω i| ≤ ‖g ω‖ := by simpa using norm_le_pi_norm (g ω) i
+  have h1 : |g ω i - m| ≤ (1 + |m|) * (1 + ‖g ω‖) := by
+    have := abs_sub (g ω i) m
+    nlinarith [abs_nonneg m, norm_nonneg (g ω)]
+  have h2 : |f (g ω)| ≤ (|f 0| + C) * (1 + ‖g ω‖) ^ (k + 1) := by
+    have h := abs_le_of_norm_fderiv_le_pow hdiff hdf (g ω)
+    have h3 : 1 ≤ (1 + ‖g ω‖) ^ (k + 1) := one_le_pow₀ (by linarith [norm_nonneg (g ω)])
     nlinarith [abs_nonneg (f 0)]
-  calc |X ω i - m| * |f (X ω)|
-      ≤ ((1 + |m|) * (1 + ‖X ω‖)) * ((|f 0| + C) * (1 + ‖X ω‖) ^ (k + 1)) :=
+  calc |g ω i - m| * |f (g ω)|
+      ≤ ((1 + |m|) * (1 + ‖g ω‖)) * ((|f 0| + C) * (1 + ‖g ω‖) ^ (k + 1)) :=
         mul_le_mul h1 h2 (abs_nonneg _) (by positivity)
-    _ = (1 + |m|) * (|f 0| + C) * (1 + ‖X ω‖) ^ (k + 2) := by ring
+    _ = (1 + |m|) * (|f 0| + C) * (1 + ‖g ω‖) ^ (k + 2) := by ring
 
 /-- **Gaussian integration by parts** (Stein's identity, covariance form): for a Gaussian vector
-$\mathbf{X}$ in $\mathbb{R}^\iota$ and $f$ of class $C^1$ whose derivative grows at most
+$\mathbf{g}$ in $\mathbb{R}^\iota$ and $f$ of class $C^1$ whose derivative grows at most
 polynomially, $\|Df(\mathbf{x})\| \le C (1 + \|\mathbf{x}\|)^k$,
-$$\mathbb{E}[(\mathbf{X}_i - \mathbb{E}\mathbf{X}_i) f(\mathbf{X})]
-= \sum_j \operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j)\, \mathbb{E}[\partial_j f(\mathbf{X})]\,.$$
+$$\mathbb{E}[(\mathbf{g}_i - \mathbb{E}\mathbf{g}_i) f(\mathbf{g})]
+= \sum_j \operatorname{Cov}(\mathbf{g}_i, \mathbf{g}_j)\, \mathbb{E}[\partial_j f(\mathbf{g})]\,.$$
 [Vershynin2018, Lemma 7.2.5]; stated there for a standard Gaussian, here any mean and any
 covariance, possibly singular. $\|\mathbf{x}\|$ is the sup norm of `ι → ℝ`; any norm gives the
 same class. Both integrands are integrable (Gaussian moments of every order), so the identity is
-never between junk values. Proof: the regression $\mathbf{X} = \mathbf{X}_i \mathbf{a} + \mathbf{W}$
-with $\mathbf{W}$ independent of $\mathbf{X}_i$
+never between junk values. Proof: the regression $\mathbf{g} = \mathbf{g}_i \mathbf{a} + \mathbf{r}$
+with $\mathbf{r}$ independent of $\mathbf{g}_i$
 (`indepFun_residual_of_hasGaussianLaw`) reduces the identity to the one-dimensional Stein identity
 `integral_mul_eq_integral_deriv_gaussianReal_one` along each line, which takes only integrability;
 polynomial growth supplies it through `memLp_id_gaussianReal` and `HasGaussianLaw.memLp`.
 Result: gaussian-integration-by-parts -/
 theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow
-    {X : Ω → ι → ℝ} (hX : HasGaussianLaw X μ) {f : (ι → ℝ) → ℝ} (hf : ContDiff ℝ 1 f)
+    {g : Ω → ι → ℝ} (hg : HasGaussianLaw g μ) {f : (ι → ℝ) → ℝ} (hf : ContDiff ℝ 1 f)
     {C : ℝ} {k : ℕ} (hdf : ∀ x, ‖fderiv ℝ f x‖ ≤ C * (1 + ‖x‖) ^ k) (i : ι) :
-    ∫ ω, (X ω i - ∫ ω', X ω' i ∂μ) * f (X ω) ∂μ =
-      ∑ j, covariance (fun ω => X ω i) (fun ω => X ω j) μ *
-        ∫ ω, fderiv ℝ f (X ω) (Pi.single j 1) ∂μ := by
-  have hP := hX.isProbabilityMeasure
-  have hXj : ∀ j, HasGaussianLaw (fun ω => X ω j) μ := fun j =>
-    hX.map_fun (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) j)
-  have hXm : ∀ j, MemLp (fun ω => X ω j) 2 μ := fun j => (hXj j).memLp_two
-  have hXae : AEMeasurable X μ := hX.aemeasurable
+    ∫ ω, (g ω i - ∫ ω', g ω' i ∂μ) * f (g ω) ∂μ =
+      ∑ j, covariance (fun ω => g ω i) (fun ω => g ω j) μ *
+        ∫ ω, fderiv ℝ f (g ω) (Pi.single j 1) ∂μ := by
+  have hP := hg.isProbabilityMeasure
+  have hgj : ∀ j, HasGaussianLaw (fun ω => g ω j) μ := fun j =>
+    hg.map_fun (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) j)
+  have hgm : ∀ j, MemLp (fun ω => g ω j) 2 μ := fun j => (hgj j).memLp_two
+  have hgae : AEMeasurable g μ := hg.aemeasurable
   have hdiff : Differentiable ℝ f := hf.differentiable one_ne_zero
   have hC : 0 ≤ C := by simpa using (norm_nonneg _).trans (hdf 0)
-  have hpow : ∀ j : ℕ, Integrable (fun ω => (1 + ‖X ω‖) ^ j) μ := fun j =>
-    integrable_one_add_norm_pow_of_memLp (fun p hp => hX.memLp hp) j
-  set m : ℝ := ∫ ω, X ω i ∂μ with hm
-  set σ2 : ℝ := Var[fun ω => X ω i; μ] with hσ2
-  set a : ι → ℝ := fun j => cov[fun ω => X ω i, fun ω => X ω j; μ] / σ2 with ha
-  have hcov : ∀ j, cov[fun ω => X ω i, fun ω => X ω j; μ] = σ2 * a j := fun j =>
-    covariance_eq_variance_mul_div (hXm i)
-  -- the regression residual `W = X - X i • a` is independent of `X i`
-  set W : Ω → ι → ℝ := fun ω => X ω - X ω i • a with hW
-  have hXW : ∀ ω, X ω i • a + W ω = X ω := fun ω => by simp only [hW]; abel
-  have hind : IndepFun (fun ω => X ω i) W μ :=
-    indepFun_residual_of_hasGaussianLaw hX i a fun j => by rw [hcov, hσ2]
-  have hUae : AEMeasurable (fun ω => X ω i) μ := (hXj i).aemeasurable
-  have hWae : AEMeasurable W μ := hXae.sub (hUae.smul_const a)
-  have hmapU : μ.map (fun ω => X ω i) = gaussianReal m σ2.toNNReal :=
-    (hXj i).map_eq_gaussianReal
+  have hpow : ∀ j : ℕ, Integrable (fun ω => (1 + ‖g ω‖) ^ j) μ := fun j =>
+    integrable_one_add_norm_pow_of_memLp (fun p hp => hg.memLp hp) j
+  set m : ℝ := ∫ ω, g ω i ∂μ with hm
+  set σ2 : ℝ := Var[fun ω => g ω i; μ] with hσ2
+  set a : ι → ℝ := fun j => cov[fun ω => g ω i, fun ω => g ω j; μ] / σ2 with ha
+  have hcov : ∀ j, cov[fun ω => g ω i, fun ω => g ω j; μ] = σ2 * a j := fun j =>
+    covariance_eq_variance_mul_div (hgm i)
+  -- the regression residual `r = g - g i • a` is independent of `g i`
+  set r : Ω → ι → ℝ := fun ω => g ω - g ω i • a with hr
+  have hgr : ∀ ω, g ω i • a + r ω = g ω := fun ω => by simp only [hr]; abel
+  have hind : IndepFun (fun ω => g ω i) r μ :=
+    indepFun_residual_of_hasGaussianLaw hg i a fun j => by rw [hcov, hσ2]
+  have hUae : AEMeasurable (fun ω => g ω i) μ := (hgj i).aemeasurable
+  have hrae : AEMeasurable r μ := hgae.sub (hUae.smul_const a)
+  have hmapU : μ.map (fun ω => g ω i) = gaussianReal m σ2.toNNReal :=
+    (hgj i).map_eq_gaussianReal
   have hσnn : ((σ2.toNNReal : ℝ≥0) : ℝ) = σ2 := Real.coe_toNNReal _ (variance_nonneg _ _)
   -- the two integrands
   set F1 : ℝ × (ι → ℝ) → ℝ := fun p => (p.1 - m) * f (p.1 • a + p.2) with hF1
@@ -406,20 +406,20 @@ theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGa
   have hF2c : Continuous F2 :=
     (hdfc.comp (by fun_prop : Continuous fun p : ℝ × (ι → ℝ) => p.1 • a + p.2)).clm_apply
       continuous_const
-  have hF1i : Integrable (fun ω => F1 (X ω i, W ω)) μ := by
-    simp only [hF1, hXW]
-    exact integrable_sub_mul_comp_of_le_pow hX hdiff hdf i m
-  have hDb : ∀ (v : ι → ℝ) ω, ‖fderiv ℝ f (X ω) v‖ ≤ C * ‖v‖ * (1 + ‖X ω‖) ^ k := fun v ω =>
+  have hF1i : Integrable (fun ω => F1 (g ω i, r ω)) μ := by
+    simp only [hF1, hgr]
+    exact integrable_sub_mul_comp_of_le_pow hg hdiff hdf i m
+  have hDb : ∀ (v : ι → ℝ) ω, ‖fderiv ℝ f (g ω) v‖ ≤ C * ‖v‖ * (1 + ‖g ω‖) ^ k := fun v ω =>
     ((fderiv ℝ f _).le_opNorm v).trans (by
       rw [mul_right_comm]
       exact mul_le_mul_of_nonneg_right (hdf _) (norm_nonneg v))
-  have hF2i : Integrable (fun ω => F2 (X ω i, W ω)) μ :=
+  have hF2i : Integrable (fun ω => F2 (g ω i, r ω)) μ :=
     Integrable.mono' ((hpow k).const_mul (C * ‖a‖))
-      (hF2c.comp_aestronglyMeasurable (hUae.prodMk hWae).aestronglyMeasurable)
-      (ae_of_all _ fun ω => by simpa only [hF2, hXW] using hDb a ω)
-  -- the one-dimensional identity in the `X i` direction, for each value of `W`
-  have hinner : ∀ w : ι → ℝ, ∫ u, F1 (u, w) ∂(μ.map fun ω => X ω i)
-      = σ2 * ∫ u, F2 (u, w) ∂(μ.map fun ω => X ω i) := by
+      (hF2c.comp_aestronglyMeasurable (hUae.prodMk hrae).aestronglyMeasurable)
+      (ae_of_all _ fun ω => by simpa only [hF2, hgr] using hDb a ω)
+  -- the one-dimensional identity in the `g i` direction, for each value of `r`
+  have hinner : ∀ w : ι → ℝ, ∫ u, F1 (u, w) ∂(μ.map fun ω => g ω i)
+      = σ2 * ∫ u, F2 (u, w) ∂(μ.map fun ω => g ω i) := by
     intro w
     have h := integral_sub_mul_comp_smul_add_eq_gaussianReal_of_le_pow m σ2.toNNReal hdiff hdf
       a w
@@ -428,41 +428,41 @@ theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGa
     exact h
   have hfa : ∀ x, fderiv ℝ f x a = ∑ j, a j * fderiv ℝ f x (Pi.single j 1) := fun x =>
     apply_eq_sum_mul_apply_single _ a
-  have hDi : ∀ j, Integrable (fun ω => fderiv ℝ f (X ω) (Pi.single j 1)) μ := fun j =>
+  have hDi : ∀ j, Integrable (fun ω => fderiv ℝ f (g ω) (Pi.single j 1)) μ := fun j =>
     Integrable.mono' ((hpow k).const_mul (C * ‖(Pi.single j 1 : ι → ℝ)‖))
-      ((hdfc.clm_apply continuous_const).comp_aestronglyMeasurable hXae.aestronglyMeasurable)
+      ((hdfc.clm_apply continuous_const).comp_aestronglyMeasurable hgae.aestronglyMeasurable)
       (ae_of_all _ fun ω => hDb _ ω)
-  calc ∫ ω, (X ω i - m) * f (X ω) ∂μ = ∫ ω, F1 (X ω i, W ω) ∂μ := by simp only [hF1, hXW]
-    _ = ∫ w, ∫ u, F1 (u, w) ∂(μ.map fun ω => X ω i) ∂(μ.map W) :=
-      integral_comp_eq_integral_integral_of_indepFun hUae hWae hind hF1c hF1i
-    _ = σ2 * ∫ w, ∫ u, F2 (u, w) ∂(μ.map fun ω => X ω i) ∂(μ.map W) := by
+  calc ∫ ω, (g ω i - m) * f (g ω) ∂μ = ∫ ω, F1 (g ω i, r ω) ∂μ := by simp only [hF1, hgr]
+    _ = ∫ w, ∫ u, F1 (u, w) ∂(μ.map fun ω => g ω i) ∂(μ.map r) :=
+      integral_comp_eq_integral_integral_of_indepFun hUae hrae hind hF1c hF1i
+    _ = σ2 * ∫ w, ∫ u, F2 (u, w) ∂(μ.map fun ω => g ω i) ∂(μ.map r) := by
       simp_rw [hinner]; rw [integral_const_mul]
-    _ = σ2 * ∫ ω, F2 (X ω i, W ω) ∂μ := by
-      rw [integral_comp_eq_integral_integral_of_indepFun hUae hWae hind hF2c hF2i]
-    _ = σ2 * ∫ ω, ∑ j, a j * fderiv ℝ f (X ω) (Pi.single j 1) ∂μ := by
-      simp only [hF2, hXW, hfa]
+    _ = σ2 * ∫ ω, F2 (g ω i, r ω) ∂μ := by
+      rw [integral_comp_eq_integral_integral_of_indepFun hUae hrae hind hF2c hF2i]
+    _ = σ2 * ∫ ω, ∑ j, a j * fderiv ℝ f (g ω) (Pi.single j 1) ∂μ := by
+      simp only [hF2, hgr, hfa]
     _ = _ := by
       rw [integral_finsetSum _ fun j _ => (hDi j).const_mul _, Finset.mul_sum]
       refine Finset.sum_congr rfl fun j _ => ?_
       rw [integral_const_mul, hcov, mul_assoc]
 
 /-- **Gaussian integration by parts** (Stein's identity, covariance form): for a Gaussian vector
-$\mathbf{X}$ in $\mathbb{R}^\iota$ and $f$ of class $C^1$ with $\|Df(\mathbf{x})\| \le C$,
-$$\mathbb{E}[(\mathbf{X}_i - \mathbb{E}\mathbf{X}_i) f(\mathbf{X})]
-= \sum_j \operatorname{Cov}(\mathbf{X}_i, \mathbf{X}_j)\, \mathbb{E}[\partial_j f(\mathbf{X})]\,.$$
+$\mathbf{g}$ in $\mathbb{R}^\iota$ and $f$ of class $C^1$ with $\|Df(\mathbf{x})\| \le C$,
+$$\mathbb{E}[(\mathbf{g}_i - \mathbb{E}\mathbf{g}_i) f(\mathbf{g})]
+= \sum_j \operatorname{Cov}(\mathbf{g}_i, \mathbf{g}_j)\, \mathbb{E}[\partial_j f(\mathbf{g})]\,.$$
 [Vershynin2018, Lemma 7.2.5]; stated there for a standard Gaussian,
 $\mathbb{E}[g f(g)] = \mathbb{E} f'(g)$; here any mean and any covariance, possibly singular, and
 no centring hypothesis (a centred consumer rewrites with `sub_zero`). The case $k = 0$ of
 `integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow`.
 Result: gaussian-integration-by-parts -/
 theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw
-    {X : Ω → ι → ℝ} (hX : HasGaussianLaw X μ) {f : (ι → ℝ) → ℝ} (hf : ContDiff ℝ 1 f)
+    {g : Ω → ι → ℝ} (hg : HasGaussianLaw g μ) {f : (ι → ℝ) → ℝ} (hf : ContDiff ℝ 1 f)
     {C : ℝ} (hdf : ∀ x, ‖fderiv ℝ f x‖ ≤ C) (i : ι) :
-    ∫ ω, (X ω i - ∫ ω', X ω' i ∂μ) * f (X ω) ∂μ =
-      ∑ j, covariance (fun ω => X ω i) (fun ω => X ω j) μ *
-        ∫ ω, fderiv ℝ f (X ω) (Pi.single j 1) ∂μ := by
+    ∫ ω, (g ω i - ∫ ω', g ω' i ∂μ) * f (g ω) ∂μ =
+      ∑ j, covariance (fun ω => g ω i) (fun ω => g ω j) μ *
+        ∫ ω, fderiv ℝ f (g ω) (Pi.single j 1) ∂μ := by
   exact
     integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow
-      hX hf (C := C) (k := 0) (fun x => by simpa only [pow_zero, mul_one] using hdf x) i
+      hg hf (C := C) (k := 0) (fun x => by simpa only [pow_zero, mul_one] using hdf x) i
 
 end NLAlib
