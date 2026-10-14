@@ -46,6 +46,40 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### OSIs respect orthogonality -/
 
+omit [DecidableEq n] in
+/-- The common tail step: off the failure event `Gᶜ`, the bad event forces `t m < M` for a
+nonnegative `M` of mean `m`, which has probability at most `1 / t` by Markov's inequality. -/
+private theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {G E : Set Ω}
+    (hG : μ.real Gᶜ ≤ δ) {M : Ω → ℝ} (hM0 : ∀ ω, 0 ≤ M ω) (hM : Integrable M μ) {m : ℝ}
+    (hm : ∫ ω, M ω ∂μ = m) (hm0 : m = 0 → ∀ ω, M ω = 0) (ht : 0 < t)
+    (hE : ∀ᵐ ω ∂μ, ω ∈ G → ω ∈ E → t * m < M ω) : μ.real E ≤ δ + 1 / t := by
+  have hae : ∀ᵐ ω ∂μ, ω ∈ E → ω ∈ Gᶜ ∪ {ω | t * m < M ω} := by
+    filter_upwards [hE] with ω hω hωE
+    by_cases hωG : ω ∈ G
+    · exact Or.inr (hω hωG hωE)
+    · exact Or.inl hωG
+  have hF : μ.real {ω | t * m < M ω} ≤ 1 / t := by
+    rcases eq_or_ne m 0 with h0 | h0
+    · have he : {ω | t * m < M ω} = ∅ := by
+        ext ω
+        simp only [hm0 h0 ω, h0, mul_zero, lt_self_iff_false, Set.mem_ofPred_eq,
+          Set.mem_empty_iff_false]
+      rw [he, measureReal_empty]
+      positivity
+    · have hm' : 0 < m := lt_of_le_of_ne (hm ▸ integral_nonneg hM0) (Ne.symm h0)
+      calc μ.real {ω | t * m < M ω} ≤ μ.real {ω | t * m ≤ M ω} :=
+            measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => hω.le)
+        _ ≤ (∫ ω, M ω ∂μ) / (t * m) :=
+            measureReal_ge_le_integral_div (ae_of_all _ hM0) hM (mul_pos ht hm')
+        _ = 1 / t := by
+            rw [hm]
+            field_simp
+  calc μ.real E ≤ μ.real (Gᶜ ∪ {ω | t * m < M ω}) :=
+        ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae hae)
+    _ ≤ μ.real Gᶜ + μ.real {ω | t * m < M ω} := measureReal_union_le _ _
+    _ ≤ δ + 1 / t := add_le_add hG hF
+
+
 /-- **OSIs respect orthogonality**: if `S` is isotropic and a subspace injection for `range Q`
 with constant `a > 0` and failure probability `δ`, `Q` with orthonormal columns, then
 `‖B (S Z)ᴴ (S Q)ᴴ†‖_F² ≤ t ‖B Zᴴ‖_F² / a` except with probability `δ + 1 / t`.
@@ -57,7 +91,26 @@ theorem HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure
     (Z : Matrix n r 𝕜) :
     μ.real {ω | t * frobNorm (B * Zᴴ) ^ 2 / a <
       frobNorm (B * (S ω * Z)ᴴ * pinv ((S ω * Q)ᴴ)) ^ 2} ≤ δ + 1 / t := by
-  sorry
+  have hm : ∫ ω, frobNorm (S ω * (Z * Bᴴ)) ^ 2 ∂μ = frobNorm (B * Zᴴ) ^ 2 := by
+    rw [hiso.integral_frobNorm_mul_sq, ← frobNorm_conjTranspose, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_conjTranspose]
+  refine measureReal_le_add_one_div (G := {ω | IsSubspaceInjection (S ω) Q a}) h
+    (fun ω => sq_nonneg _) (hiso.integrable_frobNorm_mul_sq _) hm (fun h0 ω => ?_) ht
+    (ae_of_all _ fun ω hω hE => ?_)
+  · have hZB : Z * Bᴴ = 0 := by
+      rw [← Matrix.conjTranspose_conjTranspose (Z * Bᴴ), Matrix.conjTranspose_mul,
+        Matrix.conjTranspose_conjTranspose,
+        frobNorm_eq_zero_iff.1 (pow_eq_zero_iff two_ne_zero |>.1 h0), Matrix.conjTranspose_zero]
+    rw [hZB, Matrix.mul_zero, frobNorm_zero, sq, mul_zero]
+  · have hdet := (hω : IsSubspaceInjection (S ω) Q a).frobNorm_mul_pinv_sq_le hQ ha
+      (B * (S ω * Z)ᴴ)
+    have e : frobNorm (B * (S ω * Z)ᴴ) = frobNorm (S ω * (Z * Bᴴ)) := by
+      rw [← frobNorm_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+        Matrix.mul_assoc]
+    rw [e] at hdet
+    have hE' : t * frobNorm (B * Zᴴ) ^ 2 / a <
+        frobNorm (B * (S ω * Z)ᴴ * pinv ((S ω * Q)ᴴ)) ^ 2 := hE
+    exact (div_lt_div_iff_of_pos_right ha).1 (hE'.trans_le hdet)
 
 /-- **OSIs respect orthogonality**, in CEMT's form: for an OSI for dimension `d ≥ card p`, `Q`
 and `Z` with orthonormal columns, `‖B (S Z)ᴴ (S Q)ᴴ†‖_F² ≤ t ‖B‖_F² / a` except with probability
@@ -69,7 +122,9 @@ theorem IsObliviousSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFinit
     (hZ : HasOrthonormalCols Z) (ha : 0 < a) (ht : 0 < t) (B : Matrix l r 𝕜) :
     μ.real {ω | t * frobNorm B ^ 2 / a <
       frobNorm (B * (S ω * Z)ᴴ * pinv ((S ω * Q)ᴴ)) ^ 2} ≤ δ + 1 / t := by
-  sorry
+  have h' := (h.hasSubspaceInjection (hQ.rank_eq ▸ hpd)).measure_frobNorm_mul_pinv_sq_gt_le
+    h.isotropic hQ ha ht B Z
+  rwa [hZ.frobNorm_mul_conjTranspose_right] at h'
 
 /-! ### Sketch-and-solve with an injection -/
 
@@ -85,7 +140,20 @@ theorem HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure �
     (hx : ∀ᵐ ω ∂μ, IsLeastSquaresSolution (S ω * A) (S ω *ᵥ y) (x ω)) :
     μ.real {ω | (1 + t / a) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ x ω)‖ ^ 2} ≤ δ + 1 / t := by
-  sorry
+  set w := (1 - rangeProjector A) *ᵥ y
+  refine measureReal_le_add_one_div (G := {ω | IsSubspaceInjection (S ω) A a}) h
+    (fun ω => sq_nonneg _) (hiso.integrable_norm_mulVec_sq w) (hiso.integral_norm_mulVec_sq w)
+    (fun h0 ω => ?_) ht (hx.mono fun ω hxω hω hE => ?_)
+  · have hw : w = 0 := by
+      have := pow_eq_zero_iff two_ne_zero |>.1 h0
+      rwa [norm_eq_zero, WithLp.toLp_eq_zero] at this
+    rw [hw, Matrix.mulVec_zero, WithLp.toLp_zero, norm_zero, sq, mul_zero]
+  · have hdet := (hω : IsSubspaceInjection (S ω) A a).norm_sub_mulVec_sq_le ha hxω
+    have hE' : (1 + t / a) * ‖WithLp.toLp 2 w‖ ^ 2 < ‖WithLp.toLp 2 (y - A *ᵥ x ω)‖ ^ 2 := hE
+    have e : (1 + t / a) * ‖WithLp.toLp 2 w‖ ^ 2 =
+        ‖WithLp.toLp 2 w‖ ^ 2 + t * ‖WithLp.toLp 2 w‖ ^ 2 / a := by ring
+    refine (div_lt_div_iff_of_pos_right ha).1 ?_
+    linarith
 
 /-- **Sketch-and-solve with an OSI, matrix right-hand side**, for the minimum-norm output
 `pinv (S A) (S Y)`: `‖Y - A (S A)† S Y‖_F² ≤ (1 + t / a) ‖(1 - P_A) Y‖_F²` except with
@@ -96,7 +164,18 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le [IsFinit
     (ht : 0 < t) (Y : Matrix n r 𝕜) :
     μ.real {ω | (1 + t / a) * frobNorm ((1 - rangeProjector A) * Y) ^ 2 <
       frobNorm (Y - A * (pinv (S ω * A) * (S ω * Y))) ^ 2} ≤ δ + 1 / t := by
-  sorry
+  set C := (1 - rangeProjector A) * Y
+  refine measureReal_le_add_one_div (G := {ω | IsSubspaceInjection (S ω) A a}) h
+    (fun ω => sq_nonneg _) (hiso.integrable_frobNorm_mul_sq C) (hiso.integral_frobNorm_mul_sq C)
+    (fun h0 ω => ?_) ht (ae_of_all _ fun ω hω hE => ?_)
+  · rw [frobNorm_eq_zero_iff.1 (pow_eq_zero_iff two_ne_zero |>.1 h0), Matrix.mul_zero,
+      frobNorm_zero, sq, mul_zero]
+  · have hdet := (hω : IsSubspaceInjection (S ω) A a).frobNorm_sub_mul_pinv_mul_sq_le ha Y
+    have hE' : (1 + t / a) * frobNorm C ^ 2 <
+        frobNorm (Y - A * (pinv (S ω * A) * (S ω * Y))) ^ 2 := hE
+    have e : (1 + t / a) * frobNorm C ^ 2 = frobNorm C ^ 2 + t * frobNorm C ^ 2 / a := by ring
+    refine (div_lt_div_iff_of_pos_right ha).1 ?_
+    linarith
 
 /-- **Sketch-and-solve with an OSI** for dimension `d ≥ rank A`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.7]. -/
@@ -106,7 +185,7 @@ theorem IsObliviousSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteM
     (hx : ∀ᵐ ω ∂μ, IsLeastSquaresSolution (S ω * A) (S ω *ᵥ y) (x ω)) :
     μ.real {ω | (1 + t / a) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ x ω)‖ ^ 2} ≤ δ + 1 / t := by
-  sorry
+  exact (h.hasSubspaceInjection hA).measure_norm_sub_mulVec_sq_gt_le h.isotropic ha ht y hx
 
 /-- **Sketch-and-solve with an OSI, matrix right-hand side**, for dimension `d ≥ rank A`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there a vector right-hand side. -/
@@ -115,6 +194,7 @@ theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le
     (ha : 0 < a) (ht : 0 < t) (Y : Matrix n r 𝕜) :
     μ.real {ω | (1 + t / a) * frobNorm ((1 - rangeProjector A) * Y) ^ 2 <
       frobNorm (Y - A * (pinv (S ω * A) * (S ω * Y))) ^ 2} ≤ δ + 1 / t := by
-  sorry
+  exact (h.hasSubspaceInjection hA).measure_frobNorm_sub_mul_pinv_mul_sq_gt_le h.isotropic ha ht
+    Y
 
 end NLAlib
