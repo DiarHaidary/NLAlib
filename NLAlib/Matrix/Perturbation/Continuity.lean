@@ -22,8 +22,8 @@ topological consequences in Mathlib's vocabulary, for the product topology on ma
 
 * `NLAlib.continuous_singularValues`, `NLAlib.continuousOn_eigenvalue`.
 * `NLAlib.SymmetricGauge.continuous_matrixNorm`, `NLAlib.continuous_schattenNorm`.
-* `NLAlib.SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le`: the optimal error of rank-`k`
-  approximation is `1`-Lipschitz in every unitarily invariant norm.
+* `NLAlib.SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le`: the optimal error of rank-$k$
+  approximation is $1$-Lipschitz in every unitarily invariant norm.
 * `NLAlib.isClosed_setOf_rank_le`, `NLAlib.isOpen_setOf_le_rank`,
   `NLAlib.isOpen_setOf_injective_mulVec`.
 * `NLAlib.continuousOn_pinv_setOf_rank_eq`, `NLAlib.continuousOn_rangeProjector_setOf_rank_eq`.
@@ -39,8 +39,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Singular values, eigenvalues and norms -/
 
-/-- A real function on a topological group whose increments within `s` are dominated by a
-continuous function of the difference vanishing at `0` is continuous on `s`. -/
+/-- A real function on a topological group whose increments within $s$ are dominated by a
+continuous function of the difference vanishing at $0$ is continuous on $s$. -/
 private theorem continuousOn_of_abs_sub_le {E : Type*} [TopologicalSpace E] [AddGroup E]
     [ContinuousSub E] {s : Set E} {f g : E → ℝ} (hg : Continuous g) (hg0 : g 0 = 0)
     (h : ∀ A ∈ s, ∀ B ∈ s, |f B - f A| ≤ g (B - A)) : ContinuousOn f s := by
@@ -62,31 +62,32 @@ private theorem continuous_of_abs_sub_le {E : Type*} [TopologicalSpace E] [AddGr
     (h : ∀ A B, |f B - f A| ≤ g (B - A)) : Continuous f :=
   continuousOn_univ.mp (continuousOn_of_abs_sub_le hg hg0 fun A _ B _ => h A B)
 
-/-- Each singular value is a continuous function of the matrix.
+/-- Each singular value $\sigma_k(\mathbf{A})$ is a continuous function of the matrix $\mathbf{A}$.
 Port of `NLAlib.continuous_singularValues_array`. -/
 theorem continuous_singularValues (k : ℕ) :
     Continuous fun A : Matrix m n 𝕜 => singularValues A k := by
   exact continuous_of_abs_sub_le continuous_specNorm specNorm_zero fun A B =>
     abs_singularValues_sub_le_specNorm B A k
 
-/-- Each sorted eigenvalue is a continuous function on the Hermitian matrices.
+/-- Each sorted eigenvalue $\lambda_k(\mathbf{A})$ (indexed from $0$, non-increasing) is a
+continuous function of $\mathbf{A}$ on the Hermitian matrices.
 Port of `NLAlib.continuous_eigenvalues₀_pencil`, there along a line. -/
 theorem continuousOn_eigenvalue (k : ℕ) :
     ContinuousOn (fun A : Matrix n n 𝕜 => eigenvalue A k) {A | A.IsHermitian} := by
   exact continuousOn_of_abs_sub_le continuous_specNorm specNorm_zero fun A hA B hB =>
     abs_eigenvalue_sub_le hB hA k
 
-/-- Ky Fan norms are continuous. -/
+/-- The Ky Fan norms $\|\mathbf{A}\|_{(k)}$ are continuous. -/
 theorem continuous_kyFanNorm (k : ℕ) : Continuous fun A : Matrix m n 𝕜 => kyFanNorm k A := by
   simp only [kyFanNorm_eq_sum_range]
   exact continuous_finsetSum _ fun i _ => continuous_singularValues i
 
-/-- The nuclear norm is continuous. -/
+/-- The nuclear norm $\|\mathbf{A}\|_*$ is continuous. -/
 theorem continuous_nuclearNorm : Continuous (nuclearNorm : Matrix m n 𝕜 → ℝ) := by
   unfold nuclearNorm
   exact continuous_finsetSum _ fun i _ => continuous_singularValues i
 
-/-- Every unitarily invariant norm is continuous. -/
+/-- Every unitarily invariant norm $\|\mathbf{A}\|_{\Phi}$ is continuous. -/
 theorem SymmetricGauge.continuous_matrixNorm (Φ : SymmetricGauge) :
     Continuous fun A : Matrix m n 𝕜 => Φ.matrixNorm A := by
   refine continuous_of_abs_sub_le (g := fun X => Φ (Finsupp.single 0 1) * nuclearNorm X)
@@ -95,8 +96,8 @@ theorem SymmetricGauge.continuous_matrixNorm (Φ : SymmetricGauge) :
   exact (Φ.abs_matrixNorm_sub_matrixNorm_le B A).trans
     (Φ.matrixNorm_le_apply_single_mul_nuclearNorm (B - A))
 
-/-- The Schatten `q`-norm is continuous, for `1 ≤ q`: it is the unitarily invariant norm of the
-`ℓ^q` gauge. -/
+/-- The Schatten $q$-norm $\|\mathbf{A}\|_{S_q}$ is continuous, for $1 \le q \le \infty$: it is the
+unitarily invariant norm of the $\ell^q$ gauge. -/
 theorem continuous_schattenNorm {q : ℝ≥0∞} (hq : 1 ≤ q) :
     Continuous fun A : Matrix m n 𝕜 => schattenNorm q A := by
   have h := (lpGauge q hq).continuous_matrixNorm (𝕜 := 𝕜) (m := m) (n := n)
@@ -114,10 +115,15 @@ private theorem SymmetricGauge.matrixNorm_sub_truncatedSVD_le_add (Φ : Symmetri
   have h := Φ.matrixNorm_add_le (A - B) (B - truncatedSVD B k)
   rwa [sub_add_sub_cancel] at h
 
-/-- **The optimal error of rank-`k` approximation is `1`-Lipschitz** in every unitarily
-invariant norm: `|‖A - A_k‖ - ‖B - B_k‖| ≤ ‖A - B‖`. (In the spectral norm the error is
-`singularValues A k` and this is Weyl's inequality.)
-Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`, there over `ℝ` in the Frobenius norm. -/
+/-- **The optimal error of rank-$k$ approximation is $1$-Lipschitz** in every unitarily
+invariant norm:
+$$\bigl\lvert \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi}
+{} - \|\mathbf{B} - \llbracket \mathbf{B} \rrbracket_k\|_{\Phi} \bigr\rvert
+\le \|\mathbf{A} - \mathbf{B}\|_{\Phi},$$
+where $\llbracket \mathbf{A} \rrbracket_k$ is the rank-$k$ truncated SVD of $\mathbf{A}$. (In the
+spectral norm the error is $\sigma_k(\mathbf{A})$ and this is Weyl's inequality.)
+Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`, there over $\mathbb{R}$ in the Frobenius
+norm. -/
 theorem SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le (Φ : SymmetricGauge)
     (A B : Matrix m n 𝕜) (k : ℕ) :
     |Φ.matrixNorm (A - truncatedSVD A k) - Φ.matrixNorm (B - truncatedSVD B k)| ≤
@@ -130,15 +136,22 @@ theorem SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le (Φ : SymmetricGau
     rw [← neg_sub A B, Φ.matrixNorm_neg] at h
     linarith
 
-/-- The optimal Frobenius error of rank-`k` approximation is `1`-Lipschitz in the Frobenius
-norm. Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`. -/
+/-- The optimal Frobenius error of rank-$k$ approximation is $1$-Lipschitz in the Frobenius
+norm:
+$$\bigl\lvert \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}
+{} - \|\mathbf{B} - \llbracket \mathbf{B} \rrbracket_k\|_{\mathsf{F}} \bigr\rvert
+\le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}},$$
+where $\llbracket \mathbf{A} \rrbracket_k$ is the rank-$k$ truncated SVD of $\mathbf{A}$.
+Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`. -/
 theorem abs_frobNorm_sub_truncatedSVD_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :
     |frobNorm (A - truncatedSVD A k) - frobNorm (B - truncatedSVD B k)| ≤ frobNorm (A - B) := by
   simpa only [lpGauge_two_matrixNorm] using
     (lpGauge 2 one_le_two).abs_matrixNorm_sub_truncatedSVD_sub_le A B k
 
-/-- The optimal error of rank-`k` approximation is continuous, in every unitarily invariant norm.
-The truncated SVD itself is not: it jumps where `σ_{k-1} = σ_k`.
+/-- The optimal error $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi}$ of rank-$k$
+approximation, with $\llbracket \mathbf{A} \rrbracket_k$ the rank-$k$ truncated SVD, is continuous
+in $\mathbf{A}$, in every unitarily invariant norm. The truncated SVD itself is not: it jumps where
+$\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$.
 Port of `NLAlib.continuous_bestRankFrobSq`. -/
 theorem SymmetricGauge.continuous_matrixNorm_sub_truncatedSVD (Φ : SymmetricGauge) (k : ℕ) :
     Continuous fun A : Matrix m n 𝕜 => Φ.matrixNorm (A - truncatedSVD A k) := by
@@ -148,7 +161,7 @@ theorem SymmetricGauge.continuous_matrixNorm_sub_truncatedSVD (Φ : SymmetricGau
 /-! ### Rank -/
 
 omit [Fintype m] in
-/-- **The matrices of rank at most `r` form a closed set**: the rank is lower semicontinuous. -/
+/-- **The matrices of rank at most $r$ form a closed set**: the rank is lower semicontinuous. -/
 theorem isClosed_setOf_rank_le [Finite m] (r : ℕ) : IsClosed {A : Matrix m n 𝕜 | A.rank ≤ r} := by
   have := Fintype.ofFinite m
   have h : {A : Matrix m n 𝕜 | A.rank ≤ r} = (fun A => singularValues A r) ⁻¹' {0} := by
@@ -158,7 +171,7 @@ theorem isClosed_setOf_rank_le [Finite m] (r : ℕ) : IsClosed {A : Matrix m n �
   exact isClosed_singleton.preimage (continuous_singularValues r)
 
 omit [Fintype m] in
-/-- **The matrices of rank at least `r` form an open set**: a small perturbation does not lower
+/-- **The matrices of rank at least $r$ form an open set**: a small perturbation does not lower
 the rank. -/
 theorem isOpen_setOf_le_rank [Finite m] (r : ℕ) : IsOpen {A : Matrix m n 𝕜 | r ≤ A.rank} := by
   cases r with
@@ -187,7 +200,7 @@ theorem isOpen_setOf_injective_mulVec [Finite m] :
 
 /-! ### The pseudoinverse and the range projector -/
 
-/-- A family of matrices converges to `M` when the spectral norm of the difference tends to
+/-- A family of matrices converges to $\mathbf{M}$ when the spectral norm of the difference tends to
 zero. -/
 private theorem tendsto_of_tendsto_specNorm_sub {α : Type*} {F : Filter α}
     {f : α → Matrix m n 𝕜} {M : Matrix m n 𝕜}
@@ -233,7 +246,8 @@ theorem continuousOn_pinv_setOf_rank_eq (r : ℕ) :
   refine (specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq hrank).trans ?_
   gcongr
 
-/-- The range projector is continuous on each set of matrices of a fixed rank. -/
+/-- The range projector $\mathbf{P}_{\mathbf{A}}$ is continuous in $\mathbf{A}$ on each set of
+matrices of a fixed rank. -/
 theorem continuousOn_rangeProjector_setOf_rank_eq (r : ℕ) :
     ContinuousOn (fun A : Matrix m n 𝕜 => rangeProjector A) {A | A.rank = r} := by
   intro A hA

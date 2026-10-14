@@ -11,33 +11,38 @@ public import NLAlib.Matrix.Basic.Projector
 public import NLAlib.Matrix.Majorization.KyFan
 
 /-!
-# The Davis–Kahan `sin Θ` theorems
+# The Davis–Kahan $\sin \Theta$ theorems
 
 How far an invariant subspace of a Hermitian matrix is from an approximately invariant subspace,
 or from the corresponding invariant subspace of a perturbed matrix.
 
-The basic statement is in residual form. Let `A` be Hermitian with `A * V = V * M` (the columns of
-`V` span an invariant subspace, on which `A` acts as `M`), and let `(U, L)` be any pair with `L`
-Hermitian. If the spectra of `L` and `M` are separated by `δ`, then
-`δ ‖Vᴴ U‖ ≤ ‖Vᴴ (A U - U L)‖`. When `U` and `V` are frames, `Vᴴ * U` has the singular values of
-`(1 - P) * Q` for `Q = U Uᴴ` and `1 - P = V Vᴴ`: the sines of the principal angles between the
-range of `U` and the orthogonal complement of the range of `V`
-(see `NLAlib.Matrix.Subspaces.PrincipalAngles`). The perturbation theorems are corollaries, with
-`A U - U L = E U` when `U` is invariant for `A - E`.
+The basic statement is in residual form. Let $\mathbf{A}$ be Hermitian with
+$\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$ (the columns of $\mathbf{V}$ span an invariant
+subspace, on which $\mathbf{A}$ acts as $\mathbf{M}$), and let $(\mathbf{U}, \mathbf{L})$ be any
+pair with $\mathbf{L}$ Hermitian. If the spectra of $\mathbf{L}$ and $\mathbf{M}$ are separated by
+$\delta$, then $\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|
+\le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|$. When $\mathbf{U}$ and
+$\mathbf{V}$ are frames, $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ has the singular values of
+$(\mathbf{I} - \mathbf{P})\mathbf{Q}$ for $\mathbf{Q} = \mathbf{U}\mathbf{U}^{\mathsf{H}}$ and
+$\mathbf{I} - \mathbf{P} = \mathbf{V}\mathbf{V}^{\mathsf{H}}$: the sines of the principal angles
+between the range of $\mathbf{U}$ and the orthogonal complement of the range of $\mathbf{V}$ (see
+`NLAlib.Matrix.Subspaces.PrincipalAngles`). The perturbation theorems are corollaries, with
+$\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L} = \mathbf{E}\mathbf{U}$ when $\mathbf{U}$ is invariant
+for $\mathbf{A} - \mathbf{E}$.
 
 With an interval separation the bounds hold in every unitarily invariant norm; with an arbitrary
 separation, in the Frobenius norm.
 
 ## Main results
 
-* `NLAlib.SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue`: the `sin Θ` theorem
-  in residual form, interval separation, every unitarily invariant norm.
+* `NLAlib.SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue`: the $\sin \Theta$
+  theorem in residual form, interval separation, every unitarily invariant norm.
 * `NLAlib.mul_frobNorm_conjTranspose_mul_le`: arbitrary separation, Frobenius norm.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_mul_le_of_mul_mul_le`: the projector form.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le`: a Ritz pair against a
   leading eigenspace, no complement frame.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_eigenvalue_sub`: leading eigenspaces of
-  `A` and `A + E`.
+  $\mathbf{A}$ and $\mathbf{A} + \mathbf{E}$.
 * `NLAlib.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal`,
   `NLAlib.one_sub_mul_mul_one_sub_le_of_smul_one_le`: a Hermitian matrix on the complement of a
   leading invariant subspace, in the Loewner order.
@@ -56,7 +61,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n p q : Type*} [Fintype n] [Fintype p] [F
 
 /-! ### The residual form -/
 
-/-- If `A` and `M` are Hermitian and `A * V = V * M`, then `Vᴴ * A = M * Vᴴ`. -/
+/-- If $\mathbf{A}$ and $\mathbf{M}$ are Hermitian and
+$\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$, then
+$\mathbf{V}^{\mathsf{H}}\mathbf{A} = \mathbf{M}\mathbf{V}^{\mathsf{H}}$. -/
 private theorem conjTranspose_mul_eq_of_mul_eq {A : Matrix n n 𝕜} {V : Matrix n q 𝕜}
     {M : Matrix q q 𝕜} (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M) :
     Vᴴ * A = M * Vᴴ := by
@@ -72,8 +79,10 @@ private theorem isHermitian_of_mul_eq_mul [DecidableEq q] {A : Matrix n n 𝕜} 
   rw [h]
   exact Matrix.isHermitian_conjTranspose_mul_mul V hA
 
-/-- The Sylvester identity behind the `sin Θ` theorems: if `A` is Hermitian, `A * V = V * M` and
-`M` is Hermitian, then `Vᴴ (A U - U L) = M (Vᴴ U) - (Vᴴ U) L`.
+/-- The Sylvester identity behind the $\sin \Theta$ theorems: if $\mathbf{A}$ is Hermitian,
+$\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$ and $\mathbf{M}$ is Hermitian, then
+$\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L}) =
+\mathbf{M}(\mathbf{V}^{\mathsf{H}}\mathbf{U}) - (\mathbf{V}^{\mathsf{H}}\mathbf{U})\mathbf{L}$.
 Port of `NLAlib.sylvester_complement_overlap_eq`. -/
 theorem conjTranspose_mul_mul_sub_mul_eq {A : Matrix n n 𝕜} {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
     (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M) (U : Matrix n p 𝕜)
@@ -81,13 +90,16 @@ theorem conjTranspose_mul_mul_sub_mul_eq {A : Matrix n n 𝕜} {V : Matrix n q �
   rw [Matrix.mul_sub, ← Matrix.mul_assoc, conjTranspose_mul_eq_of_mul_eq hA hM hAV,
     Matrix.mul_assoc, Matrix.mul_assoc]
 
-/-- **The Davis–Kahan `sin Θ` theorem, residual form.** Let `A` be Hermitian with
-`A * V = V * M`, `M` Hermitian. If the spectrum of `L` lies in `[a, b]` and every eigenvalue of
-`M` lies outside `(a - δ, b + δ)`, then in every unitarily invariant norm
-`δ ‖Vᴴ U‖ ≤ ‖Vᴴ (A U - U L)‖`.
+/-- **The Davis–Kahan $\sin \Theta$ theorem, residual form.** Let $\mathbf{A}$ be Hermitian with
+$\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$, $\mathbf{M}$ Hermitian. If the spectrum of
+$\mathbf{L}$ lies in $[a, b]$ (that is, $a\mathbf{I} \preceq \mathbf{L} \preceq b\mathbf{I}$) and
+every eigenvalue of $\mathbf{M}$ lies outside $(a - \delta, b + \delta)$, then in every unitarily
+invariant norm $\|\cdot\|_{\Phi}$
+$$\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\Phi}
+  \le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}.$$
 [DavisKahan1970]; [Bhatia1997, Theorem VII.3.1]; [StewartSun1990, Theorem V.3.6].
-Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_of_interval`, there over `ℝ` for
-the spectral norm.
+Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_of_interval`, there over $\mathbb{R}$
+for the spectral norm.
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue [DecidableEq p]
     (Φ : SymmetricGauge) {A : Matrix n n 𝕜} {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
@@ -99,8 +111,13 @@ theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue [Decida
   rw [conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
   exact Φ.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue hM hL₁ hL₂ hMsep _
 
-/-- The `sin Θ` theorem in residual form with a one-sided separation: `M ≤ (α - δ) • 1` and
-`α • 1 ≤ L`. Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_of_one_sided_frames`.
+/-- The $\sin \Theta$ theorem in residual form with a one-sided separation: for Hermitian
+$\mathbf{A}$ with $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$, if
+$\mathbf{M} \preceq (\alpha - \delta)\mathbf{I}$ and $\alpha\mathbf{I} \preceq \mathbf{L}$, then
+$\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\Phi}
+\le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}$ in every
+unitarily invariant norm $\|\cdot\|_{\Phi}$.
+Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_of_one_sided_frames`.
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_le [DecidableEq p]
     [DecidableEq q] (Φ : SymmetricGauge) {A : Matrix n n 𝕜} {V : Matrix n q 𝕜}
@@ -111,11 +128,14 @@ theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_le [DecidableEq p]
   rw [conjTranspose_mul_mul_sub_mul_eq hA (isHermitian_of_le_smul_one hM) hAV]
   exact Φ.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le hM hL _
 
-/-- **The `sin Θ` theorem in the Frobenius norm**, residual form, for an arbitrary separation:
-if the eigenvalues of `L` and `M` are pairwise at distance at least `δ`, then
-`δ ‖Vᴴ U‖_F ≤ ‖Vᴴ (A U - U L)‖_F`.
+/-- **The $\sin \Theta$ theorem in the Frobenius norm**, residual form, for an arbitrary separation:
+for Hermitian $\mathbf{A}$, $\mathbf{L}$, $\mathbf{M}$ with
+$\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$, if the eigenvalues of $\mathbf{L}$ and $\mathbf{M}$
+are pairwise at distance at least $\delta$, then $\delta
+\|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\mathsf{F}}
+\le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\mathsf{F}}$.
 [DavisKahan1970]; [StewartSun1990, Theorem V.3.4].
-Port of `NLAlib.frobNorm_sinePrincipalAngles_le_compressed_residual_div`, there over `ℝ`.
+Port of `NLAlib.frobNorm_sinePrincipalAngles_le_compressed_residual_div`, there over $\mathbb{R}$.
 Result: davis-kahan -/
 theorem mul_frobNorm_conjTranspose_mul_le {A : Matrix n n 𝕜} {V : Matrix n q 𝕜}
     {M : Matrix q q 𝕜} (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M)
@@ -126,10 +146,13 @@ theorem mul_frobNorm_conjTranspose_mul_le {A : Matrix n n 𝕜} {V : Matrix n q 
   rw [conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
   exact mul_frobNorm_le_frobNorm_mul_sub_mul hM hL hsep _
 
-/-- **Distance of a vector from an invariant subspace, from its residual.** If `A` is Hermitian,
-`A * V = V * M` with `M` Hermitian, and every eigenvalue of `M` is at distance at least `δ` from
-`ρ`, then `δ ‖Vᴴ x‖ ≤ ‖Vᴴ (A x - ρ x)‖`. With `V` a frame of the complement of an eigenspace this
-bounds the sine of the angle between `x` and the eigenspace by `‖A x - ρ x‖ / δ`.
+/-- **Distance of a vector from an invariant subspace, from its residual.** If $\mathbf{A}$ is
+Hermitian, $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$ with $\mathbf{M}$ Hermitian, and every
+eigenvalue of $\mathbf{M}$ is at distance at least $\delta$ from $\rho$, then
+$\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{x}\| \le
+\|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{x} - \rho\mathbf{x})\|$. With $\mathbf{V}$ a frame of
+the complement of an eigenspace this bounds the sine of the angle between $\mathbf{x}$ and the
+eigenspace by $\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\| / \delta$.
 [Parlett1998, Theorem 11.7.1 context].
 Port of `NLAlib.sqrt_complement_eigenvalueProjector_le_residual_div`. -/
 theorem mul_norm_conjTranspose_mulVec_le {A : Matrix n n 𝕜} {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
@@ -151,9 +174,11 @@ theorem mul_norm_conjTranspose_mulVec_le {A : Matrix n n 𝕜} {V : Matrix n q �
 
 /-! ### Projector form -/
 
-/-- The Sylvester identity of the projector form: for an orthogonal projector `Q` commuting with
-`A`, the matrix `Q A Q + μ (1 - Q)`, which is `A` on the range of `Q` and `μ` on its complement,
-satisfies `(Q A Q + μ (1 - Q)) (Q U) - (Q U) L = Q (A U - U L)`. -/
+/-- The Sylvester identity of the projector form: for an orthogonal projector $\mathbf{Q}$ commuting
+with $\mathbf{A}$, the matrix $\mathbf{Q}\mathbf{A}\mathbf{Q} + \mu(\mathbf{I} - \mathbf{Q})$, which
+is $\mathbf{A}$ on the range of $\mathbf{Q}$ and $\mu$ on its complement, satisfies
+$$(\mathbf{Q}\mathbf{A}\mathbf{Q} + \mu(\mathbf{I} - \mathbf{Q}))(\mathbf{Q}\mathbf{U}) -
+  (\mathbf{Q}\mathbf{U})\mathbf{L} = \mathbf{Q}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L}).$$ -/
 private theorem add_smul_one_sub_mul_mul_sub_mul [DecidableEq n] {A Q : Matrix n n 𝕜}
     (hQ : IsStarProjection Q) (hAQ : A * Q = Q * A) (μ : ℝ) (U : Matrix n p 𝕜)
     (L : Matrix p p 𝕜) :
@@ -165,12 +190,17 @@ private theorem add_smul_one_sub_mul_mul_sub_mul [DecidableEq n] {A Q : Matrix n
     Matrix.mul_assoc (Q * A) Q Q, hQ.mul_self, hQAQ, Matrix.mul_sub, Matrix.mul_assoc,
     Matrix.mul_assoc]
 
-/-- **The `sin Θ` theorem, projector form.** Let `Q` be an orthogonal projector commuting with
-`A` (the projector onto an invariant subspace) on whose range `A` is at most `μ`, in the form
-`Q A Q ≤ μ • Q`. For any pair `(U, L)` with `(μ + δ) • 1 ≤ L`, in every unitarily invariant norm
-`δ ‖Q U‖ ≤ ‖Q (A U - U L)‖`. With `Q = 1 - W Wᴴ` for a frame `W` of the rest of the spectrum,
-`Q U` is the distance of the range of `U` from the range of `W`. Only the compression `Q A Q`
-enters, and the hypothesis makes it Hermitian, so `A` itself need not be.
+/-- **The $\sin \Theta$ theorem, projector form.** Let $\mathbf{Q}$ be an orthogonal projector
+commuting with $\mathbf{A}$ (the projector onto an invariant subspace) on whose range $\mathbf{A}$
+is at most $\mu$, in the form $\mathbf{Q}\mathbf{A}\mathbf{Q} \preceq \mu\mathbf{Q}$. For any pair
+$(\mathbf{U}, \mathbf{L})$ with $(\mu + \delta)\mathbf{I} \preceq \mathbf{L}$, in every unitarily
+invariant norm $\|\cdot\|_{\Phi}$
+$$\delta \|\mathbf{Q}\mathbf{U}\|_{\Phi}
+  \le \|\mathbf{Q}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}.$$
+With $\mathbf{Q} = \mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}$ for a frame $\mathbf{W}$ of the
+rest of the spectrum, $\mathbf{Q}\mathbf{U}$ is the distance of the range of $\mathbf{U}$ from the
+range of $\mathbf{W}$. Only the compression $\mathbf{Q}\mathbf{A}\mathbf{Q}$ enters, and the
+hypothesis makes it Hermitian, so $\mathbf{A}$ itself need not be.
 [DavisKahan1970]; [Bhatia1997, Theorem VII.3.1].
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_mul_le_of_mul_mul_le [DecidableEq p] (Φ : SymmetricGauge)
@@ -187,8 +217,11 @@ theorem SymmetricGauge.mul_matrixNorm_mul_le_of_mul_mul_le [DecidableEq p] (Φ :
   have h := Φ.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le hle hL (Q * U)
   rwa [add_smul_one_sub_mul_mul_sub_mul hQ hAQ] at h
 
-/-- The projector form with the invariant subspace above the Ritz block: `μ • Q ≤ Q A Q` and
-`L ≤ (μ - δ) • 1`. -/
+/-- The projector form with the invariant subspace above the Ritz block: for an orthogonal projector
+$\mathbf{Q}$ commuting with $\mathbf{A}$, if $\mu\mathbf{Q} \preceq \mathbf{Q}\mathbf{A}\mathbf{Q}$
+and $\mathbf{L} \preceq (\mu - \delta)\mathbf{I}$, then
+$\delta \|\mathbf{Q}\mathbf{U}\|_{\Phi} \le
+\|\mathbf{Q}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}$. -/
 theorem SymmetricGauge.mul_matrixNorm_mul_le_of_le_mul_mul [DecidableEq p] (Φ : SymmetricGauge)
     {A Q : Matrix n n 𝕜} (hQ : IsStarProjection Q) (hAQ : A * Q = Q * A)
     {μ δ : ℝ} (hQA : μ • Q ≤ Q * A * Q) {U : Matrix n p 𝕜} {L : Matrix p p 𝕜}
@@ -205,7 +238,10 @@ theorem SymmetricGauge.mul_matrixNorm_mul_le_of_le_mul_mul [DecidableEq p] (Φ :
 
 /-! ### Leading eigenspaces -/
 
-/-- The projector onto an invariant subspace of a Hermitian matrix commutes with it. -/
+/-- The projector onto an invariant subspace of a Hermitian matrix commutes with it: if $\mathbf{A}$
+is Hermitian, $\mathbf{W}$ has orthonormal columns and
+$\mathbf{A}\mathbf{W} = \mathbf{W}\mathbf{M}$, then
+$\mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}} = \mathbf{W}\mathbf{W}^{\mathsf{H}}\mathbf{A}$. -/
 theorem HasOrthonormalCols.mul_conjTranspose_commute_of_mul_eq_mul [DecidableEq p]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n p 𝕜} {M : Matrix p p 𝕜}
     (hW : HasOrthonormalCols W)
@@ -230,8 +266,8 @@ private theorem HasOrthonormalCols.fromCols_replicateCol [DecidableEq p] {W : Ma
     ext i k
     rfl
 
-/-- The trace of the compression of `A` to a frame extended by one column `x` is the trace of
-the compression to the frame plus the quadratic form at `x`. -/
+/-- The trace of the compression of $\mathbf{A}$ to a frame extended by one column $\mathbf{x}$ is
+the trace of the compression to the frame plus the quadratic form at $\mathbf{x}$. -/
 private theorem trace_conjTranspose_fromCols_replicateCol_mul_mul (A : Matrix n n 𝕜)
     (W : Matrix n p 𝕜) (x : n → 𝕜) :
     ((Matrix.fromCols W (Matrix.replicateCol Unit x))ᴴ * A *
@@ -244,8 +280,9 @@ private theorem trace_conjTranspose_fromCols_replicateCol_mul_mul (A : Matrix n 
   rw [Matrix.conjTranspose_replicateCol, Matrix.mul_assoc _ A (Matrix.replicateCol Unit x),
     ← Matrix.replicateCol_mulVec, Matrix.replicateRow_mul_replicateCol_apply, quadForm_def]
 
-/-- To bound a Hermitian matrix on the orthogonal complement of the range of a frame `W`, it
-suffices to bound its quadratic form at the unit vectors orthogonal to the columns of `W`. -/
+/-- To bound a Hermitian matrix on the orthogonal complement of the range of a frame $\mathbf{W}$,
+it suffices to bound its quadratic form at the unit vectors orthogonal to the columns of
+$\mathbf{W}$. -/
 private theorem one_sub_mul_mul_one_sub_le_of_forall [DecidableEq n] [DecidableEq p]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n p 𝕜} (hW : HasOrthonormalCols W)
     {c : ℝ}
@@ -283,8 +320,9 @@ private theorem one_sub_mul_mul_one_sub_le_of_forall [DecidableEq n] [DecidableE
     field_simp
   rwa [e] at h''
 
-/-- The quadratic form of `A` at a unit vector orthogonal to a frame of leading eigenvectors is
-at most the next eigenvalue, by Ky Fan's maximum principle applied to the extended frame. -/
+/-- The quadratic form of $\mathbf{A}$ at a unit vector orthogonal to a frame of leading
+eigenvectors is at most the next eigenvalue, by Ky Fan's maximum principle applied to the extended
+frame. -/
 private theorem re_quadForm_le_eigenvalue_of_mul_eq_mul_diagonal {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {j : ℕ} {W : Matrix n (Fin (j + 1)) 𝕜} (hW : HasOrthonormalCols W)
     (hAW : A * W = W * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
@@ -299,9 +337,15 @@ private theorem re_quadForm_le_eigenvalue_of_mul_eq_mul_diagonal {A : Matrix n n
     Fin.sum_univ_eq_sum_range (fun i => eigenvalue A i) (j + 1)] at h
   linarith
 
-/-- **The complement of a leading eigenframe.** If the columns of `W` are orthonormal
-eigenvectors of the Hermitian matrix `A` for its `j + 1` largest eigenvalues, then on the
-orthogonal complement `A` is at most `λ_{j+1}(A)`. This holds with repeated eigenvalues. -/
+/-- **The complement of a leading eigenframe.** If the columns of $\mathbf{W}$ are orthonormal
+eigenvectors of the Hermitian matrix $\mathbf{A}$ for its $j + 1$ largest eigenvalues,
+$\mathbf{A}\mathbf{W} = \mathbf{W} \operatorname{diag}(\lambda_0(\mathbf{A}), \dots,
+\lambda_j(\mathbf{A}))$, then on the orthogonal complement $\mathbf{A}$ is at most
+$\lambda_{j+1}(\mathbf{A})$:
+$$(\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}) \mathbf{A}
+  (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}})
+  \preceq \lambda_{j+1}(\mathbf{A}) (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}).$$
+This holds with repeated eigenvalues. -/
 theorem one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {j : ℕ} {W : Matrix n (Fin (j + 1)) 𝕜} (hW : HasOrthonormalCols W)
     (hAW : A * W = W * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜)) :
@@ -309,8 +353,9 @@ theorem one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal [DecidableEq n] {A : M
   one_sub_mul_mul_one_sub_le_of_forall hA hW fun _ hx₀ hx =>
     re_quadForm_le_eigenvalue_of_mul_eq_mul_diagonal hA hW hAW hx₀ hx
 
-/-- The quadratic form of `A` on the span of an invariant frame `W` and a vector `x` orthogonal
-to it splits into the form of the block on the frame and the form at `x`. -/
+/-- The quadratic form of $\mathbf{A}$ on the span of an invariant frame $\mathbf{W}$ and a vector
+$\mathbf{x}$ orthogonal to it splits into the form of the block on the frame and the form at
+$\mathbf{x}$. -/
 private theorem re_quadForm_fromCols_replicateCol_mulVec [DecidableEq p] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {W : Matrix n p 𝕜} {Λ : Matrix p p 𝕜} (hW : HasOrthonormalCols W)
     (hAW : A * W = W * Λ) {x : n → 𝕜} (hx₀ : Wᴴ *ᵥ x = 0) (v : p ⊕ Unit → 𝕜) :
@@ -330,8 +375,9 @@ private theorem re_quadForm_fromCols_replicateCol_mulVec [DecidableEq p] {A : Ma
     add_zero, quadForm_smul_right, RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow,
     RCLike.re_ofReal_mul, hΛ, quadForm_conjTranspose_mul_mul, add_comm]
 
-/-- The quadratic form of `A` at a unit vector orthogonal to an invariant frame with `j + 1`
-columns on which `A` is at least `λ_j(A)` is at most `λ_{j+1}(A)`, when the two differ. -/
+/-- The quadratic form of $\mathbf{A}$ at a unit vector orthogonal to an invariant frame with
+$j + 1$ columns on which $\mathbf{A}$ is at least $\lambda_j(\mathbf{A})$ is at most
+$\lambda_{j+1}(\mathbf{A})$, when the two differ. -/
 private theorem re_quadForm_le_eigenvalue_of_smul_one_le [DecidableEq p] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {W : Matrix n p 𝕜} {Λ : Matrix p p 𝕜} (hW : HasOrthonormalCols W)
     (hAW : A * W = W * Λ) {j : ℕ} (hp : Fintype.card p = j + 1)
@@ -368,10 +414,16 @@ private theorem re_quadForm_le_eigenvalue_of_smul_one_le [DecidableEq p] {A : Ma
   · exact absurd h (not_le.mpr hgap)
   · exact h
 
-/-- The complement of a leading invariant subspace given by a Loewner bound: if `A * W = W * Λ`
-for a frame `W` with `j + 1` columns, `λ_j(A) • 1 ≤ Λ`, and there is a gap
-`λ_{j+1}(A) < λ_j(A)`, then on the orthogonal complement `A` is at most `λ_{j+1}(A)`. The gap is
-needed: with a repeated eigenvalue the bound on `Λ` does not determine the subspace. -/
+/-- The complement of a leading invariant subspace given by a Loewner bound: if $\mathbf{A}$ is
+Hermitian, $\mathbf{A}\mathbf{W} = \mathbf{W}\mathbf{\Lambda}$ for a frame $\mathbf{W}$ with $j + 1$
+columns, $\lambda_j(\mathbf{A})\mathbf{I} \preceq \mathbf{\Lambda}$, and there is a gap
+$\lambda_{j+1}(\mathbf{A}) < \lambda_j(\mathbf{A})$, then on the orthogonal complement $\mathbf{A}$
+is at most $\lambda_{j+1}(\mathbf{A})$:
+$$(\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}) \mathbf{A}
+  (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}})
+  \preceq \lambda_{j+1}(\mathbf{A}) (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}).$$
+The gap is needed: with a repeated eigenvalue the bound on $\mathbf{\Lambda}$ does not determine the
+subspace. -/
 theorem one_sub_mul_mul_one_sub_le_of_smul_one_le [DecidableEq n] [DecidableEq p]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n p 𝕜} {Λ : Matrix p p 𝕜}
     (hW : HasOrthonormalCols W) (hAW : A * W = W * Λ)
@@ -381,10 +433,12 @@ theorem one_sub_mul_mul_one_sub_le_of_smul_one_le [DecidableEq n] [DecidableEq p
   one_sub_mul_mul_one_sub_le_of_forall hA hW fun _ hx₀ hx =>
     re_quadForm_le_eigenvalue_of_smul_one_le hA hW hAW hp hΛ hgap hx₀ hx
 
-/-- **Davis–Kahan for a leading eigenspace, residual form.** Let the columns of `W` be
-orthonormal eigenvectors of the Hermitian matrix `A` for its `j + 1` largest eigenvalues. For any
-pair `(U, L)` with `(λ_{j+1}(A) + δ) • 1 ≤ L`, in every unitarily invariant norm
-`δ ‖(1 - W Wᴴ) U‖ ≤ ‖A U - U L‖`.
+/-- **Davis–Kahan for a leading eigenspace, residual form.** Let the columns of $\mathbf{W}$ be
+orthonormal eigenvectors of the Hermitian matrix $\mathbf{A}$ for its $j + 1$ largest eigenvalues.
+For any pair $(\mathbf{U}, \mathbf{L})$ with $(\lambda_{j+1}(\mathbf{A}) + \delta)\mathbf{I}
+\preceq \mathbf{L}$, in every unitarily invariant norm $\|\cdot\|_{\Phi}$
+$$\delta \|(\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}})\mathbf{U}\|_{\Phi}
+  \le \|\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L}\|_{\Phi}.$$
 This is the form used for Ritz pairs: no frame of the complement appears.
 [DavisKahan1970]; [StewartSun1990, Theorem V.3.6]; [Parlett1998, Theorem 11.7.1].
 Result: davis-kahan -/
@@ -405,9 +459,14 @@ theorem SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le [Decidab
 
 /-! ### Two matrices -/
 
-/-- **The `sin Θ` theorem for two Hermitian matrices.** If `A * U = U * L` with the spectrum of
-`L` in `[a, b]`, and `B * V = V * M` with `B`, `M` Hermitian and every eigenvalue of `M` outside
-`(a - δ, b + δ)`, then `δ ‖Vᴴ U‖ ≤ ‖Vᴴ (B - A) U‖` in every unitarily invariant norm.
+/-- **The $\sin \Theta$ theorem for two Hermitian matrices.** If
+$\mathbf{A}\mathbf{U} = \mathbf{U}\mathbf{L}$ with the spectrum of $\mathbf{L}$ in $[a, b]$ (that
+is, $a\mathbf{I} \preceq \mathbf{L} \preceq b\mathbf{I}$), and
+$\mathbf{B}\mathbf{V} = \mathbf{V}\mathbf{M}$ with $\mathbf{B}$, $\mathbf{M}$ Hermitian and every
+eigenvalue of $\mathbf{M}$ outside $(a - \delta, b + \delta)$, then
+$\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\Phi}
+\le \|\mathbf{V}^{\mathsf{H}}(\mathbf{B} - \mathbf{A})\mathbf{U}\|_{\Phi}$ in every unitarily
+invariant norm $\|\cdot\|_{\Phi}$.
 [DavisKahan1970]; [Bhatia1997, Theorem VII.3.1].
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_mul_eq_mul [DecidableEq p]
@@ -420,14 +479,19 @@ theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_mul_eq_mul [Decida
   have h := Φ.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue hB hM hBV hL₁ hL₂ hMsep (U := U)
   rwa [← hAU, ← Matrix.sub_mul, ← Matrix.mul_assoc] at h
 
-/-- **Davis–Kahan for the leading eigenspaces of `A` and `A + E`.** Let `A` and `E` be
-Hermitian, let `U` span an invariant subspace of `A` on which `A` is at least `λ_j(A)`
-(`A * U = U * L`, `λ_j(A) • 1 ≤ L`), and let the columns of `U'` be orthonormal eigenvectors of
-`A + E` for its `j + 1` largest eigenvalues. If `δ ≤ λ_j(A) - λ_{j+1}(A + E)`, then in every
-unitarily invariant norm `δ ‖(1 - U' U'ᴴ) U‖ ≤ ‖E U‖`.
+/-- **Davis–Kahan for the leading eigenspaces of $\mathbf{A}$ and $\mathbf{A} + \mathbf{E}$.** Let
+$\mathbf{A}$ and $\mathbf{E}$ be Hermitian, let $\mathbf{U}$ span an invariant subspace of
+$\mathbf{A}$ on which $\mathbf{A}$ is at least $\lambda_j(\mathbf{A})$
+($\mathbf{A}\mathbf{U} = \mathbf{U}\mathbf{L}$, $\lambda_j(\mathbf{A})\mathbf{I}
+\preceq \mathbf{L}$), and let the columns of $\mathbf{U}'$ be orthonormal eigenvectors of
+$\mathbf{A} + \mathbf{E}$ for its $j + 1$ largest eigenvalues. If
+$\delta \le \lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A} + \mathbf{E})$, then in every unitarily
+invariant norm $\|\cdot\|_{\Phi}$
+$$\delta \|(\mathbf{I} - \mathbf{U}'\mathbf{U}'^{\mathsf{H}})\mathbf{U}\|_{\Phi}
+  \le \|\mathbf{E}\mathbf{U}\|_{\Phi}.$$
 [DavisKahan1970]; [StewartSun1990, Theorem V.3.6].
-Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_top_gap`, there over `ℝ` with
-chosen eigenframes.
+Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_top_gap`, there over $\mathbb{R}$
+with chosen eigenframes.
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_eigenvalue_sub [DecidableEq n]
     [DecidableEq p] (Φ : SymmetricGauge) {A E : Matrix n n 𝕜} (hA : A.IsHermitian)

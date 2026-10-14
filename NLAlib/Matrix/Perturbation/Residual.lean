@@ -11,11 +11,12 @@ public import NLAlib.Matrix.Spectral.CourantFischer
 /-!
 # Residual bounds for eigenvalues
 
-A posteriori bounds: from an approximate eigenpair `(μ, x)` and its residual `A x - μ x` to the
-distance of `μ` from the spectrum. For Hermitian matrices the residual bounds the distance to the
-nearest eigenvalue, the Rayleigh quotient minimises the residual, and with a gap the error of the
-Rayleigh quotient is quadratic in the residual (Kato–Temple). For diagonalisable matrices the
-bound carries the condition number of the eigenvector matrix (Bauer–Fike).
+A posteriori bounds: from an approximate eigenpair $(\mu, \mathbf{x})$ and its residual
+$\mathbf{A}\mathbf{x} - \mu\mathbf{x}$ to the distance of $\mu$ from the spectrum. For Hermitian
+matrices the residual bounds the distance to the nearest eigenvalue, the Rayleigh quotient
+minimises the residual, and with a gap the error of the Rayleigh quotient is quadratic in the
+residual (Kato–Temple). For diagonalisable matrices the bound carries the condition number of the
+eigenvector matrix (Bauer–Fike).
 
 ## Main results
 
@@ -38,7 +39,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
 /-! ### Hermitian matrices -/
 
-/-- Coordinates in an orthonormal eigenbasis of a Hermitian matrix: a map `T` that preserves the
+/-- Coordinates in an orthonormal eigenbasis of a Hermitian matrix: a map $T$ that preserves the
 Euclidean norm and turns the squared norm of a shifted residual into a weighted sum. -/
 private theorem exists_eigencoordinates {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ T : (n → 𝕜) → Fin (Fintype.card n) → 𝕜,
@@ -66,10 +67,12 @@ private theorem exists_eigencoordinates {A : Matrix n n 𝕜} (hA : A.IsHermitia
     refine Finset.sum_congr rfl fun j _ => ?_
     rw [norm_mul, mul_pow, RCLike.norm_ofReal, sq_abs]
 
-/-- **An eigenvalue within the residual.** For Hermitian `A`, any vector `x` and any real `μ`,
-some eigenvalue satisfies `|λ_i - μ| ‖x‖ ≤ ‖A x - μ x‖`.
+/-- **An eigenvalue within the residual.** For Hermitian $\mathbf{A}$ with $\lvert n \rvert \ge 1$,
+any vector $\mathbf{x}$ and any real $\mu$, some eigenvalue $\lambda_i(\mathbf{A})$,
+$i < \lvert n \rvert$, satisfies $\lvert \lambda_i(\mathbf{A}) - \mu \rvert \, \|\mathbf{x}\|
+\le \|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|$.
 [Parlett1998, Theorem 4.5.1].
-Port of `NLAlib.exists_eigenvalue_abs_sub_le_residual`, there over `ℝ` for unit vectors. -/
+Port of `NLAlib.exists_eigenvalue_abs_sub_le_residual`, there over $\mathbb{R}$ for unit vectors. -/
 theorem _root_.Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le [Nonempty n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
     ∃ i, i < Fintype.card n ∧
@@ -84,7 +87,8 @@ theorem _root_.Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le [Nonempt
   rw [← sq_abs (eigenvalue A j - μ)]
   exact pow_le_pow_left₀ (abs_nonneg _) (hi j) 2
 
-/-- The residual at the Rayleigh quotient is orthogonal to the vector.
+/-- For Hermitian $\mathbf{A}$, the residual at the Rayleigh quotient $\rho$ of $\mathbf{x}$ is
+orthogonal to $\mathbf{x}$: $\mathbf{x}^{\mathsf{H}}(\mathbf{A}\mathbf{x} - \rho\mathbf{x}) = 0$.
 Port of `NLAlib.dotProduct_rayleigh_residual_eq_zero`. -/
 theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_sub_rayleighQuotient_smul
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : n → 𝕜) :
@@ -93,8 +97,11 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_sub_rayleighQuotient_sm
     ← quadForm_def, ← hA.coe_re_quadForm, re_quadForm_eq_rayleighQuotient_mul,
     RCLike.real_smul_eq_coe_mul, RCLike.ofReal_mul, sub_self]
 
-/-- **Pythagoras for residuals.** For Hermitian `A` and real `μ`,
-`‖A x - μ x‖² = ‖A x - ρ x‖² + (μ - ρ)² ‖x‖²` with `ρ` the Rayleigh quotient.
+/-- **Pythagoras for residuals.** For Hermitian $\mathbf{A}$, any vector $\mathbf{x}$ and real
+$\mu$,
+$$\|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|^2
+  = \|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2 + (\mu - \rho)^2 \|\mathbf{x}\|^2,$$
+with $\rho$ the Rayleigh quotient of $\mathbf{x}$.
 Port of `NLAlib.dotProduct_shifted_residual_eq_rayleigh_add_sq`. -/
 theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_smul_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
@@ -114,7 +121,9 @@ theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_smul_sq {A : Matrix n n 𝕜}
     Real.norm_eq_abs]
   rw [← sq, ← sq, mul_pow, sq_abs, ← neg_sub μ, neg_sq]
 
-/-- **The Rayleigh quotient minimises the residual** over real shifts.
+/-- **The Rayleigh quotient minimises the residual** over real shifts: for Hermitian $\mathbf{A}$,
+$\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\| \le \|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|$ for every
+real $\mu$, with $\rho$ the Rayleigh quotient of $\mathbf{x}$.
 [Parlett1998, §1.5]. Port of `NLAlib.rayleigh_residual_le_shifted_residual`. -/
 theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_rayleighQuotient_smul_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
@@ -123,8 +132,8 @@ theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_rayleighQuotient_smul_le {A : 
   rw [hA.norm_mulVec_sub_smul_sq x μ]
   exact le_add_of_nonneg_right (by positivity)
 
-/-- If every eigenvalue lies outside the open interval between `ℓ` and `a`, the squared residual
-of a unit vector at its Rayleigh quotient `ρ` is at least `(ℓ - ρ) (ρ - a)`. -/
+/-- If every eigenvalue lies outside the open interval between $\ell$ and $a$, the squared residual
+of a unit vector at its Rayleigh quotient $\rho$ is at least $(\ell - \rho)(\rho - a)$. -/
 private theorem sub_mul_sub_le_norm_sq {A : Matrix n n 𝕜} (hA : A.IsHermitian) {x : n → 𝕜}
     (hx : ‖WithLp.toLp 2 x‖ = 1) {ℓ a : ℝ}
     (hp : ∀ i, i < Fintype.card n → 0 ≤ (eigenvalue A i - ℓ) * (eigenvalue A i - a)) :
@@ -140,12 +149,13 @@ private theorem sub_mul_sub_le_norm_sq {A : Matrix n n 𝕜} (hA : A.IsHermitian
   rw [hx] at h1 h2
   nlinarith
 
-/-- **The quadratic residual bound.** Let `A` be Hermitian, `x` a unit vector with Rayleigh
-quotient `ρ`, and `ℓ` a number within `δ` of `ρ` such that no eigenvalue other than `ℓ` is
-within `δ` of `ρ`. Then
-`|ℓ - ρ| δ ≤ ‖A x - ρ x‖²`.
+/-- **The quadratic residual bound.** Let $\mathbf{A}$ be Hermitian, $\mathbf{x}$ a unit vector with
+Rayleigh quotient $\rho$, $\delta > 0$, and $\ell$ a number with
+$\lvert \ell - \rho \rvert < \delta$ such that every eigenvalue $\lambda_i(\mathbf{A})$ with
+$\lvert \lambda_i(\mathbf{A}) - \rho \rvert < \delta$ equals $\ell$. Then
+$\lvert \ell - \rho \rvert \, \delta \le \|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2$.
 [Parlett1998, Theorem 11.7.1].
-Port of `NLAlib.abs_eigenvalue_sub_rayleigh_le_residual_sq_div`, there over `ℝ`. -/
+Port of `NLAlib.abs_eigenvalue_sub_rayleigh_le_residual_sq_div`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_mul_le_norm_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {ℓ δ : ℝ} (hδ : 0 < δ)
     (hℓ : |ℓ - rayleighQuotient A x| < δ)
@@ -169,8 +179,9 @@ theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_mul_le_norm_sq {A : M
   rw [sub_add_cancel_left] at h2
   rcases abs_cases (ℓ - rayleighQuotient A x) with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h] <;> linarith
 
-/-- The sign condition behind the Kato–Temple inequalities: if `ℓ` is the only eigenvalue in
-`(α, β)`, then `(λ_i - ℓ) (λ_i - a) ≥ 0` for every eigenvalue and each endpoint `a`. -/
+/-- The sign condition behind the Kato–Temple inequalities: if $\ell \in (\alpha, \beta)$ and
+$t = \ell$ whenever $t \in (\alpha, \beta)$, then $(t - \ell)(t - a) \ge 0$ for each endpoint $a$ of
+$(\alpha, \beta)$. -/
 private theorem sub_mul_sub_nonneg_of_isolated {α β ℓ t a : ℝ} (hαℓ : α < ℓ) (hℓβ : ℓ < β)
     (ha : a = α ∨ a = β) (hiso : α < t → t < β → t = ℓ) : 0 ≤ (t - ℓ) * (t - a) := by
   by_cases h₁ : α < t
@@ -179,9 +190,11 @@ private theorem sub_mul_sub_nonneg_of_isolated {α β ℓ t a : ℝ} (hαℓ : �
     · rcases ha with rfl | rfl <;> nlinarith
   · rcases ha with rfl | rfl <;> nlinarith
 
-/-- **Kato–Temple, lower bound.** Let `A` be Hermitian, `x` a unit vector with Rayleigh quotient
-`ρ < β`, and `ℓ ∈ (α, β)` such that no eigenvalue other than `ℓ` lies in `(α, β)`. Then
-`ρ - ‖A x - ρ x‖² / (β - ρ) ≤ ℓ`. The bound `α < ρ` of the classical statement is not needed.
+/-- **Kato–Temple, lower bound.** Let $\mathbf{A}$ be Hermitian, $\mathbf{x}$ a unit vector with
+Rayleigh quotient $\rho < \beta$, and $\ell \in (\alpha, \beta)$ such that no eigenvalue other than
+$\ell$ lies in $(\alpha, \beta)$. Then
+$$\rho - \frac{\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2}{\beta - \rho} \le \ell.$$
+The bound $\alpha < \rho$ of the classical statement is not needed.
 [Parlett1998, §11.7]; [Kato1995, §I.6 context]. Port of `NLAlib.kato_temple_le_eigenvalue`. -/
 theorem _root_.Matrix.IsHermitian.rayleighQuotient_sub_le_of_lt {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {α β ℓ : ℝ}
@@ -197,8 +210,11 @@ theorem _root_.Matrix.IsHermitian.rayleighQuotient_sub_le_of_lt {A : Matrix n n 
   rw [sub_le_comm, le_div_iff₀ hd]
   linarith
 
-/-- **Kato–Temple, upper bound**: `ℓ ≤ ρ + ‖A x - ρ x‖² / (ρ - α)`, for `α < ρ` and `ℓ ∈ (α, β)`
-the only eigenvalue in `(α, β)`. The bound `ρ < β` of the classical statement is not needed.
+/-- **Kato–Temple, upper bound**: for Hermitian $\mathbf{A}$, a unit vector $\mathbf{x}$ with
+Rayleigh quotient $\rho > \alpha$, and $\ell \in (\alpha, \beta)$ such that no eigenvalue other than
+$\ell$ lies in $(\alpha, \beta)$,
+$$\ell \le \rho + \frac{\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2}{\rho - \alpha}.$$
+The bound $\rho < \beta$ of the classical statement is not needed.
 Port of `NLAlib.kato_temple_eigenvalue_le`. -/
 theorem _root_.Matrix.IsHermitian.le_rayleighQuotient_add_of_lt {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {α β ℓ : ℝ}
@@ -217,10 +233,14 @@ theorem _root_.Matrix.IsHermitian.le_rayleighQuotient_add_of_lt {A : Matrix n n 
 
 variable [DecidableEq n]
 
-/-- **Bauer–Fike, residual form.** If `A * V = V * diagonal d` with `V` invertible, then for any
-vector `x` and scalar `μ` some `d i` satisfies `‖d i - μ‖ ‖x‖ ≤ κ(V) ‖A x - μ x‖`.
+/-- **Bauer–Fike, residual form.** If
+$\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and
+$\lvert n \rvert \ge 1$, then for any vector $\mathbf{x}$ and scalar $\mu$ some $\mathbf{d}_i$
+satisfies $\lvert \mathbf{d}_i - \mu \rvert \, \|\mathbf{x}\|
+\le \kappa(\mathbf{V}) \, \|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|$.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
-Port of `NLAlib.exists_eigenvalue_distance_mul_euclidean_norm_le_residual`, there over `ℂ`. -/
+Port of `NLAlib.exists_eigenvalue_distance_mul_euclidean_norm_le_residual`, there over $\mathbb{C}$.
+-/
 theorem exists_norm_sub_mul_norm_le_conditionNumber_mul [Nonempty n] {A V : Matrix n n 𝕜}
     {d : n → 𝕜} (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) (x : n → 𝕜) (μ : 𝕜) :
     ∃ i, ‖d i - μ‖ * ‖WithLp.toLp 2 x‖ ≤
@@ -256,10 +276,12 @@ theorem exists_norm_sub_mul_norm_le_conditionNumber_mul [Nonempty n] {A V : Matr
     _ = conditionNumber V * ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
         rw [conditionNumber_of_isUnit hV, mul_assoc]
 
-/-- **The Bauer–Fike theorem.** If `A * V = V * diagonal d` with `V` invertible, every eigenvalue
-`μ` of `A + E` is within `κ(V) ‖E‖₂` of some `d i`.
+/-- **The Bauer–Fike theorem.** If
+$\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
+every eigenvalue $\mu$ of $\mathbf{A} + \mathbf{E}$ satisfies
+$\lvert \mathbf{d}_i - \mu \rvert \le \kappa(\mathbf{V}) \|\mathbf{E}\|_2$ for some $i$.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
-Port of `NLAlib.exists_eigenvalue_distance_le_euclidean_residual_div`, there over `ℂ`.
+Port of `NLAlib.exists_eigenvalue_distance_le_euclidean_residual_div`, there over $\mathbb{C}$.
 Result: bauer-fike -/
 theorem exists_norm_sub_le_conditionNumber_mul_specNorm {A V E : Matrix n n 𝕜} {d : n → 𝕜}
     (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) {x : n → 𝕜} (hx : x ≠ 0) {μ : 𝕜}
@@ -278,7 +300,9 @@ theorem exists_norm_sub_le_conditionNumber_mul_specNorm {A V E : Matrix n n 𝕜
   rw [mul_assoc]
   exact mul_le_mul_of_nonneg_left (norm_toLp_mulVec_le _ _) (conditionNumber_nonneg _)
 
-/-- The diagonal entries of a diagonalisation are eigenvalues.
+/-- The diagonal entries of a diagonalisation are eigenvalues: if
+$\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
+each $\mathbf{d}_i$ is an eigenvalue of $\mathbf{A}$.
 Port of `NLAlib.mem_spectrum_of_diagonal_intertwining`. -/
 theorem mem_spectrum_of_mul_eq_mul_diagonal {A V : Matrix n n 𝕜} {d : n → 𝕜} (hV : IsUnit V)
     (hA : A * V = V * Matrix.diagonal d) (i : n) : d i ∈ spectrum 𝕜 A := by

@@ -14,9 +14,10 @@ public import NLAlib.Matrix.Subspaces.ProjectorPair
 # Perturbation of the pseudoinverse
 
 The pseudoinverse is not continuous: the rank can jump. Wedin's decomposition of
-`pinv B - pinv A` into three terms gives bounds in terms of `‖pinv A‖₂` and `‖pinv B‖₂`, with the
-constant `(1 + √5) / 2` in the spectral norm and `√2` in the Frobenius norm. When the ranks agree
-and the perturbation is small, `‖pinv B‖₂` is controlled by `‖pinv A‖₂`, and the bound closes.
+$\mathbf{B}^{+} - \mathbf{A}^{+}$ into three terms gives bounds in terms of $\|\mathbf{A}^{+}\|_2$
+and $\|\mathbf{B}^{+}\|_2$, with the constant $(1 + \sqrt{5})/2$ in the spectral norm and $\sqrt{2}$
+in the Frobenius norm. When the ranks agree and the perturbation is small, $\|\mathbf{B}^{+}\|_2$ is
+controlled by $\|\mathbf{A}^{+}\|_2$, and the bound closes.
 
 ## Main results
 
@@ -27,7 +28,7 @@ and the perturbation is small, `‖pinv B‖₂` is controlled by `‖pinv A‖�
 * `NLAlib.SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_of_rank_eq`,
   `NLAlib.specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq`,
   `NLAlib.frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq`: bounds for equal ranks.
-* `NLAlib.specNorm_pinv_le_div_of_rank_eq`: control of `‖pinv B‖₂` for equal ranks.
+* `NLAlib.specNorm_pinv_le_div_of_rank_eq`: control of $\|\mathbf{B}^{+}\|_2$ for equal ranks.
 * `NLAlib.specNorm_rangeProjector_sub_rangeProjector_le`: perturbation of the range projector.
 -/
 
@@ -41,38 +42,39 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Wedin's decomposition -/
 
-/-- `B⁺ B⁺ᴴ Bᴴ = B⁺`. -/
+/-- $\mathbf{B}^{+}(\mathbf{B}^{+})^{\mathsf{H}}\mathbf{B}^{\mathsf{H}} = \mathbf{B}^{+}$. -/
 private theorem pinv_mul_conjTranspose_pinv_mul_conjTranspose (B : Matrix m n 𝕜) :
     pinv B * (pinv B)ᴴ * Bᴴ = pinv B := by
   rw [Matrix.mul_assoc, ← Matrix.conjTranspose_mul, (isPinv_pinv B).isHermitian_left.eq,
     ← Matrix.mul_assoc, pinv_mul_mul_pinv]
 
-/-- `Aᴴ A⁺ᴴ A⁺ = A⁺`. -/
+/-- $\mathbf{A}^{\mathsf{H}}(\mathbf{A}^{+})^{\mathsf{H}}\mathbf{A}^{+} = \mathbf{A}^{+}$. -/
 private theorem conjTranspose_mul_conjTranspose_pinv_mul_pinv (A : Matrix m n 𝕜) :
     Aᴴ * (pinv A)ᴴ * pinv A = pinv A := by
   rw [← Matrix.conjTranspose_mul, (isPinv_pinv A).isHermitian_right.eq, pinv_mul_mul_pinv]
 
-/-- `A⁺ P_A = A⁺`. -/
+/-- $\mathbf{A}^{+}\mathbf{P}_{\mathbf{A}} = \mathbf{A}^{+}$. -/
 private theorem pinv_mul_rangeProjector (A : Matrix m n 𝕜) :
     pinv A * rangeProjector A = pinv A := by
   rw [← mul_pinv, ← Matrix.mul_assoc, pinv_mul_mul_pinv]
 
-/-- `P_{Aᴴ} A⁺ = A⁺`. -/
+/-- $\mathbf{P}_{\mathbf{A}^{\mathsf{H}}}\mathbf{A}^{+} = \mathbf{A}^{+}$. -/
 private theorem rangeProjector_conjTranspose_mul_pinv (A : Matrix m n 𝕜) :
     rangeProjector Aᴴ * pinv A = pinv A := by
   rw [← pinv_mul, pinv_mul_mul_pinv]
 
-/-- `A⁺ (1 - P_A) = 0`. -/
+/-- $\mathbf{A}^{+}(\mathbf{I} - \mathbf{P}_{\mathbf{A}}) = \mathbf{0}$. -/
 private theorem pinv_mul_one_sub_rangeProjector [DecidableEq m] (A : Matrix m n 𝕜) :
     pinv A * (1 - rangeProjector A) = 0 := by
   rw [Matrix.mul_sub, Matrix.mul_one, pinv_mul_rangeProjector, sub_self]
 
-/-- `(1 - P_{Aᴴ}) A⁺ = 0`. -/
+/-- $(\mathbf{I} - \mathbf{P}_{\mathbf{A}^{\mathsf{H}}})\mathbf{A}^{+} = \mathbf{0}$. -/
 private theorem one_sub_rangeProjector_conjTranspose_mul_pinv [DecidableEq n] (A : Matrix m n 𝕜) :
     (1 - rangeProjector Aᴴ) * pinv A = 0 := by
   rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_conjTranspose_mul_pinv, sub_self]
 
-/-- The second term of Wedin's decomposition is `B⁺ (1 - P_A)`. -/
+/-- The second term of Wedin's decomposition is
+$\mathbf{B}^{+}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})$. -/
 private theorem pinv_mul_conjTranspose_mul_one_sub_rangeProjector [DecidableEq m]
     (A B : Matrix m n 𝕜) :
     pinv B * (pinv B)ᴴ * (B - A)ᴴ * (1 - rangeProjector A) =
@@ -81,7 +83,8 @@ private theorem pinv_mul_conjTranspose_mul_one_sub_rangeProjector [DecidableEq m
     pinv_mul_conjTranspose_pinv_mul_conjTranspose, Matrix.mul_assoc _ Aᴴ,
     conjTranspose_mul_one_sub_rangeProjector, Matrix.mul_zero, sub_zero]
 
-/-- The third term of Wedin's decomposition is `-(1 - P_{Bᴴ}) A⁺`. -/
+/-- The third term of Wedin's decomposition is
+$-(\mathbf{I} - \mathbf{P}_{\mathbf{B}^{\mathsf{H}}})\mathbf{A}^{+}$. -/
 private theorem one_sub_rangeProjector_mul_conjTranspose_mul_pinv [DecidableEq n]
     (A B : Matrix m n 𝕜) :
     (1 - rangeProjector Bᴴ) * (B - A)ᴴ * (pinv A)ᴴ * pinv A =
@@ -91,9 +94,15 @@ private theorem one_sub_rangeProjector_mul_conjTranspose_mul_pinv [DecidableEq n
     conjTranspose_mul_conjTranspose_pinv_mul_pinv]
 
 /-- **Wedin's decomposition** of the difference of two pseudoinverses:
-`B⁺ - A⁺ = -B⁺ (B - A) A⁺ + B⁺ B⁺ᴴ (B - A)ᴴ (1 - A A⁺) + (1 - B⁺ B) (B - A)ᴴ A⁺ᴴ A⁺`.
+$$\begin{aligned}
+  \mathbf{B}^{+} - \mathbf{A}^{+} &= -\mathbf{B}^{+}(\mathbf{B} - \mathbf{A})\mathbf{A}^{+} +
+    \mathbf{B}^{+}(\mathbf{B}^{+})^{\mathsf{H}}(\mathbf{B} - \mathbf{A})^{\mathsf{H}}
+    (\mathbf{I} - \mathbf{A}\mathbf{A}^{+}) \\
+  &\quad + (\mathbf{I} - \mathbf{B}^{+}\mathbf{B})(\mathbf{B} - \mathbf{A})^{\mathsf{H}}
+    (\mathbf{A}^{+})^{\mathsf{H}}\mathbf{A}^{+}.
+\end{aligned}$$
 [Wedin1973, Theorem 4.1]; [StewartSun1990, Theorem III.3.10].
-Port of `NLAlib.moorePenroseInverse_sub_eq`, there over `ℝ`.
+Port of `NLAlib.moorePenroseInverse_sub_eq`, there over $\mathbb{R}$.
 Result: pseudoinverse-perturbation -/
 theorem pinv_sub_pinv [DecidableEq m] [DecidableEq n] (A B : Matrix m n 𝕜) :
     pinv B - pinv A =
@@ -106,7 +115,8 @@ theorem pinv_sub_pinv [DecidableEq m] [DecidableEq n] (A B : Matrix m n 𝕜) :
 
 /-! ### The four blocks of the difference
 
-Relative to the projectors `P_A` on the right and `P_{Bᴴ}` on the left, `B⁺ - A⁺` has three
+Relative to the projectors $\mathbf{P}_{\mathbf{A}}$ on the right and
+$\mathbf{P}_{\mathbf{B}^{\mathsf{H}}}$ on the left, $\mathbf{B}^{+} - \mathbf{A}^{+}$ has three
 nonzero blocks, which are the three terms of Wedin's decomposition. -/
 
 private theorem rangeProjector_mul_pinv_sub_pinv_mul_rangeProjector (A B : Matrix m n 𝕜) :
@@ -142,14 +152,17 @@ private theorem matrixNorm_mul_mul_le (Φ : SymmetricGauge) {l p : Type*} [Finty
   (Φ.matrixNorm_mul_le_mul_specNorm _ _).trans
     (mul_le_mul_of_nonneg_right (Φ.matrixNorm_mul_le_specNorm_mul _ _) (specNorm_nonneg _))
 
-/-- The diagonal block: `‖B⁺ (B - A) A⁺‖ ≤ ‖B⁺‖₂ ‖A⁺‖₂ ‖B - A‖`. -/
+/-- The diagonal block: $\|\mathbf{B}^{+}(\mathbf{B} - \mathbf{A})\mathbf{A}^{+}\|_{\Phi}
+\le \|\mathbf{B}^{+}\|_2 \|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_{\Phi}$. -/
 private theorem matrixNorm_pinv_mul_sub_mul_pinv_le (Φ : SymmetricGauge) (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (pinv B * (B - A) * pinv A) ≤
       specNorm (pinv B) * specNorm (pinv A) * Φ.matrixNorm (B - A) := by
   refine (matrixNorm_mul_mul_le Φ _ _ _).trans_eq ?_
   ring
 
-/-- The block `B⁺ (1 - P_A)`: `‖B⁺ (1 - P_A)‖ ≤ ‖B⁺‖₂² ‖B - A‖`. -/
+/-- The block $\mathbf{B}^{+}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})$:
+$\|\mathbf{B}^{+}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\|_{\Phi}
+\le \|\mathbf{B}^{+}\|_2^2 \|\mathbf{B} - \mathbf{A}\|_{\Phi}$. -/
 private theorem matrixNorm_pinv_mul_one_sub_rangeProjector_le [DecidableEq m] (Φ : SymmetricGauge)
     (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (pinv B * (1 - rangeProjector A)) ≤
@@ -160,7 +173,9 @@ private theorem matrixNorm_pinv_mul_one_sub_rangeProjector_le [DecidableEq m] (�
   exact mul_le_of_le_one_right (mul_nonneg (specNorm_nonneg _) (Φ.matrixNorm_nonneg _))
     (isStarProjection_one_sub_rangeProjector A).specNorm_le_one
 
-/-- The block `(1 - P_{Bᴴ}) A⁺`: `‖(1 - P_{Bᴴ}) A⁺‖ ≤ ‖A⁺‖₂² ‖B - A‖`. -/
+/-- The block $(\mathbf{I} - \mathbf{P}_{\mathbf{B}^{\mathsf{H}}})\mathbf{A}^{+}$:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}^{\mathsf{H}}})\mathbf{A}^{+}\|_{\Phi}
+\le \|\mathbf{A}^{+}\|_2^2 \|\mathbf{B} - \mathbf{A}\|_{\Phi}$. -/
 private theorem matrixNorm_one_sub_rangeProjector_mul_pinv_le [DecidableEq n] (Φ : SymmetricGauge)
     (A B : Matrix m n 𝕜) :
     Φ.matrixNorm ((1 - rangeProjector Bᴴ) * pinv A) ≤
@@ -173,7 +188,7 @@ private theorem matrixNorm_one_sub_rangeProjector_mul_pinv_le [DecidableEq n] (�
   exact mul_le_mul_of_nonneg_left (mul_le_of_le_one_left (Φ.matrixNorm_nonneg _)
     (isStarProjection_one_sub_rangeProjector Bᴴ).specNorm_le_one) (specNorm_nonneg _)
 
-/-- `B⁺ - A⁺` as the sum of its three nonzero blocks. -/
+/-- $\mathbf{B}^{+} - \mathbf{A}^{+}$ as the sum of its three nonzero blocks. -/
 private theorem pinv_sub_pinv_eq_add_add [DecidableEq m] [DecidableEq n] (A B : Matrix m n 𝕜) :
     pinv B - pinv A = -(pinv B * (B - A) * pinv A) + pinv B * (1 - rangeProjector A) +
       -((1 - rangeProjector Bᴴ) * pinv A) := by
@@ -181,10 +196,13 @@ private theorem pinv_sub_pinv_eq_add_add [DecidableEq m] [DecidableEq n] (A B : 
     ← one_sub_rangeProjector_mul_conjTranspose_mul_pinv, ← mul_pinv, ← pinv_mul]
   exact pinv_sub_pinv A B
 
-/-- **Perturbation of the pseudoinverse in every unitarily invariant norm**:
-`‖B⁺ - A⁺‖ ≤ (‖B⁺‖₂ ‖A⁺‖₂ + ‖B⁺‖₂² + ‖A⁺‖₂²) ‖B - A‖`.
+/-- **Perturbation of the pseudoinverse in every unitarily invariant norm** $\|\cdot\|_{\Phi}$:
+$$\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\Phi}
+  \le \bigl(\|\mathbf{B}^{+}\|_2 \|\mathbf{A}^{+}\|_2 + \|\mathbf{B}^{+}\|_2^2 +
+  \|\mathbf{A}^{+}\|_2^2\bigr) \|\mathbf{B} - \mathbf{A}\|_{\Phi}.$$
 [Wedin1973]; [StewartSun1990, Theorem III.3.8].
-Port of `NLAlib.specNorm_moorePenroseInverse_add_sub_le`, there over `ℝ` in the spectral norm.
+Port of `NLAlib.specNorm_moorePenroseInverse_add_sub_le`, there over $\mathbb{R}$ in the spectral
+norm.
 Result: pseudoinverse-perturbation -/
 theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le (Φ : SymmetricGauge) (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (pinv B - pinv A) ≤
@@ -200,7 +218,9 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le (Φ : SymmetricGauge) (A B : 
   · rwa [Φ.matrixNorm_neg]
   · rwa [Φ.matrixNorm_neg]
 
-/-- `‖B⁺ - A⁺‖ ≤ 3 max (‖A⁺‖₂², ‖B⁺‖₂²) ‖B - A‖` in every unitarily invariant norm.
+/-- $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\Phi} \le 3 \max(\|\mathbf{A}^{+}\|_2^2,
+\|\mathbf{B}^{+}\|_2^2) \, \|\mathbf{B} - \mathbf{A}\|_{\Phi}$ in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$.
 Port of `NLAlib.specNorm_moorePenroseInverse_add_sub_le_three_mul_max`. -/
 theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_max (Φ : SymmetricGauge)
     (A B : Matrix m n 𝕜) :
@@ -213,9 +233,11 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_max (Φ : Symmetric
   nlinarith [sq_nonneg (specNorm (pinv B) - specNorm (pinv A))]
 
 /-- **Wedin's bound in the spectral norm**, with the golden ratio:
-`‖B⁺ - A⁺‖₂ ≤ (1 + √5)/2 · max (‖A⁺‖₂², ‖B⁺‖₂²) ‖B - A‖₂`.
+$$\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_2
+  \le \frac{1 + \sqrt{5}}{2} \max\bigl(\|\mathbf{A}^{+}\|_2^2, \|\mathbf{B}^{+}\|_2^2\bigr)
+  \|\mathbf{B} - \mathbf{A}\|_2.$$
 [Wedin1973, Theorem 4.1]; [StewartSun1990, Theorem III.3.8].
-Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_max_sq`, there over `ℝ`.
+Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_max_sq`, there over $\mathbb{R}$.
 Result: pseudoinverse-perturbation -/
 theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_max (A B : Matrix m n 𝕜) :
     specNorm (pinv B - pinv A) ≤
@@ -243,8 +265,11 @@ theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_max (A B : Matrix m n 𝕜) :
 
 /-! ### The range projector -/
 
-/-- The part of the range of `A` outside the range of `B` is controlled by `B - A`, in every
-unitarily invariant norm: `‖(1 - P_B) P_A‖ ≤ ‖A⁺‖₂ ‖(1 - P_B) (A - B)‖`.
+/-- The part of the range of $\mathbf{A}$ outside the range of $\mathbf{B}$ is controlled by
+$\mathbf{B} - \mathbf{A}$, in every unitarily invariant norm:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{P}_{\mathbf{A}}\|_{\Phi}
+\le \|\mathbf{A}^{+}\|_2
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{A} - \mathbf{B})\|_{\Phi}$.
 Port of `NLAlib.complement_columnProjector_mul_columnProjector_eq`. -/
 theorem SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_rangeProjector_le [DecidableEq m]
     (Φ : SymmetricGauge) (A B : Matrix m n 𝕜) :
@@ -257,7 +282,8 @@ theorem SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_rangeProjector_le [
   exact Φ.matrixNorm_mul_le_mul_specNorm _ _
 
 /-- **Perturbation of the range projector.** For matrices of equal rank,
-`‖P_A - P_B‖₂ ≤ min (‖A⁺‖₂, ‖B⁺‖₂) ‖B - A‖₂`.
+$\|\mathbf{P}_{\mathbf{A}} - \mathbf{P}_{\mathbf{B}}\|_2
+\le \min(\|\mathbf{A}^{+}\|_2, \|\mathbf{B}^{+}\|_2) \, \|\mathbf{B} - \mathbf{A}\|_2$.
 [StewartSun1990, §III.3]; [Wedin1973].
 Port of `NLAlib.specNorm_sub_columnProjector_le_min_pinv_mul_specNorm`. -/
 theorem specNorm_rangeProjector_sub_rangeProjector_le {A B : Matrix m n 𝕜} (h : A.rank = B.rank) :
@@ -283,7 +309,9 @@ theorem specNorm_rangeProjector_sub_rangeProjector_le {A B : Matrix m n 𝕜} (h
 
 /-! ### Equal ranks -/
 
-/-- For equal ranks, `‖B⁺ (1 - P_A)‖ ≤ ‖A⁺‖₂ ‖B⁺‖₂ ‖(1 - P_B) (B - A)‖`. -/
+/-- For equal ranks, $\|\mathbf{B}^{+}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\|_{\Phi}
+\le \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{B} - \mathbf{A})\|_{\Phi}$. -/
 private theorem matrixNorm_pinv_mul_one_sub_rangeProjector_le_of_rank_eq [DecidableEq m]
     (Φ : SymmetricGauge) {A B : Matrix m n 𝕜} (h : A.rank = B.rank) :
     Φ.matrixNorm (pinv B * (1 - rangeProjector A)) ≤
@@ -306,7 +334,9 @@ private theorem matrixNorm_pinv_mul_one_sub_rangeProjector_le_of_rank_eq [Decida
   exact Φ.matrixNorm_one_sub_rangeProjector_mul_rangeProjector_le A B
 
 open scoped ComplexOrder in
-/-- For equal ranks, `‖(1 - P_{Bᴴ}) A⁺‖ ≤ ‖A⁺‖₂ ‖B⁺‖₂ ‖(B - A) (1 - P_{Aᴴ})‖`. -/
+/-- For equal ranks, $\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}^{\mathsf{H}}})\mathbf{A}^{+}\|_{\Phi}
+\le \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2
+\|(\mathbf{B} - \mathbf{A})(\mathbf{I} - \mathbf{P}_{\mathbf{A}^{\mathsf{H}}})\|_{\Phi}$. -/
 private theorem matrixNorm_one_sub_rangeProjector_mul_pinv_le_of_rank_eq [DecidableEq n]
     (Φ : SymmetricGauge) {A B : Matrix m n 𝕜} (h : A.rank = B.rank) :
     Φ.matrixNorm ((1 - rangeProjector Bᴴ) * pinv A) ≤
@@ -326,8 +356,11 @@ private theorem matrixNorm_one_sub_rangeProjector_mul_pinv_le_of_rank_eq [Decida
   exact h1
 
 /-- **Perturbation of the pseudoinverse for equal ranks**, every unitarily invariant norm:
-`‖B⁺ - A⁺‖ ≤ 3 ‖A⁺‖₂ ‖B⁺‖₂ ‖B - A‖`. The constant improves to `(1 + √5)/2` in the spectral norm
-and to `√2` in the Frobenius norm. [Wedin1973]; [StewartSun1990, Theorem III.3.9].
+$\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\Phi} \le 3 \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2
+\|\mathbf{B} - \mathbf{A}\|_{\Phi}$ when
+$\operatorname{rank} \mathbf{A} = \operatorname{rank} \mathbf{B}$. The constant improves to
+$(1 + \sqrt{5})/2$ in the spectral norm and to $\sqrt{2}$ in the Frobenius norm. [Wedin1973];
+[StewartSun1990, Theorem III.3.9].
 Result: pseudoinverse-perturbation -/
 theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_of_rank_eq (Φ : SymmetricGauge)
     {A B : Matrix m n 𝕜} (h : A.rank = B.rank) :
@@ -349,7 +382,8 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_of_rank_eq (Φ : Sy
   rw [Φ.matrixNorm_neg, Φ.matrixNorm_neg, ← pinv_sub_pinv_eq_add_add] at h4
   linarith
 
-/-- For matrices of equal rank, `‖B⁺ - A⁺‖₂ ≤ (1 + √5)/2 · ‖A⁺‖₂ ‖B⁺‖₂ ‖B - A‖₂`.
+/-- For matrices of equal rank, $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_2
+\le \frac{1 + \sqrt{5}}{2} \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2$.
 [Wedin1973]; [StewartSun1990, Theorem III.3.9].
 Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_mul_of_rank_eq`. -/
 theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq {A B : Matrix m n 𝕜}
@@ -387,7 +421,8 @@ private theorem frobNorm_sq_eq_add_mul_right [DecidableEq n] {P : Matrix n n �
     ← Matrix.conjTranspose_mul, frobNorm_conjTranspose] at h
 
 /-- The three compressions of a matrix by two orthogonal projectors that appear in the blocks of
-`B⁺ - A⁺` have squared Frobenius norms summing to at most twice that of the matrix. -/
+$\mathbf{B}^{+} - \mathbf{A}^{+}$ have squared Frobenius norms summing to at most twice that of the
+matrix. -/
 private theorem frobNorm_sq_add_add_le_two_mul [DecidableEq m] [DecidableEq n]
     {P : Matrix m m 𝕜} {Q : Matrix n n 𝕜} (hP : IsStarProjection P) (hQ : IsStarProjection Q)
     (E : Matrix m n 𝕜) :
@@ -398,7 +433,8 @@ private theorem frobNorm_sq_add_add_le_two_mul [DecidableEq m] [DecidableEq n]
   have h3 := pow_le_pow_left₀ (frobNorm_nonneg _) (hQ.one_sub.frobNorm_mul_right_le E) 2
   linarith
 
-/-- For matrices of equal rank, `‖B⁺ - A⁺‖_F ≤ √2 ‖A⁺‖₂ ‖B⁺‖₂ ‖B - A‖_F`.
+/-- For matrices of equal rank, $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\mathsf{F}}
+\le \sqrt{2} \, \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_{\mathsf{F}}$.
 [Wedin1973]; [StewartSun1990, Theorem III.3.9].
 Port of `NLAlib.frobNorm_moorePenroseInverse_sub_le_sqrt_two_mul_of_rank_eq`. -/
 theorem frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq {A B : Matrix m n 𝕜}
@@ -444,7 +480,9 @@ theorem frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq {A B : Matrix m n 𝕜
   nlinarith [mul_le_mul_of_nonneg_left hsum (sq_nonneg (specNorm (pinv A) * specNorm (pinv B)))]
 
 /-- **Control of the perturbed pseudoinverse.** For matrices of equal rank with
-`‖A⁺‖₂ ‖B - A‖₂ < 1`, `‖B⁺‖₂ ≤ ‖A⁺‖₂ / (1 - ‖A⁺‖₂ ‖B - A‖₂)`.
+$\|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2 < 1$,
+$$\|\mathbf{B}^{+}\|_2
+  \le \frac{\|\mathbf{A}^{+}\|_2}{1 - \|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2}.$$
 [Wedin1973]; [StewartSun1990, Theorem III.3.8].
 Port of `NLAlib.specNorm_moorePenroseInverse_le_div_of_rank_eq`. -/
 theorem specNorm_pinv_le_div_of_rank_eq {A B : Matrix m n 𝕜} (h : A.rank = B.rank)
@@ -468,7 +506,9 @@ theorem specNorm_pinv_le_div_of_rank_eq {A B : Matrix m n 𝕜} (h : A.rank = B.
     rw [e]
     exact inv_anti₀ (by linarith) (by linarith)
 
-/-- A small perturbation of a matrix of full column rank has full column rank.
+/-- A small perturbation of a matrix of full column rank has full column rank: if $\mathbf{A}$ has
+full column rank and $\|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 < 1$, then $\mathbf{A} + \mathbf{E}$ has
+full column rank.
 Port of `NLAlib.rank_add_eq_card_of_pinv_mul_specNorm_lt_one`. -/
 theorem injective_mulVec_add_of_specNorm_pinv_mul_lt_one {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (hE : specNorm (pinv A) * specNorm E < 1) :
@@ -485,8 +525,9 @@ theorem injective_mulVec_add_of_specNorm_pinv_mul_lt_one {A E : Matrix m n 𝕜}
     exact fun h => hne (congrArg WithLp.ofLp h)
   nlinarith
 
-/-- For `A` of full column rank and `‖A⁺‖₂ ‖E‖₂ < 1`,
-`‖(A + E)⁺‖₂ ≤ ‖A⁺‖₂ / (1 - ‖A⁺‖₂ ‖E‖₂)`.
+/-- For $\mathbf{A}$ of full column rank and $\|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 < 1$,
+$\|(\mathbf{A} + \mathbf{E})^{+}\|_2 \le \|\mathbf{A}^{+}\|_2 / (1 - \|\mathbf{A}^{+}\|_2
+\|\mathbf{E}\|_2)$.
 Port of `NLAlib.specNorm_pinv_add_le_of_rank_eq_card`. -/
 theorem specNorm_pinv_add_le_of_injective {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (hE : specNorm (pinv A) * specNorm E < 1) :

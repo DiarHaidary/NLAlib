@@ -12,14 +12,22 @@ public import NLAlib.Matrix.Spectral.LowRank
 /-!
 # Wedin's theorem for singular subspaces
 
-The analogue of the `sin Θ` theorem for the singular subspaces of a rectangular matrix. The left
-and right subspaces are coupled, so the Sylvester equation is replaced by a coupled pair.
+The analogue of the $\sin \Theta$ theorem for the singular subspaces of a rectangular matrix. The
+left and right subspaces are coupled, so the Sylvester equation is replaced by a coupled pair.
 
-The basic statement is in residual form. Let `U`, `V` be frames of left and right singular
-vectors of `A` for its `j + 1` largest singular values, and let `(U', V', S)` be any approximate
-singular triple with `S` bounded below by `α`. Then
-`(α - σ_{j+1}(A)) max (‖(1 - U Uᴴ) U'‖, ‖(1 - V Vᴴ) V'‖) ≤ max (‖A V' - U' S‖, ‖Aᴴ U' - V' Sᴴ‖)`.
-The perturbation theorem is the case where `(U', V', S)` is exact for `A + E`.
+The basic statement is in residual form. Let $\mathbf{U}$, $\mathbf{V}$ be frames of left and right
+singular vectors of $\mathbf{A}$ for its $j + 1$ largest singular values, and let
+$(\mathbf{U}', \mathbf{V}', \mathbf{S})$ be any approximate singular triple with $\mathbf{S}$
+bounded below by $\alpha$. Then
+$$\begin{aligned}
+  &(\alpha - \sigma_{j+1}(\mathbf{A}))
+  \max\bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|,
+  \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|\bigr) \\
+  &\quad \le \max\bigl(\|\mathbf{A}\mathbf{V}' - \mathbf{U}'\mathbf{S}\|,
+  \|\mathbf{A}^{\mathsf{H}}\mathbf{U}' - \mathbf{V}'\mathbf{S}^{\mathsf{H}}\|\bigr).
+\end{aligned}$$
+The perturbation theorem is the case where $(\mathbf{U}', \mathbf{V}', \mathbf{S})$ is exact for
+$\mathbf{A} + \mathbf{E}$.
 
 ## Main results
 
@@ -27,7 +35,7 @@ The perturbation theorem is the case where `(U', V', S)` is exact for `A + E`.
 * `NLAlib.SymmetricGauge.sub_mul_max_matrixNorm_one_sub_mul_le_max`: Wedin's theorem in residual
   form, every unitarily invariant norm.
 * `NLAlib.SymmetricGauge.mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub`: the leading
-  singular subspaces of `A` and `A + E`.
+  singular subspaces of $\mathbf{A}$ and $\mathbf{A} + \mathbf{E}$.
 * `NLAlib.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le`,
   `NLAlib.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub`: the Frobenius forms.
 * `NLAlib.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap`: the bound with the gap of
@@ -46,7 +54,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [F
 /-! ### Coupled separation bounds -/
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- One of the two inequalities behind the coupled bound: `α ‖X‖ ≤ β ‖Y‖ + ‖D Y - X T‖`. -/
+/-- One of the two inequalities behind the coupled bound:
+$\alpha \|\mathbf{X}\|_{\Phi} \le \beta
+\|\mathbf{Y}\|_{\Phi} + \|\mathbf{D}\mathbf{Y} - \mathbf{X}\mathbf{T}\|_{\Phi}$. -/
 private theorem mul_matrixNorm_le_mul_matrixNorm_add (Φ : SymmetricGauge) {D : Matrix m n 𝕜}
     {T : Matrix p p 𝕜} {α β : ℝ} (hT : (α ^ 2) • (1 : Matrix p p 𝕜) ≤ T * Tᴴ)
     (hD : specNorm D ≤ β) (X : Matrix m p 𝕜) (Y : Matrix n p 𝕜) :
@@ -99,13 +109,17 @@ private theorem sub_sq_mul_add_sq_le_add_sq {α β x y a b : ℝ} (hβ : 0 ≤ �
   rwa [mul_pow, hr, hs] at h₆
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- **Coupled separation bound.** If the square matrix `T` is bounded below by `α`
-(`α² • 1 ≤ Tᴴ T`) and `‖D‖₂ ≤ β`, then for every pair `X`, `Y`, in every unitarily invariant
-norm, `(α - β) max (‖X‖, ‖Y‖) ≤ max (‖D Y - X T‖, ‖Dᴴ X - Y Tᴴ‖)`. No sign condition on `α` is
-needed: the bound is trivial for `α < β`.
+/-- **Coupled separation bound.** If the square matrix $\mathbf{T}$ is bounded below by $\alpha$
+($\alpha^2 \mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$) and $\|\mathbf{D}\|_2 \le \beta$,
+then for every pair $\mathbf{X}$, $\mathbf{Y}$, in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$,
+$$(\alpha - \beta) \max\bigl(\|\mathbf{X}\|_{\Phi}, \|\mathbf{Y}\|_{\Phi}\bigr)
+  \le \max\bigl(\|\mathbf{D}\mathbf{Y} - \mathbf{X}\mathbf{T}\|_{\Phi},
+  \|\mathbf{D}^{\mathsf{H}}\mathbf{X} - \mathbf{Y}\mathbf{T}^{\mathsf{H}}\|_{\Phi}\bigr).$$
+No sign condition on $\alpha$ is needed: the bound is trivial for $\alpha < \beta$.
 [Wedin1972]; [StewartSun1990, §V.4].
-Port of `NLAlib.sub_mul_max_specNorm_le_max_coupled_residual`, there over `ℝ` in the spectral
-norm with diagonal `T`. -/
+Port of `NLAlib.sub_mul_max_specNorm_le_max_coupled_residual`, there over $\mathbb{R}$ in the
+spectral norm with diagonal $\mathbf{T}$. -/
 theorem SymmetricGauge.sub_mul_max_matrixNorm_le_max (Φ : SymmetricGauge) {D : Matrix m n 𝕜}
     {T : Matrix p p 𝕜} {α β : ℝ} (hT : (α ^ 2) • (1 : Matrix p p 𝕜) ≤ Tᴴ * T)
     (hD : specNorm D ≤ β) (X : Matrix m p 𝕜) (Y : Matrix n p 𝕜) :
@@ -125,8 +139,12 @@ theorem SymmetricGauge.sub_mul_max_matrixNorm_le_max (Φ : SymmetricGauge) {D : 
     linarith [mul_le_mul_of_nonneg_left h hβ]
 
 omit [DecidableEq m] [DecidableEq n] in
-/-- The coupled separation bound in the Frobenius norm, for the sum of squares:
-`(α - β)² (‖X‖_F² + ‖Y‖_F²) ≤ ‖D Y - X T‖_F² + ‖Dᴴ X - Y Tᴴ‖_F²` when `β ≤ α`.
+/-- The coupled separation bound in the Frobenius norm, for the sum of squares: if
+$\alpha^2 \mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$, $\|\mathbf{D}\|_2 \le \beta$ and
+$\beta \le \alpha$, then
+$$(\alpha - \beta)^2 \bigl(\|\mathbf{X}\|_{\mathsf{F}}^2 + \|\mathbf{Y}\|_{\mathsf{F}}^2\bigr)
+  \le \|\mathbf{D}\mathbf{Y} - \mathbf{X}\mathbf{T}\|_{\mathsf{F}}^2 +
+  \|\mathbf{D}^{\mathsf{H}}\mathbf{X} - \mathbf{Y}\mathbf{T}^{\mathsf{H}}\|_{\mathsf{F}}^2.$$
 [Wedin1972].
 Port of `NLAlib.sub_sq_mul_add_sq_frobNorm_le_add_sq_coupled_residual`. -/
 theorem sub_sq_mul_frobNorm_sq_add_frobNorm_sq_le {D : Matrix m n 𝕜} {T : Matrix p p 𝕜}
@@ -145,7 +163,8 @@ theorem sub_sq_mul_frobNorm_sq_add_frobNorm_sq_le {D : Matrix m n 𝕜} {T : Mat
 /-! ### The part of a matrix outside its leading singular subspaces -/
 
 omit [Fintype n] [DecidableEq m] [DecidableEq n] in
-/-- The second singular vector equation in the form `Uᴴ * A = Σ * Vᴴ`. -/
+/-- The second singular vector equation in the form
+$\mathbf{U}^{\mathsf{H}}\mathbf{A} = \mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$. -/
 private theorem conjTranspose_mul_eq_diagonal_mul {A : Matrix m n 𝕜} {U : Matrix m p 𝕜}
     {V : Matrix n p 𝕜} {σ : p → ℝ}
     (hAU : Aᴴ * U = V * Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) :
@@ -155,7 +174,9 @@ private theorem conjTranspose_mul_eq_diagonal_mul {A : Matrix m n 𝕜} {U : Mat
     Matrix.conjTranspose_diagonal_ofReal] at h
 
 /-- The right complement alone already removes the leading part:
-`(1 - U Uᴴ) A (1 - V Vᴴ) = A (1 - V Vᴴ)`. -/
+$(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
+(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})
+= \mathbf{A}(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})$. -/
 private theorem one_sub_mul_mul_one_sub_eq_mul_one_sub {A : Matrix m n 𝕜} {U : Matrix m p 𝕜}
     {V : Matrix n p 𝕜} {σ : p → ℝ} (hV : HasOrthonormalCols V)
     (hAU : Aᴴ * U = V * Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) :
@@ -167,7 +188,9 @@ private theorem one_sub_mul_mul_one_sub_eq_mul_one_sub {A : Matrix m n 𝕜} {U 
     Matrix.mul_zero, sub_zero]
 
 /-- The left complement alone already removes the leading part:
-`(1 - U Uᴴ) A (1 - V Vᴴ) = (1 - U Uᴴ) A`. -/
+$(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
+(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})
+= (\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}$. -/
 private theorem one_sub_mul_mul_one_sub_eq_one_sub_mul {A : Matrix m n 𝕜} {U : Matrix m p 𝕜}
     {V : Matrix n p 𝕜} {σ : p → ℝ} (hU : HasOrthonormalCols U)
     (hAV : A * V = U * Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) :
@@ -177,8 +200,10 @@ private theorem one_sub_mul_mul_one_sub_eq_one_sub_mul {A : Matrix m n 𝕜} {U 
       Matrix.mul_assoc U, hU.conjTranspose_mul_self, Matrix.mul_one, sub_self, Matrix.zero_mul]
   rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, h, Matrix.zero_mul, sub_zero]
 
-/-- The first residual of Wedin's coupled pair, for the compression `D = (1 - U Uᴴ) A (1 - V Vᴴ)`
-and the components of `U'`, `V'` outside the leading subspaces. -/
+/-- The first residual of Wedin's coupled pair, for the compression
+$\mathbf{D} = (\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
+(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})$ and the components of $\mathbf{U}'$, $\mathbf{V}'$
+outside the leading subspaces. -/
 private theorem one_sub_mul_mul_one_sub_mul_sub {A : Matrix m n 𝕜} {U : Matrix m p 𝕜}
     {V : Matrix n p 𝕜} {σ : p → ℝ} {q : Type*} [Fintype q] (hU : HasOrthonormalCols U)
     (hV : HasOrthonormalCols V) (hAV : A * V = U * Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜))
@@ -211,7 +236,7 @@ private theorem conjTranspose_one_sub_mul_mul_one_sub_mul_sub {A : Matrix m n �
   rw [e, one_sub_mul_mul_one_sub_eq_mul_one_sub hV hAU, Matrix.conjTranspose_mul,
     hPV.conjTranspose_eq, Matrix.mul_sub, Matrix.mul_assoc, Matrix.mul_assoc]
 
-/-- A real diagonal matrix with entries at least `α ≥ 0` is bounded below by `α`. -/
+/-- A real diagonal matrix with entries at least $\alpha \ge 0$ is bounded below by $\alpha$. -/
 private theorem sq_smul_one_le_conjTranspose_diagonal_mul_self {σ : p → ℝ} {α : ℝ} (hα : 0 ≤ α)
     (h : ∀ i, α ≤ σ i) :
     (α ^ 2) • (1 : Matrix p p 𝕜) ≤
@@ -223,10 +248,15 @@ private theorem sq_smul_one_le_conjTranspose_diagonal_mul_self {σ : p → ℝ} 
   simp only [Matrix.mulVec_diagonal, norm_mul, mul_pow, RCLike.norm_ofReal, sq_abs]
   exact mul_le_mul_of_nonneg_right (pow_le_pow_left₀ hα (h i) 2) (sq_nonneg _)
 
-/-- If `A * V = U * Σ` and `Aᴴ * U = V * Σ` for a frame `V` and `Σ` the diagonal matrix of the
-`j + 1` largest singular values, then the remainder is the compression of `A` to the
-complements: `A - U Σ Vᴴ = (1 - U Uᴴ) A (1 - V Vᴴ)`. Orthonormality of the columns of `U` is not
-needed. -/
+/-- If $\mathbf{A}\mathbf{V} = \mathbf{U}\mathbf{\Sigma}$ and
+$\mathbf{A}^{\mathsf{H}}\mathbf{U} = \mathbf{V}\mathbf{\Sigma}$ for a frame $\mathbf{V}$ and
+$\mathbf{\Sigma} = \operatorname{diag}(\sigma_0(\mathbf{A}), \dots, \sigma_j(\mathbf{A}))$ the
+diagonal matrix of the $j + 1$ largest singular values, then the remainder is the compression of
+$\mathbf{A}$ to the complements:
+$\mathbf{A} - \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}
+= (\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
+(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})$.
+Orthonormality of the columns of $\mathbf{U}$ is not needed. -/
 theorem sub_mul_diagonal_mul_conjTranspose_eq {A : Matrix m n 𝕜} {j : ℕ}
     {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜} (hV : HasOrthonormalCols V)
     (hAV : A * V = U * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜))
@@ -236,9 +266,14 @@ theorem sub_mul_diagonal_mul_conjTranspose_eq {A : Matrix m n 𝕜} {j : ℕ}
   rw [one_sub_mul_mul_one_sub_eq_mul_one_sub hV hAU, Matrix.mul_sub, Matrix.mul_one,
     ← Matrix.mul_assoc, hAV]
 
-/-- **The complement of leading singular frames.** Under the same hypotheses the compression of
-`A` to the complements has spectral norm `σ_{j+1}(A)`. This holds with repeated singular
-values. -/
+/-- **The complement of leading singular frames.** If
+$\mathbf{A}\mathbf{V} = \mathbf{U}\mathbf{\Sigma}$ and
+$\mathbf{A}^{\mathsf{H}}\mathbf{U} = \mathbf{V}\mathbf{\Sigma}$ for a frame $\mathbf{V}$ and
+$\mathbf{\Sigma} = \operatorname{diag}(\sigma_0(\mathbf{A}), \dots, \sigma_j(\mathbf{A}))$, the
+compression of $\mathbf{A}$ to the complements has spectral norm $\sigma_{j+1}(\mathbf{A})$:
+$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
+(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\|_2 = \sigma_{j+1}(\mathbf{A})$. This holds with
+repeated singular values. -/
 theorem specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal {A : Matrix m n 𝕜} {j : ℕ}
     {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜} (hV : HasOrthonormalCols V)
     (hAV : A * V = U * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜))
@@ -277,19 +312,28 @@ theorem specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal {A : Matrix m n 
 /-! ### Wedin's theorem -/
 
 omit [Fintype m] [DecidableEq m] [DecidableEq n] [Fintype p] [DecidableEq p] in
-/-- The residual of an exact pair for `A + E`, seen from `A`, is `-(E * V)`. -/
+/-- The residual of an exact pair for $\mathbf{A} + \mathbf{E}$, seen from $\mathbf{A}$, is
+$-\mathbf{E}\mathbf{V}$. -/
 private theorem sub_eq_neg_mul_of_add_mul_eq {A E : Matrix m n 𝕜} {V : Matrix n p 𝕜}
     {B : Matrix m p 𝕜} (h : (A + E) * V = B) : A * V - B = -(E * V) := by
   rw [← h, Matrix.add_mul]
   abel
 
-/-- **Wedin's `sin Θ` theorem, residual form.** Let `U`, `V` be frames of left and right
-singular vectors of `A` for its `j + 1` largest singular values. For any triple `(U', V', S)`
-with `S` bounded below by `α` (`α² • 1 ≤ Sᴴ S`), in every unitarily invariant norm
-`(α - σ_{j+1}(A)) max (‖(1 - U Uᴴ) U'‖, ‖(1 - V Vᴴ) V'‖) ≤ max (‖A V' - U' S‖, ‖Aᴴ U' - V' Sᴴ‖)`.
+/-- **Wedin's $\sin \Theta$ theorem, residual form.** Let $\mathbf{U}$, $\mathbf{V}$ be frames of
+left and right singular vectors of $\mathbf{A}$ for its $j + 1$ largest singular values. For any
+triple $(\mathbf{U}', \mathbf{V}', \mathbf{S})$ with $\mathbf{S}$ bounded below by $\alpha$
+($\alpha^2 \mathbf{I} \preceq \mathbf{S}^{\mathsf{H}}\mathbf{S}$), in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$
+$$\begin{aligned}
+  &(\alpha - \sigma_{j+1}(\mathbf{A}))
+  \max\bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_{\Phi},
+  \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|_{\Phi}\bigr) \\
+  &\quad \le \max\bigl(\|\mathbf{A}\mathbf{V}' - \mathbf{U}'\mathbf{S}\|_{\Phi},
+  \|\mathbf{A}^{\mathsf{H}}\mathbf{U}' - \mathbf{V}'\mathbf{S}^{\mathsf{H}}\|_{\Phi}\bigr).
+\end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
-Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_max_residual_div`, there over `ℝ` in the
-spectral norm with square SVD factors.
+Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_max_residual_div`, there over $\mathbb{R}$ in
+the spectral norm with square SVD factors.
 Result: wedin -/
 theorem SymmetricGauge.sub_mul_max_matrixNorm_one_sub_mul_le_max (Φ : SymmetricGauge)
     {A : Matrix m n 𝕜} {j : ℕ} {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜}
@@ -311,11 +355,18 @@ theorem SymmetricGauge.sub_mul_max_matrixNorm_one_sub_mul_le_max (Φ : Symmetric
   exact h.trans (max_le_max (Φ.matrixNorm_mul_le_of_isStarProjection hPU _)
     (Φ.matrixNorm_mul_le_of_isStarProjection hPV _))
 
-/-- **Wedin's `sin Θ` theorem, residual form, Frobenius norm.** Let `U`, `V` be frames of left
-and right singular vectors of `A` for its `j + 1` largest singular values. For any triple
-`(U', V', S)` with `S` bounded below by `α ≥ σ_{j+1}(A)` (`α² • 1 ≤ Sᴴ S`),
-`(α - σ_{j+1}(A))² (‖(1 - U Uᴴ) U'‖_F² + ‖(1 - V Vᴴ) V'‖_F²) ≤
-‖A V' - U' S‖_F² + ‖Aᴴ U' - V' Sᴴ‖_F²`.
+/-- **Wedin's $\sin \Theta$ theorem, residual form, Frobenius norm.** Let $\mathbf{U}$, $\mathbf{V}$
+be frames of left and right singular vectors of $\mathbf{A}$ for its $j + 1$ largest singular
+values. For any triple $(\mathbf{U}', \mathbf{V}', \mathbf{S})$ with $\mathbf{S}$ bounded below by
+$\alpha \ge \sigma_{j+1}(\mathbf{A})$ ($\alpha^2 \mathbf{I}
+\preceq \mathbf{S}^{\mathsf{H}}\mathbf{S}$),
+$$\begin{aligned}
+  &(\alpha - \sigma_{j+1}(\mathbf{A}))^2
+  \bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_{\mathsf{F}}^2 +
+  \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|_{\mathsf{F}}^2\bigr) \\
+  &\quad \le \|\mathbf{A}\mathbf{V}' - \mathbf{U}'\mathbf{S}\|_{\mathsf{F}}^2 +
+  \|\mathbf{A}^{\mathsf{H}}\mathbf{U}' - \mathbf{V}'\mathbf{S}^{\mathsf{H}}\|_{\mathsf{F}}^2.
+\end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
 Result: wedin -/
 theorem sub_sq_mul_frobNorm_one_sub_mul_sq_add_le {A : Matrix m n 𝕜} {j : ℕ}
@@ -338,13 +389,20 @@ theorem sub_sq_mul_frobNorm_one_sub_mul_sq_add_le {A : Matrix m n 𝕜} {j : ℕ
   exact h.trans (add_le_add (pow_le_pow_left₀ (frobNorm_nonneg _) (hPU.frobNorm_mul_le _) 2)
     (pow_le_pow_left₀ (frobNorm_nonneg _) (hPV.frobNorm_mul_le _) 2))
 
-/-- **Wedin's `sin Θ` theorem.** Let `U`, `V` be frames of left and right singular vectors of `A`
-for its `j + 1` largest singular values, and `U'`, `V'` the same for `A + E`. If
-`δ ≤ σ_j(A + E) - σ_{j+1}(A)`, then in every unitarily invariant norm
-`δ max (‖(1 - U Uᴴ) U'‖, ‖(1 - V Vᴴ) V'‖) ≤ max (‖E V'‖, ‖Eᴴ U'‖)`.
+/-- **Wedin's $\sin \Theta$ theorem.** Let $\mathbf{U}$, $\mathbf{V}$ be frames of left and right
+singular vectors of $\mathbf{A}$ for its $j + 1$ largest singular values, and $\mathbf{U}'$,
+$\mathbf{V}'$ the same for $\mathbf{A} + \mathbf{E}$. If
+$\delta \le \sigma_j(\mathbf{A} + \mathbf{E}) - \sigma_{j+1}(\mathbf{A})$, then in every unitarily
+invariant norm $\|\cdot\|_{\Phi}$
+$$\begin{aligned}
+  &\delta \max\bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_{\Phi},
+  \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|_{\Phi}\bigr) \\
+  &\quad \le \max\bigl(\|\mathbf{E}\mathbf{V}'\|_{\Phi},
+  \|\mathbf{E}^{\mathsf{H}}\mathbf{U}'\|_{\Phi}\bigr).
+\end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
-Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_max_perturbation_frame_div`, there over `ℝ`
-in the spectral norm with square SVD factors.
+Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_max_perturbation_frame_div`, there over
+$\mathbb{R}$ in the spectral norm with square SVD factors.
 Result: wedin -/
 theorem SymmetricGauge.mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub
     (Φ : SymmetricGauge) {A E : Matrix m n 𝕜} {j : ℕ} {U U' : Matrix m (Fin (j + 1)) 𝕜}
@@ -367,9 +425,16 @@ theorem SymmetricGauge.mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub
     Φ.matrixNorm_neg] at h
   exact (mul_le_mul_of_nonneg_right hδ (le_max_of_le_left (Φ.matrixNorm_nonneg _))).trans h
 
-/-- **Wedin's theorem in the Frobenius norm**:
-`δ² (‖(1 - U Uᴴ) U'‖_F² + ‖(1 - V Vᴴ) V'‖_F²) ≤ ‖E V'‖_F² + ‖Eᴴ U'‖_F²` for
-`0 ≤ δ ≤ σ_j(A + E) - σ_{j+1}(A)`.
+/-- **Wedin's theorem in the Frobenius norm**: for frames $\mathbf{U}$, $\mathbf{V}$ of left and
+right singular vectors of $\mathbf{A}$ for its $j + 1$ largest singular values, $\mathbf{U}'$,
+$\mathbf{V}'$ the same for $\mathbf{A} + \mathbf{E}$, and
+$0 \le \delta \le \sigma_j(\mathbf{A} + \mathbf{E}) - \sigma_{j+1}(\mathbf{A})$,
+$$\begin{aligned}
+  &\delta^2 \bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_{\mathsf{F}}^2 +
+  \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|_{\mathsf{F}}^2\bigr) \\
+  &\quad \le \|\mathbf{E}\mathbf{V}'\|_{\mathsf{F}}^2 +
+  \|\mathbf{E}^{\mathsf{H}}\mathbf{U}'\|_{\mathsf{F}}^2.
+\end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
 Port of `NLAlib.sqrt_add_sq_frobNorm_sinePrincipalAngles_le_sqrt_add_sq_perturbation_frame_div`.
 Result: wedin -/
@@ -396,9 +461,13 @@ theorem sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub {A E : Matri
     pow_le_pow_left₀ hδ₀ hδ 2
   exact (mul_le_mul_of_nonneg_right h₃ (by positivity)).trans h
 
-/-- **Wedin's theorem with the gap of the unperturbed matrix**, spectral norm:
-`max (‖(1 - U Uᴴ) U'‖₂, ‖(1 - V Vᴴ) V'‖₂) ≤ 2 ‖E‖₂ / (σ_j(A) - σ_{j+1}(A))`, for frames with
-orthonormal columns on both sides.
+/-- **Wedin's theorem with the gap of the unperturbed matrix**, spectral norm: for frames
+$\mathbf{U}$, $\mathbf{V}$ of left and right singular vectors of $\mathbf{A}$ for its $j + 1$
+largest singular values, $\mathbf{U}'$, $\mathbf{V}'$ the same for $\mathbf{A} + \mathbf{E}$, all
+with orthonormal columns, and $\sigma_j(\mathbf{A}) > \sigma_{j+1}(\mathbf{A})$,
+$$\max\bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_2,
+  \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|_2\bigr)
+  \le \frac{2 \|\mathbf{E}\|_2}{\sigma_j(\mathbf{A}) - \sigma_{j+1}(\mathbf{A})}.$$
 Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_two_mul_specNorm_div_population_gap`.
 Result: wedin -/
 theorem max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap {A E : Matrix m n 𝕜}

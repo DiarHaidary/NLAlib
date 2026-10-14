@@ -12,9 +12,9 @@ public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 /-!
 # Perturbation of the inverse and of linear systems
 
-The Neumann series for `(1 - F)⁻¹` when `‖F‖₂ < 1`, the resulting bounds for the inverse of a
-perturbed matrix `A + E`, and the classical forward error bounds for the solution of a linear
-system in terms of the condition number.
+The Neumann series for $(\mathbf{I} - \mathbf{F})^{-1}$ when $\|\mathbf{F}\|_2 < 1$, the resulting
+bounds for the inverse of a perturbed matrix $\mathbf{A} + \mathbf{E}$, and the classical forward
+error bounds for the solution of a linear system in terms of the condition number.
 
 ## Main results
 
@@ -42,15 +42,17 @@ private theorem mul_inv_of_isUnit {A : Matrix n n 𝕜} (hA : IsUnit A) : A * A�
 private theorem inv_mul_of_isUnit {A : Matrix n n 𝕜} (hA : IsUnit A) : A⁻¹ * A = 1 :=
   Matrix.nonsing_inv_mul A ((Matrix.isUnit_iff_isUnit_det A).mp hA)
 
-/-- If `‖F‖₂ < 1` then `1 - F` is invertible.
+/-- If $\|\mathbf{F}\|_2 < 1$ then $\mathbf{I} - \mathbf{F}$ is invertible.
 [HornJohnson2013, Corollary 5.6.16]. Port of `NLAlib.isUnit_one_sub_of_specNorm_lt_one`. -/
 theorem isUnit_one_sub_of_specNorm_lt_one {F : Matrix n n 𝕜} (h : specNorm F < 1) :
     IsUnit (1 - F) := by
   open scoped Matrix.Norms.L2Operator in
   exact isUnit_one_sub_of_norm_lt_one (R := Matrix n n 𝕜) h
 
-/-- **The Neumann series**: if `‖F‖₂ < 1` then `(1 - F)⁻¹ = ∑ F ^ k`.
-[HornJohnson2013, Corollary 5.6.16]. Port of `NLAlib.hasSum_pow_inv_one_sub`, there over `ℝ`.
+/-- **The Neumann series**: if $\|\mathbf{F}\|_2 < 1$ then the series $\sum_{k \ge 0} \mathbf{F}^k$
+converges to $(\mathbf{I} - \mathbf{F})^{-1}$.
+[HornJohnson2013, Corollary 5.6.16]. Port of `NLAlib.hasSum_pow_inv_one_sub`, there over
+$\mathbb{R}$.
 Result: neumann-series -/
 theorem hasSum_pow_inv_one_sub {F : Matrix n n 𝕜} (h : specNorm F < 1) :
     HasSum (fun k : ℕ => F ^ k) (1 - F)⁻¹ := by
@@ -64,7 +66,8 @@ private theorem inv_one_sub_eq_one_add_mul {F : Matrix n n 𝕜} (h : IsUnit (1 
   rw [Matrix.sub_mul, Matrix.one_mul] at h1
   exact eq_add_of_sub_eq h1
 
-/-- `‖(1 - F)⁻¹‖₂ ≤ 1 / (1 - ‖F‖₂)` when `‖F‖₂ < 1`.
+/-- $\|(\mathbf{I} - \mathbf{F})^{-1}\|_2 \le 1 / (1 - \|\mathbf{F}\|_2)$ when
+$\|\mathbf{F}\|_2 < 1$.
 Port of `NLAlib.specNorm_inv_one_sub_le`. -/
 theorem specNorm_inv_one_sub_le {F : Matrix n n 𝕜} (h : specNorm F < 1) :
     specNorm (1 - F)⁻¹ ≤ (1 - specNorm F)⁻¹ := by
@@ -76,7 +79,8 @@ theorem specNorm_inv_one_sub_le {F : Matrix n n 𝕜} (h : specNorm F < 1) :
   rw [← one_div (1 - specNorm F), le_div_iff₀ (by linarith)]
   linarith
 
-/-- `‖(1 - F)⁻¹ - 1‖₂ ≤ ‖F‖₂ / (1 - ‖F‖₂)` when `‖F‖₂ < 1`.
+/-- $\|(\mathbf{I} - \mathbf{F})^{-1} - \mathbf{I}\|_2
+\le \|\mathbf{F}\|_2 / (1 - \|\mathbf{F}\|_2)$ when $\|\mathbf{F}\|_2 < 1$.
 Port of `NLAlib.specNorm_inv_one_sub_sub_one_le`. -/
 theorem specNorm_inv_one_sub_sub_one_le {F : Matrix n n 𝕜} (h : specNorm F < 1) :
     specNorm ((1 - F)⁻¹ - 1) ≤ specNorm F / (1 - specNorm F) := by
@@ -93,32 +97,41 @@ private theorem add_eq_mul_one_sub_neg {A : Matrix n n 𝕜} (hA : IsUnit A) (E 
   rw [sub_neg_eq_add, Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc, mul_inv_of_isUnit hA,
     Matrix.one_mul]
 
-/-- A perturbation `E` with `‖A⁻¹ E‖₂ < 1` keeps `A + E` invertible.
+/-- For invertible $\mathbf{A}$, a perturbation $\mathbf{E}$ with
+$\|\mathbf{A}^{-1}\mathbf{E}\|_2 < 1$ keeps $\mathbf{A} + \mathbf{E}$ invertible.
 [GolubVanLoan2013, Theorem 2.3.4]. Port of `NLAlib.isUnit_add_of_specNorm_inv_mul_lt_one`. -/
 theorem isUnit_add_of_specNorm_inv_mul_lt_one {A E : Matrix n n 𝕜} (hA : IsUnit A)
     (hE : specNorm (A⁻¹ * E) < 1) : IsUnit (A + E) := by
   rw [add_eq_mul_one_sub_neg hA E]
   exact hA.mul (isUnit_one_sub_of_specNorm_lt_one (by rwa [specNorm_neg]))
 
-/-- A perturbation `E` with `‖A⁻¹‖₂ ‖E‖₂ < 1` keeps `A + E` invertible. -/
+/-- For invertible $\mathbf{A}$, a perturbation $\mathbf{E}$ with
+$\|\mathbf{A}^{-1}\|_2 \|\mathbf{E}\|_2 < 1$ keeps $\mathbf{A} + \mathbf{E}$ invertible. -/
 theorem isUnit_add_of_specNorm_inv_mul_specNorm_lt_one {A E : Matrix n n 𝕜} (hA : IsUnit A)
     (hE : specNorm A⁻¹ * specNorm E < 1) : IsUnit (A + E) := by
   exact isUnit_add_of_specNorm_inv_mul_lt_one hA ((specNorm_mul_le _ _).trans_lt hE)
 
-/-- A perturbation smaller than the smallest singular value keeps `A + E` invertible. -/
+/-- A perturbation smaller than the smallest singular value keeps $\mathbf{A} + \mathbf{E}$
+invertible: if $\|\mathbf{E}\|_2 < \sigma_k(\mathbf{A})$ with $k + 1 = \lvert n \rvert$, then
+$\mathbf{A} + \mathbf{E}$ is invertible. -/
 theorem isUnit_add_of_specNorm_lt_singularValues {A E : Matrix n n 𝕜} {k : ℕ}
     (hk : k + 1 = Fintype.card n) (hE : specNorm E < singularValues A k) : IsUnit (A + E) := by
   rw [← Matrix.mulVec_injective_iff_isUnit]
   by_contra h
   exact absurd (singularValues_last_le_specNorm_of_not_injective_add A hk h) (not_le.mpr hE)
 
-/-- The difference of two inverses: `(A + E)⁻¹ - A⁻¹ = -(A + E)⁻¹ E A⁻¹`. -/
+/-- The difference of two inverses:
+$(\mathbf{A} + \mathbf{E})^{-1} - \mathbf{A}^{-1}
+= -(\mathbf{A} + \mathbf{E})^{-1} \mathbf{E} \mathbf{A}^{-1}$ for invertible $\mathbf{A}$ and
+$\mathbf{A} + \mathbf{E}$. -/
 theorem inv_add_sub_inv {A E : Matrix n n 𝕜} (hA : IsUnit A) (hAE : IsUnit (A + E)) :
     (A + E)⁻¹ - A⁻¹ = -((A + E)⁻¹ * E * A⁻¹) := by
   rw [Matrix.inv_sub_inv (iff_of_true hAE hA), sub_add_cancel_left, Matrix.mul_neg,
     Matrix.neg_mul]
 
-/-- `‖(A + E)⁻¹‖₂ ≤ ‖A⁻¹‖₂ / (1 - ‖A⁻¹ E‖₂)`.
+/-- For invertible $\mathbf{A}$ with $\|\mathbf{A}^{-1}\mathbf{E}\|_2 < 1$,
+$\|(\mathbf{A} + \mathbf{E})^{-1}\|_2
+\le \|\mathbf{A}^{-1}\|_2 / (1 - \|\mathbf{A}^{-1}\mathbf{E}\|_2)$.
 [GolubVanLoan2013, Theorem 2.3.4]. Port of `NLAlib.specNorm_inv_add_le`. -/
 theorem specNorm_inv_add_le {A E : Matrix n n 𝕜} (hA : IsUnit A) (hE : specNorm (A⁻¹ * E) < 1) :
     specNorm (A + E)⁻¹ ≤ specNorm A⁻¹ / (1 - specNorm (A⁻¹ * E)) := by
@@ -128,8 +141,10 @@ theorem specNorm_inv_add_le {A E : Matrix n n 𝕜} (hA : IsUnit A) (hE : specNo
   rw [add_eq_mul_one_sub_neg hA E, Matrix.mul_inv_rev, div_eq_inv_mul]
   exact (specNorm_mul_le _ _).trans (mul_le_mul_of_nonneg_right h (specNorm_nonneg _))
 
-/-- **Perturbation of the inverse**:
-`‖(A + E)⁻¹ - A⁻¹‖₂ ≤ ‖A⁻¹‖₂² ‖E‖₂ / (1 - ‖A⁻¹ E‖₂)`.
+/-- **Perturbation of the inverse**: for invertible $\mathbf{A}$ with
+$\|\mathbf{A}^{-1}\mathbf{E}\|_2 < 1$,
+$$\|(\mathbf{A} + \mathbf{E})^{-1} - \mathbf{A}^{-1}\|_2
+  \le \frac{\|\mathbf{A}^{-1}\|_2^2 \|\mathbf{E}\|_2}{1 - \|\mathbf{A}^{-1}\mathbf{E}\|_2}.$$
 [GolubVanLoan2013, Theorem 2.3.4]. Port of `NLAlib.specNorm_inv_add_sub_inv_le`.
 Result: inverse-perturbation -/
 theorem specNorm_inv_add_sub_inv_le {A E : Matrix n n 𝕜} (hA : IsUnit A)
@@ -145,8 +160,10 @@ theorem specNorm_inv_add_sub_inv_le {A E : Matrix n n 𝕜} (hA : IsUnit A)
         exact specNorm_inv_add_le hA hE
     _ = specNorm A⁻¹ ^ 2 * specNorm E / (1 - specNorm (A⁻¹ * E)) := by ring
 
-/-- Perturbation of the inverse in any unitarily invariant norm:
-`‖(A + E)⁻¹ - A⁻¹‖ ≤ ‖(A + E)⁻¹‖₂ ‖E‖ ‖A⁻¹‖₂`.
+/-- Perturbation of the inverse in any unitarily invariant norm $\|\cdot\|_{\Phi}$: for invertible
+$\mathbf{A}$ and $\mathbf{A} + \mathbf{E}$,
+$\|(\mathbf{A} + \mathbf{E})^{-1} - \mathbf{A}^{-1}\|_{\Phi}
+\le \|(\mathbf{A} + \mathbf{E})^{-1}\|_2 \|\mathbf{E}\|_{\Phi} \|\mathbf{A}^{-1}\|_2$.
 Port of `NLAlib.frobNorm_inv_add_sub_inv_le`, there for the Frobenius norm. -/
 theorem SymmetricGauge.matrixNorm_inv_add_sub_inv_le (Φ : SymmetricGauge) {A E : Matrix n n 𝕜}
     (hA : IsUnit A) (hAE : IsUnit (A + E)) :
@@ -163,9 +180,12 @@ private theorem specNorm_inv_mul_specNorm_le_conditionNumber_mul {A E : Matrix n
         mul_le_mul_of_nonneg_left hE (specNorm_nonneg _)
     _ = specNorm A * specNorm A⁻¹ * ε := by ring
 
-/-- **Relative perturbation of the inverse through the condition number.** If
-`‖E‖₂ ≤ ε ‖A‖₂` and `κ(A) ε < 1`, then
-`‖(A + E)⁻¹ - A⁻¹‖₂ ≤ κ ε / (1 - κ ε) · ‖A⁻¹‖₂`.
+/-- **Relative perturbation of the inverse through the condition number.** If $\mathbf{A}$ is
+invertible, $\|\mathbf{E}\|_2 \le \varepsilon \|\mathbf{A}\|_2$ and
+$\kappa(\mathbf{A}) \varepsilon < 1$, then
+$$\|(\mathbf{A} + \mathbf{E})^{-1} - \mathbf{A}^{-1}\|_2
+  \le \frac{\kappa(\mathbf{A}) \varepsilon}{1 - \kappa(\mathbf{A}) \varepsilon}
+  \|\mathbf{A}^{-1}\|_2.$$
 [GolubVanLoan2013, §2.6.2]; [Higham2002, §6.2]. -/
 theorem specNorm_inv_add_sub_inv_le_conditionNumber_mul {A E : Matrix n n 𝕜} (hA : IsUnit A)
     {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A) (hε : conditionNumber A * ε < 1) :
@@ -184,8 +204,9 @@ theorem specNorm_inv_add_sub_inv_le_conditionNumber_mul {A E : Matrix n n 𝕜} 
 
 /-! ### Linear systems -/
 
-/-- **Forward error from the residual.** If `A x = b` with `A` invertible, then for any `y`,
-`‖x - y‖ ≤ ‖A⁻¹‖₂ ‖b - A y‖`. -/
+/-- **Forward error from the residual.** If $\mathbf{A}\mathbf{x} = \mathbf{b}$ with $\mathbf{A}$
+invertible, then for any $\mathbf{y}$,
+$\|\mathbf{x} - \mathbf{y}\| \le \|\mathbf{A}^{-1}\|_2 \|\mathbf{b} - \mathbf{A}\mathbf{y}\|$. -/
 theorem norm_sub_le_specNorm_inv_mul_norm_sub_mulVec {A : Matrix n n 𝕜} (hA : IsUnit A)
     {x b : n → 𝕜} (hx : A *ᵥ x = b) (y : n → 𝕜) :
     ‖WithLp.toLp 2 (x - y)‖ ≤ specNorm A⁻¹ * ‖WithLp.toLp 2 (b - A *ᵥ y)‖ := by
@@ -195,8 +216,10 @@ theorem norm_sub_le_specNorm_inv_mul_norm_sub_mulVec {A : Matrix n n 𝕜} (hA :
   nth_rewrite 1 [h]
   exact norm_toLp_mulVec_le _ _
 
-/-- **Relative forward error from the relative residual**, without divisions:
-`‖x - y‖ ‖b‖ ≤ κ(A) ‖b - A y‖ ‖x‖`.
+/-- **Relative forward error from the relative residual**, without divisions: if
+$\mathbf{A}\mathbf{x} = \mathbf{b}$ with $\mathbf{A}$ invertible, then for any $\mathbf{y}$,
+$\|\mathbf{x} - \mathbf{y}\| \, \|\mathbf{b}\|
+\le \kappa(\mathbf{A}) \, \|\mathbf{b} - \mathbf{A}\mathbf{y}\| \, \|\mathbf{x}\|$.
 [GolubVanLoan2013, §2.6.4]. Port of `NLAlib.norm_sub_div_le_conditionNumber_mul`. -/
 theorem norm_sub_mul_norm_le_conditionNumber_mul {A : Matrix n n 𝕜} (hA : IsUnit A)
     {x b : n → 𝕜} (hx : A *ᵥ x = b) (y : n → 𝕜) :
@@ -212,8 +235,11 @@ theorem norm_sub_mul_norm_le_conditionNumber_mul {A : Matrix n n 𝕜} (hA : IsU
         mul_le_mul h₁ h₂ (norm_nonneg _) (by positivity)
     _ = specNorm A * specNorm A⁻¹ * ‖WithLp.toLp 2 (b - A *ᵥ y)‖ * ‖WithLp.toLp 2 x‖ := by ring
 
-/-- **Perturbation of a linear system.** If `A x = b`, `(A + E) y = b + f` and `‖A⁻¹ E‖₂ < 1`,
-then `‖y - x‖ ≤ ‖A⁻¹‖₂ / (1 - ‖A⁻¹ E‖₂) · (‖f‖ + ‖E‖₂ ‖x‖)`.
+/-- **Perturbation of a linear system.** If $\mathbf{A}$ is invertible,
+$\mathbf{A}\mathbf{x} = \mathbf{b}$, $(\mathbf{A} + \mathbf{E})\mathbf{y} = \mathbf{b} + \mathbf{f}$
+and $\|\mathbf{A}^{-1}\mathbf{E}\|_2 < 1$, then
+$$\|\mathbf{y} - \mathbf{x}\| \le \frac{\|\mathbf{A}^{-1}\|_2}{1 - \|\mathbf{A}^{-1}\mathbf{E}\|_2}
+  \bigl(\|\mathbf{f}\| + \|\mathbf{E}\|_2 \|\mathbf{x}\|\bigr).$$
 [GolubVanLoan2013, Theorem 2.6.2]; [Higham2002, Theorem 7.2].
 Port of `NLAlib.norm_div_le_of_add_mulVec_add`. -/
 theorem norm_sub_le_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
@@ -239,9 +265,13 @@ theorem norm_sub_le_of_add_mulVec_eq {A E : Matrix n n 𝕜} (hA : IsUnit A)
           (‖WithLp.toLp 2 f‖ + specNorm E * ‖WithLp.toLp 2 x‖) :=
         mul_le_mul (specNorm_inv_add_le hA hE) hres (norm_nonneg _) (by positivity)
 
-/-- **Relative perturbation of a linear system through the condition number.** If `A x = b`,
-`(A + E) y = b + f`, `‖E‖₂ ≤ ε ‖A‖₂`, `‖f‖ ≤ ε ‖b‖` and `κ(A) ε < 1`, then
-`‖y - x‖ ≤ 2 ε κ / (1 - κ ε) · ‖x‖`.
+/-- **Relative perturbation of a linear system through the condition number.** If $\mathbf{A}$ is
+invertible, $\mathbf{A}\mathbf{x} = \mathbf{b}$,
+$(\mathbf{A} + \mathbf{E})\mathbf{y} = \mathbf{b} + \mathbf{f}$,
+$\|\mathbf{E}\|_2 \le \varepsilon \|\mathbf{A}\|_2$, $\|\mathbf{f}\| \le \varepsilon \|\mathbf{b}\|$
+and $\kappa(\mathbf{A}) \varepsilon < 1$, then
+$$\|\mathbf{y} - \mathbf{x}\|
+  \le \frac{2 \varepsilon \kappa(\mathbf{A})}{1 - \kappa(\mathbf{A}) \varepsilon} \|\mathbf{x}\|.$$
 [GolubVanLoan2013, Theorem 2.6.2].
 Port of `NLAlib.norm_div_le_of_add_mulVec_add`.
 Result: linear-system-perturbation -/

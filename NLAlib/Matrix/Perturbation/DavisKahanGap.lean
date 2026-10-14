@@ -11,17 +11,21 @@ public import NLAlib.Matrix.Subspaces.ProjectorPair
 /-!
 # Davis–Kahan bounds with the gap of the unperturbed matrix
 
-The `sin Θ` theorems of `NLAlib.Matrix.Perturbation.DavisKahan` separate the spectrum of `A` on
-one subspace from the spectrum of `A + E` on the other. Here the leading eigenspaces of `A` and
-of `A + E` are compared using only `NLAlib.eigengap A (j + 1) = λ_j(A) - λ_{j+1}(A)`, the form in
-which the theorem is used in statistics.
+The $\sin \Theta$ theorems of `NLAlib.Matrix.Perturbation.DavisKahan` separate the spectrum of
+$\mathbf{A}$ on one subspace from the spectrum of $\mathbf{A} + \mathbf{E}$ on the other. Here the
+leading eigenspaces of $\mathbf{A}$ and of $\mathbf{A} + \mathbf{E}$ are compared using only the
+eigengap $\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})$ (`NLAlib.eigengap`), the form in which
+the theorem is used in statistics.
 
-In the spectral norm this follows from the `sin Θ` theorem and Weyl's inequality. In the Frobenius
-norm it follows from a variational argument: the distance from a frame `Q` to the leading
-eigenspace of `A` is controlled by how much Rayleigh trace `Q` loses, and a frame that is at
-least as good as the leading eigenframe of `A` for `A + E` loses at most `⟨Q Qᴴ - U Uᴴ, E⟩`. That
-argument uses of `Q` only the comparison of the two Rayleigh traces of `A + E`, so it applies to
-approximate leading frames and to `E` that is not Hermitian.
+In the spectral norm this follows from the $\sin \Theta$ theorem and Weyl's inequality. In the
+Frobenius norm it follows from a variational argument: the distance from a frame $\mathbf{Q}$ to the
+leading eigenspace of $\mathbf{A}$ is controlled by how much Rayleigh trace $\mathbf{Q}$ loses, and
+a frame that is at least as good as the leading eigenframe $\mathbf{U}$ of $\mathbf{A}$ for
+$\mathbf{A} + \mathbf{E}$ loses at most
+$\langle \mathbf{Q}\mathbf{Q}^{\mathsf{H}} - \mathbf{U}\mathbf{U}^{\mathsf{H}}, \mathbf{E}
+\rangle_{\mathsf{F}}$. That argument uses of $\mathbf{Q}$ only the comparison of the two Rayleigh
+traces of $\mathbf{A} + \mathbf{E}$, so it applies to approximate leading frames and to $\mathbf{E}$
+that is not Hermitian.
 
 ## Main results
 
@@ -36,7 +40,7 @@ approximate leading frames and to `E` that is not Hermitian.
   eigenframe.
 * `NLAlib.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap`,
   `NLAlib.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap`: the same for a frame
-  attaining the largest Rayleigh trace of `A + E`.
+  attaining the largest Rayleigh trace of $\mathbf{A} + \mathbf{E}$.
 -/
 
 @[expose] public section
@@ -49,10 +53,13 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n p q : Type*} [Fintype n] [Fintype p] [F
 
 /-! ### The spectral norm -/
 
-/-- **Davis–Kahan with the gap of the unperturbed matrix**, spectral norm. For leading
-eigenframes `U` of `A` and `U'` of `A + E`, both with `j + 1` columns,
-`‖(1 - U Uᴴ) U'‖₂ ≤ 2 ‖E‖₂ / (λ_j(A) - λ_{j+1}(A))`. The two frames have the same number of
-columns, so the distance is symmetric in them
+/-- **Davis–Kahan with the gap of the unperturbed matrix**, spectral norm. Let $\mathbf{A}$ and
+$\mathbf{E}$ be Hermitian with $\lambda_j(\mathbf{A}) > \lambda_{j+1}(\mathbf{A})$. For leading
+eigenframes $\mathbf{U}$ of $\mathbf{A}$ and $\mathbf{U}'$ of $\mathbf{A} + \mathbf{E}$, both with
+$j + 1$ columns,
+$$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_2
+  \le \frac{2 \|\mathbf{E}\|_2}{\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
+The two frames have the same number of columns, so the distance is symmetric in them
 (`IsStarProjection.singularValues_one_sub_mul_eq_of_rank_eq`).
 [YuWangSamworth2015, Theorem 2 context].
 Port of `NLAlib.specNorm_sinePrincipalAngles_le_two_mul_specNorm_div_population_gap`.
@@ -96,8 +103,8 @@ theorem specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap [DecidableEq n] {A
 /-! ### The variational form -/
 
 omit [Fintype n] in
-/-- A positive semidefinite matrix weighted by a diagonal matrix with entries at least `c` has
-trace at least `c` times its own. -/
+/-- A positive semidefinite matrix weighted by a diagonal matrix with entries at least $c$ has trace
+at least $c$ times its own. -/
 private theorem mul_re_trace_le_re_trace_diagonal_mul [DecidableEq p] {d : p → ℝ} {c : ℝ}
     (hd : ∀ i, c ≤ d i) {G : Matrix p p 𝕜} (hG : G.PosSemidef) :
     c * RCLike.re G.trace ≤ RCLike.re ((Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) * G).trace := by
@@ -115,7 +122,7 @@ private theorem frobNorm_one_sub_mul_comm [DecidableEq n] [DecidableEq p] {U Q :
     Matrix.conjTranspose_conjTranspose]
 
 /-- The part of the trace deficit carried by the leading block: a diagonal block with entries at
-least `c` loses at least `c` times the squared distance. -/
+least $c$ loses at least $c$ times the squared distance. -/
 private theorem mul_card_sub_frobNorm_sq_le [DecidableEq p] [DecidableEq q] {U : Matrix n p 𝕜}
     {Q : Matrix n q 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q) {d : p → ℝ}
     {c : ℝ} (hd : ∀ i, c ≤ d i) :
@@ -139,8 +146,9 @@ private theorem mul_card_sub_frobNorm_sq_le [DecidableEq p] [DecidableEq q] {U :
     Matrix.trace_diagonal, ← RCLike.ofReal_sum, RCLike.ofReal_re] at h
   exact h
 
-/-- The part of the trace deficit carried by the complement: a matrix that is at most `μ` on the
-range of an orthogonal projector `R` has compressed trace at most `μ ‖R Q‖_F²`. -/
+/-- The part of the trace deficit carried by the complement: a matrix that is at most $\mu$ on the
+range of an orthogonal projector $\mathbf{R}$ has compressed trace at most
+$\mu \|\mathbf{R}\mathbf{Q}\|_{\mathsf{F}}^2$. -/
 private theorem re_trace_conjTranspose_mul_mul_le_mul_frobNorm_sq {N R : Matrix n n 𝕜}
     (hR : IsStarProjection R) {μ : ℝ} (h : N ≤ μ • R) (Q : Matrix n p 𝕜) :
     RCLike.re (Qᴴ * N * Q).trace ≤ μ * frobNorm (R * Q) ^ 2 := by
@@ -153,12 +161,15 @@ private theorem re_trace_conjTranspose_mul_mul_le_mul_frobNorm_sq {N R : Matrix 
     Matrix.mul_assoc Qᴴ R, ← Matrix.mul_assoc R R, hR.mul_self, Matrix.mul_smul, Matrix.smul_mul,
     Matrix.trace_smul, RCLike.smul_re, ← Matrix.mul_assoc]
 
-/-- **Distance to the leading eigenspace from the loss of trace.** Let the columns of `U` be
-orthonormal eigenvectors of the Hermitian matrix `A` for its `j + 1` largest eigenvalues. For any
-frame `Q` with `j + 1` columns,
-`(λ_j - λ_{j+1}) ‖(1 - U Uᴴ) Q‖_F² ≤ ∑_{i ≤ j} λ_i - re tr (Qᴴ A Q)`.
+/-- **Distance to the leading eigenspace from the loss of trace.** Let the columns of $\mathbf{U}$
+be orthonormal eigenvectors of the Hermitian matrix $\mathbf{A}$ for its $j + 1$ largest
+eigenvalues. For any frame $\mathbf{Q}$ with $j + 1$ columns,
+$$\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
+  \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}^2
+  \le \sum_{i=0}^{j} \lambda_i(\mathbf{A}) -
+  \operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}).$$
 This turns a near-optimal value of the Rayleigh trace into closeness of subspaces.
-Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_trace_deficit`, there over `ℝ`. -/
+Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_trace_deficit`, there over $\mathbb{R}$. -/
 theorem eigengap_mul_frobNorm_one_sub_mul_sq_le [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U)
     (hQ : HasOrthonormalCols Q)
@@ -198,12 +209,23 @@ private theorem frobInner_mul_conjTranspose_self (X : Matrix n p 𝕜) (E : Matr
   rw [frobInner_eq_re_trace, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
     Matrix.mul_assoc, Matrix.trace_mul_comm]
 
-/-- **The variational form for a perturbation.** If the Rayleigh trace of `A + E` on the frame
-`Q` is at least its Rayleigh trace on the leading eigenframe `U` of `A`, then
-`(λ_j(A) - λ_{j+1}(A)) ‖(1 - U Uᴴ) Q‖_F² ≤ ⟨Q Qᴴ - U Uᴴ, E⟩_F`. Nothing is assumed of `E`, and `Q`
-need not be an eigenframe of `A + E`.
-Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over `ℝ` for a
-frame attaining the largest Rayleigh trace. -/
+/-- **The variational form for a perturbation.** Let $\mathbf{A}$ be Hermitian and $\mathbf{U}$ its
+leading eigenframe with $j + 1$ columns. If the Rayleigh trace of $\mathbf{A} + \mathbf{E}$ on a
+frame $\mathbf{Q}$ with $j + 1$ columns is at least its Rayleigh trace on $\mathbf{U}$, that is
+$\operatorname{Re} \operatorname{tr}(\mathbf{U}^{\mathsf{H}}(\mathbf{A} + \mathbf{E})\mathbf{U})
+\le \operatorname{Re}
+\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}(\mathbf{A} + \mathbf{E})\mathbf{Q})$, then
+$$\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
+  \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}^2
+  \le \langle \mathbf{Q}\mathbf{Q}^{\mathsf{H}} - \mathbf{U}\mathbf{U}^{\mathsf{H}},
+  \mathbf{E} \rangle_{\mathsf{F}},$$
+with the Frobenius inner product
+$\langle \mathbf{X}, \mathbf{Y} \rangle_{\mathsf{F}} =
+\operatorname{Re} \operatorname{tr}(\mathbf{X}^{\mathsf{H}}\mathbf{Y})$ (`NLAlib.frobInner`).
+Nothing is assumed of $\mathbf{E}$, and $\mathbf{Q}$ need not be an eigenframe of
+$\mathbf{A} + \mathbf{E}$.
+Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over $\mathbb{R}$
+for a frame attaining the largest Rayleigh trace. -/
 theorem eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le [DecidableEq n]
     {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
@@ -229,10 +251,15 @@ private theorem re_trace_le_re_trace_of_eq_sum {B : Matrix n n 𝕜} (hB : B.IsH
   have hKF := hB.re_trace_conjTranspose_mul_mul_le_sum_eigenvalue hU
   rwa [Fintype.card_fin, ← hQtop] at hKF
 
-/-- The variational form for a perturbation: if `Q` attains the largest Rayleigh trace of
-`A + E` among frames with `j + 1` columns, then
-`(λ_j(A) - λ_{j+1}(A)) ‖(1 - U Uᴴ) Q‖_F² ≤ ⟨Q Qᴴ - U Uᴴ, E⟩_F`.
-Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over `ℝ`. -/
+/-- The variational form for a perturbation: for Hermitian $\mathbf{A}$ and $\mathbf{E}$, with
+$\mathbf{U}$ the leading eigenframe of $\mathbf{A}$ with $j + 1$ columns, if $\mathbf{Q}$ attains
+the largest Rayleigh trace of $\mathbf{A} + \mathbf{E}$ among frames with $j + 1$ columns, then
+$\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
+\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}^2
+\le \langle \mathbf{Q}\mathbf{Q}^{\mathsf{H}} - \mathbf{U}\mathbf{U}^{\mathsf{H}}, \mathbf{E}
+\rangle_{\mathsf{F}}$.
+Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over $\mathbb{R}$.
+-/
 theorem eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner [DecidableEq n] {A E : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hE : E.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
@@ -243,7 +270,7 @@ theorem eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner [DecidableEq n] {A E :
   eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA hU hQ hAU
     (re_trace_le_re_trace_of_eq_sum (hA.add hE) hU hQtop)
 
-/-- From `g s² ≤ C s` to `s ≤ C / g`. -/
+/-- From $g s^2 \le C s$ to $s \le C / g$, for $g > 0$ and $s, C \ge 0$. -/
 private theorem le_div_of_mul_sq_le_mul {g s C : ℝ} (hg : 0 < g) (hs : 0 ≤ s) (hC : 0 ≤ C)
     (h : g * s ^ 2 ≤ C * s) : s ≤ C / g := by
   rw [le_div_iff₀ hg]
@@ -253,8 +280,10 @@ private theorem le_div_of_mul_sq_le_mul {g s C : ℝ} (hg : 0 < g) (hs : 0 ≤ s
   · refine le_of_mul_le_mul_left ?_ hpos
     linarith
 
-/-- The pairing of the difference of two frame projectors with `E` is at most
-`2 √p ‖E‖₂ ‖(1 - U Uᴴ) Q‖_F`, for frames with `p` columns. -/
+/-- The pairing of the difference of two frame projectors with $\mathbf{E}$ is at most
+$2 \sqrt{\lvert p \rvert} \, \|\mathbf{E}\|_2
+\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}$, for frames with
+$\lvert p \rvert$ columns. -/
 private theorem frobInner_mul_conjTranspose_sub_le [DecidableEq n] [DecidableEq p]
     {U Q : Matrix n p 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (E : Matrix n n 𝕜) :
@@ -286,10 +315,15 @@ private theorem frobInner_mul_conjTranspose_sub_le [DecidableEq n] [DecidableEq 
   rw [e, frobInner_sub_left]
   linarith
 
-/-- **Davis–Kahan with the gap of the unperturbed matrix**, Frobenius norm, for a frame `Q`
-whose Rayleigh trace for `A + E` is at least that of the leading eigenframe `U` of `A`:
-`‖(1 - U Uᴴ) Q‖_F ≤ √2 ‖E‖_F / (λ_j(A) - λ_{j+1}(A))`.
-[YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian `A + E`.
+/-- **Davis–Kahan with the gap of the unperturbed matrix**, Frobenius norm, for a frame $\mathbf{Q}$
+whose Rayleigh trace for $\mathbf{A} + \mathbf{E}$ is at least that of the leading eigenframe
+$\mathbf{U}$ of $\mathbf{A}$, both with $j + 1$ columns, $\mathbf{A}$ Hermitian and
+$\lambda_j(\mathbf{A}) > \lambda_{j+1}(\mathbf{A})$:
+$$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
+  \le \frac{\sqrt{2} \, \|\mathbf{E}\|_{\mathsf{F}}}
+  {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
+[YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian
+$\mathbf{A} + \mathbf{E}$.
 Result: davis-kahan -/
 theorem frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le
     [DecidableEq n] {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ}
@@ -305,8 +339,13 @@ theorem frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_l
     (mul_nonneg (Real.sqrt_nonneg 2) (frobNorm_nonneg E)) ?_
   linarith
 
-/-- **Davis–Kahan with the gap of the unperturbed matrix**, Frobenius norm:
-`‖(1 - U Uᴴ) Q‖_F ≤ √2 ‖E‖_F / (λ_j(A) - λ_{j+1}(A))`.
+/-- **Davis–Kahan with the gap of the unperturbed matrix**, Frobenius norm: for Hermitian
+$\mathbf{A}$ and $\mathbf{E}$ with $\lambda_j(\mathbf{A}) > \lambda_{j+1}(\mathbf{A})$, the leading
+eigenframe $\mathbf{U}$ of $\mathbf{A}$ with $j + 1$ columns, and a frame $\mathbf{Q}$ with $j + 1$
+columns attaining the largest Rayleigh trace of $\mathbf{A} + \mathbf{E}$,
+$$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
+  \le \frac{\sqrt{2} \, \|\mathbf{E}\|_{\mathsf{F}}}
+  {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
 [YuWangSamworth2015, Theorem 2].
 Port of `NLAlib.frobNorm_sinePrincipalAngles_le_two_mul_min_div_population_gap`.
 Result: davis-kahan -/
@@ -322,10 +361,15 @@ theorem frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap [DecidableEq 
     (re_trace_le_re_trace_of_eq_sum (hA.add hE) hU hQtop) hgap
 
 /-- Davis–Kahan with the gap of the unperturbed matrix, Frobenius norm of the angles against the
-spectral norm of the perturbation, for a frame `Q` whose Rayleigh trace for `A + E` is at least
-that of the leading eigenframe `U` of `A`:
-`‖(1 - U Uᴴ) Q‖_F ≤ 2 √(j + 1) ‖E‖₂ / (λ_j(A) - λ_{j+1}(A))`.
-[YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian `A + E`. -/
+spectral norm of the perturbation, for a frame $\mathbf{Q}$ whose Rayleigh trace for
+$\mathbf{A} + \mathbf{E}$ is at least that of the leading eigenframe $\mathbf{U}$ of $\mathbf{A}$,
+both with $j + 1$ columns, $\mathbf{A}$ Hermitian and
+$\lambda_j(\mathbf{A}) > \lambda_{j+1}(\mathbf{A})$:
+$$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
+  \le \frac{2 \sqrt{j + 1} \, \|\mathbf{E}\|_2}
+  {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
+[YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian
+$\mathbf{A} + \mathbf{E}$. -/
 theorem frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le
     [DecidableEq n] {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
@@ -342,8 +386,13 @@ theorem frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_tra
   linarith
 
 /-- Davis–Kahan with the gap of the unperturbed matrix, Frobenius norm of the angles against the
-spectral norm of the perturbation:
-`‖(1 - U Uᴴ) Q‖_F ≤ 2 √(j + 1) ‖E‖₂ / (λ_j(A) - λ_{j+1}(A))`.
+spectral norm of the perturbation: for Hermitian $\mathbf{A}$ and $\mathbf{E}$ with
+$\lambda_j(\mathbf{A}) > \lambda_{j+1}(\mathbf{A})$, the leading eigenframe $\mathbf{U}$ of
+$\mathbf{A}$ with $j + 1$ columns, and a frame $\mathbf{Q}$ with $j + 1$ columns attaining the
+largest Rayleigh trace of $\mathbf{A} + \mathbf{E}$,
+$$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
+  \le \frac{2 \sqrt{j + 1} \, \|\mathbf{E}\|_2}
+  {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
 [YuWangSamworth2015, Theorem 2]. -/
 theorem frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap [DecidableEq n]
     {A E : Matrix n n 𝕜} (hA : A.IsHermitian) (hE : E.IsHermitian) {j : ℕ}

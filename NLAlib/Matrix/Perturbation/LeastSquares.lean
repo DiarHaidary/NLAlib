@@ -13,9 +13,10 @@ public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 /-!
 # Perturbation of least-squares problems
 
-How the solution and the residual of `min ‖b - A x‖` move when `A` and `b` are perturbed, for `A`
-of full column rank. The bounds are stated for least-squares solutions `x` of `(A, b)` and `y` of
-`(A + E, b + f)`; under the hypotheses both are unique.
+How the solution and the residual of $\min_{\mathbf{x}} \|\mathbf{b} - \mathbf{A}\mathbf{x}\|$ move
+when $\mathbf{A}$ and $\mathbf{b}$ are perturbed, for $\mathbf{A}$ of full column rank. The bounds
+are stated for least-squares solutions $\mathbf{x}$ of $(\mathbf{A}, \mathbf{b})$ and $\mathbf{y}$
+of $(\mathbf{A} + \mathbf{E}, \mathbf{b} + \mathbf{f})$; under the hypotheses both are unique.
 
 ## Main results
 
@@ -33,8 +34,8 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- The least-squares solution of a full-column-rank problem is bounded by the data:
-`‖x‖ ≤ ‖A⁺‖₂ ‖b‖`. -/
+/-- The least-squares solution $\mathbf{x}$ of a full-column-rank problem $(\mathbf{A}, \mathbf{b})$
+is bounded by the data: $\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{b}\|$. -/
 theorem IsLeastSquaresSolution.norm_le_specNorm_pinv_mul {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {b : m → 𝕜} {x : n → 𝕜}
     (hx : IsLeastSquaresSolution A b x) :
@@ -42,8 +43,9 @@ theorem IsLeastSquaresSolution.norm_le_specNorm_pinv_mul {A : Matrix m n 𝕜}
   rw [(isLeastSquaresSolution_iff_eq_pinv_mulVec hA).mp hx]
   exact norm_toLp_mulVec_le (pinv A) b
 
-/-- The pseudoinverse of `B` on a residual of `A`, for matrices of equal rank: the residual is
-orthogonal to the range of `A`, so only the difference of the range projectors acts. -/
+/-- The pseudoinverse of $\mathbf{B}$ on a residual of $\mathbf{A}$, for matrices of equal rank: the
+residual is orthogonal to the range of $\mathbf{A}$, so only the difference of the range projectors
+acts. -/
 private theorem norm_pinv_mulVec_one_sub_rangeProjector_mulVec_le [DecidableEq m]
     {A B : Matrix m n 𝕜} (h : A.rank = B.rank) (b : m → 𝕜) :
     ‖WithLp.toLp 2 (pinv B *ᵥ ((1 - rangeProjector A) *ᵥ b))‖ ≤
@@ -68,11 +70,17 @@ private theorem norm_pinv_mulVec_one_sub_rangeProjector_mulVec_le [DecidableEq m
   exact (specNorm_rangeProjector_sub_rangeProjector_le h).trans
     (mul_le_mul_of_nonneg_right (min_le_left _ _) (specNorm_nonneg _))
 
-/-- **Perturbation of a least-squares solution.** Let `A` have full column rank and
-`‖A⁺‖₂ ‖E‖₂ < 1`. If `x` solves the problem `(A, b)` and `y` solves `(A + E, b + f)`, then
-`‖y - x‖ ≤ ‖(A + E)⁺‖₂ (‖f‖ + ‖E‖₂ ‖x‖ + ‖A⁺‖₂ ‖E‖₂ ‖b - A x‖)`.
+/-- **Perturbation of a least-squares solution.** Let $\mathbf{A}$ have full column rank and
+$\|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 < 1$. If $\mathbf{x}$ solves the problem
+$(\mathbf{A}, \mathbf{b})$ and $\mathbf{y}$ solves
+$(\mathbf{A} + \mathbf{E}, \mathbf{b} + \mathbf{f})$, then
+$$\begin{aligned}
+  \|\mathbf{y} - \mathbf{x}\| &\le \|(\mathbf{A} + \mathbf{E})^{+}\|_2
+  \bigl(\|\mathbf{f}\| + \|\mathbf{E}\|_2 \|\mathbf{x}\| \\
+  &\qquad + \|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 \|\mathbf{b} - \mathbf{A}\mathbf{x}\|\bigr).
+\end{aligned}$$
 [GolubVanLoan2013, Theorem 5.3.1]; [Wedin1973]; [Higham2002, Theorem 20.1].
-Port of `NLAlib.norm_least_squares_sub_le_pinv`, there over `ℝ`.
+Port of `NLAlib.norm_least_squares_sub_le_pinv`, there over $\mathbb{R}$.
 Result: least-squares-perturbation -/
 theorem IsLeastSquaresSolution.norm_sub_le {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (hE : specNorm (pinv A) * specNorm E < 1)
@@ -109,12 +117,20 @@ theorem IsLeastSquaresSolution.norm_sub_le {A E : Matrix m n 𝕜}
         (norm_add_le _ _).trans (add_le_add h1 h2)
     _ = _ := by ring
 
-/-- **Relative perturbation of a least-squares solution.** Let `A` have full column rank,
-`‖E‖₂ ≤ ε ‖A‖₂`, `‖f‖ ≤ ε ‖b‖` and `κ(A) ε < 1`. Then
-`‖y - x‖ ≤ ‖A⁺‖₂ / (1 - κ ε) · (ε ‖b‖ + ε ‖A‖₂ ‖x‖ + ‖A⁺‖₂ ε ‖A‖₂ ‖b - A x‖)`.
-The last term carries `κ²` when the residual is not small.
+/-- **Relative perturbation of a least-squares solution.** Let $\mathbf{A}$ have full column rank,
+$\|\mathbf{E}\|_2 \le \varepsilon \|\mathbf{A}\|_2$, $\|\mathbf{f}\| \le \varepsilon \|\mathbf{b}\|$
+and $\kappa(\mathbf{A}) \varepsilon < 1$, and let $\mathbf{x}$ solve the problem
+$(\mathbf{A}, \mathbf{b})$ and $\mathbf{y}$ solve
+$(\mathbf{A} + \mathbf{E}, \mathbf{b} + \mathbf{f})$. Then
+$$\begin{aligned}
+  \|\mathbf{y} - \mathbf{x}\| &\le \frac{\|\mathbf{A}^{+}\|_2}{1 - \kappa(\mathbf{A}) \varepsilon}
+  \bigl(\varepsilon \|\mathbf{b}\| + \varepsilon \|\mathbf{A}\|_2 \|\mathbf{x}\| \\
+  &\qquad + \|\mathbf{A}^{+}\|_2 \varepsilon \|\mathbf{A}\|_2
+  \|\mathbf{b} - \mathbf{A}\mathbf{x}\|\bigr).
+\end{aligned}$$
+The last term carries $\kappa(\mathbf{A})^2$ when the residual is not small.
 [GolubVanLoan2013, Theorem 5.3.1].
-Port of `NLAlib.norm_least_squares_sub_le_relative_data`, there over `ℝ`.
+Port of `NLAlib.norm_least_squares_sub_le_relative_data`, there over $\mathbb{R}$.
 Result: least-squares-perturbation -/
 theorem IsLeastSquaresSolution.norm_sub_le_of_le {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A)
@@ -149,11 +165,12 @@ theorem IsLeastSquaresSolution.norm_sub_le_of_le {A E : Matrix m n 𝕜}
   exact add_nonneg (add_nonneg (norm_nonneg _) (mul_nonneg (specNorm_nonneg E) (norm_nonneg _)))
     (mul_nonneg (mul_nonneg (specNorm_nonneg _) (specNorm_nonneg E)) (norm_nonneg _))
 
-/-- **Perturbation of the least-squares residual.** For matrices `A`, `B` of equal rank, the
-residuals `(1 - P_A) b` and `(1 - P_B) (b + f)` differ by at most
-`‖A⁺‖₂ ‖B - A‖₂ ‖b‖ + ‖f‖`.
+/-- **Perturbation of the least-squares residual.** For matrices $\mathbf{A}$, $\mathbf{B}$ of equal
+rank, the residuals $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{b}$ and
+$(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{b} + \mathbf{f})$ differ in norm by at most
+$\|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2 \|\mathbf{b}\| + \|\mathbf{f}\|$.
 [GolubVanLoan2013, Theorem 5.3.1].
-Port of `NLAlib.norm_least_squares_residual_sub_le`, there over `ℝ`. -/
+Port of `NLAlib.norm_least_squares_residual_sub_le`, there over $\mathbb{R}$. -/
 theorem norm_one_sub_rangeProjector_mulVec_sub_le [DecidableEq m] {A B : Matrix m n 𝕜}
     (h : A.rank = B.rank) (b f : m → 𝕜) :
     ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ b - (1 - rangeProjector B) *ᵥ (b + f))‖ ≤
@@ -170,11 +187,14 @@ theorem norm_one_sub_rangeProjector_mulVec_sub_le [DecidableEq m] {A B : Matrix 
   exact (specNorm_rangeProjector_sub_rangeProjector_le h).trans
     (mul_le_mul_of_nonneg_right (min_le_left _ _) (specNorm_nonneg _))
 
-/-- Relative perturbation of the least-squares residual: for `A` of full column rank,
-`‖E‖₂ ≤ ε ‖A‖₂`, `‖f‖ ≤ ε ‖b‖` and `κ(A) ε < 1`, the residuals differ by at most
-`(1 + κ(A)) ε ‖b‖`.
+/-- Relative perturbation of the least-squares residual: for $\mathbf{A}$ of full column rank,
+$\|\mathbf{E}\|_2 \le \varepsilon \|\mathbf{A}\|_2$, $\|\mathbf{f}\| \le \varepsilon \|\mathbf{b}\|$
+and $\kappa(\mathbf{A}) \varepsilon < 1$, the residuals
+$(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{b}$ and
+$(\mathbf{I} - \mathbf{P}_{\mathbf{A} + \mathbf{E}})(\mathbf{b} + \mathbf{f})$ differ in norm by at
+most $(1 + \kappa(\mathbf{A})) \varepsilon \|\mathbf{b}\|$.
 [GolubVanLoan2013, Theorem 5.3.1].
-Port of `NLAlib.norm_least_squares_residual_sub_le_relative_data`, there over `ℝ`. -/
+Port of `NLAlib.norm_least_squares_residual_sub_le_relative_data`, there over $\mathbb{R}$. -/
 theorem norm_one_sub_rangeProjector_mulVec_sub_le_of_le [DecidableEq m] {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A)
     (hε : conditionNumber A * ε < 1) {b f : m → 𝕜}
