@@ -37,9 +37,11 @@ $\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$ the failure events are equal
 truncated Nyström add reverse Eckart–Young to the trace tail.
 
 **Measurability.** The spectral error of truncated Nyström depends on the choice the truncation
-makes and is not known to be measurable. Its tails bound `μ.real` of a possibly non-measurable
-set, which is the outer measure: the failure event lies in a measurable event of at most the
-stated probability. The success-set form does not follow without measurability. Design:
+makes. Its tails hold for every choice of best approximations, measurable or not; for a
+non-measurable one they bound `μ.real` of a possibly non-measurable set, which is the outer
+measure: the failure event lies in a measurable event of at most the stated probability. At
+`truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`), the failure event
+is measurable and the success-set form follows by `measureReal_compl`. Design:
 `docs/design/LowRank-S5.md` §3.4 and §8.
 
 ## Main results

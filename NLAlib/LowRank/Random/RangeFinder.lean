@@ -25,15 +25,17 @@ test matrix and every finite measure. The squared Frobenius error of the late-tr
 `truncatedSVD (rsvd A (X ω)) k` is integrable too: it does not depend on the choice the truncation
 makes (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`), which is what makes it measurable.
 
-**Measurability of the truncated output.** `truncatedSVD` is a choice, so
-`fun ω => truncatedSVD (rsvd A (X ω)) k` is not known to be measurable, and its spectral error
-depends on the choice. Statements about such errors take a measurable choice $\mathbf{Y}$ of best
-approximations, `hY : ∀ ω, IsBestRankApprox (rsvd A (X ω)) k (Y ω)` with
-`hYm : AEStronglyMeasurable Y μ`. No such selector can be exhibited yet: neither the library nor
-Mathlib has a measurable-selection theorem, and the measurability of `truncatedSVD` is unknown.
-These statements are the form a measurable selector will instantiate.
+**Measurability of the truncated output.** The spectral error of
+`truncatedSVD (rsvd A (X ω)) k` depends on the choice the truncation makes. Statements about it
+are stated for any measurable choice $\mathbf{Y}$ of best approximations,
+`hY : ∀ ω, IsBestRankApprox (rsvd A (X ω)) k (Y ω)` with `hYm : AEStronglyMeasurable Y μ`, which
+covers an algorithm's own tie-break, and each has its direct form at `truncatedSVD`, which is
+Borel measurable (`NLAlib.measurable_truncatedSVD`), with
+`hY := fun _ => isBestRankApprox_truncatedSVD _ k` and
+`hYm := ((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
 
-Design: `docs/design/LowRank-S3.md` §3.1, §8 items 6 and 8.
+Design: `docs/design/LowRank-S3.md` §3.1, §8 items 6 and 8; `docs/design/LowRank-S2c.md` §8
+item 7.
 
 ## Main results
 
@@ -45,9 +47,11 @@ Design: `docs/design/LowRank-S3.md` §3.1, §8 items 6 and 8.
   the error for any measurable test matrix.
 * `NLAlib.integrable_frobNorm_sub_truncatedSVD_rsvd_sq`: the late-truncated output, Frobenius.
 * `NLAlib.integrable_specNorm_sub_sq_of_isBestRankApprox`: the truncated output, spectral, for a
-  measurable selector.
+  measurable selector; `NLAlib.integrable_specNorm_sub_truncatedSVD_rsvd_sq`, its direct form.
 * `NLAlib.integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox`:
-  reverse Eckart–Young in expectation, for a measurable selector.
+  reverse Eckart–Young in expectation, for a measurable selector;
+  `NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD_sq_le`, its
+  direct form.
 -/
 
 @[expose] public section
@@ -200,10 +204,8 @@ $\mathbf{Y}(\omega)$ a best approximation of $\mathbf{P}_{\mathbf{A}\mathbf{X}(\
 of rank at most $k$, the squared spectral error $\|\mathbf{A} - \mathbf{Y}\|_2^2$ is integrable for
 every finite measure; it is bounded by
 $\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$.
-No measurability of $\mathbf{X}$ is needed.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem and `truncatedSVD (rsvd A (X ω)) k` is not known to be
-measurable in $\omega$. This is the form a measurable selector will instantiate. -/
+No measurability of $\mathbf{X}$ is needed. Direct form at `truncatedSVD`:
+`NLAlib.integrable_specNorm_sub_truncatedSVD_rsvd_sq`. -/
 theorem integrable_specNorm_sub_sq_of_isBestRankApprox [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     {k : ℕ} {Y : Ω → Matrix m n 𝕜} (hY : ∀ ω, IsBestRankApprox (rsvd A (X ω)) k (Y ω))
     (hYm : AEStronglyMeasurable Y μ) : Integrable (fun ω => specNorm (A - Y ω) ^ 2) μ := by
@@ -223,6 +225,16 @@ theorem integrable_specNorm_sub_sq_of_isBestRankApprox [IsFiniteMeasure μ] (A :
   have h5 := pow_le_pow_left₀ (frobNorm_nonneg _) h2 2
   linarith
 
+/-- For a measurable test matrix and every finite measure, the squared spectral error of the
+truncated randomized SVD,
+$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2$, is
+integrable. The direct form of `NLAlib.integrable_specNorm_sub_sq_of_isBestRankApprox`. -/
+theorem integrable_specNorm_sub_truncatedSVD_rsvd_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
+    (hX : AEMeasurable X μ) (k : ℕ) :
+    Integrable (fun ω => specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2) μ :=
+  integrable_specNorm_sub_sq_of_isBestRankApprox A (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
+
 /-- **Reverse Eckart–Young in expectation**: for a measurable test matrix $\mathbf{X}$ and a
 measurable choice $\mathbf{Y}$ of best rank-$k$ approximations of
 $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$,
@@ -230,9 +242,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathbf{Y}\|_2^2 + \|\mathbf{A} - \llbracket\mathbf{A
 \|_{\mathsf{F}}^2 \le \sigma_k(\mathbf{A})^2 + \mathbb{E}\|\mathbf{A} -
 \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for every law: a Frobenius bound for the truncated output becomes a spectral one at no cost.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem and `truncatedSVD (rsvd A (X ω)) k` is not known to be
-measurable in $\omega$. This is the form a measurable selector will instantiate.
+Direct form at `truncatedSVD`:
+`NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD_sq_le`.
 [Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
 [TroppWebber2023, p. 42]; there a deterministic remark on truncated outputs, here in expectation
 under a selector, subtraction-free, indices from $0$. -/
@@ -254,5 +265,25 @@ theorem integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRa
   have hle := integral_mono (integrable_specNorm_sub_sq_of_isBestRankApprox A hY hYm) hI hpt
   rw [integral_add (integrable_const _) hF, integral_const, probReal_univ, one_smul] at hle
   linarith
+
+/-- **Reverse Eckart–Young in expectation, truncated randomized SVD**: for a measurable test
+matrix $\mathbf{X}$,
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2 +
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2 \le \sigma_k(\mathbf{A})^2 +
+\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k
+\|_{\mathsf{F}}^2\,,$$
+for every law. The direct form of
+`NLAlib.integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox`.
+[Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
+[TroppWebber2023, p. 42]; there a deterministic remark on truncated outputs, here in expectation,
+subtraction-free, indices from $0$. -/
+theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD_sq_le
+    [IsProbabilityMeasure μ] (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) (k : ℕ) :
+    ∫ ω, specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ +
+        frobNorm (A - truncatedSVD A k) ^ 2 ≤
+      singularValues A k ^ 2 + ∫ ω, frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ :=
+  integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox A hX
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
 
 end NLAlib

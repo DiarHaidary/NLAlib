@@ -22,7 +22,9 @@ The best rank-$k$ error is spelled `singularValues A k` in the spectral norm and
 rewrites the latter as the tail sum of squared singular values.
 
 When $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$ the best approximation is not unique;
-$\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decomposition.
+$\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from the library's chosen
+decomposition, the lexicographically least thin SVD (`NLAlib.svdU`, `NLAlib.svdV`), which is the
+same for every $k$ and makes the truncation measurable in $\mathbf{A}$.
 
 ## Main definitions
 
@@ -30,6 +32,7 @@ $\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decompo
 
 ## Main results
 
+* `NLAlib.truncatedSVD_def`: the truncation of the chosen SVD.
 * `NLAlib.rank_truncatedSVD_le`, `NLAlib.specNorm_sub_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_sq`: rank and errors of the truncation;
   `NLAlib.frobNorm_truncatedSVD_sq`: its Frobenius norm.
@@ -61,19 +64,34 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-- The **truncated singular value decomposition** $\llbracket \mathbf{A} \rrbracket_k$: a best
-approximation of $\mathbf{A}$ of rank at most $k$, obtained from a singular value decomposition
-$\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ by keeping the $k$ largest singular
-values. The decomposition is chosen, so when $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$
-this is one of several best approximations. For $k \ge \operatorname{rank} \mathbf{A}$ it is
-$\mathbf{A}$.
+approximation of $\mathbf{A}$ of rank at most $k$, obtained from the chosen thin singular value
+decomposition $\mathbf{A} = \mathsf{svdU}(\mathbf{A})\,\mathbf{\Sigma}\,
+\mathsf{svdV}(\mathbf{A})^{\mathsf{H}}$, the lexicographically least one (`NLAlib.svdU`,
+`NLAlib.svdV`), by keeping the $k$ largest singular values:
+$$\llbracket \mathbf{A} \rrbracket_k = \mathsf{svdU}(\mathbf{A})\,
+\operatorname{diag}\bigl(\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A}), 0, \dots, 0\bigr)\,
+\mathsf{svdV}(\mathbf{A})^{\mathsf{H}}$$
+(`NLAlib.truncatedSVD_def`). The decomposition is a fixed function of $\mathbf{A}$, so the
+truncation is Borel measurable in $\mathbf{A}$ (`NLAlib.measurable_truncatedSVD`), and one
+decomposition serves every $k$. When $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$ this is one
+of several best approximations. For $k \ge \operatorname{rank} \mathbf{A}$ it is $\mathbf{A}$.
 [GolubVanLoan2013, Theorem 2.4.8]. Port of `NLAlib.truncatedSVD`. -/
 noncomputable def truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) : Matrix m n 𝕜 :=
-  let h := exists_isSVD A (k := min (Fintype.card m) (Fintype.card n))
-    (le_min A.rank_le_card_height A.rank_le_card_width) (min_le_left _ _) (min_le_right _ _)
-  h.choose *
+  svdU A *
     Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
       if (i : ℕ) < k then ((singularValues A i : ℝ) : 𝕜) else 0) *
-    h.choose_spec.chooseᴴ
+    (svdV A)ᴴ
+
+/-- The truncated SVD is the chosen SVD with the singular values $\sigma_i(\mathbf{A})$,
+$i \ge k$, set to zero:
+$$\llbracket\mathbf{A}\rrbracket_k = \mathsf{svdU}(\mathbf{A})\,
+\operatorname{diag}\bigl(\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A}), 0, \dots, 0\bigr)\,
+\mathsf{svdV}(\mathbf{A})^{\mathsf{H}}\,.$$ -/
+theorem truncatedSVD_def (A : Matrix m n 𝕜) (k : ℕ) :
+    truncatedSVD A k = svdU A *
+      Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+        if (i : ℕ) < k then ((singularValues A i : ℝ) : 𝕜) else 0) * (svdV A)ᴴ :=
+  rfl
 
 /-! ### The truncation -/
 
@@ -84,8 +102,7 @@ private theorem exists_isSVD_truncatedSVD (A : Matrix m n 𝕜) :
       IsSVD A U (fun i => singularValues A i) V ∧
         ∀ k, truncatedSVD A k = U * Matrix.diagonal (fun i : Fin _ =>
           if (i : ℕ) < k then ((singularValues A i : ℝ) : 𝕜) else 0) * Vᴴ :=
-  ⟨_, _, (exists_isSVD A (le_min A.rank_le_card_height A.rank_le_card_width) (min_le_left _ _)
-    (min_le_right _ _)).choose_spec.choose_spec, fun _ => rfl⟩
+  ⟨svdU A, svdV A, isSVD_svdU_svdV A, truncatedSVD_def A⟩
 
 /-- The truncation and its error have singular value decompositions with the same factors: the
 truncation keeps the entries $i < k$ of the diagonal and the error keeps the others. -/

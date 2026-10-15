@@ -31,13 +31,13 @@ error of truncated Nyström is integrable too: it does not depend on the choice 
 makes, which is what makes it measurable.
 
 **Measurability of the truncated output.** The spectral error of truncated Nyström depends on the
-choice `truncatedSVD` makes. Statements about it take a measurable choice $\mathbf{Y}$ of best
-approximations, `hY : ∀ ω, IsBestRankApprox (nystrom H (X ω)) k (Y ω)` with
-`hYm : AEStronglyMeasurable Y μ`. No such selector can be exhibited yet: neither the library nor
-Mathlib has a measurable-selection theorem, and the measurability of `truncatedSVD` is unknown. A
-later stage (S2c) supplies a measurable best-approximation map that instantiates these statements.
+choice `truncatedSVD` makes. Statements about it are stated for any measurable choice
+$\mathbf{Y}$ of best approximations, `hY : ∀ ω, IsBestRankApprox (nystrom H (X ω)) k (Y ω)` with
+`hYm : AEStronglyMeasurable Y μ`, and each has its direct form at `truncatedSVD`, which is Borel
+measurable (`NLAlib.measurable_truncatedSVD`), with
+`hYm := ((measurable_nystrom H).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
 
-Design: `docs/design/LowRank-S5.md` §3.2, §8.
+Design: `docs/design/LowRank-S5.md` §3.2, §8; `docs/design/LowRank-S2c.md` §8 item 8.
 
 ## Main results
 
@@ -48,10 +48,13 @@ Design: `docs/design/LowRank-S5.md` §3.2, §8.
   `Matrix.PosSemidef.integrable_specNorm_sub_nystrom`: integrability of the error.
 * `Matrix.PosSemidef.integrable_nuclearNorm_sub_truncatedSVD_nystrom`: truncated Nyström, trace.
 * `Matrix.PosSemidef.integrable_specNorm_sub_of_isBestRankApprox_nystrom`: truncated Nyström,
-  spectral, for a measurable selector.
+  spectral, for a measurable selector;
+  `Matrix.PosSemidef.integrable_specNorm_sub_truncatedSVD_nystrom`, its direct form.
 * reverse Eckart–Young in expectation, for a measurable selector, in the `Matrix.PosSemidef`
   namespace:
-  `integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom`.
+  `integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom`, and its
+  direct form
+  `integral_specNorm_sub_truncatedSVD_nystrom_add_nuclearNorm_sub_truncatedSVD_le`.
 -/
 
 @[expose] public section
@@ -140,10 +143,8 @@ theorem _root_.Matrix.PosSemidef.integrable_nuclearNorm_sub_truncatedSVD_nystrom
 approximations of $\mathsf{nystrom}(\mathbf{H}, \mathbf{X})$, the spectral error
 $\|\mathbf{H} - \mathbf{Y}\|_2$ is integrable for every finite measure; it is bounded by
 $\|\mathbf{H}\|_*$. No measurability of $\mathbf{X}$ is needed.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem and `truncatedSVD (nystrom H (X ω)) k` is not known to
-be measurable in $\omega$; a later stage (S2c) supplies one. This is the form it will
-instantiate. -/
+Direct form at `truncatedSVD`:
+`Matrix.PosSemidef.integrable_specNorm_sub_truncatedSVD_nystrom`. -/
 theorem _root_.Matrix.PosSemidef.integrable_specNorm_sub_of_isBestRankApprox_nystrom
     [IsFiniteMeasure μ] (hH : H.PosSemidef) {k : ℕ} {Y : Ω → Matrix n n 𝕜}
     (hY : ∀ ω, IsBestRankApprox (nystrom H (X ω)) k (Y ω)) (hYm : AEStronglyMeasurable Y μ) :
@@ -163,6 +164,18 @@ theorem _root_.Matrix.PosSemidef.integrable_specNorm_sub_of_isBestRankApprox_nys
       rw [hT.nuclearNorm_eq_re_trace, hH.nuclearNorm_eq_re_trace, Matrix.trace_sub, map_sub]
       linarith
 
+/-- For positive semidefinite $\mathbf{H}$, a measurable test matrix $\mathbf{X}$ and every
+finite measure, the spectral error of truncated Nyström,
+$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2$, is
+integrable. The direct form of
+`Matrix.PosSemidef.integrable_specNorm_sub_of_isBestRankApprox_nystrom`. -/
+theorem _root_.Matrix.PosSemidef.integrable_specNorm_sub_truncatedSVD_nystrom [IsFiniteMeasure μ]
+    (hH : H.PosSemidef) (hX : AEMeasurable X μ) (k : ℕ) :
+    Integrable (fun ω => specNorm (H - truncatedSVD (nystrom H (X ω)) k)) μ :=
+  hH.integrable_specNorm_sub_of_isBestRankApprox_nystrom
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_nystrom H).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
+
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **Reverse Eckart–Young for truncated Nyström, in expectation**: for positive semidefinite
@@ -173,10 +186,8 @@ $$\mathbb{E}\|\mathbf{H} - \mathbf{Y}\|_2 + \|\mathbf{H} - \llbracket\mathbf{H}\
 \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_*\,,$$
 for every law: a trace bound for truncated Nyström becomes a spectral one at no cost, for every
 choice of the truncation.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem and `truncatedSVD (nystrom H (X ω)) k` is not known to
-be measurable in $\omega$; a later stage (S2c) supplies one. This is the form it will
-instantiate.
+Direct form at `truncatedSVD`:
+`Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_add_nuclearNorm_sub_truncatedSVD_le`.
 [TroppYurtseverUdellCevher2017a, Proposition A.8 and App. A.6]; [Gu2015, Theorem 3.4]; there a
 deterministic step inside a Gaussian proof, here in expectation for every law, under a selector,
 subtraction-free, indices from $0$. -/
@@ -200,5 +211,26 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_
   have hle := integral_mono (hH.integrable_specNorm_sub_of_isBestRankApprox_nystrom hY hYm) hI hpt
   rw [integral_add (integrable_const _) hF, integral_const, probReal_univ, one_smul] at hle
   linarith
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Reverse Eckart–Young for truncated Nyström, in expectation**, direct form: for positive
+semidefinite $\mathbf{H}$ and every measurable test matrix $\mathbf{X}$,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 +
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_* \le \sigma_k(\mathbf{H}) +
+\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_*\,,$$
+for every law. The direct form of
+`Matrix.PosSemidef.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom`.
+[TroppYurtseverUdellCevher2017a, Proposition A.8 and App. A.6]; [Gu2015, Theorem 3.4]; there a
+deterministic step inside a Gaussian proof, here in expectation for every law, subtraction-free,
+indices from $0$. -/
+theorem
+_root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_add_nuclearNorm_sub_truncatedSVD_le
+    [IsProbabilityMeasure μ] (hH : H.PosSemidef) (hX : AEMeasurable X μ) (k : ℕ) :
+    ∫ ω, specNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ + nuclearNorm (H - truncatedSVD H k) ≤
+      singularValues H k + ∫ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ :=
+  hH.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom hX
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_nystrom H).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
 
 end NLAlib

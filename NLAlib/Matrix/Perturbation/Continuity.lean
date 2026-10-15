@@ -8,6 +8,7 @@ module
 public import Mathlib.Topology.Instances.Matrix
 public import NLAlib.Matrix.Majorization.TraceInequalities
 public import NLAlib.Matrix.Perturbation.Pseudoinverse
+public import NLAlib.Matrix.Spectral.BestRankApprox
 
 /-!
 # Continuity of spectral quantities
@@ -21,9 +22,12 @@ topological consequences in Mathlib's vocabulary, for the product topology on ma
 ## Main results
 
 * `NLAlib.continuous_singularValues`, `NLAlib.continuousOn_eigenvalue`.
+* `NLAlib.isClosed_setOf_isSVD_singularValues`: the thin SVDs with sorted singular values form a
+  closed set.
 * `NLAlib.SymmetricGauge.continuous_matrixNorm`, `NLAlib.continuous_schattenNorm`.
 * `NLAlib.SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le`: the optimal error of rank-$k$
   approximation is $1$-Lipschitz in every unitarily invariant norm.
+* `NLAlib.isClosed_setOf_isBestRankApprox`: the best approximations form a closed set.
 * `NLAlib.isClosed_setOf_rank_le`, `NLAlib.isOpen_setOf_le_rank`,
   `NLAlib.isOpen_setOf_injective_mulVec`.
 * `NLAlib.continuousOn_pinv_setOf_rank_eq`, `NLAlib.continuousOn_rangeProjector_setOf_rank_eq`.
@@ -68,6 +72,31 @@ theorem continuous_singularValues (k : ℕ) :
     Continuous fun A : Matrix m n 𝕜 => singularValues A k := by
   exact continuous_of_abs_sub_le continuous_specNorm specNorm_zero fun A B =>
     abs_singularValues_sub_le_specNorm B A k
+
+/-- **The thin SVDs with sorted singular values form a closed set**: the triples
+$(\mathbf{A}, \mathbf{U}, \mathbf{V})$ with
+$\mathbf{A} = \mathbf{U}\operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}\mathbf{V}^{\mathsf{H}}$ and
+orthonormal columns form a closed set, since the singular values are continuous. -/
+theorem isClosed_setOf_isSVD_singularValues {r : ℕ} :
+    IsClosed {p : Matrix m n 𝕜 × (Matrix m (Fin r) 𝕜 × Matrix n (Fin r) 𝕜) |
+      IsSVD p.1 p.2.1 (fun i => singularValues p.1 i) p.2.2} := by
+  have h : {p : Matrix m n 𝕜 × (Matrix m (Fin r) 𝕜 × Matrix n (Fin r) 𝕜) |
+      IsSVD p.1 p.2.1 (fun i => singularValues p.1 i) p.2.2} =
+      ({p | HasOrthonormalCols p.2.1} ∩ {p | HasOrthonormalCols p.2.2}) ∩
+        {p | p.1 = p.2.1 * Matrix.diagonal (fun i : Fin r => ((singularValues p.1 i : ℝ) : 𝕜)) *
+          p.2.2ᴴ} := by
+    ext p
+    exact ⟨fun h => ⟨⟨h.1, h.2⟩, h.4⟩,
+      fun h => ⟨h.1.1, h.1.2, fun i => singularValues_nonneg p.1 i, h.2⟩⟩
+  have hD : Continuous fun p : Matrix m n 𝕜 × (Matrix m (Fin r) 𝕜 × Matrix n (Fin r) 𝕜) =>
+      Matrix.diagonal (fun i : Fin r => ((singularValues p.1 i : ℝ) : 𝕜)) :=
+    (continuous_pi fun i : Fin r => RCLike.continuous_ofReal.comp
+      ((continuous_singularValues (i : ℕ)).comp continuous_fst)).matrix_diagonal
+  rw [h]
+  exact ((isClosed_setOf_hasOrthonormalCols.preimage (continuous_fst.comp continuous_snd)).inter
+    (isClosed_setOf_hasOrthonormalCols.preimage (continuous_snd.comp continuous_snd))).inter
+    (isClosed_eq continuous_fst (((continuous_fst.comp continuous_snd).matrix_mul hD).matrix_mul
+      (continuous_snd.comp continuous_snd).matrix_conjTranspose))
 
 /-- Each sorted eigenvalue $\lambda_k(\mathbf{A})$ (indexed from $0$, non-increasing) is a
 continuous function of $\mathbf{A}$ on the Hermitian matrices.
@@ -169,6 +198,26 @@ theorem isClosed_setOf_rank_le [Finite m] (r : ℕ) : IsClosed {A : Matrix m n �
     exact (singularValues_eq_zero_iff A).symm
   rw [h]
   exact isClosed_singleton.preimage (continuous_singularValues r)
+
+omit [Fintype m] in
+/-- **The best approximations form a closed set**: the pairs $(\mathbf{C}, \mathbf{Y})$ with
+$\mathbf{Y}$ a best approximation of $\mathbf{C}$ of rank at most $k$ form a closed set, so a
+limit of best approximations of convergent matrices is a best approximation of the limit. The
+truncated SVD itself is not continuous (it jumps at ties
+$\sigma_{k-1}(\mathbf{C}) = \sigma_k(\mathbf{C})$); this is the continuity that survives. -/
+theorem isClosed_setOf_isBestRankApprox [Fintype m] (k : ℕ) :
+    IsClosed {p : Matrix m n 𝕜 × Matrix m n 𝕜 | IsBestRankApprox p.1 k p.2} := by
+  have h : {p : Matrix m n 𝕜 × Matrix m n 𝕜 | IsBestRankApprox p.1 k p.2} =
+      {p | p.2.rank ≤ k} ∩ {p | frobNorm (p.1 - p.2) ≤ frobNorm (p.1 - truncatedSVD p.1 k)} := by
+    ext p
+    exact isBestRankApprox_iff
+  have hc : Continuous fun A : Matrix m n 𝕜 => frobNorm (A - truncatedSVD A k) := by
+    simpa only [lpGauge_two_matrixNorm] using
+      (lpGauge 2 one_le_two).continuous_matrixNorm_sub_truncatedSVD (𝕜 := 𝕜) (m := m) (n := n) k
+  rw [h]
+  exact ((isClosed_setOf_rank_le k).preimage continuous_snd).inter
+    (isClosed_le (continuous_frobNorm.comp (continuous_fst.sub continuous_snd))
+      (hc.comp continuous_fst))
 
 omit [Fintype m] in
 /-- **The matrices of rank at least $r$ form an open set**: a small perturbation does not lower

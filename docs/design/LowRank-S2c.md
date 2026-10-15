@@ -1205,3 +1205,25 @@ file stays under 1000 lines. Order: 1a and 1b independent; 1 after 1a; 2a after 
 2a is merged; 2 and 3 independent; 4 after 1, 2b and 3; 5 and 6 after 4. Import checks: §4's
 (`Continuity.lean` gains `BestRankApprox.lean`, cycle-free) and item 2's (`SVD.lean` gains
 `Frames.lean` and file 1a, cycle-free).
+
+15. **Implementation amendments (2026-10-15, S2c proof agent).** (i) `svdU` and `svdV` are defined
+    as `if h : ∃ p, … then h.choose.1 else 0` under `open Classical in` (the `pinv` pattern): the
+    module system forbids a public definition body that names the private existence lemma, and
+    the `else` branch is never taken. (ii) The chosen-SVD block sits at the end of `SVD.lean`'s
+    "Existence" part, under its own heading "The chosen SVD", not between `exists_isSVD` and
+    `exists_isSVD_fromCols`. (iii) K3 follows `isClosed_setOf_rank_le` in `Continuity.lean`
+    (it uses it), not `continuous_matrixNorm_sub_truncatedSVD`. (iv) K0 and K0b cite
+    [KuratowskiRyllNardzewski1965] and [Kechris1995, Theorem 12.13]; Aliprantis–Border is not
+    cited (its locator was unconfirmed). (v) K15 and K16 (NL7's and NL8's direct forms) are
+    written with K17 to K19. (vi) Added at the maintainer's request:
+    `isBestRankApprox_iff_exists_isSVD` in `BestRankApprox.lean` (new section "Best
+    approximations are truncated SVDs", before "Truncating an approximation"), the equality case
+    of Eckart–Young: `IsBestRankApprox C k Y` iff `Y` is the truncation, in `truncatedSVD`'s
+    shape, of some thin SVD of `C` with `σ = singularValues C`; true under ties and for
+    `C.rank ≤ k` (then `Y = C`, through the chosen SVD). Proof: a best approximation satisfies
+    `Yᴴ (C - Y) = 0` and `Y (C - Y)ᴴ = 0` (Pythagoras with `rangeProjector Y`), so
+    $\sigma_i(\mathbf{Y}) = \sigma_i(\mathbf{C})$ for $i < k$; for $k < \operatorname{rank}
+    \mathbf{C}$ the error lives on the orthogonal completions of a $k$-column SVD of
+    $\mathbf{Y}$, whose SVD there completes it. Private helpers only. (vii) Stale "not known to
+    be measurable" sentences in the module docstrings of `Gaussian/RangeFinderTail.lean` and
+    `Gaussian/NystromTail.lean` are corrected (docstring edits, no declaration).

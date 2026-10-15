@@ -6,8 +6,10 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.ConjTranspose
+public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.Matrix.Basic.OrthonormalBasis
 public import NLAlib.Matrix.Spectral.SingularValues
+public import NLAlib.Matrix.Subspaces.Frames
 
 /-!
 # The singular value decomposition
@@ -25,14 +27,20 @@ $\boldsymbol{\sigma}$ is not required to be sorted. When the columns are indexed
 $\boldsymbol{\sigma}$ is non-increasing, $\boldsymbol{\sigma}$ is the sequence of singular values
 (`NLAlib.IsSVD.singularValues_eq`).
 
+The library's chosen thin SVD of a matrix, `NLAlib.svdU A` and `NLAlib.svdV A`, is the
+lexicographically least one in fixed real coordinates; `NLAlib.truncatedSVD` is built from it.
+
 ## Main definitions
 
 * `NLAlib.IsSVD`: the thin singular value decomposition, as a predicate.
+* `NLAlib.svdU`, `NLAlib.svdV`: the factors of the chosen thin SVD.
 
 ## Main results
 
 * `NLAlib.exists_isSVD`: every matrix has an SVD with $k$ columns, for every $k$ between its rank
   and its smaller dimension, with $\boldsymbol{\sigma}$ the singular values.
+* `NLAlib.isSVD_svdU_svdV`, `NLAlib.toLex_equivFun_svdU_svdV_le`: the chosen SVD is an SVD, and
+  the lexicographically least one.
 * `NLAlib.IsSVD.singularValues_eq`, `NLAlib.IsSVD.exists_equiv_singularValues_eq`: the entries of
   $\boldsymbol{\sigma}$ are the singular values.
 * `NLAlib.IsSVD.rank_eq`, `NLAlib.IsSVD.specNorm_eq`, `NLAlib.IsSVD.frobNorm_sq_eq`: rank and norms
@@ -475,6 +483,107 @@ theorem exists_eq_mul_conjTranspose_of_rank_le [Finite m] (A : Matrix m n 𝕜) 
     Matrix.conjTranspose_diagonal_ofReal, Matrix.mul_assoc U, hS.conjTranspose_mul_cancel_left,
     ← Matrix.mul_assoc]
   exact h.eq
+
+/-! ### The chosen SVD -/
+
+/-- The thin SVDs of $\mathbf{A}$ with $\boldsymbol{\sigma}$ the singular values form a compact
+set of factor pairs: a closed subset of a product of two Stiefel sets. -/
+private theorem isCompact_setOf_isSVD_singularValues (A : Matrix m n 𝕜) {r : ℕ} :
+    IsCompact {p : Matrix m (Fin r) 𝕜 × Matrix n (Fin r) 𝕜 |
+      IsSVD A p.1 (fun i => singularValues A i) p.2} := by
+  refine (isCompact_setOf_hasOrthonormalCols.prod
+    isCompact_setOf_hasOrthonormalCols).of_isClosed_subset ?_
+    fun p hp => ⟨hp.hasOrthonormalCols_left, hp.hasOrthonormalCols_right⟩
+  have h : {p : Matrix m (Fin r) 𝕜 × Matrix n (Fin r) 𝕜 |
+      IsSVD A p.1 (fun i => singularValues A i) p.2} =
+      ({p | HasOrthonormalCols p.1} ∩ {p | HasOrthonormalCols p.2}) ∩
+        {p | A = p.1 * Matrix.diagonal (fun i : Fin r => ((singularValues A i : ℝ) : 𝕜)) *
+          p.2ᴴ} := by
+    ext p
+    exact ⟨fun h => ⟨⟨h.1, h.2⟩, h.4⟩,
+      fun h => ⟨h.1.1, h.1.2, fun i => singularValues_nonneg A i, h.2⟩⟩
+  rw [h]
+  exact ((isClosed_setOf_hasOrthonormalCols.preimage continuous_fst).inter
+    (isClosed_setOf_hasOrthonormalCols.preimage continuous_snd)).inter
+    (isClosed_eq continuous_const
+      ((continuous_fst.matrix_mul continuous_const).matrix_mul continuous_snd.matrix_conjTranspose))
+
+/-- A thin SVD of $\mathbf{A}$ whose coordinates are lexicographically least. -/
+private theorem exists_isSVD_forall_toLex_le (A : Matrix m n 𝕜) :
+    ∃ p : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 ×
+        Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜,
+      IsSVD A p.1 (fun i => singularValues A i) p.2 ∧
+        ∀ q : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 ×
+            Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜,
+          IsSVD A q.1 (fun i => singularValues A i) q.2 →
+            toLex ((Module.finBasis ℝ _).equivFun p) ≤
+              toLex ((Module.finBasis ℝ _).equivFun q) := by
+  obtain ⟨U, V, h⟩ := exists_isSVD A (le_min A.rank_le_card_height A.rank_le_card_width)
+    (min_le_left _ _) (min_le_right _ _)
+  exact (isCompact_setOf_isSVD_singularValues A).exists_forall_toLex_equivFun_le _ ⟨(U, V), h⟩
+
+open Classical in
+/-- The **left singular vectors of the chosen SVD**: $\mathsf{svdU}(\mathbf{A})$ has
+$r = \min(\lvert m\rvert, \lvert n\rvert)$ orthonormal columns and, with
+$\mathsf{svdV}(\mathbf{A})$, gives
+$$\mathbf{A} = \mathsf{svdU}(\mathbf{A})\,\operatorname{diag}\bigl(\sigma_0(\mathbf{A}), \dots,
+\sigma_{r-1}(\mathbf{A})\bigr)\,\mathsf{svdV}(\mathbf{A})^{\mathsf{H}}$$
+(`NLAlib.isSVD_svdU_svdV`). Among all such thin SVDs it is the one whose real coordinates, in the
+basis `Module.finBasis ℝ _` of the pairs of factors, are lexicographically least
+(`NLAlib.toLex_equivFun_svdU_svdV_le`), so it is a fixed function of $\mathbf{A}$; it is Borel
+measurable (`NLAlib.measurable_svdU`). `NLAlib.truncatedSVD` is built from it. -/
+noncomputable def svdU (A : Matrix m n 𝕜) :
+    Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 :=
+  if h : ∃ p : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 ×
+      Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜,
+      IsSVD A p.1 (fun i => singularValues A i) p.2 ∧
+        ∀ q : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 ×
+            Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜,
+          IsSVD A q.1 (fun i => singularValues A i) q.2 →
+            toLex ((Module.finBasis ℝ _).equivFun p) ≤ toLex ((Module.finBasis ℝ _).equivFun q)
+  then h.choose.1 else 0
+
+open Classical in
+/-- The **right singular vectors of the chosen SVD**, $\mathsf{svdV}(\mathbf{A})$, with $r =
+\min(\lvert m\rvert, \lvert n\rvert)$ orthonormal columns; see `NLAlib.svdU`. -/
+noncomputable def svdV (A : Matrix m n 𝕜) :
+    Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 :=
+  if h : ∃ p : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 ×
+      Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜,
+      IsSVD A p.1 (fun i => singularValues A i) p.2 ∧
+        ∀ q : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 ×
+            Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜,
+          IsSVD A q.1 (fun i => singularValues A i) q.2 →
+            toLex ((Module.finBasis ℝ _).equivFun p) ≤ toLex ((Module.finBasis ℝ _).equivFun q)
+  then h.choose.2 else 0
+
+/-- The pair of factors of the chosen SVD is the chosen lexicographically least SVD. -/
+private theorem svdU_svdV_eq_choose (A : Matrix m n 𝕜) :
+    (svdU A, svdV A) = (exists_isSVD_forall_toLex_le A).choose := by
+  rw [svdU, svdV, dif_pos (exists_isSVD_forall_toLex_le A),
+    dif_pos (exists_isSVD_forall_toLex_le A)]
+
+/-- **The chosen SVD is an SVD**: $\mathbf{A} = \mathsf{svdU}(\mathbf{A})\,\mathbf{\Sigma}\,
+\mathsf{svdV}(\mathbf{A})^{\mathsf{H}}$ with orthonormal columns and $\mathbf{\Sigma} =
+\operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}$, $r = \min(\lvert m\rvert, \lvert n\rvert)$, the
+singular values in non-increasing order. -/
+theorem isSVD_svdU_svdV (A : Matrix m n 𝕜) :
+    IsSVD A (svdU A) (fun i => singularValues A i) (svdV A) := by
+  have h := (exists_isSVD_forall_toLex_le A).choose_spec.1
+  rwa [← svdU_svdV_eq_choose] at h
+
+/-- **Construction lemma** (consumed by `NLAlib.measurable_svdU`; not needed for using the SVD):
+$(\mathsf{svdU}(\mathbf{A}), \mathsf{svdV}(\mathbf{A}))$ has the lexicographically least
+coordinates in the basis `Module.finBasis ℝ _` among the thin SVDs of $\mathbf{A}$ with
+$\mathbf{\Sigma} = \operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}$. -/
+theorem toLex_equivFun_svdU_svdV_le {A : Matrix m n 𝕜}
+    {U : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜}
+    {V : Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜}
+    (h : IsSVD A U (fun i => singularValues A i) V) :
+    toLex ((Module.finBasis ℝ _).equivFun (svdU A, svdV A)) ≤
+      toLex ((Module.finBasis ℝ _).equivFun (U, V)) := by
+  rw [svdU_svdV_eq_choose]
+  exact (exists_isSVD_forall_toLex_le A).choose_spec.2 (U, V) h
 
 /-! ### Hermitian matrices -/
 

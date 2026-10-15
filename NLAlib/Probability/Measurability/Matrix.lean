@@ -10,10 +10,12 @@ public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpo
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Metric
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
 public import Mathlib.MeasureTheory.Function.SpecialFunctions.Inner
+public import NLAlib.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableSelection
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.Matrix.Perturbation.Continuity
 public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.Matrix.Factorizations.GramSchmidt
+public import NLAlib.Matrix.Factorizations.NystromGram
 public import NLAlib.Matrix.Factorizations.SketchedLowRank
 
 /-!
@@ -23,8 +25,11 @@ For random matrices, the quantities of the Matrix layer must be measurable funct
 matrix. This file belongs to the Probability layer: the Matrix layer itself has no measure theory.
 Norms, singular values and eigenvalues are continuous, hence measurable. The rank, the
 pseudoinverse, the range projector, the pseudo-condition number, the inverse Gram matrix, the
-randomized SVD, the polar factor and the Gram–Schmidt factors are not continuous but are Borel
-measurable.
+randomized SVD, (generalized) Nyström, the chosen SVD, the truncated SVD, the polar factor and
+the Gram–Schmidt factors are not continuous but are Borel measurable. The chosen SVD
+(`NLAlib.svdU`, `NLAlib.svdV`) is measurable by the measurable selection theorem
+`IsClosed.measurable_of_forall_toLex_equivFun_le`: it is the lexicographically least point of the
+closed set of SVDs.
 
 Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 
@@ -36,8 +41,14 @@ Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 * `NLAlib.measurable_rank`, `NLAlib.measurable_pinv`, `NLAlib.measurable_rangeProjector`,
   `NLAlib.measurable_pseudoConditionNumber`.
 * `NLAlib.measurable_mul_conjTranspose_inv`: the inverse Gram matrix
-  $(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$; `NLAlib.measurable_rsvd`: the randomized SVD as a
-  function of the test matrix.
+  $(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$; `NLAlib.measurable_rsvd`,
+  `NLAlib.measurable_generalizedNystrom`, `NLAlib.measurable_nystrom`: the randomized SVD and
+  (generalized) Nyström as functions of the test matrices.
+* `NLAlib.measurable_svdU`, `NLAlib.measurable_svdV`: the chosen SVD;
+  `NLAlib.measurable_truncatedSVD`, `Measurable.truncatedSVD`, `AEMeasurable.truncatedSVD`: the
+  truncated SVD. With them every theorem stated for a measurable choice of best approximations
+  $\mathbf{Y}$ applies to the truncation of a random output, for instance with
+  `hYm := ((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
 * `NLAlib.measurable_polarFactor`, `NLAlib.measurable_gramSchmidtQ`.
 -/
 
@@ -170,6 +181,80 @@ theorem measurable_rsvd {l : Type*} [Fintype l] (A : Matrix m n 𝕜) :
     Measurable fun Ω : Matrix n l 𝕜 => rsvd A Ω :=
   (measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)).matrix_mul
     measurable_const
+
+/-- Generalized Nyström $(\mathbf{\Omega}, \mathbf{\Psi}) \mapsto \mathsf{gn}(\mathbf{A},
+\mathbf{\Omega}, \mathbf{\Psi})$ is a measurable function of the two test matrices. -/
+theorem measurable_generalizedNystrom {l p : Type*} [Fintype l] [Fintype p] (A : Matrix m n 𝕜) :
+    Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 => generalizedNystrom A ΩΨ.1 ΩΨ.2 := by
+  have hΨ : Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 => ΩΨ.2ᴴ :=
+    (continuous_id.matrix_conjTranspose.measurable).comp measurable_snd
+  simp only [generalizedNystrom_def]
+  exact (((measurable_const.matrix_mul measurable_fst).matrix_mul
+    (measurable_pinv.comp ((hΨ.matrix_mul measurable_const).matrix_mul measurable_fst))).matrix_mul
+      hΨ).matrix_mul measurable_const
+
+/-- Nyström $\mathbf{\Omega} \mapsto \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$ is a measurable
+function of the test matrix. -/
+theorem measurable_nystrom {l : Type*} [Fintype l] (H : Matrix n n 𝕜) :
+    Measurable fun Ω : Matrix n l 𝕜 => nystrom H Ω := by
+  have h := (measurable_generalizedNystrom (l := l) (p := l) H).comp
+    (measurable_id.prodMk measurable_id : Measurable fun Ω : Matrix n l 𝕜 => (Ω, Ω))
+  simp only [Function.comp_def] at h
+  exact h
+
+/-! ### The chosen SVD and the truncated SVD -/
+
+/-- The chosen SVD, $\mathbf{A} \mapsto (\mathsf{svdU}(\mathbf{A}), \mathsf{svdV}(\mathbf{A}))$, is
+Borel measurable: it is the lexicographically least point of the closed set of SVDs of
+$\mathbf{A}$, whose sections lie in the compact set of pairs of frames. -/
+private theorem measurable_svdU_svdV :
+    Measurable fun A : Matrix m n 𝕜 => (svdU A, svdV A) := by
+  refine isClosed_setOf_isSVD_singularValues.measurable_of_forall_toLex_equivFun_le
+    (Module.finBasis ℝ _) (fun _ => ⟨Set.univ, Filter.univ_mem, _,
+      isCompact_setOf_hasOrthonormalCols.prod isCompact_setOf_hasOrthonormalCols,
+      fun _ _ y hy => ⟨hy.hasOrthonormalCols_left, hy.hasOrthonormalCols_right⟩⟩)
+    fun A => ⟨isSVD_svdU_svdV A, fun y hy => toLex_equivFun_svdU_svdV_le hy⟩
+
+/-- The left factor of the chosen SVD, $\mathbf{A} \mapsto \mathsf{svdU}(\mathbf{A})$, is Borel
+measurable (it is not continuous: it jumps where singular values meet). -/
+theorem measurable_svdU : Measurable (svdU : Matrix m n 𝕜 → _) :=
+  measurable_fst.comp measurable_svdU_svdV
+
+/-- The right factor of the chosen SVD, $\mathbf{A} \mapsto \mathsf{svdV}(\mathbf{A})$, is Borel
+measurable. -/
+theorem measurable_svdV : Measurable (svdV : Matrix m n 𝕜 → _) :=
+  measurable_snd.comp measurable_svdU_svdV
+
+/-- **The truncated SVD is Borel measurable**: $\mathbf{A} \mapsto \llbracket\mathbf{A}
+\rrbracket_k$ is measurable for every $k$, though not continuous (it jumps at ties
+$\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$). So the expectation of any error of a truncated
+random output is defined, and every theorem stated for a measurable choice of best
+approximations applies at `NLAlib.truncatedSVD`. -/
+theorem measurable_truncatedSVD (k : ℕ) :
+    Measurable fun A : Matrix m n 𝕜 => truncatedSVD A k := by
+  have hD : Continuous fun A : Matrix m n 𝕜 =>
+      Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+        if (i : ℕ) < k then ((singularValues A i : ℝ) : 𝕜) else 0) := by
+    refine Continuous.matrix_diagonal (continuous_pi fun i => ?_)
+    split_ifs
+    · exact RCLike.continuous_ofReal.comp (continuous_singularValues (i : ℕ))
+    · exact continuous_const
+  simp only [truncatedSVD_def]
+  exact (measurable_svdU.matrix_mul hD.measurable).matrix_mul
+    ((continuous_id.matrix_conjTranspose.measurable).comp measurable_svdV)
+
+/-- Truncation preserves measurability: $x \mapsto \llbracket f(x) \rrbracket_k$ is measurable
+for measurable $f$. -/
+theorem _root_.Measurable.truncatedSVD {α : Type*} [MeasurableSpace α] {f : α → Matrix m n 𝕜}
+    (hf : Measurable f) (k : ℕ) : Measurable fun x => truncatedSVD (f x) k :=
+  (measurable_truncatedSVD k).comp hf
+
+/-- Truncation preserves almost-everywhere measurability: $x \mapsto \llbracket f(x) \rrbracket_k$
+is almost everywhere measurable for almost everywhere measurable $f$. -/
+theorem _root_.AEMeasurable.truncatedSVD {α : Type*} [MeasurableSpace α]
+    {μ : MeasureTheory.Measure α} {f : α → Matrix m n 𝕜} (hf : AEMeasurable f μ) (k : ℕ) :
+    AEMeasurable (fun x => truncatedSVD (f x) k) μ :=
+  (measurable_truncatedSVD k).comp_aemeasurable hf
 
 open scoped Matrix.Norms.L2Operator MatrixOrder ComplexOrder Classical in
 /-- The absolute value $(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$ is a continuous function of the

@@ -299,8 +299,8 @@ those layers are designed.
 | ε-net of the unit sphere | `Metric.IsCover ε (Metric.sphere 0 1) N` in `EuclideanSpace 𝕜 n` | Mathlib's |
 | singular values | `singularValues A : ℕ → ℝ` (antitone, zero-padded, no `DecidableEq`); largest is index `0`, the smallest of a matrix with `n` columns is index `k` with `k + 1 = card n` | `singularValues_eq_linearMap`, `rfl` |
 | eigenvalues of Hermitian `A` | `eigenvalue A k : ℝ`, `k : ℕ`: sorted non-increasing for `k < card n`, `0` beyond and for non-Hermitian `A`; largest is `eigenvalue A 0`; the smallest is index `k` with `k + 1 = card n`, and bounds on it are stated in Loewner form `c • 1 ≤ A` | `hA.eigenvalue_eq_eigenvalues₀` to Mathlib's `hA.eigenvalues₀` |
-| SVD | `IsSVD A U σ V`: thin, any finite column type, `σ : r → ℝ` nonnegative, `A = U * diagonal σ * Vᴴ` | — |
-| best rank-`k` approximation | `truncatedSVD A k`; optimal errors `singularValues A k` (spectral) and `frobNorm (A - truncatedSVD A k)` (Frobenius) | `frobNorm_sub_truncatedSVD_sq` |
+| SVD | `IsSVD A U σ V`: thin, any finite column type, `σ : r → ℝ` nonnegative, `A = U * diagonal σ * Vᴴ`; the library's chosen one (the lexicographically least thin SVD) is `svdU A`, `svdV A` | `isSVD_svdU_svdV` |
+| best rank-`k` approximation | `truncatedSVD A k`, the truncation of `svdU A`, `svdV A` (Borel measurable in `A`); any best approximation `IsBestRankApprox A k Y`; optimal errors `singularValues A k` (spectral) and `frobNorm (A - truncatedSVD A k)` (Frobenius) | `frobNorm_sub_truncatedSVD_sq`, `measurable_truncatedSVD`, `isBestRankApprox_iff_exists_isSVD` |
 | spectral gap | `eigengap A k`, `singularGap A k`, indexed by the dimension `k` of the leading subspace | `eigengap_succ`, `singularGap_succ` |
 | pseudoinverse | `pinv A`, every shape and rank; recognised through `IsPinv A B` (the four Penrose identities); full-rank formulas are lemmas, not definitions | `pinv_of_isUnit`; `mul_pinv : A * pinv A = rangeProjector A` |
 | full row rank | `Function.Injective Aᴴ.mulVec` | — |

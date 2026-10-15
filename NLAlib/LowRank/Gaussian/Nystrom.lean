@@ -38,12 +38,12 @@ Nyström is the squared Frobenius error of the truncated randomized SVD
 range finder's. The spectral bounds for truncated Nyström add reverse Eckart–Young
 (`NLAlib.LowRank.Random.Nystrom`).
 
-The spectral error of truncated Nyström depends on the choice `truncatedSVD` makes and is not
-known to be measurable; its expectation is stated for a measurable choice of best approximations,
-which no theorem of the library or Mathlib can exhibit yet (a later stage, S2c, supplies one).
-The hypothesis $k + 2 \le \ell$ is necessary: at $\ell = k + 1$ the expectation is not bounded by
-any multiple of $\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$. Design:
-`docs/design/LowRank-S5.md` §3.3, §8.
+The spectral error of truncated Nyström depends on the choice `truncatedSVD` makes; its
+expectation is stated for any measurable choice of best approximations and, directly, for
+`truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). The hypothesis
+$k + 2 \le \ell$ is necessary: at $\ell = k + 1$ the expectation is not bounded by any multiple of
+$\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$. Design:
+`docs/design/LowRank-S5.md` §3.3, §8; `docs/design/LowRank-S2c.md` §8 item 8.
 
 ## Main results
 
@@ -59,9 +59,11 @@ any multiple of $\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$. Design:
 * in the `Matrix.PosSemidef` namespace, truncated Nyström:
   `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix` (trace),
   `integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix` (MT Theorem
-  14.1, for a measurable selector), and the spectral-decay forms
-  `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`,
-  `integral_specNorm_sub_le_add_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix`.
+  14.1, for a measurable selector) and its direct form
+  `integral_specNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix`, and the spectral-decay
+  forms `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`,
+  `integral_specNorm_sub_le_add_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix` and its
+  direct form `integral_specNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`.
 -/
 
 @[expose] public section
@@ -231,11 +233,8 @@ $$\mathbb{E}\|\mathbf{H} - \mathbf{Y}\|_2 \le \lambda_k(\mathbf{H}) + \frac{k}{\
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 eigenvalues indexed from $0$ (MT's $\lambda_{k+1}$), the bound of the untruncated output, by
 reverse Eckart–Young from the trace bound.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem and `truncatedSVD (nystrom H (X ω)) k` is not known to
-be measurable in $\omega$; a later stage (S2c) supplies one. The expectation of the spectral error
-of that output itself is not stated: the integral of a non-integrable function is $0$, so such a
-bound would say nothing.
+Direct form at `truncatedSVD`:
+`Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix`.
 [MartinssonTropp2020, Theorem 14.1]; [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.2)]; there
 with $1 \le k < \ell \le n$ and for the truncation an algorithm computes; here $k + 2 \le \ell$,
 any $n$, under a selector.
@@ -255,6 +254,30 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of
   have h2 := hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix hX hk
   rw [gaussianProjectionFactor_def] at h2
   linarith
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The expected spectral error of truncated Nyström** (Martinsson and Tropp's Theorem 14.1):
+for positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix
+$\mathbf{X}$ and $k + 2 \le \ell$,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
+\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+eigenvalues indexed from $0$ (MT's $\lambda_{k+1}$). The direct form of
+`Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix`,
+which covers any other measurable choice of the truncation.
+[MartinssonTropp2020, Theorem 14.1]; [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.2)]; there
+with $1 \le k < \ell \le n$; here $k + 2 \le \ell$, any $n$.
+Result: randomized-nystrom-expected-error -/
+theorem
+_root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix
+    (hH : H.PosSemidef) (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ}
+    (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, specNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+      singularValues H k +
+        (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) :=
+  hH.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix hX hk
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
 
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -305,8 +328,8 @@ eigenvalues indexed from $0$. At $q = k$ it is dominated by
 `Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix`
 (Martinsson and Tropp's Theorem 14.1); for $q > k$ the two are incomparable, this one better when
 the spectrum decays past $k$.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem; a later stage (S2c) supplies one.
+Direct form at `truncatedSVD`:
+`Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`.
 [TroppYurtseverUdellCevher2017a, Theorem 4.2 (4.4)]; there
 $2(1 + \frac{q}{\ell - q - 1})\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$ in place of the
 last two terms and a minimum over $q$.
@@ -332,5 +355,34 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_le_add_of_isBestRankApprox_nystro
     hpt).trans ?_
   rw [integral_add (integrable_const _) hS, integral_const, probReal_univ, one_smul, add_assoc]
   exact add_le_add le_rfl (hH.integral_specNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix hX hq)
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Truncated Nyström exploits spectral decay, spectral norm**: for positive semidefinite
+$\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, any target rank $k$
+and any comparison rank $q$ with $q + 2 \le \ell$,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
+\lambda_k(\mathbf{H}) + \lambda_q(\mathbf{H}) + \frac{q}{\ell - q - 1}
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,,$$
+eigenvalues indexed from $0$. The direct form of
+`Matrix.PosSemidef.integral_specNorm_sub_le_add_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix`;
+at $q = k$ it is dominated by
+`Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix`, and for
+$q > k$ the two are incomparable, this one better when the spectrum decays past $k$.
+[TroppYurtseverUdellCevher2017a, Theorem 4.2 (4.4)]; there
+$2(1 + \frac{q}{\ell - q - 1})\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$ in place of the
+last two terms and a minimum over $q$.
+Result: randomized-nystrom-expected-error -/
+theorem
+_root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix
+    (hH : H.PosSemidef) (hX : HasLaw X (gaussianMatrix n l) μ) (k : ℕ) {q : ℕ}
+    (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, specNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+      singularValues H k + singularValues H q +
+        (q : ℝ) / ((Fintype.card l : ℝ) - q - 1) * nuclearNorm (H - truncatedSVD H q) :=
+  hH.integral_specNorm_sub_le_add_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix hX
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    hq
 
 end NLAlib

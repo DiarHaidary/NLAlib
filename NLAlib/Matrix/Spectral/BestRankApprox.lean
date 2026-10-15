@@ -41,6 +41,11 @@ Every statement holds for every choice of the truncations involved. Design:
 * `NLAlib.isBestRankApprox_truncatedSVD`, `NLAlib.isBestRankApprox_iff`,
   `NLAlib.isBestRankApprox_iff_isMinOn`, `NLAlib.isBestRankApprox_iff_singularValues_sub`:
   constructors and characterizations.
+* `NLAlib.isBestRankApprox_zero_iff`, `NLAlib.isBestRankApprox_iff_eq_of_rank_le`: the degenerate
+  cases $k = 0$ and $\operatorname{rank}\mathbf{C} \le k$, where the best approximation is
+  unique.
+* `NLAlib.isBestRankApprox_iff_exists_isSVD`: the best approximations are exactly the truncations
+  of the thin SVDs of $\mathbf{C}$, ties and $k \ge \operatorname{rank}\mathbf{C}$ included.
 * `NLAlib.IsBestRankApprox.singularValues_sub`, `NLAlib.IsBestRankApprox.matrixNorm_sub`,
   `NLAlib.IsBestRankApprox.frobNorm_sub`, `NLAlib.IsBestRankApprox.rangeProjector_mul`: API.
 * `NLAlib.HasOrthonormalCols.isBestRankApprox_mul_iff`,
@@ -102,6 +107,23 @@ theorem isBestRankApprox_iff {C Y : Matrix m n 𝕜} {k : ℕ} :
     IsBestRankApprox C k Y ↔ Y.rank ≤ k ∧ frobNorm (C - Y) ≤ frobNorm (C - truncatedSVD C k) :=
   ⟨fun h => ⟨h.rank_le, h.frobNorm_sub_le _ (rank_truncatedSVD_le C k)⟩, fun h =>
     ⟨h.1, fun _ hB => h.2.trans (frobNorm_sub_truncatedSVD_le_of_rank_le C hB)⟩⟩
+
+/-- The only best approximation of rank $0$ is $\mathbf{0}$. -/
+theorem isBestRankApprox_zero_iff {C Y : Matrix m n 𝕜} : IsBestRankApprox C 0 Y ↔ Y = 0 := by
+  refine ⟨fun h => Matrix.rank_eq_zero.mp (Nat.le_zero.mp h.rank_le), ?_⟩
+  rintro rfl
+  simpa only [truncatedSVD_zero] using isBestRankApprox_truncatedSVD C 0
+
+/-- When $\operatorname{rank}\mathbf{C} \le k$, the only best approximation of $\mathbf{C}$ of
+rank at most $k$ is $\mathbf{C}$ itself. -/
+theorem isBestRankApprox_iff_eq_of_rank_le {C Y : Matrix m n 𝕜} {k : ℕ} (hk : C.rank ≤ k) :
+    IsBestRankApprox C k Y ↔ Y = C := by
+  refine ⟨fun h => ?_, ?_⟩
+  · have h0 := h.frobNorm_sub_le C hk
+    rw [sub_self, frobNorm_zero] at h0
+    exact (sub_eq_zero.mp (frobNorm_eq_zero_iff.mp (le_antisymm h0 (frobNorm_nonneg _)))).symm
+  · rintro rfl
+    simpa only [truncatedSVD_of_rank_le Y hk] using isBestRankApprox_truncatedSVD Y k
 
 /-- Bridge to Mathlib's minimizers: $\mathbf{Y}$ is a best approximation exactly when it has rank
 at most $k$ and minimizes $\mathbf{B} \mapsto \|\mathbf{C} - \mathbf{B}\|_{\mathsf{F}}$ over the
@@ -227,6 +249,312 @@ theorem HasOrthonormalCols.isBestRankApprox_conjTranspose_mul_truncatedSVD [Deci
   hQ.isBestRankApprox_mul_iff.mp (by
     rw [hQ.mul_conjTranspose_mul_truncatedSVD]
     exact isBestRankApprox_truncatedSVD _ _)
+
+/-! ### Best approximations are truncated SVDs -/
+
+/-- A best approximation is the projection of $\mathbf{C}$ onto its own column space:
+$\mathbf{Y}^{\mathsf{H}}(\mathbf{C} - \mathbf{Y}) = \mathbf{0}$. -/
+private theorem IsBestRankApprox.conjTranspose_mul_sub {C Y : Matrix m n 𝕜} {k : ℕ}
+    (h : IsBestRankApprox C k Y) : Yᴴ * (C - Y) = 0 := by
+  classical
+  have hP := isStarProjection_rangeProjector Y
+  have hPY : rangeProjector Y * Y = Y := rangeProjector_mul_self Y
+  have hsplit := hP.frobNorm_sq_eq_add (C - Y)
+  have e2 : (1 - rangeProjector Y) * (C - Y) = C - rangeProjector Y * C := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.sub_mul, Matrix.one_mul, Matrix.one_mul, hPY,
+      sub_self, sub_zero]
+  have hrank : (rangeProjector Y * C).rank ≤ k := by
+    exact (Matrix.rank_mul_le_left _ _).trans ((rank_rangeProjector Y).trans_le h.rank_le)
+  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _) (h.frobNorm_sub_le _ hrank) 2
+  rw [e2] at hsplit
+  have hsq : frobNorm (rangeProjector Y * (C - Y)) ^ 2 = 0 :=
+    le_antisymm (by linarith) (sq_nonneg _)
+  exact rangeProjector_mul_eq_zero_iff.mp
+    (frobNorm_eq_zero_iff.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq))
+
+/-- Best approximations are preserved by the conjugate transpose. -/
+private theorem IsBestRankApprox.conjTranspose {C Y : Matrix m n 𝕜} {k : ℕ}
+    (h : IsBestRankApprox C k Y) : IsBestRankApprox Cᴴ k Yᴴ := by
+  refine ⟨by rw [Matrix.rank_conjTranspose]; exact h.rank_le, fun B hB => ?_⟩
+  have h1 := h.frobNorm_sub_le Bᴴ (by rwa [Matrix.rank_conjTranspose])
+  rwa [← frobNorm_conjTranspose (C - Y), ← frobNorm_conjTranspose (C - Bᴴ),
+    Matrix.conjTranspose_sub, Matrix.conjTranspose_sub, Matrix.conjTranspose_conjTranspose] at h1
+
+/-- The leading singular values of a best approximation are those of $\mathbf{C}$:
+$\sigma_i(\mathbf{Y}) = \sigma_i(\mathbf{C})$ for $i < k$. -/
+private theorem IsBestRankApprox.singularValues_eq_of_lt {C Y : Matrix m n 𝕜} {k : ℕ}
+    (h : IsBestRankApprox C k Y) {i : ℕ} (hi : i < k) :
+    singularValues Y i = singularValues C i := by
+  classical
+  have hYE := h.conjTranspose_mul_sub
+  have hPC : rangeProjector Y * C = Y := by
+    have h0 := rangeProjector_mul_eq_zero_iff.mpr hYE
+    rwa [Matrix.mul_sub, rangeProjector_mul_self, sub_eq_zero] at h0
+  have hle : ∀ j, singularValues Y j ≤ singularValues C j := fun j => by
+    have h1 := singularValues_mul_le_specNorm_mul (rangeProjector Y) C j
+    rw [hPC] at h1
+    exact h1.trans (mul_le_of_le_one_left (singularValues_nonneg C j)
+      (isStarProjection_rangeProjector Y).specNorm_le_one)
+  have hpyth : frobNorm C ^ 2 = frobNorm Y ^ 2 + frobNorm (C - Y) ^ 2 := by
+    have h1 := frobNorm_add_sq_of_frobInner_eq_zero (A := Y) (B := C - Y)
+      (by rw [frobInner_eq_re_trace, hYE, Matrix.trace_zero, map_zero])
+    rwa [add_sub_cancel] at h1
+  have hsum : ∑ j ∈ Finset.range k, singularValues Y j ^ 2 =
+      ∑ j ∈ Finset.range k, singularValues C j ^ 2 := by
+    rw [← frobNorm_sq_eq_sum_range_singularValues_sq Y h.rank_le, ← frobNorm_truncatedSVD_sq]
+    have h2 := frobNorm_sq_eq_truncatedSVD_add C k
+    rw [h.frobNorm_sub] at hpyth
+    linarith
+  have hall := (Finset.sum_eq_sum_iff_of_le fun j _ =>
+    pow_le_pow_left₀ (singularValues_nonneg Y j) (hle j) 2).mp hsum
+  exact (sq_eq_sq₀ (singularValues_nonneg _ _) (singularValues_nonneg _ _)).mp
+    (hall i (Finset.mem_range.mpr hi))
+
+/-- A matrix with a nonzero diagonal left factor in a vanishing product vanishes. -/
+private theorem eq_zero_of_diagonal_mul_eq_zero {p q : Type*} [Fintype p] [DecidableEq p]
+    {d : p → 𝕜}
+    (hd : ∀ i, d i ≠ 0) {M : Matrix p q 𝕜} (h : Matrix.diagonal d * M = 0) : M = 0 := by
+  ext i j
+  have hij := congrFun (congrFun h i) j
+  rw [Matrix.diagonal_mul, Matrix.zero_apply] at hij
+  exact (mul_eq_zero.mp hij).resolve_left (hd i)
+
+/-- A matrix with a nonzero diagonal right factor in a vanishing product vanishes. -/
+private theorem eq_zero_of_mul_diagonal_eq_zero {p q : Type*} [Fintype q] [DecidableEq q]
+    {d : q → 𝕜}
+    (hd : ∀ j, d j ≠ 0) {M : Matrix p q 𝕜} (h : M * Matrix.diagonal d = 0) : M = 0 := by
+  ext i j
+  have hij := congrFun (congrFun h i) j
+  rw [Matrix.mul_diagonal, Matrix.zero_apply] at hij
+  exact (mul_eq_zero.mp hij).resolve_right (hd j)
+
+omit [Fintype m] [Fintype n] in
+/-- Frames multiply out a block diagonal middle factor:
+$[\mathbf{U}_1\ \mathbf{U}_2]\operatorname{diag}(\boldsymbol{\sigma}_1, \boldsymbol{\sigma}_2)
+[\mathbf{V}_1\ \mathbf{V}_2]^{\mathsf{H}} = \mathbf{U}_1\operatorname{diag}(\boldsymbol{\sigma}_1)
+\mathbf{V}_1^{\mathsf{H}} + \mathbf{U}_2\operatorname{diag}(\boldsymbol{\sigma}_2)
+\mathbf{V}_2^{\mathsf{H}}$. -/
+private theorem fromCols_mul_diagonal_sumElim_mul_conjTranspose {r₁ r₂ : Type*} [Fintype r₁]
+    [Fintype r₂] [DecidableEq r₁] [DecidableEq r₂] (U₁ : Matrix m r₁ 𝕜) (U₂ : Matrix m r₂ 𝕜)
+    (σ₁ : r₁ → ℝ) (σ₂ : r₂ → ℝ) (V₁ : Matrix n r₁ 𝕜) (V₂ : Matrix n r₂ 𝕜) :
+    Matrix.fromCols U₁ U₂ * Matrix.diagonal (fun i => ((Sum.elim σ₁ σ₂ i : ℝ) : 𝕜)) *
+        (Matrix.fromCols V₁ V₂)ᴴ =
+      U₁ * Matrix.diagonal (fun i => ((σ₁ i : ℝ) : 𝕜)) * V₁ᴴ +
+        U₂ * Matrix.diagonal (fun i => ((σ₂ i : ℝ) : 𝕜)) * V₂ᴴ := by
+  have hD : Matrix.diagonal (fun i => ((Sum.elim σ₁ σ₂ i : ℝ) : 𝕜)) =
+      Matrix.fromBlocks (Matrix.diagonal fun i => ((σ₁ i : ℝ) : 𝕜)) 0 0
+        (Matrix.diagonal fun i => ((σ₂ i : ℝ) : 𝕜)) := by
+    rw [Matrix.fromBlocks_diagonal]
+    congr 1
+    funext i
+    cases i <;> rfl
+  rw [hD, Matrix.fromCols_mul_fromBlocks, Matrix.conjTranspose_fromCols_eq_fromRows_conjTranspose,
+    Matrix.fromCols_mul_fromRows, Matrix.mul_zero, Matrix.mul_zero, add_zero, zero_add]
+
+/-- Evaluating a function on `Fin k ⊕ Fin d` along `Fin r ≃ Fin (k + d)`. -/
+private theorem sumElim_finSumFinEquiv_symm_finCongr {α : Type*} {k d r : ℕ} (h : r = k + d)
+    (f : Fin k → α) (g : Fin d → α) (i : Fin r) :
+    Sum.elim f g (finSumFinEquiv.symm (finCongr h i)) =
+      if hi : (i : ℕ) < k then f ⟨i, hi⟩ else g ⟨i - k, by omega⟩ := by
+  split_ifs with hi
+  · have he : finSumFinEquiv.symm (finCongr h i) = Sum.inl ⟨i, hi⟩ :=
+      (Equiv.symm_apply_eq _).mpr (Fin.ext (by simp))
+    rw [he, Sum.elim_inl]
+  · have he : finSumFinEquiv.symm (finCongr h i) = Sum.inr ⟨i - k, by omega⟩ :=
+      (Equiv.symm_apply_eq _).mpr (Fin.ext (by simp; omega))
+    rw [he, Sum.elim_inr]
+
+/-- The Frobenius norm and the rank of $\mathbf{U}\mathbf{D}\mathbf{V}^{\mathsf{H}}$ are those of
+$\mathbf{D}$, for frames $\mathbf{U}$, $\mathbf{V}$. -/
+private theorem frobNorm_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+    {U : Matrix m r 𝕜} {V : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
+    (D : Matrix r r 𝕜) : frobNorm (U * D * Vᴴ) = frobNorm D := by
+  rw [Matrix.mul_assoc, hU.frobNorm_mul_left, hV.frobNorm_mul_conjTranspose_right]
+
+/-- The rank of $\mathbf{U}\mathbf{D}\mathbf{V}^{\mathsf{H}}$ is that of $\mathbf{D}$, for frames
+$\mathbf{U}$, $\mathbf{V}$. -/
+private theorem rank_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+    {U : Matrix m r 𝕜} {V : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
+    (D : Matrix r r 𝕜) : (U * D * Vᴴ).rank = D.rank := by
+  rw [Matrix.mul_assoc, hU.rank_mul, ← Matrix.rank_conjTranspose, Matrix.conjTranspose_mul,
+    Matrix.conjTranspose_conjTranspose, hV.rank_mul, Matrix.rank_conjTranspose]
+
+/-- Every best approximation is the truncation of a thin SVD of $\mathbf{C}$ with sorted singular
+values: the direction (⇒) of `NLAlib.isBestRankApprox_iff_exists_isSVD`. -/
+private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : ℕ}
+    (h : IsBestRankApprox C k Y) :
+    ∃ (U : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜)
+      (V : Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜),
+      IsSVD C U (fun i => singularValues C i) V ∧
+        Y = U * Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+          if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0) * Vᴴ := by
+  classical
+  by_cases hk : C.rank ≤ k
+  · refine ⟨svdU C, svdV C, isSVD_svdU_svdV C, ?_⟩
+    rw [← truncatedSVD_def, truncatedSVD_of_rank_le C hk]
+    exact (isBestRankApprox_iff_eq_of_rank_le hk).mp h
+  rw [not_le] at hk
+  set r := min (Fintype.card m) (Fintype.card n) with hr
+  have hkm : k ≤ Fintype.card m := hk.le.trans C.rank_le_card_height
+  have hkn : k ≤ Fintype.card n := hk.le.trans C.rank_le_card_width
+  have hpos : ∀ i : Fin k, ((singularValues C i : ℝ) : 𝕜) ≠ 0 := fun i =>
+    RCLike.ofReal_ne_zero.mpr ((singularValues_pos_iff C).mpr (i.2.trans hk)).ne'
+  -- the leading block: an SVD of `Y`
+  obtain ⟨U₁, V₁, h₁⟩ := NLAlib.exists_isSVD Y h.rank_le hkm hkn
+  have hσ₁ : (fun i : Fin k => singularValues Y i) = fun i : Fin k => singularValues C i :=
+    funext fun i => h.singularValues_eq_of_lt i.2
+  rw [hσ₁] at h₁
+  obtain ⟨E, hE⟩ : ∃ E, E = C - Y := ⟨_, rfl⟩
+  have hYE : Yᴴ * E = 0 := hE ▸ h.conjTranspose_mul_sub
+  have hEY : E * Yᴴ = 0 := by
+    have h0 := h.conjTranspose.conjTranspose_mul_sub
+    rw [Matrix.conjTranspose_conjTranspose, ← Matrix.conjTranspose_sub] at h0
+    have h1 := congrArg Matrix.conjTranspose h0
+    rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_zero,
+      ← hE] at h1
+  have hU₁E : U₁ᴴ * E = 0 := by
+    refine eq_zero_of_diagonal_mul_eq_zero hpos ?_
+    have h3 := congrArg Matrix.conjTranspose h₁.mul_right_eq
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_diagonal_ofReal] at h3
+    rw [← Matrix.mul_assoc, ← h3, Matrix.mul_assoc, hYE, Matrix.mul_zero]
+  have hEV₁ : E * V₁ = 0 := by
+    refine eq_zero_of_mul_diagonal_eq_zero hpos ?_
+    have h3 := congrArg Matrix.conjTranspose h₁.conjTranspose_mul_eq
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_diagonal_ofReal] at h3
+    rw [Matrix.mul_assoc, ← h3, ← Matrix.mul_assoc, hEY, Matrix.zero_mul]
+  -- the error lives on the orthogonal completions of the leading frames
+  obtain ⟨Q, hQ⟩ := h₁.hasOrthonormalCols_left.exists_fromCols
+    (p := Fin (Fintype.card m - k)) (by simp only [Fintype.card_fin]; omega)
+  obtain ⟨R, hR⟩ := h₁.hasOrthonormalCols_right.exists_fromCols
+    (p := Fin (Fintype.card n - k)) (by simp only [Fintype.card_fin]; omega)
+  obtain ⟨-, hQo, hU₁Q⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
+  obtain ⟨-, hRo, hV₁R⟩ := hasOrthonormalCols_fromCols_iff.mp hR
+  have hQQ : Q * Qᴴ = 1 - U₁ * U₁ᴴ := eq_sub_of_add_eq'
+    (hQ.mul_conjTranspose_add_mul_conjTranspose (by simp only [Fintype.card_fin]; omega))
+  have hRR : R * Rᴴ = 1 - V₁ * V₁ᴴ := eq_sub_of_add_eq'
+    (hR.mul_conjTranspose_add_mul_conjTranspose (by simp only [Fintype.card_fin]; omega))
+  obtain ⟨M, hM⟩ : ∃ M, M = Qᴴ * E * R := ⟨_, rfl⟩
+  have hEM : Q * M * Rᴴ = E := by
+    have h1 : Q * Qᴴ * E = E := by
+      rw [hQQ, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc, hU₁E, Matrix.mul_zero, sub_zero]
+    have h2 : E * (R * Rᴴ) = E := by
+      rw [hRR, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, hEV₁, Matrix.zero_mul,
+        sub_zero]
+    rw [hM]
+    calc Q * (Qᴴ * E * R) * Rᴴ = Q * Qᴴ * E * (R * Rᴴ) := by simp only [Matrix.mul_assoc]
+      _ = E := by rw [h1, h2]
+  have hsvM : ∀ j, singularValues M j = singularValues C (k + j) := fun j => by
+    rw [← hQo.singularValues_mul_left M, ← hRo.singularValues_mul_conjTranspose_right (Q * M), hEM,
+      hE, h.singularValues_sub]
+  -- the trailing block: an SVD of the error
+  have hMr : M.rank ≤ r - k := by
+    have h1 := M.rank_le_card_height
+    have h2 := M.rank_le_card_width
+    simp only [Fintype.card_fin] at h1 h2
+    omega
+  obtain ⟨U', V', h'⟩ := NLAlib.exists_isSVD M hMr (by simp only [Fintype.card_fin]; omega)
+    (by simp only [Fintype.card_fin]; omega)
+  have hσ₂ : (fun j : Fin (r - k) => singularValues M j) =
+      fun j : Fin (r - k) => singularValues C (k + j) :=
+    funext fun j => hsvM j
+  rw [hσ₂] at h'
+  have h₂ := (h'.mul_left hQo).mul_conjTranspose_right hRo
+  rw [hEM] at h₂
+  have hU : HasOrthonormalCols (Matrix.fromCols U₁ (Q * U')) :=
+    hasOrthonormalCols_fromCols_iff.mpr ⟨h₁.hasOrthonormalCols_left, h₂.hasOrthonormalCols_left,
+      by rw [← Matrix.mul_assoc, hU₁Q, Matrix.zero_mul]⟩
+  have hV : HasOrthonormalCols (Matrix.fromCols V₁ (R * V')) :=
+    hasOrthonormalCols_fromCols_iff.mpr ⟨h₁.hasOrthonormalCols_right, h₂.hasOrthonormalCols_right,
+      by rw [← Matrix.mul_assoc, hV₁R, Matrix.zero_mul]⟩
+  have hC : IsSVD C (Matrix.fromCols U₁ (Q * U'))
+      (Sum.elim (fun i : Fin k => singularValues C i)
+        (fun j : Fin (r - k) => singularValues C (k + j))) (Matrix.fromCols V₁ (R * V')) := by
+    refine ⟨hU, hV, fun i => ?_, ?_⟩
+    · cases i <;> exact singularValues_nonneg _ _
+    · rw [fromCols_mul_diagonal_sumElim_mul_conjTranspose, ← h₁.eq, ← h₂.eq, hE,
+        add_sub_cancel]
+  have hY : IsSVD Y (Matrix.fromCols U₁ (Q * U'))
+      (Sum.elim (fun i : Fin k => singularValues C i) (fun _ : Fin (r - k) => (0 : ℝ)))
+      (Matrix.fromCols V₁ (R * V')) := by
+    refine ⟨hU, hV, fun i => ?_, ?_⟩
+    · cases i
+      · exact singularValues_nonneg _ _
+      · exact le_rfl
+    · rw [fromCols_mul_diagonal_sumElim_mul_conjTranspose, ← h₁.eq]
+      simp only [RCLike.ofReal_zero, Matrix.diagonal_zero, Matrix.mul_zero, Matrix.zero_mul,
+        add_zero]
+  -- relabel `Fin k ⊕ Fin (r - k)` as `Fin r`
+  have hrk : r = k + (r - k) := by omega
+  obtain ⟨e, he⟩ : ∃ e : Fin r ≃ Fin k ⊕ Fin (r - k),
+      e = (finCongr hrk).trans finSumFinEquiv.symm := ⟨_, rfl⟩
+  have happ : ∀ {α : Type} (f : Fin k → α) (g : Fin (r - k) → α) (i : Fin r),
+      Sum.elim f g (e i) = if hi : (i : ℕ) < k then f ⟨i, hi⟩ else g ⟨i - k, by omega⟩ :=
+    fun f g i => by rw [he, Equiv.trans_apply, sumElim_finSumFinEquiv_symm_finCongr]
+  refine ⟨(Matrix.fromCols U₁ (Q * U')).submatrix id e,
+    (Matrix.fromCols V₁ (R * V')).submatrix id e, ?_, (hY.reindex e).eq.trans ?_⟩
+  · have hσ : (Sum.elim (fun i : Fin k => singularValues C i)
+        (fun j : Fin (r - k) => singularValues C (k + j))) ∘ e =
+          fun i : Fin r => singularValues C i := by
+      funext i
+      rw [Function.comp_apply, happ]
+      split_ifs with hi
+      · rfl
+      · exact congrArg (singularValues C) (by simp only; omega)
+    have h3 := hC.reindex e
+    rwa [hσ] at h3
+  · have hd : (fun i : Fin r => (((Sum.elim (fun i : Fin k => singularValues C i)
+        (fun _ : Fin (r - k) => (0 : ℝ)) ∘ e) i : ℝ) : 𝕜)) =
+          fun i : Fin r => if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0 := by
+      funext i
+      rw [Function.comp_apply, happ]
+      split_ifs with hi
+      · rfl
+      · exact RCLike.ofReal_zero
+    rw [hd]
+
+/-- **Every best approximation is a truncated SVD**: $\mathbf{Y}$ is a best approximation of
+$\mathbf{C}$ of rank at most $k$ if and only if, for some thin singular value decomposition
+$\mathbf{C} = \mathbf{U}\operatorname{diag}(\sigma_0(\mathbf{C}), \dots,
+\sigma_{r-1}(\mathbf{C}))\mathbf{V}^{\mathsf{H}}$ with $r = \min(\lvert m\rvert, \lvert n\rvert)$
+orthonormal columns and the singular values in non-increasing order,
+$$\mathbf{Y} = \mathbf{U}\operatorname{diag}\bigl(\sigma_0(\mathbf{C}), \dots,
+\sigma_{k-1}(\mathbf{C}), 0, \dots, 0\bigr)\mathbf{V}^{\mathsf{H}}\,.$$
+So the best approximations are exactly the truncations of the SVDs of $\mathbf{C}$, in the shape
+of `NLAlib.truncatedSVD`, which is the one built from the chosen SVD (`NLAlib.svdU`,
+`NLAlib.svdV`). It holds under ties $\sigma_{k-1}(\mathbf{C}) = \sigma_k(\mathbf{C})$, where there
+are many, and for $k \ge \operatorname{rank}\mathbf{C}$, where $\mathbf{Y} = \mathbf{C}$.
+[GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9]; there that the truncation of an SVD
+is a best approximation, here also the converse, the equality case of Eckart–Young. -/
+theorem isBestRankApprox_iff_exists_isSVD {C Y : Matrix m n 𝕜} {k : ℕ} :
+    IsBestRankApprox C k Y ↔
+      ∃ (U : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜)
+        (V : Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜),
+        IsSVD C U (fun i => singularValues C i) V ∧
+          Y = U * Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+            if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0) * Vᴴ := by
+  refine ⟨fun h => h.exists_isSVD_eq, ?_⟩
+  rintro ⟨U, V, hC, rfl⟩
+  have hS := isSVD_svdU_svdV C
+  have hE : ∀ {U' : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜}
+      {V' : Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜},
+      IsSVD C U' (fun i => singularValues C i) V' →
+        C - U' * Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+            if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0) * V'ᴴ =
+          U' * (Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+              ((singularValues C i : ℝ) : 𝕜)) -
+            Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+              if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0)) * V'ᴴ :=
+    fun h => by rw [Matrix.mul_sub, Matrix.sub_mul, ← h.eq]
+  refine isBestRankApprox_iff.mpr ⟨?_, le_of_eq ?_⟩
+  · rw [rank_mul_mul_conjTranspose hC.hasOrthonormalCols_left hC.hasOrthonormalCols_right,
+      ← rank_mul_mul_conjTranspose hS.hasOrthonormalCols_left hS.hasOrthonormalCols_right,
+      ← truncatedSVD_def]
+    exact rank_truncatedSVD_le C k
+  · rw [truncatedSVD_def, hE hC, hE hS,
+      frobNorm_mul_mul_conjTranspose hC.hasOrthonormalCols_left hC.hasOrthonormalCols_right,
+      frobNorm_mul_mul_conjTranspose hS.hasOrthonormalCols_left hS.hasOrthonormalCols_right]
 
 /-! ### Truncating an approximation -/
 

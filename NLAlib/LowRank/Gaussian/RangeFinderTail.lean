@@ -43,9 +43,11 @@ $$\mathbf{S}(\mathbf{V}_2^{\mathsf{H}}\mathbf{X})(\mathbf{Z}^{\mathsf{H}}\mathbf
 whose tails are in `NLAlib/RandomMatrix/Gaussian/BlockTail.lean`.
 
 **Measurability.** The spectral error of the truncated output depends on the choice the truncation
-makes and is not known to be measurable. Its tails bound `μ.real` of a possibly non-measurable set,
-which is the outer measure: the failure event lies in a measurable event of at most the stated
-probability. The success-set form does not follow without measurability. Design:
+makes. Its tails hold for every choice of best approximations, measurable or not; for a
+non-measurable one they bound `μ.real` of a possibly non-measurable set, which is the outer
+measure: the failure event lies in a measurable event of at most the stated probability. At
+`truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`), the failure event
+is measurable and the success-set form follows by `measureReal_compl`. Design:
 `docs/design/LowRank-S3.md` §3.7 and §8.
 
 ## Main results

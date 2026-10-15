@@ -36,10 +36,11 @@ $\mathbf{0}$ almost surely (`NLAlib.ae_rsvd_eq_self_of_hasLaw_gaussianMatrix`). 
 $k + 2 \le \ell$ is necessary: at $\ell = k + 1$ the expectation is not bounded by any multiple of
 $\|\mathbf{E}\|_{\mathsf{F}}^2$.
 
-The spectral error of the truncated output depends on the choice `truncatedSVD` makes and is not
-known to be measurable; its expectation is stated for a measurable choice of best approximations,
-which no theorem of the library or Mathlib can exhibit yet. The integrability companions are
-law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design: `docs/design/LowRank-S3.md` §3.5, §8.
+The spectral error of the truncated output depends on the choice `truncatedSVD` makes; its
+expectation is stated for any measurable choice of best approximations and, directly, for
+`truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). The integrability
+companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
+`docs/design/LowRank-S3.md` §3.5, §8; `docs/design/LowRank-S2c.md` §8 item 7.
 
 ## Main results
 
@@ -57,7 +58,9 @@ law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design: `docs/design/LowRank-S
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`: the truncated
   output, Frobenius norm.
 * `NLAlib.integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix`: the truncated
-  output, spectral norm, for a measurable selector.
+  output, spectral norm, for a measurable selector;
+  `NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`, its direct
+  form.
 -/
 
 @[expose] public section
@@ -397,11 +400,8 @@ a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell
 $$\mathbb{E}\|\mathbf{A} - \mathbf{Y}\|_2^2 \le \sigma_k(\mathbf{A})^2 + \frac{k}{\ell - k - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 the bound of the untruncated output
-(`NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`).
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem and `truncatedSVD (rsvd A (X ω)) k` is not known to be
-measurable in $\omega$. The expectation of the spectral error of that output itself is not stated:
-the integral of a non-integrable function is $0$, so such a bound would say nothing.
+(`NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`). Direct form at
+`truncatedSVD`: `NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
 [Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
 [TroppWebber2023, p. 42]; there a remark on truncated outputs, here explicit, under a selector.
 Result: randomized-svd-expected-error -/
@@ -422,5 +422,26 @@ theorem integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix
     rw [gaussianProjectionFactor_def]
     ring
   linarith
+
+/-- **The expected spectral error of the truncated randomized SVD**: for a standard Gaussian
+$n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2 \le
+\sigma_k(\mathbf{A})^2 + \frac{k}{\ell - k - 1}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}^2\,,$$
+the bound of the untruncated output. The direct form of
+`NLAlib.integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix`, which covers any
+other measurable choice of the truncation.
+[Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
+[TroppWebber2023, p. 42]; there a remark on truncated outputs, here explicit.
+Result: randomized-svd-expected-error -/
+theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ}
+    (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ ≤
+      singularValues A k ^ 2 +
+        (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * frobNorm (A - truncatedSVD A k) ^ 2 :=
+  integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix A hX hk
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_rsvd A).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
 
 end NLAlib

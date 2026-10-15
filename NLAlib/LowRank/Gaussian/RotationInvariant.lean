@@ -37,9 +37,10 @@ Nyström expectations and tails hold with the Gaussian constants. Each is the ro
 statement for the randomized SVD at a factor $\mathbf{F}$ with
 $\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$, through the Gram correspondence
 (`NLAlib.conjTranspose_mul_self_sub_nystrom`); the spectral error of truncated Nyström adds reverse
-Eckart–Young (`NLAlib.LowRank.Random.Nystrom`) and is stated for a measurable selector, which no
-theorem can exhibit yet (a later stage, S2c, supplies one). Design:
-`docs/design/LowRank-S3.md` §3.6, §8 items 6 and 8; `docs/design/LowRank-S5.md` §3.5, §8.
+Eckart–Young (`NLAlib.LowRank.Random.Nystrom`) and is stated for a measurable selector and,
+directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). Design:
+`docs/design/LowRank-S3.md` §3.6, §8 items 6 and 8; `docs/design/LowRank-S5.md` §3.5, §8;
+`docs/design/LowRank-S2c.md` §8 item 8.
 
 ## Main results
 
@@ -59,7 +60,9 @@ theorem can exhibit yet (a later stage, S2c, supplies one). Design:
   (the law of the output), `integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant`,
   `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`,
   `integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant` (MT Theorem
-  14.1, for a measurable selector), `ae_nystrom_eq_self_of_isLeftUnitarilyInvariant`; in the
+  14.1, for a measurable selector) and its direct form
+  `integral_specNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`,
+  `ae_nystrom_eq_self_of_isLeftUnitarilyInvariant`; in the
   `NLAlib.SymmetricGauge` namespace,
   `integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant` and
   `measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant`.
@@ -386,8 +389,8 @@ $\mathsf{nystrom}(\mathbf{H}, \mathbf{X})$,
 $$\mathbb{E}\|\mathbf{H} - \mathbf{Y}\|_2 \le \lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 eigenvalues indexed from $0$.
-Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
-Mathlib has a measurable-selection theorem; a later stage (S2c) supplies one.
+Direct form at `truncatedSVD`:
+`Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`.
 [MartinssonTropp2020, Theorem 14.1]; [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.2)]; there
 for Gaussian (MT, TYUC) or orthonormal (TYUC) test matrices, with $1 \le k < \ell \le n$.
 Result: randomized-nystrom-expected-error -/
@@ -408,6 +411,31 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of
     hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant hX hXr hk
   rw [gaussianProjectionFactor_def] at h2
   linarith
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The expected spectral error of truncated Nyström, rotation-invariant test matrices**
+(Martinsson and Tropp's Theorem 14.1): for positive semidefinite $\mathbf{H}$, a test matrix
+$\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely and
+$k + 2 \le \ell$,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
+\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+eigenvalues indexed from $0$. The direct form of
+`Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant`,
+which covers any other measurable choice of the truncation.
+[MartinssonTropp2020, Theorem 14.1]; [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.2)]; there
+for Gaussian (MT, TYUC) or orthonormal (TYUC) test matrices, with $1 \le k < \ell \le n$.
+Result: randomized-nystrom-expected-error -/
+theorem
+_root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, specNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+      singularValues H k +
+        (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) :=
+  hH.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant hX hXr hk
+    (fun _ => isBestRankApprox_truncatedSVD _ k)
+    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
 
 namespace SymmetricGauge
 

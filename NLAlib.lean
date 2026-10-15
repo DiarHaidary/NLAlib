@@ -27,6 +27,7 @@ public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Rank
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.SchurComplement
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Trace
 public import NLAlib.ForMathlib.LinearAlgebra.UnitaryGroup
+public import NLAlib.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableSelection
 public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
@@ -35,6 +36,7 @@ public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
+public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.LowRank.Gaussian.Nystrom
