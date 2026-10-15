@@ -26,6 +26,12 @@ The maintainer approved the recommendations:
   algorithm's named output (`A - rsvd A Ω`, `A - nystrom A Ω`, `A - generalizedNystrom A Ω Ψ`, and
   likewise for the truncated outputs), "because all algorithms can be written this way"; projector
   and basis forms are bridge lemmas (`sub_rsvd` and its siblings), never the statement shape.
+- Truncated outputs (2026-10-15, S2b Q1, option (b)): the early-truncated outputs get names
+  (`earlyTruncatedRSVD`, `earlyTruncatedGeneralizedNystrom`); late truncation stays
+  `truncatedSVD` of the named output (`truncatedSVD (rsvd A Ω) k`).
+- Early-truncated GN (2026-10-15): the maintainer's bound has $\varepsilon^{-2}$ dependence where
+  TYUC SIMAX's has $\varepsilon^{-3}$; the former is the primary statement (proved without a
+  literature source), TYUC is cited for the algorithm, and a dominated TYUC bound is not ported.
 - Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
   randomized block Krylov, randomly pivoted Cholesky and similar methods.
 
