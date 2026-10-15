@@ -163,7 +163,7 @@ constants $a > 0$, $b \ge 0$ and $\mathbf{S}\mathbf{A}\mathbf{M}$ has orthonorma
 preconditioned matrix has pseudo-condition number (`NLAlib.pseudoConditionNumber`)
 $$\bigl(\|\mathbf{A}\mathbf{M}\|_2 \|(\mathbf{A}\mathbf{M})^{+}\|_2\bigr)^2 \le \frac{b}{a}\,.$$
 For empty $r$ (the column index of $\mathbf{M}$) the pseudo-condition number is $0$ and the bound
-is `hb`; for nonempty $r$ the hypotheses force $0 < b$. No rank hypothesis is needed:
+is the hypothesis $0 \le b$; for nonempty $r$ the hypotheses force $0 < b$. No rank hypothesis is needed:
 $\mathbf{A}\mathbf{M}$ has full column rank because $\mathbf{S}\mathbf{A}\mathbf{M}$ does, so the
 pseudo-condition number is the classical
 $\sigma_0(\mathbf{A}\mathbf{M}) / \sigma_{\min}(\mathbf{A}\mathbf{M})$
