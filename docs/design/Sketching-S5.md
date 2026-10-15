@@ -707,3 +707,31 @@ S4's proofs and stay proved.
     loses a private duplicate, no statement change. In all, 32 statements.
 16. §7: Q1, Q2, Q4 to Q8 and Q11 stand; Q3 is amended by items 8 and 9, Q9 is decided (the name
     `samplingSketchWithoutReplacement` is accepted), Q10 by item 3, Q12 by item 5.
+
+### Skeleton notes (2026-10-15)
+
+Item 1's promotions landed first and stay proved: `exists_hasOrthonormalCols_of_leverageScore_le`,
+`rank_le_of_leverageScore_le`, `inv_mul_smul_vecMulVec_star_self_le` (replacing the private
+`samplingAtom_le` at both call sites) in `RowSampling.lean`;
+`Matrix.conjTranspose_mul_eq_sum_vecMulVec` in `ForMathlib/LinearAlgebra/Matrix/ConjTranspose.lean`,
+stated for `[Mul α] [AddCommMonoid α] [Star α]` (the generality of `conjTranspose_vecMulVec`) and
+replacing both private copies in S4; `HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le`
+in `FixedSubspace.lean`, through which S4's private upper tail is now rerouted. S4's public
+statements are unchanged and `MatrixMultiplication` builds without warnings. S4's note has not yet
+recorded the promotions.
+
+Item 15's four files, 27 statements, one `sorry` in all: Hoeffding's comparison
+(`ConvexOn.integral_uniformOn_injective_le_integral_pi`). Everything else is proved, including the
+kernel form, all of §3.1, the trace bound and the four tails of §3.3 (from the comparison), and all
+thirteen declarations of §3.4 (law, mixture, pushforward, bridge, isotropy, both halves through
+private primitive-space lemmas, the two-sided theorem, the coherence corollary, both sizes).
+Deviations from §3 and §8, all minor:
+- The two invariance lemmas of §3.1 take `[Finite k] [Finite n]` in place of `[Fintype _]`, and
+  `integrable_re_trace_exp_sum_of_hasLaw_uniformOn_injective` takes `[Finite n]` (Mathlib's
+  `unusedFintypeInType` linter; a `Fintype` user is unaffected). The set-builder variable of
+  `uniformOn_injective_singleton` is `g`, not the bound `f`.
+- The bibliography gains `Tropp2011a`, `Hoeffding1963`, `GrossNesme2010`; every docstring cites them
+  by key without a locator (item 3).
+- The four new modules are not yet in `NLAlib.lean` (regenerate with `mk_all`).
+No statement of §3 was found false; the degenerate cases (no injection, empty `k`, empty `n`, rank
+zero, `L ≤ 0`, `ε ≥ 1`) are all handled in the proofs as §3 and item 2 describe.

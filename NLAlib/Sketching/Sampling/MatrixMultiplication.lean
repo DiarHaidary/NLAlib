@@ -58,14 +58,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### Reduction to i.i.d. indices -/
 
-omit [Fintype q] [Fintype r] [DecidableEq n] in
-/-- The sum of the rank-one atoms `(A i)ᴴ B i` over the rows is `Aᴴ B`. -/
-private theorem sum_vecMulVec_star_eq_conjTranspose_mul (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
-    ∑ i, Matrix.vecMulVec (star (A i)) (B i) = Aᴴ * B := by
-  ext a b
-  simp only [Matrix.sum_apply, Matrix.vecMulVec_apply, Matrix.mul_apply,
-    Matrix.conjTranspose_apply, Pi.star_apply]
-
 variable (k) in
 /-- The rank-one atom of row `i`, `(card k · p i)⁻¹ (A i)ᴴ B i`; the zero matrix where
 `p i = 0`. -/
@@ -87,7 +79,7 @@ omit [Fintype q] [Fintype r] [DecidableEq n] in
 `A` or `B` vanishes. -/
 private theorem sum_smul_ammAtom (hsupport : ∀ i, p i = 0 → A i = 0 ∨ B i = 0) :
     ∑ i, (p i : ℝ) • ammAtom k p A B i = (Fintype.card k : ℝ)⁻¹ • (Aᴴ * B) := by
-  rw [← sum_vecMulVec_star_eq_conjTranspose_mul, Finset.smul_sum]
+  rw [Matrix.conjTranspose_mul_eq_sum_vecMulVec, Finset.smul_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [ammAtom, smul_smul]
   by_cases hi : p i = 0

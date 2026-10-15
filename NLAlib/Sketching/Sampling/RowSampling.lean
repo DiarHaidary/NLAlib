@@ -65,6 +65,9 @@ the same identity at `A = B = 1`.
   from a user's own indices.
 * `NLAlib.conjTranspose_samplingSketchMatrix_mul_mul`: the sketched cross-Gram matrix as an
   average of rank-one atoms.
+* `NLAlib.inv_mul_smul_vecMulVec_star_self_le`: the Loewner bound on one atom.
+* `NLAlib.exists_hasOrthonormalCols_of_leverageScore_le`, `NLAlib.rank_le_of_leverageScore_le`:
+  the reduction to orthonormal columns and the bound on the rank under leverage domination.
 * `NLAlib.isIsotropicSketch_of_hasLaw_samplingSketch`: isotropy for positive weights.
 * `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch`,
   `NLAlib.hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch`: the two halves.
@@ -231,14 +234,6 @@ private noncomputable def samplingAtom (p : n → ℝ≥0) (B : Matrix n r 𝕜)
     Matrix r r 𝕜 :=
   ((Fintype.card k : ℝ) * p (ι j))⁻¹ • Matrix.vecMulVec (star (B (ι j))) (B (ι j))
 
-omit [DecidableEq n] [Fintype r] in
-/-- A Gram matrix is the sum of the rank-one matrices of its rows. -/
-private theorem conjTranspose_mul_self_eq_sum_vecMulVec (B : Matrix n r 𝕜) :
-    Bᴴ * B = ∑ i, Matrix.vecMulVec (star (B i)) (B i) := by
-  ext a b
-  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.sum_apply,
-    Matrix.vecMulVec_apply, Pi.star_apply]
-
 open scoped ComplexOrder in
 omit [Fintype n] [DecidableEq n] [Fintype r] in
 /-- The atoms are positive semidefinite. -/
@@ -248,26 +243,33 @@ private theorem posSemidef_samplingAtom [Finite r] (p : n → ℝ≥0) (B : Matr
   (Matrix.posSemidef_vecMulVec_star_self _).smul (by positivity)
 
 open scoped ComplexOrder in
-omit [Fintype n] [DecidableEq n] in
-/-- Under the domination `‖B i‖² ≤ L p i`, every atom is at most `L / card k` in the Loewner
-order. -/
-private theorem samplingAtom_le [DecidableEq r] (hL : 0 ≤ L) {B : Matrix n r 𝕜}
-    (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ L * p i) (j : k) (ι : k → n) :
-    samplingAtom p B j ι ≤ (L / Fintype.card k) • (1 : Matrix r r 𝕜) := by
-  refine (posSemidef_samplingAtom p B j ι).isHermitian.le_smul_one_of_specNorm_le ?_
-  rw [samplingAtom, specNorm_real_smul, specNorm_vecMulVec, EuclideanSpace.norm_toLp_star,
-    abs_of_nonneg (show (0 : ℝ) ≤ ((Fintype.card k : ℝ) * p (ι j))⁻¹ by positivity),
+/-- **The row-sampling atom bound.** For $c \ge 0$ samples and a weight $w \ge 0$, the
+importance-weighted rank-one atom $(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b}$ of a row
+$\mathbf{b}$ (`vecMulVec (star b) b`) satisfies
+$(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b} \preceq (L / c)\,\mathbf{I}$ when
+$\|\mathbf{b}\|^2 \le L w$ and $L \ge 0$. Junk values: for $w = 0$ or $c = 0$ the atom is
+$\mathbf{0}$ (junk inverse) and the bound is $\mathbf{0} \preceq (L / c)\,\mathbf{I}$. It is the
+hypothesis `hle` of matrix Chernoff for row sampling, with or without replacement: with
+replacement at $c = \lvert k \rvert$, $\mathbf{b}$ the sampled row and $w$ its weight; without
+replacement at uniform weights. -/
+theorem inv_mul_smul_vecMulVec_star_self_le [DecidableEq r] {c L : ℝ} {w : ℝ≥0}
+    (hc : 0 ≤ c) (hL : 0 ≤ L) {b : r → 𝕜} (hb : ‖WithLp.toLp 2 b‖ ^ 2 ≤ L * w) :
+    (c * w)⁻¹ • Matrix.vecMulVec (star b) b ≤ (L / c) • (1 : Matrix r r 𝕜) := by
+  have hcw : (0 : ℝ) ≤ (c * w)⁻¹ := inv_nonneg.2 (mul_nonneg hc w.coe_nonneg)
+  have hpsd : ((c * w)⁻¹ • Matrix.vecMulVec (star b) b).PosSemidef :=
+    (Matrix.posSemidef_vecMulVec_star_self b).smul hcw
+  refine hpsd.isHermitian.le_smul_one_of_specNorm_le ?_
+  rw [specNorm_real_smul, specNorm_vecMulVec, EuclideanSpace.norm_toLp_star, abs_of_nonneg hcw,
     ← sq]
-  rcases eq_or_ne (p (ι j)) 0 with h0 | h0
+  rcases eq_or_ne w 0 with h0 | h0
   · rw [h0, NNReal.coe_zero, mul_zero, inv_zero, zero_mul]
-    positivity
-  have hpos : 0 < (p (ι j) : ℝ) := lt_of_le_of_ne (p (ι j)).coe_nonneg (by exact_mod_cast h0.symm)
-  rcases (Nat.cast_nonneg (α := ℝ) (Fintype.card k)).eq_or_lt with hk | hk
+    exact div_nonneg hL hc
+  have hpos : 0 < (w : ℝ) := lt_of_le_of_ne w.coe_nonneg (by exact_mod_cast h0.symm)
+  rcases hc.eq_or_lt with hk | hk
   · rw [← hk, zero_mul, inv_zero, zero_mul, div_zero]
-  calc ((Fintype.card k : ℝ) * p (ι j))⁻¹ * ‖WithLp.toLp 2 (B (ι j))‖ ^ 2
-      ≤ ((Fintype.card k : ℝ) * p (ι j))⁻¹ * (L * p (ι j)) :=
-        mul_le_mul_of_nonneg_left (hB _) (by positivity)
-    _ = L / Fintype.card k := by field_simp
+  calc (c * w)⁻¹ * ‖WithLp.toLp 2 b‖ ^ 2 ≤ (c * w)⁻¹ * (L * w) :=
+        mul_le_mul_of_nonneg_left hb hcw
+    _ = L / c := by field_simp
 
 section Pi
 
@@ -294,7 +296,7 @@ private theorem sum_integral_samplingAtom [Nonempty k] [DecidableEq r] (hp : ∑
     refine (integral_comp_eval (μ := fun _ : k => samplingMeasure p) (i := j)
       (f := fun i : n => ((Fintype.card k : ℝ) * p i)⁻¹ • Matrix.vecMulVec (star (B i)) (B i))
       AEStronglyMeasurable.of_discrete).trans ?_
-    rw [integral_samplingMeasure, conjTranspose_mul_self_eq_sum_vecMulVec, Finset.smul_sum]
+    rw [integral_samplingMeasure, Matrix.conjTranspose_mul_eq_sum_vecMulVec, Finset.smul_sum]
     refine Finset.sum_congr rfl fun i _ => ?_
     rw [smul_smul]
     rcases eq_or_ne (p i) 0 with h0 | h0
@@ -336,7 +338,8 @@ private theorem hasSubspaceInjection_samplingSketchMatrix [Nonempty k] [Nonempty
   have hC := measureReal_eigenvalue_sum_le_le_card_mul_exp (iIndepFun_samplingAtom hp Q)
     (fun _ => (measurable_of_finite _).aemeasurable) (div_pos hL hk)
     (fun j => ae_of_all _ (posSemidef_samplingAtom p Q j))
-    (fun j => ae_of_all _ (samplingAtom_le hL.le hdom j)) hj₀ hε h1
+    (fun j => ae_of_all _ fun ι =>
+      inv_mul_smul_vecMulVec_star_self_le (Nat.cast_nonneg _) hL.le (hdom (ι j))) hj₀ hε h1
   rw [sum_integral_samplingAtom hp (eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
     eigenvalue_one (by omega)] at hC
   refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_)
@@ -363,29 +366,28 @@ private theorem hasSubspaceEmbedding_zero_samplingSketchMatrix [Nonempty k] [Non
   have hC := measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp (iIndepFun_samplingAtom hp Q)
     (fun _ => (measurable_of_finite _).aemeasurable) (div_pos hL hk)
     (fun j => ae_of_all _ (posSemidef_samplingAtom p Q j))
-    (fun j => ae_of_all _ (samplingAtom_le hL.le hdom j)) hε hε1
+    (fun j => ae_of_all _ fun ι =>
+      inv_mul_smul_vecMulVec_star_self_le (Nat.cast_nonneg _) hL.le (hdom (ι j))) hε hε1
   rw [sum_integral_samplingAtom hp (eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
     eigenvalue_one Fintype.card_pos] at hC
-  refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_)
-  · have hG : ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q)ᴴ *
-        ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q) = ∑ j, samplingAtom p Q j ι :=
-      conjTranspose_samplingSketchMatrix_mul_mul p ι Q Q
-    have hH : (∑ j, samplingAtom p Q j ι).IsHermitian :=
-      hG ▸ Matrix.isHermitian_conjTranspose_mul_self _
+  refine hQ.hasSubspaceEmbedding_zero_of_measureReal_le
+    ((measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_))
+  · rw [sq_singularValues, conjTranspose_samplingSketchMatrix_mul_mul] at hι
     rw [mul_one]
-    by_contra hlt
-    refine hι ⟨isSubspaceInjection_of_nonpos _ _ le_rfl, ?_⟩
-    rw [hQ.conjTranspose_mul_self, hG, hH.le_smul_one_iff]
-    exact (not_le.1 hlt).le
+    exact hι
   · congr 2
     field_simp
 
 end Pi
 
 omit [DecidableEq n] in
-/-- An orthonormal basis `Q` of a space containing `range U`, under the domination of the
-leverage scores of `U`: its rows satisfy `‖Q i‖² ≤ L p i`. -/
-private theorem exists_hasOrthonormalCols_of_leverageScore_le
+/-- **Reduction to orthonormal columns.** Under the domination
+$\ell_i(\mathbf{U}) \le L p_i$ of the leverage scores of $\mathbf{U}$ (any shape and rank),
+there is a $\mathbf{Q}$ with $\operatorname{rank}\mathbf{U}$ orthonormal columns whose range
+contains that of $\mathbf{U}$ and whose rows inherit the domination,
+$\|\mathbf{q}_i\|^2 \le L p_i$. It reduces every fixed-$\mathbf{U}$ row-sampling tail, with or
+without replacement, to orthonormal columns, through `NLAlib.HasSubspaceEmbedding.of_range_le`. -/
+theorem exists_hasOrthonormalCols_of_leverageScore_le
     (hdom : ∀ i, leverageScore U i ≤ L * p i) :
     ∃ Q : Matrix n (Fin U.rank) 𝕜, HasOrthonormalCols Q ∧
       LinearMap.range U.mulVecLin ≤ LinearMap.range Q.mulVecLin ∧
@@ -425,9 +427,11 @@ theorem isIsotropicSketch_of_hasLaw_samplingSketch [Nonempty k]
 /-! ### Subspace injection and embedding for a fixed subspace -/
 
 omit [DecidableEq n] in
-/-- Under leverage domination with weights summing to one, the rank is at most the domination
-constant. -/
-private theorem rank_le_of_leverageScore_le (hp : ∑ i, p i = 1)
+/-- Under leverage domination $\ell_i(\mathbf{U}) \le L p_i$ with weights summing to one, the
+rank is at most the domination constant: $\operatorname{rank}\mathbf{U} \le L$ (the leverage
+scores sum to the rank). It gives $L > 0$ for the Chernoff call when $\mathbf{U} \ne
+\mathbf{0}$. -/
+theorem rank_le_of_leverageScore_le (hp : ∑ i, p i = 1)
     (hdom : ∀ i, leverageScore U i ≤ L * p i) : (U.rank : ℝ) ≤ L := by
   calc (U.rank : ℝ) = ∑ i, leverageScore U i := (sum_leverageScore U).symm
     _ ≤ ∑ i, L * p i := Finset.sum_le_sum fun i _ => hdom i

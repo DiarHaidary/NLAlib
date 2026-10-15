@@ -34,6 +34,8 @@ measure is $0$. Design: `docs/design/Sketching-S1.md` §3.2.
 * `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le`: from a Gram-error tail.
 * `NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le`: from a $\sigma_{\min}$
   tail.
+* `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le`: the upper half from a
+  $\sigma_{\max}$ tail.
 * `NLAlib.HasSubspaceEmbedding.of_range_le`: passing to a smaller subspace.
 * `ProbabilityTheory.HasLaw.hasSubspaceEmbedding_iff`: the predicates depend only on the law.
 -/
@@ -127,6 +129,24 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le [IsFiniteMeasu
   refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans h
   rw [hU.isSubspaceInjection_iff_le_sq_singularValues hj, not_le] at hω
   exact hω.le
+
+/-- **From a largest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail
+$\mathbb{P}(b \le \sigma_0(\mathbf{S}\mathbf{U})^2) \le \delta$ gives the upper half
+$(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U}
+\preceq b\,\mathbf{U}^{\mathsf{H}}\mathbf{U}$ with failure probability $\delta$, the lower
+constant $0$ holding surely. The form matrix Chernoff's upper tail produces. No nonemptiness of
+`p` is needed: for empty `p` the failure event is empty. -/
+theorem HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le [IsFiniteMeasure μ]
+    [Fintype p] [DecidableEq p] (hU : HasOrthonormalCols U)
+    (h : μ.real {ω | b ≤ singularValues (S ω * U) 0 ^ 2} ≤ δ) :
+    HasSubspaceEmbedding S U 0 b δ μ := by
+  refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans h
+  by_contra hlt
+  refine hω ⟨isSubspaceInjection_of_nonpos _ _ le_rfl, ?_⟩
+  rw [hU.conjTranspose_mul_self]
+  refine (conjTranspose_mul_self_le_specNorm_sq_smul_one _).trans (smul_one_le_smul_one ?_)
+  rw [← singularValues_zero_eq_specNorm]
+  exact (not_le.1 hlt).le
 
 /-- A random subspace injection is one with any smaller constant and any larger failure
 probability. -/
