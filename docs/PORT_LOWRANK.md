@@ -40,6 +40,10 @@ The maintainer approved the recommendations:
   (2026-10-15) a public definition built from a measurable SVD, and then that `truncatedSVD`
   itself be redefined from it (S2c §8 found only one private lemma reads the old choice), so
   `truncatedSVD` becomes measurable and no second name is needed.
+- S6b (2026-10-15, maintainer): early-truncated RSVD in expectation (the $(1+\varepsilon/2)$ bound,
+  one inverse-moment lemma for $\min(1, \sigma_{\min}^2/t)$ plus assembly, about 500 lines),
+  scheduled between S6's Gaussian and Haar halves so the early-truncated GN $\varepsilon^{-2}$ result
+  is unconditional this round.
 - Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
   randomized block Krylov, randomly pivoted Cholesky and similar methods.
 
