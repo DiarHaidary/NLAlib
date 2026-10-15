@@ -65,6 +65,8 @@ the same identity at `A = B = 1`.
   from a user's own indices.
 * `NLAlib.conjTranspose_samplingSketchMatrix_mul_mul`: the sketched cross-Gram matrix as an
   average of rank-one atoms.
+* `NLAlib.samplingSketchMatrix_mul_conjTranspose_of_injective`: distinct indices give a diagonal
+  `S Sᴴ`.
 * `NLAlib.inv_mul_smul_vecMulVec_star_self_le`: the Loewner bound on one atom.
 * `NLAlib.exists_hasOrthonormalCols_of_leverageScore_le`, `NLAlib.rank_le_of_leverageScore_le`:
   the reduction to orthonormal columns and the bound on the rank under leverage domination.
@@ -196,6 +198,27 @@ theorem samplingSketchMatrix_eq_diagonal_mul [DecidableEq k] (p : n → ℝ≥0)
   · subst h
     simp
   · simp [h, Ne.symm h]
+
+/-- **Distinct indices give orthogonal rows**: for an injective $\iota$, the rows of the sketch have
+disjoint supports, so $\mathbf{S}\mathbf{S}^{\mathsf{H}}$ is diagonal with entries
+$(\lvert k \rvert \, p_{\iota(j)})^{-1}$ ($0$ where $p_{\iota(j)} = 0$). At uniform weights it is
+$(\lvert n \rvert / \lvert k \rvert) \mathbf{I}$, the partial isometry of row sampling without
+replacement and of the subsampled randomized Hadamard transform. Amendment of
+`docs/design/Sketching-S4.md` by `docs/design/Sketching-S6.md` §1, item 4. -/
+theorem samplingSketchMatrix_mul_conjTranspose_of_injective [DecidableEq k] (p : n → ℝ≥0)
+    {ι : k → n} (hι : Function.Injective ι) :
+    (samplingSketchMatrix p ι : Matrix k n 𝕜) * (samplingSketchMatrix p ι)ᴴ =
+      Matrix.diagonal fun j => ((((Fintype.card k : ℝ) * p (ι j))⁻¹ : ℝ) : 𝕜) := by
+  have hP : (selectionMatrix ι : Matrix n k 𝕜)ᴴ * (selectionMatrix ι : Matrix n k 𝕜) = 1 :=
+    (hasOrthonormalCols_selectionMatrix (𝕜 := 𝕜) hι).conjTranspose_mul_self
+  rw [samplingSketchMatrix_eq_diagonal_mul, Matrix.conjTranspose_mul,
+    Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc, ← Matrix.mul_assoc _ (selectionMatrix ι),
+    hP, Matrix.one_mul, Matrix.diagonal_conjTranspose, Matrix.diagonal_mul_diagonal]
+  congr 1
+  funext j
+  have hx : 0 ≤ (Fintype.card k : ℝ) * p (ι j) := by positivity
+  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← mul_inv,
+    Real.mul_self_sqrt hx]
 
 /-- Row `j` of a sampled matrix is the scaled row `ι j`. -/
 private theorem samplingSketchMatrix_mul_apply {q' : Type*} (p : n → ℝ≥0) (ι : k → n)

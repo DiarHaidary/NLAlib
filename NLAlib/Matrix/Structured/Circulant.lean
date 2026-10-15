@@ -9,6 +9,7 @@ public import Mathlib.LinearAlgebra.Matrix.Circulant
 public import Mathlib.Analysis.SpecialFunctions.Complex.Circle
 public import Mathlib.RingTheory.RootsOfUnity.Complex
 public import NLAlib.Matrix.Norms.Compare
+public import NLAlib.Matrix.Structured.BoundedOrthonormal
 
 /-!
 # Circulant matrices and the discrete Fourier transform
@@ -27,6 +28,8 @@ circulant exactly when it commutes with the cyclic shift.
 
 * `NLAlib.circulant_mulVec_pow`: eigenvectors of a circulant matrix, over any field.
 * `NLAlib.hasOrthonormalCols_fourierMatrix`.
+* `NLAlib.isBoundedOrthonormal_fourierMatrix`: the Fourier matrix is a bounded orthonormal
+  transform with $\beta = 1$.
 * `NLAlib.circulant_eq_fourierMatrix_mul_diagonal_mul_conjTranspose`: Fourier diagonalisation.
 * `NLAlib.specNorm_circulant_le_iff`: the spectral norm is the largest Fourier coefficient.
 * `NLAlib.mul_circulant_single_comm_iff`: characterisation by commutation with the shift.
@@ -197,6 +200,17 @@ theorem hasOrthonormalCols_fourierMatrix (n : ℕ) : HasOrthonormalCols (fourier
   split_ifs
   · exact div_self hn0
   · exact zero_div _
+
+/-- **The Fourier matrix is a bounded orthonormal transform** with $\beta = 1$: it is unitary and
+$n \lvert \mathbf{F}_{j,k} \rvert^2 = 1$. The hypothesis of the subsampled randomized Fourier
+transform's theorems (`NLAlib.Sketching.Structured.SRHT`), with real random signs. -/
+theorem isBoundedOrthonormal_fourierMatrix (n : ℕ) : IsBoundedOrthonormal (fourierMatrix n) 1 := by
+  refine ⟨hasOrthonormalCols_fourierMatrix n, fun j k => ?_⟩
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · exact j.elim0
+  have hn' : (0 : ℝ) < n := Nat.cast_pos.2 hn
+  rw [norm_fourierMatrix_apply, Fintype.card_fin, inv_pow, Real.sq_sqrt hn'.le,
+    mul_inv_cancel₀ hn'.ne']
 
 /-- The scaled unitary transform as a sum of powers of roots of unity. -/
 private theorem sqrt_mul_conjTranspose_fourierMatrix_mulVec_apply_eq_sum (v : Fin n → ℂ)

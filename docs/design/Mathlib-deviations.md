@@ -336,6 +336,27 @@ None of these was approved by the maintainer when it was made. Status is given p
   Hermitian offsets and the perturbation bound `tr exp A ≤ e^{‖A - B‖} tr exp B`, not through an
   approximation of `H`; the kernel would not have shortened that either.
 
+## 18. Bounded orthonormal transforms
+
+- **Mathlib.** `Matrix.IsHadamard H`: a square matrix over a `*`-semiring with unitary entries and
+  `H * Hᴴ = Hᴴ * H = card n • 1`, the unnormalised Hadamard matrix (`±1` over `ℝ`, unimodular
+  over `ℂ`).
+- **NLAlib.** `IsBoundedOrthonormal F β` (`NLAlib/Matrix/Structured/BoundedOrthonormal.lean`): a
+  unitary `F` (`HasOrthonormalCols F`) whose entries satisfy `card n * ‖F i j‖ ^ 2 ≤ β`, the
+  hypothesis of every SRHT statement (`docs/design/Sketching-S6.md` §7 Q2, §8 items 6 and 7).
+- **Why.** Generality, not convenience. The hypothesis is strictly weaker than `IsHadamard` on
+  `√(card n) • F`: an inequality on the entries admits the discrete cosine and Hartley transforms
+  (`β = 2`), which are not Hadamard and which Martinsson and Tropp list as SRTT transforms (the
+  Hartley transform is their recommended real choice, after Avron et al.). The flattening proof
+  uses only unitarity and the entry bound (Camaño, Epperly, Meyer and Tropp's remark after their
+  Imported Theorem 4.3), and `β` enters every bound linearly.
+- **Bridge.** `Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul : H.IsHadamard →
+  IsBoundedOrthonormal (((√(card n))⁻¹ : ℝ) • H) 1`, in the same file.
+- **Cost.** A user holding `IsHadamard` applies the bridge once; nothing else changes.
+- **Status: bridge proved**, with the Walsh and Fourier instances
+  (`isBoundedOrthonormal_smul_walshHadamard`, `isBoundedOrthonormal_fourierMatrix`), 2026-10-15
+  (S6 skeleton).
+
 ## Small spelling choices
 
 - `principalMinor A s` for `(A.submatrix (↑) (↑)).det` with `s : Finset n`

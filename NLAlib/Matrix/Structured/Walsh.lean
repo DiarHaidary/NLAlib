@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Matrix.HadamardMatrix
 public import Mathlib.Data.ZMod.Basic
 public import NLAlib.Matrix.Basic.Orthonormal
+public import NLAlib.Matrix.Structured.BoundedOrthonormal
 
 /-!
 # Walsh–Hadamard matrices
@@ -30,6 +31,8 @@ subsampled randomized Hadamard transforms use.
 * `NLAlib.walshHadamard_mul_self`: $\mathbf{H}\mathbf{H} = 2^b \mathbf{I}$.
 * `NLAlib.isHadamard_walshHadamard`.
 * `NLAlib.hasOrthonormalCols_smul_walshHadamard`: the normalised matrix is orthogonal.
+* `NLAlib.isBoundedOrthonormal_smul_walshHadamard`: the normalised matrix is a bounded orthonormal
+  transform with $\beta = 1$.
 * `NLAlib.sum_walshHadamard_apply`: character sums.
 -/
 
@@ -167,5 +170,17 @@ theorem norm_smul_walshHadamard_apply {𝕜 : Type*} [RCLike 𝕜] (x y : Fin b 
     · rw [norm_neg, norm_one]
   rw [Matrix.smul_apply, norm_smul, h1, mul_one, Real.norm_eq_abs, sq_abs, inv_pow,
     Real.sq_sqrt (by positivity)]
+
+/-- **The normalised Walsh–Hadamard matrix is a bounded orthonormal transform** with $\beta = 1$:
+it is orthogonal and $2^b \lvert (2^{-b/2} \mathbf{H})_{x,y} \rvert^2 = 1$. The hypothesis of the
+subsampled randomized Hadamard transform's theorems (`NLAlib.Sketching.Structured.SRHT`). -/
+theorem isBoundedOrthonormal_smul_walshHadamard {𝕜 : Type*} [RCLike 𝕜] (b : ℕ) :
+    IsBoundedOrthonormal (((√((2 : ℝ) ^ b))⁻¹ : ℝ) • walshHadamard 𝕜 b) 1 := by
+  refine ⟨hasOrthonormalCols_smul_walshHadamard b, fun x y => ?_⟩
+  have hcard : (Fintype.card (Fin b → ZMod 2) : ℝ) = (2 : ℝ) ^ b := by
+    rw [Fintype.card_fun, ZMod.card, Fintype.card_fin]
+    push_cast
+    rfl
+  rw [norm_smul_walshHadamard_apply, hcard, mul_inv_cancel₀ (by positivity)]
 
 end NLAlib

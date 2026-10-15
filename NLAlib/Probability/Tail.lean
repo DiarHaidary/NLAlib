@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.MeasureTheory.Integral.Layercake
+public import Mathlib.Probability.Moments.Basic
 public import Mathlib.Probability.Moments.Variance
 
 /-!
@@ -17,8 +18,9 @@ Tail bounds in NLAlib are failure probabilities in $\mathbb{R}$, with non-strict
 `MeasureTheory.mul_meas_ge_le_integral_of_nonneg` already have this form; the union bound and the
 complement are `MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_biUnion_finset_le`
 and `MeasureTheory.probReal_compl_eq_one_sub`. This file adds Markov's inequality in quotient
-form, Chebyshev's inequality in $\mathbb{R}$, the two-sided tail, and the passage from a tail bound
-to integrability and to a bound on the mean.
+form, Chebyshev's inequality in $\mathbb{R}$, the two-sided tail, the passage from a tail bound
+to integrability and to a bound on the mean, and Chernoff's bound inverted for a sub-gamma moment
+generating function.
 
 ## Main results
 
@@ -29,6 +31,8 @@ to integrability and to a bound on the mean.
 * `NLAlib.integrable_of_measureReal_ge_le`, `NLAlib.integral_le_of_measureReal_ge_le`: a
   nonnegative random variable with an integrable tail bound is integrable, and its mean is at most
   the integral of the bound.
+* `NLAlib.measureReal_ge_le_exp_neg_of_mgf_le`: Chernoff's bound for a sub-gamma upper tail, with
+  the exact constant.
 -/
 
 @[expose] public section
@@ -155,5 +159,62 @@ theorem integral_le_of_measureReal_ge_le [IsProbabilityMeasure μ] {f : Ω → �
   rw [← Set.Ioc_union_Ioi_eq_Ioi ha.le, setIntegral_union Set.Ioc_disjoint_Ioi_same
     measurableSet_Ioi (hF.mono_set Set.Ioc_subset_Ioi_self) hF0]
   linarith
+
+/-! ### Sub-gamma tails -/
+
+/-- **Chernoff's bound for a sub-gamma upper tail.** If the moment generating function of $X$
+satisfies
+$$\mathbb{E}\, e^{\theta X} \le \exp \frac{\theta^2 v}{2 (1 - b\theta)}$$
+for every $\theta \ge 0$ with $b\theta < 1$ (and $e^{\theta X}$ is integrable there), then for
+$t \ge 0$
+$$\mu\bigl(X \ge \sqrt{2 v t} + b t\bigr) \le e^{-t}\,.$$
+Chernoff's bound at $\theta = s / (1 + b s)$, $s = \sqrt{2t/v}$, where the exponent is exactly
+$-t$. No finiteness assumption on $\mu$: integrability at $\theta = 0$ gives it. $v > 0$ is needed:
+at $v = b = 0$ the constant $0$ satisfies the hypothesis and the event is everything. The exact
+constant, which the $\min(t^2/v, t/b)$ forms of `NLAlib.Probability.SubExponential.Tail` lose; the
+step behind every exact-constant Bernstein-type tail (the Hsu–Kakade–Zhang tail of
+`NLAlib.Probability.SubGaussianVector.NormMatrix`). [BoucheronLugosiMassart2013] (the sub-gamma
+tail of their Chapter 2; locator not checked against the book). -/
+theorem measureReal_ge_le_exp_neg_of_mgf_le {X : Ω → ℝ} {v b : ℝ} (hv : 0 < v) (hb : 0 ≤ b)
+    (hint : ∀ θ : ℝ, 0 ≤ θ → b * θ < 1 → Integrable (fun ω => Real.exp (θ * X ω)) μ)
+    (hmgf : ∀ θ : ℝ, 0 ≤ θ → b * θ < 1 →
+      mgf X μ θ ≤ Real.exp (θ ^ 2 * v / (2 * (1 - b * θ))))
+    {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | √(2 * v * t) + b * t ≤ X ω} ≤ Real.exp (-t) := by
+  have : IsFiniteMeasure μ := by
+    have h0 := hint 0 le_rfl (by simp)
+    simp only [zero_mul, Real.exp_zero] at h0
+    exact (integrable_const_iff_isFiniteMeasure one_ne_zero).1 h0
+  set s := √(2 * t / v) with hs_def
+  have hs0 : 0 ≤ s := Real.sqrt_nonneg _
+  have hs2 : s ^ 2 * v = 2 * t := by
+    rw [hs_def, Real.sq_sqrt (by positivity)]
+    field_simp
+  have hsa : s * √(2 * v * t) = 2 * t := by
+    rw [hs_def, ← Real.sqrt_mul (by positivity),
+      show 2 * t / v * (2 * v * t) = (2 * t) ^ 2 by field_simp, Real.sqrt_sq (by positivity)]
+  set D := 1 + b * s with hD
+  have hD0 : 0 < D := by positivity
+  set θ := s / D with hθ
+  have hθ0 : 0 ≤ θ := by positivity
+  have hbθ : 1 - b * θ = D⁻¹ := by
+    rw [hθ, hD]
+    field_simp
+    ring
+  have hbθ1 : b * θ < 1 := by
+    have : 0 < D⁻¹ := inv_pos.2 hD0
+    linarith
+  refine (measure_ge_le_exp_mul_mgf _ hθ0 (hint θ hθ0 hbθ1)).trans ?_
+  calc Real.exp (-θ * (√(2 * v * t) + b * t)) * mgf X μ θ
+      ≤ Real.exp (-θ * (√(2 * v * t) + b * t)) *
+          Real.exp (θ ^ 2 * v / (2 * (1 - b * θ))) := by
+        gcongr
+        exact hmgf θ hθ0 hbθ1
+    _ = Real.exp (-t) := by
+        rw [← Real.exp_add, hbθ]
+        congr 1
+        rw [hθ]
+        field_simp
+        linear_combination (-2) * hsa + hs2 + 2 * t * hD
 
 end NLAlib

@@ -899,3 +899,34 @@ drafted. Skeletons: the files of item 15, every new proof `sorry`.
 16. §7: Q3 to Q11 stand (Q3's D14 order by item 13, Q9 read with items 5 and 14, Q11's lower-layer
     count by item 15); Q1 is decided by item 1 (its comparison, fallback and reversal replaced, with
     items 4 and 5), Q2 by item 6.
+
+### Skeleton notes (2026-10-15)
+
+All 43 statements are written; 21 carry `sorry`, 22 are proved. Every touched file was checked
+with `lake lean`; the only warnings are `declaration uses 'sorry'`. `check_refs.py` and
+`check_latex.mjs` pass.
+- Proved in their owner files (no `sorry` added to a proved file): `Tail.lean`'s
+  `measureReal_ge_le_exp_neg_of_mgf_le` (item 2 (a)); `samplingSketchMatrix_mul_conjTranspose_of_injective`
+  in `RowSampling.lean` (§1 item 4); `isBoundedOrthonormal_smul_walshHadamard` (`Walsh.lean`) and
+  `isBoundedOrthonormal_fourierMatrix` (`Circulant.lean`), which now import the new
+  `Matrix/Structured/BoundedOrthonormal.lean` (all four of its statements proved).
+  `ForMathlib/Probability/Independence/Basic.lean`: the sections lemma, proved.
+- Item 2 (b)'s two statements are in the new `Probability/SubGaussianVector/NormMatrix.lean`
+  (both `sorry`), which merges into `Norm.lean` at the wrap-up; `measure_norm_sq_ge_le` is not
+  yet reproved from it and `Properties/Oblivious.lean`'s private Fubini helper is not yet
+  reproved from the sections lemma.
+- `Flattening.lean`: the unitary lemma, the three `srhtRowBound` lemmas and the `δ` form (from
+  the `(ε, t)` form) are proved; the flattening tail and the two transfers are `sorry`.
+- `SRHT.lean`: definitions, the measurability of the sketch (private), both finite-measure
+  instances and both probability-measure lemmas are proved; the other 16 are `sorry`.
+- **Statement change.** Both transfer theorems take `(hδ₁ : 0 ≤ δ₁)`. Without it they are false:
+  for `L < 0` and nonempty `n`, `hsample` is vacuous (every leverage score exceeds `L / n`), so
+  `δ₁` may be negative while `δ₂ = 1`. Every consumer has `δ₁ = d e^{…}` or `δ/2`, discharged by
+  `positivity`.
+- Proof route recorded in the size corollaries' docstrings: each follows from its `(ε, t)` theorem
+  at `t = log (2n/δ)` (where `n e^{-t} = δ/2` and the threshold is `β · srhtRowBound n d (δ/2)` by
+  `srhtRowBound_def`) plus the `samplingSize` inversion; no second use of the transfer.
+- `Tail.lean`'s docstring cites `[BoucheronLugosiMassart2013]` without the §2.4 locator (not
+  checked against the book). `docs/design/Mathlib-deviations.md` has entry 18 for
+  `IsBoundedOrthonormal`. S4's note does not yet record the RowSampling amendment. The new
+  modules are not in `NLAlib.lean`.
