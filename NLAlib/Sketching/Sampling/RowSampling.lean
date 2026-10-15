@@ -45,9 +45,12 @@ their weights fail it (`U = 0`, or `n` empty) the law is the zero measure for no
 subcases `U.rank = 0` and every embedding event is full. Design: `docs/design/Sketching-S4.md`
 §3.2, §8.
 
-This file is a skeleton of Sketching stage S4: the statements are final; the proofs of isotropy
-and of the two matrix Chernoff halves are deferred (`sorry`), and every other theorem is proved,
-from those three where it needs them.
+Proofs. The two halves pass to an orthonormal basis `Q` of `range U`, whose rows satisfy
+`‖Q i‖² ≤ L p i`, and to the product space of the indices; there the Gram-atoms identity writes
+`(S Q)ᴴ (S Q)` as a sum of independent positive semidefinite atoms, each at most `L / card k` with
+means summing to `Qᴴ Q = 1`, and matrix Chernoff
+(`NLAlib.Probability.MatrixConcentration.ChernoffSum`) bounds its extreme eigenvalues. Isotropy is
+the same identity at `A = B = 1`.
 
 ## Main definitions
 
@@ -103,7 +106,7 @@ inside the definition; `NLAlib.samplingSketch_eq_map` restates it under any meas
 of Diracs. A probability measure when `∑ i, p i = 1` or `k` is empty. [Woodruff2014,
 Definition 16]; [MartinssonTropp2020, §9.6.3]. -/
 noncomputable def samplingSketch (p : n → ℝ≥0) : Measure (Matrix k n 𝕜) :=
-  letI : MeasurableSpace n := ⊤
+  let _ : MeasurableSpace n := ⊤
   (Measure.pi fun _ : k => samplingMeasure p).map (samplingSketchMatrix p)
 
 omit [DecidableEq n] in
@@ -220,6 +223,178 @@ theorem conjTranspose_samplingSketchMatrix_mul_mul (p : n → ℝ≥0) (ι : k �
     Pi.star_apply, RCLike.ofReal_mul]
   ring
 
+/-! ### The Chernoff atoms -/
+
+/-- The `j`-th rank-one atom `(card k · p (ι j))⁻¹ (B (ι j))ᴴ B (ι j)` of the sketched Gram matrix
+of `B`, as a function of the indices `ι`. -/
+private noncomputable def samplingAtom (p : n → ℝ≥0) (B : Matrix n r 𝕜) (j : k) (ι : k → n) :
+    Matrix r r 𝕜 :=
+  ((Fintype.card k : ℝ) * p (ι j))⁻¹ • Matrix.vecMulVec (star (B (ι j))) (B (ι j))
+
+omit [DecidableEq n] [Fintype r] in
+/-- A Gram matrix is the sum of the rank-one matrices of its rows. -/
+private theorem conjTranspose_mul_self_eq_sum_vecMulVec (B : Matrix n r 𝕜) :
+    Bᴴ * B = ∑ i, Matrix.vecMulVec (star (B i)) (B i) := by
+  ext a b
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.sum_apply,
+    Matrix.vecMulVec_apply, Pi.star_apply]
+
+open scoped ComplexOrder in
+omit [Fintype n] [DecidableEq n] [Fintype r] in
+/-- The atoms are positive semidefinite. -/
+private theorem posSemidef_samplingAtom [Finite r] (p : n → ℝ≥0) (B : Matrix n r 𝕜) (j : k)
+    (ι : k → n) :
+    (samplingAtom p B j ι).PosSemidef :=
+  (Matrix.posSemidef_vecMulVec_star_self _).smul (by positivity)
+
+open scoped ComplexOrder in
+omit [Fintype n] [DecidableEq n] in
+/-- Under the domination `‖B i‖² ≤ L p i`, every atom is at most `L / card k` in the Loewner
+order. -/
+private theorem samplingAtom_le [DecidableEq r] (hL : 0 ≤ L) {B : Matrix n r 𝕜}
+    (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ L * p i) (j : k) (ι : k → n) :
+    samplingAtom p B j ι ≤ (L / Fintype.card k) • (1 : Matrix r r 𝕜) := by
+  refine (posSemidef_samplingAtom p B j ι).isHermitian.le_smul_one_of_specNorm_le ?_
+  rw [samplingAtom, specNorm_real_smul, specNorm_vecMulVec, EuclideanSpace.norm_toLp_star,
+    abs_of_nonneg (show (0 : ℝ) ≤ ((Fintype.card k : ℝ) * p (ι j))⁻¹ by positivity),
+    ← sq]
+  rcases eq_or_ne (p (ι j)) 0 with h0 | h0
+  · rw [h0, NNReal.coe_zero, mul_zero, inv_zero, zero_mul]
+    positivity
+  have hpos : 0 < (p (ι j) : ℝ) := lt_of_le_of_ne (p (ι j)).coe_nonneg (by exact_mod_cast h0.symm)
+  rcases (Nat.cast_nonneg (α := ℝ) (Fintype.card k)).eq_or_lt with hk | hk
+  · rw [← hk, zero_mul, inv_zero, zero_mul, div_zero]
+  calc ((Fintype.card k : ℝ) * p (ι j))⁻¹ * ‖WithLp.toLp 2 (B (ι j))‖ ^ 2
+      ≤ ((Fintype.card k : ℝ) * p (ι j))⁻¹ * (L * p (ι j)) :=
+        mul_le_mul_of_nonneg_left (hB _) (by positivity)
+    _ = L / Fintype.card k := by field_simp
+
+section Pi
+
+variable [MeasurableSpace n] [MeasurableSingletonClass n]
+
+omit [DecidableEq n] [Fintype r] in
+/-- The atoms are independent under the product of the index laws. -/
+private theorem iIndepFun_samplingAtom (hp : ∑ i, p i = 1) (B : Matrix n r 𝕜) :
+    iIndepFun (samplingAtom (k := k) p B) (Measure.pi fun _ : k => samplingMeasure p) := by
+  have := isProbabilityMeasure_samplingMeasure p hp
+  exact iIndepFun_pi (X := fun (_ : k) (i : n) =>
+    ((Fintype.card k : ℝ) * p i)⁻¹ • Matrix.vecMulVec (star (B i)) (B i))
+    fun _ => (measurable_of_finite _).aemeasurable
+
+omit [DecidableEq n] in
+/-- The means of the atoms sum to the Gram matrix `Bᴴ B`, when `B` vanishes on the rows of zero
+weight. -/
+private theorem sum_integral_samplingAtom [Nonempty k] [DecidableEq r] (hp : ∑ i, p i = 1)
+    {B : Matrix n r 𝕜} (hB : ∀ i, p i = 0 → B i = 0) :
+    ∑ j, ∫ ι, samplingAtom p B j ι ∂(Measure.pi fun _ : k => samplingMeasure p) = Bᴴ * B := by
+  have := isProbabilityMeasure_samplingMeasure p hp
+  have hj (j : k) : ∫ ι, samplingAtom p B j ι ∂(Measure.pi fun _ : k => samplingMeasure p) =
+      (Fintype.card k : ℝ)⁻¹ • (Bᴴ * B) := by
+    refine (integral_comp_eval (μ := fun _ : k => samplingMeasure p) (i := j)
+      (f := fun i : n => ((Fintype.card k : ℝ) * p i)⁻¹ • Matrix.vecMulVec (star (B i)) (B i))
+      AEStronglyMeasurable.of_discrete).trans ?_
+    rw [integral_samplingMeasure, conjTranspose_mul_self_eq_sum_vecMulVec, Finset.smul_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [smul_smul]
+    rcases eq_or_ne (p i) 0 with h0 | h0
+    · rw [hB i h0, star_zero, Matrix.zero_vecMulVec, smul_zero, smul_zero]
+    · have hpos : (p i : ℝ) ≠ 0 := by exact_mod_cast h0
+      congr 1
+      field_simp
+  have hk : (Fintype.card k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+  simp only [hj, Finset.sum_const, Finset.card_univ, ← Nat.cast_smul_eq_nsmul ℝ, smul_smul,
+    mul_inv_cancel₀ hk, one_smul]
+
+omit [Fintype n] [DecidableEq n] [MeasurableSpace n] [MeasurableSingletonClass n] in
+/-- A row of zero weight vanishes under the domination `‖B i‖² ≤ L p i`. -/
+private theorem eq_zero_of_norm_sq_le {B : Matrix n r 𝕜}
+    (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ L * p i) (i : n) (h0 : p i = 0) : B i = 0 := by
+  have h := hB i
+  rw [h0, NNReal.coe_zero, mul_zero] at h
+  have h' : ‖WithLp.toLp 2 (B i)‖ = 0 :=
+    pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h (sq_nonneg _))
+  rwa [norm_eq_zero, WithLp.toLp_eq_zero] at h'
+
+/-- The lower Chernoff tail on the primitive space, for `Q` with orthonormal columns. -/
+private theorem hasSubspaceInjection_samplingSketchMatrix [Nonempty k] [Nonempty r]
+    [DecidableEq r] {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q) (hp : ∑ i, p i = 1)
+    (hL : 0 < L) (hdom : ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i) (hε : 0 ≤ ε) :
+    HasSubspaceInjection (samplingSketchMatrix (𝕜 := 𝕜) p) Q (1 - ε)
+      (Fintype.card r * Real.exp (-ε ^ 2 * Fintype.card k / (2 * L)))
+      (Measure.pi fun _ : k => samplingMeasure p) := by
+  have := isProbabilityMeasure_samplingMeasure p hp
+  rcases le_or_gt 1 ε with h1 | h1
+  · have he : {ι : k → n | ¬ IsSubspaceInjection (samplingSketchMatrix (𝕜 := 𝕜) p ι) Q (1 - ε)} =
+        ∅ := Set.eq_empty_of_forall_notMem fun ι hι =>
+      hι (isSubspaceInjection_of_nonpos _ _ (by linarith))
+    rw [HasSubspaceInjection, he, measureReal_empty]
+    positivity
+  have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  obtain ⟨j₀, hj₀⟩ : ∃ j, j + 1 = Fintype.card r :=
+    ⟨Fintype.card r - 1, Nat.sub_add_cancel Fintype.card_pos⟩
+  have hC := measureReal_eigenvalue_sum_le_le_card_mul_exp (iIndepFun_samplingAtom hp Q)
+    (fun _ => (measurable_of_finite _).aemeasurable) (div_pos hL hk)
+    (fun j => ae_of_all _ (posSemidef_samplingAtom p Q j))
+    (fun j => ae_of_all _ (samplingAtom_le hL.le hdom j)) hj₀ hε h1
+  rw [sum_integral_samplingAtom hp (eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
+    eigenvalue_one (by omega)] at hC
+  refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_)
+  · have hG : ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q)ᴴ *
+        ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q) = ∑ j, samplingAtom p Q j ι :=
+      conjTranspose_samplingSketchMatrix_mul_mul p ι Q Q
+    have hH : (∑ j, samplingAtom p Q j ι).IsHermitian :=
+      hG ▸ Matrix.isHermitian_conjTranspose_mul_self _
+    rw [hQ.isSubspaceInjection_iff, hG, hH.smul_one_le_iff hj₀, not_le] at hι
+    rw [mul_one]
+    exact hι.le
+  · congr 2
+    field_simp
+
+/-- The upper Chernoff tail on the primitive space, for `Q` with orthonormal columns. -/
+private theorem hasSubspaceEmbedding_zero_samplingSketchMatrix [Nonempty k] [Nonempty r]
+    [DecidableEq r] {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q) (hp : ∑ i, p i = 1)
+    (hL : 0 < L) (hdom : ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i) (hε : 0 ≤ ε) (hε1 : ε ≤ 1) :
+    HasSubspaceEmbedding (samplingSketchMatrix (𝕜 := 𝕜) p) Q 0 (1 + ε)
+      (Fintype.card r * Real.exp (-ε ^ 2 * Fintype.card k / (3 * L)))
+      (Measure.pi fun _ : k => samplingMeasure p) := by
+  have := isProbabilityMeasure_samplingMeasure p hp
+  have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hC := measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp (iIndepFun_samplingAtom hp Q)
+    (fun _ => (measurable_of_finite _).aemeasurable) (div_pos hL hk)
+    (fun j => ae_of_all _ (posSemidef_samplingAtom p Q j))
+    (fun j => ae_of_all _ (samplingAtom_le hL.le hdom j)) hε hε1
+  rw [sum_integral_samplingAtom hp (eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
+    eigenvalue_one Fintype.card_pos] at hC
+  refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_)
+  · have hG : ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q)ᴴ *
+        ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q) = ∑ j, samplingAtom p Q j ι :=
+      conjTranspose_samplingSketchMatrix_mul_mul p ι Q Q
+    have hH : (∑ j, samplingAtom p Q j ι).IsHermitian :=
+      hG ▸ Matrix.isHermitian_conjTranspose_mul_self _
+    rw [mul_one]
+    by_contra hlt
+    refine hι ⟨isSubspaceInjection_of_nonpos _ _ le_rfl, ?_⟩
+    rw [hQ.conjTranspose_mul_self, hG, hH.le_smul_one_iff]
+    exact (not_le.1 hlt).le
+  · congr 2
+    field_simp
+
+end Pi
+
+omit [DecidableEq n] in
+/-- An orthonormal basis `Q` of a space containing `range U`, under the domination of the
+leverage scores of `U`: its rows satisfy `‖Q i‖² ≤ L p i`. -/
+private theorem exists_hasOrthonormalCols_of_leverageScore_le
+    (hdom : ∀ i, leverageScore U i ≤ L * p i) :
+    ∃ Q : Matrix n (Fin U.rank) 𝕜, HasOrthonormalCols Q ∧
+      LinearMap.range U.mulVecLin ≤ LinearMap.range Q.mulVecLin ∧
+      ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i := by
+  obtain ⟨Q, hQ, hR⟩ := exists_hasOrthonormalCols_range_eq U (Fintype.card_fin _)
+  refine ⟨Q, hQ, hR.ge, fun i => ?_⟩
+  rw [← hQ.leverageScore_eq, leverageScore_eq_of_range_eq hR]
+  exact hdom i
+
 /-! ### Isotropy -/
 
 /-- **Row sampling with positive weights is isotropic.** With zero weights the second moment is
@@ -232,7 +407,20 @@ review (`docs/design/Sketching-S4.md` §8, item 10). [MartinssonTropp2020, §9.6
 theorem isIsotropicSketch_of_hasLaw_samplingSketch [Nonempty k]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1) (hpos : ∀ i, 0 < p i) :
     IsIsotropicSketch S μ := by
-  sorry
+  let _ : MeasurableSpace n := ⊤
+  have := isProbabilityMeasure_samplingMeasure p hp
+  refine hS.isIsotropicSketch_iff.2
+    ((hasLaw_samplingSketchMatrix HasLaw.id).isIsotropicSketch_iff.1
+      ⟨fun i j => MemLp.of_discrete, ?_⟩)
+  have e (ι : k → n) : (samplingSketchMatrix p ι : Matrix k n 𝕜)ᴴ * samplingSketchMatrix p ι =
+      ∑ j, samplingAtom p (1 : Matrix n n 𝕜) j ι := by
+    have h := conjTranspose_samplingSketchMatrix_mul_mul p ι (1 : Matrix n n 𝕜)
+      (1 : Matrix n n 𝕜)
+    rwa [Matrix.mul_one] at h
+  simp only [id, e]
+  rw [integral_finsetSum _ fun j _ => Integrable.of_finite,
+    sum_integral_samplingAtom (B := (1 : Matrix n n 𝕜)) hp fun i h => absurd h (hpos i).ne',
+    Matrix.conjTranspose_one, Matrix.mul_one]
 
 /-! ### Subspace injection and embedding for a fixed subspace -/
 
@@ -263,7 +451,26 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSk
     (hp : ∑ i, p i = 1) (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 ≤ ε) :
     HasSubspaceInjection S U (1 - ε)
       (U.rank * Real.exp (-ε ^ 2 * Fintype.card k / (2 * L))) μ := by
-  sorry
+  have : IsProbabilityMeasure μ :=
+    hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_samplingSketch hp)
+  rcases Nat.eq_zero_or_pos U.rank with hd | hd
+  · obtain rfl := Matrix.rank_eq_zero.1 hd
+    rw [Matrix.rank_zero, Nat.cast_zero, zero_mul]
+    exact HasSubspaceEmbedding.hasSubspaceInjection (b := 0)
+      (show HasSubspaceEmbedding S (0 : Matrix n r 𝕜) (1 - ε) 0 0 μ from
+        (measureReal_not_isSubspaceEmbedding_zero _ _).le)
+  have hL : 0 < L := (Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)
+  obtain ⟨Q, hQ, hUQ, hdomQ⟩ := exists_hasOrthonormalCols_of_leverageScore_le hdom
+  rcases isEmpty_or_nonempty k with hk | hk
+  · refine measureReal_le_one.trans ?_
+    rw [Fintype.card_eq_zero, Nat.cast_zero, mul_zero, zero_div, Real.exp_zero, mul_one]
+    exact_mod_cast hd
+  have : Nonempty (Fin U.rank) := ⟨⟨0, hd⟩⟩
+  let _ : MeasurableSpace n := ⊤
+  have h := hasSubspaceInjection_samplingSketchMatrix (k := k) hQ hp hL hdomQ hε
+  rw [Fintype.card_fin] at h
+  exact (hS.hasSubspaceInjection_iff.2
+    ((hasLaw_samplingSketchMatrix HasLaw.id).hasSubspaceInjection_iff.1 h)).of_range_le hUQ
 
 /-- **The upper half of row sampling**: under leverage domination with constant `L`, the
 row-sampling sketch satisfies `(S U)ᴴ (S U) ≤ (1 + ε) Uᴴ U` outside probability
@@ -274,7 +481,24 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch (hS : HasLaw S (sampl
     (hp : ∑ i, p i = 1) (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 ≤ ε) (hε1 : ε ≤ 1) :
     HasSubspaceEmbedding S U 0 (1 + ε)
       (U.rank * Real.exp (-ε ^ 2 * Fintype.card k / (3 * L))) μ := by
-  sorry
+  have : IsProbabilityMeasure μ :=
+    hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_samplingSketch hp)
+  rcases Nat.eq_zero_or_pos U.rank with hd | hd
+  · obtain rfl := Matrix.rank_eq_zero.1 hd
+    rw [HasSubspaceEmbedding, measureReal_not_isSubspaceEmbedding_zero, Matrix.rank_zero,
+      Nat.cast_zero, zero_mul]
+  have hL : 0 < L := (Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)
+  obtain ⟨Q, hQ, hUQ, hdomQ⟩ := exists_hasOrthonormalCols_of_leverageScore_le hdom
+  rcases isEmpty_or_nonempty k with hk | hk
+  · refine measureReal_le_one.trans ?_
+    rw [Fintype.card_eq_zero, Nat.cast_zero, mul_zero, zero_div, Real.exp_zero, mul_one]
+    exact_mod_cast hd
+  have : Nonempty (Fin U.rank) := ⟨⟨0, hd⟩⟩
+  let _ : MeasurableSpace n := ⊤
+  have h := hasSubspaceEmbedding_zero_samplingSketchMatrix (k := k) hQ hp hL hdomQ hε hε1
+  rw [Fintype.card_fin] at h
+  exact (hS.hasSubspaceEmbedding_iff.2
+    ((hasLaw_samplingSketchMatrix HasLaw.id).hasSubspaceEmbedding_iff.1 h)).of_range_le hUQ
 
 /-- **Row sampling under leverage domination**: if `leverageScore U i ≤ L · p i` for every row,
 the row-sampling sketch with `k` samples is a subspace embedding for `range U` with constants
