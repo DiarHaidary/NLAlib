@@ -23,7 +23,8 @@ $$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \le 2 \exp\Bigl(-C_{\mathrm{HW}} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr),$$
 with the universal constant $C_{\mathrm{HW}}$ (`NLAlib.hansonWrightConstant`), which the sources
-leave unspecified. The diagonal part is Bernstein's inequality for the centred squares; the
+leave unspecified; the proof here reaches <!-- value hansonWrightConstant -->$1/196$<!-- /value -->.
+The diagonal part is Bernstein's inequality for the centred squares; the
 off-diagonal part is bounded by decoupling and comparison with a Gaussian chaos
 (`NLAlib/Probability/QuadraticForm/HansonWright/OffDiagonal.lean`). The two are combined by
 convexity of $\exp$ with weights $4/7$ and $3/7$ (`NLAlib.HasSubexponentialMGF.add`), which needs
@@ -33,7 +34,8 @@ $C_{\mathrm{HW}} = 1/196$.
 
 ## Main definitions
 
-* `NLAlib.hansonWrightConstant`.
+* `NLAlib.hansonWrightConstant`, at present
+  <!-- value hansonWrightConstant -->$1/196$<!-- /value -->.
 
 ## Main results
 
@@ -62,7 +64,8 @@ Hanson–Wright inequality, which the sources leave unspecified.
 proof here reaches; a larger value is a better bound. Use only `hansonWrightConstant_pos` and
 `le_hansonWrightConstant`.
 
-The proof reaches $1/196$: the centred quadratic form is sub-exponential with variance proxy
+The proof reaches <!-- value hansonWrightConstant -->$1/196$<!-- /value -->: the centred quadratic
+form is sub-exponential with variance proxy
 $98 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and scale $28 c \|\mathbf{A}\|_2$ (the diagonal part has
 $32 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and $4 c \|\mathbf{A}\|_2$, the off-diagonal part
 $18 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and $12 c \|\mathbf{A}\|_2$, combined by convexity with
@@ -76,7 +79,8 @@ theorem hansonWrightConstant_pos : 0 < hansonWrightConstant := by
   rw [hansonWrightConstant_def]
   norm_num
 
-/-- An explicit lower bound on `hansonWrightConstant`: $C_{\mathrm{HW}} \ge 1/196$. -/
+/-- An explicit lower bound on `hansonWrightConstant`, at present
+<!-- value hansonWrightConstant -->$1/196$<!-- /value -->: $C_{\mathrm{HW}} \ge 1/196$. -/
 theorem le_hansonWrightConstant : 1 / 196 ≤ hansonWrightConstant := by
   rw [hansonWrightConstant_def]
 
@@ -205,7 +209,8 @@ $$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
 \le 2 \exp\Bigl(-C_{\mathrm{HW}} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)$$
-with the explicit constant $C_{\mathrm{HW}}$ = `hansonWrightConstant`.
+with the explicit constant $C_{\mathrm{HW}}$ = `hansonWrightConstant`, at present
+<!-- value hansonWrightConstant -->$1/196$<!-- /value -->.
 [Vershynin2018, Theorem 6.2.1]; there with an unspecified absolute constant and the sub-Gaussian
 norm $K$ of the coordinates, $c$ playing the role of $K^2$.
 Result: hanson-wright -/

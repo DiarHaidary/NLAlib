@@ -36,7 +36,13 @@ for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 
 ## Main definitions
 
-* `NLAlib.gaussianEmbeddingDim`, `NLAlib.gaussianInjectionDim`, `NLAlib.jlDim`: sample sizes;
+* `NLAlib.gaussianEmbeddingDim`, `NLAlib.gaussianInjectionDim`, `NLAlib.jlDim`: sample sizes, at
+  present <!-- value gaussianEmbeddingDim d \varepsilon \delta -->
+  $9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2/\varepsilon^2$<!-- /value -->,
+  <!-- value gaussianInjectionDim d \varepsilon \delta -->
+  $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$<!-- /value --> and
+  <!-- value jlDim \varepsilon \delta -->
+  $\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->;
   `NLAlib.two_mul_exp_le_of_jlDim_le` inverts the JL tail at `jlDim`.
 
 ## Main results
@@ -163,7 +169,9 @@ private theorem div_sqrt_le_of_mul_sq_div_le {c : ℝ} (hc : 0 < c) (hε : 0 < �
 /-! ### Sample sizes -/
 
 /-- The **Gaussian embedding dimension**
-$9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2 / \varepsilon^2$: a Gaussian sketch with at least this
+<!-- value gaussianEmbeddingDim d \varepsilon \delta -->
+$9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2/\varepsilon^2$<!-- /value -->: a Gaussian sketch with at
+least this
 many rows is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$
 and failure probability $\delta$, for $0 < \varepsilon \le 1$
 (`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le`). The
@@ -190,7 +198,9 @@ theorem gaussianEmbeddingDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε �
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   gcongr
 
-/-- The explicit comparison: `gaussianEmbeddingDim d ε δ` is at most
+/-- The explicit comparison: `gaussianEmbeddingDim d ε δ`, at present
+<!-- value gaussianEmbeddingDim d \varepsilon \delta -->
+$9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2/\varepsilon^2$<!-- /value -->, is at most
 $18 (d + 2 \log(2/\delta)) / \varepsilon^2$ for $0 < \delta \le 2$, the constant of the
 prototype's `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`. -/
 theorem gaussianEmbeddingDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
@@ -203,7 +213,9 @@ theorem gaussianEmbeddingDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ �
   nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (2 / δ)))]
 
 /-- The **Gaussian injection dimension**
-$4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2 / \varepsilon^2$: a Gaussian sketch with at least this
+<!-- value gaussianInjectionDim d \varepsilon \delta -->
+$4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$<!-- /value -->: a Gaussian sketch with at
+least this
 many rows is an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and
 failure probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$
 (`NLAlib.isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le`). The
@@ -233,7 +245,9 @@ theorem gaussianInjectionDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε �
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   gcongr
 
-/-- The explicit comparison: `gaussianInjectionDim d ε δ` is at most
+/-- The explicit comparison: `gaussianInjectionDim d ε δ`, at present
+<!-- value gaussianInjectionDim d \varepsilon \delta -->
+$4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$<!-- /value -->, is at most
 $8 (d + 2 \log(1/\delta)) / \varepsilon^2$ for $0 < \delta \le 1$. -/
 theorem gaussianInjectionDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ1 : δ ≤ 1) :
     gaussianInjectionDim d ε δ ≤ 8 * (d + 2 * Real.log (1 / δ)) / ε ^ 2 := by
@@ -245,8 +259,9 @@ theorem gaussianInjectionDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ1 : δ �
   nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (1 / δ)))]
 
 /-- The **Johnson–Lindenstrauss dimension**
-$\log(2/\delta) / (\varepsilon^2/4 - \varepsilon^3/6)$: a Gaussian or Haar sketch with at least
-this many rows has the distributional JL property with distortion $\varepsilon$ and failure
+<!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->: a Gaussian or Haar sketch with
+at least this many rows has the distributional JL property with distortion $\varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon < 3/2$
 (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`). The value the proof reaches, from
 Dasgupta and Gupta's exponent. Consumers use `jlDim_le`, $12 \log(2/\delta) / \varepsilon^2$ for
@@ -284,8 +299,9 @@ theorem jlDim_mono (hε : 0 < ε) (hεε' : ε ≤ ε') (hε'1 : ε' ≤ 1) (hδ
   exact (div_le_div_of_nonneg_right hLL (hf.le.trans hff)).trans
     (div_le_div_of_nonneg_left hL hf hff)
 
-/-- The explicit comparison: `jlDim ε δ` is at most $12 \log(2/\delta) / \varepsilon^2$ for
-$\varepsilon \le 1$ and $0 < \delta \le 2$
+/-- The explicit comparison: `jlDim ε δ`, at present <!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->, is at most
+$12 \log(2/\delta) / \varepsilon^2$ for $\varepsilon \le 1$ and $0 < \delta \le 2$
 ($\varepsilon^2/4 - \varepsilon^3/6 \ge \varepsilon^2/12$). -/
 theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     jlDim ε δ ≤ 12 * Real.log (2 / δ) / ε ^ 2 := by
@@ -301,7 +317,8 @@ theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     _ = 12 * Real.log (2 / δ) / ε ^ 2 := by field_simp
 
 /-- **Inverting the JL tail at `jlDim`**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and
-$K \ge$ `jlDim ε δ`,
+$K \ge$ `jlDim ε δ`, at present <!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->,
 $2 e^{-K (\varepsilon^2/4 - \varepsilon^3/6)} \le \delta$. The step from the tail of every sketch
 with Dasgupta and Gupta's exponent (Gaussian, Haar, signs) to its sample-size form. -/
 theorem two_mul_exp_le_of_jlDim_le {K : ℝ} (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
@@ -606,7 +623,9 @@ theorem hasJLMoment_of_hasLaw_gaussianMatrix [Nonempty k] (hG : HasLaw G (gaussi
 
 /-! ### Sample-size corollaries -/
 
-/-- **Gaussian OSE, sample-size form**: at least `gaussianEmbeddingDim d ε δ` rows give an
+/-- **Gaussian OSE, sample-size form**: at least `gaussianEmbeddingDim d ε δ` rows (at present
+<!-- value gaussianEmbeddingDim d \varepsilon \delta -->
+$9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2/\varepsilon^2$<!-- /value -->) give an
 oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$ (for $\delta \ge 2$ it is
 trivial). [Woodruff2014, Theorem 6]. Replaces the prototype's
@@ -632,7 +651,9 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddi
   · nlinarith
   · nlinarith
 
-/-- **Gaussian OSI, sample-size form**: at least `gaussianInjectionDim d ε δ` rows give an
+/-- **Gaussian OSI, sample-size form**: at least `gaussianInjectionDim d ε δ` rows (at present
+<!-- value gaussianInjectionDim d \varepsilon \delta -->
+$4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$<!-- /value -->) give an
 oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$; $k$ is nonempty because
 the dimension is positive. -/
@@ -655,7 +676,9 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjecti
     hδeq.le
   nlinarith
 
-/-- **Gaussian distributional JL, sample-size form**: at least `jlDim ε δ` rows give the JL
+/-- **Gaussian distributional JL, sample-size form**: at least `jlDim ε δ` rows (at present
+<!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->) give the JL
 property with distortion $\varepsilon$ and failure probability $\delta$, for
 $0 < \varepsilon < 3/2$ and $\delta > 0$. Replaces the prototype's `jl_lemma_prob_le_of_log_le`. -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gaussianMatrix k n) μ)
@@ -667,7 +690,10 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gauss
 
 /-- **The Johnson–Lindenstrauss lemma**, existence form: for points $\mathbf{x}_i$ in
 $\mathbb{R}^n$, $N = \lvert \iota \rvert$, and $\lvert k \rvert$ at least `jlDim` at distortion
-$\varepsilon$ and failure probability $1 / (\binom{N}{2} + 1)$, some $k \times n$ matrix
+$\varepsilon$ and failure probability $1 / (\binom{N}{2} + 1)$ (that is, at present
+<!-- value jlDim \varepsilon {(1/(\binom{N}{2} + 1))} -->
+$\log(2/(1/(\binom{N}{2} + 1)))/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->), some
+$k \times n$ matrix
 $\mathbf{S}$ distorts every squared distance $\|\mathbf{x}_i - \mathbf{x}_j\|^2$ by a factor within
 $1 \pm \varepsilon$, for $0 < \varepsilon < 3/2$. A scaled Gaussian works with positive probability
 (the union bound over pairs, failure $< 1$). [Woodruff2014, Theorem 4], in squared-norm form;

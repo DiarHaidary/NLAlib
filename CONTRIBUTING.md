@@ -243,6 +243,25 @@ release.
      the tail, and a one-sided explicit comparison
      (`1 / (256 * exp 2) ≤ hansonWrightConstant`). An improvement of the same shape changes the
      body and that comparison, no statement and no name.
+
+     **A docstring that uses a named bound shows its current value** (maintainer, 2026-10-15).
+     Statements keep the name; every docstring that names the bound in backticks, and its own
+     docstring, shows the value in a value marker,
+     `<!-- value gaussianPinvSpecNormBound k \ell -->$…$<!-- /value -->`, naming the bound and
+     this docstring's LaTeX for its arguments, typically after the name: "with $C$ =
+     `gaussianPinvSpecNormBound k ℓ`, at present <marker>". The text between the markers is
+     generated, never typed. The registry `docs/constants.toml` holds, per named bound, a LaTeX
+     template of its value (`#1`, `#2`, … for its arguments in Lean order), its Lean body as text
+     and a hash of the body; `scripts/check_constants.py` (CI) fails when a body differs from the
+     registry, when a marked value differs from its template, and when a docstring names a
+     registered bound without a marked value (the opt-out `<!-- mention NAME -->` is for a name
+     mentioned only in passing, and is rare). The script's docstring has the exact marker syntax.
+     A new named bound gets its registry entry in the commit that defines it. To change a bound:
+     edit its body, edit its `latex` in the registry, run
+     `python3 scripts/check_constants.py --update NAME` (it records the new body and hash and
+     rewrites every marked value), and let CI confirm. Nothing checks the LaTeX against the Lean
+     mathematically: the reviewer compares `lean_body` and `latex`, which sit side by side in
+     the diff, on every change to a bound.
   3. A universal constant with no explicit value in the literature is a named
      `noncomputable def` chosen from an existence lemma quantified outside all dimensions, and is
      documented as such. A bare `∃ C` never appears in a statement: quantified after the
@@ -406,7 +425,10 @@ theorem eigenvalue_add_le ...
    comma-separated. Helpers carry none. The ids key the literature map maintained in the
    `explore` repository; a new id is fine, a misspelt existing one is a review comment.
 5. **Mathematics is LaTeX** (amended 2026-10-14): `$…$` inline and `$$…$$` displayed, as doc-gen4
-   and the explorer render it with KaTeX. Standard LaTeX only, no custom macros. A Lean name stays
+   and the explorer render it with KaTeX. Standard LaTeX only, no custom macros. The value
+   marker of §5.2 rule 2 is not a macro: it is a pair of HTML comments around an ordinary `$…$`
+   span that `scripts/check_constants.py` writes; doc-gen4 hides the comments, the explorer's
+   build strips them and `scripts/check_latex.mjs` skips them. A Lean name stays
    in backticks (`` `specNorm` ``, `` `RCLike` ``); it is a reference, never inside `$…$`. Informal
    Unicode maths in backticks (`` `‖A‖₂` ``) is the old style, replaced when a docstring is
    touched. The notation, so that every docstring reads the same:
@@ -535,8 +557,14 @@ lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --c
 lake env lean scripts/Audit.lean
 lake env lean scripts/Lint.lean
 python3 scripts/check_refs.py
+python3 scripts/check_constants.py
 lake env lean scripts/Duplicates.lean
 ```
+
+`scripts/check_constants.py` enforces §5.2 rule 2's displayed values: every named bound's body
+matches `docs/constants.toml`, every value marker holds its filled template, and every docstring
+that names a registered bound shows its value. `--fill` rewrites the marked values,
+`--update NAME` also records a changed body.
 
 `scripts/Duplicates.lean` is a report, not a gate: it lists library theorems (private ones
 included) whose statements coincide with another library or Mathlib theorem up to universe

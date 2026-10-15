@@ -37,7 +37,11 @@ $$d\, e^{-\varepsilon^2 k / (2 L_d(t))} + \lvert n \rvert e^{-t}, \qquad
 for every $t \ge 0$: flattening (`NLAlib.Sketching.Structured.Flattening`) followed by uniform row
 sampling (`NLAlib.Sketching.Sampling.RowSampling`, `NLAlib.Sketching.Sampling.WithoutReplacement`),
 through the flatten-then-sample transfer. The sample sizes are the row-sampling sizes
-`NLAlib.samplingSize` and `NLAlib.samplingInjectionSize` at
+`NLAlib.samplingSize` and `NLAlib.samplingInjectionSize`, at present
+<!-- value samplingSize d L \varepsilon \delta -->
+$3 L \log(2d/\delta)/\varepsilon^2$<!-- /value --> and
+<!-- value samplingInjectionSize d L \varepsilon \delta -->
+$2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->, at
 $L = \beta\,\mathrm{srhtRowBound}(\lvert n \rvert, d, \delta/2)$, with the failure split
 $\delta/2 + \delta/2$.
 
@@ -645,7 +649,9 @@ private theorem log_div_half_spec [Nonempty n] (hF : IsBoundedOrthonormal F β) 
     exact mul_pos (one_pos.trans_le hF.one_le)
       (add_pos_of_nonneg_of_pos (by positivity) (by linarith))
 
-/-- **The SRHT OSE, sample-size form**: with at least `NLAlib.samplingSize d L ε (δ/2)` rows, at
+/-- **The SRHT OSE, sample-size form**: with at least `NLAlib.samplingSize d L ε (δ/2)` rows (at
+present <!-- value samplingSize d L \varepsilon (\delta/2) -->
+$3 L \log(2d/(\delta/2))/\varepsilon^2$<!-- /value -->), at
 $L = \beta\, \mathrm{srhtRowBound}(\lvert n \rvert, d, \delta/2)$, the SRHT is an oblivious
 subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
 $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$; flattening and sampling each fail with
@@ -674,7 +680,9 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le
   linarith [two_mul_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSI, sample-size form**: with at least `NLAlib.samplingInjectionSize d L ε (δ/2)`
-rows, at $L = \beta\, \mathrm{srhtRowBound}(\lvert n \rvert, d, \delta/2)$, nonempty `k` and
+rows (at present <!-- value samplingInjectionSize d L \varepsilon (\delta/2) -->
+$2 L \log(d/(\delta/2))/\varepsilon^2$<!-- /value -->), at
+$L = \beta\, \mathrm{srhtRowBound}(\lvert n \rvert, d, \delta/2)$, nonempty `k` and
 $\lvert k \rvert \le \lvert n \rvert$, the SRHT is an oblivious subspace injection for dimension
 $d$ with constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 0$ and
 $\delta > 0$; the tail `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht` at

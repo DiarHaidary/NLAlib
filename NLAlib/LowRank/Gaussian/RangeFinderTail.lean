@@ -26,7 +26,9 @@ Every statement bounds the probability of the failure event, written as the nega
 guarantee, `μ.real {ω | ¬ error ω ≤ bound}`. The primary tail is Tropp and Webber's (RSVD1): in
 Gram form for every unitarily invariant norm, with its Schatten, Frobenius and spectral
 corollaries and the truncated outputs; the failure probability is
-$e^{-(u-2)/4}$ plus `NLAlib.gaussianPinvFrobTail k d t`, which is smaller than their
+$e^{-(u-2)/4}$ plus `NLAlib.gaussianPinvFrobTail k d t`, at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->, which is smaller than their
 $\sqrt{\pi k}\,(e/t)^{d/2}$. Beside it, Halko, Martinsson and Tropp's deviation bounds
 (Theorems 10.7 and 10.8) with the constants the library reaches; they are incomparable with
 (RSVD1) and better when $\sigma_k(\mathbf{A}) \ll \|\mathbf{E}\|_{\mathsf{F}}$.
@@ -131,7 +133,9 @@ private theorem measureReal_le_of_frame (A : Matrix m n ℝ) (hX : HasLaw X (gau
 under the rank hypothesis, by $b + c\|\mathbf{M}\|_{\mathsf{F}}^2$ for the noise term $\mathbf{M}$
 of the structural bound, and by $b$ when the error vanishes, exceeds
 $b + c\,\frac{utk}{d}\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at most
-$e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`. -/
+$e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->). -/
 private theorem measureReal_not_le_of_frobNorm_sq_le (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1) (u : ℝ)
     {t : ℝ} (ht : 0 < t) {F : Ω → ℝ} {b c : ℝ} (hc : 0 ≤ c)
@@ -178,7 +182,9 @@ $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`, with $\mathbf{e}_0$ the first
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), with $\mathbf{e}_0$ the first
 unit coordinate sequence. [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for squared Schatten
 norms, $p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$; here every quadratic
 unitarily invariant norm, and the library's second failure term is smaller than theirs.
@@ -209,7 +215,9 @@ hypotheses of the Gram form above
 in the namespace `NLAlib.SymmetricGauge`),
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{S_p}^2 \le
 \|\mathbf{E}\|_{S_p}^2 + \frac{utk}{d}\,\|\mathbf{E}\|_{\mathsf{F}}^2$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`.
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; as printed there, with a smaller second failure term.
 Result: randomized-svd-tail -/
 theorem measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
@@ -234,7 +242,9 @@ theorem measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix 
 `NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`.
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = 2$, with a larger second failure term.
 Result: randomized-svd-tail -/
 theorem measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
@@ -252,7 +262,9 @@ theorem measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A :
 `NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2 \le \sigma_k(\mathbf{A})^2 +
 \frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`.
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = \infty$, with a larger second failure term.
 Incomparable with `NLAlib.measureReal_not_specNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`, which
 is better when
@@ -275,7 +287,9 @@ theorem measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A :
 `NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2
 \le \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`, for every choice of the
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), for every choice of the
 truncation: the late truncation costs nothing. The error does not depend on the choice
 (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`), so the failure event is measurable.
 [TroppWebber2023, Theorem 8.1 (RSVD1)] with [Woodruff2014, Lemma 48]; composed here.
@@ -303,7 +317,9 @@ measurability): with the hypotheses of
 `NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{A} - \mathbf{Y}\|_2^2 \le \sigma_k(\mathbf{A})^2 +
 \frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`, the bound of the untruncated
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), the bound of the untruncated
 output. The event may be non-measurable; `μ.real` is then the outer measure, so this bound says
 exactly that the failure event lies in a measurable event of at most this probability
 (`MeasureTheory.exists_measurable_superset`), and such bounds compose by
@@ -339,7 +355,9 @@ theorem measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaus
 $$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2 \le
 \sigma_k(\mathbf{A})^2 +
 \frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`. The event may be
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->). The event may be
 non-measurable (the truncation is a choice); `μ.real` is then the outer measure, and the bound says
 that the failure event lies in a measurable event of at most this probability. The success-set
 form, probability at least $1 - \delta$ for the good event, does not follow without measurability
@@ -359,11 +377,15 @@ theorem measureReal_not_specNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussi
 
 /-- **Deviation bound for the Frobenius error of the randomized SVD**: for a standard Gaussian
 $n \times \ell$ test matrix, $k < \ell$, $d = \ell - k + 1$, $u \ge 0$ and $t > 0$, with $C$ =
-`gaussianPinvSpecNormBound k ℓ`,
+`gaussianPinvSpecNormBound k ℓ`, at present
+<!-- value gaussianPinvSpecNormBound k \ell -->
+$e\sqrt{(\ell + k - 1)/2}/(\ell - k)$<!-- /value -->,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
 \Bigl(1 + t\sqrt{k/d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
 utC\,\sigma_k(\mathbf{A})$$
-outside probability $t^{-(\ell - k)}$ + `gaussianPinvFrobTail k d (t ^ 2)` $+ e^{-u^2/2}$.
+outside probability $t^{-(\ell - k)}$ + `gaussianPinvFrobTail k d (t ^ 2)` (at present
+<!-- value gaussianPinvFrobTail k d t^2 -->
+$2\sqrt{k}\,(d/(2t^2))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->) $+ e^{-u^2/2}$.
 [HalkoMartinssonTropp2011, Theorem 10.7]; HMT print $\sqrt{12k/p}$, $e\sqrt{k+p}/(p+1)$ and
 $5t^{-p} + 2e^{-u^2/2}$ for $p = \ell - k \ge 4$ and $u, t \ge 1$, from their Proposition 10.4,
 whose tails are not reached here; the Frobenius part of this failure term is below HMT's in every
@@ -408,11 +430,15 @@ theorem measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix (A : Ma
 
 /-- **Deviation bound for the spectral error of the randomized SVD**: with the hypotheses of
 `NLAlib.measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix` and $C$ =
-`gaussianPinvSpecNormBound k ℓ`,
+`gaussianPinvSpecNormBound k ℓ`, at present
+<!-- value gaussianPinvSpecNormBound k \ell -->
+$e\sqrt{(\ell + k - 1)/2}/(\ell - k)$<!-- /value -->,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + t\sqrt{k/d}\Bigr)\sigma_k(\mathbf{A}) +
 tC\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} + utC\,\sigma_k(\mathbf{A})$$
-outside probability $t^{-(\ell - k)}$ + `gaussianPinvFrobTail k d (t ^ 2)` $+ e^{-u^2/2}$.
+outside probability $t^{-(\ell - k)}$ + `gaussianPinvFrobTail k d (t ^ 2)` (at present
+<!-- value gaussianPinvFrobTail k d t^2 -->
+$2\sqrt{k}\,(d/(2t^2))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->) $+ e^{-u^2/2}$.
 [HalkoMartinssonTropp2011, Theorem 10.8]; HMT print $\sqrt{12k/p}$, $e\sqrt{k+p}/(p+1)$ and
 $5t^{-p} + e^{-u^2/2}$ for $p = \ell - k \ge 4$ and $u, t \ge 1$, from their Proposition 10.4,
 whose tails are not reached here; the Frobenius part of this failure term is below HMT's in every

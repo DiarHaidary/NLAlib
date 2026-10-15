@@ -17,7 +17,8 @@ For a standard Gaussian $r \times k$ matrix $\mathbf{G}$ with $d = \lvert k \rve
 \rvert + 1$, the diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are
 $1/\chi^2_d$, so the exact small ball of $\chi^2$ bounds their upper tails, and the trace
 $\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$ has the tail `NLAlib.gaussianPinvFrobTail`,
-$2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}/\Gamma(d/2+1)$ at level $t\lvert r\rvert/d$
+<!-- value gaussianPinvFrobTail {\lvert r\rvert} d t -->
+$2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value --> at level $t\lvert r\rvert/d$
 (Tropp and Webber's (B.3), with a smaller constant, by Markov's inequality on a truncated $d$-th
 power and the layer-cake formula in place of their parallel sum). Markov's inequality on the
 spectral moments gives the spectral tail of $\mathbf{G}^{+}$.
@@ -63,7 +64,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k r s a : 
 /-! ### The named tail -/
 
 /-- **The tail of the Frobenius norm of a Gaussian pseudoinverse**,
-$$\frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->,
 the bound on $\mathbb{P}\{\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > tk/d\}$ for a real
 $k \times (k + d - 1)$ standard Gaussian $\mathbf{G}$
 (`NLAlib.measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix`). Source value
@@ -77,8 +79,10 @@ $2\sqrt{k} \ge 2$ at $d = 0$; meaningful for $t > 0$. Consumers use its API. -/
 noncomputable irreducible_def gaussianPinvFrobTail (k d : ℕ) (t : ℝ) : ℝ :=
   2 * √(k : ℝ) * ((d : ℝ) / (2 * t)) ^ ((d : ℝ) / 2) / Real.Gamma ((d : ℝ) / 2 + 1)
 
-/-- `gaussianPinvFrobTail k d t` is nonnegative for $t > 0$; for $t \le 0$ the real power of a
-negative base is not sign-controlled. -/
+/-- `gaussianPinvFrobTail k d t`, at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->, is nonnegative for $t > 0$; for
+$t \le 0$ the real power of a negative base is not sign-controlled. -/
 theorem gaussianPinvFrobTail_nonneg (k d : ℕ) {t : ℝ} (ht : 0 < t) :
     0 ≤ gaussianPinvFrobTail k d t := by
   rw [gaussianPinvFrobTail_def]
@@ -94,7 +98,9 @@ theorem one_le_gaussianPinvFrobTail_zero {k : ℕ} (hk : 1 ≤ k) (t : ℝ) :
   have : (1 : ℝ) ≤ √(k : ℝ) := Real.one_le_sqrt.2 (by exact_mod_cast hk)
   linarith
 
-/-- The explicit comparison: `gaussianPinvFrobTail k d t` $\le 2\sqrt{k}\,(e/t)^{d/2}$ for
+/-- The explicit comparison: `gaussianPinvFrobTail k d t`, at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->, is at most $2\sqrt{k}\,(e/t)^{d/2}$ for
 $t > 0$, by $\Gamma(x + 1) \ge (x/e)^x$ (`Real.rpow_mul_exp_neg_le_Gamma_add_one`). The right
 side is $2/\sqrt{\pi}$ times the failure term $\sqrt{\pi k}\,(e/t)^{d/2}$ of
 [TroppWebber2023, Theorem 8.1]. -/
@@ -364,8 +370,10 @@ private theorem gaussianMatrix_real_lt_sum_le [DecidableEq r]
 /-- **The trace tail of an inverse Wishart matrix**: for an $r \times k$ standard Gaussian
 $\mathbf{G}$, $d = \lvert k\rvert - \lvert r\rvert + 1$ and $t > 0$,
 $$\mathbb{P}\Bigl\{\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{t\lvert r\rvert}{d}\Bigr\} \le
-\frac{2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
-the right side being `gaussianPinvFrobTail |r| d t`. Off a null set
+\texttt{gaussianPinvFrobTail}\,\lvert r\rvert\,d\,t\,,$$
+the right side being `gaussianPinvFrobTail |r| d t`, at present
+<!-- value gaussianPinvFrobTail {\lvert r\rvert} d t -->
+$2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->. Off a null set
 $\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 = \sum_i D_i$ with
 $D_i = (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}_{ii} \sim 1/\chi^2_d$; Markov's inequality on
 $\min(v^d, (\sum_i D_i)^d)$, the power-mean inequality and the layer cake for
@@ -419,8 +427,10 @@ theorem measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix
 /-- **The spectral tail of a Gaussian pseudoinverse**: for an $r \times k$ standard Gaussian
 $\mathbf{G}$ with $\lvert r\rvert < \lvert k\rvert$ and $t > 0$,
 $\mathbb{P}\{\|\mathbf{G}^{+}\|_2 > tC\} \le t^{-(\lvert k\rvert - \lvert r\rvert)}$ with $C$ =
-`gaussianPinvSpecNormBound |r| |k|`, by Markov's inequality at the spectral moment of order
-$\lvert k\rvert - \lvert r\rvert$
+`gaussianPinvSpecNormBound |r| |k|`, at present
+<!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
+$e\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}/(\lvert k\rvert - \lvert r\rvert)$<!-- /value -->,
+by Markov's inequality at the spectral moment of order $\lvert k\rvert - \lvert r\rvert$
 (`NLAlib.integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix`).
 HMT's (10.6) has $t^{-(p+1)}$ at $e\sqrt{k+p}/(p+1)$, through the smallest-singular-value density,
 not reached by moments [HalkoMartinssonTropp2011, Proposition 10.4]. -/
@@ -598,7 +608,10 @@ theorem measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix
 /-- **The spectral block tail**, in the shape of [HalkoMartinssonTropp2011, proof of Theorem 10.8]:
 with the hypotheses of
 `NLAlib.measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix`,
-$C$ = `gaussianPinvSpecNormBound |r| |k|`, $u \ge 0$ and $t > 0$,
+$C$ = `gaussianPinvSpecNormBound |r| |k|`, at present
+<!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
+$e\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}/(\lvert k\rvert - \lvert r\rvert)$<!-- /value -->,
+$u \ge 0$ and $t > 0$,
 $$\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2 \le t\Bigl(\|\mathbf{S}\|_2\sqrt{\lvert r\rvert/d} +
 \|\mathbf{S}\|_{\mathsf{F}}C\Bigr) + utC\|\mathbf{S}\|_2$$
 outside probability $t^{-(\lvert k\rvert - \lvert r\rvert)} +

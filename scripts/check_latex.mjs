@@ -2,9 +2,10 @@
 // Docstring mathematics is LaTeX: every `$...$` and `$$...$$` span in a declaration docstring
 // (/-- ... -/) or module docstring (/-! ... -/) of NLAlib/ and NLAlibScaffold/ parses and renders
 // under KaTeX (the renderer used by the doc site), and no docstring has an unclosed `$`.
-// Backtick code spans, fenced code blocks and `\$` are not math. A line inside a `$$` display may
-// not start with Markdown block syntax (`- `, `+ `, `* `, `#`, `>`, `1. `), which doc-gen4 would
-// read as a list, heading or quote and so split the formula. This checks syntax, not meaning:
+// Backtick code spans, fenced code blocks, HTML comments (the value markers of
+// scripts/check_constants.py) and `\$` are not math. A line inside a `$$` display may not start
+// with Markdown block syntax (`- `, `+ `, `* `, `#`, `>`, `1. `), which doc-gen4 would read as a
+// list, heading or quote and so split the formula. This checks syntax, not meaning:
 // a formula that renders can still be the wrong formula.
 //
 // Usage: node scripts/check_latex.mjs [root]    (root defaults to the repository root)
@@ -78,6 +79,12 @@ function mathSpans(s) {
     }
     const c = s[i];
     lineStart = c === '\n';
+    // HTML comments (the value markers of scripts/check_constants.py) are not rendered
+    if (s.startsWith('<!--', i)) {
+      const e = s.indexOf('-->', i + 4);
+      i = e < 0 ? s.length : e + 3;
+      continue;
+    }
     if (c === '\\') { i += 2; continue; }
     if (c === '`') {
       let n = 0;

@@ -27,7 +27,11 @@ $\boldsymbol{\xi}$ of random signs), the exact JL second moment
 $2 (\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4)/\lvert k \rvert$, at most the Gaussian's
 $2 \|\mathbf{x}\|^4/\lvert k \rvert$, and is an oblivious subspace embedding and injection
 through JL plus a net at $\varepsilon/2$. The sample sizes are the Gaussian sketch's
-`NLAlib.jlDim`: `jlDim ε δ` for JL and `jlDim (ε/2) (δ/9^d)` for the OSE and OSI. For
+`NLAlib.jlDim`: `jlDim ε δ` for JL, at present
+<!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->, and `jlDim (ε/2) (δ/9^d)` for
+the OSE and OSI, at present <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
+$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$<!-- /value -->. For
 $\varepsilon \gtrsim 1.43$ the sub-Gaussian rows theorem at $c = 1$
 (`NLAlib.hasJLProperty_of_isSubgaussianVector` with
 `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`) is better; it is not restated here.
@@ -273,8 +277,10 @@ theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] 
     |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_rademacherMatrix hX)
 
 /-- The failure probability of the sign-sketch OSE is at most $\delta$ once
-`jlDim (ε/2) (δ/9^d)` is at most $\lvert k \rvert$, for $0 < \varepsilon < 3$ and
-$\delta > 0$. -/
+`jlDim (ε/2) (δ/9^d)`, at present
+<!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
+$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$<!-- /value -->, is at most
+$\lvert k \rvert$, for $0 < \varepsilon < 3$ and $\delta > 0$. -/
 private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
     2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤ δ := by
@@ -285,7 +291,9 @@ private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : �
   linarith
 
 /-- **Sign-sketch JL, sample-size form**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and at least
-`jlDim ε δ` rows, the JL property holds with distortion $\varepsilon$ and failure probability
+`jlDim ε δ` rows (at present <!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->), the JL property holds with
+distortion $\varepsilon$ and failure probability
 $\delta$; the Gaussian sketch's size (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`).
 -/
 theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
@@ -297,7 +305,10 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
 
 /-- **Sign-sketch OSE, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$ and at least
-`jlDim (ε/2) (δ/9^d)` rows, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious
+`jlDim (ε/2) (δ/9^d)` rows (at present
+<!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
+$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$<!-- /value -->),
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious
 subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
 $\delta$. -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
@@ -310,7 +321,10 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
     le_rfl le_rfl (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
 /-- **Sign-sketch OSI, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$, $k$ nonempty
-and at least `jlDim (ε/2) (δ/9^d)` rows, $\mathbf{S}$ is an oblivious subspace injection for
+and at least `jlDim (ε/2) (δ/9^d)` rows (at present
+<!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
+$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$<!-- /value -->), $\mathbf{S}$ is
+an oblivious subspace injection for
 dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$; the injection twin
 of `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le`. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix_of_jlDim_le [DecidableEq n]

@@ -33,7 +33,11 @@ replacement (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_car
 matrix Chernoff inequalities without replacement
 (`NLAlib.Probability.MatrixConcentration.ChernoffWithoutReplacement`). With $L$ the coherence of
 $\mathbf{U}$ the domination always holds. The sample sizes are those of sampling with replacement,
-`NLAlib.samplingSize` and `NLAlib.samplingInjectionSize`.
+`NLAlib.samplingSize` and `NLAlib.samplingInjectionSize`, at present
+<!-- value samplingSize d L \varepsilon \delta -->
+$3 L \log(2d/\delta)/\varepsilon^2$<!-- /value --> and
+<!-- value samplingInjectionSize d L \varepsilon \delta -->
+$2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->.
 
 Degenerate cases. For $\lvert n \rvert < \lvert k \rvert$ there is no injection and the law is the
 zero measure, so `HasLaw` forces $\mu = 0$ and every tail holds; no $\lvert k \rvert \le
@@ -462,7 +466,10 @@ theorem hasSubspaceEmbedding_coherence_of_hasLaw_samplingSketchWithoutReplacemen
 /-! ### Sample sizes -/
 
 /-- **Row sampling without replacement, sample-size form**: with at least
-`NLAlib.samplingSize U.rank L ε δ` samples, row sampling without replacement under the domination
+`NLAlib.samplingSize U.rank L ε δ` samples (at present
+<!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$<!-- /value -->), row sampling
+without replacement under the domination
 $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace embedding for
 $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ and failure probability
 $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$; the size of sampling with replacement.
@@ -483,7 +490,10 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
     hδ hk
 
 /-- **The lower half without replacement, sample-size form**: with at least
-`NLAlib.samplingInjectionSize U.rank L ε δ` samples, row sampling without replacement under the
+`NLAlib.samplingInjectionSize U.rank L ε δ` samples (at present
+<!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$<!-- /value -->), row sampling without
+replacement under the
 domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace injection for
 $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and failure probability
 $\delta$, for $\varepsilon > 0$ and $\delta > 0$. -/

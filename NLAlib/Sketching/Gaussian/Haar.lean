@@ -380,7 +380,9 @@ theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n
     apply le_of_eq
     field_simp
 
-/-- **Haar distributional JL, sample-size form**: at least `jlDim ε δ` rows give the JL property
+/-- **Haar distributional JL, sample-size form**: at least `jlDim ε δ` rows (at present
+<!-- value jlDim \varepsilon \delta -->
+$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$<!-- /value -->) give the JL property
 with distortion $\varepsilon$ and failure probability $\delta$, for $0 < \varepsilon < 3/2$ and
 $\delta > 0$. -/
 theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame n k) μ)

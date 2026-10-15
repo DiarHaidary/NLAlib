@@ -280,7 +280,9 @@ Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
 C\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
-with $C$ = `gaussianPinvSpecNormBound k ℓ`, that is $\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}$,
+with $C$ = `gaussianPinvSpecNormBound k ℓ`, that is
+<!-- value gaussianPinvSpecNormBound k \ell -->
+$e\sqrt{(\ell + k - 1)/2}/(\ell - k)$<!-- /value -->,
 at most HMT's $e\sqrt{\ell}/(\ell - k)$ (`NLAlib.gaussianPinvSpecNormBound_le`). Incomparable with
 the squared form `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: this one is
 better for large $k$.

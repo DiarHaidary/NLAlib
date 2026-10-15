@@ -29,7 +29,9 @@ $\mathbf{Q}$ of $\operatorname{range}\mathbf{U}$, is the image of the sign vecto
 $\mathbf{M}_i$ with $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le \beta d / \lvert n \rvert$ and
 $\|\mathbf{M}_i\|_2^2 \le \beta / \lvert n \rvert$, so the Hsu–Kakade–Zhang tail
 (`NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`) bounds it, over any `RCLike` field with
-the real constant. `NLAlib.srhtRowBound` is the threshold at failure probability $\delta$.
+the real constant. `NLAlib.srhtRowBound` is the threshold at failure probability $\delta$, at
+present <!-- value srhtRowBound n d \delta -->
+$d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$<!-- /value -->.
 
 The second half is generic: a sampler that injects (or embeds) every fixed subspace whose
 leverage scores are at most $L / \lvert n \rvert$, composed with an independent random unitary
@@ -47,7 +49,9 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 
 ## Main definitions
 
-* `NLAlib.srhtRowBound`: the flattening threshold at failure probability $\delta$.
+* `NLAlib.srhtRowBound`: the flattening threshold at failure probability $\delta$, at present
+  <!-- value srhtRowBound n d \delta -->
+  $d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$<!-- /value -->.
 
 ## Main results
 
@@ -71,7 +75,8 @@ namespace NLAlib
 
 /-! ### The row bound -/
 
-/-- The **SRHT row bound** $d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$: flattening with
+/-- The **SRHT row bound** <!-- value srhtRowBound n d \delta -->
+$d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$<!-- /value -->: flattening with
 failure probability $\delta$ makes every leverage score at most $\beta$ times this over $n$
 (`measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_hasLaw_rademacherVector`).
 The value the proof reaches, at $t = \log(n/\delta)$ in the Hsu–Kakade–Zhang tail. Tropp 2011a has
@@ -304,8 +309,10 @@ theorem measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademache
 /-- **Flattening in $\delta$ form**: for a bounded orthonormal $\mathbf{F}$ with constant $\beta$,
 independent signs and $\delta > 0$, outside probability $\delta$ every leverage score of
 $\mathbf{F}\mathbf{D}\mathbf{U}$ is at most
-$\beta \cdot \mathrm{srhtRowBound}(\lvert n \rvert, \operatorname{rank}\mathbf{U}, \delta) /
-\lvert n \rvert$ (`NLAlib.srhtRowBound`).
+$\beta \cdot \mathrm{srhtRowBound}(\lvert n \rvert, r, \delta) / \lvert n \rvert$ with
+$r = \operatorname{rank}\mathbf{U}$ (`NLAlib.srhtRowBound`, at present
+<!-- value srhtRowBound {\lvert n \rvert} r \delta -->
+$r + 2\sqrt{r \log(\lvert n \rvert/\delta)} + 2 \log(\lvert n \rvert/\delta)$<!-- /value -->).
 The flattening tail at $t = \log(n/\delta)$ for $\delta \le n$, where $n e^{-t} = \delta$; for
 $\delta > n \ge 1$ the bound exceeds $1$, and empty `n` has an empty event. -/
 theorem measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_hasLaw_rademacherVector

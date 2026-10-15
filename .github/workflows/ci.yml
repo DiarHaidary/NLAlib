@@ -29,6 +29,8 @@ jobs:
         run: lake env lean scripts/Lint.lean
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
+      - name: Named bounds show their current values
+        run: python3 scripts/check_constants.py
       - uses: actions/setup-node@v4
         with:
           node-version: 20

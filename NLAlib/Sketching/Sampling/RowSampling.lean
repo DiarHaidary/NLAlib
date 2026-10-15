@@ -65,7 +65,11 @@ the same identity at $\mathbf{A} = \mathbf{B} = \mathbf{I}$.
 
 * `NLAlib.samplingSketchMatrix`: the sketch built from given indices.
 * `NLAlib.samplingSketch`: its law for i.i.d. indices.
-* `NLAlib.samplingSize`, `NLAlib.samplingInjectionSize`: sample sizes.
+* `NLAlib.samplingSize`, `NLAlib.samplingInjectionSize`: sample sizes, at present
+  <!-- value samplingSize d L \varepsilon \delta -->
+  $3 L \log(2d/\delta)/\varepsilon^2$<!-- /value --> and
+  <!-- value samplingInjectionSize d L \varepsilon \delta -->
+  $2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->.
 
 ## Main results
 
@@ -561,7 +565,8 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card
 
 /-! ### Sample sizes -/
 
-/-- The **row-sampling size** $3 L \log(2d/\delta) / \varepsilon^2$: with at least this many
+/-- The **row-sampling size** <!-- value samplingSize d L \varepsilon \delta -->
+$3 L \log(2d/\delta)/\varepsilon^2$<!-- /value -->: with at least this many
 samples, row sampling under leverage domination with constant $L$ is a subspace embedding with
 constants $1 \mp \varepsilon$ and failure probability $\delta$ for a subspace of dimension $d$,
 for $0 < \varepsilon \le 1$
@@ -605,14 +610,17 @@ theorem samplingSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 
       (mul_le_mul (by linarith) hlog h0.le (mul_nonneg (by norm_num) (hL.trans hLL')))
       (by positivity) (pow_le_pow_left₀ hε.le hεε' 2)
 
-/-- The explicit comparison: `samplingSize d L ε δ` is at most
+/-- The explicit comparison: `samplingSize d L ε δ`, at present
+<!-- value samplingSize d L \varepsilon \delta -->
+$3 L \log(2d/\delta)/\varepsilon^2$<!-- /value -->, is at most
 $3 L \log(2d/\delta) / \varepsilon^2$, the value the proof reaches; an improved definition keeps it
 true. -/
 theorem samplingSize_le (d : ℕ) (L ε δ : ℝ) :
     samplingSize d L ε δ ≤ 3 * L * Real.log (2 * d / δ) / ε ^ 2 := by
   rw [samplingSize_def]
 
-/-- The **row-sampling injection size** $2 L \log(d/\delta) / \varepsilon^2$: with at least this
+/-- The **row-sampling injection size** <!-- value samplingInjectionSize d L \varepsilon \delta -->
+$2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->: with at least this
 many samples, row sampling under leverage domination with constant $L$ is a subspace injection
 with constant $1 - \varepsilon$ and failure probability $\delta$ for a subspace of dimension $d$,
 for $\varepsilon > 0$
@@ -655,7 +663,9 @@ theorem samplingInjectionSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d
       (mul_le_mul (by linarith) hlog h0.le (mul_nonneg (by norm_num) (hL.trans hLL')))
       (by positivity) (pow_le_pow_left₀ hε.le hεε' 2)
 
-/-- The explicit comparison: `samplingInjectionSize d L ε δ` is at most
+/-- The explicit comparison: `samplingInjectionSize d L ε δ`, at present
+<!-- value samplingInjectionSize d L \varepsilon \delta -->
+$2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->, is at most
 $2 L \log(d/\delta) / \varepsilon^2$, the value the proof reaches; an improved definition keeps it
 true. -/
 theorem samplingInjectionSize_le (d : ℕ) (L ε δ : ℝ) :
@@ -663,7 +673,9 @@ theorem samplingInjectionSize_le (d : ℕ) (L ε δ : ℝ) :
   rw [samplingInjectionSize_def]
 
 /-- **Inverting the embedding tail at `NLAlib.samplingSize`**: for $L > 0$, $\varepsilon > 0$,
-$\delta > 0$ and $K \ge$ `samplingSize d L ε δ`,
+$\delta > 0$ and $K \ge$ `samplingSize d L ε δ`, at present
+<!-- value samplingSize d L \varepsilon \delta -->
+$3 L \log(2d/\delta)/\varepsilon^2$<!-- /value -->,
 $2 d \, e^{-\varepsilon^2 K / (3L)} \le \delta$. The step from the tails of row sampling (with or
 without replacement, and after flattening in the SRHT) to their sample-size forms. -/
 theorem two_mul_mul_exp_le_of_samplingSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
@@ -682,7 +694,9 @@ theorem two_mul_mul_exp_le_of_samplingSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (
   linarith
 
 /-- **Inverting the injection tail at `NLAlib.samplingInjectionSize`**: for $L > 0$,
-$\varepsilon > 0$, $\delta > 0$ and $K \ge$ `samplingInjectionSize d L ε δ`,
+$\varepsilon > 0$, $\delta > 0$ and $K \ge$ `samplingInjectionSize d L ε δ`, at present
+<!-- value samplingInjectionSize d L \varepsilon \delta -->
+$2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->,
 $d \, e^{-\varepsilon^2 K / (2L)} \le \delta$. -/
 theorem mul_exp_le_of_samplingInjectionSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
     (hδ : 0 < δ) (hK : samplingInjectionSize d L ε δ ≤ K) :
@@ -699,7 +713,9 @@ theorem mul_exp_le_of_samplingInjectionSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) 
   rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
   linarith
 
-/-- **Row sampling, sample-size form**: with at least `NLAlib.samplingSize U.rank L ε δ` samples,
+/-- **Row sampling, sample-size form**: with at least `NLAlib.samplingSize U.rank L ε δ` samples (at
+present <!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$<!-- /value -->),
 row sampling under leverage domination $\ell_i(\mathbf{U}) \le L p_i$ is a subspace embedding for
 $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ and failure probability
 $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$. [Woodruff2014, Theorem 17], constant
@@ -720,7 +736,10 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
     ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
 /-- **The lower half, sample-size form**: with at least
-`NLAlib.samplingInjectionSize U.rank L ε δ` samples, row sampling under leverage domination
+`NLAlib.samplingInjectionSize U.rank L ε δ` samples (at present
+<!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$<!-- /value -->), row sampling under
+leverage domination
 $\ell_i(\mathbf{U}) \le L p_i$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with
 constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 0$ and
 $\delta > 0$. -/
