@@ -8,7 +8,7 @@ module
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 public import NLAlib.Probability.MatrixIntegral
-public import NLAlib.RandomMatrix.Gaussian.BlockMomentsSpectral
+public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.Rank
 
@@ -30,18 +30,18 @@ spectral moment of order $1/p$ times the Frobenius residual: the core noise of g
 Nyström.
 
 The proofs take an orthonormal basis $\mathbf{Q}_1$ of $\operatorname{range}\mathbf{X}$ and one,
-$\mathbf{Q}_2$, of the range of the residual $(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$;
-on the almost sure event $\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$
+$\mathbf{Q}_2$, of the range of the residual $(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$; on
+the almost sure event $\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$
 the excess is $\mathbf{Q}_1(\mathbf{S}\mathbf{Q}_1)^{+}(\mathbf{S}\mathbf{Q}_2)
 \mathbf{Q}_2^{\mathsf{H}}(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$, a Gaussian block whose
-moments are in `NLAlib.RandomMatrix.Gaussian.BlockMoments` and
-`NLAlib.RandomMatrix.Gaussian.BlockMomentsSpectral`. Unbiasedness is a symmetry: the reflection
-$2\mathbf{P}_{\mathbf{A}} - \mathbf{I}$ preserves the Gaussian law, fixes $\mathbf{A}$ and negates
-the residual. The sketch is on the left, $\mathbf{S} : p \times m$, as in the other Gaussian
-sketching files; a co-range test matrix $\mathbf{\Psi}$ is the sketch $\mathbf{\Psi}^{\mathsf{H}}$
-(`NLAlib.hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`). Scaling the sketch changes nothing
-(`NLAlib.obliqueProjector_smul_right`). Real throughout. Design: `docs/design/LowRank-S6.md` §3.2,
-§8 (the Gaussian half; the Haar statements follow in a later section).
+moments are in `NLAlib.RandomMatrix.Gaussian.BlockMoments`. Unbiasedness is a symmetry: the
+reflection $2\mathbf{P}_{\mathbf{A}} - \mathbf{I}$ preserves the Gaussian law, fixes $\mathbf{A}$
+and negates the residual. The sketch is on the left, $\mathbf{S} : p \times m$, as in the other
+Gaussian sketching files; a co-range test matrix $\mathbf{\Psi}$ is the sketch
+$\mathbf{\Psi}^{\mathsf{H}}$ (`NLAlib.hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`). Scaling the
+sketch changes nothing (`NLAlib.obliqueProjector_smul_right`). Real throughout. Design:
+`docs/design/LowRank-S6.md` §3.2, §8 (the Gaussian half; the Haar statements follow in a later
+section).
 
 ## Main results
 

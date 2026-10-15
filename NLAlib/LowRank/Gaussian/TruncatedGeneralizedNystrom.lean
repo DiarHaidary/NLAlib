@@ -7,7 +7,7 @@ module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
-public import NLAlib.LowRank.Gaussian.RangeFinderSpectral
+public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
 
 /-!

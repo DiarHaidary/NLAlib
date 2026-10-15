@@ -5,26 +5,38 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.MeasureTheory.Measure.Prod
 public import Mathlib.MeasureTheory.Measure.Real
 public import Mathlib.Probability.Independence.Basic
 
 /-!
-# Events of two independent random variables, through their sections
+# Integrals and events of two independent random variables
 
-If $X$ and $Y$ are independent, the probability of an event $(X, Y) \in E$ is the average over the
-law of $Y$ of the probabilities of its sections $\{X \in E_y\}$ (Fubini on the joint law
-$\mu_X \otimes \mu_Y$). This file bounds it by a uniform bound $\delta_1$ on the sections over a
-good set $G$ plus the probability $\delta_2$ that $Y$ leaves $G$. Mathlib has the ingredients
-(`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`, `MeasureTheory.Measure.prod_apply_symm`)
-but not the bound. Upstream candidate for `Mathlib/Probability/Independence/Basic.lean`.
+If $X$ and $Y$ are independent, their joint law is the product $\mu_X \otimes \mu_Y$
+(`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`), so integrals and probabilities of
+the pair are iterated ones against the two laws. This file records two consequences.
 
-Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15).
+* The lower integral of a measurable $f \ge 0$ of the pair is the iterated integral against the
+  two laws, $\int f(X, Y)\,d\mu = \int\!\int f(x, y)\,d\mu_Y(y)\,d\mu_X(x)$ (Tonelli,
+  `MeasureTheory.lintegral_prod`). This is the conditioning step of every expectation of two
+  independent random matrices.
+* The probability of an event $(X, Y) \in E$ is the average over the law of $Y$ of the
+  probabilities of its sections $\{X \in E_y\}$ (Fubini, `MeasureTheory.Measure.prod_apply_symm`);
+  it is bounded by a uniform bound $\delta_1$ on the sections over a good set $G$ plus the
+  probability $\delta_2$ that $Y$ leaves $G$.
+
+Mathlib has the ingredients but not these statements. Upstream candidates for
+`Mathlib/Probability/Independence/Basic.lean`.
+
+Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15); LowRank stage S6
+(`docs/design/LowRank-S6.md` §4, L1).
 
 ## Main results
 
+* `ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral`: Tonelli for an independent
+  pair.
 * `ProbabilityTheory.IndepFun.measureReal_mem_le_add`: the sections bound.
 -/
-
 @[expose] public section
 
 open MeasureTheory
@@ -33,6 +45,17 @@ open scoped ENNReal
 namespace ProbabilityTheory
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
+
+/-- **Iterated integral against an independent pair** (Tonelli): for independent $U$, $W$ and a
+measurable $f \ge 0$,
+$$\int f(U, W)\,d\mu = \int\!\!\int f(u, w)\,d\mu_W(w)\,d\mu_U(u)\,,$$
+with $\mu_U$, $\mu_W$ the laws of $U$ and $W$. Upstream candidate. -/
+theorem IndepFun.lintegral_comp_eq_lintegral_lintegral [IsFiniteMeasure μ] {α β : Type*}
+    [MeasurableSpace α] [MeasurableSpace β] {U : Ω → α} {W : Ω → β} (hUW : IndepFun U W μ)
+    (hU : AEMeasurable U μ) (hW : AEMeasurable W μ) {f : α × β → ℝ≥0∞} (hf : Measurable f) :
+    ∫⁻ ω, f (U ω, W ω) ∂μ = ∫⁻ u, ∫⁻ w, f (u, w) ∂(μ.map W) ∂(μ.map U) := by
+  rw [← lintegral_map' hf.aemeasurable (hU.prodMk hW),
+    (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW, lintegral_prod _ hf.aemeasurable]
 
 /-- **Sections of an event of two independent variables.** If $X$ and $Y$ are independent, the
 section $\{\omega \mid (X(\omega), y) \in E\}$ has probability at most $\delta_1$ for every

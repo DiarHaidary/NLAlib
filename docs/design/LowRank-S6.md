@@ -1975,3 +1975,13 @@ drafted.
     for files 1 to 5 and 8, `RandomMatrix/Gaussian/ClippedInverseMoments.lean` for file 12; file 6
     takes L12, L13 and A1 to A4 proved (S4's file, after S4). New result id `etrsvd` (the atlas
     id of brief §1) for ER10, ER11; ER12 joins `etgn`; ER1 to ER9 carry none.
+16. **Side files merged** (2026-10-16). The six side files of the Gaussian half are merged into
+    their homes as public declarations with unchanged names and statements, and deleted:
+    `Independence/Tonelli` into `ForMathlib/Probability/Independence/Basic.lean`,
+    `Measurability/EarlyTruncation` into `Probability/Measurability/Matrix.lean`,
+    `Pseudoinverse/SketchAndSolveSmul` into `Matrix/Pseudoinverse/LeastSquares.lean`,
+    `Gaussian/SpectralNormSq` into `RandomMatrix/Gaussian/SpectralNorm.lean` (its restated
+    Lipschitz lemma dropped for the home's), `Gaussian/BlockMomentsSpectral` into
+    `RandomMatrix/Gaussian/BlockMoments.lean`, and `Gaussian/RangeFinderSpectral` into
+    `LowRank/Gaussian/RangeFinder.lean` (its primed copy of `ae_sub_rsvd_eq_zero_of_card_lt`
+    dropped); no import cycle and every home under 1000 lines.

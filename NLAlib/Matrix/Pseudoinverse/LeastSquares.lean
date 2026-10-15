@@ -26,7 +26,9 @@ Sketch-and-solve replaces the problem by the one sketched by $\mathbf{S}$; its s
 $\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$, has fitted values the oblique
 projection $\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$, and when $\mathbf{S}$ keeps the rank of
 $\mathbf{A}$ it is the exact minimum-norm solution plus the sketched solution for the optimal
-residual. Design: `docs/design/LowRank-S0.md` §3.1, §8 (moved here from
+residual. The solution does not change when the sketch is multiplied by a nonzero scalar, so
+the normalisations of Gaussian and Haar sketches do not matter for it. Design:
+`docs/design/LowRank-S0.md` §3.1, §8 (moved here from
 `NLAlib.Matrix.Subspaces.ObliqueProjector` on 2026-10-15).
 
 ## Main definitions
@@ -45,6 +47,7 @@ residual. Design: `docs/design/LowRank-S0.md` §3.1, §8 (moved here from
 * `NLAlib.mul_sketchAndSolve`, `NLAlib.sketchAndSolve_eq_pinv_mul_add`,
   `NLAlib.HasOrthonormalCols.sketchAndSolve_eq_add`: sketch-and-solve, its fitted values and its
   error decomposition.
+* `NLAlib.sketchAndSolve_smul_sketch`: rescaling the sketch does not change the solution.
 -/
 
 @[expose] public section
@@ -399,6 +402,18 @@ theorem HasOrthonormalCols.sketchAndSolve_eq_add [Fintype q] [DecidableEq m] [De
     (B : Matrix m p 𝕜) :
     sketchAndSolve Q S B = Qᴴ * B + sketchAndSolve Q S ((1 - Q * Qᴴ) * B) := by
   rw [sketchAndSolve_eq_pinv_mul_add h B, hQ.pinv_eq, hQ.rangeProjector_eq]
+
+/-- **Rescaling the sketch does not change the sketch-and-solve solution**:
+$\mathsf{sketchAndSolve}(\mathbf{A}, c\mathbf{S}, \mathbf{B}) =
+\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$ for $c \ne 0$, for instance the
+normalisations $\lvert k \rvert^{-1/2}\mathbf{G}$ and
+$\sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$ of Gaussian and Haar sketches;
+a real scalar is the case `RCLike.real_smul_eq_coe_smul`. The fitted values are the case
+`NLAlib.obliqueProjector_smul_right`. -/
+theorem sketchAndSolve_smul_sketch (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜)
+    {c : 𝕜} (hc : c ≠ 0) : sketchAndSolve A (c • S) B = sketchAndSolve A S B := by
+  simp only [sketchAndSolve, Matrix.smul_mul, pinv_smul, Matrix.mul_smul, Matrix.smul_mul,
+    smul_smul, mul_inv_cancel₀ hc, one_smul]
 
 end SketchAndSolve
 

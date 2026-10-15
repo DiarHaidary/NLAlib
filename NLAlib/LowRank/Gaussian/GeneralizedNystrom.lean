@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.ForMathlib.Probability.Independence.Tonelli
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.Sketching.Gaussian.LeastSquares
 

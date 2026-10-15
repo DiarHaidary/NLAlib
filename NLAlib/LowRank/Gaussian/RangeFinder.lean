@@ -21,7 +21,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{E}\|_{\mathsf{F}}^2\,,$$
 Halko, Martinsson and Tropp's Theorem 10.5, and its Gram form in every quadratic unitarily
 invariant norm, of which the Schatten forms of Tropp and Webber's Theorem 8.1 (RSVD2) and the
-squared spectral form are corollaries. The first spectral moment (HMT Theorem 10.6) and the
+squared spectral form are corollaries. The first spectral moment (HMT Theorem 10.6), its
+second-moment form, in which the Frobenius tail enters with weight $O(1/\ell)$, and the
 late-truncated output `truncatedSVD (rsvd A (X ω)) k` in the Frobenius norm, with HMT's constant,
 are here too. Every error is $\mathbf{A}$ minus the named output.
 
@@ -54,7 +55,9 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
   as printed.
 * `NLAlib.integral_schattenNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: TW Theorem 8.1 (RSVD2).
-* `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.6.
+* `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.6;
+  `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_pinvSpecNormBound`: its
+  second-moment form.
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`: the truncated
   output, Frobenius norm.
 * `NLAlib.integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix`: the truncated
@@ -336,6 +339,68 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
     have hσ : singularValues A k = 0 := by rw [← specNorm_sub_truncatedSVD, hE, specNorm_zero]
     rw [integral_congr_ae (hae.mono fun ω hω => by simp only [hω, specNorm_zero]; rfl)]
     simp only [hE, hσ, frobNorm_zero, integral_zero, mul_zero, add_zero, le_refl]
+
+/-- **The expected squared spectral error of the randomized SVD, HMT 10.6 form**: for a standard
+Gaussian $n \times \ell$ test matrix and
+$k + 2 \le \ell$, <!-- value gaussianPinvSpecNormBound k \ell -->
+$$\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le \sigma_k^2 +
+\Bigl(\sigma_k\sqrt{\tfrac{k}{\ell-k-1}} + \frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\Bigr)^2 +
+\sigma_k^2\Bigl(\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\Bigr)^2\,,$$
+singular values of $\mathbf{A}$ from $0$; the bound is written in
+`gaussianPinvSpecNormBound k ℓ`, whence the name's suffix. The last factor being $O(1/\ell)$,
+the Frobenius tail enters with weight $O(1/\ell)$, against $\frac{k}{\ell-k-1}$ in
+`NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`; the two are incomparable
+(this one is better when the tail is heavy and $\ell \gg k$). Applied at a comparison rank near
+$\ell/2$ with the tail flattening
+`NLAlib.natCast_mul_singularValues_add_sq_le_frobNorm_sub_truncatedSVD_sq`, it bounds the
+spectral error by $O(1/\ell)$ times the Frobenius tail at any $k \le \ell/4$.
+[HalkoMartinssonTropp2011, Theorem 10.6]; there the first moment; proved without a literature
+source in this second-moment form.
+Result: randomized-svd-average-spectral-error -/
+theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_pinvSpecNormBound
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ}
+    (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, specNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
+      singularValues A k ^ 2 +
+        (singularValues A k * √((k : ℝ) / ((Fintype.card l : ℝ) - k - 1)) +
+          gaussianPinvSpecNormBound k (Fintype.card l) * frobNorm (A - truncatedSVD A k)) ^ 2 +
+        (singularValues A k * gaussianPinvSpecNormBound k (Fintype.card l)) ^ 2 := by
+  classical
+  have := hX.isProbabilityMeasure
+  rcases le_or_gt k (Fintype.card n) with hkn | hkn
+  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ :=
+      exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion (p := Fin k)
+        (q := Fin (Fintype.card n - k)) A (Fintype.card_fin k)
+        (by simp only [Fintype.card_fin]; omega)
+    have hk' : Fintype.card (Fin k) + 2 ≤ Fintype.card l := by rwa [Fintype.card_fin]
+    have hMi := integrable_specNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hZ hV hZV hk'
+      ((A - truncatedSVD A k) * V)
+    have hM := integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix hX hZ hV hZV hk'
+      ((A - truncatedSVD A k) * V)
+    have hpt : ∀ᵐ ω ∂μ, specNorm (A - rsvd A (X ω)) ^ 2 ≤ singularValues A k ^ 2 +
+        specNorm ((A - truncatedSVD A k) * V * (Vᴴ * X ω) * pinv (Zᴴ * X ω)) ^ 2 := by
+      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix Z hX
+        (by rw [hZ.rank_eq, Fintype.card_fin]; omega)]
+        with ω hω
+      have h := hZ.specNorm_sub_rsvd_sq_le hω A
+      rw [hZA, specNorm_sub_truncatedSVD] at h
+      rwa [← Matrix.mul_assoc ((A - truncatedSVD A k) * V), hEV]
+    have hI : Integrable (fun ω => singularValues A k ^ 2 +
+        specNorm ((A - truncatedSVD A k) * V * (Vᴴ * X ω) * pinv (Zᴴ * X ω)) ^ 2) μ :=
+      (integrable_const _).add hMi
+    refine (integral_mono_ae (integrable_specNorm_sub_rsvd_sq A hX.aemeasurable) hI hpt).trans ?_
+    rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul]
+    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
+    have hS := (lpGauge ⊤ le_top).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] at hS
+    rw [hF, hS, Fintype.card_fin] at hM
+    linarith
+  · obtain ⟨hE, hae⟩ := ae_sub_rsvd_eq_zero_of_card_lt A hX hkn (by omega)
+    rw [integral_congr_ae (hae.mono fun ω hω => by simp only [hω, specNorm_zero]; rfl)]
+    simp only [integral_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow]
+    positivity
 
 /-! ### The late-truncated output -/
 

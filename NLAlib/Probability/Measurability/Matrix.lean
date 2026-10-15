@@ -25,11 +25,11 @@ For random matrices, the quantities of the Matrix layer must be measurable funct
 matrix. This file belongs to the Probability layer: the Matrix layer itself has no measure theory.
 Norms, singular values and eigenvalues are continuous, hence measurable. The rank, the
 pseudoinverse, the range projector, the pseudo-condition number, the inverse Gram matrix, the
-randomized SVD, (generalized) Nyström, the chosen SVD, the truncated SVD, the polar factor and
-the Gram–Schmidt factors are not continuous but are Borel measurable. The chosen SVD
-(`NLAlib.svdU`, `NLAlib.svdV`) is measurable by the measurable selection theorem
-`IsClosed.measurable_of_forall_toLex_equivFun_le`: it is the lexicographically least point of the
-closed set of SVDs.
+randomized SVD, (generalized) Nyström, the chosen SVD, the truncated SVD, the early-truncated
+outputs, the polar factor and the Gram–Schmidt factors are not continuous but are Borel
+measurable. The chosen SVD (`NLAlib.svdU`, `NLAlib.svdV`) is measurable by the measurable
+selection theorem `IsClosed.measurable_of_forall_toLex_equivFun_le`: it is the lexicographically
+least point of the closed set of SVDs.
 
 Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 
@@ -49,6 +49,9 @@ Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
   truncated SVD. With them every theorem stated for a measurable choice of best approximations
   $\mathbf{Y}$ applies to the truncation of a random output, for instance with
   `hYm := ((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
+* `NLAlib.measurable_earlyTruncatedRSVD`, `NLAlib.measurable_earlyTruncatedGeneralizedNystrom`:
+  the early-truncated randomized SVD and generalized Nyström, built from the truncated SVD of the
+  sketch.
 * `NLAlib.measurable_polarFactor`, `NLAlib.measurable_gramSchmidtQ`.
 -/
 
@@ -255,6 +258,34 @@ theorem _root_.AEMeasurable.truncatedSVD {α : Type*} [MeasurableSpace α]
     {μ : MeasureTheory.Measure α} {f : α → Matrix m n 𝕜} (hf : AEMeasurable f μ) (k : ℕ) :
     AEMeasurable (fun x => truncatedSVD (f x) k) μ :=
   (measurable_truncatedSVD k).comp_aemeasurable hf
+
+section EarlyTruncation
+
+variable {l p : Type*} [Fintype l] [Fintype p]
+
+/-- The early-truncated randomized SVD
+$\mathbf{\Omega} \mapsto \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$ is a
+measurable function of the test matrix. -/
+theorem measurable_earlyTruncatedRSVD (A : Matrix m n 𝕜) (k : ℕ) :
+    Measurable fun Ω : Matrix n l 𝕜 => earlyTruncatedRSVD A Ω k :=
+  (measurable_rangeProjector.comp
+    ((measurable_const.matrix_mul measurable_id).truncatedSVD k)).matrix_mul measurable_const
+
+/-- Early-truncated generalized Nyström
+$(\mathbf{\Omega}, \mathbf{\Psi}) \mapsto \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega},
+\mathbf{\Psi}, k)$ is a measurable function of the two test matrices. -/
+theorem measurable_earlyTruncatedGeneralizedNystrom (A : Matrix m n 𝕜) (k : ℕ) :
+    Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 =>
+      earlyTruncatedGeneralizedNystrom A ΩΨ.1 ΩΨ.2 k := by
+  have hΨ : Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 => ΩΨ.2ᴴ :=
+    (continuous_id.matrix_conjTranspose.measurable).comp measurable_snd
+  have hT : Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 => truncatedSVD (A * ΩΨ.1) k :=
+    (measurable_const.matrix_mul measurable_fst).truncatedSVD k
+  simp only [earlyTruncatedGeneralizedNystrom, obliqueProjector]
+  exact ((hT.matrix_mul (measurable_pinv.comp (hΨ.matrix_mul hT))).matrix_mul hΨ).matrix_mul
+    measurable_const
+
+end EarlyTruncation
 
 open scoped Matrix.Norms.L2Operator MatrixOrder ComplexOrder Classical in
 /-- The absolute value $(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$ is a continuous function of the
