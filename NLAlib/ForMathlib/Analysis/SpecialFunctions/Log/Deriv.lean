@@ -28,9 +28,11 @@ the two become one public statement for $-1 < u$. Upstream candidate for
 
 namespace Real
 
-/-- $\log(1 + u) \le u - u^2/2 + u^3/3$ for $-1 < u \le 0$. The difference
-$u - u^2/2 + u^3/3 - \log(1 + u)$ has derivative $u^3/(1 + u) \le 0$ on $(-1, 0]$ and vanishes at
-$0$. -/
+/-- For $-1 < u \le 0$,
+$$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$
+Proof: with $x = -u \in [0, 1)$ the series $-\log(1 - x) = \sum_{k \ge 1} x^k / k$
+(`Real.hasSum_pow_div_log_of_abs_lt_one`) has nonnegative terms, so it is at least the sum of its
+first three terms, $x + x^2/2 + x^3/3$. Substituting $x = -u$ gives the claim. -/
 theorem log_one_add_le_cubic_of_nonpos {u : ℝ} (h1 : -1 < u) (h0 : u ≤ 0) :
     log (1 + u) ≤ u - u ^ 2 / 2 + u ^ 3 / 3 := by
   have hu : 0 ≤ -u := by linarith

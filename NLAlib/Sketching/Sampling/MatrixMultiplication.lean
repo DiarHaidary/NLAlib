@@ -12,26 +12,34 @@ public import NLAlib.Sketching.Sampling.RowSampling
 /-!
 # Approximate matrix multiplication by row sampling
 
-For `A : Matrix n q 𝕜`, `B : Matrix n r 𝕜` and the row-sampling sketch `S` with law
-`NLAlib.samplingSketch k p`, the sampled product `Aᴴ Sᴴ S B` is the average of `card k` i.i.d.
-rank-one atoms `(card k · p ι)⁻¹ (A ι)ᴴ B ι` (`NLAlib.conjTranspose_samplingSketchMatrix_mul_mul`).
-It is unbiased when every zero weight sits on a row where `A` or `B` vanishes, its squared
-Frobenius error has the exact mean `(∑ i, ‖A i‖² ‖B i‖² / p i - ‖Aᴴ B‖_F²) / k`, and under the
-domination `‖A i‖ ‖B i‖ ≤ L p i` that mean is at most `L ‖A‖_F ‖B‖_F / k`; Markov's inequality
-gives the tail. The error and its event are those of the JL-moment form
+For `A : Matrix n q 𝕜`, `B : Matrix n r 𝕜` (written $\mathbf{A}$, $\mathbf{B}$) and the
+row-sampling sketch $\mathbf{S}$ with law `NLAlib.samplingSketch k p` (weights $p_i$), the sampled
+product $\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B}$ is the sum of
+$\lvert k \rvert$ i.i.d. rank-one atoms
+$$\frac{1}{\lvert k \rvert \, p_{\iota}} (\mathbf{A}_{\iota})^{\mathsf{H}} \mathbf{B}_{\iota}$$
+for i.i.d. sampled rows $\iota$ (`NLAlib.conjTranspose_samplingSketchMatrix_mul_mul`). It is
+unbiased when every zero weight sits on a row where $\mathbf{A}$ or $\mathbf{B}$ vanishes, its
+squared Frobenius error has the exact mean
+$$\frac{1}{\lvert k \rvert} \Bigl( \sum_i \frac{\|\mathbf{A}_i\|^2 \|\mathbf{B}_i\|^2}{p_i} -
+\|\mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2 \Bigr),$$
+and under the domination $\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$ that mean is at most
+$L \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}} / \lvert k \rvert$; Markov's
+inequality gives the tail. The error and its event are those of the JL-moment form
 (`NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le`), here over `𝕜`.
 
-Degenerate cases: for empty `k`, `S = 0` and the sampled product is `0`, hence `[Nonempty k]` on
-every mean and tail; the integrability statements need neither it nor `∑ i, p i = 1`. A zero
-weight with `A i ≠ 0` and `B i ≠ 0` biases the estimator, which the support hypothesis excludes and
-the domination hypothesis implies. Design: `docs/design/Sketching-S4.md` §3.3, §8.
+Degenerate cases: for empty `k`, $\mathbf{S} = \mathbf{0}$ and the sampled product is
+$\mathbf{0}$, hence `[Nonempty k]` on every mean and tail; the integrability statements need
+neither it nor $\sum_i p_i = 1$. A zero weight with $\mathbf{A}_i \ne \mathbf{0}$ and
+$\mathbf{B}_i \ne \mathbf{0}$ biases the estimator, which the support hypothesis excludes and the
+domination hypothesis implies. Design: `docs/design/Sketching-S4.md` §3.3, §8.
 
-Proofs. Every expectation is transported to `card k` i.i.d. indices
+Proofs. Every expectation is transported to $\lvert k \rvert$ i.i.d. indices
 (`NLAlib.samplingSketch_eq_map`), where the sampled product is a sum of i.i.d. atoms whose weighted
-mean is `Aᴴ B / card k`; unbiasedness is linearity, the exact second moment is the additivity of
-the Frobenius variance over independent centred summands
+mean is $\mathbf{A}^{\mathsf{H}} \mathbf{B} / \lvert k \rvert$; unbiasedness is linearity, the
+exact second moment is the additivity of the Frobenius variance over independent centred summands
 (`NLAlib.integral_sum_mul_sum_of_iIndepFun` under the trace), the domination bound is the identity
-with `w² / p ≤ L w` and Cauchy–Schwarz, and the tails are Markov's inequality on the square.
+with $w_i^2 / p_i \le L w_i$, where $w_i = \|\mathbf{A}_i\| \, \|\mathbf{B}_i\|$, and
+Cauchy–Schwarz, and the tails are Markov's inequality on the square.
 
 ## Main results
 
@@ -59,8 +67,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 /-! ### Reduction to i.i.d. indices -/
 
 variable (k) in
-/-- The rank-one atom of row `i`, `(card k · p i)⁻¹ (A i)ᴴ B i`; the zero matrix where
-`p i = 0`. -/
+/-- The rank-one atom of row $i$, $(\lvert k \rvert \, p_i)^{-1} (\mathbf{A}_i)^{\mathsf{H}}
+\mathbf{B}_i$; the zero matrix where $p_i = 0$. -/
 private noncomputable def ammAtom (p : n → ℝ≥0) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) (i : n) :
     Matrix q r 𝕜 :=
   ((Fintype.card k : ℝ) * p i)⁻¹ • Matrix.vecMulVec (star (A i)) (B i)
@@ -75,8 +83,8 @@ private theorem conjTranspose_mul_samplingSketchMatrix_mul_mul (p : n → ℝ≥
   exact conjTranspose_samplingSketchMatrix_mul_mul p ι A B
 
 omit [Fintype q] [Fintype r] [DecidableEq n] in
-/-- The weighted atoms average to `Aᴴ B / card k` when every zero weight sits on a row where
-`A` or `B` vanishes. -/
+/-- The weighted atoms sum to $\mathbf{A}^{\mathsf{H}} \mathbf{B} / \lvert k \rvert$ when every
+zero weight sits on a row where $\mathbf{A}$ or $\mathbf{B}$ vanishes. -/
 private theorem sum_smul_ammAtom (hsupport : ∀ i, p i = 0 → A i = 0 ∨ B i = 0) :
     ∑ i, (p i : ℝ) • ammAtom k p A B i = (Fintype.card k : ℝ)⁻¹ • (Aᴴ * B) := by
   rw [Matrix.conjTranspose_mul_eq_sum_vecMulVec, Finset.smul_sum]
@@ -135,8 +143,10 @@ private theorem integral_comp_eval_pi_samplingMeasure [MeasurableSpace n]
   exact (HasLaw.id.eval j).integral_comp (StronglyMeasurable.of_discrete).aestronglyMeasurable
 
 omit [DecidableEq n] in
-/-- **The Frobenius variance of an i.i.d. sum**: for `card k` i.i.d. indices and `Z` centred
-under the weights, `E ‖∑ j, Z (ι j)‖_F² = card k · ∑ i, p i ‖Z i‖_F²`. -/
+/-- **The Frobenius variance of an i.i.d. sum**: for $\lvert k \rvert$ i.i.d. indices $\iota_j$
+and `Z` centred under the weights,
+$$\mathbb{E} \Bigl\| \sum_j Z(\iota_j) \Bigr\|_{\mathsf{F}}^2
+= \lvert k \rvert \sum_i p_i \|Z(i)\|_{\mathsf{F}}^2 \,.$$ -/
 private theorem integral_frobNorm_sum_sq_pi [MeasurableSpace n] [MeasurableSingletonClass n]
     (hp : ∑ i, p i = 1) (Z : n → Matrix q r 𝕜) (hZ : ∑ i, (p i : ℝ) • Z i = 0) :
     ∫ ι, frobNorm (∑ j, Z (ι j)) ^ 2 ∂(Measure.pi fun _ : k => samplingMeasure p) =
@@ -176,15 +186,18 @@ private theorem integral_frobNorm_sum_sq_pi [MeasurableSpace n] [MeasurableSingl
 
 /-! ### The sampled product -/
 
-/-- The sampled product `Aᴴ Sᴴ S B` of a row-sampling sketch is integrable, for any weights and
+/-- The sampled product $\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B}$ of a
+row-sampling sketch is integrable, for any weights and
 any number of samples: the sketch takes finitely many values. -/
 theorem integrable_conjTranspose_mul_mul_of_hasLaw_samplingSketch [DecidableEq r]
     (hS : HasLaw S (samplingSketch k p) μ) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
     Integrable (fun ω => Aᴴ * (S ω)ᴴ * S ω * B) μ :=
   integrable_comp_of_hasLaw_samplingSketch hS (F := fun M => Aᴴ * Mᴴ * M * B) (by fun_prop)
 
-/-- **Row sampling is unbiased for matrix products**: `E [Aᴴ Sᴴ S B] = Aᴴ B` when every zero
-weight sits on a row where `A` or `B` vanishes (in particular when every weight is positive).
+/-- **Row sampling is unbiased for matrix products**:
+$\mathbb{E}[\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B}]
+= \mathbf{A}^{\mathsf{H}} \mathbf{B}$ when every zero weight sits on a row where $\mathbf{A}$ or
+$\mathbf{B}$ vanishes (in particular when every weight is positive).
 [MartinssonTropp2020, §7.1] (the sampled estimator, positive weights). -/
 theorem integral_conjTranspose_mul_mul_of_hasLaw_samplingSketch [Nonempty k] [DecidableEq r]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
@@ -212,8 +225,12 @@ theorem integrable_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_samplingSketch
     ((continuous_frobNorm.comp (by fun_prop)).pow 2)
 
 /-- **Approximate matrix multiplication by sampling, exact second moment**:
-`E ‖Aᴴ Sᴴ S B - Aᴴ B‖_F² = (∑ i, ‖A i‖² ‖B i‖² / p i - ‖Aᴴ B‖_F²) / k` when every zero weight sits
-on a row where `A` or `B` vanishes (there the term is `0 / 0 = 0`). [MartinssonTropp2020, §7.1]
+$$\mathbb{E} \|\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B} -
+\mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2
+= \frac{1}{\lvert k \rvert} \Bigl( \sum_i \frac{\|\mathbf{A}_i\|^2 \|\mathbf{B}_i\|^2}{p_i} -
+\|\mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2 \Bigr)$$
+when every zero weight sits on a row where $\mathbf{A}$ or $\mathbf{B}$ vanishes (there the term is
+$0/0 = 0$). [MartinssonTropp2020, §7.1]
 (the estimator); Drineas, Kannan and Mahoney 2006, Lemma 4 (the identity, citation to confirm).
 Result: amm-sampling -/
 theorem integral_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_samplingSketch [Nonempty k]
@@ -261,11 +278,17 @@ theorem integral_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_samplingSketch [Non
   ring
 
 /-- **Approximate matrix multiplication by sampling, domination form**: if
-`‖A i‖ ‖B i‖ ≤ L p i` for every row, `E ‖Aᴴ Sᴴ S B - Aᴴ B‖_F² ≤ L ‖A‖_F ‖B‖_F / k`. Zero weights
-are allowed. At the optimal weights `p i ∝ ‖A i‖ ‖B i‖` (`L = ∑ i, ‖A i‖ ‖B i‖`) this is
-`‖A‖_F² ‖B‖_F² / k` by Cauchy–Schwarz, and `β`-approximations of them are `L = W/β`.
-[MartinssonTropp2020, §7.1]; Drineas, Kannan and Mahoney 2006, Lemma 4 (there the bound
-`‖A‖_F² ‖B‖_F² / (β k)`, citation to confirm).
+$\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$ for every row,
+$$\mathbb{E} \|\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B} -
+\mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2
+\le \frac{L \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}}{\lvert k \rvert} \,.$$
+Zero weights are allowed. At the optimal weights $p_i \propto \|\mathbf{A}_i\| \, \|\mathbf{B}_i\|$,
+where $L = \sum_i \|\mathbf{A}_i\| \, \|\mathbf{B}_i\|$, this is
+$\|\mathbf{A}\|_{\mathsf{F}}^2 \|\mathbf{B}\|_{\mathsf{F}}^2 / \lvert k \rvert$ by
+Cauchy–Schwarz, and $\beta$-approximations of them have $L = W/\beta$, with $W$ that sum.
+[MartinssonTropp2020, §7.1]; Drineas, Kannan and Mahoney 2006, Lemma 4 (citation to confirm).
+There the bound is
+$\|\mathbf{A}\|_{\mathsf{F}}^2 \|\mathbf{B}\|_{\mathsf{F}}^2 / (\beta \lvert k \rvert)$.
 Result: amm-sampling -/
 theorem integral_frobNorm_conjTranspose_mul_sub_sq_le_of_hasLaw_samplingSketch [Nonempty k]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
@@ -312,8 +335,10 @@ theorem integral_frobNorm_conjTranspose_mul_sub_sq_le_of_hasLaw_samplingSketch [
     _ = L * frobNorm A * frobNorm B := by ring
 
 /-- **The tail of approximate matrix multiplication by sampling**: under the domination
-`‖A i‖ ‖B i‖ ≤ L p i`, the Frobenius error exceeds `t > 0` with probability at most
-`L ‖A‖_F ‖B‖_F / (k t²)` (Markov on the square). [MartinssonTropp2020, §7.1]. -/
+$\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$, the Frobenius error exceeds $t > 0$ with
+probability at most
+$$\frac{L \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}}{\lvert k \rvert \, t^2}$$
+(Markov on the square). [MartinssonTropp2020, §7.1]. -/
 theorem measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch [Nonempty k]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
     (hdom : ∀ i, ‖WithLp.toLp 2 (A i)‖ * ‖WithLp.toLp 2 (B i)‖ ≤ L * p i) (ht : 0 < t) :
@@ -335,10 +360,13 @@ theorem measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketc
     _ = _ := by rw [div_div]
 
 /-- **The relative tail of approximate matrix multiplication by sampling**: under the domination
-`‖A i‖ ‖B i‖ ≤ L p i`, the Frobenius error exceeds `ε ‖A‖_F ‖B‖_F` with probability at most
-`L / (k ε² ‖A‖_F ‖B‖_F)`, for `ε > 0` and nonzero `A`, `B`: the event of the JL-moment form
+$\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$, the Frobenius error exceeds
+$\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$ with probability at most
+$$\frac{L}{\lvert k \rvert \, \varepsilon^2
+  \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}}$$
+for $\varepsilon > 0$ and nonzero $\mathbf{A}$, $\mathbf{B}$: the event of the JL-moment form
 `NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le`, the instance
-`t = ε ‖A‖_F ‖B‖_F` of
+$t = \varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$ of
 `NLAlib.measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch`.
 [MartinssonTropp2020, §7.1]. -/
 theorem measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch_of_ne_zero

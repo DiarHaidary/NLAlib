@@ -10,8 +10,8 @@ public import NLAlib.Probability.Law
 /-!
 # Independent entries give independent rows
 
-A random matrix whose entries, indexed by `m × n`, are independent has independent rows. Mathlib
-has the converse direction for families of independent vectors with independent coordinates
+A random matrix whose entries, indexed by $m \times n$, are independent has independent rows.
+Mathlib has the converse direction for families of independent vectors with independent coordinates
 (`ProbabilityTheory.iIndepFun_uncurry'`). This is the bridge from the entry hypotheses of
 `ProbabilityTheory.HasLaw.iIndepFun_entry`'s shape to the row hypotheses of the sub-Gaussian
 rows theorems (`NLAlib/Sketching/Gaussian/SubGaussian.lean`).
@@ -34,8 +34,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n α : Typ
   [Finite n] [MeasurableSpace α]
 
 /-- Independent entries give independent rows: if the entries $\mathbf{X}_{i,j}$ of a random
-matrix `X : Ω → Matrix m n α`, as a family indexed by `m × n`, are independent, so are its rows
-$\mathbf{X}_i$. The measurability hypothesis is the one the product-law route needs
+matrix `X : Ω → Matrix m n α`, as a family indexed by $m \times n$, are independent, so are its
+rows $\mathbf{X}_i$. The measurability hypothesis is the one the product-law route needs
 (`NLAlib.hasLaw_pi_pi_iff` with `ν i j := μ.map (X · i j)`, then
 `ProbabilityTheory.HasLaw.iIndepFun_eval`); it goes if a Mathlib grouping lemma (`iIndepFun` over
 a partition of the index) turns up. Mathlib has the converse,

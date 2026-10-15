@@ -12,16 +12,19 @@ public import NLAlib.Matrix.Subspaces.ProjectorPair
 /-!
 # Leverage scores and coherence
 
-The leverage score of row `i` of a matrix `A : Matrix m n 𝕜` is the `i`-th diagonal entry of the
-orthogonal projector onto its column space, `NLAlib.leverageScore A i = re (rangeProjector A i i)`.
-It is defined for every shape and rank, depends only on `range A`, lies in `[0, 1]`, and the
-scores sum to `A.rank`; for `A` with orthonormal columns it is the squared norm of row `i`. The
-coherence is `card m` times the largest score, and the leverage-score distribution is the score
-vector divided by the rank (junk value `0` when `A = 0`).
+The leverage score of row $i$ of a matrix `A : Matrix m n 𝕜`, $\mathbf{A} \in \Bbbk^{m \times n}$,
+is the $i$-th diagonal entry of the orthogonal projector $\mathbf{P}_{\mathbf{A}}$ onto its column
+space, `NLAlib.leverageScore A i = re (rangeProjector A i i)`. It is defined for every shape and
+rank, depends only on the column space of $\mathbf{A}$, lies in $[0, 1]$, and the scores sum to
+$\operatorname{rank} \mathbf{A}$; for $\mathbf{A}$ with orthonormal columns it is the squared norm
+of row $i$. The coherence is $\lvert m \rvert$ times the largest score, and the leverage-score
+distribution is the score vector divided by the rank (junk value $0$ when
+$\mathbf{A} = \mathbf{0}$).
 
 These are the quantities of the domination hypothesis `∀ i, leverageScore U i ≤ L * p i` of the
 row-sampling theorems (`NLAlib.Sketching.Sampling.RowSampling`): exact leverage sampling has
-`L = U.rank`, uniform sampling has `L = coherence U`. Design: `docs/design/Sketching-S4.md` §3.1,
+$L = \operatorname{rank} \mathbf{U}$, uniform sampling has $L$ equal to the coherence of
+$\mathbf{U}$. Design: `docs/design/Sketching-S4.md` §3.1,
 §8.
 
 This file was written in the skeleton pass of Sketching stage S4; its proofs are already
@@ -55,10 +58,12 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n q r : Type*} [Fintype m] [Fintype n] 
 
 /-! ### Leverage scores -/
 
-/-- The **leverage score** of row `i` of `A`: the `i`-th diagonal entry of the orthogonal
-projector onto the column space of `A`, for every shape and rank (`0` on every row when `A = 0`).
-[Woodruff2014, Definition 16 and the paragraph after it] (there `ℓᵢ²`, the squared row norm of a
-basis of the range); [MartinssonTropp2020, §9.6.1] (there `‖P_L δᵢ‖²`).
+/-- The **leverage score** of row $i$ of $\mathbf{A}$: the $i$-th diagonal entry of the orthogonal
+projector onto the column space of $\mathbf{A}$, for every shape and rank ($0$ on every row when
+$\mathbf{A} = \mathbf{0}$). [Woodruff2014, Definition 16 and the paragraph after it] (there
+$\ell_i^2$, the squared row norm of a basis of the range); [MartinssonTropp2020, §9.6.1] (there
+$\lVert \mathbf{P}_L \boldsymbol{\delta}_i \rVert^2$, with $\mathbf{P}_L$ the projector onto the
+column space).
 Result: leverage-scores -/
 noncomputable def leverageScore (A : Matrix m n 𝕜) (i : m) : ℝ :=
   RCLike.re (rangeProjector A i i)
@@ -71,20 +76,21 @@ theorem leverageScore_nonneg (A : Matrix m n 𝕜) (i : m) : 0 ≤ leverageScore
 theorem leverageScore_le_one (A : Matrix m n 𝕜) (i : m) : leverageScore A i ≤ 1 :=
   ((isStarProjection_rangeProjector A).re_apply_self_mem_Icc i).2
 
-/-- The leverage scores sum to the rank. [Woodruff2014, after Definition 16];
+/-- The leverage scores sum to the rank of $\mathbf{A}$.
+[Woodruff2014, after Definition 16];
 [MartinssonTropp2020, §9.6.1]. -/
 theorem sum_leverageScore (A : Matrix m n 𝕜) : ∑ i, leverageScore A i = A.rank := by
   simp only [leverageScore]
   rw [(isStarProjection_rangeProjector A).sum_re_apply_self, rank_rangeProjector]
 
-/-- The leverage score of row `i` is `‖P eᵢ‖²` for the projector `P` onto the column space.
-[MartinssonTropp2020, §9.6.1]. -/
+/-- The leverage score of row $i$ is $\lVert \mathbf{P} \mathbf{e}_i \rVert^2$ for the projector
+$\mathbf{P}$ onto the column space. [MartinssonTropp2020, §9.6.1]. -/
 theorem leverageScore_eq_norm_sq (A : Matrix m n 𝕜) (i : m) :
     leverageScore A i = ‖WithLp.toLp 2 ((rangeProjector A).col i)‖ ^ 2 :=
   (isStarProjection_rangeProjector A).re_apply_self_eq_norm_sq i
 
-/-- For `U` with orthonormal columns, the leverage score of row `i` is the squared norm of that
-row. [Woodruff2014, Definition 16]. -/
+/-- For $\mathbf{U}$ with orthonormal columns, the leverage score of row $i$ is the squared norm
+of that row. [Woodruff2014, Definition 16]. -/
 theorem HasOrthonormalCols.leverageScore_eq [Fintype r] [DecidableEq r] {U : Matrix m r 𝕜}
     (hU : HasOrthonormalCols U) (i : m) : leverageScore U i = ‖WithLp.toLp 2 (U i)‖ ^ 2 := by
   rw [leverageScore, hU.rangeProjector_eq, EuclideanSpace.norm_sq_eq]
@@ -102,9 +108,10 @@ theorem leverageScore_eq_of_range_eq
   simp only [leverageScore, rangeProjector_inj.2 h]
 
 open scoped ComplexOrder in
-/-- Leverage scores are monotone in the column space: if `range B ≤ range A`, every score of `B`
-is at most the corresponding score of `A`. This is how a domination hypothesis for `[A, y]`
-passes to `A`. -/
+/-- Leverage scores are monotone in the column space: if the column space of $\mathbf{B}$ is
+contained in that of $\mathbf{A}$ (`range B ≤ range A`), every score of $\mathbf{B}$ is at most the
+corresponding score of $\mathbf{A}$. This is how a domination hypothesis for
+$[\mathbf{A}, \mathbf{y}]$ passes to $\mathbf{A}$. -/
 theorem leverageScore_le_of_range_le
     (h : LinearMap.range B.mulVecLin ≤ LinearMap.range A.mulVecLin) (i : m) :
     leverageScore B i ≤ leverageScore A i := by
@@ -115,7 +122,7 @@ theorem leverageScore_le_of_range_le
   simp only [leverageScore]
   linarith
 
-/-- A leverage score vanishes exactly on a zero row. -/
+/-- A leverage score vanishes exactly on a zero row of $\mathbf{A}$. -/
 theorem leverageScore_eq_zero_iff (A : Matrix m n 𝕜) (i : m) :
     leverageScore A i = 0 ↔ A i = 0 := by
   classical
@@ -130,14 +137,15 @@ theorem leverageScore_eq_zero_iff (A : Matrix m n 𝕜) (i : m) :
 
 /-! ### Coherence -/
 
-/-- The **coherence** of `A`: `card m` times its largest leverage score, between `A.rank` and
-`card m` (`NLAlib.rank_le_coherence`, `NLAlib.coherence_le_card`). Junk value `0` for empty `m`.
+/-- The **coherence** of $\mathbf{A}$: $\lvert m \rvert$ times its largest leverage score, between
+$\operatorname{rank} \mathbf{A}$ and $\lvert m \rvert$ (`NLAlib.rank_le_coherence`,
+`NLAlib.coherence_le_card`). Junk value $0$ for empty `m`.
 [MartinssonTropp2020, §9.6.1]. -/
 noncomputable def coherence (A : Matrix m n 𝕜) : ℝ :=
   Fintype.card m * ⨆ i, leverageScore A i
 
-/-- Every leverage score is at most `coherence A / card m`: the domination hypothesis of uniform
-sampling, with `L = coherence A`. -/
+/-- Every leverage score is at most the coherence divided by $\lvert m \rvert$: the domination
+hypothesis of uniform sampling, with $L$ the coherence. -/
 theorem leverageScore_le_coherence_mul_inv (A : Matrix m n 𝕜) (i : m) :
     leverageScore A i ≤ coherence A * (Fintype.card m : ℝ)⁻¹ := by
   have : Nonempty m := ⟨i⟩
@@ -152,7 +160,8 @@ theorem rank_le_coherence (A : Matrix m n 𝕜) : (A.rank : ℝ) ≤ coherence A
         Finset.sum_le_sum fun i _ => le_ciSup (Set.finite_range _).bddAbove i
     _ = _ := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
-/-- The coherence is at most the number of rows. [MartinssonTropp2020, §9.6.1]. -/
+/-- The coherence is at most the number of rows, $\lvert m \rvert$. [MartinssonTropp2020, §9.6.1].
+-/
 theorem coherence_le_card (A : Matrix m n 𝕜) : coherence A ≤ Fintype.card m := by
   rw [coherence]
   exact mul_le_of_le_one_right (Nat.cast_nonneg _)
@@ -160,9 +169,10 @@ theorem coherence_le_card (A : Matrix m n 𝕜) : coherence A ≤ Fintype.card m
 
 /-! ### The leverage-score distribution -/
 
-/-- The **leverage-score distribution** of `A`: the scores divided by the rank, a probability
-vector when `A ≠ 0` (`NLAlib.sum_leverageScoreDistribution`). Junk value `0` on every row when
-`A = 0`. [Woodruff2014, Definition 16] (`β = 1`); [MartinssonTropp2020, §9.6.1]. -/
+/-- The **leverage-score distribution** of $\mathbf{A}$: the scores divided by the rank, a
+probability vector when $\mathbf{A} \ne \mathbf{0}$ (`NLAlib.sum_leverageScoreDistribution`). Junk
+value $0$ on every row when $\mathbf{A} = \mathbf{0}$. [Woodruff2014, Definition 16] (the case
+$\beta = 1$); [MartinssonTropp2020, §9.6.1]. -/
 noncomputable def leverageScoreDistribution (A : Matrix m n 𝕜) (i : m) : ℝ≥0 :=
   ‖leverageScore A i‖₊ / A.rank
 
@@ -192,9 +202,10 @@ theorem sum_leverageScoreDistribution (hA : A ≠ 0) : ∑ i, leverageScoreDistr
   simp only [coe_leverageScoreDistribution]
   rw [← Finset.sum_div, sum_leverageScore, div_self hr]
 
-/-- Each leverage score is at most `A.rank` times its weight in the leverage-score distribution:
-the domination hypothesis of exact leverage sampling, with `L = A.rank`. Holds also for `A = 0`,
-where every score is `0`. -/
+/-- Each leverage score is at most $\operatorname{rank} \mathbf{A}$ times its weight in the
+leverage-score distribution: the domination hypothesis of exact leverage sampling, with
+$L = \operatorname{rank} \mathbf{A}$. Holds also for $\mathbf{A} = \mathbf{0}$, where every score is
+$0$. -/
 theorem leverageScore_le_rank_mul_leverageScoreDistribution (A : Matrix m n 𝕜) (i : m) :
     leverageScore A i ≤ A.rank * leverageScoreDistribution A i := by
   rw [coe_leverageScoreDistribution]
