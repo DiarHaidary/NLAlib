@@ -29,9 +29,11 @@ The maintainer approved the recommendations:
 - Truncated outputs (2026-10-15, S2b Q1, option (b)): the early-truncated outputs get names
   (`earlyTruncatedRSVD`, `earlyTruncatedGeneralizedNystrom`); late truncation stays
   `truncatedSVD` of the named output (`truncatedSVD (rsvd A Ω) k`).
-- Early-truncated GN (2026-10-15): the maintainer's bound has $\varepsilon^{-2}$ dependence where
-  TYUC SIMAX's has $\varepsilon^{-3}$; the former is the primary statement (proved without a
-  literature source), TYUC is cited for the algorithm, and a dominated TYUC bound is not ported.
+- Early-truncated GN (2026-10-15): the maintainer's $\varepsilon^{-2}$ bound is the primary
+  statement (proved without a literature source); TYUC SIMAX is cited for the algorithm, (7.3).
+  Correction from the S2b review: TYUC §7.3.1 states no theorem for (7.3), only a remark reading
+  CEMMP as $\Theta(r/\varepsilon^2)$ with unspecified constants; the $\varepsilon^{-3}$ figure in the
+  maintainer's notes is the late-truncated GN triangle baseline (`GN_truncated.tex`).
 - Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
   randomized block Krylov, randomly pivoted Cholesky and similar methods.
 
