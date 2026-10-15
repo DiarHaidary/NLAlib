@@ -454,3 +454,24 @@ every proof `sorry`.
        (item 3).
 14. §7: Q2, Q4, Q5, Q8, Q9 and Q10 stand; Q1 is decided by item 1, Q3's justification is item 9,
     Q6 is amended by items 3 and 6, Q7 is item 10, Q11 is withdrawn (item 1).
+
+### Skeleton notes (2026-10-15)
+
+Three files, 49 statements as item 13 counts them; 8 `sorry` left (RowSampling 3, MatrixMultiplication 5).
+Deviations from §3 and §8:
+- `samplingSize_mono`, `samplingInjectionSize_mono` take every argument varying at once and a range
+  hypothesis on the larger side, `hδd : δ ≤ 2 * d'` (resp. `δ ≤ d'`), plus `0 ≤ L ≤ L'`. Without it
+  the statement is false: for `δ > 2` the size at `d = 0` is `0` and at `d = 1` negative. With it no
+  hypothesis on the smaller side is needed (its size is either `≤ 0` or comparable).
+- `samplingSize_le`, `samplingInjectionSize_le` are unconditional (the body itself).
+- §3.3: the two matrix-valued statements (unbiasedness and its integrability) take `[DecidableEq r]`
+  (the column type of `B`, for the `L2Operator` normed group), not `[DecidableEq q]` (item 12).
+- §3.3: `A`, `B` are implicit where `hsupport` or `hdom` determines them, explicit in the two
+  integrability statements.
+- Proved already: all of `Leverage.lean`; in `RowSampling.lean` the law lemmas (mixture, pushforward,
+  bridge, finiteness, probability), the two deterministic identities, the size API, the two-sided
+  theorem from the halves, both corollaries (degenerate cases included) and both size corollaries;
+  in `MatrixMultiplication.lean` the two tails from the domination bound. Left: isotropy, the two
+  Chernoff halves, AMM integrability (2), unbiasedness, exact second moment, domination bound.
+- Private helpers that a later stage may want public: `rank_le_of_leverageScore_le`
+  (`hp`, `hdom` give `U.rank ≤ L`), `leverageScore_eq_zero_of_rank_eq_zero`.
