@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.MeasureTheory.Constructions.Pi
 public import Mathlib.Probability.HasLaw
 public import Mathlib.Probability.ProbabilityMassFunction.Constructions
 public import Mathlib.Probability.UniformOn
@@ -27,6 +28,8 @@ the bridge to `PMF` is `NLAlib.samplingMeasure_toNNReal_eq_toMeasure`.
 * `NLAlib.isProbabilityMeasure_samplingMeasure`.
 * `NLAlib.integral_samplingMeasure`: $\int f = \sum_i p_i f(i)$.
 * `NLAlib.measureReal_eq_of_hasLaw_samplingMeasure`: $\mathbb{P}(X = i) = p_i$.
+* `NLAlib.measureReal_pi_samplingMeasure_setOf_apply_eq_apply`: two coordinates of an i.i.d.
+  sample collide with probability $\sum_r p_r^2$.
 -/
 
 @[expose] public section
@@ -104,6 +107,39 @@ theorem samplingMeasure_singleton (i : ι) : samplingMeasure p {i} = p i := by
   simp only [samplingMeasure, Measure.coe_finsetSum, Finset.sum_apply, Measure.smul_apply,
     Measure.dirac_apply, smul_eq_mul, Set.indicator_apply, Set.mem_singleton_iff, Pi.one_apply,
     mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, if_true]
+
+/-- **Collision probability.** Two distinct coordinates of an i.i.d. sample from
+`NLAlib.samplingMeasure p`, with weights summing to $1$, agree with probability $\sum_r p_r^2$;
+at uniform weights $1/\lvert \iota \rvert$ this is $1/\lvert \iota \rvert$. The hash-collision
+step of CountSketch (`NLAlib.Sketching.Sparse.CountSketch`). -/
+theorem measureReal_pi_samplingMeasure_setOf_apply_eq_apply {κ : Type*} [Fintype κ]
+    (hp : ∑ i, p i = 1) {i j : κ} (hij : i ≠ j) :
+    (Measure.pi fun _ : κ => samplingMeasure p).real {f | f i = f j} = ∑ r, (p r : ℝ) ^ 2 := by
+  have := isProbabilityMeasure_samplingMeasure p hp
+  set P := Measure.pi fun _ : κ => samplingMeasure p
+  have hind : IndepFun (fun f : κ → ι => f i) (fun f => f j) P :=
+    (iIndepFun_pi (μ := fun _ : κ => samplingMeasure p) (X := fun _ (x : ι) => x)
+      fun _ => aemeasurable_id).indepFun hij
+  have hev (l : κ) (r : ι) : P ((fun f : κ → ι => f l) ⁻¹' {r}) = p r := by
+    rw [(measurePreserving_eval (fun _ : κ => samplingMeasure p) l).measure_preimage
+      (measurableSet_singleton r).nullMeasurableSet, samplingMeasure_singleton]
+  have hU : {f : κ → ι | f i = f j} =
+      ⋃ r ∈ (Finset.univ : Finset ι),
+        (fun f : κ → ι => f i) ⁻¹' {r} ∩ (fun f : κ → ι => f j) ⁻¹' {r} := by
+    ext f
+    simp only [Set.mem_ofPred_eq, Finset.mem_univ, Set.iUnion_true, Set.mem_iUnion,
+      Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff]
+    exact ⟨fun h => ⟨f j, h, rfl⟩, fun ⟨_, h1, h2⟩ => h1.trans h2.symm⟩
+  have hmeas (r : ι) : MeasurableSet
+      ((fun f : κ → ι => f i) ⁻¹' {r} ∩ (fun f : κ → ι => f j) ⁻¹' {r}) :=
+    ((measurable_pi_apply i) (measurableSet_singleton r)).inter
+      ((measurable_pi_apply j) (measurableSet_singleton r))
+  rw [measureReal_def, hU, measure_biUnion_finset (fun r _ s _ hrs => ?_) fun r _ => hmeas r]
+  · rw [ENNReal.toReal_sum fun r _ => measure_ne_top _ _]
+    refine Finset.sum_congr rfl fun r _ => ?_
+    rw [hind.measure_inter_preimage_eq_mul _ _ (measurableSet_singleton r)
+      (measurableSet_singleton r), hev, hev, ENNReal.toReal_mul, ENNReal.coe_toReal, sq]
+  · exact Set.disjoint_left.2 fun f hf hf' => hrs (hf.1.symm.trans hf'.1)
 
 /-- The bridge to `PMF`. -/
 theorem samplingMeasure_toNNReal_eq_toMeasure (q : PMF ι) :

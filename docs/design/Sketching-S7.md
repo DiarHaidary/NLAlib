@@ -670,3 +670,20 @@ corrected in place (item 1). Skeletons: the files of item 17, every new proof `s
     the trace form before everything after it.
 18. §7: Q1 decided by item 2; Q4 by item 4; Q6 by item 14; Q9 with item 9; Q10's count by item 17;
     Q2, Q3, Q5, Q7 and Q8 stand.
+
+### Skeleton notes
+
+2026-10-15. Files: `ForMathlib/MeasureTheory/MeasurableSpace/Defs.lean` (1, proved);
+`Probability/Distributions/Sampling.lean` (+1, the collision lemma, proved, so no separate file;
+item 15's import added); `Sketching/Sparse/CountSketch.lean` (28: 3 definitions, 1 instance, 24
+theorems), five `sorry`: isotropy, the trace form and its integrable companion, the AMM identity
+and its integrable companion. Everything else is proved from them: the law block, the general
+entry formula and the hollow identity, the AMM bound and tail, the Gram mean (from the AMM
+identity), its integrable companion, the trace moment, the OSE (at `Fin (min d (card n))`), the OSI,
+the JL moment (the AMM bound at `Matrix.replicateCol Unit x`) and the size API and corollaries.
+Changes against §3: the result ids drop the "(new)" annotations (not slugs, `check_refs.py`);
+`conjTranspose_countSketchMatrix_mul_self_apply` ascribes the product `Matrix n n 𝕜` (it does not
+elaborate otherwise); the entry formula and the hollow identity omit `[Fintype n]` (unused); `Result`
+ids sit only where §3 puts them. Private helpers: continuity and measurability of the constructor,
+the Gram expansion `(A U)ᴴ (A U) = Uᴴ Aᴴ A U`, `‖U‖_F² = card r` for orthonormal `U`, and the
+one-column Gram entry and AMM error.
