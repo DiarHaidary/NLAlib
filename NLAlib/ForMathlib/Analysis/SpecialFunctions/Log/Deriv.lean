@@ -8,20 +8,24 @@ module
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 
 /-!
-# A third-order upper bound on $\log(1 + u)$ for $-1 < u \le 0$
+# Polynomial upper bounds on $\log(1 + u)$ and $\log(1 - u)$
 
-$\log(1 + u) \le u - u^2/2 + u^3/3$ for $-1 < u \le 0$: every term of the series of $\log(1 + u)$
-is nonpositive there, and the bound keeps the first three. It is the second-order log term the
-lower Johnson–Lindenstrauss tail of a sum of squares needs
-(`NLAlib/Probability/SubGaussian/SquareSum.lean`, `docs/design/Sketching-S3.md` §8, item 2),
-where $1 + v \le e^v$ is too weak. The same bound for $u \ge 0$ is the private
-`log_one_add_le_cubic` of `NLAlib/Probability/Distributions/ChiSquareTails.lean`; at the wrap-up
-the two become one public statement for $-1 < u$. Upstream candidate for
+Truncations of the series of $\log(1 + u)$ that bound it from above: the cubic
+$\log(1 + u) \le u - u^2/2 + u^3/3$ for every $u > -1$, the quadratic
+$\log(1 - u) \le -u - u^2/2$ on $[0, 1)$, and Laurent and Massart's
+$-\log(1 - u) \le u + u^2 / (2(1 - u))$ on $[0, 1)$. They are the log terms of the Chernoff
+bounds for $\chi^2$ and for sums of squares (Dasgupta and Gupta's exponent
+$\varepsilon^2/4 - \varepsilon^3/6$, and the sub-gamma bound of a weighted $\chi^2$), where
+$1 + v \le e^v$ is too weak. The numerical bound $\log 9 \le 9/4$ is the margin of the covering
+number $9^d$ of a $1/4$-net of a sphere. Upstream candidates for
 `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 
 ## Main results
 
-* `Real.log_one_add_le_cubic_of_nonpos`.
+* `Real.log_one_add_le_cubic`, `Real.log_one_add_le_cubic_of_nonpos`.
+* `Real.log_one_sub_le_quadratic`.
+* `Real.neg_log_one_sub_le`.
+* `Real.log_nine_le_nine_div_four`.
 -/
 
 @[expose] public section
@@ -32,7 +36,8 @@ namespace Real
 $$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$
 Proof: with $x = -u \in [0, 1)$ the series $-\log(1 - x) = \sum_{k \ge 1} x^k / k$
 (`Real.hasSum_pow_div_log_of_abs_lt_one`) has nonnegative terms, so it is at least the sum of its
-first three terms, $x + x^2/2 + x^3/3$. Substituting $x = -u$ gives the claim. -/
+first three terms, $x + x^2/2 + x^3/3$. Substituting $x = -u$ gives the claim. The bound for every
+$u > -1$ is `Real.log_one_add_le_cubic`. -/
 theorem log_one_add_le_cubic_of_nonpos {u : ℝ} (h1 : -1 < u) (h0 : u ≤ 0) :
     log (1 + u) ≤ u - u ^ 2 / 2 + u ^ 3 / 3 := by
   have hu : 0 ≤ -u := by linarith
@@ -42,5 +47,82 @@ theorem log_one_add_le_cubic_of_nonpos {u : ℝ} (h1 : -1 < u) (h0 : u ≤ 0) :
   norm_num at this
   have e : (-u) ^ 3 = -u ^ 3 := by ring
   linarith
+
+/-- For $u > -1$,
+$$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$
+For $u \le 0$ this is `Real.log_one_add_le_cubic_of_nonpos`; for $u \ge 0$ the difference has
+derivative $u^3 / (1 + u) \ge 0$ and vanishes at $0$. -/
+theorem log_one_add_le_cubic {u : ℝ} (h1 : -1 < u) :
+    log (1 + u) ≤ u - u ^ 2 / 2 + u ^ 3 / 3 := by
+  rcases le_or_gt u 0 with h0 | h0
+  · exact log_one_add_le_cubic_of_nonpos h1 h0
+  let f : ℝ → ℝ := fun t => t - t ^ 2 / 2 + t ^ 3 / 3 - log (1 + t)
+  have hderiv : ∀ t, 0 ≤ t → HasDerivAt f (1 - t + t ^ 2 - 1 / (1 + t)) t := by
+    intro t ht
+    have hlog := ((hasDerivAt_id t).const_add 1).log (by simp only [id]; linarith)
+    have hp : HasDerivAt (fun t : ℝ => t - t ^ 2 / 2 + t ^ 3 / 3) (1 - t + t ^ 2) t := by
+      have := (((hasDerivAt_id' t).sub ((hasDerivAt_pow 2 t).div_const 2)).add
+        ((hasDerivAt_pow 3 t).div_const 3))
+      exact this.congr_deriv (by norm_num)
+    exact hp.sub hlog
+  have hmono : MonotoneOn f (Set.Ici 0) := by
+    refine monotoneOn_of_deriv_nonneg (convex_Ici 0) ?_ ?_ ?_
+    · exact fun t ht => (hderiv t ht).continuousAt.continuousWithinAt
+    · intro t ht
+      rw [interior_Ici] at ht
+      exact (hderiv t (le_of_lt ht)).differentiableAt.differentiableWithinAt
+    · intro t ht
+      rw [interior_Ici] at ht
+      have ht0 : 0 < t := ht
+      rw [(hderiv t ht0.le).deriv]
+      have : 1 - t + t ^ 2 - 1 / (1 + t) = t ^ 3 / (1 + t) := by field_simp; ring
+      rw [this]; positivity
+  have := hmono (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 h0.le) h0.le
+  simp only [f, add_zero, log_one] at this
+  norm_num at this
+  linarith
+
+/-- For $0 \le u < 1$,
+$$\log(1 - u) \le -u - \frac{u^2}{2} \,,$$
+the first two terms of $-\log(1 - u) = \sum_{k \ge 1} u^k / k$, whose terms are nonnegative. -/
+theorem log_one_sub_le_quadratic {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
+    log (1 - u) ≤ -u - u ^ 2 / 2 := by
+  have h := hasSum_pow_div_log_of_abs_lt_one (x := u) (by rwa [abs_of_nonneg hu0])
+  have := sum_le_hasSum (Finset.range 2) (fun n _ => by positivity) h
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero] at this
+  norm_num at this
+  linarith
+
+/-- **Laurent and Massart's log bound**: for $0 \le u < 1$,
+$$-\log(1 - u) \le u + \frac{u^2}{2 (1 - u)} \,,$$
+by comparing the series $\sum_{k \ge 1} u^k / k$ term by term with $u + \frac{u}{2} \sum_{k \ge 1}
+u^k$. It turns the Laplace transform $(1 - 2\theta)^{-1/2}$ of $\chi^2_1$ into a sub-gamma
+bound (Laurent and Massart 2000, proof of Lemma 1). -/
+theorem neg_log_one_sub_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
+    -log (1 - u) ≤ u + u ^ 2 / (2 * (1 - u)) := by
+  have h := hasSum_pow_div_log_of_abs_lt_one (x := u) (by rwa [abs_of_nonneg hu0])
+  have hg : HasSum (fun k : ℕ => (if k = 0 then u / 2 else 0) + u / 2 * u ^ k)
+      (u / 2 + u / 2 * (1 - u)⁻¹) :=
+    (hasSum_ite_eq 0 (u / 2)).add ((hasSum_geometric_of_lt_one hu0 hu1).mul_left (u / 2))
+  have hle := hasSum_le (fun k => ?_) h hg
+  · have h1 : 0 < 1 - u := by linarith
+    calc -log (1 - u) ≤ u / 2 + u / 2 * (1 - u)⁻¹ := hle
+      _ = u + u ^ 2 / (2 * (1 - u)) := by field_simp; ring
+  · rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp
+    · rw [if_neg hk.ne', zero_add, pow_succ, mul_comm (u / 2), mul_div_assoc']
+      refine div_le_div_of_nonneg_left (by positivity) (by norm_num) ?_
+      have : (1 : ℝ) ≤ k := Nat.one_le_cast.2 hk
+      linarith
+
+/-- $\log 9 \le 9/4$, that is $9 \le e^{9/4}$: from $e^{9/32} \ge 1 + 9/32 + (9/32)^2/2$ raised
+to the eighth power. The margin that turns the $9^d$ points of a $1/4$-net of a $d$-dimensional
+sphere into a factor $e^{9d/4}$. -/
+theorem log_nine_le_nine_div_four : log 9 ≤ 9 / 4 := by
+  rw [log_le_iff_le_exp (by norm_num)]
+  have h := quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 9 / 32 by norm_num)
+  rw [show (9 / 4 : ℝ) = ((8 : ℕ) : ℝ) * (9 / 32) by norm_num, exp_nat_mul]
+  calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
+    _ ≤ exp (9 / 32) ^ 8 := by gcongr
 
 end Real

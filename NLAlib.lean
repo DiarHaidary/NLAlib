@@ -12,6 +12,7 @@ public import NLAlib.ForMathlib.Analysis.Real.Sqrt
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
+public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.ForMathlib.Data.Matrix.Block
 public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
@@ -167,7 +168,6 @@ public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare
 public import NLAlib.Probability.Distributions.ChiSquareMoments
-public import NLAlib.Probability.Distributions.ChiSquareTails
 public import NLAlib.Probability.Distributions.Gaussian
 public import NLAlib.Probability.Distributions.GaussianComparison
 public import NLAlib.Probability.Distributions.GaussianConcentration
@@ -180,7 +180,6 @@ public import NLAlib.Probability.Distributions.Sampling
 public import NLAlib.Probability.Distributions.UniformInjection
 public import NLAlib.Probability.Entropy
 public import NLAlib.Probability.EntropyTensorization
-public import NLAlib.Probability.IndependentRows
 public import NLAlib.Probability.Isotropic
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.LogSobolev
@@ -210,10 +209,8 @@ public import NLAlib.Probability.SubExponential.Tail
 public import NLAlib.Probability.SubGaussian.Basic
 public import NLAlib.Probability.SubGaussian.Moments
 public import NLAlib.Probability.SubGaussian.Square
-public import NLAlib.Probability.SubGaussian.SquareSum
 public import NLAlib.Probability.SubGaussianVector.Basic
 public import NLAlib.Probability.SubGaussianVector.Norm
-public import NLAlib.Probability.SubGaussianVector.NormMatrix
 public import NLAlib.Probability.Tail
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments

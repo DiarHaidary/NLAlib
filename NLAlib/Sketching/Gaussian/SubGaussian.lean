@@ -5,8 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Probability.IndependentRows
-public import NLAlib.Probability.SubGaussian.SquareSum
+public import NLAlib.Probability.Law
+public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.Sketching.Properties.Isotropic
 public import NLAlib.Sketching.Properties.JohnsonLindenstraussNet
@@ -76,14 +76,6 @@ namespace NLAlib
 private theorem log_two_div_nonneg {δ : ℝ} (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     0 ≤ Real.log (2 / δ) :=
   Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-
-/-- $\log 9 \le 9/4$. -/
-private theorem log_nine_le : Real.log 9 ≤ 9 / 4 := by
-  rw [Real.log_le_iff_le_exp (by norm_num)]
-  have h := Real.quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 9 / 32 by norm_num)
-  rw [show (9 / 4 : ℝ) = ((8 : ℕ) : ℝ) * (9 / 32) by norm_num, Real.exp_nat_mul]
-  calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
-    _ ≤ Real.exp (9 / 32) ^ 8 := by gcongr
 
 /-- $2 \cdot 9^d e^{-L} \le \delta$ once $d \log 9 + \log(2/\delta) \le L$, for $\delta > 0$. -/
 private theorem two_mul_nine_pow_mul_exp_le {d : ℕ} {L δ : ℝ} (hδ : 0 < δ)
@@ -220,7 +212,7 @@ theorem subgaussianEmbeddingDim_le (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 < δ)
   rw [subgaussianEmbeddingDim_def, subgaussianJLConstant_def]
   have hL := log_two_div_nonneg hδ hδ2
   have h9 : (d : ℝ) * Real.log 9 ≤ d * (9 / 4) :=
-    mul_le_mul_of_nonneg_left log_nine_le (Nat.cast_nonneg d)
+    mul_le_mul_of_nonneg_left Real.log_nine_le_nine_div_four (Nat.cast_nonneg d)
   have e : 4 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / (1 / 64 * ε ^ 2) =
       256 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / ε ^ 2 := by
     rcases eq_or_ne ε 0 with rfl | hε

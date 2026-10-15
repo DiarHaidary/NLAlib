@@ -10,7 +10,7 @@ public import NLAlib.Matrix.Norms.Compare
 public import NLAlib.Matrix.Structured.BoundedOrthonormal
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.Measurability.Matrix
-public import NLAlib.Probability.SubGaussianVector.NormMatrix
+public import NLAlib.Probability.SubGaussianVector.Norm
 public import NLAlib.Sketching.Properties.FixedSubspace
 public import NLAlib.Sketching.Sampling.Leverage
 

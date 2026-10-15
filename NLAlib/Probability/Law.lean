@@ -28,6 +28,8 @@ hypotheses apart into independence and marginals, and back, and transports integ
 * `NLAlib.hasLaw_pi_pi_iff`: the same for the entries of a random matrix, indexed by the product
   type `m × n`.
 * `ProbabilityTheory.HasLaw.entry`, `ProbabilityTheory.HasLaw.iIndepFun_entry`.
+* `NLAlib.iIndepFun_row_of_iIndepFun_entry`: independent entries give independent rows (Mathlib
+  has the converse, `ProbabilityTheory.iIndepFun_uncurry'`).
 * `ProbabilityTheory.HasLaw.integrable_comp_iff`, `ProbabilityTheory.HasLaw.memLp_comp_iff`:
   integrability depends only on the law. (The bridge to `IdentDistrib` is Mathlib's
   `ProbabilityTheory.HasLaw.identDistrib`.)
@@ -118,6 +120,33 @@ theorem _root_.ProbabilityTheory.HasLaw.iIndepFun_entry
   exact (hasLaw_pi_pi_iff.1 hX).1
 
 end Matrix
+
+section Rows
+
+variable {m n α : Type*} [Finite m] [Finite n] [MeasurableSpace α]
+
+/-- Independent entries give independent rows: if the entries $\mathbf{X}_{i,j}$ of a random
+matrix `X : Ω → Matrix m n α`, as a family indexed by $m \times n$, are independent, so are its
+rows $\mathbf{X}_i$. The bridge from the entry hypotheses of
+`ProbabilityTheory.HasLaw.iIndepFun_entry`'s shape to the row hypotheses of the sub-Gaussian
+rows theorems. The measurability hypothesis is the one the product-law route needs
+(`NLAlib.hasLaw_pi_pi_iff` with `ν i j := μ.map (X · i j)`, then
+`ProbabilityTheory.HasLaw.iIndepFun_eval`); it goes if a Mathlib grouping lemma (`iIndepFun` over
+a partition of the index) turns up. Mathlib has the converse,
+`ProbabilityTheory.iIndepFun_uncurry'`. -/
+theorem iIndepFun_row_of_iIndepFun_entry {X : Ω → Matrix m n α}
+    (hind : iIndepFun (fun p : m × n => fun ω => X ω p.1 p.2) μ)
+    (hX : ∀ i j, AEMeasurable (fun ω => X ω i j) μ) : iIndepFun (fun i ω => X ω i) μ := by
+  have := hind.isProbabilityMeasure
+  have := Fintype.ofFinite m
+  have := Fintype.ofFinite n
+  have : ∀ i j, IsProbabilityMeasure (μ.map fun ω => X ω i j) :=
+    fun i j => Measure.isProbabilityMeasure_map (hX i j)
+  have hlaw : HasLaw X (Measure.pi fun i => Measure.pi fun j => μ.map fun ω => X ω i j) μ :=
+    hasLaw_pi_pi_iff.2 ⟨hind, fun i j => ⟨hX i j, rfl⟩⟩
+  exact hlaw.iIndepFun_eval
+
+end Rows
 
 section Transport
 

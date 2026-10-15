@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.Matrix.Norms.Net
 public import NLAlib.Sketching.Properties.FixedSubspace
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
@@ -49,20 +50,6 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {k n p : Type*} [Fintype k] [Fintype n] {S : Ω → Matrix k n 𝕜} {ε δ : ℝ}
-
-/-- A finite family of reals below $s > 0$ has a common bound $M$ with $0 \le M < s$. -/
-private theorem exists_le_lt_of_forall_lt {ι : Type*} (N : Finset ι) (f : ι → ℝ) {s : ℝ}
-    (hs : 0 < s) (h : ∀ i ∈ N, f i < s) : ∃ M, 0 ≤ M ∧ M < s ∧ ∀ i ∈ N, f i ≤ M := by
-  classical
-  refine ⟨(insert 0 (N.image f)).max' (Finset.insert_nonempty _ _),
-    Finset.le_max' _ _ (Finset.mem_insert_self _ _), ?_, fun i hi => Finset.le_max' _ _
-      (Finset.mem_insert_of_mem (Finset.mem_image_of_mem f hi))⟩
-  rw [Finset.max'_lt_iff]
-  intro y hy
-  rcases Finset.mem_insert.mp hy with rfl | hy
-  · exact hs
-  · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp hy
-    exact h i hi
 
 /-- A matrix with orthonormal columns preserves the Euclidean norm. -/
 private theorem norm_mulVec_of_hasOrthonormalCols [Fintype p] [DecidableEq p]
@@ -127,7 +114,7 @@ theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] [Fintype p] [Dec
     intro ω hω
     by_contra hnot
     simp only [Set.mem_iUnion, Set.mem_ofPred_eq, not_exists, not_le] at hnot hω
-    obtain ⟨M, hM0, hMε, hM⟩ := exists_le_lt_of_forall_lt net
+    obtain ⟨M, hM0, hMε, hM⟩ := Finset.exists_le_lt_of_forall_lt net
       (fun x => |‖WithLp.toLp 2 (S ω *ᵥ (U *ᵥ x))‖ ^ 2 - 1|) hε hnot
     have hH : ((S ω * U)ᴴ * (S ω * U) - 1).IsHermitian :=
       (Matrix.isHermitian_conjTranspose_mul_self _).sub Matrix.isHermitian_one

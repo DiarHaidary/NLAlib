@@ -5,7 +5,9 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Matrix.Basic.OrthonormalBasis
+public import NLAlib.Matrix.Perturbation.Continuity
 public import NLAlib.Sketching.Properties.FixedSubspace
 public import NLAlib.Sketching.Properties.Isotropic
 
@@ -165,53 +167,22 @@ theorem IsObliviousSubspaceInjection.mono [IsFiniteMeasure μ] [DecidableEq n]
 
 /-! ### Transfer to an independent random subspace -/
 
-omit [Fintype k] [Fintype l] [Fintype n] in
-/-- The Fubini step of the transfer lemmas: a closed property $P$ of the pair
-$(\mathbf{S}, \mathbf{B})$ that fails with probability at most $\delta$ for every fixed
-$\mathbf{B}$ of rank at most $d$ fails with probability at most $\delta$ at an independent random
-$\mathbf{V}$ of rank at most $d$ (almost surely). -/
-private theorem measureReal_not_le_of_indepFun [Finite k] [Finite n] [IsProbabilityMeasure μ]
-    [Fintype q]
-    {P : Matrix k n 𝕜 → Matrix n q 𝕜 → Prop}
-    (hP : IsClosed {x : Matrix k n 𝕜 × Matrix n q 𝕜 | P x.1 x.2}) {V : Ω → Matrix n q 𝕜}
-    (hind : IndepFun S V μ) (hS : AEMeasurable S μ) (hV : AEMeasurable V μ)
-    (hrank : ∀ᵐ ω ∂μ, (V ω).rank ≤ d) (hδ : 0 ≤ δ)
-    (hfix : ∀ B : Matrix n q 𝕜, B.rank ≤ d → μ.real {ω | ¬ P (S ω) B} ≤ δ) :
-    μ.real {ω | ¬ P (S ω) (V ω)} ≤ δ := by
-  have hE : MeasurableSet {x : Matrix k n 𝕜 × Matrix n q 𝕜 | ¬ P x.1 x.2} :=
-    hP.isOpen_compl.measurableSet
-  have hslice (B : Matrix n q 𝕜) : MeasurableSet {A : Matrix k n 𝕜 | ¬ P A B} :=
-    (hP.preimage (continuous_id.prodMk continuous_const)).isOpen_compl.measurableSet
-  have hmeas : μ {ω | ¬ P (S ω) (V ω)} = ∫⁻ ω, μ {ω' | ¬ P (S ω') (V ω)} ∂μ := by
-    have h1 : μ {ω | ¬ P (S ω) (V ω)} =
-        (μ.map fun ω => (S ω, V ω)) {x | ¬ P x.1 x.2} := by
-      rw [Measure.map_apply_of_aemeasurable (hS.prodMk hV) hE]
-      rfl
-    rw [h1, (indepFun_iff_map_prod_eq_prod_map_map hS hV).1 hind, Measure.prod_apply_symm hE,
-      lintegral_map' (measurable_measure_prodMk_right hE).aemeasurable hV]
-    exact lintegral_congr fun ω => Measure.map_apply_of_aemeasurable hS (hslice (V ω))
-  have hle : μ {ω | ¬ P (S ω) (V ω)} ≤ ENNReal.ofReal δ := by
-    rw [hmeas]
-    calc ∫⁻ ω, μ {ω' | ¬ P (S ω') (V ω)} ∂μ ≤ ∫⁻ _, ENNReal.ofReal δ ∂μ := by
-          refine lintegral_mono_ae (hrank.mono fun ω hω => ?_)
-          rw [← ofReal_measureReal]
-          exact ENNReal.ofReal_le_ofReal (hfix _ hω)
-      _ = ENNReal.ofReal δ := by rw [lintegral_const, measure_univ, mul_one]
-  exact ENNReal.toReal_le_of_le_ofReal hδ hle
-
 /-- **Transfer of an OSE to an independent random subspace**: if $\mathbf{V}$ is independent of
 $\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to embed
 $\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. Fubini on the closed
-set of `NLAlib.isClosed_setOf_isSubspaceEmbedding`. -/
+set of `NLAlib.isClosed_setOf_isSubspaceEmbedding`: the sections bound
+`ProbabilityTheory.IndepFun.measureReal_mem_le_add` with the good set of rank at most $d$. -/
 theorem IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indepFun
     [IsProbabilityMeasure μ] [Fintype q] (h : IsObliviousSubspaceEmbedding S d a b δ μ)
     {V : Ω → Matrix n q 𝕜} (hind : IndepFun S V μ) (hS : AEMeasurable S μ)
     (hV : AEMeasurable V μ) (hrank : ∀ᵐ ω ∂μ, (V ω).rank ≤ d) :
     μ.real {ω | ¬ IsSubspaceEmbedding (S ω) (V ω) a b} ≤ δ := by
   have hδ : 0 ≤ δ := measureReal_nonneg.trans (h 0 (by simp))
-  exact measureReal_not_le_of_indepFun (P := fun A B => IsSubspaceEmbedding A B a b)
-    (isClosed_setOf_isSubspaceEmbedding a b) hind hS hV hrank hδ
-    fun B hB => h.hasSubspaceEmbedding hB
+  have h' := hind.measureReal_mem_le_add hS hV
+    (isClosed_setOf_isSubspaceEmbedding a b).isOpen_compl.measurableSet
+    (isClosed_setOf_rank_le d).measurableSet hδ (fun B hB => h.hasSubspaceEmbedding hB)
+    (δ₂ := 0) ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 (ae_iff.1 hrank)).le
+  rwa [add_zero] at h'
 
 /-- **Transfer of an OSI to an independent random subspace**: if $\mathbf{V}$ is independent of
 $\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to inject
@@ -222,9 +193,11 @@ theorem IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_le_of_indep
     (hS : AEMeasurable S μ) (hV : AEMeasurable V μ) (hrank : ∀ᵐ ω ∂μ, (V ω).rank ≤ d) :
     μ.real {ω | ¬ IsSubspaceInjection (S ω) (V ω) a} ≤ δ := by
   have hδ : 0 ≤ δ := measureReal_nonneg.trans (h.injection 0 (by simp))
-  exact measureReal_not_le_of_indepFun (P := fun A B => IsSubspaceInjection A B a)
-    (isClosed_setOf_isSubspaceInjection a) hind hS hV hrank hδ
-    fun B hB => h.hasSubspaceInjection hB
+  have h' := hind.measureReal_mem_le_add hS hV
+    (isClosed_setOf_isSubspaceInjection a).isOpen_compl.measurableSet
+    (isClosed_setOf_rank_le d).measurableSet hδ (fun B hB => h.hasSubspaceInjection hB)
+    (δ₂ := 0) ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 (ae_iff.1 hrank)).le
+  rwa [add_zero] at h'
 
 /-! ### Composition -/
 

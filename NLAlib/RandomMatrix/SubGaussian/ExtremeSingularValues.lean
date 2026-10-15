@@ -5,6 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
+public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.Matrix.Norms.Loewner
 public import NLAlib.Matrix.Norms.Net
 public import NLAlib.Matrix.Spectral.SingularValues
@@ -120,14 +122,6 @@ theorem hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector
 
 /-! ### Deterministic steps -/
 
-omit [Fintype n] in
-/-- $9 \le \exp(9/4)$, that is $\log 9 \le 9/4$: the margin of `subgaussianRowsConstant`. -/
-private lemma nine_le_exp : (9 : ℝ) ≤ Real.exp (9 / 4) := by
-  have h := Real.quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 9 / 32 by norm_num)
-  rw [show (9 / 4 : ℝ) = ((8 : ℕ) : ℝ) * (9 / 32) by norm_num, Real.exp_nat_mul]
-  calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
-    _ ≤ Real.exp (9 / 32) ^ 8 := by gcongr
-
 omit [Fintype m] in
 /-- With a column, an isotropic sub-Gaussian vector has proxy at least $1$. -/
 private lemma one_le_of_isSubgaussianVector [Nonempty n] [IsProbabilityMeasure μ]
@@ -226,20 +220,6 @@ private lemma lt_singularValues_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} 
 
 /-! ### The net argument -/
 
-/-- A finite family of reals below $s > 0$ has a common bound $M$ with $0 \le M < s$. -/
-private lemma exists_le_lt_of_forall_lt {ι : Type*} (S : Finset ι) (f : ι → ℝ) {s : ℝ}
-    (hs : 0 < s) (h : ∀ i ∈ S, f i < s) : ∃ M, 0 ≤ M ∧ M < s ∧ ∀ i ∈ S, f i ≤ M := by
-  classical
-  refine ⟨(insert 0 (S.image f)).max' (Finset.insert_nonempty _ _),
-    Finset.le_max' _ _ (Finset.mem_insert_self _ _), ?_, fun i hi => Finset.le_max' _ _
-      (Finset.mem_insert_of_mem (Finset.mem_image_of_mem f hi))⟩
-  rw [Finset.max'_lt_iff]
-  intro y hy
-  rcases Finset.mem_insert.mp hy with rfl | hy
-  · exact hs
-  · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp hy
-    exact h i hi
-
 /-- The fixed-vector tail at the level of the net argument:
 $r / 2 \le \bigl\lvert \|\mathbf{X}\mathbf{x}\|^2 - N \bigr\rvert$ with
 $r = \max(\sqrt{N} w, w^2)$, $N = \lvert m \rvert$, has probability at most
@@ -320,7 +300,7 @@ private lemma measureReal_not_specNorm_lt [Nonempty m] [Nonempty n]
     intro ω hω
     by_contra hnot
     simp only [Set.mem_iUnion, Set.mem_ofPred_eq, not_exists, not_le] at hnot
-    obtain ⟨M, hM0, hMr, hM⟩ := exists_le_lt_of_forall_lt net
+    obtain ⟨M, hM0, hMr, hM⟩ := Finset.exists_le_lt_of_forall_lt net
       (fun x => |‖WithLp.toLp 2 (X ω *ᵥ x)‖ ^ 2 - N|) (half_pos hr0) hnot
     have h := hnet _ (isHermitian_gram_sub (X ω) N) hM0 fun x hx => by
       rw [quadForm_sub_left, map_sub, quadForm_conjTranspose_mul_self, RCLike.ofReal_re,
@@ -339,7 +319,8 @@ private lemma measureReal_not_specNorm_lt [Nonempty m] [Nonempty n]
       rw [Finset.sum_const, nsmul_eq_mul]
     _ ≤ Real.exp (9 / 4) ^ Fintype.card n * (2 * Real.exp (-(9 / 4 * (d + t ^ 2)))) := by
       gcongr
-      exact hcard.trans (pow_le_pow_left₀ (by norm_num) nine_le_exp _)
+      exact hcard.trans (pow_le_pow_left₀ (by norm_num)
+        ((Real.log_le_iff_le_exp (by norm_num)).1 Real.log_nine_le_nine_div_four) _)
     _ = 2 * Real.exp (-(9 / 4 * t ^ 2)) := by
       rw [← Real.exp_nat_mul, mul_left_comm, ← Real.exp_add, hd_def]
       ring_nf

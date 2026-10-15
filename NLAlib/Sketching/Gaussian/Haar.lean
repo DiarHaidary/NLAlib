@@ -117,37 +117,12 @@ private theorem norm_smul_conjTranspose_mulVec_sq (M : Matrix n k ℝ) (x : n �
     Real.sq_sqrt (by positivity)]
 
 omit [Fintype k] [DecidableEq k] [Fintype p] in
-/-- **Congruence preserves positive semidefiniteness**, for a factor with any column type (no
-finiteness of `p`): the quadratic form of $\mathbf{X}^{\mathsf{H}}\mathbf{D}\mathbf{X}$ at a
-finitely supported $\mathbf{x}$ is that of the compression to the support. -/
-private theorem posSemidef_conjTranspose_mul_mul_same' {D : Matrix n n ℝ} (hD : D.PosSemidef)
-    (X : Matrix n p ℝ) : (Xᴴ * D * X).PosSemidef := by
-  classical
-  refine ⟨Matrix.isHermitian_conjTranspose_mul_mul X hD.1, fun x => ?_⟩
-  have hs := hD.conjTranspose_mul_mul_same (X.submatrix id (Subtype.val : x.support → p))
-  have h := hs.2 (x.subtypeDomain (· ∈ x.support))
-  have key : (X.submatrix id (Subtype.val : x.support → p))ᴴ * D *
-      X.submatrix id (Subtype.val : x.support → p) =
-      (Xᴴ * D * X).submatrix Subtype.val Subtype.val := by
-    ext i j
-    simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.submatrix_apply, id]
-  rw [key] at h
-  simp only [Matrix.submatrix_apply] at h
-  have hin (i : p) (xi : ℝ) : ((x.subtypeDomain (· ∈ x.support)).sum fun j xj =>
-      star xi * (Xᴴ * D * X) i j * xj) = x.sum fun j xj => star xi * (Xᴴ * D * X) i j * xj :=
-    Finsupp.sum_subtypeDomain_index (v := x) (p := fun a => a ∈ x.support)
-      (h := fun j xj => star xi * (Xᴴ * D * X) i j * xj) (fun _ hi => hi)
-  simp only [hin] at h
-  rwa [Finsupp.sum_subtypeDomain_index (v := x) (p := fun a => a ∈ x.support)
-    (h := fun i xi => x.sum fun j xj => star xi * (Xᴴ * D * X) i j * xj) (fun _ hi => hi)] at h
-
-omit [Fintype k] [DecidableEq k] [Fintype p] in
 /-- Congruence preserves the Loewner order, for a factor with any column type. -/
 private theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul' {G H : Matrix n n ℝ}
     (h : G ≤ H) (X : Matrix n p ℝ) : Xᴴ * G * X ≤ Xᴴ * H * X := by
   rw [Matrix.le_iff] at h ⊢
   rw [← Matrix.sub_mul, ← Matrix.mul_sub]
-  exact posSemidef_conjTranspose_mul_mul_same' h X
+  exact h.conjTranspose_mul_mul_same' X
 
 omit [Fintype p] in
 /-- A nonnegative scalar preserves the Loewner order. -/

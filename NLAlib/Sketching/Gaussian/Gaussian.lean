@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Probability.Distributions.ChiSquareMoments
-public import NLAlib.Probability.Distributions.ChiSquareTails
+public import NLAlib.Probability.Distributions.ChiSquare
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss

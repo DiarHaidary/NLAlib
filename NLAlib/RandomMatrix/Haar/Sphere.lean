@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Probability.Distributions.ChiSquareTails
+public import NLAlib.Probability.Distributions.ChiSquare
 public import NLAlib.RandomMatrix.Haar.Uniqueness
 
 /-!
@@ -22,15 +22,17 @@ moment
 $$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4
 = \frac{\lvert k \rvert (\lvert k \rvert + 2)}{\lvert n \rvert (\lvert n \rvert + 2)} \,.$$
 
-There is no sphere-invariance lemma in the library: the tails go through
-$\mathbf{u} = \mathbf{g} / \|\mathbf{g}\|$ for a standard Gaussian $\mathbf{g}$
+The tails go through $\mathbf{u} = \mathbf{g} / \|\mathbf{g}\|$ for a standard Gaussian
+$\mathbf{g}$
 (`NLAlib.hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`), the orthogonal
 $\mathbf{W} = \begin{bmatrix} \mathbf{V} & \mathbf{V}_{\perp} \end{bmatrix}^{\mathsf{H}}$ from
 `NLAlib.HasOrthonormalCols.exists_fromCols` and `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`,
 which reduce $\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 \le c$ to the event
 $0 \le \sum_i \theta_i \mathbf{g}_i^2$ with two weights, and Chernoff's bound with
 `NLAlib.integral_exp_sum_mul_sq_of_hasLaw_gaussianVector`. The fourth moment uses invariance
-alone: $\sum_i \mathbf{u}_i^2 = 1$ and a $45^\circ$ rotation give
+alone (`NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`: the law of
+$\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the column type of $\mathbf{V}$):
+$\sum_i \mathbf{u}_i^2 = 1$ and a $45^\circ$ rotation give
 $\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ when
 $\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$.
 
@@ -46,6 +48,7 @@ wrap-up it merges into a Haar owner file.
   the two Chernoff tails.
 * The relative deviation (in namespace `NLAlib`):
   `measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uniformSphereVector`
+* `NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`: sphere invariance.
 * `NLAlib.integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector`: the fourth
   moment.
 -/
@@ -256,48 +259,6 @@ private theorem exponent_two_weights_le {K N β : ℝ} (hKN : K ≤ N) (hβ : 0 
     · exact absurd hc (lt_irrefl _)
     · simp only [sub_self, zero_mul, add_zero]
       nlinarith [mul_nonneg hKN' (sub_nonneg.2 hc)]
-
-/-- $\log(1 + \varepsilon) \le \varepsilon - \varepsilon^2/2 + \varepsilon^3/3$ for
-$\varepsilon \ge 0$: the difference has derivative $\varepsilon^3/(1 + \varepsilon) \ge 0$ and
-vanishes at $0$. (A copy of the private lemma of `ChiSquareTails.lean`.) -/
-private theorem log_one_add_le_cubic' {ε : ℝ} (hε : 0 ≤ ε) :
-    Real.log (1 + ε) ≤ ε - ε ^ 2 / 2 + ε ^ 3 / 3 := by
-  let f : ℝ → ℝ := fun t => t - t ^ 2 / 2 + t ^ 3 / 3 - Real.log (1 + t)
-  have hderiv : ∀ t, 0 ≤ t → HasDerivAt f (1 - t + t ^ 2 - 1 / (1 + t)) t := by
-    intro t ht
-    have h1 : HasDerivAt (fun t : ℝ => 1 + t) 1 t := (hasDerivAt_id t).const_add 1
-    have hlog := h1.log (by linarith)
-    have hp : HasDerivAt (fun t : ℝ => t - t ^ 2 / 2 + t ^ 3 / 3) (1 - t + t ^ 2) t := by
-      have := (((hasDerivAt_id' t).sub ((hasDerivAt_pow 2 t).div_const 2)).add
-        ((hasDerivAt_pow 3 t).div_const 3))
-      exact this.congr_deriv (by norm_num)
-    exact hp.sub hlog
-  have hmono : MonotoneOn f (Set.Ici 0) := by
-    refine monotoneOn_of_deriv_nonneg (convex_Ici 0) ?_ ?_ ?_
-    · exact fun t ht => (hderiv t ht).continuousAt.continuousWithinAt
-    · intro t ht
-      rw [interior_Ici] at ht
-      exact (hderiv t (le_of_lt ht)).differentiableAt.differentiableWithinAt
-    · intro t ht
-      rw [interior_Ici] at ht
-      have ht0 : 0 < t := ht
-      rw [(hderiv t ht0.le).deriv]
-      have : 1 - t + t ^ 2 - 1 / (1 + t) = t ^ 3 / (1 + t) := by field_simp; ring
-      rw [this]; positivity
-  have := hmono (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 hε) hε
-  simp only [f, add_zero, Real.log_one] at this
-  norm_num at this
-  linarith
-
-/-- $\log(1 - u) \le -u - u^2/2$ for $0 \le u < 1$. (A copy of the private lemma of
-`ChiSquareTails.lean`.) -/
-private theorem log_one_sub_le'' {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
-    Real.log (1 - u) ≤ -u - u ^ 2 / 2 := by
-  have h := Real.hasSum_pow_div_log_of_abs_lt_one (x := u) (by rwa [abs_of_nonneg hu0])
-  have := sum_le_hasSum (Finset.range 2) (fun n _ => by positivity) h
-  simp only [Finset.sum_range_succ, Finset.sum_range_zero] at this
-  norm_num at this
-  linarith
 
 /-- **A Haar frame applied to a fixed unit vector**: for an $n \times k$ Haar frame $\mathbf{Q}$
 and a unit $\mathbf{x}$, $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ has the law of
@@ -541,7 +502,7 @@ measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uni
       Real.exp (-(K * (ε ^ 2 / 4 - ε ^ 3 / 6))) := by
     refine (measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector
       hu hV (by linarith)).trans (Real.exp_le_exp.2 ?_)
-    have := log_one_add_le_cubic' hε
+    have := Real.log_one_add_le_cubic (u := ε) (by linarith)
     have : K / 2 * (1 - (1 + ε) + Real.log (1 + ε)) ≤ K / 2 * (-(ε ^ 2 / 2) + ε ^ 3 / 3) :=
       mul_le_mul_of_nonneg_left (by linarith) (by positivity)
     linarith
@@ -550,7 +511,7 @@ measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uni
     rcases lt_or_ge ε 1 with hε1 | hε1
     · refine (measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector
         hu hV (by linarith) (by linarith)).trans (Real.exp_le_exp.2 ?_)
-      have := log_one_sub_le'' hε hε1
+      have := Real.log_one_sub_le_quadratic hε hε1
       have : K / 2 * (1 - (1 - ε) + Real.log (1 - ε)) ≤ K / 2 * (-(ε ^ 2 / 2)) :=
         mul_le_mul_of_nonneg_left (by linarith) (by positivity)
       have : 0 ≤ K * ε ^ 3 := by positivity
@@ -611,12 +572,17 @@ private theorem ae_norm_eq_one [Nonempty n] :
   simp only [WithLp.toLp_ofLp]
   exact norm_eq_of_mem_sphere x
 
-/-- **The law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the frame's column type**:
-two frames with the same column index project a uniform unit vector to the same law (both are the
-law of $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ for a Haar frame $\mathbf{Q}$ and a fixed unit
-$\mathbf{x}$). -/
-private theorem map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r] [DecidableEq r]
-    {V₁ V₂ : Matrix n r ℝ} (h₁ : HasOrthonormalCols V₁) (h₂ : HasOrthonormalCols V₂) :
+/-- **Sphere invariance: the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the
+frame's column type.** For $\mathbf{u}$ uniform on the unit sphere of $\mathbb{R}^n$ and two
+$\mathbf{V}_1, \mathbf{V}_2$ with orthonormal columns indexed by the same $r$,
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{u}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{u}$ have the same
+law: both are the law of $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ for an $n \times r$ Haar frame
+$\mathbf{Q}$ and a fixed unit $\mathbf{x}$
+(`NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`). For square $\mathbf{V}_2 = \mathbf{I}$
+this is the orthogonal invariance of the uniform law. -/
+theorem uniformSphereVector_map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r]
+    [DecidableEq r] {V₁ V₂ : Matrix n r ℝ} (h₁ : HasOrthonormalCols V₁)
+    (h₂ : HasOrthonormalCols V₂) :
     (uniformSphereVector n).map (V₁ᴴ *ᵥ ·) = (uniformSphereVector n).map (V₂ᴴ *ᵥ ·) := by
   classical
   obtain ⟨i⟩ := ‹Nonempty n›
@@ -627,7 +593,7 @@ private theorem map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r] 
     hx).map_eq, (hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame
     (HasLaw.id (μ := haarFrame n r)) h₂ hx).map_eq]
 
-/-- The integral form of `map_conjTranspose_mulVec_eq`. -/
+/-- The integral form of `NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`. -/
 private theorem integral_comp_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r]
     [DecidableEq r] {V₁ V₂ : Matrix n r ℝ} (h₁ : HasOrthonormalCols V₁)
     (h₂ : HasOrthonormalCols V₂) {F : (r → ℝ) → ℝ} (hF : Continuous F) :
@@ -635,7 +601,8 @@ private theorem integral_comp_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [
   have hm (W : Matrix n r ℝ) : Measurable (Wᴴ *ᵥ · : (n → ℝ) → r → ℝ) :=
     (continuous_const.matrix_mulVec continuous_id).measurable
   rw [← integral_map (hm V₁).aemeasurable hF.aestronglyMeasurable,
-    map_conjTranspose_mulVec_eq h₁ h₂, integral_map (hm V₂).aemeasurable hF.aestronglyMeasurable]
+    uniformSphereVector_map_conjTranspose_mulVec_eq h₁ h₂,
+    integral_map (hm V₂).aemeasurable hF.aestronglyMeasurable]
 
 omit [Fintype n] in
 /-- The pair `![a, b]` of distinct indices is injective. -/
