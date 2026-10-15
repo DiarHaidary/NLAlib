@@ -20,9 +20,6 @@ These are the facts sketch-and-solve uses to pass from an embedding of
 $\operatorname{range} \begin{bmatrix} \mathbf{A} & \mathbf{y} \end{bmatrix}$ to statements about
 $\mathbf{A}$ and $\mathbf{y}$ (`docs/design/Sketching-S0.md` §3.3).
 
-This file holds the Sketching round's S0 additions to the Matrix layer until the round's wrap-up
-merges them into their owner.
-
 ## Main results
 
 * `NLAlib.range_mulVecLin_le_range_fromCols_left`: $\operatorname{range} \mathbf{A} \le

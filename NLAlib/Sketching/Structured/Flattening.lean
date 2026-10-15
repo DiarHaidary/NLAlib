@@ -333,25 +333,6 @@ theorem measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_has
 
 /-! ### Flatten, then sample -/
 
-omit [Fintype r] in
-private theorem isSubspaceInjection_mul_iff {A : Matrix k n 𝕜} {B : Matrix n n 𝕜}
-    (hB : HasOrthonormalCols B) (U : Matrix n r 𝕜) :
-    IsSubspaceInjection (A * B) U a ↔ IsSubspaceInjection A (B * U) a := by
-  rw [IsSubspaceInjection, IsSubspaceInjection, Matrix.mul_assoc A B U,
-    hB.conjTranspose_mul_mul U U]
-
-omit [Fintype r] in
-private theorem isSubspaceEmbedding_mul_iff {A : Matrix k n 𝕜} {B : Matrix n n 𝕜}
-    (hB : HasOrthonormalCols B) (U : Matrix n r 𝕜) :
-    IsSubspaceEmbedding (A * B) U a b ↔ IsSubspaceEmbedding A (B * U) a b := by
-  have hU : (B * U)ᴴ * (B * U) = Uᴴ * U := hB.conjTranspose_mul_mul U U
-  refine ⟨fun h => ⟨(isSubspaceInjection_mul_iff hB U).1 h.lower, ?_⟩,
-    fun h => ⟨(isSubspaceInjection_mul_iff hB U).2 h.lower, ?_⟩⟩
-  · rw [hU, ← Matrix.mul_assoc A B U]
-    exact h.upper
-  · rw [Matrix.mul_assoc A B U, ← hU]
-    exact h.upper
-
 /-- The measurable set of unitaries $\mathbf{B}$ making $\mathbf{B}\mathbf{U}$ incoherent. -/
 private theorem measurableSet_good (U : Matrix n r 𝕜) (L : ℝ) :
     MeasurableSet {B : Matrix n n 𝕜 | HasOrthonormalCols B ∧
@@ -421,7 +402,7 @@ theorem hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le [IsProbabilityM
     (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
     HasSubspaceInjection (fun ω => P ω * T ω) U a (δ₁ + δ₂) μ :=
   measureReal_not_mul_le_add (R := fun A V => IsSubspaceInjection A V a)
-    (isClosed_setOf_isSubspaceInjection a) (fun _ _ hB => isSubspaceInjection_mul_iff hB U)
+    (isClosed_setOf_isSubspaceInjection a) (fun _ _ hB => hB.isSubspaceInjection_mul_iff U)
     hind hP hT hTU hδ₁ hsample hflat
 
 /-- **Flatten, then sample** (embedding). A random sketch $\mathbf{P}$ that is a subspace
@@ -443,7 +424,7 @@ theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityM
     (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
     HasSubspaceEmbedding (fun ω => P ω * T ω) U a b (δ₁ + δ₂) μ :=
   measureReal_not_mul_le_add (R := fun A V => IsSubspaceEmbedding A V a b)
-    (isClosed_setOf_isSubspaceEmbedding a b) (fun _ _ hB => isSubspaceEmbedding_mul_iff hB U)
+    (isClosed_setOf_isSubspaceEmbedding a b) (fun _ _ hB => hB.isSubspaceEmbedding_mul_iff U)
     hind hP hT hTU hδ₁ hsample hflat
 
 end NLAlib

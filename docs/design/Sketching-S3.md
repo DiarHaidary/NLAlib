@@ -324,3 +324,9 @@ every proof `sorry`.
 the rows theorems the proxy `c : ℝ≥0`, coerced; result ids `jl-subgaussian` (the three
 sub-Gaussian JL tails), `subgaussian-ose`, `rademacher-ose`, and the new `jl-rademacher` (the sign
 JL).
+
+**Wrap-up (2026-10-15).** `JohnsonLindenstraussNet.lean` (§3.1) merged into
+`Sketching/Properties/JohnsonLindenstrauss.lean` as its last section; its two theorems keep their
+names and statements. Its private `norm_mulVec_of_hasOrthonormalCols` is replaced by the existing
+`HasOrthonormalCols.norm_toLp_mulVec`, and the unit-vector reduction of the JL file is public as
+`exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq` (also used by `Gaussian.lean`).

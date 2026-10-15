@@ -41,11 +41,8 @@ zero measure, so `HasLaw` forces $\mu = 0$ and every tail holds; no $\lvert k \r
 bound $d \cdot e^0$ is at least $1$ when $\mathbf{U} \ne \mathbf{0}$, and the sketch is not
 isotropic, hence `[Nonempty k]` on isotropy. Rank zero: every failure event is empty. $L \le 0$
 forces rank zero, so no $0 < L$ is assumed. For $\varepsilon \ge 1$ the injection is vacuous.
-Design: `docs/design/Sketching-S5.md` §3.4, §8.
-
-This file is part of the skeleton of Sketching stage S5 (`docs/design/Sketching-S5.md` §3.4,
-§8). Its own proofs are written; the tails rest on Hoeffding's comparison, whose proof is
-deferred in `NLAlib.Probability.ConvexOrder`.
+The tails rest on Hoeffding's comparison of sampling without and with replacement
+(`NLAlib.Probability.ConvexOrder`). Design: `docs/design/Sketching-S5.md` §3.4, §8.
 
 ## Main definitions
 
@@ -247,35 +244,6 @@ theorem isIsotropicSketch_of_hasLaw_samplingSketchWithoutReplacement [Nonempty k
 
 /-! ### Subspace injection and embedding for a fixed subspace -/
 
-omit [DecidableEq n] in
-/-- Every sketch is a subspace embedding for a matrix of rank zero. -/
-private theorem hasSubspaceEmbedding_of_rank_eq_zero (hd : U.rank = 0)
-    (a b : ℝ) {δ : ℝ} (hδ : 0 ≤ δ) : HasSubspaceEmbedding S U a b δ μ := by
-  obtain rfl := Matrix.rank_eq_zero.1 hd
-  have h : {ω | ¬ IsSubspaceEmbedding (S ω) (0 : Matrix n r 𝕜) a b} = ∅ := by
-    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨?_, ?_⟩ <;>
-      simp [IsSubspaceInjection]
-  rw [HasSubspaceEmbedding, h, measureReal_empty]
-  exact hδ
-
-omit [DecidableEq n] in
-/-- Under the domination of the leverage scores by uniform weights, a matrix of positive rank has
-`0 < L`. -/
-private theorem pos_of_rank_pos (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹)
-    (hd : 0 < U.rank) : 0 < L := by
-  have hn : Nonempty n := by
-    by_contra h
-    rw [not_nonempty_iff] at h
-    have hU : U = 0 := Matrix.ext fun i => isEmptyElim i
-    rw [hU, Matrix.rank_zero] at hd
-    exact lt_irrefl 0 hd
-  have hc : (Fintype.card n : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
-  have hp : ∑ _ : n, (Fintype.card n : ℝ≥0)⁻¹ = 1 := by
-    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc]
-  refine (Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp fun i => ?_)
-  rw [NNReal.coe_inv, NNReal.coe_natCast]
-  exact hdom i
-
 /-- With fewer members than samples, the probability space of the sketch is zero. -/
 private theorem eq_zero_of_hasLaw_samplingSketchWithoutReplacement
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
@@ -287,14 +255,6 @@ private theorem eq_zero_of_hasLaw_samplingSketchWithoutReplacement
       Measure.map_zero]
   rw [h0] at h
   exact (Measure.map_eq_zero_iff hS.aemeasurable).1 h
-
-omit [DecidableEq n] in
-/-- The domination by uniform weights, in the form of `NLAlib.samplingSketchMatrix`'s weights. -/
-private theorem leverageScore_le_mul_const_inv_card
-    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (i : n) :
-    leverageScore U i ≤ L * ((fun _ : n => (Fintype.card n : ℝ≥0)⁻¹) i : ℝ) := by
-  simp only [NNReal.coe_inv, NNReal.coe_natCast]
-  exact hdom i
 
 section Primitive
 
@@ -397,8 +357,8 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, zero_mul]
-    exact (hasSubspaceEmbedding_of_rank_eq_zero hd (1 - ε) 0 le_rfl).hasSubspaceInjection
-  have hL : 0 < L := pos_of_rank_pos hdom hd
+    exact (hasSubspaceEmbedding_of_rank_eq_zero (b := 0) hd le_rfl).hasSubspaceInjection
+  have hL : 0 < L := pos_of_leverageScore_le_mul_inv_card hdom hd
   rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
   · rw [HasSubspaceInjection, eq_zero_of_hasLaw_samplingSketchWithoutReplacement hS hk,
       measureReal_zero_apply]
@@ -434,8 +394,8 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketchWithoutReplacement
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, zero_mul]
-    exact hasSubspaceEmbedding_of_rank_eq_zero hd 0 (1 + ε) le_rfl
-  have hL : 0 < L := pos_of_rank_pos hdom hd
+    exact hasSubspaceEmbedding_of_rank_eq_zero hd le_rfl
+  have hL : 0 < L := pos_of_leverageScore_le_mul_inv_card hdom hd
   rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
   · rw [HasSubspaceEmbedding, eq_zero_of_hasLaw_samplingSketchWithoutReplacement hS hk,
       measureReal_zero_apply]
@@ -472,8 +432,8 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement
       (2 * U.rank * Real.exp (-ε ^ 2 * Fintype.card k / (3 * L))) μ := by
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
-  · exact hasSubspaceEmbedding_of_rank_eq_zero hd _ _ (by positivity)
-  have hL : 0 < L := pos_of_rank_pos hdom hd
+  · exact hasSubspaceEmbedding_of_rank_eq_zero hd (by positivity)
+  have hL : 0 < L := pos_of_leverageScore_le_mul_inv_card hdom hd
   have hlow := hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement hS hdom hε
   have hb : μ.real {ω | ¬ (S ω * U)ᴴ * (S ω * U) ≤ (1 + ε) • (Uᴴ * U)} ≤
       U.rank * Real.exp (-ε ^ 2 * Fintype.card k / (3 * L)) :=
@@ -519,15 +479,8 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, mul_zero, zero_mul]
     exact hδ.le
-  have hd' : (0 : ℝ) < U.rank := Nat.cast_pos.2 hd
-  have hL : 0 < L := pos_of_rank_pos hdom hd
-  rw [samplingSize_def, div_le_iff₀ (by positivity)] at hk
-  have hlog : Real.log (2 * U.rank / δ) ≤ ε ^ 2 * Fintype.card k / (3 * L) := by
-    rw [le_div_iff₀ (by positivity)]
-    linarith
-  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
-  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
-  linarith
+  exact two_mul_mul_exp_le_of_samplingSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
+    hδ hk
 
 /-- **The lower half without replacement, sample-size form**: with at least
 `NLAlib.samplingInjectionSize U.rank L ε δ` samples, row sampling without replacement under the
@@ -545,14 +498,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, zero_mul]
     exact hδ.le
-  have hd' : (0 : ℝ) < U.rank := Nat.cast_pos.2 hd
-  have hL : 0 < L := pos_of_rank_pos hdom hd
-  rw [samplingInjectionSize_def, div_le_iff₀ (by positivity)] at hk
-  have hlog : Real.log (U.rank / δ) ≤ ε ^ 2 * Fintype.card k / (2 * L) := by
-    rw [le_div_iff₀ (by positivity)]
-    linarith
-  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
-  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
-  linarith
+  exact mul_exp_le_of_samplingInjectionSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
+    hδ hk
 
 end NLAlib

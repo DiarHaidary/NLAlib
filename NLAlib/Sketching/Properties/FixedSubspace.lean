@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Rank
 public import NLAlib.Probability.Law
 public import NLAlib.Sketching.Properties.SubspaceEmbedding
 
@@ -37,6 +38,7 @@ measure is $0$. Design: `docs/design/Sketching-S1.md` §3.2.
 * `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le`: the upper half from a
   $\sigma_{\max}$ tail.
 * `NLAlib.HasSubspaceEmbedding.of_range_le`: passing to a smaller subspace.
+* `NLAlib.hasSubspaceEmbedding_of_rank_eq_zero`: the zero subspace.
 * `ProbabilityTheory.HasLaw.hasSubspaceEmbedding_iff`: the predicates depend only on the law.
 -/
 
@@ -147,6 +149,18 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le [IsFinite
   refine (conjTranspose_mul_self_le_specNorm_sq_smul_one _).trans (smul_one_le_smul_one ?_)
   rw [← singularValues_zero_eq_specNorm]
   exact (not_le.1 hlt).le
+
+/-- **The zero subspace**: every sketch is a subspace embedding, with any constants and any
+failure probability $\delta \ge 0$, for a $\mathbf{U}$ of rank $0$ (the zero matrix, a matrix
+with no columns, or one with no rows); the failure event is empty. -/
+theorem hasSubspaceEmbedding_of_rank_eq_zero [Fintype p] (hU : U.rank = 0) (hδ : 0 ≤ δ) :
+    HasSubspaceEmbedding S U a b δ μ := by
+  obtain rfl := Matrix.rank_eq_zero.1 hU
+  have h : {ω | ¬ IsSubspaceEmbedding (S ω) (0 : Matrix n p 𝕜) a b} = ∅ := by
+    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨?_, ?_⟩ <;>
+      simp [IsSubspaceInjection]
+  rw [HasSubspaceEmbedding, h, measureReal_empty]
+  exact hδ
 
 /-- A random subspace injection is one with any smaller constant and any larger failure
 probability. -/

@@ -36,7 +36,8 @@ for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 
 ## Main definitions
 
-* `NLAlib.gaussianEmbeddingDim`, `NLAlib.gaussianInjectionDim`, `NLAlib.jlDim`: sample sizes.
+* `NLAlib.gaussianEmbeddingDim`, `NLAlib.gaussianInjectionDim`, `NLAlib.jlDim`: sample sizes;
+  `NLAlib.two_mul_exp_le_of_jlDim_le` inverts the JL tail at `jlDim`.
 
 ## Main results
 
@@ -64,29 +65,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n p ι : T
 
 /-! ### Proof-local arithmetic -/
 
-private theorem norm_inv_sqrt_smul_sq {m : Type*} [Fintype m] {N : ℝ} (hN : 0 ≤ N)
-    (v : m → ℝ) : ‖WithLp.toLp 2 ((√N)⁻¹ • v)‖ ^ 2 = ‖WithLp.toLp 2 v‖ ^ 2 / N := by
-  rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
-    Real.sq_sqrt hN, inv_mul_eq_div]
-
-private theorem norm_sketch_sq (A : Matrix k n ℝ) (r : ℝ) (u : n → ℝ) :
-    ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • A *ᵥ (r • u))‖ ^ 2 =
-      r ^ 2 * (‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2 / Fintype.card k) := by
-  rw [norm_inv_sqrt_smul_sq (Nat.cast_nonneg _), Matrix.mulVec_smul, WithLp.toLp_smul,
-    norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, mul_div_assoc]
-
-private theorem norm_smul_unit {r : ℝ} (hr : 0 ≤ r) {u : n → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1) :
-    ‖WithLp.toLp 2 (r • u)‖ = r := by
-  rw [WithLp.toLp_smul, norm_smul, hu, mul_one, Real.norm_eq_abs, abs_of_nonneg hr]
-
-private theorem exists_eq_smul_unit {x : n → ℝ} (hx : x ≠ 0) :
-    ∃ r : ℝ, 0 ≤ r ∧ ∃ u : n → ℝ, ‖WithLp.toLp 2 u‖ = 1 ∧ x = r • u := by
-  have hc0 : 0 < ‖WithLp.toLp 2 x‖ := norm_pos_iff.2 (by rwa [Ne, WithLp.toLp_eq_zero])
-  refine ⟨‖WithLp.toLp 2 x‖, hc0.le, ‖WithLp.toLp 2 x‖⁻¹ • x, ?_, ?_⟩
-  · rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv, abs_of_pos hc0,
-      inv_mul_cancel₀ hc0.ne']
-  · rw [smul_smul, mul_inv_cancel₀ hc0.ne', one_smul]
-
 private theorem one_sub_div_sq {s b c : ℝ} (hs : 0 < s) :
     s⁻¹ ^ 2 * (s - b - c) ^ 2 = (1 - (b + c) / s) ^ 2 := by
   field_simp
@@ -96,6 +74,20 @@ private theorem one_add_div_sq {s b c : ℝ} (hs : 0 < s) :
     s⁻¹ ^ 2 * (s + b + c) ^ 2 ≤ (1 + (b + c) / s) ^ 2 := by
   apply le_of_eq
   field_simp
+  ring
+
+/-- The squared distortion of the Gaussian sketch at $\mathbf{x} = \|\mathbf{x}\| \mathbf{u}$,
+expanded in $Y = \|\mathbf{G}\mathbf{u}\|^2$:
+$(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
+= \|\mathbf{x}\|^4 (Y^2 / \lvert k \rvert^2 - 2 Y / \lvert k \rvert + 1)$. -/
+private theorem sq_sketch_distortion_eq {x u : n → ℝ} (hxu : ∀ A : Matrix k n ℝ,
+      ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2 =
+        ‖WithLp.toLp 2 x‖ ^ 2 * (‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2 - 1)) (A : Matrix k n ℝ) :
+    (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • A *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 =
+      ‖WithLp.toLp 2 x‖ ^ 4 / Fintype.card k ^ 2 * (‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2) ^ 2 -
+        2 * ‖WithLp.toLp 2 x‖ ^ 4 / Fintype.card k * ‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2 +
+          ‖WithLp.toLp 2 x‖ ^ 4 := by
+  rw [← Matrix.smul_mulVec, hxu, Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq]
   ring
 
 /-- $\|\mathbf{g}\|^2$ and $\|\mathbf{g}\|^4$ of a standard Gaussian vector $\mathbf{g}$ are
@@ -203,7 +195,7 @@ prototype's `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`. -/
 theorem gaussianEmbeddingDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     gaussianEmbeddingDim d ε δ ≤ 18 * (d + 2 * Real.log (2 / δ)) / ε ^ 2 := by
   rw [gaussianEmbeddingDim_def]
-  have hL : 0 ≤ Real.log (2 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hL : 0 ≤ Real.log (2 / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)
   have h1 := Real.sq_sqrt (Nat.cast_nonneg d : (0 : ℝ) ≤ d)
   have h2 := Real.sq_sqrt (by positivity : 0 ≤ 2 * Real.log (2 / δ))
   refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
@@ -226,7 +218,7 @@ $0 < \delta < 1$; a sketch with at least this many rows has a row. -/
 theorem gaussianInjectionDim_pos (d : ℕ) (hε : ε ≠ 0) (hδ : 0 < δ) (hδ1 : δ < 1) :
     0 < gaussianInjectionDim d ε δ := by
   rw [gaussianInjectionDim_def]
-  have hL : 0 < Real.log (1 / δ) := Real.log_pos (by rw [lt_div_iff₀ hδ]; linarith)
+  have hL : 0 < Real.log (1 / δ) := Real.log_pos ((one_lt_div₀ hδ).2 hδ1)
   have h1 : 0 < √(2 * Real.log (1 / δ)) := Real.sqrt_pos.2 (by linarith)
   have h2 : 0 < √(d : ℝ) + √(2 * Real.log (1 / δ)) := by positivity
   positivity
@@ -245,7 +237,7 @@ $8 (d + 2 \log(1/\delta)) / \varepsilon^2$ for $0 < \delta \le 1$. -/
 theorem gaussianInjectionDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ1 : δ ≤ 1) :
     gaussianInjectionDim d ε δ ≤ 8 * (d + 2 * Real.log (1 / δ)) / ε ^ 2 := by
   rw [gaussianInjectionDim_def]
-  have hL : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hL : 0 ≤ Real.log (1 / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδ1)
   have h1 := Real.sq_sqrt (Nat.cast_nonneg d : (0 : ℝ) ≤ d)
   have h2 := Real.sq_sqrt (by positivity : 0 ≤ 2 * Real.log (1 / δ))
   refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
@@ -267,7 +259,7 @@ noncomputable irreducible_def jlDim (ε δ : ℝ) : ℝ :=
 $0 < \delta < 2$. -/
 theorem jlDim_pos (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ) (hδ2 : δ < 2) : 0 < jlDim ε δ := by
   rw [jlDim_def]
-  refine div_pos (Real.log_pos (by rw [lt_div_iff₀ hδ]; linarith)) ?_
+  refine div_pos (Real.log_pos ((one_lt_div₀ hδ).2 hδ2)) ?_
   have : 0 < ε ^ 2 := by positivity
   nlinarith
 
@@ -278,7 +270,7 @@ theorem jlDim_mono (hε : 0 < ε) (hεε' : ε ≤ ε') (hε'1 : ε' ≤ 1) (hδ
   rw [jlDim_def, jlDim_def]
   have hε' : 0 < ε' := hε.trans_le hεε'
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
-  have hL : 0 ≤ Real.log (2 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hL : 0 ≤ Real.log (2 / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)
   have hLL : Real.log (2 / δ') ≤ Real.log (2 / δ) := by gcongr
   have hf : 0 < ε ^ 2 / 4 - ε ^ 3 / 6 := by
     have : 0 < ε ^ 2 := by positivity
@@ -297,7 +289,7 @@ $\varepsilon \le 1$ and $0 < \delta \le 2$
 theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     jlDim ε δ ≤ 12 * Real.log (2 / δ) / ε ^ 2 := by
   rw [jlDim_def]
-  have hL : 0 ≤ Real.log (2 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hL : 0 ≤ Real.log (2 / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)
   rcases eq_or_ne ε 0 with rfl | hε0
   · simp
   have he2 : 0 < ε ^ 2 := by positivity
@@ -306,6 +298,22 @@ theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
   calc Real.log (2 / δ) / (ε ^ 2 / 4 - ε ^ 3 / 6) ≤ Real.log (2 / δ) / (ε ^ 2 / 12) :=
         div_le_div_of_nonneg_left hL (by positivity) hf
     _ = 12 * Real.log (2 / δ) / ε ^ 2 := by field_simp
+
+/-- **Inverting the JL tail at `jlDim`**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and
+$K \ge$ `jlDim ε δ`,
+$2 e^{-K (\varepsilon^2/4 - \varepsilon^3/6)} \le \delta$. The step from the tail of every sketch
+with Dasgupta and Gupta's exponent (Gaussian, Haar, signs) to its sample-size form. -/
+theorem two_mul_exp_le_of_jlDim_le {K : ℝ} (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
+    (hK : jlDim ε δ ≤ K) : 2 * Real.exp (-(K * (ε ^ 2 / 4 - ε ^ 3 / 6))) ≤ δ := by
+  have hf : 0 < ε ^ 2 / 4 - ε ^ 3 / 6 := by
+    have : 0 < ε ^ 2 := by positivity
+    nlinarith
+  rw [jlDim_def, div_le_iff₀ hf] at hK
+  calc 2 * Real.exp (-(K * (ε ^ 2 / 4 - ε ^ 3 / 6))) ≤ 2 * Real.exp (-Real.log (2 / δ)) := by
+        gcongr
+    _ = δ := by
+      rw [Real.exp_neg, Real.exp_log (by positivity)]
+      field_simp
 
 /-! ### Isotropy -/
 
@@ -521,7 +529,7 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix (hG : HasLaw G (gaussianMatrix k 
   intro x hx
   have h := measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector
     (hasLaw_mulVec_of_hasLaw_gaussianMatrix hG hx) hε
-  simp only [Matrix.smul_mulVec, norm_inv_sqrt_smul_sq (Nat.cast_nonneg _)]
+  simp only [Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq]
   exact h
 
 /-- The squared distortion $(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2$ of a Gaussian
@@ -534,14 +542,9 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix
   rcases eq_or_ne x 0 with rfl | hx
   · simp only [Matrix.mulVec_zero, smul_zero, WithLp.toLp_zero, norm_zero]
     exact integrable_const _
-  obtain ⟨r, hr, u, hu, rfl⟩ := exists_eq_smul_unit hx
+  obtain ⟨u, hu, hxu⟩ := exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq (k := k) hx
   obtain ⟨h1, h2⟩ := integrable_chiSq (hasLaw_mulVec_of_hasLaw_gaussianMatrix hG hu)
-  simp only [norm_sketch_sq, norm_smul_unit hr hu]
-  have e : ∀ y : ℝ, (r ^ 2 * (y / Fintype.card k) - r ^ 2) ^ 2 =
-      r ^ 4 / Fintype.card k ^ 2 * y ^ 2 - 2 * r ^ 4 / Fintype.card k * y + r ^ 4 := by
-    intro y
-    ring
-  simp only [e]
+  simp only [sq_sketch_distortion_eq hxu]
   exact ((h2.const_mul _).sub (h1.const_mul _)).add (integrable_const _)
 
 /-- **The JL variance of a Gaussian sketch**:
@@ -556,16 +559,12 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix [Nonempt
   rcases eq_or_ne x 0 with rfl | hx
   · simp only [Matrix.mulVec_zero, smul_zero, WithLp.toLp_zero, norm_zero]
     simp
-  obtain ⟨r, hr, u, hu, rfl⟩ := exists_eq_smul_unit hx
+  obtain ⟨u, hu, hxu⟩ := exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq (k := k) hx
   have hGu := hasLaw_mulVec_of_hasLaw_gaussianMatrix hG hu
   obtain ⟨h1, h2⟩ := integrable_chiSq hGu
   obtain ⟨e1, e2⟩ := integral_chiSq hGu
-  simp only [norm_sketch_sq, norm_smul_unit hr hu]
-  have e : ∀ y : ℝ, (r ^ 2 * (y / Fintype.card k) - r ^ 2) ^ 2 =
-      r ^ 4 / Fintype.card k ^ 2 * y ^ 2 - 2 * r ^ 4 / Fintype.card k * y + r ^ 4 := by
-    intro y
-    ring
-  simp only [e]
+  simp only [sq_sketch_distortion_eq hxu]
+  set r := ‖WithLp.toLp 2 x‖
   have hA : Integrable (fun ω => r ^ 4 / Fintype.card k ^ 2 *
       (‖WithLp.toLp 2 (G ω *ᵥ u)‖ ^ 2) ^ 2) μ := h2.const_mul _
   have hB : Integrable (fun ω => 2 * r ^ 4 / Fintype.card k *
@@ -620,7 +619,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddi
   have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
   rcases le_or_gt 2 δ with hδ2 | hδ2
   · exact fun U _ => measureReal_le_one.trans (by linarith)
-  have hL : 0 < Real.log (2 / δ) := Real.log_pos (by rw [lt_div_iff₀ hδ]; linarith)
+  have hL : 0 < Real.log (2 / δ) := Real.log_pos ((one_lt_div₀ hδ).2 hδ2)
   obtain ⟨t, ht0, hteq, htδ⟩ := exists_sqrt_two_mul_log
     (by rw [le_div_iff₀ hδ]; linarith : 1 ≤ 2 / δ)
   rw [gaussianEmbeddingDim_def, hteq] at hk
@@ -644,7 +643,7 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjecti
   have hk0 : 0 < Fintype.card k := by
     exact_mod_cast (gaussianInjectionDim_pos d hε.ne' hδ hδ1).trans_le hk
   have : Nonempty k := Fintype.card_pos_iff.1 hk0
-  have hL : 0 < Real.log (1 / δ) := Real.log_pos (by rw [lt_div_iff₀ hδ]; linarith)
+  have hL : 0 < Real.log (1 / δ) := Real.log_pos ((one_lt_div₀ hδ).2 hδ1)
   obtain ⟨t, ht0, hteq, htδ⟩ := exists_sqrt_two_mul_log
     (by rw [le_div_iff₀ hδ]; linarith : 1 ≤ 1 / δ)
   rw [gaussianInjectionDim_def, hteq] at hk
@@ -662,18 +661,8 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gauss
     (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ) (hk : jlDim ε δ ≤ Fintype.card k) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ μ := by
   have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
-  rcases le_or_gt 2 δ with hδ2 | hδ2
-  · exact fun x _ => measureReal_le_one.trans (by linarith)
-  have hf : 0 < ε ^ 2 / 4 - ε ^ 3 / 6 := by
-    have : 0 < ε ^ 2 := by positivity
-    nlinarith
-  rw [jlDim_def, div_le_iff₀ hf] at hk
-  refine (hasJLProperty_of_hasLaw_gaussianMatrix hG hε.le).mono le_rfl ?_
-  calc 2 * Real.exp (-(Fintype.card k * (ε ^ 2 / 4 - ε ^ 3 / 6))) ≤
-        2 * Real.exp (-Real.log (2 / δ)) := by gcongr
-    _ = δ := by
-      rw [Real.exp_neg, Real.exp_log (by positivity)]
-      field_simp
+  exact (hasJLProperty_of_hasLaw_gaussianMatrix hG hε.le).mono le_rfl
+    (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
 
 /-- **The Johnson–Lindenstrauss lemma**, existence form: for points $\mathbf{x}_i$ in
 $\mathbb{R}^n$, $N = \lvert \iota \rvert$, and $\lvert k \rvert$ at least `jlDim` at distortion

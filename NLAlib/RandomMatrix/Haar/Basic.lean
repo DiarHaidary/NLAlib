@@ -35,7 +35,8 @@ Access is through the `HasLaw` bridges `hasLaw_polarFactor_of_hasLaw_gaussianMat
 * `NLAlib.hasLaw_conjTranspose_of_hasLaw_haarFrame`.
 * `NLAlib.isLeftUnitarilyInvariant_haarFrame`, `NLAlib.isRightUnitarilyInvariant_haarFrame`.
 * `NLAlib.uniformSphereVector`, `NLAlib.hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`,
-  `NLAlib.hasLaw_col_unit_of_hasLaw_haarFrame`.
+  `NLAlib.hasLaw_col_unit_of_hasLaw_haarFrame`; `NLAlib.measurable_inv_norm_smul`, the
+  normalisation map.
 -/
 
 @[expose] public section
@@ -167,8 +168,9 @@ $n$ it is the point mass at the unique vector. -/
 noncomputable def uniformSphereVector (n : Type*) [Fintype n] : Measure (n → ℝ) :=
   (gaussianVector n).map fun g => ‖WithLp.toLp 2 g‖⁻¹ • g
 
-/-- Normalisation of a vector is measurable. -/
-private theorem measurable_inv_norm_smul :
+/-- Normalisation of a vector, the map that pushes `gaussianVector n` to `uniformSphereVector n`,
+is measurable. -/
+theorem measurable_inv_norm_smul :
     Measurable fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g :=
   ((PiLp.continuous_toLp 2 _).measurable.norm.inv).smul measurable_id
 

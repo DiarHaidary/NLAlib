@@ -24,11 +24,7 @@ $\mathbf{A} = \mathbf{0}$).
 These are the quantities of the domination hypothesis `∀ i, leverageScore U i ≤ L * p i` of the
 row-sampling theorems (`NLAlib.Sketching.Sampling.RowSampling`): exact leverage sampling has
 $L = \operatorname{rank} \mathbf{U}$, uniform sampling has $L$ equal to the coherence of
-$\mathbf{U}$. Design: `docs/design/Sketching-S4.md` §3.1,
-§8.
-
-This file was written in the skeleton pass of Sketching stage S4; its proofs are already
-complete.
+$\mathbf{U}$. Design: `docs/design/Sketching-S4.md` §3.1, §8.
 
 ## Main definitions
 

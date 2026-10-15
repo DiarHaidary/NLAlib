@@ -17,40 +17,49 @@ public import NLAlib.Sketching.Sampling.Leverage
 /-!
 # Row sampling
 
-For weights `p : n → ℝ≥0` and indices `ι : k → n`, the row-sampling sketch
-`NLAlib.samplingSketchMatrix p ι : Matrix k n 𝕜` has row `j` equal to
-`(√(card k · p (ι j)))⁻¹ e_{ι j}ᴴ`; its law `NLAlib.samplingSketch k p` is the pushforward of
-`card k` i.i.d. indices with law `NLAlib.samplingMeasure p`. The measurable space on the row index
-`n` is fixed to `⊤` inside the definition, so no statement carries an instance on `n`;
+For weights $p : n \to \mathbb{R}_{\ge 0}$ and indices $\iota : k \to n$, the row-sampling
+sketch `NLAlib.samplingSketchMatrix p ι : Matrix k n 𝕜` has row $j$ equal to
+$(\lvert k \rvert \, p_{\iota(j)})^{-1/2} \, \mathbf{e}_{\iota(j)}^{\mathsf{H}}$; its law
+`NLAlib.samplingSketch k p` is the pushforward of $\lvert k \rvert$ i.i.d. indices with law
+`NLAlib.samplingMeasure p`. The measurable space on the row index `n` is fixed to `⊤` inside the
+definition, so no statement carries an instance on `n`;
 `NLAlib.samplingSketch_eq_sum_smul_dirac` gives the law as a finite mixture of Diracs and
 `NLAlib.samplingSketch_eq_map` recovers the pushforward under any measurable space on `n` with
 measurable singletons.
 
-For a fixed `U : Matrix n r 𝕜` of any shape and rank and weights dominating its leverage scores,
-`∀ i, leverageScore U i ≤ L * p i`, the sketch is a random subspace injection with failure
-probability `U.rank · e^{-ε² k/(2L)}` and a random subspace embedding with constants `1 ∓ ε` and
-failure probability `2 U.rank · e^{-ε² k/(3L)}` for `0 ≤ ε ≤ 1` (matrix Chernoff). Exact leverage
-sampling is `L = U.rank`, uniform sampling `L = coherence U`. The sample sizes are named quantities
-(CONTRIBUTING §5.2, rule 2); the "`k ≥ …` suffices" forms are corollaries of the tails.
+For a fixed $\mathbf{U} : n \times r$ of any shape and rank and weights dominating its leverage
+scores, $\ell_i(\mathbf{U}) \le L p_i$ for every $i$, the sketch is a random subspace injection
+with failure probability $d\, e^{-\varepsilon^2 k / (2L)}$ and a random subspace embedding with
+constants $1 \mp \varepsilon$ and failure probability $2 d\, e^{-\varepsilon^2 k / (3L)}$ for
+$0 \le \varepsilon \le 1$, $d = \operatorname{rank}\mathbf{U}$ and $k$ the number of samples
+(matrix Chernoff). Exact leverage sampling is $L = \operatorname{rank}\mathbf{U}$, uniform
+sampling $L = \operatorname{coh}\mathbf{U}$, the coherence. The sample sizes are named quantities
+(CONTRIBUTING §5.2, rule 2), with their inversions `NLAlib.two_mul_mul_exp_le_of_samplingSize_le`
+and `NLAlib.mul_exp_le_of_samplingInjectionSize_le`; the "$k \ge \ldots$ suffices" forms are
+corollaries of the tails.
 
-Degenerate cases. Rank zero (`U = 0`): every failure event is empty and every bound is `0`. Empty
-`k`: `S = 0`, the bound `U.rank · e^0` is at least `1` when `U ≠ 0`, and the upper half holds
-surely; the sketch is not isotropic, hence `[Nonempty k]` on isotropy. A zero weight `p i = 0`
-gives a zero sketch row (junk `(√0)⁻¹ = 0`), and the domination hypothesis then forces row `i` of
-`U` to vanish (`NLAlib.leverageScore_eq_zero_iff`). `L ≤ 0` forces rank zero, so no `0 < L` is
-assumed. For `ε ≥ 1` the injection is vacuous (`NLAlib.isSubspaceInjection_of_nonpos`). The two
-corollaries at the leverage-score distribution and at uniform weights take no `∑ i, p i = 1`: when
-their weights fail it (`U = 0`, or `n` empty) the law is the zero measure for nonempty `k`, so
-`HasLaw` forces `μ = 0`, and for empty `k` the law is `dirac 0`, a probability measure; in both
-subcases `U.rank = 0` and every embedding event is full. Design: `docs/design/Sketching-S4.md`
-§3.2, §8.
+Degenerate cases. Rank zero ($\mathbf{U} = \mathbf{0}$): every failure event is empty and every
+bound is $0$. Empty `k`: $\mathbf{S} = \mathbf{0}$, the bound $d \cdot e^0$ is at least $1$ when
+$\mathbf{U} \ne \mathbf{0}$, and the upper half holds surely; the sketch is not isotropic, hence
+`[Nonempty k]` on isotropy. A zero weight $p_i = 0$ gives a zero sketch row (junk
+$(\sqrt{0})^{-1} = 0$), and the domination hypothesis then forces row $i$ of $\mathbf{U}$ to
+vanish (`NLAlib.leverageScore_eq_zero_iff`). $L \le 0$ forces rank zero, so no $0 < L$ is
+assumed. For $\varepsilon \ge 1$ the injection is vacuous (`NLAlib.isSubspaceInjection_of_nonpos`).
+The two corollaries at the leverage-score distribution and at uniform weights take no
+$\sum_i p_i = 1$: when their weights fail it ($\mathbf{U} = \mathbf{0}$, or `n` empty) the law is
+the zero measure for nonempty `k`, so `HasLaw` forces $\mu = 0$, and for empty `k` the law is a
+Dirac mass at $\mathbf{0}$, a probability measure; in both subcases
+$\operatorname{rank}\mathbf{U} = 0$ and every embedding event is full. Design:
+`docs/design/Sketching-S4.md` §3.2, §8.
 
-Proofs. The two halves pass to an orthonormal basis `Q` of `range U`, whose rows satisfy
-`‖Q i‖² ≤ L p i`, and to the product space of the indices; there the Gram-atoms identity writes
-`(S Q)ᴴ (S Q)` as a sum of independent positive semidefinite atoms, each at most `L / card k` with
-means summing to `Qᴴ Q = 1`, and matrix Chernoff
+Proofs. The two halves pass to an orthonormal basis $\mathbf{Q}$ of
+$\operatorname{range}\mathbf{U}$, whose rows satisfy $\|\mathbf{q}_i\|^2 \le L p_i$, and to the
+product space of the indices; there the Gram-atoms identity writes
+$(\mathbf{S}\mathbf{Q})^{\mathsf{H}} \mathbf{S}\mathbf{Q}$ as a sum of independent positive
+semidefinite atoms, each at most $(L / \lvert k \rvert) \, \mathbf{I}$, with means summing to
+$\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$, and matrix Chernoff
 (`NLAlib.Probability.MatrixConcentration.ChernoffSum`) bounds its extreme eigenvalues. Isotropy is
-the same identity at `A = B = 1`.
+the same identity at $\mathbf{A} = \mathbf{B} = \mathbf{I}$.
 
 ## Main definitions
 
@@ -66,10 +75,12 @@ the same identity at `A = B = 1`.
 * `NLAlib.conjTranspose_samplingSketchMatrix_mul_mul`: the sketched cross-Gram matrix as an
   average of rank-one atoms.
 * `NLAlib.samplingSketchMatrix_mul_conjTranspose_of_injective`: distinct indices give a diagonal
-  `S Sᴴ`.
+  $\mathbf{S}\mathbf{S}^{\mathsf{H}}$.
 * `NLAlib.inv_mul_smul_vecMulVec_star_self_le`: the Loewner bound on one atom.
 * `NLAlib.exists_hasOrthonormalCols_of_leverageScore_le`, `NLAlib.rank_le_of_leverageScore_le`:
-  the reduction to orthonormal columns and the bound on the rank under leverage domination.
+  the reduction to orthonormal columns and the bound on the rank under leverage domination;
+  `NLAlib.leverageScore_le_mul_const_inv_card`, `NLAlib.pos_of_leverageScore_le_mul_inv_card`:
+  domination by uniform weights.
 * `NLAlib.isIsotropicSketch_of_hasLaw_samplingSketch`: isotropy for positive weights.
 * `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch`,
   `NLAlib.hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch`: the two halves.
@@ -78,6 +89,8 @@ the same identity at `A = B = 1`.
 * `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_leverageScoreDistribution`,
   `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card`: exact leverage and
   uniform sampling.
+* `NLAlib.two_mul_mul_exp_le_of_samplingSize_le`,
+  `NLAlib.mul_exp_le_of_samplingInjectionSize_le`: the tails inverted at the sample sizes.
 * `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le`,
   `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le`: sample
   sizes.
@@ -96,26 +109,28 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### The sketch and its law -/
 
-/-- The **row-sampling sketch** with weights `p` and indices `ι : k → n`: row `j` is
-`(√(card k · p (ι j)))⁻¹ e_{ι j}ᴴ`. Junk value: a zero row where `p (ι j) = 0`. Its law for i.i.d.
-indices is `NLAlib.samplingSketch`. [Woodruff2014, Definition 16] (there `D Ωᵀ`);
+/-- The **row-sampling sketch** with weights $p$ and indices $\iota : k \to n$: row $j$ is
+$(\lvert k \rvert \, p_{\iota(j)})^{-1/2} \, \mathbf{e}_{\iota(j)}^{\mathsf{H}}$. Junk value: a
+zero row where $p_{\iota(j)} = 0$. Its law for i.i.d. indices is `NLAlib.samplingSketch`.
+[Woodruff2014, Definition 16], there $\mathbf{D}\mathbf{\Omega}^{\mathsf{T}}$;
 [MartinssonTropp2020, §9.6.3]. -/
 noncomputable def samplingSketchMatrix (p : n → ℝ≥0) (ι : k → n) : Matrix k n 𝕜 :=
   Matrix.of fun j i => if ι j = i then (((√((Fintype.card k : ℝ) * p i))⁻¹ : ℝ) : 𝕜) else 0
 
 variable (k) in
 /-- The **law of the row-sampling sketch**: the pushforward by `NLAlib.samplingSketchMatrix p` of
-`card k` i.i.d. indices with law `NLAlib.samplingMeasure p`. The measurable space on `n` is `⊤`
-inside the definition; `NLAlib.samplingSketch_eq_map` restates it under any measurable space on
-`n` with measurable singletons, and `NLAlib.samplingSketch_eq_sum_smul_dirac` as a finite mixture
-of Diracs. A probability measure when `∑ i, p i = 1` or `k` is empty. [Woodruff2014,
-Definition 16]; [MartinssonTropp2020, §9.6.3]. -/
+$\lvert k \rvert$ i.i.d. indices with law `NLAlib.samplingMeasure p`. The measurable space on `n`
+is `⊤` inside the definition; `NLAlib.samplingSketch_eq_map` restates it under any measurable
+space on `n` with measurable singletons, and `NLAlib.samplingSketch_eq_sum_smul_dirac` as a finite
+mixture of Diracs. A probability measure when $\sum_i p_i = 1$ or `k` is empty.
+[Woodruff2014, Definition 16]; [MartinssonTropp2020, §9.6.3]. -/
 noncomputable def samplingSketch (p : n → ℝ≥0) : Measure (Matrix k n 𝕜) :=
   let _ : MeasurableSpace n := ⊤
   (Measure.pi fun _ : k => samplingMeasure p).map (samplingSketchMatrix p)
 
 omit [DecidableEq n] in
-/-- The product of `card k` copies of `samplingMeasure p`, as a finite mixture of Diracs. -/
+/-- The product of $\lvert k \rvert$ copies of `samplingMeasure p`, as a finite mixture of
+Diracs. -/
 private theorem pi_samplingMeasure_eq_sum [DecidableEq k] [MeasurableSpace n]
     [MeasurableSingletonClass n] (p : n → ℝ≥0) :
     Measure.pi (fun _ : k => samplingMeasure p) =
@@ -129,8 +144,8 @@ private theorem pi_samplingMeasure_eq_sum [DecidableEq k] [MeasurableSpace n]
     Set.mem_singleton_iff, Pi.one_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
     Finset.mem_univ, if_true]
 
-/-- The pushforward of `card k` i.i.d. indices by the sketch, as a finite mixture of Diracs,
-under any measurable space on `n` with measurable singletons. -/
+/-- The pushforward of $\lvert k \rvert$ i.i.d. indices by the sketch, as a finite mixture of
+Diracs, under any measurable space on `n` with measurable singletons. -/
 private theorem map_pi_samplingMeasure_eq_sum [DecidableEq k] [MeasurableSpace n]
     [MeasurableSingletonClass n] (p : n → ℝ≥0) :
     (Measure.pi fun _ : k => samplingMeasure p).map (samplingSketchMatrix (𝕜 := 𝕜) p) =
@@ -143,7 +158,7 @@ private theorem map_pi_samplingMeasure_eq_sum [DecidableEq k] [MeasurableSpace n
   rfl
 
 /-- The law of the row-sampling sketch as a finite mixture of Diracs, one atom per index map
-`ι : k → n` with mass `∏ j, p (ι j)`. -/
+$\iota : k \to n$ with mass $\prod_j p_{\iota(j)}$. -/
 theorem samplingSketch_eq_sum_smul_dirac [DecidableEq k] (p : n → ℝ≥0) :
     samplingSketch (𝕜 := 𝕜) k p =
       ∑ ι : k → n, (∏ j, (p (ι j) : ℝ≥0∞)) • Measure.dirac (samplingSketchMatrix p ι) := by
@@ -171,8 +186,9 @@ theorem samplingSketch_eq_map [MeasurableSpace n] [MeasurableSingletonClass n] (
   classical
   rw [samplingSketch_eq_sum_smul_dirac, map_pi_samplingMeasure_eq_sum]
 
-/-- **From the user's own indices**: if `ι` is a vector of `card k` i.i.d. indices with law
-`NLAlib.samplingMeasure p`, the sketch built from it has law `NLAlib.samplingSketch k p`. -/
+/-- **From the user's own indices**: if $\iota$ is a vector of $\lvert k \rvert$ i.i.d. indices
+with law `NLAlib.samplingMeasure p`, the sketch built from it has law
+`NLAlib.samplingSketch k p`. -/
 theorem hasLaw_samplingSketchMatrix [MeasurableSpace n] [MeasurableSingletonClass n]
     {ι : Ω → k → n} (hι : HasLaw ι (Measure.pi fun _ : k => samplingMeasure p) μ) :
     HasLaw (fun ω => (samplingSketchMatrix p (ι ω) : Matrix k n 𝕜)) (samplingSketch k p) μ := by
@@ -186,7 +202,9 @@ theorem hasLaw_samplingSketchMatrix [MeasurableSpace n] [MeasurableSingletonClas
 /-! ### Deterministic identities -/
 
 omit [Fintype n] in
-/-- The row-sampling sketch is a diagonal scaling of the transposed selection matrix. -/
+/-- The row-sampling sketch is a diagonal scaling of the transposed selection matrix:
+$\mathbf{S} = \operatorname{diag}\bigl((\lvert k \rvert \, p_{\iota(j)})^{-1/2}\bigr)
+\mathbf{P}^{\mathsf{H}}$ for the selection matrix $\mathbf{P}$ of $\iota$. -/
 theorem samplingSketchMatrix_eq_diagonal_mul [DecidableEq k] (p : n → ℝ≥0) (ι : k → n) :
     (samplingSketchMatrix p ι : Matrix k n 𝕜) =
       Matrix.diagonal (fun j => (((√((Fintype.card k : ℝ) * p (ι j)))⁻¹ : ℝ) : 𝕜)) *
@@ -220,7 +238,7 @@ theorem samplingSketchMatrix_mul_conjTranspose_of_injective [DecidableEq k] (p :
   rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← mul_inv,
     Real.mul_self_sqrt hx]
 
-/-- Row `j` of a sampled matrix is the scaled row `ι j`. -/
+/-- Row $j$ of a sampled matrix is the scaled row $\iota(j)$. -/
 private theorem samplingSketchMatrix_mul_apply {q' : Type*} (p : n → ℝ≥0) (ι : k → n)
     (C : Matrix n q' 𝕜) (j : k) :
     (samplingSketchMatrix p ι * C : Matrix k q' 𝕜) j =
@@ -229,9 +247,12 @@ private theorem samplingSketchMatrix_mul_apply {q' : Type*} (p : n → ℝ≥0) 
   simp [Matrix.mul_apply, samplingSketchMatrix, ite_mul, Finset.sum_ite_eq]
 
 omit [Fintype q] [Fintype r] in
-/-- **The Gram-atoms identity**: the sketched cross-Gram matrix `(S A)ᴴ (S B)` is the sum over
-the samples `j` of the rank-one atoms `(card k · p (ι j))⁻¹ (A (ι j))ᴴ B (ι j)`, the zero matrix
-where `p (ι j) = 0`. -/
+/-- **The Gram-atoms identity**: the sketched cross-Gram matrix
+$(\mathbf{S}\mathbf{A})^{\mathsf{H}} (\mathbf{S}\mathbf{B})$ is the sum over the samples $j$ of
+the rank-one atoms
+$(\lvert k \rvert \, p_{\iota(j)})^{-1} \mathbf{a}_{\iota(j)}^{\mathsf{H}} \mathbf{b}_{\iota(j)}$,
+$\mathbf{a}_i$ and $\mathbf{b}_i$ the rows of $\mathbf{A}$ and $\mathbf{B}$, the zero matrix where
+$p_{\iota(j)} = 0$. -/
 theorem conjTranspose_samplingSketchMatrix_mul_mul (p : n → ℝ≥0) (ι : k → n)
     (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
     (samplingSketchMatrix p ι * A)ᴴ * (samplingSketchMatrix p ι * B) =
@@ -251,8 +272,9 @@ theorem conjTranspose_samplingSketchMatrix_mul_mul (p : n → ℝ≥0) (ι : k �
 
 /-! ### The Chernoff atoms -/
 
-/-- The `j`-th rank-one atom `(card k · p (ι j))⁻¹ (B (ι j))ᴴ B (ι j)` of the sketched Gram matrix
-of `B`, as a function of the indices `ι`. -/
+/-- The $j$-th rank-one atom
+$(\lvert k \rvert \, p_{\iota(j)})^{-1} \, \mathbf{b}_{\iota(j)}^{\mathsf{H}} \mathbf{b}_{\iota(j)}$
+of the sketched Gram matrix of $\mathbf{B}$, as a function of the indices $\iota$. -/
 private noncomputable def samplingAtom (p : n → ℝ≥0) (B : Matrix n r 𝕜) (j : k) (ι : k → n) :
     Matrix r r 𝕜 :=
   ((Fintype.card k : ℝ) * p (ι j))⁻¹ • Matrix.vecMulVec (star (B (ι j))) (B (ι j))
@@ -308,8 +330,8 @@ private theorem iIndepFun_samplingAtom (hp : ∑ i, p i = 1) (B : Matrix n r �
     fun _ => (measurable_of_finite _).aemeasurable
 
 omit [DecidableEq n] in
-/-- The means of the atoms sum to the Gram matrix `Bᴴ B`, when `B` vanishes on the rows of zero
-weight. -/
+/-- The means of the atoms sum to the Gram matrix $\mathbf{B}^{\mathsf{H}}\mathbf{B}$, when
+$\mathbf{B}$ vanishes on the rows of zero weight. -/
 private theorem sum_integral_samplingAtom [Nonempty k] [DecidableEq r] (hp : ∑ i, p i = 1)
     {B : Matrix n r 𝕜} (hB : ∀ i, p i = 0 → B i = 0) :
     ∑ j, ∫ ι, samplingAtom p B j ι ∂(Measure.pi fun _ : k => samplingMeasure p) = Bᴴ * B := by
@@ -332,7 +354,7 @@ private theorem sum_integral_samplingAtom [Nonempty k] [DecidableEq r] (hp : ∑
     mul_inv_cancel₀ hk, one_smul]
 
 omit [Fintype n] [DecidableEq n] [MeasurableSpace n] [MeasurableSingletonClass n] in
-/-- A row of zero weight vanishes under the domination `‖B i‖² ≤ L p i`. -/
+/-- A row of zero weight vanishes under the domination $\|\mathbf{b}_i\|^2 \le L p_i$. -/
 private theorem eq_zero_of_norm_sq_le {B : Matrix n r 𝕜}
     (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ L * p i) (i : n) (h0 : p i = 0) : B i = 0 := by
   have h := hB i
@@ -341,7 +363,8 @@ private theorem eq_zero_of_norm_sq_le {B : Matrix n r 𝕜}
     pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h (sq_nonneg _))
   rwa [norm_eq_zero, WithLp.toLp_eq_zero] at h'
 
-/-- The lower Chernoff tail on the primitive space, for `Q` with orthonormal columns. -/
+/-- The lower Chernoff tail on the primitive space, for $\mathbf{Q}$ with orthonormal
+columns. -/
 private theorem hasSubspaceInjection_samplingSketchMatrix [Nonempty k] [Nonempty r]
     [DecidableEq r] {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q) (hp : ∑ i, p i = 1)
     (hL : 0 < L) (hdom : ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i) (hε : 0 ≤ ε) :
@@ -377,7 +400,8 @@ private theorem hasSubspaceInjection_samplingSketchMatrix [Nonempty k] [Nonempty
   · congr 2
     field_simp
 
-/-- The upper Chernoff tail on the primitive space, for `Q` with orthonormal columns. -/
+/-- The upper Chernoff tail on the primitive space, for $\mathbf{Q}$ with orthonormal
+columns. -/
 private theorem hasSubspaceEmbedding_zero_samplingSketchMatrix [Nonempty k] [Nonempty r]
     [DecidableEq r] {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q) (hp : ∑ i, p i = 1)
     (hL : 0 < L) (hdom : ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i) (hε : 0 ≤ ε) (hε1 : ε ≤ 1) :
@@ -423,12 +447,15 @@ theorem exists_hasOrthonormalCols_of_leverageScore_le
 /-! ### Isotropy -/
 
 /-- **Row sampling with positive weights is isotropic.** With zero weights the second moment is
-`E [Sᴴ S] = diagonal (fun i => if p i = 0 then 0 else 1) ≤ 1`, which is not isotropy; mixing in
-uniform weights, `p = (ℓ/d + 1/n)/2` for the leverage scores `ℓ` of `U` and `d = U.rank`,
-restores isotropy at the price of a factor `2` in the domination constant (`ℓᵢ ≤ 2 d pᵢ`). A
-weakening of the fixed-subspace injection tails of `NLAlib.Sketching.Properties.Injection` to
-`∫ (S ω)ᴴ * S ω ∂μ ≤ 1` (sub-isotropy) would admit zero weights; it is open work for an S1 interface
-review (`docs/design/Sketching-S4.md` §8, item 10). [MartinssonTropp2020, §9.6.3]. -/
+$\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \operatorname{diag}([p_i \ne 0]) \preceq
+\mathbf{I}$, which is not isotropy; mixing in uniform weights,
+$p_i = (\ell_i / d + 1 / \lvert n \rvert) / 2$ for the leverage scores $\ell_i$ of $\mathbf{U}$ and
+$d = \operatorname{rank}\mathbf{U}$, restores isotropy at the price of a factor $2$ in the
+domination constant ($\ell_i \le 2 d p_i$). A weakening of the fixed-subspace injection tails of
+`NLAlib.Sketching.Properties.Injection` to
+$\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] \preceq \mathbf{I}$ (sub-isotropy) would admit zero
+weights; it is open work for an S1 interface review (`docs/design/Sketching-S4.md` §8, item 10).
+[MartinssonTropp2020, §9.6.3]. -/
 theorem isIsotropicSketch_of_hasLaw_samplingSketch [Nonempty k]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1) (hpos : ∀ i, 0 < p i) :
     IsIsotropicSketch S μ := by
@@ -460,20 +487,38 @@ theorem rank_le_of_leverageScore_le (hp : ∑ i, p i = 1)
     _ ≤ ∑ i, L * p i := Finset.sum_le_sum fun i _ => hdom i
     _ = L := by rw [← Finset.mul_sum, ← NNReal.coe_sum, hp, NNReal.coe_one, mul_one]
 
-omit [DecidableEq n] [Fintype r] in
-/-- Every sketch is a subspace embedding for the zero matrix. -/
-private theorem measureReal_not_isSubspaceEmbedding_zero (a b : ℝ) :
-    μ.real {ω | ¬ IsSubspaceEmbedding (S ω) (0 : Matrix n r 𝕜) a b} = 0 := by
-  have h : {ω | ¬ IsSubspaceEmbedding (S ω) (0 : Matrix n r 𝕜) a b} = ∅ := by
-    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨?_, ?_⟩ <;>
-      simp [IsSubspaceInjection]
-  rw [h, measureReal_empty]
+omit [DecidableEq n] in
+/-- **Uniform weights, in the form of the sketch.** The domination
+$\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ by uniform weights, as stated by uniform sampling
+with and without replacement and the SRHT, is the domination $\ell_i(\mathbf{U}) \le L p_i$ at
+the weights $p_i = 1/\lvert n \rvert$ of `NLAlib.samplingSketch`. -/
+theorem leverageScore_le_mul_const_inv_card
+    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (i : n) :
+    leverageScore U i ≤ L * ((fun _ : n => (Fintype.card n : ℝ≥0)⁻¹) i : ℝ) := by
+  simp only [NNReal.coe_inv, NNReal.coe_natCast]
+  exact hdom i
 
-/-- **The lower half of row sampling**: under leverage domination with constant `L`, the
-row-sampling sketch is a subspace injection for `range U` with constant `1 - ε` outside
-probability `U.rank · e^{-ε² k/(2L)}`, for every `ε ≥ 0` (vacuous for `ε ≥ 1`). Matrix Chernoff's
-lower tail with `R = L / card k`. [Tropp2015, Theorem 5.1.1, (5.1.5), weakened after (5.1.8)];
-there `ε ∈ [0, 1)` and the source form `(e^{-ε}/(1 - ε)^{1 - ε})^{k/L}`. -/
+omit [DecidableEq n] in
+/-- Under domination by uniform weights, $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, a matrix
+of positive rank has $L > 0$ (`NLAlib.rank_le_of_leverageScore_le`). -/
+theorem pos_of_leverageScore_le_mul_inv_card
+    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hd : 0 < U.rank) : 0 < L := by
+  have : Nonempty n := by
+    by_contra h
+    rw [not_nonempty_iff] at h
+    rw [show U = 0 from Matrix.ext fun i => isEmptyElim i, Matrix.rank_zero] at hd
+    exact lt_irrefl 0 hd
+  exact (Nat.cast_pos.2 hd).trans_le
+    (rank_le_of_leverageScore_le sum_const_inv_card (leverageScore_le_mul_const_inv_card hdom))
+
+/-- **The lower half of row sampling**: under leverage domination
+$\ell_i(\mathbf{U}) \le L p_i$, the row-sampling sketch with $k$ samples is a subspace injection
+for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ outside probability
+$\operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (2L)}$, for every
+$\varepsilon \ge 0$ (vacuous for $\varepsilon \ge 1$). Matrix Chernoff's lower tail with
+$R = L / k$. [Tropp2015, Theorem 5.1.1, (5.1.5), weakened after (5.1.8)]; there
+$\varepsilon \in [0, 1)$ and the source form
+$(e^{-\varepsilon} / (1 - \varepsilon)^{1 - \varepsilon})^{k/L}$. -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSketch k p) μ)
     (hp : ∑ i, p i = 1) (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 ≤ ε) :
     HasSubspaceInjection S U (1 - ε)
@@ -481,11 +526,8 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSk
   have : IsProbabilityMeasure μ :=
     hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_samplingSketch hp)
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
-  · obtain rfl := Matrix.rank_eq_zero.1 hd
-    rw [Matrix.rank_zero, Nat.cast_zero, zero_mul]
-    exact HasSubspaceEmbedding.hasSubspaceInjection (b := 0)
-      (show HasSubspaceEmbedding S (0 : Matrix n r 𝕜) (1 - ε) 0 0 μ from
-        (measureReal_not_isSubspaceEmbedding_zero _ _).le)
+  · rw [hd, Nat.cast_zero, zero_mul]
+    exact (hasSubspaceEmbedding_of_rank_eq_zero (b := 0) hd le_rfl).hasSubspaceInjection
   have hL : 0 < L := (Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)
   obtain ⟨Q, hQ, hUQ, hdomQ⟩ := exists_hasOrthonormalCols_of_leverageScore_le hdom
   rcases isEmpty_or_nonempty k with hk | hk
@@ -499,11 +541,15 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSk
   exact (hS.hasSubspaceInjection_iff.2
     ((hasLaw_samplingSketchMatrix HasLaw.id).hasSubspaceInjection_iff.1 h)).of_range_le hUQ
 
-/-- **The upper half of row sampling**: under leverage domination with constant `L`, the
-row-sampling sketch satisfies `(S U)ᴴ (S U) ≤ (1 + ε) Uᴴ U` outside probability
-`U.rank · e^{-ε² k/(3L)}`, for `0 ≤ ε ≤ 1`; the lower constant `0` holds surely. Matrix Chernoff's
-upper tail with `R = L / card k`. [Tropp2015, Theorem 5.1.1, (5.1.6)], with
-`ε - (1 + ε) log (1 + ε) ≤ -ε²/3` on `[0, 1]`; there the source form for every `ε ≥ 0`. -/
+/-- **The upper half of row sampling**: under leverage domination
+$\ell_i(\mathbf{U}) \le L p_i$, the row-sampling sketch with $k$ samples satisfies
+$(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U}
+\preceq (1 + \varepsilon)\, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ outside probability
+$\operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
+$0 \le \varepsilon \le 1$; the lower constant $0$ holds surely. Matrix Chernoff's upper tail with
+$R = L / k$. [Tropp2015, Theorem 5.1.1, (5.1.6)], with
+$\varepsilon - (1 + \varepsilon) \log(1 + \varepsilon) \le -\varepsilon^2/3$ on $[0, 1]$; there
+the source form for every $\varepsilon \ge 0$. -/
 theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSketch k p) μ)
     (hp : ∑ i, p i = 1) (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 ≤ ε) (hε1 : ε ≤ 1) :
     HasSubspaceEmbedding S U 0 (1 + ε)
@@ -511,9 +557,8 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch (hS : HasLaw S (sampl
   have : IsProbabilityMeasure μ :=
     hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_samplingSketch hp)
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
-  · obtain rfl := Matrix.rank_eq_zero.1 hd
-    rw [HasSubspaceEmbedding, measureReal_not_isSubspaceEmbedding_zero, Matrix.rank_zero,
-      Nat.cast_zero, zero_mul]
+  · rw [hd, Nat.cast_zero, zero_mul]
+    exact hasSubspaceEmbedding_of_rank_eq_zero hd le_rfl
   have hL : 0 < L := (Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)
   obtain ⟨Q, hQ, hUQ, hdomQ⟩ := exists_hasOrthonormalCols_of_leverageScore_le hdom
   rcases isEmpty_or_nonempty k with hk | hk
@@ -527,12 +572,14 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch (hS : HasLaw S (sampl
   exact (hS.hasSubspaceEmbedding_iff.2
     ((hasLaw_samplingSketchMatrix HasLaw.id).hasSubspaceEmbedding_iff.1 h)).of_range_le hUQ
 
-/-- **Row sampling under leverage domination**: if `leverageScore U i ≤ L · p i` for every row,
-the row-sampling sketch with `k` samples is a subspace embedding for `range U` with constants
-`1 ∓ ε` outside probability `2 U.rank · e^{-ε² k/(3L)}`, for `0 ≤ ε ≤ 1` and any `U`.
-[Woodruff2014, Theorem 17] (there `U` with orthonormal columns, `p` a `β`-approximation of the
-leverage-score distribution and `s > 144 d log (2d/δ)/(β ε²)` through a Bernstein bound, Fact 1;
-here matrix Chernoff, `L = d/β`, any shape and rank); [MartinssonTropp2020, §9.6.3];
+/-- **Row sampling under leverage domination**: if $\ell_i(\mathbf{U}) \le L p_i$ for every row,
+the row-sampling sketch with $k$ samples is a subspace embedding for
+$\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ outside probability
+$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
+$0 \le \varepsilon \le 1$ and any $\mathbf{U}$. [Woodruff2014, Theorem 17], there $\mathbf{U}$
+with orthonormal columns, $p$ a $\beta$-approximation of the leverage-score distribution and
+$s > 144 d \log(2d/\delta) / (\beta \varepsilon^2)$ samples through a Bernstein bound (Fact 1);
+here matrix Chernoff, $L = d/\beta$, any shape and rank; [MartinssonTropp2020, §9.6.3];
 [Tropp2015, Theorem 5.1.1].
 Result: leverage-sampling-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSketch k p) μ)
@@ -558,11 +605,12 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSk
   have := mul_le_mul_of_nonneg_left hexp (Nat.cast_nonneg (α := ℝ) U.rank)
   linarith
 
-/-- **Exact leverage-score sampling**: sampling rows by the leverage-score distribution of `U`
-gives a subspace embedding with constants `1 ∓ ε` outside probability
-`2 U.rank · e^{-ε² k/(3 U.rank)}`, for `0 ≤ ε ≤ 1`; the domination constant is `L = U.rank`. No
-normalisation hypothesis: for `U = 0` the bound is `0` and every embedding event is full.
-[MartinssonTropp2020, §9.6.3]; [Woodruff2014, Theorem 17] (`β = 1`).
+/-- **Exact leverage-score sampling**: sampling rows by the leverage-score distribution of
+$\mathbf{U}$ gives a subspace embedding with constants $1 \mp \varepsilon$ outside probability
+$2 d \, e^{-\varepsilon^2 k / (3 d)}$, $d = \operatorname{rank}\mathbf{U}$, for
+$0 \le \varepsilon \le 1$; the domination constant is $L = d$. No normalisation hypothesis: for
+$\mathbf{U} = \mathbf{0}$ the bound is $0$ and every embedding event is full.
+[MartinssonTropp2020, §9.6.3]; [Woodruff2014, Theorem 17], there $\beta = 1$.
 Result: leverage-sampling-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_leverageScoreDistribution
     (hS : HasLaw S (samplingSketch k (leverageScoreDistribution U)) μ) (hε : 0 ≤ ε)
@@ -570,56 +618,54 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_leverageScoreDistribution
     HasSubspaceEmbedding S U (1 - ε) (1 + ε)
       (2 * U.rank * Real.exp (-ε ^ 2 * Fintype.card k / (3 * U.rank))) μ := by
   rcases eq_or_ne U 0 with hU | hU
-  · subst hU
-    rw [HasSubspaceEmbedding, measureReal_not_isSubspaceEmbedding_zero, Matrix.rank_zero,
-      Nat.cast_zero, mul_zero, zero_mul]
+  · exact hasSubspaceEmbedding_of_rank_eq_zero (by rw [hU, Matrix.rank_zero]) (by positivity)
   · exact hasSubspaceEmbedding_of_hasLaw_samplingSketch hS (sum_leverageScoreDistribution hU)
       (leverageScore_le_rank_mul_leverageScoreDistribution U) hε hε1
 
 /-- **Uniform row sampling**: sampling rows uniformly gives a subspace embedding with constants
-`1 ∓ ε` outside probability `2 U.rank · e^{-ε² k/(3 coherence U)}`, for `0 ≤ ε ≤ 1`; the
-domination constant is `L = coherence U`. No normalisation hypothesis: for empty `n` the bound is
-`0` and every embedding event is full. [MartinssonTropp2020, §9.6.2] (there the sample size
-`2 ε⁻² μ log (2d/δ)` for coherence `μ`, through matrix Chernoff). -/
+$1 \mp \varepsilon$ outside probability
+$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3 \operatorname{coh}\mathbf{U})}$,
+for $0 \le \varepsilon \le 1$; the domination constant is the coherence
+$L = \operatorname{coh}\mathbf{U}$ (`NLAlib.coherence`). No normalisation hypothesis: for empty
+`n` the bound is $0$ and every embedding event is full. [MartinssonTropp2020, §9.6.2], there the
+sample size $2 \varepsilon^{-2} \mu \log(2d/\delta)$ for a coherence $\mu$, through matrix
+Chernoff. -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card
     (hS : HasLaw S (samplingSketch k fun _ : n => (Fintype.card n : ℝ≥0)⁻¹) μ) (hε : 0 ≤ ε)
     (hε1 : ε ≤ 1) :
     HasSubspaceEmbedding S U (1 - ε) (1 + ε)
       (2 * U.rank * Real.exp (-ε ^ 2 * Fintype.card k / (3 * coherence U))) μ := by
   rcases isEmpty_or_nonempty n with hn | hn
-  · have hU : U = 0 := Matrix.ext fun i => isEmptyElim i
-    subst hU
-    rw [HasSubspaceEmbedding, measureReal_not_isSubspaceEmbedding_zero, Matrix.rank_zero,
-      Nat.cast_zero, mul_zero, zero_mul]
-  · have hc : (Fintype.card n : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
-    refine hasSubspaceEmbedding_of_hasLaw_samplingSketch hS ?_ (fun i => ?_) hε hε1
-    · rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc]
-    · rw [NNReal.coe_inv, NNReal.coe_natCast]
-      exact leverageScore_le_coherence_mul_inv U i
+  · exact hasSubspaceEmbedding_of_rank_eq_zero
+      (Matrix.rank_eq_zero.2 (Matrix.ext fun i => isEmptyElim i)) (by positivity)
+  · exact hasSubspaceEmbedding_of_hasLaw_samplingSketch hS sum_const_inv_card
+      (leverageScore_le_mul_const_inv_card (leverageScore_le_coherence_mul_inv U)) hε hε1
 
 /-! ### Sample sizes -/
 
-/-- The **row-sampling size** `3 L log (2d/δ) / ε²`: with at least this many samples, row
-sampling under leverage domination with constant `L` is a subspace embedding with constants
-`1 ∓ ε` and failure probability `δ` for a subspace of dimension `d`, for `0 < ε ≤ 1`
+/-- The **row-sampling size** $3 L \log(2d/\delta) / \varepsilon^2$: with at least this many
+samples, row sampling under leverage domination with constant $L$ is a subspace embedding with
+constants $1 \mp \varepsilon$ and failure probability $\delta$ for a subspace of dimension $d$,
+for $0 < \varepsilon \le 1$
 (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le`). The value the proof
-reaches, inverting `2 d e^{-ε² k/(3L)} ≤ δ`; [Woodruff2014, Theorem 17] has
-`144 d log (2d/δ)/(β ε²)`, which at `L = d/β` is `48` times larger. Consumers use
-`NLAlib.samplingSize_le`. Junk values: `0` at `ε = 0`; at most `0` for `δ ≥ 2d`, where the tail
-bound is at least `1`. -/
+reaches, inverting $2 d \, e^{-\varepsilon^2 k / (3L)} \le \delta$
+(`NLAlib.two_mul_mul_exp_le_of_samplingSize_le`); [Woodruff2014, Theorem 17] has
+$144 d \log(2d/\delta) / (\beta \varepsilon^2)$, which at $L = d/\beta$ is $48$ times larger.
+Consumers use `NLAlib.samplingSize_le`. Junk values: $0$ at $\varepsilon = 0$; at most $0$ for
+$\delta \ge 2d$, where the tail bound is at least $1$. -/
 noncomputable irreducible_def samplingSize (d : ℕ) (L ε δ : ℝ) : ℝ :=
   3 * L * Real.log (2 * d / δ) / ε ^ 2
 
-/-- The row-sampling size is nonnegative for `0 ≤ L` and `0 < δ ≤ 2d`. -/
+/-- The row-sampling size is nonnegative for $0 \le L$ and $0 < \delta \le 2d$. -/
 theorem samplingSize_nonneg {d : ℕ} (hL : 0 ≤ L) (hδ : 0 < δ) (hδd : δ ≤ 2 * d) :
     0 ≤ samplingSize d L ε δ := by
   rw [samplingSize_def]
-  have hlog : 0 ≤ Real.log (2 * d / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hlog : 0 ≤ Real.log (2 * d / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδd)
   exact div_nonneg (mul_nonneg (mul_nonneg (by norm_num) hL) hlog) (sq_nonneg ε)
 
-/-- The row-sampling size is monotone in the dimension `d` and in the domination constant
-`L ≥ 0`, and antitone in the distortion `ε > 0` and the failure probability `δ > 0`, as long as
-the larger side is in its nontrivial range `δ ≤ 2 d'`. -/
+/-- The row-sampling size is monotone in the dimension $d$ and in the domination constant
+$L \ge 0$, and antitone in the distortion $\varepsilon > 0$ and the failure probability
+$\delta > 0$, as long as the larger side is in its nontrivial range $\delta \le 2 d'$. -/
 theorem samplingSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 0 ≤ L) (hLL' : L ≤ L')
     (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδd : δ ≤ 2 * d') :
     samplingSize d L ε' δ' ≤ samplingSize d' L' ε δ := by
@@ -641,32 +687,35 @@ theorem samplingSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 
       (mul_le_mul (by linarith) hlog h0.le (mul_nonneg (by norm_num) (hL.trans hLL')))
       (by positivity) (pow_le_pow_left₀ hε.le hεε' 2)
 
-/-- The explicit comparison `samplingSize d L ε δ ≤ 3 L log (2d/δ) / ε²`, the value the proof
-reaches; an improved definition keeps it true. -/
+/-- The explicit comparison: `samplingSize d L ε δ` is at most
+$3 L \log(2d/\delta) / \varepsilon^2$, the value the proof reaches; an improved definition keeps it
+true. -/
 theorem samplingSize_le (d : ℕ) (L ε δ : ℝ) :
     samplingSize d L ε δ ≤ 3 * L * Real.log (2 * d / δ) / ε ^ 2 := by
   rw [samplingSize_def]
 
-/-- The **row-sampling injection size** `2 L log (d/δ) / ε²`: with at least this many samples,
-row sampling under leverage domination with constant `L` is a subspace injection with constant
-`1 - ε` and failure probability `δ` for a subspace of dimension `d`, for `ε > 0`
+/-- The **row-sampling injection size** $2 L \log(d/\delta) / \varepsilon^2$: with at least this
+many samples, row sampling under leverage domination with constant $L$ is a subspace injection
+with constant $1 - \varepsilon$ and failure probability $\delta$ for a subspace of dimension $d$,
+for $\varepsilon > 0$
 (`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le`). The value
-the proof reaches, inverting `d e^{-ε² k/(2L)} ≤ δ`; one tail, against the embedding's two.
-Consumers use `NLAlib.samplingInjectionSize_le`. Junk values: `0` at `ε = 0`; at most `0` for
-`δ ≥ d`, where the tail bound is at least `1`. -/
+the proof reaches, inverting $d \, e^{-\varepsilon^2 k / (2L)} \le \delta$
+(`NLAlib.mul_exp_le_of_samplingInjectionSize_le`); one tail, against the embedding's two.
+Consumers use `NLAlib.samplingInjectionSize_le`. Junk values: $0$ at $\varepsilon = 0$; at most
+$0$ for $\delta \ge d$, where the tail bound is at least $1$. -/
 noncomputable irreducible_def samplingInjectionSize (d : ℕ) (L ε δ : ℝ) : ℝ :=
   2 * L * Real.log (d / δ) / ε ^ 2
 
-/-- The row-sampling injection size is nonnegative for `0 ≤ L` and `0 < δ ≤ d`. -/
+/-- The row-sampling injection size is nonnegative for $0 \le L$ and $0 < \delta \le d$. -/
 theorem samplingInjectionSize_nonneg {d : ℕ} (hL : 0 ≤ L) (hδ : 0 < δ) (hδd : δ ≤ d) :
     0 ≤ samplingInjectionSize d L ε δ := by
   rw [samplingInjectionSize_def]
-  have hlog : 0 ≤ Real.log (d / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hlog : 0 ≤ Real.log (d / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδd)
   exact div_nonneg (mul_nonneg (mul_nonneg (by norm_num) hL) hlog) (sq_nonneg ε)
 
-/-- The row-sampling injection size is monotone in the dimension `d` and in the domination
-constant `L ≥ 0`, and antitone in the distortion `ε > 0` and the failure probability `δ > 0`, as
-long as the larger side is in its nontrivial range `δ ≤ d'`. -/
+/-- The row-sampling injection size is monotone in the dimension $d$ and in the domination
+constant $L \ge 0$, and antitone in the distortion $\varepsilon > 0$ and the failure probability
+$\delta > 0$, as long as the larger side is in its nontrivial range $\delta \le d'$. -/
 theorem samplingInjectionSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 0 ≤ L)
     (hLL' : L ≤ L') (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδd : δ ≤ d') :
     samplingInjectionSize d L ε' δ' ≤ samplingInjectionSize d' L' ε δ := by
@@ -688,16 +737,55 @@ theorem samplingInjectionSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d
       (mul_le_mul (by linarith) hlog h0.le (mul_nonneg (by norm_num) (hL.trans hLL')))
       (by positivity) (pow_le_pow_left₀ hε.le hεε' 2)
 
-/-- The explicit comparison `samplingInjectionSize d L ε δ ≤ 2 L log (d/δ) / ε²`, the value the
-proof reaches; an improved definition keeps it true. -/
+/-- The explicit comparison: `samplingInjectionSize d L ε δ` is at most
+$2 L \log(d/\delta) / \varepsilon^2$, the value the proof reaches; an improved definition keeps it
+true. -/
 theorem samplingInjectionSize_le (d : ℕ) (L ε δ : ℝ) :
     samplingInjectionSize d L ε δ ≤ 2 * L * Real.log (d / δ) / ε ^ 2 := by
   rw [samplingInjectionSize_def]
 
+/-- **Inverting the embedding tail at `NLAlib.samplingSize`**: for $L > 0$, $\varepsilon > 0$,
+$\delta > 0$ and $K \ge$ `samplingSize d L ε δ`,
+$2 d \, e^{-\varepsilon^2 K / (3L)} \le \delta$. The step from the tails of row sampling (with or
+without replacement, and after flattening in the SRHT) to their sample-size forms. -/
+theorem two_mul_mul_exp_le_of_samplingSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
+    (hδ : 0 < δ) (hK : samplingSize d L ε δ ≤ K) :
+    2 * d * Real.exp (-ε ^ 2 * K / (3 * L)) ≤ δ := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · rw [Nat.cast_zero, mul_zero, zero_mul]
+    exact hδ.le
+  have hd' : (0 : ℝ) < d := Nat.cast_pos.2 hd
+  rw [samplingSize_def, div_le_iff₀ (by positivity)] at hK
+  have hlog : Real.log (2 * d / δ) ≤ ε ^ 2 * K / (3 * L) := by
+    rw [le_div_iff₀ (by positivity)]
+    linarith
+  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
+  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
+  linarith
+
+/-- **Inverting the injection tail at `NLAlib.samplingInjectionSize`**: for $L > 0$,
+$\varepsilon > 0$, $\delta > 0$ and $K \ge$ `samplingInjectionSize d L ε δ`,
+$d \, e^{-\varepsilon^2 K / (2L)} \le \delta$. -/
+theorem mul_exp_le_of_samplingInjectionSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
+    (hδ : 0 < δ) (hK : samplingInjectionSize d L ε δ ≤ K) :
+    d * Real.exp (-ε ^ 2 * K / (2 * L)) ≤ δ := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · rw [Nat.cast_zero, zero_mul]
+    exact hδ.le
+  have hd' : (0 : ℝ) < d := Nat.cast_pos.2 hd
+  rw [samplingInjectionSize_def, div_le_iff₀ (by positivity)] at hK
+  have hlog : Real.log (d / δ) ≤ ε ^ 2 * K / (2 * L) := by
+    rw [le_div_iff₀ (by positivity)]
+    linarith
+  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
+  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
+  linarith
+
 /-- **Row sampling, sample-size form**: with at least `NLAlib.samplingSize U.rank L ε δ` samples,
-row sampling under leverage domination is a subspace embedding for `range U` with constants
-`1 ∓ ε` and failure probability `δ`, for `0 < ε ≤ 1` and `δ > 0`. [Woodruff2014, Theorem 17]
-(constant `144/β` there, `3` here at `L = d/β`); [MartinssonTropp2020, §9.6.3].
+row sampling under leverage domination $\ell_i(\mathbf{U}) \le L p_i$ is a subspace embedding for
+$\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ and failure probability
+$\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$. [Woodruff2014, Theorem 17], constant
+$144/\beta$ there, $3$ here at $L = d/\beta$; [MartinssonTropp2020, §9.6.3].
 Result: leverage-sampling-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
@@ -710,20 +798,14 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, mul_zero, zero_mul]
     exact hδ.le
-  have hd' : (0 : ℝ) < U.rank := Nat.cast_pos.2 hd
-  have hL : 0 < L := hd'.trans_le (rank_le_of_leverageScore_le hp hdom)
-  rw [samplingSize_def, div_le_iff₀ (by positivity)] at hk
-  have hlog : Real.log (2 * U.rank / δ) ≤ ε ^ 2 * Fintype.card k / (3 * L) := by
-    rw [le_div_iff₀ (by positivity)]
-    linarith
-  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
-  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
-  linarith
+  exact two_mul_mul_exp_le_of_samplingSize_le
+    ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
 /-- **The lower half, sample-size form**: with at least
-`NLAlib.samplingInjectionSize U.rank L ε δ` samples, row sampling under leverage domination is a
-subspace injection for `range U` with constant `1 - ε` and failure probability `δ`, for `ε > 0`
-and `δ > 0`. -/
+`NLAlib.samplingInjectionSize U.rank L ε δ` samples, row sampling under leverage domination
+$\ell_i(\mathbf{U}) \le L p_i$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with
+constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 0$ and
+$\delta > 0$. -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
     (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 < ε) (hδ : 0 < δ)
@@ -735,14 +817,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_l
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, zero_mul]
     exact hδ.le
-  have hd' : (0 : ℝ) < U.rank := Nat.cast_pos.2 hd
-  have hL : 0 < L := hd'.trans_le (rank_le_of_leverageScore_le hp hdom)
-  rw [samplingInjectionSize_def, div_le_iff₀ (by positivity)] at hk
-  have hlog : Real.log (U.rank / δ) ≤ ε ^ 2 * Fintype.card k / (2 * L) := by
-    rw [le_div_iff₀ (by positivity)]
-    linarith
-  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
-  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
-  linarith
+  exact mul_exp_le_of_samplingInjectionSize_le
+    ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
 end NLAlib

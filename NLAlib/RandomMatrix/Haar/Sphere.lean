@@ -34,10 +34,8 @@ alone (`NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`: the law of
 $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the column type of $\mathbf{V}$):
 $\sum_i \mathbf{u}_i^2 = 1$ and a $45^\circ$ rotation give
 $\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ when
-$\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$.
-
-This file is a skeleton of Sketching stage S2 (`docs/design/Sketching-S2.md` §3.2, §8); at the
-wrap-up it merges into a Haar owner file.
+$\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$. Design:
+`docs/design/Sketching-S2.md` §3.2, §8.
 
 ## Main results
 
@@ -65,22 +63,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k : Type*}
 
 /-! ### Helpers -/
 
-/-- Normalisation of a vector is measurable. -/
-private theorem measurable_inv_norm_smul' :
-    Measurable fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g :=
-  ((PiLp.continuous_toLp 2 _).measurable.norm.inv).smul measurable_id
-
-/-- A unit vector, as a column, has orthonormal columns. -/
-private theorem hasOrthonormalCols_replicateCol' {v : n → ℝ} (hv : ‖WithLp.toLp 2 v‖ = 1) :
-    HasOrthonormalCols (Matrix.replicateCol Unit v) := by
-  have h := EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct v
-  rw [hv, one_pow, RCLike.re_to_real, star_trivial] at h
-  rw [hasOrthonormalCols_iff]
-  ext a b
-  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.replicateCol_apply, star_trivial,
-    Matrix.one_apply, Subsingleton.elim a b, if_true]
-  exact h.symm
-
 /-- The squared Euclidean norm is the sum of the squared coordinates. -/
 private theorem norm_toLp_sq_eq_sum {ι : Type*} [Fintype ι] (v : ι → ℝ) :
     ‖WithLp.toLp 2 v‖ ^ 2 = ∑ i, v i ^ 2 := by
@@ -101,7 +83,7 @@ private theorem measureReal_mem_eq_gaussianVector (hu : HasLaw u (uniformSphereV
     {S : Set (n → ℝ)} (hS : MeasurableSet S) :
     μ.real {ω | u ω ∈ S} = (gaussianVector n).real {g | ‖WithLp.toLp 2 g‖⁻¹ • g ∈ S} := by
   rw [hu.measureReal_eq (p := (· ∈ S)) hS, uniformSphereVector]
-  exact map_measureReal_apply measurable_inv_norm_smul' hS
+  exact map_measureReal_apply measurable_inv_norm_smul hS
 
 /-- **Chernoff's bound for a weighted sum of squared Gaussians**: for a standard Gaussian
 vector $\mathbf{g}$ and weights $\varphi_i < 1/2$,
@@ -277,7 +259,7 @@ theorem hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame {Q : Ω → Matrix n k �
       (haarFrame n n) := by
     refine (hasLaw_col_unit_of_hasLaw_haarFrame (hasLaw_mul_const_of_hasLaw_haarFrame
       (hasLaw_conjTranspose_of_hasLaw_haarFrame HasLaw.id) le_rfl
-      (hasOrthonormalCols_replicateCol' hx))).congr (ae_of_all _ fun P => ?_)
+      (hasOrthonormalCols_replicateCol hx))).congr (ae_of_all _ fun P => ?_)
     funext i
     simp only [id, Matrix.mul_apply, Matrix.replicateCol_apply, Matrix.mulVec, dotProduct]
   have hVm : HasLaw (fun w : n → ℝ => Vᴴ *ᵥ w) ((uniformSphereVector n).map (Vᴴ *ᵥ ·))
@@ -550,7 +532,7 @@ private theorem integrable_of_continuous {F : (n → ℝ) → ℝ} (hF : Continu
     exact (isCompact_closedBall _ _).image (PiLp.continuous_ofLp 2 _)
   obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn hF.continuousOn
   refine Integrable.of_bound hF.aestronglyMeasurable C ?_
-  rw [uniformSphereVector, ae_map_iff measurable_inv_norm_smul'.aemeasurable
+  rw [uniformSphereVector, ae_map_iff measurable_inv_norm_smul.aemeasurable
     (measurableSet_le hF.measurable.norm measurable_const)]
   refine ae_of_all _ fun g => hC _ ?_
   rw [Set.mem_preimage, mem_closedBall_zero_iff, WithLp.toLp_smul, norm_smul, norm_inv,

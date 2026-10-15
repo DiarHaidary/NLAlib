@@ -9,7 +9,7 @@ public import NLAlib.Probability.Law
 public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.Sketching.Properties.Isotropic
-public import NLAlib.Sketching.Properties.JohnsonLindenstraussNet
+public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
 
 /-!
 # Sub-Gaussian sketches
@@ -72,11 +72,6 @@ namespace NLAlib
 
 /-! ### Proof-local arithmetic -/
 
-/-- $\log(2/\delta) \ge 0$ for $0 < \delta \le 2$. -/
-private theorem log_two_div_nonneg {δ : ℝ} (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
-    0 ≤ Real.log (2 / δ) :=
-  Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-
 /-- $2 \cdot 9^d e^{-L} \le \delta$ once $d \log 9 + \log(2/\delta) \le L$, for $\delta > 0$. -/
 private theorem two_mul_nine_pow_mul_exp_le {d : ℕ} {L δ : ℝ} (hδ : 0 < δ)
     (h : d * Real.log 9 + Real.log (2 / δ) ≤ L) : 2 * 9 ^ d * Real.exp (-L) ≤ δ := by
@@ -134,7 +129,7 @@ variable {c c' ε ε' δ δ' : ℝ} {d d' : ℕ}
 theorem subgaussianJLDim_nonneg (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     0 ≤ subgaussianJLDim c ε δ := by
   rw [subgaussianJLDim_def]
-  exact div_nonneg (mul_nonneg (sq_nonneg c) (log_two_div_nonneg hδ hδ2))
+  exact div_nonneg (mul_nonneg (sq_nonneg c) (Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)))
     (mul_nonneg subgaussianJLConstant_pos.le (sq_nonneg ε))
 
 /-- The sub-Gaussian JL dimension is monotone in $c \ge 0$ and antitone in $\varepsilon > 0$ and
@@ -142,7 +137,7 @@ $\delta > 0$ (for $\delta \le 2$). -/
 theorem subgaussianJLDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hε : 0 < ε) (hεε' : ε ≤ ε')
     (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδ2 : δ ≤ 2) :
     subgaussianJLDim c ε' δ' ≤ subgaussianJLDim c' ε δ := by
-  have hL := log_two_div_nonneg hδ hδ2
+  have hL := Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)
   have hC := subgaussianJLConstant_pos
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   rw [subgaussianJLDim_def, subgaussianJLDim_def]
@@ -164,8 +159,9 @@ theorem subgaussianJLDim_le (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
   · simp
   calc c ^ 2 * Real.log (2 / δ) / (subgaussianJLConstant * ε ^ 2)
       ≤ c ^ 2 * Real.log (2 / δ) / (1 / 64 * ε ^ 2) :=
-        div_le_div_of_nonneg_left (mul_nonneg (sq_nonneg c) (log_two_div_nonneg hδ hδ2))
-          (by positivity) (mul_le_mul_of_nonneg_right le_subgaussianJLConstant (sq_nonneg ε))
+        div_le_div_of_nonneg_left
+          (mul_nonneg (sq_nonneg c) (Real.log_nonneg ((one_le_div₀ hδ).2 hδ2))) (by positivity)
+          (mul_le_mul_of_nonneg_right le_subgaussianJLConstant (sq_nonneg ε))
     _ = 64 * c ^ 2 * Real.log (2 / δ) / ε ^ 2 := by field_simp
 
 /-- The sub-Gaussian embedding dimension is nonnegative for $0 < \delta \le 2$. -/
@@ -174,7 +170,7 @@ theorem subgaussianEmbeddingDim_nonneg (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 <
   rw [subgaussianEmbeddingDim_def]
   have h9 : 0 ≤ Real.log 9 := Real.log_nonneg (by norm_num)
   exact div_nonneg (mul_nonneg (by positivity)
-      (add_nonneg (mul_nonneg (Nat.cast_nonneg d) h9) (log_two_div_nonneg hδ hδ2)))
+      (add_nonneg (mul_nonneg (Nat.cast_nonneg d) h9) (Real.log_nonneg ((one_le_div₀ hδ).2 hδ2))))
     (mul_nonneg subgaussianJLConstant_pos.le (sq_nonneg ε))
 
 /-- The sub-Gaussian embedding dimension is monotone in $c \ge 0$ and in $d$, and antitone in
@@ -182,7 +178,7 @@ $\varepsilon > 0$ and $\delta > 0$ (for $\delta \le 2$). -/
 theorem subgaussianEmbeddingDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hd : d ≤ d') (hε : 0 < ε)
     (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδ2 : δ ≤ 2) :
     subgaussianEmbeddingDim c d ε' δ' ≤ subgaussianEmbeddingDim c' d' ε δ := by
-  have hL := log_two_div_nonneg hδ hδ2
+  have hL := Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)
   have hC := subgaussianJLConstant_pos
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   have h9 : 0 ≤ Real.log 9 := Real.log_nonneg (by norm_num)
@@ -210,7 +206,7 @@ constant. -/
 theorem subgaussianEmbeddingDim_le (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     subgaussianEmbeddingDim c d ε δ ≤ 576 * c ^ 2 * (d + Real.log (2 / δ)) / ε ^ 2 := by
   rw [subgaussianEmbeddingDim_def, subgaussianJLConstant_def]
-  have hL := log_two_div_nonneg hδ hδ2
+  have hL := Real.log_nonneg ((one_le_div₀ hδ).2 hδ2)
   have h9 : (d : ℝ) * Real.log 9 ≤ d * (9 / 4) :=
     mul_le_mul_of_nonneg_left Real.log_nine_le_nine_div_four (Nat.cast_nonneg d)
   have e : 4 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / (1 / 64 * ε ^ 2) =
@@ -230,17 +226,6 @@ end Sizes
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n : Type*} [Fintype k]
   [Fintype n] {X : Ω → Matrix k n ℝ} {c : ℝ≥0} {ε δ : ℝ} {d : ℕ}
-
-/-- The squared norm of the sketch applied to $\mathbf{x}$:
-$\|\lvert k \rvert^{-1/2} \, \mathbf{A}\mathbf{x}\|^2
-= \sum_i \langle \mathbf{x}, \mathbf{A}_i \rangle^2 / \lvert k \rvert$, with $\mathbf{A}_i$ the
-rows of $\mathbf{A}$. -/
-private theorem norm_sketch_mulVec_sq (A : Matrix k n ℝ) (x : n → ℝ) :
-    ‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • A) *ᵥ x)‖ ^ 2 =
-      (∑ i, (x ⬝ᵥ A i) ^ 2) / Fintype.card k := by
-  rw [Matrix.smul_mulVec, WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs,
-    inv_pow, Real.sq_sqrt (Nat.cast_nonneg _), EuclideanSpace.norm_sq_eq, inv_mul_eq_div]
-  simp only [Real.norm_eq_abs, sq_abs, Matrix.mulVec, dotProduct_comm (A _) x]
 
 /-- The fourth moment of a sub-Gaussian variable $Y$ with proxy $c$: $\mathbb{E}[Y^4] \le 16 c^2$
 (`HasSubgaussianMGF.integral_abs_rpow_le` at $p = 4$). -/
@@ -368,8 +353,7 @@ theorem hasJLProperty_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω
   have hev : {ω | ε ≤ |‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • X ω) *ᵥ x)‖ ^ 2 - 1|} =
       {ω | ε * Fintype.card k ≤ |‖WithLp.toLp 2 (X ω *ᵥ x)‖ ^ 2 - Fintype.card k|} := by
     ext ω
-    simp only [Set.mem_ofPred_eq, Matrix.smul_mulVec, WithLp.toLp_smul, norm_smul, mul_pow,
-      Real.norm_eq_abs, sq_abs, inv_pow, Real.sq_sqrt hK0.le, inv_mul_eq_div]
+    simp only [Set.mem_ofPred_eq, Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq]
     rw [div_sub_one hK0.ne', abs_div, abs_of_pos hK0, le_div_iff₀ hK0]
   rw [hev]
   refine (hZ.measure_abs_ge_le (by positivity)).trans ?_
@@ -432,7 +416,7 @@ theorem hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le
     have h := h4 i x
     rwa [hx, one_pow, mul_one] at h
   have h := measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun hY hsubY h2 h4' hε
-  simp only [norm_sketch_mulVec_sq]
+  simp only [norm_inv_sqrt_card_smul_mulVec_sq, Real.norm_eq_abs, sq_abs]
   exact h
 
 /-- **Sub-Gaussian JL moment** at $p = 2$: for $k$ nonempty and unit $\mathbf{x}$,
@@ -466,8 +450,10 @@ theorem hasJLMoment_of_isSubgaussianVector [Nonempty k] (hind : iIndepFun (fun i
   have e (x : n → ℝ) (ω : Ω) :
       |‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • X ω) *ᵥ x)‖ ^ 2 - 1| ^ (2 : ℝ) =
         (∑ i, ((x ⬝ᵥ X ω i) ^ 2 - 1)) ^ 2 / (Fintype.card k : ℝ) ^ 2 := by
-    rw [Real.rpow_two, sq_abs, norm_sketch_mulVec_sq, Finset.sum_sub_distrib, Finset.sum_const,
-      Finset.card_univ, nsmul_eq_mul, mul_one, div_sub_one hK.ne', div_pow]
+    rw [Real.rpow_two, sq_abs, norm_inv_sqrt_card_smul_mulVec_sq]
+    simp only [Real.norm_eq_abs, sq_abs]
+    rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one,
+      div_sub_one hK.ne', div_pow]
   refine ⟨fun x hx => ?_, fun x hx => ?_⟩
   · simp only [e]
     exact (key x hx).1.integrable_sq.div_const _

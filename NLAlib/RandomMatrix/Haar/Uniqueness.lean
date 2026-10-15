@@ -236,17 +236,6 @@ private theorem map_toSphere_map_val (L : EuclideanSpace ℝ n ≃ₗᵢ[ℝ] Eu
       rw [← L.symm.map_smul, hx, L.symm_apply_apply]
   rw [hset, ← L.coe_toMeasurableEquiv, L.measurePreserving.measure_preimage_equiv]
 
-/-- A unit vector, as a column, has orthonormal columns. -/
-private theorem hasOrthonormalCols_replicateCol {v : n → ℝ} (hv : ‖WithLp.toLp 2 v‖ = 1) :
-    HasOrthonormalCols (Matrix.replicateCol Unit v) := by
-  have h := EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct v
-  rw [hv, one_pow, RCLike.re_to_real, star_trivial] at h
-  rw [hasOrthonormalCols_iff]
-  ext a b
-  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.replicateCol_apply, star_trivial,
-    Matrix.one_apply, Subsingleton.elim a b, if_true]
-  exact h.symm
-
 /-- **The uniform law on the sphere is normalised surface measure**: `uniformSphereVector n` is
 Mathlib's `Measure.toSphere` of the volume on `EuclideanSpace ℝ n`, normalised to mass one and
 pushed forward to `n → ℝ`. The bridge of `docs/design/Mathlib-deviations.md` entry 16. Needs

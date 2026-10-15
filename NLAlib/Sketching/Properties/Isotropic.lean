@@ -35,6 +35,8 @@ Design: `docs/design/Sketching-S1.md` §3.1.
   $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$.
 * `NLAlib.IsIsotropicSketch.integral_frobNorm_mul_sq`:
   $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$.
+* `NLAlib.norm_inv_sqrt_card_smul_sq`, `NLAlib.norm_inv_sqrt_card_smul_mulVec_sq`: the
+  normalisation $\lvert k \rvert^{-1/2}$, and the normalised sketch on a vector, row by row.
 * `NLAlib.isIsotropicSketch_smul_of_isIsotropic`: isotropic rows, scaled.
 * `NLAlib.IsIsotropicSketch.mul`: products of independent isotropic sketches.
 * `ProbabilityTheory.HasLaw.isIsotropicSketch_iff`: isotropy depends only on the law.
@@ -159,6 +161,30 @@ theorem integral_conjTranspose_mul_mul [DecidableEq p] (h : IsIsotropicSketch S 
 
 end IsIsotropicSketch
 
+omit [Fintype n] [Fintype p] [DecidableEq n] in
+/-- **The normalisation of a sketch with $\lvert k \rvert$ rows**: scaling a vector of
+$\Bbbk^k$ by $\lvert k \rvert^{-1/2}$ divides its squared norm by $\lvert k \rvert$,
+$\|\lvert k \rvert^{-1/2} \mathbf{v}\|^2 = \|\mathbf{v}\|^2 / \lvert k \rvert$. -/
+theorem norm_inv_sqrt_card_smul_sq (v : k → 𝕜) :
+    ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • v)‖ ^ 2 =
+      ‖WithLp.toLp 2 v‖ ^ 2 / Fintype.card k := by
+  rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
+    Real.sq_sqrt (Nat.cast_nonneg _), inv_mul_eq_div]
+
+omit [Fintype p] [DecidableEq n] in
+/-- **The normalised sketch on a vector, row by row**: for
+$\mathbf{S} = \lvert k \rvert^{-1/2} \mathbf{A}$ with rows $\mathbf{A}_i$,
+$$\|\mathbf{S}\mathbf{x}\|^2 = \frac{1}{\lvert k \rvert} \sum_i
+\lvert \langle \mathbf{x}, \mathbf{A}_i \rangle \rvert^2 \,,$$
+the average of the squared projections of $\mathbf{x}$ on the rows (with the bilinear pairing
+`x ⬝ᵥ A i`). The identity behind every sketch with independent rows
+(`NLAlib.isIsotropicSketch_smul_of_isIsotropic`, the Gaussian, sub-Gaussian and sign sketches). -/
+theorem norm_inv_sqrt_card_smul_mulVec_sq (A : Matrix k n 𝕜) (x : n → 𝕜) :
+    ‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • A) *ᵥ x)‖ ^ 2 =
+      (∑ i, ‖x ⬝ᵥ A i‖ ^ 2) / Fintype.card k := by
+  rw [Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq, EuclideanSpace.norm_sq_eq]
+  simp only [Matrix.mulVec, dotProduct_comm (A _) x]
+
 /-- **Isotropic rows give an isotropic sketch**: if every row of the random matrix $\mathbf{X}$ is
 an isotropic random vector, $\mathbf{X} / \sqrt{\lvert k \rvert}$ is an isotropic sketch. No
 independence between the rows is assumed; `[Nonempty k]` is needed, since for empty $k$ the sketch
@@ -166,25 +192,17 @@ is $\mathbf{0}$. -/
 theorem isIsotropicSketch_smul_of_isIsotropic [Nonempty k] {X : Ω → Matrix k n 𝕜}
     (hX : ∀ i, IsIsotropic (fun ω => X ω i) μ) :
     IsIsotropicSketch (fun ω => ((√(Fintype.card k : ℝ))⁻¹ : ℝ) • X ω) μ := by
-  set c : ℝ := (√(Fintype.card k : ℝ))⁻¹ with hc
   have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
-  have hc2 : c ^ 2 * Fintype.card k = 1 := by
-    rw [hc, inv_pow, Real.sq_sqrt hk.le, inv_mul_cancel₀ hk.ne']
   have hrow (x : n → 𝕜) (i : k) : MemLp (fun ω => x ⬝ᵥ X ω i) 2 μ := by
     simp only [dotProduct]
     exact memLp_finsetSum _ fun j _ => ((hX i).memLp j).const_mul (x j)
   refine isIsotropicSketch_iff.2 ⟨fun i j => ?_, fun x => ?_⟩
-  · exact ((hX i).memLp j).const_smul c
-  have e (ω : Ω) : ‖WithLp.toLp 2 ((c • X ω) *ᵥ x)‖ ^ 2 = c ^ 2 * ∑ i, ‖x ⬝ᵥ X ω i‖ ^ 2 := by
-    rw [Matrix.smul_mulVec, WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs,
-      EuclideanSpace.norm_sq_eq]
-    simp only [Matrix.mulVec, dotProduct_comm (X ω _) x]
-  simp only [e]
-  rw [integral_const_mul, integral_finsetSum _ fun i _ => (hrow x i).integrable_norm_pow
-    two_ne_zero]
+  · exact ((hX i).memLp j).const_smul ((√(Fintype.card k : ℝ))⁻¹ : ℝ)
+  simp only [norm_inv_sqrt_card_smul_mulVec_sq]
+  rw [integral_div, integral_finsetSum _ fun i _ => (hrow x i).integrable_norm_pow two_ne_zero]
   simp only [fun i => (hX i).integral_norm_dotProduct_sq x, Finset.sum_const, Finset.card_univ,
     nsmul_eq_mul]
-  rw [← mul_assoc, hc2, one_mul]
+  field_simp
 
 omit [Fintype k] [Fintype l] [Fintype n] [Fintype p] [DecidableEq n] in
 /-- The product of two independent square-integrable scalars is square integrable. -/

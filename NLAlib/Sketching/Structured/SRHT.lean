@@ -187,9 +187,8 @@ theorem isProbabilityMeasure_srht (F : Matrix n n 𝕜) (hk : Fintype.card k ≤
 theorem isProbabilityMeasure_srhtWithReplacement [Nonempty n] (F : Matrix n n 𝕜) :
     IsProbabilityMeasure (srhtWithReplacement k F) := by
   let _ : MeasurableSpace n := ⊤
-  have hc : (Fintype.card n : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
   have := isProbabilityMeasure_samplingMeasure (fun _ : n => (Fintype.card n : ℝ≥0)⁻¹)
-    (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc])
+    sum_const_inv_card
   exact Measure.isProbabilityMeasure_map (measurable_srhtMatrix F).aemeasurable
 
 /-- **The SRHT law as signs times row sampling without replacement**: the pushforward of
@@ -260,20 +259,6 @@ theorem hasLaw_srhtMatrix_of_hasLaw_pi [MeasurableSpace n] [MeasurableSingletonC
       measurable_id (measurable_of_countable _))
 
 /-! ### Isotropy and the partial isometry -/
-
-omit [DecidableEq n] in
-/-- The uniform weights sum to one. -/
-private theorem sum_const_inv_card [Nonempty n] : ∑ _ : n, (Fintype.card n : ℝ≥0)⁻¹ = 1 := by
-  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
-    mul_inv_cancel₀ (Nat.cast_ne_zero.2 Fintype.card_ne_zero)]
-
-omit [DecidableEq n] in
-/-- The domination by uniform weights, in the form of `NLAlib.samplingSketchMatrix`'s weights. -/
-private theorem leverageScore_le_mul_const_inv_card {V : Matrix n n 𝕜} {L : ℝ}
-    (hdom : ∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) (i : n) :
-    leverageScore V i ≤ L * ((fun _ : n => (Fintype.card n : ℝ≥0)⁻¹) i : ℝ) := by
-  simp only [NNReal.coe_inv, NNReal.coe_natCast]
-  exact hdom i
 
 section Product
 
@@ -370,7 +355,7 @@ theorem isIsotropicSketch_of_hasLaw_srht [Nonempty k] (hF : HasOrthonormalCols F
 theorem isIsotropicSketch_of_hasLaw_srhtWithReplacement [Nonempty k] [Nonempty n]
     (hF : HasOrthonormalCols F) (hS : HasLaw S (srhtWithReplacement k F) μ) :
     IsIsotropicSketch S μ := by
-  have hp := sum_const_inv_card (n := n)
+  have hp := sum_const_inv_card (ι := n)
   have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) hp
   refine hS.isIsotropicSketch_iff.2 ?_
   rw [srhtWithReplacement_eq_map_prod]
@@ -458,30 +443,6 @@ private theorem measureReal_le_one_of_hasLaw_srht (hS : HasLaw S (srht k F) μ) 
     exact measureReal_le_one
 
 omit [DecidableEq n] in
-/-- Every sketch is a subspace embedding for the zero matrix. -/
-private theorem hasSubspaceEmbedding_zero (S : Ω → Matrix k n 𝕜) (a b : ℝ) (hδ : 0 ≤ δ) :
-    HasSubspaceEmbedding S (0 : Matrix n n 𝕜) a b δ μ := by
-  have h : {ω | ¬ IsSubspaceEmbedding (S ω) (0 : Matrix n n 𝕜) a b} = ∅ := by
-    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨?_, ?_⟩ <;>
-      simp [IsSubspaceInjection]
-  rw [HasSubspaceEmbedding, h, measureReal_empty]
-  exact hδ
-
-omit [DecidableEq n] in
-/-- Under the domination of the leverage scores by uniform weights, a matrix of positive rank has
-$0 < L$. -/
-private theorem pos_of_rank_pos {V : Matrix n n 𝕜} {L : ℝ}
-    (hdom : ∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) (hd : 0 < V.rank) : 0 < L := by
-  have hn : Nonempty n := by
-    by_contra h
-    rw [not_nonempty_iff] at h
-    rw [show V = 0 from Matrix.ext fun i => isEmptyElim i, Matrix.rank_zero] at hd
-    exact lt_irrefl 0 hd
-  refine (Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le sum_const_inv_card fun i => ?_)
-  rw [NNReal.coe_inv, NNReal.coe_natCast]
-  exact hdom i
-
-omit [DecidableEq n] in
 /-- The sampling failure probability at the flattened bound of a subspace of rank $r \le d$ is at
 most the one at dimension $d$. -/
 private theorem rank_mul_exp_le {V : Matrix n n 𝕜} {r d : ℕ} {c K : ℝ} (hc : 0 < c)
@@ -492,7 +453,7 @@ private theorem rank_mul_exp_le {V : Matrix n n 𝕜} {r d : ℕ} {c K : ℝ} (h
   rcases Nat.eq_zero_or_pos V.rank with h0 | hpos
   · rw [h0, Nat.cast_zero, zero_mul]
     positivity
-  have hL := pos_of_rank_pos hl hpos
+  have hL := pos_of_leverageScore_le_mul_inv_card hl hpos
   have hB : 0 ≤ (r : ℝ) + 2 * √(r * t) + 2 * t := by positivity
   have hβ : 0 ≤ β := by
     by_contra h
@@ -627,7 +588,7 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement [Nonempty k] 
     IsObliviousSubspaceInjection S d (1 - ε)
       (d * Real.exp (-ε ^ 2 * Fintype.card k / (2 * (β * (d + 2 * √(d * t) + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
-  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (sum_const_inv_card (n := n))
+  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (sum_const_inv_card (ι := n))
   refine ⟨isIsotropicSketch_of_hasLaw_srhtWithReplacement hF.hasOrthonormalCols hS,
     fun U hU => ?_⟩
   refine hS.hasSubspaceInjection_iff.2 ?_
@@ -650,8 +611,8 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement
   intro U hU
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
-    exact hasSubspaceEmbedding_zero S _ _ (by positivity)
-  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (sum_const_inv_card (n := n))
+    exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero (by positivity)
+  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (sum_const_inv_card (ι := n))
   refine hS.hasSubspaceEmbedding_iff.2 ?_
   rw [srhtWithReplacement_eq_map_prod]
   refine hasSubspaceEmbedding_map_prod hF U (by positivity) ht fun V hV hl => ?_
@@ -662,21 +623,6 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement
     two_pos.le
 
 /-! ### Sample sizes -/
-
-/-- A bounded orthonormal transform on a nonempty index type has $\beta > 0$. -/
-private theorem pos_of_isBoundedOrthonormal [Nonempty n] (hF : IsBoundedOrthonormal F β) :
-    0 < β := by
-  by_contra hβ'
-  have hβ := not_lt.1 hβ'
-  have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
-  have hF0 : F = 0 := Matrix.ext fun i j => by
-    have h := hF.card_mul_norm_sq_le i j
-    have h2 : ‖F i j‖ ^ 2 ≤ 0 := by nlinarith [sq_nonneg ‖F i j‖]
-    exact norm_eq_zero.1 ((pow_eq_zero_iff two_ne_zero).1 (le_antisymm h2 (sq_nonneg _)))
-  have h1 := hF.hasOrthonormalCols
-  rw [HasOrthonormalCols, hF0, Matrix.mul_zero] at h1
-  obtain ⟨i⟩ := ‹Nonempty n›
-  exact absurd (congrFun (congrFun h1 i) i) (by simp)
 
 /-- The choice $t = \log(2\lvert n \rvert / \delta)$ for $0 < \delta < 1$: $t \ge 0$, the flattening
 term is $\delta / 2$, the flattened bound is $\beta\,\mathrm{srhtRowBound}(\lvert n \rvert, d,
@@ -696,40 +642,8 @@ private theorem log_div_half_spec [Nonempty n] (hF : IsBoundedOrthonormal F β) 
   refine ⟨hlog.le, ?_, by rw [srhtRowBound_def], ?_⟩
   · rw [Real.exp_neg, Real.exp_log hpos, inv_div, mul_div_cancel₀ _ (by positivity)]
   · rw [srhtRowBound_def]
-    exact mul_pos (pos_of_isBoundedOrthonormal hF)
+    exact mul_pos (one_pos.trans_le hF.one_le)
       (add_pos_of_nonneg_of_pos (by positivity) (by linarith))
-
-/-- Inverting the embedding tail at `NLAlib.samplingSize`. -/
-private theorem two_mul_exp_le_of_samplingSize_le {d : ℕ} {L K : ℝ} (hL : 0 < L) (hε : 0 < ε)
-    (hδ : 0 < δ) (hk : samplingSize d L ε δ ≤ K) :
-    2 * d * Real.exp (-ε ^ 2 * K / (3 * L)) ≤ δ := by
-  rcases Nat.eq_zero_or_pos d with rfl | hd
-  · rw [Nat.cast_zero, mul_zero, zero_mul]
-    exact hδ.le
-  have hd' : (0 : ℝ) < d := Nat.cast_pos.2 hd
-  rw [samplingSize_def, div_le_iff₀ (by positivity)] at hk
-  have hlog : Real.log (2 * d / δ) ≤ ε ^ 2 * K / (3 * L) := by
-    rw [le_div_iff₀ (by positivity)]
-    linarith
-  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
-  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
-  linarith
-
-/-- Inverting the injection tail at `NLAlib.samplingInjectionSize`. -/
-private theorem mul_exp_le_of_samplingInjectionSize_le {d : ℕ} {L K : ℝ} (hL : 0 < L)
-    (hε : 0 < ε) (hδ : 0 < δ) (hk : samplingInjectionSize d L ε δ ≤ K) :
-    d * Real.exp (-ε ^ 2 * K / (2 * L)) ≤ δ := by
-  rcases Nat.eq_zero_or_pos d with rfl | hd
-  · rw [Nat.cast_zero, zero_mul]
-    exact hδ.le
-  have hd' : (0 : ℝ) < d := Nat.cast_pos.2 hd
-  rw [samplingInjectionSize_def, div_le_iff₀ (by positivity)] at hk
-  have hlog : Real.log (d / δ) ≤ ε ^ 2 * K / (2 * L) := by
-    rw [le_div_iff₀ (by positivity)]
-    linarith
-  rw [Real.log_le_iff_le_exp (by positivity), div_le_iff₀ hδ] at hlog
-  rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
-  linarith
 
 /-- **The SRHT OSE, sample-size form**: with at least `NLAlib.samplingSize d L ε (δ/2)` rows, at
 $L = \beta\, \mathrm{srhtRowBound}(\lvert n \rvert, d, \delta/2)$, the SRHT is an oblivious
@@ -749,7 +663,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le
   rcases isEmpty_or_nonempty n with hn | hn
   · intro U _
     rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
-    exact hasSubspaceEmbedding_zero S _ _ hδ.le
+    exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero hδ.le
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   rcases le_or_gt 1 δ with hδ1 | hδ1
   · exact fun U _ => (measureReal_le_one_of_hasLaw_srht hS _).trans hδ1
@@ -757,7 +671,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le
   refine (isObliviousSubspaceEmbedding_of_hasLaw_srht hF hS d hε.le hε1 ht).mono le_rfl le_rfl
     le_rfl ?_
   rw [hL, hexp]
-  linarith [two_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
+  linarith [two_mul_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSI, sample-size form**: with at least `NLAlib.samplingInjectionSize d L ε (δ/2)`
 rows, at $L = \beta\, \mathrm{srhtRowBound}(\lvert n \rvert, d, \delta/2)$, nonempty `k` and
@@ -795,7 +709,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSi
   rcases isEmpty_or_nonempty n with hn | hn
   · intro U _
     rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
-    exact hasSubspaceEmbedding_zero S _ _ hδ.le
+    exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero hδ.le
   have : IsProbabilityMeasure μ :=
     hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
   rcases le_or_gt 1 δ with hδ1 | hδ1
@@ -804,7 +718,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSi
   refine (isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement hF hS d hε.le hε1 ht).mono
     le_rfl le_rfl le_rfl ?_
   rw [hL, hexp]
-  linarith [two_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
+  linarith [two_mul_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSI with replacement, sample-size form**: the size of
 `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le` for i.i.d.

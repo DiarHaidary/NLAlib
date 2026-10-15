@@ -75,19 +75,6 @@ instance isProbabilityMeasure_rademacherMatrix : IsProbabilityMeasure (rademache
 
 /-! ### Proof-local facts -/
 
-/-- $\|\lvert k \rvert^{-1/2} \, \mathbf{A}\mathbf{x}\|^2
-= \sum_i \langle \mathbf{x}, \mathbf{A}_i \rangle^2 / \lvert k \rvert$, with $\mathbf{A}_i$ the
-rows of $\mathbf{A}$. -/
-private theorem norm_sketch_sq_eq (A : Matrix k n ℝ) (x : n → ℝ) :
-    ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • (A *ᵥ x))‖ ^ 2 =
-      (∑ i, (x ⬝ᵥ A i) ^ 2) / Fintype.card k := by
-  rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
-    Real.sq_sqrt (Nat.cast_nonneg _), inv_mul_eq_div, EuclideanSpace.real_norm_sq_eq]
-  congr 1
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [dotProduct_comm]
-  rfl
-
 /-- The moments of $Q = \langle \mathbf{x}, \boldsymbol{\xi} \rangle^2$ for a vector
 $\boldsymbol{\xi}$ of random signs: $Q \in L^2$, $\mathbb{E} Q = \|\mathbf{x}\|^2$ and
 $\operatorname{Var} Q = 2 (\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4)$
@@ -105,11 +92,7 @@ private theorem moments_dotProduct_sq {ξ : Ω → n → ℝ} (hξ : HasLaw ξ (
   have hA : (Matrix.vecMulVec x x).IsHermitian := by
     rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial,
       Matrix.transpose_vecMulVec]
-  have hL4 (i : n) : MemLp (fun ω => ξ ω i) 4 μ :=
-    ((hξ.eval i).memLp_comp_iff (f := id) aestronglyMeasurable_id).2
-      ((integrable_norm_rpow_iff aestronglyMeasurable_id (by norm_num) (by norm_num)).1
-        (integrable_rademacherMeasure _))
-  have hmem := memLp_quadForm hL4 (Matrix.vecMulVec x x)
+  have hmem := memLp_quadForm (memLp_of_hasLaw_rademacherVector hξ 4) (Matrix.vecMulVec x x)
   have hvar := variance_quadForm_of_hasLaw_rademacherVector hξ hA
   simp only [hq] at hmem hvar
   refine ⟨hmem, ?_, ?_⟩
@@ -185,7 +168,8 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix
   have h := ((hT.const_mul (Fintype.card k : ℝ)⁻¹).sub
     (memLp_const (‖WithLp.toLp 2 x‖ ^ 2))).integrable_sq
   refine h.congr (ae_of_all _ fun ω => ?_)
-  simp only [Pi.sub_apply, norm_sketch_sq_eq, div_eq_inv_mul]
+  simp only [Pi.sub_apply, ← Matrix.smul_mulVec, norm_inv_sqrt_card_smul_mulVec_sq,
+    Real.norm_eq_abs, sq_abs, div_eq_inv_mul]
 
 /-- **Exact second moment of the sign-sketch distortion**: for $k$ nonempty,
 $$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
@@ -222,7 +206,8 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix [Nonem
       ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 = (∑ i, (x ⬝ᵥ X ω i) ^ 2 -
         Fintype.card k * ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 / (Fintype.card k : ℝ) ^ 2 := by
     intro ω
-    rw [norm_sketch_sq_eq]
+    rw [← Matrix.smul_mulVec, norm_inv_sqrt_card_smul_mulVec_sq]
+    simp only [Real.norm_eq_abs, sq_abs]
     field_simp
   simp only [e]
   rw [integral_div, hTvar]
@@ -293,19 +278,11 @@ $\delta > 0$. -/
 private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
     2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤ δ := by
-  have hf : 0 < (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 := by
-    have : 0 < (ε / 2) ^ 2 := by positivity
-    nlinarith [mul_pos this (by linarith : (0 : ℝ) < 3 - ε)]
-  rw [jlDim_def, div_le_iff₀ hf] at hk
   have h9 : (0 : ℝ) < 9 ^ d := by positivity
-  calc 2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤
-        2 * 9 ^ d * Real.exp (-Real.log (2 / (δ / 9 ^ d))) := by
-        gcongr
-        rw [show ε ^ 2 / 16 - ε ^ 3 / 48 = (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 by ring]
-        exact hk
-    _ = δ := by
-      rw [Real.exp_neg, Real.exp_log (by positivity)]
-      field_simp
+  have h := two_mul_exp_le_of_jlDim_le (by linarith) (by linarith) (by positivity) hk
+  rw [show (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 = ε ^ 2 / 16 - ε ^ 3 / 48 by ring,
+    le_div_iff₀ h9] at h
+  linarith
 
 /-- **Sign-sketch JL, sample-size form**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and at least
 `jlDim ε δ` rows, the JL property holds with distortion $\varepsilon$ and failure probability
@@ -316,16 +293,8 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hk : jlDim ε δ ≤ Fintype.card k) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ μ := by
   have := hX.isProbabilityMeasure
-  have hf : 0 < ε ^ 2 / 4 - ε ^ 3 / 6 := by
-    have : 0 < ε ^ 2 := by positivity
-    nlinarith
-  rw [jlDim_def, div_le_iff₀ hf] at hk
-  refine (hasJLProperty_of_hasLaw_rademacherMatrix hX hε.le).mono le_rfl ?_
-  calc 2 * Real.exp (-(Fintype.card k * (ε ^ 2 / 4 - ε ^ 3 / 6))) ≤
-        2 * Real.exp (-Real.log (2 / δ)) := by gcongr
-    _ = δ := by
-      rw [Real.exp_neg, Real.exp_log (by positivity)]
-      field_simp
+  exact (hasJLProperty_of_hasLaw_rademacherMatrix hX hε.le).mono le_rfl
+    (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
 
 /-- **Sign-sketch OSE, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$ and at least
 `jlDim (ε/2) (δ/9^d)` rows, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious

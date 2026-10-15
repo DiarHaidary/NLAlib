@@ -25,8 +25,9 @@ integrability companions hold in every shape.
 These are what a Haar sketch
 $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert} \, \mathbf{Q}^{\mathsf{H}}$ needs for
 $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, and what trace estimation with sphere
-probes or an orthonormal test matrix consumes. Fourth moments are not here: they need the
-independence of $\mathbf{g} / \|\mathbf{g}\|$ and $\|\mathbf{g}\|$.
+probes or an orthonormal test matrix consumes. The fourth moment of a projected column,
+$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4$ for $\mathbf{u}$ uniform on the sphere, is in
+`NLAlib/RandomMatrix/Haar/Sphere.lean`, also from invariance.
 
 ## Main results
 

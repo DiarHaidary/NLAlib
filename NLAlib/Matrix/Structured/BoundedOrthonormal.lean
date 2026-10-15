@@ -16,17 +16,14 @@ $\beta$ when it is unitary and its entries are uniformly small,
 $\lvert n \rvert \, \lvert \mathbf{F}_{i,j} \rvert^2 \le \beta$. The normalised Walsh–Hadamard and
 Fourier matrices, and every Hadamard matrix scaled by $\lvert n \rvert^{-1/2}$, have $\beta = 1$;
 the discrete cosine and Hartley transforms have $\beta = 2$. For nonempty `n`, unitarity forces
-$1 \le \beta$ (a row has norm $1$). These are the two features of a trigonometric transform that
-the analysis of the subsampled randomized trigonometric transform uses
-(`NLAlib.Sketching.Structured.Flattening`).
+$1 \le \beta$ (a column has norm $1$; `NLAlib.IsBoundedOrthonormal.one_le`). These are the two
+features of a trigonometric transform that the analysis of the subsampled randomized
+trigonometric transform uses (`NLAlib.Sketching.Structured.Flattening`).
 
 The hypothesis is strictly weaker than Mathlib's `Matrix.IsHadamard` on the unnormalised matrix: an
 inequality on the entries admits the cosine and Hartley transforms, which are not Hadamard. The
 bridge is `Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul`. Design:
 `docs/design/Sketching-S6.md` §8, items 6 and 7.
-
-This file is part of the skeleton of Sketching stage S6 (`docs/design/Sketching-S6.md` §8,
-item 15).
 
 ## Main definitions
 
@@ -35,6 +32,7 @@ item 15).
 ## Main results
 
 * `Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul`: a normalised Hadamard matrix.
+* `NLAlib.IsBoundedOrthonormal.one_le`: $1 \le \beta$ for nonempty `n`.
 * `NLAlib.IsBoundedOrthonormal.transpose`, `NLAlib.IsBoundedOrthonormal.conjTranspose`.
 -/
 
@@ -81,6 +79,21 @@ theorem _root_.Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul {H : Matrix 
       mul_inv_cancel₀ hc.ne']
 
 namespace IsBoundedOrthonormal
+
+/-- **A bounded orthonormal transform has $\beta \ge 1$** on a nonempty index type: a column of a
+unitary has norm $1$, so $\lvert n \rvert = \sum_i \lvert n \rvert \, \lvert \mathbf{F}_{i,j}
+\rvert^2 \le \lvert n \rvert \beta$. The normalised Hadamard matrices attain $\beta = 1$. -/
+theorem one_le [Nonempty n] (hF : IsBoundedOrthonormal F β) : 1 ≤ β := by
+  obtain ⟨j⟩ := ‹Nonempty n›
+  have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
+  have hcol : ∑ i, ‖F i j‖ ^ 2 = 1 := by
+    have h := congrFun (congrFun hF.hasOrthonormalCols.conjTranspose_mul_self j) j
+    simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, RCLike.star_def, RCLike.conj_mul,
+      Matrix.one_apply_eq] at h
+    exact_mod_cast h
+  have h := Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hF.card_mul_norm_sq_le i j
+  rw [← Finset.mul_sum, hcol, mul_one, Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at h
+  exact le_of_mul_le_mul_left (by linarith) hn
 
 /-- The transpose of a bounded orthonormal transform is one, with the same constant. Over
 $\mathbb{C}$ this carries a transform acting on the right (Halko, Martinsson and Tropp's test

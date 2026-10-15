@@ -18,8 +18,7 @@ good set $G$ plus the probability $\delta_2$ that $Y$ leaves $G$. Mathlib has th
 (`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`, `MeasureTheory.Measure.prod_apply_symm`)
 but not the bound. Upstream candidate for `Mathlib/Probability/Independence/Basic.lean`.
 
-This file is part of the skeleton of Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1,
-§8 item 15).
+Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15).
 
 ## Main results
 

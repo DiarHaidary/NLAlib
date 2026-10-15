@@ -156,9 +156,8 @@ instance isFiniteMeasure_countSketch : IsFiniteMeasure (countSketch (𝕜 := �
 theorem isProbabilityMeasure_countSketch [Nonempty k] :
     IsProbabilityMeasure (countSketch (𝕜 := 𝕜) k n) := by
   let _ : MeasurableSpace k := ⊤
-  have hc : (Fintype.card k : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
   have := isProbabilityMeasure_samplingMeasure (fun _ : k => (Fintype.card k : ℝ≥0)⁻¹)
-    (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc])
+    sum_const_inv_card
   exact Measure.isProbabilityMeasure_map measurable_countSketchMatrix.aemeasurable
 
 /-- The CountSketch law is the pushforward of i.i.d. uniform hash values and independent
@@ -242,31 +241,11 @@ private noncomputable abbrev hashLaw (k n : Type*) [Fintype k] [Fintype n] [Meas
     Measure (n → k) :=
   Measure.pi fun _ : n => samplingMeasure fun _ : k => (Fintype.card k : ℝ≥0)⁻¹
 
-/-- Almost surely, the signs read in `𝕜` have modulus $1$ and square $1$. -/
+/-- Almost surely, the signs read in `𝕜` have modulus $1$ and square $1$
+(`NLAlib.ae_norm_ofReal_eq_one_of_hasLaw_rademacherVector` on the identity). -/
 private theorem ae_norm_ofReal_eq_one :
-    ∀ᵐ σ ∂rademacherVector n, ∀ i, ‖((σ i : ℝ) : 𝕜)‖ = 1 ∧ ((σ i : ℝ) : 𝕜) ^ 2 = 1 := by
-  have hσ : HasLaw (fun σ : n → ℝ => σ) (rademacherVector n) (rademacherVector n) := HasLaw.id
-  filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hσ] with σ hσ i
-  refine ⟨?_, ?_⟩
-  · rw [RCLike.norm_ofReal, ← Real.sqrt_sq_eq_abs, hσ i, Real.sqrt_one]
-  · rw [← RCLike.ofReal_pow, hσ i, RCLike.ofReal_one]
-
-/-- The signs read in `𝕜` are independent. -/
-private theorem iIndepFun_ofReal_rademacherVector :
-    iIndepFun (fun i (σ : n → ℝ) => ((σ i : ℝ) : 𝕜)) (rademacherVector n) :=
-  iIndepFun_pi (X := fun _ (t : ℝ) => (t : 𝕜)) fun _ => RCLike.continuous_ofReal.aemeasurable
-
-/-- The signs read in `𝕜` are in every $L^p$. -/
-private theorem memLp_ofReal_rademacherVector (p : ℝ≥0∞) (i : n) :
-    MemLp (fun σ : n → ℝ => ((σ i : ℝ) : 𝕜)) p (rademacherVector n) :=
-  MemLp.of_bound (RCLike.continuous_ofReal.comp (continuous_apply i)).aestronglyMeasurable 1
-    (ae_norm_ofReal_eq_one.mono fun _ h => (h i).1.le)
-
-/-- The signs read in `𝕜` have mean $0$. -/
-private theorem integral_ofReal_rademacherVector (i : n) :
-    ∫ σ, ((σ i : ℝ) : 𝕜) ∂rademacherVector n = 0 := by
-  have hσ : HasLaw (fun σ : n → ℝ => σ) (rademacherVector n) (rademacherVector n) := HasLaw.id
-  rw [integral_ofReal, integral_of_hasLaw_rademacherMeasure (hσ.eval i), RCLike.ofReal_zero]
+    ∀ᵐ σ ∂rademacherVector n, ∀ i, ‖((σ i : ℝ) : 𝕜)‖ = 1 ∧ ((σ i : ℝ) : 𝕜) ^ 2 = 1 :=
+  ae_norm_ofReal_eq_one_of_hasLaw_rademacherVector HasLaw.id
 
 /-- The integral of a function of the signs equal to $c$ almost surely is $c$. -/
 private theorem integral_eq_of_ae_rademacherVector {E : Type*} [NormedAddCommGroup E]
@@ -338,8 +317,7 @@ private theorem measureReal_hashLaw_setOf_apply_eq_apply [MeasurableSpace k]
       exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp [samplingMeasure])
     rw [h0, Fintype.card_eq_zero, Nat.cast_zero, inv_zero, measureReal_zero_apply]
   · have hc : (Fintype.card k : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
-    rw [measureReal_pi_samplingMeasure_setOf_apply_eq_apply _
-      (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc]) hij]
+    rw [measureReal_pi_samplingMeasure_setOf_apply_eq_apply _ sum_const_inv_card hij]
     have hc' : (Fintype.card k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
     simp only [NNReal.coe_inv, NNReal.coe_natCast, Finset.sum_const, Finset.card_univ,
       nsmul_eq_mul]
@@ -365,10 +343,7 @@ private theorem integral_norm_countSketchMatrix_mulVec_sq (h : n → k) (x : n �
       ring
     · simp
   have hx : IsIsotropic (fun σ : n → ℝ => fun i => ((σ i : ℝ) : 𝕜)) (rademacherVector n) :=
-    IsIsotropic.of_iIndepFun iIndepFun_ofReal_rademacherVector
-      (fun i => memLp_ofReal_rademacherVector 2 i) integral_ofReal_rademacherVector
-      fun i => integral_eq_of_ae_rademacherVector
-        (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow])
+    isIsotropic_ofReal_of_hasLaw_rademacherVector HasLaw.id
   have htr : D.trace = ((‖WithLp.toLp 2 x‖ ^ 2 : ℝ) : 𝕜) := by
     simp only [Matrix.trace, Matrix.diag, D, Matrix.of_apply, if_true, EuclideanSpace.norm_sq_eq]
     push_cast
@@ -385,9 +360,8 @@ $\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^*] = \mathbf{I}$). -/
 theorem isIsotropicSketch_of_hasLaw_countSketch [Nonempty k] [DecidableEq n]
     (hS : HasLaw S (countSketch k n) μ) : IsIsotropicSketch S μ := by
   let _ : MeasurableSpace k := ⊤
-  have hc : (Fintype.card k : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
   have := isProbabilityMeasure_samplingMeasure (fun _ : k => (Fintype.card k : ℝ≥0)⁻¹)
-    (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc])
+    sum_const_inv_card
   refine isIsotropicSketch_iff.2 ⟨fun a i => ?_, fun x => ?_⟩
   · exact (memLp_two_iff_integrable_sq_norm
       ((Matrix.measurable_apply a i).comp_aemeasurable hS.aemeasurable).aestronglyMeasurable).2
@@ -437,8 +411,11 @@ private theorem integral_norm_trace_mul_countSketchMatrix_sq [DecidableEq n] (h 
     · have hc' : ¬(j ≠ i ∧ h j = h i) := fun h' => hc ⟨h'.1.symm, h'.2.symm⟩
       rw [if_neg hc, if_neg hc']
       ring
-  rw [integral_congr_ae e, integral_norm_quadForm_sub_trace_sq iIndepFun_ofReal_rademacherVector
-    (fun i => memLp_ofReal_rademacherVector 4 i) integral_ofReal_rademacherVector
+  have hind : iIndepFun (fun i (σ : n → ℝ) => ((σ i : ℝ) : 𝕜)) (rademacherVector n) :=
+    iIndepFun_ofReal_of_hasLaw_rademacherVector HasLaw.id
+  rw [integral_congr_ae e, integral_norm_quadForm_sub_trace_sq hind
+    (fun i => memLp_ofReal_of_hasLaw_rademacherVector hσ 4 i)
+    (integral_ofReal_of_hasLaw_rademacherVector hσ)
     (fun i => integral_eq_of_ae_rademacherVector
       (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow]))
     (s := 1) (fun i => integral_eq_of_ae_rademacherVector

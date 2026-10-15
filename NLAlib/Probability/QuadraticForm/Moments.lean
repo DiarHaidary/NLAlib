@@ -369,11 +369,7 @@ independent random signs and real symmetric $\mathbf{A}$. -/
 theorem variance_quadForm_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
     (hx : HasLaw x (rademacherVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     variance (fun ω => quadForm A (x ω)) μ = 2 * (frobNorm A ^ 2 - ∑ i, A i i ^ 2) := by
-  have hL4 (i : n) : MemLp (fun ω => x ω i) 4 μ :=
-    ((hx.eval i).memLp_comp_iff (f := id) aestronglyMeasurable_id).2
-      ((integrable_norm_rpow_iff aestronglyMeasurable_id (by norm_num) (by norm_num)).1
-        (integrable_rademacherMeasure _))
-  rw [variance_quadForm_of_isHermitian hx.iIndepFun_eval hL4
+  rw [variance_quadForm_of_isHermitian hx.iIndepFun_eval (memLp_of_hasLaw_rademacherVector hx 4)
     (fun i => integral_of_hasLaw_rademacherMeasure (hx.eval i))
     (fun i => integral_sq_of_hasLaw_rademacherMeasure (hx.eval i))
     (fun i => integral_pow_four_of_hasLaw_rademacherMeasure (hx.eval i)) hA]

@@ -34,6 +34,9 @@ random-variable forms follow.
 * `NLAlib.integral_rademacherMeasure`: $\int f = (f(1) + f(-1)) / 2$.
 * `NLAlib.hasSubgaussianMGF_of_hasLaw_rademacherMeasure`: proxy $1$.
 * `NLAlib.isIsotropic_of_hasLaw_rademacherVector`.
+* `NLAlib.memLp_of_hasLaw_rademacherVector`: the coordinates are in every $L^p$.
+* `NLAlib.isIsotropic_ofReal_of_hasLaw_rademacherVector` and its companions: the signs read in an
+  `RCLike` field.
 * `NLAlib.measurePreserving_neg_rademacherMeasure`,
   `NLAlib.measurePreserving_update_neg_rademacherVector`: sign-flip symmetry.
 -/
@@ -145,6 +148,60 @@ theorem ae_sq_eq_one_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
   refine ae_all_iff.2 fun i => ?_
   filter_upwards [ae_eq_one_or_neg_one_of_hasLaw_rademacherMeasure (hx.eval i)] with ω h
   rcases h with h | h <;> simp [h]
+
+/-- The coordinates of a vector of random signs are in every $L^p$ (they are bounded by $1$). -/
+theorem memLp_of_hasLaw_rademacherVector {x : Ω → n → ℝ} (hx : HasLaw x (rademacherVector n) μ)
+    (p : ℝ≥0∞) (i : n) : MemLp (fun ω => x ω i) p μ := by
+  have := hx.isProbabilityMeasure
+  refine MemLp.of_bound (hx.eval i).aemeasurable.aestronglyMeasurable 1 ?_
+  filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hx] with ω hω
+  rw [Real.norm_eq_abs, ← Real.sqrt_sq_eq_abs, hω i, Real.sqrt_one]
+
+/-! ### Signs read in an `RCLike` field
+
+The companions over `𝕜` of the facts above, for sketches that multiply `𝕜`-valued matrices by
+real random signs (CountSketch, the randomized trigonometric transforms). -/
+
+section RCLike
+
+variable {𝕜 : Type*} [RCLike 𝕜] {x : Ω → n → ℝ}
+
+/-- Almost surely, the coordinates of a vector of random signs, read in `𝕜`, have modulus $1$
+and square $1$. -/
+theorem ae_norm_ofReal_eq_one_of_hasLaw_rademacherVector (hx : HasLaw x (rademacherVector n) μ) :
+    ∀ᵐ ω ∂μ, ∀ i, ‖((x ω i : ℝ) : 𝕜)‖ = 1 ∧ ((x ω i : ℝ) : 𝕜) ^ 2 = 1 := by
+  filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hx] with ω hω i
+  refine ⟨?_, ?_⟩
+  · rw [RCLike.norm_ofReal, ← Real.sqrt_sq_eq_abs, hω i, Real.sqrt_one]
+  · rw [← RCLike.ofReal_pow, hω i, RCLike.ofReal_one]
+
+/-- The coordinates of a vector of independent random signs, read in `𝕜`, are independent. -/
+theorem iIndepFun_ofReal_of_hasLaw_rademacherVector (hx : HasLaw x (rademacherVector n) μ) :
+    iIndepFun (fun i ω => ((x ω i : ℝ) : 𝕜)) μ :=
+  hx.iIndepFun_eval.comp (fun _ (t : ℝ) => (t : 𝕜)) fun _ => RCLike.continuous_ofReal.measurable
+
+/-- The coordinates of a vector of random signs, read in `𝕜`, are in every $L^p$. -/
+theorem memLp_ofReal_of_hasLaw_rademacherVector (hx : HasLaw x (rademacherVector n) μ)
+    (p : ℝ≥0∞) (i : n) : MemLp (fun ω => ((x ω i : ℝ) : 𝕜)) p μ :=
+  (memLp_of_hasLaw_rademacherVector hx p i).ofReal
+
+/-- The coordinates of a vector of random signs, read in `𝕜`, have mean $0$. -/
+theorem integral_ofReal_of_hasLaw_rademacherVector (hx : HasLaw x (rademacherVector n) μ)
+    (i : n) : ∫ ω, ((x ω i : ℝ) : 𝕜) ∂μ = 0 := by
+  rw [integral_ofReal, integral_of_hasLaw_rademacherMeasure (hx.eval i), RCLike.ofReal_zero]
+
+/-- A vector of independent random signs, read in `𝕜`, is isotropic. -/
+theorem isIsotropic_ofReal_of_hasLaw_rademacherVector [DecidableEq n]
+    (hx : HasLaw x (rademacherVector n) μ) : IsIsotropic (fun ω i => ((x ω i : ℝ) : 𝕜)) μ := by
+  have := hx.isProbabilityMeasure
+  refine IsIsotropic.of_iIndepFun (iIndepFun_ofReal_of_hasLaw_rademacherVector hx)
+    (fun i => memLp_ofReal_of_hasLaw_rademacherVector hx 2 i)
+    (integral_ofReal_of_hasLaw_rademacherVector hx) fun i => ?_
+  rw [integral_congr_ae ((ae_norm_ofReal_eq_one_of_hasLaw_rademacherVector hx).mono
+    fun ω h => by rw [(h i).1, one_pow])]
+  simp
+
+end RCLike
 
 /-! ### Sign-flip symmetry -/
 

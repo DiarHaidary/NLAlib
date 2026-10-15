@@ -323,3 +323,13 @@ the new id `haar-sketch-osi`. **File list** (amends §4): `ChiSquareTails.lean` 
 `Sketching/Gaussian/Haar.lean` 18 (the 12 of §3.4, its two `hsk` shapes renamed
 `…_of_lt_sqrt_sub_sqrt`; plus the a.s. upper half, the `n/k` embedding and OSE, the `k = n`
 embedding and the two complement statements).
+
+**Wrap-up (2026-10-15).** `Sketching/Gaussian/Haar.lean` (1091 lines) is split by topic: `Haar.lean`
+keeps isotropy, the norm, the Gaussian transfer, the deterministic halves and the JL results, and
+the new `Sketching/Gaussian/HaarEmbedding.lean` holds the fixed-subspace and oblivious embeddings
+(§3.4's tails). The Gram identity of the sketch is public as
+`conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul`, used by both. `Sphere.lean` stays a
+topic file in `RandomMatrix/Haar` (the uniform unit vector: its projected law, tails and fourth
+moment), not merged into `Moments.lean` (second moments of a frame): together they would be
+about 990 lines on two topics. `Gaussian.lean` gains the public
+inversion `two_mul_exp_le_of_jlDim_le`, shared by the Gaussian, Haar and sign sketches.

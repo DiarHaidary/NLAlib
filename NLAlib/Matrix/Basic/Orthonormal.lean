@@ -29,6 +29,7 @@ Orthonormal rows are `HasOrthonormalCols Qᴴ`; a unitary matrix is a square $\m
 * `NLAlib.hasOrthonormalCols_iff_mem_unitaryGroup`: the bridge to `Matrix.unitaryGroup`.
 * `NLAlib.HasOrthonormalCols.norm_toLp_mulVec`: multiplication by $\mathbf{Q}$ preserves the
   Euclidean norm.
+* `NLAlib.hasOrthonormalCols_replicateCol`: a unit vector as a column.
 * `NLAlib.HasOrthonormalCols.mulVec_injective`: $\mathbf{Q}$ has full column rank;
   `NLAlib.HasOrthonormalCols.mulVec_injective_of_mul`: so does $\mathbf{B}$ when
   $\mathbf{S}\mathbf{B}$ has orthonormal columns.
@@ -121,6 +122,18 @@ theorem hasOrthonormalCols_fromCols_iff [DecidableEq p] {Q₁ : Matrix m n 𝕜}
     rw [← Matrix.conjTranspose_eq_zero, Matrix.conjTranspose_mul,
       Matrix.conjTranspose_conjTranspose]
     exact h₁₂
+
+/-- A unit vector, as a single column, has orthonormal columns: for $\|\mathbf{v}\| = 1$,
+`HasOrthonormalCols (Matrix.replicateCol Unit v)`. -/
+theorem hasOrthonormalCols_replicateCol {v : m → 𝕜} (hv : ‖WithLp.toLp 2 v‖ = 1) :
+    HasOrthonormalCols (Matrix.replicateCol Unit v) := by
+  have h := EuclideanSpace.norm_sq_eq (WithLp.toLp 2 v)
+  rw [hv, one_pow] at h
+  rw [hasOrthonormalCols_iff]
+  ext a b
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.replicateCol_apply,
+    RCLike.star_def, RCLike.conj_mul, Matrix.one_apply, Subsingleton.elim a b, if_true]
+  exact_mod_cast h.symm
 
 namespace HasOrthonormalCols
 

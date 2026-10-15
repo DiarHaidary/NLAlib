@@ -48,6 +48,8 @@ $\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous. Design:
 * `NLAlib.IsSubspaceEmbedding.of_range_le`, `NLAlib.IsSubspaceEmbedding.mul_right`,
   `NLAlib.IsSubspaceEmbedding.smul`, `NLAlib.IsSubspaceEmbedding.mul`: subspaces, scaling and
   composition.
+* `NLAlib.HasOrthonormalCols.isSubspaceEmbedding_mul_iff`: a factor with orthonormal columns
+  moves from the sketch to the subspace.
 * `NLAlib.isClosed_setOf_isSubspaceEmbedding`, `NLAlib.measurableSet_setOf_isSubspaceEmbedding`.
 -/
 
@@ -350,6 +352,31 @@ theorem IsSubspaceEmbedding.mul {S₂ : Matrix l k 𝕜} (h₂ : IsSubspaceEmbed
   refine ⟨h₂.lower.mul h.lower ha₂, ?_⟩
   rw [mul_smul, Matrix.mul_assoc S₂ S U]
   exact h₂.upper.trans (smul_le_smul h.upper hb₂)
+
+/-- **A factor with orthonormal columns moves to the subspace**: for $\mathbf{B}$ with orthonormal
+columns, $\mathbf{A}\mathbf{B}$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with
+constant $a$ exactly when $\mathbf{A}$ is one for $\operatorname{range}(\mathbf{B}\mathbf{U})$,
+since $(\mathbf{B}\mathbf{U})^{\mathsf{H}}\mathbf{B}\mathbf{U} =
+\mathbf{U}^{\mathsf{H}}\mathbf{U}$. It reduces a randomly rotated sketch
+$\mathbf{P}\mathbf{T}$ to its second stage $\mathbf{P}$ on the rotated subspace. -/
+theorem HasOrthonormalCols.isSubspaceInjection_mul_iff {m : Type*} [Fintype m] [DecidableEq n]
+    {A : Matrix k m 𝕜} {B : Matrix m n 𝕜} (hB : HasOrthonormalCols B) (U : Matrix n p 𝕜) :
+    IsSubspaceInjection (A * B) U a ↔ IsSubspaceInjection A (B * U) a := by
+  rw [IsSubspaceInjection, IsSubspaceInjection, Matrix.mul_assoc A B U,
+    hB.conjTranspose_mul_mul U U]
+
+/-- **A factor with orthonormal columns moves to the subspace**, the embedding form of
+`NLAlib.HasOrthonormalCols.isSubspaceInjection_mul_iff`. -/
+theorem HasOrthonormalCols.isSubspaceEmbedding_mul_iff {m : Type*} [Fintype m] [DecidableEq n]
+    {A : Matrix k m 𝕜} {B : Matrix m n 𝕜} (hB : HasOrthonormalCols B) (U : Matrix n p 𝕜) :
+    IsSubspaceEmbedding (A * B) U a b ↔ IsSubspaceEmbedding A (B * U) a b := by
+  have hU : (B * U)ᴴ * (B * U) = Uᴴ * U := hB.conjTranspose_mul_mul U U
+  refine ⟨fun h => ⟨(hB.isSubspaceInjection_mul_iff U).1 h.lower, ?_⟩,
+    fun h => ⟨(hB.isSubspaceInjection_mul_iff U).2 h.lower, ?_⟩⟩
+  · rw [hU, ← Matrix.mul_assoc A B U]
+    exact h.upper
+  · rw [Matrix.mul_assoc A B U, ← hU]
+    exact h.upper
 
 /-- Every sketch is a subspace injection with a nonpositive constant. -/
 theorem isSubspaceInjection_of_nonpos (S : Matrix k n 𝕜) (U : Matrix n p 𝕜) (ha : a ≤ 0) :

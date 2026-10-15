@@ -30,6 +30,7 @@ the bridge to `PMF` is `NLAlib.samplingMeasure_toNNReal_eq_toMeasure`.
 * `NLAlib.measureReal_eq_of_hasLaw_samplingMeasure`: $\mathbb{P}(X = i) = p_i$.
 * `NLAlib.measureReal_pi_samplingMeasure_setOf_apply_eq_apply`: two coordinates of an i.i.d.
   sample collide with probability $\sum_r p_r^2$.
+* `NLAlib.sum_const_inv_card`, `NLAlib.samplingMeasure_const_inv_card`: uniform weights.
 -/
 
 @[expose] public section
@@ -147,6 +148,13 @@ theorem samplingMeasure_toNNReal_eq_toMeasure (q : PMF ι) :
   refine Measure.ext_of_singleton fun a => ?_
   rw [samplingMeasure_singleton, PMF.toMeasure_apply_singleton _ _ (measurableSet_singleton a),
     ENNReal.coe_toNNReal (q.apply_ne_top a)]
+
+omit [MeasurableSpace ι] [MeasurableSingletonClass ι] in
+/-- The uniform weights $1/\lvert \iota \rvert$ sum to one on a nonempty index type: the
+normalisation hypothesis `∑ i, p i = 1` of the sampling laws at uniform weights. -/
+theorem sum_const_inv_card [Nonempty ι] : ∑ _ : ι, (Fintype.card ι : ℝ≥0)⁻¹ = 1 := by
+  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+    mul_inv_cancel₀ (Nat.cast_ne_zero.2 Fintype.card_ne_zero)]
 
 /-- Uniform weights give Mathlib's uniform measure. -/
 theorem samplingMeasure_const_inv_card :

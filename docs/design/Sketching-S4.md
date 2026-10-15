@@ -475,3 +475,28 @@ Deviations from §3 and §8:
   Chernoff halves, AMM integrability (2), unbiasedness, exact second moment, domination bound.
 - Private helpers that a later stage may want public: `rank_le_of_leverageScore_le`
   (`hp`, `hdom` give `U.rank ≤ L`), `leverageScore_eq_zero_of_rank_eq_zero`.
+
+### Promotions recorded at the wrap-up (2026-10-15)
+
+S4's public statements are unchanged by the later stages; these are the declarations that left
+S4's private helpers, or joined S4's files, after S4 closed.
+- **S5** (`docs/design/Sketching-S5.md` §8, item 1, and its skeleton notes): in `RowSampling.lean`,
+  `exists_hasOrthonormalCols_of_leverageScore_le` and `rank_le_of_leverageScore_le` became public,
+  and `inv_mul_smul_vecMulVec_star_self_le` replaced the private `samplingAtom_le` at both call
+  sites; `Matrix.conjTranspose_mul_eq_sum_vecMulVec`
+  (`ForMathlib/LinearAlgebra/Matrix/ConjTranspose.lean`) replaced both private copies in S4's files;
+  S4's private upper tail is routed through
+  `HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le` (`FixedSubspace.lean`).
+- **S6** (`docs/design/Sketching-S6.md` §1, item 4): `samplingSketchMatrix_mul_conjTranspose_of_injective`,
+  the diagonal `S Sᴴ` for injective indices, joined `RowSampling.lean`
+  (the partial isometry of sampling without replacement and of the SRHT).
+- **Wrap-up 2**: `RowSampling.lean` gains `leverageScore_le_mul_const_inv_card` and
+  `pos_of_leverageScore_le_mul_inv_card` (domination by uniform weights, formerly private in
+  `WithoutReplacement.lean` and `SRHT.lean`) and the size inversions
+  `two_mul_mul_exp_le_of_samplingSize_le`, `mul_exp_le_of_samplingInjectionSize_le` (formerly
+  private in `SRHT.lean` and inlined in the size corollaries here and in `WithoutReplacement.lean`);
+  `Probability/Distributions/Sampling.lean` gains `sum_const_inv_card` (the uniform weights sum to
+  one, formerly inlined here, in `SRHT.lean`, `WithoutReplacement.lean` and `CountSketch.lean`); the
+  private `measureReal_not_isSubspaceEmbedding_zero` is replaced by
+  `hasSubspaceEmbedding_of_rank_eq_zero` (`FixedSubspace.lean`). `RowSampling.lean`'s docstrings
+  are in LaTeX (CONTRIBUTING §6, item 5).

@@ -231,13 +231,13 @@ public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.Haar
+public import NLAlib.Sketching.Gaussian.HaarEmbedding
 public import NLAlib.Sketching.Gaussian.Rademacher
 public import NLAlib.Sketching.Gaussian.SubGaussian
 public import NLAlib.Sketching.Properties.FixedSubspace
 public import NLAlib.Sketching.Properties.Injection
 public import NLAlib.Sketching.Properties.Isotropic
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
-public import NLAlib.Sketching.Properties.JohnsonLindenstraussNet
 public import NLAlib.Sketching.Properties.LeastSquares
 public import NLAlib.Sketching.Properties.MatrixMultiplication
 public import NLAlib.Sketching.Properties.Oblivious
