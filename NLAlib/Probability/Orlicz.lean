@@ -19,10 +19,12 @@ Much of the literature (Vershynin's book in particular) states sub-Gaussian and 
 hypotheses through Orlicz conditions. Here they are constructor hypotheses of the library's
 interfaces, never hypotheses of a concentration theorem: the $\psi_2$ condition with squared
 scale $K$, $\mathbb{E} e^{X^2 / K} \le 2$, makes a centred $X$ satisfy Mathlib's
-`HasSubgaussianMGF` with proxy $C K$, and the $\psi_1$ condition with scale $K$,
-$\mathbb{E} e^{\lvert X\rvert / K} \le 2$, makes a centred $X$ satisfy
-`NLAlib.HasSubexponentialMGF` with proxy $C_1 K^2$ and scale $C_2 K$. Each condition is written as
-two hypotheses, integrability and the integral bound; no Orlicz norm is defined. Vershynin's
+`HasSubgaussianMGF` with proxy <!-- value psiTwoSubgaussianConstant -->$(1 + \log 2) K$, and the
+$\psi_1$ condition with scale $K$, $\mathbb{E} e^{\lvert X\rvert / K} \le 2$, makes a centred $X$
+satisfy `NLAlib.HasSubexponentialMGF` with
+proxy <!-- value psiOneSubexponentialVarianceConstant -->$(32/e^2) K^2$ and
+scale <!-- value psiOneSubexponentialScaleConstant -->$2K$. Each condition is written as two
+hypotheses, integrability and the integral bound; no Orlicz norm is defined. Vershynin's
 $\|X\|_{\psi_2} \le K'$ is $K = K'^2$, his $\|X\|_{\psi_1} \le K$ is $K$.
 
 Every conclusion is centred, so the bridges need $\mathbb{E} X = 0$; for a variable that is not
@@ -41,11 +43,12 @@ restated (`docs/design/Probability-P7.md` §7 D3, D4).
 
 ## Main definitions
 
-* `NLAlib.psiTwoSubgaussianConstant`, `NLAlib.psiOneSubexponentialVarianceConstant`,
-  `NLAlib.psiOneSubexponentialScaleConstant`: the constants of the bridges, at present
-  <!-- value psiTwoSubgaussianConstant -->$1 + \log 2$<!-- /value -->,
-  <!-- value psiOneSubexponentialVarianceConstant -->$32/e^2$<!-- /value --> and
-  <!-- value psiOneSubexponentialScaleConstant -->$2$<!-- /value -->.
+* `NLAlib.psiTwoSubgaussianConstant`: the proxy constant of the $\psi_2$ bridge, of
+  value <!-- value psiTwoSubgaussianConstant -->$1 + \log 2$.
+* `NLAlib.psiOneSubexponentialVarianceConstant`, `NLAlib.psiOneSubexponentialScaleConstant`: the
+  variance-proxy and scale constants of the $\psi_1$ bridge, of
+  values <!-- value psiOneSubexponentialVarianceConstant -->$32/e^2$
+  and <!-- value psiOneSubexponentialScaleConstant -->$2$.
 
 ## Main results
 
@@ -323,13 +326,13 @@ private theorem mgf_le_of_integral_exp_abs_div [IsProbabilityMeasure μ] {X : Ω
 /-- The proxy constant $C$ of the $\psi_2$ bridge
 `NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`.
 [Vershynin2018, Proposition 2.5.2] leaves it unspecified. The proof ($e^y \le y + e^{y^2}$, then
-Jensen for $\lambda^2 K \le 1$, and $\lambda X \le \lambda^2 K / 2 + X^2 / (2K)$ otherwise) reaches
-<!-- value psiTwoSubgaussianConstant -->$1 + \log 2$<!-- /value -->, which is the body. A smaller
-value is a better bound. Use only `psiTwoSubgaussianConstant_le`. -/
+Jensen for $\lambda^2 K \le 1$, and $\lambda X \le \lambda^2 K / 2 + X^2 / (2K)$ otherwise)
+reaches <!-- value psiTwoSubgaussianConstant -->$1 + \log 2$, which is the body. A smaller value is
+a better bound. Use only `psiTwoSubgaussianConstant_le`. -/
 noncomputable irreducible_def psiTwoSubgaussianConstant : ℝ≥0 := Real.toNNReal (1 + Real.log 2)
 
-/-- An explicit upper bound on `psiTwoSubgaussianConstant`, at present
-<!-- value psiTwoSubgaussianConstant -->$1 + \log 2$<!-- /value -->: $C \le 2$.
+/-- An explicit upper bound on `psiTwoSubgaussianConstant`,
+namely <!-- value psiTwoSubgaussianConstant -->$1 + \log 2 \le 2$.
 Proof: `psiTwoSubgaussianConstant_def`. Easy. -/
 theorem psiTwoSubgaussianConstant_le : psiTwoSubgaussianConstant ≤ 2 := by
   rw [psiTwoSubgaussianConstant_def, Real.toNNReal_le_iff_le_coe]
@@ -339,16 +342,16 @@ theorem psiTwoSubgaussianConstant_le : psiTwoSubgaussianConstant ≤ 2 := by
 
 /-- **A centred variable with a $\psi_2$ bound is sub-Gaussian**: under a probability measure, if
 $X$ is a.e.-measurable, $\mathbb{E} X = 0$, $K > 0$, $e^{X^2 / K}$ is integrable and
-$\mathbb{E} e^{X^2 / K} \le 2$, then $X$ is sub-Gaussian (`HasSubgaussianMGF`) with proxy $C K$,
-where $C$ is `psiTwoSubgaussianConstant`, at present
-<!-- value psiTwoSubgaussianConstant -->$1 + \log 2$<!-- /value -->.
+$\mathbb{E} e^{X^2 / K} \le 2$, then $X$ is sub-Gaussian (`HasSubgaussianMGF`) with
+proxy <!-- value psiTwoSubgaussianConstant -->$(1 + \log 2) K$; the constant is
+`psiTwoSubgaussianConstant`.
 [Vershynin2018, Proposition 2.5.2], (iv) ⟹ (v), with
 Vershynin's $\|X\|_{\psi_2} \le K'$ as $K = K'^2$ and the constant named. The hypothesis
 $\mathbb{E} X = 0$ is needed (every `HasSubgaussianMGF` variable is centred); for a variable that
 is not centred, use `NLAlib.hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two`. A
 $\psi_2$ Hanson–Wright inequality is
-`measureReal_quadForm_sub_integral_ge_le hind fun i => this (hψ i)`, with exponent Vershynin's at
-$c = C K$.
+`measureReal_quadForm_sub_integral_ge_le hind fun i => this (hψ i)`, with exponent Vershynin's
+at <!-- value psiTwoSubgaussianConstant -->$c = (1 + \log 2) K$.
 Proof: $e^y \le y + e^{y^2}$, so $\mathbb{E} e^{\lambda X} \le \mathbb{E} e^{\lambda^2 X^2}$ (the
 linear term vanishes). If $\lambda^2 K \le 1$, Jensen for the concave $x \mapsto x^{\lambda^2 K}$
 gives at most $2^{\lambda^2 K} = e^{\lambda^2 K \log 2}$; otherwise
@@ -371,9 +374,9 @@ theorem hasSubgaussianMGF_of_integral_exp_sq_div_le_two [IsProbabilityMeasure μ
 
 /-- **The centred $\psi_2$ bridge**: under a probability measure, if $X$ is a.e.-measurable,
 $K > 0$, $e^{X^2 / K}$ is integrable and $\mathbb{E} e^{X^2 / K} \le 2$, then
-$X - \mathbb{E} X$ is sub-Gaussian with proxy $C \cdot 4K$, where $C$ is
-`psiTwoSubgaussianConstant`, at present
-<!-- value psiTwoSubgaussianConstant -->$1 + \log 2$<!-- /value -->.
+$X - \mathbb{E} X$ is sub-Gaussian with
+proxy <!-- value psiTwoSubgaussianConstant -->$(1 + \log 2) \cdot 4K$; the constant is
+`psiTwoSubgaussianConstant`.
 [Vershynin2018, Lemma 2.6.8] (centring costs a constant factor in the $\psi_2$ norm), here with the
 explicit factor $4$ in the squared scale.
 Proof: $X - \mathbb{E} X$ satisfies the $\psi_2$ condition with squared scale $4K$:
@@ -439,21 +442,21 @@ theorem hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two [IsProbabil
 `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`. [Vershynin2018,
 Proposition 2.7.1] leaves it unspecified. The proof
 ($e^y \le 1 + y + y^2 e^{\lvert y\rvert} / 2$ on $\lvert\lambda\rvert < 1 / (2K)$, and
-$u^2 \le 4 e^{u - 2}$) reaches
-<!-- value psiOneSubexponentialVarianceConstant -->$32/e^2$<!-- /value -->, which is the body. A
-smaller value is a better bound. Use only `psiOneSubexponentialVarianceConstant_le`. -/
+$u^2 \le 4 e^{u - 2}$) reaches <!-- value psiOneSubexponentialVarianceConstant -->$32/e^2$,
+which is the body. A smaller value is a better bound. Use only
+`psiOneSubexponentialVarianceConstant_le`. -/
 noncomputable irreducible_def psiOneSubexponentialVarianceConstant : ℝ≥0 :=
   Real.toNNReal (32 / rexp 2)
 
 /-- The scale constant $C_2$ of the $\psi_1$ bridge
 `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`. [Vershynin2018,
-Proposition 2.7.1] leaves it unspecified; the proof reaches
-<!-- value psiOneSubexponentialScaleConstant -->$2$<!-- /value -->. A smaller value is a better
-bound. Use only `psiOneSubexponentialScaleConstant_le`. -/
+Proposition 2.7.1] leaves it unspecified; the proof
+reaches <!-- value psiOneSubexponentialScaleConstant -->$2$. A smaller value is a better bound.
+Use only `psiOneSubexponentialScaleConstant_le`. -/
 noncomputable irreducible_def psiOneSubexponentialScaleConstant : ℝ≥0 := 2
 
-/-- An explicit upper bound on `psiOneSubexponentialVarianceConstant`, at present
-<!-- value psiOneSubexponentialVarianceConstant -->$32/e^2$<!-- /value -->: $C_1 \le 5$.
+/-- An explicit upper bound on `psiOneSubexponentialVarianceConstant`,
+namely <!-- value psiOneSubexponentialVarianceConstant -->$32/e^2 \le 5$.
 Proof: `psiOneSubexponentialVarianceConstant_def`. Easy. -/
 theorem psiOneSubexponentialVarianceConstant_le : psiOneSubexponentialVarianceConstant ≤ 5 := by
   rw [psiOneSubexponentialVarianceConstant_def, Real.toNNReal_le_iff_le_coe]
@@ -463,19 +466,18 @@ theorem psiOneSubexponentialVarianceConstant_le : psiOneSubexponentialVarianceCo
   rw [h2]
   nlinarith
 
-/-- An explicit upper bound on `psiOneSubexponentialScaleConstant`, at present
-<!-- value psiOneSubexponentialScaleConstant -->$2$<!-- /value -->: $C_2 \le 2$.
+/-- An explicit upper bound, $2$, on `psiOneSubexponentialScaleConstant`, whose value
+is <!-- value psiOneSubexponentialScaleConstant -->$2$.
 Proof: `psiOneSubexponentialScaleConstant_def`. Easy. -/
 theorem psiOneSubexponentialScaleConstant_le : psiOneSubexponentialScaleConstant ≤ 2 := by
   rw [psiOneSubexponentialScaleConstant_def]
 
 /-- **A centred variable with a $\psi_1$ bound is sub-exponential**: under a probability measure,
 if $X$ is a.e.-measurable, $\mathbb{E} X = 0$, $K > 0$, $e^{\lvert X\rvert / K}$ is integrable and
-$\mathbb{E} e^{\lvert X\rvert / K} \le 2$, then $X$ is sub-exponential with variance proxy
-$C_1 K^2$ and scale $C_2 K$, where $C_1$ is `psiOneSubexponentialVarianceConstant`, at present
-<!-- value psiOneSubexponentialVarianceConstant -->$32/e^2$<!-- /value -->, and $C_2$ is
-`psiOneSubexponentialScaleConstant`, at present
-<!-- value psiOneSubexponentialScaleConstant -->$2$<!-- /value -->.
+$\mathbb{E} e^{\lvert X\rvert / K} \le 2$, then $X$ is sub-exponential with variance
+proxy <!-- value psiOneSubexponentialVarianceConstant -->$(32/e^2) K^2$ and
+scale <!-- value psiOneSubexponentialScaleConstant -->$2K$; the constants are
+`psiOneSubexponentialVarianceConstant` and `psiOneSubexponentialScaleConstant`.
 [Vershynin2018, Proposition 2.7.1], (iv) ⟹ (v), with
 the constants named. The hypothesis $\mathbb{E} X = 0$ is needed (every `HasSubexponentialMGF`
 variable is centred, `NLAlib.HasSubexponentialMGF.integral_eq_zero`); for a variable that is not
@@ -509,9 +511,12 @@ theorem hasSubexponentialMGF_of_integral_exp_abs_div_le_two [IsProbabilityMeasur
 
 /-- **The centred $\psi_1$ bridge**: under a probability measure, if $X$ is a.e.-measurable,
 $K > 0$, $e^{\lvert X\rvert / K}$ is integrable and $\mathbb{E} e^{\lvert X\rvert / K} \le 2$,
-then $X - \mathbb{E} X$ is sub-exponential with variance proxy $C_1 (2K)^2$ and scale
-$C_2 (2K)$. The $\psi_1$ analogue of the centring lemma [Vershynin2018, Lemma 2.6.8], with the
-explicit factor $2$ in the scale.
+then $X - \mathbb{E} X$ is sub-exponential with variance
+proxy <!-- value psiOneSubexponentialVarianceConstant -->$(32/e^2)(2K)^2$ and
+scale <!-- value psiOneSubexponentialScaleConstant -->$2 \cdot 2K$ (the constants
+`psiOneSubexponentialVarianceConstant` and `psiOneSubexponentialScaleConstant`). The $\psi_1$
+analogue of the centring lemma [Vershynin2018, Lemma 2.6.8], with the explicit factor $2$ in the
+scale.
 Proof: $X - \mathbb{E} X$ satisfies the $\psi_1$ condition with scale $2K$:
 $\lvert \mathbb{E} X\rvert \le K \log 2$ by Jensen, $\mathbb{E} e^{\lvert X\rvert / (2K)} \le
 \sqrt{2}$ by Jensen, and $\lvert X - \mathbb{E} X\rvert \le \lvert X\rvert + \lvert \mathbb{E}

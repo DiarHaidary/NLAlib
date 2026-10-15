@@ -44,8 +44,8 @@ and the Bernstein tails hold only above the threshold $t \ge \sqrt{\|\mathbf{V}\
   `NLAlib.measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim`: intrinsic Bernstein tails.
 * `NLAlib.integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim`,
   `NLAlib.integral_specNorm_sum_le_bernstein_intrinsicDim`: the means, with the constant
-  `NLAlib.intrinsicBernsteinMeanConstant`, at present
-  <!-- value intrinsicBernsteinMeanConstant -->$8$<!-- /value -->.
+  `NLAlib.intrinsicBernsteinMeanConstant`, of
+  value <!-- value intrinsicBernsteinMeanConstant -->$8$.
 
 ## References
 
@@ -627,9 +627,9 @@ end Rectangular
 
 /-- The absolute constant $C$ of the intrinsic-dimension Bernstein means.
 [Tropp2015, Theorem 7.3.1] leaves it unspecified; the prototype's proof reached $20$, the proof
-here <!-- value intrinsicBernsteinMeanConstant -->$8$<!-- /value -->, the value here. A smaller
-value is a better bound. Use only
-`intrinsicBernsteinMeanConstant_pos` and `intrinsicBernsteinMeanConstant_le`. -/
+here reaches <!-- value intrinsicBernsteinMeanConstant -->$8$, which is the body. A smaller value is
+a better bound. Use only `intrinsicBernsteinMeanConstant_pos` and
+`intrinsicBernsteinMeanConstant_le`. -/
 noncomputable irreducible_def intrinsicBernsteinMeanConstant : ℝ := 8
 
 /-- The intrinsic Bernstein mean constant is positive. -/
@@ -637,8 +637,8 @@ theorem intrinsicBernsteinMeanConstant_pos : 0 < intrinsicBernsteinMeanConstant 
   rw [intrinsicBernsteinMeanConstant_def]
   norm_num
 
-/-- An explicit upper bound on `intrinsicBernsteinMeanConstant`, at present
-<!-- value intrinsicBernsteinMeanConstant -->$8$<!-- /value -->: $C \le 8$. -/
+/-- An explicit upper bound, $8$, on `intrinsicBernsteinMeanConstant`, whose value
+is <!-- value intrinsicBernsteinMeanConstant -->$8$. -/
 theorem intrinsicBernsteinMeanConstant_le : intrinsicBernsteinMeanConstant ≤ 8 := by
   exact intrinsicBernsteinMeanConstant_def.le
 
@@ -717,14 +717,13 @@ variable {X : ι → Ω → Matrix n n 𝕜}
 
 /-- **Intrinsic-dimension matrix Bernstein for the mean**, Hermitian summands: for summands
 $\mathbf{X}_k$ and a proxy $\mathbf{V}$ as in the tail, with
-$D = \operatorname{intdim}(\mathbf{V})$,
+$D = \operatorname{intdim}(\mathbf{V})$, <!-- value intrinsicBernsteinMeanConstant -->
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
-\le C \Bigl(\sqrt{\|\mathbf{V}\|_2 \log(1 + D)} + L \log(1 + D)\Bigr)$$
-with $C$ = `intrinsicBernsteinMeanConstant`, at present
-<!-- value intrinsicBernsteinMeanConstant -->$8$<!-- /value -->.
-[Tropp2015, Corollary 7.3.2]; here with any upper
-bound $\mathbf{V}$ in Loewner order. Better than `integral_eigenvalue_zero_sum_le_bernstein` when
-$\operatorname{intdim}(\mathbf{V})$ is much smaller than $\lvert n\rvert$; its constant is worse.
+\le 8 \Bigl(\sqrt{\|\mathbf{V}\|_2 \log(1 + D)} + L \log(1 + D)\Bigr);$$
+the constant is `intrinsicBernsteinMeanConstant`.
+[Tropp2015, Corollary 7.3.2]; here with any upper bound $\mathbf{V}$ in Loewner order. Better
+than `integral_eigenvalue_zero_sum_le_bernstein` when $\operatorname{intdim}(\mathbf{V})$ is much
+smaller than $\lvert n\rvert$; its constant is worse.
 Proof: integrate the tail above the threshold.
 Result: intrinsic-matrix-bernstein -/
 theorem integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim (hind : iIndepFun X μ)
@@ -795,15 +794,15 @@ variable {m : Type*} [Fintype m] [DecidableEq m] {S : ι → Ω → Matrix m n �
 
 /-- **Intrinsic-dimension matrix Bernstein for the mean**, rectangular summands: for summands
 $\mathbf{S}_k$ and proxies $\mathbf{V}_1$, $\mathbf{V}_2$ as in the tail, with
-$v = \max(\|\mathbf{V}_1\|_2, \|\mathbf{V}_2\|_2)$ and $D$ the
-intrinsic dimension of the block diagonal matrix with blocks $\mathbf{V}_1$, $\mathbf{V}_2$,
+$v = \max(\|\mathbf{V}_1\|_2, \|\mathbf{V}_2\|_2)$ and $D$ the intrinsic dimension of the block
+diagonal matrix with blocks $\mathbf{V}_1$,
+$\mathbf{V}_2$, <!-- value intrinsicBernsteinMeanConstant -->
 $$\mathbb{E} \Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2
-\le C \Bigl(\sqrt{v \log(1 + D)} + L \log(1 + D)\Bigr)$$
-with $C$ = `intrinsicBernsteinMeanConstant`, at present
-<!-- value intrinsicBernsteinMeanConstant -->$8$<!-- /value -->.
-[Tropp2015, Theorem 7.3.1]; here with any upper
-bounds $\mathbf{V}_1$, $\mathbf{V}_2$. Better than `integral_specNorm_sum_le_bernstein` when $D$
-is much smaller than $\lvert m\rvert + \lvert n\rvert$.
+\le 8 \Bigl(\sqrt{v \log(1 + D)} + L \log(1 + D)\Bigr);$$
+the constant is `intrinsicBernsteinMeanConstant`.
+[Tropp2015, Theorem 7.3.1]; here with any upper bounds $\mathbf{V}_1$, $\mathbf{V}_2$. Better
+than `integral_specNorm_sum_le_bernstein` when $D$ is much smaller than
+$\lvert m\rvert + \lvert n\rvert$.
 Result: intrinsic-matrix-bernstein -/
 theorem integral_specNorm_sum_le_bernstein_intrinsicDim (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)

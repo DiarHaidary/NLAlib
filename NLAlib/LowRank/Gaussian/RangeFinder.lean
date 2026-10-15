@@ -279,18 +279,18 @@ theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
 /-! ### The first spectral moment -/
 
 /-- **The average spectral error of the randomized SVD** (HMT Theorem 10.6): for a standard
-Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
+Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
+$k + 2 \le \ell$, <!-- value gaussianPinvSpecNormBound k \ell -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
-C\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
-with $C$ = `gaussianPinvSpecNormBound k ℓ`, that is
-<!-- value gaussianPinvSpecNormBound k \ell -->
-$e\sqrt{(\ell + k - 1)/2}/(\ell - k)$<!-- /value -->,
-at most HMT's $e\sqrt{\ell}/(\ell - k)$ (`NLAlib.gaussianPinvSpecNormBound_le`). Incomparable with
-the squared form `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: this one is
-better for large $k$.
-[HalkoMartinssonTropp2011, Theorem 10.6]; [MartinssonTropp2020, Theorem 11.5]; there with
-$e\sqrt{k + p}/p$ in place of $C$ and $k \ge 2$, here any $k$ with $k + 2 \le \ell$.
+\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
+whose constant, `gaussianPinvSpecNormBound k ℓ`, is at most HMT's $e\sqrt{\ell}/(\ell - k)$
+(`NLAlib.gaussianPinvSpecNormBound_le`). Incomparable with the squared form
+`NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: this one is better for large
+$k$.
+[HalkoMartinssonTropp2011, Theorem 10.6]; [MartinssonTropp2020, Theorem 11.5]; there with the
+constant $e\sqrt{k + p}/p$, $p = \ell - k$, and $k \ge 2$, here any $k$ with $k + 2 \le \ell$.
 Result: randomized-svd-average-spectral-error -/
 theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :

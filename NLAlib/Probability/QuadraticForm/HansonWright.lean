@@ -17,25 +17,26 @@ public import NLAlib.Probability.SubGaussian.Square
 
 For a real random vector $\mathbf{x}$ with independent coordinates, each sub-Gaussian with proxy
 $c$, and any real square matrix $\mathbf{A}$, the quadratic form
-$\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x}$ concentrates about its mean:
+$\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x}$ concentrates about its
+mean: <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
-\le 2 \exp\Bigl(-C_{\mathrm{HW}} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
+\le 2 \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr),$$
-with the universal constant $C_{\mathrm{HW}}$ (`NLAlib.hansonWrightConstant`), which the sources
-leave unspecified; the proof here reaches <!-- value hansonWrightConstant -->$1/196$<!-- /value -->.
+where the constant in the exponent (`NLAlib.hansonWrightConstant`) is universal, unspecified in
+the sources, and is the one the proof here reaches.
 The diagonal part is Bernstein's inequality for the centred squares; the
 off-diagonal part is bounded by decoupling and comparison with a Gaussian chaos
 (`NLAlib/Probability/QuadraticForm/HansonWright/OffDiagonal.lean`). The two are combined by
 convexity of $\exp$ with weights $4/7$ and $3/7$ (`NLAlib.HasSubexponentialMGF.add`), which needs
 no independence between them: the centred form is sub-exponential with variance proxy
-$98 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and scale $28 c \|\mathbf{A}\|_2$, which gives
-$C_{\mathrm{HW}} = 1/196$.
+$98 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and scale $28 c \|\mathbf{A}\|_2$, which gives the
+constant <!-- value hansonWrightConstant -->$1/196$.
 
 ## Main definitions
 
-* `NLAlib.hansonWrightConstant`, at present
-  <!-- value hansonWrightConstant -->$1/196$<!-- /value -->.
+* `NLAlib.hansonWrightConstant`: the constant in the exponent, of
+  value <!-- value hansonWrightConstant -->$1/196$.
 
 ## Main results
 
@@ -64,7 +65,7 @@ Hanson–Wright inequality, which the sources leave unspecified.
 proof here reaches; a larger value is a better bound. Use only `hansonWrightConstant_pos` and
 `le_hansonWrightConstant`.
 
-The proof reaches <!-- value hansonWrightConstant -->$1/196$<!-- /value -->: the centred quadratic
+The proof reaches <!-- value hansonWrightConstant -->$1/196$: the centred quadratic
 form is sub-exponential with variance proxy
 $98 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and scale $28 c \|\mathbf{A}\|_2$ (the diagonal part has
 $32 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and $4 c \|\mathbf{A}\|_2$, the off-diagonal part
@@ -79,8 +80,8 @@ theorem hansonWrightConstant_pos : 0 < hansonWrightConstant := by
   rw [hansonWrightConstant_def]
   norm_num
 
-/-- An explicit lower bound on `hansonWrightConstant`, at present
-<!-- value hansonWrightConstant -->$1/196$<!-- /value -->: $C_{\mathrm{HW}} \ge 1/196$. -/
+/-- An explicit lower bound, $1/196$, on `hansonWrightConstant`, whose value
+is <!-- value hansonWrightConstant -->$1/196$. -/
 theorem le_hansonWrightConstant : 1 / 196 ≤ hansonWrightConstant := by
   rw [hansonWrightConstant_def]
 
@@ -174,10 +175,11 @@ private lemma hansonWrightConstant_mul_min_le (A : Matrix n n ℝ) {t : ℝ} (ht
       _ ≤ 1 / 56 * (t / (c * specNorm A)) := by nlinarith
 
 /-- The upper tail of a quadratic form in independent sub-Gaussian coordinates: under the
-hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for $t \ge 0$,
+hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
+$t \ge 0$, <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \ge t\bigr)
-\le \exp\Bigl(-C_{\mathrm{HW}} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
+\le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
 theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :
@@ -188,10 +190,11 @@ theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
 /-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: under the
-hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for $t \ge 0$,
+hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
+$t \ge 0$, <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \le -t\bigr)
-\le \exp\Bigl(-C_{\mathrm{HW}} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
+\le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
 theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :
@@ -204,13 +207,12 @@ theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x
 /-- **The Hanson–Wright inequality.** If the coordinates $\mathbf{x}_i$ of a real random vector
 $\mathbf{x}$ are independent and each satisfies the sub-Gaussian moment generating function bound
 with variance proxy $c$ (`HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and
-every $t \ge 0$,
+every $t \ge 0$, <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
-\le 2 \exp\Bigl(-C_{\mathrm{HW}} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
-\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)$$
-with the explicit constant $C_{\mathrm{HW}}$ = `hansonWrightConstant`, at present
-<!-- value hansonWrightConstant -->$1/196$<!-- /value -->.
+\le 2 \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
+\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr);$$
+the explicit constant is `hansonWrightConstant`.
 [Vershynin2018, Theorem 6.2.1]; there with an unspecified absolute constant and the sub-Gaussian
 norm $K$ of the coordinates, $c$ playing the role of $K^2$.
 Result: hanson-wright -/

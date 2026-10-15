@@ -19,10 +19,9 @@ public import NLAlib.Probability.SubGaussianVector.Basic
 # Extreme singular values of matrices with independent sub-Gaussian rows
 
 For a random $m \times n$ matrix $\mathbf{X}$ ($\lvert m \rvert$ rows, $\lvert n \rvert$ columns)
-whose rows are independent, isotropic and sub-Gaussian with proxy $c$, and
-$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ with $C_{\mathrm{SG}}$ the constant
-`subgaussianRowsConstant`, at present <!-- value subgaussianRowsConstant -->$24$<!-- /value -->:
-outside probability $2 e^{-t^2}$,
+whose rows are independent, isotropic and sub-Gaussian with proxy $c$,
+and <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
+`subgaussianRowsConstant`): outside probability $2 e^{-t^2}$,
 $$(\sqrt{\lvert m \rvert} - w)^2 \mathbf{I} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{X}
 \preceq (\sqrt{\lvert m \rvert} + w)^2 \mathbf{I} \,,$$
 hence $\sqrt{\lvert m \rvert} - w < \sigma_{\min}(\mathbf{X})$ and
@@ -42,8 +41,8 @@ A standard Gaussian matrix satisfies the hypotheses with $c = 1$, but there the 
 
 ## Main definitions
 
-* `NLAlib.subgaussianRowsConstant`: the constant $C_{\mathrm{SG}}$ of the bounds, at present
-  <!-- value subgaussianRowsConstant -->$24$<!-- /value -->.
+* `NLAlib.subgaussianRowsConstant`: the constant $C_{\mathrm{SG}}$ of the bounds, of
+  value <!-- value subgaussianRowsConstant -->$24$.
 
 ## Main results
 
@@ -62,12 +61,12 @@ open scoped Matrix MatrixOrder NNReal
 
 namespace NLAlib
 
-/-- The constant $C_{\mathrm{SG}}$ of the sub-Gaussian rows theorem: singular values within
-$\sqrt{\lvert m \rvert} \pm C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ outside
-probability $2 e^{-t^2}$.
-[Vershynin2018, Theorem 4.6.1] leaves it unspecified ($C K^2$ there). The value proved is
-<!-- value subgaussianRowsConstant -->$24$<!-- /value -->:
-the net argument needs $C_{\mathrm{SG}}^2 / 256 \ge \max(1, \log 9)$, that is
+/-- The constant $C_{\mathrm{SG}}$ of the sub-Gaussian rows theorem: singular values
+within <!-- value subgaussianRowsConstant -->
+$\sqrt{\lvert m \rvert} \pm 24c(\sqrt{\lvert n \rvert} + t)$ outside probability $2 e^{-t^2}$.
+[Vershynin2018, Theorem 4.6.1] leaves it unspecified ($C K^2$ there). The value proved
+is <!-- value subgaussianRowsConstant -->$24$: the net argument needs
+$C_{\mathrm{SG}}^2 / 256 \ge \max(1, \log 9)$, that is
 $C_{\mathrm{SG}} \ge 16 \sqrt{\log 9} \approx 23.72$, so the margin is thin and the proof uses
 $(\sqrt{\lvert n \rvert} + t)^2 \ge \lvert n \rvert + t^2$ and a $1/4$-net exactly. Smaller is
 better; the API is the upper bound `subgaussianRowsConstant_le`. -/
@@ -78,8 +77,8 @@ theorem subgaussianRowsConstant_pos : 0 < subgaussianRowsConstant := by
   rw [subgaussianRowsConstant_def]
   norm_num
 
-/-- An explicit upper bound on `subgaussianRowsConstant`, at present
-<!-- value subgaussianRowsConstant -->$24$<!-- /value -->: $C_{\mathrm{SG}} \le 24$. -/
+/-- An explicit upper bound, $24$, on `subgaussianRowsConstant`, whose value
+is <!-- value subgaussianRowsConstant -->$24$. -/
 theorem subgaussianRowsConstant_le : subgaussianRowsConstant ≤ 24 := by
   rw [subgaussianRowsConstant_def]
 
@@ -369,10 +368,9 @@ private lemma measureReal_not_specNorm_le
 /-! ### The extreme singular values -/
 
 /-- **Independent isotropic sub-Gaussian rows**, the Gram sandwich: for an $m \times n$ random
-matrix $\mathbf{X}$ whose rows are independent, isotropic and sub-Gaussian with proxy $c$, with
-$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ ($C_{\mathrm{SG}}$ the constant
-`subgaussianRowsConstant`, at present <!-- value subgaussianRowsConstant -->$24$<!-- /value -->),
-$0 \le t$ and $w \le \sqrt{\lvert m \rvert}$,
+matrix $\mathbf{X}$ whose rows are independent, isotropic and sub-Gaussian with proxy $c$,
+with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
+`subgaussianRowsConstant`), $0 \le t$ and $w \le \sqrt{\lvert m \rvert}$,
 $$(\sqrt{\lvert m \rvert} - w)^2 \mathbf{I} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{X}
 \preceq (\sqrt{\lvert m \rvert} + w)^2 \mathbf{I}$$
 outside probability $2 e^{-t^2}$.
@@ -402,12 +400,10 @@ measureReal_not_smul_one_le_conjTranspose_mul_self_and_le_smul_one_le_of_isSubga
 
 /-- The lower Gram bound for independent isotropic sub-Gaussian rows:
 $(\sqrt{\lvert m \rvert} - w)^2 \mathbf{I} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{X}$ outside
-probability $2 e^{-t^2}$, with $w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$
-($C_{\mathrm{SG}}$ = `subgaussianRowsConstant`, at present
-<!-- value subgaussianRowsConstant -->$24$<!-- /value -->), $0 \le t$ and
-$w \le \sqrt{\lvert m \rvert}$ (the
-base must be nonnegative). [Vershynin2018, Theorem 4.6.1], in Loewner form. For a
-standard Gaussian matrix
+probability $2 e^{-t^2}$,
+with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
+`subgaussianRowsConstant`), $0 \le t$ and $w \le \sqrt{\lvert m \rvert}$ (the base must be
+nonnegative). [Vershynin2018, Theorem 4.6.1], in Loewner form. For a standard Gaussian matrix
 `NLAlib.measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussianMatrix` is better
 in every regime. -/
 theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_isSubgaussianVector
@@ -426,9 +422,9 @@ theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_isSubgaussianVe
 
 /-- The upper Gram bound for independent isotropic sub-Gaussian rows:
 $\mathbf{X}^{\mathsf{H}}\mathbf{X} \preceq (\sqrt{\lvert m \rvert} + w)^2 \mathbf{I}$ outside
-probability $2 e^{-t^2}$, with $w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$
-($C_{\mathrm{SG}}$ = `subgaussianRowsConstant`, at present
-<!-- value subgaussianRowsConstant -->$24$<!-- /value -->) and $0 \le t$.
+probability $2 e^{-t^2}$,
+with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
+`subgaussianRowsConstant`) and $0 \le t$.
 [Vershynin2018, Theorem 4.6.1], in Loewner form. For a standard Gaussian matrix
 `NLAlib.measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_hasLaw_gaussianMatrix` is better
 in every regime. -/
@@ -447,11 +443,10 @@ theorem measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_isSubgaussianVe
   exact fun hω h => hω (conjTranspose_mul_self_le_of_specNorm_le (Nat.cast_nonneg _) hw0 h)
 
 /-- The lower tail of the smallest singular value for independent isotropic sub-Gaussian rows:
-$\mathbb{P}(\sigma_k(\mathbf{X}) \le \sqrt{\lvert m \rvert} - w) \le 2 e^{-t^2}$, with
-$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ ($C_{\mathrm{SG}}$ =
-`subgaussianRowsConstant`, at present <!-- value subgaussianRowsConstant -->$24$<!-- /value -->) and
-$0 \le t$; $\sigma_k = \sigma_{\min}$ is the singular value of index
-$k$ with $k + 1 = \lvert n \rvert$. The rows must exist (`[Nonempty m]`): with no rows the
+$\mathbb{P}(\sigma_k(\mathbf{X}) \le \sqrt{\lvert m \rvert} - w) \le 2 e^{-t^2}$,
+with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
+`subgaussianRowsConstant`) and $0 \le t$; $\sigma_k = \sigma_{\min}$ is the singular value of
+index $k$ with $k + 1 = \lvert n \rvert$. The rows must exist (`[Nonempty m]`): with no rows the
 hypotheses leave $c$ free, and for $c = 0$ the event is everything. [Vershynin2018, Theorem 4.6.1].
 For a standard Gaussian matrix `NLAlib.measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix` is
 better in every regime. -/
@@ -474,10 +469,9 @@ theorem measureReal_singularValues_le_le_of_isSubgaussianVector [Nonempty m]
   exact fun hω h => (not_le.mpr (lt_singularValues_of_specNorm_lt (Nat.cast_nonneg _) hw0 hk h)) hω
 
 /-- The upper tail of the spectral norm for independent isotropic sub-Gaussian rows:
-$\mathbb{P}(\|\mathbf{X}\|_2 \ge \sqrt{\lvert m \rvert} + w) \le 2 e^{-t^2}$, with
-$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ ($C_{\mathrm{SG}}$ =
-`subgaussianRowsConstant`, at present <!-- value subgaussianRowsConstant -->$24$<!-- /value -->) and
-$0 \le t$. The rows must exist (`[Nonempty m]`), as in
+$\mathbb{P}(\|\mathbf{X}\|_2 \ge \sqrt{\lvert m \rvert} + w) \le 2 e^{-t^2}$,
+with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
+`subgaussianRowsConstant`) and $0 \le t$. The rows must exist (`[Nonempty m]`), as in
 `NLAlib.measureReal_singularValues_le_le_of_isSubgaussianVector`. [Vershynin2018, Theorem 4.6.1].
 For a standard Gaussian matrix `NLAlib.measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix` is
 better in every regime. -/

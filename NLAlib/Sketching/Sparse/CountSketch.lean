@@ -64,9 +64,9 @@ $\varepsilon \ge 1$ the injection is vacuous and the bound is still true. Design
 
 * `NLAlib.countSketchMatrix`: the sketch built from a given hash and signs.
 * `NLAlib.countSketch`: its law for a uniform hash and Rademacher signs.
-* `NLAlib.countSketchRows`: the number of rows, at present
-  <!-- value countSketchRows d \varepsilon \delta -->
-  $(d^2 + d)/(\delta \varepsilon^2)$<!-- /value -->.
+* `NLAlib.countSketchRows`: the number of rows; for dimension $d$ the OSE
+  needs <!-- value countSketchRows d \varepsilon \delta -->
+  $\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$.
 
 ## Main results
 
@@ -864,7 +864,7 @@ theorem hasJLMoment_of_hasLaw_countSketch (hS : HasLaw S (countSketch k n) μ) (
 /-! ### Sizes -/
 
 /-- The **CountSketch rows** <!-- value countSketchRows d \varepsilon \delta -->
-$(d^2 + d)/(\delta \varepsilon^2)$<!-- /value -->: a CountSketch with at least this
+$(d^2 + d)/(\delta \varepsilon^2)$: a CountSketch with at least this
 many rows is an OSE (and, with a row, an OSI) for dimension $d$ with constants $1 \mp \varepsilon$
 and failure probability $\delta$
 (`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le`). The value the
@@ -888,19 +888,19 @@ theorem countSketchRows_mono {d d' : ℕ} {ε' δ' : ℝ} (hd : d ≤ d') (hε :
   exact div_le_div₀ (by positivity) (by gcongr) (by positivity)
     (mul_le_mul hδδ' (pow_le_pow_left₀ hε.le hεε' 2) (by positivity) (hδ.le.trans hδδ'))
 
-/-- The explicit comparison of `NLAlib.countSketchRows d ε δ`, at present
-<!-- value countSketchRows d \varepsilon \delta -->
-$(d^2 + d)/(\delta \varepsilon^2)$<!-- /value -->, with
-$(d^2 + d)/(\delta\varepsilon^2)$ that consumers invert with; an improved definition keeps it
-true. -/
+/-- The explicit comparison: `NLAlib.countSketchRows d ε δ` is at
+most <!-- value countSketchRows d \varepsilon \delta -->
+$(d^2 + d)/(\delta \varepsilon^2)$, the value consumers invert with (at present an equality); an
+improved definition keeps it true. -/
 theorem countSketchRows_le (d : ℕ) (ε δ : ℝ) :
     countSketchRows d ε δ ≤ ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2) := by
   rw [countSketchRows_def]
 
 omit [DecidableEq k] in
-/-- At least `NLAlib.countSketchRows d ε δ` rows (at present
-<!-- value countSketchRows d \varepsilon \delta -->
-$(d^2 + d)/(\delta \varepsilon^2)$<!-- /value -->) give the failure probability $\delta$. -/
+/-- For $\varepsilon, \delta > 0$ and <!-- value countSketchRows d \varepsilon \delta -->
+$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`),
+$(d^2 + d)/(\lvert k \rvert \varepsilon^2) \le \delta$: the rows give the failure probability
+$\delta$. -/
 private theorem div_card_mul_sq_le_of_countSketchRows_le {d : ℕ} (hε : 0 < ε) (hδ : 0 < δ)
     (hk : countSketchRows d ε δ ≤ Fintype.card k) :
     ((d : ℝ) ^ 2 + d) / (Fintype.card k * ε ^ 2) ≤ δ := by
@@ -915,9 +915,8 @@ private theorem div_card_mul_sq_le_of_countSketchRows_le {d : ℕ} (hε : 0 < ε
     rw [div_le_iff₀ (by positivity)] at hk
     nlinarith
 
-/-- **CountSketch OSE, size form**: with at least `NLAlib.countSketchRows d ε δ` rows (at present
-<!-- value countSketchRows d \varepsilon \delta -->
-$(d^2 + d)/(\delta \varepsilon^2)$<!-- /value -->), for
+/-- **CountSketch OSE, size form**: with <!-- value countSketchRows d \varepsilon \delta -->
+$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`), for
 $\varepsilon, \delta > 0$, a CountSketch is an oblivious subspace embedding for dimension $d$ with
 constants $1 \mp \varepsilon$ and failure probability $\delta$. [Woodruff2014, Theorem 9] (there
 $O(d^2/(\delta\varepsilon^2))$ rows). -/
@@ -929,9 +928,8 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le
   exact (isObliviousSubspaceEmbedding_of_hasLaw_countSketch hS d hε).mono le_rfl le_rfl le_rfl
     (div_card_mul_sq_le_of_countSketchRows_le hε hδ hk)
 
-/-- **CountSketch OSI, size form**: with at least `NLAlib.countSketchRows d ε δ` rows (at present
-<!-- value countSketchRows d \varepsilon \delta -->
-$(d^2 + d)/(\delta \varepsilon^2)$<!-- /value -->), for
+/-- **CountSketch OSI, size form**: with <!-- value countSketchRows d \varepsilon \delta -->
+$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`), for
 $\varepsilon, \delta > 0$ and nonempty `k`, a CountSketch is an oblivious subspace injection for
 dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le [Nonempty k]

@@ -175,16 +175,16 @@ theorem integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m 
 
 /-- **The average spectral error of the randomized SVD, rotation-invariant test matrices**: for a
 test matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely
-and $k + 2 \le \ell$,
+and $k + 2 \le \ell$, <!-- value gaussianPinvSpecNormBound k \ell -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
-C\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
-with $C$ = `gaussianPinvSpecNormBound k ℓ`, at present
-<!-- value gaussianPinvSpecNormBound k \ell -->
-$e\sqrt{(\ell + k - 1)/2}/(\ell - k)$<!-- /value -->, the bound of the Gaussian test matrix
-(`NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`).
+\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
+the bound of the Gaussian test matrix
+(`NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`); the constant is
+`gaussianPinvSpecNormBound k ℓ`.
 [HalkoMartinssonTropp2011, Theorem 10.6]; [MartinssonTropp2020, Theorem 11.5]; there for Gaussian
-test matrices, with $e\sqrt{k + p}/p$ in place of $C$.
+test matrices, with the constant $e\sqrt{k + p}/p$, $p = \ell - k$.
 Result: randomized-svd-average-spectral-error -/
 theorem integral_specNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
     (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}
@@ -237,10 +237,9 @@ $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), the tail of the Gaussian test
-matrix (in this namespace,
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`), the tail of the Gaussian test matrix (in this namespace,
 `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and Schatten norms
 $p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$, which the library's is below.
@@ -446,10 +445,10 @@ $t > 0$,
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), the tail of the Gaussian test
-matrix (in this namespace, `measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`).
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`), the tail of the Gaussian test matrix (in this namespace,
+`measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Gaussian test matrices and Schatten norms,
 with a larger second failure term.
 Result: randomized-nystrom-tail -/

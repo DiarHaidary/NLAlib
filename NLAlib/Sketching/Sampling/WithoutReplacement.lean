@@ -32,12 +32,12 @@ $0 \le \varepsilon \le 1$, $d = \operatorname{rank}\mathbf{U}$: the bounds of un
 replacement (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card`), here from the
 matrix Chernoff inequalities without replacement
 (`NLAlib.Probability.MatrixConcentration.ChernoffWithoutReplacement`). With $L$ the coherence of
-$\mathbf{U}$ the domination always holds. The sample sizes are those of sampling with replacement,
-`NLAlib.samplingSize` and `NLAlib.samplingInjectionSize`, at present
-<!-- value samplingSize d L \varepsilon \delta -->
-$3 L \log(2d/\delta)/\varepsilon^2$<!-- /value --> and
-<!-- value samplingInjectionSize d L \varepsilon \delta -->
-$2 L \log(d/\delta)/\varepsilon^2$<!-- /value -->.
+$\mathbf{U}$ the domination always holds. The sample sizes are those of sampling with
+replacement: <!-- value samplingSize d L \varepsilon \delta -->
+$\lvert k \rvert \ge 3 L \log(2d/\delta)/\varepsilon^2$ for the embedding (`NLAlib.samplingSize`)
+and <!-- value samplingInjectionSize d L \varepsilon \delta -->
+$\lvert k \rvert \ge 2 L \log(d/\delta)/\varepsilon^2$ for the injection
+(`NLAlib.samplingInjectionSize`).
 
 Degenerate cases. For $\lvert n \rvert < \lvert k \rvert$ there is no injection and the law is the
 zero measure, so `HasLaw` forces $\mu = 0$ and every tail holds; no $\lvert k \rvert \le
@@ -465,14 +465,13 @@ theorem hasSubspaceEmbedding_coherence_of_hasLaw_samplingSketchWithoutReplacemen
 
 /-! ### Sample sizes -/
 
-/-- **Row sampling without replacement, sample-size form**: with at least
-`NLAlib.samplingSize U.rank L ε δ` samples (at present
-<!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
-$3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$<!-- /value -->), row sampling
-without replacement under the domination
-$\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace embedding for
-$\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ and failure probability
-$\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$; the size of sampling with replacement.
+/-- **Row sampling without replacement, sample-size form**: row sampling without
+replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace
+embedding for $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ and failure
+probability $\delta$, for $0 < \varepsilon \le 1$, $\delta > 0$
+and <!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$\lvert k \rvert \ge 3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
+(`NLAlib.samplingSize U.rank L ε δ`), the size of sampling with replacement.
 [Tropp2011a].
 Result: sampling-without-replacement-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le
@@ -489,14 +488,13 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   exact two_mul_mul_exp_le_of_samplingSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
     hδ hk
 
-/-- **The lower half without replacement, sample-size form**: with at least
-`NLAlib.samplingInjectionSize U.rank L ε δ` samples (at present
-<!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
-$2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$<!-- /value -->), row sampling without
-replacement under the
-domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace injection for
-$\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and failure probability
-$\delta$, for $\varepsilon > 0$ and $\delta > 0$. -/
+/-- **The lower half without replacement, sample-size form**: row sampling without
+replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace
+injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and failure
+probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
+and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
+(`NLAlib.samplingInjectionSize U.rank L ε δ`). -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
     (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hε : 0 < ε) (hδ : 0 < δ)

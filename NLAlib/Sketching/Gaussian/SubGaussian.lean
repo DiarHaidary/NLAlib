@@ -23,10 +23,10 @@ always in the order `hind`, `hsub`, `hiso`). It is written out in each statement
 `NLAlib.isIsotropicSketch_smul_of_isIsotropic` (no independence needed), so it gets no isotropy
 statement here.
 
-It has the distributional Johnson–Lindenstrauss property with Vershynin's two-regime tail
-$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, $C$ the constant
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->
-(Bernstein's inequality on the centred squares
+It has the distributional Johnson–Lindenstrauss property with Vershynin's two-regime
+tail <!-- value subgaussianJLConstant -->
+$2 e^{-(1/64) \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, the constant being
+`subgaussianJLConstant` (Bernstein's inequality on the centred squares
 $\langle \mathbf{X}_i, \mathbf{x} \rangle^2 - 1$), and, for rows with proxy $1$ and fourth
 directional moments at most $3$, the tail
 $2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$ of Dasgupta and Gupta (Achlioptas's
@@ -50,13 +50,12 @@ $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0
 
 ## Main definitions
 
-* `NLAlib.subgaussianJLConstant`: the constant $C$ of the sub-Gaussian JL tail, at present
-  <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->.
-* `NLAlib.subgaussianJLDim`, `NLAlib.subgaussianEmbeddingDim`: sample sizes, at present
-  <!-- value subgaussianJLDim c \varepsilon \delta -->
-  $c^2 \log(2/\delta)/(C \varepsilon^2)$<!-- /value --> and
-  <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
-  $4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$<!-- /value -->.
+* `NLAlib.subgaussianJLConstant`: the constant of the sub-Gaussian JL
+  tail, <!-- value subgaussianJLConstant -->$C = 1/64$.
+* `NLAlib.subgaussianJLDim`, `NLAlib.subgaussianEmbeddingDim`: the sample
+  sizes <!-- value subgaussianJLDim c \varepsilon \delta -->$c^2 \log(2/\delta)/(C \varepsilon^2)$
+  and <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
+  $4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$.
 
 ## Main results
 
@@ -91,10 +90,10 @@ private theorem two_mul_nine_pow_mul_exp_le {d : ℕ} {L δ : ℝ} (hδ : 0 < δ
 /-! ### The constant and the sample sizes -/
 
 /-- The constant $C$ of the sub-Gaussian JL tail
-$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$. Unspecified in
+$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, proved
+with <!-- value subgaussianJLConstant -->$C = 1/64$. Unspecified in
 [Vershynin2018, Exercise 5.3.3, Theorem 2.8.1 (2020 draft)]; the prototype had $1/(256 e^2)$, for
-$\varepsilon < 1$ only. The value proved is
-<!-- value subgaussianJLConstant -->$1/64$<!-- /value -->: the proof reaches
+$\varepsilon < 1$ only. The proof reaches
 $\min(\varepsilon^2/(64 c^2), \varepsilon/(8 c))$ (the centred square's parameters
 $(32 c^2, 4 c)$ and Bernstein's inequality), whose linear part is $8$ times this one's and is
 given up for Vershynin's shape. Larger is better; consumers use only `subgaussianJLConstant_pos`
@@ -106,26 +105,24 @@ theorem subgaussianJLConstant_pos : 0 < subgaussianJLConstant := by
   rw [subgaussianJLConstant_def]
   norm_num
 
-/-- An explicit lower bound on `subgaussianJLConstant`, at present
-<!-- value subgaussianJLConstant -->$1/64$<!-- /value -->: it is at least $1/64$. -/
+/-- The explicit lower bound $1/64$ on `subgaussianJLConstant`, whose value
+is <!-- value subgaussianJLConstant -->$1/64$. -/
 theorem le_subgaussianJLConstant : 1 / 64 ≤ subgaussianJLConstant := by
   rw [subgaussianJLConstant_def]
 
-/-- The **sub-Gaussian JL dimension**
-<!-- value subgaussianJLDim c \varepsilon \delta -->
-$c^2 \log(2/\delta)/(C \varepsilon^2)$<!-- /value -->, $C$ the constant
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->: for
-$0 < \varepsilon \le c$ and $\delta > 0$, at least this many rows
+/-- The **sub-Gaussian JL dimension** <!-- value subgaussianJLDim c \varepsilon \delta -->
+$c^2 \log(2/\delta)/(C \varepsilon^2)$, with <!-- value subgaussianJLConstant -->$C = 1/64$
+(`subgaussianJLConstant`): for $0 < \varepsilon \le c$ and $\delta > 0$, at least this many rows
 give the JL property with distortion $\varepsilon$ and failure probability $\delta$
 (`NLAlib.hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le`). Junk: for $\delta > 2$
 the logarithm is negative, and the value is $0$ at $\varepsilon = 0$. -/
 noncomputable irreducible_def subgaussianJLDim (c ε δ : ℝ) : ℝ :=
   c ^ 2 * Real.log (2 / δ) / (subgaussianJLConstant * ε ^ 2)
 
-/-- The **sub-Gaussian embedding dimension**
-<!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
-$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$<!-- /value -->, $C$ the constant
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->: for
+/-- The **sub-Gaussian embedding
+dimension** <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
+$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/64$ (`subgaussianJLConstant`): for
 $0 < \varepsilon \le 2c$ and $\delta > 0$, at least this many rows
 give an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
 failure probability $\delta$
@@ -322,12 +319,11 @@ variable [DecidableEq n]
 
 /-- **Sub-Gaussian distributional JL**: for a random $\mathbf{X}$ with independent, isotropic,
 sub-Gaussian rows with proxy $c$, the sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
-has the JL property at every $\varepsilon$: for every unit $\mathbf{x}$,
+has the JL property at every $\varepsilon$: for every
+unit $\mathbf{x}$, <!-- value subgaussianJLConstant -->
 $$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
-\le 2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \, \varepsilon/c)} \,,$$
-$C$ the constant `subgaussianJLConstant`, at present
-<!-- value subgaussianJLConstant -->$1/64$<!-- /value -->.
-[Vershynin2018, Exercise 5.3.3 (2020 draft)], there
+\le 2 e^{-\frac{1}{64} \lvert k \rvert \min(\varepsilon^2/c^2, \, \varepsilon/c)} \,,$$
+the constant being `subgaussianJLConstant`. [Vershynin2018, Exercise 5.3.3 (2020 draft)], there
 with an unspecified constant. Replaces the prototype's
 `measure_lt_abs_mulVec_sq_sub_le_of_independent_isotropic_rows` (constant $1/(256 e^2)$,
 $\varepsilon < 1$, $K \ge 1$ assumed). For proxy $1$ and fourth directional moments at most $3$,
@@ -484,10 +480,11 @@ theorem hasJLMoment_of_isSubgaussianVector [Nonempty k] (hind : iIndepFun (fun i
 
 /-- **Sub-Gaussian OSE**: for a random $\mathbf{X}$ with independent, isotropic, sub-Gaussian rows
 with proxy $c$, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious subspace
-embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
-$$2 \cdot 9^d \, e^{-C \lvert k \rvert \min(\varepsilon^2/(4c^2), \, \varepsilon/(2c))} \,,$$
-$C$ the constant `subgaussianJLConstant`, at present
-<!-- value subgaussianJLConstant -->$1/64$<!-- /value -->: JL plus a net at $\varepsilon/2$
+embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure
+probability <!-- value subgaussianJLConstant -->
+$$2 \cdot 9^d \, e^{-\frac{1}{64} \lvert k \rvert
+\min(\varepsilon^2/(4c^2), \, \varepsilon/(2c))} \,,$$
+the constant being `subgaussianJLConstant`: JL plus a net at $\varepsilon/2$
 (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Vershynin2018, Theorem 4.6.1, (4.22)
 (2020 draft)], there for the singular values, $K^2 \max(\delta, \delta^2)$ with an unspecified
 constant; it dominates the rows theorem's Gram sandwich in every regime
@@ -509,8 +506,9 @@ theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector (hind : iIndepFun (f
   exact h.mono le_rfl le_rfl le_rfl (le_of_eq (by ring))
 
 /-- **Sub-Gaussian OSI**: for $k$ nonempty, $\mathbf{S}$ is an oblivious subspace injection for
-dimension $d$ with constant $1 - \varepsilon$ and failure probability
-$2 \cdot 9^d \, e^{-C \lvert k \rvert \min(\varepsilon^2/(4c^2), \, \varepsilon/(2c))}$: the
+dimension $d$ with constant $1 - \varepsilon$ and failure
+probability <!-- value subgaussianJLConstant -->
+$2 \cdot 9^d \, e^{-(1/64) \lvert k \rvert \min(\varepsilon^2/(4c^2), \, \varepsilon/(2c))}$: the
 lower half of `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`, with the sketch's
 isotropy (`NLAlib.isIsotropicSketch_smul_of_isIsotropic`). [Vershynin2018, Theorem 4.6.1 (2020
 draft)]; [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion. -/
@@ -524,12 +522,10 @@ theorem isObliviousSubspaceInjection_of_isSubgaussianVector [Nonempty k]
   exact (isObliviousSubspaceEmbedding_of_isSubgaussianVector hind hsub hiso
     d).isObliviousSubspaceInjection (isIsotropicSketch_smul_of_isIsotropic hiso)
 
-/-- **Sub-Gaussian JL, sample-size form**: for $0 < \varepsilon \le c$, $\delta > 0$ and at least
-`subgaussianJLDim c ε δ` rows (at present
-<!-- value subgaussianJLDim c \varepsilon \delta -->
-$c^2 \log(2/\delta)/(C \varepsilon^2)$<!-- /value -->, where $C$ is `subgaussianJLConstant`, at
-present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->), the JL property holds with
-distortion $\varepsilon$ and failure
+/-- **Sub-Gaussian JL, sample-size form**: for $0 < \varepsilon \le c$, $\delta > 0$ and at
+least <!-- value subgaussianJLDim c \varepsilon \delta -->$c^2 \log(2/\delta)/(C \varepsilon^2)$
+rows (`subgaussianJLDim c ε δ`, with <!-- value subgaussianJLConstant -->$C = 1/64$ the
+constant `subgaussianJLConstant`), the JL property holds with distortion $\varepsilon$ and failure
 probability $\delta$ (for $\varepsilon \le c$ the $\min$ of the tail is its quadratic part).
 [Vershynin2018, Exercise 5.3.3 (2020 draft)]. -/
 theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
@@ -557,10 +553,10 @@ theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
 
 omit [DecidableEq n] in
 /-- The failure probability of the sub-Gaussian OSE is at most $\delta$ for
-$0 < \varepsilon \le 2c$, $\delta > 0$ and at least `subgaussianEmbeddingDim c d ε δ` rows (at
-present <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
-$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$<!-- /value -->, where $C$ is
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->). -/
+$0 < \varepsilon \le 2c$, $\delta > 0$ and at
+least <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
+$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$ rows (`subgaussianEmbeddingDim c d ε δ`,
+with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`). -/
 private theorem failure_le_of_subgaussianEmbeddingDim_le (hε : 0 < ε) (hεc : ε ≤ 2 * c)
     (hδ : 0 < δ) (hk : subgaussianEmbeddingDim c d ε δ ≤ Fintype.card k) :
     2 * 9 ^ d * Real.exp (-(subgaussianJLConstant * Fintype.card k *
@@ -580,10 +576,9 @@ private theorem failure_le_of_subgaussianEmbeddingDim_le (hε : 0 < ε) (hεc : 
   linarith
 
 /-- **Sub-Gaussian OSE, sample-size form**: for $0 < \varepsilon \le 2c$, $\delta > 0$ and at
-least `subgaussianEmbeddingDim c d ε δ` rows (at present
-<!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
-$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$<!-- /value -->, where $C$ is
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->),
+least <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
+$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$ rows (`subgaussianEmbeddingDim c d ε δ`,
+with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`),
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
 is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
 failure probability $\delta$. [Vershynin2018, Theorem 4.6.1 (2020 draft)]; [Woodruff2014,
@@ -599,10 +594,9 @@ theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbedd
     le_rfl (failure_le_of_subgaussianEmbeddingDim_le hε hεc hδ hk)
 
 /-- **Sub-Gaussian OSI, sample-size form**: for $0 < \varepsilon \le 2c$, $\delta > 0$, $k$
-nonempty and at least `subgaussianEmbeddingDim c d ε δ` rows (at present
-<!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
-$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$<!-- /value -->, where $C$ is
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->),
+nonempty and at least <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
+$4 c^2 (d \log 9 + \log(2/\delta))/(C \varepsilon^2)$ rows (`subgaussianEmbeddingDim c d ε δ`,
+with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`),
 $\mathbf{S}$ is an oblivious
 subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
 $\delta$; the injection twin of
@@ -624,10 +618,9 @@ end Rows
 /-- **Sub-Gaussian JL for independent entries**: for a random $\mathbf{X}$ with independent
 entries $\mathbf{X}_{i,j}$, each sub-Gaussian with proxy $c$ and with
 $\mathbb{E}[\mathbf{X}_{i,j}^2] = 1$, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the
-JL property with failure probability
-$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, $C$ the constant
-`subgaussianJLConstant`, at present <!-- value subgaussianJLConstant -->$1/64$<!-- /value -->. The
-mean is $0$ by `HasSubgaussianMGF.integral_eq_zero` (the
+JL property with failure probability <!-- value subgaussianJLConstant -->
+$2 e^{-(1/64) \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, the constant being
+`subgaussianJLConstant`. The mean is $0$ by `HasSubgaussianMGF.integral_eq_zero` (the
 prototype's `hmean` is dropped), so the second moment is the variance. The rows hypotheses
 follow by `NLAlib.iIndepFun_row_of_iIndepFun_entry`, `IsSubgaussianVector.of_iIndepFun` and
 `IsIsotropic.of_iIndepFun`; the other rows theorems apply to entries through the same three

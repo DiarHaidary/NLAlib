@@ -1,8 +1,10 @@
 # Named bounds of NLAlib (CONTRIBUTING §5.2 rule 2): every constant, tail function and sample size
-# that a statement uses by name. A docstring that uses one shows its current value between markers,
-#   <!-- value NAME ARG1 ARG2 … -->$…$<!-- /value -->
-# and `scripts/check_constants.py` fills and checks those values from this file (its docstring has
-# the full rules).
+# that a statement uses by name. A docstring that uses one writes its current value inside the
+# equation, in place of the constant, and annotates that math span with a marker just before it,
+#   <!-- value NAME ARG1 ARG2 … -->
+#   $$… \frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,\|\mathbf{E}\|_{\mathsf{F}} …$$
+# and `scripts/check_constants.py` checks that the span contains the value filled from this file
+# (its docstring has the full rules).
 #
 # Fields of each entry:
 #   name       Lean full name.
@@ -12,16 +14,21 @@
 #              are the definition's; each docstring passes its own (`k \ell`, `(\varepsilon/2)`).
 #   latex      template of the current value: inline LaTeX in CONTRIBUTING §6 notation (`/` rather
 #              than `\frac`), placeholders `#1`…`#9` never followed by a letter. `C` in a sample
-#              size is the constant it uses, shown beside it in the same docstring.
+#              size is the constant it uses, whose value the same docstring shows (`$C = 1/64$`).
+#   display    optional: the same value with `\frac`, accepted (besides `latex`) in a `$$…$$`
+#              display.
 #   lean_body  the definition from its name to its end, whitespace-normalised: the text `latex`
 #              must agree with. A reviewer compares the two on every change; nothing checks
 #              LaTeX against Lean mathematically.
 #   body_hash  sha256 of `lean_body`, first 16 hex digits.
+#   previous_latex, previous_display
+#              present only while a change is pending: the templates before the change.
 #
-# To change a constant: edit its body in Lean, edit `latex` here, run
+# To change a constant: edit its body in Lean; here move `latex` to `previous_latex` (and
+# `display` to `previous_display`) and write the new value; run
 #   python3 scripts/check_constants.py --update NAME
-# which records the new `lean_body` and `body_hash` and rewrites every marked value; CI then
-# runs the check.
+# which replaces the previous value by the new one inside every annotated span, records the new
+# `lean_body` and `body_hash` and removes the `previous_*` fields; CI then runs the check.
 
 [[constant]]
 name = "NLAlib.psiTwoSubgaussianConstant"
@@ -38,6 +45,7 @@ kind = "constant"
 file = "NLAlib/Probability/Orlicz.lean"
 args = []
 latex = '32/e^2'
+display = '\frac{32}{e^2}'
 lean_body = 'psiOneSubexponentialVarianceConstant : ℝ≥0 := Real.toNNReal (32 / rexp 2)'
 body_hash = "f2bb747e39244f80"
 
@@ -65,6 +73,7 @@ kind = "constant"
 file = "NLAlib/Probability/QuadraticForm/HansonWright.lean"
 args = []
 latex = '1/196'
+display = '\frac{1}{196}'
 lean_body = 'hansonWrightConstant : ℝ := 1 / 196'
 body_hash = "7595efac384e0bf2"
 
@@ -83,6 +92,7 @@ kind = "moment bound"
 file = "NLAlib/RandomMatrix/Gaussian/InverseMoments/Spectral.lean"
 args = ["r", "k"]
 latex = 'e\sqrt{(#2 + #1 - 1)/2}/(#2 - #1)'
+display = '\frac{e}{#2 - #1}\sqrt{(#2 + #1 - 1)/2}'
 lean_body = 'gaussianPinvSpecNormBound (r k : ℕ) : ℝ := Real.exp 1 / ((k : ℝ) - r) * √(((k : ℝ) + r - 1) / 2)'
 body_hash = "4df317e0f785fe6b"
 
@@ -92,6 +102,7 @@ kind = "tail function"
 file = "NLAlib/RandomMatrix/Gaussian/BlockTail.lean"
 args = ["k", "d", "t"]
 latex = '2\sqrt{#1}\,(#2/(2#3))^{#2/2}/\Gamma(#2/2 + 1)'
+display = '\frac{2\sqrt{#1}\,(#2/(2#3))^{#2/2}}{\Gamma(#2/2 + 1)}'
 lean_body = 'gaussianPinvFrobTail (k d : ℕ) (t : ℝ) : ℝ := 2 * √(k : ℝ) * ((d : ℝ) / (2 * t)) ^ ((d : ℝ) / 2) / Real.Gamma ((d : ℝ) / 2 + 1)'
 body_hash = "705ee40c6ac548fd"
 
@@ -101,6 +112,7 @@ kind = "constant"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = []
 latex = '1/64'
+display = '\frac{1}{64}'
 lean_body = 'subgaussianJLConstant : ℝ := 1 / 64'
 body_hash = "ff06dbaad61b5d69"
 
@@ -110,6 +122,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = ["c", "ε", "δ"]
 latex = '#1^2 \log(2/#3)/(C #2^2)'
+display = '\frac{#1^2 \log(2/#3)}{C #2^2}'
 lean_body = 'subgaussianJLDim (c ε δ : ℝ) : ℝ := c ^ 2 * Real.log (2 / δ) / (subgaussianJLConstant * ε ^ 2)'
 body_hash = "6158744b19cebc1b"
 
@@ -119,6 +132,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = ["c", "d", "ε", "δ"]
 latex = '4 #1^2 (#2 \log 9 + \log(2/#4))/(C #3^2)'
+display = '\frac{4 #1^2 (#2 \log 9 + \log(2/#4))}{C #3^2}'
 lean_body = 'subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 4 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / (subgaussianJLConstant * ε ^ 2)'
 body_hash = "c5cfdabba74f95da"
 
@@ -128,6 +142,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/Gaussian.lean"
 args = ["d", "ε", "δ"]
 latex = '9 (\sqrt{#1} + \sqrt{2 \log(2/#3)})^2/#2^2'
+display = '\frac{9 (\sqrt{#1} + \sqrt{2 \log(2/#3)})^2}{#2^2}'
 lean_body = 'gaussianEmbeddingDim (d : ℕ) (ε δ : ℝ) : ℝ := 9 * (√(d : ℝ) + √(2 * Real.log (2 / δ))) ^ 2 / ε ^ 2'
 body_hash = "25e3b88f23a5cac0"
 
@@ -137,6 +152,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/Gaussian.lean"
 args = ["d", "ε", "δ"]
 latex = '4 (\sqrt{#1} + \sqrt{2 \log(1/#3)})^2/#2^2'
+display = '\frac{4 (\sqrt{#1} + \sqrt{2 \log(1/#3)})^2}{#2^2}'
 lean_body = 'gaussianInjectionDim (d : ℕ) (ε δ : ℝ) : ℝ := 4 * (√(d : ℝ) + √(2 * Real.log (1 / δ))) ^ 2 / ε ^ 2'
 body_hash = "4a1ead748ec7da6b"
 
@@ -146,6 +162,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/Gaussian.lean"
 args = ["ε", "δ"]
 latex = '\log(2/#2)/(#1^2/4 - #1^3/6)'
+display = '\frac{\log(2/#2)}{#1^2/4 - #1^3/6}'
 lean_body = 'jlDim (ε δ : ℝ) : ℝ := Real.log (2 / δ) / (ε ^ 2 / 4 - ε ^ 3 / 6)'
 body_hash = "fee45691d92c18c2"
 
@@ -155,6 +172,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Sparse/CountSketch.lean"
 args = ["d", "ε", "δ"]
 latex = '(#1^2 + #1)/(#3 #2^2)'
+display = '\frac{#1^2 + #1}{#3 #2^2}'
 lean_body = 'countSketchRows (d : ℕ) (ε δ : ℝ) : ℝ := ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)'
 body_hash = "56a83724a3db7928"
 
@@ -173,6 +191,7 @@ kind = "sample size"
 file = "NLAlib/Sketching/Sampling/RowSampling.lean"
 args = ["d", "L", "ε", "δ"]
 latex = '3 #2 \log(2#1/#4)/#3^2'
+display = '\frac{3 #2 \log(2#1/#4)}{#3^2}'
 lean_body = 'samplingSize (d : ℕ) (L ε δ : ℝ) : ℝ := 3 * L * Real.log (2 * d / δ) / ε ^ 2'
 body_hash = "c25e01a1e1a16d83"
 
@@ -182,5 +201,6 @@ kind = "sample size"
 file = "NLAlib/Sketching/Sampling/RowSampling.lean"
 args = ["d", "L", "ε", "δ"]
 latex = '2 #2 \log(#1/#4)/#3^2'
+display = '\frac{2 #2 \log(#1/#4)}{#3^2}'
 lean_body = 'samplingInjectionSize (d : ℕ) (L ε δ : ℝ) : ℝ := 2 * L * Real.log (d / δ) / ε ^ 2'
 body_hash = "41d18f4b66378b27"

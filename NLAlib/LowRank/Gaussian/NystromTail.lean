@@ -20,10 +20,10 @@ $\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_* = \sum_{i \ge k}\lambda_i(\
 $\sigma_k(\mathbf{H}) = \lambda_k(\mathbf{H})$, indexed from $0$.
 
 Every statement bounds the probability of the failure event, written as the negation of the
-guarantee, `μ.real {ω | ¬ error ω ≤ bound}`; the failure probability is $e^{-(u-2)/4}$ plus
-`NLAlib.gaussianPinvFrobTail k d t`, at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->, which is smaller than Tropp and Webber's
+guarantee, `μ.real {ω | ¬ error ω ≤ bound}`; the failure probability
+is <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, whose second term
+(`NLAlib.gaussianPinvFrobTail k d t`) is smaller than Tropp and Webber's
 $\sqrt{\pi k}\,(e/t)^{d/2}$. The primary tail is their Corollary 8.2 (NysSVD1), in every unitarily
 invariant norm, with its Schatten, trace and spectral corollaries and the truncated outputs.
 
@@ -77,11 +77,10 @@ $d = \ell - k + 1$, any $u$ and $t > 0$,
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), with $\mathbf{e}_0$ the first
-unit coordinate sequence. The Gram-form tail of the randomized SVD at a factor of $\mathbf{H}$
-(in `NLAlib.SymmetricGauge`,
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`), with $\mathbf{e}_0$ the first unit coordinate sequence. The Gram-form
+tail of the randomized SVD at a factor of $\mathbf{H}$ (in `NLAlib.SymmetricGauge`,
 `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`),
 with the same constants. For $u \le 2$, or $d = 0$, the bound is at least $1$.
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Schatten norms $1 \le p \le \infty$, with
@@ -110,9 +109,9 @@ hypotheses of the gauge form (in `NLAlib.SymmetricGauge`,
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{S_p} \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{S_p} + \frac{utk}{d}\,
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->).
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; as printed there, with a smaller second failure term.
 Result: randomized-nystrom-tail -/
 theorem
@@ -132,11 +131,10 @@ open SymmetricGauge in
 `NLAlib.SymmetricGauge`, `measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`),
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
 \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->). The error is positive
-semidefinite, so this bounds $\operatorname{tr}(\mathbf{H} - \mathsf{nystrom}(\mathbf{H},
-\mathbf{X}))$.
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`). The error is positive semidefinite, so this bounds
+$\operatorname{tr}(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X}))$.
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there at $p = 1$, with a larger second failure term.
 Result: randomized-nystrom-tail -/
 theorem
@@ -156,9 +154,9 @@ open SymmetricGauge in
 `NLAlib.SymmetricGauge`, `measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`),
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_2 \le \lambda_k(\mathbf{H}) +
 \frac{utk}{d}\,\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), eigenvalues indexed from $0$.
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`), eigenvalues indexed from $0$.
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there at $p = \infty$, with a larger second failure
 term.
 Result: randomized-nystrom-tail -/
@@ -181,10 +179,10 @@ set_option linter.style.longLine false in
 `Matrix.PosSemidef.measureReal_not_nuclearNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_* \le
 \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), for every choice of the
-truncation: the late truncation costs nothing. The error does not depend on the choice (it is the
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`), for every choice of the truncation: the late truncation costs
+nothing. The error does not depend on the choice (it is the
 squared Frobenius error of the truncated randomized SVD of a factor,
 `NLAlib.measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`), so
 the failure event is measurable.
@@ -214,10 +212,10 @@ $\mathsf{nystrom}(\mathbf{H}, \mathbf{X})$, no measurability: with the hypothese
 `Matrix.PosSemidef.measureReal_not_specNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{H} - \mathbf{Y}\|_2 \le \lambda_k(\mathbf{H}) +
 \frac{utk}{d}\,\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), the bound of the untruncated
-output, eigenvalues indexed from $0$. The failure event lies inside that of the trace tail of
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`), the bound of the untruncated output, eigenvalues indexed from
+$0$. The failure event lies inside that of the trace tail of
 truncated Nyström, by reverse Eckart–Young
 (`NLAlib.specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le`). The event may be
 non-measurable; `μ.real` is then the outer measure, so this bound says exactly that the failure
@@ -253,13 +251,13 @@ set_option linter.style.longLine false in
 `Matrix.PosSemidef.measureReal_not_specNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
 \lambda_k(\mathbf{H}) + \frac{utk}{d}\,\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
-<!-- value gaussianPinvFrobTail k d t -->
-$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->). The event may be
-non-measurable (the truncation is a choice); `μ.real` is then the outer measure, and the bound
-says that the failure event lies in a measurable event of at most this probability. The
-success-set form, probability at least $1 - \delta$ for the good event, does not follow without
-measurability (`MeasureTheory.measureReal_compl` needs `MeasurableSet`).
+outside probability <!-- value gaussianPinvFrobTail k d t -->
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+`gaussianPinvFrobTail k d t`). The event may be non-measurable (the truncation is a choice);
+`μ.real` is then the outer measure, and the bound says that the failure event lies in a measurable
+event of at most this probability. The success-set form, probability at least $1 - \delta$ for the
+good event, does not follow without measurability (`MeasureTheory.measureReal_compl` needs
+`MeasurableSet`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)] with [TroppYurtseverUdellCevher2017a, Proposition
 A.8]; composed here.
 Result: randomized-nystrom-tail -/

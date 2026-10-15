@@ -14,9 +14,10 @@ public import NLAlib.RandomMatrix.Gaussian.InverseMoments
 # Spectral moments of the pseudoinverse of a Gaussian matrix
 
 For a wide standard Gaussian $r \times k$ matrix $\mathbf{G}$, writing $r$ and $k$ also for the
-numbers $\lvert r \rvert < \lvert k \rvert$ of rows and columns,
+numbers $\lvert r \rvert < \lvert k \rvert$ of rows and
+columns, <!-- value gaussianPinvSpecNormBound r k -->
 $$\mathbb{E} \|\mathbf{G}^{+}\|_2^q
-\le \Bigl(\frac{e}{k - r} \sqrt{\frac{k + r - 1}{2}}\Bigr)^q \quad (0 < q \le k - r)$$
+\le \Bigl(\frac{e}{k - r}\sqrt{(k + r - 1)/2}\Bigr)^q \quad (0 < q \le k - r)$$
 (Halko, Martinsson and Tropp 2011, Proposition 10.4, in a sharper form), with
 $\mathbb{E} \|\mathbf{G}^{+}\|_2$ as the case $q = 1$ and the source's $e \sqrt{k} / (k - r)$ as a
 corollary. The constant $\sqrt{(k + r - 1)/2}$ is not from the literature: it is what this proof
@@ -42,9 +43,7 @@ integrals are unaffected.
 * `NLAlib.integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_pinv_le_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix`.
-* `NLAlib.gaussianPinvSpecNormBound`: the constant, at present
-  <!-- value gaussianPinvSpecNormBound r k -->
-  $e\sqrt{(k + r - 1)/2}/(k - r)$<!-- /value -->, named.
+* `NLAlib.gaussianPinvSpecNormBound`: the constant of the moment bound above, named.
 -/
 
 @[expose] public section
@@ -694,11 +693,11 @@ theorem integral_specNorm_pinv_le_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix
 
 /-! ### The named constant -/
 
-/-- **The spectral-moment constant of the Gaussian pseudoinverse**,
-<!-- value gaussianPinvSpecNormBound r k -->
-$e\sqrt{(k + r - 1)/2}/(k - r)$<!-- /value -->,
-the bound on $(\mathbb{E}\|\mathbf{G}^{+}\|_2^q)^{1/q}$, $0 < q \le k - r$, for a standard Gaussian
-$r \times k$ matrix $\mathbf{G}$ that the probe proof of
+/-- **The spectral-moment constant of the Gaussian pseudoinverse**, the right side of the
+bound <!-- value gaussianPinvSpecNormBound r k -->
+$$(\mathbb{E}\|\mathbf{G}^{+}\|_2^q)^{1/q} \le \frac{e}{k - r}\sqrt{(k + r - 1)/2}\,,
+\qquad 0 < q \le k - r\,,$$
+for a standard Gaussian $r \times k$ matrix $\mathbf{G}$ that the probe proof of
 `NLAlib.integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix` reaches. Source value
 $e\sqrt{k}/(k - r)$ [HalkoMartinssonTropp2011, Proposition 10.2]; the proved value is at most it
 for $r < k$ (`NLAlib.gaussianPinvSpecNormBound_le`). Junk for $k \le r$. Consumers use its API
@@ -707,17 +706,18 @@ moment bounds of this file are restated with the name, `gaussianPinvSpecNormBoun
 noncomputable irreducible_def gaussianPinvSpecNormBound (r k : ℕ) : ℝ :=
   Real.exp 1 / ((k : ℝ) - r) * √(((k : ℝ) + r - 1) / 2)
 
-/-- `gaussianPinvSpecNormBound r k`, at present
-<!-- value gaussianPinvSpecNormBound r k -->
-$e\sqrt{(k + r - 1)/2}/(k - r)$<!-- /value -->, is nonnegative for $r < k$. -/
+/-- The named constant is nonnegative: for $r < k$, <!-- value gaussianPinvSpecNormBound r k -->
+$e\sqrt{(k + r - 1)/2}/(k - r) \ge 0$ (`gaussianPinvSpecNormBound r k`). -/
 theorem gaussianPinvSpecNormBound_nonneg {r k : ℕ} (h : r < k) :
     0 ≤ gaussianPinvSpecNormBound r k := by
   have h' : (r : ℝ) < k := by exact_mod_cast h
   rw [gaussianPinvSpecNormBound_def]
   exact mul_nonneg (div_nonneg (Real.exp_pos 1).le (by linarith)) (Real.sqrt_nonneg _)
 
-/-- The explicit comparison with the source:
-$\frac{e}{k - r}\sqrt{(k + r - 1)/2} \le e\sqrt{k}/(k - r)$ for $r < k$, the constant of
+/-- The explicit comparison with the source: for
+$r < k$, <!-- value gaussianPinvSpecNormBound r k -->
+$e\sqrt{(k + r - 1)/2}/(k - r) \le e\sqrt{k}/(k - r)$, the left side being
+`gaussianPinvSpecNormBound r k` and the right the constant of
 [HalkoMartinssonTropp2011, Proposition 10.2]. -/
 theorem gaussianPinvSpecNormBound_le {r k : ℕ} (h : r < k) :
     gaussianPinvSpecNormBound r k ≤ Real.exp 1 * √(k : ℝ) / ((k : ℝ) - r) := by
