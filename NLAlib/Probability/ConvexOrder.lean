@@ -59,15 +59,15 @@ variable {α β E : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
 
 /-- The integral against a composition $\kappa \circ \mu$ is the iterated integral; the measure
 form of `ProbabilityTheory.Kernel.integral_comp`. -/
-private theorem integral_measureComp {μ : Measure α} [SFinite μ] {κ : Kernel α β}
-    [IsSFiniteKernel κ] {g : β → ℝ} (hg : Integrable g (κ ∘ₘ μ)) :
+private theorem integral_measureComp {μ : Measure α} {κ : Kernel α β} {g : β → ℝ}
+    (hg : Integrable g (κ ∘ₘ μ)) :
     ∫ b, g b ∂(κ ∘ₘ μ) = ∫ a, ∫ b, g b ∂(κ a) ∂μ := by
   have hc : κ ∘ₘ μ = (κ ∘ₖ Kernel.const Unit μ) () := Measure.comp_eq_comp_const_apply
   rw [hc] at hg ⊢
   rw [Kernel.integral_comp hg, Kernel.const_apply]
 
 /-- **Convex order from a conditional barycenter.** Let $\kappa$ be a Markov kernel from $\alpha$
-to $\beta$, $\mu$ an s-finite measure on $\alpha$, and $X : \alpha \to E$, $Y : \beta \to E$ with
+to $\beta$, $\mu$ a measure on $\alpha$, and $X : \alpha \to E$, $Y : \beta \to E$ with
 $Y$ integrable under almost every $\kappa(a)$ and with barycenter
 $\int Y \, d\kappa(a) = X(a)$. Then for every $f$ convex and continuous on a closed set $s$
 holding the values of $Y$,
@@ -78,7 +78,7 @@ inequality alone. The integrability of $f \circ X$ is a hypothesis: it follows f
 $f \circ Y$ only through a supporting hyperplane and a measurability argument, and every consumer
 has it from finiteness. -/
 theorem _root_.ConvexOn.integral_comp_le_integral_comp_of_integral_eq (hf : ConvexOn ℝ s f)
-    (hfc : ContinuousOn f s) (hs : IsClosed s) {μ : Measure α} [SFinite μ] {κ : Kernel α β}
+    (hfc : ContinuousOn f s) (hs : IsClosed s) {μ : Measure α} {κ : Kernel α β}
     [IsMarkovKernel κ] {X : α → E} {Y : β → E} (hY : ∀ᵐ a ∂μ, Integrable Y (κ a))
     (hYs : ∀ᵐ a ∂μ, ∀ᵐ b ∂(κ a), Y b ∈ s) (hbar : ∀ᵐ a ∂μ, ∫ b, Y b ∂(κ a) = X a)
     (hfX : Integrable (fun a => f (X a)) μ) (hfY : Integrable (fun b => f (Y b)) (κ ∘ₘ μ)) :

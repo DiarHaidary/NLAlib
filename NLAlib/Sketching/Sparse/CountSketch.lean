@@ -317,7 +317,7 @@ private theorem integrable_comp_of_hasLaw_countSketch (hS : HasLaw S (countSketc
 signs. -/
 private theorem integral_comp_of_hasLaw_countSketch [MeasurableSpace k]
     [MeasurableSingletonClass k] (hS : HasLaw S (countSketch k n) μ) {E : Type*}
-    [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E] {f : Matrix k n 𝕜 → E}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] {f : Matrix k n 𝕜 → E}
     (hf : Continuous f) :
     ∫ ω, f (S ω) ∂μ =
       ∫ h, ∫ σ, f (countSketchMatrix h σ) ∂rademacherVector n ∂hashLaw k n := by

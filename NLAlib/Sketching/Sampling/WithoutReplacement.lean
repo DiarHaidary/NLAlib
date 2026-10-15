@@ -249,7 +249,7 @@ theorem isIsotropicSketch_of_hasLaw_samplingSketchWithoutReplacement [Nonempty k
 
 omit [DecidableEq n] in
 /-- Every sketch is a subspace embedding for a matrix of rank zero. -/
-private theorem hasSubspaceEmbedding_of_rank_eq_zero [IsFiniteMeasure μ] (hd : U.rank = 0)
+private theorem hasSubspaceEmbedding_of_rank_eq_zero (hd : U.rank = 0)
     (a b : ℝ) {δ : ℝ} (hδ : 0 ≤ δ) : HasSubspaceEmbedding S U a b δ μ := by
   obtain rfl := Matrix.rank_eq_zero.1 hd
   have h : {ω | ¬ IsSubspaceEmbedding (S ω) (0 : Matrix n r 𝕜) a b} = ∅ := by
