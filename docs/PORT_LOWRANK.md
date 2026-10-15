@@ -10,6 +10,24 @@ and guidance (§0.1), then revised after a mathematics review and a design asses
 maintainer's own notes. Nothing in §3(a) is decided; §3(b) is decided by the orchestrator and open
 to correction.
 
+## Maintainer decisions (2026-10-15)
+
+The maintainer approved the recommendations:
+- D1, D2 and D4 are confirmed: one `obliqueProjector` core with named algorithms bridged to it,
+  the test matrix on the right, the Gram form with the unsquared companion, expectations before
+  tails for Gaussian and Haar.
+- D6: Epperly and Webber's lower bounds wait for a later round (S10 stays a placeholder).
+- D7: PCPs are in this round, deterministic in S2b and probabilistic in S9.
+- The Chen and Persson manuscript's new results are ported now, with docstrings saying they are
+  proved without a literature source; the manuscript is cited once it is published.
+- The readings of §0 (formula-level "one pass", the truncated variants, "pcps" as
+  projection-cost-preserving sketches) stood without objection.
+- Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
+  randomized block Krylov, randomly pivoted Cholesky and similar methods.
+
+The essential papers are downloaded to `/tmp/claude-1000/p0/papers/` (`tyuc_17_simax.pdf`,
+`tyuc_17_neurips.pdf`, `cemmp_15.pdf`, `epperly_webber_26.pdf`).
+
 ## Revision 2026-10-15
 
 Inputs: the mathematics review of the first draft (13 amendments, cited "review A1" to "A13"),
