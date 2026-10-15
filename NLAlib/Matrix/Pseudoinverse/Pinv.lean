@@ -285,6 +285,16 @@ theorem pinv_eq_pinv_conjTranspose_mul_self_mul (A : Matrix m n 𝕜) :
   rw [pinv_conjTranspose_mul_self, Matrix.mul_assoc, ← Matrix.conjTranspose_mul,
     (isPinv_pinv A).isHermitian_left.eq, ← Matrix.mul_assoc, pinv_mul_mul_pinv]
 
+/-- The pseudoinverse through the other Gram matrix:
+$\mathbf{A}^{+} = \mathbf{A}^{\mathsf{H}}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{+}$. The mirror of
+`NLAlib.pinv_eq_pinv_conjTranspose_mul_self_mul`; it writes a right factor
+$(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$ through the Gram matrix of
+$\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z}$. -/
+theorem pinv_eq_conjTranspose_mul_pinv_mul_conjTranspose_self (A : Matrix m n 𝕜) :
+    pinv A = Aᴴ * pinv (A * Aᴴ) := by
+  rw [pinv_mul_conjTranspose_self, ← Matrix.mul_assoc, ← Matrix.conjTranspose_mul,
+    (isPinv_pinv A).isHermitian_right.eq, pinv_mul_mul_pinv]
+
 /-! ### From a singular value decomposition -/
 
 /-- **The pseudoinverse from a singular value decomposition.** For any thin SVD

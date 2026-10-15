@@ -820,3 +820,31 @@ supersedes them; §3 stays as drafted. Skeletons: the files of item 17.
 
     S1 is about 590 lines and 21 public declarations. Order within file 3: §3.1 with item 1's two
     lemmas, §3.2, §3.3. Files 1 and 2 remain independent of S0 and of each other.
+
+### Skeleton notes (2026-10-15, skeleton-and-proof agent)
+
+All 21 statements are proved and sit in their homes; no side file was needed
+(`LowRankFrames.lean`, `PinvGram.lean` were not created). `RangeFinder.lean` imports
+`Matrix/Factorizations/NystromGram`, `SketchedLowRank`, `Matrix/Norms/Projector`,
+`Pseudoinverse/NormBounds`, `Spectral/ProjectedLowRank`, `Sketching/Properties/LeastSquares`; it is
+not registered in `NLAlib.lean` (wrap-up).
+- Statements are as in §3 with §8; no mathematical change. Six declarations of `RangeFinder.lean`
+  carry `omit [Fintype m] in` (the linear and Gram competitor identities, the competitor's rank
+  and range, the AMM identity, one private helper),
+  since $\lvert m \rvert$ is not needed there. L5a and L5b need `open scoped ComplexOrder` for
+  `PosSemidef` (and L2 for `Matrix.rank_conjTranspose`), declaration-local.
+- Proof routes that differ from §3: the Nyström bound factors $\mathbf{H} = \mathbf{F}^{\mathsf{H}}
+  \mathbf{F}$ by `CStarAlgebra.nonneg_iff_eq_star_mul_self` and uses
+  `conjTranspose_mul_self_sub_nystrom`, not `CFC.sqrt` (no square-root facts needed, no instance
+  clash with the classical `DecidableEq` of `sub_nystrom_eq`). L5a compares $\mathbf{u}_i$ and
+  $\mathbf{v}_i$ through the quadratic form of $\mathbf{A}$ on $\mathbf{u}_i - \mathbf{v}_i$. L3 uses
+  `singularValues_sub_truncatedSVD` and `frobNorm_sq_eq_sum_range_singularValues_sq` at
+  $N = \operatorname{rank} + d$, no case split.
+- Private helpers: `mul_pinv_self_of_rank_eq`, `sub_mul_mul_conjTranspose_mul_self`,
+  `sub_rsvd_eq_one_sub_rangeProjector_mul_sub_mul`, `singularValues_sub_rsvd_le_sub_mul`
+  (`RangeFinder.lean`); `truncatedSVD_mul_conjTranspose_sub`, `IsSVD.mul_diagonal_eq_of_posSemidef`
+  (`LowRank.lean`). For the wrap-up: `singularValues_sub_rsvd_le_sub_mul`,
+  $\sigma_i(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \le
+  \sigma_i(\mathbf{A} - \mathbf{A}\mathbf{\Omega}\mathbf{X})$ for every $\mathbf{X}$, is a candidate
+  public lemma (S2a, S3 may want it); `sub_rsvd_eq_one_sub_rangeProjector_mul_sub_mul` restates the
+  private `one_sub_rangeProjector_mul_sub_mul` of `Norms/Projector.lean` in `rsvd` form.

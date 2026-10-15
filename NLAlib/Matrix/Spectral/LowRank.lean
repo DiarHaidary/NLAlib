@@ -32,6 +32,14 @@ $\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decompo
 
 * `NLAlib.rank_truncatedSVD_le`, `NLAlib.specNorm_sub_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_sq`: rank and errors of the truncation.
+* `NLAlib.natCast_mul_singularValues_add_sq_le_frobNorm_sub_truncatedSVD_sq`: tail flattening, $d$
+  copies of $\sigma_{k+d}(\mathbf{A})^2$ below the Frobenius tail at $k$.
+* `NLAlib.mul_rangeProjector_conjTranspose_truncatedSVD`,
+  `NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD`: the row space of the
+  truncation, and a frame $\mathbf{Z}$ with
+  $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$.
+* `Matrix.PosSemidef.truncatedSVD`, `Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD`:
+  positive semidefinite inputs.
 * `NLAlib.singularValues_le_specNorm_sub_of_rank_le`: Eckart–Young in the spectral norm.
 * `NLAlib.frobNorm_sub_truncatedSVD_le_of_rank_le`: Eckart–Young in the Frobenius norm.
 * `NLAlib.isLeast_specNorm_sub_of_rank_le`, `NLAlib.isLeast_frobNorm_sub_of_rank_le`: the same as
@@ -260,6 +268,33 @@ theorem specNorm_sub_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
     specNorm (A - truncatedSVD A k) = singularValues A k := by
   rw [← singularValues_zero_eq_specNorm, singularValues_sub_truncatedSVD, add_zero]
 
+/-- **Tail flattening**:
+$$d\,\sigma_{k+d}(\mathbf{A})^2 \le
+\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2\,,$$
+since the $d$ singular values
+$\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$ are at least $\sigma_{k+d}(\mathbf{A})$.
+It bounds the spectral residual of a range finder split at $k + d$ by the Frobenius tail at $k$.
+True at every $k$ and $d$, including indices past the smaller dimension, where
+$\sigma_{k+d}(\mathbf{A}) = 0$.
+Port of `NLAlib.sub_mul_sq_le_sum_Ico_sq` and `NLAlib.sq_le_sum_Ico_sq_div`, there for real
+sequences. -/
+theorem natCast_mul_singularValues_add_sq_le_frobNorm_sub_truncatedSVD_sq (A : Matrix m n 𝕜)
+    (k d : ℕ) : (d : ℝ) * singularValues A (k + d) ^ 2 ≤ frobNorm (A - truncatedSVD A k) ^ 2 := by
+  rw [frobNorm_sq_eq_sum_range_singularValues_sq (A - truncatedSVD A k)
+    (le_self_add : (A - truncatedSVD A k).rank ≤ (A - truncatedSVD A k).rank + d)]
+  calc (d : ℝ) * singularValues A (k + d) ^ 2
+      = (Finset.range d).card • singularValues A (k + d) ^ 2 := by
+        rw [Finset.card_range, nsmul_eq_mul]
+    _ ≤ ∑ i ∈ Finset.range d, singularValues (A - truncatedSVD A k) i ^ 2 :=
+        Finset.card_nsmul_le_sum _ _ _ fun i hi => by
+          rw [singularValues_sub_truncatedSVD]
+          exact pow_le_pow_left₀ (singularValues_nonneg _ _)
+            (singularValues_antitone A (by have := Finset.mem_range.mp hi; omega)) 2
+    _ ≤ ∑ i ∈ Finset.range ((A - truncatedSVD A k).rank + d),
+          singularValues (A - truncatedSVD A k) i ^ 2 :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono le_add_self)
+          fun _ _ _ => sq_nonneg _
+
 /-- The truncated SVD and its error are orthogonal in the Frobenius inner product:
 $\langle \llbracket \mathbf{A} \rrbracket_k, \mathbf{A} - \llbracket \mathbf{A} \rrbracket_k
 \rangle_{\mathsf{F}} = 0$. -/
@@ -293,6 +328,144 @@ theorem range_mulVecLin_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
   rw [← Matrix.mul_assoc, h.mul_right_eq, ← Matrix.mul_assoc, Matrix.mul_assoc U,
     Matrix.diagonal_mul_diagonal, hT k]
   simp only [mul_ite, mul_one, mul_zero]
+
+/-! ### Row spaces, frames of dominant singular subspaces, positive semidefinite inputs -/
+
+/-- The truncation annihilates the conjugate transpose of the error:
+$$\llbracket \mathbf{A} \rrbracket_k (\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k)^{\mathsf{H}}
+= \mathbf{0}\,.$$ -/
+private theorem truncatedSVD_mul_conjTranspose_sub (A : Matrix m n 𝕜) (k : ℕ) :
+    truncatedSVD A k * (A - truncatedSVD A k)ᴴ = 0 := by
+  obtain ⟨U, V, hT, hE⟩ := exists_isSVD_truncatedSVD_sub A k
+  rw [hE.conjTranspose.eq, hT.eq]
+  simp only [Matrix.mul_assoc]
+  rw [hT.hasOrthonormalCols_right.conjTranspose_mul_cancel_left,
+    ← Matrix.mul_assoc (Matrix.diagonal _), Matrix.diagonal_mul_diagonal]
+  have hd : (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
+      (((if (i : ℕ) < k then singularValues A i else 0 : ℝ)) : 𝕜) *
+        (((if (i : ℕ) < k then 0 else singularValues A i : ℝ)) : 𝕜)) = fun _ => 0 := by
+    funext i
+    split_ifs
+    · rw [RCLike.ofReal_zero, mul_zero]
+    · rw [RCLike.ofReal_zero, zero_mul]
+  rw [hd, Matrix.diagonal_zero, Matrix.zero_mul, Matrix.mul_zero]
+
+/-- The truncated SVD is $\mathbf{A}$ times the projector onto its own row space:
+$$\mathbf{A}\mathbf{P}_{\llbracket \mathbf{A} \rrbracket_k^{\mathsf{H}}} =
+\llbracket \mathbf{A} \rrbracket_k\,.$$
+The row twin of
+`NLAlib.rangeProjector_truncatedSVD_mul`; it identifies a frame of a dominant right singular
+subspace (`NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD`). -/
+theorem mul_rangeProjector_conjTranspose_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
+    A * rangeProjector (truncatedSVD A k)ᴴ = truncatedSVD A k := by
+  have h0 : ((truncatedSVD A k)ᴴ)ᴴ * (A - truncatedSVD A k)ᴴ = 0 := by
+    rw [Matrix.conjTranspose_conjTranspose]
+    exact truncatedSVD_mul_conjTranspose_sub A k
+  have h := congrArg Matrix.conjTranspose (rangeProjector_mul_eq_zero_iff.mpr h0)
+  rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, conjTranspose_rangeProjector,
+    Matrix.conjTranspose_zero, Matrix.sub_mul, sub_eq_zero] at h
+  have hT := congrArg Matrix.conjTranspose (rangeProjector_mul_self (truncatedSVD A k)ᴴ)
+  rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+    conjTranspose_rangeProjector] at hT
+  rw [h, hT]
+
+open scoped ComplexOrder in
+/-- For positive semidefinite $\mathbf{A}$ with an SVD
+$\mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$, the left and right singular vectors agree
+wherever the singular value is nonzero. -/
+private theorem IsSVD.mul_diagonal_eq_of_posSemidef {r : Type*} [Fintype r] [DecidableEq r]
+    {A : Matrix n n 𝕜} (hA : A.PosSemidef) {U V : Matrix n r 𝕜} {σ : r → ℝ} (h : IsSVD A U σ V)
+    {d : r → 𝕜} (hd : ∀ i, σ i = 0 → d i = 0) : U * Matrix.diagonal d = V * Matrix.diagonal d := by
+  ext j i
+  rw [Matrix.mul_diagonal, Matrix.mul_diagonal]
+  by_cases hσ : σ i = 0
+  · rw [hd i hσ, mul_zero, mul_zero]
+  have h1 := h.mulVec_col i
+  have h2 := h.conjTranspose.mulVec_col i
+  rw [hA.isHermitian.eq] at h2
+  have hx : A *ᵥ (U.col i - V.col i) = (-((σ i : ℝ) : 𝕜)) • (U.col i - V.col i) := by
+    rw [Matrix.mulVec_sub, h1, h2, neg_smul, smul_sub, neg_sub,
+      RCLike.real_smul_eq_coe_smul (K := 𝕜), RCLike.real_smul_eq_coe_smul (K := 𝕜)]
+  have hnn := hA.dotProduct_mulVec_nonneg (U.col i - V.col i)
+  rw [hx, dotProduct_smul, smul_eq_mul, neg_mul, neg_nonneg] at hnn
+  have hσpos : (0 : 𝕜) < ((σ i : ℝ) : 𝕜) :=
+    RCLike.ofReal_pos.mpr (lt_of_le_of_ne (h.nonneg i) (Ne.symm hσ))
+  have hs : star (U.col i - V.col i) ⬝ᵥ (U.col i - V.col i) = 0 :=
+    (mul_eq_zero.mp (le_antisymm hnn (mul_nonneg hσpos.le
+      (dotProduct_star_self_nonneg _)))).resolve_left hσpos.ne'
+  have hj := congrFun (dotProduct_star_self_eq_zero.mp hs) j
+  rw [Pi.sub_apply, Pi.zero_apply, sub_eq_zero] at hj
+  exact congrArg (· * d i) hj
+
+open scoped ComplexOrder in
+/-- The truncated SVD of a positive semidefinite matrix is positive semidefinite:
+$\llbracket \mathbf{A} \rrbracket_k \succeq \mathbf{0}$ for $\mathbf{A} \succeq \mathbf{0}$,
+whatever singular value decomposition the definition chose, ties included. (For Hermitian
+$\mathbf{A}$ that is not positive semidefinite the chosen truncation need not be Hermitian.) -/
+theorem _root_.Matrix.PosSemidef.truncatedSVD {A : Matrix n n 𝕜} (hA : A.PosSemidef) (k : ℕ) :
+    (truncatedSVD A k).PosSemidef := by
+  obtain ⟨U, V, h, hT⟩ := exists_isSVD_truncatedSVD A
+  rw [hT k, h.mul_diagonal_eq_of_posSemidef hA fun i hi => by
+    split_ifs
+    · rw [hi, RCLike.ofReal_zero]
+    · rfl]
+  refine (Matrix.PosSemidef.diagonal fun i => ?_).mul_mul_conjTranspose_same V
+  change (0 : 𝕜) ≤ if (i : ℕ) < k then ((singularValues A i : ℝ) : 𝕜) else 0
+  split_ifs
+  · exact RCLike.ofReal_nonneg.mpr (singularValues_nonneg A i)
+  · exact le_rfl
+
+open scoped ComplexOrder in
+/-- For positive semidefinite $\mathbf{H}$ and a frame $\mathbf{Z}$ with
+$\mathbf{H}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{H} \rrbracket_k$, the
+compression of $\mathbf{H}$ to the complement of $\operatorname{range}\mathbf{Z}$ is the
+truncation error:
+$$(\mathbf{I} - \mathbf{Z}\mathbf{Z}^{\mathsf{H}})\mathbf{H}
+(\mathbf{I} - \mathbf{Z}\mathbf{Z}^{\mathsf{H}}) =
+\mathbf{H} - \llbracket \mathbf{H} \rrbracket_k\,.$$
+It is the top-$k$ reading of the Nyström structural bound; the frame comes from
+`NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD` at $\mathbf{H}$. -/
+theorem _root_.Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD [DecidableEq n]
+    {r : Type*} [Fintype r] [DecidableEq r] {H : Matrix n n 𝕜} (hH : H.PosSemidef)
+    {Z : Matrix n r 𝕜} (hZ : HasOrthonormalCols Z) {k : ℕ}
+    (hZH : H * Z * Zᴴ = truncatedSVD H k) :
+    (1 - Z * Zᴴ) * H * (1 - Z * Zᴴ) = H - truncatedSVD H k := by
+  have hT := (hH.truncatedSVD k).isHermitian.eq
+  have hPH : Z * Zᴴ * H = truncatedSVD H k := by
+    have h := congrArg Matrix.conjTranspose hZH
+    rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      hH.isHermitian.eq, hT, ← Matrix.mul_assoc] at h
+  have hPHP : Z * Zᴴ * H * (Z * Zᴴ) = truncatedSVD H k := by
+    rw [hPH, ← hZH, ← Matrix.mul_assoc, hZ.mul_conjTranspose_mul_cancel_right]
+  simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one]
+  rw [hPHP, hPH, ← Matrix.mul_assoc H, hZH]
+  abel
+
+open scoped ComplexOrder in
+/-- **A frame of a dominant right singular subspace.** For an index type $p$ with
+$\lvert p \rvert = k \le \lvert n \rvert$ there is $\mathbf{Z}$ with orthonormal columns indexed by
+$p$ and $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$; for
+$k \ge \operatorname{rank}\mathbf{A}$ it is any frame whose range contains the row space. Rewriting
+with the equation turns a statement about any frame into its top-$k$ form, where
+$$\mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} =
+\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\,.$$ -/
+theorem exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD {p : Type*} [Fintype p]
+    [DecidableEq p] (A : Matrix m n 𝕜) {k : ℕ} (hp : Fintype.card p = k)
+    (hk : k ≤ Fintype.card n) :
+    ∃ Z : Matrix n p 𝕜, HasOrthonormalCols Z ∧ A * Z * Zᴴ = truncatedSVD A k := by
+  obtain ⟨Z, hZ, hle⟩ := exists_hasOrthonormalCols_range_le (truncatedSVD A k)ᴴ
+    (by rw [Matrix.rank_conjTranspose, hp]; exact rank_truncatedSVD_le A k) (hp ▸ hk)
+  refine ⟨Z, hZ, ?_⟩
+  rw [Matrix.mul_assoc, ← hZ.rangeProjector_eq]
+  rcases le_total k A.rank with hkA | hkA
+  · have hr : (truncatedSVD A k)ᴴ.rank = Z.rank := by
+      rw [Matrix.rank_conjTranspose, rank_truncatedSVD, min_eq_left hkA, hZ.rank_eq, hp]
+    rw [← rangeProjector_inj.mpr (Submodule.eq_of_le_of_finrank_eq hle hr),
+      mul_rangeProjector_conjTranspose_truncatedSVD]
+  · rw [truncatedSVD_of_rank_le A hkA] at hle ⊢
+    have h := congrArg Matrix.conjTranspose (rangeProjector_mul_eq_self_iff.mpr hle)
+    rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector,
+      Matrix.conjTranspose_conjTranspose] at h
 
 /-! ### Eckart–Young -/
 
