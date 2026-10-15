@@ -264,8 +264,9 @@ every proof `sorry`.
    `E exp (θ Y²) ≤ (1 - 2θ)^{-1/2}`, then S2's arithmetic. Lower half: the fourth moment,
    `E exp (-θ Y²) ≤ 1 - θ + 3θ²/2`, and
    `θ (1 - ε) + log (1 - θ + 3θ²/2) ≤ -(ε²/4 - ε³/6)` at `θ = ε/(2(1 + ε))` on `(0, 1]` (margin
-   about `ε³/48` at small `ε`; on a grid it is at least `0.0176 ε³` on `(0, 1]`, so the review's
-   `0.0208 ε³` holds only near `0`, the inequality itself holds). `1 + v ≤ exp v` is too weak; the
+   about `ε³/48` at small `ε`; the proof's exact margin, after the cubic log bound, is
+   `ε³ (256ε⁶ + 1152ε⁵ + 2304ε⁴ + 2637ε³ + 1668ε² + 444ε + 32) / (1536 (1 + ε)⁶)`, positive for every
+   `ε ≥ 0`; the orchestrator's earlier `0.0176 ε³` grid figure was wrong). `1 + v ≤ exp v` is too weak; the
    second-order log term comes from `log (1 + u) ≤ u - u²/2 + u³/3` for `-1 < u ≤ 0`, new (S2 has
    only the `u ≥ 0` version, the private `log_one_add_le_cubic` of `ChiSquareTails.lean`, shared at
    the wrap-up). One generic theorem carries the probability, then a rows theorem and the

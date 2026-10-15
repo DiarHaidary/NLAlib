@@ -16,7 +16,7 @@ has the converse direction for families of independent vectors with independent 
 `ProbabilityTheory.HasLaw.iIndepFun_entry`'s shape to the row hypotheses of the sub-Gaussian
 rows theorems (`NLAlib/Sketching/Gaussian/SubGaussian.lean`).
 
-This file is a skeleton of Sketching stage S3 (`docs/design/Sketching-S3.md` §3.2). At the
+This file is Sketching stage S3's (`docs/design/Sketching-S3.md` §3.2). At the round's
 wrap-up it merges into `NLAlib/Probability/Law.lean`.
 
 ## Main results
@@ -42,6 +42,13 @@ a partition of the index) turns up. Mathlib has the converse,
 theorem iIndepFun_row_of_iIndepFun_entry {X : Ω → Matrix m n α}
     (hind : iIndepFun (fun p : m × n => fun ω => X ω p.1 p.2) μ)
     (hX : ∀ i j, AEMeasurable (fun ω => X ω i j) μ) : iIndepFun (fun i ω => X ω i) μ := by
-  sorry
+  have := hind.isProbabilityMeasure
+  have := Fintype.ofFinite m
+  have := Fintype.ofFinite n
+  have : ∀ i j, IsProbabilityMeasure (μ.map fun ω => X ω i j) :=
+    fun i j => Measure.isProbabilityMeasure_map (hX i j)
+  have hlaw : HasLaw X (Measure.pi fun i => Measure.pi fun j => μ.map fun ω => X ω i j) μ :=
+    hasLaw_pi_pi_iff.2 ⟨hind, fun i j => ⟨hX i j, rfl⟩⟩
+  exact hlaw.iIndepFun_eval
 
 end NLAlib

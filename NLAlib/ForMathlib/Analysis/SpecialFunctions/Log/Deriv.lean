@@ -33,6 +33,12 @@ namespace Real
 `0`. -/
 theorem log_one_add_le_cubic_of_nonpos {u : ℝ} (h1 : -1 < u) (h0 : u ≤ 0) :
     log (1 + u) ≤ u - u ^ 2 / 2 + u ^ 3 / 3 := by
-  sorry
+  have hu : 0 ≤ -u := by linarith
+  have h := hasSum_pow_div_log_of_abs_lt_one (x := -u) (by rw [abs_of_nonneg hu]; linarith)
+  have := sum_le_hasSum (Finset.range 3) (fun n _ => by positivity) h
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, sub_neg_eq_add] at this
+  norm_num at this
+  have e : (-u) ^ 3 = -u ^ 3 := by ring
+  linarith
 
 end Real
