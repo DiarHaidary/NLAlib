@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.Matrix.Norms.Compare
 public import NLAlib.Matrix.Structured.BoundedOrthonormal
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.Measurability.Matrix
@@ -43,9 +44,6 @@ Degenerate cases. Rank zero: every leverage score is $0$ and the flattening even
 surely, so $\mathbf{F}\mathbf{D}$ is unitary only almost surely. The transfer takes
 $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 `docs/design/Sketching-S6.md` §3.2, §8.
-
-This file is part of the skeleton of Sketching stage S6 (`docs/design/Sketching-S6.md` §8,
-item 15); the proofs of the flattening tails and of the transfer are deferred.
 
 ## Main definitions
 
@@ -148,6 +146,105 @@ theorem ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector (hF : HasO
   rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hω i,
     RCLike.ofReal_one]
 
+omit [DecidableEq n] in
+private theorem range_mul_eq_of_range_eq {p q : Type*} [Fintype p] [Fintype q] (B : Matrix n n 𝕜)
+    {U : Matrix n p 𝕜} {Q : Matrix n q 𝕜}
+    (h : LinearMap.range Q.mulVecLin = LinearMap.range U.mulVecLin) :
+    LinearMap.range (B * Q).mulVecLin = LinearMap.range (B * U).mulVecLin := by
+  rw [Matrix.mulVecLin_mul, Matrix.mulVecLin_mul, LinearMap.range_comp, LinearMap.range_comp, h]
+
+/-- Row $i$ of $\mathbf{F}\operatorname{diag}(\boldsymbol{\xi})\mathbf{Q}$ is the image of the
+sign vector under
+$\mathbf{M}_i = \mathbf{Q}^{\mathsf{T}} \operatorname{diag}(\mathbf{F}_{i,\cdot})$. -/
+private theorem mul_diagonal_mul_apply {q : Type*} (Q : Matrix n q 𝕜) (v : n → ℝ)
+    (i : n) :
+    (F * Matrix.diagonal (fun l => (v l : 𝕜)) * Q) i =
+      (Qᵀ * Matrix.diagonal (F i)) *ᵥ fun l => (v l : 𝕜) := by
+  funext j
+  simp only [Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.transpose_apply,
+    Matrix.diagonal_apply, mul_ite, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, if_true]
+  exact Finset.sum_congr rfl fun l _ => by ring
+
+/-- The row matrix $\mathbf{M}_i$ has $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le \beta \lvert q \rvert /
+\lvert n \rvert$ and $\|\mathbf{M}_i\|_2^2 \le \beta / \lvert n \rvert$. -/
+private theorem frobNorm_sq_le_and_specNorm_sq_le (hF : IsBoundedOrthonormal F β) [Nonempty n]
+    {q : Type*} [Fintype q] [DecidableEq q] {Q : Matrix n q 𝕜} (hQ : HasOrthonormalCols Q) (i : n) :
+    frobNorm (Qᵀ * Matrix.diagonal (F i)) ^ 2 ≤ β * (Fintype.card n : ℝ)⁻¹ * Fintype.card q ∧
+      specNorm (Qᵀ * Matrix.diagonal (F i)) ^ 2 ≤ β * (Fintype.card n : ℝ)⁻¹ := by
+  have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
+  have hFi : ∀ l, ‖F i l‖ ^ 2 ≤ β * (Fintype.card n : ℝ)⁻¹ := fun l => by
+    rw [← div_eq_mul_inv, le_div_iff₀ hn, mul_comm]
+    exact hF.card_mul_norm_sq_le i l
+  have hK : 0 ≤ β * (Fintype.card n : ℝ)⁻¹ :=
+    (sq_nonneg _).trans (hFi (Classical.arbitrary n))
+  refine ⟨?_, ?_⟩
+  · rw [← frobNorm_transpose, Matrix.transpose_mul, Matrix.diagonal_transpose,
+      Matrix.transpose_transpose, ← hQ.frobNorm_sq, frobNorm_sq_eq_sum, frobNorm_sq_eq_sum,
+      Finset.mul_sum]
+    refine Finset.sum_le_sum fun l _ => ?_
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun j _ => ?_
+    rw [Matrix.diagonal_mul, norm_mul, mul_pow]
+    exact mul_le_mul_of_nonneg_right (hFi l) (sq_nonneg _)
+  · have h1 : specNorm (Matrix.diagonal (F i)) ≤ √(β * (Fintype.card n : ℝ)⁻¹) :=
+      specNorm_diagonal_le (Real.sqrt_nonneg _) fun l => Real.le_sqrt_of_sq_le (hFi l)
+    have h2 : specNorm (Qᵀ * Matrix.diagonal (F i)) ≤ √(β * (Fintype.card n : ℝ)⁻¹) := by
+      refine (specNorm_mul_le _ _).trans ?_
+      rw [specNorm_transpose]
+      calc specNorm Q * specNorm (Matrix.diagonal (F i)) ≤ 1 * √(β * (Fintype.card n : ℝ)⁻¹) :=
+            mul_le_mul hQ.specNorm_le_one h1 (specNorm_nonneg _) zero_le_one
+        _ = _ := one_mul _
+    calc specNorm (Qᵀ * Matrix.diagonal (F i)) ^ 2 ≤ √(β * (Fintype.card n : ℝ)⁻¹) ^ 2 :=
+          pow_le_pow_left₀ (specNorm_nonneg _) h2 2
+      _ = _ := Real.sq_sqrt hK
+
+/-- The tail of one row: the Hsu–Kakade–Zhang tail at $\mathbf{M}_i$, proxy $1$. -/
+private theorem measureReal_not_norm_row_sq_le (hF : IsBoundedOrthonormal F β)
+    (hξ : HasLaw ξ (rademacherVector n) μ) {q : Type*} [Fintype q] [DecidableEq q]
+    {Q : Matrix n q 𝕜} (hQ : HasOrthonormalCols Q) (ht : 0 ≤ t) (i : n) :
+    μ.real {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * Q) i)‖ ^ 2 ≤
+      β * (Fintype.card q + 2 * √(Fintype.card q * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} ≤
+      Real.exp (-t) := by
+  have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.2 inferInstance
+  have : Nonempty n := ⟨i⟩
+  obtain ⟨hFr, hSp⟩ := frobNorm_sq_le_and_specNorm_sq_le hF hQ i
+  set M := Qᵀ * Matrix.diagonal (F i) with hM_def
+  set K := β * (Fintype.card n : ℝ)⁻¹ with hK_def
+  set d : ℝ := (Fintype.card q : ℝ) with hd_def
+  have hK : 0 ≤ K := (sq_nonneg _).trans hSp
+  have hd : 0 ≤ d := Nat.cast_nonneg _
+  have hthr : β * (d + 2 * √(d * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹ =
+      K * (d + 2 * √d * √t + 2 * t) := by
+    rw [Real.sqrt_mul hd, hK_def]
+    ring
+  simp only [mul_diagonal_mul_apply Q, hthr]
+  by_cases hM : M = 0
+  · have hset : {ω | ¬ ‖WithLp.toLp 2 (M *ᵥ fun l => (ξ ω l : 𝕜))‖ ^ 2 ≤
+        K * (d + 2 * √d * √t + 2 * t)} = ∅ := by
+      refine Set.eq_empty_of_forall_notMem fun ω hω => hω ?_
+      rw [hM, Matrix.zero_mulVec, WithLp.toLp_zero, norm_zero, zero_pow two_ne_zero]
+      positivity
+    rw [hset, measureReal_empty]
+    positivity
+  have hS : specNorm M ≤ √K := Real.le_sqrt_of_sq_le hSp
+  have hFr' : frobNorm M ≤ √K * √d := by
+    rw [← Real.sqrt_mul hK]
+    exact Real.le_sqrt_of_sq_le hFr
+  have hG : frobNorm (Mᴴ * M) ≤ K * √d := by
+    refine (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans ?_
+    rw [specNorm_conjTranspose]
+    calc specNorm M * frobNorm M ≤ √K * (√K * √d) :=
+          mul_le_mul hS hFr' (frobNorm_nonneg _) (Real.sqrt_nonneg _)
+      _ = K * √d := by rw [← mul_assoc, Real.mul_self_sqrt hK]
+  have key := (isSubgaussianVector_of_hasLaw_rademacherVector hξ).measure_norm_mulVec_sq_ge_le
+    one_ne_zero hM ht (𝕜 := 𝕜)
+  refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top _ _)) key
+  simp only [Set.mem_ofPred_eq, not_le, NNReal.coe_one, one_mul] at hω ⊢
+  refine le_trans ?_ hω.le
+  have h1 := mul_le_mul_of_nonneg_right hG (Real.sqrt_nonneg t)
+  have h2 := mul_le_mul_of_nonneg_right hSp ht
+  nlinarith
+
 /-- **Flattening**: a randomized unitary transform makes every subspace incoherent. For a bounded
 orthonormal $\mathbf{F}$ with constant $\beta$, independent signs $\boldsymbol{\xi}$,
 $\mathbf{D} = \operatorname{diag}(\boldsymbol{\xi})$, any $\mathbf{U}$ with
@@ -161,13 +258,14 @@ argument needs only these two features); [Tropp2011a] (real signs, Walsh;
 $(\sqrt{d} + \sqrt{8 \log(\beta n)})^2 / n$, through CEMT, paper not in hand). Here any
 $\mathbf{F}$ with $n \lvert \mathbf{F}_{i,j} \rvert^2 \le \beta$, any field, any $\mathbf{U}$, the
 Hsu–Kakade–Zhang constant.
-Proof: pass to an orthonormal basis $\mathbf{Q}$ of $\operatorname{range}\mathbf{U}$
+The proof passes to an orthonormal basis $\mathbf{Q}$ of $\operatorname{range}\mathbf{U}$
 (`NLAlib.leverageScore_eq_of_range_eq`); almost surely $\mathbf{F}\mathbf{D}\mathbf{Q}$ is
-orthonormal and score $i$ is $\|(\mathbf{F}\mathbf{D}\mathbf{Q})_i\|^2 = \lvert n \rvert^{-1}
+orthonormal and score $i$ is $\|(\mathbf{F}\mathbf{D}\mathbf{Q})_i\|^2 =
 \|\mathbf{M}_i \boldsymbol{\xi}\|^2$ with $\mathbf{M}_i = \mathbf{Q}^{\mathsf{T}}
-\operatorname{diag}(\sqrt{n}\,\mathbf{F}_{i,\cdot})$, $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le \beta d$,
-$\|\mathbf{M}_i\|_2^2 \le \beta$; the Hsu–Kakade–Zhang tail at proxy $1$ per row, then a union over
-the rows. About 150 lines, moderate.
+\operatorname{diag}(\mathbf{F}_{i,\cdot})$,
+$\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le \beta d / \lvert n \rvert$ and
+$\|\mathbf{M}_i\|_2^2 \le \beta / \lvert n \rvert$; the Hsu–Kakade–Zhang tail at proxy $1$ per
+row, then a union over the rows.
 Result: srht-flattening -/
 theorem measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector
     (hF : IsBoundedOrthonormal F β) (hξ : HasLaw ξ (rademacherVector n) μ) (U : Matrix n r 𝕜)
@@ -175,7 +273,33 @@ theorem measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademache
     μ.real {ω | ¬ ∀ i, leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i ≤
         β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} ≤
       Fintype.card n * Real.exp (-t) := by
-  sorry
+  have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.2 inferInstance
+  obtain ⟨Q, hQ, hQU⟩ := exists_hasOrthonormalCols_range_eq (p := Fin U.rank) U
+    (Fintype.card_fin _)
+  have hae := ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
+    hF.hasOrthonormalCols hξ
+  have hrow := fun i => measureReal_not_norm_row_sq_le hF hξ hQ ht i
+  simp only [Fintype.card_fin] at hrow
+  have hsub : {ω | ¬ ∀ i, leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i ≤
+        β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} ≤ᵐ[μ]
+      ⋃ i, {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * Q) i)‖ ^ 2 ≤
+        β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} := by
+    filter_upwards [hae] with ω hω hnot
+    simp only [not_forall] at hnot
+    obtain ⟨i, hi⟩ := hnot
+    refine Set.mem_iUnion.2 ⟨i, ?_⟩
+    rw [leverageScore_eq_of_range_eq (range_mul_eq_of_range_eq _ hQU).symm,
+      (hω.mul hQ).leverageScore_eq i] at hi
+    exact hi
+  calc _ ≤ μ.real (⋃ i, {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * Q)
+          i)‖ ^ 2 ≤ β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹}) :=
+        ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae hsub)
+    _ ≤ ∑ i, μ.real {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * Q)
+          i)‖ ^ 2 ≤ β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} :=
+        measureReal_iUnion_fintype_le _
+    _ ≤ ∑ _i : n, Real.exp (-t) := Finset.sum_le_sum fun i _ => hrow i
+    _ = Fintype.card n * Real.exp (-t) := by
+        rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
 /-- **Flattening in $\delta$ form**: for a bounded orthonormal $\mathbf{F}$ with constant $\beta$,
 independent signs and $\delta > 0$, outside probability $\delta$ every leverage score of
@@ -209,6 +333,70 @@ theorem measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_has
 
 /-! ### Flatten, then sample -/
 
+omit [Fintype r] in
+private theorem isSubspaceInjection_mul_iff {A : Matrix k n 𝕜} {B : Matrix n n 𝕜}
+    (hB : HasOrthonormalCols B) (U : Matrix n r 𝕜) :
+    IsSubspaceInjection (A * B) U a ↔ IsSubspaceInjection A (B * U) a := by
+  rw [IsSubspaceInjection, IsSubspaceInjection, Matrix.mul_assoc A B U,
+    hB.conjTranspose_mul_mul U U]
+
+omit [Fintype r] in
+private theorem isSubspaceEmbedding_mul_iff {A : Matrix k n 𝕜} {B : Matrix n n 𝕜}
+    (hB : HasOrthonormalCols B) (U : Matrix n r 𝕜) :
+    IsSubspaceEmbedding (A * B) U a b ↔ IsSubspaceEmbedding A (B * U) a b := by
+  have hU : (B * U)ᴴ * (B * U) = Uᴴ * U := hB.conjTranspose_mul_mul U U
+  refine ⟨fun h => ⟨(isSubspaceInjection_mul_iff hB U).1 h.lower, ?_⟩,
+    fun h => ⟨(isSubspaceInjection_mul_iff hB U).2 h.lower, ?_⟩⟩
+  · rw [hU, ← Matrix.mul_assoc A B U]
+    exact h.upper
+  · rw [Matrix.mul_assoc A B U, ← hU]
+    exact h.upper
+
+/-- The measurable set of unitaries $\mathbf{B}$ making $\mathbf{B}\mathbf{U}$ incoherent. -/
+private theorem measurableSet_good (U : Matrix n r 𝕜) (L : ℝ) :
+    MeasurableSet {B : Matrix n n 𝕜 | HasOrthonormalCols B ∧
+      ∀ i, leverageScore (B * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} := by
+  have h1 : MeasurableSet {B : Matrix n n 𝕜 | HasOrthonormalCols B} :=
+    (isClosed_eq (continuous_id.matrix_conjTranspose.matrix_mul continuous_id)
+      continuous_const).measurableSet
+  have h2 : MeasurableSet {B : Matrix n n 𝕜 |
+      ∀ i, leverageScore (B * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} := by
+    rw [Set.ofPred_forall]
+    refine MeasurableSet.iInter fun i => measurableSet_le ?_ measurable_const
+    exact RCLike.continuous_re.measurable.comp ((Matrix.measurable_apply i i).comp
+      (measurable_rangeProjector.comp (measurable_id.matrix_mul measurable_const)))
+  exact h1.inter h2
+
+omit [Fintype k] in
+/-- The shared step of the two transfers, for a closed property $R$ of the pair
+$(\mathbf{A}, \mathbf{V})$ with $R(\mathbf{A}\mathbf{B}, \mathbf{U}) \iff R(\mathbf{A},
+\mathbf{B}\mathbf{U})$ for unitary $\mathbf{B}$. -/
+private theorem measureReal_not_mul_le_add [Finite k] [IsProbabilityMeasure μ]
+    {R : Matrix k n 𝕜 → Matrix n r 𝕜 → Prop}
+    (hR : IsClosed {x : Matrix k n 𝕜 × Matrix n r 𝕜 | R x.1 x.2}) {U : Matrix n r 𝕜}
+    (hRB : ∀ (A : Matrix k n 𝕜) (B : Matrix n n 𝕜), HasOrthonormalCols B →
+      (R (A * B) U ↔ R A (B * U)))
+    {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
+    (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))
+    (hδ₁ : 0 ≤ δ₁)
+    (hsample : ∀ V : Matrix n r 𝕜, V.rank ≤ U.rank →
+      (∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) → μ.real {ω | ¬ R (P ω) V} ≤ δ₁)
+    (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
+    μ.real {ω | ¬ R (P ω * T ω) U} ≤ δ₁ + δ₂ := by
+  have hE : MeasurableSet {x : Matrix k n 𝕜 × Matrix n n 𝕜 | ¬ R (x.1 * x.2) U} :=
+    (hR.preimage ((continuous_fst.matrix_mul continuous_snd).prodMk continuous_const)
+      ).isOpen_compl.measurableSet
+  refine hind.measureReal_mem_le_add hP hT hE (measurableSet_good U L) hδ₁ ?_ ?_
+  · rintro B ⟨hB, hlev⟩
+    have h := hsample (B * U) (Matrix.rank_mul_le_right B U) hlev
+    refine le_of_eq_of_le ?_ h
+    congr 1
+    ext ω
+    exact not_congr (hRB (P ω) B hB)
+  · refine le_trans (ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)) hflat
+    filter_upwards [hTU] with ω hω hnot
+    exact fun h => hnot ⟨hω, h⟩
+
 /-- **Flatten, then sample** (injection). A random sketch $\mathbf{P}$ that is a subspace injection
 with constant $a$ and failure probability $\delta_1$ for every fixed subspace of rank at most
 $\operatorname{rank}\mathbf{U}$ whose leverage scores are at most $L / \lvert n \rvert$, composed
@@ -218,12 +406,12 @@ constant $a$ outside probability $\delta_1 + \delta_2$. $0 \le \delta_1$ is need
 and nonempty `n` the sampling hypothesis is vacuous. [Tropp2011a] (the structure of the SRHT
 proof, through CEMT); [CamanoEpperlyMeyerTropp2025, §4.5] (the same two steps for SparseRTT, where
 their Theorem 4.4 is the sampling hypothesis).
-Proof: `ProbabilityTheory.IndepFun.measureReal_mem_le_add` with the open event
+The proof: `ProbabilityTheory.IndepFun.measureReal_mem_le_add` with the open event
 $\{(\mathbf{A}, \mathbf{B}) \mid \mathbf{A}\mathbf{B} \text{ is not an injection for }
 \operatorname{range}\mathbf{U}\}$ and the measurable good set of unitaries $\mathbf{B}$ making
 $\mathbf{B}\mathbf{U}$ incoherent; on it the section is the sampling hypothesis at
 $\mathbf{B}\mathbf{U}$, since $(\mathbf{B}\mathbf{U})^{\mathsf{H}}\mathbf{B}\mathbf{U} =
-\mathbf{U}^{\mathsf{H}}\mathbf{U}$. About 80 lines, moderate (the measurability of the good set). -/
+\mathbf{U}^{\mathsf{H}}\mathbf{U}$. -/
 theorem hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
     (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))
@@ -231,8 +419,10 @@ theorem hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le [IsProbabilityM
     (hsample : ∀ V : Matrix n r 𝕜, V.rank ≤ U.rank →
       (∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) → HasSubspaceInjection P V a δ₁ μ)
     (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
-    HasSubspaceInjection (fun ω => P ω * T ω) U a (δ₁ + δ₂) μ := by
-  sorry
+    HasSubspaceInjection (fun ω => P ω * T ω) U a (δ₁ + δ₂) μ :=
+  measureReal_not_mul_le_add (R := fun A V => IsSubspaceInjection A V a)
+    (isClosed_setOf_isSubspaceInjection a) (fun _ _ hB => isSubspaceInjection_mul_iff hB U)
+    hind hP hT hTU hδ₁ hsample hflat
 
 /-- **Flatten, then sample** (embedding). A random sketch $\mathbf{P}$ that is a subspace
 embedding with constants $a$, $b$ and failure probability $\delta_1$ for every fixed subspace of
@@ -243,8 +433,7 @@ $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ outside probability
 $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed, as in
 `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`. [Tropp2011a];
 [CamanoEpperlyMeyerTropp2025, §4.5].
-Proof: as for the injection, with `NLAlib.isClosed_setOf_isSubspaceEmbedding`. About 20 lines on
-a shared private lemma, easy once the injection is proved. -/
+The proof is that of the injection, with `NLAlib.isClosed_setOf_isSubspaceEmbedding`. -/
 theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
     (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))
@@ -252,7 +441,9 @@ theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityM
     (hsample : ∀ V : Matrix n r 𝕜, V.rank ≤ U.rank →
       (∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) → HasSubspaceEmbedding P V a b δ₁ μ)
     (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
-    HasSubspaceEmbedding (fun ω => P ω * T ω) U a b (δ₁ + δ₂) μ := by
-  sorry
+    HasSubspaceEmbedding (fun ω => P ω * T ω) U a b (δ₁ + δ₂) μ :=
+  measureReal_not_mul_le_add (R := fun A V => IsSubspaceEmbedding A V a b)
+    (isClosed_setOf_isSubspaceEmbedding a b) (fun _ _ hB => isSubspaceEmbedding_mul_iff hB U)
+    hind hP hT hTU hδ₁ hsample hflat
 
 end NLAlib
