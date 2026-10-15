@@ -357,6 +357,45 @@ None of these was approved by the maintainer when it was made. Status is given p
   (`isBoundedOrthonormal_smul_walshHadamard`, `isBoundedOrthonormal_fourierMatrix`), 2026-10-15
   (S6 skeleton).
 
+## 19. Oblique projectors from a basis and a sketch
+
+- **Mathlib.** `Submodule.projection p q h` (an endomorphism) and `Submodule.linearProjOfIsCompl`
+  (a map into `p` through an injection), in `LinearAlgebra/Projection.lean`, project onto `p`
+  along a complement `q` and take a proof `h : IsCompl p q`; `LinearMap.IsProj p f` is the
+  predicate. The idempotent predicate `IsIdempotentElem` is used as Mathlib has it.
+- **NLAlib.** `obliqueProjector X S := X * pinv (S * X) * S`
+  (`NLAlib/Matrix/Subspaces/ObliqueProjector.lean`), a total matrix-valued function of a basis
+  `X : Matrix m r 𝕜` and a sketch `S : Matrix k m 𝕜` with no proof argument. It is always
+  idempotent; under `(S * X).rank = X.rank` it projects onto `range X` along
+  `{v | S *ᵥ v ⟂ range (S * X)}`.
+- **Why.** Generality, not convenience. (1) Every rank and shape: through `pinv` the formula is
+  defined and idempotent for every `X` and `S`, it projects onto `range X` exactly under the
+  rank hypothesis, and onto the smaller range of `X * (S * X)ᴴ` otherwise; Mathlib's projection
+  exists only after an `IsCompl` proof. The probabilistic stages need the total form: they
+  integrate `obliqueProjector X (Ψ ω)ᴴ` over every `ω`, including the null set where the rank
+  hypothesis fails, and `measurable_pinv` makes it a random matrix, which a proof-carrying
+  projection is not without a junk branch. (2) It is the matrix the algorithms compute:
+  generalized Nyström, sketch-and-solve and the formulas of Tropp, Yurtsever, Udell and
+  Cevher, Epperly and Webber, and Camaño, Epperly, Meyer and Tropp are literally
+  $\mathbf{X}(\mathbf{S}\mathbf{X})^{+}\mathbf{S}$, and `generalizedNystrom_def` and
+  `sketchAndSolve` unfold to them with no transport. (3) The complement is not a datum the user
+  has: when `S` has more rows than `rank X` the kernel is the preimage under `S` of the
+  orthogonal complement of `range (S * X)`, which is `ker S` only when
+  `range (S * X) = range S`. Mathlib's form would require constructing that subspace and proving
+  complementarity at every use, and it hides the sketch, which is the variable of every theorem
+  (the injection hypothesis, the law of `S`).
+- **Bridge.** To the predicate: `isIdempotentElem_obliqueProjector` and
+  `IsIdempotentElem.obliqueProjector_eq` (every idempotent is one). To Mathlib's projections:
+  not stated, added on demand in the same file (`docs/design/LowRank-S0.md` §7 Q11); it would
+  read `LinearMap.IsProj (LinearMap.range X.mulVecLin) (obliqueProjector X S).mulVecLin` under
+  the rank hypothesis, a corollary of `range_obliqueProjector` and
+  `obliqueProjector_mul_eq_self_of_range_le`.
+- **Cost.** A user holding `Submodule.projection` writes the bridge first. The §5.3 two-bases
+  spelling `X * (Yᴴ * X)⁻¹ * Yᴴ` becomes a lemma (`obliqueProjector_of_isUnit`), and six
+  `Oblique.lean` lemmas are deprecated for one release.
+- **Status: proposed** in LowRank S0 (`docs/design/LowRank-S0.md` §8 item 3), 2026-10-15; not
+  approved by the maintainer.
+
 ## Small spelling choices
 
 - `principalMinor A s` for `(A.submatrix (↑) (↑)).det` with `s : Finset n`
@@ -371,6 +410,8 @@ None of these was approved by the maintainer when it was made. Status is given p
 (`isLeastSquaresSolution_iff_isMinOn` bridges to `IsMinOn`), `IsSVD` and `truncatedSVD`,
 `Majorized`, `SymmetricGauge`, the Schatten, nuclear and Ky Fan norms, `OperatorConvexOn`, the
 factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tangentMatrix`.
+`obliqueProjector` (entry 19), `sketchAndSolve`, `rsvd`, `generalizedNystrom`, `nystrom`
+(LowRank S0, `docs/design/LowRank-S0.md` §8 item 3).
 
 ## Used as Mathlib has them
 

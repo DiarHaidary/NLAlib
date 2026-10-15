@@ -29,12 +29,13 @@ is $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$.
 * `IsIdempotentElem.pinv_eq_rangeProjector_conjTranspose_mul_rangeProjector`: the pseudoinverse
   of an idempotent.
 * `IsIdempotentElem.specNorm_mul_cos_principalAngle`: the secant formula.
-* `IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le`,
-  `IsIdempotentElem.eq_mul_inv_mul_conjTranspose`: every idempotent is the oblique projector
-  $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ of a basis
-  $\mathbf{X}$ of its range and a basis $\mathbf{Y}$ of the range of its adjoint.
-* `NLAlib.HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose`: the norm of an oblique
-  projector given by two frames.
+* `IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le`: the overlap of two bases adapted to an
+  idempotent is invertible.
+
+The two-bases spelling $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$
+is `NLAlib.obliqueProjector X Yᴴ` (`NLAlib.Matrix.Subspaces.ObliqueProjector`), every rank; the six
+lemmas stated with it here are deprecated since LowRank S0 (2026-10-15) for their restatements in
+`NLAlib.Matrix.Subspaces.ObliqueProjector` and `NLAlib.Matrix.Subspaces.ObliqueBases`.
 -/
 
 @[expose] public section
@@ -269,6 +270,8 @@ variable [DecidableEq p]
 /-- $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ is idempotent when
 $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ is invertible: it is the projector onto the column space of
 $\mathbf{X}$ along the orthogonal complement of the column space of $\mathbf{Y}$. -/
+@[deprecated "Use `isIdempotentElem_obliqueProjector` and `obliqueProjector_of_isUnit`."
+  (since := "2026-10-15")]
 theorem isIdempotentElem_mul_inv_mul_conjTranspose {X Y : Matrix n p 𝕜} (h : IsUnit (Yᴴ * X)) :
     IsIdempotentElem (X * (Yᴴ * X)⁻¹ * Yᴴ) := by
   have key : X * (Yᴴ * X)⁻¹ * Yᴴ * X = X := by
@@ -279,6 +282,8 @@ theorem isIdempotentElem_mul_inv_mul_conjTranspose {X Y : Matrix n p 𝕜} (h : 
 /-- The oblique projector fixes $\mathbf{X}$:
 $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}\mathbf{X} = \mathbf{X}$
 when $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ is invertible. -/
+@[deprecated "Use `obliqueProjector_mul_self_iff` and `obliqueProjector_of_isUnit`."
+  (since := "2026-10-15")]
 theorem mul_inv_mul_conjTranspose_mul_self {X Y : Matrix n p 𝕜} (h : IsUnit (Yᴴ * X)) :
     X * (Yᴴ * X)⁻¹ * Yᴴ * X = X := by
   rw [Matrix.mul_assoc (X * (Yᴴ * X)⁻¹), Matrix.mul_assoc X,
@@ -288,6 +293,8 @@ theorem mul_inv_mul_conjTranspose_mul_self {X Y : Matrix n p 𝕜} (h : IsUnit (
 $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ annihilates the
 orthogonal complement of the column space of $\mathbf{Y}$: it sends $\mathbf{v}$ with
 $\mathbf{Y}^{\mathsf{H}}\mathbf{v} = \mathbf{0}$ to $\mathbf{0}$. -/
+@[deprecated "Use `Matrix.mulVec_mulVec` and the hypothesis, or
+  `obliqueProjector_mul_eq_zero_of_mul_eq_zero` at one column." (since := "2026-10-15")]
 theorem mul_inv_mul_conjTranspose_mulVec_eq_zero (X Y : Matrix n p 𝕜) {v : n → 𝕜}
     (hv : Yᴴ *ᵥ v = 0) : (X * (Yᴴ * X)⁻¹ * Yᴴ) *ᵥ v = 0 := by
   rw [← Matrix.mulVec_mulVec, hv, Matrix.mulVec_zero]
@@ -326,6 +333,8 @@ $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ invertible by
 [HornJohnson2013, Corollary 3.4.3.3 context].
 Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, second half, there over
 $\mathbb{R}$ for two frames. -/
+@[deprecated "Use `IsIdempotentElem.obliqueProjector_eq` and `obliqueProjector_of_isUnit`."
+  (since := "2026-10-15")]
 theorem _root_.IsIdempotentElem.eq_mul_inv_mul_conjTranspose {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {X Y : Matrix n p 𝕜} (hX : Function.Injective X.mulVec)
     (hXP : LinearMap.range X.mulVecLin = LinearMap.range P.mulVecLin)
@@ -351,7 +360,12 @@ No invertibility is assumed (Mathlib's inverse of a singular matrix is $\mathbf{
 $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ is invertible this is the reciprocal of its smallest singular
 value, that is, the secant of the largest principal angle
 (`HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose_mul_cos`).
+Deprecated (LowRank S0) for `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector`, which agrees
+with this lemma where $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ is invertible; where it is singular
+both sides here are $0$ (Mathlib's inverse), a case the replacement states with the
+pseudoinverse instead, for frames of any widths.
 [Szyld2006]. -/
+@[deprecated "Use `HasOrthonormalCols.specNorm_obliqueProjector`." (since := "2026-10-15")]
 theorem HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) :
     specNorm (U * (Vᴴ * U)⁻¹ * Vᴴ) = specNorm (Vᴴ * U)⁻¹ := by
@@ -361,13 +375,17 @@ theorem HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose {U V : Matrix n p 
 $\mathbf{U}$, $\mathbf{V}$ with orthonormal columns indexed by $p$ and
 $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ invertible,
 $\|\mathbf{U}(\mathbf{V}^{\mathsf{H}}\mathbf{U})^{-1}\mathbf{V}^{\mathsf{H}}\|_2
-\cos \theta_j(\mathbf{U}, \mathbf{V}) = 1$ for $j + 1 = \lvert p \rvert$. -/
+\cos \theta_j(\mathbf{U}, \mathbf{V}) = 1$ for $j + 1 = \lvert p \rvert$. Deprecated (LowRank S0)
+for `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector_mul_cos`, the same statement. -/
+@[deprecated "Use `HasOrthonormalCols.specNorm_obliqueProjector_mul_cos`."
+  (since := "2026-10-15")]
 theorem HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose_mul_cos {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) (h : IsUnit (Vᴴ * U)) {j : ℕ}
     (hj : j + 1 = Fintype.card p) :
     specNorm (U * (Vᴴ * U)⁻¹ * Vᴴ) * Real.cos (principalAngle U V j) = 1 := by
   have hr : (Vᴴ * U).rank = Fintype.card p := Matrix.rank_of_isUnit _ h
-  rw [hU.specNorm_mul_inv_mul_conjTranspose hV, ← pinv_of_isUnit h,
+  rw [Matrix.mul_assoc, hU.specNorm_mul_left, hV.specNorm_mul_conjTranspose_right,
+    ← pinv_of_isUnit h,
     specNorm_pinv _ (k := j) (by rw [hr, hj]), hU.cos_principalAngle hV,
     ← singularValues_conjTranspose (Uᴴ * V), Matrix.conjTranspose_mul,
     Matrix.conjTranspose_conjTranspose]

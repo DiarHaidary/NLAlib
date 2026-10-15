@@ -50,6 +50,7 @@ $\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous. Design:
   composition.
 * `NLAlib.HasOrthonormalCols.isSubspaceEmbedding_mul_iff`: a factor with orthonormal columns
   moves from the sketch to the subspace.
+* `NLAlib.IsSubspaceInjection.rank_mul_eq`: an injection keeps the rank of $\mathbf{U}$.
 * `NLAlib.isClosed_setOf_isSubspaceEmbedding`, `NLAlib.measurableSet_setOf_isSubspaceEmbedding`.
 -/
 
@@ -409,6 +410,24 @@ theorem IsSubspaceInjection.injective_mulVec [Fintype p] (h : IsSubspaceInjectio
   intro z₁ z₂ hz
   rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec] at hz
   exact hU (h.injOn ha ⟨z₁, rfl⟩ ⟨z₂, rfl⟩ hz)
+
+/-- **A subspace injection keeps the rank**: for a positive constant,
+$\operatorname{rank}(\mathbf{S}\mathbf{U}) = \operatorname{rank}\mathbf{U}$. This is the rank
+hypothesis of the oblique projector $\mathbf{\Pi}_{\mathbf{U},\mathbf{S}}$ (LowRank stage S0),
+so every statement about that projector applies under an injection. -/
+theorem IsSubspaceInjection.rank_mul_eq [Fintype p] (h : IsSubspaceInjection S U a) (ha : 0 < a) :
+    (S * U).rank = U.rank := by
+  have hker : LinearMap.ker (S * U).mulVecLin = LinearMap.ker U.mulVecLin := by
+    ext x
+    simp only [LinearMap.mem_ker, Matrix.mulVecLin_apply, ← Matrix.mulVec_mulVec]
+    refine ⟨fun hx => ?_, fun hx => by rw [hx, Matrix.mulVec_zero]⟩
+    exact h.injOn ha ⟨x, rfl⟩ (Submodule.zero_mem _) (by rw [Matrix.mulVec_zero]; exact hx)
+  have h1 := LinearMap.finrank_range_add_finrank_ker (S * U).mulVecLin
+  have h2 := LinearMap.finrank_range_add_finrank_ker U.mulVecLin
+  rw [hker] at h1
+  change Module.finrank 𝕜 (LinearMap.range (S * U).mulVecLin) =
+    Module.finrank 𝕜 (LinearMap.range U.mulVecLin)
+  omega
 
 /-! ### Closedness and measurability of the events -/
 

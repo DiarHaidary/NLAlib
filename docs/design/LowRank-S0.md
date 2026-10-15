@@ -981,3 +981,40 @@ supersedes them; §3 stays as drafted. Skeletons: the files of item 15, every ne
     1 and `Sketching/Properties/LeastSquares.lean` 1, with the reproof of
     `frobNorm_sub_mul_pinv_mul_sq_le`; `Matrix/Spectral/ProjectedLowRank.lean` docstring only.
     The Mathlib-deviations entry of item 3 and the §5.3 rows of §1 go in with the definitions.
+
+### Skeleton notes
+
+Skeleton agent, 2026-10-15. All 75 statements are written and **proved; no `sorry` remains**.
+Nothing is registered in `NLAlib.lean`. Each file was checked with `lake lean`; `check_refs.py`
+and `check_latex.mjs` pass.
+
+- **Files.** New: `Matrix/Subspaces/ObliqueProjector.lean` (27), `Matrix/Factorizations/SketchedLowRank.lean`
+  (17), `Matrix/Factorizations/NystromOrder.lean` (6). Side files, because their homes are
+  registered and would otherwise import unregistered modules: `Matrix/Factorizations/NystromGram.lean`
+  (the 16 `Nystrom.lean` additions), `Matrix/Subspaces/ObliqueBases.lean` (the 3 `Oblique.lean`
+  additions), `Sketching/Properties/LeastSquaresOblique.lean` (the `LeastSquares.lean` addition).
+  Each says it merges into its home at the wrap-up. Proved in place: the two Gram singular-value
+  lemmas (`SingularValues.lean`), the gauge equality (`UnitarilyInvariant.lean`),
+  `HasOrthonormalCols.rangeProjector_mul` (moved public to `Basic/Projector.lean`, removed from
+  `PrincipalAngles.lean`), `IsSubspaceInjection.rank_mul_eq` (`SubspaceEmbedding.lean`), and the
+  §3.6 item 4 docstring of `ProjectedLowRank.lean`.
+- **Deferred to the wrap-up.** The reproof of `IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le`
+  from the split (it needs `LeastSquares.lean` to import `ObliqueProjector.lean`). The six
+  deprecations in `Oblique.lean` are in place with message strings, not target names, since
+  `Oblique.lean` cannot import `ObliqueProjector.lean` before registration; the merge of
+  `ObliqueBases.lean` should switch them to `@[deprecated name]`. The §5.3 rows of §1 are not yet
+  in CONTRIBUTING.
+- **Statement changes.** `HasOrthonormalCols.generalizedNystrom_eq` became
+  `generalizedNystrom_eq_mul_sketchAndSolve`: orthonormality of `Q` was unused (the identity holds
+  for any `Q` with the range of `A * Ω`), and an unused hypothesis is not minimal.
+  `frobNorm_sub_generalizedNystrom_sq` takes no `[DecidableEq m]`, and the four `CFC.sqrt`
+  statements of `NystromGram.lean` take no `[DecidableEq n]` (`open scoped Classical in`, as in
+  `Functions/AbsoluteValue.lean`): the linter reports the instance used only in proofs.
+  `[Fintype _]` instances are on the declarations that need them.
+- **Proof routes that differ from §3.** Range invariance (`obliqueProjector_eq_of_range_eq`) needs
+  no orthonormal basis: $\mathbf{\Pi}_{\mathbf{X}}\mathbf{\Pi}_{\mathbf{X}'} =
+  \mathbf{\Pi}_{\mathbf{X}'}$ by exactness, and the product collapses because
+  $\mathbf{P}_{\mathbf{S}\mathbf{X}'} = \mathbf{P}_{\mathbf{S}\mathbf{X}}$; only the rank
+  hypothesis on $\mathbf{X}$ is used. The PSD rank lemma goes through
+  $\mathbf{A}^{1/2}$ and `Matrix.rank_conjTranspose_mul_self`. Superadditivity and Nyström helps
+  are pointwise from the variational form.

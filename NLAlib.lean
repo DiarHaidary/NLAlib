@@ -54,11 +54,14 @@ public import NLAlib.Matrix.Factorizations.Householder
 public import NLAlib.Matrix.Factorizations.LU
 public import NLAlib.Matrix.Factorizations.LUGeneral
 public import NLAlib.Matrix.Factorizations.Nystrom
+public import NLAlib.Matrix.Factorizations.NystromGram
+public import NLAlib.Matrix.Factorizations.NystromOrder
 public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.Matrix.Factorizations.PolarFrames
 public import NLAlib.Matrix.Factorizations.Procrustes
 public import NLAlib.Matrix.Factorizations.QR
 public import NLAlib.Matrix.Factorizations.RankRevealing
+public import NLAlib.Matrix.Factorizations.SketchedLowRank
 public import NLAlib.Matrix.Factorizations.Triangular
 public import NLAlib.Matrix.Functions.AbsoluteValue
 public import NLAlib.Matrix.Functions.Complexification
@@ -161,6 +164,8 @@ public import NLAlib.Matrix.Structured.Walsh
 public import NLAlib.Matrix.Subspaces.CSDecomposition
 public import NLAlib.Matrix.Subspaces.Frames
 public import NLAlib.Matrix.Subspaces.Oblique
+public import NLAlib.Matrix.Subspaces.ObliqueBases
+public import NLAlib.Matrix.Subspaces.ObliqueProjector
 public import NLAlib.Matrix.Subspaces.PrincipalAngles
 public import NLAlib.Matrix.Subspaces.ProjectorPair
 public import NLAlib.Matrix.Subspaces.Tangent
@@ -239,6 +244,7 @@ public import NLAlib.Sketching.Properties.Injection
 public import NLAlib.Sketching.Properties.Isotropic
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
 public import NLAlib.Sketching.Properties.LeastSquares
+public import NLAlib.Sketching.Properties.LeastSquaresOblique
 public import NLAlib.Sketching.Properties.MatrixMultiplication
 public import NLAlib.Sketching.Properties.Oblivious
 public import NLAlib.Sketching.Properties.SubspaceEmbedding

@@ -48,8 +48,10 @@ $$\|\mathbf{A} - \mathbf{Q}\mathbf{B}\|_{\mathsf{F}}^2 =
 the squared projection residual plus the squared error of $\mathbf{B}$ as an approximation of the
 compression $\mathbf{Q}^{\mathsf{H}}\mathbf{A}$. This is `NLAlib.frobNorm_sub_mul_sq` with the
 range projector written $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ and the error inside the range pulled
-back through $\mathbf{Q}$.
-[HalkoMartinssonTropp2011, Theorem 9.1 (proof)].
+back through $\mathbf{Q}$. It is the core-form split of the sketched low-rank approximations: with
+$\mathbf{B}$ the sketched core it splits the error of generalized Nyström in the form
+`NLAlib.generalizedNystrom_eq_mul_sketchAndSolve` gives.
+[HalkoMartinssonTropp2011, Theorem 9.1 (proof)]; [TroppYurtseverUdellCevher2017, Lemma A.3].
 Port of `NLAlib.frobSq_sub_mul_eq`. -/
 theorem HasOrthonormalCols.frobNorm_sub_mul_sq [DecidableEq m] {Q : Matrix m r 𝕜}
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) (B : Matrix r n 𝕜) :

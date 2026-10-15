@@ -28,6 +28,8 @@ $\mathbf{A}\mathbf{B}$ and $\mathbf{B}$ have different shapes.
 ## Main results
 
 * `NLAlib.SymmetricGauge.matrixNorm_add_le`: the triangle inequality.
+* `NLAlib.SymmetricGauge.matrixNorm_mul_conjTranspose_self`:
+  $\|\mathbf{A}\mathbf{A}^{\mathsf{H}}\|_{\Phi} = \|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\Phi}$.
 * `NLAlib.SymmetricGauge.matrixNorm_le_of_forall_kyFanNorm_le`,
   `NLAlib.forall_matrixNorm_le_iff_forall_kyFanNorm_le`: Fan dominance.
 * `NLAlib.SymmetricGauge.apply_singularValuesFinsupp_sub_le`: Mirsky's theorem.
@@ -174,6 +176,14 @@ theorem matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols [DecidableEq n]
     {Q : Matrix p n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
     Φ.matrixNorm (A * Qᴴ) = Φ.matrixNorm A := by
   exact Φ.matrixNorm_congr (hQ.singularValues_mul_conjTranspose_right A)
+
+/-- **The two Gram matrices have the same norm**:
+$\|\mathbf{A}\mathbf{A}^{\mathsf{H}}\|_{\Phi} = \|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\Phi}$,
+although they have different sizes: both have singular values $\sigma_k(\mathbf{A})^2$. -/
+theorem matrixNorm_mul_conjTranspose_self (A : Matrix m n 𝕜) :
+    Φ.matrixNorm (A * Aᴴ) = Φ.matrixNorm (Aᴴ * A) := by
+  refine Φ.matrixNorm_congr (funext fun k => ?_)
+  rw [singularValues_mul_conjTranspose_self, singularValues_conjTranspose_mul_self]
 
 /-! ### Monotonicity, Fan dominance and the triangle inequality -/
 

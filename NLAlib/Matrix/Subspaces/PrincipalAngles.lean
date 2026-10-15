@@ -149,27 +149,6 @@ section Invariance
 
 variable {m p' q' : Type*} [Fintype m] [Fintype p'] [Fintype q']
 
-/-- The projector onto the column space of $\mathbf{Q}\mathbf{X}$, for $\mathbf{Q}$ with
-orthonormal columns:
-$\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$. -/
-private theorem HasOrthonormalCols.rangeProjector_mul [DecidableEq n] {Q : Matrix m n 𝕜}
-    (hQ : HasOrthonormalCols Q) (X : Matrix n p 𝕜) :
-    rangeProjector (Q * X) = Q * rangeProjector X * Qᴴ := by
-  have hP := isStarProjection_rangeProjector X
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_rangeProjector X).le
-  refine (IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩)
-    (le_antisymm ?_ ?_)).symm
-  · rw [Matrix.mul_assoc (Q * rangeProjector X), ← Matrix.mul_assoc Qᴴ,
-      hQ.conjTranspose_mul_cancel_left, ← Matrix.mul_assoc, Matrix.mul_assoc Q, hP.mul_self]
-  · rw [Matrix.IsHermitian, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
-      Matrix.conjTranspose_conjTranspose, hP.conjTranspose_eq, Matrix.mul_assoc]
-  · refine range_mulVecLin_le_iff_exists_mul.mpr ⟨C * Qᴴ, ?_⟩
-    rw [hC]
-    simp only [Matrix.mul_assoc]
-  · refine range_mulVecLin_le_iff_exists_mul.mpr ⟨Q * X, ?_⟩
-    rw [Matrix.mul_assoc, hQ.conjTranspose_mul_cancel_left, Matrix.mul_assoc,
-      rangeProjector_mul_self]
-
 /-- **Principal angles are invariant under an isometry of the ambient space**: multiplying both
 matrices on the left by a matrix $\mathbf{Q}$ with orthonormal columns, square or not, does not
 change the angles between their column spaces. [StewartSun1990, §I.5]. -/

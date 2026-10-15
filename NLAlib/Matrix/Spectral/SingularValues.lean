@@ -44,6 +44,8 @@ are padding, so an index quantified by `∃`, or by `∀` in a hypothesis, needs
   the subspaces attaining them.
 * `NLAlib.singularValues_last_mul_norm_le`: the smallest singular value bounds
   $\|\mathbf{A}\mathbf{x}\|$ below.
+* `NLAlib.singularValues_conjTranspose_mul_self`, `NLAlib.singularValues_mul_conjTranspose_self`:
+  the singular values of a Gram matrix are the squared singular values.
 -/
 
 @[expose] public section
@@ -538,5 +540,20 @@ theorem _root_.Matrix.PosSemidef.singularValues_eq_eigenvalue {A : Matrix n n �
     simp only [← sq, RCLike.ofReal_pow]
   · rw [eigenvalue_of_card_le _ (not_lt.mp hk), eigenvalue_of_card_le _ (not_lt.mp hk),
       zero_pow two_ne_zero]
+
+/-- **The singular values of the Gram matrix are the squared singular values**:
+$\sigma_k(\mathbf{A}^{\mathsf{H}}\mathbf{A}) = \sigma_k(\mathbf{A})^2$ for every index $k$,
+the zero padding included. Mathlib's `LinearMap.singularValues` has no such statement. -/
+theorem singularValues_conjTranspose_mul_self (A : Matrix m n 𝕜) (k : ℕ) :
+    singularValues (Aᴴ * A) k = singularValues A k ^ 2 := by
+  rw [(Matrix.posSemidef_conjTranspose_mul_self A).singularValues_eq_eigenvalue,
+    sq_singularValues]
+
+/-- The same for the other Gram matrix:
+$\sigma_k(\mathbf{A}\mathbf{A}^{\mathsf{H}}) = \sigma_k(\mathbf{A})^2$ for every index $k$. -/
+theorem singularValues_mul_conjTranspose_self (A : Matrix m n 𝕜) (k : ℕ) :
+    singularValues (A * Aᴴ) k = singularValues A k ^ 2 := by
+  rw [(Matrix.posSemidef_self_mul_conjTranspose A).singularValues_eq_eigenvalue,
+    sq_singularValues_eq_eigenvalue_mul_conjTranspose_self]
 
 end NLAlib

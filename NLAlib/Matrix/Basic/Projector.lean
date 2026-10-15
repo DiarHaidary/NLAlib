@@ -37,6 +37,8 @@ $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is treated in `NLAlib.Matrix.Basic.Comple
   the range of $\mathbf{Y}$ is inside the range of $\mathbf{B}$.
 * `NLAlib.HasOrthonormalCols.rangeProjector_eq`: for $\mathbf{Q}$ with orthonormal columns the
   projector is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
+* `NLAlib.HasOrthonormalCols.rangeProjector_mul`: equivariance,
+  $\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$.
 * `NLAlib.rangeProjector_eq_mul_inv_mul_conjTranspose`: the full-column-rank formula.
 * `NLAlib.toEuclideanLin_rangeProjector`: the bridge to Mathlib's `Submodule.starProjection`.
 -/
@@ -416,6 +418,28 @@ theorem HasOrthonormalCols.rangeProjector_eq [Fintype m] [Fintype n] [DecidableE
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : rangeProjector Q = Q * Qᴴ := by
   rw [← rangeProjector_mul_conjTranspose_self,
     hQ.isStarProjection_mul_conjTranspose.rangeProjector_eq]
+
+/-- The projector onto the column space of $\mathbf{Q}\mathbf{X}$, for $\mathbf{Q}$ with
+orthonormal columns:
+$\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$,
+the equivariance of the range projector under an isometry of the ambient space. -/
+theorem HasOrthonormalCols.rangeProjector_mul [Fintype m] [Fintype n] [Fintype p] [DecidableEq n]
+    {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (X : Matrix n p 𝕜) :
+    rangeProjector (Q * X) = Q * rangeProjector X * Qᴴ := by
+  have hP := isStarProjection_rangeProjector X
+  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_rangeProjector X).le
+  refine (IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩)
+    (le_antisymm ?_ ?_)).symm
+  · rw [Matrix.mul_assoc (Q * rangeProjector X), ← Matrix.mul_assoc Qᴴ,
+      hQ.conjTranspose_mul_cancel_left, ← Matrix.mul_assoc, Matrix.mul_assoc Q, hP.mul_self]
+  · rw [Matrix.IsHermitian, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_conjTranspose, hP.conjTranspose_eq, Matrix.mul_assoc]
+  · refine range_mulVecLin_le_iff_exists_mul.mpr ⟨C * Qᴴ, ?_⟩
+    rw [hC]
+    simp only [Matrix.mul_assoc]
+  · refine range_mulVecLin_le_iff_exists_mul.mpr ⟨Q * X, ?_⟩
+    rw [Matrix.mul_assoc, hQ.conjTranspose_mul_cancel_left, Matrix.mul_assoc,
+      rangeProjector_mul_self]
 
 /-- With full column rank, the range projector is
 $\mathbf{P}_{\mathbf{A}} =
