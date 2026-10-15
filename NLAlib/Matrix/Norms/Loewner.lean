@@ -12,10 +12,10 @@ public import NLAlib.Matrix.Norms.Compare
 /-!
 # Norm bounds as Loewner inequalities
 
-A spectral norm bound on a matrix `T` is a Loewner inequality on its Gram matrix, and for a
-Hermitian matrix it is a two-sided Loewner inequality on the matrix itself. These are the forms
-in which matrix concentration inequalities conclude and in which a subspace embedding is stated,
-so the lemmas here are the bridge between those layers and `specNorm`.
+A spectral norm bound on a matrix $\mathbf{T}$ is a Loewner inequality on its Gram matrix, and
+for a Hermitian matrix it is a two-sided Loewner inequality on the matrix itself. These are the
+forms in which matrix concentration inequalities conclude and in which a subspace embedding is
+stated, so the lemmas here are the bridge between those layers and the spectral norm (`specNorm`).
 
 A scalar multiple of the identity in a Loewner inequality is always written with the real scalar
 action, `(a : ℝ) • (1 : Matrix n n 𝕜)`.
@@ -23,15 +23,19 @@ action, `(a : ℝ) • (1 : Matrix n n 𝕜)`.
 ## Main results
 
 * `NLAlib.conjTranspose_mul_self_le_smul_one_iff`, `NLAlib.smul_one_le_conjTranspose_mul_self_iff`:
-  an upper or lower Loewner bound on `Tᴴ * T` is a bound on `‖T x‖ ^ 2` for every `x`.
-* `NLAlib.specNorm_sq_le_iff_conjTranspose_mul_self_le`: the upper bound in terms of `specNorm`.
+  an upper or lower Loewner bound on $\mathbf{T}^{\mathsf{H}}\mathbf{T}$ is a bound on
+  $\|\mathbf{T}\mathbf{x}\|^2$ for every $\mathbf{x}$.
+* `NLAlib.specNorm_sq_le_iff_conjTranspose_mul_self_le`: the upper bound in terms of
+  $\|\mathbf{T}\|_2$.
 * `NLAlib.mul_specNorm_sq_le_of_smul_one_le`, `NLAlib.mul_frobNorm_sq_le_of_smul_one_le`: a factor
   bounded below cannot shrink a norm by more than its lower bound.
-* `Matrix.IsHermitian.specNorm_le_iff`: for Hermitian `A`, `specNorm A ≤ c` iff
-  `-(c • 1) ≤ A ≤ c • 1`.
+* `Matrix.IsHermitian.specNorm_le_iff`: for Hermitian $\mathbf{A}$ and $c \ge 0$,
+  $\|\mathbf{A}\|_2 \le c$ iff $-c\mathbf{I} \preceq \mathbf{A} \preceq c\mathbf{I}$.
 * `NLAlib.one_sub_smul_one_le_conjTranspose_mul_self_of_specNorm_le`,
   `NLAlib.conjTranspose_mul_self_le_one_add_smul_one_of_specNorm_le`: from the Gram error
-  `specNorm (Tᴴ * T - 1) ≤ ε` to the Loewner bounds `(1 - ε) • 1 ≤ Tᴴ * T ≤ (1 + ε) • 1`.
+  $\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - \mathbf{I}\|_2 \le \varepsilon$ to the Loewner bounds
+  $(1 - \varepsilon)\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}
+  \preceq (1 + \varepsilon)\mathbf{I}$.
 * `Matrix.PosSemidef.specNorm_le_specNorm_of_le`: the spectral norm is monotone on the positive
   semidefinite cone.
 * `NLAlib.isHermitian_of_le_smul_one`, `NLAlib.isHermitian_of_smul_one_le`,
@@ -49,14 +53,17 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-! ### Quadratic forms -/
 
-/-- The quadratic form is bounded by the spectral norm: `|zᴴ A z| ≤ specNorm A * ‖z‖ ^ 2`.
+/-- The quadratic form is bounded by the spectral norm:
+$\lvert \mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z} \rvert \le \|\mathbf{A}\|_2 \|\mathbf{z}\|^2$.
 Port of `NLAlib.abs_re_star_dotProduct_mulVec_le_specNorm`. -/
 theorem norm_quadForm_le (A : Matrix n n 𝕜) (z : n → 𝕜) :
     ‖quadForm A z‖ ≤ specNorm A * ‖WithLp.toLp 2 z‖ ^ 2 := by
   refine (norm_star_dotProduct_mulVec_le A z z).trans_eq ?_
   ring
 
-/-- The real part of the quadratic form is bounded by the spectral norm. -/
+/-- The real part of the quadratic form is bounded by the spectral norm:
+$\lvert \operatorname{Re}(\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}) \rvert
+\le \|\mathbf{A}\|_2 \|\mathbf{z}\|^2$. -/
 theorem abs_re_quadForm_le (A : Matrix n n 𝕜) (z : n → 𝕜) :
     |RCLike.re (quadForm A z)| ≤ specNorm A * ‖WithLp.toLp 2 z‖ ^ 2 := by
   exact (RCLike.abs_re_le_norm _).trans (norm_quadForm_le A z)
@@ -64,9 +71,11 @@ theorem abs_re_quadForm_le (A : Matrix n n 𝕜) (z : n → 𝕜) :
 /-! ### Congruence -/
 
 omit [Fintype n] in
-/-- **Congruence preserves the Loewner order**, for a factor of any shape: if `G ≤ H` then
-`Xᴴ * G * X ≤ Xᴴ * H * X`. This is Mathlib's `Matrix.PosSemidef.conjTranspose_mul_mul_same`
-applied to `H - G`. [HornJohnson2013, §7.7]. -/
+/-- **Congruence preserves the Loewner order**, for a factor of any shape: if
+$\mathbf{G} \preceq \mathbf{H}$ then
+$\mathbf{X}^{\mathsf{H}}\mathbf{G}\mathbf{X} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{H}\mathbf{X}$.
+This is Mathlib's `Matrix.PosSemidef.conjTranspose_mul_mul_same` applied to
+$\mathbf{H} - \mathbf{G}$. [HornJohnson2013, §7.7]. -/
 theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul [Finite n] {G H : Matrix m m 𝕜}
     (h : G ≤ H) (X : Matrix m n 𝕜) : Xᴴ * G * X ≤ Xᴴ * H * X := by
   rw [Matrix.le_iff] at h ⊢
@@ -76,23 +85,26 @@ theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul [Finite n] {G H : Matrix 
 /-! ### Multiples of the identity -/
 
 omit [Fintype n] in
-/-- A matrix below a real multiple of the identity in the Loewner order is Hermitian. A Loewner
-bound against `b • 1` therefore needs no separate Hermitian hypothesis. -/
+/-- A matrix below a real multiple of the identity in the Loewner order is Hermitian: if
+$\mathbf{M} \preceq b\mathbf{I}$, $b$ real, then $\mathbf{M}$ is Hermitian. A Loewner bound against
+$b\mathbf{I}$ therefore needs no separate Hermitian hypothesis. -/
 theorem isHermitian_of_le_smul_one [DecidableEq n] {M : Matrix n n 𝕜} {b : ℝ}
     (h : M ≤ b • (1 : Matrix n n 𝕜)) : M.IsHermitian := by
   have h' := (isHermitian_real_smul_one (𝕜 := 𝕜) (n := n) b).sub (Matrix.le_iff.mp h).isHermitian
   rwa [sub_sub_cancel] at h'
 
 omit [Fintype n] in
-/-- A matrix above a real multiple of the identity in the Loewner order is Hermitian. -/
+/-- A matrix above a real multiple of the identity in the Loewner order is Hermitian: if
+$a\mathbf{I} \preceq \mathbf{M}$, $a$ real, then $\mathbf{M}$ is Hermitian. -/
 theorem isHermitian_of_smul_one_le [DecidableEq n] {M : Matrix n n 𝕜} {a : ℝ}
     (h : a • (1 : Matrix n n 𝕜) ≤ M) : M.IsHermitian := by
   have h' := (Matrix.le_iff.mp h).isHermitian.add (isHermitian_real_smul_one (𝕜 := 𝕜) (n := n) a)
   rwa [sub_add_cancel] at h'
 
 omit [Fintype n] in
-/-- A real diagonal matrix is above `c • 1` in the Loewner order exactly when its entries are at
-least `c`. -/
+/-- A real diagonal matrix is above $c\mathbf{I}$ in the Loewner order exactly when its entries
+are at least $c$: $c\mathbf{I} \preceq \operatorname{diag}(\mathbf{d})$ iff $c \le \mathbf{d}_i$
+for all $i$. -/
 theorem smul_one_le_diagonal_iff [DecidableEq n] {d : n → ℝ} {c : ℝ} :
     c • (1 : Matrix n n 𝕜) ≤ Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) ↔ ∀ i, c ≤ d i := by
   have e : (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) - c • (1 : Matrix n n 𝕜) =
@@ -106,7 +118,8 @@ theorem smul_one_le_diagonal_iff [DecidableEq n] {d : n → ℝ} {c : ℝ} :
   exact forall_congr' fun i => by rw [RCLike.ofReal_nonneg, sub_nonneg]
 
 omit [Fintype n] in
-/-- Real multiples of the identity are ordered as their scalars. -/
+/-- Real multiples of the identity are ordered as their scalars: $a \le b$ implies
+$a\mathbf{I} \preceq b\mathbf{I}$. -/
 theorem smul_one_le_smul_one [DecidableEq n] {a b : ℝ} (h : a ≤ b) :
     a • (1 : Matrix n n 𝕜) ≤ b • (1 : Matrix n n 𝕜) := by
   rw [Matrix.le_iff, ← sub_smul]
@@ -114,7 +127,7 @@ theorem smul_one_le_smul_one [DecidableEq n] {a b : ℝ} (h : a ≤ b) :
 
 omit [Fintype n] in
 /-- On a nonempty index type, real multiples of the identity are ordered exactly as their
-scalars. -/
+scalars: $a\mathbf{I} \preceq b\mathbf{I}$ iff $a \le b$. -/
 theorem smul_one_le_smul_one_iff [DecidableEq n] [Nonempty n] {a b : ℝ} :
     a • (1 : Matrix n n 𝕜) ≤ b • (1 : Matrix n n 𝕜) ↔ a ≤ b := by
   have e : b • (1 : Matrix n n 𝕜) = Matrix.diagonal fun _ => ((b : ℝ) : 𝕜) := by
@@ -126,7 +139,9 @@ theorem smul_one_le_smul_one_iff [DecidableEq n] [Nonempty n] {a b : ℝ} :
 
 /-! ### Gram matrices -/
 
-/-- An upper Loewner bound on the Gram matrix of `T` is an upper bound on `‖T x‖ ^ 2`. -/
+/-- An upper Loewner bound on the Gram matrix of $\mathbf{T}$ is an upper bound on
+$\|\mathbf{T}\mathbf{x}\|^2$: $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq a\mathbf{I}$ iff
+$\|\mathbf{T}\mathbf{x}\|^2 \le a \|\mathbf{x}\|^2$ for every $\mathbf{x}$. -/
 theorem conjTranspose_mul_self_le_smul_one_iff [DecidableEq n] {T : Matrix m n 𝕜} {a : ℝ} :
     Tᴴ * T ≤ a • (1 : Matrix n n 𝕜) ↔
       ∀ x, ‖WithLp.toLp 2 (T *ᵥ x)‖ ^ 2 ≤ a * ‖WithLp.toLp 2 x‖ ^ 2 := by
@@ -134,8 +149,10 @@ theorem conjTranspose_mul_self_le_smul_one_iff [DecidableEq n] {T : Matrix m n �
     (isHermitian_real_smul_one a)]
   simp only [quadForm_conjTranspose_mul_self, RCLike.ofReal_re, re_quadForm_real_smul_one]
 
-/-- A lower Loewner bound on the Gram matrix of `T` is a lower bound on `‖T x‖ ^ 2`. This is the
-form in which a one-sided subspace embedding is used vector by vector.
+/-- A lower Loewner bound on the Gram matrix of $\mathbf{T}$ is a lower bound on
+$\|\mathbf{T}\mathbf{x}\|^2$: $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ iff
+$a \|\mathbf{x}\|^2 \le \|\mathbf{T}\mathbf{x}\|^2$ for every $\mathbf{x}$. This is the form in
+which a one-sided subspace embedding is used vector by vector.
 Port of the hypothesis of `NLAlib.mul_specNorm_le_specNorm_mul_of_mulVec_sq_le`. -/
 theorem smul_one_le_conjTranspose_mul_self_iff [DecidableEq n] {T : Matrix m n 𝕜} {a : ℝ} :
     a • (1 : Matrix n n 𝕜) ≤ Tᴴ * T ↔
@@ -144,7 +161,8 @@ theorem smul_one_le_conjTranspose_mul_self_iff [DecidableEq n] {T : Matrix m n �
     (Matrix.isHermitian_conjTranspose_mul_self T)]
   simp only [quadForm_conjTranspose_mul_self, RCLike.ofReal_re, re_quadForm_real_smul_one]
 
-/-- The squared spectral norm of `T` is at most `a ≥ 0` exactly when `Tᴴ * T ≤ a • 1`. -/
+/-- The squared spectral norm of $\mathbf{T}$ is at most $a \ge 0$ exactly when
+$\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq a\mathbf{I}$. -/
 theorem specNorm_sq_le_iff_conjTranspose_mul_self_le [DecidableEq n] {T : Matrix m n 𝕜} {a : ℝ}
     (ha : 0 ≤ a) : specNorm T ^ 2 ≤ a ↔ Tᴴ * T ≤ a • (1 : Matrix n n 𝕜) := by
   rw [conjTranspose_mul_self_le_smul_one_iff, ← Real.le_sqrt (specNorm_nonneg T) ha,
@@ -152,12 +170,14 @@ theorem specNorm_sq_le_iff_conjTranspose_mul_self_le [DecidableEq n] {T : Matrix
   refine forall_congr' fun x => ?_
   rw [← sq_le_sq₀ (norm_nonneg _) (by positivity), mul_pow, Real.sq_sqrt ha]
 
-/-- The Gram matrix is below the squared spectral norm times the identity. -/
+/-- The Gram matrix is below the squared spectral norm times the identity:
+$\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq \|\mathbf{T}\|_2^2 \, \mathbf{I}$. -/
 theorem conjTranspose_mul_self_le_specNorm_sq_smul_one [DecidableEq n] (T : Matrix m n 𝕜) :
     Tᴴ * T ≤ (specNorm T ^ 2) • (1 : Matrix n n 𝕜) := by
   exact (specNorm_sq_le_iff_conjTranspose_mul_self_le (sq_nonneg _)).mp le_rfl
 
-/-- A factor `T` with `Tᴴ * T ≤ a • 1` enlarges the squared spectral norm by at most `a`. -/
+/-- A factor $\mathbf{T}$ with $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq a\mathbf{I}$ enlarges the
+squared spectral norm by at most $a$: $\|\mathbf{T}\mathbf{X}\|_2^2 \le a \|\mathbf{X}\|_2^2$. -/
 theorem specNorm_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m] {T : Matrix l m 𝕜}
     {a : ℝ} (h : Tᴴ * T ≤ a • (1 : Matrix m m 𝕜)) (X : Matrix m n 𝕜) :
     specNorm (T * X) ^ 2 ≤ a * specNorm X ^ 2 := by
@@ -181,8 +201,9 @@ theorem specNorm_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m] {T : Mat
     rw [hX, Matrix.mul_zero, specNorm_zero]
     norm_num
 
-/-- A factor `T` with `a • 1 ≤ Tᴴ * T` shrinks the squared spectral norm by at most `a`.
-Port of `NLAlib.mul_specNorm_le_specNorm_mul_of_mulVec_sq_le`, there over `ℝ` with the
+/-- A factor $\mathbf{T}$ with $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ shrinks the
+squared spectral norm by at most $a$: $a \|\mathbf{X}\|_2^2 \le \|\mathbf{T}\mathbf{X}\|_2^2$.
+Port of `NLAlib.mul_specNorm_le_specNorm_mul_of_mulVec_sq_le`, there over $\mathbb{R}$ with the
 hypothesis as a raw condition on vectors and the bound unsquared. -/
 theorem mul_specNorm_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {a : ℝ}
     (h : a • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) :
@@ -198,7 +219,9 @@ theorem mul_specNorm_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} 
       _ ≤ ‖WithLp.toLp 2 (T *ᵥ (X *ᵥ x))‖ ^ 2 := h _
       _ ≤ specNorm (T * X) ^ 2 := by gcongr
 
-/-- A factor `T` with `Tᴴ * T ≤ a • 1` enlarges the squared Frobenius norm by at most `a`. -/
+/-- A factor $\mathbf{T}$ with $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq a\mathbf{I}$ enlarges the
+squared Frobenius norm by at most $a$:
+$\|\mathbf{T}\mathbf{X}\|_{\mathsf{F}}^2 \le a \|\mathbf{X}\|_{\mathsf{F}}^2$. -/
 theorem frobNorm_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m] {T : Matrix l m 𝕜}
     {a : ℝ} (h : Tᴴ * T ≤ a • (1 : Matrix m m 𝕜)) (X : Matrix m n 𝕜) :
     frobNorm (T * X) ^ 2 ≤ a * frobNorm X ^ 2 := by
@@ -206,7 +229,9 @@ theorem frobNorm_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m] {T : Mat
   rw [frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, Finset.mul_sum]
   exact Finset.sum_le_sum fun j _ => h (X.col j)
 
-/-- A factor `T` with `a • 1 ≤ Tᴴ * T` shrinks the squared Frobenius norm by at most `a`.
+/-- A factor $\mathbf{T}$ with $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ shrinks the
+squared Frobenius norm by at most $a$:
+$a \|\mathbf{X}\|_{\mathsf{F}}^2 \le \|\mathbf{T}\mathbf{X}\|_{\mathsf{F}}^2$.
 Port of `NLAlib.mul_frobSq_le_frobSq_mul_of_mulVec_sq_le`. -/
 theorem mul_frobNorm_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {a : ℝ}
     (h : a • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) :
@@ -216,7 +241,8 @@ theorem mul_frobNorm_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} 
   exact Finset.sum_le_sum fun j _ => h (X.col j)
 
 /-- The unsquared form of `NLAlib.mul_specNorm_sq_le_of_smul_one_le`, for a lower bound written
-as a square. -/
+as a square: if $c \ge 0$ and $c^2\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ then
+$c \|\mathbf{X}\|_2 \le \|\mathbf{T}\mathbf{X}\|_2$. -/
 theorem mul_specNorm_le_of_sq_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {c : ℝ}
     (hc : 0 ≤ c) (h : (c ^ 2) • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) :
     c * specNorm X ≤ specNorm (T * X) := by
@@ -225,9 +251,11 @@ theorem mul_specNorm_le_of_sq_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} 
 
 /-! ### Hermitian matrices -/
 
-/-- For a Hermitian matrix and `c ≥ 0`, `specNorm A ≤ c` exactly when the real quadratic form is
-bounded by `c * ‖x‖ ^ 2`. Port of `NLAlib.specNorm_le_iff_abs_dotProduct_mulVec_le`, there over
-`ℝ`. -/
+/-- For a Hermitian matrix and $c \ge 0$, $\|\mathbf{A}\|_2 \le c$ exactly when the real quadratic
+form is bounded by $c \|\mathbf{x}\|^2$:
+$\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \rvert \le c
+\|\mathbf{x}\|^2$ for every $\mathbf{x}$. Port of `NLAlib.specNorm_le_iff_abs_dotProduct_mulVec_le`,
+there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.specNorm_le_iff_abs_re_quadForm_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : 0 ≤ c) :
     specNorm A ≤ c ↔ ∀ x, |RCLike.re (quadForm A x)| ≤ c * ‖WithLp.toLp 2 x‖ ^ 2 := by
@@ -243,8 +271,10 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_iff_abs_re_quadForm_le {A : Matrix
     abs_pow, abs_norm]
   exact div_le_of_le_mul₀ (sq_nonneg _) hc (h x.ofLp)
 
-/-- The spectral norm of a Hermitian matrix is attained by its quadratic form at a unit vector.
-Port of `NLAlib.exists_unit_abs_quadForm_eq_specNorm`, there over `ℝ`. -/
+/-- The spectral norm of a Hermitian matrix is attained by its quadratic form at a unit vector:
+on a nonempty index type there is $\mathbf{x}$ with $\|\mathbf{x}\| = 1$ and
+$\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \rvert = \|\mathbf{A}\|_2$.
+Port of `NLAlib.exists_unit_abs_quadForm_eq_specNorm`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.exists_norm_eq_one_and_abs_re_quadForm_eq_specNorm [Nonempty n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ x : n → 𝕜, ‖WithLp.toLp 2 x‖ = 1 ∧ |RCLike.re (quadForm A x)| = specNorm A := by
@@ -276,7 +306,8 @@ theorem _root_.Matrix.IsHermitian.exists_norm_eq_one_and_abs_re_quadForm_eq_spec
     rw [re_quadForm_eq_rayleighQuotient_mul, abs_mul, abs_pow, abs_norm]
     gcongr
 
-/-- The upper half of `Matrix.IsHermitian.specNorm_le_iff`. -/
+/-- The upper half of `Matrix.IsHermitian.specNorm_le_iff`: for Hermitian $\mathbf{A}$,
+$\|\mathbf{A}\|_2 \le c$ implies $\mathbf{A} \preceq c\mathbf{I}$. -/
 theorem _root_.Matrix.IsHermitian.le_smul_one_of_specNorm_le [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (h : specNorm A ≤ c) : A ≤ c • (1 : Matrix n n 𝕜) := by
   rw [hA.le_iff_re_quadForm_le (isHermitian_real_smul_one c)]
@@ -286,7 +317,8 @@ theorem _root_.Matrix.IsHermitian.le_smul_one_of_specNorm_le [DecidableEq n] {A 
     _ ≤ specNorm A * ‖WithLp.toLp 2 x‖ ^ 2 := abs_re_quadForm_le A x
     _ ≤ c * ‖WithLp.toLp 2 x‖ ^ 2 := by gcongr
 
-/-- The lower half of `Matrix.IsHermitian.specNorm_le_iff`. -/
+/-- The lower half of `Matrix.IsHermitian.specNorm_le_iff`: for Hermitian $\mathbf{A}$,
+$\|\mathbf{A}\|_2 \le c$ implies $-c\mathbf{I} \preceq \mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.neg_smul_one_le_of_specNorm_le [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {c : ℝ} (h : specNorm A ≤ c) :
     -(c • (1 : Matrix n n 𝕜)) ≤ A := by
@@ -297,18 +329,20 @@ theorem _root_.Matrix.IsHermitian.neg_smul_one_le_of_specNorm_le [DecidableEq n]
     _ ≤ -|RCLike.re (quadForm A x)| := neg_le_neg (abs_re_quadForm_le A x)
     _ ≤ RCLike.re (quadForm A x) := neg_abs_le _
 
-/-- A Hermitian matrix is below its spectral norm times the identity. -/
+/-- A Hermitian matrix is below its spectral norm times the identity:
+$\mathbf{A} \preceq \|\mathbf{A}\|_2 \, \mathbf{I}$. -/
 theorem _root_.Matrix.IsHermitian.le_specNorm_smul_one [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : A ≤ specNorm A • (1 : Matrix n n 𝕜) := by
   exact hA.le_smul_one_of_specNorm_le le_rfl
 
-/-- A Hermitian matrix is above minus its spectral norm times the identity. -/
+/-- A Hermitian matrix is above minus its spectral norm times the identity:
+$-\|\mathbf{A}\|_2 \, \mathbf{I} \preceq \mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.neg_specNorm_smul_one_le [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : -(specNorm A • (1 : Matrix n n 𝕜)) ≤ A := by
   exact hA.neg_smul_one_le_of_specNorm_le le_rfl
 
-/-- A Hermitian matrix sandwiched between `-(c • 1)` and `c • 1` has spectral norm at most `c`,
-for `c ≥ 0`. This is how a two-sided eigenvalue bound becomes a norm bound. -/
+/-- A Hermitian matrix sandwiched between $-c\mathbf{I}$ and $c\mathbf{I}$ has spectral norm at
+most $c$, for $c \ge 0$. This is how a two-sided eigenvalue bound becomes a norm bound. -/
 theorem _root_.Matrix.IsHermitian.specNorm_le_of_le_smul_one [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : 0 ≤ c) (h₁ : -(c • (1 : Matrix n n 𝕜)) ≤ A)
     (h₂ : A ≤ c • (1 : Matrix n n 𝕜)) : specNorm A ≤ c := by
@@ -320,7 +354,8 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_of_le_smul_one [DecidableEq n] {A 
   rw [re_quadForm_real_smul_one] at h₂'
   exact abs_le.mpr ⟨h₁', h₂'⟩
 
-/-- For a Hermitian matrix and `c ≥ 0`, `specNorm A ≤ c` exactly when `-(c • 1) ≤ A ≤ c • 1`.
+/-- For a Hermitian matrix and $c \ge 0$, $\|\mathbf{A}\|_2 \le c$ exactly when
+$-c\mathbf{I} \preceq \mathbf{A} \preceq c\mathbf{I}$.
 [HornJohnson2013, §7.7]. -/
 theorem _root_.Matrix.IsHermitian.specNorm_le_iff [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : 0 ≤ c) :
@@ -330,9 +365,10 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_iff [DecidableEq n] {A : Matrix n 
 
 /-! ### Gram matrices close to the identity -/
 
-/-- If the Gram matrix of `T` is within `ε` of the identity in spectral norm, then
-`(1 - ε) • 1 ≤ Tᴴ * T`. This turns the Gram-error form of a subspace embedding,
-`specNorm (Tᴴ * T - 1) ≤ ε`, into the lower Loewner bound that
+/-- If the Gram matrix of $\mathbf{T}$ is within $\varepsilon$ of the identity in spectral norm,
+then $(1 - \varepsilon)\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$. This turns the
+Gram-error form of a subspace embedding, $\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - \mathbf{I}\|_2 \le
+\varepsilon$, into the lower Loewner bound that
 `NLAlib.mul_specNorm_sq_le_of_smul_one_le` consumes. -/
 theorem one_sub_smul_one_le_conjTranspose_mul_self_of_specNorm_le [DecidableEq n]
     {T : Matrix m n 𝕜} {ε : ℝ} (h : specNorm (Tᴴ * T - 1) ≤ ε) :
@@ -342,9 +378,10 @@ theorem one_sub_smul_one_le_conjTranspose_mul_self_of_specNorm_le [DecidableEq n
   rw [sub_smul, one_smul, sub_le_iff_le_add]
   exact neg_le_sub_iff_le_add.mp (hH.neg_smul_one_le_of_specNorm_le h)
 
-/-- If the Gram matrix of `T` is within `ε` of the identity in spectral norm, then
-`Tᴴ * T ≤ (1 + ε) • 1`. This turns the Gram-error form of a subspace embedding,
-`specNorm (Tᴴ * T - 1) ≤ ε`, into the upper Loewner bound that
+/-- If the Gram matrix of $\mathbf{T}$ is within $\varepsilon$ of the identity in spectral norm,
+then $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq (1 + \varepsilon)\mathbf{I}$. This turns the
+Gram-error form of a subspace embedding, $\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - \mathbf{I}\|_2 \le
+\varepsilon$, into the upper Loewner bound that
 `NLAlib.specNorm_mul_sq_le_of_conjTranspose_mul_self_le` consumes. -/
 theorem conjTranspose_mul_self_le_one_add_smul_one_of_specNorm_le [DecidableEq n]
     {T : Matrix m n 𝕜} {ε : ℝ} (h : specNorm (Tᴴ * T - 1) ≤ ε) :
@@ -356,8 +393,8 @@ theorem conjTranspose_mul_self_le_one_add_smul_one_of_specNorm_le [DecidableEq n
 
 /-! ### Positive semidefinite matrices -/
 
-/-- For a positive semidefinite matrix and `c ≥ 0`, `specNorm A ≤ c` exactly when
-`A ≤ c • 1`. -/
+/-- For a positive semidefinite matrix and $c \ge 0$, $\|\mathbf{A}\|_2 \le c$ exactly when
+$\mathbf{A} \preceq c\mathbf{I}$. -/
 theorem _root_.Matrix.PosSemidef.specNorm_le_iff [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {c : ℝ} (hc : 0 ≤ c) :
     specNorm A ≤ c ↔ A ≤ c • (1 : Matrix n n 𝕜) := by
@@ -367,7 +404,8 @@ theorem _root_.Matrix.PosSemidef.specNorm_le_iff [DecidableEq n] {A : Matrix n n
   rw [abs_of_nonneg (hA.re_quadForm_nonneg x), ← re_quadForm_real_smul_one]
   exact re_quadForm_le_re_quadForm_of_le h x
 
-/-- The spectral norm is monotone on the positive semidefinite cone. -/
+/-- The spectral norm is monotone on the positive semidefinite cone: if
+$\mathbf{0} \preceq \mathbf{A} \preceq \mathbf{B}$ then $\|\mathbf{A}\|_2 \le \|\mathbf{B}\|_2$. -/
 theorem _root_.Matrix.PosSemidef.specNorm_le_specNorm_of_le {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (h : A ≤ B) : specNorm A ≤ specNorm B := by
   rw [hA.isHermitian.specNorm_le_iff_abs_re_quadForm_le (specNorm_nonneg B)]
@@ -378,7 +416,7 @@ theorem _root_.Matrix.PosSemidef.specNorm_le_specNorm_of_le {A B : Matrix n n �
     _ ≤ specNorm B * ‖WithLp.toLp 2 x‖ ^ 2 := abs_re_quadForm_le B x
 
 /-- The Frobenius norm of a positive semidefinite matrix is at most the real part of its
-trace. -/
+trace: $\|\mathbf{A}\|_{\mathsf{F}} \le \operatorname{Re} \operatorname{tr} \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.frobNorm_le_re_trace {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     frobNorm A ≤ RCLike.re A.trace := by
   rw [← sq_le_sq₀ (frobNorm_nonneg A) hA.re_trace_nonneg, frobNorm_sq_eq_sum, Matrix.trace,
@@ -386,7 +424,7 @@ theorem _root_.Matrix.PosSemidef.frobNorm_le_re_trace {A : Matrix n n 𝕜} (hA 
   exact Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => hA.norm_apply_sq_le i j
 
 /-- The spectral norm of a positive semidefinite matrix is at most the real part of its
-trace. -/
+trace: $\|\mathbf{A}\|_2 \le \operatorname{Re} \operatorname{tr} \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.specNorm_le_re_trace {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     specNorm A ≤ RCLike.re A.trace :=
   (specNorm_le_frobNorm A).trans hA.frobNorm_le_re_trace

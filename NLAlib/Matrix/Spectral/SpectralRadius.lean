@@ -12,12 +12,12 @@ public import NLAlib.Matrix.Spectral.Gershgorin
 /-!
 # The spectral radius of a matrix
 
-The spectral radius of a square matrix over `𝕜` is the largest modulus of a complex eigenvalue,
-`NLAlib.specRadius A`, defined through Mathlib's `spectralRadius` of the complexification. It is
-at most the spectral norm, with equality for normal matrices; it is invariant under similarity
-and under transposition; it is at most the largest row sum and the largest column sum; and it is
-sub-additive and sub-multiplicative on commuting matrices. The powers of a matrix are in
-`NLAlib.Matrix.Spectral.PowerBounds`.
+The spectral radius $\rho(\mathbf{A})$ of a square matrix over $\Bbbk$ is the largest modulus of
+a complex eigenvalue, `NLAlib.specRadius A`, defined through Mathlib's `spectralRadius` of the
+complexification. It is at most the spectral norm, with equality for normal matrices; it is
+invariant under similarity and under transposition; it is at most the largest row sum and the
+largest column sum; and it is sub-additive and sub-multiplicative on commuting matrices. The
+powers of a matrix are in `NLAlib.Matrix.Spectral.PowerBounds`.
 
 ## Main definitions
 
@@ -44,8 +44,8 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The **spectral radius** of a square matrix: the largest modulus of a complex eigenvalue, zero
-for a matrix of size zero. [HornJohnson2013, Definition 1.2.9]. -/
+/-- The **spectral radius** $\rho(\mathbf{A})$ of a square matrix: the largest modulus of a
+complex eigenvalue, zero for a matrix of size zero. [HornJohnson2013, Definition 1.2.9]. -/
 noncomputable def specRadius (A : Matrix n n 𝕜) : ℝ :=
   (spectralRadius ℂ (complexify A)).toReal
 
@@ -84,7 +84,7 @@ theorem norm_le_specRadius_of_mem_spectrum_complexify {A : Matrix n n 𝕜} {μ 
     (le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ (complexify A)) => (‖k‖₊ : ENNReal)) μ hμ)
   rwa [ENNReal.coe_toReal, coe_nnnorm] at h2
 
-/-- Over `ℂ` the spectral radius is Mathlib's `spectralRadius`. -/
+/-- Over $\mathbb{C}$ the spectral radius is Mathlib's `spectralRadius`. -/
 theorem specRadius_eq_toReal_spectralRadius (A : Matrix n n ℂ) :
     specRadius A = (spectralRadius ℂ A).toReal := by
   rw [specRadius, complexify_eq_self]
@@ -94,7 +94,7 @@ theorem specRadius_eq_toReal_spectralRadius (A : Matrix n n ℂ) :
 theorem specRadius_complexify (A : Matrix n n 𝕜) : specRadius (complexify A) = specRadius A := by
   rw [specRadius, complexify_eq_self, specRadius]
 
-/-- The spectral radius of the identity of positive size is one. -/
+/-- The spectral radius of the identity of positive size is one: $\rho(\mathbf{I}) = 1$. -/
 @[simp]
 theorem specRadius_one [Nonempty n] : specRadius (1 : Matrix n n 𝕜) = 1 := by
   rw [specRadius, complexify_one, spectrum.spectralRadius_one, ENNReal.toReal_one]
@@ -105,9 +105,10 @@ theorem norm_le_specRadius_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜} (h�
   rw [← RCLike.norm_toComplex]
   exact norm_le_specRadius_of_mem_spectrum_complexify (toComplex_mem_spectrum_complexify hμ)
 
-/-- **The spectral radius through a listing of the eigenvalues**: if `d`, indexed by any finite
-type, lists the complex eigenvalues of `A`, then `specRadius A ≤ c` exactly when every `‖d i‖` is
-at most `c`, for `c ≥ 0` (the hypothesis matters only for a matrix of size zero). -/
+/-- **The spectral radius through a listing of the eigenvalues**: if $\mathbf{d}$, indexed by any
+finite type, lists the complex eigenvalues of $\mathbf{A}$, then $\rho(\mathbf{A}) \le c$ exactly
+when $\lvert \mathbf{d}_i \rvert \le c$ for every $i$, for $c \ge 0$ (the hypothesis matters only
+for a matrix of size zero). -/
 theorem IsEigenvalueListing.specRadius_le_iff {A : Matrix n n 𝕜} {ι : Type*} [Fintype ι]
     {d : ι → ℂ} (hd : IsEigenvalueListing (complexify A) d) {c : ℝ} (hc : 0 ≤ c) :
     specRadius A ≤ c ↔ ∀ i, ‖d i‖ ≤ c := by
@@ -130,7 +131,8 @@ theorem exists_mem_spectrum_norm_eq_specRadius [Nonempty n] (A : Matrix n n 𝕜
   exact ⟨d i, hmem, le_antisymm (norm_le_specRadius_of_mem_spectrum_complexify hmem)
     ((hd.specRadius_le_iff (norm_nonneg _)).mpr hi)⟩
 
-/-- **The spectral radius is at most the spectral norm.** [HornJohnson2013, Theorem 5.6.9]. -/
+/-- **The spectral radius is at most the spectral norm**: $\rho(\mathbf{A}) \le \|\mathbf{A}\|_2$.
+[HornJohnson2013, Theorem 5.6.9]. -/
 theorem specRadius_le_specNorm (A : Matrix n n 𝕜) : specRadius A ≤ specNorm A := by
   have h := spectralRadius_complexify_ne_top A
   open scoped Matrix.Norms.L2Operator in
@@ -148,7 +150,8 @@ theorem specRadius_of_isEmpty [IsEmpty n] (A : Matrix n n 𝕜) : specRadius A =
   rw [← specNorm_zero (m := n) (n := n) (𝕜 := 𝕜), Subsingleton.elim 0 A]
   exact specRadius_le_specNorm A
 
-/-- The spectral radius of a power. -/
+/-- The spectral radius of a power: $\rho(\mathbf{A}^k) = \rho(\mathbf{A})^k$, on a nonempty index
+type. -/
 theorem specRadius_pow [Nonempty n] (A : Matrix n n 𝕜) (k : ℕ) :
     specRadius (A ^ k) = specRadius A ^ k := by
   obtain ⟨d, hd⟩ := exists_isEigenvalueListing (complexify A)
@@ -167,17 +170,19 @@ theorem specRadius_pow [Nonempty n] (A : Matrix n n 𝕜) (k : ℕ) :
     rw [hρ, ← norm_pow]
     exact norm_le_specRadius_of_isEigenvalueListing hk i
 
-/-- The spectral radius is invariant under similarity. -/
+/-- The spectral radius is invariant under similarity:
+$\rho(\mathbf{S}^{-1}\mathbf{A}\mathbf{S}) = \rho(\mathbf{A})$ for invertible $\mathbf{S}$. -/
 theorem specRadius_inv_mul_mul (A : Matrix n n 𝕜) {S : Matrix n n 𝕜} (hS : IsUnit S.det) :
     specRadius (S⁻¹ * A * S) = specRadius A := by
   obtain ⟨u, rfl⟩ := (Matrix.isUnit_iff_isUnit_det S).mpr hS
   exact specRadius_eq_of_charpoly_eq (Matrix.charpoly_units_conj' u A)
 
-/-- `A B` and `B A` have the same spectral radius. -/
+/-- $\mathbf{A}\mathbf{B}$ and $\mathbf{B}\mathbf{A}$ have the same spectral radius. -/
 theorem specRadius_mul_comm (A B : Matrix n n 𝕜) : specRadius (A * B) = specRadius (B * A) :=
   specRadius_eq_of_charpoly_eq (Matrix.charpoly_mul_comm A B)
 
-/-- **The spectral norm of a normal matrix is its spectral radius.**
+/-- **The spectral norm of a normal matrix is its spectral radius**:
+$\|\mathbf{A}\|_2 = \rho(\mathbf{A})$.
 [HornJohnson2013, §5.6]. -/
 theorem _root_.IsStarNormal.specNorm_eq_specRadius {A : Matrix n n 𝕜} (hA : IsStarNormal A) :
     specNorm A = specRadius A := by
@@ -190,7 +195,9 @@ theorem _root_.IsStarNormal.specNorm_eq_specRadius {A : Matrix n n 𝕜} (hA : I
   exact (hN.specNorm_le_iff hd (specRadius_nonneg A)).mpr
     (norm_le_specRadius_of_isEigenvalueListing hd)
 
-/-- The spectral radius is at most the largest row sum.
+/-- The spectral radius is at most the largest row sum: if
+$\sum_j \lvert \mathbf{A}_{i,j} \rvert \le c$ for every $i$, with $c \ge 0$, then
+$\rho(\mathbf{A}) \le c$.
 Port of `NLAlib.spectralRadius_le_max_row_sum`. -/
 theorem specRadius_le_of_forall_sum_le {A : Matrix n n 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ i, ∑ j, ‖A i j‖ ≤ c) : specRadius A ≤ c := by
@@ -221,14 +228,17 @@ theorem specRadius_conjTranspose (A : Matrix n n 𝕜) : specRadius Aᴴ = specR
   have h := spectralRadius_star_le (star (complexify A))
   rwa [star_star] at h
 
-/-- The spectral radius is at most the largest column sum.
+/-- The spectral radius is at most the largest column sum: if
+$\sum_i \lvert \mathbf{A}_{i,j} \rvert \le c$ for every $j$, with $c \ge 0$, then
+$\rho(\mathbf{A}) \le c$.
 Port of `NLAlib.spectralRadius_le_max_column_sum`. -/
 theorem specRadius_le_of_forall_sum_col_le {A : Matrix n n 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ j, ∑ i, ‖A i j‖ ≤ c) : specRadius A ≤ c := by
   rw [← specRadius_transpose]
   exact specRadius_le_of_forall_sum_le hc h
 
-/-- The spectral radius of a sum of commuting matrices is at most the sum. -/
+/-- The spectral radius of a sum of commuting matrices is at most the sum:
+$\rho(\mathbf{A} + \mathbf{B}) \le \rho(\mathbf{A}) + \rho(\mathbf{B})$. -/
 theorem specRadius_add_le_of_commute {A B : Matrix n n 𝕜} (h : Commute A B) :
     specRadius (A + B) ≤ specRadius A + specRadius B := by
   obtain ⟨a, b, ha, hb, hab, -⟩ :=
@@ -239,7 +249,8 @@ theorem specRadius_add_le_of_commute {A B : Matrix n n 𝕜} (h : Commute A B) :
   exact (norm_add_le _ _).trans (add_le_add (norm_le_specRadius_of_isEigenvalueListing ha i)
     (norm_le_specRadius_of_isEigenvalueListing hb i))
 
-/-- The spectral radius of a product of commuting matrices is at most the product. -/
+/-- The spectral radius of a product of commuting matrices is at most the product:
+$\rho(\mathbf{A}\mathbf{B}) \le \rho(\mathbf{A}) \, \rho(\mathbf{B})$. -/
 theorem specRadius_mul_le_of_commute {A B : Matrix n n 𝕜} (h : Commute A B) :
     specRadius (A * B) ≤ specRadius A * specRadius B := by
   obtain ⟨a, b, ha, hb, -, hab⟩ :=
@@ -264,8 +275,10 @@ private theorem specRadius_lt_of_forall_sum_lt {A : Matrix n n 𝕜} {c : ℝ} (
     refine hi.trans_lt ((Finset.sum_congr rfl fun l _ => ?_).trans_lt (h i))
     rw [complexify_apply, RCLike.norm_toComplex]
 
-/-- **The Jacobi iteration converges for strictly diagonally dominant matrices**: the iteration
-matrix `1 - D⁻¹ A`, with `D` the diagonal of `A`, has spectral radius less than one.
+/-- **The Jacobi iteration converges for strictly diagonally dominant matrices**: if
+$\sum_{j \ne i} \lvert \mathbf{A}_{i,j} \rvert < \lvert \mathbf{A}_{i,i} \rvert$ for every $i$,
+the iteration matrix $\mathbf{I} - \mathbf{D}^{-1}\mathbf{A}$, with $\mathbf{D}$ the diagonal of
+$\mathbf{A}$, has spectral radius less than one.
 [GolubVanLoan2013, Theorem 11.2.2]; [Saad2003, Theorem 4.9].
 Result: jacobi-convergence -/
 theorem specRadius_one_sub_inv_diagonal_mul_lt_one {A : Matrix n n 𝕜}

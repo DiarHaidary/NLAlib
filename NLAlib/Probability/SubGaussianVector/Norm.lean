@@ -12,20 +12,23 @@ public import NLAlib.Probability.SubGaussianVector.Basic
 /-!
 # The squared norm of a sub-Gaussian random vector
 
-For a real sub-Gaussian vector `X` with proxy `c`, `E exp (θ ‖X‖²)` is at most the Laplace
-transform of `c χ²_n`, and the upper tail of `‖X‖²` is the Laurent–Massart bound
-`P(c (n + 2√(n t) + 2t) ≤ ‖X‖²) ≤ e^{-t}` (Hsu, Kakade and Zhang). For independent sub-Gaussian
-coordinates, the two-sided tail of `‖X‖²` about its mean is Bernstein's inequality for the
-centred squares.
+For a real sub-Gaussian vector $\mathbf{x}$ with proxy $c$, $\mathbb{E} e^{\theta \|\mathbf{x}\|^2}$
+is at most the Laplace transform of $c \chi^2_n$, and the upper tail of $\|\mathbf{x}\|^2$ is the
+Laurent–Massart bound
+$\mathbb{P}(\|\mathbf{x}\|^2 \ge c (n + 2\sqrt{n t} + 2t)) \le e^{-t}$ (Hsu, Kakade and Zhang).
+For independent sub-Gaussian coordinates, the two-sided tail of $\|\mathbf{x}\|^2$ about its mean
+is Bernstein's inequality for the centred squares.
 
-The statements are over `ℝ`: the proofs linearise with a standard Gaussian vector of the same
-dimension (`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), which exists over `ℝ` only in
-this library for now; the complex versions are the real ones in dimension `2 n`.
+The statements are over $\mathbb{R}$: the proofs linearise with a standard Gaussian vector of the
+same dimension (`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), which exists over
+$\mathbb{R}$ only in this library for now; the complex versions are the real ones in dimension
+$2 n$.
 
 ## Main results
 
-* `NLAlib.IsSubgaussianVector.integral_exp_mul_norm_sq_le`: `E exp (θ‖X‖²) ≤ (1 - 2θc)^{-n/2}`.
-* `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le`: the upper tail of `‖X‖²`.
+* `NLAlib.IsSubgaussianVector.integral_exp_mul_norm_sq_le`:
+  $\mathbb{E} e^{\theta \|\mathbf{x}\|^2} \le (1 - 2\theta c)^{-n/2}$.
+* `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le`: the upper tail of $\|\mathbf{x}\|^2$.
 * `NLAlib.measureReal_abs_norm_sq_sub_integral_ge_le`: the two-sided tail for independent
   coordinates.
 -/
@@ -38,12 +41,14 @@ open scoped NNReal
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
-  {X : Ω → n → ℝ} {c : ℝ≥0}
+  {x : Ω → n → ℝ} {c : ℝ≥0}
 
 private lemma norm_sq_eq (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = ∑ i, x i ^ 2 :=
   EuclideanSpace.real_norm_sq_eq _
 
-/-- The Laplace transform of `χ²_n`, as an upper bound. -/
+/-- The Laplace transform of $\chi^2_n$, as an upper bound: for a standard Gaussian vector
+$\mathbf{g}$ and $0 \le a < 1/2$,
+$\mathbb{E} e^{a \|\mathbf{g}\|^2} \le (1 - 2a)^{-\lvert n\rvert/2}$. -/
 private lemma lintegral_exp_mul_norm_sq_gaussianVector_le {a : ℝ} (ha0 : 0 ≤ a)
     (ha : 2 * a < 1) :
     ∫⁻ g, ENNReal.ofReal (rexp (a * ‖WithLp.toLp 2 g‖ ^ 2)) ∂(gaussianVector n) ≤
@@ -72,37 +77,37 @@ private lemma lintegral_exp_mul_norm_sq_gaussianVector_le {a : ℝ} (ha0 : 0 ≤
 
 namespace IsSubgaussianVector
 
-private lemma lintegral_exp_mul_norm_sq_le (h : IsSubgaussianVector X c μ) {θ : ℝ} (hθ0 : 0 ≤ θ)
+private lemma lintegral_exp_mul_norm_sq_le (h : IsSubgaussianVector x c μ) {θ : ℝ} (hθ0 : 0 ≤ θ)
     (hθ : 2 * θ * c < 1) :
-    ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2)) ∂μ ≤
+    ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2)) ∂μ ≤
       ENNReal.ofReal ((1 - 2 * θ * c) ^ (-(Fintype.card n / 2 : ℝ))) := by
   have := (h.hasSubgaussianMGF 0).isFiniteMeasure
   set s := √(2 * θ)
   have hs : s ^ 2 = 2 * θ := sq_sqrt (by linarith)
-  have hpt : ∀ x : n → ℝ, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 x‖ ^ 2)) =
-      ∫⁻ g, ENNReal.ofReal (rexp (s * (x ⬝ᵥ g))) ∂(gaussianVector n) := by
-    intro x
+  have hpt : ∀ v : n → ℝ, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 v‖ ^ 2)) =
+      ∫⁻ g, ENNReal.ofReal (rexp (s * (v ⬝ᵥ g))) ∂(gaussianVector n) := by
+    intro v
     rw [lintegral_exp_mul_dotProduct_gaussianVector, hs]
     ring_nf
-  have hXi : ∀ i, AEMeasurable (fun p : Ω × (n → ℝ) => X p.1 i) (μ.prod (gaussianVector n)) :=
+  have hxi : ∀ i, AEMeasurable (fun p : Ω × (n → ℝ) => x p.1 i) (μ.prod (gaussianVector n)) :=
     fun i => (aemeasurable_pi_iff.mp h.aemeasurable i).comp_fst
-  have hdot : AEMeasurable (fun p : Ω × (n → ℝ) => X p.1 ⬝ᵥ p.2) (μ.prod (gaussianVector n)) :=
+  have hdot : AEMeasurable (fun p : Ω × (n → ℝ) => x p.1 ⬝ᵥ p.2) (μ.prod (gaussianVector n)) :=
     Finset.aemeasurable_fun_sum _ fun i _ =>
-      (hXi i).mul ((measurable_pi_apply i).comp measurable_snd).aemeasurable
+      (hxi i).mul ((measurable_pi_apply i).comp measurable_snd).aemeasurable
   have hmeas : AEMeasurable (Function.uncurry fun ω (g : n → ℝ) =>
-      ENNReal.ofReal (rexp (s * (X ω ⬝ᵥ g)))) (μ.prod (gaussianVector n)) :=
+      ENNReal.ofReal (rexp (s * (x ω ⬝ᵥ g)))) (μ.prod (gaussianVector n)) :=
     (measurable_exp.comp_aemeasurable (hdot.const_mul s)).ennreal_ofReal
-  calc ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2)) ∂μ
-      = ∫⁻ ω, ∫⁻ g, ENNReal.ofReal (rexp (s * (X ω ⬝ᵥ g))) ∂(gaussianVector n) ∂μ := by
+  calc ∫⁻ ω, ENNReal.ofReal (rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2)) ∂μ
+      = ∫⁻ ω, ∫⁻ g, ENNReal.ofReal (rexp (s * (x ω ⬝ᵥ g))) ∂(gaussianVector n) ∂μ := by
         simp only [hpt]
-    _ = ∫⁻ g, ∫⁻ ω, ENNReal.ofReal (rexp (s * (X ω ⬝ᵥ g))) ∂μ ∂(gaussianVector n) :=
+    _ = ∫⁻ g, ∫⁻ ω, ENNReal.ofReal (rexp (s * (x ω ⬝ᵥ g))) ∂μ ∂(gaussianVector n) :=
         lintegral_lintegral_swap hmeas
     _ ≤ ∫⁻ g, ENNReal.ofReal (rexp ((θ * c) * ‖WithLp.toLp 2 g‖ ^ 2)) ∂(gaussianVector n) := by
         refine lintegral_mono fun g => ?_
         have hu := h.hasSubgaussianMGF g
         simp only [RCLike.re_to_real] at hu
-        have heq : ∫⁻ ω, ENNReal.ofReal (rexp (s * (X ω ⬝ᵥ g))) ∂μ =
-            ENNReal.ofReal (mgf (fun ω => g ⬝ᵥ X ω) μ s) := by
+        have heq : ∫⁻ ω, ENNReal.ofReal (rexp (s * (x ω ⬝ᵥ g))) ∂μ =
+            ENNReal.ofReal (mgf (fun ω => g ⬝ᵥ x ω) μ s) := by
           rw [mgf, ofReal_integral_eq_lintegral_ofReal (hu.integrable_exp_mul s)
             (ae_of_all _ fun _ => (exp_pos _).le)]
           simp only [dotProduct_comm g]
@@ -116,25 +121,27 @@ private lemma lintegral_exp_mul_norm_sq_le (h : IsSubgaussianVector X c μ) {θ 
         rw [h2]
         exact lintegral_exp_mul_norm_sq_gaussianVector_le (by positivity) (by linarith)
 
-/-- The mean squared norm of a sub-Gaussian vector is at most `c n`. -/
-theorem integral_norm_sq_le [IsProbabilityMeasure μ] (h : IsSubgaussianVector X c μ) :
-    ∫ ω, ‖WithLp.toLp 2 (X ω)‖ ^ 2 ∂μ ≤ c * Fintype.card n := by
-  have hi : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ := fun i => by
+/-- The mean squared norm of a sub-Gaussian vector with proxy $c$ is at most $c \lvert n\rvert$:
+$\mathbb{E}\|\mathbf{x}\|^2 \le c \lvert n\rvert$ under a probability measure. -/
+theorem integral_norm_sq_le [IsProbabilityMeasure μ] (h : IsSubgaussianVector x c μ) :
+    ∫ ω, ‖WithLp.toLp 2 (x ω)‖ ^ 2 ∂μ ≤ c * Fintype.card n := by
+  have hi : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ := fun i => by
     simpa only [RCLike.re_to_real] using h.hasSubgaussianMGF_re_apply i
   simp only [norm_sq_eq]
   rw [integral_finsetSum _ fun i _ => ((hi i).memLp 2).integrable_sq]
-  calc ∑ i, ∫ ω, X ω i ^ 2 ∂μ ≤ ∑ _i : n, (c : ℝ) :=
+  calc ∑ i, ∫ ω, x ω i ^ 2 ∂μ ≤ ∑ _i : n, (c : ℝ) :=
         Finset.sum_le_sum fun i _ => (hi i).integral_sq_le
     _ = c * Fintype.card n := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_comm]
 
-/-- `exp (θ ‖X‖²)` is integrable for a sub-Gaussian vector when `2 θ c < 1`. -/
-theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector X c μ) {θ : ℝ}
-    (hθ : 2 * θ * c < 1) : Integrable (fun ω => rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2)) μ := by
+/-- $e^{\theta \|\mathbf{x}\|^2}$ is integrable for a sub-Gaussian vector with proxy $c$ when
+$2 \theta c < 1$. -/
+theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector x c μ) {θ : ℝ}
+    (hθ : 2 * θ * c < 1) : Integrable (fun ω => rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2)) μ := by
   have := (h.hasSubgaussianMGF 0).isFiniteMeasure
-  have hcont : Continuous fun x : n → ℝ => rexp (θ * ‖WithLp.toLp 2 x‖ ^ 2) := by
+  have hcont : Continuous fun v : n → ℝ => rexp (θ * ‖WithLp.toLp 2 v‖ ^ 2) := by
     simp only [norm_sq_eq]
     fun_prop
-  have hm : AEStronglyMeasurable (fun ω => rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2)) μ :=
+  have hm : AEStronglyMeasurable (fun ω => rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2)) μ :=
     hcont.comp_aestronglyMeasurable h.aemeasurable.aestronglyMeasurable
   rcases le_or_gt θ 0 with hθ0 | hθ0
   · refine Integrable.mono' (integrable_const 1) hm (ae_of_all _ fun ω => ?_)
@@ -143,20 +150,21 @@ theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector X c μ) {θ : ℝ}
   · refine ⟨hm, (hasFiniteIntegral_iff_ofReal (ae_of_all _ fun _ => (exp_pos _).le)).mpr ?_⟩
     exact (h.lintegral_exp_mul_norm_sq_le hθ0.le hθ).trans_lt ENNReal.ofReal_lt_top
 
-/-- `E exp (θ ‖X‖²) ≤ (1 - 2θc)^{-n/2}` for a sub-Gaussian vector and `0 ≤ θ < 1 / (2c)`: the
-Laplace transform of `c χ²_n`, by Gaussian linearisation. -/
-theorem integral_exp_mul_norm_sq_le (h : IsSubgaussianVector X c μ) {θ : ℝ} (hθ0 : 0 ≤ θ)
+/-- $\int e^{\theta \|\mathbf{x}\|^2} \, d\mu \le (1 - 2\theta c)^{-\lvert n\rvert/2}$ for a
+sub-Gaussian vector with proxy $c$, $\theta \ge 0$ and $2\theta c < 1$: the Laplace transform of
+$c \chi^2_n$, by Gaussian linearisation. -/
+theorem integral_exp_mul_norm_sq_le (h : IsSubgaussianVector x c μ) {θ : ℝ} (hθ0 : 0 ≤ θ)
     (hθ : 2 * θ * c < 1) :
-    ∫ ω, rexp (θ * ‖WithLp.toLp 2 (X ω)‖ ^ 2) ∂μ ≤
+    ∫ ω, rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2) ∂μ ≤
       (1 - 2 * θ * c) ^ (-(Fintype.card n / 2 : ℝ)) := by
   rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => (exp_pos _).le)
     (h.integrable_exp_mul_norm_sq hθ).aestronglyMeasurable]
   exact ENNReal.toReal_le_of_le_ofReal (by positivity) (h.lintegral_exp_mul_norm_sq_le hθ0 hθ)
 
-private lemma measure_norm_sq_ge_le_aux (h : IsSubgaussianVector X c μ) (hc0 : (0 : ℝ) < c)
+private lemma measure_norm_sq_ge_le_aux (h : IsSubgaussianVector x c μ) (hc0 : (0 : ℝ) < c)
     {t : ℝ} (ht : 0 < t) (hd : (0 : ℝ) < Fintype.card n) :
     μ.real {ω | c * (Fintype.card n + 2 * √(Fintype.card n * t) + 2 * t) ≤
-      ‖WithLp.toLp 2 (X ω)‖ ^ 2} ≤ rexp (-t) := by
+      ‖WithLp.toLp 2 (x ω)‖ ^ 2} ≤ rexp (-t) := by
   have := (h.hasSubgaussianMGF 0).isFiniteMeasure
   set d : ℝ := (Fintype.card n : ℝ)
   set a := √(t / d)
@@ -181,7 +189,7 @@ private lemma measure_norm_sq_ge_le_aux (h : IsSubgaussianVector X c μ) (hc0 : 
     have : 0 < (1 + ε)⁻¹ := by positivity
     linarith
   refine (measure_ge_le_exp_mul_mgf _ hθ0 (h.integrable_exp_mul_norm_sq hθc)).trans ?_
-  have hmgf : mgf (fun ω => ‖WithLp.toLp 2 (X ω)‖ ^ 2) μ θ ≤ (1 - 2 * θ * c) ^ (-(d / 2)) :=
+  have hmgf : mgf (fun ω => ‖WithLp.toLp 2 (x ω)‖ ^ 2) μ θ ≤ (1 - 2 * θ * c) ^ (-(d / 2)) :=
     h.integral_exp_mul_norm_sq_le hθ0 hθc
   have h1ε : 0 < 1 + ε := by positivity
   have hlog : log (1 + ε) ≤ 2 * a := by
@@ -189,7 +197,7 @@ private lemma measure_norm_sq_ge_le_aux (h : IsSubgaussianVector X c μ) (hc0 : 
     have := quadratic_le_exp_of_nonneg (show 0 ≤ 2 * a by positivity)
     simp only [ε]
     nlinarith
-  calc rexp (-θ * (c * (1 + ε) * d)) * mgf (fun ω => ‖WithLp.toLp 2 (X ω)‖ ^ 2) μ θ
+  calc rexp (-θ * (c * (1 + ε) * d)) * mgf (fun ω => ‖WithLp.toLp 2 (x ω)‖ ^ 2) μ θ
       ≤ rexp (-θ * (c * (1 + ε) * d)) * (1 - 2 * θ * c) ^ (-(d / 2)) := by gcongr
     _ = rexp (-(d / 2) * (ε - log (1 + ε))) := by
       rw [h2θ, inv_rpow h1ε.le, ← rpow_neg h1ε.le, neg_neg, rpow_def_of_pos h1ε, ← exp_add]
@@ -203,15 +211,17 @@ private lemma measure_norm_sq_ge_le_aux (h : IsSubgaussianVector X c μ) (hc0 : 
       simp only [ε]
       nlinarith [mul_le_mul_of_nonneg_left hlog hd.le]
 
-/-- **The upper tail of `‖X‖²`** for a sub-Gaussian vector (Hsu, Kakade and Zhang 2012,
-Theorem 2.1 with `A = 1`; for a standard Gaussian vector this is Laurent and Massart's bound).
-`c ≠ 0` is needed for the non-strict event: with `c = 0` the vector is `0` almost surely and the
-event is everything.
+/-- **The upper tail of $\|\mathbf{x}\|^2$** for a real sub-Gaussian vector with proxy
+$c \ne 0$: for $t \ge 0$, with $n = \lvert n\rvert$,
+$$\mu\bigl(\|\mathbf{x}\|^2 \ge c\,(n + 2\sqrt{n t} + 2t)\bigr) \le e^{-t}\,.$$
+Hsu, Kakade and Zhang 2012, Theorem 2.1 with $\mathbf{A} = \mathbf{I}$; for a standard Gaussian
+vector this is Laurent and Massart's bound. $c \ne 0$ is needed for the non-strict event: with
+$c = 0$ the vector is $\mathbf{0}$ almost surely and the event is everything.
 Result: hsu-kakade-zhang -/
-theorem measure_norm_sq_ge_le (h : IsSubgaussianVector X c μ) (hc : c ≠ 0) {t : ℝ}
+theorem measure_norm_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {t : ℝ}
     (ht : 0 ≤ t) :
     μ.real {ω | c * (Fintype.card n + 2 * √(Fintype.card n * t) + 2 * t) ≤
-      ‖WithLp.toLp 2 (X ω)‖ ^ 2} ≤ rexp (-t) := by
+      ‖WithLp.toLp 2 (x ω)‖ ^ 2} ≤ rexp (-t) := by
   have := (h.hasSubgaussianMGF 0).isFiniteMeasure
   have hc0 : (0 : ℝ) < c := NNReal.coe_pos.mpr (pos_iff_ne_zero.mpr hc)
   rcases ht.eq_or_lt with rfl | htpos
@@ -223,7 +233,7 @@ theorem measure_norm_sq_ge_le (h : IsSubgaussianVector X c μ) (hc : c ≠ 0) {t
   rcases (Nat.cast_nonneg (α := ℝ) (Fintype.card n)).eq_or_lt with hd | hd
   · have : IsEmpty n := Fintype.card_eq_zero_iff.mp (by exact_mod_cast hd.symm)
     have hset : {ω | c * (Fintype.card n + 2 * √(Fintype.card n * t) + 2 * t) ≤
-        ‖WithLp.toLp 2 (X ω)‖ ^ 2} = ∅ := by
+        ‖WithLp.toLp 2 (x ω)‖ ^ 2} = ∅ := by
       ext ω
       simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_le, norm_sq_eq,
         Finset.univ_eq_empty, Finset.sum_empty, ← hd, zero_mul, sqrt_zero, mul_zero, zero_add]
@@ -234,22 +244,26 @@ theorem measure_norm_sq_ge_le (h : IsSubgaussianVector X c μ) (hc : c ≠ 0) {t
 
 end IsSubgaussianVector
 
-/-- The two-sided tail of `‖X‖²` about its mean for independent sub-Gaussian coordinates:
-Bernstein's inequality for the centred squares, whose variance proxy and scale are `32 c²` and
-`4 c`. -/
-theorem measureReal_abs_norm_sq_sub_integral_ge_le (hind : iIndepFun (fun i ω => X ω i) μ)
-    (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) {t : ℝ} (ht : 0 ≤ t) :
-    μ.real {ω | t ≤ |‖WithLp.toLp 2 (X ω)‖ ^ 2 - ∫ ω', ‖WithLp.toLp 2 (X ω')‖ ^ 2 ∂μ|} ≤
+/-- The two-sided tail of $\|\mathbf{x}\|^2$ about its mean for a real vector with independent
+coordinates, each sub-Gaussian with proxy $c$: for $t \ge 0$,
+$$\mu\bigl(\bigl\lvert \|\mathbf{x}\|^2 - \mathbb{E}\|\mathbf{x}\|^2 \bigr\rvert \ge t\bigr)
+\le 2 \exp\Bigl(-\min\Bigl(\frac{t^2}{2 \lvert n\rvert \cdot 32 c^2}, \frac{t}{2 \cdot 4c}\Bigr)
+\Bigr)\,,$$
+Bernstein's inequality for the centred squares, whose variance proxy and scale are $32 c^2$ and
+$4 c$. -/
+theorem measureReal_abs_norm_sq_sub_integral_ge_le (hind : iIndepFun (fun i ω => x ω i) μ)
+    (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | t ≤ |‖WithLp.toLp 2 (x ω)‖ ^ 2 - ∫ ω', ‖WithLp.toLp 2 (x ω')‖ ^ 2 ∂μ|} ≤
       2 * rexp (-min (t ^ 2 / (2 * (Fintype.card n * (32 * c ^ 2)))) (t / (2 * (4 * c)))) := by
   have := hind.isProbabilityMeasure
-  have hint : ∀ i, Integrable (fun ω => X ω i ^ 2) μ := fun i => ((h i).memLp 2).integrable_sq
-  have hind' : iIndepFun (fun i ω => X ω i ^ 2 - ∫ ω', X ω' i ^ 2 ∂μ) μ :=
-    hind.comp (fun i x => x ^ 2 - ∫ ω', X ω' i ^ 2 ∂μ) fun i => by fun_prop
+  have hint : ∀ i, Integrable (fun ω => x ω i ^ 2) μ := fun i => ((h i).memLp 2).integrable_sq
+  have hind' : iIndepFun (fun i ω => x ω i ^ 2 - ∫ ω', x ω' i ^ 2 ∂μ) μ :=
+    hind.comp (fun i y => y ^ 2 - ∫ ω', x ω' i ^ 2 ∂μ) fun i => by fun_prop
   have hsum := (HasSubexponentialMGF.sum_of_iIndepFun hind' (s := Finset.univ)
     fun i _ => (h i).hasSubexponentialMGF_sq_sub_integral).mono le_rfl
       (Finset.sup_le fun i _ => le_rfl)
-  have hfun : ∀ ω, ‖WithLp.toLp 2 (X ω)‖ ^ 2 - ∫ ω', ‖WithLp.toLp 2 (X ω')‖ ^ 2 ∂μ =
-      ∑ i, (X ω i ^ 2 - ∫ ω', X ω' i ^ 2 ∂μ) := by
+  have hfun : ∀ ω, ‖WithLp.toLp 2 (x ω)‖ ^ 2 - ∫ ω', ‖WithLp.toLp 2 (x ω')‖ ^ 2 ∂μ =
+      ∑ i, (x ω i ^ 2 - ∫ ω', x ω' i ^ 2 ∂μ) := by
     intro ω
     simp only [norm_sq_eq]
     rw [integral_finsetSum _ fun i _ => hint i, Finset.sum_sub_distrib]

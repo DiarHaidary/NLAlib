@@ -10,10 +10,12 @@ public import NLAlib.Matrix.Factorizations.QR
 /-!
 # Householder reflectors and Householder QR
 
-The Householder reflector of a vector `v` is `1 - (2 / ‖v‖²) v vᴴ`: Hermitian, unitary, an
-involution, with `v ↦ -v` and the orthogonal complement of `v` fixed. For every vector `x` and
-coordinate `i₀` there is a reflector sending `x` to a multiple of the coordinate vector `e_{i₀}`;
-`NLAlib.householderVector` is the numerically stable choice of `v`.
+The Householder reflector of a vector $\mathbf{v}$ is
+$\mathbf{I} - (2 / \|\mathbf{v}\|^2) \mathbf{v}\mathbf{v}^{\mathsf{H}}$: Hermitian, unitary, an
+involution, sending $\mathbf{v}$ to $-\mathbf{v}$ and fixing the orthogonal complement of
+$\mathbf{v}$. For every vector $\mathbf{x}$ and coordinate $i_0$ there is a reflector sending
+$\mathbf{x}$ to a multiple of the coordinate vector $\mathbf{e}_{i_0}$;
+`NLAlib.householderVector` is the numerically stable choice of $\mathbf{v}$.
 
 Householder QR applies such reflectors to clear the columns of a matrix below the diagonal. It is
 defined for matrices indexed by `Fin m` and `Fin n` and never breaks down.
@@ -21,7 +23,8 @@ defined for matrices indexed by `Fin m` and `Fin n` and never breaks down.
 ## Main definitions
 
 * `NLAlib.householder`: the reflector of a vector (the identity for the zero vector).
-* `NLAlib.householderVector`: the vector whose reflector sends `x` to a multiple of `e_{i₀}`.
+* `NLAlib.householderVector`: the vector whose reflector sends $\mathbf{x}$ to a multiple of
+  $\mathbf{e}_{i_0}$.
 * `NLAlib.householderQ`, `NLAlib.householderR`: the factors computed by Householder QR.
 
 ## Main results
@@ -43,9 +46,11 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m : Type*} [Fintype m] [DecidableEq m]
 
 /-! ### Reflectors -/
 
-/-- The **Householder reflector** of `v`: `1 - (2 / ‖v‖²) v vᴴ`. For `v = 0` it is the identity.
+/-- The **Householder reflector** of $\mathbf{v}$:
+$\mathbf{I} - (2 / \|\mathbf{v}\|^2) \mathbf{v}\mathbf{v}^{\mathsf{H}}$. For
+$\mathbf{v} = \mathbf{0}$ it is the identity.
 [GolubVanLoan2013, §5.1.2]; [TrefethenBau1997, Lecture 10].
-Port of `NLAlib.householder`, there over `ℝ`. -/
+Port of `NLAlib.householder`, there over $\mathbb{R}$. -/
 noncomputable def householder (v : m → 𝕜) : Matrix m m 𝕜 :=
   1 - ((2 / ‖WithLp.toLp 2 v‖ ^ 2 : ℝ) : 𝕜) • Matrix.vecMulVec v (star v)
 
@@ -58,7 +63,9 @@ private theorem star_ofReal (r : ℝ) : star (r : 𝕜) = r := by
 theorem householder_zero : householder (0 : m → 𝕜) = 1 := by
   rw [householder, Matrix.zero_vecMulVec, smul_zero, sub_zero]
 
-/-- The action of a reflector: `H x = x - (2 vᴴx / ‖v‖²) v`.
+/-- The action of the reflector $\mathbf{H}$ of $\mathbf{v}$:
+$\mathbf{H}\mathbf{x} = \mathbf{x} - (2\, \mathbf{v}^{\mathsf{H}}\mathbf{x} / \|\mathbf{v}\|^2)
+\mathbf{v}$.
 Port of `NLAlib.householder_mulVec`. -/
 theorem householder_mulVec (v x : m → 𝕜) :
     householder v *ᵥ x = x - ((2 / ‖WithLp.toLp 2 v‖ ^ 2 : ℝ) : 𝕜) • (star v ⬝ᵥ x) • v := by
@@ -99,7 +106,8 @@ omit [DecidableEq m] in
 private theorem norm_toLp_sq_ne_zero {v : m → 𝕜} (hv : v ≠ 0) : ‖WithLp.toLp 2 v‖ ^ 2 ≠ 0 :=
   pow_ne_zero 2 (norm_ne_zero_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr hv))
 
-/-- A reflector negates its vector. Port of `NLAlib.householder_mulVec_self`. -/
+/-- A reflector negates its vector: $\mathbf{H}\mathbf{v} = -\mathbf{v}$.
+Port of `NLAlib.householder_mulVec_self`. -/
 theorem householder_mulVec_self (v : m → 𝕜) : householder v *ᵥ v = -v := by
   rw [householder_mulVec, EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, smul_smul,
     ← RCLike.ofReal_mul]
@@ -108,13 +116,15 @@ theorem householder_mulVec_self (v : m → 𝕜) : householder v *ᵥ v = -v := 
   · rw [div_mul_cancel₀ _ (norm_toLp_sq_ne_zero hv), RCLike.ofReal_ofNat, two_smul]
     abel
 
-/-- A reflector fixes the vectors orthogonal to its vector.
+/-- A reflector fixes the vectors orthogonal to its vector: if
+$\mathbf{v}^{\mathsf{H}}\mathbf{w} = 0$ then $\mathbf{H}\mathbf{w} = \mathbf{w}$.
 Port of `NLAlib.householder_mulVec_of_dotProduct_eq_zero`. -/
 theorem householder_mulVec_of_dotProduct_eq_zero {v w : m → 𝕜} (h : star v ⬝ᵥ w = 0) :
     householder v *ᵥ w = w := by
   rw [householder_mulVec, h, zero_smul, smul_zero, sub_zero]
 
-/-- The reflector depends only on the direction of its vector. -/
+/-- The reflector depends only on the direction of its vector: the reflectors of
+$c\mathbf{v}$, $c \ne 0$, and of $\mathbf{v}$ agree. -/
 theorem householder_smul {c : 𝕜} (hc : c ≠ 0) (v : m → 𝕜) :
     householder (c • v) = householder v := by
   have hn : ‖WithLp.toLp 2 (c • v)‖ ^ 2 = ‖WithLp.toLp 2 v‖ ^ 2 * ‖c‖ ^ 2 := by
@@ -125,7 +135,7 @@ theorem householder_smul {c : 𝕜} (hc : c ≠ 0) (v : m → 𝕜) :
     smul_smul, smul_smul, mul_assoc, hcc, ← RCLike.ofReal_mul, ← div_div,
     div_mul_cancel₀ _ (pow_ne_zero 2 (norm_ne_zero_iff.mpr hc))]
 
-/-- The determinant of a reflector of a nonzero vector is `-1`. -/
+/-- The determinant of a reflector of a nonzero vector is $-1$. -/
 theorem det_householder {v : m → 𝕜} (hv : v ≠ 0) : (householder v).det = -1 := by
   rw [householder, sub_eq_add_neg, ← neg_smul, ← Matrix.smul_vecMulVec, Matrix.vecMulVec_eq Unit,
     Matrix.det_one_add_replicateCol_mul_replicateRow, dotProduct_smul,
@@ -135,9 +145,11 @@ theorem det_householder {v : m → 𝕜} (hv : v ≠ 0) : (householder v).det = 
 
 /-! ### Clearing a vector -/
 
-/-- The **Householder vector** of `x` at the coordinate `i₀`: `x + phase(x i₀) ‖x‖ e_{i₀}`, with
-`phase z = z / ‖z‖` and `phase 0 = 1`. The sign avoids cancellation.
-[GolubVanLoan2013, §5.1.3]. Port of `NLAlib.householderVector`, there over `ℝ`. -/
+/-- The **Householder vector** of $\mathbf{x}$ at the coordinate $i_0$:
+$\mathbf{x} + \omega \|\mathbf{x}\| \mathbf{e}_{i_0}$, with the phase
+$\omega = \mathbf{x}_{i_0} / \lvert \mathbf{x}_{i_0} \rvert$, and $\omega = 1$ when
+$\mathbf{x}_{i_0} = 0$. The sign avoids cancellation.
+[GolubVanLoan2013, §5.1.3]. Port of `NLAlib.householderVector`, there over $\mathbb{R}$. -/
 noncomputable def householderVector (x : m → 𝕜) (i₀ : m) : m → 𝕜 :=
   x + ((if x i₀ = 0 then 1 else x i₀ / (‖x i₀‖ : 𝕜)) * (‖WithLp.toLp 2 x‖ : 𝕜)) • Pi.single i₀ 1
 
@@ -147,7 +159,7 @@ private theorem norm_phase (z : 𝕜) : ‖if z = 0 then 1 else z / (‖z‖ : �
   · exact norm_one
   · rw [norm_div, RCLike.norm_ofReal, abs_norm, div_self (norm_ne_zero_iff.mpr h)]
 
-/-- The conjugate phase of `z` times `z` is the modulus of `z`. -/
+/-- The conjugate phase of $z$ times $z$ is the modulus of $z$. -/
 private theorem star_phase_mul (z : 𝕜) :
     star (if z = 0 then 1 else z / (‖z‖ : 𝕜)) * z = (‖z‖ : 𝕜) := by
   split_ifs with h
@@ -156,7 +168,9 @@ private theorem star_phase_mul (z : 𝕜) :
     rw [star_div₀, star_ofReal, div_mul_eq_mul_div, RCLike.star_def, RCLike.conj_mul, pow_two,
       mul_div_assoc, div_self hz, mul_one]
 
-/-- **The Householder reflector clears a vector**: `H x = x - v`, a multiple of `e_{i₀}`.
+/-- **The Householder reflector clears a vector**: for the Householder vector $\mathbf{v}$ of
+$\mathbf{x}$ at $i_0$ and its reflector $\mathbf{H}$,
+$\mathbf{H}\mathbf{x} = \mathbf{x} - \mathbf{v}$, a multiple of $\mathbf{e}_{i_0}$.
 Port of `NLAlib.householder_mulVec_householderVector`. -/
 theorem householder_mulVec_householderVector (x : m → 𝕜) (i₀ : m) :
     householder (householderVector x i₀) *ᵥ x = x - householderVector x i₀ := by
@@ -198,13 +212,15 @@ theorem householder_mulVec_householderVector (x : m → 𝕜) (i₀ : m) :
       field_simp
     rw [smul_smul, hcoef, one_smul]
 
-/-- The cleared vector vanishes away from the chosen coordinate. -/
+/-- The cleared vector vanishes away from the chosen coordinate: $(\mathbf{H}\mathbf{x})_i = 0$
+for $i \ne i_0$. -/
 theorem householder_mulVec_householderVector_apply_of_ne (x : m → 𝕜) {i₀ i : m} (hi : i ≠ i₀) :
     (householder (householderVector x i₀) *ᵥ x) i = 0 := by
   rw [householder_mulVec_householderVector, householderVector, Pi.sub_apply, Pi.add_apply,
     Pi.smul_apply, Pi.single_eq_of_ne hi, smul_zero, add_zero, sub_self]
 
-/-- The cleared vector has the norm of `x` in the chosen coordinate. -/
+/-- The cleared vector has the norm of $\mathbf{x}$ in the chosen coordinate:
+$\lvert (\mathbf{H}\mathbf{x})_{i_0} \rvert = \|\mathbf{x}\|$. -/
 theorem norm_householder_mulVec_householderVector_apply (x : m → 𝕜) (i₀ : m) :
     ‖(householder (householderVector x i₀) *ᵥ x) i₀‖ = ‖WithLp.toLp 2 x‖ := by
   rw [householder_mulVec_householderVector, householderVector, Pi.sub_apply, Pi.add_apply,
@@ -217,15 +233,15 @@ section QR
 
 variable {m n : ℕ}
 
-/-- The reflector of step `k` of Householder QR: it clears column `k` of `W` below the diagonal
-and fixes the first `k` coordinates. Beyond the size of the matrix it is the identity. -/
+/-- The reflector of step $k$ of Householder QR: it clears column $k$ of $\mathbf{W}$ below the
+diagonal and fixes the first $k$ coordinates. Beyond the size of the matrix it is the identity. -/
 noncomputable def householderStep (W : Matrix (Fin m) (Fin n) 𝕜) (k : ℕ) :
     Matrix (Fin m) (Fin m) 𝕜 :=
   if h : k < m ∧ k < n then
     householder (householderVector (fun i => if k ≤ (i : ℕ) then W i ⟨k, h.2⟩ else 0) ⟨k, h.1⟩)
   else 1
 
-/-- The state of Householder QR after `k` steps: the accumulated unitary factor and the partially
+/-- The state of Householder QR after $k$ steps: the accumulated unitary factor and the partially
 triangularised matrix. -/
 noncomputable def householderState (A : Matrix (Fin m) (Fin n) 𝕜) :
     ℕ → Matrix (Fin m) (Fin m) 𝕜 × Matrix (Fin m) (Fin n) 𝕜
@@ -234,11 +250,19 @@ noncomputable def householderState (A : Matrix (Fin m) (Fin n) 𝕜) :
       ((householderState A k).1 * householderStep (householderState A k).2 k,
         householderStep (householderState A k).2 k * (householderState A k).2)
 
-/-- The unitary factor of Householder QR. Port of `NLAlib.householderQ`, there over `ℝ`. -/
+/-- The unitary factor of Householder QR of an $m \times n$ matrix $\mathbf{A}$: the
+$m \times m$ product $\mathbf{Q} = \mathbf{H}_0 \mathbf{H}_1 \cdots \mathbf{H}_{n-1}$ of the
+reflectors of the $n$ steps (`householderStep`, the identity at the steps $k \ge \min(m, n)$).
+It is unitary (`hasOrthonormalCols_householderQ`) and $\mathbf{Q}\mathbf{R} = \mathbf{A}$ for
+$\mathbf{R}$ = `householderR A` (`householderQ_mul_householderR`).
+Port of `NLAlib.householderQ`, there over $\mathbb{R}$. -/
 noncomputable def householderQ (A : Matrix (Fin m) (Fin n) 𝕜) : Matrix (Fin m) (Fin m) 𝕜 :=
   (householderState A n).1
 
-/-- The upper trapezoidal factor of Householder QR. Port of `NLAlib.householderR`. -/
+/-- The upper trapezoidal factor of Householder QR of an $m \times n$ matrix $\mathbf{A}$: the
+$m \times n$ matrix $\mathbf{R} = \mathbf{H}_{n-1} \cdots \mathbf{H}_1 \mathbf{H}_0 \mathbf{A}$ left
+after the reflectors of the $n$ steps have cleared each column below the diagonal
+(`isUpperTrapezoidal_householderR`). Port of `NLAlib.householderR`. -/
 noncomputable def householderR (A : Matrix (Fin m) (Fin n) 𝕜) : Matrix (Fin m) (Fin n) 𝕜 :=
   (householderState A n).2
 
@@ -271,7 +295,7 @@ private theorem householderState_fst_mul_snd (A : Matrix (Fin m) (Fin n) 𝕜) (
       householderStep_mul_self, Matrix.one_mul, ih]
 
 /-- One step of Householder QR keeps the columns already cleared and clears the next one: the
-reflector of step `k` fixes every vector supported on the first `k` coordinates. -/
+reflector of step $k$ fixes every vector supported on the first $k$ coordinates. -/
 private theorem householderStep_mul_apply_eq_zero {W : Matrix (Fin m) (Fin n) 𝕜} {k : ℕ}
     (hW : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < k → (j : ℕ) < (i : ℕ) → W i j = 0)
     {i : Fin m} {j : Fin n} (hjk : (j : ℕ) < k + 1) (hji : (j : ℕ) < (i : ℕ)) :
@@ -314,7 +338,7 @@ private theorem householderStep_mul_apply_eq_zero {W : Matrix (Fin m) (Fin n) �
       householder_mulVec_householderVector_apply_of_ne x hi, zero_add]
     exact if_pos (hjk' ▸ hji).le
 
-/-- After `k` steps of Householder QR the first `k` columns vanish below the diagonal. -/
+/-- After $k$ steps of Householder QR the first $k$ columns vanish below the diagonal. -/
 private theorem householderState_snd_apply_eq_zero (A : Matrix (Fin m) (Fin n) 𝕜) (k : ℕ)
     (i : Fin m) (j : Fin n) (hjk : (j : ℕ) < k) (hji : (j : ℕ) < (i : ℕ)) :
     (householderState A k).2 i j = 0 := by
@@ -328,7 +352,8 @@ theorem hasOrthonormalCols_householderQ (A : Matrix (Fin m) (Fin n) 𝕜) :
     HasOrthonormalCols (householderQ A) := by
   exact hasOrthonormalCols_householderState_fst A n
 
-/-- Householder QR factors the matrix. Port of `NLAlib.householderQ_mul_householderR`. -/
+/-- Householder QR factors the matrix: $\mathbf{Q}\mathbf{R} = \mathbf{A}$.
+Port of `NLAlib.householderQ_mul_householderR`. -/
 theorem householderQ_mul_householderR (A : Matrix (Fin m) (Fin n) 𝕜) :
     householderQ A * householderR A = A := by
   exact householderState_fst_mul_snd A n
@@ -339,7 +364,8 @@ theorem isUpperTrapezoidal_householderR (A : Matrix (Fin m) (Fin n) 𝕜) :
     IsUpperTrapezoidal (householderR A) := by
   exact fun i j hji => householderState_snd_apply_eq_zero A n i j j.2 hji
 
-/-- Householder QR gives the thin QR factorization of a tall matrix.
+/-- Householder QR gives the thin QR factorization of a tall matrix: for $n \le m$, the first
+$n$ columns of $\mathbf{Q}$ and the first $n$ rows of $\mathbf{R}$.
 Port of `NLAlib.isQR_householderQR`. -/
 theorem isQR_householder (A : Matrix (Fin m) (Fin n) 𝕜) (h : n ≤ m) :
     IsQR A ((householderQ A).submatrix id (Fin.castLE h))

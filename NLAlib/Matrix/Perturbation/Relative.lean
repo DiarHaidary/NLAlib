@@ -11,11 +11,14 @@ public import NLAlib.Matrix.Spectral.Weyl
 /-!
 # Multiplicative perturbations
 
-Bounds for the singular values, the pseudoinverse and the pseudo-condition number of `S * A` in
-terms of those of `A`, when the Gram matrices are comparable:
-`a • Aᴴ A ≤ (S A)ᴴ (S A) ≤ b • Aᴴ A`. This two-sided bound is what a subspace embedding
-guarantees, and the consequences here are what sketch-and-precondition and sketched least squares
-consume.
+Bounds for the singular values, the pseudoinverse and the pseudo-condition number of
+$\mathbf{S}\mathbf{A}$ in terms of those of $\mathbf{A}$, when the Gram matrices are comparable in
+the Loewner order:
+$$a \mathbf{A}^{\mathsf{H}}\mathbf{A}
+  \preceq (\mathbf{S}\mathbf{A})^{\mathsf{H}}(\mathbf{S}\mathbf{A})
+  \preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}.$$
+This two-sided bound is what a subspace embedding guarantees, and the consequences here are what
+sketch-and-precondition and sketched least squares consume.
 
 ## Main results
 
@@ -34,12 +37,15 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*} [Fintype l] [Fintype m] [Fintype n]
 
-/-- **Singular values under a lower Gram bound.** If `a • Aᴴ A ≤ Bᴴ B` then
-`a σ_i(A)² ≤ σ_i(B)²` for every `i`. With `B = S * A` this is the lower half of a subspace
-embedding, and the lower half of Ostrowski's theorem; the upper half for a product is
+/-- **Singular values under a lower Gram bound.** If
+$a \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq \mathbf{B}^{\mathsf{H}}\mathbf{B}$ for a real $a$, then
+$a \sigma_i(\mathbf{A})^2 \le \sigma_i(\mathbf{B})^2$ for every $i$. With
+$\mathbf{B} = \mathbf{S}\mathbf{A}$ this is the lower half of a subspace embedding, and the lower
+half of Ostrowski's theorem; the upper half for a product is
 `NLAlib.singularValues_mul_le_specNorm_mul`.
 [HornJohnson2013, Corollary 7.7.4 for the Gram matrices];
-[HornJohnson2013, Theorem 4.5.9 (Ostrowski) for the congruence `Aᴴ Sᴴ S A`]. -/
+[HornJohnson2013, Theorem 4.5.9 (Ostrowski)], for the congruence
+$\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{A}$. -/
 theorem mul_sq_singularValues_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ}
     (h : a • (Aᴴ * A) ≤ Bᴴ * B) (i : ℕ) :
     a * singularValues A i ^ 2 ≤ singularValues B i ^ 2 := by
@@ -49,8 +55,9 @@ theorem mul_sq_singularValues_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l 
     rwa [eigenvalue_real_smul _ ha, ← sq_singularValues, ← sq_singularValues] at hk
   · exact (mul_nonpos_of_nonpos_of_nonneg ha.le (sq_nonneg _)).trans (sq_nonneg _)
 
-/-- **Singular values under an upper Gram bound.** If `Bᴴ B ≤ b • Aᴴ A` then
-`σ_i(B)² ≤ b σ_i(A)²` for every `i`. -/
+/-- **Singular values under an upper Gram bound.** If
+$\mathbf{B}^{\mathsf{H}}\mathbf{B} \preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}$ for a real $b$, then
+$\sigma_i(\mathbf{B})^2 \le b \sigma_i(\mathbf{A})^2$ for every $i$. -/
 theorem sq_singularValues_le_mul_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {b : ℝ}
     (h : Bᴴ * B ≤ b • (Aᴴ * A)) (i : ℕ) :
     singularValues B i ^ 2 ≤ b * singularValues A i ^ 2 := by
@@ -67,7 +74,9 @@ theorem sq_singularValues_le_mul_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l 
     rw [Matrix.conjTranspose_mul_self_eq_zero.mp hB0, Matrix.conjTranspose_mul_self_eq_zero.mp hA0,
       singularValues_zero, singularValues_zero, Pi.zero_apply, zero_pow two_ne_zero, mul_zero]
 
-/-- A lower Gram bound with a positive constant does not lose rank. -/
+/-- A lower Gram bound with a positive constant does not lose rank: if $0 < a$ and
+$a \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq \mathbf{B}^{\mathsf{H}}\mathbf{B}$, then
+$\operatorname{rank} \mathbf{A} \le \operatorname{rank} \mathbf{B}$. -/
 theorem rank_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ} (ha : 0 < a)
     (h : a • (Aᴴ * A) ≤ Bᴴ * B) : A.rank ≤ B.rank := by
   refine Nat.le_of_not_gt fun hlt => ?_
@@ -77,7 +86,10 @@ theorem rank_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ}
   rw [hB, zero_pow two_ne_zero] at h'
   exact absurd h' (not_le.mpr (mul_pos ha (pow_pos hA 2)))
 
-/-- Comparable Gram matrices have the same rank. -/
+/-- Comparable Gram matrices have the same rank: if $0 < a$ and
+$a \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq \mathbf{B}^{\mathsf{H}}\mathbf{B}
+\preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}$, then
+$\operatorname{rank} \mathbf{B} = \operatorname{rank} \mathbf{A}$. -/
 theorem rank_eq_of_smul_le_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a b : ℝ}
     (ha : 0 < a) (h₁ : a • (Aᴴ * A) ≤ Bᴴ * B) (h₂ : Bᴴ * B ≤ b • (Aᴴ * A)) :
     B.rank = A.rank := by
@@ -89,8 +101,9 @@ theorem rank_eq_of_smul_le_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜
   exact absurd h (not_le.mpr (pow_pos hB 2))
 
 /-- Under a lower Gram bound the pseudoinverse is controlled:
-`‖B⁺‖₂² ≤ a⁻¹ ‖A⁺‖₂²` when `a • Aᴴ A ≤ Bᴴ B`, `0 < a`, and the rank of `B` is at most that of
-`A` (the two ranks are then equal). -/
+$\|\mathbf{B}^{+}\|_2^2 \le a^{-1} \|\mathbf{A}^{+}\|_2^2$ when
+$a \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq \mathbf{B}^{\mathsf{H}}\mathbf{B}$, $0 < a$, and the
+rank of $\mathbf{B}$ is at most that of $\mathbf{A}$ (the two ranks are then equal). -/
 theorem specNorm_pinv_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ}
     (ha : 0 < a) (h : a • (Aᴴ * A) ≤ Bᴴ * B) (hr : B.rank ≤ A.rank) :
     specNorm (pinv B) ^ 2 ≤ a⁻¹ * specNorm (pinv A) ^ 2 := by
@@ -105,8 +118,10 @@ theorem specNorm_pinv_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n �
     exact inv_anti₀ (mul_pos ha (pow_pos hA 2)) hle
 
 /-- **The pseudo-condition number under comparable Gram matrices**: if
-`a • Aᴴ A ≤ Bᴴ B ≤ b • Aᴴ A` with `0 < a`, then `κ(B) ≤ √(b / a) κ(A)`.
-With `B = S * A` this is the conditioning of a sketched matrix. -/
+$a \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq \mathbf{B}^{\mathsf{H}}\mathbf{B}
+\preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}$ with $0 < a$, then
+$\|\mathbf{B}\|_2 \|\mathbf{B}^{+}\|_2 \le \sqrt{b / a} \, \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$.
+With $\mathbf{B} = \mathbf{S}\mathbf{A}$ this is the conditioning of a sketched matrix. -/
 theorem pseudoConditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul {A : Matrix m n 𝕜}
     {B : Matrix l n 𝕜} {a b : ℝ} (ha : 0 < a) (h₁ : a • (Aᴴ * A) ≤ Bᴴ * B)
     (h₂ : Bᴴ * B ≤ b • (Aᴴ * A)) :

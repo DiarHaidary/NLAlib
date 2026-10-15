@@ -12,22 +12,22 @@ public import NLAlib.Matrix.Spectral.CourantFischer
 # Weyl's inequalities and eigenvalue perturbation
 
 Eigenvalues of Hermitian matrices are monotone in the Loewner order, subadditive in Weyl's sense,
-`1`-Lipschitz in the spectral norm, and move by at most `r` positions under a perturbation of
-rank `r`.
+$1$-Lipschitz in the spectral norm, and move by at most $r$ positions under a perturbation of
+rank $r$.
 
-`NLAlib.eigengap A k` is the gap `eigenvalue A (k - 1) - eigenvalue A k` separating the `k`
-largest eigenvalues from the rest; it is the quantity perturbation bounds for eigenspaces divide
-by.
+`NLAlib.eigengap A k` is the gap $\lambda_{k-1}(\mathbf{A}) - \lambda_k(\mathbf{A})$ separating the
+$k$ largest eigenvalues from the rest; it is the quantity perturbation bounds for eigenspaces
+divide by.
 
 ## Main definitions
 
-* `NLAlib.eigengap`: the gap below the `k` largest eigenvalues.
+* `NLAlib.eigengap`: the gap below the $k$ largest eigenvalues.
 
 ## Main results
 
 * `NLAlib.eigenvalue_le_eigenvalue_of_le`: monotonicity in the Loewner order.
 * `NLAlib.eigenvalue_add_le`, `NLAlib.le_eigenvalue_add`: Weyl's inequalities.
-* `NLAlib.abs_eigenvalue_sub_le`: eigenvalues are `1`-Lipschitz in the spectral norm.
+* `NLAlib.abs_eigenvalue_sub_le`: eigenvalues are $1$-Lipschitz in the spectral norm.
 * `NLAlib.eigenvalue_add_le_of_rank_le`, `NLAlib.eigenvalue_le_eigenvalue_add_of_rank_le`:
   interlacing under a low-rank perturbation.
 * `NLAlib.abs_eigengap_sub_le`: stability of the gap.
@@ -43,7 +43,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
 /-! ### Perturbations restricted to their kernel -/
 
-/-- The quadratic form of `A + B` agrees with that of `A` on the kernel of `B`. -/
+/-- The quadratic form of $\mathbf{A} + \mathbf{B}$ agrees with that of $\mathbf{A}$ on the kernel
+of $\mathbf{B}$. -/
 private theorem quadForm_add_of_mem_ker (A : Matrix n n 𝕜) {B : Matrix n n 𝕜} {x : n → 𝕜}
     (hx : x ∈ LinearMap.ker B.mulVecLin) : quadForm (A + B) x = quadForm A x := by
   rw [LinearMap.mem_ker, Matrix.mulVecLin_apply] at hx
@@ -51,8 +52,10 @@ private theorem quadForm_add_of_mem_ker (A : Matrix n n 𝕜) {B : Matrix n n �
 
 /-! ### Monotonicity -/
 
-/-- **Monotonicity of eigenvalues.** If `A ≤ B` in the Loewner order and `A` is Hermitian (then
-so is `B`), every eigenvalue of `A` is at most the corresponding eigenvalue of `B`.
+/-- **Monotonicity of eigenvalues.** If $\mathbf{A} \preceq \mathbf{B}$ in the Loewner order and
+$\mathbf{A}$ is Hermitian (then so is $\mathbf{B}$), every eigenvalue of $\mathbf{A}$ is at most
+the corresponding eigenvalue of $\mathbf{B}$: $\lambda_k(\mathbf{A}) \le \lambda_k(\mathbf{B})$
+for every $k$.
 [HornJohnson2013, Corollary 4.3.12].
 Port of `Matrix.IsHermitian.eigenvalues₀_le_eigenvalues₀_of_le`.
 Result: eigenvalue-monotonicity -/
@@ -67,7 +70,9 @@ theorem eigenvalue_le_eigenvalue_of_le {A B : Matrix n n 𝕜} (h : A ≤ B) (hA
     exact hB.le_eigenvalue_of_forall_mem S hS.ge fun x hx =>
       (hAS x hx).trans (re_quadForm_le_re_quadForm_of_le h x)
 
-/-- Adding a positive semidefinite matrix does not decrease any eigenvalue. -/
+/-- Adding a positive semidefinite matrix does not decrease any eigenvalue: for Hermitian
+$\mathbf{A}$ and $\mathbf{0} \preceq \mathbf{B}$,
+$\lambda_k(\mathbf{A}) \le \lambda_k(\mathbf{A} + \mathbf{B})$. -/
 theorem eigenvalue_le_eigenvalue_add_of_posSemidef {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.PosSemidef) (k : ℕ) : eigenvalue A k ≤ eigenvalue (A + B) k := by
   refine eigenvalue_le_eigenvalue_of_le (Matrix.le_iff.mpr ?_) hA k
@@ -75,9 +80,11 @@ theorem eigenvalue_le_eigenvalue_add_of_posSemidef {A B : Matrix n n 𝕜} (hA :
 
 /-! ### Weyl's inequalities -/
 
-/-- **Weyl's inequality.** For Hermitian `A`, `B` and `i + j` a valid index,
-`λ_{i+j}(A + B) ≤ λ_i(A) + λ_j(B)`, eigenvalues non-increasing and indexed from `0`.
-[HornJohnson2013, Theorem 4.3.1]; stated there over `ℂ` with eigenvalues in increasing order.
+/-- **Weyl's inequality.** For Hermitian $\mathbf{A}$, $\mathbf{B}$ and $i + j < \lvert n \rvert$,
+$\lambda_{i+j}(\mathbf{A} + \mathbf{B}) \le \lambda_i(\mathbf{A}) + \lambda_j(\mathbf{B})$,
+eigenvalues non-increasing and indexed from $0$.
+[HornJohnson2013, Theorem 4.3.1]; stated there over $\mathbb{C}$ with eigenvalues in increasing
+order.
 Port of `Matrix.IsHermitian.eigenvalues₀_add_le`.
 Result: weyl-inequality -/
 theorem eigenvalue_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian)
@@ -91,8 +98,9 @@ theorem eigenvalue_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.I
   · rw [quadForm_add_left, map_add, add_mul]
     exact add_le_add (hA₁ x hx.1) (hB₂ x hx.2)
 
-/-- **Weyl's inequality, lower form.** For Hermitian `A`, `B` and valid indices with
-`i + j + 1 = k + Fintype.card n`, `λ_i(A) + λ_j(B) ≤ λ_k(A + B)`.
+/-- **Weyl's inequality, lower form.** For Hermitian $\mathbf{A}$, $\mathbf{B}$ and indices
+$i, j < \lvert n \rvert$ with $i + j + 1 = k + \lvert n \rvert$,
+$\lambda_i(\mathbf{A}) + \lambda_j(\mathbf{B}) \le \lambda_k(\mathbf{A} + \mathbf{B})$.
 [HornJohnson2013, Theorem 4.3.1].
 Result: weyl-inequality -/
 theorem le_eigenvalue_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian)
@@ -107,21 +115,24 @@ theorem le_eigenvalue_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.I
   · rw [quadForm_add_left, map_add, add_mul]
     exact add_le_add (hA₁ x hx.1) (hB₂ x hx.2)
 
-/-- Weyl's inequality with the largest eigenvalue of the perturbation:
-`λ_k(A + B) ≤ λ_k(A) + λ_0(B)`. -/
+/-- Weyl's inequality with the largest eigenvalue of the perturbation: for Hermitian $\mathbf{A}$,
+$\mathbf{B}$ and $k < \lvert n \rvert$,
+$\lambda_k(\mathbf{A} + \mathbf{B}) \le \lambda_k(\mathbf{A}) + \lambda_0(\mathbf{B})$. -/
 theorem eigenvalue_add_le_add_eigenvalue_zero {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
     eigenvalue (A + B) k ≤ eigenvalue A k + eigenvalue B 0 := by
   exact eigenvalue_add_le hA hB (i := k) (j := 0) hk
 
-/-- Weyl's inequality with the smallest eigenvalue of the perturbation:
-`λ_k(A) + λ_min(B) ≤ λ_k(A + B)`. -/
+/-- Weyl's inequality with the smallest eigenvalue of the perturbation: for Hermitian
+$\mathbf{A}$, $\mathbf{B}$, $k < \lvert n \rvert$ and $l + 1 = \lvert n \rvert$,
+$\lambda_k(\mathbf{A}) + \lambda_l(\mathbf{B}) \le \lambda_k(\mathbf{A} + \mathbf{B})$. -/
 theorem eigenvalue_add_eigenvalue_last_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {k l : ℕ} (hk : k < Fintype.card n) (hl : l + 1 = Fintype.card n) :
     eigenvalue A k + eigenvalue B l ≤ eigenvalue (A + B) k := by
   exact le_eigenvalue_add hA hB hk (by omega) (by omega)
 
-/-- One side of the Lipschitz bound, at a valid index. -/
+/-- One side of the Lipschitz bound, at a valid index:
+$\lambda_k(\mathbf{A}) - \lambda_k(\mathbf{B}) \le \|\mathbf{A} - \mathbf{B}\|_2$. -/
 private theorem eigenvalue_sub_le_specNorm_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
     eigenvalue A k - eigenvalue B k ≤ specNorm (A - B) := by
@@ -130,8 +141,9 @@ private theorem eigenvalue_sub_le_specNorm_sub {A B : Matrix n n 𝕜} (hA : A.I
   have h' := (abs_le.mp ((hA.sub hB).abs_eigenvalue_le_specNorm 0)).2
   linarith
 
-/-- **Eigenvalues are `1`-Lipschitz in the spectral norm.** For Hermitian `A`, `B` and every
-`k`, `|λ_k(A) - λ_k(B)| ≤ ‖A - B‖₂`.
+/-- **Eigenvalues are $1$-Lipschitz in the spectral norm.** For Hermitian $\mathbf{A}$,
+$\mathbf{B}$ and every $k$,
+$\lvert \lambda_k(\mathbf{A}) - \lambda_k(\mathbf{B}) \rvert \le \|\mathbf{A} - \mathbf{B}\|_2$.
 [HornJohnson2013, Corollary 4.3.15].
 Result: weyl-perturbation -/
 theorem abs_eigenvalue_sub_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian)
@@ -146,10 +158,11 @@ theorem abs_eigenvalue_sub_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB :
 
 /-! ### Low-rank perturbations -/
 
-/-- **Interlacing under a low-rank perturbation, upper.** If `B` has rank at most `r` then
-`λ_{k+r}(A + B) ≤ λ_k(A)`.
+/-- **Interlacing under a low-rank perturbation, upper.** For Hermitian $\mathbf{A}$, $\mathbf{B}$
+with $\operatorname{rank} \mathbf{B} \le r$ and $k + r < \lvert n \rvert$,
+$\lambda_{k+r}(\mathbf{A} + \mathbf{B}) \le \lambda_k(\mathbf{A})$.
 [HornJohnson2013, Corollary 4.3.5].
-Port of `NLAlib.eigenvalues₀_add_le_of_rank_le`, there over `ℝ`.
+Port of `NLAlib.eigenvalues₀_add_le_of_rank_le`, there over $\mathbb{R}$.
 Result: low-rank-interlacing -/
 theorem eigenvalue_add_le_of_rank_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {r : ℕ} (hr : B.rank ≤ r) {k : ℕ} (hk : k + r < Fintype.card n) :
@@ -163,10 +176,11 @@ theorem eigenvalue_add_le_of_rank_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian
   · rw [quadForm_add_of_mem_ker A hx.2]
     exact hAW x hx.1
 
-/-- **Interlacing under a low-rank perturbation, lower.** If `B` has rank at most `r` then
-`λ_{k+r}(A) ≤ λ_k(A + B)`.
+/-- **Interlacing under a low-rank perturbation, lower.** For Hermitian $\mathbf{A}$, $\mathbf{B}$
+with $\operatorname{rank} \mathbf{B} \le r$ and $k + r < \lvert n \rvert$,
+$\lambda_{k+r}(\mathbf{A}) \le \lambda_k(\mathbf{A} + \mathbf{B})$.
 [HornJohnson2013, Corollary 4.3.5].
-Port of `NLAlib.eigenvalues₀_le_add_of_rank_le`, there over `ℝ`.
+Port of `NLAlib.eigenvalues₀_le_add_of_rank_le`, there over $\mathbb{R}$.
 Result: low-rank-interlacing -/
 theorem eigenvalue_le_eigenvalue_add_of_rank_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {r : ℕ} (hr : B.rank ≤ r) {k : ℕ} (hk : k + r < Fintype.card n) :
@@ -179,23 +193,29 @@ theorem eigenvalue_le_eigenvalue_add_of_rank_le {A B : Matrix n n 𝕜} (hA : A.
   · rw [← quadForm_add_of_mem_ker A hx.2]
     exact hW' x hx.1
 
-/-- **Rank-one update, upper.** Adding `z zᴴ` moves each eigenvalue up by at most one position:
-`λ_{k+1}(A + z zᴴ) ≤ λ_k(A)`. [HornJohnson2013, Corollary 4.3.9].
-Port of `NLAlib.eigenvalues₀_rank_one_add_interlacing`, there over `ℝ` as a conjunction. -/
+/-- **Rank-one update, upper.** Adding $\mathbf{z}\mathbf{z}^{\mathsf{H}}$ to a Hermitian
+$\mathbf{A}$ moves each eigenvalue up by at most one position:
+$\lambda_{k+1}(\mathbf{A} + \mathbf{z}\mathbf{z}^{\mathsf{H}}) \le \lambda_k(\mathbf{A})$ for
+$k + 1 < \lvert n \rvert$. [HornJohnson2013, Corollary 4.3.9].
+Port of `NLAlib.eigenvalues₀_rank_one_add_interlacing`, there over $\mathbb{R}$ as a conjunction. -/
 theorem eigenvalue_add_vecMulVec_star_le {A : Matrix n n 𝕜} (hA : A.IsHermitian) (z : n → 𝕜)
     {k : ℕ} (hk : k + 1 < Fintype.card n) :
     eigenvalue (A + Matrix.vecMulVec z (star z)) (k + 1) ≤ eigenvalue A k := by
   exact eigenvalue_add_le_of_rank_le hA (Matrix.posSemidef_vecMulVec_self_star z).isHermitian
     (Matrix.rank_vecMulVec_le z (star z)) hk
 
-/-- **Rank-one update, lower.** Adding `z zᴴ` does not decrease any eigenvalue.
+/-- **Rank-one update, lower.** Adding $\mathbf{z}\mathbf{z}^{\mathsf{H}}$ to a Hermitian
+$\mathbf{A}$ does not decrease any eigenvalue:
+$\lambda_k(\mathbf{A}) \le \lambda_k(\mathbf{A} + \mathbf{z}\mathbf{z}^{\mathsf{H}})$.
 [HornJohnson2013, Corollary 4.3.9]. -/
 theorem eigenvalue_le_eigenvalue_add_vecMulVec_star {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (z : n → 𝕜) (k : ℕ) :
     eigenvalue A k ≤ eigenvalue (A + Matrix.vecMulVec z (star z)) k := by
   exact eigenvalue_le_eigenvalue_add_of_posSemidef hA (Matrix.posSemidef_vecMulVec_self_star z) k
 
-/-- **Rank-one downdate, upper.** Subtracting `z zᴴ` does not increase any eigenvalue.
+/-- **Rank-one downdate, upper.** Subtracting $\mathbf{z}\mathbf{z}^{\mathsf{H}}$ from a Hermitian
+$\mathbf{A}$ does not increase any eigenvalue:
+$\lambda_k(\mathbf{A} - \mathbf{z}\mathbf{z}^{\mathsf{H}}) \le \lambda_k(\mathbf{A})$.
 [HornJohnson2013, Corollary 4.3.9]. -/
 theorem eigenvalue_sub_vecMulVec_star_le {A : Matrix n n 𝕜} (hA : A.IsHermitian) (z : n → 𝕜)
     (k : ℕ) : eigenvalue (A - Matrix.vecMulVec z (star z)) k ≤ eigenvalue A k := by
@@ -203,8 +223,10 @@ theorem eigenvalue_sub_vecMulVec_star_le {A : Matrix n n 𝕜} (hA : A.IsHermiti
     (hA.sub (Matrix.posSemidef_vecMulVec_self_star z).isHermitian) z k
   rwa [sub_add_cancel] at h
 
-/-- **Rank-one downdate, lower.** Subtracting `z zᴴ` moves each eigenvalue down by at most one
-position: `λ_{k+1}(A) ≤ λ_k(A - z zᴴ)`. [HornJohnson2013, Corollary 4.3.9]. -/
+/-- **Rank-one downdate, lower.** Subtracting $\mathbf{z}\mathbf{z}^{\mathsf{H}}$ from a Hermitian
+$\mathbf{A}$ moves each eigenvalue down by at most one position:
+$\lambda_{k+1}(\mathbf{A}) \le \lambda_k(\mathbf{A} - \mathbf{z}\mathbf{z}^{\mathsf{H}})$ for
+$k + 1 < \lvert n \rvert$. [HornJohnson2013, Corollary 4.3.9]. -/
 theorem eigenvalue_le_eigenvalue_sub_vecMulVec_star {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (z : n → 𝕜) {k : ℕ} (hk : k + 1 < Fintype.card n) :
     eigenvalue A (k + 1) ≤ eigenvalue (A - Matrix.vecMulVec z (star z)) k := by
@@ -214,10 +236,11 @@ theorem eigenvalue_le_eigenvalue_sub_vecMulVec_star {A : Matrix n n 𝕜} (hA : 
 
 /-! ### The eigengap -/
 
-/-- The **eigengap** below the `k` largest eigenvalues: `λ_{k-1}(A) - λ_k(A)` with eigenvalues
-indexed from `0`, the gap that separates the leading `k`-dimensional eigenspace from the rest. The
-index is the dimension of that eigenspace. With truncated subtraction `eigengap A 0 = 0`, so a
-hypothesis `0 < eigengap A k` already excludes `k = 0`. -/
+/-- The **eigengap** below the $k$ largest eigenvalues:
+$\lambda_{k-1}(\mathbf{A}) - \lambda_k(\mathbf{A})$ with eigenvalues indexed from $0$, the gap that
+separates the leading $k$-dimensional eigenspace from the rest. The index is the dimension of that
+eigenspace. With truncated subtraction `eigengap A 0 = 0`, so a hypothesis `0 < eigengap A k`
+already excludes $k = 0$. -/
 noncomputable def eigengap (A : Matrix n n 𝕜) (k : ℕ) : ℝ :=
   eigenvalue A (k - 1) - eigenvalue A k
 
@@ -226,18 +249,21 @@ noncomputable def eigengap (A : Matrix n n 𝕜) (k : ℕ) : ℝ :=
 theorem eigengap_zero (A : Matrix n n 𝕜) : eigengap A 0 = 0 := by
   rw [eigengap, Nat.zero_sub, sub_self]
 
-/-- The eigengap at dimension `k + 1` is `λ_k - λ_{k+1}`. This is the form to compute with. -/
+/-- The eigengap at dimension $k + 1$ is $\lambda_k(\mathbf{A}) - \lambda_{k+1}(\mathbf{A})$. This
+is the form to compute with. -/
 theorem eigengap_succ (A : Matrix n n 𝕜) (k : ℕ) :
     eigengap A (k + 1) = eigenvalue A k - eigenvalue A (k + 1) := by
   rw [eigengap, Nat.add_sub_cancel]
 
-/-- The eigengap of a Hermitian matrix is nonnegative at a valid index. -/
+/-- The eigengap of a Hermitian matrix is nonnegative at a valid index $k < \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.eigengap_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian) {k : ℕ}
     (hk : k < Fintype.card n) : 0 ≤ eigengap A k := by
   exact sub_nonneg.mpr (hA.eigenvalue_le_eigenvalue (Nat.sub_le k 1) hk)
 
 /-- **Stability of the eigengap.** A Hermitian perturbation changes the gap by at most twice its
-spectral norm. -/
+spectral norm: for Hermitian $\mathbf{A}$, $\mathbf{B}$ and every $k$, writing $\delta_k$ for the
+eigengap `eigengap`,
+$\lvert \delta_k(\mathbf{A}) - \delta_k(\mathbf{B}) \rvert \le 2 \|\mathbf{A} - \mathbf{B}\|_2$. -/
 theorem abs_eigengap_sub_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian)
     (k : ℕ) : |eigengap A k - eigengap B k| ≤ 2 * specNorm (A - B) := by
   have h₁ := abs_le.mp (abs_eigenvalue_sub_le hA hB (k - 1))

@@ -13,12 +13,14 @@ public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 /-!
 # The QR factorization
 
-`NLAlib.IsQR A Q R` says that `A = Q * R` with `Q` having orthonormal columns and `R` square upper
-triangular: the thin QR factorization of a matrix with at least as many rows as columns. `R` has
-the Gram matrix, singular values and pseudo-condition number of `A`; when `A` has full column
-rank, `R` is invertible, `Q * Qᴴ` is the orthogonal projector onto the range, the least-squares
-problem is the triangular system `R x = Qᴴ b`, and the factorization with positive diagonal is
-unique.
+`NLAlib.IsQR A Q R` says that $\mathbf{A} = \mathbf{Q}\mathbf{R}$ with $\mathbf{Q}$ having
+orthonormal columns and $\mathbf{R}$ square upper triangular: the thin QR factorization of a
+matrix with at least as many rows as columns. $\mathbf{R}$ has the Gram matrix, singular values
+and pseudo-condition number of $\mathbf{A}$; when $\mathbf{A}$ has full column rank, $\mathbf{R}$
+is invertible, $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ is the orthogonal projector onto the range, the
+least-squares problem is the triangular system
+$\mathbf{R}\mathbf{x} = \mathbf{Q}^{\mathsf{H}}\mathbf{b}$, and the factorization with positive
+diagonal is unique.
 
 The full factorization, with a square unitary factor and an upper trapezoidal one, is stated for
 matrices indexed by `Fin`. Existence is read off Mathlib's
@@ -36,7 +38,7 @@ matrices indexed by `Fin`. Existence is read off Mathlib's
 * `NLAlib.IsQR.pinv_eq`, `NLAlib.IsQR.mul_conjTranspose_eq_rangeProjector`.
 * `NLAlib.IsQR.isLeastSquaresSolution_backSubst`: the triangular solve.
 * `NLAlib.IsQR.isLeastSquaresSolution_iff`: least squares through QR.
-* `NLAlib.IsQR.isCholesky`: `Rᴴ` is the Cholesky factor of the Gram matrix.
+* `NLAlib.IsQR.isCholesky`: $\mathbf{R}^{\mathsf{H}}$ is the Cholesky factor of the Gram matrix.
 * `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`,
   `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal_nonneg`: the full factorization.
 * `NLAlib.isQR_submatrix_castLE`, `NLAlib.IsQR.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`:
@@ -52,8 +54,9 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*} [Fintype l] [Fintype m] [Fintype n]
   [LinearOrder n] [DecidableEq n]
 
-/-- `IsQR A Q R`: **`A = Q * R` is a thin QR factorization**, with `Q` having orthonormal columns
-and `R` upper triangular. [GolubVanLoan2013, Theorem 5.2.3]; [HornJohnson2013, Theorem 2.1.14].
+/-- `IsQR A Q R`: **$\mathbf{A} = \mathbf{Q}\mathbf{R}$ is a thin QR factorization**, with
+$\mathbf{Q}$ having orthonormal columns and $\mathbf{R}$ square upper triangular.
+[GolubVanLoan2013, Theorem 5.2.3]; [HornJohnson2013, Theorem 2.1.14].
 Port of `NLAlib.IsQR`. -/
 structure IsQR (A Q : Matrix m n 𝕜) (R : Matrix n n 𝕜) : Prop where
   /-- The matrix is the product of the factors. -/
@@ -67,38 +70,44 @@ section
 
 variable {A Q : Matrix m n 𝕜} {R : Matrix n n 𝕜}
 
-/-! ### What `R` knows about `A` -/
+/-! ### What $\mathbf{R}$ knows about $\mathbf{A}$ -/
 
 /-- A triangular factor with no zero on its diagonal is invertible. -/
 private theorem IsQR.isUnit (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) : IsUnit R :=
   (Matrix.isUnit_iff_isUnit_det R).mpr
     (h.isUpperTriangular.isUnit_det_iff.mpr fun i => (hR i).isUnit)
 
-/-- A column of `A` is the combination of the columns of `Q` with the entries of `R`. -/
+/-- A column of $\mathbf{A}$ is the combination of the columns of $\mathbf{Q}$ with the entries
+of $\mathbf{R}$: $\mathbf{A}_{:,k} = \sum_i \mathbf{R}_{i,k} \mathbf{Q}_{:,i}$. -/
 private theorem IsQR.col_eq_sum (h : IsQR A Q R) (k : n) : A.col k = ∑ i, R i k • Q.col i := by
   ext x
   rw [h.eq_mul]
   simp only [Matrix.col_apply, Matrix.mul_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul,
     mul_comm]
 
-/-- `R = Qᴴ * A`. Port of `NLAlib.IsQR.conjTranspose_mul_eq`. -/
+/-- $\mathbf{R} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$. Port of `NLAlib.IsQR.conjTranspose_mul_eq`. -/
 theorem IsQR.conjTranspose_mul_eq (h : IsQR A Q R) : Qᴴ * A = R := by
   rw [h.eq_mul, h.hasOrthonormalCols.conjTranspose_mul_cancel_left]
 
-/-- `R` has the Gram matrix of `A`. Port of `NLAlib.IsQR.conjTranspose_mul_self_eq`. -/
+/-- $\mathbf{R}$ has the Gram matrix of $\mathbf{A}$:
+$\mathbf{A}^{\mathsf{H}}\mathbf{A} = \mathbf{R}^{\mathsf{H}}\mathbf{R}$.
+Port of `NLAlib.IsQR.conjTranspose_mul_self_eq`. -/
 theorem IsQR.conjTranspose_mul_self (h : IsQR A Q R) : Aᴴ * A = Rᴴ * R := by
   rw [h.eq_mul, h.hasOrthonormalCols.conjTranspose_mul_mul]
 
-/-- `R` has the singular values of `A`. Port of `NLAlib.singularValues_eq_of_qr`. -/
+/-- $\mathbf{R}$ has the singular values of $\mathbf{A}$:
+$\sigma_k(\mathbf{R}) = \sigma_k(\mathbf{A})$ for every $k$.
+Port of `NLAlib.singularValues_eq_of_qr`. -/
 theorem IsQR.singularValues_eq (h : IsQR A Q R) (k : ℕ) :
     singularValues R k = singularValues A k := by
   rw [singularValues_eq_of_conjTranspose_mul_self_eq h.conjTranspose_mul_self]
 
-/-- `R` has the rank of `A`. -/
+/-- $\mathbf{R}$ has the rank of $\mathbf{A}$. -/
 theorem IsQR.rank_eq (h : IsQR A Q R) : R.rank = A.rank := by
   rw [h.eq_mul, h.hasOrthonormalCols.rank_mul]
 
-/-- `R` has the pseudo-condition number of `A`.
+/-- $\mathbf{R}$ has the pseudo-condition number of $\mathbf{A}$:
+$\|\mathbf{R}\|_2 \|\mathbf{R}^{+}\|_2 = \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$.
 Port of `NLAlib.moorePenroseConditionNumber_eq_of_qr`. -/
 theorem IsQR.pseudoConditionNumber_eq (h : IsQR A Q R) :
     pseudoConditionNumber R = pseudoConditionNumber A := by
@@ -107,7 +116,8 @@ theorem IsQR.pseudoConditionNumber_eq (h : IsQR A Q R) :
 
 /-! ### Full column rank -/
 
-/-- `A` has full column rank exactly when the diagonal of `R` has no zero.
+/-- $\mathbf{A}$ has full column rank ($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective)
+exactly when the diagonal of $\mathbf{R}$ has no zero.
 Port of `NLAlib.IsQR.isUnit_conjTranspose_mul_self_iff`. -/
 theorem IsQR.injective_mulVec_iff (h : IsQR A Q R) :
     Function.Injective A.mulVec ↔ ∀ i, R i i ≠ 0 := by
@@ -116,31 +126,37 @@ theorem IsQR.injective_mulVec_iff (h : IsQR A Q R) :
     h.isUpperTriangular.isUnit_det_iff]
   simp only [isUnit_iff_ne_zero]
 
-/-- For `A` of full column rank, a nonnegative diagonal of `R` is positive.
+/-- For $\mathbf{A}$ of full column rank, a nonnegative diagonal of $\mathbf{R}$ is positive.
 Port of `NLAlib.diag_pos_of_qr_of_rank_eq_card`. -/
 theorem IsQR.apply_self_pos (h : IsQR A Q R) (hA : Function.Injective A.mulVec)
     (hd : ∀ i, 0 ≤ R i i) (i : n) : 0 < R i i := by
   exact (hd i).lt_of_ne' (h.injective_mulVec_iff.mp hA i)
 
-/-- **The pseudoinverse through QR**: `A⁺ = R⁺ Qᴴ`, with no rank assumption. -/
+/-- **The pseudoinverse through QR**:
+$\mathbf{A}^{+} = \mathbf{R}^{+}\mathbf{Q}^{\mathsf{H}}$, with no rank assumption. -/
 theorem IsQR.pinv_eq (h : IsQR A Q R) : pinv A = pinv R * Qᴴ := by
   classical
   rw [h.eq_mul, h.hasOrthonormalCols.pinv_mul_left]
 
-/-- The pseudoinverse through QR for `A` of full column rank: `A⁺ = R⁻¹ Qᴴ`.
+/-- The pseudoinverse through QR when the diagonal of $\mathbf{R}$ has no zero (full column
+rank): $\mathbf{A}^{+} = \mathbf{R}^{-1}\mathbf{Q}^{\mathsf{H}}$.
 Port of `NLAlib.moorePenroseInverse_eq_of_isQR`. -/
 theorem IsQR.pinv_eq_inv_mul (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) : pinv A = R⁻¹ * Qᴴ := by
   rw [h.pinv_eq, pinv_of_isUnit (h.isUnit hR)]
 
-/-- For `A` of full column rank, `Q Qᴴ` is the orthogonal projector onto the range of `A`.
+/-- When the diagonal of $\mathbf{R}$ has no zero (full column rank),
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$, the orthogonal projector onto the
+range of $\mathbf{A}$.
 Port of `NLAlib.IsQR.mul_conjTranspose_eq`. -/
 theorem IsQR.mul_conjTranspose_eq_rangeProjector (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) :
     Q * Qᴴ = rangeProjector A := by
   rw [h.eq_mul, rangeProjector_mul_of_isUnit Q (h.isUnit hR),
     h.hasOrthonormalCols.rangeProjector_eq]
 
-/-- While the diagonal of `R` has no zero, the first columns of `Q` span the same subspace as
-the first columns of `A`. Port of `NLAlib.IsQR.isGradedColumnBasis`. -/
+/-- While the diagonal of $\mathbf{R}$ has no zero, the first columns of $\mathbf{Q}$ span the
+same subspace as the first columns of $\mathbf{A}$: if $\mathbf{R}_{i,i} \ne 0$ for $i \le j$, the
+columns $i \le j$ of $\mathbf{Q}$ and of $\mathbf{A}$ have the same span.
+Port of `NLAlib.IsQR.isGradedColumnBasis`. -/
 theorem IsQR.span_col_image_Iic (h : IsQR A Q R) {j : n} (hR : ∀ i, i ≤ j → R i i ≠ 0) :
     Submodule.span 𝕜 (Q.col '' Set.Iic j) = Submodule.span 𝕜 (A.col '' Set.Iic j) := by
   have hQ : ∀ k, k ≤ j → Q.col k ∈ Submodule.span 𝕜 (A.col '' Set.Iic k) := by
@@ -171,15 +187,19 @@ theorem IsQR.span_col_image_Iic (h : IsQR A Q R) {j : n} (hR : ∀ i, i ≤ j �
     · rw [h.isUpperTriangular hik, zero_smul]
       exact Submodule.zero_mem _
 
-/-- A solution of `R x = Qᴴ b` solves the least-squares problem, with no rank assumption. -/
+/-- A solution of $\mathbf{R}\mathbf{x} = \mathbf{Q}^{\mathsf{H}}\mathbf{b}$ solves the
+least-squares problem $\min_{\mathbf{x}} \|\mathbf{A}\mathbf{x} - \mathbf{b}\|$, with no rank
+assumption. -/
 theorem IsQR.isLeastSquaresSolution_of_mulVec_eq (h : IsQR A Q R) {b : m → 𝕜} {x : n → 𝕜}
     (hx : R *ᵥ x = Qᴴ *ᵥ b) : IsLeastSquaresSolution A b x := by
   rw [isLeastSquaresSolution_iff_normal_equations, h.eq_mul, Matrix.conjTranspose_mul]
   simp only [← Matrix.mulVec_mulVec]
   rw [h.hasOrthonormalCols.conjTranspose_mulVec_mulVec, hx]
 
-/-- **Least squares through QR.** For `A` of full column rank, `x` solves the least-squares
-problem exactly when `R x = Qᴴ b`. [GolubVanLoan2013, §5.3.3]; [TrefethenBau1997, Lecture 11].
+/-- **Least squares through QR.** When the diagonal of $\mathbf{R}$ has no zero (full column
+rank), $\mathbf{x}$ minimises $\|\mathbf{A}\mathbf{x} - \mathbf{b}\|$ exactly when
+$\mathbf{R}\mathbf{x} = \mathbf{Q}^{\mathsf{H}}\mathbf{b}$.
+[GolubVanLoan2013, §5.3.3]; [TrefethenBau1997, Lecture 11].
 Result: least-squares-qr -/
 theorem IsQR.isLeastSquaresSolution_iff (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) {b : m → 𝕜}
     {x : n → 𝕜} : IsLeastSquaresSolution A b x ↔ R *ᵥ x = Qᴴ *ᵥ b := by
@@ -190,7 +210,8 @@ theorem IsQR.isLeastSquaresSolution_iff (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 
   exact Matrix.mulVec_injective_iff_isUnit.mpr
     ((h.isUnit hR).star) hx
 
-/-- For `R` with positive diagonal, `Rᴴ` is the Cholesky factor of the Gram matrix `Aᴴ A`. -/
+/-- For $\mathbf{R}$ with positive diagonal, $\mathbf{R}^{\mathsf{H}}$ is the Cholesky factor of
+the Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$. -/
 theorem IsQR.isCholesky (h : IsQR A Q R) (hR : ∀ i, 0 < R i i) : IsCholesky (Aᴴ * A) Rᴴ := by
   refine ⟨h.isUpperTriangular.conjTranspose, fun i => ?_, ?_⟩
   · rw [Matrix.conjTranspose_apply]
@@ -199,7 +220,10 @@ theorem IsQR.isCholesky (h : IsQR A Q R) (hR : ∀ i, 0 < R i i) : IsCholesky (A
 
 /-! ### Changing the factorization -/
 
-/-- A QR factorization can be rescaled by a diagonal of unit modulus.
+/-- A QR factorization can be rescaled by a diagonal of unit modulus: if
+$\lvert \mathbf{d}_i \rvert = 1$ for all $i$, then
+$\mathbf{A} = (\mathbf{Q} \operatorname{diag}(\mathbf{d}))
+(\operatorname{diag}(\bar{\mathbf{d}}) \mathbf{R})$ is a QR factorization.
 Port of `NLAlib.IsQR.diagonal_mul`. -/
 theorem IsQR.mul_diagonal (h : IsQR A Q R) {d : n → 𝕜} (hd : ∀ i, star (d i) * d i = 1) :
     IsQR A (Q * Matrix.diagonal d) (Matrix.diagonal (star d) * R) := by
@@ -215,7 +239,8 @@ theorem IsQR.mul_diagonal (h : IsQR A Q R) {d : n → 𝕜} (hd : ∀ i, star (d
     exact congrArg _ (funext hd)
   · rw [Matrix.diagonal_mul, h.isUpperTriangular hij, mul_zero]
 
-/-- A QR factorization is preserved by relabelling the rows.
+/-- A QR factorization is preserved by relabelling the rows of $\mathbf{A}$ and $\mathbf{Q}$
+along a bijection.
 Port of `NLAlib.IsQR.submatrix_rows`. -/
 theorem IsQR.submatrix_rows (h : IsQR A Q R) (e : l ≃ m) :
     IsQR (A.submatrix e id) (Q.submatrix e id) R := by
@@ -224,13 +249,17 @@ theorem IsQR.submatrix_rows (h : IsQR A Q R) (e : l ≃ m) :
   ext i j
   simp only [Matrix.submatrix_apply, Matrix.mul_apply, id_eq]
 
-/-- A unitary factor on the left passes to `Q`. -/
+/-- A factor with orthonormal columns on the left passes to $\mathbf{Q}$: if $\mathbf{W}$ has
+orthonormal columns, $\mathbf{W}\mathbf{A} = (\mathbf{W}\mathbf{Q})\mathbf{R}$ is a QR
+factorization. -/
 theorem IsQR.mul_left [DecidableEq m] (h : IsQR A Q R) {W : Matrix l m 𝕜}
     (hW : HasOrthonormalCols W) : IsQR (W * A) (W * Q) R := by
   exact ⟨by rw [h.eq_mul, Matrix.mul_assoc], hW.mul h.hasOrthonormalCols, h.isUpperTriangular⟩
 
-/-- **The QR factorization with positive diagonal is unique.**
-[HornJohnson2013, Theorem 2.1.14]. Port of `NLAlib.IsQR.eq_of_diag_pos`, there over `ℝ`. -/
+/-- **The QR factorization with positive diagonal is unique**: two QR factorizations of
+$\mathbf{A}$ whose triangular factors have positive diagonals are equal.
+[HornJohnson2013, Theorem 2.1.14]. Port of `NLAlib.IsQR.eq_of_diag_pos`, there over $\mathbb{R}$.
+-/
 theorem IsQR.unique {Q' : Matrix m n 𝕜} {R' : Matrix n n 𝕜} (h : IsQR A Q R)
     (h' : IsQR A Q' R') (hR : ∀ i, 0 < R i i) (hR' : ∀ i, 0 < R' i i) : Q = Q' ∧ R = R' := by
   have hRR : R = R' :=
@@ -247,7 +276,7 @@ end
 
 /-- **The full QR factorization.** Every matrix indexed by `Fin m` and `Fin n` is a square
 unitary matrix times an upper trapezoidal one.
-Port of `NLAlib.exists_isFullQR`, there over `ℝ`. -/
+Port of `NLAlib.exists_isFullQR`, there over $\mathbb{R}$. -/
 theorem exists_hasOrthonormalCols_mul_isUpperTrapezoidal {m n : ℕ}
     (A : Matrix (Fin m) (Fin n) 𝕜) :
     ∃ (Q : Matrix (Fin m) (Fin m) 𝕜) (R : Matrix (Fin m) (Fin n) 𝕜),
@@ -319,8 +348,8 @@ theorem exists_hasOrthonormalCols_mul_isUpperTrapezoidal_nonneg {m n : ℕ}
     simp only [d, dif_pos hi]
     exact hnn _
 
-/-- The thin factorization from the full one: the first `n` columns of `Q` and the first `n` rows
-of `R`. Port of `NLAlib.IsFullQR.isQR_castLE`. -/
+/-- The thin factorization from the full one: for $n \le m$, the first $n$ columns of
+$\mathbf{Q}$ and the first $n$ rows of $\mathbf{R}$. Port of `NLAlib.IsFullQR.isQR_castLE`. -/
 theorem isQR_submatrix_castLE {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜}
     {Q : Matrix (Fin m) (Fin m) 𝕜} {R : Matrix (Fin m) (Fin n) 𝕜} (hQ : HasOrthonormalCols Q)
     (hR : IsUpperTrapezoidal R) (hA : A = Q * R) (h : n ≤ m) :
@@ -337,9 +366,10 @@ theorem isQR_submatrix_castLE {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜}
   exact hk ⟨⟨k, not_le.mp hkn⟩, Fin.ext rfl⟩
 
 /-- **A thin QR factorization extends to a full one**, the converse of
-`NLAlib.isQR_submatrix_castLE`: for `A = Q * R` with `Q` having orthonormal columns and `R` upper
-triangular there are a square unitary `Q'` whose first `n` columns are `Q` and an upper
-trapezoidal `R'` whose first `n` rows are `R` (the others vanish), with `A = Q' * R'`. -/
+`NLAlib.isQR_submatrix_castLE`: for a thin QR factorization $\mathbf{A} = \mathbf{Q}\mathbf{R}$
+of an $m \times n$ matrix, $n \le m$, there are a square unitary $\mathbf{Q}'$ whose first $n$
+columns are $\mathbf{Q}$ and an upper trapezoidal $\mathbf{R}'$ whose first $n$ rows are
+$\mathbf{R}$ (the others vanish), with $\mathbf{A} = \mathbf{Q}'\mathbf{R}'$. -/
 theorem IsQR.exists_hasOrthonormalCols_mul_isUpperTrapezoidal {m n : ℕ}
     {A Q : Matrix (Fin m) (Fin n) 𝕜} {R : Matrix (Fin n) (Fin n) 𝕜} (h : IsQR A Q R)
     (hnm : n ≤ m) :
@@ -391,8 +421,10 @@ private theorem exists_isQR_fin {m n : ℕ} (A : Matrix (Fin m) (Fin n) 𝕜) (h
   exact ⟨_, _, isQR_submatrix_castLE hQ hR hA h⟩
 
 /-- **Every matrix with at least as many rows as columns has a QR factorization**, with
-nonnegative diagonal. [HornJohnson2013, Theorem 2.1.14]; [GolubVanLoan2013, Theorem 5.2.3].
-Port of `NLAlib.exists_isQR`, there over `ℝ`.
+nonnegative diagonal: if $\lvert n \rvert \le \lvert m \rvert$, then
+$\mathbf{A} = \mathbf{Q}\mathbf{R}$ with $\mathbf{R}_{i,i} \ge 0$.
+[HornJohnson2013, Theorem 2.1.14]; [GolubVanLoan2013, Theorem 5.2.3].
+Port of `NLAlib.exists_isQR`, there over $\mathbb{R}$.
 Result: qr-existence -/
 theorem exists_isQR (A : Matrix m n 𝕜) (h : Fintype.card n ≤ Fintype.card m) :
     ∃ Q R, IsQR A Q R ∧ ∀ i, 0 ≤ R i i := by
@@ -409,7 +441,7 @@ theorem exists_isQR (A : Matrix m n 𝕜) (h : Fintype.card n ≤ Fintype.card m
   exact hA.exists_nonneg
 
 /-- A matrix of full column rank has a QR factorization with positive diagonal.
-Port of `NLAlib.exists_isQR_of_isUnit`, there over `ℝ`. -/
+Port of `NLAlib.exists_isQR_of_isUnit`, there over $\mathbb{R}$. -/
 theorem exists_isQR_of_injective {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec) :
     ∃ Q R, IsQR A Q R ∧ ∀ i, 0 < R i i := by
   have hcard : Fintype.card n ≤ Fintype.card m :=
@@ -418,7 +450,7 @@ theorem exists_isQR_of_injective {A : Matrix m n 𝕜} (hA : Function.Injective 
   exact ⟨Q, R, h, h.apply_self_pos hA hR⟩
 
 /-- A matrix of full column rank has exactly one QR factorization with positive diagonal.
-Port of `NLAlib.existsUnique_qr_of_rank_eq_card`, there over `ℝ`. -/
+Port of `NLAlib.existsUnique_qr_of_rank_eq_card`, there over $\mathbb{R}$. -/
 theorem existsUnique_isQR_of_injective {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec) :
     ∃! QR : Matrix m n 𝕜 × Matrix n n 𝕜, IsQR A QR.1 QR.2 ∧ ∀ i, 0 < QR.2 i i := by
   obtain ⟨Q, R, h, hR⟩ := exists_isQR_of_injective hA
@@ -428,21 +460,26 @@ theorem existsUnique_isQR_of_injective {A : Matrix m n 𝕜} (hA : Function.Inje
 
 /-! ### The QR iteration step -/
 
-/-- **One step of the QR iteration is a unitary similarity**: if `H = Q R` then `R Q = Qᴴ H Q`.
-[GolubVanLoan2013, §7.3]. Port of `NLAlib.IsQR.mul_eq_transpose_mul_mul`, there over `ℝ`. -/
+/-- **One step of the QR iteration is a unitary similarity**: if
+$\mathbf{H} = \mathbf{Q}\mathbf{R}$ for square $\mathbf{H}$, then
+$\mathbf{R}\mathbf{Q} = \mathbf{Q}^{\mathsf{H}}\mathbf{H}\mathbf{Q}$. [GolubVanLoan2013, §7.3].
+Port of `NLAlib.IsQR.mul_eq_transpose_mul_mul`, there over $\mathbb{R}$. -/
 theorem IsQR.mul_eq_conjTranspose_mul_mul {H Q R : Matrix n n 𝕜} (h : IsQR H Q R) :
     R * Q = Qᴴ * H * Q := by
   rw [h.conjTranspose_mul_eq]
 
-/-- A step of the QR iteration keeps a Hermitian matrix Hermitian.
+/-- A step of the QR iteration keeps a Hermitian matrix Hermitian: if
+$\mathbf{H} = \mathbf{Q}\mathbf{R}$ is Hermitian, so is $\mathbf{R}\mathbf{Q}$.
 Port of `NLAlib.isHermitian_mul_of_isQR`. -/
 theorem IsQR.isHermitian_mul {H Q R : Matrix n n 𝕜} (h : IsQR H Q R) (hH : H.IsHermitian) :
     (R * Q).IsHermitian := by
   rw [h.mul_eq_conjTranspose_mul_mul]
   exact Matrix.isHermitian_conjTranspose_mul_mul Q hH
 
-/-- **One shifted step of the QR iteration is a unitary similarity**: if `H - μ • 1 = Q R` then
-`R Q + μ • 1 = Qᴴ H Q`. [GolubVanLoan2013, §7.5.2]. -/
+/-- **One shifted step of the QR iteration is a unitary similarity**: if
+$\mathbf{H} - \mu \mathbf{I} = \mathbf{Q}\mathbf{R}$ then
+$\mathbf{R}\mathbf{Q} + \mu \mathbf{I} = \mathbf{Q}^{\mathsf{H}}\mathbf{H}\mathbf{Q}$.
+[GolubVanLoan2013, §7.5.2]. -/
 theorem IsQR.mul_add_smul_one_eq {H Q R : Matrix n n 𝕜} {μ : 𝕜}
     (h : IsQR (H - μ • (1 : Matrix n n 𝕜)) Q R) :
     R * Q + μ • (1 : Matrix n n 𝕜) = Qᴴ * H * Q := by
@@ -450,8 +487,9 @@ theorem IsQR.mul_add_smul_one_eq {H Q R : Matrix n n 𝕜} {μ : 𝕜}
     Matrix.smul_mul, h.hasOrthonormalCols.conjTranspose_mul_self, sub_add_cancel]
 
 /-- **The least-squares solution by back substitution**: for a QR factorization with no zero on
-the diagonal of `R`, `x = R⁻¹ Qᴴ b`, computed by back substitution, solves the least-squares
-problem. [GolubVanLoan2013, Algorithm 5.3.2]. -/
+the diagonal of $\mathbf{R}$, $\mathbf{x} = \mathbf{R}^{-1}\mathbf{Q}^{\mathsf{H}}\mathbf{b}$,
+computed by back substitution, solves the least-squares problem.
+[GolubVanLoan2013, Algorithm 5.3.2]. -/
 theorem IsQR.isLeastSquaresSolution_backSubst {k : ℕ} {A Q : Matrix m (Fin k) 𝕜}
     {R : Matrix (Fin k) (Fin k) 𝕜} (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) (b : m → 𝕜) :
     IsLeastSquaresSolution A b (backSubst R (Qᴴ *ᵥ b)) := by

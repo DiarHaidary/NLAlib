@@ -17,10 +17,11 @@ the span of the others.
 
 ## Main results
 
-* `NLAlib.exists_norm_eq_one_and_norm_mulVec_eq_singularValues`: `σ_k(A) = ‖A x‖` for a unit
-  vector `x`; in particular the least singular value is attained on the unit sphere.
+* `NLAlib.exists_norm_eq_one_and_norm_mulVec_eq_singularValues`:
+  $\sigma_k(\mathbf{A}) = \|\mathbf{A}\mathbf{x}\|$ for a unit vector $\mathbf{x}$; in particular
+  the least singular value is attained on the unit sphere.
 * `NLAlib.exists_iInf_norm_mulVec_le_of_singularValues_le`: a small least singular value puts a
-  column within `√n` times it of the span of the other columns.
+  column within $\sqrt{\lvert n \rvert}$ times it of the span of the other columns.
 -/
 
 @[expose] public section
@@ -31,10 +32,11 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- **Every singular value is attained at a unit vector**: for `k` below the number of columns
-there is a unit vector `x`, a right singular vector, with `‖A x‖ = σ_k(A)`. With
-`k + 1 = Fintype.card n` it says that the least singular value is the minimum of `‖A x‖` over
-the unit sphere (`NLAlib.singularValues_last_mul_norm_le` is the lower bound); the case `k = 0` is
+/-- **Every singular value is attained at a unit vector**: for $k < \lvert n \rvert$, the number
+of columns, there is a unit vector $\mathbf{x}$, a right singular vector, with
+$\|\mathbf{A}\mathbf{x}\| = \sigma_k(\mathbf{A})$. With $k + 1 = \lvert n \rvert$ it says that the
+least singular value is the minimum of $\|\mathbf{A}\mathbf{x}\|$ over the unit sphere
+(`NLAlib.singularValues_last_mul_norm_le` is the lower bound); the case $k = 0$ is
 `NLAlib.exists_norm_eq_one_and_norm_mulVec_eq_specNorm`. [HornJohnson2013, §2.6]. -/
 theorem exists_norm_eq_one_and_norm_mulVec_eq_singularValues (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k < Fintype.card n) :
@@ -47,12 +49,14 @@ theorem exists_norm_eq_one_and_norm_mulVec_eq_singularValues (A : Matrix m n �
   exact (sq_eq_sq₀ (norm_nonneg _) (singularValues_nonneg A k)).mp h
 
 /-- **A small least singular value puts a column near the span of the others.** If the least
-singular value of a matrix with `n` columns is at most `s`, then for some column `j` the infimum
-of `‖A x‖` over the vectors `x` with `x j = 1`, which is the distance from column `j` to the span
-of the other columns, is at most `√n * s`. This is the deterministic step of the "invertibility
+singular value of a matrix with columns indexed by $n$ is at most $s$,
+$\sigma_k(\mathbf{A}) \le s$ with $k + 1 = \lvert n \rvert$, then for some column $j$
+$$\inf_{\mathbf{x}_j = 1} \|\mathbf{A}\mathbf{x}\| \le \sqrt{\lvert n \rvert} \, s,$$
+the infimum, over the vectors $\mathbf{x}$ with $\mathbf{x}_j = 1$, being the distance from
+column $j$ to the span of the other columns. This is the deterministic step of the "invertibility
 via distance" argument for the least singular value of a random matrix.
 [RudelsonVershynin2008, Lemma 3.5]; stated there for square real matrices, in probability.
-Port of `NLAlib.exists_iInf_norm_mulVec_le_of_singularValues_last_le`, there over `ℝ`. -/
+Port of `NLAlib.exists_iInf_norm_mulVec_le_of_singularValues_last_le`, there over $\mathbb{R}$. -/
 theorem exists_iInf_norm_mulVec_le_of_singularValues_le (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) {s : ℝ} (hs : singularValues A k ≤ s) :
     ∃ j : n, ⨅ x : {x : n → 𝕜 // x j = 1}, ‖WithLp.toLp 2 (A *ᵥ x.1)‖ ≤

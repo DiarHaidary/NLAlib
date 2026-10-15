@@ -13,15 +13,16 @@ public import NLAlib.RandomMatrix.UnitaryInvariance
 /-!
 # Haar frames
 
-The law `haarFrame n k` of an orthogonally invariant `n × k` random matrix with orthonormal
+The law `haarFrame n k` of an orthogonally invariant $n \times k$ random matrix with orthonormal
 columns (a Haar-distributed point of the Stiefel manifold), defined as the law of the polar factor
-`G (Gᴴ G)^{-1/2}` of a standard Gaussian matrix `G`. For `card k ≤ card n` it is concentrated on
-frames; it is invariant under orthogonal maps on both sides, and its conjugate transpose is a
-Haar frame of the transposed shape. For `n × n` it is Haar measure on the orthogonal group
+$\mathbf{G}(\mathbf{G}^{\mathsf{H}}\mathbf{G})^{-1/2}$ of a standard Gaussian matrix
+$\mathbf{G}$. For $\lvert k \rvert \le \lvert n \rvert$ it is concentrated on frames; it is
+invariant under orthogonal maps on both sides, and its conjugate transpose is a Haar frame of the
+transposed shape. For $n \times n$ it is Haar measure on the orthogonal group
 (`haarFrame_eq_map_haarMeasure`, in `NLAlib/RandomMatrix/Haar/Uniqueness.lean`).
 
 The one-column case gives the uniform law on the unit sphere, `uniformSphereVector n`, the law of
-`g / ‖g‖` for a standard Gaussian vector `g`.
+$\mathbf{g} / \|\mathbf{g}\|$ for a standard Gaussian vector $\mathbf{g}$.
 
 Access is through the `HasLaw` bridges `hasLaw_polarFactor_of_hasLaw_gaussianMatrix` and
 `hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`, not by unfolding.
@@ -49,13 +50,15 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k : Type*}
 
 /-! ### The law -/
 
-/-- The law of an `n × k` **Haar frame**: the polar factor `G (Gᴴ G)^{-1/2}` of a standard Gaussian
-matrix `G`. For `card k ≤ card n` it is concentrated on matrices with orthonormal columns and
-invariant under orthogonal maps on both sides. Junk value: for `card n < card k` it is the law of
-`Pᴴ` for a `k × n` Haar frame `P` (orthonormal rows); every theorem using columns assumes
-`card k ≤ card n`. [Meckes2019, Ch. 1], where it is constructed by Gram–Schmidt
+/-- The law of an $n \times k$ **Haar frame**: the polar factor
+$\mathbf{G}(\mathbf{G}^{\mathsf{H}}\mathbf{G})^{-1/2}$ of a standard Gaussian matrix $\mathbf{G}$.
+For $\lvert k \rvert \le \lvert n \rvert$ it is concentrated on matrices with orthonormal columns
+and invariant under orthogonal maps on both sides. Junk value: for
+$\lvert n \rvert < \lvert k \rvert$ it is the law of $\mathbf{P}^{\mathsf{H}}$ for a $k \times n$
+Haar frame $\mathbf{P}$ (orthonormal rows); every theorem using columns assumes
+$\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 1], where it is constructed by Gram–Schmidt
 (`hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix`); here any shape. Replaces the prototype's
-`haarFrameLaw`, there a measure on the bundled Stiefel manifold for `k ≤ n`. -/
+`haarFrameLaw`, there a measure on the bundled Stiefel manifold for $k \le n$. -/
 noncomputable def haarFrame (n k : Type*) [Fintype n] [Fintype k] [DecidableEq k] :
     Measure (Matrix n k ℝ) :=
   (gaussianMatrix n k).map polarFactor
@@ -90,7 +93,8 @@ private theorem ae_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFrame
 
 /-! ### Frames -/
 
-/-- **A Haar frame has orthonormal columns** almost surely, when it is no wider than tall. -/
+/-- **A Haar frame has orthonormal columns** almost surely, when it is no wider than tall
+($\lvert k \rvert \le \lvert n \rvert$). -/
 theorem ae_hasOrthonormalCols_of_hasLaw_haarFrame [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) :
     ∀ᵐ ω ∂μ, HasOrthonormalCols (X ω) := by
@@ -102,7 +106,8 @@ theorem ae_hasOrthonormalCols_of_hasLaw_haarFrame [DecidableEq k]
   rw [hG, min_eq_right hk]
 
 /-- **The conjugate transpose of a Haar frame** is a Haar frame of the transposed shape. Every
-shape; for `card n ≤ card k` it says that `X` has orthonormal rows almost surely. -/
+shape; for $\lvert n \rvert \le \lvert k \rvert$ it says that $\mathbf{X}$ has orthonormal rows
+almost surely. -/
 theorem hasLaw_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) : HasLaw (fun ω => (X ω)ᴴ) (haarFrame k n) μ := by
   refine HasLaw.fun_comp (Y := Matrix.conjTranspose)
@@ -111,13 +116,14 @@ theorem hasLaw_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [DecidableEq k]
     (hasLaw_conjTranspose_of_hasLaw_gaussianMatrix HasLaw.id)).congr
     (ae_of_all _ fun G => (polarFactor_conjTranspose G).symm)
 
-/-- A Haar frame has spectral norm at most one almost surely, in every shape. -/
+/-- A Haar frame has spectral norm at most one almost surely, in every shape:
+$\|\mathbf{Q}\|_2 \le 1$. -/
 theorem ae_specNorm_le_one_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFrame n k) μ) :
     ∀ᵐ ω ∂μ, specNorm (X ω) ≤ 1 :=
   ae_of_hasLaw_haarFrame hX (measurableSet_le measurable_specNorm measurable_const)
     (ae_of_all _ specNorm_polarFactor_le_one)
 
-/-- The entries of a Haar frame have moments of every order (they are bounded by `1`). -/
+/-- The entries of a Haar frame have moments of every order (they are bounded by $1$). -/
 theorem memLp_apply_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFrame n k) μ) (i : n)
     (j : k) (p : ℝ≥0∞) : MemLp (fun ω => X ω i j) p μ := by
   have := hX.isProbabilityMeasure_iff.2 inferInstance
@@ -128,8 +134,9 @@ theorem memLp_apply_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFram
 
 /-! ### Invariance -/
 
-/-- **A Haar frame is left orthogonally invariant**: `U Q` is a Haar frame for every orthogonal
-`U`. Every shape. [Meckes2019, Ch. 1]. Replaces the prototype's `haarFrameLaw_map_smul`.
+/-- **A Haar frame is left orthogonally invariant**: $\mathbf{U}\mathbf{Q}$ is a Haar frame for
+every orthogonal $\mathbf{U}$. Every shape. [Meckes2019, Ch. 1]. Replaces the prototype's
+`haarFrameLaw_map_smul`.
 Result: haar-frame-invariance -/
 instance isLeftUnitarilyInvariant_haarFrame [DecidableEq n] [DecidableEq k] :
     IsLeftUnitarilyInvariant (haarFrame n k) := by
@@ -139,8 +146,8 @@ instance isLeftUnitarilyInvariant_haarFrame [DecidableEq n] [DecidableEq k] :
     (hasLaw_const_mul_of_hasLaw_gaussianMatrix HasLaw.id hU.conjTranspose)).congr
     (ae_of_all _ fun G => (polarFactor_mul_left hU G).symm)
 
-/-- **A Haar frame is right orthogonally invariant**: `Q V` is a Haar frame for every orthogonal
-`V`. Every shape. [Meckes2019, Ch. 1].
+/-- **A Haar frame is right orthogonally invariant**: $\mathbf{Q}\mathbf{V}$ is a Haar frame for
+every orthogonal $\mathbf{V}$. Every shape. [Meckes2019, Ch. 1].
 Result: haar-frame-invariance -/
 instance isRightUnitarilyInvariant_haarFrame [DecidableEq k] :
     IsRightUnitarilyInvariant (haarFrame n k) := by
@@ -152,10 +159,11 @@ instance isRightUnitarilyInvariant_haarFrame [DecidableEq k] :
 
 /-! ### The uniform law on the sphere -/
 
-/-- The **uniform law on the unit sphere** of `ℝⁿ`: the law of `g / ‖g‖` for a standard Gaussian
-vector `g`, the Euclidean norm being `‖WithLp.toLp 2 g‖`. It is the law of a column of a Haar
-frame (`hasLaw_col_of_hasLaw_haarFrame`). For nonempty `n` it is concentrated on the sphere; for
-empty `n` it is the point mass at the unique vector. -/
+/-- The **uniform law on the unit sphere** of $\mathbb{R}^n$: the law of
+$\mathbf{g} / \|\mathbf{g}\|$ for a standard Gaussian vector $\mathbf{g}$, the Euclidean norm
+being `‖WithLp.toLp 2 g‖`. It is the law of a column of a Haar frame
+(`hasLaw_col_of_hasLaw_haarFrame`). For nonempty $n$ it is concentrated on the sphere; for empty
+$n$ it is the point mass at the unique vector. -/
 noncomputable def uniformSphereVector (n : Type*) [Fintype n] : Measure (n → ℝ) :=
   (gaussianVector n).map fun g => ‖WithLp.toLp 2 g‖⁻¹ • g
 
@@ -177,8 +185,8 @@ theorem hasLaw_inv_norm_smul_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
   HasLaw.fun_comp (Y := fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g)
     ⟨measurable_inv_norm_smul.aemeasurable, rfl⟩ hg
 
-/-- **A one-column Haar frame is uniform on the sphere**: the column of a Haar frame `n × 1` has
-law `uniformSphereVector n`. No hypothesis on `n`. The general column is
+/-- **A one-column Haar frame is uniform on the sphere**: the column of a Haar frame $n \times 1$
+has law `uniformSphereVector n`. No hypothesis on $n$. The general column is
 `hasLaw_col_of_hasLaw_haarFrame`. -/
 theorem hasLaw_col_unit_of_hasLaw_haarFrame {X : Ω → Matrix n Unit ℝ}
     (hX : HasLaw X (haarFrame n Unit) μ) :

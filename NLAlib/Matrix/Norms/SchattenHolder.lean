@@ -12,9 +12,11 @@ public import NLAlib.Matrix.Norms.Schatten
 /-!
 # Hölder's inequality and duality for Schatten norms
 
-For exponents with `1/q + 1/r = 1/s`, `‖A B‖_s ≤ ‖A‖_q ‖B‖_r`; for conjugate exponents,
-`|tr (Aᴴ B)| ≤ ‖A‖_q ‖B‖_r`, with equality attained, so the Schatten `q`-norm is the dual of the
-Schatten `r`-norm under the Frobenius inner product. Exponent relations are Mathlib's
+For exponents with $1/q + 1/r = 1/s$,
+$\|\mathbf{A}\mathbf{B}\|_{S_s} \le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}$; for conjugate
+exponents, $\lvert \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B}) \rvert \le
+\|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}$, with equality attained, so the Schatten $q$-norm is the
+dual of the Schatten $r$-norm under the Frobenius inner product. Exponent relations are Mathlib's
 `ENNReal.HolderTriple` and `ENNReal.HolderConjugate`.
 
 ## Main results
@@ -32,10 +34,11 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
 
-/-- **Hölder's inequality for Schatten norms.** If `1/q + 1/r = 1/s` with `q, r ≠ 0`, then
-`‖A B‖_s ≤ ‖A‖_q ‖B‖_r`.
+/-- **Hölder's inequality for Schatten norms.** If $1/q + 1/r = 1/s$ (with $1/\infty = 0$) and
+$q, r \ne 0$, then
+$$\|\mathbf{A}\mathbf{B}\|_{S_s} \le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}\,.$$
 [HornJohnson1991, Theorem 3.3.14]; [Bhatia1997, Exercise IV.2.7].
-Port of `NLAlib.schattenNorm_mul_le_mul`, there over `ℝ` for exponents at least one.
+Port of `NLAlib.schattenNorm_mul_le_mul`, there over $\mathbb{R}$ for exponents at least one.
 Result: schatten-holder -/
 theorem schattenNorm_mul_le {q r s : ℝ≥0∞} [ENNReal.HolderTriple q r s] (hq : q ≠ 0)
     (hr : r ≠ 0) (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) :
@@ -74,10 +77,11 @@ theorem schattenNorm_mul_le {q r s : ℝ≥0∞} [ENNReal.HolderTriple q r s] (h
     (Real.Lr_rpow_le_Lp_mul_Lq_of_nonneg _ hT (fun i _ => singularValues_nonneg A i)
       fun i _ => singularValues_nonneg B i)
 
-/-- **Hölder's inequality for the trace.** For conjugate exponents,
-`|tr (Aᴴ B)| ≤ ‖A‖_q ‖B‖_r`.
+/-- **Hölder's inequality for the trace.** For conjugate exponents, $1/q + 1/r = 1$,
+$$\lvert \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B}) \rvert
+  \le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}\,.$$
 [Bhatia1997, Corollary IV.2.6].
-Port of `NLAlib.abs_frobInner_le_schattenNorm_mul`, there over `ℝ` for the real part.
+Port of `NLAlib.abs_frobInner_le_schattenNorm_mul`, there over $\mathbb{R}$ for the real part.
 Result: schatten-holder -/
 theorem norm_trace_conjTranspose_mul_le_schattenNorm_mul {q r : ℝ≥0∞}
     [ENNReal.HolderConjugate q r] (A B : Matrix m n 𝕜) :
@@ -102,22 +106,30 @@ theorem norm_trace_conjTranspose_mul_le_schattenNorm_mul {q r : ℝ≥0∞}
   exact Real.inner_le_Lp_mul_Lq_of_nonneg _ (ENNReal.HolderConjugate.toReal_of_ne_top hq' hr')
     (fun i _ => singularValues_nonneg A i) fun i _ => singularValues_nonneg B i
 
-/-- Hölder's inequality for the trace of a product `A * B` with `B` of the transposed shape. -/
+/-- Hölder's inequality for the trace of a product $\mathbf{A}\mathbf{B}$ with $\mathbf{B}$ of
+the transposed shape: for conjugate exponents,
+$\lvert \operatorname{tr}(\mathbf{A}\mathbf{B}) \rvert \le \|\mathbf{A}\|_{S_q}
+\|\mathbf{B}\|_{S_r}$. -/
 theorem norm_trace_mul_le_schattenNorm_mul {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A : Matrix m n 𝕜) (B : Matrix n m 𝕜) :
     ‖(A * B).trace‖ ≤ schattenNorm q A * schattenNorm r B := by
   have h := norm_trace_conjTranspose_mul_le_schattenNorm_mul (q := q) (r := r) Aᴴ B
   rwa [Matrix.conjTranspose_conjTranspose, schattenNorm_conjTranspose] at h
 
-/-- Hölder's inequality for the Frobenius inner product: `|⟨A, B⟩_F| ≤ ‖A‖_q ‖B‖_r`.
-Port of `NLAlib.abs_frobInner_le_schattenNorm_mul`, there over `ℝ`. -/
+/-- Hölder's inequality for the Frobenius inner product: for conjugate exponents,
+$\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
+\le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}$.
+Port of `NLAlib.abs_frobInner_le_schattenNorm_mul`, there over $\mathbb{R}$. -/
 theorem abs_frobInner_le_schattenNorm_mul {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A B : Matrix m n 𝕜) : |frobInner A B| ≤ schattenNorm q A * schattenNorm r B := by
   exact (RCLike.abs_re_le_norm _).trans (norm_trace_conjTranspose_mul_le_schattenNorm_mul A B)
 
 /-- Attainment in Hölder's inequality for finite conjugate exponents: with a thin singular value
-decomposition `A = U diag(σ) Vᴴ`, the matrix `U diag(σ_i^(q-1) / ‖A‖_q^(q-1)) Vᴴ` has Schatten
-`r`-norm one and pairs with `A` to `‖A‖_q`. -/
+decomposition $\mathbf{A} = \mathbf{U} \operatorname{diag}(\sigma_i(\mathbf{A}))
+\mathbf{V}^{\mathsf{H}}$, the matrix
+$\mathbf{U} \operatorname{diag}\bigl(\sigma_i(\mathbf{A})^{q-1} / \|\mathbf{A}\|_{S_q}^{q-1}\bigr)
+\mathbf{V}^{\mathsf{H}}$ has Schatten $r$-norm at most one and pairs with $\mathbf{A}$ to
+$\|\mathbf{A}\|_{S_q}$. -/
 private theorem exists_schattenNorm_le_one_frobInner_eq_of_ne_top {q r : ℝ≥0∞}
     [ENNReal.HolderConjugate q r] (hq : q ≠ ⊤) (hr : r ≠ ⊤) (A : Matrix m n 𝕜) :
     ∃ B : Matrix m n 𝕜, schattenNorm r B ≤ 1 ∧ frobInner A B = schattenNorm q A := by
@@ -172,9 +184,10 @@ private theorem exists_schattenNorm_le_one_frobInner_eq_of_ne_top {q r : ℝ≥0
       Real.rpow_sub_one hc.ne']
     exact div_div_cancel₀ (Real.rpow_pos_of_pos hc _).ne'
 
-/-- Equality in Hölder's inequality is attained: there is `B` in the unit ball of the Schatten
-`r`-norm with `⟨A, B⟩_F = ‖A‖_q`.
-Port of `NLAlib.exists_schattenNorm_le_one_frobInner_eq`, there over `ℝ`. -/
+/-- Equality in Hölder's inequality is attained: for conjugate exponents there is $\mathbf{B}$
+in the unit ball of the Schatten $r$-norm with
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_{S_q}$.
+Port of `NLAlib.exists_schattenNorm_le_one_frobInner_eq`, there over $\mathbb{R}$. -/
 theorem exists_schattenNorm_le_one_frobInner_eq {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A : Matrix m n 𝕜) :
     ∃ B : Matrix m n 𝕜, schattenNorm r B ≤ 1 ∧ frobInner A B = schattenNorm q A := by
@@ -188,9 +201,12 @@ theorem exists_schattenNorm_le_one_frobInner_eq {q r : ℝ≥0∞} [ENNReal.Hold
     exact exists_specNorm_le_one_frobInner_eq_nuclearNorm A
   · exact exists_schattenNorm_le_one_frobInner_eq_of_ne_top hq hr A
 
-/-- **Duality of Schatten norms.** For conjugate exponents, the Schatten `q`-norm is the largest
-Frobenius inner product with a matrix in the unit ball of the Schatten `r`-norm.
-[Bhatia1997, §IV.2]. Port of `NLAlib.isGreatest_schattenNorm_frobInner`, there over `ℝ`.
+/-- **Duality of Schatten norms.** For conjugate exponents, $1/q + 1/r = 1$, the Schatten
+$q$-norm is the largest Frobenius inner product with a matrix in the unit ball of the Schatten
+$r$-norm:
+$$\|\mathbf{A}\|_{S_q} = \max_{\|\mathbf{B}\|_{S_r} \le 1}
+  \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}\,.$$
+[Bhatia1997, §IV.2]. Port of `NLAlib.isGreatest_schattenNorm_frobInner`, there over $\mathbb{R}$.
 Result: schatten-duality -/
 theorem isGreatest_frobInner_schattenNorm {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A : Matrix m n 𝕜) :

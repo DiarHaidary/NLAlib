@@ -12,9 +12,10 @@ public import NLAlib.Matrix.Factorizations.GaussState
 # Inertia through elimination
 
 The inertia of a Hermitian block matrix is that of a block plus that of its Schur complement
-(Haynsworth). Elimination at nonzero pivots writes a Hermitian matrix as `L D Lᴴ` with the
-inverses of the pivots on the diagonal of `D`, so by Sylvester's law the signs of the pivots of
-`A - x • 1` count the eigenvalues of `A` below `x`, which is what the bisection method uses.
+(Haynsworth). Elimination at nonzero pivots writes a Hermitian matrix as
+$\mathbf{L}\mathbf{D}\mathbf{L}^{\mathsf{H}}$ with the inverses of the pivots on the diagonal of
+$\mathbf{D}$, so by Sylvester's law the signs of the pivots of $\mathbf{A} - x\mathbf{I}$ count
+the eigenvalues of $\mathbf{A}$ below $x$, which is what the bisection method uses.
 
 ## Main results
 
@@ -22,8 +23,8 @@ inverses of the pivots on the diagonal of `D`, so by Sylvester's law the signs o
   Haynsworth additivity.
 * `Matrix.PosDef.inertiaPos_fromBlocks_zero`, `Matrix.PosDef.inertiaNeg_fromBlocks_zero`: the
   inertia of a saddle-point matrix.
-* `Matrix.IsHermitian.inertiaNeg_sub_smul_one`: the negative index of `A - x • 1` counts the
-  eigenvalues below `x`.
+* `Matrix.IsHermitian.inertiaNeg_sub_smul_one`: the negative index of $\mathbf{A} - x\mathbf{I}$
+  counts the eigenvalues below $x$.
 * `Matrix.IsHermitian.inertiaNeg_sub_smul_one_eq_card_gaussState_re_neg`: counting eigenvalues by
   pivots.
 -/
@@ -38,7 +39,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Congruence to a diagonal matrix -/
 
-/-- The inertia of `L D Lᴴ` for an invertible `L` and a real diagonal `D` is read off `D`. -/
+/-- The inertia of $\mathbf{L} \operatorname{diag}(\mathbf{d}) \mathbf{L}^{\mathsf{H}}$ for an
+invertible $\mathbf{L}$ and a real $\mathbf{d}$ is read off $\mathbf{d}$. -/
 private theorem inertia_mul_diagonal_mul_conjTranspose [DecidableEq n] {L : Matrix n n 𝕜}
     (hL : IsUnit L.det) (d : n → ℝ) :
     inertiaPos (L * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Lᴴ) =
@@ -94,7 +96,9 @@ private theorem inertia_fromBlocks_diagonal {A : Matrix m m 𝕜} {C : Matrix n 
     (inertia_mul_diagonal_mul_conjTranspose hR c).2]
   exact ⟨hsum fun x => 0 < x, hsum fun x => x < 0⟩
 
-/-- The positive index of a block diagonal matrix is the sum of those of the blocks.
+/-- The positive index of a block diagonal matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{C} \end{bmatrix}$ with Hermitian
+blocks is the sum of those of the blocks.
 Port of `NLAlib.inertiaPos_fromBlocks_zero`. -/
 theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks_diagonal
     {A : Matrix m m 𝕜} {C : Matrix n n 𝕜}
@@ -102,7 +106,9 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks_diagonal
     inertiaPos (Matrix.fromBlocks A 0 0 C) = inertiaPos A + inertiaPos C :=
   (inertia_fromBlocks_diagonal hA hC).1
 
-/-- The negative index of a block diagonal matrix is the sum of those of the blocks.
+/-- The negative index of a block diagonal matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{C} \end{bmatrix}$ with Hermitian
+blocks is the sum of those of the blocks.
 Port of `NLAlib.inertiaNeg_fromBlocks_zero`. -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks_diagonal
     {A : Matrix m m 𝕜} {C : Matrix n n 𝕜}
@@ -110,7 +116,14 @@ theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks_diagonal
     inertiaNeg (Matrix.fromBlocks A 0 0 C) = inertiaNeg A + inertiaNeg C :=
   (inertia_fromBlocks_diagonal hA hC).2
 
-/-- The block factorization behind the Schur complement, as a congruence. -/
+/-- The block factorization behind the Schur complement, as a congruence: for invertible
+Hermitian $\mathbf{A}$ and $\mathbf{T} =
+\begin{bmatrix} \mathbf{I} & \mathbf{A}^{-1}\mathbf{B} \\ \mathbf{0} & \mathbf{I} \end{bmatrix}$,
+$$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}
+  = \mathbf{T}^{\mathsf{H}}
+  \begin{bmatrix} \mathbf{A} & \mathbf{0} \\
+  \mathbf{0} & \mathbf{C} - \mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B} \end{bmatrix}
+  \mathbf{T}.$$ -/
 private theorem fromBlocks_eq_conjTranspose_mul_fromBlocks_mul [DecidableEq m] [DecidableEq n]
     {A : Matrix m m 𝕜}
     (hA : A.IsHermitian) (hAu : IsUnit A.det) (B : Matrix m n 𝕜) (C : Matrix n n 𝕜) :
@@ -123,10 +136,13 @@ private theorem fromBlocks_eq_conjTranspose_mul_fromBlocks_mul [DecidableEq m] [
     zero_add, Matrix.mul_assoc, Matrix.mul_nonsing_inv_cancel_left _ _ hAu,
     Matrix.nonsing_inv_mul _ hAu, add_sub_cancel]
 
-/-- **Haynsworth inertia additivity**, positive index: for an invertible Hermitian block `A`,
-the inertia of the block matrix is that of `A` plus that of the Schur complement.
+/-- **Haynsworth inertia additivity**, positive index: for Hermitian $\mathbf{A}$ and $\mathbf{C}$
+with $\mathbf{A}$ invertible, the number of positive eigenvalues of the block matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
+is that of $\mathbf{A}$ plus that of the Schur complement
+$\mathbf{C} - \mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B}$.
 [HornJohnson2013, §4.5].
-Port of `NLAlib.inertiaPos_fromBlocks_eq_add_schur`, there over `ℝ`.
+Port of `NLAlib.inertiaPos_fromBlocks_eq_add_schur`, there over $\mathbb{R}$.
 Result: haynsworth -/
 theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks [DecidableEq m]
     {A : Matrix m m 𝕜} {C : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -141,7 +157,11 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks [DecidableEq m]
     hD.inertiaPos_conjTranspose_mul_mul (by rw [Matrix.det_fromBlocks_zero₂₁]; simp),
     hA.inertiaPos_fromBlocks_diagonal hS]
 
-/-- **Haynsworth inertia additivity**, negative index.
+/-- **Haynsworth inertia additivity**, negative index: for Hermitian $\mathbf{A}$ and $\mathbf{C}$
+with $\mathbf{A}$ invertible, the number of negative eigenvalues of the block matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
+is that of $\mathbf{A}$ plus that of the Schur complement
+$\mathbf{C} - \mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B}$.
 Port of `NLAlib.inertiaNeg_fromBlocks_eq_add_schur`.
 Result: haynsworth -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks [DecidableEq m]
@@ -157,7 +177,8 @@ theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks [DecidableEq m]
     hD.inertiaNeg_conjTranspose_mul_mul (by rw [Matrix.det_fromBlocks_zero₂₁]; simp),
     hA.inertiaNeg_fromBlocks_diagonal hS]
 
-/-- For `A` positive definite, `Bᴴ A⁻¹ B` has the rank of `B`. -/
+/-- For $\mathbf{A}$ positive definite, $\mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B}$ has the
+rank of $\mathbf{B}$. -/
 private theorem rank_conjTranspose_mul_inv_mul [DecidableEq m] {A : Matrix m m 𝕜} (hA : A.PosDef)
     (B : Matrix m n 𝕜) : (Bᴴ * A⁻¹ * B).rank = B.rank := by
   have hker : LinearMap.ker (Bᴴ * A⁻¹ * B).mulVecLin = LinearMap.ker B.mulVecLin := by
@@ -174,8 +195,9 @@ private theorem rank_conjTranspose_mul_inv_mul [DecidableEq m] {A : Matrix m m �
   rw [hker] at h1
   omega
 
-/-- **The inertia of a saddle-point matrix.** For `A` positive definite, the matrix
-`[[A, B], [Bᴴ, 0]]` has as many positive eigenvalues as `A` has rows.
+/-- **The inertia of a saddle-point matrix.** For $\mathbf{A}$ positive definite, the matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$
+has as many positive eigenvalues as $\mathbf{A}$ has rows, $\lvert m \rvert$.
 [GolubVanLoan2013, §4.4 context]. -/
 theorem _root_.Matrix.PosDef.inertiaPos_fromBlocks_zero {A : Matrix m m 𝕜} (hA : A.PosDef)
     (B : Matrix m n 𝕜) :
@@ -187,8 +209,9 @@ theorem _root_.Matrix.PosDef.inertiaPos_fromBlocks_zero {A : Matrix m m 𝕜} (h
     ← inertiaNeg_eq_inertiaPos_neg, hX.isHermitian.posSemidef_iff_inertiaNeg_eq_zero.mp hX,
     add_zero, hA.isHermitian.posDef_iff_inertiaPos_eq_card.mp hA]
 
-/-- The inertia of a saddle-point matrix: for `A` positive definite, `[[A, B], [Bᴴ, 0]]` has
-`rank B` negative eigenvalues. -/
+/-- The inertia of a saddle-point matrix: for $\mathbf{A}$ positive definite,
+$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$
+has $\operatorname{rank} \mathbf{B}$ negative eigenvalues. -/
 theorem _root_.Matrix.PosDef.inertiaNeg_fromBlocks_zero {A : Matrix m m 𝕜} (hA : A.PosDef)
     (B : Matrix m n 𝕜) : inertiaNeg (Matrix.fromBlocks A B Bᴴ 0) = B.rank := by
   classical
@@ -203,7 +226,9 @@ theorem _root_.Matrix.PosDef.inertiaNeg_fromBlocks_zero {A : Matrix m m 𝕜} (h
 
 /-! ### Counting eigenvalues -/
 
-/-- The negative index of `A - x • 1` counts the eigenvalues of `A` below `x`.
+/-- The negative index of $\mathbf{A} - x\mathbf{I}$ counts the eigenvalues of the Hermitian
+$\mathbf{A}$ below $x$: it is the number of $i < \lvert n \rvert$ with
+$\lambda_i(\mathbf{A}) < x$.
 Port of `NLAlib.inertiaNeg_sub_smul_one_eq_card`. -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_sub_smul_one [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : ℝ) :
@@ -213,7 +238,9 @@ theorem _root_.Matrix.IsHermitian.inertiaNeg_sub_smul_one [DecidableEq n]
   rw [sub_eq_add_neg, ← neg_smul, hA.eigenvalue_add_smul_one _ (Finset.mem_range.mp hi),
     ← sub_eq_add_neg, sub_neg]
 
-/-- The positive index of `A - x • 1` counts the eigenvalues of `A` above `x`.
+/-- The positive index of $\mathbf{A} - x\mathbf{I}$ counts the eigenvalues of the Hermitian
+$\mathbf{A}$ above $x$: it is the number of $i < \lvert n \rvert$ with
+$x < \lambda_i(\mathbf{A})$.
 Port of `NLAlib.inertiaPos_sub_smul_one_eq_card`. -/
 theorem _root_.Matrix.IsHermitian.inertiaPos_sub_smul_one [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : ℝ) :
@@ -223,9 +250,11 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_sub_smul_one [DecidableEq n]
   rw [sub_eq_add_neg, ← neg_smul, hA.eigenvalue_add_smul_one _ (Finset.mem_range.mp hi),
     ← sub_eq_add_neg, sub_pos]
 
-/-- **Counting eigenvalues by a triangular factorization.** If `A - x • 1 = L D Lᴴ` with `L`
-invertible and `D` real diagonal, the number of eigenvalues of `A` below `x` is the number of
-negative entries of `D`. [GolubVanLoan2013, §8.4.2].
+/-- **Counting eigenvalues by a triangular factorization.** If
+$\mathbf{A} - x\mathbf{I} = \mathbf{L} \operatorname{diag}(\mathbf{d}) \mathbf{L}^{\mathsf{H}}$
+with $\mathbf{A}$ Hermitian, $\mathbf{L}$ invertible and $\mathbf{d}$ real, the number of
+eigenvalues of $\mathbf{A}$ below $x$ is the number of negative entries of $\mathbf{d}$.
+[GolubVanLoan2013, §8.4.2].
 Port of `NLAlib.card_eigenvalues_lt_eq_card_neg_of_eq_mul_diagonal_mul`. -/
 theorem _root_.Matrix.IsHermitian.card_eigenvalue_lt_eq_card_neg_of_sub_smul_one_eq
     [DecidableEq n] {A : Matrix n n 𝕜}
@@ -235,9 +264,9 @@ theorem _root_.Matrix.IsHermitian.card_eigenvalue_lt_eq_card_neg_of_sub_smul_one
       (Finset.univ.filter fun i => d i < 0).card := by
   rw [← hA.inertiaNeg_sub_smul_one, h, (inertia_mul_diagonal_mul_conjTranspose hL d).2]
 
-/-- **The `L D Lᴴ` factorization produced by elimination** of a Hermitian matrix at nonzero
-pivots: column `j` of `L` is the pivot column of the `j`-th state and `D` holds the inverses of
-the pivots. -/
+/-- **The $\mathbf{L}\mathbf{D}\mathbf{L}^{\mathsf{H}}$ factorization produced by elimination** of
+a Hermitian matrix at nonzero pivots: column $j$ of $\mathbf{L}$ is the pivot column of the $j$-th
+state and $\mathbf{D}$ holds the inverses of the pivots. -/
 private theorem eq_mul_diagonal_mul_conjTranspose_of_gaussState_ne_zero {k : ℕ}
     {M : Matrix (Fin k) (Fin k) 𝕜} (hM : M.IsHermitian)
     (hp : ∀ i : Fin k, gaussState M i i i ≠ 0) :
@@ -258,9 +287,10 @@ private theorem eq_mul_diagonal_mul_conjTranspose_of_gaussState_ne_zero {k : ℕ
     smul_eq_mul, RCLike.ofReal_inv, (hM.gaussState j).coe_re_apply_self j]
   ring
 
-/-- **Counting eigenvalues by pivots** (the Sturm count). If elimination on `A - x • 1` meets no
-zero pivot, the number of eigenvalues of `A` below `x`, which is `inertiaNeg (A - x • 1)`, is
-the number of negative pivots (the pivots of a Hermitian matrix are real).
+/-- **Counting eigenvalues by pivots** (the Sturm count). If elimination on
+$\mathbf{A} - x\mathbf{I}$ meets no zero pivot, the number of eigenvalues of the Hermitian
+$\mathbf{A}$ below $x$, which is `inertiaNeg (A - x • 1)`, is the number of negative pivots (the
+pivots of a Hermitian matrix are real; the count uses their real parts).
 [GolubVanLoan2013, Theorem 8.4.1]; [Parlett1998, §3.3].
 Port of `NLAlib.card_eigenvalues_lt_eq_card_sign_changes`, which the prototype leaves unproved.
 Result: sturm-count -/

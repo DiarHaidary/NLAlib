@@ -12,13 +12,13 @@ public import NLAlib.Matrix.Spectral.Weyl
 /-!
 # Rank-one updates and bordered matrices
 
-The determinant and the characteristic polynomial of a rank-one update `A + x yᵀ` and of a
-bordered matrix: the matrix determinant lemma, the secular equation of a diagonal matrix plus a
-rank-one matrix and of an arrowhead matrix, and Brauer's theorem on the eigenvalues after a
-rank-one update along an eigenvector. The sorted eigenvalues of a Hermitian matrix are a listing
-of its eigenvalues, so they are determined by the characteristic polynomial. The converses of
-the interlacing theorems, which rest on the secular equation, are in
-`NLAlib.Matrix.Spectral.InterlacingConverse`.
+The determinant and the characteristic polynomial of a rank-one update
+$\mathbf{A} + \mathbf{x}\mathbf{y}^{\mathsf{T}}$ and of a bordered matrix: the matrix determinant
+lemma, the secular equation of a diagonal matrix plus a rank-one matrix and of an arrowhead
+matrix, and Brauer's theorem on the eigenvalues after a rank-one update along an eigenvector. The
+sorted eigenvalues of a Hermitian matrix are a listing of its eigenvalues, so they are determined
+by the characteristic polynomial. The converses of the interlacing theorems, which rest on the
+secular equation, are in `NLAlib.Matrix.Spectral.InterlacingConverse`.
 
 ## Main results
 
@@ -41,8 +41,10 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### Determinants and characteristic polynomials -/
 
-/-- **The matrix determinant lemma**: `det (M + u vᵀ) = det M · (1 + vᵀ M⁻¹ u)` for invertible
-`M`. Port of `NLAlib.det_add_vecMulVec`. -/
+/-- **The matrix determinant lemma**: for invertible $\mathbf{M}$ over a field,
+$$\det(\mathbf{M} + \mathbf{u}\mathbf{v}^{\mathsf{T}})
+  = \det \mathbf{M} \, (1 + \mathbf{v}^{\mathsf{T}}\mathbf{M}^{-1}\mathbf{u}).$$
+Port of `NLAlib.det_add_vecMulVec`. -/
 theorem det_add_vecMulVec {K : Type*} [Field K] {M : Matrix n n K} (hM : IsUnit M.det)
     (u v : n → K) : (M + Matrix.vecMulVec u v).det = M.det * (1 + v ⬝ᵥ M⁻¹ *ᵥ u) := by
   have hfactor : M + Matrix.vecMulVec u v = M * (1 + Matrix.vecMulVec (M⁻¹ *ᵥ u) v) := by
@@ -52,7 +54,9 @@ theorem det_add_vecMulVec {K : Type*} [Field K] {M : Matrix n n K} (hM : IsUnit 
     Matrix.det_one_add_replicateCol_mul_replicateRow]
 
 /-- The determinant of a matrix bordered by one row and one column, through the adjugate, when
-the determinant of the matrix is not a zero divisor. -/
+the determinant of the matrix is not a zero divisor:
+$$\det \begin{bmatrix} \mathbf{A} & \mathbf{u} \\ \mathbf{w}^{\mathsf{T}} & a \end{bmatrix}
+  = a \det \mathbf{A} - \mathbf{w}^{\mathsf{T}} (\operatorname{adj} \mathbf{A}) \mathbf{u}.$$ -/
 private theorem det_fromBlocks_replicateCol_of_isRegular {S : Type*} [CommRing S]
     {A : Matrix n n S} (hA : IsRegular A.det) (u w : n → S) (a : S) :
     (Matrix.fromBlocks A (Matrix.replicateCol Unit u) (Matrix.replicateRow Unit w)
@@ -87,7 +91,9 @@ private theorem det_fromBlocks_replicateCol_of_isRegular {S : Type*} [CommRing S
   exact hreg.left h
 
 /-- The determinant of a rank-one update through the adjugate, when the determinant of the
-matrix is not a zero divisor. -/
+matrix is not a zero divisor:
+$\det(\mathbf{A} - \mathbf{u}\mathbf{v}^{\mathsf{T}}) = \det \mathbf{A} -
+\mathbf{v}^{\mathsf{T}} (\operatorname{adj} \mathbf{A}) \mathbf{u}$. -/
 private theorem det_sub_vecMulVec_of_isRegular {S : Type*} [CommRing S] {A : Matrix n n S}
     (hA : IsRegular A.det) (u v : n → S) :
     (A - Matrix.vecMulVec u v).det = A.det - v ⬝ᵥ A.adjugate *ᵥ u := by
@@ -98,7 +104,11 @@ private theorem det_sub_vecMulVec_of_isRegular {S : Type*} [CommRing S] {A : Mat
     det_fromBlocks_replicateCol_of_isRegular hA, mul_one]
 
 /-- **The secular equation**: the characteristic polynomial of a diagonal matrix plus a rank-one
-matrix. [GolubVanLoan2013, §8.4.3]. Port of `NLAlib.charpoly_diagonal_add_vecMulVec`. -/
+matrix, over any commutative ring,
+$$\det\bigl(X\mathbf{I} - \operatorname{diag}(\mathbf{d}) - \mathbf{u}\mathbf{v}^{\mathsf{T}}\bigr)
+  = \prod_i (X - \mathbf{d}_i) -
+  \sum_i \mathbf{u}_i \mathbf{v}_i \prod_{j \ne i} (X - \mathbf{d}_j).$$
+[GolubVanLoan2013, §8.4.3]. Port of `NLAlib.charpoly_diagonal_add_vecMulVec`. -/
 theorem charpoly_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → R) :
     (Matrix.diagonal d + Matrix.vecMulVec u v).charpoly =
       ∏ i, (X - C (d i)) - ∑ i, C (u i * v i) * ∏ j ∈ Finset.univ.erase i, (X - C (d j)) := by
@@ -125,7 +135,10 @@ theorem charpoly_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → 
   ring
 
 /-- The determinant of a diagonal matrix plus a rank-one matrix, with no invertibility
-assumption. Port of `NLAlib.det_diagonal_add_vecMulVec_of_forall_ne_zero`. -/
+assumption:
+$$\det\bigl(\operatorname{diag}(\mathbf{d}) + \mathbf{u}\mathbf{v}^{\mathsf{T}}\bigr)
+  = \prod_i \mathbf{d}_i + \sum_i \mathbf{u}_i \mathbf{v}_i \prod_{j \ne i} \mathbf{d}_j.$$
+Port of `NLAlib.det_diagonal_add_vecMulVec_of_forall_ne_zero`. -/
 theorem det_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → R) :
     (Matrix.diagonal d + Matrix.vecMulVec u v).det =
       ∏ i, d i + ∑ i, u i * v i * ∏ j ∈ Finset.univ.erase i, d j := by
@@ -149,7 +162,12 @@ theorem det_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → R) :
     Finset.sum_neg_distrib, sub_neg_eq_add, zero_add]
 
 /-- **The characteristic polynomial of an arrowhead matrix**: a diagonal matrix bordered by one
-row and one column. [GolubVanLoan2013, §8.4.3 context].
+row and one column,
+$$\det\left(X\mathbf{I} - \begin{bmatrix} \operatorname{diag}(\mathbf{d}) & \mathbf{u} \\
+  \mathbf{w}^{\mathsf{T}} & a \end{bmatrix}\right)
+  = (X - a) \prod_i (X - \mathbf{d}_i) -
+  \sum_i \mathbf{u}_i \mathbf{w}_i \prod_{j \ne i} (X - \mathbf{d}_j).$$
+[GolubVanLoan2013, §8.4.3 context].
 Port of `NLAlib.charpoly_fromBlocks_diagonal_replicate`. -/
 theorem charpoly_fromBlocks_diagonal_replicateCol {R : Type*} [CommRing R] (d u w : n → R)
     (a : R) :
@@ -173,10 +191,13 @@ theorem charpoly_fromBlocks_diagonal_replicateCol {R : Type*} [CommRing R] (d u 
   rw [Matrix.mulVec_diagonal, C_mul]
   ring
 
-/-- **Brauer's theorem.** A rank-one update along an eigenvector `x` of `A` with eigenvalue `μ`
-moves `μ` to `μ + yᵀ x` and leaves the other eigenvalues in place, as an identity of
-characteristic polynomials over any commutative ring.
-[HornJohnson2013, Theorem 1.2.8 context], there over `ℂ`.
+/-- **Brauer's theorem.** A rank-one update along an eigenvector $\mathbf{x}$ of $\mathbf{A}$ with
+eigenvalue $\mu$ moves $\mu$ to $\mu + \mathbf{y}^{\mathsf{T}}\mathbf{x}$ and leaves the other
+eigenvalues in place, as an identity of characteristic polynomials over any commutative ring:
+$$(X - \mu) \, p_{\mathbf{A} + \mathbf{x}\mathbf{y}^{\mathsf{T}}}(X)
+  = (X - \mu - \mathbf{y}^{\mathsf{T}}\mathbf{x}) \, p_{\mathbf{A}}(X),$$
+with $p_{\mathbf{M}}(X) = \det(X\mathbf{I} - \mathbf{M})$.
+[HornJohnson2013, Theorem 1.2.8 context], there over $\mathbb{C}$.
 Port of `NLAlib.charpoly_add_vecMulVec_mul_X_sub_C`. -/
 theorem charpoly_add_vecMulVec_mul {R : Type*} [CommRing R] {A : Matrix n n R} {x : n → R}
     {μ : R} (hAx : A *ᵥ x = μ • x) (y : n → R) :
@@ -218,7 +239,9 @@ theorem charpoly_add_vecMulVec_mul {R : Type*} [CommRing R] {A : Matrix n n R} {
 
 /-! ### Eigenvalues determined by the characteristic polynomial -/
 
-/-- The sorted eigenvalues of a Hermitian matrix list its eigenvalues. -/
+/-- The sorted eigenvalues of a Hermitian matrix list its eigenvalues:
+$\lambda_0(\mathbf{A}), \dots, \lambda_{\lvert n \rvert - 1}(\mathbf{A})$ is an
+`IsEigenvalueListing` of $\mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.isEigenvalueListing_eigenvalue {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     IsEigenvalueListing A (fun i : Fin (Fintype.card n) => ((eigenvalue A i : ℝ) : 𝕜)) := by
@@ -226,7 +249,8 @@ theorem _root_.Matrix.IsHermitian.isEigenvalueListing_eigenvalue {A : Matrix n n
   rw [isEigenvalueListing_iff, hA.charpoly_eq]
   exact Fintype.prod_equiv e _ _ fun i => by rw [he]
 
-/-- Hermitian matrices with the same characteristic polynomial have the same eigenvalues.
+/-- Hermitian matrices with the same characteristic polynomial have the same eigenvalues:
+$\lambda_k(\mathbf{A}) = \lambda_k(\mathbf{B})$ for every $k$.
 Port of `NLAlib.eigenvalues₀_eq_of_charpoly_eq`. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_eq_of_charpoly_eq {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) (h : A.charpoly = B.charpoly) :

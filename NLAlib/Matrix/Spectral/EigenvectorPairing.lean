@@ -12,12 +12,13 @@ public import Mathlib.LinearAlgebra.Matrix.Rank
 /-!
 # Left and right eigenvectors
 
-A right eigenvector of a square matrix over a field is a vector `x` with `A *ᵥ x = μ • x`, a left
-eigenvector a vector `y` with `y ᵥ* A = μ • y`. Left and right eigenvectors for different
-eigenvalues are orthogonal for the pairing `y ⬝ᵥ x`; for an eigenvalue whose eigenspace is a
-line, the pairing of its left and right eigenvectors decides whether the eigenvalue is a simple
-root of the characteristic polynomial, and the adjugate of `A - μ • 1` is a nonzero multiple of
-`x yᵀ`.
+A right eigenvector of a square matrix over a field is a vector $\mathbf{x}$ with
+$\mathbf{A}\mathbf{x} = \mu\mathbf{x}$, a left eigenvector a vector $\mathbf{y}$ with
+$\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$. Left and right eigenvectors for
+different eigenvalues are orthogonal for the pairing $\mathbf{y}^{\mathsf{T}}\mathbf{x}$; for an
+eigenvalue whose eigenspace is a line, the pairing of its left and right eigenvectors decides
+whether the eigenvalue is a simple root of the characteristic polynomial, and the adjugate of
+$\mathbf{A} - \mu\mathbf{I}$ is a nonzero multiple of $\mathbf{x}\mathbf{y}^{\mathsf{T}}$.
 
 ## Main results
 
@@ -40,7 +41,8 @@ variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### Existence and biorthogonality -/
 
-/-- Every eigenvalue has a right eigenvector.
+/-- Every eigenvalue has a right eigenvector: for $\mu$ in the spectrum of $\mathbf{A}$ there is
+$\mathbf{x} \ne \mathbf{0}$ with $\mathbf{A}\mathbf{x} = \mu\mathbf{x}$.
 Port of `NLAlib.exists_mulVec_eq_smul_of_mem_spectrum`. -/
 theorem exists_mulVec_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
     (hμ : μ ∈ spectrum K A) : ∃ x : n → K, x ≠ 0 ∧ A *ᵥ x = μ • x := by
@@ -53,7 +55,8 @@ theorem exists_mulVec_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
   rw [← h, Matrix.scalar_apply, ← Matrix.smul_one_eq_diagonal, Matrix.smul_mulVec,
     Matrix.one_mulVec]
 
-/-- Every eigenvalue has a left eigenvector.
+/-- Every eigenvalue has a left eigenvector: for $\mu$ in the spectrum of $\mathbf{A}$ there is
+$\mathbf{y} \ne \mathbf{0}$ with $\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$.
 Port of `NLAlib.exists_vecMul_eq_smul_of_mem_spectrum`. -/
 theorem exists_vecMul_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
     (hμ : μ ∈ spectrum K A) : ∃ y : n → K, y ≠ 0 ∧ y ᵥ* A = μ • y := by
@@ -65,7 +68,9 @@ theorem exists_vecMul_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
   exact ⟨y, hy, by rwa [Matrix.mulVec_transpose] at h⟩
 
 omit [DecidableEq n] in
-/-- **Biorthogonality**: left and right eigenvectors for different eigenvalues are orthogonal.
+/-- **Biorthogonality**: left and right eigenvectors for different eigenvalues are orthogonal: if
+$\mathbf{A}\mathbf{x} = \alpha\mathbf{x}$, $\mathbf{y}^{\mathsf{T}}\mathbf{A} =
+\mu\mathbf{y}^{\mathsf{T}}$ and $\alpha \ne \mu$, then $\mathbf{y}^{\mathsf{T}}\mathbf{x} = 0$.
 [HornJohnson2013, Theorem 1.4.7].
 Port of `NLAlib.dotProduct_eq_zero_of_left_right_eigenvalues_ne`. -/
 theorem dotProduct_eq_zero_of_vecMul_eq_smul_of_mulVec_eq_smul {A : Matrix n n K} {x y : n → K}
@@ -77,7 +82,7 @@ theorem dotProduct_eq_zero_of_vecMul_eq_smul_of_mulVec_eq_smul {A : Matrix n n K
 
 /-! ### Simple eigenvalues -/
 
-/-- The kernel of `A - μ • 1` is the eigenspace of `μ`. -/
+/-- The kernel of $\mathbf{A} - \mu\mathbf{I}$ is the eigenspace of $\mu$. -/
 private theorem ker_mulVecLin_sub_smul_one (A : Matrix n n K) (μ : K) :
     LinearMap.ker (A - μ • (1 : Matrix n n K)).mulVecLin =
       Module.End.eigenspace (Matrix.toLin' A) μ := by
@@ -85,7 +90,7 @@ private theorem ker_mulVecLin_sub_smul_one (A : Matrix n n K) (μ : K) :
   rw [LinearMap.mem_ker, Matrix.mulVecLin_apply, Module.End.mem_eigenspace_iff,
     Matrix.toLin'_apply, Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, sub_eq_zero]
 
-/-- Powers of `A - μ • 1` as a linear map and as a matrix. -/
+/-- Powers of $\mathbf{A} - \mu\mathbf{I}$ as a linear map and as a matrix. -/
 private theorem toLin'_sub_smul_one_pow_apply (A : Matrix n n K) (μ : K) (k : ℕ) (z : n → K) :
     ((Matrix.toLin' A - μ • 1) ^ k) z = (A - μ • (1 : Matrix n n K)) ^ k *ᵥ z := by
   rw [← Matrix.toLin'_apply, Matrix.toLin'_pow, map_sub, map_smul, Matrix.toLin'_one]
@@ -93,7 +98,9 @@ private theorem toLin'_sub_smul_one_pow_apply (A : Matrix n n K) (μ : K) (k : �
 
 omit [DecidableEq n] in
 /-- A matrix with a kernel of dimension one has in its range every vector orthogonal to a
-nonzero left null vector. -/
+nonzero left null vector: if $\mathbf{y}^{\mathsf{T}}\mathbf{N} = \mathbf{0}$,
+$\mathbf{y} \ne \mathbf{0}$ and $\mathbf{y}^{\mathsf{T}}\mathbf{x} = 0$, then
+$\mathbf{N}\mathbf{z} = \mathbf{x}$ for some $\mathbf{z}$. -/
 private theorem exists_mulVec_eq_of_dotProduct_eq_zero {N : Matrix n n K} {x y : n → K}
     (hy : y ≠ 0) (hyN : y ᵥ* N = 0) (hker : Module.finrank K (LinearMap.ker N.mulVecLin) = 1)
     (hpair : y ⬝ᵥ x = 0) : ∃ z : n → K, N *ᵥ z = x := by
@@ -122,8 +129,9 @@ private theorem exists_mulVec_eq_of_dotProduct_eq_zero {N : Matrix n n K} {x y :
   rw [← heq] at hx
   exact hx
 
-/-- If the eigenspace of `μ` is spanned by `x` and a left eigenvector `y` has `y ⬝ᵥ x ≠ 0`, the
-generalized eigenspace of `μ` is the eigenspace. -/
+/-- If the eigenspace of $\mu$ is spanned by $\mathbf{x}$ and a left eigenvector $\mathbf{y}$ has
+$\mathbf{y}^{\mathsf{T}}\mathbf{x} \ne 0$, the generalized eigenspace of $\mu$ is the
+eigenspace. -/
 private theorem maxGenEigenspace_eq_eigenspace_of_dotProduct_ne_zero {A : Matrix n n K}
     {x y : n → K} {μ : K} (hyA : y ᵥ* A = μ • y)
     (hspan : Module.End.eigenspace (Matrix.toLin' A) μ ≤ K ∙ x) (hpair : y ⬝ᵥ x ≠ 0) :
@@ -164,7 +172,11 @@ private theorem maxGenEigenspace_eq_eigenspace_of_dotProduct_ne_zero {A : Matrix
   exact hpow k z hkM
 
 /-- **A geometrically simple eigenvalue is algebraically simple exactly when its left and right
-eigenvectors are not orthogonal.** [HornJohnson2013, Theorem 1.4.12].
+eigenvectors are not orthogonal**: if the eigenspace of $\mu$ has dimension one,
+$\mathbf{A}\mathbf{x} = \mu\mathbf{x}$ and $\mathbf{y}^{\mathsf{T}}\mathbf{A} =
+\mu\mathbf{y}^{\mathsf{T}}$ with $\mathbf{x}, \mathbf{y} \ne \mathbf{0}$, then $\mu$ is a simple
+root of the characteristic polynomial if and only if $\mathbf{y}^{\mathsf{T}}\mathbf{x} \ne 0$.
+[HornJohnson2013, Theorem 1.4.12].
 Port of `NLAlib.rootMultiplicity_eq_one_iff_pairing_ne_zero_of_finrank_eigenspace_eq_one`. -/
 theorem rootMultiplicity_charpoly_eq_one_iff_dotProduct_ne_zero
     {A : Matrix n n K} {x y : n → K} {μ : K} (hx : x ≠ 0) (hy : y ≠ 0) (hAx : A *ᵥ x = μ • x)
@@ -246,8 +258,12 @@ private theorem adjugate_ne_zero_of_finrank_ker_eq_one {M : Matrix n n K}
   rw [Matrix.submatrix_apply, Equiv.apply_symm_apply, hdiag, Matrix.zero_apply] at h0
   exact one_ne_zero h0
 
-/-- **The adjugate at a geometrically simple eigenvalue** is a nonzero multiple of `x yᵀ`, with
-`x` a right and `y` a left eigenvector. [HornJohnson2013, §1.4.11].
+/-- **The adjugate at a geometrically simple eigenvalue.** If the kernel of $\mathbf{M}$ has
+dimension one, $\mathbf{M}\mathbf{x} = \mathbf{0}$ and $\mathbf{y}^{\mathsf{T}}\mathbf{M} =
+\mathbf{0}$ with $\mathbf{x}, \mathbf{y} \ne \mathbf{0}$, then
+$\operatorname{adj} \mathbf{M} = c\,\mathbf{x}\mathbf{y}^{\mathsf{T}}$ for some $c \ne 0$. With
+$\mathbf{M} = \mathbf{A} - \mu\mathbf{I}$, $\mathbf{x}$ is a right and $\mathbf{y}$ a left
+eigenvector of $\mathbf{A}$ for $\mu$. [HornJohnson2013, §1.4.11].
 Port of `NLAlib.exists_adjugate_shift_eq_smul_vecMulVec_of_finrank_eigenspace_eq_one`. -/
 theorem exists_adjugate_eq_smul_vecMulVec {M : Matrix n n K} {x y : n → K} (hx : x ≠ 0)
     (hy : y ≠ 0) (hMx : M *ᵥ x = 0) (hyM : y ᵥ* M = 0)

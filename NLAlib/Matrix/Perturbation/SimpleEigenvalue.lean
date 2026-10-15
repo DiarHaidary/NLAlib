@@ -21,16 +21,20 @@ public import NLAlib.Matrix.Spectral.Weyl
 /-!
 # First-order perturbation of a simple eigenvalue
 
-A simple eigenvalue moves differentiably under a perturbation `A + t • E`, with derivative
-`yᴴ E x / yᴴ x` for right and left eigenvectors `x`, `y`. For a Hermitian matrix the sorted
-eigenvalue `eigenvalue (A + t • E) k` itself is differentiable at `t = 0` when `eigenvalue A k` is
-simple, with derivative `xᴴ E x` for a unit eigenvector: no branch has to be chosen.
+A simple eigenvalue $\mu$ moves differentiably under a perturbation $\mathbf{A} + t\mathbf{E}$, with
+derivative $\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x} / \mathbf{y}^{\mathsf{T}}\mathbf{x}$ for
+right and left eigenvectors $\mathbf{x}$, $\mathbf{y}$ ($\mathbf{A}\mathbf{x} = \mu\mathbf{x}$,
+$\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$). For a Hermitian matrix the sorted
+eigenvalue $\lambda_k(\mathbf{A} + t\mathbf{E})$ itself is differentiable at $t = 0$ when
+$\lambda_k(\mathbf{A})$ is simple, with derivative $\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x}$ for
+a unit eigenvector: no branch has to be chosen.
 
 ## Main results
 
 * `Matrix.IsHermitian.hasDerivAt_eigenvalue_add_smul`: the Hermitian case.
 * `NLAlib.hasDerivAt_of_isRoot_charpoly_add_smul`: every continuous eigenvalue branch through a
-  simple eigenvalue of a complex matrix has derivative `yᵀ E x / yᵀ x`.
+  simple eigenvalue of a complex matrix has derivative
+  $\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x} / \mathbf{y}^{\mathsf{T}}\mathbf{x}$.
 * `NLAlib.exists_eigenvalue_branch_of_rootMultiplicity_eq_one`: a differentiable branch through a
   simple eigenvalue of a complex matrix.
 -/
@@ -46,10 +50,15 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-! ### Hermitian matrices -/
 
 omit [DecidableEq n] in
-/-- The second-order remainder in the Hermitian case: for `t` small,
-`|λ_k(A + t E) - λ_k(A) - t xᴴ E x| δ ≤ t² ‖E‖₂²`, where `δ` is half the distance from
-`eigenvalue A k` to the rest of the spectrum.
-[Parlett1998, Theorem 11.7.1 applied to the Rayleigh quotient of `x`]. -/
+/-- The second-order remainder in the Hermitian case: for Hermitian $\mathbf{A}$, $\mathbf{E}$, a
+unit vector $\mathbf{x}$ with $\mathbf{A}\mathbf{x} = \lambda_k(\mathbf{A})\mathbf{x}$, $\delta > 0$
+at most half the distance from $\lambda_k(\mathbf{A})$ to the other eigenvalues
+$\lambda_i(\mathbf{A})$, $i \ne k$, and $t$ small,
+$\lvert t \rvert \, \|\mathbf{E}\|_2 < \delta / 2$,
+$$\bigl\lvert \lambda_k(\mathbf{A} + t\mathbf{E}) - \lambda_k(\mathbf{A}) -
+  t \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x}) \bigr\rvert \, \delta
+  \le t^2 \|\mathbf{E}\|_2^2.$$
+[Parlett1998, Theorem 11.7.1], applied to the Rayleigh quotient of $\mathbf{x}$. -/
 theorem _root_.Matrix.IsHermitian.abs_eigenvalue_add_smul_sub_mul_le {A E : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hE : E.IsHermitian) {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i, i < Fintype.card n → i ≠ k → 2 * δ ≤ |eigenvalue A i - eigenvalue A k|)
@@ -107,9 +116,11 @@ theorem _root_.Matrix.IsHermitian.abs_eigenvalue_add_smul_sub_mul_le {A E : Matr
     _ = t ^ 2 * specNorm E ^ 2 := by rw [mul_pow, sq_abs]
 
 omit [DecidableEq n] in
-/-- **First-order perturbation of a simple eigenvalue of a Hermitian matrix.** If `A` and `E` are
-Hermitian, `eigenvalue A k` is a simple eigenvalue of `A` and `x` is a unit eigenvector for it,
-then `t ↦ eigenvalue (A + t • E) k` has derivative `re (xᴴ E x)` at `0`.
+/-- **First-order perturbation of a simple eigenvalue of a Hermitian matrix.** If $\mathbf{A}$ and
+$\mathbf{E}$ are Hermitian, $\lambda_k(\mathbf{A})$ is a simple eigenvalue of $\mathbf{A}$ and
+$\mathbf{x}$ is a unit eigenvector for it, then $t \mapsto \lambda_k(\mathbf{A} + t\mathbf{E})$
+(eigenvalues indexed from $0$, non-increasing) has derivative
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x})$ at $t = 0$.
 [StewartSun1990, Theorem IV.2.3]; [Kato1995, §II.6.4]. -/
 theorem _root_.Matrix.IsHermitian.hasDerivAt_eigenvalue_add_smul {A E : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hE : E.IsHermitian) {k : ℕ}
@@ -194,7 +205,10 @@ private theorem exists_eq_smul_of_rootMultiplicity_eq_one {A : Matrix n n ℂ} {
   obtain ⟨c, hc⟩ := h
   exact ⟨c, hc.symm⟩
 
-/-- For a simple eigenvalue the left and right eigenvectors are not orthogonal: `yᵀ x ≠ 0`.
+/-- For a simple eigenvalue the left and right eigenvectors are not orthogonal: if $\mu$ is a simple
+root of the characteristic polynomial of $\mathbf{A}$, $\mathbf{A}\mathbf{x} = \mu\mathbf{x}$ and
+$\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$ with
+$\mathbf{x}, \mathbf{y} \ne \mathbf{0}$, then $\mathbf{y}^{\mathsf{T}}\mathbf{x} \ne 0$.
 [HornJohnson2013, Lemma 6.3.10].
 Port of `NLAlib.dotProduct_ne_zero_of_simple_eigenvalue`, there over any algebraically closed
 field. -/
@@ -219,8 +233,10 @@ theorem dotProduct_ne_zero_of_rootMultiplicity_eq_one {A : Matrix n n ℂ} {x y 
   simpa only [ℓ, LinearMap.mem_ker, LinearMap.coe_mk, AddHom.coe_mk, dotProduct_single, mul_one,
     Pi.zero_apply] using hi
 
-/-- The matrix `μ • 1 - A`, bordered by the rank-one matrix of the two eigenvectors of a simple
-eigenvalue `μ`, is invertible. -/
+/-- The matrix $\mu\mathbf{I} - \mathbf{A}$, bordered by the rank-one matrix of the two eigenvectors
+of a simple eigenvalue $\mu$, is invertible:
+$\det(\mu\mathbf{I} - \mathbf{A} + (\mathbf{y}^{\mathsf{T}}\mathbf{x})^{-1}
+\mathbf{x}\mathbf{y}^{\mathsf{T}}) \ne 0$. -/
 private theorem det_smul_one_sub_add_smul_vecMulVec_ne_zero {A : Matrix n n ℂ} {x y : n → ℂ}
     {μ : ℂ} (hx : x ≠ 0) (hy : y ≠ 0) (hAx : A *ᵥ x = μ • x) (hyA : y ᵥ* A = μ • y)
     (hμ : A.charpoly.rootMultiplicity μ = 1) :
@@ -242,8 +258,9 @@ private theorem det_smul_one_sub_add_smul_vecMulVec_ne_zero {A : Matrix n n ℂ}
   · exact hw (by rw [hc, zero_smul])
   · exact ha hc
 
-/-- If `M` is singular and its rank-one update `K = M + c • x yᵀ` is not, then `adj K x` is in
-the kernel of `M`. -/
+/-- If $\mathbf{M}$ is singular and its rank-one update
+$\mathbf{K} = \mathbf{M} + c\,\mathbf{x}\mathbf{y}^{\mathsf{T}}$ is not, then
+$\operatorname{adj}(\mathbf{K})\mathbf{x}$ is in the kernel of $\mathbf{M}$. -/
 private theorem mulVec_adjugate_add_smul_vecMulVec_mulVec {M : Matrix n n ℂ} (hM : M.det = 0)
     {c : ℂ} {x y : n → ℂ} (hK : (M + c • Matrix.vecMulVec x y).det ≠ 0) :
     M *ᵥ ((M + c • Matrix.vecMulVec x y).adjugate *ᵥ x) = 0 := by
@@ -263,14 +280,16 @@ private theorem mulVec_adjugate_add_smul_vecMulVec_mulVec {M : Matrix n n ℂ} (
   simp only [Matrix.mulVec_smul, hMw, smul_zero] at h
   exact (smul_eq_zero.mp h.symm).resolve_left hc
 
-/-- **Every continuous eigenvalue branch through a simple eigenvalue is differentiable.** Let `μ`
-be a simple root of the characteristic polynomial of the complex matrix `A`, with right
-eigenvector `x` and left eigenvector `y` (`y ᵥ* A = μ • y`). If `φ` is continuous at `0`,
-`φ 0 = μ`, and `φ t` is an eigenvalue of `A + t • E` for `t` near `0` (a root of the
-characteristic polynomial; see `Matrix.mem_spectrum_iff_isRoot_charpoly`), then `φ` has derivative
-`yᵀ E x / yᵀ x` at `0`. Only continuity at the base point is assumed of `φ`, so this applies to
-any selection of eigenvalues, not only to the branch of
-`NLAlib.exists_eigenvalue_branch_of_rootMultiplicity_eq_one`.
+/-- **Every continuous eigenvalue branch through a simple eigenvalue is differentiable.** Let $\mu$
+be a simple root of the characteristic polynomial of the complex matrix $\mathbf{A}$, with right
+eigenvector $\mathbf{x}$ and left eigenvector $\mathbf{y}$
+($\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$). If $\varphi$ is continuous at
+$0$, $\varphi(0) = \mu$, and $\varphi(t)$ is an eigenvalue of $\mathbf{A} + t\mathbf{E}$ for complex
+$t$ near $0$ (a root of the characteristic polynomial; see
+`Matrix.mem_spectrum_iff_isRoot_charpoly`), then $\varphi$ has derivative
+$\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x} / \mathbf{y}^{\mathsf{T}}\mathbf{x}$ at $0$. Only
+continuity at the base point is assumed of $\varphi$, so this applies to any selection of
+eigenvalues, not only to the branch of `NLAlib.exists_eigenvalue_branch_of_rootMultiplicity_eq_one`.
 [StewartSun1990, Theorem IV.2.3]; [HornJohnson2013, Theorem 6.3.12].
 Result: simple-eigenvalue-perturbation -/
 theorem hasDerivAt_of_isRoot_charpoly_add_smul {A : Matrix n n ℂ} (E : Matrix n n ℂ)
@@ -340,7 +359,8 @@ theorem hasDerivAt_of_isRoot_charpoly_add_smul {A : Matrix n n ℂ} (E : Matrix 
   rw [slope_def_field, hφ₀, sub_zero, div_eq_div_iff h₂ ht]
   linear_combination -h₁
 
-/-- The function `(t, z) ↦ det (z • 1 - (A + t • E))` is continuously differentiable. -/
+/-- The function $(t, z) \mapsto \det(z\mathbf{I} - (\mathbf{A} + t\mathbf{E}))$ is continuously
+differentiable. -/
 private theorem contDiff_eval_charpoly_add_smul (A E : Matrix n n ℂ) :
     ContDiff ℂ 1 fun p : ℂ × ℂ => (A + p.1 • E).charpoly.eval p.2 := by
   simp only [Matrix.eval_charpoly, Matrix.det_apply, Units.smul_def, zsmul_eq_mul]
@@ -349,8 +369,8 @@ private theorem contDiff_eval_charpoly_add_smul (A E : Matrix n n ℂ) :
     Matrix.smul_apply, smul_eq_mul]
   split_ifs <;> fun_prop
 
-/-- The derivative of `(t, z) ↦ det (z • 1 - (A + t • E))` in the direction of `z` is the
-derivative of the characteristic polynomial. -/
+/-- The derivative of $(t, z) \mapsto \det(z\mathbf{I} - (\mathbf{A} + t\mathbf{E}))$ in the
+direction of $z$ is the derivative of the characteristic polynomial. -/
 private theorem fderiv_eval_charpoly_add_smul_apply (A E : Matrix n n ℂ) (p : ℂ × ℂ) :
     fderiv ℂ (fun p : ℂ × ℂ => (A + p.1 • E).charpoly.eval p.2) p (0, 1) =
       (A + p.1 • E).charpoly.derivative.eval p.2 := by
@@ -389,12 +409,17 @@ private theorem eventually_continuousAt_implicitFunctionOfProdDomain {f : ℂ ×
   exact (((hf.implicitFunctionDataOfProdDomain hf').toOpenPartialHomeomorph.symm.continuousAt
     ht).comp (continuousAt_const.prodMk continuousAt_id)).snd
 
-/-- **A differentiable branch through a simple eigenvalue.** Let `μ` be a simple root of the
-characteristic polynomial of the complex matrix `A`, with right eigenvector `x` and left
-eigenvector `y`. Then there is a function `φ` with `φ 0 = μ`, derivative `yᵀ E x / yᵀ x` at `0`,
-such that near `(0, μ)` the eigenvalues of `A + t • E` close to `μ` are exactly `φ t`, and they
-remain simple. The left eigenvector enters through the bilinear product `yᵀ x`, with
-`y ᵥ* A = μ • y`; for Hermitian `A` take `y = star x` to recover the derivative `xᴴ E x`.
+/-- **A differentiable branch through a simple eigenvalue.** Let $\mu$ be a simple root of the
+characteristic polynomial of the complex matrix $\mathbf{A}$, with right eigenvector $\mathbf{x}$
+and left eigenvector $\mathbf{y}$. Then there is a function $\varphi$, continuous near $0$, with
+$\varphi(0) = \mu$ and derivative
+$\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x} / \mathbf{y}^{\mathsf{T}}\mathbf{x}$ at $0$, such that
+near $(0, \mu)$ the eigenvalues of $\mathbf{A} + t\mathbf{E}$ close to $\mu$ are exactly
+$\varphi(t)$, and they remain simple. The left eigenvector enters through the bilinear product
+$\mathbf{y}^{\mathsf{T}}\mathbf{x}$, with
+$\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$; for Hermitian $\mathbf{A}$ take
+$\mathbf{y} = \overline{\mathbf{x}}$ to recover the derivative
+$\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x}$.
 [StewartSun1990, Theorem IV.2.3]; [HornJohnson2013, Theorem 6.3.12].
 Port of `NLAlib.exists_eigenvalue_branch_of_simple_with_multiplicity`.
 Result: simple-eigenvalue-perturbation -/

@@ -11,16 +11,18 @@ public import NLAlib.Sketching.Properties.SubspaceEmbedding
 /-!
 # Random sketches of a fixed subspace
 
-For a random sketch `S : Ω → Matrix k n 𝕜` and a fixed `U : Matrix n p 𝕜`,
-`NLAlib.HasSubspaceInjection S U a δ μ` and `NLAlib.HasSubspaceEmbedding S U a b δ μ` say that
-`S ω` fails to be a subspace injection (embedding) for `range U` with probability at most `δ`:
-`μ.real {ω | ¬ IsSubspaceInjection (S ω) U a} ≤ δ`. They are the conclusions of the
-fixed-subspace theorems (leverage-score sampling, a sketch of `[A, y]` in a solver) and the
-hypotheses of the oblivious constructors. Tails of the Gram error (matrix Chernoff) and of the
-smallest singular value convert to them here.
+For a random sketch $\mathbf{S}$ with values in $\Bbbk^{k \times n}$ and a fixed
+$\mathbf{U} \in \Bbbk^{n \times p}$, `NLAlib.HasSubspaceInjection S U a δ μ` and
+`NLAlib.HasSubspaceEmbedding S U a b δ μ` say that $\mathbf{S}(\omega)$ fails to be a subspace
+injection (embedding) for $\operatorname{range}\mathbf{U}$ with probability at most $\delta$:
+$\mu\{\omega : \mathbf{S}(\omega) \text{ is not a subspace injection with constant } a\}
+\le \delta$.
+They are the conclusions of the fixed-subspace theorems (leverage-score sampling, a sketch of
+$[\mathbf{A}, \mathbf{y}]$ in a solver) and the hypotheses of the oblivious constructors. Tails of
+the Gram error (matrix Chernoff) and of the smallest singular value convert to them here.
 
 Theorems that compare two events take `[IsFiniteMeasure μ]`, since `μ.real` of a set of infinite
-measure is `0`. Design: `docs/design/Sketching-S1.md` §3.2.
+measure is $0$. Design: `docs/design/Sketching-S1.md` §3.2.
 
 ## Main definitions
 
@@ -30,7 +32,8 @@ measure is `0`. Design: `docs/design/Sketching-S1.md` §3.2.
 
 * `NLAlib.HasSubspaceInjection.hasSubspaceEmbedding`: joining the two halves.
 * `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le`: from a Gram-error tail.
-* `NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le`: from a `σ_min` tail.
+* `NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le`: from a $\sigma_{\min}$
+  tail.
 * `NLAlib.HasSubspaceEmbedding.of_range_le`: passing to a smaller subspace.
 * `ProbabilityTheory.HasLaw.hasSubspaceEmbedding_iff`: the predicates depend only on the law.
 -/
@@ -46,14 +49,16 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {k n p q : Type*} [Fintype k] [Fintype n] {S : Ω → Matrix k n 𝕜}
   {U : Matrix n p 𝕜} {a a' b b' δ δ' ε : ℝ}
 
-/-- `S` is a **subspace injection for `range U` with probability `1 - δ`**: the event that `S ω`
-is not a subspace injection with constant `a` has probability at most `δ`. -/
+/-- $\mathbf{S}$ is a **subspace injection for $\operatorname{range}\mathbf{U}$ with probability
+$1 - \delta$**: the event that $\mathbf{S}(\omega)$ is not a subspace injection with constant $a$
+has probability at most $\delta$. -/
 def HasSubspaceInjection (S : Ω → Matrix k n 𝕜) (U : Matrix n p 𝕜) (a δ : ℝ) (μ : Measure Ω) :
     Prop :=
   μ.real {ω | ¬ IsSubspaceInjection (S ω) U a} ≤ δ
 
-/-- `S` is a **subspace embedding for `range U` with probability `1 - δ`**: the event that `S ω`
-is not a subspace embedding with constants `a`, `b` has probability at most `δ`. -/
+/-- $\mathbf{S}$ is a **subspace embedding for $\operatorname{range}\mathbf{U}$ with probability
+$1 - \delta$**: the event that $\mathbf{S}(\omega)$ is not a subspace embedding with constants $a$,
+$b$ has probability at most $\delta$. -/
 def HasSubspaceEmbedding (S : Ω → Matrix k n 𝕜) (U : Matrix n p 𝕜) (a b δ : ℝ)
     (μ : Measure Ω) : Prop :=
   μ.real {ω | ¬ IsSubspaceEmbedding (S ω) U a b} ≤ δ
@@ -82,7 +87,8 @@ theorem HasSubspaceEmbedding.hasSubspaceInjection [IsFiniteMeasure μ]
   exact (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω h' => hω h'.lower)).trans h
 
 /-- **Joining the halves**: a random subspace injection whose upper half fails with probability
-at most `δ'` is a random subspace embedding with failure probability `δ + δ'` (union bound). -/
+at most $\delta'$ is a random subspace embedding with failure probability $\delta + \delta'$
+(union bound). -/
 theorem HasSubspaceInjection.hasSubspaceEmbedding (h : HasSubspaceInjection S U a δ μ)
     (hb : μ.real {ω | ¬ (S ω * U)ᴴ * (S ω * U) ≤ b • (Uᴴ * U)} ≤ δ') :
     HasSubspaceEmbedding S U a b (δ + δ') μ := by
@@ -96,9 +102,10 @@ theorem HasSubspaceInjection.hasSubspaceEmbedding (h : HasSubspaceInjection S U 
   rw [e]
   exact (measureReal_union_le _ _).trans (add_le_add h hb)
 
-/-- **From a Gram-error tail**: for `U` with orthonormal columns, a tail
-`P(ε ≤ ‖(S U)ᴴ (S U) - 1‖) ≤ δ` gives a random `ε`-embedding with failure probability `δ`. The
-form matrix Chernoff and matrix Bernstein bounds produce. -/
+/-- **From a Gram-error tail**: for $\mathbf{U}$ with orthonormal columns, a tail
+$\mathbb{P}(\varepsilon \le \|(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} -
+\mathbf{I}\|_2) \le \delta$ gives a random $\varepsilon$-embedding with failure probability
+$\delta$. The form matrix Chernoff and matrix Bernstein bounds produce. -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le [IsFiniteMeasure μ]
     [Fintype p] [DecidableEq p] (hU : HasOrthonormalCols U)
     (h : μ.real {ω | ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)} ≤ δ) :
@@ -109,9 +116,10 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le [IsFiniteMeasu
   exact hω ((hU.isSubspaceEmbedding_iff_specNorm_le
     ((specNorm_nonneg _).trans hlt.le)).2 hlt.le)
 
-/-- **From a smallest-singular-value tail**: for `U` with orthonormal columns, a tail
-`P(σ_min(S U)² ≤ a) ≤ δ` gives a random subspace injection with constant `a`; the smallest
-singular value is index `j` with `j + 1 = card p`. -/
+/-- **From a smallest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail
+$\mathbb{P}(\sigma_{\min}(\mathbf{S}\mathbf{U})^2 \le a) \le \delta$ gives a random subspace
+injection with constant $a$; the smallest singular value is index $j$ with
+$j + 1 = \lvert p \rvert$. -/
 theorem HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le [IsFiniteMeasure μ]
     [Fintype p] [DecidableEq p] (hU : HasOrthonormalCols U) {j : ℕ} (hj : j + 1 = Fintype.card p)
     (h : μ.real {ω | singularValues (S ω * U) j ^ 2 ≤ a} ≤ δ) :
@@ -134,7 +142,8 @@ theorem HasSubspaceEmbedding.mono [IsFiniteMeasure μ] (h : HasSubspaceEmbedding
   exact (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω h' => hω (h'.mono ha hb))).trans
     (h.trans hδ)
 
-/-- A random subspace injection for `range U` is one for every subspace `range V ≤ range U`. -/
+/-- A random subspace injection for $\operatorname{range}\mathbf{U}$ is one for every subspace
+$\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
 theorem HasSubspaceInjection.of_range_le [IsFiniteMeasure μ] [Fintype p] [Fintype q]
     (h : HasSubspaceInjection S U a δ μ) {V : Matrix n q 𝕜}
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
@@ -142,7 +151,8 @@ theorem HasSubspaceInjection.of_range_le [IsFiniteMeasure μ] [Fintype p] [Finty
   exact (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω h' =>
     hω (h'.of_range_le hVU))).trans h
 
-/-- A random subspace embedding for `range U` is one for every subspace `range V ≤ range U`. -/
+/-- A random subspace embedding for $\operatorname{range}\mathbf{U}$ is one for every subspace
+$\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
 theorem HasSubspaceEmbedding.of_range_le [IsFiniteMeasure μ] [Fintype p] [Fintype q]
     (h : HasSubspaceEmbedding S U a b δ μ) {V : Matrix n q 𝕜}
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :

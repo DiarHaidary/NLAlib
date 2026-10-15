@@ -13,15 +13,19 @@ public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 /-!
 # Quadratic forms and Rayleigh quotients of matrices
 
-`NLAlib.quadForm A z` is the `𝕜`-valued quadratic form `star z ⬝ᵥ (A *ᵥ z)`, the expression in
-which Mathlib states positive semidefiniteness. For a Hermitian `A` it is real, and the real
-consumers (variational characterisations of eigenvalues, energy norms) take `RCLike.re` of it.
-`NLAlib.rayleighQuotient A x` is the real quotient `re (quadForm A x) / ‖x‖ ^ 2`.
+`NLAlib.quadForm A z` is the $\Bbbk$-valued quadratic form
+$\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$ (in Lean `star z ⬝ᵥ (A *ᵥ z)`), the expression in
+which Mathlib states positive semidefiniteness. For a Hermitian $\mathbf{A}$ it is real, and the
+real consumers (variational characterisations of eigenvalues, energy norms) take `RCLike.re` of it.
+`NLAlib.rayleighQuotient A x` is the real quotient
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) / \|\mathbf{x}\|^2$.
 
 ## Main definitions
 
-* `NLAlib.quadForm`: the quadratic form `zᴴ A z`.
-* `NLAlib.rayleighQuotient`: the Rayleigh quotient `re (xᴴ A x) / ‖x‖²`, zero at `x = 0`.
+* `NLAlib.quadForm`: the quadratic form $\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$.
+* `NLAlib.rayleighQuotient`: the Rayleigh quotient
+  $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) / \|\mathbf{x}\|^2$, zero at
+  $\mathbf{x} = \mathbf{0}$.
 
 ## Main results
 
@@ -41,17 +45,21 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype n]
 
-/-- The quadratic form `zᴴ A z` of a square matrix, `𝕜`-valued: `star z ⬝ᵥ (A *ᵥ z)`. This is the
-expression in Mathlib's dot-product characterisation of `Matrix.PosSemidef`. For Hermitian `A` the
-value is real (`Matrix.IsHermitian.coe_re_quadForm`). -/
+/-- The quadratic form $\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$ of a square matrix,
+$\Bbbk$-valued, in Lean `star z ⬝ᵥ (A *ᵥ z)`. This is the expression in Mathlib's dot-product
+characterisation of `Matrix.PosSemidef`. For Hermitian $\mathbf{A}$ the value is real
+(`Matrix.IsHermitian.coe_re_quadForm`). -/
 def quadForm (A : Matrix n n 𝕜) (z : n → 𝕜) : 𝕜 :=
   star z ⬝ᵥ (A *ᵥ z)
 
-/-- `quadForm A z` unfolds to `star z ⬝ᵥ (A *ᵥ z)`. -/
+/-- `quadForm A z` unfolds to its definition `star z ⬝ᵥ (A *ᵥ z)`. -/
 theorem quadForm_def (A : Matrix n n 𝕜) (z : n → 𝕜) : quadForm A z = star z ⬝ᵥ (A *ᵥ z) :=
   rfl
 
-/-- The quadratic form as a double sum over entries. Port of `NLAlib.quadForm_eq_sum_mul_mul`. -/
+/-- The quadratic form as a double sum over entries:
+$\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z} = \sum_i \sum_j \overline{\mathbf{z}_i} \,
+\mathbf{A}_{i,j} \, \mathbf{z}_j$.
+Port of `NLAlib.quadForm_eq_sum_mul_mul`. -/
 theorem quadForm_eq_sum (A : Matrix n n 𝕜) (z : n → 𝕜) :
     quadForm A z = ∑ i, ∑ j, star (z i) * A i j * z j := by
   simp only [quadForm, dotProduct, Matrix.mulVec, Pi.star_apply, Finset.mul_sum]
@@ -78,52 +86,63 @@ theorem quadForm_sub_left (A B : Matrix n n 𝕜) (z : n → 𝕜) :
 theorem quadForm_neg_left (A : Matrix n n 𝕜) (z : n → 𝕜) : quadForm (-A) z = -quadForm A z := by
   simp only [quadForm, Matrix.neg_mulVec, dotProduct_neg]
 
-/-- The quadratic form is homogeneous in the matrix. -/
+/-- The quadratic form is homogeneous in the matrix:
+$\mathbf{z}^{\mathsf{H}}(c\mathbf{A})\mathbf{z} = c \,
+\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$. -/
 theorem quadForm_smul_left (c : 𝕜) (A : Matrix n n 𝕜) (z : n → 𝕜) :
     quadForm (c • A) z = c * quadForm A z := by
   simp only [quadForm, Matrix.smul_mulVec, dotProduct_smul, smul_eq_mul]
 
-/-- The quadratic form of the identity is the squared Euclidean norm. -/
+/-- The quadratic form of the identity is the squared Euclidean norm,
+$\mathbf{z}^{\mathsf{H}}\mathbf{z} = \|\mathbf{z}\|^2$. -/
 theorem quadForm_one [DecidableEq n] (z : n → 𝕜) :
     quadForm (1 : Matrix n n 𝕜) z = ((‖WithLp.toLp 2 z‖ ^ 2 : ℝ) : 𝕜) := by
   rw [quadForm, Matrix.one_mulVec, EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq]
 
-/-- The real quadratic form of a real multiple of the identity, written with the real scalar
-action, is that multiple of the squared Euclidean norm. -/
+/-- The real quadratic form of a real multiple $a\mathbf{I}$ of the identity, written with the
+real scalar action, is that multiple of the squared Euclidean norm:
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}(a\mathbf{I})\mathbf{x}) = a\|\mathbf{x}\|^2$. -/
 theorem re_quadForm_real_smul_one [DecidableEq n] (a : ℝ) (x : n → 𝕜) :
     RCLike.re (quadForm (a • (1 : Matrix n n 𝕜)) x) = a * ‖WithLp.toLp 2 x‖ ^ 2 := by
   rw [RCLike.real_smul_eq_coe_smul (K := 𝕜), quadForm_smul_left, quadForm_one,
     RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-/-- The quadratic form of a diagonal matrix is the weighted sum of squared moduli. -/
+/-- The quadratic form of a diagonal matrix is the weighted sum of squared moduli:
+$\mathbf{z}^{\mathsf{H}} \operatorname{diag}(\mathbf{d}) \mathbf{z}
+= \sum_i \mathbf{d}_i \lvert \mathbf{z}_i \rvert^2$. -/
 theorem quadForm_diagonal [DecidableEq n] (d : n → 𝕜) (z : n → 𝕜) :
     quadForm (Matrix.diagonal d) z = ∑ i, d i * ((‖z i‖ ^ 2 : ℝ) : 𝕜) := by
   simp only [quadForm, dotProduct, Matrix.mulVec_diagonal, Pi.star_apply]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [mul_left_comm, RCLike.star_def, RCLike.conj_mul, RCLike.ofReal_pow]
 
-/-- The quadratic form of the rank-one matrix `b bᴴ` is `|bᴴ z|²`.
+/-- The quadratic form of the rank-one matrix $\mathbf{b}\mathbf{b}^{\mathsf{H}}$ at $\mathbf{z}$
+is $\lvert \mathbf{b}^{\mathsf{H}}\mathbf{z} \rvert^2$.
 Port of `NLAlib.quadForm_vecMulVec_star_self`. -/
 theorem quadForm_vecMulVec_star (b z : n → 𝕜) :
     quadForm (Matrix.vecMulVec b (star b)) z = ((‖star b ⬝ᵥ z‖ ^ 2 : ℝ) : 𝕜) := by
   rw [quadForm, Matrix.vecMulVec_mulVec, dotProduct_smul, op_smul_eq_mul,
     Matrix.star_dotProduct z b, RCLike.star_def, RCLike.conj_mul, RCLike.ofReal_pow]
 
-/-- The quadratic form of a compression `Wᴴ A W` at `v` is that of `A` at `W v`.
+/-- The quadratic form of a compression $\mathbf{W}^{\mathsf{H}}\mathbf{A}\mathbf{W}$ at
+$\mathbf{v}$ is that of $\mathbf{A}$ at $\mathbf{W}\mathbf{v}$.
 Port of `NLAlib.quadForm_conjTranspose_mul_mul`. -/
 theorem quadForm_conjTranspose_mul_mul [Fintype m] (A : Matrix m m 𝕜) (W : Matrix m n 𝕜)
     (v : n → 𝕜) : quadForm (Wᴴ * A * W) v = quadForm A (W *ᵥ v) := by
   rw [quadForm, quadForm, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec,
     Matrix.dotProduct_mulVec (star v) Wᴴ, Matrix.star_mulVec]
 
-/-- The quadratic form of a Gram matrix `Aᴴ A` at `z` is `‖A z‖²`.
+/-- The quadratic form of a Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ at $\mathbf{z}$ is
+$\|\mathbf{A}\mathbf{z}\|^2$.
 Port of `NLAlib.quadForm_conjTranspose_mul_self`. -/
 theorem quadForm_conjTranspose_mul_self [Fintype m] (A : Matrix m n 𝕜) (z : n → 𝕜) :
     quadForm (Aᴴ * A) z = ((‖WithLp.toLp 2 (A *ᵥ z)‖ ^ 2 : ℝ) : 𝕜) := by
   rw [← EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, Matrix.star_mulVec, quadForm,
     ← Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec]
 
-/-- Conjugating the quadratic form is the quadratic form of the conjugate transpose. -/
+/-- Conjugating the quadratic form is the quadratic form of the conjugate transpose:
+$\overline{\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}} =
+\mathbf{z}^{\mathsf{H}}\mathbf{A}^{\mathsf{H}}\mathbf{z}$. -/
 theorem star_quadForm (A : Matrix n n 𝕜) (z : n → 𝕜) : star (quadForm A z) = quadForm Aᴴ z := by
   rw [quadForm, quadForm, Matrix.star_dotProduct, Matrix.star_mulVec, star_star,
     Matrix.dotProduct_mulVec]
@@ -135,7 +154,9 @@ theorem star_quadForm (A : Matrix n n 𝕜) (z : n → 𝕜) : star (quadForm A 
 theorem quadForm_zero_right (A : Matrix n n 𝕜) : quadForm A 0 = 0 := by
   rw [quadForm, Matrix.mulVec_zero, dotProduct_zero]
 
-/-- The quadratic form scales by `|c|²` under scaling of the vector: `star c * c * quadForm A z`.
+/-- The quadratic form scales by $\lvert c \rvert^2$ under scaling of the vector:
+$(c\mathbf{z})^{\mathsf{H}}\mathbf{A}(c\mathbf{z}) = \bar{c} c \,
+\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$.
 Port of `NLAlib.quadForm_smul`. -/
 theorem quadForm_smul_right (A : Matrix n n 𝕜) (c : 𝕜) (z : n → 𝕜) :
     quadForm A (c • z) = star c * c * quadForm A z := by
@@ -143,12 +164,18 @@ theorem quadForm_smul_right (A : Matrix n n 𝕜) (c : 𝕜) (z : n → 𝕜) :
     smul_eq_mul]
   ring
 
-/-- The quadratic form is even: `quadForm A (-z) = quadForm A z`. -/
+/-- The quadratic form is even:
+$(-\mathbf{z})^{\mathsf{H}}\mathbf{A}(-\mathbf{z}) =
+\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$. -/
 @[simp]
 theorem quadForm_neg_right (A : Matrix n n 𝕜) (z : n → 𝕜) : quadForm A (-z) = quadForm A z := by
   simp only [quadForm, star_neg, Matrix.mulVec_neg, neg_dotProduct_neg]
 
-/-- The polar expansion of the quadratic form of a sum of vectors. Port of `NLAlib.quadForm_add`. -/
+/-- The polar expansion of the quadratic form of a sum of vectors:
+$$(\mathbf{x} + \mathbf{y})^{\mathsf{H}}\mathbf{A}(\mathbf{x} + \mathbf{y})
+  = \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x} + \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} +
+  \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x} + \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y}\,.$$
+Port of `NLAlib.quadForm_add`. -/
 theorem quadForm_add_right (A : Matrix n n 𝕜) (x y : n → 𝕜) :
     quadForm A (x + y) =
       quadForm A x + star x ⬝ᵥ (A *ᵥ y) + star y ⬝ᵥ (A *ᵥ x) + quadForm A y := by
@@ -158,8 +185,8 @@ theorem quadForm_add_right (A : Matrix n n 𝕜) (x y : n → 𝕜) :
 /-! ### Hermitian and positive semidefinite matrices -/
 
 omit [Fintype n] in
-/-- A real multiple of the identity, written with the real scalar action, is Hermitian. This is
-the side condition for comparing a matrix with `a • 1` through
+/-- A real multiple $a\mathbf{I}$ of the identity, written with the real scalar action, is
+Hermitian. This is the side condition for comparing a matrix with $a\mathbf{I}$ through
 `Matrix.IsHermitian.le_iff_re_quadForm_le`. -/
 theorem isHermitian_real_smul_one [DecidableEq n] (a : ℝ) :
     (a • (1 : Matrix n n 𝕜)).IsHermitian :=
@@ -176,7 +203,9 @@ theorem _root_.Matrix.IsHermitian.im_quadForm {A : Matrix n n 𝕜} (hA : A.IsHe
     (z : n → 𝕜) : RCLike.im (quadForm A z) = 0 := by
   exact hA.im_star_dotProduct_mulVec_self z
 
-/-- For Hermitian `A`, the two cross terms of the polar expansion are conjugate.
+/-- For Hermitian $\mathbf{A}$, the two cross terms of the polar expansion are conjugate:
+$\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x}
+= \overline{\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y}}$.
 Port of `Matrix.IsHermitian.star_dotProduct_mulVec_comm`. -/
 theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_comm {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x y : n → 𝕜) :
@@ -185,7 +214,11 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_comm {A : Matrix n n �
     hA.eq]
 
 /-- The real polar expansion for a Hermitian matrix:
-`re (quadForm A (x + y)) = re (quadForm A x) + 2 * re (xᴴ A y) + re (quadForm A y)`. -/
+$$\operatorname{Re}\bigl((\mathbf{x} + \mathbf{y})^{\mathsf{H}}\mathbf{A}(\mathbf{x} +
+\mathbf{y})\bigr)
+  = \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) +
+  2\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y}) +
+  \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$ -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_add {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (x y : n → 𝕜) :
     RCLike.re (quadForm A (x + y)) =
@@ -265,12 +298,14 @@ theorem _root_.Matrix.IsHermitian.le_iff_re_quadForm_le {A B : Matrix n n 𝕜}
 
 /-! ### Rayleigh quotient -/
 
-/-- The **Rayleigh quotient** `re (xᴴ A x) / ‖x‖²` of a square matrix at a vector. Real-valued;
-its value at `x = 0` is `0`. For Hermitian `A` nothing is lost by taking the real part. -/
+/-- The **Rayleigh quotient** $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) /
+\|\mathbf{x}\|^2$ of a square matrix at a vector. Real-valued; its value at $\mathbf{x} =
+\mathbf{0}$ is $0$. For Hermitian $\mathbf{A}$ nothing is lost by taking the real part. -/
 noncomputable def rayleighQuotient (A : Matrix n n 𝕜) (x : n → 𝕜) : ℝ :=
   RCLike.re (quadForm A x) / ‖WithLp.toLp 2 x‖ ^ 2
 
-/-- `rayleighQuotient A x` unfolds to `re (quadForm A x) / ‖x‖ ^ 2`. -/
+/-- `rayleighQuotient A x` unfolds to
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) / \|\mathbf{x}\|^2$. -/
 theorem rayleighQuotient_def (A : Matrix n n 𝕜) (x : n → 𝕜) :
     rayleighQuotient A x = RCLike.re (quadForm A x) / ‖WithLp.toLp 2 x‖ ^ 2 :=
   rfl
@@ -292,7 +327,8 @@ theorem rayleighQuotient_smul (A : Matrix n n 𝕜) {c : 𝕜} (hc : c ≠ 0) (x
     ← RCLike.ofReal_pow, RCLike.re_ofReal_mul, WithLp.toLp_smul, norm_smul, mul_pow]
   exact mul_div_mul_left _ _ (pow_ne_zero 2 (norm_ne_zero_iff.mpr hc))
 
-/-- The real part of the quadratic form is the Rayleigh quotient times the squared norm. -/
+/-- The real part of the quadratic form is the Rayleigh quotient times the squared norm
+$\|\mathbf{x}\|^2$, also at $\mathbf{x} = \mathbf{0}$. -/
 theorem re_quadForm_eq_rayleighQuotient_mul (A : Matrix n n 𝕜) (x : n → 𝕜) :
     RCLike.re (quadForm A x) = rayleighQuotient A x * ‖WithLp.toLp 2 x‖ ^ 2 := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -300,7 +336,9 @@ theorem re_quadForm_eq_rayleighQuotient_mul (A : Matrix n n 𝕜) (x : n → �
   · rw [rayleighQuotient, div_mul_cancel₀]
     exact pow_ne_zero 2 (norm_ne_zero_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr hx))
 
-/-- The Rayleigh quotient at an eigenvector is the real part of the eigenvalue. -/
+/-- The Rayleigh quotient at an eigenvector is the real part of the eigenvalue: if
+$\mathbf{A}\mathbf{x} = c\mathbf{x}$ with $\mathbf{x} \ne \mathbf{0}$, it equals
+$\operatorname{Re} c$. -/
 theorem rayleighQuotient_of_mulVec_eq_smul {A : Matrix n n 𝕜} {x : n → 𝕜} {c : 𝕜}
     (h : A *ᵥ x = c • x) (hx : x ≠ 0) : rayleighQuotient A x = RCLike.re c := by
   have hx' : ‖WithLp.toLp 2 x‖ ^ 2 ≠ 0 :=

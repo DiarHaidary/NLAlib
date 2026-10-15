@@ -208,8 +208,8 @@ release.
   `HasSubgaussianMGF X c μ`; not `Measurable X` next to `HasLaw X ν μ`, which gives only
   `AEMeasurable`).
 - Definitions are total, Mathlib-style (`⁻¹` of a singular matrix is `0`, `eigenvalue A k` is `0`
-  for `k` out of range, `pseudoConditionNumber` of a singular matrix is the ratio to its smallest nonzero
-  singular value); the theorem carries the hypothesis that excludes the junk value and the
+  for `k` out of range, `pseudoConditionNumber` of a singular matrix is the ratio to its smallest
+  nonzero singular value); the theorem carries the hypothesis that excludes the junk value and the
   definition's docstring states the junk value. Real-valued quantities stay real-valued: a `⊤` in
   `ℝ≥0∞` costs coercions, `positivity` and `gcongr` at every use.
 - **A quantified index of a padded sequence carries its range.** `∃ k, -3 < eigenvalue A k` is
@@ -380,15 +380,18 @@ Every public declaration has a docstring. It is the record the documentation sit
 index and the literature map are generated from, so its parts are fixed:
 
 ```lean
-/-- **Weyl's inequality.** For Hermitian `A`, `B` and `i + j` a valid index,
-`λ_{i+j}(A + B) ≤ λ_i(A) + λ_j(B)`, eigenvalues non-increasing and indexed from `0`.
-[HornJohnson2013, Theorem 4.3.1]; stated there over ℂ with eigenvalues in increasing order, here
-over any `RCLike` field, any finite index type, non-increasing.
+/-- **Weyl's inequality.** For Hermitian $\mathbf{A}, \mathbf{B}$ and $i + j$ a valid index,
+$\lambda_{i+j}(\mathbf{A} + \mathbf{B}) \le \lambda_i(\mathbf{A}) + \lambda_j(\mathbf{B})$, eigenvalues
+non-increasing and indexed from $0$.
+[HornJohnson2013, Theorem 4.3.1]; stated there over $\mathbb{C}$ with eigenvalues in increasing
+order, here over any `RCLike` field, any finite index type, non-increasing.
 Result: weyl-inequality -/
 theorem eigenvalue_add_le ...
 ```
 
 1. **First sentence:** what it asserts, in words, with the bold name of the result if it has one.
+   Its mathematics is LaTeX (item 5); a reader of the documentation site or the explorer should
+   learn the statement from it without reading the Lean.
 2. **Citation:** `[Key, label]` where `Key` is an entry of `docs/references.bib` and `label` is the
    printed theorem, section or equation, for every source where this result or the result it
    generalises or specialises appears. Several are separated by `;`. Then the relation to the
@@ -402,6 +405,47 @@ theorem eigenvalue_add_le ...
    named mathematical result (`weyl-inequality`, `eckart-young-frobenius`). Several ids are
    comma-separated. Helpers carry none. The ids key the literature map maintained in the
    `explore` repository; a new id is fine, a misspelt existing one is a review comment.
+5. **Mathematics is LaTeX** (amended 2026-10-14): `$…$` inline and `$$…$$` displayed, as doc-gen4
+   and the explorer render it with KaTeX. Standard LaTeX only, no custom macros. A Lean name stays
+   in backticks (`` `specNorm` ``, `` `RCLike` ``); it is a reference, never inside `$…$`. Informal
+   Unicode maths in backticks (`` `‖A‖₂` ``) is the old style, replaced when a docstring is
+   touched. The notation, so that every docstring reads the same:
+
+   | Object | LaTeX | Shown |
+   |---|---|---|
+   | matrix, vector | `\mathbf{A}`, `\mathbf{x}`; entries `\mathbf{A}_{i,j}`, `\mathbf{x}_i` | bold upright |
+   | scalars, indices, dimensions | `c`, `t`, `i`, `k`, `n`; the size of an index type `n` is `\lvert n \rvert` | italic |
+   | random variables | random scalar `X` (capital, italic); random vector `\mathbf{x}`, `\mathbf{g}` (lowercase bold, like every vector, and lowercase in the Lean too: `x : Ω → n → ℝ`); random matrix `\mathbf{G}`; a random process over an arbitrary index set stays `X_t` | |
+   | submatrix on index sets `s`, `t` (`s : Finset n`) | `\mathbf{A}_{s,t}`, principal `\mathbf{A}_{s,s}`, minor `\det \mathbf{A}_{s,s}` | |
+   | identity, zero matrix | `\mathbf{I}`, `\mathbf{0}` | |
+   | conjugate transpose, transpose | `\mathbf{A}^{\mathsf{H}}`, `\mathbf{A}^{\mathsf{T}}` | |
+   | inverse, pseudoinverse | `\mathbf{A}^{-1}`, `\mathbf{A}^{+}` | |
+   | block matrix | `\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}` | |
+   | spectral, Frobenius, nuclear norm | `\|\mathbf{A}\|_2`, `\|\mathbf{A}\|_{\mathsf{F}}`, `\|\mathbf{A}\|_*` | |
+   | Schatten, Ky Fan, unitarily invariant norm | `\|\mathbf{A}\|_{S_q}`, `\|\mathbf{A}\|_{(k)}`, `\|\mathbf{A}\|_{\Phi}` | |
+   | vector 2-norm, inner product | `\|\mathbf{x}\|`, `\langle \mathbf{x}, \mathbf{y} \rangle` | |
+   | eigenvalues, singular values (library indexing: from `0`, non-increasing) | `\lambda_k(\mathbf{A})`, `\sigma_k(\mathbf{A})`, `\sigma_{\min}(\mathbf{A})` | |
+   | condition number, pseudo-condition number, projector onto the range | `\kappa(\mathbf{A})` only for the classical condition number (invertible or full column rank, where it equals `` `pseudoConditionNumber` ``); otherwise the pseudo-condition number is written out, `\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2`, never `\kappa`; `\mathbf{P}_{\mathbf{A}}` | |
+   | trace, determinant, rank, diagonal | `\operatorname{tr}`, `\det`, `\operatorname{rank}`, `\operatorname{diag}` | |
+   | Loewner order | `\mathbf{A} \preceq \mathbf{B}`, `\mathbf{0} \preceq \mathbf{A}` | |
+   | expectation, probability, variance | `\mathbb{E}`, `\mathbb{P}`, `\operatorname{Var}` | |
+   | number fields, the `RCLike` field | `\mathbb{R}`, `\mathbb{C}`, `\Bbbk` | |
+   | named constants | `C_{\mathrm{HW}}` with the Lean name in words nearby (`` `hansonWrightConstant` ``) | |
+   | truncated SVD (best rank-`k` approximation) | `\llbracket \mathbf{A} \rrbracket_k` | |
+   | bold Greek matrices | `\mathbf{\Sigma}`, `\mathbf{\Lambda}` | |
+   | real part, adjugate, Frobenius inner product | `\operatorname{Re}`, `\operatorname{adj}`, `\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}` | |
+   | absolute value; epsilon, phi | `\lvert x \rvert`; `\varepsilon`, `\varphi` | |
+
+   A conclusion with a fraction or longer than a line is displayed (`$$…$$`), a long display split
+   with `\begin{aligned}`; `\frac` in displays, `/` inline. Punctuation that ends a sentence after
+   a display goes inside it (`… \,.$$`). Mathematics stays out of citation brackets: the label in
+   `[Key, label]` is plain text, and a remark with mathematics follows the bracket. A symbol the
+   table does not fix (a Rayleigh quotient `\rho`, a gap `\delta`) is introduced in words where it
+   is used.
+
+   `scripts/check_latex.mjs` renders every docstring's LaTeX with KaTeX in CI and fails on an
+   error; it checks the syntax, not that the LaTeX says what the Lean says, which is the
+   reviewer's job.
 
 Module docstrings follow Mathlib: `# Title`, a paragraph, `## Main results` listing the names.
 

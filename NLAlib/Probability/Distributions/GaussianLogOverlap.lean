@@ -13,22 +13,26 @@ public import NLAlib.Probability.Distributions.Gaussian
 /-!
 # The logarithmic overlap of a Gaussian vector with a fixed direction
 
-For a standard Gaussian vector `X` in `ℝⁿ` (`N = card n`) and a fixed unit vector `u`, the
-squared overlap `(u ⬝ᵥ X)² / ‖X‖²` is the squared cosine between a random start and a fixed
-direction, the quantity a random-start analysis of the power method or the Lanczos method has to
-control [KuczynskiWozniakowski1992]. Its inverse `‖X‖² / (u ⬝ᵥ X)²` has infinite
-mean, but its logarithm has an exponential tail beyond `log (2N)`:
-`P(t ≤ log (‖X‖² / (u ⬝ᵥ X)²)) ≤ √(2N) e^{-t/2}` for every real `t`, and so finite first and
-second moments, `E log (‖X‖² / (u ⬝ᵥ X)²) ≤ log (2N) + 2` and
-`E log (‖X‖² / (u ⬝ᵥ X)²)² ≤ log (2N)² + 4 log (2N) + 8`.
+For a standard Gaussian vector $\mathbf{g}$ in $\mathbb{R}^n$ (with $N = \lvert n \rvert$) and a
+fixed unit vector $\mathbf{u}$, the squared overlap
+$\langle \mathbf{u}, \mathbf{g} \rangle^2 / \|\mathbf{g}\|^2$ is the squared cosine between a
+random start and a fixed direction, the quantity a random-start analysis of the power method or
+the Lanczos method has to control [KuczynskiWozniakowski1992]. Its inverse
+$\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2$ has infinite mean, but its logarithm
+$L = \log(\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2)$ has an exponential tail
+beyond $\log(2N)$: $\mathbb{P}(t \le L) \le \sqrt{2N}\, e^{-t/2}$ for every real $t$, and so finite
+first and second moments, $\mathbb{E} L \le \log(2N) + 2$ and
+$\mathbb{E} L^2 \le \log(2N)^2 + 4 \log(2N) + 8$.
 
-The quantity is written out, with no definition. On the null event `u ⬝ᵥ X = 0` the quotient is
-`0` (Lean's division) and its logarithm is `0`; the statements hold with this convention. The
-coordinate case is `u = Pi.single i 1`, where `u ⬝ᵥ X = X i`.
+The quantity is written out, with no definition. On the null event
+$\langle \mathbf{u}, \mathbf{g} \rangle = 0$ the quotient is $0$ (Lean's division) and its logarithm
+is $0$; the statements hold with this convention. The coordinate case is `u = Pi.single i 1`, where
+$\langle \mathbf{u}, \mathbf{g} \rangle = \mathbf{g}_i$.
 
-The proof rotates `u` to a coordinate vector, splits that coordinate `g` from the others, whose
-squared norm `R` is independent of it, and uses the small-ball bound `P(|g| ≤ a) ≤ a` (the
-standard Gaussian density is at most `1/2`): `P(v ≤ R / g²) ≤ E √(R / v) ≤ √((N - 1) / v)`.
+The proof rotates $\mathbf{u}$ to a coordinate vector, splits that coordinate $g$ from the others,
+whose squared norm $R$ is independent of it, and uses the small-ball bound
+$\mathbb{P}(\lvert g\rvert \le a) \le a$ (the standard Gaussian density is at most $1/2$):
+$\mathbb{P}(v \le R / g^2) \le \mathbb{E}\sqrt{R / v} \le \sqrt{(N - 1) / v}$.
 
 ## Main results
 
@@ -51,7 +55,7 @@ open MeasureTheory ProbabilityTheory Set
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
-  {X : Ω → n → ℝ} {u : n → ℝ}
+  {g : Ω → n → ℝ} {u : n → ℝ}
 
 /-! ### One coordinate against the others -/
 
@@ -68,7 +72,7 @@ private theorem gaussianPDFReal_le_half (x : ℝ) : gaussianPDFReal 0 1 x ≤ 1 
   exact (mul_le_mul_of_nonneg_left hexp (inv_nonneg.mpr (Real.sqrt_nonneg _))).trans
     (by simpa only [mul_one] using hinv)
 
-/-- The small ball `P(|g| ≤ a) ≤ a` of a standard Gaussian. -/
+/-- The small ball $\mathbb{P}(\lvert g\rvert \le a) \le a$ of a standard Gaussian. -/
 private theorem gaussianReal_abs_le_le (a : ℝ) :
     gaussianReal 0 1 {x : ℝ | |x| ≤ a} ≤ ENNReal.ofReal a := by
   have hSet : {x : ℝ | |x| ≤ a} = Icc (-a) a := by
@@ -87,7 +91,7 @@ private theorem gaussianReal_abs_le_le (a : ℝ) :
       congr 1
       ring
 
-/-- `P(v ≤ s / g²) ≤ √(s / v)` for a standard Gaussian `g`. -/
+/-- $\mathbb{P}(v \le s / g^2) \le \sqrt{s / v}$ for a standard Gaussian $g$ and $v > 0$. -/
 private theorem gaussianReal_le_div_sq_le {s v : ℝ} (hv : 0 < v) :
     gaussianReal 0 1 {x : ℝ | v ≤ s / x ^ 2} ≤ ENNReal.ofReal √(s / v) := by
   refine (measure_mono fun x (hx : v ≤ s / x ^ 2) => ?_).trans (gaussianReal_abs_le_le _)
@@ -100,8 +104,8 @@ private theorem gaussianReal_le_div_sq_le {s v : ℝ} (hv : 0 < v) :
   rw [le_div_iff₀ (by positivity)] at hx
   linarith
 
-/-- `E √R ≤ √(card m)` for the squared norm `R` of a standard Gaussian vector, in the form
-`E √(R / v) ≤ √(card m / v)`. -/
+/-- $\mathbb{E}\sqrt{R} \le \sqrt{\lvert m \rvert}$ for the squared norm $R$ of a standard Gaussian
+vector in $\mathbb{R}^m$, in the form $\mathbb{E}\sqrt{R / v} \le \sqrt{\lvert m \rvert / v}$. -/
 private theorem lintegral_sqrt_norm_sq_div_le {m : Type*} [Fintype m] {v : ℝ}
     (hv : 0 < v) :
     ∫⁻ r, ENNReal.ofReal √(‖WithLp.toLp 2 r‖ ^ 2 / v) ∂(gaussianVector m) ≤
@@ -142,8 +146,9 @@ private theorem lintegral_sqrt_norm_sq_div_le {m : Type*} [Fintype m] {v : ℝ}
       rw [div_eq_div_iff hK.ne' hsv.ne', hK_def]
       linear_combination (-2 * √v) * h1
 
-/-- With `R` the squared norm of the coordinates other than `i`, `P(v ≤ R / g_i²) ≤ √((N-1)/v)`:
-`g_i` is independent of `R`, so the small ball of `g_i` is integrated against the law of `R`. -/
+/-- With $R$ the squared norm of the coordinates other than $i$,
+$\mathbb{P}(v \le R / \mathbf{g}_i^2) \le \sqrt{(N - 1) / v}$: $\mathbf{g}_i$ is independent of
+$R$, so the small ball of $\mathbf{g}_i$ is integrated against the law of $R$. -/
 private theorem gaussianVector_le_div_sq_le [DecidableEq n] (i : n) {v : ℝ} (hv : 0 < v) :
     gaussianVector n {x | v ≤ ‖WithLp.toLp 2 (fun j : {j // ¬j = i} => x j)‖ ^ 2 / x i ^ 2} ≤
       ENNReal.ofReal √(Fintype.card {j // ¬j = i} / v) := by
@@ -170,7 +175,8 @@ private theorem measurable_log_norm_sq_div_sq (i : n) :
     Measurable fun x : n → ℝ => Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2) :=
   Real.measurable_log.comp (by fun_prop)
 
-/-- The squared norm splits off the coordinate `i`. -/
+/-- The squared norm splits off the coordinate $i$:
+$\|\mathbf{x}\|^2 = \mathbf{x}_i^2 + \sum_{j \ne i} \mathbf{x}_j^2$. -/
 private theorem norm_sq_eq_sq_add [DecidableEq n] (i : n) (x : n → ℝ) :
     ‖WithLp.toLp 2 x‖ ^ 2 = x i ^ 2 + ‖WithLp.toLp 2 (fun j : {j // ¬j = i} => x j)‖ ^ 2 := by
   rw [EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq]
@@ -285,8 +291,8 @@ private theorem lintegral_ofReal_two_mul_mul_exp_neg_half_Ioi :
   · filter_upwards [ae_restrict_mem measurableSet_Ioi] with t ht
     exact mul_nonneg (mul_nonneg (by norm_num) (le_of_lt ht)) (Real.exp_pos _).le
 
-/-- A nonnegative measurable `f` with `P(t < f) ≤ e^{-t/2}` for `t > 0` has `E f ≤ 2` and
-`E f² ≤ 8`. -/
+/-- A nonnegative measurable $f$ with $\nu\{t < f\} \le e^{-t/2}$ for $t > 0$ has
+$\int f \, d\nu \le 2$ and $\int f^2 \, d\nu \le 8$, both integrands integrable. -/
 private theorem moments_of_exp_neg_half_tail {α : Type*} [MeasurableSpace α] {ν : Measure α}
     {f : α → ℝ} (hf : Measurable f) (hf0 : ∀ x, 0 ≤ f x)
     (htail : ∀ t : ℝ, 0 < t → ν {x | t < f x} ≤ ENNReal.ofReal (Real.exp (-t / 2))) :
@@ -333,7 +339,7 @@ private theorem moments_of_exp_neg_half_tail {α : Type*} [MeasurableSpace α] {
     exact ENNReal.toReal_le_of_le_ofReal (by norm_num) hL2
 
 /-- The moments on the canonical space, for one coordinate: the excess
-`Z = max (L - log (2N)) 0` has tail `e^{-t/2}`, and `L ≤ log (2N) + Z`. -/
+$Z = \max(L - \log(2N), 0)$ has tail $e^{-t/2}$, and $L \le \log(2N) + Z$. -/
 private theorem gaussianVector_moments (i : n) :
     Integrable (fun x => Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2)) (gaussianVector n) ∧
       ∫ x, Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2) ∂(gaussianVector n) ≤
@@ -405,13 +411,14 @@ private theorem gaussianVector_moments (i : n) :
 
 /-! ### Rotating a unit vector to a coordinate -/
 
-/-- A unit vector `u` is a coordinate of a rotated copy `Y` of `X`: `Y` is again standard
-Gaussian, `‖Y‖ = ‖X‖` and `Y i = u ⬝ᵥ X`. -/
-private theorem exists_hasLaw_gaussianVector_eq (hX : HasLaw X (gaussianVector n) μ)
+/-- A unit vector $\mathbf{u}$ is a coordinate of a rotated copy $\mathbf{g}'$ of $\mathbf{g}$:
+$\mathbf{g}'$ is again standard Gaussian, $\|\mathbf{g}'\| = \|\mathbf{g}\|$ and
+$\mathbf{g}'_i = \langle \mathbf{u}, \mathbf{g} \rangle$. -/
+private theorem exists_hasLaw_gaussianVector_eq (hg : HasLaw g (gaussianVector n) μ)
     (hu : ‖WithLp.toLp 2 u‖ = 1) :
-    ∃ i : n, ∃ Y : Ω → n → ℝ, HasLaw Y (gaussianVector n) μ ∧
-      ∀ ω, ‖WithLp.toLp 2 (X ω)‖ ^ 2 / (u ⬝ᵥ X ω) ^ 2 =
-        ‖WithLp.toLp 2 (Y ω)‖ ^ 2 / Y ω i ^ 2 := by
+    ∃ i : n, ∃ g' : Ω → n → ℝ, HasLaw g' (gaussianVector n) μ ∧
+      ∀ ω, ‖WithLp.toLp 2 (g ω)‖ ^ 2 / (u ⬝ᵥ g ω) ^ 2 =
+        ‖WithLp.toLp 2 (g' ω)‖ ^ 2 / g' ω i ^ 2 := by
   have hne : Nonempty n := by
     by_contra h
     have : IsEmpty n := not_nonempty_iff.mp h
@@ -434,99 +441,109 @@ private theorem exists_hasLaw_gaussianVector_eq (hX : HasLaw X (gaussianVector n
     rw [h1, ← Measure.map_map (by fun_prop) (by fun_prop),
       ← Measure.map_map (by fun_prop) (by fun_prop), map_pi_eq_stdGaussian, stdGaussian_map,
       ← map_pi_eq_stdGaussian, Measure.map_map (by fun_prop) (by fun_prop), h2]
-  refine ⟨i, fun ω => f (X ω), HasLaw.fun_comp (Y := f) ⟨hf.aemeasurable, hmap⟩ hX,
+  refine ⟨i, fun ω => f (g ω), HasLaw.fun_comp (Y := f) ⟨hf.aemeasurable, hmap⟩ hg,
     fun ω => ?_⟩
-  have hnorm : ‖WithLp.toLp 2 (f (X ω))‖ = ‖WithLp.toLp 2 (X ω)‖ := by
+  have hnorm : ‖WithLp.toLp 2 (f (g ω))‖ = ‖WithLp.toLp 2 (g ω)‖ := by
     simp only [f, WithLp.toLp_ofLp, LinearIsometryEquiv.norm_map]
-  have hi : f (X ω) i = u ⬝ᵥ X ω := by
+  have hi : f (g ω) i = u ⬝ᵥ g ω := by
     simp only [f, OrthonormalBasis.repr_apply_apply, hb i (mem_singleton i),
       EuclideanSpace.inner_toLp_toLp, star_trivial]
     exact dotProduct_comm _ _
-  change _ = ‖WithLp.toLp 2 (f (X ω))‖ ^ 2 / f (X ω) i ^ 2
+  change _ = ‖WithLp.toLp 2 (f (g ω))‖ ^ 2 / f (g ω) i ^ 2
   rw [hnorm, hi]
 
 /-! ### Main results -/
 
-/-- **The tail of the logarithmic overlap.** For a standard Gaussian vector `X` in `ℝⁿ` and a
-unit vector `u`, `P(t ≤ log (‖X‖² / (u ⬝ᵥ X)²)) ≤ √(2N) e^{-t/2}` for every real `t`, with
-`N = card n`; the bound is below `1` exactly when `t > log (2N)`. The logarithm is `0` on the null
-event `u ⬝ᵥ X = 0`. The random-start step of the power and Lanczos methods
-[KuczynskiWozniakowski1992], in logarithmic form.
+/-- **The tail of the logarithmic overlap.** For a standard Gaussian vector $\mathbf{g}$ in
+$\mathbb{R}^n$ and a unit vector $\mathbf{u}$, for every real $t$,
+$$\mathbb{P}\Bigl(t \le \log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \rangle^2}
+\Bigr) \le \sqrt{2N}\, e^{-t/2},$$
+with $N = \lvert n \rvert$; the bound is below $1$ exactly when $t > \log(2N)$. The logarithm is
+$0$ on the null event $\langle \mathbf{u}, \mathbf{g} \rangle = 0$. The random-start step of the
+power and Lanczos methods [KuczynskiWozniakowski1992], in logarithmic form.
 Port of `NLAlib.pi_gaussianReal_logOverlap_gt_le`, there for a coordinate of `Fin (n + 1)`, a
-strict event and `t ≥ log (2N)`.
+strict event and $t \ge \log(2N)$.
 Result: random-start-log-overlap -/
 theorem measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) (t : ℝ) :
-    μ.real {ω | t ≤ Real.log (‖WithLp.toLp 2 (X ω)‖ ^ 2 / (u ⬝ᵥ X ω) ^ 2)} ≤
+    (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) (t : ℝ) :
+    μ.real {ω | t ≤ Real.log (‖WithLp.toLp 2 (g ω)‖ ^ 2 / (u ⬝ᵥ g ω) ^ 2)} ≤
       √(2 * Fintype.card n) * Real.exp (-t / 2) := by
   classical
-  obtain ⟨i, Y, hY, hXY⟩ := exists_hasLaw_gaussianVector_eq hX hu
-  simp only [hXY]
-  rw [hY.measureReal_eq (p := fun x => t ≤ Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2))
+  obtain ⟨i, g', hg', hgg'⟩ := exists_hasLaw_gaussianVector_eq hg hu
+  simp only [hgg']
+  rw [hg'.measureReal_eq (p := fun x => t ≤ Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2))
     (measurableSet_le measurable_const (measurable_log_norm_sq_div_sq i))]
   exact gaussianVector_le_log_le i t
 
-/-- The logarithmic overlap `log (‖X‖² / (u ⬝ᵥ X)²)` of a standard Gaussian vector with a unit
-vector is integrable (`NLAlib.integral_log_norm_sq_div_sq_le_of_hasLaw_gaussianVector`). -/
+/-- The logarithmic overlap
+$\log(\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2)$ of a standard Gaussian vector
+with a unit vector is integrable (`NLAlib.integral_log_norm_sq_div_sq_le_of_hasLaw_gaussianVector`).
+-/
 theorem integrable_log_norm_sq_div_sq_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
-    Integrable (fun ω => Real.log (‖WithLp.toLp 2 (X ω)‖ ^ 2 / (u ⬝ᵥ X ω) ^ 2)) μ := by
+    (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
+    Integrable (fun ω => Real.log (‖WithLp.toLp 2 (g ω)‖ ^ 2 / (u ⬝ᵥ g ω) ^ 2)) μ := by
   classical
-  obtain ⟨i, Y, hY, hXY⟩ := exists_hasLaw_gaussianVector_eq hX hu
-  simp only [hXY]
-  exact (hY.integrable_comp_iff (f := fun x => Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2))
+  obtain ⟨i, g', hg', hgg'⟩ := exists_hasLaw_gaussianVector_eq hg hu
+  simp only [hgg']
+  exact (hg'.integrable_comp_iff (f := fun x => Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2))
     (measurable_log_norm_sq_div_sq i).aestronglyMeasurable).2 (gaussianVector_moments i).1
 
-/-- **The mean logarithmic overlap.** For a standard Gaussian vector `X` in `ℝⁿ` and a unit
-vector `u`, `E log (‖X‖² / (u ⬝ᵥ X)²) ≤ log (2N) + 2` with `N = card n`, although
-`E ‖X‖² / (u ⬝ᵥ X)² = ∞`. Integrating the tail
-`NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector`; the random-start step of
-the power and Lanczos methods [KuczynskiWozniakowski1992]. The exact mean is
-`ψ(N/2) - ψ(1/2) ~ log (2N) + γ`, so the additive constant is not tight.
+/-- **The mean logarithmic overlap.** For a standard Gaussian vector $\mathbf{g}$ in
+$\mathbb{R}^n$ and a unit vector $\mathbf{u}$, with $N = \lvert n \rvert$,
+$$\mathbb{E} \log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \rangle^2}
+\le \log(2N) + 2,$$
+although $\mathbb{E}[\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2] = \infty$.
+Integrating the tail `NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector`; the
+random-start step of the power and Lanczos methods [KuczynskiWozniakowski1992]. The exact mean is
+$\psi(N/2) - \psi(1/2) \sim \log(2N) + \gamma$ (digamma $\psi$, Euler's constant $\gamma$), so the
+additive constant is not tight.
 Port of `NLAlib.integrable_and_integral_gaussianLogOverlap_le` and
 `NLAlib.integrable_and_integral_log_sum_div_sq_pi_gaussianReal_le`, there for a coordinate.
 Result: random-start-log-overlap -/
 theorem integral_log_norm_sq_div_sq_le_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
-    ∫ ω, Real.log (‖WithLp.toLp 2 (X ω)‖ ^ 2 / (u ⬝ᵥ X ω) ^ 2) ∂μ ≤
+    (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
+    ∫ ω, Real.log (‖WithLp.toLp 2 (g ω)‖ ^ 2 / (u ⬝ᵥ g ω) ^ 2) ∂μ ≤
       Real.log (2 * Fintype.card n) + 2 := by
   classical
-  obtain ⟨i, Y, hY, hXY⟩ := exists_hasLaw_gaussianVector_eq hX hu
-  simp only [hXY]
-  have h := hY.integral_comp (measurable_log_norm_sq_div_sq i).aestronglyMeasurable
+  obtain ⟨i, g', hg', hgg'⟩ := exists_hasLaw_gaussianVector_eq hg hu
+  simp only [hgg']
+  have h := hg'.integral_comp (measurable_log_norm_sq_div_sq i).aestronglyMeasurable
   simp only [Function.comp_def] at h
   rw [h]
   exact (gaussianVector_moments i).2.1
 
-/-- The square of the logarithmic overlap `log (‖X‖² / (u ⬝ᵥ X)²)` of a standard Gaussian vector
+/-- The square of the logarithmic overlap
+$\log(\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2)$ of a standard Gaussian vector
 with a unit vector is integrable
 (`NLAlib.integral_log_norm_sq_div_sq_sq_le_of_hasLaw_gaussianVector`). -/
 theorem integrable_log_norm_sq_div_sq_sq_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
-    Integrable (fun ω => Real.log (‖WithLp.toLp 2 (X ω)‖ ^ 2 / (u ⬝ᵥ X ω) ^ 2) ^ 2) μ := by
+    (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
+    Integrable (fun ω => Real.log (‖WithLp.toLp 2 (g ω)‖ ^ 2 / (u ⬝ᵥ g ω) ^ 2) ^ 2) μ := by
   classical
-  obtain ⟨i, Y, hY, hXY⟩ := exists_hasLaw_gaussianVector_eq hX hu
-  simp only [hXY]
-  exact (hY.integrable_comp_iff (f := fun x => Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2) ^ 2)
+  obtain ⟨i, g', hg', hgg'⟩ := exists_hasLaw_gaussianVector_eq hg hu
+  simp only [hgg']
+  exact (hg'.integrable_comp_iff (f := fun x => Real.log (‖WithLp.toLp 2 x‖ ^ 2 / x i ^ 2) ^ 2)
     ((measurable_log_norm_sq_div_sq i).pow_const 2).aestronglyMeasurable).2
     (gaussianVector_moments i).2.2.1
 
-/-- **The second moment of the logarithmic overlap.** For a standard Gaussian vector `X` in `ℝⁿ`
-and a unit vector `u`, with `T = log (2N)` and `N = card n`,
-`E log (‖X‖² / (u ⬝ᵥ X)²)² ≤ T² + 4T + 8`, so the logarithmic overlap has variance `O(1)` around
-a mean of order `log N`. Integrating the tail
-`NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector` beyond `T`.
+/-- **The second moment of the logarithmic overlap.** For a standard Gaussian vector
+$\mathbf{g}$ in $\mathbb{R}^n$ and a unit vector $\mathbf{u}$, with $T = \log(2N)$ and
+$N = \lvert n \rvert$,
+$$\mathbb{E}\Bigl(\log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \rangle^2}\Bigr)^2
+\le T^2 + 4T + 8,$$
+so the logarithmic overlap has variance $O(1)$ around a mean of order $\log N$. Integrating the
+tail `NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector` beyond $T$.
 Port of `NLAlib.integrable_and_integral_gaussianLogOverlap_le` and
 `NLAlib.integrable_and_integral_log_sum_div_sq_pi_gaussianReal_le`, there for a coordinate.
 Result: random-start-log-overlap -/
 theorem integral_log_norm_sq_div_sq_sq_le_of_hasLaw_gaussianVector
-    (hX : HasLaw X (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
-    ∫ ω, Real.log (‖WithLp.toLp 2 (X ω)‖ ^ 2 / (u ⬝ᵥ X ω) ^ 2) ^ 2 ∂μ ≤
+    (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
+    ∫ ω, Real.log (‖WithLp.toLp 2 (g ω)‖ ^ 2 / (u ⬝ᵥ g ω) ^ 2) ^ 2 ∂μ ≤
       Real.log (2 * Fintype.card n) ^ 2 + 4 * Real.log (2 * Fintype.card n) + 8 := by
   classical
-  obtain ⟨i, Y, hY, hXY⟩ := exists_hasLaw_gaussianVector_eq hX hu
-  simp only [hXY]
-  have h := hY.integral_comp ((measurable_log_norm_sq_div_sq i).pow_const 2).aestronglyMeasurable
+  obtain ⟨i, g', hg', hgg'⟩ := exists_hasLaw_gaussianVector_eq hg hu
+  simp only [hgg']
+  have h := hg'.integral_comp ((measurable_log_norm_sq_div_sq i).pow_const 2).aestronglyMeasurable
   simp only [Function.comp_def] at h
   rw [h]
   exact (gaussianVector_moments i).2.2.2

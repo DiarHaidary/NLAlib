@@ -12,8 +12,9 @@ public import NLAlib.Matrix.Functions.TraceFunctions
 /-!
 # Traces of powers and of products of matrix functions
 
-For Hermitian `A` and `B` with unitary diagonalisations, the trace `tr (f(A) g(B))` is a
-nonnegative combination of the products `f(λ_i) g(μ_j)`, with weights the squared overlaps of the
+For Hermitian $\mathbf{A}$ and $\mathbf{B}$ with unitary diagonalisations, the trace
+$\operatorname{tr}(f(\mathbf{A}) g(\mathbf{B}))$ is a nonnegative combination of the products
+$f(\lambda_i(\mathbf{A})) g(\lambda_j(\mathbf{B}))$, with weights the squared overlaps of the
 eigenvectors. Scalar inequalities in two variables therefore lift to trace inequalities. This file
 records the lifting principle and the trace-power inequalities that the moment method and the
 method of exchangeable pairs for random matrices use.
@@ -26,8 +27,13 @@ method of exchangeable pairs for random matrices use.
   `Matrix.IsHermitian.re_trace_pow_le_card_mul_specNorm_pow`: traces of powers through the
   eigenvalues (`Matrix.IsHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow`); the moment bound for
   the spectral norm is `NLAlib.specNorm_pow_le_re_trace_pow`.
-* `NLAlib.re_trace_mul_diagonal_mul_mul_diagonal`: `tr (C D_x C D_y)` as a weighted sum.
-* `NLAlib.re_trace_mul_pow_mul_pow_le`: `tr (C Hˡ C Hᵏ) ≤ tr (C² Hˡ⁺ᵏ)` for even `l + k`.
+* `NLAlib.re_trace_mul_diagonal_mul_mul_diagonal`:
+  $\operatorname{tr}(\mathbf{C} \operatorname{diag}(\mathbf{x}) \mathbf{C}
+  \operatorname{diag}(\mathbf{y}))$
+  as a weighted sum.
+* `NLAlib.re_trace_mul_pow_mul_pow_le`:
+  $\operatorname{tr}(\mathbf{C}\mathbf{H}^l\mathbf{C}\mathbf{H}^k)
+  \le \operatorname{tr}(\mathbf{C}^2\mathbf{H}^{l+k})$ for even $l + k$.
 * `NLAlib.re_trace_cfc_sub_mul_cfc_sub_le`: the mean value trace inequality.
 * `NLAlib.re_trace_mul_pow_le_add`, `NLAlib.re_trace_mul_le_re_trace_rpow_add`: trace Young.
 -/
@@ -42,10 +48,15 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### The overlap formula -/
 
-/-- **The overlap formula.** If `A = U diag(a) Uᴴ` and `B = V diag(b) Vᴴ` with `U`, `V` unitary
-(orthonormal columns, as many columns as rows),
-then `tr (f(A) g(B)) = ∑ i j, |(Uᴴ V)_{ij}|² f(a_i) g(b_j)`.
-Port of `NLAlib.re_trace_pow_mul_pow_eq_sum_overlap`, there for powers over `ℂ`. -/
+/-- **The overlap formula.** If
+$\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{a})\mathbf{U}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{V}\operatorname{diag}(\mathbf{b})\mathbf{V}^{\mathsf{H}}$ with $\mathbf{a}$,
+$\mathbf{b}$ real and $\mathbf{U}$, $\mathbf{V}$ unitary (orthonormal columns, as many columns as
+rows), then
+$$\operatorname{Re} \operatorname{tr}(f(\mathbf{A}) g(\mathbf{B}))
+  = \sum_{i, j} \lvert (\mathbf{U}^{\mathsf{H}}\mathbf{V})_{i,j} \rvert^2 f(\mathbf{a}_i)
+  g(\mathbf{b}_j) \,.$$
+Port of `NLAlib.re_trace_pow_mul_pow_eq_sum_overlap`, there for powers over $\mathbb{C}$. -/
 theorem re_trace_cfc_mul_cfc_eq_sum {r s : Type*} [Fintype r] [Fintype s] [DecidableEq r]
     [DecidableEq s] {A B : Matrix n n 𝕜} {U : Matrix n r 𝕜} {V : Matrix n s 𝕜} {a : r → ℝ}
     {b : s → ℝ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
@@ -74,7 +85,9 @@ theorem re_trace_cfc_mul_cfc_eq_sum {r s : Type*} [Fintype r] [Fintype s] [Decid
     RCLike.star_def, RCLike.mul_conj, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul,
     RCLike.ofReal_re, mul_comm]
 
-/-- The overlap formula along the sorted eigenvalues, with the weights left abstract. -/
+/-- The overlap formula along the sorted eigenvalues, with the weights left abstract: there are
+$w_{ij} \ge 0$ with $\operatorname{Re} \operatorname{tr}(f(\mathbf{A}) g(\mathbf{B}))
+= \sum_{i, j} w_{ij} f(\lambda_i(\mathbf{A})) g(\lambda_j(\mathbf{B}))$ for all $f$, $g$. -/
 private theorem exists_re_trace_cfc_mul_cfc_eq_sum {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
     ∃ w : Fin (Fintype.card n) → Fin (Fintype.card n) → ℝ, (∀ i j, 0 ≤ w i j) ∧
@@ -86,9 +99,12 @@ private theorem exists_re_trace_cfc_mul_cfc_eq_sum {A B : Matrix n n 𝕜} (hA :
   exact ⟨fun i j => ‖(Uᴴ * V) i j‖ ^ 2, fun i j => by positivity,
     fun f g => re_trace_cfc_mul_cfc_eq_sum hU hV hr hr hAU hBV f g⟩
 
-/-- **Lifting a two-variable inequality to traces.** If `∑ k, f k x * g k y ≤ ∑ k, f' k x * g' k y`
-for all `x` in the spectrum of `A` and `y` in that of `B`, the same inequality holds for the
-traces `∑ k, tr (f_k(A) g_k(B))`. [Tropp2015, Proposition 8.3.5]. -/
+/-- **Lifting a two-variable inequality to traces.** For Hermitian $\mathbf{A}$, $\mathbf{B}$ and
+finitely many functions, if $\sum_k f_k(x) g_k(y) \le \sum_k f'_k(x) g'_k(y)$ for all $x$ in the
+spectrum of $\mathbf{A}$ and $y$ in that of $\mathbf{B}$, then
+$$\sum_k \operatorname{Re} \operatorname{tr}(f_k(\mathbf{A}) g_k(\mathbf{B}))
+  \le \sum_k \operatorname{Re} \operatorname{tr}(f'_k(\mathbf{A}) g'_k(\mathbf{B})) \,.$$
+[Tropp2015, Proposition 8.3.5]. -/
 theorem sum_re_trace_cfc_mul_cfc_le_of_forall {ι : Type*} [Fintype ι] {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) {f g f' g' : ι → ℝ → ℝ}
     (h : ∀ x ∈ spectrum ℝ A, ∀ y ∈ spectrum ℝ B,
@@ -110,21 +126,25 @@ theorem sum_re_trace_cfc_mul_cfc_le_of_forall {ι : Type*} [Fintype ι] {A B : M
 
 /-! ### Traces of powers -/
 
-/-- The trace of an even power of a Hermitian matrix is nonnegative.
+/-- The trace of an even power of a Hermitian matrix is nonnegative:
+$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \ge 0$ for even $r$.
 Port of `NLAlib.re_trace_pow_nonneg_of_even`. -/
 theorem _root_.Matrix.IsHermitian.re_trace_pow_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {r : ℕ} (hr : Even r) : 0 ≤ RCLike.re (A ^ r).trace := by
   rw [hA.re_trace_pow_eq_sum_range_eigenvalue_pow]
   exact Finset.sum_nonneg fun i _ => hr.pow_nonneg _
 
-/-- The trace of a power of a positive semidefinite matrix is nonnegative.
+/-- The trace of a power of a positive semidefinite matrix is nonnegative:
+$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \ge 0$.
 Port of `NLAlib.re_trace_pow_nonneg_of_posSemidef`. -/
 theorem _root_.Matrix.PosSemidef.re_trace_pow_nonneg {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (r : ℕ) : 0 ≤ RCLike.re (A ^ r).trace := by
   rw [hA.isHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow]
   exact Finset.sum_nonneg fun i _ => pow_nonneg (hA.eigenvalue_nonneg i) r
 
-/-- The trace of a power is at most the dimension times the power of the spectral norm. -/
+/-- The trace of a power is at most the dimension times the power of the spectral norm: for
+Hermitian $\mathbf{A}$,
+$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \le \lvert n \rvert \, \|\mathbf{A}\|_2^r$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_pow_le_card_mul_specNorm_pow {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (r : ℕ) :
     RCLike.re (A ^ r).trace ≤ Fintype.card n * specNorm A ^ r := by
@@ -137,7 +157,8 @@ theorem _root_.Matrix.IsHermitian.re_trace_pow_le_card_mul_specNorm_pow {A : Mat
 
 /-! ### Trace inequalities for powers -/
 
-/-- The rearrangement inequality for two powers with even total degree. -/
+/-- The rearrangement inequality for two powers with even total degree: for real $x$, $y$ and
+$l + k$ even, $x^l y^k + x^k y^l \le x^{l+k} + y^{l+k}$. -/
 private theorem pow_mul_pow_add_le {l k : ℕ} (h : Even (l + k)) (x y : ℝ) :
     x ^ l * y ^ k + x ^ k * y ^ l ≤ x ^ (l + k) + y ^ (l + k) := by
   have h1 : ∀ a b : ℕ, x ^ a * y ^ b ≤ |x| ^ a * |y| ^ b := fun a b => by
@@ -153,11 +174,17 @@ private theorem pow_mul_pow_add_le {l k : ℕ} (h : Even (l + k)) (x y : ℝ) :
   rw [← h.pow_abs x, ← h.pow_abs y, pow_add, pow_add]
   linarith [h1 l k, h1 k l]
 
-/-- **The trace of `C D_x C D_y`** for Hermitian `C` and real diagonal matrices `D_x`, `D_y` is
-the weighted sum `∑ i j, |C i j|² x_j y_i`. In an eigenbasis of `H` this expresses
-`tr (C f(H) C g(H))` through the eigenvalues of `H`.
-Port of `NLAlib.trace_mul_diagonal_pow_mul_mul_diagonal_pow`, there over `ℝ` for powers of one
-diagonal matrix. -/
+/-- **The trace of
+$\mathbf{C}\operatorname{diag}(\mathbf{x})\mathbf{C}\operatorname{diag}(\mathbf{y})$**
+for Hermitian $\mathbf{C}$ and real vectors $\mathbf{x}$, $\mathbf{y}$ is the weighted sum
+$$\operatorname{Re} \operatorname{tr}\bigl(\mathbf{C}\operatorname{diag}(\mathbf{x})\mathbf{C}
+  \operatorname{diag}(\mathbf{y})\bigr)
+  = \sum_{i, j} \lvert \mathbf{C}_{i,j} \rvert^2 \mathbf{x}_j \mathbf{y}_i \,.$$
+In an eigenbasis of $\mathbf{H}$ this expresses
+$\operatorname{tr}(\mathbf{C} f(\mathbf{H}) \mathbf{C} g(\mathbf{H}))$ through the eigenvalues of
+$\mathbf{H}$.
+Port of `NLAlib.trace_mul_diagonal_pow_mul_mul_diagonal_pow`, there over $\mathbb{R}$ for powers
+of one diagonal matrix. -/
 theorem re_trace_mul_diagonal_mul_mul_diagonal {p : Type*} [Fintype p] [DecidableEq p]
     {C : Matrix p p 𝕜} (hC : C.IsHermitian) (x y : p → ℝ) :
     RCLike.re (C * Matrix.diagonal (fun i => ((x i : ℝ) : 𝕜)) * C *
@@ -172,8 +199,8 @@ theorem re_trace_mul_diagonal_mul_mul_diagonal {p : Type*} [Fintype p] [Decidabl
     RCLike.star_def, RCLike.mul_conj, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul,
     RCLike.ofReal_re, mul_comm]
 
-/-- The trace `tr (C Hˡ C Hᵏ)` as a sum over pairs of eigenvalues of `H` with symmetric
-nonnegative weights. -/
+/-- The trace $\operatorname{Re} \operatorname{tr}(\mathbf{C}\mathbf{H}^l\mathbf{C}\mathbf{H}^k)$
+as a sum over pairs of eigenvalues of $\mathbf{H}$ with symmetric nonnegative weights. -/
 private theorem exists_re_trace_mul_pow_mul_pow_eq_sum {C H : Matrix n n 𝕜} (hC : C.IsHermitian)
     (hH : H.IsHermitian) :
     ∃ w : Fin (Fintype.card n) → Fin (Fintype.card n) → ℝ, (∀ i j, 0 ≤ w i j) ∧
@@ -201,9 +228,11 @@ private theorem exists_re_trace_mul_pow_mul_pow_eq_sum {C H : Matrix n n 𝕜} (
       simp only [Matrix.mul_assoc], Matrix.trace_mul_comm Uᴴ]
     simp only [Matrix.mul_assoc]
 
-/-- **Rearranging powers inside a trace**: for Hermitian `C`, `H` and `l + k` even,
-`tr (C Hˡ C Hᵏ) ≤ tr (C² Hˡ⁺ᵏ)`. [MackeyEtAl2014, §3].
-Port of `NLAlib.re_trace_mul_pow_mul_le_trace_sq_mul_pow`, there over `ℂ`. -/
+/-- **Rearranging powers inside a trace**: for Hermitian $\mathbf{C}$, $\mathbf{H}$ and $l + k$
+even,
+$\operatorname{Re} \operatorname{tr}(\mathbf{C}\mathbf{H}^l\mathbf{C}\mathbf{H}^k)
+\le \operatorname{Re} \operatorname{tr}(\mathbf{C}^2\mathbf{H}^{l+k})$. [MackeyEtAl2014, §3].
+Port of `NLAlib.re_trace_mul_pow_mul_le_trace_sq_mul_pow`, there over $\mathbb{C}$. -/
 theorem re_trace_mul_pow_mul_pow_le {C H : Matrix n n 𝕜} (hC : C.IsHermitian)
     (hH : H.IsHermitian) {l k : ℕ} (h : Even (l + k)) :
     RCLike.re (C * H ^ l * C * H ^ k).trace ≤ RCLike.re (C ^ 2 * H ^ (l + k)).trace := by
@@ -231,7 +260,9 @@ theorem re_trace_mul_pow_mul_pow_le {C H : Matrix n n 𝕜} (hC : C.IsHermitian)
 
 /-! ### The mean value trace inequality -/
 
-/-- The trapezoid bound for a function whose derivative is convex. -/
+/-- The trapezoid bound for a function whose derivative is convex: if $h$ has derivative $h'$
+within $s$ and $h'$ is convex on $s$, then for $b < a$ in $s$,
+$h(a) - h(b) \le (a - b)(h'(a) + h'(b))/2$. -/
 private theorem sub_le_mul_add_div_two {h h' : ℝ → ℝ} {s : Set ℝ}
     (hh : ∀ x ∈ s, HasDerivWithinAt h (h' x) s x) (hh' : ConvexOn ℝ s h') {a b : ℝ} (ha : a ∈ s)
     (hb : b ∈ s) (hba : b < a) : h a - h b ≤ (a - b) * (h' a + h' b) / 2 := by
@@ -280,7 +311,9 @@ private theorem sub_le_mul_add_div_two {h h' : ℝ → ℝ} {s : Set ℝ}
     zero_div, add_zero, sub_zero, zero_mul] at hle
   nlinarith
 
-/-- The scalar mean value inequality behind the mean value trace inequality. -/
+/-- The scalar mean value inequality behind the mean value trace inequality:
+$(g(a) - g(b))(h(a) - h(b)) \le \tfrac12 (g(a) - g(b))(a - b)(h'(a) + h'(b))$ for $g$
+non-decreasing and $h'$ convex on $s$. -/
 private theorem sub_mul_sub_le_half_mul {g h h' : ℝ → ℝ} {s : Set ℝ} (hg : MonotoneOn g s)
     (hh : ∀ x ∈ s, HasDerivWithinAt h (h' x) s x) (hh' : ConvexOn ℝ s h') {a b : ℝ} (ha : a ∈ s)
     (hb : b ∈ s) :
@@ -294,12 +327,14 @@ private theorem sub_mul_sub_le_half_mul {g h h' : ℝ → ℝ} {s : Set ℝ} (hg
     have h2 : 0 ≤ g a - g b := sub_nonneg.mpr (hg hb ha hab.le)
     nlinarith [mul_le_mul_of_nonneg_left h1 h2]
 
-/-- Functions of one matrix multiply pointwise; every function is continuous on the spectrum. -/
+/-- Functions of one matrix multiply pointwise: $(fg)(\mathbf{A}) = f(\mathbf{A}) g(\mathbf{A})$;
+every function is continuous on the spectrum. -/
 private theorem cfc_mul_cfc (A : Matrix n n 𝕜) (f g : ℝ → ℝ) :
     cfc (fun x => f x * g x) A = cfc f A * cfc g A :=
   cfc_mul f g A (A.finite_real_spectrum.continuousOn _) (A.finite_real_spectrum.continuousOn _)
 
-/-- The trace of `(g(A) - g(B)) (h(A) - h(B))` as a combination of traces `tr (φ(A) ψ(B))`. -/
+/-- The trace of $(g(\mathbf{A}) - g(\mathbf{B}))(h(\mathbf{A}) - h(\mathbf{B}))$ as a combination
+of traces $\operatorname{tr}(\varphi(\mathbf{A}) \psi(\mathbf{B}))$. -/
 private theorem trace_cfc_sub_mul_cfc_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) (g h : ℝ → ℝ) :
     ((cfc g A - cfc g B) * (cfc h A - cfc h B)).trace =
@@ -313,8 +348,9 @@ private theorem trace_cfc_sub_mul_cfc_sub {A B : Matrix n n 𝕜} (hA : A.IsHerm
   simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.trace_sub]
   ring
 
-/-- The trace of `(g(A) - g(B)) (A - B) (p(A) + p(B))` as a combination of traces
-`tr (φ(A) ψ(B))`. -/
+/-- The trace of
+$(g(\mathbf{A}) - g(\mathbf{B}))(\mathbf{A} - \mathbf{B})(p(\mathbf{A}) + p(\mathbf{B}))$ as a
+combination of traces $\operatorname{tr}(\varphi(\mathbf{A}) \psi(\mathbf{B}))$. -/
 private theorem trace_cfc_sub_mul_sub_mul_cfc_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) (g p : ℝ → ℝ) :
     ((cfc g A - cfc g B) * (A - B) * (cfc p A + cfc p B)).trace =
@@ -350,9 +386,14 @@ private theorem trace_cfc_sub_mul_sub_mul_cfc_add {A B : Matrix n n 𝕜} (hA : 
   simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_add, Matrix.trace_sub, Matrix.trace_add]
   ring
 
-/-- **The mean value trace inequality.** For `g` non-decreasing on `s`, `h` with derivative `h'`
-convex on `s`, and Hermitian `A`, `B` with spectrum in `s`,
-`tr ((g(A) - g(B)) (h(A) - h(B))) ≤ ½ tr ((g(A) - g(B)) (A - B) (h'(A) + h'(B)))`.
+/-- **The mean value trace inequality.** For $g$ non-decreasing on $s$, $h$ with derivative $h'$
+within $s$ and $h'$ convex on $s$, and Hermitian $\mathbf{A}$, $\mathbf{B}$ with spectrum in $s$,
+$$\begin{aligned}
+  &\operatorname{Re} \operatorname{tr}\bigl((g(\mathbf{A}) - g(\mathbf{B}))
+    (h(\mathbf{A}) - h(\mathbf{B}))\bigr) \\
+  &\quad \le \tfrac12 \operatorname{Re} \operatorname{tr}\bigl((g(\mathbf{A}) - g(\mathbf{B}))
+    (\mathbf{A} - \mathbf{B})(h'(\mathbf{A}) + h'(\mathbf{B}))\bigr) \,.
+\end{aligned}$$
 [MackeyEtAl2014, Lemma 3.4].
 Result: mean-value-trace-inequality -/
 theorem re_trace_cfc_sub_mul_cfc_sub_le {g h h' : ℝ → ℝ} {s : Set ℝ} (hg : MonotoneOn g s)
@@ -384,9 +425,14 @@ theorem re_trace_cfc_sub_mul_cfc_sub_le {g h h' : ℝ → ℝ} {s : Set ℝ} (hg
   exact mul_le_mul_of_nonneg_left (sub_mul_sub_le_half_mul hg hh hh'
     (hAs (hA.eigenvalue_mem_spectrum i.isLt)) (hBs (hB.eigenvalue_mem_spectrum j.isLt))) (hw0 i j)
 
-/-- The mean value trace inequality for powers: for Hermitian `H`, `K` and even `m`,
-`tr ((H - K)(Hᵐ⁺¹ - Kᵐ⁺¹)) ≤ (m + 1)/2 · tr ((H - K)² (Hᵐ + Kᵐ))`.
-[MackeyEtAl2014, Lemma 3.4]. Port of `NLAlib.re_trace_sub_mul_sub_pow_le`, there over `ℂ`. -/
+/-- The mean value trace inequality for powers: for Hermitian $\mathbf{H}$, $\mathbf{K}$ and even
+$m$,
+$$\operatorname{Re} \operatorname{tr}\bigl((\mathbf{H} - \mathbf{K})
+  (\mathbf{H}^{m+1} - \mathbf{K}^{m+1})\bigr)
+  \le \frac{m + 1}{2} \operatorname{Re} \operatorname{tr}\bigl((\mathbf{H} - \mathbf{K})^2
+  (\mathbf{H}^m + \mathbf{K}^m)\bigr) \,.$$
+[MackeyEtAl2014, Lemma 3.4]. Port of `NLAlib.re_trace_sub_mul_sub_pow_le`, there over
+$\mathbb{C}$. -/
 theorem re_trace_sub_mul_pow_sub_pow_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian)
     (hK : K.IsHermitian) {m : ℕ} (hm : Even m) :
     RCLike.re ((H - K) * (H ^ (m + 1) - K ^ (m + 1))).trace ≤
@@ -409,7 +455,8 @@ theorem re_trace_sub_mul_pow_sub_pow_le {H K : Matrix n n 𝕜} (hH : H.IsHermit
 
 /-! ### Trace Young inequalities -/
 
-/-- Young's inequality for natural powers: `(q + 1) x y^q ≤ x^{q+1} + q y^{q+1}`. -/
+/-- Young's inequality for natural powers: $(q + 1) x y^q \le x^{q+1} + q y^{q+1}$ for
+$x, y \ge 0$. -/
 private theorem succ_mul_mul_pow_le {x y : ℝ} (hx : 0 ≤ x) (hy : 0 ≤ y) (q : ℕ) :
     (q + 1 : ℝ) * (x * y ^ q) ≤ x ^ (q + 1) + q * y ^ (q + 1) := by
   induction q with
@@ -426,10 +473,14 @@ private theorem succ_mul_mul_pow_le {x y : ℝ} (hx : 0 ≤ x) (hy : 0 ≤ y) (q
     push_cast
     nlinarith
 
-/-- **The trace Young inequality for powers**: for positive semidefinite `V` and Hermitian `H`,
-`(q + 1)(2q + 1) tr (V H^{2q}) ≤ (2q + 1)^{q+1} tr V^{q+1} + q tr H^{2q+2}`.
+/-- **The trace Young inequality for powers**: for positive semidefinite $\mathbf{V}$ and
+Hermitian $\mathbf{H}$,
+$$(q + 1)(2q + 1) \operatorname{tr}(\mathbf{V}\mathbf{H}^{2q})
+  \le (2q + 1)^{q+1} \operatorname{tr} \mathbf{V}^{q+1} + q \operatorname{tr} \mathbf{H}^{2q+2}
+  \,,$$
+traces through their real parts.
 [MackeyEtAl2014, proof of Theorem 7.1].
-Port of `NLAlib.nat_mul_mul_re_trace_mul_pow_le`, there over `ℂ` with `p = q + 1`. -/
+Port of `NLAlib.nat_mul_mul_re_trace_mul_pow_le`, there over $\mathbb{C}$ with $p = q + 1$. -/
 theorem re_trace_mul_pow_le_add {V H : Matrix n n 𝕜} (hV : V.PosSemidef) (hH : H.IsHermitian)
     (q : ℕ) :
     (q + 1 : ℝ) * (2 * q + 1) * RCLike.re (V * H ^ (2 * q)).trace ≤
@@ -452,8 +503,11 @@ theorem re_trace_mul_pow_le_add {V H : Matrix n n 𝕜} (hV : V.PosSemidef) (hH 
   rw [mul_pow, ← pow_mul, ← pow_mul, show 2 * (q + 1) = 2 * q + 2 by ring] at hs
   nlinarith [mul_le_mul_of_nonneg_left hs (hw0 i j)]
 
-/-- **Young's inequality for traces**: for positive semidefinite `A`, `B` and conjugate exponents
-`p`, `q`, `tr (A B) ≤ tr Aᵖ / p + tr B^q / q`. [Bhatia1997, §IV.2 context]. -/
+/-- **Young's inequality for traces**: for positive semidefinite $\mathbf{A}$, $\mathbf{B}$ and
+conjugate exponents $p$, $q$ (`Real.HolderConjugate`, so $1/p + 1/q = 1$),
+$\operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B})
+\le \operatorname{Re} \operatorname{tr} \mathbf{A}^p / p +
+\operatorname{Re} \operatorname{tr} \mathbf{B}^q / q$. [Bhatia1997, §IV.2 context]. -/
 theorem re_trace_mul_le_re_trace_rpow_add {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
     (hB : B.PosSemidef) {p q : ℝ} (hpq : p.HolderConjugate q) :
     RCLike.re (A * B).trace ≤ RCLike.re (A ^ p).trace / p + RCLike.re (B ^ q).trace / q := by

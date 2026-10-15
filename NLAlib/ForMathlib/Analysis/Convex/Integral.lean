@@ -10,11 +10,11 @@ public import Mathlib.Analysis.Convex.Integral
 /-!
 # Jensen's inequality on a convex set that is not closed
 
-Mathlib's `ConcaveOn.le_map_integral` proves `∫ g ∘ f ≤ g (∫ f)` for `g` concave and continuous on
-a closed convex set `s`. Closedness serves only to put the mean of `f` in `s`; when the mean is
-known to lie in `s`, the inequality holds on any convex set. This is the form needed on the cone of
-positive definite matrices, which is open. Upstream candidate for
-`Mathlib.Analysis.Convex.Integral`.
+Mathlib's `ConcaveOn.le_map_integral` proves $\int g \circ f \, d\mu
+\le g\bigl(\int f \, d\mu\bigr)$ for $g$ concave and continuous on a closed convex set $s$.
+Closedness serves only to put the mean of $f$ in $s$; when the mean is known to lie in $s$, the
+inequality holds on any convex set. This is the form needed on the cone of positive definite
+matrices, which is open. Upstream candidate for `Mathlib.Analysis.Convex.Integral`.
 
 ## Main results
 
@@ -30,9 +30,11 @@ open scoped Topology
 variable {α E : Type*} {m0 : MeasurableSpace α} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [CompleteSpace E] {μ : Measure α} {s : Set E} {f : α → E} {g : E → ℝ}
 
-/-- **Jensen's inequality** `∫ g ∘ f ≤ g (∫ f)` for `g` concave and continuous on a convex set `s`
-that need not be closed, provided the mean of `f` lies in `s`. Mathlib's
-`ConcaveOn.le_map_integral` needs `s` closed. Port of the prototype lemma of the same name. -/
+/-- **Jensen's inequality** $\int g(f(x)) \, d\mu(x) \le g\bigl(\int f(x) \, d\mu(x)\bigr)$ for a
+probability measure $\mu$ and $g$ concave and continuous on a convex set $s$ that need not be
+closed, provided $f$ takes values in $s$ almost everywhere, $f$ and $g \circ f$ are integrable,
+and the mean of $f$ lies in $s$. Mathlib's `ConcaveOn.le_map_integral` needs $s$ closed. Port of the
+prototype lemma of the same name. -/
 theorem ConcaveOn.le_map_integral_of_integral_mem [IsProbabilityMeasure μ] (hg : ConcaveOn ℝ s g)
     (hgc : ContinuousOn g s) (hfs : ∀ᵐ x ∂μ, f x ∈ s) (hfi : Integrable f μ)
     (hgi : Integrable (g ∘ f) μ) (hm : ∫ x, f x ∂μ ∈ s) :

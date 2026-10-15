@@ -13,20 +13,24 @@ public import NLAlib.Probability.Distributions.Gaussian
 /-!
 # Real moments of the chi-square law
 
-For a standard Gaussian vector `X` in `ℝⁿ` (`d = card n`), `‖X‖²` has the `χ²_d` law, and
-`E (‖X‖²)^s = 2^s Γ(d/2 + s) / Γ(d/2)` for every real `s > -d/2`, the integrability threshold.
-The negative moments are what the inverse moments of Gaussian matrices rest on; in particular
-`E 1 / ‖X‖² = 1 / (d - 2)` for `d ≥ 3`. At `X = 0` (probability zero) `0 ^ s` is Lean's junk value
-for `s < 0`; the integrals are unaffected. The case `s = 1/2` gives `E ‖X‖`, whose growth in the
-dimension (`√m - √n ≤ E ‖g_m‖ - E ‖g_n‖`) is the step of Gordon's lower bound for the smallest
-singular value of a Gaussian matrix.
+For a standard Gaussian vector $\mathbf{g}$ in $\mathbb{R}^n$ (with $d = \lvert n \rvert$),
+$\|\mathbf{g}\|^2$ has the $\chi^2_d$ law, and
+$\mathbb{E}(\|\mathbf{g}\|^2)^s = 2^s \Gamma(d/2 + s) / \Gamma(d/2)$ for every real $s > -d/2$, the
+integrability threshold. The negative moments are what the inverse moments of Gaussian matrices
+rest on; in particular $\mathbb{E}[1 / \|\mathbf{g}\|^2] = 1 / (d - 2)$ for $d \ge 3$. At
+$\mathbf{g} = \mathbf{0}$ (probability zero) $0^s$ is Lean's junk value for $s < 0$; the integrals
+are unaffected. The case $s = 1/2$ gives $\mathbb{E}\|\mathbf{g}\|$, whose growth in the
+dimension ($\sqrt{m} - \sqrt{n} \le \mathbb{E}\|\mathbf{g}_m\| - \mathbb{E}\|\mathbf{g}_n\|$ for
+standard Gaussian vectors $\mathbf{g}_k$ of dimension $k$) is the step of Gordon's lower bound for
+the smallest singular value of a Gaussian matrix.
 
 ## Main results
 
 * `NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector`.
 * `NLAlib.integral_norm_sq_inv_of_hasLaw_gaussianVector`.
 * `NLAlib.le_integral_norm_sub_integral_norm_of_hasLaw_gaussianVector`:
-  `√m - √n ≤ E ‖g_m‖ - E ‖g_n‖` for `1 ≤ n ≤ m`.
+  $\sqrt{m} - \sqrt{n} \le \mathbb{E}\|\mathbf{g}_m\| - \mathbb{E}\|\mathbf{g}_n\|$ for
+  $1 \le n \le m$.
 -/
 
 @[expose] public section
@@ -36,9 +40,10 @@ open MeasureTheory ProbabilityTheory Real Set
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
-  {X : Ω → n → ℝ}
+  {g : Ω → n → ℝ}
 
-/-- The standard Gaussian vector has the density `(2π)^{-n/2} exp (-‖x‖²/2)`. -/
+/-- The standard Gaussian vector has the density
+$(2\pi)^{-\lvert n \rvert/2} e^{-\|\mathbf{x}\|^2/2}$. -/
 private theorem gaussianVector_eq_withDensity :
     gaussianVector n = volume.withDensity fun x : n → ℝ =>
       ENNReal.ofReal ((√(2 * π))⁻¹ ^ Fintype.card n * rexp (-‖WithLp.toLp 2 x‖ ^ 2 / 2)) := by
@@ -104,7 +109,7 @@ private theorem integral_radial_gaussianVector [Nonempty n] (φ : ℝ → ℝ) :
   simp only [e, integral_const_mul]
   ring
 
-/-- `∫₀^∞ y^q e^{-y²/2} dy = 2^{(q+1)/2} Γ((q+1)/2) / 2` for `q > -1`. -/
+/-- $\int_0^\infty y^q e^{-y^2/2} \, dy = 2^{(q+1)/2} \Gamma((q+1)/2) / 2$ for $q > -1$. -/
 private theorem integral_rpow_mul_exp_neg_sq_div_two {q : ℝ} (hq : -1 < q) :
     ∫ y in Ioi (0 : ℝ), y ^ q * rexp (-y ^ 2 / 2) =
       2 ^ ((q + 1) / 2) * (1 / 2) * Real.Gamma ((q + 1) / 2) := by
@@ -121,7 +126,9 @@ private theorem integral_rpow_mul_exp_neg_sq_div_two {q : ℝ} (hq : -1 < q) :
   congr 2
   ring
 
-/-- The radial integral `∫₀^∞ y^{d-1} e^{-y²/2} (y²)^s dy` for `s > -d/2`. -/
+/-- The radial integral
+$\int_0^\infty y^{d-1} e^{-y^2/2} (y^2)^s \, dy = 2^{d/2 + s} \Gamma(d/2 + s) / 2$ for $d \ge 1$
+and $s > -d/2$. -/
 private theorem integral_pow_mul_exp_mul_rpow {d : ℕ} (hd : 1 ≤ d) {s : ℝ}
     (hs : -((d : ℝ) / 2) < s) :
     ∫ y in Ioi (0 : ℝ), y ^ (d - 1) * (rexp (-y ^ 2 / 2) * (y ^ 2) ^ s) =
@@ -135,7 +142,7 @@ private theorem integral_pow_mul_exp_mul_rpow {d : ℕ} (hd : 1 ≤ d) {s : ℝ}
     ← Real.rpow_add hy]
   ring_nf
 
-/-- The real moments of `χ²_d` under the law itself. -/
+/-- The real moments of $\chi^2_d$ under the law itself. -/
 private theorem integral_norm_sq_rpow_gaussianVector {s : ℝ}
     (hs : -((Fintype.card n : ℝ) / 2) < s) :
     ∫ x, (‖WithLp.toLp 2 x‖ ^ 2) ^ s ∂(gaussianVector n) =
@@ -163,13 +170,14 @@ private theorem integral_norm_sq_rpow_gaussianVector {s : ℝ}
   linear_combination (-(2 ^ s * Real.Gamma ((d : ℝ) / 2 + s))) * hnorm
 
 
-/-- `(‖X‖²)^s` is integrable for a standard Gaussian vector exactly in the range `s > -d/2`. -/
-theorem integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
+/-- $(\|\mathbf{g}\|^2)^s$ is integrable for a standard Gaussian vector $\mathbf{g}$ when
+$s > -d/2$, with $d = \lvert n \rvert$ (the range is sharp; only this direction is stated). -/
+theorem integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
     {s : ℝ} (hs : -((Fintype.card n : ℝ) / 2) < s) :
-    Integrable (fun ω => (‖WithLp.toLp 2 (X ω)‖ ^ 2) ^ s) μ := by
+    Integrable (fun ω => (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ s) μ := by
   have hf : Measurable fun x : n → ℝ => (‖WithLp.toLp 2 x‖ ^ 2) ^ s := by fun_prop
-  refine (integrable_map_measure hf.aestronglyMeasurable hX.aemeasurable).1 ?_
-  rw [hX.map_eq]
+  refine (integrable_map_measure hf.aestronglyMeasurable hg.aemeasurable).1 ?_
+  rw [hg.map_eq]
   rcases isEmpty_or_nonempty n with hn | hn
   · have hs0 : 0 < s := by simpa [Fintype.card_eq_zero] using hs
     have h0 : (fun x : n → ℝ => (‖WithLp.toLp 2 x‖ ^ 2) ^ s) = fun _ => 0 := by
@@ -186,23 +194,26 @@ theorem integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hX : HasLaw X (gaussia
     Real.Gamma_pos_of_pos (by have : 0 < Fintype.card n := Fintype.card_pos; positivity)
   positivity
 
-/-- **The real moments of `χ²_d`**: `E (‖X‖²)^s = 2^s Γ(d/2 + s) / Γ(d/2)` for `s > -d/2`. -/
-theorem integral_norm_sq_rpow_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
+/-- **The real moments of $\chi^2_d$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
+$d = \lvert n \rvert$ and real $s > -d/2$,
+$$\mathbb{E}(\|\mathbf{g}\|^2)^s = \frac{2^s \Gamma(d/2 + s)}{\Gamma(d/2)}\,.$$ -/
+theorem integral_norm_sq_rpow_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
     {s : ℝ} (hs : -((Fintype.card n : ℝ) / 2) < s) :
-    ∫ ω, (‖WithLp.toLp 2 (X ω)‖ ^ 2) ^ s ∂μ =
+    ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ s ∂μ =
       2 ^ s * Real.Gamma ((Fintype.card n : ℝ) / 2 + s) /
         Real.Gamma ((Fintype.card n : ℝ) / 2) := by
   rw [← integral_norm_sq_rpow_gaussianVector hs]
   have hf : Measurable fun x : n → ℝ => (‖WithLp.toLp 2 x‖ ^ 2) ^ s := by fun_prop
-  exact hX.integral_comp hf.aestronglyMeasurable
+  exact hg.integral_comp hf.aestronglyMeasurable
 
-/-- `E 1 / χ²_d = 1 / (d - 2)` for `d ≥ 3`. -/
-theorem integral_norm_sq_inv_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVector n) μ)
+/-- $\mathbb{E}[1 / \|\mathbf{g}\|^2] = 1 / (d - 2)$ for a standard Gaussian vector $\mathbf{g}$
+of dimension $d = \lvert n \rvert \ge 3$. -/
+theorem integral_norm_sq_inv_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
     (hn : 3 ≤ Fintype.card n) :
-    ∫ ω, (‖WithLp.toLp 2 (X ω)‖ ^ 2)⁻¹ ∂μ = 1 / ((Fintype.card n : ℝ) - 2) := by
+    ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2)⁻¹ ∂μ = 1 / ((Fintype.card n : ℝ) - 2) := by
   have hd : (3 : ℝ) ≤ Fintype.card n := by exact_mod_cast hn
   simp only [← Real.rpow_neg_one]
-  rw [integral_norm_sq_rpow_of_hasLaw_gaussianVector hX (by linarith),
+  rw [integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (by linarith),
     show (Fintype.card n : ℝ) / 2 = ((Fintype.card n : ℝ) / 2 + -1) + 1 by ring,
     Real.Gamma_add_one (by linarith), add_neg_cancel_right, Real.rpow_neg_one]
   have hG : 0 < Real.Gamma ((Fintype.card n : ℝ) / 2 + -1) := Real.Gamma_pos_of_pos (by linarith)
@@ -211,18 +222,18 @@ theorem integral_norm_sq_inv_of_hasLaw_gaussianVector (hX : HasLaw X (gaussianVe
     show (Fintype.card n : ℝ) / 2 + -1 = ((Fintype.card n : ℝ) - 2) / 2 by ring]
   field_simp
 
-/-! ### The growth of `E ‖g_d‖` -/
+/-! ### The growth of $\mathbb{E}\|\mathbf{g}_d\|$ -/
 
-/-- The expected norm of a standard Gaussian vector in dimension `d`:
-`a_d = √2 Γ(d/2 + 1/2) / Γ(d/2)`. -/
+/-- The expected norm of a standard Gaussian vector in dimension $d$:
+$a_d = \sqrt{2}\, \Gamma(d/2 + 1/2) / \Gamma(d/2)$. -/
 private noncomputable def gaussNormMean (d : ℕ) : ℝ :=
   √2 * Real.Gamma ((d : ℝ) / 2 + 1 / 2) / Real.Gamma ((d : ℝ) / 2)
 
-private theorem integral_norm_eq_gaussNormMean (hX : HasLaw X (gaussianVector n) μ) :
-    ∫ ω, ‖WithLp.toLp 2 (X ω)‖ ∂μ = gaussNormMean (Fintype.card n) := by
-  have h := integral_norm_sq_rpow_of_hasLaw_gaussianVector hX (s := 1 / 2)
+private theorem integral_norm_eq_gaussNormMean (hg : HasLaw g (gaussianVector n) μ) :
+    ∫ ω, ‖WithLp.toLp 2 (g ω)‖ ∂μ = gaussNormMean (Fintype.card n) := by
+  have h := integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 1 / 2)
     (by have := (Nat.cast_nonneg (Fintype.card n) : (0 : ℝ) ≤ _); linarith)
-  have e (ω : Ω) : (‖WithLp.toLp 2 (X ω)‖ ^ 2) ^ (1 / 2 : ℝ) = ‖WithLp.toLp 2 (X ω)‖ := by
+  have e (ω : Ω) : (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (1 / 2 : ℝ) = ‖WithLp.toLp 2 (g ω)‖ := by
     rw [← Real.sqrt_eq_rpow, Real.sqrt_sq (norm_nonneg _)]
   simp only [e] at h
   rw [h, gaussNormMean, ← Real.sqrt_eq_rpow]
@@ -249,22 +260,23 @@ private theorem gaussNormMean_mul_succ {d : ℕ} (hd : 1 ≤ d) :
       (√2 * √2) * (d / 2) by field_simp, hs]
   ring
 
-/-- `a_d ≤ √d`, by Jensen (`IsIsotropic.integral_norm_mulVec_le` with `A = 1`). -/
+/-- $a_d^2 \le d$, by Jensen (`IsIsotropic.integral_norm_mulVec_le` with
+$\mathbf{A} = \mathbf{I}$). -/
 private theorem gaussNormMean_sq_le (d : ℕ) : gaussNormMean d ^ 2 ≤ d := by
-  have hX : HasLaw (id : (Fin d → ℝ) → Fin d → ℝ) (gaussianVector (Fin d))
+  have hg : HasLaw (id : (Fin d → ℝ) → Fin d → ℝ) (gaussianVector (Fin d))
       (gaussianVector (Fin d)) := HasLaw.id
-  have h := (isIsotropic_of_hasLaw_gaussianVector hX).integral_norm_mulVec_le
+  have h := (isIsotropic_of_hasLaw_gaussianVector hg).integral_norm_mulVec_le
     (1 : Matrix (Fin d) (Fin d) ℝ)
   have h0 : 0 ≤ ∫ x, ‖WithLp.toLp 2 (id x : Fin d → ℝ)‖ ∂(gaussianVector (Fin d)) :=
     integral_nonneg fun _ => norm_nonneg _
   simp only [Matrix.one_mulVec] at h
-  rw [integral_norm_eq_gaussNormMean hX, Fintype.card_fin] at h h0
+  rw [integral_norm_eq_gaussNormMean hg, Fintype.card_fin] at h h0
   calc gaussNormMean d ^ 2 ≤ frobNorm (1 : Matrix (Fin d) (Fin d) ℝ) ^ 2 :=
         pow_le_pow_left₀ h0 h 2
     _ = d := by rw [frobNorm_one_sq, Fintype.card_fin]
 
 /-! ### The sequence argument -/
-/-- Comparison sequence `B m = m - 1/2 + 3/(20 m)`. -/
+/-- Comparison sequence $B_m = m - 1/2 + 3/(20 m)$. -/
 private noncomputable def enB (m : ℝ) : ℝ := m - 1 / 2 + 3 / (20 * m)
 
 private theorem enB_pos {m : ℝ} (hm : 1 ≤ m) : 0 < enB m := by
@@ -298,8 +310,8 @@ private theorem enB_le_div {M : ℝ} (hM : 1 ≤ M) : M / enB M ≤ 1 + 1 / M :=
   have : 0 ≤ 3 / (20 * M ^ 2) := by positivity
   nlinarith
 
-/-- Abstract sequence argument: if `a m · a (m+1) = m`, `a m > 0` and `a m² ≤ m` for `m ≥ 1`,
-then `a m² ≤ m - 1/2 + 3/(20m)`. -/
+/-- Abstract sequence argument: if $a_m a_{m+1} = m$, $a_m > 0$ and $a_m^2 \le m$ for $m \ge 1$,
+then $a_m^2 \le m - 1/2 + 3/(20m)$. -/
 private theorem en_seq_sq_le (a : ℕ → ℝ) (hpos : ∀ m, 1 ≤ m → 0 < a m)
     (hrec : ∀ m, 1 ≤ m → a m * a (m + 1) = m) (hsq : ∀ m, 1 ≤ m → a m ^ 2 ≤ m)
     (m : ℕ) (hm : 1 ≤ m) : a m ^ 2 ≤ enB m := by
@@ -366,7 +378,7 @@ private theorem en_seq_sq_le (a : ℕ → ℝ) (hpos : ∀ m, 1 ≤ m → 0 < a 
     linarith
   linarith
 
-/-- `√(m(m+1)) ≥ m + 1/2 - 1/(8m)` for `m ≥ 1`. -/
+/-- $\sqrt{m(m+1)} \ge m + 1/2 - 1/(8m)$ for $m \ge 1$. -/
 private theorem en_sqrt_mul_ge {m : ℝ} (hm : 1 ≤ m) :
     m + 1 / 2 - 1 / (8 * m) ≤ Real.sqrt m * Real.sqrt (m + 1) := by
   rw [← Real.sqrt_mul (by linarith)]
@@ -379,7 +391,7 @@ private theorem en_sqrt_mul_ge {m : ℝ} (hm : 1 ≤ m) :
     rw [div_le_div_iff₀ (by positivity) (by positivity)]; nlinarith
   linarith
 
-/-- One step: if `0 < a ≤ √(B m)` and `a · b = m` then `b - a ≥ √(m+1) - √m`. -/
+/-- One step: if $0 < a \le \sqrt{B_m}$ and $a b = m$ then $b - a \ge \sqrt{m+1} - \sqrt{m}$. -/
 private theorem en_step {m a b : ℝ} (hm : 1 ≤ m) (ha : 0 < a) (hab : a * b = m)
     (hB : a ^ 2 ≤ enB m) :
     Real.sqrt (m + 1) - Real.sqrt m ≤ b - a := by
@@ -429,7 +441,7 @@ private theorem en_step {m a b : ℝ} (hm : 1 ≤ m) (ha : 0 < a) (hab : a * b =
   rw [hd, e2, div_le_div_iff₀ hts ha]
   linarith
 
-/-- Telescoping: `a N - a n ≥ √N - √n` for `N ≥ n ≥ 1`. -/
+/-- Telescoping: $a_N - a_n \ge \sqrt{N} - \sqrt{n}$ for $N \ge n \ge 1$. -/
 private theorem en_seq_diff (a : ℕ → ℝ) (hpos : ∀ m, 1 ≤ m → 0 < a m)
     (hrec : ∀ m, 1 ≤ m → a m * a (m + 1) = m) (hsq : ∀ m, 1 ≤ m → a m ^ 2 ≤ m)
     {N n : ℕ} (hn : 1 ≤ n) (hnN : n ≤ N) :
@@ -443,18 +455,22 @@ private theorem en_seq_diff (a : ℕ → ℝ) (hpos : ∀ m, 1 ≤ m → 0 < a m
     push_cast
     linarith
 
-/-- **Growth of `E ‖g_d‖`**: for standard Gaussian vectors `X` in `ℝⁿ` and `Y` in `ℝᵐ`
-(possibly on different probability spaces) with `1 ≤ n ≤ m`, `√m - √n ≤ E ‖Y‖ - E ‖X‖`.
+/-- **Growth of $\mathbb{E}\|\mathbf{g}_d\|$**: for standard Gaussian vectors $\mathbf{g}$ in
+$\mathbb{R}^n$ and $\mathbf{g}'$ in $\mathbb{R}^m$ (possibly on different probability spaces) with
+$1 \le \lvert n \rvert \le \lvert m \rvert$,
+$$\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert}
+\le \mathbb{E}\|\mathbf{g}'\| - \mathbb{E}\|\mathbf{g}\|\,.$$
 [DavidsonSzarek2001, proof of Theorem II.13]; the step of Gordon's lower bound for the smallest
-singular value of a Gaussian matrix. Both hypotheses are needed: for `n = 0` it would claim
-`√m ≤ E ‖Y‖`, false for `m ≥ 1`, and for `n > m` the inequality reverses. -/
+singular value of a Gaussian matrix. Both hypotheses are needed: for $\lvert n \rvert = 0$ it would
+claim $\sqrt{\lvert m \rvert} \le \mathbb{E}\|\mathbf{g}'\|$, false for $\lvert m \rvert \ge 1$, and
+for $\lvert n \rvert > \lvert m \rvert$ the inequality reverses. -/
 theorem le_integral_norm_sub_integral_norm_of_hasLaw_gaussianVector {Ω' : Type*}
-    {mΩ' : MeasurableSpace Ω'} {ν : Measure Ω'} {m : Type*} [Fintype m] {Y : Ω' → m → ℝ}
-    (hX : HasLaw X (gaussianVector n) μ) (hY : HasLaw Y (gaussianVector m) ν)
+    {mΩ' : MeasurableSpace Ω'} {ν : Measure Ω'} {m : Type*} [Fintype m] {g' : Ω' → m → ℝ}
+    (hg : HasLaw g (gaussianVector n) μ) (hg' : HasLaw g' (gaussianVector m) ν)
     (hn : 0 < Fintype.card n) (hnm : Fintype.card n ≤ Fintype.card m) :
     √(Fintype.card m : ℝ) - √(Fintype.card n : ℝ) ≤
-      ∫ ω, ‖WithLp.toLp 2 (Y ω)‖ ∂ν - ∫ ω, ‖WithLp.toLp 2 (X ω)‖ ∂μ := by
-  rw [integral_norm_eq_gaussNormMean hX, integral_norm_eq_gaussNormMean hY]
+      ∫ ω, ‖WithLp.toLp 2 (g' ω)‖ ∂ν - ∫ ω, ‖WithLp.toLp 2 (g ω)‖ ∂μ := by
+  rw [integral_norm_eq_gaussNormMean hg, integral_norm_eq_gaussNormMean hg']
   exact en_seq_diff gaussNormMean (fun _ hd => gaussNormMean_pos hd)
     (fun _ hd => gaussNormMean_mul_succ hd) (fun d _ => gaussNormMean_sq_le d) hn hnm
 

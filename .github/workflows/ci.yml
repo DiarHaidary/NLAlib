@@ -29,3 +29,8 @@ jobs:
         run: lake env lean scripts/Lint.lean
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Docstring LaTeX renders
+        run: npm install --no-save --no-package-lock katex@0.16.22 && node scripts/check_latex.mjs

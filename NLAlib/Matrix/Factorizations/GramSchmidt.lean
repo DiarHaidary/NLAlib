@@ -11,11 +11,12 @@ public import NLAlib.Matrix.Factorizations.QR
 /-!
 # Gram–Schmidt orthogonalisation of the columns of a matrix
 
-The Gram–Schmidt process applied to the columns of `A`, in the order of the column index, gives
-`NLAlib.gramSchmidtQ A`, whose nonzero columns are orthonormal, and the upper triangular
-`NLAlib.gramSchmidtR A = Qᴴ A` with nonnegative diagonal, with `A = Q R` always. A column of `Q`
-vanishes exactly when the corresponding column of `A` depends on the earlier ones; for `A` of full
-column rank this is the QR factorization with positive diagonal.
+The Gram–Schmidt process applied to the columns of $\mathbf{A}$, in the order of the column
+index, gives $\mathbf{Q}$ = `NLAlib.gramSchmidtQ A`, whose nonzero columns are orthonormal, and the
+upper triangular $\mathbf{R} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$ = `NLAlib.gramSchmidtR A` with
+nonnegative diagonal, with $\mathbf{A} = \mathbf{Q}\mathbf{R}$ always. A column of $\mathbf{Q}$
+vanishes exactly when the corresponding column of $\mathbf{A}$ depends on the earlier ones; for
+$\mathbf{A}$ of full column rank this is the QR factorization with positive diagonal.
 
 The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
 
@@ -25,7 +26,7 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
 
 ## Main results
 
-* `NLAlib.gramSchmidtQ_mul_gramSchmidtR`: `Q R = A`.
+* `NLAlib.gramSchmidtQ_mul_gramSchmidtR`: $\mathbf{Q}\mathbf{R} = \mathbf{A}$.
 * `NLAlib.isUpperTriangular_gramSchmidtR`, `NLAlib.gramSchmidtR_apply_self_nonneg`.
 * `NLAlib.gramSchmidtR_apply_self_smul_col`: the classical recursion.
 * `NLAlib.isQR_gramSchmidt`: the QR factorization of a matrix of full column rank.
@@ -138,19 +139,21 @@ private theorem toLp_mem_span_image_iff {ι κ : Type*} (v : ι → κ → 𝕜)
 
 /-! ### The factors -/
 
-/-- The matrix of Gram–Schmidt vectors of the columns of `A`: column `j` is the normalised
-component of column `j` of `A` orthogonal to the earlier columns, or zero if there is none.
-Port of `NLAlib.gramSchmidtQ`, there by an explicit recursion over `ℝ`. -/
+/-- The matrix of Gram–Schmidt vectors of the columns of $\mathbf{A}$: column $j$ is the
+normalised component of column $j$ of $\mathbf{A}$ orthogonal to the earlier columns, or zero if
+that component is zero.
+Port of `NLAlib.gramSchmidtQ`, there by an explicit recursion over $\mathbb{R}$. -/
 noncomputable def gramSchmidtQ (A : Matrix m n 𝕜) : Matrix m n 𝕜 :=
   Matrix.of fun i j =>
     InnerProductSpace.gramSchmidtNormed 𝕜 (fun k => WithLp.toLp 2 (A.col k)) j i
 
-/-- The triangular factor of the Gram–Schmidt process, `R = Qᴴ A`.
+/-- The triangular factor of the Gram–Schmidt process,
+$\mathbf{R} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$.
 Port of `NLAlib.gramSchmidtR`. -/
 noncomputable def gramSchmidtR (A : Matrix m n 𝕜) : Matrix n n 𝕜 :=
   (gramSchmidtQ A)ᴴ * A
 
-/-- The columns of `A` as vectors of the Euclidean space. -/
+/-- The columns of $\mathbf{A}$ as vectors of the Euclidean space. -/
 private abbrev colVec (A : Matrix m n 𝕜) (k : n) : EuclideanSpace 𝕜 m :=
   WithLp.toLp 2 (A.col k)
 
@@ -180,7 +183,9 @@ theorem gramSchmidtR_apply_self_nonneg (A : Matrix m n 𝕜) (j : n) : 0 ≤ gra
   rw [gramSchmidtR_apply_self]
   exact RCLike.ofReal_nonneg.mpr (norm_nonneg _)
 
-/-- **The classical Gram–Schmidt recursion**: `r_jj q_j = a_j - ∑_{k < j} r_kj q_k`.
+/-- **The classical Gram–Schmidt recursion**:
+$\mathbf{R}_{j,j} \mathbf{q}_j = \mathbf{a}_j - \sum_{k < j} \mathbf{R}_{k,j} \mathbf{q}_k$, with
+$\mathbf{a}_j$, $\mathbf{q}_j$ the columns of $\mathbf{A}$, $\mathbf{Q}$.
 Port of `NLAlib.gramSchmidtResidual_eq_sum` and `NLAlib.norm_smul_gramSchmidtCol`. -/
 theorem gramSchmidtR_apply_self_smul_col (A : Matrix m n 𝕜) (j : n) :
     gramSchmidtR A j j • (gramSchmidtQ A).col j =
@@ -191,7 +196,8 @@ theorem gramSchmidtR_apply_self_smul_col (A : Matrix m n 𝕜) (j : n) :
   simp only [gramSchmidtR_apply]
   exact h
 
-/-- **Gram–Schmidt factors the matrix**: `Q R = A`, with no rank assumption.
+/-- **Gram–Schmidt factors the matrix**: $\mathbf{Q}\mathbf{R} = \mathbf{A}$, with no rank
+assumption.
 Port of `NLAlib.gramSchmidtQ_mul_gramSchmidtR`. -/
 theorem gramSchmidtQ_mul_gramSchmidtR (A : Matrix m n 𝕜) :
     gramSchmidtQ A * gramSchmidtR A = A := by
@@ -204,7 +210,8 @@ theorem gramSchmidtQ_mul_gramSchmidtR (A : Matrix m n 𝕜) :
   intro k _ hk
   rw [isUpperTriangular_gramSchmidtR A (not_le.mp (Finset.mem_Iic.not.mp hk)), mul_zero]
 
-/-- The Gram matrix of the Gram–Schmidt vectors is diagonal with entries zero or one.
+/-- The Gram matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{Q}$ of the Gram–Schmidt vectors is diagonal,
+with entry $0$ where $\mathbf{R}_{j,j} = 0$ and $1$ elsewhere.
 Port of `NLAlib.transpose_gramSchmidtQ_mul_self`. -/
 theorem conjTranspose_gramSchmidtQ_mul_self [DecidableEq n] (A : Matrix m n 𝕜) :
     (gramSchmidtQ A)ᴴ * gramSchmidtQ A =
@@ -226,14 +233,16 @@ theorem conjTranspose_gramSchmidtQ_mul_self [DecidableEq n] (A : Matrix m n 𝕜
         inner_gramSchmidtNormed_self_of_ne_zero _ h0]
   · rw [Matrix.diagonal_apply_ne _ hkl, inner_gramSchmidtNormed_of_ne _ hkl]
 
-/-- A diagonal entry of `R` vanishes exactly when the column of `A` depends on the earlier ones.
+/-- A diagonal entry $\mathbf{R}_{j,j}$ vanishes exactly when column $j$ of $\mathbf{A}$ lies in
+the span of the earlier columns.
 Port of `NLAlib.gramSchmidtResidual_eq_zero_iff`. -/
 theorem gramSchmidtR_apply_self_eq_zero_iff (A : Matrix m n 𝕜) (j : n) :
     gramSchmidtR A j j = 0 ↔ A.col j ∈ Submodule.span 𝕜 (A.col '' Set.Iio j) := by
   rw [gramSchmidtR_apply_self, RCLike.ofReal_eq_zero, norm_eq_zero, gramSchmidt_eq_zero_iff]
   exact toLp_mem_span_image_iff A.col (Set.Iio j) (A.col j)
 
-/-- The diagonal of `R` has no zero exactly when `A` has full column rank.
+/-- The diagonal of $\mathbf{R}$ has no zero exactly when $\mathbf{A}$ has full column rank
+($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective).
 Port of `NLAlib.gramSchmidtSucceeds_iff_linearIndependent`. -/
 theorem forall_gramSchmidtR_apply_self_ne_zero_iff (A : Matrix m n 𝕜) :
     (∀ j, gramSchmidtR A j j ≠ 0) ↔ Function.Injective A.mulVec := by
@@ -248,7 +257,8 @@ theorem forall_gramSchmidtR_apply_self_ne_zero_iff (A : Matrix m n 𝕜) :
     exact InnerProductSpace.gramSchmidt_ne_zero j ((Matrix.mulVec_injective_iff.mp h).map'
       (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap (LinearEquiv.ker _))
 
-/-- The first Gram–Schmidt vectors span the same subspace as the first columns of `A`.
+/-- The first Gram–Schmidt vectors span the same subspace as the first columns of $\mathbf{A}$:
+the columns $i \le j$ of $\mathbf{Q}$ and of $\mathbf{A}$ have the same span.
 Port of `NLAlib.span_gramSchmidtCol_image_Iic`. -/
 theorem span_gramSchmidtQ_col_image_Iic (A : Matrix m n 𝕜) (j : n) :
     Submodule.span 𝕜 ((gramSchmidtQ A).col '' Set.Iic j) =
@@ -261,7 +271,7 @@ theorem span_gramSchmidtQ_col_image_Iic (A : Matrix m n 𝕜) (j : n) :
     (Iff.trans ?_ (toLp_mem_span_image_iff _ _ x))
   exact iff_of_eq (congrArg (fun S => WithLp.toLp 2 x ∈ S) h)
 
-/-- For `A` of full column rank the Gram–Schmidt vectors are orthonormal.
+/-- For $\mathbf{A}$ of full column rank the Gram–Schmidt vectors are orthonormal.
 Port of `NLAlib.hasOrthonormalCols_gramSchmidtQ`. -/
 theorem hasOrthonormalCols_gramSchmidtQ [DecidableEq n] {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) : HasOrthonormalCols (gramSchmidtQ A) := by
@@ -276,14 +286,15 @@ theorem isQR_gramSchmidt [DecidableEq n] {A : Matrix m n 𝕜} (hA : Function.In
   exact ⟨(gramSchmidtQ_mul_gramSchmidtR A).symm, hasOrthonormalCols_gramSchmidtQ hA,
     isUpperTriangular_gramSchmidtR A⟩
 
-/-- For `A` of full column rank the diagonal of the triangular factor is positive.
+/-- For $\mathbf{A}$ of full column rank the diagonal of the triangular factor is positive.
 Port of `NLAlib.gramSchmidtR_apply_self_pos`. -/
 theorem gramSchmidtR_apply_self_pos {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec)
     (j : n) : 0 < gramSchmidtR A j j := by
   exact (gramSchmidtR_apply_self_nonneg A j).lt_of_ne'
     ((forall_gramSchmidtR_apply_self_ne_zero_iff A).mpr hA j)
 
-/-- Gram–Schmidt commutes with a unitary factor on the left: `Q(W A) = W Q(A)`.
+/-- Gram–Schmidt commutes with a factor $\mathbf{W}$ with orthonormal columns on the left: the
+Gram–Schmidt factor of $\mathbf{W}\mathbf{A}$ is $\mathbf{W}\mathbf{Q}$.
 Port of `NLAlib.qrNormalizedArray_orthogonal_mul`. -/
 theorem gramSchmidtQ_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matrix l m 𝕜}
     (hW : HasOrthonormalCols W) (A : Matrix m n 𝕜) :
@@ -296,7 +307,8 @@ theorem gramSchmidtQ_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matri
   rw [gramSchmidtNormed_map]
   rfl
 
-/-- The triangular factor is unchanged by a unitary factor on the left: `R(W A) = R(A)`.
+/-- The triangular factor is unchanged by a factor $\mathbf{W}$ with orthonormal columns on the
+left: $\mathbf{W}\mathbf{A}$ and $\mathbf{A}$ have the same triangular factor $\mathbf{R}$.
 Port of `NLAlib.canonicalQRUpper_orthogonal_mul`. -/
 theorem gramSchmidtR_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matrix l m 𝕜}
     (hW : HasOrthonormalCols W) (A : Matrix m n 𝕜) :

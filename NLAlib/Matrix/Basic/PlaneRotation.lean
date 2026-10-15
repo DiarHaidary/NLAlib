@@ -11,13 +11,16 @@ public import NLAlib.Matrix.Basic.Orthonormal
 /-!
 # Plane rotations
 
-`NLAlib.planeRotation u v c s` rotates the plane spanned by two orthonormal vectors `u`, `v` by
-the angle with cosine `c` and sine `s`, and fixes the orthogonal complement of that plane. With
-`u`, `v` standard basis vectors it is a Givens rotation.
+`NLAlib.planeRotation u v c s` rotates the plane spanned by two orthonormal vectors
+$\mathbf{u}$, $\mathbf{v}$ by the angle with cosine $c$ and sine $s$, and fixes the orthogonal
+complement of that plane. With $\mathbf{u}$, $\mathbf{v}$ standard basis vectors it is a Givens
+rotation.
 
 ## Main definitions
 
-* `NLAlib.planeRotation`: `1 + (c - 1) (u uᴴ + v vᴴ) + s (u vᴴ - v uᴴ)`.
+* `NLAlib.planeRotation`: $\mathbf{I} + (c - 1)(\mathbf{u}\mathbf{u}^{\mathsf{H}} +
+  \mathbf{v}\mathbf{v}^{\mathsf{H}}) + s(\mathbf{u}\mathbf{v}^{\mathsf{H}} -
+  \mathbf{v}\mathbf{u}^{\mathsf{H}})$.
 
 ## Main results
 
@@ -33,16 +36,24 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [DecidableEq n]
 
-/-- The **plane rotation** in the plane of `u` and `v` with cosine `c` and sine `s`:
-`1 + (c - 1) (u uᴴ + v vᴴ) + s (u vᴴ - v uᴴ)`. It is a rotation when `u`, `v` are orthonormal
-and `c ^ 2 + s ^ 2 = 1`; for other arguments it is just this matrix.
-[GolubVanLoan2013, §5.1.8] for `u`, `v` standard basis vectors (Givens rotations).
-Port of `NLAlib.planeRotation`, there over `ℝ`. -/
+/-- The **plane rotation** in the plane of $\mathbf{u}$ and $\mathbf{v}$ with cosine $c$ and
+sine $s$ (real):
+$$\mathbf{I} + (c - 1)(\mathbf{u}\mathbf{u}^{\mathsf{H}} + \mathbf{v}\mathbf{v}^{\mathsf{H}}) +
+  s(\mathbf{u}\mathbf{v}^{\mathsf{H}} - \mathbf{v}\mathbf{u}^{\mathsf{H}})\,.$$
+It is a rotation when $\mathbf{u}$, $\mathbf{v}$ are orthonormal and $c^2 + s^2 = 1$; for other
+arguments it is just this matrix.
+[GolubVanLoan2013, §5.1.8]; there for standard basis vectors (Givens rotations).
+Port of `NLAlib.planeRotation`, there over $\mathbb{R}$. -/
 def planeRotation (u v : n → 𝕜) (c s : ℝ) : Matrix n n 𝕜 :=
   1 + ((c : 𝕜) - 1) • (Matrix.vecMulVec u (star u) + Matrix.vecMulVec v (star v)) +
     (s : 𝕜) • (Matrix.vecMulVec u (star v) - Matrix.vecMulVec v (star u))
 
-/-- The action of a plane rotation on a vector. Port of `NLAlib.planeRotation_mulVec`. -/
+/-- The action of a plane rotation $\mathbf{R}$ on a vector:
+$$\mathbf{R}\mathbf{x} = \mathbf{x} +
+  (c - 1)\bigl((\mathbf{u}^{\mathsf{H}}\mathbf{x})\mathbf{u} + (\mathbf{v}^{\mathsf{H}}\mathbf{x})
+  \mathbf{v}\bigr) + s\bigl((\mathbf{v}^{\mathsf{H}}\mathbf{x})\mathbf{u} -
+  (\mathbf{u}^{\mathsf{H}}\mathbf{x})\mathbf{v}\bigr)\,.$$
+Port of `NLAlib.planeRotation_mulVec`. -/
 theorem planeRotation_mulVec [Fintype n] (u v x : n → 𝕜) (c s : ℝ) :
     planeRotation u v c s *ᵥ x =
       x + ((c : 𝕜) - 1) • ((star u ⬝ᵥ x) • u + (star v ⬝ᵥ x) • v) +
@@ -50,13 +61,14 @@ theorem planeRotation_mulVec [Fintype n] (u v x : n → 𝕜) (c s : ℝ) :
   simp only [planeRotation, Matrix.add_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec,
     Matrix.sub_mulVec, Matrix.vecMulVec_mulVec, op_smul_eq_smul]
 
-/-- The rotation by angle zero is the identity. -/
+/-- The rotation by angle zero ($c = 1$, $s = 0$) is the identity. -/
 @[simp]
 theorem planeRotation_one_zero (u v : n → 𝕜) : planeRotation u v 1 0 = 1 := by
   rw [planeRotation, RCLike.ofReal_one, sub_self, zero_smul, RCLike.ofReal_zero, zero_smul,
     add_zero, add_zero]
 
-/-- The conjugate transpose of a plane rotation is the rotation by the opposite angle. -/
+/-- The conjugate transpose of a plane rotation is the rotation by the opposite angle, with sine
+$-s$. -/
 theorem conjTranspose_planeRotation (u v : n → 𝕜) (c s : ℝ) :
     (planeRotation u v c s)ᴴ = planeRotation u v c (-s) := by
   simp only [planeRotation, Matrix.conjTranspose_add, Matrix.conjTranspose_sub,
@@ -70,7 +82,8 @@ private theorem star_dotProduct_self_of_norm_toLp_eq_one [Fintype n] {u : n → 
     (hu : ‖WithLp.toLp 2 u‖ = 1) : star u ⬝ᵥ u = 1 := by
   rw [EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, hu, one_pow, RCLike.ofReal_one]
 
-/-- A plane rotation sends `u` to `c u - s v`, for orthonormal `u`, `v`. -/
+/-- A plane rotation sends $\mathbf{u}$ to $c\mathbf{u} - s\mathbf{v}$, for a unit vector
+$\mathbf{u}$ orthogonal to $\mathbf{v}$. -/
 theorem planeRotation_mulVec_left [Fintype n] {u v : n → 𝕜} (hu : ‖WithLp.toLp 2 u‖ = 1)
     (huv : star u ⬝ᵥ v = 0) (c s : ℝ) :
     planeRotation u v c s *ᵥ u = (c : 𝕜) • u - (s : 𝕜) • v := by
@@ -79,7 +92,8 @@ theorem planeRotation_mulVec_left [Fintype n] {u v : n → 𝕜} (hu : ‖WithLp
   simp only [one_smul, zero_smul, add_zero, zero_sub, smul_neg, sub_smul]
   abel
 
-/-- A plane rotation sends `v` to `s u + c v`, for orthonormal `u`, `v`. -/
+/-- A plane rotation sends $\mathbf{v}$ to $s\mathbf{u} + c\mathbf{v}$, for a unit vector
+$\mathbf{v}$ orthogonal to $\mathbf{u}$. -/
 theorem planeRotation_mulVec_right [Fintype n] {u v : n → 𝕜} (hv : ‖WithLp.toLp 2 v‖ = 1)
     (huv : star u ⬝ᵥ v = 0) (c s : ℝ) :
     planeRotation u v c s *ᵥ v = (s : 𝕜) • u + (c : 𝕜) • v := by
@@ -87,15 +101,16 @@ theorem planeRotation_mulVec_right [Fintype n] {u v : n → 𝕜} (hv : ‖WithL
   simp only [one_smul, zero_smul, zero_add, sub_zero, sub_smul]
   abel
 
-/-- A plane rotation fixes every vector orthogonal to `u` and `v`. -/
+/-- A plane rotation fixes every vector orthogonal to $\mathbf{u}$ and $\mathbf{v}$. -/
 theorem planeRotation_mulVec_of_orthogonal [Fintype n] {u v x : n → 𝕜}
     (hux : star u ⬝ᵥ x = 0) (hvx : star v ⬝ᵥ x = 0) (c s : ℝ) :
     planeRotation u v c s *ᵥ x = x := by
   rw [planeRotation_mulVec, hux, hvx, zero_smul, zero_smul, add_zero, sub_self, smul_zero,
     smul_zero, add_zero, add_zero]
 
-/-- **A plane rotation is unitary**, for orthonormal `u`, `v` and `c ^ 2 + s ^ 2 = 1`.
-Port of `NLAlib.hasOrthonormalCols_planeRotation`, there over `ℝ`. -/
+/-- **A plane rotation is unitary**, for orthonormal $\mathbf{u}$, $\mathbf{v}$ and
+$c^2 + s^2 = 1$.
+Port of `NLAlib.hasOrthonormalCols_planeRotation`, there over $\mathbb{R}$. -/
 theorem hasOrthonormalCols_planeRotation [Fintype n] {u v : n → 𝕜}
     (hu : ‖WithLp.toLp 2 u‖ = 1) (hv : ‖WithLp.toLp 2 v‖ = 1) (huv : star u ⬝ᵥ v = 0)
     {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) : HasOrthonormalCols (planeRotation u v c s) := by
@@ -131,8 +146,8 @@ theorem hasOrthonormalCols_planeRotation [Fintype n] {u v : n → 𝕜}
   simp only [Matrix.add_apply, Matrix.smul_apply, Matrix.neg_apply, smul_eq_mul]
   linear_combination hcoef * P i j
 
-/-- The rational parametrisation of the circle: `c = (1 - t²) / (1 + t²)` and
-`s = 2 t / (1 + t²)` satisfy `c ^ 2 + s ^ 2 = 1`.
+/-- The rational parametrisation of the circle: $c = (1 - t^2) / (1 + t^2)$ and
+$s = 2t / (1 + t^2)$ satisfy $c^2 + s^2 = 1$.
 Port of `NLAlib.sq_rational_rotation_coefficients`. -/
 theorem sq_div_add_sq_div_one_add_sq (t : ℝ) :
     ((1 - t ^ 2) / (1 + t ^ 2)) ^ 2 + (2 * t / (1 + t ^ 2)) ^ 2 = 1 := by

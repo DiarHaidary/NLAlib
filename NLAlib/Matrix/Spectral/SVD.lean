@@ -12,16 +12,18 @@ public import NLAlib.Matrix.Spectral.SingularValues
 /-!
 # The singular value decomposition
 
-`NLAlib.IsSVD A U σ V` says that `A = U * diagonal σ * Vᴴ` with `U` and `V` having orthonormal
-columns and `σ` nonnegative. The columns are indexed by an arbitrary finite type `r`, so the
-predicate covers the compact SVD, the thin SVD and partial decompositions, and with `r` a sum
-type and `Matrix.fromCols` it expresses the splitting of `A` into two blocks of singular triples.
-The factors need not be square and no rectangular diagonal matrix appears. A full SVD with
-unitary factors is obtained from a thin one by orthonormal completion
-(`NLAlib.HasOrthonormalCols.exists_fromCols`).
+`NLAlib.IsSVD A U σ V` says that
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\sigma}) \mathbf{V}^{\mathsf{H}}$ with
+$\mathbf{U}$ and $\mathbf{V}$ having orthonormal columns and $\boldsymbol{\sigma}$ nonnegative. The
+columns are indexed by an arbitrary finite type $r$, so the predicate covers the compact SVD, the
+thin SVD and partial decompositions, and with $r$ a sum type and `Matrix.fromCols` it expresses
+the splitting of $\mathbf{A}$ into two blocks of singular triples. The factors need not be square
+and no rectangular diagonal matrix appears. A full SVD with unitary factors is obtained from a
+thin one by orthonormal completion (`NLAlib.HasOrthonormalCols.exists_fromCols`).
 
-`σ` is not required to be sorted. When the columns are indexed by `Fin k` and `σ` is
-non-increasing, `σ` is the sequence of singular values (`NLAlib.IsSVD.singularValues_eq`).
+$\boldsymbol{\sigma}$ is not required to be sorted. When the columns are indexed by `Fin k` and
+$\boldsymbol{\sigma}$ is non-increasing, $\boldsymbol{\sigma}$ is the sequence of singular values
+(`NLAlib.IsSVD.singularValues_eq`).
 
 ## Main definitions
 
@@ -29,10 +31,10 @@ non-increasing, `σ` is the sequence of singular values (`NLAlib.IsSVD.singularV
 
 ## Main results
 
-* `NLAlib.exists_isSVD`: every matrix has an SVD with `k` columns, for every `k` between its rank
-  and its smaller dimension, with `σ` the singular values.
+* `NLAlib.exists_isSVD`: every matrix has an SVD with $k$ columns, for every $k$ between its rank
+  and its smaller dimension, with $\boldsymbol{\sigma}$ the singular values.
 * `NLAlib.IsSVD.singularValues_eq`, `NLAlib.IsSVD.exists_equiv_singularValues_eq`: the entries of
-  `σ` are the singular values.
+  $\boldsymbol{\sigma}$ are the singular values.
 * `NLAlib.IsSVD.rank_eq`, `NLAlib.IsSVD.specNorm_eq`, `NLAlib.IsSVD.frobNorm_sq_eq`: rank and norms
   from any SVD; `NLAlib.IsSVD.frobInner_eq` for two matrices with the same singular vectors.
 * `NLAlib.IsSVD.conjTranspose`, `NLAlib.IsSVD.mul_left`, `NLAlib.IsSVD.reindex`: stability.
@@ -52,9 +54,11 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n r r₁ r₂ r' : Type*} [Fintype l]
   [Fintype r] [Fintype r₁] [Fintype r₂] [Fintype r'] [DecidableEq r] [DecidableEq r₁]
   [DecidableEq r₂] [DecidableEq r']
 
-/-- **Singular value decomposition**, thin form. `IsSVD A U σ V` means that `U` and `V` have
-orthonormal columns indexed by the same finite type `r`, the real numbers `σ i` are nonnegative,
-and `A = U * diagonal σ * Vᴴ`. The index type is arbitrary and `σ` need not be sorted.
+/-- **Singular value decomposition**, thin form. `IsSVD A U σ V` means that $\mathbf{U}$ and
+$\mathbf{V}$ have orthonormal columns indexed by the same finite type $r$, the real numbers
+$\boldsymbol{\sigma}_i$ are nonnegative, and
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\sigma}) \mathbf{V}^{\mathsf{H}}$. The
+index type is arbitrary and $\boldsymbol{\sigma}$ need not be sorted.
 [HornJohnson2013, Theorem 2.6.3]; [GolubVanLoan2013, §2.4]. There the factors are square and
 unitary and the middle factor is a rectangular diagonal matrix; the thin form used here carries
 the same information and composes with products and block splittings. -/
@@ -65,7 +69,8 @@ structure IsSVD (A : Matrix m n 𝕜) (U : Matrix m r 𝕜) (σ : r → ℝ) (V 
   hasOrthonormalCols_right : HasOrthonormalCols V
   /-- The singular values are nonnegative. -/
   nonneg : ∀ i, 0 ≤ σ i
-  /-- The decomposition `A = U Σ Vᴴ`. -/
+  /-- The decomposition $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$,
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
   eq : A = U * Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) * Vᴴ
 
 namespace IsSVD
@@ -78,7 +83,8 @@ private theorem eq_mul_mul (h : IsSVD A U σ V) :
   rw [← Matrix.mul_assoc]
   exact h.eq
 
-/-- The decomposition of the conjugate transpose. -/
+/-- The decomposition of the conjugate transpose:
+$\mathbf{A}^{\mathsf{H}} = \mathbf{V}\mathbf{\Sigma}\mathbf{U}^{\mathsf{H}}$. -/
 private theorem conjTranspose_eq_mul_mul (h : IsSVD A U σ V) :
     Aᴴ = V * Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) * Uᴴ := by
   rw [h.eq, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
@@ -86,23 +92,31 @@ private theorem conjTranspose_eq_mul_mul (h : IsSVD A U σ V) :
 
 /-! ### Consequences of the decomposition -/
 
-/-- `A * V = U * Σ`: the right singular vectors are mapped to multiples of the left ones.
+/-- $\mathbf{A}\mathbf{V} = \mathbf{U}\mathbf{\Sigma}$, with
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$: the right singular vectors are mapped
+to multiples of the left ones.
 Port of `NLAlib.IsSVD.mul_right`. -/
 theorem mul_right_eq (h : IsSVD A U σ V) :
     A * V = U * Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.eq, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
 
-/-- `Uᴴ * A = Σ * Vᴴ`. Port of `NLAlib.IsSVD.conjTranspose_mul`. -/
+/-- $\mathbf{U}^{\mathsf{H}}\mathbf{A} = \mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$, with
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
+Port of `NLAlib.IsSVD.conjTranspose_mul`. -/
 theorem conjTranspose_mul_eq (h : IsSVD A U σ V) :
     Uᴴ * A = Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) * Vᴴ := by
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.conjTranspose_mul_cancel_left]
 
-/-- `Uᴴ * A * V = Σ`. Port of `NLAlib.IsSVD.conjTranspose_mul_mul`. -/
+/-- $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V} = \mathbf{\Sigma}$, with
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
+Port of `NLAlib.IsSVD.conjTranspose_mul_mul`. -/
 theorem conjTranspose_mul_mul_eq (h : IsSVD A U σ V) :
     Uᴴ * A * V = Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.conjTranspose_mul_eq, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
 
-/-- The Gram matrix from an SVD: `Aᴴ * A = V * Σ² * Vᴴ`.
+/-- The Gram matrix from an SVD:
+$\mathbf{A}^{\mathsf{H}}\mathbf{A} = \mathbf{V}\mathbf{\Sigma}^2\mathbf{V}^{\mathsf{H}}$, with
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
 Port of `NLAlib.IsSVD.conjTranspose_mul_self`. -/
 theorem conjTranspose_mul_self_eq (h : IsSVD A U σ V) :
     Aᴴ * A = V * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) * Vᴴ := by
@@ -110,7 +124,9 @@ theorem conjTranspose_mul_self_eq (h : IsSVD A U σ V) :
     ← Matrix.mul_assoc, Matrix.mul_assoc V, Matrix.diagonal_mul_diagonal]
   simp only [sq, RCLike.ofReal_mul]
 
-/-- The other Gram matrix from an SVD: `A * Aᴴ = U * Σ² * Uᴴ`.
+/-- The other Gram matrix from an SVD:
+$\mathbf{A}\mathbf{A}^{\mathsf{H}} = \mathbf{U}\mathbf{\Sigma}^2\mathbf{U}^{\mathsf{H}}$, with
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
 Port of `NLAlib.IsSVD.mul_conjTranspose_self`. -/
 theorem mul_conjTranspose_self_eq (h : IsSVD A U σ V) :
     A * Aᴴ = U * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) * Uᴴ := by
@@ -118,7 +134,9 @@ theorem mul_conjTranspose_self_eq (h : IsSVD A U σ V) :
     Matrix.mul_assoc U, Matrix.diagonal_mul_diagonal]
   simp only [sq, RCLike.ofReal_mul]
 
-/-- A right singular vector is mapped to `σ i` times the left singular vector. -/
+/-- A right singular vector is mapped to $\boldsymbol{\sigma}_i$ times the left singular vector:
+$\mathbf{A}\mathbf{v}_i = \boldsymbol{\sigma}_i \mathbf{u}_i$ for the $i$-th columns
+$\mathbf{v}_i$ of $\mathbf{V}$ and $\mathbf{u}_i$ of $\mathbf{U}$. -/
 theorem mulVec_col (h : IsSVD A U σ V) (i : r) : A *ᵥ V.col i = σ i • U.col i := by
   funext j
   have hj : (A * V) j i = U j i * ((σ i : ℝ) : 𝕜) := by
@@ -128,21 +146,23 @@ theorem mulVec_col (h : IsSVD A U σ V) (i : r) : A *ᵥ V.col i = σ i • U.co
 
 /-! ### Stability -/
 
-/-- An SVD of `A` gives an SVD of `Aᴴ` with the factors exchanged.
+/-- An SVD of $\mathbf{A}$ gives an SVD of $\mathbf{A}^{\mathsf{H}}$ with the factors exchanged.
 Port of `NLAlib.IsSVD.conjTranspose_eq`. -/
 protected theorem conjTranspose (h : IsSVD A U σ V) : IsSVD Aᴴ V σ U :=
   ⟨h.hasOrthonormalCols_right, h.hasOrthonormalCols_left, h.nonneg,
     h.conjTranspose_eq_mul_mul⟩
 
-/-- Left multiplication by a matrix with orthonormal columns: `Q * A = (Q * U) * Σ * Vᴴ` is an
-SVD. This is the step that lifts the SVD of a small projected matrix to the full space. -/
+/-- Left multiplication by a matrix with orthonormal columns:
+$\mathbf{Q}\mathbf{A} = (\mathbf{Q}\mathbf{U})\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ is an SVD.
+This is the step that lifts the SVD of a small projected matrix to the full space. -/
 theorem mul_left [DecidableEq m] (h : IsSVD A U σ V) {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) : IsSVD (Q * A) (Q * U) σ V := by
   refine ⟨hQ.mul h.hasOrthonormalCols_left, h.hasOrthonormalCols_right, h.nonneg, ?_⟩
   rw [Matrix.mul_assoc Q U, Matrix.mul_assoc Q, ← h.eq]
 
 /-- Right multiplication by the conjugate transpose of a matrix with orthonormal columns:
-`A * Qᴴ = U * Σ * (Q * V)ᴴ` is an SVD. -/
+$\mathbf{A}\mathbf{Q}^{\mathsf{H}} = \mathbf{U}\mathbf{\Sigma}(\mathbf{Q}\mathbf{V})^{\mathsf{H}}$
+is an SVD. -/
 theorem mul_conjTranspose_right [DecidableEq n] (h : IsSVD A U σ V) {Q : Matrix l n 𝕜}
     (hQ : HasOrthonormalCols Q) : IsSVD (A * Qᴴ) U σ (Q * V) := by
   refine ⟨h.hasOrthonormalCols_left, hQ.mul h.hasOrthonormalCols_right, h.nonneg, ?_⟩
@@ -161,7 +181,7 @@ theorem reindex (h : IsSVD A U σ V) (e : r' ≃ r) :
 
 /-! ### Rank and norms -/
 
-/-- The rank is the number of nonzero entries of `σ`. -/
+/-- The rank is the number of nonzero entries of $\boldsymbol{\sigma}$. -/
 theorem rank_eq (h : IsSVD A U σ V) : A.rank = (Finset.univ.filter fun i => σ i ≠ 0).card := by
   classical
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.rank_mul, ← Matrix.rank_conjTranspose,
@@ -170,7 +190,8 @@ theorem rank_eq (h : IsSVD A U σ V) : A.rank = (Finset.univ.filter fun i => σ 
     Fintype.card_subtype]
   exact congrArg Finset.card (Finset.filter_congr fun i _ => not_congr RCLike.ofReal_eq_zero)
 
-/-- The spectral norm is the largest entry of `σ`: the supremum norm of `σ`. -/
+/-- The spectral norm is the largest entry of $\boldsymbol{\sigma}$:
+$\|\mathbf{A}\|_2 = \max_i \boldsymbol{\sigma}_i$, the supremum norm of $\boldsymbol{\sigma}$. -/
 theorem specNorm_eq (h : IsSVD A U σ V) : specNorm A = ‖σ‖ := by
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.specNorm_mul_left,
     h.hasOrthonormalCols_right.specNorm_mul_conjTranspose_right, specNorm_diagonal]
@@ -181,15 +202,19 @@ theorem specNorm_eq (h : IsSVD A U σ V) : specNorm A = ‖σ‖ := by
   · rw [Real.norm_eq_abs, ← RCLike.norm_ofReal (K := 𝕜)]
     exact norm_le_pi_norm (fun i => ((σ i : ℝ) : 𝕜)) i
 
-/-- The squared Frobenius norm is the sum of the squares of the entries of `σ`. -/
+/-- The squared Frobenius norm is the sum of the squares of the entries of $\boldsymbol{\sigma}$:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_i \boldsymbol{\sigma}_i^2$. -/
 theorem frobNorm_sq_eq (h : IsSVD A U σ V) : frobNorm A ^ 2 = ∑ i, σ i ^ 2 := by
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.frobNorm_mul_left,
     h.hasOrthonormalCols_right.frobNorm_mul_conjTranspose_right, frobNorm_diagonal_sq]
   exact Finset.sum_congr rfl fun i _ => by rw [RCLike.norm_ofReal, sq_abs]
 
 /-- The Frobenius inner product of two matrices with the same singular vectors is the inner
-product of their diagonal factors: if `A = U * diagonal σ * Vᴴ` and `B = U * diagonal τ * Vᴴ`,
-then `⟨A, B⟩_F = ∑ i, σ i * τ i`. -/
+product of their diagonal factors: if
+$\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\sigma}) \mathbf{V}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{U} \operatorname{diag}(\boldsymbol{\tau}) \mathbf{V}^{\mathsf{H}}$ are SVDs,
+then $\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \sum_i \boldsymbol{\sigma}_i
+\boldsymbol{\tau}_i$. -/
 theorem frobInner_eq {B : Matrix m n 𝕜} {τ : r → ℝ} (h : IsSVD A U σ V) (hB : IsSVD B U τ V) :
     frobInner A B = ∑ i, σ i * τ i := by
   rw [h.eq, hB.eq, Matrix.mul_assoc, Matrix.mul_assoc, frobInner_mul_left,
@@ -200,16 +225,17 @@ theorem frobInner_eq {B : Matrix m n 𝕜} {τ : r → ℝ} (h : IsSVD A U σ V)
   simp only [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul,
     ← RCLike.ofReal_sum, RCLike.ofReal_re]
 
-/-! ### The entries of `σ` are the singular values -/
+/-! ### The entries of $\boldsymbol{\sigma}$ are the singular values -/
 
-/-- The singular values of `A` are those of the diagonal factor. -/
+/-- The singular values of $\mathbf{A}$ are those of the diagonal factor. -/
 private theorem singularValues_eq_singularValues_diagonal (h : IsSVD A U σ V) :
     singularValues A = singularValues (Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.singularValues_mul_left,
     h.hasOrthonormalCols_right.singularValues_mul_conjTranspose_right]
 
-/-- In an SVD with columns indexed by `Fin k` and `σ` non-increasing, `σ` is the sequence of
-singular values. Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
+/-- In an SVD with columns indexed by `Fin k` and $\boldsymbol{\sigma}$ non-increasing,
+$\boldsymbol{\sigma}$ is the sequence of singular values: $\sigma_i(\mathbf{A}) =
+\boldsymbol{\sigma}_i$ for $i < k$. Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
 Result: svd-uniqueness -/
 theorem singularValues_eq {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → ℝ}
     {V : Matrix n (Fin k) 𝕜} (h : IsSVD A U σ V) (hσ : Antitone σ) (i : Fin k) :
@@ -220,19 +246,21 @@ theorem singularValues_eq {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → 
     eigenvalue_diagonal hσ]
 
 /-- In an SVD, the singular values vanish from the number of columns on, whatever the column
-type. -/
+type: $\sigma_i(\mathbf{A}) = 0$ for $i \ge \lvert r \rvert$. -/
 theorem singularValues_of_card_le (h : IsSVD A U σ V) {i : ℕ} (hi : Fintype.card r ≤ i) :
     singularValues A i = 0 := by
   rw [h.singularValues_eq_singularValues_diagonal]
   exact singularValues_of_card_cols_le _ hi
 
-/-- In an SVD with `k` columns, the singular values vanish from index `k` on. -/
+/-- In an SVD with $k$ columns, the singular values vanish from index $k$ on. -/
 theorem singularValues_of_le {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → ℝ}
     {V : Matrix n (Fin k) 𝕜} (h : IsSVD A U σ V) {i : ℕ} (hi : k ≤ i) :
     singularValues A i = 0 :=
   h.singularValues_of_card_le (by rwa [Fintype.card_fin])
 
-/-- In any SVD, the entries of `σ` are the leading singular values in some order. -/
+/-- In any SVD, the entries of $\boldsymbol{\sigma}$ are the leading singular values in some
+order: $\boldsymbol{\sigma}_i = \sigma_{e(i)}(\mathbf{A})$ for a bijection $e$ from $r$ onto
+$\{0, \dots, \lvert r \rvert - 1\}$. -/
 theorem exists_equiv_singularValues_eq (h : IsSVD A U σ V) :
     ∃ e : r ≃ Fin (Fintype.card r), ∀ i, σ i = singularValues A (e i) := by
   let e₀ : Fin (Fintype.card r) ≃ r := (Fintype.equivFin r).symm
@@ -256,9 +284,13 @@ private theorem diagonal_sumElim_ofReal (σ₁ : r₁ → ℝ) (σ₂ : r₂ →
   funext i
   cases i <;> rfl
 
-/-- An SVD whose singular triples are split into two groups writes `A` as a sum of two pieces
-with mutually orthogonal factors. This is the form in which Wedin's theorem and the analysis of
-truncation consume an SVD. -/
+/-- An SVD whose singular triples are split into two groups writes $\mathbf{A}$ as a sum of two
+pieces with mutually orthogonal factors: if
+$[\mathbf{U}_1 \; \mathbf{U}_2]$, $(\boldsymbol{\sigma}_1, \boldsymbol{\sigma}_2)$,
+$[\mathbf{V}_1 \; \mathbf{V}_2]$ is an SVD of $\mathbf{A}$, then
+$$\mathbf{A} = \mathbf{U}_1 \operatorname{diag}(\boldsymbol{\sigma}_1) \mathbf{V}_1^{\mathsf{H}} +
+  \mathbf{U}_2 \operatorname{diag}(\boldsymbol{\sigma}_2) \mathbf{V}_2^{\mathsf{H}}.$$
+This is the form in which Wedin's theorem and the analysis of truncation consume an SVD. -/
 theorem eq_add {U₁ : Matrix m r₁ 𝕜} {U₂ : Matrix m r₂ 𝕜} {σ₁ : r₁ → ℝ} {σ₂ : r₂ → ℝ}
     {V₁ : Matrix n r₁ 𝕜} {V₂ : Matrix n r₂ 𝕜}
     (h : IsSVD A (Matrix.fromCols U₁ U₂) (Sum.elim σ₁ σ₂) (Matrix.fromCols V₁ V₂)) :
@@ -269,7 +301,8 @@ theorem eq_add {U₁ : Matrix m r₁ 𝕜} {U₂ : Matrix m r₂ 𝕜} {σ₁ : 
     Matrix.conjTranspose_fromCols_eq_fromRows_conjTranspose, Matrix.fromCols_mul_fromRows,
     Matrix.mul_zero, Matrix.mul_zero, add_zero, zero_add] at hA
 
-/-- The first block of a split SVD is an SVD of its own piece. -/
+/-- The first block of a split SVD is an SVD of its own piece,
+$\mathbf{U}_1 \operatorname{diag}(\boldsymbol{\sigma}_1) \mathbf{V}_1^{\mathsf{H}}$. -/
 theorem fromCols_left {U₁ : Matrix m r₁ 𝕜} {U₂ : Matrix m r₂ 𝕜} {σ₁ : r₁ → ℝ} {σ₂ : r₂ → ℝ}
     {V₁ : Matrix n r₁ 𝕜} {V₂ : Matrix n r₂ 𝕜}
     (h : IsSVD A (Matrix.fromCols U₁ U₂) (Sum.elim σ₁ σ₂) (Matrix.fromCols V₁ V₂)) :
@@ -278,7 +311,8 @@ theorem fromCols_left {U₁ : Matrix m r₁ 𝕜} {U₂ : Matrix m r₂ 𝕜} {�
     (hasOrthonormalCols_fromCols_iff.mp h.hasOrthonormalCols_right).1,
     fun i => h.nonneg (Sum.inl i), rfl⟩
 
-/-- The second block of a split SVD is an SVD of its own piece. -/
+/-- The second block of a split SVD is an SVD of its own piece,
+$\mathbf{U}_2 \operatorname{diag}(\boldsymbol{\sigma}_2) \mathbf{V}_2^{\mathsf{H}}$. -/
 theorem fromCols_right {U₁ : Matrix m r₁ 𝕜} {U₂ : Matrix m r₂ 𝕜} {σ₁ : r₁ → ℝ} {σ₂ : r₂ → ℝ}
     {V₁ : Matrix n r₁ 𝕜} {V₂ : Matrix n r₂ 𝕜}
     (h : IsSVD A (Matrix.fromCols U₁ U₂) (Sum.elim σ₁ σ₂) (Matrix.fromCols V₁ V₂)) :
@@ -292,7 +326,8 @@ end IsSVD
 /-! ### Existence -/
 
 omit [Fintype r] in
-/-- A column of `B` whose diagonal entry in the Gram matrix `Bᴴ * B` vanishes is zero. -/
+/-- A column of $\mathbf{B}$ whose diagonal entry in the Gram matrix
+$\mathbf{B}^{\mathsf{H}}\mathbf{B}$ vanishes is zero. -/
 private theorem apply_eq_zero_of_conjTranspose_mul_self_eq_diagonal {B : Matrix m r 𝕜}
     {d : r → 𝕜} (hB : Bᴴ * B = Matrix.diagonal d) {i : r} (hi : d i = 0) (j : m) :
     B j i = 0 := by
@@ -301,8 +336,10 @@ private theorem apply_eq_zero_of_conjTranspose_mul_self_eq_diagonal {B : Matrix 
     rwa [Matrix.diagonal_apply_eq, hi] at hii
   exact congrFun (dotProduct_star_self_eq_zero.mp h0) j
 
-/-- A matrix `B` whose Gram matrix is `diagonal (s ^ 2)` is `U * diagonal s` for a `U` with
-orthonormal columns: normalise the columns with `s i ≠ 0` and complete them. -/
+/-- A matrix $\mathbf{B}$ whose Gram matrix is $\operatorname{diag}(\mathbf{s})^2$ is
+$\mathbf{U} \operatorname{diag}(\mathbf{s})$ for a $\mathbf{U}$ with orthonormal columns, when
+$\lvert r \rvert \le \lvert m \rvert$: normalise the columns with $\mathbf{s}_i \ne 0$ and complete
+them. -/
 private theorem exists_hasOrthonormalCols_mul_diagonal_eq {B : Matrix m r 𝕜} {s : r → ℝ}
     (hB : Bᴴ * B = Matrix.diagonal fun i => ((s i ^ 2 : ℝ) : 𝕜))
     (hr : Fintype.card r ≤ Fintype.card m) :
@@ -341,10 +378,14 @@ private theorem exists_hasOrthonormalCols_mul_diagonal_eq {B : Matrix m r 𝕜} 
     refine (apply_eq_zero_of_conjTranspose_mul_self_eq_diagonal hB ?_ j).symm
     rw [hi0, zero_pow two_ne_zero, RCLike.ofReal_zero]
 
-/-- **Existence of the singular value decomposition.** For every `k` between the rank of `A` and
-its smaller dimension, `A = U * diagonal σ * Vᴴ` with `U`, `V` having `k` orthonormal columns and
-`σ` the first `k` singular values of `A`. With `k = rank A` this is the compact SVD and with
-`k = min (card m) (card n)` the thin SVD.
+/-- **Existence of the singular value decomposition.** For every $k$ between the rank of
+$\mathbf{A}$ and its smaller dimension,
+$$\mathbf{A} = \mathbf{U}
+  \operatorname{diag}\bigl(\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A})\bigr)
+  \mathbf{V}^{\mathsf{H}}$$
+with $\mathbf{U}$, $\mathbf{V}$ having $k$ orthonormal columns. With
+$k = \operatorname{rank} \mathbf{A}$ this is the compact SVD and with
+$k = \min(\lvert m \rvert, \lvert n \rvert)$ the thin SVD.
 [HornJohnson2013, Theorem 2.6.3]; [GolubVanLoan2013, Theorem 2.4.1].
 Port of `NLAlib.exists_isSVD`, there with square factors.
 Result: svd-existence -/
@@ -389,10 +430,11 @@ theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : 
   rw [(singularValues_eq_zero_iff A).mpr (hk.trans hki), zero_pow two_ne_zero,
     RCLike.ofReal_zero]
 
-/-- **Existence of a split singular value decomposition.** For `k + d` between the rank of `A`
-and its smaller dimension, `A` has an SVD whose first block carries the `k` largest singular
-values and whose second block carries the next `d`.
-Port of `NLAlib.exists_svd_right_blocks`, there over `ℝ` with `Fin` matrices. -/
+/-- **Existence of a split singular value decomposition.** For $k + d$ between the rank of
+$\mathbf{A}$ and its smaller dimension, $\mathbf{A}$ has an SVD whose first block carries the $k$
+largest singular values $\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A})$ and whose second
+block carries the next $d$, $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$.
+Port of `NLAlib.exists_svd_right_blocks`, there over $\mathbb{R}$ with `Fin` matrices. -/
 theorem exists_isSVD_fromCols (A : Matrix m n 𝕜) {k d : ℕ} (hk : A.rank ≤ k + d)
     (hkm : k + d ≤ Fintype.card m) (hkn : k + d ≤ Fintype.card n) :
     ∃ (U₁ : Matrix m (Fin k) 𝕜) (U₂ : Matrix m (Fin d) 𝕜) (V₁ : Matrix n (Fin k) 𝕜)
@@ -414,9 +456,10 @@ theorem exists_isSVD_fromCols (A : Matrix m n 𝕜) {k d : ℕ} (hk : A.rank ≤
   exact ⟨_, _, _, _, h'⟩
 
 omit [Fintype m] in
-/-- Every matrix of rank `k` factors as `B * Cᴴ` through `k` columns; more precisely
-`A = U * (V * Σ)ᴴ` from the compact SVD. The rank factorisation used when a proof only needs
-"`A` has rank at most `k`" in product form. -/
+/-- Every matrix of rank at most $k$ factors as $\mathbf{B}\mathbf{C}^{\mathsf{H}}$ through $k$
+columns; more precisely $\mathbf{A} = \mathbf{U}(\mathbf{V}\mathbf{\Sigma})^{\mathsf{H}}$ from the
+compact SVD. The rank factorisation used when a proof only needs "$\mathbf{A}$ has rank at most
+$k$" in product form. -/
 theorem exists_eq_mul_conjTranspose_of_rank_le [Finite m] (A : Matrix m n 𝕜) {k : ℕ}
     (hk : A.rank ≤ k) : ∃ (B : Matrix m (Fin k) 𝕜) (C : Matrix n (Fin k) 𝕜), A = B * Cᴴ := by
   classical
@@ -436,9 +479,11 @@ theorem exists_eq_mul_conjTranspose_of_rank_le [Finite m] (A : Matrix m n 𝕜) 
 /-! ### Hermitian matrices -/
 
 /-- The absolute values of the eigenvalues of a Hermitian matrix are its singular values, up to a
-permutation: the eigendecomposition is a singular value decomposition once the signs of the
-eigenvalues are moved into the left factor. For a positive semidefinite matrix no permutation is
-needed (`Matrix.PosSemidef.singularValues_eq_eigenvalue`). -/
+permutation $e$ of $\{0, \dots, \lvert n \rvert - 1\}$:
+$\lvert \lambda_i(\mathbf{A}) \rvert = \sigma_{e(i)}(\mathbf{A})$. The eigendecomposition is a
+singular value decomposition once the signs of the eigenvalues are moved into the left factor.
+For a positive semidefinite matrix no permutation is needed
+(`Matrix.PosSemidef.singularValues_eq_eigenvalue`). -/
 theorem _root_.Matrix.IsHermitian.exists_equiv_abs_eigenvalue_eq_singularValues
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ e : Fin (Fintype.card n) ≃ Fin (Fintype.card n),
@@ -470,8 +515,8 @@ theorem _root_.Matrix.IsHermitian.exists_equiv_abs_eigenvalue_eq_singularValues
   obtain ⟨e, he⟩ := h.exists_equiv_singularValues_eq
   exact ⟨e.trans (finCongr (Fintype.card_fin _)), fun i => he i⟩
 
-/-- The singular values of a matrix with orthonormal columns are `1`, as many as it has
-columns. -/
+/-- The singular values of a matrix with orthonormal columns are $1$, as many as it has
+columns: $\sigma_i(\mathbf{V}) = 1$ for $i < \lvert n \rvert$. -/
 theorem HasOrthonormalCols.singularValues_eq_one [DecidableEq n] {V : Matrix m n 𝕜}
     (hV : HasOrthonormalCols V) {i : ℕ} (hi : i < Fintype.card n) : singularValues V i = 1 := by
   have h1 : singularValues V = singularValues (1 : Matrix n n 𝕜) :=

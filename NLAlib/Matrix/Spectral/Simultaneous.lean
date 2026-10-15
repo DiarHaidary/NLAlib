@@ -13,18 +13,19 @@ public import NLAlib.Matrix.Spectral.Normal
 A commuting family of complex matrices has a common eigenvector and is simultaneously unitarily
 triangularisable; over a general `RCLike` field the same holds when the characteristic
 polynomials split. A family of normal matrices commutes exactly when it is simultaneously
-unitarily diagonalisable; for Hermitian matrices over `𝕜` the diagonals are real, and over `ℝ`
-the unitary matrix is orthogonal. The families are indexed by an arbitrary type.
+unitarily diagonalisable; for Hermitian matrices over $\Bbbk$ the diagonals are real, and over
+$\mathbb{R}$ the unitary matrix is orthogonal. The families are indexed by an arbitrary type.
 
 ## Main results
 
 * `NLAlib.exists_mulVec_eq_smul_of_pairwise_commute`: a common eigenvector.
 * `NLAlib.exists_hasOrthonormalCols_forall_isUpperTriangular_of_forall_splits`: simultaneous
-  unitary triangularisation over `𝕜` when the characteristic polynomials split.
-* `NLAlib.exists_hasOrthonormalCols_forall_isUpperTriangular_of_pairwise_commute`: over `ℂ`.
+  unitary triangularisation over $\Bbbk$ when the characteristic polynomials split.
+* `NLAlib.exists_hasOrthonormalCols_forall_isUpperTriangular_of_pairwise_commute`: over
+  $\mathbb{C}$.
 * `NLAlib.pairwise_commute_iff_exists_forall_eq_mul_diagonal_mul_conjTranspose`: normal families.
 * `NLAlib.exists_hasOrthonormalCols_forall_eq_mul_diagonal_of_pairwise_commute`: Hermitian
-  families over `𝕜`.
+  families over $\Bbbk$.
 
 ## Implementation notes
 
@@ -123,7 +124,9 @@ private theorem exists_mem_forall_mulVec_eq_smul (A : ι → Matrix n n K)
       exact ⟨x, ((hmem x).mp hx).1, hx0, hxe⟩
 
 omit [DecidableEq n] in
-/-- **A commuting family of complex matrices has a common eigenvector.**
+/-- **A commuting family of complex matrices has a common eigenvector**: for a nonempty index
+type there is $\mathbf{x} \ne \mathbf{0}$ with $\mathbf{A}_i\mathbf{x} = d_i\mathbf{x}$ for every
+member $\mathbf{A}_i$ of the family.
 [HornJohnson2013, Lemma 1.3.19].
 Port of `NLAlib.exists_common_mulVec_eigenvector_of_commute`. -/
 theorem exists_mulVec_eq_smul_of_pairwise_commute [Nonempty n] (A : ι → Matrix n n ℂ)
@@ -163,7 +166,9 @@ private theorem exists_hasOrthonormalCols_col_eq_smul {x : n → 𝕜} (hx : x �
   rfl
 
 /-- Conjugating by a unitary matrix one of whose columns is an eigenvector puts a multiple of a
-coordinate vector in that column. -/
+coordinate vector in that column: if the column $i_0$ of $\mathbf{W}$ is an eigenvector of
+$\mathbf{A}$ for $\alpha$, the column $i_0$ of $\mathbf{W}^{\mathsf{H}}\mathbf{A}\mathbf{W}$ is
+$\alpha$ times the coordinate vector $\mathbf{e}_{i_0}$. -/
 private theorem conjTranspose_mul_mul_apply_of_mulVec_eq_smul {A W : Matrix n n 𝕜}
     (hW : HasOrthonormalCols W) {i₀ : n} {α : 𝕜}
     (hA : (A *ᵥ fun i => W i i₀) = α • fun i => W i i₀) (i : n) :
@@ -251,16 +256,20 @@ private theorem exists_triangular_family_aux (k : ℕ) :
       exact isUpperTriangular_fromBlocks_submatrix_sumCompl_symm hi₀ _ _ (hT i)
 
 /-- **A commuting family of matrices whose characteristic polynomials split is simultaneously
-unitarily triangularisable.** Over `ℝ` this is simultaneous orthogonal triangularisation of
-commuting matrices with real eigenvalues; the family may be infinite.
-[HornJohnson2013, Theorem 2.3.3], there over `ℂ`. -/
+unitarily triangularisable**: there is a unitary $\mathbf{U}$ with
+$\mathbf{U}^{\mathsf{H}}\mathbf{A}_i\mathbf{U}$ upper triangular for every $i$. Over $\mathbb{R}$
+this is simultaneous orthogonal triangularisation of commuting matrices with real eigenvalues;
+the family may be infinite.
+[HornJohnson2013, Theorem 2.3.3], there over $\mathbb{C}$. -/
 theorem exists_hasOrthonormalCols_forall_isUpperTriangular_of_forall_splits [LinearOrder n]
     (A : ι → Matrix n n 𝕜) (h : Pairwise fun i j => Commute (A i) (A j))
     (hA : ∀ i, (A i).charpoly.Splits) :
     ∃ U : Matrix n n 𝕜, HasOrthonormalCols U ∧ ∀ i, (Uᴴ * A i * U).IsUpperTriangular :=
   exists_triangular_family_aux _ n rfl A h hA
 
-/-- **A commuting family of complex matrices is simultaneously unitarily triangularisable.**
+/-- **A commuting family of complex matrices is simultaneously unitarily triangularisable**:
+there is a unitary $\mathbf{U}$ with $\mathbf{U}^{\mathsf{H}}\mathbf{A}_i\mathbf{U}$ upper
+triangular for every $i$.
 [HornJohnson2013, Theorem 2.3.3].
 Port of `NLAlib.exists_simultaneous_unitary_schur_triangularization`.
 Result: simultaneous-triangularization -/
@@ -283,7 +292,10 @@ private theorem commute_mul_diagonal_mul_conjTranspose {U : Matrix n n 𝕜}
   simp only [mul_comm]
 
 /-- **A family of normal matrices commutes exactly when it is simultaneously unitarily
-diagonalisable.** [HornJohnson2013, Theorem 2.5.5].
+diagonalisable**: the complex normal $\mathbf{A}_i$ commute pairwise if and only if there is a
+unitary $\mathbf{U}$ with
+$\mathbf{A}_i = \mathbf{U} \operatorname{diag}(\mathbf{d}_i) \mathbf{U}^{\mathsf{H}}$ for every
+$i$. [HornJohnson2013, Theorem 2.5.5].
 Port of `NLAlib.pairwise_commute_iff_exists_simultaneous_unitary_diagonalization`.
 Result: simultaneous-diagonalization -/
 theorem pairwise_commute_iff_exists_forall_eq_mul_diagonal_mul_conjTranspose
@@ -305,9 +317,12 @@ theorem pairwise_commute_iff_exists_forall_eq_mul_diagonal_mul_conjTranspose
     exact commute_mul_diagonal_mul_conjTranspose hU a b
 
 /-- **A commuting family of Hermitian matrices is simultaneously unitarily diagonalisable**,
-with real diagonals; over `ℝ` the unitary matrix is orthogonal.
+with real diagonals: there is a unitary $\mathbf{U}$ with
+$\mathbf{A}_i = \mathbf{U} \operatorname{diag}(\mathbf{d}_i) \mathbf{U}^{\mathsf{H}}$,
+$\mathbf{d}_i$ real, for every $i$; over $\mathbb{R}$ the unitary matrix is orthogonal.
 [HornJohnson2013, Theorem 4.1.6 context].
-Port of `NLAlib.exists_simultaneous_orthogonal_diagonalization_of_commute`, there over `ℝ`.
+Port of `NLAlib.exists_simultaneous_orthogonal_diagonalization_of_commute`, there over
+$\mathbb{R}$.
 Result: simultaneous-diagonalization -/
 theorem exists_hasOrthonormalCols_forall_eq_mul_diagonal_of_pairwise_commute
     {A : ι → Matrix n n 𝕜} (hA : ∀ i, (A i).IsHermitian)
@@ -325,7 +340,10 @@ theorem exists_hasOrthonormalCols_forall_eq_mul_diagonal_of_pairwise_commute
   simpa only [hH.coe_re_apply_self] using h1
 
 /-- Two Hermitian matrices commute exactly when they are simultaneously unitarily
-diagonalisable. Port of `NLAlib.exists_orthogonal_congruence_diagonal_of_commute`. -/
+diagonalisable: $\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{a}) \mathbf{U}^{\mathsf{H}}$
+and $\mathbf{B} = \mathbf{U} \operatorname{diag}(\mathbf{b}) \mathbf{U}^{\mathsf{H}}$ with
+$\mathbf{U}$ unitary and $\mathbf{a}$, $\mathbf{b}$ real.
+Port of `NLAlib.exists_orthogonal_congruence_diagonal_of_commute`. -/
 theorem _root_.Matrix.IsHermitian.commute_iff_exists_eq_mul_diagonal_mul_conjTranspose
     {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) :

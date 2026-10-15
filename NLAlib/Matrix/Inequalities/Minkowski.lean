@@ -12,15 +12,17 @@ public import NLAlib.Matrix.Inequalities.Determinant
 /-!
 # Minkowski's determinant inequality
 
-Minkowski's inequality `(det A)^(1/N) + (det B)^(1/N) ≤ (det (A + B))^(1/N)` for positive
-semidefinite matrices of size `N ≥ 1`, with its two consequences: `A ↦ (det A)^(1/N)` is concave
-on the positive definite matrices, and the determinant is superadditive. Determinants of
-Hermitian matrices are real; the inequalities are stated for `RCLike.re (det A)`.
+Minkowski's inequality
+$(\det \mathbf{A})^{1/N} + (\det \mathbf{B})^{1/N} \le (\det(\mathbf{A} + \mathbf{B}))^{1/N}$ for
+positive semidefinite matrices of size $N \ge 1$, with its two consequences:
+$\mathbf{A} \mapsto (\det \mathbf{A})^{1/N}$ is concave on the positive definite matrices, and the
+determinant is superadditive. Determinants of Hermitian matrices are real; the inequalities are
+stated for $\operatorname{Re} \det \mathbf{A}$ (`RCLike.re`).
 
 ## Main results
 
 * `Matrix.PosSemidef.re_det_rpow_add_le`: Minkowski's inequality.
-* `NLAlib.concaveOn_re_det_rpow`: concavity of the `N`-th root of the determinant.
+* `NLAlib.concaveOn_re_det_rpow`: concavity of the $N$-th root of the determinant.
 * `Matrix.PosSemidef.re_det_add_le`: superadditivity of the determinant.
 -/
 
@@ -32,7 +34,7 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- Superadditivity of the geometric mean against the constant sequence `1`. -/
+/-- Superadditivity of the geometric mean against the constant sequence $1$. -/
 private theorem one_add_prod_rpow_le {ι : Type*} {s : Finset ι} (hs : s.Nonempty) {μ : ι → ℝ}
     (hμ : ∀ i ∈ s, 0 ≤ μ i) :
     1 + (∏ i ∈ s, μ i) ^ (s.card : ℝ)⁻¹ ≤ (∏ i ∈ s, (μ i + 1)) ^ (s.card : ℝ)⁻¹ := by
@@ -127,10 +129,13 @@ private theorem re_det_rpow_add_le_of_posDef [Nonempty n] {A B : Matrix n n 𝕜
   rw [mul_add, h2]
   exact h
 
-/-- **Minkowski's determinant inequality.** For positive semidefinite `A`, `B` of size `N ≥ 1`,
-`(det A)^(1/N) + (det B)^(1/N) ≤ (det (A + B))^(1/N)`.
+/-- **Minkowski's determinant inequality.** For positive semidefinite $\mathbf{A}$, $\mathbf{B}$
+of size $N = \lvert n \rvert \ge 1$,
+$$(\operatorname{Re} \det \mathbf{A})^{1/N} + (\operatorname{Re} \det \mathbf{B})^{1/N}
+  \le (\operatorname{Re} \det(\mathbf{A} + \mathbf{B}))^{1/N}\,.$$
 [HornJohnson2013, Theorem 7.8.21].
-Port of `NLAlib.det_rpow_inv_card_add_le`, there over `ℝ` for positive definite matrices.
+Port of `NLAlib.det_rpow_inv_card_add_le`, there over $\mathbb{R}$ for positive definite
+matrices.
 Result: minkowski-determinant-inequality -/
 theorem _root_.Matrix.PosSemidef.re_det_rpow_add_le [Nonempty n] {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -155,7 +160,8 @@ private theorem re_det_real_smul_rpow [Nonempty n] {A : Matrix n n 𝕜} (hA : A
     RCLike.re_ofReal_mul, Real.mul_rpow (pow_nonneg ha _) (RCLike.nonneg_iff.mp hA.det_nonneg).1,
     Real.pow_rpow_inv_natCast ha Fintype.card_ne_zero]
 
-/-- `A ↦ (det A)^(1/N)` is concave on the positive definite matrices.
+/-- $\mathbf{A} \mapsto (\operatorname{Re} \det \mathbf{A})^{1/N}$, with
+$N = \lvert n \rvert \ge 1$, is concave on the positive definite matrices.
 [HornJohnson2013, Theorem 7.8.21]. Port of `NLAlib.concaveOn_det_rpow_inv_card`. -/
 theorem concaveOn_re_det_rpow [Nonempty n] :
     ConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosDef}
@@ -169,7 +175,8 @@ theorem concaveOn_re_det_rpow [Nonempty n] :
     rwa [re_det_real_smul_rpow hA.posSemidef ha, re_det_real_smul_rpow hB.posSemidef hb] at h
 
 /-- The determinant is superadditive on positive semidefinite matrices of positive size:
-`det A + det B ≤ det (A + B)`. [HornJohnson2013, §7.8]. -/
+$\operatorname{Re} \det \mathbf{A} + \operatorname{Re} \det \mathbf{B}
+\le \operatorname{Re} \det(\mathbf{A} + \mathbf{B})$. [HornJohnson2013, §7.8]. -/
 theorem _root_.Matrix.PosSemidef.re_det_add_le [Nonempty n] {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef)
     (hB : B.PosSemidef) : RCLike.re A.det + RCLike.re B.det ≤ RCLike.re (A + B).det := by

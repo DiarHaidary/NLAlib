@@ -46,7 +46,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Continuous quantities -/
 
-/-- A function that is continuous on each fibre of a measurable map to `ℕ` is measurable. -/
+/-- A function that is continuous on each fibre of a measurable map to $\mathbb{N}$ is
+measurable. -/
 private theorem measurable_of_continuousOn_fiber {X Y : Type*} [TopologicalSpace X]
     [MeasurableSpace X] [OpensMeasurableSpace X] [TopologicalSpace Y] [MeasurableSpace Y]
     [BorelSpace Y] {f : X → Y} {r : X → ℕ} (hr : Measurable r)
@@ -62,26 +63,28 @@ private theorem measurable_of_continuousOn_fiber {X Y : Type*} [TopologicalSpace
   rw [huk]
   exact hu.measurableSet.inter (hr (measurableSet_singleton k))
 
-/-- The spectral norm is measurable. Port of `NLAlib.measurable_specNorm_of_entries`. -/
+/-- The spectral norm $\mathbf{A} \mapsto \|\mathbf{A}\|_2$ is measurable.
+Port of `NLAlib.measurable_specNorm_of_entries`. -/
 theorem measurable_specNorm : Measurable (specNorm : Matrix m n 𝕜 → ℝ) := by
   exact continuous_specNorm.measurable
 
-/-- The Frobenius norm is measurable. Port of `NLAlib.measurable_frobSq_of_entries`. -/
+/-- The Frobenius norm $\mathbf{A} \mapsto \|\mathbf{A}\|_{\mathsf{F}}$ is measurable.
+Port of `NLAlib.measurable_frobSq_of_entries`. -/
 theorem measurable_frobNorm : Measurable (frobNorm : Matrix m n 𝕜 → ℝ) := by
   exact continuous_frobNorm.measurable
 
-/-- Every unitarily invariant norm is measurable. -/
+/-- Every unitarily invariant norm $\mathbf{A} \mapsto \|\mathbf{A}\|_{\Phi}$ is measurable. -/
 theorem SymmetricGauge.measurable_matrixNorm (Φ : SymmetricGauge) :
     Measurable (Φ.matrixNorm : Matrix m n 𝕜 → ℝ) := by
   exact Φ.continuous_matrixNorm.measurable
 
-/-- Each singular value is measurable. -/
+/-- Each singular value $\mathbf{A} \mapsto \sigma_k(\mathbf{A})$ is measurable. -/
 theorem measurable_singularValues (k : ℕ) :
     Measurable fun A : Matrix m n 𝕜 => singularValues A k := by
   exact (continuous_singularValues k).measurable
 
-/-- Each sorted eigenvalue is measurable (it is continuous on the closed set of Hermitian
-matrices and zero elsewhere). -/
+/-- Each sorted eigenvalue $\mathbf{A} \mapsto \lambda_k(\mathbf{A})$ is measurable (it is
+continuous on the closed set of Hermitian matrices and zero elsewhere). -/
 theorem measurable_eigenvalue (k : ℕ) :
     Measurable fun A : Matrix n n 𝕜 => eigenvalue A k := by
   have hs : MeasurableSet {A : Matrix n n 𝕜 | A.IsHermitian} :=
@@ -117,7 +120,7 @@ theorem measurableSet_setOf_posDef [Finite n] :
 /-! ### Quantities that are not continuous -/
 
 omit [Fintype m] in
-/-- The rank is measurable. -/
+/-- The rank $\mathbf{A} \mapsto \operatorname{rank} \mathbf{A}$ is measurable. -/
 theorem measurable_rank [Finite m] : Measurable fun A : Matrix m n 𝕜 => A.rank := by
   refine measurable_to_countable' fun r => ?_
   have h : (fun A : Matrix m n 𝕜 => A.rank) ⁻¹' {r} =
@@ -128,13 +131,15 @@ theorem measurable_rank [Finite m] : Measurable fun A : Matrix m n 𝕜 => A.ran
   rw [h]
   exact (isClosed_setOf_rank_le r).measurableSet.inter (isOpen_setOf_le_rank r).measurableSet
 
-/-- **The pseudoinverse is measurable.** Port of `NLAlib.measurable_pinvL_entry_of` and
+/-- **The pseudoinverse is measurable**: $\mathbf{A} \mapsto \mathbf{A}^{+}$.
+Port of `NLAlib.measurable_pinvL_entry_of` and
 `NLAlib.measurable_pinvR_entry`. -/
 theorem measurable_pinv :
     Measurable (pinv : Matrix m n 𝕜 → Matrix n m 𝕜) := by
   exact measurable_of_continuousOn_fiber measurable_rank continuousOn_pinv_setOf_rank_eq
 
-/-- The orthogonal projector onto the range is measurable. -/
+/-- The orthogonal projector onto the range, $\mathbf{A} \mapsto \mathbf{P}_{\mathbf{A}}$, is
+measurable. -/
 theorem measurable_rangeProjector :
     Measurable (rangeProjector : Matrix m n 𝕜 → Matrix m m 𝕜) := by
   have h : (rangeProjector : Matrix m n 𝕜 → Matrix m m 𝕜) = fun A => A * pinv A :=
@@ -142,13 +147,15 @@ theorem measurable_rangeProjector :
   rw [h]
   exact measurable_id.matrix_mul measurable_pinv
 
-/-- The pseudo-condition number is measurable. -/
+/-- The pseudo-condition number $\mathbf{A} \mapsto \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$ is
+measurable. -/
 theorem measurable_pseudoConditionNumber :
     Measurable (pseudoConditionNumber : Matrix m n 𝕜 → ℝ) := by
   exact measurable_specNorm.mul (measurable_specNorm.comp measurable_pinv)
 
 open scoped Matrix.Norms.L2Operator MatrixOrder ComplexOrder Classical in
-/-- The absolute value `(Aᴴ A)^{1/2}` is a continuous function of the matrix. -/
+/-- The absolute value $(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$ is a continuous function of the
+matrix. -/
 private theorem continuous_sqrt_gram :
     Continuous fun A : Matrix m n 𝕜 => CFC.sqrt (Aᴴ * A) := by
   have h : Continuous fun A : Matrix m n 𝕜 => Aᴴ * A :=
@@ -160,7 +167,8 @@ private theorem continuous_sqrt_gram :
     (Matrix.posSemidef_conjTranspose_mul_self A).nonneg
 
 omit [Fintype n] in
-/-- Each Gram–Schmidt vector of the columns is a measurable function of the matrix. -/
+/-- Each Gram–Schmidt vector of the columns (unnormalised, `InnerProductSpace.gramSchmidt`) is a
+measurable function of the matrix. -/
 private theorem measurable_gramSchmidt [Finite n] [LinearOrder n] [LocallyFiniteOrderBot n]
     (j : n) :
     Measurable fun A : Matrix m n 𝕜 =>

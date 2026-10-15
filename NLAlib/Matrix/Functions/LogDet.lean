@@ -13,19 +13,26 @@ public import NLAlib.Matrix.Inequalities.Determinant
 /-!
 # The logarithm of the determinant and the trace of the inverse
 
-For a positive definite matrix, `log det A = tr log A`. The function `A ↦ log det A` is strictly
-concave on positive definite matrices, `log det (1 + A) ≤ tr A`, and `A ↦ tr A⁻¹` is strictly
-convex. These are the objective functions of D-optimal and A-optimal experimental design and the
-potential functions of barrier arguments.
+For a positive definite matrix,
+$\log \det \mathbf{A} = \operatorname{tr} \log(\mathbf{A})$. The function
+$\mathbf{A} \mapsto \log \det \mathbf{A}$ is strictly concave on positive definite matrices,
+$\log \det(\mathbf{I} + \mathbf{A}) \le \operatorname{tr} \mathbf{A}$, and
+$\mathbf{A} \mapsto \operatorname{tr} \mathbf{A}^{-1}$ is strictly convex. These are the objective
+functions of D-optimal and A-optimal experimental design and the potential functions of barrier
+arguments.
 
-Determinants of Hermitian matrices are written `RCLike.re A.det`.
+Determinants and traces of Hermitian matrices are real; in Lean they are written through their
+real parts (`RCLike.re`).
 
 ## Main results
 
-* `Matrix.PosDef.log_re_det_eq_re_trace_cfc_log`: `log det A = tr log A`.
-* `Matrix.PosSemidef.log_re_det_one_add_le_re_trace`: `log det (1 + A) ≤ tr A`.
-* `NLAlib.strictConcaveOn_log_re_det`: strict concavity of `log det`.
-* `NLAlib.strictConvexOn_re_trace_inv`: strict convexity of `tr A⁻¹`.
+* `Matrix.PosDef.log_re_det_eq_re_trace_cfc_log`:
+  $\log \det \mathbf{A} = \operatorname{tr} \log(\mathbf{A})$.
+* `Matrix.PosSemidef.log_re_det_one_add_le_re_trace`:
+  $\log \det(\mathbf{I} + \mathbf{A}) \le \operatorname{tr} \mathbf{A}$.
+* `NLAlib.strictConcaveOn_log_re_det`: strict concavity of $\log \det$.
+* `NLAlib.strictConvexOn_re_trace_inv`: strict convexity of
+  $\operatorname{tr} \mathbf{A}^{-1}$.
 * `Matrix.PosDef.inv_smul_add_smul_le`: the inverse is operator convex.
 -/
 
@@ -39,7 +46,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### The determinant through the eigenvalues -/
 
-/-- The determinant of a function of a Hermitian matrix is the product over the eigenvalues. -/
+/-- The determinant of a function of a Hermitian matrix is the product over the eigenvalues:
+$\operatorname{Re} \det f(\mathbf{A}) = \prod_{i < \lvert n \rvert} f(\lambda_i(\mathbf{A}))$. -/
 theorem _root_.Matrix.IsHermitian.re_det_cfc {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (f : ℝ → ℝ) :
     RCLike.re (cfc f A).det = ∏ i ∈ Finset.range (Fintype.card n), f (eigenvalue A i) := by
@@ -53,7 +61,8 @@ theorem _root_.Matrix.IsHermitian.re_det_cfc {A : Matrix n n 𝕜} (hA : A.IsHer
     ← Fin.prod_univ_eq_prod_range (fun i => f (eigenvalue A i)), ← Equiv.prod_comp e]
   exact Finset.prod_congr rfl fun i _ => (he i).symm
 
-/-- **`log det A = tr log A`** for positive definite `A`. -/
+/-- **The log-determinant is the trace of the logarithm**:
+$\log \det \mathbf{A} = \operatorname{tr} \log(\mathbf{A})$ for positive definite $\mathbf{A}$. -/
 theorem _root_.Matrix.PosDef.log_re_det_eq_re_trace_cfc_log {A : Matrix n n 𝕜} (hA : A.PosDef) :
     Real.log (RCLike.re A.det) = RCLike.re (cfc Real.log A).trace := by
   rw [hA.isHermitian.re_trace_cfc, hA.isHermitian.det_eq_prod_range_eigenvalue, RCLike.ofReal_re,
@@ -61,20 +70,23 @@ theorem _root_.Matrix.PosDef.log_re_det_eq_re_trace_cfc_log {A : Matrix n n 𝕜
   exact fun i hi =>
     (hA.isHermitian.posDef_iff_eigenvalue_pos.mp hA i (Finset.mem_range.mp hi)).ne'
 
-/-- `det (exp A) = exp (tr A)` for Hermitian `A`. -/
+/-- $\det \exp(\mathbf{A}) = e^{\operatorname{tr} \mathbf{A}}$ for Hermitian $\mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.re_det_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     RCLike.re (NormedSpace.exp A).det = Real.exp (RCLike.re A.trace) := by
   rw [hA.exp_eq_cfc, hA.re_det_cfc, hA.re_trace_eq_sum_range_eigenvalue, Real.exp_sum]
 
-/-- **`log det (1 + A) ≤ tr A`** for positive semidefinite `A`. This is the inequality behind the
-elliptical potential lemma and volume-based pivoting arguments. -/
+/-- **The log-determinant is at most the trace**:
+$\log \det(\mathbf{I} + \mathbf{A}) \le \operatorname{tr} \mathbf{A}$ for positive semidefinite
+$\mathbf{A}$. This is the inequality behind the elliptical potential lemma and volume-based
+pivoting arguments. -/
 theorem _root_.Matrix.PosSemidef.log_re_det_one_add_le_re_trace {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : Real.log (RCLike.re (1 + A).det) ≤ RCLike.re A.trace := by
   have h1 : (1 + A).PosDef := Matrix.PosDef.one.add_posSemidef hA
   rw [h1.log_re_det_eq_re_trace_cfc_log]
   exact re_trace_le_re_trace_of_le hA.cfc_log_one_add_le
 
-/-- The product of `1 + x_i` over nonnegative reals is at least one plus their sum. -/
+/-- The product of $1 + x_i$ over nonnegative reals is at least one plus their sum:
+$1 + \sum_{i \in s} x_i \le \prod_{i \in s} (x_i + 1)$. -/
 private theorem one_add_sum_le_prod {ι : Type*} (s : Finset ι) {x : ι → ℝ}
     (hx : ∀ i ∈ s, 0 ≤ x i) : 1 + ∑ i ∈ s, x i ≤ ∏ i ∈ s, (x i + 1) := by
   classical
@@ -88,7 +100,8 @@ private theorem one_add_sum_le_prod {ι : Type*} (s : Finset ι) {x : ι → ℝ
       Finset.sum_nonneg fun i hi => hx i (Finset.mem_insert_of_mem hi)
     nlinarith [mul_le_mul_of_nonneg_left h1 (by linarith : (0 : ℝ) ≤ x a + 1), mul_nonneg h2 h3]
 
-/-- `1 + tr A ≤ det (1 + A)` for positive semidefinite `A`. -/
+/-- $1 + \operatorname{tr} \mathbf{A} \le \det(\mathbf{I} + \mathbf{A})$ for positive
+semidefinite $\mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.one_add_re_trace_le_re_det_one_add {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : 1 + RCLike.re A.trace ≤ RCLike.re (1 + A).det := by
   have h1 : 1 + A = A + (1 : ℝ) • (1 : Matrix n n 𝕜) := by rw [one_smul, add_comm]
@@ -101,8 +114,11 @@ theorem _root_.Matrix.PosSemidef.one_add_re_trace_le_re_det_one_add {A : Matrix 
 /-! ### Concavity of the logarithm of the determinant -/
 
 /-- Two positive definite matrices are simultaneously congruent to diagonal matrices, the first
-to the identity: with `A = R²` and `R⁻¹ B R⁻¹ = U diag(d) Uᴴ`, every real combination is
-`a A + b B = R U diag(a + b d) Uᴴ R`. -/
+to the identity: with $\mathbf{A} = \mathbf{R}^2$ and
+$\mathbf{R}^{-1}\mathbf{B}\mathbf{R}^{-1}
+= \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}$, every real combination is
+$a\mathbf{A} + b\mathbf{B}
+= \mathbf{R}\mathbf{U}\operatorname{diag}(a + b\mathbf{d}_i)\mathbf{U}^{\mathsf{H}}\mathbf{R}$. -/
 private theorem exists_smul_add_smul_eq {A B : Matrix n n 𝕜} (hA : A.PosDef) (hB : B.PosDef) :
     ∃ (R : Matrix n n 𝕜) (U : Matrix n (Fin (Fintype.card n)) 𝕜)
       (d : Fin (Fintype.card n) → ℝ), R * R = A ∧ IsUnit R.det ∧ HasOrthonormalCols U ∧
@@ -156,9 +172,10 @@ private theorem exists_re_det_smul_add_smul_eq {A B : Matrix n n 𝕜} (hA : A.P
     hA.isHermitian.re_det_mul, RCLike.ofReal_re]
 
 /-- **The weighted geometric mean of determinants** is at most the determinant of the weighted
-mean: `det A ^ a · det B ^ b ≤ det (a A + b B)` for positive definite `A`, `B` and weights
-`a + b = 1`. [HornJohnson2013, Theorem 7.6.6 context].
-Port of `NLAlib.det_rpow_mul_le_det_smul_add`, there over `ℝ`. -/
+mean: $(\det \mathbf{A})^a (\det \mathbf{B})^b \le \det(a\mathbf{A} + b\mathbf{B})$ for positive
+definite $\mathbf{A}$, $\mathbf{B}$ and weights $a, b \ge 0$, $a + b = 1$.
+[HornJohnson2013, Theorem 7.6.6 context].
+Port of `NLAlib.det_rpow_mul_le_det_smul_add`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosDef.re_det_rpow_mul_re_det_rpow_le {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosDef) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hab : a + b = 1) :
     RCLike.re A.det ^ a * RCLike.re B.det ^ b ≤ RCLike.re (a • A + b • B).det := by
@@ -173,8 +190,10 @@ theorem _root_.Matrix.PosDef.re_det_rpow_mul_re_det_rpow_le {A B : Matrix n n �
   have h := Real.geom_mean_le_arith_mean2_weighted ha hb zero_le_one (hd i).le hab
   rwa [Real.one_rpow, one_mul, mul_one] at h
 
-/-- **`log det` is strictly concave** on the positive definite matrices.
-[HornJohnson2013, Theorem 7.6.6]. Port of `NLAlib.strictConcaveOn_log_det`, there over `ℝ`.
+/-- **The log-determinant is strictly concave**: $\mathbf{A} \mapsto \log \det \mathbf{A}$ is
+strictly concave on the positive definite matrices.
+[HornJohnson2013, Theorem 7.6.6]. Port of `NLAlib.strictConcaveOn_log_det`, there over
+$\mathbb{R}$.
 Result: log-det-concavity -/
 theorem strictConcaveOn_log_re_det :
     StrictConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosDef} fun A => Real.log (RCLike.re A.det) := by
@@ -206,8 +225,11 @@ theorem strictConcaveOn_log_re_det :
       Real.log (RCLike.re A.det) := by rw [← add_mul, hab, one_mul]
   linarith
 
-/-- Equality in the concavity of `log det` holds only at `A = B`.
-Port of `NLAlib.log_det_smul_add_eq_iff`, there over `ℝ`. -/
+/-- Equality in the concavity of $\log \det$ holds only at $\mathbf{A} = \mathbf{B}$: for positive
+definite $\mathbf{A}$, $\mathbf{B}$ and $a, b > 0$ with $a + b = 1$,
+$\log \det(a\mathbf{A} + b\mathbf{B}) = a \log \det \mathbf{A} + b \log \det \mathbf{B}$ if and
+only if $\mathbf{A} = \mathbf{B}$.
+Port of `NLAlib.log_det_smul_add_eq_iff`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosDef.log_re_det_smul_add_smul_eq_iff {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.PosDef) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1) :
     Real.log (RCLike.re (a • A + b • B).det) =
@@ -223,7 +245,8 @@ theorem _root_.Matrix.PosDef.log_re_det_smul_add_smul_eq_iff {A B : Matrix n n �
 /-! ### The inverse -/
 
 /-- **The inverse is operator convex** on positive definite matrices:
-`(a A + b B)⁻¹ ≤ a A⁻¹ + b B⁻¹`. [Bhatia1997, Exercise V.1.15 context]. -/
+$(a\mathbf{A} + b\mathbf{B})^{-1} \preceq a\mathbf{A}^{-1} + b\mathbf{B}^{-1}$ for
+$a, b \ge 0$ with $a + b = 1$. [Bhatia1997, Exercise V.1.15 context]. -/
 theorem _root_.Matrix.PosDef.inv_smul_add_smul_le {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosDef) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hab : a + b = 1) :
     (a • A + b • B)⁻¹ ≤ a • A⁻¹ + b • B⁻¹ := by
@@ -231,7 +254,8 @@ theorem _root_.Matrix.PosDef.inv_smul_add_smul_le {A B : Matrix n n 𝕜} (hA : 
   exact operatorConvexOn_inv.cfc_smul_add_smul_le hA.isHermitian hB.isHermitian
     hA.spectrum_subset_Ioi hB.spectrum_subset_Ioi ha hb hab
 
-/-- The gap in the convexity of the reciprocal. -/
+/-- The gap in the convexity of the reciprocal:
+$a + b/d - 1/(a + bd) = ab(d - 1)^2 / (d(a + bd))$ when $a + b = 1$. -/
 private theorem add_mul_inv_sub_inv {a b d : ℝ} (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1)
     (hd : 0 < d) :
     a + b * d⁻¹ - (a + b * d)⁻¹ = a * b * (d - 1) ^ 2 / (d * (a + b * d)) := by
@@ -274,8 +298,10 @@ private theorem exists_re_trace_inv_smul_add_smul_eq {A B : Matrix n n 𝕜} (hA
   simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_diagonal, map_sum,
     RCLike.re_mul_ofReal, mul_comm]
 
-/-- **`tr A⁻¹` is strictly convex** on the positive definite matrices.
-Port of `NLAlib.strictConvexOn_trace_inv`, there over `ℝ`.
+/-- **The trace of the inverse is strictly convex**:
+$\mathbf{A} \mapsto \operatorname{tr} \mathbf{A}^{-1}$ is strictly convex on the positive definite
+matrices.
+Port of `NLAlib.strictConvexOn_trace_inv`, there over $\mathbb{R}$.
 Result: trace-inverse-convexity -/
 theorem strictConvexOn_re_trace_inv :
     StrictConvexOn ℝ {A : Matrix n n 𝕜 | A.PosDef} fun A => RCLike.re A⁻¹.trace := by

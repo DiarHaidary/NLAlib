@@ -13,37 +13,58 @@ public import NLAlib.Sketching.Gaussian.Gaussian
 /-!
 # Haar sketches
 
-The Haar sketch is `S = √(n/k) • Qᴴ` for an `n × k` Haar frame `Q`, `card k ≤ card n`: `k`
-orthonormal rows, scaled. It is written out in each statement,
-`fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ`, with the hypothesis
+The Haar sketch is $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}
+\, \mathbf{Q}^{\mathsf{H}}$ for an $n \times k$ Haar frame $\mathbf{Q}$,
+$\lvert k \rvert \le \lvert n \rvert$: $\lvert k \rvert$ orthonormal rows, scaled. It is written out
+in each statement, `fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ`, with the hypothesis
 `HasLaw Q (haarFrame n k) μ`; there is no named sketch law (`docs/design/Sketching-S2.md` §7 Q1).
 
 It is exactly isotropic, like a Gaussian sketch, and unlike it has a deterministic norm
-`specNorm S = √(n/k)`. Its upper half is deterministic: `(S U)ᴴ (S U) ≤ (n/k) • Uᴴ U` almost
-surely, and at `k = n` the sketch is orthogonal, an exact embedding. Its Gram matrix on `U` has the
-law of `(n/k) Uᴴ P_G U` for the range projector `P_G` of an `n × k` Gaussian (the transfer of
-`NLAlib/RandomMatrix/Haar/Transfer.lean`); the inverse-Gram identity
-`Uᴴ P_G U = (Gᴴ U)ᴴ (Gᴴ G)⁻¹ (Gᴴ U)` and Gordon's tails then give the lower constant
-`a_H = (1 - (√p + t)/√k)² / (1 + (√k + s)/√n)²`, with a tail in `t` for the subspace and one in
-`s` for the frame, and the upper constant `b_H = (1 + (√p + t)/√k)² / (1 - (√k + s)/√n)²` for
-`s < √n - √k`. Both are lossy near `k = n`; there the complement route is sharp: with `c` the
-codimension (`card k + c = card n`), `Q ~ P V₁` and `Q⊥ := P V₂` for a square Haar frame `P`,
-`Uᴴ Q Qᴴ U = 1 - Uᴴ Q⊥ Q⊥ᴴ U`, and the inverse-Gram step on the `n × c` Gaussian behind `Q⊥` gives
-`a = (n/k)(1 - (√c + √p + t)² / (√n - √c - s)²)`, which tends to `1` as `c / n → 0`.
+$\|\mathbf{S}\|_2 = \sqrt{\lvert n \rvert / \lvert k \rvert}$. Its upper half is deterministic:
+$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})
+\preceq (\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ almost surely, and
+at $\lvert k \rvert = \lvert n \rvert$ the sketch is orthogonal, an exact embedding. Its Gram matrix
+on $\mathbf{U}$ has the law of $(\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}}
+\mathbf{P}_{\mathbf{G}} \mathbf{U}$ for the range projector $\mathbf{P}_{\mathbf{G}}$ of an
+$n \times k$ Gaussian $\mathbf{G}$ (the transfer of `NLAlib/RandomMatrix/Haar/Transfer.lean`); the
+inverse-Gram identity
+$$\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}
+= (\mathbf{G}^{\mathsf{H}}\mathbf{U})^{\mathsf{H}} (\mathbf{G}^{\mathsf{H}}\mathbf{G})^{-1}
+(\mathbf{G}^{\mathsf{H}}\mathbf{U})$$
+and Gordon's tails then give the lower constant
+$$a_{\mathrm{H}} = \frac{(1 - (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2} \,,$$
+with a tail in $t$ for the subspace and one in $s$ for the frame, and the upper constant
+$$b_{\mathrm{H}} = \frac{(1 + (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 - (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
+for $s < \sqrt{\lvert n \rvert} - \sqrt{\lvert k \rvert}$. Both are lossy near
+$\lvert k \rvert = \lvert n \rvert$; there the complement route is sharp: with $c$ the codimension
+($\lvert k \rvert + c = \lvert n \rvert$), $\mathbf{Q} \sim \mathbf{P}\mathbf{V}_1$ and
+$\mathbf{Q}_{\perp} := \mathbf{P}\mathbf{V}_2$ for a square Haar frame $\mathbf{P}$,
+$\mathbf{U}^{\mathsf{H}}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{U} = \mathbf{I} -
+\mathbf{U}^{\mathsf{H}}\mathbf{Q}_{\perp}\mathbf{Q}_{\perp}^{\mathsf{H}}\mathbf{U}$, and the
+inverse-Gram step on the $n \times c$ Gaussian behind $\mathbf{Q}_{\perp}$ gives
+$$a = \frac{\lvert n \rvert}{\lvert k \rvert}
+\Bigl(1 - \frac{(\sqrt{c} + \sqrt{\lvert p \rvert} + t)^2}
+{(\sqrt{\lvert n \rvert} - \sqrt{c} - s)^2}\Bigr) \,,$$
+which tends to $1$ as $c / \lvert n \rvert \to 0$.
 
 The JL tails are the projection tails of a uniform unit vector
 (`NLAlib/RandomMatrix/Haar/Sphere.lean`), with the Gaussian's constants; the JL variance is
-`2 (n - k) / (k (n + 2))`, below the Gaussian's `2 / k` and `0` at `k = n`.
+$2 (\lvert n \rvert - \lvert k \rvert) / (\lvert k \rvert (\lvert n \rvert + 2))$, below the
+Gaussian's $2 / \lvert k \rvert$ and $0$ at $\lvert k \rvert = \lvert n \rvert$.
 
-Degenerate cases: for empty `k`, `√(n/0) = 0` and `S = 0`, hence `[Nonempty k]` on isotropy, the
-OSI and the moments. Design: `docs/design/Sketching-S2.md` §3.4, §8.
+Degenerate cases: for empty $k$, $\sqrt{\lvert n \rvert / 0} = 0$ and $\mathbf{S} = \mathbf{0}$,
+hence `[Nonempty k]` on isotropy, the OSI and the moments. Design: `docs/design/Sketching-S2.md`
+§3.4, §8.
 
 ## Main results
 
 * `NLAlib.isIsotropicSketch_of_hasLaw_haarFrame`, `NLAlib.ae_specNorm_eq_of_hasLaw_haarFrame`.
 * `NLAlib.hasLaw_conjTranspose_mul_self_mul_of_hasLaw_haarFrame`: the Gaussian transfer.
 * `NLAlib.ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`: the upper half.
-* `NLAlib.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq`: exact at `k = n`.
+* `NLAlib.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq`: exact at
+  $\lvert k \rvert = \lvert n \rvert$.
 * `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame`,
   `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt`,
   `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_add_eq`: three
@@ -67,14 +88,16 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n p : Type
 /-! ### Helpers -/
 
 omit [DecidableEq k] in
-/-- The scaling of the Haar sketch squares to `n/k`. -/
+/-- The scaling of the Haar sketch squares to $\lvert n \rvert / \lvert k \rvert$. -/
 private theorem sqrt_mul_sqrt_card_div :
     √(Fintype.card n / Fintype.card k : ℝ) * √(Fintype.card n / Fintype.card k : ℝ) =
       (Fintype.card n / Fintype.card k : ℝ) :=
   Real.mul_self_sqrt (by positivity)
 
 omit [DecidableEq k] [Fintype p] in
-/-- The Gram matrix of the Haar sketch on `U`: `(S U)ᴴ (S U) = (n/k) • Uᴴ (Q Qᴴ) U`. -/
+/-- The Gram matrix of the Haar sketch on $\mathbf{U}$: $(\mathbf{S}\mathbf{U})^{\mathsf{H}}
+(\mathbf{S}\mathbf{U}) = (\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}}
+(\mathbf{Q}\mathbf{Q}^{\mathsf{H}}) \mathbf{U}$. -/
 private theorem gram_smul_conjTranspose (M : Matrix n k ℝ) (U : Matrix n p ℝ) :
     (√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ * U)ᴴ *
         (√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ * U) =
@@ -85,7 +108,8 @@ private theorem gram_smul_conjTranspose (M : Matrix n k ℝ) (U : Matrix n p ℝ
   simp only [Matrix.mul_assoc]
 
 omit [DecidableEq k] in
-/-- The squared length of `S x`: `‖S x‖² = (n/k) ‖Qᴴ x‖²`. -/
+/-- The squared length of $\mathbf{S}\mathbf{x}$: $\|\mathbf{S}\mathbf{x}\|^2
+= (\lvert n \rvert / \lvert k \rvert) \|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\|^2$. -/
 private theorem norm_smul_conjTranspose_mulVec_sq (M : Matrix n k ℝ) (x : n → ℝ) :
     ‖WithLp.toLp 2 ((√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ) *ᵥ x)‖ ^ 2 =
       (Fintype.card n / Fintype.card k : ℝ) * ‖WithLp.toLp 2 (Mᴴ *ᵥ x)‖ ^ 2 := by
@@ -94,8 +118,8 @@ private theorem norm_smul_conjTranspose_mulVec_sq (M : Matrix n k ℝ) (x : n �
 
 omit [Fintype k] [DecidableEq k] [Fintype p] in
 /-- **Congruence preserves positive semidefiniteness**, for a factor with any column type (no
-finiteness of `p`): the quadratic form of `Xᴴ D X` at a finitely supported `x` is that of the
-compression to the support. -/
+finiteness of `p`): the quadratic form of $\mathbf{X}^{\mathsf{H}}\mathbf{D}\mathbf{X}$ at a
+finitely supported $\mathbf{x}$ is that of the compression to the support. -/
 private theorem posSemidef_conjTranspose_mul_mul_same' {D : Matrix n n ℝ} (hD : D.PosSemidef)
     (X : Matrix n p ℝ) : (Xᴴ * D * X).PosSemidef := by
   classical
@@ -136,7 +160,8 @@ private theorem smul_le_smul_loewner {A B : Matrix p p ℝ} (h : A ≤ B) {c : �
 /-! ### Isotropy, norm and the Gaussian transfer -/
 
 open scoped Matrix.Norms.L2Operator in
-/-- **A Haar sketch is isotropic**: `E [Sᴴ S] = (n/k) E [Q Qᴴ] = 1`
+/-- **A Haar sketch is isotropic**: $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}]
+= (\lvert n \rvert / \lvert k \rvert) \, \mathbb{E}[\mathbf{Q}\mathbf{Q}^{\mathsf{H}}] = \mathbf{I}$
 (`NLAlib.integral_mul_conjTranspose_of_hasLaw_haarFrame`), exactly, as for a Gaussian sketch.
 [MartinssonTropp2020, §8.9]. -/
 theorem isIsotropicSketch_of_hasLaw_haarFrame [DecidableEq n] [Nonempty k]
@@ -157,9 +182,10 @@ theorem isIsotropicSketch_of_hasLaw_haarFrame [DecidableEq n] [Nonempty k]
     rw [integral_smul, integral_mul_conjTranspose_of_hasLaw_haarFrame hQ hk, smul_smul,
       div_mul_div_comm, mul_comm (Fintype.card n : ℝ), div_self (by positivity), one_smul]
 
-/-- **The norm of a Haar sketch is deterministic**: `specNorm S = √(n/k)` almost surely, since
-`Q` has orthonormal columns (`NLAlib.HasOrthonormalCols.specNorm_eq_one`); for empty `k` both
-sides are `0`. [MartinssonTropp2020, §8.9]. -/
+/-- **The norm of a Haar sketch is deterministic**:
+$\|\mathbf{S}\|_2 = \sqrt{\lvert n \rvert / \lvert k \rvert}$ almost surely, since $\mathbf{Q}$ has
+orthonormal columns (`NLAlib.HasOrthonormalCols.specNorm_eq_one`); for empty $k$ both sides are $0$.
+[MartinssonTropp2020, §8.9]. -/
 theorem ae_specNorm_eq_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) :
     ∀ᵐ ω ∂μ, specNorm (√(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) =
@@ -171,10 +197,13 @@ theorem ae_specNorm_eq_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
   · rw [hω.specNorm_eq_one, mul_one]
 
 omit [Fintype p] in
-/-- **Gaussian transfer of the Haar Gram matrix**: `(S U)ᴴ (S U)` has the law of
-`(n/k) Uᴴ P_G U`, `P_G` the range projector of an `n × k` standard Gaussian, for every `U`; `Q Qᴴ`
-is the range projector of `Q` almost surely (`NLAlib.HasOrthonormalCols.rangeProjector_eq`), and
-`NLAlib.hasLaw_rangeProjector_mul_of_hasLaw_haarFrame` at `A = 1` transfers it. -/
+/-- **Gaussian transfer of the Haar Gram matrix**:
+$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})$ has the law of
+$(\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$,
+$\mathbf{P}_{\mathbf{G}}$ the range projector of an $n \times k$ standard Gaussian $\mathbf{G}$, for
+every $\mathbf{U}$; $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ is the range projector of $\mathbf{Q}$
+almost surely (`NLAlib.HasOrthonormalCols.rangeProjector_eq`), and
+`NLAlib.hasLaw_rangeProjector_mul_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$ transfers it. -/
 theorem hasLaw_conjTranspose_mul_self_mul_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (U : Matrix n p ℝ) :
     HasLaw (fun ω => (√(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ * U)ᴴ *
@@ -197,8 +226,10 @@ theorem hasLaw_conjTranspose_mul_self_mul_of_hasLaw_haarFrame (hQ : HasLaw Q (ha
 /-! ### Deterministic halves -/
 
 omit [Fintype p] in
-/-- **The upper half of a Haar sketch is deterministic**: `(S U)ᴴ (S U) ≤ (n/k) • (Uᴴ U)` almost
-surely, for every `U`, every shape, with no parameter: `Q Qᴴ ≤ 1` because `specNorm Q ≤ 1`
+/-- **The upper half of a Haar sketch is deterministic**: $(\mathbf{S}\mathbf{U})^{\mathsf{H}}
+(\mathbf{S}\mathbf{U}) \preceq (\lvert n \rvert / \lvert k \rvert)
+\, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ almost surely, for every $\mathbf{U}$, every shape, with no
+parameter: $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} \preceq \mathbf{I}$ because $\|\mathbf{Q}\|_2 \le 1$
 (`NLAlib.ae_specNorm_le_one_of_hasLaw_haarFrame`,
 `NLAlib.specNorm_sq_le_iff_conjTranspose_mul_self_le`). -/
 theorem ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame
@@ -219,9 +250,9 @@ theorem ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame
   exact smul_le_smul_loewner h2 (by positivity)
 
 omit [Fintype p] in
-/-- **A square Haar sketch is an exact embedding**: for `card k = card n`, `S = Qᴴ` is orthogonal
-almost surely, so it is a subspace embedding for every `range U` with constants `1`, `1` and
-failure probability `0`. -/
+/-- **A square Haar sketch is an exact embedding**: for $\lvert k \rvert = \lvert n \rvert$,
+$\mathbf{S} = \mathbf{Q}^{\mathsf{H}}$ is orthogonal almost surely, so it is a subspace embedding
+for every $\operatorname{range} \mathbf{U}$ with constants $1$, $1$ and failure probability $0$. -/
 theorem hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq (hQ : HasLaw Q (haarFrame n k) μ)
     (hkn : Fintype.card k = Fintype.card n) (U : Matrix n p ℝ) :
     HasSubspaceEmbedding (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) U 1 1 0 μ := by
@@ -244,8 +275,8 @@ theorem hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq (hQ : HasLaw Q (haar
   rw [Measure.real, ae_iff.1 hae, ENNReal.toReal_zero]
 
 omit [Fintype k] [DecidableEq k] [Fintype p] in
-/-- Every event on matrices indexed by an empty type has probability `0`, so for empty `p` every
-fixed-subspace property holds with any `δ ≥ 0`. -/
+/-- Every event on matrices indexed by an empty type has probability $0$, so for empty $p$ every
+fixed-subspace property holds with any $\delta \ge 0$. -/
 private theorem hasSubspaceEmbedding_of_isEmpty {m : Type*} [Fintype m] [IsEmpty p]
     {S : Ω → Matrix m n ℝ} {a b δ : ℝ} (hδ : 0 ≤ δ) : HasSubspaceEmbedding S U a b δ μ := by
   have hsub : ∀ M N : Matrix p p ℝ, M ≤ N :=
@@ -273,7 +304,9 @@ private theorem hasSubspaceInjection_of_isEmpty {m : Type*} [Fintype m] [IsEmpty
   exact hδ
 
 omit [Fintype k] [DecidableEq k] [Fintype p] in
-/-- The inverse-Gram identity `Uᴴ P_G U = (Gᴴ U)ᴴ (Gᴴ G)⁻¹ (Gᴴ U)` for invertible `Gᴴ G`. -/
+/-- The inverse-Gram identity $\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}
+= (\mathbf{G}^{\mathsf{H}}\mathbf{U})^{\mathsf{H}} (\mathbf{G}^{\mathsf{H}}\mathbf{G})^{-1}
+(\mathbf{G}^{\mathsf{H}}\mathbf{U})$ for invertible $\mathbf{G}^{\mathsf{H}}\mathbf{G}$. -/
 private theorem conjTranspose_mul_rangeProjector_mul_eq {l : Type*} [Fintype l] [DecidableEq l]
     {G : Matrix n l ℝ} (hG : IsUnit (Gᴴ * G)) (U : Matrix n p ℝ) :
     Uᴴ * rangeProjector G * U = (Gᴴ * U)ᴴ * (Gᴴ * G)⁻¹ * (Gᴴ * U) := by
@@ -286,15 +319,20 @@ private theorem conjTranspose_mul_rangeProjector_mul_eq {l : Type*} [Fintype l] 
 variable [DecidableEq p]
 
 omit [Fintype k] [DecidableEq k] [Fintype p] [DecidableEq p] in
-/-- `Xᴴ (c • 1) X = c • Xᴴ X`. -/
+/-- $\mathbf{X}^{\mathsf{H}} (c \, \mathbf{I}) \mathbf{X} = c \, \mathbf{X}^{\mathsf{H}}\mathbf{X}$.
+-/
 private theorem conjTranspose_mul_smul_one_mul {l : Type*} [Fintype l] [DecidableEq l]
     (X : Matrix l p ℝ) (c : ℝ) : Xᴴ * (c • (1 : Matrix l l ℝ)) * X = c • (Xᴴ * X) := by
   rw [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul]
 
 omit [Fintype k] [DecidableEq k] in
-/-- **The Gaussian lower bound on `Uᴴ P_G U`**: for an `n × l` Gaussian `G`, `l ≤ n`,
-`(√l - √p - t)² / (√n + √l + s)² • 1 ≤ Uᴴ P_G U` outside probability `e^{-t²/2} + e^{-s²/2}`:
-Gordon's lower tail for the `l × p` Gaussian `Gᴴ U`, the upper tail of `Gᴴ G`, and the
+/-- **The Gaussian lower bound on $\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$**:
+for an $n \times l$ Gaussian $\mathbf{G}$, $\lvert l \rvert \le \lvert n \rvert$,
+$$\frac{(\sqrt{\lvert l \rvert} - \sqrt{\lvert p \rvert} - t)^2}
+{(\sqrt{\lvert n \rvert} + \sqrt{\lvert l \rvert} + s)^2} \, \mathbf{I}
+\preceq \mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$$
+outside probability $e^{-t^2/2} + e^{-s^2/2}$: Gordon's lower tail for the $l \times p$ Gaussian
+$\mathbf{G}^{\mathsf{H}}\mathbf{U}$, the upper tail of $\mathbf{G}^{\mathsf{H}}\mathbf{G}$, and the
 inverse-Gram identity. -/
 private theorem measureReal_not_smul_one_le_conjTranspose_mul_rangeProjector_mul_le
     (hU : HasOrthonormalCols U) {l : Type*} [Fintype l] (hl : Fintype.card l ≤ Fintype.card n)
@@ -361,9 +399,14 @@ private theorem measureReal_not_smul_one_le_conjTranspose_mul_rangeProjector_mul
         exact (measureReal_union_le _ _).trans (add_le_add hA hB)
 
 omit [Fintype k] [DecidableEq k] in
-/-- **The Gaussian upper bound on `Uᴴ P_G U`**: for an `n × l` Gaussian `G`,
-`Uᴴ P_G U ≤ (√l + √p + t)² / (√n - √l - s)² • 1` outside probability `e^{-t²/2} + e^{-s²/2}`, for
-`t ≥ 0` and `0 ≤ s < √n - √l`: Gordon's upper tail for `Gᴴ U`, the lower tail of `Gᴴ G`, and the
+/-- **The Gaussian upper bound on $\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$**:
+for an $n \times l$ Gaussian $\mathbf{G}$,
+$$\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}
+\preceq \frac{(\sqrt{\lvert l \rvert} + \sqrt{\lvert p \rvert} + t)^2}
+{(\sqrt{\lvert n \rvert} - \sqrt{\lvert l \rvert} - s)^2} \, \mathbf{I}$$
+outside probability $e^{-t^2/2} + e^{-s^2/2}$, for $t \ge 0$ and
+$0 \le s < \sqrt{\lvert n \rvert} - \sqrt{\lvert l \rvert}$: Gordon's upper tail for
+$\mathbf{G}^{\mathsf{H}}\mathbf{U}$, the lower tail of $\mathbf{G}^{\mathsf{H}}\mathbf{G}$, and the
 inverse-Gram identity. -/
 private theorem measureReal_not_conjTranspose_mul_rangeProjector_mul_le_smul_one_le
     (hU : HasOrthonormalCols U) {l : Type*} [Fintype l] (ht : 0 ≤ t) (hs : 0 ≤ s)
@@ -402,7 +445,7 @@ private theorem measureReal_not_conjTranspose_mul_rangeProjector_mul_le_smul_one
     _ ≤ _ := (measureReal_union_le _ _).trans (add_le_add hA hB)
 
 omit [Fintype p] [DecidableEq p] in
-/-- The failure event of the injection, transferred to a Gaussian `G`. -/
+/-- The failure event of the injection, transferred to a Gaussian $\mathbf{G}$. -/
 private theorem measureReal_not_isSubspaceInjection_eq [Finite p]
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (a : ℝ) :
     μ.real {ω | ¬ IsSubspaceInjection (√(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) U a} =
@@ -417,7 +460,7 @@ private theorem measureReal_not_isSubspaceInjection_eq [Finite p]
     measurable_const).matrix_const_smul _) hT
 
 omit [Fintype p] [DecidableEq p] in
-/-- The failure event of an upper bound, transferred to a Gaussian `G`. -/
+/-- The failure event of an upper bound, transferred to a Gaussian $\mathbf{G}$. -/
 private theorem measureReal_not_le_smul_eq [Finite p] (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (b : ℝ) :
     μ.real {ω | ¬ (√(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ * U)ᴴ *
@@ -432,16 +475,16 @@ private theorem measureReal_not_le_smul_eq [Finite p] (hQ : HasLaw Q (haarFrame 
   exact map_measureReal_apply (((measurable_const.matrix_mul measurable_rangeProjector).matrix_mul
     measurable_const).matrix_const_smul _) hT
 
-/-- The lower constant in the two normalisations: `(b²/a²) (a - x)²/(b + y)² =
-(1 - x/a)²/(1 + y/b)²`. -/
+/-- The lower constant in the two normalisations:
+$(b^2/a^2) (a - x)^2/(b + y)^2 = (1 - x/a)^2/(1 + y/b)^2$. -/
 private theorem div_sq_mul_sub_sq_div_add_sq {a b x y : ℝ} (ha : 0 < a) (hb : 0 < b)
     (hy : 0 ≤ y) : b ^ 2 / a ^ 2 * ((a - x) ^ 2 / (b + y) ^ 2) =
       (1 - x / a) ^ 2 / (1 + y / b) ^ 2 := by
   have : b + y ≠ 0 := by linarith
   field_simp
 
-/-- The upper constant in the two normalisations: `(b²/a²) (a + x)²/(b - y)² =
-(1 + x/a)²/(1 - y/b)²` for `y < b`. -/
+/-- The upper constant in the two normalisations:
+$(b^2/a^2) (a + x)^2/(b - y)^2 = (1 + x/a)^2/(1 - y/b)^2$ for $y < b$. -/
 private theorem div_sq_mul_add_sq_div_sub_sq {a b x y : ℝ} (ha : 0 < a) (hb : 0 < b)
     (hy : y < b) : b ^ 2 / a ^ 2 * ((a + x) ^ 2 / (b - y) ^ 2) =
       (1 + x / a) ^ 2 / (1 - y / b) ^ 2 := by
@@ -449,7 +492,8 @@ private theorem div_sq_mul_add_sq_div_sub_sq {a b x y : ℝ} (ha : 0 < a) (hb : 
   field_simp
 
 omit [DecidableEq k] [DecidableEq p] in
-/-- With a nonempty `p` and `t ≤ √k - √p`, both `√k` and `√n` are positive. -/
+/-- With a nonempty $p$ and $t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$, both
+$\sqrt{\lvert k \rvert}$ and $\sqrt{\lvert n \rvert}$ are positive. -/
 private theorem sqrt_card_pos_of_le [Nonempty p] (hk : Fintype.card k ≤ Fintype.card n)
     (ht : 0 ≤ t) (htk : t ≤ √(Fintype.card k : ℝ) - √(Fintype.card p : ℝ)) :
     0 < √(Fintype.card k : ℝ) ∧ 0 < √(Fintype.card n : ℝ) := by
@@ -458,14 +502,21 @@ private theorem sqrt_card_pos_of_le [Nonempty p] (hk : Fintype.card k ≤ Fintyp
   have hK : 0 < √(Fintype.card k : ℝ) := by linarith
   exact ⟨hK, hK.trans_le (Real.sqrt_le_sqrt (Nat.cast_le.2 hk))⟩
 
-/-- **Haar subspace injection**: for `U` with orthonormal columns, the Haar sketch is a subspace
-injection for `range U` with constant `a_H = (1 - (√p + t)/√k)² / (1 + (√k + s)/√n)²` outside
-probability `e^{-t²/2} + e^{-s²/2}`, for `0 ≤ t ≤ √k - √p` and `s ≥ 0`. By the transfer and
-`Uᴴ P_G U = (Gᴴ U)ᴴ (Gᴴ G)⁻¹ (Gᴴ U)` with `Gᴴ U` a `k × p` Gaussian: Gordon's lower tail for
-`Gᴴ U` (`t`), the upper tail of `‖G‖` (`s`), a union bound (no independence needed). Lossy near
-`k = n` (`a_H ≈ (1 - √(p/n))² / 4` there);
-`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq` is better
-when the codimension is small, this one when `k ≤ n/2` (rule 4). -/
+/-- **Haar subspace injection**: for $\mathbf{U}$ with orthonormal columns, the Haar sketch is a
+subspace injection for $\operatorname{range} \mathbf{U}$ with constant
+$$a_{\mathrm{H}} = \frac{(1 - (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
+outside probability $e^{-t^2/2} + e^{-s^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ and $s \ge 0$. By the transfer and
+$\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}
+= (\mathbf{G}^{\mathsf{H}}\mathbf{U})^{\mathsf{H}} (\mathbf{G}^{\mathsf{H}}\mathbf{G})^{-1}
+(\mathbf{G}^{\mathsf{H}}\mathbf{U})$ with $\mathbf{G}^{\mathsf{H}}\mathbf{U}$ a $k \times p$
+Gaussian: Gordon's lower tail for $\mathbf{G}^{\mathsf{H}}\mathbf{U}$ ($t$), the upper tail of
+$\|\mathbf{G}\|_2$ ($s$), a union bound (no independence needed). Lossy near
+$\lvert k \rvert = \lvert n \rvert$ ($a_{\mathrm{H}} \approx (1 -
+\sqrt{\lvert p \rvert / \lvert n \rvert})^2 / 4$ there);
+`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq` is better when
+the codimension is small, this one when $\lvert k \rvert \le \lvert n \rvert / 2$ (rule 4). -/
 theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame (hU : HasOrthonormalCols U)
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (ht : 0 ≤ t)
     (htk : t ≤ √(Fintype.card k : ℝ) - √(Fintype.card p : ℝ)) (hs : 0 ≤ s) :
@@ -491,14 +542,16 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame (hU : HasOrt
   rw [hU.conjTranspose_mul_self, ← e, ← smul_smul]
   exact smul_le_smul_loewner hle (by positivity)
 
-/-- **Haar subspace embedding, deterministic upper half**: for `U` with orthonormal columns, the
-lower constant `a_H` of `NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame` and
-the upper constant `n/k`, outside probability `e^{-t²/2} + e^{-s²/2}`, for `0 ≤ t ≤ √k - √p`
-and `s ≥ 0`; no condition on `s` and `k < n` not needed. The upper half is
-`NLAlib.ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`. Its upper constant is exact
-at `k = n` and incomparable with the `b_H` of
-`NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt`, which
-is better for `k` small against `n` (rule 4).
+/-- **Haar subspace embedding, deterministic upper half**: for $\mathbf{U}$ with orthonormal
+columns, the lower constant $a_{\mathrm{H}}$ of
+`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame` and the upper constant
+$\lvert n \rvert / \lvert k \rvert$, outside probability $e^{-t^2/2} + e^{-s^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ and $s \ge 0$; no condition on $s$ and
+$\lvert k \rvert < \lvert n \rvert$ not needed. The upper half is
+`NLAlib.ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`. Its upper constant is exact at
+$\lvert k \rvert = \lvert n \rvert$ and incomparable with the $b_{\mathrm{H}}$ of
+`NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt`, which is
+better for $\lvert k \rvert$ small against $\lvert n \rvert$ (rule 4).
 Result: haar-sketch-ose -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame (hU : HasOrthonormalCols U)
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (ht : 0 ≤ t)
@@ -514,12 +567,18 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame (hU : HasOrt
   · rw [Measure.real, ae_iff.1 (ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame hQ U),
       ENNReal.toReal_zero]
 
-/-- **Haar subspace embedding, Gaussian upper half**: for `U` with orthonormal columns, constants
-`a_H` and `b_H = (1 + (√p + t)/√k)² / (1 - (√k + s)/√n)²` outside probability
-`2 e^{-t²/2} + 2 e^{-s²/2}`, for `0 ≤ t ≤ √k - √p` and `0 ≤ s < √n - √k`; four tails, two for
-`Gᴴ U` and two for `G`, with `NLAlib.Matrix.PosDef.inv_le_inv_of_le` on `Gᴴ G`. Better than the
-upper constant `n/k` of `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame` for
-`k` small against `n`, worse near `k = n` (rule 4).
+/-- **Haar subspace embedding, Gaussian upper half**: for $\mathbf{U}$ with orthonormal columns,
+constants $a_{\mathrm{H}}$ and
+$$b_{\mathrm{H}} = \frac{(1 + (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 - (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
+outside probability $2 e^{-t^2/2} + 2 e^{-s^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ and
+$0 \le s < \sqrt{\lvert n \rvert} - \sqrt{\lvert k \rvert}$; four tails, two for
+$\mathbf{G}^{\mathsf{H}}\mathbf{U}$ and two for $\mathbf{G}$, with
+`NLAlib.Matrix.PosDef.inv_le_inv_of_le` on $\mathbf{G}^{\mathsf{H}}\mathbf{G}$. Better than the
+upper constant $\lvert n \rvert / \lvert k \rvert$ of
+`NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame` for $\lvert k \rvert$ small
+against $\lvert n \rvert$, worse near $\lvert k \rvert = \lvert n \rvert$ (rule 4).
 Result: haar-sketch-ose -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt
     (hU : HasOrthonormalCols U) (hQ : HasLaw Q (haarFrame n k) μ)
@@ -558,8 +617,10 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_s
   ring
 
 omit [Fintype p] [DecidableEq p] in
-/-- **Complementary coordinate frames**: for `card k + c = card n` there are frames `V₁ : n × k`
-and `V₂ : n × c` with `V₁ V₁ᴴ + V₂ V₂ᴴ = 1` (selection matrices of a split of `n`). -/
+/-- **Complementary coordinate frames**: for $\lvert k \rvert + c = \lvert n \rvert$ there are
+frames $\mathbf{V}_1$ ($n \times k$) and $\mathbf{V}_2$ ($n \times c$) with
+$\mathbf{V}_1\mathbf{V}_1^{\mathsf{H}} + \mathbf{V}_2\mathbf{V}_2^{\mathsf{H}} = \mathbf{I}$
+(selection matrices of a split of $n$). -/
 private theorem exists_complementary_frames [DecidableEq n] {c : ℕ}
     (hc : Fintype.card k + c = Fintype.card n) :
     ∃ (V₁ : Matrix n k ℝ) (V₂ : Matrix n (Fin c) ℝ), HasOrthonormalCols V₁ ∧
@@ -579,10 +640,14 @@ private theorem exists_complementary_frames [DecidableEq n] {c : ℕ}
     hV.mul_conjTranspose_add_mul_conjTranspose (by rw [Fintype.card_fin, hc])⟩
 
 omit [Fintype p] [DecidableEq p] in
-/-- **The complement of a Haar frame**: an event on `Uᴴ Q Qᴴ U` for an `n × k` Haar frame `Q`
-has the probability of the same event on `Uᴴ U - Uᴴ Q⊥ Q⊥ᴴ U` for an `n × c` Haar frame `Q⊥`,
-`card k + c = card n`: `Q ~ P V₁` and `Q⊥ ~ P V₂` for a square Haar frame `P`, and
-`P V₁ (P V₁)ᴴ = 1 - P V₂ (P V₂)ᴴ`. -/
+/-- **The complement of a Haar frame**: an event on
+$\mathbf{U}^{\mathsf{H}}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{U}$ for an $n \times k$ Haar frame
+$\mathbf{Q}$ has the probability of the same event on $\mathbf{U}^{\mathsf{H}}\mathbf{U} -
+\mathbf{U}^{\mathsf{H}}\mathbf{Q}_{\perp}\mathbf{Q}_{\perp}^{\mathsf{H}}\mathbf{U}$ for an
+$n \times c$ Haar frame $\mathbf{Q}_{\perp}$, $\lvert k \rvert + c = \lvert n \rvert$:
+$\mathbf{Q} \sim \mathbf{P}\mathbf{V}_1$ and $\mathbf{Q}_{\perp} \sim \mathbf{P}\mathbf{V}_2$ for a
+square Haar frame $\mathbf{P}$, and $\mathbf{P}\mathbf{V}_1 (\mathbf{P}\mathbf{V}_1)^{\mathsf{H}}
+= \mathbf{I} - \mathbf{P}\mathbf{V}_2 (\mathbf{P}\mathbf{V}_2)^{\mathsf{H}}$. -/
 private theorem measureReal_haarFrame_eq_complement [Finite p] {c : ℕ}
     (hc : Fintype.card k + c = Fintype.card n) {C : Matrix p p ℝ} {r : ℝ} :
     (haarFrame n k).real {M | ¬ C ≤ r • (Uᴴ * (M * Mᴴ) * U)} =
@@ -613,8 +678,12 @@ private theorem measureReal_haarFrame_eq_complement [Finite p] {c : ℕ}
   rw [hPP, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one]
 
 omit [Fintype k] [DecidableEq k] [Fintype p] [DecidableEq p] in
-/-- An event on `Uᴴ Q Qᴴ U` for a Haar frame `Q` with `card l ≤ card n` has the probability of
-the same event on `Uᴴ P_G U` for a Gaussian `G` (`Q Qᴴ` is the range projector of `Q`). -/
+/-- An event on $\mathbf{U}^{\mathsf{H}}\mathbf{U} -
+\mathbf{U}^{\mathsf{H}}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{U}$ for an $n \times l$ Haar frame
+$\mathbf{Q}$ with $\lvert l \rvert \le \lvert n \rvert$ has the probability of the same event on
+$\mathbf{U}^{\mathsf{H}}\mathbf{U} - \mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$ for
+a Gaussian $\mathbf{G}$ ($\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ is the range projector of
+$\mathbf{Q}$). -/
 private theorem measureReal_haarFrame_eq_gaussianMatrix [Finite p] {l : Type*} [Fintype l]
     [DecidableEq l]
     (hl : Fintype.card l ≤ Fintype.card n) {C : Matrix p p ℝ} {r : ℝ} :
@@ -642,14 +711,21 @@ private theorem measureReal_haarFrame_eq_gaussianMatrix [Finite p] {l : Type*} [
     (¬ C ≤ r • (Uᴴ * U - Uᴴ * rangeProjector M * U))
   rw [hM'.rangeProjector_eq]
 
-/-- **Haar subspace injection near `k = n`**: with `c` the codimension, `card k + c = card n`,
-and `U` with orthonormal columns, the Haar sketch is a subspace injection for `range U` with
-constant `(n/k)(1 - (√c + √p + t)² / (√n - √c - s)²)` outside probability
-`e^{-t²/2} + e^{-s²/2}`, for `t ≥ 0` and `0 ≤ s < √n - √c`. The complement route:
-`Q ~ P V₁` and `Q⊥ := P V₂` for a square Haar frame `P` and the selection matrices of a split of
-its columns (`NLAlib.hasLaw_mul_const_of_hasLaw_haarFrame`), `Uᴴ Q Qᴴ U = 1 - Uᴴ Q⊥ Q⊥ᴴ U`, and
-the inverse-Gram step on the `n × c` Gaussian behind `Q⊥`. The constant tends to `1` as
-`c / n → 0` and is vacuous for `k ≤ n/2`; incomparable with the `a_H` of
+/-- **Haar subspace injection near $\lvert k \rvert = \lvert n \rvert$**: with $c$ the codimension,
+$\lvert k \rvert + c = \lvert n \rvert$, and $\mathbf{U}$ with orthonormal columns, the Haar sketch
+is a subspace injection for $\operatorname{range} \mathbf{U}$ with constant
+$$\frac{\lvert n \rvert}{\lvert k \rvert} \Bigl(1 - \frac{(\sqrt{c} + \sqrt{\lvert p \rvert} + t)^2}
+{(\sqrt{\lvert n \rvert} - \sqrt{c} - s)^2}\Bigr)$$
+outside probability $e^{-t^2/2} + e^{-s^2/2}$, for $t \ge 0$ and
+$0 \le s < \sqrt{\lvert n \rvert} - \sqrt{c}$. The complement route:
+$\mathbf{Q} \sim \mathbf{P}\mathbf{V}_1$ and $\mathbf{Q}_{\perp} := \mathbf{P}\mathbf{V}_2$ for a
+square Haar frame $\mathbf{P}$ and the selection matrices of a split of its columns
+(`NLAlib.hasLaw_mul_const_of_hasLaw_haarFrame`),
+$\mathbf{U}^{\mathsf{H}}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{U} = \mathbf{I} -
+\mathbf{U}^{\mathsf{H}}\mathbf{Q}_{\perp}\mathbf{Q}_{\perp}^{\mathsf{H}}\mathbf{U}$, and the
+inverse-Gram step on the $n \times c$ Gaussian behind $\mathbf{Q}_{\perp}$. The constant tends to
+$1$ as $c / \lvert n \rvert \to 0$ and is vacuous for $\lvert k \rvert \le \lvert n \rvert / 2$;
+incomparable with the $a_{\mathrm{H}}$ of
 `NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame` (rule 4). -/
 theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq
     (hU : HasOrthonormalCols U) (hQ : HasLaw Q (haarFrame n k) μ) {c : ℕ}
@@ -692,10 +768,11 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_
   convert hle using 1
   abel
 
-/-- **Haar subspace embedding near `k = n`**: the lower constant of
+/-- **Haar subspace embedding near $\lvert k \rvert = \lvert n \rvert$**: the lower constant of
 `NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq` and the
-deterministic upper constant `n/k`, outside probability `e^{-t²/2} + e^{-s²/2}`, for `t ≥ 0`
-and `0 ≤ s < √n - √c`, `c` the codimension. Both constants tend to `1` as `c / n → 0`.
+deterministic upper constant $\lvert n \rvert / \lvert k \rvert$, outside probability
+$e^{-t^2/2} + e^{-s^2/2}$, for $t \ge 0$ and $0 \le s < \sqrt{\lvert n \rvert} - \sqrt{c}$, $c$ the
+codimension. Both constants tend to $1$ as $c / \lvert n \rvert \to 0$.
 Result: haar-sketch-ose -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_add_eq
     (hU : HasOrthonormalCols U) (hQ : HasLaw Q (haarFrame n k) μ) {c : ℕ}
@@ -716,7 +793,7 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_add_
 /-! ### Oblivious forms -/
 
 omit [Fintype k] [DecidableEq k] [Fintype p] [DecidableEq p] in
-/-- `(1 - (√d + t)/√k)²` is antitone in `d` while `√d + t ≤ √k`. -/
+/-- $(1 - (\sqrt{d} + t)/\sqrt{K})^2$ is antitone in $d$ while $\sqrt{d} + t \le \sqrt{K}$. -/
 private theorem one_sub_div_sq_le {d d' : ℕ} (hdd : d' ≤ d) {K : ℝ}
     (htd : t ≤ √K - √(d : ℝ)) :
     (1 - (√(d : ℝ) + t) / √K) ^ 2 ≤ (1 - (√(d' : ℝ) + t) / √K) ^ 2 := by
@@ -732,7 +809,7 @@ private theorem one_sub_div_sq_le {d d' : ℕ} (hdd : d' ≤ d) {K : ℝ}
   exact pow_le_pow_left₀ (by linarith) (by linarith) 2
 
 omit [Fintype k] [DecidableEq k] [Fintype p] [DecidableEq p] in
-/-- `(1 + (√d + t)/√k)²` is monotone in `d`. -/
+/-- $(1 + (\sqrt{d} + t)/\sqrt{K})^2$ is monotone in $d$, for $t \ge 0$. -/
 private theorem one_add_div_sq_le {d d' : ℕ} (hdd : d' ≤ d) (ht : 0 ≤ t) {K : ℝ} :
     (1 + (√(d' : ℝ) + t) / √K) ^ 2 ≤ (1 + (√(d : ℝ) + t) / √K) ^ 2 := by
   have hs : √(d' : ℝ) ≤ √(d : ℝ) := Real.sqrt_le_sqrt (Nat.cast_le.2 hdd)
@@ -740,9 +817,12 @@ private theorem one_add_div_sq_le {d d' : ℕ} (hdd : d' ≤ d) (ht : 0 ≤ t) {
     div_le_div_of_nonneg_right (by linarith) (Real.sqrt_nonneg K)
   exact pow_le_pow_left₀ (by positivity) (by linarith) 2
 
-/-- **The Haar OSI**: the Haar sketch is an oblivious subspace injection for dimension `d` with
-constant `(1 - (√d + t)/√k)² / (1 + (√k + s)/√n)²` and failure probability
-`e^{-t²/2} + e^{-s²/2}`, for `0 ≤ t ≤ √k - √d` and `s ≥ 0`.
+/-- **The Haar OSI**: the Haar sketch is an oblivious subspace injection for dimension $d$ with
+constant
+$$\frac{(1 - (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
+and failure probability $e^{-t^2/2} + e^{-s^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$ and $s \ge 0$.
 Result: haar-sketch-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_haarFrame [DecidableEq n] [Nonempty k]
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (d : ℕ)
@@ -765,9 +845,13 @@ theorem isObliviousSubspaceInjection_of_hasLaw_haarFrame [DecidableEq n] [Nonemp
   refine ⟨h.isotropic, fun V hV => (h.injection V (le_min hV V.rank_le_card_width)).mono ?_ le_rfl⟩
   exact div_le_div_of_nonneg_right (one_sub_div_sq_le hdd htd) (sq_nonneg _)
 
-/-- **The Haar OSE, deterministic upper half**: an oblivious subspace embedding for dimension
-`d` with constants `(1 - (√d + t)/√k)² / (1 + (√k + s)/√n)²` and `n/k`, failure probability
-`e^{-t²/2} + e^{-s²/2}`, for `0 ≤ t ≤ √k - √d` and `s ≥ 0`. Incomparable with
+/-- **The Haar OSE, deterministic upper half**: an oblivious subspace embedding for dimension $d$
+with constants
+$$\frac{(1 - (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}
+\quad \text{and} \quad \frac{\lvert n \rvert}{\lvert k \rvert} \,,$$
+failure probability $e^{-t^2/2} + e^{-s^2/2}$, for $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$
+and $s \ge 0$. Incomparable with
 `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt` (rule 4).
 Result: haar-sketch-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
@@ -794,10 +878,15 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFra
   refine fun V hV => (h V (le_min hV V.rank_le_card_width)).mono ?_ le_rfl le_rfl
   exact div_le_div_of_nonneg_right (one_sub_div_sq_le hdd htd) (sq_nonneg _)
 
-/-- **The Haar OSE, Gaussian upper half**: an oblivious subspace embedding for dimension `d`
-with constants `(1 ∓ (√d + t)/√k)² / (1 ± (√k + s)/√n)²` and failure probability
-`2 e^{-t²/2} + 2 e^{-s²/2}`, for `0 ≤ t ≤ √k - √d` and `0 ≤ s < √n - √k`. Better than
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame` for `k` small against `n` (rule 4).
+/-- **The Haar OSE, Gaussian upper half**: an oblivious subspace embedding for dimension $d$ with
+constants
+$$\frac{(1 \mp (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 \pm (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
+and failure probability $2 e^{-t^2/2} + 2 e^{-s^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$ and
+$0 \le s < \sqrt{\lvert n \rvert} - \sqrt{\lvert k \rvert}$. Better than
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame` for $\lvert k \rvert$ small against
+$\lvert n \rvert$ (rule 4).
 Result: haar-sketch-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (d : ℕ)
@@ -829,7 +918,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt
 /-! ### Johnson–Lindenstrauss -/
 
 omit [DecidableEq k] in
-/-- `‖Qᴴ x‖ ≤ ‖x‖` almost surely, in every shape. -/
+/-- $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\| \le \|\mathbf{x}\|$ almost surely, in every shape. -/
 private theorem ae_norm_conjTranspose_mulVec_le [DecidableEq k] (hQ : HasLaw Q (haarFrame n k) μ)
     (x : n → ℝ) : ∀ᵐ ω ∂μ, ‖WithLp.toLp 2 ((Q ω)ᴴ *ᵥ x)‖ ≤ ‖WithLp.toLp 2 x‖ := by
   filter_upwards [ae_specNorm_le_one_of_hasLaw_haarFrame hQ] with ω hω
@@ -837,7 +926,8 @@ private theorem ae_norm_conjTranspose_mulVec_le [DecidableEq k] (hQ : HasLaw Q (
   rw [specNorm_conjTranspose]
   nlinarith [norm_nonneg (WithLp.toLp 2 x)]
 
-/-- The powers of `‖Qᴴ x‖` are integrable (they are bounded by those of `‖x‖`). -/
+/-- The powers of $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\|$ are integrable (they are bounded by those
+of $\|\mathbf{x}\|$). -/
 private theorem integrable_norm_conjTranspose_mulVec_pow (hQ : HasLaw Q (haarFrame n k) μ)
     (x : n → ℝ) (m : ℕ) : Integrable (fun ω => ‖WithLp.toLp 2 ((Q ω)ᴴ *ᵥ x)‖ ^ m) μ := by
   have := hQ.isProbabilityMeasure_iff.2 inferInstance
@@ -848,8 +938,12 @@ private theorem integrable_norm_conjTranspose_mulVec_pow (hQ : HasLaw Q (haarFra
   rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
   exact pow_le_pow_left₀ (norm_nonneg _) hω m
 
-/-- **The fourth moment of `‖Qᴴ x‖`**: `E ‖Qᴴ x‖⁴ = ‖x‖⁴ k (k + 2) / (n (n + 2))`, from the law
-of `Qᴴ x` and the fourth moment of a projected uniform unit vector. -/
+/-- **The fourth moment of $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\|$**:
+$$\mathbb{E}\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\|^4
+= \|\mathbf{x}\|^4 \, \frac{\lvert k \rvert (\lvert k \rvert + 2)}
+{\lvert n \rvert (\lvert n \rvert + 2)} \,,$$
+from the law of $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ and the fourth moment of a projected uniform
+unit vector. -/
 private theorem integral_norm_conjTranspose_mulVec_pow_four [Nonempty k]
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (x : n → ℝ) :
     ∫ ω, ‖WithLp.toLp 2 ((Q ω)ᴴ *ᵥ x)‖ ^ 4 ∂μ = ‖WithLp.toLp 2 x‖ ^ 4 *
@@ -884,11 +978,14 @@ private theorem integral_norm_conjTranspose_mulVec_pow_four [Nonempty k]
   exact integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector HasLaw.id hV
 
 /-- **Distributional Johnson–Lindenstrauss for a Haar sketch**, with the Gaussian's constants:
-`P(ε ≤ |‖S x‖² - 1|) ≤ 2 exp (-k (ε²/4 - ε³/6))` for every unit `x` and `ε ≥ 0`;
-`‖S x‖² = (n/k) ‖Vᴴ u‖²` for `u` uniform on the sphere
-(`NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`) and the relative-deviation tail of
-`NLAlib/RandomMatrix/Haar/Sphere.lean`. [Vershynin2018, Lemma 5.3.2 (2020 draft)], there with
-an unspecified constant `c`; the exponent of Dasgupta and Gupta (2003). -/
+$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+\le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$$
+for every unit $\mathbf{x}$ and $\varepsilon \ge 0$; $\|\mathbf{S}\mathbf{x}\|^2
+= (\lvert n \rvert / \lvert k \rvert) \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2$ for $\mathbf{u}$
+uniform on the sphere (`NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`) and the
+relative-deviation tail of `NLAlib/RandomMatrix/Haar/Sphere.lean`.
+[Vershynin2018, Lemma 5.3.2 (2020 draft)], there with an unspecified constant $c$; the exponent of
+Dasgupta and Gupta (2003). -/
 theorem hasJLProperty_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 ≤ ε) :
     HasJLProperty (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε
@@ -909,7 +1006,8 @@ theorem hasJLProperty_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
     measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uniformSphereVector
       HasLaw.id hV hε
 
-/-- The squared distortion `(‖S x‖² - ‖x‖²)²` of a Haar sketch is integrable (it is bounded). -/
+/-- The squared distortion $(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2$ of a Haar sketch is
+integrable (it is bounded). -/
 theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame
     (hQ : HasLaw Q (haarFrame n k) μ) (x : n → ℝ) :
     Integrable (fun ω => (‖WithLp.toLp 2
@@ -934,10 +1032,13 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame
   exact pow_le_pow_left₀ (abs_nonneg _) (abs_le.2 ⟨by nlinarith [sq_nonneg ‖WithLp.toLp 2 x‖],
     by nlinarith [sq_nonneg ‖WithLp.toLp 2 x‖]⟩) 2
 
-/-- **The JL variance of a Haar sketch**: `E (‖S x‖² - ‖x‖²)² = 2 (n - k) / (k (n + 2)) ‖x‖⁴`
-exactly, below the Gaussian's `2 / k` and `0` at `k = n`; from `E ‖Vᴴ u‖² = k / n` and the
-fourth moment `NLAlib.integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector`.
--/
+/-- **The JL variance of a Haar sketch**:
+$$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
+= \frac{2 (\lvert n \rvert - \lvert k \rvert)}
+{\lvert k \rvert (\lvert n \rvert + 2)} \|\mathbf{x}\|^4$$
+exactly, below the Gaussian's $2 / \lvert k \rvert$ and $0$ at $\lvert k \rvert = \lvert n \rvert$;
+from $\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 = \lvert k \rvert / \lvert n \rvert$ and the
+fourth moment `NLAlib.integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector`. -/
 theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame [Nonempty k]
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (x : n → ℝ) :
     ∫ ω, (‖WithLp.toLp 2 ((√(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) *ᵥ x)‖ ^ 2 -
@@ -971,9 +1072,9 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame [Nonempty k]
   field_simp
   ring
 
-/-- **The JL moment property of a Haar sketch** at `p = 2`, with
-`δ = 2 (n - k) / (k (n + 2) ε²)`, from the exact variance. [Woodruff2014, Definition 12], the
-property there. -/
+/-- **The JL moment property of a Haar sketch** at $p = 2$, with $\delta = 2 (\lvert n \rvert -
+\lvert k \rvert) / (\lvert k \rvert (\lvert n \rvert + 2) \varepsilon^2)$, from the exact variance.
+[Woodruff2014, Definition 12], the property there. -/
 theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε) :
     HasJLMoment (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε
@@ -991,8 +1092,9 @@ theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n
     apply le_of_eq
     field_simp
 
-/-- **Haar distributional JL, sample-size form**: `k ≥ jlDim ε δ` rows give the JL property with
-distortion `ε` and failure probability `δ`, for `0 < ε < 3/2` and `δ > 0`. -/
+/-- **Haar distributional JL, sample-size form**: at least `jlDim ε δ` rows give the JL property
+with distortion $\varepsilon$ and failure probability $\delta$, for $0 < \varepsilon < 3/2$ and
+$\delta > 0$. -/
 theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk' : jlDim ε δ ≤ Fintype.card k) :

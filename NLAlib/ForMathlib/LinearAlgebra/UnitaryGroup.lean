@@ -11,9 +11,9 @@ public import Mathlib.Topology.Algebra.Star.Unitary
 /-!
 # Compactness of the unitary group
 
-The unitary group `Matrix.unitaryGroup n 𝕜` (over `ℝ`, the orthogonal group
+The unitary group `Matrix.unitaryGroup n 𝕜` (over $\mathbb{R}$, the orthogonal group
 `Matrix.orthogonalGroup n ℝ`) is a compact space: it is closed, and its entries are bounded by
-`1`. With it, Mathlib's `MeasureTheory.Measure.haarMeasure` on the group is a finite measure.
+$1$. With it, Mathlib's `MeasureTheory.Measure.haarMeasure` on the group is a finite measure.
 Upstream candidate for `Mathlib.LinearAlgebra.UnitaryGroup` (or the topology file that would
 import it).
 
@@ -26,9 +26,9 @@ import it).
 
 namespace Matrix
 
-/-- The unitary group `Matrix.unitaryGroup n 𝕜` (over `ℝ`, the orthogonal group) is compact, in
-every dimension including `0`. Port of the prototype's `orthogonalGroupCompactSpace`, there for
-`Fin n` over `ℝ`. -/
+/-- The unitary group `Matrix.unitaryGroup n 𝕜` (over $\mathbb{R}$, the orthogonal group) is
+compact, in every dimension including $0$. Port of the prototype's `orthogonalGroupCompactSpace`,
+there for `Fin n` over $\mathbb{R}$. -/
 instance compactSpace_unitaryGroup {𝕜 n : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n] :
     CompactSpace (Matrix.unitaryGroup n 𝕜) := by
   have hb : IsCompact (Set.univ.pi fun _ : n => Set.univ.pi fun _ : n =>

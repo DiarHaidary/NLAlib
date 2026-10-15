@@ -14,12 +14,12 @@ public import NLAlib.Probability.EntropyTensorization
 /-!
 # Gross's logarithmic Sobolev inequality on the line, for compactly supported functions
 
-For the standard Gaussian `γ` on `ℝ` and a compactly supported `C¹` function `g`,
-`Ent_γ (g²) ≤ 2 E_γ g'²`. This is Gross's original route: the two-point inequality
-`Ent (G²) ≤ (G 1 - G (-1))² / 2` for a random sign, tensorized over `n` independent signs and
-applied to `g ((s₁ + ⋯ + sₙ) / √n)`, gives the inequality for the law of the normalised sum up to
-an error that vanishes with `n` (the derivative of `g` is uniformly continuous); the central
-limit theorem passes to the limit.
+For the standard Gaussian $\gamma$ on $\mathbb{R}$ and a compactly supported $C^1$ function $g$,
+$\operatorname{Ent}_\gamma(g^2) \le 2\, \mathbb{E}_\gamma[g'^2]$. This is Gross's original route:
+the two-point inequality $\operatorname{Ent}(G^2) \le (G(1) - G(-1))^2 / 2$ for a random sign,
+tensorized over $n$ independent signs and applied to $g((s_1 + \dots + s_n) / \sqrt{n})$, gives the
+inequality for the law of the normalised sum up to an error that vanishes with $n$ (the
+derivative of $g$ is uniformly continuous); the central limit theorem passes to the limit.
 
 ## Main results
 
@@ -136,7 +136,8 @@ private lemma two_point_nonneg {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
         _ ≤ (b - a) ^ 2 / 2 := two_point_aux hb' ha hab
         _ = (a - b) ^ 2 / 2 := by ring
 
-/-- The two-point logarithmic Sobolev inequality for a random sign. -/
+/-- The two-point logarithmic Sobolev inequality for a random sign:
+$\operatorname{Ent}(G^2) \le (G(1) - G(-1))^2 / 2$ under the Rademacher law. -/
 private lemma entropy_sq_rademacherMeasure_le (G : ℝ → ℝ) :
     entropy rademacherMeasure (fun y => G y ^ 2) ≤ (G 1 - G (-1)) ^ 2 / 2 := by
   rw [entropy, integral_rademacherMeasure, integral_rademacherMeasure, smul_eq_mul, smul_eq_mul]
@@ -148,8 +149,10 @@ private lemma entropy_sq_rademacherMeasure_le (G : ℝ → ℝ) :
 
 /-! ### The central limit theorem for random signs -/
 
-/-- The integral of a bounded continuous function of the normalised sum of `n` random signs
-tends to its Gaussian integral. -/
+/-- The integral of a bounded continuous function of the normalised sum of $n$ random signs
+tends to its Gaussian integral:
+$\mathbb{E}\, \varphi((s_1 + \dots + s_n) / \sqrt{n}) \to \mathbb{E}\, \varphi(g)$ for
+$g \sim \mathcal{N}(0, 1)$. -/
 private lemma tendsto_integral_rademacher {φ : ℝ → ℝ} (hφ : Continuous φ) {C : ℝ}
     (hC : ∀ x, |φ x| ≤ C) :
     Tendsto (fun n : ℕ => ∫ x, φ ((√n)⁻¹ * ∑ i, x i)
@@ -178,8 +181,9 @@ private lemma tendsto_integral_rademacher {φ : ℝ → ℝ} (hφ : Continuous �
 
 /-! ### Tensorization over random signs -/
 
-/-- The first-order estimate `|g u - g v - (u - v) g' c| ≤ ε |u - v|` when `g'` varies by at
-most `ε` on the `δ`-ball about `c`. -/
+/-- The first-order estimate
+$\lvert g(u) - g(v) - (u - v) g'(c)\rvert \le \varepsilon \lvert u - v\rvert$ when $g'$ varies by
+at most $\varepsilon$ on the $\delta$-ball about $c$ and $u$, $v$ lie in it. -/
 private lemma abs_sub_sub_mul_deriv_le {g : ℝ → ℝ} (hgd : Differentiable ℝ g) {ε δ c u v : ℝ}
     (hδ : ∀ w, |w - c| < δ → |deriv g w - deriv g c| ≤ ε) (hu : |u - c| < δ)
     (hv : |v - c| < δ) : |g u - g v - (u - v) * deriv g c| ≤ ε * |u - v| := by
@@ -196,8 +200,8 @@ private lemma abs_sub_sub_mul_deriv_le {g : ℝ → ℝ} (hgd : Differentiable �
         ring_nf
     _ ≤ ε * |u - v| := h
 
-/-- One coordinate of the tensorized bound: resampling the `i`-th sign moves the scaled sum by
-`2 h`, so the two-point inequality and the first-order estimate bound the entropy. -/
+/-- One coordinate of the tensorized bound: resampling the $i$-th sign moves the scaled sum by
+$2h$, so the two-point inequality and the first-order estimate bound the entropy. -/
 private lemma entropy_update_le {ι : Type*} [Fintype ι] [DecidableEq ι] {g : ℝ → ℝ}
     (hgd : Differentiable ℝ g) {K ε δ h : ℝ} (hK : ∀ x, |deriv g x| ≤ K)
     (hδ : ∀ u v, |u - v| < δ → |deriv g u - deriv g v| ≤ ε) (h0 : 0 ≤ h)
@@ -242,8 +246,11 @@ private lemma entropy_update_le {ι : Type*} [Fintype ι] [DecidableEq ι] {g : 
     _ = 2 * h ^ 2 * (|deriv g T| + ε) ^ 2 := by ring
     _ ≤ 2 * h ^ 2 * (deriv g T ^ 2 + ε * (2 * K + ε)) := by gcongr
 
-/-- The tensorized two-point inequality for `g` of a scaled sum of random signs, with an error
-controlled by the oscillation of `g'` at the scale of one step. -/
+/-- The tensorized two-point inequality for $g$ of a scaled sum $h \sum_i s_i$ of random signs,
+with $\lvert \iota \rvert h^2 = 1$:
+$\operatorname{Ent}(g(h \sum_i s_i)^2) \le 2\, \mathbb{E}[g'(h \sum_i s_i)^2]
++ 2 \varepsilon (2K + \varepsilon)$, with an error controlled by the oscillation $\varepsilon$ of
+$g'$ at the scale of one step and the bound $K$ on $\lvert g'\rvert$. -/
 private lemma entropy_comp_sum_le {ι : Type*} [Fintype ι] {g : ℝ → ℝ}
     (hg : ContDiff ℝ 1 g) {B K ε δ h : ℝ} (hB : ∀ x, |g x| ≤ B) (hK : ∀ x, |deriv g x| ≤ K)
     (hδ : ∀ u v, |u - v| < δ → |deriv g u - deriv g v| ≤ ε) (h0 : 0 ≤ h) (hh : 2 * h < δ)
@@ -305,9 +312,10 @@ private lemma entropy_comp_sum_le {ι : Type*} [Fintype ι] {g : ℝ → ℝ}
 
 /-! ### The limit -/
 
-/-- **Gross's logarithmic Sobolev inequality** on `ℝ` for a compactly supported `C¹` function:
-`Ent_γ (g²) ≤ 2 E_γ g'²` for the standard Gaussian `γ` ([BoucheronLugosiMassart2013],
-Theorem 5.4, whose proof by random signs and the central limit theorem is followed here). The
+/-- **Gross's logarithmic Sobolev inequality** on $\mathbb{R}$ for a compactly supported $C^1$
+function: $\operatorname{Ent}_\gamma(g^2) \le 2\, \mathbb{E}_\gamma[g'^2]$ for the standard Gaussian
+$\gamma$ ([BoucheronLugosiMassart2013], Theorem 5.4, whose proof by random signs and the central
+limit theorem is followed here). The
 general integrable form is `NLAlib.entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal`.
 Port: the old library's `entropy_sq_le_two_mul_integral_sq_deriv_gaussianReal_of_hasCompactSupport`,
 re-proved without the Ornstein–Uhlenbeck semigroup. -/

@@ -14,16 +14,18 @@ public import NLAlib.Probability.Tail
 /-!
 # The Johnson–Lindenstrauss property
 
-A random sketch `S : Ω → Matrix k n 𝕜` has the *distributional Johnson–Lindenstrauss property*
-with distortion `ε` and failure probability `δ` when, for every unit vector `x`,
-`P(ε ≤ |‖S x‖² - 1|) ≤ δ`; it has the *JL moment property* with exponent `p` when
-`E |‖S x‖² - 1|^p ≤ ε^p δ` for unit `x`. The moment property implies the tail property
-(Markov), and both scale to every nonzero vector; the tail property gives the
-Johnson–Lindenstrauss lemma for finitely many points by a union bound over pairs. The moment
-property also gives approximate matrix multiplication
+A random sketch $\mathbf{S}$ with values in $\Bbbk^{k \times n}$ has the *distributional
+Johnson–Lindenstrauss property* with distortion $\varepsilon$ and failure probability $\delta$
+when, for every unit vector $\mathbf{x}$,
+$\mathbb{P}(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert) \le \delta$; it has the
+*JL moment property* with exponent $p$ when
+$\mathbb{E}\lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert^p \le \varepsilon^p \delta$ for unit
+$\mathbf{x}$. The moment property implies the tail property (Markov), and both scale to every
+nonzero vector; the tail property gives the Johnson–Lindenstrauss lemma for finitely many points
+by a union bound over pairs. The moment property also gives approximate matrix multiplication
 (`NLAlib.Sketching.Properties.MatrixMultiplication`).
 
-Both are stated with the non-strict threshold event `{ε ≤ X}`. Design:
+Both are stated with the non-strict threshold event $\{\varepsilon \le X\}$. Design:
 `docs/design/Sketching-S1.md` §3.5.
 
 ## Main definitions
@@ -34,7 +36,8 @@ Both are stated with the non-strict threshold event `{ε ≤ X}`. Design:
 
 * `NLAlib.HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le`: the JL lemma.
 * `NLAlib.HasJLMoment.hasJLProperty`: moments give tails.
-* `NLAlib.HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le`: the moment bound for every `x`.
+* `NLAlib.HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le`: the moment bound for every
+  $\mathbf{x}$.
 -/
 
 @[expose] public section
@@ -47,24 +50,28 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {k n : Type*} [Fintype k] [Fintype n] {S : Ω → Matrix k n 𝕜} {ε ε' δ δ' p : ℝ}
 
-/-- **Distributional Johnson–Lindenstrauss property** on unit vectors: for every unit `x`,
-`P(ε ≤ |‖S x‖² - 1|) ≤ δ`. [Woodruff2014, proof of Lemma 18]; [MartinssonTropp2020, §8.6]. -/
+/-- **Distributional Johnson–Lindenstrauss property** on unit vectors: for every unit
+$\mathbf{x}$, $\mathbb{P}(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert) \le \delta$.
+[Woodruff2014, proof of Lemma 18]; [MartinssonTropp2020, §8.6]. -/
 def HasJLProperty (S : Ω → Matrix k n 𝕜) (ε δ : ℝ) (μ : Measure Ω) : Prop :=
   ∀ x : n → 𝕜, ‖WithLp.toLp 2 x‖ = 1 →
     μ.real {ω | ε ≤ |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - 1|} ≤ δ
 
-/-- **JL moment property** with exponent `p : ℝ`: for every unit `x`,
-`E |‖S x‖² - 1|^p ≤ ε^p δ`. Junk for `ε < 0` (real powers of negative numbers).
-[Woodruff2014, Definition 12]. -/
+/-- **JL moment property** with real exponent $p$: for every unit $\mathbf{x}$, the $p$-th moment
+is integrable and
+$\mathbb{E}\lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert^p \le \varepsilon^p \delta$. Junk for
+$\varepsilon < 0$ (real powers of negative numbers). [Woodruff2014, Definition 12]. -/
 structure HasJLMoment (S : Ω → Matrix k n 𝕜) (ε δ p : ℝ) (μ : Measure Ω) : Prop where
-  /-- The `p`-th moment of the distortion is finite at every unit vector. -/
+  /-- The $p$-th moment of the distortion is finite at every unit vector. -/
   integrable : ∀ x : n → 𝕜, ‖WithLp.toLp 2 x‖ = 1 →
     Integrable (fun ω => |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - 1| ^ p) μ
-  /-- The `p`-th moment of the distortion is at most `ε^p δ` at every unit vector. -/
+  /-- The $p$-th moment of the distortion is at most $\varepsilon^p \delta$ at every unit
+  vector. -/
   integral_le : ∀ x : n → 𝕜, ‖WithLp.toLp 2 x‖ = 1 →
     ∫ ω, |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - 1| ^ p ∂μ ≤ ε ^ p * δ
 
-/-- A nonzero vector is its norm times a unit vector, and the distortion scales by `‖x‖²`. -/
+/-- A nonzero vector is its norm times a unit vector, and the distortion scales by
+$\|\mathbf{x}\|^2$. -/
 private theorem exists_unit_of_ne_zero {x : n → 𝕜} (hx : x ≠ 0) :
     ∃ u : n → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ ∀ A : Matrix k n 𝕜,
       ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2 =
@@ -79,7 +86,8 @@ private theorem exists_unit_of_ne_zero {x : n → 𝕜} (hx : x ≠ 0) :
     rw [Matrix.mulVec_smul, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_pos hc0]
     ring
 
-/-- The distortion at `x ≠ 0`, to the power `p`, is `‖x‖^(2p)` times that at a unit vector. -/
+/-- The distortion at $\mathbf{x} \ne \mathbf{0}$, to the power $p$, is $\|\mathbf{x}\|^{2p}$
+times that at a unit vector. -/
 private theorem abs_sub_rpow_eq {x u : n → 𝕜} (hu : ∀ A : Matrix k n 𝕜,
       ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2 =
         ‖WithLp.toLp 2 x‖ ^ 2 * (‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2 - 1)) (A : Matrix k n 𝕜) :
@@ -123,7 +131,7 @@ theorem HasJLProperty.mono [IsFiniteMeasure μ] (h : HasJLProperty S ε δ μ) (
     hε.trans hω)).trans ((h x hx).trans hδ)
 
 /-- The JL moment property holds with any larger distortion and failure probability, for
-`0 ≤ ε`, `0 ≤ p`, `0 ≤ δ`. -/
+$0 \le \varepsilon$, $0 \le p$, $0 \le \delta$. -/
 theorem HasJLMoment.mono (h : HasJLMoment S ε δ p μ) (hε : ε ≤ ε') (hδ : δ ≤ δ') (hε0 : 0 ≤ ε)
     (hp : 0 ≤ p) (hδ0 : 0 ≤ δ) : HasJLMoment S ε' δ' p μ := by
   refine ⟨h.integrable, fun x hx => (h.integral_le x hx).trans ?_⟩
@@ -132,7 +140,9 @@ theorem HasJLMoment.mono (h : HasJLMoment S ε δ p μ) (hε : ε ≤ ε') (hδ 
         mul_le_mul_of_nonneg_right (Real.rpow_le_rpow hε0 hε hp) hδ0
     _ ≤ ε' ^ p * δ' := mul_le_mul_of_nonneg_left hδ (Real.rpow_nonneg hε' p)
 
-/-- The JL property at a nonzero vector `x`: `P(ε ‖x‖² ≤ |‖S x‖² - ‖x‖²|) ≤ δ`. -/
+/-- The JL property at a nonzero vector $\mathbf{x}$:
+$\mathbb{P}(\varepsilon \|\mathbf{x}\|^2 \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2
+\rvert) \le \delta$. -/
 theorem HasJLProperty.measure_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
     {x : n → 𝕜} (hx : x ≠ 0) :
     μ.real {ω | ε * ‖WithLp.toLp 2 x‖ ^ 2 ≤
@@ -154,10 +164,15 @@ theorem HasJLProperty.measure_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S 
   rw [e]
   exact h u hu
 
-/-- **Johnson–Lindenstrauss lemma**: for finitely many points `x i`, the probability that some
-pairwise difference has its squared norm distorted by a factor `ε` or more is at most
-`(card ι).choose 2 * δ` (union over unordered pairs). [Woodruff2014, Definition 3]; there
-inner products on a finite set, here squared norms of differences.
+/-- **Johnson–Lindenstrauss lemma**: for finitely many points $\mathbf{x}_i$, $i \in \iota$, and
+$\delta \ge 0$, the probability that some pairwise difference $\mathbf{x}_i - \mathbf{x}_j \ne
+\mathbf{0}$ has its squared norm distorted by a factor $\varepsilon$ or more,
+$$\varepsilon \|\mathbf{x}_i - \mathbf{x}_j\|^2
+\le \bigl\lvert \|\mathbf{S}(\mathbf{x}_i - \mathbf{x}_j)\|^2 - \|\mathbf{x}_i - \mathbf{x}_j\|^2
+\bigr\rvert,$$
+is at most $\binom{\lvert \iota \rvert}{2} \delta$ (union over unordered pairs).
+[Woodruff2014, Definition 3]; there inner products on a finite set, here squared norms of
+differences.
 Result: jl-lemma -/
 theorem HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
     (hδ : 0 ≤ δ) {ι : Type*} [Fintype ι] (x : ι → n → 𝕜) :
@@ -206,8 +221,9 @@ theorem HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProp
   refine (Finset.sum_le_sum fun z _ => hle z).trans_eq ?_
   rw [Finset.sum_const, Finset.card_univ, Sym2.card_subtype_not_diag, nsmul_eq_mul]
 
-/-- **Moments give tails**: the JL moment property implies the JL property with the same
-`ε` and `δ` (Markov's inequality in `L^p`). [Woodruff2014, §2.2]. -/
+/-- **Moments give tails**: for $\varepsilon > 0$ and $p > 0$, the JL moment property implies the
+JL property with the same $\varepsilon$ and $\delta$ (Markov's inequality in $L^p$).
+[Woodruff2014, §2.2]. -/
 theorem HasJLMoment.hasJLProperty (h : HasJLMoment S ε δ p μ) (hε : 0 < ε) (hp : 0 < p) :
     HasJLProperty S ε δ μ := by
   intro x hx
@@ -215,7 +231,7 @@ theorem HasJLMoment.hasJLProperty (h : HasJLMoment S ε δ p μ) (hε : 0 < ε) 
   rw [div_le_iff₀ (Real.rpow_pos_of_pos hε p), mul_comm]
   exact h.integral_le x hx
 
-/-- The `p`-th moment of the distortion at any vector is integrable. -/
+/-- The $p$-th moment of the distortion at any vector is integrable. -/
 theorem HasJLMoment.integrable_abs_norm_mulVec_sq_sub_rpow (h : HasJLMoment S ε δ p μ)
     (hp : 0 < p) (x : n → 𝕜) :
     Integrable (fun ω => |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2| ^ p) μ := by
@@ -227,7 +243,9 @@ theorem HasJLMoment.integrable_abs_norm_mulVec_sq_sub_rpow (h : HasJLMoment S ε
   simp only [abs_sub_rpow_eq hSu]
   exact (h.integrable u hu).const_mul _
 
-/-- The JL moment bound at any vector: `E |‖S x‖² - ‖x‖²|^p ≤ ε^p δ ‖x‖^(2p)`. -/
+/-- The JL moment bound at any vector, for $p > 0$:
+$\mathbb{E}\lvert \|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2 \rvert^p
+\le \varepsilon^p \delta \|\mathbf{x}\|^{2p}$. -/
 theorem HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le (h : HasJLMoment S ε δ p μ)
     (hp : 0 < p) (x : n → 𝕜) :
     ∫ ω, |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2| ^ p ∂μ ≤

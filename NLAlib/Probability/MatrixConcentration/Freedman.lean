@@ -12,22 +12,27 @@ public import NLAlib.Probability.MatrixConcentration.ConditionalMGFBound
 /-!
 # Freedman's inequality for matrix martingales
 
-For increments `X j` adapted to a filtration `ℱ` (`X j` is `ℱ (j + 1)`-measurable) with
-conditional matrix MGF bounds `NLAlib.HasCondMatrixMGFBound (ℱ j) _ (X j) g (A j) s μ`, the trace
-potential `tr exp (θ Yₖ - g θ Wₖ)`, with `Yₖ = ∑_{j<k} X j` and `Wₖ = ∑_{j<k} A j`, is a
+For increments $\mathbf{X}_j$ adapted to a filtration $\mathcal{F}$ ($\mathbf{X}_j$ is
+$\mathcal{F}_{j+1}$-measurable) with conditional matrix MGF bounds
+`NLAlib.HasCondMatrixMGFBound (ℱ j) _ (X j) g (A j) s μ`, the trace potential
+$\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$, with
+$\mathbf{Y}_k = \sum_{j<k} \mathbf{X}_j$ and $\mathbf{W}_k = \sum_{j<k} \mathbf{A}_j$, is a
 supermartingale (conditional Lieb). Ville's maximal inequality for it is the martingale master
-tail: the probability that for some `k` both `λ_max Yₖ ≥ t` and `Wₖ ≤ w • 1` is at most
-`d e^{-θt + g θ w}`. With the conditional Bernstein bound this is Freedman's inequality: for
-conditionally centred increments with `X j ≤ L • 1`, the probability that for some `k` both
-`λ_max Yₖ ≥ t` and the predictable quadratic variation `‖∑_{j<k} E[X j² | ℱ j]‖ ≤ v` is at most
-`d exp (-(t²/2) / (v + L t / 3))`. The sub-Gaussian bridge
+tail: the probability that for some $k$ both $\lambda_{\max}(\mathbf{Y}_k) \ge t$ and
+$\mathbf{W}_k \preceq w\mathbf{I}$ is at most $d\, e^{-\theta t + g(\theta) w}$, with
+$d = \lvert n\rvert$. With the conditional Bernstein bound this is Freedman's inequality: for
+conditionally centred increments with $\mathbf{X}_j \preceq L\mathbf{I}$, the probability that for
+some $k$ both $\lambda_{\max}(\mathbf{Y}_k) \ge t$ and the predictable quadratic variation
+satisfies $\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\|_2 \le v$ is at most
+$d \exp(-(t^2/2) / (v + L t / 3))$. The sub-Gaussian bridge
 `NLAlib.hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF` gives matrix Azuma-type tails from
 the same master tail.
 
-Index convention: the increments are `X j = Y (j + 1) - Y j` with `Y 0 = 0` (Tropp's), so the
-partial sums are `∑ j ∈ Finset.range k, X j ω` and there is no special first term. Mathlib's
-Azuma conditions `Y (i + 1)` on `ℱ i` and treats `Y 0` apart; the two agree under `X j =
-Y (j + 1)`. A finite horizon `N` is the case `X j = 0` for `j ≥ N`.
+Index convention: the increments are $\mathbf{X}_j = \mathbf{Y}_{j+1} - \mathbf{Y}_j$ with
+$\mathbf{Y}_0 = \mathbf{0}$ (Tropp's), so the partial sums are `∑ j ∈ Finset.range k, X j ω` and
+there is no special first term. Mathlib's Azuma conditions $Y_{i+1}$ on $\mathcal{F}_i$ and treats
+$Y_0$ apart; the two agree under $X_j = Y_{j+1}$. A finite horizon $N$ is the case
+$\mathbf{X}_j = \mathbf{0}$ for $j \ge N$.
 
 ## Main results
 
@@ -55,7 +60,8 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsProbabilityMeasure μ]
   {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] {ℱ : Filtration ℕ mΩ}
 
-/-- Monotonicity of `μ.real` along an almost-everywhere inclusion. -/
+/-- Monotonicity of `μ.real` along an almost-everywhere inclusion: $\mu(s) \le \mu(t)$ when
+$s \subseteq t$ almost everywhere. -/
 private theorem measureReal_mono_ae' {s t : Set Ω} (h : s ≤ᵐ[μ] t) : μ.real s ≤ μ.real t :=
   ENNReal.toReal_mono (measure_ne_top μ t) (measure_mono_ae h)
 
@@ -80,18 +86,23 @@ private theorem ae_isHermitian_potential
   exact ((IsSelfAdjoint.all θ).smul (isSelfAdjoint_sum _ fun j _ => h1 j)).sub
     ((IsSelfAdjoint.all _).smul (isSelfAdjoint_sum _ fun j _ => h2 j))
 
-/-- **The trace supermartingale**: for increments with conditional matrix MGF bounds, the
-potential `tr exp (θ Yₖ - g θ Wₖ)`, with `Yₖ = ∑_{j<k} X j`, `Wₖ = ∑_{j<k} A j` and `θ ∈ s`, is
-a supermartingale. Its integrability is a hypothesis here (it is derived in Freedman's
-inequality from boundedness). [Tropp2011, §2].
-Proof: adaptedness from `hX` and the `ℱ j`-measurability of `A j`. One step suffices
-(`Supermartingale` from the one-step inequality and the tower property): with
-`H = θ Yₖ - g θ W_{k+1}`, `ℱ k`-measurable because `A k` is,
-`NLAlib.condExp_re_trace_exp_add_le` gives
-`E[tr exp (H + θ X k) | ℱ k] ≤ tr exp (H + log E[exp (θ X k) | ℱ k])`; the bound
-`E[exp (θ X k) | ℱ k] ≤ exp (g θ • A k)`, almost surely positive definite, and the operator
-monotonicity of the logarithm give `log E[…] ≤ g θ • A k`; then monotonicity of `tr exp`
-(`NLAlib.re_trace_exp_le_re_trace_exp_of_le`) returns `tr exp (θ Yₖ - g θ Wₖ)`. Medium. -/
+/-- **The trace supermartingale**: for increments $\mathbf{X}_j$, $\mathcal{F}_{j+1}$-measurable,
+with conditional matrix MGF bounds, the potential
+$\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$, with
+$\mathbf{Y}_k = \sum_{j<k} \mathbf{X}_j$, $\mathbf{W}_k = \sum_{j<k} \mathbf{A}_j$ and
+$\theta \in s$, is a supermartingale. Its integrability is a hypothesis here (it is derived in
+Freedman's inequality from boundedness). [Tropp2011, §2].
+Proof: adaptedness from `hX` and the $\mathcal{F}_j$-measurability of $\mathbf{A}_j$. One step
+suffices (`Supermartingale` from the one-step inequality and the tower property): with
+$\mathbf{H} = \theta \mathbf{Y}_k - g(\theta) \mathbf{W}_{k+1}$, $\mathcal{F}_k$-measurable
+because $\mathbf{A}_k$ is, `NLAlib.condExp_re_trace_exp_add_le` gives
+$\mathbb{E}[\operatorname{tr} e^{\mathbf{H} + \theta \mathbf{X}_k} \mid \mathcal{F}_k]
+\le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E}[e^{\theta \mathbf{X}_k} \mid \mathcal{F}_k]}$;
+the bound $\mathbb{E}[e^{\theta \mathbf{X}_k} \mid \mathcal{F}_k] \preceq
+e^{g(\theta) \mathbf{A}_k}$, almost surely positive definite, and the operator monotonicity of the
+logarithm give $\log \mathbb{E}[\ldots] \preceq g(\theta) \mathbf{A}_k$; then monotonicity of
+$\operatorname{tr} \exp$ (`NLAlib.re_trace_exp_le_re_trace_exp_of_le`) returns
+$\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$. Medium. -/
 theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθ : θ ∈ s)
     (hint : ∀ k, Integrable (fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
@@ -145,14 +156,17 @@ theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
     (add_le_add le_rfl hlog)
 
 /-- **The martingale master tail**: for increments with conditional matrix MGF bounds,
-`θ ∈ s`, `θ > 0` and `g θ ≥ 0`, the probability that for some `k` both `t ≤ λ_max Yₖ` and
-`Wₖ ≤ w • 1` is at most `d e^{-θt + g θ w}`. [Tropp2011, §2]; the martingale form of
+$\theta \in s$, $\theta > 0$ and $g(\theta) \ge 0$, with an integrable trace potential,
+$$\mathbb{P}\bigl(\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
+\mathbf{W}_k \preceq w\mathbf{I}\bigr) \le \lvert n\rvert\, e^{-\theta t + g(\theta) w}\,.$$
+[Tropp2011, §2]; the martingale form of
 `NLAlib.HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le_card_mul_exp`.
 Proof: on the event the potential of `supermartingale_re_trace_exp` is at least
-`e^{θt - g θ w}` (`θ Yₖ - g θ Wₖ ≥ θ Yₖ - g θ w • 1` since `g θ ≥ 0`, and
-`tr exp M ≥ e^{λ_max M}`); Ville's inequality
-(`MeasureTheory.Supermartingale.measure_exists_ge_le`) with the potential at `k = 0` equal to
-`tr 1 = d`. Easy given the supermartingale. -/
+$e^{\theta t - g(\theta) w}$
+($\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k \succeq \theta \mathbf{Y}_k - g(\theta) w\mathbf{I}$
+since $g(\theta) \ge 0$, and $\operatorname{tr} e^{\mathbf{M}} \ge e^{\lambda_0(\mathbf{M})}$);
+Ville's inequality (`MeasureTheory.Supermartingale.measure_exists_ge_le`) with the potential at
+$k = 0$ equal to $\operatorname{tr} \mathbf{I} = \lvert n\rvert$. Easy given the supermartingale. -/
 theorem measure_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
     (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθs : θ ∈ s)
@@ -203,8 +217,9 @@ theorem measure_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
   rw [h0, div_eq_mul_inv, ← Real.exp_neg]
   ring_nf
 
-/-- The trace potential is integrable when the increments are bounded above, `A j ≥ 0` and
-`θ, g θ ≥ 0`: it is at most `d e^{θ k L}`. -/
+/-- The trace potential is integrable when the increments are bounded above,
+$\mathbf{X}_j \preceq L\mathbf{I}$, $\mathbf{A}_j \succeq \mathbf{0}$ and $\theta, g(\theta) \ge 0$:
+it is at most $\lvert n\rvert\, e^{\theta k L}$. -/
 private theorem integrable_potential (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ L : ℝ} (hθ : 0 ≤ θ)
     (hg : 0 ≤ g θ) (hle : ∀ j, ∀ᵐ ω ∂μ, X j ω ≤ L • (1 : Matrix n n 𝕜))
@@ -236,22 +251,27 @@ private theorem integrable_potential (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
 
 end HasCondMatrixMGFBound
 
-/-- **Freedman's inequality for matrix martingales.** For increments `X j`, `ℱ (j + 1)`-measurable,
-square-integrable, conditionally centred (`E[X j | ℱ j] = 0`) and with `X j ≤ L • 1` almost
-surely, the probability that for some `k` both `t ≤ λ_max (∑_{j<k} X j)` and the predictable
-quadratic variation satisfies `‖∑_{j<k} E[X j² | ℱ j]‖ ≤ v` is at most
-`d exp (-(t²/2) / (v + L t / 3))`. [Tropp2011, Theorem 1.2]; stated there for Hermitian
-martingales over `ℂ` with the conditional variance as the predictable quadratic variation, here
-over any `RCLike` field, any finite index type, with square-integrable increments. The source's
-constant. No hypothesis on `v`: for `v < 0` the event is empty.
-Proof: case split `v < 0` first (the event is empty, the left side is `0`); `t = 0` (the right
-side is `d ≥ 1`). Otherwise the conditional Bernstein bound
+/-- **Freedman's inequality for matrix martingales.** For increments $\mathbf{X}_j$,
+$\mathcal{F}_{j+1}$-measurable, square-integrable, conditionally centred
+($\mathbb{E}[\mathbf{X}_j \mid \mathcal{F}_j] = \mathbf{0}$) and with
+$\mathbf{X}_j \preceq L\mathbf{I}$ almost surely, $L > 0$ and $t \ge 0$,
+$$\mathbb{P}\Bigl(\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t \text{ and }
+\Bigl\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\Bigr\|_2 \le v\Bigr)
+\le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
+[Tropp2011, Theorem 1.2]; stated there for Hermitian martingales over $\mathbb{C}$ with the
+conditional variance as the predictable quadratic variation, here over any `RCLike` field, any
+finite index type, with square-integrable increments. The source's constant. No hypothesis on
+$v$: for $v < 0$ the event is empty.
+Proof: case split $v < 0$ first (the event is empty, the left side is $0$); $t = 0$ (the right
+side is $\lvert n\rvert \ge 1$). Otherwise the conditional Bernstein bound
 `NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`, the master tail
-`NLAlib.HasCondMatrixMGFBound.measure_exists_eigenvalue_zero_sum_ge_le` at `w = v` with
-`θ` from P5a's `NLAlib.exists_bernstein_exponent` (which needs `0 ≤ v`); on the event
-`specNorm Wₖ ≤ v` gives `Wₖ ≤ v • 1` (`Wₖ` is almost surely Hermitian). The potential's
-integrability: it is almost surely at most `tr exp (θ Yₖ) ≤ d e^{θ k L}`, since `Wₖ ≥ 0`,
-`g θ ≥ 0` and `Yₖ ≤ k L • 1`, and it is measurable. Medium.
+`NLAlib.HasCondMatrixMGFBound.measure_exists_eigenvalue_zero_sum_ge_le` at $w = v$ with
+$\theta$ from P5a's `NLAlib.exists_bernstein_exponent` (which needs $0 \le v$); on the event
+$\|\mathbf{W}_k\|_2 \le v$ gives $\mathbf{W}_k \preceq v\mathbf{I}$ ($\mathbf{W}_k$ is almost
+surely Hermitian). The potential's integrability: it is almost surely at most
+$\operatorname{tr} e^{\theta \mathbf{Y}_k} \le \lvert n\rvert\, e^{\theta k L}$, since
+$\mathbf{W}_k \succeq \mathbf{0}$, $g(\theta) \ge 0$ and $\mathbf{Y}_k \preceq k L\mathbf{I}$, and
+it is measurable. Medium.
 Result: matrix-freedman -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
     {X : ℕ → Ω → Matrix n n 𝕜} (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
@@ -294,10 +314,14 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
   exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr hθb) (Nat.cast_nonneg _)
 
 /-- **The martingale matrix Bernstein inequality**: Freedman's inequality with an almost sure
-bound `v` on the predictable quadratic variation at every time, so that the event is only
-`t ≤ λ_max (∑_{j<k} X j)` for some `k`. [Tropp2011, Theorem 1.2]; the form used for adaptive
-sampling and streaming. A finite horizon is `X j = 0` for `j ≥ N`.
-Proof: `hv` holds for all `k` simultaneously almost surely (countable intersection), so the
+bound $\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\|_2 \le v$ on the predictable
+quadratic variation at every time $k$, so that the event is only
+$\lambda_0(\sum_{j<k} \mathbf{X}_j) \ge t$ for some $k$:
+$$\mathbb{P}\Bigl(\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t\Bigr)
+\le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
+[Tropp2011, Theorem 1.2]; the form used for adaptive sampling and streaming. A finite horizon is
+$\mathbf{X}_j = \mathbf{0}$ for $j \ge N$.
+Proof: `hv` holds for all $k$ simultaneously almost surely (countable intersection), so the
 event agrees almost everywhere with the event of
 `NLAlib.measureReal_exists_eigenvalue_zero_sum_ge_le_freedman`. Easy. -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman_of_ae_le [Nonempty n]
@@ -318,16 +342,22 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman_of_ae_le [Nonempty
     (measureReal_exists_eigenvalue_zero_sum_ge_le_freedman hX hX2 hmean hL hle ht)
 
 /-- **Freedman's inequality for rectangular matrix martingales.** For rectangular increments
-`S j`, `ℱ (j + 1)`-measurable, square-integrable, conditionally centred and with
-`‖S j‖ ≤ L` almost surely, the probability that for some `k` both `t ≤ ‖∑_{j<k} S j‖` and the
-larger of the two predictable quadratic variations `‖∑_{j<k} E[S j S jᴴ | ℱ j]‖`,
-`‖∑_{j<k} E[S jᴴ S j | ℱ j]‖` is at most `v` is at most
-`(d₁ + d₂) exp (-(t²/2) / (v + L t / 3))`. [Tropp2011, Corollary 1.3]; over any `RCLike` field
-and finite index types. The source's constant.
-Proof: the Hermitian Freedman inequality for the dilations
-`dilation (S j)`, with `Matrix.condExp_dilation` (centring), `Matrix.condExp_dilation_sq` (the
-predictable quadratic variation is block diagonal, so its norm is the `max`),
-`λ_max (dilation M) = ‖M‖` and `dilation (S j) ≤ L • 1` from `‖S j‖ ≤ L`. Medium. -/
+$\mathbf{S}_j$ with row index $r$, $\mathcal{F}_{j+1}$-measurable, square-integrable,
+conditionally centred and with $\|\mathbf{S}_j\|_2 \le L$ almost surely, $L > 0$ and $t \ge 0$,
+the probability that for some $k$ both $\|\sum_{j<k} \mathbf{S}_j\|_2 \ge t$ and the larger of the
+two predictable quadratic variations
+$\|\sum_{j<k} \mathbb{E}[\mathbf{S}_j \mathbf{S}_j^{\mathsf{H}} \mid \mathcal{F}_j]\|_2$,
+$\|\sum_{j<k} \mathbb{E}[\mathbf{S}_j^{\mathsf{H}} \mathbf{S}_j \mid \mathcal{F}_j]\|_2$ is at
+most $v$ is at most
+$$(\lvert r\rvert + \lvert n\rvert) \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
+[Tropp2011, Corollary 1.3]; over any `RCLike` field and finite index types. The source's
+constant.
+Proof: the Hermitian Freedman inequality for the dilations `dilation (S j)`, with
+`Matrix.condExp_dilation` (centring), `Matrix.condExp_dilation_sq` (the predictable quadratic
+variation is block diagonal, so its norm is the $\max$),
+$\lambda_0(\operatorname{dilation} \mathbf{M}) = \|\mathbf{M}\|_2$ and
+$\operatorname{dilation} \mathbf{S}_j \preceq L\mathbf{I}$ from $\|\mathbf{S}_j\|_2 \le L$.
+Medium. -/
 theorem measureReal_exists_specNorm_sum_ge_le_freedman [Nonempty n] {r : Type*} [Fintype r]
     [DecidableEq r] {S : ℕ → Ω → Matrix r n 𝕜} (hS : ∀ j, StronglyMeasurable[ℱ (j + 1)] (S j))
     (hS2 : ∀ j, MemLp (S j) 2 μ) (hmean : ∀ j, μ[S j | ℱ j] =ᵐ[μ] 0) {L : ℝ} (hL : 0 < L)

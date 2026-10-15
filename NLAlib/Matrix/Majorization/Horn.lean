@@ -14,7 +14,8 @@ public import NLAlib.Matrix.Spectral.SingularValueInequalities
 # Horn's product inequality and log-majorization
 
 The singular values of a product are log-majorized by the products of the singular values:
-`∏ i < k, σ_i(A B) ≤ ∏ i < k, σ_i(A) σ_i(B)`. Weyl's lemma turns such product inequalities
+$\prod_{i < k} \sigma_i(\mathbf{A}\mathbf{B}) \le \prod_{i < k} \sigma_i(\mathbf{A})
+\sigma_i(\mathbf{B})$. Weyl's lemma turns such product inequalities
 between non-increasing nonnegative sequences into inequalities between sums of powers, which is
 how Hölder's inequality for Schatten norms is obtained.
 
@@ -36,9 +37,10 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [F
 
 /-! ### Horn's product inequality -/
 
-/-- For a matrix `Y` with `k` columns, the product of the `k` squared singular values of `A * Y`
-is at most that of `A` times that of `Y`: the Gram determinant of `A * Y` factors through an
-orthonormal basis of a `k`-dimensional space containing the range of `Y`. -/
+/-- For a matrix $\mathbf{Y}$ with $k$ columns, $k$ at most its number of rows, the product of the
+$k$ largest squared singular values of $\mathbf{A}\mathbf{Y}$ is at most that of $\mathbf{A}$ times
+that of $\mathbf{Y}$: the Gram determinant of $\mathbf{A}\mathbf{Y}$ factors through an
+orthonormal basis of a $k$-dimensional space containing the range of $\mathbf{Y}$. -/
 private theorem prod_sq_singularValues_mul_le (A : Matrix m p 𝕜) {k : ℕ}
     (Y : Matrix p (Fin k) 𝕜) (hk : k ≤ Fintype.card p) :
     ∏ i ∈ Finset.range k, singularValues (A * Y) i ^ 2 ≤
@@ -70,8 +72,8 @@ private theorem prod_sq_singularValues_mul_le (A : Matrix m p 𝕜) {k : ℕ}
       (mul_le_of_le_one_right (singularValues_nonneg A i)
         h.hasOrthonormalCols_left.specNorm_le_one)
 
-/-- The leading `k` right singular vectors: an `X` with `k` orthonormal columns such that the
-singular values of `M * X` are the `k` largest singular values of `M`. -/
+/-- The leading $k$ right singular vectors: an $\mathbf{X}$ with $k$ orthonormal columns such that
+$\sigma_i(\mathbf{M}\mathbf{X}) = \sigma_i(\mathbf{M})$ for $i < k$. -/
 private theorem exists_hasOrthonormalCols_singularValues_mul_eq (M : Matrix m n 𝕜) {k : ℕ}
     (hkm : k ≤ Fintype.card m) (hkn : k ≤ Fintype.card n) :
     ∃ X : Matrix n (Fin k) 𝕜, HasOrthonormalCols X ∧
@@ -95,10 +97,12 @@ private theorem exists_hasOrthonormalCols_singularValues_mul_eq (M : Matrix m n 
   exact hsvd.singularValues_eq (fun a b hab => singularValues_antitone M (Fin.le_def.mp hab))
     ⟨i, hi⟩
 
-/-- **Horn's product inequality.** For every `k`,
-`∏ i < k, σ_i(A * B) ≤ ∏ i < k, σ_i(A) σ_i(B)`.
+/-- **Horn's product inequality.** For every $k$,
+$$\prod_{i < k} \sigma_i(\mathbf{A}\mathbf{B})
+  \le \prod_{i < k} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B}) \,,$$
+singular values indexed from $0$ and non-increasing.
 [HornJohnson1991, Theorem 3.3.4].
-Port of `NLAlib.prod_singularValues_mul_le`, there over `ℝ`.
+Port of `NLAlib.prod_singularValues_mul_le`, there over $\mathbb{R}$.
 Result: horn-product-inequality -/
 theorem prod_range_singularValues_mul_le (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) (k : ℕ) :
     ∏ i ∈ Finset.range k, singularValues (A * B) i ≤
@@ -138,7 +142,7 @@ theorem prod_range_singularValues_mul_le (A : Matrix m p 𝕜) (B : Matrix p n �
 /-! ### Weyl's lemma -/
 
 /-- Weyl's lemma for positive sequences: logarithms turn the product inequalities into a weak
-majorization, to which the monotone convex function `t ↦ exp (r * t)` is applied. -/
+majorization, to which the monotone convex function $t \mapsto e^{rt}$ is applied. -/
 private theorem sum_range_rpow_le_of_forall_prod_range_le_of_pos {x y : ℕ → ℝ} {N : ℕ}
     (hx0 : ∀ i < N, 0 < x i) (hy0 : ∀ i < N, 0 < y i) (hx : Antitone x) (hy : Antitone y)
     (h : ∀ k ≤ N, ∏ i ∈ Finset.range k, x i ≤ ∏ i ∈ Finset.range k, y i) {r : ℝ} (hr : 0 < r) :
@@ -171,8 +175,8 @@ private theorem sum_range_rpow_le_of_forall_prod_range_le_of_pos {x y : ℕ → 
     _ = ∑ i : Fin N, y i ^ r := Finset.sum_congr rfl fun i _ => hexp (hy0 i i.isLt)
 
 /-- **Weyl's lemma: log-majorization implies weak majorization of powers.** For nonnegative
-non-increasing sequences `x`, `y` with `∏ i < k, x i ≤ ∏ i < k, y i` for all `k ≤ N`, and any
-`r > 0`, `∑ i < N, x i ^ r ≤ ∑ i < N, y i ^ r`.
+non-increasing real sequences $x$, $y$ with $\prod_{i < k} x_i \le \prod_{i < k} y_i$ for all
+$k \le N$, and any real $r > 0$, $\sum_{i < N} x_i^r \le \sum_{i < N} y_i^r$.
 [HornJohnson1991, Theorem 3.3.13 and Corollary 3.3.10].
 Port of `NLAlib.sum_range_rpow_le_of_nonneg_of_prod_le`. -/
 theorem sum_range_rpow_le_of_forall_prod_range_le {x y : ℕ → ℝ} {N : ℕ} (hx0 : ∀ i, 0 ≤ x i)
@@ -194,10 +198,11 @@ theorem sum_range_rpow_le_of_forall_prod_range_le {x y : ℕ → ℝ} {N : ℕ} 
           hprod.ne' (Finset.prod_eq_zero (Finset.mem_range.mpr hi) hi0)
       exact sum_range_rpow_le_of_forall_prod_range_le_of_pos hxpos hypos hx hy h hr
 
-/-- Power sums of the singular values of a product: for `r > 0` and every `N`,
-`∑ i < N, σ_i(A B) ^ r ≤ ∑ i < N, (σ_i(A) σ_i(B)) ^ r`.
+/-- Power sums of the singular values of a product: for real $r > 0$ and every $N$,
+$$\sum_{i < N} \sigma_i(\mathbf{A}\mathbf{B})^r
+  \le \sum_{i < N} \bigl(\sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})\bigr)^r \,.$$
 [HornJohnson1991, Theorem 3.3.14].
-Port of `NLAlib.sum_range_singularValues_mul_rpow_le`, there over `ℝ`. -/
+Port of `NLAlib.sum_range_singularValues_mul_rpow_le`, there over $\mathbb{R}$. -/
 theorem sum_range_singularValues_mul_rpow_le (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) (N : ℕ)
     {r : ℝ} (hr : 0 < r) :
     ∑ i ∈ Finset.range N, singularValues (A * B) i ^ r ≤

@@ -11,11 +11,13 @@ public import NLAlib.Matrix.Spectral.SingularValueInequalities
 /-!
 # Lidskii's inequalities
 
-For Hermitian `A` and `B`, the vector of eigenvalue differences `λ_i(A + B) - λ_i(A)` is
-majorized by the eigenvalues of `B`. For arbitrary matrices, the absolute differences of
-singular values `|σ_i(A + E) - σ_i(A)|` are weakly majorized by the singular values of `E`. The
-second statement is the general form of Mirsky's theorem: with Fan dominance it gives the
-`1`-Lipschitz property of singular values in every unitarily invariant norm.
+For Hermitian $\mathbf{A}$ and $\mathbf{B}$, the vector of eigenvalue differences
+$\lambda_i(\mathbf{A} + \mathbf{B}) - \lambda_i(\mathbf{A})$ is majorized by the eigenvalues of
+$\mathbf{B}$. For arbitrary matrices, the absolute differences of singular values
+$\lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert$ are weakly majorized by
+the singular values of $\mathbf{E}$. The second statement is the general form of Mirsky's theorem:
+with Fan dominance it gives the $1$-Lipschitz property of singular values in every unitarily
+invariant norm.
 
 ## Main results
 
@@ -34,8 +36,11 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Eigenvalues -/
 
-/-- The positive part of `B - c • 1`: a positive semidefinite `P` with `B ≤ P + c • 1` whose trace
-is the sum of the positive parts of the `λ_i(B) - c`. -/
+/-- The positive part of $\mathbf{B} - c\mathbf{I}$: a positive semidefinite $\mathbf{P}$ with
+$\mathbf{B} \preceq \mathbf{P} + c\mathbf{I}$ whose trace is the sum of the positive parts of the
+$\lambda_i(\mathbf{B}) - c$,
+$\operatorname{Re} \operatorname{tr} \mathbf{P}
+= \sum_{i < \lvert n \rvert} \max(\lambda_i(\mathbf{B}) - c, 0)$. -/
 private theorem exists_posSemidef_le_add_smul_one [DecidableEq n] {B : Matrix n n 𝕜}
     (hB : B.IsHermitian) (c : ℝ) :
     ∃ P : Matrix n n 𝕜, P.PosSemidef ∧ B ≤ P + c • (1 : Matrix n n 𝕜) ∧
@@ -70,11 +75,13 @@ private theorem exists_posSemidef_le_add_smul_one [DecidableEq n] {B : Matrix n 
       ← RCLike.ofReal_sum, RCLike.ofReal_re]
     exact Fin.sum_univ_eq_sum_range (fun i => max (eigenvalue B i - c) 0) _
 
-/-- **Lidskii's inequality**, sum form. For Hermitian `A`, `B` and any set `J` of valid indices,
-`∑ j ∈ J, (λ_j(A + B) - λ_j(A)) ≤ ∑ i < |J|, λ_i(B)`.
+/-- **Lidskii's inequality**, sum form. For Hermitian $\mathbf{A}$, $\mathbf{B}$ and any set $J$
+of indices below $\lvert n \rvert$,
+$$\sum_{j \in J} \bigl(\lambda_j(\mathbf{A} + \mathbf{B}) - \lambda_j(\mathbf{A})\bigr)
+  \le \sum_{i < \lvert J \rvert} \lambda_i(\mathbf{B}) \,.$$
 [HornJohnson2013, Theorem 4.3.47(b)]; [Bhatia1997, Theorem III.4.1].
-Port of `NLAlib.sum_eigenvalues₀_add_le_sum_add_eigenvaluePrefix`, there over `ℝ`; the proof here
-is new.
+Port of `NLAlib.sum_eigenvalues₀_add_le_sum_add_eigenvaluePrefix`, there over $\mathbb{R}$; the
+proof here is new.
 Result: lidskii-inequality -/
 theorem sum_eigenvalue_add_sub_le_sum_range {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {J : Finset ℕ} (hJ : ∀ j ∈ J, j < Fintype.card n) :
@@ -120,10 +127,12 @@ theorem sum_eigenvalue_add_sub_le_sum_range {A B : Matrix n n 𝕜} (hA : A.IsHe
           ← hA.re_trace_eq_sum_range_eigenvalue, Matrix.trace_add, map_add, add_sub_cancel_left,
           htr, h3, sub_add_cancel]
 
-/-- **Lidskii's inequality**, majorization form. For Hermitian `A`, `B`, the eigenvalue
-differences `λ_i(A + B) - λ_i(A)` are majorized by the eigenvalues of `B`.
+/-- **Lidskii's inequality**, majorization form. For Hermitian $\mathbf{A}$, $\mathbf{B}$, the
+eigenvalue differences $(\lambda_i(\mathbf{A} + \mathbf{B}) - \lambda_i(\mathbf{A}))_{i < \lvert n
+\rvert}$
+are majorized by the eigenvalues $(\lambda_i(\mathbf{B}))_{i < \lvert n \rvert}$.
 [Bhatia1997, Corollary III.4.2].
-Port of `NLAlib.majorized_eigenvalues₀_add_sub`, there over `ℝ`.
+Port of `NLAlib.majorized_eigenvalues₀_add_sub`, there over $\mathbb{R}$.
 Result: lidskii-inequality -/
 theorem majorized_eigenvalue_add_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
@@ -143,8 +152,11 @@ theorem majorized_eigenvalue_add_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian
 
 /-! ### Singular values -/
 
-/-- Lidskii's inequality for singular values, for indices below both dimensions: index `i` of the
-dilation is used where the singular value increases, and the mirror index where it decreases. -/
+/-- Lidskii's inequality for singular values, for indices below both dimensions: for a set $T$ of
+such indices,
+$\sum_{i \in T} \lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert
+\le \|\mathbf{E}\|_{(\lvert T \rvert)}$. Index $i$ of the dilation is used where the singular value
+increases, and the mirror index where it decreases. -/
 private theorem sum_abs_singularValues_add_sub_le_kyFanNorm_of_lt (A E : Matrix m n 𝕜)
     {T : Finset ℕ} (hT : ∀ i ∈ T, i < min (Fintype.card m) (Fintype.card n)) :
     ∑ i ∈ T, |singularValues (A + E) i - singularValues A i| ≤ kyFanNorm T.card E := by
@@ -193,10 +205,11 @@ private theorem sum_abs_singularValues_add_sub_le_kyFanNorm_of_lt (A E : Matrix 
         Finset.sum_congr rfl fun i hi =>
           eigenvalue_dilation E (by have := Finset.mem_range.mp hi; omega)
 
-/-- **Lidskii's inequality for singular values.** For any set `S` of indices,
-`∑ i ∈ S, |σ_i(A + E) - σ_i(A)| ≤ ∑ j < |S|, σ_j(E)`.
+/-- **Lidskii's inequality for singular values.** For any finite set $S$ of indices,
+$$\sum_{i \in S} \lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert
+  \le \|\mathbf{E}\|_{(\lvert S \rvert)} = \sum_{j < \lvert S \rvert} \sigma_j(\mathbf{E}) \,.$$
 [HornJohnson1991, Theorem 3.4.5]; [Bhatia1997, Theorem IV.3.4].
-Port of `NLAlib.sum_abs_singularValues_add_sub_le_sum_range`, there over `ℝ`.
+Port of `NLAlib.sum_abs_singularValues_add_sub_le_sum_range`, there over $\mathbb{R}$.
 Result: lidskii-singular-values, mirsky-inequality -/
 theorem sum_abs_singularValues_add_sub_le_kyFanNorm (A E : Matrix m n 𝕜) (S : Finset ℕ) :
     ∑ i ∈ S, |singularValues (A + E) i - singularValues A i| ≤ kyFanNorm S.card E := by
@@ -216,10 +229,12 @@ theorem sum_abs_singularValues_add_sub_le_kyFanNorm (A E : Matrix m n 𝕜) (S :
     (Finset.mem_filter.mp hi).2).trans
       (kyFanNorm_mono_left E (Finset.card_le_card (Finset.filter_subset _ S)))
 
-/-- The absolute differences of the first `N` singular values are weakly majorized by the first
-`N` singular values of the perturbation, for every `N`.
+/-- The absolute differences of the first $N$ singular values are weakly majorized by the first
+$N$ singular values of the perturbation, for every $N$:
+$(\lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert)_{i < N}$ is weakly
+majorized by $(\sigma_i(\mathbf{E}))_{i < N}$.
 [Bhatia1997, Theorem IV.3.4].
-Port of `NLAlib.weaklyMajorized_abs_singularValues_add_sub_padded`, there over `ℝ`.
+Port of `NLAlib.weaklyMajorized_abs_singularValues_add_sub_padded`, there over $\mathbb{R}$.
 Result: lidskii-singular-values -/
 theorem weaklyMajorized_abs_singularValues_add_sub (A E : Matrix m n 𝕜) (N : ℕ) :
     WeaklyMajorized (fun i : Fin N => |singularValues (A + E) i - singularValues A i|)

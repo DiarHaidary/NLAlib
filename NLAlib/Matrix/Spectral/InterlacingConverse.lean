@@ -35,9 +35,13 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### Partial fractions -/
 
-/-- Interpolation at distinct nodes `d i`, `i ∈ s`: the monic polynomial with roots `β i` is the
-one with roots `d i` minus a combination of the polynomials that omit one node, with the
-residues as coefficients. -/
+/-- Interpolation at distinct nodes $d_i$, $i \in s$: the monic polynomial with roots $\beta_i$ is
+the one with roots $d_i$ minus a combination of the polynomials that omit one node, with the
+residues as coefficients:
+$$\prod_{i \in s} (X - \beta_i) = \prod_{i \in s} (X - d_i) -
+  \sum_{i \in s} (\beta_i - d_i) \prod_{j \ne i} \frac{d_i - \beta_j}{d_i - d_j}
+  \prod_{j \ne i} (X - d_j),$$
+the products over $j \in s$. -/
 private theorem prod_X_sub_C_eq_sub_sum {ι : Type*} [DecidableEq ι] (s : Finset ι) {d : ι → ℝ}
     (β : ι → ℝ) (hd : Set.InjOn d s) :
     ∏ i ∈ s, (X - C (β i)) = ∏ i ∈ s, (X - C (d i)) -
@@ -77,11 +81,12 @@ private theorem prod_X_sub_C_eq_sub_sum {ι : Type*} [DecidableEq ι] (s : Finse
       ← Finset.mul_prod_erase s _ hk]
     ring
 
-/-- **Partial fractions under interlacing.** If `β` interlaces `d` from above, in the order
-given by an injective ranking `r` of the indices, the monic polynomial with roots `β` is the one
-with roots `d` minus a nonnegative combination of the polynomials that omit one root. Repeated
-values of `d` are allowed: only the first index of each group of equal values gets a nonzero
-weight. -/
+/-- **Partial fractions under interlacing.** If $\beta$ interlaces $d$ from above, in the order
+given by an injective ranking $r$ of the indices, the monic polynomial with roots $\beta$ is the
+one with roots $d$ minus a nonnegative combination of the polynomials that omit one root:
+$\prod_i (X - \beta_i) = \prod_i (X - d_i) - \sum_i \omega_i \prod_{j \ne i} (X - d_j)$ with
+$\omega_i \ge 0$. Repeated values of $d$ are allowed: only the first index of each group of equal
+values gets a nonzero weight. -/
 private theorem exists_nonneg_prod_X_sub_C_eq {ι : Type*} [Fintype ι] [DecidableEq ι]
     {r : ι → ℕ} (hr : Function.Injective r) {d β : ι → ℝ} (hd : ∀ i j, r i ≤ r j → d j ≤ d i)
     (h₁ : ∀ i, d i ≤ β i) (h₂ : ∀ i j, r i < r j → β j ≤ d i) :
@@ -149,8 +154,8 @@ private theorem mul_prod_sub_sum_eq {R ι : Type*} [CommRing R] [Fintype ι] [De
 
 /-! ### Eigenvalues from the characteristic polynomial -/
 
-/-- A Hermitian matrix whose characteristic polynomial is `∏ (X - β i)` for a non-increasing
-`β` has the eigenvalues `β`. -/
+/-- A Hermitian matrix whose characteristic polynomial is $\prod_i (X - \beta_i)$ for a
+non-increasing $\beta$ has the eigenvalues $\beta$: $\lambda_i(\mathbf{M}) = \beta_i$. -/
 private theorem eigenvalue_eq_of_charpoly_eq_prod {p : Type*} [Fintype p] [DecidableEq p]
     {q : ℕ} (hq : Fintype.card p = q) {M : Matrix p p 𝕜} (hM : M.IsHermitian) {β : Fin q → ℝ}
     (hβ : Antitone β) (hchar : M.charpoly = ∏ i, (X - C ((β i : ℝ) : 𝕜))) (i : Fin q) :
@@ -185,8 +190,8 @@ private theorem antitone_of_interlacing {A : Matrix n n 𝕜} (hA : A.IsHermitia
     exact ((h₂ m (by omega)).trans (hA.eigenvalue_le_eigenvalue (by omega) (by omega))).trans
       (h₁ j (by omega))
 
-/-- **The weights of the secular equation.** If `b` interlaces the eigenvalues of a Hermitian
-matrix from above, the polynomial with roots `b` is the secular polynomial of the eigenvalues
+/-- **The weights of the secular equation.** If $b$ interlaces the eigenvalues of a Hermitian
+matrix from above, the polynomial with roots $b$ is the secular polynomial of the eigenvalues
 with nonnegative weights. -/
 private theorem exists_nonneg_prod_X_sub_C_eigenvalues_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {b : ℕ → ℝ} (h₁ : ∀ i, i < Fintype.card n → eigenvalue A i ≤ b i)
@@ -227,10 +232,13 @@ private theorem exists_eq_mul_diagonal_eigenvalues_mul {A : Matrix n n 𝕜} (hA
 /-! ### The converses -/
 
 omit [DecidableEq n] in
-/-- **The converse of interlacing for a rank-one update.** If `b` interlaces the eigenvalues of
-the Hermitian matrix `A` from above, `λ_i ≤ b_i` and `b_{i+1} ≤ λ_i`, there is a vector `z` such
-that `A + z zᴴ` has eigenvalues `b`. [HornJohnson2013, Theorem 4.3.26].
-Port of `NLAlib.exists_add_vecMulVec_charpoly_of_interlacing`, there over `ℝ`.
+/-- **The converse of interlacing for a rank-one update.** If the real sequence $b$ interlaces
+the eigenvalues of the Hermitian matrix $\mathbf{A}$ from above, $\lambda_i(\mathbf{A}) \le b_i$
+for $i < \lvert n \rvert$ and $b_{i+1} \le \lambda_i(\mathbf{A})$ for $i + 1 < \lvert n \rvert$,
+there is a vector $\mathbf{z}$ such that
+$\lambda_i(\mathbf{A} + \mathbf{z}\mathbf{z}^{\mathsf{H}}) = b_i$ for every $i < \lvert n \rvert$.
+[HornJohnson2013, Theorem 4.3.26].
+Port of `NLAlib.exists_add_vecMulVec_charpoly_of_interlacing`, there over $\mathbb{R}$.
 Result: interlacing-converse -/
 theorem _root_.Matrix.IsHermitian.exists_eigenvalue_add_vecMulVec_star_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {b : ℕ → ℝ} (h₁ : ∀ i, i < Fintype.card n → eigenvalue A i ≤ b i)
@@ -259,10 +267,14 @@ theorem _root_.Matrix.IsHermitian.exists_eigenvalue_add_vecMulVec_star_eq {A : M
     (antitone_of_interlacing hA (Nat.le_succ _) h₁ h₂) hchar ⟨i, hi⟩
 
 omit [DecidableEq n] in
-/-- **The converse of Cauchy interlacing.** If `b_0 ≥ … ≥ b_n` interlaces the eigenvalues of the
-Hermitian matrix `A` of size `n`, `b_{i+1} ≤ λ_i ≤ b_i`, there is a bordering of `A` by one row
-and column with eigenvalues `b`. [HornJohnson2013, Theorem 4.3.21].
-Port of `NLAlib.exists_bordered_charpoly_of_interlacing`, there over `ℝ`.
+/-- **The converse of Cauchy interlacing.** If the real sequence $b$ interlaces the eigenvalues
+of the Hermitian matrix $\mathbf{A}$, $b_{i+1} \le \lambda_i(\mathbf{A}) \le b_i$ for every
+$i < \lvert n \rvert$, there is a bordering of $\mathbf{A}$ by one row and column,
+$$\begin{bmatrix} \mathbf{A} & \mathbf{z} \\ \mathbf{z}^{\mathsf{H}} & a \end{bmatrix}
+  \quad \text{with } a \in \mathbb{R},$$
+whose eigenvalues are $b_0, \dots, b_{\lvert n \rvert}$.
+[HornJohnson2013, Theorem 4.3.21].
+Port of `NLAlib.exists_bordered_charpoly_of_interlacing`, there over $\mathbb{R}$.
 Result: interlacing-converse -/
 theorem _root_.Matrix.IsHermitian.exists_eigenvalue_fromBlocks_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {b : ℕ → ℝ} (h₁ : ∀ i, i < Fintype.card n → eigenvalue A i ≤ b i)

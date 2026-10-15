@@ -18,12 +18,14 @@ public import NLAlib.Matrix.Spectral.Simultaneous
 A square matrix over a field is diagonalisable when it has a basis of eigenvectors,
 `NLAlib.IsDiagonalizable A`. This file gives the equivalent forms, the standard sufficient
 conditions and simultaneous diagonalisation of commuting families. Left and right eigenvectors
-are in `NLAlib.Matrix.Spectral.EigenvectorPairing`, the Sylvester equation `A X - X B = C` in
+are in `NLAlib.Matrix.Spectral.EigenvectorPairing`, the Sylvester equation
+$\mathbf{A}\mathbf{X} - \mathbf{X}\mathbf{B} = \mathbf{C}$ in
 `NLAlib.Matrix.Spectral.SylvesterEquation`.
 
 ## Main definitions
 
-* `NLAlib.IsDiagonalizable`: `A * V = V * diagonal d` for an invertible `V`.
+* `NLAlib.IsDiagonalizable`: $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$
+  for an invertible $\mathbf{V}$.
 
 ## Main results
 
@@ -45,13 +47,16 @@ variable {K : Type*} [Field K] {ι m n : Type*} [Fintype m] [Fintype n] [Decidab
 
 /-! ### Diagonalisability -/
 
-/-- A square matrix is **diagonalisable** if `A * V = V * diagonal d` for an invertible `V`: the
-columns of `V` are a basis of eigenvectors. [HornJohnson2013, Definition 1.3.6].
+/-- A square matrix is **diagonalisable** if
+$\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ for an invertible $\mathbf{V}$:
+the columns of $\mathbf{V}$ are a basis of eigenvectors. [HornJohnson2013, Definition 1.3.6].
 Port of `NLAlib.IsDiagonalizable`. -/
 def IsDiagonalizable (A : Matrix n n K) : Prop :=
   ∃ (V : Matrix n n K) (d : n → K), IsUnit V.det ∧ A * V = V * Matrix.diagonal d
 
-/-- Diagonalisability as a similarity `A = V D V⁻¹`.
+/-- Diagonalisability as a similarity
+$\mathbf{A} = \mathbf{V} \operatorname{diag}(\mathbf{d}) \mathbf{V}^{-1}$ with $\mathbf{V}$
+invertible.
 Port of `NLAlib.isDiagonalizable_iff_exists_similarity`. -/
 theorem isDiagonalizable_iff_exists_eq_mul_diagonal_mul_inv {A : Matrix n n K} :
     IsDiagonalizable A ↔
@@ -61,7 +66,9 @@ theorem isDiagonalizable_iff_exists_eq_mul_diagonal_mul_inv {A : Matrix n n K} :
   · rw [← h, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hV, Matrix.mul_one]
   · rw [h, Matrix.mul_assoc, Matrix.nonsing_inv_mul _ hV, Matrix.mul_one]
 
-/-- A matrix equation `A * V = V * diagonal d` says that the columns of `V` are eigenvectors. -/
+/-- A matrix equation $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ says
+that the columns of $\mathbf{V}$ are eigenvectors: $\mathbf{A}\mathbf{v}_j = \mathbf{d}_j
+\mathbf{v}_j$ for each column $\mathbf{v}_j$. -/
 private theorem mul_eq_mul_diagonal_iff {A V : Matrix n n K} {d : n → K} :
     A * V = V * Matrix.diagonal d ↔ ∀ j, A *ᵥ V.col j = d j • V.col j := by
   refine ⟨fun h j => funext fun i => ?_, fun h => Matrix.ext fun i j => ?_⟩
@@ -74,7 +81,8 @@ private theorem mul_eq_mul_diagonal_iff {A V : Matrix n n K} {d : n → K} :
     rw [Matrix.mul_diagonal, ← h1]
     rfl
 
-/-- Diagonalisability as a linearly independent family of eigenvectors.
+/-- Diagonalisability as a linearly independent family of eigenvectors: vectors $\mathbf{v}_j$,
+$j \in n$, linearly independent, with $\mathbf{A}\mathbf{v}_j = \mathbf{d}_j \mathbf{v}_j$.
 Port of `NLAlib.isDiagonalizable_iff_exists_independent_eigenvectors`. -/
 theorem isDiagonalizable_iff_exists_linearIndependent {A : Matrix n n K} :
     IsDiagonalizable A ↔
@@ -90,7 +98,9 @@ theorem isDiagonalizable_iff_exists_linearIndependent {A : Matrix n n K} :
     rw [hcol]
     exact h
 
-/-- The diagonal of a diagonalisation lists the eigenvalues. -/
+/-- The diagonal of a diagonalisation lists the eigenvalues: if $\mathbf{V}$ is invertible and
+$\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$, the entries of $\mathbf{d}$
+are the eigenvalues of $\mathbf{A}$ with multiplicity (`IsEigenvalueListing`). -/
 theorem isEigenvalueListing_of_mul_eq_mul_diagonal {A V : Matrix n n K} {d : n → K}
     (hV : IsUnit V.det) (h : A * V = V * Matrix.diagonal d) :
     IsEigenvalueListing A d := by
@@ -99,7 +109,9 @@ theorem isEigenvalueListing_of_mul_eq_mul_diagonal {A V : Matrix n n K} {d : n �
   rw [isEigenvalueListing_iff, hA, Matrix.charpoly_mul_comm, ← Matrix.mul_assoc,
     Matrix.nonsing_inv_mul _ hV, Matrix.one_mul, Matrix.charpoly_diagonal]
 
-/-- **A matrix with distinct eigenvalues is diagonalisable.**
+/-- **A matrix with distinct eigenvalues is diagonalisable**: if the entries of $\mathbf{d}$ are
+pairwise distinct and each lies in the spectrum of $\mathbf{A}$, then $\mathbf{A}$ is
+diagonalisable.
 [HornJohnson2013, Theorem 1.3.9]. Port of `NLAlib.isDiagonalizable_of_distinct_eigenvalues`. -/
 theorem isDiagonalizable_of_injective_of_forall_mem_spectrum {A : Matrix n n K} {d : n → K}
     (hd : Function.Injective d) (h : ∀ j, d j ∈ spectrum K A) : IsDiagonalizable A := by
@@ -110,7 +122,7 @@ theorem isDiagonalizable_of_injective_of_forall_mem_spectrum {A : Matrix n n K} 
   rw [Matrix.toLin'_apply, hAv]
 
 omit [Fintype n] [DecidableEq n] in
-/-- A spanning set of vectors contains a linearly independent family indexed by `n`. -/
+/-- A spanning set of vectors contains a linearly independent family indexed by $n$. -/
 private theorem exists_linearIndependent_of_span_eq_top [Finite n] {S : Set (n → K)}
     (hS : Submodule.span K S = ⊤) :
     ∃ v : n → n → K, LinearIndependent K v ∧ ∀ j, v j ∈ S := by
@@ -191,7 +203,9 @@ private theorem IsDiagonalizable.of_surjective {A : Matrix m m K} {B : Matrix n 
     exact Module.End.mem_eigenspace_iff.mp hx
   rw [Module.End.mem_eigenspace_iff, Matrix.toLin'_apply, ← h, hx', map_smul]
 
-/-- A block diagonal matrix is diagonalisable exactly when its blocks are.
+/-- A block diagonal matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$ is
+diagonalisable exactly when its blocks $\mathbf{A}$ and $\mathbf{B}$ are.
 Port of `NLAlib.isDiagonalizable_fromBlocks_zero_zero_iff`. -/
 theorem isDiagonalizable_fromBlocks_diagonal_iff {A : Matrix m m K} {B : Matrix n n K} :
     IsDiagonalizable (Matrix.fromBlocks A 0 0 B) ↔ IsDiagonalizable A ∧ IsDiagonalizable B := by
@@ -227,7 +241,9 @@ theorem _root_.IsStarNormal.isDiagonalizable {A : Matrix n n ℂ} (hA : IsStarNo
   refine ⟨U, d, (Matrix.isUnit_iff_isUnit_det U).mp hU.isUnit, ?_⟩
   rw [Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
 
-/-- **A commuting family of diagonalisable matrices is simultaneously diagonalisable.**
+/-- **A commuting family of diagonalisable matrices is simultaneously diagonalisable**: if the
+$\mathbf{A}_i$ are diagonalisable and commute pairwise, there is one invertible $\mathbf{V}$ with
+$\mathbf{A}_i\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d}_i)$ for every $i$.
 [HornJohnson2013, Theorem 1.3.21].
 Port of `NLAlib.exists_simultaneous_diagonalization_of_commute`. -/
 theorem exists_forall_mul_eq_mul_diagonal_of_pairwise_commute {A : ι → Matrix n n K}
@@ -256,7 +272,10 @@ theorem exists_forall_mul_eq_mul_diagonal_of_pairwise_commute {A : ι → Matrix
   choose d hd using fun j => hvS j i
   exact ⟨d, mul_eq_mul_diagonal_iff.mpr (hcol ▸ hd)⟩
 
-/-- Simultaneously diagonalisable matrices commute.
+/-- Simultaneously diagonalisable matrices commute: if $\mathbf{V}$ is invertible,
+$\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{a})$ and
+$\mathbf{B}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{b})$, then
+$\mathbf{A}\mathbf{B} = \mathbf{B}\mathbf{A}$.
 Port of `NLAlib.commute_of_simultaneous_diagonalization`. -/
 theorem commute_of_mul_eq_mul_diagonal {A B V : Matrix n n K} {a b : n → K} (hV : IsUnit V.det)
     (hA : A * V = V * Matrix.diagonal a) (hB : B * V = V * Matrix.diagonal b) : Commute A B := by

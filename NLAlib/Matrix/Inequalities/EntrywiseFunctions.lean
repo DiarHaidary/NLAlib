@@ -44,8 +44,9 @@ private theorem map_pow_succ (A : Matrix n n 𝕜) (k : ℕ) :
   ext i j
   simp only [Matrix.map_apply, Matrix.hadamard_apply, pow_succ]
 
-/-- **Entrywise powers of a positive semidefinite matrix are positive semidefinite.**
-[HornJohnson2013, Theorem 7.5.9]. Port of `NLAlib.posSemidef_map_pow`, there over `ℝ`. -/
+/-- **Entrywise powers of a positive semidefinite matrix are positive semidefinite**: for every
+$k$, the matrix $\mathbf{A}^{\circ k}$ with entries $\mathbf{A}_{i,j}^k$ is positive semidefinite.
+[HornJohnson2013, Theorem 7.5.9]. Port of `NLAlib.posSemidef_map_pow`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosSemidef.map_pow [Finite n] {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (k : ℕ) : (A.map fun t => t ^ k).PosSemidef := by
   induction k with
@@ -61,9 +62,11 @@ theorem _root_.Matrix.PosSemidef.map_pow [Finite n] {A : Matrix n n 𝕜} (hA : 
     rw [map_pow_succ]
     exact ih.hadamard hA
 
-/-- Entrywise powers are monotone on positive semidefinite matrices: `0 ≤ B ≤ A` gives
-`B^{∘k} ≤ A^{∘k}`. [HornJohnson1991, §5.2 context].
-Port of `NLAlib.map_pow_le_map_pow_of_posSemidef_le`, there over `ℝ`. -/
+/-- Entrywise powers are monotone on positive semidefinite matrices:
+$\mathbf{0} \preceq \mathbf{B} \preceq \mathbf{A}$ gives
+$\mathbf{B}^{\circ k} \preceq \mathbf{A}^{\circ k}$, with $\mathbf{A}^{\circ k}$ the entrywise
+$k$-th power. [HornJohnson1991, §5.2 context].
+Port of `NLAlib.map_pow_le_map_pow_of_posSemidef_le`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosSemidef.map_pow_le_map_pow_of_le [Finite n] {A B : Matrix n n 𝕜}
     (hB : B.PosSemidef) (h : B ≤ A) (k : ℕ) : (B.map fun t => t ^ k) ≤ A.map fun t => t ^ k := by
   have hA : A.PosSemidef := by
@@ -91,8 +94,9 @@ private theorem hasSum_smul_map_pow {A : Matrix n n ℝ} {c : ℕ → ℝ} {f : 
   simpa only [Matrix.smul_apply, Matrix.map_apply, smul_eq_mul] using h i j
 
 /-- **Entrywise power series with nonnegative coefficients preserve positive semidefiniteness.**
-If `f t = ∑ c k t ^ k` with `c k ≥ 0` at every entry of the real positive semidefinite matrix
-`A`, then `A.map f` is positive semidefinite.
+If $f(t) = \sum_k c_k t^k$ with $c_k \ge 0$, the series converging at every entry of the real
+positive semidefinite matrix $\mathbf{A}$, then the matrix with entries $f(\mathbf{A}_{i,j})$ is
+positive semidefinite.
 [HornJohnson2013, Theorem 7.5.9]; [HornJohnson1991, Theorem 6.3.6 context].
 Port of `NLAlib.posSemidef_map_of_nonneg_powerSeries`.
 Result: schur-product-power-series -/
@@ -112,14 +116,17 @@ private theorem hasSum_inv_factorial_smul_map_pow (A : Matrix n n ℝ) :
     HasSum (fun k => (k.factorial : ℝ)⁻¹ • A.map fun t => t ^ k) (A.map Real.exp) :=
   hasSum_smul_map_pow fun i j => hasSum_inv_factorial_mul_pow (A i j)
 
-/-- **The entrywise exponential of a positive semidefinite matrix is positive semidefinite.**
+/-- **The entrywise exponential of a positive semidefinite matrix is positive semidefinite**: for
+real positive semidefinite $\mathbf{A}$, so is the matrix with entries $e^{\mathbf{A}_{i,j}}$.
 [HornJohnson2013, Theorem 7.5.9]. Port of `NLAlib.posSemidef_map_exp`. -/
 theorem _root_.Matrix.PosSemidef.map_exp [Finite n] {A : Matrix n n ℝ} (hA : A.PosSemidef) :
     (A.map Real.exp).PosSemidef :=
   hA.map_of_hasSum (fun k => inv_nonneg.mpr k.factorial.cast_nonneg) fun i j =>
     hasSum_inv_factorial_mul_pow (A i j)
 
-/-- The entrywise exponential is monotone on positive semidefinite matrices.
+/-- The entrywise exponential is monotone on positive semidefinite matrices: for real
+$\mathbf{0} \preceq \mathbf{B} \preceq \mathbf{A}$, the entrywise exponential of $\mathbf{B}$ is
+below that of $\mathbf{A}$ in the Loewner order.
 Port of `NLAlib.map_exp_le_map_exp_of_posSemidef_le`. -/
 theorem _root_.Matrix.PosSemidef.map_exp_le_map_exp_of_le [Finite n] {A B : Matrix n n ℝ}
     (hB : B.PosSemidef) (h : B ≤ A) : B.map Real.exp ≤ A.map Real.exp := by
@@ -138,7 +145,7 @@ private theorem map_pow_vecMulVec (b : n → ℝ) (k : ℕ) :
   ext i j
   simp only [Matrix.map_apply, Matrix.vecMulVec_apply, mul_pow, star_trivial]
 
-/-- The quadratic form of the first `N` terms of the entrywise exponential series of a rank-one
+/-- The quadratic form of the first $N$ terms of the entrywise exponential series of a rank-one
 Gram matrix is a weighted sum of squares of moments. -/
 private theorem quadForm_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] (b x : n → ℝ)
     (N : ℕ) :
@@ -153,8 +160,8 @@ private theorem quadForm_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] (b
     simp only [star_trivial, RCLike.ofReal_real_eq_id, id_eq, Real.norm_eq_abs, sq_abs,
       dotProduct, mul_comm]
 
-/-- The first `card n` terms of the entrywise exponential series of the Gram matrix of distinct
-real numbers already form a positive definite matrix, by the Vandermonde determinant. -/
+/-- The first $\lvert n \rvert$ terms of the entrywise exponential series of the Gram matrix of
+distinct real numbers already form a positive definite matrix, by the Vandermonde determinant. -/
 private theorem posDef_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] {b : n → ℝ}
     (hb : Function.Injective b) :
     (∑ k ∈ Finset.range (Fintype.card n),
@@ -238,7 +245,9 @@ private theorem exists_injective_vecMulVec_le [Finite n] {A : Matrix n n ℝ} (h
   nlinarith [mul_nonneg hx hq, mul_nonneg (mul_nonneg hx hq) hq]
 
 /-- **The entrywise exponential of a positive semidefinite matrix is positive definite exactly
-when its rows are distinct.** [HornJohnson2013, Theorem 7.5.9 context].
+when its rows are distinct**: for real positive semidefinite $\mathbf{A}$, the matrix with entries
+$e^{\mathbf{A}_{i,j}}$ is positive definite iff no two rows of $\mathbf{A}$ are equal.
+[HornJohnson2013, Theorem 7.5.9 context].
 Port of `NLAlib.posDef_map_exp_iff_rows_injective`.
 Result: exponential-kernel -/
 theorem _root_.Matrix.PosSemidef.posDef_map_exp_iff [Finite n] {A : Matrix n n ℝ}
@@ -256,7 +265,8 @@ theorem _root_.Matrix.PosSemidef.posDef_map_exp_iff [Finite n] {A : Matrix n n �
       (Matrix.le_iff.mp (hBB.map_exp_le_map_exp_of_le hle))
     rwa [add_sub_cancel] at h
 
-/-- The Gram matrix `exp (b i * b j)` of distinct real numbers is positive definite.
+/-- For distinct real numbers $\mathbf{b}_i$, the matrix with entries
+$e^{\mathbf{b}_i \mathbf{b}_j}$ is positive definite.
 Port of `NLAlib.posDef_sum_inv_factorial_map_pow_vecMulVec_of_injective`, in the limit. -/
 theorem posDef_of_exp_mul [Finite n] {b : n → ℝ} (hb : Function.Injective b) :
     (Matrix.of fun i j => Real.exp (b i * b j)).PosDef :=

@@ -10,18 +10,24 @@ public import NLAlib.Matrix.Pseudoinverse.Pinv
 /-!
 # Norms and singular values of the pseudoinverse
 
-The singular values of `pinv A` are the inverses of the nonzero singular values of `A`, in
-reverse order. In particular `specNorm (pinv A)` is the inverse of the smallest nonzero singular
-value, and a lower Loewner bound on the Gram matrix of `A` bounds `specNorm (pinv A)` above. The
-latter is how a subspace embedding controls `(S U)⁺`.
+The singular values of $\mathbf{A}^{+}$ are the inverses of the nonzero singular values of
+$\mathbf{A}$, in reverse order. In particular $\|\mathbf{A}^{+}\|_2$ is the inverse of the smallest
+nonzero singular value, and a lower Loewner bound on the Gram matrix of $\mathbf{A}$ bounds
+$\|\mathbf{A}^{+}\|_2$ above. The latter is how a subspace embedding controls
+$(\mathbf{S}\mathbf{U})^{+}$.
 
 ## Main results
 
 * `NLAlib.singularValues_pinv`: the singular values of the pseudoinverse.
 * `NLAlib.specNorm_pinv`, `NLAlib.specNorm_pinv_of_injective`: its spectral norm.
-* `NLAlib.specNorm_pinv_sq_le_inv_of_smul_one_le`: from `a • 1 ≤ Aᴴ * A`.
-* `NLAlib.norm_le_specNorm_pinv_mul_norm_mulVec`: `‖x‖ ≤ ‖A⁺‖ ‖A x‖` for full column rank.
-* `NLAlib.frobNorm_pinv_sq_eq_re_trace_inv`: `‖A⁺‖_F² = tr (Aᴴ A)⁻¹` for full column rank.
+* `NLAlib.specNorm_pinv_sq_le_inv_of_smul_one_le`: from
+  $a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$.
+* `NLAlib.norm_le_specNorm_pinv_mul_norm_mulVec`:
+  $\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$ for full column rank.
+* `NLAlib.frobNorm_pinv_sq_eq_re_trace_inv`:
+  $\|\mathbf{A}^{+}\|_{\mathsf{F}}^2
+  = \operatorname{Re} \operatorname{tr}\bigl((\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\bigr)$ for
+  full column rank.
 -/
 
 @[expose] public section
@@ -32,8 +38,9 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- **Singular values of the pseudoinverse.** For `i + j + 1 = rank A`,
-`σ_i(pinv A) = (σ_j(A))⁻¹`: the nonzero singular values are inverted and their order reversed.
+/-- **Singular values of the pseudoinverse.** For $i + j + 1 = \operatorname{rank} \mathbf{A}$,
+$\sigma_i(\mathbf{A}^{+}) = \sigma_j(\mathbf{A})^{-1}$, singular values non-increasing and indexed
+from $0$: the nonzero singular values are inverted and their order reversed.
 [HornJohnson2013, Problem 7.3.P7]. -/
 theorem singularValues_pinv (A : Matrix m n 𝕜) {i j : ℕ} (h : i + j + 1 = A.rank) :
     singularValues (pinv A) i = (singularValues A j)⁻¹ := by
@@ -48,7 +55,8 @@ theorem singularValues_pinv (A : Matrix m n 𝕜) {i j : ℕ} (h : i + j + 1 = A
   exact congrArg (fun t => (singularValues A t)⁻¹) hj
 
 /-- **The spectral norm of the pseudoinverse** is the inverse of the smallest nonzero singular
-value: for `k + 1 = rank A`, `specNorm (pinv A) = (σ_k(A))⁻¹`.
+value: for $k + 1 = \operatorname{rank} \mathbf{A}$, $\|\mathbf{A}^{+}\|_2 =
+\sigma_k(\mathbf{A})^{-1}$.
 [GolubVanLoan2013, §5.5.2].
 Port of `NLAlib.specNorm_moorePenroseInverse_eq_inv_singularValues_last_positive`. -/
 theorem specNorm_pinv (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = A.rank) :
@@ -57,20 +65,21 @@ theorem specNorm_pinv (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = A.rank) :
   exact singularValues_pinv A (by omega)
 
 /-- With full column rank, the spectral norm of the pseudoinverse is the inverse of the smallest
-singular value. -/
+singular value: $\|\mathbf{A}^{+}\|_2 = \sigma_k(\mathbf{A})^{-1}$ for $k + 1 = \lvert n \rvert$. -/
 theorem specNorm_pinv_of_injective {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec) {k : ℕ}
     (hk : k + 1 = Fintype.card n) : specNorm (pinv A) = (singularValues A k)⁻¹ := by
   exact specNorm_pinv A (hk.trans (mulVec_injective_iff_rank_eq.mp hA).symm)
 
-/-- `specNorm (pinv A) ^ 2 = specNorm (pinv (Aᴴ * A))`.
+/-- $\|\mathbf{A}^{+}\|_2^2 = \|(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+}\|_2$.
 Port of `NLAlib.specNorm_moorePenroseInverse_sq`. -/
 theorem specNorm_pinv_sq (A : Matrix m n 𝕜) :
     specNorm (pinv A) ^ 2 = specNorm (pinv (Aᴴ * A)) := by
   rw [pinv_conjTranspose_mul_self, specNorm_mul_conjTranspose_self]
 
-/-- **A lower bound on the Gram matrix bounds the pseudoinverse.** If `a • 1 ≤ Aᴴ * A` with
-`0 < a`, then `specNorm (pinv A) ^ 2 ≤ a⁻¹`. With `A = S * U` and `a = 1 - ε` this is the bound
-on `(S U)⁺` delivered by a subspace embedding. -/
+/-- **A lower bound on the Gram matrix bounds the pseudoinverse.** If
+$a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ with $0 < a$, then $\|\mathbf{A}^{+}\|_2^2
+\le a^{-1}$. With $\mathbf{A} = \mathbf{S}\mathbf{U}$ and $a = 1 - \varepsilon$ this is the bound on
+$(\mathbf{S}\mathbf{U})^{+}$ delivered by a subspace embedding. -/
 theorem specNorm_pinv_sq_le_inv_of_smul_one_le [DecidableEq n] {A : Matrix m n 𝕜} {a : ℝ}
     (ha : 0 < a) (h : a • (1 : Matrix n n 𝕜) ≤ Aᴴ * A) : specNorm (pinv A) ^ 2 ≤ a⁻¹ := by
   classical
@@ -84,25 +93,28 @@ theorem specNorm_pinv_sq_le_inv_of_smul_one_le [DecidableEq n] {A : Matrix m n �
   exact h₁.trans (pow_le_pow_left₀ (norm_nonneg _) h₂ 2)
 
 /-- **The pseudoinverse bounds the vector below.** With full column rank,
-`‖x‖ ≤ specNorm (pinv A) * ‖A x‖`.
-Port of `NLAlib.inv_specNorm_pinvL_sq_mul_dotProduct_le`, there over `ℝ` in squared form. -/
+$\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$.
+Port of `NLAlib.inv_specNorm_pinvL_sq_mul_dotProduct_le`, there over $\mathbb{R}$ in squared
+form. -/
 theorem norm_le_specNorm_pinv_mul_norm_mulVec {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (x : n → 𝕜) :
     ‖WithLp.toLp 2 x‖ ≤ specNorm (pinv A) * ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
   have h := norm_toLp_mulVec_le (pinv A) (A *ᵥ x)
   rwa [pinv_mulVec_mulVec_of_injective hA] at h
 
-/-- For a vector in the row space of `A`, `‖x‖ ≤ specNorm (pinv A) * ‖A x‖`, with no rank
-assumption.
-Port of `NLAlib.inv_specNorm_moorePenroseInverse_sq_mul_dotProduct_le`, there over `ℝ`. -/
+/-- For a vector $\mathbf{x}$ in the row space of $\mathbf{A}$ (the range of
+$\mathbf{A}^{\mathsf{H}}$), $\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$, with
+no rank assumption.
+Port of `NLAlib.inv_specNorm_moorePenroseInverse_sq_mul_dotProduct_le`, there over $\mathbb{R}$. -/
 theorem norm_le_specNorm_pinv_mul_norm_mulVec_of_mem_range (A : Matrix m n 𝕜) {x : n → 𝕜}
     (hx : x ∈ LinearMap.range Aᴴ.mulVecLin) :
     ‖WithLp.toLp 2 x‖ ≤ specNorm (pinv A) * ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
   have h := norm_toLp_mulVec_le (pinv A) (A *ᵥ x)
   rwa [Matrix.mulVec_mulVec, pinv_mul, rangeProjector_mulVec_eq_self_iff.mpr hx] at h
 
-/-- **A lower Gram bound is a bound on the pseudoinverse.** With full column rank and `0 < a`,
-`a • 1 ≤ Aᴴ * A` exactly when `specNorm (pinv A) ^ 2 ≤ a⁻¹`. -/
+/-- **A lower Gram bound is a bound on the pseudoinverse.** With full column rank and $0 < a$,
+$a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ exactly when $\|\mathbf{A}^{+}\|_2^2 \le
+a^{-1}$. -/
 theorem smul_one_le_conjTranspose_mul_self_iff_specNorm_pinv_sq_le [DecidableEq n]
     {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec) {a : ℝ} (ha : 0 < a) :
     a • (1 : Matrix n n 𝕜) ≤ Aᴴ * A ↔ specNorm (pinv A) ^ 2 ≤ a⁻¹ := by
@@ -114,14 +126,18 @@ theorem smul_one_le_conjTranspose_mul_self_iff_specNorm_pinv_sq_le [DecidableEq 
   rwa [le_inv_mul_iff₀ ha] at hx'
 
 /-- **The squared Frobenius norm of the pseudoinverse** is the sum of the inverse squared
-nonzero singular values. -/
+nonzero singular values:
+$\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \sum_{k < \operatorname{rank} \mathbf{A}}
+\sigma_k(\mathbf{A})^{-2}$. -/
 theorem frobNorm_pinv_sq (A : Matrix m n 𝕜) :
     frobNorm (pinv A) ^ 2 = ∑ k ∈ Finset.range A.rank, (singularValues A k ^ 2)⁻¹ := by
   obtain ⟨U, V, hsvd⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
   rw [hsvd.pinv.frobNorm_sq_eq, ← Fin.sum_univ_eq_sum_range fun k => (singularValues A k ^ 2)⁻¹]
   exact Finset.sum_congr rfl fun i _ => inv_pow _ _
 
-/-- With full column rank, `‖pinv A‖_F² = re (tr (Aᴴ A)⁻¹)`. This is the quantity whose
+/-- With full column rank,
+$\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \operatorname{Re}
+\operatorname{tr}\bigl((\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\bigr)$. This is the quantity whose
 expectation for a Gaussian matrix drives the randomized range finder bounds.
 [HalkoMartinssonTropp2011, Proposition 10.2] uses it in this form.
 Port of `NLAlib.frobSq_pinvL_eq_trace_inv`. -/
@@ -131,8 +147,10 @@ theorem frobNorm_pinv_sq_eq_re_trace_inv [DecidableEq n] {A : Matrix m n 𝕜}
   rw [frobNorm_sq_eq_re_trace, Matrix.trace_mul_comm, ← pinv_conjTranspose_mul_self,
     pinv_of_isUnit (isUnit_conjTranspose_mul_self_iff.mpr hA)]
 
-/-- With full row rank, `‖pinv A‖_F² = re (tr (A Aᴴ)⁻¹)`. This is the form the randomized range
-finder uses, for the full-row-rank Gaussian block `Ω₁`.
+/-- With full row rank,
+$\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \operatorname{Re}
+\operatorname{tr}\bigl((\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}\bigr)$. This is the form the
+randomized range finder uses, for the full-row-rank Gaussian block $\mathbf{\Omega}_1$.
 [HalkoMartinssonTropp2011, Proposition 10.2].
 Port of `NLAlib.frobSq_pinvR_eq_trace_inv`. -/
 theorem frobNorm_pinv_sq_eq_re_trace_inv_of_injective_conjTranspose [DecidableEq m]
@@ -141,7 +159,8 @@ theorem frobNorm_pinv_sq_eq_re_trace_inv_of_injective_conjTranspose [DecidableEq
   have h := frobNorm_pinv_sq_eq_re_trace_inv hA
   rwa [pinv_conjTranspose, frobNorm_conjTranspose, Matrix.conjTranspose_conjTranspose] at h
 
-/-- `‖pinv A‖_F² = re (tr (pinv (A * Aᴴ)))`, with no rank assumption.
+/-- $\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \operatorname{Re}
+\operatorname{tr}\bigl((\mathbf{A}\mathbf{A}^{\mathsf{H}})^{+}\bigr)$, with no rank assumption.
 Port of `NLAlib.frobSq_moorePenroseInverse_eq_trace_moorePenroseInverse`. -/
 theorem frobNorm_pinv_sq_eq_re_trace_pinv (A : Matrix m n 𝕜) :
     frobNorm (pinv A) ^ 2 = RCLike.re (pinv (A * Aᴴ)).trace := by

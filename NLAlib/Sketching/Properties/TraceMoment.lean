@@ -12,15 +12,18 @@ public import NLAlib.Sketching.Properties.Oblivious
 /-!
 # Trace moments of the Gram error
 
-For a random sketch `S` and `U` with orthonormal columns, the Gram error is
-`E = (S U)ᴴ (S U) - 1`. A bound `E [re tr E^{2q}] ≤ B` on its even trace moments,
-`NLAlib.HasGramTraceMoment S U q B μ`, gives `P(ε ≤ ‖E‖) ≤ B / ε^{2q}` by Markov's inequality,
-since `‖E‖^{2q} ≤ re tr E^{2q}`, hence a random subspace embedding, and, for every orthonormal
-`U` at once, an oblivious subspace embedding. This is the moment method of the sparse
-embeddings and of the Gaussian and sign sketches at `q = 1`.
+For a random sketch $\mathbf{S}$ and $\mathbf{U}$ with orthonormal columns, the Gram error is
+$\mathbf{E} = (\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} - \mathbf{I}$. A bound
+$\mathbb{E}[\operatorname{Re}\operatorname{tr}\mathbf{E}^{2q}] \le B$ on its even trace moments,
+`NLAlib.HasGramTraceMoment S U q B μ`, gives
+$\mathbb{P}(\varepsilon \le \|\mathbf{E}\|_2) \le B / \varepsilon^{2q}$ by Markov's inequality,
+since $\|\mathbf{E}\|_2^{2q} \le \operatorname{Re}\operatorname{tr}\mathbf{E}^{2q}$, hence a random
+subspace embedding, and, for every orthonormal $\mathbf{U}$ at once, an oblivious subspace
+embedding. This is the moment method of the sparse embeddings and of the Gaussian and sign
+sketches at $q = 1$.
 
-At `q = 0` the hypothesis is `card p · μ univ ≤ B` and the consequences still hold. Design:
-`docs/design/Sketching-S1.md` §3.7.
+At $q = 0$ the hypothesis is $\lvert p \rvert \, \mu(\Omega) \le B$ and the consequences still
+hold. Design: `docs/design/Sketching-S1.md` §3.7.
 
 ## Main definitions
 
@@ -44,14 +47,15 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {k n p : Type*} [Fintype k] [Fintype n] [Fintype p] [DecidableEq p] {S : Ω → Matrix k n 𝕜}
   {U : Matrix n p 𝕜} {q : ℕ} {B B' ε : ℝ}
 
-/-- **Trace-moment bound on the Gram error**: `re tr E^{2q}` is integrable and
-`E [re tr E^{2q}] ≤ B` for `E = (S U)ᴴ (S U) - 1`. Used for `U` with orthonormal columns, where
-`E` is the Gram error of the embedding. -/
+/-- **Trace-moment bound on the Gram error**: $\operatorname{Re}\operatorname{tr}\mathbf{E}^{2q}$
+is integrable and $\mathbb{E}[\operatorname{Re}\operatorname{tr}\mathbf{E}^{2q}] \le B$ for
+$\mathbf{E} = (\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} - \mathbf{I}$. Used for
+$\mathbf{U}$ with orthonormal columns, where $\mathbf{E}$ is the Gram error of the embedding. -/
 structure HasGramTraceMoment (S : Ω → Matrix k n 𝕜) (U : Matrix n p 𝕜) (q : ℕ) (B : ℝ)
     (μ : Measure Ω) : Prop where
   /-- The trace moment is integrable. -/
   integrable : Integrable (fun ω => RCLike.re (((S ω * U)ᴴ * (S ω * U) - 1) ^ (2 * q)).trace) μ
-  /-- The trace moment is at most `B`. -/
+  /-- The trace moment is at most $B$. -/
   integral_le : ∫ ω, RCLike.re (((S ω * U)ᴴ * (S ω * U) - 1) ^ (2 * q)).trace ∂μ ≤ B
 
 /-- The trace-moment bound depends only on the law of the sketch. -/
@@ -74,8 +78,11 @@ theorem HasGramTraceMoment.mono (h : HasGramTraceMoment S U q B μ) (hB : B ≤ 
     HasGramTraceMoment S U q B' μ := by
   exact ⟨h.integrable, h.integral_le.trans hB⟩
 
-/-- **Trace-moment Markov step**: `P(ε ≤ ‖(S U)ᴴ (S U) - 1‖) ≤ B / ε^{2q}`, from
-`‖E‖^{2q} ≤ re tr E^{2q}`. [Woodruff2014, proof of Theorem 9]. -/
+/-- **Trace-moment Markov step**: for $\varepsilon > 0$,
+$$\mathbb{P}\bigl(\varepsilon \le \|(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} -
+\mathbf{I}\|_2\bigr) \le \frac{B}{\varepsilon^{2q}}\,,$$
+from $\|\mathbf{E}\|_2^{2q} \le \operatorname{Re}\operatorname{tr}\mathbf{E}^{2q}$.
+[Woodruff2014, proof of Theorem 9]. -/
 theorem HasGramTraceMoment.measure_specNorm_ge_le [IsFiniteMeasure μ]
     (h : HasGramTraceMoment S U q B μ) (hε : 0 < ε) :
     μ.real {ω | ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)} ≤ B / ε ^ (2 * q) := by
@@ -111,16 +118,18 @@ theorem HasGramTraceMoment.measure_specNorm_ge_le [IsFiniteMeasure μ]
           (pow_nonneg (specNorm_nonneg _) _).trans (hpow ω)) h.integrable hεq
     _ ≤ B / ε ^ (2 * q) := div_le_div_of_nonneg_right h.integral_le hεq.le
 
-/-- A trace-moment bound for `U` with orthonormal columns makes `S` a random `ε`-embedding of
-`range U` with failure probability `B / ε^{2q}`. -/
+/-- A trace-moment bound for $\mathbf{U}$ with orthonormal columns makes $\mathbf{S}$ a random
+$\varepsilon$-embedding of $\operatorname{range}\mathbf{U}$, $\varepsilon > 0$, with failure
+probability $B / \varepsilon^{2q}$. -/
 theorem HasGramTraceMoment.hasSubspaceEmbedding [IsFiniteMeasure μ]
     (h : HasGramTraceMoment S U q B μ) (hU : HasOrthonormalCols U) (hε : 0 < ε) :
     HasSubspaceEmbedding S U (1 - ε) (1 + ε) (B / ε ^ (2 * q)) μ := by
   exact hU.hasSubspaceEmbedding_of_measureReal_le (h.measure_specNorm_ge_le hε)
 
-/-- **OSE from trace moments**: a trace-moment bound for every `U : Matrix n p 𝕜` with
-orthonormal columns makes `S` an OSE for dimension `card p` with distortion `ε` and failure
-probability `B / ε^{2q}`. [Woodruff2014, proof of Theorem 9]. -/
+/-- **OSE from trace moments**: for $\lvert p \rvert \le \lvert n \rvert$, a trace-moment bound for
+every $\mathbf{U} \in \Bbbk^{n \times p}$ with orthonormal columns makes $\mathbf{S}$ an OSE for
+dimension $\lvert p \rvert$ with distortion $\varepsilon > 0$ and failure probability
+$B / \varepsilon^{2q}$. [Woodruff2014, proof of Theorem 9]. -/
 theorem isObliviousSubspaceEmbedding_of_hasGramTraceMoment [IsFiniteMeasure μ]
     (hp : Fintype.card p ≤ Fintype.card n)
     (h : ∀ U : Matrix n p 𝕜, HasOrthonormalCols U → HasGramTraceMoment S U q B μ) (hε : 0 < ε) :

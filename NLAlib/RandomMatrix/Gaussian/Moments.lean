@@ -12,16 +12,23 @@ public import NLAlib.RandomMatrix.Gaussian.Basic
 /-!
 # Second moments of random sketches
 
-If the entries of a random matrix `X`, read as a vector indexed by `m × n`, are isotropic, then
-`E ‖S X T‖_F² = ‖S‖_F² ‖T‖_F²` for fixed `S` and `T` (Halko, Martinsson and Tropp 2011,
-Proposition 10.1, for a Gaussian `X`); the proof writes `S X T` as `(S ⊗ Tᵀ)` applied to the
-entries and uses `E ‖A Y‖² = ‖A‖_F²` for an isotropic `Y`. The same holds when `S` and `T` are
-random but independent of `X`: `E ‖S X T‖_F² = E [‖S‖_F² ‖T‖_F²]`, which is the conditioning step
-of the randomized range finder's error bound; the two sides are integrable together.
+If the entries of a random matrix $\mathbf{X}$, read as a vector indexed by $m \times n$, are
+isotropic, then
+$\mathbb{E} \|\mathbf{S}\mathbf{X}\mathbf{T}\|_{\mathsf{F}}^2
+= \|\mathbf{S}\|_{\mathsf{F}}^2 \|\mathbf{T}\|_{\mathsf{F}}^2$ for fixed $\mathbf{S}$ and
+$\mathbf{T}$ (Halko, Martinsson and Tropp 2011, Proposition 10.1, for a Gaussian $\mathbf{X}$); the
+proof writes $\mathbf{S}\mathbf{X}\mathbf{T}$ as $\mathbf{S} \otimes \mathbf{T}^{\mathsf{T}}$
+applied to the entries and uses $\mathbb{E} \|\mathbf{A}\mathbf{y}\|^2
+= \|\mathbf{A}\|_{\mathsf{F}}^2$ for an isotropic $\mathbf{y}$. The same holds when $\mathbf{S}$ and
+$\mathbf{T}$ are random but independent of $\mathbf{X}$:
+$\mathbb{E} \|\mathbf{S}\mathbf{X}\mathbf{T}\|_{\mathsf{F}}^2
+= \mathbb{E}\bigl[\|\mathbf{S}\|_{\mathsf{F}}^2 \|\mathbf{T}\|_{\mathsf{F}}^2\bigr]$, which is the
+conditioning step of the randomized range finder's error bound; the two sides are integrable
+together.
 
-The isotropic statements are over `𝕜` and are stated at the root (their subject is
+The isotropic statements are over $\Bbbk$ and are stated at the root (their subject is
 `Function.uncurry X`, so P0's `IsIsotropic` dot notation would not apply); the Gaussian ones are
-their corollaries over `ℝ`.
+their corollaries over $\mathbb{R}$.
 
 ## Main results
 
@@ -67,7 +74,10 @@ theorem integrable_frobNorm_mul_mul_sq_of_isIsotropic
   simp only [frobNorm_mul_mul_eq]
   exact hX.integrable_norm_mulVec_sq _
 
-/-- **The second moment of a sketch with isotropic entries**: `E ‖S X T‖_F² = ‖S‖_F² ‖T‖_F²`. -/
+/-- **The second moment of a sketch with isotropic entries**: for fixed $\mathbf{S}$ and
+$\mathbf{T}$,
+$\mathbb{E} \|\mathbf{S}\mathbf{X}\mathbf{T}\|_{\mathsf{F}}^2
+= \|\mathbf{S}\|_{\mathsf{F}}^2 \|\mathbf{T}\|_{\mathsf{F}}^2$. -/
 theorem integral_frobNorm_mul_mul_sq_of_isIsotropic
     (hX : IsIsotropic (fun ω => Function.uncurry (X ω)) μ) (S : Matrix a m 𝕜) (T : Matrix n b 𝕜) :
     ∫ ω, frobNorm (S * X ω * T) ^ 2 ∂μ = frobNorm S ^ 2 * frobNorm T ^ 2 := by
@@ -119,10 +129,13 @@ private theorem lintegral_frobNorm_mul_mul_sq_of_isIsotropic_of_indepFun (hX : H
     _ = ∫⁻ ω, ENNReal.ofReal (frobNorm (S (Y ω)) ^ 2 * frobNorm (T (Y ω)) ^ 2) ∂μ :=
         lintegral_map' hG.aemeasurable hY
 
-/-- **The second moment with independent random factors**: if `X` has an isotropic law and is
-independent of `Y`, then `E ‖S(Y) X T(Y)‖_F² = E [‖S(Y)‖_F² ‖T(Y)‖_F²]`. A consumer with random
-factors `S T : Ω → Matrix` takes `Y := fun ω => (S ω, T ω)`. The identity holds as stated even
-when the right side is not integrable (both sides are then `0`); integrability transfers by
+/-- **The second moment with independent random factors**: if $\mathbf{X}$ has an isotropic law
+and is independent of $Y$, and $\mathbf{S}$, $\mathbf{T}$ are measurable, then
+$$\mathbb{E} \|\mathbf{S}(Y)\mathbf{X}\mathbf{T}(Y)\|_{\mathsf{F}}^2
+= \mathbb{E}\bigl[\|\mathbf{S}(Y)\|_{\mathsf{F}}^2 \|\mathbf{T}(Y)\|_{\mathsf{F}}^2\bigr] \,.$$
+A consumer with random factors `S T : Ω → Matrix` takes `Y := fun ω => (S ω, T ω)`. The identity
+holds as stated even when the right side is not integrable (both sides are then $0$);
+integrability transfers by
 `integrable_frobNorm_mul_mul_sq_iff_of_isIsotropic_of_indepFun`. -/
 theorem integral_frobNorm_mul_mul_sq_of_isIsotropic_of_indepFun (hX : HasLaw X ν μ)
     (hν : IsIsotropic (fun x : Matrix m n 𝕜 => Function.uncurry x) ν) (hY : AEMeasurable Y μ)
@@ -161,7 +174,9 @@ section Gaussian
 variable {X : Ω → Matrix m n ℝ}
 
 /-- **The second moment of a Gaussian sketch** (Halko, Martinsson and Tropp 2011,
-Proposition 10.1): `E ‖S G T‖_F² = ‖S‖_F² ‖T‖_F²`. -/
+Proposition 10.1): for fixed $\mathbf{S}$ and $\mathbf{T}$,
+$\mathbb{E} \|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}}^2
+= \|\mathbf{S}\|_{\mathsf{F}}^2 \|\mathbf{T}\|_{\mathsf{F}}^2$. -/
 theorem integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (S : Matrix a m ℝ) (T : Matrix n b ℝ) :
     ∫ ω, frobNorm (S * X ω * T) ^ 2 ∂μ = frobNorm S ^ 2 * frobNorm T ^ 2 := by
@@ -177,7 +192,10 @@ private theorem isIsotropic_uncurry_gaussianMatrix [DecidableEq m] [DecidableEq 
   isIsotropic_of_hasLaw_gaussianVector
     (hasLaw_uncurry_of_hasLaw_gaussianMatrix (HasLaw.id (μ := gaussianMatrix m n)))
 
-/-- The second moment of a Gaussian sketch with independent random factors. -/
+/-- The second moment of a Gaussian sketch with independent random factors:
+$\mathbb{E} \|\mathbf{S}(Y)\mathbf{G}\mathbf{T}(Y)\|_{\mathsf{F}}^2
+= \mathbb{E}\bigl[\|\mathbf{S}(Y)\|_{\mathsf{F}}^2 \|\mathbf{T}(Y)\|_{\mathsf{F}}^2\bigr]$ for
+$Y$ independent of $\mathbf{G}$. -/
 theorem integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix_of_indepFun
     (hX : HasLaw X (gaussianMatrix m n) μ) (hY : AEMeasurable Y μ) (hXY : IndepFun Y X μ)
     (hS : Measurable S) (hT : Measurable T) :

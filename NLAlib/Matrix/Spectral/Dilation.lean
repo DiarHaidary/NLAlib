@@ -10,19 +10,22 @@ public import NLAlib.Matrix.Spectral.SingularValues
 /-!
 # Eigenvalues of the Hermitian dilation
 
-The Hermitian dilation `NLAlib.dilation A = fromBlocks 0 A Aᴴ 0` of a matrix `A` of any shape has
-eigenvalues `± σ_i(A)` and zeros. Its leading eigenvalues are therefore the singular values of
-`A`, and its largest eigenvalue is the spectral norm of `A`. This is how statements about
-eigenvalues of Hermitian matrices, in particular matrix concentration inequalities, are
-transferred to singular values of rectangular matrices.
+The Hermitian dilation `NLAlib.dilation A`,
+$\mathcal{H}(\mathbf{A}) =
+\begin{bmatrix} \mathbf{0} & \mathbf{A} \\ \mathbf{A}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$,
+of a matrix $\mathbf{A}$ of any shape has eigenvalues $\pm \sigma_i(\mathbf{A})$ and zeros. Its
+leading eigenvalues are therefore the singular values of $\mathbf{A}$, and its largest eigenvalue
+is the spectral norm of $\mathbf{A}$. This is how statements about eigenvalues of Hermitian
+matrices, in particular matrix concentration inequalities, are transferred to singular values of
+rectangular matrices.
 
 ## Main results
 
-* `NLAlib.eigenvalue_dilation`: `eigenvalue (dilation A) k = singularValues A k` below the larger
-  dimension of `A`.
+* `NLAlib.eigenvalue_dilation`: $\lambda_k(\mathcal{H}(\mathbf{A})) = \sigma_k(\mathbf{A})$
+  below the larger dimension of $\mathbf{A}$.
 * `NLAlib.eigenvalue_dilation_of_add_add_one_eq`: the trailing eigenvalues are the negated
   singular values.
-* `NLAlib.eigenvalue_zero_dilation`: `eigenvalue (dilation A) 0 = specNorm A`.
+* `NLAlib.eigenvalue_zero_dilation`: $\lambda_0(\mathcal{H}(\mathbf{A})) = \|\mathbf{A}\|_2$.
 -/
 
 @[expose] public section
@@ -33,8 +36,9 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- The quadratic form of the dilation at `(y, x)` is twice the real part of the pairing of `y`
-with `A x`. -/
+/-- The quadratic form of the dilation $\mathcal{H}(\mathbf{A})$ at $(\mathbf{y}, \mathbf{x})$ is
+twice the real part of the pairing of $\mathbf{y}$ with $\mathbf{A}\mathbf{x}$:
+$2 \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x})$. -/
 private theorem re_quadForm_dilation (A : Matrix m n 𝕜) (y : m → 𝕜) (x : n → 𝕜) :
     RCLike.re (quadForm (dilation A) (Sum.elim y x)) = 2 * RCLike.re (star y ⬝ᵥ (A *ᵥ x)) := by
   have h : star x ⬝ᵥ (Aᴴ *ᵥ y) = star (star y ⬝ᵥ (A *ᵥ x)) := by
@@ -42,7 +46,9 @@ private theorem re_quadForm_dilation (A : Matrix m n 𝕜) (y : m → 𝕜) (x :
   rw [quadForm_def, dilation_mulVec, Function.star_sumElim, sumElim_dotProduct_sumElim, h,
     map_add, RCLike.star_def, RCLike.conj_re, two_mul]
 
-/-- The eigenvalues of the dilation are bounded above by the singular values. -/
+/-- The eigenvalues of the dilation are bounded above by the singular values:
+$\lambda_k(\mathcal{H}(\mathbf{A})) \le \sigma_k(\mathbf{A})$ for $k < \lvert m \rvert +
+\lvert n \rvert$. -/
 private theorem eigenvalue_dilation_le (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k < Fintype.card m + Fintype.card n) :
     eigenvalue (dilation A) k ≤ singularValues A k := by
@@ -86,9 +92,9 @@ private theorem eigenvalue_neg_dilation (A : Matrix m n 𝕜) (k : ℕ) :
   rw [← hE]
   exact eigenvalue_conjTranspose_mul_mul_of_card_eq (dilation A) hJ rfl k
 
-/-- A real sequence that is antisymmetric under reversal of its first `N` indices, is bounded
-above by a nonnegative sequence `s`, and whose squares sum to twice those of `s`, has positive
-part `s`. -/
+/-- A real sequence $e$ that is antisymmetric under reversal of its first $N$ indices, is bounded
+above by a nonnegative sequence $s$, and whose squares sum to twice those of $s$, has positive
+part $s$: $\max(e_k, 0) = s_k$ for $k < N$. -/
 private theorem max_zero_eq_of_sum_sq_eq {e s : ℕ → ℝ} {N : ℕ}
     (hsym : ∀ k < N, e (N - 1 - k) = -e k) (hs : ∀ k, 0 ≤ s k) (hle : ∀ k < N, e k ≤ s k)
     (hsum : ∑ k ∈ Finset.range N, e k ^ 2 = 2 * ∑ k ∈ Finset.range N, s k ^ 2) {k : ℕ}
@@ -113,9 +119,13 @@ private theorem max_zero_eq_of_sum_sq_eq {e s : ℕ → ℝ} {N : ℕ}
   exact (sq_eq_sq₀ (le_max_right _ _) (hs k)).mp
     ((Finset.sum_eq_sum_iff_of_le h2).mp h3 k (Finset.mem_range.mpr hk))
 
-/-- The leading eigenvalues of the Hermitian dilation are the singular values of the matrix.
-The dilation has eigenvalues `± σ_i` and zeros, so the statement holds below the larger
-dimension. [HornJohnson2013, Theorem 7.3.3]. -/
+/-- The leading eigenvalues of the Hermitian dilation
+$\mathcal{H}(\mathbf{A}) =
+\begin{bmatrix} \mathbf{0} & \mathbf{A} \\ \mathbf{A}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$
+are the singular values of the matrix: $\lambda_k(\mathcal{H}(\mathbf{A})) = \sigma_k(\mathbf{A})$
+for $k < \max(\lvert m \rvert, \lvert n \rvert)$. The dilation has eigenvalues
+$\pm \sigma_i(\mathbf{A})$ and zeros, so the statement holds below the larger dimension.
+[HornJohnson2013, Theorem 7.3.3]. -/
 theorem eigenvalue_dilation (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k < max (Fintype.card m) (Fintype.card n)) :
     eigenvalue (dilation A) k = singularValues A k := by
@@ -148,10 +158,14 @@ theorem eigenvalue_dilation (A : Matrix m n 𝕜) {k : ℕ}
     · exact singularValues_of_card_rows_le A (by omega)
   rw [← hmax, max_eq_left h0]
 
-/-- The trailing eigenvalues of the Hermitian dilation are the negated singular values of the
-matrix: `eigenvalue (dilation A) j = -singularValues A k` for the mirror index `j` of `k`, that
-is `k + j + 1 = card m + card n`, with `k` below the larger dimension. Together with
-`NLAlib.eigenvalue_dilation` this describes the whole spectrum `± σ_i(A)` and zeros.
+/-- The trailing eigenvalues of the Hermitian dilation
+$\mathcal{H}(\mathbf{A}) =
+\begin{bmatrix} \mathbf{0} & \mathbf{A} \\ \mathbf{A}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$
+are the negated singular values of the matrix:
+$\lambda_j(\mathcal{H}(\mathbf{A})) = -\sigma_k(\mathbf{A})$ for the mirror index $j$ of $k$, that
+is $k + j + 1 = \lvert m \rvert + \lvert n \rvert$, with $k < \max(\lvert m \rvert, \lvert n
+\rvert)$. Together with `NLAlib.eigenvalue_dilation` this describes the whole spectrum
+$\pm \sigma_i(\mathbf{A})$ and zeros.
 [HornJohnson2013, Theorem 7.3.3]. -/
 theorem eigenvalue_dilation_of_add_add_one_eq (A : Matrix m n 𝕜) {k j : ℕ}
     (hk : k < max (Fintype.card m) (Fintype.card n))
@@ -161,7 +175,10 @@ theorem eigenvalue_dilation_of_add_add_one_eq (A : Matrix m n 𝕜) {k j : ℕ}
   rw [← dilation_neg, eigenvalue_dilation _ hk, singularValues_neg] at h'
   linarith
 
-/-- The largest eigenvalue of the Hermitian dilation is the spectral norm of the matrix.
+/-- The largest eigenvalue of the Hermitian dilation
+$\mathcal{H}(\mathbf{A}) =
+\begin{bmatrix} \mathbf{0} & \mathbf{A} \\ \mathbf{A}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$
+is the spectral norm of the matrix: $\lambda_0(\mathcal{H}(\mathbf{A})) = \|\mathbf{A}\|_2$.
 [Tropp2015, (2.1.28)]. -/
 theorem eigenvalue_zero_dilation (A : Matrix m n 𝕜) : eigenvalue (dilation A) 0 = specNorm A := by
   rw [← singularValues_zero_eq_specNorm]

@@ -16,20 +16,22 @@ public import Mathlib.Probability.Moments.Tilted
 /-!
 # The entropy functional and Herbst's argument
 
-`NLAlib.entropy ν f = E f log f - E f log E f` is the entropy of a nonnegative function under a
-measure. It is nonnegative under a probability measure (Jensen), it tensorizes over product
-measures (`NLAlib/Probability/EntropyTensorization.lean`), and an entropy bound for `exp (s f)`
-of the right order in `s` makes `f - E f` sub-Gaussian (Herbst's argument). These are the steps
-from a logarithmic Sobolev inequality to concentration.
+`NLAlib.entropy ν f`, written $\operatorname{Ent}(f) = \mathbb{E}[f \log f] - \mathbb{E} f \log
+\mathbb{E} f$, is the entropy of a nonnegative function under a measure. It is nonnegative under a
+probability measure (Jensen), it tensorizes over product measures
+(`NLAlib/Probability/EntropyTensorization.lean`), and an entropy bound for $e^{s f}$ of the right
+order in $s$ makes $f - \mathbb{E} f$ sub-Gaussian (Herbst's argument). These are the steps from a
+logarithmic Sobolev inequality to concentration.
 
-If `g` takes values in `[a, b]`, then `Ent(e^{s g}) ≤ s² (b - a)² / 8 · E e^{s g}`: the entropy
-form of Hoeffding's lemma. With Herbst's argument it recovers Hoeffding's lemma; with the
+If $g$ takes values in $[a, b]$, then
+$\operatorname{Ent}(e^{s g}) \le \frac{s^2 (b - a)^2}{8}\, \mathbb{E} e^{s g}$: the entropy form of
+Hoeffding's lemma. With Herbst's argument it recovers Hoeffding's lemma; with the
 tensorization of entropy (`NLAlib.entropy_pi_le_sum`) applied on the fibres of a function of
 independent coordinates it gives the bounded differences inequality
 (`NLAlib/Probability/BoundedDifferences.lean`).
 
-`entropy ν f` is a junk value when `f log f` or `f` is not integrable (the Bochner integral is `0`
-then), so every statement about it carries the integrability it needs.
+`entropy ν f` is a junk value when $f \log f$ or $f$ is not integrable (the Bochner integral is
+$0$ then), so every statement about it carries the integrability it needs.
 
 ## Main definitions
 
@@ -40,7 +42,7 @@ then), so every statement about it carries the integrability it needs.
 * `NLAlib.entropy_nonneg`.
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_entropy_le`: Herbst's argument.
 * `NLAlib.entropy_exp_mul_le_of_mem_Icc`, `NLAlib.entropy_exp_mul_le_of_abs_sub_le`: the entropy
-  of `e^{s g}` for `g` in `[a, b]`, respectively of oscillation at most `c`.
+  of $e^{s g}$ for $g$ in $[a, b]$, respectively of oscillation at most $c$.
 
 ## References
 
@@ -57,8 +59,9 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ ν : Measure Ω}
 
-/-- The entropy of a nonnegative function `f` under `ν`: `E f log f - E f log E f`. It is a junk
-value when `f` or `f log f` is not integrable. -/
+/-- The entropy of a nonnegative function $f$ under $\nu$:
+$\operatorname{Ent}(f) = \int f \log f \, d\nu - \bigl(\int f \, d\nu\bigr) \log \int f \, d\nu$.
+It is a junk value when $f$ or $f \log f$ is not integrable. -/
 noncomputable def entropy (ν : Measure Ω) (f : Ω → ℝ) : ℝ :=
   ∫ ω, f ω * Real.log (f ω) ∂ν - (∫ ω, f ω ∂ν) * Real.log (∫ ω, f ω ∂ν)
 
@@ -74,8 +77,9 @@ theorem entropy_nonneg [IsProbabilityMeasure ν] {f : Ω → ℝ} (hf0 : 0 ≤�
 /-! ### Resampling one coordinate of a product measure -/
 
 
-/-- Herbst's argument on the upper half-line: an entropy bound `c s² E e^{s f}` for `s > 0` gives
-`E e^{s f} ≤ exp (s E f + c s²)` for `s ≥ 0`. -/
+/-- Herbst's argument on the upper half-line: an entropy bound
+$\operatorname{Ent}(e^{s f}) \le c s^2\, \mathbb{E} e^{s f}$ for $s > 0$ gives
+$\mathbb{E} e^{s f} \le \exp(s\, \mathbb{E} f + c s^2)$ for $s \ge 0$. -/
 private theorem integral_exp_mul_le_exp_of_entropy_le [IsProbabilityMeasure μ] {f : Ω → ℝ}
     (c : ℝ) (hint : ∀ s, Integrable (fun ω => rexp (s * f ω)) μ)
     (hent : ∀ s, 0 < s →
@@ -148,9 +152,11 @@ private theorem integral_exp_mul_le_exp_of_entropy_le [IsProbabilityMeasure μ] 
   calc M s = rexp (Real.log (M s)) := (Real.exp_log (hMpos s)).symm
     _ ≤ _ := Real.exp_le_exp.mpr hlog
 
-/-- **Herbst's argument** ([BoucheronLugosiMassart2013], Proposition 6.1): if the entropy of
-`exp (s f)` is at most `c s² / 2` times its mean for every `s`, then `f - E f` is sub-Gaussian with
-proxy `c`. The hypothesis for `s > 0` gives the upper tail, for `s < 0` the lower one. -/
+/-- **Herbst's argument** ([BoucheronLugosiMassart2013], Proposition 6.1): under a probability
+measure, if $e^{s f}$ is integrable and
+$\operatorname{Ent}(e^{s f}) \le \frac{c s^2}{2}\, \mathbb{E} e^{s f}$ for every real $s$, then
+$f - \mathbb{E} f$ is sub-Gaussian with proxy $c$. The hypothesis for $s > 0$ gives the upper
+tail, for $s < 0$ the lower one. -/
 theorem hasSubgaussianMGF_sub_integral_of_entropy_le [IsProbabilityMeasure μ] {f : Ω → ℝ}
     {c : ℝ≥0} (hint : ∀ s, Integrable (fun ω => rexp (s * f ω)) μ)
     (hent : ∀ s, entropy μ (fun ω => rexp (s * f ω)) ≤ c * s ^ 2 / 2 * ∫ ω, rexp (s * f ω) ∂μ) :
@@ -187,19 +193,21 @@ theorem hasSubgaussianMGF_sub_integral_of_entropy_le [IsProbabilityMeasure μ] {
 
 /-! ### The entropy of the exponential of a bounded function -/
 
-/-- **The entropy of an exponential of a bounded function**: if `g` lies in `[a, b]` almost
-surely, then `Ent(e^{s g}) ≤ s² (b - a)² / 8 · E e^{s g}` for every `s`. The entropy form of
-Hoeffding's lemma, with the hypothesis of Mathlib's
+/-- **The entropy of an exponential of a bounded function**: under a probability measure, if $g$
+lies in $[a, b]$ almost surely, then for every real $s$
+$$\operatorname{Ent}(e^{s g}) \le \frac{s^2 (b - a)^2}{8}\, \mathbb{E} e^{s g}\,.$$
+The entropy form of Hoeffding's lemma, with the hypothesis of Mathlib's
 `ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero`.
 [BoucheronLugosiMassart2013, proof of Theorem 6.2].
-Proof: with `Λ = cgf g ν`, `Ent(e^{s g}) / E e^{s g} = s Λ'(s) - Λ(s) = ∫₀ˢ θ Λ''(θ) dθ`, and
-`Λ''(θ)` is the variance of `g` under the tilted measure `ν.tilted (θ * g ·)`, at most
-`(b - a)² / 4`. The variance step is that of Mathlib's
-`ProbabilityTheory.mgf_le_of_mem_Icc_of_integral_eq_zero` (`variance_tilted_mul`,
+Proof: with $\Lambda$ the cumulant generating function of $g$ (`cgf g ν`),
+$\operatorname{Ent}(e^{s g}) / \mathbb{E} e^{s g} = s \Lambda'(s) - \Lambda(s)
+= \int_0^s \theta \Lambda''(\theta) \, d\theta$, and $\Lambda''(\theta)$ is the variance of $g$
+under the tilted measure `ν.tilted (θ * g ·)`, at most $(b - a)^2 / 4$. The variance step is that
+of Mathlib's `ProbabilityTheory.mgf_le_of_mem_Icc_of_integral_eq_zero` (`variance_tilted_mul`,
 `variance_le_sq_of_bounded`); in place of its Taylor step
 (`exists_cgf_eq_iteratedDeriv_two_cgf_mul`), the mean value theorem for
-`s Λ'(s) - Λ(s) - s² (b - a)² / 8`, which vanishes at `0` and has derivative
-`s (Λ''(s) - (b - a)² / 4)`. -/
+$s \Lambda'(s) - \Lambda(s) - s^2 (b - a)^2 / 8$, which vanishes at $0$ and has derivative
+$s (\Lambda''(s) - (b - a)^2 / 4)$. -/
 theorem entropy_exp_mul_le_of_mem_Icc [IsProbabilityMeasure ν] {g : Ω → ℝ}
     (hg : AEMeasurable g ν) {a b : ℝ} (hab : ∀ᵐ ω ∂ν, g ω ∈ Set.Icc a b) (s : ℝ) :
     entropy ν (fun ω => rexp (s * g ω)) ≤ s ^ 2 * (b - a) ^ 2 / 8 * ∫ ω, rexp (s * g ω) ∂ν := by
@@ -267,12 +275,14 @@ theorem entropy_exp_mul_le_of_mem_Icc [IsProbabilityMeasure ν] {g : Ω → ℝ}
   rw [hent, show ∫ ω, rexp (s * g ω) ∂ν = mgf g ν s from rfl, mul_comm (mgf g ν s)]
   exact mul_le_mul_of_nonneg_right hφs' hM.le
 
-/-- **The entropy of an exponential of a function of bounded oscillation**: if
-`|g x - g y| ≤ c` for all `x`, `y`, then `Ent(e^{s g}) ≤ s² c² / 8 · E e^{s g}`. The pointwise
-form used on the fibres of a function with bounded differences.
+/-- **The entropy of an exponential of a function of bounded oscillation**: under a probability
+measure, if $\lvert g(x) - g(y)\rvert \le c$ for all $x$, $y$, then
+$\operatorname{Ent}(e^{s g}) \le \frac{s^2 c^2}{8}\, \mathbb{E} e^{s g}$ for every real $s$. The
+pointwise form used on the fibres of a function with bounded differences.
 [BoucheronLugosiMassart2013, proof of Theorem 6.2].
-Proof: `Ω` is nonempty (probability measure) and `g` is bounded, so with `a = sInf (Set.range g)`
-and `b = a + c`, `g` takes values in `[a, b]`; `NLAlib.entropy_exp_mul_le_of_mem_Icc`. -/
+Proof: `Ω` is nonempty (probability measure) and $g$ is bounded, so with $a = \inf g$
+(`sInf (Set.range g)`) and $b = a + c$, $g$ takes values in $[a, b]$;
+`NLAlib.entropy_exp_mul_le_of_mem_Icc`. -/
 theorem entropy_exp_mul_le_of_abs_sub_le [IsProbabilityMeasure ν] {g : Ω → ℝ}
     (hg : AEMeasurable g ν) {c : ℝ≥0} (hc : ∀ x y, |g x - g y| ≤ c) (s : ℝ) :
     entropy ν (fun ω => rexp (s * g ω)) ≤ s ^ 2 * c ^ 2 / 8 * ∫ ω, rexp (s * g ω) ∂ν := by

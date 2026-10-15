@@ -16,26 +16,30 @@ public import NLAlib.Probability.SubGaussianVector.Basic
 /-!
 # Extreme singular values of matrices with independent sub-Gaussian rows
 
-For a random matrix `X : m × n` (`N = card m` rows, `n = card n` columns) whose rows are
-independent, isotropic and sub-Gaussian with proxy `c`, and `w = C c (√n + t)` with
-`C = subgaussianRowsConstant`: outside probability `2 e^{-t²}`,
-`(√N - w)² • 1 ≤ Xᴴ X ≤ (√N + w)² • 1`, hence `√N - w < σ_min(X)` and `‖X‖ < √N + w`. Also the
-fixed-vector bound: for a unit `x`, `‖X x‖² - N` is sub-exponential with parameters `32 c² N`,
-`4 c`.
+For a random $m \times n$ matrix $\mathbf{X}$ ($\lvert m \rvert$ rows, $\lvert n \rvert$ columns)
+whose rows are independent, isotropic and sub-Gaussian with proxy $c$, and
+$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ with $C_{\mathrm{SG}}$ the constant
+`subgaussianRowsConstant`: outside probability $2 e^{-t^2}$,
+$$(\sqrt{\lvert m \rvert} - w)^2 \mathbf{I} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{X}
+\preceq (\sqrt{\lvert m \rvert} + w)^2 \mathbf{I} \,,$$
+hence $\sqrt{\lvert m \rvert} - w < \sigma_{\min}(\mathbf{X})$ and
+$\|\mathbf{X}\|_2 < \sqrt{\lvert m \rvert} + w$. Also the fixed-vector bound: for a unit
+$\mathbf{x}$, $\|\mathbf{X}\mathbf{x}\|^2 - \lvert m \rvert$ is sub-exponential with parameters
+$32 c^2 \lvert m \rvert$, $4 c$.
 
 **Naming.** The suffix `_of_isSubgaussianVector` stands for the three row hypotheses, always taken
 together and in this order: `hind : iIndepFun (fun i ω => X ω i) μ` (independent rows),
 `hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ` and
-`hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ`. No `1 ≤ c` hypothesis is stated: with rows and
+`hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ`. No $1 \le c$ hypothesis is stated: with rows and
 columns present, isotropy and `HasSubgaussianMGF.integral_sq_le` give it.
 
-A standard Gaussian matrix satisfies the hypotheses with `c = 1`, but there the bounds of
+A standard Gaussian matrix satisfies the hypotheses with $c = 1$, but there the bounds of
 `NLAlib/RandomMatrix/Gaussian/ExtremeSingularValues.lean` are better in every regime
-(`√N ± (√n + √2 t)` outside `2 e^{-t²}`).
+($\sqrt{\lvert m \rvert} \pm (\sqrt{\lvert n \rvert} + \sqrt{2} \, t)$ outside $2 e^{-t^2}$).
 
 ## Main definitions
 
-* `NLAlib.subgaussianRowsConstant`: the constant `C` of the bounds.
+* `NLAlib.subgaussianRowsConstant`: the constant $C_{\mathrm{SG}}$ of the bounds.
 
 ## Main results
 
@@ -54,11 +58,14 @@ open scoped Matrix MatrixOrder NNReal
 
 namespace NLAlib
 
-/-- The constant `C` of the sub-Gaussian rows theorem: `√N ± C c (√n + t)` outside `2 e^{-t²}`.
-[Vershynin2018, Theorem 4.6.1] leaves it unspecified (`C K²` there). The value proved is `24`:
-the net argument needs `C² / 256 ≥ max 1 (log 9)`, that is `C ≥ 16 √(log 9) ≈ 23.72`, so the margin
-is thin and the proof uses `(√n + t)² ≥ n + t²` and a `1/4`-net exactly. Smaller is better; the
-API is the upper bound `subgaussianRowsConstant_le`. -/
+/-- The constant $C_{\mathrm{SG}}$ of the sub-Gaussian rows theorem: singular values within
+$\sqrt{\lvert m \rvert} \pm C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ outside
+probability $2 e^{-t^2}$.
+[Vershynin2018, Theorem 4.6.1] leaves it unspecified ($C K^2$ there). The value proved is $24$:
+the net argument needs $C_{\mathrm{SG}}^2 / 256 \ge \max(1, \log 9)$, that is
+$C_{\mathrm{SG}} \ge 16 \sqrt{\log 9} \approx 23.72$, so the margin is thin and the proof uses
+$(\sqrt{\lvert n \rvert} + t)^2 \ge \lvert n \rvert + t^2$ and a $1/4$-net exactly. Smaller is
+better; the API is the upper bound `subgaussianRowsConstant_le`. -/
 noncomputable irreducible_def subgaussianRowsConstant : ℝ := 24
 
 /-- The sub-Gaussian rows constant is positive. -/
@@ -66,16 +73,18 @@ theorem subgaussianRowsConstant_pos : 0 < subgaussianRowsConstant := by
   rw [subgaussianRowsConstant_def]
   norm_num
 
-/-- An explicit upper bound on `subgaussianRowsConstant`. -/
+/-- An explicit upper bound on `subgaussianRowsConstant`: $C_{\mathrm{SG}} \le 24$. -/
 theorem subgaussianRowsConstant_le : subgaussianRowsConstant ≤ 24 := by
   rw [subgaussianRowsConstant_def]
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n] [DecidableEq n] {X : Ω → Matrix m n ℝ} {c : ℝ≥0}
 
-/-- **The fixed-vector bound**: for independent isotropic sub-Gaussian rows with proxy `c` and a
-unit vector `x`, `‖X x‖² - N` is sub-exponential with parameters `32 c² N` and `4 c`: each
-`⟨Xᵢ, x⟩² - 1` is sub-exponential with parameters `32 c²`, `4 c`
+/-- **The fixed-vector bound**: for an $m \times n$ random matrix $\mathbf{X}$ with independent
+isotropic sub-Gaussian rows with proxy $c$ and a unit vector $\mathbf{x}$,
+$\|\mathbf{X}\mathbf{x}\|^2 - \lvert m \rvert$ is sub-exponential with parameters
+$32 c^2 \lvert m \rvert$ and $4 c$: each $\langle \mathbf{X}_{i,:}, \mathbf{x} \rangle^2 - 1$ is
+sub-exponential with parameters $32 c^2$, $4 c$
 (`HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral`), and the rows are independent.
 [Vershynin2018, proof of Theorem 4.6.1], with the constants of the squared sub-Gaussian. -/
 theorem hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector
@@ -112,7 +121,7 @@ theorem hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector
 /-! ### Deterministic steps -/
 
 omit [Fintype n] in
-/-- `9 ≤ exp (9 / 4)`, that is `log 9 ≤ 9 / 4`: the margin of `subgaussianRowsConstant`. -/
+/-- $9 \le \exp(9/4)$, that is $\log 9 \le 9/4$: the margin of `subgaussianRowsConstant`. -/
 private lemma nine_le_exp : (9 : ℝ) ≤ Real.exp (9 / 4) := by
   have h := Real.quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 9 / 32 by norm_num)
   rw [show (9 / 4 : ℝ) = ((8 : ℕ) : ℝ) * (9 / 32) by norm_num, Real.exp_nat_mul]
@@ -120,9 +129,9 @@ private lemma nine_le_exp : (9 : ℝ) ≤ Real.exp (9 / 4) := by
     _ ≤ Real.exp (9 / 32) ^ 8 := by gcongr
 
 omit [Fintype m] in
-/-- With a column, an isotropic sub-Gaussian vector has proxy at least `1`. -/
+/-- With a column, an isotropic sub-Gaussian vector has proxy at least $1$. -/
 private lemma one_le_of_isSubgaussianVector [Nonempty n] [IsProbabilityMeasure μ]
-    {Y : Ω → n → ℝ} (hsub : IsSubgaussianVector Y c μ) (hiso : IsIsotropic Y μ) :
+    {y : Ω → n → ℝ} (hsub : IsSubgaussianVector y c μ) (hiso : IsIsotropic y μ) :
     1 ≤ (c : ℝ) := by
   obtain ⟨j⟩ := ‹Nonempty n›
   have hu : ‖WithLp.toLp 2 (Pi.single j 1 : n → ℝ)‖ = 1 := by
@@ -139,25 +148,30 @@ private lemma one_le_of_isSubgaussianVector [Nonempty n] [IsProbabilityMeasure �
   linarith
 
 omit [Fintype n] in
-/-- The Gram matrix minus `N • 1` is Hermitian. -/
+/-- The Gram matrix minus $N \mathbf{I}$ is Hermitian:
+$\mathbf{A}^{\mathsf{H}}\mathbf{A} - N \mathbf{I}$. -/
 private lemma isHermitian_gram_sub (A : Matrix m n ℝ) (N : ℝ) :
     (Aᴴ * A - N • (1 : Matrix n n ℝ)).IsHermitian :=
   (Matrix.isHermitian_conjTranspose_mul_self A).sub (isHermitian_real_smul_one N)
 
-/-- From a Gram error at most `s` to the upper Loewner bound `(N + s) • 1`. -/
+/-- From the Gram error $s = \|\mathbf{A}^{\mathsf{H}}\mathbf{A} - N \mathbf{I}\|_2$ to the upper
+Loewner bound $\mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq (N + s) \mathbf{I}$. -/
 private lemma conjTranspose_mul_self_le_add_smul_one (A : Matrix m n ℝ) (N : ℝ) :
     Aᴴ * A ≤ (N + specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ))) • (1 : Matrix n n ℝ) := by
   rw [add_smul, add_comm]
   exact sub_le_iff_le_add.mp ((isHermitian_gram_sub A N).le_smul_one_of_specNorm_le le_rfl)
 
-/-- From a Gram error at most `s` to the lower Loewner bound `(N - s) • 1`. -/
+/-- From the Gram error $s = \|\mathbf{A}^{\mathsf{H}}\mathbf{A} - N \mathbf{I}\|_2$ to the lower
+Loewner bound $(N - s) \mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$. -/
 private lemma sub_smul_one_le_conjTranspose_mul_self (A : Matrix m n ℝ) (N : ℝ) :
     (N - specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ))) • (1 : Matrix n n ℝ) ≤ Aᴴ * A := by
   rw [sub_smul, sub_le_iff_le_add]
   exact neg_le_sub_iff_le_add.mp
     ((isHermitian_gram_sub A N).neg_smul_one_le_of_specNorm_le le_rfl)
 
-/-- The upper Gram bound from a Gram error at most `max (√N w) (w²)`. -/
+/-- The upper Gram bound
+$\mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq (\sqrt{N} + w)^2 \mathbf{I}$ from a Gram error at most
+$\max(\sqrt{N} w, w^2)$. -/
 private lemma conjTranspose_mul_self_le_of_specNorm_le {A : Matrix m n ℝ} {N w : ℝ} (hN : 0 ≤ N)
     (hw : 0 ≤ w) (h : specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ)) ≤ max (√N * w) (w ^ 2)) :
     Aᴴ * A ≤ (√N + w) ^ 2 • (1 : Matrix n n ℝ) := by
@@ -168,7 +182,9 @@ private lemma conjTranspose_mul_self_le_of_specNorm_le {A : Matrix m n ℝ} {N w
   have e : (√N + w) ^ 2 = N + 2 * (√N * w) + w ^ 2 := by rw [add_sq, Real.sq_sqrt hN]; ring
   linarith
 
-/-- The lower Gram bound from a Gram error at most `max (√N w) (w²)`, for `w ≤ √N`. -/
+/-- The lower Gram bound
+$(\sqrt{N} - w)^2 \mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ from a Gram error at most
+$\max(\sqrt{N} w, w^2)$, for $0 \le w \le \sqrt{N}$. -/
 private lemma le_conjTranspose_mul_self_of_specNorm_le {A : Matrix m n ℝ} {N w : ℝ} (hN : 0 ≤ N)
     (hw : 0 ≤ w) (hwN : w ≤ √N)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ)) ≤ max (√N * w) (w ^ 2)) :
@@ -179,7 +195,8 @@ private lemma le_conjTranspose_mul_self_of_specNorm_le {A : Matrix m n ℝ} {N w
   rw [hm] at h
   nlinarith
 
-/-- The spectral norm from a Gram error below `max (√N w) (w²)`. -/
+/-- The spectral norm bound $\|\mathbf{A}\|_2 < \sqrt{N} + w$ from a Gram error below
+$\max(\sqrt{N} w, w^2)$. -/
 private lemma specNorm_lt_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} (hN : 0 ≤ N) (hw : 0 ≤ w)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ)) < max (√N * w) (w ^ 2)) :
     specNorm A < √N + w := by
@@ -192,7 +209,8 @@ private lemma specNorm_lt_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} (hN : 
   have e : (√N + w) ^ 2 = N + 2 * (√N * w) + w ^ 2 := by rw [add_sq, Real.sq_sqrt hN]; ring
   exact lt_of_pow_lt_pow_left₀ 2 (by positivity) (by linarith)
 
-/-- The smallest singular value from a Gram error below `max (√N w) (w²)`. -/
+/-- The smallest singular value bound $\sqrt{N} - w < \sigma_{\min}(\mathbf{A})$ from a Gram error
+below $\max(\sqrt{N} w, w^2)$. -/
 private lemma lt_singularValues_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} (hN : 0 ≤ N)
     (hw : 0 ≤ w) {k : ℕ} (hk : k + 1 = Fintype.card n)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ)) < max (√N * w) (w ^ 2)) :
@@ -208,7 +226,7 @@ private lemma lt_singularValues_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} 
 
 /-! ### The net argument -/
 
-/-- A finite family of reals below `s > 0` has a common bound `M` with `0 ≤ M < s`. -/
+/-- A finite family of reals below $s > 0$ has a common bound $M$ with $0 \le M < s$. -/
 private lemma exists_le_lt_of_forall_lt {ι : Type*} (S : Finset ι) (f : ι → ℝ) {s : ℝ}
     (hs : 0 < s) (h : ∀ i ∈ S, f i < s) : ∃ M, 0 ≤ M ∧ M < s ∧ ∀ i ∈ S, f i ≤ M := by
   classical
@@ -222,8 +240,10 @@ private lemma exists_le_lt_of_forall_lt {ι : Type*} (S : Finset ι) (f : ι →
   · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp hy
     exact h i hi
 
-/-- The fixed-vector tail at the level of the net argument: `r / 2 ≤ |‖X x‖² - N|` with
-`r = max (√N w) (w²)` has probability at most `2 exp (-(9/4) (n + t²))`. -/
+/-- The fixed-vector tail at the level of the net argument:
+$r / 2 \le \bigl\lvert \|\mathbf{X}\mathbf{x}\|^2 - N \bigr\rvert$ with
+$r = \max(\sqrt{N} w, w^2)$, $N = \lvert m \rvert$, has probability at most
+$2 \exp\bigl(-(9/4)(\lvert n \rvert + t^2)\bigr)$. -/
 private lemma measureReal_half_le_abs_le [Nonempty m]
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hc : 1 ≤ (c : ℝ)) {t : ℝ} (ht : 0 ≤ t)
@@ -269,7 +289,8 @@ private lemma measureReal_half_le_abs_le [Nonempty m]
     nlinarith [mul_nonneg hc0 hdt2]
 
 /-- **The net argument**: with rows and columns present, the Gram error
-`‖Xᴴ X - N • 1‖` is below `max (√N w) (w²)` outside probability `2 e^{-t²}`. -/
+$\|\mathbf{X}^{\mathsf{H}}\mathbf{X} - N \mathbf{I}\|_2$, $N = \lvert m \rvert$, is below
+$\max(\sqrt{N} w, w^2)$ outside probability $2 e^{-t^2}$. -/
 private lemma measureReal_not_specNorm_lt [Nonempty m] [Nonempty n]
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {t : ℝ} (ht : 0 ≤ t) :
@@ -326,7 +347,7 @@ private lemma measureReal_not_specNorm_lt [Nonempty m] [Nonempty n]
       gcongr
       nlinarith [sq_nonneg t]
 
-/-- The Gram error is at most `max (√N w) (w²)` outside probability `2 e^{-t²}`, with no
+/-- The Gram error is at most $\max(\sqrt{N} w, w^2)$ outside probability $2 e^{-t^2}$, with no
 nonemptiness hypothesis (with no rows or no columns the event is empty). -/
 private lemma measureReal_not_specNorm_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
@@ -362,11 +383,15 @@ private lemma measureReal_not_specNorm_le
 
 /-! ### The extreme singular values -/
 
-/-- **Independent isotropic sub-Gaussian rows**, the Gram sandwich: with
-`w = subgaussianRowsConstant * c * (√n + t)` and `0 ≤ t`, `w ≤ √N`,
-`(√N - w)² • 1 ≤ Xᴴ X ≤ (√N + w)² • 1` outside probability `2 e^{-t²}`.
+/-- **Independent isotropic sub-Gaussian rows**, the Gram sandwich: for an $m \times n$ random
+matrix $\mathbf{X}$ whose rows are independent, isotropic and sub-Gaussian with proxy $c$, with
+$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ ($C_{\mathrm{SG}}$ the constant
+`subgaussianRowsConstant`), $0 \le t$ and $w \le \sqrt{\lvert m \rvert}$,
+$$(\sqrt{\lvert m \rvert} - w)^2 \mathbf{I} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{X}
+\preceq (\sqrt{\lvert m \rvert} + w)^2 \mathbf{I}$$
+outside probability $2 e^{-t^2}$.
 [Vershynin2018, Theorem 4.6.1], there for the singular values with an unspecified constant
-`C K²`; here in Loewner form with the named constant `subgaussianRowsConstant`. For a standard
+$C K^2$; here in Loewner form with the named constant `subgaussianRowsConstant`. For a standard
 Gaussian matrix the Gram sandwich of `NLAlib/RandomMatrix/Gaussian/ExtremeSingularValues.lean`
 is better in every regime.
 Result: subgaussian-matrix-norm -/
@@ -389,9 +414,11 @@ measureReal_not_smul_one_le_conjTranspose_mul_self_and_le_smul_one_le_of_isSubga
   exact fun hω h => hω ⟨le_conjTranspose_mul_self_of_specNorm_le (Nat.cast_nonneg _) hw0 hw h,
     conjTranspose_mul_self_le_of_specNorm_le (Nat.cast_nonneg _) hw0 h⟩
 
-/-- The lower Gram bound for independent isotropic sub-Gaussian rows: `(√N - w)² • 1 ≤ Xᴴ X`
-outside probability `2 e^{-t²}`, with `w = subgaussianRowsConstant * c * (√n + t)`, `0 ≤ t` and
-`w ≤ √N` (the base must be nonnegative). [Vershynin2018, Theorem 4.6.1], in Loewner form. For a
+/-- The lower Gram bound for independent isotropic sub-Gaussian rows:
+$(\sqrt{\lvert m \rvert} - w)^2 \mathbf{I} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{X}$ outside
+probability $2 e^{-t^2}$, with $w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$
+($C_{\mathrm{SG}}$ = `subgaussianRowsConstant`), $0 \le t$ and $w \le \sqrt{\lvert m \rvert}$ (the
+base must be nonnegative). [Vershynin2018, Theorem 4.6.1], in Loewner form. For a
 standard Gaussian matrix
 `NLAlib.measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussianMatrix` is better
 in every regime. -/
@@ -409,8 +436,10 @@ theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_isSubgaussianVe
   simp only [Set.mem_ofPred_eq]
   exact fun hω h => hω h.1
 
-/-- The upper Gram bound for independent isotropic sub-Gaussian rows: `Xᴴ X ≤ (√N + w)² • 1`
-outside probability `2 e^{-t²}`, with `w = subgaussianRowsConstant * c * (√n + t)` and `0 ≤ t`.
+/-- The upper Gram bound for independent isotropic sub-Gaussian rows:
+$\mathbf{X}^{\mathsf{H}}\mathbf{X} \preceq (\sqrt{\lvert m \rvert} + w)^2 \mathbf{I}$ outside
+probability $2 e^{-t^2}$, with $w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$
+($C_{\mathrm{SG}}$ = `subgaussianRowsConstant`) and $0 \le t$.
 [Vershynin2018, Theorem 4.6.1], in Loewner form. For a standard Gaussian matrix
 `NLAlib.measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_hasLaw_gaussianMatrix` is better
 in every regime. -/
@@ -429,11 +458,13 @@ theorem measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_isSubgaussianVe
   exact fun hω h => hω (conjTranspose_mul_self_le_of_specNorm_le (Nat.cast_nonneg _) hw0 h)
 
 /-- The lower tail of the smallest singular value for independent isotropic sub-Gaussian rows:
-`P(σ_min(X) ≤ √N - w) ≤ 2 e^{-t²}`, with `w = subgaussianRowsConstant * c * (√n + t)` and
-`0 ≤ t`; `σ_min` is the singular value of index `k` with `k + 1 = n`. The rows must exist
-(`[Nonempty m]`): with no rows the hypotheses leave `c` free, and for `c = 0` the event is
-everything. [Vershynin2018, Theorem 4.6.1]. For a standard Gaussian matrix
-`NLAlib.measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix` is better in every regime. -/
+$\mathbb{P}(\sigma_k(\mathbf{X}) \le \sqrt{\lvert m \rvert} - w) \le 2 e^{-t^2}$, with
+$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ ($C_{\mathrm{SG}}$ =
+`subgaussianRowsConstant`) and $0 \le t$; $\sigma_k = \sigma_{\min}$ is the singular value of index
+$k$ with $k + 1 = \lvert n \rvert$. The rows must exist (`[Nonempty m]`): with no rows the
+hypotheses leave $c$ free, and for $c = 0$ the event is everything. [Vershynin2018, Theorem 4.6.1].
+For a standard Gaussian matrix `NLAlib.measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix` is
+better in every regime. -/
 theorem measureReal_singularValues_le_le_of_isSubgaussianVector [Nonempty m]
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {k : ℕ} (hk : k + 1 = Fintype.card n) {t : ℝ}
@@ -453,7 +484,9 @@ theorem measureReal_singularValues_le_le_of_isSubgaussianVector [Nonempty m]
   exact fun hω h => (not_le.mpr (lt_singularValues_of_specNorm_lt (Nat.cast_nonneg _) hw0 hk h)) hω
 
 /-- The upper tail of the spectral norm for independent isotropic sub-Gaussian rows:
-`P(√N + w ≤ ‖X‖) ≤ 2 e^{-t²}`, with `w = subgaussianRowsConstant * c * (√n + t)` and `0 ≤ t`.
+$\mathbb{P}(\|\mathbf{X}\|_2 \ge \sqrt{\lvert m \rvert} + w) \le 2 e^{-t^2}$, with
+$w = C_{\mathrm{SG}} \, c \, (\sqrt{\lvert n \rvert} + t)$ ($C_{\mathrm{SG}}$ =
+`subgaussianRowsConstant`) and $0 \le t$.
 The rows must exist (`[Nonempty m]`), as in
 `NLAlib.measureReal_singularValues_le_le_of_isSubgaussianVector`. [Vershynin2018, Theorem 4.6.1].
 For a standard Gaussian matrix `NLAlib.measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix` is

@@ -80,7 +80,9 @@ theorem isUpperQuasiTriangular_of_le_two [Zero R] (hk : k ≤ 2)
 
 /-! ### Block triangular matrices -/
 
-/-- The matrix with blocks `S`, `C`, `D`, `T`, indexed by `Fin (p + q)`. -/
+/-- The matrix with blocks $\mathbf{S}$, $\mathbf{C}$, $\mathbf{D}$, $\mathbf{T}$,
+$\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{D} & \mathbf{T} \end{bmatrix}$, indexed by
+`Fin (p + q)`. -/
 private def finBlocks {p q : ℕ} (S : Matrix (Fin p) (Fin p) R) (C : Matrix (Fin p) (Fin q) R)
     (D : Matrix (Fin q) (Fin p) R) (T : Matrix (Fin q) (Fin q) R) :
     Matrix (Fin (p + q)) (Fin (p + q)) R :=
@@ -109,7 +111,9 @@ private theorem finBlocks_natAdd_natAdd (i j : Fin q) :
   simp [finBlocks]
 
 /-- **A block upper triangular matrix with upper quasi-triangular diagonal blocks is upper
-quasi-triangular**, the blocks being placed in order along `Fin (p + q)`.
+quasi-triangular**: for upper quasi-triangular $\mathbf{S}$ and $\mathbf{T}$,
+$\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{0} & \mathbf{T} \end{bmatrix}$ is, the blocks
+being placed in order along `Fin (p + q)`.
 Port of `NLAlib.isUpperQuasiTriangular_of_small_leading_block`, there for a leading block of size
 at most two. -/
 theorem IsUpperQuasiTriangular.submatrix_fromBlocks [Zero R] (hS : IsUpperQuasiTriangular S)
@@ -152,8 +156,10 @@ theorem IsUpperQuasiTriangular.submatrix_fromBlocks [Zero R] (hS : IsUpperQuasiT
       exact hT.2 i j l (by simp only [Fin.val_natAdd] at h₁; omega)
         (by simp only [Fin.val_natAdd] at h₂; omega)
 
-/-- A block upper triangular matrix with upper triangular diagonal blocks is upper triangular,
-the blocks being placed in order along `Fin (p + q)`. -/
+/-- A block upper triangular matrix
+$\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{0} & \mathbf{T} \end{bmatrix}$ with upper
+triangular diagonal blocks is upper triangular, the blocks being placed in order along
+`Fin (p + q)`. -/
 theorem _root_.Matrix.IsUpperTriangular.submatrix_fromBlocks [Zero R] (hS : S.IsUpperTriangular)
     (hT : T.IsUpperTriangular) (C : Matrix (Fin p) (Fin q) R) :
     ((Matrix.fromBlocks S C 0 T).submatrix finSumFinEquiv.symm

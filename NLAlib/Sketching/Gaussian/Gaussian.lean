@@ -15,22 +15,23 @@ public import NLAlib.Sketching.Properties.Oblivious
 /-!
 # Gaussian sketches
 
-The Gaussian sketch is `S = (√k)⁻¹ • G` for a standard Gaussian `G : Matrix k n ℝ` (`k = card k`
-rows). It is written out in each statement, `fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω`, with the
-hypothesis `HasLaw G (gaussianMatrix k n) μ`; there is no named sketch law
-(`docs/design/Sketching-S2.md` §7 Q1).
+The Gaussian sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ for a standard Gaussian
+`G : Matrix k n ℝ` ($\lvert k \rvert$ rows). It is written out in each statement,
+`fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω`, with the hypothesis `HasLaw G (gaussianMatrix k n) μ`;
+there is no named sketch law (`docs/design/Sketching-S2.md` §7 Q1).
 
-It is an isotropic sketch, a random subspace injection and embedding for a fixed `U` with
-orthonormal columns (Gordon's extreme singular values, one tail `e^{-t²/2}` per side), an
+It is an isotropic sketch, a random subspace injection and embedding for a fixed $\mathbf{U}$ with
+orthonormal columns (Gordon's extreme singular values, one tail $e^{-t^2/2}$ per side), an
 oblivious subspace injection and embedding, and has the distributional Johnson–Lindenstrauss
-property with Dasgupta and Gupta's exponent `ε²/4 - ε³/6`, and the exact JL second moment
-`2 / k`. The sample sizes are named quantities (CONTRIBUTING §5.2, rule 2), each with its
-nonnegativity, monotonicity and an explicit comparison; the "`k ≥ …` suffices" forms are
-corollaries of the tails.
+property with Dasgupta and Gupta's exponent $\varepsilon^2/4 - \varepsilon^3/6$, and the exact JL
+second moment $2 / \lvert k \rvert$. The sample sizes are named quantities (CONTRIBUTING §5.2,
+rule 2), each with its nonnegativity, monotonicity and an explicit comparison; the
+"$\lvert k \rvert \ge \ldots$ suffices" forms are corollaries of the tails.
 
-Degenerate cases: for empty `k`, `(√0)⁻¹ = 0` and `S = 0`, which is not isotropic, hence
-`[Nonempty k]` on isotropy, the OSI and the moments; the hypothesis `t ≤ √k - √p` then forces `p`
-empty. The JL bound is `2` for `k = 0` and at least `2` for `ε ≥ 3/2`. Design:
+Degenerate cases: for empty $k$, $(\sqrt{0})^{-1} = 0$ and $\mathbf{S} = \mathbf{0}$, which is not
+isotropic, hence `[Nonempty k]` on isotropy, the OSI and the moments; the hypothesis
+$t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ then forces $p$ empty. The JL bound is $2$
+for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 `docs/design/Sketching-S2.md` §3.3, §8.
 
 ## Main definitions
@@ -41,11 +42,12 @@ empty. The JL bound is `2` for `k = 0` and at least `2` for `ε ≥ 3/2`. Design
 
 * `NLAlib.isIsotropicSketch_of_hasLaw_gaussianMatrix`.
 * `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_gaussianMatrix`: the fixed-subspace
-  embedding, `(1 ∓ (√p + t)/√k)²` outside `2 e^{-t²/2}`.
+  embedding, $(1 \mp (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2$ outside
+  $2 e^{-t^2/2}$.
 * `NLAlib.isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`,
   `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`.
 * `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`: distributional JL.
-* `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`: the JL moment property at `p = 2`.
+* `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`: the JL moment property at $p = 2$.
 * `NLAlib.exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le`: the Johnson–Lindenstrauss lemma.
 -/
 
@@ -96,24 +98,27 @@ private theorem one_add_div_sq {s b c : ℝ} (hs : 0 < s) :
   field_simp
   ring
 
-/-- `‖X‖²` and `‖X‖⁴` of a standard Gaussian vector are integrable. -/
-private theorem integrable_chiSq {X : Ω → k → ℝ} (hX : HasLaw X (gaussianVector k) μ) :
-    Integrable (fun ω => ‖WithLp.toLp 2 (X ω)‖ ^ 2) μ ∧
-      Integrable (fun ω => (‖WithLp.toLp 2 (X ω)‖ ^ 2) ^ 2) μ := by
+/-- $\|\mathbf{g}\|^2$ and $\|\mathbf{g}\|^4$ of a standard Gaussian vector $\mathbf{g}$ are
+integrable. -/
+private theorem integrable_chiSq {g : Ω → k → ℝ} (hg : HasLaw g (gaussianVector k) μ) :
+    Integrable (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2) μ ∧
+      Integrable (fun ω => (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ 2) μ := by
   have hk : (0 : ℝ) ≤ Fintype.card k := Nat.cast_nonneg _
-  have h1 := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hX (s := 1) (by linarith)
-  have h2 := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hX (s := 2) (by linarith)
+  have h1 := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 1) (by linarith)
+  have h2 := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 2) (by linarith)
   simp only [Real.rpow_one, Real.rpow_two] at h1 h2
   exact ⟨h1, h2⟩
 
-/-- `E ‖X‖² = k` and `E ‖X‖⁴ = k (k + 2)` for a standard Gaussian vector. -/
-private theorem integral_chiSq [Nonempty k] {X : Ω → k → ℝ}
-    (hX : HasLaw X (gaussianVector k) μ) :
-    ∫ ω, ‖WithLp.toLp 2 (X ω)‖ ^ 2 ∂μ = Fintype.card k ∧
-      ∫ ω, (‖WithLp.toLp 2 (X ω)‖ ^ 2) ^ 2 ∂μ = Fintype.card k * (Fintype.card k + 2) := by
+/-- $\mathbb{E}\|\mathbf{g}\|^2 = \lvert k \rvert$ and
+$\mathbb{E}\|\mathbf{g}\|^4 = \lvert k \rvert (\lvert k \rvert + 2)$ for a standard Gaussian vector
+$\mathbf{g}$ in $\mathbb{R}^k$. -/
+private theorem integral_chiSq [Nonempty k] {g : Ω → k → ℝ}
+    (hg : HasLaw g (gaussianVector k) μ) :
+    ∫ ω, ‖WithLp.toLp 2 (g ω)‖ ^ 2 ∂μ = Fintype.card k ∧
+      ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ 2 ∂μ = Fintype.card k * (Fintype.card k + 2) := by
   have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
-  have h1 := integral_norm_sq_rpow_of_hasLaw_gaussianVector hX (s := 1) (by linarith)
-  have h2 := integral_norm_sq_rpow_of_hasLaw_gaussianVector hX (s := 2) (by linarith)
+  have h1 := integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 1) (by linarith)
+  have h2 := integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 2) (by linarith)
   simp only [Real.rpow_one, Real.rpow_two] at h1 h2
   have hΓ : Real.Gamma ((Fintype.card k : ℝ) / 2) ≠ 0 := (Real.Gamma_pos_of_pos (by positivity)).ne'
   have hΓ1 : Real.Gamma ((Fintype.card k : ℝ) / 2 + 1) =
@@ -129,7 +134,8 @@ private theorem integral_chiSq [Nonempty k] {X : Ω → k → ℝ}
   · rw [h2, hΓ2, hΓ1]
     field_simp
 
-/-- The parameter `t = √(2 log a)` of the sample-size corollaries: `e^{-t²/2} = 1/a`. -/
+/-- The parameter $t = \sqrt{2 \log a}$ of the sample-size corollaries, for $a \ge 1$:
+$t \ge 0$ and $e^{-t^2/2} = 1/a$. -/
 private theorem exists_sqrt_two_mul_log {a : ℝ} (ha : 1 ≤ a) :
     ∃ t : ℝ, 0 ≤ t ∧ √(2 * Real.log a) = t ∧ Real.exp (-t ^ 2 / 2) = a⁻¹ := by
   have hL : 0 ≤ Real.log a := Real.log_nonneg ha
@@ -137,8 +143,10 @@ private theorem exists_sqrt_two_mul_log {a : ℝ} (ha : 1 ≤ a) :
   rw [Real.sq_sqrt (by positivity), show -(2 * Real.log a) / 2 = -Real.log a by ring,
     Real.exp_neg, Real.exp_log (by linarith)]
 
-/-- From `c² (√d + t)² / ε² ≤ k`: the ratio `(√d + t)/√k` is at most `ε / c`, and
-`t ≤ √k - √d` when `ε ≤ c`. -/
+/-- From $c^2 (\sqrt{d} + t)^2 / \varepsilon^2 \le \lvert k \rvert$: the ratio
+$(\sqrt{d} + t)/\sqrt{\lvert k \rvert}$ is nonnegative and at most $\varepsilon / c$, and
+$t \le \sqrt{\lvert k \rvert} - \sqrt{d}$, for $c > 0$, $\varepsilon > 0$, $t \ge 0$ and
+$\varepsilon \le c$. -/
 private theorem div_sqrt_le_of_mul_sq_div_le {c : ℝ} (hc : 0 < c) (hε : 0 < ε) (ht : 0 ≤ t)
     (hεc : ε ≤ c) (hk : c ^ 2 * (√(d : ℝ) + t) ^ 2 / ε ^ 2 ≤ Fintype.card k) :
     0 ≤ (√(d : ℝ) + t) / √(Fintype.card k : ℝ) ∧
@@ -161,14 +169,17 @@ private theorem div_sqrt_le_of_mul_sq_div_le {c : ℝ} (hc : 0 < c) (hε : 0 < �
 
 /-! ### Sample sizes -/
 
-/-- The **Gaussian embedding dimension** `9 (√d + √(2 log (2/δ)))² / ε²`: a Gaussian sketch with
-at least this many rows is an oblivious subspace embedding for dimension `d` with constants
-`1 ∓ ε` and failure probability `δ`, for `0 < ε ≤ 1`
+/-- The **Gaussian embedding dimension**
+$9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2 / \varepsilon^2$: a Gaussian sketch with at least this
+many rows is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$
+and failure probability $\delta$, for $0 < \varepsilon \le 1$
 (`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le`). The
-value the proof reaches (`t = √(2 log (2/δ))` and `(√d + t)/√k ≤ ε/3`); [Woodruff2014, Theorem 6]
-has `Θ((d + log (1/δ))/ε²)` with no constant. Consumers use `gaussianEmbeddingDim_le`, the
-prototype's `18 (d + 2 log (2/δ))/ε²`. Junk values: `0` at `ε = 0`; for `δ ≥ 2` the logarithm is
-at most `0` and its square root is `0`. -/
+value the proof reaches ($t = \sqrt{2 \log(2/\delta)}$ and
+$(\sqrt{d} + t)/\sqrt{\lvert k \rvert} \le \varepsilon/3$); [Woodruff2014, Theorem 6] has
+$\Theta((d + \log(1/\delta))/\varepsilon^2)$ with no constant. Consumers use
+`gaussianEmbeddingDim_le`, the prototype's $18 (d + 2 \log(2/\delta))/\varepsilon^2$. Junk values:
+$0$ at $\varepsilon = 0$; for $\delta \ge 2$ the logarithm is at most $0$ and its square root is
+$0$. -/
 noncomputable irreducible_def gaussianEmbeddingDim (d : ℕ) (ε δ : ℝ) : ℝ :=
   9 * (√(d : ℝ) + √(2 * Real.log (2 / δ))) ^ 2 / ε ^ 2
 
@@ -177,8 +188,8 @@ theorem gaussianEmbeddingDim_nonneg (d : ℕ) (ε δ : ℝ) : 0 ≤ gaussianEmbe
   rw [gaussianEmbeddingDim_def]
   positivity
 
-/-- The Gaussian embedding dimension is monotone in the dimension `d` and antitone in the
-distortion `ε > 0` and the failure probability `δ > 0`. -/
+/-- The Gaussian embedding dimension is monotone in the dimension $d$ and antitone in the
+distortion $\varepsilon > 0$ and the failure probability $\delta > 0$. -/
 theorem gaussianEmbeddingDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ)
     (hδδ' : δ ≤ δ') : gaussianEmbeddingDim d ε' δ' ≤ gaussianEmbeddingDim d' ε δ := by
   rw [gaussianEmbeddingDim_def, gaussianEmbeddingDim_def]
@@ -186,9 +197,9 @@ theorem gaussianEmbeddingDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε �
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   gcongr
 
-/-- The explicit comparison `gaussianEmbeddingDim d ε δ ≤ 18 (d + 2 log (2/δ)) / ε²` for
-`0 < δ ≤ 2`, the constant of the prototype's
-`one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`. -/
+/-- The explicit comparison: `gaussianEmbeddingDim d ε δ` is at most
+$18 (d + 2 \log(2/\delta)) / \varepsilon^2$ for $0 < \delta \le 2$, the constant of the
+prototype's `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`. -/
 theorem gaussianEmbeddingDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     gaussianEmbeddingDim d ε δ ≤ 18 * (d + 2 * Real.log (2 / δ)) / ε ^ 2 := by
   rw [gaussianEmbeddingDim_def]
@@ -198,18 +209,20 @@ theorem gaussianEmbeddingDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ �
   refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
   nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (2 / δ)))]
 
-/-- The **Gaussian injection dimension** `4 (√d + √(2 log (1/δ)))² / ε²`: a Gaussian sketch with
-at least this many rows is an oblivious subspace injection for dimension `d` with constant
-`1 - ε` and failure probability `δ`, for `0 < ε ≤ 2` and `0 < δ < 1`
+/-- The **Gaussian injection dimension**
+$4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2 / \varepsilon^2$: a Gaussian sketch with at least this
+many rows is an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and
+failure probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$
 (`NLAlib.isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le`). The
-value the proof reaches (`t = √(2 log (1/δ))` and `(√d + t)/√k ≤ ε/2`); one tail, against the
-embedding's two. Consumers use `gaussianInjectionDim_le`. Junk values: `0` at `ε = 0`; for
-`δ ≥ 1` the logarithm is at most `0` and its square root is `0`. -/
+value the proof reaches ($t = \sqrt{2 \log(1/\delta)}$ and
+$(\sqrt{d} + t)/\sqrt{\lvert k \rvert} \le \varepsilon/2$); one tail, against the embedding's two.
+Consumers use `gaussianInjectionDim_le`. Junk values: $0$ at $\varepsilon = 0$; for
+$\delta \ge 1$ the logarithm is at most $0$ and its square root is $0$. -/
 noncomputable irreducible_def gaussianInjectionDim (d : ℕ) (ε δ : ℝ) : ℝ :=
   4 * (√(d : ℝ) + √(2 * Real.log (1 / δ))) ^ 2 / ε ^ 2
 
-/-- The Gaussian injection dimension is positive for `ε ≠ 0` and `0 < δ < 1`; a sketch with at
-least this many rows has a row. -/
+/-- The Gaussian injection dimension is positive for $\varepsilon \ne 0$ and
+$0 < \delta < 1$; a sketch with at least this many rows has a row. -/
 theorem gaussianInjectionDim_pos (d : ℕ) (hε : ε ≠ 0) (hδ : 0 < δ) (hδ1 : δ < 1) :
     0 < gaussianInjectionDim d ε δ := by
   rw [gaussianInjectionDim_def]
@@ -218,8 +231,8 @@ theorem gaussianInjectionDim_pos (d : ℕ) (hε : ε ≠ 0) (hδ : 0 < δ) (hδ1
   have h2 : 0 < √(d : ℝ) + √(2 * Real.log (1 / δ)) := by positivity
   positivity
 
-/-- The Gaussian injection dimension is monotone in the dimension `d` and antitone in the
-distortion `ε > 0` and the failure probability `δ > 0`. -/
+/-- The Gaussian injection dimension is monotone in the dimension $d$ and antitone in the
+distortion $\varepsilon > 0$ and the failure probability $\delta > 0$. -/
 theorem gaussianInjectionDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ)
     (hδδ' : δ ≤ δ') : gaussianInjectionDim d ε' δ' ≤ gaussianInjectionDim d' ε δ := by
   rw [gaussianInjectionDim_def, gaussianInjectionDim_def]
@@ -227,8 +240,8 @@ theorem gaussianInjectionDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε �
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   gcongr
 
-/-- The explicit comparison `gaussianInjectionDim d ε δ ≤ 8 (d + 2 log (1/δ)) / ε²` for
-`0 < δ ≤ 1`. -/
+/-- The explicit comparison: `gaussianInjectionDim d ε δ` is at most
+$8 (d + 2 \log(1/\delta)) / \varepsilon^2$ for $0 < \delta \le 1$. -/
 theorem gaussianInjectionDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ1 : δ ≤ 1) :
     gaussianInjectionDim d ε δ ≤ 8 * (d + 2 * Real.log (1 / δ)) / ε ^ 2 := by
   rw [gaussianInjectionDim_def]
@@ -238,25 +251,28 @@ theorem gaussianInjectionDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ1 : δ �
   refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
   nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (1 / δ)))]
 
-/-- The **Johnson–Lindenstrauss dimension** `log (2/δ) / (ε²/4 - ε³/6)`: a Gaussian or Haar
-sketch with at least this many rows has the distributional JL property with distortion `ε` and
-failure probability `δ`, for `0 < ε < 3/2`
+/-- The **Johnson–Lindenstrauss dimension**
+$\log(2/\delta) / (\varepsilon^2/4 - \varepsilon^3/6)$: a Gaussian or Haar sketch with at least
+this many rows has the distributional JL property with distortion $\varepsilon$ and failure
+probability $\delta$, for $0 < \varepsilon < 3/2$
 (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`). The value the proof reaches, from
-Dasgupta and Gupta's exponent. Consumers use `jlDim_le`, `12 log (2/δ) / ε²` for `ε ≤ 1`. Junk
-values: for `ε ≥ 3/2` the denominator is at most `0`, and the value is `0` at `ε = 3/2` and of
-the sign of `-log (2/δ)` beyond; for `δ ≥ 2` the logarithm is at most `0`. -/
+Dasgupta and Gupta's exponent. Consumers use `jlDim_le`, $12 \log(2/\delta) / \varepsilon^2$ for
+$\varepsilon \le 1$. Junk values: for $\varepsilon \ge 3/2$ the denominator is at most $0$, and
+the value is $0$ at $\varepsilon = 3/2$ and of the sign of $-\log(2/\delta)$ beyond; for
+$\delta \ge 2$ the logarithm is at most $0$. -/
 noncomputable irreducible_def jlDim (ε δ : ℝ) : ℝ :=
   Real.log (2 / δ) / (ε ^ 2 / 4 - ε ^ 3 / 6)
 
-/-- The Johnson–Lindenstrauss dimension is positive for `0 < ε < 3/2` and `0 < δ < 2`. -/
+/-- The Johnson–Lindenstrauss dimension is positive for $0 < \varepsilon < 3/2$ and
+$0 < \delta < 2$. -/
 theorem jlDim_pos (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ) (hδ2 : δ < 2) : 0 < jlDim ε δ := by
   rw [jlDim_def]
   refine div_pos (Real.log_pos (by rw [lt_div_iff₀ hδ]; linarith)) ?_
   have : 0 < ε ^ 2 := by positivity
   nlinarith
 
-/-- The Johnson–Lindenstrauss dimension is antitone in the distortion on `(0, 1]` and in the
-failure probability, for `0 < δ ≤ 2`. -/
+/-- The Johnson–Lindenstrauss dimension is antitone in the distortion on $(0, 1]$ and in the
+failure probability, for $0 < \delta \le 2$. -/
 theorem jlDim_mono (hε : 0 < ε) (hεε' : ε ≤ ε') (hε'1 : ε' ≤ 1) (hδ : 0 < δ) (hδδ' : δ ≤ δ')
     (hδ2 : δ ≤ 2) : jlDim ε' δ' ≤ jlDim ε δ := by
   rw [jlDim_def, jlDim_def]
@@ -275,8 +291,9 @@ theorem jlDim_mono (hε : 0 < ε) (hεε' : ε ≤ ε') (hε'1 : ε' ≤ 1) (hδ
   exact (div_le_div_of_nonneg_right hLL (hf.le.trans hff)).trans
     (div_le_div_of_nonneg_left hL hf hff)
 
-/-- The explicit comparison `jlDim ε δ ≤ 12 log (2/δ) / ε²` for `ε ≤ 1` and `0 < δ ≤ 2`
-(`ε²/4 - ε³/6 ≥ ε²/12`). -/
+/-- The explicit comparison: `jlDim ε δ` is at most $12 \log(2/\delta) / \varepsilon^2$ for
+$\varepsilon \le 1$ and $0 < \delta \le 2$
+($\varepsilon^2/4 - \varepsilon^3/6 \ge \varepsilon^2/12$). -/
 theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     jlDim ε δ ≤ 12 * Real.log (2 / δ) / ε ^ 2 := by
   rw [jlDim_def]
@@ -292,8 +309,9 @@ theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
 
 /-! ### Isotropy -/
 
-/-- **A Gaussian sketch is isotropic**: `E [Sᴴ S] = 1` for `S = (√k)⁻¹ • G`, `k` nonempty. Its
-rows are isotropic (`NLAlib.hasLaw_col_of_hasLaw_gaussianMatrix` on `Gᴴ`) and
+/-- **A Gaussian sketch is isotropic**: $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$
+for $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$, $k$ nonempty. Its rows are isotropic
+(`NLAlib.hasLaw_col_of_hasLaw_gaussianMatrix` on $\mathbf{G}^{\mathsf{H}}$) and
 `NLAlib.isIsotropicSketch_smul_of_isIsotropic` scales them. -/
 theorem isIsotropicSketch_of_hasLaw_gaussianMatrix [DecidableEq n] [Nonempty k]
     (hG : HasLaw G (gaussianMatrix k n) μ) :
@@ -305,7 +323,10 @@ theorem isIsotropicSketch_of_hasLaw_gaussianMatrix [DecidableEq n] [Nonempty k]
 
 variable [DecidableEq p]
 
-/-- The upper half for a fixed `U` with orthonormal columns, in Loewner form. -/
+/-- The upper half for a fixed $\mathbf{U}$ with orthonormal columns, in Loewner form:
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is a subspace embedding with constants $0$ and
+$(1 + (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2$ outside probability
+$e^{-t^2/2}$, for $t \ge 0$. -/
 private theorem measureReal_not_upper_le (hU : HasOrthonormalCols U)
     (hG : HasLaw G (gaussianMatrix k n) μ) (ht : 0 ≤ t) :
     μ.real {ω | ¬ IsSubspaceEmbedding ((√(Fintype.card k : ℝ))⁻¹ • G ω) U 0
@@ -329,12 +350,16 @@ private theorem measureReal_not_upper_le (hU : HasOrthonormalCols U)
     positivity
   · exact one_add_div_sq h0
 
-/-- **Gaussian subspace injection**: for `U` with orthonormal columns, `S = (√k)⁻¹ • G` satisfies
-`(1 - (√p + t)/√k)² • 1 ≤ (S U)ᴴ (S U)` outside probability `e^{-t²/2}`, for
-`0 ≤ t ≤ √k - √p`. `G U` is a `k × p` Gaussian and Gordon's lower tail
+/-- **Gaussian subspace injection**: for $\mathbf{U}$ with orthonormal columns,
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ satisfies
+$$\Bigl(1 - \frac{\sqrt{\lvert p \rvert} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2 \mathbf{I}
+\preceq (\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})$$
+outside probability $e^{-t^2/2}$, for $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$.
+$\mathbf{G}\mathbf{U}$ is a $k \times p$ Gaussian and Gordon's lower tail
 (`NLAlib.measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussianMatrix`)
-applies. [MartinssonTropp2020, §8.7.2], there `1 - (1 + √p)/√k - t/√k` for our `t`, with
-unsquared singular values; one-sided here, so one tail. -/
+applies. [MartinssonTropp2020, §8.7.2], there
+$1 - (1 + \sqrt{\lvert p \rvert})/\sqrt{\lvert k \rvert} - t/\sqrt{\lvert k \rvert}$ for our $t$,
+with unsquared singular values; one-sided here, so one tail. -/
 theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_gaussianMatrix
     (hU : HasOrthonormalCols U) (hG : HasLaw G (gaussianMatrix k n) μ) (ht : 0 ≤ t)
     (htk : t ≤ √(Fintype.card k : ℝ) - √(Fintype.card p : ℝ)) :
@@ -365,11 +390,17 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_gaussianMatrix
   have h' := ((hU.isSubspaceInjection_iff (S := G ω)).2 hlow).smul_real (√(Fintype.card k : ℝ))⁻¹
   rwa [one_sub_div_sq hs] at h'
 
-/-- **Gaussian subspace embedding**: for `U` with orthonormal columns, `S = (√k)⁻¹ • G` is a
-subspace embedding for `range U` with constants `(1 ∓ (√p + t)/√k)²` outside probability
-`2 e^{-t²/2}`, for `0 ≤ t ≤ √k - √p`; Gordon's Gram sandwich for the `k × p` Gaussian `G U`.
-[Woodruff2014, Theorem 6] (`k = Θ((p + log (1/δ))/ε²)`, no constant);
-[MartinssonTropp2020, §8.7.2], there `1 ∓ (1 + √p)/√k ∓ t/√k` for our `t`.
+/-- **Gaussian subspace embedding**: for $\mathbf{U}$ with orthonormal columns,
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is a subspace embedding for
+$\operatorname{range} \mathbf{U}$ with constants
+$(1 \mp (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2$ outside probability
+$2 e^{-t^2/2}$, for $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$; Gordon's Gram
+sandwich for the $k \times p$ Gaussian $\mathbf{G}\mathbf{U}$.
+[Woodruff2014, Theorem 6]
+($\lvert k \rvert = \Theta((\lvert p \rvert + \log(1/\delta))/\varepsilon^2)$, no constant);
+[MartinssonTropp2020, §8.7.2], there
+$1 \mp (1 + \sqrt{\lvert p \rvert})/\sqrt{\lvert k \rvert} \mp t/\sqrt{\lvert k \rvert}$ for our
+$t$.
 Result: gaussian-ose -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_gaussianMatrix
     (hU : HasOrthonormalCols U) (hG : HasLaw G (gaussianMatrix k n) μ) (ht : 0 ≤ t)
@@ -386,9 +417,11 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_gaussianMatrix
   simp only [Set.mem_ofPred_eq] at hω ⊢
   exact fun h' => hω h'.upper
 
-/-- **The upper half alone**: for `U` with orthonormal columns,
-`(S U)ᴴ (S U) ≤ (1 + (√p + t)/√k)² • 1` outside probability `e^{-t²/2}`, for every `t ≥ 0`; no
-condition relating `t`, `k` and `p`, and one tail. The lower constant `0` is vacuous. -/
+/-- **The upper half alone**: for $\mathbf{U}$ with orthonormal columns,
+$$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})
+\preceq \Bigl(1 + \frac{\sqrt{\lvert p \rvert} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2 \mathbf{I}$$
+outside probability $e^{-t^2/2}$, for every $t \ge 0$; no condition relating $t$, $k$ and $p$, and
+one tail. The lower constant $0$ is vacuous. -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_zero_of_hasLaw_gaussianMatrix
     (hU : HasOrthonormalCols U) (hG : HasLaw G (gaussianMatrix k n) μ) (ht : 0 ≤ t) :
     HasSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) U 0
@@ -398,9 +431,11 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_zero_of_hasLaw_gaussianMatrix
 
 /-! ### Oblivious forms -/
 
-/-- **The Gaussian OSI**: `S = (√k)⁻¹ • G` is an oblivious subspace injection for dimension `d`
-with constant `(1 - (√d + t)/√k)²` and failure probability `e^{-t²/2}`, for
-`0 ≤ t ≤ √k - √d`; for `d > card n` the proof works at `min d (card n)` and weakens.
+/-- **The Gaussian OSI**: $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is an oblivious
+subspace injection for dimension $d$ with constant
+$(1 - (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2$ and failure probability $e^{-t^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$; for $d > \lvert n \rvert$ the proof works at
+$\min(d, \lvert n \rvert)$ and weakens.
 [CamanoEpperlyMeyerTropp2025, Definition 1.6, §1.5.0], who cite [MartinssonTropp2020, §8.7.2]
 for it; the one-sided tail gives the better failure probability.
 Result: gaussian-osi -/
@@ -430,9 +465,11 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix [DecidableEq n] [N
       (√(d : ℝ) + t) / √(Fintype.card k : ℝ) := by gcongr
   exact pow_le_pow_left₀ h0 (by linarith) 2
 
-/-- **The Gaussian OSE**: `S = (√k)⁻¹ • G` is an oblivious subspace embedding for dimension `d`
-with constants `(1 ∓ (√d + t)/√k)²` and failure probability `2 e^{-t²/2}`, for
-`0 ≤ t ≤ √k - √d`. [Woodruff2014, Theorem 6]; [MartinssonTropp2020, §8.7.2].
+/-- **The Gaussian OSE**: $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is an oblivious
+subspace embedding for dimension $d$ with constants
+$(1 \mp (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2$ and failure probability $2 e^{-t^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$. [Woodruff2014, Theorem 6];
+[MartinssonTropp2020, §8.7.2].
 Result: gaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix
     (hG : HasLaw G (gaussianMatrix k n) μ) (d : ℕ) (ht : 0 ≤ t)
@@ -466,12 +503,16 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix
 
 /-! ### Johnson–Lindenstrauss -/
 
-/-- **Distributional Johnson–Lindenstrauss for a Gaussian sketch**: for every unit `x`,
-`P(ε ≤ |‖S x‖² - 1|) ≤ 2 exp (-k (ε²/4 - ε³/6))`, every `ε ≥ 0`; `‖S x‖² = ‖G x‖²/k` is
-`χ²_k / k` (`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`).
-[Woodruff2014, Lemma 18] (there `ε² k / 16`); [MartinssonTropp2020, §8.6]; the exponent of
-Dasgupta and Gupta (`docs/PORT_SKETCHING.md` D12). No `ε < 1`: the bound is at least `2` for
-`ε ≥ 3/2`. Replaces the prototype's `jl_distributional`.
+/-- **Distributional Johnson–Lindenstrauss for a Gaussian sketch**: for every unit $\mathbf{x}$
+and every $\varepsilon \ge 0$,
+$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+\le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,;$$
+$\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{G}\mathbf{x}\|^2/\lvert k \rvert$ is
+$\chi^2_{\lvert k \rvert} / \lvert k \rvert$
+(`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`).
+[Woodruff2014, Lemma 18] (there $\varepsilon^2 \lvert k \rvert / 16$); [MartinssonTropp2020, §8.6];
+the exponent of Dasgupta and Gupta (`docs/PORT_SKETCHING.md` D12). No $\varepsilon < 1$: the bound
+is at least $2$ for $\varepsilon \ge 3/2$. Replaces the prototype's `jl_distributional`.
 Result: jl-distributional -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix (hG : HasLaw G (gaussianMatrix k n) μ)
     (hε : 0 ≤ ε) :
@@ -483,7 +524,8 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix (hG : HasLaw G (gaussianMatrix k 
   simp only [Matrix.smul_mulVec, norm_inv_sqrt_smul_sq (Nat.cast_nonneg _)]
   exact h
 
-/-- The squared distortion `(‖S x‖² - ‖x‖²)²` of a Gaussian sketch is integrable. -/
+/-- The squared distortion $(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2$ of a Gaussian
+sketch is integrable. -/
 theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix
     (hG : HasLaw G (gaussianMatrix k n) μ) (x : n → ℝ) :
     Integrable (fun ω => (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • G ω *ᵥ x)‖ ^ 2 -
@@ -502,8 +544,10 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix
   simp only [e]
   exact ((h2.const_mul _).sub (h1.const_mul _)).add (integrable_const _)
 
-/-- **The JL variance of a Gaussian sketch**: `E (‖S x‖² - ‖x‖²)² = 2 ‖x‖⁴ / k` exactly, from
-`Var χ²_k = 2k` (`NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector` at `s = 1, 2`). -/
+/-- **The JL variance of a Gaussian sketch**:
+$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2 = 2 \|\mathbf{x}\|^4 / \lvert k \rvert$
+exactly, from $\operatorname{Var} \chi^2_{\lvert k \rvert} = 2 \lvert k \rvert$
+(`NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector` at $s = 1, 2$). -/
 theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix [Nonempty k]
     (hG : HasLaw G (gaussianMatrix k n) μ) (x : n → ℝ) :
     ∫ ω, (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • G ω *ᵥ x)‖ ^ 2 -
@@ -535,9 +579,10 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix [Nonempt
   field_simp
   ring
 
-/-- **The JL moment property of a Gaussian sketch** at `p = 2`, with `δ = 2 / (k ε²)`, from the
-exact variance. [Woodruff2014, Definition 12], the property there; the input of approximate
-matrix multiplication at `p = 2`. -/
+/-- **The JL moment property of a Gaussian sketch** at $p = 2$, with
+$\delta = 2 / (\lvert k \rvert \varepsilon^2)$, from the exact variance.
+[Woodruff2014, Definition 12], the property there; the input of approximate matrix multiplication
+at $p = 2$. -/
 theorem hasJLMoment_of_hasLaw_gaussianMatrix [Nonempty k] (hG : HasLaw G (gaussianMatrix k n) μ)
     (hε : 0 < ε) :
     HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε
@@ -561,11 +606,12 @@ theorem hasJLMoment_of_hasLaw_gaussianMatrix [Nonempty k] (hG : HasLaw G (gaussi
 
 /-! ### Sample-size corollaries -/
 
-/-- **Gaussian OSE, sample-size form**: `k ≥ gaussianEmbeddingDim d ε δ` rows give an oblivious
-subspace embedding for dimension `d` with constants `1 ∓ ε` and failure probability `δ`, for
-`0 < ε ≤ 1` and `δ > 0` (for `δ ≥ 2` it is trivial). [Woodruff2014, Theorem 6]. Replaces the
-prototype's `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`
-(`k ≥ 18 (d + 2 log (2/δ)) / ε²`, now `gaussianEmbeddingDim_le`). -/
+/-- **Gaussian OSE, sample-size form**: at least `gaussianEmbeddingDim d ε δ` rows give an
+oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure
+probability $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$ (for $\delta \ge 2$ it is
+trivial). [Woodruff2014, Theorem 6]. Replaces the prototype's
+`one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`
+($\lvert k \rvert \ge 18 (d + 2 \log(2/\delta)) / \varepsilon^2$, now `gaussianEmbeddingDim_le`). -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
     (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
     (hk : gaussianEmbeddingDim d ε δ ≤ Fintype.card k) :
@@ -586,9 +632,10 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddi
   · nlinarith
   · nlinarith
 
-/-- **Gaussian OSI, sample-size form**: `k ≥ gaussianInjectionDim d ε δ` rows give an oblivious
-subspace injection for dimension `d` with constant `1 - ε` and failure probability `δ`, for
-`0 < ε ≤ 2` and `0 < δ < 1`; `k` is nonempty because the dimension is positive. -/
+/-- **Gaussian OSI, sample-size form**: at least `gaussianInjectionDim d ε δ` rows give an
+oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure
+probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$; $k$ is nonempty because
+the dimension is positive. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     [DecidableEq n] (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε2 : ε ≤ 2)
     (hδ : 0 < δ) (hδ1 : δ < 1) (hk : gaussianInjectionDim d ε δ ≤ Fintype.card k) :
@@ -608,9 +655,9 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjecti
     hδeq.le
   nlinarith
 
-/-- **Gaussian distributional JL, sample-size form**: `k ≥ jlDim ε δ` rows give the JL property
-with distortion `ε` and failure probability `δ`, for `0 < ε < 3/2` and `δ > 0`. Replaces the
-prototype's `jl_lemma_prob_le_of_log_le`. -/
+/-- **Gaussian distributional JL, sample-size form**: at least `jlDim ε δ` rows give the JL
+property with distortion $\varepsilon$ and failure probability $\delta$, for
+$0 < \varepsilon < 3/2$ and $\delta > 0$. Replaces the prototype's `jl_lemma_prob_le_of_log_le`. -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gaussianMatrix k n) μ)
     (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ) (hk : jlDim ε δ ≤ Fintype.card k) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ μ := by
@@ -628,11 +675,13 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gauss
       rw [Real.exp_neg, Real.exp_log (by positivity)]
       field_simp
 
-/-- **The Johnson–Lindenstrauss lemma**, existence form: for points `x i` in `ℝⁿ`, `N = card ι`,
-and `k ≥ jlDim ε (1 / (N choose 2 + 1))`, some `S : Matrix k n ℝ` distorts every squared
-distance `‖x i - x j‖²` by a factor within `1 ± ε`, for `0 < ε < 3/2`. A scaled Gaussian works
-with positive probability (the union bound over pairs, failure `< 1`). [Woodruff2014, Theorem 4],
-in squared-norm form; [MartinssonTropp2020, §8.6]. Replaces the prototype's `jl_lemma_exists`.
+/-- **The Johnson–Lindenstrauss lemma**, existence form: for points $\mathbf{x}_i$ in
+$\mathbb{R}^n$, $N = \lvert \iota \rvert$, and $\lvert k \rvert$ at least `jlDim` at distortion
+$\varepsilon$ and failure probability $1 / (\binom{N}{2} + 1)$, some $k \times n$ matrix
+$\mathbf{S}$ distorts every squared distance $\|\mathbf{x}_i - \mathbf{x}_j\|^2$ by a factor within
+$1 \pm \varepsilon$, for $0 < \varepsilon < 3/2$. A scaled Gaussian works with positive probability
+(the union bound over pairs, failure $< 1$). [Woodruff2014, Theorem 4], in squared-norm form;
+[MartinssonTropp2020, §8.6]. Replaces the prototype's `jl_lemma_exists`.
 Result: jl-lemma -/
 theorem exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le [Fintype ι] (x : ι → n → ℝ)
     (hε : 0 < ε) (hε1 : ε < 3 / 2)

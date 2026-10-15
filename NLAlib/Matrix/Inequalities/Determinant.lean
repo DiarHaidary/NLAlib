@@ -15,8 +15,8 @@ public import NLAlib.Matrix.Basic.SchurComplement
 Hadamard's inequality (in its positive semidefinite form and in its column-norm form), Fischer's
 inequality for a block matrix, principal minors, and the Hadamard–Fischer (Koteljanskii)
 inequality for principal minors on overlapping index sets. Determinants of Hermitian matrices are
-real; the inequalities are stated for `RCLike.re (det A)`. Minkowski's inequality is in
-`NLAlib.Matrix.Inequalities.Minkowski`.
+real; the inequalities are stated for $\operatorname{Re} \det \mathbf{A}$ (`RCLike.re`). Minkowski's
+inequality is in `NLAlib.Matrix.Inequalities.Minkowski`.
 
 ## Main results
 
@@ -43,15 +43,20 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 /-! ### Fischer's inequality -/
 
 /-- The determinant of a Hermitian matrix is real, so it comes out of a real part:
-`re (det A · z) = re (det A) · re z`. -/
+$\operatorname{Re}(\det \mathbf{A} \cdot z) = \operatorname{Re}(\det \mathbf{A}) \operatorname{Re}
+z$. -/
 theorem _root_.Matrix.IsHermitian.re_det_mul {A : Matrix m m 𝕜} (hA : A.IsHermitian) (z : 𝕜) :
     RCLike.re (A.det * z) = RCLike.re A.det * RCLike.re z := by
   conv_lhs => rw [hA.det_eq_re_det, RCLike.re_ofReal_mul]
 
-/-- **The Schur determinant formula** for a matrix indexed by a sum type whose leading block is
-invertible: `det M = det M₁₁ · det (M₂₂ - M₂₁ M₁₁⁻¹ M₁₂)`. This is Mathlib's
-`Matrix.det_fromBlocks₁₁` for a matrix that is not written as `Matrix.fromBlocks`, with `⁻¹` in
-place of `⅟`. [HornJohnson2013, §0.8.5]. -/
+/-- **The Schur determinant formula** for a matrix $\mathbf{M}$ indexed by a sum type whose
+leading block is invertible: with blocks $\mathbf{M}_{11}, \mathbf{M}_{12}, \mathbf{M}_{21},
+\mathbf{M}_{22}$ (`Matrix.toBlocks₁₁` and so on),
+$$\det \mathbf{M} = \det \mathbf{M}_{11} \cdot
+  \det(\mathbf{M}_{22} - \mathbf{M}_{21}\mathbf{M}_{11}^{-1}\mathbf{M}_{12})\,.$$
+This is Mathlib's `Matrix.det_fromBlocks₁₁` for a matrix that is not written as
+`Matrix.fromBlocks`, with the inverse `⁻¹` in place of `⅟`, over any commutative ring.
+[HornJohnson2013, §0.8.5]. -/
 theorem det_eq_det_toBlocks₁₁_mul_det {R : Type*} [CommRing R] (M : Matrix (m ⊕ n) (m ⊕ n) R)
     (h : IsUnit M.toBlocks₁₁) : M.det = M.toBlocks₁₁.det *
       (M.toBlocks₂₂ - M.toBlocks₂₁ * M.toBlocks₁₁⁻¹ * M.toBlocks₁₂).det := by
@@ -60,9 +65,12 @@ theorem det_eq_det_toBlocks₁₁_mul_det {R : Type*} [CommRing R] (M : Matrix (
   rw [Matrix.det_fromBlocks₁₁, Matrix.invOf_eq_nonsing_inv]
 
 /-- **Fischer's inequality.** The determinant of a positive semidefinite block matrix is at most
-the product of the determinants of its diagonal blocks.
+the product of the determinants of its diagonal blocks:
+$$\operatorname{Re} \det \begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} &
+\mathbf{C} \end{bmatrix}
+  \le \operatorname{Re} \det \mathbf{A} \cdot \operatorname{Re} \det \mathbf{C}\,.$$
 [HornJohnson2013, Theorem 7.8.5].
-Port of `NLAlib.det_fromBlocks_le_mul_det_of_posSemidef`, there over `ℝ`.
+Port of `NLAlib.det_fromBlocks_le_mul_det_of_posSemidef`, there over $\mathbb{R}$.
 Result: fischer-inequality -/
 theorem re_det_fromBlocks_le_of_posSemidef {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
@@ -87,7 +95,8 @@ theorem re_det_fromBlocks_le_of_posSemidef {A : Matrix m m 𝕜} {B : Matrix m n
       (RCLike.nonneg_iff.mp hA.det_nonneg).1
 
 omit [Fintype n] [DecidableEq m] [DecidableEq n] in
-/-- A congruence of a positive definite matrix vanishes only for the zero matrix. -/
+/-- A congruence of a positive definite matrix vanishes only for the zero matrix:
+$\mathbf{B}^{\mathsf{H}}\mathbf{A}\mathbf{B} = \mathbf{0}$ forces $\mathbf{B} = \mathbf{0}$. -/
 private theorem eq_zero_of_conjTranspose_mul_mul_eq_zero [Finite n] {A : Matrix m m 𝕜}
     (hA : A.PosDef) {B : Matrix m n 𝕜} (h : Bᴴ * A * B = 0) : B = 0 := by
   classical
@@ -100,9 +109,10 @@ private theorem eq_zero_of_conjTranspose_mul_mul_eq_zero [Finite n] {A : Matrix 
     exact (hA.quadForm_pos hne).ne' hq
   simpa using congrFun hz i
 
-/-- Equality in Fischer's inequality for a positive definite block matrix holds exactly when the
-off-diagonal block vanishes.
-Port of `NLAlib.det_fromBlocks_eq_mul_det_iff_of_posDef`, there over `ℝ`. -/
+/-- Equality in Fischer's inequality for a positive definite block matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
+holds exactly when the off-diagonal block vanishes, $\mathbf{B} = \mathbf{0}$.
+Port of `NLAlib.det_fromBlocks_eq_mul_det_iff_of_posDef`, there over $\mathbb{R}$. -/
 theorem re_det_fromBlocks_eq_iff_of_posDef {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosDef) :
     RCLike.re (Matrix.fromBlocks A B Bᴴ C).det = RCLike.re A.det * RCLike.re C.det ↔ B = 0 := by
@@ -242,9 +252,10 @@ private theorem apply_eq_zero_of_re_det_submatrix_val_eq_prod {A : Matrix n n �
     · exact ih h3 i hi' j hj' hij
 
 /-- **Hadamard's inequality.** The determinant of a positive semidefinite matrix is at most the
-product of its diagonal entries.
+product of its diagonal entries:
+$\operatorname{Re} \det \mathbf{A} \le \prod_i \operatorname{Re} \mathbf{A}_{i,i}$.
 [HornJohnson2013, Theorem 7.8.1]. Port of `NLAlib.det_le_prod_diag_of_posSemidef`, there over
-`ℝ`.
+$\mathbb{R}$.
 Result: hadamard-determinant-inequality -/
 theorem _root_.Matrix.PosSemidef.re_det_le_prod_re_diag {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     RCLike.re A.det ≤ ∏ i, RCLike.re (A i i) := by
@@ -253,8 +264,9 @@ theorem _root_.Matrix.PosSemidef.re_det_le_prod_re_diag {A : Matrix n n 𝕜} (h
     Matrix.submatrix_id_id] at h
 
 /-- Equality in Hadamard's inequality for a positive definite matrix holds exactly for diagonal
-matrices. [HornJohnson2013, Theorem 7.8.1].
-Port of `NLAlib.det_eq_prod_diag_iff_isDiag_of_posDef`, there over `ℝ`. -/
+matrices: $\operatorname{Re} \det \mathbf{A} = \prod_i \operatorname{Re} \mathbf{A}_{i,i}$ iff
+$\mathbf{A}$ is diagonal. [HornJohnson2013, Theorem 7.8.1].
+Port of `NLAlib.det_eq_prod_diag_iff_isDiag_of_posDef`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosDef.re_det_eq_prod_re_diag_iff {A : Matrix n n 𝕜} (hA : A.PosDef) :
     RCLike.re A.det = ∏ i, RCLike.re (A i i) ↔ A.IsDiag := by
   constructor
@@ -272,8 +284,11 @@ theorem _root_.Matrix.PosDef.re_det_eq_prod_re_diag_iff {A : Matrix n n 𝕜} (h
     rw [hd, ← RCLike.ofReal_prod, RCLike.ofReal_re]
 
 /-- **Hadamard's inequality, column form.** The modulus of the determinant of a square matrix is
-at most the product of the Euclidean norms of its columns.
-[HornJohnson2013, Corollary 7.8.3]. Port of `NLAlib.abs_det_le_prod_column_norm`, there over `ℝ`.
+at most the product of the Euclidean norms of its columns:
+$\lvert \det \mathbf{B} \rvert \le \prod_i \|\mathbf{b}_i\|$, with $\mathbf{b}_i$ column $i$ of
+$\mathbf{B}$.
+[HornJohnson2013, Corollary 7.8.3]. Port of `NLAlib.abs_det_le_prod_column_norm`, there over
+$\mathbb{R}$.
 Result: hadamard-determinant-inequality -/
 theorem norm_det_le_prod_norm_col (B : Matrix n n 𝕜) :
     ‖B.det‖ ≤ ∏ i, ‖WithLp.toLp 2 (B.col i)‖ := by
@@ -293,8 +308,9 @@ theorem norm_det_le_prod_norm_col (B : Matrix n n 𝕜) :
 
 /-! ### Principal minors and the Hadamard–Fischer inequality -/
 
-/-- The **principal minor** of a square matrix on an index set: the determinant of the principal
-submatrix with rows and columns in `s`. The minor on the empty set is `1`.
+/-- The **principal minor** of a square matrix on an index set: the determinant
+$\det \mathbf{A}_{s,s}$ of the principal submatrix $\mathbf{A}_{s,s}$ with rows and columns in $s$.
+The minor on the empty set is $1$.
 [HornJohnson2013, §0.7.1]. Port of `NLAlib.principalMinor`, there for real matrices. -/
 def principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) (s : Finset n) : R :=
   (A.submatrix (Subtype.val : ↥s → n) Subtype.val).det
@@ -307,7 +323,7 @@ theorem principalMinor_empty {R : Type*} [CommRing R] (A : Matrix n n R) :
   Matrix.det_isEmpty
 
 omit [Fintype n] in
-/-- The principal minor on a single index is the diagonal entry. -/
+/-- The principal minor on a single index $i$ is the diagonal entry $\mathbf{A}_{i,i}$. -/
 @[simp]
 theorem principalMinor_singleton {R : Type*} [CommRing R] (A : Matrix n n R) (i : n) :
     principalMinor A {i} = A i i :=
@@ -329,24 +345,27 @@ theorem principalMinor_transpose {R : Type*} [CommRing R] (A : Matrix n n R) (s 
   rw [principalMinor, principalMinor, ← Matrix.transpose_submatrix, Matrix.det_transpose]
 
 omit [Fintype n] in
-/-- The principal minors of the conjugate transpose are the conjugates of those of the
-matrix. -/
+/-- The principal minors of the conjugate transpose are the conjugates of those of the matrix:
+$\det (\mathbf{A}^{\mathsf{H}})_{s,s} = \overline{\det \mathbf{A}_{s,s}}$. -/
 @[simp]
 theorem principalMinor_conjTranspose {R : Type*} [CommRing R] [StarRing R] (A : Matrix n n R)
     (s : Finset n) : principalMinor Aᴴ s = star (principalMinor A s) := by
   rw [principalMinor, principalMinor, ← Matrix.det_conjTranspose, Matrix.conjTranspose_submatrix]
 
 omit [Fintype n] in
-/-- **A principal minor as the determinant of a submatrix along an injective map.** If `f` is
-injective with image the index set `s`, the determinant of `A.submatrix f f` is the principal
-minor of `A` on `s`: a principal minor does not depend on how its index set is enumerated. -/
+/-- **A principal minor as the determinant of a submatrix along an injective map.** If $f$ is
+injective with image the index set $s$, the determinant of the matrix with entries
+$\mathbf{A}_{f(i),f(j)}$ (`A.submatrix f f`) is the principal minor of $\mathbf{A}$ on $s$: a
+principal minor does not depend on how its index set is enumerated. -/
 theorem det_submatrix_eq_principalMinor {R ι : Type*} [CommRing R] [Fintype ι] [DecidableEq ι]
     (A : Matrix n n R) {f : ι → n} (hf : Function.Injective f) {s : Finset n}
     (hs : Set.range f = s) : (A.submatrix f f).det = principalMinor A s :=
   det_submatrix_eq_det_submatrix_val A hf fun x => by rw [← Finset.mem_coe, ← hs]
 
-/-- **The sum of all principal minors is `det (1 + A)`.** This is the normalising constant of a
-determinantal point process with kernel `A`. [HornJohnson2013, §1.2 context]. -/
+/-- **The sum of all principal minors is $\det(\mathbf{I} + \mathbf{A})$:**
+$\sum_{s} \det \mathbf{A}_{s,s} = \det(\mathbf{I} + \mathbf{A})$, over all index sets $s$, the empty
+one included; over any commutative ring. This is the normalising constant of a determinantal
+point process with kernel $\mathbf{A}$. [HornJohnson2013, §1.2 context]. -/
 theorem sum_principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) :
     ∑ s : Finset n, principalMinor A s = (1 + A).det := by
   have h := (Matrix.detRowAlternating (R := R) (n := n)).map_add_univ A (1 : Matrix n n R)
@@ -355,14 +374,16 @@ theorem sum_principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) :
   exact Finset.sum_congr rfl fun s _ => (Matrix.det_piecewise_one_eq_submatrix_det A s).symm
 
 omit [Fintype n] in
-/-- The principal minors of a positive semidefinite matrix are nonnegative.
+/-- The principal minors of a positive semidefinite matrix are nonnegative:
+$0 \le \operatorname{Re} \det \mathbf{A}_{s,s}$.
 Port of `NLAlib.principalMinor_nonneg`. -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_nonneg {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (s : Finset n) : 0 ≤ RCLike.re (principalMinor A s) :=
   (RCLike.nonneg_iff.mp (hA.submatrix (Subtype.val : s → n)).det_nonneg).1
 
 omit [Fintype n] in
-/-- The principal minors of a positive definite matrix are positive.
+/-- The principal minors of a positive definite matrix are positive:
+$0 < \operatorname{Re} \det \mathbf{A}_{s,s}$.
 Port of `NLAlib.principalMinor_pos`. -/
 theorem _root_.Matrix.PosDef.re_principalMinor_pos {A : Matrix n n 𝕜} (hA : A.PosDef)
     (s : Finset n) : 0 < RCLike.re (principalMinor A s) :=
@@ -425,10 +446,13 @@ private theorem re_det_mul_re_det_inl_le {ι : Type*} [Fintype ι] [DecidableEq 
     (by fun_prop) (by fun_prop) (fun _ hM => re_det_mul_re_det_inl_le_of_posDef hM) hH
 
 omit [Fintype n] in
-/-- **The Hadamard–Fischer inequality** (Koteljanskii). For a positive semidefinite matrix and
-index sets `s`, `t`, `A[s ∪ t] · A[s ∩ t] ≤ A[s] · A[t]` for the principal minors.
+/-- **The Hadamard–Fischer inequality** (Koteljanskii). For a positive semidefinite matrix
+$\mathbf{A}$ and index sets $s$, $t$, the principal minors satisfy
+$$\operatorname{Re} \det \mathbf{A}_{s \cup t, s \cup t}
+  \cdot \operatorname{Re} \det \mathbf{A}_{s \cap t, s \cap t}
+  \le \operatorname{Re} \det \mathbf{A}_{s,s} \cdot \operatorname{Re} \det \mathbf{A}_{t,t}\,.$$
 [HornJohnson2013, Theorem 7.8.9].
-Port of `NLAlib.det_principal_union_mul_inter_le_of_posSemidef`, there over `ℝ`.
+Port of `NLAlib.det_principal_union_mul_inter_le_of_posSemidef`, there over $\mathbb{R}$.
 Result: koteljanskii-inequality -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_union_mul_inter_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (s t : Finset n) :
@@ -464,9 +488,11 @@ theorem _root_.Matrix.PosSemidef.re_principalMinor_union_mul_inter_le {A : Matri
   exact h
 
 omit [Fintype n] in
-/-- **Fischer's inequality for principal minors.** For a positive semidefinite matrix and
-disjoint index sets `s`, `t`, `A[s ∪ t] ≤ A[s] · A[t]`: the case `s ∩ t = ∅` of the
-Hadamard–Fischer inequality. [HornJohnson2013, Theorem 7.8.5].
+/-- **Fischer's inequality for principal minors.** For a positive semidefinite matrix
+$\mathbf{A}$ and disjoint index sets $s$, $t$,
+$\operatorname{Re} \det \mathbf{A}_{s \cup t, s \cup t}
+\le \operatorname{Re} \det \mathbf{A}_{s,s} \cdot \operatorname{Re} \det \mathbf{A}_{t,t}$: the case
+$s \cap t = \emptyset$ of the Hadamard–Fischer inequality. [HornJohnson2013, Theorem 7.8.5].
 Result: fischer-inequality -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_union_le_of_disjoint {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {s t : Finset n} (hst : Disjoint s t) :

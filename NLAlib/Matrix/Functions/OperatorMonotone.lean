@@ -15,20 +15,20 @@ public import NLAlib.Matrix.Inequalities.Order
 /-!
 # Operator monotone functions
 
-The Löwner–Heinz theorem: `t ↦ t ^ r` for `0 ≤ r ≤ 1` and the logarithm are operator monotone;
-the powers are operator concave.
+The Löwner–Heinz theorem: $t \mapsto t^r$ for $0 \le r \le 1$ and the logarithm are operator
+monotone; the powers are operator concave.
 
-The results are stated over `𝕜`; they are proved over `ℂ`, where Mathlib has the corresponding
-C⋆-algebra facts (`CFC.rpow_le_rpow`, `CFC.concaveOn_rpow`, `CFC.log_le_log`, in the scope
-`Matrix.Norms.L2Operator`), and transferred through `NLAlib.complexify`.
+The results are stated over $\Bbbk$; they are proved over $\mathbb{C}$, where Mathlib has the
+corresponding C⋆-algebra facts (`CFC.rpow_le_rpow`, `CFC.concaveOn_rpow`, `CFC.log_le_log`, in
+the scope `Matrix.Norms.L2Operator`), and transferred through `NLAlib.complexify`.
 
 ## Main results
 
 * `Matrix.PosSemidef.rpow_le_rpow`, `Matrix.PosSemidef.sqrt_le_sqrt`,
   `Matrix.PosDef.cfc_log_le_cfc_log`: Löwner–Heinz.
 * `NLAlib.concaveOn_rpow`: operator concavity of the powers.
-* `Matrix.PosDef.le_iff_inv_sqrt_mul_mul_inv_sqrt_le_one`: `B ≤ A` exactly when
-  `A^{-1/2} B A^{-1/2} ≤ 1`.
+* `Matrix.PosDef.le_iff_inv_sqrt_mul_mul_inv_sqrt_le_one`: $\mathbf{B} \preceq \mathbf{A}$
+  exactly when $\mathbf{A}^{-1/2}\mathbf{B}\mathbf{A}^{-1/2} \preceq \mathbf{I}$.
 -/
 
 @[expose] public section
@@ -42,16 +42,19 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 /-! ### Löwner–Heinz -/
 
 omit [Fintype n] in
-/-- A matrix above a positive definite matrix is positive definite.
+/-- A matrix above a positive definite matrix is positive definite: if $\mathbf{A}$ is positive
+definite and $\mathbf{A} \preceq \mathbf{B}$, then $\mathbf{B}$ is positive definite.
 Port of `NLAlib.posDef_of_posDef_le`. -/
 theorem _root_.Matrix.PosDef.posDef_of_le {A B : Matrix n n 𝕜} (hA : A.PosDef) (h : A ≤ B) :
     B.PosDef := by
   have hB := hA.add_posSemidef (Matrix.le_iff.mp h)
   rwa [add_sub_cancel] at hB
 
-/-- **The Löwner–Heinz theorem.** For `0 ≤ r ≤ 1`, `t ↦ t ^ r` is operator monotone on positive
-semidefinite matrices. [Bhatia1997, Theorem V.1.9].
-Port of `NLAlib.cfc_rpow_le_cfc_rpow`, there over `ℝ`.
+/-- **The Löwner–Heinz theorem.** For $0 \le r \le 1$, $t \mapsto t^r$ is operator monotone on
+positive semidefinite matrices: if $\mathbf{A}$ is positive semidefinite and
+$\mathbf{A} \preceq \mathbf{B}$, then $\mathbf{A}^r \preceq \mathbf{B}^r$.
+[Bhatia1997, Theorem V.1.9].
+Port of `NLAlib.cfc_rpow_le_cfc_rpow`, there over $\mathbb{R}$.
 Result: loewner-heinz -/
 theorem _root_.Matrix.PosSemidef.rpow_le_rpow [DecidableEq n] {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (h : A ≤ B) {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) : A ^ r ≤ B ^ r := by
@@ -65,8 +68,10 @@ theorem _root_.Matrix.PosSemidef.rpow_le_rpow [DecidableEq n] {A B : Matrix n n 
   exact CFC.rpow_le_rpow hr (complexify_le_complexify_iff.mpr h)
 
 open scoped Classical in
-/-- **The square root is operator monotone.** [Bhatia1997, Proposition V.1.8].
-Port of `NLAlib.sqrt_le_sqrt_of_posSemidef_le`, there over `ℝ`. -/
+/-- **The square root is operator monotone**: if $\mathbf{A}$ is positive semidefinite and
+$\mathbf{A} \preceq \mathbf{B}$, then $\mathbf{A}^{1/2} \preceq \mathbf{B}^{1/2}$.
+[Bhatia1997, Proposition V.1.8].
+Port of `NLAlib.sqrt_le_sqrt_of_posSemidef_le`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosSemidef.sqrt_le_sqrt {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
     (h : A ≤ B) : CFC.sqrt A ≤ CFC.sqrt B := by
   rw [CFC.sqrt_eq_rpow, CFC.sqrt_eq_rpow]
@@ -74,8 +79,10 @@ theorem _root_.Matrix.PosSemidef.sqrt_le_sqrt {A B : Matrix n n 𝕜} (hA : A.Po
 
 variable [DecidableEq n]
 
-/-- **The logarithm is operator monotone** on positive definite matrices.
-[Bhatia1997, Exercise V.1.10]. Port of `NLAlib.cfc_log_le_cfc_log`, there over `ℝ`.
+/-- **The logarithm is operator monotone** on positive definite matrices: if $\mathbf{A}$ is
+positive definite and $\mathbf{A} \preceq \mathbf{B}$, then
+$\log(\mathbf{A}) \preceq \log(\mathbf{B})$.
+[Bhatia1997, Exercise V.1.10]. Port of `NLAlib.cfc_log_le_cfc_log`, there over $\mathbb{R}$.
 Result: loewner-heinz -/
 theorem _root_.Matrix.PosDef.cfc_log_le_cfc_log {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (h : A ≤ B) : cfc Real.log A ≤ cfc Real.log B := by
@@ -86,8 +93,9 @@ theorem _root_.Matrix.PosDef.cfc_log_le_cfc_log {A B : Matrix n n 𝕜} (hA : A.
   exact CFC.log_le_log (complexify_le_complexify_iff.mpr h)
     (posDef_complexify_iff.mpr hA).isStrictlyPositive
 
-/-- **The powers `t ^ r`, `0 ≤ r ≤ 1`, are operator concave** on positive semidefinite matrices.
-[Bhatia1997, Theorem V.2.5]. Port of `NLAlib.concaveOn_cfc_rpow`, there over `ℝ`. -/
+/-- **The powers $t^r$, $0 \le r \le 1$, are operator concave** on positive semidefinite
+matrices: $\mathbf{A} \mapsto \mathbf{A}^r$ is concave for the Loewner order.
+[Bhatia1997, Theorem V.2.5]. Port of `NLAlib.concaveOn_cfc_rpow`, there over $\mathbb{R}$. -/
 theorem concaveOn_rpow {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
     ConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosSemidef} fun A => A ^ r := by
   refine ⟨convex_setOf_posSemidef, fun A hA B hB a b ha hb hab => ?_⟩
@@ -100,9 +108,10 @@ theorem concaveOn_rpow {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
   open scoped Matrix.Norms.L2Operator in
   exact (CFC.concaveOn_rpow hr).2 hAc hBc ha hb hab
 
-/-- The description of `B ≤ A` through a contraction: for positive definite `A`,
-`B ≤ A` exactly when `A^{-1/2} B A^{-1/2} ≤ 1`.
-Port of `NLAlib.le_iff_exists_sqrt_congruence_contraction`, there over `ℝ`. -/
+/-- The description of $\mathbf{B} \preceq \mathbf{A}$ through a contraction: for positive
+definite $\mathbf{A}$, $\mathbf{B} \preceq \mathbf{A}$ exactly when
+$\mathbf{A}^{-1/2}\mathbf{B}\mathbf{A}^{-1/2} \preceq \mathbf{I}$.
+Port of `NLAlib.le_iff_exists_sqrt_congruence_contraction`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosDef.le_iff_inv_sqrt_mul_mul_inv_sqrt_le_one {A B : Matrix n n 𝕜}
     (hA : A.PosDef) : B ≤ A ↔ (CFC.sqrt A)⁻¹ * B * (CFC.sqrt A)⁻¹ ≤ 1 := by
   have hS : (CFC.sqrt A).IsHermitian := (CFC.sqrt_nonneg A).isSelfAdjoint

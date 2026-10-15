@@ -11,7 +11,8 @@ public import NLAlib.Matrix.Basic.Projector
 /-!
 # Orthonormal bases of column spaces and orthonormal completion
 
-Every column space has an orthonormal basis, given as a matrix `Q` with `HasOrthonormalCols Q`,
+Every column space has an orthonormal basis, given as a matrix $\mathbf{Q}$ with
+`HasOrthonormalCols Q`,
 and every matrix with orthonormal columns extends to a larger one. The new columns are indexed by
 an arbitrary type, constrained by a cardinality hypothesis.
 
@@ -23,7 +24,7 @@ an arbitrary type, constrained by a cardinality hypothesis.
 * `NLAlib.HasOrthonormalCols.exists_fromCols_of_card_le`,
   `NLAlib.HasOrthonormalCols.exists_fromCols`: orthonormal completion.
 * `IsStarProjection.exists_hasOrthonormalCols_mul_conjTranspose_eq`: every star projection is
-  `Q * Qᴴ` for a `Q` with orthonormal columns.
+  $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ for a $\mathbf{Q}$ with orthonormal columns.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose`: the two blocks of a
   completed matrix give complementary projectors.
 -/
@@ -36,15 +37,16 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*}
 
-/-- The column space of `A` as a subspace of `EuclideanSpace 𝕜 m`. -/
+/-- The column space of $\mathbf{A}$ as a subspace of `EuclideanSpace 𝕜 m`. -/
 private noncomputable abbrev euclideanRange [Fintype n] (A : Matrix m n 𝕜) :
     Submodule 𝕜 (EuclideanSpace 𝕜 m) :=
   (LinearMap.range A.mulVecLin).map (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap
 
-/-- **Orthonormal basis of a column space.** For any column index type `p` with as many elements
-as the rank of `A`, there is a `Q` with orthonormal columns indexed by `p` and the same column
-space as `A`. Port of `NLAlib.hasOrthonormalCols_orthonormalBasisMatrix` and
-`NLAlib.range_orthonormalBasisMatrix`, there a definition indexed by `Fin (finrank S)`. -/
+/-- **Orthonormal basis of a column space.** For any column index type $p$ with
+$\lvert p \rvert = \operatorname{rank} \mathbf{A}$, there is a $\mathbf{Q}$ with orthonormal
+columns indexed by $p$ and the same column space as $\mathbf{A}$. Port of
+`NLAlib.hasOrthonormalCols_orthonormalBasisMatrix` and `NLAlib.range_orthonormalBasisMatrix`, there
+a definition indexed by `Fin (finrank S)`. -/
 theorem exists_hasOrthonormalCols_range_eq [Fintype m] [Fintype n] [Fintype p] [DecidableEq p]
     (A : Matrix m n 𝕜) (h : Fintype.card p = A.rank) :
     ∃ Q : Matrix m p 𝕜, HasOrthonormalCols Q ∧
@@ -68,9 +70,11 @@ theorem exists_hasOrthonormalCols_range_eq [Fintype m] [Fintype n] [Fintype p] [
       Module.Basis.span_eq, Submodule.map_comp, Submodule.map_subtype_top, ← Submodule.map_comp,
       LinearEquiv.comp_symm, Submodule.map_id]
 
-/-- **Orthonormal completion** by any number of columns that fits. A matrix `Q` with orthonormal
-columns indexed by `n` extends, by columns indexed by any type `p` with
-`card n + card p ≤ card m`, to a matrix `fromCols Q Q'` with orthonormal columns.
+/-- **Orthonormal completion** by any number of columns that fits. A matrix $\mathbf{Q}$ with
+orthonormal columns indexed by $n$ extends, by columns $\mathbf{Q}'$ indexed by any type $p$ with
+$\lvert n \rvert + \lvert p \rvert \le \lvert m \rvert$, to a matrix
+$\begin{bmatrix} \mathbf{Q} & \mathbf{Q}' \end{bmatrix}$ (`Matrix.fromCols`) with orthonormal
+columns.
 `NLAlib.HasOrthonormalCols.exists_fromCols` is the case of equality, where the completed matrix is
 unitary up to relabelling. -/
 theorem HasOrthonormalCols.exists_fromCols_of_card_le [Fintype m] [Fintype n] [Fintype p]
@@ -96,8 +100,9 @@ theorem HasOrthonormalCols.exists_fromCols_of_card_le [Fintype m] [Fintype n] [F
   ext i j
   exact congrFun (congrFun h0 i) (g j)
 
-/-- For any column index type `p` with at least `rank A` and at most `card m` elements, there is a
-`Q` with orthonormal columns indexed by `p` whose column space contains that of `A`. -/
+/-- For any column index type $p$ with
+$\operatorname{rank} \mathbf{A} \le \lvert p \rvert \le \lvert m \rvert$, there is a $\mathbf{Q}$
+with orthonormal columns indexed by $p$ whose column space contains that of $\mathbf{A}$. -/
 theorem exists_hasOrthonormalCols_range_le [Fintype m] [Fintype n] [Fintype p] [DecidableEq p]
     (A : Matrix m n 𝕜) (h : A.rank ≤ Fintype.card p) (hp : Fintype.card p ≤ Fintype.card m) :
     ∃ Q : Matrix m p 𝕜, HasOrthonormalCols Q ∧
@@ -118,8 +123,9 @@ theorem exists_hasOrthonormalCols_range_le [Fintype m] [Fintype n] [Fintype p] [
   simp only [Equiv.coe_refl, Matrix.col_apply, Matrix.submatrix_apply, id_eq,
     Equiv.apply_symm_apply, Matrix.fromCols_apply_inl]
 
-/-- Every star projection is `Q * Qᴴ` for a `Q` with orthonormal columns, indexed by any type
-with `rank P` elements. -/
+/-- Every star projection $\mathbf{P}$ is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ for a $\mathbf{Q}$
+with orthonormal columns, indexed by any type $p$ with
+$\lvert p \rvert = \operatorname{rank} \mathbf{P}$. -/
 theorem _root_.IsStarProjection.exists_hasOrthonormalCols_mul_conjTranspose_eq [Fintype m]
     [Fintype p] [DecidableEq p] {P : Matrix m m 𝕜} (hP : IsStarProjection P)
     (h : Fintype.card p = P.rank) :
@@ -128,10 +134,13 @@ theorem _root_.IsStarProjection.exists_hasOrthonormalCols_mul_conjTranspose_eq [
   exact ⟨Q, hQ, by rw [← hQ.rangeProjector_eq, rangeProjector_inj.mpr hrange,
     hP.rangeProjector_eq]⟩
 
-/-- **Orthonormal completion.** A matrix `Q` with orthonormal columns extends, by columns indexed
-by any type `p` of the complementary size, to a matrix `fromCols Q Q'` with orthonormal columns.
-That matrix has as many rows as columns, so it is unitary up to relabelling:
-`HasOrthonormalCols.mul_conjTranspose_self_of_card_eq` gives `Q * Qᴴ + Q' * Q'ᴴ = 1`.
+/-- **Orthonormal completion.** A matrix $\mathbf{Q}$ with orthonormal columns indexed by $n$
+extends, by columns $\mathbf{Q}'$ indexed by any type $p$ with
+$\lvert n \rvert + \lvert p \rvert = \lvert m \rvert$, to a matrix
+$\begin{bmatrix} \mathbf{Q} & \mathbf{Q}' \end{bmatrix}$ with orthonormal columns. That matrix has
+as many rows as columns, so it is unitary up to relabelling:
+`HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose` gives
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} + \mathbf{Q}'\mathbf{Q}'^{\mathsf{H}} = \mathbf{I}$.
 Port of `NLAlib.exists_unitary_complement`. -/
 theorem HasOrthonormalCols.exists_fromCols [Fintype m] [Fintype n] [Fintype p] [DecidableEq n]
     [DecidableEq p] {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
@@ -139,8 +148,10 @@ theorem HasOrthonormalCols.exists_fromCols [Fintype m] [Fintype n] [Fintype p] [
     ∃ Q' : Matrix m p 𝕜, HasOrthonormalCols (Matrix.fromCols Q Q') :=
   hQ.exists_fromCols_of_card_le h.le
 
-/-- If `fromCols Q Q'` has orthonormal columns and is square up to relabelling, the two
-projectors are complementary: `Q * Qᴴ + Q' * Q'ᴴ = 1`. -/
+/-- If $\begin{bmatrix} \mathbf{Q} & \mathbf{Q}' \end{bmatrix}$ has orthonormal columns and is
+square up to relabelling ($\lvert n \rvert + \lvert p \rvert = \lvert m \rvert$), the two
+projectors are complementary:
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} + \mathbf{Q}'\mathbf{Q}'^{\mathsf{H}} = \mathbf{I}$. -/
 theorem HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose [Fintype m] [Fintype n]
     [Fintype p] [DecidableEq m] [DecidableEq n] [DecidableEq p] {Q : Matrix m n 𝕜}
     {Q' : Matrix m p 𝕜} (hQ : HasOrthonormalCols (Matrix.fromCols Q Q'))

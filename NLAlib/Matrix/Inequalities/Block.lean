@@ -13,11 +13,12 @@ public import NLAlib.Matrix.Pseudoinverse.Pinv
 /-!
 # Positive semidefinite block matrices
 
-Criteria for a Hermitian block matrix `fromBlocks A B Bᴴ C` to be positive semidefinite that do
-not need an inverse: the Cauchy–Schwarz test on the off-diagonal block, the factorisation
-`B = A^{1/2} X C^{1/2}` with a contraction `X`, and the special cases with identity or equal
-diagonal blocks. The Schur complement criteria are in `NLAlib.Matrix.Basic.SchurComplement` and
-`NLAlib.Matrix.Pseudoinverse.GeneralizedSchur`.
+Criteria for a Hermitian block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
+\mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ to be positive semidefinite that do not need an
+inverse: the Cauchy–Schwarz test on the off-diagonal block, the factorisation
+$\mathbf{B} = \mathbf{A}^{1/2}\mathbf{X}\mathbf{C}^{1/2}$ with a contraction $\mathbf{X}$, and the
+special cases with identity or equal diagonal blocks. The Schur complement criteria are in
+`NLAlib.Matrix.Basic.SchurComplement` and `NLAlib.Matrix.Pseudoinverse.GeneralizedSchur`.
 
 ## Main results
 
@@ -39,9 +40,12 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Cauchy–Schwarz -/
 
-/-- **Cauchy–Schwarz for a positive semidefinite form**: `|xᴴ A y|² ≤ (xᴴ A x) (yᴴ A y)`.
+/-- **Cauchy–Schwarz for a positive semidefinite form**: for positive semidefinite $\mathbf{A}$,
+$$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
+  \le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
+  \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
 [HornJohnson2013, §7.7].
-Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_posSemidef`, there over `ℝ`. -/
+Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_posSemidef`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (x y : n → 𝕜) :
     ‖star x ⬝ᵥ A *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm A y) := by
@@ -56,9 +60,15 @@ theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le {A : Matrix n
     ← EuclideanSpace.inner_toLp_toLp_eq_star_dotProduct, ← mul_pow]
   exact pow_le_pow_left₀ (norm_nonneg _) (norm_inner_le_norm _ _) 2
 
-/-- The quadratic form of a Hermitian block matrix:
-`(x, y)ᴴ [A B; Bᴴ C] (x, y) = xᴴ A x + 2 re (xᴴ B y) + yᴴ C y`, for the real parts.
-Port of `NLAlib.quadForm_fromBlocks`, there over `ℝ`. -/
+/-- The real part of the quadratic form of a block matrix with off-diagonal blocks
+$\mathbf{B}$ and $\mathbf{B}^{\mathsf{H}}$ (the diagonal blocks are arbitrary):
+$$\operatorname{Re}\left(\begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}^{\mathsf{H}}
+  \begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}
+  \begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}\right)
+  = \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) +
+  2\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y}) +
+  \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$
+Port of `NLAlib.quadForm_fromBlocks`, there over $\mathbb{R}$. -/
 theorem re_quadForm_fromBlocks (A : Matrix m m 𝕜) (B : Matrix m n 𝕜) (C : Matrix n n 𝕜)
     (x : m → 𝕜) (y : n → 𝕜) :
     RCLike.re (quadForm (Matrix.fromBlocks A B Bᴴ C) (Sum.elim x y)) =
@@ -74,10 +84,14 @@ theorem re_quadForm_fromBlocks (A : Matrix m m 𝕜) (B : Matrix m n 𝕜) (C : 
 
 /-! ### The bilinear test -/
 
-/-- If a Hermitian block matrix is positive semidefinite, its off-diagonal block satisfies the
-Cauchy–Schwarz bound `|xᴴ B y|² ≤ (xᴴ A x) (yᴴ C y)`.
+/-- If the block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} &
+\mathbf{C} \end{bmatrix}$ is positive semidefinite, its off-diagonal block satisfies the
+Cauchy–Schwarz bound
+$$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y} \rvert^2 \le
+\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
+\operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$
 [HornJohnson2013, Theorem 7.7.7].
-Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_fromBlocks_posSemidef`, there over `ℝ`. -/
+Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_fromBlocks_posSemidef`, there over $\mathbb{R}$. -/
 theorem norm_sq_star_dotProduct_mulVec_le_of_posSemidef_fromBlocks {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef)
     (x : m → 𝕜) (y : n → 𝕜) :
@@ -87,11 +101,15 @@ theorem norm_sq_star_dotProduct_mulVec_le_of_posSemidef_fromBlocks {A : Matrix m
     Function.star_sumElim, sumElim_dotProduct_sumElim, star_zero, Matrix.mulVec_zero,
     zero_dotProduct, dotProduct_zero, add_zero, zero_add] using h1
 
-/-- **The bilinear test.** For positive semidefinite `A` and `C`, the block matrix
-`fromBlocks A B Bᴴ C` is positive semidefinite exactly when
-`|xᴴ B y|² ≤ (xᴴ A x) (yᴴ C y)` for all `x`, `y`.
+/-- **The bilinear test.** For positive semidefinite $\mathbf{A}$ and $\mathbf{C}$, the block
+matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C}
+\end{bmatrix}$ is positive semidefinite exactly when
+$$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y} \rvert^2 \le
+\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
+\operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})$$
+for all $\mathbf{x}$, $\mathbf{y}$.
 [HornJohnson2013, Theorem 7.7.7].
-Port of `NLAlib.posSemidef_fromBlocks_iff_bilinear_tests`, there over `ℝ`.
+Port of `NLAlib.posSemidef_fromBlocks_iff_bilinear_tests`, there over $\mathbb{R}$.
 Result: block-positivity -/
 theorem posSemidef_fromBlocks_iff_forall_norm_sq_le {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (hA : A.PosSemidef) (hC : C.PosSemidef) :
@@ -120,9 +138,10 @@ theorem posSemidef_fromBlocks_iff_forall_norm_sq_le {A : Matrix m m 𝕜} {B : M
 
 /-! ### Contraction factors -/
 
-/-- `[1 X; Xᴴ 1]` is positive semidefinite exactly when `‖X‖₂ ≤ 1`.
+/-- $\begin{bmatrix} \mathbf{I} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} & \mathbf{I} \end{bmatrix}$
+is positive semidefinite exactly when $\|\mathbf{X}\|_2 \le 1$.
 [HornJohnson2013, §7.7].
-Port of `NLAlib.posSemidef_identity_fromBlocks_iff_specNorm_le_one`, there over `ℝ`. -/
+Port of `NLAlib.posSemidef_identity_fromBlocks_iff_specNorm_le_one`, there over $\mathbb{R}$. -/
 theorem posSemidef_fromBlocks_one_iff_specNorm_le_one [DecidableEq m] [DecidableEq n]
     (X : Matrix m n 𝕜) :
     (Matrix.fromBlocks 1 X Xᴴ 1).PosSemidef ↔ specNorm X ≤ 1 := by
@@ -136,7 +155,8 @@ theorem posSemidef_fromBlocks_one_iff_specNorm_le_one [DecidableEq m] [Decidable
   · intro h
     exact ⟨Matrix.PosSemidef.one, X, Matrix.one_mul X, by rwa [Matrix.mul_one]⟩
 
-/-- `1 - Xᴴ * X` is positive definite exactly when `‖X‖₂ < 1`. -/
+/-- $\mathbf{I} - \mathbf{X}^{\mathsf{H}}\mathbf{X}$ is positive definite exactly when
+$\|\mathbf{X}\|_2 < 1$. -/
 private theorem posDef_one_sub_conjTranspose_mul_self_iff [DecidableEq n] (X : Matrix m n 𝕜) :
     (1 - Xᴴ * X).PosDef ↔ specNorm X < 1 := by
   have hH : (1 - Xᴴ * X).IsHermitian :=
@@ -170,15 +190,17 @@ private theorem posDef_one_sub_conjTranspose_mul_self_iff [DecidableEq n] (X : M
       h1.trans_lt (by nlinarith)
     nlinarith [norm_nonneg (WithLp.toLp 2 (X *ᵥ x))]
 
-/-- `[1 X; Xᴴ 1]` is positive definite exactly when `‖X‖₂ < 1`.
-Port of `NLAlib.posDef_identity_fromBlocks_iff_specNorm_lt_one`, there over `ℝ`. -/
+/-- $\begin{bmatrix} \mathbf{I} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} & \mathbf{I} \end{bmatrix}$
+is positive definite exactly when $\|\mathbf{X}\|_2 < 1$.
+Port of `NLAlib.posDef_identity_fromBlocks_iff_specNorm_lt_one`, there over $\mathbb{R}$. -/
 theorem posDef_fromBlocks_one_iff_specNorm_lt_one [DecidableEq m] [DecidableEq n]
     (X : Matrix m n 𝕜) :
     (Matrix.fromBlocks 1 X Xᴴ 1).PosDef ↔ specNorm X < 1 := by
   rw [posDef_fromBlocks_iff, inv_one, Matrix.mul_one, posDef_one_sub_conjTranspose_mul_self_iff]
   exact and_iff_right Matrix.PosDef.one
 
-/-- For Hermitian `S`, the form of `S * S` at `S⁺ u` is at most `‖u‖²`. -/
+/-- For Hermitian $\mathbf{S}$, the real quadratic form of $\mathbf{S}\mathbf{S}$ at
+$\mathbf{S}^{+}\mathbf{u}$ is at most $\|\mathbf{u}\|^2$. -/
 private theorem re_quadForm_mul_self_pinv_mulVec_le {S : Matrix n n 𝕜} (hS : S.IsHermitian)
     (u : n → 𝕜) :
     RCLike.re (quadForm (S * S) (pinv S *ᵥ u)) ≤ ‖WithLp.toLp 2 u‖ ^ 2 := by
@@ -188,7 +210,8 @@ private theorem re_quadForm_mul_self_pinv_mulVec_le {S : Matrix n n 𝕜} (hS : 
     ((isStarProjection_rangeProjector S).norm_toLp_mulVec_le u) 2
 
 /-- The contraction factor of a positive semidefinite block matrix, for any Hermitian square
-roots `S`, `T` of the diagonal blocks: `X = S⁺ B T⁺`. -/
+roots $\mathbf{S}$, $\mathbf{T}$ of the diagonal blocks:
+$\mathbf{X} = \mathbf{S}^{+}\mathbf{B}\mathbf{T}^{+}$. -/
 private theorem exists_specNorm_le_one_and_eq_mul_mul {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} {S : Matrix m m 𝕜} {T : Matrix n n 𝕜} (hS : S.IsHermitian)
     (hT : T.IsHermitian) (hA : S * S = A) (hC : T * T = C)
@@ -229,11 +252,14 @@ private theorem exists_specNorm_le_one_and_eq_mul_mul {A : Matrix m m 𝕜} {B :
       _ = S * (pinv S * B * pinv T) * T := by simp only [Matrix.mul_assoc]
 
 open scoped Classical in
-/-- **The contraction factor.** For positive semidefinite `A` and `C`, the block matrix
-`fromBlocks A B Bᴴ C` is positive semidefinite exactly when `B = A^{1/2} X C^{1/2}` for some
-contraction `X`.
+/-- **The contraction factor.** For positive semidefinite $\mathbf{A}$ and $\mathbf{C}$, the
+block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C}
+\end{bmatrix}$ is positive semidefinite exactly when $\mathbf{B} =
+\mathbf{A}^{1/2}\mathbf{X}\mathbf{C}^{1/2}$ for some contraction $\mathbf{X}$, $\|\mathbf{X}\|_2 \le
+1$; here $\mathbf{A}^{1/2}$ is the positive semidefinite square root (`CFC.sqrt`).
 [HornJohnson2013, Theorem 7.7.9].
-Port of `NLAlib.posSemidef_fromBlocks_iff_exists_sqrt_contraction_factor`, there over `ℝ`.
+Port of `NLAlib.posSemidef_fromBlocks_iff_exists_sqrt_contraction_factor`, there over
+$\mathbb{R}$.
 Result: block-positivity -/
 theorem posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (hA : A.PosSemidef) (hC : C.PosSemidef) :
@@ -259,7 +285,9 @@ theorem posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt {A : Matrix m m 𝕜}
   rwa [e] at h
 
 omit [Fintype n] in
-/-- For positive definite `A` and any `X`, `[A X; Xᴴ Xᴴ A⁻¹ X]` is positive semidefinite.
+/-- For positive definite $\mathbf{A}$ and any $\mathbf{X}$,
+$\begin{bmatrix} \mathbf{A} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} &
+\mathbf{X}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{X} \end{bmatrix}$ is positive semidefinite.
 Port of `NLAlib.fromBlocks_inverse_gram_posSemidef`. -/
 theorem posSemidef_fromBlocks_conjTranspose_mul_inv_mul [Finite n] [DecidableEq m]
     {A : Matrix m m 𝕜} (hA : A.PosDef) (X : Matrix m n 𝕜) :
@@ -277,10 +305,12 @@ theorem posSemidef_fromBlocks_conjTranspose_mul_inv_mul [Finite n] [DecidableEq 
 /-! ### Equal diagonal blocks -/
 
 omit [Fintype n] in
-/-- **Equal diagonal blocks.** `[A B; B A]` is positive semidefinite exactly when `-A ≤ B ≤ A`.
+/-- **Equal diagonal blocks.** $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B} & \mathbf{A}
+\end{bmatrix}$ is positive semidefinite exactly when
+$-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$.
 [HornJohnson2013, §7.7].
-Port of `NLAlib.posSemidef_equal_diagonal_fromBlocks_iff_le`, there for positive semidefinite `B`
-over `ℝ`. -/
+Port of `NLAlib.posSemidef_equal_diagonal_fromBlocks_iff_le`, there for positive semidefinite
+$\mathbf{B}$ over $\mathbb{R}$. -/
 theorem posSemidef_fromBlocks_self_iff [Finite n] {A B : Matrix n n 𝕜} :
     (Matrix.fromBlocks A B B A).PosSemidef ↔ -A ≤ B ∧ B ≤ A := by
   classical
@@ -315,8 +345,11 @@ theorem posSemidef_fromBlocks_self_iff [Finite n] {A B : Matrix n n 𝕜} :
       add_zero, zero_add, Matrix.fromBlocks_smul]
     congr 1 <;> module
 
-/-- For Hermitian `B`, the bound `-A ≤ B ≤ A` is the quadratic-form bound
-`|xᴴ B x| ≤ xᴴ A x`. Port of `NLAlib.abs_quadForm_le_iff_neg_le_and_le`, there over `ℝ`. -/
+/-- For Hermitian $\mathbf{A}$ and $\mathbf{B}$, the bound
+$-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$ is the quadratic-form bound
+$\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{x}) \rvert
+\le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for all $\mathbf{x}$.
+Port of `NLAlib.abs_quadForm_le_iff_neg_le_and_le`, there over $\mathbb{R}$. -/
 theorem neg_le_and_le_iff_forall_abs_re_quadForm_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
     -A ≤ B ∧ B ≤ A ↔ ∀ x : n → 𝕜, |RCLike.re (quadForm B x)| ≤ RCLike.re (quadForm A x) := by

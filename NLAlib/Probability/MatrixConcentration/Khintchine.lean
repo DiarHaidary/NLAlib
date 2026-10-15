@@ -14,21 +14,29 @@ public import NLAlib.Probability.MatrixIntegral
 /-!
 # Trace moments of matrix series and the noncommutative Khintchine inequality
 
-For a matrix series `Y = ∑ i, g i • A i` with real coefficients `g` and Hermitian `A i`, the even
-trace moments satisfy `E tr Y^{2p} ≤ (2p - 1)^p tr (∑ A i²)^p` when `g` is a standard Gaussian
-vector or a vector of independent random signs: the noncommutative Khintchine inequality in trace
-form. Both follow from one law-free step, which closes the moment recursion
-`E tr Y^{2q+2} ≤ (2q + 1) E tr (V Y^{2q})` by trace Young; the two laws enter only through their
-recursions, by Stein's identity coordinate by coordinate (Gaussian) or by flipping one sign at a
-time (Rademacher). The second moment `E Y² = ∑ A i²` holds for any isotropic coefficient vector,
-with no Hermitian hypothesis.
+For a matrix series $\mathbf{Y} = \sum_i g_i \mathbf{A}_i$ with real coefficients $g_i$ and
+Hermitian $\mathbf{A}_i$, the even trace moments satisfy
+$$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2p}
+\le (2p - 1)^p \operatorname{tr} \Bigl(\sum_i \mathbf{A}_i^2\Bigr)^p$$
+when the coefficient vector $\mathbf{g}$ is a standard Gaussian vector or a vector of independent
+random signs: the noncommutative Khintchine inequality in trace form. Both follow from one law-free
+step, which closes the moment recursion
+$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2}
+\le (2q + 1)\, \mathbb{E} \operatorname{tr}(\mathbf{V} \mathbf{Y}^{2q})$ by trace Young; the two
+laws enter only through their recursions, by Stein's identity coordinate by coordinate (Gaussian)
+or by flipping one sign at a time (Rademacher). The second moment
+$\mathbb{E}\mathbf{Y}^2 = \sum_i \mathbf{A}_i^2$ holds for any isotropic coefficient vector, with
+no Hermitian hypothesis.
 
-The spectral-norm moments `E ‖Y‖^{2p} ≤ (2p - 1)^p d ‖∑ A i²‖^p` compose the headline with
+The spectral-norm moments
+$\mathbb{E}\|\mathbf{Y}\|_2^{2p} \le (2p - 1)^p\, d\, \|\sum_i \mathbf{A}_i^2\|_2^p$, with
+$d = \lvert n\rvert$, compose the headline with
 `specNorm_pow_le_re_trace_pow` and `re_trace_pow_le_card_mul_specNorm_pow` and are not stated.
 
 ## Main results
 
-* `NLAlib.IsIsotropic.integral_sum_smul_sq`: `E (∑ ε i • A i)² = ∑ A i²`.
+* `NLAlib.IsIsotropic.integral_sum_smul_sq`:
+  $\mathbb{E}(\sum_i \varepsilon_i \mathbf{A}_i)^2 = \sum_i \mathbf{A}_i^2$.
 * `NLAlib.integral_re_trace_pow_le_of_recursion`: the law-free absorption step.
 * `NLAlib.integral_re_trace_sum_smul_pow_le_of_hasLaw_gaussianVector`,
   `NLAlib.integral_re_trace_sum_smul_pow_le_of_hasLaw_rademacherVector`: noncommutative
@@ -65,8 +73,9 @@ private theorem IsIsotropic.integrable_smul_mul [DecidableEq ι] {ε : Ω → ι
     Integrable (fun ω => (ε ω i * ε ω j) • (A i * A j)) μ := by
   simpa only [star_trivial] using (hε.integrable_mul_star i j).smul_const (A i * A j)
 
-/-- A matrix series with isotropic real coefficients has second moment `E [Y²] = ∑ A i²`. No
-Hermitian hypothesis, no independence and no probability measure: isotropy is all that is used.
+/-- A matrix series $\mathbf{Y} = \sum_i \varepsilon_i \mathbf{A}_i$ with isotropic real
+coefficients has second moment $\mathbb{E}[\mathbf{Y}^2] = \sum_i \mathbf{A}_i^2$. No Hermitian
+hypothesis, no independence and no probability measure: isotropy is all that is used.
 [Tropp2015, chapter 4] (there for Gaussian and Rademacher coefficients). -/
 theorem IsIsotropic.integral_sum_smul_sq [DecidableEq ι] {ε : Ω → ι → ℝ} (hε : IsIsotropic ε μ)
     (A : ι → Matrix n n 𝕜) : ∫ ω, (∑ i, ε ω i • A i) ^ 2 ∂μ = ∑ i, A i ^ 2 := by
@@ -90,18 +99,24 @@ theorem IsIsotropic.integrable_sum_smul_sq [DecidableEq ι] {ε : Ω → ι → 
 
 /-! ### The law-free step -/
 
-/-- **The moment recursion closes.** If `E tr Y^{2q+2} ≤ (2q + 1) E tr (V Y^{2q})` for an almost
-surely Hermitian `Y` and a positive semidefinite `V`, then
-`E tr Y^{2q+2} ≤ (2q + 1)^{q+1} tr V^{q+1}`. Law-free: the Gaussian and Rademacher series satisfy
-the recursion with `V = ∑ A i²`, and any other law with the recursion (exchangeable pairs) gets
-the bound. [MackeyEtAl2014, Theorem 7.1] (the absorption step of its proof).
-No integrability hypothesis is needed, by a case split: if `tr (V Y^{2q})` is not integrable its
-integral is `0`, so `hrec` makes the left side at most `0`; if `tr Y^{2q+2}` is not integrable the
-left side is `0`; in both cases the right side is nonnegative
+/-- **The moment recursion closes.** Under a probability measure, if
+$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2}
+\le (2q + 1)\, \mathbb{E} \operatorname{tr}(\mathbf{V} \mathbf{Y}^{2q})$ for an almost surely
+Hermitian $\mathbf{Y}$ and a positive semidefinite $\mathbf{V}$, then
+$$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2}
+\le (2q + 1)^{q+1} \operatorname{tr} \mathbf{V}^{q+1}\,.$$
+Law-free: the Gaussian and Rademacher series satisfy the recursion with
+$\mathbf{V} = \sum_i \mathbf{A}_i^2$, and any other law with the recursion (exchangeable pairs)
+gets the bound. [MackeyEtAl2014, Theorem 7.1] (the absorption step of its proof).
+No integrability hypothesis is needed, by a case split: if
+$\operatorname{tr}(\mathbf{V} \mathbf{Y}^{2q})$ is not integrable its integral is $0$, so `hrec`
+makes the left side at most $0$; if $\operatorname{tr} \mathbf{Y}^{2q+2}$ is not integrable the
+left side is $0$; in both cases the right side is nonnegative
 (`Matrix.PosSemidef.re_trace_pow_nonneg`). Otherwise integrate trace Young
 (`re_trace_mul_pow_le_add`),
-`(q + 1)(2q + 1) tr (V Y^{2q}) ≤ (2q + 1)^{q+1} tr V^{q+1} + q tr Y^{2q+2}`, and combine with
-`hrec`. -/
+$(q + 1)(2q + 1) \operatorname{tr}(\mathbf{V} \mathbf{Y}^{2q})
+\le (2q + 1)^{q+1} \operatorname{tr} \mathbf{V}^{q+1} + q \operatorname{tr} \mathbf{Y}^{2q+2}$,
+and combine with `hrec`. -/
 theorem integral_re_trace_pow_le_of_recursion [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜}
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) {V : Matrix n n 𝕜} (hV : V.PosSemidef) (q : ℕ)
     (hrec : ∫ ω, RCLike.re (Y ω ^ (2 * q + 2)).trace ∂μ ≤
@@ -159,7 +174,9 @@ private theorem norm_sum_smul_le (A : ι → Matrix n n 𝕜) (x : ι → ℝ) :
   rw [norm_smul, mul_comm]
   exact mul_le_mul_of_nonneg_left (norm_le_pi_norm x i) (norm_nonneg _)
 
-/-- `‖Y^a‖ ≤ D^{m+1} (1 + ‖x‖)^m` for `a ≤ m`, with `D = ‖1‖ + ∑ ‖A i‖ + 1`. -/
+/-- $\|\mathbf{Y}(\mathbf{x})^a\|_2 \le D^{m+1} (1 + \|\mathbf{x}\|_\infty)^m$ for $a \le m$, with
+$\mathbf{Y}(\mathbf{x}) = \sum_i \mathbf{x}_i \mathbf{A}_i$ and
+$D = \|\mathbf{I}\|_2 + \sum_i \|\mathbf{A}_i\|_2 + 1$. -/
 private theorem norm_sum_smul_pow_le (A : ι → Matrix n n 𝕜) (x : ι → ℝ) {a m : ℕ}
     (ham : a ≤ m) :
     ‖(∑ i, x i • A i) ^ a‖ ≤
@@ -184,8 +201,11 @@ private theorem norm_sum_smul_pow_le (A : ι → Matrix n n 𝕜) (x : ι → �
   refine (key a).trans ?_
   gcongr
 
-/-- The growth of a trace product: `|tr (B Y^a C Y^b)| ≤ c ‖B‖ ‖C‖ D^{2m+2} (1 + ‖x‖)^{2m}` for
-`a, b ≤ m`. -/
+/-- The growth of a trace product: for $a, b \le m$,
+$\lvert \operatorname{Re} \operatorname{tr}(\mathbf{B} \mathbf{Y}^a \mathbf{C} \mathbf{Y}^b)\rvert
+\le c \|\mathbf{B}\|_2 \|\mathbf{C}\|_2 D^{2m+2} (1 + \|\mathbf{x}\|_\infty)^{2m}$, with $c$ the
+norm of $\operatorname{Re} \operatorname{tr}$ as a functional and $D$ as in
+`norm_sum_smul_pow_le`. -/
 private theorem abs_re_trace_mul_sum_smul_pow_mul_le (A : ι → Matrix n n 𝕜)
     (B C : Matrix n n 𝕜) {a b m : ℕ} (ha : a ≤ m) (hb : b ≤ m) (x : ι → ℝ) :
     |RCLike.re (B * (∑ i, x i • A i) ^ a * C * (∑ i, x i • A i) ^ b).trace| ≤
@@ -225,7 +245,8 @@ private theorem continuous_re_trace_mul_sum_smul_pow_mul (A : ι → Matrix n n 
   simp only [← reTraceCLM_apply]
   exact reTraceCLM.continuous.comp (by fun_prop)
 
-/-- The derivative of `x ↦ re tr (B Y(x)^m)`, by the noncommutative product rule. -/
+/-- The derivative of $\mathbf{x} \mapsto \operatorname{Re} \operatorname{tr}(\mathbf{B}
+\mathbf{Y}(\mathbf{x})^m)$, by the noncommutative product rule. -/
 private theorem hasFDerivAt_re_trace_mul_sum_smul_pow (A : ι → Matrix n n 𝕜)
     (B : Matrix n n 𝕜) (m : ℕ) (x : ι → ℝ) :
     ∃ f' : (ι → ℝ) →L[ℝ] ℝ,
@@ -256,7 +277,8 @@ private theorem contDiff_re_trace_mul_sum_smul_pow (A : ι → Matrix n n 𝕜)
     reTraceCLM.contDiff.comp (contDiff_const.mul (L.contDiff.pow m))
   simpa only [hL, reTraceCLM_apply] using h
 
-/-- The derivative of `x ↦ re tr (B Y(x)^m)` grows polynomially. -/
+/-- The derivative of $\mathbf{x} \mapsto \operatorname{Re} \operatorname{tr}(\mathbf{B}
+\mathbf{Y}(\mathbf{x})^m)$ grows polynomially. -/
 private theorem exists_norm_fderiv_re_trace_mul_sum_smul_pow_le (A : ι → Matrix n n 𝕜)
     (B : Matrix n n 𝕜) (m : ℕ) : ∃ K : ℝ, ∀ x : ι → ℝ,
       ‖fderiv ℝ (fun x : ι → ℝ => RCLike.re (B * (∑ i, x i • A i) ^ m).trace) x‖ ≤
@@ -283,7 +305,9 @@ private theorem exists_norm_fderiv_re_trace_mul_sum_smul_pow_le (A : ι → Matr
         rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
         ring
 
-/-- `tr Y^{2q+2} = ∑ i, x i tr (A i Y^{2q+1})`. -/
+/-- $\operatorname{tr} \mathbf{Y}^{r+1} = \sum_i \mathbf{x}_i
+\operatorname{tr}(\mathbf{A}_i \mathbf{Y}^r)$ for $\mathbf{Y} = \sum_i \mathbf{x}_i
+\mathbf{A}_i$ (real parts). -/
 private theorem re_trace_sum_smul_pow_succ (A : ι → Matrix n n 𝕜) (x : ι → ℝ) (r : ℕ) :
     RCLike.re ((∑ i, x i • A i) ^ (r + 1)).trace =
       ∑ i, x i * RCLike.re (A i * (∑ i, x i • A i) ^ r).trace := by
@@ -292,15 +316,15 @@ private theorem re_trace_sum_smul_pow_succ (A : ι → Matrix n n 𝕜) (x : ι 
   rw [Matrix.smul_mul, Matrix.trace_smul, RCLike.smul_re]
 
 /-- The moment recursion, coordinate by coordinate. -/
-private theorem integral_re_trace_sum_smul_pow_le_of_forall {X : Ω → ι → ℝ} (q : ℕ)
+private theorem integral_re_trace_sum_smul_pow_le_of_forall {x : Ω → ι → ℝ} (q : ℕ)
     (h1 : ∀ i, Integrable (fun ω =>
-      X ω i * RCLike.re (A i * (∑ j, X ω j • A j) ^ (2 * q + 1)).trace) μ)
-    (h2 : ∀ i, Integrable (fun ω => RCLike.re (A i ^ 2 * (∑ j, X ω j • A j) ^ (2 * q)).trace) μ)
-    (h : ∀ i, ∫ ω, X ω i * RCLike.re (A i * (∑ j, X ω j • A j) ^ (2 * q + 1)).trace ∂μ ≤
-      (2 * q + 1 : ℝ) * ∫ ω, RCLike.re (A i ^ 2 * (∑ j, X ω j • A j) ^ (2 * q)).trace ∂μ) :
-    ∫ ω, RCLike.re ((∑ i, X ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
+      x ω i * RCLike.re (A i * (∑ j, x ω j • A j) ^ (2 * q + 1)).trace) μ)
+    (h2 : ∀ i, Integrable (fun ω => RCLike.re (A i ^ 2 * (∑ j, x ω j • A j) ^ (2 * q)).trace) μ)
+    (h : ∀ i, ∫ ω, x ω i * RCLike.re (A i * (∑ j, x ω j • A j) ^ (2 * q + 1)).trace ∂μ ≤
+      (2 * q + 1 : ℝ) * ∫ ω, RCLike.re (A i ^ 2 * (∑ j, x ω j • A j) ^ (2 * q)).trace ∂μ) :
+    ∫ ω, RCLike.re ((∑ i, x ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
       (2 * q + 1 : ℝ) *
-        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, X ω i • A i) ^ (2 * q)).trace ∂μ := by
+        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, x ω i • A i) ^ (2 * q)).trace ∂μ := by
   simp only [re_trace_sum_smul_pow_succ, Finset.sum_mul, Matrix.trace_sum, map_sum]
   rw [integral_finsetSum _ fun i _ => h1 i, integral_finsetSum _ fun i _ => h2 i,
     Finset.mul_sum]
@@ -309,14 +333,14 @@ private theorem integral_re_trace_sum_smul_pow_le_of_forall {X : Ω → ι → �
 /-! ### Gaussian series -/
 
 /-- A continuous function of polynomial growth of a Gaussian vector is integrable. -/
-private theorem integrable_comp_of_hasGaussianLaw {X : Ω → ι → ℝ} (hX : HasGaussianLaw X μ)
+private theorem integrable_comp_of_hasGaussianLaw {g : Ω → ι → ℝ} (hg : HasGaussianLaw g μ)
     {F : (ι → ℝ) → ℝ} (hF : Continuous F) {K : ℝ} {k : ℕ}
-    (hb : ∀ x, |F x| ≤ K * (1 + ‖x‖) ^ k) : Integrable (fun ω => F (X ω)) μ := by
-  have hP := hX.isProbabilityMeasure
+    (hb : ∀ x, |F x| ≤ K * (1 + ‖x‖) ^ k) : Integrable (fun ω => F (g ω)) μ := by
+  have hP := hg.isProbabilityMeasure
   exact Integrable.mono'
-    ((integrable_one_add_norm_pow_of_memLp (fun p hp => hX.memLp hp) k).const_mul K)
-    (hF.comp_aestronglyMeasurable hX.aemeasurable.aestronglyMeasurable)
-    (ae_of_all _ fun ω => by simpa only [Real.norm_eq_abs] using hb (X ω))
+    ((integrable_one_add_norm_pow_of_memLp (fun p hp => hg.memLp hp) k).const_mul K)
+    (hF.comp_aestronglyMeasurable hg.aemeasurable.aestronglyMeasurable)
+    (ae_of_all _ fun ω => by simpa only [Real.norm_eq_abs] using hb (g ω))
 
 /-- A coordinate times a function of polynomial growth has polynomial growth. -/
 private theorem abs_apply_mul_le {F : (ι → ℝ) → ℝ} {K : ℝ} {k : ℕ}
@@ -409,13 +433,19 @@ private theorem integral_mul_re_trace_le_of_hasLaw_gaussianVector {g : Ω → ι
   rw [← integral_const_mul]
   exact integral_mono hdi (hgi.const_mul _) fun ω => hpt (g ω)
 
-/-- **The Gaussian moment recursion**: for a standard Gaussian vector `g` and Hermitian `A i`,
-`E tr Y^{2q+2} ≤ (2q + 1) E tr ((∑ A i²) Y^{2q})` with `Y = ∑ g i • A i`.
+/-- **The Gaussian moment recursion**: for a standard Gaussian vector $\mathbf{g}$ and Hermitian
+$\mathbf{A}_i$, with $\mathbf{Y} = \sum_i g_i \mathbf{A}_i$,
+$$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2} \le (2q + 1)\, \mathbb{E} \operatorname{tr}
+\Bigl(\Bigl(\sum_i \mathbf{A}_i^2\Bigr) \mathbf{Y}^{2q}\Bigr)\,.$$
 [MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). Proof:
-`tr Y^{2q+2} = ∑ i, g i tr (A i Y^{2q+1})`; Stein's identity for derivatives of polynomial growth
+$\operatorname{tr} \mathbf{Y}^{2q+2}
+= \sum_i g_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^{2q+1})$;
+Stein's identity for derivatives of polynomial growth
 (`integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow`)
-in each coordinate gives `∑_{l ≤ 2q} E tr (A i Y^l A i Y^{2q-l})`, each term at most
-`E tr (A i² Y^{2q})` (`re_trace_mul_pow_mul_pow_le`). -/
+in each coordinate gives
+$\sum_{l \le 2q} \mathbb{E} \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^l \mathbf{A}_i
+\mathbf{Y}^{2q-l})$, each term at most
+$\mathbb{E} \operatorname{tr}(\mathbf{A}_i^2 \mathbf{Y}^{2q})$ (`re_trace_mul_pow_mul_pow_le`). -/
 theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_gaussianVector {g : Ω → ι → ℝ}
     (hg : HasLaw g (gaussianVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (q : ℕ) :
     ∫ ω, RCLike.re ((∑ i, g ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
@@ -436,29 +466,31 @@ theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_gaussianVector {g : Ω �
     simp only [mul_one, pow_zero] at hc
     exact integrable_comp_of_hasGaussianLaw hG hc hK
 
-/-- The headline from the recursion: `p = 0` directly, `p = q + 1` by the law-free step. -/
+/-- The headline from the recursion: $p = 0$ directly, $p = q + 1$ by the law-free step. -/
 private theorem integral_re_trace_sum_smul_pow_le_of_recursion [IsProbabilityMeasure μ]
-    {X : Ω → ι → ℝ} (hA : ∀ i, (A i).IsHermitian)
-    (hrec : ∀ q : ℕ, ∫ ω, RCLike.re ((∑ i, X ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
+    {x : Ω → ι → ℝ} (hA : ∀ i, (A i).IsHermitian)
+    (hrec : ∀ q : ℕ, ∫ ω, RCLike.re ((∑ i, x ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
       (2 * q + 1 : ℝ) *
-        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, X ω i • A i) ^ (2 * q)).trace ∂μ) (p : ℕ) :
-    ∫ ω, RCLike.re ((∑ i, X ω i • A i) ^ (2 * p)).trace ∂μ ≤
+        ∫ ω, RCLike.re ((∑ i, A i ^ 2) * (∑ i, x ω i • A i) ^ (2 * q)).trace ∂μ) (p : ℕ) :
+    ∫ ω, RCLike.re ((∑ i, x ω i • A i) ^ (2 * p)).trace ∂μ ≤
       (2 * p - 1 : ℝ) ^ p * RCLike.re ((∑ i, A i ^ 2) ^ p).trace := by
   rcases p with _ | q
   · simp
   · have h := integral_re_trace_pow_le_of_recursion
-      (Y := fun ω => ∑ i, X ω i • A i) (ae_of_all _ fun ω => isHermitian_sum_smul hA (X ω))
+      (Y := fun ω => ∑ i, x ω i • A i) (ae_of_all _ fun ω => isHermitian_sum_smul hA (x ω))
       (posSemidef_sum_sq hA) q (hrec q)
     have e1 : 2 * (q + 1) = 2 * q + 2 := by ring
     have e2 : (2 * ((q + 1 : ℕ) : ℝ) - 1) = 2 * q + 1 := by push_cast; ring
     rw [e1, e2]
     exact h
 
-/-- **Noncommutative Khintchine inequality**, Gaussian series: for a standard Gaussian vector `g`
-and Hermitian `A i`, `E tr (∑ g i • A i)^{2p} ≤ (2p - 1)^p tr (∑ A i²)^p`.
+/-- **Noncommutative Khintchine inequality**, Gaussian series: for a standard Gaussian vector
+$\mathbf{g}$ and Hermitian $\mathbf{A}_i$, for every $p \in \mathbb{N}$,
+$$\mathbb{E} \operatorname{tr} \Bigl(\sum_i g_i \mathbf{A}_i\Bigr)^{2p}
+\le (2p - 1)^p \operatorname{tr} \Bigl(\sum_i \mathbf{A}_i^2\Bigr)^p\,.$$
 [MackeyEtAl2014, Theorem 7.1]; [Tropp2015, chapter 4]; here over any `RCLike` field and any
-finite index types, every `p` (at `p = 0` both sides are `card n`). Buchholz's `(2p - 1)!!` is a
-sharper constant of another shape, not stated.
+finite index types, every $p$ (at $p = 0$ both sides are $\lvert n\rvert$). Buchholz's
+$(2p - 1)!!$ is a sharper constant of another shape, not stated.
 Result: noncommutative-khintchine -/
 theorem integral_re_trace_sum_smul_pow_le_of_hasLaw_gaussianVector {g : Ω → ι → ℝ}
     (hg : HasLaw g (gaussianVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (p : ℕ) :
@@ -498,9 +530,13 @@ theorem integrable_re_trace_sum_smul_pow_of_hasLaw_rademacherVector {ε : Ω →
   simp only [one_mul, mul_one, pow_zero] at hc
   exact integrable_comp_of_hasLaw_rademacherVector hε hc hK
 
-/-- The deterministic sign-flip inequality: with `y` the vector `x` with its `i`-th sign flipped
-and `x i² = 1`, `x i tr (A i Y(x)^{2q+1}) + y i tr (A i Y(y)^{2q+1})` is at most
-`(2q + 1) (tr (A i² Y(x)^{2q}) + tr (A i² Y(y)^{2q}))`, by the mean value trace inequality. -/
+/-- The deterministic sign-flip inequality: with $\mathbf{y}$ the vector $\mathbf{x}$ with its
+$i$-th sign flipped and $\mathbf{x}_i^2 = 1$,
+$$\mathbf{x}_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}(\mathbf{x})^{2q+1}) +
+\mathbf{y}_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}(\mathbf{y})^{2q+1})
+\le (2q + 1) \bigl(\operatorname{tr}(\mathbf{A}_i^2 \mathbf{Y}(\mathbf{x})^{2q}) +
+\operatorname{tr}(\mathbf{A}_i^2 \mathbf{Y}(\mathbf{y})^{2q})\bigr)$$
+(real parts of traces), by the mean value trace inequality. -/
 private theorem sign_flip_le [DecidableEq ι] (hA : ∀ i, (A i).IsHermitian) (q : ℕ) (i : ι)
     (x : ι → ℝ) (hx : x i ^ 2 = 1) :
     x i * RCLike.re (A i * (∑ j, x j • A j) ^ (2 * q + 1)).trace +
@@ -576,12 +612,17 @@ private theorem integral_mul_re_trace_le_of_hasLaw_rademacherVector {ε : Ω →
   change ∫ ω, F (ε ω) ∂μ ≤ (2 * q + 1 : ℝ) * ∫ ω, G (ε ω) ∂μ
   linarith
 
-/-- **The Rademacher moment recursion**: for a vector `ε` of independent random signs and
-Hermitian `A i`, `E tr Y^{2q+2} ≤ (2q + 1) E tr ((∑ A i²) Y^{2q})` with `Y = ∑ ε i • A i`.
-[MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). Proof: with `Y⁽ⁱ⁾` the series with
-the `i`-th sign flipped (same law, `measurePreserving_update_neg_rademacherVector`),
-`E [ε i tr (A i Y^{2q+1})] = ¼ E tr ((Y - Y⁽ⁱ⁾)(Y^{2q+1} - Y⁽ⁱ⁾^{2q+1}))`; the mean value trace
-inequality (`re_trace_sub_mul_pow_sub_pow_le`) with `Y - Y⁽ⁱ⁾ = 2 ε i • A i` and `ε i² = 1`, and a
+/-- **The Rademacher moment recursion**: for a vector $\boldsymbol{\varepsilon}$ of independent
+random signs and Hermitian $\mathbf{A}_i$, with $\mathbf{Y} = \sum_i \varepsilon_i \mathbf{A}_i$,
+$$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2} \le (2q + 1)\, \mathbb{E} \operatorname{tr}
+\Bigl(\Bigl(\sum_i \mathbf{A}_i^2\Bigr) \mathbf{Y}^{2q}\Bigr)\,.$$
+[MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). Proof: with $\mathbf{Y}^{(i)}$ the
+series with the $i$-th sign flipped (same law, `measurePreserving_update_neg_rademacherVector`),
+$\mathbb{E}[\varepsilon_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^{2q+1})]
+= \frac14 \mathbb{E} \operatorname{tr}\bigl((\mathbf{Y} - \mathbf{Y}^{(i)})
+(\mathbf{Y}^{2q+1} - (\mathbf{Y}^{(i)})^{2q+1})\bigr)$; the mean value trace inequality
+(`re_trace_sub_mul_pow_sub_pow_le`) with
+$\mathbf{Y} - \mathbf{Y}^{(i)} = 2 \varepsilon_i \mathbf{A}_i$ and $\varepsilon_i^2 = 1$, and a
 second flip. -/
 theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_rademacherVector {ε : Ω → ι → ℝ}
     (hε : HasLaw ε (rademacherVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (q : ℕ) :
@@ -602,10 +643,13 @@ theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_rademacherVector {ε : �
     simp only [mul_one, pow_zero] at hc
     exact integrable_comp_of_hasLaw_rademacherVector hε hc hK
 
-/-- **Noncommutative Khintchine inequality**, Rademacher series: for a vector `ε` of independent
-random signs and Hermitian `A i`, `E tr (∑ ε i • A i)^{2p} ≤ (2p - 1)^p tr (∑ A i²)^p`.
+/-- **Noncommutative Khintchine inequality**, Rademacher series: for a vector
+$\boldsymbol{\varepsilon}$ of independent random signs and Hermitian $\mathbf{A}_i$, for every
+$p \in \mathbb{N}$,
+$$\mathbb{E} \operatorname{tr} \Bigl(\sum_i \varepsilon_i \mathbf{A}_i\Bigr)^{2p}
+\le (2p - 1)^p \operatorname{tr} \Bigl(\sum_i \mathbf{A}_i^2\Bigr)^p\,.$$
 [MackeyEtAl2014, Theorem 7.1]; [Tropp2015, chapter 4]; here over any `RCLike` field and any
-finite index types, every `p`.
+finite index types, every $p$.
 Result: noncommutative-khintchine -/
 theorem integral_re_trace_sum_smul_pow_le_of_hasLaw_rademacherVector {ε : Ω → ι → ℝ}
     (hε : HasLaw ε (rademacherVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (p : ℕ) :

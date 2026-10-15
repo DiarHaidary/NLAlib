@@ -10,10 +10,11 @@ public import Mathlib.Analysis.Complex.Basic
 public import Mathlib.Analysis.Complex.Order
 
 /-!
-# The embedding of an `RCLike` field into `ℂ`
+# The embedding of an `RCLike` field into $\mathbb{C}$
 
-Every `RCLike` field embeds in `ℂ` by `x ↦ ⟨re x, im x⟩`. The embedding is an injective real star
-algebra homomorphism: the inclusion for `ℝ`, the identity for `ℂ`. Mathlib has the equivalences
+Every `RCLike` field embeds in $\mathbb{C}$ by $x \mapsto \operatorname{Re} x +
+i \operatorname{Im} x$. The embedding is an injective real star algebra homomorphism: the inclusion
+for $\mathbb{R}$, the identity for $\mathbb{C}$. Mathlib has the equivalences
 `RCLike.realRingEquiv` and `RCLike.complexRingEquiv` under a hypothesis on `RCLike.I`; this map
 needs none. Upstream candidate for `Mathlib.Analysis.RCLike.Basic`.
 
@@ -30,7 +31,8 @@ namespace RCLike
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The embedding of an `RCLike` field into `ℂ`, `x ↦ ⟨re x, im x⟩`. -/
+/-- The embedding of an `RCLike` field into $\mathbb{C}$,
+$x \mapsto \operatorname{Re} x + i \operatorname{Im} x$. -/
 noncomputable def toComplex : 𝕜 →⋆ₐ[ℝ] ℂ where
   toFun x := ⟨re x, im x⟩
   map_one' := by apply Complex.ext <;> simp
@@ -79,7 +81,7 @@ theorem toComplex_le_toComplex_iff {x y : 𝕜} : toComplex x ≤ toComplex y �
 theorem continuous_toComplex : Continuous (toComplex : 𝕜 → ℂ) :=
   (AddMonoidHomClass.isometry_of_norm toComplex norm_toComplex).continuous
 
-/-- On `ℂ` the embedding is the identity. -/
+/-- On $\mathbb{C}$ the embedding is the identity. -/
 @[simp]
 theorem toComplex_complex (z : ℂ) : toComplex z = z :=
   rfl

@@ -12,21 +12,27 @@ public import NLAlib.Matrix.Norms.SchattenPowers
 /-!
 # The matrix absolute value
 
-The absolute value of a rectangular matrix `A` is `|A| = (Aᴴ A)^{1/2}`, spelled
-`CFC.sqrt (Aᴴ * A)`; for a square matrix this is Mathlib's `CFC.abs A` by definition. Its
-eigenvalues are the singular values of `A`, so the nuclear norm is `tr |A|` and the Schatten
-norms are traces of powers of `Aᴴ A`. For an even natural exponent the trace form, with natural
+The absolute value of a rectangular matrix $\mathbf{A}$ is
+$\lvert \mathbf{A} \rvert = (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$, spelled `CFC.sqrt`
+applied to $\mathbf{A}^{\mathsf{H}}\mathbf{A}$; for a square matrix this is Mathlib's `CFC.abs`
+by definition. Its eigenvalues are the singular values of $\mathbf{A}$, so the nuclear norm is
+$\operatorname{tr} \lvert \mathbf{A} \rvert$ and the Schatten norms are traces of powers of
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}$. For an even natural exponent the trace form, with natural
 powers, is `NLAlib.schattenNorm_two_mul_natCast_pow`.
 
-For a Hermitian matrix, `CFC.abs A = cfc |·| A` is Mathlib's `CFC.abs_eq_cfc_norm`, and the
-positive and negative parts `A⁺`, `A⁻` are Mathlib's, with `CFC.le_posPart`,
+For a Hermitian matrix, $\lvert \mathbf{A} \rvert$ is the functional calculus of
+$\lvert \cdot \rvert$ at $\mathbf{A}$ (Mathlib's `CFC.abs_eq_cfc_norm`), and the positive and
+negative parts
+$\mathbf{A}^{+}$, $\mathbf{A}^{-}$ are Mathlib's, with `CFC.le_posPart`,
 `CFC.posPart_sub_negPart` and `CFC.abs_eq_posPart_add_negPart`.
 
 ## Main results
 
-* `NLAlib.eigenvalue_sqrt_conjTranspose_mul_self`: the eigenvalues of `|A|`.
-* `NLAlib.nuclearNorm_eq_re_trace_sqrt`: `‖A‖_* = tr |A|`.
-* `NLAlib.schattenNorm_rpow_eq_re_trace_rpow`: `‖A‖_p^p = tr (Aᴴ A)^{p/2}`.
+* `NLAlib.eigenvalue_sqrt_conjTranspose_mul_self`: the eigenvalues of $\lvert \mathbf{A} \rvert$.
+* `NLAlib.nuclearNorm_eq_re_trace_sqrt`:
+  $\|\mathbf{A}\|_* = \operatorname{tr} \lvert \mathbf{A} \rvert$.
+* `NLAlib.schattenNorm_rpow_eq_re_trace_rpow`:
+  $\|\mathbf{A}\|_{S_p}^p = \operatorname{tr} (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{p/2}$.
 * `Matrix.IsHermitian.le_abs`, `Matrix.IsHermitian.neg_abs_le`.
 -/
 
@@ -40,7 +46,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 open scoped Classical in
 /-- **The eigenvalues of the absolute value are the singular values**:
-`λ_k((Aᴴ A)^{1/2}) = σ_k(A)` for `k` below the number of columns. -/
+$\lambda_k((\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}) = \sigma_k(\mathbf{A})$ for
+$k < \lvert n \rvert$, the number of columns, both indexed from $0$ and non-increasing. -/
 theorem eigenvalue_sqrt_conjTranspose_mul_self (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k < Fintype.card n) : eigenvalue (CFC.sqrt (Aᴴ * A)) k = singularValues A k := by
   have hG : (Aᴴ * A).PosSemidef := Matrix.posSemidef_conjTranspose_mul_self A
@@ -59,7 +66,9 @@ theorem singularValues_sqrt_conjTranspose_mul_self (A : Matrix m n 𝕜) (k : �
   rw [hH.eq, CFC.sqrt_mul_sqrt_self (Aᴴ * A) hG.nonneg]
 
 open scoped Classical in
-/-- **The nuclear norm is the trace of the absolute value**: `‖A‖_* = tr (Aᴴ A)^{1/2}`.
+/-- **The nuclear norm is the trace of the absolute value**:
+$\|\mathbf{A}\|_* = \operatorname{Re} \operatorname{tr} (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$
+(the trace is real).
 [HornJohnson2013, §7.4.1 context]. -/
 theorem nuclearNorm_eq_re_trace_sqrt (A : Matrix m n 𝕜) :
     nuclearNorm A = RCLike.re (CFC.sqrt (Aᴴ * A)).trace := by
@@ -68,7 +77,10 @@ theorem nuclearNorm_eq_re_trace_sqrt (A : Matrix m n 𝕜) :
     nuclearNorm_eq_sum_range _ (Matrix.rank_le_card_width _)]
   exact Finset.sum_congr rfl fun i _ => (singularValues_sqrt_conjTranspose_mul_self A i).symm
 
-/-- **Schatten norms as traces**: `‖A‖_p^p = tr (Aᴴ A)^{p/2}` for `0 < p < ∞`. -/
+/-- **Schatten norms as traces**: for real $p > 0$,
+$$\|\mathbf{A}\|_{S_p}^p
+  = \operatorname{Re} \operatorname{tr} (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{p/2},$$
+the power taken in the continuous functional calculus (the trace is real). -/
 theorem schattenNorm_rpow_eq_re_trace_rpow [DecidableEq n] (A : Matrix m n 𝕜) {p : ℝ}
     (hp : 0 < p) :
     schattenNorm (ENNReal.ofReal p) A ^ p = RCLike.re ((Aᴴ * A) ^ (p / 2)).trace := by
@@ -84,7 +96,8 @@ theorem schattenNorm_rpow_eq_re_trace_rpow [DecidableEq n] (A : Matrix m n 𝕜)
   ring
 
 open scoped Classical in
-/-- A Hermitian matrix is at most its absolute value. -/
+/-- A Hermitian matrix is at most its absolute value:
+$\mathbf{A} \preceq \lvert \mathbf{A} \rvert$. -/
 theorem _root_.Matrix.IsHermitian.le_abs {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A ≤ CFC.abs A := by
   have hsa : IsSelfAdjoint A := hA
@@ -92,15 +105,17 @@ theorem _root_.Matrix.IsHermitian.le_abs {A : Matrix n n 𝕜} (hA : A.IsHermiti
   exact nsmul_nonneg (CFC.negPart_nonneg A) 2
 
 open scoped Classical in
-/-- A Hermitian matrix is at least minus its absolute value. -/
+/-- A Hermitian matrix is at least minus its absolute value:
+$-\lvert \mathbf{A} \rvert \preceq \mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.neg_abs_le {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     -CFC.abs A ≤ A := by
   have hsa : IsSelfAdjoint A := hA
   rw [neg_le_iff_add_nonneg', CFC.abs_add_self A hsa]
   exact nsmul_nonneg (CFC.posPart_nonneg A) 2
 
-/-- The spectral norm bounds the absolute value in the Loewner order: `|A| ≤ ‖A‖₂ • 1`, for
-every square matrix `A`. -/
+/-- The spectral norm bounds the absolute value in the Loewner order:
+$\lvert \mathbf{A} \rvert \preceq \|\mathbf{A}\|_2 \mathbf{I}$ for every square matrix
+$\mathbf{A}$. -/
 theorem abs_le_specNorm_smul_one [DecidableEq n] (A : Matrix n n 𝕜) :
     CFC.abs A ≤ specNorm A • (1 : Matrix n n 𝕜) := by
   rcases isEmpty_or_nonempty n with h | h

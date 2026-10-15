@@ -11,11 +11,12 @@ public import NLAlib.RandomMatrix.Gaussian.Basic
 /-!
 # Gaussian concentration for functions of Gaussian matrices
 
-A function of a standard Gaussian matrix that is `L`-Lipschitz for the Frobenius distance is
-sub-Gaussian about its mean with proxy `L²`. The Lipschitz hypothesis is the explicit inequality
-`|f A - f B| ≤ L ‖A - B‖_F`: matrices carry no global metric in this library, and the singular
-values satisfy exactly this inequality (`NLAlib.abs_singularValues_sub_le_frobNorm`). The proof
-reads the matrix as a standard Gaussian vector indexed by `m × n`.
+A function of a standard Gaussian matrix that is $L$-Lipschitz for the Frobenius distance is
+sub-Gaussian about its mean with proxy $L^2$. The Lipschitz hypothesis is the explicit inequality
+$\lvert f(\mathbf{A}) - f(\mathbf{B}) \rvert \le L \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$:
+matrices carry no global metric in this library, and the singular values satisfy exactly this
+inequality (`NLAlib.abs_singularValues_sub_le_frobNorm`). The proof reads the matrix as a standard
+Gaussian vector indexed by $m \times n$.
 
 ## Main results
 
@@ -33,7 +34,7 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n] {X : Ω → Matrix m n ℝ} {f : Matrix m n ℝ → ℝ} {L : ℝ≥0}
 
-/-- The Frobenius-Lipschitz inequality for `f`, read on the flattened entries. -/
+/-- The Frobenius-Lipschitz inequality for $f$, read on the flattened entries. -/
 private theorem lipschitzWith_curry (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B)) :
     LipschitzWith L (fun x : EuclideanSpace ℝ (m × n) =>
       f (Matrix.of (Function.curry (WithLp.ofLp x)))) := by
@@ -49,8 +50,10 @@ theorem integrable_comp_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix 
     (f := fun x => f (Matrix.of (Function.curry x)))
     (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) (lipschitzWith_curry hf)
 
-/-- **Gaussian concentration** for a function of a Gaussian matrix that is `L`-Lipschitz for the
-Frobenius distance: `f (G) - E f (G)` is sub-Gaussian with proxy `L²`. -/
+/-- **Gaussian concentration** for a function of a Gaussian matrix that is $L$-Lipschitz for the
+Frobenius distance
+($\lvert f(\mathbf{A}) - f(\mathbf{B}) \rvert \le L \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$):
+$f(\mathbf{G}) - \mathbb{E} f(\mathbf{G})$ is sub-Gaussian with proxy $L^2$. -/
 theorem hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B)) :
     HasSubgaussianMGF (fun ω => f (X ω) - ∫ ω', f (X ω') ∂μ) (L ^ 2) μ := by
@@ -58,7 +61,8 @@ theorem hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix
     (f := fun x => f (Matrix.of (Function.curry x)))
     (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) (lipschitzWith_curry hf)
 
-/-- The upper tail: `P(E f(G) + t ≤ f(G)) ≤ exp (-t² / (2L²))`. -/
+/-- The upper tail: for $f$ $L$-Lipschitz for the Frobenius distance and $t \ge 0$,
+$\mathbb{P}\bigl(f(\mathbf{G}) \ge \mathbb{E} f(\mathbf{G}) + t\bigr) \le \exp(-t^2 / (2L^2))$. -/
 theorem measureReal_integral_add_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B))
     {t : ℝ} (ht : 0 ≤ t) :

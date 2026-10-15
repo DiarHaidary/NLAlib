@@ -14,8 +14,8 @@ public import NLAlib.ForMathlib.MeasureTheory.Matrix
 /-!
 # Laws of random vectors and random matrices
 
-Statements in NLAlib take a random variable `X` with Mathlib's `HasLaw X ν μ`, never a canonical
-measure space (`docs/PORT_PROBABILITY.md` D2). "Independent coordinates with laws `ν i`" is the
+Statements in NLAlib take a random variable $X$ with Mathlib's `HasLaw X ν μ`, never a canonical
+measure space (`docs/PORT_PROBABILITY.md` D2). "Independent coordinates with laws $\nu_i$" is the
 single hypothesis `HasLaw X (Measure.pi ν) μ`, and a random matrix with independent entries has
 the nested product law `Measure.pi fun i => Measure.pi fun j => ν i j`. This file takes those
 hypotheses apart into independence and marginals, and back, and transports integrability and
@@ -25,7 +25,8 @@ hypotheses apart into independence and marginals, and back, and transports integ
 
 * `NLAlib.hasLaw_pi_iff`: a product law is independence plus marginals.
 * `ProbabilityTheory.HasLaw.eval`, `ProbabilityTheory.HasLaw.iIndepFun_eval`: its two halves.
-* `NLAlib.hasLaw_pi_pi_iff`: the same for the entries of a random matrix, indexed by `m × n`.
+* `NLAlib.hasLaw_pi_pi_iff`: the same for the entries of a random matrix, indexed by the product
+  type `m × n`.
 * `ProbabilityTheory.HasLaw.entry`, `ProbabilityTheory.HasLaw.iIndepFun_entry`.
 * `ProbabilityTheory.HasLaw.integrable_comp_iff`, `ProbabilityTheory.HasLaw.memLp_comp_iff`:
   integrability depends only on the law. (The bridge to `IdentDistrib` is Mathlib's
@@ -46,9 +47,10 @@ section Pi
 variable {ι : Type*} [Fintype ι] {E : ι → Type*} [∀ i, MeasurableSpace (E i)]
   {ν : ∀ i, Measure (E i)} {X : Ω → ∀ i, E i}
 
-/-- A random vector has the product law `Measure.pi ν` exactly when its coordinates are
-independent and the `i`-th coordinate has law `ν i`. The hypothesis that `μ` is a probability
-measure is needed only for the reverse direction when `ι` is empty. -/
+/-- A random variable $X$ in $\prod_i E_i$ has the product law `Measure.pi ν` exactly when its
+coordinates are independent and the $i$-th coordinate $X_i$ has law $\nu_i$. The hypothesis that
+$\mu$ is a probability measure is needed only for the reverse direction when the index type `ι` is
+empty. -/
 theorem hasLaw_pi_iff [IsProbabilityMeasure μ] [∀ i, IsProbabilityMeasure (ν i)] :
     HasLaw X (Measure.pi ν) μ ↔
       iIndepFun (fun i ω => X ω i) μ ∧ ∀ i, HasLaw (fun ω => X ω i) (ν i) μ := by
@@ -57,7 +59,7 @@ theorem hasLaw_pi_iff [IsProbabilityMeasure μ] [∀ i, IsProbabilityMeasure (ν
     (measurePreserving_eval ν i).fun_comp_hasLaw hX
   exact ⟨(iIndepFun_iff_hasLaw_pi_pi hev).2 hX, hev⟩
 
-/-- The `i`-th coordinate of a random vector with law `Measure.pi ν` has law `ν i`. -/
+/-- The $i$-th coordinate of a random vector with law `Measure.pi ν` has law $\nu_i$. -/
 theorem _root_.ProbabilityTheory.HasLaw.eval [∀ i, IsProbabilityMeasure (ν i)]
     (hX : HasLaw X (Measure.pi ν) μ) (i : ι) : HasLaw (fun ω => X ω i) (ν i) μ := by
   exact (measurePreserving_eval ν i).fun_comp_hasLaw hX
@@ -75,9 +77,9 @@ section Matrix
 variable {m n α : Type*} [Fintype m] [Fintype n] [MeasurableSpace α] {ν : m → n → Measure α}
   [∀ i j, IsProbabilityMeasure (ν i j)] {X : Ω → Matrix m n α}
 
-/-- Currying is measure preserving from the product law on `m × n` to the nested product law on
-matrices. This is the step that reads a random matrix with independent entries as a random vector
-indexed by `m × n` (through its inverse, `Function.uncurry`), and back. -/
+/-- Currying is measure preserving from the product law on the index type `m × n` to the nested
+product law on matrices. This is the step that reads a random matrix with independent entries as a
+random vector indexed by `m × n` (through its inverse, `Function.uncurry`), and back. -/
 theorem measurePreserving_curry_pi :
     MeasurePreserving (MeasurableEquiv.curry m n α) (Measure.pi fun p : m × n => ν p.1 p.2)
       (Measure.pi fun i => Measure.pi fun j => ν i j) := by
@@ -85,8 +87,9 @@ theorem measurePreserving_curry_pi :
   simp_rw [← Measure.infinitePi_eq_pi]
   exact Measure.infinitePi_map_curry ν
 
-/-- A random matrix has the law `Measure.pi fun i => Measure.pi fun j => ν i j` exactly when its
-entries, indexed by `m × n`, are independent and the `(i, j)` entry has law `ν i j`. -/
+/-- A random matrix $\mathbf{X}$ has the law `Measure.pi fun i => Measure.pi fun j => ν i j`
+exactly when its entries, indexed by `m × n`, are independent and the entry $\mathbf{X}_{i,j}$ has
+law $\nu_{i,j}$. -/
 theorem hasLaw_pi_pi_iff [IsProbabilityMeasure μ] :
     HasLaw X (Measure.pi fun i => Measure.pi fun j => ν i j) μ ↔
       iIndepFun (fun p : m × n => fun ω => X ω p.1 p.2) μ ∧
@@ -97,7 +100,8 @@ theorem hasLaw_pi_pi_iff [IsProbabilityMeasure μ] :
       fun hX => measurePreserving_curry_pi.fun_comp_hasLaw hX⟩
   rw [hY, hasLaw_pi_iff, Prod.forall]
 
-/-- The `(i, j)` entry of a random matrix with independent entries has law `ν i j`. -/
+/-- The entry $\mathbf{X}_{i,j}$ of a random matrix with the nested product law
+`Measure.pi fun i => Measure.pi fun j => ν i j` has law $\nu_{i,j}$. -/
 theorem _root_.ProbabilityTheory.HasLaw.entry
     (hX : HasLaw X (Measure.pi fun i => Measure.pi fun j => ν i j) μ) (i : m) (j : n) :
     HasLaw (fun ω => X ω i j) (ν i j) μ := by
@@ -120,14 +124,14 @@ section Transport
 variable {𝓧 : Type*} {m𝓧 : MeasurableSpace 𝓧} {ν : Measure 𝓧} {X : Ω → 𝓧}
   {E : Type*} [NormedAddCommGroup E]
 
-/-- Integrability of `f ∘ X` depends only on the law of `X`. -/
+/-- Integrability of $f \circ X$ depends only on the law of $X$. -/
 theorem _root_.ProbabilityTheory.HasLaw.integrable_comp_iff (hX : HasLaw X ν μ) {f : 𝓧 → E}
     (hf : AEStronglyMeasurable f ν) :
     Integrable (fun ω => f (X ω)) μ ↔ Integrable f ν := by
   rw [← hX.map_eq] at hf ⊢
   exact (integrable_map_measure hf hX.aemeasurable).symm
 
-/-- Membership of `f ∘ X` in `Lᵖ` depends only on the law of `X`. -/
+/-- Membership of $f \circ X$ in $L^p$ depends only on the law of $X$. -/
 theorem _root_.ProbabilityTheory.HasLaw.memLp_comp_iff (hX : HasLaw X ν μ) {f : 𝓧 → E}
     (hf : AEStronglyMeasurable f ν) {p : ℝ≥0∞} :
     MemLp (fun ω => f (X ω)) p μ ↔ MemLp f p ν := by

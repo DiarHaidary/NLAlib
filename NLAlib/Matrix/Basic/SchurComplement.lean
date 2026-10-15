@@ -13,11 +13,15 @@ public import NLAlib.Matrix.Basic.QuadForm
 /-!
 # Positive semidefinite block matrices and Schur complements
 
-Criteria for a Hermitian block matrix `fromBlocks A B Bᴴ C` to be positive semidefinite or
-positive definite. The Schur complement has no definition: with `A` invertible it is Mathlib's
-`C - Bᴴ * A⁻¹ * B`, and in general it is `C - Xᴴ * A * X` for any solution `X` of `A * X = B`,
-which does not depend on the solution. Mathlib has the determinant and inverse of a block matrix
-and the semidefinite criterion for positive definite `A` (`Matrix.PosSemidef.fromBlocks₁₁`).
+Criteria for a Hermitian block matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
+to be positive semidefinite or positive definite. The Schur complement has no definition: with
+$\mathbf{A}$ invertible it is Mathlib's
+$\mathbf{C} - \mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B}$, and in general it is
+$\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ for any solution $\mathbf{X}$ of
+$\mathbf{A}\mathbf{X} = \mathbf{B}$, which does not depend on the solution. Mathlib has the
+determinant and inverse of a block matrix and the semidefinite criterion for positive definite
+$\mathbf{A}$ (`Matrix.PosSemidef.fromBlocks₁₁`).
 
 ## Main results
 
@@ -34,11 +38,15 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*}
 
-/-- **Completing the square** in a Hermitian block matrix. If `A` is Hermitian and `A * X = B`,
-the quadratic form of `fromBlocks A B Bᴴ C` at `(y, x)` is the quadratic form of `A` at
-`y + X x` plus the quadratic form of `C - Xᴴ * A * X` at `x`.
+/-- **Completing the square** in a Hermitian block matrix. If $\mathbf{A}$ is Hermitian and
+$\mathbf{A}\mathbf{X} = \mathbf{B}$, then for $\mathbf{M} = \begin{bmatrix} \mathbf{A} & \mathbf{B}
+\\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
+$$\begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}^{\mathsf{H}} \mathbf{M} \begin{bmatrix}
+\mathbf{y} \\ \mathbf{x} \end{bmatrix}
+  = (\mathbf{y} + \mathbf{X}\mathbf{x})^{\mathsf{H}}\mathbf{A}(\mathbf{y} + \mathbf{X}\mathbf{x}) +
+  \mathbf{x}^{\mathsf{H}}(\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X})\mathbf{x}\,.$$
 Port of `NLAlib.dotProduct_fromBlocks_eq_generalizedSchurComplement_square`, there with
-`X = A⁺ B`. -/
+$\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$. -/
 theorem quadForm_fromBlocks_eq_add [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
     {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hX : A * X = B) (y : m → 𝕜) (x : n → 𝕜) :
@@ -53,16 +61,18 @@ theorem quadForm_fromBlocks_eq_add [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
     Function.star_sumElim, sumElim_dotProduct_sumElim, dotProduct_add, hAX]
   ring
 
-/-- For Hermitian `A`, the matrix `Xᴴ * A * X` is the same for every solution `X` of
-`A * X = B`. -/
+/-- For Hermitian $\mathbf{A}$, the matrix $\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is the
+same for every solution $\mathbf{X}$ of $\mathbf{A}\mathbf{X} = \mathbf{B}$. -/
 theorem conjTranspose_mul_mul_eq_of_mul_eq [Fintype m] {A : Matrix m m 𝕜} {B X Y : Matrix m n 𝕜}
     (hA : A.IsHermitian) (hX : A * X = B) (hY : A * Y = B) : Xᴴ * A * X = Yᴴ * A * Y := by
   calc Xᴴ * A * X = Xᴴ * (A * Y) := by rw [Matrix.mul_assoc, hX, hY]
     _ = (A * X)ᴴ * Y := by rw [Matrix.conjTranspose_mul, hA.eq, Matrix.mul_assoc]
     _ = Yᴴ * A * Y := by rw [hX, ← hY, Matrix.conjTranspose_mul, hA.eq]
 
-/-- In a positive semidefinite block matrix, the kernel of the leading block `A` is contained in
-the kernel of `Bᴴ`. Port of `NLAlib.conjTranspose_mulVec_eq_zero_of_fromBlocks_posSemidef`. -/
+/-- In a positive semidefinite block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
+\mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, the kernel of the leading block $\mathbf{A}$ is
+contained in the kernel of $\mathbf{B}^{\mathsf{H}}$. Port of
+`NLAlib.conjTranspose_mulVec_eq_zero_of_fromBlocks_posSemidef`. -/
 theorem conjTranspose_mulVec_eq_zero_of_posSemidef_fromBlocks [Fintype m] [Finite n]
     {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) {z : m → 𝕜} (hz : A *ᵥ z = 0) :
@@ -78,8 +88,9 @@ theorem conjTranspose_mulVec_eq_zero_of_posSemidef_fromBlocks [Fintype m] [Finit
   simpa only [Matrix.fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr,
     Matrix.mulVec_zero, add_zero, Pi.zero_comp] using hr
 
-/-- In a positive semidefinite block matrix, the columns of the off-diagonal block `B` lie in the
-column space of the leading block `A`.
+/-- In a positive semidefinite block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
+\mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, the columns of the off-diagonal block
+$\mathbf{B}$ lie in the column space of the leading block $\mathbf{A}$.
 Port of `NLAlib.one_sub_mul_moorePenroseInverse_mul_eq_zero_of_fromBlocks_posSemidef`. -/
 theorem range_mulVecLin_le_of_posSemidef_fromBlocks [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
@@ -102,12 +113,15 @@ theorem range_mulVecLin_le_of_posSemidef_fromBlocks [Fintype m] [Fintype n] {A :
   rw [one_sub_rangeProjector_mul, sub_eq_zero] at hFB
   exact hFB.symm
 
-/-- **Albert's criterion.** The block matrix `fromBlocks A B Bᴴ C` is positive semidefinite
-exactly when `A` is, the equation `A * X = B` has a solution, and `C - Xᴴ * A * X` is positive
-semidefinite for one such solution (equivalently for all,
-`NLAlib.conjTranspose_mul_mul_eq_of_mul_eq`).
-[HornJohnson2013, Theorem 7.7.9]; stated there with the pseudoinverse solution `X = A⁺ B` and the
-range condition `A A⁺ B = B`, here with any solution, so that no pseudoinverse is needed.
+/-- **Albert's criterion.** The block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
+\mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ is positive semidefinite exactly when
+$\mathbf{A}$ is, the equation $\mathbf{A}\mathbf{X} = \mathbf{B}$ has a solution, and
+$\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is positive semidefinite for one such
+solution (equivalently for all, `NLAlib.conjTranspose_mul_mul_eq_of_mul_eq`).
+[HornJohnson2013, Theorem 7.7.9]; stated there with the pseudoinverse solution
+$\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$ and the range condition
+$\mathbf{A}\mathbf{A}^{+}\mathbf{B} = \mathbf{B}$, here with any solution, so that no
+pseudoinverse is needed.
 Port of `NLAlib.posSemidef_fromBlocks_iff`.
 Result: schur-complement-psd, albert-theorem -/
 theorem posSemidef_fromBlocks_iff_exists [Fintype m] [Finite n] {A : Matrix m m 𝕜}
@@ -134,8 +148,10 @@ theorem posSemidef_fromBlocks_iff_exists [Fintype m] [Finite n] {A : Matrix m m 
     rw [← Sum.elim_comp_inl_inr z, quadForm_fromBlocks_eq_add hA.isHermitian hX]
     exact add_nonneg (hA.quadForm_nonneg _) (hS.quadForm_nonneg _)
 
-/-- If the block matrix is positive semidefinite, then for every solution `X` of `A * X = B` the
-Schur complement `C - Xᴴ * A * X` is positive semidefinite.
+/-- If the block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} &
+\mathbf{C} \end{bmatrix}$ is positive semidefinite, then for every solution $\mathbf{X}$ of
+$\mathbf{A}\mathbf{X} = \mathbf{B}$ the Schur complement $\mathbf{C} -
+\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is positive semidefinite.
 Port of `NLAlib.generalizedSchurComplement_nonneg`. -/
 theorem posSemidef_sub_conjTranspose_mul_mul_of_posSemidef_fromBlocks [Fintype m] [Finite n]
     {A : Matrix m m 𝕜} {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜}
@@ -144,9 +160,13 @@ theorem posSemidef_sub_conjTranspose_mul_mul_of_posSemidef_fromBlocks [Fintype m
   obtain ⟨hA, Y, hY, hS⟩ := posSemidef_fromBlocks_iff_exists.mp h
   rwa [conjTranspose_mul_mul_eq_of_mul_eq hA.isHermitian hX hY]
 
-/-- **The Schur complement as a partial minimum.** In a positive semidefinite block matrix, with
-`A * X = B`, the quadratic form of `C - Xᴴ * A * X` at `x` is a lower bound for the quadratic
-form of the block matrix at `(y, x)`, for every `y`. Equality holds at `y = -X x`
+/-- **The Schur complement as a partial minimum.** If $\mathbf{M} = \begin{bmatrix} \mathbf{A} &
+\mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ is positive semidefinite and
+$\mathbf{A}\mathbf{X} = \mathbf{B}$, then for every $\mathbf{y}$
+$$\mathbf{x}^{\mathsf{H}}(\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X})\mathbf{x}
+  \le \begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}^{\mathsf{H}} \mathbf{M} \begin{bmatrix}
+  \mathbf{y} \\ \mathbf{x} \end{bmatrix}\,,$$
+in the order of $\Bbbk$. Equality holds at $\mathbf{y} = -\mathbf{X}\mathbf{x}$
 (`NLAlib.quadForm_fromBlocks_eq_add`).
 Port of `NLAlib.dotProduct_generalizedSchurComplement_mulVec_le`.
 Result: schur-complement-variational -/
@@ -158,15 +178,18 @@ theorem quadForm_sub_conjTranspose_mul_mul_le [Fintype m] [Fintype n] {A : Matri
   rw [quadForm_fromBlocks_eq_add hA.isHermitian hX]
   exact le_add_of_nonneg_left (hA.quadForm_nonneg _)
 
-/-- The Schur complement of a positive semidefinite leading block is below `C` in the Loewner
-order. Port of `NLAlib.generalizedSchurComplement_le`. -/
+/-- The Schur complement of a positive semidefinite leading block is below $\mathbf{C}$ in the
+Loewner order: $\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} \preceq \mathbf{C}$ for
+$\mathbf{0} \preceq \mathbf{A}$ and any $\mathbf{X}$. Port of
+`NLAlib.generalizedSchurComplement_le`. -/
 theorem sub_conjTranspose_mul_mul_le [Fintype m] [Finite n] {A : Matrix m m 𝕜} (hA : A.PosSemidef)
     (X : Matrix m n 𝕜) (C : Matrix n n 𝕜) : C - Xᴴ * A * X ≤ C := by
   rw [Matrix.le_iff, sub_sub_cancel]
   exact hA.conjTranspose_mul_mul_same X
 
-/-- **Positive definite block matrices.** `fromBlocks A B Bᴴ C` is positive definite exactly when
-`A` and the Schur complement `C - Bᴴ * A⁻¹ * B` are.
+/-- **Positive definite block matrices.** $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
+\mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ is positive definite exactly when $\mathbf{A}$
+and the Schur complement $\mathbf{C} - \mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B}$ are.
 [HornJohnson2013, Theorem 7.7.7].
 Result: schur-complement-pd -/
 theorem posDef_fromBlocks_iff [Fintype m] [Finite n] [DecidableEq m] {A : Matrix m m 𝕜}

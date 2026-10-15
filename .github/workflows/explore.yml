@@ -36,9 +36,9 @@ jobs:
               --notes "Rolling data for nla-lib.org/explore; replaced on every push." \
               --target "$GITHUB_SHA"
           fi
+          # the data file records its own commit and date; the release itself is never edited
+          # (editing fails once the commit the tag was created at is gone from every branch)
           gh release upload explore-data explore-data.json --clobber
-          gh release edit explore-data \
-            --notes "Rolling data for nla-lib.org/explore. Built from ${GITHUB_SHA} (${GITHUB_REF_NAME})."
       - name: Notify NLA-lib/explore
         env:
           DISPATCH_TOKEN: ${{ secrets.EXPLORE_DISPATCH_TOKEN }}

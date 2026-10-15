@@ -65,7 +65,8 @@ private theorem forall_eigenvalues_iff [DecidableEq n] {A : Matrix n n 𝕜} (hA
 
 /-! ### Trace, determinant, Frobenius norm, rank -/
 
-/-- The trace of a Hermitian matrix is the sum of its eigenvalues. Mathlib's
+/-- The trace of a Hermitian matrix is the sum of its eigenvalues:
+$\operatorname{tr} \mathbf{A} = \sum_{k < \lvert n \rvert} \lambda_k(\mathbf{A})$. Mathlib's
 `Matrix.IsHermitian.trace_eq_sum_eigenvalues` is the same fact for the unsorted `hA.eigenvalues`.
 [HornJohnson2013, Theorem 1.2.16]. -/
 theorem _root_.Matrix.IsHermitian.trace_eq_sum_range_eigenvalue {A : Matrix n n 𝕜}
@@ -75,13 +76,18 @@ theorem _root_.Matrix.IsHermitian.trace_eq_sum_range_eigenvalue {A : Matrix n n 
   rw [hA.trace_eq_sum_eigenvalues, sum_eigenvalues_eq_sum_range hA fun x => (x : 𝕜),
     RCLike.ofReal_sum]
 
-/-- The real part of the trace of a Hermitian matrix is the sum of its eigenvalues. -/
+/-- The real part of the trace of a Hermitian matrix is the sum of its eigenvalues:
+$\operatorname{Re} \operatorname{tr} \mathbf{A} = \sum_{k < \lvert n \rvert} \lambda_k(\mathbf{A})$.
+-/
 theorem _root_.Matrix.IsHermitian.re_trace_eq_sum_range_eigenvalue {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     RCLike.re A.trace = ∑ k ∈ Finset.range (Fintype.card n), eigenvalue A k := by
   rw [hA.trace_eq_sum_range_eigenvalue, RCLike.ofReal_re]
 
-/-- Positive powers of a matrix diagonalised by a matrix with orthonormal columns. -/
+/-- Positive powers of a matrix diagonalised by a matrix with orthonormal columns:
+$(\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}})^{k+1} =
+\mathbf{U} \operatorname{diag}(\mathbf{d}^{k+1}) \mathbf{U}^{\mathsf{H}}$, the power taken
+entrywise. -/
 private theorem mul_diagonal_mul_conjTranspose_pow_succ [DecidableEq n] [DecidableEq p]
     {U : Matrix n p 𝕜} (hU : HasOrthonormalCols U) (d : p → 𝕜) (k : ℕ) :
     (U * Matrix.diagonal d * Uᴴ) ^ (k + 1) =
@@ -101,8 +107,9 @@ private theorem mul_diagonal_mul_conjTranspose_pow_succ [DecidableEq n] [Decidab
           rw [Matrix.diagonal_mul_diagonal]
           simp only [pow_succ]
 
-/-- The trace of a power of a Hermitian matrix is the power sum of its eigenvalues. For `p = 0`
-both sides are the dimension. -/
+/-- The trace of a power of a Hermitian matrix is the power sum of its eigenvalues:
+$\operatorname{tr}(\mathbf{A}^p) = \sum_{k < \lvert n \rvert} \lambda_k(\mathbf{A})^p$. For
+$p = 0$ both sides are the dimension. -/
 theorem _root_.Matrix.IsHermitian.trace_pow_eq_sum_range_eigenvalue_pow [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (p : ℕ) :
     (A ^ p).trace = ((∑ k ∈ Finset.range (Fintype.card n), eigenvalue A k ^ p : ℝ) : 𝕜) := by
@@ -119,13 +126,15 @@ theorem _root_.Matrix.IsHermitian.trace_pow_eq_sum_range_eigenvalue_pow [Decidab
   simp only [← RCLike.ofReal_pow, ← RCLike.ofReal_sum]
 
 /-- The real part of the trace of a power of a Hermitian matrix is the power sum of its
-eigenvalues. This is the form used by the moment method. -/
+eigenvalues: $\operatorname{Re} \operatorname{tr}(\mathbf{A}^p) = \sum_{k < \lvert n \rvert}
+\lambda_k(\mathbf{A})^p$. This is the form used by the moment method. -/
 theorem _root_.Matrix.IsHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (p : ℕ) :
     RCLike.re (A ^ p).trace = ∑ k ∈ Finset.range (Fintype.card n), eigenvalue A k ^ p := by
   rw [hA.trace_pow_eq_sum_range_eigenvalue_pow, RCLike.ofReal_re]
 
-/-- The determinant of a Hermitian matrix is the product of its eigenvalues. Mathlib's
+/-- The determinant of a Hermitian matrix is the product of its eigenvalues:
+$\det \mathbf{A} = \prod_{k < \lvert n \rvert} \lambda_k(\mathbf{A})$. Mathlib's
 `Matrix.IsHermitian.det_eq_prod_eigenvalues` is the same fact for the unsorted `hA.eigenvalues`.
 [HornJohnson2013, Theorem 1.2.16]. -/
 theorem _root_.Matrix.IsHermitian.det_eq_prod_range_eigenvalue [DecidableEq n] {A : Matrix n n 𝕜}
@@ -134,8 +143,9 @@ theorem _root_.Matrix.IsHermitian.det_eq_prod_range_eigenvalue [DecidableEq n] {
   rw [hA.det_eq_prod_eigenvalues, prod_eigenvalues_eq_prod_range hA fun x => (x : 𝕜),
     RCLike.ofReal_prod]
 
-/-- The squared Frobenius norm of a Hermitian matrix is the sum of its squared eigenvalues.
-Port of `NLAlib.frobSq_eq_sum_sq_eigenvalues`, there over `ℝ`. -/
+/-- The squared Frobenius norm of a Hermitian matrix is the sum of its squared eigenvalues:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{k < \lvert n \rvert} \lambda_k(\mathbf{A})^2$.
+Port of `NLAlib.frobSq_eq_sum_sq_eigenvalues`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.IsHermitian.frobNorm_sq_eq_sum_eigenvalue_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     frobNorm A ^ 2 = ∑ k ∈ Finset.range (Fintype.card n), eigenvalue A k ^ 2 := by
@@ -151,7 +161,8 @@ theorem _root_.Matrix.IsHermitian.frobNorm_sq_eq_sum_eigenvalue_sq {A : Matrix n
     Matrix.one_mul, Matrix.trace_diagonal, ← Fin.sum_univ_eq_sum_range fun k => eigenvalue A k ^ 2]
   simp only [← RCLike.ofReal_mul, ← RCLike.ofReal_sum, RCLike.ofReal_re, sq]
 
-/-- The rank of a Hermitian matrix is the number of its nonzero eigenvalues. -/
+/-- The rank of a Hermitian matrix is the number of its nonzero eigenvalues: the number of
+$k < \lvert n \rvert$ with $\lambda_k(\mathbf{A}) \ne 0$. -/
 theorem _root_.Matrix.IsHermitian.rank_eq_card_eigenvalue_ne_zero {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     A.rank = ((Finset.range (Fintype.card n)).filter fun k => eigenvalue A k ≠ 0).card := by
@@ -174,7 +185,8 @@ theorem eigenvalue_zero (k : ℕ) : eigenvalue (0 : Matrix n n 𝕜) k = 0 := by
     exact (smul_eq_zero.mp h.symm).resolve_right hu0
   · exact eigenvalue_of_card_le _ (not_lt.mp hk)
 
-/-- The eigenvalues of the identity are one on the valid range. -/
+/-- The eigenvalues of the identity are one on the valid range: $\lambda_k(\mathbf{I}) = 1$ for
+$k < \lvert n \rvert$. -/
 theorem eigenvalue_one [DecidableEq n] {k : ℕ} (hk : k < Fintype.card n) :
     eigenvalue (1 : Matrix n n 𝕜) k = 1 := by
   obtain ⟨u, hu, h⟩ :=
@@ -188,7 +200,8 @@ theorem eigenvalue_one [DecidableEq n] {k : ℕ} (hk : k < Fintype.card n) :
   exact (sub_eq_zero.mp ((smul_eq_zero.mp h1).resolve_right hu0)).symm
 
 /-- The eigenvalues of a real diagonal matrix with non-increasing diagonal are the diagonal
-entries. -/
+entries: $\lambda_i(\operatorname{diag}(\mathbf{d})) = \mathbf{d}_i$ for $\mathbf{d}$
+non-increasing and $i < q$. -/
 theorem eigenvalue_diagonal {q : ℕ} {d : Fin q → ℝ} (hd : Antitone d) (i : Fin q) :
     eigenvalue (Matrix.diagonal fun j => ((d j : ℝ) : 𝕜)) i = d i := by
   refine eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose
@@ -197,10 +210,11 @@ theorem eigenvalue_diagonal {q : ℕ} {d : Fin q → ℝ} (hd : Antitone d) (i :
 
 /-! ### Transformations -/
 
-/-- Negation reverses and negates the eigenvalues. The index reversal is written with an
-equation, `k + j + 1 = Fintype.card n`, so that no subtraction appears. No hypothesis on `A` is
-needed: both sides are zero when `A` is not Hermitian.
-Port of `NLAlib.eigenvalues₀_neg`, there over `ℝ`. -/
+/-- Negation reverses and negates the eigenvalues:
+$\lambda_k(-\mathbf{A}) = -\lambda_j(\mathbf{A})$ when $k + j + 1 = \lvert n \rvert$. The index
+reversal is written with this equation so that no subtraction appears. No hypothesis on
+$\mathbf{A}$ is needed: both sides are zero when $\mathbf{A}$ is not Hermitian.
+Port of `NLAlib.eigenvalues₀_neg`, there over $\mathbb{R}$. -/
 theorem eigenvalue_neg (A : Matrix n n 𝕜) {k j : ℕ} (h : k + j + 1 = Fintype.card n) :
     eigenvalue (-A) k = -eigenvalue A j := by
   classical
@@ -235,8 +249,9 @@ theorem eigenvalue_neg (A : Matrix n n 𝕜) {k j : ℕ} (h : k + j + 1 = Fintyp
   rw [h2] at h1
   exact h1
 
-/-- Scaling by a nonnegative real scales the eigenvalues. No hypothesis on `A` is needed: both
-sides are zero when `A` is not Hermitian. -/
+/-- Scaling by a nonnegative real scales the eigenvalues: $\lambda_k(c\mathbf{A}) = c \,
+\lambda_k(\mathbf{A})$ for $c \ge 0$. No hypothesis on $\mathbf{A}$ is needed: both sides are zero
+when $\mathbf{A}$ is not Hermitian. -/
 theorem eigenvalue_real_smul (A : Matrix n n 𝕜) {c : ℝ} (hc : 0 ≤ c) (k : ℕ) :
     eigenvalue (c • A) k = c * eigenvalue A k := by
   classical
@@ -263,7 +278,9 @@ theorem eigenvalue_real_smul (A : Matrix n n 𝕜) {c : ℝ} (hc : 0 ≤ c) (k :
     rw [hd, Matrix.mul_smul, Matrix.smul_mul, ← hAU]
   · rw [eigenvalue_of_card_le _ (not_lt.mp hk), eigenvalue_of_card_le _ (not_lt.mp hk), mul_zero]
 
-/-- Adding a real multiple of the identity shifts the eigenvalues, on the valid range. -/
+/-- Adding a real multiple of the identity shifts the eigenvalues, on the valid range:
+$\lambda_k(\mathbf{A} + c\mathbf{I}) = \lambda_k(\mathbf{A}) + c$ for Hermitian $\mathbf{A}$ and
+$k < \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_add_smul_one [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (c : ℝ) {k : ℕ} (hk : k < Fintype.card n) :
     eigenvalue (A + c • (1 : Matrix n n 𝕜)) k = eigenvalue A k + c := by
@@ -282,15 +299,17 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_add_smul_one [DecidableEq n] {A : M
   rw [hd, Matrix.mul_add, Matrix.add_mul, ← hAU, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
     hU.mul_conjTranspose_self_of_card_eq (Fintype.card_fin _).symm]
 
-/-- The eigenvalues of a real multiple of the identity are that multiple, on the valid range. -/
+/-- The eigenvalues of a real multiple of the identity are that multiple, on the valid range:
+$\lambda_k(c\mathbf{I}) = c$ for $k < \lvert n \rvert$. -/
 theorem eigenvalue_real_smul_one [DecidableEq n] (c : ℝ) {k : ℕ} (hk : k < Fintype.card n) :
     eigenvalue (c • (1 : Matrix n n 𝕜)) k = c := by
   have h := (Matrix.isHermitian_zero (α := 𝕜) (n := n)).eigenvalue_add_smul_one c hk
   rwa [zero_add, eigenvalue_zero, zero_add] at h
 
-/-- **Invariance under unitary similarity.** If `U` has orthonormal columns and as many columns
-as rows, `Uᴴ * A * U` has the eigenvalues of `A`. No hypothesis on `A` is needed: both sides are
-zero when `A` is not Hermitian. -/
+/-- **Invariance under unitary similarity.** If $\mathbf{U}$ has orthonormal columns and as many
+columns as rows, $\lambda_k(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}) = \lambda_k(\mathbf{A})$
+for every $k$. No hypothesis on $\mathbf{A}$ is needed: both sides are zero when $\mathbf{A}$ is
+not Hermitian. -/
 theorem eigenvalue_conjTranspose_mul_mul_of_card_eq [DecidableEq p] (A : Matrix n n 𝕜)
     {U : Matrix n p 𝕜} (hU : HasOrthonormalCols U) (h : Fintype.card n = Fintype.card p) (k : ℕ) :
     eigenvalue (Uᴴ * A * U) k = eigenvalue A k := by
@@ -331,7 +350,8 @@ theorem eigenvalue_submatrix_equiv (A : Matrix n n 𝕜) (e : p ≃ n) (k : ℕ)
 
 /-! ### Positive semidefinite and positive definite matrices -/
 
-/-- The eigenvalues of a positive semidefinite matrix are nonnegative. -/
+/-- The eigenvalues of a positive semidefinite matrix are nonnegative:
+$0 \le \lambda_k(\mathbf{A})$ for every $k$. -/
 theorem _root_.Matrix.PosSemidef.eigenvalue_nonneg {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (k : ℕ) : 0 ≤ eigenvalue A k := by
   classical
@@ -339,8 +359,8 @@ theorem _root_.Matrix.PosSemidef.eigenvalue_nonneg {A : Matrix n n 𝕜} (hA : A
   · exact (forall_eigenvalues_iff hA.isHermitian (0 ≤ ·)).mp hA.eigenvalues_nonneg k hk
   · rw [eigenvalue_of_card_le _ (not_lt.mp hk)]
 
-/-- The eigenvalue sequence of a positive semidefinite matrix is non-increasing on all of `ℕ`:
-the zero padding is at the bottom. -/
+/-- The eigenvalue sequence of a positive semidefinite matrix is non-increasing on all of
+$\mathbb{N}$: the zero padding is at the bottom. -/
 theorem _root_.Matrix.PosSemidef.eigenvalue_antitone {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     Antitone (eigenvalue A) := by
   intro i j hij
@@ -349,7 +369,8 @@ theorem _root_.Matrix.PosSemidef.eigenvalue_antitone {A : Matrix n n 𝕜} (hA :
   · rw [eigenvalue_of_card_le _ (not_lt.mp hj)]
     exact hA.eigenvalue_nonneg i
 
-/-- A Hermitian matrix is positive semidefinite exactly when its eigenvalues are nonnegative.
+/-- A Hermitian matrix is positive semidefinite exactly when its eigenvalues are nonnegative:
+$\mathbf{0} \preceq \mathbf{A}$ if and only if $0 \le \lambda_k(\mathbf{A})$ for every $k$.
 [HornJohnson2013, Theorem 4.1.8]. -/
 theorem _root_.Matrix.IsHermitian.posSemidef_iff_eigenvalue_nonneg {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : A.PosSemidef ↔ ∀ k, 0 ≤ eigenvalue A k := by
@@ -359,7 +380,8 @@ theorem _root_.Matrix.IsHermitian.posSemidef_iff_eigenvalue_nonneg {A : Matrix n
   exact (forall_eigenvalues_iff hA (0 ≤ ·)).mpr fun k _ => h k
 
 /-- A Hermitian matrix is positive definite exactly when its eigenvalues on the valid range are
-positive. [HornJohnson2013, Theorem 4.1.8]. -/
+positive: $0 < \lambda_k(\mathbf{A})$ for every $k < \lvert n \rvert$.
+[HornJohnson2013, Theorem 4.1.8]. -/
 theorem _root_.Matrix.IsHermitian.posDef_iff_eigenvalue_pos {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : A.PosDef ↔ ∀ k < Fintype.card n, 0 < eigenvalue A k := by
   classical

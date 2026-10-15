@@ -12,14 +12,16 @@ public import NLAlib.Matrix.Spectral.Weyl
 /-!
 # Separation bounds for the Sylvester operator
 
-For matrices `L` and `M` whose spectra are separated, the Sylvester operator `X ↦ L * X - X * M`
-is bounded below: `δ ‖X‖ ≤ ‖L X - X M‖`. These bounds are the engine of the `sin Θ` theorems.
+For matrices $\mathbf{L}$ and $\mathbf{M}$ whose spectra are separated, the Sylvester operator
+$\mathbf{X} \mapsto \mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}$ is bounded below:
+$\delta \|\mathbf{X}\| \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|$. These bounds are the
+engine of the $\sin \Theta$ theorems.
 
-Two regimes are covered. When one spectrum lies in a disc and the other outside a larger
-concentric disc (in particular: Hermitian `M` with spectrum in an interval and Hermitian `L` with
-spectrum outside a wider interval) the bound holds in every unitarily invariant norm. For
-Hermitian matrices with arbitrarily interleaved spectra at distance `δ` it holds in the Frobenius
-norm.
+Two regimes are covered. When one spectrum lies in a disc and the other outside a larger concentric
+disc (in particular: Hermitian $\mathbf{M}$ with spectrum in an interval and Hermitian $\mathbf{L}$
+with spectrum outside a wider interval) the bound holds in every unitarily invariant norm. For
+Hermitian matrices with arbitrarily interleaved spectra at distance $\delta$ it holds in the
+Frobenius norm.
 
 ## Main results
 
@@ -40,9 +42,12 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-! ### Disc separation, every unitarily invariant norm -/
 
-/-- **Sylvester separation bound, disc form.** If `‖M‖₂ ≤ r` and `L` is bounded below by
-`r + δ`, in the form `(r + δ)² • 1 ≤ Lᴴ L`, then `δ ‖X‖ ≤ ‖L X - X M‖` in every unitarily
-invariant norm. Apply it to `L - c • 1` and `M - c • 1` for a disc centred at `c`.
+/-- **Sylvester separation bound, disc form.** If $\|\mathbf{M}\|_2 \le r$ and $\mathbf{L}$ is
+bounded below by $r + \delta$, in the form $(r + \delta)^2 \mathbf{I}
+\preceq \mathbf{L}^{\mathsf{H}}\mathbf{L}$, then $\delta \|\mathbf{X}\|_{\Phi}
+\le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$ in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$. Apply it to $\mathbf{L} - c\mathbf{I}$ and $\mathbf{M} - c\mathbf{I}$ for a disc
+centred at $c$.
 [Bhatia1997, Theorem VII.2.8]. -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul [DecidableEq m]
     (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} {r δ : ℝ} (hM : specNorm M ≤ r)
@@ -65,8 +70,10 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul [DecidableEq m]
 
 /-! ### Interval separation for Hermitian matrices -/
 
-/-- A Hermitian matrix with spectrum in `[a, b]` is within `(b - a) / 2` of the midpoint. The
-hypothesis `a ≤ b` is automatic unless the matrix has size zero.
+/-- A Hermitian matrix with spectrum in $[a, b]$, that is
+$a\mathbf{I} \preceq \mathbf{M} \preceq b\mathbf{I}$, is within $(b - a)/2$ of the midpoint:
+$\|\mathbf{M} - c\mathbf{I}\|_2 \le (b - a)/2$ for $c = (a + b)/2$. The hypothesis $a \le b$ is
+automatic unless the matrix has size zero.
 Port of `NLAlib.specNorm_shift_le_half_width`. -/
 theorem specNorm_sub_smul_one_le_of_le [DecidableEq n] {M : Matrix n n 𝕜} {a b : ℝ}
     (hab : a ≤ b) (h₁ : a • (1 : Matrix n n 𝕜) ≤ M) (h₂ : M ≤ b • (1 : Matrix n n 𝕜)) :
@@ -81,8 +88,9 @@ theorem specNorm_sub_smul_one_le_of_le [DecidableEq n] {M : Matrix n n 𝕜} {a 
     convert h₂ using 2
     ring
 
-/-- A Hermitian matrix whose eigenvalues are at distance at least `s` from `c` is bounded below
-by `s` after the shift: `s² • 1 ≤ (L - c • 1)ᴴ (L - c • 1)`.
+/-- A Hermitian matrix whose eigenvalues are at distance at least $s \ge 0$ from $c$ is bounded
+below by $s$ after the shift: $s^2 \mathbf{I}
+\preceq (\mathbf{L} - c\mathbf{I})^{\mathsf{H}}(\mathbf{L} - c\mathbf{I})$.
 Port of `NLAlib.mulVec_shift_sq_ge_of_eigenvalue_abs_sub_ge`. -/
 theorem _root_.Matrix.IsHermitian.sq_smul_one_le_sub_smul_one_conjTranspose_mul_self
     [DecidableEq m] {L : Matrix m m 𝕜} (hL : L.IsHermitian) {s c : ℝ} (hs : 0 ≤ s)
@@ -114,12 +122,15 @@ theorem _root_.Matrix.IsHermitian.sq_smul_one_le_sub_smul_one_conjTranspose_mul_
   rw [← sq_abs (eigenvalue L i - c)]
   exact pow_le_pow_left₀ hs (h i i.2) 2
 
-/-- **Sylvester separation bound, interval form.** For Hermitian `L` and `M`, if the spectrum of
-`M` lies in `[a, b]` and every eigenvalue of `L` lies outside `(a - δ, b + δ)`, then
-`δ ‖X‖ ≤ ‖L X - X M‖` in every unitarily invariant norm.
+/-- **Sylvester separation bound, interval form.** For Hermitian $\mathbf{L}$ and $\mathbf{M}$, if
+the spectrum of $\mathbf{M}$ lies in $[a, b]$ (that is,
+$a\mathbf{I} \preceq \mathbf{M} \preceq b\mathbf{I}$) and every eigenvalue of $\mathbf{L}$ lies
+outside $(a - \delta, b + \delta)$, then $\delta \|\mathbf{X}\|_{\Phi}
+\le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$ in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$.
 [Bhatia1997, Theorem VII.2.8 and §VII.3]; [DavisKahan1970].
-Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_interval`, there over `ℝ` in the spectral
-norm.
+Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_interval`, there over $\mathbb{R}$ in the
+spectral norm.
 Result: sylvester-separation -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue [DecidableEq n]
     (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} (hL : L.IsHermitian) {a b δ : ℝ}
@@ -154,8 +165,10 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue [D
       Matrix.mul_one, sub_sub_sub_cancel_right]
   rwa [heq] at h₃
 
-/-- **Sylvester separation bound, one-sided form.** If `L ≤ (α - δ) • 1` and `α • 1 ≤ M`, then
-`δ ‖X‖ ≤ ‖L X - X M‖` in every unitarily invariant norm.
+/-- **Sylvester separation bound, one-sided form.** If
+$\mathbf{L} \preceq (\alpha - \delta)\mathbf{I}$ and $\alpha\mathbf{I} \preceq \mathbf{M}$, then
+$\delta \|\mathbf{X}\|_{\Phi} \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$ in every
+unitarily invariant norm $\|\cdot\|_{\Phi}$.
 Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_one_sided`. -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le [DecidableEq m]
     [DecidableEq n] (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} {α δ : ℝ}
@@ -167,7 +180,9 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le [Decidable
   have h := eigenvalue_le_eigenvalue_of_le hL hLh i
   rwa [eigenvalue_real_smul_one _ hi] at h
 
-/-- The one-sided form with `L` above `M`: `(α + δ) • 1 ≤ L` and `M ≤ α • 1`. -/
+/-- The one-sided form with $\mathbf{L}$ above $\mathbf{M}$: if
+$(\alpha + \delta)\mathbf{I} \preceq \mathbf{L}$ and $\mathbf{M} \preceq \alpha\mathbf{I}$, then
+$\delta \|\mathbf{X}\|_{\Phi} \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$. -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_ge [DecidableEq m]
     [DecidableEq n] (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} {α δ : ℝ}
     (hL : (α + δ) • (1 : Matrix m m 𝕜) ≤ L) (hM : M ≤ α • (1 : Matrix n n 𝕜))
@@ -183,8 +198,9 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_ge [Decidable
 
 /-! ### Arbitrary separation, Frobenius norm -/
 
-/-- Simultaneous diagonalisation of the Sylvester operator of two Hermitian matrices: in
-eigenvector bases of `L` and `M` it multiplies the entry `(i, j)` by `λ_i(L) - λ_j(M)`. -/
+/-- Simultaneous diagonalisation of the Sylvester operator of two Hermitian matrices: in eigenvector
+bases of $\mathbf{L}$ and $\mathbf{M}$ it multiplies the entry $(i, j)$ by
+$\lambda_i(\mathbf{L}) - \lambda_j(\mathbf{M})$. -/
 private theorem exists_conjTranspose_mul_mul_sub_mul_mul_apply {L : Matrix m m 𝕜}
     {M : Matrix n n 𝕜} (hL : L.IsHermitian) (hM : M.IsHermitian) (X : Matrix m n 𝕜) :
     ∃ (U : Matrix m (Fin (Fintype.card m)) 𝕜) (V : Matrix n (Fin (Fintype.card n)) 𝕜),
@@ -213,11 +229,13 @@ private theorem exists_conjTranspose_mul_mul_sub_mul_mul_apply {L : Matrix m m �
   rw [h, Matrix.sub_apply, Matrix.diagonal_mul, Matrix.mul_diagonal, RCLike.ofReal_sub, sub_mul,
     mul_comm ((Uᴴ * X * V) i j)]
 
-/-- **Sylvester separation bound in the Frobenius norm.** For Hermitian `L` and `M` whose
-eigenvalues are pairwise at distance at least `δ`, `δ ‖X‖_F ≤ ‖L X - X M‖_F`. No interval
-structure is needed.
+/-- **Sylvester separation bound in the Frobenius norm.** For Hermitian $\mathbf{L}$ and
+$\mathbf{M}$ whose eigenvalues are pairwise at distance at least $\delta$,
+$\lvert \lambda_i(\mathbf{L}) - \lambda_j(\mathbf{M}) \rvert \ge \delta$ for all $i, j$, we have
+$\delta \|\mathbf{X}\|_{\mathsf{F}} \le
+\|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\mathsf{F}}$. No interval structure is needed.
 [Bhatia1997, §VII.2]; [StewartSun1990, §V.3].
-Port of `NLAlib.mul_frobNorm_le_frobNorm_sylvester`, there over `ℝ`.
+Port of `NLAlib.mul_frobNorm_le_frobNorm_sylvester`, there over $\mathbb{R}$.
 Result: sylvester-separation -/
 theorem mul_frobNorm_le_frobNorm_mul_sub_mul {L : Matrix m m 𝕜} {M : Matrix n n 𝕜}
     (hL : L.IsHermitian) (hM : M.IsHermitian) {δ : ℝ}
@@ -243,7 +261,8 @@ theorem mul_frobNorm_le_frobNorm_mul_sub_mul {L : Matrix m m 𝕜} {M : Matrix n
   exact pow_le_pow_left₀ hδ.le (hsep i i.2 j j.2) 2
 
 /-- A Sylvester equation with separated Hermitian coefficients has only the trivial homogeneous
-solution: if `L X = X M` and the spectra are disjoint, then `X = 0`. -/
+solution: if $\mathbf{L}\mathbf{X} = \mathbf{X}\mathbf{M}$ and the spectra are disjoint, then
+$\mathbf{X} = \mathbf{0}$. -/
 theorem eq_zero_of_mul_eq_mul_of_eigenvalue_ne {L : Matrix m m 𝕜} {M : Matrix n n 𝕜}
     (hL : L.IsHermitian) (hM : M.IsHermitian)
     (hsep : ∀ i, i < Fintype.card m → ∀ j, j < Fintype.card n → eigenvalue L i ≠ eigenvalue M j)

@@ -15,7 +15,7 @@ The entropy of a nonnegative function under a product of probability measures is
 sum over coordinates of the mean entropy in that coordinate, the others fixed
 ([BoucheronLugosiMassart2013], Theorem 4.10). The positive case is a telescoping sum over partial
 marginals with the variational (Gibbs) inequality for entropy; the nonnegative case follows by
-adding `δ` and letting `δ → 0`.
+adding $\delta$ and letting $\delta \to 0$.
 
 ## Main results
 
@@ -42,7 +42,8 @@ private theorem young_scaled {Z U m : ℝ} (hZ : 0 < Z) (hm : 0 < m) :
   rw [h2, Real.log_div hZ.ne' hm.ne', le_div_iff₀ hZ] at h1
   nlinarith
 
-/-- The Gibbs variational inequality: `E Z U ≤ entropy ν Z` for `Z > 0` and `E e^U ≤ 1`. -/
+/-- The Gibbs variational inequality: $\mathbb{E}[Z U] \le \operatorname{Ent}(Z)$ for $Z > 0$ and
+$\mathbb{E} e^U \le 1$. -/
 private theorem integral_mul_le_entropy_of_integral_exp_le_one [IsProbabilityMeasure ν]
     {Z U : Ω → ℝ} (hZ : ∀ t, 0 < Z t) (hZi : Integrable Z ν)
     (hZl : Integrable (fun t => Z t * Real.log (Z t)) ν)
@@ -77,7 +78,7 @@ section Telescope
 variable {ι : Type*} [DecidableEq ι] {X : ι → Type*} [∀ i, MeasurableSpace (X i)]
   {P : ∀ i, Measure (X i)} [∀ i, IsProbabilityMeasure (P i)]
 
-/-- A function independent of the coordinates in `S` is fixed by `lmarginal S`. -/
+/-- A function independent of the coordinates in $S$ is fixed by `lmarginal S`. -/
 private theorem lmarginal_of_indep (S : Finset ι) (F : (∀ j, X j) → ℝ≥0∞)
     (hF : ∀ x y, (∀ j ∉ S, x j = y j) → F x = F y) :
     lmarginal P S F = F := by
@@ -106,7 +107,7 @@ private theorem lintegral_mul_indep [Fintype ι] (S : Finset ι) {F W : (∀ j, 
   rw [h1] at this
   exact this.symm
 
-/-- The partial integral `E_S Z`, integrating out the coordinates in `S`. -/
+/-- The partial integral $\mathbb{E}_S Z$, integrating out the coordinates in $S$. -/
 private noncomputable def margE (P : ∀ i, Measure (X i)) (S : Finset ι) (Z : (∀ j, X j) → ℝ)
     (x : ∀ j, X j) : ℝ :=
   (lmarginal P S (fun y => ENNReal.ofReal (Z y)) x).toReal
@@ -374,7 +375,7 @@ private theorem abs_add_mul_log_add_le {a δ : ℝ} (ha : 0 ≤ a) (hδ : 0 < δ
     rw [abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos hbpos.le hlog0)]
     linarith
 
-/-- Dominated convergence for `(f + δ) log (f + δ)` as `δ → 0`. -/
+/-- Dominated convergence for $(f + \delta) \log (f + \delta)$ as $\delta \to 0$. -/
 private theorem tendsto_integral_mul_log_add [IsFiniteMeasure ν] {f : Ω → ℝ}
     (hfm : Measurable f) (hf0 : ∀ x, 0 ≤ f x) (hf : Integrable f ν)
     (hflog : Integrable (fun x => f x * Real.log (f x)) ν)
@@ -398,7 +399,8 @@ section Nonneg
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {X : ι → Type*} [∀ i, MeasurableSpace (X i)]
   {P : ∀ i, Measure (X i)} [∀ i, IsProbabilityMeasure (P i)]
 
-/-- `E_i g log E_i g` is integrable for a nonnegative `g` with `g, g log g` integrable. -/
+/-- $\mathbb{E}_i g \log \mathbb{E}_i g$ is integrable for a nonnegative $g$ with $g$ and
+$g \log g$ integrable, where $\mathbb{E}_i$ integrates out the $i$-th coordinate. -/
 private theorem integrable_mul_log_integral_update (i : ι) {g : (∀ j, X j) → ℝ}
     (hgm : Measurable g) (hg0 : ∀ x, 0 ≤ g x) (hg : Integrable g (Measure.pi P))
     (hglog : Integrable (fun x => g x * Real.log (g x)) (Measure.pi P)) :
@@ -422,7 +424,8 @@ private theorem integrable_mul_log_integral_update (i : ι) {g : (∀ j, X j) �
   rw [abs_le]
   constructor <;> linarith
 
-/-- The integrated `i`-th entropy is `E g log g - E (E_i g log E_i g)`. -/
+/-- The integrated $i$-th entropy is
+$\mathbb{E}[g \log g] - \mathbb{E}[\mathbb{E}_i g \log \mathbb{E}_i g]$. -/
 private theorem integral_entropy_update (i : ι) {g : (∀ j, X j) → ℝ}
     (hgm : Measurable g) (hg0 : ∀ x, 0 ≤ g x) (hg : Integrable g (Measure.pi P))
     (hglog : Integrable (fun x => g x * Real.log (g x)) (Measure.pi P)) :
@@ -439,7 +442,10 @@ end Nonneg
 
 /-- **Tensorization of entropy** ([BoucheronLugosiMassart2013], Theorem 4.10): the entropy of a
 function under a product of probability measures is at most the sum over coordinates of the
-mean entropy in that coordinate, the others fixed. -/
+mean entropy in that coordinate, the others fixed. For $f \ge 0$ measurable with $f$ and
+$f \log f$ integrable under $\nu = \bigotimes_i \nu_i$,
+$$\operatorname{Ent}_\nu(f) \le \sum_i \mathbb{E}_{x \sim \nu}
+\operatorname{Ent}_{\nu_i}\bigl(y \mapsto f(x \text{ with } x_i := y)\bigr)\,.$$ -/
 theorem entropy_pi_le_sum {ι : Type*} [Fintype ι] [DecidableEq ι] {X : ι → Type*}
     [∀ i, MeasurableSpace (X i)] (ν : ∀ i, Measure (X i)) [∀ i, IsProbabilityMeasure (ν i)]
     {f : (∀ i, X i) → ℝ} (hfm : Measurable f) (hf0 : ∀ x, 0 ≤ f x)

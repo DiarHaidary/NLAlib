@@ -12,24 +12,29 @@ public import NLAlib.Probability.MatrixIntegral
 /-!
 # Isotropic sketches
 
-A random sketch `S : Ω → Matrix k n 𝕜` is isotropic when its entries are square integrable and
-`E [Sᴴ S] = 1`, equivalently `E ‖S x‖² = ‖x‖²` for every `x`. Isotropy is the half of an oblivious
-subspace injection that is not a tail bound (`NLAlib.IsObliviousSubspaceInjection`): with it,
-`E ‖S M‖_F² = ‖M‖_F²`, which is the Markov step of the injection tails of
-`NLAlib.Sketching.Properties.Injection`.
+A random sketch $\mathbf{S}$ with values in $\Bbbk^{k \times n}$ is isotropic when its entries are
+square integrable and $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, equivalently
+$\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$ for every $\mathbf{x}$. Isotropy is the
+half of an oblivious subspace injection that is not a tail bound
+(`NLAlib.IsObliviousSubspaceInjection`): with it,
+$\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$, which is the
+Markov step of the injection tails of `NLAlib.Sketching.Properties.Injection`.
 
-A matrix with isotropic rows, scaled by `(√k)⁻¹`, is an isotropic sketch, with no independence
-between the rows; the product of two independent isotropic sketches is isotropic. Design:
-`docs/design/Sketching-S1.md` §3.1.
+A matrix with isotropic rows, scaled by $1/\sqrt{\lvert k \rvert}$, is an isotropic sketch, with no
+independence between the rows; the product of two independent isotropic sketches is isotropic.
+Design: `docs/design/Sketching-S1.md` §3.1.
 
 ## Main definitions
 
-* `NLAlib.IsIsotropicSketch S μ`: square-integrable entries and `E [Sᴴ S] = 1`.
+* `NLAlib.IsIsotropicSketch S μ`: square-integrable entries and
+  $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$.
 
 ## Main results
 
-* `NLAlib.isIsotropicSketch_iff`: the vector form `E ‖S x‖² = ‖x‖²`.
-* `NLAlib.IsIsotropicSketch.integral_frobNorm_mul_sq`: `E ‖S M‖_F² = ‖M‖_F²`.
+* `NLAlib.isIsotropicSketch_iff`: the vector form
+  $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$.
+* `NLAlib.IsIsotropicSketch.integral_frobNorm_mul_sq`:
+  $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$.
 * `NLAlib.isIsotropicSketch_smul_of_isIsotropic`: isotropic rows, scaled.
 * `NLAlib.IsIsotropicSketch.mul`: products of independent isotropic sketches.
 * `ProbabilityTheory.HasLaw.isIsotropicSketch_iff`: isotropy depends only on the law.
@@ -46,16 +51,19 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {k l n p : Type*} [Fintype k] [Fintype l] [Fintype n] [Fintype p] [DecidableEq n]
   {S : Ω → Matrix k n 𝕜}
 
-/-- **Isotropic sketch**: the entries of `S` are square integrable and `E [Sᴴ S] = 1`, that is
-`E ‖S x‖² = ‖x‖²` for every `x` (`NLAlib.isIsotropicSketch_iff`).
+/-- **Isotropic sketch**: the entries of $\mathbf{S}$ are square integrable and
+$\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, that is
+$\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$ for every $\mathbf{x}$
+(`NLAlib.isIsotropicSketch_iff`).
 [CamanoEpperlyMeyerTropp2025, Definition 1.2 (1.2)]; there the vector form. -/
 structure IsIsotropicSketch (S : Ω → Matrix k n 𝕜) (μ : Measure Ω) : Prop where
   /-- Each entry is square integrable. -/
   memLp : ∀ i j, MemLp (fun ω => S ω i j) 2 μ
-  /-- The second-moment matrix `E [Sᴴ S]` is the identity. -/
+  /-- The second-moment matrix $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}]$ is the identity. -/
   integral_conjTranspose_mul_self : ∫ ω, (S ω)ᴴ * S ω ∂μ = 1
 
-/-- The Gram matrix `Sᴴ S` of a sketch with square-integrable entries is integrable. -/
+/-- The Gram matrix $\mathbf{S}^{\mathsf{H}}\mathbf{S}$ of a sketch with square-integrable entries
+is integrable. -/
 private theorem integrable_conjTranspose_mul_self_of_memLp
     (hS : ∀ i j, MemLp (fun ω => S ω i j) 2 μ) : Integrable (fun ω => (S ω)ᴴ * S ω) μ := by
   refine Matrix.integrable_iff.2 fun i j => ?_
@@ -63,7 +71,7 @@ private theorem integrable_conjTranspose_mul_self_of_memLp
   exact integrable_finsetSum _ fun c _ => (hS c i).star.integrable_mul (hS c j)
 
 omit [DecidableEq n] in
-/-- `‖S x‖²` is integrable for a sketch with square-integrable entries. -/
+/-- $\|\mathbf{S}\mathbf{x}\|^2$ is integrable for a sketch with square-integrable entries. -/
 private theorem integrable_norm_mulVec_sq_of_memLp
     (hS : ∀ i j, MemLp (fun ω => S ω i j) 2 μ) (x : n → 𝕜) :
     Integrable (fun ω => ‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2) μ := by
@@ -74,7 +82,8 @@ private theorem integrable_norm_mulVec_sq_of_memLp
     exact memLp_finsetSum _ fun j _ => (hS i j).mul_const (x j)
   exact h.integrable_norm_pow two_ne_zero
 
-/-- `E ‖S x‖²` is the quadratic form of `E [Sᴴ S]` at `x`. -/
+/-- $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2$ is the quadratic form of
+$\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}]$ at $\mathbf{x}$. -/
 private theorem ofReal_integral_norm_mulVec_sq
     (hS : ∀ i j, MemLp (fun ω => S ω i j) 2 μ) (x : n → 𝕜) :
     ((∫ ω, ‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 ∂μ : ℝ) : 𝕜) =
@@ -82,7 +91,8 @@ private theorem ofReal_integral_norm_mulVec_sq
   rw [← integral_ofReal, ← Matrix.integral_quadForm (integrable_conjTranspose_mul_self_of_memLp hS)]
   simp only [quadForm_conjTranspose_mul_self]
 
-/-- Isotropy in vector form: square-integrable entries and `E ‖S x‖² = ‖x‖²` for every `x`. -/
+/-- Isotropy in vector form: square-integrable entries and
+$\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$ for every $\mathbf{x}$. -/
 theorem isIsotropicSketch_iff : IsIsotropicSketch S μ ↔ (∀ i j, MemLp (fun ω => S ω i j) 2 μ) ∧
     ∀ x : n → 𝕜, ∫ ω, ‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 ∂μ = ‖WithLp.toLp 2 x‖ ^ 2 := by
   constructor
@@ -100,25 +110,28 @@ theorem isIsotropicSketch_iff : IsIsotropicSketch S μ ↔ (∀ i j, MemLp (fun 
 
 namespace IsIsotropicSketch
 
-/-- The squared norm `‖S x‖²` of an isotropic sketch applied to a fixed vector is integrable. -/
+/-- The squared norm $\|\mathbf{S}\mathbf{x}\|^2$ of an isotropic sketch applied to a fixed vector
+is integrable. -/
 theorem integrable_norm_mulVec_sq (h : IsIsotropicSketch S μ) (x : n → 𝕜) :
     Integrable (fun ω => ‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2) μ :=
   integrable_norm_mulVec_sq_of_memLp h.memLp x
 
-/-- An isotropic sketch preserves squared norms in expectation: `E ‖S x‖² = ‖x‖²`. -/
+/-- An isotropic sketch preserves squared norms in expectation:
+$\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$. -/
 theorem integral_norm_mulVec_sq (h : IsIsotropicSketch S μ) (x : n → 𝕜) :
     ∫ ω, ‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 ∂μ = ‖WithLp.toLp 2 x‖ ^ 2 :=
   (isIsotropicSketch_iff.1 h).2 x
 
-/-- The squared Frobenius norm `‖S M‖_F²` of an isotropic sketch times a fixed matrix is
-integrable. -/
+/-- The squared Frobenius norm $\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2$ of an isotropic sketch
+times a fixed matrix is integrable. -/
 theorem integrable_frobNorm_mul_sq (h : IsIsotropicSketch S μ) (M : Matrix n p 𝕜) :
     Integrable (fun ω => frobNorm (S ω * M) ^ 2) μ := by
   simp only [frobNorm_sq_eq_sum_col]
   exact integrable_finsetSum _ fun j _ => h.integrable_norm_mulVec_sq (M.col j)
 
 /-- An isotropic sketch preserves squared Frobenius norms in expectation:
-`E ‖S M‖_F² = ‖M‖_F²`. [CamanoEpperlyMeyerTropp2025, proof of Lemma 2.1]. -/
+$\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$.
+[CamanoEpperlyMeyerTropp2025, proof of Lemma 2.1]. -/
 theorem integral_frobNorm_mul_sq (h : IsIsotropicSketch S μ) (M : Matrix n p 𝕜) :
     ∫ ω, frobNorm (S ω * M) ^ 2 ∂μ = frobNorm M ^ 2 := by
   simp only [frobNorm_sq_eq_sum_col]
@@ -128,7 +141,8 @@ theorem integral_frobNorm_mul_sq (h : IsIsotropicSketch S μ) (M : Matrix n p �
   exact Finset.sum_congr rfl fun j _ => h.integral_norm_mulVec_sq (M.col j)
 
 /-- An isotropic sketch preserves Gram matrices in expectation:
-`E [(S U)ᴴ (S U)] = Uᴴ U`. -/
+$\mathbb{E}[(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U}]
+= \mathbf{U}^{\mathsf{H}}\mathbf{U}$. -/
 theorem integral_conjTranspose_mul_mul [DecidableEq p] (h : IsIsotropicSketch S μ)
     (U : Matrix n p 𝕜) :
     ∫ ω, (S ω * U)ᴴ * (S ω * U) ∂μ = Uᴴ * U := by
@@ -145,9 +159,10 @@ theorem integral_conjTranspose_mul_mul [DecidableEq p] (h : IsIsotropicSketch S 
 
 end IsIsotropicSketch
 
-/-- **Isotropic rows give an isotropic sketch**: if every row of `X` is an isotropic random
-vector, `(√k)⁻¹ • X` is an isotropic sketch. No independence between the rows is assumed;
-`[Nonempty k]` is needed, since for empty `k` the sketch is `0`. -/
+/-- **Isotropic rows give an isotropic sketch**: if every row of the random matrix $\mathbf{X}$ is
+an isotropic random vector, $\mathbf{X} / \sqrt{\lvert k \rvert}$ is an isotropic sketch. No
+independence between the rows is assumed; `[Nonempty k]` is needed, since for empty $k$ the sketch
+is $\mathbf{0}$. -/
 theorem isIsotropicSketch_smul_of_isIsotropic [Nonempty k] {X : Ω → Matrix k n 𝕜}
     (hX : ∀ i, IsIsotropic (fun ω => X ω i) μ) :
     IsIsotropicSketch (fun ω => ((√(Fintype.card k : ℝ))⁻¹ : ℝ) • X ω) μ := by
@@ -182,14 +197,16 @@ private theorem memLp_mul_of_indepFun {f g : Ω → 𝕜} (hfg : IndepFun f g μ
     (hg.integrable_norm_pow two_ne_zero)
 
 omit [Fintype l] [Fintype n] [Fintype p] [DecidableEq n] in
-/-- The entries of `Bᴴ M B`, with the middle factor kept intact. -/
+/-- The entries of $\mathbf{B}^{\mathsf{H}}\mathbf{M}\mathbf{B}$, with the middle factor kept
+intact. -/
 private theorem conjTranspose_mul_mul_apply (B : Matrix k n 𝕜) (M : Matrix k k 𝕜) (i j : n) :
     (Bᴴ * M * B) i j = ∑ b, ∑ a, M a b * (star (B a i) * B b j) := by
   simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Finset.sum_mul]
   exact Finset.sum_congr rfl fun b _ => Finset.sum_congr rfl fun a _ => by ring
 
 omit [Fintype l] [Fintype p] in
-/-- The entries of `E [Sᴴ S]` for an isotropic sketch, written as sums of entry products. -/
+/-- The entries of $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}]$ for an isotropic sketch,
+written as sums of entry products. -/
 private theorem IsIsotropicSketch.sum_integral_star_mul (h : IsIsotropicSketch S μ) (i j : n) :
     ∑ a, ∫ ω, star (S ω a i) * S ω a j ∂μ = (1 : Matrix n n 𝕜) i j := by
   have hI := integrable_conjTranspose_mul_self_of_memLp h.memLp
@@ -199,8 +216,11 @@ private theorem IsIsotropicSketch.sum_integral_star_mul (h : IsIsotropicSketch S
     (h.memLp a i).star.integrable_mul (h.memLp a j)
   rw [integral_finsetSum _ fun a _ => hg a]
 
-/-- **The product of independent isotropic sketches is isotropic**: for `S₂` and `S`
-independent, `E [(S₂ S)ᴴ (S₂ S)] = E [Sᴴ E [S₂ᴴ S₂] S] = 1`. -/
+/-- **The product of independent isotropic sketches is isotropic**: for $\mathbf{S}_2$ and
+$\mathbf{S}$ independent,
+$\mathbb{E}[(\mathbf{S}_2\mathbf{S})^{\mathsf{H}}\mathbf{S}_2\mathbf{S}]
+= \mathbb{E}[\mathbf{S}^{\mathsf{H}}\, \mathbb{E}[\mathbf{S}_2^{\mathsf{H}}\mathbf{S}_2]\,
+\mathbf{S}] = \mathbf{I}$. -/
 theorem IsIsotropicSketch.mul [DecidableEq k] {S₂ : Ω → Matrix l k 𝕜}
     (h₂ : IsIsotropicSketch S₂ μ) (h : IsIsotropicSketch S μ) (hind : IndepFun S₂ S μ) :
     IsIsotropicSketch (fun ω => S₂ ω * S ω) μ := by
@@ -240,8 +260,8 @@ theorem IsIsotropicSketch.mul [DecidableEq k] {S₂ : Ω → Matrix l k 𝕜}
   simp only [hterm, Matrix.one_apply, ite_mul, one_mul, zero_mul,
     Finset.sum_ite_eq', Finset.mem_univ, if_true]
 
-/-- Isotropy of a sketch depends only on its law: a sketch with law `ν` is isotropic exactly when
-the identity is isotropic for `ν`. -/
+/-- Isotropy of a sketch depends only on its law: a sketch with law $\nu$ is isotropic exactly
+when the identity is isotropic for $\nu$. -/
 theorem _root_.ProbabilityTheory.HasLaw.isIsotropicSketch_iff {ν : Measure (Matrix k n 𝕜)}
     (hS : HasLaw S ν μ) : IsIsotropicSketch S μ ↔ IsIsotropicSketch id ν := by
   have hmem (i : k) (j : n) :

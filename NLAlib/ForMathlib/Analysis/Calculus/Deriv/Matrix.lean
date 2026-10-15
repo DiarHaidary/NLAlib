@@ -18,18 +18,22 @@ public import Mathlib.Topology.Instances.Matrix
 
 Derivatives of the product, the powers, the determinant (Jacobi's formula), the inverse and the
 trace of powers of a differentiable one-parameter family of matrices. Hypotheses and matrix-valued
-conclusions are entrywise, `∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t`, so the statements
-do not depend on a choice of matrix norm. Upstream candidates for a file
-`Mathlib.Analysis.Calculus.Deriv.Matrix`.
+conclusions are entrywise (each entry $s \mapsto \mathbf{A}(s)_{i,j}$ has derivative
+$\mathbf{A}'_{i,j}$ at $t$), so the statements do not depend on a choice of matrix norm. Upstream
+candidates for a file `Mathlib.Analysis.Calculus.Deriv.Matrix`.
 
 ## Main results
 
 * `Matrix.hasDerivAt_iff_forall_apply`: the entrywise form of a derivative.
 * `Matrix.hasDerivAt_mul_apply`, `Matrix.hasDerivAt_pow_succ_apply`: products and powers.
-* `Matrix.hasDerivAt_det`: Jacobi's formula `(det A)' = tr (adj A · A')`.
-* `Matrix.hasDerivAt_log_det`: `(log det A)' = tr (A⁻¹ A')`.
-* `Matrix.hasDerivAt_inv_apply`: `(A⁻¹)' = -A⁻¹ A' A⁻¹`.
-* `Matrix.hasDerivAt_trace_pow_succ`: `(tr Aᵏ⁺¹)' = (k + 1) tr (A' Aᵏ)`.
+* `Matrix.hasDerivAt_det`: Jacobi's formula
+  $(\det \mathbf{A})' = \operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{A}')$.
+* `Matrix.hasDerivAt_log_det`:
+  $(\log \det \mathbf{A})' = \operatorname{tr}(\mathbf{A}^{-1} \mathbf{A}')$.
+* `Matrix.hasDerivAt_inv_apply`:
+  $(\mathbf{A}^{-1})' = -\mathbf{A}^{-1} \mathbf{A}' \mathbf{A}^{-1}$.
+* `Matrix.hasDerivAt_trace_pow_succ`:
+  $(\operatorname{tr} \mathbf{A}^{k+1})' = (k + 1) \operatorname{tr}(\mathbf{A}' \mathbf{A}^k)$.
 -/
 
 @[expose] public section
@@ -49,7 +53,8 @@ theorem hasDerivAt_iff_forall_apply [Finite n] {A : 𝔽 → Matrix m n R} {A' :
   exact hasDerivAt_pi.trans (forall_congr' fun i => hasDerivAt_pi)
 
 omit [Fintype l] [Fintype n] in
-/-- The derivative of a product of two matrix families, entrywise. -/
+/-- The derivative of a product of two matrix families, entrywise:
+$(\mathbf{A}\mathbf{B})' = \mathbf{A}'\mathbf{B} + \mathbf{A}\mathbf{B}'$. -/
 theorem hasDerivAt_mul_apply {A : 𝔽 → Matrix l m R} {B : 𝔽 → Matrix m n R} {A' : Matrix l m R}
     {B' : Matrix m n R} {t : 𝔽} (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t)
     (hB : ∀ i j, HasDerivAt (fun s => B s i j) (B' i j) t) (i : l) (j : n) :
@@ -67,7 +72,7 @@ theorem hasDerivAt_trace {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : �
 variable [DecidableEq n]
 
 /-- The derivative of a power of a matrix family, entrywise:
-`(Aᵏ⁺¹)' = ∑_{i + j = k} Aⁱ A' Aʲ`. -/
+$(\mathbf{A}^{k+1})' = \sum_{p + q = k} \mathbf{A}^p \mathbf{A}' \mathbf{A}^q$. -/
 theorem hasDerivAt_pow_succ_apply {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (k : ℕ) (i j : n) :
     HasDerivAt (fun s => (A s ^ (k + 1)) i j)
@@ -87,8 +92,9 @@ theorem hasDerivAt_pow_succ_apply {A : 𝔽 → Matrix n n R} {A' : Matrix n n R
     rw [hsum]
     simpa only [pow_succ _ (k + 1)] using h
 
-/-- **The derivative of the trace of a power**: `(tr Aᵏ⁺¹)' = (k + 1) tr (A' Aᵏ)`.
-Port of `NLAlib.hasDerivAt_matrix_trace_pow`, there over `ℝ` in the operator norm. -/
+/-- **The derivative of the trace of a power**:
+$(\operatorname{tr} \mathbf{A}^{k+1})' = (k + 1) \operatorname{tr}(\mathbf{A}' \mathbf{A}^k)$.
+Port of `NLAlib.hasDerivAt_matrix_trace_pow`, there over $\mathbb{R}$ in the operator norm. -/
 theorem hasDerivAt_trace_pow_succ {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (k : ℕ) :
     HasDerivAt (fun s => (A s ^ (k + 1)).trace) ((k + 1) * (A' * A t ^ k).trace) t := by
@@ -103,8 +109,9 @@ theorem hasDerivAt_trace_pow_succ {A : 𝔽 → Matrix n n R} {A' : Matrix n n R
   rw [← hval]
   exact h
 
-/-- The sum over rows of the determinants with one row replaced is the trace against the
-adjugate. Port of `NLAlib.sum_det_updateRow_eq_trace_adjugate_mul`, there over `ℝ`. -/
+/-- The sum over rows $i$ of the determinants of $\mathbf{A}$ with row $i$ replaced by row $i$ of
+$\mathbf{H}$ is $\operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{H})$.
+Port of `NLAlib.sum_det_updateRow_eq_trace_adjugate_mul`, there over $\mathbb{R}$. -/
 theorem sum_det_updateRow {S : Type*} [CommRing S] (A H : Matrix n n S) :
     ∑ i, (A.updateRow i (H i)).det = (A.adjugate * H).trace := by
   simp_rw [← Matrix.cramer_transpose_apply, Matrix.cramer_eq_adjugate_mulVec,
@@ -113,8 +120,9 @@ theorem sum_det_updateRow {S : Type*} [CommRing S] (A H : Matrix n n S) :
     Matrix.mul_apply]
   exact Finset.sum_comm
 
-/-- **Jacobi's formula**: `(det A)' = tr (adj A · A')`.
-Port of `NLAlib.hasDerivAt_det`, there over `ℝ` in the entrywise norm. -/
+/-- **Jacobi's formula**:
+$(\det \mathbf{A})' = \operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{A}')$.
+Port of `NLAlib.hasDerivAt_det`, there over $\mathbb{R}$ in the entrywise norm. -/
 theorem hasDerivAt_det {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) :
     HasDerivAt (fun s => (A s).det) ((A t).adjugate * A').trace t := by
@@ -131,8 +139,10 @@ theorem hasDerivAt_det {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽
   rw [← hval]
   exact h
 
-/-- **The derivative of the inverse**, entrywise: `(A⁻¹)' = -A⁻¹ A' A⁻¹` where `A t` is
-invertible. Port of `NLAlib.hasDerivAt_matrix_inv`, there over `ℝ` in the operator norm. -/
+/-- **The derivative of the inverse**, entrywise:
+$(\mathbf{A}^{-1})' = -\mathbf{A}^{-1} \mathbf{A}' \mathbf{A}^{-1}$ where $\mathbf{A}(t)$ is
+invertible. Port of `NLAlib.hasDerivAt_matrix_inv`, there over $\mathbb{R}$ in the operator
+norm. -/
 theorem hasDerivAt_inv_apply {A : 𝔽 → Matrix n n 𝔽} {A' : Matrix n n 𝔽} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (ht : IsUnit (A t).det) (i j : n) :
     HasDerivAt (fun s => (A s)⁻¹ i j) ((-((A t)⁻¹ * A' * (A t)⁻¹)) i j) t := by
@@ -174,8 +184,10 @@ theorem hasDerivAt_inv_apply {A : 𝔽 → Matrix n n 𝔽} {A' : Matrix n n �
   rw [← hB']
   exact hB i j
 
-/-- **The derivative of the logarithm of the determinant**: `(log det A)' = tr (A⁻¹ A')` where
-`A t` is invertible. Port of `NLAlib.hasDerivAt_log_det`. -/
+/-- **The derivative of the logarithm of the determinant**: for a family of real matrices,
+$(\log \det \mathbf{A})' = \operatorname{tr}(\mathbf{A}^{-1} \mathbf{A}')$ where
+$\det \mathbf{A}(t) \ne 0$ (the determinant may be negative: `Real.log` is the logarithm of the
+absolute value). Port of `NLAlib.hasDerivAt_log_det`. -/
 theorem hasDerivAt_log_det {A : ℝ → Matrix n n ℝ} {A' : Matrix n n ℝ} {t : ℝ}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (ht : (A t).det ≠ 0) :
     HasDerivAt (fun s => Real.log (A s).det) ((A t)⁻¹ * A').trace t := by

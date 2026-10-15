@@ -15,12 +15,16 @@ public import NLAlib.Matrix.Factorizations.QR
 /-!
 # Sketched least squares
 
-The deterministic consequences of a subspace embedding or injection for least squares. If `S` is
-a subspace embedding with constants `a`, `b` for a subspace containing `range A` and `y`, every
-minimizer `x` of the sketched problem `‖S A x - S y‖` has residual within `b / a` (squared) of the
-optimal residual `(1 - rangeProjector A) *ᵥ y` (sketch-and-solve). If `S` embeds `range A` and
-`S * A * M` has orthonormal columns (QR's `R⁻¹`, SVD's `V Σ⁻¹`), then `A * M` has condition
-number at most `√(b / a)` (sketch-and-precondition).
+The deterministic consequences of a subspace embedding or injection for least squares. If
+$\mathbf{S}$ is a subspace embedding with constants $a$, $b$ for a subspace containing
+$\operatorname{range}\mathbf{A}$ and $\mathbf{y}$, every minimizer $\mathbf{x}$ of the sketched
+problem $\|\mathbf{S}\mathbf{A}\mathbf{x} - \mathbf{S}\mathbf{y}\|$ has residual within $b / a$
+(squared) of the optimal residual $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}$
+(sketch-and-solve). If $\mathbf{S}$ embeds $\operatorname{range}\mathbf{A}$ and
+$\mathbf{S}\mathbf{A}\mathbf{M}$ has orthonormal columns (QR's $\mathbf{R}^{-1}$, SVD's
+$\mathbf{V}\mathbf{\Sigma}^{-1}$), then $\mathbf{A}\mathbf{M}$ has pseudo-condition number
+$\|\mathbf{A}\mathbf{M}\|_2 \|(\mathbf{A}\mathbf{M})^{+}\|_2$ (`NLAlib.pseudoConditionNumber`) at
+most $\sqrt{b / a}$ (sketch-and-precondition).
 
 The injection alone controls the error of the sketched solution against the sketched residual
 (CEMT's Lemma 2.6), for a vector and for a matrix right-hand side, and gives the deterministic
@@ -56,7 +60,7 @@ private theorem smul_le_smul_aux {G H : Matrix r r 𝕜} (h : G ≤ H) {c : ℝ}
   rw [Matrix.le_iff, ← smul_sub]
   exact (Matrix.le_iff.mp h).smul hc
 
-/-- From `a ‖u‖² ≤ ‖v‖²` with `0 < a`, `‖u‖² ≤ ‖v‖² / a`. -/
+/-- From $a u \le v$ with $0 < a$, $u \le v / a$. -/
 private theorem le_div_of_mul_le' {a u v : ℝ} (ha : 0 < a) (h : a * u ≤ v) : u ≤ v / a := by
   rw [le_div_iff₀ ha, mul_comm]
   exact h
@@ -67,12 +71,18 @@ section LeastSquares
 
 variable [DecidableEq n]
 
-/-- **Sketch-and-solve.** If `S` is a subspace embedding with constants `a > 0`, `b` for a
-subspace `range U` containing `range A` and `y`, every minimizer `x` of `‖S A x - S y‖` satisfies
-`‖y - A x‖² ≤ (b / a) ‖(1 - P_A) y‖²`, the last being the optimal residual.
-[Woodruff2014, proof of Theorem 21], there `(1 + ε) / (1 - ε)` in squared norms;
-[MartinssonTropp2020, §10.3], there `‖A x̂ - b‖ ≤ (1 + ε) ‖A x⋆ - b‖`, unsquared (after Sarlós).
-Here any constants and any subspace containing `range A` and `y`.
+/-- **Sketch-and-solve.** If $\mathbf{S}$ is a subspace embedding with constants $a > 0$, $b$ for
+a subspace $\operatorname{range}\mathbf{U}$ containing $\operatorname{range}\mathbf{A}$ and
+$\mathbf{y}$, every minimizer $\mathbf{x}$ of
+$\|\mathbf{S}\mathbf{A}\mathbf{x} - \mathbf{S}\mathbf{y}\|$ satisfies
+$$\|\mathbf{y} - \mathbf{A}\mathbf{x}\|^2
+\le \frac{b}{a} \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2,$$
+the last being the optimal residual.
+[Woodruff2014, proof of Theorem 21], there $(1 + \varepsilon) / (1 - \varepsilon)$ in squared
+norms; [MartinssonTropp2020, §10.3], there
+$\|\mathbf{A}\hat{\mathbf{x}} - \mathbf{b}\| \le (1 + \varepsilon) \|\mathbf{A}\mathbf{x}_\star -
+\mathbf{b}\|$, unsquared (after Sarlós). Here any constants and any subspace containing
+$\operatorname{range}\mathbf{A}$ and $\mathbf{y}$.
 Result: sketch-and-solve-ls -/
 theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le (h : IsSubspaceEmbedding S U a b) (ha : 0 < a)
     (hA : LinearMap.range A.mulVecLin ≤ LinearMap.range U.mulVecLin)
@@ -93,7 +103,9 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le (h : IsSubspaceEmbedding S U a
   rw [div_mul_eq_mul_div]
   exact le_div_of_mul_le' ha (h₁.trans (h₃.trans h₂))
 
-/-- **Sketch-and-solve**, unsquared: `‖y - A x‖ ≤ √(b / a) ‖(1 - P_A) y‖`.
+/-- **Sketch-and-solve**, unsquared:
+$\|\mathbf{y} - \mathbf{A}\mathbf{x}\|
+\le \sqrt{b / a}\, \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|$.
 [MartinssonTropp2020, §10.3], unsquared there. -/
 theorem IsSubspaceEmbedding.norm_sub_mulVec_le (h : IsSubspaceEmbedding S U a b) (ha : 0 < a)
     (hA : LinearMap.range A.mulVecLin ≤ LinearMap.range U.mulVecLin)
@@ -106,8 +118,8 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_le (h : IsSubspaceEmbedding S U a b)
     _ = √(b / a) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ := by
         rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
 
-/-- **Sketch-and-solve** with an embedding of `range [A, y]`, the form in which the literature
-states it. [Woodruff2014, proof of Theorem 21]. -/
+/-- **Sketch-and-solve** with an embedding of $\operatorname{range}[\mathbf{A}, \mathbf{y}]$, the
+form in which the literature states it. [Woodruff2014, proof of Theorem 21]. -/
 theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le_of_fromCols
     (h : IsSubspaceEmbedding S (Matrix.fromCols A (Matrix.replicateCol Unit y)) a b) (ha : 0 < a)
     (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
@@ -120,9 +132,12 @@ end LeastSquares
 
 /-! ### Sketch-and-precondition -/
 
-/-- **Sketch-and-precondition**, lower half of the spectral equivalence: if `S` embeds `range A`
-with upper constant `b > 0` and `S * A * M` has orthonormal columns, then
-`b⁻¹ • 1 ≤ (A M)ᴴ (A M)`. Any such `M` (QR's `R⁻¹`, SVD's `V Σ⁻¹`, Cholesky-QR) qualifies. -/
+/-- **Sketch-and-precondition**, lower half of the spectral equivalence: if $\mathbf{S}$ embeds
+$\operatorname{range}\mathbf{A}$ with upper constant $b > 0$ and $\mathbf{S}\mathbf{A}\mathbf{M}$
+has orthonormal columns, then
+$b^{-1}\mathbf{I} \preceq (\mathbf{A}\mathbf{M})^{\mathsf{H}}\mathbf{A}\mathbf{M}$. Any such
+$\mathbf{M}$ (QR's $\mathbf{R}^{-1}$, SVD's $\mathbf{V}\mathbf{\Sigma}^{-1}$, Cholesky-QR)
+qualifies. -/
 theorem IsSubspaceEmbedding.inv_smul_one_le_conjTranspose_mul_self [DecidableEq r]
     {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (hb : 0 < b)
     (hM : HasOrthonormalCols (S * A * M)) : b⁻¹ • (1 : Matrix r r 𝕜) ≤ (A * M)ᴴ * (A * M) := by
@@ -131,9 +146,10 @@ theorem IsSubspaceEmbedding.inv_smul_one_le_conjTranspose_mul_self [DecidableEq 
   have h' := smul_le_smul_aux hup (inv_nonneg.mpr hb.le)
   rwa [smul_smul, inv_mul_cancel₀ hb.ne', one_smul] at h'
 
-/-- **Sketch-and-precondition**, upper half of the spectral equivalence: if `S` embeds `range A`
-with lower constant `a > 0` and `S * A * M` has orthonormal columns, then
-`(A M)ᴴ (A M) ≤ a⁻¹ • 1`. -/
+/-- **Sketch-and-precondition**, upper half of the spectral equivalence: if $\mathbf{S}$ embeds
+$\operatorname{range}\mathbf{A}$ with lower constant $a > 0$ and $\mathbf{S}\mathbf{A}\mathbf{M}$
+has orthonormal columns, then
+$(\mathbf{A}\mathbf{M})^{\mathsf{H}}\mathbf{A}\mathbf{M} \preceq a^{-1}\mathbf{I}$. -/
 theorem IsSubspaceEmbedding.conjTranspose_mul_self_le_inv_smul_one [DecidableEq r]
     {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (ha : 0 < a)
     (hM : HasOrthonormalCols (S * A * M)) : (A * M)ᴴ * (A * M) ≤ a⁻¹ • (1 : Matrix r r 𝕜) := by
@@ -142,12 +158,17 @@ theorem IsSubspaceEmbedding.conjTranspose_mul_self_le_inv_smul_one [DecidableEq 
   have h' := smul_le_smul_aux hlow (inv_nonneg.mpr ha.le)
   rwa [smul_smul, inv_mul_cancel₀ ha.ne', one_smul] at h'
 
-/-- **Sketch-and-precondition**: if `S` embeds `range A` with constants `a > 0`, `b ≥ 0` and
-`S * A * M` has orthonormal columns, the preconditioned matrix has `κ(A M)² ≤ b / a`.
-For empty `r`, `κ(A M) = 0` and the bound is `hb`; for nonempty `r` the hypotheses force
-`0 < b`. No rank hypothesis is needed: `A * M` has full column rank because `S * A * M` does, so
-`κ(A M)` is the classical `σ_max / σ_min` (`NLAlib.pseudoConditionNumber_of_injective`).
-[MartinssonTropp2020, §10.5]; there for `M = R⁻¹` from a QR factorization of `S A`.
+/-- **Sketch-and-precondition**: if $\mathbf{S}$ embeds $\operatorname{range}\mathbf{A}$ with
+constants $a > 0$, $b \ge 0$ and $\mathbf{S}\mathbf{A}\mathbf{M}$ has orthonormal columns, the
+preconditioned matrix has pseudo-condition number (`NLAlib.pseudoConditionNumber`)
+$$\bigl(\|\mathbf{A}\mathbf{M}\|_2 \|(\mathbf{A}\mathbf{M})^{+}\|_2\bigr)^2 \le \frac{b}{a}\,.$$
+For empty $r$ (the column index of $\mathbf{M}$) the pseudo-condition number is $0$ and the bound
+is `hb`; for nonempty $r$ the hypotheses force $0 < b$. No rank hypothesis is needed:
+$\mathbf{A}\mathbf{M}$ has full column rank because $\mathbf{S}\mathbf{A}\mathbf{M}$ does, so the
+pseudo-condition number is the classical
+$\sigma_0(\mathbf{A}\mathbf{M}) / \sigma_{\min}(\mathbf{A}\mathbf{M})$
+(`NLAlib.pseudoConditionNumber_of_injective`). [MartinssonTropp2020, §10.5]; there for
+$\mathbf{M} = \mathbf{R}^{-1}$ from a QR factorization of $\mathbf{S}\mathbf{A}$.
 Result: sketch-and-precondition -/
 theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le [Fintype r] [DecidableEq r]
     {M : Matrix q r 𝕜} (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hb : 0 ≤ b)
@@ -169,8 +190,13 @@ theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le [Fintype r] [Decidab
       (inv_nonneg.mpr ha.le) (h.inv_smul_one_le_conjTranspose_mul_self hb₀ hM)
       (h.conjTranspose_mul_self_le_inv_smul_one ha hM)
 
-/-- **Sketch-and-precondition with QR**: for a thin QR factorization `S A = Q R` with `R`
-invertible, `κ(A R⁻¹)² ≤ b / a`. [MartinssonTropp2020, §10.5]. -/
+/-- **Sketch-and-precondition with QR**: if $\mathbf{S}$ embeds $\operatorname{range}\mathbf{A}$
+with constants $a > 0$, $b \ge 0$, then for a thin QR factorization
+$\mathbf{S}\mathbf{A} = \mathbf{Q}\mathbf{R}$ with $\mathbf{R}$ invertible the pseudo-condition
+number (`NLAlib.pseudoConditionNumber`) satisfies
+$$\bigl(\|\mathbf{A}\mathbf{R}^{-1}\|_2 \|(\mathbf{A}\mathbf{R}^{-1})^{+}\|_2\bigr)^2
+\le \frac{b}{a}\,.$$
+[MartinssonTropp2020, §10.5]. -/
 theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR [LinearOrder q]
     [DecidableEq q] {Q : Matrix k q 𝕜} {R : Matrix q q 𝕜} (h : IsSubspaceEmbedding S A a b)
     (ha : 0 < a) (hb : 0 ≤ b) (hQR : IsQR (S * A) Q R) (hR : IsUnit R) :
@@ -188,8 +214,11 @@ section ErrorFormula
 
 variable [DecidableEq n]
 
-/-- The error of a sketched solution against the optimal fit, from the injection alone:
-`‖A x - P_A y‖² ≤ ‖S (1 - P_A) y‖² / a` for every minimizer `x` of `‖S A x - S y‖`.
+/-- The error of a sketched solution against the optimal fit, from the injection alone: for a
+subspace injection for $\operatorname{range}\mathbf{A}$ with constant $a > 0$,
+$$\|\mathbf{A}\mathbf{x} - \mathbf{P}_{\mathbf{A}}\mathbf{y}\|^2
+\le \frac{\|\mathbf{S}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2}{a}$$
+for every minimizer $\mathbf{x}$ of $\|\mathbf{S}\mathbf{A}\mathbf{x} - \mathbf{S}\mathbf{y}\|$.
 [CamanoEpperlyMeyerTropp2025, Lemma 2.6]; there an identity for the minimum-norm solution, here
 a bound in norm for every minimizer. -/
 theorem IsSubspaceInjection.norm_mulVec_sub_rangeProjector_mulVec_sq_le
@@ -211,8 +240,12 @@ theorem IsSubspaceInjection.norm_mulVec_sub_rangeProjector_mulVec_sq_le
   rw [hpy]
   exact le_add_of_nonneg_left (sq_nonneg _)
 
-/-- **Sketch-and-solve error formula**: for every minimizer `x` of `‖S A x - S y‖`,
-`‖y - A x‖² ≤ ‖(1 - P_A) y‖² + ‖S (1 - P_A) y‖² / a`.
+/-- **Sketch-and-solve error formula**: for a subspace injection for
+$\operatorname{range}\mathbf{A}$ with constant $a > 0$ and every minimizer $\mathbf{x}$ of
+$\|\mathbf{S}\mathbf{A}\mathbf{x} - \mathbf{S}\mathbf{y}\|$,
+$$\|\mathbf{y} - \mathbf{A}\mathbf{x}\|^2
+\le \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2 +
+\frac{\|\mathbf{S}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2}{a}\,.$$
 [CamanoEpperlyMeyerTropp2025, Lemma 2.6, proof of Theorem 2.7]; there an identity for the
 minimum-norm solution, here a bound for every minimizer. -/
 theorem IsSubspaceInjection.norm_sub_mulVec_sq_le (h : IsSubspaceInjection S A a) (ha : 0 < a)
@@ -228,8 +261,11 @@ theorem IsSubspaceInjection.norm_sub_mulVec_sq_le (h : IsSubspaceInjection S A a
   exact add_le_add_right (h.norm_mulVec_sub_rangeProjector_mulVec_sq_le ha hx) _
 
 /-- **Sketch-and-solve error formula, matrix right-hand side**, for the minimum-norm output
-`pinv (S A) (S Y)`, as generalized Nyström uses it:
-`‖Y - A (S A)† S Y‖_F² ≤ ‖(1 - P_A) Y‖_F² + ‖S (1 - P_A) Y‖_F² / a`.
+$(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{Y}$, as generalized Nyström uses it: for a subspace
+injection for $\operatorname{range}\mathbf{A}$ with constant $a > 0$,
+$$\|\mathbf{Y} - \mathbf{A}(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{Y}\|_{\mathsf{F}}^2
+\le \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{Y}\|_{\mathsf{F}}^2 +
+\frac{\|\mathbf{S}(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{Y}\|_{\mathsf{F}}^2}{a}\,.$$
 [CamanoEpperlyMeyerTropp2025, Lemma 2.6, proof of Theorem 2.7]; there an identity. -/
 theorem IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le [Fintype r]
     (h : IsSubspaceInjection S A a) (ha : 0 < a) (Y : Matrix n r 𝕜) :
@@ -243,9 +279,12 @@ theorem IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le [Fintype r]
 
 end ErrorFormula
 
-/-- **Deterministic half of CEMT Lemma 2.1**: for `U` with orthonormal columns and a subspace
-injection with constant `a > 0`, `‖X (S U)ᴴ†‖_F² ≤ ‖X‖_F² / a`. CEMT apply it at
-`X = B (S Q⊥)ᴴ`. [CamanoEpperlyMeyerTropp2025, proof of Lemma 2.1]. -/
+/-- **Deterministic half of CEMT Lemma 2.1**: for $\mathbf{U}$ with orthonormal columns and a
+subspace injection for $\operatorname{range}\mathbf{U}$ with constant $a > 0$,
+$$\bigl\|\mathbf{X}((\mathbf{S}\mathbf{U})^{\mathsf{H}})^{+}\bigr\|_{\mathsf{F}}^2
+\le \frac{\|\mathbf{X}\|_{\mathsf{F}}^2}{a}\,.$$
+CEMT apply it at $\mathbf{X} = \mathbf{B}(\mathbf{S}\mathbf{Q}_\perp)^{\mathsf{H}}$.
+[CamanoEpperlyMeyerTropp2025, proof of Lemma 2.1]. -/
 theorem IsSubspaceInjection.frobNorm_mul_pinv_sq_le [DecidableEq p]
     (h : IsSubspaceInjection S U a) (hU : HasOrthonormalCols U) (ha : 0 < a)
     (X : Matrix l k 𝕜) : frobNorm (X * pinv ((S * U)ᴴ)) ^ 2 ≤ frobNorm X ^ 2 / a := by

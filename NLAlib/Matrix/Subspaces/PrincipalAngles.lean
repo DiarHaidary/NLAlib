@@ -11,23 +11,26 @@ public import NLAlib.Matrix.Subspaces.ProjectorPair
 /-!
 # Principal angles between subspaces
 
-The principal angles between the column spaces of two matrices `X` and `Y` are
-`NLAlib.principalAngle X Y k`, `k = 0, 1, …`, in non-decreasing order. Their cosines are the
-singular values of the product of the two orthogonal projectors; for matrices `U`, `V` with
-orthonormal columns these are the singular values of `Uᴴ * V`. The sines are the singular values
-of `(1 - rangeProjector X) * rangeProjector Y`. The tangents are the singular values of the
-tangent matrix, in `NLAlib.Matrix.Subspaces.Tangent`.
+The principal angles between the column spaces of two matrices $\mathbf{X}$ and $\mathbf{Y}$
+are `NLAlib.principalAngle X Y k`, written $\theta_k(\mathbf{X}, \mathbf{Y})$, $k = 0, 1, \dots$, in
+non-decreasing order. Their cosines are the singular values of the product
+$\mathbf{P}_{\mathbf{X}}\mathbf{P}_{\mathbf{Y}}$ of the two orthogonal projectors; for matrices
+$\mathbf{U}$, $\mathbf{V}$ with orthonormal columns these are the singular values of
+$\mathbf{U}^{\mathsf{H}}\mathbf{V}$. The sines are the singular values of
+$(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{P}_{\mathbf{Y}}$. The tangents are the singular
+values of the tangent matrix, in `NLAlib.Matrix.Subspaces.Tangent`.
 
-The angle depends only on the column spaces, so `X` and `Y` may be orthonormal frames, arbitrary
-bases, or the projectors themselves. Beyond the smaller of the two dimensions the angle is `π / 2`.
+The angle depends only on the column spaces, so $\mathbf{X}$ and $\mathbf{Y}$ may be orthonormal
+frames, arbitrary bases, or the projectors themselves. Beyond the smaller of the two dimensions
+the angle is $\pi / 2$.
 
 Statements about distances between subspaces are made with the matrices, in a norm:
-`specNorm ((1 - P) * Q)`, `frobNorm ((1 - P) * Q)`. This file identifies those norms with the
-angles.
+$\|(\mathbf{I} - \mathbf{P})\mathbf{Q}\|_2$, $\|(\mathbf{I} - \mathbf{P})\mathbf{Q}\|_{\mathsf{F}}$.
+This file identifies those norms with the angles.
 
 ## Main definitions
 
-* `NLAlib.principalAngle`: the `k`-th principal angle between two column spaces.
+* `NLAlib.principalAngle`: the $k$-th principal angle between two column spaces.
 
 ## Main results
 
@@ -47,10 +50,11 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n p q r : Type*} [Fintype n] [Fintype p] [Fintype q] [Fintype r]
 
-/-- The **`k`-th principal angle** between the column spaces of `X` and `Y`, `k = 0, 1, …`, in
-non-decreasing order: the angle in `[0, π/2]` whose cosine is the `k`-th singular value of the
-product of the two orthogonal projectors. For `k` at least the smaller of the two dimensions it
-is `π / 2`.
+/-- The **$k$-th principal angle** $\theta_k(\mathbf{X}, \mathbf{Y})$ between the column spaces of
+$\mathbf{X}$ and $\mathbf{Y}$, $k = 0, 1, \dots$, in non-decreasing order: the angle in $[0, \pi/2]$
+whose cosine is $\sigma_k(\mathbf{P}_{\mathbf{X}}\mathbf{P}_{\mathbf{Y}})$, the $k$-th singular
+value of the product of the two orthogonal projectors. For $k$ at least the smaller of the two
+dimensions it is $\pi / 2$.
 [GolubVanLoan2013, §6.4.3]; [StewartSun1990, §I.5].
 Port of `NLAlib.principalAnglesFintype`, there for two frames with the same number of columns. -/
 noncomputable def principalAngle (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ) : ℝ :=
@@ -65,7 +69,7 @@ private theorem singularValues_rangeProjector_mul_rangeProjector_le_one (X : Mat
     (((isStarProjection_rangeProjector X).specNorm_mul_le _).trans
       (isStarProjection_rangeProjector Y).specNorm_le_one)
 
-/-- Principal angles lie in `[0, π/2]`. Port of `NLAlib.principalAngles_mem_Icc`. -/
+/-- Principal angles lie in $[0, \pi/2]$. Port of `NLAlib.principalAngles_mem_Icc`. -/
 theorem principalAngle_mem_Icc (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ) :
     principalAngle X Y k ∈ Set.Icc 0 (Real.pi / 2) := by
   exact ⟨Real.arccos_nonneg _, Real.arccos_le_pi_div_two.mpr (singularValues_nonneg _ k)⟩
@@ -76,7 +80,9 @@ theorem principalAngle_monotone (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) :
     Monotone (principalAngle X Y) := by
   exact fun i j hij => Real.antitone_arccos (singularValues_antitone _ hij)
 
-/-- Principal angles are symmetric in the two subspaces. Port of `NLAlib.principalAngles_comm`. -/
+/-- Principal angles are symmetric in the two subspaces:
+$\theta_k(\mathbf{X}, \mathbf{Y}) = \theta_k(\mathbf{Y}, \mathbf{X})$. Port of
+`NLAlib.principalAngles_comm`. -/
 theorem principalAngle_comm (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ) :
     principalAngle X Y k = principalAngle Y X k := by
   unfold principalAngle
@@ -106,7 +112,9 @@ theorem principalAngle_rangeProjector_right (X : Matrix n p 𝕜) (Y : Matrix n 
   unfold principalAngle
   rw [(isStarProjection_rangeProjector Y).rangeProjector_eq]
 
-/-- Beyond the smaller of the two dimensions the principal angle is `π / 2`. -/
+/-- Beyond the smaller of the two dimensions the principal angle is $\pi / 2$:
+$\theta_k(\mathbf{X}, \mathbf{Y}) = \pi / 2$ for
+$\min(\operatorname{rank} \mathbf{X}, \operatorname{rank} \mathbf{Y}) \le k$. -/
 theorem principalAngle_of_rank_le {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜} {k : ℕ}
     (h : min X.rank Y.rank ≤ k) : principalAngle X Y k = Real.pi / 2 := by
   have hr : (rangeProjector X * rangeProjector Y).rank ≤ k := by
@@ -116,7 +124,8 @@ theorem principalAngle_of_rank_le {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜} {k
   unfold principalAngle
   rw [(singularValues_eq_zero_iff _).mpr hr, Real.arccos_zero]
 
-/-- The principal angles between a subspace and itself vanish, up to its dimension. -/
+/-- The principal angles between a subspace and itself vanish, up to its dimension:
+$\theta_k(\mathbf{X}, \mathbf{X}) = 0$ for $k < \operatorname{rank} \mathbf{X}$. -/
 theorem principalAngle_self (X : Matrix n p 𝕜) {k : ℕ} (hk : k < X.rank) :
     principalAngle X X k = 0 := by
   unfold principalAngle
@@ -124,8 +133,9 @@ theorem principalAngle_self (X : Matrix n p 𝕜) {k : ℕ} (hk : k < X.rank) :
     (isStarProjection_rangeProjector X).singularValues_of_lt_rank (by rwa [rank_rangeProjector]),
     Real.arccos_one]
 
-/-- If the column space of `Y` is inside that of `X`, the principal angles vanish up to the
-dimension of the smaller space. Port of `NLAlib.directedSubspaceGap_eq_zero_of_range_le`. -/
+/-- If the column space of $\mathbf{Y}$ is inside that of $\mathbf{X}$, the principal angles
+vanish up to the dimension of the smaller space: $\theta_k(\mathbf{X}, \mathbf{Y}) = 0$ for
+$k < \operatorname{rank} \mathbf{Y}$. Port of `NLAlib.directedSubspaceGap_eq_zero_of_range_le`. -/
 theorem principalAngle_eq_zero_of_range_le {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range X.mulVecLin) {k : ℕ} (hk : k < Y.rank) :
     principalAngle X Y k = 0 := by
@@ -139,7 +149,9 @@ section Invariance
 
 variable {m p' q' : Type*} [Fintype m] [Fintype p'] [Fintype q']
 
-/-- The projector onto the column space of `Q * X`, for `Q` with orthonormal columns. -/
+/-- The projector onto the column space of $\mathbf{Q}\mathbf{X}$, for $\mathbf{Q}$ with
+orthonormal columns:
+$\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$. -/
 private theorem HasOrthonormalCols.rangeProjector_mul [DecidableEq n] {Q : Matrix m n 𝕜}
     (hQ : HasOrthonormalCols Q) (X : Matrix n p 𝕜) :
     rangeProjector (Q * X) = Q * rangeProjector X * Qᴴ := by
@@ -159,8 +171,8 @@ private theorem HasOrthonormalCols.rangeProjector_mul [DecidableEq n] {Q : Matri
       rangeProjector_mul_self]
 
 /-- **Principal angles are invariant under an isometry of the ambient space**: multiplying both
-matrices on the left by a matrix `Q` with orthonormal columns, square or not, does not change the
-angles between their column spaces. [StewartSun1990, §I.5]. -/
+matrices on the left by a matrix $\mathbf{Q}$ with orthonormal columns, square or not, does not
+change the angles between their column spaces. [StewartSun1990, §I.5]. -/
 theorem HasOrthonormalCols.principalAngle_mul_left [DecidableEq n] {Q : Matrix m n 𝕜}
     (hQ : HasOrthonormalCols Q) (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ) :
     principalAngle (Q * X) (Q * Y) k = principalAngle X Y k := by
@@ -179,8 +191,8 @@ private theorem rangeProjector_submatrix_id_equiv (X : Matrix n p 𝕜) (f : p' 
 /-- **Principal angles are invariant under relabelling**: a common relabelling of the rows by an
 equivalence, together with any relabelling of the columns of either matrix, does not change the
 angles. For `Matrix.reindex`, rewrite with `Matrix.reindex_apply` first.
-[StewartSun1990, §I.5]. Port of `NLAlib.sinePrincipalAngles_reindex_rows`, there over `ℝ` for the
-matrix of sines of two frames and a relabelling of the rows only. -/
+[StewartSun1990, §I.5]. Port of `NLAlib.sinePrincipalAngles_reindex_rows`, there over
+$\mathbb{R}$ for the matrix of sines of two frames and a relabelling of the rows only. -/
 theorem principalAngle_submatrix_equiv (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (e : m ≃ n)
     (f : p' ≃ p) (g : q' ≃ q) (k : ℕ) :
     principalAngle (X.submatrix e f) (Y.submatrix e g) k = principalAngle X Y k := by
@@ -202,7 +214,8 @@ end Invariance
 /-! ### Cosines -/
 
 /-- The cosines of the principal angles are the singular values of the product of the two
-projectors. -/
+projectors: $\cos \theta_k(\mathbf{X}, \mathbf{Y}) =
+\sigma_k(\mathbf{P}_{\mathbf{X}}\mathbf{P}_{\mathbf{Y}})$. -/
 theorem cos_principalAngle (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ) :
     Real.cos (principalAngle X Y k) =
       singularValues (rangeProjector X * rangeProjector Y) k := by
@@ -210,7 +223,11 @@ theorem cos_principalAngle (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ)
     (by linarith [singularValues_nonneg (rangeProjector X * rangeProjector Y) k])
     (singularValues_rangeProjector_mul_rangeProjector_le_one X Y k)
 
-/-- **Cosines for orthonormal frames**: the singular values of `Uᴴ * V`.
+/-- **Cosines for orthonormal frames**: for $\mathbf{U}$ and $\mathbf{V}$ with orthonormal
+columns, the cosines of the principal angles between their column spaces are the singular values
+of $\mathbf{U}^{\mathsf{H}}\mathbf{V}$:
+$\cos \theta_k(\mathbf{U}, \mathbf{V}) = \sigma_k(\mathbf{U}^{\mathsf{H}}\mathbf{V})$ for every
+$k$.
 [GolubVanLoan2013, §6.4.3]. Port of `NLAlib.cos_principalAngles`.
 Result: principal-angles -/
 theorem HasOrthonormalCols.cos_principalAngle [DecidableEq p] [DecidableEq q]
@@ -221,7 +238,7 @@ theorem HasOrthonormalCols.cos_principalAngle [DecidableEq p] [DecidableEq q]
     ← Matrix.mul_assoc Uᴴ, hU.singularValues_mul_left, hV.singularValues_mul_conjTranspose_right]
 
 /-- Cosines when only the first frame is orthonormal: the singular values of
-`Uᴴ * rangeProjector Y`. -/
+$\mathbf{U}^{\mathsf{H}}\mathbf{P}_{\mathbf{Y}}$. -/
 theorem HasOrthonormalCols.cos_principalAngle_left [DecidableEq p] {U : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (Y : Matrix n q 𝕜) (k : ℕ) :
     Real.cos (principalAngle U Y k) = singularValues (Uᴴ * rangeProjector Y) k := by
@@ -230,7 +247,10 @@ theorem HasOrthonormalCols.cos_principalAngle_left [DecidableEq p] {U : Matrix n
 
 /-! ### Sines -/
 
-/-- The sine of a principal angle from its cosine. Port of `NLAlib.sin_principalAngles`. -/
+/-- The sine of a principal angle from its cosine:
+$\sin \theta_k(\mathbf{X}, \mathbf{Y}) = \sqrt{1 -
+\sigma_k(\mathbf{P}_{\mathbf{X}}\mathbf{P}_{\mathbf{Y}})^2}$.
+Port of `NLAlib.sin_principalAngles`. -/
 theorem sin_principalAngle (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ) :
     Real.sin (principalAngle X Y k) =
       √(1 - singularValues (rangeProjector X * rangeProjector Y) k ^ 2) := by
@@ -239,8 +259,9 @@ theorem sin_principalAngle (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜) (k : ℕ)
 variable [DecidableEq n]
 
 /-- **Sines of the principal angles**: the singular values of
-`(1 - rangeProjector X) * rangeProjector Y`, in reverse order:
-`σ_i = sin θ_j` for `i + j + 1 = rank Y`.
+$(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{P}_{\mathbf{Y}}$, in reverse order:
+$\sigma_i((\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{P}_{\mathbf{Y}}) = \sin \theta_j(\mathbf{X},
+\mathbf{Y})$ for $i + j + 1 = \operatorname{rank} \mathbf{Y}$.
 [GolubVanLoan2013, §2.5.3]; [StewartSun1990, Theorem I.5.5].
 Result: principal-angles -/
 theorem singularValues_one_sub_rangeProjector_mul_rangeProjector (X : Matrix n p 𝕜)
@@ -251,7 +272,10 @@ theorem singularValues_one_sub_rangeProjector_mul_rangeProjector (X : Matrix n p
     (isStarProjection_rangeProjector X) (i := i) (j := j) (by rw [rank_rangeProjector, hij])
   rw [sin_principalAngle, ← h, Real.sqrt_sq (singularValues_nonneg _ _)]
 
-/-- Sines for orthonormal frames: the singular values of `(1 - U * Uᴴ) * V`, in reverse order.
+/-- Sines for orthonormal frames: the singular values of
+$(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{V}$, in reverse order:
+$\sigma_i((\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{V})
+= \sin \theta_j(\mathbf{U}, \mathbf{V})$ for $i + j + 1 = \lvert q \rvert$.
 Port of `NLAlib.transpose_sinePrincipalAngles_mul_self` and
 `NLAlib.specNorm_sinePrincipalAngles_eq_residual`. -/
 theorem HasOrthonormalCols.singularValues_one_sub_mul_conjTranspose_mul [DecidableEq p]
@@ -263,8 +287,10 @@ theorem HasOrthonormalCols.singularValues_one_sub_mul_conjTranspose_mul [Decidab
     hU.rangeProjector_eq, hV.rangeProjector_eq, ← Matrix.mul_assoc,
     hV.singularValues_mul_conjTranspose_right]
 
-/-- **The largest principal angle as a distance**: `‖(1 - P_X) P_Y‖₂` is the sine of the largest
-principal angle counted up to the dimension of the column space of `Y`.
+/-- **The largest principal angle as a distance**:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{P}_{\mathbf{Y}}\|_2 = \sin \theta_j(\mathbf{X},
+\mathbf{Y})$ for $j + 1 = \operatorname{rank} \mathbf{Y}$, the sine of the largest principal angle
+counted up to the dimension of the column space of $\mathbf{Y}$.
 [GolubVanLoan2013, §2.5.3]. Port of `NLAlib.directedSubspaceGap_eq_sin_principalAngles`.
 Result: principal-angles -/
 theorem specNorm_one_sub_rangeProjector_mul_rangeProjector (X : Matrix n p 𝕜) (Y : Matrix n q 𝕜)
@@ -273,8 +299,11 @@ theorem specNorm_one_sub_rangeProjector_mul_rangeProjector (X : Matrix n p 𝕜)
   rw [← singularValues_zero_eq_specNorm]
   exact singularValues_one_sub_rangeProjector_mul_rangeProjector X Y (by omega)
 
-/-- The Frobenius norm of `(1 - P_X) P_Y` is the root sum of squares of the sines of the
-principal angles. Port of `NLAlib.frobNorm_sinePrincipalAngles_eq_residual`. -/
+/-- The Frobenius norm of $(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{P}_{\mathbf{Y}}$ is the
+root sum of squares of the sines of the principal angles:
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{P}_{\mathbf{Y}}\|_{\mathsf{F}}^2
+= \sum_{j < \operatorname{rank} \mathbf{Y}} \sin^2 \theta_j(\mathbf{X},
+\mathbf{Y})$. Port of `NLAlib.frobNorm_sinePrincipalAngles_eq_residual`. -/
 theorem frobNorm_one_sub_rangeProjector_mul_rangeProjector_sq (X : Matrix n p 𝕜)
     (Y : Matrix n q 𝕜) :
     frobNorm ((1 - rangeProjector X) * rangeProjector Y) ^ 2 =
@@ -288,7 +317,9 @@ theorem frobNorm_one_sub_rangeProjector_mul_rangeProjector_sq (X : Matrix n p �
 
 omit [DecidableEq n] in
 /-- **The distance between two projectors of equal rank** is the sine of the largest principal
-angle. [GolubVanLoan2013, §2.5.3].
+angle: if $\operatorname{rank} \mathbf{X} = \operatorname{rank} \mathbf{Y} = j + 1$, then
+$\|\mathbf{P}_{\mathbf{X}} - \mathbf{P}_{\mathbf{Y}}\|_2 = \sin \theta_j(\mathbf{X}, \mathbf{Y})$.
+[GolubVanLoan2013, §2.5.3].
 Port of `NLAlib.specNorm_sinePrincipalAngles_eq_projector_distance`.
 Result: projector-gap -/
 theorem specNorm_rangeProjector_sub_rangeProjector {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜}
@@ -301,7 +332,8 @@ theorem specNorm_rangeProjector_sub_rangeProjector {X : Matrix n p 𝕜} {Y : Ma
 
 omit [DecidableEq n] in
 /-- For two subspaces of equal dimension,
-`‖P_X - P_Y‖_F² = 2 ∑ sin² θ_j`.
+$\|\mathbf{P}_{\mathbf{X}} - \mathbf{P}_{\mathbf{Y}}\|_{\mathsf{F}}^2
+= 2 \sum_{j < \operatorname{rank} \mathbf{Y}} \sin^2 \theta_j(\mathbf{X}, \mathbf{Y})$.
 Port of `NLAlib.frobSq_projector_distance_eq_two_mul_sinePrincipalAngles`. -/
 theorem frobNorm_rangeProjector_sub_rangeProjector_sq {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜}
     (h : X.rank = Y.rank) :

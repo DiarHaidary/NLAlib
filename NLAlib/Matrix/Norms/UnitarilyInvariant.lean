@@ -12,11 +12,13 @@ public import NLAlib.Matrix.Spectral.LowRank
 /-!
 # Unitarily invariant norms
 
-For a symmetric gauge function `Φ`, `Φ.matrixNorm A` is `Φ` applied to the singular values of
-`A`. It is a norm on matrices of every shape, invariant under multiplication by matrices with
-orthonormal columns; the Schatten and Ky Fan norms are the cases `lpGauge q` and `kyFanGauge k`.
-Results stated for `Φ.matrixNorm` hold for all of them at once, across shapes: for example
-`Φ.matrixNorm (A * B) ≤ specNorm A * Φ.matrixNorm B`, where `A * B` and `B` have different shapes.
+For a symmetric gauge function $\Phi$, `Φ.matrixNorm A`, written $\|\mathbf{A}\|_{\Phi}$, is
+$\Phi$ applied to the singular values of $\mathbf{A}$. It is a norm on matrices of every shape,
+invariant under multiplication by matrices with orthonormal columns; the Schatten and Ky Fan norms
+are the cases `lpGauge q` and `kyFanGauge k`. Results stated for `Φ.matrixNorm` hold for all of
+them at once, across shapes: for example
+$\|\mathbf{A}\mathbf{B}\|_{\Phi} \le \|\mathbf{A}\|_2 \|\mathbf{B}\|_{\Phi}$, where
+$\mathbf{A}\mathbf{B}$ and $\mathbf{B}$ have different shapes.
 
 ## Main definitions
 
@@ -91,9 +93,11 @@ namespace SymmetricGauge
 
 variable (Φ : SymmetricGauge)
 
-/-- The **unitarily invariant norm** of a symmetric gauge function: the gauge of the singular
-values. [HornJohnson2013, Theorem 7.4.7.2] (von Neumann).
-Port of `NLAlib.SymmetricGauge.matrixValue`, there for one shape over `ℝ`. -/
+/-- The **unitarily invariant norm** $\|\mathbf{A}\|_{\Phi}$ of a symmetric gauge function
+$\Phi$: the gauge of the singular values,
+$\Phi\bigl(\sigma_0(\mathbf{A}), \sigma_1(\mathbf{A}), \dots\bigr)$.
+[HornJohnson2013, Theorem 7.4.7.2] (von Neumann). Port of `NLAlib.SymmetricGauge.matrixValue`,
+there for one shape over $\mathbb{R}$. -/
 noncomputable def matrixNorm (A : Matrix m n 𝕜) : ℝ :=
   Φ (singularValuesFinsupp A)
 
@@ -126,7 +130,8 @@ theorem matrixNorm_eq_zero_iff {A : Matrix m n 𝕜} : Φ.matrixNorm A = 0 ↔ A
   rw [matrixNorm_def, Φ.eq_zero_iff, ← singularValues_eq_zero, ← coe_singularValuesFinsupp,
     Finsupp.coe_eq_zero]
 
-/-- Unitarily invariant norms are absolutely homogeneous.
+/-- Unitarily invariant norms are absolutely homogeneous:
+$\|c\mathbf{A}\|_{\Phi} = \lvert c \rvert \|\mathbf{A}\|_{\Phi}$.
 Port of `NLAlib.SymmetricGauge.matrixValue_smul`. -/
 theorem matrixNorm_smul (c : 𝕜) (A : Matrix m n 𝕜) :
     Φ.matrixNorm (c • A) = ‖c‖ * Φ.matrixNorm A := by
@@ -180,19 +185,25 @@ theorem matrixNorm_le_of_singularValues_le {A : Matrix m n 𝕜} {B : Matrix l p
     abs_of_nonneg (singularValues_nonneg A i), abs_of_nonneg (singularValues_nonneg B i)]
   exact h i
 
-/-- **Fan dominance.** If every Ky Fan norm of `A` is at most that of `B`, then every unitarily
-invariant norm of `A` is at most that of `B`. The shapes may differ.
+/-- **Fan dominance.** If every Ky Fan norm of $\mathbf{A}$ is at most that of $\mathbf{B}$,
+$\|\mathbf{A}\|_{(k)} \le \|\mathbf{B}\|_{(k)}$ for all $k$, then every unitarily invariant norm of
+$\mathbf{A}$ is at most that of $\mathbf{B}$: $\|\mathbf{A}\|_{\Phi} \le \|\mathbf{B}\|_{\Phi}$.
+The shapes may differ.
 [HornJohnson2013, Theorem 7.4.8.4]; [Bhatia1997, Theorem IV.2.2].
-Port of `NLAlib.forall_invariantNorm_le_iff_weaklyMajorized`, there for one shape over `ℝ`.
+Port of `NLAlib.forall_invariantNorm_le_iff_weaklyMajorized`, there for one shape over
+$\mathbb{R}$.
 Result: fan-dominance -/
 theorem matrixNorm_le_of_forall_kyFanNorm_le {A : Matrix m n 𝕜} {B : Matrix l p 𝕜}
     (h : ∀ k, kyFanNorm k A ≤ kyFanNorm k B) : Φ.matrixNorm A ≤ Φ.matrixNorm B := by
   refine Φ.le_of_forall_sum_le (singularValues_antitone B) fun S => ?_
   exact (sum_abs_singularValues_le_kyFanNorm A S).trans (h S.card)
 
-/-- **The triangle inequality** for unitarily invariant norms.
+/-- **The triangle inequality** for unitarily invariant norms: for every symmetric gauge $\Phi$
+and matrices $\mathbf{A}$, $\mathbf{B}$ of the same shape,
+$\|\mathbf{A} + \mathbf{B}\|_{\Phi} \le \|\mathbf{A}\|_{\Phi} + \|\mathbf{B}\|_{\Phi}$, where
+$\|\mathbf{A}\|_{\Phi}$ (`Φ.matrixNorm A`) is the gauge of the singular values of $\mathbf{A}$.
 [HornJohnson2013, Theorem 7.4.7.2].
-Port of `NLAlib.SymmetricGauge.matrixValue_add_le`, there over `ℝ`.
+Port of `NLAlib.SymmetricGauge.matrixValue_add_le`, there over $\mathbb{R}$.
 Result: unitarily-invariant-norm -/
 theorem matrixNorm_add_le (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (A + B) ≤ Φ.matrixNorm A + Φ.matrixNorm B := by
@@ -209,7 +220,9 @@ theorem matrixNorm_add_le (A B : Matrix m n 𝕜) :
           exact Finset.sum_congr rfl fun i _ => (Finsupp.add_apply _ _ i).symm
   exact h.trans (map_add_le_add Φ _ _)
 
-/-- The reverse triangle inequality for unitarily invariant norms. -/
+/-- The reverse triangle inequality for unitarily invariant norms:
+$\lvert \|\mathbf{A}\|_{\Phi} - \|\mathbf{B}\|_{\Phi} \rvert
+\le \|\mathbf{A} - \mathbf{B}\|_{\Phi}$. -/
 theorem abs_matrixNorm_sub_matrixNorm_le (A B : Matrix m n 𝕜) :
     |Φ.matrixNorm A - Φ.matrixNorm B| ≤ Φ.matrixNorm (A - B) := by
   rw [abs_sub_le_iff]
@@ -223,7 +236,8 @@ theorem abs_matrixNorm_sub_matrixNorm_le (A B : Matrix m n 𝕜) :
 
 /-! ### Products -/
 
-/-- `‖A B‖ ≤ ‖A‖₂ ‖B‖` for every unitarily invariant norm.
+/-- $\|\mathbf{A}\mathbf{B}\|_{\Phi} \le \|\mathbf{A}\|_2 \|\mathbf{B}\|_{\Phi}$ for every
+unitarily invariant norm.
 [HornJohnson2013, §7.4.9]; [Bhatia1997, Proposition IV.2.4]. -/
 theorem matrixNorm_mul_le_specNorm_mul (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) :
     Φ.matrixNorm (A * B) ≤ specNorm A * Φ.matrixNorm B := by
@@ -233,7 +247,8 @@ theorem matrixNorm_mul_le_specNorm_mul (A : Matrix m p 𝕜) (B : Matrix p n �
       exact singularValues_mul_le_specNorm_mul A B i
   rwa [matrixNorm_smul, RCLike.norm_ofReal, abs_of_nonneg (specNorm_nonneg A)] at h
 
-/-- `‖A B‖ ≤ ‖A‖ ‖B‖₂` for every unitarily invariant norm. -/
+/-- $\|\mathbf{A}\mathbf{B}\|_{\Phi} \le \|\mathbf{A}\|_{\Phi} \|\mathbf{B}\|_2$ for every
+unitarily invariant norm. -/
 theorem matrixNorm_mul_le_mul_specNorm (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) :
     Φ.matrixNorm (A * B) ≤ Φ.matrixNorm A * specNorm B := by
   have h := Φ.matrixNorm_le_of_singularValues_le (A := A * B) (B := (specNorm B : 𝕜) • A)
@@ -242,20 +257,23 @@ theorem matrixNorm_mul_le_mul_specNorm (A : Matrix m p 𝕜) (B : Matrix p n �
       exact singularValues_mul_le_mul_specNorm A B i
   rwa [matrixNorm_smul, RCLike.norm_ofReal, abs_of_nonneg (specNorm_nonneg B), mul_comm] at h
 
-/-- Multiplying by a star projection on the left does not increase a unitarily invariant norm. -/
+/-- Multiplying by a star projection on the left does not increase a unitarily invariant norm:
+$\|\mathbf{P}\mathbf{A}\|_{\Phi} \le \|\mathbf{A}\|_{\Phi}$. -/
 theorem matrixNorm_mul_le_of_isStarProjection {P : Matrix m m 𝕜} (hP : IsStarProjection P)
     (A : Matrix m n 𝕜) : Φ.matrixNorm (P * A) ≤ Φ.matrixNorm A := by
   exact Φ.matrixNorm_le_of_singularValues_le (hP.singularValues_mul_le A)
 
-/-- A submatrix has a smaller unitarily invariant norm. -/
+/-- A submatrix selected by injective maps of the row and column indices has a smaller
+unitarily invariant norm. -/
 theorem matrixNorm_submatrix_le (A : Matrix m n 𝕜) {f : l → m} {g : p → n}
     (hf : Function.Injective f) (hg : Function.Injective g) :
     Φ.matrixNorm (A.submatrix f g) ≤ Φ.matrixNorm A := by
   exact Φ.matrixNorm_le_of_singularValues_le (singularValues_submatrix_le A hf hg)
 
 open scoped MatrixOrder in
-/-- A factor `T` with `c² • 1 ≤ Tᴴ * T`, `c ≥ 0`, shrinks a unitarily invariant norm by at most
-`c`: `c * Φ.matrixNorm X ≤ Φ.matrixNorm (T * X)`. The form of
+/-- A factor $\mathbf{T}$ with $c^2\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$,
+$c \ge 0$, shrinks a unitarily invariant norm by at most $c$:
+$c \|\mathbf{X}\|_{\Phi} \le \|\mathbf{T}\mathbf{X}\|_{\Phi}$. The form of
 `NLAlib.mul_specNorm_le_of_sq_smul_one_le` for every unitarily invariant norm. -/
 theorem mul_matrixNorm_le_of_sq_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {c : ℝ}
     (hc : 0 ≤ c) (h : (c ^ 2) • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) :
@@ -269,14 +287,18 @@ theorem mul_matrixNorm_le_of_sq_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜
 
 /-! ### Comparison with the spectral and nuclear norms -/
 
-/-- Every unitarily invariant norm dominates a multiple of the spectral norm. -/
+/-- Every unitarily invariant norm dominates a multiple of the spectral norm:
+$\Phi(\mathbf{e}_0) \|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{\Phi}$, with $\mathbf{e}_0$ the first unit
+coordinate sequence. -/
 theorem apply_single_mul_specNorm_le (A : Matrix m n 𝕜) :
     Φ (Finsupp.single 0 1) * specNorm A ≤ Φ.matrixNorm A := by
   have h := Φ.apply_single_mul_abs_le (singularValuesFinsupp A) 0
   rwa [coe_singularValuesFinsupp, singularValues_zero_eq_specNorm,
     abs_of_nonneg (specNorm_nonneg A)] at h
 
-/-- Every unitarily invariant norm is dominated by a multiple of the nuclear norm. -/
+/-- Every unitarily invariant norm is dominated by a multiple of the nuclear norm:
+$\|\mathbf{A}\|_{\Phi} \le \Phi(\mathbf{e}_0) \|\mathbf{A}\|_*$, with $\mathbf{e}_0$ the first unit
+coordinate sequence. -/
 theorem matrixNorm_le_apply_single_mul_nuclearNorm (A : Matrix m n 𝕜) :
     Φ.matrixNorm A ≤ Φ (Finsupp.single 0 1) * nuclearNorm A := by
   refine (Φ.le_apply_single_mul_sum _).trans_eq ?_
@@ -293,10 +315,14 @@ theorem matrixNorm_le_apply_single_mul_nuclearNorm (A : Matrix m n 𝕜) :
 /-! ### Perturbation of singular values and low-rank approximation -/
 
 /-- **Mirsky's theorem.** In every unitarily invariant norm, the sorted singular values are
-`1`-Lipschitz: the gauge of the difference of the singular value sequences of `A` and `B` is at
-most the norm of `A - B`.
+$1$-Lipschitz: the gauge of the difference of the singular value sequences of $\mathbf{A}$ and
+$\mathbf{B}$ is at most the norm of $\mathbf{A} - \mathbf{B}$,
+$$\Phi\bigl(\sigma_0(\mathbf{A}) - \sigma_0(\mathbf{B}),\,
+  \sigma_1(\mathbf{A}) - \sigma_1(\mathbf{B}),\, \dots\bigr)
+  \le \|\mathbf{A} - \mathbf{B}\|_{\Phi}\,.$$
 [HornJohnson2013, Corollary 7.4.9.3]; [Bhatia1997, Theorem IV.3.4].
-Port of `NLAlib.invariantNorm_rectangularDiagonal_singularValues_add_sub_le`, there over `ℝ`.
+Port of `NLAlib.invariantNorm_rectangularDiagonal_singularValues_add_sub_le`, there over
+$\mathbb{R}$.
 Result: mirsky-inequality -/
 theorem apply_singularValuesFinsupp_sub_le (A B : Matrix m n 𝕜) :
     Φ (singularValuesFinsupp A - singularValuesFinsupp B) ≤ Φ.matrixNorm (A - B) := by
@@ -304,8 +330,10 @@ theorem apply_singularValuesFinsupp_sub_le (A B : Matrix m n 𝕜) :
   simp only [Finsupp.sub_apply, coe_singularValuesFinsupp]
   exact sum_abs_singularValues_sub_le_kyFanNorm_sub A B S
 
-/-- **Eckart–Young–Mirsky.** The truncated SVD is a best approximation of rank at most `k` in
-every unitarily invariant norm.
+/-- **Eckart–Young–Mirsky.** The truncated SVD $\llbracket \mathbf{A} \rrbracket_k$ is a best
+approximation of rank at most $k$ in every unitarily invariant norm: for every $\mathbf{B}$ with
+$\operatorname{rank} \mathbf{B} \le k$,
+$\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi} \le \|\mathbf{A} - \mathbf{B}\|_{\Phi}$.
 [HornJohnson2013, §7.4.9]; [Bhatia1997, Exercise IV.3.5]. -/
 theorem matrixNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix m n 𝕜) {B : Matrix m n 𝕜} {k : ℕ}
     (hB : B.rank ≤ k) : Φ.matrixNorm (A - truncatedSVD A k) ≤ Φ.matrixNorm (A - B) := by
@@ -313,8 +341,10 @@ theorem matrixNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix m n 𝕜) {B : Mat
   rw [singularValues_sub_truncatedSVD]
   exact singularValues_add_le_singularValues_sub_of_rank_le A hB i
 
-/-- A best approximation of rank at most `r` exists in every unitarily invariant norm: the
-distance to the closed set of matrices of rank at most `r` is attained (by the truncated SVD). -/
+/-- A best approximation of rank at most $r$ exists in every unitarily invariant norm: the
+distance to the closed set of matrices of rank at most $r$ is attained, by the truncated SVD:
+$\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_r\|_{\Phi}$ is the least value of
+$\|\mathbf{A} - \mathbf{B}\|_{\Phi}$ over $\operatorname{rank} \mathbf{B} \le r$. -/
 theorem isLeast_matrixNorm_sub_of_rank_le (A : Matrix m n 𝕜) (r : ℕ) :
     IsLeast ((fun B : Matrix m n 𝕜 => Φ.matrixNorm (A - B)) '' {B | B.rank ≤ r})
       (Φ.matrixNorm (A - truncatedSVD A r)) := by
@@ -326,7 +356,7 @@ end SymmetricGauge
 
 /-! ### Schatten and Ky Fan norms as gauge norms -/
 
-/-- The norm of the `ℓ^q` gauge is the Schatten `q`-norm.
+/-- The norm of the $\ell^q$ gauge is the Schatten $q$-norm $\|\mathbf{A}\|_{S_q}$.
 Port of `NLAlib.schattenInvariantNorm_apply`. -/
 @[simp]
 theorem lpGauge_matrixNorm {q : ℝ≥0∞} (hq : 1 ≤ q) (A : Matrix m n 𝕜) :
@@ -334,22 +364,22 @@ theorem lpGauge_matrixNorm {q : ℝ≥0∞} (hq : 1 ≤ q) (A : Matrix m n 𝕜)
   rw [SymmetricGauge.matrixNorm_def, schattenNorm]
   exact lpGauge_apply_eq_norm_toLp hq fun i hi => singularValues_of_min_card_le A hi
 
-/-- The norm of the `ℓ^∞` gauge is the spectral norm. -/
+/-- The norm of the $\ell^\infty$ gauge is the spectral norm $\|\mathbf{A}\|_2$. -/
 theorem lpGauge_top_matrixNorm (A : Matrix m n 𝕜) :
     (lpGauge ⊤ le_top).matrixNorm A = specNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_top]
 
-/-- The norm of the `ℓ^2` gauge is the Frobenius norm. -/
+/-- The norm of the $\ell^2$ gauge is the Frobenius norm $\|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem lpGauge_two_matrixNorm (A : Matrix m n 𝕜) :
     (lpGauge 2 one_le_two).matrixNorm A = frobNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_two]
 
-/-- The norm of the `ℓ^1` gauge is the nuclear norm. -/
+/-- The norm of the $\ell^1$ gauge is the nuclear norm $\|\mathbf{A}\|_*$. -/
 theorem lpGauge_one_matrixNorm (A : Matrix m n 𝕜) :
     (lpGauge 1 le_rfl).matrixNorm A = nuclearNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_one]
 
-/-- The norm of the Ky Fan `k`-gauge is the Ky Fan `k`-norm.
+/-- The norm of the Ky Fan $k$-gauge is the Ky Fan $k$-norm $\|\mathbf{A}\|_{(k)}$.
 Port of `NLAlib.kyFanInvariantNorm`. -/
 @[simp]
 theorem kyFanGauge_matrixNorm {k : ℕ} (hk : k ≠ 0) (A : Matrix m n 𝕜) :
@@ -358,8 +388,9 @@ theorem kyFanGauge_matrixNorm {k : ℕ} (hk : k ≠ 0) (A : Matrix m n 𝕜) :
     kyFanGauge_apply_of_antitone hk (x := singularValuesFinsupp A) (singularValues_antitone A)]
   rfl
 
-/-- **Fan dominance**, as an equivalence: every unitarily invariant norm of `A` is at most that of
-`B` if and only if every Ky Fan norm of `A` is at most that of `B`. The shapes may differ. The
+/-- **Fan dominance**, as an equivalence: every unitarily invariant norm of $\mathbf{A}$ is at
+most that of $\mathbf{B}$ if and only if every Ky Fan norm of $\mathbf{A}$ is at most that of
+$\mathbf{B}$. The shapes may differ. The
 Ky Fan norms are unitarily invariant norms (`kyFanGauge_matrixNorm`), which gives one direction;
 the other is `SymmetricGauge.matrixNorm_le_of_forall_kyFanNorm_le`.
 [HornJohnson2013, Theorem 7.4.8.4].

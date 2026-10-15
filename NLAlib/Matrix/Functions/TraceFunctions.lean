@@ -15,13 +15,19 @@ public import NLAlib.Matrix.Spectral.Weyl
 /-!
 # Trace functions
 
-For `f : ℝ → ℝ`, the trace function `A ↦ re (cfc f A).trace = ∑ f(λ_i(A))` on Hermitian matrices
-inherits monotonicity and convexity from `f`. With `f = exp` this gives the monotonicity and
-convexity of the trace exponential. Quadratic forms satisfy Jensen's inequality
-`φ(xᴴ A x) ≤ xᴴ φ(A) x` for convex `φ` and unit `x`.
+For a function $f$ from $\mathbb{R}$ to $\mathbb{R}$, the trace function
+$\mathbf{A} \mapsto \operatorname{tr} f(\mathbf{A}) = \sum_i f(\lambda_i(\mathbf{A}))$ on Hermitian
+matrices (in Lean the real part of the trace) inherits monotonicity and convexity from $f$. With
+$f = \exp$ this gives the monotonicity and convexity of the trace exponential. Quadratic forms
+satisfy Jensen's inequality
+$\varphi(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \le \mathbf{x}^{\mathsf{H}}
+\varphi(\mathbf{A}) \mathbf{x}$
+for convex $\varphi$ and unit $\mathbf{x}$.
 
-The intrinsic dimension `NLAlib.intrinsicDimension A = tr A / ‖A‖₂` of a positive semidefinite
-matrix replaces the ambient dimension in trace bounds.
+The intrinsic dimension
+$\operatorname{intdim}(\mathbf{A}) = \operatorname{tr} \mathbf{A} / \|\mathbf{A}\|_2$
+(`NLAlib.intrinsicDimension`) of a positive semidefinite matrix replaces the ambient dimension in
+trace bounds.
 
 ## Main definitions
 
@@ -29,8 +35,8 @@ matrix replaces the ambient dimension in trace bounds.
 
 ## Main results
 
-* `NLAlib.re_trace_cfc_le_re_trace_cfc_of_le`: monotone `f` gives a monotone trace function.
-* `NLAlib.convexOn_re_trace_cfc`: convex `f` gives a convex trace function.
+* `NLAlib.re_trace_cfc_le_re_trace_cfc_of_le`: monotone $f$ gives a monotone trace function.
+* `NLAlib.convexOn_re_trace_cfc`: convex $f$ gives a convex trace function.
 * `NLAlib.re_trace_mul_cfc_le_re_trace_cfc_sub`: Klein's inequality.
 * `NLAlib.apply_re_quadForm_le_re_quadForm_cfc`: Jensen for quadratic forms.
 * `NLAlib.re_quadForm_mem_of_spectrum_subset`: the quadratic form at a unit vector lies in every
@@ -53,7 +59,10 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [F
 
 /-! ### Jensen for quadratic forms along an orthonormal frame -/
 
-/-- The quadratic form of `f(A)` at a unit vector is an average of `f` over the eigenvalues. -/
+/-- The quadratic form of $f(\mathbf{A})$ at a unit vector is an average of $f$ over the
+eigenvalues: there are weights $w_i \ge 0$ summing to $1$ with
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}} f(\mathbf{A}) \mathbf{x})
+= \sum_i w_i f(\lambda_i(\mathbf{A}))$ for every $f$. -/
 private theorem exists_weights_re_quadForm_cfc {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) :
     ∃ w : Fin (Fintype.card n) → ℝ, (∀ i, 0 ≤ w i) ∧ ∑ i, w i = 1 ∧
@@ -67,8 +76,10 @@ private theorem exists_weights_re_quadForm_cfc {A : Matrix n n 𝕜} (hA : A.IsH
   · rw [re_quadForm_cfc_eq_sum hU hr hAU f x]
     exact Finset.sum_congr rfl fun i _ => by rw [smul_eq_mul, mul_comm]
 
-/-- **Jensen's inequality for a quadratic form.** For `φ` convex on a set containing the spectrum
-of the Hermitian matrix `A` and a unit vector `x`, `φ(xᴴ A x) ≤ xᴴ φ(A) x`.
+/-- **Jensen's inequality for a quadratic form.** For $\varphi$ convex on a set containing the
+spectrum of the Hermitian matrix $\mathbf{A}$ and a unit vector $\mathbf{x}$,
+$\varphi(\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}))
+\le \operatorname{Re}(\mathbf{x}^{\mathsf{H}} \varphi(\mathbf{A}) \mathbf{x})$.
 [HalkoMartinssonTropp2011, Proposition 8.6 context]. -/
 theorem apply_re_quadForm_le_re_quadForm_cfc {φ : ℝ → ℝ} {s : Set ℝ} (hφ : ConvexOn ℝ s φ)
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (hAs : spectrum ℝ A ⊆ s) {x : n → 𝕜}
@@ -82,7 +93,8 @@ theorem apply_re_quadForm_le_re_quadForm_cfc {φ : ℝ → ℝ} {s : Set ℝ} (h
   exact hφ.map_sum_le (fun i _ => hw0 i) hw1 fun i _ => hAs (hA.eigenvalue_mem_spectrum i.isLt)
 
 /-- The quadratic form of a Hermitian matrix at a unit vector lies in every convex set containing
-the spectrum: it is a convex combination of the eigenvalues. -/
+the spectrum: $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \in s$ for
+$\|\mathbf{x}\| = 1$, since it is a convex combination of the eigenvalues. -/
 theorem re_quadForm_mem_of_spectrum_subset {s : Set ℝ} (hs : Convex ℝ s) {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hAs : spectrum ℝ A ⊆ s) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) :
     RCLike.re (quadForm A x) ∈ s := by
@@ -93,7 +105,8 @@ theorem re_quadForm_mem_of_spectrum_subset {s : Set ℝ} (hs : Convex ℝ s) {A 
   rw [hid]
   exact hs.sum_mem (fun i _ => hw0 i) hw1 fun i _ => hAs (hA.eigenvalue_mem_spectrum i.isLt)
 
-/-- The quadratic form at a coordinate vector is the diagonal entry. -/
+/-- The quadratic form at a coordinate vector is the diagonal entry:
+$\mathbf{e}_i^{\mathsf{H}}\mathbf{N}\mathbf{e}_i = \mathbf{N}_{i,i}$. -/
 private theorem quadForm_single_one (N : Matrix n n 𝕜) (i : n) :
     quadForm N (Pi.single i 1) = N i i := by
   rw [quadForm_def, Matrix.mulVec_single_one, ← Pi.single_star, star_one, single_one_dotProduct]
@@ -106,9 +119,13 @@ private theorem norm_toLp_mulVec_single {U : Matrix n p 𝕜} (hU : HasOrthonorm
   rw [hU.norm_toLp_mulVec]
   exact (PiLp.norm_single 2 (fun _ : p => 𝕜) i (1 : 𝕜)).trans norm_one
 
-/-- **Peierls' inequality.** For `φ` convex on a set containing the spectrum of the Hermitian
-matrix `A` and `U` with orthonormal columns `u_i = U *ᵥ Pi.single i 1`,
-`∑ i, φ(u_iᴴ A u_i) ≤ tr (Uᴴ φ(A) U)`; for a unitary `U` the right side is `tr φ(A)`.
+/-- **Peierls' inequality.** For $\varphi$ convex on a set containing the spectrum of the
+Hermitian matrix $\mathbf{A}$ and $\mathbf{U}$ with orthonormal columns
+$\mathbf{u}_i = \mathbf{U}\mathbf{e}_i$,
+$$\sum_i \varphi(\operatorname{Re}(\mathbf{u}_i^{\mathsf{H}}\mathbf{A}\mathbf{u}_i))
+  \le \operatorname{Re} \operatorname{tr}(\mathbf{U}^{\mathsf{H}} \varphi(\mathbf{A}) \mathbf{U})
+  \,;$$
+for a unitary $\mathbf{U}$ the right side is $\operatorname{tr} \varphi(\mathbf{A})$.
 [Carlen2010, Theorem 2.9]; stated there for an orthonormal basis, here for any orthonormal family.
 Result: peierls-inequality -/
 theorem sum_apply_re_quadForm_le_re_trace_cfc {φ : ℝ → ℝ} {s : Set ℝ} (hφ : ConvexOn ℝ s φ)
@@ -124,7 +141,9 @@ theorem sum_apply_re_quadForm_le_re_trace_cfc {φ : ℝ → ℝ} {s : Set ℝ} (
   exact apply_re_quadForm_le_re_quadForm_cfc hφ hA hAs (norm_toLp_mulVec_single hU i)
 
 /-- A Hermitian matrix has a unitary frame along which its quadratic form takes the sorted
-eigenvalues. -/
+eigenvalues: $\operatorname{Re}(\mathbf{u}_i^{\mathsf{H}}\mathbf{C}\mathbf{u}_i) =
+\lambda_i(\mathbf{C})$
+for the columns $\mathbf{u}_i$ of a unitary $\mathbf{U}$. -/
 private theorem exists_frame_re_quadForm_eq_eigenvalue {C : Matrix n n 𝕜} (hC : C.IsHermitian) :
     ∃ U : Matrix n (Fin (Fintype.card n)) 𝕜, HasOrthonormalCols U ∧ U * Uᴴ = 1 ∧
       ∀ i, RCLike.re (quadForm C (U *ᵥ Pi.single i 1)) = eigenvalue C i := by
@@ -135,7 +154,10 @@ private theorem exists_frame_re_quadForm_eq_eigenvalue {C : Matrix n n 𝕜} (hC
     RCLike.ofReal_re]
 
 omit [DecidableEq n] in
-/-- The quadratic form of a real combination of two matrices. -/
+/-- The quadratic form of a real combination of two matrices:
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}(a\mathbf{A} + b\mathbf{B})\mathbf{x})
+= a \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) +
+b \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{x})$. -/
 private theorem re_quadForm_smul_add_smul (a b : ℝ) (A B : Matrix n n 𝕜) (x : n → 𝕜) :
     RCLike.re (quadForm (a • A + b • B) x) =
       a * RCLike.re (quadForm A x) + b * RCLike.re (quadForm B x) := by
@@ -186,7 +208,11 @@ private theorem re_trace_cfc_smul_add_smul_le {f : ℝ → ℝ} {s : Set ℝ} (h
 
 omit [DecidableEq n] in
 /-- **The overlap formula** for two unitary diagonalisations:
-`tr (U D_a Uᴴ V D_b Vᴴ) = ∑ a_j b_k |(Uᴴ V)_{jk}|²`. -/
+$$\operatorname{Re}
+\operatorname{tr}\bigl(\mathbf{U}\operatorname{diag}(\mathbf{a})\mathbf{U}^{\mathsf{H}}
+  \mathbf{V}\operatorname{diag}(\mathbf{b})\mathbf{V}^{\mathsf{H}}\bigr)
+  = \sum_{j, k} \mathbf{a}_j \mathbf{b}_k \, \lvert (\mathbf{U}^{\mathsf{H}}\mathbf{V})_{j,k}
+  \rvert^2 \,.$$ -/
 private theorem re_trace_mul_diagonal_mul (U V : Matrix n p 𝕜) (a b : p → ℝ) :
     RCLike.re ((U * Matrix.diagonal (fun j => ((a j : ℝ) : 𝕜)) * Uᴴ) *
       (V * Matrix.diagonal (fun k => ((b k : ℝ) : 𝕜)) * Vᴴ)).trace =
@@ -212,10 +238,12 @@ private theorem re_trace_mul_diagonal_mul (U V : Matrix n p 𝕜) (a b : p → �
 
 /-! ### Monotonicity and convexity -/
 
-/-- **A monotone function gives a monotone trace function**: if `A ≤ B` have spectrum in `s` and
-`f` is non-decreasing on `s`, then `tr f(A) ≤ tr f(B)`.
+/-- **A monotone function gives a monotone trace function**: if $\mathbf{A}$ is Hermitian,
+$\mathbf{A} \preceq \mathbf{B}$, both have spectrum in $s$ and $f$ is non-decreasing on $s$, then
+$\operatorname{Re} \operatorname{tr} f(\mathbf{A}) \le \operatorname{Re} \operatorname{tr}
+f(\mathbf{B})$.
 [Tropp2015, §2.1 and §8.3]; [Carlen2010, Theorem 2.10].
-Port of `NLAlib.traceExp_le_traceExp`, there for the exponential over `ℂ`.
+Port of `NLAlib.traceExp_le_traceExp`, there for the exponential over $\mathbb{C}$.
 Result: trace-monotonicity -/
 theorem re_trace_cfc_le_re_trace_cfc_of_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (h : A ≤ B)
     {f : ℝ → ℝ} {s : Set ℝ} (hf : MonotoneOn f s) (hAs : spectrum ℝ A ⊆ s)
@@ -229,8 +257,9 @@ theorem re_trace_cfc_le_re_trace_cfc_of_le {A B : Matrix n n 𝕜} (hA : A.IsHer
   exact hf (hAs (hA.eigenvalue_mem_spectrum hi')) (hBs (hB.eigenvalue_mem_spectrum hi'))
     (eigenvalue_le_eigenvalue_of_le h hA i)
 
-/-- **A convex function gives a convex trace function** on the Hermitian matrices with spectrum
-in the domain of convexity.
+/-- **A convex function gives a convex trace function**: for $f$ convex on $s$, the function
+$\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} f(\mathbf{A})$ is convex on the Hermitian
+matrices with spectrum in $s$.
 [Carlen2010, Theorem 2.10]; [Bhatia1997, Problem IX.8.14 context].
 Port of `NLAlib.convexOn_traceExp_isHermitian` and `NLAlib.convexOn_traceEvenPower`, there for
 the exponential and for even powers.
@@ -243,8 +272,10 @@ theorem convexOn_re_trace_cfc {f : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ
     exact ⟨h.1, h.2.1⟩
   · exact (re_trace_cfc_smul_add_smul_le hf hA.1 hA.2 hB.1 hB.2 ha hb hab).2.2
 
-/-- **The generalized Klein inequality.** If `∑ i, f i a * g i h ≥ 0` for all `a`, `h` in `s`,
-then `∑ i, tr (f_i(A) g_i(H)) ≥ 0` for Hermitian `A`, `H` with spectrum in `s`.
+/-- **The generalized Klein inequality.** For finitely many functions $f_i$, $g_i$, if
+$\sum_i f_i(a) g_i(h) \ge 0$ for all $a, h \in s$, then
+$\sum_i \operatorname{Re} \operatorname{tr}(f_i(\mathbf{A}) g_i(\mathbf{H})) \ge 0$ for Hermitian
+$\mathbf{A}$, $\mathbf{H}$ with spectrum in $s$.
 [Tropp2015, Proposition 8.3.5]. Port of `NLAlib.generalized_klein`. -/
 theorem sum_re_trace_cfc_mul_cfc_nonneg {ι : Type*} [Fintype ι] {f g : ι → ℝ → ℝ} {s : Set ℝ}
     (hfg : ∀ a ∈ s, ∀ h ∈ s, 0 ≤ ∑ i, f i a * g i h) {A H : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -268,8 +299,11 @@ theorem sum_re_trace_cfc_mul_cfc_nonneg {ι : Type*} [Fintype ι] {f g : ι → 
   exact mul_nonneg (hfg _ (hAs (hA.eigenvalue_mem_spectrum j.isLt)) _
     (hHs (hH.eigenvalue_mem_spectrum k.isLt))) (by positivity)
 
-/-- **Klein's inequality.** For `f` convex on `s` with derivative `f'`, and Hermitian `A`, `B`
-with spectrum in `s`, `tr ((A - B) f'(B)) ≤ tr f(A) - tr f(B)`.
+/-- **Klein's inequality.** For $f$ convex on $s$ with derivative $f'$ within $s$ at every point
+of $s$, and Hermitian $\mathbf{A}$, $\mathbf{B}$ with spectrum in $s$,
+$$\operatorname{Re} \operatorname{tr}((\mathbf{A} - \mathbf{B}) f'(\mathbf{B}))
+  \le \operatorname{Re} \operatorname{tr} f(\mathbf{A}) - \operatorname{Re} \operatorname{tr}
+  f(\mathbf{B}) \,.$$
 [Carlen2010, Theorem 2.11]; [Tropp2015, §8.3].
 Port of `NLAlib.generalized_klein`, in its classical form.
 Result: klein-inequality -/
@@ -307,9 +341,11 @@ theorem re_trace_mul_cfc_le_re_trace_cfc_sub {f f' : ℝ → ℝ} {s : Set ℝ} 
 
 /-! ### Compressions -/
 
-/-- **The power scheme bound.** For positive semidefinite `B` and `Q` with orthonormal columns,
-`‖Qᴴ B Q‖₂^{q+1} ≤ ‖Qᴴ B^{q+1} Q‖₂`. This is why power iteration improves the randomized range
-finder. [HalkoMartinssonTropp2011, Proposition 8.6]. -/
+/-- **The power scheme bound.** For positive semidefinite $\mathbf{B}$ and $\mathbf{Q}$ with
+orthonormal columns,
+$\|\mathbf{Q}^{\mathsf{H}}\mathbf{B}\mathbf{Q}\|_2^{q+1}
+\le \|\mathbf{Q}^{\mathsf{H}}\mathbf{B}^{q+1}\mathbf{Q}\|_2$. This is why power iteration improves
+the randomized range finder. [HalkoMartinssonTropp2011, Proposition 8.6]. -/
 theorem specNorm_conjTranspose_mul_mul_pow_le {B : Matrix n n 𝕜} (hB : B.PosSemidef)
     {Q : Matrix n p 𝕜} (hQ : HasOrthonormalCols Q) (q : ℕ) :
     specNorm (Qᴴ * B * Q) ^ (q + 1) ≤ specNorm (Qᴴ * B ^ (q + 1) * Q) := by
@@ -331,8 +367,10 @@ theorem specNorm_conjTranspose_mul_mul_pow_le {B : Matrix n n 𝕜} (hB : B.PosS
     rw [h1]
     exact h2.trans ((le_abs_self _).trans h3)
 
-/-- **Trace Jensen for compressions** (Berezin's inequality). For `f` convex on a set containing
-the spectrum of `A` and `Q` with orthonormal columns, `tr f(Qᴴ A Q) ≤ tr (Qᴴ f(A) Q)`.
+/-- **Trace Jensen for compressions** (Berezin's inequality). For $f$ convex on a set containing
+the spectrum of the Hermitian $\mathbf{A}$ and $\mathbf{Q}$ with orthonormal columns,
+$\operatorname{Re} \operatorname{tr} f(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})
+\le \operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}} f(\mathbf{A}) \mathbf{Q})$.
 [Carlen2010, Theorem 2.12 context]; [Bhatia1997, Problem IX.8.14]. -/
 theorem re_trace_cfc_conjTranspose_mul_mul_le {f : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ s f)
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (hAs : spectrum ℝ A ⊆ s) {Q : Matrix n p 𝕜}
@@ -350,8 +388,11 @@ theorem re_trace_cfc_conjTranspose_mul_mul_le {f : ℝ → ℝ} {s : Set ℝ} (h
 
 /-! ### The trace exponential -/
 
-/-- **The trace exponential is monotone** in the Loewner order.
-[Tropp2015, §2.1]. Port of `NLAlib.traceExp_le_traceExp`, there over `ℂ`. -/
+/-- **The trace exponential is monotone** in the Loewner order: for Hermitian $\mathbf{A}$ and
+$\mathbf{A} \preceq \mathbf{B}$,
+$\operatorname{Re} \operatorname{tr} \exp(\mathbf{A}) \le \operatorname{Re} \operatorname{tr}
+\exp(\mathbf{B})$.
+[Tropp2015, §2.1]. Port of `NLAlib.traceExp_le_traceExp`, there over $\mathbb{C}$. -/
 theorem re_trace_exp_le_re_trace_exp_of_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (h : A ≤ B) : RCLike.re (exp A).trace ≤ RCLike.re (exp B).trace := by
   have hB : B.IsHermitian := by
@@ -361,8 +402,9 @@ theorem re_trace_exp_le_re_trace_exp_of_le {A B : Matrix n n 𝕜} (hA : A.IsHer
   exact re_trace_cfc_le_re_trace_cfc_of_le hA h (Real.exp_monotone.monotoneOn Set.univ)
     (Set.subset_univ _) (Set.subset_univ _)
 
-/-- **The trace exponential is convex** on the Hermitian matrices.
-[Tropp2015, §8.3]. Port of `NLAlib.convexOn_traceExp_isHermitian`, there over `ℂ`. -/
+/-- **The trace exponential is convex** on the Hermitian matrices:
+$\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$ is convex there.
+[Tropp2015, §8.3]. Port of `NLAlib.convexOn_traceExp_isHermitian`, there over $\mathbb{C}$. -/
 theorem convexOn_re_trace_exp :
     ConvexOn ℝ {A : Matrix n n 𝕜 | A.IsHermitian} fun A => RCLike.re (exp A).trace := by
   have h := convexOn_re_trace_cfc (𝕜 := 𝕜) (n := n) convexOn_exp
@@ -376,7 +418,9 @@ theorem convexOn_re_trace_exp :
   rw [Matrix.IsHermitian.exp_eq_cfc hA]
 
 /-- The trace exponential is stable under perturbation:
-`tr exp A ≤ exp ‖A - B‖₂ · tr exp B` for Hermitian `A`, `B`.
+$\operatorname{Re} \operatorname{tr} \exp(\mathbf{A})
+\le e^{\|\mathbf{A} - \mathbf{B}\|_2} \operatorname{Re} \operatorname{tr} \exp(\mathbf{B})$ for
+Hermitian $\mathbf{A}$, $\mathbf{B}$.
 Port of `NLAlib.traceExp_le_exp_mul_traceExp_of_norm_sub_le`. -/
 theorem re_trace_exp_le_exp_specNorm_sub_mul {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
@@ -388,14 +432,18 @@ theorem re_trace_exp_le_exp_specNorm_sub_mul {A B : Matrix n n 𝕜} (hA : A.IsH
 
 /-! ### Intrinsic dimension -/
 
-/-- The **intrinsic dimension** of a matrix: the ratio of its trace to its spectral norm. For a
-nonzero positive semidefinite matrix it lies between `1` and the rank.
-[Tropp2015, Definition 7.1.1]. Port of `NLAlib.intrinsicDimension`, there over `ℂ`. -/
+/-- The **intrinsic dimension** of a matrix: the ratio of its trace to its spectral norm,
+$\operatorname{intdim}(\mathbf{A}) = \operatorname{Re} \operatorname{tr} \mathbf{A} /
+\|\mathbf{A}\|_2$
+(Lean's division by zero gives $0$ for $\mathbf{A} = \mathbf{0}$). For a nonzero positive
+semidefinite matrix it lies between $1$ and the rank.
+[Tropp2015, Definition 7.1.1]. Port of `NLAlib.intrinsicDimension`, there over $\mathbb{C}$. -/
 noncomputable def intrinsicDimension (A : Matrix n n 𝕜) : ℝ :=
   RCLike.re A.trace / specNorm A
 
 omit [DecidableEq n] in
-/-- The intrinsic dimension of a nonzero positive semidefinite matrix is at least one. -/
+/-- The intrinsic dimension of a nonzero positive semidefinite matrix is at least one:
+$1 \le \operatorname{intdim}(\mathbf{A})$. -/
 theorem _root_.Matrix.PosSemidef.one_le_intrinsicDimension {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (h : A ≠ 0) : 1 ≤ intrinsicDimension A := by
   have hpos : 0 < specNorm A :=
@@ -404,7 +452,8 @@ theorem _root_.Matrix.PosSemidef.one_le_intrinsicDimension {A : Matrix n n 𝕜}
   exact hA.specNorm_le_re_trace
 
 omit [DecidableEq n] in
-/-- The intrinsic dimension of a positive semidefinite matrix is at most its rank. -/
+/-- The intrinsic dimension of a positive semidefinite matrix is at most its rank:
+$\operatorname{intdim}(\mathbf{A}) \le \operatorname{rank} \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.intrinsicDimension_le_rank {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : intrinsicDimension A ≤ A.rank := by
   rcases eq_or_ne A 0 with rfl | h
@@ -421,7 +470,9 @@ theorem _root_.Matrix.PosSemidef.intrinsicDimension_le_rank {A : Matrix n n 𝕜
   rwa [nsmul_eq_mul] at hle
 
 omit [DecidableEq n] in
-/-- Enlarging the denominator does not increase the ratio defining the intrinsic dimension. -/
+/-- Enlarging the denominator does not increase the ratio defining the intrinsic dimension: if
+$\|\mathbf{A}\|_2 \le c$ then
+$\operatorname{Re} \operatorname{tr} \mathbf{A} / c \le \operatorname{intdim}(\mathbf{A})$. -/
 private theorem re_trace_div_le_intrinsicDimension {A : Matrix n n 𝕜} (hA : A.PosSemidef) {c : ℝ}
     (hc : specNorm A ≤ c) : RCLike.re A.trace / c ≤ intrinsicDimension A := by
   rcases eq_or_ne A 0 with rfl | h
@@ -432,7 +483,7 @@ private theorem re_trace_div_le_intrinsicDimension {A : Matrix n n 𝕜} (hA : A
 
 omit [DecidableEq m] [DecidableEq n] in
 /-- The intrinsic dimension of a block diagonal positive semidefinite matrix is at most the sum
-of the intrinsic dimensions of the blocks.
+of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$.
 [Tropp2015, §7.3]. Port of `NLAlib.intrinsicDimension_fromBlocks`. -/
 theorem intrinsicDimension_fromBlocks_le {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -445,7 +496,7 @@ theorem intrinsicDimension_fromBlocks_le {A : Matrix m m 𝕜} {B : Matrix n n �
 
 omit [DecidableEq m] [DecidableEq n] in
 /-- The intrinsic dimension of a block diagonal positive semidefinite matrix is at least the
-smaller of the intrinsic dimensions of the blocks.
+smaller of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$.
 Port of `NLAlib.intrinsicDimension_fromBlocks`. -/
 theorem min_intrinsicDimension_le_intrinsicDimension_fromBlocks {A : Matrix m m 𝕜}
     {B : Matrix n n 𝕜} (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -463,10 +514,12 @@ theorem min_intrinsicDimension_le_intrinsicDimension_fromBlocks {A : Matrix m m 
     exact (min_le_left _ _).trans
       (div_le_div_of_nonneg_right (le_add_of_nonneg_right htB) (specNorm_nonneg A))
 
-/-- **The intrinsic dimension lemma.** For `φ` convex on `[0, ∞)` with `φ 0 = 0` and positive
-semidefinite `A`, `tr φ(A) ≤ intdim(A) · φ(‖A‖₂)`.
+/-- **The intrinsic dimension lemma.** For $\varphi$ convex on $[0, \infty)$ with
+$\varphi(0) = 0$ and positive semidefinite $\mathbf{A}$,
+$$\operatorname{Re} \operatorname{tr} \varphi(\mathbf{A})
+  \le \operatorname{intdim}(\mathbf{A}) \, \varphi(\|\mathbf{A}\|_2) \,.$$
 [Tropp2015, Lemma 7.5.1].
-Port of `NLAlib.traceFunction_le_intrinsicDimension_mul`, there over `ℂ`.
+Port of `NLAlib.traceFunction_le_intrinsicDimension_mul`, there over $\mathbb{C}$.
 Result: intrinsic-dimension -/
 theorem _root_.Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {φ : ℝ → ℝ} (hφ : ConvexOn ℝ (Set.Ici 0) φ) (hφ0 : φ 0 = 0) :

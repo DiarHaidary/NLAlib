@@ -12,15 +12,17 @@ public import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 /-!
 # The Sylvester equation
 
-The Sylvester equation `A X - X B = C`, for square `A` and `B` of possibly different sizes over a
-field, has exactly one solution `X` when the characteristic polynomials of `A` and `B` are
-coprime; over an algebraically closed field this says that `A` and `B` have no common eigenvalue.
-A block upper triangular matrix whose diagonal blocks satisfy this condition is therefore similar
-to its block diagonal part.
+The Sylvester equation $\mathbf{A}\mathbf{X} - \mathbf{X}\mathbf{B} = \mathbf{C}$, for square
+$\mathbf{A}$ and $\mathbf{B}$ of possibly different sizes over a field, has exactly one solution
+$\mathbf{X}$ when the characteristic polynomials of $\mathbf{A}$ and $\mathbf{B}$ are coprime;
+over an algebraically closed field this says that $\mathbf{A}$ and $\mathbf{B}$ have no common
+eigenvalue. A block upper triangular matrix whose diagonal blocks satisfy this condition is
+therefore similar to its block diagonal part.
 
 ## Main results
 
-* `NLAlib.eq_zero_of_mul_eq_mul_of_isCoprime_charpoly`: only `X = 0` intertwines `A` and `B`.
+* `NLAlib.eq_zero_of_mul_eq_mul_of_isCoprime_charpoly`: only $\mathbf{X} = \mathbf{0}$
+  intertwines $\mathbf{A}$ and $\mathbf{B}$.
 * `NLAlib.existsUnique_mul_sub_mul_eq_of_isCoprime_charpoly`: the Sylvester equation.
 * `NLAlib.isCoprime_charpoly_iff_disjoint_spectrum`: coprimality as disjoint spectra.
 * `NLAlib.exists_fromBlocks_mul_eq_mul_fromBlocks`: block diagonalisation.
@@ -36,7 +38,8 @@ namespace NLAlib
 variable {K : Type*} [Field K] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
   [DecidableEq n]
 
-/-- An intertwining relation `A Y = Y B` passes to polynomials in `A` and `B`. -/
+/-- An intertwining relation $\mathbf{A}\mathbf{Y} = \mathbf{Y}\mathbf{B}$ passes to polynomials
+in $\mathbf{A}$ and $\mathbf{B}$: $p(\mathbf{A})\mathbf{Y} = \mathbf{Y}p(\mathbf{B})$. -/
 private theorem aeval_mul_eq_mul_aeval {A : Matrix m m K} {B : Matrix n n K} {Y : Matrix m n K}
     (hY : A * Y = Y * B) (p : K[X]) : aeval A p * Y = Y * aeval B p := by
   have hpow : ∀ k : ℕ, A ^ k * Y = Y * B ^ k := by
@@ -52,7 +55,8 @@ private theorem aeval_mul_eq_mul_aeval {A : Matrix m m K} {B : Matrix n n K} {Y 
       Algebra.algebraMap_eq_smul_one, smul_mul_assoc, smul_mul_assoc, one_mul, one_mul,
       Matrix.smul_mul, Matrix.mul_smul, hpow]
 
-/-- If the characteristic polynomials of `A` and `B` are coprime, only `X = 0` intertwines them.
+/-- If the characteristic polynomials of $\mathbf{A}$ and $\mathbf{B}$ are coprime, only
+$\mathbf{X} = \mathbf{0}$ satisfies $\mathbf{A}\mathbf{X} = \mathbf{X}\mathbf{B}$.
 Port of `NLAlib.eq_zero_of_mul_eq_mul_of_isCoprime_charpoly`. -/
 theorem eq_zero_of_mul_eq_mul_of_isCoprime_charpoly {A : Matrix m m K} {B : Matrix n n K}
     (h : IsCoprime A.charpoly B.charpoly) {X : Matrix m n K} (hX : A * X = X * B) : X = 0 := by
@@ -63,8 +67,9 @@ theorem eq_zero_of_mul_eq_mul_of_isCoprime_charpoly {A : Matrix m m K} {B : Matr
   rw [Matrix.aeval_self_charpoly, Matrix.mul_zero] at h2
   rw [← Matrix.one_mul X, ← h1, Matrix.mul_assoc, h2, Matrix.mul_zero]
 
-/-- **The Sylvester equation `A X - X B = C` has a unique solution** when the characteristic
-polynomials of `A` and `B` are coprime. [HornJohnson2013, Theorem 2.4.4.1].
+/-- **The Sylvester equation $\mathbf{A}\mathbf{X} - \mathbf{X}\mathbf{B} = \mathbf{C}$ has a
+unique solution** when the characteristic polynomials of $\mathbf{A}$ and $\mathbf{B}$ are
+coprime. [HornJohnson2013, Theorem 2.4.4.1].
 Port of `NLAlib.existsUnique_sylvester_of_isCoprime_charpoly`.
 Result: sylvester-equation -/
 theorem existsUnique_mul_sub_mul_eq_of_isCoprime_charpoly (A : Matrix m m K) (B : Matrix n n K)
@@ -94,7 +99,12 @@ theorem isCoprime_charpoly_iff_disjoint_spectrum [IsAlgClosed K] (A : Matrix m m
   tauto
 
 /-- **A block upper triangular matrix whose diagonal blocks have coprime characteristic
-polynomials is similar to its block diagonal part.** [HornJohnson2013, Theorem 2.4.6.1 context]. -/
+polynomials is similar to its block diagonal part**: there is $\mathbf{X}$ with
+$$\begin{bmatrix} \mathbf{A} & \mathbf{C} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}
+  \begin{bmatrix} \mathbf{I} & \mathbf{X} \\ \mathbf{0} & \mathbf{I} \end{bmatrix} =
+  \begin{bmatrix} \mathbf{I} & \mathbf{X} \\ \mathbf{0} & \mathbf{I} \end{bmatrix}
+  \begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}.$$
+[HornJohnson2013, Theorem 2.4.6.1 context]. -/
 theorem exists_fromBlocks_mul_eq_mul_fromBlocks (A : Matrix m m K) (B : Matrix n n K)
     (h : IsCoprime A.charpoly B.charpoly) (C : Matrix m n K) :
     ∃ X : Matrix m n K,

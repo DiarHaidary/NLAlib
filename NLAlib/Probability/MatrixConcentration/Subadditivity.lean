@@ -14,11 +14,15 @@ public import NLAlib.Probability.MatrixConcentration.Laplace
 /-!
 # Subadditivity of matrix cumulant generating functions
 
-Lieb's concavity theorem in expectation: for a fixed Hermitian `H` and a random Hermitian `X`,
-`E tr exp (H + X) ≤ tr exp (H + log E e^X)` (Tropp 2015, Corollary 3.4.2). For independent
-random Hermitian matrices it gives the subadditivity of matrix cumulant generating functions,
-`E tr exp (∑ X k) ≤ tr exp (∑ log E e^{X k})` (Tropp 2015, Lemma 3.5.1), the step from one summand
-to a sum in every matrix concentration inequality.
+Lieb's concavity theorem in expectation: for a fixed Hermitian $\mathbf{H}$ and a random Hermitian
+$\mathbf{X}$,
+$\mathbb{E} \operatorname{tr} e^{\mathbf{H} + \mathbf{X}}
+\le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E} e^{\mathbf{X}}}$ (Tropp 2015, Corollary
+3.4.2). For independent random Hermitian matrices it gives the subadditivity of matrix cumulant
+generating functions,
+$\mathbb{E} \operatorname{tr} e^{\sum_k \mathbf{X}_k}
+\le \operatorname{tr} e^{\sum_k \log \mathbb{E} e^{\mathbf{X}_k}}$ (Tropp 2015, Lemma 3.5.1), the
+step from one summand to a sum in every matrix concentration inequality.
 
 ## Main results
 
@@ -46,8 +50,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 /-! ### Measurability -/
 
 /-- An almost surely Hermitian random matrix with an integrable exponential is almost everywhere
-measurable: `X = log (exp X)` almost surely, and the logarithm is continuous on the positive
-definite matrices. -/
+measurable: $\mathbf{X} = \log e^{\mathbf{X}}$ almost surely, and the logarithm is continuous on
+the positive definite matrices. -/
 theorem aemeasurable_of_integrable_exp {X : Ω → Matrix n n 𝕜}
     (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian) (hint : Integrable (fun ω => exp (X ω)) μ) :
     AEMeasurable X μ := by
@@ -76,7 +80,9 @@ private theorem specNorm_exp_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (A := fun b => cond b A B) fun b _ => by cases b <;> assumption
   simpa only [Fintype.sum_bool, Fintype.prod_bool, cond_true, cond_false] using h
 
-/-- `tr exp (H + X)` is integrable when `‖exp X‖` is dominated by an integrable function. -/
+/-- $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is integrable, for Hermitian $\mathbf{H}$ and
+an almost surely Hermitian, almost everywhere measurable $\mathbf{X}$, when
+$\|e^{\mathbf{X}}\|_2$ is dominated by an integrable function. -/
 theorem integrable_re_trace_exp_add_of_le {H : Matrix n n 𝕜} (hH : H.IsHermitian)
     {X : Ω → Matrix n n 𝕜} (hXm : AEMeasurable X μ) (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian)
     {g : Ω → ℝ} (hg : Integrable g μ) (hle : ∀ᵐ ω ∂μ, specNorm (exp (X ω)) ≤ g ω) :
@@ -94,7 +100,11 @@ theorem integrable_re_trace_exp_add_of_le {H : Matrix n n 𝕜} (hH : H.IsHermit
 
 /-! ### Lieb's theorem in expectation -/
 
-/-- **Lieb's theorem in expectation** ([Tropp2015], Corollary 3.4.2). -/
+/-- **Lieb's theorem in expectation**: for a fixed Hermitian $\mathbf{H}$ and an almost surely
+Hermitian random matrix $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under a probability measure,
+$$\mathbb{E} \operatorname{tr} e^{\mathbf{H} + \mathbf{X}}
+\le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E} e^{\mathbf{X}}}\,.$$
+[Tropp2015, Corollary 3.4.2]. -/
 theorem integral_re_trace_exp_add_le [IsProbabilityMeasure μ] {H : Matrix n n 𝕜}
     (hH : H.IsHermitian) {X : Ω → Matrix n n 𝕜} (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian)
     (hint : Integrable (fun ω => exp (X ω)) μ) :
@@ -112,8 +122,10 @@ theorem integral_re_trace_exp_add_le [IsProbabilityMeasure μ] {H : Matrix n n �
   exact (concaveOn_re_trace_exp_add_cfc_log hH).le_map_integral_of_integral_mem
     (continuousOn_re_trace_exp_add_cfc_log H) hpd hint (hi.congr heq.symm) hm
 
-/-- Replacing a random Hermitian `Z` independent of a random Hermitian `R` by `log E e^Z` does not
-decrease `E tr exp (R + Z)`: condition on `R` and apply Lieb's theorem in expectation. -/
+/-- Replacing a random Hermitian $\mathbf{Z}$ independent of a random Hermitian $\mathbf{R}$ by
+$\log \mathbb{E} e^{\mathbf{Z}}$ does not decrease
+$\mathbb{E} \operatorname{tr} e^{\mathbf{R} + \mathbf{Z}}$: condition on $\mathbf{R}$ and apply
+Lieb's theorem in expectation. -/
 private theorem integral_re_trace_exp_add_le_of_indepFun [IsProbabilityMeasure μ]
     {R Z : Ω → Matrix n n 𝕜} (hind : IndepFun R Z μ) (hRm : AEMeasurable R μ)
     (hZm : AEMeasurable Z μ) (hR : ∀ᵐ ω ∂μ, (R ω).IsHermitian)
@@ -246,7 +258,11 @@ theorem integrable_re_trace_exp_sum (hind : iIndepFun X μ)
   simpa only [zero_add] using
     integrable_re_trace_exp_add_sum hind hX hint Matrix.isHermitian_zero Finset.univ
 
-/-- **Subadditivity of matrix cumulant generating functions** ([Tropp2015], Lemma 3.5.1). -/
+/-- **Subadditivity of matrix cumulant generating functions**: for finitely many independent,
+almost surely Hermitian random matrices $\mathbf{X}_k$ with $e^{\mathbf{X}_k}$ integrable,
+$$\mathbb{E} \operatorname{tr} e^{\sum_k \mathbf{X}_k}
+\le \operatorname{tr} e^{\sum_k \log \mathbb{E} e^{\mathbf{X}_k}}\,.$$
+[Tropp2015, Lemma 3.5.1]. -/
 theorem integral_re_trace_exp_sum_le (hind : iIndepFun X μ)
     (hX : ∀ k, ∀ᵐ ω ∂μ, (X k ω).IsHermitian) (hint : ∀ k, Integrable (fun ω => exp (X k ω)) μ) :
     ∫ ω, RCLike.re (exp (∑ k, X k ω)).trace ∂μ ≤

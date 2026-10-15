@@ -13,20 +13,29 @@ public import NLAlib.RandomMatrix.Gaussian.InverseMoments
 /-!
 # Spectral moments of the pseudoinverse of a Gaussian matrix
 
-For a wide standard Gaussian matrix `G : r × k` (`r < k`),
-`E ‖G†‖^q ≤ (e √((k + r - 1)/2) / (k - r))^q` for `0 < q ≤ k - r` (Halko, Martinsson and Tropp
-2011, Proposition 10.4, in a sharper form), with `E ‖G†‖` as the case `q = 1` and the source's
-`e √k / (k - r)` as a corollary. The constant `√((k + r - 1)/2)` is not from the literature: it is
-what this proof reaches, and it is at most the source's `√k`.
+For a wide standard Gaussian $r \times k$ matrix $\mathbf{G}$, writing $r$ and $k$ also for the
+numbers $\lvert r \rvert < \lvert k \rvert$ of rows and columns,
+$$\mathbb{E} \|\mathbf{G}^{+}\|_2^q
+\le \Bigl(\frac{e}{k - r} \sqrt{\frac{k + r - 1}{2}}\Bigr)^q \quad (0 < q \le k - r)$$
+(Halko, Martinsson and Tropp 2011, Proposition 10.4, in a sharper form), with
+$\mathbb{E} \|\mathbf{G}^{+}\|_2$ as the case $q = 1$ and the source's $e \sqrt{k} / (k - r)$ as a
+corollary. The constant $\sqrt{(k + r - 1)/2}$ is not from the literature: it is what this proof
+reaches, and it is at most the source's $\sqrt{k}$.
 
-The proof is by Gaussian probes and needs no eigenvalue density. For a positive semidefinite `A`
-with top unit eigenvector `v`, `‖A‖ (v ⬝ z)² ≤ z ⬝ A z`; averaging over an independent standard
-Gaussian `z` gives `E |N(0,1)|^{2q} ‖A‖^q ≤ E_z (z ⬝ A z)^q`. For `A = (G Gᴴ)⁻¹`, Tonelli and the
-moments of the probes
+The proof is by Gaussian probes and needs no eigenvalue density. For a positive semidefinite
+$\mathbf{A}$ with top unit eigenvector $\mathbf{v}$,
+$\|\mathbf{A}\|_2 (\mathbf{v}^{\mathsf{T}}\mathbf{z})^2
+\le \mathbf{z}^{\mathsf{T}}\mathbf{A}\mathbf{z}$; averaging over an independent standard Gaussian
+$\mathbf{z}$ gives $\mathbb{E} \lvert N(0,1) \rvert^{2q} \, \|\mathbf{A}\|_2^q
+\le \mathbb{E}_{\mathbf{z}} (\mathbf{z}^{\mathsf{T}}\mathbf{A}\mathbf{z})^q$. For
+$\mathbf{A} = (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$, Tonelli and the moments of the probes
 (`NLAlib.integral_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussianMatrix`) evaluate
-the right side exactly, as `E ‖z‖^{2q} E (1/χ²_{k-r+1})^q`. At `q = (k - r)/2` Gamma estimates
-(log-convexity and Stirling) give the constant; Lyapunov's inequality gives every smaller `q`.
-`pinv` is total, and `‖G†‖² = ‖(G Gᴴ)⁻¹‖` off a null set; the integrals are unaffected.
+the right side exactly, as
+$\mathbb{E} \|\mathbf{z}\|^{2q} \, \mathbb{E} (1/\chi^2_{k-r+1})^q$. At $q = (k - r)/2$ Gamma
+estimates (log-convexity and Stirling) give the constant; Lyapunov's inequality gives every
+smaller $q$. `pinv` is total, and
+$\|\mathbf{G}^{+}\|_2^2 = \|(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\|_2$ off a null set; the
+integrals are unaffected.
 
 ## Main results
 
@@ -62,8 +71,10 @@ private theorem dotProduct_inv_mul_conjTranspose_mulVec_nonneg (G : Matrix r k �
 /-! ### Spectral probes -/
 
 omit [DecidableEq r] in
-/-- A top eigenvector `v` of a positive semidefinite `A` detects its norm:
-`‖A‖ (v ⬝ z)² ≤ z ⬝ A z`. -/
+/-- A top unit eigenvector $\mathbf{v}$ of a positive semidefinite $\mathbf{A}$
+($\mathbf{A}\mathbf{v} = \|\mathbf{A}\|_2 \mathbf{v}$) detects its norm:
+$\|\mathbf{A}\|_2 (\mathbf{v}^{\mathsf{T}}\mathbf{z})^2
+\le \mathbf{z}^{\mathsf{T}}\mathbf{A}\mathbf{z}$. -/
 private theorem specNorm_mul_dotProduct_sq_le {A : Matrix r r ℝ} (hA : A.PosSemidef)
     {v : r → ℝ} (hv : ‖WithLp.toLp 2 v‖ = 1) (hAv : A *ᵥ v = specNorm A • v) (z : r → ℝ) :
     specNorm A * (v ⬝ᵥ z) ^ 2 ≤ z ⬝ᵥ (A *ᵥ z) := by
@@ -92,8 +103,8 @@ private theorem specNorm_mul_dotProduct_sq_le {A : Matrix r r ℝ} (hA : A.PosSe
   linarith
 
 omit [DecidableEq r] in
-/-- The moments of a squared unit projection of a standard Gaussian vector:
-`E ((v ⬝ z)²)^q = 2^q Γ(1/2 + q) / √π`. -/
+/-- The moments of a squared unit projection of a standard Gaussian vector: for $q \ge 0$,
+$\mathbb{E} ((\mathbf{v}^{\mathsf{T}}\mathbf{z})^2)^q = 2^q \, \Gamma(1/2 + q) / \sqrt{\pi}$. -/
 private theorem integrable_and_integral_dotProduct_sq_rpow {v : r → ℝ}
     (hv : ‖WithLp.toLp 2 v‖ = 1) {q : ℝ} (hq : 0 ≤ q) :
     Integrable (fun z => ((v ⬝ᵥ z) ^ 2) ^ q) (gaussianVector r) ∧
@@ -122,7 +133,10 @@ private theorem integrable_and_integral_dotProduct_sq_rpow {v : r → ℝ}
   refine ⟨hint, ?_⟩
   rw [hval, add_comm, Real.Gamma_one_half_eq]
 
-/-- The moment `E (z ⬝ (G Gᴴ)⁻¹ z)^q = ‖z‖^{2q} E (1/χ²_{k-r+1})^q` for a fixed `z`. -/
+/-- The moment
+$\mathbb{E} (\mathbf{z}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{z})^q
+= \|\mathbf{z}\|^{2q} \, \mathbb{E} (1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1})^q$ for a
+fixed $\mathbf{z}$. -/
 private theorem lintegral_dotProduct_inv_mul_conjTranspose_mulVec_rpow
     (hrk : Fintype.card r ≤ Fintype.card k) {q : ℝ} (hq0 : 0 < q)
     (hq : q < ((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) / 2) (z : r → ℝ) :
@@ -171,8 +185,11 @@ private theorem measurable_dotProduct_inv_mul_conjTranspose_mulVec :
     (measurable_snd.prodMk ((measurable_inv_mul_conjTranspose.comp measurable_fst).matrix_mulVec
       measurable_snd))
 
-/-- **The probe bound**: for `0 < q < (k - r + 1)/2`,
-`c_q E ‖(G Gᴴ)⁻¹‖^q ≤ E ‖z‖^{2q} E (1/χ²_{k-r+1})^q`, with `c_q = E |N(0,1)|^{2q}`. -/
+/-- **The probe bound**: for $0 < q < (\lvert k \rvert - \lvert r \rvert + 1)/2$,
+$c_q \, \mathbb{E} \|(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\|_2^q
+\le \mathbb{E} \|\mathbf{z}\|^{2q} \, \mathbb{E}
+(1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1})^q$, with
+$c_q = \mathbb{E} \lvert N(0,1) \rvert^{2q}$. -/
 private theorem lintegral_specNorm_inv_rpow_le [Nonempty r]
     (hrk : Fintype.card r ≤ Fintype.card k) {q : ℝ} (hq0 : 0 < q)
     (hq : q < ((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) / 2) :
@@ -236,7 +253,7 @@ section GammaBounds
 
 open Real
 
-/-- `Γ(x + 1/2) ≤ Γ(x) √x` (log-convexity). -/
+/-- $\Gamma(x + 1/2) \le \Gamma(x) \sqrt{x}$ for $x > 0$ (log-convexity). -/
 private theorem Gamma_add_half_le_mul_sqrt {x : ℝ} (hx : 0 < x) :
     Gamma (x + 1 / 2) ≤ Gamma x * √x := by
   have h := Gamma_mul_add_mul_le_rpow_Gamma_mul_rpow_Gamma hx (by linarith : 0 < x + 1)
@@ -248,7 +265,8 @@ private theorem Gamma_add_half_le_mul_sqrt {x : ℝ} (hx : 0 < x) :
     Real.sqrt_mul (by positivity), Real.sqrt_sq hG.le] at h
   exact h
 
-/-- AM–GM for an arithmetic progression. -/
+/-- AM–GM for an arithmetic progression:
+$\prod_{i=0}^{n} (a + i) \le \bigl((2a + n)/2\bigr)^{n+1}$ for $a \ge 0$. -/
 private theorem prod_range_add_le_pow (a : ℝ) (ha : 0 ≤ a) (n : ℕ) :
     ∏ i ∈ Finset.range (n + 1), (a + i) ≤ ((2 * a + n) / 2) ^ (n + 1) := by
   set M := (2 * a + n) / 2 with hM
@@ -401,8 +419,9 @@ private theorem Gamma_endpoint_moment_le {x : ℝ} (hx : 0 < x) {d : ℕ} (hd : 
     field_simp
   simpa [hq, hM, neg_div] using hfactor.trans heq.le
 
-/-- The endpoint constant: for `1 ≤ r < k`,
-`2^{-(k-r)/2} π Γ(k/2) / (Γ(r/2) Γ((k-r+1)/2)²) ≤ (e² (k+r-1) / (2 (k-r)²))^{(k-r)/2}`. -/
+/-- The endpoint constant: for natural numbers $1 \le r < k$,
+$$\frac{2^{-(k-r)/2} \, \pi \, \Gamma(k/2)}{\Gamma(r/2) \, \Gamma((k-r+1)/2)^2}
+\le \Bigl(\frac{e^2 (k+r-1)}{2 (k-r)^2}\Bigr)^{(k-r)/2} \,.$$ -/
 private theorem gamma_inverse_spectral_endpoint_le {r k : ℕ} (hr : 1 ≤ r) (hrk : r < k) :
     2 ^ (-((k : ℝ) - r) / 2) * π * Gamma ((k : ℝ) / 2) /
         (Gamma ((r : ℝ) / 2) * Gamma (((k : ℝ) - r + 1) / 2) ^ 2) ≤
@@ -432,7 +451,9 @@ private theorem integrable_rpow_of_le {α : Type*} [MeasurableSpace α] {ν : Me
   have hfq' : Integrable (fun x => ‖f x‖ ^ q) ν := by simpa only [hnorm] using hfq
   simpa only [hnorm] using integrable_norm_rpow_of_le hf hp (hp.trans hpq) hpq hfq'
 
-/-- **Lyapunov's inequality** in the form `E f^q ≤ C^q ⟹ E f^p ≤ C^p` for `0 < p ≤ q`. -/
+/-- **Lyapunov's inequality** in the form
+$\mathbb{E} f^q \le C^q \implies \mathbb{E} f^p \le C^p$ for $0 < p \le q$, $f \ge 0$ and
+$C \ge 0$. -/
 private theorem integral_rpow_le_of_integral_rpow_le {α : Type*} [MeasurableSpace α]
     {ν : Measure α} [IsProbabilityMeasure ν] {f : α → ℝ} {p q C : ℝ}
     (hf : AEStronglyMeasurable f ν) (hfnn : ∀ x, 0 ≤ f x) (hp : 0 < p) (hpq : p ≤ q)
@@ -459,7 +480,7 @@ private theorem integral_rpow_le_of_integral_rpow_le {α : Type*} [MeasurableSpa
   have h := Real.rpow_le_rpow (Real.rpow_nonneg hpint _) hroot hp.le
   rwa [Real.rpow_inv_rpow hpint hp.ne'] at h
 
-/-! ### Spectral moments of `(G Gᴴ)⁻¹` -/
+/-! ### Spectral moments of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ -/
 
 private theorem measurable_specNorm_inv_mul_conjTranspose :
     Measurable fun G : Matrix r k ℝ => specNorm (G * Gᴴ)⁻¹ :=
@@ -510,7 +531,9 @@ private theorem integrable_and_integral_specNorm_inv_rpow_le [Nonempty r]
   rw [← ofReal_integral_eq_lintegral_ofReal hint (Filter.Eventually.of_forall hnn)] at hbound
   exact (ENNReal.ofReal_le_ofReal_iff (div_nonneg ha0 hc0.le)).1 hbound
 
-/-- `E ‖(G Gᴴ)⁻¹‖^p ≤ (e² (k + r - 1) / (2 (k - r)²))^p` for `0 < p ≤ (k - r)/2`. -/
+/-- $\mathbb{E} \|(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\|_2^p
+\le \bigl(e^2 (k + r - 1) / (2 (k - r)^2)\bigr)^p$ for $0 < p \le (k - r)/2$, writing $r$, $k$
+for $\lvert r \rvert < \lvert k \rvert$; with integrability. -/
 private theorem integrable_and_integral_specNorm_inv_rpow_le_pow [Nonempty r]
     (hrk : Fintype.card r < Fintype.card k) {p : ℝ} (hp0 : 0 < p)
     (hp : p ≤ ((Fintype.card k : ℝ) - Fintype.card r) / 2) :
@@ -557,7 +580,8 @@ private theorem integrable_and_integral_specNorm_inv_rpow_le_pow [Nonempty r]
 
 end Probes
 
-/-- Almost surely `‖G†‖^q = ‖(G Gᴴ)⁻¹‖^{q/2}`. -/
+/-- Almost surely
+$\|\mathbf{G}^{+}\|_2^q = \|(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\|_2^{q/2}$. -/
 private theorem ae_specNorm_pinv_rpow_eq [DecidableEq r] (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r ≤ Fintype.card k) (q : ℝ) :
     ∀ᵐ ω ∂μ, specNorm (pinv (X ω)) ^ q = specNorm (X ω * (X ω)ᴴ)⁻¹ ^ (q / 2) := by
@@ -576,7 +600,8 @@ private theorem ae_specNorm_pinv_rpow_eq [DecidableEq r] (hX : HasLaw X (gaussia
   push_cast
   ring
 
-/-- `‖G†‖^q` is integrable for `0 < q ≤ k - r`. -/
+/-- $\|\mathbf{G}^{+}\|_2^q$ is integrable for a standard Gaussian $r \times k$ matrix
+$\mathbf{G}$ and $0 < q \le \lvert k \rvert - \lvert r \rvert$. -/
 theorem integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) {q : ℝ} (hq0 : 0 < q)
     (hq : q ≤ (Fintype.card k : ℝ) - Fintype.card r) :
@@ -598,9 +623,12 @@ theorem integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix
   filter_upwards [ae_specNorm_pinv_rpow_eq hX hrk.le q] with ω hω
   exact hω.symm
 
-/-- **The spectral moments of `G†`**: `E ‖G†‖^q ≤ (e √((k + r - 1)/2) / (k - r))^q` for
-`0 < q ≤ k - r` (Halko, Martinsson and Tropp, Proposition 10.4, in a sharper form: the constant
-`√((k + r - 1)/2)` in place of `√k` is what the proof by probes reaches). -/
+/-- **The spectral moments of $\mathbf{G}^{+}$**: for a standard Gaussian $r \times k$ matrix
+$\mathbf{G}$, writing $r$, $k$ also for $\lvert r \rvert$, $\lvert k \rvert$,
+$$\mathbb{E} \|\mathbf{G}^{+}\|_2^q
+\le \Bigl(\frac{e}{k - r} \sqrt{\frac{k + r - 1}{2}}\Bigr)^q \quad (0 < q \le k - r)$$
+(Halko, Martinsson and Tropp, Proposition 10.4, in a sharper form: the constant
+$\sqrt{(k + r - 1)/2}$ in place of $\sqrt{k}$ is what the proof by probes reaches). -/
 theorem integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) {q : ℝ} (hq0 : 0 < q)
     (hq : q ≤ (Fintype.card k : ℝ) - Fintype.card r) :
@@ -643,7 +671,10 @@ theorem integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix
   push_cast
   ring
 
-/-- `E ‖G†‖ ≤ e √((k + r - 1)/2) / (k - r)` for `r < k`: the case `q = 1`. -/
+/-- $\mathbb{E} \|\mathbf{G}^{+}\|_2
+\le \frac{e}{\lvert k \rvert - \lvert r \rvert} \sqrt{(\lvert k \rvert + \lvert r \rvert - 1)/2}$
+for a standard Gaussian $r \times k$ matrix with $\lvert r \rvert < \lvert k \rvert$: the case
+$q = 1$. -/
 theorem integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r < Fintype.card k) :
     ∫ ω, specNorm (pinv (X ω)) ∂μ ≤
@@ -653,7 +684,9 @@ theorem integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gauss
   have h := integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix hX one_pos (by linarith)
   simpa only [Real.rpow_one] using h
 
-/-- The form of Halko, Martinsson and Tropp (Proposition 10.2), `E ‖G†‖ ≤ e √k / (k - r)`;
+/-- The form of Halko, Martinsson and Tropp (Proposition 10.2),
+$\mathbb{E} \|\mathbf{G}^{+}\|_2 \le e \sqrt{\lvert k \rvert} / (\lvert k \rvert - \lvert r \rvert)$
+for a standard Gaussian $r \times k$ matrix with $\lvert r \rvert < \lvert k \rvert$;
 weaker in every regime and proved from `integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix`. -/
 theorem integral_specNorm_pinv_le_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r < Fintype.card k) :

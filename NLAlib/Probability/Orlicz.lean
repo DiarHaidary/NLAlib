@@ -13,29 +13,30 @@ public import NLAlib.Probability.SubExponential.Basic
 public import NLAlib.Probability.SubGaussian.Basic
 
 /-!
-# Orlicz conditions: the `ψ₂` and `ψ₁` bridges
+# Orlicz conditions: the $\psi_2$ and $\psi_1$ bridges
 
 Much of the literature (Vershynin's book in particular) states sub-Gaussian and sub-exponential
 hypotheses through Orlicz conditions. Here they are constructor hypotheses of the library's
-interfaces, never hypotheses of a concentration theorem: the `ψ₂` condition with squared scale
-`K`, `E exp (X² / K) ≤ 2`, makes a centred `X` satisfy Mathlib's `HasSubgaussianMGF` with proxy
-`C K`, and the `ψ₁` condition with scale `K`, `E exp (|X| / K) ≤ 2`, makes a centred `X` satisfy
-`NLAlib.HasSubexponentialMGF` with proxy `C₁ K²` and scale `C₂ K`. Each condition is written as
+interfaces, never hypotheses of a concentration theorem: the $\psi_2$ condition with squared
+scale $K$, $\mathbb{E} e^{X^2 / K} \le 2$, makes a centred $X$ satisfy Mathlib's
+`HasSubgaussianMGF` with proxy $C K$, and the $\psi_1$ condition with scale $K$,
+$\mathbb{E} e^{\lvert X\rvert / K} \le 2$, makes a centred $X$ satisfy
+`NLAlib.HasSubexponentialMGF` with proxy $C_1 K^2$ and scale $C_2 K$. Each condition is written as
 two hypotheses, integrability and the integral bound; no Orlicz norm is defined. Vershynin's
-`‖X‖_ψ₂ ≤ K'` is `K = K' ^ 2`, his `‖X‖_ψ₁ ≤ K` is `K`.
+$\|X\|_{\psi_2} \le K'$ is $K = K'^2$, his $\|X\|_{\psi_1} \le K$ is $K$.
 
-Every conclusion is centred, so the bridges need `E X = 0`; for a variable that is not centred
-the `sub_integral` forms bound `X - E X`, at the price of a factor in the scale (the centring
-lemma, [Vershynin2018, Lemma 2.6.8]).
+Every conclusion is centred, so the bridges need $\mathbb{E} X = 0$; for a variable that is not
+centred the `sub_integral` forms bound $X - \mathbb{E} X$, at the price of a factor in the scale
+(the centring lemma, [Vershynin2018, Lemma 2.6.8]).
 
-`0 < K` is needed: `X² / 0 = 0` in Lean, so the condition at `K = 0` holds for every `X`.
-A probability measure is needed: under `2 • δ₀` the variable `0` satisfies the `ψ₂` condition but
-has `mgf 0 = 2 > 1`. `AEMeasurable X` is a hypothesis: integrability of `exp (X² / K)` does not
-give it (the sign is lost).
+$K > 0$ is needed: $X^2 / 0 = 0$ in Lean, so the condition at $K = 0$ holds for every $X$.
+A probability measure is needed: under $2 \delta_0$ the variable $0$ satisfies the $\psi_2$
+condition but has moment generating function $2 > 1$ at $0$. `AEMeasurable X` is a hypothesis:
+integrability of $e^{X^2 / K}$ does not give it (the sign is lost).
 
-A `ψ₂` Hanson–Wright inequality is the `ψ₂` bridge followed by
-`NLAlib.measureReal_quadForm_sub_integral_ge_le`, and a `ψ₁` Bernstein inequality is the `ψ₁`
-bridge followed by `NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`; neither is
+A $\psi_2$ Hanson–Wright inequality is the $\psi_2$ bridge followed by
+`NLAlib.measureReal_quadForm_sub_integral_ge_le`, and a $\psi_1$ Bernstein inequality is the
+$\psi_1$ bridge followed by `NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`; neither is
 restated (`docs/design/Probability-P7.md` §7 D3, D4).
 
 ## Main definitions
@@ -45,8 +46,8 @@ restated (`docs/design/Probability-P7.md` §7 D3, D4).
 
 ## Main results
 
-* `NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`: the `ψ₂` bridge.
-* `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`: the `ψ₁` bridge.
+* `NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`: the $\psi_2$ bridge.
+* `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`: the $\psi_1$ bridge.
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two`,
   `NLAlib.hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two`: the centred forms.
 
@@ -117,7 +118,8 @@ private theorem exp_le_one_add_add_sq_mul_exp_abs_div_two (y : ℝ) :
       le_mul_of_one_le_right (sq_nonneg y) (Real.one_le_exp (abs_nonneg y))
     linarith
 
-/-- `x² ≤ (16 K² / e²) e^{|x| / (2K)}`, from `w ≤ e^{w - 1}` at `w = |x| / (4K)`. -/
+/-- $x^2 \le (16 K^2 / e^2)\, e^{\lvert x\rvert / (2K)}$, from $w \le e^{w - 1}$ at
+$w = \lvert x\rvert / (4K)$. -/
 private theorem sq_le_mul_exp_abs_div {K : ℝ} (hK : 0 < K) (x : ℝ) :
     x ^ 2 ≤ 16 * K ^ 2 / rexp 2 * rexp (|x| / (2 * K)) := by
   set w := |x| / (4 * K) with hw
@@ -140,7 +142,8 @@ private theorem sq_le_mul_exp_abs_div {K : ℝ} (hK : 0 < K) (x : ℝ) :
 
 /-! ### Jensen's inequality for the Orlicz conditions -/
 
-/-- If `E e^Z ≤ 2` for `Z ≥ 0`, then `E e^{p Z} ≤ 2^p` for `p ∈ [0, 1]` (Jensen for `x ↦ x^p`). -/
+/-- If $\mathbb{E} e^Z \le 2$ for $Z \ge 0$, then $\mathbb{E} e^{p Z} \le 2^p$ for $p \in [0, 1]$
+(Jensen for $x \mapsto x^p$). -/
 private theorem integral_exp_mul_le_of_integral_exp_le_two [IsProbabilityMeasure μ] {Z : Ω → ℝ}
     (hZm : AEMeasurable Z μ) (hZ0 : ∀ ω, 0 ≤ Z ω) (hint : Integrable (fun ω => rexp (Z ω)) μ)
     (hψ : ∫ ω, rexp (Z ω) ∂μ ≤ 2) {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
@@ -167,7 +170,7 @@ private theorem integral_exp_mul_le_of_integral_exp_le_two [IsProbabilityMeasure
     _ ≤ (2 : ℝ) ^ p := Real.rpow_le_rpow (integral_nonneg fun _ => (Real.exp_pos _).le) hψ hp0
     _ = rexp (p * Real.log 2) := by rw [Real.rpow_def_of_pos two_pos, mul_comm]
 
-/-- If `E e^Z ≤ 2`, then `E Z ≤ log 2` (Jensen for `exp`). -/
+/-- If $\mathbb{E} e^Z \le 2$, then $\mathbb{E} Z \le \log 2$ (Jensen for $\exp$). -/
 private theorem integral_le_log_two_of_integral_exp_le_two [IsProbabilityMeasure μ]
     {Z : Ω → ℝ} (hZ : Integrable Z μ) (hint : Integrable (fun ω => rexp (Z ω)) μ)
     (hψ : ∫ ω, rexp (Z ω) ∂μ ≤ 2) : ∫ ω, Z ω ∂μ ≤ Real.log 2 := by
@@ -185,7 +188,7 @@ private theorem exp_half_log_two_mul_self :
   rw [← Real.exp_add, show 1 / 2 * Real.log 2 + 1 / 2 * Real.log 2 = Real.log 2 by ring,
     Real.exp_log two_pos]
 
-/-! ### The `ψ₂` bound on the moment generating function -/
+/-! ### The $\psi_2$ bound on the moment generating function -/
 
 private theorem integrable_of_integral_exp_sq_div {X : Ω → ℝ} [IsFiniteMeasure μ]
     (hX : AEMeasurable X μ) {K : ℝ} (hK : 0 < K)
@@ -254,7 +257,7 @@ private theorem mgf_le_of_integral_exp_sq_div [IsProbabilityMeasure μ] {X : Ω 
         rw [← Real.exp_add, Real.exp_le_exp]
         nlinarith
 
-/-! ### The `ψ₁` bound on the moment generating function -/
+/-! ### The $\psi_1$ bound on the moment generating function -/
 
 private theorem integrable_of_integral_exp_abs_div {X : Ω → ℝ}
     (hX : AEMeasurable X μ) {K : ℝ} (hK : 0 < K)
@@ -314,13 +317,15 @@ private theorem mgf_le_of_integral_exp_abs_div [IsProbabilityMeasure μ] {X : Ω
     _ ≤ rexp (C * 2) := by linarith [Real.add_one_le_exp (C * 2)]
     _ = _ := by rw [hC]; ring_nf
 
-/-- The proxy constant of the `ψ₂` bridge `NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`.
-[Vershynin2018, Proposition 2.5.2] leaves it unspecified. The proof (`e^y ≤ y + e^{y²}`, then
-Jensen for `λ² K ≤ 1`, and `λ X ≤ λ² K / 2 + X² / (2K)` otherwise) reaches `1 + log 2`, which is
-the body. A smaller value is a better bound. Use only `psiTwoSubgaussianConstant_le`. -/
+/-- The proxy constant $C$ of the $\psi_2$ bridge
+`NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`.
+[Vershynin2018, Proposition 2.5.2] leaves it unspecified. The proof ($e^y \le y + e^{y^2}$, then
+Jensen for $\lambda^2 K \le 1$, and $\lambda X \le \lambda^2 K / 2 + X^2 / (2K)$ otherwise) reaches
+$1 + \log 2$, which is the body. A smaller value is a better bound. Use only
+`psiTwoSubgaussianConstant_le`. -/
 noncomputable irreducible_def psiTwoSubgaussianConstant : ℝ≥0 := Real.toNNReal (1 + Real.log 2)
 
-/-- An explicit upper bound on `psiTwoSubgaussianConstant`.
+/-- An explicit upper bound on `psiTwoSubgaussianConstant`: $C \le 2$.
 Proof: `psiTwoSubgaussianConstant_def`. Easy. -/
 theorem psiTwoSubgaussianConstant_le : psiTwoSubgaussianConstant ≤ 2 := by
   rw [psiTwoSubgaussianConstant_def, Real.toNNReal_le_iff_le_coe]
@@ -328,19 +333,22 @@ theorem psiTwoSubgaussianConstant_le : psiTwoSubgaussianConstant ≤ 2 := by
   push_cast
   linarith
 
-/-- **A centred variable with a `ψ₂` bound is sub-Gaussian**: if `E X = 0`, `exp (X² / K)` is
-integrable and `E exp (X² / K) ≤ 2`, then `HasSubgaussianMGF X (C K)` with
-`C = psiTwoSubgaussianConstant`. [Vershynin2018, Proposition 2.5.2], (iv) ⟹ (v), with Vershynin's
-`‖X‖_ψ₂ ≤ K'` as `K = K' ^ 2` and the constant named. The hypothesis `E X = 0` is needed (every
-`HasSubgaussianMGF` variable is centred); for a variable that is not centred, use
-`NLAlib.hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two`. A `ψ₂` Hanson–Wright
-inequality is `measureReal_quadForm_sub_integral_ge_le hind fun i => this (hψ i)`, with exponent
-Vershynin's at `c = psiTwoSubgaussianConstant * K`.
-Proof: `e^y ≤ y + e^{y²}`, so `mgf X μ λ ≤ E exp (λ² X²)` (the linear term vanishes). If
-`λ² K ≤ 1`, Jensen for the concave `x ↦ x ^ (λ² K)` gives `≤ 2 ^ (λ² K) = e^{λ² K log 2}`;
-otherwise `λ X ≤ λ² K / 2 + X² / (2K)` and Jensen at exponent `1 / 2` give
-`≤ e^{λ² K / 2} √2`. Both are at most `e^{(1 + log 2) K λ² / 2}`. Integrability of `exp (λ X)`
-from `exp (λ X) ≤ e^{λ² K / 2} exp (X² / (2K))`. Medium.
+/-- **A centred variable with a $\psi_2$ bound is sub-Gaussian**: under a probability measure, if
+$X$ is a.e.-measurable, $\mathbb{E} X = 0$, $K > 0$, $e^{X^2 / K}$ is integrable and
+$\mathbb{E} e^{X^2 / K} \le 2$, then $X$ is sub-Gaussian (`HasSubgaussianMGF`) with proxy $C K$,
+where $C$ is `psiTwoSubgaussianConstant`. [Vershynin2018, Proposition 2.5.2], (iv) ⟹ (v), with
+Vershynin's $\|X\|_{\psi_2} \le K'$ as $K = K'^2$ and the constant named. The hypothesis
+$\mathbb{E} X = 0$ is needed (every `HasSubgaussianMGF` variable is centred); for a variable that
+is not centred, use `NLAlib.hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two`. A
+$\psi_2$ Hanson–Wright inequality is
+`measureReal_quadForm_sub_integral_ge_le hind fun i => this (hψ i)`, with exponent Vershynin's at
+$c = C K$.
+Proof: $e^y \le y + e^{y^2}$, so $\mathbb{E} e^{\lambda X} \le \mathbb{E} e^{\lambda^2 X^2}$ (the
+linear term vanishes). If $\lambda^2 K \le 1$, Jensen for the concave $x \mapsto x^{\lambda^2 K}$
+gives at most $2^{\lambda^2 K} = e^{\lambda^2 K \log 2}$; otherwise
+$\lambda X \le \lambda^2 K / 2 + X^2 / (2K)$ and Jensen at exponent $1/2$ give at most
+$e^{\lambda^2 K / 2} \sqrt{2}$. Both are at most $e^{(1 + \log 2) K \lambda^2 / 2}$. Integrability
+of $e^{\lambda X}$ from $e^{\lambda X} \le e^{\lambda^2 K / 2} e^{X^2 / (2K)}$. Medium.
 Result: subgaussian-def -/
 theorem hasSubgaussianMGF_of_integral_exp_sq_div_le_two [IsProbabilityMeasure μ] {X : Ω → ℝ}
     (hX : AEMeasurable X μ) (hmean : ∫ ω, X ω ∂μ = 0) {K : ℝ≥0} (hK : 0 < K)
@@ -355,15 +363,19 @@ theorem hasSubgaussianMGF_of_integral_exp_sq_div_le_two [IsProbabilityMeasure μ
   rw [hc]
   exact (mgf_le_of_integral_exp_sq_div hX hmean hK' hint hψ t).2
 
-/-- **The centred `ψ₂` bridge**: if `exp (X² / K)` is integrable and `E exp (X² / K) ≤ 2`, then
-`X - E X` is sub-Gaussian with proxy `C · 4K`, `C = psiTwoSubgaussianConstant`.
-[Vershynin2018, Lemma 2.6.8] (centring costs a constant factor in the `ψ₂` norm), here with the
-explicit factor `4` in the squared scale.
-Proof: `X - E X` satisfies the `ψ₂` condition with squared scale `4K`: `(EX)² ≤ K log 2` by
-Jensen (`exp ((EX)² / K) ≤ E exp (X² / K) ≤ 2`), `(X - EX)² ≤ 2X² + 2(EX)²`, and
-`E exp (X² / (2K)) ≤ √2` by Jensen, so `E exp ((X - EX)² / (4K)) ≤ √2 · √2 = 2`; then
-`NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`. Integrability of `X` from
-`|X| ≤ K + exp (X² / K)`, up to constants. Easy to medium. -/
+/-- **The centred $\psi_2$ bridge**: under a probability measure, if $X$ is a.e.-measurable,
+$K > 0$, $e^{X^2 / K}$ is integrable and $\mathbb{E} e^{X^2 / K} \le 2$, then
+$X - \mathbb{E} X$ is sub-Gaussian with proxy $C \cdot 4K$, where $C$ is
+`psiTwoSubgaussianConstant`.
+[Vershynin2018, Lemma 2.6.8] (centring costs a constant factor in the $\psi_2$ norm), here with the
+explicit factor $4$ in the squared scale.
+Proof: $X - \mathbb{E} X$ satisfies the $\psi_2$ condition with squared scale $4K$:
+$(\mathbb{E} X)^2 \le K \log 2$ by Jensen
+($e^{(\mathbb{E} X)^2 / K} \le \mathbb{E} e^{X^2 / K} \le 2$),
+$(X - \mathbb{E} X)^2 \le 2X^2 + 2(\mathbb{E} X)^2$, and $\mathbb{E} e^{X^2 / (2K)} \le \sqrt{2}$
+by Jensen, so $\mathbb{E} e^{(X - \mathbb{E} X)^2 / (4K)} \le \sqrt{2} \cdot \sqrt{2} = 2$; then
+`NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`. Integrability of $X$ from
+$\lvert X\rvert \le K + e^{X^2 / K}$, up to constants. Easy to medium. -/
 theorem hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two [IsProbabilityMeasure μ]
     {X : Ω → ℝ} (hX : AEMeasurable X μ) {K : ℝ≥0} (hK : 0 < K)
     (hint : Integrable (fun ω => rexp (X ω ^ 2 / K)) μ)
@@ -416,21 +428,22 @@ theorem hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two [IsProbabil
   exact hasSubgaussianMGF_of_integral_exp_sq_div_le_two (hX.sub_const m) hYmean
     (by positivity) hYi hYle
 
-/-- The variance-proxy constant of the `ψ₁` bridge
+/-- The variance-proxy constant $C_1$ of the $\psi_1$ bridge
 `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`. [Vershynin2018,
-Proposition 2.7.1] leaves it unspecified. The proof (`e^y ≤ 1 + y + y² e^{|y|} / 2` on
-`|λ| < 1 / (2K)`, and `u² ≤ 4 e^{u - 2}`) reaches `32 / e²`, which is the body. A smaller value
-is a better bound. Use only `psiOneSubexponentialVarianceConstant_le`. -/
+Proposition 2.7.1] leaves it unspecified. The proof
+($e^y \le 1 + y + y^2 e^{\lvert y\rvert} / 2$ on $\lvert\lambda\rvert < 1 / (2K)$, and
+$u^2 \le 4 e^{u - 2}$) reaches $32 / e^2$, which is the body. A smaller value is a better bound.
+Use only `psiOneSubexponentialVarianceConstant_le`. -/
 noncomputable irreducible_def psiOneSubexponentialVarianceConstant : ℝ≥0 :=
   Real.toNNReal (32 / rexp 2)
 
-/-- The scale constant of the `ψ₁` bridge
+/-- The scale constant $C_2$ of the $\psi_1$ bridge
 `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`. [Vershynin2018,
-Proposition 2.7.1] leaves it unspecified; the proof reaches `2`. A smaller value is a better
+Proposition 2.7.1] leaves it unspecified; the proof reaches $2$. A smaller value is a better
 bound. Use only `psiOneSubexponentialScaleConstant_le`. -/
 noncomputable irreducible_def psiOneSubexponentialScaleConstant : ℝ≥0 := 2
 
-/-- An explicit upper bound on `psiOneSubexponentialVarianceConstant`.
+/-- An explicit upper bound on `psiOneSubexponentialVarianceConstant`: $C_1 \le 5$.
 Proof: `psiOneSubexponentialVarianceConstant_def`. Easy. -/
 theorem psiOneSubexponentialVarianceConstant_le : psiOneSubexponentialVarianceConstant ≤ 5 := by
   rw [psiOneSubexponentialVarianceConstant_def, Real.toNNReal_le_iff_le_coe]
@@ -440,24 +453,26 @@ theorem psiOneSubexponentialVarianceConstant_le : psiOneSubexponentialVarianceCo
   rw [h2]
   nlinarith
 
-/-- An explicit upper bound on `psiOneSubexponentialScaleConstant`.
+/-- An explicit upper bound on `psiOneSubexponentialScaleConstant`: $C_2 \le 2$.
 Proof: `psiOneSubexponentialScaleConstant_def`. Easy. -/
 theorem psiOneSubexponentialScaleConstant_le : psiOneSubexponentialScaleConstant ≤ 2 := by
   rw [psiOneSubexponentialScaleConstant_def]
 
-/-- **A centred variable with a `ψ₁` bound is sub-exponential**: if `E X = 0`, `exp (|X| / K)`
-is integrable and `E exp (|X| / K) ≤ 2`, then `X` is sub-exponential with variance proxy
-`C₁ K²` and scale `C₂ K`, `C₁ = psiOneSubexponentialVarianceConstant`,
-`C₂ = psiOneSubexponentialScaleConstant`. [Vershynin2018, Proposition 2.7.1], (iv) ⟹ (v), with
-the constants named. The hypothesis `E X = 0` is needed (every `HasSubexponentialMGF` variable
-is centred, `NLAlib.HasSubexponentialMGF.integral_eq_zero`); for a variable that is not
-centred, use `NLAlib.hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two`. A `ψ₁`
-Bernstein inequality is this bridge followed by
+/-- **A centred variable with a $\psi_1$ bound is sub-exponential**: under a probability measure,
+if $X$ is a.e.-measurable, $\mathbb{E} X = 0$, $K > 0$, $e^{\lvert X\rvert / K}$ is integrable and
+$\mathbb{E} e^{\lvert X\rvert / K} \le 2$, then $X$ is sub-exponential with variance proxy
+$C_1 K^2$ and scale $C_2 K$, where $C_1$ is `psiOneSubexponentialVarianceConstant` and $C_2$ is
+`psiOneSubexponentialScaleConstant`. [Vershynin2018, Proposition 2.7.1], (iv) ⟹ (v), with
+the constants named. The hypothesis $\mathbb{E} X = 0$ is needed (every `HasSubexponentialMGF`
+variable is centred, `NLAlib.HasSubexponentialMGF.integral_eq_zero`); for a variable that is not
+centred, use `NLAlib.hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two`. A
+$\psi_1$ Bernstein inequality is this bridge followed by
 `NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`.
-Proof: for `|λ| < 1 / (2K)`, `e^y ≤ 1 + y + y² e^{|y|} / 2` gives
-`mgf X μ λ ≤ 1 + λ² E[X² e^{|X| / (2K)}] / 2`, and `X² ≤ (16 K² / e²) e^{|X| / (2K)}` (from
-`u² ≤ 4 e^{u - 2}`) bounds the expectation by `(16 K² / e²) E e^{|X| / K} ≤ 32 K² / e²`; then
-`1 + a ≤ e^a`. Medium.
+Proof: for $\lvert\lambda\rvert < 1 / (2K)$, $e^y \le 1 + y + y^2 e^{\lvert y\rvert} / 2$ gives
+$\mathbb{E} e^{\lambda X} \le 1 + \lambda^2\, \mathbb{E}[X^2 e^{\lvert X\rvert / (2K)}] / 2$, and
+$X^2 \le (16 K^2 / e^2)\, e^{\lvert X\rvert / (2K)}$ (from $u^2 \le 4 e^{u - 2}$) bounds the
+expectation by $(16 K^2 / e^2)\, \mathbb{E} e^{\lvert X\rvert / K} \le 32 K^2 / e^2$; then
+$1 + a \le e^a$. Medium.
 Result: subexponential-def -/
 theorem hasSubexponentialMGF_of_integral_exp_abs_div_le_two [IsProbabilityMeasure μ]
     {X : Ω → ℝ} (hX : AEMeasurable X μ) (hmean : ∫ ω, X ω ∂μ = 0) {K : ℝ≥0} (hK : 0 < K)
@@ -478,13 +493,15 @@ theorem hasSubexponentialMGF_of_integral_exp_abs_div_le_two [IsProbabilityMeasur
   rw [hc]
   exact (mgf_le_of_integral_exp_abs_div hX hmean hK' hint hψ (hw l hl)).2
 
-/-- **The centred `ψ₁` bridge**: if `exp (|X| / K)` is integrable and `E exp (|X| / K) ≤ 2`,
-then `X - E X` is sub-exponential with variance proxy `C₁ (2K)²` and scale `C₂ (2K)`. The `ψ₁`
-analogue of the centring lemma [Vershynin2018, Lemma 2.6.8], with the explicit factor `2` in the
-scale.
-Proof: `X - E X` satisfies the `ψ₁` condition with scale `2K`: `|EX| ≤ K log 2` by Jensen,
-`E exp (|X| / (2K)) ≤ √2` by Jensen, and `|X - EX| ≤ |X| + |EX|`, so
-`E exp (|X - EX| / (2K)) ≤ 2`; then
+/-- **The centred $\psi_1$ bridge**: under a probability measure, if $X$ is a.e.-measurable,
+$K > 0$, $e^{\lvert X\rvert / K}$ is integrable and $\mathbb{E} e^{\lvert X\rvert / K} \le 2$,
+then $X - \mathbb{E} X$ is sub-exponential with variance proxy $C_1 (2K)^2$ and scale
+$C_2 (2K)$. The $\psi_1$ analogue of the centring lemma [Vershynin2018, Lemma 2.6.8], with the
+explicit factor $2$ in the scale.
+Proof: $X - \mathbb{E} X$ satisfies the $\psi_1$ condition with scale $2K$:
+$\lvert \mathbb{E} X\rvert \le K \log 2$ by Jensen, $\mathbb{E} e^{\lvert X\rvert / (2K)} \le
+\sqrt{2}$ by Jensen, and $\lvert X - \mathbb{E} X\rvert \le \lvert X\rvert + \lvert \mathbb{E}
+X\rvert$, so $\mathbb{E} e^{\lvert X - \mathbb{E} X\rvert / (2K)} \le 2$; then
 `NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`. Easy to medium. -/
 theorem hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two
     [IsProbabilityMeasure μ] {X : Ω → ℝ} (hX : AEMeasurable X μ) {K : ℝ≥0} (hK : 0 < K)

@@ -14,14 +14,24 @@ public import NLAlib.RandomMatrix.Gaussian.Concentration
 /-!
 # The spectral norm of Gaussian matrices: Chevet's inequality
 
-For a standard Gaussian matrix `G : m × n` and fixed `S : a × m`, `T : n × b`, Chevet's inequality
-`E ‖S G T‖ ≤ ‖S‖ ‖T‖_F + ‖S‖_F ‖T‖`, its form with random factors independent of `G`, the tail of
-`‖S G T‖` above that bound, and Gordon's upper bound `E ‖G‖ ≤ √N + √n` (`N = card m`,
-`n = card n`) as the case `S = 1`, `T = 1`. Real throughout: the Gaussian matrix law is real.
+For a standard Gaussian $m \times n$ matrix $\mathbf{G}$ and fixed $\mathbf{S}$ ($a \times m$),
+$\mathbf{T}$ ($n \times b$), Chevet's inequality
+$\mathbb{E} \|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
+\le \|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} + \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2$,
+its form with random factors independent of $\mathbf{G}$, the tail of
+$\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ above that bound, and Gordon's upper bound
+$\mathbb{E} \|\mathbf{G}\|_2 \le \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert}$ as the case
+$\mathbf{S} = \mathbf{I}$, $\mathbf{T} = \mathbf{I}$. Real throughout: the Gaussian matrix law is
+real.
 
 The proof of Chevet's inequality compares, over finite symmetric nets of the unit spheres, the
-process `⟨u, S G T v⟩ = ⟨Sᴴ u, G (T v)⟩` with `‖Sᴴ u‖ ⟨g, T v⟩ + ‖T v‖ ⟨h, Sᴴ u⟩` (`g`, `h`
-independent standard Gaussian vectors) through the Sudakov–Fernique inequality
+process
+$\langle \mathbf{u}, \mathbf{S}\mathbf{G}\mathbf{T}\mathbf{v} \rangle
+= \langle \mathbf{S}^{\mathsf{H}}\mathbf{u}, \mathbf{G}(\mathbf{T}\mathbf{v}) \rangle$ with
+$\|\mathbf{S}^{\mathsf{H}}\mathbf{u}\| \langle \mathbf{g}, \mathbf{T}\mathbf{v} \rangle +
+\|\mathbf{T}\mathbf{v}\| \langle \mathbf{h}, \mathbf{S}^{\mathsf{H}}\mathbf{u} \rangle$
+($\mathbf{g}$, $\mathbf{h}$ independent standard Gaussian vectors) through the Sudakov–Fernique
+inequality
 (`NLAlib.integral_iSup_le_integral_iSup_of_hasGaussianLaw`), then bounds the comparison process
 by `NLAlib.IsIsotropic.integral_norm_mulVec_le`.
 
@@ -30,8 +40,10 @@ by `NLAlib.IsIsotropic.integral_norm_mulVec_le`.
 * `NLAlib.integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix`: Chevet's inequality.
 * `NLAlib.integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun`: Chevet's inequality
   with random factors independent of the Gaussian matrix.
-* `NLAlib.measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix`: the tail of `‖S G T‖`.
-* `NLAlib.integral_specNorm_le_of_hasLaw_gaussianMatrix`: `E ‖G‖ ≤ √N + √n`.
+* `NLAlib.measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix`: the tail of
+  $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$.
+* `NLAlib.integral_specNorm_le_of_hasLaw_gaussianMatrix`:
+  $\mathbb{E} \|\mathbf{G}\|_2 \le \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert}$.
 -/
 
 @[expose] public section
@@ -47,7 +59,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n a b : Ty
 
 section Comparison
 
-/-- The increments of `⟨x, G y⟩` are at most those of `‖x‖ ⟨g, y⟩ + ‖y‖ ⟨h, x⟩`. -/
+/-- The increments of $\langle \mathbf{x}, \mathbf{G}\mathbf{y} \rangle$ are at most those of
+$\|\mathbf{x}\| \langle \mathbf{g}, \mathbf{y} \rangle + \|\mathbf{y}\| \langle \mathbf{h},
+\mathbf{x} \rangle$. -/
 private theorem chevet_increment_le (x x' : m → ℝ) (y y' : n → ℝ) :
     ((fun p : m × n => x p.1 * y p.2) - fun p => x' p.1 * y' p.2) ⬝ᵥ
         ((fun p : m × n => x p.1 * y p.2) - fun p => x' p.1 * y' p.2) ≤
@@ -92,7 +106,9 @@ private theorem integral_iSup_le_integral_iSup_chevet (hX : HasLaw X (gaussianMa
     integral_dotProduct_sub_dotProduct_sq_of_hasLaw_gaussianVector hV]
   exact chevet_increment_le _ _ _ _
 
-/-- The comparison process is bounded by `‖S‖ ‖Tᵀ g‖ + ‖T‖ ‖S h‖` on unit vectors. -/
+/-- The comparison process is bounded by
+$\|\mathbf{S}\|_2 \|\mathbf{T}^{\mathsf{T}}\mathbf{g}\| + \|\mathbf{T}\|_2 \|\mathbf{S}\mathbf{h}\|$
+on unit vectors. -/
 private theorem sumElim_dotProduct_sumElim_le (S : Matrix a m ℝ) (T : Matrix n b ℝ)
     {u : a → ℝ} {v : b → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1) (hv : ‖WithLp.toLp 2 v‖ = 1)
     (g : n → ℝ) (h : m → ℝ) :
@@ -120,7 +136,7 @@ private theorem sumElim_dotProduct_sumElim_le (S : Matrix a m ℝ) (T : Matrix n
 
 end Comparison
 
-/-- From `a (1 - 2ε) ≤ c` for all small `ε > 0`, `a ≤ c`. -/
+/-- From $x (1 - 2\varepsilon) \le c$ for all $0 < \varepsilon < 1/2$, $x \le c$. -/
 private theorem le_of_forall_mul_one_sub_le {x c : ℝ}
     (h : ∀ ε : ℝ, 0 < ε → ε < 1 / 2 → x * (1 - 2 * ε) ≤ c) : x ≤ c := by
   have hlim : Filter.Tendsto (fun ε : ℝ => x * (1 - 2 * ε)) (nhdsWithin 0 (Set.Ioi 0))
@@ -132,7 +148,8 @@ private theorem le_of_forall_mul_one_sub_le {x c : ℝ}
     filter_upwards [Ioo_mem_nhdsGT (by norm_num : (0 : ℝ) < 1 / 2)] with ε hε
     exact h ε hε.1 hε.2)
 
-/-- `‖S A T‖` is `‖S‖ ‖T‖`-Lipschitz in `A` for the Frobenius norm. -/
+/-- $\|\mathbf{S}\mathbf{A}\mathbf{T}\|_2$ is $\|\mathbf{S}\|_2 \|\mathbf{T}\|_2$-Lipschitz in
+$\mathbf{A}$ for the Frobenius norm. -/
 private theorem abs_specNorm_mul_mul_sub_le (S : Matrix a m ℝ) (T : Matrix n b ℝ)
     (A B : Matrix m n ℝ) :
     |specNorm (S * A * T) - specNorm (S * B * T)| ≤
@@ -147,13 +164,14 @@ private theorem abs_specNorm_mul_mul_sub_le (S : Matrix a m ℝ) (T : Matrix n b
 
 section Fixed
 
-/-- `‖S G T‖` is integrable for a standard Gaussian matrix `G`. -/
+/-- $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ is integrable for a standard Gaussian matrix
+$\mathbf{G}$. -/
 theorem integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ)
     (S : Matrix a m ℝ) (T : Matrix n b ℝ) : Integrable (fun ω => specNorm (S * X ω * T)) μ :=
   integrable_comp_of_hasLaw_gaussianMatrix hX (f := fun A => specNorm (S * A * T))
     (abs_specNorm_mul_mul_sub_le S T)
 
-/-- Chevet's inequality on `ε`-nets, before `ε → 0`. -/
+/-- Chevet's inequality on $\varepsilon$-nets, before $\varepsilon \to 0$. -/
 private theorem integral_specNorm_mul_mul_mul_one_sub_le (hX : HasLaw X (gaussianMatrix m n) μ)
     (S : Matrix a m ℝ) (T : Matrix n b ℝ) {ε : ℝ} (hε0 : 0 < ε) (hε : ε < 1 / 2) :
     (∫ ω, specNorm (S * X ω * T) ∂μ) * (1 - 2 * ε) ≤
@@ -229,8 +247,10 @@ private theorem integral_specNorm_mul_mul_mul_one_sub_le (hX : HasLaw X (gaussia
         have h4 := mul_le_mul_of_nonneg_left h2 (specNorm_nonneg T)
         linarith [mul_comm (frobNorm S) (specNorm T)]
 
-/-- **Chevet's inequality**: for a standard Gaussian matrix `G` and fixed `S`, `T`,
-`E ‖S G T‖ ≤ ‖S‖ ‖T‖_F + ‖S‖_F ‖T‖`.
+/-- **Chevet's inequality**: for a standard Gaussian matrix $\mathbf{G}$ and fixed $\mathbf{S}$,
+$\mathbf{T}$,
+$\mathbb{E} \|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
+\le \|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} + \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2$.
 [Vershynin2018, Theorem 8.7.1]; [HalkoMartinssonTropp2011, Proposition 10.1]; Vershynin states
 it for a general bilinear supremum over two sets, here the matrix form of Halko, Martinsson and
 Tropp, over any finite index types.
@@ -240,12 +260,16 @@ theorem integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix
     ∫ ω, specNorm (S * X ω * T) ∂μ ≤ specNorm S * frobNorm T + frobNorm S * specNorm T :=
   le_of_forall_mul_one_sub_le fun _ hε0 hε => integral_specNorm_mul_mul_mul_one_sub_le hX S T hε0 hε
 
-/-- The tail of `‖S G T‖` above Chevet's bound:
-`P(‖S‖ ‖T‖_F + ‖S‖_F ‖T‖ + t ≤ ‖S G T‖) ≤ exp (-t² / (2 ‖S‖² ‖T‖²))` for `t ≥ 0`, by Gaussian
-concentration (`NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`) with Lipschitz
-constant `‖S‖ ‖T‖` and Chevet's inequality. [HalkoMartinssonTropp2011, proof of Theorem 10.8],
-the deviation step of the range finder's spectral tail. If `S = 0` or `T = 0` the right side is
-`exp 0 = 1` (Lean's `x / 0 = 0`). -/
+/-- The tail of $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ above Chevet's bound: for $t \ge 0$,
+$$\mathbb{P}\bigl(\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
+  \ge \|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} + \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2 +
+  t\bigr)
+\le \exp\Bigl(-\frac{t^2}{2 \|\mathbf{S}\|_2^2 \|\mathbf{T}\|_2^2}\Bigr) \,,$$
+by Gaussian concentration (`NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`) with
+Lipschitz constant $\|\mathbf{S}\|_2 \|\mathbf{T}\|_2$ and Chevet's inequality.
+[HalkoMartinssonTropp2011, proof of Theorem 10.8], the deviation step of the range finder's
+spectral tail. If $\mathbf{S} = \mathbf{0}$ or $\mathbf{T} = \mathbf{0}$ the right side is
+$\exp 0 = 1$ (Lean's $x / 0 = 0$). -/
 theorem measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (S : Matrix a m ℝ) (T : Matrix n b ℝ) {t : ℝ}
     (ht : 0 ≤ t) :
@@ -258,17 +282,20 @@ theorem measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix
   simp only [Set.mem_ofPred_eq] at hω ⊢
   linarith
 
-/-- `‖G‖` is integrable for a standard Gaussian matrix `G`. -/
+/-- $\|\mathbf{G}\|_2$ is integrable for a standard Gaussian matrix $\mathbf{G}$. -/
 theorem integrable_specNorm_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ) :
     Integrable (fun ω => specNorm (X ω)) μ :=
   integrable_comp_of_hasLaw_gaussianMatrix hX (L := 1) fun A B => by
     rw [NNReal.coe_one, one_mul]
     exact (abs_specNorm_sub_specNorm_le A B).trans (specNorm_le_frobNorm _)
 
-/-- **Gordon's upper bound**: `E ‖G‖ ≤ √N + √n` for a standard Gaussian matrix `G : N × n`, the
-case `S = 1`, `T = 1` of Chevet's inequality.
+/-- **Gordon's upper bound**:
+$\mathbb{E} \|\mathbf{G}\|_2 \le \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert}$ for a standard
+Gaussian $m \times n$ matrix $\mathbf{G}$, the case $\mathbf{S} = \mathbf{I}$,
+$\mathbf{T} = \mathbf{I}$ of Chevet's inequality.
 [Vershynin2018, Theorem 7.3.1]; [DavidsonSzarek2001, Theorem II.13]; the lower bound
-`√N - √n ≤ E σ_min(G)` is `NLAlib.le_integral_singularValues_of_hasLaw_gaussianMatrix`.
+$\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} \le \mathbb{E} \, \sigma_{\min}(\mathbf{G})$ is
+`NLAlib.le_integral_singularValues_of_hasLaw_gaussianMatrix`.
 Result: gaussian-matrix-extreme-singular-values -/
 theorem integral_specNorm_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ) :
     ∫ ω, specNorm (X ω) ∂μ ≤ √(Fintype.card m : ℝ) + √(Fintype.card n : ℝ) := by
@@ -337,8 +364,9 @@ private theorem lintegral_specNorm_mul_mul_le (hY : AEMeasurable Y μ)
           frobNorm (S (Y ω)) * specNorm (T (Y ω))) ∂μ :=
         lintegral_map' hG.aemeasurable hY
 
-/-- `‖S G T‖` is integrable when the random factors `S`, `T` are functions of a variable `Y`
-independent of the Gaussian matrix `G` and Chevet's bound for them is integrable. -/
+/-- $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ is integrable when the random factors $\mathbf{S}$,
+$\mathbf{T}$ are measurable functions of a variable $Y$ independent of the Gaussian matrix
+$\mathbf{G}$ and Chevet's bound for them is integrable. -/
 theorem integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix_of_indepFun (hY : AEMeasurable Y μ)
     (hX : HasLaw X (gaussianMatrix m n) μ) (hXY : IndepFun Y X μ) (hS : Measurable S)
     (hT : Measurable T)
@@ -351,8 +379,11 @@ theorem integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix_of_indepFun (hY : A
   exact (lintegral_specNorm_mul_mul_le hY hX hXY hS hT).trans_lt hST.lintegral_lt_top
 
 /-- **Chevet's inequality with random factors** independent of the Gaussian matrix:
-`E ‖S G T‖ ≤ E [‖S‖ ‖T‖_F + ‖S‖_F ‖T‖]` when `S`, `T` are functions of a variable `Y`
-independent of `G`. [HalkoMartinssonTropp2011, proof of Theorem 10.6], where it is applied
+$$\mathbb{E} \|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
+\le \mathbb{E}\bigl[\|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} +
+  \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2\bigr]$$
+when $\mathbf{S}$, $\mathbf{T}$ are measurable functions of a variable $Y$ independent of
+$\mathbf{G}$. [HalkoMartinssonTropp2011, proof of Theorem 10.6], where it is applied
 conditionally on the independent block. The integrability hypothesis `hST` excludes the junk
 value `0` of a non-integrable right side. -/
 theorem integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun (hY : AEMeasurable Y μ)

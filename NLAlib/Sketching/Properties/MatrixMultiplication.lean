@@ -12,22 +12,32 @@ public import NLAlib.Sketching.Properties.Oblivious
 /-!
 # Approximate matrix multiplication from the JL moment property
 
-A real sketch with the JL moment property, exponent `p ≥ 2`, approximates every product `Aᴴ B`:
-`E ‖Aᴴ Sᴴ S B - Aᴴ B‖_F^p ≤ (ε ‖A‖_F ‖B‖_F)^p δ`. At `A = B = U` with orthonormal columns this is
-a Gram-error bound, so the sketch is a random subspace embedding for every fixed subspace with
-distortion `ε · dim`, hence an oblivious subspace embedding.
+A real sketch $\mathbf{S}$ with the JL moment property, exponent $p \ge 2$, approximates every
+product $\mathbf{A}^{\mathsf{H}}\mathbf{B}$:
+$$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}^p
+\le (\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}})^p \delta\,.$$
+At $\mathbf{A} = \mathbf{B} = \mathbf{U}$ with orthonormal columns this is a Gram-error bound, so
+the sketch is a random subspace embedding for every fixed subspace with distortion $\varepsilon$
+times the dimension, hence an oblivious subspace embedding.
 
-Over `ℝ` only, with constant `1`: Woodruff's statement has `3 ε`, and `1` is optimal (the
-deterministic sketch with `Sᴴ S = (1 + ε) • 1`, at `A = B` a unit vector, attains it). Over `ℂ`
-the hypothesis gives only `√2 ε`, and this is sharp: for `Sᴴ S - 1 = c (ξ₁ σx + ξ₂ σy)` with
-Rademacher `ξ` and Pauli matrices `σx`, `σy`, `c ≤ 1/√2`, one has `E (x* E x)² ≤ c² ‖x‖⁴` for
-every `x` but `E |e₁* E e₂|² = 2 c²`. A `𝕜` form with `√2 ε` is added when a complex consumer
-appears. Design: `docs/design/Sketching-S1.md` §3.6, §7 Q2.
+Over $\mathbb{R}$ only, with constant $1$: Woodruff's statement has $3 \varepsilon$, and $1$ is
+optimal (the deterministic sketch with
+$\mathbf{S}^{\mathsf{H}}\mathbf{S} = (1 + \varepsilon)\mathbf{I}$, at $\mathbf{A} = \mathbf{B}$ a
+unit vector, attains it). Over $\mathbb{C}$ the hypothesis gives only $\sqrt{2}\,\varepsilon$, and
+this is sharp: for
+$\mathbf{E} = \mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}
+= c (\xi_1 \boldsymbol{\sigma}_x + \xi_2 \boldsymbol{\sigma}_y)$ with Rademacher $\xi_1, \xi_2$,
+Pauli matrices $\boldsymbol{\sigma}_x$, $\boldsymbol{\sigma}_y$ and $c \le 1/\sqrt{2}$, one has
+$\mathbb{E}(\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x})^2 \le c^2 \|\mathbf{x}\|^4$ for every
+$\mathbf{x}$ but $\mathbb{E}\lvert\mathbf{e}_1^{\mathsf{H}}\mathbf{E}\mathbf{e}_2\rvert^2 = 2 c^2$.
+A form over $\Bbbk$ with $\sqrt{2}\,\varepsilon$ is added when a complex consumer appears. Design:
+`docs/design/Sketching-S1.md` §3.6, §7 Q2.
 
 ## Main results
 
 * `NLAlib.HasJLMoment.integral_frobNorm_conjTranspose_mul_sub_rpow_le`: approximate matrix
-  multiplication in `L^p`.
+  multiplication in $L^p$.
 * `NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le`: its tail.
 * `NLAlib.HasJLMoment.hasSubspaceEmbedding`, `NLAlib.HasJLMoment.isObliviousSubspaceEmbedding`.
 -/
@@ -45,8 +55,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n q r : Ty
 /-! ### Proof-local helpers -/
 
 omit [Fintype k] [Fintype n] [Fintype q] [Fintype r] in
-/-- **Weighted Jensen for a sum of nonnegative random variables**: if `E [Y i ^ r] ≤ w i ^ r K`
-for weights `w` summing to one, with `Y i = 0` where `w i = 0`, then `E [(∑ Y i) ^ r] ≤ K`. -/
+/-- **Weighted Jensen for a sum of nonnegative random variables**: for $r \ge 1$, if
+$\mathbb{E}[Y_i^r] \le w_i^r K$ for nonnegative weights $w_i$ summing to one, with $Y_i = 0$ where
+$w_i = 0$, then $(\sum_i Y_i)^r$ is integrable and $\mathbb{E}[(\sum_i Y_i)^r] \le K$. -/
 private theorem integral_rpow_sum_le {ι : Type*} [Fintype ι] {Y : ι → Ω → ℝ}
     (hY0 : ∀ i ω, 0 ≤ Y i ω) {r : ℝ} (hr : 1 ≤ r)
     (hm : AEStronglyMeasurable (fun ω => (∑ i, Y i ω) ^ r) μ) {w : ι → ℝ} (hw0 : ∀ i, 0 ≤ w i)
@@ -90,12 +101,14 @@ private theorem integral_rpow_sum_le {ι : Type*} [Fintype ι] {Y : ι → Ω �
           mul_le_mul_of_nonneg_left (hK i) (div_nonneg hpos.le hwr.le)
       _ = w i * K := by field_simp
 
-/-- Over `ℝ`, the squared Euclidean norm is the dot product of a vector with itself. -/
+/-- Over $\mathbb{R}$, the squared Euclidean norm is the dot product of a vector with itself. -/
 private theorem norm_toLp_sq_eq_dotProduct {m : Type*} [Fintype m] (v : m → ℝ) :
     ‖WithLp.toLp 2 v‖ ^ 2 = v ⬝ᵥ v := by
   rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, star_trivial, RCLike.re_to_real]
 
-/-- The bilinear form `(M x)ᵀ (M y) - xᵀ y` of the Gram error `Mᵀ M - 1`. -/
+/-- The bilinear form
+$(\mathbf{M}\mathbf{x})^{\mathsf{T}}\mathbf{M}\mathbf{y} - \mathbf{x}^{\mathsf{T}}\mathbf{y}$ of
+the Gram error $\mathbf{M}^{\mathsf{T}}\mathbf{M} - \mathbf{I}$. -/
 private def gramErr (M : Matrix k n ℝ) (x y : n → ℝ) : ℝ := (M *ᵥ x) ⬝ᵥ (M *ᵥ y) - x ⬝ᵥ y
 
 /-- **Polarization** of the Gram error. -/
@@ -177,7 +190,9 @@ private theorem integral_abs_gramErr_rpow_le_of_norm_eq (h : HasJLMoment S ε δ
   exact hY ω
 
 /-- The moment bound for the Gram error at any two vectors:
-`E |(S x)ᵀ (S y) - xᵀ y|^p ≤ ε^p δ (‖x‖ ‖y‖)^p`. -/
+$\mathbb{E}\lvert(\mathbf{S}\mathbf{x})^{\mathsf{T}}\mathbf{S}\mathbf{y} -
+\mathbf{x}^{\mathsf{T}}\mathbf{y}\rvert^p
+\le \varepsilon^p \delta (\|\mathbf{x}\| \|\mathbf{y}\|)^p$. -/
 private theorem integral_abs_gramErr_rpow_le (h : HasJLMoment S ε δ p μ) (hp : 1 ≤ p)
     (hS : AEMeasurable S μ) (x y : n → ℝ) :
     Integrable (fun ω => |gramErr (S ω) x y| ^ p) μ ∧ ∫ ω, |gramErr (S ω) x y| ^ p ∂μ ≤
@@ -218,7 +233,7 @@ private theorem integral_abs_gramErr_rpow_le (h : HasJLMoment S ε δ p μ) (hp 
   simp only [hg, hsq] at hA
   exact hA
 
-/-- `(x ^ 2) ^ (p / 2) = x ^ p` for `x ≥ 0`. -/
+/-- $(x^2)^{p/2} = x^p$ for $x \ge 0$. -/
 private theorem sq_rpow_half {x : ℝ} (hx : 0 ≤ x) : (x ^ 2) ^ (p / 2) = x ^ p := by
   rw [← Real.rpow_two, ← Real.rpow_mul hx]
   congr 1
@@ -235,7 +250,7 @@ private theorem conjTranspose_mul_sub_apply (M : Matrix k n ℝ) (A : Matrix n q
     gramErr, dotProduct]
   rfl
 
-/-- Approximate matrix multiplication in `L^p` for nonzero `A`, `B`. -/
+/-- Approximate matrix multiplication in $L^p$ for nonzero $\mathbf{A}$, $\mathbf{B}$. -/
 private theorem integral_frobNorm_rpow_le_of_ne_zero (h : HasJLMoment S ε δ p μ) (hp : 2 ≤ p)
     (hS : AEMeasurable S μ) {A : Matrix n q ℝ} {B : Matrix n r ℝ} (hA : A ≠ 0) (hB : B ≠ 0) :
     Integrable (fun ω => frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B) ^ p) μ ∧
@@ -293,7 +308,8 @@ private theorem integral_frobNorm_rpow_le_of_ne_zero (h : HasJLMoment S ε δ p 
     have hFp : 0 < F ^ p := Real.rpow_pos_of_pos hF0 p
     field_simp
 
-/-- The approximate-multiplication error vanishes when `A = 0` or `B = 0`. -/
+/-- The approximate-multiplication error vanishes when $\mathbf{A} = \mathbf{0}$ or
+$\mathbf{B} = \mathbf{0}$. -/
 private theorem frobNorm_conjTranspose_mul_sub_rpow_eq_zero (hp : 0 < p) (M : Matrix k n ℝ)
     {A : Matrix n q ℝ} {B : Matrix n r ℝ} (hAB : A = 0 ∨ B = 0) :
     frobNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B) ^ p = 0 := by
@@ -301,7 +317,7 @@ private theorem frobNorm_conjTranspose_mul_sub_rpow_eq_zero (hp : 0 < p) (M : Ma
     simp only [Matrix.conjTranspose_zero, Matrix.zero_mul, Matrix.mul_zero, sub_self,
       frobNorm_zero, Real.zero_rpow hp.ne']
 
-/-- The `p`-th power of the approximate-matrix-multiplication error is integrable. -/
+/-- The $p$-th power of the approximate-matrix-multiplication error is integrable. -/
 theorem HasJLMoment.integrable_frobNorm_conjTranspose_mul_sub_rpow (h : HasJLMoment S ε δ p μ)
     (hp : 2 ≤ p) (hS : AEMeasurable S μ) (A : Matrix n q ℝ) (B : Matrix n r ℝ) :
     Integrable (fun ω => frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B) ^ p) μ := by
@@ -312,11 +328,18 @@ theorem HasJLMoment.integrable_frobNorm_conjTranspose_mul_sub_rpow (h : HasJLMom
     exact (integral_frobNorm_rpow_le_of_ne_zero h hp hS hA hB).1
 
 /-- **Approximate matrix multiplication from the JL moment property**: for a real sketch with
-the `(ε, δ, p)` JL moment property, `p ≥ 2`,
-`E ‖Aᴴ Sᴴ S B - Aᴴ B‖_F^p ≤ (ε ‖A‖_F ‖B‖_F)^p δ`. [Woodruff2014, Theorem 13]; Woodruff has
-`3 ε`; the constant `1` here is optimal (`Sᴴ S = (1 + ε) • 1` attains it). Over `ℝ` only: over
-`ℂ` the hypothesis gives only `√2 ε`, sharply, as `Sᴴ S - 1 = c (ξ₁ σx + ξ₂ σy)` shows
-(Rademacher `ξ`, Pauli `σx`, `σy`, `c ≤ 1/√2`: `E (x* E x)² ≤ c² ‖x‖⁴`, `E |e₁* E e₂|² = 2 c²`).
+the $(\varepsilon, \delta, p)$ JL moment property, $\varepsilon \ge 0$, $p \ge 2$,
+$$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}^p
+\le (\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}})^p \delta\,.$$
+[Woodruff2014, Theorem 13]; Woodruff has $3 \varepsilon$; the constant $1$ here is optimal
+($\mathbf{S}^{\mathsf{H}}\mathbf{S} = (1 + \varepsilon)\mathbf{I}$ attains it). Over $\mathbb{R}$
+only: over $\mathbb{C}$ the hypothesis gives only $\sqrt{2}\,\varepsilon$, sharply, as
+$\mathbf{E} = \mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}
+= c (\xi_1 \boldsymbol{\sigma}_x + \xi_2 \boldsymbol{\sigma}_y)$ shows (Rademacher $\xi_1, \xi_2$,
+Pauli $\boldsymbol{\sigma}_x$, $\boldsymbol{\sigma}_y$, $c \le 1/\sqrt{2}$:
+$\mathbb{E}(\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x})^2 \le c^2 \|\mathbf{x}\|^4$,
+$\mathbb{E}\lvert\mathbf{e}_1^{\mathsf{H}}\mathbf{E}\mathbf{e}_2\rvert^2 = 2 c^2$).
 Result: amm-ose -/
 theorem HasJLMoment.integral_frobNorm_conjTranspose_mul_sub_rpow_le (h : HasJLMoment S ε δ p μ)
     (hε : 0 ≤ ε) (hp : 2 ≤ p) (hS : AEMeasurable S μ) (A : Matrix n q ℝ) (B : Matrix n r ℝ) :
@@ -332,8 +355,12 @@ theorem HasJLMoment.integral_frobNorm_conjTranspose_mul_sub_rpow_le (h : HasJLMo
     rw [mul_assoc ε, Real.mul_rpow hε (mul_nonneg (frobNorm_nonneg _) (frobNorm_nonneg _))]
     ring
 
-/-- **Approximate matrix multiplication, tail form**: for nonzero `A`, `B`,
-`P(ε ‖A‖_F ‖B‖_F ≤ ‖Aᴴ Sᴴ S B - Aᴴ B‖_F) ≤ δ`. [Woodruff2014, Theorem 13]; there `3 ε`. -/
+/-- **Approximate matrix multiplication, tail form**: for $\varepsilon > 0$, $p \ge 2$ and nonzero
+$\mathbf{A}$, $\mathbf{B}$,
+$$\mathbb{P}\bigl(\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
+\le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr) \le \delta\,.$$
+[Woodruff2014, Theorem 13]; there $3 \varepsilon$. -/
 theorem HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le (h : HasJLMoment S ε δ p μ)
     (hε : 0 < ε) (hp : 2 ≤ p) (hS : AEMeasurable S μ) {A : Matrix n q ℝ} {B : Matrix n r ℝ}
     (hA : A ≠ 0) (hB : B ≠ 0) :
@@ -357,7 +384,7 @@ theorem HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le (h : HasJLMomen
     exact hle
 
 /-- The JL moment property gives a random embedding of every subspace of the column space of
-an orthonormal `U`, with any constants weaker than `1 ∓ ε · card q`. -/
+an orthonormal $\mathbf{U}$, with any constants weaker than $1 \mp \varepsilon \lvert q \rvert$. -/
 private theorem hasSubspaceEmbedding_of_range_le [DecidableEq q] (h : HasJLMoment S ε δ p μ)
     (hε : 0 < ε) (hp : 2 ≤ p) (hS : AEMeasurable S μ) (hδ : 0 ≤ δ) {U : Matrix n q ℝ}
     (hU : HasOrthonormalCols U) {q' : Type*} [Fintype q'] {V : Matrix n q' ℝ}
@@ -409,20 +436,21 @@ private theorem hasSubspaceEmbedding_of_range_le [DecidableEq q] (h : HasJLMomen
     exact (hint.measure_norm_ge_lt_top (Real.rpow_pos_of_pos hc0 p)).ne
   exact (measureReal_mono (hsub.trans hsub2) hfin).trans htail
 
-/-- **The JL moment property gives subspace embeddings**: for `U` with orthonormal columns, a
-real sketch with the `(ε, δ, p)` JL moment property, `p ≥ 2`, is a random subspace embedding for
-`range U` with distortion `ε · card q` and failure probability `δ`. [Woodruff2014, proof of
-Theorem 9] (Theorems 13 and 14). -/
+/-- **The JL moment property gives subspace embeddings**: for $\mathbf{U}$ with orthonormal
+columns indexed by $q$, a real sketch with the $(\varepsilon, \delta, p)$ JL moment property,
+$\varepsilon > 0$, $p \ge 2$, $\delta \ge 0$, is a random subspace embedding for
+$\operatorname{range}\mathbf{U}$ with distortion $\varepsilon \lvert q \rvert$ and failure
+probability $\delta$. [Woodruff2014, proof of Theorem 9] (Theorems 13 and 14). -/
 theorem HasJLMoment.hasSubspaceEmbedding [DecidableEq q] (h : HasJLMoment S ε δ p μ)
     (hε : 0 < ε) (hp : 2 ≤ p) (hS : AEMeasurable S μ) (hδ : 0 ≤ δ) {U : Matrix n q ℝ}
     (hU : HasOrthonormalCols U) :
     HasSubspaceEmbedding S U (1 - ε * Fintype.card q) (1 + ε * Fintype.card q) δ μ := by
   exact hasSubspaceEmbedding_of_range_le h hε hp hS hδ hU le_rfl le_rfl le_rfl
 
-/-- **The JL moment property gives an OSE**: a real sketch with the `(ε, δ, p)` JL moment
-property, `p ≥ 2`, is an OSE for every dimension `d` with distortion `ε d` and failure
-probability `δ`; no `d ≤ card n` is needed. [Woodruff2014, proof of Theorem 9] (Theorems 13
-and 14). -/
+/-- **The JL moment property gives an OSE**: a real sketch with the $(\varepsilon, \delta, p)$ JL
+moment property, $\varepsilon > 0$, $p \ge 2$, $\delta \ge 0$, is an OSE for every dimension $d$
+with distortion $\varepsilon d$ and failure probability $\delta$; no $d \le \lvert n \rvert$ is
+needed. [Woodruff2014, proof of Theorem 9] (Theorems 13 and 14). -/
 theorem HasJLMoment.isObliviousSubspaceEmbedding (h : HasJLMoment S ε δ p μ) (hε : 0 < ε)
     (hp : 2 ≤ p) (hS : AEMeasurable S μ) (hδ : 0 ≤ δ) (d : ℕ) :
     IsObliviousSubspaceEmbedding S d (1 - ε * d) (1 + ε * d) δ μ := by

@@ -16,7 +16,8 @@ public import NLAlib.Probability.Isotropic
 /-!
 # Integrals of matrix-valued functions
 
-The expectation of a random matrix `X : Ω → Matrix m n 𝕜` is Mathlib's Bochner integral
+The expectation $\mathbb{E}\mathbf{X}$ of a random matrix `X : Ω → Matrix m n 𝕜` is Mathlib's
+Bochner integral
 `∫ ω, X ω ∂μ`, which needs a normed-space structure on matrices. NLAlib uses one scope for it,
 library-wide: `open scoped Matrix.Norms.L2Operator` (`docs/design/Mathlib-deviations.md`
 entry 13), with the real normed-space instance of
@@ -25,8 +26,8 @@ on the norm, and the statements here mention none: integrability and the integra
 and the integral commutes with the conjugate transpose, reindexing, submatrices, the trace,
 products with fixed matrices and quadratic forms. An almost surely Hermitian (positive
 semidefinite) random matrix has a Hermitian (positive semidefinite) mean, with no integrability
-hypothesis, because a non-integrable function integrates to `0`. Loewner monotonicity is Mathlib's
-`MeasureTheory.integral_mono_ae`, through `Matrix.instOrderClosedTopology`
+hypothesis, because a non-integrable function integrates to $\mathbf{0}$. Loewner monotonicity is
+Mathlib's `MeasureTheory.integral_mono_ae`, through `Matrix.instOrderClosedTopology`
 (`NLAlib/ForMathlib/LinearAlgebra/Matrix/PosDef.lean`).
 
 ## Main results
@@ -38,7 +39,8 @@ hypothesis, because a non-integrable function integrates to `0`. Loewner monoton
 * `Matrix.isHermitian_integral`, `Matrix.posSemidef_integral`, `Matrix.posDef_integral`.
 * `Matrix.IsHermitian.integrable_cfc`, `Matrix.IsHermitian.cfc_integral`: a random function of a
   fixed Hermitian matrix, with no continuity hypothesis.
-* `NLAlib.IsIsotropic.integral_vecMulVec`: `E [X Xᴴ] = 1`.
+* `NLAlib.IsIsotropic.integral_vecMulVec`: $\mathbb{E}[\mathbf{x}\mathbf{x}^{\mathsf{H}}]
+  = \mathbf{I}$.
 -/
 
 @[expose] public section
@@ -66,7 +68,7 @@ theorem _root_.Matrix.integrable_iff :
   simp only [integrable_pi_iff]
   rfl
 
-/-- A random matrix is in `Lᵖ` exactly when its entries are. -/
+/-- A random matrix is in $L^p$ exactly when its entries are. -/
 theorem _root_.Matrix.memLp_iff {p : ℝ≥0∞} :
     MemLp X p μ ↔ ∀ i j, MemLp (fun ω => X ω i j) p μ := by
   have h : MemLp X p μ ↔ MemLp (fun ω => toPi (X ω)) p μ :=
@@ -78,9 +80,10 @@ theorem _root_.Matrix.memLp_iff {p : ℝ≥0∞} :
   simp only [memLp_pi_iff]
   rfl
 
-/-- The entries of the mean of a random matrix are the means of its entries. Integrability of
-the entries is needed: if one entry is not integrable, the integral is `0` while the other
-entries may have nonzero means. -/
+/-- The entries of the mean of a random matrix are the means of its entries:
+$(\mathbb{E}\mathbf{X})_{i,j} = \mathbb{E}\mathbf{X}_{i,j}$. Integrability of the entries is
+needed: if one entry is not integrable, the integral is $\mathbf{0}$ while the other entries may
+have nonzero means. -/
 theorem _root_.Matrix.integral_apply (hX : ∀ i j, Integrable (fun ω => X ω i j) μ) (i : m)
     (j : n) : (∫ ω, X ω ∂μ) i j = ∫ ω, X ω i j ∂μ := by
   exact ((Matrix.entryLinearMap ℝ 𝕜 i j).toContinuousLinearMap.integral_comp_comm
@@ -102,8 +105,9 @@ private def conjTransposeLinearEquivReal : Matrix m n 𝕜 ≃ₗ[ℝ] Matrix n 
   right_inv := Matrix.conjTranspose_conjTranspose
 
 variable [DecidableEq m] in
-/-- The conjugate transpose commutes with the integral; no integrability is needed, since the
-conjugate transpose is a real-linear isometric equivalence. -/
+/-- The conjugate transpose commutes with the integral,
+$\mathbb{E}[\mathbf{X}^{\mathsf{H}}] = (\mathbb{E}\mathbf{X})^{\mathsf{H}}$; no integrability is
+needed, since the conjugate transpose is a real-linear isometric equivalence. -/
 theorem _root_.Matrix.integral_conjTranspose (X : Ω → Matrix m n 𝕜) :
     ∫ ω, (X ω)ᴴ ∂μ = (∫ ω, X ω ∂μ)ᴴ := by
   exact (conjTransposeLinearEquivReal (m := m) (n := n) (𝕜 := 𝕜)).toContinuousLinearEquiv
@@ -125,13 +129,15 @@ theorem _root_.Matrix.integral_submatrix (hX : Integrable X μ) (r : l → m) (c
       map_smul' := fun _ _ => rfl }
   exact L.toContinuousLinearMap.integral_comp_comm hX
 
-/-- The trace commutes with the integral. -/
+/-- The trace commutes with the integral: for integrable $\mathbf{X}$,
+$\mathbb{E}\operatorname{tr}\mathbf{X} = \operatorname{tr}\mathbb{E}\mathbf{X}$. -/
 theorem _root_.Matrix.integral_trace {X : Ω → Matrix n n 𝕜} (hX : Integrable X μ) :
     ∫ ω, (X ω).trace ∂μ = (∫ ω, X ω ∂μ).trace := by
   exact (Matrix.traceLinearMap n ℝ 𝕜).toContinuousLinearMap.integral_comp_comm hX
 
-/-- A fixed left factor comes out of the integral. Integrability is needed: `A * X` may be
-integrable when `X` is not. -/
+/-- A fixed left factor comes out of the integral: for integrable $\mathbf{X}$,
+$\mathbb{E}[\mathbf{A}\mathbf{X}] = \mathbf{A}\, \mathbb{E}\mathbf{X}$. Integrability is needed:
+$\mathbf{A}\mathbf{X}$ may be integrable when $\mathbf{X}$ is not. -/
 theorem _root_.Matrix.integral_const_mul (A : Matrix l m 𝕜) (hX : Integrable X μ) :
     ∫ ω, A * X ω ∂μ = A * ∫ ω, X ω ∂μ := by
   let L : Matrix m n 𝕜 →ₗ[ℝ] Matrix l n 𝕜 :=
@@ -141,7 +147,8 @@ theorem _root_.Matrix.integral_const_mul (A : Matrix l m 𝕜) (hX : Integrable 
   exact L.toContinuousLinearMap.integral_comp_comm hX
 
 variable [DecidableEq k] in
-/-- A fixed right factor comes out of the integral. -/
+/-- A fixed right factor comes out of the integral: for integrable $\mathbf{X}$,
+$\mathbb{E}[\mathbf{X}\mathbf{B}] = (\mathbb{E}\mathbf{X})\, \mathbf{B}$. -/
 theorem _root_.Matrix.integral_mul_const (hX : Integrable X μ) (B : Matrix n k 𝕜) :
     ∫ ω, X ω * B ∂μ = (∫ ω, X ω ∂μ) * B := by
   let L : Matrix m n 𝕜 →ₗ[ℝ] Matrix m k 𝕜 :=
@@ -158,7 +165,9 @@ private def quadFormLinearMap (z : n → 𝕜) : Matrix n n 𝕜 →ₗ[ℝ] �
     simp only [RingHom.id_apply, RCLike.real_smul_eq_coe_smul (K := 𝕜), quadForm_smul_left,
       smul_eq_mul]
 
-/-- The quadratic form of the mean is the mean of the quadratic form. -/
+/-- The quadratic form of the mean is the mean of the quadratic form: for integrable $\mathbf{X}$,
+$\mathbb{E}[\mathbf{z}^{\mathsf{H}}\mathbf{X}\mathbf{z}]
+= \mathbf{z}^{\mathsf{H}}(\mathbb{E}\mathbf{X})\mathbf{z}$. -/
 theorem _root_.Matrix.integral_quadForm {X : Ω → Matrix n n 𝕜} (hX : Integrable X μ)
     (z : n → 𝕜) : ∫ ω, quadForm (X ω) z ∂μ = quadForm (∫ ω, X ω ∂μ) z := by
   exact (quadFormLinearMap z).toContinuousLinearMap.integral_comp_comm hX
@@ -170,7 +179,7 @@ section Order
 variable {X : Ω → Matrix n n 𝕜}
 
 /-- An almost surely Hermitian random matrix has a Hermitian mean. No integrability is needed:
-a non-integrable function integrates to `0`. -/
+a non-integrable function integrates to $\mathbf{0}$. -/
 theorem _root_.Matrix.isHermitian_integral (h : ∀ᵐ ω ∂μ, (X ω).IsHermitian) :
     (∫ ω, X ω ∂μ).IsHermitian := by
   rw [Matrix.IsHermitian, ← Matrix.integral_conjTranspose]
@@ -210,7 +219,7 @@ end Order
 /-! ### Functions of a fixed Hermitian matrix -/
 
 /-- Both halves of `Matrix.IsHermitian.integrable_cfc` and `Matrix.IsHermitian.cfc_integral`,
-through a unitary diagonalisation of `B`. -/
+through a unitary diagonalisation of $\mathbf{B}$. -/
 private theorem integrable_and_integral_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian)
     {f : Ω → ℝ → ℝ} (hf : ∀ x, Integrable (fun ω => f ω x) μ) :
     Integrable (fun ω => cfc (f ω) B) μ ∧
@@ -240,28 +249,33 @@ private theorem integrable_and_integral_cfc {B : Matrix n n 𝕜} (hB : B.IsHerm
   funext i
   exact eval_integral (fun i => hf _) i
 
-/-- **A random function of a fixed Hermitian matrix is integrable** when its values are: if
-`ω ↦ f ω x` is integrable for every `x`, so is `ω ↦ cfc (f ω) B`. Unlike Mathlib's
-`integrable_cfc`, no continuity in `ω` or `x` is needed: the spectrum of a matrix is finite. -/
+/-- **A random function of a fixed Hermitian matrix is integrable** when its values are: for
+Hermitian $\mathbf{B}$, if $\omega \mapsto f_\omega(x)$ is integrable for every $x$, so is
+$\omega \mapsto f_\omega(\mathbf{B})$ (the functional calculus `cfc (f ω) B`). Unlike Mathlib's
+`integrable_cfc`, no continuity in $\omega$ or $x$ is needed: the spectrum of a matrix is finite.
+-/
 theorem _root_.Matrix.IsHermitian.integrable_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian)
     {f : Ω → ℝ → ℝ} (hf : ∀ x, Integrable (fun ω => f ω x) μ) :
     Integrable (fun ω => cfc (f ω) B) μ :=
   (integrable_and_integral_cfc hB hf).1
 
-/-- **The functional calculus of a fixed Hermitian matrix commutes with the integral**: if
-`ω ↦ f ω x` is integrable for every `x`, then `cfc (∫ f ω) B = ∫ cfc (f ω) B`. Unlike Mathlib's
-`cfc_integral`, no continuity in `ω` or `x` is needed: the spectrum of a matrix is finite. -/
+/-- **The functional calculus of a fixed Hermitian matrix commutes with the integral**: for
+Hermitian $\mathbf{B}$, if $\omega \mapsto f_\omega(x)$ is integrable for every $x$, then
+$g(\mathbf{B}) = \mathbb{E} f_\omega(\mathbf{B})$ with $g(x) = \mathbb{E} f_\omega(x)$, where
+$f(\mathbf{B})$ is `cfc f B`. Unlike Mathlib's `cfc_integral`, no continuity in $\omega$ or $x$ is
+needed: the spectrum of a matrix is finite. -/
 theorem _root_.Matrix.IsHermitian.cfc_integral {B : Matrix n n 𝕜} (hB : B.IsHermitian)
     {f : Ω → ℝ → ℝ} (hf : ∀ x, Integrable (fun ω => f ω x) μ) :
     cfc (fun x => ∫ ω, f ω x ∂μ) B = ∫ ω, cfc (f ω) B ∂μ :=
   (integrable_and_integral_cfc hB hf).2.symm
 
-/-- The second-moment matrix of an isotropic vector is the identity: `E [X Xᴴ] = 1`. -/
-theorem IsIsotropic.integral_vecMulVec {X : Ω → n → 𝕜} (hX : IsIsotropic X μ) :
-    ∫ ω, Matrix.vecMulVec (X ω) (star (X ω)) ∂μ = 1 := by
+/-- The second-moment matrix of an isotropic vector is the identity:
+$\mathbb{E}[\mathbf{x}\mathbf{x}^{\mathsf{H}}] = \mathbf{I}$. -/
+theorem IsIsotropic.integral_vecMulVec {x : Ω → n → 𝕜} (hx : IsIsotropic x μ) :
+    ∫ ω, Matrix.vecMulVec (x ω) (star (x ω)) ∂μ = 1 := by
   ext i j
-  refine (Matrix.integral_apply (X := fun ω => Matrix.vecMulVec (X ω) (star (X ω)))
-    (fun i j => hX.integrable_mul_star i j) i j).trans ?_
-  exact (hX.integral_mul_star i j).trans Matrix.one_apply.symm
+  refine (Matrix.integral_apply (X := fun ω => Matrix.vecMulVec (x ω) (star (x ω)))
+    (fun i j => hx.integrable_mul_star i j) i j).trans ?_
+  exact (hx.integral_mul_star i j).trans Matrix.one_apply.symm
 
 end NLAlib

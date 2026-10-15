@@ -11,28 +11,36 @@ public import NLAlib.RandomMatrix.Haar.Uniqueness
 /-!
 # Projections of a uniform unit vector
 
-For `u` uniform on the unit sphere of `ℝⁿ` and `V : Matrix n k ℝ` with orthonormal columns,
-`‖Vᴴ u‖²` is the squared length of the projection of `u` onto a fixed `k`-dimensional subspace.
-Its law does not depend on `V`, and it is the law of `‖Qᴴ x‖²` for an `n × k` Haar frame `Q` and a
-fixed unit `x`: this is the Haar sketch's Johnson–Lindenstrauss variable. This file gives the
-law, the Chernoff tails of Dasgupta and Gupta (2003) around the mean `k / n`, on either side, and
-the exact fourth moment `E ‖Vᴴ u‖⁴ = k (k + 2) / (n (n + 2))`.
+For $\mathbf{u}$ uniform on the unit sphere of $\mathbb{R}^n$ and `V : Matrix n k ℝ` with
+orthonormal columns, $\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2$ is the squared length of the
+projection of $\mathbf{u}$ onto a fixed $\lvert k \rvert$-dimensional subspace. Its law does not
+depend on $\mathbf{V}$, and it is the law of $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\|^2$ for an
+$n \times k$ Haar frame $\mathbf{Q}$ and a fixed unit $\mathbf{x}$: this is the Haar sketch's
+Johnson–Lindenstrauss variable. This file gives the law, the Chernoff tails of Dasgupta and Gupta
+(2003) around the mean $\lvert k \rvert / \lvert n \rvert$, on either side, and the exact fourth
+moment
+$$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4
+= \frac{\lvert k \rvert (\lvert k \rvert + 2)}{\lvert n \rvert (\lvert n \rvert + 2)} \,.$$
 
-There is no sphere-invariance lemma in the library: the tails go through `u = g / ‖g‖` for a
-standard Gaussian `g` (`NLAlib.hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`), the orthogonal
-`W = [V, V⊥]ᴴ` from `NLAlib.HasOrthonormalCols.exists_fromCols` and
-`NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`, which reduce `‖Vᴴ u‖² ≤ c` to the event
-`0 ≤ ∑ θᵢ gᵢ²` with two weights, and Chernoff's bound with
+There is no sphere-invariance lemma in the library: the tails go through
+$\mathbf{u} = \mathbf{g} / \|\mathbf{g}\|$ for a standard Gaussian $\mathbf{g}$
+(`NLAlib.hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`), the orthogonal
+$\mathbf{W} = \begin{bmatrix} \mathbf{V} & \mathbf{V}_{\perp} \end{bmatrix}^{\mathsf{H}}$ from
+`NLAlib.HasOrthonormalCols.exists_fromCols` and `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`,
+which reduce $\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 \le c$ to the event
+$0 \le \sum_i \theta_i \mathbf{g}_i^2$ with two weights, and Chernoff's bound with
 `NLAlib.integral_exp_sum_mul_sq_of_hasLaw_gaussianVector`. The fourth moment uses invariance
-alone: `∑ uᵢ² = 1` and a `45°` rotation give `E u₁⁴ = 3 E u₁² u₂²` when `card n ≥ 2`; for
-`card n = 1`, `u = ±1`.
+alone: $\sum_i \mathbf{u}_i^2 = 1$ and a $45^\circ$ rotation give
+$\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ when
+$\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$.
 
 This file is a skeleton of Sketching stage S2 (`docs/design/Sketching-S2.md` §3.2, §8); at the
 wrap-up it merges into a Haar owner file.
 
 ## Main results
 
-* `NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`: `Qᴴ x` has the law of `Vᴴ u`.
+* `NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`: $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ has
+  the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$.
 * `NLAlib.measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector`,
   `NLAlib.measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector`:
   the two Chernoff tails.
@@ -84,39 +92,48 @@ private theorem norm_conjTranspose_mulVec_inv_norm_smul_sq (V : Matrix n k ℝ) 
   rw [Matrix.mulVec_smul, WithLp.toLp_smul, norm_smul, mul_pow, norm_inv, norm_norm, inv_pow,
     inv_mul_eq_div]
 
-/-- A probability law of `u` transfers an event to the normalised Gaussian vector. -/
+/-- A probability law of $\mathbf{u}$ transfers an event to the normalised Gaussian
+vector. -/
 private theorem measureReal_mem_eq_gaussianVector (hu : HasLaw u (uniformSphereVector n) μ)
     {S : Set (n → ℝ)} (hS : MeasurableSet S) :
     μ.real {ω | u ω ∈ S} = (gaussianVector n).real {g | ‖WithLp.toLp 2 g‖⁻¹ • g ∈ S} := by
   rw [hu.measureReal_eq (p := (· ∈ S)) hS, uniformSphereVector]
   exact map_measureReal_apply measurable_inv_norm_smul' hS
 
-/-- **Chernoff's bound for a weighted sum of squared Gaussians**:
-`P(0 ≤ ∑ φᵢ Xᵢ²) ≤ ∏ (1 - 2φᵢ)^{-1/2}`, in exponential form. -/
-private theorem measureReal_nonneg_sum_mul_sq_le {ι : Type*} [Fintype ι] {X : Ω → ι → ℝ}
-    (hX : HasLaw X (gaussianVector ι) μ) {φ : ι → ℝ} (hφ : ∀ i, 2 * φ i < 1) :
-    μ.real {ω | 0 ≤ ∑ i, φ i * X ω i ^ 2} ≤
+/-- **Chernoff's bound for a weighted sum of squared Gaussians**: for a standard Gaussian
+vector $\mathbf{g}$ and weights $\varphi_i < 1/2$,
+$\mathbb{P}(0 \le \sum_i \varphi_i \mathbf{g}_i^2) \le \prod_i (1 - 2\varphi_i)^{-1/2}$, in
+exponential form. -/
+private theorem measureReal_nonneg_sum_mul_sq_le {ι : Type*} [Fintype ι] {g : Ω → ι → ℝ}
+    (hg : HasLaw g (gaussianVector ι) μ) {φ : ι → ℝ} (hφ : ∀ i, 2 * φ i < 1) :
+    μ.real {ω | 0 ≤ ∑ i, φ i * g ω i ^ 2} ≤
       Real.exp (-(1 / 2) * ∑ i, Real.log (1 - 2 * φ i)) := by
-  have := hX.isProbabilityMeasure_iff.2 inferInstance
-  have hI := integral_exp_sum_mul_sq_of_hasLaw_gaussianVector hX hφ
+  have := hg.isProbabilityMeasure_iff.2 inferInstance
+  have hI := integral_exp_sum_mul_sq_of_hasLaw_gaussianVector hg hφ
   have hprod : ∏ i, (1 - 2 * φ i) ^ (-(1 / 2 : ℝ)) =
       Real.exp (-(1 / 2) * ∑ i, Real.log (1 - 2 * φ i)) := by
     rw [Finset.mul_sum, Real.exp_sum]
     refine Finset.prod_congr rfl fun i _ => ?_
     rw [Real.rpow_def_of_pos (by linarith [hφ i]), mul_comm]
-  have hint : Integrable (fun ω => Real.exp (1 * ∑ i, φ i * X ω i ^ 2)) μ := by
+  have hint : Integrable (fun ω => Real.exp (1 * ∑ i, φ i * g ω i ^ 2)) μ := by
     by_contra h
     simp only [one_mul] at h
     rw [integral_undef h, hprod] at hI
     exact (Real.exp_pos _).ne hI
-  have h := measure_ge_le_exp_mul_mgf (X := fun ω => ∑ i, φ i * X ω i ^ 2) 0 zero_le_one hint
+  have h := measure_ge_le_exp_mul_mgf (X := fun ω => ∑ i, φ i * g ω i ^ 2) 0 zero_le_one hint
   simp only [mul_zero, Real.exp_zero, one_mul, mgf] at h
   rwa [hI, hprod] at h
 
-/-- **The two-weight Chernoff bound for a projected uniform unit vector**: an event `S` on which
-`0 ≤ φ₁ ‖Vᴴ g‖² + φ₂ (‖g‖² - ‖Vᴴ g‖²)` for the unnormalised `g` has probability at most
-`exp (-(k log (1 - 2φ₁) + (n - k) log (1 - 2φ₂)) / 2)`. The orthogonal `[V, V⊥]ᴴ` turns
-`‖Vᴴ g‖²` and `‖g‖² - ‖Vᴴ g‖²` into sums of `k` and `n - k` independent squared Gaussians. -/
+/-- **The two-weight Chernoff bound for a projected uniform unit vector**: an event $S$ on which
+$0 \le \varphi_1 \|\mathbf{V}^{\mathsf{H}}\mathbf{g}\|^2 +
+\varphi_2 (\|\mathbf{g}\|^2 - \|\mathbf{V}^{\mathsf{H}}\mathbf{g}\|^2)$ for the unnormalised
+$\mathbf{g}$ has probability at most
+$$\exp\bigl(-\bigl(\lvert k \rvert \log(1 - 2\varphi_1) +
+(\lvert n \rvert - \lvert k \rvert) \log(1 - 2\varphi_2)\bigr)/2\bigr) \,.$$
+The orthogonal $\begin{bmatrix} \mathbf{V} & \mathbf{V}_{\perp} \end{bmatrix}^{\mathsf{H}}$ turns
+$\|\mathbf{V}^{\mathsf{H}}\mathbf{g}\|^2$ and
+$\|\mathbf{g}\|^2 - \|\mathbf{V}^{\mathsf{H}}\mathbf{g}\|^2$ into sums of $\lvert k \rvert$ and
+$\lvert n \rvert - \lvert k \rvert$ independent squared Gaussians. -/
 private theorem measureReal_mem_le_of_two_weights (hu : HasLaw u (uniformSphereVector n) μ)
     (hV : HasOrthonormalCols V) {S : Set (n → ℝ)} (hS : MeasurableSet S) {φ₁ φ₂ : ℝ}
     (h₁ : 2 * φ₁ < 1) (h₂ : Fintype.card k < Fintype.card n → 2 * φ₂ < 1)
@@ -148,7 +165,7 @@ private theorem measureReal_mem_le_of_two_weights (hu : HasLaw u (uniformSphereV
     refine ⟨h1, ?_⟩
     rw [← hWn.norm_toLp_mulVec g, norm_toLp_sq_eq_sum, Fintype.sum_sum_type, h1]
     ring
-  have hX : HasLaw (fun g : n → ℝ => W *ᵥ g) (gaussianVector (k ⊕ Fin c)) (gaussianVector n) :=
+  have hWg : HasLaw (fun g : n → ℝ => W *ᵥ g) (gaussianVector (k ⊕ Fin c)) (gaussianVector n) :=
     hasLaw_mulVec_of_hasLaw_gaussianVector HasLaw.id hW
   set φ : k ⊕ Fin c → ℝ := Sum.elim (fun _ => φ₁) (fun _ => φ₂) with hφdef
   have hφ : ∀ j, 2 * φ j < 1 := by
@@ -167,21 +184,24 @@ private theorem measureReal_mem_le_of_two_weights (hu : HasLaw u (uniformSphereV
         simp only [Set.mem_ofPred_eq, Fintype.sum_sum_type, hφdef, Sum.elim_inl, Sum.elim_inr,
           ← Finset.mul_sum]
         exact h
-    _ ≤ _ := measureReal_nonneg_sum_mul_sq_le hX hφ
+    _ ≤ _ := measureReal_nonneg_sum_mul_sq_le hWg hφ
     _ = _ := by
         simp only [Fintype.sum_sum_type, hφdef, Sum.elim_inl, Sum.elim_inr, Finset.sum_const,
           Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, hc, Nat.cast_add]
         ring_nf
 
-/-- Bessel's inequality for `Vᴴ g`, squared, and its consequence at `g = 0`. -/
+/-- Bessel's inequality for $\mathbf{V}^{\mathsf{H}}\mathbf{g}$, squared, and its consequence
+at $\mathbf{g} = \mathbf{0}$. -/
 private theorem norm_conjTranspose_mulVec_sq_le (hV : HasOrthonormalCols V) (g : n → ℝ) :
     ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ ^ 2 ≤ ‖WithLp.toLp 2 g‖ ^ 2 ∧
       (‖WithLp.toLp 2 g‖ ^ 2 = 0 → ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ ^ 2 = 0) := by
   have h := pow_le_pow_left₀ (norm_nonneg _) (hV.norm_toLp_conjTranspose_mulVec_le g) 2
   exact ⟨h, fun h0 => le_antisymm (h0 ▸ h) (sq_nonneg _)⟩
 
-/-- The two Chernoff weights at `β`, `φ₁ = (1 - 1/β)/2` and `φ₂ = -a φ₁ / (1 - a)` with
-`a = β k / n`, make the event `0 ≤ φ₁ X + φ₂ (G - X)` the event `0 ≤ φ₁ (X - a G)`. -/
+/-- The two Chernoff weights at $\beta$, $\varphi_1 = (1 - 1/\beta)/2$ and
+$\varphi_2 = -a \varphi_1 / (1 - a)$ with $a = \beta \lvert k \rvert / \lvert n \rvert < 1$, make
+the event $0 \le \varphi_1 X + \varphi_2 (G - X)$ the event $0 \le \varphi_1 (X - a G)$, for reals
+$X$ and $G$. -/
 private theorem nonneg_two_weights {a φ₁ X G : ℝ} (ha : a < 1) (h : 0 ≤ φ₁ * (X - a * G)) :
     0 ≤ φ₁ * X + -(a * φ₁ / (1 - a)) * (G - X) := by
   have h1 : (1 - a) ≠ 0 := by linarith
@@ -191,7 +211,7 @@ private theorem nonneg_two_weights {a φ₁ X G : ℝ} (ha : a < 1) (h : 0 ≤ �
   rw [this]
   exact div_nonneg h (by linarith)
 
-/-- `1 - 2 φ₂ = (n - k)/(n - β k)` for the second Chernoff weight. -/
+/-- $1 - 2 \varphi_2 = (N - K)/(N - \beta K)$ for the second Chernoff weight. -/
 private theorem one_sub_two_mul_weight {K N β : ℝ} (hβ : 0 < β) (hN : 0 < N)
     (ha : β * (K / N) < 1) :
     1 - 2 * -(β * (K / N) * ((1 - β⁻¹) / 2) / (1 - β * (K / N))) = (N - K) / (N - β * K) := by
@@ -202,8 +222,8 @@ private theorem one_sub_two_mul_weight {K N β : ℝ} (hβ : 0 < β) (hN : 0 < N
   field_simp
   ring
 
-/-- The exponent reached by the two Chernoff weights is at most `(k/2)(1 - β + log β)`
-(`log x ≤ x - 1` on the second factor). -/
+/-- The exponent reached by the two Chernoff weights is at most
+$(K/2)(1 - \beta + \log \beta)$ ($\log x \le x - 1$ on the second factor). -/
 private theorem exponent_two_weights_le {K N β : ℝ} (hKN : K ≤ N) (hβ : 0 < β)
     (ha : β * (K / N) < 1) (hN : 0 < N) (hc : K < N ∨ β ≤ 1) :
     -(1 / 2) * (K * Real.log (1 - 2 * ((1 - β⁻¹) / 2)) + (N - K) * Real.log (1 - 2 *
@@ -237,8 +257,9 @@ private theorem exponent_two_weights_le {K N β : ℝ} (hKN : K ≤ N) (hβ : 0 
     · simp only [sub_self, zero_mul, add_zero]
       nlinarith [mul_nonneg hKN' (sub_nonneg.2 hc)]
 
-/-- `log (1 + ε) ≤ ε - ε²/2 + ε³/3` for `ε ≥ 0`: the difference has derivative
-`ε³/(1 + ε) ≥ 0` and vanishes at `0`. (A copy of the private lemma of `ChiSquareTails.lean`.) -/
+/-- $\log(1 + \varepsilon) \le \varepsilon - \varepsilon^2/2 + \varepsilon^3/3$ for
+$\varepsilon \ge 0$: the difference has derivative $\varepsilon^3/(1 + \varepsilon) \ge 0$ and
+vanishes at $0$. (A copy of the private lemma of `ChiSquareTails.lean`.) -/
 private theorem log_one_add_le_cubic' {ε : ℝ} (hε : 0 ≤ ε) :
     Real.log (1 + ε) ≤ ε - ε ^ 2 / 2 + ε ^ 3 / 3 := by
   let f : ℝ → ℝ := fun t => t - t ^ 2 / 2 + t ^ 3 / 3 - Real.log (1 + t)
@@ -268,7 +289,7 @@ private theorem log_one_add_le_cubic' {ε : ℝ} (hε : 0 ≤ ε) :
   norm_num at this
   linarith
 
-/-- `log (1 - u) ≤ -u - u²/2` for `0 ≤ u < 1`. (A copy of the private lemma of
+/-- $\log(1 - u) \le -u - u^2/2$ for $0 \le u < 1$. (A copy of the private lemma of
 `ChiSquareTails.lean`.) -/
 private theorem log_one_sub_le'' {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
     Real.log (1 - u) ≤ -u - u ^ 2 / 2 := by
@@ -278,12 +299,13 @@ private theorem log_one_sub_le'' {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
   norm_num at this
   linarith
 
-/-- **A Haar frame applied to a fixed unit vector**: for an `n × k` Haar frame `Q` and a unit
-`x`, `Qᴴ x` has the law of `Vᴴ u` for `u` uniform on the sphere and any `V` with orthonormal
-columns (`hV` gives `card k ≤ card n`). By left invariance
-(`NLAlib.HasOrthonormalCols.exists_mul_eq` sends `x` to a coordinate vector), `Q ~ P V` for a
-square Haar frame `P`
-(`NLAlib.hasLaw_mul_const_of_hasLaw_haarFrame`), and a column of `Pᴴ`
+/-- **A Haar frame applied to a fixed unit vector**: for an $n \times k$ Haar frame $\mathbf{Q}$
+and a unit $\mathbf{x}$, $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ has the law of
+$\mathbf{V}^{\mathsf{H}}\mathbf{u}$ for $\mathbf{u}$ uniform on the sphere and any $\mathbf{V}$ with
+orthonormal columns (`hV` gives $\lvert k \rvert \le \lvert n \rvert$). By left invariance
+(`NLAlib.HasOrthonormalCols.exists_mul_eq` sends $\mathbf{x}$ to a coordinate vector),
+$\mathbf{Q} \sim \mathbf{P}\mathbf{V}$ for a square Haar frame $\mathbf{P}$
+(`NLAlib.hasLaw_mul_const_of_hasLaw_haarFrame`), and a column of $\mathbf{P}^{\mathsf{H}}$
 (`NLAlib.hasLaw_col_of_hasLaw_haarFrame`). -/
 theorem hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame {Q : Ω → Matrix n k ℝ}
     (hQ : HasLaw Q (haarFrame n k) μ) (hV : HasOrthonormalCols V) {x : n → ℝ}
@@ -308,8 +330,9 @@ theorem hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame {Q : Ω → Matrix n k �
   · refine (hVm.comp hcol).congr (ae_of_all _ fun P => ?_)
     simp only [Function.comp_apply, Matrix.conjTranspose_mul, Matrix.mulVec_mulVec]
 
-/-- The upper tail when `β k / n ≥ 1`: on the event `‖Vᴴ u‖ = ‖u‖`, so the second Chernoff
-weight alone, taken large, gives the bound; for `k = n` the event is empty. -/
+/-- The upper tail when $\beta \lvert k \rvert / \lvert n \rvert \ge 1$: on the event
+$\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\| = \|\mathbf{u}\|$, so the second Chernoff weight alone,
+taken large, gives the bound; for $\lvert k \rvert = \lvert n \rvert$ the event is empty. -/
 private theorem measureReal_upper_tail_of_one_le (hu : HasLaw u (uniformSphereVector n) μ)
     (hV : HasOrthonormalCols V) (hβ1 : 1 < β) (hN : (0 : ℝ) < Fintype.card n)
     (ha : 1 ≤ β * (Fintype.card k / Fintype.card n))
@@ -364,11 +387,15 @@ private theorem measureReal_upper_tail_of_one_le (hu : HasLaw u (uniformSphereVe
     rw [hempty, measureReal_empty]
     positivity
 
-/-- **Projection of a uniform unit vector, upper tail**:
-`P(β k / n ≤ ‖Vᴴ u‖²) ≤ exp ((k/2)(1 - β + log β))` for `β ≥ 1`. The exponent of Dasgupta and
-Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact with an unspecified
-constant `c`. The `χ²_k` tail `NLAlib.measureReal_mul_card_le_norm_sq_le_of_hasLaw_gaussianVector`
-is the limit `n → ∞`. -/
+/-- **Projection of a uniform unit vector, upper tail**: for $\mathbf{u}$ uniform on the unit
+sphere, $\mathbf{V}$ with orthonormal columns and $\beta \ge 1$,
+$$\mathbb{P}\bigl(\beta \lvert k \rvert / \lvert n \rvert
+\le \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2\bigr)
+\le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
+The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
+with an unspecified constant $c$. The $\chi^2_{\lvert k \rvert}$ tail
+`NLAlib.measureReal_mul_card_le_norm_sq_le_of_hasLaw_gaussianVector` is the limit
+$\lvert n \rvert \to \infty$. -/
 theorem measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector
     (hu : HasLaw u (uniformSphereVector n) μ) (hV : HasOrthonormalCols V) (hβ : 1 ≤ β) :
     μ.real {ω | β * (Fintype.card k / Fintype.card n) ≤ ‖WithLp.toLp 2 (Vᴴ *ᵥ u ω)‖ ^ 2} ≤
@@ -419,10 +446,13 @@ theorem measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniform
           linarith
   · exact measureReal_upper_tail_of_one_le hu hV hβ1 hN (not_lt.1 ha) hS
 
-/-- **Projection of a uniform unit vector, lower tail**:
-`P(‖Vᴴ u‖² ≤ β k / n) ≤ exp ((k/2)(1 - β + log β))` for `0 < β ≤ 1`. The exponent of Dasgupta and
-Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact with an unspecified
-constant `c`. -/
+/-- **Projection of a uniform unit vector, lower tail**: for $\mathbf{u}$ uniform on the unit
+sphere, $\mathbf{V}$ with orthonormal columns and $0 < \beta \le 1$,
+$$\mathbb{P}\bigl(\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2
+\le \beta \lvert k \rvert / \lvert n \rvert\bigr)
+\le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
+The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
+with an unspecified constant $c$. -/
 theorem measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector
     (hu : HasLaw u (uniformSphereVector n) μ) (hV : HasOrthonormalCols V) (hβ0 : 0 < β)
     (hβ : β ≤ 1) :
@@ -470,11 +500,15 @@ theorem measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniform
       · rw [div_le_iff₀ hG] at hg
         linarith
 
-/-- **Projection of a uniform unit vector, relative deviation**:
-`P(ε ≤ |(n/k) ‖Vᴴ u‖² - 1|) ≤ 2 exp (-k (ε²/4 - ε³/6))` for `ε ≥ 0`, from the two tails as for
-`χ²_k` (`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`). At
-least `2` for empty `k` and for `ε ≥ 3/2`. [Vershynin2018, Lemma 5.3.2 (2020 draft)], there with
-an unspecified constant `c`; the exponent of Dasgupta and Gupta (2003). -/
+/-- **Projection of a uniform unit vector, relative deviation**: for $\mathbf{u}$ uniform on the
+unit sphere, $\mathbf{V}$ with orthonormal columns and $\varepsilon \ge 0$,
+$$\mathbb{P}\Bigl(\varepsilon \le \Bigl\lvert \frac{\lvert n \rvert}{\lvert k \rvert}
+\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 - 1 \Bigr\rvert\Bigr)
+\le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,,$$
+from the two tails as for $\chi^2_{\lvert k \rvert}$
+(`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`). At least $2$
+for empty $k$ and for $\varepsilon \ge 3/2$. [Vershynin2018, Lemma 5.3.2 (2020 draft)], there with
+an unspecified constant $c$; the exponent of Dasgupta and Gupta (2003). -/
 theorem
 measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uniformSphereVector
     (hu : HasLaw u (uniformSphereVector n) μ) (hV : HasOrthonormalCols V) (hε : 0 ≤ ε) :
@@ -565,7 +599,7 @@ private theorem integrable_of_continuous {F : (n → ℝ) → ℝ} (hF : Continu
     exact zero_le_one
   · rw [inv_mul_cancel₀ h.ne']
 
-/-- For nonempty `n`, a uniform unit vector has norm `1` almost surely. -/
+/-- For nonempty $n$, a uniform unit vector has norm $1$ almost surely. -/
 private theorem ae_norm_eq_one [Nonempty n] :
     ∀ᵐ v ∂uniformSphereVector n, ‖WithLp.toLp 2 v‖ = 1 := by
   have hm : Measurable fun x : Metric.sphere (0 : EuclideanSpace ℝ n) 1 =>
@@ -577,9 +611,10 @@ private theorem ae_norm_eq_one [Nonempty n] :
   simp only [WithLp.toLp_ofLp]
   exact norm_eq_of_mem_sphere x
 
-/-- **The law of `Vᴴ u` depends only on the frame's column type**: two frames with the same column
-index project a uniform unit vector to the same law (both are the law of `Qᴴ x` for a Haar
-frame `Q` and a fixed unit `x`). -/
+/-- **The law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the frame's column type**:
+two frames with the same column index project a uniform unit vector to the same law (both are the
+law of $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ for a Haar frame $\mathbf{Q}$ and a fixed unit
+$\mathbf{x}$). -/
 private theorem map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r] [DecidableEq r]
     {V₁ V₂ : Matrix n r ℝ} (h₁ : HasOrthonormalCols V₁) (h₂ : HasOrthonormalCols V₂) :
     (uniformSphereVector n).map (V₁ᴴ *ᵥ ·) = (uniformSphereVector n).map (V₂ᴴ *ᵥ ·) := by
@@ -608,7 +643,8 @@ private theorem injective_vecCons_pair {a b : n} (hab : a ≠ b) : Function.Inje
   intro x y hxy
   fin_cases x <;> fin_cases y <;> simp_all [eq_comm]
 
-/-- `E u_a² u_b²` is the same for every pair of distinct coordinates. -/
+/-- $\mathbb{E}\,\mathbf{u}_a^2 \mathbf{u}_b^2$ is the same for every pair of distinct
+coordinates. -/
 private theorem integral_sq_mul_sq_eq [Nonempty n] {a b i₁ i₂ : n} (hab : a ≠ b)
     (h12 : i₁ ≠ i₂) :
     ∫ v, v a ^ 2 * v b ^ 2 ∂uniformSphereVector n =
@@ -621,7 +657,7 @@ private theorem integral_sq_mul_sq_eq [Nonempty n] {a b i₁ i₂ : n} (hab : a 
   simpa only [conjTranspose_selectionMatrix_mulVec, Function.comp_apply, Matrix.cons_val_zero,
     Matrix.cons_val_one] using h
 
-/-- `E u_a⁴` is the same for every coordinate. -/
+/-- $\mathbb{E}\,\mathbf{u}_a^4$ is the same for every coordinate. -/
 private theorem integral_pow_four_eq [Nonempty n] (a b : n) :
     ∫ v, v a ^ 4 ∂uniformSphereVector n = ∫ v, v b ^ 4 ∂uniformSphereVector n := by
   classical
@@ -632,8 +668,11 @@ private theorem integral_pow_four_eq [Nonempty n] (a b : n) :
     (F := fun w : Unit → ℝ => w () ^ 4) (by fun_prop)
   simpa only [conjTranspose_selectionMatrix_mulVec, Function.comp_apply] using h
 
-/-- **The `45°` rotation**: `E u₁⁴ = 3 E u₁² u₂²`. The frame of `(e₁ ± e₂)/√2` has the law of the
-coordinate frame `(e₁, e₂)`, and `((a + b)⁴ + (a - b)⁴)/4 = (a⁴ + 6 a² b² + b⁴)/2`. -/
+/-- **The $45^\circ$ rotation**:
+$\mathbb{E}\,\mathbf{u}_{i_1}^4 = 3 \, \mathbb{E}\,\mathbf{u}_{i_1}^2 \mathbf{u}_{i_2}^2$ for
+$i_1 \ne i_2$. The frame of $(\mathbf{e}_{i_1} \pm \mathbf{e}_{i_2})/\sqrt{2}$ has the law of the
+coordinate frame $(\mathbf{e}_{i_1}, \mathbf{e}_{i_2})$, and
+$((a + b)^4 + (a - b)^4)/4 = (a^4 + 6 a^2 b^2 + b^4)/2$. -/
 private theorem integral_pow_four_eq_three_mul [Nonempty n] {i₁ i₂ : n} (h12 : i₁ ≠ i₂) :
     ∫ v, v i₁ ^ 4 ∂uniformSphereVector n =
       3 * ∫ v, v i₁ ^ 2 * v i₂ ^ 2 ∂uniformSphereVector n := by
@@ -668,8 +707,11 @@ private theorem integral_pow_four_eq_three_mul [Nonempty n] {i₁ i₂ : n} (h12
     integral_add (hc _ (by fun_prop)) (hc _ (by fun_prop)), integral_pow_four_eq i₂ i₁] at h
   linarith
 
-/-- `E (∑_{j ∈ r} u_{s j}²)² = r (r + 2) E u₁² u₂²` for an injective `s`: the diagonal terms are
-`E u⁴ = 3 E u₁² u₂²`, the others `E u₁² u₂²`. -/
+/-- $\mathbb{E}(\sum_{j \in r} \mathbf{u}_{s(j)}^2)^2
+= \lvert r \rvert (\lvert r \rvert + 2) \, \mathbb{E}\,\mathbf{u}_{i_1}^2 \mathbf{u}_{i_2}^2$ for
+an injective $s$ and $i_1 \ne i_2$: the diagonal terms are
+$\mathbb{E}\,\mathbf{u}_i^4 = 3 \, \mathbb{E}\,\mathbf{u}_{i_1}^2 \mathbf{u}_{i_2}^2$, the others
+$\mathbb{E}\,\mathbf{u}_{i_1}^2 \mathbf{u}_{i_2}^2$. -/
 private theorem integral_sum_sq_sq [Nonempty n] {i₁ i₂ : n} (h12 : i₁ ≠ i₂) {r : Type*}
     [Fintype r] {s : r → n} (hs : Function.Injective s) :
     ∫ v, (∑ j, v (s j) ^ 2) ^ 2 ∂uniformSphereVector n =
@@ -702,17 +744,22 @@ private theorem integral_sum_sq_sq [Nonempty n] {i₁ i₂ : n} (h12 : i₁ ≠ 
 
 omit [DecidableEq k] in
 /-- The fourth power of the projected length of a uniform unit vector is integrable (it is at
-most `specNorm V ^ 4`), for every fixed `V`. -/
+most $\|\mathbf{V}\|_2^4$), for every fixed $\mathbf{V}$. -/
 theorem integrable_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector
     (hu : HasLaw u (uniformSphereVector n) μ) (V : Matrix n k ℝ) :
     Integrable (fun ω => ‖WithLp.toLp 2 (Vᴴ *ᵥ u ω)‖ ^ 4) μ := by
   have hF : Continuous fun w : n → ℝ => ‖WithLp.toLp 2 (Vᴴ *ᵥ w)‖ ^ 4 := by fun_prop
   exact (hu.integrable_comp_iff hF.aestronglyMeasurable).2 (integrable_of_continuous hF)
 
-/-- **The fourth moment of a projected uniform unit vector**:
-`E ‖Vᴴ u‖⁴ = k (k + 2) / (n (n + 2))`, from invariance alone (`docs/design/Sketching-S2.md` §7
-Q5): `∑ uᵢ² = 1` and a `45°` rotation give `E u₁⁴ = 3 E u₁² u₂²` and
-`n (n + 2) E u₁² u₂² = 1` when `card n ≥ 2`; for `card n = 1`, `u = ±1`. No radius–direction
+/-- **The fourth moment of a projected uniform unit vector**: for $\mathbf{u}$ uniform on the
+unit sphere of $\mathbb{R}^n$, $n$ nonempty, and $\mathbf{V}$ with orthonormal columns,
+$$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4
+= \frac{\lvert k \rvert (\lvert k \rvert + 2)}{\lvert n \rvert (\lvert n \rvert + 2)} \,,$$
+from invariance alone (`docs/design/Sketching-S2.md` §7 Q5): $\sum_i \mathbf{u}_i^2 = 1$ and a
+$45^\circ$ rotation give
+$\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ and
+$\lvert n \rvert (\lvert n \rvert + 2) \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2 = 1$ when
+$\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$. No radius–direction
 independence. -/
 theorem integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector [Nonempty n]
     (hu : HasLaw u (uniformSphereVector n) μ) (hV : HasOrthonormalCols V) :

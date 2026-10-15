@@ -12,17 +12,18 @@ public import NLAlib.Sketching.Properties.Isotropic
 /-!
 # Oblivious subspace embeddings and injections
 
-A random sketch `S : Ω → Matrix k n 𝕜` is an *oblivious subspace embedding* (OSE) for dimension
-`d` when, for every fixed subspace of dimension at most `d`, it is a subspace embedding with
-probability `1 - δ`; it is an *oblivious subspace injection* (OSI) when it is isotropic and the
-lower half holds with probability `1 - δ` on every such subspace. Subspaces are column spaces of
-square matrices `U : Matrix n n 𝕜` with `U.rank ≤ d`;
-`NLAlib.IsObliviousSubspaceEmbedding.hasSubspaceEmbedding` applies the predicate to `U` of any
-shape.
+A random sketch $\mathbf{S}$ with values in $\Bbbk^{k \times n}$ is an *oblivious subspace
+embedding* (OSE) for dimension $d$ when, for every fixed subspace of dimension at most $d$, it is
+a subspace embedding with probability $1 - \delta$; it is an *oblivious subspace injection* (OSI)
+when it is isotropic and the lower half holds with probability $1 - \delta$ on every such
+subspace. Subspaces are column spaces of square matrices $\mathbf{U} \in \Bbbk^{n \times n}$ with
+$\operatorname{rank}\mathbf{U} \le d$; `NLAlib.IsObliviousSubspaceEmbedding.hasSubspaceEmbedding`
+applies the predicate to $\mathbf{U}$ of any shape.
 
 Every sketching family concludes one of these predicates, through the constructor from
-orthonormal `U : Matrix n p 𝕜`; every consumer takes one. The predicates transfer to a random
-subspace independent of the sketch, and compose over independent sketches.
+$\mathbf{U} \in \Bbbk^{n \times p}$ with orthonormal columns; every consumer takes one. The
+predicates transfer to a random subspace independent of the sketch, and compose over independent
+sketches.
 
 Theorems that compare two events take `[IsFiniteMeasure μ]`. Design:
 `docs/design/Sketching-S1.md` §3.3.
@@ -52,25 +53,29 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {k l n p q : Type*} [Fintype k] [Fintype l] [Fintype n] {S : Ω → Matrix k n 𝕜}
   {a a' a₂ b b' b₂ δ δ' δ₂ : ℝ} {d d' : ℕ}
 
-/-- **Oblivious subspace embedding** for dimension `d`: for every `U : Matrix n n 𝕜` of rank at
-most `d`, `S` is a subspace embedding for `range U` with constants `a`, `b` with probability
-`1 - δ`. [Woodruff2014, Definition 2] (`1 ∓ ε`); [CamanoEpperlyMeyerTropp2025, Definition 1.1]
-(`α`, `β`); there for subspaces of dimension exactly `d`, here at most `d`.
+/-- **Oblivious subspace embedding** for dimension $d$: for every
+$\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $d$, $\mathbf{S}$ is a subspace embedding for
+$\operatorname{range}\mathbf{U}$ with constants $a$, $b$ with probability $1 - \delta$.
+[Woodruff2014, Definition 2], there $1 \mp \varepsilon$; [CamanoEpperlyMeyerTropp2025,
+Definition 1.1], there $\alpha$, $\beta$; both for subspaces of dimension exactly $d$, here at
+most $d$.
 Result: ose-def -/
 def IsObliviousSubspaceEmbedding (S : Ω → Matrix k n 𝕜) (d : ℕ) (a b δ : ℝ) (μ : Measure Ω) :
     Prop :=
   ∀ U : Matrix n n 𝕜, U.rank ≤ d → HasSubspaceEmbedding S U a b δ μ
 
-/-- **Oblivious subspace injection** for dimension `d`: `S` is isotropic and, for every
-`U : Matrix n n 𝕜` of rank at most `d`, a subspace injection for `range U` with constant `a` with
-probability `1 - δ`. [CamanoEpperlyMeyerTropp2025, Definition 1.2]; there `δ = 1/20` and
-`α ∈ (0, 1]`, here any `δ` and `a`.
+/-- **Oblivious subspace injection** for dimension $d$: $\mathbf{S}$ is isotropic and, for every
+$\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $d$, a subspace injection for
+$\operatorname{range}\mathbf{U}$ with constant $a$ with probability $1 - \delta$.
+[CamanoEpperlyMeyerTropp2025, Definition 1.2]; there $\delta = 1/20$ and $\alpha \in (0, 1]$,
+here any $\delta$ and $a$.
 Result: osi-def -/
 structure IsObliviousSubspaceInjection [DecidableEq n] (S : Ω → Matrix k n 𝕜) (d : ℕ) (a δ : ℝ)
     (μ : Measure Ω) : Prop where
   /-- The sketch is isotropic. -/
   isotropic : IsIsotropicSketch S μ
-  /-- The lower half holds with probability `1 - δ` on every subspace of dimension at most `d`. -/
+  /-- The lower half holds with probability $1 - \delta$ on every subspace of dimension at most
+  $d$. -/
   injection : ∀ U : Matrix n n 𝕜, U.rank ≤ d → HasSubspaceInjection S U a δ μ
 
 /-- Being an OSE depends only on the law of the sketch. -/
@@ -91,7 +96,7 @@ theorem _root_.ProbabilityTheory.HasLaw.isObliviousSubspaceInjection_iff [Decida
     exact ⟨hS.isIsotropicSketch_iff.2 h.isotropic,
       fun U hU => hS.hasSubspaceInjection_iff.2 (h.injection U hU)⟩
 
-/-- An OSE applies to the column space of a matrix of any shape and rank at most `d`. -/
+/-- An OSE applies to the column space of a matrix of any shape and rank at most $d$. -/
 theorem IsObliviousSubspaceEmbedding.hasSubspaceEmbedding [Fintype p]
     (h : IsObliviousSubspaceEmbedding S d a b δ μ) {U : Matrix n p 𝕜} (hU : U.rank ≤ d) :
     HasSubspaceEmbedding S U a b δ μ := by
@@ -103,7 +108,7 @@ theorem IsObliviousSubspaceEmbedding.hasSubspaceEmbedding [Fintype p]
   rw [e]
   exact h _ (by rwa [rank_rangeProjector])
 
-/-- An OSI applies to the column space of a matrix of any shape and rank at most `d`. -/
+/-- An OSI applies to the column space of a matrix of any shape and rank at most $d$. -/
 theorem IsObliviousSubspaceInjection.hasSubspaceInjection [DecidableEq n] [Fintype p]
     (h : IsObliviousSubspaceInjection S d a δ μ) {U : Matrix n p 𝕜} (hU : U.rank ≤ d) :
     HasSubspaceInjection S U a δ μ := by
@@ -115,9 +120,9 @@ theorem IsObliviousSubspaceInjection.hasSubspaceInjection [DecidableEq n] [Finty
   rw [e]
   exact h.injection _ (by rwa [rank_rangeProjector])
 
-/-- **The OSE constructor**: a sketch that is a random subspace embedding for every `U` with
-orthonormal columns indexed by `p` is an OSE for dimension `card p`. The constructor every
-sketching family uses. -/
+/-- **The OSE constructor**: for $\lvert p \rvert \le \lvert n \rvert$, a sketch that is a random
+subspace embedding for every $\mathbf{U}$ with orthonormal columns indexed by $p$ is an OSE for
+dimension $\lvert p \rvert$. The constructor every sketching family uses. -/
 theorem IsObliviousSubspaceEmbedding.of_hasOrthonormalCols [IsFiniteMeasure μ] [Fintype p]
     [DecidableEq p] (hp : Fintype.card p ≤ Fintype.card n)
     (h : ∀ U : Matrix n p 𝕜, HasOrthonormalCols U → HasSubspaceEmbedding S U a b δ μ) :
@@ -126,8 +131,9 @@ theorem IsObliviousSubspaceEmbedding.of_hasOrthonormalCols [IsFiniteMeasure μ] 
   obtain ⟨Q, hQ, hUQ⟩ := exists_hasOrthonormalCols_range_le U hU hp
   exact (h Q hQ).of_range_le hUQ
 
-/-- **The OSI constructor**: an isotropic sketch that is a random subspace injection for every
-`U` with orthonormal columns indexed by `p` is an OSI for dimension `card p`. -/
+/-- **The OSI constructor**: for $\lvert p \rvert \le \lvert n \rvert$, an isotropic sketch that is
+a random subspace injection for every $\mathbf{U}$ with orthonormal columns indexed by $p$ is an
+OSI for dimension $\lvert p \rvert$. -/
 theorem IsObliviousSubspaceInjection.of_hasOrthonormalCols [IsFiniteMeasure μ] [DecidableEq n]
     [Fintype p] [DecidableEq p] (hiso : IsIsotropicSketch S μ)
     (hp : Fintype.card p ≤ Fintype.card n)
@@ -160,9 +166,10 @@ theorem IsObliviousSubspaceInjection.mono [IsFiniteMeasure μ] [DecidableEq n]
 /-! ### Transfer to an independent random subspace -/
 
 omit [Fintype k] [Fintype l] [Fintype n] in
-/-- The Fubini step of the transfer lemmas: a closed property `P` of the pair `(S, B)` that fails
-with probability at most `δ` for every fixed `B` of rank at most `d` fails with probability at
-most `δ` at an independent random `V` of rank at most `d`. -/
+/-- The Fubini step of the transfer lemmas: a closed property $P$ of the pair
+$(\mathbf{S}, \mathbf{B})$ that fails with probability at most $\delta$ for every fixed
+$\mathbf{B}$ of rank at most $d$ fails with probability at most $\delta$ at an independent random
+$\mathbf{V}$ of rank at most $d$ (almost surely). -/
 private theorem measureReal_not_le_of_indepFun [Finite k] [Finite n] [IsProbabilityMeasure μ]
     [Fintype q]
     {P : Matrix k n 𝕜 → Matrix n q 𝕜 → Prop}
@@ -192,9 +199,10 @@ private theorem measureReal_not_le_of_indepFun [Finite k] [Finite n] [IsProbabil
       _ = ENNReal.ofReal δ := by rw [lintegral_const, measure_univ, mul_one]
   exact ENNReal.toReal_le_of_le_ofReal hδ hle
 
-/-- **Transfer of an OSE to an independent random subspace**: if `V` is independent of `S` and
-has rank at most `d` almost surely, `S ω` fails to embed `range (V ω)` with probability at most
-`δ`. Fubini on the closed set of `NLAlib.isClosed_setOf_isSubspaceEmbedding`. -/
+/-- **Transfer of an OSE to an independent random subspace**: if $\mathbf{V}$ is independent of
+$\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to embed
+$\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. Fubini on the closed
+set of `NLAlib.isClosed_setOf_isSubspaceEmbedding`. -/
 theorem IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indepFun
     [IsProbabilityMeasure μ] [Fintype q] (h : IsObliviousSubspaceEmbedding S d a b δ μ)
     {V : Ω → Matrix n q 𝕜} (hind : IndepFun S V μ) (hS : AEMeasurable S μ)
@@ -205,9 +213,9 @@ theorem IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indep
     (isClosed_setOf_isSubspaceEmbedding a b) hind hS hV hrank hδ
     fun B hB => h.hasSubspaceEmbedding hB
 
-/-- **Transfer of an OSI to an independent random subspace**: if `V` is independent of `S` and
-has rank at most `d` almost surely, `S ω` fails to inject `range (V ω)` with probability at most
-`δ`. -/
+/-- **Transfer of an OSI to an independent random subspace**: if $\mathbf{V}$ is independent of
+$\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to inject
+$\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. -/
 theorem IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_le_of_indepFun
     [IsProbabilityMeasure μ] [DecidableEq n] [Fintype q]
     (h : IsObliviousSubspaceInjection S d a δ μ) {V : Ω → Matrix n q 𝕜} (hind : IndepFun S V μ)
@@ -220,8 +228,9 @@ theorem IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_le_of_indep
 
 /-! ### Composition -/
 
-/-- **Composition of OSEs**: for independent OSEs `S₂` and `S` for the same dimension, `S₂ * S`
-is an OSE with multiplied constants and failure probability `δ₂ + δ`. -/
+/-- **Composition of OSEs**: for independent OSEs $\mathbf{S}_2$ and $\mathbf{S}$ for the same
+dimension, the constants $a_2, b_2$ of $\mathbf{S}_2$ nonnegative, $\mathbf{S}_2\mathbf{S}$ is an
+OSE with constants $a_2 a$, $b_2 b$ and failure probability $\delta_2 + \delta$. -/
 theorem IsObliviousSubspaceEmbedding.mul [IsProbabilityMeasure μ] {S₂ : Ω → Matrix l k 𝕜}
     (h₂ : IsObliviousSubspaceEmbedding S₂ d a₂ b₂ δ₂ μ)
     (h : IsObliviousSubspaceEmbedding S d a b δ μ) (hind : IndepFun S₂ S μ)
@@ -243,8 +252,9 @@ theorem IsObliviousSubspaceEmbedding.mul [IsProbabilityMeasure μ] {S₂ : Ω �
   rw [not_or, not_not, not_not] at hcon
   exact hω (hcon.1.mul hcon.2 ha₂ hb₂)
 
-/-- **Composition of OSIs**: for independent OSIs `S₂` and `S` for the same dimension, `S₂ * S`
-is an OSI with constant `a₂ * a` and failure probability `δ₂ + δ`. -/
+/-- **Composition of OSIs**: for independent OSIs $\mathbf{S}_2$ and $\mathbf{S}$ for the same
+dimension, the constant $a_2$ of $\mathbf{S}_2$ nonnegative, $\mathbf{S}_2\mathbf{S}$ is an OSI
+with constant $a_2 a$ and failure probability $\delta_2 + \delta$. -/
 theorem IsObliviousSubspaceInjection.mul [IsProbabilityMeasure μ] [DecidableEq n]
     [DecidableEq k] {S₂ : Ω → Matrix l k 𝕜} (h₂ : IsObliviousSubspaceInjection S₂ d a₂ δ₂ μ)
     (h : IsObliviousSubspaceInjection S d a δ μ) (hind : IndepFun S₂ S μ)

@@ -19,7 +19,7 @@ an unreduced Hessenberg form is determined by the first column of the unitary fa
 unimodular scaling (the implicit Q theorem).
 
 The Hessenberg predicate is stated for rectangular matrices, since the Arnoldi process produces
-`(k + 1) × k` Hessenberg matrices.
+$(k + 1) \times k$ Hessenberg matrices.
 
 ## Main definitions
 
@@ -30,7 +30,7 @@ The Hessenberg predicate is stated for rectangular matrices, since the Arnoldi p
 * `NLAlib.exists_isUpperHessenberg_conjTranspose_mul_mul`: reduction to Hessenberg form.
 * `Matrix.IsHermitian.exists_isTridiagonal_conjTranspose_mul_mul`: reduction to tridiagonal form.
 * `NLAlib.IsUpperHessenberg.exists_isQR`: a Hessenberg matrix has a QR factorization with
-  Hessenberg `Q`, so `R Q` is again Hessenberg.
+  Hessenberg $\mathbf{Q}$, so $\mathbf{R}\mathbf{Q}$ is again Hessenberg.
 * `NLAlib.exists_eq_mul_diagonal_of_isUpperHessenberg`: the implicit Q theorem.
 -/
 
@@ -45,13 +45,15 @@ variable {𝕜 : Type*} [RCLike 𝕜] {R : Type*} {m n : ℕ}
 /-! ### The predicates -/
 
 /-- A matrix indexed by `Fin m` and `Fin n` is **upper Hessenberg** if its entries below the first
-subdiagonal vanish. [GolubVanLoan2013, §7.4]. Port of `NLAlib.IsUpperHessenberg`, there for
+subdiagonal vanish: $\mathbf{H}_{i,j} = 0$ for $j + 1 < i$. [GolubVanLoan2013, §7.4].
+Port of `NLAlib.IsUpperHessenberg`, there for
 square real matrices. -/
 def IsUpperHessenberg [Zero R] (H : Matrix (Fin m) (Fin n) R) : Prop :=
   ∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < (i : ℕ) → H i j = 0
 
 /-- A square matrix indexed by `Fin n` is **tridiagonal** if its entries outside the main
-diagonal and the two adjacent ones vanish. Port of `NLAlib.IsTridiagonal`. -/
+diagonal and the two adjacent ones vanish: $\mathbf{T}_{i,j} = 0$ for $\lvert i - j \rvert > 1$.
+Port of `NLAlib.IsTridiagonal`. -/
 def IsTridiagonal [Zero R] (T : Matrix (Fin n) (Fin n) R) : Prop :=
   ∀ i j : Fin n, (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ) → T i j = 0
 
@@ -71,7 +73,8 @@ theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix (Fin n) (Fin n) R}
     (hT : IsTridiagonal T) : IsUpperHessenberg T := by
   exact fun i j hij => hT i j (Or.inr hij)
 
-/-- A matrix is tridiagonal exactly when it and its transpose are upper Hessenberg. -/
+/-- A matrix $\mathbf{T}$ is tridiagonal exactly when $\mathbf{T}$ and $\mathbf{T}^{\mathsf{T}}$
+are upper Hessenberg. -/
 theorem isTridiagonal_iff [Zero R] {T : Matrix (Fin n) (Fin n) R} :
     IsTridiagonal T ↔ IsUpperHessenberg T ∧ IsUpperHessenberg Tᵀ := by
   refine ⟨fun h => ⟨h.isUpperHessenberg, fun i j hij => h j i (Or.inl hij)⟩, fun h i j hij => ?_⟩
@@ -110,7 +113,8 @@ theorem IsUpperHessenberg.isUpperTriangular_mul [NonUnitalNonAssocSemiring R]
   · rw [hU (show k < i from Fin.lt_def.mpr hk), zero_mul]
   · rw [hH k j (by omega), mul_zero]
 
-/-- A shift of an upper Hessenberg matrix is upper Hessenberg.
+/-- A shift of an upper Hessenberg matrix is upper Hessenberg: so is
+$\mathbf{H} - \mu \mathbf{I}$.
 Port of `NLAlib.IsUpperHessenberg.sub_smul_one`. -/
 theorem IsUpperHessenberg.sub_smul_one [Ring R] {H : Matrix (Fin n) (Fin n) R}
     (hH : IsUpperHessenberg H) (μ : R) : IsUpperHessenberg (H - μ • (1 : Matrix _ _ R)) := by
@@ -121,8 +125,8 @@ theorem IsUpperHessenberg.sub_smul_one [Ring R] {H : Matrix (Fin n) (Fin n) R}
 
 /-! ### Reduction -/
 
-/-- A Hermitian unitary matrix that fixes the first `p` coordinate vectors and clears a vector
-below coordinate `p`. -/
+/-- A Hermitian unitary matrix that fixes the first $p$ coordinate vectors and clears a vector
+below coordinate $p$. -/
 private theorem exists_reflector (x : Fin n → 𝕜) (p : ℕ) :
     ∃ P : Matrix (Fin n) (Fin n) 𝕜, P.IsHermitian ∧ P * P = 1 ∧
       (∀ i j : Fin n, (j : ℕ) < p → P i j = (1 : Matrix (Fin n) (Fin n) 𝕜) i j) ∧
@@ -159,7 +163,7 @@ private theorem exists_reflector (x : Fin n → 𝕜) (p : ℕ) :
       householder_mulVec_householderVector_apply_of_ne y hi', zero_add]
     exact if_pos hi.le
 
-/-- The state of the reduction to Hessenberg form after `k` reflectors: the first `k` columns
+/-- The state of the reduction to Hessenberg form after $k$ reflectors: the first $k$ columns
 are in Hessenberg form. -/
 private theorem exists_hessenberg_state (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) :
     ∃ Q : Matrix (Fin n) (Fin n) 𝕜, HasOrthonormalCols Q ∧
@@ -205,8 +209,9 @@ private theorem exists_hessenberg_state (A : Matrix (Fin n) (Fin n) 𝕜) (k : �
       rw [Matrix.col_apply, hmulP Q l i (by omega)]
       exact congrFun (hcol i hi) l
 
-/-- **Reduction to Hessenberg form.** Every square matrix is unitarily similar to an upper
-Hessenberg matrix, by a unitary matrix whose first column is the first coordinate vector.
+/-- **Reduction to Hessenberg form.** Every square matrix $\mathbf{A}$ is unitarily similar to an
+upper Hessenberg matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, by a unitary $\mathbf{Q}$
+whose first column is the first coordinate vector $\mathbf{e}_0$.
 [GolubVanLoan2013, §7.4.3]; [HornJohnson2013, §2.5].
 Port of `NLAlib.exists_isHessenbergForm`, which the prototype leaves unproved.
 Result: hessenberg-reduction -/
@@ -216,8 +221,9 @@ theorem exists_isUpperHessenberg_conjTranspose_mul_mul (A : Matrix (Fin n) (Fin 
   obtain ⟨Q, hQ, hW, hcol⟩ := exists_hessenberg_state A n
   exact ⟨Q, hQ, fun i j hij => hW i j j.2 hij, hcol⟩
 
-/-- **Reduction to tridiagonal form.** Every Hermitian matrix is unitarily similar to a
-Hermitian tridiagonal matrix. [GolubVanLoan2013, §8.3.1].
+/-- **Reduction to tridiagonal form.** Every Hermitian matrix $\mathbf{A}$ is unitarily similar
+to a tridiagonal matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, by a unitary $\mathbf{Q}$
+whose first column is the first coordinate vector $\mathbf{e}_0$. [GolubVanLoan2013, §8.3.1].
 Port of `NLAlib.IsHessenbergForm.isTridiagonal`. -/
 theorem _root_.Matrix.IsHermitian.exists_isTridiagonal_conjTranspose_mul_mul
     {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
@@ -228,9 +234,10 @@ theorem _root_.Matrix.IsHermitian.exists_isTridiagonal_conjTranspose_mul_mul
 
 /-! ### The QR iteration -/
 
-/-- The state of the QR factorization of a Hessenberg matrix by Givens rotations after `k`
-rotations: `S` is the conjugate transpose of the accumulated unitary factor, the first `k`
-columns of `R` are triangular, and the rows of `S` beyond row `k` are those of the identity. -/
+/-- The state of the QR factorization of a Hessenberg matrix by Givens rotations after $k$
+rotations: $\mathbf{S}$ is the conjugate transpose of the accumulated unitary factor, the first $k$
+columns of $\mathbf{R}$ are triangular, and the rows of $\mathbf{S}$ beyond row $k$ are those of
+the identity. -/
 private theorem exists_givens_state {H : Matrix (Fin n) (Fin n) 𝕜} (hH : IsUpperHessenberg H)
     (k : ℕ) :
     ∃ S R : Matrix (Fin n) (Fin n) 𝕜, HasOrthonormalCols S ∧ S * H = R ∧ IsUpperHessenberg R ∧
@@ -304,8 +311,9 @@ private theorem exists_givens_state {H : Matrix (Fin n) (Fin n) 𝕜} (hH : IsUp
     · rw [givens_mul_apply_of_ne (hne i (by omega) (by omega)).1 (hne i (by omega) (by omega)).2]
       exact hS1 i j (by omega)
 
-/-- **A Hessenberg matrix has a QR factorization with a Hessenberg unitary factor.** No rank
-assumption is made.
+/-- **A Hessenberg matrix has a QR factorization with a Hessenberg unitary factor**:
+$\mathbf{H} = \mathbf{Q}\mathbf{R}$ with $\mathbf{Q}$ upper Hessenberg. No rank assumption is
+made.
 [GolubVanLoan2013, §5.2.5]. Port of `NLAlib.isQR_givensQR` with
 `NLAlib.isUpperHessenberg_givensQR_fst`, which the prototype leaves unproved. -/
 theorem IsUpperHessenberg.exists_isQR {H : Matrix (Fin n) (Fin n) 𝕜}
@@ -315,14 +323,18 @@ theorem IsUpperHessenberg.exists_isQR {H : Matrix (Fin n) (Fin n) 𝕜}
   · rw [← hSH, ← Matrix.mul_assoc, hS.conjTranspose_mul_self, Matrix.one_mul]
   · rw [Matrix.conjTranspose_apply, hSl j i hij, star_zero]
 
-/-- A step of the QR iteration with a Hessenberg unitary factor keeps the Hessenberg form.
+/-- A step of the QR iteration with a Hessenberg unitary factor keeps the Hessenberg form: if
+$\mathbf{H} = \mathbf{Q}\mathbf{R}$ with $\mathbf{Q}$ upper Hessenberg, then $\mathbf{R}\mathbf{Q}$
+is upper Hessenberg.
 Port of `NLAlib.isUpperHessenberg_givensQR_snd_mul_fst`. -/
 theorem IsQR.isUpperHessenberg_mul {H Q R : Matrix (Fin n) (Fin n) 𝕜} (h : IsQR H Q R)
     (hQ : IsUpperHessenberg Q) : IsUpperHessenberg (R * Q) := by
   exact hQ.isUpperTriangular_mul h.isUpperTriangular
 
 /-- For a nonsingular Hessenberg matrix the unitary factor of any QR factorization is
-Hessenberg. Port of `NLAlib.isUpperHessenberg_mul_of_isQR`. -/
+Hessenberg: if $\mathbf{H} = \mathbf{Q}\mathbf{R}$ is upper Hessenberg and the diagonal of
+$\mathbf{R}$ has no zero, then $\mathbf{Q}$ is upper Hessenberg.
+Port of `NLAlib.isUpperHessenberg_mul_of_isQR`. -/
 theorem IsQR.isUpperHessenberg_of_isUpperHessenberg {H Q R : Matrix (Fin n) (Fin n) 𝕜}
     (h : IsQR H Q R) (hH : IsUpperHessenberg H) (hR : ∀ i, R i i ≠ 0) :
     IsUpperHessenberg Q := by
@@ -332,8 +344,10 @@ theorem IsQR.isUpperHessenberg_of_isUpperHessenberg {H Q R : Matrix (Fin n) (Fin
   rw [hQ]
   exact hH.mul_isUpperTriangular h.isUpperTriangular.inv
 
-/-- **The QR iteration preserves tridiagonal Hermitian matrices.** That `H` is tridiagonal is not
-a hypothesis: it follows from `H = Q R` being Hermitian with `Q` upper Hessenberg.
+/-- **The QR iteration preserves tridiagonal Hermitian matrices**: if
+$\mathbf{H} = \mathbf{Q}\mathbf{R}$ is Hermitian with $\mathbf{Q}$ upper Hessenberg, then
+$\mathbf{R}\mathbf{Q}$ is tridiagonal. That $\mathbf{H}$ is tridiagonal is not a hypothesis: it
+follows from $\mathbf{H}$ being Hermitian and $\mathbf{Q}$ upper Hessenberg.
 [GolubVanLoan2013, §8.3.3]. Port of `NLAlib.isTridiagonal_mul_of_isQR`. -/
 theorem IsQR.isTridiagonal_mul {H Q R : Matrix (Fin n) (Fin n) 𝕜} (h : IsQR H Q R)
     (hH : H.IsHermitian) (hQ : IsUpperHessenberg Q) : IsTridiagonal (R * Q) := by
@@ -378,9 +392,13 @@ private theorem isUpperTriangular_of_mul_eq_mul {H₁ H₂ V : Matrix (Fin (n + 
       exact (mul_eq_zero.mp h1.symm).resolve_right (hsub c ⟨j, hjn⟩ hcj)
   exact fun i c hci => key c i c le_rfl hci
 
-/-- **The implicit Q theorem.** If `Q₁ᴴ A Q₁ = H₁` and `Q₂ᴴ A Q₂ = H₂` are upper Hessenberg with
-`Q₁`, `Q₂` unitary with the same first column, and the subdiagonal of `H₁` has no zero, then
-`Q₂ = Q₁ D` and `H₂ = Dᴴ H₁ D` for a diagonal `D` of unit modulus with first entry one.
+/-- **The implicit Q theorem.** If
+$\mathbf{H}_1 = \mathbf{Q}_1^{\mathsf{H}}\mathbf{A}\mathbf{Q}_1$ and
+$\mathbf{H}_2 = \mathbf{Q}_2^{\mathsf{H}}\mathbf{A}\mathbf{Q}_2$ are upper Hessenberg with
+$\mathbf{Q}_1$, $\mathbf{Q}_2$ unitary with the same first column, and the subdiagonal of
+$\mathbf{H}_1$ has no zero, then $\mathbf{Q}_2 = \mathbf{Q}_1\mathbf{D}$ and
+$\mathbf{H}_2 = \mathbf{D}^{\mathsf{H}}\mathbf{H}_1\mathbf{D}$ for a diagonal $\mathbf{D}$ whose
+entries have unit modulus, the first one being $1$.
 [GolubVanLoan2013, Theorem 7.4.2].
 Port of `NLAlib.IsHessenbergForm.exists_sign`, which the prototype leaves unproved.
 Result: implicit-q -/

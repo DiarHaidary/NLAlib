@@ -13,14 +13,15 @@ public import NLAlib.Matrix.Norms.Compare
 /-!
 # Circulant matrices and the discrete Fourier transform
 
-A circulant matrix is Mathlib's `Matrix.circulant v`. The powers of an `n`-th root of unity form
-an eigenvector, with eigenvalue a value of the discrete Fourier transform of `v`; over `ℂ` the
-unitary Fourier matrix diagonalises every circulant matrix. A matrix is circulant exactly when it
-commutes with the cyclic shift.
+A circulant matrix is Mathlib's `Matrix.circulant`: the circulant matrix of $\mathbf{v}$ has
+entries $\mathbf{v}_{i-j}$, indices modulo $n$. The powers of an $n$-th root of unity form an
+eigenvector, with eigenvalue a value of the discrete Fourier transform of $\mathbf{v}$; over
+$\mathbb{C}$ the unitary Fourier matrix diagonalises every circulant matrix. A matrix is
+circulant exactly when it commutes with the cyclic shift.
 
 ## Main definitions
 
-* `NLAlib.fourierMatrix`: the unitary `n × n` discrete Fourier transform matrix.
+* `NLAlib.fourierMatrix`: the unitary $n \times n$ discrete Fourier transform matrix.
 
 ## Main results
 
@@ -39,8 +40,9 @@ namespace NLAlib
 
 variable {n : ℕ}
 
-/-- **Eigenvectors of a circulant matrix.** For an `n`-th root of unity `ζ` in a field, the
-vector of powers of `ζ` is an eigenvector of `circulant v` with eigenvalue `∑ l, v l * ζ⁻ˡ`.
+/-- **Eigenvectors of a circulant matrix.** For $\zeta$ in a field with $\zeta^n = 1$, the
+vector $(\zeta^j)_{j}$ of powers of $\zeta$ is an eigenvector of the circulant matrix of
+$\mathbf{v}$ with eigenvalue $\sum_l \mathbf{v}_l \zeta^{-l}$, indices $0 \le j, l < n$.
 [HornJohnson2013, §0.9.6]. -/
 theorem circulant_mulVec_pow {K : Type*} [Field K] (v : Fin n → K) {ζ : K} (hζ : ζ ^ n = 1) :
     (Matrix.circulant v *ᵥ fun j : Fin n => ζ ^ (j : ℕ)) =
@@ -83,7 +85,8 @@ private theorem circulant_single_mul_apply {R : Type*} [Semiring R] [NeZero n]
     exact fun h => hk (by rw [← h, sub_sub_cancel])
   · exact fun h => absurd (Finset.mem_univ _) h
 
-/-- A matrix that commutes with the cyclic shift is the circulant matrix of its first column.
+/-- A matrix $\mathbf{A}$ that commutes with the cyclic shift is the circulant matrix of its
+first column $(\mathbf{A}_{i,0})_i$.
 Port of `NLAlib.eq_circulant_of_commute_cyclicShift`. -/
 theorem eq_circulant_of_mul_circulant_single_comm {R : Type*} [Semiring R] [NeZero n]
     {A : Matrix (Fin n) (Fin n) R}
@@ -100,7 +103,7 @@ theorem eq_circulant_of_mul_circulant_single_comm {R : Type*} [Semiring R] [NeZe
   rw [Matrix.circulant_apply, hall]
 
 /-- **A matrix commutes with the cyclic shift exactly when it is circulant.**
-Port of `NLAlib.commute_cyclicShift_iff_exists_circulant`, there over `ℝ`. -/
+Port of `NLAlib.commute_cyclicShift_iff_exists_circulant`, there over $\mathbb{R}$. -/
 theorem mul_circulant_single_comm_iff {R : Type*} [Semiring R] [NeZero n]
     (A : Matrix (Fin n) (Fin n) R) :
     A * Matrix.circulant (Pi.single 1 1) = Matrix.circulant (Pi.single 1 1) * A ↔
@@ -113,13 +116,13 @@ theorem mul_circulant_single_comm_iff {R : Type*} [Semiring R] [NeZero n]
 
 /-! ### The Fourier matrix -/
 
-/-- The **Fourier matrix**: the unitary matrix of the discrete Fourier transform on `Fin n`, with
-entries `exp (2π i j k / n) / √n`. -/
+/-- The **Fourier matrix** $\mathbf{F}$: the unitary matrix of the discrete Fourier transform on
+`Fin n`, with entries $\mathbf{F}_{j,k} = e^{2 \pi \mathrm{i} j k / n} / \sqrt{n}$. -/
 noncomputable def fourierMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℂ :=
   Matrix.of fun j k =>
     Complex.exp (2 * Real.pi * Complex.I * (j : ℕ) * (k : ℕ) / n) / (√(n : ℝ) : ℂ)
 
-/-- Entries of the Fourier matrix have modulus `1 / √n`. -/
+/-- Entries of the Fourier matrix have modulus $1 / \sqrt{n}$. -/
 theorem norm_fourierMatrix_apply (j k : Fin n) : ‖fourierMatrix n j k‖ = (√(n : ℝ))⁻¹ := by
   have h : (2 * Real.pi * Complex.I * (j : ℕ) * (k : ℕ) / n : ℂ) =
       ((2 * Real.pi * (j : ℕ) * (k : ℕ) / n : ℝ) : ℂ) * Complex.I := by
@@ -154,7 +157,7 @@ private theorem star_fourierMatrix_apply (j k : Fin n) :
   refine eq_inv_of_mul_eq_one_left ?_
   rw [Complex.conj_mul', hnorm, Complex.ofReal_one, one_pow]
 
-/-- The sum of the powers of a ratio of two `n`-th roots of unity vanishes unless they agree. -/
+/-- The sum of the powers of a ratio of two $n$-th roots of unity vanishes unless they agree. -/
 private theorem sum_inv_mul_pow (k l : Fin n) :
     ∑ j : Fin n, ((Complex.exp (2 * Real.pi * Complex.I / n) ^ (k : ℕ))⁻¹ *
       Complex.exp (2 * Real.pi * Complex.I / n) ^ (l : ℕ)) ^ (j : ℕ) =
@@ -206,8 +209,9 @@ private theorem sqrt_mul_conjTranspose_fourierMatrix_mulVec_apply_eq_sum (v : Fi
   rw [Matrix.conjTranspose_apply, star_fourierMatrix_apply, inv_pow, ← pow_mul,
     mul_comm (k : ℕ), ← mul_assoc, mul_div_cancel₀ _ hn0, mul_comm]
 
-/-- The unitary discrete Fourier transform of a vector, scaled by `√n`, is the discrete Fourier
-transform: `√n (Fᴴ v)_k = ∑ l, v l * exp (-2π i k l / n)`. -/
+/-- The unitary discrete Fourier transform of a vector, scaled by $\sqrt{n}$, is the discrete
+Fourier transform: $\sqrt{n}\,(\mathbf{F}^{\mathsf{H}}\mathbf{v})_k
+= \sum_l \mathbf{v}_l e^{-2 \pi \mathrm{i} k l / n}$. -/
 theorem sqrt_mul_conjTranspose_fourierMatrix_mulVec_apply (v : Fin n → ℂ) (k : Fin n) :
     (√(n : ℝ) : ℂ) * ((fourierMatrix n)ᴴ *ᵥ v) k =
       ∑ l : Fin n, v l * Complex.exp (-(2 * Real.pi * Complex.I * (k : ℕ) * (l : ℕ) / n)) := by
@@ -218,8 +222,11 @@ theorem sqrt_mul_conjTranspose_fourierMatrix_mulVec_apply (v : Fin n → ℂ) (k
   push_cast
   ring
 
-/-- **Fourier diagonalisation of a circulant matrix.** `circulant v = F diag(v̂) Fᴴ` with `F` the
-Fourier matrix and `v̂ = √n Fᴴ v` the discrete Fourier transform of `v`.
+/-- **Fourier diagonalisation of a circulant matrix.** The circulant matrix $\mathbf{C}$ of
+$\mathbf{v} \in \mathbb{C}^n$ is
+$\mathbf{C} = \mathbf{F} \operatorname{diag}(\hat{\mathbf{v}}) \mathbf{F}^{\mathsf{H}}$, with
+$\mathbf{F}$ the Fourier matrix and $\hat{\mathbf{v}} = \sqrt{n}\,\mathbf{F}^{\mathsf{H}}\mathbf{v}$
+the discrete Fourier transform of $\mathbf{v}$.
 [HornJohnson2013, §2.2.P10]; [GolubVanLoan2013, §4.8.2].
 Result: circulant-diagonalization -/
 theorem circulant_eq_fourierMatrix_mul_diagonal_mul_conjTranspose (v : Fin n → ℂ) :
@@ -254,7 +261,9 @@ theorem isStarNormal_circulant (v : Fin n → ℂ) : IsStarNormal (Matrix.circul
   exact Matrix.Fin.circulant_mul_comm _ _
 
 /-- **The spectral norm of a circulant matrix** is the largest modulus of a Fourier coefficient
-of its first column. -/
+of its first column, in the form: for $c \ge 0$, $\|\mathbf{C}\|_2 \le c$ if and only if
+$\sqrt{n}\,\lvert (\mathbf{F}^{\mathsf{H}}\mathbf{v})_k \rvert \le c$ for every $k$, where
+$\mathbf{C}$ is the circulant matrix of $\mathbf{v}$ and $\mathbf{F}$ the Fourier matrix. -/
 theorem specNorm_circulant_le_iff (v : Fin n → ℂ) {c : ℝ} (hc : 0 ≤ c) :
     specNorm (Matrix.circulant v) ≤ c ↔
       ∀ k : Fin n, √(n : ℝ) * ‖((fourierMatrix n)ᴴ *ᵥ v) k‖ ≤ c := by
@@ -265,7 +274,7 @@ theorem specNorm_circulant_le_iff (v : Fin n → ℂ) {c : ℝ} (hc : 0 ≤ c) :
   simp only [Pi.smul_apply, norm_smul, Complex.norm_real, Real.norm_of_nonneg (Real.sqrt_nonneg _)]
 
 /-- The determinant of a circulant matrix is the product of the Fourier coefficients of its
-first column. -/
+first column: $\det \mathbf{C} = \prod_k \sqrt{n}\,(\mathbf{F}^{\mathsf{H}}\mathbf{v})_k$. -/
 theorem det_circulant (v : Fin n → ℂ) :
     (Matrix.circulant v).det = ∏ k : Fin n, (√(n : ℝ) : ℂ) * ((fourierMatrix n)ᴴ *ᵥ v) k := by
   rw [circulant_eq_fourierMatrix_mul_diagonal_mul_conjTranspose, Matrix.det_mul, Matrix.det_mul,

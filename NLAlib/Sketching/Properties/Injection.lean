@@ -18,10 +18,12 @@ the randomized range finder, Nyström and generalized Nyström bounds; and *sket
 OSI* (their Theorem 2.7), for a vector and for a matrix right-hand side. Each is stated for a
 random subspace injection of a fixed subspace together with isotropy, and again for an OSI.
 
-Each event is the negation of the guarantee (`{c < X}` for `X ≤ c`), so the degenerate cases
-`B Zᴴ = 0`, `(1 - P_A) y = 0` need no hypothesis. The proofs combine the deterministic bounds of
-`NLAlib.Sketching.Properties.LeastSquares` with Markov's inequality for
-`E ‖S M‖_F² = ‖M‖_F²`. Design: `docs/design/Sketching-S1.md` §3.4.
+Each event is the negation of the guarantee ($\{c < X\}$ for $X \le c$), so the degenerate cases
+$\mathbf{B}\mathbf{Z}^{\mathsf{H}} = \mathbf{0}$,
+$(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y} = \mathbf{0}$ need no hypothesis. The proofs
+combine the deterministic bounds of `NLAlib.Sketching.Properties.LeastSquares` with Markov's
+inequality for $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$.
+Design: `docs/design/Sketching-S1.md` §3.4.
 
 ## Main results
 
@@ -47,8 +49,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 /-! ### OSIs respect orthogonality -/
 
 omit [DecidableEq n] in
-/-- The common tail step: off the failure event `Gᶜ`, the bad event forces `t m < M` for a
-nonnegative `M` of mean `m`, which has probability at most `1 / t` by Markov's inequality. -/
+/-- The common tail step: off the failure event $G^c$, the bad event forces $t m < M$ for a
+nonnegative $M$ of mean $m$, which has probability at most $1 / t$ by Markov's inequality. -/
 private theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {G E : Set Ω}
     (hG : μ.real Gᶜ ≤ δ) {M : Ω → ℝ} (hM0 : ∀ ω, 0 ≤ M ω) (hM : Integrable M μ) {m : ℝ}
     (hm : ∫ ω, M ω ∂μ = m) (hm0 : m = 0 → ∀ ω, M ω = 0) (ht : 0 < t)
@@ -80,11 +82,15 @@ private theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {G E : Set Ω}
     _ ≤ δ + 1 / t := add_le_add hG hF
 
 
-/-- **OSIs respect orthogonality**: if `S` is isotropic and a subspace injection for `range Q`
-with constant `a > 0` and failure probability `δ`, `Q` with orthonormal columns, then
-`‖B (S Z)ᴴ (S Q)ᴴ†‖_F² ≤ t ‖B Zᴴ‖_F² / a` except with probability `δ + 1 / t`.
-[CamanoEpperlyMeyerTropp2025, Lemma 2.1]; there `Qᴴ Z = 0` (unused here), `Z` with orthonormal
-columns and `t = 20`. -/
+/-- **OSIs respect orthogonality**: if $\mathbf{S}$ is isotropic and a subspace injection for
+$\operatorname{range}\mathbf{Q}$ with constant $a > 0$ and failure probability $\delta$,
+$\mathbf{Q}$ with orthonormal columns, then for $t > 0$
+$$\bigl\|\mathbf{B}(\mathbf{S}\mathbf{Z})^{\mathsf{H}}
+((\mathbf{S}\mathbf{Q})^{\mathsf{H}})^{+}\bigr\|_{\mathsf{F}}^2
+\le \frac{t \|\mathbf{B}\mathbf{Z}^{\mathsf{H}}\|_{\mathsf{F}}^2}{a}$$
+except with probability $\delta + 1 / t$.
+[CamanoEpperlyMeyerTropp2025, Lemma 2.1]; there $\mathbf{Q}^{\mathsf{H}}\mathbf{Z} = \mathbf{0}$
+(unused here), $\mathbf{Z}$ with orthonormal columns and $t = 20$. -/
 theorem HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure μ]
     [DecidableEq p] (h : HasSubspaceInjection S Q a δ μ) (hiso : IsIsotropicSketch S μ)
     (hQ : HasOrthonormalCols Q) (ha : 0 < a) (ht : 0 < t) (B : Matrix l r 𝕜)
@@ -112,10 +118,14 @@ theorem HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure
         frobNorm (B * (S ω * Z)ᴴ * pinv ((S ω * Q)ᴴ)) ^ 2 := hE
     exact (div_lt_div_iff_of_pos_right ha).1 (hE'.trans_le hdet)
 
-/-- **OSIs respect orthogonality**, in CEMT's form: for an OSI for dimension `d ≥ card p`, `Q`
-and `Z` with orthonormal columns, `‖B (S Z)ᴴ (S Q)ᴴ†‖_F² ≤ t ‖B‖_F² / a` except with probability
-`δ + 1 / t`. [CamanoEpperlyMeyerTropp2025, Lemma 2.1]; there `Qᴴ Z = 0` (unused here) and
-`t = 20`. -/
+/-- **OSIs respect orthogonality**, in CEMT's form: for an OSI for dimension $d \ge \lvert p \rvert$
+with constant $a > 0$ and failure probability $\delta$, $\mathbf{Q}$ (with $p$ columns) and
+$\mathbf{Z}$ with orthonormal columns, and $t > 0$,
+$$\bigl\|\mathbf{B}(\mathbf{S}\mathbf{Z})^{\mathsf{H}}
+((\mathbf{S}\mathbf{Q})^{\mathsf{H}})^{+}\bigr\|_{\mathsf{F}}^2
+\le \frac{t \|\mathbf{B}\|_{\mathsf{F}}^2}{a}$$
+except with probability $\delta + 1 / t$. [CamanoEpperlyMeyerTropp2025, Lemma 2.1]; there
+$\mathbf{Q}^{\mathsf{H}}\mathbf{Z} = \mathbf{0}$ (unused here) and $t = 20$. -/
 theorem IsObliviousSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure μ]
     [DecidableEq p] [DecidableEq r] (h : IsObliviousSubspaceInjection S d a δ μ)
     (hQ : HasOrthonormalCols Q) (hpd : Fintype.card p ≤ d) {Z : Matrix n r 𝕜}
@@ -128,11 +138,14 @@ theorem IsObliviousSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFinit
 
 /-! ### Sketch-and-solve with an injection -/
 
-/-- **Sketch-and-solve with an OSI**: if `S` is isotropic and a subspace injection for
-`range A` with constant `a > 0` and failure probability `δ`, every (almost surely) minimizer
-`x ω` of `‖S A x - S y‖` satisfies `‖y - A x‖² ≤ (1 + t / a) ‖(1 - P_A) y‖²` except with
-probability `δ + 1 / t`. [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there for an OSI, the
-minimum-norm solution and a fixed `t`, here a tail in `t` for every minimizer.
+/-- **Sketch-and-solve with an OSI**: if $\mathbf{S}$ is isotropic and a subspace injection for
+$\operatorname{range}\mathbf{A}$ with constant $a > 0$ and failure probability $\delta$, and
+$\mathbf{x}(\omega)$ is (almost surely) a minimizer of
+$\|\mathbf{S}\mathbf{A}\mathbf{x} - \mathbf{S}\mathbf{y}\|$, then for $t > 0$
+$$\|\mathbf{y} - \mathbf{A}\mathbf{x}\|^2
+\le \Bigl(1 + \frac{t}{a}\Bigr) \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2$$
+except with probability $\delta + 1 / t$. [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there for an
+OSI, the minimum-norm solution and a fixed $t$, here a tail in $t$ for every minimizer.
 Result: sketch-and-solve-ls -/
 theorem HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure μ]
     (h : HasSubspaceInjection S A a δ μ) (hiso : IsIsotropicSketch S μ) (ha : 0 < a)
@@ -156,9 +169,14 @@ theorem HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure �
     linarith
 
 /-- **Sketch-and-solve with an OSI, matrix right-hand side**, for the minimum-norm output
-`pinv (S A) (S Y)`: `‖Y - A (S A)† S Y‖_F² ≤ (1 + t / a) ‖(1 - P_A) Y‖_F²` except with
-probability `δ + 1 / t`. [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there a vector
-right-hand side. -/
+$(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{Y}$: if $\mathbf{S}$ is isotropic and a subspace
+injection for $\operatorname{range}\mathbf{A}$ with constant $a > 0$ and failure probability
+$\delta$, then for $t > 0$
+$$\|\mathbf{Y} - \mathbf{A}(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{Y}\|_{\mathsf{F}}^2
+\le \Bigl(1 + \frac{t}{a}\Bigr)
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{Y}\|_{\mathsf{F}}^2$$
+except with probability $\delta + 1 / t$. [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there a
+vector right-hand side. -/
 theorem HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le [IsFiniteMeasure μ]
     (h : HasSubspaceInjection S A a δ μ) (hiso : IsIsotropicSketch S μ) (ha : 0 < a)
     (ht : 0 < t) (Y : Matrix n r 𝕜) :
@@ -177,7 +195,8 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le [IsFinit
     refine (div_lt_div_iff_of_pos_right ha).1 ?_
     linarith
 
-/-- **Sketch-and-solve with an OSI** for dimension `d ≥ rank A`.
+/-- **Sketch-and-solve with an OSI** for dimension $d \ge \operatorname{rank}\mathbf{A}$: the
+bound of `NLAlib.HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.7]. -/
 theorem IsObliviousSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure μ]
     (h : IsObliviousSubspaceInjection S d a δ μ) (hA : A.rank ≤ d) (ha : 0 < a) (ht : 0 < t)
@@ -187,7 +206,9 @@ theorem IsObliviousSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteM
       ‖WithLp.toLp 2 (y - A *ᵥ x ω)‖ ^ 2} ≤ δ + 1 / t := by
   exact (h.hasSubspaceInjection hA).measure_norm_sub_mulVec_sq_gt_le h.isotropic ha ht y hx
 
-/-- **Sketch-and-solve with an OSI, matrix right-hand side**, for dimension `d ≥ rank A`.
+/-- **Sketch-and-solve with an OSI, matrix right-hand side**, for dimension
+$d \ge \operatorname{rank}\mathbf{A}$: the bound of
+`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there a vector right-hand side. -/
 theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le
     [IsFiniteMeasure μ] (h : IsObliviousSubspaceInjection S d a δ μ) (hA : A.rank ≤ d)

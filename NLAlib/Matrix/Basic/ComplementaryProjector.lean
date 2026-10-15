@@ -10,17 +10,18 @@ public import NLAlib.Matrix.Basic.Projector
 /-!
 # The complementary projector
 
-For a matrix `A`, the complementary projector `1 - rangeProjector A` is the orthogonal projector
-onto the orthogonal complement of the column space of `A`, the kernel of `Aᴴ`. Applied to a
-vector it gives the residual of the best approximation from the column space, and applied to a
-matrix it gives the projection residual `(1 - rangeProjector Y) * A`, which has no definition of
-its own.
+For a matrix $\mathbf{A}$, the complementary projector $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$, with
+$\mathbf{P}_{\mathbf{A}}$ the projector `rangeProjector`, is the orthogonal projector onto the
+orthogonal complement of the column space of $\mathbf{A}$, the kernel of $\mathbf{A}^{\mathsf{H}}$.
+Applied to a vector it gives the residual of the best approximation from the column space, and
+applied to a matrix it gives the projection residual $(\mathbf{I} -
+\mathbf{P}_{\mathbf{Y}})\mathbf{A}$, which has no definition of its own.
 
 ## Main results
 
 * `NLAlib.isStarProjection_one_sub_rangeProjector`: it is an orthogonal projector.
 * `NLAlib.one_sub_rangeProjector_mul_self`, `NLAlib.conjTranspose_mul_one_sub_rangeProjector`: it
-  annihilates the columns of `A`, on both sides.
+  annihilates the columns of $\mathbf{A}$, on both sides.
 * `NLAlib.range_mulVecLin_one_sub_rangeProjector`, `NLAlib.rank_one_sub_rangeProjector_add_rank`:
   its range and its rank.
 * `NLAlib.norm_one_sub_rangeProjector_mulVec_le`: the projection is the best approximation.
@@ -35,32 +36,38 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*}
 
-/-- The complementary projector `1 - rangeProjector A` is a star projection. -/
+/-- The complementary projector $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is an orthogonal projector
+(`IsStarProjection`). -/
 theorem isStarProjection_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
     (A : Matrix m n 𝕜) : IsStarProjection (1 - rangeProjector A) :=
   (isStarProjection_rangeProjector A).one_sub
 
-/-- The projection residual of `A` with respect to itself vanishes. -/
+/-- The projection residual of $\mathbf{A}$ with respect to itself vanishes:
+$(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{A} = \mathbf{0}$. -/
 @[simp]
 theorem one_sub_rangeProjector_mul_self [Fintype m] [Fintype n] [DecidableEq m]
     (A : Matrix m n 𝕜) : (1 - rangeProjector A) * A = 0 := by
   rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_mul_self, sub_self]
 
-/-- The projection residual is orthogonal to the columns of `B`:
-`Bᴴ * (1 - rangeProjector B) = 0`. Port of `NLAlib.conjTranspose_mul_residual`. -/
+/-- The projection residual is orthogonal to the columns of $\mathbf{B}$:
+$\mathbf{B}^{\mathsf{H}}(\mathbf{I} - \mathbf{P}_{\mathbf{B}}) = \mathbf{0}$.
+Port of `NLAlib.conjTranspose_mul_residual`. -/
 @[simp]
 theorem conjTranspose_mul_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
     (B : Matrix m n 𝕜) : Bᴴ * (1 - rangeProjector B) = 0 := by
   rw [Matrix.mul_sub, Matrix.mul_one, conjTranspose_mul_rangeProjector, sub_self]
 
-/-- The projection residual written as a difference. The product on the left is the library's
-spelling of the residual; this lemma is for proofs that want the difference. -/
+/-- The projection residual written as a difference:
+$(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A} = \mathbf{A} - \mathbf{P}_{\mathbf{Y}}\mathbf{A}$.
+The product on the left is the library's spelling of the residual; this lemma is for proofs that
+want the difference. -/
 theorem one_sub_rangeProjector_mul [Fintype m] [Fintype n] [DecidableEq m] (Y : Matrix m n 𝕜)
     (A : Matrix m p 𝕜) : (1 - rangeProjector Y) * A = A - rangeProjector Y * A := by
   rw [Matrix.sub_mul, Matrix.one_mul]
 
-/-- The range of the complementary projector of `A` is the kernel of `Aᴴ`: the orthogonal
-complement of the column space, expressed without leaving `m → 𝕜`. -/
+/-- The range of the complementary projector $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is the kernel
+of $\mathbf{A}^{\mathsf{H}}$: the orthogonal complement of the column space, expressed without
+leaving `m → 𝕜`. -/
 theorem range_mulVecLin_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
     (A : Matrix m n 𝕜) :
     LinearMap.range (1 - rangeProjector A).mulVecLin = LinearMap.ker Aᴴ.mulVecLin := by
@@ -69,8 +76,9 @@ theorem range_mulVecLin_one_sub_rangeProjector [Fintype m] [Fintype n] [Decidabl
     Matrix.mulVecLin_apply, Matrix.sub_mulVec, Matrix.one_mulVec, sub_eq_self,
     rangeProjector_mulVec_eq_zero_iff]
 
-/-- The rank of the complementary projector `1 - rangeProjector A` and the rank of `A` add up to
-the number of rows. -/
+/-- The rank of the complementary projector and the rank of $\mathbf{A}$ add up to the number of
+rows: $\operatorname{rank}(\mathbf{I} - \mathbf{P}_{\mathbf{A}}) + \operatorname{rank} \mathbf{A}
+= \lvert m \rvert$. -/
 theorem rank_one_sub_rangeProjector_add_rank [Fintype m] [Fintype n] [DecidableEq m]
     (A : Matrix m n 𝕜) : (1 - rangeProjector A).rank + A.rank = Fintype.card m := by
   have h := LinearMap.finrank_range_add_finrank_ker Aᴴ.mulVecLin
@@ -79,8 +87,10 @@ theorem rank_one_sub_rangeProjector_add_rank [Fintype m] [Fintype n] [DecidableE
     Matrix.rank, add_comm]
   exact h
 
-/-- **Best approximation.** The projection of `x` onto the column space of `B` is at least as
-close to `x`, in Euclidean norm, as any other point `B *ᵥ y` of that space.
+/-- **Best approximation.** The projection of $\mathbf{x}$ onto the column space of $\mathbf{B}$
+is at least as close to $\mathbf{x}$, in Euclidean norm, as any point $\mathbf{B}\mathbf{y}$ of that
+space: $\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{x}\| \le \|\mathbf{x} -
+\mathbf{B}\mathbf{y}\|$.
 [GolubVanLoan2013, §5.3.1]. -/
 theorem norm_one_sub_rangeProjector_mulVec_le [Fintype m] [Fintype n] [DecidableEq m]
     (B : Matrix m n 𝕜) (x : m → 𝕜) (y : n → 𝕜) :
@@ -92,7 +102,8 @@ theorem norm_one_sub_rangeProjector_mulVec_le [Fintype m] [Fintype n] [Decidable
   exact (isStarProjection_one_sub_rangeProjector B).norm_toLp_mulVec_le _
 
 /-- **Pythagoras** for a vector and a column space:
-`‖x‖² = ‖P x‖² + ‖(1 - P) x‖²` with `P = rangeProjector B`. -/
+$\|\mathbf{x}\|^2 = \|\mathbf{P}_{\mathbf{B}}\mathbf{x}\|^2 +
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{x}\|^2$. -/
 theorem norm_toLp_sq_eq_add_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
     (B : Matrix m n 𝕜) (x : m → 𝕜) :
     ‖WithLp.toLp 2 x‖ ^ 2 =

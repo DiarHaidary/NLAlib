@@ -12,7 +12,7 @@ public import NLAlib.Probability.Law
 /-!
 # Gaussian matrices
 
-`NLAlib.gaussianMatrix m n` is the law of an `m × n` real matrix with independent standard
+`NLAlib.gaussianMatrix m n` is the law of an $m \times n$ real matrix with independent standard
 Gaussian entries, written as independent rows, each a standard Gaussian vector:
 `Measure.pi fun _ : m => gaussianVector n`. It is an `abbrev`, so P0's product-law lemmas apply
 directly: the rows are `ProbabilityTheory.HasLaw.eval`, their independence
@@ -20,10 +20,10 @@ directly: the rows are `ProbabilityTheory.HasLaw.eval`, their independence
 `ProbabilityTheory.HasLaw.iIndepFun_entry`. Since `Matrix` is a `def`, Mathlib's instances about
 `Measure.pi` are not found at `Measure (Matrix m n ℝ)`; the ones the library needs are stated here.
 
-A Gaussian matrix read as a vector indexed by `m × n` (`Function.uncurry`) is a standard Gaussian
-vector, and its Frobenius norm is that vector's Euclidean norm; this is how the vector results of
-the probability layer apply to it. The law is real; a complex Gaussian matrix will be a separate
-law (`docs/design/Probability-P2.md` §7).
+A Gaussian matrix read as a vector indexed by $m \times n$ (`Function.uncurry`) is a standard
+Gaussian vector, and its Frobenius norm is that vector's Euclidean norm; this is how the vector
+results of the probability layer apply to it. The law is real; a complex Gaussian matrix will be a
+separate law (`docs/design/Probability-P2.md` §7).
 
 ## Main definitions
 
@@ -52,9 +52,11 @@ noncomputable abbrev gaussianMatrix (m n : Type*) [Fintype m] [Fintype n] :
     Measure (Matrix m n ℝ) :=
   Measure.pi fun _ : m => gaussianVector n
 
+/-- The standard Gaussian matrix law is a probability measure. -/
 instance isProbabilityMeasure_gaussianMatrix : IsProbabilityMeasure (gaussianMatrix m n) :=
   inferInstanceAs (IsProbabilityMeasure (Measure.pi fun _ : m => gaussianVector n))
 
+/-- The standard Gaussian matrix law is a Gaussian measure on `Matrix m n ℝ`. -/
 instance isGaussian_gaussianMatrix : IsGaussian (gaussianMatrix m n) := by
   let L : (m × n → ℝ) →L[ℝ] Matrix m n ℝ :=
     { toFun := fun v => Matrix.of (Function.curry v)
@@ -66,13 +68,13 @@ instance isGaussian_gaussianMatrix : IsGaussian (gaussianMatrix m n) := by
   rw [h]
   exact isGaussian_map_of_measurable (MeasurableEquiv.curry m n ℝ).measurable
 
-/-- A Gaussian matrix read as a vector indexed by `m × n` is a standard Gaussian vector. -/
+/-- A Gaussian matrix read as a vector indexed by $m \times n$ is a standard Gaussian vector. -/
 theorem hasLaw_uncurry_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ) :
     HasLaw (fun ω => Function.uncurry (X ω)) (gaussianVector (m × n)) μ :=
   (measurePreserving_curry_pi (ν := fun _ _ => gaussianReal 0 1)).symm.fun_comp_hasLaw hX
 
-/-- A random matrix whose entries, as a vector indexed by `m × n`, form a standard Gaussian vector
-is a Gaussian matrix. -/
+/-- A random matrix whose entries, as a vector indexed by $m \times n$, form a standard Gaussian
+vector is a Gaussian matrix. -/
 theorem hasLaw_gaussianMatrix_of_hasLaw_uncurry
     (hX : HasLaw (fun ω => Function.uncurry (X ω)) (gaussianVector (m × n)) μ) :
     HasLaw X (gaussianMatrix m n) μ :=

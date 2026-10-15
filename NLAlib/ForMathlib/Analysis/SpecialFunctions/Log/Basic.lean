@@ -8,11 +8,12 @@ module
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
-# Bounds on `s log s`
+# Bounds on $s \log s$
 
-`|s log s| ≤ s² + 1` for `s ≥ 0`: the domination that makes `g² log g²` integrable once `g⁴` is,
-used for entropies of squares. `|G s log (G s)| ≤ |G log G| + G` for `G ≥ 0` and `s ∈ [0, 1]`:
-the domination of `x log x` along a shrinking of `x`, used to pass to the limit in an entropy
+$\lvert s \log s \rvert \le s^2 + 1$ for $s \ge 0$: the domination that makes $g^2 \log g^2$
+integrable once $g^4$ is, used for entropies of squares.
+$\lvert G s \log(G s) \rvert \le \lvert G \log G \rvert + G$ for $G \ge 0$ and $s \in [0, 1]$:
+the domination of $x \log x$ along a shrinking of $x$, used to pass to the limit in an entropy
 under a truncation or a cutoff. Upstream candidates for
 `Mathlib.Analysis.SpecialFunctions.Log.Basic`.
 
@@ -26,7 +27,7 @@ under a truncation or a cutoff. Upstream candidates for
 
 namespace Real
 
-/-- `|s log s| ≤ s² + 1` for `s ≥ 0`. -/
+/-- $\lvert s \log s \rvert \le s^2 + 1$ for $s \ge 0$. -/
 theorem abs_mul_log_le_sq_add_one {s : ℝ} (hs : 0 ≤ s) : |s * log s| ≤ s ^ 2 + 1 := by
   rcases hs.eq_or_lt with rfl | hs'
   · simp
@@ -39,8 +40,9 @@ theorem abs_mul_log_le_sq_add_one {s : ℝ} (hs : 0 ≤ s) : |s * log s| ≤ s ^
     rw [abs_of_nonneg (mul_nonneg hs hl)]
     nlinarith
 
-/-- `|(G s) log (G s)| ≤ |G log G| + G` for `G ≥ 0` and `s ∈ [0, 1]`: shrinking `x ≥ 0` by a
-factor in `[0, 1]` changes `|x log x|` by at most `x`. -/
+/-- $\lvert G s \log(G s) \rvert \le \lvert G \log G \rvert + G$ for $G \ge 0$ and
+$s \in [0, 1]$: shrinking $x \ge 0$ by a factor in $[0, 1]$ makes $\lvert x \log x \rvert$ exceed
+its old value by at most $x$. -/
 theorem abs_mul_mul_log_mul_le {G s : ℝ} (hG : 0 ≤ G) (hs0 : 0 ≤ s) (hs1 : s ≤ 1) :
     |G * s * log (G * s)| ≤ |G * log G| + G := by
   rcases hG.eq_or_lt with rfl | hG'

@@ -16,9 +16,10 @@ public import NLAlib.Matrix.Basic.SchurComplement
 
 Monotonicity of the trace, the determinant and the inverse in the Loewner order, with their
 equality cases; invariance of the order under congruence; compressions of inverses; spectral
-equivalence `a • M ≤ A ≤ b • M`, which is how the quality of a preconditioner `M` is stated, with
-its consequence for the condition number of the preconditioned matrix and its description through
-the spectrum of `M⁻¹ * A` (the generalized eigenvalues of the pair).
+equivalence $a\mathbf{M} \preceq \mathbf{A} \preceq b\mathbf{M}$, which is how the quality of a
+preconditioner $\mathbf{M}$ is stated, with its consequence for the condition number of the
+preconditioned matrix and its description through the spectrum of $\mathbf{M}^{-1}\mathbf{A}$ (the
+generalized eigenvalues of the pair).
 
 ## Main results
 
@@ -49,7 +50,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 /-! ### Trace and determinant -/
 
 omit [DecidableEq n] in
-/-- The trace is monotone in the Loewner order. Port of `NLAlib.trace_le_of_le`. -/
+/-- The trace is monotone in the Loewner order: $\mathbf{A} \preceq \mathbf{B}$ gives
+$\operatorname{Re} \operatorname{tr} \mathbf{A} \le \operatorname{Re} \operatorname{tr} \mathbf{B}$.
+Port of `NLAlib.trace_le_of_le`. -/
 theorem re_trace_le_re_trace_of_le {A B : Matrix n n 𝕜} (h : A ≤ B) :
     RCLike.re A.trace ≤ RCLike.re B.trace := by
   have h' := (Matrix.le_iff.mp h).re_trace_nonneg
@@ -57,7 +60,9 @@ theorem re_trace_le_re_trace_of_le {A B : Matrix n n 𝕜} (h : A ≤ B) :
   linarith
 
 omit [DecidableEq n] in
-/-- Loewner-ordered matrices with the same trace are equal.
+/-- Loewner-ordered matrices with the same trace are equal: $\mathbf{A} \preceq \mathbf{B}$ and
+$\operatorname{Re} \operatorname{tr} \mathbf{A} = \operatorname{Re} \operatorname{tr} \mathbf{B}$
+give $\mathbf{A} = \mathbf{B}$.
 Port of `NLAlib.trace_eq_iff_of_le`. -/
 theorem eq_of_le_of_re_trace_eq {A B : Matrix n n 𝕜} (h : A ≤ B)
     (ht : RCLike.re A.trace = RCLike.re B.trace) : A = B := by
@@ -65,12 +70,15 @@ theorem eq_of_le_of_re_trace_eq {A B : Matrix n n 𝕜} (h : A ≤ B)
     (by rw [Matrix.trace_sub, map_sub, ht, sub_self])
   exact (sub_eq_zero.mp h').symm
 
-/-- The determinant of a Hermitian matrix is real. -/
+/-- The determinant of a Hermitian matrix is real:
+$\det \mathbf{A} = \operatorname{Re} \det \mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.det_eq_re_det {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     A.det = ((RCLike.re A.det : ℝ) : 𝕜) := by
   rw [eq_comm, ← RCLike.conj_eq_iff_re, ← RCLike.star_def, ← Matrix.det_conjTranspose, hA.eq]
 
-/-- **The determinant is monotone on positive semidefinite matrices.**
+/-- **The determinant is monotone on positive semidefinite matrices**: for positive
+semidefinite $\mathbf{A} \preceq \mathbf{B}$,
+$\operatorname{Re} \det \mathbf{A} \le \operatorname{Re} \det \mathbf{B}$.
 [HornJohnson2013, Corollary 7.7.4]. Port of `NLAlib.det_le_det_of_posSemidef_le`. -/
 theorem _root_.Matrix.PosSemidef.re_det_le_re_det_of_le {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (h : A ≤ B) : RCLike.re A.det ≤ RCLike.re B.det := by
@@ -80,8 +88,9 @@ theorem _root_.Matrix.PosSemidef.re_det_le_re_det_of_le {A B : Matrix n n 𝕜}
   exact Finset.prod_le_prod (fun k _ => hA.eigenvalue_nonneg k)
     fun k _ => eigenvalue_le_eigenvalue_of_le h hA.isHermitian k
 
-/-- Equality in the monotonicity of the determinant: if `B ≤ A` with `A` positive definite, `B`
-positive semidefinite and `det B = det A`, then `B = A`.
+/-- Equality in the monotonicity of the determinant: if $\mathbf{B} \preceq \mathbf{A}$ with
+$\mathbf{A}$ positive definite, $\mathbf{B}$ positive semidefinite and
+$\det \mathbf{B} = \det \mathbf{A}$, then $\mathbf{B} = \mathbf{A}$.
 [HornJohnson2013, Corollary 7.7.4]. Port of `NLAlib.det_eq_iff_eq_of_posSemidef_le_posDef`. -/
 theorem _root_.Matrix.PosDef.eq_of_le_of_det_eq {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosSemidef) (h : B ≤ A) (hdet : B.det = A.det) : B = A := by
@@ -111,14 +120,19 @@ theorem _root_.Matrix.PosDef.eq_of_le_of_det_eq {A B : Matrix n n 𝕜} (hA : A.
 
 /-! ### Congruence and inverses -/
 
-/-- **Congruence by an invertible matrix preserves and reflects the Loewner order.**
+/-- **Congruence by an invertible matrix preserves and reflects the Loewner order**: for
+invertible $\mathbf{S}$,
+$\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S} \preceq \mathbf{S}^{\mathsf{H}}\mathbf{B}\mathbf{S}$
+iff $\mathbf{A} \preceq \mathbf{B}$.
 Port of `NLAlib.congruence_le_congruence_iff`. -/
 theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul_iff {A B S : Matrix n n 𝕜}
     (hS : IsUnit S) : Sᴴ * A * S ≤ Sᴴ * B * S ↔ A ≤ B := by
   rw [Matrix.le_iff, Matrix.le_iff, ← Matrix.sub_mul, ← Matrix.mul_sub]
   exact Matrix.IsUnit.posSemidef_star_left_conjugate_iff hS
 
-/-- For positive definite `A`, the block matrix `[A 1; 1 A⁻¹]` is positive semidefinite. -/
+/-- For positive definite $\mathbf{A}$, the block matrix
+$\begin{bmatrix} \mathbf{A} & \mathbf{I} \\ \mathbf{I} & \mathbf{A}^{-1} \end{bmatrix}$ is positive
+semidefinite. -/
 private theorem posSemidef_fromBlocks_one_one_inv {A : Matrix n n 𝕜} (hA : A.PosDef) :
     (Matrix.fromBlocks A 1 (1 : Matrix n n 𝕜)ᴴ A⁻¹).PosSemidef := by
   have hAA : A * A⁻¹ = 1 :=
@@ -127,7 +141,8 @@ private theorem posSemidef_fromBlocks_one_one_inv {A : Matrix n n 𝕜} (hA : A.
   rw [hA.isHermitian.inv.eq, Matrix.mul_assoc, hAA, Matrix.mul_one, sub_self]
   exact Matrix.PosSemidef.zero
 
-/-- If `[M 1; 1 C]` is positive semidefinite with `M` invertible, then `M⁻¹ ≤ C`. -/
+/-- If $\begin{bmatrix} \mathbf{M} & \mathbf{I} \\ \mathbf{I} & \mathbf{C} \end{bmatrix}$ is
+positive semidefinite with $\mathbf{M}$ invertible, then $\mathbf{M}^{-1} \preceq \mathbf{C}$. -/
 private theorem inv_le_of_posSemidef_fromBlocks_one {M C : Matrix n n 𝕜} (hM : IsUnit M)
     (h : (Matrix.fromBlocks M 1 (1 : Matrix n n 𝕜)ᴴ C).PosSemidef) : M⁻¹ ≤ C := by
   have hMM : M * M⁻¹ = 1 := Matrix.mul_nonsing_inv M ((Matrix.isUnit_iff_isUnit_det M).mp hM)
@@ -139,7 +154,8 @@ private theorem inv_le_of_posSemidef_fromBlocks_one {M C : Matrix n n 𝕜} (hM 
   rw [hMh.inv.eq, Matrix.mul_assoc, hMM, Matrix.mul_one] at h'
   exact Matrix.le_iff.mpr h'
 
-/-- **The inverse is order-reversing** on positive definite matrices.
+/-- **The inverse is order-reversing** on positive definite matrices: for positive definite
+$\mathbf{A} \preceq \mathbf{B}$, $\mathbf{B}^{-1} \preceq \mathbf{A}^{-1}$.
 [HornJohnson2013, Corollary 7.7.4]. -/
 theorem _root_.Matrix.PosDef.inv_le_inv_of_le {A B : Matrix n n 𝕜} (hA : A.PosDef) (h : A ≤ B) :
     B⁻¹ ≤ A⁻¹ := by
@@ -154,7 +170,7 @@ theorem _root_.Matrix.PosDef.inv_le_inv_of_le {A B : Matrix n n 𝕜} (hA : A.Po
   simpa [Matrix.fromBlocks_add] using h'
 
 /-- The inverse of a positive definite matrix is bounded by the reciprocal of a lower bound:
-`a • 1 ≤ A` with `0 < a` gives `A⁻¹ ≤ a⁻¹ • 1`. -/
+$a\mathbf{I} \preceq \mathbf{A}$ with $0 < a$ gives $\mathbf{A}^{-1} \preceq a^{-1}\mathbf{I}$. -/
 theorem inv_le_inv_smul_one_of_smul_one_le {A : Matrix n n 𝕜} {a : ℝ} (ha : 0 < a)
     (h : a • (1 : Matrix n n 𝕜) ≤ A) : A⁻¹ ≤ a⁻¹ • (1 : Matrix n n 𝕜) := by
   have hpd : (a • (1 : Matrix n n 𝕜)).PosDef := Matrix.PosDef.one.smul ha
@@ -165,7 +181,9 @@ theorem inv_le_inv_smul_one_of_smul_one_le {A : Matrix n n 𝕜} {a : ℝ} (ha :
   rwa [e] at h'
 
 /-- **The inverse of a compression is at most the compression of the inverse**:
-`(Vᴴ A V)⁻¹ ≤ Vᴴ A⁻¹ V` for positive definite `A` and `V` with orthonormal columns.
+$(\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V})^{-1}
+\preceq \mathbf{V}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{V}$ for positive definite $\mathbf{A}$ and
+$\mathbf{V}$ with orthonormal columns.
 [HornJohnson2013, Theorem 7.7.8 context].
 Port of `NLAlib.inv_compression_le_compression_inv`. -/
 theorem _root_.Matrix.PosDef.inv_conjTranspose_mul_mul_le {A : Matrix m m 𝕜} (hA : A.PosDef)
@@ -189,7 +207,8 @@ theorem _root_.Matrix.PosDef.inv_conjTranspose_mul_mul_le {A : Matrix m m 𝕜} 
   rw [e1, e2, e3] at h
   rwa [Matrix.conjTranspose_one]
 
-/-- The inverse of a principal submatrix is at most the principal submatrix of the inverse.
+/-- The inverse of a principal submatrix is at most the principal submatrix of the inverse, for
+positive definite $\mathbf{A}$ and the submatrix along an injective map of indices.
 [HornJohnson2013, Theorem 7.7.8]. Port of `NLAlib.inv_submatrix_le_submatrix_inv`. -/
 theorem _root_.Matrix.PosDef.inv_submatrix_le {A : Matrix m m 𝕜} (hA : A.PosDef) {f : n → m}
     (hf : Function.Injective f) : (A.submatrix f f)⁻¹ ≤ A⁻¹.submatrix f f := by
@@ -207,12 +226,14 @@ theorem _root_.Matrix.PosDef.inv_submatrix_le {A : Matrix m m 𝕜} (hA : A.PosD
 /-! ### Comparison with the identity -/
 
 /-- A positive semidefinite matrix is at most the identity exactly when its spectral norm is at
-most one. Port of `NLAlib.le_one_iff_specNorm_le_one_of_posSemidef`. -/
+most one: $\mathbf{A} \preceq \mathbf{I}$ iff $\|\mathbf{A}\|_2 \le 1$. Port of
+`NLAlib.le_one_iff_specNorm_le_one_of_posSemidef`. -/
 theorem _root_.Matrix.PosSemidef.le_one_iff_specNorm_le_one {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : A ≤ 1 ↔ specNorm A ≤ 1 := by
   rw [hA.specNorm_le_iff zero_le_one, one_smul]
 
-/-- For positive semidefinite `A`, `1 - A` is positive definite exactly when `‖A‖₂ < 1`.
+/-- For positive semidefinite $\mathbf{A}$, $\mathbf{I} - \mathbf{A}$ is positive definite
+exactly when $\|\mathbf{A}\|_2 < 1$.
 Port of `NLAlib.posDef_one_sub_iff_specNorm_lt_one_of_posSemidef`. -/
 theorem _root_.Matrix.PosSemidef.posDef_one_sub_iff_specNorm_lt_one {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : (1 - A).PosDef ↔ specNorm A < 1 := by
@@ -248,9 +269,9 @@ theorem _root_.Matrix.PosSemidef.posDef_one_sub_iff_specNorm_lt_one {A : Matrix 
     nlinarith
 
 omit [Fintype n] in
-/-- **A positive definite matrix dominates a positive multiple of the identity**: `a • 1 ≤ A`
-for some `a > 0`. The largest such `a` is the smallest eigenvalue of `A`; the one produced here
-is `(‖A⁻¹‖₂ + 1)⁻¹`. -/
+/-- **A positive definite matrix dominates a positive multiple of the identity**:
+$a\mathbf{I} \preceq \mathbf{A}$ for some $a > 0$. The largest such $a$ is the smallest eigenvalue
+of $\mathbf{A}$; the one produced here is $(\|\mathbf{A}^{-1}\|_2 + 1)^{-1}$. -/
 theorem _root_.Matrix.PosDef.exists_pos_smul_one_le [Finite n] {A : Matrix n n 𝕜}
     (hA : A.PosDef) : ∃ a : ℝ, 0 < a ∧ a • (1 : Matrix n n 𝕜) ≤ A := by
   have := Fintype.ofFinite n
@@ -279,8 +300,10 @@ private theorem pseudoConditionNumber_le_div_aux [Nonempty n] {A : Matrix n n �
     ((hA.posSemidef.inv.specNorm_le_iff (inv_nonneg.mpr ha.le)).mpr
       (inv_le_inv_smul_one_of_smul_one_le ha h₁)) (specNorm_nonneg _) hb
 
-/-- A Hermitian matrix between `a • 1` and `b • 1` with `0 < a` has condition number at most
-`b / a`. -/
+/-- A matrix with $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$, $0 < a$ and $0 \le b$
+(hence Hermitian and invertible) has pseudo-condition number
+$\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 \le b / a$; here it is the classical condition number
+$\kappa(\mathbf{A})$. -/
 theorem pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one {A : Matrix n n 𝕜} {a b : ℝ}
     (ha : 0 < a) (hb : 0 ≤ b) (h₁ : a • (1 : Matrix n n 𝕜) ≤ A)
     (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) : pseudoConditionNumber A ≤ b / a := by
@@ -289,26 +312,32 @@ theorem pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one {A : Matrix n
     exact div_nonneg hb ha.le
   · exact pseudoConditionNumber_le_div_aux ha h₁ h₂
 
-/-- **Spectral equivalence, lower half, after a change of variables.** If `Cᴴ * M * C = 1`
-(for instance `C = M^{-1/2}`, or the inverse of a Cholesky factor), then `a • M ≤ A` exactly when
-`a • 1 ≤ Cᴴ * A * C`. -/
+/-- **Spectral equivalence, lower half, after a change of variables.** If
+$\mathbf{C}^{\mathsf{H}}\mathbf{M}\mathbf{C} = \mathbf{I}$ (for instance
+$\mathbf{C} = \mathbf{M}^{-1/2}$, or the inverse of a Cholesky factor), then
+$a\mathbf{M} \preceq \mathbf{A}$ exactly when $a\mathbf{I} \preceq
+\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$. -/
 theorem smul_le_iff_smul_one_le_conjTranspose_mul_mul {A M C : Matrix n n 𝕜}
     (hC : Cᴴ * M * C = 1) {a : ℝ} : a • M ≤ A ↔ a • (1 : Matrix n n 𝕜) ≤ Cᴴ * A * C := by
   rw [← conjTranspose_mul_mul_le_conjTranspose_mul_mul_iff
     ((Matrix.isUnit_iff_isUnit_det C).mpr (Matrix.isUnit_det_of_left_inverse hC)),
     Matrix.mul_smul, Matrix.smul_mul, hC]
 
-/-- Spectral equivalence, upper half, after a change of variables: if `Cᴴ * M * C = 1`, then
-`A ≤ b • M` exactly when `Cᴴ * A * C ≤ b • 1`. -/
+/-- Spectral equivalence, upper half, after a change of variables: if
+$\mathbf{C}^{\mathsf{H}}\mathbf{M}\mathbf{C} = \mathbf{I}$, then $\mathbf{A} \preceq b\mathbf{M}$
+exactly when $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C} \preceq b\mathbf{I}$. -/
 theorem le_smul_iff_conjTranspose_mul_mul_le_smul_one {A M C : Matrix n n 𝕜}
     (hC : Cᴴ * M * C = 1) {b : ℝ} : A ≤ b • M ↔ Cᴴ * A * C ≤ b • (1 : Matrix n n 𝕜) := by
   rw [← conjTranspose_mul_mul_le_conjTranspose_mul_mul_iff
     ((Matrix.isUnit_iff_isUnit_det C).mpr (Matrix.isUnit_det_of_left_inverse hC)),
     Matrix.mul_smul, Matrix.smul_mul, hC]
 
-/-- **The condition number of a preconditioned matrix.** If `a • M ≤ A ≤ b • M` with `0 < a` and
-`Cᴴ * M * C = 1`, the symmetrically preconditioned matrix `Cᴴ * A * C` has condition number at
-most `b / a`. This is the statement that conjugate gradient rates consume.
+/-- **The condition number of a preconditioned matrix.** If
+$a\mathbf{M} \preceq \mathbf{A} \preceq b\mathbf{M}$ with $0 < a$, $0 \le b$, and
+$\mathbf{C}^{\mathsf{H}}\mathbf{M}\mathbf{C} = \mathbf{I}$, the symmetrically preconditioned matrix
+$\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ has condition number
+$\kappa(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}) \le b / a$. This is the statement that
+conjugate gradient rates consume.
 Result: preconditioned-condition-number -/
 theorem pseudoConditionNumber_conjTranspose_mul_mul_le_div {A M C : Matrix n n 𝕜}
     (hC : Cᴴ * M * C = 1) {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b) (h₁ : a • M ≤ A)
@@ -322,8 +351,8 @@ theorem pseudoConditionNumber_conjTranspose_mul_mul_le_div {A M C : Matrix n n �
 
 /-! ### Generalized eigenvalues -/
 
-/-- A positive definite `A` is congruent to the identity by a matrix `C` such that `A⁻¹ * B` is
-similar to `Cᴴ * B * C`. -/
+/-- A positive definite $\mathbf{A}$ is congruent to the identity by a matrix $\mathbf{C}$ such
+that $\mathbf{A}^{-1}\mathbf{B}$ is similar to $\mathbf{C}^{\mathsf{H}}\mathbf{B}\mathbf{C}$. -/
 private theorem exists_conjTranspose_mul_mul_eq_one_and_inv_mul_eq {A : Matrix n n 𝕜}
     (hA : A.PosDef) (B : Matrix n n 𝕜) :
     ∃ C : Matrix n n 𝕜, Cᴴ * A * C = 1 ∧
@@ -379,10 +408,11 @@ private theorem le_smul_one_iff_forall_spectrum_le {H : Matrix n n 𝕜} (hH : H
     · intro h
       exact h _ ⟨0, Set.mem_Iio.mpr hpos, rfl⟩
 
-/-- **Spectral equivalence through generalized eigenvalues.** For positive definite `A` and
-Hermitian `B`, `a • A ≤ B ≤ b • A` exactly when the spectrum of `A⁻¹ * B` lies in `[a, b]`.
+/-- **Spectral equivalence through generalized eigenvalues.** For positive definite $\mathbf{A}$
+and Hermitian $\mathbf{B}$, $a\mathbf{A} \preceq \mathbf{B} \preceq b\mathbf{A}$ exactly when the
+real spectrum of $\mathbf{A}^{-1}\mathbf{B}$ lies in $[a, b]$.
 [HornJohnson2013, Theorem 7.6.4 context].
-Port of `NLAlib.loewner_sandwich_iff_relative_spectrum_subset`, there over `ℝ`.
+Port of `NLAlib.loewner_sandwich_iff_relative_spectrum_subset`, there over $\mathbb{R}$.
 Result: relative-spectrum -/
 theorem _root_.Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) (a b : ℝ) :
@@ -395,7 +425,9 @@ theorem _root_.Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset {A B : Matr
   exact ⟨fun h z hz => ⟨h.1 z hz, h.2 z hz⟩,
     fun h => ⟨fun z hz => (h hz).1, fun z hz => (h hz).2⟩⟩
 
-/-- The upper half: `B ≤ b • A` exactly when the spectrum of `A⁻¹ * B` is at most `b`.
+/-- The upper half: for positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$,
+$\mathbf{B} \preceq b\mathbf{A}$ exactly when the real spectrum of $\mathbf{A}^{-1}\mathbf{B}$ is at
+most $b$.
 Port of `NLAlib.le_smul_iff_relative_spectrum_upper`. -/
 theorem _root_.Matrix.PosDef.le_smul_iff_forall_spectrum_le {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) (b : ℝ) :
@@ -404,7 +436,9 @@ theorem _root_.Matrix.PosDef.le_smul_iff_forall_spectrum_le {A B : Matrix n n �
   rw [hu, spectrum.units_conjugate, le_smul_iff_conjTranspose_mul_mul_le_smul_one hC,
     le_smul_one_iff_forall_spectrum_le (Matrix.isHermitian_conjTranspose_mul_mul C hB)]
 
-/-- The lower half: `a • A ≤ B` exactly when the spectrum of `A⁻¹ * B` is at least `a`.
+/-- The lower half: for positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$,
+$a\mathbf{A} \preceq \mathbf{B}$ exactly when the real spectrum of $\mathbf{A}^{-1}\mathbf{B}$ is at
+least $a$.
 Port of `NLAlib.smul_le_iff_relative_spectrum_lower`. -/
 theorem _root_.Matrix.PosDef.smul_le_iff_forall_le_spectrum {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) (a : ℝ) :
@@ -414,7 +448,8 @@ theorem _root_.Matrix.PosDef.smul_le_iff_forall_le_spectrum {A B : Matrix n n �
     smul_one_le_iff_forall_le_spectrum (Matrix.isHermitian_conjTranspose_mul_mul C hB)]
 
 /-- The generalized eigenvalues of a positive definite pair are real: the spectrum of
-`A⁻¹ * B` over `𝕜` consists of real numbers when `A` is positive definite and `B` Hermitian. -/
+$\mathbf{A}^{-1}\mathbf{B}$ over $\Bbbk$ consists of real numbers when $\mathbf{A}$ is positive
+definite and $\mathbf{B}$ Hermitian. -/
 theorem _root_.Matrix.PosDef.spectrum_inv_mul_subset_range_ofReal {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) :
     spectrum 𝕜 (A⁻¹ * B) ⊆ Set.range (fun r : ℝ => (r : 𝕜)) := by
@@ -424,7 +459,8 @@ theorem _root_.Matrix.PosDef.spectrum_inv_mul_subset_range_ofReal {A B : Matrix 
   rintro _ ⟨r, -, rfl⟩
   exact ⟨r, rfl⟩
 
-/-- `B² ≤ A²` exactly when `‖B A⁻¹‖₂ ≤ 1`, for positive definite `A` and Hermitian `B`.
+/-- $\mathbf{B}^2 \preceq \mathbf{A}^2$ exactly when $\|\mathbf{B}\mathbf{A}^{-1}\|_2 \le 1$, for
+positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$.
 Port of `NLAlib.sq_le_sq_iff_relative_specNorm_le_one`. -/
 theorem _root_.Matrix.PosDef.sq_le_sq_iff_specNorm_mul_inv_le_one {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) : B ^ 2 ≤ A ^ 2 ↔ specNorm (B * A⁻¹) ≤ 1 := by

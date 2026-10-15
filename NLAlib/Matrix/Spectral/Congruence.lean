@@ -15,13 +15,16 @@ public import NLAlib.Matrix.Subspaces.Frames
 /-!
 # Simultaneous diagonalisation by congruence
 
-A positive definite `A` and a Hermitian `B` are simultaneously diagonalised by congruence:
-`A = S Sᴴ` and `B = S D Sᴴ` with `D` real diagonal. The entries of `D` are the generalized
-eigenvalues of the pair, the eigenvalues of `A⁻¹ B`, so `A⁻¹ B` and `A B` are diagonalisable with
-real spectrum. Two positive semidefinite matrices are simultaneously diagonalised by congruence
-as well, and for an indefinite invertible `A` this happens exactly when `A⁻¹ B` is diagonalisable
-with real eigenvalues. Over `ℂ` every pair of square matrices is simultaneously unitarily
-triangularised (the generalized Schur, or QZ, decomposition).
+A positive definite $\mathbf{A}$ and a Hermitian $\mathbf{B}$ are simultaneously diagonalised by
+congruence: $\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{S}\mathbf{D}\mathbf{S}^{\mathsf{H}}$ with $\mathbf{D}$ real diagonal. The
+entries of $\mathbf{D}$ are the generalized eigenvalues of the pair, the eigenvalues of
+$\mathbf{A}^{-1}\mathbf{B}$, so $\mathbf{A}^{-1}\mathbf{B}$ and $\mathbf{A}\mathbf{B}$ are
+diagonalisable with real spectrum. Two positive semidefinite matrices are simultaneously
+diagonalised by congruence as well, and for an indefinite invertible $\mathbf{A}$ this happens
+exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable with real eigenvalues. Over
+$\mathbb{C}$ every pair of square matrices is simultaneously unitarily triangularised (the
+generalized Schur, or QZ, decomposition).
 
 ## Main results
 
@@ -50,8 +53,11 @@ private theorem isUnit_det_conjTranspose {S : Matrix n n 𝕜} (hS : IsUnit S.de
   rw [Matrix.det_conjTranspose]
   exact hS.star
 
-/-- For `A = S Sᴴ` and `B = S D Sᴴ`, the columns of `S⁻ᴴ` are eigenvectors of `A⁻¹ B` when `D` is
-diagonal: `A⁻¹ B S⁻ᴴ = S⁻ᴴ D`. -/
+/-- For $\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{S}\mathbf{D}\mathbf{S}^{\mathsf{H}}$ with $\mathbf{S}$ invertible, the
+columns of $\mathbf{S}^{-\mathsf{H}}$ are eigenvectors of $\mathbf{A}^{-1}\mathbf{B}$ when
+$\mathbf{D}$ is diagonal:
+$\mathbf{A}^{-1}\mathbf{B}\mathbf{S}^{-\mathsf{H}} = \mathbf{S}^{-\mathsf{H}}\mathbf{D}$. -/
 private theorem inv_mul_mul_inv_conjTranspose {A B S D : Matrix n n 𝕜} (hS : IsUnit S.det)
     (hA : A = S * Sᴴ) (hB : B = S * D * Sᴴ) : A⁻¹ * B * (Sᴴ)⁻¹ = (Sᴴ)⁻¹ * D := by
   rw [hA, hB, Matrix.mul_inv_rev]
@@ -59,7 +65,9 @@ private theorem inv_mul_mul_inv_conjTranspose {A B S D : Matrix n n 𝕜} (hS : 
   rw [Matrix.mul_nonsing_inv _ (isUnit_det_conjTranspose hS), Matrix.mul_one,
     ← Matrix.mul_assoc S⁻¹, Matrix.nonsing_inv_mul _ hS, Matrix.one_mul]
 
-/-- The middle factor of a congruence by an invertible matrix. -/
+/-- The middle factor of a congruence by an invertible matrix: if
+$\mathbf{B} = \mathbf{S}\mathbf{D}\mathbf{S}^{\mathsf{H}}$ then
+$\mathbf{D} = \mathbf{S}^{-1}\mathbf{B}\mathbf{S}^{-\mathsf{H}}$. -/
 private theorem diagonal_eq_inv_mul_mul_conjTranspose {B S D : Matrix n n 𝕜} (hS : IsUnit S.det)
     (hB : B = S * D * Sᴴ) : D = S⁻¹ * B * (S⁻¹)ᴴ := by
   rw [hB, Matrix.conjTranspose_nonsing_inv]
@@ -67,10 +75,12 @@ private theorem diagonal_eq_inv_mul_mul_conjTranspose {B S D : Matrix n n 𝕜} 
   rw [Matrix.mul_nonsing_inv _ (isUnit_det_conjTranspose hS), Matrix.mul_one,
     ← Matrix.mul_assoc S⁻¹, Matrix.nonsing_inv_mul _ hS, Matrix.one_mul]
 
-/-- **Simultaneous diagonalisation of a definite pair.** For `A` positive definite and `B`
-Hermitian there are an invertible `S` and a real `d` with `A = S Sᴴ` and `B = S diag(d) Sᴴ`.
+/-- **Simultaneous diagonalisation of a definite pair.** For $\mathbf{A}$ positive definite and
+$\mathbf{B}$ Hermitian there are an invertible $\mathbf{S}$ and a real $\mathbf{d}$ with
+$\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$.
 [HornJohnson2013, Theorem 7.6.4]; [GolubVanLoan2013, Theorem 8.7.1].
-Port of `NLAlib.exists_definite_pair_congruence_diagonal`, there over `ℝ`.
+Port of `NLAlib.exists_definite_pair_congruence_diagonal`, there over $\mathbb{R}$.
 Result: definite-pair -/
 theorem _root_.Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose
     {A B : Matrix n n 𝕜} (hA : A.PosDef) (hB : B.IsHermitian) :
@@ -97,7 +107,12 @@ theorem _root_.Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul
           rw [hd, Matrix.conjTranspose_mul]
           simp only [Matrix.mul_assoc]
 
-/-- **The generalized eigenvalues of a definite pair** are the eigenvalues of `A⁻¹ B`.
+/-- **The generalized eigenvalues of a definite pair** are the eigenvalues of
+$\mathbf{A}^{-1}\mathbf{B}$: if $\mathbf{S}$ is invertible,
+$\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$, then the
+entries of $\mathbf{d}$ list the eigenvalues of $\mathbf{A}^{-1}\mathbf{B}$ with multiplicity
+(`IsEigenvalueListing`).
 Port of `NLAlib.charpoly_inverse_mul_eq_prod_of_congruence`. -/
 theorem isEigenvalueListing_inv_mul_of_eq_mul_diagonal_mul_conjTranspose {A B S : Matrix n n 𝕜}
     {d : n → ℝ} (hS : IsUnit S.det) (hA : A = S * Sᴴ)
@@ -107,7 +122,8 @@ theorem isEigenvalueListing_inv_mul_of_eq_mul_diagonal_mul_conjTranspose {A B S 
     (Matrix.isUnit_nonsing_inv_det _ (isUnit_det_conjTranspose hS))
     (inv_mul_mul_inv_conjTranspose hS hA hB)
 
-/-- For `A` positive definite and `B` Hermitian, `A⁻¹ B` is diagonalisable.
+/-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ Hermitian, $\mathbf{A}^{-1}\mathbf{B}$ is
+diagonalisable.
 [HornJohnson2013, Theorem 7.6.3]. Port of `NLAlib.isDiagonalizable_inverse_mul_of_posDef`. -/
 theorem _root_.Matrix.PosDef.isDiagonalizable_inv_mul {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.IsHermitian) : IsDiagonalizable (A⁻¹ * B) := by
@@ -116,15 +132,17 @@ theorem _root_.Matrix.PosDef.isDiagonalizable_inv_mul {A B : Matrix n n 𝕜} (h
   exact ⟨(Sᴴ)⁻¹, _, Matrix.isUnit_nonsing_inv_det _ (isUnit_det_conjTranspose hS),
     inv_mul_mul_inv_conjTranspose hS hA' hB'⟩
 
-/-- For `A` positive definite and `B` Hermitian, `A B` is diagonalisable.
+/-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ Hermitian, $\mathbf{A}\mathbf{B}$ is
+diagonalisable.
 Port of `NLAlib.isDiagonalizable_mul_of_posDef`. -/
 theorem _root_.Matrix.PosDef.isDiagonalizable_mul {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.IsHermitian) : IsDiagonalizable (A * B) := by
   have h := hA.inv.isDiagonalizable_inv_mul hB
   rwa [Matrix.nonsing_inv_nonsing_inv A ((Matrix.isUnit_iff_isUnit_det A).mp hA.isUnit)] at h
 
-/-- For `A` positive definite and `B` Hermitian, the eigenvalues of `A B` are real: its
-characteristic polynomial splits with real roots. -/
+/-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ Hermitian, the eigenvalues of
+$\mathbf{A}\mathbf{B}$ are real: its characteristic polynomial splits with real roots
+$\mathbf{d}_i$. -/
 theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.IsHermitian) : ∃ d : n → ℝ, IsEigenvalueListing (A * B) (fun i => ((d i : ℝ) : 𝕜)) := by
   obtain ⟨S, d, hS, hA', hB'⟩ :=
@@ -133,8 +151,9 @@ theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul {A B : Matrix n n �
   rw [Matrix.nonsing_inv_nonsing_inv A ((Matrix.isUnit_iff_isUnit_det A).mp hA.isUnit)] at h
   exact ⟨d, h⟩
 
-/-- For `A` positive definite and `B` positive semidefinite, the eigenvalues of `A B` are real
-and nonnegative. Port of `NLAlib.spectrum_mul_subset_nonneg_of_posDef`. -/
+/-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ positive semidefinite, the eigenvalues of
+$\mathbf{A}\mathbf{B}$ are real and nonnegative.
+Port of `NLAlib.spectrum_mul_subset_nonneg_of_posDef`. -/
 theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul_nonneg {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.PosSemidef) :
     ∃ d : n → ℝ, IsEigenvalueListing (A * B) (fun i => ((d i : ℝ) : 𝕜)) ∧ ∀ i, 0 ≤ d i := by
@@ -147,7 +166,10 @@ theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul_nonneg {A B : Matrix
   rw [← diagonal_eq_inv_mul_mul_conjTranspose hS hB', Matrix.posSemidef_diagonal_iff] at hD
   exact RCLike.ofReal_nonneg.mp (hD i)
 
-/-- The inertia of `B` is read off the diagonal of a congruence.
+/-- The positive index of inertia of $\mathbf{B}$ is read off the diagonal of a congruence: if
+$\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$ with
+$\mathbf{S}$ invertible and $\mathbf{d}$ real, then `inertiaPos B` is the number of indices $i$
+with $\mathbf{d}_i > 0$.
 Port of `NLAlib.inertia_diagonal_eq_of_congruence`. -/
 theorem inertiaPos_eq_card_of_eq_mul_diagonal_mul_conjTranspose {B S : Matrix n n 𝕜} {d : n → ℝ}
     (hS : IsUnit S.det) (hB : B = S * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Sᴴ) :
@@ -161,7 +183,8 @@ theorem inertiaPos_eq_card_of_eq_mul_diagonal_mul_conjTranspose {B S : Matrix n 
 /-! ### Semidefinite and indefinite pairs -/
 
 omit [DecidableEq n] in
-/-- The kernel of a sum of positive semidefinite matrices is the intersection of the kernels.
+/-- The kernel of a sum of positive semidefinite matrices is the intersection of the kernels:
+$\ker(\mathbf{A} + \mathbf{B}) = \ker \mathbf{A} \cap \ker \mathbf{B}$.
 Port of `NLAlib.ker_add_eq_inf_of_posSemidef`. -/
 theorem _root_.Matrix.PosSemidef.ker_add {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
     (hB : B.PosSemidef) :
@@ -238,8 +261,11 @@ private theorem exists_conjTranspose_mul_mul_eq_diagonal_indicator {C : Matrix n
       exact (Real.sq_sqrt (hc i)).symm
 
 /-- **Two positive semidefinite matrices are simultaneously diagonalised by congruence**, with
-nonnegative diagonals. [HornJohnson2013, Theorem 7.6.4 context].
-Port of `NLAlib.exists_diagonal_congruence_of_posSemidef`, there over `ℝ`. -/
+nonnegative diagonals: there are an invertible $\mathbf{X}$ and nonnegative real $\mathbf{a}$,
+$\mathbf{b}$ with $\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} = \operatorname{diag}(\mathbf{a})$
+and $\mathbf{X}^{\mathsf{H}}\mathbf{B}\mathbf{X} = \operatorname{diag}(\mathbf{b})$.
+[HornJohnson2013, Theorem 7.6.4 context].
+Port of `NLAlib.exists_diagonal_congruence_of_posSemidef`, there over $\mathbb{R}$. -/
 theorem _root_.Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
     ∃ (X : Matrix n n 𝕜) (a b : n → ℝ), IsUnit X.det ∧
@@ -275,8 +301,11 @@ theorem _root_.Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal {A B :
   rw [Matrix.det_mul]
   exact hX₁.mul ((Matrix.isUnit_iff_isUnit_det V).mp hV.isUnit)
 
-/-- **A real symmetric pair with invertible `A` is simultaneously diagonalised by congruence
-exactly when `A⁻¹ B` is diagonalisable over `ℝ`.** [HornJohnson2013, Theorem 4.5.17].
+/-- **A real symmetric pair with invertible $\mathbf{A}$ is simultaneously diagonalised by
+congruence exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable over $\mathbb{R}$**: there
+is an invertible $\mathbf{X}$ with $\mathbf{X}^{\mathsf{T}}\mathbf{A}\mathbf{X}$ and
+$\mathbf{X}^{\mathsf{T}}\mathbf{B}\mathbf{X}$ diagonal if and only if $\mathbf{A}^{-1}\mathbf{B}$
+is diagonalisable. [HornJohnson2013, Theorem 4.5.17].
 Port of `NLAlib.exists_diagonal_congruence_iff_isDiagonalizable_inverse_mul`. -/
 theorem _root_.Matrix.IsHermitian.exists_conjTranspose_mul_mul_eq_diagonal_iff
     {A B : Matrix n n ℝ} (hA : A.IsHermitian) (hAu : IsUnit A.det) (hB : B.IsHermitian) :
@@ -331,8 +360,9 @@ theorem _root_.Matrix.IsHermitian.exists_conjTranspose_mul_mul_eq_diagonal_iff
 
 /-! ### The generalized Schur decomposition -/
 
-/-- The QZ decomposition of a pencil with invertible `B`: a Schur form `Zᴴ (B⁻¹ A) Z` followed by a
-QR factorization of `B Z`. -/
+/-- The QZ decomposition of a pencil with invertible $\mathbf{B}$: a Schur form
+$\mathbf{Z}^{\mathsf{H}}(\mathbf{B}^{-1}\mathbf{A})\mathbf{Z}$ followed by a QR factorization of
+$\mathbf{B}\mathbf{Z}$. -/
 private theorem exists_isUpperTriangular_of_isUnit_det [LinearOrder n] (A : Matrix n n ℂ)
     {B : Matrix n n ℂ} (hB : IsUnit B.det) :
     ∃ Q Z : Matrix n n ℂ, HasOrthonormalCols Q ∧ HasOrthonormalCols Z ∧
@@ -367,7 +397,9 @@ private theorem isClosed_setOf_isUpperTriangular [LinearOrder n] :
     isClosed_eq (continuous_id.matrix_elem i j) continuous_const
 
 /-- **The QZ decomposition.** Every pair of square complex matrices is simultaneously reduced to
-upper triangular form by two unitary matrices.
+upper triangular form by two unitary matrices: there are unitary $\mathbf{Q}$, $\mathbf{Z}$ with
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Z}$ and $\mathbf{Q}^{\mathsf{H}}\mathbf{B}\mathbf{Z}$
+upper triangular.
 [GolubVanLoan2013, Theorem 7.7.1]; [HornJohnson2013, Theorem 2.6.1].
 Port of `NLAlib.exists_unitary_qz_triangularization`.
 Result: qz -/

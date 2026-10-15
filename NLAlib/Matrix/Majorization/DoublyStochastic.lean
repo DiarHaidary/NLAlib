@@ -14,10 +14,11 @@ public import NLAlib.Matrix.Majorization.Basic
 /-!
 # Majorization, doubly stochastic matrices and convex functions
 
-The Hardy–Littlewood–Pólya characterisations of majorization: `x` is majorized by `y` exactly
-when `x = D y` for a doubly stochastic matrix `D`, exactly when `x` lies in the convex hull of the
-permutations of `y`, and exactly when `∑ φ (x i) ≤ ∑ φ (y i)` for every convex `φ`. Weak
-majorization is characterised by monotone convex functions.
+The Hardy–Littlewood–Pólya characterisations of majorization: $\mathbf{x}$ is majorized by
+$\mathbf{y}$ exactly when $\mathbf{x} = \mathbf{D}\mathbf{y}$ for a doubly stochastic matrix
+$\mathbf{D}$, exactly when $\mathbf{x}$ lies in the convex hull of the permutations of
+$\mathbf{y}$, and exactly when $\sum_i \varphi(\mathbf{x}_i) \le \sum_i \varphi(\mathbf{y}_i)$ for
+every convex $\varphi$. Weak majorization is characterised by monotone convex functions.
 
 ## Main results
 
@@ -60,8 +61,8 @@ private theorem exists_card_eq_min_and_forall_le (x : ι → ℝ) (k : ℕ) :
   rw [Finset.sum_insert hj', ← hsum, ← Finset.add_sum_erase t x hi] at h
   linarith
 
-/-- A set carrying the `k` largest entries, with a value `c` separating its entries from the
-others. -/
+/-- A set $t$ carrying the $k$ largest entries, with a value $c$ separating its entries from the
+others: $\mathbf{x}_j \le c \le \mathbf{x}_i$ for $i \in t$, $j \notin t$. -/
 private theorem exists_threshold (x : ι → ℝ) (k : ℕ) :
     ∃ (t : Finset ι) (c : ℝ), t.card = min k (Fintype.card ι) ∧ (∀ i ∈ t, c ≤ x i) ∧
       (∀ j ∉ t, x j ≤ c) ∧ ∑ i ∈ t, x i = sumLargest x k := by
@@ -78,8 +79,9 @@ private theorem exists_threshold (x : ι → ℝ) (k : ℕ) :
     rw [hmin]
     exact hle i hi j hj
 
-/-- A weight vector with entries in `[0, 1]` and total `k` picks out at most the sum of the `k`
-largest entries. Port of `NLAlib.sum_mul_le_sumLargest`. -/
+/-- A weight vector with entries in $[0, 1]$ and total $k$ picks out at most the sum of the $k$
+largest entries: $\sum_i \mathbf{x}_i \mathbf{w}_i \le S_k(\mathbf{x})$, where $S_k$ is
+`NLAlib.sumLargest`. Port of `NLAlib.sum_mul_le_sumLargest`. -/
 theorem sum_mul_le_sumLargest (x w : ι → ℝ) (hw0 : ∀ i, 0 ≤ w i) (hw1 : ∀ i, w i ≤ 1) {k : ℕ}
     (hk : ∑ i, w i = k) : ∑ i, x i * w i ≤ sumLargest x k := by
   classical
@@ -102,7 +104,8 @@ theorem sum_mul_le_sumLargest (x w : ι → ℝ) (hw0 : ∀ i, 0 ≤ w i) (hw1 :
   rw [hl, hr] at h
   linarith
 
-/-- The image of a vector under a doubly stochastic matrix is majorized by the vector.
+/-- The image of a vector under a doubly stochastic matrix is majorized by the vector:
+$\mathbf{D}\mathbf{y}$ is majorized by $\mathbf{y}$.
 [HornJohnson2013, Theorem 4.3.49].
 Port of `NLAlib.majorized_mulVec_of_doublyStochastic`. -/
 theorem majorized_mulVec_of_mem_doublyStochastic [DecidableEq ι] (y : ι → ℝ) {D : Matrix ι ι ℝ}
@@ -144,8 +147,9 @@ private theorem sum_range_extendFin {N : ℕ} (g : Fin N → ℝ) {k : ℕ} (hk 
   simp only [Finset.mem_range, Finset.mem_filter]
   omega
 
-/-- Abel summation on `Fin N`: a non-increasing weight preserves domination of the partial sums,
-when the totals agree or the weight is nonnegative. -/
+/-- Abel summation on `Fin N`: a non-increasing weight $\mathbf{a}$ preserves domination of the
+partial sums, $\sum_i \mathbf{a}_i \mathbf{b}_i \le \sum_i \mathbf{a}_i \mathbf{c}_i$, when the
+totals agree or the weight is nonnegative. -/
 private theorem sum_mul_le_sum_mul_of_antitone {N : ℕ} {a b c : Fin N → ℝ} (ha : Antitone a)
     (hp : ∀ k ≤ N, (∑ i : Fin N, if (i : ℕ) < k then b i else 0) ≤
       ∑ i : Fin N, if (i : ℕ) < k then c i else 0)
@@ -172,8 +176,9 @@ private theorem sum_mul_le_sum_mul_of_antitone {N : ℕ} {a b c : Fin N → ℝ}
       rw [extendFin, dif_pos hi]
       exact hc _
 
-/-- The pairing of a weight vector with a weakly majorized vector is at most its pairing with a
-permutation of the majorizing vector, when the totals agree or the weight is nonnegative. -/
+/-- The pairing of a weight vector $\mathbf{a}$ with a weakly majorized vector $\mathbf{x}$ is at
+most its pairing with a permutation of the majorizing vector $\mathbf{y}$, when the totals agree
+or the weight is nonnegative. -/
 private theorem exists_perm_sum_mul_le_aux {x y : ι → ℝ} (h : WeaklyMajorized x y) (a : ι → ℝ)
     (hc : ∑ i, x i = ∑ i, y i ∨ ∀ i, 0 ≤ a i) :
     ∃ σ : Equiv.Perm ι, ∑ i, a i * x i ≤ ∑ i, a i * y (σ i) := by
@@ -195,16 +200,18 @@ private theorem exists_perm_sum_mul_le_aux {x y : ι → ℝ} (h : WeaklyMajoriz
     · exact Or.inl ((Equiv.sum_comp e₁ x).trans (hc.trans (Equiv.sum_comp e₂ y).symm))
     · exact Or.inr fun j => hc _
 
-/-- **Rearrangement through majorization.** If `x` is majorized by `y` then for every weight
-vector `a` there is a permutation `σ` with `∑ a i * x i ≤ ∑ a i * y (σ i)`.
+/-- **Rearrangement through majorization.** If $\mathbf{x}$ is majorized by $\mathbf{y}$ then for
+every real weight vector $\mathbf{a}$ there is a permutation $\pi$ with
+$\sum_i \mathbf{a}_i \mathbf{x}_i \le \sum_i \mathbf{a}_i \mathbf{y}_{\pi(i)}$.
 Port of `NLAlib.Majorized.exists_perm_sum_mul_le`. -/
 theorem Majorized.exists_perm_sum_mul_le {x y : ι → ℝ} (h : Majorized x y) (a : ι → ℝ) :
     ∃ σ : Equiv.Perm ι, ∑ i, a i * x i ≤ ∑ i, a i * y (σ i) := by
   exact exists_perm_sum_mul_le_aux h.weaklyMajorized a (Or.inl h.sum_eq)
 
-/-- **Rearrangement through weak majorization.** If `x` is weakly majorized by `y` then for every
-nonnegative weight vector `a` there is a permutation `σ` with `∑ a i * x i ≤ ∑ a i * y (σ i)`.
-The majorized case, with no sign condition on `a`, is `NLAlib.Majorized.exists_perm_sum_mul_le`. -/
+/-- **Rearrangement through weak majorization.** If $\mathbf{x}$ is weakly majorized by
+$\mathbf{y}$ then for every nonnegative weight vector $\mathbf{a}$ there is a permutation $\pi$
+with $\sum_i \mathbf{a}_i \mathbf{x}_i \le \sum_i \mathbf{a}_i \mathbf{y}_{\pi(i)}$. The majorized
+case, with no sign condition on $\mathbf{a}$, is `NLAlib.Majorized.exists_perm_sum_mul_le`. -/
 theorem WeaklyMajorized.exists_perm_sum_mul_le {x y : ι → ℝ} (h : WeaklyMajorized x y)
     {a : ι → ℝ} (ha : ∀ i, 0 ≤ a i) :
     ∃ σ : Equiv.Perm ι, ∑ i, a i * x i ≤ ∑ i, a i * y (σ i) := by
@@ -212,7 +219,8 @@ theorem WeaklyMajorized.exists_perm_sum_mul_le {x y : ι → ℝ} (h : WeaklyMaj
 
 /-! ### Hardy–Littlewood–Pólya and Rado -/
 
-/-- A continuous linear functional on `ι → ℝ` is a pairing with a weight vector. -/
+/-- A continuous linear functional on $\mathbb{R}^{\iota}$ is a pairing with a weight vector:
+$f(\mathbf{z}) = \sum_i \mathbf{a}_i \mathbf{z}_i$. -/
 private theorem exists_forall_apply_eq_sum_mul (f : StrongDual ℝ (ι → ℝ)) :
     ∃ a : ι → ℝ, ∀ z, f z = ∑ i, a i * z i := by
   classical
@@ -235,7 +243,9 @@ private theorem Majorized.mem_convexHull_permutations {x y : ι → ℝ} (h : Ma
     exact hσ
   linarith
 
-/-- Birkhoff's theorem transported along `D ↦ D *ᵥ y`. -/
+/-- Birkhoff's theorem transported along $\mathbf{D} \mapsto \mathbf{D}\mathbf{y}$: $\mathbf{x}$
+lies in the convex hull of the permutations of $\mathbf{y}$ exactly when
+$\mathbf{x} = \mathbf{D}\mathbf{y}$ for a doubly stochastic $\mathbf{D}$. -/
 private theorem mem_convexHull_permutations_iff_exists_doublyStochastic [DecidableEq ι]
     {x y : ι → ℝ} : x ∈ convexHull ℝ (Set.range fun σ : Equiv.Perm ι => y ∘ σ) ↔
       ∃ D ∈ doublyStochastic ℝ ι, D *ᵥ y = x := by
@@ -251,8 +261,8 @@ private theorem mem_convexHull_permutations_iff_exists_doublyStochastic [Decidab
   rw [← him, ← F.image_convexHull, ← doublyStochastic_eq_convexHull_permMatrix]
   rfl
 
-/-- **Rado's theorem.** `x` is majorized by `y` exactly when `x` lies in the convex hull of the
-permutations of `y`. [HornJohnson2013, Theorem 4.3.49].
+/-- **Rado's theorem.** $\mathbf{x}$ is majorized by $\mathbf{y}$ exactly when $\mathbf{x}$ lies
+in the convex hull of the permutations of $\mathbf{y}$. [HornJohnson2013, Theorem 4.3.49].
 Port of `NLAlib.majorized_iff_mem_convexHull_permutations`.
 Result: majorization-convex-hull -/
 theorem majorized_iff_mem_convexHull_permutations {x y : ι → ℝ} :
@@ -262,8 +272,9 @@ theorem majorized_iff_mem_convexHull_permutations {x y : ι → ℝ} :
   obtain ⟨D, hD, rfl⟩ := mem_convexHull_permutations_iff_exists_doublyStochastic.mp h
   exact majorized_mulVec_of_mem_doublyStochastic y hD
 
-/-- **Hardy–Littlewood–Pólya.** `x` is majorized by `y` exactly when `x = D y` for some doubly
-stochastic matrix `D`. [HornJohnson2013, Theorem 4.3.49].
+/-- **Hardy–Littlewood–Pólya.** $\mathbf{x}$ is majorized by $\mathbf{y}$ exactly when
+$\mathbf{x} = \mathbf{D}\mathbf{y}$ for some doubly stochastic matrix $\mathbf{D}$.
+[HornJohnson2013, Theorem 4.3.49].
 Port of `NLAlib.majorized_iff_exists_doublyStochastic`.
 Result: hardy-littlewood-polya -/
 theorem majorized_iff_exists_doublyStochastic [DecidableEq ι] {x y : ι → ℝ} :
@@ -273,8 +284,9 @@ theorem majorized_iff_exists_doublyStochastic [DecidableEq ι] {x y : ι → ℝ
 
 /-! ### Convex functions -/
 
-/-- **Karamata's inequality.** If `x` is majorized by `y` and `φ` is convex, then
-`∑ φ (x i) ≤ ∑ φ (y i)`. [HornJohnson2013, Theorem 4.3.50].
+/-- **Karamata's inequality.** If $\mathbf{x}$ is majorized by $\mathbf{y}$ and $\varphi$ is
+convex on $\mathbb{R}$, then $\sum_i \varphi(\mathbf{x}_i) \le \sum_i \varphi(\mathbf{y}_i)$.
+[HornJohnson2013, Theorem 4.3.50].
 Port of `NLAlib.Majorized.sum_convex_le`.
 Result: karamata-inequality -/
 theorem Majorized.sum_convex_le {x y : ι → ℝ} (h : Majorized x y) {φ : ℝ → ℝ}
@@ -292,9 +304,10 @@ theorem Majorized.sum_convex_le {x y : ι → ℝ} (h : Majorized x y) {φ : ℝ
         refine Finset.sum_congr rfl fun j _ => ?_
         rw [← Finset.sum_mul, sum_col_of_mem_doublyStochastic hD j, one_mul]
 
-/-- **Schur-convexity of symmetric convex functions.** If `x` is majorized by `y` and
-`Φ : (ι → ℝ) → ℝ` is convex and invariant under permutations of the coordinates, then
-`Φ x ≤ Φ y`. Karamata's inequality is the separable case `Φ z = ∑ i, φ (z i)`.
+/-- **Schur-convexity of symmetric convex functions.** If $\mathbf{x}$ is majorized by
+$\mathbf{y}$ and $\Phi$, a real function of real vectors indexed by $\iota$, is convex and
+invariant under permutations of the coordinates, then $\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$.
+Karamata's inequality is the separable case $\Phi(\mathbf{z}) = \sum_i \varphi(\mathbf{z}_i)$.
 [HornJohnson2013, Theorem 4.3.49 with Birkhoff's theorem 8.7.2]; [Bhatia1997, Theorem II.3.3]. -/
 theorem Majorized.le_of_convexOn_of_comp_perm {x y : ι → ℝ} (h : Majorized x y)
     {Φ : (ι → ℝ) → ℝ} (hΦ : ConvexOn ℝ Set.univ Φ)
@@ -338,7 +351,9 @@ private theorem weaklyMajorized_of_forall_sum_max_sub_le {x y : ι → ℝ}
   have hc := h c
   linarith
 
-/-- Majorization is characterised by convex functions.
+/-- Majorization is characterised by convex functions: $\mathbf{x}$ is majorized by $\mathbf{y}$
+exactly when $\sum_i \varphi(\mathbf{x}_i) \le \sum_i \varphi(\mathbf{y}_i)$ for every convex
+$\varphi$ on $\mathbb{R}$.
 Port of `NLAlib.majorized_iff_sum_convex_le`. -/
 theorem majorized_iff_forall_sum_convex_le {x y : ι → ℝ} :
     Majorized x y ↔ ∀ φ : ℝ → ℝ, ConvexOn ℝ Set.univ φ → ∑ i, φ (x i) ≤ ∑ i, φ (y i) := by
@@ -350,7 +365,7 @@ theorem majorized_iff_forall_sum_convex_le {x y : ι → ℝ} :
   exact le_antisymm hpos hneg
 
 /-- **Majorization is decided on the entries that differ.** Two vectors that agree outside an
-index set `s` are majorized exactly when their restrictions to `s` are. -/
+index set $s$ are majorized exactly when their restrictions to $s$ are. -/
 theorem majorized_subtype_iff {x y : ι → ℝ} {s : Finset ι} (h : ∀ k ∉ s, x k = y k) :
     Majorized (fun k : s => x k) (fun k : s => y k) ↔ Majorized x y := by
   classical
@@ -406,15 +421,17 @@ private theorem WeaklyMajorized.mem_convexHull_add_Iic {x y : ι → ℝ} (h : W
     exact hσ
   linarith [hperm σ]
 
-/-- A weakly majorized vector lies below a majorized one: `x ≤ z` entrywise with `z` majorized
-by `y`. Port of `NLAlib.WeaklyMajorized.exists_le_majorized`. -/
+/-- A weakly majorized vector lies below a majorized one: if $\mathbf{x}$ is weakly majorized by
+$\mathbf{y}$, there is $\mathbf{z}$ with $\mathbf{x} \le \mathbf{z}$ entrywise and $\mathbf{z}$
+majorized by $\mathbf{y}$. Port of `NLAlib.WeaklyMajorized.exists_le_majorized`. -/
 theorem WeaklyMajorized.exists_le_majorized {x y : ι → ℝ} (h : WeaklyMajorized x y) :
     ∃ z : ι → ℝ, x ≤ z ∧ Majorized z y := by
   obtain ⟨z, hz, w, hw, rfl⟩ := h.mem_convexHull_add_Iic
   exact ⟨z, add_le_of_nonpos_right hw, majorized_iff_mem_convexHull_permutations.mpr hz⟩
 
-/-- If `x` is weakly majorized by `y` and `Φ : (ι → ℝ) → ℝ` is convex, monotone and invariant
-under permutations of the coordinates, then `Φ x ≤ Φ y`. This is the form in which symmetric
+/-- If $\mathbf{x}$ is weakly majorized by $\mathbf{y}$ and $\Phi$, a real function of real
+vectors indexed by $\iota$, is convex, monotone and invariant under permutations of the
+coordinates, then $\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$. This is the form in which symmetric
 gauge functions consume weak majorization. [Bhatia1997, Theorem II.3.3 and Example II.3.5]. -/
 theorem WeaklyMajorized.le_of_convexOn_of_monotone_of_comp_perm {x y : ι → ℝ}
     (h : WeaklyMajorized x y) {Φ : (ι → ℝ) → ℝ} (hΦ : ConvexOn ℝ Set.univ Φ) (hmono : Monotone Φ)
@@ -422,8 +439,9 @@ theorem WeaklyMajorized.le_of_convexOn_of_monotone_of_comp_perm {x y : ι → �
   obtain ⟨z, hxz, hzy⟩ := h.exists_le_majorized
   exact (hmono hxz).trans (hzy.le_of_convexOn_of_comp_perm hΦ hperm)
 
-/-- **Tomić–Weyl.** If `x` is weakly majorized by `y` and `φ` is monotone and convex, then
-`∑ φ (x i) ≤ ∑ φ (y i)`. [HornJohnson1991, Theorem 3.3.14 context].
+/-- **Tomić–Weyl.** If $\mathbf{x}$ is weakly majorized by $\mathbf{y}$ and $\varphi$ is monotone
+and convex on $\mathbb{R}$, then $\sum_i \varphi(\mathbf{x}_i) \le \sum_i \varphi(\mathbf{y}_i)$.
+[HornJohnson1991, Theorem 3.3.14 context].
 Port of `NLAlib.WeaklyMajorized.sum_monotone_convex_le`.
 Result: tomic-weyl-inequality -/
 theorem WeaklyMajorized.sum_monotone_convex_le {x y : ι → ℝ} (h : WeaklyMajorized x y)
@@ -432,7 +450,9 @@ theorem WeaklyMajorized.sum_monotone_convex_le {x y : ι → ℝ} (h : WeaklyMaj
   obtain ⟨z, hxz, hzy⟩ := h.exists_le_majorized
   exact (Finset.sum_le_sum fun i _ => hφm (hxz i)).trans (hzy.sum_convex_le hφ)
 
-/-- Weak majorization is characterised by the hinge functions `u ↦ max (u - a) 0`.
+/-- Weak majorization is characterised by the hinge functions $u \mapsto \max(u - a, 0)$:
+$\mathbf{x}$ is weakly majorized by $\mathbf{y}$ exactly when
+$\sum_i \max(\mathbf{x}_i - a, 0) \le \sum_i \max(\mathbf{y}_i - a, 0)$ for every real $a$.
 Port of `NLAlib.weaklyMajorized_iff_sum_max_sub_le`. -/
 theorem weaklyMajorized_iff_forall_sum_max_sub_le {x y : ι → ℝ} :
     WeaklyMajorized x y ↔ ∀ a : ℝ, ∑ i, max (x i - a) 0 ≤ ∑ i, max (y i - a) 0 := by
@@ -440,10 +460,12 @@ theorem weaklyMajorized_iff_forall_sum_max_sub_le {x y : ι → ℝ} :
     weaklyMajorized_of_forall_sum_max_sub_le⟩
   exact max_le_max (sub_le_sub_right huv a) le_rfl
 
-/-- Weak majorization is characterised by monotone convex functions: `x` is weakly majorized by
-`y` exactly when `∑ φ (x i) ≤ ∑ φ (y i)` for every monotone convex `φ`. The forward direction
-is `NLAlib.WeaklyMajorized.sum_monotone_convex_le`; the converse tests the hinge functions
-`u ↦ max (u - a) 0`, as in `NLAlib.weaklyMajorized_iff_forall_sum_max_sub_le`. -/
+/-- Weak majorization is characterised by monotone convex functions: $\mathbf{x}$ is weakly
+majorized by $\mathbf{y}$ exactly when $\sum_i \varphi(\mathbf{x}_i) \le \sum_i
+\varphi(\mathbf{y}_i)$
+for every monotone convex $\varphi$. The forward direction is
+`NLAlib.WeaklyMajorized.sum_monotone_convex_le`; the converse tests the hinge functions
+$u \mapsto \max(u - a, 0)$, as in `NLAlib.weaklyMajorized_iff_forall_sum_max_sub_le`. -/
 theorem weaklyMajorized_iff_forall_sum_monotone_convex_le {x y : ι → ℝ} :
     WeaklyMajorized x y ↔
       ∀ φ : ℝ → ℝ, Monotone φ → ConvexOn ℝ Set.univ φ → ∑ i, φ (x i) ≤ ∑ i, φ (y i) := by
@@ -453,7 +475,9 @@ theorem weaklyMajorized_iff_forall_sum_monotone_convex_le {x y : ι → ℝ} :
 
 /-! ### Transport plans -/
 
-/-- A doubly stochastic transport plan costs at least as much as the best permutation.
+/-- A doubly stochastic transport plan costs at least as much as the best permutation: for a
+real cost matrix $\mathbf{C}$ and doubly stochastic $\mathbf{W}$ there is a permutation $\pi$ with
+$\sum_i \mathbf{C}_{i,\pi(i)} \le \sum_{i,j} \mathbf{W}_{i,j} \mathbf{C}_{i,j}$.
 Port of `NLAlib.exists_perm_sum_le_doublyStochastic_cost`. -/
 theorem exists_perm_sum_le_sum_mul_of_mem_doublyStochastic [DecidableEq ι] (C : Matrix ι ι ℝ)
     {W : Matrix ι ι ℝ} (hW : W ∈ doublyStochastic ℝ ι) :

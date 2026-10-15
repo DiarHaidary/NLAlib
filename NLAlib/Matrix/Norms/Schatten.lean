@@ -11,15 +11,15 @@ public import NLAlib.Matrix.Norms.Nuclear
 /-!
 # Schatten norms
 
-The Schatten `q`-norm `NLAlib.schattenNorm q A` of a matrix is the `ℓ^q` norm of its singular
-values, for `q : ℝ≥0∞`. The cases `q = 1`, `q = 2` and `q = ⊤` are the nuclear, Frobenius and
-spectral norms. It is defined as Mathlib's `PiLp` norm of the vector of the first
-`min (card m) (card n)` singular values, so `q = ⊤` needs no separate definition, and the
-degenerate `q = 0` gives the rank.
+The Schatten $q$-norm `NLAlib.schattenNorm q A` of a matrix, written $\|\mathbf{A}\|_{S_q}$, is
+the $\ell^q$ norm of its singular values, for $q$ in `ℝ≥0∞`. The cases $q = 1$, $q = 2$ and
+$q = \infty$ are the nuclear, Frobenius and spectral norms. It is defined as Mathlib's `PiLp` norm
+of the vector of the first $\min(\lvert m \rvert, \lvert n \rvert)$ singular values, so
+$q = \infty$ needs no separate definition, and the degenerate $q = 0$ gives the rank.
 
-Statements that hold for every exponent take `q` alone; homogeneity, definiteness and the
-comparisons need `q ≠ 0`; the triangle inequality needs `1 ≤ q`, as an explicit hypothesis.
-Natural exponents have their own power-sum and trace forms, with `ℕ` powers, in
+Statements that hold for every exponent take $q$ alone; homogeneity and the comparisons need
+$q \ne 0$; the triangle inequality needs $1 \le q$, as an explicit hypothesis.
+Natural exponents have their own power-sum and trace forms, with natural-number powers, in
 `NLAlib.Matrix.Norms.SchattenPowers`.
 
 ## Main definitions
@@ -30,10 +30,10 @@ Natural exponents have their own power-sum and trace forms, with `ℕ` powers, i
 
 * `NLAlib.schattenNorm_one`, `NLAlib.schattenNorm_two`, `NLAlib.schattenNorm_top`: the nuclear,
   Frobenius and spectral norms.
-* `NLAlib.schattenNorm_eq_sum_rpow`: the formula for finite positive `q`.
+* `NLAlib.schattenNorm_eq_sum_rpow`: the formula for finite positive $q$.
 * `NLAlib.schattenNorm_congr`, `NLAlib.schattenNorm_le_mul_of_singularValues_le`: Schatten norms
   depend only on the singular values, monotonically, across shapes.
-* `NLAlib.schattenNorm_add_le`: the triangle inequality for `1 ≤ q`.
+* `NLAlib.schattenNorm_add_le`: the triangle inequality for $1 \le q$.
 * `NLAlib.schattenNorm_anti`, `NLAlib.schattenNorm_le_rank_rpow_mul_schattenNorm`: comparison
   between exponents.
 -/
@@ -46,9 +46,10 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] [Fintype n] [Fintype p]
 
-/-- The **Schatten `q`-norm**: the `ℓ^q` norm of the singular values, for `q : ℝ≥0∞`.
-For `q = 1`, `2`, `⊤` it is the nuclear, Frobenius and spectral norm; it is a norm for `1 ≤ q`.
-For `q = 0` it is the rank, following Mathlib's convention for `ℓ^0`.
+/-- The **Schatten $q$-norm** $\|\mathbf{A}\|_{S_q}$: the $\ell^q$ norm of the singular values
+$\sigma_i(\mathbf{A})$, $i < \min(\lvert m \rvert, \lvert n \rvert)$, for $q$ in `ℝ≥0∞`.
+For $q = 1, 2, \infty$ it is the nuclear, Frobenius and spectral norm; it is a norm for $1 \le q$.
+For $q = 0$ it is the rank, following Mathlib's convention for $\ell^0$.
 [HornJohnson2013, §7.4.7]; [Bhatia1997, §IV.2]. Port of `NLAlib.schattenNorm`, with the arguments
 in the other order. -/
 noncomputable def schattenNorm (q : ℝ≥0∞) (A : Matrix m n 𝕜) : ℝ :=
@@ -57,7 +58,8 @@ noncomputable def schattenNorm (q : ℝ≥0∞) (A : Matrix m n 𝕜) : ℝ :=
 
 /-! ### Special exponents -/
 
-/-- The Schatten `∞`-norm is the spectral norm. Port of `NLAlib.schattenNorm_top`. -/
+/-- The Schatten $\infty$-norm is the spectral norm: $\|\mathbf{A}\|_{S_\infty} = \|\mathbf{A}\|_2$.
+Port of `NLAlib.schattenNorm_top`. -/
 @[simp]
 theorem schattenNorm_top (A : Matrix m n 𝕜) : schattenNorm ⊤ A = specNorm A := by
   rw [schattenNorm, PiLp.norm_toLp]
@@ -72,7 +74,7 @@ theorem schattenNorm_top (A : Matrix m n 𝕜) : schattenNorm ⊤ A = specNorm A
     · exact (Real.norm_of_nonneg (singularValues_nonneg A 0)).symm.le.trans
         (norm_le_pi_norm (fun i : Fin _ => singularValues A i) ⟨0, h⟩)
 
-/-- The Schatten `0`-"norm" is the rank. -/
+/-- The Schatten $0$-"norm" is the rank: $\|\mathbf{A}\|_{S_0} = \operatorname{rank} \mathbf{A}$. -/
 theorem schattenNorm_zero_eq_rank (A : Matrix m n 𝕜) : schattenNorm 0 A = A.rank := by
   classical
   rw [schattenNorm, PiLp.norm_eq_card, Set.Finite.toFinset_ofPred]
@@ -91,8 +93,8 @@ private theorem sum_range_singularValues_rpow (A : Matrix m n 𝕜) {t : ℝ} (h
     rw [(singularValues_eq_zero_iff A).mpr (not_lt.mp fun h => hi (Finset.mem_range.mpr h)),
       Real.zero_rpow ht]).symm
 
-/-- **The Schatten norm as a power sum.** For `0 < q < ∞` and any `N` at least the rank,
-`‖A‖_q = (∑ i < N, σ_i ^ q) ^ (1 / q)`.
+/-- **The Schatten norm as a power sum.** For $0 < q < \infty$ and any $N$ at least the rank,
+$$\|\mathbf{A}\|_{S_q} = \Bigl(\sum_{i < N} \sigma_i(\mathbf{A})^q\Bigr)^{1/q}\,.$$
 Port of `NLAlib.schattenNormReal_eq_sum_range_rpow_of_min_le` and
 `NLAlib.schattenNormReal_eq_sum_rank_rpow`. -/
 theorem schattenNorm_eq_sum_rpow {q : ℝ≥0∞} (hq0 : q ≠ 0) (hq : q ≠ ⊤) (A : Matrix m n 𝕜) {N : ℕ}
@@ -104,8 +106,9 @@ theorem schattenNorm_eq_sum_rpow {q : ℝ≥0∞} (hq0 : q ≠ 0) (hq : q ≠ �
     one_div, ← Fin.sum_univ_eq_sum_range fun i => singularValues A i ^ q.toReal]
   simp only [Real.norm_of_nonneg (singularValues_nonneg A _)]
 
-/-- The `q`-th power of the Schatten `q`-norm is the sum of the `q`-th powers of the singular
-values. -/
+/-- The $q$-th power of the Schatten $q$-norm is the sum of the $q$-th powers of the singular
+values: for $0 < q < \infty$ and $N \ge \operatorname{rank} \mathbf{A}$,
+$\|\mathbf{A}\|_{S_q}^q = \sum_{i < N} \sigma_i(\mathbf{A})^q$. -/
 theorem schattenNorm_rpow {q : ℝ≥0∞} (hq0 : q ≠ 0) (hq : q ≠ ⊤) (A : Matrix m n 𝕜) {N : ℕ}
     (hN : A.rank ≤ N) :
     schattenNorm q A ^ q.toReal = ∑ i ∈ Finset.range N, singularValues A i ^ q.toReal := by
@@ -113,7 +116,8 @@ theorem schattenNorm_rpow {q : ℝ≥0∞} (hq0 : q ≠ 0) (hq : q ≠ ⊤) (A :
   exact Real.rpow_inv_rpow (Finset.sum_nonneg fun i _ =>
     Real.rpow_nonneg (singularValues_nonneg A i) _) (ENNReal.toReal_pos hq0 hq).ne'
 
-/-- The Schatten `1`-norm is the nuclear norm. Port of `NLAlib.schattenNorm_one`. -/
+/-- The Schatten $1$-norm is the nuclear norm: $\|\mathbf{A}\|_{S_1} = \|\mathbf{A}\|_*$. Port of
+`NLAlib.schattenNorm_one`. -/
 @[simp]
 theorem schattenNorm_one (A : Matrix m n 𝕜) : schattenNorm 1 A = nuclearNorm A := by
   rw [schattenNorm_eq_sum_rpow one_ne_zero ENNReal.one_ne_top A
@@ -121,8 +125,9 @@ theorem schattenNorm_one (A : Matrix m n 𝕜) : schattenNorm 1 A = nuclearNorm 
     Real.rpow_one, nuclearNorm]
   simp only [Real.rpow_one]
 
-/-- The Schatten `2`-norm is the Frobenius norm. Port of `NLAlib.schattenNorm_two`, there over
-`ℝ`. -/
+/-- The Schatten $2$-norm is the Frobenius norm:
+$\|\mathbf{A}\|_{S_2} = \|\mathbf{A}\|_{\mathsf{F}}$. Port of `NLAlib.schattenNorm_two`, there
+over $\mathbb{R}$. -/
 @[simp]
 theorem schattenNorm_two (A : Matrix m n 𝕜) : schattenNorm 2 A = frobNorm A := by
   rw [schattenNorm_eq_sum_rpow two_ne_zero ENNReal.ofNat_ne_top A le_rfl, ENNReal.toReal_ofNat]
@@ -164,7 +169,8 @@ theorem schattenNorm_zero (q : ℝ≥0∞) : schattenNorm q (0 : Matrix m n 𝕜
   · rw [schattenNorm_eq_sum_rpow hq0 hq 0 (N := 0) (by rw [Matrix.rank_zero]),
       Finset.sum_range_zero, Real.zero_rpow (inv_ne_zero (ENNReal.toReal_pos hq0 hq).ne')]
 
-/-- Schatten norms are definite. Port of `NLAlib.schattenNorm_eq_zero_iff`. -/
+/-- Schatten norms are definite, for every exponent: $\|\mathbf{A}\|_{S_q} = 0$ iff
+$\mathbf{A} = \mathbf{0}$. Port of `NLAlib.schattenNorm_eq_zero_iff`. -/
 @[simp]
 theorem schattenNorm_eq_zero_iff (q : ℝ≥0∞) {A : Matrix m n 𝕜} : schattenNorm q A = 0 ↔ A = 0 := by
   refine ⟨fun h => ?_, fun h => by rw [h, schattenNorm_zero]⟩
@@ -177,8 +183,9 @@ theorem schattenNorm_eq_zero_iff (q : ℝ≥0∞) {A : Matrix m n 𝕜} : schatt
   · exact specNorm_eq_zero_iff.mp (le_antisymm
       ((specNorm_le_schattenNorm_of_ne_top hq0 hq A).trans_eq h) (specNorm_nonneg A))
 
-/-- A termwise bound `σ_i(A) ≤ c σ_i(B)` on the singular values gives `‖A‖_q ≤ c ‖B‖_q`, for
-`q ≠ 0`. The shapes may differ. -/
+/-- A termwise bound $\sigma_i(\mathbf{A}) \le c \, \sigma_i(\mathbf{B})$ on the singular values,
+$c \ge 0$, gives $\|\mathbf{A}\|_{S_q} \le c \, \|\mathbf{B}\|_{S_q}$, for $q \ne 0$. The
+shapes may differ. -/
 theorem schattenNorm_le_mul_of_singularValues_le {q : ℝ≥0∞} (hq : q ≠ 0)
     {A : Matrix m n 𝕜} {B : Matrix l p 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ i, singularValues A i ≤ c * singularValues B i) :
@@ -210,7 +217,8 @@ theorem schattenNorm_congr {A : Matrix m n 𝕜} {B : Matrix l p 𝕜}
       ((schattenNorm_le_mul_of_singularValues_le hq zero_le_one fun i => by
         rw [h, one_mul]).trans_eq (one_mul _))
 
-/-- Schatten norms are absolutely homogeneous, for `q ≠ 0`.
+/-- Schatten norms are absolutely homogeneous, for $q \ne 0$:
+$\|c\mathbf{A}\|_{S_q} = \lvert c \rvert \, \|\mathbf{A}\|_{S_q}$.
 Port of `NLAlib.schattenNorm_smul`. -/
 theorem schattenNorm_smul {q : ℝ≥0∞} (hq : q ≠ 0) (c : 𝕜) (A : Matrix m n 𝕜) :
     schattenNorm q (c • A) = ‖c‖ * schattenNorm q A := by
@@ -280,8 +288,10 @@ private theorem convexOn_max_zero_rpow {t : ℝ} (ht : 1 ≤ t) :
   exact (Real.rpow_le_rpow (le_max_right _ _) h (zero_le_one.trans ht)).trans
     ((convexOn_rpow ht).2 (le_max_right x 0) (le_max_right y 0) ha hb hab)
 
-/-- **The triangle inequality for Schatten norms**, `1 ≤ q`.
-[Bhatia1997, §IV.2]. Port of `NLAlib.schattenNorm_add_le`, there over `ℝ`.
+/-- **The triangle inequality for Schatten norms**: for $1 \le q \le \infty$ and matrices
+$\mathbf{A}$, $\mathbf{B}$ of the same shape,
+$\|\mathbf{A} + \mathbf{B}\|_{S_q} \le \|\mathbf{A}\|_{S_q} + \|\mathbf{B}\|_{S_q}$.
+[Bhatia1997, §IV.2]. Port of `NLAlib.schattenNorm_add_le`, there over $\mathbb{R}$.
 Result: schatten-norm -/
 theorem schattenNorm_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (A B : Matrix m n 𝕜) :
     schattenNorm q (A + B) ≤ schattenNorm q A + schattenNorm q B := by
@@ -317,7 +327,9 @@ theorem schattenNorm_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (A B : Matrix m n �
     (Real.Lp_add_le_of_nonneg _ ht (fun i _ => singularValues_nonneg A i)
       fun i _ => singularValues_nonneg B i)
 
-/-- The reverse triangle inequality for Schatten norms, `1 ≤ q`. -/
+/-- The reverse triangle inequality for Schatten norms, $1 \le q$:
+$\lvert \|\mathbf{A}\|_{S_q} - \|\mathbf{B}\|_{S_q} \rvert
+\le \|\mathbf{A} - \mathbf{B}\|_{S_q}$. -/
 theorem abs_schattenNorm_sub_schattenNorm_le {q : ℝ≥0∞} (hq : 1 ≤ q) (A B : Matrix m n 𝕜) :
     |schattenNorm q A - schattenNorm q B| ≤ schattenNorm q (A - B) := by
   have h1 := schattenNorm_add_le hq (A - B) B
@@ -328,8 +340,9 @@ theorem abs_schattenNorm_sub_schattenNorm_le {q : ℝ≥0∞} (hq : 1 ≤ q) (A 
 
 /-! ### Comparison between exponents -/
 
-/-- Schatten norms decrease in the exponent.
-Port of `NLAlib.schattenNorm_le_of_le`, there over `ℝ` for `1 ≤ q`. -/
+/-- Schatten norms decrease in the exponent: for $0 < q \le r$,
+$\|\mathbf{A}\|_{S_r} \le \|\mathbf{A}\|_{S_q}$.
+Port of `NLAlib.schattenNorm_le_of_le`, there over $\mathbb{R}$ for $1 \le q$. -/
 theorem schattenNorm_anti {q r : ℝ≥0∞} (hq : q ≠ 0) (h : q ≤ r) (A : Matrix m n 𝕜) :
     schattenNorm r A ≤ schattenNorm q A := by
   rcases eq_or_ne q ⊤ with rfl | hq'
@@ -359,7 +372,8 @@ theorem schattenNorm_anti {q r : ℝ≥0∞} (hq : q ≠ 0) (h : q ≤ r) (A : M
         rw [← Finset.mul_sum, ← schattenNorm_rpow hq hq' A le_rfl,
           ← Real.rpow_add_of_nonneg (schattenNorm_nonneg q A) hqr hq0.le, sub_add_cancel]
 
-/-- The spectral norm is at most every Schatten norm with `q ≠ 0`.
+/-- The spectral norm is at most every Schatten norm with $q \ne 0$:
+$\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{S_q}$.
 Port of `NLAlib.specNorm_le_schattenNormReal`. -/
 theorem specNorm_le_schattenNorm {q : ℝ≥0∞} (hq : q ≠ 0) (A : Matrix m n 𝕜) :
     specNorm A ≤ schattenNorm q A := by
@@ -383,9 +397,9 @@ private theorem schattenNorm_le_rank_rpow_mul_specNorm_of_ne_top {q : ℝ≥0∞
     _ = (A.rank : ℝ) * specNorm A ^ q.toReal := by
         rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
 
-/-- Comparison in the other direction, with the rank: for `q ≤ r`,
-`‖A‖_q ≤ rank(A) ^ (1/q - 1/r) ‖A‖_r`.
-Port of `NLAlib.schattenNorm_le_rank_rpow_mul`, there over `ℝ` for `1 ≤ q`. -/
+/-- Comparison in the other direction, with the rank: for $0 < q \le r$, with $1/\infty = 0$,
+$$\|\mathbf{A}\|_{S_q} \le (\operatorname{rank} \mathbf{A})^{1/q - 1/r} \, \|\mathbf{A}\|_{S_r}\,.$$
+Port of `NLAlib.schattenNorm_le_rank_rpow_mul`, there over $\mathbb{R}$ for $1 \le q$. -/
 theorem schattenNorm_le_rank_rpow_mul_schattenNorm {q r : ℝ≥0∞} (hq : q ≠ 0) (h : q ≤ r)
     (A : Matrix m n 𝕜) :
     schattenNorm q A ≤ (A.rank : ℝ) ^ (q.toReal⁻¹ - r.toReal⁻¹) * schattenNorm r A := by
@@ -415,7 +429,8 @@ theorem schattenNorm_le_rank_rpow_mul_schattenNorm {q r : ℝ≥0∞} (hq : q �
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← Real.rpow_mul (singularValues_nonneg A i), h2]
 
-/-- `‖A‖_q ≤ rank(A) ^ (1/q) ‖A‖₂`.
+/-- $\|\mathbf{A}\|_{S_q} \le (\operatorname{rank} \mathbf{A})^{1/q} \, \|\mathbf{A}\|_2$ for
+$q \ne 0$, with $1/\infty = 0$.
 Port of `NLAlib.schattenNormReal_le_rank_rpow_mul_specNorm`. -/
 theorem schattenNorm_le_rank_rpow_mul_specNorm {q : ℝ≥0∞} (hq : q ≠ 0) (A : Matrix m n 𝕜) :
     schattenNorm q A ≤ (A.rank : ℝ) ^ q.toReal⁻¹ * specNorm A := by
@@ -424,15 +439,17 @@ theorem schattenNorm_le_rank_rpow_mul_specNorm {q : ℝ≥0∞} (hq : q ≠ 0) (
 
 /-! ### Products with a spectral-norm factor -/
 
-/-- `‖A B‖_q ≤ ‖A‖₂ ‖B‖_q`.
-Port of `NLAlib.schattenNormReal_mul_le_specNorm_mul`, there over `ℝ`. -/
+/-- $\|\mathbf{A}\mathbf{B}\|_{S_q} \le \|\mathbf{A}\|_2 \, \|\mathbf{B}\|_{S_q}$ for
+$q \ne 0$.
+Port of `NLAlib.schattenNormReal_mul_le_specNorm_mul`, there over $\mathbb{R}$. -/
 theorem schattenNorm_mul_le_specNorm_mul {q : ℝ≥0∞} (hq : q ≠ 0) (A : Matrix m p 𝕜)
     (B : Matrix p n 𝕜) : schattenNorm q (A * B) ≤ specNorm A * schattenNorm q B := by
   exact schattenNorm_le_mul_of_singularValues_le hq (specNorm_nonneg A) fun i =>
     singularValues_mul_le_specNorm_mul A B i
 
-/-- `‖A B‖_q ≤ ‖A‖_q ‖B‖₂`.
-Port of `NLAlib.schattenNormReal_mul_le_mul_specNorm`, there over `ℝ`. -/
+/-- $\|\mathbf{A}\mathbf{B}\|_{S_q} \le \|\mathbf{A}\|_{S_q} \, \|\mathbf{B}\|_2$ for
+$q \ne 0$.
+Port of `NLAlib.schattenNormReal_mul_le_mul_specNorm`, there over $\mathbb{R}$. -/
 theorem schattenNorm_mul_le_mul_specNorm {q : ℝ≥0∞} (hq : q ≠ 0) (A : Matrix m p 𝕜)
     (B : Matrix p n 𝕜) : schattenNorm q (A * B) ≤ schattenNorm q A * specNorm B := by
   rw [mul_comm]

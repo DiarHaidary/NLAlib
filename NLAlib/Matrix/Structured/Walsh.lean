@@ -12,10 +12,11 @@ public import NLAlib.Matrix.Basic.Orthonormal
 /-!
 # Walsh–Hadamard matrices
 
-The Walsh–Hadamard matrix of order `2 ^ b` is indexed by bit strings `Fin b → ZMod 2`, with entry
-`(-1) ^ ⟨x, y⟩` at `(x, y)`. It is symmetric with entries `±1` and `H * H = 2 ^ b • 1`, so it is
-a Hadamard matrix in the sense of Mathlib's `Matrix.IsHadamard`, and `2 ^ (-b / 2) • H` is a
-symmetric orthogonal matrix all of whose entries have the same modulus. This flatness is what
+The Walsh–Hadamard matrix $\mathbf{H}$ of order $2^b$ is indexed by bit strings
+`Fin b → ZMod 2`, with entry $\mathbf{H}_{x,y} = (-1)^{\sum_i x_i y_i}$. It is symmetric with
+entries $\pm 1$ and $\mathbf{H}\mathbf{H} = 2^b \mathbf{I}$, so it is a Hadamard matrix in the sense
+of Mathlib's `Matrix.IsHadamard`, and $2^{-b/2} \mathbf{H}$ is a symmetric orthogonal matrix all of
+whose entries have the same modulus. This flatness is what
 subsampled randomized Hadamard transforms use.
 
 ## Main definitions
@@ -26,7 +27,7 @@ subsampled randomized Hadamard transforms use.
 
 * `NLAlib.walshHadamard_apply`, `NLAlib.transpose_walshHadamard`,
   `NLAlib.conjTranspose_walshHadamard`: entries and symmetry.
-* `NLAlib.walshHadamard_mul_self`: `H * H = 2 ^ b • 1`.
+* `NLAlib.walshHadamard_mul_self`: $\mathbf{H}\mathbf{H} = 2^b \mathbf{I}$.
 * `NLAlib.isHadamard_walshHadamard`.
 * `NLAlib.hasOrthonormalCols_smul_walshHadamard`: the normalised matrix is orthogonal.
 * `NLAlib.sum_walshHadamard_apply`: character sums.
@@ -40,14 +41,14 @@ namespace NLAlib
 
 variable {R : Type*} [Ring R] {b : ℕ}
 
-/-- The **Walsh–Hadamard matrix** of order `2 ^ b`, indexed by bit strings: the entry at `(x, y)`
-is `1` if `x` and `y` share an even number of ones and `-1` otherwise.
-Port of `NLAlib.walshMatrix`, there normalised and over `ℝ`. -/
+/-- The **Walsh–Hadamard matrix** of order $2^b$ over a ring, indexed by bit strings: the entry at
+$(x, y)$ is $1$ if $x$ and $y$ share an even number of ones and $-1$ otherwise.
+Port of `NLAlib.walshMatrix`, there normalised and over $\mathbb{R}$. -/
 def walshHadamard (R : Type*) [Ring R] (b : ℕ) :
     Matrix (Fin b → ZMod 2) (Fin b → ZMod 2) R :=
   Matrix.of fun x y => if ∑ i, x i * y i = 0 then 1 else -1
 
-/-- The sign `(-1) ^ s` of a bit `s`, written with `if`, is multiplicative. -/
+/-- The sign $(-1)^s$ of a bit $s$, written with `if`, is multiplicative. -/
 private theorem ite_add_eq_zero (s t : ZMod 2) :
     (if s + t = 0 then (1 : R) else -1) =
       (if s = 0 then 1 else -1) * (if t = 0 then 1 else -1) := by
@@ -55,7 +56,8 @@ private theorem ite_add_eq_zero (s t : ZMod 2) :
   rcases h s with rfl | rfl <;> rcases h t with rfl | rfl <;>
     simp [show (1 : ZMod 2) + 1 = 0 from by decide]
 
-/-- Entries of the Walsh–Hadamard matrix, unfolded. -/
+/-- Entries of the Walsh–Hadamard matrix, unfolded: $\mathbf{H}_{x,y} = 1$ if
+$\sum_i x_i y_i = 0$ in $\mathbb{Z}/2\mathbb{Z}$, and $-1$ otherwise. -/
 theorem walshHadamard_apply (x y : Fin b → ZMod 2) :
     walshHadamard R b x y = if ∑ i, x i * y i = 0 then 1 else -1 :=
   rfl
@@ -78,15 +80,15 @@ theorem transpose_walshHadamard (b : ℕ) : (walshHadamard R b)ᵀ = walshHadama
   ext x y
   rw [Matrix.transpose_apply, walshHadamard_comm]
 
-/-- The entries are characters: `H (x + z) y = H x y * H z y`.
+/-- The entries are characters: $\mathbf{H}_{x+z,\,y} = \mathbf{H}_{x,y} \mathbf{H}_{z,y}$.
 Port of `NLAlib.walshCharacter_add_left`. -/
 theorem walshHadamard_add_apply (x z y : Fin b → ZMod 2) :
     walshHadamard R b (x + z) y = walshHadamard R b x y * walshHadamard R b z y := by
   simp only [walshHadamard_apply, Pi.add_apply, add_mul, Finset.sum_add_distrib]
   exact ite_add_eq_zero _ _
 
-/-- **Character sums**: a row of the Walsh–Hadamard matrix sums to `2 ^ b` for the zero string
-and to `0` otherwise. Port of `NLAlib.sum_walshCharacter`. -/
+/-- **Character sums**: a row of the Walsh–Hadamard matrix sums to $2^b$ for the zero string
+and to $0$ otherwise. Port of `NLAlib.sum_walshCharacter`. -/
 theorem sum_walshHadamard_apply (x : Fin b → ZMod 2) :
     ∑ y, walshHadamard R b x y = if x = 0 then (2 : R) ^ b else 0 := by
   split_ifs with hx
@@ -106,7 +108,8 @@ theorem sum_walshHadamard_apply (x : Fin b → ZMod 2) :
     · ext j
       simp only [Pi.add_apply, add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
-/-- **`H * H = 2 ^ b • 1`.** Port of `NLAlib.walshMatrix_mul_self`. -/
+/-- **The Walsh–Hadamard matrix squares to a multiple of the identity**:
+$\mathbf{H}\mathbf{H} = 2^b \mathbf{I}$. Port of `NLAlib.walshMatrix_mul_self`. -/
 theorem walshHadamard_mul_self (b : ℕ) :
     walshHadamard R b * walshHadamard R b = (2 : R) ^ b • (1 : Matrix _ _ R) := by
   ext x z
@@ -140,7 +143,8 @@ theorem isHadamard_walshHadamard [StarRing R] (b : ℕ) : (walshHadamard R b).Is
   · rw [hH, hcard, walshHadamard_mul_self]
   · rw [hH, hcard, walshHadamard_mul_self]
 
-/-- **The normalised Walsh–Hadamard matrix is orthogonal.**
+/-- **The normalised Walsh–Hadamard matrix is orthogonal**: over any `RCLike` field,
+$2^{-b/2} \mathbf{H}$ has orthonormal columns.
 Port of `NLAlib.walshMatrix_transpose_mul_self`. -/
 theorem hasOrthonormalCols_smul_walshHadamard {𝕜 : Type*} [RCLike 𝕜] (b : ℕ) :
     HasOrthonormalCols (((√((2 : ℝ) ^ b))⁻¹ : ℝ) • walshHadamard 𝕜 b) := by
@@ -151,7 +155,8 @@ theorem hasOrthonormalCols_smul_walshHadamard {𝕜 : Type*} [RCLike 𝕜] (b : 
     show ((2 : 𝕜) ^ b) = (((2 : ℝ) ^ b : ℝ) : 𝕜) by push_cast; rfl,
     ← RCLike.real_smul_eq_coe_smul, smul_smul, hc, one_smul]
 
-/-- The entries of the normalised Walsh–Hadamard matrix all have modulus `2 ^ (-b / 2)`.
+/-- The entries of the normalised Walsh–Hadamard matrix all have modulus $2^{-b/2}$:
+$\lvert (2^{-b/2} \mathbf{H})_{x,y} \rvert^2 = 2^{-b}$.
 Port of `NLAlib.walshMatrix_apply_sq`. -/
 theorem norm_smul_walshHadamard_apply {𝕜 : Type*} [RCLike 𝕜] (x y : Fin b → ZMod 2) :
     ‖(((√((2 : ℝ) ^ b))⁻¹ : ℝ) • walshHadamard 𝕜 b) x y‖ ^ 2 = ((2 : ℝ) ^ b)⁻¹ := by

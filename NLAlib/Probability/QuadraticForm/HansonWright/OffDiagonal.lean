@@ -11,19 +11,22 @@ public import NLAlib.Probability.SubExponential.Basic
 /-!
 # The off-diagonal part of a quadratic form in independent sub-Gaussian coordinates
 
-For a random vector `X` with independent coordinates, each sub-Gaussian with proxy `c`, and a
-real matrix `A`, the off-diagonal chaos `∑_{i ≠ j} A i j X i X j`, written
-`quadForm (A - diagonal (diag A)) X`, is sub-exponential with variance proxy `18 c² ‖A‖_F²` and
-scale `12 c ‖A‖`.
+For a real random vector $\mathbf{x}$ with independent coordinates, each sub-Gaussian with proxy
+$c$, and a real square matrix $\mathbf{A}$, the off-diagonal chaos
+$\sum_{i \ne j} \mathbf{A}_{i,j} \mathbf{x}_i \mathbf{x}_j$, written
+`quadForm (A - diagonal (diag A)) x`, is sub-exponential with variance proxy
+$18 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and scale $12 c \|\mathbf{A}\|_2$.
 
-The proof decouples by random cuts. For `δ : n → Bool`, the cut of `A` keeps the entries `A i j`
-with `δ i` and `¬ δ j`; averaged over all `δ`, a pair `i ≠ j` is kept with frequency `1/4`, so the
-off-diagonal form is four times the average of the cut forms and, by convexity,
-`exp (l O) ≤ avg_δ exp (4 l O_δ)`. A cut form pairs the coordinates in `δ` with the coordinates
-outside it, which are independent of them, so its moment generating function is that of the
-decoupled form `X ⬝ᵥ A_δ X'` with `X'` an independent copy. Conditioning on `X`, the linear form in
-`X'` gives `exp (c λ² ‖A_δᵀ X‖² / 2)`, and `NLAlib.lintegral_exp_mul_norm_mulVec_sq_le` bounds its
-mean.
+The proof decouples by random cuts. For `δ : n → Bool`, the cut $\mathbf{A}_\delta$ of
+$\mathbf{A}$ keeps the entries $\mathbf{A}_{i,j}$ with $\delta(i)$ true and $\delta(j)$ false;
+averaged over all $\delta$, a pair $i \ne j$ is kept with frequency $1/4$, so the off-diagonal form
+$O$ is four times the average of the cut forms $O_\delta$ and, by convexity,
+$e^{l O} \le \operatorname{avg}_\delta e^{4 l O_\delta}$. A cut form pairs the coordinates in
+$\delta$ with the coordinates outside it, which are independent of them, so its moment generating
+function is that of the decoupled form $\langle \mathbf{x}, \mathbf{A}_\delta \mathbf{x}' \rangle$
+with $\mathbf{x}'$ an independent copy. Conditioning on $\mathbf{x}$, the linear form in
+$\mathbf{x}'$ gives $e^{c \lambda^2 \|\mathbf{A}_\delta^{\mathsf{T}}\mathbf{x}\|^2 / 2}$, and
+`NLAlib.lintegral_exp_mul_norm_mulVec_sq_le` bounds its mean.
 
 ## Main results
 
@@ -43,11 +46,12 @@ open scoped NNReal ENNReal Matrix
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
-  {X : Ω → n → ℝ} {c : ℝ≥0}
+  {x : Ω → n → ℝ} {c : ℝ≥0}
 
 /-! ### Cuts of a matrix -/
 
-/-- The cut of `A` along `δ`: the entries `A i j` with `δ i` and `¬ δ j`, and `0` elsewhere. -/
+/-- The cut of $\mathbf{A}$ along $\delta$: the entries $\mathbf{A}_{i,j}$ with $\delta(i)$ true
+and $\delta(j)$ false, and $0$ elsewhere. -/
 private def cut (A : Matrix n n ℝ) (δ : n → Bool) : Matrix n n ℝ :=
   Matrix.of fun i j => if δ i = true ∧ δ j = false then A i j else 0
 
@@ -87,7 +91,9 @@ private lemma frobNorm_cut_sq_le (A : Matrix n n ℝ) (δ : n → Bool) :
 
 /-! ### The average over cuts -/
 
-/-- A pair `i ≠ j` is cut with frequency `1/4`, and a pair `i = i` never. -/
+/-- A pair $i \ne j$ is cut with frequency $1/4$, and a pair $(i, i)$ never: the sum over all
+$\delta$ of $2^{-\lvert n\rvert}$ times the indicator of $\delta(i) \wedge \neg\delta(j)$ is $0$ if
+$i = j$ and $1/4$ otherwise. -/
 private lemma sum_cut_weight [DecidableEq n] (i j : n) :
     ∑ δ : n → Bool, (1 / 2 : ℝ) ^ Fintype.card n *
       (if δ i = true ∧ δ j = false then 1 else 0) = if i = j then 0 else 1 / 4 := by
@@ -119,7 +125,9 @@ private lemma sum_cut_weight [DecidableEq n] (i j : n) :
   simp only [hsum, Finset.prod_mul_distrib, Finset.prod_ite_eq', Finset.mem_univ, if_true]
   norm_num
 
-/-- The off-diagonal form is four times the average of the cut forms. -/
+/-- The off-diagonal form is four times the average of the cut forms:
+$\sum_\delta 2^{-\lvert n\rvert}\, \mathbf{x}^{\mathsf{T}}\mathbf{A}_\delta\mathbf{x}
+= \frac14\, \mathbf{x}^{\mathsf{T}}(\mathbf{A} - \operatorname{diag}(\mathbf{A}))\mathbf{x}$. -/
 private lemma sum_quadForm_cut [DecidableEq n] (A : Matrix n n ℝ) (x : n → ℝ) :
     ∑ δ : n → Bool, (1 / 2 : ℝ) ^ Fintype.card n * quadForm (cut A δ) x =
       1 / 4 * quadForm (A - Matrix.diagonal A.diag) x := by
@@ -143,7 +151,8 @@ private lemma sum_quadForm_cut [DecidableEq n] (A : Matrix n n ℝ) (x : n → �
           ring
         · ring
 
-/-- Convexity of `exp` against the average over cuts. -/
+/-- The weights of the average over cuts sum to one: $\sum_\delta 2^{-\lvert n\rvert} = 1$, as
+convexity of $\exp$ against the average over cuts needs. -/
 private lemma sum_weight [DecidableEq n] :
     ∑ _δ : n → Bool, (1 / 2 : ℝ) ^ Fintype.card n = 1 := by
   rw [Finset.sum_const, Finset.card_univ, Fintype.card_fun, Fintype.card_bool, nsmul_eq_mul]
@@ -180,7 +189,9 @@ private lemma continuous_quadForm [Fintype n] (M : Matrix n n ℝ) :
   simp only [quadForm, star_trivial]
   exact continuous_id.dotProduct (continuous_const.matrix_mulVec continuous_id)
 
-/-- For independent `U` and `W`, `E f (U, W) = E_ω E_ω' f (U ω, W ω')`. -/
+/-- For independent $U$ and $W$ under a finite measure,
+$\mathbb{E} f(U, W) = \mathbb{E}_\omega \mathbb{E}_{\omega'} f(U(\omega), W(\omega'))$, as lower
+integrals. -/
 private lemma lintegral_comp_eq_lintegral_lintegral {α β : Type*} [MeasurableSpace α]
     [MeasurableSpace β] [IsFiniteMeasure μ] {U : Ω → α} {W : Ω → β} (hUW : IndepFun U W μ)
     (hU : AEMeasurable U μ) (hW : AEMeasurable W μ) {f : α × β → ℝ≥0∞} (hf : Measurable f) :
@@ -195,7 +206,8 @@ private lemma lintegral_comp_eq_lintegral_lintegral {α β : Type*} [MeasurableS
     _ = ∫⁻ ω, ∫⁻ ω', f (U ω, W ω') ∂μ ∂μ :=
         lintegral_congr fun ω => lintegral_map' (hf.comp measurable_prodMk_left).aemeasurable hW
 
-/-- A cut form only sees the coordinates in `δ` on the left and those outside it on the right. -/
+/-- A cut form only sees the coordinates in $\delta$ on the left and those outside it on the
+right. -/
 private lemma dotProduct_mulVec_cut (A : Matrix n n ℝ) (δ : n → Bool) (x y : n → ℝ) :
     x ⬝ᵥ cut A δ *ᵥ y =
       (fun i => if δ i then x i else 0) ⬝ᵥ cut A δ *ᵥ fun j => if δ j then 0 else y j := by
@@ -204,11 +216,15 @@ private lemma dotProduct_mulVec_cut (A : Matrix n n ℝ) (δ : n → Bool) (x y 
   rcases Bool.eq_false_or_eq_true (δ i) with hi | hi <;>
     rcases Bool.eq_false_or_eq_true (δ j) with hj | hj <;> simp [hi, hj]
 
-/-- The moment generating function of a cut form is that of the decoupled form. -/
-private lemma lintegral_exp_quadForm_cut_eq (hind : iIndepFun (fun i ω => X ω i) μ)
-    (hX : ∀ i, AEMeasurable (fun ω => X ω i) μ) (A : Matrix n n ℝ) (δ : n → Bool) (lam : ℝ) :
-    ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (X ω))) ∂μ =
-      ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (X ω ⬝ᵥ cut A δ *ᵥ X ω'))) ∂μ ∂μ := by
+/-- The moment generating function of a cut form is that of the decoupled form:
+$\mathbb{E} e^{\lambda \mathbf{x}^{\mathsf{T}}\mathbf{A}_\delta\mathbf{x}}
+= \mathbb{E}_\omega \mathbb{E}_{\omega'}
+e^{\lambda \langle \mathbf{x}(\omega), \mathbf{A}_\delta \mathbf{x}(\omega') \rangle}$, as lower
+integrals. -/
+private lemma lintegral_exp_quadForm_cut_eq (hind : iIndepFun (fun i ω => x ω i) μ)
+    (hx : ∀ i, AEMeasurable (fun ω => x ω i) μ) (A : Matrix n n ℝ) (δ : n → Bool) (lam : ℝ) :
+    ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (x ω))) ∂μ =
+      ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (x ω ⬝ᵥ cut A δ *ᵥ x ω'))) ∂μ ∂μ := by
   classical
   have := hind.isProbabilityMeasure
   set S : Finset n := Finset.univ.filter fun i => δ i = true
@@ -217,7 +233,7 @@ private lemma lintegral_exp_quadForm_cut_eq (hind : iIndepFun (fun i ω => X ω 
     rw [Finset.disjoint_filter]
     intro i _ h
     simp [h]
-  have hind' := hind.indepFun_finset₀ S T hST hX
+  have hind' := hind.indepFun_finset₀ S T hST hx
   set eS : (S → ℝ) → n → ℝ := fun y i => if hi : i ∈ S then y ⟨i, hi⟩ else 0
   set eT : (T → ℝ) → n → ℝ := fun y i => if hi : i ∈ T then y ⟨i, hi⟩ else 0
   have hmS : Measurable eS := measurable_pi_lambda _ fun i => by
@@ -232,23 +248,23 @@ private lemma lintegral_exp_quadForm_cut_eq (hind : iIndepFun (fun i ω => X ω 
       exact measurable_pi_apply _
     · simp only [eT, hi, dite_false]
       exact measurable_const
-  have hUW := hind'.comp hmS hmT
-  set U : Ω → n → ℝ := eS ∘ fun ω (i : S) => X ω i
-  set W : Ω → n → ℝ := eT ∘ fun ω (i : T) => X ω i
-  have hU : ∀ ω, U ω = fun i => if δ i then X ω i else 0 := by
+  have huw := hind'.comp hmS hmT
+  set u : Ω → n → ℝ := eS ∘ fun ω (i : S) => x ω i
+  set w : Ω → n → ℝ := eT ∘ fun ω (i : T) => x ω i
+  have hu : ∀ ω, u ω = fun i => if δ i then x ω i else 0 := by
     intro ω
     ext i
-    by_cases h : δ i <;> simp [U, eS, S, h]
-  have hW : ∀ ω, W ω = fun j => if δ j then 0 else X ω j := by
+    by_cases h : δ i <;> simp [u, eS, S, h]
+  have hw : ∀ ω, w ω = fun j => if δ j then 0 else x ω j := by
     intro ω
     ext j
-    by_cases h : δ j <;> simp [W, eT, T, h]
-  have hXm : AEMeasurable X μ := aemeasurable_pi_lambda _ hX
-  have hUm : AEMeasurable U μ := by
-    have h' := hmS.comp_aemeasurable (aemeasurable_pi_lambda _ fun (i : S) => hX i)
+    by_cases h : δ j <;> simp [w, eT, T, h]
+  have hxm : AEMeasurable x μ := aemeasurable_pi_lambda _ hx
+  have hum : AEMeasurable u μ := by
+    have h' := hmS.comp_aemeasurable (aemeasurable_pi_lambda _ fun (i : S) => hx i)
     exact h'
-  have hWm : AEMeasurable W μ := by
-    have h' := hmT.comp_aemeasurable (aemeasurable_pi_lambda _ fun (i : T) => hX i)
+  have hwm : AEMeasurable w μ := by
+    have h' := hmT.comp_aemeasurable (aemeasurable_pi_lambda _ fun (i : T) => hx i)
     exact h'
   have hc : Continuous fun p : (n → ℝ) × (n → ℝ) => rexp (lam * (p.1 ⬝ᵥ cut A δ *ᵥ p.2)) :=
     (continuous_const.mul (continuous_fst.dotProduct
@@ -256,27 +272,30 @@ private lemma lintegral_exp_quadForm_cut_eq (hind : iIndepFun (fun i ω => X ω 
   have hf : Measurable fun p : (n → ℝ) × (n → ℝ) =>
       ENNReal.ofReal (rexp (lam * (p.1 ⬝ᵥ cut A δ *ᵥ p.2))) :=
     ENNReal.measurable_ofReal.comp hc.measurable
-  have key := lintegral_comp_eq_lintegral_lintegral hUW hUm hWm hf
-  calc ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (X ω))) ∂μ
-      = ∫⁻ ω, ENNReal.ofReal (rexp (lam * (U ω ⬝ᵥ cut A δ *ᵥ W ω))) ∂μ := by
+  have key := lintegral_comp_eq_lintegral_lintegral huw hum hwm hf
+  calc ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (x ω))) ∂μ
+      = ∫⁻ ω, ENNReal.ofReal (rexp (lam * (u ω ⬝ᵥ cut A δ *ᵥ w ω))) ∂μ := by
         refine lintegral_congr fun ω => ?_
-        rw [hU, hW, ← dotProduct_mulVec_cut, quadForm, star_trivial]
-    _ = ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (U ω ⬝ᵥ cut A δ *ᵥ W ω'))) ∂μ ∂μ := key
-    _ = ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (X ω ⬝ᵥ cut A δ *ᵥ X ω'))) ∂μ ∂μ := by
+        rw [hu, hw, ← dotProduct_mulVec_cut, quadForm, star_trivial]
+    _ = ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (u ω ⬝ᵥ cut A δ *ᵥ w ω'))) ∂μ ∂μ := key
+    _ = ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (x ω ⬝ᵥ cut A δ *ᵥ x ω'))) ∂μ ∂μ := by
         refine lintegral_congr fun ω => lintegral_congr fun ω' => ?_
-        rw [hU, hW, ← dotProduct_mulVec_cut]
+        rw [hu, hw, ← dotProduct_mulVec_cut]
 
-/-- The moment generating function of a cut form. -/
-private lemma lintegral_exp_quadForm_cut_le (hind : iIndepFun (fun i ω => X ω i) μ)
-    (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ) (A : Matrix n n ℝ) (δ : n → Bool)
+/-- The moment generating function of a cut form: if
+$9 c^2 \lambda^2 \|\mathbf{A}\|_2^2 \le 1$, then
+$\mathbb{E} e^{\lambda \mathbf{x}^{\mathsf{T}}\mathbf{A}_\delta\mathbf{x}}
+\le e^{9 c^2 \lambda^2 \|\mathbf{A}\|_{\mathsf{F}}^2 / 16}$. -/
+private lemma lintegral_exp_quadForm_cut_le (hind : iIndepFun (fun i ω => x ω i) μ)
+    (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) (δ : n → Bool)
     {lam : ℝ} (hlam : 9 * (c ^ 2 * lam ^ 2 * specNorm A ^ 2) ≤ 1) :
-    ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (X ω))) ∂μ ≤
+    ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (x ω))) ∂μ ≤
       ENNReal.ofReal (rexp (9 / 16 * (c ^ 2 * lam ^ 2 * frobNorm A ^ 2))) := by
   rw [lintegral_exp_quadForm_cut_eq hind (fun i => (h i).aemeasurable) A δ lam]
-  have hinner : ∀ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (X ω ⬝ᵥ cut A δ *ᵥ X ω'))) ∂μ ≤
-      ENNReal.ofReal (rexp (c * lam ^ 2 / 2 * ‖WithLp.toLp 2 ((cut A δ)ᵀ *ᵥ X ω)‖ ^ 2)) := by
+  have hinner : ∀ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (x ω ⬝ᵥ cut A δ *ᵥ x ω'))) ∂μ ≤
+      ENNReal.ofReal (rexp (c * lam ^ 2 / 2 * ‖WithLp.toLp 2 ((cut A δ)ᵀ *ᵥ x ω)‖ ^ 2)) := by
     intro ω
-    have heq : ∀ ω', X ω ⬝ᵥ cut A δ *ᵥ X ω' = ((cut A δ)ᵀ *ᵥ X ω) ⬝ᵥ X ω' := fun ω' => by
+    have heq : ∀ ω', x ω ⬝ᵥ cut A δ *ᵥ x ω' = ((cut A δ)ᵀ *ᵥ x ω) ⬝ᵥ x ω' := fun ω' => by
       rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose]
     simp only [heq]
     refine (lintegral_exp_mul_dotProduct_le hind h _ lam).trans (le_of_eq ?_)
@@ -290,8 +309,8 @@ private lemma lintegral_exp_quadForm_cut_le (hind : iIndepFun (fun i ω => X ω 
     have h2 : specNorm (cut A δ) ^ 2 ≤ specNorm A ^ 2 :=
       pow_le_pow_left₀ (specNorm_nonneg _) hS 2
     nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ c ^ 2 * lam ^ 2)]
-  calc ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (X ω ⬝ᵥ cut A δ *ᵥ X ω'))) ∂μ ∂μ
-      ≤ ∫⁻ ω, ENNReal.ofReal (rexp (c * lam ^ 2 / 2 * ‖WithLp.toLp 2 ((cut A δ)ᵀ *ᵥ X ω)‖ ^ 2))
+  calc ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (x ω ⬝ᵥ cut A δ *ᵥ x ω'))) ∂μ ∂μ
+      ≤ ∫⁻ ω, ENNReal.ofReal (rexp (c * lam ^ 2 / 2 * ‖WithLp.toLp 2 ((cut A δ)ᵀ *ᵥ x ω)‖ ^ 2))
           ∂μ := lintegral_mono hinner
     _ ≤ ENNReal.ofReal (rexp (9 / 8 * (c * (c * lam ^ 2 / 2) * frobNorm (cut A δ)ᵀ ^ 2))) :=
         lintegral_exp_mul_norm_mulVec_sq_le hind h _ (by positivity) hsmall
@@ -300,11 +319,14 @@ private lemma lintegral_exp_quadForm_cut_le (hind : iIndepFun (fun i ω => X ω 
         rw [frobNorm_transpose]
         nlinarith [mul_le_mul_of_nonneg_left hF (by positivity : (0 : ℝ) ≤ c ^ 2 * lam ^ 2)]
 
-/-- The moment generating function of the off-diagonal form, by the average over cuts. -/
+/-- The moment generating function of the off-diagonal form, by the average over cuts: if
+$12 c \|\mathbf{A}\|_2 \lvert l\rvert \le 1$, then
+$\mathbb{E} e^{l \mathbf{x}^{\mathsf{T}}(\mathbf{A} - \operatorname{diag}(\mathbf{A}))\mathbf{x}}
+\le e^{9 c^2 l^2 \|\mathbf{A}\|_{\mathsf{F}}^2}$. -/
 private lemma lintegral_exp_quadForm_sub_diagonal_le [DecidableEq n]
-    (hind : iIndepFun (fun i ω => X ω i) μ) (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ)
+    (hind : iIndepFun (fun i ω => x ω i) μ) (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ)
     (A : Matrix n n ℝ) {l : ℝ} (hl : 12 * (c * specNorm A * |l|) ≤ 1) :
-    ∫⁻ ω, ENNReal.ofReal (rexp (l * quadForm (A - Matrix.diagonal A.diag) (X ω))) ∂μ ≤
+    ∫⁻ ω, ENNReal.ofReal (rexp (l * quadForm (A - Matrix.diagonal A.diag) (x ω))) ∂μ ≤
       ENNReal.ofReal (rexp (9 * (c ^ 2 * l ^ 2 * frobNorm A ^ 2))) := by
   set w : ℝ := (1 / 2 : ℝ) ^ Fintype.card n
   set B := ENNReal.ofReal (rexp (9 * (c ^ 2 * l ^ 2 * frobNorm A ^ 2)))
@@ -316,32 +338,32 @@ private lemma lintegral_exp_quadForm_sub_diagonal_le [DecidableEq n]
           rw [mul_pow, mul_pow, mul_pow, sq_abs]
           ring
       _ ≤ 1 := h1
-  have hcut : ∀ δ, ∫⁻ ω, ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (X ω))) ∂μ ≤ B := by
+  have hcut : ∀ δ, ∫⁻ ω, ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (x ω))) ∂μ ≤ B := by
     intro δ
     refine (lintegral_exp_quadForm_cut_le hind h A δ hlam).trans (le_of_eq ?_)
     congr 2
     ring
-  have hXm : AEMeasurable X μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
+  have hxm : AEMeasurable x μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
   have hmeas : ∀ δ, AEMeasurable
-      (fun ω => ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (X ω)))) μ := by
+      (fun ω => ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (x ω)))) μ := by
     intro δ
-    have hc : Measurable fun x : n → ℝ => ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) x)) :=
+    have hc : Measurable fun v : n → ℝ => ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) v)) :=
       ENNReal.measurable_ofReal.comp
         ((continuous_const.mul (continuous_quadForm _)).rexp).measurable
-    have h' := hc.comp_aemeasurable hXm
+    have h' := hc.comp_aemeasurable hxm
     exact h'
-  calc ∫⁻ ω, ENNReal.ofReal (rexp (l * quadForm (A - Matrix.diagonal A.diag) (X ω))) ∂μ
+  calc ∫⁻ ω, ENNReal.ofReal (rexp (l * quadForm (A - Matrix.diagonal A.diag) (x ω))) ∂μ
       ≤ ∫⁻ ω, ∑ δ : n → Bool, ENNReal.ofReal w *
-          ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (X ω))) ∂μ := by
+          ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (x ω))) ∂μ := by
         refine lintegral_mono fun ω => ?_
-        calc ENNReal.ofReal (rexp (l * quadForm (A - Matrix.diagonal A.diag) (X ω)))
-            ≤ ENNReal.ofReal (∑ δ : n → Bool, w * rexp (4 * l * quadForm (cut A δ) (X ω))) :=
-              ENNReal.ofReal_le_ofReal (exp_mul_quadForm_sub_diagonal_le A l (X ω))
+        calc ENNReal.ofReal (rexp (l * quadForm (A - Matrix.diagonal A.diag) (x ω)))
+            ≤ ENNReal.ofReal (∑ δ : n → Bool, w * rexp (4 * l * quadForm (cut A δ) (x ω))) :=
+              ENNReal.ofReal_le_ofReal (exp_mul_quadForm_sub_diagonal_le A l (x ω))
           _ = _ := by
               rw [ENNReal.ofReal_sum_of_nonneg fun δ _ => by positivity]
               exact Finset.sum_congr rfl fun δ _ => ENNReal.ofReal_mul hw0
     _ = ∑ δ : n → Bool, ENNReal.ofReal w *
-          ∫⁻ ω, ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (X ω))) ∂μ := by
+          ∫⁻ ω, ENNReal.ofReal (rexp (4 * l * quadForm (cut A δ) (x ω))) ∂μ := by
         rw [lintegral_finsetSum' _ fun δ _ => (hmeas δ).const_mul _]
         exact Finset.sum_congr rfl fun δ _ => lintegral_const_mul' _ _ ENNReal.ofReal_ne_top
     _ ≤ ∑ _δ : n → Bool, ENNReal.ofReal w * B := by
@@ -367,20 +389,22 @@ private lemma hasSubexponentialMGF_of_lintegral_le {Y : Ω → ℝ} {v b : ℝ�
   rw [mgf, integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => (exp_pos _).le) (hm l)]
   exact ENNReal.toReal_le_of_le_ofReal (exp_pos _).le (h l hl)
 
-/-- The off-diagonal part of a quadratic form in independent coordinates, each sub-Gaussian with
-proxy `c`, is sub-exponential with variance proxy `18 c² ‖A‖_F²` and scale `12 c ‖A‖`. The
-off-diagonal part `∑_{i ≠ j} A i j X i X j` is written `quadForm (A - diagonal (diag A)) X`; the
-norms are those of `A` itself. This is the off-diagonal step of the Hanson–Wright inequality
-([Vershynin2018], proof of Theorem 6.2.1), with the decoupling constant `4` of the random cuts
-and explicit constants in place of the source's unspecified ones. -/
+/-- The off-diagonal part of a quadratic form in independent real coordinates, each sub-Gaussian
+with proxy $c$, is sub-exponential with variance proxy $18 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and
+scale $12 c \|\mathbf{A}\|_2$. The off-diagonal part
+$\sum_{i \ne j} \mathbf{A}_{i,j} \mathbf{x}_i \mathbf{x}_j$ is written
+`quadForm (A - diagonal (diag A)) x`; the norms are those of $\mathbf{A}$ itself.
+[Vershynin2018, proof of Theorem 6.2.1]; the off-diagonal step of the Hanson–Wright inequality,
+with the decoupling constant $4$ of the random cuts and explicit constants in place of the
+source's unspecified ones. -/
 theorem hasSubexponentialMGF_quadForm_sub_diagonal [DecidableEq n]
-    (hind : iIndepFun (fun i ω => X ω i) μ) (h : ∀ i, HasSubgaussianMGF (fun ω => X ω i) c μ)
+    (hind : iIndepFun (fun i ω => x ω i) μ) (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ)
     (A : Matrix n n ℝ) :
-    HasSubexponentialMGF (fun ω => quadForm (A - Matrix.diagonal A.diag) (X ω))
+    HasSubexponentialMGF (fun ω => quadForm (A - Matrix.diagonal A.diag) (x ω))
       (18 * c ^ 2 * (frobNorm A).toNNReal ^ 2) (12 * c * (specNorm A).toNNReal) μ := by
-  have hXm : AEMeasurable X μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
-  have hY : AEMeasurable (fun ω => quadForm (A - Matrix.diagonal A.diag) (X ω)) μ := by
-    have h' := (continuous_quadForm (A - Matrix.diagonal A.diag)).measurable.comp_aemeasurable hXm
+  have hxm : AEMeasurable x μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
+  have hY : AEMeasurable (fun ω => quadForm (A - Matrix.diagonal A.diag) (x ω)) μ := by
+    have h' := (continuous_quadForm (A - Matrix.diagonal A.diag)).measurable.comp_aemeasurable hxm
     exact h'
   refine hasSubexponentialMGF_of_lintegral_le hY fun l hl => ?_
   have hb : ((12 * c * (specNorm A).toNNReal : ℝ≥0) : ℝ) = 12 * c * specNorm A := by

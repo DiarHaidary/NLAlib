@@ -14,8 +14,8 @@ Run from the repository root after `lake build NLAlib`:
 `explore-data.json`. `scripts/explore_data.sh` wraps it and stamps the commit.
 
 Not part of the library: structure constructors and projections, recursors, equation lemmas,
-matchers, `_proof_N` and other auxiliary constants, private declarations, and instances that have
-neither a docstring nor a user-chosen name (`instFoo…`). References to constructors,
+matchers, `_proof_N` and other auxiliary constants, private and deprecated declarations, and
+instances that have neither a docstring nor a user-chosen name (`instFoo…`). References to constructors,
 projections, recursors, equation lemmas and matchers count as references to their parent; the
 other excluded constants are expanded into whatever they themselves reference. -/
 
@@ -65,9 +65,11 @@ def structuralParent? (env : Environment) (n : Name) : Option Name :=
         if generatedSuffixes.contains s || Meta.isEqnReservedNameSuffix s then some p else none
       | _ => none
 
-/-- Whether a library constant is an auxiliary one that is never shown. -/
+/-- Whether a library constant is an auxiliary one that is never shown. A deprecated alias is
+one: a reference to it counts as one to whatever it unfolds to. -/
 def isAuxiliary (env : Environment) (n : Name) : Bool :=
-  isPrivateName n || n.isInternal || n.isInternalDetail || (structuralParent? env n).isSome
+  isPrivateName n || n.isInternal || n.isInternalDetail || (structuralParent? env n).isSome ||
+    Linter.isDeprecated env n
 
 /-- The constants an inductive's definition mentions: its constructors' types. -/
 def ctorTypes (env : Environment) (ctors : List Name) : Array Expr :=

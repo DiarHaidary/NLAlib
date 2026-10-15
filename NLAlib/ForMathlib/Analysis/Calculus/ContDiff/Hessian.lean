@@ -13,10 +13,11 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 /-!
 # Coordinate gradients, second derivatives and bounded Hessians
 
-A function of class `C²` whose second derivative is bounded by `C` has a derivative of linear
-growth and values of quadratic growth. On `ι → ℝ`, a function given with a coordinate gradient
-`g` whose coordinates have continuous gradients `H` is of class `C²`, its second derivative is
-`(v, w) ↦ ∑ᵢⱼ Hᵢⱼ vⱼ wᵢ`, and a bound on the entries of `H` bounds the second derivative. These
+A function of class $C^2$ whose second derivative is bounded by $C$ has a derivative of linear
+growth and values of quadratic growth. On $\mathbb{R}^{\iota}$, a function given with a coordinate
+gradient $g$ whose coordinates have continuous gradients $H$ is of class $C^2$, its second
+derivative is $(\mathbf{v}, \mathbf{w}) \mapsto \sum_{i,j} H_{i,j} \mathbf{v}_j \mathbf{w}_i$,
+and a bound on the entries of $H$ bounds the second derivative. These
 are the regularity facts behind Gaussian interpolation arguments, whose test functions (soft
 maxima) are given by explicit gradients; the coordinate forms of the product, inverse, logarithm,
 sum and exponential rules compute those gradients. Upstream candidates for
@@ -24,14 +25,16 @@ sum and exponential rules compute those gradients. Upstream candidates for
 
 ## Main results
 
-* `NLAlib.norm_fderiv_le_of_norm_iteratedFDeriv_two_le`: `‖D f x‖ ≤ ‖D f 0‖ + C ‖x‖`.
-* `NLAlib.norm_sub_le_of_norm_iteratedFDeriv_two_le`: `‖f x - f 0‖ ≤ ‖D f 0‖ ‖x‖ + C ‖x‖²`.
-* `NLAlib.contDiff_two_of_hasFDerivAt_sum_smul_proj`: explicit gradients give `C²`.
+* `NLAlib.norm_fderiv_le_of_norm_iteratedFDeriv_two_le`: $\|Df(x)\| \le \|Df(0)\| + C \|x\|$.
+* `NLAlib.norm_sub_le_of_norm_iteratedFDeriv_two_le`:
+  $\|f(x) - f(0)\| \le \|Df(0)\| \|x\| + C \|x\|^2$.
+* `NLAlib.contDiff_two_of_hasFDerivAt_sum_smul_proj`: explicit gradients give $C^2$.
 * `NLAlib.fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj`: the second derivative in
   coordinates.
-* `NLAlib.norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj`: `‖D² f x‖ ≤ |ι|² K` when
-  `|Hᵢⱼ| ≤ K`.
-* `NLAlib.apply_eq_sum_mul_apply_single`: a linear form on `ι → ℝ` in the standard basis.
+* `NLAlib.norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj`:
+  $\|D^2 f(\mathbf{x})\| \le \lvert \iota \rvert^2 K$ when $\lvert H_{i,j} \rvert \le K$.
+* `NLAlib.apply_eq_sum_mul_apply_single`: a linear form on $\mathbb{R}^{\iota}$ in the standard
+  basis.
 * `HasFDerivAt.mul_sum_smul_proj` and its companions: calculus rules for coordinate gradients.
 -/
 
@@ -44,8 +47,8 @@ section Bounded
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F] {f : E → F} {C : ℝ}
 
-/-- A second derivative bounded by `C` gives a derivative of linear growth:
-`‖D f x‖ ≤ ‖D f 0‖ + C ‖x‖`. -/
+/-- For $f$ of class $C^2$, a second derivative bounded by $C$ gives a derivative of linear
+growth: $\|Df(x)\| \le \|Df(0)\| + C \|x\|$. -/
 theorem norm_fderiv_le_of_norm_iteratedFDeriv_two_le (hf : ContDiff ℝ 2 f)
     (hC : ∀ x, ‖iteratedFDeriv ℝ 2 f x‖ ≤ C) (x : E) :
     ‖fderiv ℝ f x‖ ≤ ‖fderiv ℝ f 0‖ + C * ‖x‖ := by
@@ -59,8 +62,8 @@ theorem norm_fderiv_le_of_norm_iteratedFDeriv_two_le (hf : ContDiff ℝ 2 f)
   rw [sub_zero] at h
   linarith [norm_le_insert' (fderiv ℝ f x) (fderiv ℝ f 0)]
 
-/-- A second derivative bounded by `C` gives quadratic growth:
-`‖f x - f 0‖ ≤ ‖D f 0‖ ‖x‖ + C ‖x‖²`. -/
+/-- For $f$ of class $C^2$, a second derivative bounded by $C$ gives quadratic growth:
+$\|f(x) - f(0)\| \le \|Df(0)\| \|x\| + C \|x\|^2$. -/
 theorem norm_sub_le_of_norm_iteratedFDeriv_two_le (hf : ContDiff ℝ 2 f)
     (hC : ∀ x, ‖iteratedFDeriv ℝ 2 f x‖ ≤ C) (x : E) :
     ‖f x - f 0‖ ≤ ‖fderiv ℝ f 0‖ * ‖x‖ + C * ‖x‖ ^ 2 := by
@@ -82,7 +85,8 @@ variable {ι : Type*} [Fintype ι]
 
 local notation "PR" j => ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : ι => ℝ) j
 
-/-- A linear form on `ι → ℝ` in the standard basis: `L a = ∑ⱼ aⱼ L eⱼ`. -/
+/-- A linear form on $\mathbb{R}^{\iota}$ in the standard basis:
+$L(\mathbf{a}) = \sum_j \mathbf{a}_j L(\mathbf{e}_j)$. -/
 theorem apply_eq_sum_mul_apply_single [DecidableEq ι] (L : (ι → ℝ) →L[ℝ] ℝ) (a : ι → ℝ) :
     L a = ∑ j, a j * L (Pi.single j 1) := by
   conv_lhs => rw [← Finset.univ_sum_single a]
@@ -93,8 +97,9 @@ theorem apply_eq_sum_mul_apply_single [DecidableEq ι] (L : (ι → ℝ) →L[�
 
 variable {f : (ι → ℝ) → ℝ} {g : ι → (ι → ℝ) → ℝ} {H : ι → ι → (ι → ℝ) → ℝ}
 
-/-- A function with coordinate gradient `g` (`D f x = ∑ᵢ gᵢ x • projᵢ`) whose coordinates have
-continuous coordinate gradients `H` is of class `C²`. -/
+/-- A function with coordinate gradient $g$ ($Df(\mathbf{x}) = \sum_i g_i(\mathbf{x}) \pi_i$,
+$\pi_i$ the $i$-th coordinate projection) whose coordinates have continuous coordinate gradients
+$H$ ($Dg_i(\mathbf{x}) = \sum_j H_{i,j}(\mathbf{x}) \pi_j$) is of class $C^2$. -/
 theorem contDiff_two_of_hasFDerivAt_sum_smul_proj (hf : ∀ x, HasFDerivAt f (∑ i, g i x • PR i) x)
     (hg : ∀ i x, HasFDerivAt (g i) (∑ j, H i j x • PR j) x) (hH : ∀ i j, Continuous (H i j)) :
     ContDiff ℝ 2 f := by
@@ -108,7 +113,8 @@ theorem contDiff_two_of_hasFDerivAt_sum_smul_proj (hf : ∀ x, HasFDerivAt f (�
   exact ContDiff.sum fun i _ => (hgc i).smul contDiff_const
 
 /-- The second derivative of a function given by coordinate gradients:
-`D² f x v w = ∑ᵢ (∑ⱼ Hᵢⱼ x vⱼ) wᵢ`. -/
+$D(Df)(\mathbf{x})\,\mathbf{v}\,\mathbf{w}
+= \sum_i \bigl(\sum_j H_{i,j}(\mathbf{x}) \mathbf{v}_j\bigr) \mathbf{w}_i$. -/
 theorem fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj
     (hf : ∀ x, HasFDerivAt f (∑ i, g i x • PR i) x)
     (hg : ∀ i x, HasFDerivAt (g i) (∑ j, H i j x • PR j) x) (x v w : ι → ℝ) :
@@ -118,7 +124,9 @@ theorem fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj
     h.fderiv]
   simp [smul_eq_mul]
 
-/-- A bound `|Hᵢⱼ| ≤ K` on the coordinate Hessian bounds the second derivative by `|ι|² K`. -/
+/-- A bound $\lvert H_{i,j} \rvert \le K$ on the coordinate Hessian bounds the second derivative
+by $\lvert \iota \rvert^2 K$: $\|D^2 f(\mathbf{x})\| \le \lvert \iota \rvert^2 K$, in the operator
+norm for the sup norm of `ι → ℝ`. -/
 theorem norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj
     (hf : ∀ x, HasFDerivAt f (∑ i, g i x • PR i) x)
     (hg : ∀ i x, HasFDerivAt (g i) (∑ j, H i j x • PR j) x) {K : ℝ} (hK0 : 0 ≤ K)
@@ -190,7 +198,7 @@ theorem _root_.HasFDerivAt.sum_sum_smul_proj {κ : Type*} [Fintype κ] {f : κ �
   rw [Finset.sum_comm]
   simp only [Finset.sum_smul]
 
-/-- The coordinate gradient of `y ↦ exp (β yₐ)`. -/
+/-- The coordinate gradient of $\mathbf{y} \mapsto \exp(\beta \mathbf{y}_a)$. -/
 theorem hasFDerivAt_exp_mul_apply_sum_smul_proj [DecidableEq ι] (β : ℝ) (a : ι) (x : ι → ℝ) :
     HasFDerivAt (fun y : ι → ℝ => Real.exp (β * y a))
       (∑ b, (if b = a then β * Real.exp (β * x a) else 0) • PR b) x := by

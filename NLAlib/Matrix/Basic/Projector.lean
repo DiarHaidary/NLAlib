@@ -14,14 +14,15 @@ public import NLAlib.Matrix.Basic.Orthonormal
 /-!
 # Orthogonal projectors
 
-An orthogonal projector is a matrix `P` with `IsStarProjection P` (Mathlib: idempotent and
-self-adjoint). `NLAlib.rangeProjector A` is the orthogonal projector onto the column space
-`LinearMap.range A.mulVecLin` of an arbitrary matrix `A`, of any shape and rank. It depends only
-on that range.
+An orthogonal projector is a matrix $\mathbf{P}$ with `IsStarProjection P` (Mathlib: idempotent
+and self-adjoint). `NLAlib.rangeProjector A`, written $\mathbf{P}_{\mathbf{A}}$, is the orthogonal
+projector onto the column space `LinearMap.range A.mulVecLin` of an arbitrary matrix $\mathbf{A}$,
+of any shape and rank. It depends only on that range.
 
-The projection residual of `A` with respect to `Y` has no definition; it is always written
-`(1 - rangeProjector Y) * A`. The complementary projector `1 - rangeProjector A` is treated in
-`NLAlib.Matrix.Basic.ComplementaryProjector`.
+The projection residual of $\mathbf{A}$ with respect to $\mathbf{Y}$ has no definition; it is
+always written $(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}$, in Lean
+`(1 - rangeProjector Y) * A`. The complementary projector
+$\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is treated in `NLAlib.Matrix.Basic.ComplementaryProjector`.
 
 ## Main definitions
 
@@ -32,9 +33,10 @@ The projection residual of `A` with respect to `Y` has no definition; it is alwa
 * `NLAlib.isStarProjection_rangeProjector`, `NLAlib.rangeProjector_mul_self`,
   `NLAlib.range_mulVecLin_rangeProjector`: the characterising properties.
 * `IsStarProjection.eq_rangeProjector`: uniqueness.
-* `NLAlib.rangeProjector_mul_eq_self_iff`: `rangeProjector B * Y = Y` iff the range of `Y` is
-  inside the range of `B`.
-* `NLAlib.HasOrthonormalCols.rangeProjector_eq`: for orthonormal `Q` the projector is `Q * Qᴴ`.
+* `NLAlib.rangeProjector_mul_eq_self_iff`: $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{Y}$ iff
+  the range of $\mathbf{Y}$ is inside the range of $\mathbf{B}$.
+* `NLAlib.HasOrthonormalCols.rangeProjector_eq`: for $\mathbf{Q}$ with orthonormal columns the
+  projector is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
 * `NLAlib.rangeProjector_eq_mul_inv_mul_conjTranspose`: the full-column-rank formula.
 * `NLAlib.toEuclideanLin_rangeProjector`: the bridge to Mathlib's `Submodule.starProjection`.
 -/
@@ -69,14 +71,16 @@ theorem _root_.IsStarProjection.conjTranspose_eq [Fintype m] {P : Matrix m m �
     (hP : IsStarProjection P) : Pᴴ = P :=
   hP.isHermitian
 
-/-- A star projection is positive semidefinite. Applied to `hP.one_sub`, this gives `P ≤ 1` in
-the Loewner order. -/
+/-- A star projection is positive semidefinite. Applied to `hP.one_sub`, this gives
+$\mathbf{P} \preceq \mathbf{I}$ in the Loewner order. -/
 theorem _root_.IsStarProjection.posSemidef [Fintype m] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) : P.PosSemidef := by
   have h := Matrix.posSemidef_conjTranspose_mul_self P
   rwa [hP.conjTranspose_eq, hP.mul_self] at h
 
-/-- A star projection fixes exactly the matrices whose columns lie in its range. -/
+/-- A star projection fixes exactly the matrices whose columns lie in its range:
+$\mathbf{P}\mathbf{A} = \mathbf{A}$ iff the column space of $\mathbf{A}$ is inside the range of
+$\mathbf{P}$. -/
 theorem _root_.IsStarProjection.mul_eq_self_iff [Fintype m] [Fintype n] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) {A : Matrix m n 𝕜} :
     P * A = A ↔ LinearMap.range A.mulVecLin ≤ LinearMap.range P.mulVecLin := by
@@ -110,7 +114,8 @@ theorem _root_.IsStarProjection.eq_of_range_eq [Fintype m] {P P' : Matrix m m �
   rw [Matrix.conjTranspose_mul, hP.conjTranspose_eq, hP'.conjTranspose_eq, h2] at h3
   exact h3.symm
 
-/-- **Pythagoras** for a star projection: `‖x‖² = ‖P x‖² + ‖(1 - P) x‖²`. -/
+/-- **Pythagoras** for a star projection:
+$\|\mathbf{x}\|^2 = \|\mathbf{P}\mathbf{x}\|^2 + \|(\mathbf{I} - \mathbf{P})\mathbf{x}\|^2$. -/
 theorem _root_.IsStarProjection.norm_toLp_sq_eq_add [Fintype m] [DecidableEq m]
     {P : Matrix m m 𝕜} (hP : IsStarProjection P) (x : m → 𝕜) :
     ‖WithLp.toLp 2 x‖ ^ 2 =
@@ -125,7 +130,8 @@ theorem _root_.IsStarProjection.norm_toLp_sq_eq_add [Fintype m] [DecidableEq m]
   rw [← hx] at h
   rw [sq, sq, sq, h]
 
-/-- A star projection does not increase the Euclidean norm of a vector. -/
+/-- A star projection does not increase the Euclidean norm of a vector:
+$\|\mathbf{P}\mathbf{x}\| \le \|\mathbf{x}\|$. -/
 theorem _root_.IsStarProjection.norm_toLp_mulVec_le [Fintype m] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (x : m → 𝕜) : ‖WithLp.toLp 2 (P *ᵥ x)‖ ≤ ‖WithLp.toLp 2 x‖ := by
   classical
@@ -133,7 +139,8 @@ theorem _root_.IsStarProjection.norm_toLp_mulVec_le [Fintype m] {P : Matrix m m 
   rw [hP.norm_toLp_sq_eq_add x]
   exact le_add_of_nonneg_right (sq_nonneg _)
 
-/-- For `Q` with orthonormal columns, `Q * Qᴴ` is a star projection.
+/-- For $\mathbf{Q}$ with orthonormal columns, $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ is a star
+projection.
 Port of `NLAlib.mul_conjTranspose_mul_mul_conjTranspose`. -/
 theorem HasOrthonormalCols.isStarProjection_mul_conjTranspose [Fintype m] [Fintype n]
     [DecidableEq n] {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
@@ -145,11 +152,13 @@ theorem HasOrthonormalCols.isStarProjection_mul_conjTranspose [Fintype m] [Finty
 /-! ### The range projector -/
 
 open Classical in
-/-- The **orthogonal projector onto the column space** of `A`: the matrix of the orthogonal
-projection of `EuclideanSpace 𝕜 m` onto `LinearMap.range A.mulVecLin`. Defined for every matrix,
-including rank-deficient and empty ones, and equal to `0` for `A = 0`. It depends only on the
-range of `A` (`NLAlib.rangeProjector_inj`); for `Q` with orthonormal columns it is `Q * Qᴴ`
-(`NLAlib.HasOrthonormalCols.rangeProjector_eq`). [GolubVanLoan2013, §2.5.1]. -/
+/-- The **orthogonal projector onto the column space** of $\mathbf{A}$, written
+$\mathbf{P}_{\mathbf{A}}$: the matrix of the orthogonal projection of `EuclideanSpace 𝕜 m` onto
+`LinearMap.range A.mulVecLin`. Defined for every matrix, including rank-deficient and empty ones,
+and equal to $\mathbf{0}$ for $\mathbf{A} = \mathbf{0}$. It depends only on the range of
+$\mathbf{A}$ (`NLAlib.rangeProjector_inj`); for $\mathbf{Q}$ with orthonormal columns it is
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ (`NLAlib.HasOrthonormalCols.rangeProjector_eq`).
+[GolubVanLoan2013, §2.5.1]. -/
 noncomputable def rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) : Matrix m m 𝕜 :=
   LinearMap.toMatrix' <|
     (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).toLinearMap ∘ₗ
@@ -157,7 +166,7 @@ noncomputable def rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
         (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap).starProjection.toLinearMap ∘ₗ
       (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap
 
-/-- The column space of `A` as a subspace of `EuclideanSpace 𝕜 m`. -/
+/-- The column space of $\mathbf{A}$ as a subspace of `EuclideanSpace 𝕜 m`. -/
 private noncomputable abbrev euclideanRange [Fintype n] (A : Matrix m n 𝕜) :
     Submodule 𝕜 (EuclideanSpace 𝕜 m) :=
   (LinearMap.range A.mulVecLin).map (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap
@@ -204,7 +213,7 @@ theorem conjTranspose_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n �
     (rangeProjector A)ᴴ = rangeProjector A :=
   (isStarProjection_rangeProjector A).conjTranspose_eq
 
-/-- The range of the range projector of `A` is the column space of `A`.
+/-- The range of $\mathbf{P}_{\mathbf{A}}$ is the column space of $\mathbf{A}$.
 Port of `NLAlib.range_mulVecLin_rangeProjector`. -/
 theorem range_mulVecLin_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     LinearMap.range (rangeProjector A).mulVecLin = LinearMap.range A.mulVecLin := by
@@ -212,37 +221,42 @@ theorem range_mulVecLin_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n �
   rw [← (isStarProjection_rangeProjector A).mulVec_eq_self_iff,
     rangeProjector_mulVec_eq_self_iff_aux]
 
-/-- The range projector of `A` fixes `A`. Port of `NLAlib.rangeProjector_mul`. -/
+/-- The range projector of $\mathbf{A}$ fixes $\mathbf{A}$:
+$\mathbf{P}_{\mathbf{A}}\mathbf{A} = \mathbf{A}$. Port of `NLAlib.rangeProjector_mul`. -/
 @[simp]
 theorem rangeProjector_mul_self [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     rangeProjector A * A = A :=
   (isStarProjection_rangeProjector A).mul_eq_self_iff.mpr (range_mulVecLin_rangeProjector A).ge
 
-/-- `Aᴴ * rangeProjector A = Aᴴ`. -/
+/-- $\mathbf{A}^{\mathsf{H}}\mathbf{P}_{\mathbf{A}} = \mathbf{A}^{\mathsf{H}}$. -/
 @[simp]
 theorem conjTranspose_mul_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     Aᴴ * rangeProjector A = Aᴴ := by
   have h := congrArg Matrix.conjTranspose (rangeProjector_mul_self A)
   rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector] at h
 
-/-- The range projector of `A` fixes `A *ᵥ y`. -/
+/-- The range projector of $\mathbf{A}$ fixes $\mathbf{A}\mathbf{y}$:
+$\mathbf{P}_{\mathbf{A}}(\mathbf{A}\mathbf{y}) = \mathbf{A}\mathbf{y}$. -/
 theorem rangeProjector_mulVec_mulVec [Fintype m] [Fintype n] (A : Matrix m n 𝕜) (y : n → 𝕜) :
     rangeProjector A *ᵥ (A *ᵥ y) = A *ᵥ y := by
   rw [Matrix.mulVec_mulVec, rangeProjector_mul_self]
 
-/-- The range projector of `B` fixes exactly the vectors in the column space of `B`. -/
+/-- The range projector of $\mathbf{B}$ fixes exactly the vectors in the column space of
+$\mathbf{B}$. -/
 theorem rangeProjector_mulVec_eq_self_iff [Fintype m] [Fintype n] {B : Matrix m n 𝕜}
     {x : m → 𝕜} : rangeProjector B *ᵥ x = x ↔ x ∈ LinearMap.range B.mulVecLin :=
   rangeProjector_mulVec_eq_self_iff_aux
 
-/-- `rangeProjector B * Y = Y` exactly when the column space of `Y` is contained in that of `B`.
+/-- $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{Y}$ exactly when the column space of
+$\mathbf{Y}$ is contained in that of $\mathbf{B}$.
 Port of `NLAlib.rangeProjector_mul_of_range_le`, there one direction. -/
 theorem rangeProjector_mul_eq_self_iff [Fintype m] [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} :
     rangeProjector B * Y = Y ↔ LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin := by
   rw [(isStarProjection_rangeProjector B).mul_eq_self_iff, range_mulVecLin_rangeProjector]
 
-/-- The column space of `Y` is contained in that of `B` exactly when `Y = B * C` for some `C`. -/
+/-- The column space of $\mathbf{Y}$ is contained in that of $\mathbf{B}$ exactly when
+$\mathbf{Y} = \mathbf{B}\mathbf{C}$ for some $\mathbf{C}$. -/
 theorem range_mulVecLin_le_iff_exists_mul [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} :
     LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin ↔ ∃ C : Matrix n p 𝕜, Y = B * C := by
@@ -264,7 +278,8 @@ private theorem exists_rangeProjector_eq_mul [Fintype m] [Fintype n] (A : Matrix
     ∃ C : Matrix n m 𝕜, rangeProjector A = A * C :=
   range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_rangeProjector A).le
 
-/-- `rangeProjector B * Y = 0` exactly when the columns of `Y` are orthogonal to those of `B`. -/
+/-- $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{0}$ exactly when the columns of $\mathbf{Y}$
+are orthogonal to those of $\mathbf{B}$, $\mathbf{B}^{\mathsf{H}}\mathbf{Y} = \mathbf{0}$. -/
 theorem rangeProjector_mul_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} : rangeProjector B * Y = 0 ↔ Bᴴ * Y = 0 := by
   constructor
@@ -275,8 +290,9 @@ theorem rangeProjector_mul_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m n �
     rw [← conjTranspose_rangeProjector, hC, Matrix.conjTranspose_mul, Matrix.mul_assoc, h,
       Matrix.mul_zero]
 
-/-- `rangeProjector B *ᵥ x = 0` exactly when `x` is orthogonal to the columns of `B`. This is the
-vector form of `NLAlib.rangeProjector_mul_eq_zero_iff`. -/
+/-- $\mathbf{P}_{\mathbf{B}}\mathbf{x} = \mathbf{0}$ exactly when $\mathbf{x}$ is orthogonal to
+the columns of $\mathbf{B}$, $\mathbf{B}^{\mathsf{H}}\mathbf{x} = \mathbf{0}$. This is the vector
+form of `NLAlib.rangeProjector_mul_eq_zero_iff`. -/
 theorem rangeProjector_mulVec_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m n 𝕜}
     {x : m → 𝕜} : rangeProjector B *ᵥ x = 0 ↔ Bᴴ *ᵥ x = 0 := by
   constructor
@@ -287,7 +303,7 @@ theorem rangeProjector_mulVec_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m 
     rw [← conjTranspose_rangeProjector, hC, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec, h,
       Matrix.mulVec_zero]
 
-/-- A star projection with the same range as `A` is the range projector of `A`. -/
+/-- A star projection with the same range as $\mathbf{A}$ is $\mathbf{P}_{\mathbf{A}}$. -/
 theorem _root_.IsStarProjection.eq_rangeProjector [Fintype m] [Fintype n] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) {A : Matrix m n 𝕜}
     (h : LinearMap.range P.mulVecLin = LinearMap.range A.mulVecLin) : P = rangeProjector A :=
@@ -299,7 +315,9 @@ theorem _root_.IsStarProjection.rangeProjector_eq [Fintype m] {P : Matrix m m �
     (hP : IsStarProjection P) : rangeProjector P = P :=
   (hP.eq_rangeProjector rfl).symm
 
-/-- The range projector depends only on the column space. -/
+/-- The range projector depends only on the column space:
+$\mathbf{P}_{\mathbf{A}} = \mathbf{P}_{\mathbf{B}}$ iff $\mathbf{A}$ and $\mathbf{B}$ have the same
+column space. -/
 theorem rangeProjector_inj [Fintype m] [Fintype n] [Fintype p] {A : Matrix m n 𝕜}
     {B : Matrix m p 𝕜} :
     rangeProjector A = rangeProjector B ↔
@@ -311,8 +329,10 @@ theorem rangeProjector_inj [Fintype m] [Fintype n] [Fintype p] {A : Matrix m n �
     exact (isStarProjection_rangeProjector A).eq_rangeProjector
       ((range_mulVecLin_rangeProjector A).trans h)
 
-/-- If the column space of `Y` is inside that of `B`, projecting onto `B` after `Y` is projecting
-onto `Y`. Port of `NLAlib.rangeProjector_mul_rangeProjector_of_mul_eq`. -/
+/-- If the column space of $\mathbf{Y}$ is inside that of $\mathbf{B}$, projecting onto
+$\mathbf{B}$ after $\mathbf{Y}$ is projecting onto $\mathbf{Y}$:
+$\mathbf{P}_{\mathbf{B}}\mathbf{P}_{\mathbf{Y}} = \mathbf{P}_{\mathbf{Y}}$.
+Port of `NLAlib.rangeProjector_mul_rangeProjector_of_mul_eq`. -/
 theorem rangeProjector_mul_rangeProjector_of_range_le [Fintype m] [Fintype n] [Fintype p]
     {B : Matrix m n 𝕜} {Y : Matrix m p 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) :
@@ -320,8 +340,9 @@ theorem rangeProjector_mul_rangeProjector_of_range_le [Fintype m] [Fintype n] [F
   rw [rangeProjector_mul_eq_self_iff, range_mulVecLin_rangeProjector]
   exact h
 
-/-- If the column space of `Y` is inside that of `B`, projecting onto `Y` after `B` is projecting
-onto `Y`. -/
+/-- If the column space of $\mathbf{Y}$ is inside that of $\mathbf{B}$, projecting onto
+$\mathbf{Y}$ after $\mathbf{B}$ is projecting onto $\mathbf{Y}$:
+$\mathbf{P}_{\mathbf{Y}}\mathbf{P}_{\mathbf{B}} = \mathbf{P}_{\mathbf{Y}}$. -/
 theorem rangeProjector_mul_rangeProjector_of_range_le' [Fintype m] [Fintype n] [Fintype p]
     {B : Matrix m n 𝕜} {Y : Matrix m p 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) :
@@ -331,7 +352,8 @@ theorem rangeProjector_mul_rangeProjector_of_range_le' [Fintype m] [Fintype n] [
     at h'
 
 /-- The range projector is monotone: a smaller column space gives a smaller projector in the
-Loewner order. -/
+Loewner order, $\mathbf{P}_{\mathbf{Y}} \preceq \mathbf{P}_{\mathbf{B}}$ when the column space of
+$\mathbf{Y}$ is inside that of $\mathbf{B}$. -/
 theorem rangeProjector_mono [Fintype m] [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) :
     rangeProjector Y ≤ rangeProjector B := by
@@ -378,7 +400,7 @@ theorem rangeProjector_mul_of_isUnit [Fintype m] [Fintype n] [DecidableEq n] (A 
   rw [LinearMap.range_eq_top, Matrix.coe_mulVecLin]
   exact Matrix.mulVec_surjective_iff_isUnit.mpr hB
 
-/-- `A * Aᴴ` has the same range projector as `A`. -/
+/-- $\mathbf{A}\mathbf{A}^{\mathsf{H}}$ has the same range projector as $\mathbf{A}$. -/
 @[simp]
 theorem rangeProjector_mul_conjTranspose_self [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     rangeProjector (A * Aᴴ) = rangeProjector A := by
@@ -387,16 +409,20 @@ theorem rangeProjector_mul_conjTranspose_self [Fintype m] [Fintype n] (A : Matri
   rw [Matrix.mulVecLin_mul]
   exact LinearMap.range_comp_le_range _ _
 
-/-- For `Q` with orthonormal columns, the range projector is `Q * Qᴴ`.
+/-- For $\mathbf{Q}$ with orthonormal columns,
+$\mathbf{P}_{\mathbf{Q}} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
 Port of `NLAlib.rangeProjector_eq_mul_conjTranspose_of_hasOrthonormalCols`. -/
 theorem HasOrthonormalCols.rangeProjector_eq [Fintype m] [Fintype n] [DecidableEq n]
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : rangeProjector Q = Q * Qᴴ := by
   rw [← rangeProjector_mul_conjTranspose_self,
     hQ.isStarProjection_mul_conjTranspose.rangeProjector_eq]
 
-/-- With full column rank, the range projector is `A * (Aᴴ * A)⁻¹ * Aᴴ`.
-[GolubVanLoan2013, §5.3.1]; the hypothesis is taken as invertibility of the Gram matrix, which
-`NLAlib.isUnit_conjTranspose_mul_self_iff` converts to and from injectivity of `A.mulVec`.
+/-- With full column rank, the range projector is
+$\mathbf{P}_{\mathbf{A}} =
+\mathbf{A}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\mathbf{A}^{\mathsf{H}}$.
+[GolubVanLoan2013, §5.3.1]; the hypothesis is taken as invertibility of the Gram matrix
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}$, which `NLAlib.isUnit_conjTranspose_mul_self_iff` converts to
+and from injectivity of $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$.
 Port of `NLAlib.rangeProjector_eq_mul_inv_gram_conjTranspose`. -/
 theorem rangeProjector_eq_mul_inv_mul_conjTranspose [Fintype m] [Fintype n] [DecidableEq n]
     {A : Matrix m n 𝕜} (hA : IsUnit (Aᴴ * A)) : rangeProjector A = A * (Aᴴ * A)⁻¹ * Aᴴ := by
@@ -415,7 +441,7 @@ theorem rangeProjector_eq_mul_inv_mul_conjTranspose [Fintype m] [Fintype n] [Dec
     exact range_mulVecLin_le_iff_exists_mul.mpr ⟨_, rfl⟩
   · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨_, hfix.symm⟩
 
-/-- The rank of the range projector of `A` is the rank of `A`.
+/-- $\operatorname{rank} \mathbf{P}_{\mathbf{A}} = \operatorname{rank} \mathbf{A}$.
 Port of `NLAlib.rank_rangeProjector`. -/
 @[simp]
 theorem rank_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :

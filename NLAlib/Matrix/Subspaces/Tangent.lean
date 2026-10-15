@@ -12,14 +12,17 @@ public import NLAlib.Matrix.Subspaces.PrincipalAngles
 /-!
 # Tangents of principal angles and alignment of frames
 
-For a frame `U` (orthonormal columns) and a basis `Y` with the same number of columns, the
-**tangent matrix** `NLAlib.tangentMatrix U Y = (1 - U * Uᴴ) * Y * (Uᴴ * Y)⁻¹` depends only on the
-column space of `Y`, and in the acute case, `IsUnit (Uᴴ * Y)`, its singular values are the
-tangents of the principal angles between the two column spaces. Tangent bounds for subspace
-iterations are statements about this matrix in a norm.
+For a frame $\mathbf{U}$ (orthonormal columns) and a basis $\mathbf{Y}$ with the same number
+of columns, the **tangent matrix** `NLAlib.tangentMatrix U Y`,
+$$(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})
+  \mathbf{Y}(\mathbf{U}^{\mathsf{H}}\mathbf{Y})^{-1},$$
+depends only on the column space of $\mathbf{Y}$, and in the acute case,
+$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ invertible, its singular values are the tangents of the
+principal angles between the two column spaces. Tangent bounds for subspace iterations are
+statements about this matrix in a norm.
 
 Two frames with the same number of columns can be aligned by a unitary factor so that they are
-as close, up to a factor `√2`, as their column spaces.
+as close, up to a factor $\sqrt{2}$, as their column spaces.
 
 ## Main definitions
 
@@ -53,21 +56,26 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n p q : Type*} [Fintype n] [Fintype p] [F
 
 /-! ### The tangent matrix -/
 
-/-- The **tangent matrix** of a basis `Y` relative to a frame `U` with the same number of
-columns: `(1 - U * Uᴴ) * Y * (Uᴴ * Y)⁻¹`. When `U` has orthonormal columns and `Uᴴ * Y` is
-invertible, its singular values are the tangents of the principal angles between the two column
-spaces, and it depends only on the column space of `Y`. It is `0` when `Uᴴ * Y` is singular.
+/-- The **tangent matrix** of a basis $\mathbf{Y}$ relative to a frame $\mathbf{U}$ with the
+same number of columns: $(\mathbf{I} -
+\mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Y}(\mathbf{U}^{\mathsf{H}}\mathbf{Y})^{-1}$. When
+$\mathbf{U}$ has orthonormal columns and $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is invertible, its
+singular values are the tangents of the principal angles between the two column spaces, and it
+depends only on the column space of $\mathbf{Y}$. It is $\mathbf{0}$ when
+$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is singular.
 [GolubVanLoan2013, §8.2.4]; [Saad2011, §5.2].
 Port of `NLAlib.overlapTangentNorm` and `NLAlib.tangentPrincipalAngles`, as a matrix. -/
 noncomputable def tangentMatrix (U Y : Matrix n p 𝕜) : Matrix n p 𝕜 :=
   (1 - U * Uᴴ) * Y * (Uᴴ * Y)⁻¹
 
-/-- The tangent matrix unfolded. -/
+/-- The tangent matrix unfolded: `tangentMatrix U Y` is $(\mathbf{I} -
+\mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Y}(\mathbf{U}^{\mathsf{H}}\mathbf{Y})^{-1}$. -/
 theorem tangentMatrix_def (U Y : Matrix n p 𝕜) :
     tangentMatrix U Y = (1 - U * Uᴴ) * Y * (Uᴴ * Y)⁻¹ :=
   rfl
 
-/-- The tangent matrix does not depend on the basis of the second subspace.
+/-- The tangent matrix does not depend on the basis of the second subspace: replacing
+$\mathbf{Y}$ by $\mathbf{Y}\mathbf{R}$ with $\mathbf{R}$ invertible does not change it.
 Port of `NLAlib.overlapTangentNorm_mul_right`. -/
 @[simp]
 theorem tangentMatrix_mul_right (U Y : Matrix n p 𝕜) {R : Matrix p p 𝕜} (hR : IsUnit R) :
@@ -77,15 +85,18 @@ theorem tangentMatrix_mul_right (U Y : Matrix n p 𝕜) {R : Matrix p p 𝕜} (h
     ← Matrix.mul_assoc _ Y R, Matrix.mul_assoc _ R, ← Matrix.mul_assoc R,
     Matrix.mul_nonsing_inv R hR', Matrix.one_mul]
 
-/-- The tangent matrix vanishes when `Uᴴ * Y` is singular.
+/-- The tangent matrix vanishes when $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is singular.
 Port of `NLAlib.overlapTangentNorm_eq_zero_of_not_isUnit`. -/
 theorem tangentMatrix_of_not_isUnit {U Y : Matrix n p 𝕜} (h : ¬ IsUnit (Uᴴ * Y)) :
     tangentMatrix U Y = 0 := by
   rw [tangentMatrix, Matrix.nonsing_inv_apply_not_isUnit _
     (fun hd => h ((Matrix.isUnit_iff_isUnit_det _).mpr hd)), Matrix.mul_zero]
 
-/-- The tangent matrix in terms of a complement frame: if `U * Uᴴ + W * Wᴴ = 1` with `W`
-orthonormal, then `tangentMatrix U Y` and `Wᴴ * Y * (Uᴴ * Y)⁻¹` have the same singular values.
+/-- The tangent matrix in terms of a complement frame: if
+$\mathbf{U}\mathbf{U}^{\mathsf{H}} + \mathbf{W}\mathbf{W}^{\mathsf{H}} = \mathbf{I}$ with
+$\mathbf{W}$ having orthonormal columns, then the tangent matrix and
+$\mathbf{W}^{\mathsf{H}}\mathbf{Y}(\mathbf{U}^{\mathsf{H}}\mathbf{Y})^{-1}$ have the same singular
+values.
 Port of `NLAlib.overlapTangentNorm_eq_specNorm_transpose_mul_mul`. -/
 theorem singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one [DecidableEq q]
     {U : Matrix n p 𝕜} {W : Matrix n q 𝕜} (hW : HasOrthonormalCols W)
@@ -95,8 +106,9 @@ theorem singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one [Decidab
     singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one hW h]
 
 omit [DecidableEq n] in
-/-- **The acute case for a frame and a basis with the same number of columns**: `Uᴴ * Y` is
-invertible exactly when the largest principal angle is below `π / 2`.
+/-- **The acute case for a frame and a basis with the same number of columns**:
+$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is invertible exactly when the largest principal angle is below
+$\pi / 2$: $\theta_j(\mathbf{U}, \mathbf{Y}) < \pi / 2$ for $j + 1 = \lvert p \rvert$.
 Port of `NLAlib.isUnit_overlap_of_principalAngles_last_lt_pi_div_two`. -/
 theorem HasOrthonormalCols.isUnit_conjTranspose_mul_iff {U : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (Y : Matrix n p 𝕜) {j : ℕ} (hj : j + 1 = Fintype.card p) :
@@ -121,9 +133,11 @@ theorem HasOrthonormalCols.isUnit_conjTranspose_mul_iff {U : Matrix n p 𝕜}
       le_antisymm (Matrix.rank_le_card_width _) (by omega)
     exact Matrix.mulVec_injective_iff_isUnit.mp (mulVec_injective_iff_rank_eq.mpr hr)
 
-/-- **Tangents of the principal angles.** For `U` with orthonormal columns and any `Y` with the
-same number of columns and `Uᴴ * Y` invertible, the singular values of `tangentMatrix U Y` are
-the tangents of the principal angles, in reverse order.
+/-- **Tangents of the principal angles.** For $\mathbf{U}$ with orthonormal columns and any
+$\mathbf{Y}$ with the same number $\lvert p \rvert$ of columns and
+$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ invertible, the singular values of the tangent matrix
+$\mathbf{T}$ are the tangents of the principal angles, in reverse order:
+$\sigma_i(\mathbf{T}) = \tan \theta_j(\mathbf{U}, \mathbf{Y})$ for $i + j + 1 = \lvert p \rvert$.
 [GolubVanLoan2013, §8.2.4 (proof of Theorem 8.2.2)]; [Saad2011, §5.2].
 Port of `NLAlib.tan_principalAngles_sq` and `NLAlib.tanThetaMax_eq_tan_principalAngles`.
 Result: principal-angles -/
@@ -172,7 +186,9 @@ theorem HasOrthonormalCols.singularValues_tangentMatrix {U : Matrix n p 𝕜}
   rw [Real.tan_eq_sin_div_cos, sin_principalAngle, ← NLAlib.cos_principalAngle, hcos, hsin]
   field_simp
 
-/-- The tangent of the largest principal angle as a spectral norm.
+/-- The tangent of the largest principal angle as a spectral norm:
+$\|\mathbf{T}\|_2 = \tan \theta_j(\mathbf{U}, \mathbf{Y})$ for the tangent matrix $\mathbf{T}$,
+$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ invertible and $j + 1 = \lvert p \rvert$.
 Port of `NLAlib.specNorm_tangentPrincipalAngles_eq_tan_last`. -/
 theorem HasOrthonormalCols.specNorm_tangentMatrix {U : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) {Y : Matrix n p 𝕜} (hY : IsUnit (Uᴴ * Y)) {j : ℕ}
@@ -181,9 +197,11 @@ theorem HasOrthonormalCols.specNorm_tangentMatrix {U : Matrix n p 𝕜}
   rw [← singularValues_zero_eq_specNorm]
   exact hU.singularValues_tangentMatrix hY (by omega)
 
-/-- **The tangent matrix of a graph subspace.** If `U` has orthonormal columns and `Uᴴ * W = 0`,
-the tangent matrix of `U + W * F` relative to `U` is `W * F`, for every `F`. When `W` has
-orthonormal columns too, its singular values are those of `F`
+/-- **The tangent matrix of a graph subspace.** If $\mathbf{U}$ has orthonormal columns and
+$\mathbf{U}^{\mathsf{H}}\mathbf{W} = \mathbf{0}$, the tangent matrix of
+$\mathbf{U} + \mathbf{W}\mathbf{F}$ relative to $\mathbf{U}$ is $\mathbf{W}\mathbf{F}$, for every
+$\mathbf{F}$. When $\mathbf{W}$ has orthonormal columns too, its singular values are those of
+$\mathbf{F}$
 (`NLAlib.HasOrthonormalCols.singularValues_eq_tan_principalAngle_add_mul`). [Saad2011, §5.1].
 Port of `NLAlib.subspaceTangent_range_graph_eq_specNorm`. -/
 theorem HasOrthonormalCols.tangentMatrix_add_mul {U : Matrix n p 𝕜} {W : Matrix n q 𝕜}
@@ -196,8 +214,11 @@ theorem HasOrthonormalCols.tangentMatrix_add_mul {U : Matrix n p 𝕜} {W : Matr
     Matrix.mul_assoc, h1, Matrix.mul_one, add_sub_cancel_left]
 
 omit [DecidableEq n] in
-/-- The singular values of `F` are the tangents of the principal angles between the column spaces
-of `U` and of the graph `U + W * F`. [Saad2011, §5.1]. -/
+/-- The singular values of $\mathbf{F}$ are the tangents of the principal angles between the
+column spaces of $\mathbf{U}$ and of the graph $\mathbf{U} + \mathbf{W}\mathbf{F}$, in reverse
+order: $\sigma_i(\mathbf{F}) = \tan \theta_j(\mathbf{U}, \mathbf{U} + \mathbf{W}\mathbf{F})$ for
+$i + j + 1 = \lvert p \rvert$, when $\mathbf{U}$, $\mathbf{W}$ have orthonormal columns and
+$\mathbf{U}^{\mathsf{H}}\mathbf{W} = \mathbf{0}$. [Saad2011, §5.1]. -/
 theorem HasOrthonormalCols.singularValues_eq_tan_principalAngle_add_mul [DecidableEq q]
     {U : Matrix n p 𝕜} {W : Matrix n q 𝕜} (hU : HasOrthonormalCols U)
     (hW : HasOrthonormalCols W) (hUW : Uᴴ * W = 0) (F : Matrix q p 𝕜) {i j : ℕ}
@@ -214,14 +235,17 @@ theorem HasOrthonormalCols.singularValues_eq_tan_principalAngle_add_mul [Decidab
 /-! ### The tangent of the angle from a vector to a subspace -/
 
 /-- **The tangent of the angle from a unit vector to a subspace, bounded by a competitor.** For
-`Q` with orthonormal columns, the tangent of the angle between a unit vector `u` and the column
-space of `Q` is the quotient of `‖(1 - Q * Qᴴ) u‖` and `‖Qᴴ u‖`. If `u + w` lies in that column
-space for some `w` orthogonal to `u`, the tangent is at most `‖w‖`, stated here without the
-division. This is the per-vector form of the tangent bounds for subspace iterations: it needs no
-assumption on the dimension of the column space of `Q`, where
-`NLAlib.HasOrthonormalCols.tangentMatrix_add_mul` compares subspaces of equal dimension.
-Port of `NLAlib.vectorTangentToFrame_le_of_orthogonal_competitor`, there over `ℝ` and as a
-quotient. -/
+$\mathbf{Q}$ with orthonormal columns, the tangent of the angle between a unit vector $\mathbf{u}$
+and the column space of $\mathbf{Q}$ is the quotient of $\|(\mathbf{I} -
+\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{u}\|$ and $\|\mathbf{Q}^{\mathsf{H}}\mathbf{u}\|$. If
+$\mathbf{u} + \mathbf{w}$ lies in that column space for some $\mathbf{w}$ orthogonal to
+$\mathbf{u}$, the tangent is at most $\|\mathbf{w}\|$, stated here without the division:
+$\|(\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{u}\| \le \|\mathbf{w}\| \,
+\|\mathbf{Q}^{\mathsf{H}}\mathbf{u}\|$. This is the per-vector form of the tangent bounds for
+subspace iterations: it needs no assumption on the dimension of the column space of $\mathbf{Q}$,
+where `NLAlib.HasOrthonormalCols.tangentMatrix_add_mul` compares subspaces of equal dimension.
+Port of `NLAlib.vectorTangentToFrame_le_of_orthogonal_competitor`, there over $\mathbb{R}$ and as
+a quotient. -/
 theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_le_mul {Q : Matrix n p 𝕜}
     (hQ : HasOrthonormalCols Q) {u w : n → 𝕜} (hu : ‖WithLp.toLp 2 u‖ = 1)
     (huw : star u ⬝ᵥ w = 0) (hw : u + w ∈ LinearMap.range Q.mulVecLin) :
@@ -252,13 +276,16 @@ theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_le_mul {Q : Matrix n p �
   rw [mul_pow]
   linarith
 
-/-- **The tangent of the angle from a column of a graph basis to a subspace.** If `U` and `W`
-have orthonormal columns with `Uᴴ * W = 0` and the column space of the graph `U + W * F` is
-contained in that of `Q`, which has orthonormal columns, then the tangent of the angle between
-column `i` of `U` and the column space of `Q` is at most the norm of column `i` of `F`, stated
-without the division. This is how a tangent bound for a subspace iteration gives a bound for each
-target vector. Port of `NLAlib.vectorTangentToFrame_graph_col_le`, there over `ℝ` and as a
-quotient. -/
+/-- **The tangent of the angle from a column of a graph basis to a subspace.** If $\mathbf{U}$
+and $\mathbf{W}$ have orthonormal columns with $\mathbf{U}^{\mathsf{H}}\mathbf{W} = \mathbf{0}$
+and the column space of the graph $\mathbf{U} + \mathbf{W}\mathbf{F}$ is contained in that of
+$\mathbf{Q}$, which has orthonormal columns, then the tangent of the angle between column
+$\mathbf{u}_i$ of $\mathbf{U}$ and the column space of $\mathbf{Q}$ is at most the norm of column
+$\mathbf{f}_i$ of $\mathbf{F}$, stated without the division:
+$\|(\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{u}_i\| \le \|\mathbf{f}_i\| \,
+\|\mathbf{Q}^{\mathsf{H}}\mathbf{u}_i\|$. This is how a tangent bound for a subspace iteration gives
+a bound for each target vector.
+Port of `NLAlib.vectorTangentToFrame_graph_col_le`, there over $\mathbb{R}$ and as a quotient. -/
 theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_col_le_mul {r : Type*} [Fintype r]
     [DecidableEq q] [DecidableEq r] {Q : Matrix n p 𝕜} (hQ : HasOrthonormalCols Q)
     {U : Matrix n q 𝕜} {W : Matrix n r 𝕜} (hU : HasOrthonormalCols U)
@@ -281,12 +308,20 @@ theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_col_le_mul {r : Type*} [
 
 /-! ### Aligning two frames -/
 
-/-- **Aligning two frames, Loewner form.** For frames `U`, `V` with the same number of columns
-there is a unitary `T` for which the Gram matrix of `U - V * T` is at most twice that of
-`(1 - V * Vᴴ) * U` in the Loewner order. The bounds in the Frobenius and spectral norms, and in
-every unitarily invariant norm, follow from it by monotonicity. With a singular value
-decomposition `Vᴴ * U = W₁ * D * W₂ᴴ` and `T = W₁ * W₂ᴴ`, the two Gram matrices are
-`2 (1 - W₂ D W₂ᴴ)` and `1 - W₂ D² W₂ᴴ`, and `D - D²` is positive semidefinite.
+/-- **Aligning two frames, Loewner form.** For frames $\mathbf{U}$, $\mathbf{V}$ with the same
+number of columns there is a unitary $\mathbf{T}$ for which the Gram matrix of
+$\mathbf{U} - \mathbf{V}\mathbf{T}$ is at most twice that of
+$(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{U}$ in the Loewner order:
+$$(\mathbf{U} - \mathbf{V}\mathbf{T})^{\mathsf{H}}(\mathbf{U} - \mathbf{V}\mathbf{T})
+  \preceq 2 \bigl((\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{U}\bigr)^{\mathsf{H}}
+  \bigl((\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{U}\bigr)\,.$$
+The bounds in the Frobenius and spectral norms, and in every unitarily invariant norm, follow
+from it by monotonicity. With a singular value decomposition
+$\mathbf{V}^{\mathsf{H}}\mathbf{U} = \mathbf{W}_1\mathbf{D}\mathbf{W}_2^{\mathsf{H}}$ and
+$\mathbf{T} = \mathbf{W}_1\mathbf{W}_2^{\mathsf{H}}$, the two Gram matrices are
+$2(\mathbf{I} - \mathbf{W}_2\mathbf{D}\mathbf{W}_2^{\mathsf{H}})$ and
+$\mathbf{I} - \mathbf{W}_2\mathbf{D}^2\mathbf{W}_2^{\mathsf{H}}$, and $\mathbf{D} - \mathbf{D}^2$
+is positive semidefinite.
 [StewartSun1990, Theorem II.4.11 context]. -/
 theorem HasOrthonormalCols.exists_conjTranspose_sub_mul_mul_sub_mul_le {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) :
@@ -365,9 +400,11 @@ theorem HasOrthonormalCols.exists_conjTranspose_sub_mul_mul_sub_mul_le {U V : Ma
       ((hV.specNorm_conjTranspose_mul_le U).trans hU.specNorm_le_one)
   exact RCLike.ofReal_nonneg.mpr (mul_nonneg zero_le_two (mul_nonneg h0 (sub_nonneg.mpr h1)))
 
-/-- **Aligning two frames.** For frames `U`, `V` with the same number of columns there is a
-unitary `T` with `‖U - V T‖_F² ≤ 2 ‖(1 - V Vᴴ) U‖_F²`: after the best rotation, the frames are as
-close as the subspaces. [StewartSun1990, Theorem II.4.11 context]. -/
+/-- **Aligning two frames.** For frames $\mathbf{U}$, $\mathbf{V}$ with the same number of
+columns there is a unitary $\mathbf{T}$ with
+$\|\mathbf{U} - \mathbf{V}\mathbf{T}\|_{\mathsf{F}}^2 \le 2\|(\mathbf{I} -
+\mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{U}\|_{\mathsf{F}}^2$: after the best rotation, the frames
+are as close as the subspaces. [StewartSun1990, Theorem II.4.11 context]. -/
 theorem HasOrthonormalCols.exists_frobNorm_sub_mul_sq_le {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) :
     ∃ T : Matrix p p 𝕜, HasOrthonormalCols T ∧
@@ -379,8 +416,9 @@ theorem HasOrthonormalCols.exists_frobNorm_sub_mul_sq_le {U V : Matrix n p 𝕜}
     ← frobNorm_sq_eq_re_trace] at h
   linarith
 
-/-- Aligning two frames, in the spectral norm: there is a unitary `T` with
-`‖U - V T‖₂² ≤ 2 ‖(1 - V Vᴴ) U‖₂²`. -/
+/-- Aligning two frames, in the spectral norm: there is a unitary $\mathbf{T}$ with
+$\|\mathbf{U} - \mathbf{V}\mathbf{T}\|_2^2 \le 2\|(\mathbf{I} -
+\mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{U}\|_2^2$. -/
 theorem HasOrthonormalCols.exists_specNorm_sub_mul_sq_le {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) :
     ∃ T : Matrix p p 𝕜, HasOrthonormalCols T ∧

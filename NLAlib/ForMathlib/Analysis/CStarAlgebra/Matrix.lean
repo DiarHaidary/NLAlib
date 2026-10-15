@@ -10,11 +10,12 @@ public import Mathlib.Analysis.CStarAlgebra.Matrix
 /-!
 # The real normed space of matrices under the operator norm
 
-Under `open scoped Matrix.Norms.L2Operator`, Mathlib makes `Matrix m n 𝕜` a normed space over `𝕜`
-but not over `ℝ`, which the Bochner integral and conditional expectation need; over `ℂ` the real
-structure comes from `NormedSpace.complexToReal`, over a general `RCLike` field from nothing. This
-file adds it, on the existing `Module ℝ` structure of matrices (no new data); at `𝕜 = ℂ` it agrees
-with `NormedSpace.complexToReal` up to reducible defeq. Upstream candidate for
+Under `open scoped Matrix.Norms.L2Operator`, Mathlib makes `Matrix m n 𝕜` a normed space over
+$\Bbbk$ but not over $\mathbb{R}$, which the Bochner integral and conditional expectation need;
+over $\mathbb{C}$ the real structure comes from `NormedSpace.complexToReal`, over a general
+`RCLike` field from nothing. This file adds it, on the existing `Module ℝ` structure of matrices
+(no new data); at $\Bbbk = \mathbb{C}$ it agrees with `NormedSpace.complexToReal` up to reducible
+defeq. Upstream candidate for
 `Mathlib/Analysis/CStarAlgebra/Matrix.lean`.
 
 ## Main definitions

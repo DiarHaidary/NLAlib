@@ -10,13 +10,14 @@ public import NLAlib.Matrix.Factorizations.QR
 /-!
 # Givens rotations
 
-The Givens rotation `NLAlib.givens i j c s` acts on the coordinates `i` and `j` by the matrix
-`[[c, s], [-s̄, c̄]]` and fixes the others. It is unitary when `|c|² + |s|² = 1`, and for every
-vector there is a rotation that clears coordinate `j` into coordinate `i`.
+The Givens rotation `NLAlib.givens i j c s` acts on the coordinates $i$ and $j$ by the matrix
+$\begin{bmatrix} c & s \\ -\bar{s} & \bar{c} \end{bmatrix}$ and fixes the others. It is unitary
+when $\lvert c \rvert^2 + \lvert s \rvert^2 = 1$, and for every vector there is a rotation that
+clears coordinate $j$ into coordinate $i$.
 
 ## Main definitions
 
-* `NLAlib.givens`: the rotation in the coordinate plane `(i, j)`.
+* `NLAlib.givens`: the rotation in the coordinate plane $(i, j)$.
 
 ## Main results
 
@@ -35,17 +36,17 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The **Givens rotation** in the coordinate plane `(i, j)`: the identity outside rows and
-columns `i`, `j`, and `[[c, s], [-s̄, c̄]]` on them.
-[GolubVanLoan2013, §5.1.8]. Port of `NLAlib.givens`, there over `ℝ`. -/
+/-- The **Givens rotation** in the coordinate plane $(i, j)$: the identity outside rows and
+columns $i$, $j$, and $\begin{bmatrix} c & s \\ -\bar{s} & \bar{c} \end{bmatrix}$ on them.
+[GolubVanLoan2013, §5.1.8]. Port of `NLAlib.givens`, there over $\mathbb{R}$. -/
 def givens (i j : n) (c s : 𝕜) : Matrix n n 𝕜 :=
   1 + (c - 1) • Matrix.single i i 1 + (star c - 1) • Matrix.single j j 1 +
     s • Matrix.single i j 1 - star s • Matrix.single j i 1
 
 omit [Fintype n] in
-/-- **The entries of a Givens rotation** in the plane `(i, j)`, `i ≠ j`: `c`, `s` in row `i` and
-`-s̄`, `c̄` in row `j` at the columns `i`, `j`, and the identity elsewhere.
-[GolubVanLoan2013, §5.1.8]. Port of `NLAlib.givens_apply`, there over `ℝ`. -/
+/-- **The entries of a Givens rotation** in the plane $(i, j)$, $i \ne j$: $c$, $s$ in row $i$
+and $-\bar{s}$, $\bar{c}$ in row $j$ at the columns $i$, $j$, and the identity elsewhere.
+[GolubVanLoan2013, §5.1.8]. Port of `NLAlib.givens_apply`, there over $\mathbb{R}$. -/
 theorem givens_apply {i j : n} (hij : i ≠ j) (c s : 𝕜) (a b : n) :
     givens i j c s a b =
       if a = i then (if b = i then c else if b = j then s else 0)
@@ -69,20 +70,23 @@ private theorem givens_mulVec (i j : n) (c s : 𝕜) (x : n → 𝕜) :
     Matrix.one_mulVec, Matrix.single_mulVec_eq, one_mul, smul_smul]
   module
 
-/-- The normalisation `|c|² + |s|² = 1`, in the field. -/
+/-- The normalisation $\lvert c \rvert^2 + \lvert s \rvert^2 = 1$, in the field:
+$\bar{c} c + \bar{s} s = 1$. -/
 private theorem star_mul_self_add {c s : 𝕜} (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1) :
     star c * c + star s * s = 1 := by
   rw [RCLike.star_def, RCLike.conj_mul, RCLike.conj_mul, ← RCLike.ofReal_pow,
     ← RCLike.ofReal_pow, ← RCLike.ofReal_add, hcs, RCLike.ofReal_one]
 
-/-- Coordinate `i` of a rotated vector. Port of `NLAlib.givens_mulVec_apply_left`. -/
+/-- Coordinate $i$ of a rotated vector: $c \mathbf{x}_i + s \mathbf{x}_j$.
+Port of `NLAlib.givens_mulVec_apply_left`. -/
 theorem givens_mulVec_apply_left {i j : n} (hij : i ≠ j) (c s : 𝕜) (x : n → 𝕜) :
     (givens i j c s *ᵥ x) i = c * x i + s * x j := by
   rw [givens_mulVec]
   simp only [Pi.add_apply, Pi.smul_apply, Pi.single_eq_same, Pi.single_eq_of_ne hij, smul_eq_mul]
   ring
 
-/-- Coordinate `j` of a rotated vector. Port of `NLAlib.givens_mulVec_apply_right`. -/
+/-- Coordinate $j$ of a rotated vector: $-\bar{s} \mathbf{x}_i + \bar{c} \mathbf{x}_j$.
+Port of `NLAlib.givens_mulVec_apply_right`. -/
 theorem givens_mulVec_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (x : n → 𝕜) :
     (givens i j c s *ᵥ x) j = -star s * x i + star c * x j := by
   rw [givens_mulVec]
@@ -98,7 +102,7 @@ theorem givens_mulVec_apply_of_ne {i j a : n} (hai : a ≠ i) (haj : a ≠ j) (c
   simp only [Pi.add_apply, Pi.smul_apply, Pi.single_eq_of_ne hai, Pi.single_eq_of_ne haj,
     smul_eq_mul, mul_zero, add_zero]
 
-/-- Left multiplication by a rotation changes only rows `i` and `j`. -/
+/-- Left multiplication by a rotation changes only rows $i$ and $j$. -/
 theorem givens_mul_apply_of_ne {i j a : n} (hai : a ≠ i) (haj : a ≠ j) (c s : 𝕜)
     (A : Matrix n m 𝕜) (b : m) : (givens i j c s * A) a b = A a b := by
   simp only [givens, Matrix.add_mul, Matrix.sub_mul, Matrix.smul_mul, Matrix.one_mul,
@@ -106,7 +110,7 @@ theorem givens_mul_apply_of_ne {i j a : n} (hai : a ≠ i) (haj : a ≠ j) (c s 
     Matrix.single_mul_apply_of_ne _ _ _ _ _ hai, Matrix.single_mul_apply_of_ne _ _ _ _ _ haj,
     smul_zero, add_zero, sub_zero]
 
-/-- Right multiplication by a rotation changes only columns `i` and `j`. -/
+/-- Right multiplication by a rotation changes only columns $i$ and $j$. -/
 theorem mul_givens_apply_of_ne {i j b : n} (hbi : b ≠ i) (hbj : b ≠ j) (c s : 𝕜)
     (A : Matrix m n 𝕜) (a : m) : (A * givens i j c s) a b = A a b := by
   simp only [givens, Matrix.mul_add, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one,
@@ -114,17 +118,20 @@ theorem mul_givens_apply_of_ne {i j b : n} (hbi : b ≠ i) (hbj : b ≠ j) (c s 
     Matrix.mul_single_apply_of_ne _ _ _ _ _ hbi, Matrix.mul_single_apply_of_ne _ _ _ _ _ hbj,
     smul_zero, add_zero, sub_zero]
 
-/-- Row `i` of a matrix multiplied on the left by a rotation in the plane `(i, j)`. -/
+/-- Row $i$ of a matrix multiplied on the left by a rotation in the plane $(i, j)$:
+$c \mathbf{A}_{i,b} + s \mathbf{A}_{j,b}$. -/
 theorem givens_mul_apply_left {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matrix n m 𝕜) (b : m) :
     (givens i j c s * A) i b = c * A i b + s * A j b := by
   exact givens_mulVec_apply_left hij c s fun a => A a b
 
-/-- Row `j` of a matrix multiplied on the left by a rotation in the plane `(i, j)`. -/
+/-- Row $j$ of a matrix multiplied on the left by a rotation in the plane $(i, j)$:
+$-\bar{s} \mathbf{A}_{i,b} + \bar{c} \mathbf{A}_{j,b}$. -/
 theorem givens_mul_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matrix n m 𝕜) (b : m) :
     (givens i j c s * A) j b = -star s * A i b + star c * A j b := by
   exact givens_mulVec_apply_right hij c s fun a => A a b
 
-/-- Column `i` of a matrix multiplied on the right by a rotation in the plane `(i, j)`. -/
+/-- Column $i$ of a matrix multiplied on the right by a rotation in the plane $(i, j)$:
+$\mathbf{A}_{a,i} c - \mathbf{A}_{a,j} \bar{s}$. -/
 theorem mul_givens_apply_left {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matrix m n 𝕜) (a : m) :
     (A * givens i j c s) a i = A a i * c - A a j * star s := by
   simp only [givens, Matrix.mul_add, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one,
@@ -132,7 +139,8 @@ theorem mul_givens_apply_left {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matrix
     Matrix.mul_single_apply_of_ne _ _ _ _ _ hij, smul_eq_mul, mul_one]
   ring
 
-/-- Column `j` of a matrix multiplied on the right by a rotation in the plane `(i, j)`. -/
+/-- Column $j$ of a matrix multiplied on the right by a rotation in the plane $(i, j)$:
+$\mathbf{A}_{a,i} s + \mathbf{A}_{a,j} \bar{c}$. -/
 theorem mul_givens_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matrix m n 𝕜) (a : m) :
     (A * givens i j c s) a j = A a i * s + A a j * star c := by
   simp only [givens, Matrix.mul_add, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one,
@@ -141,7 +149,8 @@ theorem mul_givens_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matri
   ring
 
 omit [Fintype n] in
-/-- The conjugate transpose of a rotation is the inverse rotation.
+/-- The conjugate transpose of a rotation is the rotation with parameters $\bar{c}$, $-s$; for
+$\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ it is the inverse rotation.
 Port of `NLAlib.transpose_givens`. -/
 theorem conjTranspose_givens (i j : n) (c s : 𝕜) :
     (givens i j c s)ᴴ = givens i j (star c) (-s) := by
@@ -150,7 +159,8 @@ theorem conjTranspose_givens (i j : n) (c s : 𝕜) :
     star_one, star_star, star_neg]
   module
 
-/-- **A Givens rotation is unitary** when `|c|² + |s|² = 1`.
+/-- **A Givens rotation is unitary** when $\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ and
+$i \ne j$.
 Port of `NLAlib.hasOrthonormalCols_givens`. -/
 theorem hasOrthonormalCols_givens {i j : n} (hij : i ≠ j) {c s : 𝕜}
     (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1) : HasOrthonormalCols (givens i j c s) := by
@@ -175,7 +185,8 @@ theorem givens_mul_conjTranspose_self {i j : n} (hij : i ≠ j) {c s : 𝕜}
     (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1) : givens i j c s * (givens i j c s)ᴴ = 1 := by
   exact (hasOrthonormalCols_givens hij hcs).mul_conjTranspose_self
 
-/-- **The determinant of a Givens rotation** is `c c̄ + s s̄`, for any `c`, `s`. -/
+/-- **The determinant of a Givens rotation** is $c \bar{c} + s \bar{s}$, for any $c$, $s$ and
+$i \ne j$. -/
 theorem det_givens_eq_mul_star_add_mul_star {i j : n} (hij : i ≠ j) (c s : 𝕜) :
     (givens i j c s).det = c * star c + s * star s := by
   let ei : n → 𝕜 := Pi.single i 1
@@ -206,9 +217,11 @@ theorem det_givens {i j : n} (hij : i ≠ j) {c s : 𝕜} (hcs : ‖c‖ ^ 2 + �
   rw [det_givens_eq_mul_star_add_mul_star hij, mul_comm c, mul_comm s]
   exact star_mul_self_add hcs
 
-/-- **Clearing an entry.** For every vector `x` and `i ≠ j` there is a unitary Givens rotation
-that sends coordinate `j` to zero and coordinate `i` to `√(|x i|² + |x j|²)`.
-Port of `NLAlib.givensRotation_transpose_mulVec_apply_right` and `…_left`, there over `ℝ`. -/
+/-- **Clearing an entry.** For every vector $\mathbf{x}$ and $i \ne j$ there is a unitary Givens
+rotation ($\lvert c \rvert^2 + \lvert s \rvert^2 = 1$) that sends coordinate $j$ to zero and
+coordinate $i$ to $\sqrt{\lvert \mathbf{x}_i \rvert^2 + \lvert \mathbf{x}_j \rvert^2}$.
+Port of `NLAlib.givensRotation_transpose_mulVec_apply_right` and `…_left`, there over
+$\mathbb{R}$. -/
 theorem exists_givens_mulVec_apply_eq_zero {i j : n} (hij : i ≠ j) (x : n → 𝕜) :
     ∃ c s : 𝕜, ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1 ∧ (givens i j c s *ᵥ x) j = 0 ∧
       (givens i j c s *ᵥ x) i = ((√(‖x i‖ ^ 2 + ‖x j‖ ^ 2) : ℝ) : 𝕜) := by

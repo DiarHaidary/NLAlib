@@ -13,18 +13,23 @@ public import NLAlib.Probability.Measurability.Matrix
 /-!
 # The matrix Laplace transform method
 
-For a random Hermitian matrix `Y`, the tail of its largest eigenvalue is bounded by the trace of
-its matrix moment generating function, `P(t ≤ λ_max Y) ≤ e^{-θ t} E tr exp (θ Y)` for `θ > 0`, and
-its mean by `θ⁻¹ log E tr exp (θ Y)` (Tropp 2015, Proposition 3.2.1). The smallest eigenvalue,
-`eigenvalue Y k` with `k + 1 = card n`, is handled with `θ < 0`. The eigenvalue and spectral norm of
-an integrable random matrix are integrable, so the means here are not junk values.
+For a random Hermitian matrix $\mathbf{Y}$, the tail of its largest eigenvalue
+$\lambda_0(\mathbf{Y})$ is bounded by the trace of its matrix moment generating function,
+$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le e^{-\theta t}\, \mathbb{E} \operatorname{tr}
+e^{\theta \mathbf{Y}}$ for $\theta > 0$, and its mean by
+$\theta^{-1} \log \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}$ (Tropp 2015, Proposition
+3.2.1). The smallest eigenvalue, $\lambda_k(\mathbf{Y})$ with $k + 1 = \lvert n\rvert$, is handled
+with $\theta < 0$. The eigenvalue and spectral norm of an integrable random matrix are integrable,
+so the means here are not junk values. Traces are real parts in Lean (`RCLike.re`), which loses
+nothing for Hermitian matrices.
 
-More generally, for a nonnegative `ψ`, nondecreasing on `[0, ∞)`,
-`P(t ≤ λ_max Y) ≤ E tr ψ(Y) / ψ(t)` for `t ≥ 0` with `ψ t > 0` (Tropp 2015, Proposition 7.4.1).
-The exponential `ψ a = e^{θ a}` gives the bound above; the intrinsic-dimension tails
-(`NLAlib/Probability/MatrixConcentration/IntrinsicDimension.lean`) use `ψ a = e^{θ a} - θ a - 1`
-and `ψ a = max (e^{θ a} - 1) 0`, which vanish at `0` and so let the intrinsic dimension replace
-the ambient dimension.
+More generally, for a nonnegative $\psi$, nondecreasing on $[0, \infty)$,
+$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le \mathbb{E} \operatorname{tr} \psi(\mathbf{Y}) /
+\psi(t)$ for $t \ge 0$ with $\psi(t) > 0$ (Tropp 2015, Proposition 7.4.1). The exponential
+$\psi(a) = e^{\theta a}$ gives the bound above; the intrinsic-dimension tails
+(`NLAlib/Probability/MatrixConcentration/IntrinsicDimension.lean`) use
+$\psi(a) = e^{\theta a} - \theta a - 1$ and $\psi(a) = \max(e^{\theta a} - 1, 0)$, which vanish at
+$0$ and so let the intrinsic dimension replace the ambient dimension.
 
 ## Main results
 
@@ -67,7 +72,8 @@ theorem integrable_specNorm {m : Type*} [Fintype m] {S : Ω → Matrix m n 𝕜}
   simp only [specNorm_eq_norm]
   exact hS.norm
 
-/-- `exp (θ λ_j(A)) ≤ tr exp (θ A)` for a Hermitian `A`, any real `θ` and any valid index `j`. -/
+/-- $e^{\theta \lambda_j(\mathbf{A})} \le \operatorname{tr} e^{\theta \mathbf{A}}$ for a Hermitian
+$\mathbf{A}$, any real $\theta$ and any valid index $j < \lvert n\rvert$. -/
 theorem exp_mul_eigenvalue_le_re_trace_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (θ : ℝ) {j : ℕ} (hj : j < Fintype.card n) :
     Real.exp (θ * eigenvalue A j) ≤ RCLike.re (exp (θ • A)).trace := by
@@ -76,19 +82,22 @@ theorem exp_mul_eigenvalue_le_re_trace_exp {A : Matrix n n 𝕜} (hA : A.IsHermi
   exact Finset.single_le_sum (f := fun i => Real.exp (θ • eigenvalue A i))
     (fun i _ => (Real.exp_pos _).le) (Finset.mem_range.mpr hj)
 
-/-- `tr exp (θ A)` is positive for a Hermitian `A` with an eigenvalue index `j`. -/
+/-- $\operatorname{tr} e^{\theta \mathbf{A}}$ is nonnegative for a Hermitian $\mathbf{A}$ with an
+eigenvalue index $j < \lvert n\rvert$. -/
 private theorem re_trace_exp_smul_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian) (θ : ℝ)
     {j : ℕ} (hj : j < Fintype.card n) : 0 ≤ RCLike.re (exp (θ • A)).trace :=
   (Real.exp_pos _).le.trans (exp_mul_eigenvalue_le_re_trace_exp hA θ hj)
 
-/-- **The generalised matrix Laplace transform bound**: for `ψ ≥ 0` nondecreasing on `[0, ∞)`,
-`t ≥ 0` and `ψ t > 0`, `P(t ≤ λ_max Y) ≤ E tr ψ(Y) / ψ(t)`.
-[Tropp2015, Proposition 7.4.1]; here for any measure (the proof is Markov's inequality,
+/-- **The generalised matrix Laplace transform bound**: for $\mathbf{Y}$ almost surely Hermitian,
+$\psi \ge 0$ nondecreasing on $[0, \infty)$, $t \ge 0$ and $\psi(t) > 0$,
+$$\mu(\lambda_0(\mathbf{Y}) \ge t) \le
+\frac{\int \operatorname{tr} \psi(\mathbf{Y}) \, d\mu}{\psi(t)}\,.$$
+[Tropp2015, Proposition 7.4.1]; here for any measure $\mu$ (the proof is Markov's inequality,
 `mul_meas_ge_le_integral_of_nonneg`, which needs no finiteness), over any `RCLike` field. No
-continuity of `ψ` is assumed: the spectrum of a Hermitian matrix is finite, so `cfc ψ` is never
-its junk value at a Hermitian argument. `[Nonempty n]` is needed: for empty `n` and `t = 0` the
-event is everything and the right side `0`. The integrability hypothesis `hint` excludes the junk
-value `0` of the integral.
+continuity of $\psi$ is assumed: the spectrum of a Hermitian matrix is finite, so `cfc ψ` is never
+its junk value at a Hermitian argument. `[Nonempty n]` is needed: for empty $n$ and $t = 0$ the
+event is everything and the right side $0$. The integrability hypothesis `hint` excludes the junk
+value $0$ of the integral.
 Result: generalized-matrix-laplace -/
 theorem measureReal_eigenvalue_zero_ge_le_integral_re_trace_cfc_div [Nonempty n]
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) {ψ : ℝ → ℝ} (hψ0 : ∀ x, 0 ≤ ψ x)
@@ -116,7 +125,8 @@ theorem measureReal_eigenvalue_zero_ge_le_integral_re_trace_cfc_div [Nonempty n]
 
 variable [IsProbabilityMeasure μ]
 
-/-- Markov's inequality in the form `P(s) ≤ e^{-c} E f` when `e^c ≤ f` on `s`. -/
+/-- Markov's inequality in the form $\mathbb{P}(s) \le e^{-c}\, \mathbb{E} f$ when $e^c \le f$
+almost everywhere on $s$, for $f \ge 0$ integrable. -/
 private theorem measureReal_le_exp_neg_mul_integral {f : Ω → ℝ} {s : Set Ω} (hnn : 0 ≤ᵐ[μ] f)
     (hf : Integrable f μ) {c : ℝ} (hs : ∀ᵐ ω ∂μ, ω ∈ s → Real.exp c ≤ f ω) :
     μ.real s ≤ Real.exp (-c) * ∫ ω, f ω ∂μ := by
@@ -129,8 +139,8 @@ private theorem measureReal_le_exp_neg_mul_integral {f : Ω → ℝ} {s : Set Ω
     _ ≤ Real.exp (-c) * ∫ ω, f ω ∂μ := mul_le_mul_of_nonneg_left hM (Real.exp_pos _).le
 
 /-- **Jensen's inequality for the exponential**, in the form the Laplace transform method uses:
-for an integrable `Z` and an integrable `f` with `exp Z ≤ f` almost surely,
-`exp (E Z) ≤ E f`. The integrability of `exp Z` follows from the domination. -/
+for an integrable $Z$ and an integrable $f$ with $e^Z \le f$ almost surely,
+$e^{\mathbb{E} Z} \le \mathbb{E} f$. The integrability of $e^Z$ follows from the domination. -/
 theorem exp_integral_le_integral {Z f : Ω → ℝ} (hZ : Integrable Z μ) (hf : Integrable f μ)
     (hle : ∀ᵐ ω ∂μ, Real.exp (Z ω) ≤ f ω) : Real.exp (∫ ω, Z ω ∂μ) ≤ ∫ ω, f ω ∂μ := by
   have hgi : Integrable (Real.exp ∘ Z) μ := by
@@ -142,8 +152,11 @@ theorem exp_integral_le_integral {Z f : Ω → ℝ} (hZ : Integrable Z μ) (hf :
     (ae_of_all _ fun _ => Set.mem_univ _) hZ hgi).trans ?_
   exact integral_mono_ae hgi hf hle
 
-/-- **The matrix Laplace transform bound** for the largest eigenvalue ([Tropp2015],
-Proposition 3.2.1). -/
+/-- **The matrix Laplace transform bound** for the largest eigenvalue: for $\mathbf{Y}$ almost
+surely Hermitian, $\theta > 0$ and every real $t$,
+$$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t)
+\le e^{-\theta t}\, \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}\,.$$
+[Tropp2015, Proposition 3.2.1]. -/
 theorem measureReal_eigenvalue_zero_ge_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian)
     {θ : ℝ} (hθ : 0 < θ) (hint : Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
     (t : ℝ) :
@@ -156,7 +169,10 @@ theorem measureReal_eigenvalue_zero_ge_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y
   exact (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left ht hθ.le)).trans
     (exp_mul_eigenvalue_le_re_trace_exp hω θ Fintype.card_pos)
 
-/-- The matrix Laplace transform bound for the smallest eigenvalue, with `θ < 0`. -/
+/-- The matrix Laplace transform bound for the smallest eigenvalue, with $\theta < 0$: for
+$k + 1 = \lvert n\rvert$ and every real $t$,
+$\mathbb{P}(\lambda_k(\mathbf{Y}) \le t)
+\le e^{-\theta t}\, \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}$. -/
 theorem measureReal_eigenvalue_le_le (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) {k : ℕ}
     (hk : k + 1 = Fintype.card n) {θ : ℝ} (hθ : θ < 0)
     (hint : Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ) (t : ℝ) :
@@ -170,7 +186,11 @@ theorem measureReal_eigenvalue_le_le (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) 
   exact (Real.exp_le_exp.mpr (mul_le_mul_of_nonpos_left ht hθ.le)).trans
     (exp_mul_eigenvalue_le_re_trace_exp hω θ hkn)
 
-/-- The matrix Laplace transform bound for the mean of the largest eigenvalue. -/
+/-- The matrix Laplace transform bound for the mean of the largest eigenvalue: for an integrable,
+almost surely Hermitian $\mathbf{Y}$ with $\operatorname{tr} e^{\theta \mathbf{Y}}$ integrable and
+$\theta > 0$,
+$\mathbb{E}\, \lambda_0(\mathbf{Y})
+\le \theta^{-1} \log \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}$. -/
 theorem integral_eigenvalue_zero_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian)
     (hYi : Integrable Y μ) {θ : ℝ} (hθ : 0 < θ)
     (hint : Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ) :
@@ -181,7 +201,10 @@ theorem integral_eigenvalue_zero_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).I
   rw [le_inv_mul_iff₀ hθ, Real.le_log_iff_exp_le ((Real.exp_pos _).trans_le h)]
   exact h
 
-/-- The matrix Laplace transform bound for the mean of the smallest eigenvalue, with `θ < 0`. -/
+/-- The matrix Laplace transform bound for the mean of the smallest eigenvalue, with
+$\theta < 0$: for $k + 1 = \lvert n\rvert$,
+$\theta^{-1} \log \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \mathbb{E}\, \lambda_k(\mathbf{Y})$. -/
 theorem le_integral_eigenvalue (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi : Integrable Y μ)
     {k : ℕ} (hk : k + 1 = Fintype.card n) {θ : ℝ} (hθ : θ < 0)
     (hint : Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ) :
