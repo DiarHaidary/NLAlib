@@ -37,6 +37,8 @@ Tropp's proofs of Theorems 10.7 and 10.8.
 
 ## Main results
 
+* `NLAlib.gaussianPinvFrobTail_nonneg`, `NLAlib.gaussianPinvFrobTail_le`,
+  `NLAlib.one_le_gaussianPinvFrobTail_zero`: the API of the named tail.
 * `NLAlib.measureReal_le_inv_mul_conjTranspose_apply_self_le_of_hasLaw_gaussianMatrix`.
 * `NLAlib.measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix`: the trace tail of an
   inverse Wishart matrix.
@@ -82,6 +84,15 @@ theorem gaussianPinvFrobTail_nonneg (k d : ℕ) {t : ℝ} (ht : 0 < t) :
   rw [gaussianPinvFrobTail_def]
   have := Real.Gamma_pos_of_pos (show 0 < (d : ℝ) / 2 + 1 by positivity)
   positivity
+
+/-- At $d = 0$ the named tail is $2\sqrt{k}$, at least $1$ for $k \ge 1$: a bound with this
+failure probability says nothing. -/
+theorem one_le_gaussianPinvFrobTail_zero {k : ℕ} (hk : 1 ≤ k) (t : ℝ) :
+    1 ≤ gaussianPinvFrobTail k 0 t := by
+  rw [gaussianPinvFrobTail_def]
+  simp only [Nat.cast_zero, zero_div, Real.rpow_zero, mul_one, zero_add, Real.Gamma_one, div_one]
+  have : (1 : ℝ) ≤ √(k : ℝ) := Real.one_le_sqrt.2 (by exact_mod_cast hk)
+  linarith
 
 /-- The explicit comparison: `gaussianPinvFrobTail k d t` $\le 2\sqrt{k}\,(e/t)^{d/2}$ for
 $t > 0$, by $\Gamma(x + 1) \ge (x/e)^x$ (`Real.rpow_mul_exp_neg_le_Gamma_add_one`). The right
@@ -384,12 +395,8 @@ theorem measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix
     exact h0
   rcases Nat.eq_zero_or_pos d with hd0 | hd0
   · refine measureReal_le_one.trans ?_
-    rw [gaussianPinvFrobTail_def, hd0]
-    simp only [CharP.cast_eq_zero, zero_div, Real.rpow_zero, zero_add, Real.Gamma_one, div_one,
-      mul_one]
-    have : (1 : ℝ) ≤ √(Fintype.card r : ℝ) :=
-      Real.one_le_sqrt.2 (by exact_mod_cast hr)
-    linarith
+    rw [hd0]
+    exact one_le_gaussianPinvFrobTail_zero hr t
   have hset :
       MeasurableSet {G : Matrix r k ℝ | ¬ frobNorm (pinv G) ^ 2 ≤ t * Fintype.card r / d} :=
     (measurableSet_le ((measurable_frobNorm.comp measurable_pinv).pow_const 2)

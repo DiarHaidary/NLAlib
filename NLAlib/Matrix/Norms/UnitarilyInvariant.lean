@@ -177,6 +177,14 @@ theorem matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols [DecidableEq n]
     Φ.matrixNorm (A * Qᴴ) = Φ.matrixNorm A := by
   exact Φ.matrixNorm_congr (hQ.singularValues_mul_conjTranspose_right A)
 
+/-- **Invariance on a subspace**: if $\mathbf{V}$ has orthonormal columns and
+$\mathbf{A}\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{A}$ (the rows of $\mathbf{A}$ lie in
+the range of $\mathbf{V}$), then $\|\mathbf{A}\mathbf{V}\|_{\Phi} = \|\mathbf{A}\|_{\Phi}$. -/
+theorem matrixNorm_mul_of_mul_mul_conjTranspose_eq [DecidableEq p] {A : Matrix m n 𝕜}
+    {V : Matrix n p 𝕜} (hV : HasOrthonormalCols V) (hAV : A * V * Vᴴ = A) :
+    Φ.matrixNorm (A * V) = Φ.matrixNorm A := by
+  rw [← Φ.matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols hV (A * V), hAV]
+
 /-- **The two Gram matrices have the same norm**:
 $\|\mathbf{A}\mathbf{A}^{\mathsf{H}}\|_{\Phi} = \|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\Phi}$,
 although they have different sizes: both have singular values $\sigma_k(\mathbf{A})^2$. -/

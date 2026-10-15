@@ -66,39 +66,6 @@ private theorem measurable_sub_mul (A : Matrix m n ℝ) :
 variable [DecidableEq n] {ν : Measure (Matrix n l ℝ)} [IsProbabilityMeasure ν]
   [IsLeftUnitarilyInvariant ν]
 
-/-! ### Transfer to the Gaussian -/
-
-/-- An expectation of a function of the test matrix that factors through the range projector
-$\mathbf{P}_{\mathbf{A}\mathbf{X}}$ is the Gaussian one. -/
-private theorem integral_eq_integral_gaussianMatrix (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
-    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {f : Matrix n l ℝ → ℝ}
-    {g : Matrix m m ℝ → ℝ} (hg : Measurable g) (hfg : ∀ Ω, f Ω = g (rangeProjector (A * Ω))) :
-    ∫ ω, f (X ω) ∂μ = ∫ G, f G ∂(gaussianMatrix n l) := by
-  classical
-  have h := integral_comp_rangeProjector_mul_of_hasLaw_haarFrame A hg.stronglyMeasurable
-    (hasLaw_polarFactor_of_isLeftUnitarilyInvariant hX hXr) (HasLaw.id (μ := gaussianMatrix n l))
-  simp only [rangeProjector_mul_polarFactor, id] at h
-  simp only [hfg]
-  exact h
-
-/-- A tail of a function of the test matrix that factors measurably through the range projector
-$\mathbf{P}_{\mathbf{A}\mathbf{X}}$ is the Gaussian one. -/
-private theorem measureReal_eq_measureReal_gaussianMatrix (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
-    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {f : Matrix n l ℝ → ℝ}
-    {g : Matrix m m ℝ → ℝ} (hg : Measurable g) (hfg : ∀ Ω, f Ω = g (rangeProjector (A * Ω)))
-    (c : ℝ) :
-    μ.real {ω | ¬ f (X ω) ≤ c} = (gaussianMatrix n l).real {G | ¬ f G ≤ c} := by
-  have hm : Measurable fun G : Matrix n l ℝ => rangeProjector (A * G) :=
-    measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)
-  have hs : MeasurableSet {P : Matrix m m ℝ | ¬ g P ≤ c} :=
-    (measurableSet_le hg measurable_const).compl
-  have hG : HasLaw (fun G : Matrix n l ℝ => rangeProjector (A * G))
-      ((gaussianMatrix n l).map fun G => rangeProjector (A * G)) (gaussianMatrix n l) :=
-    ⟨hm.aemeasurable, rfl⟩
-  simp only [hfg]
-  rw [(hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant A hX hXr).measureReal_eq hs,
-    hG.measureReal_eq hs]
-
 /-! ### Exact recovery -/
 
 /-- **A rotation-invariant sketch at least as wide as the rank recovers the matrix**: if
@@ -138,7 +105,7 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitaril
   have hg : Measurable fun P : Matrix m m ℝ => Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) :=
     Φ.measurable_matrixNorm.comp ((Measurable.matrix_conjTranspose continuous_star.measurable
       (measurable_sub_mul A)).matrix_mul (measurable_sub_mul A))
-  refine (integral_eq_integral_gaussianMatrix A hX hXr
+  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => Φ.matrixNorm ((A - rsvd A Ω)ᴴ * (A - rsvd A Ω))) hg fun _ => rfl).trans_le ?_
   exact integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix Φ A
     HasLaw.id hk
@@ -161,7 +128,7 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix
     (hk : k + 2 ≤ Fintype.card l) :
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       gaussianProjectionFactor k (Fintype.card l) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  refine (integral_eq_integral_gaussianMatrix A hX hXr
+  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => frobNorm (A - rsvd A Ω) ^ 2)
     ((measurable_frobNorm.comp (measurable_sub_mul A)).pow_const 2) fun _ => rfl).trans_le ?_
   exact integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A HasLaw.id hk
@@ -180,8 +147,9 @@ theorem integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m 
     (hk : k + 2 ≤ Fintype.card l) :
     ∫ ω, frobNorm (A - rsvd A (X ω)) ∂μ ≤
       √(gaussianProjectionFactor k (Fintype.card l)) * frobNorm (A - truncatedSVD A k) := by
-  refine (integral_eq_integral_gaussianMatrix A hX hXr (f := fun Ω => frobNorm (A - rsvd A Ω))
-    (measurable_frobNorm.comp (measurable_sub_mul A)) fun _ => rfl).trans_le ?_
+  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
+    (f := fun Ω => frobNorm (A - rsvd A Ω)) (measurable_frobNorm.comp (measurable_sub_mul A))
+    fun _ => rfl).trans_le ?_
   exact integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix A HasLaw.id hk
 
 /-- **The average spectral error of the randomized SVD, rotation-invariant test matrices**: for a
@@ -201,8 +169,9 @@ theorem integral_specNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m 
     ∫ ω, specNorm (A - rsvd A (X ω)) ∂μ ≤
       (1 + √((k : ℝ) / ((Fintype.card l : ℝ) - k - 1))) * singularValues A k +
         gaussianPinvSpecNormBound k (Fintype.card l) * frobNorm (A - truncatedSVD A k) := by
-  refine (integral_eq_integral_gaussianMatrix A hX hXr (f := fun Ω => specNorm (A - rsvd A Ω))
-    (measurable_specNorm.comp (measurable_sub_mul A)) fun _ => rfl).trans_le ?_
+  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
+    (f := fun Ω => specNorm (A - rsvd A Ω)) (measurable_specNorm.comp (measurable_sub_mul A))
+    fun _ => rfl).trans_le ?_
   exact integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix A HasLaw.id hk
 
 /-- **The expected error of the truncated randomized SVD, Frobenius norm, rotation-invariant test
@@ -227,7 +196,7 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvarian
     ((measurable_frobNorm.comp (measurable_sub_mul A)).pow_const 2).add
       (Finset.measurable_sum _ fun i _ => ((measurable_singularValues i).comp
         (measurable_id.matrix_mul measurable_const)).pow_const 2)
-  refine (integral_eq_integral_gaussianMatrix A hX hXr
+  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2) hg fun Ω => ?_).trans_le ?_
   · rw [frobNorm_sub_truncatedSVD_rsvd_sq, frobNorm_sub_truncatedSVD_sq]
     rfl
@@ -262,7 +231,7 @@ theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLe
   have hg : Measurable fun P : Matrix m m ℝ => Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) :=
     Φ.measurable_matrixNorm.comp ((Measurable.matrix_conjTranspose continuous_star.measurable
       (measurable_sub_mul A)).matrix_mul (measurable_sub_mul A))
-  refine (measureReal_eq_measureReal_gaussianMatrix A hX hXr
+  refine (measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => Φ.matrixNorm ((A - rsvd A Ω)ᴴ * (A - rsvd A Ω))) hg (fun _ => rfl) _).trans_le ?_
   exact measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix Φ
     A HasLaw.id hd u ht

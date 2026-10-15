@@ -31,6 +31,9 @@ verbatim for a Haar test matrix, in every shape and rank.
 * `NLAlib.hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant`,
   `NLAlib.ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant`: the same for every full-rank test
   matrix with a left unitarily invariant law.
+* `NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`,
+  `NLAlib.measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant`: expectations
+  and tails of statistics of the range projector, in the form a range-finder consumer applies.
 -/
 
 @[expose] public section
@@ -153,5 +156,45 @@ theorem ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant [DecidableEq n] {m : Type
     (hasLaw_polarFactor_of_isLeftUnitarilyInvariant hX hXr)] with ω hω
   rw [← hω, ← rank_rangeProjector, ← rank_rangeProjector (A * polarFactor (X ω)),
     rangeProjector_mul_polarFactor]
+
+/-- **Expectations transfer from a rotation-invariant test matrix to the Gaussian**: if the law of
+$\mathbf{X}$ is a left unitarily invariant probability measure and $\mathbf{X}$ has full column
+rank almost surely, then for every $f$ that factors through the range projector,
+$f(\mathbf{Y}) = g(\mathbf{P}_{\mathbf{A}\mathbf{Y}})$ with $g$ measurable,
+$\mathbb{E} f(\mathbf{X}) = \mathbb{E} f(\mathbf{G})$ for a standard Gaussian $\mathbf{G}$ of the
+same shape. No integrability hypothesis: both sides integrate $g$ against one law. -/
+theorem integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant [DecidableEq n]
+    {m : Type*} [Fintype m] {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν]
+    [IsLeftUnitarilyInvariant ν] (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {f : Matrix n k ℝ → ℝ}
+    {g : Matrix m m ℝ → ℝ} (hg : Measurable g) (hfg : ∀ Y, f Y = g (rangeProjector (A * Y))) :
+    ∫ ω, f (X ω) ∂μ = ∫ G, f G ∂(gaussianMatrix n k) := by
+  classical
+  have h := integral_comp_rangeProjector_mul_of_hasLaw_haarFrame A hg.stronglyMeasurable
+    (hasLaw_polarFactor_of_isLeftUnitarilyInvariant hX hXr) (HasLaw.id (μ := gaussianMatrix n k))
+  simp only [rangeProjector_mul_polarFactor, id] at h
+  simp only [hfg]
+  exact h
+
+/-- **Tails transfer from a rotation-invariant test matrix to the Gaussian**: with the hypotheses
+of `NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`, for every $f$ that
+factors measurably through the range projector and every $c$,
+$\mathbb{P}\{f(\mathbf{X}) > c\} = \mathbb{P}\{f(\mathbf{G}) > c\}$ for a standard Gaussian
+$\mathbf{G}$ of the same shape. -/
+theorem measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant [DecidableEq n]
+    {m : Type*} [Fintype m] {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν]
+    [IsLeftUnitarilyInvariant ν] (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {f : Matrix n k ℝ → ℝ}
+    {g : Matrix m m ℝ → ℝ} (hg : Measurable g) (hfg : ∀ Y, f Y = g (rangeProjector (A * Y)))
+    (c : ℝ) :
+    μ.real {ω | ¬ f (X ω) ≤ c} = (gaussianMatrix n k).real {G | ¬ f G ≤ c} := by
+  have hs : MeasurableSet {P : Matrix m m ℝ | ¬ g P ≤ c} :=
+    (measurableSet_le hg measurable_const).compl
+  have hG : HasLaw (fun G : Matrix n k ℝ => rangeProjector (A * G))
+      ((gaussianMatrix n k).map fun G => rangeProjector (A * G)) (gaussianMatrix n k) :=
+    ⟨(measurable_rangeProjector_mul A).aemeasurable, rfl⟩
+  simp only [hfg]
+  rw [(hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant A hX hXr).measureReal_eq hs,
+    hG.measureReal_eq hs]
 
 end NLAlib

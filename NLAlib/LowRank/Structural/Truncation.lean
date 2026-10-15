@@ -36,6 +36,8 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
 * `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`, `NLAlib.frobNorm_rsvd_sub_truncatedSVD_le`,
   `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_rsvd_sq_add`: the Frobenius split.
 * `NLAlib.HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd`: the algorithm's factored form.
+* `NLAlib.IsBestRankApprox.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le`: reverse
+  Eckart–Young for a truncation of the randomized SVD.
 * `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add`: Gu's projected
   form.
 * `NLAlib.SymmetricGauge.matrixNorm_sub_truncatedSVD_nystrom_le`,
@@ -136,6 +138,24 @@ theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_rsvd_sq_add (A : Matri
   rw [frobNorm_sub_truncatedSVD_rsvd_sq]
   have := pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_rsvd_sub_truncatedSVD_le A Ω k) 2
   linarith
+
+/-- **Reverse Eckart–Young for the truncated randomized SVD**: for a best rank-$k$ approximation
+$\mathbf{Y}$ of $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$,
+$$\|\mathbf{A} - \mathbf{Y}\|_2^2 + \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
+\le \sigma_k(\mathbf{A})^2 + \|\mathbf{A} -
+\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,:$$
+a Frobenius bound for the truncated output becomes a spectral one at no cost. The right side does
+not depend on the choice of the truncation (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`).
+[Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
+[TroppWebber2023, p. 42]; there a remark on truncated outputs, here subtraction-free, indices
+from $0$. -/
+theorem IsBestRankApprox.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le {A : Matrix m n 𝕜}
+    {Ω : Matrix n l 𝕜} {k : ℕ} {Y : Matrix m n 𝕜} (hY : IsBestRankApprox (rsvd A Ω) k Y) :
+    specNorm (A - Y) ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2 ≤
+      singularValues A k ^ 2 + frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 := by
+  have h := specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_rank_le A hY.rank_le
+  rwa [hY.frobNorm_sub_sq_eq_frobNorm_sub_rsvd_sq_add, hY.frobNorm_sub,
+    ← frobNorm_sub_truncatedSVD_rsvd_sq] at h
 
 /-- **The truncated randomized SVD through a basis**: for any $\mathbf{Q}$ with orthonormal
 columns spanning $\operatorname{range}(\mathbf{A}\mathbf{\Omega})$, the algorithm's

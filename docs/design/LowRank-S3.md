@@ -1452,3 +1452,18 @@ general (the law of $\|\mathbf{g}\|^2$ as a pushforward with a density), it is a
   (`RandomMatrix/Gaussian/Invariance.lean`), `singularValues_sub_rsvd_le`
   (`Matrix/Factorizations/SketchedLowRank.lean`). The result id `chi-square-small-ball` is only on
   the exact small ball (C1); the Chernoff corollary carries none.
+- Amendment 2026-10-15 (helper refactor after the proofs): private copies replaced by public
+  lemmas in their topic homes, no public statement changed.
+  `exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion`
+  (`Matrix/Spectral/LowRank.lean`, over `𝕜`, for the two frame completions);
+  `ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix` (`RandomMatrix/Gaussian/Rank.lean`, for
+  any `Z` with `Z.rank ≤ card n`); `integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`,
+  `measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant`
+  (`RandomMatrix/Haar/Transfer.lean`); `SymmetricGauge.matrixNorm_mul_of_mul_mul_conjTranspose_eq`
+  (`Matrix/Norms/UnitarilyInvariant.lean`); `one_le_gaussianPinvFrobTail_zero`
+  (`RandomMatrix/Gaussian/BlockTail.lean`, also used there at $d = 0$);
+  `HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd_sq_le` (`LowRank/Structural/RangeFinder.lean`,
+  which now imports `Structural/Truncation`); `IsBestRankApprox.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le`
+  (`LowRank/Structural/Truncation.lean`, also used in `LowRank/Random/RangeFinder.lean`).
+  `Gaussian/RangeFinderTail.lean` imports `Gaussian/RangeFinder.lean` and uses E1
+  (`ae_rsvd_eq_self_of_hasLaw_gaussianMatrix`) in its degenerate branch.

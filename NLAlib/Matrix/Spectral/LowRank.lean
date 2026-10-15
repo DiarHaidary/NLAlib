@@ -39,6 +39,8 @@ $\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decompo
   `NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD`: the row space of the
   truncation, and a frame $\mathbf{Z}$ with
   $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$.
+* `NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion`: that frame
+  with an orthonormal completion carrying $\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k$.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD`: the truncation of
   $\mathbf{Q}\mathbf{X}$ stays in the range of $\mathbf{Q}$.
 * `Matrix.PosSemidef.truncatedSVD`, `Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD`,
@@ -500,6 +502,38 @@ theorem exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD {p : Typ
     have h := congrArg Matrix.conjTranspose (rangeProjector_mul_eq_self_iff.mpr hle)
     rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector,
       Matrix.conjTranspose_conjTranspose] at h
+
+/-- **A top-$k$ frame and its orthonormal completion**: for $\lvert p \rvert = k$ and
+$\lvert p \rvert + \lvert q \rvert = \lvert n \rvert$ there are $\mathbf{Z}$ and $\mathbf{V}$
+with orthonormal columns indexed by $p$ and $q$, $\mathbf{Z}^{\mathsf{H}}\mathbf{V} = \mathbf{0}$
+(so $\begin{bmatrix} \mathbf{Z} & \mathbf{V} \end{bmatrix}$ is unitary up to relabelling),
+$\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$ and
+$$\mathbf{E}\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{E},\qquad
+\mathbf{E} = \mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\,:$$
+the error of the truncation lives on the completion, so $\mathbf{E}\mathbf{V}$ has the norms of
+$\mathbf{E}$ (`NLAlib.SymmetricGauge.matrixNorm_mul_of_mul_mul_conjTranspose_eq`). This is the
+frame in which the randomized SVD is analysed: the noise term of the structural bound becomes
+$(\mathbf{E}\mathbf{V})(\mathbf{V}^{\mathsf{H}}\mathbf{\Omega})
+(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$. -/
+theorem exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion {p q : Type*}
+    [Fintype p] [Fintype q] [DecidableEq p] [DecidableEq q] (A : Matrix m n 𝕜) {k : ℕ}
+    (hp : Fintype.card p = k) (hpq : Fintype.card p + Fintype.card q = Fintype.card n) :
+    ∃ (Z : Matrix n p 𝕜) (V : Matrix n q 𝕜), HasOrthonormalCols Z ∧ HasOrthonormalCols V ∧
+      Zᴴ * V = 0 ∧ A * Z * Zᴴ = truncatedSVD A k ∧
+        (A - truncatedSVD A k) * V * Vᴴ = A - truncatedSVD A k := by
+  classical
+  obtain ⟨Z, hZ, hZA⟩ :=
+    exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD A hp (by omega)
+  obtain ⟨V, hZV⟩ := hZ.exists_fromCols hpq
+  obtain ⟨-, hV, h0⟩ := hasOrthonormalCols_fromCols_iff.mp hZV
+  refine ⟨Z, V, hZ, hV, h0, hZA, ?_⟩
+  have hV' : V * Vᴴ = 1 - Z * Zᴴ :=
+    eq_sub_of_add_eq' (hZV.mul_conjTranspose_add_mul_conjTranspose hpq)
+  have hP : A * Z * Zᴴ * (Z * Zᴴ) = A * (Z * Zᴴ) := by
+    rw [Matrix.mul_assoc A Z Zᴴ, Matrix.mul_assoc A, Matrix.mul_assoc Z Zᴴ,
+      ← Matrix.mul_assoc Zᴴ Z Zᴴ, hZ.conjTranspose_mul_self, Matrix.one_mul]
+  rw [← hZA, Matrix.mul_assoc, hV', Matrix.mul_sub, Matrix.mul_one,
+    Matrix.sub_mul A (A * Z * Zᴴ), hP, sub_self, sub_zero]
 
 open scoped ComplexOrder MatrixOrder in
 /-- The truncated SVD of a positive semidefinite matrix lies below it:

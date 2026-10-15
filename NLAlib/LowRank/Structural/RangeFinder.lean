@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.Matrix.Factorizations.NystromGram
 public import NLAlib.Matrix.Factorizations.SketchedLowRank
 public import NLAlib.Matrix.Norms.Projector
@@ -54,7 +55,8 @@ bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = [0]$). Design:
 * `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_sq_le`,
   `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_le`,
   `NLAlib.HasOrthonormalCols.frobNorm_sub_rsvd_sq_le`: spectral and Frobenius forms.
-* `NLAlib.HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le`: truncation for free.
+* `NLAlib.HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le`,
+  `NLAlib.HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd_sq_le`: truncation for free.
 * `NLAlib.IsSubspaceInjection.frobNorm_sub_rsvd_sq_le`: under a subspace injection.
 * `NLAlib.HasOrthonormalCols.sub_mul_mul_pinv_eq`,
   `NLAlib.IsSubspaceInjection.matrixNorm_sub_mul_mul_pinv_le`: $\mathbf{M}$ through an
@@ -177,23 +179,6 @@ theorem HasOrthonormalCols.frobNorm_sub_mul_mul_pinv_mul_conjTranspose_sq
     Matrix.trace_zero, map_zero]
 
 /-! ### The structural bound for any frame -/
-
-/-- The error of the range finder is the projection residual of the error of any matrix
-$\mathbf{A}\mathbf{\Omega}\mathbf{X}$ built from the sketch. -/
-private theorem sub_rsvd_eq_one_sub_rangeProjector_mul_sub_mul [DecidableEq m]
-    (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (X : Matrix l n 𝕜) :
-    A - rsvd A Ω = (1 - rangeProjector (A * Ω)) * (A - A * Ω * X) := by
-  rw [sub_rsvd, Matrix.mul_sub, ← Matrix.mul_assoc _ (A * Ω) X, one_sub_rangeProjector_mul_self,
-    Matrix.zero_mul, sub_zero]
-
-/-- The range finder is at least as good as any matrix $\mathbf{A}\mathbf{\Omega}\mathbf{X}$
-built from the sketch, singular value by singular value. -/
-private theorem singularValues_sub_rsvd_le_sub_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
-    (X : Matrix l n 𝕜) (i : ℕ) :
-    singularValues (A - rsvd A Ω) i ≤ singularValues (A - A * Ω * X) i := by
-  classical
-  rw [sub_rsvd_eq_one_sub_rangeProjector_mul_sub_mul A Ω X]
-  exact (isStarProjection_one_sub_rangeProjector _).singularValues_mul_le _ i
 
 /-- **The structural bound of the range finder, Gram form.** For $\mathbf{Z}$ with orthonormal
 columns and $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, in every unitarily invariant
@@ -333,6 +318,26 @@ theorem HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le [DecidableEq q] {
       hk : (Qᴴ * (A * Ω * pinv (Zᴴ * Ω) * Zᴴ)).rank ≤ k)
   rw [hQC] at h
   exact pow_le_pow_left₀ (frobNorm_nonneg _) h 2
+
+/-- **Truncation for free, for the truncated randomized SVD**: for any $k \ge \lvert r \rvert$,
+$$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}^2 \le \|\mathbf{E}\|_{\mathsf{F}}^2 + \|\mathbf{M}\|_{\mathsf{F}}^2\,,$$
+for every choice of the truncation: the named-output form of
+`NLAlib.HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le`, through an orthonormal basis of
+$\operatorname{range}(\mathbf{A}\mathbf{\Omega})$
+(`NLAlib.HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd`).
+[Woodruff2014, Lemma 48], its middle inequality, there over $\mathbb{R}$; here for the named
+output and any frame.
+Result: truncated-range-finder-structural-bound -/
+theorem HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd_sq_le (hZ : HasOrthonormalCols Z)
+    (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) {k : ℕ} (hk : Fintype.card r ≤ k) :
+    frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 ≤
+      frobNorm (A - A * Z * Zᴴ) ^ 2 + frobNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
+  classical
+  obtain ⟨Q, hQ, hQY⟩ := exists_hasOrthonormalCols_range_eq (p := Fin (A * Ω).rank) (A * Ω)
+    (Fintype.card_fin _)
+  rw [hQ.frobNorm_sub_truncatedSVD_rsvd hQY k]
+  exact hQ.frobNorm_sub_mul_truncatedSVD_sq_le hQY.ge hZ hΩ hk
 
 /-! ### Subspace injections, approximate multiplication, Nyström -/
 

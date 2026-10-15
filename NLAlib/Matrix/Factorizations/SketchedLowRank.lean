@@ -53,8 +53,9 @@ $\mathbf{0}$. Design: `docs/design/LowRank-S0.md` §3.3, §8; `docs/design/LowRa
 * `NLAlib.rsvd_eq_obliqueProjector`, `NLAlib.generalizedNystrom_def`,
   `NLAlib.generalizedNystrom_one`, `NLAlib.sub_rsvd`, `NLAlib.sub_generalizedNystrom`: the source
   formulas and the residual bridges.
-* `NLAlib.singularValues_sub_rsvd_le`: the error of the randomized SVD has singular values at
-  most those of $\mathbf{A}$.
+* `NLAlib.singularValues_sub_rsvd_le`, `NLAlib.singularValues_sub_rsvd_le_sub_mul`: the error of
+  the randomized SVD has singular values at most those of $\mathbf{A}$, and of the error of every
+  approximation $\mathbf{A}\mathbf{\Omega}\mathbf{X}$ built from the sketch.
 * `NLAlib.frobNorm_sub_generalizedNystrom_sq`: generalized Nyström error = randomized SVD error +
   sketch-and-solve excess.
 * `NLAlib.rsvd_eq_self_of_rank_eq`, `NLAlib.generalizedNystrom_eq_self_of_rank_eq`: exactness at low
@@ -114,6 +115,18 @@ theorem singularValues_sub_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) 
   classical
   rw [sub_rsvd]
   exact singularValues_one_sub_rangeProjector_mul_le (A * Ω) A i
+
+/-- **The randomized SVD beats every approximation built from the sketch**, singular value by
+singular value:
+$\sigma_i(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \le
+\sigma_i(\mathbf{A} - \mathbf{A}\mathbf{\Omega}\mathbf{X})$ for every $\mathbf{X}$ and every $i$;
+at $\mathbf{X} = \mathbf{0}$ this is `NLAlib.singularValues_sub_rsvd_le`. -/
+theorem singularValues_sub_rsvd_le_sub_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
+    (X : Matrix l n 𝕜) (i : ℕ) :
+    singularValues (A - rsvd A Ω) i ≤ singularValues (A - A * Ω * X) i := by
+  classical
+  rw [sub_rsvd, ← one_sub_rangeProjector_mul_sub_mul (A * Ω) A X]
+  exact singularValues_one_sub_rangeProjector_mul_le (A * Ω) _ i
 
 /-- The randomized SVD has rank at most the rank of the sketch:
 $$\operatorname{rank}(\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \le

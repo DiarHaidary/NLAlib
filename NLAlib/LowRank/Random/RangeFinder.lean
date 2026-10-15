@@ -246,9 +246,7 @@ theorem integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRa
       (singularValues A k ^ 2 - frobNorm (A - truncatedSVD A k) ^ 2) +
         frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 := by
     intro ω
-    have h := specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_rank_le A (hY ω).rank_le
-    rw [(hY ω).frobNorm_sub_sq_eq_frobNorm_sub_rsvd_sq_add, (hY ω).frobNorm_sub,
-      ← frobNorm_sub_truncatedSVD_rsvd_sq] at h
+    have h := (hY ω).specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le
     linarith
   have hF := integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hX k
   have hI : Integrable (fun ω => (singularValues A k ^ 2 - frobNorm (A - truncatedSVD A k) ^ 2) +

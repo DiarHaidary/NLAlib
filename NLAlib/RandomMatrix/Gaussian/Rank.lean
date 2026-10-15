@@ -26,6 +26,7 @@ $\lvert n \rvert \le \operatorname{rank} \mathbf{A}$.
 * `NLAlib.ae_eval_ne_zero_of_ne_zero`.
 * `NLAlib.ae_rank_eq_min_of_hasLaw_gaussianMatrix`.
 * `NLAlib.ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix`.
+* `NLAlib.ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix`.
 * `NLAlib.ae_isUnit_conjTranspose_mul_self_mul_of_hasLaw_gaussianMatrix`.
 -/
 
@@ -210,6 +211,19 @@ theorem ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix {l : Type*} [Finite l] (A : 
   refine le_antisymm (le_min (Matrix.rank_mul_le_left _ _) (Matrix.rank_le_card_width _)) ?_
   rw [← hrank (X ω) hω]
   exact Matrix.rank_mul_le_left _ _
+
+/-- **A Gaussian sketch keeps a small rank**: for a fixed $\mathbf{Z}$ with
+$\operatorname{rank}\mathbf{Z} \le \lvert n \rvert$ and a standard Gaussian $m \times n$ matrix
+$\mathbf{G}$,
+$\operatorname{rank}(\mathbf{G}^{\mathsf{H}}\mathbf{Z}) = \operatorname{rank}\mathbf{Z}$
+almost surely: the rank hypothesis `(Ωᴴ * Z).rank = Z.rank` of the structural bound of the range
+finder, for a frame $\mathbf{Z}$ with at most $\lvert n \rvert$ columns. -/
+theorem ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix {p : Type*} [Fintype p]
+    (Z : Matrix m p ℝ) (hX : HasLaw X (gaussianMatrix m n) μ) (hZ : Z.rank ≤ Fintype.card n) :
+    ∀ᵐ ω ∂μ, ((X ω)ᴴ * Z).rank = Z.rank := by
+  filter_upwards [ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix Zᴴ hX] with ω hω
+  rw [← Matrix.rank_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+    hω, Matrix.rank_conjTranspose, min_eq_left hZ]
 
 /-- A standard Gaussian $m \times n$ matrix has full rank almost surely:
 $\operatorname{rank} \mathbf{G} = \min(\lvert m \rvert, \lvert n \rvert)$. -/

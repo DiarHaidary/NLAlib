@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.RandomMatrix.Gaussian.BlockTail
@@ -74,68 +75,11 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type
 
 /-! ### The common step -/
 
-/-- At $d = 0$ the named tail is $2\sqrt{k}$, at least $1$ for $k \ge 1$. -/
-private theorem one_le_gaussianPinvFrobTail_zero {k : ℕ} (hk : 1 ≤ k) (t : ℝ) :
-    1 ≤ gaussianPinvFrobTail k 0 t := by
-  rw [gaussianPinvFrobTail_def]
-  simp only [Nat.cast_zero, zero_div, Real.rpow_zero, mul_one, zero_add, Real.Gamma_one, div_one]
-  have : (1 : ℝ) ≤ √(k : ℝ) := Real.one_le_sqrt.2 (by exact_mod_cast hk)
-  linarith
-
 /-- A set that lies, outside a null set, inside a set of probability at most $\delta$ has
 `μ.real` at most $\delta$; no measurability is needed. -/
 private theorem measureReal_le_of_ae_imp [IsFiniteMeasure μ] {s t : Set Ω} {δ : ℝ}
     (hst : ∀ᵐ ω ∂μ, ω ∈ s → ω ∈ t) (ht : μ.real t ≤ δ) : μ.real s ≤ δ :=
   (ENNReal.toReal_mono (measure_ne_top μ t) (measure_mono_ae hst)).trans ht
-
-/-- A frame $\mathbf{Z}$ of a dominant right singular subspace and its orthogonal complement
-$\mathbf{V}_2$: with $\mathbf{S} = (\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k)\mathbf{V}_2$,
-which has the Frobenius and spectral norms of $\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$, the
-noise term of the structural bound is the Gaussian block
-$$\mathbf{S}(\mathbf{V}_2^{\mathsf{H}}\mathbf{\Omega})
-(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}\,.$$
--/
-private theorem exists_frame_complement (A : Matrix m n ℝ) {k : ℕ} (hkn : k ≤ Fintype.card n) :
-    ∃ (Z : Matrix n (Fin k) ℝ) (V₂ : Matrix n (Fin (Fintype.card n - k)) ℝ),
-      HasOrthonormalCols Z ∧ HasOrthonormalCols V₂ ∧ Zᴴ * V₂ = 0 ∧
-      A * Z * Zᴴ = truncatedSVD A k ∧
-      frobNorm ((A - truncatedSVD A k) * V₂) = frobNorm (A - truncatedSVD A k) ∧
-      specNorm ((A - truncatedSVD A k) * V₂) = singularValues A k ∧
-      ∀ Ω : Matrix n l ℝ, (A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) =
-        (A - truncatedSVD A k) * V₂ * (V₂ᴴ * Ω) * pinv (Zᴴ * Ω) := by
-  classical
-  obtain ⟨Z, hZ, hZA⟩ := exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD
-    (p := Fin k) A (Fintype.card_fin k) hkn
-  have hc : Fintype.card (Fin k) + Fintype.card (Fin (Fintype.card n - k)) = Fintype.card n := by
-    simp only [Fintype.card_fin]; omega
-  obtain ⟨V₂, hV⟩ := hZ.exists_fromCols hc
-  obtain ⟨-, hV₂, hZV⟩ := hasOrthonormalCols_fromCols_iff.mp hV
-  have hsum := hV.mul_conjTranspose_add_mul_conjTranspose hc
-  have hA : A = A * Z * Zᴴ + A * V₂ * V₂ᴴ := by
-    rw [Matrix.mul_assoc, Matrix.mul_assoc, ← Matrix.mul_add, hsum, Matrix.mul_one]
-  have h1 : (A - A * Z * Zᴴ) * V₂ = A * V₂ := by
-    rw [Matrix.sub_mul, Matrix.mul_assoc (A * Z), hZV, Matrix.mul_zero, sub_zero]
-  have hE : A - truncatedSVD A k = (A - truncatedSVD A k) * V₂ * V₂ᴴ := by
-    rw [← hZA, h1]
-    exact sub_eq_iff_eq_add'.mpr hA
-  refine ⟨Z, V₂, hZ, hV₂, hZV, hZA, ?_, ?_, fun Ω => ?_⟩
-  · conv_rhs => rw [hE]
-    rw [hV₂.frobNorm_mul_conjTranspose_right]
-  · rw [← specNorm_sub_truncatedSVD]
-    conv_rhs => rw [hE]
-    rw [hV₂.specNorm_mul_conjTranspose_right]
-  · rw [hZA]
-    conv_lhs => rw [hE]
-    simp only [Matrix.mul_assoc]
-
-/-- For a frame with $\lvert p \rvert \le \ell$ columns, the rank hypothesis of the structural
-bound holds almost surely for a Gaussian test matrix. -/
-private theorem ae_rank_conjTranspose_mul_eq (hX : HasLaw X (gaussianMatrix n l) μ) {p : Type*}
-    [Fintype p] [DecidableEq p] {Z : Matrix n p ℝ} (hZ : HasOrthonormalCols Z)
-    (hpl : Fintype.card p ≤ Fintype.card l) : ∀ᵐ ω ∂μ, ((X ω)ᴴ * Z).rank = Z.rank := by
-  filter_upwards [ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix Zᴴ hX] with ω hω
-  rw [← Matrix.rank_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
-    hω, Matrix.rank_conjTranspose, hZ.rank_eq, min_eq_left hpl]
 
 /-- The common reduction of every tail of this file to a block tail. If $\lvert n \rvert < k$, the
 error vanishes almost surely and $\llbracket\mathbf{A}\rrbracket_k = \mathbf{A}$, and `h₀` says
@@ -156,17 +100,32 @@ private theorem measureReal_le_of_frame (A : Matrix m n ℝ) (hX : HasLaw X (gau
     μ.real s ≤ δ := by
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
   rcases le_or_gt k (Fintype.card n) with hkn | hkn
-  · obtain ⟨Z, V₂, hZ, hV₂, hZV, hZA, hF, hS, hM⟩ := exists_frame_complement (l := l) A hkn
+  · obtain ⟨Z, V₂, hZ, hV₂, hZV, hZA, hEV⟩ :=
+      exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion (p := Fin k)
+        (q := Fin (Fintype.card n - k)) A (Fintype.card_fin k)
+        (by simp only [Fintype.card_fin]; omega)
+    have hF : frobNorm ((A - truncatedSVD A k) * V₂) = frobNorm (A - truncatedSVD A k) := by
+      conv_rhs => rw [← hEV]
+      rw [hV₂.frobNorm_mul_conjTranspose_right]
+    have hS : specNorm ((A - truncatedSVD A k) * V₂) = singularValues A k := by
+      rw [← specNorm_sub_truncatedSVD]
+      conv_rhs => rw [← hEV]
+      rw [hV₂.specNorm_mul_conjTranspose_right]
+    have hM : ∀ Ω : Matrix n l ℝ, (A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) =
+        (A - truncatedSVD A k) * V₂ * (V₂ᴴ * Ω) * pinv (Zᴴ * Ω) := fun Ω => by
+      rw [hZA]
+      conv_lhs => rw [← hEV]
+      simp only [Matrix.mul_assoc]
     obtain ⟨s', hs', hss'⟩ := h₁ Z V₂ hZ hV₂ hZV hZA hF hS hM
     refine measureReal_le_of_ae_imp ?_ hs'
-    filter_upwards [ae_rank_conjTranspose_mul_eq hX hZ (by rwa [Fintype.card_fin])] with ω hω
+    filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix Z hX
+      (by rwa [hZ.rank_eq, Fintype.card_fin])] with ω hω
     exact hss' ω hω
   · have hA : truncatedSVD A k = A := truncatedSVD_of_rank_le A (A.rank_le_card_width.trans hkn.le)
     refine measureReal_le_of_ae_imp (t := ∅) ?_ (by rwa [measureReal_empty])
-    filter_upwards [ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix A hX] with ω hω hs
-    refine h₀ ω ?_ hA hs
-    rw [rsvd_eq_self_of_rank_eq (hω.trans (min_eq_left (A.rank_le_card_width.trans
-      (hkn.le.trans hkl)))), sub_self]
+    filter_upwards [ae_rsvd_eq_self_of_hasLaw_gaussianMatrix A hX
+      (A.rank_le_card_width.trans (hkn.le.trans hkl))] with ω hω hs
+    exact h₀ ω (by rw [hω, sub_self]) hA hs
 
 /-- The reduction of the (RSVD1) tails to the Frobenius block tail: a statistic $F$ bounded,
 under the rank hypothesis, by $b + c\|\mathbf{M}\|_{\mathsf{F}}^2$ for the noise term $\mathbf{M}$
@@ -207,35 +166,6 @@ private theorem measureReal_not_le_of_frobNorm_sq_le (A : Matrix m n ℝ)
           pinv (Zᴴ * X ω)) ^ 2 := h
       _ ≤ b + c * (u * t * k / d * frobNorm (A - truncatedSVD A k) ^ 2) := by gcongr
       _ = b + c * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2 := by ring
-
-/-- Truncation for free on the named output: under the rank hypothesis of the structural bound,
-for a frame $\mathbf{Z}$ with $k$ columns and the noise term $\mathbf{M}$,
-$$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}^2 \le \|\mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}\|_{\mathsf{F}}^2 +
-\|\mathbf{M}\|_{\mathsf{F}}^2\,.$$ -/
-private theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_of_frame {A : Matrix m n ℝ}
-    {Ω : Matrix n l ℝ} {k : ℕ} {Z : Matrix n (Fin k) ℝ} (hZ : HasOrthonormalCols Z)
-    (hΩ : (Ωᴴ * Z).rank = Z.rank) :
-    frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 ≤
-      frobNorm (A - A * Z * Zᴴ) ^ 2 + frobNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  classical
-  obtain ⟨Q, hQ, hQY⟩ := exists_hasOrthonormalCols_range_eq (p := Fin (A * Ω).rank) (A * Ω)
-    (Fintype.card_fin _)
-  rw [hQ.frobNorm_sub_truncatedSVD_rsvd hQY k]
-  exact hQ.frobNorm_sub_mul_truncatedSVD_sq_le hQY.ge hZ hΩ (by rw [Fintype.card_fin])
-
-/-- Reverse Eckart–Young for a best approximation $\mathbf{Y}$ of the randomized SVD, in the shape
-the tails use:
-$$\|\mathbf{A} - \mathbf{Y}\|_2^2 + \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
-\le \sigma_k(\mathbf{A})^2 + \|\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$ -/
-private theorem specNorm_sub_sq_add_le_of_isBestRankApprox {A Y : Matrix m n ℝ}
-    {Ω : Matrix n l ℝ} {k : ℕ} (hY : IsBestRankApprox (rsvd A Ω) k Y) :
-    specNorm (A - Y) ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2 ≤
-      singularValues A k ^ 2 + frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 := by
-  have h := specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_rank_le A hY.rank_le
-  rwa [hY.frobNorm_sub_sq_eq_frobNorm_sub_rsvd_sq_add, hY.frobNorm_sub,
-    ← frobNorm_sub_truncatedSVD_rsvd_sq] at h
 
 /-! ### The tail of the randomized SVD -/
 
@@ -361,7 +291,7 @@ theorem measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussi
     (b := frobNorm (A - truncatedSVD A k) ^ 2)
     (fun ω h hA => by rw [← sub_eq_zero.mp h])
     (fun ω Z hZ hZA hω => by
-      have h := frobNorm_sub_truncatedSVD_rsvd_sq_le_of_frame (A := A) hZ hω
+      have h := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le hω A (Fintype.card_fin k).le
       rw [hZA] at h ⊢
       rwa [one_mul])
   rw [add_mul, one_mul]
@@ -392,13 +322,13 @@ theorem measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaus
   have h := measureReal_not_le_of_frobNorm_sq_le A hX hd u ht zero_le_one
     (F := fun ω => specNorm (A - Y ω) ^ 2) (b := singularValues A k ^ 2)
     (fun ω h hA => by
-      have h1 := specNorm_sub_sq_add_le_of_isBestRankApprox (hY ω)
+      have h1 := (hY ω).specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le
       have h2 := frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_rsvd_sq_add A (X ω) k
       rw [h, frobNorm_zero] at h2
       linarith)
     (fun ω Z hZ hZA hω => by
-      have h1 := specNorm_sub_sq_add_le_of_isBestRankApprox (hY ω)
-      have h2 := frobNorm_sub_truncatedSVD_rsvd_sq_le_of_frame (A := A) hZ hω
+      have h1 := (hY ω).specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le
+      have h2 := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le hω A (Fintype.card_fin k).le
       rw [hZA] at h2 ⊢
       linarith)
   simpa only [one_mul] using h

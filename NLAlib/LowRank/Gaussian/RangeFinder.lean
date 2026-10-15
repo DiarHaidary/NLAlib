@@ -25,10 +25,9 @@ squared spectral form are corollaries. The first spectral moment (HMT Theorem 10
 late-truncated output `truncatedSVD (rsvd A (X ω)) k` in the Frobenius norm, with HMT's constant,
 are here too. Every error is $\mathbf{A}$ minus the named output.
 
-The proof completes a top-$k$ frame $\mathbf{Z}$
-(`NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD`) by $\mathbf{V}$ to an
-orthogonal matrix, so that the structural bounds of `NLAlib.LowRank.Structural.RangeFinder` hold
-almost surely with
+The proof completes a top-$k$ frame $\mathbf{Z}$ by $\mathbf{V}$ to an orthogonal matrix
+(`NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion`), so that
+the structural bounds of `NLAlib.LowRank.Structural.RangeFinder` hold almost surely with
 $\mathbf{M} = (\mathbf{E}\mathbf{V})(\mathbf{V}^{\mathsf{H}}\mathbf{X})
 (\mathbf{Z}^{\mathsf{H}}\mathbf{X})^{+}$, and integrates them with the block moments of
 `NLAlib.RandomMatrix.Gaussian.BlockMoments`. No hypothesis on the shape of $\mathbf{A}$ is needed:
@@ -73,31 +72,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type
 
 /-! ### The completed top-`k` frame -/
 
-/-- A top-$k$ frame $\mathbf{Z}$ of $\mathbf{A}$ completed by $\mathbf{V}$ to an orthogonal
-matrix; then $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$ satisfies
-$\mathbf{E}\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{E}$. -/
-private theorem exists_completedFrame (A : Matrix m n ℝ) {k : ℕ} (hkn : k ≤ Fintype.card n) :
-    ∃ (Z : Matrix n (Fin k) ℝ) (V : Matrix n (Fin (Fintype.card n - k)) ℝ),
-      HasOrthonormalCols Z ∧ HasOrthonormalCols V ∧ Zᴴ * V = 0 ∧
-        A * Z * Zᴴ = truncatedSVD A k ∧
-          (A - truncatedSVD A k) * V * Vᴴ = A - truncatedSVD A k := by
-  classical
-  obtain ⟨Z, hZ, hZA⟩ :=
-    exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD A (Fintype.card_fin k) hkn
-  obtain ⟨V, hZV⟩ := hZ.exists_fromCols (p := Fin (Fintype.card n - k))
-    (by rw [Fintype.card_fin, Fintype.card_fin]; omega)
-  obtain ⟨-, hV, h0⟩ := hasOrthonormalCols_fromCols_iff.mp hZV
-  have hsum := hZV.mul_conjTranspose_add_mul_conjTranspose
-    (by rw [Fintype.card_fin, Fintype.card_fin]; omega)
-  refine ⟨Z, V, hZ, hV, h0, hZA, ?_⟩
-  have hV' : V * Vᴴ = 1 - Z * Zᴴ := eq_sub_of_add_eq' hsum
-  have hZ1 : Zᴴ * Z = 1 := hZ
-  have hP : A * Z * Zᴴ * (Z * Zᴴ) = A * (Z * Zᴴ) := by
-    rw [Matrix.mul_assoc A Z Zᴴ, Matrix.mul_assoc A, Matrix.mul_assoc Z Zᴴ,
-      ← Matrix.mul_assoc Zᴴ Z Zᴴ, hZ1, Matrix.one_mul]
-  rw [← hZA, Matrix.mul_assoc, hV', Matrix.mul_sub, Matrix.mul_one,
-    Matrix.sub_mul A (A * Z * Zᴴ), hP, sub_self, sub_zero]
-
 omit [Fintype m] in
 /-- The block of the structural bound in the completed frame:
 $$\mathbf{E}\mathbf{X}(\mathbf{Z}^{\mathsf{H}}\mathbf{X})^{+} =
@@ -107,26 +81,6 @@ private theorem sub_mul_mul_pinv_eq_block {E : Matrix m n ℝ} {p q : Type*} [Fi
     [Fintype q] {V : Matrix n q ℝ} (hEV : E * V * Vᴴ = E) (Z : Matrix n p ℝ)
     (Ω : Matrix n l ℝ) : E * Ω * pinv (Zᴴ * Ω) = E * V * (Vᴴ * Ω) * pinv (Zᴴ * Ω) := by
   rw [← Matrix.mul_assoc (E * V), hEV]
-
-/-- The completed frame does not change the norms of $\mathbf{E}$:
-$\|\mathbf{E}\mathbf{V}\|_{\Phi} = \|\mathbf{E}\|_{\Phi}$. -/
-private theorem matrixNorm_mul_of_mul_mul_conjTranspose_eq (Φ : SymmetricGauge)
-    {E : Matrix m n ℝ} {q : Type*} [Fintype q] [DecidableEq q] {V : Matrix n q ℝ}
-    (hV : HasOrthonormalCols V) (hEV : E * V * Vᴴ = E) : Φ.matrixNorm (E * V) = Φ.matrixNorm E := by
-  rw [← Φ.matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols hV (E * V), hEV]
-
-/-- For a frame $\mathbf{Z}$ of $k \le \ell$ columns, $\mathbf{Z}^{\mathsf{H}}\mathbf{X}$ has full
-row rank almost surely: the rank hypothesis of the structural bounds. -/
-private theorem ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} {Z : Matrix n (Fin k) ℝ}
-    (hZ : HasOrthonormalCols Z) (hkl : k ≤ Fintype.card l) :
-    ∀ᵐ ω ∂μ, ((X ω)ᴴ * Z).rank = Z.rank := by
-  have hZr : Z.rank = k := by
-    rw [mulVec_injective_iff_rank_eq.mp hZ.mulVec_injective, Fintype.card_fin]
-  filter_upwards [ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix Zᴴ hX] with ω hω
-  rw [Matrix.rank_conjTranspose, hZr] at hω
-  rw [← Matrix.rank_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
-    hω, hZr, min_eq_left hkl]
 
 /-! ### Exact recovery -/
 
@@ -179,7 +133,10 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
   classical
   have := hX.isProbabilityMeasure
   rcases le_or_gt k (Fintype.card n) with hkn | hkn
-  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ := exists_completedFrame A hkn
+  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ :=
+      exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion (p := Fin k)
+        (q := Fin (Fintype.card n - k)) A (Fintype.card_fin k)
+        (by simp only [Fintype.card_fin]; omega)
     have hk' : Fintype.card (Fin k) + 2 ≤ Fintype.card l := by rwa [Fintype.card_fin]
     have hMi := integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hZ hV hZV hk'
       ((A - truncatedSVD A k) * V)
@@ -189,7 +146,8 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
         Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
           Φ (Finsupp.single 0 1) *
             frobNorm ((A - truncatedSVD A k) * V * (Vᴴ * X ω) * pinv (Zᴴ * X ω)) ^ 2 := by
-      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix hX hZ (by omega)]
+      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix Z hX
+        (by rw [hZ.rank_eq, Fintype.card_fin]; omega)]
         with ω hω
       have h := Φ.matrixNorm_conjTranspose_mul_self_sub_rsvd_le hZ hω A
       rw [hZA, sub_mul_mul_pinv_eq_block hEV] at h
@@ -204,7 +162,7 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
       hX.aemeasurable) hI hpt).trans_eq ?_
     rw [integral_add (integrable_const _) (hMi.const_mul _), integral_const, probReal_univ,
       one_smul, integral_const_mul, hM, Fintype.card_fin]
-    have hF := matrixNorm_mul_of_mul_mul_conjTranspose_eq (lpGauge 2 one_le_two) hV hEV
+    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
     rw [hF]
     ring
@@ -339,7 +297,10 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
   have hC : 0 ≤ gaussianPinvSpecNormBound k (Fintype.card l) :=
     gaussianPinvSpecNormBound_nonneg (by omega)
   rcases le_or_gt k (Fintype.card n) with hkn | hkn
-  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ := exists_completedFrame A hkn
+  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ :=
+      exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion (p := Fin k)
+        (q := Fin (Fintype.card n - k)) A (Fintype.card_fin k)
+        (by simp only [Fintype.card_fin]; omega)
     have hk' : Fintype.card (Fin k) + 2 ≤ Fintype.card l := by rwa [Fintype.card_fin]
     have hMi := integrable_specNorm_mul_mul_pinv_of_hasLaw_gaussianMatrix hX hZ hV hZV hk'
       ((A - truncatedSVD A k) * V)
@@ -347,7 +308,8 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
       ((A - truncatedSVD A k) * V)
     have hpt : ∀ᵐ ω ∂μ, specNorm (A - rsvd A (X ω)) ≤ singularValues A k +
         specNorm ((A - truncatedSVD A k) * V * (Vᴴ * X ω) * pinv (Zᴴ * X ω)) := by
-      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix hX hZ (by omega)]
+      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix Z hX
+        (by rw [hZ.rank_eq, Fintype.card_fin]; omega)]
         with ω hω
       have h := hZ.specNorm_sub_rsvd_le hω A
       rwa [hZA, sub_mul_mul_pinv_eq_block hEV, specNorm_sub_truncatedSVD] at h
@@ -356,9 +318,9 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
       (integrable_const _).add hMi
     refine (integral_mono_ae (integrable_specNorm_sub_rsvd A hX.aemeasurable) hI hpt).trans ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul]
-    have hF := matrixNorm_mul_of_mul_mul_conjTranspose_eq (lpGauge 2 one_le_two) hV hEV
+    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
-    have hS := matrixNorm_mul_of_mul_mul_conjTranspose_eq (lpGauge ⊤ le_top) hV hEV
+    have hS := (lpGauge ⊤ le_top).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] at hS
     rw [hF, hS, Fintype.card_fin, ← gaussianPinvSpecNormBound_def] at hM
     linarith
@@ -388,7 +350,10 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
   classical
   have := hX.isProbabilityMeasure
   rcases le_or_gt k (Fintype.card n) with hkn | hkn
-  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ := exists_completedFrame A hkn
+  · obtain ⟨Z, V, hZ, hV, hZV, hZA, hEV⟩ :=
+      exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion (p := Fin k)
+        (q := Fin (Fintype.card n - k)) A (Fintype.card_fin k)
+        (by simp only [Fintype.card_fin]; omega)
     have hk' : Fintype.card (Fin k) + 2 ≤ Fintype.card l := by rwa [Fintype.card_fin]
     have hMi := integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hZ hV hZV hk'
       ((A - truncatedSVD A k) * V)
@@ -397,13 +362,12 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
     have hpt : ∀ᵐ ω ∂μ, frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ≤
         frobNorm (A - truncatedSVD A k) ^ 2 +
           frobNorm ((A - truncatedSVD A k) * V * (Vᴴ * X ω) * pinv (Zᴴ * X ω)) ^ 2 := by
-      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix hX hZ (by omega)]
+      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix Z hX
+        (by rw [hZ.rank_eq, Fintype.card_fin]; omega)]
         with ω hω
-      obtain ⟨Q, hQ, hQY⟩ :=
-        exists_hasOrthonormalCols_range_eq (A * X ω) (Fintype.card_fin (A * X ω).rank)
-      have h := hQ.frobNorm_sub_mul_truncatedSVD_sq_le hQY.ge hZ hω
+      have h := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le hω A
         (by rw [Fintype.card_fin] : Fintype.card (Fin k) ≤ k)
-      rwa [← hQ.frobNorm_sub_truncatedSVD_rsvd hQY, hZA, sub_mul_mul_pinv_eq_block hEV] at h
+      rwa [hZA, sub_mul_mul_pinv_eq_block hEV] at h
     have hI : Integrable (fun ω => frobNorm (A - truncatedSVD A k) ^ 2 +
         frobNorm ((A - truncatedSVD A k) * V * (Vᴴ * X ω) * pinv (Zᴴ * X ω)) ^ 2) μ :=
       (integrable_const _).add hMi
@@ -411,7 +375,7 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
       hI hpt).trans_eq ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul, hM,
       Fintype.card_fin, gaussianProjectionFactor_def]
-    have hF := matrixNorm_mul_of_mul_mul_conjTranspose_eq (lpGauge 2 one_le_two) hV hEV
+    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
     rw [hF]
     ring

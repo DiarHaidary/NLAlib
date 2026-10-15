@@ -164,13 +164,6 @@ theorem frobNorm_sub_mul_sq (B : Matrix m p 𝕜) (A : Matrix m n 𝕜) (X : Mat
     exact (isStarProjection_rangeProjector B).frobInner_mul_one_sub_mul _ _
   rw [hPX, ← frobNorm_add_sq_of_frobInner_eq_zero h0, ← hsplit]
 
-omit [Fintype n] in
-private theorem one_sub_rangeProjector_mul_sub_mul (B : Matrix m p 𝕜) (A : Matrix m n 𝕜)
-    (X : Matrix p n 𝕜) :
-    (1 - rangeProjector B) * (A - B * X) = (1 - rangeProjector B) * A := by
-  rw [Matrix.mul_sub, ← Matrix.mul_assoc, one_sub_rangeProjector_mul_self, Matrix.zero_mul,
-    sub_zero]
-
 /-- **Best approximation in the Frobenius norm.** The projection residual is at most the
 residual of any approximation $\mathbf{B}\mathbf{X}$ with columns in the range of $\mathbf{B}$:
 $\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_{\mathsf{F}}

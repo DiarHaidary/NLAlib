@@ -22,6 +22,8 @@ applied to a matrix it gives the projection residual $(\mathbf{I} -
 * `NLAlib.isStarProjection_one_sub_rangeProjector`: it is an orthogonal projector.
 * `NLAlib.one_sub_rangeProjector_mul_self`, `NLAlib.conjTranspose_mul_one_sub_rangeProjector`: it
   annihilates the columns of $\mathbf{A}$, on both sides.
+* `NLAlib.one_sub_rangeProjector_mul_sub_mul`: the residual of $\mathbf{A} - \mathbf{B}\mathbf{X}$
+  is the residual of $\mathbf{A}$.
 * `NLAlib.range_mulVecLin_one_sub_rangeProjector`, `NLAlib.rank_one_sub_rangeProjector_add_rank`:
   its range and its rank.
 * `NLAlib.norm_one_sub_rangeProjector_mulVec_le`: the projection is the best approximation.
@@ -64,6 +66,15 @@ want the difference. -/
 theorem one_sub_rangeProjector_mul [Fintype m] [Fintype n] [DecidableEq m] (Y : Matrix m n 𝕜)
     (A : Matrix m p 𝕜) : (1 - rangeProjector Y) * A = A - rangeProjector Y * A := by
   rw [Matrix.sub_mul, Matrix.one_mul]
+
+/-- The projection residual does not see a matrix with columns in the range:
+$(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{A} - \mathbf{B}\mathbf{X}) =
+(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}$ for every $\mathbf{X}$. -/
+theorem one_sub_rangeProjector_mul_sub_mul [Fintype m] [Fintype p] [DecidableEq m]
+    (B : Matrix m p 𝕜) (A : Matrix m n 𝕜) (X : Matrix p n 𝕜) :
+    (1 - rangeProjector B) * (A - B * X) = (1 - rangeProjector B) * A := by
+  rw [Matrix.mul_sub, ← Matrix.mul_assoc, one_sub_rangeProjector_mul_self, Matrix.zero_mul,
+    sub_zero]
 
 /-- The range of the complementary projector $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is the kernel
 of $\mathbf{A}^{\mathsf{H}}$: the orthogonal complement of the column space, expressed without

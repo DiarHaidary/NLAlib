@@ -848,3 +848,8 @@ not registered in `NLAlib.lean` (wrap-up).
   \sigma_i(\mathbf{A} - \mathbf{A}\mathbf{\Omega}\mathbf{X})$ for every $\mathbf{X}$, is a candidate
   public lemma (S2a, S3 may want it); `sub_rsvd_eq_one_sub_rangeProjector_mul_sub_mul` restates the
   private `one_sub_rangeProjector_mul_sub_mul` of `Norms/Projector.lean` in `rsvd` form.
+- Amendment 2026-10-15 (S3 helper refactor): `singularValues_sub_rsvd_le_sub_mul` is public in
+  `Matrix/Factorizations/SketchedLowRank.lean`, beside its case $\mathbf{X} = \mathbf{0}$
+  `singularValues_sub_rsvd_le`; `sub_rsvd_eq_one_sub_rangeProjector_mul_sub_mul` is deleted and
+  `one_sub_rangeProjector_mul_sub_mul` is public in `Matrix/Basic/ComplementaryProjector.lean`
+  (moved from a private lemma of `Matrix/Norms/Projector.lean`).
