@@ -11,18 +11,22 @@ public import NLAlib.Probability.SubGaussian.Square
 /-!
 # Sums of squares of sub-Gaussian variables with Gaussian moments
 
-For independent real `Y₁, …, Y_k`, each sub-Gaussian with proxy `1`, with `E Yᵢ² = 1` and
-`E Yᵢ⁴ ≤ 3` (the moments of a standard Gaussian), the relative deviation of `k⁻¹ ∑ Yᵢ²` from `1`
-has the tail `2 exp (-k (ε²/4 - ε³/6))` of `χ²_k`, Dasgupta and Gupta's exponent. The upper half
-is Chernoff's bound with `E exp (θ Y²) ≤ (1 - 2θ)^{-1/2}`
-(`HasSubgaussianMGF.integral_exp_mul_sq_le`) and the arithmetic of the `χ²` tail; the lower half
-is Chernoff's bound with `E exp (-θ Y²) ≤ 1 - θ + 3θ²/2` at `θ = ε/(2(1 + ε))`, through
-`Real.log_one_add_le_cubic_of_nonpos`. A standard Gaussian and a Rademacher combination
-`⟨ξ, x⟩` with `‖x‖ = 1` (`E ⟨ξ, x⟩⁴ = 3 - 2 ∑ xⱼ⁴`) satisfy the hypotheses; the latter gives the
-sign-sketch Johnson–Lindenstrauss tail with Gaussian constants (Achlioptas).
+For $k$ independent real $Y_i$, each sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and
+$\mathbb{E}[Y_i^4] \le 3$ (the moments of a standard Gaussian), the relative deviation of
+$k^{-1} \sum_i Y_i^2$ from $1$ has the tail $2 e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$ of
+$\chi^2_k$, Dasgupta and Gupta's exponent. The upper half is Chernoff's bound with
+$\mathbb{E}[e^{\theta Y^2}] \le (1 - 2\theta)^{-1/2}$ (`HasSubgaussianMGF.integral_exp_mul_sq_le`)
+and the arithmetic of the $\chi^2$ tail; the lower half is Chernoff's bound with
+$\mathbb{E}[e^{-\theta Y^2}] \le 1 - \theta + 3\theta^2/2$ at
+$\theta = \varepsilon/(2(1 + \varepsilon))$, through `Real.log_one_add_le_cubic_of_nonpos`. A
+standard Gaussian and a Rademacher combination $\langle \boldsymbol{\xi}, \mathbf{x} \rangle$ with
+$\|\mathbf{x}\| = 1$
+($\mathbb{E} \langle \boldsymbol{\xi}, \mathbf{x} \rangle^4 = 3 - 2 \sum_j \mathbf{x}_j^4$)
+satisfy the hypotheses; the latter gives the sign-sketch Johnson–Lindenstrauss tail with Gaussian
+constants (Achlioptas).
 
 This file is Sketching stage S3's (`docs/design/Sketching-S3.md` §8, item 2). At the round's
-wrap-up it merges into `NLAlib/Probability/SubGaussian/Square.lean`, and the `χ²` relative
+wrap-up it merges into `NLAlib/Probability/SubGaussian/Square.lean`, and the $\chi^2$ relative
 deviation `NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`, which
 it dominates (same bound, weaker hypotheses), can be reproved from it and keep its name
 (CONTRIBUTING §5.2, rule 6).
@@ -41,8 +45,9 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {ι : Type*} [Fintype ι]
   {Y : ι → Ω → ℝ} {ε : ℝ}
 
-/-- `log (1 + ε) ≤ ε - ε²/2 + ε³/3` for `ε ≥ 0`: the difference has derivative
-`ε³/(1 + ε) ≥ 0` and vanishes at `0`. A copy of the private lemma of
+/-- $\log(1 + \varepsilon) \le \varepsilon - \varepsilon^2/2 + \varepsilon^3/3$ for
+$\varepsilon \ge 0$: the difference has derivative $\varepsilon^3/(1 + \varepsilon) \ge 0$ and
+vanishes at $0$. A copy of the private lemma of
 `NLAlib/Probability/Distributions/ChiSquareTails.lean`, until the wrap-up. -/
 private theorem log_one_add_le_cubic {ε : ℝ} (hε : 0 ≤ ε) :
     Real.log (1 + ε) ≤ ε - ε ^ 2 / 2 + ε ^ 3 / 3 := by
@@ -73,8 +78,8 @@ private theorem log_one_add_le_cubic {ε : ℝ} (hε : 0 ≤ ε) :
   norm_num at this
   linarith
 
-/-- `exp (-t) ≤ 1 - t + t²/2` for `t ≥ 0`: the difference has derivative `t - 1 + exp (-t) ≥ 0`
-and vanishes at `0`. -/
+/-- $e^{-t} \le 1 - t + t^2/2$ for $t \ge 0$: the difference has derivative
+$t - 1 + e^{-t} \ge 0$ and vanishes at $0$. -/
 private theorem exp_neg_le_one_sub_add_sq_div_two {t : ℝ} (ht : 0 ≤ t) :
     Real.exp (-t) ≤ 1 - t + t ^ 2 / 2 := by
   let g : ℝ → ℝ := fun s => 1 - s + s ^ 2 / 2 - Real.exp (-s)
@@ -95,9 +100,10 @@ private theorem exp_neg_le_one_sub_add_sq_div_two {t : ℝ} (ht : 0 ≤ t) :
   simp only [g, neg_zero, Real.exp_zero] at this
   linarith
 
-/-- The arithmetic of the lower tail: at `θ = ε/(2(1 + ε))` and `u = -θ + 3θ²/2`,
-`θ (1 - ε) + u - u²/2 + u³/3 ≤ -(ε²/4 - ε³/6)`; the difference is `ε³` times a rational function
-with positive coefficients. -/
+/-- The arithmetic of the lower tail: for $\varepsilon \ge 0$, at
+$\theta = \varepsilon/(2(1 + \varepsilon))$ and $u = -\theta + 3\theta^2/2$,
+$$\theta (1 - \varepsilon) + u - u^2/2 + u^3/3 \le -(\varepsilon^2/4 - \varepsilon^3/6) \,;$$
+the difference is $\varepsilon^3$ times a rational function with positive coefficients. -/
 private theorem lower_exponent_le (hε : 0 ≤ ε) :
     ε / (2 * (1 + ε)) * (1 - ε) + ((-(ε / (2 * (1 + ε))) + 3 * (ε / (2 * (1 + ε))) ^ 2 / 2) -
       (-(ε / (2 * (1 + ε))) + 3 * (ε / (2 * (1 + ε))) ^ 2 / 2) ^ 2 / 2 +
@@ -116,7 +122,8 @@ private theorem lower_exponent_le (hε : 0 ≤ ε) :
       1668 * ε ^ 2 + 444 * ε + 32) / (1536 * (1 + ε) ^ 6) := by positivity
   linarith
 
-/-- The moment generating function of `∑ Yᵢ²` is the product of those of the `Yᵢ²`. -/
+/-- The moment generating function of $\sum_i Y_i^2$ is the product of those of the $Y_i^2$, for
+independent sub-Gaussian $Y_i$. -/
 private theorem mgf_sum_sq (hind : iIndepFun Y μ) (hsub : ∀ i, HasSubgaussianMGF (Y i) 1 μ)
     (t : ℝ) : mgf (fun ω => ∑ i, Y i ω ^ 2) μ t = ∏ i, mgf (fun ω => Y i ω ^ 2) μ t := by
   have hW : iIndepFun (fun i ω => Y i ω ^ 2) μ :=
@@ -126,7 +133,8 @@ private theorem mgf_sum_sq (hind : iIndepFun Y μ) (hsub : ∀ i, HasSubgaussian
   ext ω
   rw [Finset.sum_apply]
 
-/-- `exp (θ ∑ Yᵢ²)` is integrable as soon as each `exp (θ Yᵢ²)` is. -/
+/-- $e^{\theta \sum_i Y_i^2}$ is integrable for independent $Y_i$, each sub-Gaussian with proxy
+$1$, when $2\theta < 1$ (where each $e^{\theta Y_i^2}$ is). -/
 private theorem integrable_exp_mul_sum_sq (hind : iIndepFun Y μ)
     (hsub : ∀ i, HasSubgaussianMGF (Y i) 1 μ) {θ : ℝ} (hθ : 2 * θ < 1) :
     Integrable (fun ω => Real.exp (θ * ∑ i, Y i ω ^ 2)) μ := by
@@ -138,8 +146,11 @@ private theorem integrable_exp_mul_sum_sq (hind : iIndepFun Y μ)
   refine (Finset.prod_pos fun i _ => mgf_pos ?_).ne'
   exact (hsub i).integrable_exp_mul_sq (by rw [NNReal.coe_one, mul_one]; exact hθ)
 
-/-- **Upper Chernoff tail**: `P((1 + ε) k ≤ ∑ Yᵢ²) ≤ exp (-k (ε²/4 - ε³/6))`, at
-`θ = ε/(2(1 + ε))` with `E exp (θ Yᵢ²) ≤ (1 - 2θ)^{-1/2}`. -/
+/-- **Upper Chernoff tail**: for $\varepsilon \ge 0$,
+$\mathbb{P}\bigl((1 + \varepsilon) k \le \sum_i Y_i^2\bigr)
+\le e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$, $k = \lvert \iota \rvert$, at
+$\theta = \varepsilon/(2(1 + \varepsilon))$ with
+$\mathbb{E}[e^{\theta Y_i^2}] \le (1 - 2\theta)^{-1/2}$. -/
 private theorem measureReal_mul_card_le_sum_sq_le (hind : iIndepFun Y μ)
     (hsub : ∀ i, HasSubgaussianMGF (Y i) 1 μ) (hε : 0 ≤ ε) :
     μ.real {ω | (1 + ε) * Fintype.card ι ≤ ∑ i, Y i ω ^ 2} ≤
@@ -179,8 +190,11 @@ private theorem measureReal_mul_card_le_sum_sq_le (hind : iIndepFun Y μ)
       rw [e]
       nlinarith
 
-/-- **Lower Chernoff tail**: `P(∑ Yᵢ² ≤ (1 - ε) k) ≤ exp (-k (ε²/4 - ε³/6))`, at
-`θ = ε/(2(1 + ε))` with `E exp (-θ Yᵢ²) ≤ 1 - θ + 3θ²/2` (the fourth moment) and
+/-- **Lower Chernoff tail**: for $\varepsilon \ge 0$,
+$\mathbb{P}\bigl(\sum_i Y_i^2 \le (1 - \varepsilon) k\bigr)
+\le e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$, $k = \lvert \iota \rvert$, at
+$\theta = \varepsilon/(2(1 + \varepsilon))$ with
+$\mathbb{E}[e^{-\theta Y_i^2}] \le 1 - \theta + 3\theta^2/2$ (the fourth moment) and
 `Real.log_one_add_le_cubic_of_nonpos`. -/
 private theorem measureReal_sum_sq_le_mul_card_le (hind : iIndepFun Y μ)
     (hsub : ∀ i, HasSubgaussianMGF (Y i) 1 μ) (h2 : ∀ i, ∫ ω, Y i ω ^ 2 ∂μ = 1)
@@ -248,13 +262,16 @@ private theorem measureReal_sum_sq_le_mul_card_le (hind : iIndepFun Y μ)
       have : θ * (1 - ε) + Real.log (1 + u) ≤ -(ε ^ 2 / 4 - ε ^ 3 / 6) := by linarith
       nlinarith
 
-/-- **Dasgupta–Gupta tail for sums of squares**: for independent real `Yᵢ`, each sub-Gaussian
-with proxy `1`, with `E Yᵢ² = 1` and `E Yᵢ⁴ ≤ 3`, and `0 ≤ ε`,
-`P(ε ≤ |k⁻¹ ∑ Yᵢ² - 1|) ≤ 2 exp (-k (ε²/4 - ε³/6))`, `k = card ι`. The exponent of Dasgupta and
-Gupta (2003) for `χ²_k`, cited by name only (`docs/PORT_SKETCHING.md` §7.2); here for any
-variables with the Gaussian's proxy and its second and fourth moments. The lower half covers
-`ε = 1`, where `∑ Yᵢ² = 0` may have positive probability (`2^{-k}` for Rademacher combinations).
-The bound is at least `2` for `ε ≥ 3/2` and for empty `ι`. -/
+/-- **Dasgupta–Gupta tail for sums of squares**: for independent real $Y_i$, $i \in \iota$, each
+sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and $\mathbb{E}[Y_i^4] \le 3$, and
+$\varepsilon \ge 0$,
+$$\mathbb{P}\Bigl(\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr)
+\le 2 e^{-k(\varepsilon^2/4 - \varepsilon^3/6)} \,, \qquad k = \lvert \iota \rvert \,.$$
+The exponent of Dasgupta and Gupta (2003) for $\chi^2_k$, cited by name only
+(`docs/PORT_SKETCHING.md` §7.2); here for any variables with the Gaussian's proxy and its second
+and fourth moments. The lower half covers $\varepsilon = 1$, where $\sum_i Y_i^2 = 0$ may have
+positive probability (up to $2^{-k}$ for Rademacher combinations). The bound is at least $2$ for
+$\varepsilon \ge 3/2$ and for empty $\iota$. -/
 theorem measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun (hind : iIndepFun Y μ)
     (hsub : ∀ i, HasSubgaussianMGF (Y i) 1 μ) (h2 : ∀ i, ∫ ω, Y i ω ^ 2 ∂μ = 1)
     (h4 : ∀ i, ∫ ω, Y i ω ^ 4 ∂μ ≤ 3) (hε : 0 ≤ ε) :

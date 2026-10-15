@@ -13,25 +13,31 @@ public import NLAlib.Sketching.Gaussian.SubGaussian
 /-!
 # Rademacher sketches
 
-The sign sketch is `S = (√k)⁻¹ • X` for `X : Matrix k n ℝ` with independent random signs,
-`HasLaw X (rademacherMatrix k n) μ`, where `rademacherMatrix k n` is the law of independent rows,
-each a `rademacherVector n`. It is written out in each statement,
-`fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`, as for the Gaussian sketch.
+The sign sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ for a random
+`X : Matrix k n ℝ` with independent random signs, `HasLaw X (rademacherMatrix k n) μ`, where
+`rademacherMatrix k n` is the law of independent rows, each a `rademacherVector n`. It is written
+out in each statement, `fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`, as for the Gaussian sketch.
 
 It is an isotropic sketch, has the distributional Johnson–Lindenstrauss property with the
-Gaussian sketch's exponent `ε²/4 - ε³/6` (Dasgupta and Gupta's; Achlioptas's argument, through
-`NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le`, since
-`E ⟨ξ, x⟩⁴ = 3 ‖x‖⁴ - 2 ∑ xⱼ⁴ ≤ 3 ‖x‖⁴`), the exact JL second moment `2 (‖x‖⁴ - ∑ xⱼ⁴)/k`, at
-most the Gaussian's `2 ‖x‖⁴/k`, and is an oblivious subspace embedding and injection through JL
-plus a net at `ε / 2`. The sample sizes are the Gaussian sketch's `NLAlib.jlDim`: `jlDim ε δ`
-for JL and `jlDim (ε/2) (δ/9^d)` for the OSE and OSI. For `ε ≳ 1.43` the sub-Gaussian rows
-theorem at `c = 1` (`NLAlib.hasJLProperty_of_isSubgaussianVector` with
+Gaussian sketch's exponent $\varepsilon^2/4 - \varepsilon^3/6$ (Dasgupta and Gupta's; Achlioptas's
+argument, through `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le`, since
+$\mathbb{E} \langle \boldsymbol{\xi}, \mathbf{x} \rangle^4
+= 3 \|\mathbf{x}\|^4 - 2 \sum_j \mathbf{x}_j^4 \le 3 \|\mathbf{x}\|^4$ for a vector
+$\boldsymbol{\xi}$ of random signs), the exact JL second moment
+$2 (\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4)/\lvert k \rvert$, at most the Gaussian's
+$2 \|\mathbf{x}\|^4/\lvert k \rvert$, and is an oblivious subspace embedding and injection
+through JL plus a net at $\varepsilon/2$. The sample sizes are the Gaussian sketch's
+`NLAlib.jlDim`: `jlDim ε δ` for JL and `jlDim (ε/2) (δ/9^d)` for the OSE and OSI. For
+$\varepsilon \gtrsim 1.43$ the sub-Gaussian rows theorem at $c = 1$
+(`NLAlib.hasJLProperty_of_isSubgaussianVector` with
 `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`) is better; it is not restated here.
 
-Degenerate cases: for empty `k`, `S = 0`, which is not isotropic, hence `[Nonempty k]` on
-isotropy, the OSI and the moments; the JL bound is `2` for `k = 0` and at least `2` for
-`ε ≥ 3/2`. For `ε = 1` the lower JL event `{S x = 0}` has positive probability (`2^{-k}` at
-`x = (1, 1)/√2`), and the proof covers it. Design: `docs/design/Sketching-S3.md` §3.3, §8.
+Degenerate cases: for empty $k$, $\mathbf{S} = \mathbf{0}$, which is not isotropic, hence
+`[Nonempty k]` on isotropy, the OSI and the moments; the JL bound is $2$ for
+$\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. For $\varepsilon = 1$ the lower
+JL event $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$ has positive probability ($2^{-\lvert k \rvert}$
+at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it. Design:
+`docs/design/Sketching-S3.md` §3.3, §8.
 
 ## Main definitions
 
@@ -43,7 +49,7 @@ isotropy, the OSI and the moments; the JL bound is `2` for `k = 0` and at least 
 * `NLAlib.hasJLProperty_of_hasLaw_rademacherMatrix`: distributional JL.
 * `NLAlib.integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix`: the exact second
   moment of the distortion.
-* `NLAlib.hasJLMoment_of_hasLaw_rademacherMatrix`: the JL moment property at `p = 2`.
+* `NLAlib.hasJLMoment_of_hasLaw_rademacherMatrix`: the JL moment property at $p = 2$.
 * `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`,
   `NLAlib.isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix`.
 -/
@@ -69,7 +75,9 @@ instance isProbabilityMeasure_rademacherMatrix : IsProbabilityMeasure (rademache
 
 /-! ### Proof-local facts -/
 
-/-- `‖(√k)⁻¹ A x‖² = (∑ᵢ ⟨x, Aᵢ⟩²)/k`. -/
+/-- $\|\lvert k \rvert^{-1/2} \, \mathbf{A}\mathbf{x}\|^2
+= \sum_i \langle \mathbf{x}, \mathbf{A}_i \rangle^2 / \lvert k \rvert$, with $\mathbf{A}_i$ the
+rows of $\mathbf{A}$. -/
 private theorem norm_sketch_sq_eq (A : Matrix k n ℝ) (x : n → ℝ) :
     ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • (A *ᵥ x))‖ ^ 2 =
       (∑ i, (x ⬝ᵥ A i) ^ 2) / Fintype.card k := by
@@ -80,9 +88,10 @@ private theorem norm_sketch_sq_eq (A : Matrix k n ℝ) (x : n → ℝ) :
   rw [dotProduct_comm]
   rfl
 
-/-- The moments of `Q = ⟨x, ξ⟩²` for a vector of random signs `ξ`: `Q ∈ L²`, `E Q = ‖x‖²` and
-`Var Q = 2 (‖x‖⁴ - ∑ xⱼ⁴)` (`NLAlib.variance_quadForm_of_hasLaw_rademacherVector` at
-`vecMulVec x x`). -/
+/-- The moments of $Q = \langle \mathbf{x}, \boldsymbol{\xi} \rangle^2$ for a vector
+$\boldsymbol{\xi}$ of random signs: $Q \in L^2$, $\mathbb{E} Q = \|\mathbf{x}\|^2$ and
+$\operatorname{Var} Q = 2 (\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4)$
+(`NLAlib.variance_quadForm_of_hasLaw_rademacherVector` at `vecMulVec x x`). -/
 private theorem moments_dotProduct_sq {ξ : Ω → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) μ)
     (x : n → ℝ) :
     MemLp (fun ω => (x ⬝ᵥ ξ ω) ^ 2) 2 μ ∧ ∫ ω, (x ⬝ᵥ ξ ω) ^ 2 ∂μ = ‖WithLp.toLp 2 x‖ ^ 2 ∧
@@ -111,7 +120,9 @@ private theorem moments_dotProduct_sq {ξ : Ω → n → ℝ} (hξ : HasLaw ξ (
     rw [hvar, frobNorm_vecMulVec, e]
     ring
 
-/-- The fourth moment of a Rademacher combination: `E ⟨x, ξ⟩⁴ = 3 ‖x‖⁴ - 2 ∑ xⱼ⁴`. -/
+/-- The fourth moment of a Rademacher combination:
+$\mathbb{E} \langle \mathbf{x}, \boldsymbol{\xi} \rangle^4
+= 3 \|\mathbf{x}\|^4 - 2 \sum_j \mathbf{x}_j^4$. -/
 private theorem integral_dotProduct_pow_four {ξ : Ω → n → ℝ}
     (hξ : HasLaw ξ (rademacherVector n) μ) (x : n → ℝ) :
     ∫ ω, (x ⬝ᵥ ξ ω) ^ 4 ∂μ = 3 * ‖WithLp.toLp 2 x‖ ^ 4 - 2 * ∑ j, x j ^ 4 := by
@@ -126,24 +137,29 @@ private theorem integral_dotProduct_pow_four {ξ : Ω → n → ℝ}
   rw [e] at hvar
   linarith
 
-/-- **The sign sketch is isotropic**: `E [Sᴴ S] = 1`, from the isotropy of each row
-(`NLAlib.isIsotropic_of_hasLaw_rademacherVector`). [CamanoEpperlyMeyerTropp2025, Definition 1.2]
-for the notion. -/
+/-- **The sign sketch is isotropic**: $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$
+for $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$, $k$ nonempty, from the isotropy of each
+row (`NLAlib.isIsotropic_of_hasLaw_rademacherVector`). [CamanoEpperlyMeyerTropp2025, Definition
+1.2] for the notion. -/
 theorem isIsotropicSketch_of_hasLaw_rademacherMatrix [DecidableEq n] [Nonempty k]
     (hX : HasLaw X (rademacherMatrix k n) μ) :
     IsIsotropicSketch (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) μ := by
   exact isIsotropicSketch_smul_of_isIsotropic fun i =>
     isIsotropic_of_hasLaw_rademacherVector (hX.eval i)
 
-/-- **Sign-sketch distributional JL** with Gaussian constants: for `0 ≤ ε`,
-`P(ε ≤ |‖S x‖² - 1|) ≤ 2 exp (-k (ε²/4 - ε³/6))` at every unit `x`, the bound of
-`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`. From
+/-- **Sign-sketch distributional JL** with Gaussian constants: for every unit $\mathbf{x}$ and
+every $\varepsilon \ge 0$,
+$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+\le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,,$$
+the bound of `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`. From
 `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le`, with
-`E ⟨ξ, x⟩⁴ = Var (⟨ξ, x⟩²) + ‖x‖⁴ = 3 ‖x‖⁴ - 2 ∑ xⱼ⁴`
+$\mathbb{E} \langle \boldsymbol{\xi}, \mathbf{x} \rangle^4
+= \operatorname{Var}(\langle \boldsymbol{\xi}, \mathbf{x} \rangle^2) + \|\mathbf{x}\|^4
+= 3 \|\mathbf{x}\|^4 - 2 \sum_j \mathbf{x}_j^4$
 (`NLAlib.variance_quadForm_of_hasLaw_rademacherVector` at `vecMulVec x x`).
 [Woodruff2014, §2.1, after Theorem 6]; constants of [Achlioptas2003, Theorem 1.1], locator to
-confirm (`docs/PORT_SKETCHING.md` §7.2). For `ε ≳ 1.43`,
-`NLAlib.hasJLProperty_of_isSubgaussianVector` at `c = 1` is better.
+confirm (`docs/PORT_SKETCHING.md` §7.2). For $\varepsilon \gtrsim 1.43$,
+`NLAlib.hasJLProperty_of_isSubgaussianVector` at $c = 1$ is better.
 Result: jl-rademacher -/
 theorem hasJLProperty_of_hasLaw_rademacherMatrix (hX : HasLaw X (rademacherMatrix k n) μ)
     (hε : 0 ≤ ε) :
@@ -157,7 +173,8 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix (hX : HasLaw X (rademacherMatri
   have : 0 ≤ ∑ j, x j ^ 4 := Finset.sum_nonneg fun j _ => by positivity
   linarith
 
-/-- The squared distortion of the sign sketch is integrable. -/
+/-- The squared distortion $(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2$ of the sign sketch
+is integrable. -/
 theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix
     (hX : HasLaw X (rademacherMatrix k n) μ) (x : n → ℝ) :
     Integrable (fun ω => (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ x)‖ ^ 2 -
@@ -170,11 +187,13 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix
   refine h.congr (ae_of_all _ fun ω => ?_)
   simp only [Pi.sub_apply, norm_sketch_sq_eq, div_eq_inv_mul]
 
-/-- **Exact second moment of the sign-sketch distortion**:
-`E (‖S x‖² - ‖x‖²)² = 2 (‖x‖⁴ - ∑ xⱼ⁴)/k`, at most the Gaussian sketch's `2 ‖x‖⁴/k`
+/-- **Exact second moment of the sign-sketch distortion**: for $k$ nonempty,
+$$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
+= \frac{2}{\lvert k \rvert} \Bigl(\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4\Bigr) \,,$$
+at most the Gaussian sketch's $2 \|\mathbf{x}\|^4/\lvert k \rvert$
 (`NLAlib.integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix`). By independence of
 the rows and `NLAlib.variance_quadForm_of_hasLaw_rademacherVector` at `vecMulVec x x`
-(`‖x xᵀ‖_F² = ‖x‖⁴`). -/
+($\|\mathbf{x}\mathbf{x}^{\mathsf{T}}\|_{\mathsf{F}}^2 = \|\mathbf{x}\|^4$). -/
 theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix [Nonempty k]
     (hX : HasLaw X (rademacherMatrix k n) μ) (x : n → ℝ) :
     ∫ ω, (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ x)‖ ^ 2 -
@@ -209,7 +228,8 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix [Nonem
   rw [integral_div, hTvar]
   field_simp
 
-/-- **Sign-sketch JL moment** at `p = 2`, with `δ = 2/(k ε²)`, the Gaussian sketch's
+/-- **Sign-sketch JL moment** at $p = 2$, with $\delta = 2/(\lvert k \rvert \varepsilon^2)$ for
+$\varepsilon > 0$ and $k$ nonempty, the Gaussian sketch's
 (`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`). [Woodruff2014, Definition 12] for the
 property. -/
 theorem hasJLMoment_of_hasLaw_rademacherMatrix [Nonempty k] (hX : HasLaw X (rademacherMatrix k n) μ)
@@ -235,10 +255,12 @@ theorem hasJLMoment_of_hasLaw_rademacherMatrix [Nonempty k] (hX : HasLaw X (rade
     calc 2 / (Fintype.card k : ℝ) * (1 - ∑ j, x j ^ 4) ≤ 2 / Fintype.card k := by nlinarith
       _ = ε ^ 2 * (2 / (Fintype.card k * ε ^ 2)) := by field_simp
 
-/-- **Sign-sketch OSE**: for `0 ≤ ε`, `(√k)⁻¹ • X` is an oblivious `1 ∓ ε` subspace embedding for
-dimension `d` with failure `2 · 9^d exp (-k (ε²/16 - ε³/48))`: JL plus a net at `ε/2`
-(`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Woodruff2014, §2.1, Theorem 6], there
-with `O(ε)` and unspecified constants.
+/-- **Sign-sketch OSE**: for $\varepsilon \ge 0$,
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious subspace embedding for
+dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
+$2 \cdot 9^d e^{-\lvert k \rvert (\varepsilon^2/16 - \varepsilon^3/48)}$: JL plus a net at
+$\varepsilon/2$ (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Woodruff2014, §2.1,
+Theorem 6], there with $O(\varepsilon)$ and unspecified constants.
 Result: rademacher-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix
     (hX : HasLaw X (rademacherMatrix k n) μ) (d : ℕ) (hε : 0 ≤ ε) :
@@ -252,7 +274,9 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix
   rw [show (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 = ε ^ 2 / 16 - ε ^ 3 / 48 by ring]
   ring
 
-/-- **Sign-sketch OSI**: the lower half of
+/-- **Sign-sketch OSI**: for $\varepsilon \ge 0$ and $k$ nonempty, $\mathbf{S}$ is an oblivious
+subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
+$2 \cdot 9^d e^{-\lvert k \rvert (\varepsilon^2/16 - \varepsilon^3/48)}$: the lower half of
 `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`, with the sketch's isotropy.
 [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] [Nonempty k]
@@ -263,8 +287,9 @@ theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] 
   exact (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε)
     |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_rademacherMatrix hX)
 
-/-- The failure probability of the sign-sketch OSE is at most `δ` once
-`jlDim (ε/2) (δ/9^d) ≤ k`, for `0 < ε < 3`. -/
+/-- The failure probability of the sign-sketch OSE is at most $\delta$ once
+`jlDim (ε/2) (δ/9^d)` is at most $\lvert k \rvert$, for $0 < \varepsilon < 3$ and
+$\delta > 0$. -/
 private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
     2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤ δ := by
@@ -282,9 +307,10 @@ private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : �
       rw [Real.exp_neg, Real.exp_log (by positivity)]
       field_simp
 
-/-- **Sign-sketch JL, sample-size form**: for `0 < ε < 3/2`, `0 < δ` and at least `jlDim ε δ`
-rows, the JL property holds with failure `δ`; the Gaussian sketch's size
-(`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`). -/
+/-- **Sign-sketch JL, sample-size form**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and at least
+`jlDim ε δ` rows, the JL property holds with distortion $\varepsilon$ and failure probability
+$\delta$; the Gaussian sketch's size (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`).
+-/
 theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk : jlDim ε δ ≤ Fintype.card k) :
@@ -301,9 +327,10 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
       rw [Real.exp_neg, Real.exp_log (by positivity)]
       field_simp
 
-/-- **Sign-sketch OSE, sample-size form**: for `0 < ε < 3`, `0 < δ` and at least
-`jlDim (ε/2) (δ/9^d)` rows, `(√k)⁻¹ • X` is an oblivious `1 ∓ ε` subspace embedding for
-dimension `d` with failure `δ`. -/
+/-- **Sign-sketch OSE, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$ and at least
+`jlDim (ε/2) (δ/9^d)` rows, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious
+subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
+$\delta$. -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
@@ -313,8 +340,10 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
   refine (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl
     le_rfl le_rfl (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
-/-- **Sign-sketch OSI, sample-size form**: the injection twin of
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le`. -/
+/-- **Sign-sketch OSI, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$, $k$ nonempty
+and at least `jlDim (ε/2) (δ/9^d)` rows, $\mathbf{S}$ is an oblivious subspace injection for
+dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$; the injection twin
+of `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le`. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix_of_jlDim_le [DecidableEq n]
     [Nonempty k] (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3)
     (hδ : 0 < δ) (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :

@@ -446,7 +446,7 @@ theorem exists_isLU_of_forall_principalMinor_ne_zero (A : Matrix n n K)
 /-- **A matrix whose leading principal minors up to its rank are nonzero has an LU
 factorization**: over a field, if the leading principal minors of every order at most
 $\operatorname{rank} \mathbf{A}$ are nonzero, then $\mathbf{A} = \mathbf{L}\mathbf{U}$ with
-$\mathbf{L}$ unit lower and $\mathbf{U}$ upper triangular. [HornJohnson2013, Theorem 3.5.2].
+$\mathbf{L}$ unit lower and $\mathbf{U}$ upper triangular. [HornJohnson2013, Corollary 3.5.4].
 Port of `NLAlib.exists_unit_triangular_factorizations_of_leading_minors_through_rank`. -/
 theorem exists_isLU_of_forall_principalMinor_ne_zero_of_le_rank (A : Matrix n n K)
     (h : ∀ i, (Finset.Iic i).card ≤ A.rank → principalMinor A (Finset.Iic i) ≠ 0) :
@@ -466,7 +466,7 @@ theorem exists_isLU_of_forall_principalMinor_ne_zero_of_le_rank (A : Matrix n n 
   exact hi.trans_eq (Matrix.rank_submatrix A e.toEquiv e.toEquiv)
 
 /-- **A nonsingular matrix has an LU factorization exactly when its leading principal minors
-are nonzero.** [HornJohnson2013, Corollary 3.5.5].
+are nonzero.** [HornJohnson2013, Corollary 3.5.4].
 Port of `NLAlib.exists_isLU_iff_forall_leadingMinor_ne_zero`, there over $\mathbb{R}$.
 Result: lu-existence -/
 theorem exists_isLU_iff_forall_principalMinor_ne_zero {A : Matrix n n K} (hA : IsUnit A.det) :

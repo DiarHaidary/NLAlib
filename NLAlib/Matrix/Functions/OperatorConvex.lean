@@ -47,7 +47,7 @@ $f(a\mathbf{A} + b\mathbf{B}) \preceq a f(\mathbf{A}) + b f(\mathbf{B})$ for all
 $a, b \ge 0$ with $a + b = 1$ and all Hermitian matrices $\mathbf{A}$, $\mathbf{B}$ of every size
 with spectrum in $s$. It is stated for complex matrices indexed by `Fin d`; the consequences below
 hold over any `RCLike` field and any index type.
-[Bhatia1997, §V.1]; [Tropp2015, Definition 8.4.1]. Port of `NLAlib.OperatorConvexOn`. -/
+[Bhatia1997, §V.1]; [Tropp2015, Definition 8.4.5]. Port of `NLAlib.OperatorConvexOn`. -/
 def OperatorConvexOn (s : Set ℝ) (f : ℝ → ℝ) : Prop :=
   Convex ℝ s ∧ ∀ (d : ℕ) (A B : Matrix (Fin d) (Fin d) ℂ), A.IsHermitian → B.IsHermitian →
     spectrum ℝ A ⊆ s → spectrum ℝ B ⊆ s → ∀ a b : ℝ, 0 ≤ a → 0 ≤ b → a + b = 1 →

@@ -33,9 +33,10 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n α : Type*} [Finite m]
   [Finite n] [MeasurableSpace α]
 
-/-- Independent entries give independent rows: if the entries of `X : Ω → Matrix m n α`, as a
-family indexed by `m × n`, are independent, so are its rows. The measurability hypothesis is the
-one the product-law route needs (`NLAlib.hasLaw_pi_pi_iff` with `ν i j := μ.map (X · i j)`, then
+/-- Independent entries give independent rows: if the entries $\mathbf{X}_{i,j}$ of a random
+matrix `X : Ω → Matrix m n α`, as a family indexed by `m × n`, are independent, so are its rows
+$\mathbf{X}_i$. The measurability hypothesis is the one the product-law route needs
+(`NLAlib.hasLaw_pi_pi_iff` with `ν i j := μ.map (X · i j)`, then
 `ProbabilityTheory.HasLaw.iIndepFun_eval`); it goes if a Mathlib grouping lemma (`iIndepFun` over
 a partition of the index) turns up. Mathlib has the converse,
 `ProbabilityTheory.iIndepFun_uncurry'`. -/

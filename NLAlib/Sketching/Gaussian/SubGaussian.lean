@@ -14,8 +14,9 @@ public import NLAlib.Sketching.Properties.JohnsonLindenstraussNet
 /-!
 # Sub-Gaussian sketches
 
-The sub-Gaussian sketch is `S = (√k)⁻¹ • X` for a random `X : Matrix k n ℝ` (`k = card k` rows)
-whose rows are independent, isotropic and sub-Gaussian with proxy `c` (the three hypotheses of
+The sub-Gaussian sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ for a random
+`X : Matrix k n ℝ` ($\lvert k \rvert$ rows) whose rows $\mathbf{X}_i$ are independent, isotropic
+and sub-Gaussian with proxy $c$ (the three hypotheses of
 `NLAlib/RandomMatrix/SubGaussian/ExtremeSingularValues.lean`, suffix `_of_isSubgaussianVector`,
 always in the order `hind`, `hsub`, `hiso`). It is written out in each statement,
 `fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`; there is no named sketch law. Its isotropy is
@@ -23,36 +24,40 @@ always in the order `hind`, `hsub`, `hiso`). It is written out in each statement
 statement here.
 
 It has the distributional Johnson–Lindenstrauss property with Vershynin's two-regime tail
-`2 exp (-C k min (ε²/c², ε/c))`, `C = subgaussianJLConstant` (Bernstein's inequality on the
-centred squares `⟨Xᵢ, x⟩² - 1`), and, for rows with proxy `1` and fourth directional moments at
-most `3`, the tail `2 exp (-k (ε²/4 - ε³/6))` of Dasgupta and Gupta (Achlioptas's argument;
-incomparable, CONTRIBUTING §5.2 rule 4). It has the JL moment property at `p = 2`, and is an
-oblivious subspace embedding and injection through JL plus a net
-(`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at `ε / 2`); that route dominates the
-rows theorem's Gram sandwich in every regime (`docs/design/Sketching-S3.md` §7 Q1). Matrices with
-independent sub-Gaussian entries of unit variance reach the rows hypotheses through
+$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, $C$ the constant
+`subgaussianJLConstant` (Bernstein's inequality on the centred squares
+$\langle \mathbf{X}_i, \mathbf{x} \rangle^2 - 1$), and, for rows with proxy $1$ and fourth
+directional moments at most $3$, the tail
+$2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$ of Dasgupta and Gupta (Achlioptas's
+argument; incomparable, CONTRIBUTING §5.2 rule 4). It has the
+JL moment property at $p = 2$, and is an oblivious subspace embedding and injection through JL
+plus a net (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at $\varepsilon/2$); that route
+dominates the rows theorem's Gram sandwich in every regime (`docs/design/Sketching-S3.md` §7 Q1).
+Matrices with independent sub-Gaussian entries of unit variance reach the rows hypotheses through
 `NLAlib.iIndepFun_row_of_iIndepFun_entry`; only their JL tail is stated. The sample sizes are
 named quantities with nonnegativity, monotonicity and an explicit comparison.
 
-Degenerate cases: for empty `k`, `S = 0`, the JL bounds are `2` and the OSE bounds `2 · 9^d`, all
-true, but `S` is not isotropic, hence `[Nonempty k]` on the OSI and the moment. With rows and
-columns present the hypotheses force `1 ≤ c`; for `c = 0`, `ε / 0 = 0` and the bound is `2`. No
-`0 ≤ ε` on the Bernstein tails: for `ε < 0` the bound exceeds `2`. For `ε = 1` the lower JL event
-is `{S x = 0}`, which need not be null (for signs, probability `2^{-k}` at `x = (1, 1)/√2`); for
-`ε > 1` it is empty, and the lower OSE constant `1 - ε ≤ 0` is vacuous
+Degenerate cases: for empty $k$, $\mathbf{S} = \mathbf{0}$, the JL bounds are $2$ and the OSE
+bounds $2 \cdot 9^d$, all true, but $\mathbf{S}$ is not isotropic, hence `[Nonempty k]` on the OSI
+and the moment. With rows and columns present the hypotheses force $c \ge 1$; for $c = 0$,
+$\varepsilon/0 = 0$ and the bound is $2$. No $\varepsilon \ge 0$ on the Bernstein tails: for
+$\varepsilon < 0$ the bound exceeds $2$. For $\varepsilon = 1$ the lower JL event is
+$\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$, which need not be null (for signs, probability
+$2^{-\lvert k \rvert}$ at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$); for
+$\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0$ is vacuous
 (`NLAlib.isSubspaceInjection_of_nonpos`). Design: `docs/design/Sketching-S3.md` §3.3, §8.
 
 ## Main definitions
 
-* `NLAlib.subgaussianJLConstant`: the constant `C` of the sub-Gaussian JL tail.
+* `NLAlib.subgaussianJLConstant`: the constant $C$ of the sub-Gaussian JL tail.
 * `NLAlib.subgaussianJLDim`, `NLAlib.subgaussianEmbeddingDim`: sample sizes.
 
 ## Main results
 
 * `NLAlib.hasJLProperty_of_isSubgaussianVector`: sub-Gaussian distributional JL.
 * `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le`: the Dasgupta–Gupta
-  tail for proxy `1` and Gaussian fourth moments.
-* `NLAlib.hasJLMoment_of_isSubgaussianVector`: the JL moment property at `p = 2`.
+  tail for proxy $1$ and Gaussian fourth moments.
+* `NLAlib.hasJLMoment_of_isSubgaussianVector`: the JL moment property at $p = 2$.
 * `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`,
   `NLAlib.isObliviousSubspaceInjection_of_isSubgaussianVector`.
 * `NLAlib.hasJLProperty_of_iIndepFun_entry`: JL for independent sub-Gaussian entries.
@@ -67,12 +72,12 @@ namespace NLAlib
 
 /-! ### Proof-local arithmetic -/
 
-/-- `0 ≤ log (2 / δ)` for `0 < δ ≤ 2`. -/
+/-- $\log(2/\delta) \ge 0$ for $0 < \delta \le 2$. -/
 private theorem log_two_div_nonneg {δ : ℝ} (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     0 ≤ Real.log (2 / δ) :=
   Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
 
-/-- `log 9 ≤ 9 / 4`. -/
+/-- $\log 9 \le 9/4$. -/
 private theorem log_nine_le : Real.log 9 ≤ 9 / 4 := by
   rw [Real.log_le_iff_le_exp (by norm_num)]
   have h := Real.quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 9 / 32 by norm_num)
@@ -80,7 +85,7 @@ private theorem log_nine_le : Real.log 9 ≤ 9 / 4 := by
   calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
     _ ≤ Real.exp (9 / 32) ^ 8 := by gcongr
 
-/-- `2 · 9^d · exp (-L) ≤ δ` once `d log 9 + log (2/δ) ≤ L`. -/
+/-- $2 \cdot 9^d e^{-L} \le \delta$ once $d \log 9 + \log(2/\delta) \le L$, for $\delta > 0$. -/
 private theorem two_mul_nine_pow_mul_exp_le {d : ℕ} {L δ : ℝ} (hδ : 0 < δ)
     (h : d * Real.log 9 + Real.log (2 / δ) ≤ L) : 2 * 9 ^ d * Real.exp (-L) ≤ δ := by
   calc 2 * 9 ^ d * Real.exp (-L) ≤ 2 * 9 ^ d * Real.exp (-(d * Real.log 9 + Real.log (2 / δ))) := by
@@ -92,12 +97,14 @@ private theorem two_mul_nine_pow_mul_exp_le {d : ℕ} {L δ : ℝ} (hδ : 0 < δ
 
 /-! ### The constant and the sample sizes -/
 
-/-- The constant `C` of the sub-Gaussian JL tail `2 exp (-C k min (ε²/c², ε/c))`. Unspecified in
-[Vershynin2018, Exercise 5.3.3, Theorem 2.8.1 (2020 draft)]; the prototype had `1/(256 e²)`, for
-`ε < 1` only. The value proved is `1/64`: the proof reaches `min (ε²/(64 c²)) (ε/(8 c))` (the
-centred square's parameters `(32 c², 4 c)` and Bernstein's inequality), whose linear part is `8`
-times this one's and is given up for Vershynin's shape. Larger is better; consumers use only
-`subgaussianJLConstant_pos` and `le_subgaussianJLConstant`. -/
+/-- The constant $C$ of the sub-Gaussian JL tail
+$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$. Unspecified in
+[Vershynin2018, Exercise 5.3.3, Theorem 2.8.1 (2020 draft)]; the prototype had $1/(256 e^2)$, for
+$\varepsilon < 1$ only. The value proved is $1/64$: the proof reaches
+$\min(\varepsilon^2/(64 c^2), \varepsilon/(8 c))$ (the centred square's parameters
+$(32 c^2, 4 c)$ and Bernstein's inequality), whose linear part is $8$ times this one's and is
+given up for Vershynin's shape. Larger is better; consumers use only `subgaussianJLConstant_pos`
+and `le_subgaussianJLConstant`. -/
 noncomputable irreducible_def subgaussianJLConstant : ℝ := 1 / 64
 
 /-- The sub-Gaussian JL constant is positive. -/
@@ -105,22 +112,25 @@ theorem subgaussianJLConstant_pos : 0 < subgaussianJLConstant := by
   rw [subgaussianJLConstant_def]
   norm_num
 
-/-- An explicit lower bound on `subgaussianJLConstant`. -/
+/-- An explicit lower bound on `subgaussianJLConstant`: it is at least $1/64$. -/
 theorem le_subgaussianJLConstant : 1 / 64 ≤ subgaussianJLConstant := by
   rw [subgaussianJLConstant_def]
 
-/-- The **sub-Gaussian JL dimension** `c² log (2/δ) / (C ε²)`, `C = subgaussianJLConstant`: for
-`0 < ε ≤ c`, at least this many rows give the JL property with failure `δ`
-(`NLAlib.hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le`). Junk: for `δ > 2` the
-logarithm is negative, and the value is `0` at `ε = 0`. -/
+/-- The **sub-Gaussian JL dimension** $c^2 \log(2/\delta) / (C \varepsilon^2)$, $C$ the constant
+`subgaussianJLConstant`: for $0 < \varepsilon \le c$ and $\delta > 0$, at least this many rows
+give the JL property with distortion $\varepsilon$ and failure probability $\delta$
+(`NLAlib.hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le`). Junk: for $\delta > 2$
+the logarithm is negative, and the value is $0$ at $\varepsilon = 0$. -/
 noncomputable irreducible_def subgaussianJLDim (c ε δ : ℝ) : ℝ :=
   c ^ 2 * Real.log (2 / δ) / (subgaussianJLConstant * ε ^ 2)
 
-/-- The **sub-Gaussian embedding dimension** `4 c² (d log 9 + log (2/δ)) / (C ε²)`,
-`C = subgaussianJLConstant`: for `0 < ε ≤ 2c`, at least this many rows give an oblivious
-`1 ∓ ε` embedding for dimension `d` with failure `δ`
+/-- The **sub-Gaussian embedding dimension**
+$4 c^2 (d \log 9 + \log(2/\delta)) / (C \varepsilon^2)$, $C$ the constant
+`subgaussianJLConstant`: for $0 < \varepsilon \le 2c$ and $\delta > 0$, at least this many rows
+give an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
+failure probability $\delta$
 (`NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le`).
-Junk: the value is `0` at `ε = 0`, and negative for `δ > 2 · 9 ^ d`. -/
+Junk: the value is $0$ at $\varepsilon = 0$, and negative for $\delta > 2 \cdot 9^d$. -/
 noncomputable irreducible_def subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ :=
   4 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / (subgaussianJLConstant * ε ^ 2)
 
@@ -128,15 +138,15 @@ section Sizes
 
 variable {c c' ε ε' δ δ' : ℝ} {d d' : ℕ}
 
-/-- The sub-Gaussian JL dimension is nonnegative for `0 < δ ≤ 2`. -/
+/-- The sub-Gaussian JL dimension is nonnegative for $0 < \delta \le 2$. -/
 theorem subgaussianJLDim_nonneg (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     0 ≤ subgaussianJLDim c ε δ := by
   rw [subgaussianJLDim_def]
   exact div_nonneg (mul_nonneg (sq_nonneg c) (log_two_div_nonneg hδ hδ2))
     (mul_nonneg subgaussianJLConstant_pos.le (sq_nonneg ε))
 
-/-- The sub-Gaussian JL dimension is monotone in `0 ≤ c` and antitone in `ε > 0` and `δ > 0`
-(for `δ ≤ 2`). -/
+/-- The sub-Gaussian JL dimension is monotone in $c \ge 0$ and antitone in $\varepsilon > 0$ and
+$\delta > 0$ (for $\delta \le 2$). -/
 theorem subgaussianJLDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hε : 0 < ε) (hεε' : ε ≤ ε')
     (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδ2 : δ ≤ 2) :
     subgaussianJLDim c ε' δ' ≤ subgaussianJLDim c' ε δ := by
@@ -153,7 +163,8 @@ theorem subgaussianJLDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hε : 0 < ε) (h
       (mul_nonpos_of_nonneg_of_nonpos (sq_nonneg c) hL'.le) (by positivity)).trans ?_
     exact div_nonneg (mul_nonneg (sq_nonneg _) hL) (by positivity)
 
-/-- An explicit upper bound on the sub-Gaussian JL dimension: `64 c² log (2/δ) / ε²`. -/
+/-- An explicit upper bound on the sub-Gaussian JL dimension: it is at most
+$64 c^2 \log(2/\delta) / \varepsilon^2$ for $0 < \delta \le 2$. -/
 theorem subgaussianJLDim_le (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     subgaussianJLDim c ε δ ≤ 64 * c ^ 2 * Real.log (2 / δ) / ε ^ 2 := by
   rw [subgaussianJLDim_def]
@@ -165,7 +176,7 @@ theorem subgaussianJLDim_le (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
           (by positivity) (mul_le_mul_of_nonneg_right le_subgaussianJLConstant (sq_nonneg ε))
     _ = 64 * c ^ 2 * Real.log (2 / δ) / ε ^ 2 := by field_simp
 
-/-- The sub-Gaussian embedding dimension is nonnegative for `0 < δ ≤ 2`. -/
+/-- The sub-Gaussian embedding dimension is nonnegative for $0 < \delta \le 2$. -/
 theorem subgaussianEmbeddingDim_nonneg (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     0 ≤ subgaussianEmbeddingDim c d ε δ := by
   rw [subgaussianEmbeddingDim_def]
@@ -174,8 +185,8 @@ theorem subgaussianEmbeddingDim_nonneg (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 <
       (add_nonneg (mul_nonneg (Nat.cast_nonneg d) h9) (log_two_div_nonneg hδ hδ2)))
     (mul_nonneg subgaussianJLConstant_pos.le (sq_nonneg ε))
 
-/-- The sub-Gaussian embedding dimension is monotone in `0 ≤ c` and in `d`, and antitone in
-`ε > 0` and `δ > 0` (for `δ ≤ 2`). -/
+/-- The sub-Gaussian embedding dimension is monotone in $c \ge 0$ and in $d$, and antitone in
+$\varepsilon > 0$ and $\delta > 0$ (for $\delta \le 2$). -/
 theorem subgaussianEmbeddingDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hd : d ≤ d') (hε : 0 < ε)
     (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδ2 : δ ≤ 2) :
     subgaussianEmbeddingDim c d ε' δ' ≤ subgaussianEmbeddingDim c' d' ε δ := by
@@ -201,8 +212,9 @@ theorem subgaussianEmbeddingDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hd : d �
     exact div_nonneg (mul_nonneg (by positivity) hA) (by positivity)
 
 /-- An explicit upper bound on the sub-Gaussian embedding dimension,
-`576 c² (d + log (2/δ)) / ε²` (`256 log 9 ≤ 576`): [Woodruff2014, Theorem 6]'s
-`Θ ((d + log (1/δ))/ε²)` with an explicit constant. -/
+$576 c^2 (d + \log(2/\delta)) / \varepsilon^2$ for $0 < \delta \le 2$ ($256 \log 9 \le 576$):
+[Woodruff2014, Theorem 6]'s $\Theta((d + \log(1/\delta))/\varepsilon^2)$ with an explicit
+constant. -/
 theorem subgaussianEmbeddingDim_le (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     subgaussianEmbeddingDim c d ε δ ≤ 576 * c ^ 2 * (d + Real.log (2 / δ)) / ε ^ 2 := by
   rw [subgaussianEmbeddingDim_def, subgaussianJLConstant_def]
@@ -227,7 +239,10 @@ end Sizes
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n : Type*} [Fintype k]
   [Fintype n] {X : Ω → Matrix k n ℝ} {c : ℝ≥0} {ε δ : ℝ} {d : ℕ}
 
-/-- The squared norm of the sketch applied to `x`: `‖(√k)⁻¹ • A x‖² = (∑ᵢ ⟨x, Aᵢ⟩²) / k`. -/
+/-- The squared norm of the sketch applied to $\mathbf{x}$:
+$\|\lvert k \rvert^{-1/2} \, \mathbf{A}\mathbf{x}\|^2
+= \sum_i \langle \mathbf{x}, \mathbf{A}_i \rangle^2 / \lvert k \rvert$, with $\mathbf{A}_i$ the
+rows of $\mathbf{A}$. -/
 private theorem norm_sketch_mulVec_sq (A : Matrix k n ℝ) (x : n → ℝ) :
     ‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • A) *ᵥ x)‖ ^ 2 =
       (∑ i, (x ⬝ᵥ A i) ^ 2) / Fintype.card k := by
@@ -235,8 +250,8 @@ private theorem norm_sketch_mulVec_sq (A : Matrix k n ℝ) (x : n → ℝ) :
     inv_pow, Real.sq_sqrt (Nat.cast_nonneg _), EuclideanSpace.norm_sq_eq, inv_mul_eq_div]
   simp only [Real.norm_eq_abs, sq_abs, Matrix.mulVec, dotProduct_comm (A _) x]
 
-/-- The fourth moment of a sub-Gaussian variable: `E Y⁴ ≤ 16 c²`
-(`HasSubgaussianMGF.integral_abs_rpow_le` at `p = 4`). -/
+/-- The fourth moment of a sub-Gaussian variable $Y$ with proxy $c$: $\mathbb{E}[Y^4] \le 16 c^2$
+(`HasSubgaussianMGF.integral_abs_rpow_le` at $p = 4$). -/
 private theorem integral_pow_four_le {Y : Ω → ℝ} (h : HasSubgaussianMGF Y c μ) :
     ∫ ω, Y ω ^ 4 ∂μ ≤ 16 * (c : ℝ) ^ 2 := by
   have h4 := h.integral_abs_rpow_le (p := 4) (by norm_num)
@@ -250,8 +265,9 @@ private theorem integral_pow_four_le {Y : Ω → ℝ} (h : HasSubgaussianMGF Y c
   rw [show (4 : ℝ) / 2 = 2 by norm_num, Real.rpow_two, hΓ] at h4
   linarith
 
-/-- The centred sum of squares of independent sub-Gaussian `Yᵢ` with `E Yᵢ² = 1`: it is square
-integrable and `E (∑ᵢ (Yᵢ² - 1))² ≤ card ι (16 c² - 1)`. -/
+/-- The centred sum of squares of independent $Y_i$, $i \in \iota$, sub-Gaussian with proxy $c$,
+with $\mathbb{E}[Y_i^2] = 1$: it is square integrable and
+$\mathbb{E}\bigl(\sum_i (Y_i^2 - 1)\bigr)^2 \le \lvert \iota \rvert (16 c^2 - 1)$. -/
 private theorem integral_sum_sq_sub_one_sq_le {ι : Type*} [Fintype ι] {Y : ι → Ω → ℝ}
     (hind : iIndepFun Y μ) (hsub : ∀ i, HasSubgaussianMGF (Y i) c μ)
     (h2 : ∀ i, ∫ ω, Y i ω ^ 2 ∂μ = 1) :
@@ -314,14 +330,17 @@ section Rows
 
 variable [DecidableEq n]
 
-/-- **Sub-Gaussian distributional JL**: for `X` with independent, isotropic, sub-Gaussian rows
-with proxy `c`, the sketch `(√k)⁻¹ • X` has the JL property at every `ε` with failure
-`2 exp (-C k min (ε²/c², ε/c))`, `C = subgaussianJLConstant`. [Vershynin2018, Exercise 5.3.3
-(2020 draft)], there with an unspecified constant. Replaces the prototype's
-`measure_lt_abs_mulVec_sq_sub_le_of_independent_isotropic_rows` (constant `1/(256 e²)`, `ε < 1`,
-`K ≥ 1` assumed). For proxy `1` and fourth directional moments at most `3`,
+/-- **Sub-Gaussian distributional JL**: for a random $\mathbf{X}$ with independent, isotropic,
+sub-Gaussian rows with proxy $c$, the sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
+has the JL property at every $\varepsilon$: for every unit $\mathbf{x}$,
+$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+\le 2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \, \varepsilon/c)} \,,$$
+$C$ the constant `subgaussianJLConstant`. [Vershynin2018, Exercise 5.3.3 (2020 draft)], there
+with an unspecified constant. Replaces the prototype's
+`measure_lt_abs_mulVec_sq_sub_le_of_independent_isotropic_rows` (constant $1/(256 e^2)$,
+$\varepsilon < 1$, $K \ge 1$ assumed). For proxy $1$ and fourth directional moments at most $3$,
 `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le` is better for
-`ε ≲ 1.43` and this one beyond.
+$\varepsilon \lesssim 1.43$ and this one beyond.
 Result: jl-subgaussian -/
 theorem hasJLProperty_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
@@ -384,16 +403,20 @@ theorem hasJLProperty_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω
     have h2 : 0 ≤ (Fintype.card k : ℝ) * (ε / c) := by positivity
     linarith
 
-/-- **Dasgupta–Gupta tail for rows with Gaussian fourth moments**: for `X` with independent,
-isotropic rows, sub-Gaussian with proxy `1`, with `E ⟨Xᵢ, x⟩⁴ ≤ 3 ‖x‖⁴`, and `0 ≤ ε`, the
-sketch `(√k)⁻¹ • X` has the JL property with failure `2 exp (-k (ε²/4 - ε³/6))`, the Gaussian
-sketch's (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`). From
-`NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun` at `Yᵢ = ⟨Xᵢ, x⟩`.
+/-- **Dasgupta–Gupta tail for rows with Gaussian fourth moments**: for a random $\mathbf{X}$ with
+independent, isotropic rows $\mathbf{X}_i$, sub-Gaussian with proxy $1$, with
+$\mathbb{E} \langle \mathbf{x}, \mathbf{X}_i \rangle^4 \le 3 \|\mathbf{x}\|^4$ for every
+$\mathbf{x}$, and $\varepsilon \ge 0$, the sketch
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the JL property with failure probability
+$2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$, the Gaussian sketch's
+(`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`). From
+`NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun` at
+$Y_i = \langle \mathbf{X}_i, \mathbf{x} \rangle$.
 [Woodruff2014, §2.1, after Theorem 6] attributes this to Achlioptas for signs; constants of
 [Achlioptas2003, Theorem 1.1], locator to confirm (`docs/PORT_SKETCHING.md` §7.2). Incomparable
-with `NLAlib.hasJLProperty_of_isSubgaussianVector` at `c = 1` (CONTRIBUTING §5.2 rule 4): this
-one is better for `ε ≲ 1.43` (sixteen times the exponent at small `ε`), that one beyond, and
-needs no fourth-moment hypothesis.
+with `NLAlib.hasJLProperty_of_isSubgaussianVector` at $c = 1$ (CONTRIBUTING §5.2 rule 4): this
+one is better for $\varepsilon \lesssim 1.43$ (sixteen times the exponent at small
+$\varepsilon$), that one beyond, and needs no fourth-moment hypothesis.
 Result: jl-subgaussian -/
 theorem hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) 1 μ)
@@ -420,10 +443,14 @@ theorem hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le
   simp only [norm_sketch_mulVec_sq]
   exact h
 
-/-- **Sub-Gaussian JL moment** at `p = 2`: `E (‖S x‖² - 1)² = (E ⟨Xᵢ, x⟩⁴ - 1)/k` on average over
-the rows, and `E ⟨Xᵢ, x⟩⁴ ≤ 16 c²` (`HasSubgaussianMGF.integral_abs_rpow_le` at `p = 4`), so the
-JL moment property holds with `δ = (16 c² - 1)/(k ε²)`. [Woodruff2014, Definition 12] for the
-property; the constant is the closed form of the sub-Gaussian fourth moment bound. -/
+/-- **Sub-Gaussian JL moment** at $p = 2$: for $k$ nonempty and unit $\mathbf{x}$,
+$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - 1)^2$ is
+$(\mathbb{E} \langle \mathbf{X}_i, \mathbf{x} \rangle^4 - 1)/\lvert k \rvert$ on average over the
+rows, and $\mathbb{E} \langle \mathbf{X}_i, \mathbf{x} \rangle^4 \le 16 c^2$
+(`HasSubgaussianMGF.integral_abs_rpow_le` at $p = 4$), so the JL moment property holds for
+$\varepsilon > 0$ with $\delta = (16 c^2 - 1)/(\lvert k \rvert \varepsilon^2)$. [Woodruff2014,
+Definition 12] for the property; the constant is the closed form of the sub-Gaussian fourth
+moment bound. -/
 theorem hasJLMoment_of_isSubgaussianVector [Nonempty k] (hind : iIndepFun (fun i ω => X ω i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) :
@@ -461,12 +488,15 @@ theorem hasJLMoment_of_isSubgaussianVector [Nonempty k] (hind : iIndepFun (fun i
       _ = ε ^ 2 * ((16 * (c : ℝ) ^ 2 - 1) / (Fintype.card k * ε ^ 2)) := by
           field_simp
 
-/-- **Sub-Gaussian OSE**: for `X` with independent, isotropic, sub-Gaussian rows with proxy `c`,
-`(√k)⁻¹ • X` is an oblivious `1 ∓ ε` subspace embedding for dimension `d` with failure
-`2 · 9^d exp (-C k min (ε²/(4c²), ε/(2c)))`, `C = subgaussianJLConstant`: JL plus a net at `ε/2`
+/-- **Sub-Gaussian OSE**: for a random $\mathbf{X}$ with independent, isotropic, sub-Gaussian rows
+with proxy $c$, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious subspace
+embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
+$$2 \cdot 9^d \, e^{-C \lvert k \rvert \min(\varepsilon^2/(4c^2), \, \varepsilon/(2c))} \,,$$
+$C$ the constant `subgaussianJLConstant`: JL plus a net at $\varepsilon/2$
 (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Vershynin2018, Theorem 4.6.1, (4.22)
-(2020 draft)], there for the singular values, `K² max (δ, δ²)` with an unspecified constant; it
-dominates the rows theorem's Gram sandwich in every regime (`docs/design/Sketching-S3.md` §7 Q1).
+(2020 draft)], there for the singular values, $K^2 \max(\delta, \delta^2)$ with an unspecified
+constant; it dominates the rows theorem's Gram sandwich in every regime
+(`docs/design/Sketching-S3.md` §7 Q1).
 Result: subgaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
@@ -483,10 +513,12 @@ theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector (hind : iIndepFun (f
     show ε / 2 / (c : ℝ) = ε / (2 * c) by ring] at h
   exact h.mono le_rfl le_rfl le_rfl (le_of_eq (by ring))
 
-/-- **Sub-Gaussian OSI**: the lower half of
-`NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`, with the sketch's isotropy
-(`NLAlib.isIsotropicSketch_smul_of_isIsotropic`). [Vershynin2018, Theorem 4.6.1 (2020 draft)];
-[CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion. -/
+/-- **Sub-Gaussian OSI**: for $k$ nonempty, $\mathbf{S}$ is an oblivious subspace injection for
+dimension $d$ with constant $1 - \varepsilon$ and failure probability
+$2 \cdot 9^d \, e^{-C \lvert k \rvert \min(\varepsilon^2/(4c^2), \, \varepsilon/(2c))}$: the
+lower half of `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`, with the sketch's
+isotropy (`NLAlib.isIsotropicSketch_smul_of_isIsotropic`). [Vershynin2018, Theorem 4.6.1 (2020
+draft)]; [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion. -/
 theorem isObliviousSubspaceInjection_of_isSubgaussianVector [Nonempty k]
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (d : ℕ) :
@@ -497,9 +529,10 @@ theorem isObliviousSubspaceInjection_of_isSubgaussianVector [Nonempty k]
   exact (isObliviousSubspaceEmbedding_of_isSubgaussianVector hind hsub hiso
     d).isObliviousSubspaceInjection (isIsotropicSketch_smul_of_isIsotropic hiso)
 
-/-- **Sub-Gaussian JL, sample-size form**: for `0 < ε ≤ c`, `0 < δ` and at least
-`subgaussianJLDim c ε δ` rows, the JL property holds with failure `δ` (for `ε ≤ c` the `min` of
-the tail is its quadratic part). [Vershynin2018, Exercise 5.3.3 (2020 draft)]. -/
+/-- **Sub-Gaussian JL, sample-size form**: for $0 < \varepsilon \le c$, $\delta > 0$ and at least
+`subgaussianJLDim c ε δ` rows, the JL property holds with distortion $\varepsilon$ and failure
+probability $\delta$ (for $\varepsilon \le c$ the $\min$ of the tail is its quadratic part).
+[Vershynin2018, Exercise 5.3.3 (2020 draft)]. -/
 theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ c) (hδ : 0 < δ)
@@ -524,8 +557,8 @@ theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
   simpa only [pow_zero, mul_one, Nat.cast_zero] using two_mul_nine_pow_mul_exp_le (d := 0) hδ hL
 
 omit [DecidableEq n] in
-/-- The failure probability of the sub-Gaussian OSE is at most `δ` for `0 < ε ≤ 2c` and at
-least `subgaussianEmbeddingDim c d ε δ` rows. -/
+/-- The failure probability of the sub-Gaussian OSE is at most $\delta$ for
+$0 < \varepsilon \le 2c$, $\delta > 0$ and at least `subgaussianEmbeddingDim c d ε δ` rows. -/
 private theorem failure_le_of_subgaussianEmbeddingDim_le (hε : 0 < ε) (hεc : ε ≤ 2 * c)
     (hδ : 0 < δ) (hk : subgaussianEmbeddingDim c d ε δ ≤ Fintype.card k) :
     2 * 9 ^ d * Real.exp (-(subgaussianJLConstant * Fintype.card k *
@@ -544,10 +577,11 @@ private theorem failure_le_of_subgaussianEmbeddingDim_le (hε : 0 < ε) (hεc : 
   rw [mul_div_assoc', le_div_iff₀ (by positivity)]
   linarith
 
-/-- **Sub-Gaussian OSE, sample-size form**: for `0 < ε ≤ 2c`, `0 < δ` and at least
-`subgaussianEmbeddingDim c d ε δ` rows, `(√k)⁻¹ • X` is an oblivious `1 ∓ ε` subspace embedding
-for dimension `d` with failure `δ`. [Vershynin2018, Theorem 4.6.1 (2020 draft)];
-[Woodruff2014, Theorem 6]. -/
+/-- **Sub-Gaussian OSE, sample-size form**: for $0 < \varepsilon \le 2c$, $\delta > 0$ and at
+least `subgaussianEmbeddingDim c d ε δ` rows, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
+is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
+failure probability $\delta$. [Vershynin2018, Theorem 4.6.1 (2020 draft)]; [Woodruff2014,
+Theorem 6]. -/
 theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ 2 * c) (hδ : 0 < δ)
@@ -558,7 +592,10 @@ theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbedd
   exact (isObliviousSubspaceEmbedding_of_isSubgaussianVector hind hsub hiso d).mono le_rfl le_rfl
     le_rfl (failure_le_of_subgaussianEmbeddingDim_le hε hεc hδ hk)
 
-/-- **Sub-Gaussian OSI, sample-size form**: the injection twin of
+/-- **Sub-Gaussian OSI, sample-size form**: for $0 < \varepsilon \le 2c$, $\delta > 0$, $k$
+nonempty and at least `subgaussianEmbeddingDim c d ε δ` rows, $\mathbf{S}$ is an oblivious
+subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
+$\delta$; the injection twin of
 `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le`. -/
 theorem isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     [Nonempty k] (hind : iIndepFun (fun i ω => X ω i) μ)
@@ -574,10 +611,13 @@ end Rows
 
 /-! ### Independent sub-Gaussian entries -/
 
-/-- **Sub-Gaussian JL for independent entries**: for `X` with independent entries, each
-sub-Gaussian with proxy `c` and of unit variance, `(√k)⁻¹ • X` has the JL property with failure
-`2 exp (-C k min (ε²/c², ε/c))`, `C = subgaussianJLConstant`. The mean is `0` by
-`HasSubgaussianMGF.integral_eq_zero` (the prototype's `hmean` is dropped). The rows hypotheses
+/-- **Sub-Gaussian JL for independent entries**: for a random $\mathbf{X}$ with independent
+entries $\mathbf{X}_{i,j}$, each sub-Gaussian with proxy $c$ and with
+$\mathbb{E}[\mathbf{X}_{i,j}^2] = 1$, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the
+JL property with failure probability
+$2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, $C$ the constant
+`subgaussianJLConstant`. The mean is $0$ by `HasSubgaussianMGF.integral_eq_zero` (the
+prototype's `hmean` is dropped), so the second moment is the variance. The rows hypotheses
 follow by `NLAlib.iIndepFun_row_of_iIndepFun_entry`, `IsSubgaussianVector.of_iIndepFun` and
 `IsIsotropic.of_iIndepFun`; the other rows theorems apply to entries through the same three
 steps. [Vershynin2018, Exercise 5.3.3 (2020 draft)]. Replaces the prototype's
@@ -597,8 +637,8 @@ theorem hasJLProperty_of_iIndepFun_entry
   have hcol (i : k) : iIndepFun (fun j ω => X ω i j) μ :=
     hind.precomp (g := fun j : n => (i, j)) (Prod.mk_right_injective i)
   refine hasJLProperty_of_isSubgaussianVector hrow
-    (fun i => IsSubgaussianVector.of_iIndepFun (X := fun ω => X ω i) (hcol i) (hsub i))
-    fun i => IsIsotropic.of_iIndepFun (X := fun ω => X ω i) (hcol i) (fun j => ?_)
+    (fun i => IsSubgaussianVector.of_iIndepFun (x := fun ω => X ω i) (hcol i) (hsub i))
+    fun i => IsIsotropic.of_iIndepFun (x := fun ω => X ω i) (hcol i) (fun j => ?_)
       (fun j => (hsub i j).integral_eq_zero) fun j => ?_
   · simpa using (hsub i j).memLp 2
   · simpa only [Real.norm_eq_abs, sq_abs] using hvar i j

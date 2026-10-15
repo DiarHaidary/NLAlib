@@ -74,7 +74,7 @@ $0 < a$, then for every vector $\mathbf{x}$
 $$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \,
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{x})
   \le \frac{(a + b)^2}{4ab} \|\mathbf{x}\|^4\,.$$
-[HornJohnson2013, Theorem 7.4.41].
+[HornJohnson2013, (7.4.12.1)].
 Port of `NLAlib.quadForm_mul_quadForm_inv_le_of_sandwich`, there over $\mathbb{R}$.
 Result: kantorovich-inequality -/
 theorem re_quadForm_mul_re_quadForm_inv_le {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 < a)
@@ -107,7 +107,7 @@ $\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$),
 $$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \,
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{x})
   \le \frac{(\kappa + 1)^2}{4\kappa} \|\mathbf{x}\|^4\,.$$
-[HornJohnson2013, Theorem 7.4.41].
+[HornJohnson2013, (7.4.12.1)].
 Port of `NLAlib.quadForm_mul_quadForm_inv_le_moorePenroseConditionNumber_sqrt`, there over
 $\mathbb{R}$.
 Result: kantorovich-inequality -/
@@ -218,7 +218,7 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
   \le \Bigl(\frac{b - a}{b + a}\Bigr)^2
   \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
   \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
-[HornJohnson2013, Theorem 7.4.34].
+[HornJohnson2013, (7.4.12.2)].
 Port of `NLAlib.sq_bilinear_le_sq_ratio_mul_quadForm_of_sandwich`, there over $\mathbb{R}$.
 Result: wielandt-inequality -/
 theorem norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero {A : Matrix n n 𝕜} {a b : ℝ}

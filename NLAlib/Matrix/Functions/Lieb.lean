@@ -56,7 +56,7 @@ $$D(\mathbf{A}; \mathbf{H}) = \operatorname{Re} \operatorname{tr}\bigl(\mathbf{A
 the Bregman divergence of
 $\mathbf{A} \mapsto \operatorname{tr}(\mathbf{A}\log(\mathbf{A}) - \mathbf{A})$. The definition
 takes any two square matrices; it is meant for positive definite ones.
-[Tropp2015, Definition 8.3.1]. Port of `NLAlib.relativeEntropy`. -/
+[Tropp2015, Definition 8.1.2]. Port of `NLAlib.relativeEntropy`. -/
 noncomputable def relativeEntropy (A H : Matrix n n 𝕜) : ℝ :=
   RCLike.re (A * (cfc Real.log A - cfc Real.log H) - (A - H)).trace
 

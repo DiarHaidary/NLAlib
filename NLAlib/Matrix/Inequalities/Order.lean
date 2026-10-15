@@ -184,7 +184,7 @@ theorem inv_le_inv_smul_one_of_smul_one_le {A : Matrix n n 𝕜} {a : ℝ} (ha :
 $(\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V})^{-1}
 \preceq \mathbf{V}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{V}$ for positive definite $\mathbf{A}$ and
 $\mathbf{V}$ with orthonormal columns.
-[HornJohnson2013, Theorem 7.7.8 context].
+[HornJohnson2013, Theorem 7.7.15 context].
 Port of `NLAlib.inv_compression_le_compression_inv`. -/
 theorem _root_.Matrix.PosDef.inv_conjTranspose_mul_mul_le {A : Matrix m m 𝕜} (hA : A.PosDef)
     {V : Matrix m n 𝕜} (hV : HasOrthonormalCols V) : (Vᴴ * A * V)⁻¹ ≤ Vᴴ * A⁻¹ * V := by
@@ -209,7 +209,7 @@ theorem _root_.Matrix.PosDef.inv_conjTranspose_mul_mul_le {A : Matrix m m 𝕜} 
 
 /-- The inverse of a principal submatrix is at most the principal submatrix of the inverse, for
 positive definite $\mathbf{A}$ and the submatrix along an injective map of indices.
-[HornJohnson2013, Theorem 7.7.8]. Port of `NLAlib.inv_submatrix_le_submatrix_inv`. -/
+[HornJohnson2013, Theorem 7.7.15]. Port of `NLAlib.inv_submatrix_le_submatrix_inv`. -/
 theorem _root_.Matrix.PosDef.inv_submatrix_le {A : Matrix m m 𝕜} (hA : A.PosDef) {f : n → m}
     (hf : Function.Injective f) : (A.submatrix f f)⁻¹ ≤ A⁻¹.submatrix f f := by
   have hV : HasOrthonormalCols ((1 : Matrix m m 𝕜).submatrix id f) :=

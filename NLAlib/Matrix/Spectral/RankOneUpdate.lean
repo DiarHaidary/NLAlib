@@ -197,7 +197,7 @@ eigenvalues in place, as an identity of characteristic polynomials over any comm
 $$(X - \mu) \, p_{\mathbf{A} + \mathbf{x}\mathbf{y}^{\mathsf{T}}}(X)
   = (X - \mu - \mathbf{y}^{\mathsf{T}}\mathbf{x}) \, p_{\mathbf{A}}(X),$$
 with $p_{\mathbf{M}}(X) = \det(X\mathbf{I} - \mathbf{M})$.
-[HornJohnson2013, Theorem 1.2.8 context], there over $\mathbb{C}$.
+[HornJohnson2013, Example 1.2.8], there over $\mathbb{C}$.
 Port of `NLAlib.charpoly_add_vecMulVec_mul_X_sub_C`. -/
 theorem charpoly_add_vecMulVec_mul {R : Type*} [CommRing R] {A : Matrix n n R} {x : n → R}
     {μ : R} (hAx : A *ᵥ x = μ • x) (y : n → R) :
