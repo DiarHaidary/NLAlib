@@ -34,6 +34,9 @@ their corollaries over $\mathbb{R}$.
 
 * `NLAlib.integral_frobNorm_mul_mul_sq_of_isIsotropic`.
 * `NLAlib.integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix`.
+* `NLAlib.integral_frobNorm_mul_mul_le_of_hasLaw_gaussianMatrix`: the Frobenius mean,
+  $\mathbb{E}\|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}} \le
+  \|\mathbf{S}\|_{\mathsf{F}}\|\mathbf{T}\|_{\mathsf{F}}$.
 * `NLAlib.integral_frobNorm_mul_mul_sq_of_isIsotropic_of_indepFun`,
   `NLAlib.integrable_frobNorm_mul_mul_sq_iff_of_isIsotropic_of_indepFun`.
 * `NLAlib.integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix_of_indepFun`.
@@ -183,6 +186,43 @@ theorem integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix
   classical
   exact integral_frobNorm_mul_mul_sq_of_isIsotropic
     (isIsotropic_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)) S T
+
+private theorem memLp_frobNorm_mul_mul_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix m n) μ) (S : Matrix a m ℝ) (T : Matrix n b ℝ) :
+    MemLp (fun ω => frobNorm (S * X ω * T)) 2 μ := by
+  classical
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  have hm : AEStronglyMeasurable (fun ω => frobNorm (S * X ω * T)) μ :=
+    ((continuous_frobNorm.comp ((continuous_const.matrix_mul continuous_id).matrix_mul
+      continuous_const)).measurable.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable
+  exact (memLp_two_iff_integrable_sq hm).2 (integrable_frobNorm_mul_mul_sq_of_isIsotropic
+    (isIsotropic_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)) S T)
+
+/-- $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}}$ is integrable for a standard Gaussian
+matrix $\mathbf{G}$ and fixed $\mathbf{S}$, $\mathbf{T}$. -/
+theorem integrable_frobNorm_mul_mul_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix m n) μ) (S : Matrix a m ℝ) (T : Matrix n b ℝ) :
+    Integrable (fun ω => frobNorm (S * X ω * T)) μ := by
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  exact (memLp_frobNorm_mul_mul_of_hasLaw_gaussianMatrix hX S T).integrable one_le_two
+
+/-- **The Frobenius mean of a Gaussian sketch**: for a standard Gaussian matrix $\mathbf{G}$ and
+fixed $\mathbf{S}$, $\mathbf{T}$,
+$\mathbb{E}\|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}} \le \|\mathbf{S}\|_{\mathsf{F}}
+\|\mathbf{T}\|_{\mathsf{F}}$, by Jensen from the second moment
+`NLAlib.integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix`.
+[HalkoMartinssonTropp2011, Proposition 10.1]; there the second moment, here its consequence. -/
+theorem integral_frobNorm_mul_mul_le_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix m n) μ) (S : Matrix a m ℝ) (T : Matrix n b ℝ) :
+    ∫ ω, frobNorm (S * X ω * T) ∂μ ≤ frobNorm S * frobNorm T := by
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  have hvar := variance_nonneg (fun ω => frobNorm (S * X ω * T)) μ
+  rw [variance_eq_sub (memLp_frobNorm_mul_mul_of_hasLaw_gaussianMatrix hX S T)] at hvar
+  simp only [Pi.pow_apply] at hvar
+  rw [integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix hX S T] at hvar
+  refine (le_abs_self _).trans (abs_le_of_sq_le_sq' ?_ (by positivity)).2
+  rw [mul_pow, sq_abs]
+  linarith
 
 variable {α : Type*} [MeasurableSpace α] {Y : Ω → α} {S : α → Matrix a m ℝ}
   {T : α → Matrix n b ℝ}

@@ -32,6 +32,8 @@ compactness (`Matrix.compactSpace_unitaryGroup`) is used only to state the bridg
 
 * `NLAlib.hasLaw_haarFrame_of_isLeftUnitarilyInvariant`: the characterization.
 * `NLAlib.hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix`: the QR construction.
+* `NLAlib.hasLaw_polarFactor_of_isLeftUnitarilyInvariant`: the polar factor of a full-rank
+  rotation-invariant random matrix is a Haar frame.
 * `NLAlib.hasLaw_mul_const_of_hasLaw_haarFrame`: sub-frames.
 * `NLAlib.hasLaw_col_of_hasLaw_haarFrame`: a column is uniform on the sphere.
 * `NLAlib.uniformSphereVector_eq_map_toSphere`: the uniform law on the sphere is Mathlib's
@@ -167,6 +169,30 @@ theorem hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix [LinearOrder k] [LocallyFin
   filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hG] with ω hω
   rw [min_eq_right hk] at hω
   exact hasOrthonormalCols_gramSchmidtQ (mulVec_injective_iff_rank_eq.2 hω)
+
+/-- **The polar factor of a full-rank rotation-invariant random matrix is Haar**: if the law
+$\nu$ of $\mathbf{X}$ is a left unitarily invariant probability measure (over $\mathbb{R}$,
+$\mathbf{U}\mathbf{X}$ has the law of $\mathbf{X}$ for every orthogonal $\mathbf{U}$) and
+$\mathbf{X}$ has full column rank almost surely, then its polar factor
+$\mathbf{X}(\mathbf{X}^{\mathsf{H}}\mathbf{X})^{-1/2}$ has the law `haarFrame n k`. The
+hypothesis class is the full-rank rotation-invariant embedding of [EpperlyWebber2026, p. 2]; the
+Gaussian (`isLeftUnitarilyInvariant_gaussianMatrix`, full rank a.s. for
+$\lvert k \rvert \le \lvert n \rvert$) and the Haar frame are instances. A corollary of the
+characterization `NLAlib.hasLaw_haarFrame_of_isLeftUnitarilyInvariant`, since
+$\operatorname{polar}(\mathbf{U}\mathbf{X}) = \mathbf{U}\operatorname{polar}(\mathbf{X})$. -/
+theorem hasLaw_polarFactor_of_isLeftUnitarilyInvariant [DecidableEq n] [DecidableEq k]
+    {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν] [IsLeftUnitarilyInvariant ν]
+    (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) :
+    HasLaw (fun ω => polarFactor (X ω)) (haarFrame n k) μ := by
+  have hm : Measurable (polarFactor : Matrix n k ℝ → Matrix n k ℝ) := measurable_polarFactor
+  have : IsProbabilityMeasure (ν.map polarFactor) :=
+    Measure.isProbabilityMeasure_map hm.aemeasurable
+  have : IsLeftUnitarilyInvariant (ν.map polarFactor) :=
+    isLeftUnitarilyInvariant_map hm fun _ hU x => polarFactor_mul_left hU x
+  refine hasLaw_haarFrame_of_isLeftUnitarilyInvariant
+    (HasLaw.fun_comp (Y := polarFactor) ⟨hm.aemeasurable, rfl⟩ hX) ?_
+  filter_upwards [hXr] with ω hω
+  exact hasOrthonormalCols_polarFactor_iff.2 hω
 
 /-- **Sub-frames of a Haar frame**: $\mathbf{Q}\mathbf{V}$ is a Haar frame for an $n \times k$
 Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$, and a fixed $\mathbf{V}$ with

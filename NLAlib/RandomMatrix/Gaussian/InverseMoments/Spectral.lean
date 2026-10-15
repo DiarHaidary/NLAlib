@@ -42,6 +42,7 @@ integrals are unaffected.
 * `NLAlib.integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_pinv_le_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix`.
+* `NLAlib.gaussianPinvSpecNormBound`: the constant $\frac{e}{k - r}\sqrt{(k + r - 1)/2}$, named.
 -/
 
 @[expose] public section
@@ -695,6 +696,38 @@ theorem integral_specNorm_pinv_le_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix
   have hrk' : (Fintype.card r : ℝ) + 1 ≤ Fintype.card k := by exact_mod_cast hrk
   refine (integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix hX hrk).trans ?_
   rw [div_mul_eq_mul_div]
+  gcongr
+  · linarith
+  · linarith
+
+/-! ### The named constant -/
+
+/-- **The spectral-moment constant of the Gaussian pseudoinverse**,
+$$C = \frac{e}{k - r}\sqrt{\frac{k + r - 1}{2}}\,,$$
+the bound on $(\mathbb{E}\|\mathbf{G}^{+}\|_2^q)^{1/q}$, $0 < q \le k - r$, for a standard Gaussian
+$r \times k$ matrix $\mathbf{G}$ that the probe proof of
+`NLAlib.integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix` reaches. Source value
+$e\sqrt{k}/(k - r)$ [HalkoMartinssonTropp2011, Proposition 10.2]; the proved value is at most it
+for $r < k$ (`NLAlib.gaussianPinvSpecNormBound_le`). Junk for $k \le r$. Consumers use its API
+(`NLAlib.gaussianPinvSpecNormBound_nonneg`, `NLAlib.gaussianPinvSpecNormBound_le`) and, until the
+moment bounds of this file are restated with the name, `gaussianPinvSpecNormBound_def`. -/
+noncomputable irreducible_def gaussianPinvSpecNormBound (r k : ℕ) : ℝ :=
+  Real.exp 1 / ((k : ℝ) - r) * √(((k : ℝ) + r - 1) / 2)
+
+/-- `gaussianPinvSpecNormBound r k` is nonnegative for $r < k$. -/
+theorem gaussianPinvSpecNormBound_nonneg {r k : ℕ} (h : r < k) :
+    0 ≤ gaussianPinvSpecNormBound r k := by
+  have h' : (r : ℝ) < k := by exact_mod_cast h
+  rw [gaussianPinvSpecNormBound_def]
+  exact mul_nonneg (div_nonneg (Real.exp_pos 1).le (by linarith)) (Real.sqrt_nonneg _)
+
+/-- The explicit comparison with the source:
+$\frac{e}{k - r}\sqrt{(k + r - 1)/2} \le e\sqrt{k}/(k - r)$ for $r < k$, the constant of
+[HalkoMartinssonTropp2011, Proposition 10.2]. -/
+theorem gaussianPinvSpecNormBound_le {r k : ℕ} (h : r < k) :
+    gaussianPinvSpecNormBound r k ≤ Real.exp 1 * √(k : ℝ) / ((k : ℝ) - r) := by
+  have h' : (r : ℝ) + 1 ≤ k := by exact_mod_cast h
+  rw [gaussianPinvSpecNormBound_def, div_mul_eq_mul_div]
   gcongr
   · linarith
   · linarith

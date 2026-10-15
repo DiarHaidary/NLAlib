@@ -43,6 +43,9 @@ $\mathbf{G}$ does not have full row rank, and `pinv` is total; the integrals are
 
 ## Main results
 
+* `NLAlib.hasLaw_inv_mul_conjTranspose_apply_self_of_hasLaw_gaussianMatrix`: the diagonal
+  entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are
+  $1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$.
 * `NLAlib.integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix`.
 * `NLAlib.integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_frobNorm_pinv_le_of_hasLaw_gaussianMatrix`,
@@ -321,6 +324,35 @@ private theorem hasLaw_inv_mul_conjTranspose_apply_self (hX : HasLaw X (gaussian
   hasLaw_of_lintegral_eq (((Matrix.measurable_apply i i).comp
     measurable_inv_mul_conjTranspose).comp_aemeasurable hX.aemeasurable)
     fun _ hφ => lintegral_comp_inv_mul_conjTranspose_apply_self hX hrk i hφ
+
+/-- **The diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are $1/\chi^2_d$**: for an
+$r \times k$ standard Gaussian matrix $\mathbf{G}$ and $d = \lvert k \rvert - \lvert r \rvert + 1$,
+each diagonal entry $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}_{ii}$ has the law of
+$1/\|\mathbf{g}\|^2$ for a standard Gaussian vector $\mathbf{g}$ in $\mathbb{R}^d$. By the Schur
+complement of row $i$, it is the reciprocal of the squared distance from that row to the span of
+the others. For $d = 0$ ($\lvert r \rvert = \lvert k \rvert + 1$) both sides are the point mass
+at $0$: $\mathbf{G}\mathbf{G}^{\mathsf{H}}$ is singular and its inverse is Lean's $\mathbf{0}$. -/
+theorem hasLaw_inv_mul_conjTranspose_apply_self_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix r k) μ) {d : ℕ}
+    (hd : Fintype.card r + d = Fintype.card k + 1) (i : r) :
+    HasLaw (fun ω => (X ω * (X ω)ᴴ)⁻¹ i i)
+      ((gaussianVector (Fin d)).map fun z => (‖WithLp.toLp 2 z‖ ^ 2)⁻¹) μ := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd0
+  · have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
+    have hfun : (fun z : Fin 0 → ℝ => (‖WithLp.toLp 2 z‖ ^ 2)⁻¹) = fun _ => 0 := by
+      funext z
+      rw [Subsingleton.elim (WithLp.toLp 2 z) 0, norm_zero, zero_pow two_ne_zero, inv_zero]
+    rw [hfun, Measure.map_const, measure_univ, one_smul]
+    refine hasLaw_dirac_of_ae_eq (ae_of_all _ fun ω => ?_)
+    have hnot : ¬IsUnit (X ω * (X ω)ᴴ).det := by
+      rw [← Matrix.isUnit_iff_isUnit_det]
+      intro hu
+      have h1 := Matrix.rank_of_isUnit _ hu
+      have h2 := (Matrix.rank_mul_le_left (X ω) (X ω)ᴴ).trans (X ω).rank_le_card_width
+      omega
+    simp only [Matrix.nonsing_inv_apply_not_isUnit _ hnot, Matrix.zero_apply]
+  · have h := hasLaw_inv_mul_conjTranspose_apply_self hX (by omega) i
+    rwa [show Fintype.card k - Fintype.card r + 1 = d by omega] at h
 
 /-- A unit vector $\mathbf{u}$ is row $i$ of an orthogonal matrix. -/
 private theorem exists_hasOrthonormalCols_conjTranspose_row_eq {u : r → ℝ}

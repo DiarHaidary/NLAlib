@@ -27,6 +27,7 @@ in `NLAlib.Matrix.Norms.UnitarilyInvariant`).
 * `NLAlib.lpGauge_apply_of_ne_top`, `NLAlib.lpGauge_top_apply`, `NLAlib.lpGauge_one_apply`: the
   values of the $\ell^q$ gauges.
 * `NLAlib.lpGauge_apply_eq_norm_toLp`: the bridge to Mathlib's `PiLp` norms on `Fin N → ℝ`.
+* `NLAlib.lpGauge_apply_single_zero`: $\Phi_{\ell^q}(\mathbf{e}_0) = 1$.
 * `NLAlib.sum_abs_le_kyFanGauge`, `NLAlib.kyFanGauge_apply_of_antitone`: the Ky Fan gauge bounds
   every sum of $k$ absolute values, and is the sum of the first $k$ entries of a non-increasing
   sequence.
@@ -166,6 +167,21 @@ theorem lpGauge_apply_eq_norm_toLp {q : ℝ≥0∞} (hq : 1 ≤ q) {x : ℕ →�
     (hx : ∀ i, N ≤ i → x i = 0) :
     lpGauge q hq x = ‖(WithLp.toLp q fun i : Fin N => x i : PiLp q fun _ : Fin N => ℝ)‖ := by
   exact lpFun_eq_norm_toLp hq hx
+
+/-- The $\ell^q$ gauge takes the value $1$ at the first unit coordinate sequence,
+$\Phi_{\ell^q}(\mathbf{e}_0) = 1$, so the matrix norm of `lpGauge q` needs no normalisation. -/
+theorem lpGauge_apply_single_zero {q : ℝ≥0∞} (hq : 1 ≤ q) :
+    lpGauge q hq (Finsupp.single 0 1) = 1 := by
+  rcases eq_or_ne q ⊤ with rfl | hqt
+  · have h : ∀ i, |(Finsupp.single 0 (1 : ℝ)) i| ≤ 1 := fun i => by
+      rcases eq_or_ne i 0 with rfl | hi
+      · simp
+      · simp [Finsupp.single_eq_of_ne hi]
+    rw [lpGauge_top_apply]
+    refine le_antisymm (Real.iSup_le h zero_le_one) ?_
+    exact le_ciSup_of_le ⟨1, by rintro _ ⟨i, rfl⟩; exact h i⟩ 0 (by simp)
+  · rw [lpGauge_apply_of_ne_top hq hqt]
+    simp
 
 /-! ### The Ky Fan gauges -/
 

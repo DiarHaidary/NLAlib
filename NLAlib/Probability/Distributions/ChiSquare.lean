@@ -5,7 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Probability.Distributions.Gaussian
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
+public import NLAlib.Probability.Distributions.ChiSquareMoments
 public import NLAlib.Probability.SubGaussian.Square
 
 /-!
@@ -17,8 +18,10 @@ unweighted, and its tails. Chernoff's bound with the exact Laplace transform at
 $\theta = (1 - 1/\beta)/2$ gives $\mathbb{P}(\|\mathbf{g}\|^2 \ge \beta d)$ and
 $\mathbb{P}(\|\mathbf{g}\|^2 \le \beta d)$ at most $e^{(d/2)(1 - \beta + \log \beta)}$, on either
 side of $\beta = 1$, with the exponent of Dasgupta and Gupta (2003). The lower tail gives
-Laurent and Massart's lower tail and the small-ball bound as corollaries (CONTRIBUTING §5.2,
-rule 6). The relative deviation
+Laurent and Massart's lower tail as a corollary (CONTRIBUTING §5.2, rule 6). The exact small ball
+$\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (u/2)^{d/2} / \Gamma(d/2 + 1)$ comes from the
+$\chi^2_d$ density in `NLAlib/Probability/Distributions/ChiSquareMoments.lean`, and the Chernoff
+small ball $(e u / d)^{d/2}$ is its corollary. The relative deviation
 $\mathbb{P}(\varepsilon \le \lvert \|\mathbf{g}\|^2/d - 1 \rvert)
 \le 2 e^{-d(\varepsilon^2/4 - \varepsilon^3/6)}$ is the case of standard Gaussian coordinates of
 the sums-of-squares tail `NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun`.
@@ -40,6 +43,8 @@ sub-Gaussian vector (`NLAlib/Probability/SubGaussianVector/Norm.lean`).
   $0 < \beta \le 1$.
 * `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector`:
   $\mathbb{P}(\|\mathbf{g}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$.
+* `NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector`: the exact small
+  ball $\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (u/2)^{d/2} / \Gamma(d/2 + 1)$.
 * `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector`: the small ball
   $\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (e u / d)^{d/2}$.
 * `NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`: the relative
@@ -169,10 +174,11 @@ $\mathbb{P}(\|\mathbf{g}\|^2 \le \beta d) \le e^{(d/2)(1 - \beta + \log \beta)}$
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. It dominates
 (CONTRIBUTING §5.2 rule 6) Laurent and Massart's
 `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (at $\beta = 1 - 2\sqrt{t/d}$, with
-$\log(1 - u) \le -u - u^2/2$) and the small ball
+$\log(1 - u) \le -u - u^2/2$), which is proved from it, and the small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector` (at $\beta = u/d$, after dropping
-the factor $e^{-u/2} \le 1$), which are proved from it. The exponent of Dasgupta and Gupta
-(2003), there for the projection of a uniform unit vector.
+the factor $e^{-u/2} \le 1$), which is proved from the sharper exact small ball
+`NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector`. The exponent of
+Dasgupta and Gupta (2003), there for the projection of a uniform unit vector.
 Result: chi-square-lower-tail -/
 theorem measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ) (hβ0 : 0 < β) (hβ : β ≤ 1) :
@@ -244,10 +250,87 @@ theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hg : HasLaw g (gaussian
     · rw [measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector hg hn]
       positivity
 
+/-- $\int_0^\infty y^{d-1} e^{-y^2/2} \mathbf{1}[y \le r]\,dy \le r^d / d$: the radial
+integral of the small ball, after dropping $e^{-y^2/2} \le 1$. -/
+private theorem integral_Ioi_pow_mul_exp_mul_indicator_le {d : ℕ} (hd : 1 ≤ d) {r : ℝ}
+    (hr : 0 ≤ r) :
+    ∫ y in Set.Ioi (0 : ℝ), y ^ (d - 1) * (rexp (-y ^ 2 / 2) * (Set.Iic r).indicator 1 y) ≤
+      r ^ d / d := by
+  have e : (fun y : ℝ => y ^ (d - 1) * (rexp (-y ^ 2 / 2) * (Set.Iic r).indicator 1 y)) =
+      (Set.Iic r).indicator fun y => y ^ (d - 1) * rexp (-y ^ 2 / 2) := by
+    funext y
+    by_cases hy : y ∈ Set.Iic r <;> simp [hy]
+  rw [e, setIntegral_indicator measurableSet_Iic, Set.Ioi_inter_Iic]
+  have hcont : Continuous fun y : ℝ => y ^ (d - 1) := continuous_pow _
+  calc ∫ y in Set.Ioc 0 r, y ^ (d - 1) * rexp (-y ^ 2 / 2)
+      ≤ ∫ y in Set.Ioc 0 r, y ^ (d - 1) := by
+        refine setIntegral_mono_on ?_ ?_ measurableSet_Ioc fun y (hy : 0 < y ∧ y ≤ r) => ?_
+        · exact ((hcont.mul (by fun_prop)).integrableOn_Icc).mono_set Set.Ioc_subset_Icc_self
+        · exact hcont.integrableOn_Icc.mono_set Set.Ioc_subset_Icc_self
+        · refine mul_le_of_le_one_right (pow_nonneg hy.1.le _) ?_
+          rw [Real.exp_le_one_iff]
+          have := sq_nonneg y
+          linarith
+    _ = r ^ d / d := by
+        rw [← intervalIntegral.integral_of_le hr, integral_pow, Nat.sub_add_cancel hd,
+          zero_pow (by omega), sub_zero, Nat.cast_sub hd, Nat.cast_one, sub_add_cancel]
+
+/-- **Small-ball bound for $\chi^2$, exact density**: for a standard Gaussian vector $\mathbf{g}$
+of dimension $d = \lvert n \rvert$ and $u \ge 0$,
+$$\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le \frac{(u/2)^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+from the $\chi^2_d$ density (`NLAlib.integral_comp_norm_of_hasLaw_gaussianVector`) after dropping
+$e^{-u/2} \le 1$; for $d = 0$ both sides are $1$. It dominates the Chernoff small ball
+`NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector` by
+$\Gamma(x + 1) \ge (x/e)^x$ (`Real.rpow_mul_exp_neg_le_Gamma_add_one`), which is proved from it
+(CONTRIBUTING §5.2, rule 6); asymptotically it is smaller by the Stirling factor
+$\sqrt{\pi d}$.
+Result: chi-square-small-ball -/
+theorem measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector
+    (hg : HasLaw g (gaussianVector n) μ) {u : ℝ} (hu : 0 ≤ u) :
+    μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ u} ≤
+      (u / 2) ^ (Fintype.card n / 2 : ℝ) / Real.Gamma (Fintype.card n / 2 + 1) := by
+  have : IsProbabilityMeasure μ := hg.isProbabilityMeasure_iff.2 inferInstance
+  rcases Nat.eq_zero_or_pos (Fintype.card n) with hd | hd
+  · rw [hd, Nat.cast_zero, zero_div, Real.rpow_zero, zero_add, Real.Gamma_one, div_one]
+    exact measureReal_le_one
+  set d := Fintype.card n with hd_def
+  have hset : MeasurableSet {x : n → ℝ | ‖WithLp.toLp 2 x‖ ^ 2 ≤ u} :=
+    measurableSet_le (by fun_prop) measurable_const
+  have hind : (fun x : n → ℝ => (Set.Iic √u).indicator (1 : ℝ → ℝ) ‖WithLp.toLp 2 x‖) =
+      {x : n → ℝ | ‖WithLp.toLp 2 x‖ ^ 2 ≤ u}.indicator 1 := by
+    funext x
+    have hiff : ‖WithLp.toLp 2 x‖ ≤ √u ↔ ‖WithLp.toLp 2 x‖ ^ 2 ≤ u := by
+      rw [Real.le_sqrt (norm_nonneg _) hu]
+    by_cases hx : ‖WithLp.toLp 2 x‖ ^ 2 ≤ u
+    · rw [Set.indicator_of_mem (show _ ∈ Set.Iic √u from hiff.2 hx),
+        Set.indicator_of_mem (show x ∈ {x : n → ℝ | ‖WithLp.toLp 2 x‖ ^ 2 ≤ u} from hx)]
+      rfl
+    · rw [Set.indicator_of_notMem (show _ ∉ Set.Iic √u from fun h => hx (hiff.1 h)),
+        Set.indicator_of_notMem (show x ∉ {x : n → ℝ | ‖WithLp.toLp 2 x‖ ^ 2 ≤ u} from hx)]
+  have hP : μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ u} =
+      ∫ x, (Set.Iic √u).indicator (1 : ℝ → ℝ) ‖WithLp.toLp 2 (id x : n → ℝ)‖
+        ∂(gaussianVector n) := by
+    rw [hg.measureReal_eq (p := fun x => ‖WithLp.toLp 2 x‖ ^ 2 ≤ u) hset]
+    simp only [id, hind]
+    rw [integral_indicator_one hset]
+  rw [hP, integral_comp_norm_of_hasLaw_gaussianVector (g := id) (φ := (Set.Iic √u).indicator 1)
+    HasLaw.id hd (measurable_const.indicator measurableSet_Iic)]
+  have hG : 0 < Real.Gamma ((d : ℝ) / 2) := Real.Gamma_pos_of_pos (by positivity)
+  have hd1 : (0 : ℝ) < d := by exact_mod_cast hd
+  refine (div_le_div_of_nonneg_right (integral_Ioi_pow_mul_exp_mul_indicator_le hd
+    (Real.sqrt_nonneg u)) (by positivity)).trans (le_of_eq ?_)
+  rw [Real.sqrt_eq_rpow, ← Real.rpow_natCast, ← Real.rpow_mul hu, Real.div_rpow hu (by norm_num),
+    Real.Gamma_add_one (by positivity), Real.rpow_sub (by norm_num), Real.rpow_one,
+    show (1 / 2 : ℝ) * d = d / 2 by ring]
+  simp only [← hd_def]
+  field_simp
+
 /-- **Small-ball bound for $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $u \ge 0$, $\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (e u / d)^{d/2}$.
-A corollary of `NLAlib.measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector` at
-$\beta = u / d$. It decays like $u^{d/2}$ as $u \to 0$, which
+A corollary of the exact small ball
+`NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector` by
+$\Gamma(x + 1) \ge (x/e)^x$ at $x = d/2$; it is also Chernoff's bound at $\beta = u/d$, after
+dropping the factor $e^{-u/2} \le 1$. It decays like $u^{d/2}$ as $u \to 0$, which
 `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (better for thresholds near $d$) does not
 see; it is at least $1$ for $u \ge d$ and for $d = 0$.
 Port of `NLAlib.measureReal_sum_sq_le_le_gaussianVector`, there for `Fin d`, $d \ge 1$ and
@@ -258,31 +341,20 @@ theorem measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector
     μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ u} ≤
       (rexp 1 * u / Fintype.card n) ^ (Fintype.card n / 2 : ℝ) := by
   have : IsProbabilityMeasure μ := hg.isProbabilityMeasure_iff.2 inferInstance
-  rcases (Nat.cast_nonneg (Fintype.card n) : (0 : ℝ) ≤ Fintype.card n).eq_or_lt with hd | hd
-  · rw [← hd, zero_div, Real.rpow_zero]
+  rcases Nat.eq_zero_or_pos (Fintype.card n) with hd | hd
+  · rw [hd, Nat.cast_zero, zero_div, Real.rpow_zero]
     exact measureReal_le_one
-  rcases le_or_gt (Fintype.card n : ℝ) u with hdu | hud
-  · refine measureReal_le_one.trans (Real.one_le_rpow ?_ (by positivity))
-    rw [le_div_iff₀ hd, one_mul]
-    nlinarith [Real.add_one_le_exp 1]
-  rcases hu.eq_or_lt with rfl | hu0
-  · rw [measureReal_norm_sq_le_zero_of_hasLaw_gaussianVector hg (by exact_mod_cast hd),
-      mul_zero, zero_div, Real.zero_rpow (by positivity)]
-  have h := measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector hg
-    (div_pos hu0 hd) ((div_le_one hd).2 hud.le)
-  rw [div_mul_cancel₀ u hd.ne'] at h
-  refine h.trans ?_
-  rw [Real.rpow_def_of_pos (by positivity), Real.exp_le_exp, Real.log_div hu0.ne' hd.ne',
-    Real.log_div (x := rexp 1 * u) (by positivity) hd.ne',
-    Real.log_mul (Real.exp_pos 1).ne' hu0.ne', Real.log_exp]
-  have e : (Fintype.card n : ℝ) / 2 * (1 - u / Fintype.card n + (Real.log u -
-      Real.log (Fintype.card n))) = (1 + Real.log u - Real.log (Fintype.card n)) *
-      (Fintype.card n / 2) - u / 2 := by
-    field_simp
-    ring
-  rw [e]
-  linarith
-
+  refine (measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector hg hu).trans ?_
+  set x : ℝ := (Fintype.card n : ℝ) / 2
+  have hx : 0 < x := by positivity
+  have hΓ := Real.rpow_mul_exp_neg_le_Gamma_add_one hx.le
+  have hpos : 0 < x ^ x * rexp (-x) := by positivity
+  refine (div_le_div_of_nonneg_left (by positivity) hpos hΓ).trans (le_of_eq ?_)
+  rw [show rexp 1 * u / Fintype.card n = rexp 1 * (u / 2) / x by
+      simp only [x]; field_simp,
+    Real.div_rpow (by positivity) hx.le, Real.mul_rpow (by positivity) (by positivity),
+    Real.exp_one_rpow, Real.exp_neg]
+  field_simp
 /-! ### The relative deviation -/
 
 /-- **Relative deviation of $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension

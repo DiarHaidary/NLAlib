@@ -27,6 +27,7 @@ the smallest singular value of a Gaussian matrix.
 ## Main results
 
 * `NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector`.
+* `NLAlib.integral_comp_norm_of_hasLaw_gaussianVector`: polar coordinates, the $\chi_d$ density.
 * `NLAlib.integral_norm_sq_inv_of_hasLaw_gaussianVector`.
 * `NLAlib.le_integral_norm_sub_integral_norm_of_hasLaw_gaussianVector`:
   $\sqrt{m} - \sqrt{n} \le \mathbb{E}\|\mathbf{g}_m\| - \mathbb{E}\|\mathbf{g}_n\|$ for
@@ -169,6 +170,36 @@ private theorem integral_norm_sq_rpow_gaussianVector {s : ℝ}
   rw [eq_div_iff hG.ne']
   linear_combination (-(2 ^ s * Real.Gamma ((d : ℝ) / 2 + s))) * hnorm
 
+/-- **Polar coordinates for a standard Gaussian vector**, the $\chi_d$ density: for a standard
+Gaussian vector $\mathbf{g}$ of dimension $d = \lvert n \rvert \ge 1$ and measurable $\varphi$,
+$$\mathbb{E}\,\varphi(\|\mathbf{g}\|) = \frac{1}{2^{d/2 - 1}\,\Gamma(d/2)}
+\int_0^\infty y^{d-1} e^{-y^2/2} \varphi(y)\,dy\,.$$
+Both sides are Bochner integrals, so the identity also holds (as $0 = 0$) when either side is not
+integrable. This is the density-level fact behind the exact small ball of $\chi^2$
+(`NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector`). -/
+theorem integral_comp_norm_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
+    (hn : 0 < Fintype.card n) {φ : ℝ → ℝ} (hφ : Measurable φ) :
+    ∫ ω, φ ‖WithLp.toLp 2 (g ω)‖ ∂μ =
+      (∫ y in Ioi (0 : ℝ), y ^ (Fintype.card n - 1) * (rexp (-y ^ 2 / 2) * φ y)) /
+        (2 ^ ((Fintype.card n : ℝ) / 2 - 1) * Real.Gamma ((Fintype.card n : ℝ) / 2)) := by
+  have : Nonempty n := Fintype.card_pos_iff.mp hn
+  have hf : Measurable fun x : n → ℝ => φ ‖WithLp.toLp 2 x‖ := hφ.comp (by fun_prop)
+  rw [show (∫ ω, φ ‖WithLp.toLp 2 (g ω)‖ ∂μ) = ∫ x, φ ‖WithLp.toLp 2 x‖ ∂(gaussianVector n) from
+    hg.integral_comp hf.aestronglyMeasurable, integral_radial_gaussianVector]
+  have hnorm := integral_radial_gaussianVector (n := n) (fun y => (y ^ 2) ^ (0 : ℝ))
+  set d := Fintype.card n with hd_def
+  have hd : 1 ≤ d := hn
+  simp only [Real.rpow_zero, integral_const, probReal_univ, smul_eq_mul, mul_one] at hnorm
+  rw [show (fun y : ℝ => y ^ (d - 1) * rexp (-y ^ 2 / 2)) =
+      fun y => y ^ (d - 1) * (rexp (-y ^ 2 / 2) * (y ^ 2) ^ (0 : ℝ)) by
+    simp only [Real.rpow_zero, mul_one],
+    integral_pow_mul_exp_mul_rpow hd (neg_lt_zero.mpr (by positivity)), add_zero] at hnorm
+  have hG : 0 < Real.Gamma ((d : ℝ) / 2) := Real.Gamma_pos_of_pos (by positivity)
+  have h2 : (2 : ℝ) ^ ((d : ℝ) / 2 - 1) = 2 ^ ((d : ℝ) / 2) / 2 := by
+    rw [Real.rpow_sub (by norm_num), Real.rpow_one]
+  rw [h2, eq_div_iff (by positivity)]
+  set I := ∫ y in Ioi (0 : ℝ), y ^ (d - 1) * (rexp (-y ^ 2 / 2) * φ y)
+  linear_combination (-I) * hnorm
 
 /-- $(\|\mathbf{g}\|^2)^s$ is integrable for a standard Gaussian vector $\mathbf{g}$ when
 $s > -d/2$, with $d = \lvert n \rvert$ (the range is sharp; only this direction is stated). -/

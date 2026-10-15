@@ -32,6 +32,8 @@ inner product.
 * `NLAlib.nuclearNorm_mul_le_frobNorm_mul_frobNorm`: the factorisation bound.
 * `Matrix.PosSemidef.nuclearNorm_eq_re_trace`,
   `Matrix.IsHermitian.nuclearNorm_eq_sum_abs_eigenvalue`.
+* `NLAlib.nuclearNorm_conjTranspose_mul_self`:
+  $\|\mathbf{B}^{\mathsf{H}}\mathbf{B}\|_* = \|\mathbf{B}\|_{\mathsf{F}}^2$.
 -/
 
 @[expose] public section
@@ -295,6 +297,13 @@ theorem _root_.Matrix.PosSemidef.nuclearNorm_eq_re_trace {A : Matrix n n 𝕜} (
     nuclearNorm A = RCLike.re A.trace := by
   rw [nuclearNorm, min_self, hA.singularValues_eq_eigenvalue,
     hA.isHermitian.re_trace_eq_sum_range_eigenvalue]
+
+/-- The nuclear norm of a Gram matrix is the squared Frobenius norm:
+$\|\mathbf{B}^{\mathsf{H}}\mathbf{B}\|_* = \|\mathbf{B}\|_{\mathsf{F}}^2$. -/
+theorem nuclearNorm_conjTranspose_mul_self (B : Matrix m n 𝕜) :
+    nuclearNorm (Bᴴ * B) = frobNorm B ^ 2 := by
+  rw [(Matrix.posSemidef_conjTranspose_mul_self B).nuclearNorm_eq_re_trace,
+    frobNorm_sq_eq_re_trace]
 
 /-- The nuclear norm of a Hermitian matrix is the sum of the absolute values of its eigenvalues:
 $\|\mathbf{A}\|_* = \sum_{i < \lvert n \rvert} \lvert \lambda_i(\mathbf{A}) \rvert$.

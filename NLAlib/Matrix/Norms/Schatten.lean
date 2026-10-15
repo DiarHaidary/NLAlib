@@ -33,6 +33,8 @@ Natural exponents have their own power-sum and trace forms, with natural-number 
 * `NLAlib.schattenNorm_eq_sum_rpow`: the formula for finite positive $q$.
 * `NLAlib.schattenNorm_congr`, `NLAlib.schattenNorm_le_mul_of_singularValues_le`: Schatten norms
   depend only on the singular values, monotonically, across shapes.
+* `NLAlib.schattenNorm_conjTranspose_mul_self`: the Gram form,
+  $\|\mathbf{B}^{\mathsf{H}}\mathbf{B}\|_{S_q} = \|\mathbf{B}\|_{S_{2q}}^2$.
 * `NLAlib.schattenNorm_add_le`: the triangle inequality for $1 \le q$.
 * `NLAlib.schattenNorm_anti`, `NLAlib.schattenNorm_le_rank_rpow_mul_schattenNorm`: comparison
   between exponents.
@@ -243,6 +245,32 @@ theorem schattenNorm_neg (q : ℝ≥0∞) (A : Matrix m n 𝕜) :
 theorem schattenNorm_conjTranspose (q : ℝ≥0∞) (A : Matrix m n 𝕜) :
     schattenNorm q Aᴴ = schattenNorm q A := by
   exact schattenNorm_congr (singularValues_conjTranspose A) q
+
+/-- **The Schatten norm of a Gram matrix**:
+$\|\mathbf{B}^{\mathsf{H}}\mathbf{B}\|_{S_q} = \|\mathbf{B}\|_{S_{2q}}^2$ for $q \ne 0$, since
+$\sigma_i(\mathbf{B}^{\mathsf{H}}\mathbf{B}) = \sigma_i(\mathbf{B})^2$. The case $q = 0$ is
+excluded: `schattenNorm 0` is the rank. -/
+theorem schattenNorm_conjTranspose_mul_self {q : ℝ≥0∞} (hq : q ≠ 0) (B : Matrix m n 𝕜) :
+    schattenNorm q (Bᴴ * B) = schattenNorm (2 * q) B ^ 2 := by
+  rcases eq_or_ne q ⊤ with rfl | hqt
+  · rw [ENNReal.mul_top two_ne_zero, schattenNorm_top, schattenNorm_top,
+      specNorm_conjTranspose_mul_self]
+  have h2q0 : 2 * q ≠ 0 := mul_ne_zero two_ne_zero hq
+  have h2qt : 2 * q ≠ ⊤ := ENNReal.mul_ne_top ENNReal.ofNat_ne_top hqt
+  have hq' : 0 < q.toReal := ENNReal.toReal_pos hq hqt
+  have hN : (Bᴴ * B).rank ≤ Fintype.card n := (Bᴴ * B).rank_le_card_width
+  rw [schattenNorm_eq_sum_rpow hq hqt _ hN,
+    schattenNorm_eq_sum_rpow h2q0 h2qt _ B.rank_le_card_width,
+    ENNReal.toReal_mul, ENNReal.toReal_ofNat]
+  have hS : 0 ≤ ∑ i ∈ Finset.range (Fintype.card n), singularValues B i ^ (2 * q.toReal) :=
+    Finset.sum_nonneg fun i _ => Real.rpow_nonneg (singularValues_nonneg B i) _
+  have hsum : ∑ i ∈ Finset.range (Fintype.card n), singularValues (Bᴴ * B) i ^ q.toReal =
+      ∑ i ∈ Finset.range (Fintype.card n), singularValues B i ^ (2 * q.toReal) := by
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [singularValues_conjTranspose_mul_self, Real.rpow_mul (singularValues_nonneg B i),
+      Real.rpow_two]
+  rw [hsum, ← Real.rpow_natCast, ← Real.rpow_mul hS, Nat.cast_ofNat, mul_inv,
+    mul_comm (2 : ℝ)⁻¹, mul_assoc, inv_mul_cancel₀ two_ne_zero, mul_one]
 
 /-- Schatten norms are invariant under the transpose. Port of `NLAlib.schattenNorm_transpose`. -/
 @[simp]

@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.RandomMatrix.Haar.Basic
+public import NLAlib.RandomMatrix.Haar.Uniqueness
 
 /-!
 # Transfer between Gaussian and Haar test matrices
@@ -28,6 +28,9 @@ verbatim for a Haar test matrix, in every shape and rank.
 * `NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame`:
   $\operatorname{rank}(\mathbf{A}\mathbf{Q}) = \min(\operatorname{rank} \mathbf{A},
   \lvert k \rvert)$ almost surely.
+* `NLAlib.hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant`,
+  `NLAlib.ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant`: the same for every full-rank test
+  matrix with a left unitarily invariant law.
 -/
 
 @[expose] public section
@@ -110,5 +113,45 @@ theorem ae_rank_mul_eq_min_of_hasLaw_haarFrame [DecidableEq k] {m : Type*} [Fini
   rw [← hP.map_eq] at hG
   filter_upwards [ae_of_ae_map hP.aemeasurable hG] with ω hω
   rwa [rank_rangeProjector] at hω
+
+/-! ### Rotation-invariant test matrices -/
+
+/-- **Every full-rank rotation-invariant test matrix has the Gaussian law of the range**: if the
+law $\nu$ of $\mathbf{X}$ is a left unitarily invariant probability measure and $\mathbf{X}$ has
+full column rank almost surely, then $\mathbf{P}_{\mathbf{A}\mathbf{X}}$ has the law of
+$\mathbf{P}_{\mathbf{A}\mathbf{G}}$ for a standard Gaussian $\mathbf{G}$ of the same shape.
+The polar factor of $\mathbf{X}$ is a Haar frame
+(`NLAlib.hasLaw_polarFactor_of_isLeftUnitarilyInvariant`) with the same range sketch, and
+`NLAlib.hasLaw_rangeProjector_mul_of_hasLaw_haarFrame` applies. The hypothesis class is the
+full-rank rotation-invariant embedding of [EpperlyWebber2026, p. 2]; it is unsatisfiable for
+$\lvert k \rvert > \lvert n \rvert$, where the Haar frame is handled directly.
+Result: gaussian-haar-range-transfer -/
+theorem hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant [DecidableEq n] {m : Type*}
+    [Fintype m] {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν]
+    [IsLeftUnitarilyInvariant ν] (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) :
+    HasLaw (fun ω => rangeProjector (A * X ω))
+      ((gaussianMatrix n k).map fun G => rangeProjector (A * G)) μ := by
+  classical
+  have h := hasLaw_rangeProjector_mul_of_hasLaw_haarFrame A
+    (hasLaw_polarFactor_of_isLeftUnitarilyInvariant hX hXr)
+  simp only [rangeProjector_mul_polarFactor] at h
+  exact h
+
+/-- **The rank of a rotation-invariant sketch**:
+$\operatorname{rank}(\mathbf{A}\mathbf{X}) = \min(\operatorname{rank} \mathbf{A}, \lvert k \rvert)$
+almost surely, for $\mathbf{X}$ with a left unitarily invariant law and full column rank almost
+surely. The rotation-invariant twin of `ae_rank_mul_eq_min_of_hasLaw_haarFrame`, through the
+polar factor, whose sketch has the same range. -/
+theorem ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant [DecidableEq n] {m : Type*} [Finite m]
+    {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν] [IsLeftUnitarilyInvariant ν]
+    (A : Matrix m n ℝ) (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) :
+    ∀ᵐ ω ∂μ, (A * X ω).rank = min A.rank (Fintype.card k) := by
+  classical
+  have := Fintype.ofFinite m
+  filter_upwards [ae_rank_mul_eq_min_of_hasLaw_haarFrame A
+    (hasLaw_polarFactor_of_isLeftUnitarilyInvariant hX hXr)] with ω hω
+  rw [← hω, ← rank_rangeProjector, ← rank_rangeProjector (A * polarFactor (X ω)),
+    rangeProjector_mul_polarFactor]
 
 end NLAlib

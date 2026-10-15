@@ -22,6 +22,8 @@ Gaussian vector indexed by $m \times n$.
 
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix`.
 * `NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`: the upper tail.
+* `NLAlib.measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun`: the upper tail
+  for a function of the Gaussian matrix and an independent random factor.
 -/
 
 @[expose] public section
@@ -70,5 +72,84 @@ theorem measureReal_integral_add_le_of_hasLaw_gaussianMatrix
   exact measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
     (f := fun x => f (Matrix.of (Function.curry x)))
     (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) (lipschitzWith_curry hf) ht
+
+/-! ### An independent random factor -/
+
+/-- The fixed-factor step of the independent-factor concentration: under the Gaussian law, the
+event $f(\mathbf{G}) > c + Lt$ has probability at most $e^{-t^2/2}$. -/
+private theorem gaussianMatrix_lt_le {g : Matrix m n ℝ → ℝ} {L c : ℝ} (hL0 : 0 ≤ L)
+    (hlip : ∀ A B, |g A - g B| ≤ L * frobNorm (A - B))
+    (hmean : ∫ A, g A ∂(gaussianMatrix m n) ≤ c) {t : ℝ} (ht : 0 ≤ t) :
+    (gaussianMatrix m n).real {A | c + L * t < g A} ≤ Real.exp (-t ^ 2 / 2) := by
+  rcases hL0.eq_or_lt with hL | hL
+  · subst hL
+    have hconst : ∀ A, g A = ∫ B, g B ∂(gaussianMatrix m n) := by
+      intro A
+      have h : ∀ B, g B = g A := fun B => by
+        have := hlip B A
+        rw [zero_mul] at this
+        exact sub_eq_zero.mp (abs_nonpos_iff.mp this)
+      simp only [h, integral_const, probReal_univ, smul_eq_mul, one_mul]
+    have hempty : {A | c + 0 * t < g A} = ∅ := by
+      ext A
+      simp only [Set.mem_ofPred_eq, zero_mul, add_zero, Set.mem_empty_iff_false, iff_false,
+        not_lt]
+      rw [hconst A]
+      exact hmean
+    rw [hempty, measureReal_empty]
+    positivity
+  · have hlip' : ∀ A B, |g A - g B| ≤ (‖L‖₊ : ℝ) * frobNorm (A - B) := by
+      intro A B
+      rw [coe_nnnorm, Real.norm_of_nonneg hL.le]
+      exact hlip A B
+    have h := measureReal_integral_add_le_of_hasLaw_gaussianMatrix (X := id) (f := g)
+      (μ := gaussianMatrix m n) HasLaw.id hlip' (t := L * t) (by positivity)
+    rw [coe_nnnorm, Real.norm_of_nonneg hL.le] at h
+    have he : -(L * t) ^ 2 / (2 * L ^ 2) = -t ^ 2 / 2 := by
+      field_simp
+    rw [he] at h
+    refine (measureReal_mono (fun A (hA : c + L * t < g A) => ?_)).trans h
+    change ∫ B, g (id B) ∂(gaussianMatrix m n) + L * t ≤ g (id A)
+    simp only [id]
+    linarith
+
+/-- **Gaussian concentration with an independent random factor**: if $\mathbf{G}$ is a standard
+Gaussian matrix independent of $Y$ and, for each $y$, $f(y, \cdot)$ is $L(y)$-Lipschitz for the
+Frobenius distance, with $L \ge 0$ and Gaussian mean at most $c(y)$, then for $t \ge 0$
+$$\mathbb{P}\{f(Y, \mathbf{G}) > c(Y) + L(Y)\,t\} \le e^{-t^2/2}\,.$$
+The fixed-factor form is `NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`; this one
+conditions on $Y$ through the product law of the pair. $L \ge 0$ is needed when the matrices are
+empty, where the Lipschitz hypothesis holds for every $L$.
+Result: gaussian-lipschitz-concentration -/
+theorem measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun {β : Type*}
+    [MeasurableSpace β] {X : Ω → Matrix m n ℝ} {Y : Ω → β} (hX : HasLaw X (gaussianMatrix m n) μ)
+    (hY : AEMeasurable Y μ) (hXY : IndepFun Y X μ) {f : β → Matrix m n ℝ → ℝ}
+    (hf : Measurable (Function.uncurry f)) {L c : β → ℝ} (hL : Measurable L)
+    (hL0 : ∀ y, 0 ≤ L y) (hc : Measurable c)
+    (hlip : ∀ y A B, |f y A - f y B| ≤ L y * frobNorm (A - B))
+    (hmean : ∀ y, ∫ A, f y A ∂(gaussianMatrix m n) ≤ c y) {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | ¬ f (Y ω) (X ω) ≤ c (Y ω) + L (Y ω) * t} ≤ Real.exp (-t ^ 2 / 2) := by
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
+  set E : Set (β × Matrix m n ℝ) := {p | c p.1 + L p.1 * t < f p.1 p.2} with hE_def
+  have hE : MeasurableSet E :=
+    measurableSet_lt ((hc.comp measurable_fst).add ((hL.comp measurable_fst).mul_const t)) hf
+  have hpair : AEMeasurable (fun ω => (Y ω, X ω)) μ := hY.prodMk hX.aemeasurable
+  have hmap : μ.map (fun ω => (Y ω, X ω)) = (μ.map Y).prod (gaussianMatrix m n) := by
+    rw [(indepFun_iff_map_prod_eq_prod_map_map hY hX.aemeasurable).1 hXY, hX.map_eq]
+  have hset : {ω | ¬ f (Y ω) (X ω) ≤ c (Y ω) + L (Y ω) * t} = (fun ω => (Y ω, X ω)) ⁻¹' E := by
+    ext ω
+    simp only [Set.mem_ofPred_eq, not_le, Set.mem_preimage, hE_def]
+  have : IsProbabilityMeasure (μ.map Y) := Measure.isProbabilityMeasure_map hY
+  have hslice : ∀ y, gaussianMatrix m n (Prod.mk y ⁻¹' E) ≤
+      ENNReal.ofReal (Real.exp (-t ^ 2 / 2)) := fun y => by
+      rw [← ofReal_measureReal]
+      exact ENNReal.ofReal_le_ofReal (gaussianMatrix_lt_le (hL0 y) (hlip y) (hmean y) ht)
+  rw [hset, measureReal_def, ← Measure.map_apply_of_aemeasurable hpair hE, hmap,
+    Measure.prod_apply hE]
+  refine ENNReal.toReal_le_of_le_ofReal (by positivity) ?_
+  calc ∫⁻ y, gaussianMatrix m n (Prod.mk y ⁻¹' E) ∂(μ.map Y)
+      ≤ ∫⁻ _, ENNReal.ofReal (Real.exp (-t ^ 2 / 2)) ∂(μ.map Y) := lintegral_mono hslice
+    _ = ENNReal.ofReal (Real.exp (-t ^ 2 / 2)) := by
+        rw [lintegral_const, measure_univ, mul_one]
 
 end NLAlib

@@ -28,6 +28,10 @@ $$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2
 \le \|\mathbf{S}\|_2 \, \mathbb{E} \|\mathbf{G}_1^{+}\|_{\mathsf{F}} +
   \|\mathbf{S}\|_{\mathsf{F}} \, \mathbb{E} \|\mathbf{G}_1^{+}\|_2 \,.$$
 
+## Main definitions
+
+* `NLAlib.gaussianProjectionFactor k l`: the factor $1 + \frac{k}{l - k - 1}$.
+
 ## Main results
 
 * `NLAlib.integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`.
@@ -46,6 +50,39 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k r s a : Type*} [Fintype n]
   [Fintype k] [Fintype r] [Fintype s] [Fintype a] {X : Ω → Matrix n k ℝ}
+
+/-! ### The Gaussian projection factor -/
+
+/-- **The Gaussian projection factor** $1 + \frac{k}{l - k - 1}$ (casts to $\mathbb{R}$). For a
+real $k \times l$ standard Gaussian matrix $\mathbf{G}$ it is
+$1 + \mathbb{E}\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$, the factor in front of the optimal Frobenius
+error in the expected error of the randomized SVD [HalkoMartinssonTropp2011, Theorem 10.5], and
+in Gaussian sketch-and-solve it is the completion factor $1 + \frac{q}{p - q - 1}$. Junk for
+$l \le k + 1$, where the denominator is at most $0$ (and Lean's $x/0 = 0$ at $l = k + 1$);
+theorems carry `k + 2 ≤ l`. A plain definition, because its body is the source's formula. -/
+noncomputable def gaussianProjectionFactor (k l : ℕ) : ℝ := 1 + (k : ℝ) / ((l : ℝ) - k - 1)
+
+/-- The body of `gaussianProjectionFactor`, as a simp lemma. -/
+@[simp]
+theorem gaussianProjectionFactor_def (k l : ℕ) :
+    gaussianProjectionFactor k l = 1 + (k : ℝ) / ((l : ℝ) - k - 1) :=
+  rfl
+
+/-- The Gaussian projection factor is at least $1$ for $k + 2 \le l$. -/
+theorem one_le_gaussianProjectionFactor {k l : ℕ} (h : k + 2 ≤ l) :
+    1 ≤ gaussianProjectionFactor k l := by
+  have h' : (k : ℝ) + 2 ≤ l := by exact_mod_cast h
+  rw [gaussianProjectionFactor_def, le_add_iff_nonneg_right]
+  exact div_nonneg (Nat.cast_nonneg k) (by linarith)
+
+/-- The Gaussian projection factor is monotone in the target rank $k$ while $k + 2 \le l$. -/
+theorem gaussianProjectionFactor_le_gaussianProjectionFactor {k k' l : ℕ} (hk : k ≤ k')
+    (h : k' + 2 ≤ l) : gaussianProjectionFactor k l ≤ gaussianProjectionFactor k' l := by
+  have hk' : (k : ℝ) ≤ k' := by exact_mod_cast hk
+  have h' : (k' : ℝ) + 2 ≤ l := by exact_mod_cast h
+  simp only [gaussianProjectionFactor_def, add_le_add_iff_left]
+  exact div_le_div₀ (Nat.cast_nonneg _) hk' (by linarith) (by linarith)
+
 
 omit [Fintype s] [Fintype a] in
 private theorem hasLaw_conjTranspose_mul [DecidableEq r] (hX : HasLaw X (gaussianMatrix n k) μ)
