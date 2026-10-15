@@ -534,7 +534,18 @@ lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --c
 lake env lean scripts/Audit.lean
 lake env lean scripts/Lint.lean
 python3 scripts/check_refs.py
+lake env lean scripts/Duplicates.lean
 ```
+
+`scripts/Duplicates.lean` is a report, not a gate: it lists library theorems (private ones
+included) whose statements coincide with another library or Mathlib theorem up to universe
+levels, binder names, metadata and eta, confirmed by reducible `isDefEq`. A private lemma that
+duplicates a public one is deleted in favour of the public one; `scripts/stage_check.sh` runs it.
+
+`scripts/Reuse.lean` lists, for each declaration named in `scripts/reuse_targets.txt` (or every
+public theorem of a `module M` line), the NLAlib and Mathlib constants its proof uses directly,
+grouped by module. Run it on a PR's headline theorems to check that they are proved from the
+library's API for their topic rather than re-derived.
 
 The PR description contains a read-back: for each headline theorem, what the Lean statement says,
 written from the Lean alone. The reviewer checks the read-back against the design note and the

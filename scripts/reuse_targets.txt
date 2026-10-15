@@ -1,0 +1,4 @@
+# Targets for scripts/Reuse.lean, one per line: a declaration name, or `module M` for every
+# public theorem of module M. Lines starting with `#` are ignored.
+NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq
+module NLAlib.Matrix.Spectral.BestRankApprox
