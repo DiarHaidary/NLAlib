@@ -22,6 +22,10 @@ The maintainer approved the recommendations:
   proved without a literature source; the manuscript is cited once it is published.
 - The readings of §0 (formula-level "one pass", the truncated variants, "pcps" as
   projection-cost-preserving sketches) stood without objection.
+- Error spelling (2026-10-15, from S1 Q2): every error is written as $\mathbf{A}$ minus the
+  algorithm's named output (`A - rsvd A Ω`, `A - nystrom A Ω`, `A - generalizedNystrom A Ω Ψ`, and
+  likewise for the truncated outputs), "because all algorithms can be written this way"; projector
+  and basis forms are bridge lemmas (`sub_rsvd` and its siblings), never the statement shape.
 - Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
   randomized block Krylov, randomly pivoted Cholesky and similar methods.
 
