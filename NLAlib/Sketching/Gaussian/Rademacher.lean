@@ -33,8 +33,6 @@ isotropy, the OSI and the moments; the JL bound is `2` for `k = 0` and at least 
 `ε ≥ 3/2`. For `ε = 1` the lower JL event `{S x = 0}` has positive probability (`2^{-k}` at
 `x = (1, 1)/√2`), and the proof covers it. Design: `docs/design/Sketching-S3.md` §3.3, §8.
 
-This file is a skeleton of Sketching stage S3; every proof is deferred.
-
 ## Main definitions
 
 * `NLAlib.rademacherMatrix k n`.
@@ -67,7 +65,66 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n : Type*}
   [Fintype n] {X : Ω → Matrix k n ℝ} {ε δ : ℝ} {d : ℕ}
 
 instance isProbabilityMeasure_rademacherMatrix : IsProbabilityMeasure (rademacherMatrix k n) :=
-  sorry
+  inferInstanceAs (IsProbabilityMeasure (Measure.pi fun _ : k => rademacherVector n))
+
+/-! ### Proof-local facts -/
+
+/-- `‖(√k)⁻¹ A x‖² = (∑ᵢ ⟨x, Aᵢ⟩²)/k`. -/
+private theorem norm_sketch_sq_eq (A : Matrix k n ℝ) (x : n → ℝ) :
+    ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • (A *ᵥ x))‖ ^ 2 =
+      (∑ i, (x ⬝ᵥ A i) ^ 2) / Fintype.card k := by
+  rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
+    Real.sq_sqrt (Nat.cast_nonneg _), inv_mul_eq_div, EuclideanSpace.real_norm_sq_eq]
+  congr 1
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [dotProduct_comm]
+  rfl
+
+/-- The moments of `Q = ⟨x, ξ⟩²` for a vector of random signs `ξ`: `Q ∈ L²`, `E Q = ‖x‖²` and
+`Var Q = 2 (‖x‖⁴ - ∑ xⱼ⁴)` (`NLAlib.variance_quadForm_of_hasLaw_rademacherVector` at
+`vecMulVec x x`). -/
+private theorem moments_dotProduct_sq {ξ : Ω → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) μ)
+    (x : n → ℝ) :
+    MemLp (fun ω => (x ⬝ᵥ ξ ω) ^ 2) 2 μ ∧ ∫ ω, (x ⬝ᵥ ξ ω) ^ 2 ∂μ = ‖WithLp.toLp 2 x‖ ^ 2 ∧
+      variance (fun ω => (x ⬝ᵥ ξ ω) ^ 2) μ = 2 * (‖WithLp.toLp 2 x‖ ^ 4 - ∑ j, x j ^ 4) := by
+  classical
+  have hq : ∀ z : n → ℝ, quadForm (Matrix.vecMulVec x x) z = (x ⬝ᵥ z) ^ 2 := by
+    intro z
+    have h := quadForm_vecMulVec_star x z
+    rw [star_trivial, RCLike.ofReal_real_eq_id, id, Real.norm_eq_abs, sq_abs] at h
+    exact h
+  have hA : (Matrix.vecMulVec x x).IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial,
+      Matrix.transpose_vecMulVec]
+  have hL4 (i : n) : MemLp (fun ω => ξ ω i) 4 μ :=
+    ((hξ.eval i).memLp_comp_iff (f := id) aestronglyMeasurable_id).2
+      ((integrable_norm_rpow_iff aestronglyMeasurable_id (by norm_num) (by norm_num)).1
+        (integrable_rademacherMeasure _))
+  have hmem := memLp_quadForm hL4 (Matrix.vecMulVec x x)
+  have hvar := variance_quadForm_of_hasLaw_rademacherVector hξ hA
+  simp only [hq] at hmem hvar
+  refine ⟨hmem, ?_, ?_⟩
+  · have h := (isIsotropic_of_hasLaw_rademacherVector hξ).integral_norm_dotProduct_sq x
+    simpa only [Real.norm_eq_abs, sq_abs] using h
+  · have e : ∑ i, Matrix.vecMulVec x x i i ^ 2 = ∑ j, x j ^ 4 :=
+      Finset.sum_congr rfl fun j _ => by rw [Matrix.vecMulVec_apply]; ring
+    rw [hvar, frobNorm_vecMulVec, e]
+    ring
+
+/-- The fourth moment of a Rademacher combination: `E ⟨x, ξ⟩⁴ = 3 ‖x‖⁴ - 2 ∑ xⱼ⁴`. -/
+private theorem integral_dotProduct_pow_four {ξ : Ω → n → ℝ}
+    (hξ : HasLaw ξ (rademacherVector n) μ) (x : n → ℝ) :
+    ∫ ω, (x ⬝ᵥ ξ ω) ^ 4 ∂μ = 3 * ‖WithLp.toLp 2 x‖ ^ 4 - 2 * ∑ j, x j ^ 4 := by
+  have := hξ.isProbabilityMeasure
+  obtain ⟨hmem, hmean, hvar⟩ := moments_dotProduct_sq hξ x
+  rw [variance_eq_sub hmem, hmean] at hvar
+  have e : ∫ ω, ((fun ω => (x ⬝ᵥ ξ ω) ^ 2) ^ 2) ω ∂μ = ∫ ω, (x ⬝ᵥ ξ ω) ^ 4 ∂μ := by
+    congr 1
+    ext ω
+    simp only [Pi.pow_apply]
+    ring
+  rw [e] at hvar
+  linarith
 
 /-- **The sign sketch is isotropic**: `E [Sᴴ S] = 1`, from the isotropy of each row
 (`NLAlib.isIsotropic_of_hasLaw_rademacherVector`). [CamanoEpperlyMeyerTropp2025, Definition 1.2]
@@ -75,7 +132,8 @@ for the notion. -/
 theorem isIsotropicSketch_of_hasLaw_rademacherMatrix [DecidableEq n] [Nonempty k]
     (hX : HasLaw X (rademacherMatrix k n) μ) :
     IsIsotropicSketch (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) μ := by
-  sorry
+  exact isIsotropicSketch_smul_of_isIsotropic fun i =>
+    isIsotropic_of_hasLaw_rademacherVector (hX.eval i)
 
 /-- **Sign-sketch distributional JL** with Gaussian constants: for `0 ≤ ε`,
 `P(ε ≤ |‖S x‖² - 1|) ≤ 2 exp (-k (ε²/4 - ε³/6))` at every unit `x`, the bound of
@@ -91,14 +149,26 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix (hX : HasLaw X (rademacherMatri
     (hε : 0 ≤ ε) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε
       (2 * Real.exp (-(Fintype.card k * (ε ^ 2 / 4 - ε ^ 3 / 6)))) μ := by
-  sorry
+  classical
+  refine hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le hX.iIndepFun_eval
+    (fun i => isSubgaussianVector_of_hasLaw_rademacherVector (hX.eval i))
+    (fun i => isIsotropic_of_hasLaw_rademacherVector (hX.eval i)) (fun i x => ?_) hε
+  rw [integral_dotProduct_pow_four (hX.eval i) x]
+  have : 0 ≤ ∑ j, x j ^ 4 := Finset.sum_nonneg fun j _ => by positivity
+  linarith
 
 /-- The squared distortion of the sign sketch is integrable. -/
 theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix
     (hX : HasLaw X (rademacherMatrix k n) μ) (x : n → ℝ) :
     Integrable (fun ω => (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ x)‖ ^ 2 -
       ‖WithLp.toLp 2 x‖ ^ 2) ^ 2) μ := by
-  sorry
+  have := hX.isProbabilityMeasure
+  have hT : MemLp (fun ω => ∑ i, (x ⬝ᵥ X ω i) ^ 2) 2 μ :=
+    memLp_finsetSum _ fun i _ => (moments_dotProduct_sq (hX.eval i) x).1
+  have h := ((hT.const_mul (Fintype.card k : ℝ)⁻¹).sub
+    (memLp_const (‖WithLp.toLp 2 x‖ ^ 2))).integrable_sq
+  refine h.congr (ae_of_all _ fun ω => ?_)
+  simp only [Pi.sub_apply, norm_sketch_sq_eq, div_eq_inv_mul]
 
 /-- **Exact second moment of the sign-sketch distortion**:
 `E (‖S x‖² - ‖x‖²)² = 2 (‖x‖⁴ - ∑ xⱼ⁴)/k`, at most the Gaussian sketch's `2 ‖x‖⁴/k`
@@ -110,7 +180,34 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix [Nonem
     ∫ ω, (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ x)‖ ^ 2 -
       ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 ∂μ =
         2 / Fintype.card k * (‖WithLp.toLp 2 x‖ ^ 4 - ∑ j, x j ^ 4) := by
-  sorry
+  have := hX.isProbabilityMeasure
+  have hN0 : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hmom := fun i => moments_dotProduct_sq (hX.eval i) x
+  have hind : iIndepFun (fun i ω => (x ⬝ᵥ X ω i) ^ 2) μ :=
+    hX.iIndepFun_eval.comp (fun _ y => (x ⬝ᵥ y) ^ 2) fun _ => by fun_prop
+  have hTvar : variance (∑ i, fun ω => (x ⬝ᵥ X ω i) ^ 2) μ =
+      ∑ i, variance (fun ω => (x ⬝ᵥ X ω i) ^ 2) μ :=
+    IndepFun.variance_sum (fun i _ => (hmom i).1) fun i _ j _ hij => hind.indepFun hij
+  have hsumfun : (∑ i, fun ω => (x ⬝ᵥ X ω i) ^ 2) = fun ω => ∑ i, (x ⬝ᵥ X ω i) ^ 2 := by
+    ext ω
+    rw [Finset.sum_apply]
+  have hT : MemLp (fun ω => ∑ i, (x ⬝ᵥ X ω i) ^ 2) 2 μ :=
+    memLp_finsetSum _ fun i _ => (hmom i).1
+  have hTmean : ∫ ω, ∑ i, (x ⬝ᵥ X ω i) ^ 2 ∂μ =
+      Fintype.card k * ‖WithLp.toLp 2 x‖ ^ 2 := by
+    rw [integral_finsetSum _ fun i _ => (hmom i).1.integrable one_le_two]
+    simp only [fun i => (hmom i).2.1, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  rw [hsumfun, variance_eq_integral hT.aestronglyMeasurable.aemeasurable, hTmean] at hTvar
+  simp only [fun i => (hmom i).2.2, Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at hTvar
+  have e : ∀ ω, (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • (X ω *ᵥ x))‖ ^ 2 -
+      ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 = (∑ i, (x ⬝ᵥ X ω i) ^ 2 -
+        Fintype.card k * ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 / (Fintype.card k : ℝ) ^ 2 := by
+    intro ω
+    rw [norm_sketch_sq_eq]
+    field_simp
+  simp only [e]
+  rw [integral_div, hTvar]
+  field_simp
 
 /-- **Sign-sketch JL moment** at `p = 2`, with `δ = 2/(k ε²)`, the Gaussian sketch's
 (`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`). [Woodruff2014, Definition 12] for the
@@ -119,7 +216,24 @@ theorem hasJLMoment_of_hasLaw_rademacherMatrix [Nonempty k] (hX : HasLaw X (rade
     (hε : 0 < ε) :
     HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε
       (2 / (Fintype.card k * ε ^ 2)) 2 μ := by
-  sorry
+  have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have e (x : n → ℝ) (hx : ‖WithLp.toLp 2 x‖ = 1) :
+      (fun ω => |‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ x)‖ ^ 2 - 1| ^ (2 : ℝ)) =
+      fun ω => (‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ x)‖ ^ 2 -
+        ‖WithLp.toLp 2 x‖ ^ 2) ^ 2 := by
+    funext ω
+    rw [hx, one_pow, Real.rpow_two, sq_abs]
+  refine ⟨fun x hx => ?_, fun x hx => ?_⟩
+  · simp only [Matrix.smul_mulVec]
+    rw [e x hx]
+    exact integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix hX x
+  · simp only [Matrix.smul_mulVec]
+    rw [e x hx, integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix hX x, hx,
+      one_pow, Real.rpow_two]
+    have hs : 0 ≤ ∑ j, x j ^ 4 := Finset.sum_nonneg fun j _ => by positivity
+    have h2k : 0 < 2 / (Fintype.card k : ℝ) := by positivity
+    calc 2 / (Fintype.card k : ℝ) * (1 - ∑ j, x j ^ 4) ≤ 2 / Fintype.card k := by nlinarith
+      _ = ε ^ 2 * (2 / (Fintype.card k * ε ^ 2)) := by field_simp
 
 /-- **Sign-sketch OSE**: for `0 ≤ ε`, `(√k)⁻¹ • X` is an oblivious `1 ∓ ε` subspace embedding for
 dimension `d` with failure `2 · 9^d exp (-k (ε²/16 - ε³/48))`: JL plus a net at `ε/2`
@@ -130,7 +244,13 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix
     (hX : HasLaw X (rademacherMatrix k n) μ) (d : ℕ) (hε : 0 ≤ ε) :
     IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε)
       (2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48)))) μ := by
-  sorry
+  have := hX.isProbabilityMeasure
+  have h := (hasJLProperty_of_hasLaw_rademacherMatrix hX (ε := ε / 2) (by linarith))
+    |>.isObliviousSubspaceEmbedding (by positivity) d
+  rw [Module.finrank_self, mul_one] at h
+  refine h.mono le_rfl (by linarith) (by linarith) (le_of_eq ?_)
+  rw [show (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 = ε ^ 2 / 16 - ε ^ 3 / 48 by ring]
+  ring
 
 /-- **Sign-sketch OSI**: the lower half of
 `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`, with the sketch's isotropy.
@@ -139,7 +259,28 @@ theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] 
     (hX : HasLaw X (rademacherMatrix k n) μ) (d : ℕ) (hε : 0 ≤ ε) :
     IsObliviousSubspaceInjection (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε)
       (2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48)))) μ := by
-  sorry
+  have := hX.isProbabilityMeasure
+  exact (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε)
+    |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_rademacherMatrix hX)
+
+/-- The failure probability of the sign-sketch OSE is at most `δ` once
+`jlDim (ε/2) (δ/9^d) ≤ k`, for `0 < ε < 3`. -/
+private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
+    (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
+    2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤ δ := by
+  have hf : 0 < (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 := by
+    have : 0 < (ε / 2) ^ 2 := by positivity
+    nlinarith [mul_pos this (by linarith : (0 : ℝ) < 3 - ε)]
+  rw [jlDim_def, div_le_iff₀ hf] at hk
+  have h9 : (0 : ℝ) < 9 ^ d := by positivity
+  calc 2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤
+        2 * 9 ^ d * Real.exp (-Real.log (2 / (δ / 9 ^ d))) := by
+        gcongr
+        rw [show ε ^ 2 / 16 - ε ^ 3 / 48 = (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 by ring]
+        exact hk
+    _ = δ := by
+      rw [Real.exp_neg, Real.exp_log (by positivity)]
+      field_simp
 
 /-- **Sign-sketch JL, sample-size form**: for `0 < ε < 3/2`, `0 < δ` and at least `jlDim ε δ`
 rows, the JL property holds with failure `δ`; the Gaussian sketch's size
@@ -148,7 +289,17 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk : jlDim ε δ ≤ Fintype.card k) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ μ := by
-  sorry
+  have := hX.isProbabilityMeasure
+  have hf : 0 < ε ^ 2 / 4 - ε ^ 3 / 6 := by
+    have : 0 < ε ^ 2 := by positivity
+    nlinarith
+  rw [jlDim_def, div_le_iff₀ hf] at hk
+  refine (hasJLProperty_of_hasLaw_rademacherMatrix hX hε.le).mono le_rfl ?_
+  calc 2 * Real.exp (-(Fintype.card k * (ε ^ 2 / 4 - ε ^ 3 / 6))) ≤
+        2 * Real.exp (-Real.log (2 / δ)) := by gcongr
+    _ = δ := by
+      rw [Real.exp_neg, Real.exp_log (by positivity)]
+      field_simp
 
 /-- **Sign-sketch OSE, sample-size form**: for `0 < ε < 3`, `0 < δ` and at least
 `jlDim (ε/2) (δ/9^d)` rows, `(√k)⁻¹ • X` is an oblivious `1 ∓ ε` subspace embedding for
@@ -158,7 +309,9 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
     IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε) δ
       μ := by
-  sorry
+  have := hX.isProbabilityMeasure
+  refine (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl
+    le_rfl le_rfl (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
 /-- **Sign-sketch OSI, sample-size form**: the injection twin of
 `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le`. -/
@@ -166,6 +319,8 @@ theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix_of_jlDim_le [Dec
     [Nonempty k] (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3)
     (hδ : 0 < δ) (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
     IsObliviousSubspaceInjection (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) δ μ := by
-  sorry
+  have := hX.isProbabilityMeasure
+  exact (isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl le_rfl
+    (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
 end NLAlib
