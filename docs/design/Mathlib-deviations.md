@@ -411,7 +411,8 @@ None of these was approved by the maintainer when it was made. Status is given p
 `Majorized`, `SymmetricGauge`, the Schatten, nuclear and Ky Fan norms, `OperatorConvexOn`, the
 factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tangentMatrix`.
 `obliqueProjector` (entry 19), `sketchAndSolve`, `rsvd`, `generalizedNystrom`, `nystrom`
-(LowRank S0, `docs/design/LowRank-S0.md` §8 item 3).
+(LowRank S0, `docs/design/LowRank-S0.md` §8 item 3). `IsBestRankApprox`
+(`isBestRankApprox_iff_isMinOn` bridges to `IsMinOn`; LowRank S2a, `docs/design/LowRank-S2a.md`).
 
 ## Used as Mathlib has them
 

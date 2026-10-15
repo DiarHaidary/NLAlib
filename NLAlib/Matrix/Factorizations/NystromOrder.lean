@@ -39,6 +39,7 @@ Design: `docs/design/LowRank-S0.md` §3.5, §8.
 * `Matrix.PosSemidef.nystrom_le_nystrom_of_range_le`: more samples, better approximation.
 * `Matrix.PosSemidef.singularValues_sub_nystrom_le`,
   `NLAlib.SymmetricGauge.matrixNorm_sub_nystrom_le`: Nyström helps.
+* `Matrix.PosSemidef.singularValues_nystrom_le`: Nyström does not increase singular values.
 -/
 
 @[expose] public section
@@ -212,6 +213,19 @@ theorem _root_.Matrix.PosSemidef.singularValues_sub_nystrom_le [DecidableEq n]
           Matrix.conjTranspose_mul, hR.conjTranspose_eq,
           ← singularValues_conjTranspose ((1 - rangeProjector Ω) * H)]
         exact hR.singularValues_mul_le _ k
+
+/-- **Nyström does not increase any singular value**: for positive semidefinite $\mathbf{H}$,
+$\sigma_i(\mathbf{H}\langle\mathbf{\Omega}\rangle) \le \sigma_i(\mathbf{H})$ at every index $i$,
+since $\mathbf{0} \preceq \mathbf{H}\langle\mathbf{\Omega}\rangle \preceq \mathbf{H}$. It is the
+domination hypothesis of the constant-one truncation lemma. False for Hermitian $\mathbf{H}$ that
+is not positive semidefinite, where $\|\mathbf{H}\langle\mathbf{\Omega}\rangle\|_2$ can be
+unbounded.
+[MartinssonTropp2020, §14.3]; [EpperlyWebber2026, Fact 6.1(a)]; there the order
+$\mathbf{H}\langle\mathbf{\Omega}\rangle \preceq \mathbf{H}$, here its singular-value form. -/
+theorem _root_.Matrix.PosSemidef.singularValues_nystrom_le {H : Matrix n n 𝕜} (hH : H.PosSemidef)
+    (Ω : Matrix n l 𝕜) (i : ℕ) : singularValues (nystrom H Ω) i ≤ singularValues H i := by
+  rw [(hH.nystrom Ω).singularValues_eq_eigenvalue, hH.singularValues_eq_eigenvalue]
+  exact eigenvalue_le_eigenvalue_of_le (hH.nystrom_le Ω) (hH.nystrom Ω).isHermitian i
 
 /-- **Nyström helps** in every unitarily invariant norm: for positive semidefinite $\mathbf{H}$,
 $$\|\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle\|_{\Phi} \le

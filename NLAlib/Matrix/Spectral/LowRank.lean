@@ -31,7 +31,8 @@ $\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decompo
 ## Main results
 
 * `NLAlib.rank_truncatedSVD_le`, `NLAlib.specNorm_sub_truncatedSVD`,
-  `NLAlib.frobNorm_sub_truncatedSVD_sq`: rank and errors of the truncation.
+  `NLAlib.frobNorm_sub_truncatedSVD_sq`: rank and errors of the truncation;
+  `NLAlib.frobNorm_truncatedSVD_sq`: its Frobenius norm.
 * `NLAlib.natCast_mul_singularValues_add_sq_le_frobNorm_sub_truncatedSVD_sq`: tail flattening, $d$
   copies of $\sigma_{k+d}(\mathbf{A})^2$ below the Frobenius tail at $k$.
 * `NLAlib.mul_rangeProjector_conjTranspose_truncatedSVD`,
@@ -235,6 +236,16 @@ theorem frobNorm_sub_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
     rw [if_pos (not_le.mp fun hki => (hni hki).not_gt (Finset.mem_range.mp hi)),
       zero_pow two_ne_zero]
   · rw [if_neg (not_lt.mpr (Finset.mem_Ico.mp hi).1)]
+
+/-- The truncated SVD keeps the leading singular values in the Frobenius norm:
+$$\|\llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2 = \sum_{i < k} \sigma_i(\mathbf{A})^2\,,$$
+for every choice of the truncation; indices at or above $\min(\lvert m \rvert, \lvert n \rvert)$
+contribute $0$. -/
+theorem frobNorm_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
+    frobNorm (truncatedSVD A k) ^ 2 = ∑ i ∈ Finset.range k, singularValues A i ^ 2 := by
+  rw [frobNorm_sq_eq_sum_range_singularValues_sq _ (rank_truncatedSVD_le A k)]
+  exact Finset.sum_congr rfl fun i hi => by
+    rw [singularValues_truncatedSVD, if_pos (Finset.mem_range.mp hi)]
 
 /-- The singular values of the truncation error are the singular values of $\mathbf{A}$ from the
 $k$-th on: $\sigma_i(\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k) = \sigma_{k+i}(\mathbf{A})$.

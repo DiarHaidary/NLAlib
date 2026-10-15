@@ -33,6 +33,7 @@ public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.LowRank.Structural.RangeFinder
+public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.Dilation
 public import NLAlib.Matrix.Basic.FromCols
@@ -125,6 +126,7 @@ public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 public import NLAlib.Matrix.Pseudoinverse.Penrose
 public import NLAlib.Matrix.Pseudoinverse.Pinv
+public import NLAlib.Matrix.Spectral.BestRankApprox
 public import NLAlib.Matrix.Spectral.Congruence
 public import NLAlib.Matrix.Spectral.CourantFischer
 public import NLAlib.Matrix.Spectral.Diagonalizable

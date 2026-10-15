@@ -1122,3 +1122,29 @@ supersedes them; §3 stays as drafted. Skeletons: the files of item 19.
     S2a is about 940 lines and 36 public declarations. Order within file 1: §3.1 with B22 after B5,
     §3.2, §3.3; file 4: §3.5, §3.6, §3.7. S1's L1, L2, L5a, L5b come with `LowRank.lean` (item 3);
     nothing waits on S1, and S2a does not import `RangeFinder.lean`.
+
+### Skeleton notes
+
+Written and proved together (2026-10-15); no `sorry`, no side files. All 36 statements are proved:
+`Matrix/Spectral/BestRankApprox.lean` (498 lines, B1 to B22), `LowRank/Structural/Truncation.lean`
+(389 lines, T1 to T12), B23 `frobNorm_truncatedSVD_sq` in `Matrix/Spectral/LowRank.lean` and N1
+`Matrix.PosSemidef.singularValues_nystrom_le` in `Matrix/Factorizations/NystromOrder.lean`, both
+written proved (item 18). The two new files are not registered in `NLAlib.lean`.
+- Signatures are those of §3 and items 5, 6; `[DecidableEq q]` is an instance argument of B9 to
+  B11 and T5 (for `HasOrthonormalCols Q`); T8 is stated under `open scoped Classical in`, as S0's
+  `CFC.sqrt` statements. Both files open `ComplexOrder` (the Loewner order of B21, T9).
+- One public lemma beyond the note, in file 4 before T3:
+  `IsBestRankApprox.frobNorm_sub_sq_eq_frobNorm_sub_rsvd_sq_add`, T3 for any best approximation
+  $\mathbf{Y}$ of `rsvd A Ω` (§3.5's "the proof holds for any best approximation"); T3 and T5 are
+  one-line consequences, and it is the selector form Q3 asks S3 to state. One private lemma in
+  file 4, `exists_core_generalizedNystrom` (the basis step of T10 and T11).
+- Routes as drafted, with three simplifications: B6 and B22's converse go through
+  `SymmetricGauge.matrixNorm_congr` (equal singular values); B17 replaces the singular values of
+  $\mathbf{E}$ by those of $\llbracket\mathbf{E}\rrbracket_r$ termwise and applies
+  `Real.sum_mul_le_sqrt_mul_sqrt`, without B23; B15 and B16 sum to $\min(\lvert m\rvert,
+  \lvert n\rvert) + 1$ and split off index $0$ with `Finset.sum_range_succ'`.
+- B15 and B16 cite [Gu2015, Theorem 3.4] by name (entry added with
+  `TroppYurtseverUdellCevher2017a`), per the orchestrator's brief.
+- For the wrap-up: T8 reproves S0's private `eq_conjTranspose_sqrt_mul_sqrt` in two lines (as
+  `nystrom_le_nystrom_of_range_le` already does); B17 generalizes
+  `frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le`, which could become its corollary.
