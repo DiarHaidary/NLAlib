@@ -82,9 +82,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p q : Type*} [Fintype l] [Fintype m
 /-! ### The randomized SVD approximation -/
 
 /-- The **randomized SVD approximation** (range-finder approximation)
-$\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) := \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$
-of $\mathbf{A}$ for a test matrix
-$\mathbf{\Omega}$, here deterministic: the projection of $\mathbf{A}$ onto the range of the sketch
+$\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) := \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$
+of $\mathbf{A}$ for a test matrix $\mathbf{\Omega}$, here deterministic: the projection of $\mathbf{A}$ onto the range of the sketch
 $\mathbf{A}\mathbf{\Omega}$, two passes over $\mathbf{A}$. Its rank is at most
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le \lvert l \rvert$ (`NLAlib.rank_rsvd_le`); it is
 $\mathbf{0}$ when $\mathbf{A}\mathbf{\Omega} = \mathbf{0}$.
