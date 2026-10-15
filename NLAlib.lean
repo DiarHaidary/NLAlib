@@ -34,17 +34,21 @@ public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.ForMathlib.Probability.Independence.Tonelli
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.Nystrom
 public import NLAlib.LowRank.Gaussian.NystromTail
 public import NLAlib.LowRank.Gaussian.RangeFinder
+public import NLAlib.LowRank.Gaussian.RangeFinderSpectral
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
 public import NLAlib.LowRank.Gaussian.RotationInvariant
 public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
 public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.EarlyTruncation
@@ -142,6 +146,7 @@ public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 public import NLAlib.Matrix.Pseudoinverse.Penrose
 public import NLAlib.Matrix.Pseudoinverse.Pinv
+public import NLAlib.Matrix.Pseudoinverse.SketchAndSolveSmul
 public import NLAlib.Matrix.Spectral.BestRankApprox
 public import NLAlib.Matrix.Spectral.Congruence
 public import NLAlib.Matrix.Spectral.CourantFischer
@@ -223,6 +228,7 @@ public import NLAlib.Probability.MatrixConcentration.Subadditivity
 public import NLAlib.Probability.MatrixConcentration.Variance
 public import NLAlib.Probability.MatrixConditionalExpectation
 public import NLAlib.Probability.MatrixIntegral
+public import NLAlib.Probability.Measurability.EarlyTruncation
 public import NLAlib.Probability.Measurability.Matrix
 public import NLAlib.Probability.Orlicz
 public import NLAlib.Probability.QuadraticForm.HansonWright
@@ -239,6 +245,7 @@ public import NLAlib.Probability.SubGaussianVector.Norm
 public import NLAlib.Probability.Tail
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
+public import NLAlib.RandomMatrix.Gaussian.BlockMomentsSpectral
 public import NLAlib.RandomMatrix.Gaussian.BlockTail
 public import NLAlib.RandomMatrix.Gaussian.Concentration
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
@@ -249,6 +256,7 @@ public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral
 public import NLAlib.RandomMatrix.Gaussian.Moments
 public import NLAlib.RandomMatrix.Gaussian.Rank
 public import NLAlib.RandomMatrix.Gaussian.SpectralNorm
+public import NLAlib.RandomMatrix.Gaussian.SpectralNormSq
 public import NLAlib.RandomMatrix.Haar.Basic
 public import NLAlib.RandomMatrix.Haar.Blocks
 public import NLAlib.RandomMatrix.Haar.Moments
@@ -260,6 +268,7 @@ public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.Haar
 public import NLAlib.Sketching.Gaussian.HaarEmbedding
+public import NLAlib.Sketching.Gaussian.LeastSquares
 public import NLAlib.Sketching.Gaussian.Rademacher
 public import NLAlib.Sketching.Gaussian.SubGaussian
 public import NLAlib.Sketching.Properties.FixedSubspace
