@@ -180,11 +180,14 @@ end SymmetricGauge
 
 open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Frobenius norm** (HMT Theorem 10.5, squared):
-for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
+for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
+$k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}^2\,,$$
-the factor being `gaussianProjectionFactor k ℓ`.
+\|_{\mathsf{F}}^2\,;$$
+the factor is `gaussianProjectionFactor k ℓ`. The Frobenius instance of the Gram-form bound above;
+Epperly and Webber's sharper factor, with a rank parameter, is
+`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le`.
 [HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; HMT state the
 bound for $\mathbb{E}\|\cdot\|_{\mathsf{F}}$ (it follows by Jensen,
 `NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`) and assume $k \ge 2$ and

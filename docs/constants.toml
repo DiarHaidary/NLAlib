@@ -204,3 +204,23 @@ latex = '2 #2 \log(#1/#4)/#3^2'
 display = '\frac{2 #2 \log(#1/#4)}{#3^2}'
 lean_body = 'samplingInjectionSize (d : ℕ) (L ε δ : ℝ) : ℝ := 2 * L * Real.log (d / δ) / ε ^ 2'
 body_hash = "41d18f4b66378b27"
+
+[[constant]]
+name = "NLAlib.gaussianProjectionFactor"
+kind = "factor"
+file = "NLAlib/RandomMatrix/Gaussian/BlockMoments.lean"
+args = ["k", "l"]
+latex = '1 + #1/(#2 - #1 - 1)'
+display = '1 + \frac{#1}{#2 - #1 - 1}'
+lean_body = 'gaussianProjectionFactor (k l : ℕ) : ℝ := 1 + (k : ℝ) / ((l : ℝ) - k - 1)'
+body_hash = "9b03c4494754f608"
+
+[[constant]]
+name = "NLAlib.rotationInvariantFactor"
+kind = "factor"
+file = "NLAlib/LowRank/Gaussian/RotationInvariantFactor.lean"
+args = ["r", "l", "q"]
+latex = '(#1 - #2)/(#1 - #3) \cdot (1 + #3/(#2 - #3 - 1))'
+display = '\frac{#1 - #2}{#1 - #3}\Bigl(1 + \frac{#3}{#2 - #3 - 1}\Bigr)'
+lean_body = 'rotationInvariantFactor (r l q : ℕ) : ℝ := ((r : ℝ) - l) / ((r : ℝ) - q) * gaussianProjectionFactor q l'
+body_hash = "e16aff298f44deea"

@@ -31,7 +31,8 @@ $$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2
 
 ## Main definitions
 
-* `NLAlib.gaussianProjectionFactor k l`: the factor $1 + \frac{k}{l - k - 1}$.
+* `NLAlib.gaussianProjectionFactor k l`: the factor <!-- value gaussianProjectionFactor k l -->
+  $1 + k/(l - k - 1)$.
 
 ## Main results
 
@@ -54,7 +55,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k r s a : 
 
 /-! ### The Gaussian projection factor -/
 
-/-- **The Gaussian projection factor** $1 + \frac{k}{l - k - 1}$ (casts to $\mathbb{R}$). For a
+/-- **The Gaussian projection factor** <!-- value gaussianProjectionFactor k l -->
+$1 + k/(l - k - 1)$ (casts to $\mathbb{R}$). For a
 real $k \times l$ standard Gaussian matrix $\mathbf{G}$ it is
 $1 + \mathbb{E}\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$, the factor in front of the optimal Frobenius
 error in the expected error of the randomized SVD [HalkoMartinssonTropp2011, Theorem 10.5], and
@@ -63,7 +65,8 @@ $l \le k + 1$, where the denominator is at most $0$ (and Lean's $x/0 = 0$ at $l 
 theorems carry `k + 2 ≤ l`. A plain definition, because its body is the source's formula. -/
 noncomputable def gaussianProjectionFactor (k l : ℕ) : ℝ := 1 + (k : ℝ) / ((l : ℝ) - k - 1)
 
-/-- The body of `gaussianProjectionFactor`, as a simp lemma. -/
+/-- The body of `gaussianProjectionFactor`, <!-- value gaussianProjectionFactor k l -->
+$1 + k/(l - k - 1)$, as a simp lemma. -/
 @[simp]
 theorem gaussianProjectionFactor_def (k l : ℕ) :
     gaussianProjectionFactor k l = 1 + (k : ℝ) / ((l : ℝ) - k - 1) :=

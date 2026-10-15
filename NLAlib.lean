@@ -44,6 +44,7 @@ public import NLAlib.LowRank.Gaussian.NystromTail
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
 public import NLAlib.LowRank.Gaussian.RotationInvariant
+public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.EarlyTruncation
@@ -249,6 +250,7 @@ public import NLAlib.RandomMatrix.Gaussian.Moments
 public import NLAlib.RandomMatrix.Gaussian.Rank
 public import NLAlib.RandomMatrix.Gaussian.SpectralNorm
 public import NLAlib.RandomMatrix.Haar.Basic
+public import NLAlib.RandomMatrix.Haar.Blocks
 public import NLAlib.RandomMatrix.Haar.Moments
 public import NLAlib.RandomMatrix.Haar.Sphere
 public import NLAlib.RandomMatrix.Haar.Transfer

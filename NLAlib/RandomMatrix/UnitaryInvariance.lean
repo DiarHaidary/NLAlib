@@ -40,6 +40,10 @@ The classes are stated with `HasOrthonormalCols`, not with Mathlib's `SMulInvari
 * `NLAlib.integral_eq_zero_of_isLeftUnitarilyInvariant`.
 * `NLAlib.integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant`:
   $\mathbb{E}[\mathbf{X}\mathbf{B}\mathbf{X}^{\mathsf{H}}]$ is scalar.
+* `NLAlib.hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant`: rotating one of two
+  orthogonal blocks keeps their joint law.
+* `NLAlib.integral_conjTranspose_mul_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant`: the
+  coupled conjugation average is scalar.
 -/
 
 @[expose] public section
@@ -175,6 +179,108 @@ theorem integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant [DecidableEq 
       rw [Matrix.integral_mul_const (hint.const_mul U), Matrix.integral_const_mul U hint]
     rw [← h3]
     exact h2.trans h1.symm
+  refine (eq_smul_one_of_forall_mul_mul_conjTranspose_eq key).trans ?_
+  rw [Matrix.integral_trace hint]
+
+/-! ### Coupled invariance of two blocks -/
+
+/-- The block-diagonal rotation $\mathbf{I} + \mathbf{V}_2(\mathbf{U} - \mathbf{I})
+\mathbf{V}_2^{\mathsf{H}}$ of a frame $\mathbf{V}_2$ by a unitary $\mathbf{U}$ is unitary. -/
+private theorem hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose [DecidableEq n] {t : Type*}
+    [Fintype t] [DecidableEq t] {V₂ : Matrix n t 𝕜} (hV₂ : HasOrthonormalCols V₂)
+    {U : Matrix t t 𝕜} (hU : HasOrthonormalCols U) :
+    HasOrthonormalCols (1 + V₂ * (U - 1) * V₂ᴴ) := by
+  rw [hasOrthonormalCols_iff]
+  have hM : (Uᴴ - 1) + (U - 1) + (Uᴴ - 1) * (U - 1) = 0 := by
+    rw [sub_mul, mul_sub, mul_sub, hU.conjTranspose_mul_self, Matrix.mul_one, Matrix.one_mul,
+      Matrix.one_mul]
+    abel
+  have hV := hV₂.conjTranspose_mul_self
+  calc (1 + V₂ * (U - 1) * V₂ᴴ)ᴴ * (1 + V₂ * (U - 1) * V₂ᴴ)
+      = 1 + V₂ * ((Uᴴ - 1) + (U - 1) + (Uᴴ - 1) * (V₂ᴴ * V₂) * (U - 1)) * V₂ᴴ := by
+        simp only [Matrix.conjTranspose_add, Matrix.conjTranspose_one, Matrix.conjTranspose_mul,
+          Matrix.conjTranspose_sub, Matrix.conjTranspose_conjTranspose, Matrix.add_mul,
+          Matrix.mul_add, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
+        abel
+    _ = 1 := by rw [hV, Matrix.mul_one, hM, Matrix.mul_zero, Matrix.zero_mul, add_zero]
+
+omit [Fintype k] in
+/-- **Rotating one block keeps the joint law**: for $\mathbf{X}$ with a left unitarily invariant
+law, frames $\mathbf{V}_1$ ($n \times s$, any matrix) and $\mathbf{V}_2$ ($n \times t$, orthonormal
+columns) with $\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, and every unitary
+$\mathbf{U}$ on $t$, the pair
+$(\mathbf{V}_1^{\mathsf{H}}\mathbf{X}, \mathbf{U}\mathbf{V}_2^{\mathsf{H}}\mathbf{X})$ has the law
+of $(\mathbf{V}_1^{\mathsf{H}}\mathbf{X}, \mathbf{V}_2^{\mathsf{H}}\mathbf{X})$. The rotation
+$\mathbf{I} + \mathbf{V}_2(\mathbf{U} - \mathbf{I})\mathbf{V}_2^{\mathsf{H}}$ is unitary and fixes
+the first block.
+[EpperlyWebber2026, proofs of Theorem 2.1 and Proposition 5.7]; there for a random orthonormal
+matrix and complementary frames. -/
+theorem hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant [DecidableEq n]
+    {s t : Type*} [Fintype t] [DecidableEq t] {ν : Measure (Matrix n k 𝕜)}
+    [IsLeftUnitarilyInvariant ν] {X : Ω → Matrix n k 𝕜} (hX : HasLaw X ν μ)
+    {V₁ : Matrix n s 𝕜} {V₂ : Matrix n t 𝕜} (hV₂ : HasOrthonormalCols V₂) (h₁₂ : V₁ᴴ * V₂ = 0)
+    {U : Matrix t t 𝕜} (hU : HasOrthonormalCols U) :
+    HasLaw (fun ω => (V₁ᴴ * X ω, U * (V₂ᴴ * X ω))) (ν.map fun x => (V₁ᴴ * x, V₂ᴴ * x)) μ := by
+  set R := 1 + V₂ * (U - 1) * V₂ᴴ
+  have hR : HasOrthonormalCols R :=
+    hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hV₂ hU
+  have h1 : V₁ᴴ * R = V₁ᴴ := by
+    simp only [R, Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc, h₁₂, Matrix.zero_mul,
+      add_zero]
+  have h2 : V₂ᴴ * R = U * V₂ᴴ := by
+    simp only [R, Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc, hV₂.conjTranspose_mul_self,
+      Matrix.one_mul, Matrix.sub_mul]
+    abel
+  have hg : Measurable fun x : Matrix n k 𝕜 => (V₁ᴴ * x, V₂ᴴ * x) :=
+    (measurable_const.matrix_mul measurable_id).prodMk (measurable_const.matrix_mul measurable_id)
+  have h := HasLaw.fun_comp (Y := fun x : Matrix n k 𝕜 => (V₁ᴴ * x, V₂ᴴ * x))
+    ⟨hg.aemeasurable, rfl⟩ (hasLaw_const_mul_of_isLeftUnitarilyInvariant hX hR)
+  refine h.congr (ae_of_all _ fun ω => ?_)
+  simp only [← Matrix.mul_assoc, h1, h2]
+
+/-- **The coupled conjugation average**: for $\mathbf{X}$ with a left unitarily invariant law,
+frames as in `NLAlib.hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant` and measurable
+$F$, if $\mathbf{Z} = \mathbf{V}_2^{\mathsf{H}}\mathbf{X}\,F(\mathbf{V}_1^{\mathsf{H}}\mathbf{X})\,
+(\mathbf{V}_2^{\mathsf{H}}\mathbf{X})^{\mathsf{H}}$ is integrable then
+$$\mathbb{E}\mathbf{Z} =
+\frac{\mathbb{E}\operatorname{tr}\mathbf{Z}}{\lvert t\rvert}\,\mathbf{I}\,,$$
+although the middle factor depends on $\mathbf{X}$. The case of a fixed middle factor is
+`NLAlib.integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant`.
+[EpperlyWebber2026, proof of Proposition 5.7]; there for a random orthonormal matrix. -/
+theorem integral_conjTranspose_mul_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant
+    [DecidableEq n] {s t : Type*} [Fintype t] [DecidableEq t]
+    {ν : Measure (Matrix n k 𝕜)} [IsLeftUnitarilyInvariant ν] {X : Ω → Matrix n k 𝕜}
+    (hX : HasLaw X ν μ) {V₁ : Matrix n s 𝕜} {V₂ : Matrix n t 𝕜} (hV₂ : HasOrthonormalCols V₂)
+    (h₁₂ : V₁ᴴ * V₂ = 0) {F : Matrix s k 𝕜 → Matrix k k 𝕜} (hF : Measurable F)
+    (hint : Integrable (fun ω => V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ) μ) :
+    ∫ ω, V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ ∂μ =
+      ((∫ ω, (V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ).trace ∂μ) / Fintype.card t) •
+        (1 : Matrix t t 𝕜) := by
+  set g := fun x : Matrix n k 𝕜 => (V₁ᴴ * x, V₂ᴴ * x)
+  have hg : Measurable g :=
+    (measurable_const.matrix_mul measurable_id).prodMk (measurable_const.matrix_mul measurable_id)
+  set h := fun y : Matrix s k 𝕜 × Matrix t k 𝕜 => y.2 * F y.1 * y.2ᴴ
+  have hh : Measurable h :=
+    (measurable_snd.matrix_mul (hF.comp measurable_fst)).matrix_mul
+      (Measurable.matrix_conjTranspose continuous_star.measurable measurable_snd)
+  have h0 : HasLaw (fun ω => (V₁ᴴ * X ω, V₂ᴴ * X ω)) (ν.map g) μ :=
+    HasLaw.fun_comp (Y := g) ⟨hg.aemeasurable, rfl⟩ hX
+  have key : ∀ U : Matrix t t 𝕜, HasOrthonormalCols U →
+      U * (∫ ω, V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ ∂μ) * Uᴴ =
+        ∫ ω, V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ ∂μ := by
+    intro U hU
+    have hU' := hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant hX hV₂ h₁₂ hU
+    have e1 := hU'.integral_comp hh.aestronglyMeasurable
+    have e2 := h0.integral_comp hh.aestronglyMeasurable
+    have e3 : ∫ ω, h (V₁ᴴ * X ω, U * (V₂ᴴ * X ω)) ∂μ =
+        U * (∫ ω, V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ ∂μ) * Uᴴ := by
+      have e4 : ∀ ω, h (V₁ᴴ * X ω, U * (V₂ᴴ * X ω)) =
+          U * (V₂ᴴ * X ω * F (V₁ᴴ * X ω) * (V₂ᴴ * X ω)ᴴ) * Uᴴ := fun ω => by
+        simp only [h, Matrix.conjTranspose_mul, Matrix.mul_assoc]
+      simp only [e4]
+      rw [Matrix.integral_mul_const (hint.const_mul U), Matrix.integral_const_mul U hint]
+    rw [← e3]
+    exact e1.trans e2.symm
   refine (eq_smul_one_of_forall_mul_mul_conjTranspose_eq key).trans ?_
   rw [Matrix.integral_trace hint]
 

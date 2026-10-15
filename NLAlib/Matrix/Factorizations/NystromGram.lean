@@ -51,6 +51,7 @@ into it at the round's wrap-up. Design: `docs/design/LowRank-S0.md` §3.4, §8.
 * `Matrix.PosSemidef.rank_conjTranspose_mul_mul`: Nyström always keeps the rank of the sketch.
 * `Matrix.PosSemidef.nystrom_eq_self_of_rank_eq`, `Matrix.PosSemidef.nystrom_eq_of_range_eq`:
   exactness and representation invariance.
+* `NLAlib.nystrom_conjTranspose_mul_mul`: conjugation by any matrix.
 * `NLAlib.HasOrthonormalCols.nystrom_mul_mul_conjTranspose`: equivariance.
 -/
 
@@ -302,13 +303,27 @@ theorem nystrom_selectionMatrix [Fintype p] [DecidableEq n] (A : Matrix n n 𝕜
     Matrix.mul_assoc (A.submatrix id e * pinv (A.submatrix e e)),
     conjTranspose_selectionMatrix_mul]
 
+/-- **Conjugation of Nyström**: for every $\mathbf{B}$, $\mathbf{D}$ and $\mathbf{\Omega}$,
+$$\mathsf{nystrom}(\mathbf{B}^{\mathsf{H}}\mathbf{D}\mathbf{B}, \mathbf{\Omega}) =
+\mathbf{B}^{\mathsf{H}}\,\mathsf{nystrom}(\mathbf{D}, \mathbf{B}\mathbf{\Omega})\,\mathbf{B}\,:$$
+Nyström of a compressed matrix is the compression of Nyström with the compressed test matrix. No
+hypothesis; with $\mathbf{B}$ of orthonormal rows the two errors have the same singular values.
+[EpperlyWebber2026, §6.3 and proof of Lemma 6.2]; there for unitary and block-selection
+$\mathbf{B}$. -/
+theorem nystrom_conjTranspose_mul_mul [Fintype p] (B : Matrix p n 𝕜) (D : Matrix p p 𝕜)
+    (Ω : Matrix n l 𝕜) : nystrom (Bᴴ * D * B) Ω = Bᴴ * nystrom D (B * Ω) * B := by
+  simp only [nystrom_def, Matrix.conjTranspose_mul, Matrix.mul_assoc]
+
 /-- **Equivariance of Nyström**: for $\mathbf{U}$ with orthonormal columns,
 $$\mathsf{nystrom}(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}, \mathbf{U}\mathbf{\Omega}) =
 \mathbf{U}\,\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})\mathbf{U}^{\mathsf{H}}\,,$$
-for every square $\mathbf{A}$. -/
+for every square $\mathbf{A}$. The instance $\mathbf{B} = \mathbf{U}^{\mathsf{H}}$ of
+`NLAlib.nystrom_conjTranspose_mul_mul`. -/
 theorem HasOrthonormalCols.nystrom_mul_mul_conjTranspose [DecidableEq n] {n' : Type*}
     [Fintype n'] {U : Matrix n' n 𝕜} (hU : HasOrthonormalCols U) (A : Matrix n n 𝕜)
-    (Ω : Matrix n l 𝕜) : nystrom (U * A * Uᴴ) (U * Ω) = U * nystrom A Ω * Uᴴ :=
-  hU.generalizedNystrom_mul_mul_conjTranspose hU A Ω Ω
+    (Ω : Matrix n l 𝕜) : nystrom (U * A * Uᴴ) (U * Ω) = U * nystrom A Ω * Uᴴ := by
+  have h := nystrom_conjTranspose_mul_mul Uᴴ A (U * Ω)
+  rwa [Matrix.conjTranspose_conjTranspose, ← Matrix.mul_assoc, hU.conjTranspose_mul_self,
+    Matrix.one_mul] at h
 
 end NLAlib

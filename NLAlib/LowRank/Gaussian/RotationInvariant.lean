@@ -7,6 +7,7 @@ module
 
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
+public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.RandomMatrix.Haar.Transfer
 
@@ -40,7 +41,8 @@ $\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$, through the Gram correspondenc
 Eckart–Young (`NLAlib.LowRank.Random.Nystrom`) and is stated for a measurable selector and,
 directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). Design:
 `docs/design/LowRank-S3.md` §3.6, §8 items 6 and 8; `docs/design/LowRank-S5.md` §3.5, §8;
-`docs/design/LowRank-S2c.md` §8 item 8.
+`docs/design/LowRank-S2c.md` §8 item 8; Epperly and Webber's sharp bounds,
+`docs/design/LowRank-S4.md` §3.4, §8 items 1, 5, 13.
 
 ## Main results
 
@@ -56,6 +58,19 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   truncated output.
 * the Gram-form tail (TW Theorem 8.1 (RSVD1)), in the `NLAlib.SymmetricGauge` namespace:
   `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant`.
+* Epperly and Webber's sharp bounds, with a rank parameter $r \ge \operatorname{rank}$ and the
+  factor <!-- value rotationInvariantFactor r \ell q -->
+  $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$ (`NLAlib.rotationInvariantFactor r ℓ q`):
+  in the `Matrix.PosSemidef` namespace,
+  `integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le` (their Theorem
+  3.6(a)), its Gaussian twin
+  `integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le` and the truncated
+  decay form
+  `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_isLeftUnitarilyInvariant_of_rank_le`;
+  `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le` (their Theorem
+  3.2) and its Gaussian twin
+  `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le`. The HMT forms
+  above are their instances $r = n$.
 * Nyström, in the `Matrix.PosSemidef` namespace: `hasLaw_nystrom_of_isLeftUnitarilyInvariant`
   (the law of the output), `integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant`,
   `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`,
@@ -132,27 +147,6 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitaril
     HasLaw.id hk
 
 end SymmetricGauge
-
-/-- **The expected error of the randomized SVD, Frobenius norm, rotation-invariant test
-matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full column
-rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}^2\,,$$
-the factor being `gaussianProjectionFactor k ℓ`.
-[EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) over
-$\mathbb{R}$ and $\mathbb{C}$ with a minimum over the number $q$ of directions, here over
-$\mathbb{R}$ at $q = k$.
-Result: randomized-svd-expected-error -/
-theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
-    (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}
-    (hk : k + 2 ≤ Fintype.card l) :
-    ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
-      gaussianProjectionFactor k (Fintype.card l) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
-    (f := fun Ω => frobNorm (A - rsvd A Ω) ^ 2)
-    ((measurable_frobNorm.comp (measurable_sub_mul A)).pow_const 2) fun _ => rfl).trans_le ?_
-  exact integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A HasLaw.id hk
 
 /-- **The expected error of the randomized SVD, Frobenius norm, as printed, rotation-invariant
 test matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full
@@ -328,30 +322,6 @@ theorem integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant (Φ : Sym
 
 end SymmetricGauge
 
-/-- **The expected trace error of randomized Nyström, rotation-invariant test matrices**: for
-positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
-and full column rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
-the factor being `gaussianProjectionFactor k ℓ`: the squared Frobenius error of the randomized
-SVD of a factor (`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`). A Haar
-frame (`NLAlib.haarFrame`) is an instance: its law is left unitarily invariant
-(`NLAlib.isLeftUnitarilyInvariant_haarFrame`), and for $\ell \le n$ it has full column rank
-almost surely (`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$).
-[EpperlyWebber2026, Theorem 3.1 and Fact 3.5]; [TroppYurtseverUdellCevher2017a, Theorem A.1];
-there with a minimum over the comparison rank, for orthonormal test matrices (TYUC) or
-rotation-invariant ones (EW, the Nyström twin of their Theorem 3.1); here at one rank.
-Result: randomized-nystrom-expected-error -/
-theorem _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant
-    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
-    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
-    ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
-      gaussianProjectionFactor k (Fintype.card l) * nuclearNorm (H - truncatedSVD H k) := by
-  obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
-  simp only [Matrix.star_eq_conjTranspose, nuclearNorm_conjTranspose_mul_self_sub_nystrom,
-    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
-  exact integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant F hX hXr hk
-
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **The expected trace error of truncated Nyström, rotation-invariant test matrices**: for
@@ -363,6 +333,9 @@ the squared Frobenius error of the truncated randomized SVD of a factor
 (`NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant`). A Haar
 frame is an instance (`NLAlib.isLeftUnitarilyInvariant_haarFrame`, and
 `NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$ for $\ell \le n$).
+Incomparable with the decay form with Epperly and Webber's factor,
+`Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_isLeftUnitarilyInvariant_of_rank_le`,
+which is better for rank close to $\ell$ or a decaying tail.
 [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.1)]; there for Gaussian or orthonormal test
 matrices, with $1 \le k$ and $\ell \le n$.
 Result: randomized-nystrom-expected-error -/
@@ -480,5 +453,468 @@ theorem _root_.Matrix.PosSemidef.ae_nystrom_eq_self_of_isLeftUnitarilyInvariant
     ∀ᵐ ω ∂μ, nystrom H (X ω) = H := by
   filter_upwards [ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant H hX hXr] with ω hω
   exact hH.nystrom_eq_self_of_rank_eq (hω.trans (min_eq_left hHl))
+
+/-! ### Epperly and Webber's sharp bounds
+
+The rank-parameter forms. The reduction to a diagonal matrix, the cyclic average of its tail and
+the transfer to the Gaussian are private steps of the Nyström bound; the randomized SVD bound is
+its Gram form. -/
+
+/-- The trace error of Nyström is monotone in the positive semidefinite matrix. -/
+private theorem nuclearNorm_sub_nystrom_le_of_le {ι : Type*} [Fintype ι] {D D' : Matrix ι ι ℝ}
+    (hD : D.PosSemidef) (h : D ≤ D') (G : Matrix ι l ℝ) :
+    nuclearNorm (D - nystrom D G) ≤ nuclearNorm (D' - nystrom D' G) := by
+  have hD' : D'.PosSemidef := by simpa using hD.add (Matrix.le_iff.mp h)
+  rw [(Matrix.le_iff.mp (hD.nystrom_le G)).nuclearNorm_eq_re_trace,
+    (Matrix.le_iff.mp (hD'.nystrom_le G)).nuclearNorm_eq_re_trace]
+  exact re_trace_le_re_trace_of_le (hD.sub_nystrom_le_sub_nystrom h G)
+
+/-- Relabelling the rows of a standard Gaussian test matrix leaves the expected trace error of
+Nyström unchanged, after relabelling the matrix. -/
+private theorem nuclearNorm_submatrix_sub_nystrom {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (e : ι ≃ ι) (D : Matrix ι ι ℝ) (G : Matrix ι l ℝ) :
+    nuclearNorm (D.submatrix e e - nystrom (D.submatrix e e) G) =
+      nuclearNorm (D - nystrom D (selectionMatrix e * G)) := by
+  have h := nystrom_conjTranspose_mul_mul (selectionMatrix e : Matrix ι ι ℝ) D G
+  rw [conjTranspose_selectionMatrix_mul_mul_selectionMatrix,
+    conjTranspose_selectionMatrix_mul_mul_selectionMatrix] at h
+  rw [h]
+  exact nuclearNorm_submatrix_equiv (D - nystrom D (selectionMatrix e * G)) e e
+
+/-- The two-level diagonal matrix as a block matrix. -/
+private theorem diagonal_sumElim_const {s t : Type*} [DecidableEq s] [DecidableEq t] (a b : ℝ) :
+    Matrix.diagonal (Sum.elim (fun _ : s => a) fun _ : t => b) =
+      Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0 (b • (1 : Matrix t t ℝ)) := by
+  rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
+
+/-- **The diagonal case of the sharp Nyström bound** (Epperly and Webber's §6.3 at a fixed
+eigenbasis): for a standard Gaussian test matrix on $(s \oplus \mathrm{Fin}\,d) \times l$, the
+expected trace error of Nyström for
+$\operatorname{diag}(\boldsymbol{\sigma}_1, \boldsymbol{\sigma}_2)$ with
+$\boldsymbol{\sigma}_1 \le a$ is at most the factor times $\sum_j \sigma_{2,j}$. -/
+private theorem integral_nuclearNorm_diagonal_sub_nystrom_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
+    {μ' : Measure Ω'} {s : Type*} [Fintype s] [DecidableEq s] {d : ℕ} [NeZero d]
+    {G : Ω' → Matrix (s ⊕ Fin d) l ℝ} (hG : HasLaw G (gaussianMatrix (s ⊕ Fin d) l) μ')
+    {σ₁ : s → ℝ} {σ₂ : Fin d → ℝ} {a : ℝ} (h₁ : ∀ i, 0 ≤ σ₁ i) (ha : ∀ i, σ₁ i ≤ a)
+    (ha0 : 0 ≤ a) (h₂ : ∀ j, 0 ≤ σ₂ j) (hsl : Fintype.card s + 2 ≤ Fintype.card l)
+    (hlr : Fintype.card l ≤ Fintype.card s + d) :
+    ∫ ω, nuclearNorm (Matrix.diagonal (Sum.elim σ₁ σ₂) -
+        nystrom (Matrix.diagonal (Sum.elim σ₁ σ₂)) (G ω)) ∂μ' ≤
+      rotationInvariantFactor (Fintype.card s + d) (Fintype.card l) (Fintype.card s) *
+        ∑ j, σ₂ j := by
+  classical
+  have := hG.isProbabilityMeasure_iff.2 inferInstance
+  set Da := Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂)
+  have hDa : Da.PosSemidef := Matrix.PosSemidef.diagonal fun i => by cases i <;> simp [ha0, h₂]
+  have hD : (Matrix.diagonal (Sum.elim σ₁ σ₂)).PosSemidef :=
+    Matrix.PosSemidef.diagonal fun i => by cases i <;> simp [h₁, h₂]
+  have hle : Matrix.diagonal (Sum.elim σ₁ σ₂) ≤ Da := by
+    rw [Matrix.le_iff, Matrix.diagonal_sub]
+    refine Matrix.PosSemidef.diagonal fun i => ?_
+    cases i <;> simp [ha]
+  -- the cyclic shifts of the tail block
+  set e : Fin d → (s ⊕ Fin d) ≃ (s ⊕ Fin d) := fun k =>
+    Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)
+  set Dk : Fin d → Matrix (s ⊕ Fin d) (s ⊕ Fin d) ℝ := fun k => Da.submatrix (e k) (e k)
+  have hDk : ∀ k, (Dk k).PosSemidef := fun k => hDa.submatrix _
+  have hf : Measurable fun Y : Matrix (s ⊕ Fin d) l ℝ => nuclearNorm (Da - nystrom Da Y) :=
+    continuous_nuclearNorm.measurable.comp (measurable_const.sub (measurable_nystrom Da))
+  have hshift : ∀ k, ∫ ω, nuclearNorm (Dk k - nystrom (Dk k) (G ω)) ∂μ' =
+      ∫ ω, nuclearNorm (Da - nystrom Da (G ω)) ∂μ' := by
+    intro k
+    have hP : HasOrthonormalCols (selectionMatrix (e k) : Matrix (s ⊕ Fin d) (s ⊕ Fin d) ℝ)ᴴ :=
+      (hasOrthonormalCols_selectionMatrix (e k).injective).conjTranspose_of_card_eq rfl
+    have hPG := hasLaw_const_mul_of_hasLaw_gaussianMatrix hG hP
+    simp only [Dk, nuclearNorm_submatrix_sub_nystrom]
+    exact (hPG.integral_comp hf.aestronglyMeasurable).trans
+      (hG.integral_comp hf.aestronglyMeasurable).symm
+  -- the average of the shifts
+  have hd0 : (0 : ℝ) < d := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne d)
+  set w : ℝ := 1 / d with hwdef
+  have hw : 0 ≤ w := by positivity
+  set b₀ : ℝ := (∑ j, σ₂ j) / d
+  have hb₀ : 0 ≤ b₀ := div_nonneg (Finset.sum_nonneg fun j _ => h₂ j) hd0.le
+  have hbar : ∑ k, w • Dk k = Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
+      (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ)) := by
+    rw [← diagonal_sumElim_const]
+    have e1 : ∀ k, Dk k = Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂ ∘ e k) := fun k =>
+      Matrix.submatrix_diagonal_equiv _ _
+    simp only [e1]
+    ext i j
+    simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.diagonal_apply, smul_eq_mul]
+    split_ifs with hij
+    · subst hij
+      cases i with
+      | inl i =>
+        simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
+          Sum.elim_inl, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, w]
+        field_simp
+      | inr j =>
+        simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inr, Equiv.coe_addRight,
+          Sum.elim_inr, b₀, w, ← Finset.mul_sum]
+        rw [show (∑ k : Fin d, σ₂ (j + k)) = ∑ k, σ₂ k from
+          Equiv.sum_comp (Equiv.addLeft j) σ₂]
+        ring
+    · simp
+  have hDbar : (Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
+      (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ))).PosSemidef := by
+    rw [← hbar]
+    exact Matrix.posSemidef_sum _ fun k _ => (hDk k).smul hw
+  have hpt : ∀ ω, w * ∑ k, nuclearNorm (Dk k - nystrom (Dk k) (G ω)) ≤
+      nuclearNorm (Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
+        (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ)) - nystrom (Matrix.fromBlocks (a • (1 : Matrix s s ℝ))
+          0 0 (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ))) (G ω)) := by
+    intro ω
+    have h := sum_smul_sub_nystrom_le Finset.univ (fun k _ => hDk k) (fun k _ => hw) (G ω)
+    rw [hbar] at h
+    rw [(Matrix.le_iff.mp (hDbar.nystrom_le (G ω))).nuclearNorm_eq_re_trace]
+    refine le_of_eq_of_le ?_ (re_trace_le_re_trace_of_le h)
+    rw [Matrix.trace_sum, map_sum, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [Matrix.trace_smul, (Matrix.le_iff.mp ((hDk k).nystrom_le (G ω))).nuclearNorm_eq_re_trace,
+      RCLike.re_to_real, RCLike.re_to_real, smul_eq_mul]
+  -- integrate
+  have hint : ∀ k, Integrable (fun ω => nuclearNorm (Dk k - nystrom (Dk k) (G ω))) μ' :=
+    fun k => (hDk k).integrable_nuclearNorm_sub_nystrom hG.aemeasurable
+  have hYr : ∀ᵐ ω ∂μ', Function.Injective (G ω).mulVec := by
+    filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hG] with ω hω
+    rw [mulVec_injective_iff_rank_eq, hω, Fintype.card_sum, Fintype.card_fin]
+    exact min_eq_right hlr
+  have hLa := integral_nuclearNorm_fromBlocks_sub_nystrom_le_of_isLeftUnitarilyInvariant hG hYr
+    hsl ha0 hb₀
+  rw [Fintype.card_fin] at hLa
+  calc ∫ ω, nuclearNorm (Matrix.diagonal (Sum.elim σ₁ σ₂) -
+        nystrom (Matrix.diagonal (Sum.elim σ₁ σ₂)) (G ω)) ∂μ'
+      ≤ ∫ ω, nuclearNorm (Da - nystrom Da (G ω)) ∂μ' :=
+        integral_mono (hD.integrable_nuclearNorm_sub_nystrom hG.aemeasurable)
+          (hDa.integrable_nuclearNorm_sub_nystrom hG.aemeasurable)
+          fun ω => nuclearNorm_sub_nystrom_le_of_le hD hle (G ω)
+    _ = ∫ ω, w * ∑ k, nuclearNorm (Dk k - nystrom (Dk k) (G ω)) ∂μ' := by
+        rw [integral_const_mul, integral_finsetSum _ fun k _ => hint k]
+        simp only [hshift, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, w]
+        field_simp
+    _ ≤ _ := integral_mono ((integrable_finsetSum _ fun k _ => hint k).const_mul w)
+        (hDbar.integrable_nuclearNorm_sub_nystrom hG.aemeasurable) hpt
+    _ ≤ _ := hLa
+    _ = _ := by
+        simp only [b₀]
+        field_simp
+
+omit [DecidableEq n] in
+/-- The sharp Nyström bound for a standard Gaussian test matrix when the rank parameter is at most
+the dimension. -/
+private theorem integral_nuclearNorm_sub_nystrom_le_of_rank_le_of_le_card {Ω' : Type*}
+    {mΩ' : MeasurableSpace Ω'} {μ' : Measure Ω'} {G : Ω' → Matrix n l ℝ}
+    (hG : HasLaw G (gaussianMatrix n l) μ') {H : Matrix n n ℝ} (hH : H.PosSemidef) {r q : ℕ}
+    (hr : H.rank ≤ r) (hrn : r ≤ Fintype.card n) (hlr : Fintype.card l ≤ r)
+    (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - nystrom H (G ω)) ∂μ' ≤
+      rotationInvariantFactor r (Fintype.card l) q * nuclearNorm (H - truncatedSVD H q) := by
+  classical
+  obtain ⟨U, hU, hHU⟩ := hH.isHermitian.exists_eq_mul_diagonal_mul_conjTranspose
+  set d := r - q with hd'
+  have hd : q + d = r := by omega
+  have : NeZero d := ⟨by omega⟩
+  set ι : Fin q ⊕ Fin d → Fin (Fintype.card n) :=
+    Sum.elim (fun i => ⟨i, by omega⟩) fun j => ⟨q + j, by omega⟩
+  have hι : Function.Injective ι := by
+    rintro (x | x) (y | y) h <;> simp only [ι, Sum.elim_inl, Sum.elim_inr, Fin.mk.injEq] at h <;>
+      first | (congr 1; exact Fin.ext (by omega)) | (exfalso; omega)
+  set V := U.submatrix (Equiv.refl n) ι
+  have hV : HasOrthonormalCols V := hU.submatrix (Equiv.refl n) hι
+  set w : Fin q ⊕ Fin d → ℝ := fun c => eigenvalue H (ι c)
+  have hzero : ∀ j : Fin (Fintype.card n), j ∉ Finset.univ.image ι → eigenvalue H j = 0 := by
+    intro j hj
+    have hjr : r ≤ (j : ℕ) := by
+      by_contra hjr
+      refine hj (Finset.mem_image.mpr ?_)
+      by_cases hjq : (j : ℕ) < q
+      · exact ⟨Sum.inl ⟨j, hjq⟩, Finset.mem_univ _, Fin.ext rfl⟩
+      · exact ⟨Sum.inr ⟨j - q, by omega⟩, Finset.mem_univ _, Fin.ext (by simp [ι]; omega)⟩
+    rw [← hH.singularValues_eq_eigenvalue]
+    exact (singularValues_eq_zero_iff H).mpr (hr.trans hjr)
+  have hHV : H = V * Matrix.diagonal w * Vᴴ := by
+    conv_lhs => rw [hHU]
+    ext a b
+    rw [Matrix.mul_apply, Matrix.mul_apply]
+    simp only [Matrix.mul_diagonal, Matrix.conjTranspose_apply, star_trivial,
+      V, Matrix.submatrix_apply, Equiv.refl_apply, w, RCLike.ofReal_real_eq_id, id]
+    rw [← Finset.sum_image (f := fun j => U a j * eigenvalue H j * U b j) (fun x _ y _ h => hι h)]
+    refine (Finset.sum_subset (Finset.subset_univ _) fun j _ hj => ?_).symm
+    rw [hzero j hj, mul_zero, zero_mul]
+  -- compress to the leading `r` eigenvectors
+  have hpt : ∀ ω, nuclearNorm (H - nystrom H (G ω)) =
+      nuclearNorm (Matrix.diagonal w - nystrom (Matrix.diagonal w) (Vᴴ * G ω)) := by
+    intro ω
+    have h := nystrom_conjTranspose_mul_mul Vᴴ (Matrix.diagonal w) (G ω)
+    rw [Matrix.conjTranspose_conjTranspose] at h
+    rw [hHV, h, ← Matrix.sub_mul, ← Matrix.mul_sub, hV.nuclearNorm_mul_conjTranspose_right,
+      hV.nuclearNorm_mul_left]
+  have hVG : HasLaw (fun ω => Vᴴ * G ω) (gaussianMatrix (Fin q ⊕ Fin d) l) μ' :=
+    hasLaw_const_mul_of_hasLaw_gaussianMatrix hG (by rwa [Matrix.conjTranspose_conjTranspose])
+  have hw : w = Sum.elim (fun i : Fin q => eigenvalue H i)
+      fun j : Fin d => eigenvalue H (q + j) := by
+    funext c
+    cases c <;> rfl
+  have hcore := integral_nuclearNorm_diagonal_sub_nystrom_le hVG
+    (σ₁ := fun i : Fin q => eigenvalue H i) (σ₂ := fun j : Fin d => eigenvalue H (q + j))
+    (a := eigenvalue H 0) (fun i => hH.eigenvalue_nonneg _)
+    (fun i => hH.eigenvalue_antitone (Nat.zero_le _)) (hH.eigenvalue_nonneg _)
+    (fun j => hH.eigenvalue_nonneg _) (by rw [Fintype.card_fin]; exact hq)
+    (by rw [Fintype.card_fin]; omega)
+  rw [Fintype.card_fin, hd, ← hw] at hcore
+  have htail : ∑ j : Fin d, eigenvalue H (q + j) = nuclearNorm (H - truncatedSVD H q) := by
+    have hrank : (H - truncatedSVD H q).rank ≤ d := by
+      rw [← singularValues_eq_zero_iff, singularValues_sub_truncatedSVD, hd]
+      exact (singularValues_eq_zero_iff H).mpr hr
+    rw [nuclearNorm_eq_sum_range _ hrank, Fin.sum_univ_eq_sum_range (fun j => eigenvalue H (q + j))]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [singularValues_sub_truncatedSVD, hH.singularValues_eq_eigenvalue]
+  rw [← htail]
+  simp only [hpt]
+  exact hcore
+
+omit [DecidableEq n] [IsLeftUnitarilyInvariant ν] in
+/-- A test matrix with full column rank almost surely is no wider than tall. -/
+private theorem card_le_of_ae_injective (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) : Fintype.card l ≤ Fintype.card n := by
+  have := hX.isProbabilityMeasure_iff.2 inferInstance
+  obtain ⟨ω, hω⟩ := hXr.exists
+  rw [← mulVec_injective_iff_rank_eq.mp hω]
+  exact Matrix.rank_le_card_height _
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The sharp expected trace error of randomized Nyström, rotation-invariant test matrices**:
+for positive semidefinite $\mathbf{H}$ of rank at most $r$, a test matrix $\mathbf{X}$ with a left
+unitarily invariant law and full column rank almost surely (Gaussian, Haar, ...),
+$\ell \le r$ and $q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
+\frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,;$$
+the factor is `rotationInvariantFactor r ℓ q`. At $r = \operatorname{rank}\mathbf{H}$ the supremum
+of the ratio over rank-$r$ matrices equals the factor ([EpperlyWebber2026, Theorem 3.6(b)]); at
+$r = n$ the bound needs no knowledge of the rank. The factor is at most HMT's
+(`NLAlib.rotationInvariantFactor_le_gaussianProjectionFactor`), so this sharpens
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant`, its
+instance $r = n$. The proof passes to a Gaussian test matrix, compresses $\mathbf{H}$ to its
+leading $r$ eigenvectors, raises the top $q$ eigenvalues to $\lambda_0(\mathbf{H})$ (monotonicity
+of the Schur complement), averages the tail over its cyclic shifts (concavity) and ends at the
+two-eigenvalue instance
+`NLAlib.integral_nuclearNorm_fromBlocks_sub_nystrom_le_of_isLeftUnitarilyInvariant`.
+[EpperlyWebber2026, Theorem 3.6(a)]; there over $\mathbb{R}$ and $\mathbb{C}$ with
+$r = \operatorname{rank}\mathbf{H} \ge \ell$ and a minimum over $q$; here over $\mathbb{R}$, any
+$r \ge \max(\operatorname{rank}\mathbf{H}, \ell)$, at each $q$.
+Result: randomized-nystrom-expected-error -/
+theorem
+    _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {r q : ℕ} (hr : H.rank ≤ r)
+    (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
+      rotationInvariantFactor r (Fintype.card l) q * nuclearNorm (H - truncatedSVD H q) := by
+  have hln := card_le_of_ae_injective hX hXr
+  obtain ⟨S, hS⟩ : ∃ S : Matrix n n ℝ,
+      ∀ G : Matrix n l ℝ, nystrom H G = S * rangeProjector (S * G) * S :=
+    ⟨_, hH.nystrom_eq⟩
+  have hg : Measurable fun P : Matrix n n ℝ => nuclearNorm (H - S * P * S) :=
+    continuous_nuclearNorm.measurable.comp
+      (measurable_const.sub ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
+  rw [integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant S hX hXr
+    (f := fun Y => nuclearNorm (H - nystrom H Y)) hg fun Y => by rw [hS]]
+  by_cases hrn : r ≤ Fintype.card n
+  · exact integral_nuclearNorm_sub_nystrom_le_of_rank_le_of_le_card HasLaw.id hH hr hrn hlr hq
+  · refine (integral_nuclearNorm_sub_nystrom_le_of_rank_le_of_le_card HasLaw.id hH
+      (Matrix.rank_le_card_height H) le_rfl hln hq).trans ?_
+    exact mul_le_mul_of_nonneg_right
+      (rotationInvariantFactor_le_rotationInvariantFactor hq hln (by omega)) (nuclearNorm_nonneg _)
+
+-- A proof line names the rank-parameter Nyström bound, whose name exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The sharp expected error of the randomized SVD, rotation-invariant test matrices**: for
+$\mathbf{A}$ of rank at most $r$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
+and full column rank almost surely, $\ell \le r$ and
+$q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
+\frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,;$$
+the factor is `rotationInvariantFactor r ℓ q`, at most HMT's, so this sharpens
+`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`, its instance $r = n$. The
+Nyström bound at $\mathbf{H} = \mathbf{A}^{\mathsf{H}}\mathbf{A}$, by the Gram correspondence
+(`NLAlib.nuclearNorm_conjTranspose_mul_self_sub_nystrom`).
+[EpperlyWebber2026, Theorem 3.2]; there with $r = \operatorname{rank}\mathbf{A} \ge \ell$ and a
+minimum over $q$, over $\mathbb{R}$ and $\mathbb{C}$.
+Result: randomized-svd-expected-error -/
+theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le
+    (A : Matrix m n ℝ) (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec)
+    {r q : ℕ} (hr : A.rank ≤ r) (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
+      rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
+  have h := (Matrix.posSemidef_conjTranspose_mul_self A).integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le
+    hX hXr (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
+  simpa only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD] using h
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+omit [DecidableEq n] in
+/-- **The sharp expected trace error of randomized Nyström, Gaussian test matrices**: for positive
+semidefinite $\mathbf{H}$ of rank at most $r$, a standard Gaussian $n \times \ell$ test matrix
+$\mathbf{X}$, $\ell \le r$ and $q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
+\frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,,$$
+for every $\ell$ (for $\ell > n$ Nyström is exact almost surely); the factor is
+`rotationInvariantFactor r ℓ q`. The Gaussian instance of
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le`, and
+the sharper form of `Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix`
+(HMT's factor).
+[EpperlyWebber2026, Theorem 3.6(a)]; there with $r = \operatorname{rank}\mathbf{H} \ge \ell$ and a
+minimum over $q$.
+Result: randomized-nystrom-expected-error -/
+theorem
+    _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X (gaussianMatrix n l) μ) {r q : ℕ}
+    (hr : H.rank ≤ r) (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
+      rotationInvariantFactor r (Fintype.card l) q * nuclearNorm (H - truncatedSVD H q) := by
+  classical
+  have := hX.isProbabilityMeasure
+  by_cases hln : Fintype.card l ≤ Fintype.card n
+  · refine hH.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le hX ?_ hr
+      hlr hq
+    filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hX] with ω hω
+    rw [mulVec_injective_iff_rank_eq, hω, min_eq_right hln]
+  · have h0 : ∀ᵐ ω ∂μ, nystrom H (X ω) = H := by
+      filter_upwards [ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix H hX] with ω hω
+      exact hH.nystrom_eq_self_of_rank_eq
+        (hω.trans (min_eq_left ((Matrix.rank_le_card_height H).trans (by omega))))
+    rw [integral_congr_ae (h0.mono fun ω h => by rw [h, sub_self])]
+    simp only [nuclearNorm_zero, integral_zero]
+    exact mul_nonneg (rotationInvariantFactor_nonneg hq hlr) (nuclearNorm_nonneg _)
+
+-- A proof line names the rank-parameter Nyström bound, whose name exceeds 100 characters.
+set_option linter.style.longLine false in
+omit [DecidableEq n] in
+/-- **The sharp expected error of the randomized SVD, Gaussian test matrices**: for $\mathbf{A}$
+of rank at most $r$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $\ell \le r$
+and $q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
+\frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
+for every $\ell$; the factor is `rotationInvariantFactor r ℓ q`. The sharper form of
+`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix` (HMT's factor); the Nyström
+bound at $\mathbf{H} = \mathbf{A}^{\mathsf{H}}\mathbf{A}$ by the Gram correspondence.
+[EpperlyWebber2026, Theorem 3.2]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) with
+$r = \operatorname{rank}\mathbf{A} \ge \ell$ and a minimum over $q$, (HMT) with HMT's factor.
+Result: randomized-svd-expected-error -/
+theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {r q : ℕ} (hr : A.rank ≤ r)
+    (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
+      rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
+  classical
+  have h := (Matrix.posSemidef_conjTranspose_mul_self A).integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le
+    hX (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
+  simpa only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD] using h
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Truncated Nyström exploits spectral decay, with Epperly and Webber's factor**: for positive
+semidefinite $\mathbf{H}$ of rank at most $r$, a test matrix $\mathbf{X}$ with a left unitarily
+invariant law and full column rank almost surely, any target rank $k$, a comparison rank $q$ with
+$q + 2 \le \ell \le r$ and every choice of the
+truncation, <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_* \le
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_* + \frac{r - \ell}{r - q}
+\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,;$$
+the factor is `rotationInvariantFactor r ℓ q`. Better than
+`Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`'s
+$1 + \frac{q}{\ell-q-1}$ by the factor $\frac{r-\ell}{r-q}$. Incomparable with
+`Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant` at
+$q = k$ as well: better iff $(r-\ell)(\ell-1) < k(r-k)$, that is for rank close to $\ell$ (at
+$r = \ell$ it gives the best rank-$k$ error with constant one); for $q > k$ better when the tail
+decays. From the constant-one truncation lemma
+`NLAlib.SymmetricGauge.matrixNorm_sub_truncatedSVD_nystrom_le` and
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le`.
+[TroppYurtseverUdellCevher2017a, Theorem 4.2 (4.3)]; [EpperlyWebber2026, Theorem 3.6(a)]; there
+(TYUC) with the constant $2$ and HMT's factor.
+Result: randomized-nystrom-expected-error -/
+theorem
+    _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_isLeftUnitarilyInvariant_of_rank_le
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) (k : ℕ) {r q : ℕ} (hr : H.rank ≤ r)
+    (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+      nuclearNorm (H - truncatedSVD H k) +
+        rotationInvariantFactor r (Fintype.card l) q * nuclearNorm (H - truncatedSVD H q) := by
+  have := hX.isProbabilityMeasure_iff.2 inferInstance
+  have hpt : ∀ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ≤
+      nuclearNorm (H - truncatedSVD H k) + nuclearNorm (H - nystrom H (X ω)) := fun ω => by
+    simpa only [lpGauge_one_matrixNorm] using
+      (lpGauge 1 le_rfl).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
+  have hN := hH.integrable_nuclearNorm_sub_nystrom hX.aemeasurable
+  have hI : Integrable (fun ω => nuclearNorm (H - truncatedSVD H k) +
+      nuclearNorm (H - nystrom H (X ω))) μ := (integrable_const _).add hN
+  refine (integral_mono (hH.integrable_nuclearNorm_sub_truncatedSVD_nystrom hX.aemeasurable k)
+    hI hpt).trans ?_
+  rw [integral_add (integrable_const _) hN, integral_const, probReal_univ, one_smul]
+  exact add_le_add le_rfl
+    (hH.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le hX hXr hr hlr hq)
+
+/-- **The expected error of the randomized SVD, Frobenius norm, rotation-invariant test
+matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full column
+rank almost surely and $k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}^2\,;$$
+the factor is `gaussianProjectionFactor k ℓ`, HMT's. The instance $r = n$ of
+`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le`, with Epperly and
+Webber's factor bounded by HMT's; kept for the form consumers cite.
+[EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) over
+$\mathbb{R}$ and $\mathbb{C}$ with a minimum over the number $q$ of directions, here over
+$\mathbb{R}$ at $q = k$.
+Result: randomized-svd-expected-error -/
+theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
+    (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}
+    (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
+      gaussianProjectionFactor k (Fintype.card l) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  have hln := card_le_of_ae_injective hX hXr
+  refine (integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le A hX hXr
+    (Matrix.rank_le_card_width A) hln hk).trans ?_
+  exact mul_le_mul_of_nonneg_right (rotationInvariantFactor_le_gaussianProjectionFactor hk hln)
+    (sq_nonneg _)
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The expected trace error of randomized Nyström, rotation-invariant test matrices**: for
+positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
+and full column rank almost surely and
+$k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,;$$
+the factor is `gaussianProjectionFactor k ℓ`, HMT's. The instance $r = n$ of
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le`,
+with Epperly and Webber's factor bounded by HMT's. A Haar frame (`NLAlib.haarFrame`) is an
+instance: its law is left unitarily invariant (`NLAlib.isLeftUnitarilyInvariant_haarFrame`), and
+for $\ell \le n$ it has full column rank almost surely
+(`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$).
+[EpperlyWebber2026, Theorem 3.1 and Fact 3.5]; [TroppYurtseverUdellCevher2017a, Theorem A.1];
+there with a minimum over the comparison rank, for orthonormal test matrices (TYUC) or
+rotation-invariant ones (EW, the Nyström twin of their Theorem 3.1); here at one rank.
+Result: randomized-nystrom-expected-error -/
+theorem _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
+      gaussianProjectionFactor k (Fintype.card l) * nuclearNorm (H - truncatedSVD H k) := by
+  have hln := card_le_of_ae_injective hX hXr
+  refine (hH.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le hX hXr
+    (Matrix.rank_le_card_width H) hln hk).trans ?_
+  exact mul_le_mul_of_nonneg_right (rotationInvariantFactor_le_gaussianProjectionFactor hk hln)
+    (nuclearNorm_nonneg _)
+
 
 end NLAlib

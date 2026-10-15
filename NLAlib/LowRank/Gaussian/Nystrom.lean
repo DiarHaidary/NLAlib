@@ -121,11 +121,15 @@ theorem SymmetricGauge.integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatr
 
 open SymmetricGauge in
 /-- **The expected error of randomized Nyström, trace**: for positive semidefinite $\mathbf{H}$,
-a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
+a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
+$k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
-the factor being `gaussianProjectionFactor k ℓ`. The error is positive semidefinite, so this is
-$\mathbb{E}\operatorname{tr}(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X}))$.
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,;$$
+the factor is `gaussianProjectionFactor k ℓ`. The error is positive semidefinite, so this is
+$\mathbb{E}\operatorname{tr}(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X}))$. The trace
+instance of the Gram-form bound above; Epperly and Webber's sharper factor, with a rank
+parameter, is
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le`.
 [TroppYurtseverUdellCevher2017a, Theorem A.1]; [TroppWebber2023, Corollary 8.8]; there with a
 minimum over the comparison rank (TYUC) and $k \ge 1$, here at one rank, any $k$; the first case
 of TW Corollary 8.8.
@@ -198,6 +202,8 @@ theorem _root_.Matrix.PosSemidef.integral_frobNorm_sub_nystrom_le_of_hasLaw_gaus
 
 /-! ### The late-truncated output -/
 
+-- A docstring line names a declaration whose name exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The expected trace error of truncated Nyström** (fixed-rank Nyström): for positive
 semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$,
 $k + 2 \le \ell$ and every choice of the truncation,
@@ -205,7 +211,11 @@ $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rr
 \le \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 the bound of the untruncated output. The error does not depend on the choice: it is the squared
 Frobenius error of the truncated randomized SVD of a factor
-(`NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`).
+(`NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`). Incomparable with
+the decay form with Epperly and Webber's factor,
+`Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_isLeftUnitarilyInvariant_of_rank_le`
+(a Gaussian test matrix is an instance), which is better for rank close to $\ell$ or a decaying
+tail.
 [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.1)]; there with $1 \le k$ and $\ell \le n$,
 neither needed here, and through Gu's projected truncation; here through Woodruff's truncation
 for free.

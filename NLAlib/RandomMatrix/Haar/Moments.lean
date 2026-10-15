@@ -27,7 +27,10 @@ $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert} \, \mathbf{Q}^{\mathsf{H}
 $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, and what trace estimation with sphere
 probes or an orthonormal test matrix consumes. The fourth moment of a projected column,
 $\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4$ for $\mathbf{u}$ uniform on the sphere, is in
-`NLAlib/RandomMatrix/Haar/Sphere.lean`, also from invariance.
+`NLAlib/RandomMatrix/Haar/Sphere.lean`, also from invariance. The inverse mean of the Beta matrix
+$\mathbf{W}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{W}^{\mathsf{H}}$, a moment of a block of
+$\mathbf{Q}$, is `NLAlib.integral_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame` in
+`NLAlib/RandomMatrix/Haar/Blocks.lean`.
 
 ## Main results
 
