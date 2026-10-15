@@ -63,12 +63,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k : Type*}
 
 /-! ### Helpers -/
 
-/-- The squared Euclidean norm is the sum of the squared coordinates. -/
-private theorem norm_toLp_sq_eq_sum {ι : Type*} [Fintype ι] (v : ι → ℝ) :
-    ‖WithLp.toLp 2 v‖ ^ 2 = ∑ i, v i ^ 2 := by
-  rw [EuclideanSpace.norm_sq_eq]
-  simp only [Real.norm_eq_abs, sq_abs]
-
 omit [DecidableEq k] in
 /-- The projected length of a normalised vector. -/
 private theorem norm_conjTranspose_mulVec_inv_norm_smul_sq (V : Matrix n k ℝ) (g : n → ℝ) :
@@ -145,10 +139,10 @@ private theorem measureReal_mem_le_of_two_weights (hu : HasLaw u (uniformSphereV
       ‖WithLp.toLp 2 g‖ ^ 2 - ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ ^ 2 =
         ∑ j, (W *ᵥ g) (Sum.inr j) ^ 2 := by
     have h1 : ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ ^ 2 = ∑ i, (W *ᵥ g) (Sum.inl i) ^ 2 := by
-      rw [norm_toLp_sq_eq_sum]
+      rw [EuclideanSpace.norm_toLp_sq_eq_sum_sq]
       exact Finset.sum_congr rfl fun i _ => by rw [hWl]
     refine ⟨h1, ?_⟩
-    rw [← hWn.norm_toLp_mulVec g, norm_toLp_sq_eq_sum, Fintype.sum_sum_type, h1]
+    rw [← hWn.norm_toLp_mulVec g, EuclideanSpace.norm_toLp_sq_eq_sum_sq, Fintype.sum_sum_type, h1]
     ring
   have hWg : HasLaw (fun g : n → ℝ => W *ᵥ g) (gaussianVector (k ⊕ Fin c)) (gaussianVector n) :=
     hasLaw_mulVec_of_hasLaw_gaussianVector HasLaw.id hW
@@ -724,13 +718,13 @@ theorem integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVecto
   rw [integral_comp_conjTranspose_mulVec_eq hV hE
     (F := fun w : k → ℝ => ‖WithLp.toLp 2 w‖ ^ 4) (by fun_prop)]
   have h4 (w : k → ℝ) : ‖WithLp.toLp 2 w‖ ^ 4 = (∑ j, w j ^ 2) ^ 2 := by
-    rw [← norm_toLp_sq_eq_sum]
+    rw [← EuclideanSpace.norm_toLp_sq_eq_sum_sq]
     ring
   simp only [conjTranspose_selectionMatrix_mulVec, h4, Function.comp_apply]
   have hone : ∫ v, (∑ a, v a ^ 2) ^ 2 ∂uniformSphereVector n = 1 := by
     rw [integral_congr_ae (g := fun _ => (1 : ℝ)), integral_const, probReal_univ, one_smul]
     filter_upwards [ae_norm_eq_one] with v hv
-    rw [← norm_toLp_sq_eq_sum, hv, one_pow, one_pow]
+    rw [← EuclideanSpace.norm_toLp_sq_eq_sum_sq, hv, one_pow, one_pow]
   have hN : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
   rcases Nat.lt_or_ge 1 (Fintype.card n) with hn | hn
   · obtain ⟨i₁, i₂, h12⟩ := Fintype.exists_pair_of_one_lt_card hn

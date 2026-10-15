@@ -111,8 +111,7 @@ omit [Fintype r] in
 $\mathbf{G}$. -/
 private theorem measurable_inv_mul_conjTranspose_apply [Fintype r] [DecidableEq r] (i : r) :
     Measurable fun G : Matrix r k ℝ => (G * Gᴴ)⁻¹ i i :=
-  (Matrix.measurable_apply i i).comp
-    (measurable_id.matrix_mul (continuous_id.matrix_conjTranspose).measurable).matrix_inv
+  (Matrix.measurable_apply i i).comp measurable_mul_conjTranspose_inv
 
 omit [Fintype k] in
 private theorem inv_mul_conjTranspose_apply_self_nonneg [Fintype k] [DecidableEq r]
@@ -467,12 +466,6 @@ section Block
 variable [DecidableEq r] [DecidableEq s] {X : Ω → Matrix n k ℝ} {V₁ : Matrix n r ℝ}
   {V₂ : Matrix n s ℝ}
 
-omit [Fintype a] [DecidableEq s] in
-private theorem hasLaw_conjTranspose_mul' {p : Type*} [Fintype p] [DecidableEq p]
-    (hX : HasLaw X (gaussianMatrix n k) μ) {V : Matrix n p ℝ} (hV : HasOrthonormalCols V) :
-    HasLaw (fun ω => Vᴴ * X ω) (gaussianMatrix p k) μ :=
-  hasLaw_const_mul_of_hasLaw_gaussianMatrix hX (by rwa [Matrix.conjTranspose_conjTranspose])
-
 omit [Fintype a] in
 /-- The common skeleton of the spectral and Frobenius block tails: outside the two bad events of
 $\mathbf{T} = \mathbf{G}_1^{+}$ (spectral and Frobenius tails) and the concentration event of
@@ -493,8 +486,8 @@ private theorem measureReal_block_le_of_good (hX : HasLaw X (gaussianMatrix n k)
       t ^ (-((Fintype.card k : ℝ) - Fintype.card r)) +
         gaussianPinvFrobTail (Fintype.card r) d (t ^ 2) + Real.exp (-u ^ 2 / 2) := by
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
-  have hG₁ := hasLaw_conjTranspose_mul' hX hV₁
-  have hG₂ := hasLaw_conjTranspose_mul' hX hV₂
+  have hG₁ := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
+  have hG₂ := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂
   set A₁ := {ω | ¬ specNorm (pinv (V₁ᴴ * X ω)) ≤
     t * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k)}
   set A₂ := {ω | ¬ frobNorm (pinv (V₁ᴴ * X ω)) ^ 2 ≤ t ^ 2 * Fintype.card r / d}
@@ -544,8 +537,8 @@ theorem measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix
   · refine measureReal_le_one.trans ?_
     have : 1 ≤ Real.exp (-(u - 2) / 4) := Real.one_le_exp (by linarith)
     linarith
-  have hG₁ := hasLaw_conjTranspose_mul' hX hV₁
-  have hG₂ := hasLaw_conjTranspose_mul' hX hV₂
+  have hG₁ := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
+  have hG₂ := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂
   have hsu : 1 ≤ √u := Real.one_le_sqrt.2 (by linarith)
   set A := {ω | ¬ frobNorm (pinv (V₁ᴴ * X ω)) ^ 2 ≤ t * Fintype.card r / d}
   set B := {ω | ¬ frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ≤

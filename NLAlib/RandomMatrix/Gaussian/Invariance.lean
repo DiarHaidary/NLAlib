@@ -28,7 +28,8 @@ frames are independent, which is how the randomized range finder splits a Gaussi
   vector when $\mathbf{A}$ has orthonormal rows; every result below reduces to it.
 * `NLAlib.hasLaw_mul_mul_of_hasLaw_gaussianMatrix`: two-sided invariance.
 * `NLAlib.hasLaw_const_mul_of_hasLaw_gaussianMatrix`,
-  `NLAlib.hasLaw_mul_const_of_hasLaw_gaussianMatrix`.
+  `NLAlib.hasLaw_mul_const_of_hasLaw_gaussianMatrix`,
+  `NLAlib.hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix`.
 * `NLAlib.hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`,
   `NLAlib.hasLaw_submatrix_of_hasLaw_gaussianMatrix`.
 * `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianMatrix`: $\mathbf{G}\mathbf{x}$ for a unit vector
@@ -137,6 +138,14 @@ theorem hasLaw_const_mul_of_hasLaw_gaussianMatrix [DecidableEq p]
   classical
   simpa only [Matrix.mul_one] using
     hasLaw_mul_mul_of_hasLaw_gaussianMatrix hX hU (hasOrthonormalCols_one (n := n))
+
+/-- $\mathbf{V}^{\mathsf{H}}\mathbf{G}$ is a standard Gaussian matrix when $\mathbf{V}$ has
+orthonormal columns: the form in which a block of a Gaussian test matrix appears,
+$\mathbf{G}_1 = \mathbf{V}_1^{\mathsf{H}}\mathbf{G}$ for a frame $\mathbf{V}_1$. -/
+theorem hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix [DecidableEq p]
+    (hX : HasLaw X (gaussianMatrix m n) μ) {V : Matrix m p ℝ} (hV : HasOrthonormalCols V) :
+    HasLaw (fun ω => Vᴴ * X ω) (gaussianMatrix p n) μ :=
+  hasLaw_const_mul_of_hasLaw_gaussianMatrix hX (by rwa [Matrix.conjTranspose_conjTranspose])
 
 /-- $\mathbf{G}\mathbf{V}$ is a standard Gaussian matrix when $\mathbf{V}$ has orthonormal
 columns. -/

@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Matrix.Basic.FromCols
+public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 public import NLAlib.Sketching.Properties.SubspaceEmbedding
 public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
@@ -52,13 +52,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {k l n p q r : Type*} [Fintype k] [Fintype
   {A : Matrix n q 𝕜} {y : n → 𝕜} {x : q → 𝕜} {a b : ℝ}
 
 /-! ### Proof-local helpers -/
-
-open scoped ComplexOrder in
-/-- Scaling by a nonnegative real is monotone in the Loewner order. -/
-private theorem smul_le_smul_aux {G H : Matrix r r 𝕜} (h : G ≤ H) {c : ℝ} (hc : 0 ≤ c) :
-    c • G ≤ c • H := by
-  rw [Matrix.le_iff, ← smul_sub]
-  exact (Matrix.le_iff.mp h).smul hc
 
 /-- From $a u \le v$ with $0 < a$, $u \le v / a$. -/
 private theorem le_div_of_mul_le' {a u v : ℝ} (ha : 0 < a) (h : a * u ≤ v) : u ≤ v / a := by
@@ -125,8 +118,8 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le_of_fromCols
     (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (y - A *ᵥ x)‖ ^ 2 ≤
       b / a * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  exact h.norm_sub_mulVec_sq_le ha (range_mulVecLin_le_range_fromCols_left A _)
-    (mem_range_mulVecLin_fromCols_replicateCol A y) hx
+  exact h.norm_sub_mulVec_sq_le ha (Matrix.range_mulVecLin_le_range_fromCols_left A _)
+    (Matrix.mem_range_mulVecLin_fromCols_replicateCol A y) hx
 
 end LeastSquares
 
@@ -143,7 +136,7 @@ theorem IsSubspaceEmbedding.inv_smul_one_le_conjTranspose_mul_self [DecidableEq 
     (hM : HasOrthonormalCols (S * A * M)) : b⁻¹ • (1 : Matrix r r 𝕜) ≤ (A * M)ᴴ * (A * M) := by
   have hup := (h.mul_right M).upper
   rw [← Matrix.mul_assoc S A M, hM.conjTranspose_mul_self] at hup
-  have h' := smul_le_smul_aux hup (inv_nonneg.mpr hb.le)
+  have h' := smul_le_smul_of_nonneg hup (inv_nonneg.mpr hb.le)
   rwa [smul_smul, inv_mul_cancel₀ hb.ne', one_smul] at h'
 
 /-- **Sketch-and-precondition**, upper half of the spectral equivalence: if $\mathbf{S}$ embeds
@@ -155,7 +148,7 @@ theorem IsSubspaceEmbedding.conjTranspose_mul_self_le_inv_smul_one [DecidableEq 
     (hM : HasOrthonormalCols (S * A * M)) : (A * M)ᴴ * (A * M) ≤ a⁻¹ • (1 : Matrix r r 𝕜) := by
   have hlow : a • ((A * M)ᴴ * (A * M)) ≤ (S * (A * M))ᴴ * (S * (A * M)) := (h.mul_right M).lower
   rw [← Matrix.mul_assoc S A M, hM.conjTranspose_mul_self] at hlow
-  have h' := smul_le_smul_aux hlow (inv_nonneg.mpr ha.le)
+  have h' := smul_le_smul_of_nonneg hlow (inv_nonneg.mpr ha.le)
   rwa [smul_smul, inv_mul_cancel₀ ha.ne', one_smul] at h'
 
 /-- **Sketch-and-precondition**: if $\mathbf{S}$ embeds $\operatorname{range}\mathbf{A}$ with

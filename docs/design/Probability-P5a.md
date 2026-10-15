@@ -328,3 +328,11 @@ the cardinal; `[Nonempty n]` is the Matrix layer's form of it).
 7. Docstrings: rectangular Bernstein is Tropp's Theorem 6.1.1 (Corollary 6.1.2 in some printings)
    and also the two-sided Hermitian form; the sub-Gaussian series is the same proof as Tropp's
    Gaussian and Rademacher Theorem 4.1.1, not his statement.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: the private `exp_cfc` (`Series.lean`, `ConditionalMGFBound.lean`) is
+  `Matrix.IsHermitian.exp_cfc` (`Matrix/Functions/Exponential.lean`); the private
+  `integral_pos_of_ae_pos` (`MGFBound.lean`, `ChernoffSum.lean`) is
+  `MeasureTheory.integral_pos_of_ae_pos` (`ForMathlib/MeasureTheory/Integral/Bochner/Basic.lean`,
+  for any nonzero measure).

@@ -493,3 +493,13 @@ D10), the Loewner order, `ConvexOn.map_integral_le`.
   -- All linting checks passed!
   46 bibliography keys; 0 problems
   ```
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: of wrap-up 2's public helpers, `norm_inv_sqrt_card_smul_sq` moves from
+  `Sketching/Properties/Isotropic.lean` to `ForMathlib/Analysis/InnerProductSpace/PiL2.lean` as
+  `EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq` (deprecated alias kept) and
+  `norm_inv_sqrt_card_smul_mulVec_sq` to `Matrix/Basic/Gram.lean` (name unchanged); the private
+  copies in `CountSketch.lean` and `MatrixMultiplication.lean` are replaced by
+  `HasOrthonormalCols.frobNorm_sq` and `EuclideanSpace.norm_toLp_sq_eq_dotProduct_self`. Moves of S0
+  to S5 declarations are recorded in those notes.

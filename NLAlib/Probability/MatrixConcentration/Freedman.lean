@@ -65,12 +65,6 @@ $s \subseteq t$ almost everywhere. -/
 private theorem measureReal_mono_ae' {s t : Set Ω} (h : s ≤ᵐ[μ] t) : μ.real s ≤ μ.real t :=
   ENNReal.toReal_mono (measure_ne_top μ t) (measure_mono_ae h)
 
-/-- The trace exponential of a Hermitian matrix is nonnegative. -/
-private theorem re_trace_exp_nonneg {M : Matrix n n 𝕜} (hM : M.IsHermitian) :
-    0 ≤ RCLike.re (exp M).trace := by
-  rw [hM.re_trace_exp]
-  exact Finset.sum_nonneg fun _ _ => (Real.exp_pos _).le
-
 namespace HasCondMatrixMGFBound
 
 variable {X A : ℕ → Ω → Matrix n n 𝕜} {g : ℝ → ℝ} {s : Set ℝ}
@@ -180,7 +174,7 @@ theorem measure_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
   have hherm := ae_isHermitian_potential h θ
   have hΦ0 : ∀ k, 0 ≤ᵐ[μ] fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
       g θ • ∑ j ∈ Finset.range k, A j ω)).trace := fun k =>
-    hherm.mono fun ω hω => re_trace_exp_nonneg (hω k)
+    hherm.mono fun ω hω => (hω k).re_trace_exp_nonneg
   have hV := hsup.measure_exists_ge_le hΦ0 (Real.exp_pos (θ * t - g θ * w))
   have h0 : ∫ ω, RCLike.re (exp (θ • ∑ j ∈ Finset.range 0, X j ω -
       g θ • ∑ j ∈ Finset.range 0, A j ω)).trace ∂μ = Fintype.card n := by
@@ -236,7 +230,7 @@ private theorem integrable_potential (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
     hmeas.aestronglyMeasurable ?_
   filter_upwards [ae_isHermitian_potential h θ, ae_all_iff.mpr hle, ae_all_iff.mpr hA]
     with ω h1 h2 h3
-  rw [Real.norm_eq_abs, abs_of_nonneg (re_trace_exp_nonneg (h1 k))]
+  rw [Real.norm_eq_abs, abs_of_nonneg ((h1 k).re_trace_exp_nonneg)]
   have hY : ∑ j ∈ Finset.range k, X j ω ≤ (k * L) • (1 : Matrix n n 𝕜) := by
     refine (Finset.sum_le_sum fun j _ => h2 j).trans_eq ?_
     rw [Finset.sum_const, Finset.card_range, ← Nat.cast_smul_eq_nsmul ℝ, smul_smul]

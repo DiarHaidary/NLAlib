@@ -283,3 +283,13 @@ Skeleton-level changes, same meaning:
   `frobNorm`, `singularValues` or a product over that index (`unusedFintypeInType`). In
   `LeastSquares.lean`, `[DecidableEq n]` is a section variable of the sketch-and-solve and
   error-formula sections only (`unusedDecidableInType`).
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: `Matrix/Basic/FromCols.lean` moves to
+  `ForMathlib/Data/Matrix/ColumnRowPartitioned.lean` as
+  `Matrix.range_mulVecLin_le_range_fromCols_left` and
+  `Matrix.mem_range_mulVecLin_fromCols_replicateCol` over any commutative semiring; `FromCols.lean`
+  keeps only the two deprecated aliases. The private `smul_le_smul` copies of
+  `SubspaceEmbedding.lean` and `LeastSquares.lean` are one public `NLAlib.smul_le_smul_of_nonneg` in
+  `Matrix/Norms/Loewner.lean`.

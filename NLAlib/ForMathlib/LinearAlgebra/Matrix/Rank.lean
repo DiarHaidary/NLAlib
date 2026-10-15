@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.Data.Matrix.ColumnRowPartitioned
 public import Mathlib.LinearAlgebra.Matrix.SchurComplement
+public import Mathlib.Analysis.RCLike.Basic
 
 /-!
 # Rank inequalities for matrices over a field
@@ -28,6 +29,9 @@ so that `omega` and `linarith` can use them.
 * `Matrix.rank_fromBlocks₁₁`: rank additivity of the Schur complement.
 * `Matrix.rank_fromCols_replicateCol_eq_iff`: the Rouché–Capelli solvability criterion.
 * `Matrix.finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not`: complementary nullities.
+* `Matrix.rank_mul_eq_iff_injOn`: $\mathbf{S}$ keeps the rank of $\mathbf{X}$ iff it is injective
+  on $\operatorname{range}\mathbf{X}$; `Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq`:
+  it then keeps the row space.
 * `Submodule.finrank_map_add_finrank_inf_ker`: rank–nullity for a linear map restricted to a
   submodule.
 * `Submodule.finrank_prod`: the dimension of a product of submodules.
@@ -268,5 +272,59 @@ theorem rank_toBlock_add_card_eq_rank_inv_toBlock_not_add_card [DecidableEq n] (
   have h := finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not A hA r c
   rw [rank, rank]
   lia
+
+
+/-! ### Sketches that keep the rank -/
+
+section KeepRank
+
+variable {k r : Type*} [Fintype m] [Fintype r]
+
+omit [Fintype n] in
+/-- **The rank interface**: the sketch $\mathbf{S}$ keeps the rank of $\mathbf{X}$,
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$, exactly when it is
+injective on $\operatorname{range}\mathbf{X}$. This is the form `NLAlib.IsSubspaceInjection.injOn`
+concludes, and the hypothesis of the oblique projector `NLAlib.obliqueProjector X S`. -/
+theorem rank_mul_eq_iff_injOn {S : Matrix k m K} {X : Matrix m r K} :
+    (S * X).rank = X.rank ↔ Set.InjOn S.mulVec (LinearMap.range X.mulVecLin) := by
+  set V := LinearMap.range X.mulVecLin
+  set g := S.mulVecLin.domRestrict V
+  have hr : LinearMap.range g = LinearMap.range (S * X).mulVecLin := by
+    rw [LinearMap.range_domRestrict, Matrix.mulVecLin_mul, LinearMap.range_comp]
+  have hn := LinearMap.finrank_range_add_finrank_ker g
+  rw [hr] at hn
+  have hinj : Set.InjOn S.mulVec V ↔ Function.Injective g := by
+    constructor
+    · intro h a b hab
+      exact Subtype.ext (h a.2 b.2 (by simpa [g] using hab))
+    · intro h a ha b hb hab
+      exact congrArg Subtype.val (@h ⟨a, ha⟩ ⟨b, hb⟩ (by simpa [g] using hab))
+  rw [hinj, ← LinearMap.ker_eq_bot, ← Submodule.finrank_eq_zero]
+  change Module.finrank K (LinearMap.range (S * X).mulVecLin) = Module.finrank K V ↔ _
+  omega
+
+end KeepRank
+
+section RCLike
+
+open scoped ComplexOrder
+
+variable {𝕜 : Type*} [RCLike 𝕜] {k r : Type*} [Fintype k] [Fintype m] [Fintype r]
+
+omit [Fintype n] in
+/-- A sketch $\mathbf{S}$ that keeps the rank of $\mathbf{X}$,
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$, keeps its row space:
+$$\operatorname{range}(\mathbf{S}\mathbf{X})^{\mathsf{H}} =
+\operatorname{range}\mathbf{X}^{\mathsf{H}}\,.$$ -/
+theorem range_mulVecLin_conjTranspose_mul_eq_of_rank_eq {S : Matrix k m 𝕜} {X : Matrix m r 𝕜}
+    (h : (S * X).rank = X.rank) :
+    LinearMap.range (S * X)ᴴ.mulVecLin = LinearMap.range Xᴴ.mulVecLin := by
+  refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
+  · rw [conjTranspose_mul, mulVecLin_mul]
+    exact LinearMap.range_comp_le_range _ _
+  · change (S * X)ᴴ.rank = Xᴴ.rank
+    rw [rank_conjTranspose, rank_conjTranspose, h]
+
+end RCLike
 
 end Matrix

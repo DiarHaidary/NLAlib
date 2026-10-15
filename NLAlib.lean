@@ -15,7 +15,9 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
 public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.ForMathlib.Data.Matrix.Block
+public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 public import NLAlib.ForMathlib.Data.Matrix.Mul
+public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.CauchyBinet
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.ConjTranspose
@@ -27,9 +29,11 @@ public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Trace
 public import NLAlib.ForMathlib.LinearAlgebra.UnitaryGroup
 public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
@@ -169,6 +173,7 @@ public import NLAlib.Matrix.Structured.Kronecker
 public import NLAlib.Matrix.Structured.Walsh
 public import NLAlib.Matrix.Subspaces.CSDecomposition
 public import NLAlib.Matrix.Subspaces.Frames
+public import NLAlib.Matrix.Subspaces.Leverage
 public import NLAlib.Matrix.Subspaces.Oblique
 public import NLAlib.Matrix.Subspaces.ObliqueBases
 public import NLAlib.Matrix.Subspaces.ObliqueProjector
@@ -230,6 +235,7 @@ public import NLAlib.RandomMatrix.Gaussian.Concentration
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments
+public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral
 public import NLAlib.RandomMatrix.Gaussian.Moments
 public import NLAlib.RandomMatrix.Gaussian.Rank
@@ -257,7 +263,6 @@ public import NLAlib.Sketching.Properties.Oblivious
 public import NLAlib.Sketching.Properties.ProjectionCost
 public import NLAlib.Sketching.Properties.SubspaceEmbedding
 public import NLAlib.Sketching.Properties.TraceMoment
-public import NLAlib.Sketching.Sampling.Leverage
 public import NLAlib.Sketching.Sampling.MatrixMultiplication
 public import NLAlib.Sketching.Sampling.RowSampling
 public import NLAlib.Sketching.Sampling.WithoutReplacement

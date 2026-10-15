@@ -15,18 +15,19 @@ public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.Rank
 
 /-!
-# Inverse moments of Gaussian matrices
+# Inverse moments of Gaussian matrices: the inverse Wishart matrix
 
 For a wide standard Gaussian $r \times k$ matrix $\mathbf{G}$ ($\lvert r \rvert < \lvert k \rvert$),
-the moments of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ and of the pseudoinverse
+the law and the moments of the entries of the inverse Wishart matrix
+$(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$, from which the moments of the pseudoinverse
 $\mathbf{G}^{+} = \mathbf{G}^{\mathsf{H}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ that the
-randomized range finder consumes (Halko, Martinsson and Tropp 2011, Propositions 10.2 and 10.3):
-$\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}
-= (\lvert k \rvert - \lvert r \rvert - 1)^{-1} \mathbf{I}$,
-$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^2
-= \lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)$ and the fourth moment of
-$\|\mathbf{G}^{+}\|_{\mathsf{F}}$. The spectral moments of $\mathbf{G}^{+}$ (Proposition 10.4) are
-in `NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral`.
+randomized range finder consumes follow (Halko, Martinsson and Tropp 2011, Propositions 10.2 to
+10.4): the mean $\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1} = (\lvert k \rvert - \lvert r
+\rvert - 1)^{-1} \mathbf{I}$, the second moments of the entries, and the moments of the probes
+$\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u}$. The Frobenius moments
+of $\mathbf{G}^{+}$ (Propositions 10.2 and 10.3) are in
+`NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius`, its spectral moments (Proposition 10.4) in
+`NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral`.
 
 The route: by the Schur complement of one row, a diagonal entry of
 $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is the reciprocal of the squared distance from that row
@@ -46,10 +47,11 @@ $\mathbf{G}$ does not have full row rank, and `pinv` is total; the integrals are
 * `NLAlib.hasLaw_inv_mul_conjTranspose_apply_self_of_hasLaw_gaussianMatrix`: the diagonal
   entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are
   $1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$.
-* `NLAlib.integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix`.
-* `NLAlib.integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix`,
-  `NLAlib.integral_frobNorm_pinv_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.integral_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix`.
+* `NLAlib.integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix`: the mean;
+  `NLAlib.integral_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix`: its entries.
+* `NLAlib.memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix`,
+  `NLAlib.integral_mul_conjTranspose_inv_apply_self_mul_of_hasLaw_gaussianMatrix`: second moments of
+  the entries.
 * `NLAlib.integral_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussianMatrix`: the
   moments of the probes,
   $\mathbb{E} (\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u})^q
@@ -300,10 +302,6 @@ private theorem lintegral_comp_inv_mul_conjTranspose_apply_self
           (by fun_prop)
     _ = _ := by rw [lintegral_const, measure_univ, mul_one]
 
-private theorem measurable_inv_mul_conjTranspose :
-    Measurable fun G : Matrix r k ℝ => (G * Gᴴ)⁻¹ :=
-  (measurable_id.matrix_mul (continuous_id.matrix_conjTranspose).measurable).matrix_inv
-
 /-- The law of $1 / \chi^2_d$. -/
 private noncomputable abbrev invChiSq (d : ℕ) : Measure ℝ :=
   (gaussianVector (Fin d)).map fun z => (‖WithLp.toLp 2 z‖ ^ 2)⁻¹
@@ -322,7 +320,7 @@ private theorem hasLaw_inv_mul_conjTranspose_apply_self (hX : HasLaw X (gaussian
     HasLaw (fun ω => (X ω * (X ω)ᴴ)⁻¹ i i)
       (invChiSq (Fintype.card k - Fintype.card r + 1)) μ :=
   hasLaw_of_lintegral_eq (((Matrix.measurable_apply i i).comp
-    measurable_inv_mul_conjTranspose).comp_aemeasurable hX.aemeasurable)
+    measurable_mul_conjTranspose_inv).comp_aemeasurable hX.aemeasurable)
     fun _ hφ => lintegral_comp_inv_mul_conjTranspose_apply_self hX hrk i hφ
 
 /-- **The diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are $1/\chi^2_d$**: for an
@@ -472,11 +470,6 @@ private theorem integral_sq_of_hasLaw_invChiSq {Y : Ω → ℝ} {d : ℕ}
     (mul_ne_zero h1 h2)]
   ring
 
-private theorem dotProduct_inv_mul_conjTranspose_mulVec_nonneg (G : Matrix r k ℝ) (u : r → ℝ) :
-    0 ≤ u ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ u) := by
-  simpa only [star_trivial] using
-    (Matrix.posSemidef_self_mul_conjTranspose G).inv.dotProduct_mulVec_nonneg u
-
 private theorem isHermitian_inv_mul_conjTranspose (G : Matrix r k ℝ) :
     ((G * Gᴴ)⁻¹).IsHermitian :=
   (Matrix.isHermitian_mul_conjTranspose_self G).inv
@@ -520,8 +513,10 @@ private theorem hasLaw_add_div_two_add_mul_inv_apply (hX : HasLaw X (gaussianMat
   linear_combination (-((X ω * (X ω)ᴴ)⁻¹ i i + 2 * ε * (X ω * (X ω)ᴴ)⁻¹ i j +
     ε ^ 2 * (X ω * (X ω)ᴴ)⁻¹ j j)) * hcc - ((X ω * (X ω)ᴴ)⁻¹ j j / 2) * hε
 
-private theorem integrable_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) (i j : r) :
+/-- The entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are integrable for a standard
+Gaussian $r \times k$ matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
+theorem integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (i j : r) :
     Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹ i j) μ := by
   have hd : 3 ≤ Fintype.card k - Fintype.card r + 1 := by omega
   have hdiag (l : r) : Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹ l l) μ :=
@@ -536,8 +531,13 @@ private theorem integrable_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianM
   simp only [Pi.sub_apply, Pi.add_apply]
   ring
 
-private theorem integral_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) (i j : r) :
+/-- **The mean of an entry of the inverse Wishart matrix**: for a standard Gaussian $r \times k$
+matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$,
+$\mathbb{E}\,((\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1})_{i,j}
+= \delta_{ij} / (\lvert k \rvert - \lvert r \rvert - 1)$, the entry form of
+`NLAlib.integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix`. -/
+theorem integral_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (i j : r) :
     ∫ ω, (X ω * (X ω)ᴴ)⁻¹ i j ∂μ =
       ((Fintype.card k : ℝ) - Fintype.card r - 1)⁻¹ * (1 : Matrix r r ℝ) i j := by
   have hd : 3 ≤ Fintype.card k - Fintype.card r + 1 := by omega
@@ -555,7 +555,7 @@ private theorem integral_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianMat
   have hlaw := hasLaw_add_div_two_add_mul_inv_apply hX (by omega) hij (ε := 1) (by norm_num)
   have hQ := integral_of_hasLaw_invChiSq hlaw hd
   have hint (l : r) : Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹ l l) μ :=
-    integrable_inv_mul_conjTranspose_apply hX hrk l l
+    integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk l l
   have hsum : Integrable (fun ω => ((X ω * (X ω)ᴴ)⁻¹ i i + (X ω * (X ω)ᴴ)⁻¹ j j) / 2) μ :=
     ((hint i).add (hint j)).div_const 2
   have hfun : (fun ω => (X ω * (X ω)ᴴ)⁻¹ i j) = fun ω =>
@@ -687,8 +687,8 @@ private theorem lintegral_inv_mul_conjTranspose_apply_sq (hX : HasLaw X (gaussia
   have htk : Fintype.card t ≤ Fintype.card k := by omega
   have hdiag : ∫ H, (H * Hᴴ)⁻¹ j' j' ∂(gaussianMatrix t k) =
       ((Fintype.card k : ℝ) - Fintype.card r)⁻¹ := by
-    have h := integral_inv_mul_conjTranspose_apply (HasLaw.id (μ := gaussianMatrix t k))
-      (by omega) j' j'
+    have h := integral_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
+      (HasLaw.id (μ := gaussianMatrix t k)) (by omega) j' j'
     simp only [id_eq] at h
     rw [h, Matrix.one_apply_eq, mul_one]
     congr 1
@@ -735,14 +735,14 @@ private theorem lintegral_inv_mul_conjTranspose_apply_sq (hX : HasLaw X (gaussia
         rw [lintegral_sq_dotProduct_mul_inv_sq hV, hb, lintegral_inv_norm_sq_sq (by omega)]
     _ = _ := by
         have hint : Integrable (fun H : Matrix t k ℝ => (H * Hᴴ)⁻¹ j' j') (gaussianMatrix t k) :=
-          integrable_inv_mul_conjTranspose_apply (HasLaw.id (μ := gaussianMatrix t k))
-            (by omega) j' j'
+          integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
+            (HasLaw.id (μ := gaussianMatrix t k)) (by omega) j' j'
         rw [lintegral_mul_const' _ _ ENNReal.ofReal_ne_top,
           ← ofReal_integral_eq_lintegral_ofReal hint
             (Filter.Eventually.of_forall fun H => by
               simpa only [Matrix.mulVec_single_one, single_dotProduct, Matrix.col_apply, one_mul,
                 Pi.zero_apply] using
-                dotProduct_inv_mul_conjTranspose_mulVec_nonneg H (Pi.single j' 1)),
+                dotProduct_mul_conjTranspose_inv_mulVec_nonneg H (Pi.single j' 1)),
           hdiag, ← ENNReal.ofReal_mul (inv_nonneg.2 (by
             have : (Fintype.card r : ℝ) + 4 ≤ Fintype.card k := by exact_mod_cast hrk
             linarith))]
@@ -801,8 +801,11 @@ private theorem integral_mul_eq_of_memLp {x y z : Ω → ℝ} (hx : MemLp x 2 μ
   rw [e, integral_sub h1 h2, integral_sub h3 hz2, integral_add (hQ 1) (hQ (-1)),
     integral_const_mul, integral_const_mul, integral_add hx.integrable_sq hy.integrable_sq]
 
-private theorem memLp_inv_mul_conjTranspose_apply (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 4 ≤ Fintype.card k) (i j : r) :
+/-- The entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are square integrable for a
+standard Gaussian $r \times k$ matrix $\mathbf{G}$ with
+$\lvert r \rvert + 4 \le \lvert k \rvert$. -/
+theorem memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 4 ≤ Fintype.card k) (i j : r) :
     MemLp (fun ω => (X ω * (X ω)ᴴ)⁻¹ i j) 2 μ := by
   have hd : 5 ≤ Fintype.card k - Fintype.card r + 1 := by omega
   have hdiag (l : r) : MemLp (fun ω => (X ω * (X ω)ᴴ)⁻¹ l l) 2 μ :=
@@ -838,7 +841,7 @@ private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (ga
       ((Fintype.card k : ℝ) - Fintype.card r)⁻¹ * a := by
     have h := lintegral_inv_mul_conjTranspose_apply_sq hX hrk (i := j) (j := i) hij
     have hint : Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹ i j ^ 2) μ :=
-      (memLp_inv_mul_conjTranspose_apply hX hrk i j).integrable_sq
+      (memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk i j).integrable_sq
     rw [integral_eq_lintegral_of_nonneg_ae (Filter.Eventually.of_forall fun ω => sq_nonneg _)
       hint.aestronglyMeasurable, h, ENNReal.toReal_ofReal]
     have : (Fintype.card r : ℝ) + 4 ≤ Fintype.card k := by exact_mod_cast hrk
@@ -846,10 +849,34 @@ private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (ga
     exact mul_nonneg (inv_nonneg.2 (by linarith)) (by apply div_nonneg <;> nlinarith)
   have hQ (ε : ℝ) (hε : ε ^ 2 = 1) := hasLaw_add_div_two_add_mul_inv_apply hX (by omega) hij hε
   have hQsq (ε : ℝ) (hε : ε ^ 2 = 1) := integral_sq_of_hasLaw_invChiSq (hQ ε hε) hd
-  rw [integral_mul_eq_of_memLp (memLp_inv_mul_conjTranspose_apply hX hrk i i)
-    (memLp_inv_mul_conjTranspose_apply hX hrk j j) (memLp_inv_mul_conjTranspose_apply hX hrk i j),
+  rw [integral_mul_eq_of_memLp
+    (memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk i i)
+    (memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk j j)
+    (memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk i j),
     hQsq 1 (by norm_num), hQsq (-1) (by norm_num), hc, hsq, hsq, Matrix.one_apply_ne hij]
   ring
+
+/-- **Products of diagonal entries of the inverse Wishart matrix**: for a standard Gaussian
+$r \times k$ matrix $\mathbf{G}$ with $\lvert r \rvert + 4 \le \lvert k \rvert$ and
+$\mathbf{W} = (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$,
+$$\mathbb{E}\,[\mathbf{W}_{i,i}\mathbf{W}_{j,j}] =
+\frac{1 - 2(1 - \delta_{ij})/(\lvert k \rvert - \lvert r \rvert)}
+{(\lvert k \rvert - \lvert r \rvert - 1)(\lvert k \rvert - \lvert r \rvert - 3)}\,:$$
+the second moment of $1/\chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$ on the diagonal, less
+twice the off-diagonal second moment off it. The input of the fourth moment of
+$\|\mathbf{G}^{+}\|_{\mathsf{F}}$. -/
+theorem integral_mul_conjTranspose_inv_apply_self_mul_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 4 ≤ Fintype.card k) (i j : r) :
+    ∫ ω, (X ω * (X ω)ᴴ)⁻¹ i i * (X ω * (X ω)ᴴ)⁻¹ j j ∂μ =
+      (1 - 2 * ((Fintype.card k : ℝ) - Fintype.card r)⁻¹ * (1 - (1 : Matrix r r ℝ) i j)) /
+        (((Fintype.card k : ℝ) - Fintype.card r - 1) *
+          ((Fintype.card k : ℝ) - Fintype.card r - 3)) := by
+  have hcast : ((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) =
+      (Fintype.card k : ℝ) - Fintype.card r + 1 := by
+    rw [Nat.cast_add, Nat.cast_sub (by omega), Nat.cast_one]
+  rw [integral_inv_mul_conjTranspose_apply_self_mul hX hrk, hcast, one_div, div_eq_inv_mul,
+    mul_comm]
+  ring_nf
 
 /-! ### The moments of the probes -/
 
@@ -895,7 +922,7 @@ theorem integral_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussian
 
 end Entries
 
-/-! ### The mean and the Frobenius moments -/
+/-! ### The mean -/
 
 /-- $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is integrable for a standard Gaussian $r \times k$
 matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
@@ -903,7 +930,8 @@ theorem integrable_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix [DecidableEq r
     (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
     Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹) μ := by
   classical
-  exact Matrix.integrable_iff.2 fun i j => integrable_inv_mul_conjTranspose_apply hX hrk i j
+  exact Matrix.integrable_iff.2 fun i j =>
+    integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk i j
 
 /-- **The mean of the inverse Wishart matrix**: for a standard Gaussian $r \times k$ matrix
 $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$,
@@ -915,135 +943,9 @@ theorem integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix [DecidableEq r]
       ((Fintype.card k : ℝ) - Fintype.card r - 1)⁻¹ • (1 : Matrix r r ℝ) := by
   classical
   ext i j
-  rw [Matrix.integral_apply (fun i j => integrable_inv_mul_conjTranspose_apply hX hrk i j),
-    integral_inv_mul_conjTranspose_apply hX hrk, Matrix.smul_apply, smul_eq_mul]
-
-/-- Almost surely
-$\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 = \operatorname{tr} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$. -/
-private theorem ae_frobNorm_pinv_sq_eq_sum [DecidableEq r] (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r ≤ Fintype.card k) :
-    ∀ᵐ ω ∂μ, frobNorm (pinv (X ω)) ^ 2 = ∑ i, (X ω * (X ω)ᴴ)⁻¹ i i := by
-  filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hX] with ω hω
-  have hinj : Function.Injective (X ω)ᴴ.mulVec := by
-    rw [mulVec_injective_iff_rank_eq, Matrix.rank_conjTranspose, hω, min_eq_left hrk]
-  rw [frobNorm_pinv_sq_eq_re_trace_inv_of_injective_conjTranspose hinj, RCLike.re_to_real]
-  rfl
-
-/-- $\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$ is integrable for a standard Gaussian $r \times k$ matrix
-with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
-theorem integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
-    Integrable (fun ω => frobNorm (pinv (X ω)) ^ 2) μ := by
-  classical
-  refine (integrable_finsetSum Finset.univ fun i _ =>
-    integrable_inv_mul_conjTranspose_apply hX hrk i i).congr ?_
-  filter_upwards [ae_frobNorm_pinv_sq_eq_sum hX (by omega)] with ω hω
-  rw [hω]
-
-/-- **$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^2
-= \lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)$** for a standard Gaussian $r \times k$
-matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$ (Halko, Martinsson and Tropp,
-Proposition 10.2). -/
-theorem integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
-    ∫ ω, frobNorm (pinv (X ω)) ^ 2 ∂μ =
-      (Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1) := by
-  classical
-  rw [integral_congr_ae (ae_frobNorm_pinv_sq_eq_sum hX (by omega)),
-    integral_finsetSum _ fun i _ => integrable_inv_mul_conjTranspose_apply hX hrk i i]
-  simp only [integral_inv_mul_conjTranspose_apply hX hrk, Matrix.one_apply_eq, mul_one,
-    Finset.sum_const, Finset.card_univ, nsmul_eq_mul, div_eq_mul_inv]
-
-private theorem aestronglyMeasurable_frobNorm_pinv (hX : HasLaw X (gaussianMatrix r k) μ) :
-    AEStronglyMeasurable (fun ω => frobNorm (pinv (X ω))) μ :=
-  ((measurable_frobNorm.comp measurable_pinv).comp_aemeasurable
-    hX.aemeasurable).aestronglyMeasurable
-
-private theorem memLp_frobNorm_pinv (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
-    MemLp (fun ω => frobNorm (pinv (X ω))) 2 μ :=
-  (memLp_two_iff_integrable_sq (aestronglyMeasurable_frobNorm_pinv hX)).2
-    (integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hX hrk)
-
-/-- $\|\mathbf{G}^{+}\|_{\mathsf{F}}$ is integrable for a standard Gaussian $r \times k$ matrix
-with $\lvert r \rvert + 2 \le \lvert k \rvert$. -/
-theorem integrable_frobNorm_pinv_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
-    Integrable (fun ω => frobNorm (pinv (X ω))) μ := by
-  have := hX.isProbabilityMeasure
-  exact (memLp_frobNorm_pinv hX hrk).integrable one_le_two
-
-/-- $\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}
-\le \sqrt{\lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)}$ for a standard Gaussian
-$r \times k$ matrix with $\lvert r \rvert + 2 \le \lvert k \rvert$, by Jensen. -/
-theorem integral_frobNorm_pinv_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) :
-    ∫ ω, frobNorm (pinv (X ω)) ∂μ ≤
-      √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) := by
-  have := hX.isProbabilityMeasure
-  have hvar := variance_nonneg (fun ω => frobNorm (pinv (X ω))) μ
-  rw [variance_eq_sub (memLp_frobNorm_pinv hX hrk)] at hvar
-  refine (le_abs_self _).trans (Real.abs_le_sqrt ?_)
-  rw [← integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hX hrk]
-  simp only [Pi.pow_apply] at hvar
-  linarith
-
-private theorem ae_frobNorm_pinv_pow_four_eq [DecidableEq r] (hX : HasLaw X (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r ≤ Fintype.card k) :
-    ∀ᵐ ω ∂μ, frobNorm (pinv (X ω)) ^ 4 =
-      ∑ i, ∑ j, (X ω * (X ω)ᴴ)⁻¹ i i * (X ω * (X ω)ᴴ)⁻¹ j j := by
-  filter_upwards [ae_frobNorm_pinv_sq_eq_sum hX hrk] with ω hω
-  rw [show 4 = 2 * 2 by rfl, pow_mul, hω, sq, Finset.sum_mul_sum]
-
-/-- $\|\mathbf{G}^{+}\|_{\mathsf{F}}^4$ is integrable for a standard Gaussian $r \times k$ matrix
-with $\lvert r \rvert + 4 \le \lvert k \rvert$. -/
-theorem integrable_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix
-    (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 4 ≤ Fintype.card k) :
-    Integrable (fun ω => frobNorm (pinv (X ω)) ^ 4) μ := by
-  classical
-  have hint (i j : r) : Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹ i i * (X ω * (X ω)ᴴ)⁻¹ j j) μ :=
-    (memLp_inv_mul_conjTranspose_apply hX hrk i i).integrable_mul
-      (memLp_inv_mul_conjTranspose_apply hX hrk j j)
-  refine (integrable_finsetSum Finset.univ fun i _ =>
-    integrable_finsetSum Finset.univ fun j _ => hint i j).congr ?_
-  filter_upwards [ae_frobNorm_pinv_pow_four_eq hX (by omega)] with ω hω
-  rw [hω]
-
-/-- The fourth moment of $\|\mathbf{G}^{+}\|_{\mathsf{F}}$ (Halko, Martinsson and Tropp,
-Proposition 10.3): for a standard Gaussian $r \times k$ matrix $\mathbf{G}$ with
-$\lvert r \rvert + 4 \le \lvert k \rvert$, writing $r$, $k$ for $\lvert r \rvert$,
-$\lvert k \rvert$,
-$$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^4
-= \frac{r^2 (k - r) - 2 r (r - 1)}{(k - r)(k - r - 1)(k - r - 3)} \,.$$ -/
-theorem integral_frobNorm_pinv_pow_four_of_hasLaw_gaussianMatrix
-    (hX : HasLaw X (gaussianMatrix r k) μ) (hrk : Fintype.card r + 4 ≤ Fintype.card k) :
-    ∫ ω, frobNorm (pinv (X ω)) ^ 4 ∂μ =
-      ((Fintype.card r : ℝ) ^ 2 * ((Fintype.card k : ℝ) - Fintype.card r) -
-          2 * Fintype.card r * ((Fintype.card r : ℝ) - 1)) /
-        (((Fintype.card k : ℝ) - Fintype.card r) * ((Fintype.card k : ℝ) - Fintype.card r - 1) *
-          ((Fintype.card k : ℝ) - Fintype.card r - 3)) := by
-  classical
-  have hint (i j : r) : Integrable (fun ω => (X ω * (X ω)ᴴ)⁻¹ i i * (X ω * (X ω)ᴴ)⁻¹ j j) μ :=
-    (memLp_inv_mul_conjTranspose_apply hX hrk i i).integrable_mul
-      (memLp_inv_mul_conjTranspose_apply hX hrk j j)
-  rw [integral_congr_ae (ae_frobNorm_pinv_pow_four_eq hX (by omega)),
-    integral_finsetSum _ fun i _ => integrable_finsetSum _ fun j _ => hint i j]
-  simp only [integral_finsetSum _ fun j _ => hint _ j,
-    integral_inv_mul_conjTranspose_apply_self_mul hX hrk]
-  have hcast : ((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) =
-      (Fintype.card k : ℝ) - Fintype.card r + 1 := by
-    rw [Nat.cast_add, Nat.cast_sub (by omega), Nat.cast_one]
-  have hone (i : r) : ∑ j, (1 : Matrix r r ℝ) i j = 1 := by
-    simp only [Matrix.one_apply, Finset.sum_ite_eq, Finset.mem_univ, if_true]
-  simp only [← Finset.mul_sum, mul_sub, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ,
-    nsmul_eq_mul, mul_one, hone, hcast]
-  have hkr : (Fintype.card r : ℝ) + 4 ≤ Fintype.card k := by exact_mod_cast hrk
-  have h1 : (Fintype.card k : ℝ) - Fintype.card r ≠ 0 := by linarith
-  have h2 : (Fintype.card k : ℝ) - Fintype.card r - 1 ≠ 0 := by linarith
-  have h3 : (Fintype.card k : ℝ) - Fintype.card r - 3 ≠ 0 := by linarith
-  have h2' : (Fintype.card k : ℝ) - Fintype.card r + 1 - 2 ≠ 0 := by linarith
-  have h3' : (Fintype.card k : ℝ) - Fintype.card r + 1 - 4 ≠ 0 := by linarith
-  field_simp
-  ring
+  rw [Matrix.integral_apply
+      (fun i j => integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk i j),
+    integral_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk, Matrix.smul_apply,
+    smul_eq_mul]
 
 end NLAlib

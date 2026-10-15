@@ -178,18 +178,6 @@ private theorem sqrt_and_inv {A : Matrix n n 𝕜} (hA : A.PosDef) :
     CFC.sqrt_mul_sqrt_self A hA.posSemidef.nonneg, Matrix.mul_nonsing_inv _ hdet,
     Matrix.nonsing_inv_mul _ hdet⟩
 
-omit [DecidableEq n] in
-/-- The congruence by $\sqrt{c}\,\mathbf{S}\mathbf{R}$ in terms of the congruence by
-$\mathbf{R}$: for Hermitian $\mathbf{S}$, $\mathbf{R}$ and $c \ge 0$,
-$(\sqrt{c}\,\mathbf{S}\mathbf{R})^{\mathsf{H}} \mathbf{N} (\sqrt{c}\,\mathbf{S}\mathbf{R})
-= c\, \mathbf{R}\mathbf{S}\mathbf{N}\mathbf{S}\mathbf{R}$. -/
-private theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S R : Matrix n n 𝕜}
-    (hS : Sᴴ = S) (hR : Rᴴ = R) (N : Matrix n n 𝕜) :
-    (√c • (S * R))ᴴ * N * (√c • (S * R)) = c • (R * (S * N * S) * R) := by
-  rw [Matrix.conjTranspose_smul, Matrix.conjTranspose_mul, hR, hS, star_trivial]
-  simp only [Matrix.smul_mul, Matrix.mul_smul, smul_smul, Real.mul_self_sqrt hc,
-    Matrix.mul_assoc]
-
 /-- The operator Jensen inequality for the two-term family
 $\mathbf{K}_1 = \sqrt{a}\,\mathbf{S}_1\mathbf{R}$, $\mathbf{K}_2 = \sqrt{b}\,\mathbf{S}_2\mathbf{R}$
 with $\mathbf{R}(a\mathbf{S}_1^2 + b\mathbf{S}_2^2)\mathbf{R} = \mathbf{I}$. -/
@@ -209,12 +197,12 @@ private theorem OperatorConvexOn.cfc_mul_smul_add_smul_mul_le {s : Set ℝ} {f :
         R * (a • (S₁ * N₁ * S₁) + b • (S₂ * N₂ * S₂)) * R := fun N₁ N₂ => by
     rw [Fin.sum_univ_two]
     change (√a • (S₁ * R))ᴴ * N₁ * (√a • (S₁ * R)) + (√b • (S₂ * R))ᴴ * N₂ * (√b • (S₂ * R)) = _
-    rw [conjTranspose_smul_mul_mul_smul ha hS₁ hR, conjTranspose_smul_mul_mul_smul hb hS₂ hR, e,
-      e, ← Matrix.add_mul, ← Matrix.mul_add]
+    rw [Matrix.conjTranspose_smul_mul_mul_smul ha hS₁ hR,
+      Matrix.conjTranspose_smul_mul_mul_smul hb hS₂ hR, e, e, ← Matrix.add_mul, ← Matrix.mul_add]
   have hK' : ∑ i : Fin 2, ((![√a • (S₁ * R), √b • (S₂ * R)] : Fin 2 → Matrix n n 𝕜) i)ᴴ *
       (![√a • (S₁ * R), √b • (S₂ * R)] : Fin 2 → Matrix n n 𝕜) i = 1 := by
-    have h1 := conjTranspose_smul_mul_mul_smul ha hS₁ hR 1
-    have h2 := conjTranspose_smul_mul_mul_smul hb hS₂ hR 1
+    have h1 := Matrix.conjTranspose_smul_mul_mul_smul ha hS₁ hR 1
+    have h2 := Matrix.conjTranspose_smul_mul_mul_smul hb hS₂ hR 1
     simp only [Matrix.mul_one] at h1 h2
     rw [Fin.sum_univ_two]
     change (√a • (S₁ * R))ᴴ * (√a • (S₁ * R)) + (√b • (S₂ * R))ᴴ * (√b • (S₂ * R)) = 1

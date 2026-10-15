@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.RCLike.Basic
+public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.LinearAlgebra.Matrix.ConjTranspose
 
 /-!
@@ -15,7 +16,8 @@ A diagonal matrix over an `RCLike` field whose diagonal entries are real is its 
 transpose; upstream candidate for `Mathlib.Analysis.RCLike.Basic` or a file on Hermitian
 matrices. The cross-Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{B}$ is the sum of the rank-one
 products of the rows; upstream candidate for `Mathlib.LinearAlgebra.Matrix.ConjTranspose`, beside
-`Matrix.conjTranspose_vecMulVec`.
+`Matrix.conjTranspose_vecMulVec`. A congruence by a scaled product of Hermitian matrices is
+written out; upstream candidate for the same file.
 
 ## Main results
 
@@ -25,6 +27,8 @@ products of the rows; upstream candidate for `Mathlib.LinearAlgebra.Matrix.ConjT
 * `Matrix.conjTranspose_mul_eq_sum_vecMulVec`:
   $\mathbf{A}^{\mathsf{H}}\mathbf{B} = \sum_i \mathbf{a}_i^{\mathsf{H}} \mathbf{b}_i$ over the rows
   $\mathbf{a}_i$, $\mathbf{b}_i$.
+* `Matrix.conjTranspose_smul_mul_mul_smul`: a congruence by
+  $\sqrt{c}\,\mathbf{S}\mathbf{R}$ for Hermitian $\mathbf{S}$, $\mathbf{R}$.
 -/
 
 @[expose] public section
@@ -62,5 +66,25 @@ theorem conjTranspose_mul_eq_sum_vecMulVec (A : Matrix n q α) (B : Matrix n r �
   simp only [mul_apply, conjTranspose_apply, sum_apply, vecMulVec_apply, Pi.star_apply]
 
 end Gram
+
+
+section Congruence
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
+
+/-- A congruence by a scaled product of Hermitian factors: for $\mathbf{S}^{\mathsf{H}} =
+\mathbf{S}$, $\mathbf{R}^{\mathsf{H}} = \mathbf{R}$ and $c \ge 0$,
+$$(\sqrt{c}\,\mathbf{S}\mathbf{R})^{\mathsf{H}} \mathbf{N} (\sqrt{c}\,\mathbf{S}\mathbf{R})
+= c\, \mathbf{R}\mathbf{S}\mathbf{N}\mathbf{S}\mathbf{R}\,.$$
+The step of the operator Jensen inequality for the two-term families
+$\mathbf{K}_i = \sqrt{a_i}\,\mathbf{S}_i\mathbf{R}$. -/
+theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S R : Matrix n n 𝕜}
+    (hS : Sᴴ = S) (hR : Rᴴ = R) (N : Matrix n n 𝕜) :
+    (√c • (S * R))ᴴ * N * (√c • (S * R)) = c • (R * (S * N * S) * R) := by
+  rw [Matrix.conjTranspose_smul, Matrix.conjTranspose_mul, hR, hS, star_trivial]
+  simp only [Matrix.smul_mul, Matrix.mul_smul, _root_.smul_smul, Real.mul_self_sqrt hc,
+    Matrix.mul_assoc]
+
+end Congruence
 
 end Matrix

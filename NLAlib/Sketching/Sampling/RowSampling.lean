@@ -12,7 +12,7 @@ public import NLAlib.Probability.Law
 public import NLAlib.Probability.MatrixConcentration.ChernoffSum
 public import NLAlib.Sketching.Properties.FixedSubspace
 public import NLAlib.Sketching.Properties.Isotropic
-public import NLAlib.Sketching.Sampling.Leverage
+public import NLAlib.Matrix.Subspaces.Leverage
 
 /-!
 # Row sampling
@@ -76,11 +76,6 @@ the same identity at $\mathbf{A} = \mathbf{B} = \mathbf{I}$.
   average of rank-one atoms.
 * `NLAlib.samplingSketchMatrix_mul_conjTranspose_of_injective`: distinct indices give a diagonal
   $\mathbf{S}\mathbf{S}^{\mathsf{H}}$.
-* `NLAlib.inv_mul_smul_vecMulVec_star_self_le`: the Loewner bound on one atom.
-* `NLAlib.exists_hasOrthonormalCols_of_leverageScore_le`, `NLAlib.rank_le_of_leverageScore_le`:
-  the reduction to orthonormal columns and the bound on the rank under leverage domination;
-  `NLAlib.leverageScore_le_mul_const_inv_card`, `NLAlib.pos_of_leverageScore_le_mul_inv_card`:
-  domination by uniform weights.
 * `NLAlib.isIsotropicSketch_of_hasLaw_samplingSketch`: isotropy for positive weights.
 * `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch`,
   `NLAlib.hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch`: the two halves.
@@ -270,7 +265,11 @@ theorem conjTranspose_samplingSketchMatrix_mul_mul (p : n → ℝ≥0) (ι : k �
     Pi.star_apply, RCLike.ofReal_mul]
   ring
 
-/-! ### The Chernoff atoms -/
+/-! ### The Chernoff atoms
+
+Private proof material: the atoms of the sketched Gram matrix and the two Chernoff halves on the
+product space of the indices. The Loewner bound on one atom is
+`NLAlib.inv_mul_smul_vecMulVec_star_self_le` (`NLAlib.Matrix.Norms.Loewner`). -/
 
 /-- The $j$-th rank-one atom
 $(\lvert k \rvert \, p_{\iota(j)})^{-1} \, \mathbf{b}_{\iota(j)}^{\mathsf{H}} \mathbf{b}_{\iota(j)}$
@@ -286,35 +285,6 @@ private theorem posSemidef_samplingAtom [Finite r] (p : n → ℝ≥0) (B : Matr
     (ι : k → n) :
     (samplingAtom p B j ι).PosSemidef :=
   (Matrix.posSemidef_vecMulVec_star_self _).smul (by positivity)
-
-open scoped ComplexOrder in
-/-- **The row-sampling atom bound.** For $c \ge 0$ samples and a weight $w \ge 0$, the
-importance-weighted rank-one atom $(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b}$ of a row
-$\mathbf{b}$ (`vecMulVec (star b) b`) satisfies
-$(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b} \preceq (L / c)\,\mathbf{I}$ when
-$\|\mathbf{b}\|^2 \le L w$ and $L \ge 0$. Junk values: for $w = 0$ or $c = 0$ the atom is
-$\mathbf{0}$ (junk inverse) and the bound is $\mathbf{0} \preceq (L / c)\,\mathbf{I}$. It is the
-hypothesis `hle` of matrix Chernoff for row sampling, with or without replacement: with
-replacement at $c = \lvert k \rvert$, $\mathbf{b}$ the sampled row and $w$ its weight; without
-replacement at uniform weights. -/
-theorem inv_mul_smul_vecMulVec_star_self_le [DecidableEq r] {c L : ℝ} {w : ℝ≥0}
-    (hc : 0 ≤ c) (hL : 0 ≤ L) {b : r → 𝕜} (hb : ‖WithLp.toLp 2 b‖ ^ 2 ≤ L * w) :
-    (c * w)⁻¹ • Matrix.vecMulVec (star b) b ≤ (L / c) • (1 : Matrix r r 𝕜) := by
-  have hcw : (0 : ℝ) ≤ (c * w)⁻¹ := inv_nonneg.2 (mul_nonneg hc w.coe_nonneg)
-  have hpsd : ((c * w)⁻¹ • Matrix.vecMulVec (star b) b).PosSemidef :=
-    (Matrix.posSemidef_vecMulVec_star_self b).smul hcw
-  refine hpsd.isHermitian.le_smul_one_of_specNorm_le ?_
-  rw [specNorm_real_smul, specNorm_vecMulVec, EuclideanSpace.norm_toLp_star, abs_of_nonneg hcw,
-    ← sq]
-  rcases eq_or_ne w 0 with h0 | h0
-  · rw [h0, NNReal.coe_zero, mul_zero, inv_zero, zero_mul]
-    exact div_nonneg hL hc
-  have hpos : 0 < (w : ℝ) := lt_of_le_of_ne w.coe_nonneg (by exact_mod_cast h0.symm)
-  rcases hc.eq_or_lt with hk | hk
-  · rw [← hk, zero_mul, inv_zero, zero_mul, div_zero]
-  calc (c * w)⁻¹ * ‖WithLp.toLp 2 b‖ ^ 2 ≤ (c * w)⁻¹ * (L * w) :=
-        mul_le_mul_of_nonneg_left hb hcw
-    _ = L / c := by field_simp
 
 section Pi
 
@@ -427,23 +397,6 @@ private theorem hasSubspaceEmbedding_zero_samplingSketchMatrix [Nonempty k] [Non
 
 end Pi
 
-omit [DecidableEq n] in
-/-- **Reduction to orthonormal columns.** Under the domination
-$\ell_i(\mathbf{U}) \le L p_i$ of the leverage scores of $\mathbf{U}$ (any shape and rank),
-there is a $\mathbf{Q}$ with $\operatorname{rank}\mathbf{U}$ orthonormal columns whose range
-contains that of $\mathbf{U}$ and whose rows inherit the domination,
-$\|\mathbf{q}_i\|^2 \le L p_i$. It reduces every fixed-$\mathbf{U}$ row-sampling tail, with or
-without replacement, to orthonormal columns, through `NLAlib.HasSubspaceEmbedding.of_range_le`. -/
-theorem exists_hasOrthonormalCols_of_leverageScore_le
-    (hdom : ∀ i, leverageScore U i ≤ L * p i) :
-    ∃ Q : Matrix n (Fin U.rank) 𝕜, HasOrthonormalCols Q ∧
-      LinearMap.range U.mulVecLin ≤ LinearMap.range Q.mulVecLin ∧
-      ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i := by
-  obtain ⟨Q, hQ, hR⟩ := exists_hasOrthonormalCols_range_eq U (Fintype.card_fin _)
-  refine ⟨Q, hQ, hR.ge, fun i => ?_⟩
-  rw [← hQ.leverageScore_eq, leverageScore_eq_of_range_eq hR]
-  exact hdom i
-
 /-! ### Isotropy -/
 
 /-- **Row sampling with positive weights is isotropic.** With zero weights the second moment is
@@ -475,41 +428,6 @@ theorem isIsotropicSketch_of_hasLaw_samplingSketch [Nonempty k]
     Matrix.conjTranspose_one, Matrix.mul_one]
 
 /-! ### Subspace injection and embedding for a fixed subspace -/
-
-omit [DecidableEq n] in
-/-- Under leverage domination $\ell_i(\mathbf{U}) \le L p_i$ with weights summing to one, the
-rank is at most the domination constant: $\operatorname{rank}\mathbf{U} \le L$ (the leverage
-scores sum to the rank). It gives $L > 0$ for the Chernoff call when $\mathbf{U} \ne
-\mathbf{0}$. -/
-theorem rank_le_of_leverageScore_le (hp : ∑ i, p i = 1)
-    (hdom : ∀ i, leverageScore U i ≤ L * p i) : (U.rank : ℝ) ≤ L := by
-  calc (U.rank : ℝ) = ∑ i, leverageScore U i := (sum_leverageScore U).symm
-    _ ≤ ∑ i, L * p i := Finset.sum_le_sum fun i _ => hdom i
-    _ = L := by rw [← Finset.mul_sum, ← NNReal.coe_sum, hp, NNReal.coe_one, mul_one]
-
-omit [DecidableEq n] in
-/-- **Uniform weights, in the form of the sketch.** The domination
-$\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ by uniform weights, as stated by uniform sampling
-with and without replacement and the SRHT, is the domination $\ell_i(\mathbf{U}) \le L p_i$ at
-the weights $p_i = 1/\lvert n \rvert$ of `NLAlib.samplingSketch`. -/
-theorem leverageScore_le_mul_const_inv_card
-    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (i : n) :
-    leverageScore U i ≤ L * ((fun _ : n => (Fintype.card n : ℝ≥0)⁻¹) i : ℝ) := by
-  simp only [NNReal.coe_inv, NNReal.coe_natCast]
-  exact hdom i
-
-omit [DecidableEq n] in
-/-- Under domination by uniform weights, $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, a matrix
-of positive rank has $L > 0$ (`NLAlib.rank_le_of_leverageScore_le`). -/
-theorem pos_of_leverageScore_le_mul_inv_card
-    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hd : 0 < U.rank) : 0 < L := by
-  have : Nonempty n := by
-    by_contra h
-    rw [not_nonempty_iff] at h
-    rw [show U = 0 from Matrix.ext fun i => isEmptyElim i, Matrix.rank_zero] at hd
-    exact lt_irrefl 0 hd
-  exact (Nat.cast_pos.2 hd).trans_le
-    (rank_le_of_leverageScore_le sum_const_inv_card (leverageScore_le_mul_const_inv_card hdom))
 
 /-- **The lower half of row sampling**: under leverage domination
 $\ell_i(\mathbf{U}) \le L p_i$, the row-sampling sketch with $k$ samples is a subspace injection
@@ -638,7 +556,7 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card
   rcases isEmpty_or_nonempty n with hn | hn
   · exact hasSubspaceEmbedding_of_rank_eq_zero
       (Matrix.rank_eq_zero.2 (Matrix.ext fun i => isEmptyElim i)) (by positivity)
-  · exact hasSubspaceEmbedding_of_hasLaw_samplingSketch hS sum_const_inv_card
+  · exact hasSubspaceEmbedding_of_hasLaw_samplingSketch hS NNReal.sum_const_inv_card
       (leverageScore_le_mul_const_inv_card (leverageScore_le_coherence_mul_inv U)) hε hε1
 
 /-! ### Sample sizes -/

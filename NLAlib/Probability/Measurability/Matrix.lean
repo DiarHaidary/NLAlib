@@ -14,6 +14,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.Matrix.Perturbation.Continuity
 public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.Matrix.Factorizations.GramSchmidt
+public import NLAlib.Matrix.Factorizations.SketchedLowRank
 
 /-!
 # Measurability of matrix quantities
@@ -21,8 +22,9 @@ public import NLAlib.Matrix.Factorizations.GramSchmidt
 For random matrices, the quantities of the Matrix layer must be measurable functions of the
 matrix. This file belongs to the Probability layer: the Matrix layer itself has no measure theory.
 Norms, singular values and eigenvalues are continuous, hence measurable. The rank, the
-pseudoinverse, the range projector, the pseudo-condition number, the polar factor and the
-Gram–Schmidt factors are not continuous but are Borel measurable.
+pseudoinverse, the range projector, the pseudo-condition number, the inverse Gram matrix, the
+randomized SVD, the polar factor and the Gram–Schmidt factors are not continuous but are Borel
+measurable.
 
 Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 
@@ -33,6 +35,9 @@ Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 * `NLAlib.measurableSet_setOf_posDef`: the positive definite matrices form a measurable set.
 * `NLAlib.measurable_rank`, `NLAlib.measurable_pinv`, `NLAlib.measurable_rangeProjector`,
   `NLAlib.measurable_pseudoConditionNumber`.
+* `NLAlib.measurable_mul_conjTranspose_inv`: the inverse Gram matrix
+  $(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$; `NLAlib.measurable_rsvd`: the randomized SVD as a
+  function of the test matrix.
 * `NLAlib.measurable_polarFactor`, `NLAlib.measurable_gramSchmidtQ`.
 -/
 
@@ -152,6 +157,19 @@ measurable. -/
 theorem measurable_pseudoConditionNumber :
     Measurable (pseudoConditionNumber : Matrix m n 𝕜 → ℝ) := by
   exact measurable_specNorm.mul (measurable_specNorm.comp measurable_pinv)
+
+/-- The inverse Gram matrix $\mathbf{A} \mapsto (\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$ is
+measurable (Lean's inverse, $\mathbf{0}$ where $\mathbf{A}\mathbf{A}^{\mathsf{H}}$ is singular). -/
+theorem measurable_mul_conjTranspose_inv [DecidableEq m] :
+    Measurable fun A : Matrix m n 𝕜 => (A * Aᴴ)⁻¹ :=
+  (measurable_id.matrix_mul (continuous_id.matrix_conjTranspose).measurable).matrix_inv
+
+/-- The randomized SVD $\mathbf{\Omega} \mapsto \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$
+is a measurable function of the test matrix. -/
+theorem measurable_rsvd {l : Type*} [Fintype l] (A : Matrix m n 𝕜) :
+    Measurable fun Ω : Matrix n l 𝕜 => rsvd A Ω :=
+  (measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)).matrix_mul
+    measurable_const
 
 open scoped Matrix.Norms.L2Operator MatrixOrder ComplexOrder Classical in
 /-- The absolute value $(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$ is a continuous function of the

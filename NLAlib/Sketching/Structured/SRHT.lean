@@ -188,7 +188,7 @@ theorem isProbabilityMeasure_srhtWithReplacement [Nonempty n] (F : Matrix n n �
     IsProbabilityMeasure (srhtWithReplacement k F) := by
   let _ : MeasurableSpace n := ⊤
   have := isProbabilityMeasure_samplingMeasure (fun _ : n => (Fintype.card n : ℝ≥0)⁻¹)
-    sum_const_inv_card
+    NNReal.sum_const_inv_card
   exact Measure.isProbabilityMeasure_map (measurable_srhtMatrix F).aemeasurable
 
 /-- **The SRHT law as signs times row sampling without replacement**: the pushforward of
@@ -355,7 +355,7 @@ theorem isIsotropicSketch_of_hasLaw_srht [Nonempty k] (hF : HasOrthonormalCols F
 theorem isIsotropicSketch_of_hasLaw_srhtWithReplacement [Nonempty k] [Nonempty n]
     (hF : HasOrthonormalCols F) (hS : HasLaw S (srhtWithReplacement k F) μ) :
     IsIsotropicSketch S μ := by
-  have hp := sum_const_inv_card (ι := n)
+  have hp := NNReal.sum_const_inv_card (ι := n)
   have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) hp
   refine hS.isIsotropicSketch_iff.2 ?_
   rw [srhtWithReplacement_eq_map_prod]
@@ -588,13 +588,13 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement [Nonempty k] 
     IsObliviousSubspaceInjection S d (1 - ε)
       (d * Real.exp (-ε ^ 2 * Fintype.card k / (2 * (β * (d + 2 * √(d * t) + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
-  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (sum_const_inv_card (ι := n))
+  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (NNReal.sum_const_inv_card (ι := n))
   refine ⟨isIsotropicSketch_of_hasLaw_srhtWithReplacement hF.hasOrthonormalCols hS,
     fun U hU => ?_⟩
   refine hS.hasSubspaceInjection_iff.2 ?_
   rw [srhtWithReplacement_eq_map_prod]
   refine hasSubspaceInjection_map_prod hF U (by positivity) ht fun V hV hl => ?_
-  exact (hasSubspaceInjection_of_hasLaw_samplingSketch HasLaw.id sum_const_inv_card
+  exact (hasSubspaceInjection_of_hasLaw_samplingSketch HasLaw.id NNReal.sum_const_inv_card
     (leverageScore_le_mul_const_inv_card hl) hε).mono le_rfl
     (rank_mul_exp_le two_pos (Nat.cast_nonneg _) ht hV hU hl)
 
@@ -612,11 +612,11 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
     exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero (by positivity)
-  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (sum_const_inv_card (ι := n))
+  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (NNReal.sum_const_inv_card (ι := n))
   refine hS.hasSubspaceEmbedding_iff.2 ?_
   rw [srhtWithReplacement_eq_map_prod]
   refine hasSubspaceEmbedding_map_prod hF U (by positivity) ht fun V hV hl => ?_
-  refine (hasSubspaceEmbedding_of_hasLaw_samplingSketch HasLaw.id sum_const_inv_card
+  refine (hasSubspaceEmbedding_of_hasLaw_samplingSketch HasLaw.id NNReal.sum_const_inv_card
     (leverageScore_le_mul_const_inv_card hl) hε hε1).mono le_rfl le_rfl ?_
   rw [mul_assoc, mul_assoc]
   exact mul_le_mul_of_nonneg_left (rank_mul_exp_le three_pos (Nat.cast_nonneg _) ht hV hU hl)

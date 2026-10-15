@@ -308,3 +308,9 @@ from it; `lintegral_exp_mul_dotProduct_gaussianVector` is duplicated privately i
   `IsSubgaussianVector.measure_norm_sq_ge_le` (the tail-prefix rule now in `CONTRIBUTING.md` §4).
   Not changed: P1's scalar `E exp (θX²) ≤ 1 / √(1 - 2θc)` keeps its square-root form (the
   readable scalar statement; the vector form's `card n = 1` case is one `rw`).
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: `SubGaussianVector/Norm.lean`'s private `norm_sq_eq` is replaced by
+  `EuclideanSpace.norm_toLp_sq_eq_sum_sq` (`ForMathlib/Analysis/InnerProductSpace/PiL2.lean`),
+  shared with `RandomMatrix/Haar/Sphere.lean`.

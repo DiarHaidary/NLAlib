@@ -87,7 +87,8 @@ private theorem sq_sketch_distortion_eq {x u : n → ℝ} (hxu : ∀ A : Matrix 
       ‖WithLp.toLp 2 x‖ ^ 4 / Fintype.card k ^ 2 * (‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2) ^ 2 -
         2 * ‖WithLp.toLp 2 x‖ ^ 4 / Fintype.card k * ‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2 +
           ‖WithLp.toLp 2 x‖ ^ 4 := by
-  rw [← Matrix.smul_mulVec, hxu, Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq]
+  rw [← Matrix.smul_mulVec, hxu, Matrix.smul_mulVec,
+    EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq]
   ring
 
 /-- $\|\mathbf{g}\|^2$ and $\|\mathbf{g}\|^4$ of a standard Gaussian vector $\mathbf{g}$ are
@@ -529,7 +530,7 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix (hG : HasLaw G (gaussianMatrix k 
   intro x hx
   have h := measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector
     (hasLaw_mulVec_of_hasLaw_gaussianMatrix hG hx) hε
-  simp only [Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq]
+  simp only [Matrix.smul_mulVec, EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq]
   exact h
 
 /-- The squared distortion $(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2$ of a Gaussian

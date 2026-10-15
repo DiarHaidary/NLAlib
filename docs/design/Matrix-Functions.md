@@ -363,3 +363,11 @@ powers along a line, the polynomial energy bound with a general weight, the deri
 characteristic determinant as a sum of complementary minors, the equality cases for `tr A⁻¹` and
 for the multiplicative determinant inequality. The ledger accounts for all 245 public prototype
 declarations of `Matrix/Functions` and `Matrix/Calculus`.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: the private `conjTranspose_smul_mul_mul_smul` of `OperatorConvex.lean` and
+  `Perspective.lean` is one public `Matrix.conjTranspose_smul_mul_mul_smul` in
+  `ForMathlib/LinearAlgebra/Matrix/ConjTranspose.lean`; `Exponential.lean` gains
+  `Matrix.IsHermitian.exp_cfc` and `Matrix.IsHermitian.re_trace_exp_nonneg`, formerly private in the
+  matrix concentration files.

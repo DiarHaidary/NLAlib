@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Matrix.Basic.Gram
 public import NLAlib.Matrix.Norms.Frobenius
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.MatrixIntegral
@@ -35,8 +36,6 @@ Design: `docs/design/Sketching-S1.md` §3.1.
   $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$.
 * `NLAlib.IsIsotropicSketch.integral_frobNorm_mul_sq`:
   $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$.
-* `NLAlib.norm_inv_sqrt_card_smul_sq`, `NLAlib.norm_inv_sqrt_card_smul_mulVec_sq`: the
-  normalisation $\lvert k \rvert^{-1/2}$, and the normalised sketch on a vector, row by row.
 * `NLAlib.isIsotropicSketch_smul_of_isIsotropic`: isotropic rows, scaled.
 * `NLAlib.IsIsotropicSketch.mul`: products of independent isotropic sketches.
 * `ProbabilityTheory.HasLaw.isIsotropicSketch_iff`: isotropy depends only on the law.
@@ -161,30 +160,6 @@ theorem integral_conjTranspose_mul_mul [DecidableEq p] (h : IsIsotropicSketch S 
 
 end IsIsotropicSketch
 
-omit [Fintype n] [Fintype p] [DecidableEq n] in
-/-- **The normalisation of a sketch with $\lvert k \rvert$ rows**: scaling a vector of
-$\Bbbk^k$ by $\lvert k \rvert^{-1/2}$ divides its squared norm by $\lvert k \rvert$,
-$\|\lvert k \rvert^{-1/2} \mathbf{v}\|^2 = \|\mathbf{v}\|^2 / \lvert k \rvert$. -/
-theorem norm_inv_sqrt_card_smul_sq (v : k → 𝕜) :
-    ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • v)‖ ^ 2 =
-      ‖WithLp.toLp 2 v‖ ^ 2 / Fintype.card k := by
-  rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
-    Real.sq_sqrt (Nat.cast_nonneg _), inv_mul_eq_div]
-
-omit [Fintype p] [DecidableEq n] in
-/-- **The normalised sketch on a vector, row by row**: for
-$\mathbf{S} = \lvert k \rvert^{-1/2} \mathbf{A}$ with rows $\mathbf{A}_i$,
-$$\|\mathbf{S}\mathbf{x}\|^2 = \frac{1}{\lvert k \rvert} \sum_i
-\lvert \langle \mathbf{x}, \mathbf{A}_i \rangle \rvert^2 \,,$$
-the average of the squared projections of $\mathbf{x}$ on the rows (with the bilinear pairing
-`x ⬝ᵥ A i`). The identity behind every sketch with independent rows
-(`NLAlib.isIsotropicSketch_smul_of_isIsotropic`, the Gaussian, sub-Gaussian and sign sketches). -/
-theorem norm_inv_sqrt_card_smul_mulVec_sq (A : Matrix k n 𝕜) (x : n → 𝕜) :
-    ‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • A) *ᵥ x)‖ ^ 2 =
-      (∑ i, ‖x ⬝ᵥ A i‖ ^ 2) / Fintype.card k := by
-  rw [Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq, EuclideanSpace.norm_sq_eq]
-  simp only [Matrix.mulVec, dotProduct_comm (A _) x]
-
 /-- **Isotropic rows give an isotropic sketch**: if every row of the random matrix $\mathbf{X}$ is
 an isotropic random vector, $\mathbf{X} / \sqrt{\lvert k \rvert}$ is an isotropic sketch. No
 independence between the rows is assumed; `[Nonempty k]` is needed, since for empty $k$ the sketch
@@ -293,5 +268,10 @@ theorem _root_.ProbabilityTheory.HasLaw.isIsotropicSketch_iff {ν : Measure (Mat
     exact ⟨fun i j => (hmem i j).1 (h.memLp i j), hint.symm.trans h.integral_conjTranspose_mul_self⟩
   · intro h
     exact ⟨fun i j => (hmem i j).2 (h.memLp i j), hint.trans h.integral_conjTranspose_mul_self⟩
+
+/-! ### Deprecated aliases -/
+
+@[deprecated EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq (since := "2026-10-15")]
+alias norm_inv_sqrt_card_smul_sq := EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq
 
 end NLAlib

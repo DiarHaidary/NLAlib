@@ -353,7 +353,8 @@ theorem hasJLProperty_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω
   have hev : {ω | ε ≤ |‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • X ω) *ᵥ x)‖ ^ 2 - 1|} =
       {ω | ε * Fintype.card k ≤ |‖WithLp.toLp 2 (X ω *ᵥ x)‖ ^ 2 - Fintype.card k|} := by
     ext ω
-    simp only [Set.mem_ofPred_eq, Matrix.smul_mulVec, norm_inv_sqrt_card_smul_sq]
+    simp only [Set.mem_ofPred_eq, Matrix.smul_mulVec,
+      EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq]
     rw [div_sub_one hK0.ne', abs_div, abs_of_pos hK0, le_div_iff₀ hK0]
   rw [hev]
   refine (hZ.measure_abs_ge_le (by positivity)).trans ?_

@@ -101,11 +101,6 @@ private theorem integral_rpow_sum_le {ι : Type*} [Fintype ι] {Y : ι → Ω �
           mul_le_mul_of_nonneg_left (hK i) (div_nonneg hpos.le hwr.le)
       _ = w i * K := by field_simp
 
-/-- Over $\mathbb{R}$, the squared Euclidean norm is the dot product of a vector with itself. -/
-private theorem norm_toLp_sq_eq_dotProduct {m : Type*} [Fintype m] (v : m → ℝ) :
-    ‖WithLp.toLp 2 v‖ ^ 2 = v ⬝ᵥ v := by
-  rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, star_trivial, RCLike.re_to_real]
-
 /-- The bilinear form
 $(\mathbf{M}\mathbf{x})^{\mathsf{T}}\mathbf{M}\mathbf{y} - \mathbf{x}^{\mathsf{T}}\mathbf{y}$ of
 the Gram error $\mathbf{M}^{\mathsf{T}}\mathbf{M} - \mathbf{I}$. -/
@@ -115,9 +110,9 @@ private def gramErr (M : Matrix k n ℝ) (x y : n → ℝ) : ℝ := (M *ᵥ x) �
 private theorem gramErr_eq (M : Matrix k n ℝ) (x y : n → ℝ) :
     gramErr M x y = ((‖WithLp.toLp 2 (M *ᵥ (x + y))‖ ^ 2 - ‖WithLp.toLp 2 (x + y)‖ ^ 2) -
       (‖WithLp.toLp 2 (M *ᵥ (x - y))‖ ^ 2 - ‖WithLp.toLp 2 (x - y)‖ ^ 2)) / 4 := by
-  simp only [gramErr, norm_toLp_sq_eq_dotProduct, Matrix.mulVec_add, Matrix.mulVec_sub,
-    add_dotProduct, dotProduct_add, sub_dotProduct, dotProduct_sub, dotProduct_comm (M *ᵥ y),
-    dotProduct_comm y]
+  simp only [gramErr, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, Matrix.mulVec_add,
+    Matrix.mulVec_sub, add_dotProduct, dotProduct_add, sub_dotProduct, dotProduct_sub,
+    dotProduct_comm (M *ᵥ y), dotProduct_comm y]
   ring
 
 private theorem continuous_gramErr (x y : n → ℝ) :
@@ -139,9 +134,10 @@ private theorem integral_abs_gramErr_rpow_le_of_norm_eq (h : HasJLMoment S ε δ
     |‖WithLp.toLp 2 (S ω *ᵥ v i)‖ ^ 2 - ‖WithLp.toLp 2 (v i)‖ ^ 2| / 4
   let w : Fin 2 → ℝ := fun i => ‖WithLp.toLp 2 (v i)‖ ^ 2 / (4 * c)
   have hpar : ‖WithLp.toLp 2 (x + y)‖ ^ 2 + ‖WithLp.toLp 2 (x - y)‖ ^ 2 = 4 * c := by
-    have hy : y ⬝ᵥ y = c := by rw [hc, hxy, norm_toLp_sq_eq_dotProduct]
-    have hx2 : x ⬝ᵥ x = c := by rw [hc, norm_toLp_sq_eq_dotProduct]
-    rw [norm_toLp_sq_eq_dotProduct, norm_toLp_sq_eq_dotProduct]
+    have hy : y ⬝ᵥ y = c := by rw [hc, hxy, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+    have hx2 : x ⬝ᵥ x = c := by rw [hc, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+    rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self,
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
     simp only [add_dotProduct, dotProduct_add, sub_dotProduct, dotProduct_sub,
       dotProduct_comm y x, hy, hx2]
     ring

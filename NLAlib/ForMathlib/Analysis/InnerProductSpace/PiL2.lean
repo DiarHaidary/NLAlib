@@ -13,8 +13,8 @@ public import Mathlib.Analysis.InnerProductSpace.PiL2
 Bridges between the Euclidean norm $\|\mathbf{x}\|$ (`‖WithLp.toLp 2 x‖`) of a vector
 `x : n → 𝕜` and the pairing $\mathbf{x}^{\mathsf{H}}\mathbf{x}$ (`star x ⬝ᵥ x`), the
 Cauchy–Schwarz inequality for the dot product, and the behaviour of that norm under conjugation,
-reindexing, extension by zero and concatenation. Upstream candidates for
-`Mathlib.Analysis.InnerProductSpace.PiL2`.
+reindexing, extension by zero, concatenation and scaling by $\lvert k \rvert^{-1/2}$. Upstream
+candidates for `Mathlib.Analysis.InnerProductSpace.PiL2`.
 
 ## Main results
 
@@ -34,6 +34,10 @@ reindexing, extension by zero and concatenation. Upstream candidates for
 * `EuclideanSpace.norm_toLp_sumElim_sq`:
   $\left\|\begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}\right\|^2
   = \|\mathbf{x}\|^2 + \|\mathbf{y}\|^2$.
+* `EuclideanSpace.norm_toLp_sq_eq_sum_sq`: $\|\mathbf{x}\|^2 = \sum_i \mathbf{x}_i^2$ over
+  $\mathbb{R}$.
+* `EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq`:
+  $\|\lvert k \rvert^{-1/2} \mathbf{v}\|^2 = \|\mathbf{v}\|^2 / \lvert k \rvert$.
 -/
 
 @[expose] public section
@@ -118,5 +122,21 @@ $\left\|\begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}\right\|^2
 theorem norm_toLp_sumElim_sq {m : Type*} [Fintype m] (x : m → 𝕜) (y : n → 𝕜) :
     ‖WithLp.toLp 2 (Sum.elim x y)‖ ^ 2 = ‖WithLp.toLp 2 x‖ ^ 2 + ‖WithLp.toLp 2 y‖ ^ 2 := by
   simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl, Sum.elim_inr]
+
+
+/-- The squared Euclidean norm of a real coordinate vector is the sum of the squared coordinates,
+$\|\mathbf{x}\|^2 = \sum_i \mathbf{x}_i^2$: `EuclideanSpace.real_norm_sq_eq` stated for
+`x : n → ℝ`. -/
+theorem norm_toLp_sq_eq_sum_sq (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = ∑ i, x i ^ 2 :=
+  EuclideanSpace.real_norm_sq_eq _
+
+/-- **The normalisation of a sketch with $\lvert k \rvert$ rows**: scaling a vector of
+$\Bbbk^k$ by $\lvert k \rvert^{-1/2}$ divides its squared norm by $\lvert k \rvert$,
+$\|\lvert k \rvert^{-1/2} \mathbf{v}\|^2 = \|\mathbf{v}\|^2 / \lvert k \rvert$. -/
+theorem norm_toLp_inv_sqrt_card_smul_sq {k : Type*} [Fintype k] (v : k → 𝕜) :
+    ‖WithLp.toLp 2 ((√(Fintype.card k : ℝ))⁻¹ • v)‖ ^ 2 =
+      ‖WithLp.toLp 2 v‖ ^ 2 / Fintype.card k := by
+  rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
+    Real.sq_sqrt (Nat.cast_nonneg _), inv_mul_eq_div]
 
 end EuclideanSpace

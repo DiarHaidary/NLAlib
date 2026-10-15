@@ -39,8 +39,11 @@ $\llbracket \mathbf{A} \rrbracket_k$ is one of them, built from a chosen decompo
   `NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD`: the row space of the
   truncation, and a frame $\mathbf{Z}$ with
   $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$.
-* `Matrix.PosSemidef.truncatedSVD`, `Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD`:
-  positive semidefinite inputs.
+* `NLAlib.HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD`: the truncation of
+  $\mathbf{Q}\mathbf{X}$ stays in the range of $\mathbf{Q}$.
+* `Matrix.PosSemidef.truncatedSVD`, `Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD`,
+  `Matrix.PosSemidef.truncatedSVD_le`: positive semidefinite inputs, and the truncation below the
+  matrix in the Loewner order.
 * `NLAlib.singularValues_le_specNorm_sub_of_rank_le`: Eckart–Young in the spectral norm.
 * `NLAlib.frobNorm_sub_truncatedSVD_le_of_rank_le`: Eckart–Young in the Frobenius norm.
 * `NLAlib.isLeast_specNorm_sub_of_rank_le`, `NLAlib.isLeast_frobNorm_sub_of_rank_le`: the same as
@@ -340,6 +343,26 @@ theorem range_mulVecLin_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
     Matrix.diagonal_mul_diagonal, hT k]
   simp only [mul_ite, mul_one, mul_zero]
 
+/-- The truncation of $\mathbf{Q}\mathbf{X}$ lies in the range of $\mathbf{Q}$:
+$$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k =
+\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k\,,$$
+so $\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k = \mathbf{Q}\mathbf{Y}$ with
+$\mathbf{Y} = \mathbf{Q}^{\mathsf{H}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k$ a best
+approximation of
+$\mathbf{X}$ (`NLAlib.HasOrthonormalCols.isBestRankApprox_conjTranspose_mul_truncatedSVD`). The
+projector form
+$$\mathbf{P}_{\mathbf{Q}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k =
+\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k$$
+holds for every $\mathbf{Q}$.
+[TroppYurtseverUdellCevher2017, §6.2, (6.3)]; there "there is a best rank-$r$ approximation of
+$\mathbf{Q}\mathbf{X}$" with this property, here the truncated SVD itself. -/
+theorem HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD {q : Type*} [Fintype q]
+    [DecidableEq q] {Q : Matrix m q 𝕜} (hQ : HasOrthonormalCols Q) (X : Matrix q n 𝕜) (k : ℕ) :
+    Q * (Qᴴ * truncatedSVD (Q * X) k) = truncatedSVD (Q * X) k := by
+  rw [← Matrix.mul_assoc, ← hQ.rangeProjector_eq, rangeProjector_mul_eq_self_iff]
+  exact (range_mulVecLin_truncatedSVD_le _ k).trans
+    (range_mulVecLin_le_iff_exists_mul.mpr ⟨X, rfl⟩)
+
 /-! ### Row spaces, frames of dominant singular subspaces, positive semidefinite inputs -/
 
 /-- The truncation annihilates the conjugate transpose of the error:
@@ -477,6 +500,23 @@ theorem exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD {p : Typ
     have h := congrArg Matrix.conjTranspose (rangeProjector_mul_eq_self_iff.mpr hle)
     rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector,
       Matrix.conjTranspose_conjTranspose] at h
+
+open scoped ComplexOrder MatrixOrder in
+/-- The truncated SVD of a positive semidefinite matrix lies below it:
+$\llbracket\mathbf{A}\rrbracket_k \preceq \mathbf{A}$, for every choice of the truncation.
+[MartinssonTropp2020, §14.3]; there the positive semidefiniteness of the approximation, here the
+order. -/
+theorem _root_.Matrix.PosSemidef.truncatedSVD_le {A : Matrix n n 𝕜} (hA : A.PosSemidef) (k : ℕ) :
+    truncatedSVD A k ≤ A := by
+  classical
+  rcases le_or_gt k (Fintype.card n) with hk | hk
+  · obtain ⟨Z, hZ, hZA⟩ := exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD
+      (p := Fin k) A (Fintype.card_fin k) hk
+    rw [Matrix.le_iff, ← hA.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD hZ hZA]
+    have h := hA.conjTranspose_mul_mul_same (1 - Z * Zᴴ)
+    rwa [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_conjTranspose] at h
+  · rw [truncatedSVD_of_rank_le A (A.rank_le_card_width.trans hk.le)]
 
 /-! ### Eckart–Young -/
 

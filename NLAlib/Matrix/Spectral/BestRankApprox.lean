@@ -27,8 +27,7 @@ $\mathbf{A}$: with constant one when the singular values of $\hat{\mathbf{A}}$ a
 those of $\mathbf{A}$, with constant two in general, and through the $2k$ leading singular values of
 the perturbation in the Frobenius norm (perturbed truncation). Reverse Eckart–Young bounds the
 spectral error of any rank-$k$ matrix by its Frobenius or nuclear excess. The last results relate
-the truncation of $\mathbf{G}^{\mathsf{H}}\mathbf{G}$ to that of $\mathbf{G}$, and place the
-truncation of a positive semidefinite matrix below it in the Loewner order.
+the truncation of $\mathbf{G}^{\mathsf{H}}\mathbf{G}$ to that of $\mathbf{G}$.
 
 Every statement holds for every choice of the truncations involved. Design:
 `docs/design/LowRank-S2a.md`.
@@ -45,16 +44,18 @@ Every statement holds for every choice of the truncations involved. Design:
 * `NLAlib.IsBestRankApprox.singularValues_sub`, `NLAlib.IsBestRankApprox.matrixNorm_sub`,
   `NLAlib.IsBestRankApprox.frobNorm_sub`, `NLAlib.IsBestRankApprox.rangeProjector_mul`: API.
 * `NLAlib.HasOrthonormalCols.isBestRankApprox_mul_iff`,
-  `NLAlib.HasOrthonormalCols.isBestRankApprox_conjTranspose_mul_truncatedSVD`,
-  `NLAlib.HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD`: the factored form.
+  `NLAlib.HasOrthonormalCols.isBestRankApprox_conjTranspose_mul_truncatedSVD`: the factored form,
+  with `NLAlib.HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD`
+  (`NLAlib.Matrix.Spectral.LowRank`).
 * `NLAlib.IsBestRankApprox.matrixNorm_sub_le_add_of_singularValues_le`,
   `NLAlib.IsBestRankApprox.matrixNorm_sub_le_add_two_mul`: the truncation lemma.
 * `NLAlib.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_rank_le`,
   `NLAlib.specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le`: reverse Eckart–Young.
 * `NLAlib.IsBestRankApprox.frobNorm_sub_le_add_frobNorm_truncatedSVD`,
   `NLAlib.IsBestRankApprox.frobNorm_sub_le_add_specNorm`: perturbed truncation.
-* `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD`,
-  `Matrix.PosSemidef.truncatedSVD_le`: Gram matrices and the Loewner order.
+* `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD`: Gram matrices. The Loewner order
+  $\llbracket\mathbf{A}\rrbracket_k \preceq \mathbf{A}$ for positive semidefinite $\mathbf{A}$ is
+  `Matrix.PosSemidef.truncatedSVD_le` (`NLAlib.Matrix.Spectral.LowRank`).
 -/
 
 @[expose] public section
@@ -212,26 +213,6 @@ theorem HasOrthonormalCols.isBestRankApprox_mul_iff [DecidableEq q] {Q : Matrix 
       exact le_add_of_nonneg_left (sq_nonneg _)
     exact h1.trans h2
 
-/-- The truncation of $\mathbf{Q}\mathbf{X}$ lies in the range of $\mathbf{Q}$:
-$$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k =
-\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k\,,$$
-so $\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k = \mathbf{Q}\mathbf{Y}$ with
-$\mathbf{Y} = \mathbf{Q}^{\mathsf{H}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k$ a best
-approximation of
-$\mathbf{X}$ (`NLAlib.HasOrthonormalCols.isBestRankApprox_conjTranspose_mul_truncatedSVD`). The
-projector form
-$$\mathbf{P}_{\mathbf{Q}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k =
-\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k$$
-holds for every $\mathbf{Q}$.
-[TroppYurtseverUdellCevher2017, §6.2, (6.3)]; there "there is a best rank-$r$ approximation of
-$\mathbf{Q}\mathbf{X}$" with this property, here the truncated SVD itself. -/
-theorem HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD [DecidableEq q] {Q : Matrix m q 𝕜}
-    (hQ : HasOrthonormalCols Q) (X : Matrix q n 𝕜) (k : ℕ) :
-    Q * (Qᴴ * truncatedSVD (Q * X) k) = truncatedSVD (Q * X) k := by
-  rw [← Matrix.mul_assoc, ← hQ.rangeProjector_eq, rangeProjector_mul_eq_self_iff]
-  exact (range_mulVecLin_truncatedSVD_le _ k).trans
-    (range_mulVecLin_le_iff_exists_mul.mpr ⟨X, rfl⟩)
-
 /-- **The factored form of a truncation**: for $\mathbf{Q}$ with orthonormal columns,
 $\mathbf{Q}^{\mathsf{H}}\llbracket\mathbf{Q}\mathbf{X}\rrbracket_k$ is a best approximation of
 $\mathbf{X}$ of rank at most $k$; with
@@ -353,7 +334,7 @@ theorem specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix 
     Finset.sum_le_sum fun i _ => singularValues_add_le_singularValues_sub_of_rank_le A hB (i + 1)
   linarith
 
-/-! ### Perturbed truncation, Gram matrices, the Loewner order -/
+/-! ### Perturbed truncation, Gram matrices -/
 
 /-- The Frobenius inner product with a matrix of rank at most $r$ only sees the $r$ leading
 singular values: if $\operatorname{rank}\mathbf{X} \le r$ then
@@ -478,21 +459,5 @@ theorem nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD (G : Matrix m n 𝕜
   exact Finset.sum_congr rfl fun i _ => by
     rw [singularValues_sub_truncatedSVD, singularValues_conjTranspose_mul_self,
       singularValues_sub_truncatedSVD]
-
-/-- The truncated SVD of a positive semidefinite matrix lies below it:
-$\llbracket\mathbf{A}\rrbracket_k \preceq \mathbf{A}$, for every choice of the truncation.
-[MartinssonTropp2020, §14.3]; there the positive semidefiniteness of the approximation, here the
-order. -/
-theorem _root_.Matrix.PosSemidef.truncatedSVD_le {A : Matrix n n 𝕜} (hA : A.PosSemidef) (k : ℕ) :
-    truncatedSVD A k ≤ A := by
-  classical
-  rcases le_or_gt k (Fintype.card n) with hk | hk
-  · obtain ⟨Z, hZ, hZA⟩ := exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD
-      (p := Fin k) A (Fintype.card_fin k) hk
-    rw [Matrix.le_iff, ← hA.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD hZ hZA]
-    have h := hA.conjTranspose_mul_mul_same (1 - Z * Zᴴ)
-    rwa [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, Matrix.conjTranspose_mul,
-      Matrix.conjTranspose_conjTranspose] at h
-  · rw [truncatedSVD_of_rank_le A (A.rank_le_card_width.trans hk.le)]
 
 end NLAlib

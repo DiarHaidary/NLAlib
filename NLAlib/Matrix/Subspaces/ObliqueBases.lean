@@ -62,7 +62,7 @@ theorem _root_.IsIdempotentElem.obliqueProjector_eq {P : Matrix n n 𝕜} (hP : 
     rw [← Matrix.conjTranspose_conjTranspose P, hD, Matrix.conjTranspose_mul,
       Matrix.conjTranspose_conjTranspose]
   have hrank : (S * X).rank = X.rank := by
-    rw [rank_mul_eq_iff_injOn, hX]
+    rw [Matrix.rank_mul_eq_iff_injOn, hX]
     rintro _ ⟨a, rfl⟩ _ ⟨b, rfl⟩ hab
     simp only [Matrix.mulVecLin_apply] at hab ⊢
     have h0 : S *ᵥ (P *ᵥ a - P *ᵥ b) = 0 := by rw [Matrix.mulVec_sub, hab, sub_self]

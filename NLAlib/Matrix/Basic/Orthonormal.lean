@@ -30,6 +30,9 @@ Orthonormal rows are `HasOrthonormalCols Qᴴ`; a unitary matrix is a square $\m
 * `NLAlib.HasOrthonormalCols.norm_toLp_mulVec`: multiplication by $\mathbf{Q}$ preserves the
   Euclidean norm.
 * `NLAlib.hasOrthonormalCols_replicateCol`: a unit vector as a column.
+* `NLAlib.exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq`: the distortion
+  $\|\mathbf{A}\mathbf{x}\|^2 - \|\mathbf{x}\|^2$ at $\mathbf{x} \ne \mathbf{0}$ through a unit
+  vector.
 * `NLAlib.HasOrthonormalCols.mulVec_injective`: $\mathbf{Q}$ has full column rank;
   `NLAlib.HasOrthonormalCols.mulVec_injective_of_mul`: so does $\mathbf{B}$ when
   $\mathbf{S}\mathbf{B}$ has orthonormal columns.
@@ -134,6 +137,28 @@ theorem hasOrthonormalCols_replicateCol {v : m → 𝕜} (hv : ‖WithLp.toLp 2 
   simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.replicateCol_apply,
     RCLike.star_def, RCLike.conj_mul, Matrix.one_apply, Subsingleton.elim a b, if_true]
   exact_mod_cast h.symm
+
+omit [DecidableEq n] in
+/-- **Reduction of the distortion to unit vectors**: a nonzero $\mathbf{x}$ is $\|\mathbf{x}\|$
+times the unit vector $\mathbf{u} = \mathbf{x}/\|\mathbf{x}\|$, and for every matrix
+$\mathbf{A}$,
+$\|\mathbf{A}\mathbf{x}\|^2 - \|\mathbf{x}\|^2
+= \|\mathbf{x}\|^2 (\|\mathbf{A}\mathbf{u}\|^2 - 1)$. It transfers every JL statement on unit
+vectors to all vectors. -/
+theorem exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq {k : Type*} [Fintype k] [Fintype n]
+    {x : n → 𝕜} (hx : x ≠ 0) :
+    ∃ u : n → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ ∀ A : Matrix k n 𝕜,
+      ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2 =
+        ‖WithLp.toLp 2 x‖ ^ 2 * (‖WithLp.toLp 2 (A *ᵥ u)‖ ^ 2 - 1) := by
+  set c := ‖WithLp.toLp 2 x‖ with hc
+  have hc0 : 0 < c := norm_pos_iff.2 (by rwa [Ne, WithLp.toLp_eq_zero])
+  refine ⟨(c⁻¹ : ℝ) • x, ?_, fun A => ?_⟩
+  · rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv, abs_of_pos hc0,
+      inv_mul_cancel₀ hc0.ne']
+  · have hx' : x = c • ((c⁻¹ : ℝ) • x) := by rw [smul_smul, mul_inv_cancel₀ hc0.ne', one_smul]
+    conv_lhs => rw [hx']
+    rw [Matrix.mulVec_smul, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_pos hc0]
+    ring
 
 namespace HasOrthonormalCols
 

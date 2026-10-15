@@ -40,8 +40,9 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
   form.
 * `NLAlib.SymmetricGauge.matrixNorm_sub_truncatedSVD_nystrom_le`,
   `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom`,
-  `Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`,
-  `Matrix.PosSemidef.truncatedSVD_nystrom_le`: truncated Nyström.
+  `Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`: truncated Nyström; it lies below the
+  matrix by `Matrix.PosSemidef.truncatedSVD_nystrom_le`
+  (`NLAlib.Matrix.Factorizations.NystromOrder`).
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm`: truncated generalized
   Nyström.
@@ -275,15 +276,6 @@ theorem _root_.Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom {H : Matri
   have h := nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom (CFC.sqrt H) Ω k
   rwa [hHF] at h
 
-/-- **Truncated Nyström stays below the matrix**: for positive semidefinite $\mathbf{H}$,
-$\llbracket\mathbf{H}\langle\mathbf{\Omega}\rangle\rrbracket_k \preceq \mathbf{H}$, so the trace of
-the error is its nuclear norm.
-[MartinssonTropp2020, §14.3]; there the positive semidefiniteness of the approximation, here the
-order. -/
-theorem _root_.Matrix.PosSemidef.truncatedSVD_nystrom_le {H : Matrix n n 𝕜} (hH : H.PosSemidef)
-    (Ω : Matrix n l 𝕜) (k : ℕ) : truncatedSVD (nystrom H Ω) k ≤ H :=
-  ((hH.nystrom Ω).truncatedSVD_le k).trans (hH.nystrom_le Ω)
-
 /-! ### Truncated generalized Nyström -/
 
 /-- The core form of truncated generalized Nyström: in a basis $\mathbf{Q}$ of
@@ -302,8 +294,8 @@ private theorem exists_core_generalizedNystrom {A : Matrix m n 𝕜} {Ω : Matri
   obtain ⟨Q, hQ, hQY⟩ := exists_hasOrthonormalCols_range_eq (p := Fin (A * Ω).rank) (A * Ω)
     (Fintype.card_fin _)
   have hΨQ : (Ψᴴ * Q).rank = Q.rank := by
-    rw [rank_mul_eq_iff_injOn, hQY]
-    exact rank_mul_eq_iff_injOn.mp h
+    rw [Matrix.rank_mul_eq_iff_injOn, hQY]
+    exact Matrix.rank_mul_eq_iff_injOn.mp h
   have hP : rangeProjector (A * Ω) = Q * Qᴴ := by
     rw [← rangeProjector_inj.mpr hQY, hQ.rangeProjector_eq]
   have hG : generalizedNystrom A Ω Ψ = Q * sketchAndSolve Q Ψᴴ A :=

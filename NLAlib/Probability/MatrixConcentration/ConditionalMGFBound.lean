@@ -108,12 +108,6 @@ end HasCondMatrixMGFBound
 
 /-! ### Helpers -/
 
-/-- The trace exponential of a Hermitian matrix is nonnegative. -/
-private theorem re_trace_exp_nonneg {M : Matrix n n 𝕜} (hM : M.IsHermitian) :
-    0 ≤ RCLike.re (exp M).trace := by
-  rw [hM.re_trace_exp]
-  exact Finset.sum_nonneg fun _ _ => (Real.exp_pos _).le
-
 omit [Fintype n] [DecidableEq n] in
 /-- Conditional expectations are monotone on an $m$-measurable set. -/
 private theorem ae_condExp_le_condExp_of_mem (hm : m ≤ mΩ) {f g : Ω → ℝ} (hf : Integrable f μ)
@@ -188,7 +182,7 @@ private theorem ae_condExp_re_trace_exp_add_le_exp_mul (hm : m ≤ mΩ) {H X : �
     have h := re_trace_exp_le_exp_specNorm_sub_mul (hHω.add hXω) (hp.add hXω)
     rw [add_sub_add_right_eq_sub, specNorm_eq_norm] at h
     exact h.trans (mul_le_mul_of_nonneg_right (Real.exp_le_exp.mpr (le_of_lt hωC))
-      (re_trace_exp_nonneg (hp.add hXω)))
+      ((hp.add hXω).re_trace_exp_nonneg))
   filter_upwards [ae_condExp_le_condExp_of_mem hm hi (hip.const_mul (Real.exp δ)) hC hpt,
     condExp_smul (m := m) (Real.exp δ) (fun ω => RCLike.re (exp (p + X ω)).trace)]
     with ω h hs hωC
@@ -226,7 +220,7 @@ theorem condExp_re_trace_exp_add_le (hm : m ≤ mΩ) {H X : Ω → Matrix n n �
   swap
   · rw [condExp_of_not_integrable hi]
     filter_upwards [hH] with ω hω
-    exact re_trace_exp_nonneg (hω.add (cfc_predicate Real.log _))
+    exact (hω.add (cfc_predicate Real.log _)).re_trace_exp_nonneg
   let S := {A : Matrix n n 𝕜 // A.IsHermitian}
   have : Nonempty S := ⟨⟨0, Matrix.isHermitian_zero⟩⟩
   let u : ℕ → Matrix n n 𝕜 := fun j => (TopologicalSpace.denseSeq S j).1
@@ -260,7 +254,7 @@ theorem condExp_re_trace_exp_add_le (hm : m ≤ mΩ) {H X : Ω → Matrix n n �
         mul_le_mul_of_nonneg_left (hJω j) (Real.exp_pos _).le
       _ ≤ Real.exp (δ k) * (Real.exp (δ k) * R) :=
         mul_le_mul_of_nonneg_left (hrev.trans (mul_le_mul_of_nonneg_right
-          (Real.exp_le_exp.mpr hj.le) (re_trace_exp_nonneg (hHω.add hL)))) (Real.exp_pos _).le
+          (Real.exp_le_exp.mpr hj.le) (hHω.add hL).re_trace_exp_nonneg)) (Real.exp_pos _).le
       _ = Real.exp (2 * δ k) * R := by rw [← mul_assoc, ← Real.exp_add, two_mul]
   have hδ : Tendsto δ atTop (𝓝 0) := tendsto_one_div_add_atTop_nhds_zero_nat
   have hlim : Tendsto (fun k => Real.exp (2 * δ k) * R) atTop (𝓝 R) := by
@@ -335,14 +329,6 @@ theorem hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (hm : m ≤ mΩ) {X : Ω 
   rw [h2', h3', h4', h5', condExp_const hm, h6, Pi.zero_apply, smul_zero, add_zero] at h1
   exact h1.trans (Matrix.IsHermitian.one_add_le_exp ((IsSelfAdjoint.all c).smul h7))
 
-/-- The exponential of a function of a Hermitian matrix. -/
-private theorem exp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian) (f : ℝ → ℝ) :
-    exp (cfc f B) = cfc (fun x => Real.exp (f x)) B := by
-  have hH : (cfc f B).IsHermitian := cfc_predicate f B
-  rw [hH.exp_eq_cfc]
-  exact (cfc_comp' Real.exp f B ((B.finite_real_spectrum.image _).continuousOn _)
-    (B.finite_real_spectrum.continuousOn _) hB).symm
-
 omit [IsProbabilityMeasure μ] in
 /-- **The bridge from Mathlib's conditionally sub-Gaussian scalars**: if $\gamma$ has a
 conditionally sub-Gaussian moment generating function with proxy $c$ (Mathlib's
@@ -371,7 +357,7 @@ theorem hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF [StandardBorelSpace 
     B.finite_real_spectrum.continuousOn g
   have hexp : ∀ (θ : ℝ) (ω : Ω),
       exp (θ • γ ω • B) = cfc (fun x => Real.exp (θ * γ ω * x)) B := fun θ ω => by
-    rw [smul_smul, ← exp_cfc hB, cfc_const_mul _ (fun x => x) B (hcont _), cfc_id' ℝ B hsa]
+    rw [smul_smul, ← hB.exp_cfc, cfc_const_mul _ (fun x => x) B (hcont _), cfc_id' ℝ B hsa]
   have hf : ∀ θ x : ℝ, Integrable (fun ω => Real.exp (θ * γ ω * x)) μ := fun θ x => by
     refine (hγ.integrable_exp_mul (θ * x)).congr (ae_of_all _ fun ω => ?_)
     simp only
@@ -397,7 +383,7 @@ theorem hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF [StandardBorelSpace 
       congr 1
       ring
     filter_upwards [hB.condExp_cfc (m := m) (hf θ), hsub] with ω' h1 h2
-    rw [h1, hR, exp_cfc hB]
+    rw [h1, hR, hB.exp_cfc]
     refine cfc_mono (fun x hx => ?_) (hcont _) (hcont _)
     have hsp := (hB.spectrum_subset_iff (s := {x | μ[fun ω => Real.exp (θ * γ ω * x) | m] ω' ≤
       Real.exp (θ ^ 2 / 2 * ((c : ℝ) * x ^ 2))})).mpr fun i hi => h2 ⟨i, hi⟩

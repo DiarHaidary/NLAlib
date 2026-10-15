@@ -65,9 +65,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {Ω : Type*} {mΩ : MeasurableSpace Ω} {�
 /-- The error of the randomized SVD is a measurable function of the test matrix. -/
 private theorem measurable_sub_rsvd (A : Matrix m n 𝕜) :
     Measurable fun Ω : Matrix n l 𝕜 => A - rsvd A Ω :=
-  measurable_const.matrix_sub
-    ((measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)).matrix_mul
-      measurable_const)
+  measurable_const.matrix_sub (measurable_rsvd A)
 
 /-- A bounded measurable function of a measurable random matrix is integrable. -/
 private theorem integrable_comp_of_abs_le {p q : Type*} [IsFiniteMeasure μ]
@@ -75,13 +73,6 @@ private theorem integrable_comp_of_abs_le {p q : Type*} [IsFiniteMeasure μ]
     (C : ℝ) (hC : ∀ M, |g M| ≤ C) : Integrable (fun ω => g (Z ω)) μ :=
   Integrable.of_bound (hg.comp_aemeasurable hZ).aestronglyMeasurable C
     (Filter.Eventually.of_forall fun ω => by rw [Real.norm_eq_abs]; exact hC (Z ω))
-
-/-- The singular values of the error of the randomized SVD are at most those of $\mathbf{A}$. -/
-private theorem singularValues_sub_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (i : ℕ) :
-    singularValues (A - rsvd A Ω) i ≤ singularValues A i := by
-  classical
-  rw [sub_rsvd]
-  exact singularValues_one_sub_rangeProjector_mul_le (A * Ω) A i
 
 /-- Every unitarily invariant norm of the error of the randomized SVD is at most that of
 $\mathbf{A}$. -/
@@ -189,9 +180,7 @@ theorem integrable_frobNorm_sub_truncatedSVD_rsvd_sq [IsFiniteMeasure μ] (A : M
         (Fintype.card n)), singularValues (rsvd A Ω) i ^ 2 := by
     funext Ω
     rw [frobNorm_sub_truncatedSVD_rsvd_sq, frobNorm_sub_truncatedSVD_sq]
-  have hr : Measurable fun Ω : Matrix n l 𝕜 => rsvd A Ω :=
-    (measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)).matrix_mul
-      measurable_const
+  have hr : Measurable fun Ω : Matrix n l 𝕜 => rsvd A Ω := measurable_rsvd A
   have hg : Measurable fun Ω : Matrix n l 𝕜 => frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 := by
     rw [he]
     exact ((measurable_frobNorm.comp (measurable_sub_rsvd A)).pow_const 2).add

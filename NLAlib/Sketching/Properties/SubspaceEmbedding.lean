@@ -107,12 +107,6 @@ private theorem posSemidef_conjTranspose_mul_self (U : Matrix n p 𝕜) : (Uᴴ 
   simpa only [Matrix.mul_one] using
     (Matrix.PosSemidef.one (n := n) (R := 𝕜)).conjTranspose_mul_mul_same' U
 
-/-- Scaling by a nonnegative real is monotone in the Loewner order. -/
-private theorem smul_le_smul {G H : Matrix p p 𝕜} (h : G ≤ H) {c : ℝ} (hc : 0 ≤ c) :
-    c • G ≤ c • H := by
-  rw [Matrix.le_iff, ← smul_sub]
-  exact (Matrix.le_iff.mp h).smul hc
-
 /-- Real multiples of a Gram matrix are ordered as their scalars. -/
 private theorem smul_gram_le_smul_gram (U : Matrix n p 𝕜) {c d : ℝ} (h : c ≤ d) :
     c • (Uᴴ * U) ≤ d • (Uᴴ * U) := by
@@ -312,14 +306,14 @@ theorem IsSubspaceEmbedding.mul_right [Fintype p] (h : IsSubspaceEmbedding S U a
 theorem IsSubspaceInjection.smul (h : IsSubspaceInjection S U a) (c : 𝕜) :
     IsSubspaceInjection (c • S) U (‖c‖ ^ 2 * a) := by
   rw [IsSubspaceInjection, Matrix.smul_mul, conjTranspose_smul_mul_smul, mul_smul]
-  exact smul_le_smul h (sq_nonneg _)
+  exact smul_le_smul_of_nonneg h (sq_nonneg _)
 
 /-- Scaling the sketch by $c$ scales both embedding constants by $\lvert c \rvert^2$. -/
 theorem IsSubspaceEmbedding.smul (h : IsSubspaceEmbedding S U a b) (c : 𝕜) :
     IsSubspaceEmbedding (c • S) U (‖c‖ ^ 2 * a) (‖c‖ ^ 2 * b) := by
   refine ⟨h.lower.smul c, ?_⟩
   rw [Matrix.smul_mul, conjTranspose_smul_mul_smul, mul_smul]
-  exact smul_le_smul h.upper (sq_nonneg _)
+  exact smul_le_smul_of_nonneg h.upper (sq_nonneg _)
 
 /-- Scaling the sketch by a real $c$ scales the injection constant by $c^2$: the form a
 sketching family normalised by $1/\sqrt{\lvert k \rvert}$ uses. -/
@@ -341,7 +335,7 @@ $\mathbf{S}_2\mathbf{S}$ injects $\operatorname{range}\mathbf{U}$ with constant 
 theorem IsSubspaceInjection.mul {S₂ : Matrix l k 𝕜} (h₂ : IsSubspaceInjection S₂ (S * U) a₂)
     (h : IsSubspaceInjection S U a) (ha₂ : 0 ≤ a₂) : IsSubspaceInjection (S₂ * S) U (a₂ * a) := by
   rw [IsSubspaceInjection, mul_smul, Matrix.mul_assoc S₂ S U]
-  exact (smul_le_smul h ha₂).trans h₂
+  exact (smul_le_smul_of_nonneg h ha₂).trans h₂
 
 /-- **Composition of subspace embeddings**: if $\mathbf{S}$ embeds
 $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ and $\mathbf{S}_2$ embeds
@@ -352,7 +346,7 @@ theorem IsSubspaceEmbedding.mul {S₂ : Matrix l k 𝕜} (h₂ : IsSubspaceEmbed
     IsSubspaceEmbedding (S₂ * S) U (a₂ * a) (b₂ * b) := by
   refine ⟨h₂.lower.mul h.lower ha₂, ?_⟩
   rw [mul_smul, Matrix.mul_assoc S₂ S U]
-  exact h₂.upper.trans (smul_le_smul h.upper hb₂)
+  exact h₂.upper.trans (smul_le_smul_of_nonneg h.upper hb₂)
 
 /-- **A factor with orthonormal columns moves to the subspace**: for $\mathbf{B}$ with orthonormal
 columns, $\mathbf{A}\mathbf{B}$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with

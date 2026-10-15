@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.Probability.MatrixConcentration.Subadditivity
 
 /-!
@@ -197,14 +198,6 @@ theorem measure_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iInd
     _ = Fintype.card n * Real.exp (-θ * t + g θ * eigenvalue (∑ k, A k) 0) := by
         rw [Real.exp_add]
         ring
-
-/-- An almost surely positive integrable function has a positive mean. -/
-private theorem integral_pos_of_ae_pos [IsProbabilityMeasure μ] {f : Ω → ℝ} (hf : Integrable f μ)
-    (hpos : ∀ᵐ ω ∂μ, 0 < f ω) : 0 < ∫ ω, f ω ∂μ := by
-  rw [integral_pos_iff_support_of_nonneg_ae (hpos.mono fun _ h => h.le) hf,
-    measure_congr (Filter.eventuallyEq_univ.2 (hpos.mono fun _ h => h.ne') :
-      Function.support f =ᵐ[μ] Set.univ), measure_univ]
-  exact one_pos
 
 /-- **The master bound for the mean**: for independent integrable summands with matrix MGF bounds,
 $\theta \in s$ and $\theta > 0$,

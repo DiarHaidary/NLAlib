@@ -330,3 +330,9 @@ JL).
 names and statements. Its private `norm_mulVec_of_hasOrthonormalCols` is replaced by the existing
 `HasOrthonormalCols.norm_toLp_mulVec`, and the unit-vector reduction of the JL file is public as
 `exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq` (also used by `Gaussian.lean`).
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: `exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq` moves from
+  `Sketching/Properties/JohnsonLindenstrauss.lean` to `Matrix/Basic/Orthonormal.lean` (a
+  deterministic normalisation identity), name unchanged.

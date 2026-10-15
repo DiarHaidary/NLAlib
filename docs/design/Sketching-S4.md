@@ -500,3 +500,13 @@ S4's private helpers, or joined S4's files, after S4 closed.
   private `measureReal_not_isSubspaceEmbedding_zero` is replaced by
   `hasSubspaceEmbedding_of_rank_eq_zero` (`FixedSubspace.lean`). `RowSampling.lean`'s docstrings
   are in LaTeX (CONTRIBUTING §6, item 5).
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15 (maintainer; reverses D15 and Q9): `Leverage.lean` moves to
+  `NLAlib/Matrix/Subspaces/Leverage.lean`, since leverage scores are deterministic matrix analysis,
+  and gains `RowSampling.lean`'s domination lemmas `exists_hasOrthonormalCols_of_leverageScore_le`,
+  `rank_le_of_leverageScore_le`, `leverageScore_le_mul_const_inv_card`,
+  `pos_of_leverageScore_le_mul_inv_card`; `inv_mul_smul_vecMulVec_star_self_le` moves to
+  `Matrix/Norms/Loewner.lean`; `sum_const_inv_card` moves to `ForMathlib/Data/NNReal/Basic.lean` as
+  `NNReal.sum_const_inv_card` (deprecated alias `NLAlib.sum_const_inv_card`). Other names unchanged.

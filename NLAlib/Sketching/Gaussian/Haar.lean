@@ -40,8 +40,6 @@ hence `[Nonempty k]` on isotropy and the moments. Design: `docs/design/Sketching
 ## Main results
 
 * `NLAlib.isIsotropicSketch_of_hasLaw_haarFrame`, `NLAlib.ae_specNorm_eq_of_hasLaw_haarFrame`.
-* `NLAlib.conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul`: the Gram matrix of the
-  sketch on $\mathbf{U}$.
 * `NLAlib.hasLaw_conjTranspose_mul_self_mul_of_hasLaw_haarFrame`: the Gaussian transfer.
 * `NLAlib.ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`: the upper half.
 * `NLAlib.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq`: exact at
@@ -68,21 +66,6 @@ private theorem sqrt_mul_sqrt_card_div :
     √(Fintype.card n / Fintype.card k : ℝ) * √(Fintype.card n / Fintype.card k : ℝ) =
       (Fintype.card n / Fintype.card k : ℝ) :=
   Real.mul_self_sqrt (by positivity)
-
-omit [DecidableEq k] [Fintype p] in
-/-- **The Gram matrix of the Haar sketch** on $\mathbf{U}$, for any $\mathbf{M}$ in place of the
-frame: with $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert} \, \mathbf{M}^{\mathsf{H}}$,
-$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U}) = (\lvert n \rvert / \lvert k \rvert)
-\, \mathbf{U}^{\mathsf{H}} (\mathbf{M}\mathbf{M}^{\mathsf{H}}) \mathbf{U}$. -/
-theorem conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul (M : Matrix n k ℝ)
-    (U : Matrix n p ℝ) :
-    (√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ * U)ᴴ *
-        (√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ * U) =
-      (Fintype.card n / Fintype.card k : ℝ) • (Uᴴ * (M * Mᴴ) * U) := by
-  rw [Matrix.smul_mul, Matrix.conjTranspose_smul, star_trivial, Matrix.smul_mul,
-    Matrix.mul_smul, smul_smul, sqrt_mul_sqrt_card_div, Matrix.conjTranspose_mul,
-    Matrix.conjTranspose_conjTranspose]
-  simp only [Matrix.mul_assoc]
 
 omit [DecidableEq k] in
 /-- The squared length of $\mathbf{S}\mathbf{x}$: $\|\mathbf{S}\mathbf{x}\|^2

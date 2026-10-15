@@ -1018,3 +1018,14 @@ and `check_latex.mjs` pass.
   hypothesis on $\mathbf{X}$ is used. The PSD rank lemma goes through
   $\mathbf{A}^{1/2}$ and `Matrix.rank_conjTranspose_mul_self`. Superadditivity and Nyström helps
   are pointwise from the variational form.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15 (maintainer): `sketchAndSolve`, `mul_sketchAndSolve`,
+  `sketchAndSolve_eq_pinv_mul_add` and `HasOrthonormalCols.sketchAndSolve_eq_add` move from
+  `Matrix/Subspaces/ObliqueProjector.lean` to `Matrix/Pseudoinverse/LeastSquares.lean` (their topic
+  is least squares; `ObliqueProjector.lean` points to them), names unchanged;
+  `rank_mul_eq_iff_injOn` moves to `ForMathlib/LinearAlgebra/Matrix/Rank.lean` as
+  `Matrix.rank_mul_eq_iff_injOn` over any field (deprecated alias `NLAlib.rank_mul_eq_iff_injOn`),
+  beside the formerly private row-space companion, now public as
+  `Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq`.

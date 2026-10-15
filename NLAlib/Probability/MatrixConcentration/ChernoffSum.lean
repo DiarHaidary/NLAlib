@@ -64,14 +64,6 @@ private theorem chernoff_sum_hyps (hind : iIndepFun X μ) (hXm : ∀ k, AEMeasur
   filter_upwards [ae_all_iff.2 fun k => hpsd k] with ω hω
   exact isSelfAdjoint_sum _ fun k _ => (hω k).isHermitian
 
-/-- An almost surely positive integrable function has a positive mean. -/
-private theorem integral_pos_of_ae_pos [IsProbabilityMeasure μ] {f : Ω → ℝ} (hf : Integrable f μ)
-    (hpos : ∀ᵐ ω ∂μ, 0 < f ω) : 0 < ∫ ω, f ω ∂μ := by
-  rw [integral_pos_iff_support_of_nonneg_ae (hpos.mono fun _ h => h.le) hf,
-    measure_congr (Filter.eventuallyEq_univ.2 (hpos.mono fun _ h => h.ne') :
-      Function.support f =ᵐ[μ] Set.univ), measure_univ]
-  exact one_pos
-
 /-- **Matrix Chernoff, upper tail**: for finitely many independent, almost everywhere measurable
 random matrices with $\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
 $\mu_{\max} = \lambda_0(\sum_k \mathbb{E}\mathbf{X}_k)$ and $\delta \ge 0$,

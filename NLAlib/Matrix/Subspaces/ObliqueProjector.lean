@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Rank
 public import NLAlib.Matrix.Pseudoinverse.Pinv
 public import NLAlib.Matrix.Norms.UnitarilyInvariant
 
@@ -18,7 +19,7 @@ values of the least-squares problem
 $\min_{\mathbf{C}} \|\mathbf{S}(\mathbf{X}\mathbf{C} - \mathbf{B})\|_{\mathsf{F}}$, as a matrix
 acting on $\mathbf{B}$. It is defined for every shape and rank and is always idempotent. It projects
 onto $\operatorname{range}\mathbf{X}$ exactly when the sketch keeps the rank of $\mathbf{X}$,
-written `(S * X).rank = X.rank` in every statement (`NLAlib.rank_mul_eq_iff_injOn`: $\mathbf{S}$ is
+written `(S * X).rank = X.rank` in every statement (`Matrix.rank_mul_eq_iff_injOn`: $\mathbf{S}$ is
 injective on $\operatorname{range}\mathbf{X}$). Randomized SVD, generalized Nyström and
 sketch-and-solve are all this projector applied to a matrix
 (`NLAlib.Matrix.Factorizations.SketchedLowRank`).
@@ -27,9 +28,10 @@ The exact error split: under the rank hypothesis,
 $$(\mathbf{I} - \mathbf{\Pi})\mathbf{B} = (\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{B} -
 \mathbf{\Pi}(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{B}$$
 with orthogonal terms, so the squared Frobenius error is the orthogonal-projection error plus a
-sketched term, and the Gram matrices add. `NLAlib.sketchAndSolve A S B` is the sketched
-least-squares solution $(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$ and
-$\mathbf{A}\hat{\mathbf{X}} = \mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$.
+sketched term, and the Gram matrices add. The sketched least-squares solution
+`NLAlib.sketchAndSolve A S B`, with
+$\mathbf{A}\hat{\mathbf{X}} = \mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$
+(`NLAlib.mul_sketchAndSolve`), is in `NLAlib.Matrix.Pseudoinverse.LeastSquares`.
 
 Degenerate cases: for $\mathbf{S}\mathbf{X} = \mathbf{0}$ (empty `k`, $\mathbf{S} = \mathbf{0}$,
 $\mathbf{X} = \mathbf{0}$, empty `r`) the projector is $\mathbf{0}$, and the rank hypothesis holds
@@ -40,11 +42,9 @@ range of $\mathbf{X}$. Design: `docs/design/LowRank-S0.md` §3.1, §8.
 ## Main definitions
 
 * `NLAlib.obliqueProjector`: $\mathbf{X}(\mathbf{S}\mathbf{X})^{+}\mathbf{S}$.
-* `NLAlib.sketchAndSolve`: $(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$.
 
 ## Main results
 
-* `NLAlib.rank_mul_eq_iff_injOn`: the rank hypothesis is injectivity on the range.
 * `NLAlib.isIdempotentElem_obliqueProjector`, `NLAlib.rank_obliqueProjector`,
   `NLAlib.obliqueProjector_mul_self_iff`, `NLAlib.range_obliqueProjector`: the projector.
 * `NLAlib.obliqueProjector_eq_of_range_eq`: it depends on $\mathbf{X}$ only through its range.
@@ -57,8 +57,6 @@ range of $\mathbf{X}$. Design: `docs/design/LowRank-S0.md` §3.1, §8.
   `NLAlib.frobNorm_one_sub_obliqueProjector_mul_sq`,
   `NLAlib.SymmetricGauge.matrixNorm_conjTranspose_mul_self_one_sub_obliqueProjector_mul_le`: the
   exact error split.
-* `NLAlib.mul_sketchAndSolve`, `NLAlib.sketchAndSolve_eq_pinv_mul_add`,
-  `NLAlib.HasOrthonormalCols.sketchAndSolve_eq_add`: sketch-and-solve and its core noise.
 -/
 
 @[expose] public section
@@ -93,38 +91,6 @@ noncomputable def obliqueProjector (X : Matrix m r 𝕜) (S : Matrix k m 𝕜) :
   X * pinv (S * X) * S
 
 variable {X : Matrix m r 𝕜} {S : Matrix k m 𝕜}
-
-omit [Fintype k] in
-/-- **The rank interface**: the sketch $\mathbf{S}$ keeps the rank of $\mathbf{X}$,
-$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$, exactly when it is
-injective on $\operatorname{range}\mathbf{X}$. This is the form `NLAlib.IsSubspaceInjection.injOn`
-concludes. -/
-theorem rank_mul_eq_iff_injOn :
-    (S * X).rank = X.rank ↔ Set.InjOn S.mulVec (LinearMap.range X.mulVecLin) := by
-  set V := LinearMap.range X.mulVecLin
-  set g := S.mulVecLin.domRestrict V
-  have hr : LinearMap.range g = LinearMap.range (S * X).mulVecLin := by
-    rw [LinearMap.range_domRestrict, Matrix.mulVecLin_mul, LinearMap.range_comp]
-  have hn := LinearMap.finrank_range_add_finrank_ker g
-  rw [hr] at hn
-  have hinj : Set.InjOn S.mulVec V ↔ Function.Injective g := by
-    constructor
-    · intro h a b hab
-      exact Subtype.ext (h a.2 b.2 (by simpa [g] using hab))
-    · intro h a ha b hb hab
-      exact congrArg Subtype.val (@h ⟨a, ha⟩ ⟨b, hb⟩ (by simpa [g] using hab))
-  rw [hinj, ← LinearMap.ker_eq_bot, ← Submodule.finrank_eq_zero]
-  change Module.finrank 𝕜 (LinearMap.range (S * X).mulVecLin) = Module.finrank 𝕜 V ↔ _
-  omega
-
-/-- Under the rank hypothesis the row space of $\mathbf{S}\mathbf{X}$ is the row space of
-$\mathbf{X}$. -/
-private theorem range_conjTranspose_mul_eq (h : (S * X).rank = X.rank) :
-    LinearMap.range (S * X)ᴴ.mulVecLin = LinearMap.range Xᴴ.mulVecLin := by
-  refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
-  · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨Sᴴ, Matrix.conjTranspose_mul S X⟩
-  · change (S * X)ᴴ.rank = Xᴴ.rank
-    rw [Matrix.rank_conjTranspose, Matrix.rank_conjTranspose, h]
 
 /-- The oblique projector is **idempotent**, for every basis and sketch:
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}^2 = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$. -/
@@ -180,7 +146,7 @@ theorem obliqueProjector_mul_self_iff :
       _ = (S * X).rank := rank_obliqueProjector X S
   · intro h
     have hP : rangeProjector (S * X)ᴴ = rangeProjector Xᴴ :=
-      rangeProjector_inj.mpr (range_conjTranspose_mul_eq h)
+      rangeProjector_inj.mpr (Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq h)
     calc obliqueProjector X S * X = X * (pinv (S * X) * (S * X)) := by
           simp only [obliqueProjector, Matrix.mul_assoc]
       _ = X := by rw [pinv_mul, hP, ← pinv_mul, ← Matrix.mul_assoc, mul_pinv_mul_self]
@@ -392,70 +358,9 @@ theorem SymmetricGauge.matrixNorm_conjTranspose_mul_self_one_sub_obliqueProjecto
   rw [conjTranspose_mul_self_one_sub_obliqueProjector_mul h B]
   exact Φ.matrixNorm_add_le _ _
 
-/-! ### Sketch-and-solve -/
+/-! ### Deprecated aliases -/
 
-section SketchAndSolve
-
-variable [Fintype n]
-
-/-- The **sketch-and-solve solution**
-$\hat{\mathbf{X}} = (\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$, the minimum-norm minimizer of
-$\|\mathbf{S}(\mathbf{A}\mathbf{X} - \mathbf{B})\|_{\mathsf{F}}$, column by column
-(`NLAlib.isLeastSquaresSolution_pinv_mulVec`). Total; its junk value is $\mathbf{0}$ when
-$\mathbf{S}\mathbf{A} = \mathbf{0}$. The argument order is system, sketch, right-hand side, as in
-`NLAlib.obliqueProjector`.
-[EpperlyWebber2026, §2]; there with $\mathbf{S} = \mathbf{\Omega}^{\mathsf{H}}$. -/
-noncomputable def sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜) :
-    Matrix n p 𝕜 :=
-  pinv (S * A) * (S * B)
-
-/-- The fitted values of sketch-and-solve are the oblique projection of the right-hand side:
-$\mathbf{A}\hat{\mathbf{X}} = \mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$. -/
-theorem mul_sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜) :
-    A * sketchAndSolve A S B = obliqueProjector A S * B := by
-  rw [sketchAndSolve, obliqueProjector]
-  simp only [Matrix.mul_assoc]
-
-/-- **Sketch-and-solve error decomposition**: when
-$\operatorname{rank}(\mathbf{S}\mathbf{A}) = \operatorname{rank}\mathbf{A}$,
-$$\hat{\mathbf{X}} = \mathbf{A}^{+}\mathbf{B} +
-(\mathbf{S}\mathbf{A})^{+}\mathbf{S}(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}\,:$$
-the sketched solution is the exact minimum-norm solution plus the sketch-and-solve solution for the
-optimal residual. This is the exact identity beside the bound `sketch-and-solve-ls`
-(`NLAlib.IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le`).
-[EpperlyWebber2026, Lemma 5.1, (5.1)]; there in a factorization $\mathbf{A} = \mathbf{Q}\mathbf{R}$,
-here basis-free.
-Result: sketch-and-solve-error-decomposition -/
-theorem sketchAndSolve_eq_pinv_mul_add [DecidableEq m] {A : Matrix m n 𝕜}
-    (h : (S * A).rank = A.rank) (B : Matrix m p 𝕜) :
-    sketchAndSolve A S B = pinv A * B + sketchAndSolve A S ((1 - rangeProjector A) * B) := by
-  have hP : rangeProjector (S * A)ᴴ = rangeProjector Aᴴ :=
-    rangeProjector_inj.mpr (range_conjTranspose_mul_eq h)
-  have key : pinv (S * A) * (S * (rangeProjector A * B)) = pinv A * B := by
-    calc pinv (S * A) * (S * (rangeProjector A * B))
-        = pinv (S * A) * (S * A) * pinv A * B := by
-          rw [← mul_pinv]
-          simp only [Matrix.mul_assoc]
-      _ = pinv A * B := by
-          rw [pinv_mul, hP, ← pinv_mul, pinv_mul_mul_pinv]
-  rw [sketchAndSolve, sketchAndSolve, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_sub,
-    Matrix.mul_sub, key]
-  abel
-
-/-- **Core noise**: for $\mathbf{Q}$ with orthonormal columns and
-$\operatorname{rank}(\mathbf{S}\mathbf{Q}) = \operatorname{rank}\mathbf{Q}$ (full column rank of
-$\mathbf{S}\mathbf{Q}$), the sketched core is the exact core plus noise,
-$$(\mathbf{S}\mathbf{Q})^{+}\mathbf{S}\mathbf{B} = \mathbf{Q}^{\mathsf{H}}\mathbf{B} +
-(\mathbf{S}\mathbf{Q})^{+}\mathbf{S}(\mathbf{I}-\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{B}\,.$$
-[TroppYurtseverUdellCevher2017, Lemma A.4]; [CamanoEpperlyMeyerTropp2025, Lemma 2.6]; there with a
-complement frame.
-Result: sketch-and-solve-error-decomposition -/
-theorem HasOrthonormalCols.sketchAndSolve_eq_add [Fintype q] [DecidableEq m] [DecidableEq q]
-    {Q : Matrix m q 𝕜} (hQ : HasOrthonormalCols Q) (h : (S * Q).rank = Q.rank)
-    (B : Matrix m p 𝕜) :
-    sketchAndSolve Q S B = Qᴴ * B + sketchAndSolve Q S ((1 - Q * Qᴴ) * B) := by
-  rw [sketchAndSolve_eq_pinv_mul_add h B, hQ.pinv_eq, hQ.rangeProjector_eq]
-
-end SketchAndSolve
+@[deprecated Matrix.rank_mul_eq_iff_injOn (since := "2026-10-15")]
+alias rank_mul_eq_iff_injOn := Matrix.rank_mul_eq_iff_injOn
 
 end NLAlib

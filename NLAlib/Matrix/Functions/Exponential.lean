@@ -25,7 +25,8 @@ the largest eigenvalue, and its behaviour under shifts and unitary conjugation.
 
 ## Main results
 
-* `Matrix.IsHermitian.exp_eq_cfc`: the bridge.
+* `Matrix.IsHermitian.exp_eq_cfc`: the bridge; `Matrix.IsHermitian.exp_cfc`:
+  $\exp(f(\mathbf{A})) = (e^{f})(\mathbf{A})$.
 * `Matrix.IsHermitian.posDef_exp`, `Matrix.IsHermitian.cfc_log_exp`, `Matrix.PosDef.exp_cfc_log`.
 * `Matrix.IsHermitian.one_add_le_exp`.
 * `NLAlib.specNorm_exp_le`: $\|\exp(\mathbf{A})\|_2 \le e^{\|\mathbf{A}\|_2}$ for every square
@@ -35,7 +36,8 @@ the largest eigenvalue, and its behaviour under shifts and unitary conjugation.
   $\|\exp(\sum_k \mathbf{A}_k)\|_2 \le \prod_k \|\exp(\mathbf{A}_k)\|_2$ for Hermitian
   $\mathbf{A}_k$.
 * `Matrix.IsHermitian.re_trace_exp`:
-  $\operatorname{tr} \exp(\mathbf{A}) = \sum_i e^{\lambda_i(\mathbf{A})}$.
+  $\operatorname{tr} \exp(\mathbf{A}) = \sum_i e^{\lambda_i(\mathbf{A})}$;
+  `Matrix.IsHermitian.re_trace_exp_nonneg`, `Matrix.IsHermitian.re_trace_exp_pos`: its sign.
 * `Matrix.IsHermitian.exp_eigenvalue_zero_le_re_trace_exp`:
   $e^{\lambda_0(\mathbf{A})} \le \operatorname{tr} \exp(\mathbf{A})$.
 * `Matrix.IsHermitian.re_trace_exp_le_card_mul_exp`:
@@ -112,6 +114,15 @@ theorem _root_.Matrix.IsHermitian.exp_eq_cfc {A : Matrix n n 𝕜} (hA : A.IsHer
   rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU Real.exp]
   conv_lhs => rw [hAU]
   exact exp_mul_diagonal_mul_conjTranspose hU hr _
+
+/-- The exponential of a function of a Hermitian matrix is the function composed with the real
+exponential: $\exp(f(\mathbf{B})) = (e^{f})(\mathbf{B})$, in terms of `cfc`. -/
+theorem _root_.Matrix.IsHermitian.exp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian) (f : ℝ → ℝ) :
+    exp (cfc f B) = cfc (fun x => Real.exp (f x)) B := by
+  have hH : (cfc f B).IsHermitian := cfc_predicate f B
+  rw [hH.exp_eq_cfc]
+  exact (cfc_comp' Real.exp f B ((B.finite_real_spectrum.image _).continuousOn _)
+    (B.finite_real_spectrum.continuousOn _) hB).symm
 
 /-- A scalar shift factors out of the exponential:
 $\exp(\mathbf{A} + t\mathbf{I}) = e^t \exp(\mathbf{A})$ for real $t$. -/
@@ -320,6 +331,14 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_pos [Nonempty n] {A : Matrix n n 
   rw [hA.re_trace_exp]
   exact Finset.sum_pos (fun i _ => Real.exp_pos _)
     (Finset.nonempty_range_iff.mpr Fintype.card_ne_zero)
+
+/-- The trace exponential of a Hermitian matrix is nonnegative, for every size:
+$\operatorname{Re} \operatorname{tr} \exp(\mathbf{A}) \ge 0$ (`0` for an empty index type;
+`Matrix.IsHermitian.re_trace_exp_pos` for positive size). -/
+theorem _root_.Matrix.IsHermitian.re_trace_exp_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    0 ≤ RCLike.re (exp A).trace := by
+  rw [hA.re_trace_exp]
+  exact Finset.sum_nonneg fun _ _ => (Real.exp_pos _).le
 
 /-- **The largest eigenvalue is controlled by the trace exponential**: for Hermitian $\mathbf{A}$
 of positive size,

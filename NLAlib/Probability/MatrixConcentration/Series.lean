@@ -47,14 +47,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-! ### Helpers -/
 
-/-- The exponential of a function of a Hermitian matrix. -/
-private theorem exp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian) (g : ℝ → ℝ) :
-    exp (cfc g B) = cfc (fun x => Real.exp (g x)) B := by
-  have hH : (cfc g B).IsHermitian := cfc_predicate g B
-  rw [hH.exp_eq_cfc]
-  exact (cfc_comp' Real.exp g B ((B.finite_real_spectrum.image _).continuousOn _)
-    (B.finite_real_spectrum.continuousOn _) hB).symm
-
 /-- A sub-Gaussian coefficient times a fixed Hermitian matrix has a matrix MGF bound: if $\gamma$
 has proxy $c$, then $\mathbb{E} e^{\theta \gamma \mathbf{B}} \preceq e^{(\theta^2/2)\, c
 \mathbf{B}^2}$ for every real $\theta$. -/
@@ -66,7 +58,7 @@ theorem hasMatrixMGFBound_smul_of_hasSubgaussianMGF {γ : Ω → ℝ} {c : ℝ�
     B.finite_real_spectrum.continuousOn g
   have hexp : ∀ (θ : ℝ) (ω : Ω),
       exp (θ • γ ω • B) = cfc (fun x => Real.exp (θ * γ ω * x)) B := fun θ ω => by
-    rw [smul_smul, ← exp_cfc hB, cfc_const_mul _ (fun x => x) B (hcont _), cfc_id' ℝ B hsa]
+    rw [smul_smul, ← hB.exp_cfc, cfc_const_mul _ (fun x => x) B (hcont _), cfc_id' ℝ B hsa]
   have hf : ∀ θ x : ℝ, Integrable (fun ω => Real.exp (θ * γ ω * x)) μ := fun θ x => by
     refine (hγ.integrable_exp_mul (θ * x)).congr (ae_of_all _ fun ω => ?_)
     simp only
@@ -81,7 +73,7 @@ theorem hasMatrixMGFBound_smul_of_hasSubgaussianMGF {γ : Ω → ℝ} {c : ℝ�
         cfc (fun x : ℝ => θ ^ 2 / 2 * ((c : ℝ) * x ^ 2)) B := by
       rw [cfc_const_mul _ _ B (hcont _), cfc_const_mul _ _ B (hcont _),
         cfc_pow (fun x : ℝ => x) 2 B (hcont _) hsa, cfc_id' ℝ B hsa]
-    rw [hR, exp_cfc hB]
+    rw [hR, hB.exp_cfc]
     refine cfc_mono (fun x _ => ?_) (hcont _) (hcont _)
     have hm := hγ.mgf_le (θ * x)
     have he : ∫ ω, Real.exp (θ * γ ω * x) ∂μ = mgf γ μ (θ * x) := by

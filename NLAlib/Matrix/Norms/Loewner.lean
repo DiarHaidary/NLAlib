@@ -41,6 +41,10 @@ action, `(a : ℝ) • (1 : Matrix n n 𝕜)`.
 * `NLAlib.isHermitian_of_le_smul_one`, `NLAlib.isHermitian_of_smul_one_le`,
   `NLAlib.smul_one_le_smul_one_iff`, `NLAlib.smul_one_le_diagonal_iff`: comparisons with
   multiples of the identity.
+* `NLAlib.smul_le_smul_of_nonneg`: scaling by $c \ge 0$ is monotone, for any index type.
+* `NLAlib.inv_mul_smul_vecMulVec_star_self_le`: a weighted rank-one matrix
+  $(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b}$ lies below $(L / c)\,\mathbf{I}$ when
+  $\|\mathbf{b}\|^2 \le L w$.
 -/
 
 @[expose] public section
@@ -428,5 +432,44 @@ trace: $\|\mathbf{A}\|_2 \le \operatorname{Re} \operatorname{tr} \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.specNorm_le_re_trace {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     specNorm A ≤ RCLike.re A.trace :=
   (specNorm_le_frobNorm A).trans hA.frobNorm_le_re_trace
+
+omit [Fintype n] in
+/-- Scaling by a nonnegative real is monotone in the Loewner order: $\mathbf{G} \preceq \mathbf{H}$
+and $c \ge 0$ give $c\,\mathbf{G} \preceq c\,\mathbf{H}$, for square matrices over any index type.
+Mathlib's `smul_le_smul_of_nonneg_left` gives it for a finite index type. -/
+theorem smul_le_smul_of_nonneg {G H : Matrix n n 𝕜} (h : G ≤ H) {c : ℝ} (hc : 0 ≤ c) :
+    c • G ≤ c • H := by
+  rw [Matrix.le_iff, ← smul_sub]
+  exact (Matrix.le_iff.mp h).smul hc
+
+open scoped NNReal in
+/-- **A Loewner bound on a weighted rank-one matrix** (the row-sampling atom bound). For
+$c \ge 0$ samples and a weight $w \ge 0$, the importance-weighted rank-one atom
+$(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b}$ of a row $\mathbf{b}$ (`vecMulVec (star b) b`)
+satisfies
+$(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b} \preceq (L / c)\,\mathbf{I}$ when
+$\|\mathbf{b}\|^2 \le L w$ and $L \ge 0$. Junk values: for $w = 0$ or $c = 0$ the atom is
+$\mathbf{0}$ (junk inverse) and the bound is $\mathbf{0} \preceq (L / c)\,\mathbf{I}$. It is the
+hypothesis `hle` of matrix Chernoff for row sampling, with or without replacement: with
+replacement at $c = \lvert k \rvert$, $\mathbf{b}$ the sampled row and $w$ its weight; without
+replacement at uniform weights. -/
+theorem inv_mul_smul_vecMulVec_star_self_le {r : Type*} [Fintype r] [DecidableEq r] {c L : ℝ}
+    {w : ℝ≥0} (hc : 0 ≤ c) (hL : 0 ≤ L) {b : r → 𝕜} (hb : ‖WithLp.toLp 2 b‖ ^ 2 ≤ L * w) :
+    (c * w)⁻¹ • Matrix.vecMulVec (star b) b ≤ (L / c) • (1 : Matrix r r 𝕜) := by
+  have hcw : (0 : ℝ) ≤ (c * w)⁻¹ := inv_nonneg.2 (mul_nonneg hc w.coe_nonneg)
+  have hpsd : ((c * w)⁻¹ • Matrix.vecMulVec (star b) b).PosSemidef :=
+    (Matrix.posSemidef_vecMulVec_star_self b).smul hcw
+  refine hpsd.isHermitian.le_smul_one_of_specNorm_le ?_
+  rw [specNorm_real_smul, specNorm_vecMulVec, EuclideanSpace.norm_toLp_star, abs_of_nonneg hcw,
+    ← sq]
+  rcases eq_or_ne w 0 with h0 | h0
+  · rw [h0, NNReal.coe_zero, mul_zero, inv_zero, zero_mul]
+    exact div_nonneg hL hc
+  have hpos : 0 < (w : ℝ) := lt_of_le_of_ne w.coe_nonneg (by exact_mod_cast h0.symm)
+  rcases hc.eq_or_lt with hk | hk
+  · rw [← hk, zero_mul, inv_zero, zero_mul, div_zero]
+  calc (c * w)⁻¹ * ‖WithLp.toLp 2 b‖ ^ 2 ≤ (c * w)⁻¹ * (L * w) :=
+        mul_le_mul_of_nonneg_left hb hcw
+    _ = L / c := by field_simp
 
 end NLAlib

@@ -5,7 +5,9 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.Matrix.Basic.Orthonormal
+public import NLAlib.Matrix.Basic.OrthonormalBasis
 public import NLAlib.Matrix.Basic.Projector
 public import NLAlib.Matrix.Subspaces.ProjectorPair
 
@@ -24,7 +26,8 @@ $\mathbf{A} = \mathbf{0}$).
 These are the quantities of the domination hypothesis `∀ i, leverageScore U i ≤ L * p i` of the
 row-sampling theorems (`NLAlib.Sketching.Sampling.RowSampling`): exact leverage sampling has
 $L = \operatorname{rank} \mathbf{U}$, uniform sampling has $L$ equal to the coherence of
-$\mathbf{U}$. Design: `docs/design/Sketching-S4.md` §3.1, §8.
+$\mathbf{U}$. Design: `docs/design/Sketching-S4.md` §3.1, §8 (moved from `Sketching/Sampling/` to
+the Matrix layer on 2026-10-15).
 
 ## Main definitions
 
@@ -41,6 +44,10 @@ $\mathbf{U}$. Design: `docs/design/Sketching-S4.md` §3.1, §8.
   `NLAlib.coherence_le_card`.
 * `NLAlib.sum_leverageScoreDistribution`,
   `NLAlib.leverageScore_le_rank_mul_leverageScoreDistribution`.
+* `NLAlib.exists_hasOrthonormalCols_of_leverageScore_le`, `NLAlib.rank_le_of_leverageScore_le`:
+  the reduction to orthonormal columns and the bound on the rank under a domination
+  $\ell_i(\mathbf{U}) \le L p_i$; `NLAlib.leverageScore_le_mul_const_inv_card`,
+  `NLAlib.pos_of_leverageScore_le_mul_inv_card`: domination by uniform weights.
 -/
 
 @[expose] public section
@@ -208,5 +215,65 @@ theorem leverageScore_le_rank_mul_leverageScoreDistribution (A : Matrix m n 𝕜
   rcases eq_or_ne (A.rank : ℝ) 0 with h | h
   · rw [leverageScore_eq_zero_of_rank_eq_zero (by exact_mod_cast h) i, zero_div, mul_zero]
   · rw [mul_div_cancel₀ _ h]
+
+/-! ### Domination by weights
+
+The hypothesis of the row-sampling theorems is a domination $\ell_i(\mathbf{U}) \le L p_i$ of the
+leverage scores by weights $p : n \to \mathbb{R}_{\ge 0}$. -/
+
+section Domination
+
+variable [Fintype r] {U : Matrix n r 𝕜} {p : n → ℝ≥0} {L : ℝ}
+
+/-- **Reduction to orthonormal columns.** Under the domination
+$\ell_i(\mathbf{U}) \le L p_i$ of the leverage scores of $\mathbf{U}$ (any shape and rank),
+there is a $\mathbf{Q}$ with $\operatorname{rank}\mathbf{U}$ orthonormal columns whose range
+contains that of $\mathbf{U}$ and whose rows inherit the domination,
+$\|\mathbf{q}_i\|^2 \le L p_i$. It reduces every fixed-$\mathbf{U}$ row-sampling tail, with or
+without replacement, to orthonormal columns, through `NLAlib.HasSubspaceEmbedding.of_range_le`. -/
+theorem exists_hasOrthonormalCols_of_leverageScore_le
+    (hdom : ∀ i, leverageScore U i ≤ L * p i) :
+    ∃ Q : Matrix n (Fin U.rank) 𝕜, HasOrthonormalCols Q ∧
+      LinearMap.range U.mulVecLin ≤ LinearMap.range Q.mulVecLin ∧
+      ∀ i, ‖WithLp.toLp 2 (Q i)‖ ^ 2 ≤ L * p i := by
+  obtain ⟨Q, hQ, hR⟩ := exists_hasOrthonormalCols_range_eq U (Fintype.card_fin _)
+  refine ⟨Q, hQ, hR.ge, fun i => ?_⟩
+  rw [← hQ.leverageScore_eq, leverageScore_eq_of_range_eq hR]
+  exact hdom i
+
+/-- Under leverage domination $\ell_i(\mathbf{U}) \le L p_i$ with weights summing to one, the
+rank is at most the domination constant: $\operatorname{rank}\mathbf{U} \le L$ (the leverage
+scores sum to the rank). It gives $L > 0$ for the Chernoff call when $\mathbf{U} \ne
+\mathbf{0}$. -/
+theorem rank_le_of_leverageScore_le (hp : ∑ i, p i = 1)
+    (hdom : ∀ i, leverageScore U i ≤ L * p i) : (U.rank : ℝ) ≤ L := by
+  calc (U.rank : ℝ) = ∑ i, leverageScore U i := (sum_leverageScore U).symm
+    _ ≤ ∑ i, L * p i := Finset.sum_le_sum fun i _ => hdom i
+    _ = L := by rw [← Finset.mul_sum, ← NNReal.coe_sum, hp, NNReal.coe_one, mul_one]
+
+/-- **Uniform weights, in the form of the sketch.** The domination
+$\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ by uniform weights, as stated by uniform sampling
+with and without replacement and the SRHT, is the domination $\ell_i(\mathbf{U}) \le L p_i$ at
+the weights $p_i = 1/\lvert n \rvert$ of `NLAlib.samplingSketch`. -/
+theorem leverageScore_le_mul_const_inv_card
+    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (i : n) :
+    leverageScore U i ≤ L * ((fun _ : n => (Fintype.card n : ℝ≥0)⁻¹) i : ℝ) := by
+  simp only [NNReal.coe_inv, NNReal.coe_natCast]
+  exact hdom i
+
+/-- Under domination by uniform weights, $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, a matrix
+of positive rank has $L > 0$ (`NLAlib.rank_le_of_leverageScore_le`). -/
+theorem pos_of_leverageScore_le_mul_inv_card
+    (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hd : 0 < U.rank) : 0 < L := by
+  have : Nonempty n := by
+    by_contra h
+    rw [not_nonempty_iff] at h
+    rw [show U = 0 from Matrix.ext fun i => isEmptyElim i, Matrix.rank_zero] at hd
+    exact lt_irrefl 0 hd
+  exact (Nat.cast_pos.2 hd).trans_le
+    (rank_le_of_leverageScore_le NNReal.sum_const_inv_card
+      (leverageScore_le_mul_const_inv_card hdom))
+
+end Domination
 
 end NLAlib

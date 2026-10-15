@@ -18,7 +18,7 @@ public import NLAlib.Sketching.Properties.Isotropic
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
 public import NLAlib.Sketching.Properties.Oblivious
 public import NLAlib.Sketching.Properties.TraceMoment
-public import NLAlib.Sketching.Sampling.Leverage
+public import NLAlib.Matrix.Subspaces.Leverage
 
 /-!
 # CountSketch
@@ -157,7 +157,7 @@ theorem isProbabilityMeasure_countSketch [Nonempty k] :
     IsProbabilityMeasure (countSketch (𝕜 := 𝕜) k n) := by
   let _ : MeasurableSpace k := ⊤
   have := isProbabilityMeasure_samplingMeasure (fun _ : k => (Fintype.card k : ℝ≥0)⁻¹)
-    sum_const_inv_card
+    NNReal.sum_const_inv_card
   exact Measure.isProbabilityMeasure_map measurable_countSketchMatrix.aemeasurable
 
 /-- The CountSketch law is the pushforward of i.i.d. uniform hash values and independent
@@ -317,7 +317,7 @@ private theorem measureReal_hashLaw_setOf_apply_eq_apply [MeasurableSpace k]
       exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp [samplingMeasure])
     rw [h0, Fintype.card_eq_zero, Nat.cast_zero, inv_zero, measureReal_zero_apply]
   · have hc : (Fintype.card k : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
-    rw [measureReal_pi_samplingMeasure_setOf_apply_eq_apply _ sum_const_inv_card hij]
+    rw [measureReal_pi_samplingMeasure_setOf_apply_eq_apply _ NNReal.sum_const_inv_card hij]
     have hc' : (Fintype.card k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
     simp only [NNReal.coe_inv, NNReal.coe_natCast, Finset.sum_const, Finset.card_univ,
       nsmul_eq_mul]
@@ -361,7 +361,7 @@ theorem isIsotropicSketch_of_hasLaw_countSketch [Nonempty k] [DecidableEq n]
     (hS : HasLaw S (countSketch k n) μ) : IsIsotropicSketch S μ := by
   let _ : MeasurableSpace k := ⊤
   have := isProbabilityMeasure_samplingMeasure (fun _ : k => (Fintype.card k : ℝ≥0)⁻¹)
-    sum_const_inv_card
+    NNReal.sum_const_inv_card
   refine isIsotropicSketch_iff.2 ⟨fun a i => ?_, fun x => ?_⟩
   · exact (memLp_two_iff_integrable_sq_norm
       ((Matrix.measurable_apply a i).comp_aemeasurable hS.aemeasurable).aestronglyMeasurable).2
@@ -690,12 +690,6 @@ private theorem conjTranspose_mul_mul_self_eq (A : Matrix k n 𝕜) (U : Matrix 
   rw [Matrix.conjTranspose_mul]
   simp only [Matrix.mul_assoc]
 
-omit [DecidableEq k] in
-/-- For orthonormal columns, $\|\mathbf{U}\|_{\mathsf{F}}^2 = \lvert r \rvert$. -/
-private theorem frobNorm_sq_eq_card_of_hasOrthonormalCols (hU : HasOrthonormalCols U) :
-    frobNorm U ^ 2 = Fintype.card r := by
-  rw [frobNorm_sq_eq_re_trace, show Uᴴ * U = 1 from hU, Matrix.trace_one, RCLike.natCast_re]
-
 /-- The squared Gram error of a CountSketch on the columns of any $\mathbf{U}$ is integrable. -/
 theorem integrable_frobNorm_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch
     (hS : HasLaw S (countSketch k n) μ) (U : Matrix n r 𝕜) :
@@ -739,7 +733,7 @@ theorem HasOrthonormalCols.integral_frobNorm_conjTranspose_mul_self_sub_one_sq_o
     ring
   simp only [e]
   rw [integral_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_countSketch hS U U,
-    frobNorm_sq_eq_card_of_hasOrthonormalCols hU]
+    hU.frobNorm_sq]
   simp only [hl]
   ring
 
@@ -765,7 +759,7 @@ theorem hasGramTraceMoment_of_hasLaw_countSketch (hS : HasLaw S (countSketch k n
     rw [hU.integral_frobNorm_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch hS]
     refine div_le_div_of_nonneg_right ?_ (Nat.cast_nonneg _)
     have h1 : frobNorm (Uᵀ * U) ^ 2 ≤ Fintype.card r := by
-      rw [← frobNorm_sq_eq_card_of_hasOrthonormalCols hU]
+      rw [← hU.frobNorm_sq]
       have h := frobNorm_mul_le_specNorm_mul_frobNorm Uᵀ U
       rw [specNorm_transpose] at h
       exact pow_le_pow_left₀ (frobNorm_nonneg _)

@@ -1148,3 +1148,12 @@ written proved (item 18). The two new files are not registered in `NLAlib.lean`.
 - For the wrap-up: T8 reproves S0's private `eq_conjTranspose_sqrt_mul_sqrt` in two lines (as
   `nystrom_le_nystrom_of_range_le` already does); B17 generalizes
   `frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le`, which could become its corollary.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: `Matrix.PosSemidef.truncatedSVD_le` and
+  `HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD` move from
+  `Matrix/Spectral/BestRankApprox.lean` to `Matrix/Spectral/LowRank.lean` (truncated-SVD facts with
+  no best-approximation predicate); `Matrix.PosSemidef.truncatedSVD_nystrom_le` moves from
+  `LowRank/Structural/Truncation.lean` to `Matrix/Factorizations/NystromOrder.lean` (a Loewner-order
+  fact about Nyström). Names unchanged.

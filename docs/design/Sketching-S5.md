@@ -735,3 +735,11 @@ Deviations from §3 and §8, all minor:
 - The four new modules are not yet in `NLAlib.lean` (regenerate with `mk_all`).
 No statement of §3 was found false; the degenerate cases (no injection, empty `k`, empty `n`, rank
 zero, `L ≤ 0`, `ε ≥ 1`) are all handled in the proofs as §3 and item 2 describe.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: `ConvexOn.integral_comp_le_integral_comp_of_integral_eq` moves from
+  `Probability/ConvexOrder.lean` to
+  `ForMathlib/Probability/Kernel/Composition/IntegralCompProd.lean` (no NLAlib vocabulary), name
+  unchanged, with the formerly private kernel-integral helper public as
+  `MeasureTheory.Measure.integral_comp`; Hoeffding's comparison stays in `ConvexOrder.lean`.

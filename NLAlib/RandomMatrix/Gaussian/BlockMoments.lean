@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral
 public import NLAlib.RandomMatrix.Gaussian.Moments
 public import NLAlib.RandomMatrix.Gaussian.SpectralNorm
@@ -84,18 +85,12 @@ theorem gaussianProjectionFactor_le_gaussianProjectionFactor {k k' l : ℕ} (hk 
   exact div_le_div₀ (Nat.cast_nonneg _) hk' (by linarith) (by linarith)
 
 
-omit [Fintype s] [Fintype a] in
-private theorem hasLaw_conjTranspose_mul [DecidableEq r] (hX : HasLaw X (gaussianMatrix n k) μ)
-    {V : Matrix n r ℝ} (hV : HasOrthonormalCols V) :
-    HasLaw (fun ω => Vᴴ * X ω) (gaussianMatrix r k) μ :=
-  hasLaw_const_mul_of_hasLaw_gaussianMatrix hX (by rwa [Matrix.conjTranspose_conjTranspose])
-
 private theorem integrable_chevet_pinv [DecidableEq r] (hX : HasLaw X (gaussianMatrix n k) μ)
     {V₁ : Matrix n r ℝ} (hV₁ : HasOrthonormalCols V₁) (hrk : Fintype.card r + 2 ≤ Fintype.card k)
     (S : Matrix a s ℝ) :
     Integrable (fun ω => specNorm S * frobNorm (pinv (V₁ᴴ * X ω)) +
       frobNorm S * specNorm (pinv (V₁ᴴ * X ω))) μ := by
-  have hY := hasLaw_conjTranspose_mul hX hV₁
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
   have hspec := integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix hY one_pos
     (q := 1) (by linarith [show (Fintype.card r : ℝ) + 2 ≤ Fintype.card k by exact_mod_cast hrk])
   simp only [Real.rpow_one] at hspec
@@ -108,9 +103,9 @@ theorem integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix [DecidableE
     {V₂ : Matrix n s ℝ} (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
     (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (S : Matrix a s ℝ) :
     Integrable (fun ω => frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ^ 2) μ := by
-  have hY := hasLaw_conjTranspose_mul hX hV₁
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
   refine (integrable_frobNorm_mul_mul_sq_iff_of_hasLaw_gaussianMatrix_of_indepFun
-    (hasLaw_conjTranspose_mul hX hV₂) hY.aemeasurable
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂) hY.aemeasurable
     (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
     (S := fun _ => S) measurable_const measurable_pinv).2 ?_
   exact (integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk).const_mul _
@@ -129,9 +124,9 @@ theorem integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix [DecidableEq 
     (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (S : Matrix a s ℝ) :
     ∫ ω, frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ^ 2 ∂μ =
       frobNorm S ^ 2 * Fintype.card r / ((Fintype.card k : ℝ) - Fintype.card r - 1) := by
-  have hY := hasLaw_conjTranspose_mul hX hV₁
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
   refine (integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix_of_indepFun
-    (hasLaw_conjTranspose_mul hX hV₂) hY.aemeasurable
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂) hY.aemeasurable
     (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
     (S := fun _ => S) measurable_const measurable_pinv).trans ?_
   rw [integral_const_mul, integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk, mul_div_assoc]
@@ -176,7 +171,8 @@ theorem integrable_specNorm_mul_mul_pinv_of_hasLaw_gaussianMatrix [DecidableEq r
     (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (S : Matrix a s ℝ) :
     Integrable (fun ω => specNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω))) μ := by
   exact integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix_of_indepFun
-    (hasLaw_conjTranspose_mul hX hV₁).aemeasurable (hasLaw_conjTranspose_mul hX hV₂)
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁).aemeasurable
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂)
     (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
     (S := fun _ => S) measurable_const measurable_pinv (integrable_chevet_pinv hX hV₁ hrk S)
 
@@ -203,10 +199,10 @@ theorem integral_specNorm_mul_mul_pinv_le_of_hasLaw_gaussianMatrix [DecidableEq 
       specNorm S * √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) +
         frobNorm S * (Real.exp 1 / ((Fintype.card k : ℝ) - Fintype.card r) *
           √(((Fintype.card k : ℝ) + Fintype.card r - 1) / 2)) := by
-  have hY := hasLaw_conjTranspose_mul hX hV₁
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
   have hrk' : Fintype.card r < Fintype.card k := by omega
   refine (integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun hY.aemeasurable
-    (hasLaw_conjTranspose_mul hX hV₂)
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂)
     (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
     (S := fun _ => S) measurable_const measurable_pinv
     (integrable_chevet_pinv hX hV₁ hrk S)).trans ?_

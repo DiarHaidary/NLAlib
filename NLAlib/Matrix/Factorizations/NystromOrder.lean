@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Factorizations.NystromGram
+public import NLAlib.Matrix.Spectral.LowRank
 public import NLAlib.Matrix.Spectral.SingularValueInequalities
 public import NLAlib.Matrix.Spectral.Weyl
 
@@ -40,6 +41,7 @@ Design: `docs/design/LowRank-S0.md` §3.5, §8.
 * `Matrix.PosSemidef.singularValues_sub_nystrom_le`,
   `NLAlib.SymmetricGauge.matrixNorm_sub_nystrom_le`: Nyström helps.
 * `Matrix.PosSemidef.singularValues_nystrom_le`: Nyström does not increase singular values.
+* `Matrix.PosSemidef.truncatedSVD_nystrom_le`: truncated Nyström stays below the matrix.
 -/
 
 @[expose] public section
@@ -236,5 +238,14 @@ theorem SymmetricGauge.matrixNorm_sub_nystrom_le [DecidableEq n] (Φ : Symmetric
     {H : Matrix n n 𝕜} (hH : H.PosSemidef) (Ω : Matrix n l 𝕜) :
     Φ.matrixNorm (H - nystrom H Ω) ≤ Φ.matrixNorm ((1 - rangeProjector Ω) * H) :=
   Φ.matrixNorm_le_of_singularValues_le (hH.singularValues_sub_nystrom_le Ω)
+
+/-- **Truncated Nyström stays below the matrix**: for positive semidefinite $\mathbf{H}$,
+$\llbracket\mathbf{H}\langle\mathbf{\Omega}\rangle\rrbracket_k \preceq \mathbf{H}$, so the trace of
+the error is its nuclear norm.
+[MartinssonTropp2020, §14.3]; there the positive semidefiniteness of the approximation, here the
+order. -/
+theorem _root_.Matrix.PosSemidef.truncatedSVD_nystrom_le {H : Matrix n n 𝕜} (hH : H.PosSemidef)
+    (Ω : Matrix n l 𝕜) (k : ℕ) : truncatedSVD (nystrom H Ω) k ≤ H :=
+  ((hH.nystrom Ω).truncatedSVD_le k).trans (hH.nystrom_le Ω)
 
 end NLAlib

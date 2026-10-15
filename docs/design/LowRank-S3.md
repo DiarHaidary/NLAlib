@@ -1438,3 +1438,17 @@ gains the import of `ChiSquareMoments.lean` (no cycle: `ChiSquareMoments.lean` i
 (CONTRIBUTING §5.2, rule 6). Every χ² tail is then in one file. If the density step C1 needs is
 general (the law of $\|\mathbf{g}\|^2$ as a pushforward with a density), it is a public lemma of
 `ChiSquareMoments.lean`.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: `RandomMatrix/Gaussian/InverseMoments.lean` (1049 lines) is split by topic:
+  the entries of the inverse Wishart matrix stay (their mean and second moments now public as
+  `integrable_`, `integral_`, `memLp_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix` and
+  `integral_mul_conjTranspose_inv_apply_self_mul_of_hasLaw_gaussianMatrix`), the Frobenius moments
+  of $\mathbf{G}^{+}$ move to `InverseMoments/Frobenius.lean` (names unchanged). Public instead of
+  private copies: `measurable_mul_conjTranspose_inv` and `measurable_rsvd`
+  (`Probability/Measurability/Matrix.lean`), `dotProduct_mul_conjTranspose_inv_mulVec_nonneg`
+  (`Matrix/Basic/Gram.lean`), `hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix`
+  (`RandomMatrix/Gaussian/Invariance.lean`), `singularValues_sub_rsvd_le`
+  (`Matrix/Factorizations/SketchedLowRank.lean`). The result id `chi-square-small-ball` is only on
+  the exact small ball (C1); the Chernoff corollary carries none.

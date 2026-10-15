@@ -9,6 +9,7 @@ public import Mathlib.Analysis.InnerProductSpace.GramMatrix
 public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.LinearAlgebra.Matrix.Rank
+public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
 # Gram matrices
@@ -17,7 +18,8 @@ The Gram matrix of $\mathbf{A}$ is $\mathbf{A}^{\mathsf{H}}\mathbf{A}$; it has n
 its own. Mathlib has its positive
 semidefiniteness (`Matrix.posSemidef_conjTranspose_mul_self`), rank
 (`Matrix.rank_conjTranspose_mul_self`) and kernel (`Matrix.ker_mulVecLin_conjTranspose_mul_self`).
-This file adds the characterisations of invertibility.
+This file adds the characterisations of invertibility, and two identities for a matrix scaled as
+a sketch: its action on a vector row by row, and its Gram matrix.
 
 "Full column rank" is spelled `Function.Injective A.mulVec` throughout the library, the
 hypothesis of Mathlib's `Matrix.PosDef.conjTranspose_mul_self`. The equivalent forms
@@ -32,6 +34,11 @@ hypothesis of Mathlib's `Matrix.PosDef.conjTranspose_mul_self`. The equivalent f
 * `NLAlib.posDef_conjTranspose_mul_self_iff`: $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ is positive
   definite iff $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective.
 * `NLAlib.conjTranspose_mul_self_eq_gram`: the bridge to Mathlib's `Matrix.gram`.
+* `NLAlib.dotProduct_mul_conjTranspose_inv_mulVec_nonneg`: the inverse Gram matrix of a real
+  matrix is positive semidefinite, as a quadratic form.
+* `NLAlib.norm_inv_sqrt_card_smul_mulVec_sq`,
+  `NLAlib.conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul`: a matrix scaled as a sketch,
+  on a vector and in its Gram matrix.
 -/
 
 @[expose] public section
@@ -103,5 +110,48 @@ theorem mul_right_inj_of_mulVec_injective {p : Type*} [Fintype n] {A : Matrix m 
     (hA : Function.Injective A.mulVec) {B C : Matrix n p 𝕜} : A * B = A * C ↔ B = C := by
   refine ⟨fun h => Matrix.ext_col fun j => hA ?_, fun h => by rw [h]⟩
   exact congrArg (fun M : Matrix m p 𝕜 => M.col j) h
+
+
+/-- The quadratic form of the inverse Gram matrix $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ of a
+real matrix is nonnegative: $\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}
+\mathbf{u} \ge 0$ (Lean's inverse, $\mathbf{0}$ where $\mathbf{G}\mathbf{G}^{\mathsf{H}}$ is
+singular). -/
+theorem dotProduct_mul_conjTranspose_inv_mulVec_nonneg [Fintype m] [Fintype n] [DecidableEq m]
+    (G : Matrix m n ℝ) (u : m → ℝ) : 0 ≤ u ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ u) := by
+  simpa only [star_trivial] using
+    (Matrix.posSemidef_self_mul_conjTranspose G).inv.dotProduct_mulVec_nonneg u
+
+/-! ### Scaled matrices -/
+
+/-- **A scaled matrix on a vector, row by row**: for
+$\mathbf{S} = \lvert k \rvert^{-1/2} \mathbf{A}$ with rows $\mathbf{A}_i$,
+$$\|\mathbf{S}\mathbf{x}\|^2 = \frac{1}{\lvert k \rvert} \sum_i
+\lvert \langle \mathbf{x}, \mathbf{A}_i \rangle \rvert^2 \,,$$
+the average of the squared projections of $\mathbf{x}$ on the rows (with the bilinear pairing
+`x ⬝ᵥ A i`). The identity behind every sketch with independent rows
+(`NLAlib.isIsotropicSketch_smul_of_isIsotropic`, the Gaussian, sub-Gaussian and sign sketches). -/
+theorem norm_inv_sqrt_card_smul_mulVec_sq {k : Type*} [Fintype k] [Fintype n] (A : Matrix k n 𝕜)
+    (x : n → 𝕜) :
+    ‖WithLp.toLp 2 (((√(Fintype.card k : ℝ))⁻¹ • A) *ᵥ x)‖ ^ 2 =
+      (∑ i, ‖x ⬝ᵥ A i‖ ^ 2) / Fintype.card k := by
+  rw [Matrix.smul_mulVec, EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq,
+    EuclideanSpace.norm_sq_eq]
+  simp only [Matrix.mulVec, dotProduct_comm (A _) x]
+
+/-- **The Gram matrix of a scaled conjugate transpose** on $\mathbf{U}$: with
+$\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert} \, \mathbf{M}^{\mathsf{H}}$,
+$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U}) = (\lvert n \rvert / \lvert k \rvert)
+\, \mathbf{U}^{\mathsf{H}} (\mathbf{M}\mathbf{M}^{\mathsf{H}}) \mathbf{U}$. The Gram matrix of
+the Haar sketch, for any $\mathbf{M}$ in place of the frame
+(`NLAlib.Sketching.Gaussian.Haar`). -/
+theorem conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul {k p : Type*} [Fintype k]
+    [Fintype n] (M : Matrix n k 𝕜) (U : Matrix n p 𝕜) :
+    (√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ * U)ᴴ *
+        (√(Fintype.card n / Fintype.card k : ℝ) • Mᴴ * U) =
+      (Fintype.card n / Fintype.card k : ℝ) • (Uᴴ * (M * Mᴴ) * U) := by
+  rw [Matrix.smul_mul, Matrix.conjTranspose_smul, star_trivial, Matrix.smul_mul,
+    Matrix.mul_smul, smul_smul, Real.mul_self_sqrt (by positivity), Matrix.conjTranspose_mul,
+    Matrix.conjTranspose_conjTranspose]
+  simp only [Matrix.mul_assoc]
 
 end NLAlib

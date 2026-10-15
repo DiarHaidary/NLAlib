@@ -74,10 +74,6 @@ private theorem one_sub_rpow_neg_half_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1)
     rw [div_div]; ring_nf
   linarith
 
-private lemma norm_sq_eq {n : Type*} [Fintype n] (x : n → ℝ) :
-    ‖WithLp.toLp 2 x‖ ^ 2 = ∑ i, x i ^ 2 :=
-  EuclideanSpace.real_norm_sq_eq _
-
 section Gram
 
 variable {n : Type*} [Fintype n] {m : Type*} [Fintype m] {𝕜 : Type*} [RCLike 𝕜]
@@ -276,7 +272,7 @@ theorem integral_norm_sq_le [IsProbabilityMeasure μ] (h : IsSubgaussianVector x
     ∫ ω, ‖WithLp.toLp 2 (x ω)‖ ^ 2 ∂μ ≤ c * Fintype.card n := by
   have hi : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ := fun i => by
     simpa only [RCLike.re_to_real] using h.hasSubgaussianMGF_re_apply i
-  simp only [norm_sq_eq]
+  simp only [EuclideanSpace.norm_toLp_sq_eq_sum_sq]
   rw [integral_finsetSum _ fun i _ => ((hi i).memLp 2).integrable_sq]
   calc ∑ i, ∫ ω, x ω i ^ 2 ∂μ ≤ ∑ _i : n, (c : ℝ) :=
         Finset.sum_le_sum fun i _ => (hi i).integral_sq_le
@@ -288,7 +284,7 @@ theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector x c μ) {θ : ℝ}
     (hθ : 2 * θ * c < 1) : Integrable (fun ω => rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2)) μ := by
   have := (h.hasSubgaussianMGF 0).isFiniteMeasure
   have hcont : Continuous fun v : n → ℝ => rexp (θ * ‖WithLp.toLp 2 v‖ ^ 2) := by
-    simp only [norm_sq_eq]
+    simp only [EuclideanSpace.norm_toLp_sq_eq_sum_sq]
     fun_prop
   have hm : AEStronglyMeasurable (fun ω => rexp (θ * ‖WithLp.toLp 2 (x ω)‖ ^ 2)) μ :=
     hcont.comp_aestronglyMeasurable h.aemeasurable.aestronglyMeasurable
@@ -298,7 +294,7 @@ theorem integrable_exp_mul_norm_sq (h : IsSubgaussianVector x c μ) {θ : ℝ}
     exact mul_nonpos_of_nonpos_of_nonneg hθ0 (sq_nonneg _)
   · refine (h.integrable_exp_mul_sum_mul_sq (w := fun _ => 1) (fun _ => zero_le_one) hθ0.le
       fun _ => by linarith).congr (ae_of_all _ fun ω => ?_)
-    simp only [one_mul, norm_sq_eq]
+    simp only [one_mul, EuclideanSpace.norm_toLp_sq_eq_sum_sq]
 
 /-- $\int e^{\theta \|\mathbf{x}\|^2} \, d\mu \le (1 - 2\theta c)^{-\lvert n\rvert/2}$ for a
 sub-Gaussian vector with proxy $c$, $\theta \ge 0$ and $2\theta c < 1$: the Laplace transform of
@@ -310,7 +306,7 @@ theorem integral_exp_mul_norm_sq_le (h : IsSubgaussianVector x c μ) {θ : ℝ} 
   have h2 : 0 ≤ 1 - 2 * θ * c := by linarith
   have hw := h.mgf_sum_mul_sq_le (w := fun _ => 1) (fun _ => zero_le_one) hθ0
     fun _ => by linarith
-  simp only [mgf, one_mul, mul_one, ← norm_sq_eq] at hw
+  simp only [mgf, one_mul, mul_one, ← EuclideanSpace.norm_toLp_sq_eq_sum_sq] at hw
   refine hw.trans_eq ?_
   rw [Finset.prod_const, Finset.card_univ, ← rpow_natCast, ← rpow_mul (by linarith)]
   ring_nf
@@ -500,8 +496,9 @@ theorem measure_norm_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {t
     have hset : {ω | c * (Fintype.card n + 2 * √(Fintype.card n * t) + 2 * t) ≤
         ‖WithLp.toLp 2 (x ω)‖ ^ 2} = ∅ := by
       ext ω
-      simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_le, norm_sq_eq,
-        Finset.univ_eq_empty, Finset.sum_empty, ← hd, zero_mul, sqrt_zero, mul_zero, zero_add]
+      simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_le,
+        EuclideanSpace.norm_toLp_sq_eq_sum_sq, Finset.univ_eq_empty, Finset.sum_empty, ← hd,
+        zero_mul, sqrt_zero, mul_zero, zero_add]
       positivity
     rw [hset, measureReal_empty]
     positivity
@@ -543,7 +540,7 @@ theorem measureReal_abs_norm_sq_sub_integral_ge_le (hind : iIndepFun (fun i ω =
   have hfun : ∀ ω, ‖WithLp.toLp 2 (x ω)‖ ^ 2 - ∫ ω', ‖WithLp.toLp 2 (x ω')‖ ^ 2 ∂μ =
       ∑ i, (x ω i ^ 2 - ∫ ω', x ω' i ^ 2 ∂μ) := by
     intro ω
-    simp only [norm_sq_eq]
+    simp only [EuclideanSpace.norm_toLp_sq_eq_sum_sq]
     rw [integral_finsetSum _ fun i _ => hint i, Finset.sum_sub_distrib]
   have hv : ((∑ _i : n, 32 * c ^ 2 : ℝ≥0) : ℝ) = Fintype.card n * (32 * (c : ℝ) ^ 2) := by
     push_cast

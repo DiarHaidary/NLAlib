@@ -291,3 +291,9 @@ statements go in new files, merged or registered at wrap-up. None is registered 
    supermartingale and Freedman statements `[IsProbabilityMeasure μ]` (as §3 says).
 8. **Result ids**: `matrix-freedman` (the Hermitian Freedman inequality), `ville-inequality`
    (new, for Ville's inequality).
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: the private `re_trace_exp_nonneg` (`ConditionalMGFBound.lean`,
+  `Freedman.lean`) is `Matrix.IsHermitian.re_trace_exp_nonneg`
+  (`Matrix/Functions/Exponential.lean`).

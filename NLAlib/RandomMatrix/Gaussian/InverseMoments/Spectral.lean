@@ -59,16 +59,6 @@ section Probes
 
 variable [DecidableEq r]
 
-private theorem measurable_inv_mul_conjTranspose :
-    Measurable fun G : Matrix r k ℝ => (G * Gᴴ)⁻¹ := by
-  classical
-  exact (measurable_id.matrix_mul (continuous_id.matrix_conjTranspose).measurable).matrix_inv
-
-private theorem dotProduct_inv_mul_conjTranspose_mulVec_nonneg (G : Matrix r k ℝ) (u : r → ℝ) :
-    0 ≤ u ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ u) := by
-  simpa only [star_trivial] using
-    (Matrix.posSemidef_self_mul_conjTranspose G).inv.dotProduct_mulVec_nonneg u
-
 /-! ### Spectral probes -/
 
 omit [DecidableEq r] in
@@ -159,7 +149,7 @@ private theorem lintegral_dotProduct_inv_mul_conjTranspose_mulVec_rpow
   have hzu : z = ρ • u := by rw [hu, smul_smul, mul_inv_cancel₀ hρ0.ne', one_smul]
   have hform (G : Matrix r k ℝ) : (z ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ z)) ^ q =
       (ρ ^ 2) ^ q * (u ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ u)) ^ q := by
-    rw [← Real.mul_rpow (sq_nonneg _) (dotProduct_inv_mul_conjTranspose_mulVec_nonneg G u)]
+    rw [← Real.mul_rpow (sq_nonneg _) (dotProduct_mul_conjTranspose_inv_mulVec_nonneg G u)]
     congr 1
     conv_lhs => rw [hzu]
     rw [Matrix.mulVec_smul, smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul, sq,
@@ -177,13 +167,13 @@ private theorem lintegral_dotProduct_inv_mul_conjTranspose_mulVec_rpow
   simp only [hform]
   rw [← ofReal_integral_eq_lintegral_ofReal hint (Filter.Eventually.of_forall fun G =>
       mul_nonneg (Real.rpow_nonneg (sq_nonneg _) _)
-        (Real.rpow_nonneg (dotProduct_inv_mul_conjTranspose_mulVec_nonneg G u) _)),
+        (Real.rpow_nonneg (dotProduct_mul_conjTranspose_inv_mulVec_nonneg G u) _)),
     integral_const_mul, hval]
 
 private theorem measurable_dotProduct_inv_mul_conjTranspose_mulVec :
     Measurable fun p : Matrix r k ℝ × (r → ℝ) => p.2 ⬝ᵥ ((p.1 * p.1ᴴ)⁻¹ *ᵥ p.2) :=
   (continuous_fst.dotProduct continuous_snd).measurable.comp
-    (measurable_snd.prodMk ((measurable_inv_mul_conjTranspose.comp measurable_fst).matrix_mulVec
+    (measurable_snd.prodMk ((measurable_mul_conjTranspose_inv.comp measurable_fst).matrix_mulVec
       measurable_snd))
 
 /-- **The probe bound**: for $0 < q < (\lvert k \rvert - \lvert r \rvert + 1)/2$,
@@ -485,7 +475,7 @@ private theorem integral_rpow_le_of_integral_rpow_le {α : Type*} [MeasurableSpa
 
 private theorem measurable_specNorm_inv_mul_conjTranspose :
     Measurable fun G : Matrix r k ℝ => specNorm (G * Gᴴ)⁻¹ :=
-  measurable_specNorm.comp measurable_inv_mul_conjTranspose
+  measurable_specNorm.comp measurable_mul_conjTranspose_inv
 
 private theorem integrable_and_integral_specNorm_inv_rpow_le [Nonempty r]
     (hrk : Fintype.card r ≤ Fintype.card k) {q : ℝ} (hq0 : 0 < q)

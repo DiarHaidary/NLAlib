@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
+public import NLAlib.Matrix.Subspaces.ObliqueProjector
 
 /-!
 # Linear least squares
@@ -20,9 +21,17 @@ gives the one of smallest norm, and the residual is $(\mathbf{I} -
 \mathbf{P}_{\mathbf{A}})\mathbf{b}$, with $\mathbf{P}_{\mathbf{A}}$ the orthogonal projector onto
 the range of $\mathbf{A}$ (`rangeProjector`).
 
+Sketch-and-solve replaces the problem by the one sketched by $\mathbf{S}$; its solution
+`NLAlib.sketchAndSolve A S B` has fitted values the oblique projection
+$\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$, and when $\mathbf{S}$ keeps the rank of
+$\mathbf{A}$ it is the exact minimum-norm solution plus the sketched solution for the optimal
+residual. Design: `docs/design/LowRank-S0.md` §3.1, §8 (moved here from
+`NLAlib.Matrix.Subspaces.ObliqueProjector` on 2026-10-15).
+
 ## Main definitions
 
 * `NLAlib.IsLeastSquaresSolution`: $\mathbf{x}$ minimises $\|\mathbf{b} - \mathbf{A}\mathbf{x}\|$.
+* `NLAlib.sketchAndSolve`: the sketched solution $(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$.
 
 ## Main results
 
@@ -32,6 +41,9 @@ the range of $\mathbf{A}$ (`rangeProjector`).
 * `NLAlib.isLeastSquaresSolution_pinv_mulVec`: $\mathbf{A}^{+}\mathbf{b}$ is a solution.
 * `NLAlib.IsLeastSquaresSolution.norm_pinv_mulVec_le`: it is the solution of smallest norm.
 * `NLAlib.existsUnique_isLeastSquaresSolution_iff`: uniqueness exactly for full column rank.
+* `NLAlib.mul_sketchAndSolve`, `NLAlib.sketchAndSolve_eq_pinv_mul_add`,
+  `NLAlib.HasOrthonormalCols.sketchAndSolve_eq_add`: sketch-and-solve, its fitted values and its
+  error decomposition.
 -/
 
 @[expose] public section
@@ -314,5 +326,76 @@ theorem existsUnique_isLeastSquaresSolution_iff (A : Matrix m n 𝕜) (b : m →
   · intro hA
     exact ⟨pinv A *ᵥ b, isLeastSquaresSolution_pinv_mulVec A b,
       fun y hy => (isLeastSquaresSolution_iff_eq_pinv_mulVec hA).mp hy⟩
+
+/-! ### Sketch-and-solve
+
+The least-squares problem sketched by $\mathbf{S}$, $\min_{\mathbf{X}}
+\|\mathbf{S}(\mathbf{A}\mathbf{X} - \mathbf{B})\|_{\mathsf{F}}$, and its minimum-norm solution
+$(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$, whose fitted values are the oblique projection
+$\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$ (`NLAlib.obliqueProjector`). -/
+
+section SketchAndSolve
+
+variable {k p q : Type*} [Fintype k] {S : Matrix k m 𝕜}
+
+/-- The **sketch-and-solve solution**
+$\hat{\mathbf{X}} = (\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$, the minimum-norm minimizer of
+$\|\mathbf{S}(\mathbf{A}\mathbf{X} - \mathbf{B})\|_{\mathsf{F}}$, column by column
+(`NLAlib.isLeastSquaresSolution_pinv_mulVec`). Total; its junk value is $\mathbf{0}$ when
+$\mathbf{S}\mathbf{A} = \mathbf{0}$. The argument order is system, sketch, right-hand side, as in
+`NLAlib.obliqueProjector`.
+[EpperlyWebber2026, §2]; there with $\mathbf{S} = \mathbf{\Omega}^{\mathsf{H}}$. -/
+noncomputable def sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜) :
+    Matrix n p 𝕜 :=
+  pinv (S * A) * (S * B)
+
+/-- The fitted values of sketch-and-solve are the oblique projection of the right-hand side:
+$\mathbf{A}\hat{\mathbf{X}} = \mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$. -/
+theorem mul_sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜) :
+    A * sketchAndSolve A S B = obliqueProjector A S * B := by
+  rw [sketchAndSolve, obliqueProjector]
+  simp only [Matrix.mul_assoc]
+
+/-- **Sketch-and-solve error decomposition**: when
+$\operatorname{rank}(\mathbf{S}\mathbf{A}) = \operatorname{rank}\mathbf{A}$,
+$$\hat{\mathbf{X}} = \mathbf{A}^{+}\mathbf{B} +
+(\mathbf{S}\mathbf{A})^{+}\mathbf{S}(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}\,:$$
+the sketched solution is the exact minimum-norm solution plus the sketch-and-solve solution for the
+optimal residual. This is the exact identity beside the bound `sketch-and-solve-ls`
+(`NLAlib.IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le`).
+[EpperlyWebber2026, Lemma 5.1, (5.1)]; there in a factorization $\mathbf{A} = \mathbf{Q}\mathbf{R}$,
+here basis-free.
+Result: sketch-and-solve-error-decomposition -/
+theorem sketchAndSolve_eq_pinv_mul_add [DecidableEq m] {A : Matrix m n 𝕜}
+    (h : (S * A).rank = A.rank) (B : Matrix m p 𝕜) :
+    sketchAndSolve A S B = pinv A * B + sketchAndSolve A S ((1 - rangeProjector A) * B) := by
+  have hP : rangeProjector (S * A)ᴴ = rangeProjector Aᴴ :=
+    rangeProjector_inj.mpr (Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq h)
+  have key : pinv (S * A) * (S * (rangeProjector A * B)) = pinv A * B := by
+    calc pinv (S * A) * (S * (rangeProjector A * B))
+        = pinv (S * A) * (S * A) * pinv A * B := by
+          rw [← mul_pinv]
+          simp only [Matrix.mul_assoc]
+      _ = pinv A * B := by
+          rw [pinv_mul, hP, ← pinv_mul, pinv_mul_mul_pinv]
+  rw [sketchAndSolve, sketchAndSolve, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_sub,
+    Matrix.mul_sub, key]
+  abel
+
+/-- **Core noise**: for $\mathbf{Q}$ with orthonormal columns and
+$\operatorname{rank}(\mathbf{S}\mathbf{Q}) = \operatorname{rank}\mathbf{Q}$ (full column rank of
+$\mathbf{S}\mathbf{Q}$), the sketched core is the exact core plus noise,
+$$(\mathbf{S}\mathbf{Q})^{+}\mathbf{S}\mathbf{B} = \mathbf{Q}^{\mathsf{H}}\mathbf{B} +
+(\mathbf{S}\mathbf{Q})^{+}\mathbf{S}(\mathbf{I}-\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{B}\,.$$
+[TroppYurtseverUdellCevher2017, Lemma A.4]; [CamanoEpperlyMeyerTropp2025, Lemma 2.6]; there with a
+complement frame.
+Result: sketch-and-solve-error-decomposition -/
+theorem HasOrthonormalCols.sketchAndSolve_eq_add [Fintype q] [DecidableEq m] [DecidableEq q]
+    {Q : Matrix m q 𝕜} (hQ : HasOrthonormalCols Q) (h : (S * Q).rank = Q.rank)
+    (B : Matrix m p 𝕜) :
+    sketchAndSolve Q S B = Qᴴ * B + sketchAndSolve Q S ((1 - Q * Qᴴ) * B) := by
+  rw [sketchAndSolve_eq_pinv_mul_add h B, hQ.pinv_eq, hQ.rangeProjector_eq]
+
+end SketchAndSolve
 
 end NLAlib

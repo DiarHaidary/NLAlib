@@ -333,3 +333,11 @@ topic file in `RandomMatrix/Haar` (the uniform unit vector: its projected law, t
 moment), not merged into `Moments.lean` (second moments of a frame): together they would be
 about 990 lines on two topics. `Gaussian.lean` gains the public
 inversion `two_mul_exp_le_of_jlDim_le`, shared by the Gaussian, Haar and sign sketches.
+
+### Placement refactor (2026-10-15)
+
+- Amendment 2026-10-15: the Gram identity
+  `conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul` moves from
+  `Sketching/Gaussian/Haar.lean` to `Matrix/Basic/Gram.lean`, generalised from ℝ to `RCLike` (name
+  unchanged); `Sphere.lean`'s private `norm_toLp_sq_eq_sum` is replaced by
+  `EuclideanSpace.norm_toLp_sq_eq_sum_sq` (`ForMathlib/Analysis/InnerProductSpace/PiL2.lean`).

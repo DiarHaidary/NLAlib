@@ -8,6 +8,7 @@ module
 public import Mathlib.Analysis.CStarAlgebra.Matrix
 public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog.Order
 public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.RingInverseOrder
+public import NLAlib.ForMathlib.LinearAlgebra.Matrix.ConjTranspose
 public import NLAlib.Matrix.Functions.Complexification
 
 /-!
@@ -391,18 +392,6 @@ private theorem cfc_neg_log_cfc_inv {X : Matrix n n 𝕜} (hX : X.IsHermitian) :
     hX.isSelfAdjoint]
   exact cfc_congr fun x _ => by simp only [Real.log_inv, neg_neg]
 
-omit [DecidableEq n] in
-/-- The congruence by $\sqrt{c}\,\mathbf{S}\mathbf{r}$ in terms of the congruence by
-$\mathbf{r}$: for Hermitian $\mathbf{S}$, $\mathbf{r}$ and $c \ge 0$,
-$(\sqrt{c}\,\mathbf{S}\mathbf{r})^{\mathsf{H}} \mathbf{N} (\sqrt{c}\,\mathbf{S}\mathbf{r})
-= c\, \mathbf{r}\mathbf{S}\mathbf{N}\mathbf{S}\mathbf{r}$. -/
-private theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S r : Matrix n n 𝕜}
-    (hS : Sᴴ = S) (hr : rᴴ = r) (N : Matrix n n 𝕜) :
-    (√c • (S * r))ᴴ * N * (√c • (S * r)) = c • (r * (S * N * S) * r) := by
-  rw [Matrix.conjTranspose_smul, Matrix.conjTranspose_mul, hr, hS, star_trivial]
-  simp only [Matrix.smul_mul, Matrix.mul_smul, smul_smul, Real.mul_self_sqrt hc,
-    Matrix.mul_assoc]
-
 /-- $\mathbf{X}^{1/2} \mathbf{X}^{1/2} = \mathbf{X}$ for positive definite $\mathbf{X}$, in terms
 of `cfc`. -/
 private theorem cfc_sqrt_mul_cfc_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) :
@@ -456,8 +445,8 @@ private theorem cfc_mul_log_smul_add_smul_le {A B : Matrix n n 𝕜} (hA : A.Pos
       Fin 2 → Matrix n n 𝕜) i)ᴴ *
         (![√a • (cfc Real.sqrt A * r), √b • (cfc Real.sqrt B * r)] : Fin 2 → Matrix n n 𝕜) i =
           1 := by
-    have h1 := conjTranspose_smul_mul_mul_smul ha (hH Real.sqrt A) hrH 1
-    have h2 := conjTranspose_smul_mul_mul_smul hb (hH Real.sqrt B) hrH 1
+    have h1 := Matrix.conjTranspose_smul_mul_mul_smul ha (hH Real.sqrt A) hrH 1
+    have h2 := Matrix.conjTranspose_smul_mul_mul_smul hb (hH Real.sqrt B) hrH 1
     rw [Matrix.mul_one, Matrix.mul_one, cfc_sqrt_mul_cfc_sqrt hA] at h1
     rw [Matrix.mul_one, Matrix.mul_one, cfc_sqrt_mul_cfc_sqrt hB] at h2
     rw [Fin.sum_univ_two]
@@ -479,8 +468,8 @@ private theorem cfc_mul_log_smul_add_smul_le {A B : Matrix n n 𝕜} (hA : A.Pos
         (√a • (cfc Real.sqrt A * r)) +
       (√b • (cfc Real.sqrt B * r))ᴴ * cfc (fun x : ℝ => -Real.log x) (cfc (fun x : ℝ => x⁻¹) B) *
         (√b • (cfc Real.sqrt B * r)) at hJ
-  have hKa := conjTranspose_smul_mul_mul_smul ha (hH Real.sqrt A) hrH
-  have hKb := conjTranspose_smul_mul_mul_smul hb (hH Real.sqrt B) hrH
+  have hKa := Matrix.conjTranspose_smul_mul_mul_smul ha (hH Real.sqrt A) hrH
+  have hKb := Matrix.conjTranspose_smul_mul_mul_smul hb (hH Real.sqrt B) hrH
   rw [hKa, hKb, hKa, hKb, hinv A hA, hinv B hB, Matrix.mul_one, ← add_smul, hab, one_smul, hlogX,
     cfc_neg_log_cfc_inv hA.isHermitian, cfc_neg_log_cfc_inv hB.isHermitian,
     cfc_sqrt_mul_cfc_mul_cfc_sqrt hA, cfc_sqrt_mul_cfc_mul_cfc_sqrt hB] at hJ
