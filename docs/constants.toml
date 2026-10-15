@@ -216,6 +216,16 @@ lean_body = 'gaussianProjectionFactor (k l : ℕ) : ℝ := 1 + (k : ℝ) / ((l :
 body_hash = "9b03c4494754f608"
 
 [[constant]]
+name = "NLAlib.haarProjectionFactor"
+kind = "factor"
+file = "NLAlib/RandomMatrix/Haar/Blocks.lean"
+args = ["d", "p", "q"]
+latex = '1 + (#1 - #2)/(#1 - #3) \cdot (#3/(#2 - #3 - 1))'
+display = '1 + \frac{#1 - #2}{#1 - #3}\cdot\frac{#3}{#2 - #3 - 1}'
+lean_body = 'haarProjectionFactor (d p q : ℕ) : ℝ := 1 + ((d : ℝ) - p) / ((d : ℝ) - q) * ((q : ℝ) / ((p : ℝ) - q - 1))'
+body_hash = "7b07b0a551ec4b16"
+
+[[constant]]
 name = "NLAlib.rotationInvariantFactor"
 kind = "factor"
 file = "NLAlib/LowRank/Gaussian/RotationInvariantFactor.lean"
@@ -234,3 +244,22 @@ latex = '1 + #1/(#2 - #1 - 1) + 4\sqrt{2#1 (25(1 + #1/(#2 - #1 - 1)) + 484)/#3} 
 display = '1 + \frac{#1}{#2 - #1 - 1} + 4\sqrt{\frac{2#1}{#3}\Bigl(25\Bigl(1 + \frac{#1}{#2 - #1 - 1}\Bigr) + 484\Bigr)} + \frac{8#1}{#3}\Bigl(25\Bigl(1 + \frac{#1}{#2 - #1 - 1}\Bigr) + 484\Bigr)'
 lean_body = 'truncatedGNFactor (k l p : ℕ) : ℝ := gaussianProjectionFactor k l + 4 * √(2 * k * ((25 * gaussianProjectionFactor k l + 484) / p)) + 8 * k * ((25 * gaussianProjectionFactor k l + 484) / p)'
 body_hash = "5d686ba5bf0e79e3"
+
+[[constant]]
+name = "NLAlib.gaussianClippedInvMomentConstant"
+kind = "constant"
+file = "NLAlib/RandomMatrix/Gaussian/ClippedInverseMoments.lean"
+args = ["q"]
+latex = '2#1 (0.9)^{-(2#1 + 1)} e^{(2#1 + 1)^2/50}\sqrt{2\pi} + 1'
+lean_body = 'gaussianClippedInvMomentConstant (q : ℕ) : ℝ := 2 * q * 0.9 ^ (-(2 * q + 1 : ℤ)) * Real.exp ((2 * q + 1) ^ 2 / 50) * √(2 * π) + 1'
+body_hash = "061389fc1db7bcc7"
+
+[[constant]]
+name = "NLAlib.earlyTruncatedRSVDFactor"
+kind = "factor"
+file = "NLAlib/LowRank/Gaussian/EarlyTruncation.lean"
+args = ["k", "l"]
+latex = '((1 + \sqrt{2#1/#2})((1 - \sqrt{#1/#2})^{-2} + 10/\sqrt{#2}) + (\sqrt{#1/#2}/4)\sqrt{1 + 2/(#1 #2)}\sqrt{(1 - \sqrt{#1/#2})^{-8} + 263/\sqrt{#2}})/(1 - 4\sqrt{#1/#2})'
+display = '\frac{(1 + \sqrt{2#1/#2})\bigl((1 - \sqrt{#1/#2})^{-2} + 10/\sqrt{#2}\bigr) + \frac{1}{4}\sqrt{#1/#2}\sqrt{1 + 2/(#1 #2)}\sqrt{(1 - \sqrt{#1/#2})^{-8} + 263/\sqrt{#2}}}{1 - 4\sqrt{#1/#2}}'
+lean_body = 'earlyTruncatedRSVDFactor (k l : ℕ) : ℝ := ((1 + √(2 * k / l)) * (((1 - √(k / l)) ^ 2)⁻¹ + 10 / √l) + √(k / l) / 4 * √(1 + 2 / (k * l)) * √(((1 - √(k / l)) ^ 8)⁻¹ + 263 / √l)) / (1 - 4 * √(k / l))'
+body_hash = "e0b4c3e17218eda8"

@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Structured.Kronecker
+public import NLAlib.Probability.Distributions.ChiSquareMoments
 public import NLAlib.Probability.Isotropic
 public import NLAlib.RandomMatrix.Gaussian.Basic
 
@@ -37,6 +38,9 @@ their corollaries over $\mathbb{R}$.
 * `NLAlib.integral_frobNorm_mul_mul_le_of_hasLaw_gaussianMatrix`: the Frobenius mean,
   $\mathbb{E}\|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}} \le
   \|\mathbf{S}\|_{\mathsf{F}}\|\mathbf{T}\|_{\mathsf{F}}$.
+* `NLAlib.integral_frobNorm_pow_four_of_hasLaw_gaussianMatrix`: the fourth moment,
+  $\mathbb{E}\|\mathbf{G}\|_{\mathsf{F}}^4 = d^2 + 2d$ with $d = \lvert m \rvert\lvert n \rvert$;
+  `NLAlib.integrable_frobNorm_pow_four_of_hasLaw_gaussianMatrix`.
 * `NLAlib.integral_frobNorm_mul_mul_sq_of_isIsotropic_of_indepFun`,
   `NLAlib.integrable_frobNorm_mul_mul_sq_iff_of_isIsotropic_of_indepFun`.
 * `NLAlib.integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix_of_indepFun`.
@@ -223,6 +227,46 @@ theorem integral_frobNorm_mul_mul_le_of_hasLaw_gaussianMatrix
   refine (le_abs_self _).trans (abs_le_of_sq_le_sq' ?_ (by positivity)).2
   rw [mul_pow, sq_abs]
   linarith
+
+private theorem frobNorm_pow_four_eq (A : Matrix m n ℝ) :
+    frobNorm A ^ 4 = (‖WithLp.toLp 2 (Function.uncurry A)‖ ^ 2) ^ (2 : ℝ) := by
+  rw [frobNorm_eq_norm_toLp_uncurry, Real.rpow_two, ← pow_mul]
+
+private theorem neg_card_prod_div_two_lt_two : -((Fintype.card (m × n) : ℝ) / 2) < 2 := by
+  have : (0 : ℝ) ≤ Fintype.card (m × n) := Nat.cast_nonneg _
+  linarith
+
+/-- $\|\mathbf{G}\|_{\mathsf{F}}^4$ is integrable for a standard Gaussian matrix
+$\mathbf{G}$. -/
+theorem integrable_frobNorm_pow_four_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix m n) μ) : Integrable (fun ω => frobNorm (X ω) ^ 4) μ :=
+  (integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
+    neg_card_prod_div_two_lt_two).congr (ae_of_all _ fun ω => (frobNorm_pow_four_eq (X ω)).symm)
+
+/-- **The fourth moment of the Frobenius norm of a Gaussian matrix**: for a standard Gaussian
+$m \times n$ matrix $\mathbf{G}$ and $d = \lvert m \rvert\lvert n \rvert$,
+$\mathbb{E}\|\mathbf{G}\|_{\mathsf{F}}^4 = d^2 + 2d$, the second moment of $\chi^2_d$
+(`NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector` at $s = 2$). -/
+theorem integral_frobNorm_pow_four_of_hasLaw_gaussianMatrix
+    (hX : HasLaw X (gaussianMatrix m n) μ) :
+    ∫ ω, frobNorm (X ω) ^ 4 ∂μ = ((Fintype.card m * Fintype.card n : ℕ) : ℝ) ^ 2 +
+      2 * ((Fintype.card m * Fintype.card n : ℕ) : ℝ) := by
+  simp only [frobNorm_pow_four_eq]
+  rw [integral_norm_sq_rpow_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
+    neg_card_prod_div_two_lt_two, Fintype.card_prod, show (2 : ℝ) ^ (2 : ℝ) = 4 by norm_num]
+  set d := ((Fintype.card m * Fintype.card n : ℕ) : ℝ)
+  have hd0 : 0 ≤ d := Nat.cast_nonneg _
+  rcases hd0.eq_or_lt with hd | hd
+  · rw [← hd]
+    simp
+  have hΓ : Real.Gamma (d / 2 + 2) = (d / 2 + 1) * (d / 2) * Real.Gamma (d / 2) := by
+    rw [show d / 2 + 2 = (d / 2 + 1) + 1 by ring, Real.Gamma_add_one (by positivity),
+      Real.Gamma_add_one (by positivity)]
+    ring
+  have hG0 : Real.Gamma (d / 2) ≠ 0 := (Real.Gamma_pos_of_pos (by positivity)).ne'
+  rw [hΓ]
+  field_simp
+  ring
 
 variable {α : Type*} [MeasurableSpace α] {Y : Ω → α} {S : α → Matrix a m ℝ}
   {T : α → Matrix n b ℝ}

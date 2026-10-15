@@ -39,6 +39,8 @@ public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.LowRank.Gaussian.EarlyTruncation
+public import NLAlib.LowRank.Gaussian.EarlyTruncationHaar
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.Nystrom
 public import NLAlib.LowRank.Gaussian.NystromTail
@@ -242,6 +244,7 @@ public import NLAlib.Probability.Tail
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.BlockTail
+public import NLAlib.RandomMatrix.Gaussian.ClippedInverseMoments
 public import NLAlib.RandomMatrix.Gaussian.Concentration
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.Gaussian.Invariance

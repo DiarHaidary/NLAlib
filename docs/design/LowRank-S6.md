@@ -1985,3 +1985,37 @@ drafted.
     `RandomMatrix/Gaussian/BlockMoments.lean`, and `Gaussian/RangeFinderSpectral` into
     `LowRank/Gaussian/RangeFinder.lean` (its primed copy of `ae_sub_rsvd_eq_zero_of_card_lt`
     dropped); no import cycle and every home under 1000 lines.
+17. **Early truncation and the clipped moments settled as topic files** (2026-10-16; amends
+    item 15's rows 11 and 12 and its side-file sentence).
+    - *Files.* Early truncation is two topic files. `LowRank/Gaussian/EarlyTruncation.lean`
+      (about 980 lines) holds the Gaussian co-range statements (ET1, ET3, ET4, ET6) and S6b's
+      ER7 to ER12; `LowRank/Gaussian/EarlyTruncationHaar.lean` (about 195
+      lines) is the permanent home of the Haar co-range statements ET2 and ET5. Merging the Haar
+      half into the Gaussian file would take it past 1000 lines, and the Haar file imports
+      neither the Gaussian file nor S6b's inputs. Likewise ER1 to ER5 stay in their own topic file,
+      `RandomMatrix/Gaussian/ClippedInverseMoments.lean` (about 710 lines), beside
+      `ExtremeSingularValues.lean` rather than merged into it (445 plus 710 lines would exceed
+      1000); it imports `ExtremeSingularValues.lean`, so a user of the clipped moments gets
+      Gordon's bounds with them.
+    - *Helpers made public* (placement per CONTRIBUTING §8 item 5). The squared error of
+      early-truncated generalized Nyström is almost everywhere strongly measurable for any pair of
+      measurable test matrices,
+      `aestronglyMeasurable_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq`, now public in
+      `LowRank/Random/RangeFinder.lean` over `RCLike` (facts for any law of the test matrix,
+      beside `integrable_frobNorm_sub_earlyTruncatedRSVD_sq`); the two identical private copies in
+      the early-truncation files are deleted. S6b's private fourth moment of a Gaussian matrix's
+      Frobenius norm is public in `RandomMatrix/Gaussian/Moments.lean` (Gaussian Frobenius
+      moments) as `integrable_frobNorm_pow_four_of_hasLaw_gaussianMatrix` and
+      `integral_frobNorm_pow_four_of_hasLaw_gaussianMatrix`,
+      $\mathbb{E}\|\mathbf{G}\|_{\mathsf{F}}^4 = d^2 + 2d$, without the private copy's hypothesis
+      $d \ge 1$.
+    - *ER5* drops `hq1 : 1 ≤ q`: the bound holds at $q = 0$ as well ($1 \le 1 + c_0/\sqrt{m}$).
+    - *Haar half statement changes.* L12
+      (`integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame`) drops `h₁₂` and `hrs`:
+      integrability needs neither complementarity nor the dimension count. L13 is stated without
+      `[DecidableEq m]`. A16 and A17 (`integrable_sketchAndSolve_of_hasLaw_haarFrame`,
+      `integral_sketchAndSolve_of_hasLaw_haarFrame`) add `[DecidableEq r]`. The Haar form of GN2
+      is kept private in `LowRank/Gaussian/GeneralizedNystrom.lean`, as a step of GH1 to GH5,
+      not a public statement.
+    - *S6b's final statement* (the unconditional $(1 + \varepsilon)$ form, ER12) is named
+      `integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.

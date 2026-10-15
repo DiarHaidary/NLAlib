@@ -46,6 +46,9 @@ item 7.
   `NLAlib.integrable_specNorm_sub_rsvd_sq`, `NLAlib.integrable_specNorm_sub_rsvd`: integrability of
   the error for any measurable test matrix.
 * `NLAlib.integrable_frobNorm_sub_truncatedSVD_rsvd_sq`: the late-truncated output, Frobenius.
+* `NLAlib.integrable_frobNorm_sub_earlyTruncatedRSVD_sq`: the early-truncated output;
+  `NLAlib.aestronglyMeasurable_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq`, the
+  measurability of its generalized Nyström completion for any pair of test matrices.
 * `NLAlib.integrable_specNorm_sub_sq_of_isBestRankApprox`: the truncated output, spectral, for a
   measurable selector; `NLAlib.integrable_specNorm_sub_truncatedSVD_rsvd_sq`, its direct form.
 * `NLAlib.integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox`:
@@ -166,6 +169,36 @@ theorem integrable_specNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
   simpa only [lpGauge_top_matrixNorm] using (lpGauge ⊤ le_top).integrable_matrixNorm_sub_rsvd A hX
 
 /-! ### The truncated output -/
+
+/-- The squared Frobenius error of the early-truncated randomized SVD,
+$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{X}, k)\|_{\mathsf{F}}^2$, is
+integrable for every measurable test matrix $\mathbf{X}$ and finite measure: it is a measurable
+function of the test matrix (`NLAlib.measurable_earlyTruncatedRSVD`) bounded by
+$\|\mathbf{A}\|_{\mathsf{F}}^2$, for every choice of the truncation. -/
+theorem integrable_frobNorm_sub_earlyTruncatedRSVD_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
+    (hX : AEMeasurable X μ) (k : ℕ) :
+    Integrable (fun ω => frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2) μ := by
+  classical
+  refine integrable_comp_of_abs_le hX (g := fun Ω => frobNorm (A - earlyTruncatedRSVD A Ω k) ^ 2)
+    ((measurable_frobNorm.comp
+      (measurable_const.matrix_sub (measurable_earlyTruncatedRSVD A k))).pow_const 2)
+    (frobNorm A ^ 2) fun Ω => ?_
+  rw [abs_of_nonneg (sq_nonneg _), sub_earlyTruncatedRSVD]
+  exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_one_sub_rangeProjector_mul_le _ A) 2
+
+/-- The squared Frobenius error of early-truncated generalized Nyström,
+$\|\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{X}, \mathbf{\Psi},
+k)\|_{\mathsf{F}}^2$, is almost everywhere strongly measurable for every pair of almost everywhere
+measurable test matrices $\mathbf{X}$ and $\mathbf{\Psi}$, whatever their joint law: it is a
+measurable function of the pair (`NLAlib.measurable_earlyTruncatedGeneralizedNystrom`). -/
+theorem aestronglyMeasurable_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq {p : Type*}
+    [Fintype p] {Ψ : Ω → Matrix m p 𝕜} (A : Matrix m n 𝕜) (hX : AEMeasurable X μ)
+    (hΨ : AEMeasurable Ψ μ) (k : ℕ) :
+    AEStronglyMeasurable
+      (fun ω => frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2) μ :=
+  (((measurable_frobNorm.comp (measurable_const.matrix_sub
+    (measurable_earlyTruncatedGeneralizedNystrom A k))).pow_const 2).comp_aemeasurable
+      (hX.prodMk hΨ)).aestronglyMeasurable
 
 /-- The squared Frobenius error of the late-truncated randomized SVD,
 $\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2$,

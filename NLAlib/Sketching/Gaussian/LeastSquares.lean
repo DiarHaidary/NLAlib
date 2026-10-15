@@ -11,9 +11,10 @@ public import NLAlib.Probability.MatrixIntegral
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.Rank
+public import NLAlib.RandomMatrix.Haar.Blocks
 
 /-!
-# Sketched least squares with Gaussian sketches
+# Sketched least squares with Gaussian and Haar sketches
 
 For a standard Gaussian $p \times m$ sketch $\mathbf{S}$, a fixed basis $\mathbf{X}$ of rank $q$
 with $q + 2 \le p$ and every $\mathbf{B}$, the oblique projection
@@ -39,9 +40,14 @@ reflection $2\mathbf{P}_{\mathbf{A}} - \mathbf{I}$ preserves the Gaussian law, f
 and negates the residual. The sketch is on the left, $\mathbf{S} : p \times m$, as in the other
 Gaussian sketching files; a co-range test matrix $\mathbf{\Psi}$ is the sketch
 $\mathbf{\Psi}^{\mathsf{H}}$ (`NLAlib.hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`). Scaling the
-sketch changes nothing (`NLAlib.obliqueProjector_smul_right`). Real throughout. Design:
-`docs/design/LowRank-S6.md` §3.2, §8 (the Gaussian half; the Haar statements follow in a later
-section).
+sketch changes nothing (`NLAlib.obliqueProjector_smul_right`).
+
+For an $m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$ and the sketch $\mathbf{Q}^{\mathsf{H}}$
+the factor is <!-- value haarProjectionFactor m p q -->
+$1 + (m - p)/(m - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor m p q`), at most the
+Gaussian one: orthogonality helps, but only a bit. Every Haar statement carries $p \le m$: a wider
+Haar frame has orthonormal rows, the sketch is an isometry and the factor would be $1$. Real
+throughout. Design: `docs/design/LowRank-S6.md` §3.2, §8.
 
 ## Main results
 
@@ -53,6 +59,11 @@ section).
 * the spectral norm of the excess,
   `integral_specNorm_obliqueProjector_mul_one_sub_rangeProjector_mul_sq_le_of_hasLaw_gaussianMatrix`
   and its numerical form for $4q \le p$ (the same name with `_le_div_card` in place of `_le`).
+* `NLAlib.haarProjectionFactor_le_gaussianProjectionFactor`.
+* Haar sketches: the completion identity
+  `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame`, the exact mean
+  squared residual `NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`, and
+  unbiasedness, `NLAlib.integral_sketchAndSolve_of_hasLaw_haarFrame`.
 -/
 
 @[expose] public section
@@ -494,6 +505,262 @@ theorem integral_sketchAndSolve_of_hasLaw_gaussianMatrix [DecidableEq r]
     integrable_sketchAndSolve_of_hasLaw_gaussianMatrix hS hA E
   have hae : ∀ᵐ ω ∂μ, sketchAndSolve A (S ω) B = pinv A * B + f (S ω) := by
     filter_upwards [ae_rank_mul_eq hS A (by omega)] with ω hω
+    exact sketchAndSolve_eq_pinv_mul_add hω B
+  rw [integral_congr_ae hae, integral_add (integrable_const _) hfi, h0, add_zero, integral_const,
+    probReal_univ, one_smul]
+
+/-! ### Haar sketches
+
+For an $m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$ the sketch is
+$\mathbf{Q}^{\mathsf{H}}$; the proofs are those above with complementary frames and the random
+orthonormal sketching identity `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame` in
+place of the Gaussian block moment. -/
+
+variable {Q : Ω → Matrix m p ℝ}
+
+/-- **Orthogonality helps, but only a bit**: the Haar projection factor is at most the Gaussian
+one, <!-- value haarProjectionFactor d p q --> <!-- value gaussianProjectionFactor q p -->
+$1 + (d - p)/(d - q) \cdot (q/(p - q - 1)) \le 1 + q/(p - q - 1)$ for $q + 2 \le p \le d$; the
+excesses over $1$ are in the ratio $\frac{d-p}{d-q}$.
+[EpperlyWebber2026, §2.1]. -/
+theorem haarProjectionFactor_le_gaussianProjectionFactor {d p q : ℕ} (hqp : q + 2 ≤ p)
+    (hpd : p ≤ d) : haarProjectionFactor d p q ≤ gaussianProjectionFactor q p := by
+  have hqp' : (q : ℝ) + 2 ≤ p := by exact_mod_cast hqp
+  have hpd' : (p : ℝ) ≤ d := by exact_mod_cast hpd
+  rw [haarProjectionFactor_def, gaussianProjectionFactor_def, add_le_add_iff_left]
+  refine mul_le_of_le_one_left (div_nonneg (Nat.cast_nonneg q) (by linarith)) ?_
+  exact div_le_one_of_le₀ (by linarith) (by linarith)
+
+/-! ### Haar sketches: complementary frames -/
+
+omit [Fintype r] in
+/-- Complementary orthonormal frames $\mathbf{Q}_1$ of $\operatorname{range}\mathbf{X}$ and
+$\mathbf{Q}_2$ of its orthogonal complement; the second reproduces every residual
+$(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$. -/
+private theorem exists_compl_frames (X : Matrix m s ℝ) (B : Matrix m r ℝ) :
+    ∃ (Q₁ : Matrix m (Fin X.rank) ℝ) (Q₂ : Matrix m (Fin (Fintype.card m - X.rank)) ℝ),
+      HasOrthonormalCols Q₁ ∧ HasOrthonormalCols Q₂ ∧ Q₁ᴴ * Q₂ = 0 ∧
+        LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin ∧
+          Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B := by
+  obtain ⟨Q₁, hQ₁, hR₁⟩ := exists_hasOrthonormalCols_range_eq (p := Fin X.rank) X
+    (Fintype.card_fin _)
+  have hc : Fintype.card (Fin X.rank) + Fintype.card (Fin (Fintype.card m - X.rank)) =
+      Fintype.card m := by
+    simp only [Fintype.card_fin]; have := Matrix.rank_le_card_height X; omega
+  obtain ⟨Q₂, hQ⟩ := hQ₁.exists_fromCols hc
+  obtain ⟨-, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
+  have hVV := hQ.mul_conjTranspose_add_mul_conjTranspose hc
+  have hP : rangeProjector X = Q₁ * Q₁ᴴ := by
+    rw [← rangeProjector_inj.mpr hR₁, hQ₁.rangeProjector_eq]
+  have h22 : Q₂ * Q₂ᴴ = 1 - rangeProjector X := by rw [hP, ← hVV]; abel
+  refine ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, ?_⟩
+  have hI : (1 - rangeProjector X) * (1 - rangeProjector X) = 1 - rangeProjector X := by
+    rw [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_sub, Matrix.mul_one,
+      rangeProjector_mul_rangeProjector, sub_self, sub_zero]
+  rw [← Matrix.mul_assoc, h22, ← Matrix.mul_assoc, hI]
+
+omit [DecidableEq m] in
+/-- The rank event holds almost surely for a Haar sketch:
+$\operatorname{rank}(\mathbf{Q}^{\mathsf{H}}\mathbf{X}) = \operatorname{rank}\mathbf{X}$ when
+$\operatorname{rank}\mathbf{X} \le p$. -/
+private theorem ae_rank_conjTranspose_mul_eq [DecidableEq p] (hQ : HasLaw Q (haarFrame m p) μ)
+    (X : Matrix m s ℝ) (hX : X.rank ≤ Fintype.card p) :
+    ∀ᵐ ω ∂μ, ((Q ω)ᴴ * X).rank = X.rank := by
+  filter_upwards [ae_rank_mul_eq_min_of_hasLaw_haarFrame Xᴴ hQ] with ω hω
+  rw [show (Q ω)ᴴ * X = (Xᴴ * Q ω)ᴴ by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose], Matrix.rank_conjTranspose,
+    hω, Matrix.rank_conjTranspose, min_eq_left hX]
+
+/-! ### Haar sketches: the completion identity -/
+
+/-- The completion split, almost surely, for a Haar sketch. -/
+private theorem ae_frobNorm_one_sub_obliqueProjector_mul_sq_eq_haar [DecidableEq p]
+    (hQ : HasLaw Q (haarFrame m p) μ) {X : Matrix m s ℝ} (hX : X.rank ≤ Fintype.card p)
+    {B : Matrix m r ℝ} {t : ℕ}
+    {Q₁ : Matrix m (Fin X.rank) ℝ} {Q₂ : Matrix m (Fin t) ℝ} (hQ₁ : HasOrthonormalCols Q₁)
+    (hR₁ : LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin)
+    (hE : Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B) :
+    ∀ᵐ ω ∂μ, frobNorm ((1 - obliqueProjector X (Q ω)ᴴ) * B) ^ 2 =
+      frobNorm ((1 - rangeProjector X) * B) ^ 2 +
+        frobNorm (pinv ((Q ω)ᴴ * Q₁) * ((Q ω)ᴴ * Q₂) *
+          (Q₂ᴴ * ((1 - rangeProjector X) * B))) ^ 2 := by
+  filter_upwards [ae_rank_conjTranspose_mul_eq hQ X hX] with ω hω
+  rw [frobNorm_one_sub_obliqueProjector_mul_sq hω, obliqueProjector_mul_eq_frames hR₁ hE hω,
+    hQ₁.frobNorm_mul_left]
+
+/-- The squared error of the Haar oblique projection is integrable for
+$\operatorname{rank}\mathbf{X} + 2 \le p \le m$. -/
+theorem integrable_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame [DecidableEq p]
+    (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    (X : Matrix m s ℝ) (hX : X.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    Integrable (fun ω => frobNorm ((1 - obliqueProjector X (Q ω)ᴴ) * B) ^ 2) μ := by
+  have := hQ.isProbabilityMeasure
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames X B
+  have hrp : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
+  have hint := integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame hQ hpm hQ₁ hQ₂ hrp
+    (Q₂ᴴ * ((1 - rangeProjector X) * B))
+  exact ((integrable_const _).add hint).congr
+    ((ae_frobNorm_one_sub_obliqueProjector_mul_sq_eq_haar hQ (by omega) hQ₁ hR₁ hE).mono
+      fun _ h => h.symm)
+
+/-- **The Haar completion identity**: for an $m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$,
+the sketch $\mathbf{Q}^{\mathsf{H}}$, every fixed $\mathbf{X}$ with
+$\operatorname{rank}\mathbf{X} + 2 \le p$ and every $\mathbf{B}$, writing
+$q = \operatorname{rank}\mathbf{X}$, <!-- value haarProjectionFactor m p q -->
+$$\mathbb{E}\|(\mathbf{I}-\mathbf{\Pi}_{\mathbf{X},\mathbf{Q}^{\mathsf{H}}})\mathbf{B}
+\|_{\mathsf{F}}^2 = \Bigl(1 + \frac{m - p}{m - q}\cdot\frac{q}{p - q - 1}\Bigr)
+\|(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2\,,$$
+the factor being `haarProjectionFactor m p q`. No full rank of $\mathbf{X}$ is assumed. For
+$p > m$ the formula is false (the sketch is then an isometry and the error is the orthogonal one),
+hence $p \le m$. The Gaussian twin is
+`NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix`.
+[EpperlyWebber2026, Theorem 2.1 and Proposition 5.7]; there for $\mathbf{X} = \mathbf{A}$, here any
+basis of any rank. Result: sketch-and-solve-expected-error -/
+theorem integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame [DecidableEq p]
+    (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    (X : Matrix m s ℝ) (hX : X.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    ∫ ω, frobNorm ((1 - obliqueProjector X (Q ω)ᴴ) * B) ^ 2 ∂μ =
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) X.rank *
+        frobNorm ((1 - rangeProjector X) * B) ^ 2 := by
+  have := hQ.isProbabilityMeasure
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames X B
+  have hrp : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
+  have hrs : Fintype.card (Fin X.rank) + Fintype.card (Fin (Fintype.card m - X.rank)) =
+      Fintype.card m := by
+    simp only [Fintype.card_fin]; omega
+  have hint := integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame hQ hpm hQ₁ hQ₂ hrp
+    (Q₂ᴴ * ((1 - rangeProjector X) * B))
+  have hval := integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame hQ hpm hQ₁ hQ₂ h₁₂ hrs hrp
+    (Q₂ᴴ * ((1 - rangeProjector X) * B))
+  have hQE : frobNorm (Q₂ᴴ * ((1 - rangeProjector X) * B)) =
+      frobNorm ((1 - rangeProjector X) * B) := by
+    rw [← hQ₂.frobNorm_mul_left, hE]
+  rw [integral_congr_ae
+      (ae_frobNorm_one_sub_obliqueProjector_mul_sq_eq_haar hQ (by omega) hQ₁ hR₁ hE),
+    integral_add (integrable_const _) hint, integral_const, probReal_univ, one_smul, hval,
+    Fintype.card_fin, haarProjectionFactor_def, hQE]
+  ring
+
+/-- **Exact mean squared residual of sketch-and-solve with a random orthonormal sketch**: for an
+$m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$, the sketch $\mathbf{Q}^{\mathsf{H}}$ and
+$r = \operatorname{rank}\mathbf{A}$ with $r + 2 \le p$, <!-- value haarProjectionFactor m p r -->
+$$\mathbb{E}\|\mathbf{B} - \mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{Q}^{\mathsf{H}},
+\mathbf{B})\|_{\mathsf{F}}^2 = \Bigl(1 + \frac{m - p}{m - r}\cdot\frac{r}{p - r - 1}\Bigr)
+\min_{\mathbf{Y}}\|\mathbf{B}-\mathbf{A}\mathbf{Y}\|_{\mathsf{F}}^2\,,$$
+the minimum being $\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}\|_{\mathsf{F}}^2$ and the factor
+`haarProjectionFactor m p r`. Its integrand is that of
+`NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame` at
+$\mathbf{X} = \mathbf{A}$ (`NLAlib.mul_sketchAndSolve`), whose integrability companion applies.
+[EpperlyWebber2026, Theorem 2.1 (random orthonormal)]; real case, $\alpha_{\mathbb{R}} = 1$.
+Result: sketch-and-solve-expected-error -/
+theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame [DecidableEq p]
+    (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    {A : Matrix m n ℝ} (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    ∫ ω, frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2 ∂μ =
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) A.rank *
+        frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
+  simp only [mul_sketchAndSolve]
+  rw [← integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame hQ hpm A hA B]
+  simp only [Matrix.sub_mul, Matrix.one_mul]
+
+/-! ### Haar sketches: unbiasedness -/
+
+omit [DecidableEq m] in
+open scoped Matrix.Norms.L2Operator in
+/-- The sketch-and-solve solution with a Haar sketch is integrable for
+$\operatorname{rank}\mathbf{A} + 2 \le p \le m$. -/
+theorem integrable_sketchAndSolve_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
+    (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    {A : Matrix m n ℝ} (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    Integrable (fun ω => sketchAndSolve A (Q ω)ᴴ B) μ := by
+  classical
+  have := hQ.isProbabilityMeasure
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames A B
+  set E := (1 - rangeProjector A) * B
+  have hrp : Fintype.card (Fin A.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
+  have hint := integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame hQ hpm hQ₁ hQ₂ hrp
+    (Q₂ᴴ * E)
+  have hm : Measurable fun Q₀ : Matrix m p ℝ => sketchAndSolve A Q₀ᴴ B :=
+    (measurable_pinv.comp (continuous_id.matrix_conjTranspose.measurable.matrix_mul
+      measurable_const)).matrix_mul
+      (continuous_id.matrix_conjTranspose.measurable.matrix_mul measurable_const)
+  refine Integrable.mono' ((integrable_const (specNorm (pinv A * B))).add
+    (((integrable_const 1).add hint).const_mul (specNorm (pinv A))))
+    (hm.comp_aemeasurable hQ.aemeasurable).aestronglyMeasurable ?_
+  filter_upwards [ae_rank_conjTranspose_mul_eq hQ A (by omega)] with ω hω
+  rw [← specNorm_eq_norm, sketchAndSolve_eq_pinv_mul_add hω B]
+  refine (specNorm_add_le _ _).trans (add_le_add le_rfl ?_)
+  rw [← pinv_mul_mul_sketchAndSolve A (Q ω)ᴴ E, mul_sketchAndSolve,
+    obliqueProjector_mul_eq_frames hR₁ hE hω]
+  refine (specNorm_mul_le _ _).trans (mul_le_mul_of_nonneg_left ?_ (specNorm_nonneg _))
+  rw [hQ₁.specNorm_mul_left]
+  set x := frobNorm (pinv ((Q ω)ᴴ * Q₁) * ((Q ω)ᴴ * Q₂) * (Q₂ᴴ * E))
+  have hx : x ≤ 1 + x ^ 2 := by nlinarith [sq_nonneg (x - 1)]
+  exact (specNorm_le_frobNorm _).trans hx
+
+omit [DecidableEq m] in
+open scoped Matrix.Norms.L2Operator in
+/-- **Sketch-and-solve with a random orthonormal sketch is unbiased**: for an $m \times p$ Haar
+frame $\mathbf{Q}$ with $p \le m$ and $\operatorname{rank}\mathbf{A} + 2 \le p$,
+$$\mathbb{E}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{Q}^{\mathsf{H}}, \mathbf{B}) =
+\mathbf{A}^{+}\mathbf{B}\,.$$
+The reflection $2\mathbf{P}_{\mathbf{A}} - \mathbf{I}$, acting on the left of the frame, preserves
+its law, fixes $\mathbf{A}$ and negates the residual. The Gaussian twin is
+`NLAlib.integral_sketchAndSolve_of_hasLaw_gaussianMatrix`.
+[EpperlyWebber2026, Theorem 2.1]; real case. Result: sketch-and-solve-expected-error -/
+theorem integral_sketchAndSolve_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
+    (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    {A : Matrix m n ℝ} (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    ∫ ω, sketchAndSolve A (Q ω)ᴴ B ∂μ = pinv A * B := by
+  classical
+  have := hQ.isProbabilityMeasure
+  set E := (1 - rangeProjector A) * B with hEdef
+  set D : Matrix m m ℝ := (2 : ℝ) • rangeProjector A - 1 with hDdef
+  have hPP := rangeProjector_mul_rangeProjector A
+  have hDD : D * D = 1 := by
+    simp only [hDdef, Matrix.sub_mul, Matrix.mul_sub, Matrix.smul_mul, Matrix.mul_smul,
+      Matrix.one_mul, Matrix.mul_one, hPP]
+    module
+  have hDh : Dᴴ = D := by
+    simp only [hDdef, Matrix.conjTranspose_sub, Matrix.conjTranspose_smul, star_trivial,
+      conjTranspose_rangeProjector, Matrix.conjTranspose_one]
+  have hD : HasOrthonormalCols D := by
+    rw [hasOrthonormalCols_iff, hDh, hDD]
+  have hDA : D * A = A := by
+    simp only [hDdef, Matrix.sub_mul, Matrix.smul_mul, rangeProjector_mul_self, Matrix.one_mul]
+    module
+  have hDE : D * E = -E := by
+    have hPE : rangeProjector A * E = 0 := by
+      rw [hEdef, ← Matrix.mul_assoc, Matrix.mul_sub, Matrix.mul_one, hPP, sub_self,
+        Matrix.zero_mul]
+    simp only [hDdef, Matrix.sub_mul, Matrix.smul_mul, hPE, Matrix.one_mul, smul_zero, zero_sub]
+  set f : Matrix m p ℝ → Matrix n r ℝ := fun Q₀ => sketchAndSolve A Q₀ᴴ E with hf
+  have hfm : Measurable f :=
+    (measurable_pinv.comp (continuous_id.matrix_conjTranspose.measurable.matrix_mul
+      measurable_const)).matrix_mul
+      (continuous_id.matrix_conjTranspose.measurable.matrix_mul measurable_const)
+  have hfD (Q₀ : Matrix m p ℝ) : f (D * Q₀) = -f Q₀ := by
+    simp only [hf, sketchAndSolve, Matrix.conjTranspose_mul, hDh, Matrix.mul_assoc, hDA, hDE,
+      Matrix.mul_neg]
+  have hQD := hasLaw_const_mul_of_isLeftUnitarilyInvariant hQ hD
+  have h1 : ∫ ω, f (Q ω) ∂μ = ∫ x, f x ∂(haarFrame m p) :=
+    hQ.integral_comp hfm.aestronglyMeasurable
+  have h2 : ∫ ω, f (D * Q ω) ∂μ = ∫ x, f x ∂(haarFrame m p) :=
+    hQD.integral_comp hfm.aestronglyMeasurable
+  have h0 : ∫ ω, f (Q ω) ∂μ = 0 := by
+    have h3 : ∫ ω, f (Q ω) ∂μ = -∫ ω, f (Q ω) ∂μ :=
+      calc ∫ ω, f (Q ω) ∂μ = ∫ ω, f (D * Q ω) ∂μ := h1.trans h2.symm
+        _ = ∫ ω, -f (Q ω) ∂μ := by simp only [hfD]
+        _ = -∫ ω, f (Q ω) ∂μ := integral_neg _
+    have h4 : (2 : ℝ) • ∫ ω, f (Q ω) ∂μ = 0 := by
+      rw [two_smul]
+      nth_rewrite 2 [h3]
+      exact add_neg_cancel _
+    exact (smul_eq_zero.mp h4).resolve_left two_ne_zero
+  have hfi : Integrable (fun ω => f (Q ω)) μ :=
+    integrable_sketchAndSolve_of_hasLaw_haarFrame hQ hpm hA E
+  have hae : ∀ᵐ ω ∂μ, sketchAndSolve A (Q ω)ᴴ B = pinv A * B + f (Q ω) := by
+    filter_upwards [ae_rank_conjTranspose_mul_eq hQ A (by omega)] with ω hω
     exact sketchAndSolve_eq_pinv_mul_add hω B
   rw [integral_congr_ae hae, integral_add (integrable_const _) hfi, h0, add_zero, integral_const,
     probReal_univ, one_smul]

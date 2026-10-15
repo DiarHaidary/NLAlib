@@ -9,6 +9,7 @@ public import NLAlib.Matrix.Basic.OrthonormalBasis
 public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius
 public import NLAlib.RandomMatrix.Gaussian.Moments
+public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
 
 /-!
@@ -27,10 +28,19 @@ polar factor of a wide matrix is
 $\mathbf{W}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{W}^{\mathsf{H}}$ is a Beta matrix (Epperly and
 Webber's Definition 5.5); its inverse mean, in trace form, is
 $\mathbb{E}\|(\mathbf{W}\mathbf{Q})^{+}\|_{\mathsf{F}}^2 = p\bigl(1 + (n-k)/(k-p-1)\bigr)$, computed
-from the Gaussian inverse moments without the Beta law. Real field, as the Haar frame. The moments
+from the Gaussian inverse moments without the Beta law. With it and the coupled conjugation average
+(`NLAlib.integral_conjTranspose_mul_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant`) the random
+orthonormal sketching identity follows: for complementary frames $\mathbf{V}_1$ ($r$ columns) and
+$\mathbf{V}_2$ and $r + 2 \le k \le n$,
+$$\mathbb{E}\|(\mathbf{Q}^{\mathsf{H}}\mathbf{V}_1)^{+}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\mathbf{B}
+\|_{\mathsf{F}}^2 = \frac{n-k}{n-r}\cdot\frac{r}{k-r-1}\,\|\mathbf{B}\|_{\mathsf{F}}^2\,,$$
+packaged in the Haar projection factor <!-- value haarProjectionFactor d p q -->
+$1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor d p q`), the completion
+factor of Haar sketch-and-solve. Real field, as the Haar frame. The moments
 are here rather than in `NLAlib.RandomMatrix.Haar.Moments` because they are moments of the block
 $\mathbf{W}\mathbf{Q}$, proved from its law and the Gaussian inverse moments. Design:
-`docs/design/LowRank-S4.md` §3.2, §8 item 8.
+`docs/design/LowRank-S4.md` §3.2, §8 item 8; the sketching identity and the factor,
+`docs/design/LowRank-S6.md` §3.1, §8 items 3 and 6.
 
 ## Main results
 
@@ -39,6 +49,11 @@ $\mathbf{W}\mathbf{Q}$, proved from its law and the Gaussian inverse moments. De
 * `NLAlib.integral_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame`, with its integrability
   `NLAlib.integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame`: the inverse mean of the Beta
   matrix, trace form.
+* `NLAlib.haarProjectionFactor`, with `NLAlib.one_le_haarProjectionFactor` and the monotonicity
+  `NLAlib.haarProjectionFactor_le_haarProjectionFactor`.
+* `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame`, with its integrability
+  `NLAlib.integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame`: the random orthonormal
+  sketching identity.
 -/
 
 @[expose] public section
@@ -313,5 +328,268 @@ theorem integral_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame [DecidableEq k] 
     linarith
   simp only [probReal_univ, one_smul]
   field_simp
+
+end NLAlib
+
+namespace NLAlib
+
+/-! ### The Haar projection factor -/
+
+/-- **The Haar projection factor** <!-- value haarProjectionFactor d p q -->
+$1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$ (casts to $\mathbb{R}$): the factor by which a Haar
+sketch of size $p$ in ambient dimension $d$ inflates the least-squares error of a basis of rank
+$q$, Epperly and Webber's random orthonormal constant, and their
+$1 + \gamma\frac{\ell}{p - \ell - 1}$ with $\gamma = \frac{d - p}{d - \ell}$ at $q = \ell$. Junk for
+$p \le q + 1$ or $d \le q$ (Lean's $x/0 = 0$, signs); theorems carry `q + 2 ≤ p` and `p ≤ d`. A
+plain definition, because its body is the source's formula.
+[EpperlyWebber2026, Theorem 2.1]. -/
+noncomputable def haarProjectionFactor (d p q : ℕ) : ℝ :=
+  1 + ((d : ℝ) - p) / ((d : ℝ) - q) * ((q : ℝ) / ((p : ℝ) - q - 1))
+
+/-- The body of `haarProjectionFactor`, <!-- value haarProjectionFactor d p q -->
+$1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$, as a simp lemma. -/
+@[simp]
+theorem haarProjectionFactor_def (d p q : ℕ) :
+    haarProjectionFactor d p q =
+      1 + ((d : ℝ) - p) / ((d : ℝ) - q) * ((q : ℝ) / ((p : ℝ) - q - 1)) :=
+  rfl
+
+/-- The Haar projection factor is at least $1$ for $q + 2 \le p \le d$. -/
+theorem one_le_haarProjectionFactor {d p q : ℕ} (hqp : q + 2 ≤ p) (hpd : p ≤ d) :
+    1 ≤ haarProjectionFactor d p q := by
+  have hqp' : (q : ℝ) + 2 ≤ p := by exact_mod_cast hqp
+  have hpd' : (p : ℝ) ≤ d := by exact_mod_cast hpd
+  rw [haarProjectionFactor_def, le_add_iff_nonneg_right]
+  exact mul_nonneg (div_nonneg (by linarith) (by linarith))
+    (div_nonneg (Nat.cast_nonneg q) (by linarith))
+
+/-- The Haar projection factor is monotone in the rank: the factor at the actual rank is at most
+the factor at any larger rank $q'$ with $q' + 2 \le p \le d$. -/
+theorem haarProjectionFactor_le_haarProjectionFactor {d p q q' : ℕ} (hq : q ≤ q')
+    (hq' : q' + 2 ≤ p) (hpd : p ≤ d) :
+    haarProjectionFactor d p q ≤ haarProjectionFactor d p q' := by
+  have hq1 : (q : ℝ) ≤ q' := by exact_mod_cast hq
+  have hq2 : (q' : ℝ) + 2 ≤ p := by exact_mod_cast hq'
+  have hpd' : (p : ℝ) ≤ d := by exact_mod_cast hpd
+  simp only [haarProjectionFactor_def, add_le_add_iff_left]
+  exact mul_le_mul (div_le_div_of_nonneg_left (by linarith) (by linarith) (by linarith))
+    (div_le_div₀ (Nat.cast_nonneg _) hq1 (by linarith) (by linarith))
+    (div_nonneg (Nat.cast_nonneg _) (by linarith)) (div_nonneg (by linarith) (by linarith))
+
+/-! ### The random orthonormal sketching identity -/
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m p r s a : Type*} [Fintype m]
+  [Fintype p] [Fintype r] [Fintype s] [Fintype a] {Q : Ω → Matrix m p ℝ}
+
+/-- The middle factor $F(\mathbf{x}) = (\mathbf{x}^{\mathsf{H}})^{+\mathsf{H}}
+(\mathbf{x}^{\mathsf{H}})^{+}$ of the sketching identity. -/
+private noncomputable def middle (x : Matrix r p ℝ) : Matrix p p ℝ :=
+  (pinv xᴴ)ᴴ * pinv xᴴ
+
+omit [Fintype r] in
+private theorem measurable_middle [Fintype r] : Measurable (middle (r := r) (p := p)) := by
+  have hT : Measurable fun x : Matrix r p ℝ => xᴴ := continuous_id.matrix_conjTranspose.measurable
+  have hP : Measurable fun x : Matrix r p ℝ => pinv xᴴ := measurable_pinv.comp hT
+  exact (continuous_id.matrix_conjTranspose.measurable.comp hP).matrix_mul hP
+
+/-- The squared norm in the sketching identity as a trace against the conjugated middle factor. -/
+private theorem frobNorm_pinv_mul_mul_sq_eq_trace (Q₀ : Matrix m p ℝ) (V₁ : Matrix m r ℝ)
+    (V₂ : Matrix m s ℝ) (B : Matrix s a ℝ) :
+    frobNorm (pinv (Q₀ᴴ * V₁) * (Q₀ᴴ * V₂) * B) ^ 2 =
+      (V₂ᴴ * Q₀ * middle (V₁ᴴ * Q₀) * (V₂ᴴ * Q₀)ᴴ * (B * Bᴴ)).trace := by
+  have h1 : (V₁ᴴ * Q₀)ᴴ = Q₀ᴴ * V₁ := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+  have h2 : (V₂ᴴ * Q₀)ᴴ = Q₀ᴴ * V₂ := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+  rw [frobNorm_sq_eq_re_trace, RCLike.re_to_real]
+  have e : (pinv (Q₀ᴴ * V₁) * (Q₀ᴴ * V₂) * B)ᴴ * (pinv (Q₀ᴴ * V₁) * (Q₀ᴴ * V₂) * B) =
+      Bᴴ * (V₂ᴴ * Q₀ * middle (V₁ᴴ * Q₀) * (V₂ᴴ * Q₀)ᴴ * B) := by
+    rw [middle, h1, h2]
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc]
+  rw [e, Matrix.trace_mul_comm, Matrix.mul_assoc]
+
+/-- The two traces of the middle factor, for $\mathbf{x}^{\mathsf{H}}$ of full column rank. -/
+private theorem trace_middle_mul_eq [DecidableEq r] {x : Matrix r p ℝ}
+    (hL : pinv xᴴ * xᴴ = 1) : (middle x * (xᴴ * x)).trace = Fintype.card r := by
+  rw [middle, show (pinv xᴴ)ᴴ * pinv xᴴ * (xᴴ * x) = (pinv xᴴ)ᴴ * (pinv xᴴ * xᴴ) * x by
+      simp only [Matrix.mul_assoc], hL, Matrix.mul_one, Matrix.trace_mul_comm,
+    show x * (pinv xᴴ)ᴴ = (pinv xᴴ * xᴴ)ᴴ by
+      rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose], hL,
+    Matrix.conjTranspose_one, Matrix.trace_one]
+
+private theorem trace_middle (x : Matrix r p ℝ) : (middle x).trace = frobNorm (pinv x) ^ 2 := by
+  rw [middle, pinv_conjTranspose, Matrix.conjTranspose_conjTranspose, Matrix.trace_mul_comm,
+    frobNorm_sq_eq_re_trace, RCLike.re_to_real]
+
+/-- The trace of the conjugated middle factor, on the event that $\mathbf{Q}$ has orthonormal
+columns and $\mathbf{V}_1^{\mathsf{H}}\mathbf{Q}$ has full row rank. -/
+private theorem trace_conj_middle_eq [DecidableEq m] [DecidableEq p]
+    {Q₀ : Matrix m p ℝ} (hQ₀ : HasOrthonormalCols Q₀) {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ}
+    (hVV : V₁ * V₁ᴴ + V₂ * V₂ᴴ = 1) (hinj : Function.Injective (Q₀ᴴ * V₁).mulVec) :
+    (V₂ᴴ * Q₀ * middle (V₁ᴴ * Q₀) * (V₂ᴴ * Q₀)ᴴ).trace =
+      frobNorm (pinv (V₁ᴴ * Q₀)) ^ 2 - Fintype.card r := by
+  classical
+  have h1 : (V₁ᴴ * Q₀)ᴴ = Q₀ᴴ * V₁ := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+  have hL : pinv (V₁ᴴ * Q₀)ᴴ * (V₁ᴴ * Q₀)ᴴ = 1 := by
+    rw [h1]; exact pinv_mul_self_of_injective hinj
+  have hG : (V₂ᴴ * Q₀)ᴴ * (V₂ᴴ * Q₀) = 1 - (V₁ᴴ * Q₀)ᴴ * (V₁ᴴ * Q₀) := by
+    have e : Q₀ᴴ * (V₁ * V₁ᴴ + V₂ * V₂ᴴ) * Q₀ = 1 := by
+      rw [hVV, Matrix.mul_one, hQ₀.conjTranspose_mul_self]
+    rw [eq_sub_iff_add_eq, ← e]
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_add,
+      Matrix.add_mul, Matrix.mul_assoc]
+    abel
+  rw [Matrix.mul_assoc, Matrix.trace_mul_comm, Matrix.mul_assoc, hG, Matrix.mul_sub,
+    Matrix.mul_one, Matrix.trace_sub, trace_middle, trace_middle_mul_eq hL]
+
+/-- Almost surely the squared norm is at most $\|(\mathbf{V}_1^{\mathsf{H}}\mathbf{Q})^{+}
+\|_{\mathsf{F}}^2\|\mathbf{B}\|_2^2$, since $\|\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\|_2 \le 1$. -/
+private theorem ae_frobNorm_pinv_mul_mul_sq_le [DecidableEq p] (hQ : HasLaw Q (haarFrame m p) μ)
+    {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ} [DecidableEq s] (hV₂ : HasOrthonormalCols V₂)
+    (B : Matrix s a ℝ) :
+    ∀ᵐ ω ∂μ, frobNorm (pinv ((Q ω)ᴴ * V₁) * ((Q ω)ᴴ * V₂) * B) ^ 2 ≤
+      frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2 * specNorm B ^ 2 := by
+  filter_upwards [ae_specNorm_le_one_of_hasLaw_haarFrame hQ] with ω hω
+  have h1 : frobNorm (pinv ((Q ω)ᴴ * V₁)) = frobNorm (pinv (V₁ᴴ * Q ω)) := by
+    rw [show (Q ω)ᴴ * V₁ = (V₁ᴴ * Q ω)ᴴ by
+      rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose], pinv_conjTranspose,
+      frobNorm_conjTranspose]
+  have h2 : specNorm ((Q ω)ᴴ * V₂) ≤ 1 := by
+    rw [← specNorm_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+    exact (hV₂.specNorm_conjTranspose_mul_le _).trans hω
+  have h3 : frobNorm (pinv ((Q ω)ᴴ * V₁) * ((Q ω)ᴴ * V₂) * B) ≤
+      frobNorm (pinv (V₁ᴴ * Q ω)) * specNorm B := by
+    refine (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
+      (mul_le_mul_of_nonneg_right ?_ (specNorm_nonneg _))
+    refine (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans ?_
+    rw [h1]
+    exact mul_le_of_le_one_right (frobNorm_nonneg _) h2
+  rw [← mul_pow]
+  exact pow_le_pow_left₀ (frobNorm_nonneg _) h3 2
+
+/-- The integrand of the sketching identity is measurable in the frame. -/
+private theorem measurable_frobNorm_pinv_mul_mul_sq (V₁ : Matrix m r ℝ) (V₂ : Matrix m s ℝ)
+    (B : Matrix s a ℝ) :
+    Measurable fun Q₀ : Matrix m p ℝ => frobNorm (pinv (Q₀ᴴ * V₁) * (Q₀ᴴ * V₂) * B) ^ 2 := by
+  have hT : Measurable fun Q₀ : Matrix m p ℝ => Q₀ᴴ :=
+    continuous_id.matrix_conjTranspose.measurable
+  exact (measurable_frobNorm.comp (((measurable_pinv.comp
+    (hT.matrix_mul measurable_const)).matrix_mul (hT.matrix_mul measurable_const)).matrix_mul
+      measurable_const)).pow_const 2
+
+/-- The squared norm of the Haar block
+$(\mathbf{Q}^{\mathsf{H}}\mathbf{V}_1)^{+}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\mathbf{B}$ is
+integrable, for an $m \times p$ Haar frame $\mathbf{Q}$, a frame $\mathbf{V}_1$ with
+$r + 2 \le p \le m$ and any $\mathbf{V}_2$ with orthonormal columns. -/
+theorem integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
+    [DecidableEq s] (hQ : HasLaw Q (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ}
+    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (hrp : Fintype.card r + 2 ≤ Fintype.card p) (B : Matrix s a ℝ) :
+    Integrable (fun ω => frobNorm (pinv ((Q ω)ᴴ * V₁) * ((Q ω)ᴴ * V₂) * B) ^ 2) μ := by
+  have hW : HasOrthonormalCols (V₁ᴴ)ᴴ := by rwa [Matrix.conjTranspose_conjTranspose]
+  have hint := integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame hQ hpm hW hrp
+  exact Integrable.mono' (hint.mul_const (specNorm B ^ 2))
+    ((measurable_frobNorm_pinv_mul_mul_sq V₁ V₂ B).comp_aemeasurable
+      hQ.aemeasurable).aestronglyMeasurable
+    ((ae_frobNorm_pinv_mul_mul_sq_le hQ hV₂ B).mono fun ω h => by
+      rw [Real.norm_of_nonneg (sq_nonneg _)]; exact h)
+
+open scoped Matrix.Norms.L2Operator in
+/-- **The random orthonormal sketching identity**: for an $m \times p$ Haar frame $\mathbf{Q}$,
+$p \le m$, complementary frames $\mathbf{V}_1$ ($r$ columns) and $\mathbf{V}_2$
+($\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, $r + \lvert s\rvert = m$), $r + 2 \le p$ and
+every $\mathbf{B}$,
+$$\mathbb{E}\|(\mathbf{Q}^{\mathsf{H}}\mathbf{V}_1)^{+}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\mathbf{B}
+\|_{\mathsf{F}}^2 = \frac{m-p}{m-r}\cdot\frac{r}{p-r-1}\,\|\mathbf{B}\|_{\mathsf{F}}^2\,,$$
+the Haar twin of `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix`, smaller than
+the Gaussian value $\frac{r}{p-r-1}$ by the factor $\frac{m-p}{m-r}$. Unlike the Gaussian case the
+frames must be complementary: the proof uses
+$\mathbf{\Omega}_1^{\mathsf{H}}\mathbf{\Omega}_1 + \mathbf{\Omega}_2^{\mathsf{H}}\mathbf{\Omega}_2 =
+\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$ for the blocks
+$\mathbf{\Omega}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{Q}$.
+[EpperlyWebber2026, Proposition 5.7]; there an inequality for general $\mathbf{R}$, equality at
+$\mathbf{R} = \mathbf{I}$, over $\mathbb{R}$ and $\mathbb{C}$; here the real case at
+$\mathbf{R} = \mathbf{I}$. Result: haar-sketching-identity -/
+theorem integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
+    [DecidableEq s] (hQ : HasLaw Q (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ}
+    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂) (h₁₂ : V₁ᴴ * V₂ = 0)
+    (hrs : Fintype.card r + Fintype.card s = Fintype.card m)
+    (hrp : Fintype.card r + 2 ≤ Fintype.card p) (B : Matrix s a ℝ) :
+    ∫ ω, frobNorm (pinv ((Q ω)ᴴ * V₁) * ((Q ω)ᴴ * V₂) * B) ^ 2 ∂μ =
+      frobNorm B ^ 2 * (((Fintype.card m : ℝ) - Fintype.card p) /
+        ((Fintype.card m : ℝ) - Fintype.card r) *
+          ((Fintype.card r : ℝ) / ((Fintype.card p : ℝ) - Fintype.card r - 1))) := by
+  classical
+  have := hQ.isProbabilityMeasure
+  have hVV : V₁ * V₁ᴴ + V₂ * V₂ᴴ = 1 :=
+    (hasOrthonormalCols_fromCols_iff.mpr ⟨hV₁, hV₂, h₁₂⟩).mul_conjTranspose_add_mul_conjTranspose
+      hrs
+  have hW : HasOrthonormalCols (V₁ᴴ)ᴴ := by rwa [Matrix.conjTranspose_conjTranspose]
+  have hpinv := integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame hQ hpm hW hrp
+  set Z : Ω → Matrix s s ℝ := fun ω => V₂ᴴ * Q ω * middle (V₁ᴴ * Q ω) * (V₂ᴴ * Q ω)ᴴ with hZdef
+  have hZm : Measurable fun Q₀ : Matrix m p ℝ =>
+      V₂ᴴ * Q₀ * middle (V₁ᴴ * Q₀) * (V₂ᴴ * Q₀)ᴴ :=
+    (((measurable_const.matrix_mul measurable_id).matrix_mul
+      (measurable_middle.comp (measurable_const.matrix_mul measurable_id))).matrix_mul
+      (continuous_id.matrix_conjTranspose.measurable.comp
+        (measurable_const.matrix_mul measurable_id)))
+  -- The conjugated middle factor is integrable: its norm is at most `‖(V₁ᴴQ)⁺‖_F²`.
+  have hZ : Integrable Z μ := by
+    refine Integrable.mono' hpinv (hZm.comp_aemeasurable hQ.aemeasurable).aestronglyMeasurable ?_
+    filter_upwards [ae_specNorm_le_one_of_hasLaw_haarFrame hQ] with ω hω
+    rw [← specNorm_eq_norm]
+    have hY : specNorm (V₂ᴴ * Q ω) ≤ 1 := (hV₂.specNorm_conjTranspose_mul_le _).trans hω
+    have hM : specNorm (middle (V₁ᴴ * Q ω)) ≤ frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2 := by
+      rw [middle]
+      refine (specNorm_mul_le _ _).trans ?_
+      rw [specNorm_conjTranspose, pinv_conjTranspose, specNorm_conjTranspose, ← sq]
+      exact pow_le_pow_left₀ (specNorm_nonneg _) (specNorm_le_frobNorm _) 2
+    have hM0 := specNorm_nonneg (middle (V₁ᴴ * Q ω))
+    have hY0 := specNorm_nonneg (V₂ᴴ * Q ω)
+    change specNorm (V₂ᴴ * Q ω * middle (V₁ᴴ * Q ω) * (V₂ᴴ * Q ω)ᴴ) ≤ _
+    calc specNorm (V₂ᴴ * Q ω * middle (V₁ᴴ * Q ω) * (V₂ᴴ * Q ω)ᴴ)
+        ≤ specNorm (V₂ᴴ * Q ω) * specNorm (middle (V₁ᴴ * Q ω)) * specNorm (V₂ᴴ * Q ω) := by
+          refine (specNorm_mul_le _ _).trans ?_
+          rw [specNorm_conjTranspose]
+          exact mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) hY0
+      _ ≤ 1 * frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2 * 1 := by gcongr
+      _ = frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2 := by ring
+  have hrank : ∀ᵐ ω ∂μ, Function.Injective ((Q ω)ᴴ * V₁).mulVec := by
+    filter_upwards [ae_rank_mul_eq_min_of_hasLaw_haarFrame V₁ᴴ hQ] with ω hω
+    rw [mulVec_injective_iff_rank_eq, show (Q ω)ᴴ * V₁ = (V₁ᴴ * Q ω)ᴴ by
+      rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose], Matrix.rank_conjTranspose,
+      hω, Matrix.rank_conjTranspose, hV₁.rank_eq]
+    omega
+  have htr : ∀ᵐ ω ∂μ, (Z ω).trace = frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2 - Fintype.card r := by
+    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame hQ hpm, hrank] with ω h1 h2
+    exact trace_conj_middle_eq h1 hVV h2
+  have hU2 := integral_conjTranspose_mul_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant hQ hV₂
+    h₁₂ measurable_middle hZ
+  have hval := integral_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame hQ hpm hW hrp
+  have htrZ : ∫ ω, (Z ω).trace ∂μ = Fintype.card r * (1 + ((Fintype.card m : ℝ) - Fintype.card p) /
+      ((Fintype.card p : ℝ) - Fintype.card r - 1)) - Fintype.card r := by
+    rw [integral_congr_ae htr, integral_sub hpinv (integrable_const _), hval, integral_const,
+      probReal_univ, one_smul]
+  have hC : (B * Bᴴ).trace = frobNorm B ^ 2 := by
+    rw [← frobNorm_conjTranspose B, frobNorm_sq_eq_re_trace, Matrix.conjTranspose_conjTranspose,
+      RCLike.re_to_real]
+  simp only [frobNorm_pinv_mul_mul_sq_eq_trace]
+  rw [Matrix.integral_trace (hZ.mul_const _), Matrix.integral_mul_const hZ, hU2]
+  simp only [Matrix.smul_mul, Matrix.one_mul, Matrix.trace_smul, smul_eq_mul]
+  rw [htrZ, hC]
+  have hs : (Fintype.card s : ℝ) = Fintype.card m - Fintype.card r := by
+    rw [← hrs]; push_cast; ring
+  have hmr : (0 : ℝ) < (Fintype.card m : ℝ) - Fintype.card r := by
+    have : (Fintype.card r : ℝ) + 2 ≤ Fintype.card m := by exact_mod_cast hrp.trans hpm
+    linarith
+  have hpr : (0 : ℝ) < (Fintype.card p : ℝ) - Fintype.card r - 1 := by
+    have : (Fintype.card r : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast hrp
+    linarith
+  rw [hs]
+  field_simp
+  ring
 
 end NLAlib

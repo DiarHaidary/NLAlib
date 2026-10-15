@@ -7,10 +7,11 @@ module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.LowRank.Gaussian.RangeFinder
+public import NLAlib.LowRank.Gaussian.RotationInvariant
 public import NLAlib.Sketching.Gaussian.LeastSquares
 
 /-!
-# Generalized Nyström in expectation with a Gaussian co-range test matrix
+# Generalized Nyström in expectation with a Gaussian or Haar co-range test matrix
 
 For a range test matrix $\mathbf{\Omega}$ (the Lean `X`, `X₀` when fixed) and an independent
 standard Gaussian co-range test matrix $\mathbf{\Psi}$, the expected squared Frobenius error of
@@ -29,8 +30,16 @@ the sketch $\mathbf{\Psi}^{\mathsf{H}}$; the iterated integral over the independ
 (`ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral`) integrates it over
 $\mathbf{\Omega}$, whose law is arbitrary. Any bound on the randomized SVD thus becomes a bound on
 generalized Nyström; with a Gaussian $\mathbf{\Omega}$ this is Tropp, Yurtsever, Udell and Cevher's
-Theorem 4.3. Real throughout. Design: `docs/design/LowRank-S6.md` §3.4, §8 (the Gaussian half;
-the rotation-invariant bound and the Haar co-range statements follow in a later section).
+Theorem 4.3.
+
+For an $m \times p$ Haar co-range test matrix with $p \le m$ the factor is the Haar
+one, <!-- value haarProjectionFactor m p q -->
+$1 + (m - p)/(m - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor m p q`), through
+`NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame`. With a
+rotation-invariant $\mathbf{\Omega}$ of full column rank, Epperly and Webber's sharp bound for the
+randomized SVD (`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le`)
+gives their Theorem 4.2(a), for a Gaussian and for a Haar co-range test matrix. Real throughout.
+Design: `docs/design/LowRank-S6.md` §3.4, §8.
 
 ## Main results
 
@@ -43,6 +52,16 @@ the rotation-invariant bound and the Haar co-range statements follow in a later 
   `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`: Gaussian test
   matrices (TYUC Theorem 4.3).
 * `NLAlib.ae_generalizedNystrom_eq_self_of_hasLaw_gaussianMatrix`: exact recovery at low rank.
+* Haar co-range: `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame` (fixed
+  range test matrix),
+  `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_mul_integral_of_hasLaw_haarFrame` with
+  `NLAlib.integrable_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame` (any law of the range
+  test matrix), and for a Gaussian range test matrix
+  `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_eq_mul_integral_of_hasLaw_haarFrame`.
+* Epperly and Webber's Theorem 4.2(a), with a rank parameter $r \ge \operatorname{rank}\mathbf{A}$:
+  `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_isLeftUnitarilyInvariant` followed by
+  `_of_hasLaw_gaussianMatrix_of_rank_le` (Gaussian co-range) or `_of_hasLaw_haarFrame_of_rank_le`
+  (Haar co-range).
 -/
 
 @[expose] public section
@@ -286,5 +305,249 @@ theorem ae_generalizedNystrom_eq_self_of_hasLaw_gaussianMatrix (A : Matrix m n �
   have hinj := Matrix.rank_mul_eq_iff_injOn.mp hΨ'
   refine Matrix.rank_mul_eq_iff_injOn.mpr (hinj.mono ?_)
   exact range_mulVecLin_le_iff_exists_mul.mpr ⟨X ω, rfl⟩
+
+/-! ### A Haar co-range test matrix -/
+
+/-- **Generalized Nyström conditionally on the range test matrix, Haar co-range**: for a fixed
+test matrix $\mathbf{\Omega}$, an $m \times p$ Haar co-range test matrix $\mathbf{\Psi}$ with
+$p \le m$ and $q = \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$ with
+$q + 2 \le p$, <!-- value haarProjectionFactor m p q -->
+$$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
+\|_{\mathsf{F}}^2 = \Bigl(1 + \frac{m - p}{m - q}\cdot\frac{q}{p - q - 1}\Bigr)
+\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
+the factor being `haarProjectionFactor m p q`. The Gaussian twin is
+`NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix`.
+[EpperlyWebber2026, proof of Theorem 4.2]; there with $q$ the sketch size.
+Result: generalized-nystrom-expected-error -/
+theorem integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame [DecidableEq p]
+    (A : Matrix m n ℝ) (X₀ : Matrix n l ℝ) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hr : (A * X₀).rank + 2 ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - generalizedNystrom A X₀ (Ψ ω)) ^ 2 ∂μ =
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) (A * X₀).rank *
+        frobNorm (A - rsvd A X₀) ^ 2 := by
+  classical
+  simp only [sub_generalizedNystrom, sub_rsvd]
+  exact integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame hΨ hpm (A * X₀) hr A
+
+/-- The squared error with a fixed range test matrix and a Haar co-range test matrix is
+integrable for $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) + 2 \le p \le m$. -/
+private theorem integrable_frobNorm_sub_generalizedNystrom_sq_of_fixed_haar [DecidableEq p]
+    (A : Matrix m n ℝ) (X₀ : Matrix n l ℝ) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hr : (A * X₀).rank + 2 ≤ Fintype.card p) :
+    Integrable (fun ω => frobNorm (A - generalizedNystrom A X₀ (Ψ ω)) ^ 2) μ := by
+  classical
+  simp only [sub_generalizedNystrom]
+  exact integrable_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame hΨ hpm (A * X₀)
+    hr A
+
+omit [Fintype m] in
+/-- The Haar completion factor at the rank is measurable in the range test matrix. -/
+private theorem measurable_haarProjectionFactor_rank [Finite m] (A : Matrix m n ℝ) (d c : ℕ) :
+    Measurable fun x : Matrix n l ℝ => haarProjectionFactor d c (A * x).rank :=
+  (measurable_from_nat (f := fun q => haarProjectionFactor d c q)).comp
+    (measurable_rank.comp (measurable_const.matrix_mul measurable_id))
+
+/-- The Haar completion factor at a rank $q$ with $q + 2 \le p \le d$ lies in $[1, 1 + p]$. -/
+private theorem haarProjectionFactor_le_one_add {d q c : ℕ} (h : q + 2 ≤ c) (hcd : c ≤ d) :
+    haarProjectionFactor d c q ≤ 1 + c := by
+  refine (haarProjectionFactor_le_gaussianProjectionFactor h hcd).trans ?_
+  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
+  nlinarith
+
+/-- The right side of the identity at the random rank is integrable. -/
+private theorem integrable_haarProjectionFactor_mul [IsFiniteMeasure μ] (A : Matrix m n ℝ)
+    (hX : AEMeasurable X μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    (hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p) :
+    Integrable (fun ω => haarProjectionFactor (Fintype.card m) (Fintype.card p) (A * X ω).rank *
+      frobNorm (A - rsvd A (X ω)) ^ 2) μ := by
+  refine (integrable_frobNorm_sub_rsvd_sq A hX).bdd_mul (c := 1 + Fintype.card p)
+    ((measurable_haarProjectionFactor_rank A _ _).comp_aemeasurable hX).aestronglyMeasurable ?_
+  filter_upwards [hr] with ω hω
+  rw [Real.norm_of_nonneg (zero_le_one.trans (one_le_haarProjectionFactor hω hpm))]
+  exact haarProjectionFactor_le_one_add hω hpm
+
+/-- The identity as lower integrals: the iterated integral over the independent pair, with the
+fixed-$\mathbf{\Omega}$ identity inside. -/
+private theorem lintegral_frobNorm_sub_generalizedNystrom_sq_haar [DecidableEq p]
+    (A : Matrix m n ℝ) (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hXΨ : IndepFun X Ψ μ)
+    (hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p) :
+    ∫⁻ ω, ENNReal.ofReal (frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2) ∂μ =
+      ∫⁻ ω, ENNReal.ofReal (haarProjectionFactor (Fintype.card m) (Fintype.card p)
+        (A * X ω).rank * frobNorm (A - rsvd A (X ω)) ^ 2) ∂μ := by
+  have := hΨ.isProbabilityMeasure
+  have hF : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
+      ENNReal.ofReal (frobNorm (A - generalizedNystrom A q.1 q.2) ^ 2) :=
+    ENNReal.measurable_ofReal.comp ((continuous_frobNorm.measurable.comp
+      (measurable_const.sub (measurable_generalizedNystrom A))).pow_const 2)
+  have hrank : Measurable fun x : Matrix n l ℝ => (A * x).rank :=
+    measurable_rank.comp (measurable_const.matrix_mul measurable_id)
+  have hG : Measurable fun x : Matrix n l ℝ =>
+      ENNReal.ofReal (haarProjectionFactor (Fintype.card m) (Fintype.card p) (A * x).rank *
+        frobNorm (A - rsvd A x) ^ 2) :=
+    ENNReal.measurable_ofReal.comp ((measurable_haarProjectionFactor_rank A _ _).mul
+      ((continuous_frobNorm.measurable.comp
+        (measurable_const.sub (measurable_rsvd A))).pow_const 2))
+  have hr' : ∀ᵐ x ∂(μ.map X), (A * x).rank + 2 ≤ Fintype.card p :=
+    (ae_map_iff hX (hrank (MeasurableSet.of_discrete
+      (s := {q : ℕ | q + 2 ≤ Fintype.card p})))).mpr hr
+  have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (haarFrame m p) (haarFrame m p) := HasLaw.id
+  rw [hXΨ.lintegral_comp_eq_lintegral_lintegral hX hΨ.aemeasurable hF, hΨ.map_eq,
+    ← lintegral_map' hG.aemeasurable hX]
+  refine lintegral_congr_ae (hr'.mono fun x hx => ?_)
+  dsimp only
+  rw [← ofReal_integral_eq_lintegral_ofReal
+      (integrable_frobNorm_sub_generalizedNystrom_sq_of_fixed_haar A x hid hpm hx)
+      (ae_of_all _ fun _ => sq_nonneg _),
+    integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame A x hid hpm hx]
+
+/-- The identity with the rank inside the expectation, Haar co-range. -/
+private theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_haar [DecidableEq p]
+    (A : Matrix m n ℝ) (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hXΨ : IndepFun X Ψ μ)
+    (hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ =
+      ∫ ω, haarProjectionFactor (Fintype.card m) (Fintype.card p) (A * X ω).rank *
+        frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
+  have := hΨ.isProbabilityMeasure
+  have hR := integrable_haarProjectionFactor_mul A hX hpm hr
+  rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => sq_nonneg _)
+      (aestronglyMeasurable_frobNorm_sub_generalizedNystrom_sq A hX hΨ.aemeasurable),
+    integral_eq_lintegral_of_nonneg_ae (hr.mono fun ω hω => mul_nonneg
+      (zero_le_one.trans (one_le_haarProjectionFactor hω hpm)) (sq_nonneg _))
+      hR.aestronglyMeasurable,
+    lintegral_frobNorm_sub_generalizedNystrom_sq_haar A hX hΨ hpm hXΨ hr]
+
+/-- The generalized Nyström error is integrable under a Haar co-range test matrix with $p \le m$
+independent of the range test matrix, when $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) + 2 \le
+p$ almost surely. -/
+theorem integrable_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame [DecidableEq p]
+    (A : Matrix m n ℝ) (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hXΨ : IndepFun X Ψ μ)
+    (hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p) :
+    Integrable (fun ω => frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2) μ := by
+  have := hΨ.isProbabilityMeasure
+  refine ⟨aestronglyMeasurable_frobNorm_sub_generalizedNystrom_sq A hX hΨ.aemeasurable, ?_⟩
+  rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun _ => sq_nonneg _),
+    lintegral_frobNorm_sub_generalizedNystrom_sq_haar A hX hΨ hpm hXΨ hr]
+  exact (integrable_haarProjectionFactor_mul A hX hpm hr).lintegral_lt_top
+
+/-- **Generalized Nyström = randomized SVD × completion, Haar co-range, bound form**, for any law
+of $\mathbf{\Omega}$ independent of an $m \times p$ Haar $\mathbf{\Psi}$ with $p \le m$ and
+$\ell + 2 \le p$: <!-- value haarProjectionFactor m p \ell -->
+$$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2
+\le \Bigl(1 + \frac{m - p}{m - \ell}\cdot\frac{\ell}{p - \ell - 1}\Bigr)\,
+\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
+the factor being `haarProjectionFactor m p ℓ`. Any bound on the randomized SVD becomes a bound on
+generalized Nyström with a Haar co-range test matrix.
+[EpperlyWebber2026, proof of Theorem 4.2]. Result: generalized-nystrom-expected-error -/
+theorem integral_frobNorm_sub_generalizedNystrom_sq_le_mul_integral_of_hasLaw_haarFrame
+    [DecidableEq p] (A : Matrix m n ℝ) (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hXΨ : IndepFun X Ψ μ)
+    (hlp : Fintype.card l + 2 ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ ≤
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) (Fintype.card l) *
+        ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
+  have := hΨ.isProbabilityMeasure
+  have hrl (ω : Ω) : (A * X ω).rank ≤ Fintype.card l := Matrix.rank_le_card_width _
+  have hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p :=
+    ae_of_all _ fun ω => by have := hrl ω; omega
+  rw [integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_haar A hX hΨ hpm hXΨ hr,
+    ← integral_const_mul]
+  refine integral_mono_of_nonneg (hr.mono fun ω hω => mul_nonneg
+    (zero_le_one.trans (one_le_haarProjectionFactor hω hpm)) (sq_nonneg _))
+    ((integrable_frobNorm_sub_rsvd_sq A hX).const_mul _) (ae_of_all _ fun ω => ?_)
+  exact mul_le_mul_of_nonneg_right
+    (haarProjectionFactor_le_haarProjectionFactor (hrl ω) hlp hpm) (sq_nonneg _)
+
+/-- **The generalized Nyström identity, Gaussian range and Haar co-range test matrices**: with
+$\ell' = \min(\operatorname{rank}\mathbf{A}, \ell)$, the almost sure rank of the sketch,
+$\ell' + 2 \le p \le m$, <!-- value haarProjectionFactor m p {\ell'} -->
+$$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2 =
+\Bigl(1 + \frac{m - p}{m - \ell'}\cdot\frac{\ell'}{p - \ell' - 1}\Bigr)\,
+\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
+the factor being `haarProjectionFactor m p ℓ'`, Epperly and Webber's
+$1 + \gamma\frac{\ell'}{p - \ell' - 1}$ with $\gamma = \frac{m - p}{m - \ell'}$.
+[EpperlyWebber2026, proof of Theorem 4.2(a), random orthonormal co-range]; there for
+$\operatorname{rank}\mathbf{A} \ge p$. Result: generalized-nystrom-expected-error -/
+theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_mul_integral_of_hasLaw_haarFrame
+    [DecidableEq p] (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ)
+    (hΨ : HasLaw Ψ (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
+    (hXΨ : IndepFun X Ψ μ) (hr : min A.rank (Fintype.card l) + 2 ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ =
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) (min A.rank (Fintype.card l)) *
+        ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
+  have hrk := ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix A hX
+  rw [integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_haar A hX.aemeasurable hΨ hpm hXΨ
+    (hrk.mono fun ω hω => by rw [hω]; exact hr), ← integral_const_mul]
+  exact integral_congr_ae (hrk.mono fun ω hω => by simp only [hω])
+
+/-! ### Rotation-invariant range test matrices: Epperly and Webber's Theorem 4.2(a) -/
+
+variable [DecidableEq n] {ν : Measure (Matrix n l ℝ)} [IsProbabilityMeasure ν]
+  [IsLeftUnitarilyInvariant ν]
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The sharp upper bound for generalized Nyström, Gaussian co-range**: for $\mathbf{A}$ of rank
+at most $r$, a test matrix $\mathbf{\Omega}$ with a left unitarily invariant law and full column
+rank almost surely, a standard Gaussian $\mathbf{\Psi}$ independent of it, $\ell \le r$,
+$\ell + 2 \le p$ and $q + 2 \le \ell$,
+so <!-- value gaussianProjectionFactor \ell p --> <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
+\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{\ell}{p - \ell - 1}\Bigr)
+\frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
+the factors being `gaussianProjectionFactor ℓ p` and `rotationInvariantFactor r ℓ q`. The instance
+$r = \lvert n\rvert$ needs no knowledge of the rank.
+[EpperlyWebber2026, Theorem 4.2(a), $\gamma = 1$]; there $r = \operatorname{rank}\mathbf{A} \ge p$
+and a minimum over $q$. Result: generalized-nystrom-expected-error -/
+theorem
+    integral_frobNorm_sub_generalizedNystrom_sq_le_of_isLeftUnitarilyInvariant_of_hasLaw_gaussianMatrix_of_rank_le
+    (A : Matrix m n ℝ) (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec)
+    (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ) {r q : ℕ} (hr : A.rank ≤ r)
+    (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l)
+    (hlp : Fintype.card l + 2 ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ ≤
+      gaussianProjectionFactor (Fintype.card l) (Fintype.card p) *
+        rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
+  rw [mul_assoc]
+  exact (integral_frobNorm_sub_generalizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix A
+    hX.aemeasurable hΨ hXΨ hlp).trans (mul_le_mul_of_nonneg_left
+      (integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le A hX hXr hr hlr hq)
+      (zero_le_one.trans (one_le_gaussianProjectionFactor hlp)))
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The sharp upper bound for generalized Nyström, random orthonormal co-range**: for
+$\mathbf{A}$ of rank at most $r$, a test matrix $\mathbf{\Omega}$ with a left unitarily invariant
+law and full column rank almost surely, an $m \times p$ Haar $\mathbf{\Psi}$ independent of it,
+$\ell \le r$, $\ell + 2 \le p \le m$ and $q + 2 \le \ell$,
+so <!-- value haarProjectionFactor m p \ell --> <!-- value rotationInvariantFactor r \ell q -->
+$$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
+\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{m - p}{m - \ell}\cdot\frac{\ell}{p - \ell - 1}\Bigr)
+\frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
+the factors being `haarProjectionFactor m p ℓ` and `rotationInvariantFactor r ℓ q`; smaller than
+the Gaussian co-range bound by the ratio of the completion factors.
+[EpperlyWebber2026, Theorem 4.2(a), $\gamma = \frac{d - k}{d - \ell}$ in their letters]; there
+$r = \operatorname{rank}\mathbf{A} \ge p$ and a minimum over $q$.
+Result: generalized-nystrom-expected-error -/
+theorem
+    integral_frobNorm_sub_generalizedNystrom_sq_le_of_isLeftUnitarilyInvariant_of_hasLaw_haarFrame_of_rank_le
+    [DecidableEq p] (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) (hΨ : HasLaw Ψ (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (hXΨ : IndepFun X Ψ μ) {r q : ℕ} (hr : A.rank ≤ r)
+    (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l)
+    (hlp : Fintype.card l + 2 ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ ≤
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) (Fintype.card l) *
+        rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
+  rw [mul_assoc]
+  exact (integral_frobNorm_sub_generalizedNystrom_sq_le_mul_integral_of_hasLaw_haarFrame A
+    hX.aemeasurable hΨ hpm hXΨ hlp).trans (mul_le_mul_of_nonneg_left
+      (integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le A hX hXr hr hlr hq)
+      (zero_le_one.trans (one_le_haarProjectionFactor hlp hpm)))
 
 end NLAlib
