@@ -36,7 +36,9 @@ The maintainer approved the recommendations:
   maintainer's notes is the late-truncated GN triangle baseline (`GN_truncated.tex`).
 - Measurable truncation (2026-10-15): a stage S2c supplies a measurable best rank-$k$
   approximation map and instantiates every selector-hypothesis theorem (spectral truncated RSVD,
-  MT 14.1's expectation form, truncated GN), so they become usable.
+  MT 14.1's expectation form, truncated GN), so they become usable. The maintainer chose
+  (2026-10-15) a public definition (not an existence theorem alone) built from a measurable SVD,
+  named `measurableTruncatedSVD`; `truncatedSVD` itself is not redefined.
 - Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
   randomized block Krylov, randomly pivoted Cholesky and similar methods.
 
