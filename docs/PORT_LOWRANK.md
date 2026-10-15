@@ -34,6 +34,9 @@ The maintainer approved the recommendations:
   Correction from the S2b review: TYUC §7.3.1 states no theorem for (7.3), only a remark reading
   CEMMP as $\Theta(r/\varepsilon^2)$ with unspecified constants; the $\varepsilon^{-3}$ figure in the
   maintainer's notes is the late-truncated GN triangle baseline (`GN_truncated.tex`).
+- Measurable truncation (2026-10-15): a stage S2c supplies a measurable best rank-$k$
+  approximation map and instantiates every selector-hypothesis theorem (spectral truncated RSVD,
+  MT 14.1's expectation form, truncated GN), so they become usable.
 - Out of scope until a later round, by the maintainer's instruction: power and subspace iteration,
   randomized block Krylov, randomly pivoted Cholesky and similar methods.
 
