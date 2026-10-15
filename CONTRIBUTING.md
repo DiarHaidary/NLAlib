@@ -432,6 +432,7 @@ theorem eigenvalue_add_le ...
    | number fields, the `RCLike` field | `\mathbb{R}`, `\mathbb{C}`, `\Bbbk` | |
    | named constants | `C_{\mathrm{HW}}` with the Lean name in words nearby (`` `hansonWrightConstant` ``) | |
    | truncated SVD (best rank-`k` approximation) | `\llbracket \mathbf{A} \rrbracket_k` | |
+   | named algorithm outputs (maintainer, 2026-10-15) | `\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})`, `\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})`, `\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})`: the Lean name in `\mathsf`, never the formula it unfolds to; the definition's docstring alone shows the formula, as `\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) := \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}` | |
    | bold Greek matrices | `\mathbf{\Sigma}`, `\mathbf{\Lambda}` | |
    | real part, adjugate, Frobenius inner product | `\operatorname{Re}`, `\operatorname{adj}`, `\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}` | |
    | absolute value; epsilon, phi | `\lvert x \rvert`; `\varepsilon`, `\varphi` | |
