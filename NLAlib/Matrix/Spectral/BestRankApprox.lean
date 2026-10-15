@@ -53,7 +53,9 @@ Every statement holds for every choice of the truncations involved. Design:
   `NLAlib.specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le`: reverse Eckart–Young.
 * `NLAlib.IsBestRankApprox.frobNorm_sub_le_add_frobNorm_truncatedSVD`,
   `NLAlib.IsBestRankApprox.frobNorm_sub_le_add_specNorm`: perturbed truncation.
-* `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD`: Gram matrices. The Loewner order
+* `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD`,
+  `NLAlib.SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD`: Gram matrices, in
+  trace and in every unitarily invariant norm. The Loewner order
   $\llbracket\mathbf{A}\rrbracket_k \preceq \mathbf{A}$ for positive semidefinite $\mathbf{A}$ is
   `Matrix.PosSemidef.truncatedSVD_le` (`NLAlib.Matrix.Spectral.LowRank`).
 -/
@@ -459,5 +461,24 @@ theorem nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD (G : Matrix m n 𝕜
   exact Finset.sum_congr rfl fun i _ => by
     rw [singularValues_sub_truncatedSVD, singularValues_conjTranspose_mul_self,
       singularValues_sub_truncatedSVD]
+
+/-- **Truncation commutes with the Gram map in every unitarily invariant norm**:
+$$\|\mathbf{G}^{\mathsf{H}}\mathbf{G} - \llbracket\mathbf{G}^{\mathsf{H}}\mathbf{G}\rrbracket_k
+\|_{\Phi} = \|(\mathbf{G} - \llbracket\mathbf{G}\rrbracket_k)^{\mathsf{H}}
+(\mathbf{G} - \llbracket\mathbf{G}\rrbracket_k)\|_{\Phi}\,,$$
+independent of the choice `truncatedSVD` makes on either side (both error matrices have the
+singular values $\sigma_{k+i}(\mathbf{G})^2$). The nuclear case is
+`NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD`. It moves the best errors of a
+positive semidefinite $\mathbf{H} = \mathbf{G}^{\mathsf{H}}\mathbf{G}$ to those of a factor, with
+no square root.
+[TroppYurtseverUdellCevher2017a, App. A.5]; [TroppWebber2023, proof of Corollary 8.8]; there the
+trace and Schatten forms, implicitly inside proofs, with $\mathbf{G} = \mathbf{A}^{1/2}$. -/
+theorem SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD (Φ : SymmetricGauge)
+    (G : Matrix m n 𝕜) (k : ℕ) :
+    Φ.matrixNorm (Gᴴ * G - truncatedSVD (Gᴴ * G) k) =
+      Φ.matrixNorm ((G - truncatedSVD G k)ᴴ * (G - truncatedSVD G k)) :=
+  Φ.matrixNorm_congr (funext fun i => by
+    rw [singularValues_sub_truncatedSVD, singularValues_conjTranspose_mul_self,
+      singularValues_conjTranspose_mul_self, singularValues_sub_truncatedSVD])
 
 end NLAlib

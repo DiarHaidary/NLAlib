@@ -41,6 +41,9 @@ Design: `docs/design/LowRank-S0.md` §3.5, §8.
 * `Matrix.PosSemidef.nystrom_le_nystrom_of_range_le`: more samples, better approximation.
 * `Matrix.PosSemidef.singularValues_sub_nystrom_le`,
   `NLAlib.SymmetricGauge.matrixNorm_sub_nystrom_le`: Nyström helps.
+* `Matrix.PosSemidef.singularValues_sub_nystrom_mul_le_singularValues_sub_rsvd`,
+  `NLAlib.SymmetricGauge.matrixNorm_sub_nystrom_mul_le_matrixNorm_sub_rsvd`: Nyström from the
+  randomized SVD's sketch beats the randomized SVD.
 * `Matrix.PosSemidef.singularValues_nystrom_le`: Nyström does not increase singular values.
 * `Matrix.PosSemidef.truncatedSVD_nystrom_le`: truncated Nyström stays below the matrix.
 -/
@@ -244,6 +247,39 @@ theorem SymmetricGauge.matrixNorm_sub_nystrom_le [DecidableEq n] (Φ : Symmetric
     {H : Matrix n n 𝕜} (hH : H.PosSemidef) (Ω : Matrix n l 𝕜) :
     Φ.matrixNorm (H - nystrom H Ω) ≤ Φ.matrixNorm ((1 - rangeProjector Ω) * H) :=
   Φ.matrixNorm_le_of_singularValues_le (hH.singularValues_sub_nystrom_le Ω)
+
+/-- **Nyström from the randomized SVD's sketch**: for positive semidefinite $\mathbf{H}$, the
+Nyström approximation that takes the sketch $\mathbf{H}\mathbf{\Omega}$ as its test matrix is at
+least as accurate as the randomized SVD of $\mathbf{H}$ with test matrix $\mathbf{\Omega}$, at
+every singular value:
+$$\sigma_k(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{H}\mathbf{\Omega})) \le
+\sigma_k(\mathbf{H} - \mathsf{rsvd}(\mathbf{H}, \mathbf{\Omega}))\,.$$
+It is not a comparison on identical data: $\mathsf{nystrom}(\mathbf{H}, \mathbf{H}\mathbf{\Omega})$
+uses one more multiplication by $\mathbf{H}$ (its own sketch is $\mathbf{H}^2\mathbf{\Omega}$).
+The general form is `Matrix.PosSemidef.singularValues_sub_nystrom_le`.
+[TroppWebber2023, Lemma 5.2] at the test matrix $\mathbf{H}\mathbf{\Omega}$; there for any test
+matrix and every unitarily invariant norm.
+Result: nystrom-helps -/
+theorem _root_.Matrix.PosSemidef.singularValues_sub_nystrom_mul_le_singularValues_sub_rsvd
+    {H : Matrix n n 𝕜} (hH : H.PosSemidef) (Ω : Matrix n l 𝕜) (k : ℕ) :
+    singularValues (H - nystrom H (H * Ω)) k ≤ singularValues (H - rsvd H Ω) k := by
+  classical
+  rw [sub_rsvd]
+  exact hH.singularValues_sub_nystrom_le (H * Ω) k
+
+/-- **Nyström from the randomized SVD's sketch** in every unitarily invariant norm: for positive
+semidefinite $\mathbf{H}$,
+$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{H}\mathbf{\Omega})\|_{\Phi} \le
+\|\mathbf{H} - \mathsf{rsvd}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi}\,,$$
+at the cost of one more multiplication by $\mathbf{H}$
+(`Matrix.PosSemidef.singularValues_sub_nystrom_mul_le_singularValues_sub_rsvd`).
+[TroppWebber2023, Lemma 5.2] at the test matrix $\mathbf{H}\mathbf{\Omega}$.
+Result: nystrom-helps -/
+theorem SymmetricGauge.matrixNorm_sub_nystrom_mul_le_matrixNorm_sub_rsvd (Φ : SymmetricGauge)
+    {H : Matrix n n 𝕜} (hH : H.PosSemidef) (Ω : Matrix n l 𝕜) :
+    Φ.matrixNorm (H - nystrom H (H * Ω)) ≤ Φ.matrixNorm (H - rsvd H Ω) :=
+  Φ.matrixNorm_le_of_singularValues_le
+    (hH.singularValues_sub_nystrom_mul_le_singularValues_sub_rsvd Ω)
 
 /-- **Truncated Nyström stays below the matrix**: for positive semidefinite $\mathbf{H}$,
 $\llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k \preceq \mathbf{H}$, so the

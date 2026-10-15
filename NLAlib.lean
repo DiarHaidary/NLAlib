@@ -37,9 +37,12 @@ public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.LowRank.Gaussian.Nystrom
+public import NLAlib.LowRank.Gaussian.NystromTail
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
 public import NLAlib.LowRank.Gaussian.RotationInvariant
+public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.LowRank.Structural.RangeFinder

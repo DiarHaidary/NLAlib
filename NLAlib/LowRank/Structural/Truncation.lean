@@ -42,8 +42,10 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
   form.
 * `NLAlib.SymmetricGauge.matrixNorm_sub_truncatedSVD_nystrom_le`,
   `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom`,
-  `Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`: truncated Nyström; it lies below the
-  matrix by `Matrix.PosSemidef.truncatedSVD_nystrom_le`
+  `Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`,
+  `Matrix.PosSemidef.nuclearNorm_sub_le_nuclearNorm_sub_truncatedSVD_nystrom_of_isBestRankApprox`:
+  truncated Nyström, the last for any best approximation in place of the truncation; it lies
+  below the matrix by `Matrix.PosSemidef.truncatedSVD_nystrom_le`
   (`NLAlib.Matrix.Factorizations.NystromOrder`).
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm`: truncated generalized
@@ -295,6 +297,35 @@ theorem _root_.Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom {H : Matri
   have hHF : (CFC.sqrt H)ᴴ * CFC.sqrt H = H := by rw [hR, CFC.sqrt_mul_sqrt_self H hH.nonneg]
   have h := nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom (CFC.sqrt H) Ω k
   rwa [hHF] at h
+
+/-- **The trace error of truncated Nyström under any choice of the truncation**: for positive
+semidefinite $\mathbf{H}$ and any best rank-$k$ approximation $\mathbf{Y}$ of
+$\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$,
+$$\|\mathbf{H} - \mathbf{Y}\|_* \le
+\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_*\,,$$
+the right side being choice-free
+(`NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom`). Equality is expected but
+not proved; the inequality is all that is used. With reverse Eckart–Young
+(`NLAlib.specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le`) it turns a trace bound for
+truncated Nyström into a spectral bound for every choice of the truncation. -/
+theorem
+_root_.Matrix.PosSemidef.nuclearNorm_sub_le_nuclearNorm_sub_truncatedSVD_nystrom_of_isBestRankApprox
+    {H : Matrix n n 𝕜} (hH : H.PosSemidef) {Ω : Matrix n l 𝕜} {k : ℕ} {Y : Matrix n n 𝕜}
+    (hY : IsBestRankApprox (nystrom H Ω) k Y) :
+    nuclearNorm (H - Y) ≤ nuclearNorm (H - truncatedSVD (nystrom H Ω) k) := by
+  have h1 : (H - nystrom H Ω).PosSemidef := Matrix.le_iff.mp (hH.nystrom_le Ω)
+  have h2 : (nystrom H Ω - truncatedSVD (nystrom H Ω) k).PosSemidef :=
+    Matrix.le_iff.mp ((hH.nystrom Ω).truncatedSVD_le k)
+  have hY' : nuclearNorm (nystrom H Ω - Y) =
+      nuclearNorm (nystrom H Ω - truncatedSVD (nystrom H Ω) k) := by
+    simpa only [lpGauge_one_matrixNorm] using hY.matrixNorm_sub (lpGauge 1 le_rfl)
+  calc nuclearNorm (H - Y) = nuclearNorm ((H - nystrom H Ω) + (nystrom H Ω - Y)) := by
+        rw [sub_add_sub_cancel]
+    _ ≤ nuclearNorm (H - nystrom H Ω) + nuclearNorm (nystrom H Ω - Y) := nuclearNorm_add_le _ _
+    _ = nuclearNorm (H - truncatedSVD (nystrom H Ω) k) := by
+      rw [hY', h1.nuclearNorm_eq_re_trace, h2.nuclearNorm_eq_re_trace, ← map_add,
+        ← Matrix.trace_add, sub_add_sub_cancel,
+        (Matrix.le_iff.mp (hH.truncatedSVD_nystrom_le Ω k)).nuclearNorm_eq_re_trace]
 
 /-! ### Truncated generalized Nyström -/
 

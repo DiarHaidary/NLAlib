@@ -7,6 +7,7 @@ module
 
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
+public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.RandomMatrix.Haar.Transfer
 
 /-!
@@ -28,8 +29,17 @@ The hypotheses are `HasLaw X ν μ` with `[IsProbabilityMeasure ν] [IsLeftUnita
 and `∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec`. The second is unsatisfiable for $\ell > n$; a Haar
 frame of that shape has orthonormal rows and recovers the matrix almost surely
 (`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame`). The late-truncated Frobenius error is
-transferred through its choice-free form (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`). Design:
-`docs/design/LowRank-S3.md` §3.6, §8 items 6 and 8.
+transferred through its choice-free form (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`).
+
+**Nyström.** For positive semidefinite $\mathbf{H}$, $\mathsf{nystrom}(\mathbf{H}, \mathbf{X})$ has
+the law of $\mathsf{nystrom}(\mathbf{H}, \mathbf{G})$ for a standard Gaussian $\mathbf{G}$, and the
+Nyström expectations and tails hold with the Gaussian constants. Each is the rotation-invariant
+statement for the randomized SVD at a factor $\mathbf{F}$ with
+$\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$, through the Gram correspondence
+(`NLAlib.conjTranspose_mul_self_sub_nystrom`); the spectral error of truncated Nyström adds reverse
+Eckart–Young (`NLAlib.LowRank.Random.Nystrom`) and is stated for a measurable selector, which no
+theorem can exhibit yet (a later stage, S2c, supplies one). Design:
+`docs/design/LowRank-S3.md` §3.6, §8 items 6 and 8; `docs/design/LowRank-S5.md` §3.5, §8.
 
 ## Main results
 
@@ -45,12 +55,20 @@ transferred through its choice-free form (`NLAlib.frobNorm_sub_truncatedSVD_rsvd
   truncated output.
 * the Gram-form tail (TW Theorem 8.1 (RSVD1)), in the `NLAlib.SymmetricGauge` namespace:
   `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant`.
+* Nyström, in the `Matrix.PosSemidef` namespace: `hasLaw_nystrom_of_isLeftUnitarilyInvariant`
+  (the law of the output), `integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant`,
+  `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`,
+  `integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant` (MT Theorem
+  14.1, for a measurable selector), `ae_nystrom_eq_self_of_isLeftUnitarilyInvariant`; in the
+  `NLAlib.SymmetricGauge` namespace,
+  `integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant` and
+  `measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant`.
 -/
 
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory
-open scoped Matrix
+open scoped Matrix ComplexOrder MatrixOrder
 
 namespace NLAlib
 
@@ -158,7 +176,9 @@ and $k + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
 C\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
-with $C$ = `gaussianPinvSpecNormBound k ℓ`, the bound of the Gaussian test matrix
+with $C$ = `gaussianPinvSpecNormBound k ℓ`, at present
+<!-- value gaussianPinvSpecNormBound k \ell -->
+$e\sqrt{(\ell + k - 1)/2}/(\ell - k)$<!-- /value -->, the bound of the Gaussian test matrix
 (`NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`).
 [HalkoMartinssonTropp2011, Theorem 10.6]; [MartinssonTropp2020, Theorem 11.5]; there for Gaussian
 test matrices, with $e\sqrt{k + p}/p$ in place of $C$.
@@ -214,7 +234,9 @@ $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
-outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`, the tail of the Gaussian test
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), the tail of the Gaussian test
 matrix (in this namespace,
 `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and Schatten norms
@@ -237,5 +259,199 @@ theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLe
     A HasLaw.id hd u ht
 
 end SymmetricGauge
+
+/-! ### Nyström -/
+
+/-- **Nyström with a rotation-invariant test matrix has the Gaussian law**: for positive
+semidefinite $\mathbf{H}$ and a test matrix $\mathbf{X}$ with a left unitarily invariant law and
+full column rank almost surely, $\mathsf{nystrom}(\mathbf{H}, \mathbf{X})$ has the law of
+$\mathsf{nystrom}(\mathbf{H}, \mathbf{G})$ for a standard Gaussian $\mathbf{G}$. Nyström depends
+on the test matrix only through the range projector $\mathbf{P}_{\mathbf{H}^{1/2}\mathbf{X}}$
+(`Matrix.PosSemidef.nystrom_eq`), whose law is the Gaussian one
+(`NLAlib.hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant`). Every rotation-invariant
+Nyström statement is a consequence.
+[TroppYurtseverUdellCevher2017a, Proposition A.2 and proof of Theorem A.1];
+[EpperlyWebber2026, Fact 6.1(b)]; there as "we may assume the test matrix is Gaussian", here as
+a law statement for every full-rank rotation-invariant law.
+Result: gaussian-haar-range-transfer -/
+theorem _root_.Matrix.PosSemidef.hasLaw_nystrom_of_isLeftUnitarilyInvariant {H : Matrix n n ℝ}
+    (hH : H.PosSemidef) (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) :
+    HasLaw (fun ω => nystrom H (X ω)) ((gaussianMatrix n l).map (nystrom H)) μ := by
+  obtain ⟨S, hS⟩ : ∃ S : Matrix n n ℝ,
+      ∀ G : Matrix n l ℝ, nystrom H G = S * rangeProjector (S * G) * S :=
+    ⟨_, hH.nystrom_eq⟩
+  have hg : Measurable fun P : Matrix n n ℝ => S * P * S :=
+    (measurable_const.matrix_mul measurable_id).matrix_mul measurable_const
+  have hm : Measurable fun G : Matrix n l ℝ => rangeProjector (S * G) :=
+    measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)
+  have h := HasLaw.fun_comp (Y := fun P : Matrix n n ℝ => S * P * S) ⟨hg.aemeasurable, rfl⟩
+    (hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant S hX hXr)
+  rw [Measure.map_map hg hm] at h
+  have e1 : (fun ω => nystrom H (X ω)) = fun ω => S * rangeProjector (S * X ω) * S :=
+    funext fun ω => hS (X ω)
+  have e2 : nystrom H = (fun P : Matrix n n ℝ => S * P * S) ∘ fun G => rangeProjector (S * G) :=
+    funext hS
+  rw [e1, e2]
+  exact h
+
+namespace SymmetricGauge
+
+/-- **The expected error of randomized Nyström, every unitarily invariant norm, rotation-invariant
+test matrices**: for positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left
+unitarily invariant law and full column rank almost surely (Gaussian, Haar, ...) and
+$k + 2 \le \ell$,
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,
+\frac{k}{\ell - k - 1}\,\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+the bound of the Gaussian test matrix (in this namespace,
+`integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix`); the rotation-invariant Gram form
+of the randomized SVD at a factor of $\mathbf{H}$.
+[TroppWebber2023, Corollary 8.2 (NysSVD2)]; [TroppYurtseverUdellCevher2017a, Theorem A.1];
+[EpperlyWebber2026, Theorem 3.1 and Fact 3.5]; there for Gaussian test matrices and Schatten
+norms (TW), or the trace (TYUC, EW).
+Result: randomized-nystrom-expected-error -/
+theorem integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant (Φ : SymmetricGauge)
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, Φ.matrixNorm (H - nystrom H (X ω)) ∂μ ≤
+      Φ.matrixNorm (H - truncatedSVD H k) +
+        Φ (Finsupp.single 0 1) * ((k : ℝ) / ((Fintype.card l : ℝ) - k - 1)) *
+          nuclearNorm (H - truncatedSVD H k) := by
+  obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
+  simp only [Matrix.star_eq_conjTranspose, conjTranspose_mul_self_sub_nystrom,
+    Φ.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+  exact Φ.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitarilyInvariant F hX
+    hXr hk
+
+end SymmetricGauge
+
+/-- **The expected trace error of randomized Nyström, rotation-invariant test matrices**: for
+positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
+and full column rank almost surely and $k + 2 \le \ell$,
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+the factor being `gaussianProjectionFactor k ℓ`: the squared Frobenius error of the randomized
+SVD of a factor (`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`). A Haar
+frame (`NLAlib.haarFrame`) is an instance: its law is left unitarily invariant
+(`NLAlib.isLeftUnitarilyInvariant_haarFrame`), and for $\ell \le n$ it has full column rank
+almost surely (`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$).
+[EpperlyWebber2026, Theorem 3.1 and Fact 3.5]; [TroppYurtseverUdellCevher2017a, Theorem A.1];
+there with a minimum over the comparison rank, for orthonormal test matrices (TYUC) or
+rotation-invariant ones (EW, the Nyström twin of their Theorem 3.1); here at one rank.
+Result: randomized-nystrom-expected-error -/
+theorem _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
+      gaussianProjectionFactor k (Fintype.card l) * nuclearNorm (H - truncatedSVD H k) := by
+  obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
+  simp only [Matrix.star_eq_conjTranspose, nuclearNorm_conjTranspose_mul_self_sub_nystrom,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+  exact integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant F hX hXr hk
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The expected trace error of truncated Nyström, rotation-invariant test matrices**: for
+positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
+and full column rank almost surely, $k + 2 \le \ell$ and every choice of the truncation,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_*
+\le \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,:$$
+the squared Frobenius error of the truncated randomized SVD of a factor
+(`NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant`). A Haar
+frame is an instance (`NLAlib.isLeftUnitarilyInvariant_haarFrame`, and
+`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$ for $\ell \le n$).
+[TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.1)]; there for Gaussian or orthonormal test
+matrices, with $1 \le k$ and $\ell \le n$.
+Result: randomized-nystrom-expected-error -/
+theorem
+_root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
+    ∫ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+      gaussianProjectionFactor k (Fintype.card l) * nuclearNorm (H - truncatedSVD H k) := by
+  obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
+  simp only [Matrix.star_eq_conjTranspose,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+  exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant F hX hXr hk
+
+-- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The expected spectral error of truncated Nyström, rotation-invariant test matrices**
+(Martinsson and Tropp's Theorem 14.1): for positive semidefinite $\mathbf{H}$, a test matrix
+$\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
+$k + 2 \le \ell$ and a measurable choice $\mathbf{Y}$ of best rank-$k$ approximations of
+$\mathsf{nystrom}(\mathbf{H}, \mathbf{X})$,
+$$\mathbb{E}\|\mathbf{H} - \mathbf{Y}\|_2 \le \lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+eigenvalues indexed from $0$.
+Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
+Mathlib has a measurable-selection theorem; a later stage (S2c) supplies one.
+[MartinssonTropp2020, Theorem 14.1]; [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.2)]; there
+for Gaussian (MT, TYUC) or orthonormal (TYUC) test matrices, with $1 \le k < \ell \le n$.
+Result: randomized-nystrom-expected-error -/
+theorem
+_root_.Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ} (hk : k + 2 ≤ Fintype.card l)
+    {Y : Ω → Matrix n n ℝ} (hY : ∀ ω, IsBestRankApprox (nystrom H (X ω)) k (Y ω))
+    (hYm : AEStronglyMeasurable Y μ) :
+    ∫ ω, specNorm (H - Y ω) ∂μ ≤
+      singularValues H k +
+        (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) := by
+  have := hX.isProbabilityMeasure
+  have h1 :=
+    hH.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom
+      hX.aemeasurable hY hYm
+  have h2 :=
+    hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant hX hXr hk
+  rw [gaussianProjectionFactor_def] at h2
+  linarith
+
+namespace SymmetricGauge
+
+/-- **The tail of randomized Nyström, every unitarily invariant norm, rotation-invariant test
+matrices**: for positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left
+unitarily invariant law and full column rank almost surely, $d = \ell - k + 1$, any $u$ and
+$t > 0$,
+$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
+outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t` (at present
+<!-- value gaussianPinvFrobTail k d t -->
+$2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$<!-- /value -->), the tail of the Gaussian test
+matrix (in this namespace, `measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`).
+[TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Gaussian test matrices and Schatten norms,
+with a larger second failure term.
+Result: randomized-nystrom-tail -/
+theorem measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant
+    (Φ : SymmetricGauge) {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
+    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
+    μ.real {ω | ¬ Φ.matrixNorm (H - nystrom H (X ω)) ≤
+        Φ.matrixNorm (H - truncatedSVD H k) +
+          Φ (Finsupp.single 0 1) * (u * t * k / d) * nuclearNorm (H - truncatedSVD H k)} ≤
+      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+  obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
+  simp only [Matrix.star_eq_conjTranspose, conjTranspose_mul_self_sub_nystrom,
+    Φ.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD,
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+  exact
+    Φ.measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant
+      F hX hXr hd u ht
+
+end SymmetricGauge
+
+/-- **A rotation-invariant sketch at least as wide as the rank makes Nyström exact**: for
+positive semidefinite $\mathbf{H}$ with $\operatorname{rank}\mathbf{H} \le \ell$ and a test matrix
+$\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
+$\mathsf{nystrom}(\mathbf{H}, \mathbf{X}) = \mathbf{H}$ almost surely. -/
+theorem _root_.Matrix.PosSemidef.ae_nystrom_eq_self_of_isLeftUnitarilyInvariant
+    {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) (hHl : H.rank ≤ Fintype.card l) :
+    ∀ᵐ ω ∂μ, nystrom H (X ω) = H := by
+  filter_upwards [ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant H hX hXr] with ω hω
+  exact hH.nystrom_eq_self_of_rank_eq (hω.trans (min_eq_left hHl))
 
 end NLAlib
