@@ -492,6 +492,13 @@ maintainer before any proof is written. The note answers, with specifics:
    it and in what form; a statement with no foreseeable consumer is questioned.
 5. **Files.** The file split for this stage, each file a topic of up to about 1000 lines, with the
    declarations it will hold in order.
+   **Placement** (maintainer, 2026-10-15): every new declaration, including each one a stage adds
+   to a lower layer or to an existing file, goes where a user looking for its topic would find it,
+   judged by what the statement is about, never by what its proof imports. The note lists every
+   addition outside the stage's own new files with its home and a one-line reason. A declaration
+   placed anywhere else (for an import cycle, a file that cannot yet import it, a side file awaiting
+   a merge) is flagged in the note with its intended home, and the stage report lists every flag
+   still open. Reviews of notes and stage reports check placement explicitly.
 6. **Material.** Which files of the prototype library were read, what in them is reused (as
    mathematics to cover, as proof material), and what is deliberately not reproduced and why
    (twins, bundles, transport lemmas, local interfaces).
