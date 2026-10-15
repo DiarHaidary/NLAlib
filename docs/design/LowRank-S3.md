@@ -1425,3 +1425,16 @@ here). Where an item below contradicts §0 to §7, it supersedes them; §3 stays
     Proposition A.3) and HMT Theorem A.6 (item 3); (iii) a measurable best-approximation selector,
     for L8, L9, U2 (§3.0, unchanged); (iv) $\mathbb{E}\|\mathbf{M}\|_\Phi$ for the nuclear gauge, for
     unsquared gauge moments (§6, unchanged).
+
+### Orchestrator addendum (2026-10-15): placement of the χ² small ball
+
+Item 2 is amended on placement. The two χ² files split by method: `ChiSquareMoments.lean` holds
+the density-level facts (the exact real moments through $\Gamma$), `ChiSquare.lean` the Laplace
+transform and the tails. The exact small ball C1 is a tail, so it goes in `ChiSquare.lean`, which
+gains the import of `ChiSquareMoments.lean` (no cycle: `ChiSquareMoments.lean` imports only
+`Distributions/Gaussian`). The Chernoff small ball
+`measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector` is dominated by C1
+($\Gamma(x + 1) \ge (x/e)^x$), so it is reproved as C1's corollary and keeps its name and statement
+(CONTRIBUTING §5.2, rule 6). Every χ² tail is then in one file. If the density step C1 needs is
+general (the law of $\|\mathbf{g}\|^2$ as a pushforward with a density), it is a public lemma of
+`ChiSquareMoments.lean`.
