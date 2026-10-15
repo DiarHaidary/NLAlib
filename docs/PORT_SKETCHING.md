@@ -283,6 +283,7 @@ rename. *Rework:* low for adding a family later; moderate for the field of the S
 theorems.
 **Maintainer, 2026-10-14: approved as recommended, (a); SparseStack and OSNAP leave the table
 under the revised D6.**
+*Amended 2026-10-15* (`docs/design/Sketching-S7.md` §8 item 2): CountSketch's field is `𝕜`, real signs coerced, as S6's `srhtMatrix`.
 
 **D4. How a sketch family is carried.**
 - (a) Each family is a law on matrices, `countSketch k n : Measure (Matrix k n ℝ)`, defined as
