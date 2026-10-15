@@ -15,7 +15,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 decl = re.compile(
     r"\s*(?:@\[[^\]]*\]\s*)*(?:(?:private|protected|noncomputable|nonrec|public)\s+)*"
-    r"(?:theorem|lemma|def|structure|abbrev|instance|class|inductive|alias)\s+([^\s:({\[]+)")
+    r"(?:theorem|lemma|def|irreducible_def|structure|abbrev|instance|class|inductive|alias)\s+([^\s:({\[]+)")
 names = set()
 for lib in ("NLAlib", "NLAlibScaffold"):
     for f in (root / lib).rglob("*.lean"):
