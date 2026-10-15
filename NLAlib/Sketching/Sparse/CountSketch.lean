@@ -60,10 +60,6 @@ $d \le \lvert n \rvert$ is assumed. Signs off $\{\pm 1\}$ form a null set. For
 $\varepsilon \ge 1$ the injection is vacuous and the bound is still true. Design:
 `docs/design/Sketching-S7.md` §3.2, §8.
 
-This file is the skeleton of Sketching stage S7 (`docs/design/Sketching-S7.md` §8, item 17),
-with proofs deferred: isotropy, the exact second moment in trace form and in AMM form, and their
-integrability. Everything after them is proved from them.
-
 ## Main definitions
 
 * `NLAlib.countSketchMatrix`: the sketch built from a given hash and signs.
@@ -234,26 +230,251 @@ theorem conjTranspose_countSketchMatrix_mul_self_sub_one [DecidableEq n] (h : n 
     simp [h1]
   · simp [hij]
 
+/-! ### Integrals against the law
+
+Every integral against `NLAlib.countSketch k n` is computed on the product space of hashes and
+signs: an iterated integral, signs inside. Almost surely the signs are $\pm 1$, so the entries of
+the sketch lie in the compact set of matrices with entries of modulus at most $1$, and every
+continuous function of the sketch is integrable. -/
+
+/-- The hash factor of the CountSketch law. -/
+private noncomputable abbrev hashLaw (k n : Type*) [Fintype k] [Fintype n] [MeasurableSpace k] :
+    Measure (n → k) :=
+  Measure.pi fun _ : n => samplingMeasure fun _ : k => (Fintype.card k : ℝ≥0)⁻¹
+
+/-- Almost surely, the signs read in `𝕜` have modulus $1$ and square $1$. -/
+private theorem ae_norm_ofReal_eq_one :
+    ∀ᵐ σ ∂rademacherVector n, ∀ i, ‖((σ i : ℝ) : 𝕜)‖ = 1 ∧ ((σ i : ℝ) : 𝕜) ^ 2 = 1 := by
+  have hσ : HasLaw (fun σ : n → ℝ => σ) (rademacherVector n) (rademacherVector n) := HasLaw.id
+  filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hσ] with σ hσ i
+  refine ⟨?_, ?_⟩
+  · rw [RCLike.norm_ofReal, ← Real.sqrt_sq_eq_abs, hσ i, Real.sqrt_one]
+  · rw [← RCLike.ofReal_pow, hσ i, RCLike.ofReal_one]
+
+/-- The signs read in `𝕜` are independent. -/
+private theorem iIndepFun_ofReal_rademacherVector :
+    iIndepFun (fun i (σ : n → ℝ) => ((σ i : ℝ) : 𝕜)) (rademacherVector n) :=
+  iIndepFun_pi (X := fun _ (t : ℝ) => (t : 𝕜)) fun _ => RCLike.continuous_ofReal.aemeasurable
+
+/-- The signs read in `𝕜` are in every $L^p$. -/
+private theorem memLp_ofReal_rademacherVector (p : ℝ≥0∞) (i : n) :
+    MemLp (fun σ : n → ℝ => ((σ i : ℝ) : 𝕜)) p (rademacherVector n) :=
+  MemLp.of_bound (RCLike.continuous_ofReal.comp (continuous_apply i)).aestronglyMeasurable 1
+    (ae_norm_ofReal_eq_one.mono fun _ h => (h i).1.le)
+
+/-- The signs read in `𝕜` have mean $0$. -/
+private theorem integral_ofReal_rademacherVector (i : n) :
+    ∫ σ, ((σ i : ℝ) : 𝕜) ∂rademacherVector n = 0 := by
+  have hσ : HasLaw (fun σ : n → ℝ => σ) (rademacherVector n) (rademacherVector n) := HasLaw.id
+  rw [integral_ofReal, integral_of_hasLaw_rademacherMeasure (hσ.eval i), RCLike.ofReal_zero]
+
+/-- The integral of a function of the signs equal to $c$ almost surely is $c$. -/
+private theorem integral_eq_of_ae_rademacherVector {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] [CompleteSpace E] {f : (n → ℝ) → E} {c : E}
+    (hf : ∀ᵐ σ ∂rademacherVector n, f σ = c) :
+    ∫ σ, f σ ∂rademacherVector n = c := by
+  rw [integral_congr_ae hf, integral_const, probReal_univ, one_smul]
+
+omit [Fintype k] [Fintype n] [DecidableEq k] in
+/-- The set of matrices with entries of modulus at most $1$ is compact. -/
+private theorem isCompact_setOf_norm_apply_le_one :
+    IsCompact {A : Matrix k n 𝕜 | ∀ a i, ‖A a i‖ ≤ 1} := by
+  have h : {A : Matrix k n 𝕜 | ∀ a i, ‖A a i‖ ≤ 1} =
+      Set.univ.pi fun _ : k => Set.univ.pi fun _ : n => Metric.closedBall (0 : 𝕜) 1 := by
+    ext A
+    change _ ↔ ∀ a ∈ Set.univ, ∀ i ∈ Set.univ, A a i ∈ Metric.closedBall (0 : 𝕜) 1
+    simp only [Set.mem_ofPred_eq, Set.mem_univ, forall_const, mem_closedBall_zero_iff]
+  rw [h]
+  exact isCompact_univ_pi fun _ => isCompact_univ_pi fun _ => isCompact_closedBall 0 1
+
+/-- A continuous function of the sketch is integrable on the product space of hashes and signs. -/
+private theorem integrable_comp_countSketchMatrix [MeasurableSpace k]
+    [MeasurableSingletonClass k] {E : Type*} [NormedAddCommGroup E] {f : Matrix k n 𝕜 → E}
+    (hf : Continuous f) :
+    Integrable (fun x : (n → k) × (n → ℝ) => f (countSketchMatrix x.1 x.2))
+      ((hashLaw k n).prod (rademacherVector n)) := by
+  obtain ⟨C, hC⟩ := isCompact_setOf_norm_apply_le_one.exists_bound_of_continuousOn hf.continuousOn
+  refine Integrable.of_bound
+    (hf.comp_aestronglyMeasurable measurable_countSketchMatrix.aestronglyMeasurable) C ?_
+  filter_upwards [Measure.quasiMeasurePreserving_snd.ae (ae_norm_ofReal_eq_one (𝕜 := 𝕜))]
+    with x hx
+  refine hC _ fun a i => ?_
+  simp only [countSketchMatrix, Matrix.of_apply]
+  split_ifs
+  · exact (hx i).1.le
+  · simp
+
+/-- A continuous function of a CountSketch is integrable. -/
+private theorem integrable_comp_of_hasLaw_countSketch (hS : HasLaw S (countSketch k n) μ)
+    {E : Type*} [NormedAddCommGroup E] {f : Matrix k n 𝕜 → E} (hf : Continuous f) :
+    Integrable (fun ω => f (S ω)) μ := by
+  let _ : MeasurableSpace k := ⊤
+  rw [hS.integrable_comp_iff hf.aestronglyMeasurable, countSketch_eq_map,
+    integrable_map_measure hf.aestronglyMeasurable measurable_countSketchMatrix.aemeasurable]
+  exact integrable_comp_countSketchMatrix hf
+
+/-- The integral of a continuous function of a CountSketch, iterated over the hash and the
+signs. -/
+private theorem integral_comp_of_hasLaw_countSketch [MeasurableSpace k]
+    [MeasurableSingletonClass k] (hS : HasLaw S (countSketch k n) μ) {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E] {f : Matrix k n 𝕜 → E}
+    (hf : Continuous f) :
+    ∫ ω, f (S ω) ∂μ =
+      ∫ h, ∫ σ, f (countSketchMatrix h σ) ∂rademacherVector n ∂hashLaw k n := by
+  refine (hS.integral_comp hf.aestronglyMeasurable).trans ?_
+  rw [countSketch_eq_map,
+    integral_map measurable_countSketchMatrix.aemeasurable hf.aestronglyMeasurable]
+  exact integral_prod _ (integrable_comp_countSketchMatrix hf)
+
+omit [DecidableEq k] in
+/-- Two distinct hash values collide with probability $1/\lvert k \rvert$; for empty `k` both
+sides are $0$. -/
+private theorem measureReal_hashLaw_setOf_apply_eq_apply [MeasurableSpace k]
+    [MeasurableSingletonClass k] {i j : n} (hij : i ≠ j) :
+    (hashLaw k n).real {h | h i = h j} = (Fintype.card k : ℝ)⁻¹ := by
+  rcases isEmpty_or_nonempty k with hk | hk
+  · have h0 : hashLaw k n = 0 := by
+      rw [← Measure.measure_univ_eq_zero, Measure.pi_univ]
+      exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp [samplingMeasure])
+    rw [h0, Fintype.card_eq_zero, Nat.cast_zero, inv_zero, measureReal_zero_apply]
+  · have hc : (Fintype.card k : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+    rw [measureReal_pi_samplingMeasure_setOf_apply_eq_apply _
+      (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc]) hij]
+    have hc' : (Fintype.card k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+    simp only [NNReal.coe_inv, NNReal.coe_natCast, Finset.sum_const, Finset.card_univ,
+      nsmul_eq_mul]
+    field_simp
+
+/-- For a fixed hash, $\mathbb{E}_\sigma\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$: the
+quadratic form of the signs against $[h(i) = h(j)]\,\overline{\mathbf{x}_i}\mathbf{x}_j$, whose
+trace is $\|\mathbf{x}\|^2$. -/
+private theorem integral_norm_countSketchMatrix_mulVec_sq (h : n → k) (x : n → 𝕜) :
+    ∫ σ, ‖WithLp.toLp 2 ((countSketchMatrix h σ : Matrix k n 𝕜) *ᵥ x)‖ ^ 2 ∂rademacherVector n =
+      ‖WithLp.toLp 2 x‖ ^ 2 := by
+  classical
+  set D : Matrix n n 𝕜 := Matrix.of fun i j => if h i = h j then star (x i) * x j else 0
+  have e (σ : n → ℝ) :
+      ((‖WithLp.toLp 2 ((countSketchMatrix h σ : Matrix k n 𝕜) *ᵥ x)‖ ^ 2 : ℝ) : 𝕜) =
+        quadForm D fun i => ((σ i : ℝ) : 𝕜) := by
+    rw [← quadForm_conjTranspose_mul_self, quadForm_eq_sum, quadForm_eq_sum]
+    refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+    rw [conjTranspose_countSketchMatrix_mul_self_apply]
+    simp only [D, Matrix.of_apply, RCLike.star_def, RCLike.conj_ofReal]
+    split_ifs
+    · push_cast
+      ring
+    · simp
+  have hx : IsIsotropic (fun σ : n → ℝ => fun i => ((σ i : ℝ) : 𝕜)) (rademacherVector n) :=
+    IsIsotropic.of_iIndepFun iIndepFun_ofReal_rademacherVector
+      (fun i => memLp_ofReal_rademacherVector 2 i) integral_ofReal_rademacherVector
+      fun i => integral_eq_of_ae_rademacherVector
+        (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow])
+  have htr : D.trace = ((‖WithLp.toLp 2 x‖ ^ 2 : ℝ) : 𝕜) := by
+    simp only [Matrix.trace, Matrix.diag, D, Matrix.of_apply, if_true, EuclideanSpace.norm_sq_eq]
+    push_cast
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [RCLike.star_def, RCLike.conj_mul]
+  apply RCLike.ofReal_injective (K := 𝕜)
+  rw [← integral_ofReal]
+  simp only [e]
+  rw [hx.integral_quadForm D, htr]
+
 /-- **CountSketch is isotropic**, $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, for
 nonempty `k`. [CamanoEpperlyMeyerTropp2025, Lemma B.1] (first part, there
-$\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^*] = \mathbf{I}$).
-Proof: the entries are bounded by $1$ almost surely, so in $L^2$; by the hollow Gram identity the
-off-diagonal entries of $\mathbf{S}^{\mathsf{H}}\mathbf{S}$ are $[h(i) = h(j)]\,\sigma_i\sigma_j$,
-of mean $0$ by independence of the signs, and the diagonal is $1$ almost surely. On the product
-space, then `ProbabilityTheory.HasLaw.isIsotropicSketch_iff`. Moderate. -/
+$\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^*] = \mathbf{I}$). -/
 theorem isIsotropicSketch_of_hasLaw_countSketch [Nonempty k] [DecidableEq n]
     (hS : HasLaw S (countSketch k n) μ) : IsIsotropicSketch S μ := by
-  sorry
+  let _ : MeasurableSpace k := ⊤
+  have hc : (Fintype.card k : ℝ≥0) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+  have := isProbabilityMeasure_samplingMeasure (fun _ : k => (Fintype.card k : ℝ≥0)⁻¹)
+    (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_inv_cancel₀ hc])
+  refine isIsotropicSketch_iff.2 ⟨fun a i => ?_, fun x => ?_⟩
+  · exact (memLp_two_iff_integrable_sq_norm
+      ((Matrix.measurable_apply a i).comp_aemeasurable hS.aemeasurable).aestronglyMeasurable).2
+      (integrable_comp_of_hasLaw_countSketch hS ((continuous_id.matrix_elem a i).norm.pow 2))
+  · rw [integral_comp_of_hasLaw_countSketch hS
+      (f := fun A => ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2) (by fun_prop)]
+    simp only [integral_norm_countSketchMatrix_mulVec_sq, integral_const, probReal_univ,
+      one_smul]
 
 /-! ### The exact second moment -/
 
-/-- The squared trace of $\mathbf{M}$ against the Gram error of a CountSketch is integrable.
-Proof: on the product space the hash space is finite, and for each hash the integrand is the
-squared modulus of a quadratic form in bounded signs. Easy. -/
+/-- The squared trace of $\mathbf{M}$ against the Gram error of a CountSketch is integrable. -/
 theorem integrable_norm_trace_mul_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch
     [DecidableEq n] (hS : HasLaw S (countSketch k n) μ) (M : Matrix n n 𝕜) :
-    Integrable (fun ω => ‖(M * ((S ω)ᴴ * S ω - 1)).trace‖ ^ 2) μ := by
-  sorry
+    Integrable (fun ω => ‖(M * ((S ω)ᴴ * S ω - 1)).trace‖ ^ 2) μ :=
+  integrable_comp_of_hasLaw_countSketch hS (f := fun A => ‖(M * (Aᴴ * A - 1)).trace‖ ^ 2)
+    (by fun_prop)
+
+/-- For a fixed hash, the second moment over the signs: $\operatorname{tr}(\mathbf{M}\mathbf{H})$
+is almost surely the quadratic form in the signs of the hollow matrix with entries
+$[i \ne j,\ h(i) = h(j)]\,\mathbf{M}_{i,j}$, whose second moment is
+`NLAlib.integral_norm_quadForm_sub_trace_sq` at $s = 1$, $m_4 = 1$. -/
+private theorem integral_norm_trace_mul_countSketchMatrix_sq [DecidableEq n] (h : n → k)
+    (M : Matrix n n 𝕜) :
+    ∫ σ, ‖(M * ((countSketchMatrix h σ : Matrix k n 𝕜)ᴴ * countSketchMatrix h σ - 1)).trace‖ ^ 2
+        ∂rademacherVector n =
+      ∑ i, ∑ j, if i ≠ j ∧ h i = h j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i)
+        else 0 := by
+  set A : Matrix n n 𝕜 := Matrix.of fun i j => if i ≠ j ∧ h i = h j then M i j else 0
+  have hdiag (i : n) : A i i = 0 := by simp [A]
+  have hA : A.trace = 0 := by simp [Matrix.trace, hdiag]
+  have hσ : HasLaw (fun σ : n → ℝ => σ) (rademacherVector n) (rademacherVector n) := HasLaw.id
+  have e : ∀ᵐ σ ∂rademacherVector n,
+      ‖(M * ((countSketchMatrix h σ : Matrix k n 𝕜)ᴴ * countSketchMatrix h σ - 1)).trace‖ ^ 2 =
+        ‖quadForm A (fun i => ((σ i : ℝ) : 𝕜)) - A.trace‖ ^ 2 := by
+    filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hσ] with σ hσ
+    rw [conjTranspose_countSketchMatrix_mul_self_sub_one h hσ, hA, sub_zero, quadForm_eq_sum,
+      Matrix.trace]
+    congr 2
+    simp only [Matrix.diag, Matrix.mul_apply, Matrix.of_apply, A]
+    refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+    by_cases hc : i ≠ j ∧ h i = h j
+    · have hc' : j ≠ i ∧ h j = h i := ⟨hc.1.symm, hc.2.symm⟩
+      rw [if_pos hc, if_pos hc', RCLike.star_def, RCLike.conj_ofReal]
+      push_cast
+      ring
+    · have hc' : ¬(j ≠ i ∧ h j = h i) := fun h' => hc ⟨h'.1.symm, h'.2.symm⟩
+      rw [if_neg hc, if_neg hc']
+      ring
+  rw [integral_congr_ae e, integral_norm_quadForm_sub_trace_sq iIndepFun_ofReal_rademacherVector
+    (fun i => memLp_ofReal_rademacherVector 4 i) integral_ofReal_rademacherVector
+    (fun i => integral_eq_of_ae_rademacherVector
+      (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow]))
+    (s := 1) (fun i => integral_eq_of_ae_rademacherVector
+      (ae_norm_ofReal_eq_one.mono fun σ h => (h i).2))
+    (m₄ := 1) (fun i => integral_eq_of_ae_rademacherVector
+      (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow])) A]
+  simp only [hdiag, norm_zero, norm_one, one_pow, one_mul, ne_eq, OfNat.ofNat_ne_zero,
+    not_false_eq_true, zero_pow, Finset.sum_const_zero, mul_zero, add_zero, frobNorm_sq_eq_sum,
+    frobInner_eq_sum, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+  simp only [A, Matrix.of_apply, Matrix.transpose_apply]
+  by_cases hc : i ≠ j ∧ h i = h j
+  · have hc' : j ≠ i ∧ h j = h i := ⟨hc.1.symm, hc.2.symm⟩
+    rw [if_pos hc, if_pos hc', if_pos hc]
+  · have hc' : ¬(j ≠ i ∧ h j = h i) := fun h' => hc ⟨h'.1.symm, h'.2.symm⟩
+    rw [if_neg hc, if_neg hc', if_neg hc]
+    simp
+
+/-- The off-diagonal sum in closed form:
+$$\sum_{i \ne j} \bigl(\lvert \mathbf{M}_{i,j} \rvert^2 +
+\operatorname{Re}(\overline{\mathbf{M}_{i,j}}\mathbf{M}_{j,i})\bigr) =
+\|\mathbf{M}\|_{\mathsf{F}}^2 + \langle \mathbf{M}, \mathbf{M}^{\mathsf{T}} \rangle_{\mathsf{F}} -
+2 \sum_i \lvert \mathbf{M}_{i,i} \rvert^2\,.$$ -/
+private theorem sum_sum_ite_ne [DecidableEq n] (M : Matrix n n 𝕜) :
+    ∑ i, ∑ j, (if i ≠ j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0) =
+      frobNorm M ^ 2 + frobInner M Mᵀ - 2 * ∑ i, ‖M i i‖ ^ 2 := by
+  have hd (i : n) : ‖M i i‖ ^ 2 + RCLike.re (star (M i i) * M i i) = 2 * ‖M i i‖ ^ 2 := by
+    rw [RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow, RCLike.ofReal_re]
+    ring
+  have e (i j : n) : (if i ≠ j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0) =
+      ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) -
+        if i = j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0 := by
+    split_ifs <;> simp_all
+  simp only [e, Finset.sum_sub_distrib, Finset.sum_ite_eq, Finset.mem_univ, if_true, hd,
+    Finset.sum_add_distrib, frobNorm_sq_eq_sum, frobInner_eq_sum, Matrix.transpose_apply,
+    ← Finset.mul_sum]
 
 /-- **The second moment of a CountSketch**: for every $\mathbf{M}$,
 $$\mathbb{E}\lvert \operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))
@@ -263,22 +484,43 @@ $$\mathbb{E}\lvert \operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S
 uncentred moment $\mathbb{E}[\operatorname{tr}(\mathbf{M}\mathbf{\Phi}\mathbf{\Phi}^*)^2]$, which
 adds $(\operatorname{tr}\mathbf{M})^2$; the exact expression is in the proof, the statement is
 the bound $(\operatorname{tr}\mathbf{M})^2 + 2\|\mathbf{M}\|_{\mathsf{F}}^2/b$ for $b$ rows).
-Here centred, any $\mathbf{M}$, any field.
-Proof: split on `Nonempty k` (the empty case is $0 = 0$). Fubini on the product space; for a fixed
-hash, almost surely $\operatorname{tr}(\mathbf{M}\mathbf{H})$ is the quadratic form in the signs
-of the hollow matrix $\mathbf{A}_h$ with entries $[i \ne j,\ h(i) = h(j)]\,\mathbf{M}_{j,i}$, and
-`NLAlib.integral_norm_quadForm_sub_trace_sq` ($s = 1$, $m_4 = 1$) gives
-$$\sum_{i \ne j,\ h(i) = h(j)} \bigl(\lvert \mathbf{M}_{i,j} \rvert^2 +
-\operatorname{Re}(\overline{\mathbf{M}_{i,j}}\mathbf{M}_{j,i})\bigr)\,;$$
-the collision probability `NLAlib.measureReal_pi_samplingMeasure_setOf_apply_eq_apply` at
-uniform weights averages the hash.
-About 150 lines. Hard.
+Here centred, any $\mathbf{M}$, any field. For a fixed hash,
+$\operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))$ is a hollow
+Rademacher quadratic form (`NLAlib.integral_norm_quadForm_sub_trace_sq` at $s = 1$, $m_4 = 1$),
+and the collision probability `NLAlib.measureReal_pi_samplingMeasure_setOf_apply_eq_apply`
+averages the hash.
 Result: countsketch-second-moment -/
 theorem integral_norm_trace_mul_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch
     [DecidableEq n] (hS : HasLaw S (countSketch k n) μ) (M : Matrix n n 𝕜) :
     ∫ ω, ‖(M * ((S ω)ᴴ * S ω - 1)).trace‖ ^ 2 ∂μ =
       (frobNorm M ^ 2 + frobInner M Mᵀ - 2 * ∑ i, ‖M i i‖ ^ 2) / Fintype.card k := by
-  sorry
+  let _ : MeasurableSpace k := ⊤
+  have hint (i j : n) : ∫ h, (if i ≠ j ∧ h i = h j then
+      ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0) ∂hashLaw k n =
+      (Fintype.card k : ℝ)⁻¹ *
+        if i ≠ j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0 := by
+    by_cases hij : i = j
+    · simp [hij]
+    · have hs : MeasurableSet {h : n → k | h i = h j} :=
+        measurableSet_eq_fun (measurable_pi_apply i) (measurable_pi_apply j)
+      have e : (fun h : n → k => if i ≠ j ∧ h i = h j then
+          ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0) =
+          {h : n → k | h i = h j}.indicator
+            fun _ => ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) := by
+        ext h
+        simp [Set.indicator_apply, hij]
+      rw [e, integral_indicator_const _ hs, measureReal_hashLaw_setOf_apply_eq_apply hij,
+        if_pos hij, smul_eq_mul]
+  refine (integral_comp_of_hasLaw_countSketch hS
+    (f := fun A : Matrix k n 𝕜 => ‖(M * (Aᴴ * A - 1)).trace‖ ^ 2) (by fun_prop)).trans ?_
+  simp only [integral_norm_trace_mul_countSketchMatrix_sq]
+  rw [integral_finsetSum _ fun i _ => integrable_finsetSum _ fun j _ => Integrable.of_finite]
+  simp only [fun i => integral_finsetSum (μ := hashLaw k n) _
+    fun j (_ : j ∈ Finset.univ) => Integrable.of_finite (f := fun h : n → k =>
+      if i ≠ j ∧ h i = h j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0), hint,
+    inv_mul_eq_div]
+  rw [← sum_sum_ite_ne, Finset.sum_div]
+  simp only [Finset.sum_div]
 
 /-! ### Approximate matrix multiplication -/
 
@@ -286,15 +528,77 @@ section AMM
 
 variable [Fintype q] [Fintype r]
 
-/-- The squared error of approximate matrix multiplication with a CountSketch is integrable.
-Proof: each entry of the error
-$\mathbf{A}^{\mathsf{H}}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I})\mathbf{B}$ is a trace
-against a rank-one matrix, so the integrand is a finite sum of the integrable functions of
-`NLAlib.integrable_norm_trace_mul_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch`. Easy. -/
+/-- The squared error of approximate matrix multiplication with a CountSketch is integrable. -/
 theorem integrable_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_countSketch
     (hS : HasLaw S (countSketch k n) μ) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
-    Integrable (fun ω => frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B) ^ 2) μ := by
-  sorry
+    Integrable (fun ω => frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B) ^ 2) μ :=
+  integrable_comp_of_hasLaw_countSketch hS
+    (f := fun T : Matrix k n 𝕜 => frobNorm (Aᴴ * Tᴴ * T * B - Aᴴ * B) ^ 2)
+    ((continuous_frobNorm.comp (by fun_prop)).pow 2)
+
+omit [DecidableEq k] [Fintype q] [Fintype r] in
+/-- Entry $(a, b)$ of the AMM error is the trace of the rank-one matrix with entries
+$\mathbf{B}_{j,b}\overline{\mathbf{A}_{i,a}}$ against the Gram error. -/
+private theorem conjTranspose_mul_sub_apply_eq_trace [DecidableEq n] (A : Matrix n q 𝕜)
+    (B : Matrix n r 𝕜) (T : Matrix k n 𝕜) (a : q) (b : r) :
+    (Aᴴ * Tᴴ * T * B - Aᴴ * B) a b =
+      ((Matrix.of fun j i => B j b * star (A i a)) * (Tᴴ * T - 1)).trace := by
+  have e : Aᴴ * Tᴴ * T * B - Aᴴ * B = Aᴴ * (Tᴴ * T - 1) * B := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.mul_assoc Aᴴ Tᴴ T]
+  rw [e, Matrix.trace]
+  simp only [Matrix.mul_apply, Matrix.diag, Matrix.of_apply, Matrix.conjTranspose_apply,
+    Finset.sum_mul]
+  refine Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun i _ => ?_
+  ring
+
+omit [Fintype k] [DecidableEq k] in
+/-- The first term of the AMM identity: the rank-one matrices have total squared Frobenius norm
+$\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{B}\|_{\mathsf{F}}^2$. -/
+private theorem sum_sum_frobNorm_of_mul_star_sq (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
+    ∑ a, ∑ b, frobNorm (Matrix.of fun j i => B j b * star (A i a)) ^ 2 =
+      frobNorm A ^ 2 * frobNorm B ^ 2 := by
+  have hA : frobNorm A ^ 2 = ∑ a, ∑ i, ‖A i a‖ ^ 2 := by rw [frobNorm_sq_eq_sum, Finset.sum_comm]
+  have hB : frobNorm B ^ 2 = ∑ b, ∑ j, ‖B j b‖ ^ 2 := by rw [frobNorm_sq_eq_sum, Finset.sum_comm]
+  have h (a : q) (b : r) : frobNorm (Matrix.of fun j i => B j b * star (A i a)) ^ 2 =
+      (∑ j, ‖B j b‖ ^ 2) * ∑ i, ‖A i a‖ ^ 2 := by
+    rw [frobNorm_sq_eq_sum, Finset.sum_mul_sum]
+    simp only [Matrix.of_apply, norm_mul, norm_star, mul_pow]
+  rw [hA, hB]
+  simp only [h, ← Finset.sum_mul, ← Finset.mul_sum]
+  ring
+
+omit [Fintype k] [DecidableEq k] in
+/-- The second term of the AMM identity: the transpose pairings of the rank-one matrices sum to
+$\|\mathbf{A}^{\mathsf{T}}\mathbf{B}\|_{\mathsf{F}}^2$. -/
+private theorem sum_sum_frobInner_of_mul_star_transpose (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
+    ∑ a, ∑ b, frobInner (Matrix.of fun j i => B j b * star (A i a))
+      (Matrix.of fun j i => B j b * star (A i a))ᵀ = frobNorm (Aᵀ * B) ^ 2 := by
+  have hz (z : 𝕜) : ‖z‖ ^ 2 = RCLike.re (star z * z) := by
+    rw [RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow, RCLike.ofReal_re]
+  rw [frobNorm_sq_eq_sum]
+  refine Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun b _ => ?_
+  rw [frobInner_eq_sum, hz, Matrix.mul_apply, star_sum, Finset.sum_mul_sum, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 1
+  simp only [Matrix.of_apply, Matrix.transpose_apply, star_mul', star_star]
+  ring
+
+omit [Fintype k] [DecidableEq k] in
+/-- The third term of the AMM identity: the squared diagonals of the rank-one matrices sum to
+$\sum_i \|\mathbf{a}_i\|^2 \|\mathbf{b}_i\|^2$. -/
+private theorem sum_sum_sum_norm_of_mul_star_apply_sq (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
+    ∑ a, ∑ b, ∑ i, ‖(Matrix.of fun j i => B j b * star (A i a) : Matrix n n 𝕜) i i‖ ^ 2 =
+      ∑ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 * ‖WithLp.toLp 2 (B i)‖ ^ 2 := by
+  simp only [Matrix.of_apply, norm_mul, norm_star, mul_pow, EuclideanSpace.norm_sq_eq,
+    Finset.sum_mul_sum]
+  calc ∑ a, ∑ b, ∑ i, ‖B i b‖ ^ 2 * ‖A i a‖ ^ 2
+      = ∑ a, ∑ i, ∑ b, ‖A i a‖ ^ 2 * ‖B i b‖ ^ 2 := by
+        refine Finset.sum_congr rfl fun a _ => ?_
+        rw [Finset.sum_comm]
+        exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun b _ => mul_comm _ _
+    _ = ∑ i, ∑ a, ∑ b, ‖A i a‖ ^ 2 * ‖B i b‖ ^ 2 := Finset.sum_comm
 
 /-- **AMM with a CountSketch, exact second moment**:
 $$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
@@ -304,19 +608,34 @@ $$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
 2\sum_i \|\mathbf{a}_i\|^2 \|\mathbf{b}_i\|^2}{\lvert k \rvert}$$
 for the rows $\mathbf{a}_i$, $\mathbf{b}_i$ of $\mathbf{A}$, $\mathbf{B}$. Proved without a
 literature source; Woodruff's proof of Theorem 14 computes its case
-$\mathbf{A} = \mathbf{B} = \mathbf{x}$ over $\mathbb{R}$.
-Proof: entry $(a, b)$ of the error is
+$\mathbf{A} = \mathbf{B} = \mathbf{x}$ over $\mathbb{R}$. Entry $(a, b)$ of the error is
 $\operatorname{tr}(\mathbf{M}_{ab}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))$ for the
-rank-one $\mathbf{M}_{ab}$ with entries $\mathbf{B}_{j,b}\overline{\mathbf{A}_{i,a}}$; sum the
-exact second moment over $(a, b)$ (`NLAlib.frobNorm_vecMulVec`, `NLAlib.frobInner_eq_sum`).
-Moderate.
+rank-one $\mathbf{M}_{ab}$ with entries $\mathbf{B}_{j,b}\overline{\mathbf{A}_{i,a}}$, and the
+exact second moment is summed over $(a, b)$.
 Result: amm-countsketch -/
 theorem integral_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_countSketch
     (hS : HasLaw S (countSketch k n) μ) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
     ∫ ω, frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B) ^ 2 ∂μ =
       (frobNorm A ^ 2 * frobNorm B ^ 2 + frobNorm (Aᵀ * B) ^ 2 -
         2 * ∑ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 * ‖WithLp.toLp 2 (B i)‖ ^ 2) / Fintype.card k := by
-  sorry
+  classical
+  have e (ω : Ω) : frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B) ^ 2 =
+      ∑ a, ∑ b,
+        ‖((Matrix.of fun j i => B j b * star (A i a)) * ((S ω)ᴴ * S ω - 1)).trace‖ ^ 2 := by
+    rw [frobNorm_sq_eq_sum]
+    simp only [conjTranspose_mul_sub_apply_eq_trace]
+  have hI (a : q) (b : r) :=
+    integrable_norm_trace_mul_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch hS
+      (Matrix.of fun j i => B j b * star (A i a))
+  simp only [e]
+  rw [integral_finsetSum _ fun a _ => integrable_finsetSum _ fun b _ => hI a b]
+  simp only [fun a => integral_finsetSum (μ := μ) _ fun b (_ : b ∈ Finset.univ) => hI a b,
+    integral_norm_trace_mul_conjTranspose_mul_self_sub_one_sq_of_hasLaw_countSketch hS]
+  rw [← sum_sum_frobNorm_of_mul_star_sq, ← sum_sum_frobInner_of_mul_star_transpose,
+    ← sum_sum_sum_norm_of_mul_star_apply_sq, Finset.mul_sum, ← Finset.sum_add_distrib,
+    ← Finset.sum_sub_distrib, Finset.sum_div]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  rw [Finset.mul_sum, ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib, Finset.sum_div]
 
 /-- **AMM with a CountSketch**, the bound
 $$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
