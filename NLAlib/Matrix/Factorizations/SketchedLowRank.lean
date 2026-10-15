@@ -24,18 +24,29 @@ The randomized SVD is the case $\mathbf{\Psi} = \mathbf{I}$. When
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$ equals
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, the squared Frobenius error of generalized Nyström
 is the error of the randomized SVD plus a sketch-and-solve excess, exactly; no full rank of
-$\mathbf{A}\mathbf{\Omega}$ is assumed. Truncated variants have no names:
-`truncatedSVD (rsvd A Ω) k` (late), `rangeProjector (truncatedSVD (A * Ω) k) * A` and
-`obliqueProjector (truncatedSVD (A * Ω) k) Ψᴴ * A` (early).
+$\mathbf{A}\mathbf{\Omega}$ is assumed.
 
-Degenerate cases: for empty `l`, $\mathbf{\Omega} = \mathbf{0}$ or $\mathbf{A} = \mathbf{0}$ both
+Truncation. Late truncation is spelled `truncatedSVD (rsvd A Ω) k`, and likewise for the other
+outputs (`truncatedSVD (generalizedNystrom A Ω Ψ) k`); it has no name of its own. Early truncation,
+which replaces the sketch $\mathbf{A}\mathbf{\Omega}$ by its truncated SVD
+$\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ before projecting, is named:
+`NLAlib.earlyTruncatedRSVD A Ω k` is
+$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}$ and
+`NLAlib.earlyTruncatedGeneralizedNystrom A Ω Ψ k` is
+$$\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
+\mathbf{A}\,.$$
+Errors are written as $\mathbf{A}$ minus the named output.
+
+Degenerate cases: for empty `l`, $\mathbf{\Omega} = \mathbf{0}$ or $\mathbf{A} = \mathbf{0}$ all
 approximations are $\mathbf{0}$, and `NLAlib.generalizedNystrom_eq_self_of_rank_eq` then needs
-$\mathbf{A} = \mathbf{0}$, which its hypothesis says. Design: `docs/design/LowRank-S0.md` §3.3, §8.
+$\mathbf{A} = \mathbf{0}$, which its hypothesis says; for $k = 0$ the early-truncated outputs are
+$\mathbf{0}$. Design: `docs/design/LowRank-S0.md` §3.3, §8; `docs/design/LowRank-S2b.md` §3.1, §8.
 
 ## Main definitions
 
 * `NLAlib.rsvd`: $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$.
 * `NLAlib.generalizedNystrom`: $\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle$.
+* `NLAlib.earlyTruncatedRSVD`, `NLAlib.earlyTruncatedGeneralizedNystrom`: early truncation.
 
 ## Main results
 
@@ -50,6 +61,12 @@ $\mathbf{A} = \mathbf{0}$, which its hypothesis says. Design: `docs/design/LowRa
   $\operatorname{range}(\mathbf{A}\mathbf{\Omega})$.
 * `NLAlib.HasOrthonormalCols.rsvd_mul_mul_conjTranspose`,
   `NLAlib.HasOrthonormalCols.generalizedNystrom_mul_mul_conjTranspose`: equivariance.
+* `NLAlib.earlyTruncatedRSVD_mul`, `NLAlib.rank_earlyTruncatedRSVD_le`,
+  `NLAlib.rank_earlyTruncatedGeneralizedNystrom_le`, `NLAlib.earlyTruncatedRSVD_of_rank_le`,
+  `NLAlib.earlyTruncatedGeneralizedNystrom_of_rank_le`, `NLAlib.sub_earlyTruncatedRSVD`,
+  `NLAlib.sub_earlyTruncatedGeneralizedNystrom`: the early-truncation API.
+* `NLAlib.frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq`: early-truncated generalized Nyström
+  error = early-truncated randomized SVD error + sketch-and-solve excess.
 -/
 
 @[expose] public section
@@ -254,5 +271,119 @@ theorem HasOrthonormalCols.generalizedNystrom_mul_mul_conjTranspose [DecidableEq
   rw [generalizedNystrom, generalizedNystrom, e, Matrix.conjTranspose_mul,
     hU.obliqueProjector_mul_mul_conjTranspose]
   simp only [Matrix.mul_assoc, hU.conjTranspose_mul_cancel_left]
+
+/-! ### Early truncation -/
+
+/-- The **early-truncated randomized SVD**
+$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}$: the projection of
+$\mathbf{A}$ onto the range of the truncated SVD of the sketch $\mathbf{A}\mathbf{\Omega}$, that is
+onto $k$ dominant left singular vectors of the sketch. Rank at most $k$
+(`NLAlib.rank_earlyTruncatedRSVD_le`); $\lvert l \rvert$ products with $\mathbf{A}$ and at most $k$
+with $\mathbf{A}^{\mathsf{H}}$. Under ties
+$\sigma_{k-1}(\mathbf{A}\mathbf{\Omega}) = \sigma_k(\mathbf{A}\mathbf{\Omega})$ it depends on the
+choice `truncatedSVD` makes, and so does its error.
+[Woodruff2014, Theorem 61]; there transposed, with the sketch on the left.
+[CohenElderMuscoMuscoPersu2015, §10.1], there transposed; [CohenElderMuscoMuscoPersu2015, §7.2], a
+remark in this orientation. -/
+noncomputable def earlyTruncatedRSVD (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
+    Matrix m n 𝕜 :=
+  rangeProjector (truncatedSVD (A * Ω) k) * A
+
+/-- The early-truncated randomized SVD reproduces the truncated sketch:
+$$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}\mathbf{\Omega} =
+\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k\,.$$ -/
+theorem earlyTruncatedRSVD_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
+    earlyTruncatedRSVD A Ω k * Ω = truncatedSVD (A * Ω) k := by
+  rw [earlyTruncatedRSVD, Matrix.mul_assoc, rangeProjector_truncatedSVD_mul]
+
+/-- The residual of the early-truncated randomized SVD is a projection residual:
+$$\mathbf{A} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A} =
+(\mathbf{I} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k})\mathbf{A}\,.$$ -/
+theorem sub_earlyTruncatedRSVD [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
+    A - earlyTruncatedRSVD A Ω k = (1 - rangeProjector (truncatedSVD (A * Ω) k)) * A := by
+  rw [earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul]
+
+/-- The early-truncated randomized SVD has rank at most $k$:
+$$\operatorname{rank}(\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A})
+\le k\,.$$ -/
+theorem rank_earlyTruncatedRSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
+    (earlyTruncatedRSVD A Ω k).rank ≤ k :=
+  ((Matrix.rank_mul_le_left _ _).trans_eq (rank_rangeProjector _)).trans
+    (rank_truncatedSVD_le _ k)
+
+/-- With $k$ at least the rank of the sketch nothing is truncated: when
+$\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le k$,
+$$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A} =
+\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\,.$$ -/
+theorem earlyTruncatedRSVD_of_rank_le {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {k : ℕ}
+    (hk : (A * Ω).rank ≤ k) : earlyTruncatedRSVD A Ω k = rsvd A Ω := by
+  rw [earlyTruncatedRSVD, truncatedSVD_of_rank_le _ hk, rsvd]
+
+/-- The **early-truncated generalized Nyström approximation**
+$$\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
+\mathbf{A}\,:$$
+generalized Nyström with the range sketch $\mathbf{A}\mathbf{\Omega}$ replaced by its truncated SVD.
+One pass; rank at most $k$ (`NLAlib.rank_earlyTruncatedGeneralizedNystrom_le`). Under ties of the
+singular values of the sketch it depends on the choice `truncatedSVD` makes.
+[TroppYurtseverUdellCevher2017, §7.3.1, (7.3)]; there through a basis of $k$ dominant left singular
+vectors of the sketch, a QR factorization, and a final truncation that is the identity. TYUC state
+the algorithm and report, from CEMMP, a high-probability $(1+\varepsilon)$ bound at
+$\Theta(r/\varepsilon^2)$ for both sketch sizes with unspecified constants; no bound is taken from
+it. The bounds on this output compose `NLAlib.frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq`
+with a bound on the sketch-and-solve term and an early-truncated randomized SVD bound. -/
+noncomputable def earlyTruncatedGeneralizedNystrom (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
+    (Ψ : Matrix m p 𝕜) (k : ℕ) : Matrix m n 𝕜 :=
+  obliqueProjector (truncatedSVD (A * Ω) k) Ψᴴ * A
+
+/-- The residual of early-truncated generalized Nyström is an oblique projection residual:
+$$\mathbf{A} - \mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,
+\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A} = (\mathbf{I} -
+\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}})
+\mathbf{A}\,.$$ -/
+theorem sub_earlyTruncatedGeneralizedNystrom [DecidableEq m] (A : Matrix m n 𝕜)
+    (Ω : Matrix n l 𝕜) (Ψ : Matrix m p 𝕜) (k : ℕ) :
+    A - earlyTruncatedGeneralizedNystrom A Ω Ψ k =
+      (1 - obliqueProjector (truncatedSVD (A * Ω) k) Ψᴴ) * A := by
+  rw [earlyTruncatedGeneralizedNystrom, Matrix.sub_mul, Matrix.one_mul]
+
+/-- Early-truncated generalized Nyström has rank at most $k$:
+$$\operatorname{rank}(\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,
+\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A}) \le k\,.$$ -/
+theorem rank_earlyTruncatedGeneralizedNystrom_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
+    (Ψ : Matrix m p 𝕜) (k : ℕ) : (earlyTruncatedGeneralizedNystrom A Ω Ψ k).rank ≤ k :=
+  (((Matrix.rank_mul_le_left _ _).trans_eq (rank_obliqueProjector _ _)).trans
+    (Matrix.rank_mul_le_right _ _)).trans (rank_truncatedSVD_le _ k)
+
+/-- With $k$ at least the rank of the sketch nothing is truncated: when
+$\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le k$,
+$$\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
+\mathbf{A} = \mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle\,.$$ -/
+theorem earlyTruncatedGeneralizedNystrom_of_rank_le {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
+    {k : ℕ} (hk : (A * Ω).rank ≤ k) (Ψ : Matrix m p 𝕜) :
+    earlyTruncatedGeneralizedNystrom A Ω Ψ k = generalizedNystrom A Ω Ψ := by
+  rw [earlyTruncatedGeneralizedNystrom, truncatedSVD_of_rank_le _ hk, generalizedNystrom]
+
+/-- **Early-truncated generalized Nyström error = early-truncated randomized SVD error +
+sketch-and-solve excess**, exactly, in squared Frobenius norm: with
+$\mathbf{X} = \llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ and
+$\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{X}) = \operatorname{rank}\mathbf{X}$,
+$$\|\mathbf{A} - \mathbf{\Pi}_{\mathbf{X},\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A}\|_{\mathsf{F}}^2 =
+\|\mathbf{A} - \mathbf{P}_{\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2 +
+\|\mathbf{\Pi}_{\mathbf{X},\mathbf{\Psi}^{\mathsf{H}}}
+(\mathbf{A} - \mathbf{P}_{\mathbf{X}}\mathbf{A})\|_{\mathsf{F}}^2\,.$$
+The deterministic half of every bound on early-truncated generalized Nyström: the last term is the
+one a completion identity or a subspace injection bounds. The rank hypothesis is at the actual rank
+of $\mathbf{X}$, which may be below $k$. Without it the identity fails
+($\mathbf{\Psi} = \mathbf{0}$, $\mathbf{A} = \mathbf{\Omega} = \mathbf{I}_2$, $k = 2$). -/
+theorem frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
+    {Ψ : Matrix m p 𝕜} {k : ℕ}
+    (h : (Ψᴴ * truncatedSVD (A * Ω) k).rank = (truncatedSVD (A * Ω) k).rank) :
+    frobNorm (A - earlyTruncatedGeneralizedNystrom A Ω Ψ k) ^ 2 =
+      frobNorm (A - earlyTruncatedRSVD A Ω k) ^ 2 +
+        frobNorm (obliqueProjector (truncatedSVD (A * Ω) k) Ψᴴ *
+          (A - earlyTruncatedRSVD A Ω k)) ^ 2 := by
+  classical
+  rw [sub_earlyTruncatedGeneralizedNystrom, sub_earlyTruncatedRSVD]
+  exact frobNorm_one_sub_obliqueProjector_mul_sq h A
 
 end NLAlib

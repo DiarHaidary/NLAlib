@@ -32,6 +32,7 @@ public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.Matrix.Basic.ComplementaryProjector
@@ -250,6 +251,7 @@ public import NLAlib.Sketching.Properties.LeastSquares
 public import NLAlib.Sketching.Properties.LeastSquaresOblique
 public import NLAlib.Sketching.Properties.MatrixMultiplication
 public import NLAlib.Sketching.Properties.Oblivious
+public import NLAlib.Sketching.Properties.ProjectionCost
 public import NLAlib.Sketching.Properties.SubspaceEmbedding
 public import NLAlib.Sketching.Properties.TraceMoment
 public import NLAlib.Sketching.Sampling.Leverage

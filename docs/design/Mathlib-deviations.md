@@ -413,6 +413,8 @@ factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tan
 `obliqueProjector` (entry 19), `sketchAndSolve`, `rsvd`, `generalizedNystrom`, `nystrom`
 (LowRank S0, `docs/design/LowRank-S0.md` §8 item 3). `IsBestRankApprox`
 (`isBestRankApprox_iff_isMinOn` bridges to `IsMinOn`; LowRank S2a, `docs/design/LowRank-S2a.md`).
+`earlyTruncatedRSVD`, `earlyTruncatedGeneralizedNystrom`, `IsProjectionCostPreserving` (LowRank
+S2b, `docs/design/LowRank-S2b.md` §1, §8).
 
 ## Used as Mathlib has them
 
