@@ -14,9 +14,9 @@ public import NLAlib.Matrix.Spectral.BestRankApprox
 # Late truncation of sketched low-rank approximations
 
 Late truncation computes an approximation and then keeps its best rank-$k$ part:
-$\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k$ for the randomized SVD,
-$\llbracket\mathbf{H}\langle\mathbf{\Omega}\rangle\rrbracket_k$ for Nyström and
-$\llbracket\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle\rrbracket_k$ for generalized
+$\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k$ for the randomized SVD,
+$\llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k$ for Nyström and
+$\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k$ for generalized
 Nyström. They have no names: they are spelled `truncatedSVD (rsvd A Ω) k`,
 `truncatedSVD (nystrom H Ω) k` and `truncatedSVD (generalizedNystrom A Ω Ψ) k`, and their errors
 `A - truncatedSVD (rsvd A Ω) k` and so on. The algorithm's own form
@@ -62,9 +62,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p q : Type*} [Fintype l] [Fintype m
 /-! ### Truncated randomized SVD -/
 
 /-- **The truncated randomized SVD in every unitarily invariant norm**:
-$$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\Phi} \le
+$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\Phi} \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\Phi} +
-\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\Phi}\,.$$
+\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\Phi}\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.3]; there in the spectral norm, here every unitarily
 invariant norm.
 Result: truncation-lemma -/
@@ -76,8 +76,8 @@ theorem SymmetricGauge.matrixNorm_sub_truncatedSVD_rsvd_le (Φ : SymmetricGauge)
     (fun i => (isStarProjection_rangeProjector (A * Ω)).singularValues_mul_le A i) Φ
 
 /-- The optimal error of the projected matrix is at most that of the matrix:
-$$\|\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}
+$$\|\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) -
+\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}
 \le \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.3 (proof)]; [Woodruff2014, Lemma 44]. -/
 theorem frobNorm_rsvd_sub_truncatedSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
@@ -88,10 +88,10 @@ theorem frobNorm_rsvd_sub_truncatedSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h
 
 /-- For any best rank-$k$ approximation $\mathbf{Y}$ of the randomized SVD
-$\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$, the error splits exactly:
+$\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$, the error splits exactly:
 $$\|\mathbf{A} - \mathbf{Y}\|_{\mathsf{F}}^2
-= \|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\mathsf{F}}^2 +
-\|\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A} - \mathbf{Y}\|_{\mathsf{F}}^2\,.$$
+= \|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 +
+\|\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) - \mathbf{Y}\|_{\mathsf{F}}^2\,.$$
 The hypothesis form of `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`, for a measurable selector or an
 algorithm's $\mathbf{Q}\llbracket\mathbf{Q}^{\mathsf{H}}\mathbf{A}\rrbracket_k$.
 [Woodruff2014, Lemma 44]. -/
@@ -107,10 +107,10 @@ theorem IsBestRankApprox.frobNorm_sub_sq_eq_frobNorm_sub_rsvd_sq_add {A : Matrix
 
 /-- **The truncated randomized SVD error splits exactly**:
 $$\|\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
-= \|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\mathsf{F}}^2 +
-\|\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
+\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
+= \|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 +
+\|\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) -
+\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for every choice of the truncation.
 [Woodruff2014, Lemma 44]; there the optimality of a truncation inside a row space, here the exact
 split for the named output. Port of `NLAlib.frobSq_truncatedRsvdOutput_eq`, there for the
@@ -122,8 +122,8 @@ theorem frobNorm_sub_truncatedSVD_rsvd_sq (A : Matrix m n 𝕜) (Ω : Matrix n l
 
 /-- **The truncation lemma, Frobenius-squared form**:
 $$\|\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
-\le \|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\mathsf{F}}^2 +
+\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
+\le \|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 +
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 sharper than squaring the gauge form. Dominated by
 `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add`, kept because
@@ -140,10 +140,10 @@ theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_rsvd_sq_add (A : Matri
   linarith
 
 /-- **Reverse Eckart–Young for the truncated randomized SVD**: for a best rank-$k$ approximation
-$\mathbf{Y}$ of $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$,
+$\mathbf{Y}$ of $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$,
 $$\|\mathbf{A} - \mathbf{Y}\|_2^2 + \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
 \le \sigma_k(\mathbf{A})^2 + \|\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,:$$
+\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2\,:$$
 a Frobenius bound for the truncated output becomes a spectral one at no cost. The right side does
 not depend on the choice of the truncation (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`).
 [Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
@@ -160,7 +160,7 @@ theorem IsBestRankApprox.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le {A 
 /-- **The truncated randomized SVD through a basis**: for any $\mathbf{Q}$ with orthonormal
 columns spanning $\operatorname{range}(\mathbf{A}\mathbf{\Omega})$, the algorithm's
 $\mathbf{Q}\llbracket\mathbf{Q}^{\mathsf{H}}\mathbf{A}\rrbracket_k$ has the Frobenius error of
-$\llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k$, whatever the two
+$\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k$, whatever the two
 truncations choose.
 [TroppYurtseverUdellCevher2017, §6.2, (6.3)]. -/
 theorem HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd [DecidableEq q] {A : Matrix m n 𝕜}
@@ -234,9 +234,9 @@ theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add
 
 /-- **Truncated Nyström in every unitarily invariant norm**: for positive semidefinite
 $\mathbf{H}$,
-$$\|\mathbf{H} - \llbracket\mathbf{H}\langle\mathbf{\Omega}\rangle\rrbracket_k\|_{\Phi} \le
+$$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_{\Phi} \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} +
-\|\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle\|_{\Phi}\,.$$
+\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi}\,.$$
 [MartinssonTropp2020, §14.3]; [TroppYurtseverUdellCevher2017a, Theorem 4.2 (proof)]; there inside an
 expectation with constant two, here constant one by domination.
 Result: truncation-lemma -/
@@ -251,9 +251,9 @@ theorem SymmetricGauge.matrixNorm_sub_truncatedSVD_nystrom_le (Φ : SymmetricGau
 $\mathbf{F}^{\mathsf{H}}\mathbf{F}$ is the squared Frobenius error of the truncated randomized SVD
 of $\mathbf{F}$,
 $$\|\mathbf{F}^{\mathsf{H}}\mathbf{F} -
-\llbracket(\mathbf{F}^{\mathsf{H}}\mathbf{F})\langle\mathbf{\Omega}\rangle\rrbracket_k\|_*
+\llbracket\mathsf{nystrom}(\mathbf{F}^{\mathsf{H}}\mathbf{F}, \mathbf{\Omega})\rrbracket_k\|_*
 = \|\mathbf{F} -
-\llbracket\mathbf{P}_{\mathbf{F}\mathbf{\Omega}}\mathbf{F}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
+\llbracket\mathsf{rsvd}(\mathbf{F}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for every factor, test matrix, rank and choice of truncation.
 [TroppYurtseverUdellCevher2017a, App. A.5]; [MartinssonTropp2020, §14.2]; there in the proof of a
 Nyström bound for $\mathbf{A}^{1/2}$ and a Gaussian test matrix, here any factor, deterministic.
@@ -280,9 +280,9 @@ theorem nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom (F : Matrix 
 open scoped Classical in
 /-- **Truncation under the Gram correspondence**, positive semidefinite form: with
 $\mathbf{F} = \mathbf{H}^{1/2}$,
-$$\|\mathbf{H} - \llbracket\mathbf{H}\langle\mathbf{\Omega}\rangle\rrbracket_k\|_*
+$$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_*
 = \|\mathbf{H}^{1/2} -
-\llbracket\mathbf{P}_{\mathbf{H}^{1/2}\mathbf{\Omega}}\mathbf{H}^{1/2}\rrbracket_k
+\llbracket\mathsf{rsvd}(\mathbf{H}^{1/2}, \mathbf{\Omega})\rrbracket_k
 \|_{\mathsf{F}}^2\,.$$
 [TroppYurtseverUdellCevher2017a, App. A.5]; [MartinssonTropp2020, §14.2].
 Result: truncated-gram-correspondence -/
@@ -345,7 +345,7 @@ with $\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}$ and the core noise
 $$\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
 (\mathbf{A} - \mathbf{P}\mathbf{A})\,,$$
 $$\|\mathbf{A} -
-\llbracket\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle\rrbracket_k\|_{\mathsf{F}}^2
+\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2
 \le \|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 + \bigl(\|\mathbf{P}\mathbf{A} -
 \llbracket\mathbf{P}\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
 2\,\|\llbracket\mathbf{N}\rrbracket_{2k}\|_{\mathsf{F}}\bigr)^2\,,$$
@@ -376,7 +376,7 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncate
 the core noise $\mathbf{N}$ as in
 `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`,
 $$\|\mathbf{A} -
-\llbracket\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle\rrbracket_k\|_{\mathsf{F}}^2
+\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2
 \le \|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 + \bigl(\|\mathbf{P}\mathbf{A} -
 \llbracket\mathbf{P}\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
 2\sqrt{2k}\,\|\mathbf{N}\|_2\bigr)^2\,.$$

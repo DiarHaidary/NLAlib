@@ -69,7 +69,7 @@ variable [DecidableEq n] {ν : Measure (Matrix n l ℝ)} [IsProbabilityMeasure �
 /-! ### Exact recovery -/
 
 /-- **A rotation-invariant sketch at least as wide as the rank recovers the matrix**: if
-$\operatorname{rank}\mathbf{A} \le \ell$, then $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A} =
+$\operatorname{rank}\mathbf{A} \le \ell$, then $\mathsf{rsvd}(\mathbf{A}, \mathbf{X}) =
 \mathbf{A}$ almost surely, for a test matrix $\mathbf{X}$ with a left unitarily invariant law
 and full column rank almost surely. -/
 theorem ae_rsvd_eq_self_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
@@ -85,8 +85,8 @@ namespace SymmetricGauge
 /-- **The expected error of the randomized SVD, Gram form, rotation-invariant test matrices**:
 for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost
 surely (Gaussian, Haar, ...), $k + 2 \le \ell$ and every unitarily invariant norm,
-$$\mathbb{E}\bigl\|(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})^{\mathsf{H}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})\bigr\|_{\Phi} \le
+$$\mathbb{E}\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
+(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{k}{\ell - k - 1}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
@@ -115,7 +115,7 @@ end SymmetricGauge
 /-- **The expected error of the randomized SVD, Frobenius norm, rotation-invariant test
 matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full column
 rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2\,,$$
 the factor being `gaussianProjectionFactor k ℓ`.
@@ -136,7 +136,7 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix
 /-- **The expected error of the randomized SVD, Frobenius norm, as printed, rotation-invariant
 test matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full
 column rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}} \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}\,.$$
 [EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) with a
@@ -155,7 +155,7 @@ theorem integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m 
 /-- **The average spectral error of the randomized SVD, rotation-invariant test matrices**: for a
 test matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely
 and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
 C\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
 with $C$ = `gaussianPinvSpecNormBound k ℓ`, the bound of the Gaussian test matrix
@@ -177,12 +177,12 @@ theorem integral_specNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m 
 /-- **The expected error of the truncated randomized SVD, Frobenius norm, rotation-invariant test
 matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full column
 rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\rrbracket_k
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} -
 \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for every choice of the truncation. The error is transferred to the Gaussian through its
 choice-free form, the squared error of the untruncated output plus the tail sum of squared
-singular values of $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$.
+singular values of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$.
 [HalkoMartinssonTropp2011, Theorem 10.5]; [Woodruff2014, Lemma 48]; there for Gaussian test
 matrices and the untruncated output, with Woodruff's truncation for free.
 Result: randomized-svd-expected-error -/
@@ -209,8 +209,8 @@ namespace SymmetricGauge
 /-- **The tail of the randomized SVD, Gram form, rotation-invariant test matrices**: for a test
 matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
 $d = \ell - k + 1$, every unitarily invariant norm, any $u$ and $t > 0$,
-$$\bigl\|(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})^{\mathsf{H}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})\bigr\|_{\Phi} \le
+$$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
+(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$

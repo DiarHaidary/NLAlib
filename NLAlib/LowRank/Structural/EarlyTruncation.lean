@@ -14,7 +14,7 @@ public import NLAlib.Sketching.Properties.ProjectionCost
 Early truncation projects $\mathbf{A} \in \Bbbk^{m \times n}$ onto the range of a best rank-$k$
 approximation of the sketch $\mathbf{A}\mathbf{\Omega}$: the early-truncated randomized SVD
 `NLAlib.earlyTruncatedRSVD A Ω k` is
-$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}$. The projector is optimal
+$\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$. The projector is optimal
 for the sketch, not for $\mathbf{A}$, and the statements here transfer that optimality to
 $\mathbf{A}$ by two deterministic routes.
 
@@ -42,7 +42,7 @@ $\|\mathbf{E}\|_{\mathsf{F}}$ is the optimal error.
 
 **The uniform route.** If $\mathbf{A}\mathbf{\Omega}$ is a rank-$k$ projection-cost-preserving
 sketch of $\mathbf{A}$ with constants $a$, $b$, then
-$$a\|\mathbf{A} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}
+$$a\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
 \|_{\mathsf{F}}^2 \le b\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,;$$
 a subspace embedding of the row space gives one.
 
@@ -290,7 +290,7 @@ w = \|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{E}^{\mathsf{H
 \mathbf{E}\mathbf{E}^{\mathsf{H}}\|_{\mathsf{F}},\qquad
 \chi = \|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z} -
 \mathbf{E}\mathbf{Z}\|_{\mathsf{F}},$$
-$$\|\mathbf{A} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}
+$$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
 \|_{\mathsf{F}}^2 \le \frac{\|\mathbf{E}\|_{\mathsf{F}}^2 + \sqrt{k}\,w}{(1-\theta)\lambda} +
 \frac{\chi^2}{\theta(1-\theta)\lambda^2}\,,$$
 for every choice of the truncation. With
@@ -326,7 +326,7 @@ theorem IsSubspaceInjection.frobNorm_sub_earlyTruncatedRSVD_sq_le {Ω : Matrix n
 /-- **Early truncation through a projection-cost-preserving sketch**: if
 $\mathbf{A}\mathbf{\Omega}$ is a rank-$k$ projection-cost-preserving sketch of $\mathbf{A}$ with
 constants $a$, $b$, then
-$$a\|\mathbf{A} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}
+$$a\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
 \|_{\mathsf{F}}^2 \le b\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 that is $(1+\varepsilon)/(1-\varepsilon)$ times the optimal error in the two-sided form, for every
 choice of the truncations. A pointwise statement: off the event where the sketch is a
@@ -357,7 +357,7 @@ theorem IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le
 /-- **Early truncation under a subspace embedding of the row space**: if
 $\mathbf{\Omega}^{\mathsf{H}}$ is a subspace embedding for
 $\operatorname{range}\mathbf{A}^{\mathsf{H}}$ with constants $a$, $b$, then for every $k$
-$$a\|\mathbf{A} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}
+$$a\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
 \|_{\mathsf{F}}^2 \le b\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 The embedding dimension is at least $\operatorname{rank}\mathbf{A}$; a sketch of dimension
 independent of the rank needs `NLAlib.IsSubspaceInjection.frobNorm_sub_earlyTruncatedRSVD_sq_le`.

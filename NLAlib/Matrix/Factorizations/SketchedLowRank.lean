@@ -13,12 +13,12 @@ public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 For $\mathbf{A} \in \Bbbk^{m \times n}$, a test matrix $\mathbf{\Omega} \in \Bbbk^{n \times l}$ and
 a co-range test matrix $\mathbf{\Psi} \in \Bbbk^{m \times p}$, all deterministic here:
 
-* the **randomized SVD approximation** (range finder) `NLAlib.rsvd A Ω` is
-  $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$, two passes over $\mathbf{A}$;
-* the **generalized Nyström approximation** `NLAlib.generalizedNystrom A Ω Ψ` is
-  $\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle$ (formula:
-  `NLAlib.generalizedNystrom_def`), one pass, the oblique projector
-  $\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}$ applied to $\mathbf{A}$.
+* the **randomized SVD approximation** (range finder) `NLAlib.rsvd A Ω`, written
+  $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$: the projection of $\mathbf{A}$ onto the range of
+  the sketch, two passes over $\mathbf{A}$;
+* the **generalized Nyström approximation** `NLAlib.generalizedNystrom A Ω Ψ`, written
+  $\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})$ (formula:
+  `NLAlib.generalizedNystrom_def`): one pass, an oblique projection of $\mathbf{A}$.
 
 The randomized SVD is the case $\mathbf{\Psi} = \mathbf{I}$. When
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$ equals
@@ -30,11 +30,10 @@ Truncation. Late truncation is spelled `truncatedSVD (rsvd A Ω) k`, and likewis
 outputs (`truncatedSVD (generalizedNystrom A Ω Ψ) k`); it has no name of its own. Early truncation,
 which replaces the sketch $\mathbf{A}\mathbf{\Omega}$ by its truncated SVD
 $\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ before projecting, is named:
-`NLAlib.earlyTruncatedRSVD A Ω k` is
-$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}$ and
-`NLAlib.earlyTruncatedGeneralizedNystrom A Ω Ψ k` is
-$$\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
-\mathbf{A}\,.$$
+`NLAlib.earlyTruncatedRSVD A Ω k`, written
+$\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$, and
+`NLAlib.earlyTruncatedGeneralizedNystrom A Ω Ψ k`, written
+$\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k)$.
 Errors are written as $\mathbf{A}$ minus the named output.
 
 Degenerate cases: for empty `l`, $\mathbf{\Omega} = \mathbf{0}$ or $\mathbf{A} = \mathbf{0}$ all
@@ -44,8 +43,8 @@ $\mathbf{0}$. Design: `docs/design/LowRank-S0.md` §3.3, §8; `docs/design/LowRa
 
 ## Main definitions
 
-* `NLAlib.rsvd`: $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$.
-* `NLAlib.generalizedNystrom`: $\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle$.
+* `NLAlib.rsvd`: the randomized SVD approximation.
+* `NLAlib.generalizedNystrom`: the generalized Nyström approximation.
 * `NLAlib.earlyTruncatedRSVD`, `NLAlib.earlyTruncatedGeneralizedNystrom`: early truncation.
 
 ## Main results
@@ -83,7 +82,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p q : Type*} [Fintype l] [Fintype m
 /-! ### The randomized SVD approximation -/
 
 /-- The **randomized SVD approximation** (range-finder approximation)
-$\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$ of $\mathbf{A}$ for a test matrix
+$\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) := \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$
+of $\mathbf{A}$ for a test matrix
 $\mathbf{\Omega}$, here deterministic: the projection of $\mathbf{A}$ onto the range of the sketch
 $\mathbf{A}\mathbf{\Omega}$, two passes over $\mathbf{A}$. Its rank is at most
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le \lvert l \rvert$ (`NLAlib.rank_rsvd_le`); it is
@@ -94,21 +94,21 @@ noncomputable def rsvd (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) : Matrix m n
   rangeProjector (A * Ω) * A
 
 /-- The randomized SVD is the oblique projector with the identity sketch:
-$$\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A} =
+$$\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) =
 \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{I}}\mathbf{A}\,.$$ -/
 theorem rsvd_eq_obliqueProjector [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) :
     rsvd A Ω = obliqueProjector (A * Ω) (1 : Matrix m m 𝕜) * A := by
   rw [obliqueProjector_one, rsvd]
 
 /-- The residual of the randomized SVD is the projection residual:
-$$\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A} =
+$$\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) =
 (\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}})\mathbf{A}\,.$$ -/
 theorem sub_rsvd [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) :
     A - rsvd A Ω = (1 - rangeProjector (A * Ω)) * A := by
   rw [rsvd, Matrix.sub_mul, Matrix.one_mul]
 
 /-- The singular values of the error of the randomized SVD are at most those of $\mathbf{A}$:
-$\sigma_i(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \le \sigma_i(\mathbf{A})$
+$\sigma_i(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})) \le \sigma_i(\mathbf{A})$
 for every test matrix $\mathbf{\Omega}$ and every $i$. -/
 theorem singularValues_sub_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (i : ℕ) :
     singularValues (A - rsvd A Ω) i ≤ singularValues A i := by
@@ -118,7 +118,7 @@ theorem singularValues_sub_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) 
 
 /-- **The randomized SVD beats every approximation built from the sketch**, singular value by
 singular value:
-$\sigma_i(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \le
+$\sigma_i(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})) \le
 \sigma_i(\mathbf{A} - \mathbf{A}\mathbf{\Omega}\mathbf{X})$ for every $\mathbf{X}$ and every $i$;
 at $\mathbf{X} = \mathbf{0}$ this is `NLAlib.singularValues_sub_rsvd_le`. -/
 theorem singularValues_sub_rsvd_le_sub_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
@@ -129,14 +129,14 @@ theorem singularValues_sub_rsvd_le_sub_mul (A : Matrix m n 𝕜) (Ω : Matrix n 
   exact singularValues_one_sub_rangeProjector_mul_le (A * Ω) _ i
 
 /-- The randomized SVD has rank at most the rank of the sketch:
-$$\operatorname{rank}(\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \le
+$$\operatorname{rank}(\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})) \le
 \operatorname{rank}(\mathbf{A}\mathbf{\Omega})\,;$$
 with Mathlib's `Matrix.rank_le_card_width`, at most $\lvert l \rvert$. -/
 theorem rank_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) : (rsvd A Ω).rank ≤ (A * Ω).rank :=
   (Matrix.rank_mul_le_left _ _).trans_eq (rank_rangeProjector _)
 
 /-- The range of the randomized SVD lies in the range of the sketch:
-$$\operatorname{range}(\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \subseteq
+$$\operatorname{range}(\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})) \subseteq
 \operatorname{range}(\mathbf{A}\mathbf{\Omega})\,.$$ -/
 theorem range_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) :
     LinearMap.range (rsvd A Ω).mulVecLin ≤ LinearMap.range (A * Ω).mulVecLin :=
@@ -152,7 +152,7 @@ private theorem range_mul_eq_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l �
 
 /-- **Exactness of the randomized SVD at low rank**: if
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$ then
-$\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A} = \mathbf{A}$. -/
+$\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) = \mathbf{A}$. -/
 theorem rsvd_eq_self_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
     (h : (A * Ω).rank = A.rank) : rsvd A Ω = A :=
   rangeProjector_mul_eq_self_iff.mpr (range_mul_eq_of_rank_eq h).ge
@@ -160,7 +160,7 @@ theorem rsvd_eq_self_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
 /-- **Equivariance of the randomized SVD**: for $\mathbf{U}$, $\mathbf{V}$ with orthonormal columns,
 the approximation of $\mathbf{U}\mathbf{A}\mathbf{V}^{\mathsf{H}}$ with the test matrix
 $\mathbf{V}\mathbf{\Omega}$ is
-$\mathbf{U}(\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}) \mathbf{V}^{\mathsf{H}}$. This reduces
+$\mathbf{U}\,\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\,\mathbf{V}^{\mathsf{H}}$. This reduces
 $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ to $\mathbf{\Sigma}$ under an
 orthogonally invariant law of $\mathbf{\Omega}$. -/
 theorem HasOrthonormalCols.rsvd_mul_mul_conjTranspose [DecidableEq m] [DecidableEq n]
@@ -178,7 +178,7 @@ theorem HasOrthonormalCols.rsvd_mul_mul_conjTranspose [DecidableEq m] [Decidable
 variable [Fintype p]
 
 /-- The **generalized Nyström approximation**
-$$\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle =
+$$\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}) :=
 \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A} =
 \mathbf{A}\mathbf{\Omega}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})^{+}
 \mathbf{\Psi}^{\mathsf{H}}\mathbf{A}$$
@@ -192,7 +192,7 @@ noncomputable def generalizedNystrom (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜
   obliqueProjector (A * Ω) Ψᴴ * A
 
 /-- The source formula of the generalized Nyström approximation:
-$$\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle =
+$$\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}) =
 \mathbf{A}\mathbf{\Omega}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})^{+}
 \mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\,.$$
 [EpperlyWebber2026, Definition 4.1]. -/
@@ -201,14 +201,14 @@ theorem generalizedNystrom_def (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (Ψ 
   rw [generalizedNystrom, obliqueProjector, Matrix.mul_assoc Ψᴴ A Ω]
 
 /-- With $\mathbf{\Psi} = \mathbf{I}$ generalized Nyström is the randomized SVD:
-$$\mathbf{A}\langle\mathbf{\Omega},\mathbf{I}\rangle =
-\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\,.$$ -/
+$$\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{I}) =
+\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\,.$$ -/
 theorem generalizedNystrom_one [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) :
     generalizedNystrom A Ω (1 : Matrix m m 𝕜) = rsvd A Ω := by
   rw [generalizedNystrom, Matrix.conjTranspose_one, obliqueProjector_one, rsvd]
 
 /-- The residual of generalized Nyström is an oblique projection residual:
-$$\mathbf{A} - \mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle =
+$$\mathbf{A} - \mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}) =
 (\mathbf{I} - \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}})\mathbf{A}\,.$$ -/
 theorem sub_generalizedNystrom [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
     (Ψ : Matrix m p 𝕜) :
@@ -216,7 +216,7 @@ theorem sub_generalizedNystrom [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matri
   rw [generalizedNystrom, Matrix.sub_mul, Matrix.one_mul]
 
 /-- Generalized Nyström has rank at most the rank of the core:
-$$\operatorname{rank}\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle \le
+$$\operatorname{rank}(\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})) \le
 \operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})\,;$$
 at most $\min(\lvert l \rvert, \lvert p \rvert)$ by Mathlib's `Matrix.rank_le_card_width` and
 `Matrix.rank_le_card_height`. -/
@@ -225,7 +225,7 @@ theorem rank_generalizedNystrom_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) 
   (Matrix.rank_mul_le_left _ _).trans_eq (rank_obliqueProjector _ _)
 
 /-- The range of generalized Nyström lies in the range of the sketch:
-$$\operatorname{range}\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle \subseteq
+$$\operatorname{range}(\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})) \subseteq
 \operatorname{range}(\mathbf{A}\mathbf{\Omega})\,.$$ -/
 theorem range_generalizedNystrom_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (Ψ : Matrix m p 𝕜) :
     LinearMap.range (generalizedNystrom A Ω Ψ).mulVecLin ≤ LinearMap.range (A * Ω).mulVecLin :=
@@ -237,10 +237,10 @@ theorem range_generalizedNystrom_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
 squared Frobenius norm: if
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$ equals
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, then
-$$\|\mathbf{A} - \mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle\|_{\mathsf{F}}^2 =
-\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\mathsf{F}}^2 +
+$$\|\mathbf{A} - \mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2 =
+\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 +
 \|\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A})\|_{\mathsf{F}}^2\,,$$
+(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))\|_{\mathsf{F}}^2\,,$$
 with no full rank of $\mathbf{A}\mathbf{\Omega}$ assumed. Without the rank hypothesis it is false.
 [EpperlyWebber2026, proof of Theorem 4.2]; [TroppYurtseverUdellCevher2017, Lemma A.3]; there with
 random test matrices of full rank. -/
@@ -257,7 +257,7 @@ theorem frobNorm_sub_generalizedNystrom_sq {A : Matrix m n 𝕜}
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$ and
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$ equals
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, then
-$\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle = \mathbf{A}$. -/
+$\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}) = \mathbf{A}$. -/
 theorem generalizedNystrom_eq_self_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
     {Ψ : Matrix m p 𝕜} (hΩ : (A * Ω).rank = A.rank) (hΨ : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) :
     generalizedNystrom A Ω Ψ = A :=
@@ -268,8 +268,8 @@ $\operatorname{range}\mathbf{Q} = \operatorname{range}(\mathbf{A}\mathbf{\Omega}
 orthonormal basis, and when
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$ equals
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$,
-$$\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle =
-\mathbf{Q}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{Q})^{+}\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\,,$$
+$$\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}) =
+\mathbf{Q}\,\mathsf{sketchAndSolve}(\mathbf{Q}, \mathbf{\Psi}^{\mathsf{H}}, \mathbf{A})\,,$$
 the basis times the sketch-and-solve core. Orthonormality of $\mathbf{Q}$ is not needed.
 [TroppYurtseverUdellCevher2017, (4.1)–(4.3)]; there with $\mathbf{Q}$ from a QR factorization of the
 sketch $\mathbf{A}\mathbf{\Omega}$. -/
@@ -282,8 +282,8 @@ theorem generalizedNystrom_eq_mul_sketchAndSolve [Fintype q] {A : Matrix m n �
 
 /-- **Equivariance of generalized Nyström**: for $\mathbf{U}$, $\mathbf{V}$ with orthonormal
 columns,
-$$(\mathbf{U}\mathbf{A}\mathbf{V}^{\mathsf{H}})\langle\mathbf{V}\mathbf{\Omega},
-\mathbf{U}\mathbf{\Psi}\rangle = \mathbf{U}\,\mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle
+$$\mathsf{gn}(\mathbf{U}\mathbf{A}\mathbf{V}^{\mathsf{H}}, \mathbf{V}\mathbf{\Omega},
+\mathbf{U}\mathbf{\Psi}) = \mathbf{U}\,\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \mathbf{V}^{\mathsf{H}}\,.$$ -/
 theorem HasOrthonormalCols.generalizedNystrom_mul_mul_conjTranspose [DecidableEq m]
     [DecidableEq n] {m' n' : Type*} [Fintype m'] [Fintype n'] {U : Matrix m' m 𝕜}
@@ -299,7 +299,8 @@ theorem HasOrthonormalCols.generalizedNystrom_mul_mul_conjTranspose [DecidableEq
 /-! ### Early truncation -/
 
 /-- The **early-truncated randomized SVD**
-$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}$: the projection of
+$\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k) :=
+\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}$: the projection of
 $\mathbf{A}$ onto the range of the truncated SVD of the sketch $\mathbf{A}\mathbf{\Omega}$, that is
 onto $k$ dominant left singular vectors of the sketch. Rank at most $k$
 (`NLAlib.rank_earlyTruncatedRSVD_le`); $\lvert l \rvert$ products with $\mathbf{A}$ and at most $k$
@@ -321,14 +322,14 @@ theorem earlyTruncatedRSVD_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k :
   rw [earlyTruncatedRSVD, Matrix.mul_assoc, rangeProjector_truncatedSVD_mul]
 
 /-- The residual of the early-truncated randomized SVD is a projection residual:
-$$\mathbf{A} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A} =
+$$\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k) =
 (\mathbf{I} - \mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k})\mathbf{A}\,.$$ -/
 theorem sub_earlyTruncatedRSVD [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     A - earlyTruncatedRSVD A Ω k = (1 - rangeProjector (truncatedSVD (A * Ω) k)) * A := by
   rw [earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul]
 
 /-- The early-truncated randomized SVD has rank at most $k$:
-$$\operatorname{rank}(\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A})
+$$\operatorname{rank}(\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k))
 \le k\,.$$ -/
 theorem rank_earlyTruncatedRSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     (earlyTruncatedRSVD A Ω k).rank ≤ k :=
@@ -337,14 +338,15 @@ theorem rank_earlyTruncatedRSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) 
 
 /-- With $k$ at least the rank of the sketch nothing is truncated: when
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le k$,
-$$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A} =
-\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\,.$$ -/
+$$\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k) =
+\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\,.$$ -/
 theorem earlyTruncatedRSVD_of_rank_le {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {k : ℕ}
     (hk : (A * Ω).rank ≤ k) : earlyTruncatedRSVD A Ω k = rsvd A Ω := by
   rw [earlyTruncatedRSVD, truncatedSVD_of_rank_le _ hk, rsvd]
 
 /-- The **early-truncated generalized Nyström approximation**
-$$\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
+$$\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k) :=
+\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
 \mathbf{A}\,:$$
 generalized Nyström with the range sketch $\mathbf{A}\mathbf{\Omega}$ replaced by its truncated SVD.
 One pass; rank at most $k$ (`NLAlib.rank_earlyTruncatedGeneralizedNystrom_le`). Under ties of the
@@ -360,8 +362,8 @@ noncomputable def earlyTruncatedGeneralizedNystrom (A : Matrix m n 𝕜) (Ω : M
   obliqueProjector (truncatedSVD (A * Ω) k) Ψᴴ * A
 
 /-- The residual of early-truncated generalized Nyström is an oblique projection residual:
-$$\mathbf{A} - \mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,
-\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A} = (\mathbf{I} -
+$$\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k) =
+(\mathbf{I} -
 \mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}})
 \mathbf{A}\,.$$ -/
 theorem sub_earlyTruncatedGeneralizedNystrom [DecidableEq m] (A : Matrix m n 𝕜)
@@ -371,8 +373,8 @@ theorem sub_earlyTruncatedGeneralizedNystrom [DecidableEq m] (A : Matrix m n �
   rw [earlyTruncatedGeneralizedNystrom, Matrix.sub_mul, Matrix.one_mul]
 
 /-- Early-truncated generalized Nyström has rank at most $k$:
-$$\operatorname{rank}(\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,
-\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A}) \le k\,.$$ -/
+$$\operatorname{rank}(\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k)) \le
+k\,.$$ -/
 theorem rank_earlyTruncatedGeneralizedNystrom_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
     (Ψ : Matrix m p 𝕜) (k : ℕ) : (earlyTruncatedGeneralizedNystrom A Ω Ψ k).rank ≤ k :=
   (((Matrix.rank_mul_le_left _ _).trans_eq (rank_obliqueProjector _ _)).trans
@@ -380,8 +382,8 @@ theorem rank_earlyTruncatedGeneralizedNystrom_le (A : Matrix m n 𝕜) (Ω : Mat
 
 /-- With $k$ at least the rank of the sketch nothing is truncated: when
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le k$,
-$$\mathbf{\Pi}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k,\mathbf{\Psi}^{\mathsf{H}}}
-\mathbf{A} = \mathbf{A}\langle\mathbf{\Omega},\mathbf{\Psi}\rangle\,.$$ -/
+$$\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k) =
+\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\,.$$ -/
 theorem earlyTruncatedGeneralizedNystrom_of_rank_le {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
     {k : ℕ} (hk : (A * Ω).rank ≤ k) (Ψ : Matrix m p 𝕜) :
     earlyTruncatedGeneralizedNystrom A Ω Ψ k = generalizedNystrom A Ω Ψ := by
@@ -391,10 +393,14 @@ theorem earlyTruncatedGeneralizedNystrom_of_rank_le {A : Matrix m n 𝕜} {Ω : 
 sketch-and-solve excess**, exactly, in squared Frobenius norm: with
 $\mathbf{X} = \llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ and
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{X}) = \operatorname{rank}\mathbf{X}$,
-$$\|\mathbf{A} - \mathbf{\Pi}_{\mathbf{X},\mathbf{\Psi}^{\mathsf{H}}}\mathbf{A}\|_{\mathsf{F}}^2 =
-\|\mathbf{A} - \mathbf{P}_{\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2 +
-\|\mathbf{\Pi}_{\mathbf{X},\mathbf{\Psi}^{\mathsf{H}}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{X}}\mathbf{A})\|_{\mathsf{F}}^2\,.$$
+$$\begin{aligned}
+&\|\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k)
+\|_{\mathsf{F}}^2 \\
+&\quad = \|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
+\|_{\mathsf{F}}^2 \\
+&\qquad + \|\mathbf{\Pi}_{\mathbf{X},\mathbf{\Psi}^{\mathsf{H}}}
+(\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k))\|_{\mathsf{F}}^2\,.
+\end{aligned}$$
 The deterministic half of every bound on early-truncated generalized Nyström: the last term is the
 one a completion identity or a subspace injection bounds. The rank hypothesis is at the actual rank
 of $\mathbf{X}$, which may be below $k$. Without it the identity fails

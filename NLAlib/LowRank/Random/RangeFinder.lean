@@ -13,7 +13,7 @@ public import NLAlib.Probability.Measurability.Matrix
 /-!
 # The randomized SVD with any random test matrix
 
-Facts about the randomized SVD $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$ (`NLAlib.rsvd`) that
+Facts about the randomized SVD $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$ (`NLAlib.rsvd`) that
 hold for every random test matrix $\mathbf{X}$, whatever its law, over any `RCLike` field. They are
 the integrability companions of the expectation bounds of the Gaussian, rotation-invariant and
 oblivious range finders, and the reduction of a spectral bound for the truncated output to a
@@ -84,8 +84,8 @@ private theorem matrixNorm_sub_rsvd_le (Φ : SymmetricGauge) (A : Matrix m n �
 
 /-- The Gram matrix of the error of the randomized SVD is integrable in every unitarily invariant
 norm, for every measurable test matrix $\mathbf{X}$ and finite measure: $\omega \mapsto
-\|(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})^{\mathsf{H}}(\mathbf{A} -
-\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})\|_{\Phi}$ is measurable and bounded by
+\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}(\mathbf{A} -
+\mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\|_{\Phi}$ is measurable and bounded by
 $\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\Phi}$. The companion of the Gram-form expectations. -/
 theorem SymmetricGauge.integrable_matrixNorm_conjTranspose_mul_self_sub_rsvd (Φ : SymmetricGauge)
     [IsFiniteMeasure μ] (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) :
@@ -103,7 +103,7 @@ theorem SymmetricGauge.integrable_matrixNorm_conjTranspose_mul_self_sub_rsvd (Φ
 
 /-- The error of the randomized SVD is integrable in every unitarily invariant norm, for every
 measurable test matrix $\mathbf{X}$ and finite measure: $\omega \mapsto \|\mathbf{A} -
-\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\Phi}$ is measurable and bounded by
+\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\Phi}$ is measurable and bounded by
 $\|\mathbf{A}\|_{\Phi}$. -/
 theorem SymmetricGauge.integrable_matrixNorm_sub_rsvd (Φ : SymmetricGauge) [IsFiniteMeasure μ]
     (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) :
@@ -115,7 +115,7 @@ theorem SymmetricGauge.integrable_matrixNorm_sub_rsvd (Φ : SymmetricGauge) [IsF
 
 /-- The squared Schatten $q$-norm of the error of the randomized SVD, $q \ge 1$, is integrable for
 every measurable test matrix $\mathbf{X}$ and finite measure: $\omega \mapsto \|\mathbf{A} -
-\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{S_q}^2$ is bounded by
+\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{S_q}^2$ is bounded by
 $\|\mathbf{A}\|_{S_q}^2$. -/
 theorem integrable_schattenNorm_sub_rsvd_sq [IsFiniteMeasure μ] {q : ℝ≥0∞} (hq : 1 ≤ q)
     (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) :
@@ -132,14 +132,14 @@ theorem integrable_schattenNorm_sub_rsvd_sq [IsFiniteMeasure μ] {q : ℝ≥0∞
   exact pow_le_pow_left₀ (schattenNorm_nonneg _ _) h 2
 
 /-- The squared Frobenius error of the randomized SVD,
-$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2$, is integrable for
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2$, is integrable for
 every measurable test matrix $\mathbf{X}$ and finite measure. -/
 theorem integrable_frobNorm_sub_rsvd_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) : Integrable (fun ω => frobNorm (A - rsvd A (X ω)) ^ 2) μ := by
   simpa only [schattenNorm_two] using integrable_schattenNorm_sub_rsvd_sq one_le_two A hX
 
 /-- The Frobenius error of the randomized SVD,
-$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}$, is integrable for every
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}$, is integrable for every
 measurable test matrix $\mathbf{X}$ and finite measure. The companion of the expected Frobenius
 error in its printed, unsquared form. -/
 theorem integrable_frobNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
@@ -148,14 +148,14 @@ theorem integrable_frobNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (lpGauge 2 one_le_two).integrable_matrixNorm_sub_rsvd A hX
 
 /-- The squared spectral error of the randomized SVD,
-$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2^2$, is integrable for every
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2$, is integrable for every
 measurable test matrix $\mathbf{X}$ and finite measure. -/
 theorem integrable_specNorm_sub_rsvd_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) : Integrable (fun ω => specNorm (A - rsvd A (X ω)) ^ 2) μ := by
   simpa only [schattenNorm_top] using integrable_schattenNorm_sub_rsvd_sq le_top A hX
 
 /-- The spectral error of the randomized SVD,
-$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2$, is integrable for every measurable
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2$, is integrable for every measurable
 test matrix $\mathbf{X}$ and finite measure. -/
 theorem integrable_specNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) : Integrable (fun ω => specNorm (A - rsvd A (X ω))) μ := by
@@ -164,11 +164,11 @@ theorem integrable_specNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
 /-! ### The truncated output -/
 
 /-- The squared Frobenius error of the late-truncated randomized SVD,
-$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$,
+$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2$,
 is integrable for every measurable test matrix $\mathbf{X}$ and finite measure. It does not depend
 on the choice made by `truncatedSVD` (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`): it is
-$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2$ plus the tail sum of
-squared singular values of $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$, which is what makes it
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2$ plus the tail sum of
+squared singular values of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$, which is what makes it
 measurable; it is bounded by
 $\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$.
 -/
@@ -225,10 +225,10 @@ theorem integrable_specNorm_sub_sq_of_isBestRankApprox [IsFiniteMeasure μ] (A :
 
 /-- **Reverse Eckart–Young in expectation**: for a measurable test matrix $\mathbf{X}$ and a
 measurable choice $\mathbf{Y}$ of best rank-$k$ approximations of
-$\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$,
+$\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$,
 $$\mathbb{E}\|\mathbf{A} - \mathbf{Y}\|_2^2 + \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2 \le \sigma_k(\mathbf{A})^2 + \mathbb{E}\|\mathbf{A} -
-\llbracket\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
+\llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for every law: a Frobenius bound for the truncated output becomes a spectral one at no cost.
 Not instantiable yet: no measurable selector can be exhibited, since neither the library nor
 Mathlib has a measurable-selection theorem and `truncatedSVD (rsvd A (X ω)) k` is not known to be

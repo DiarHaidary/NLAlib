@@ -16,7 +16,7 @@ public import NLAlib.RandomMatrix.Gaussian.Rank
 
 For $\mathbf{A} \in \mathbb{R}^{m \times n}$, a standard Gaussian test matrix
 $\mathbf{X} \in \mathbb{R}^{n \times \ell}$ and a target rank $k$, the error of the randomized SVD
-is `A - rsvd A (X ω)`, $\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$, and the error of
+is `A - rsvd A (X ω)`, $\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})$, and the error of
 its late truncation is `A - truncatedSVD (rsvd A (X ω)) k`. Throughout,
 $$\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k,\qquad
 \|\mathbf{E}\|_2 = \sigma_k(\mathbf{A}),\qquad d = \ell - k + 1\,,$$
@@ -173,8 +173,8 @@ namespace SymmetricGauge
 
 /-- **The tail of the randomized SVD, Gram form**: for a standard Gaussian $n \times \ell$ test
 matrix $\mathbf{X}$, $d = \ell - k + 1$, every unitarily invariant norm, any $u$ and $t > 0$,
-$$\bigl\|(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})^{\mathsf{H}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})\bigr\|_{\Phi} \le
+$$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
+(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
@@ -207,7 +207,7 @@ end SymmetricGauge
 hypotheses of the Gram form above
 (`measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`
 in the namespace `NLAlib.SymmetricGauge`),
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{S_p}^2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{S_p}^2 \le
 \|\mathbf{E}\|_{S_p}^2 + \frac{utk}{d}\,\|\mathbf{E}\|_{\mathsf{F}}^2$$
 outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`.
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; as printed there, with a smaller second failure term.
@@ -232,7 +232,7 @@ theorem measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix 
 
 /-- **The tail of the randomized SVD, Frobenius norm**: with the hypotheses of
 `NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`.
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = 2$, with a larger second failure term.
@@ -250,7 +250,7 @@ theorem measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A :
 
 /-- **The tail of the randomized SVD, spectral norm**: with the hypotheses of
 `NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2^2 \le \sigma_k(\mathbf{A})^2 +
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2 \le \sigma_k(\mathbf{A})^2 +
 \frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`.
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = \infty$, with a larger second failure term.
@@ -273,7 +273,7 @@ theorem measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A :
 
 /-- **The tail of the truncated randomized SVD, Frobenius norm**: with the hypotheses of
 `NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
+$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2
 \le \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`, for every choice of the
 truncation: the late truncation costs nothing. The error does not depend on the choice
@@ -298,7 +298,7 @@ theorem measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussi
   simpa only [one_mul] using h
 
 /-- **The tail of the truncated randomized SVD, spectral norm**, for any best rank-$k$
-approximations $\mathbf{Y}(\omega)$ of $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$ (no
+approximations $\mathbf{Y}(\omega)$ of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$ (no
 measurability): with the hypotheses of
 `NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
 $$\|\mathbf{A} - \mathbf{Y}\|_2^2 \le \sigma_k(\mathbf{A})^2 +
@@ -336,7 +336,7 @@ theorem measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaus
 /-- **The tail of the truncated randomized SVD, spectral norm**, for the output
 `truncatedSVD (rsvd A (X ω)) k`: with the hypotheses of
 `NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\rrbracket_k\|_2^2 \le
+$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2 \le
 \sigma_k(\mathbf{A})^2 +
 \frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 outside probability $e^{-(u-2)/4}$ + `gaussianPinvFrobTail k d t`. The event may be
@@ -360,7 +360,7 @@ theorem measureReal_not_specNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussi
 /-- **Deviation bound for the Frobenius error of the randomized SVD**: for a standard Gaussian
 $n \times \ell$ test matrix, $k < \ell$, $d = \ell - k + 1$, $u \ge 0$ and $t > 0$, with $C$ =
 `gaussianPinvSpecNormBound k ℓ`,
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}} \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
 \Bigl(1 + t\sqrt{k/d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
 utC\,\sigma_k(\mathbf{A})$$
 outside probability $t^{-(\ell - k)}$ + `gaussianPinvFrobTail k d (t ^ 2)` $+ e^{-u^2/2}$.
@@ -409,7 +409,7 @@ theorem measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix (A : Ma
 /-- **Deviation bound for the spectral error of the randomized SVD**: with the hypotheses of
 `NLAlib.measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix` and $C$ =
 `gaussianPinvSpecNormBound k ℓ`,
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + t\sqrt{k/d}\Bigr)\sigma_k(\mathbf{A}) +
 tC\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} + utC\,\sigma_k(\mathbf{A})$$
 outside probability $t^{-(\ell - k)}$ + `gaussianPinvFrobTail k d (t ^ 2)` $+ e^{-u^2/2}$.

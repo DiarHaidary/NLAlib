@@ -14,7 +14,8 @@ public import NLAlib.Matrix.Spectral.Weyl
 # The Nyström residual in the Loewner order
 
 For positive semidefinite $\mathbf{H}$ and a test matrix $\mathbf{\Omega}$, the Nyström residual
-$\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle$ is the Schur complement of $\mathbf{H}$ with
+$\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$ is the Schur complement of $\mathbf{H}$
+with
 respect to $\mathbf{\Omega}$, written $\mathbf{H}/\mathbf{\Omega}$ in docstrings and
 `H - nystrom H Ω` in Lean, with no definition. Its quadratic form at $\mathbf{x}$ is the least value
 of the quadratic form of $\mathbf{H}$ over the affine space
@@ -53,7 +54,8 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l n q : Type*} [Fintype l] [Fintype n]
 
 /-- **Variational form of the Schur complement**
-$\mathbf{H}/\mathbf{\Omega} = \mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle$: for positive
+$\mathbf{H}/\mathbf{\Omega} = \mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$: for
+positive
 semidefinite $\mathbf{H}$,
 $$\operatorname{Re}\langle\mathbf{x}, (\mathbf{H}/\mathbf{\Omega})\mathbf{x}\rangle =
 \min_{\mathbf{y}} \operatorname{Re}\langle\mathbf{x}-\mathbf{\Omega}\mathbf{y},
@@ -97,8 +99,8 @@ theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_sub_mulVec {H : Matrix n n 
 
 /-- **Monotonicity of the Schur complement** $\mathbf{H} \mapsto \mathbf{H}/\mathbf{\Omega}$: for
 positive semidefinite $\mathbf{H} \preceq \mathbf{H}'$,
-$$\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle \preceq
-\mathbf{H}' - \mathbf{H}'\langle\mathbf{\Omega}\rangle\,.$$
+$$\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega}) \preceq
+\mathbf{H}' - \mathsf{nystrom}(\mathbf{H}', \mathbf{\Omega})\,.$$
 [MartinssonTropp2020, Corollary 11.2]; [EpperlyWebber2026, Fact 6.1(d)].
 Result: schur-complement-monotone -/
 theorem _root_.Matrix.PosSemidef.sub_nystrom_le_sub_nystrom {H H' : Matrix n n 𝕜}
@@ -153,8 +155,10 @@ theorem sum_smul_sub_nystrom_le {ι : Type*} (s : Finset ι) {H : ι → Matrix 
   exact ((hH i hi).isLeast_re_quadForm_sub_mulVec Ω x).2 ⟨y, rfl⟩
 
 /-- **More samples, better approximation**: for positive semidefinite $\mathbf{H}$ the Nyström
-approximation is monotone in $\operatorname{range}\mathbf{\Omega}$,
-$\mathbf{H}\langle\mathbf{\Omega}\rangle \preceq \mathbf{H}\langle\mathbf{\Omega}'\rangle$ when
+approximation is monotone in $\operatorname{range}\mathbf{\Omega}$, that is
+$$\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega}) \preceq
+\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega}')$$
+when
 $\operatorname{range}\mathbf{\Omega} \subseteq \operatorname{range}\mathbf{\Omega}'$.
 [MartinssonTropp2020, §14.2]; there through the square-root form. -/
 theorem _root_.Matrix.PosSemidef.nystrom_le_nystrom_of_range_le [Fintype q] {H : Matrix n n 𝕜}
@@ -173,7 +177,7 @@ theorem _root_.Matrix.PosSemidef.nystrom_le_nystrom_of_range_le [Fintype q] {H :
   rwa [hR] at this
 
 /-- **Nyström helps**, singular-value form: for positive semidefinite $\mathbf{H}$,
-$$\sigma_k(\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle) \le
+$$\sigma_k(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})) \le
 \sigma_k((\mathbf{I} - \mathbf{P}_{\mathbf{\Omega}})\mathbf{H})$$
 at every index $k$: the Nyström error is at most the error of projecting $\mathbf{H}$ onto the
 orthogonal complement of the test space. At $\mathbf{\Omega} = \mathbf{H}\mathbf{\Omega}_0$ this
@@ -217,20 +221,22 @@ theorem _root_.Matrix.PosSemidef.singularValues_sub_nystrom_le [DecidableEq n]
         exact hR.singularValues_mul_le _ k
 
 /-- **Nyström does not increase any singular value**: for positive semidefinite $\mathbf{H}$,
-$\sigma_i(\mathbf{H}\langle\mathbf{\Omega}\rangle) \le \sigma_i(\mathbf{H})$ at every index $i$,
-since $\mathbf{0} \preceq \mathbf{H}\langle\mathbf{\Omega}\rangle \preceq \mathbf{H}$. It is the
+$\sigma_i(\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})) \le \sigma_i(\mathbf{H})$ at every index
+$i$,
+since $\mathbf{0} \preceq \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega}) \preceq \mathbf{H}$. It is
+the
 domination hypothesis of the constant-one truncation lemma. False for Hermitian $\mathbf{H}$ that
-is not positive semidefinite, where $\|\mathbf{H}\langle\mathbf{\Omega}\rangle\|_2$ can be
+is not positive semidefinite, where $\|\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_2$ can be
 unbounded.
 [MartinssonTropp2020, §14.3]; [EpperlyWebber2026, Fact 6.1(a)]; there the order
-$\mathbf{H}\langle\mathbf{\Omega}\rangle \preceq \mathbf{H}$, here its singular-value form. -/
+$\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega}) \preceq \mathbf{H}$, here its singular-value form. -/
 theorem _root_.Matrix.PosSemidef.singularValues_nystrom_le {H : Matrix n n 𝕜} (hH : H.PosSemidef)
     (Ω : Matrix n l 𝕜) (i : ℕ) : singularValues (nystrom H Ω) i ≤ singularValues H i := by
   rw [(hH.nystrom Ω).singularValues_eq_eigenvalue, hH.singularValues_eq_eigenvalue]
   exact eigenvalue_le_eigenvalue_of_le (hH.nystrom_le Ω) (hH.nystrom Ω).isHermitian i
 
 /-- **Nyström helps** in every unitarily invariant norm: for positive semidefinite $\mathbf{H}$,
-$$\|\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle\|_{\Phi} \le
+$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi} \le
 \|(\mathbf{I} - \mathbf{P}_{\mathbf{\Omega}})\mathbf{H}\|_{\Phi}\,.$$
 [TroppWebber2023, Lemma 5.2].
 Result: nystrom-helps -/
@@ -240,7 +246,8 @@ theorem SymmetricGauge.matrixNorm_sub_nystrom_le [DecidableEq n] (Φ : Symmetric
   Φ.matrixNorm_le_of_singularValues_le (hH.singularValues_sub_nystrom_le Ω)
 
 /-- **Truncated Nyström stays below the matrix**: for positive semidefinite $\mathbf{H}$,
-$\llbracket\mathbf{H}\langle\mathbf{\Omega}\rangle\rrbracket_k \preceq \mathbf{H}$, so the trace of
+$\llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k \preceq \mathbf{H}$, so the
+trace of
 the error is its nuclear norm.
 [MartinssonTropp2020, §14.3]; there the positive semidefiniteness of the approximation, here the
 order. -/

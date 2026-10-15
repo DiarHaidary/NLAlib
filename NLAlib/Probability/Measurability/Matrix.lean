@@ -164,7 +164,7 @@ theorem measurable_mul_conjTranspose_inv [DecidableEq m] :
     Measurable fun A : Matrix m n 𝕜 => (A * Aᴴ)⁻¹ :=
   (measurable_id.matrix_mul (continuous_id.matrix_conjTranspose).measurable).matrix_inv
 
-/-- The randomized SVD $\mathbf{\Omega} \mapsto \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$
+/-- The randomized SVD $\mathbf{\Omega} \mapsto \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$
 is a measurable function of the test matrix. -/
 theorem measurable_rsvd {l : Type*} [Fintype l] (A : Matrix m n 𝕜) :
     Measurable fun Ω : Matrix n l 𝕜 => rsvd A Ω :=

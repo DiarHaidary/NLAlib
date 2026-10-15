@@ -30,7 +30,8 @@ $$(\mathbf{I} - \mathbf{\Pi})\mathbf{B} = (\mathbf{I} - \mathbf{P}_{\mathbf{X}})
 with orthogonal terms, so the squared Frobenius error is the orthogonal-projection error plus a
 sketched term, and the Gram matrices add. The sketched least-squares solution
 `NLAlib.sketchAndSolve A S B`, with
-$\mathbf{A}\hat{\mathbf{X}} = \mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$
+$\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B}) =
+\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$
 (`NLAlib.mul_sketchAndSolve`), is in `NLAlib.Matrix.Pseudoinverse.LeastSquares`.
 
 Degenerate cases: for $\mathbf{S}\mathbf{X} = \mathbf{0}$ (empty `k`, $\mathbf{S} = \mathbf{0}$,

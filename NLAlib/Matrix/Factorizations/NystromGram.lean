@@ -14,13 +14,10 @@ public import NLAlib.Matrix.Functions.AbsoluteValue
 # The Nyström approximation and the Gram correspondence
 
 For a square $\mathbf{A}$ and a test matrix $\mathbf{\Omega}$, `NLAlib.nystrom A Ω` is the Nyström
-approximation
-$$\mathbf{A}\langle\mathbf{\Omega}\rangle =
-\mathbf{A}\mathbf{\Omega}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})^{+}
-\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\,,$$
-generalized Nyström with $\mathbf{\Psi} = \mathbf{\Omega}$. Its residual
-$\mathbf{A} - \mathbf{A}\langle\mathbf{\Omega}\rangle$ is the Schur complement of $\mathbf{A}$ with
-respect to $\mathbf{\Omega}$ and has no definition.
+approximation $\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})$, generalized Nyström with
+$\mathbf{\Psi} = \mathbf{\Omega}$ (formula: `NLAlib.nystrom_def`). Its residual
+$\mathbf{A} - \mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})$ is the Schur complement of $\mathbf{A}$
+with respect to $\mathbf{\Omega}$ and has no definition.
 
 **The Gram correspondence**: the Nyström approximation of a Gram matrix
 $\mathbf{F}^{\mathsf{H}}\mathbf{F}$ is the Gram matrix of the randomized SVD approximation of
@@ -39,7 +36,7 @@ into it at the round's wrap-up. Design: `docs/design/LowRank-S0.md` §3.4, §8.
 
 ## Main definitions
 
-* `NLAlib.nystrom`: $\mathbf{A}\langle\mathbf{\Omega}\rangle$.
+* `NLAlib.nystrom`: $\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})$.
 
 ## Main results
 
@@ -50,7 +47,7 @@ into it at the round's wrap-up. Design: `docs/design/LowRank-S0.md` §3.4, §8.
 * `Matrix.PosSemidef.nystrom_eq`, `Matrix.PosSemidef.sub_nystrom_eq`,
   `Matrix.PosSemidef.singularValues_sub_nystrom`: the square-root forms.
 * `Matrix.PosSemidef.nystrom`, `Matrix.PosSemidef.nystrom_le`:
-  $\mathbf{0} \preceq \mathbf{A}\langle\mathbf{\Omega}\rangle \preceq \mathbf{A}$.
+  $\mathbf{0} \preceq \mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) \preceq \mathbf{A}$.
 * `Matrix.PosSemidef.rank_conjTranspose_mul_mul`: Nyström always keeps the rank of the sketch.
 * `Matrix.PosSemidef.nystrom_eq_self_of_rank_eq`, `Matrix.PosSemidef.nystrom_eq_of_range_eq`:
   exactness and representation invariance.
@@ -66,7 +63,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n p q : Type*} [Fintype l] [Fintype m] [Fintype n]
 
 /-- The **Nyström approximation**
-$$\mathbf{A}\langle\mathbf{\Omega}\rangle =
+$$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) :=
 \mathbf{A}\mathbf{\Omega}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})^{+}
 \mathbf{\Omega}^{\mathsf{H}}\mathbf{A}$$
 (`NLAlib.nystrom_def`), the generalized Nyström approximation with
@@ -83,7 +80,7 @@ noncomputable def nystrom (A : Matrix n n 𝕜) (Ω : Matrix n l 𝕜) : Matrix 
   generalizedNystrom A Ω Ω
 
 /-- The source formula of the Nyström approximation:
-$$\mathbf{A}\langle\mathbf{\Omega}\rangle =
+$$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) =
 \mathbf{A}\mathbf{\Omega}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})^{+}
 \mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\,.$$
 [MartinssonTropp2020, (2.3)]; [EpperlyWebber2026, Definition 3.4]. -/
@@ -95,9 +92,9 @@ theorem nystrom_def (A : Matrix n n 𝕜) (Ω : Matrix n l 𝕜) :
 
 /-- **The Gram correspondence**: the Nyström approximation of $\mathbf{F}^{\mathsf{H}}\mathbf{F}$ is
 the Gram matrix of the randomized SVD approximation of $\mathbf{F}$,
-$$(\mathbf{F}^{\mathsf{H}}\mathbf{F})\langle\mathbf{\Omega}\rangle =
-(\mathbf{P}_{\mathbf{F}\mathbf{\Omega}}\mathbf{F})^{\mathsf{H}}
-\mathbf{P}_{\mathbf{F}\mathbf{\Omega}}\mathbf{F}\,,$$
+$$\mathsf{nystrom}(\mathbf{F}^{\mathsf{H}}\mathbf{F}, \mathbf{\Omega}) =
+(\mathsf{rsvd}(\mathbf{F}, \mathbf{\Omega}))^{\mathsf{H}}
+\mathsf{rsvd}(\mathbf{F}, \mathbf{\Omega})\,,$$
 for every factor, test matrix and rank.
 [MartinssonTropp2020, Proposition 11.1, §14.2]; [EpperlyWebber2026, Fact 3.5];
 [CamanoEpperlyMeyerTropp2025, Imported Theorem 2.4]; [TroppWebber2023, §5.4]; there with
@@ -118,8 +115,8 @@ theorem nystrom_conjTranspose_mul_self (F : Matrix m n 𝕜) (Ω : Matrix n l �
 
 /-- **The Gram correspondence, error form**: the Nyström error of
 $\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$ is the Gram matrix of the randomized SVD error,
-$$\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle = \mathbf{E}^{\mathsf{H}}\mathbf{E},
-\qquad \mathbf{E} = \mathbf{F} - \mathbf{P}_{\mathbf{F}\mathbf{\Omega}}\mathbf{F}\,.$$
+$$\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega}) = \mathbf{E}^{\mathsf{H}}\mathbf{E},
+\qquad \mathbf{E} = \mathbf{F} - \mathsf{rsvd}(\mathbf{F}, \mathbf{\Omega})\,.$$
 [MartinssonTropp2020, Proposition 11.1]; [EpperlyWebber2026, Fact 3.5]; there with
 $\mathbf{F} = \mathbf{A}^{1/2}$.
 Result: gram-correspondence -/
@@ -141,8 +138,8 @@ theorem conjTranspose_mul_self_sub_nystrom (F : Matrix m n 𝕜) (Ω : Matrix n 
 
 /-- The singular values of the Nyström error of $\mathbf{F}^{\mathsf{H}}\mathbf{F}$ are the squared
 singular values of the randomized SVD error of $\mathbf{F}$:
-$$\sigma_k(\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle) =
-\sigma_k(\mathbf{F} - \mathbf{P}_{\mathbf{F}\mathbf{\Omega}}\mathbf{F})^2$$
+$$\sigma_k(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})) =
+\sigma_k(\mathbf{F} - \mathsf{rsvd}(\mathbf{F}, \mathbf{\Omega}))^2$$
 for every index $k$, so every unitarily invariant norm of the one is a quadratic norm of the other.
 [MartinssonTropp2020, Proposition 11.1]; [TroppWebber2023, §5.4]; there for the norms. -/
 theorem singularValues_conjTranspose_mul_self_sub_nystrom (F : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
@@ -152,8 +149,8 @@ theorem singularValues_conjTranspose_mul_self_sub_nystrom (F : Matrix m n 𝕜) 
 
 /-- **The Gram correspondence, trace form**: the nuclear norm of the Nyström error of
 $\mathbf{F}^{\mathsf{H}}\mathbf{F}$ is the squared Frobenius error of the randomized SVD,
-$$\|\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle\|_* =
-\|\mathbf{F} - \mathbf{P}_{\mathbf{F}\mathbf{\Omega}}\mathbf{F}\|_{\mathsf{F}}^2\,.$$
+$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_* =
+\|\mathbf{F} - \mathsf{rsvd}(\mathbf{F}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,.$$
 [CamanoEpperlyMeyerTropp2025, Imported Theorem 2.4]; [EpperlyWebber2026, Fact 3.5]; there as a trace
 with $\mathbf{F} = \mathbf{A}^{1/2}$.
 Result: gram-correspondence -/
@@ -179,8 +176,8 @@ private theorem eq_conjTranspose_sqrt_mul_sqrt (hA : A.PosSemidef) :
 
 open scoped Classical in
 /-- **The square-root form of Nyström**: for positive semidefinite $\mathbf{A}$,
-$$\mathbf{A}\langle\mathbf{\Omega}\rangle =
-\mathbf{A}^{1/2}\mathbf{P}_{\mathbf{A}^{1/2}\mathbf{\Omega}}\mathbf{A}^{1/2}\,.$$
+$$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) =
+\mathbf{A}^{1/2}\mathsf{rsvd}(\mathbf{A}^{1/2}, \mathbf{\Omega})\,.$$
 [MartinssonTropp2020, §14.2]; [TroppWebber2023, §5.4]; stated there without proof. -/
 theorem _root_.Matrix.PosSemidef.nystrom_eq (hA : A.PosSemidef)
     (Ω : Matrix n l 𝕜) :
@@ -197,9 +194,8 @@ theorem _root_.Matrix.PosSemidef.nystrom_eq (hA : A.PosSemidef)
 open scoped Classical in
 /-- **The Gram correspondence for a positive semidefinite matrix**: the Nyström error is the Gram
 matrix of the randomized SVD error of the square root,
-$$\mathbf{A} - \mathbf{A}\langle\mathbf{\Omega}\rangle = \mathbf{E}^{\mathsf{H}}\mathbf{E},
-\qquad \mathbf{E} = \mathbf{A}^{1/2} - \mathbf{P}_{\mathbf{A}^{1/2}\mathbf{\Omega}}
-\mathbf{A}^{1/2}\,.$$
+$$\mathbf{A} - \mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) = \mathbf{E}^{\mathsf{H}}\mathbf{E},
+\qquad \mathbf{E} = \mathbf{A}^{1/2} - \mathsf{rsvd}(\mathbf{A}^{1/2}, \mathbf{\Omega})\,.$$
 [MartinssonTropp2020, Proposition 11.1]; [EpperlyWebber2026, Fact 3.5]; [TroppWebber2023, §5.4].
 Result: gram-correspondence -/
 theorem _root_.Matrix.PosSemidef.sub_nystrom_eq (hA : A.PosSemidef)
@@ -213,8 +209,8 @@ theorem _root_.Matrix.PosSemidef.sub_nystrom_eq (hA : A.PosSemidef)
 open scoped Classical in
 /-- The singular values of the Nyström error of a positive semidefinite $\mathbf{A}$ are the squared
 singular values of the randomized SVD error of $\mathbf{A}^{1/2}$, at every index:
-$$\sigma_k(\mathbf{A} - \mathbf{A}\langle\mathbf{\Omega}\rangle) =
-\sigma_k(\mathbf{A}^{1/2} - \mathbf{P}_{\mathbf{A}^{1/2}\mathbf{\Omega}}\mathbf{A}^{1/2})^2\,.$$
+$$\sigma_k(\mathbf{A} - \mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})) =
+\sigma_k(\mathbf{A}^{1/2} - \mathsf{rsvd}(\mathbf{A}^{1/2}, \mathbf{\Omega}))^2\,.$$
 [MartinssonTropp2020, Proposition 11.1]; [TroppWebber2023, §5.4]. -/
 theorem _root_.Matrix.PosSemidef.singularValues_sub_nystrom (hA : A.PosSemidef)
     (Ω : Matrix n l 𝕜) (k : ℕ) :
@@ -223,7 +219,7 @@ theorem _root_.Matrix.PosSemidef.singularValues_sub_nystrom (hA : A.PosSemidef)
   rw [hA.sub_nystrom_eq, singularValues_conjTranspose_mul_self]
 
 /-- The Nyström approximation of a positive semidefinite matrix is positive semidefinite:
-$\mathbf{0} \preceq \mathbf{A}\langle\mathbf{\Omega}\rangle$.
+$\mathbf{0} \preceq \mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})$.
 [MartinssonTropp2020, §2.7]; [EpperlyWebber2026, Fact 6.1(a)]. -/
 theorem _root_.Matrix.PosSemidef.nystrom (hA : A.PosSemidef) (Ω : Matrix n l 𝕜) :
     (nystrom A Ω).PosSemidef := by
@@ -233,7 +229,7 @@ theorem _root_.Matrix.PosSemidef.nystrom (hA : A.PosSemidef) (Ω : Matrix n l �
   exact Matrix.posSemidef_conjTranspose_mul_self _
 
 /-- The Nyström approximation of a positive semidefinite matrix lies below it:
-$\mathbf{A}\langle\mathbf{\Omega}\rangle \preceq \mathbf{A}$.
+$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) \preceq \mathbf{A}$.
 [MartinssonTropp2020, §2.7]; [EpperlyWebber2026, Fact 6.1(a)]. -/
 theorem _root_.Matrix.PosSemidef.nystrom_le (hA : A.PosSemidef) (Ω : Matrix n l 𝕜) :
     nystrom A Ω ≤ A := by
@@ -265,14 +261,15 @@ theorem _root_.Matrix.PosSemidef.rank_conjTranspose_mul_mul (hA : A.PosSemidef)
 
 /-- **Exactness of Nyström at low rank**: for positive semidefinite $\mathbf{A}$ with
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$,
-$\mathbf{A}\langle\mathbf{\Omega}\rangle = \mathbf{A}$. -/
+$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) = \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.nystrom_eq_self_of_rank_eq (hA : A.PosSemidef)
     {Ω : Matrix n l 𝕜} (h : (A * Ω).rank = A.rank) : nystrom A Ω = A :=
   generalizedNystrom_eq_self_of_rank_eq h (hA.rank_conjTranspose_mul_mul Ω)
 
 /-- **Representation invariance**: for positive semidefinite $\mathbf{A}$ the Nyström approximation
 depends on the test matrix only through its range,
-$\mathbf{A}\langle\mathbf{\Omega}\rangle = \mathbf{A}\langle\mathbf{\Omega}'\rangle$ when
+$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) = \mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}')$
+when
 $\operatorname{range}\mathbf{\Omega} = \operatorname{range}\mathbf{\Omega}'$, whatever the widths;
 the invertible case is $\mathbf{\Omega}' = \mathbf{\Omega}\mathbf{M}$.
 [EpperlyWebber2026, Fact 6.1(b)]; there for invertible $\mathbf{M}$. -/
@@ -306,8 +303,8 @@ theorem nystrom_selectionMatrix [Fintype p] [DecidableEq n] (A : Matrix n n 𝕜
     conjTranspose_selectionMatrix_mul]
 
 /-- **Equivariance of Nyström**: for $\mathbf{U}$ with orthonormal columns,
-$$(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})\langle\mathbf{U}\mathbf{\Omega}\rangle =
-\mathbf{U}\,\mathbf{A}\langle\mathbf{\Omega}\rangle\mathbf{U}^{\mathsf{H}}\,,$$
+$$\mathsf{nystrom}(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}, \mathbf{U}\mathbf{\Omega}) =
+\mathbf{U}\,\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})\mathbf{U}^{\mathsf{H}}\,,$$
 for every square $\mathbf{A}$. -/
 theorem HasOrthonormalCols.nystrom_mul_mul_conjTranspose [DecidableEq n] {n' : Type*}
     [Fintype n'] {U : Matrix n' n 𝕜} (hU : HasOrthonormalCols U) (A : Matrix n n 𝕜)

@@ -22,8 +22,9 @@ gives the one of smallest norm, and the residual is $(\mathbf{I} -
 the range of $\mathbf{A}$ (`rangeProjector`).
 
 Sketch-and-solve replaces the problem by the one sketched by $\mathbf{S}$; its solution
-`NLAlib.sketchAndSolve A S B` has fitted values the oblique projection
-$\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$, and when $\mathbf{S}$ keeps the rank of
+`NLAlib.sketchAndSolve A S B`, written
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$, has fitted values the oblique
+projection $\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$, and when $\mathbf{S}$ keeps the rank of
 $\mathbf{A}$ it is the exact minimum-norm solution plus the sketched solution for the optimal
 residual. Design: `docs/design/LowRank-S0.md` §3.1, §8 (moved here from
 `NLAlib.Matrix.Subspaces.ObliqueProjector` on 2026-10-15).
@@ -31,7 +32,7 @@ residual. Design: `docs/design/LowRank-S0.md` §3.1, §8 (moved here from
 ## Main definitions
 
 * `NLAlib.IsLeastSquaresSolution`: $\mathbf{x}$ minimises $\|\mathbf{b} - \mathbf{A}\mathbf{x}\|$.
-* `NLAlib.sketchAndSolve`: the sketched solution $(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$.
+* `NLAlib.sketchAndSolve`: the sketch-and-solve solution.
 
 ## Main results
 
@@ -331,15 +332,16 @@ theorem existsUnique_isLeastSquaresSolution_iff (A : Matrix m n 𝕜) (b : m →
 
 The least-squares problem sketched by $\mathbf{S}$, $\min_{\mathbf{X}}
 \|\mathbf{S}(\mathbf{A}\mathbf{X} - \mathbf{B})\|_{\mathsf{F}}$, and its minimum-norm solution
-$(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$, whose fitted values are the oblique projection
-$\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$ (`NLAlib.obliqueProjector`). -/
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$, whose fitted values are the oblique
+projection $\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$ (`NLAlib.obliqueProjector`). -/
 
 section SketchAndSolve
 
 variable {k p q : Type*} [Fintype k] {S : Matrix k m 𝕜}
 
 /-- The **sketch-and-solve solution**
-$\hat{\mathbf{X}} = (\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$, the minimum-norm minimizer of
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B}) :=
+(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{B}$, the minimum-norm minimizer of
 $\|\mathbf{S}(\mathbf{A}\mathbf{X} - \mathbf{B})\|_{\mathsf{F}}$, column by column
 (`NLAlib.isLeastSquaresSolution_pinv_mulVec`). Total; its junk value is $\mathbf{0}$ when
 $\mathbf{S}\mathbf{A} = \mathbf{0}$. The argument order is system, sketch, right-hand side, as in
@@ -350,7 +352,8 @@ noncomputable def sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B 
   pinv (S * A) * (S * B)
 
 /-- The fitted values of sketch-and-solve are the oblique projection of the right-hand side:
-$\mathbf{A}\hat{\mathbf{X}} = \mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$. -/
+$$\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B}) =
+\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}\,.$$ -/
 theorem mul_sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜) :
     A * sketchAndSolve A S B = obliqueProjector A S * B := by
   rw [sketchAndSolve, obliqueProjector]
@@ -358,8 +361,8 @@ theorem mul_sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matr
 
 /-- **Sketch-and-solve error decomposition**: when
 $\operatorname{rank}(\mathbf{S}\mathbf{A}) = \operatorname{rank}\mathbf{A}$,
-$$\hat{\mathbf{X}} = \mathbf{A}^{+}\mathbf{B} +
-(\mathbf{S}\mathbf{A})^{+}\mathbf{S}(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}\,:$$
+$$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B}) = \mathbf{A}^{+}\mathbf{B} +
+\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, (\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B})\,:$$
 the sketched solution is the exact minimum-norm solution plus the sketch-and-solve solution for the
 optimal residual. This is the exact identity beside the bound `sketch-and-solve-ls`
 (`NLAlib.IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le`).
@@ -385,8 +388,9 @@ theorem sketchAndSolve_eq_pinv_mul_add [DecidableEq m] {A : Matrix m n 𝕜}
 /-- **Core noise**: for $\mathbf{Q}$ with orthonormal columns and
 $\operatorname{rank}(\mathbf{S}\mathbf{Q}) = \operatorname{rank}\mathbf{Q}$ (full column rank of
 $\mathbf{S}\mathbf{Q}$), the sketched core is the exact core plus noise,
-$$(\mathbf{S}\mathbf{Q})^{+}\mathbf{S}\mathbf{B} = \mathbf{Q}^{\mathsf{H}}\mathbf{B} +
-(\mathbf{S}\mathbf{Q})^{+}\mathbf{S}(\mathbf{I}-\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{B}\,.$$
+$$\mathsf{sketchAndSolve}(\mathbf{Q}, \mathbf{S}, \mathbf{B}) = \mathbf{Q}^{\mathsf{H}}\mathbf{B} +
+\mathsf{sketchAndSolve}(\mathbf{Q}, \mathbf{S},
+(\mathbf{I}-\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{B})\,.$$
 [TroppYurtseverUdellCevher2017, Lemma A.4]; [CamanoEpperlyMeyerTropp2025, Lemma 2.6]; there with a
 complement frame.
 Result: sketch-and-solve-error-decomposition -/

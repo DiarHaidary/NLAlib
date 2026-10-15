@@ -15,9 +15,9 @@ public import NLAlib.RandomMatrix.Gaussian.Rank
 # The expected error of the Gaussian randomized SVD
 
 For a real $\mathbf{A}$ and a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, the
-randomized SVD $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$ (`NLAlib.rsvd`) has, for a target rank
+randomized SVD $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$ (`NLAlib.rsvd`) has, for a target rank
 $k$ with $k + 2 \le \ell$ and $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{E}\|_{\mathsf{F}}^2\,,$$
 Halko, Martinsson and Tropp's Theorem 10.5, and its Gram form in every quadratic unitarily
 invariant norm, of which the Schatten forms of Tropp and Webber's Theorem 8.1 (RSVD2) and the
@@ -85,7 +85,7 @@ private theorem sub_mul_mul_pinv_eq_block {E : Matrix m n ℝ} {p q : Type*} [Fi
 /-! ### Exact recovery -/
 
 /-- **A Gaussian sketch at least as wide as the rank recovers the matrix**: if
-$\operatorname{rank}\mathbf{A} \le \ell$, then $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A} =
+$\operatorname{rank}\mathbf{A} \le \ell$, then $\mathsf{rsvd}(\mathbf{A}, \mathbf{X}) =
 \mathbf{A}$ almost surely, for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$. -/
 theorem ae_rsvd_eq_self_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) (hA : A.rank ≤ Fintype.card l) :
@@ -110,8 +110,8 @@ namespace SymmetricGauge
 
 /-- **The expected error of the randomized SVD, Gram form**: for a standard Gaussian
 $n \times \ell$ test matrix $\mathbf{X}$, $k + 2 \le \ell$ and every unitarily invariant norm,
-$$\mathbb{E}\bigl\|(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})^{\mathsf{H}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A})\bigr\|_{\Phi} \le
+$$\mathbb{E}\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
+(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{k}{\ell - k - 1}\,
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
@@ -178,7 +178,7 @@ end SymmetricGauge
 open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Frobenius norm** (HMT Theorem 10.5, squared):
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}}^2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2\,,$$
 the factor being `gaussianProjectionFactor k ℓ`.
@@ -200,7 +200,7 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
 
 /-- **The expected error of the randomized SVD, Frobenius norm, as printed** (HMT Theorem 10.5):
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{\mathsf{F}} \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}\,,$$
 by Jensen from the squared form `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
@@ -228,7 +228,7 @@ open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Schatten norms** (TW Theorem 8.1 (RSVD2)): for a
 standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $k + 2 \le \ell$ and
 $2 \le p \le \infty$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_{S_p}^2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{S_p}^2 \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{S_p}^2 + \frac{k}{\ell - k - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 The Gram form at the Schatten gauge of order $p/2$.
@@ -255,7 +255,7 @@ open SymmetricGauge in
 /-- **The expected error of the randomized SVD, squared spectral norm** (TW Theorem 8.1 (RSVD2) at
 $p = \infty$): for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
 $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2^2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2 \le
 \sigma_k(\mathbf{A})^2 + \frac{k}{\ell - k - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 Incomparable with `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix` (the first
@@ -277,7 +277,7 @@ theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
 
 /-- **The average spectral error of the randomized SVD** (HMT Theorem 10.6): for a standard
 Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\|_2 \le
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
 C\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
 with $C$ = `gaussianPinvSpecNormBound k ℓ`, that is $\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}$,
@@ -333,7 +333,7 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
 
 /-- **The expected error of the truncated randomized SVD, Frobenius norm**: the late truncation
 keeps HMT's constant,
-$$\mathbb{E}\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}\rrbracket_k
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} -
 \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $k + 2 \le \ell$ and every
@@ -390,7 +390,7 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
     norm_num
 
 /-- **The expected spectral error of the truncated randomized SVD**, for a measurable choice
-$\mathbf{Y}$ of best rank-$k$ approximations of $\mathbf{P}_{\mathbf{A}\mathbf{X}}\mathbf{A}$: for
+$\mathbf{Y}$ of best rank-$k$ approximations of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$: for
 a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{A} - \mathbf{Y}\|_2^2 \le \sigma_k(\mathbf{A})^2 + \frac{k}{\ell - k - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$

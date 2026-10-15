@@ -23,7 +23,7 @@ $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ has full row rank, written `(Ωᴴ * Z)
 $$\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}},\qquad
 \mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+},$$
 spelled inline as `A - A * Z * Zᴴ` and `(A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)`, the error
-$\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$ of the randomized SVD,
+$\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ of the randomized SVD,
 `A - rsvd A Ω`, is bounded by $\mathbf{E}$ and $\mathbf{M}$ in every unitarily invariant norm: in
 Gram form for the quadratic norms and in triangle form for all of them. The proof compares the
 error with the competitor
@@ -183,8 +183,8 @@ theorem HasOrthonormalCols.frobNorm_sub_mul_mul_pinv_mul_conjTranspose_sq
 /-- **The structural bound of the range finder, Gram form.** For $\mathbf{Z}$ with orthonormal
 columns and $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, in every unitarily invariant
 norm,
-$$\bigl\|(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A})^{\mathsf{H}}
-(\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A})\bigr\|_{\Phi} \le
+$$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))^{\mathsf{H}}
+(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))\bigr\|_{\Phi} \le
 \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \|\mathbf{M}^{\mathsf{H}}\mathbf{M}\|_{\Phi}$$
 with $\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$ and
 $\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$: a bound on
@@ -218,7 +218,7 @@ theorem SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_rsvd_le (Φ : Symme
 
 /-- **The structural bound of the range finder, unsquared triangle form**, in every unitarily
 invariant norm:
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\Phi} \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\Phi} \le
 \|\mathbf{E}\|_{\Phi} + \|\mathbf{M}\|_{\Phi}\,.$$
 For every quadratic norm the Gram form
 (`NLAlib.SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_rsvd_le`) is at least as strong
@@ -241,7 +241,7 @@ theorem SymmetricGauge.matrixNorm_sub_rsvd_le (Φ : SymmetricGauge) (hZ : HasOrt
   rw [Φ.matrixNorm_neg, Φ.matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols hZ]
 
 /-- Spectral form of the structural bound:
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_2^2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le
 \|\mathbf{E}\|_2^2 + \|\mathbf{M}\|_2^2\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.1], there for a top-$k$ frame; here any frame.
 Port of `NLAlib.specNorm_residual_sq_le_of_range_subset`.
@@ -254,7 +254,7 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_sq_le (hZ : HasOrthonormalCols Z)
   simpa only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self] using h
 
 /-- Unsquared spectral form of the structural bound:
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2 \le
 \|\mathbf{E}\|_2 + \|\mathbf{M}\|_2\,.$$
 Dominated by `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_sq_le`, kept because HMT 10.6 uses this
 simpler form (CONTRIBUTING §5.2, numerical bounds, rule 6).
@@ -270,7 +270,7 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_le (hZ : HasOrthonormalCols Z)
   simpa only [lpGauge_top_matrixNorm] using h
 
 /-- Frobenius form of the structural bound:
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\mathsf{F}}^2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \|\mathbf{E}\|_{\mathsf{F}}^2 + \|\mathbf{M}\|_{\mathsf{F}}^2\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.1]; [Woodruff2014, Lemma 48];
 [CamanoEpperlyMeyerTropp2025, Imported Theorem 2.3]; there for a top-$k$ frame (HMT, CEMT) or any
@@ -320,7 +320,7 @@ theorem HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le [DecidableEq q] {
   exact pow_le_pow_left₀ (frobNorm_nonneg _) h 2
 
 /-- **Truncation for free, for the truncated randomized SVD**: for any $k \ge \lvert r \rvert$,
-$$\|\mathbf{A} - \llbracket\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\rrbracket_k
+$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k
 \|_{\mathsf{F}}^2 \le \|\mathbf{E}\|_{\mathsf{F}}^2 + \|\mathbf{M}\|_{\mathsf{F}}^2\,,$$
 for every choice of the truncation: the named-output form of
 `NLAlib.HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le`, through an orthonormal basis of
@@ -344,7 +344,7 @@ theorem HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd_sq_le (hZ : HasOrthono
 /-- **The structural bound of the range finder, under a subspace injection** (the deterministic
 core of CEMT Theorem 2.2): if $\mathbf{\Omega}^{\mathsf{H}}$ is a subspace injection for
 $\operatorname{range}\mathbf{Z}$ with constant $a > 0$, then
-$$\|\mathbf{A} - \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}\|_{\mathsf{F}}^2 \le
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \|\mathbf{E}\|_{\mathsf{F}}^2 + \frac{\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}^2}{a}\,.$$
 The rank hypothesis follows from the injection (`NLAlib.IsSubspaceInjection.rank_mul_eq`).
 [CamanoEpperlyMeyerTropp2025, Theorem 2.2 (proof), Lemma 2.1]; there with probability $9/10$ and an
@@ -405,7 +405,8 @@ positive semidefinite $\mathbf{H}$, $\mathbf{Z}$ with orthonormal columns and
 $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, with
 $$\mathbf{H}_\perp = (\mathbf{I} - \mathbf{Z}\mathbf{Z}^{\mathsf{H}})\mathbf{H}
 (\mathbf{I} - \mathbf{Z}\mathbf{Z}^{\mathsf{H}}),$$
-$$\|\mathbf{H} - \mathbf{H}\langle\mathbf{\Omega}\rangle\|_{\Phi} \le \|\mathbf{H}_\perp\|_{\Phi} +
+$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi} \le
+\|\mathbf{H}_\perp\|_{\Phi} +
 \bigl\|((\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+})^{\mathsf{H}}\,\mathbf{\Omega}^{\mathsf{H}}
 \mathbf{H}_\perp\mathbf{\Omega}\,(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}\bigr\|_{\Phi}\,.$$
 No square root appears: kernel and Gram matrices apply it directly. With
