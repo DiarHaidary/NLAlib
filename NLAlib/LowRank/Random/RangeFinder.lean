@@ -279,7 +279,8 @@ Direct form at `truncatedSVD`:
 `NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD_sq_le`.
 [Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
 [TroppWebber2023, p. 42]; there a deterministic remark on truncated outputs, here in expectation
-under a selector, subtraction-free, indices from $0$. -/
+under a selector, subtraction-free, indices from $0$.
+Result: reverse-eckart-young -/
 theorem integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox
     [IsProbabilityMeasure μ] (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) {k : ℕ}
     {Y : Ω → Matrix m n 𝕜} (hY : ∀ ω, IsBestRankApprox (rsvd A (X ω)) k (Y ω))
@@ -309,7 +310,8 @@ for every law. The direct form of
 `NLAlib.integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox`.
 [Gu2015, Theorem 3.4]; [TroppYurtseverUdellCevher2017a, Proposition A.8];
 [TroppWebber2023, p. 42]; there a deterministic remark on truncated outputs, here in expectation,
-subtraction-free, indices from $0$. -/
+subtraction-free, indices from $0$.
+Result: reverse-eckart-young -/
 theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD_sq_le
     [IsProbabilityMeasure μ] (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) (k : ℕ) :
     ∫ ω, specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ +

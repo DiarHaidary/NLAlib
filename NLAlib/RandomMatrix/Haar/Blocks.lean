@@ -511,7 +511,8 @@ $\mathbf{\Omega}_1^{\mathsf{H}}\mathbf{\Omega}_1 + \mathbf{\Omega}_2^{\mathsf{H}
 $\mathbf{\Omega}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{Q}$.
 [EpperlyWebber2026, Proposition 5.7]; there an inequality for general $\mathbf{R}$, equality at
 $\mathbf{R} = \mathbf{I}$, over $\mathbb{R}$ and $\mathbb{C}$; here the real case at
-$\mathbf{R} = \mathbf{I}$. Result: haar-sketching-identity -/
+$\mathbf{R} = \mathbf{I}$.
+Result: haar-sketching-identity -/
 theorem integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
     [DecidableEq s] (hQ : HasLaw Q (haarFrame m p) μ)
     (hpm : Fintype.card p ≤ Fintype.card m) {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ}

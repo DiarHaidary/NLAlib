@@ -304,8 +304,7 @@ $\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$,
 $$\|\mathbf{H} - \mathbf{Y}\|_* \le
 \|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_*\,,$$
 the right side being choice-free
-(`NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom`). Equality is expected but
-not proved; the inequality is all that is used. With reverse Eckart–Young
+(`NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom`). With reverse Eckart–Young
 (`NLAlib.specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le`) it turns a trace bound for
 truncated Nyström into a spectral bound for every choice of the truncation. -/
 theorem

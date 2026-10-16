@@ -632,7 +632,8 @@ probability $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$ (for $\delta 
 trivial). [Woodruff2014, Theorem 6]. Replaces the prototype's
 `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`
 ($\lvert k \rvert \ge 18 (d + 2 \log(2/\delta)) / \varepsilon^2$, now `gaussianEmbeddingDim_le`).
-Asymptotic form: `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`. -/
+Asymptotic form: `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`.
+Result: gaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
     (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
     (hk : gaussianEmbeddingDim d ε δ ≤ Fintype.card k) :
@@ -686,7 +687,8 @@ $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$ rows (`gaussianInjectio
 an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$; $k$ is nonempty because
 the dimension is positive. Asymptotic form:
-`NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`. -/
+`NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`.
+Result: gaussian-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     [DecidableEq n] (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε2 : ε ≤ 2)
     (hδ : 0 < δ) (hδ1 : δ < 1) (hk : gaussianInjectionDim d ε δ ≤ Fintype.card k) :
@@ -733,7 +735,8 @@ least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - 
 rows (`jlDim ε δ`) give the JL property with distortion $\varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. Replaces the prototype's
 `jl_lemma_prob_le_of_log_le`. Asymptotic form:
-`NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`. -/
+`NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`.
+Result: jl-distributional -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gaussianMatrix k n) μ)
     (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ) (hk : jlDim ε δ ≤ Fintype.card k) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ μ := by

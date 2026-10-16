@@ -922,7 +922,8 @@ $\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketch
 $\varepsilon, \delta > 0$, a CountSketch is an oblivious subspace embedding for dimension $d$ with
 constants $1 \mp \varepsilon$ and failure probability $\delta$. [Woodruff2014, Theorem 9] (there
 $O(d^2/(\delta\varepsilon^2))$ rows). Asymptotic form:
-`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch`. -/
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch`.
+Result: sparse-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le
     (hS : HasLaw S (countSketch k n) μ) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
     (hk : countSketchRows d ε δ ≤ Fintype.card k) :

@@ -33,12 +33,6 @@ which is convex only on Hermitian matrices). Hoeffding's comparison is stated wi
 only and declared in the `ConvexOn` namespace for dot notation; it uses the library's API for
 uniform injections (`NLAlib.Probability.Distributions.UniformInjection`), so it stays here.
 
-This file is part of Sketching stage S5 (`docs/design/Sketching-S5.md` §3.2, §8). Hoeffding's
-comparison is the kernel form applied to a private pattern kernel: an injection $\iota$ goes to
-$\iota \circ \tau \circ \pi_J$, with $\tau$ a uniform permutation of the sample, $J$ a uniform map
-$k \to n$ and $\pi_J : k \to k$ a pattern with $J = e_J \circ \pi_J$ for an injection $e_J$.
-Averaging over $\tau$ gives the barycenter, and averaging over the permutations of the
-population gives the marginal.
 
 ## Main results
 

@@ -839,9 +839,19 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht :
         mul_le_mul_of_nonneg_left (by linarith) (by linarith)
     _ = 32 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ)) := by ring
 
-/-- **The SRHT OSE with replacement, sample-size form**: the size of
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le` for i.i.d. uniform
-indices. [MartinssonTropp2020, §9.3]. Asymptotic form:
+/-- **The SRHT OSE with replacement, sample-size form**: for a bounded orthonormal transform
+$\mathbf{F}$ with bound $\beta$ (`NLAlib.IsBoundedOrthonormal`),
+$0 < \varepsilon \le 1$ and $\delta > 0$, the
+SRHT with i.i.d. uniform row indices is an oblivious subspace embedding for dimension $d$
+with constants $1 \mp \varepsilon$
+and failure probability $\delta$ once it has <!-- value samplingSize d L \varepsilon (\delta/2) -->
+$$\lvert k \rvert \ge \frac{3 L \log(2d/(\delta/2))}{\varepsilon^2}$$
+rows (`NLAlib.samplingSize d L ε (δ/2)`), where the flattened
+coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
+$$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
+2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
+is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; flattening and sampling each
+fail with probability at most $\delta/2$. [MartinssonTropp2020, §9.3]. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement`.
 Result: srht-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSize_le
@@ -925,9 +935,19 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement
         mul_le_mul_of_nonneg_left (by linarith) (by linarith)
     _ = 72 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ)) := by ring
 
-/-- **The SRHT OSI with replacement, sample-size form**: the size of
-`NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le` for i.i.d.
-uniform indices, nonempty `k` and `n`. Asymptotic form:
+/-- **The SRHT OSI with replacement, sample-size form**: for a bounded orthonormal transform
+$\mathbf{F}$ with bound $\beta$ (`NLAlib.IsBoundedOrthonormal`), $\varepsilon > 0$,
+$\delta > 0$ and nonempty `k` and `n`, the SRHT with i.i.d. uniform row indices is an oblivious
+subspace injection for dimension $d$ with constant $1 - \varepsilon$
+and failure probability $\delta$ once the
+row count satisfies <!-- value samplingInjectionSize d L \varepsilon (\delta/2) -->
+$$\lvert k \rvert \ge \frac{2 L \log(d/(\delta/2))}{\varepsilon^2}$$
+rows (`NLAlib.samplingInjectionSize d L ε (δ/2)`), where the flattened
+coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
+$$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
+2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
+is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; flattening and sampling each
+fail with probability at most $\delta/2$. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement`.
 Result: srht-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le

@@ -169,11 +169,11 @@ $$\mathbb{E}\|(\mathbf{I}-\mathbf{\Pi}_{\mathbf{X},\mathbf{S}})\mathbf{B}\|_{\ma
 \Bigl(1 + \frac{q}{p - q - 1}\Bigr)\|(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2
 \,:$$
 the oblique projection inflates the orthogonal projection's error by exactly the factor
-`gaussianProjectionFactor q p`. No full rank of $\mathbf{X}$ is assumed; at
-$p = q + 1$ the left side is not integrable unless the residual vanishes.
+`gaussianProjectionFactor q p`. No full rank of $\mathbf{X}$ is assumed.
 [EpperlyWebber2026, Theorem 2.1 and Lemma 5.1]; [TroppYurtseverUdellCevher2017, Lemma A.5];
 there for $\mathbf{X} = \mathbf{A}$ (EW) or an orthonormal $\mathbf{Q}$ (TYUC), here any basis of
-any rank. Result: sketch-and-solve-expected-error -/
+any rank.
+Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix
     (hS : HasLaw S (gaussianMatrix p m) μ) (X : Matrix m s ℝ)
     (hX : X.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
@@ -208,7 +208,8 @@ integrand is that of
 `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix` at
 $\mathbf{X} = \mathbf{A}$ (`NLAlib.mul_sketchAndSolve`), whose integrability companion applies.
 [EpperlyWebber2026, Theorem 2.1 (Gaussian)]; real case, $\alpha_{\mathbb{R}} = 1$; first proved by
-Bartan and Pilanci, as EW report. Result: sketch-and-solve-expected-error -/
+Bartan and Pilanci, as EW report.
+Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix
     (hS : HasLaw S (gaussianMatrix p m) μ) {A : Matrix m n ℝ}
     (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
@@ -453,7 +454,8 @@ core of generalized Nyström. The reflection $2\mathbf{P}_{\mathbf{A}} - \mathbf
 law of $\mathbf{S}$, fixes $\mathbf{A}$ and negates the residual; at $p = \operatorname{rank}
 \mathbf{A}$ the solution need not be integrable.
 [EpperlyWebber2026, Theorem 2.1]; [TroppYurtseverUdellCevher2017, Lemma A.5]; there with
-$\operatorname{rank}\mathbf{A} + 2 \le p$. Result: sketch-and-solve-expected-error -/
+$\operatorname{rank}\mathbf{A} + 2 \le p$.
+Result: sketch-and-solve-expected-error -/
 theorem integral_sketchAndSolve_of_hasLaw_gaussianMatrix [DecidableEq r]
     (hS : HasLaw S (gaussianMatrix p m) μ) {A : Matrix m n ℝ}
     (hA : A.rank + 1 ≤ Fintype.card p) (B : Matrix m r ℝ) :
@@ -615,7 +617,8 @@ $p > m$ the formula is false (the sketch is then an isometry and the error is th
 hence $p \le m$. The Gaussian twin is
 `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix`.
 [EpperlyWebber2026, Theorem 2.1 and Proposition 5.7]; there for $\mathbf{X} = \mathbf{A}$, here any
-basis of any rank. Result: sketch-and-solve-expected-error -/
+basis of any rank.
+Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame [DecidableEq p]
     (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
     (X : Matrix m s ℝ) (hX : X.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
@@ -707,7 +710,8 @@ $$\mathbb{E}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{Q}^{\mathsf{H}}, \math
 The reflection $2\mathbf{P}_{\mathbf{A}} - \mathbf{I}$, acting on the left of the frame, preserves
 its law, fixes $\mathbf{A}$ and negates the residual. The Gaussian twin is
 `NLAlib.integral_sketchAndSolve_of_hasLaw_gaussianMatrix`.
-[EpperlyWebber2026, Theorem 2.1]; real case. Result: sketch-and-solve-expected-error -/
+[EpperlyWebber2026, Theorem 2.1]; real case.
+Result: sketch-and-solve-expected-error -/
 theorem integral_sketchAndSolve_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
     (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
     {A : Matrix m n ℝ} (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :

@@ -190,7 +190,8 @@ Direct form at `truncatedSVD`:
 `Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_add_nuclearNorm_sub_truncatedSVD_le`.
 [TroppYurtseverUdellCevher2017a, Proposition A.8 and App. A.6]; [Gu2015, Theorem 3.4]; there a
 deterministic step inside a Gaussian proof, here in expectation for every law, under a selector,
-subtraction-free, indices from $0$. -/
+subtraction-free, indices from $0$.
+Result: reverse-eckart-young -/
 theorem
 _root_.Matrix.PosSemidef.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom
     [IsProbabilityMeasure μ] (hH : H.PosSemidef) (hX : AEMeasurable X μ) {k : ℕ}
@@ -223,7 +224,8 @@ for every law. The direct form of
 `Matrix.PosSemidef.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom`.
 [TroppYurtseverUdellCevher2017a, Proposition A.8 and App. A.6]; [Gu2015, Theorem 3.4]; there a
 deterministic step inside a Gaussian proof, here in expectation for every law, subtraction-free,
-indices from $0$. -/
+indices from $0$.
+Result: reverse-eckart-young -/
 theorem
 _root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_add_nuclearNorm_sub_truncatedSVD_le
     [IsProbabilityMeasure μ] (hH : H.PosSemidef) (hX : AEMeasurable X μ) (k : ℕ) :

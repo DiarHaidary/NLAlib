@@ -46,9 +46,9 @@ for every best rank-$k$ approximation of the output. Real throughout. Design:
 
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`:
   the expected error.
-* relative error $1 + \varepsilon$ (asymptotic form: `exists_forall_` followed by the name below
-  without `_one_add_mul`):
-  `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`
+* [relative-error bound](https://nla-lib.org/explore/#d/NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix):
+  relative error $1 + \varepsilon$; its asymptotic form is
+  [asymptotic form](https://nla-lib.org/explore/#d/NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix).
 * the Frobenius core-noise form:
   `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_sqrt_of_hasLaw_gaussianMatrix`.
 -/
@@ -63,20 +63,19 @@ namespace NLAlib
 /-! ### The truncated generalized Nyström factor -/
 
 /-- **The truncated generalized Nyström factor**: the multiplier of
-$\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ in the expected error of truncated
-generalized Nyström with Gaussian test matrices of sizes $\ell$ and $p$
+$\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ in the expected squared
+Frobenius error of truncated generalized Nyström with independent Gaussian test matrices of sizes
+$\ell$ and $p$, for $4k \le \ell$ and $4\ell \le p$
 (`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`),
 at present <!-- value truncatedGNFactor k \ell p -->
 $$1 + \frac{k}{\ell - k - 1} + 4\sqrt{\frac{2k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr) +
-484\Bigr)} + \frac{8k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr) + 484\Bigr)\,,$$
-that is $g + 4\sqrt{2kc} + 8kc$ with $g = 1 + k/(\ell - k - 1)$ and $c = (25g + 484)/p$. It tends
-to $g$ as $p/k \to \infty$, and is at most $1 + \varepsilon$ at $\ell \ge 6k/\varepsilon$,
-$p \ge 8000\ell/\varepsilon$ (`NLAlib.truncatedGNFactor_le_one_add`). Source value: none; no
-published statement has one, and the triangle inequality gives at best $9$
-(`NLAlib.IsBestRankApprox.matrixNorm_sub_le_add_two_mul`). Value proved: as displayed, the
-constants of this library's proof. Gap: a sharp second moment of a Gaussian product (Tropp and
-Webber's Lemma B.1, without its variance term) would replace $25$ and $484$ by about $17$ and
-$408$. Consumers use `NLAlib.one_le_truncatedGNFactor` and `NLAlib.truncatedGNFactor_le_one_add`.
+484\Bigr)} + \frac{8k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr) + 484\Bigr)\,.$$
+For $0 < \varepsilon \le 1$, it is at most $1 + \varepsilon$ at $\ell \ge 6k/\varepsilon$,
+$p \ge 8000\ell/\varepsilon$ (`NLAlib.truncatedGNFactor_le_one_add`).
+Source value: none; proved here without a matching published bound. Value proved: as displayed;
+the triangle inequality alone gives a squared-error factor of $9$
+(`NLAlib.IsBestRankApprox.matrixNorm_sub_le_add_two_mul`).
+Consumers use `NLAlib.one_le_truncatedGNFactor` and `NLAlib.truncatedGNFactor_le_one_add`.
 Junk for $\ell \le k + 1$ with $k \ge 1$; the theorems carry `4 * k ≤ l`. -/
 noncomputable irreducible_def truncatedGNFactor (k l p : ℕ) : ℝ :=
   gaussianProjectionFactor k l +
@@ -635,7 +634,8 @@ $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`.
-Proved without a literature source. Result: tgn-expected-error -/
+Proved without a literature source.
+Result: tgn-expected-error -/
 theorem
     integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ)
@@ -689,18 +689,20 @@ theorem
       A hX hΨ hXΨ hε hε1 (by nlinarith [Nat.cast_nonneg (α := ℝ) k]) (by linarith)
 
 /-- **Truncated generalized Nyström, Frobenius core-noise form**: for independent standard Gaussian
-test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \frac{\ell}{p - \ell - 1}$
-and <!-- value gaussianProjectionFactor k \ell -->
+test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \frac{\ell}{p - \ell - 1}$,
+the bound is <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
-\mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le \bigl(g + 4\sqrt{hg} + 4hg\bigr)
-\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,\qquad
-g = 1 + \frac{k}{\ell - k - 1}\,.$$
+\mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1} +
+4\sqrt{h\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)} +
+4h\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\Bigr)
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 Incomparable with
 `NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`:
 milder size conditions and better constants at practical sizes (below $\ell \approx 10^3 k$), but
 relative error $1 + \varepsilon$ only at $p = O(k/\varepsilon^3)$. Proved without a literature
 source; [TroppYurtseverUdellCevher2017, Corollary 6.4] is the published first-moment bound of
-this kind (constant 2, triangle inequality). Result: tgn-expected-error -/
+this kind (constant 2, triangle inequality).
+Result: tgn-expected-error -/
 theorem
     integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_sqrt_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ)

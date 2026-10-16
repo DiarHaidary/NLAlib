@@ -33,6 +33,33 @@ ASYM = re.compile(r"^\s*Asymptotic:[ \t]*(\S*)[ \t]*(?:-/)?[ \t]*$", re.M)
 ASYM_FORM = re.compile(r"Asymptotic form:\s*`([^`]+)`")
 
 
+def tag_format_problems(text):
+    """Reject every tag occurrence that is not a standalone, well-formed docstring tag."""
+    bad = []
+    for doc in re.finditer(r"/--([\s\S]*?)-/", text):
+        body = doc.group(1)
+        for tag in ("Result", "Asymptotic"):
+            for occurrence in re.finditer(rf"\b{tag}:", body):
+                start = body.rfind("\n", 0, occurrence.start()) + 1
+                end = body.find("\n", occurrence.end())
+                end = len(body) if end < 0 else end
+                line = body[start:end]
+                if line[:occurrence.start() - start].strip():
+                    bad.append(f"inline `{tag}:` tag")
+                    continue
+                value = body[occurrence.end():end].strip()
+                if tag == "Result":
+                    if not value or any(not slug.fullmatch(x.strip()) for x in value.split(",")):
+                        bad.append("malformed `Result:` tag")
+                    if body[end:].strip():
+                        bad.append("the `Result:` line is not the docstring's last line")
+                elif value and not re.fullmatch(r"[A-Za-z_][\w'.]*(?:\.[\w']+)*", value):
+                    bad.append("malformed `Asymptotic:` tag")
+                elif not value and not re.match(r"\n[ \t]*[A-Za-z_][\w'.]*[ \t]*(?:\n|$)", body[end:]):
+                    bad.append("malformed `Asymptotic:` tag")
+    return bad
+
+
 def declarations(path):
     """(full name, short name, docstring or None) for each declaration of the file."""
     out, namespaces, doc, pending, buf = [], [], None, None, None
@@ -74,6 +101,11 @@ def declarations(path):
     return out
 
 
+def pair_has_result(asymptotic_doc, explicit_doc):
+    """A pair needs a literature-map id on at least one of its declarations."""
+    return any(result.search(doc or "") for doc in (asymptotic_doc, explicit_doc))
+
+
 def asymptotic_problems(paths):
     bad, decls = [], {}
     for path in paths:
@@ -105,6 +137,9 @@ def asymptotic_problems(paths):
             if not re.search(rf"`(?:NLAlib\.)?{re.escape(trel)}`", body[:m.start()]):
                 bad.append(f"{where}: its docstring does not name {target} in a sentence")
             tpath, _, tdoc = decls[target]
+            if not pair_has_result(doc, tdoc):
+                bad.append(f"{where}: neither asymptotic nor explicit docstring has a `Result:` "
+                           "tag; the pair cannot appear as an explorer result")
             if tpath != path:
                 bad.append(f"{where}: its explicit theorem {target} is in another file")
             rel = full[7:] if full.startswith("NLAlib.") else full
@@ -121,24 +156,32 @@ def asymptotic_problems(paths):
     return tagged, bad
 
 
-bad = 0
-paths = []
-for lib in ("NLAlib", "NLAlibScaffold"):
-    for path in sorted((ROOT / lib).rglob("*.lean")):
-        paths.append(path)
-        text = path.read_text()
-        for m in cite.finditer(text):
-            if m.group(1) not in keys:
-                print(f"{path}: unknown reference key [{m.group(1)}]")
-                bad += 1
-        for m in result.finditer(text):
-            for rid in m.group(1).split(","):
-                if not slug.match(rid.strip()):
-                    print(f"{path}: malformed result id {rid.strip()!r}")
+def main():
+    bad = 0
+    paths = []
+    for lib in ("NLAlib", "NLAlibScaffold"):
+        for path in sorted((ROOT / lib).rglob("*.lean")):
+            paths.append(path)
+            text = path.read_text()
+            for m in cite.finditer(text):
+                if m.group(1) not in keys:
+                    print(f"{path}: unknown reference key [{m.group(1)}]")
                     bad += 1
-tagged, problems = asymptotic_problems(paths)
-for p in problems:
-    print(p)
-bad += len(problems)
-print(f"{len(keys)} bibliography keys; {tagged} asymptotic forms; {bad} problems")
-sys.exit(1 if bad else 0)
+            for problem in tag_format_problems(text):
+                print(f"{path}: {problem}")
+                bad += 1
+            for m in result.finditer(text):
+                for rid in m.group(1).split(","):
+                    if not slug.match(rid.strip()):
+                        print(f"{path}: malformed result id {rid.strip()!r}")
+                        bad += 1
+    tagged, problems = asymptotic_problems(paths)
+    for p in problems:
+        print(p)
+    bad += len(problems)
+    print(f"{len(keys)} bibliography keys; {tagged} asymptotic forms; {bad} problems")
+    sys.exit(1 if bad else 0)
+
+
+if __name__ == "__main__":
+    main()

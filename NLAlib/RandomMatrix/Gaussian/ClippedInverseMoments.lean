@@ -34,18 +34,17 @@ The extreme singular values themselves (Gordon's bounds and their tails) are in
 `NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues`, the unclipped inverse moments in
 `NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral`.
 
-Design: `docs/design/LowRank-S6.md` §8 items 13 and 17 (statements ER1 to ER5).
 
 ## Main results
 
+* `NLAlib.integral_min_one_singularValues_sq_div_inv_pow_le_of_hasLaw_gaussianMatrix`: the
+  clipped inverse moments.
 * `NLAlib.gaussianClippedInvMomentConstant q`: the constant, at
   present <!-- value gaussianClippedInvMomentConstant q -->
   $2q (0.9)^{-(2q + 1)} e^{(2q + 1)^2/50}\sqrt{2\pi} + 1$, with
   `NLAlib.gaussianClippedInvMomentConstant_one_le_10` and
   `NLAlib.gaussianClippedInvMomentConstant_four_le_263`.
 * `NLAlib.integrable_min_one_singularValues_sq_div_inv_pow_of_hasLaw_gaussianMatrix`.
-* `NLAlib.integral_min_one_singularValues_sq_div_inv_pow_le_of_hasLaw_gaussianMatrix`: the
-  clipped inverse moments.
 -/
 
 @[expose] public section

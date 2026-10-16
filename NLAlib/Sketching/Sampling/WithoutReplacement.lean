@@ -536,7 +536,8 @@ probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
 and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
 (`NLAlib.samplingInjectionSize U.rank L ε δ`). Asymptotic form:
-`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`. -/
+`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`.
+Result: sampling-without-replacement-osi -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
     (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hε : 0 < ε) (hδ : 0 < δ)
