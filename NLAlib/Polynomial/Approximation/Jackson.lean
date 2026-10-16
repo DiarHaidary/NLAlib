@@ -20,6 +20,9 @@ degree-$N$ approximant. The positive kernel has mass $2\pi$, including its full 
 The construction follows [ChenTrogdonUbaru2022, Appendix C], specifically the first arXiv version,
 and extends the norm estimate to real- or complex-valued functions.
 
+Classical background is given in [Rivlin1981]. [ShahUrschelWest2026, §1 and Theorem 1.3]
+identifies this construction as the Rivlin/KPM kernel and analyzes sharper asymptotic constants.
+
 ## Main results
 
 * `jacksonApprox`: the explicit damped Chebyshev polynomial.
@@ -305,12 +308,31 @@ private lemma norm_error_cos {f : ℝ → 𝕜} {L : ℝ≥0}
           (jacksonKernel_nonneg _ _)
       _ = _ := by dsimp [w]; ring
 
+/-- The proved Jackson approximation factor currently equals
+the value <!-- value jacksonApproximationConstant --> $\pi$.
+The source [ChenTrogdonUbaru2022, Appendix C, Theorem 38] gives factor $\pi^2/2$.
+The chord/Young estimate below proves the smaller factor $\pi$ for the same construction
+and hypotheses; no optimality is asserted. Consumers use positivity and the upper comparison. -/
+noncomputable irreducible_def jacksonApproximationConstant : ℝ := Real.pi
+
+/-- The Jackson approximation factor is positive:
+we have <!-- value jacksonApproximationConstant --> $0 < \pi$. -/
+theorem jacksonApproximationConstant_pos : 0 < jacksonApproximationConstant := by
+  rw [jacksonApproximationConstant_def]
+  exact Real.pi_pos
+
+/-- The Jackson approximation factor is at most
+its current value <!-- value jacksonApproximationConstant --> $\pi$. -/
+theorem jacksonApproximationConstant_le : jacksonApproximationConstant ≤ Real.pi := by
+  rw [jacksonApproximationConstant_def]
+
 /-- Jackson damping gives a degree-$N$ approximation for any $L$-Lipschitz function on
-$[-1,1]$ with uniform error
-$$\frac{\pi^2L}{2(N+2)}.$$
-[ChenTrogdonUbaru2022, Appendix C, Theorem 38], generalized to RCLike values, with the same
-constant and full-coefficient normalization. The assertion includes $N=0$, $L=0$ and both
-endpoints; values outside the segment play no role.
+$[-1,1]$ with uniform error at most <!-- value jacksonApproximationConstant -->
+$$\frac{\pi L}{N+2}.$$
+[ChenTrogdonUbaru2022, Appendix C, Theorem 38] proves the source bound
+$\pi^2L/(2(N+2))$. The chord/Young estimate here proves the smaller displayed bound for the
+same construction and extends it to RCLike values, keeping full-coefficient normalization.
+The assertion includes $N=0$, $L=0$ and both endpoints; values outside the segment play no role.
 
 Result: jackson-lipschitz
 -/
@@ -319,19 +341,14 @@ theorem isUniformApproxOn_jacksonApprox_of_lipschitz
     (hf : LipschitzOnWith L f (Set.Icc (-1 : ℝ) 1)) (N : ℕ) :
     Metric.IsUniformApproxOn
       (fun x : ℝ => (jacksonApprox f N).eval (x : 𝕜)) f (Set.Icc (-1 : ℝ) 1)
-      (Real.pi ^ 2 * (L : ℝ) / (2 * (N + 2 : ℝ))) := by
+      (jacksonApproximationConstant * (L : ℝ) / (N + 2 : ℝ)) := by
   intro x hx
   have hcos := Real.cos_arccos hx.1 hx.2
   have h := norm_error_cos hf N (Real.arccos x)
   rw [hcos] at h
   rw [dist_eq_norm]
-  refine h.trans ?_
-  have hpi : 2 ≤ Real.pi := Real.two_le_pi
-  have hden : 0 < (N + 2 : ℝ) := by positivity
-  apply (le_div_iff₀ (show 0 < 2 * (N + 2 : ℝ) by positivity)).mpr
-  have he : ((L : ℝ) * (Real.pi / (N + 2))) * (2 * (N + 2)) =
-      2 * (L : ℝ) * Real.pi := by field_simp
-  rw [he]
-  nlinarith [mul_nonneg L.coe_nonneg Real.pi_pos.le]
+  rw [jacksonApproximationConstant_def]
+  convert h using 1
+  ring
 
 end NLAlib

@@ -223,10 +223,13 @@ explicit/asymptotic pairs where applicable, without calling every degree estimat
 A stage report states source reuse, changed hypotheses/constants, anything scaffolded and
 remaining consumers. Do not claim proof completion from lexical token scans or green imports.
 
-**Current state: Poly0–Poly3 complete. The user requested Jackson/moment matching for spectral
-distributions ahead of Poly4, with relevant finite orthogonal-polynomial follow-up.
-`docs/design/Polynomial-Jackson-Moments.md` records the reviewed roadmap and approved kernel/
-constructive approximation scope and completed J0/J2 read-back. The exact kernel API, canonical
-damped polynomial and generic Lipschitz bound are proved; combined validation passed apart from
-the documented textual ledger parser false positive for the existing `IsSVD.eq` field.
-Later stages retain exact design/consumer checkpoints.**
+**Current state: Poly0–Poly3 complete. J0/J2 implement the approved kernel and canonical RCLike
+Jackson approximant; the same public uniform theorem now exposes the stronger named factor,
+currently π, and error πL/(N+2). Target/capped checks and final full build, audit, lint, duplicate, documentation, reuse and
+Explorer extraction checks pass. Historical `c769e96` checks belong to the previous bound.
+The current combined work has 23 explicit public additions; generated irreducible-definition
+machinery follows existing extraction policy. The source factor π²/2, HMT-style named-bound
+practice and non-optimality/background references are documented in
+`docs/design/Polynomial-Jackson-Moments.md`. J1 coefficient regularity, moment comparison and
+finite OP follow-up remain unimplemented exact-design checkpoints; the proposed probability
+moment approximation term is now 2πL/(N+2), not a completed theorem.**

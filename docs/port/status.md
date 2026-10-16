@@ -2,6 +2,34 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Stronger Jackson bound complete (2026-10-16)
+
+The public `isUniformApproxOn_jacksonApprox_of_lipschitz` now exposes the proved error
+πL/(N+2) for the same polynomial, interval Lipschitz hypotheses and RCLike values. It uses
+`jacksonApproximationConstant`, currently π, with positivity and ≤π API, following the HMT
+Gaussian pseudoinverse precedent and CONTRIBUTING §5.2. The earlier final weakening is removed.
+The design amendment and actual source/registry/instruction changes passed independent review.
+CONTRIBUTING explicitly says not to discard an already-proved stronger bound merely to match a
+source constant or an earlier draft. Same theorem/result names; no unused weaker companion.
+Twenty-three explicit public additions in the combined Jackson work; the irreducible definition
+also generates its body equation. Kernel, coefficients and hypothesis interfaces are unchanged.
+
+Added `Rivlin1981` and `ShahUrschelWest2026` (arXiv:2607.23375v2) as requested, with module
+background citations. Documentation distinguishes improvement over the cited CTU v1 bound from
+optimality: the newer paper's sharper asymptotic constants/remainder are not formalized here.
+
+Final stronger-source checks: target build and capped file check clean; full build 3909 jobs/0
+warnings; audit 7501 declarations/0 violations; 14 linters on 5116+2385 declarations/0 errors;
+duplicates 4709 theorems/0 classes; root import and proof-reuse checks pass. References (59 keys),
+constants (26), and LaTeX (18199 spans) pass. Explorer extraction has 315 modules/3534 declarations,
+all source fingerprints match, headline displays πL/(N+2), and the named factor has support role.
+Logs/artifact: `/tmp/nlalib-jackson-stronger-{target,lean,build,audit,lint,duplicates,reuse,explore}.log`
+and `/tmp/nlalib-jackson-stronger-explore.json`. No active build or proof gap at handoff.
+The prototype ledger remains unchanged for the previously reviewed source-coverage reasons.
+
+The report below records the prior `c769e96` source-bound commit; this section and the latest
+design amendment supersede its numerical guarantee. J1, moments and OP remain later stages.
+
 ## Jackson kernel and constructive approximation complete (2026-10-16)
 
 The user-approved stages 1 and 2 are complete and independently reviewed. Design, exact APIs,
