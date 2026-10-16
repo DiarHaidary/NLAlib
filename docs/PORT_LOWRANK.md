@@ -103,6 +103,36 @@ Two readings, not rejections:
 Review A11 lists copying the EW PDF as an "essential download". It is a copy, so it is listed
 under housekeeping in §9.2.
 
+## Amendment 2026-10-16: S9 done
+
+Stage S9 (projection-cost-preserving sketches, probabilistic) is proved. Its design note is
+`docs/design/LowRank-S9.md`, whose §8 and §9 record the review and the implementation. What landed:
+the tail predicate `HasProjectionCostPreserving` and its constructors, including the head-tail
+constructor C5 (CEMMP Lemma 6), in `Sketching/Properties/ProjectionCost.lean`; the star-projection
+facts in `Matrix/Norms/Projector.lean`; the Jensen pair `integrable_rpow_sum`,
+`integral_rpow_sum_le` in `Probability/Tail.lean`; three JL-moment consequences in
+`Sketching/Properties/JohnsonLindenstrauss.lean`; and the family statements for Gaussian,
+sub-Gaussian and CountSketch sketches, with asymptotic forms, in each family's own file (Rademacher
+dropped at review). The interface-level early-truncation corollaries U1 and U2 are handed to S7's
+`LowRank/Oblivious/EarlyTruncation.lean` and land with S7. Deferred: the
+$(k + \log(1/\delta))/\varepsilon^2$ form, which needs a stable-rank spectral AMM, and the column
+sampling, SRHT and Haar families. The §5.3 vocabulary row is in CONTRIBUTING.md.
+
+Deviations from the brief:
+- `CountSketch.lean` is split into `Sketching/Sparse/CountSketch.lean` (the law, moments, AMM) and
+  `Sketching/Sparse/CountSketchEmbedding.lean` (Gram error, OSE, OSI, JL moment, sizes, PCP).
+  Names are unchanged.
+- L5 needs `[DecidableEq p]` on the frame's column type. SG1 and SG2 keep `[DecidableEq n]`. G1
+  assumes $\varepsilon \le 2$, CS1 has no upper bound on $\varepsilon$, and SG2's constant is
+  $C = 9216$. The family theorems take the row type of $\mathbf{A}$ as an implicit binder.
+- S2b's `LowRank/Structural/EarlyTruncation.lean` now uses the public L2 to L5, and its private
+  copies are deleted. `MatrixMultiplication.lean` uses the public Jensen pair
+  `integrable_rpow_sum` and `integral_rpow_sum_le`.
+- U1 and U2 were handed to S7's `LowRank/Oblivious/EarlyTruncation.lean` rather than a file of
+  their own.
+- Size is about 1100 lines, not the 720 of the note's estimate (the §7 entry and table above
+  carry the brief's earlier figure of 250 plus 400).
+
 ## 0. What this is and is not
 
 ### 0.1 The request and how this brief reads it

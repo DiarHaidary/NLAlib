@@ -35,7 +35,7 @@ same for every $k$ and makes the truncation measurable in $\mathbf{A}$.
 * `NLAlib.truncatedSVD_def`: the truncation of the chosen SVD.
 * `NLAlib.rank_truncatedSVD_le`, `NLAlib.specNorm_sub_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_sq`: rank and errors of the truncation;
-  `NLAlib.frobNorm_truncatedSVD_sq`: its Frobenius norm.
+  `NLAlib.frobNorm_truncatedSVD_sq`, `NLAlib.frobNorm_truncatedSVD_le`: its Frobenius norm.
 * `NLAlib.natCast_mul_singularValues_add_sq_le_frobNorm_sub_truncatedSVD_sq`: tail flattening, $d$
   copies of $\sigma_{k+d}(\mathbf{A})^2$ below the Frobenius tail at $k$.
 * `NLAlib.mul_rangeProjector_conjTranspose_truncatedSVD`,
@@ -268,6 +268,17 @@ theorem frobNorm_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
   rw [frobNorm_sq_eq_sum_range_singularValues_sq _ (rank_truncatedSVD_le A k)]
   exact Finset.sum_congr rfl fun i hi => by
     rw [singularValues_truncatedSVD, if_pos (Finset.mem_range.mp hi)]
+
+/-- **Truncation does not increase the Frobenius norm**, for every $k$:
+$\|\llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$. -/
+theorem frobNorm_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
+    frobNorm (truncatedSVD A k) ≤ frobNorm A := by
+  have hle : frobNorm (truncatedSVD A k) ^ 2 ≤ frobNorm A ^ 2 := by
+    rw [frobNorm_truncatedSVD_sq, frobNorm_sq_eq_sum_range_singularValues_sq A
+      (Nat.le_add_left A.rank k)]
+    exact Finset.sum_le_sum_of_subset_of_nonneg
+      (Finset.range_subset_range.2 (Nat.le_add_right k _)) fun i _ _ => sq_nonneg _
+  exact (pow_le_pow_iff_left₀ (frobNorm_nonneg _) (frobNorm_nonneg _) two_ne_zero).1 hle
 
 /-- The singular values of the truncation error are the singular values of $\mathbf{A}$ from the
 $k$-th on: $\sigma_i(\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k) = \sigma_{k+i}(\mathbf{A})$.

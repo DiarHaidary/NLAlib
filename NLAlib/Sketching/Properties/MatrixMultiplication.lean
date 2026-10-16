@@ -54,53 +54,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n q r : Ty
 
 /-! ### Proof-local helpers -/
 
-omit [Fintype k] [Fintype n] [Fintype q] [Fintype r] in
-/-- **Weighted Jensen for a sum of nonnegative random variables**: for $r \ge 1$, if
-$\mathbb{E}[Y_i^r] \le w_i^r K$ for nonnegative weights $w_i$ summing to one, with $Y_i = 0$ where
-$w_i = 0$, then $(\sum_i Y_i)^r$ is integrable and $\mathbb{E}[(\sum_i Y_i)^r] \le K$. -/
-private theorem integral_rpow_sum_le {ι : Type*} [Fintype ι] {Y : ι → Ω → ℝ}
-    (hY0 : ∀ i ω, 0 ≤ Y i ω) {r : ℝ} (hr : 1 ≤ r)
-    (hm : AEStronglyMeasurable (fun ω => (∑ i, Y i ω) ^ r) μ) {w : ι → ℝ} (hw0 : ∀ i, 0 ≤ w i)
-    (hw1 : ∑ i, w i = 1) (hwY : ∀ i, w i = 0 → ∀ ω, Y i ω = 0)
-    (hint : ∀ i, Integrable (fun ω => Y i ω ^ r) μ) {K : ℝ}
-    (hK : ∀ i, ∫ ω, Y i ω ^ r ∂μ ≤ w i ^ r * K) :
-    Integrable (fun ω => (∑ i, Y i ω) ^ r) μ ∧ ∫ ω, (∑ i, Y i ω) ^ r ∂μ ≤ K := by
-  have hpt (ω : Ω) : (∑ i, Y i ω) ^ r ≤ ∑ i, w i * (Y i ω / w i) ^ r := by
-    have e : ∑ i, Y i ω = ∑ i, w i * (Y i ω / w i) := Finset.sum_congr rfl fun i _ => by
-      rcases eq_or_ne (w i) 0 with h0 | h0
-      · rw [h0, hwY i h0 ω, zero_mul]
-      · rw [mul_div_cancel₀ _ h0]
-    rw [e]
-    exact Real.rpow_arith_mean_le_arith_mean_rpow Finset.univ w (fun i => Y i ω / w i)
-      (fun i _ => hw0 i) hw1 (fun i _ => div_nonneg (hY0 i ω) (hw0 i)) hr
-  have hterm (i : ι) : (fun ω => w i * (Y i ω / w i) ^ r) =
-      fun ω => w i / w i ^ r * Y i ω ^ r := by
-    funext ω
-    rw [Real.div_rpow (hY0 i ω) (hw0 i)]
-    ring
-  have hti (i : ι) : Integrable (fun ω => w i * (Y i ω / w i) ^ r) μ := by
-    rw [hterm]
-    exact (hint i).const_mul _
-  have hdom : Integrable (fun ω => ∑ i, w i * (Y i ω / w i) ^ r) μ :=
-    integrable_finsetSum _ fun i _ => hti i
-  have hint' : Integrable (fun ω => (∑ i, Y i ω) ^ r) μ := by
-    refine hdom.mono' hm (ae_of_all _ fun ω => ?_)
-    rw [Real.norm_eq_abs,
-      abs_of_nonneg (Real.rpow_nonneg (Finset.sum_nonneg fun i _ => hY0 i ω) r)]
-    exact hpt ω
-  refine ⟨hint', (integral_mono hint' hdom hpt).trans ?_⟩
-  rw [integral_finsetSum _ fun i _ => hti i]
-  calc ∑ i, ∫ ω, w i * (Y i ω / w i) ^ r ∂μ ≤ ∑ i, w i * K :=
-        Finset.sum_le_sum fun i _ => ?_
-    _ = K := by rw [← Finset.sum_mul, hw1, one_mul]
-  rw [hterm, integral_const_mul]
-  rcases eq_or_lt_of_le (hw0 i) with h0 | hpos
-  · rw [← h0, zero_div, zero_mul, zero_mul]
-  · have hwr : 0 < w i ^ r := Real.rpow_pos_of_pos hpos r
-    calc w i / w i ^ r * ∫ ω, Y i ω ^ r ∂μ ≤ w i / w i ^ r * (w i ^ r * K) :=
-          mul_le_mul_of_nonneg_left (hK i) (div_nonneg hpos.le hwr.le)
-      _ = w i * K := by field_simp
-
 /-- The bilinear form
 $(\mathbf{M}\mathbf{x})^{\mathsf{T}}\mathbf{M}\mathbf{y} - \mathbf{x}^{\mathsf{T}}\mathbf{y}$ of
 the Gram error $\mathbf{M}^{\mathsf{T}}\mathbf{M} - \mathbf{I}$. -/
@@ -152,8 +105,13 @@ private theorem integral_abs_gramErr_rpow_le_of_norm_eq (h : HasJLMoment S ε δ
     have hF : Continuous fun M : Matrix k n ℝ => ∑ i, |‖WithLp.toLp 2 (M *ᵥ v i)‖ ^ 2 -
         ‖WithLp.toLp 2 (v i)‖ ^ 2| / 4 := by fun_prop
     exact ((hF.measurable.comp_aemeasurable hS).pow_const p).aestronglyMeasurable
-  obtain ⟨hint, hle⟩ := integral_rpow_sum_le (Y := Y) (w := w) (K := ε ^ p * δ * c ^ p)
-    (fun i ω => by positivity) hp hYm (fun i => by positivity)
+  have hY0 : ∀ i ω, 0 ≤ Y i ω := fun i ω => by positivity
+  have hYint : ∀ i, Integrable (fun ω => Y i ω ^ p) μ := fun i => by
+    simp only [Y, Real.div_rpow (abs_nonneg _) (show (0 : ℝ) ≤ 4 by norm_num)]
+    exact (h.integrable_abs_norm_mulVec_sq_sub_rpow hp0 (v i)).div_const _
+  have hint := integrable_rpow_sum hY0 hp hYm hYint
+  have hle := integral_rpow_sum_le (Y := Y) (w := w) (K := ε ^ p * δ * c ^ p)
+    hY0 hp hYm (fun i => by positivity)
     (by
       rw [Fin.sum_univ_two, ← add_div]
       simp only [v, Matrix.cons_val_zero, Matrix.cons_val_one]
@@ -164,9 +122,7 @@ private theorem integral_abs_gramErr_rpow_le_of_norm_eq (h : HasJLMoment S ε δ
         rwa [sq_eq_zero_iff, norm_eq_zero, WithLp.toLp_eq_zero] at this
       simp only [Y, hv, Matrix.mulVec_zero, WithLp.toLp_zero, norm_zero, sub_self, abs_zero,
         zero_div, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow])
-    (fun i => by
-      simp only [Y, Real.div_rpow (abs_nonneg _) (show (0 : ℝ) ≤ 4 by norm_num)]
-      exact (h.integrable_abs_norm_mulVec_sq_sub_rpow hp0 (v i)).div_const _)
+    hYint
     (fun i => by
       simp only [Y, Real.div_rpow (abs_nonneg _) (show (0 : ℝ) ≤ 4 by norm_num)]
       rw [integral_div]
@@ -281,8 +237,12 @@ private theorem integral_frobNorm_rpow_le_of_ne_zero (h : HasJLMoment S ε δ p 
       continuous_finsetSum _ fun ij _ => (continuous_gramErr _ _).pow 2
     exact ((hc.measurable.comp_aemeasurable hS).pow_const _).aestronglyMeasurable
   simp only [hfun]
-  refine integral_rpow_sum_le (Y := Y) (w := w) (fun ij ω => sq_nonneg _) hp2 hm
-    (fun ij => sq_nonneg _) ?_ (fun ij hij ω => ?_) (fun ij => ?_) (fun ij => ?_)
+  have hY0 : ∀ ij ω, 0 ≤ Y ij ω := fun ij ω => sq_nonneg _
+  have hYint : ∀ ij, Integrable (fun ω => Y ij ω ^ (p / 2)) μ := fun ij => by
+    simp only [hYr]
+    exact (integral_abs_gramErr_rpow_le h hp1 hS _ _).1
+  refine ⟨integrable_rpow_sum hY0 hp2 hm hYint, integral_rpow_sum_le (Y := Y) (w := w) hY0 hp2 hm
+    (fun ij => sq_nonneg _) ?_ (fun ij hij ω => ?_) hYint (fun ij => ?_)⟩
   · simp only [w, u, div_pow, mul_pow]
     rw [← Finset.sum_div, Fintype.sum_prod_type]
     simp only
@@ -296,8 +256,6 @@ private theorem integral_frobNorm_rpow_le_of_ne_zero (h : HasJLMoment S ε δ p 
       · rw [norm_eq_zero, WithLp.toLp_eq_zero] at h0
         simp only [Y, h0, gramErr, Matrix.mulVec_zero, dotProduct_zero, zero_dotProduct,
           sub_self, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow]
-  · simp only [hYr]
-    exact (integral_abs_gramErr_rpow_le h hp1 hS _ _).1
   · simp only [hYr, hwr]
     refine (integral_abs_gramErr_rpow_le h hp1 hS _ _).2.trans_eq ?_
     simp only [u]

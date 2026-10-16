@@ -46,9 +46,19 @@ public import NLAlib.LowRank.Gaussian.Nystrom
 public import NLAlib.LowRank.Gaussian.NystromTail
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
+public import NLAlib.LowRank.Gaussian.RangeFinderTailHaar
 public import NLAlib.LowRank.Gaussian.RotationInvariant
 public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
+public import NLAlib.LowRank.Oblivious.CountSketch
+public import NLAlib.LowRank.Oblivious.EarlyTruncation
+public import NLAlib.LowRank.Oblivious.Gaussian
+public import NLAlib.LowRank.Oblivious.GeneralizedNystrom
+public import NLAlib.LowRank.Oblivious.RangeFinder
+public import NLAlib.LowRank.Oblivious.RowSampling
+public import NLAlib.LowRank.Oblivious.SRHT
+public import NLAlib.LowRank.Oblivious.SubGaussian
+public import NLAlib.LowRank.Oblivious.WithoutReplacement
 public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.EarlyTruncation
@@ -285,5 +295,6 @@ public import NLAlib.Sketching.Sampling.MatrixMultiplication
 public import NLAlib.Sketching.Sampling.RowSampling
 public import NLAlib.Sketching.Sampling.WithoutReplacement
 public import NLAlib.Sketching.Sparse.CountSketch
+public import NLAlib.Sketching.Sparse.CountSketchEmbedding
 public import NLAlib.Sketching.Structured.Flattening
 public import NLAlib.Sketching.Structured.SRHT

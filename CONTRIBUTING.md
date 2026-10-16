@@ -389,6 +389,7 @@ those layers are designed.
 | tail | `μ.real {ω | ¬ good ω} ≤ δ` | — |
 | expectation | `∫ ω, f (X ω) ∂μ` (Bochner) | — |
 | sub-Gaussian | `HasSubgaussianMGF X c μ` | Mathlib's |
+| projection-cost-preserving sketch | deterministic: `IsProjectionCostPreserving A Ã k a b` (S2b); random: `HasProjectionCostPreserving S A k a b δ μ`, the tail `μ.real {ω \| ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ`, with the sketch `S : Ω → Matrix l n 𝕜` in the Sketching orientation; on a LowRank test matrix, `fun ω => (X ω)ᴴ`; no oblivious (all-`A`) predicate | `HasSubspaceEmbedding.hasProjectionCostPreserving`, `IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`, `hasProjectionCostPreserving_conjTranspose_iff` (the LowRank orientation); Mathlib has none |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
 and unitarily invariant norms, the principal-angle / subspace-distance interface. Rows from the
@@ -489,6 +490,16 @@ theorem eigenvalue_add_le ...
    | bold Greek matrices | `\mathbf{\Sigma}`, `\mathbf{\Lambda}` | |
    | real part, adjugate, Frobenius inner product | `\operatorname{Re}`, `\operatorname{adj}`, `\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}` | |
    | absolute value; epsilon, phi | `\lvert x \rvert`; `\varepsilon`, `\varphi` | |
+
+   **Probability notation** (maintainer, 2026-10-16): mathematical probability statements use
+   `$\mathbb{P}[E]$`, with square brackets around the event. Use
+   `$\mathbb{P}\bigl[E\bigr]$` or `$\mathbb{P}\left[E\right]$` when sizing is needed;
+   preserve parentheses belonging to functions inside the event. Conditional probability is
+   `$\mathbb{P}[E \mid F]$`; a subscript may identify the random sketch or law. Do not use
+   `$P(E)$`, `$\Pr(E)$` or round event delimiters. A displayed high-probability guarantee
+   states its event explicitly, for example `$\mathbb{P}[\mathrm{error}\le t]\ge1-\delta$`;
+   prose may still say "with probability at least $1-\delta$". This is a documentation
+   convention; formal Lean statements keep the measure interface in §5.4.
 
    A conclusion with a fraction or longer than a line is displayed (`$$…$$`), a long display split
    with `\begin{aligned}`; `\frac` in displays, `/` inline. Punctuation that ends a sentence after

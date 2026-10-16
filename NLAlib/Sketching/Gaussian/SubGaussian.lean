@@ -10,6 +10,7 @@ public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.Sketching.Properties.Isotropic
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
+public import NLAlib.Sketching.Properties.ProjectionCost
 
 /-!
 # Sub-Gaussian sketches
@@ -66,10 +67,13 @@ $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0
 * `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`,
   `NLAlib.isObliviousSubspaceInjection_of_isSubgaussianVector`.
 * `NLAlib.hasJLProperty_of_iIndepFun_entry`: JL for independent sub-Gaussian entries.
+* `NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card`: the sub-Gaussian (and
+  Rademacher) sketch is a projection-cost-preserving sketch.
 * `NLAlib.exists_forall_hasJLProperty_of_isSubgaussianVector`,
   `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`: the asymptotic
   forms, $O(c^2 \log(1/\delta)/\varepsilon^2)$ and $O(c^2 (d + \log(1/\delta))/\varepsilon^2)$
-  rows.
+  rows; `NLAlib.exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector`,
+  $O(c^2 (d + 1)/(\varepsilon^2\delta))$ rows for a projection-cost-preserving sketch.
 -/
 
 @[expose] public section
@@ -695,6 +699,144 @@ theorem isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbedd
   have := hind.isProbabilityMeasure
   exact (isObliviousSubspaceInjection_of_isSubgaussianVector hind hsub hiso d).mono le_rfl le_rfl
     (failure_le_of_subgaussianEmbeddingDim_le hε hεc hδ hk)
+
+omit [DecidableEq n] in
+/-- With no columns every sketch is a projection-cost-preserving sketch. -/
+private theorem hasProjectionCostPreserving_of_isEmpty [IsEmpty n] {l m : Type*} [Fintype l]
+    [Fintype m] (S : Ω → Matrix l n ℝ) (A : Matrix m n ℝ) (d : ℕ) (a b : ℝ) {δ : ℝ}
+    (hδ : 0 ≤ δ) : HasProjectionCostPreserving S A d a b δ μ := by
+  have hA : A = 0 := Matrix.ext fun _ j => isEmptyElim j
+  have e : {ω | ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) d a b} = ∅ := by
+    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨0, le_rfl, fun P _ _ => ?_⟩
+    simp only [hA, Matrix.zero_mul, Matrix.mul_zero, sub_self, frobNorm_zero, ne_eq,
+      OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, add_zero, le_refl, and_self]
+  unfold HasProjectionCostPreserving
+  rw [e, measureReal_empty]
+  exact hδ
+
+/-- **A sub-Gaussian sketch is a projection-cost-preserving sketch**, size form: for a sketch
+$\mathbf{X}$ with independent isotropic rows, sub-Gaussian with proxy $c$, for
+$0 < \varepsilon \le 4c$, $\delta > 0$, at
+least <!-- value subgaussianEmbeddingDim c d (\varepsilon/2) (\delta/2) -->
+$4 c^2 (d \log 9 + \log(2/(\delta/2)))/(C (\varepsilon/2)^2)$ rows
+(`subgaussianEmbeddingDim c d (ε / 2) (δ / 2)`,
+with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`) and at
+least <!-- value projectionCostTailRows {(16c^2 - 1)} d \varepsilon \delta -->
+$384 \cdot (16c^2 - 1) (d + 1)/(\varepsilon^2 \delta)$ rows
+(`projectionCostTailRows (16 * c ^ 2 - 1) d ε δ`), $\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{X}$
+makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$ projection-cost-preserving sketch of
+$\mathbf{A}$ with constants $1 \mp \varepsilon$, for every $\mathbf{A}$, except with probability
+$\delta$. A Rademacher sketch is the case $c = 1$
+(`NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`,
+`NLAlib.isIsotropic_of_hasLaw_rademacherVector`, `ProbabilityTheory.HasLaw.iIndepFun_eval`),
+CEMMP's family 1; its constants are looser than a Rademacher-specific route would give, which
+the asymptotic forms do not see. The route of [CohenElderMuscoMuscoPersu2015, proof of
+Theorem 12]; the sub-Gaussian instance is not stated there. Asymptotic form:
+`NLAlib.exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector`.
+Result: subgaussian-pcp -/
+theorem hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card [Nonempty k]
+    (hind : iIndepFun (fun i ω => X ω i) μ)
+    (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
+    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ)
+    (d : ℕ) (hε : 0 < ε) (hεc : ε ≤ 4 * c) (hδ : 0 < δ)
+    (hk₁ : subgaussianEmbeddingDim c d (ε / 2) (δ / 2) ≤ Fintype.card k)
+    (hk₂ : projectionCostTailRows (16 * (c : ℝ) ^ 2 - 1) d ε δ ≤ Fintype.card k) :
+    HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) A d (1 - ε) (1 + ε)
+      δ μ := by
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact hasProjectionCostPreserving_of_isEmpty _ A d _ _ hδ.le
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hv : 0 ≤ 16 * (c : ℝ) ^ 2 - 1 := by nlinarith
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
+  have hbud : 1 - ε ≤ 1 - ε / 2 - 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ∧
+      1 + ε / 2 + 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) + ε / (8 * √((d : ℝ) + 1)) ≤
+        1 + ε ∧
+      δ / 2 + 3 * ((16 * (c : ℝ) ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2)) ≤
+        δ := by
+    have hs1 : 1 ≤ √((d : ℝ) + 1) :=
+      Real.one_le_sqrt.2 (by linarith [Nat.cast_nonneg (α := ℝ) d])
+    have hds : √(d : ℝ) ≤ √((d : ℝ) + 1) := Real.sqrt_le_sqrt (by linarith)
+    have hss : √((d : ℝ) + 1) ^ 2 = (d : ℝ) + 1 := Real.sq_sqrt (by positivity)
+    have hJ : ε / (8 * √((d : ℝ) + 1)) * √((d : ℝ) + 1) = ε / 8 := by field_simp
+    have hJ1 : ε / (8 * √((d : ℝ) + 1)) ≤ ε / 8 := by
+      rw [div_le_div_iff₀ (by positivity) (by norm_num)]
+      nlinarith
+    have h3 : 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ≤ 3 * (ε / 8) := by
+      rw [← hJ, mul_assoc]
+      exact mul_le_mul_of_nonneg_left
+        (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
+    refine ⟨by linarith, by linarith, ?_⟩
+    have hk := hk₂
+    rw [projectionCostTailRows_def, div_le_iff₀ (by positivity)] at hk
+    have e : (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
+        64 * (16 * (c : ℝ) ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
+      rw [div_pow, mul_pow, hss]
+      field_simp
+      ring
+    have h4 : 3 * (64 * (16 * (c : ℝ) ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2)) ≤
+        δ / 2 := by
+      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+      nlinarith
+    linarith
+  obtain ⟨h₁, h₂, h₃⟩ := hbud
+  have hose := isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
+    hind hsub hiso (half_pos hε) (by linarith) (half_pos hδ) hk₁
+  have hX : AEMeasurable X μ := aemeasurable_pi_lambda X fun i => (hsub i).aemeasurable
+  exact (hose.hasProjectionCostPreserving_of_hasJLMoment
+    (hasJLMoment_of_isSubgaussianVector hind hsub hiso hJ0)
+    (hX.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by linarith) (by linarith) hJ0 le_rfl
+    (div_nonneg hv (by positivity)) A).mono le_rfl h₁ h₂ h₃
+
+/-- **$O(c^2 (d+1)/(\varepsilon^2\delta))$ rows suffice for a sub-Gaussian sketch** with
+independent isotropic rows, sub-Gaussian with proxy $c$, to be a rank-$d$ projection-cost-preserving
+sketch with constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and
+$\delta$ below absolute constants; the constants come before every dimension and the proxy. At
+$c = 1$ this covers Rademacher sketches. Proved from
+`NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card` with $C = 9216$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a column.
+[CohenElderMuscoMuscoPersu2015, proof of Theorem 12].
+Asymptotic: NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card
+Result: subgaussian-pcp -/
+theorem exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k m n : Type} [MeasurableSpace Ω] [Fintype k]
+      [Fintype m] [Fintype n] [DecidableEq n] [Nonempty k] (μ : Measure Ω)
+      (X : Ω → Matrix k n ℝ) (c : ℝ≥0) (A : Matrix m n ℝ) (d : ℕ) (ε δ : ℝ),
+      iIndepFun (fun i ω => X ω i) μ → (∀ i, IsSubgaussianVector (fun ω => X ω i) c μ) →
+      (∀ i, IsIsotropic (fun ω => X ω i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((c : ℝ) ^ 2 * ((d : ℝ) + 1) / (ε ^ 2 * δ)) ≤ Fintype.card k →
+      HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) A d (1 - ε)
+        (1 + ε) δ μ := by
+  refine ⟨9216, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k m n _ _ _ _ _ _ μ X c A d ε δ hind hsub hiso hε hε1 hδ hδ2 hk
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact hasProjectionCostPreserving_of_isEmpty _ A d _ _ hδ.le
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hD : 0 < ε ^ 2 * δ := by positivity
+  have hc2 : 1 ≤ (c : ℝ) ^ 2 := by nlinarith
+  refine hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card hind hsub hiso A d hε
+    (by linarith) hδ ?_ ?_
+  · refine (subgaussianEmbeddingDim_le c d (ε / 2) (half_pos hδ) (by linarith)).trans
+      (le_trans ?_ hk)
+    have hl := Real.log_le_sub_one_of_pos (show 0 < 2 / (δ / 2) by positivity)
+    have hδL : δ * Real.log (2 / (δ / 2)) ≤ 4 - δ := by
+      have e : δ * (2 / (δ / 2) - 1) = 4 - δ := by field_simp; ring
+      nlinarith
+    have hL0 : 0 ≤ Real.log (2 / (δ / 2)) :=
+      Real.log_nonneg (by rw [le_div_iff₀ (by positivity)]; linarith)
+    have h1 : 576 * ((d : ℝ) * δ + δ * Real.log (2 / (δ / 2))) ≤ 2304 * ((d : ℝ) + 1) := by
+      nlinarith [Nat.cast_nonneg (α := ℝ) d]
+    rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
+    have hcc := sq_nonneg (c : ℝ)
+    nlinarith [mul_le_mul_of_nonneg_right h1 (mul_nonneg hcc (sq_nonneg ε))]
+  · refine (projectionCostTailRows_le _ d ε δ).trans (le_trans ?_ hk)
+    rw [mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ hD.le
+    nlinarith [Nat.cast_nonneg (α := ℝ) d]
 
 end Rows
 

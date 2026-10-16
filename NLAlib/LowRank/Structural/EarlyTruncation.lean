@@ -72,72 +72,6 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n r : Type*} [Fintype l] [Fintype m] [Fintype n]
   [Fintype r] [DecidableEq r]
 
-/-! ### Proof-local facts about a star projection and a frame -/
-
-section Aux
-
-variable {q : Type*} [Fintype q]
-
-omit [Fintype r] [DecidableEq r] in
-/-- The residual of a star projection is orthogonal to its range part:
-$$\langle \mathbf{B} - \mathbf{P}\mathbf{B}, \mathbf{X} - \mathbf{P}\mathbf{X} \rangle_{\mathsf{F}}
-= \langle \mathbf{B} - \mathbf{P}\mathbf{B}, \mathbf{X} \rangle_{\mathsf{F}}\,.$$ -/
-private theorem frobInner_sub_mul_sub_mul {P : Matrix m m 𝕜} (hP : IsStarProjection P)
-    (B X : Matrix m q 𝕜) : frobInner (B - P * B) (X - P * X) = frobInner (B - P * B) X := by
-  have h0 : frobInner (B - P * B) (P * X) = 0 := by
-    rw [frobInner_comm, frobInner_mul_left, hP.conjTranspose_eq, Matrix.mul_sub,
-      ← Matrix.mul_assoc, hP.mul_self, sub_self, frobInner_zero_right]
-  rw [frobInner_sub_right, h0, sub_zero]
-
-omit [Fintype r] [DecidableEq r] in
-/-- The squared residual of a star projection:
-$$\|\mathbf{X} - \mathbf{P}\mathbf{X}\|_{\mathsf{F}}^2 = \|\mathbf{X}\|_{\mathsf{F}}^2 -
-\langle \mathbf{P}, \mathbf{X}\mathbf{X}^{\mathsf{H}} \rangle_{\mathsf{F}}\,.$$ -/
-private theorem frobNorm_sub_mul_sq_eq {P : Matrix m m 𝕜} (hP : IsStarProjection P)
-    (X : Matrix m q 𝕜) :
-    frobNorm (X - P * X) ^ 2 = frobNorm X ^ 2 - frobInner P (X * Xᴴ) := by
-  rw [← frobInner_self (X - P * X), frobInner_sub_mul_sub_mul hP, frobInner_sub_left,
-    frobInner_self, frobInner_mul_right]
-
-omit [Fintype r] [DecidableEq r] in
-/-- A star projection of rank at most $k$ meets any matrix in at most
-$\sqrt{k}\,\|\mathbf{W}\|_{\mathsf{F}}$. -/
-private theorem frobInner_le_sqrt_mul {P : Matrix m m 𝕜} (hP : IsStarProjection P) {k : ℕ}
-    (hPk : P.rank ≤ k) (W : Matrix m m 𝕜) : frobInner P W ≤ √(k : ℝ) * frobNorm W := by
-  have h1 : frobNorm P ^ 2 = P.rank := by
-    have h := frobNorm_rangeProjector_sq P
-    rwa [hP.rangeProjector_eq] at h
-  have hPF : frobNorm P ≤ √(k : ℝ) := by
-    rw [← Real.sqrt_sq (frobNorm_nonneg P), h1]
-    exact Real.sqrt_le_sqrt (by exact_mod_cast hPk)
-  exact (frobInner_le P W).trans (mul_le_mul_of_nonneg_right hPF (frobNorm_nonneg W))
-
-/-- **The head–tail split of a projection residual** for a frame $\mathbf{Z}$ and any
-$\mathbf{P}$: with $\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$,
-$$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 =
-\|\mathbf{A}\mathbf{Z} - \mathbf{P}\mathbf{A}\mathbf{Z}\|_{\mathsf{F}}^2 +
-\|\mathbf{E} - \mathbf{P}\mathbf{E}\|_{\mathsf{F}}^2\,;$$
-`IsStarProjection.frobNorm_sq_eq_add` at $\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$, transposed. -/
-private theorem frobNorm_sub_mul_sq_eq_add {Z : Matrix n r 𝕜} (hZ : HasOrthonormalCols Z)
-    (A : Matrix m n 𝕜) (P : Matrix m m 𝕜) :
-    frobNorm (A - P * A) ^ 2 =
-      frobNorm (A * Z - P * (A * Z)) ^ 2 +
-        frobNorm (A - A * Z * Zᴴ - P * (A - A * Z * Zᴴ)) ^ 2 := by
-  classical
-  have h := hZ.isStarProjection_mul_conjTranspose.frobNorm_sq_eq_add (A - P * A)ᴴ
-  have e₁ : (Z * Zᴴ * (A - P * A)ᴴ)ᴴ = (A * Z - P * (A * Z)) * Zᴴ := by
-    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.sub_mul,
-      Matrix.mul_assoc]
-  have e₂ : ((1 - Z * Zᴴ) * (A - P * A)ᴴ)ᴴ = A - A * Z * Zᴴ - P * (A - A * Z * Zᴴ) := by
-    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_sub,
-      Matrix.conjTranspose_conjTranspose, Matrix.mul_sub, Matrix.sub_mul, Matrix.one_mul,
-      Matrix.mul_assoc]
-  rw [frobNorm_conjTranspose, ← frobNorm_conjTranspose (Z * Zᴴ * _), e₁,
-    hZ.frobNorm_mul_conjTranspose_right, ← frobNorm_conjTranspose ((1 - Z * Zᴴ) * _), e₂] at h
-  exact h
-
-end Aux
-
 /-! ### The structural bound -/
 
 /-- **The early-truncation structural bound.** Let $\mathbf{Z}$ have orthonormal columns,
@@ -195,17 +129,18 @@ theorem IsSubspaceInjection.mul_frobNorm_sub_mul_sq_add_le {A : Matrix m n 𝕜}
   -- tail
   have htail : frobNorm ((E - P * E) * Ω) ^ 2 = frobNorm (E * Ω) ^ 2 -
       frobInner P (E * Ω * Ωᴴ * Eᴴ) := by
-    rw [Matrix.sub_mul, Matrix.mul_assoc P, frobNorm_sub_mul_sq_eq hP, Matrix.conjTranspose_mul,
-      ← Matrix.mul_assoc]
-  have hr₂ := frobNorm_sub_mul_sq_eq hP E
-  have hW := frobInner_le_sqrt_mul hP hPk (E * Ω * Ωᴴ * Eᴴ - E * Eᴴ)
+    rw [Matrix.sub_mul, Matrix.mul_assoc P, hP.frobNorm_sub_mul_sq_eq_sub_frobInner,
+      Matrix.conjTranspose_mul, ← Matrix.mul_assoc]
+  have hr₂ := hP.frobNorm_sub_mul_sq_eq_sub_frobInner E
+  have hW := (le_abs_self _).trans
+    (hP.abs_frobInner_le_sqrt_mul_frobNorm hPk (E * Ω * Ωᴴ * Eᴴ - E * Eᴴ))
   rw [frobInner_sub_right] at hW
   -- cross
   have hcross : frobInner (R₁ * (Zᴴ * Ω)) ((E - P * E) * Ω) =
       frobInner R₁ (E * Ω * Ωᴴ * Z - E * Z) := by
     rw [frobInner_mul_right, hEZ, sub_zero, Matrix.conjTranspose_mul,
       Matrix.conjTranspose_conjTranspose, Matrix.sub_mul, Matrix.sub_mul, Matrix.mul_assoc P,
-      Matrix.mul_assoc P, hR₁, frobInner_sub_mul_sub_mul hP]
+      Matrix.mul_assoc P, hR₁, hP.frobInner_sub_mul_sub_mul]
     simp only [Matrix.mul_assoc]
   have hχ := neg_abs_le (frobInner R₁ (E * Ω * Ωᴴ * Z - E * Z))
   have hχ' := abs_frobInner_le R₁ (E * Ω * Ωᴴ * Z - E * Z)
@@ -232,7 +167,7 @@ theorem IsSubspaceInjection.mul_frobNorm_sub_mul_sq_le {A : Matrix m n 𝕜} {Ω
         2 * frobNorm ((A - A * Z * Zᴴ) * Ω * Ωᴴ * Z - (A - A * Z * Zᴴ) * Z) *
           frobNorm (A - P * A) := by
   have h2 := h.mul_frobNorm_sub_mul_sq_add_le hZ hP hPk hopt
-  have hs := frobNorm_sub_mul_sq_eq_add hZ A P
+  have hs := hZ.frobNorm_sub_mul_sq_eq_add A P
   have hr₁ : frobNorm (A * Z - P * (A * Z)) ≤ frobNorm (A - P * A) :=
     (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).mp
       (by nlinarith [sq_nonneg (frobNorm (A - A * Z * Zᴴ - P * (A - A * Z * Zᴴ)))])

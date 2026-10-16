@@ -491,16 +491,6 @@ private theorem integral_frobNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
     hH hint (fun _ => sq_nonneg _) hle ((integrable_frobNorm_sub_rsvd_sq A hX).const_mul _)
   exact ⟨hI, hE.trans_eq (integral_const_mul _ _)⟩
 
-/-- A truncation has Frobenius norm at most that of the matrix. -/
-private theorem frobNorm_truncatedSVD_le (N : Matrix m n ℝ) (j : ℕ) :
-    frobNorm (truncatedSVD N j) ≤ frobNorm N := by
-  have h := (lpGauge 2 one_le_two).matrixNorm_le_of_singularValues_le
-    (A := truncatedSVD N j) (B := N) fun i => by
-      rw [singularValues_truncatedSVD]
-      split_ifs
-      exacts [le_rfl, singularValues_nonneg _ _]
-  rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h
-
 /-! ### Truncated generalized Nyström -/
 
 /-- The squared Frobenius error of truncated generalized Nyström is integrable for any law of the
