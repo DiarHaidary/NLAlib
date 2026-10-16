@@ -416,6 +416,8 @@ factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tan
 `earlyTruncatedRSVD`, `earlyTruncatedGeneralizedNystrom`, `IsProjectionCostPreserving` (LowRank
 S2b, `docs/design/LowRank-S2b.md` §1, §8). `svdU` and `svdV`, the chosen thin SVD from which
 `truncatedSVD` is now built (LowRank S2c, `docs/design/LowRank-S2c.md` §8 items 1, 2, 12).
+`HasProjectionCostPreserving`, the tail form of `IsProjectionCostPreserving` (LowRank S9,
+`docs/design/LowRank-S9.md` §1, §8 item 7).
 
 ## Used as Mathlib has them
 

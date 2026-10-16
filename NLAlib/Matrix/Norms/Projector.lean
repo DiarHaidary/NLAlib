@@ -23,7 +23,13 @@ $\mathbf{P}_{\mathbf{Y}}$ the orthogonal projector onto the range of $\mathbf{Y}
 
 * `IsStarProjection.specNorm_le_one`, `IsStarProjection.specNorm_mul_le`,
   `IsStarProjection.frobNorm_mul_le`: contraction.
-* `IsStarProjection.frobNorm_sq_eq_add`: Pythagoras.
+* `IsStarProjection.frobNorm_sq_eq_add`: Pythagoras;
+  `NLAlib.HasOrthonormalCols.frobNorm_sub_mul_sq_eq_add`: its head–tail form for a frame.
+* `IsStarProjection.frobInner_sub_mul_sub_mul`,
+  `IsStarProjection.frobNorm_sub_mul_sq_eq_sub_frobInner`: the residual of a projector, with no
+  identity matrix.
+* `IsStarProjection.frobNorm_sq_eq_rank`, `IsStarProjection.abs_frobInner_le_sqrt_mul_frobNorm`:
+  the Frobenius norm of a projector is the square root of its rank, and the $\sqrt{k}$ bound.
 * `NLAlib.frobNorm_one_sub_rangeProjector_mul_le_frobNorm_sub_mul`,
   `NLAlib.specNorm_one_sub_rangeProjector_mul_le_specNorm_sub_mul`: the projection residual is
   the smallest residual $\mathbf{A} - \mathbf{B}\mathbf{X}$.
@@ -109,6 +115,51 @@ theorem _root_.IsStarProjection.frobNorm_sq_eq_add [DecidableEq m] {P : Matrix m
   have h := frobNorm_add_sq_of_frobInner_eq_zero (hP.frobInner_mul_one_sub_mul A A)
   rwa [← Matrix.add_mul, add_sub_cancel, Matrix.one_mul] at h
 
+/-- The residual of an orthogonal projector is orthogonal to its range part:
+$$\langle \mathbf{B} - \mathbf{P}\mathbf{B}, \mathbf{X} - \mathbf{P}\mathbf{X} \rangle_{\mathsf{F}}
+= \langle \mathbf{B} - \mathbf{P}\mathbf{B}, \mathbf{X} \rangle_{\mathsf{F}}\,,$$
+the identity-free form of `IsStarProjection.frobInner_mul_one_sub_mul`. -/
+theorem _root_.IsStarProjection.frobInner_sub_mul_sub_mul {P : Matrix m m 𝕜}
+    (hP : IsStarProjection P) (B X : Matrix m n 𝕜) :
+    frobInner (B - P * B) (X - P * X) = frobInner (B - P * B) X := by
+  have h0 : frobInner (B - P * B) (P * X) = 0 := by
+    rw [frobInner_comm, frobInner_mul_left, hP.conjTranspose_eq, Matrix.mul_sub,
+      ← Matrix.mul_assoc, hP.mul_self, sub_self, frobInner_zero_right]
+  rw [frobInner_sub_right, h0, sub_zero]
+
+/-- The squared residual of an orthogonal projector, with no identity matrix:
+$$\|\mathbf{X} - \mathbf{P}\mathbf{X}\|_{\mathsf{F}}^2 = \|\mathbf{X}\|_{\mathsf{F}}^2 -
+\langle \mathbf{P}, \mathbf{X}\mathbf{X}^{\mathsf{H}} \rangle_{\mathsf{F}}\,.$$ -/
+theorem _root_.IsStarProjection.frobNorm_sub_mul_sq_eq_sub_frobInner {P : Matrix m m 𝕜}
+    (hP : IsStarProjection P) (X : Matrix m n 𝕜) :
+    frobNorm (X - P * X) ^ 2 = frobNorm X ^ 2 - frobInner P (X * Xᴴ) := by
+  rw [← frobInner_self (X - P * X), hP.frobInner_sub_mul_sub_mul, frobInner_sub_left,
+    frobInner_self, frobInner_mul_right]
+
+/-- **The head–tail split of a projection residual** for a frame $\mathbf{Z}$ and any
+$\mathbf{P}$: with $\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$,
+$$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 =
+\|\mathbf{A}\mathbf{Z} - \mathbf{P}\mathbf{A}\mathbf{Z}\|_{\mathsf{F}}^2 +
+\|\mathbf{E} - \mathbf{P}\mathbf{E}\|_{\mathsf{F}}^2\,;$$
+`IsStarProjection.frobNorm_sq_eq_add` at $\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$, transposed. -/
+theorem HasOrthonormalCols.frobNorm_sub_mul_sq_eq_add [DecidableEq p] {Z : Matrix n p 𝕜}
+    (hZ : HasOrthonormalCols Z) (A : Matrix m n 𝕜) (P : Matrix m m 𝕜) :
+    frobNorm (A - P * A) ^ 2 =
+      frobNorm (A * Z - P * (A * Z)) ^ 2 +
+        frobNorm (A - A * Z * Zᴴ - P * (A - A * Z * Zᴴ)) ^ 2 := by
+  classical
+  have h := hZ.isStarProjection_mul_conjTranspose.frobNorm_sq_eq_add (A - P * A)ᴴ
+  have e₁ : (Z * Zᴴ * (A - P * A)ᴴ)ᴴ = (A * Z - P * (A * Z)) * Zᴴ := by
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.sub_mul,
+      Matrix.mul_assoc]
+  have e₂ : ((1 - Z * Zᴴ) * (A - P * A)ᴴ)ᴴ = A - A * Z * Zᴴ - P * (A - A * Z * Zᴴ) := by
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_sub,
+      Matrix.conjTranspose_conjTranspose, Matrix.mul_sub, Matrix.sub_mul, Matrix.one_mul,
+      Matrix.mul_assoc]
+  rw [frobNorm_conjTranspose, ← frobNorm_conjTranspose (Z * Zᴴ * _), e₁,
+    hZ.frobNorm_mul_conjTranspose_right, ← frobNorm_conjTranspose ((1 - Z * Zᴴ) * _), e₂] at h
+  exact h
+
 /-! ### The range projector -/
 
 /-- The trace of the range projector is the rank:
@@ -125,6 +176,30 @@ theorem frobNorm_rangeProjector_sq (A : Matrix m n 𝕜) :
     frobNorm (rangeProjector A) ^ 2 = A.rank := by
   rw [frobNorm_sq_eq_re_trace, conjTranspose_rangeProjector, rangeProjector_mul_rangeProjector,
     trace_rangeProjector, RCLike.natCast_re]
+
+/-- The squared Frobenius norm of an orthogonal projector is its rank:
+$\|\mathbf{P}\|_{\mathsf{F}}^2 = \operatorname{rank} \mathbf{P}$; the projector form of
+`NLAlib.frobNorm_rangeProjector_sq`. -/
+theorem _root_.IsStarProjection.frobNorm_sq_eq_rank {P : Matrix m m 𝕜} (hP : IsStarProjection P) :
+    frobNorm P ^ 2 = P.rank := by
+  have h := frobNorm_rangeProjector_sq P
+  rwa [hP.rangeProjector_eq] at h
+
+/-- An orthogonal projector of rank at most $k$ meets any $\mathbf{W}$ in at most
+$\sqrt{k}\,\|\mathbf{W}\|_{\mathsf{F}}$:
+$\lvert\langle\mathbf{P}, \mathbf{W}\rangle_{\mathsf{F}}\rvert
+\le \sqrt{k}\,\|\mathbf{W}\|_{\mathsf{F}}$. This is the Ky Fan step
+$\sum_{i < k}\lvert\lambda_i(\mathbf{W})\rvert \le \sqrt{k}\,\|\mathbf{W}\|_{\mathsf{F}}$ in
+the form the sketching proofs use. [CohenElderMuscoMuscoPersu2015, proof of Theorem 12]; there
+the sum of the $k$ largest absolute eigenvalues of a symmetric error; here the inner product with
+a projector, any `RCLike` field. -/
+theorem _root_.IsStarProjection.abs_frobInner_le_sqrt_mul_frobNorm {P : Matrix m m 𝕜}
+    (hP : IsStarProjection P) {k : ℕ} (hPk : P.rank ≤ k) (W : Matrix m m 𝕜) :
+    |frobInner P W| ≤ √(k : ℝ) * frobNorm W := by
+  have hPF : frobNorm P ≤ √(k : ℝ) := by
+    rw [← Real.sqrt_sq (frobNorm_nonneg P), hP.frobNorm_sq_eq_rank]
+    exact Real.sqrt_le_sqrt (by exact_mod_cast hPk)
+  exact (abs_frobInner_le P W).trans (mul_le_mul_of_nonneg_right hPF (frobNorm_nonneg W))
 
 /-! ### The projection residual -/
 

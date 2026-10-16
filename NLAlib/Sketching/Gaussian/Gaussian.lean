@@ -11,6 +11,7 @@ public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
 public import NLAlib.Sketching.Properties.Oblivious
+public import NLAlib.Sketching.Properties.ProjectionCost
 
 /-!
 # Gaussian sketches
@@ -55,10 +56,14 @@ for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 * `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`: distributional JL.
 * `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`: the JL moment property at $p = 2$.
 * `NLAlib.exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le`: the Johnson–Lindenstrauss lemma.
+* `NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card`: the Gaussian sketch
+  is a projection-cost-preserving sketch.
 * `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`,
   `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`,
   `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`: the asymptotic forms,
-  $O((d + \log(1/\delta))/\varepsilon^2)$ and $O(\log(1/\delta)/\varepsilon^2)$ rows.
+  $O((d + \log(1/\delta))/\varepsilon^2)$ and $O(\log(1/\delta)/\varepsilon^2)$ rows;
+  `NLAlib.exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix`,
+  $O((d + 1)/(\varepsilon^2\delta))$ rows for a projection-cost-preserving sketch.
 -/
 
 @[expose] public section
@@ -680,6 +685,106 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix :
     hδ ((gaussianEmbeddingDim_le d ε hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
   exact div_le_div_of_nonneg_right (by linarith [Nat.cast_nonneg (α := ℝ) d]) (sq_nonneg ε)
+
+/-- **A Gaussian sketch is a projection-cost-preserving sketch**, size form: for
+$0 < \varepsilon \le 2$, $\delta > 0$, at
+least <!-- value gaussianEmbeddingDim d (\varepsilon/2) (\delta/2) -->
+$9 (\sqrt{d} + \sqrt{2 \log(2/(\delta/2))})^2/(\varepsilon/2)^2$ rows
+(`gaussianEmbeddingDim d (ε / 2) (δ / 2)`) and at
+least <!-- value projectionCostTailRows 2 d \varepsilon \delta -->
+$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailRows 2 d ε δ`),
+$\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{G}$ makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$
+projection-cost-preserving sketch of $\mathbf{A}$ with constants $1 \mp \varepsilon$, for every
+$\mathbf{A}$, except with probability $\delta$. The head is the OSE size form at
+$(\varepsilon/2, \delta/2)$, the tail the JL moment at $\varepsilon/(8\sqrt{d+1})$, through
+`NLAlib.IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`.
+[CohenElderMuscoMuscoPersu2015, Theorem 12, Lemma 11 family 1]; there sign matrices and
+$O((k + \log(1/\delta))/\varepsilon^2)$ rows through stable-rank spectral approximate
+multiplication, error $O(\varepsilon)$; here the Gaussian, explicit constants, and $1/\delta$ from
+second moments. Asymptotic form:
+`NLAlib.exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix`.
+Result: gaussian-pcp -/
+theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
+    (hG : HasLaw G (gaussianMatrix k n) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ) (d : ℕ)
+    (hε : 0 < ε) (hε2 : ε ≤ 2) (hδ : 0 < δ)
+    (hk₁ : gaussianEmbeddingDim d (ε / 2) (δ / 2) ≤ Fintype.card k)
+    (hk₂ : projectionCostTailRows 2 d ε δ ≤ Fintype.card k) :
+    HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) A d (1 - ε) (1 + ε) δ
+      μ := by
+  have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  have hpos : 0 < projectionCostTailRows 2 d ε δ := by
+    rw [projectionCostTailRows_def]; positivity
+  have hK : (0 : ℝ) < Fintype.card k := hpos.trans_le hk₂
+  have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK)
+  have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
+  have hbud : 1 - ε ≤ 1 - ε / 2 - 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ∧
+      1 + ε / 2 + 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) + ε / (8 * √((d : ℝ) + 1)) ≤
+        1 + ε ∧
+      δ / 2 + 3 * (2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2)) ≤ δ := by
+    have hs1 : 1 ≤ √((d : ℝ) + 1) :=
+      Real.one_le_sqrt.2 (by linarith [Nat.cast_nonneg (α := ℝ) d])
+    have hds : √(d : ℝ) ≤ √((d : ℝ) + 1) := Real.sqrt_le_sqrt (by linarith)
+    have hss : √((d : ℝ) + 1) ^ 2 = (d : ℝ) + 1 := Real.sq_sqrt (by positivity)
+    have hJ : ε / (8 * √((d : ℝ) + 1)) * √((d : ℝ) + 1) = ε / 8 := by field_simp
+    have hJ1 : ε / (8 * √((d : ℝ) + 1)) ≤ ε / 8 := by
+      rw [div_le_div_iff₀ (by positivity) (by norm_num)]
+      nlinarith
+    have h3 : 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ≤ 3 * (ε / 8) := by
+      rw [← hJ, mul_assoc]
+      exact mul_le_mul_of_nonneg_left
+        (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
+    refine ⟨by linarith, by linarith, ?_⟩
+    have hk := hk₂
+    rw [projectionCostTailRows_def, div_le_iff₀ (by positivity)] at hk
+    have e : 2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
+        64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
+      rw [div_pow, mul_pow, hss]
+      field_simp
+      ring
+    have h4 : 3 * (64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2)) ≤ δ / 2 := by
+      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+      nlinarith
+    linarith
+  obtain ⟨h₁, h₂, h₃⟩ := hbud
+  have hose := isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
+    hG (half_pos hε) (by linarith) (half_pos hδ) hk₁
+  exact (hose.hasProjectionCostPreserving_of_hasJLMoment
+    (hasJLMoment_of_hasLaw_gaussianMatrix hG hJ0)
+    (hG.aemeasurable.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by linarith) (by linarith) hJ0
+    le_rfl (by positivity) A).mono le_rfl h₁ h₂ h₃
+
+/-- **$O((d+1)/(\varepsilon^2\delta))$ Gaussian rows suffice for a rank-$d$
+projection-cost-preserving sketch** with constants $1 \mp \varepsilon$ and failure probability
+$\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
+dimension. Proved from `NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card`
+with $C = 768$, $\varepsilon_0 = 1$ and $\delta \le 1/2$. At constant $\delta$ this is
+$O(d/\varepsilon^2)$; the literature's $(d + \log(1/\delta))/\varepsilon^2$ needs more than second
+moments. [CohenElderMuscoMuscoPersu2015, Theorem 12].
+Asymptotic: NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
+Result: gaussian-pcp -/
+theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k m n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype m]
+      [Fintype n] (μ : Measure Ω) (G : Ω → Matrix k n ℝ) (A : Matrix m n ℝ) (d : ℕ) (ε δ : ℝ),
+      HasLaw G (gaussianMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (((d : ℝ) + 1) / (ε ^ 2 * δ)) ≤ Fintype.card k →
+      HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) A d (1 - ε) (1 + ε)
+        δ μ := by
+  refine ⟨768, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k m n _ _ _ _ μ G A d ε δ hG hε hε1 hδ hδ2 hk
+  have hD : 0 < ε ^ 2 * δ := by positivity
+  refine hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card hG A d hε (by linarith)
+    hδ ?_ ?_
+  · refine (gaussianEmbeddingDim_le d (ε / 2) (half_pos hδ) (by linarith)).trans (le_trans ?_ hk)
+    have hl := Real.log_le_sub_one_of_pos (show 0 < 2 / (δ / 2) by positivity)
+    have hδL : δ * Real.log (2 / (δ / 2)) ≤ 4 - δ := by
+      have e : δ * (2 / (δ / 2) - 1) = 4 - δ := by field_simp; ring
+      nlinarith
+    have h1 : 18 * (d : ℝ) * δ + 36 * (δ * Real.log (2 / (δ / 2))) ≤ 192 * ((d : ℝ) + 1) := by
+      nlinarith [Nat.cast_nonneg (α := ℝ) d]
+    rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
+    nlinarith [mul_le_mul_of_nonneg_right h1 (sq_nonneg ε)]
+  · refine (projectionCostTailRows_le 2 d ε δ).trans (le_trans (le_of_eq ?_) hk)
+    ring
 
 /-- **Gaussian OSI, sample-size form**: at
 least <!-- value gaussianInjectionDim d \varepsilon \delta -->

@@ -59,6 +59,10 @@ for `mono`. Design: `docs/design/Sketching-S3.md` §3.1.
 * `NLAlib.HasJLMoment.hasJLProperty`: moments give tails.
 * `NLAlib.HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le`: the moment bound for every
   $\mathbf{x}$.
+* `NLAlib.HasJLMoment.integrable_abs_frobNorm_mul_sq_sub_rpow`,
+  `NLAlib.HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le`,
+  `NLAlib.HasJLMoment.measure_abs_frobNorm_mul_sq_sub_ge_le`: Frobenius-norm preservation, the
+  moment bound summed over the columns of a matrix, any field.
 * `NLAlib.HasJLProperty.hasSubspaceEmbedding`: JL plus a net, for a fixed $\mathbf{U}$.
 * `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`: the oblivious form.
 -/
@@ -265,6 +269,124 @@ theorem HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le (h : HasJLMoment S �
   simp only [abs_sub_rpow_eq hSu]
   rw [integral_const_mul, mul_comm (ε ^ p * δ)]
   exact mul_le_mul_of_nonneg_left (h.integral_le u hu) (Real.rpow_nonneg (norm_nonneg _) _)
+
+/-! ### Frobenius-norm preservation -/
+
+section Frobenius
+
+variable {q : Type*} [Fintype q]
+
+omit [Fintype k] [Fintype q] in
+/-- The columns of a product are the images of the columns. -/
+private theorem col_mul_eq_mulVec (A : Matrix k n 𝕜) (X : Matrix n q 𝕜) (j : q) :
+    (A * X).col j = A *ᵥ X.col j := by
+  ext i
+  simp only [Matrix.mulVec, Matrix.col_apply, Matrix.mul_apply, dotProduct]
+
+/-- The Frobenius distortion is at most the sum of the column distortions. -/
+private theorem abs_frobNorm_mul_sq_sub_le_sum (A : Matrix k n 𝕜) (X : Matrix n q 𝕜) :
+    |frobNorm (A * X) ^ 2 - frobNorm X ^ 2| ≤
+      ∑ j, |‖WithLp.toLp 2 (A *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2| := by
+  rw [frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, ← Finset.sum_sub_distrib]
+  simp only [col_mul_eq_mulVec]
+  exact Finset.abs_sum_le_sum_abs _ _
+
+/-- The $p$-th power of the Frobenius distortion
+$\lvert\|\mathbf{S}\mathbf{X}\|_{\mathsf{F}}^2 - \|\mathbf{X}\|_{\mathsf{F}}^2\rvert$ is
+integrable, for $p \ge 1$; the matrix twin of
+`NLAlib.HasJLMoment.integrable_abs_norm_mulVec_sq_sub_rpow`. -/
+theorem HasJLMoment.integrable_abs_frobNorm_mul_sq_sub_rpow (h : HasJLMoment S ε δ p μ)
+    (hp : 1 ≤ p) (hS : AEMeasurable S μ) (X : Matrix n q 𝕜) :
+    Integrable (fun ω => |frobNorm (S ω * X) ^ 2 - frobNorm X ^ 2| ^ p) μ := by
+  have hp0 : 0 < p := by linarith
+  have hc : Continuous fun A : Matrix k n 𝕜 =>
+      ∑ j, |‖WithLp.toLp 2 (A *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2| :=
+    continuous_finsetSum _ fun j _ => by fun_prop
+  have hsum := integrable_rpow_sum
+    (Y := fun j ω => |‖WithLp.toLp 2 (S ω *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2|)
+    (fun j ω => abs_nonneg _) hp
+    ((hc.measurable.comp_aemeasurable hS).pow_const p).aestronglyMeasurable
+    (fun j => h.integrable_abs_norm_mulVec_sq_sub_rpow hp0 _)
+  have hF : Continuous fun A : Matrix k n 𝕜 => |frobNorm (A * X) ^ 2 - frobNorm X ^ 2| :=
+    (((continuous_frobNorm.comp (by fun_prop)).pow 2).sub continuous_const).abs
+  refine hsum.mono' ((hF.measurable.comp_aemeasurable hS).pow_const p).aestronglyMeasurable
+    (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_eq_abs, abs_of_nonneg (Real.rpow_nonneg (abs_nonneg _) _)]
+  exact Real.rpow_le_rpow (abs_nonneg _) (abs_frobNorm_mul_sq_sub_le_sum _ _) hp0.le
+
+/-- **Frobenius-norm preservation from the JL moment property**: for $\varepsilon \ge 0$ and
+$p \ge 1$,
+$$\mathbb{E}\bigl\lvert\|\mathbf{S}\mathbf{X}\|_{\mathsf{F}}^2 - \|\mathbf{X}\|_{\mathsf{F}}^2
+\bigr\rvert^p \le (\varepsilon\|\mathbf{X}\|_{\mathsf{F}}^2)^p\,\delta\,.$$
+The matrix twin of `NLAlib.HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le`. Any field: only
+the vector property is used, column by column, with Jensen's inequality for the weights
+$\|\mathbf{X}_{:,j}\|^2/\|\mathbf{X}\|_{\mathsf{F}}^2$ (`NLAlib.integral_rpow_sum_le`). As a
+remark, the distortion is the trace of the approximate-multiplication error at
+$\mathbf{A} = \mathbf{B} = \mathbf{X}$, which the Frobenius bound on that error does not
+control without a rank bound. [Woodruff2014, proof of Theorem 13], the same summation over
+columns; [CohenElderMuscoMuscoPersu2015, §7, discussion after Lemma 11], stated there as standard
+for embedding matrices.
+Result: jl-moment-frobenius -/
+theorem HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le (h : HasJLMoment S ε δ p μ)
+    (hε : 0 ≤ ε) (hp : 1 ≤ p) (hS : AEMeasurable S μ) (X : Matrix n q 𝕜) :
+    ∫ ω, |frobNorm (S ω * X) ^ 2 - frobNorm X ^ 2| ^ p ∂μ ≤ (ε * frobNorm X ^ 2) ^ p * δ := by
+  have hp0 : 0 < p := by linarith
+  rcases eq_or_ne X 0 with rfl | hX
+  · simp only [Matrix.mul_zero, frobNorm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+      zero_pow, sub_self, abs_zero, Real.zero_rpow hp0.ne', integral_zero, mul_zero, zero_mul,
+      le_refl]
+  have hF0 : 0 < frobNorm X ^ 2 :=
+    pow_pos (lt_of_le_of_ne (frobNorm_nonneg _) (Ne.symm (mt frobNorm_eq_zero_iff.1 hX))) 2
+  set F := frobNorm X ^ 2 with hF
+  set Y : q → Ω → ℝ :=
+    fun j ω => |‖WithLp.toLp 2 (S ω *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2| with hYdef
+  have hc : Continuous fun A : Matrix k n 𝕜 =>
+      ∑ j, |‖WithLp.toLp 2 (A *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2| :=
+    continuous_finsetSum _ fun j _ => by fun_prop
+  have hm : AEStronglyMeasurable (fun ω => (∑ j, Y j ω) ^ p) μ :=
+    ((hc.measurable.comp_aemeasurable hS).pow_const p).aestronglyMeasurable
+  have hY0 : ∀ j ω, 0 ≤ Y j ω := fun j ω => abs_nonneg _
+  have hYint : ∀ j, Integrable (fun ω => Y j ω ^ p) μ :=
+    fun j => h.integrable_abs_norm_mulVec_sq_sub_rpow hp0 _
+  refine (integral_mono (h.integrable_abs_frobNorm_mul_sq_sub_rpow hp hS X)
+    (integrable_rpow_sum hY0 hp hm hYint) fun ω => Real.rpow_le_rpow (abs_nonneg _)
+      (abs_frobNorm_mul_sq_sub_le_sum _ _) hp0.le).trans ?_
+  refine integral_rpow_sum_le hY0 hp hm (w := fun j => ‖WithLp.toLp 2 (X.col j)‖ ^ 2 / F)
+    (fun j => by positivity) ?_ (fun j hj ω => ?_) hYint (fun j => ?_)
+  · rw [← Finset.sum_div, ← frobNorm_sq_eq_sum_col, ← hF, div_self hF0.ne']
+  · have hx : X.col j = 0 := by
+      have := (div_eq_zero_iff.1 hj).resolve_right hF0.ne'
+      rwa [sq_eq_zero_iff, norm_eq_zero, WithLp.toLp_eq_zero] at this
+    simp only [hYdef, hx, Matrix.mulVec_zero, WithLp.toLp_zero, norm_zero, sub_self, abs_zero,
+      ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow]
+  · refine (h.integral_abs_norm_mulVec_sq_sub_rpow_le hp0 (X.col j)).trans_eq ?_
+    rw [Real.div_rpow (sq_nonneg _) hF0.le, Real.mul_rpow hε hF0.le,
+      Real.rpow_mul (norm_nonneg _), Real.rpow_two]
+    have hFp : 0 < F ^ p := Real.rpow_pos_of_pos hF0 p
+    field_simp
+
+/-- **Frobenius-norm preservation, tail form**: for $\varepsilon > 0$, $p \ge 1$ and
+$\mathbf{X} \ne \mathbf{0}$,
+$$\mathbb{P}\bigl(\varepsilon\|\mathbf{X}\|_{\mathsf{F}}^2 \le
+\bigl\lvert\|\mathbf{S}\mathbf{X}\|_{\mathsf{F}}^2 - \|\mathbf{X}\|_{\mathsf{F}}^2\bigr\rvert\bigr)
+\le \delta\,,$$
+from `NLAlib.HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le` by Markov's inequality; the
+matrix twin of `NLAlib.HasJLProperty.measure_abs_norm_mulVec_sq_sub_ge_le` through
+`NLAlib.HasJLMoment.hasJLProperty`. [Woodruff2014, proof of Theorem 13];
+[CohenElderMuscoMuscoPersu2015, §7, discussion after Lemma 11].
+Result: jl-moment-frobenius -/
+theorem HasJLMoment.measure_abs_frobNorm_mul_sq_sub_ge_le (h : HasJLMoment S ε δ p μ)
+    (hε : 0 < ε) (hp : 1 ≤ p) (hS : AEMeasurable S μ) {X : Matrix n q 𝕜} (hX : X ≠ 0) :
+    μ.real {ω | ε * frobNorm X ^ 2 ≤ |frobNorm (S ω * X) ^ 2 - frobNorm X ^ 2|} ≤ δ := by
+  have hp0 : 0 < p := by linarith
+  have ht : 0 < ε * frobNorm X ^ 2 := mul_pos hε
+    (pow_pos (lt_of_le_of_ne (frobNorm_nonneg _) (Ne.symm (mt frobNorm_eq_zero_iff.1 hX))) 2)
+  refine (measureReal_abs_ge_le_integral_rpow_div hp0
+    (h.integrable_abs_frobNorm_mul_sq_sub_rpow hp hS X) ht).trans ?_
+  rw [div_le_iff₀ (Real.rpow_pos_of_pos ht p), mul_comm]
+  exact h.integral_abs_frobNorm_mul_sq_sub_rpow_le hε.le hp hS X
+
+end Frobenius
 
 /-! ### From the JL property to subspace embeddings -/
 

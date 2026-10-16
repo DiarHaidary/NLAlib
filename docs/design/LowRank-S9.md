@@ -1395,3 +1395,33 @@ except as amended here.
     | CS2 `exists_forall_hasProjectionCostPreserving_of_hasLaw_countSketch` | `Sketching/Sparse/CountSketchEmbedding.lean` | CS1's asymptotic form, beside it |
 
     Not placed by S9: U1 and U2 (S7's `LowRank/Oblivious/EarlyTruncation.lean`, item 3).
+
+## 9. Implementation amendments (2026-10-16)
+
+Recorded when they happened, by the implementing agent; §8 stands otherwise.
+
+1. **The CountSketch split** (§8 item 6) is done as a pure move at "The Gram error and the
+   embedding": `Sparse/CountSketch.lean` (669 lines, 14 public declarations: the law, the hollow
+   Gram identity, isotropy, the exact second moment, AMM) and the new
+   `Sparse/CountSketchEmbedding.lean` (the Gram error, OSE, OSI, JL moment, the sizes, and now
+   CS1, CS2; 16 public declarations), which imports the first. Names are unchanged; the first file
+   lost the imports only the second half used (`Matrix/Subspaces/Leverage`,
+   `Sketching/Properties/JohnsonLindenstrauss`, `Oblivious`, `TraceMoment`). The registry entry of
+   `countSketchRows` names the new file. `NLAlib.lean` is not regenerated here (orchestrator).
+2. **Statement changes against §8.** L5 takes `[DecidableEq p]` on the frame's column type
+   (`HasOrthonormalCols` needs it; the S2b private had it as a section variable). SG1 and SG2 keep
+   `[DecidableEq n]` (item 9 is wrong there: `IsIsotropic` needs it), SG2 among its quantifiers as
+   the sub-Gaussian OSE asymptotic form has it. G1 assumes $\varepsilon \le 2$, not $\le 1$ (the
+   Gaussian OSE size form at $\varepsilon/2$ needs only that); CS1 has no upper bound on
+   $\varepsilon$ (none is used). SG2's constant is $C = 9216$. The family statements take the row
+   type of $\mathbf{A}$ as an implicit binder `{m : Type*} [Fintype m]` (the family files have no
+   `m` variable).
+3. **Privates replaced now, not at the wrap-up.** `LowRank/Structural/EarlyTruncation.lean` uses
+   L2 to L5 and its four privates are deleted (the brief asked for L5; the other three would
+   otherwise be reported by `scripts/Duplicates.lean`). `MatrixMultiplication.lean` uses the
+   public `integrable_rpow_sum` and `integral_rpow_sum_le` and its private copy is deleted.
+   `Probability/Tail.lean` imports `Mathlib.Analysis.MeanInequalities` as well
+   (`Real.rpow_sum_le_const_mul_sum_rpow_of_nonneg` gives `integrable_rpow_sum` in one step).
+4. **Inversions.** The explicit family forms unfold `projectionCostTailRows_def` (they derive the
+   failure bound from the rows, as `countSketchRows` does in its own file); the asymptotic forms
+   use `projectionCostTailRows_le` only. No side file was opened.

@@ -389,6 +389,7 @@ those layers are designed.
 | tail | `μ.real {ω | ¬ good ω} ≤ δ` | — |
 | expectation | `∫ ω, f (X ω) ∂μ` (Bochner) | — |
 | sub-Gaussian | `HasSubgaussianMGF X c μ` | Mathlib's |
+| projection-cost-preserving sketch | deterministic: `IsProjectionCostPreserving A Ã k a b` (S2b); random: `HasProjectionCostPreserving S A k a b δ μ`, the tail `μ.real {ω \| ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ`, with the sketch `S : Ω → Matrix l n 𝕜` in the Sketching orientation; on a LowRank test matrix, `fun ω => (X ω)ᴴ`; no oblivious (all-`A`) predicate | `HasSubspaceEmbedding.hasProjectionCostPreserving`, `IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`, `hasProjectionCostPreserving_conjTranspose_iff` (the LowRank orientation); Mathlib has none |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
 and unitarily invariant norms, the principal-angle / subspace-distance interface. Rows from the

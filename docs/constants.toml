@@ -171,12 +171,22 @@ body_hash = "fee45691d92c18c2"
 [[constant]]
 name = "NLAlib.countSketchRows"
 kind = "sample size"
-file = "NLAlib/Sketching/Sparse/CountSketch.lean"
+file = "NLAlib/Sketching/Sparse/CountSketchEmbedding.lean"
 args = ["d", "ε", "δ"]
 latex = '(#1^2 + #1)/(#3 #2^2)'
 display = '\frac{#1^2 + #1}{#3 #2^2}'
 lean_body = 'countSketchRows (d : ℕ) (ε δ : ℝ) : ℝ := ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)'
 body_hash = "56a83724a3db7928"
+
+[[constant]]
+name = "NLAlib.projectionCostTailRows"
+kind = "sample size"
+file = "NLAlib/Sketching/Properties/ProjectionCost.lean"
+args = ["v", "d", "ε", "δ"]
+latex = '384 \cdot #1 (#2 + 1)/(#3^2 #4)'
+display = '\frac{384 \cdot #1 (#2 + 1)}{#3^2 #4}'
+lean_body = 'projectionCostTailRows (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ)'
+body_hash = "85efc63753bb852f"
 
 [[constant]]
 name = "NLAlib.srhtRowBound"

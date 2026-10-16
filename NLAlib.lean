@@ -285,5 +285,6 @@ public import NLAlib.Sketching.Sampling.MatrixMultiplication
 public import NLAlib.Sketching.Sampling.RowSampling
 public import NLAlib.Sketching.Sampling.WithoutReplacement
 public import NLAlib.Sketching.Sparse.CountSketch
+public import NLAlib.Sketching.Sparse.CountSketchEmbedding
 public import NLAlib.Sketching.Structured.Flattening
 public import NLAlib.Sketching.Structured.SRHT
