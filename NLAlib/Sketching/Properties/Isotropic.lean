@@ -19,7 +19,7 @@ $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{x}\|^2$ for every $\mathbf{x}$
 half of an oblivious subspace injection that is not a tail bound
 (`NLAlib.IsObliviousSubspaceInjection`): with it,
 $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$, which is the
-Markov step of the injection tails of `NLAlib.Sketching.Properties.Injection`.
+Markov step of the injection tails of `NLAlib.Regression.Oblivious`.
 
 A matrix with isotropic rows, scaled by $1/\sqrt{\lvert k \rvert}$, is an isotropic sketch, with no
 independence between the rows; the product of two independent isotropic sketches is isotropic.

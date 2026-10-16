@@ -7,8 +7,8 @@ module
 
 public import NLAlib.Probability.Measurability.Matrix
 public import NLAlib.Probability.Tail
-public import NLAlib.Sketching.Properties.LeastSquares
-public import NLAlib.Sketching.Properties.LeastSquaresOblique
+public import NLAlib.Regression.Embedding
+public import NLAlib.Regression.Oblique
 public import NLAlib.Sketching.Properties.MatrixMultiplication
 public import NLAlib.Sketching.Properties.Oblivious
 
@@ -28,7 +28,7 @@ random design.
 Each event is the negation of the guarantee ($\{c < X\}$ for $X \le c$), so the degenerate cases
 $\mathbf{B}\mathbf{Z}^{\mathsf{H}} = \mathbf{0}$,
 $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y} = \mathbf{0}$ need no hypothesis. The proofs
-combine the deterministic bounds of `NLAlib.Sketching.Properties.LeastSquares` with Markov's
+combine the deterministic bounds of `NLAlib.Regression.Embedding` with Markov's
 inequality for $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$
 off the injection event (`NLAlib.measureReal_le_add_one_div`, in `NLAlib.Probability.Tail`).
 Design: `docs/design/Sketching-S1.md` §3.4.

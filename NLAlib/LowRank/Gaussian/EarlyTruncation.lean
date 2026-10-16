@@ -11,7 +11,7 @@ public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.RandomMatrix.Gaussian.ClippedInverseMoments
 public import NLAlib.Sketching.Gaussian.Gaussian
-public import NLAlib.Sketching.Gaussian.LeastSquares
+public import NLAlib.Regression.SketchAndSolve
 public import NLAlib.Sketching.Properties.MatrixMultiplication
 
 /-!

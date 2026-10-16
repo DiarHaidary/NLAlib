@@ -11,7 +11,7 @@ public import NLAlib.Matrix.Factorizations.SketchedLowRank
 public import NLAlib.Matrix.Norms.Projector
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 public import NLAlib.Matrix.Spectral.ProjectedLowRank
-public import NLAlib.Sketching.Properties.LeastSquares
+public import NLAlib.Regression.Embedding
 
 /-!
 # The structural bound of the range finder
