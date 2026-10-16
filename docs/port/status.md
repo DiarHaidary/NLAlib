@@ -2,6 +2,26 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Regression rates (2026-10-16)
+
+Complete and independently reviewed on `feat/regression-rates`; design, source read-back and
+validation report: `docs/design/Regression-Rates.md`. Eleven new public declarations provide
+Gaussian/Haar expected relative squared-residual pairs, a generic RCLike AMM-tail consumer,
+and Gaussian/CountSketch high-probability relative-residual pairs. The existing factor helper
+was moved unchanged to its RandomMatrix owner; no new object, interface, constant or prototype
+mapping. Both new Regression modules are registered. Available-model fallback continues.
+
+Full two-thread build passed (3873 jobs, zero warnings), as did both root checks, axiom audit
+(7235 declarations, zero violations), 14 linters (4994 plus 2241 generated, zero errors), duplicate
+report (4597 theorems, zero classes), references (55 keys, 40 asymptotic forms), constants,
+KaTeX and all-eleven-target reuse. Prior capped module/single-file checks passed. The import
+DAG is acyclic with no Regression→LowRank import; ledger dispositions are unchanged. A second
+overlapping stage build was omitted after the equivalent root gates passed.
+Fresh extraction: `/tmp/nlalib-regression-rates-explore.json`, 301 modules, 3466 declarations;
+all source hashes match and all eleven additions are proved. Logs:
+`/tmp/nlalib-regression-rates-checks`. Explorer integration uses this extraction separately.
+No validation-agent commit or push; root handles the requested local commit.
+
 ## Regression organization (2026-10-16)
 
 Completed user-approved whole-file relocation on `feat/regression-organization`:

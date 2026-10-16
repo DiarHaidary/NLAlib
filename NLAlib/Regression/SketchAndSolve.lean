@@ -64,6 +64,11 @@ throughout. Design: `docs/design/LowRank-S6.md` §3.2, §8.
   `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame`, the exact mean
   squared residual `NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`, and
   unbiasedness, `NLAlib.integral_sketchAndSolve_of_hasLaw_haarFrame`.
+* `NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`,
+  `NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame`:
+  expected relative squared residual, with rank-zero-safe $O((r+1)/\varepsilon)$ forms
+  `NLAlib.exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_gaussianMatrix`
+  and `NLAlib.exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_haarFrame`.
 -/
 
 @[expose] public section
@@ -768,5 +773,158 @@ theorem integral_sketchAndSolve_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq
     exact sketchAndSolve_eq_pinv_mul_add hω B
   rw [integral_congr_ae hae, integral_add (integrable_const _) hfi, h0, add_zero, integral_const,
     probReal_univ, one_smul]
+
+/-! ### Expected relative residual -/
+
+omit [DecidableEq m] in
+/-- The squared Frobenius residual of Gaussian sketch-and-solve is integrable when
+$\operatorname{rank}\mathbf{A}+2\le p$. This rewrites the oblique-projection integrability
+result into the algorithm's residual form. -/
+theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix
+    (hS : HasLaw S (gaussianMatrix p m) μ) (A : Matrix m n ℝ)
+    (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    Integrable (fun ω => frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2) μ := by
+  classical
+  simpa only [mul_sketchAndSolve, Matrix.sub_mul, Matrix.one_mul] using
+    integrable_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix hS A hA B
+
+omit [DecidableEq m] in
+/-- The squared Frobenius residual of Haar sketch-and-solve is integrable when
+$\operatorname{rank}\mathbf{A}+2\le p\le m$. This rewrites the oblique-projection
+integrability result into the algorithm's residual form. -/
+theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame [DecidableEq p]
+    {Q : Ω → Matrix m p ℝ} (hQ : HasLaw Q (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (A : Matrix m n ℝ)
+    (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
+    Integrable (fun ω => frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2) μ := by
+  classical
+  simpa only [mul_sketchAndSolve, Matrix.sub_mul, Matrix.one_mul] using
+    integrable_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame hQ hpm A hA B
+
+/-- **Gaussian sketch-and-solve, expected relative residual**: for a standard Gaussian
+$p\times m$ sketch $\mathbf{S}$, $r=\operatorname{rank}\mathbf{A}$,
+$r+2\le p$, $\varepsilon>0$ and $p\ge r+1+r/\varepsilon$,
+$$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},\mathbf{B})
+\|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2\,.$$
+The right side uses the optimal squared residual, for any rank of $\mathbf{A}$ and any matrix
+right-hand side. [EpperlyWebber2026, Theorem 2.1 and §2.1]; the real Gaussian identity there,
+here its sufficient-size corollary. Integrability is
+`NLAlib.integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix`.
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_gaussianMatrix`.
+Result: sketch-and-solve-expected-error -/
+theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
+    (hS : HasLaw S (gaussianMatrix p m) μ) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
+    {ε : ℝ} (_hε : 0 < ε) (hA : A.rank + 2 ≤ Fintype.card p)
+    (hp : (A.rank : ℝ) ≤ ε * ((Fintype.card p : ℝ) - A.rank - 1)) :
+    ∫ ω, frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2 ∂μ ≤
+      (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
+  rw [integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix hS hA B]
+  apply mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+  have hA' : (A.rank : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast hA
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
+  exact hp
+
+/-- **Haar sketch-and-solve, expected relative residual**: for an $m\times p$ Haar frame
+$\mathbf{Q}$, the sketch $\mathbf{Q}^{\mathsf{H}}$, $r=\operatorname{rank}\mathbf{A}$,
+$r+2\le p\le m$, $\varepsilon>0$ and $p\ge r+1+r/\varepsilon$,
+$$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{Q}^{\mathsf{H}},
+\mathbf{B})\|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2\,.$$
+The right side uses the optimal squared residual, for any rank of $\mathbf{A}$ and any matrix
+right-hand side. [EpperlyWebber2026, Theorem 2.1 and §2.1]; the real orthonormal identity there,
+here a sufficient-size corollary using its factor's upper bound by the Gaussian factor.
+Integrability is `NLAlib.integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`.
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_haarFrame`.
+Result: sketch-and-solve-expected-error -/
+theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
+    [DecidableEq p] {Q : Ω → Matrix m p ℝ} (hQ : HasLaw Q (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
+    {ε : ℝ} (_hε : 0 < ε) (hA : A.rank + 2 ≤ Fintype.card p)
+    (hp : (A.rank : ℝ) ≤ ε * ((Fintype.card p : ℝ) - A.rank - 1)) :
+    ∫ ω, frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2 ∂μ ≤
+      (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
+  rw [integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame hQ hpm hA B]
+  apply mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+  refine (haarProjectionFactor_le_gaussianProjectionFactor hA hpm).trans ?_
+  have hA' : (A.rank : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast hA
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
+  exact hp
+
+/-- **Gaussian sketch-and-solve, asymptotic expected relative residual**:
+$O((r+1)/\varepsilon)$ Gaussian rows suffice, where $r=\operatorname{rank}\mathbf{A}$:
+for $0<\varepsilon\le\varepsilon_0$ and absolute constants $C,\varepsilon_0>0$, a standard
+Gaussian $p\times m$ sketch with $p\ge C(r+1)/\varepsilon$ satisfies
+$$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},\mathbf{B})
+\|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2\,.$$
+No positive-rank hypothesis is needed. The constants precede every dimension and matrix.
+Proved from
+`NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`
+with $C=3$, $\varepsilon_0=1$. [EpperlyWebber2026, Theorem 2.1 and §2.1]; the source gives the
+explicit sufficient size, here a rank-zero-safe asymptotic corollary.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
+Result: sketch-and-solve-expected-error -/
+theorem exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧
+      ∀ {Ω m n r p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+        [Fintype r] [Fintype p] [DecidableEq m] (μ : Measure Ω) (S : Ω → Matrix p m ℝ)
+        (A : Matrix m n ℝ) (B : Matrix m r ℝ) (ε : ℝ),
+        HasLaw S (gaussianMatrix p m) μ → 0 < ε → ε ≤ ε₀ →
+        C * (((A.rank : ℝ) + 1) / ε) ≤ Fintype.card p →
+        ∫ ω, frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2 ∂μ ≤
+          (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n r p _ _ _ _ _ _ μ S A B ε hS hε hε1 hp
+  have hp' : 3 * (((A.rank + 1 : ℕ) : ℝ) / ε) ≤ Fintype.card p := by
+    simpa only [Nat.cast_add, Nat.cast_one] using hp
+  obtain ⟨hA, hfac⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le
+    (Nat.succ_pos A.rank) hε hε1 hp'
+  have hA' : (A.rank : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast (show A.rank + 2 ≤
+    Fintype.card p by omega)
+  have hfac' := (gaussianProjectionFactor_le_gaussianProjectionFactor (Nat.le_succ _) hA).trans hfac
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)] at hfac'
+  exact integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
+    hS A B hε (by omega) hfac'
+
+/-- **Haar sketch-and-solve, asymptotic expected relative residual**:
+$O((r+1)/\varepsilon)$ orthonormal sketch rows suffice, where $r=\operatorname{rank}\mathbf{A}$:
+for $0<\varepsilon\le\varepsilon_0$ and absolute constants $C,\varepsilon_0>0$, an $m\times p$
+Haar frame with $C(r+1)/\varepsilon\le p\le m$ satisfies
+$$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{Q}^{\mathsf{H}},
+\mathbf{B})\|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2\,.$$
+No positive-rank hypothesis is needed. The constants precede every dimension and matrix.
+Proved from
+`NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame`
+with $C=3$, $\varepsilon_0=1$. [EpperlyWebber2026, Theorem 2.1 and §2.1]; here the uniform
+sufficient Gaussian size also bounds the smaller Haar factor.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
+Result: sketch-and-solve-expected-error -/
+theorem exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_haarFrame :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧
+      ∀ {Ω m n r p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+        [Fintype r] [Fintype p] [DecidableEq m] [DecidableEq p] (μ : Measure Ω)
+        (Q : Ω → Matrix m p ℝ) (A : Matrix m n ℝ) (B : Matrix m r ℝ) (ε : ℝ),
+        HasLaw Q (haarFrame m p) μ → Fintype.card p ≤ Fintype.card m →
+        0 < ε → ε ≤ ε₀ → C * (((A.rank : ℝ) + 1) / ε) ≤ Fintype.card p →
+        ∫ ω, frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2 ∂μ ≤
+          (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n r p _ _ _ _ _ _ _ μ Q A B ε hQ hpm hε hε1 hp
+  have hp' : 3 * (((A.rank + 1 : ℕ) : ℝ) / ε) ≤ Fintype.card p := by
+    simpa only [Nat.cast_add, Nat.cast_one] using hp
+  obtain ⟨hA, hfac⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le
+    (Nat.succ_pos A.rank) hε hε1 hp'
+  have hA' : (A.rank : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast (show A.rank + 2 ≤
+    Fintype.card p by omega)
+  have hfac' := (gaussianProjectionFactor_le_gaussianProjectionFactor (Nat.le_succ _) hA).trans hfac
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)] at hfac'
+  exact integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
+    hQ hpm A B hε (by omega) hfac'
 
 end NLAlib

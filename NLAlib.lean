@@ -274,7 +274,9 @@ public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.UnitaryInvariance
+public import NLAlib.Regression.CountSketch
 public import NLAlib.Regression.Embedding
+public import NLAlib.Regression.Gaussian
 public import NLAlib.Regression.Oblique
 public import NLAlib.Regression.Oblivious
 public import NLAlib.Regression.SketchAndSolve

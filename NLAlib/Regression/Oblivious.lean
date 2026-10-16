@@ -285,6 +285,55 @@ theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_
         t * frobNorm ((1 - rangeProjector (Y ω)) * B ω) ^ 2 / a := by ring
   linarith
 
+/-- **Sketch-and-solve to relative error from an approximate-multiplication tail**:
+let $\mathbf{C}=(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}$. If $\mathbf{S}$ injects
+$\operatorname{range}\mathbf{A}$ with constant $a>0$ except with probability $\delta$,
+$\varepsilon\ge0$, and
+$$\mathbb{P}\bigl[a\sqrt{\varepsilon}\|\mathbf{C}\|_{\mathsf{F}}<
+\|\mathbf{P}_{\mathbf{A}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{C}\|_{\mathsf{F}}\bigr]
+\le\delta'\,,$$
+then
+$$\mathbb{P}\bigl[(1+\varepsilon)\|\mathbf{C}\|_{\mathsf{F}}^2<
+\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},\mathbf{B})
+\|_{\mathsf{F}}^2\bigr]\le\delta+\delta'\,.$$
+Over any `RCLike` field, with a matrix right-hand side. The family-specific multiplication tail
+is an input; the real JL-moment instance is
+`NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`.
+[Woodruff2014, proof of Theorem 23]; there real vector regression and a constant embedding,
+here any injection constant and a supplied multiplication tail.
+Result: sketch-and-solve-ls -/
+theorem HasSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    [IsFiniteMeasure μ] {δ' ε : ℝ} (h : HasSubspaceInjection S A a δ μ) (ha : 0 < a)
+    (hε : 0 ≤ ε) (B : Matrix n r 𝕜)
+    (hAMM : μ.real {ω | a * √ε * frobNorm ((1 - rangeProjector A) * B) <
+      frobNorm (rangeProjector A * (S ω)ᴴ * S ω * ((1 - rangeProjector A) * B))} ≤ δ') :
+    μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ + δ' := by
+  let C := (1 - rangeProjector A) * B
+  unfold HasSubspaceInjection at h
+  refine (measureReal_mono (s₂ := {ω | ¬ IsSubspaceInjection (S ω) A a} ∪
+    {ω | a * √ε * frobNorm C < frobNorm (rangeProjector A * (S ω)ᴴ * S ω * C)})
+    fun ω hω => ?_).trans ((measureReal_union_le _ _).trans (add_le_add h hAMM))
+  by_contra hc
+  simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_not, not_lt] at hc
+  obtain ⟨hinj, hmul⟩ := hc
+  have hbound := hinj.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2 one_le_two) C
+  rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hbound
+  have hsmall : frobNorm (obliqueProjector A (S ω) * C) ≤ √ε * frobNorm C := by
+    refine hbound.trans ((div_le_iff₀ ha).2 ?_)
+    calc frobNorm (rangeProjector A * (S ω)ᴴ * S ω * C) ≤ a * √ε * frobNorm C := hmul
+      _ = (√ε * frobNorm C) * a := by ring
+  have hsq := pow_le_pow_left₀ (frobNorm_nonneg _) hsmall 2
+  rw [mul_pow, Real.sq_sqrt hε] at hsq
+  have he : B - A * sketchAndSolve A (S ω) B = (1 - obliqueProjector A (S ω)) * B := by
+    rw [mul_sketchAndSolve, Matrix.sub_mul, Matrix.one_mul]
+  change (1 + ε) * frobNorm C ^ 2 <
+    frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2 at hω
+  rw [he, frobNorm_one_sub_obliqueProjector_mul_sq (hinj.rank_mul_eq ha)] at hω
+  change (1 + ε) * frobNorm C ^ 2 <
+    frobNorm C ^ 2 + frobNorm (obliqueProjector A (S ω) * C) ^ 2 at hω
+  nlinarith
+
 /-! ### Sketch-and-solve to relative error through approximate multiplication -/
 
 section JLMoment
