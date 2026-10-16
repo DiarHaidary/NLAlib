@@ -275,3 +275,12 @@ latex = '((1 + \sqrt{2#1/#2})((1 - \sqrt{#1/#2})^{-2} + 10/\sqrt{#2}) + (\sqrt{#
 display = '\frac{(1 + \sqrt{2#1/#2})\bigl((1 - \sqrt{#1/#2})^{-2} + 10/\sqrt{#2}\bigr) + \frac{1}{4}\sqrt{#1/#2}\sqrt{1 + 2/(#1 #2)}\sqrt{(1 - \sqrt{#1/#2})^{-8} + 263/\sqrt{#2}}}{1 - 4\sqrt{#1/#2}}'
 lean_body = 'earlyTruncatedRSVDFactor (k l : ℕ) : ℝ := ((1 + √(2 * k / l)) * (((1 - √(k / l)) ^ 2)⁻¹ + 10 / √l) + √(k / l) / 4 * √(1 + 2 / (k * l)) * √(((1 - √(k / l)) ^ 8)⁻¹ + 263 / √l)) / (1 - 4 * √(k / l))'
 body_hash = "e0b4c3e17218eda8"
+
+[[constant]]
+name = "NLAlib.jacksonApproximationConstant"
+kind = "constant"
+file = "NLAlib/Polynomial/Approximation/Jackson.lean"
+args = []
+latex = '\pi'
+lean_body = 'jacksonApproximationConstant : ℝ := Real.pi'
+body_hash = "c1d52b2710e0f6a4"

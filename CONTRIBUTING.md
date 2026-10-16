@@ -247,6 +247,12 @@ release.
      (`1 / (256 * exp 2) ≤ hansonWrightConstant`). An improvement of the same shape changes the
      body and that comparison, no statement and no name.
 
+     When a proof establishes a stronger bound under the same hypotheses, expose that bound
+     through the existing theorem and named-bound API. Record its relation to the source rather
+     than weaken it solely to reproduce the source's constant or an earlier approved draft.
+     Changes to hypotheses, mathematical scope or public interfaces retain their normal design
+     review.
+
      **A docstring that uses a named bound shows its current value inside its equations**
      (maintainer, 2026-10-15). Statements keep the name; the docstring writes the value in place
      of the constant, in the formula itself, never a symbol $C$ defined by a sentence "with $C$ =
@@ -376,6 +382,7 @@ those layers are designed.
 | Jackson damping | `jacksonDamping N k : ℝ`, normalized sine autocorrelation; zero for `k > N`, zeroth mode 1, values in `[0,1]` | Raw autocorrelation by definition; `jacksonDamping_eq_closed_form` gives its trigonometric representation; no matching pinned Mathlib object |
 | nonnegative periodic Jackson kernel | `jacksonKernel N θ : ℝ`, finite cosine polynomial; period `2π`, integral `2π` | `jacksonKernel_eq_norm_sq`, `integral_jacksonKernel`, `integral_cos_mul_jacksonKernel`; ordinary functions, no new circle-function type |
 | canonical Jackson approximant | `jacksonApprox f N : 𝕜[X]` for `[RCLike 𝕜]`, `f : ℝ → 𝕜`; inclusive sum `0..N` with damping times the existing full coefficients | `eval_jacksonApprox`, `degree_jacksonApprox_le`, `chebyshevCoeff_jacksonApprox`; no arbitrary-function reconstruction claim |
+| Jackson approximation factor | `jacksonApproximationConstant : ℝ`, currently `Real.pi`, improving the source's `π²/2`; supporting numerical API | `jacksonApproximationConstant_pos`, `jacksonApproximationConstant_le`; the current-value comparison is `≤ Real.pi` |
 | location of the spectrum | `spectrum ℝ A ⊆ s`; for an interval the Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` | `Matrix.IsHermitian.spectrum_subset_iff` |
 | transfer from `𝕜` to `ℂ` | `complexify A = A.map RCLike.toComplex` | `complexify_cfc`, `complexify_le_complexify_iff` |
 | operator convexity | `OperatorConvexOn s f`; convex combinations as `a • A + b • B`, `a + b = 1` | `OperatorConvexOn.cfc_smul_add_smul_le` |

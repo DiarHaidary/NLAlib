@@ -1,11 +1,13 @@
 # Jackson approximation and moment/orthogonal-polynomial roadmap
 
-**J0/J2 complete and independently reviewed, 2026-10-16.** The user approved roadmap steps
+**J0/J2 proved and independently reviewed, 2026-10-16; stronger-bound integration checks in progress.** The user approved roadmap steps
 1 (kernel/damping) and 2 (constructive approximation), using agents. The roadmap and exact J0
 proposal passed two bounded independent reviews; root accepted both reviews and clarifications.
 The exact J2 implementation addendum below passed bounded independent review; root accepted it. J1 coefficient
 regularity, moment comparison and OP retain later exact-design checkpoints; moment/OP proof work
-is not authorized here. The kernel alone does not complete constructive approximation.
+is not authorized here. The current theorem exposes the named factor `jacksonApproximationConstant`, whose value is π,
+with uniform error πL/(N+2). The earlier π²L/(2(N+2)) reports below are historical at `c769e96`.
+The kernel alone does not complete constructive approximation.
 Poly0–3 are complete at `f527934`. Read CONTRIBUTING, PORT_POLYNOMIAL and current status.
 Historical model aliases are unavailable; the authorized available-agent fallback continues.
 
@@ -23,7 +25,8 @@ Recommend these choices for explicit assessment:
   Add one Jackson damping sequence, one nonnegative periodic kernel and one damped polynomial.
   Damping is defined by zero-padded sine autocorrelation; the customary trigonometric closed
   formula is a representation theorem. This makes positivity structural rather than assumed.
-* Use the stronger constructive error π²L/(2(N+2)) from the user's exact source, including N = 0.
+* Expose the proved constructive error πL/(N+2), including N = 0, through the named-bound API.
+  The source's π²L/(2(N+2)) is a comparison, not the current library guarantee.
   Do not port the 1430-line sharp-existence sawtooth chain as the first Jackson implementation.
 * Introduce one basis-independent degree ≤ N polynomial-integral exactness predicate when the
   measure stage begins, with raw iff and monomial/Chebyshev bridges. Later OP/Gauss uses it too.
@@ -117,7 +120,7 @@ wait implementation after exact title/edition metadata review; no ledger disposi
 
 ## 3. Jackson stages and exact first-stage objects/API
 
-The following are exact signature targets, not elaborated code. Stage J0 is the bounded first
+The following J0 signatures are implemented; later stages remain design targets. Stage J0 is the bounded first
 implementation checkpoint; J2 follows J0 under the authorized addendum; J1 is deferred until noisy moments needs it.
 
 ### J0: damping and positive periodic kernel
@@ -234,18 +237,19 @@ noncomputable def jacksonApprox {𝕜 : Type*} [RCLike 𝕜] (f : ℝ → 𝕜) 
       Polynomial.Chebyshev.T 𝕜 (k : ℤ)
 ```
 
-Ship unconditional degree ≤ N, the canonical coefficient identity on k ≤ N, and the uniform bound
+The implemented API gives unconditional degree ≤ N, the canonical coefficient identity for every k
+(with zero padding beyond N), and the uniform bound
 `Metric.IsUniformApproxOn (fun x => (jacksonApprox f N).eval (x : 𝕜)) f (Icc (-1) 1)
- (Real.pi^2 * (L:ℝ) / (2*(N+2)))` under `LipschitzOnWith L f (Icc (-1) 1)`.
+ (jacksonApproximationConstant * (L:ℝ) / (N+2))` under `LipschitzOnWith L f (Icc (-1) 1)`.
 The positive coefficient bound for this same polynomial follows J1 and damping ≤ 1. No separate
 existential witness may replace it in the noisy moment theorem.
 
 Proof: identify the canonical polynomial with normalized convolution by jacksonKernel of f∘cos.
-For the positive kernel, circle angle is bounded by π/2 times chord; Cauchy–Schwarz and its first
-moment yield πL√((1−cosβ)/2)≤π²L/(2(N+2)). This is v1 Appendix C's route and works directly
-with RCLike Bochner norms; no real-only sawtooth integration-by-parts is needed. Reuse the existing
-full coefficient/Fourier dictionary. No new public circle-function object. Affine transport is
-routine but not necessary to delay the first normalized spectral-distribution consumer.
+The implemented finite-integral argument needs no Fourier summability. Positivity, kernel mass
+and first cosine moment combine with the chord/Young inequality to give πL/(N+2) directly for
+RCLike norms. The named factor exposes this stronger value; the source's mean-angle argument
+instead gives π²L/(2(N+2)). No new public circle-function object or real-only sawtooth chain is
+needed. Affine transport remains a later consumer.
 
 ## 4. Moment stages: one exactness spelling and honest noisy weights
 
@@ -279,10 +283,10 @@ continuous-on-compact test interface, not raw total-integral linearity. Probabil
 is twoε. Include mass/constant mode; N = 0 exactness is equality of total mass, not an empty condition.
 
 M1: exact and noisy normalized spectral distributions. For two probability measures AE-supported
-on[-1,1], exact budgetN matching gives every L-Lipschitz test discrepancy≤π²L/(N+2).
+on [-1,1], exact budget N matching gives every L-Lipschitz test discrepancy ≤ 2πL/(N+2).
 The SAME Jackson polynomial gives the proposed noisy headline
 
-`|∫f dμ−∫f dν| ≤ π²L/(N+2) + (4L/π) * ∑ k∈range N, |Δ_(k+1)|/(k+1)`,
+`|∫f dμ−∫f dν| ≤ 2πL/(N+2) + (4L/π) * ∑ k∈range N, |Δ_(k+1)|/(k+1)`,
 
 where Δj is the actual Chebyshev-T integral discrepancy. Probability mass cancels k = 0 even for
 unbounded additive constants in f. Exact monomial and Chebyshev matching are equivalent; noisy
@@ -367,8 +371,8 @@ normalization and the first cosine moment of J0's kernel prove it directly. Defe
 exports the exact canonical coefficient identity and damping contraction, so that later J1 uses
 the same polynomial rather than a separately chosen witness.
 
-One new file, `NLAlib/Polynomial/Approximation/Jackson.lean`, owns the polynomial and its six
-public declarations below. It imports the J0 owner and existing Chebyshev coefficient/polynomial
+The file `NLAlib/Polynomial/Approximation/Jackson.lean` owns the six constructive API
+declarations below plus the implemented named factor and its two support lemmas (later amendment). It imports the J0 owner and existing Chebyshev coefficient/polynomial
 machinery, with only the particular integration/trigonometric files actually required. Do not
 import an analytic-ellipse owner: the hypotheses and proof are Lipschitz, not analytic.
 
@@ -383,7 +387,8 @@ but does not generally reproduce every polynomial of degree ≤ N.
 
 ### Exact J2 signatures
 
-These are target signatures, not a claim that elaboration has already passed. The standard local
+These signatures reflect the implemented constructive API; the named factor is defined in the
+stronger-bound amendment below. The standard local
 open declarations provide polynomial, interval-integral and measure notation.
 
 ```lean
@@ -416,7 +421,7 @@ theorem isUniformApproxOn_jacksonApprox_of_lipschitz
     (hf : LipschitzOnWith L f (Set.Icc (-1 : ℝ) 1)) (N : ℕ) :
     Metric.IsUniformApproxOn
       (fun x : ℝ => (jacksonApprox f N).eval (x : 𝕜)) f (Set.Icc (-1 : ℝ) 1)
-      (Real.pi ^ 2 * (L : ℝ) / (2 * (N + 2 : ℝ)))
+      (jacksonApproximationConstant * (L : ℝ) / (N + 2 : ℝ))
 
 end NLAlib
 ```
@@ -450,9 +455,9 @@ assert unconditional additivity of arbitrary total integrals.
    two-coordinate Cauchy–Schwarz inequality prove it without shifting a periodic Lipschitz
    hypothesis. Weighted Cauchy–Schwarz with J0's nonnegative kernel, mass and first cosine moment
    then gives error at most `L * sqrt(2 * (1 - cos β))`, where `β = π/(N+2)`. Since this equals
-   `2L * sin(β/2) ≤ Lβ`, the private proof actually obtains `πL/(N+2)`. Use `2 ≤ π` to conclude
-   the approved public bound `π²L/(2(N+2))`. This stronger intermediate is a direct estimate for
-   the existing construction, not an additional public theorem or changed source attribution.
+   `2L * sin(β/2) ≤ Lβ`, the private proof actually obtains `πL/(N+2)`. The implemented Young majorant gives the same `πL/(N+2)` estimate without square roots.
+   Expose it through the named factor, preserving the existing theorem name and hypotheses.
+   This is a direct estimate for the existing construction, not a claim of a new source theorem.
    If the chord-square formalization proves unexpectedly expensive, the checked alternative
    `Real.cos_le_one_sub_mul_cos_sq` on `[-π,π]` bounds the mean angle instead and gives the
    approved constant directly. Keep either weighted integral/second-moment helper private;
@@ -474,7 +479,7 @@ AddCircle route is used, following Poly3; no generated public Fact duplicates.
 
 ### Edges, source and handoff
 
-N = 0 gives the constant coefficient and the finite bound π²L/4. L = 0 gives zero error for
+N = 0 gives the constant coefficient and the current bound πL/2. L = 0 gives zero error for
 functions constant on the segment, without a separate global constancy premise. Zero polynomials
 and vanished coefficients are covered by the WithBot degree bound. The theorem includes both
 endpoints and complex-valued functions with the same constant. Values outside the segment are
@@ -484,7 +489,7 @@ Source: [Chen–Trogdon–Ubaru, arXiv:2204.01941v1, Appendix C](https://arxiv.o
 Theorem 38 and Lemmas 44–45. Preserve the checked source-to-library kernel normalization
 `K = 2u` and full unhalved constant coefficient. The generic RCLike norm proof is an explicit
 extension of the source argument. The preferred chord estimate improves an internal bound while
-retaining exactly the approved public constant; it is not attributed as a separately printed source
+now exposed through the named public factor; it is not attributed as a separately printed source
 result. The bibliography key is `ChenTrogdonUbaru2022`. The later v3 weaker constant is not substituted. J2's degree-N
 approximation is a mathematical theorem about this explicit polynomial, not a claim of numerical
 stability or a sampling algorithm.
@@ -594,7 +599,7 @@ before final handoff. Final review confirms exactly one induction remains. Also 
 headline's fractional error conclusion to a displayed `\frac` formula under CONTRIBUTING §6,
 without changing its value. No Lean edit or build was performed while proposing this amendment.
 
-### J2 and shared-owner final read-back and approval (2026-10-16)
+### Historical J2 and shared-owner read-back at `c769e96` (2026-10-16)
 
 Independently approved against the final source and affected-target logs. Jackson is 337 lines
 with exactly its six approved public declarations. The shared coefficient owner adds exactly one
@@ -628,7 +633,7 @@ Final affected-target builds passed without warnings: coefficient owner 2717 job
 The reviewer ran no builds and changed only this design note. Root's combined integration gates
 are separate; no full-gate success, moment/OP completion or commit is claimed by this read-back.
 
-### Combined integration validation (2026-10-16)
+### Historical combined integration validation at `c769e96` (2026-10-16)
 
 Root accepted the independent J0, J2, shared-owner and vocabulary reviews. Full `NLAlib` and
 `NLAlibScaffold` build passes 3909 jobs without warnings. Root import checks pass. Axiom audit:
@@ -647,3 +652,150 @@ The textual ledger checker still reports the known pre-existing `IsSVD.eq` field
 (documented in Sketching-REPORT); `/tmp/nlalib-jackson-field-check.log` confirms the field exists
 in Lean. The ledger is deliberately unchanged for the source-coverage reasons above. No
 moment-comparison, coefficient-regularity or OP theorem is claimed by completion of J0/J2.
+
+### Stronger public Jackson bound amendment (2026-10-16)
+
+The user explicitly requests exposing the stronger bound already proved internally. This
+supersedes the earlier decision to discard the private πL/(N+2) estimate by comparison with the
+source's π²L/(2(N+2)). Keep the existing theorem name, hypotheses and
+`Result: jackson-lipschitz`; no second “improved” theorem or weaker replacement is introduced.
+This is authorized work, not a request for renewed approval of ordinary elaboration choices.
+
+**Numerical-bound contract.** CONTRIBUTING §5.2 rule 2 permits a small literal source constant
+when the proof reaches it, but requires any other proof-derived constant or tail function to be
+named. The source factor here is π²/2; the new factor π is a proof improvement, even though π
+itself is the existing mathematical constant `Real.pi`. Naming the bound does not redefine π:
+it gives the algorithm's numerical guarantee an improvement-stable API. This is the actual HMT
+Gaussian pseudoinverse precedent: `gaussianPinvSpecNormBound` in
+`RandomMatrix/Gaussian/InverseMoments/Spectral.lean` names the proof-derived
+`e * sqrt((k+r-1)/2)/(k-r)`, documents its difference from HMT's `e*sqrt(k)/(k-r)`,
+and supplies an explicit comparison and constants-registry entry. The algorithm theorem must
+not hide the stronger result merely to retain the source's printed literal.
+
+Recommended minimal owner API, in `Polynomial/Approximation/Jackson.lean` before its main
+uniform theorem (ordinary local openings omitted):
+
+```lean
+namespace NLAlib
+
+noncomputable irreducible_def jacksonApproximationConstant : ℝ := Real.pi
+
+theorem jacksonApproximationConstant_pos : 0 < jacksonApproximationConstant
+
+theorem jacksonApproximationConstant_le : jacksonApproximationConstant ≤ Real.pi
+
+theorem isUniformApproxOn_jacksonApprox_of_lipschitz
+    {𝕜 : Type*} [RCLike 𝕜] {f : ℝ → 𝕜} {L : ℝ≥0}
+    (hf : LipschitzOnWith L f (Set.Icc (-1 : ℝ) 1)) (N : ℕ) :
+    Metric.IsUniformApproxOn
+      (fun x : ℝ => (jacksonApprox f N).eval (x : 𝕜)) f (Set.Icc (-1 : ℝ) 1)
+      (jacksonApproximationConstant * (L : ℝ) / (N + 2 : ℝ))
+
+end NLAlib
+```
+
+The numerical factor is a bound definition under rule 2, not a fourth approximation object or
+new hypothesis interface. Its current body is exactly π; consumers use positivity and the
+one-sided comparison rather than unfold it. The current-value comparison ≤π remains valid if
+the factor improves. No equality-to-π API is needed. The body equation generated by the
+irreducible definition serves the owner proof. Future same-shape improvements update the body,
+comparison proof, current-value formulas and registry without renaming the main theorem.
+
+Proposed numerical-bound vocabulary row for the same implementation handoff:
+
+| Numerical bound | Current body and role | Consumer API and bridge |
+| --- | --- | --- |
+| Jackson approximation factor | `jacksonApproximationConstant : ℝ := Real.pi`; named proof-derived factor, support declaration rather than an Explorer headline | `jacksonApproximationConstant_pos`, `jacksonApproximationConstant_le`; upper comparison to the current explicit value π, documented source factor π²/2 |
+
+No explicit Result or Concept metadata is added to this numerical factor. Existing Explorer
+support-role behavior keeps it out of the headline catalogue; the existing Jackson result's
+mathematical display shows the numeric π factor. No Explorer configuration or frontend edit is
+needed. The registry records the numerical bound, independently of result membership.
+
+Proof change is minimal: the existing `norm_error_cos` already proves
+`L * (π/(N+2))`. Rewrite the bound's body only in the owner proof and rearrange multiplication;
+remove the final weakening via `Real.two_le_pi`. No kernel, polynomial, coefficient or
+hypothesis changes. Positivity and comparison are direct `Real.pi_pos`/reflexivity bridges.
+At N=0 the public current error is πL/2; L=0 remains zero. No affine or noisy-moment claim is
+added. The library value is strictly below the source factor for positive L, but no optimality or
+sharpness is claimed: it is the estimate this chord/Young proof reaches.
+
+The source docstring still cites `ChenTrogdonUbaru2022`, v1 Appendix C/Theorem 38, then
+explicitly distinguishes its π²L/(2(N+2)) from our proved πL/(N+2). The main displayed
+conclusion shows the **current value**, not a bare C:
+
+```text
+... the uniform error is at most <!-- value jacksonApproximationConstant -->
+$$\frac{\pi L}{N+2}.$$
+```
+
+The constant's docstring also displays π and states both source and proved factors. Its
+registry entry is included in `docs/constants.toml`, with body `Real.pi`, current
+LaTeX `\pi` and the script-generated body hash; do not invent a source value or bypass markers
+because π is familiar. Update explanatory prose that currently calls π²L/(2(N+2)) the final
+library guarantee, while retaining that expression when identifying the source or earlier
+reviewed design. Target/capped checks and final root documentation/constants/reuse gates must
+refer to the final stronger statement; no builds were run for this design amendment.
+
+**Proposed targeted CONTRIBUTING clarification.** Existing numerical-bound rules clearly settle
+naming and comparison, but do not explicitly require exposing an already-proved stronger result.
+A single sentence after rule 2's opening paragraph would make the user's requested lasting
+practice explicit: “When a proof establishes a stronger bound under the same hypotheses, expose
+that bound through the existing theorem and named-bound API; record its relation to the source
+rather than weaken it solely to reproduce the source's constant or an earlier approved draft.
+Changes to hypotheses, mathematical scope or public interfaces retain their normal design review.” No broader policy or automatic
+new objects are needed. That narrow clarification is now applied in CONTRIBUTING; this documentation pass makes no
+further CONTRIBUTING edits.
+
+### Current stronger-bound implementation status and background (2026-10-16)
+
+The stronger named factor is implemented and target/capped checks are clean. The current main
+theorem has the same name, hypotheses and result identifier, with bound
+`jacksonApproximationConstant * L / (N+2)` and current displayed value πL/(N+2).
+The registry now has 26 numerical bounds, and CONTRIBUTING includes the targeted stronger-bound
+clarification and factor row. Combined final gates pass, as recorded below; the historical `c769e96` counts
+and checks above describe the previous statement.
+There are 23 explicit new public declarations in the combined work: thirteen J0, six constructive
+J2, one shared coefficient theorem, and the factor with its two lemmas. The irreducible definition
+also generates machinery, counted according to the existing audit/extraction policy.
+
+This follows the actual HMT Gaussian pseudoinverse precedent described above: preserve the
+proved stronger value through a stable named bound and display its current number, while stating
+the source comparison honestly. The value π here is what this proof establishes, not an optimal
+Jackson constant and not a novelty claim. The earlier library source guarantee was π²/2 times
+L/(N+2); no weaker theorem is retained merely to reproduce that value.
+
+User-supplied background references are `Rivlin1981`, *An Introduction to the Approximation of
+Functions*, and [Shah–Urschel–West2026, version 2](https://arxiv.org/abs/2607.23375v2),
+*What is Jackson's constant?*. The latter's §1/Theorem 1.3 discusses a sharper asymptotic constant
+approximately 2.4306 with a remainder term. That asymptotic theorem and its remainder are not
+proved here, and must not be conflated with the present finite-N constructive bound or cited as
+its formal proof. These references supply background for further exact-design work.
+
+The proposed, still unimplemented M1 targets now use approximation contribution **2πL/(N+2)**
+for probability measures, plus `(4L/π) * ∑ |Δ_k|/k` if the deferred J1 coefficient bound is proved
+for the same polynomial. The named factor would express this as twice its value in Lean. Neither
+an exact/noisy moment theorem, W1 transport identification nor pointwise spectral density estimate
+is claimed by the current Jackson implementation.
+
+### Stronger-bound final validation and read-back (2026-10-16)
+
+Root accepted the bounded design review and independent actual-source/registry review. From the
+Lean statement: the same canonical polynomial approximates any RCLike-valued function that is
+L-Lipschitz on [-1,1], with degree budget N and error bounded by the named factor times L/(N+2).
+The factor currently equals π and its public comparison is ≤π; N=0, L=0 and endpoints remain
+covered. The proof uses the established chord/Young estimate directly, with no final weakening.
+The existing result identifier and theorem name are preserved. The source docstring correctly
+identifies the source factor π²/2 and the new proved value; no optimality/novelty claim is made.
+
+Final full build passes 3909 jobs with no warnings; target and capped file checks are clean.
+Axiom audit: 7501 reachable declarations, zero violations. Fourteen linters: 5116 declarations
+plus 2385 generated, zero errors. Duplicate report: 4709 theorems, zero classes. Root imports,
+proof reuse, references (59 keys), constants (26), and LaTeX (18199 spans) pass. Logs are
+`/tmp/nlalib-jackson-stronger-{target,lean,build,audit,lint,duplicates,reuse,imports,explore}.log`.
+
+Explorer extraction `/tmp/nlalib-jackson-stronger-explore.json` contains 315 modules and 3534
+declarations; all source fingerprints match. The headline doc displays πL/(N+2) and the factor
+is marked `explorerRole: support`. This is extraction validation, not deployment. The existing
+prototype ledger is unchanged: this improvement still does not port the sharper existential
+sawtooth theorem. No new scaffold, sorry, axiom, coefficient spelling or approximation object.
