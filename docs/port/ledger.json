@@ -9775,6 +9775,16 @@
   "note": "equivalent pointwise real bound through Metric.IsUniformApproxOn and Real.dist_eq",
   "stage": "Poly0"
  },
+ "NLAlib.abs_eval_le_abs_eval_T_real_of_forall_abs_le_one": {
+  "new": "Polynomial.Chebyshev.abs_eval_le_abs_eval_T_real_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
+ "NLAlib.abs_eval_le_mul_abs_eval_T_real_of_forall_abs_le": {
+  "new": "Polynomial.Chebyshev.abs_eval_le_mul_abs_eval_T_real_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
  "NLAlib.abs_exp_neg_le_one": {
   "new": null,
   "note": "private step or covered by the covariance form; Sudakov-Fernique follows from Gordon",
@@ -17753,6 +17763,11 @@
   "note": "Mathlib: Matrix.inv_diagonal",
   "stage": "M10"
  },
+ "NLAlib.inv_eval_T_real_le_of_forall_abs_eval_le": {
+  "new": "NLAlib.inv_eval_T_real_le_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
  "NLAlib.inv_gram_eq_zero_of_not_posDef": {
   "new": null,
   "note": "cut: D9, Wishart and the hard edge; PORT_PROBABILITY.md D9, R4 §0",
@@ -17807,6 +17822,11 @@
  "NLAlib.inv_submatrix_le_submatrix_inv": {
   "new": "Matrix.PosDef.inv_submatrix_le",
   "stage": "M7"
+ },
+ "NLAlib.inv_two_pow_le_of_monic_of_forall_abs_eval_le": {
+  "new": "Polynomial.Chebyshev.inv_two_pow_le_of_monic_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
  },
  "NLAlib.invariantNorm_rectangularDiagonal_singularValues_add_sub_le": {
   "new": "NLAlib.SymmetricGauge.apply_singularValuesFinsupp_sub_le",
@@ -18159,6 +18179,16 @@
  "NLAlib.isLeastSquaresSolution_toEuclideanLin_pinv": {
   "new": "NLAlib.isLeastSquaresSolution_pinv_mulVec",
   "stage": "M6"
+ },
+ "NLAlib.isLeast_chebyshev_minimax": {
+  "new": "NLAlib.isLeast_chebyshev_minimax",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
+ "NLAlib.isLeast_chebyshev_monic_minimax": {
+  "new": "Polynomial.Chebyshev.isLeast_chebyshev_monic_minimax",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
  },
  "NLAlib.isLeast_frobSq_sub_orthogonal_mul": {
   "new": "NLAlib.isLeast_frobNorm_sub_mul_sq",

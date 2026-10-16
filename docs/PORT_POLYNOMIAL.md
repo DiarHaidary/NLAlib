@@ -213,4 +213,7 @@ explicit/asymptotic pairs where applicable, without calling every degree estimat
 A stage report states source reuse, changed hypotheses/constants, anything scaffolded and
 remaining consumers. Do not claim proof completion from lexical token scans or green imports.
 
-**Current state: Poly0 implementation in progress; later exact APIs remain design checkpoints.**
+**Current state: Poly0 complete (`e33043d`); Poly1 complete with both files independently approved and all
+mechanical gates passed (report: `docs/design/Polynomial-Minimax.md`). The user approved Poly2 full coefficient normalization, one generic
+RCLike API and inclusive degree-N truncation (0 through N). Poly2 implementation has not started;
+its exact stage design and later APIs remain design checkpoints.**

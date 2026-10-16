@@ -2,6 +2,28 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Polynomial Poly1 (2026-10-16)
+
+Complete and independently reviewed: `docs/design/Polynomial-Minimax.md`. Both files/all six
+new statements are approved: external modulus comparison, monic minimax and exact normalized
+residual minimax, preserving Poly0 API and including q=0. One new root import and six genuine
+prototype mappings were recorded; previous ledger entries are unchanged. No new vocabulary,
+Mathlib deviation or proof edits during mechanical validation.
+
+Full two-thread build passed (3895 jobs, zero warnings), both root checks passed, audit 7278/zero
+violations, 14 linters 5020 plus 2258 generated/zero errors, duplicates 4621 theorems/zero classes.
+References (56 keys/40 asymptotic forms), constants (25), KaTeX (5490 docstrings/18117 spans),
+11 metadata tests and six reuse targets passed. Prior target/capped checks passed; no redundant
+stage build. Logs: `/tmp/nlalib-poly1-checks`.
+Fresh extraction `/tmp/nlalib-poly1-explore.json`: 307 modules/3490 public declarations, all source
+hashes matching and all six additions proved. Strict unchanged Explorer build passed: 306 visible
+modules/251 results/169 enriched definitions; Rates remains 32 rows/nine guarantees/three families.
+No active validation process, commit or push; root handles the commit and extraction restamp.
+
+Poly2 full coefficient normalization, one generic RCLike API and inclusive degree-N truncation
+(0 through N) are explicitly user-approved. No Poly2 code has started; its exact stage design
+and sequential proof work follow separately. Available-agent fallback continues.
+
 ## Polynomial Poly0 (2026-10-16)
 
 Complete and independently reviewed; user-approved roadmap and stage design:
