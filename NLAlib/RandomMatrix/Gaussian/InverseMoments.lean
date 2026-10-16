@@ -22,7 +22,8 @@ the law and the moments of the entries of the inverse Wishart matrix
 $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$, from which the moments of the pseudoinverse
 $\mathbf{G}^{+} = \mathbf{G}^{\mathsf{H}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ that the
 randomized range finder consumes follow (Halko, Martinsson and Tropp 2011, Propositions 10.2 to
-10.4): the mean $\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1} = (\lvert k \rvert - \lvert r
+10.4): for $\lvert r \rvert + 2 \le \lvert k \rvert$, the mean
+$\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1} = (\lvert k \rvert - \lvert r
 \rvert - 1)^{-1} \mathbf{I}$, the second moments of the entries, and the moments of the probes
 $\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u}$. The Frobenius moments
 of $\mathbf{G}^{+}$ (Propositions 10.2 and 10.3) are in

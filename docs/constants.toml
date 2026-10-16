@@ -9,6 +9,8 @@
 # Fields of each entry:
 #   name       Lean full name.
 #   kind       what it is: constant, tail function, sample size, …
+#   explorer_role optional: "support" (default) or "concept". Supporting bounds stay searchable
+#              and linked from results, but are not headline catalogue or dependency-graph nodes.
 #   file       the file that defines it.
 #   args       its explicit arguments, in Lean order; `#i` in `latex` is the i-th. The letters here
 #              are the definition's; each docstring passes its own (`k \ell`, `(\varepsilon/2)`).

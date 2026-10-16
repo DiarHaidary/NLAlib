@@ -386,7 +386,8 @@ theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property
 with distortion $\varepsilon$ and failure probability $\delta$, for $0 < \varepsilon < 3/2$ and
-$\delta > 0$. Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`. -/
+$\delta > 0$. Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`.
+Result: jl-haar -/
 theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk' : jlDim ε δ ≤ Fintype.card k) :

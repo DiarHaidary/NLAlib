@@ -503,6 +503,21 @@ theorem eigenvalue_add_le ...
 
 Module docstrings follow Mathlib: `# Title`, a paragraph, `## Main results` listing the names.
 
+The explorer separates mathematical headlines from supporting API. Named bounds registered in
+`docs/constants.toml` are supporting API by default: searchable, linkable and available with the
+file's other declarations, but not separate headline catalogue entries or graph nodes. An entry
+may set `explorer_role = "concept"` when the definition itself warrants headline presentation.
+This is presentation metadata; it does not change visibility or the Lean API. Module summaries
+list actual declaration names, with supporting numerical API in a separate section when useful.
+
+For results with `Asymptotic:` metadata, the explorer leads with the asymptotic docstring and
+offers the corresponding explicit bound alongside it. Both docstrings must therefore state
+their hypotheses and conclusions independently; the explicit theorem remains the primary Lean
+API. At least one member of every explicit/asymptotic pair carries a `Result:` id so the pair
+appears in result navigation; the reference checker enforces this. The extraction wrapper
+records source hashes so source-body enrichment cannot silently
+combine extracted declarations with a different checkout.
+
 `scripts/check_refs.py` fails CI on an unknown bibliography key or a malformed result id.
 `docs/references.bib` grows by adding the entry before citing it; keys are `AuthorSurnames + year`.
 

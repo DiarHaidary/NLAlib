@@ -42,6 +42,22 @@ Updated at every stopping point. Newest entry first within each section.
   4. Random matrices with orthonormal columns (normalised Gaussians) are a first-class
      distribution alongside Gaussian, sub-Gaussian, sparse and structured ones.
 
+## Explorer documentation follow-up (2026-10-16)
+
+- Complete on `feat/explorer-docs` in the existing library and explorer checkouts; the user
+  requested separate local commits after validation.
+  All 28 asymptotic forms have paired explorer views, 24 named bounds are supporting API,
+  and 21 Lean files received comment-only corrections. No theorem statements or proofs changed.
+- Design, read-back, independent reviews, residual citation follow-up and validation:
+  `docs/design/Explorer-Documentation.md`. Full build and per-file checks, root checks,
+  audit/lint/duplicate report, documentation checks, 19 regression tests and browser checks pass.
+  Logs: `/tmp/nlalib-explorer-checks/`. Merge library changes before deploying the stricter
+  explorer parser. No prototype work was added, so ledger dispositions are unchanged.
+- Unrelated untracked files are untouched and excluded: the preexisting
+  `docs/design/LowRank-S7.md` and the concurrently added
+  `NLAlib/Sketching/Sparse/CountSketchEmbedding.lean`. Concurrent CountSketch source and
+  constant-registry refactoring is also preserved in the working tree, outside this commit.
+
 ## Gaussian fourth-moment follow-up (2026-10-16)
 
 - **Complete and independently reviewed**, branch `feat/gaussian-fourth-moments`, base

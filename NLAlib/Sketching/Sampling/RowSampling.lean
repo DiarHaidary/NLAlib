@@ -775,7 +775,8 @@ constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 
 and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
 (`NLAlib.samplingInjectionSize U.rank L ε δ`). Asymptotic form:
-`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`. -/
+`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`.
+Result: leverage-sampling-osi -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
     (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 < ε) (hδ : 0 < δ)

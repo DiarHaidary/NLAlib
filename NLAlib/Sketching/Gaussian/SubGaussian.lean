@@ -404,8 +404,7 @@ $2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$, the Gaussian sketc
 (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`). From
 `NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun` at
 $Y_i = \langle \mathbf{X}_i, \mathbf{x} \rangle$.
-[Woodruff2014, §2.1, after Theorem 6] attributes this to Achlioptas for signs; constants of
-[Achlioptas2003, Theorem 1.1], locator to confirm (`docs/PORT_SKETCHING.md` §7.2). Incomparable
+[Woodruff2014, §2.1, after Theorem 6] attributes this to Achlioptas for signs. Incomparable
 with `NLAlib.hasJLProperty_of_isSubgaussianVector` at $c = 1$ (CONTRIBUTING §5.2 rule 4): this
 one is better for $\varepsilon \lesssim 1.43$ (sixteen times the exponent at small
 $\varepsilon$), that one beyond, and needs no fourth-moment hypothesis.
@@ -532,7 +531,8 @@ rows (`subgaussianJLDim c ε δ`, with <!-- value subgaussianJLConstant -->$C = 
 constant `subgaussianJLConstant`), the JL property holds with distortion $\varepsilon$ and failure
 probability $\delta$ (for $\varepsilon \le c$ the $\min$ of the tail is its quadratic part).
 [Vershynin2018, Exercise 5.3.3 (2020 draft)]. Asymptotic form:
-`NLAlib.exists_forall_hasJLProperty_of_isSubgaussianVector`. -/
+`NLAlib.exists_forall_hasJLProperty_of_isSubgaussianVector`.
+Result: jl-subgaussian -/
 theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ c) (hδ : 0 < δ)
@@ -623,7 +623,8 @@ $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
 is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
 failure probability $\delta$. [Vershynin2018, Theorem 4.6.1 (2020 draft)]; [Woodruff2014,
 Theorem 6]. Asymptotic form:
-`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`. -/
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`.
+Result: subgaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ 2 * c) (hδ : 0 < δ)

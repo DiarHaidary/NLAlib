@@ -394,13 +394,7 @@ outside probability $\delta_2$, is a subspace injection for $\operatorname{range
 constant $a$ outside probability $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed: for $L < 0$
 and nonempty `n` the sampling hypothesis is vacuous. [Tropp2011a] (the structure of the SRHT
 proof, through CEMT); [CamanoEpperlyMeyerTropp2025, §4.5] (the same two steps for SparseRTT, where
-their Theorem 4.4 is the sampling hypothesis).
-The proof: `ProbabilityTheory.IndepFun.measureReal_mem_le_add` with the open event
-$\{(\mathbf{A}, \mathbf{B}) \mid \mathbf{A}\mathbf{B} \text{ is not an injection for }
-\operatorname{range}\mathbf{U}\}$ and the measurable good set of unitaries $\mathbf{B}$ making
-$\mathbf{B}\mathbf{U}$ incoherent; on it the section is the sampling hypothesis at
-$\mathbf{B}\mathbf{U}$, since $(\mathbf{B}\mathbf{U})^{\mathsf{H}}\mathbf{B}\mathbf{U} =
-\mathbf{U}^{\mathsf{H}}\mathbf{U}$. -/
+their Theorem 4.4 is the sampling hypothesis). -/
 theorem hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
     (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))
@@ -421,8 +415,7 @@ $\mathbf{T}\mathbf{U}$ so incoherent outside probability $\delta_2$, is a subspa
 $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ outside probability
 $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed, as in
 `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`. [Tropp2011a];
-[CamanoEpperlyMeyerTropp2025, §4.5].
-The proof is that of the injection, with `NLAlib.isClosed_setOf_isSubspaceEmbedding`. -/
+[CamanoEpperlyMeyerTropp2025, §4.5]. -/
 theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
     (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))

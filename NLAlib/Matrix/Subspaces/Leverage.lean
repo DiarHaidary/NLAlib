@@ -112,7 +112,9 @@ theorem leverageScore_eq_of_range_eq
 
 open scoped ComplexOrder in
 /-- Leverage scores are monotone in the column space: if the column space of $\mathbf{B}$ is
-contained in that of $\mathbf{A}$ (`range B ≤ range A`), every score of $\mathbf{B}$ is at most the
+contained in that of $\mathbf{A}$
+($\operatorname{range}\mathbf{B} \subseteq \operatorname{range}\mathbf{A}$),
+every score of $\mathbf{B}$ is at most the
 corresponding score of $\mathbf{A}$. This is how a domination hypothesis for
 $[\mathbf{A}, \mathbf{y}]$ passes to $\mathbf{A}$. -/
 theorem leverageScore_le_of_range_le

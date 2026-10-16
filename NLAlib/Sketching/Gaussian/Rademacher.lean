@@ -296,7 +296,8 @@ private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : �
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`), the JL property holds with distortion $\varepsilon$ and failure probability
 $\delta$; the Gaussian sketch's size (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`).
-Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix`. -/
+Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix`.
+Result: jl-rademacher -/
 theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk : jlDim ε δ ≤ Fintype.card k) :
@@ -334,7 +335,8 @@ $\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$ rows (`jlDim 
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious
 subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
 $\delta$. Asymptotic form:
-`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`. -/
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`.
+Result: rademacher-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :

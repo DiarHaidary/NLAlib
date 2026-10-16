@@ -45,11 +45,10 @@ Design: `docs/design/LowRank-S6.md` §3.6, §8 items 4, 13 and 17. Real througho
 
 * `NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_hasLaw_gaussianMatrix`:
   a fixed range test matrix.
-* any law of the range test matrix: the composition
-  `integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussian…`
-  (ending in `Matrix`), its integrability companion, and the $(1 + \varepsilon)$ form from a bound
-  on the early-truncated randomized SVD (the same name with `le_one_add_mul` for
-  `le_mul_integral` and the suffix `_of_integral_le`).
+* [Gaussian completion bound](https://nla-lib.org/explore/#d/NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix):
+  completion for any law of the range test matrix.
+* [relative-error composition bound](https://nla-lib.org/explore/#d/NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix_of_integral_le):
+  relative error from an expected bound on early-truncated randomized SVD.
 * `NLAlib.earlyTruncatedRSVDFactor k l`: the factor, at
   present <!-- value earlyTruncatedRSVDFactor k \ell -->
   $$\frac{(1 + \sqrt{2k/\ell})\bigl((1 - \sqrt{k/\ell})^{-2} + 10/\sqrt{\ell}\bigr) +
@@ -58,11 +57,12 @@ Design: `docs/design/LowRank-S6.md` §3.6, §8 items 4, 13 and 17. Real througho
   with `NLAlib.one_le_earlyTruncatedRSVDFactor` and `NLAlib.earlyTruncatedRSVDFactor_le_one_add`.
 * `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`:
-  the early-truncated randomized SVD; the asymptotic form of the second is `NLAlib.exists_forall_`
-  followed by its name without `_one_add_mul`.
-* early-truncated generalized Nyström with Gaussian test matrices, $\varepsilon^{-2}$ range and
-  $\varepsilon^{-1}$ co-range samples: the $(1 + \varepsilon)$ form above without the suffix
-  `_of_integral_le`, and its asymptotic form, named in the same way.
+  the early-truncated randomized SVD; its asymptotic form is
+  `NLAlib.exists_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix`.
+* [relative-error bound](https://nla-lib.org/explore/#d/NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix):
+  early-truncated generalized Nyström with $\varepsilon^{-2}$ range and
+  $\varepsilon^{-1}$ co-range samples; its asymptotic form is
+  [asymptotic form](https://nla-lib.org/explore/#d/NLAlib.exists_forall_integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_of_hasLaw_gaussianMatrix).
 -/
 
 @[expose] public section
