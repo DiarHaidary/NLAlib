@@ -20,9 +20,10 @@ Tail bounds in NLAlib are failure probabilities in $\mathbb{R}$, with non-strict
 `MeasureTheory.mul_meas_ge_le_integral_of_nonneg` already have this form; the union bound and the
 complement are `MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_biUnion_finset_le`
 and `MeasureTheory.probReal_compl_eq_one_sub`. This file adds Markov's inequality in quotient
-form, Chebyshev's inequality in $\mathbb{R}$, the two-sided tail, the passage from a tail bound
-to integrability and to a bound on the mean, Chernoff's bound inverted for a sub-gamma moment
-generating function, and Jensen's inequality for a power of a sum of random variables.
+form, Chebyshev's inequality in $\mathbb{R}$, the two-sided tail, Markov's inequality off a
+failure event, the passage from a tail bound to integrability and to a bound on the mean,
+Chernoff's bound inverted for a sub-gamma moment generating function, and Jensen's inequality for
+a power of a sum of random variables.
 
 ## Main results
 
@@ -30,6 +31,8 @@ generating function, and Jensen's inequality for a power of a sum of random vari
 * `NLAlib.measureReal_abs_ge_le_integral_rpow_div`: Markov's inequality for a moment.
 * `NLAlib.measureReal_ge_le_variance_div_sq`: Chebyshev's inequality.
 * `NLAlib.measureReal_abs_ge_le_add`: a two-sided tail is at most the sum of the one-sided tails.
+* `NLAlib.measureReal_le_add_one_div`: Markov's inequality off a failure event, the step of
+  every subspace-injection tail.
 * `NLAlib.integrable_of_measureReal_ge_le`, `NLAlib.integral_le_of_measureReal_ge_le`: a
   nonnegative random variable with an integrable tail bound is integrable, and its mean is at most
   the integral of the bound.
@@ -90,6 +93,42 @@ theorem measureReal_abs_ge_le_add (X : Ω → ℝ) (t : ℝ) :
     simp only [Set.mem_ofPred_eq, Set.mem_union, le_abs, le_neg]
   rw [h]
   exact measureReal_union_le _ _
+
+/-- **Markov's inequality off a failure event**: if $\mu(G^c) \le \delta$, $M \ge 0$ is integrable
+with mean $m$ (and vanishes when $m = 0$), and on $G$ the event $E$ forces $t m < M$, then for
+$t > 0$
+$$\mu(E) \le \delta + \frac{1}{t}\,.$$
+The common step of the subspace-injection tails (`NLAlib.Sketching.Properties.Injection`) and
+the oblivious low-rank tails. -/
+theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {δ t : ℝ} {G E : Set Ω}
+    (hG : μ.real Gᶜ ≤ δ) {M : Ω → ℝ} (hM0 : ∀ ω, 0 ≤ M ω) (hM : Integrable M μ) {m : ℝ}
+    (hm : ∫ ω, M ω ∂μ = m) (hm0 : m = 0 → ∀ ω, M ω = 0) (ht : 0 < t)
+    (hE : ∀ᵐ ω ∂μ, ω ∈ G → ω ∈ E → t * m < M ω) : μ.real E ≤ δ + 1 / t := by
+  have hae : ∀ᵐ ω ∂μ, ω ∈ E → ω ∈ Gᶜ ∪ {ω | t * m < M ω} := by
+    filter_upwards [hE] with ω hω hωE
+    by_cases hωG : ω ∈ G
+    · exact Or.inr (hω hωG hωE)
+    · exact Or.inl hωG
+  have hF : μ.real {ω | t * m < M ω} ≤ 1 / t := by
+    rcases eq_or_ne m 0 with h0 | h0
+    · have he : {ω | t * m < M ω} = ∅ := by
+        ext ω
+        simp only [hm0 h0 ω, h0, mul_zero, lt_self_iff_false, Set.mem_ofPred_eq,
+          Set.mem_empty_iff_false]
+      rw [he, measureReal_empty]
+      positivity
+    · have hm' : 0 < m := lt_of_le_of_ne (hm ▸ integral_nonneg hM0) (Ne.symm h0)
+      calc μ.real {ω | t * m < M ω} ≤ μ.real {ω | t * m ≤ M ω} :=
+            measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => hω.le)
+        _ ≤ (∫ ω, M ω ∂μ) / (t * m) :=
+            measureReal_ge_le_integral_div (ae_of_all _ hM0) hM (mul_pos ht hm')
+        _ = 1 / t := by
+            rw [hm]
+            field_simp
+  calc μ.real E ≤ μ.real (Gᶜ ∪ {ω | t * m < M ω}) :=
+        ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae hae)
+    _ ≤ μ.real Gᶜ + μ.real {ω | t * m < M ω} := measureReal_union_le _ _
+    _ ≤ δ + 1 / t := add_le_add hG hF
 
 private theorem lintegral_ofReal_le_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ}
     (hf : AEMeasurable f μ) (hf0 : 0 ≤ᵐ[μ] f) {a : ℝ} (ha : 0 ≤ a) {F : ℝ → ℝ}

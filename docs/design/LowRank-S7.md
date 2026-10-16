@@ -1846,3 +1846,16 @@ below contradicts §0 to §7, it supersedes them; §3's signatures stand except 
       `EarlyTruncation.lean` 448 (6); `Injection.lean` +237 (to 458), `LeastSquaresOblique.lean`
       +53, `SketchedLowRank.lean` +8, `Spectral/LowRank.lean` +11: about 1,730 lines against the
       estimate of 1,250, the excess being docstrings and the degenerate-case branches.
+    - *U1, U2 and the Markov step (2026-10-16; items 17, 18).* S9's U1
+      `HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` and U2
+      `HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le`
+      are proved in a final section of `LowRank/Oblivious/EarlyTruncation.lean` (now 552 lines,
+      8 statements), with the signatures of S9 §3.6 unchanged: U1 from
+      `hasProjectionCostPreserving_conjTranspose_iff` and T6 under `measureReal_mono`, U2 as the
+      union of U1's event and C4's. No new import (`ProjectionCost` comes through
+      `LowRank/Structural/EarlyTruncation`); U2 carries `set_option linter.style.longLine false in`
+      for its 101-character name. No per-family instance (cut, S9 §6 and Q6).
+      `measureReal_le_add_one_div` is moved, statement and name unchanged, to
+      `Probability/Tail.lean` beside `measureReal_ge_le_integral_div`; it is item 2's Markov step
+      itself, so nothing else moves. `Injection.lean` already imported `Tail`. The flag of item 17
+      on its home is closed.

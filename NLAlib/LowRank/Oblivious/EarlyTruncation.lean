@@ -32,8 +32,11 @@ $\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ is one, and so is the projecto
 the raw test matrix when a family's analysis runs at a rescaled one: a family statement concludes
 about the output the user computes without identifying outputs under ties.
 
-The PCP route to the same outputs (S9's `HasProjectionCostPreserving` tails) is appended to this
-file after S7. Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18.
+**Through a projection-cost-preserving sketch.** The last section states the same outputs for a
+sketch known only to satisfy `NLAlib.HasProjectionCostPreserving`, the tail form of the
+deterministic `NLAlib.IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le`. For a
+sketch of a known family the structural route above uses fewer events and gives better constants.
+Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18; `docs/design/LowRank-S9.md` §3.6.
 
 ## Main results
 
@@ -47,6 +50,10 @@ file after S7. Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18.
   `NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`: the
   completion step, any law of $\mathbf{\Omega}$;
   `NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le`: both sides.
+* `NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le`: the
+  early-truncated randomized SVD through a random projection-cost-preserving sketch, and
+  [generalized Nyström](https://nla-lib.org/explore/#d/NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le)
+  through it and an OSI.
 -/
 
 @[expose] public section
@@ -457,5 +464,89 @@ theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_
   linarith [hc.2]
 
 end Real
+
+/-! ### Through a projection-cost-preserving sketch -/
+
+omit [Fintype p] [DecidableEq m] [DecidableEq n] in
+/-- **Early truncation through a random projection-cost-preserving sketch**: if
+$\mathbf{\Omega}^{\mathsf{H}}$ is a rank-$k$ projection-cost-preserving sketch for $\mathbf{A}$
+with constants $a$, $b$ except with probability $\delta$, then
+$$a\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2
+\le b\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$, for every choice of the truncations. With constants
+$1 \mp \varepsilon$ this is
+$$(1 - \varepsilon)\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
+\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+The tail form of `NLAlib.IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le`.
+For a sketch of a known family the structural route
+`NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` (the tail form of
+`NLAlib.IsSubspaceInjection.frobNorm_sub_earlyTruncatedRSVD_sq_le`) uses fewer events and gives
+better constants; this is the form for a sketch known only to be projection-cost-preserving.
+[CohenElderMuscoMuscoPersu2015, Lemma 3, §7.2]; there for a fixed sketch with $\varepsilon$, here
+a tail with constants $a$, $b$ and the named output.
+Result: early-truncation-pcp-bound -/
+theorem HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le
+    [IsFiniteMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a b δ : ℝ}
+    (h : HasProjectionCostPreserving (fun ω => (X ω)ᴴ) A k a b δ μ) :
+    μ.real {ω | b * frobNorm (A - truncatedSVD A k) ^ 2 <
+      a * frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
+  refine (measureReal_mono (s₂ := {ω | ¬ IsProjectionCostPreserving A (A * X ω) k a b})
+    fun ω hω hpcp => ?_).trans (hasProjectionCostPreserving_conjTranspose_iff.1 h)
+  have hω' : b * frobNorm (A - truncatedSVD A k) ^ 2 <
+      a * frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
+  exact not_lt.2 hpcp.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le hω'
+
+-- The name of this theorem exceeds 100 characters with its indentation.
+set_option linter.style.longLine false in
+omit [DecidableEq n] in
+/-- **Early-truncated generalized Nyström through a random projection-cost-preserving sketch**:
+if $\mathbf{\Omega}^{\mathsf{H}}$ is a rank-$k$ projection-cost-preserving sketch for
+$\mathbf{A}$ with constants $a \ge 0$, $b$ except with probability $\delta$, and an independent
+co-range test matrix $\mathbf{\Psi}$ has $\mathbf{\Psi}^{\mathsf{H}}$ an oblivious subspace
+injection for dimension $k$ with constant $a' > 0$ and failure probability $\delta'$, then for
+$t > 0$
+$$a\|\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k)
+\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{t}{a'}\Bigr) b\,
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta + \delta' + 1/t$. One pass, rank at most $k$. Proved as the union
+of the events of
+`NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` and the
+completion step
+`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`.
+For real sketches with the JL moment property
+`NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le` uses no
+projection-cost-preserving event and has no $1/t$ term; this is the form for a sketch known only
+to be projection-cost-preserving.
+[TroppYurtseverUdellCevher2017, §7.3.1], the algorithm and the remark that the results of
+[CohenElderMuscoMuscoPersu2015] imply a $(1+\varepsilon)$ bound at $\Theta(r/\varepsilon^2)$ for
+both sketch sizes, with unspecified constants; here explicit, with failure probability
+$\delta + \delta' + 1/t$.
+Result: early-truncation-pcp-bound -/
+theorem
+    HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le
+    [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a b δ a' δ' t : ℝ}
+    (h : HasProjectionCostPreserving (fun ω => (X ω)ᴴ) A k a b δ μ) (ha : 0 ≤ a)
+    (hΨ : IsObliviousSubspaceInjection (fun ω => (Ψ ω)ᴴ) k a' δ' μ) (ha' : 0 < a') (ht : 0 < t)
+    (hind : IndepFun X Ψ μ) (hX : AEMeasurable X μ) (hΨm : AEMeasurable Ψ μ) :
+    μ.real {ω | (1 + t / a') * b * frobNorm (A - truncatedSVD A k) ^ 2 <
+      a * frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2} ≤
+      δ + δ' + 1 / t := by
+  refine (measureReal_mono (s₂ := {ω | b * frobNorm (A - truncatedSVD A k) ^ 2 <
+      a * frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ∪
+      {ω | (1 + t / a') * frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 <
+        frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2})
+      fun ω hω => ?_).trans
+    ((measureReal_union_le _ _).trans ((add_le_add
+      h.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le
+      (hΨ.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le ha' ht hind hX
+        hΨm)).trans_eq (add_assoc _ _ _).symm))
+  by_contra hc
+  simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_lt] at hc
+  have hω' : (1 + t / a') * b * frobNorm (A - truncatedSVD A k) ^ 2 <
+      a * frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2 := hω
+  have h1 := mul_le_mul_of_nonneg_left hc.2 ha
+  have h2 := mul_le_mul_of_nonneg_left hc.1 (by positivity : (0 : ℝ) ≤ 1 + t / a')
+  linarith
 
 end NLAlib
