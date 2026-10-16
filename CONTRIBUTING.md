@@ -283,6 +283,19 @@ release.
      `noncomputable def` chosen from an existence lemma quantified outside all dimensions, and is
      documented as such. A bare `∃ C` never appears in a statement: quantified after the
      dimensions it is unusable, and it hides loose proofs.
+     **Asymptotic forms** (maintainer, 2026-10-16). A sample-size result of the subspace-embedding
+     or algorithm kind (JL, OSE, OSI, the $(1+\varepsilon)$ bounds of the low-rank algorithms,
+     PCP constructors) also gets the computer-science reading "$O(\cdot)$ suffices" as a corollary:
+     `∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n … : Type} [instances] (μ) (A) (sketches) (k) (ε) …,
+     hypotheses → 0 < ε → ε ≤ ε₀ → C * (threshold without constants) ≤ size → conclusion`. Every
+     constant is existential and comes before every dimension, type, measure, matrix and
+     parameter, so it is absolute; a dimension dependence the result really has (a $\log n$)
+     appears in the threshold, never inside $C$. Index types are fixed to `Type`. The name starts
+     `exists_forall_` followed by the explicit theorem's conclusion; the proof instantiates the
+     explicit theorem, which stays primary and whose docstring names its asymptotic form. The
+     asymptotic form's docstring says "$O(\ldots)$ suffices" in words and ends with the line
+     `Asymptotic: <full name of the explicit theorem>` (before any `Result:` line), so tools (the
+     explorer, `scripts/check_refs.py`) can find and check these corollaries.
   4. Incomparable bounds coexist, each named by what distinguishes it: its hypothesis
      (`_of_bounded`, `_of_variance_le`) or the parameter its bound is in (`_intrinsicDim`). Each
      docstring says in which regime it is better and names the other.
