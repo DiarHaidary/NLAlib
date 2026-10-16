@@ -45,6 +45,8 @@ hence `[Nonempty k]` on isotropy and the moments. Design: `docs/design/Sketching
 * `NLAlib.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq`: exact at
   $\lvert k \rvert = \lvert n \rvert$.
 * `NLAlib.hasJLProperty_of_hasLaw_haarFrame`, `NLAlib.hasJLMoment_of_hasLaw_haarFrame`.
+* `NLAlib.hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le` and its asymptotic form
+  `NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`.
 -/
 
 @[expose] public section
@@ -384,7 +386,7 @@ theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property
 with distortion $\varepsilon$ and failure probability $\delta$, for $0 < \varepsilon < 3/2$ and
-$\delta > 0$. -/
+$\delta > 0$. Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`. -/
 theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk' : jlDim ε δ ≤ Fintype.card k) :
@@ -392,5 +394,29 @@ theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame 
   have := hQ.isProbabilityMeasure_iff.2 inferInstance
   exact (hasJLProperty_of_hasLaw_haarFrame hQ hk hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk')
+
+/-- **Haar distributional JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice
+for the Haar sketch to have the JL property with distortion $\varepsilon$ and failure probability
+$\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
+dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le` with $C = 24$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic: NLAlib.hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le -/
+theorem exists_forall_hasJLProperty_of_hasLaw_haarFrame :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq k] (μ : Measure Ω) (Q : Ω → Matrix n k ℝ) (ε δ : ℝ),
+      HasLaw Q (haarFrame n k) μ → Fintype.card k ≤ Fintype.card n →
+      0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLProperty (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε δ μ := by
+  refine ⟨24, 1, by norm_num, one_pos, fun μ Q ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  refine hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le hQ hkn hε (by linarith) hδ
+    ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right (by linarith) (sq_nonneg ε)
 
 end NLAlib

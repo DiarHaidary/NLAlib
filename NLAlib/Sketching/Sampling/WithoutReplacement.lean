@@ -69,6 +69,9 @@ The tails rest on Hoeffding's comparison of sampling without and with replacemen
   and its lower-half twin
   `hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le`:
   sample sizes.
+* `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement`,
+  `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`: the
+  asymptotic forms.
 -/
 
 @[expose] public section
@@ -472,7 +475,8 @@ probability $\delta$, for $0 < \varepsilon \le 1$, $\delta > 0$
 and <!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
 (`NLAlib.samplingSize U.rank L ε δ`), the size of sampling with replacement.
-[Tropp2011a].
+[Tropp2011a]. Asymptotic form:
+`NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement`.
 Result: sampling-without-replacement-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
@@ -488,13 +492,51 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   exact two_mul_mul_exp_le_of_samplingSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
     hδ hk
 
+/-- **Row sampling without replacement, asymptotic form**: with
+$d = \operatorname{rank}\mathbf{U}$, $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row
+sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ to
+be a subspace embedding for $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$
+and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the
+constants come before every dimension and before $L$ (the coherence parameter), which stays in the
+threshold. Proved from
+`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le` with
+$C = 6$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic:
+NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le -/
+theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
+      [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
+      (U : Matrix n r 𝕜) (L ε δ : ℝ),
+      HasLaw S (samplingSketchWithoutReplacement k n) μ →
+      (∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) →
+      0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (L * Real.log (U.rank / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasSubspaceEmbedding S U (1 - ε) (1 + ε) δ μ := by
+  refine ⟨6, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n r _ _ _ _ _ _ μ S U L ε δ hS hdom hε hε1 hδ hδ2 hk
+  refine hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le hS
+    hdom hε hε1 hδ ((samplingSize_le _ L ε δ).trans (le_trans ?_ hk))
+  rcases Nat.eq_zero_or_pos U.rank with hd | hd
+  · simp [hd]
+  have hL : 0 < L := pos_of_leverageScore_le_mul_inv_card hdom hd
+  have hl2 : Real.log (2 * U.rank / δ) ≤ 2 * Real.log (U.rank / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (U.rank / δ) :=
+      Real.log_le_log (by norm_num) (by
+        rw [le_div_iff₀ hδ]; nlinarith [(Nat.one_le_cast (α := ℝ)).2 hd])
+    rw [mul_div_assoc, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right
+    (by nlinarith [mul_le_mul_of_nonneg_left hl2 hL.le]) (sq_nonneg ε)
+
 /-- **The lower half without replacement, sample-size form**: row sampling without
 replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace
 injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
 and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingInjectionSize U.rank L ε δ`). -/
+(`NLAlib.samplingInjectionSize U.rank L ε δ`). Asymptotic form:
+`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`. -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
     (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hε : 0 < ε) (hδ : 0 < δ)
@@ -508,5 +550,30 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
     exact hδ.le
   exact mul_exp_le_of_samplingInjectionSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
     hδ hk
+
+/-- **The lower half without replacement, asymptotic form**: with
+$d = \operatorname{rank}\mathbf{U}$, $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row
+sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ to
+be a subspace injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and
+failure probability $\delta$, for $\varepsilon$ below an absolute constant; the constants come
+before every dimension and before $L$, which stays in the threshold. Proved from
+`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le`
+with $C = 2$ and $\varepsilon_0 = 1$.
+Asymptotic:
+NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
+-/
+theorem exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
+      [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
+      (U : Matrix n r 𝕜) (L ε δ : ℝ),
+      HasLaw S (samplingSketchWithoutReplacement k n) μ →
+      (∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) →
+      0 < ε → ε ≤ ε₀ → 0 < δ → C * (L * Real.log (U.rank / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasSubspaceInjection S U (1 - ε) δ μ := by
+  refine ⟨2, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n r _ _ _ _ _ _ μ S U L ε δ hS hdom hε _ hδ hk
+  refine hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
+    hS hdom hε hδ ((samplingInjectionSize_le _ L ε δ).trans (le_of_eq_of_le ?_ hk))
+  ring
 
 end NLAlib

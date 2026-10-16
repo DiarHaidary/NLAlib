@@ -55,6 +55,10 @@ for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 * `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`: distributional JL.
 * `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`: the JL moment property at $p = 2$.
 * `NLAlib.exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le`: the Johnson–Lindenstrauss lemma.
+* `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`,
+  `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`,
+  `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`: the asymptotic forms,
+  $O((d + \log(1/\delta))/\varepsilon^2)$ and $O(\log(1/\delta)/\varepsilon^2)$ rows.
 -/
 
 @[expose] public section
@@ -627,7 +631,8 @@ an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsi
 probability $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$ (for $\delta \ge 2$ it is
 trivial). [Woodruff2014, Theorem 6]. Replaces the prototype's
 `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`
-($\lvert k \rvert \ge 18 (d + 2 \log(2/\delta)) / \varepsilon^2$, now `gaussianEmbeddingDim_le`). -/
+($\lvert k \rvert \ge 18 (d + 2 \log(2/\delta)) / \varepsilon^2$, now `gaussianEmbeddingDim_le`).
+Asymptotic form: `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`. -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
     (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
     (hk : gaussianEmbeddingDim d ε δ ≤ Fintype.card k) :
@@ -648,12 +653,40 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddi
   · nlinarith
   · nlinarith
 
+/-- **Gaussian OSE, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+the Gaussian sketch to be an oblivious subspace embedding for dimension $d$ with constants
+$1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
+constants; the constants come before every dimension. Proved from
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le` with
+$C = 72$, $\varepsilon_0 = 1$ and $\delta \le 1/2$. [Woodruff2014, Theorem 6].
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
+-/
+theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      (μ : Measure Ω) (G : Ω → Matrix k n ℝ) (d : ℕ) (ε δ : ℝ),
+      HasLaw G (gaussianMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
+      IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) d (1 - ε) (1 + ε) δ
+        μ := by
+  refine ⟨72, 1, by norm_num, one_pos, fun μ G d ε δ hG hε hε1 hδ hδ2 hk => ?_⟩
+  have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  refine isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le hG hε hε1
+    hδ ((gaussianEmbeddingDim_le d ε hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right (by linarith [Nat.cast_nonneg (α := ℝ) d]) (sq_nonneg ε)
+
 /-- **Gaussian OSI, sample-size form**: at
 least <!-- value gaussianInjectionDim d \varepsilon \delta -->
 $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$ rows (`gaussianInjectionDim d ε δ`) give
 an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$; $k$ is nonempty because
-the dimension is positive. -/
+the dimension is positive. Asymptotic form:
+`NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     [DecidableEq n] (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε2 : ε ≤ 2)
     (hδ : 0 < δ) (hδ1 : δ < 1) (hk : gaussianInjectionDim d ε δ ≤ Fintype.card k) :
@@ -673,17 +706,63 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjecti
     hδeq.le
   nlinarith
 
+/-- **Gaussian OSI, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+the Gaussian sketch to be an oblivious subspace injection for dimension $d$ with constant
+$1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
+constants; the constants come before every dimension. Proved from
+`NLAlib.isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le` with
+$C = 16$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic: NLAlib.isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
+-/
+theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq n] (μ : Measure Ω) (G : Ω → Matrix k n ℝ) (d : ℕ) (ε δ : ℝ),
+      HasLaw G (gaussianMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
+      IsObliviousSubspaceInjection (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) d (1 - ε) δ μ := by
+  refine ⟨16, 1, by norm_num, one_pos, fun μ G d ε δ hG hε hε1 hδ hδ2 hk => ?_⟩
+  have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  refine isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le hG hε
+    (by linarith) hδ (by linarith)
+    ((gaussianInjectionDim_le d ε hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right (by linarith [Nat.cast_nonneg (α := ℝ) d]) (sq_nonneg ε)
+
 /-- **Gaussian distributional JL, sample-size form**: at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property with distortion $\varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. Replaces the prototype's
-`jl_lemma_prob_le_of_log_le`. -/
+`jl_lemma_prob_le_of_log_le`. Asymptotic form:
+`NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`. -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gaussianMatrix k n) μ)
     (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ) (hk : jlDim ε δ ≤ Fintype.card k) :
     HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ μ := by
   have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
   exact (hasJLProperty_of_hasLaw_gaussianMatrix hG hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
+
+/-- **Gaussian distributional JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows
+suffice for the Gaussian sketch to have the JL property with distortion $\varepsilon$ and failure
+probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come
+before every dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`
+with $C = 24$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic: NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le -/
+theorem exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      (μ : Measure Ω) (G : Ω → Matrix k n ℝ) (ε δ : ℝ),
+      HasLaw G (gaussianMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ μ := by
+  refine ⟨24, 1, by norm_num, one_pos, fun μ G ε δ hG hε hε1 hδ hδ2 hk => ?_⟩
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  refine hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le hG hε (by linarith) hδ
+    ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right (by linarith) (sq_nonneg ε)
 
 /-- **The Johnson–Lindenstrauss lemma**, existence form: for points $\mathbf{x}_i$ in
 $\mathbb{R}^n$, $N = \lvert \iota \rvert$, $\delta = 1/(\binom{N}{2} + 1)$

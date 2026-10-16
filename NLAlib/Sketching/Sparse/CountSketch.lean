@@ -91,6 +91,8 @@ $\varepsilon \ge 1$ the injection is vacuous and the bound is still true. Design
 * `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le`,
   `NLAlib.isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le`,
   `NLAlib.hasJLMoment_of_hasLaw_countSketch_of_le_card`: sizes.
+* `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch`: the asymptotic
+  form, $O(d^2/(\delta \varepsilon^2))$ rows.
 -/
 
 @[expose] public section
@@ -919,7 +921,8 @@ private theorem div_card_mul_sq_le_of_countSketchRows_le {d : ℕ} (hε : 0 < ε
 $\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`), for
 $\varepsilon, \delta > 0$, a CountSketch is an oblivious subspace embedding for dimension $d$ with
 constants $1 \mp \varepsilon$ and failure probability $\delta$. [Woodruff2014, Theorem 9] (there
-$O(d^2/(\delta\varepsilon^2))$ rows). -/
+$O(d^2/(\delta\varepsilon^2))$ rows). Asymptotic form:
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch`. -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le
     (hS : HasLaw S (countSketch k n) μ) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
     (hk : countSketchRows d ε δ ≤ Fintype.card k) :
@@ -927,6 +930,31 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   exact (isObliviousSubspaceEmbedding_of_hasLaw_countSketch hS d hε).mono le_rfl le_rfl le_rfl
     (div_card_mul_sq_le_of_countSketchRows_le hε hδ hk)
+
+/-- **CountSketch OSE, asymptotic form**: $O(d^2/(\delta \varepsilon^2))$ rows suffice for a
+CountSketch to be an oblivious subspace embedding for dimension $d$ with constants
+$1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ below an absolute constant;
+the constants come before every dimension. Proved from
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le` with $C = 2$
+and $\varepsilon_0 = 1$. [Woodruff2014, Theorem 9].
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le -/
+theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
+      [Fintype n] [DecidableEq k] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜) (d : ℕ) (ε δ : ℝ),
+      HasLaw S (countSketch k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ →
+      C * ((d : ℝ) ^ 2 / (δ * ε ^ 2)) ≤ Fintype.card k →
+      IsObliviousSubspaceEmbedding S d (1 - ε) (1 + ε) δ μ := by
+  refine ⟨2, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n _ _ _ _ _ μ S d ε δ hS hε _ hδ hk
+  refine isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le hS d hε hδ
+    ((countSketchRows_le d ε δ).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  refine div_le_div_of_nonneg_right ?_ (by positivity)
+  have hd : (d : ℝ) ≤ (d : ℝ) ^ 2 := by
+    rcases Nat.eq_zero_or_pos d with rfl | hd
+    · simp
+    · nlinarith [(Nat.one_le_cast (α := ℝ)).2 hd]
+  linarith
 
 /-- **CountSketch OSI, size form**: with <!-- value countSketchRows d \varepsilon \delta -->
 $\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`), for

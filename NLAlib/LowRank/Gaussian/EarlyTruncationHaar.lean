@@ -67,7 +67,7 @@ $k + 2 \le p$, <!-- value haarProjectionFactor m p q -->
 $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A}-\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi}, k)\|_{\mathsf{F}}^2 = \Bigl(1 + \frac{m - p}{m - q}\cdot\frac{q}{p - q - 1}\Bigr)
 \|\mathbf{A}-\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2\,,$$
-the factor `haarProjectionFactor m p q` at the actual rank $q$. The Gaussian twin is
+the factor at the actual rank $q$. The Gaussian twin is
 `NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_hasLaw_gaussianMatrix`.
 Proved without a literature source, as a composition: the completion step is
 [EpperlyWebber2026, Theorem 2.1]; the algorithm is [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].
@@ -160,8 +160,8 @@ with $p \le m$, and $k + 2 \le p$, <!-- value haarProjectionFactor m p k -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k)
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{m - p}{m - k}\cdot\frac{k}{p - k - 1}\Bigr)\,
 \mathbb{E}\|\mathbf{A}-\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
-\|_{\mathsf{F}}^2\,,$$
-the factor being `haarProjectionFactor m p k`. The Gaussian twin is
+\|_{\mathsf{F}}^2\,.$$
+The Gaussian twin is
 `integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix`.
 Proved without a literature source, as a composition: [EpperlyWebber2026, Theorem 2.1] for the
 completion; the algorithm is [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].

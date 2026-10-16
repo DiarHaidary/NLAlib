@@ -610,7 +610,7 @@ $q = \operatorname{rank}\mathbf{X}$, <!-- value haarProjectionFactor m p q -->
 $$\mathbb{E}\|(\mathbf{I}-\mathbf{\Pi}_{\mathbf{X},\mathbf{Q}^{\mathsf{H}}})\mathbf{B}
 \|_{\mathsf{F}}^2 = \Bigl(1 + \frac{m - p}{m - q}\cdot\frac{q}{p - q - 1}\Bigr)
 \|(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2\,,$$
-the factor being `haarProjectionFactor m p q`. No full rank of $\mathbf{X}$ is assumed. For
+No full rank of $\mathbf{X}$ is assumed. For
 $p > m$ the formula is false (the sketch is then an isometry and the error is the orthogonal one),
 hence $p \le m$. The Gaussian twin is
 `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix`.

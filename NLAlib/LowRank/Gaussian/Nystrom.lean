@@ -64,6 +64,8 @@ $\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$. Design:
   forms `integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`,
   `integral_specNorm_sub_le_add_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix` and its
   direct form `integral_specNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`.
+* the asymptotic forms of the two trace bounds, $O(k/\varepsilon)$ samples for relative error
+  $1 + \varepsilon$: `NLAlib.exists_forall_` followed by their names in `Matrix.PosSemidef`.
 -/
 
 @[expose] public section
@@ -124,12 +126,14 @@ open SymmetricGauge in
 a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
 $k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,;$$
-the factor is `gaussianProjectionFactor k ℓ`. The error is positive semidefinite, so this is
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,.$$
+The error is positive semidefinite, so this is
 $\mathbb{E}\operatorname{tr}(\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X}))$. The trace
 instance of the Gram-form bound above; Epperly and Webber's sharper factor, with a rank
 parameter, is
 `Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le`.
+Asymptotic form:
+`NLAlib.exists_forall_integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix`.
 [TroppYurtseverUdellCevher2017a, Theorem A.1]; [TroppWebber2023, Corollary 8.8]; there with a
 minimum over the comparison rank (TYUC) and $k \ge 1$, here at one rank, any $k$; the first case
 of TW Corollary 8.8.
@@ -143,6 +147,32 @@ theorem _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_g
   simp only [lpGauge_one_matrixNorm, lpGauge_apply_single_zero, one_mul] at h
   rw [gaussianProjectionFactor_def]
   linarith
+
+/-- **$O(k/\varepsilon)$ samples suffice for randomized Nyström**, trace: there are absolute
+constants $C, \varepsilon_0 > 0$ such that for positive semidefinite $\mathbf{H}$, a standard
+Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $k \ge 1$, $0 < \varepsilon \le \varepsilon_0$
+and $\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
+(1 + \varepsilon)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,.$$
+The asymptotic form of
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix`; the proof takes
+$C = 3$ and $\varepsilon_0 = 1$.
+[TroppYurtseverUdellCevher2017a, §4, after Theorem 4.1]; there $\ell = (1 + 1/\varepsilon)k + 1$,
+for the truncated output, whose error is the larger.
+Asymptotic: Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix
+Result: randomized-nystrom-expected-error -/
+theorem exists_forall_integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω n l : Type} [MeasurableSpace Ω] [Fintype n] [Fintype l]
+      (μ : Measure Ω) (H : Matrix n n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      H.PosSemidef → HasLaw X (gaussianMatrix n l) μ → 0 < k → 0 < ε → ε ≤ ε₀ →
+      C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
+        (1 + ε) * nuclearNorm (H - truncatedSVD H k) := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω n l _ _ _ μ H X k ε hH hX hk hε hε1 hl
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (hH.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix hX hkl).trans
+    (mul_le_mul_of_nonneg_right hg (nuclearNorm_nonneg _))
 
 open SymmetricGauge in
 /-- **The expected error of randomized Nyström, Schatten norms**: for positive semidefinite
@@ -215,7 +245,8 @@ Frobenius error of the truncated randomized SVD of a factor
 the decay form with Epperly and Webber's factor,
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_isLeftUnitarilyInvariant_of_rank_le`
 (a Gaussian test matrix is an instance), which is better for rank close to $\ell$ or a decaying
-tail.
+tail. Asymptotic form:
+`NLAlib.exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix`.
 [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.1)]; there with $1 \le k$ and $\ell \le n$,
 neither needed here, and through Gu's projected truncation; here through Woodruff's truncation
 for free.
@@ -232,6 +263,36 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_has
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
   exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix F hX hk
+
+/-- **$O(k/\varepsilon)$ samples suffice for truncated Nyström**, trace: there are absolute
+constants $C, \varepsilon_0 > 0$ such that for positive semidefinite $\mathbf{H}$, a standard
+Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $0 < \varepsilon \le \varepsilon_0$ and
+$\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_*
+\le (1 + \varepsilon)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,.$$
+The asymptotic form of
+`Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix`; the
+proof takes $C = 3$ and $\varepsilon_0 = 1$.
+[TroppYurtseverUdellCevher2017a, §4, after Theorem 4.1]; there $\ell = (1 + 1/\varepsilon)k + 1$.
+Asymptotic:
+Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix
+Result: randomized-nystrom-expected-error -/
+theorem exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω n l : Type} [MeasurableSpace Ω] [Fintype n] [Fintype l]
+      (μ : Measure Ω) (H : Matrix n n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      H.PosSemidef → HasLaw X (gaussianMatrix n l) μ → 0 < ε → ε ≤ ε₀ →
+      C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+        (1 + ε) * nuclearNorm (H - truncatedSVD H k) := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω n l _ _ _ μ H X k ε hH hX hε hε1 hl
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have := hX.isProbabilityMeasure
+    simp only [truncatedSVD_zero, sub_zero, integral_const, probReal_univ, one_smul]
+    nlinarith [nuclearNorm_nonneg H]
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix hX hkl).trans
+    (mul_le_mul_of_nonneg_right hg (nuclearNorm_nonneg _))
 
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in

@@ -56,6 +56,9 @@ at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers 
 * `NLAlib.hasJLMoment_of_hasLaw_rademacherMatrix`: the JL moment property at $p = 2$.
 * `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`,
   `NLAlib.isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix`.
+* `NLAlib.exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix`,
+  `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`: the asymptotic
+  forms of the sample sizes.
 -/
 
 @[expose] public section
@@ -293,7 +296,7 @@ private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : �
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`), the JL property holds with distortion $\varepsilon$ and failure probability
 $\delta$; the Gaussian sketch's size (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`).
--/
+Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix`. -/
 theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)
     (hk : jlDim ε δ ≤ Fintype.card k) :
@@ -302,12 +305,36 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
   exact (hasJLProperty_of_hasLaw_rademacherMatrix hX hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
 
+/-- **Sign-sketch JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for the
+sign sketch to have the JL property with distortion $\varepsilon$ and failure probability
+$\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
+dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le` with
+$C = 24$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic: NLAlib.hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le -/
+theorem exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      (μ : Measure Ω) (X : Ω → Matrix k n ℝ) (ε δ : ℝ),
+      HasLaw X (rademacherMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ μ := by
+  refine ⟨24, 1, by norm_num, one_pos, fun μ X ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  refine hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le hX hε (by linarith) hδ
+    ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right (by linarith) (sq_nonneg ε)
+
 /-- **Sign-sketch OSE, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$ and at
 least <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
 $\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$ rows (`jlDim (ε/2) (δ/9^d)`),
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious
 subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
-$\delta$. -/
+$\delta$. Asymptotic form:
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`. -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
     (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
     (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
@@ -316,6 +343,38 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
   have := hX.isProbabilityMeasure
   refine (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl
     le_rfl le_rfl (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
+
+/-- **Sign-sketch OSE, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice
+for the sign sketch to be an oblivious subspace embedding for dimension $d$ with constants
+$1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
+constants; the constants come before every dimension. Proved from
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le` with $C = 108$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le -/
+theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      (μ : Measure Ω) (X : Ω → Matrix k n ℝ) (d : ℕ) (ε δ : ℝ),
+      HasLaw X (rademacherMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
+      IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε) δ
+        μ := by
+  refine ⟨108, 1, by norm_num, one_pos, fun μ X d ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
+  have h9 : (1 : ℝ) ≤ 9 ^ d := one_le_pow₀ (by norm_num)
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl : Real.log (2 / (δ / 9 ^ d)) = Real.log 2 + d * Real.log 9 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 9 ^ d) = 2 * 9 ^ d * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by positivity),
+      Real.log_pow]
+  have hd9 : (d : ℝ) * Real.log 9 ≤ d * (9 / 4) :=
+    mul_le_mul_of_nonneg_left Real.log_nine_le_nine_div_four (Nat.cast_nonneg d)
+  refine isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le hX hε (by linarith) hδ
+    ((jlDim_le (by linarith) (by positivity)
+      ((div_le_self hδ.le h9).trans (by linarith))).trans (le_trans ?_ hk))
+  rw [hl, mul_div_assoc', div_pow, div_div_eq_mul_div, mul_comm _ ((2 : ℝ) ^ 2)]
+  exact div_le_div_of_nonneg_right
+    (by nlinarith [Nat.cast_nonneg (α := ℝ) d, Real.log_nonneg (by norm_num : (1 : ℝ) ≤ 2)])
+    (sq_nonneg ε)
 
 /-- **Sign-sketch OSI, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$, $k$ nonempty
 and at least <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->

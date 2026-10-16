@@ -58,10 +58,11 @@ Design: `docs/design/LowRank-S6.md` §3.6, §8 items 4, 13 and 17. Real througho
   with `NLAlib.one_le_earlyTruncatedRSVDFactor` and `NLAlib.earlyTruncatedRSVDFactor_le_one_add`.
 * `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`:
-  the early-truncated randomized SVD.
+  the early-truncated randomized SVD; the asymptotic form of the second is `NLAlib.exists_forall_`
+  followed by its name without `_one_add_mul`.
 * early-truncated generalized Nyström with Gaussian test matrices, $\varepsilon^{-2}$ range and
   $\varepsilon^{-1}$ co-range samples: the $(1 + \varepsilon)$ form above without the suffix
-  `_of_integral_le`.
+  `_of_integral_le`, and its asymptotic form, named in the same way.
 -/
 
 @[expose] public section
@@ -95,7 +96,7 @@ $k + 2 \le p$, <!-- value gaussianProjectionFactor q p -->
 $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A}-\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi}, k)\|_{\mathsf{F}}^2 = \Bigl(1 + \frac{q}{p - q - 1}\Bigr)\|\mathbf{A}-
 \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2\,,$$
-the factor `gaussianProjectionFactor q p` at the actual rank $q$. Proved without a literature
+the factor at the actual rank $q$. Proved without a literature
 source, as a composition: the completion step is [EpperlyWebber2026, Theorem 2.1]; the algorithm
 is [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].
 Result: etgn -/
@@ -186,11 +187,10 @@ law of $\mathbf{\Omega}$ independent of a standard Gaussian $\mathbf{\Psi}$ and
 $k + 2 \le p$, <!-- value gaussianProjectionFactor k p -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}, k)
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{p - k - 1}\Bigr)\,\mathbb{E}\|\mathbf{A}-
-\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2\,,$$
-the factor being `gaussianProjectionFactor k p`. Every bound on the early-truncated randomized
-SVD (the subspace-embedding and projection-cost-preserving routes, and its expectation at
-$\ell = O(k/\varepsilon^2)$) becomes one on early-truncated generalized Nyström with
-$p = O(k/\varepsilon)$. Proved without a literature source, as a composition:
+\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2\,.$$
+Every bound on the early-truncated randomized SVD (the subspace-embedding and
+projection-cost-preserving routes, and its expectation) becomes one on early-truncated
+generalized Nyström. Proved without a literature source, as a composition:
 [EpperlyWebber2026, Theorem 2.1] for the completion; the algorithm is
 [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].
 Result: etgn -/
@@ -263,8 +263,8 @@ private theorem one_add_half_mul_gaussianProjectionFactor_le {k c : ℕ} {ε : �
 
 set_option linter.style.longLine false in
 -- The theorem's name alone exceeds 100 characters.
-/-- **Early-truncated generalized Nyström reaches relative error $1 + \varepsilon$ with
-$p = O(k/\varepsilon)$, from a bound on the early-truncated randomized SVD**: for any law of
+/-- **Early-truncated generalized Nyström reaches relative error $1 + \varepsilon$ from a bound
+on the early-truncated randomized SVD**: for any law of
 $\mathbf{\Omega}$ independent of a standard Gaussian $\mathbf{\Psi}$, if the early-truncated
 randomized SVD with the same $\mathbf{\Omega}$ has expected error at most
 $(1 + \varepsilon/2)\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ and
@@ -348,8 +348,7 @@ private theorem sqrt_div_le_tenth {k l : ℕ} (h : 100 * k ≤ l) :
 $100k \le \ell$, <!-- value earlyTruncatedRSVDFactor k \ell -->
 $$1 \le \frac{(1 + \sqrt{2k/\ell})\bigl((1 - \sqrt{k/\ell})^{-2} + 10/\sqrt{\ell}\bigr) +
 \frac{1}{4}\sqrt{k/\ell}\sqrt{1 + 2/(k \ell)}\sqrt{(1 - \sqrt{k/\ell})^{-8} +
-263/\sqrt{\ell}}}{1 - 4\sqrt{k/\ell}}\,,$$
-the right side being `earlyTruncatedRSVDFactor k ℓ`. -/
+263/\sqrt{\ell}}}{1 - 4\sqrt{k/\ell}}\,.$$ -/
 theorem one_le_earlyTruncatedRSVDFactor {k l : ℕ} (h : 100 * k ≤ l) :
     1 ≤ earlyTruncatedRSVDFactor k l := by
   obtain ⟨hy0, hy⟩ := sqrt_div_le_tenth h
@@ -371,8 +370,7 @@ and $0 < \varepsilon \le 1$, <!-- value earlyTruncatedRSVDFactor k \ell -->
 $$\frac{(1 + \sqrt{2k/\ell})\bigl((1 - \sqrt{k/\ell})^{-2} + 10/\sqrt{\ell}\bigr) +
 \frac{1}{4}\sqrt{k/\ell}\sqrt{1 + 2/(k \ell)}\sqrt{(1 - \sqrt{k/\ell})^{-8} +
 263/\sqrt{\ell}}}{1 - 4\sqrt{k/\ell}} \le 1 + \varepsilon\,,$$
-the left side being `earlyTruncatedRSVDFactor k ℓ`; an explicit comparison that stays true when
-the factor improves. -/
+an explicit comparison that stays true when the factor improves. -/
 theorem earlyTruncatedRSVDFactor_le_one_add {k l : ℕ} {ε : ℝ} (hk : 1 ≤ k) (hε : 0 < ε)
     (hε1 : ε ≤ 1) (hl : 900 * (k : ℝ) ≤ ε ^ 2 * l) : earlyTruncatedRSVDFactor k l ≤ 1 + ε := by
   have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
@@ -875,8 +873,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omeg
 \|_{\mathsf{F}}^2 \le \frac{(1 + \sqrt{2k/\ell})\bigl((1 - \sqrt{k/\ell})^{-2} +
 10/\sqrt{\ell}\bigr) + \frac{1}{4}\sqrt{k/\ell}\sqrt{1 + 2/(k \ell)}\sqrt{(1 - \sqrt{k/\ell})^{-8} +
 263/\sqrt{\ell}}}{1 - 4\sqrt{k/\ell}}\,
-\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
-the factor being `earlyTruncatedRSVDFactor k ℓ`. Every rank and shape; every choice of the
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+Every rank and shape; every choice of the
 truncation. Proved without a literature source: the structural bound
 `NLAlib.IsSubspaceInjection.frobNorm_sub_mul_sq_le` at $\theta = 4\sqrt{k/\ell}$ with the clipped
 head constant, whose inverse moments are
@@ -921,8 +919,9 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omeg
 \|_{\mathsf{F}}^2 \le (1+\varepsilon)\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2\,,$$
 with $\ell$ products with $\mathbf{A}$, at most $k$ with $\mathbf{A}^{\mathsf{H}}$, and output
-rank at most $k$. Proved without a literature source; the algorithm is
-[TroppYurtseverUdellCevher2017, §7.3.1].
+rank at most $k$. Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix`.
+Proved without a literature source; the algorithm is [TroppYurtseverUdellCevher2017, §7.3.1].
 Result: etrsvd -/
 theorem integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} {ε : ℝ} (hε : 0 < ε)
@@ -947,6 +946,31 @@ theorem integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gau
   exact (integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix A hX hkl hl').trans
     (mul_le_mul_of_nonneg_right (earlyTruncatedRSVDFactor_le_one_add hk hε hε1 hl) (sq_nonneg _))
 
+/-- **$O(k/\varepsilon^2)$ samples suffice for the early-truncated randomized SVD**: there are
+absolute constants $C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$ test
+matrix $\mathbf{\Omega}$, $0 < \varepsilon \le \varepsilon_0$ and $\ell \ge Ck/\varepsilon^2$,
+$$\mathbb{E}\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)
+\|_{\mathsf{F}}^2 \le (1+\varepsilon)\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`; the
+proof takes $C = 900$ and $\varepsilon_0 = 1$.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
+Result: etrsvd -/
+theorem exists_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X (gaussianMatrix n l) μ → 0 < ε → ε ≤ ε₀ →
+      C * ((k : ℝ) / ε ^ 2) ≤ Fintype.card l →
+      ∫ ω, frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  refine ⟨900, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ μ A X k ε hX hε hε1 hl
+  rw [← mul_div_assoc, div_le_iff₀ (by positivity)] at hl
+  exact integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix A hX hε
+    hε1 (by linarith)
+
 set_option linter.style.longLine false in
 -- The theorem's name alone exceeds 100 characters.
 /-- **Early-truncated generalized Nyström reaches relative error $1 + \varepsilon$**: for
@@ -956,12 +980,13 @@ $p \ge k + 1 + (2+\varepsilon)k/\varepsilon$ and $0 < \varepsilon \le 1$,
 $$\mathbb{E}\|\mathbf{A}-\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi},
 k)\|_{\mathsf{F}}^2 \le (1+\varepsilon)\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2\,:$$
-$O(k/\varepsilon^2)$ products with $\mathbf{A}$, $O(k/\varepsilon)$ with $\mathbf{A}^{\mathsf{H}}$,
 one pass, output rank at most $k$. The early-truncated randomized SVD at accuracy
 $\varepsilon/2$
 (`NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`)
 composed with the Gaussian completion
 (`NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix_of_integral_le`).
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_of_hasLaw_gaussianMatrix`.
 Proved without a literature source; the algorithm is
 [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].
 Result: etgn -/
@@ -977,5 +1002,49 @@ theorem
     A hX.aemeasurable hΨ hXΨ hε hp
     (integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix A hX
       (half_pos hε) (by linarith) (by nlinarith))
+
+-- A docstring line names a declaration whose name exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(k/\varepsilon^2)$ and $O(k/\varepsilon)$ samples suffice for early-truncated generalized
+Nyström**: there are absolute constants $C, \varepsilon_0 > 0$ such that for independent standard
+Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$ ($m \times p$),
+$0 < \varepsilon \le \varepsilon_0$, $\ell \ge Ck/\varepsilon^2$ and $p \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{A}-\mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi},
+k)\|_{\mathsf{F}}^2 \le (1+\varepsilon)\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`;
+the proof takes $C = 3600$ and $\varepsilon_0 = 1$.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
+Result: etgn -/
+theorem
+    exists_forall_integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m]
+      [Fintype n] [Fintype l] [Fintype p] (μ : Measure Ω) (A : Matrix m n ℝ)
+      (X : Ω → Matrix n l ℝ) (Ψ : Ω → Matrix m p ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X (gaussianMatrix n l) μ → HasLaw Ψ (gaussianMatrix m p) μ → IndepFun X Ψ μ →
+      0 < ε → ε ≤ ε₀ → C * ((k : ℝ) / ε ^ 2) ≤ Fintype.card l →
+      C * ((k : ℝ) / ε) ≤ Fintype.card p →
+      ∫ ω, frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  refine ⟨3600, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l p _ _ _ _ _ μ A X Ψ k ε hX hΨ hXΨ hε hε1 hl hp
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have := hX.isProbabilityMeasure
+    have h0 (x : Matrix n l ℝ) (ψ : Matrix m p ℝ) :
+        earlyTruncatedGeneralizedNystrom A x ψ 0 = 0 := by
+      simp only [earlyTruncatedGeneralizedNystrom, truncatedSVD_zero, obliqueProjector,
+        Matrix.zero_mul]
+    simp only [h0, sub_zero, truncatedSVD_zero, integral_const, probReal_univ, one_smul]
+    nlinarith [sq_nonneg (frobNorm A)]
+  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have ht : (k : ℝ) ≤ k / ε := (le_div_iff₀ hε).2 (by nlinarith)
+  have he : (2 + ε) * k / ε = 2 * (k / ε) + k := by
+    rw [add_mul, add_div, mul_div_assoc, mul_div_cancel_left₀ _ hε.ne']
+  rw [← mul_div_assoc, div_le_iff₀ (by positivity)] at hl
+  exact
+    integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
+      A hX hΨ hXΨ hε hε1 (by linarith) (by rw [he]; linarith)
 
 end NLAlib

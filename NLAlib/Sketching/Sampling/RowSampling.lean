@@ -93,6 +93,9 @@ the same identity at $\mathbf{A} = \mathbf{B} = \mathbf{I}$.
 * `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le`,
   `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le`: sample
   sizes.
+* `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch`,
+  `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`: the asymptotic forms,
+  $O(L \log(d/\delta)/\varepsilon^2)$ samples.
 -/
 
 @[expose] public section
@@ -715,7 +718,8 @@ constants $1 \mp \varepsilon$ and failure probability $\delta$, for $0 < \vareps
 $\delta > 0$ and <!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
 (`NLAlib.samplingSize U.rank L ε δ`). [Woodruff2014, Theorem 17], constant
-$144/\beta$ there, $3$ here at $L = d/\beta$; [MartinssonTropp2020, §9.6.3].
+$144/\beta$ there, $3$ here at $L = d/\beta$; [MartinssonTropp2020, §9.6.3]. Asymptotic form:
+`NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch`.
 Result: leverage-sampling-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
@@ -731,12 +735,47 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
   exact two_mul_mul_exp_le_of_samplingSize_le
     ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
+/-- **Row sampling, asymptotic form**: with $d = \operatorname{rank}\mathbf{U}$,
+$O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row sampling under leverage domination
+$\ell_i(\mathbf{U}) \le L p_i$ to be a subspace embedding for $\operatorname{range}\mathbf{U}$
+with constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and
+$\delta$ below absolute constants; the constants come before every dimension and before $L$, which
+stays in the threshold ($L = d$ at the leverage scores, $O(d \log(d/\delta)/\varepsilon^2)$).
+Proved from `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le` with
+$C = 6$, $\varepsilon_0 = 1$ and $\delta \le 1/2$. [Woodruff2014, Theorem 17].
+Asymptotic: NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le -/
+theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
+      [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
+      (p : n → ℝ≥0) (U : Matrix n r 𝕜) (L ε δ : ℝ),
+      HasLaw S (samplingSketch k p) μ → ∑ i, p i = 1 → (∀ i, leverageScore U i ≤ L * p i) →
+      0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (L * Real.log (U.rank / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasSubspaceEmbedding S U (1 - ε) (1 + ε) δ μ := by
+  refine ⟨6, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n r _ _ _ _ _ _ μ S p U L ε δ hS hp hdom hε hε1 hδ hδ2 hk
+  refine hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le hS hp hdom hε hε1 hδ
+    ((samplingSize_le _ L ε δ).trans (le_trans ?_ hk))
+  rcases Nat.eq_zero_or_pos U.rank with hd | hd
+  · simp [hd]
+  have hL : (1 : ℝ) ≤ L := (Nat.one_le_cast.2 hd).trans (rank_le_of_leverageScore_le hp hdom)
+  have hl2 : Real.log (2 * U.rank / δ) ≤ 2 * Real.log (U.rank / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (U.rank / δ) :=
+      Real.log_le_log (by norm_num) (by
+        rw [le_div_iff₀ hδ]; nlinarith [(Nat.one_le_cast (α := ℝ)).2 hd])
+    rw [mul_div_assoc, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right
+    (by nlinarith [mul_le_mul_of_nonneg_left hl2 (by linarith : (0 : ℝ) ≤ L)]) (sq_nonneg ε)
+
 /-- **The lower half, sample-size form**: row sampling under leverage domination
 $\ell_i(\mathbf{U}) \le L p_i$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with
 constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
 and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingInjectionSize U.rank L ε δ`). -/
+(`NLAlib.samplingInjectionSize U.rank L ε δ`). Asymptotic form:
+`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`. -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
     (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 < ε) (hδ : 0 < δ)
@@ -750,5 +789,27 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_l
     exact hδ.le
   exact mul_exp_le_of_samplingInjectionSize_le
     ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
+
+/-- **The lower half, asymptotic form**: with $d = \operatorname{rank}\mathbf{U}$,
+$O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row sampling under leverage domination
+$\ell_i(\mathbf{U}) \le L p_i$ to be a subspace injection for $\operatorname{range}\mathbf{U}$
+with constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ below an
+absolute constant; the constants come before every dimension and before $L$, which stays in the
+threshold. Proved from
+`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le` with $C = 2$
+and $\varepsilon_0 = 1$.
+Asymptotic: NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le -/
+theorem exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
+      [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
+      (p : n → ℝ≥0) (U : Matrix n r 𝕜) (L ε δ : ℝ),
+      HasLaw S (samplingSketch k p) μ → ∑ i, p i = 1 → (∀ i, leverageScore U i ≤ L * p i) →
+      0 < ε → ε ≤ ε₀ → 0 < δ → C * (L * Real.log (U.rank / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasSubspaceInjection S U (1 - ε) δ μ := by
+  refine ⟨2, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n r _ _ _ _ _ _ μ S p U L ε δ hS hp hdom hε _ hδ hk
+  refine hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le hS hp hdom hε
+    hδ ((samplingInjectionSize_le _ L ε δ).trans (le_of_eq_of_le ?_ hk))
+  ring
 
 end NLAlib

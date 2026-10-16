@@ -126,8 +126,9 @@ theorem hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector
 /-! ### Deterministic steps -/
 
 omit [Fintype m] in
-/-- With a column, an isotropic sub-Gaussian vector has proxy at least $1$. -/
-private lemma one_le_of_isSubgaussianVector [Nonempty n] [IsProbabilityMeasure μ]
+/-- With a coordinate, an isotropic sub-Gaussian vector has proxy at least $1$: a coordinate has
+second moment $1$, at most the proxy by `HasSubgaussianMGF.integral_sq_le`. -/
+theorem IsSubgaussianVector.one_le_of_isIsotropic [Nonempty n] [IsProbabilityMeasure μ]
     {y : Ω → n → ℝ} (hsub : IsSubgaussianVector y c μ) (hiso : IsIsotropic y μ) :
     1 ≤ (c : ℝ) := by
   obtain ⟨j⟩ := ‹Nonempty n›
@@ -283,7 +284,7 @@ private lemma measureReal_not_specNorm_lt [Nonempty m] [Nonempty n]
       2 * Real.exp (-t ^ 2) := by
   have := hind.isProbabilityMeasure
   have hc : 1 ≤ (c : ℝ) :=
-    one_le_of_isSubgaussianVector (hsub (Classical.arbitrary m)) (hiso (Classical.arbitrary m))
+    (hsub (Classical.arbitrary m)).one_le_of_isIsotropic (hiso (Classical.arbitrary m))
   set N : ℝ := (Fintype.card m : ℝ) with hN_def
   set d : ℝ := (Fintype.card n : ℝ) with hd_def
   set w := subgaussianRowsConstant * c * (√d + t) with hw_def

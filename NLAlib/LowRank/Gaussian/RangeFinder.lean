@@ -60,6 +60,9 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
   second-moment form.
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`: the truncated
   output, Frobenius norm.
+* the asymptotic forms of the two Frobenius bounds above (HMT Theorem 10.5 squared and the
+  truncated output), $O(k/\varepsilon)$ samples for relative error $1 + \varepsilon$:
+  `NLAlib.exists_forall_` followed by their names.
 * `NLAlib.integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix`: the truncated
   output, spectral norm, for a measurable selector;
   `NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`, its direct
@@ -181,16 +184,37 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
 
 end SymmetricGauge
 
+/-- **The Gaussian projection factor at $\ell \ge 3k/\varepsilon$**: for $k \ge 1$,
+$0 < \varepsilon \le 1$ and $3k/\varepsilon \le \ell$, the size condition $k + 2 \le \ell$ holds
+and <!-- value gaussianProjectionFactor k \ell --> $1 + k/(\ell - k - 1) \le 1 + \varepsilon$. The
+arithmetic of the asymptotic forms of the
+expected-error bounds with HMT's factor. -/
+theorem gaussianProjectionFactor_le_one_add_of_three_mul_div_le {k l : ℕ} {ε : ℝ} (hk : 0 < k)
+    (hε : 0 < ε) (hε1 : ε ≤ 1) (hl : 3 * ((k : ℝ) / ε) ≤ l) :
+    k + 2 ≤ l ∧ gaussianProjectionFactor k l ≤ 1 + ε := by
+  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hl' : 3 * (k : ℝ) ≤ l * ε := by rwa [← mul_div_assoc, div_le_iff₀ hε] at hl
+  have hεk := mul_le_mul_of_nonneg_right hε1 (Nat.cast_nonneg (α := ℝ) k)
+  have hεl := mul_le_mul_of_nonneg_right hε1 (Nat.cast_nonneg (α := ℝ) l)
+  have hkl : k + 2 ≤ l := by
+    have : (k : ℝ) + 2 ≤ l := by linarith
+    exact_mod_cast this
+  refine ⟨hkl, ?_⟩
+  have hden : 0 < (l : ℝ) - k - 1 := by linarith
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ hden]
+  nlinarith
+
 open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Frobenius norm** (HMT Theorem 10.5, squared):
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
 $k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}^2\,;$$
-the factor is `gaussianProjectionFactor k ℓ`. The Frobenius instance of the Gram-form bound above;
+\|_{\mathsf{F}}^2\,.$$
+The Frobenius instance of the Gram-form bound above;
 Epperly and Webber's sharper factor, with a rank parameter, is
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le`.
+Asymptotic form: `NLAlib.exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
 [HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; HMT state the
 bound for $\mathbb{E}\|\cdot\|_{\mathsf{F}}$ (it follows by Jensen,
 `NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`) and assume $k \ge 2$ and
@@ -206,6 +230,28 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
     lpGauge_apply_single_zero, one_mul] at h
   rw [gaussianProjectionFactor_def]
   linarith
+
+/-- **$O(k/\varepsilon)$ samples suffice for the randomized SVD**, Frobenius norm: there are
+absolute constants $C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$ test
+matrix $\mathbf{X}$, $k \ge 1$, $0 < \varepsilon \le \varepsilon_0$ and $\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix` (HMT
+Theorem 10.5); the proof takes $C = 3$ and $\varepsilon_0 = 1$.
+[EpperlyWebber2026, §4.2]; there as the count $2\ell \ge (2/\varepsilon + 2)k$ of products.
+Asymptotic: NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix
+Result: randomized-svd-expected-error -/
+theorem exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X (gaussianMatrix n l) μ → 0 < k → 0 < ε → ε ≤ ε₀ →
+      C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤ (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ μ A X k ε hX hk hε hε1 hl
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hkl).trans
+    (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
 
 /-- **The expected error of the randomized SVD, Frobenius norm, as printed** (HMT Theorem 10.5):
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
@@ -291,7 +337,7 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \Bigl(1 + \sqrt{\tfrac{k}{\ell - k - 1}}\Bigr)\sigma_k(\mathbf{A}) +
 \frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
-whose constant, `gaussianPinvSpecNormBound k ℓ`, is at most HMT's $e\sqrt{\ell}/(\ell - k)$
+whose constant is at most HMT's $e\sqrt{\ell}/(\ell - k)$
 (`NLAlib.gaussianPinvSpecNormBound_le`). Incomparable with the squared form
 `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: this one is better for large
 $k$.
@@ -347,8 +393,8 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le \s
 \Bigl(\sigma_k\sqrt{\tfrac{k}{\ell-k-1}} + \frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\Bigr)^2 +
 \sigma_k^2\Bigl(\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\Bigr)^2\,,$$
-singular values of $\mathbf{A}$ from $0$; the bound is written in
-`gaussianPinvSpecNormBound k ℓ`, whence the name's suffix. The last factor being $O(1/\ell)$,
+singular values of $\mathbf{A}$ from $0$; the bound is written in HMT's pseudoinverse
+constant, whence the name's suffix. The last factor being $O(1/\ell)$,
 the Frobenius tail enters with weight $O(1/\ell)$, against $\frac{k}{\ell-k-1}$ in
 `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`; the two are incomparable
 (this one is better when the tail is heavy and $\ell \gg k$). Applied at a comparison rank near
@@ -411,7 +457,8 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbra
 \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $k + 2 \le \ell$ and every
 choice of the truncation (the squared Frobenius error does not depend on it,
-`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`).
+`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`). Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
 [HalkoMartinssonTropp2011, Theorem 10.5]; [Woodruff2014, Lemma 48];
 [CamanoEpperlyMeyerTropp2025, remark after Theorem 2.2]; there the untruncated bound with the
 truncation for free of Woodruff, or the truncation through the spectral HMT Theorem 9.3 (CEMT).
@@ -461,6 +508,34 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
     rw [integral_congr_ae hpt]
     simp only [hE, frobNorm_zero, integral_zero]
     norm_num
+
+/-- **$O(k/\varepsilon)$ samples suffice for the truncated randomized SVD**, Frobenius norm: there
+are absolute constants $C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$
+test matrix $\mathbf{X}$, $0 < \varepsilon \le \varepsilon_0$ and $\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k
+\|_{\mathsf{F}}^2 \le (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix`; the proof takes
+$C = 3$ and $\varepsilon_0 = 1$.
+[Woodruff2014, Lemma 45 and Remark 46]; there with constant probability, here in expectation.
+Asymptotic: NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
+Result: randomized-svd-expected-error -/
+theorem exists_forall_integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X (gaussianMatrix n l) μ → 0 < ε → ε ≤ ε₀ → C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ μ A X k ε hX hε hε1 hl
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have := hX.isProbabilityMeasure
+    simp only [truncatedSVD_zero, sub_zero, integral_const, probReal_univ, one_smul]
+    nlinarith [sq_nonneg (frobNorm A)]
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hkl).trans
+    (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
 
 /-- **The expected spectral error of the truncated randomized SVD**, for a measurable choice
 $\mathbf{Y}$ of best rank-$k$ approximations of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$: for

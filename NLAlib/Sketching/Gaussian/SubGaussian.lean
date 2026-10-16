@@ -66,6 +66,10 @@ $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0
 * `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`,
   `NLAlib.isObliviousSubspaceInjection_of_isSubgaussianVector`.
 * `NLAlib.hasJLProperty_of_iIndepFun_entry`: JL for independent sub-Gaussian entries.
+* `NLAlib.exists_forall_hasJLProperty_of_isSubgaussianVector`,
+  `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`: the asymptotic
+  forms, $O(c^2 \log(1/\delta)/\varepsilon^2)$ and $O(c^2 (d + \log(1/\delta))/\varepsilon^2)$
+  rows.
 -/
 
 @[expose] public section
@@ -527,7 +531,8 @@ least <!-- value subgaussianJLDim c \varepsilon \delta -->$c^2 \log(2/\delta)/(C
 rows (`subgaussianJLDim c ε δ`, with <!-- value subgaussianJLConstant -->$C = 1/64$ the
 constant `subgaussianJLConstant`), the JL property holds with distortion $\varepsilon$ and failure
 probability $\delta$ (for $\varepsilon \le c$ the $\min$ of the tail is its quadratic part).
-[Vershynin2018, Exercise 5.3.3 (2020 draft)]. -/
+[Vershynin2018, Exercise 5.3.3 (2020 draft)]. Asymptotic form:
+`NLAlib.exists_forall_hasJLProperty_of_isSubgaussianVector`. -/
 theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ c) (hδ : 0 < δ)
@@ -550,6 +555,41 @@ theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
     rw [Nat.cast_zero, zero_mul, zero_add, mul_div_assoc', le_div_iff₀ (by positivity)]
     linarith
   simpa only [pow_zero, mul_one, Nat.cast_zero] using two_mul_nine_pow_mul_exp_le (d := 0) hδ hL
+
+/-- **Sub-Gaussian JL, asymptotic form**: $O(c^2 \log(1/\delta)/\varepsilon^2)$ rows suffice for
+the sketch with independent isotropic rows, sub-Gaussian with proxy $c$, to have the JL property
+with distortion $\varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below
+absolute constants; the constants come before every dimension and the proxy. Proved from
+`NLAlib.hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le` with $C = 128$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a column.
+Asymptotic: NLAlib.hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le -/
+theorem exists_forall_hasJLProperty_of_isSubgaussianVector :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq n] [Nonempty k] (μ : Measure Ω) (X : Ω → Matrix k n ℝ) (c : ℝ≥0) (ε δ : ℝ),
+      iIndepFun (fun i ω => X ω i) μ → (∀ i, IsSubgaussianVector (fun ω => X ω i) c μ) →
+      (∀ i, IsIsotropic (fun ω => X ω i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((c : ℝ) ^ 2 * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ μ := by
+  refine ⟨128, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k n _ _ _ _ _ μ X c ε δ hind hsub hiso hε hε1 hδ hδ2 hk
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro x hx
+    rw [Subsingleton.elim x 0] at hx
+    simp at hx
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  refine hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le hind hsub hiso hε
+    (by linarith) hδ ((subgaussianJLDim_le c ε hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right
+    (by nlinarith [mul_le_mul_of_nonneg_left hl2 (sq_nonneg (c : ℝ))]) (sq_nonneg ε)
 
 omit [DecidableEq n] in
 /-- The failure probability of the sub-Gaussian OSE is at most $\delta$ for
@@ -582,7 +622,8 @@ with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLC
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
 is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
 failure probability $\delta$. [Vershynin2018, Theorem 4.6.1 (2020 draft)]; [Woodruff2014,
-Theorem 6]. -/
+Theorem 6]. Asymptotic form:
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`. -/
 theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ 2 * c) (hδ : 0 < δ)
@@ -592,6 +633,49 @@ theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbedd
   have := hind.isProbabilityMeasure
   exact (isObliviousSubspaceEmbedding_of_isSubgaussianVector hind hsub hiso d).mono le_rfl le_rfl
     le_rfl (failure_le_of_subgaussianEmbeddingDim_le hε hεc hδ hk)
+
+/-- **Sub-Gaussian OSE, asymptotic form**: $O(c^2 (d + \log(1/\delta))/\varepsilon^2)$ rows
+suffice for the sketch with independent isotropic rows, sub-Gaussian with proxy $c$, to be an
+oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure
+probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come
+before every dimension and the proxy. Proved from
+`NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le` with
+$C = 1152$, $\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a
+column. [Woodruff2014, Theorem 6].
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
+-/
+theorem exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq n] [Nonempty k] (μ : Measure Ω) (X : Ω → Matrix k n ℝ) (c : ℝ≥0) (d : ℕ)
+      (ε δ : ℝ),
+      iIndepFun (fun i ω => X ω i) μ → (∀ i, IsSubgaussianVector (fun ω => X ω i) c μ) →
+      (∀ i, IsIsotropic (fun ω => X ω i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((c : ℝ) ^ 2 * (d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
+      IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε) δ
+        μ := by
+  refine ⟨1152, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k n _ _ _ _ _ μ X c d ε δ hind hsub hiso hε hε1 hδ hδ2 hk
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro U _
+    rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
+    exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero hδ.le
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  refine isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le hind
+    hsub hiso hε (by linarith) hδ
+    ((subgaussianEmbeddingDim_le c d ε hδ (by linarith)).trans (le_trans ?_ hk))
+  rw [mul_div_assoc']
+  exact div_le_div_of_nonneg_right
+    (by nlinarith [mul_le_mul_of_nonneg_left hl2 (sq_nonneg (c : ℝ)),
+      mul_nonneg (sq_nonneg (c : ℝ)) (Nat.cast_nonneg (α := ℝ) d),
+      mul_nonneg (sq_nonneg (c : ℝ)) hl1]) (sq_nonneg ε)
 
 /-- **Sub-Gaussian OSI, sample-size form**: for $0 < \varepsilon \le 2c$, $\delta > 0$, $k$
 nonempty and at least <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->

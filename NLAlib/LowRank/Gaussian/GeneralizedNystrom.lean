@@ -34,7 +34,7 @@ Theorem 4.3.
 
 For an $m \times p$ Haar co-range test matrix with $p \le m$ the factor is the Haar
 one, <!-- value haarProjectionFactor m p q -->
-$1 + (m - p)/(m - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor m p q`), through
+$1 + (m - p)/(m - q) \cdot (q/(p - q - 1))$, through
 `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame`. With a
 rotation-invariant $\mathbf{\Omega}$ of full column rank, Epperly and Webber's sharp bound for the
 randomized SVD (`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le`)
@@ -50,7 +50,8 @@ Design: `docs/design/LowRank-S6.md` §3.4, §8.
   any law of the range test matrix.
 * `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_eq_mul_integral_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`: Gaussian test
-  matrices (TYUC Theorem 4.3).
+  matrices (TYUC Theorem 4.3), and the asymptotic form of the second ($O(k/\varepsilon)$ and
+  $O(\ell/\varepsilon)$ samples), `NLAlib.exists_forall_` followed by its name.
 * `NLAlib.ae_generalizedNystrom_eq_self_of_hasLaw_gaussianMatrix`: exact recovery at low rank.
 * Haar co-range: `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame` (fixed
   range test matrix),
@@ -94,8 +95,7 @@ $q = \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$ with
 $q + 2 \le p$, <!-- value gaussianProjectionFactor q p -->
 $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \|_{\mathsf{F}}^2 = \Bigl(1 + \frac{q}{p - q - 1}\Bigr)\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A},
-\mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
-the factor being `gaussianProjectionFactor q p`.
+\mathbf{\Omega})\|_{\mathsf{F}}^2\,.$$
 [EpperlyWebber2026, proof of Theorem 4.2]; [TroppYurtseverUdellCevher2017, Lemmas A.3, A.5]; there
 with $q$ the sketch size (full rank). Result: generalized-nystrom-expected-error -/
 theorem integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
@@ -186,7 +186,7 @@ $q = \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, <!-- value gaussianProject
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2 =
 \mathbb{E}\Bigl[\Bigl(1 + \frac{q}{p - q - 1}\Bigr)\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A},
 \mathbf{\Omega})\|_{\mathsf{F}}^2\Bigr]\,:$$
-the rank stays inside the expectation, with the factor `gaussianProjectionFactor q p`.
+the rank stays inside the expectation.
 [EpperlyWebber2026, proof of Theorem 4.2]; [TroppYurtseverUdellCevher2017, §A.3.4].
 Result: generalized-nystrom-expected-error -/
 theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_of_hasLaw_gaussianMatrix
@@ -223,8 +223,8 @@ $\mathbf{\Omega}$ independent of a standard Gaussian $\mathbf{\Psi}$ and
 $\ell + 2 \le p$: <!-- value gaussianProjectionFactor \ell p -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2
 \le \Bigl(1 + \frac{\ell}{p - \ell - 1}\Bigr)\,\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A},
-\mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
-the factor being `gaussianProjectionFactor ℓ p`. Any bound on the randomized SVD (Gaussian,
+\mathbf{\Omega})\|_{\mathsf{F}}^2\,.$$
+Any bound on the randomized SVD (Gaussian,
 rotation-invariant, oblivious subspace injection) becomes a bound on generalized Nyström.
 [CamanoEpperlyMeyerTropp2025, proof of Corollary 2.8]; [TroppYurtseverUdellCevher2017, §A.3.4].
 Result: generalized-nystrom-expected-error -/
@@ -253,8 +253,7 @@ $\ell' = \min(\operatorname{rank}\mathbf{A}, \ell)$, the almost sure rank of the
 $\ell' + 2 \le p$, <!-- value gaussianProjectionFactor {\ell'} p -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2 =
 \Bigl(1 + \frac{\ell'}{p - \ell' - 1}\Bigr)\,\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A},
-\mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
-the factor being `gaussianProjectionFactor ℓ' p`.
+\mathbf{\Omega})\|_{\mathsf{F}}^2\,.$$
 [EpperlyWebber2026, proof of Theorem 4.2(a), $\gamma = 1$]; there for
 $\operatorname{rank}\mathbf{A} \ge p$. Result: generalized-nystrom-expected-error -/
 theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_mul_integral_of_hasLaw_gaussianMatrix
@@ -274,8 +273,9 @@ standard Gaussian test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$,
 so <!-- value gaussianProjectionFactor \ell p --> <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2
 \le \Bigl(1 + \frac{\ell}{p - \ell - 1}\Bigr)\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)
-\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
-the factors being `gaussianProjectionFactor ℓ p` and `gaussianProjectionFactor k ℓ`.
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`.
 [TroppYurtseverUdellCevher2017, Theorem 4.3]; there with a minimum over $k$, not stated here
 (one comparison rank per statement). Result: generalized-nystrom-expected-error -/
 theorem integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix
@@ -290,6 +290,47 @@ theorem integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix
     hX.aemeasurable hΨ hXΨ hlp).trans (mul_le_mul_of_nonneg_left
       (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hk)
       (zero_le_one.trans (one_le_gaussianProjectionFactor hlp)))
+
+/-- **$O(k/\varepsilon)$ and $O(\ell/\varepsilon)$ samples suffice for generalized Nyström**:
+there are absolute constants $C, \varepsilon_0 > 0$ such that for independent standard Gaussian
+test matrices $\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$ ($m \times p$), $k \ge 1$,
+$0 < \varepsilon \le \varepsilon_0$, $\ell \ge Ck/\varepsilon$ and $p \ge C\ell/\varepsilon$,
+$$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2
+\le (1 + \varepsilon)\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,,$$
+so $O(k/\varepsilon^2)$ products in all. The asymptotic form of
+`NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`; the proof takes
+$C = 9$ and $\varepsilon_0 = 1$.
+[TroppYurtseverUdellCevher2017, Remark 4.4]; [Woodruff2014, Theorem 47];
+[EpperlyWebber2026, §4.2]; there as scalings $\Theta(\cdot)$, and (Woodruff) with constant
+probability and a subspace embedding for the co-range sketch.
+Asymptotic: NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix
+Result: generalized-nystrom-expected-error -/
+theorem exists_forall_integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m]
+      [Fintype n] [Fintype l] [Fintype p] (μ : Measure Ω) (A : Matrix m n ℝ)
+      (X : Ω → Matrix n l ℝ) (Ψ : Ω → Matrix m p ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X (gaussianMatrix n l) μ → HasLaw Ψ (gaussianMatrix m p) μ → IndepFun X Ψ μ →
+      0 < k → 0 < ε → ε ≤ ε₀ → C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      C * ((Fintype.card l : ℝ) / ε) ≤ Fintype.card p →
+      ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  refine ⟨9, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l p _ _ _ _ _ μ A X Ψ k ε hX hΨ hXΨ hk hε hε1 hl hp
+  have h3 (a b : ℝ) (h : 9 * (a / ε) ≤ b) : 3 * (a / (ε / 3)) ≤ b := by
+    have : 3 * (a / (ε / 3)) = 9 * (a / ε) := by rw [div_div_eq_mul_div]; ring
+    rwa [this]
+  have hε3 : 0 < ε / 3 := by positivity
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε3
+    (by linarith) (h3 _ _ hl)
+  obtain ⟨hlp, hh⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le
+    (by omega : 0 < Fintype.card l) hε3 (by linarith) (h3 _ _ hp)
+  refine (integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix A hX hΨ hXΨ hkl
+    hlp).trans (mul_le_mul_of_nonneg_right ?_ (sq_nonneg _))
+  have hg1 := one_le_gaussianProjectionFactor hkl
+  calc gaussianProjectionFactor (Fintype.card l) (Fintype.card p) *
+        gaussianProjectionFactor k (Fintype.card l) ≤ (1 + ε / 3) * (1 + ε / 3) :=
+        mul_le_mul hh hg (by linarith) (by linarith)
+    _ ≤ 1 + ε := by nlinarith
 
 /-- **Gaussian test matrices at least as wide as the rank make generalized Nyström exact**: if
 $\operatorname{rank}\mathbf{A} \le \min(\ell, p)$ then $\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
@@ -314,8 +355,8 @@ $p \le m$ and $q = \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$ with
 $q + 2 \le p$, <!-- value haarProjectionFactor m p q -->
 $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \|_{\mathsf{F}}^2 = \Bigl(1 + \frac{m - p}{m - q}\cdot\frac{q}{p - q - 1}\Bigr)
-\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
-the factor being `haarProjectionFactor m p q`. The Gaussian twin is
+\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,.$$
+The Gaussian twin is
 `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix`.
 [EpperlyWebber2026, proof of Theorem 4.2]; there with $q$ the sketch size.
 Result: generalized-nystrom-expected-error -/
@@ -438,8 +479,8 @@ of $\mathbf{\Omega}$ independent of an $m \times p$ Haar $\mathbf{\Psi}$ with $p
 $\ell + 2 \le p$: <!-- value haarProjectionFactor m p \ell -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2
 \le \Bigl(1 + \frac{m - p}{m - \ell}\cdot\frac{\ell}{p - \ell - 1}\Bigr)\,
-\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
-the factor being `haarProjectionFactor m p ℓ`. Any bound on the randomized SVD becomes a bound on
+\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,.$$
+Any bound on the randomized SVD becomes a bound on
 generalized Nyström with a Haar co-range test matrix.
 [EpperlyWebber2026, proof of Theorem 4.2]. Result: generalized-nystrom-expected-error -/
 theorem integral_frobNorm_sub_generalizedNystrom_sq_le_mul_integral_of_hasLaw_haarFrame
@@ -467,7 +508,7 @@ $\ell' + 2 \le p \le m$, <!-- value haarProjectionFactor m p {\ell'} -->
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2 =
 \Bigl(1 + \frac{m - p}{m - \ell'}\cdot\frac{\ell'}{p - \ell' - 1}\Bigr)\,
 \mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
-the factor being `haarProjectionFactor m p ℓ'`, Epperly and Webber's
+Epperly and Webber's factor
 $1 + \gamma\frac{\ell'}{p - \ell' - 1}$ with $\gamma = \frac{m - p}{m - \ell'}$.
 [EpperlyWebber2026, proof of Theorem 4.2(a), random orthonormal co-range]; there for
 $\operatorname{rank}\mathbf{A} \ge p$. Result: generalized-nystrom-expected-error -/
@@ -498,8 +539,8 @@ so <!-- value gaussianProjectionFactor \ell p --> <!-- value rotationInvariantFa
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{\ell}{p - \ell - 1}\Bigr)
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
-\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
-the factors being `gaussianProjectionFactor ℓ p` and `rotationInvariantFactor r ℓ q`. The instance
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,.$$
+The instance
 $r = \lvert n\rvert$ needs no knowledge of the rank.
 [EpperlyWebber2026, Theorem 4.2(a), $\gamma = 1$]; there $r = \operatorname{rank}\mathbf{A} \ge p$
 and a minimum over $q$. Result: generalized-nystrom-expected-error -/
@@ -529,7 +570,7 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{m - p}{m - \ell}\cdot\frac{\ell}{p - \ell - 1}\Bigr)
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
-the factors being `haarProjectionFactor m p ℓ` and `rotationInvariantFactor r ℓ q`; smaller than
+smaller than
 the Gaussian co-range bound by the ratio of the completion factors.
 [EpperlyWebber2026, Theorem 4.2(a), $\gamma = \frac{d - k}{d - \ell}$ in their letters]; there
 $r = \operatorname{rank}\mathbf{A} \ge p$ and a minimum over $q$.

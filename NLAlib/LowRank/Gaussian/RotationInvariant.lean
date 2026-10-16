@@ -60,7 +60,7 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant`.
 * Epperly and Webber's sharp bounds, with a rank parameter $r \ge \operatorname{rank}$ and the
   factor <!-- value rotationInvariantFactor r \ell q -->
-  $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$ (`NLAlib.rotationInvariantFactor r ℓ q`):
+  $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$:
   in the `Matrix.PosSemidef` namespace,
   `integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le` (their Theorem
   3.6(a)), its Gaussian twin
@@ -81,6 +81,9 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   `NLAlib.SymmetricGauge` namespace,
   `integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant` and
   `measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant`.
+* the asymptotic forms, $O(k/\varepsilon)$ samples for relative error $1 + \varepsilon$, of
+  `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant` and of the two Nyström
+  trace bounds: `NLAlib.exists_forall_` followed by their names (without `Matrix.PosSemidef`).
 -/
 
 @[expose] public section
@@ -175,8 +178,7 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le
 \frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}\,,$$
 the bound of the Gaussian test matrix
-(`NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`); the constant is
-`gaussianPinvSpecNormBound k ℓ`.
+(`NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`).
 [HalkoMartinssonTropp2011, Theorem 10.6]; [MartinssonTropp2020, Theorem 11.5]; there for Gaussian
 test matrices, with the constant $e\sqrt{k + p}/p$, $p = \ell - k$.
 Result: randomized-svd-average-spectral-error -/
@@ -232,8 +234,8 @@ $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 \|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`), the tail of the Gaussian test matrix (in this namespace,
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
+matrix (in this namespace,
 `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and Schatten norms
 $p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$, which the library's is below.
@@ -335,7 +337,8 @@ frame is an instance (`NLAlib.isLeftUnitarilyInvariant_haarFrame`, and
 `NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$ for $\ell \le n$).
 Incomparable with the decay form with Epperly and Webber's factor,
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_isLeftUnitarilyInvariant_of_rank_le`,
-which is better for rank close to $\ell$ or a decaying tail.
+which is better for rank close to $\ell$ or a decaying tail. Asymptotic form:
+`NLAlib.exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`.
 [TroppYurtseverUdellCevher2017a, Theorem 4.1 (4.1)]; there for Gaussian or orthonormal test
 matrices, with $1 \le k$ and $\ell \le n$.
 Result: randomized-nystrom-expected-error -/
@@ -350,6 +353,39 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isL
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
   exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant F hX hXr hk
+
+/-- **$O(k/\varepsilon)$ samples suffice for truncated Nyström, rotation-invariant test
+matrices**, trace: there are absolute constants $C, \varepsilon_0 > 0$ such that for positive
+semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law and
+full column rank almost surely, $0 < \varepsilon \le \varepsilon_0$ and $\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_*
+\le (1 + \varepsilon)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,.$$
+The asymptotic form of
+`Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant`;
+the proof takes $C = 3$ and $\varepsilon_0 = 1$.
+[TroppYurtseverUdellCevher2017a, §4, after Theorem 4.1]; there $\ell = (1 + 1/\varepsilon)k + 1$,
+for Gaussian or orthonormal test matrices.
+Asymptotic:
+Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant
+Result: randomized-nystrom-expected-error -/
+theorem
+    exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω n l : Type} [MeasurableSpace Ω] [Fintype n] [Fintype l]
+      [DecidableEq n] (μ : Measure Ω) (ν : Measure (Matrix n l ℝ)) [IsProbabilityMeasure ν]
+      [IsLeftUnitarilyInvariant ν] (H : Matrix n n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      H.PosSemidef → HasLaw X ν μ → (∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) →
+      0 < ε → ε ≤ ε₀ → C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ ≤
+        (1 + ε) * nuclearNorm (H - truncatedSVD H k) := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω n l _ _ _ _ μ ν _ _ H X k ε hH hX hXr hε hε1 hl
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have := hX.isProbabilityMeasure
+    simp only [truncatedSVD_zero, sub_zero, integral_const, probReal_univ, one_smul]
+    nlinarith [nuclearNorm_nonneg H]
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant hX hXr
+    hkl).trans (mul_le_mul_of_nonneg_right hg (nuclearNorm_nonneg _))
 
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -419,8 +455,8 @@ $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`), the tail of the Gaussian test matrix (in this namespace,
+$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
+matrix (in this namespace,
 `measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Gaussian test matrices and Schatten norms,
 with a larger second failure term.
@@ -691,8 +727,8 @@ unitarily invariant law and full column rank almost surely (Gaussian, Haar, ...)
 $\ell \le r$ and $q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
-\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,;$$
-the factor is `rotationInvariantFactor r ℓ q`. At $r = \operatorname{rank}\mathbf{H}$ the supremum
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,.$$
+At $r = \operatorname{rank}\mathbf{H}$ the supremum
 of the ratio over rank-$r$ matrices equals the factor ([EpperlyWebber2026, Theorem 3.6(b)]); at
 $r = n$ the bound needs no knowledge of the rank. The factor is at most HMT's
 (`NLAlib.rotationInvariantFactor_le_gaussianProjectionFactor`), so this sharpens
@@ -738,7 +774,7 @@ $q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,;$$
-the factor is `rotationInvariantFactor r ℓ q`, at most HMT's, so this sharpens
+the factor is at most HMT's, so this sharpens
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`, its instance $r = n$. The
 Nyström bound at $\mathbf{H} = \mathbf{A}^{\mathsf{H}}\mathbf{A}$, by the Gram correspondence
 (`NLAlib.nuclearNorm_conjTranspose_mul_self_sub_nystrom`).
@@ -764,8 +800,7 @@ $\mathbf{X}$, $\ell \le r$ and $q + 2 \le \ell$, <!-- value rotationInvariantFac
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,,$$
-for every $\ell$ (for $\ell > n$ Nyström is exact almost surely); the factor is
-`rotationInvariantFactor r ℓ q`. The Gaussian instance of
+for every $\ell$ (for $\ell > n$ Nyström is exact almost surely). The Gaussian instance of
 `Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le`, and
 the sharper form of `Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix`
 (HMT's factor).
@@ -802,7 +837,7 @@ and $q + 2 \le \ell$, <!-- value rotationInvariantFactor r \ell q -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
-for every $\ell$; the factor is `rotationInvariantFactor r ℓ q`. The sharper form of
+for every $\ell$. The sharper form of
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix` (HMT's factor); the Nyström
 bound at $\mathbf{H} = \mathbf{A}^{\mathsf{H}}\mathbf{A}$ by the Gram correspondence.
 [EpperlyWebber2026, Theorem 3.2]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) with
@@ -828,8 +863,8 @@ $q + 2 \le \ell \le r$ and every choice of the
 truncation, <!-- value rotationInvariantFactor r \ell q -->
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_* \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_* + \frac{r - \ell}{r - q}
-\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,;$$
-the factor is `rotationInvariantFactor r ℓ q`. Better than
+\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,.$$
+Better than
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`'s
 $1 + \frac{q}{\ell-q-1}$ by the factor $\frac{r-\ell}{r-q}$. Incomparable with
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant` at
@@ -868,10 +903,11 @@ matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law a
 rank almost surely and $k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}^2\,;$$
-the factor is `gaussianProjectionFactor k ℓ`, HMT's. The instance $r = n$ of
+\|_{\mathsf{F}}^2\,,$$
+with HMT's factor. The instance $r = n$ of
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le`, with Epperly and
-Webber's factor bounded by HMT's; kept for the form consumers cite.
+Webber's factor bounded by HMT's; kept for the form consumers cite. Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`.
 [EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) over
 $\mathbb{R}$ and $\mathbb{C}$ with a minimum over the number $q$ of directions, here over
 $\mathbb{R}$ at $q = k$.
@@ -887,6 +923,31 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix
   exact mul_le_mul_of_nonneg_right (rotationInvariantFactor_le_gaussianProjectionFactor hk hln)
     (sq_nonneg _)
 
+/-- **$O(k/\varepsilon)$ samples suffice for the randomized SVD, rotation-invariant test
+matrices**, Frobenius norm: there are absolute constants $C, \varepsilon_0 > 0$ such that for a
+test matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
+$k \ge 1$, $0 < \varepsilon \le \varepsilon_0$ and $\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`; the
+proof takes $C = 3$ and $\varepsilon_0 = 1$.
+[EpperlyWebber2026, §4.2]; there as the count $2\ell \ge (2/\varepsilon + 2)k$ of products.
+Asymptotic: NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant
+Result: randomized-svd-expected-error -/
+theorem exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] [DecidableEq n] (μ : Measure Ω) (ν : Measure (Matrix n l ℝ))
+      [IsProbabilityMeasure ν] [IsLeftUnitarilyInvariant ν] (A : Matrix m n ℝ)
+      (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X ν μ → (∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) → 0 < k → 0 < ε → ε ≤ ε₀ →
+      C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤ (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ ν _ _ A X k ε hX hXr hk hε hε1 hl
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant A hX hXr hkl).trans
+    (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
+
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **The expected trace error of randomized Nyström, rotation-invariant test matrices**: for
@@ -894,13 +955,14 @@ positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unita
 and full column rank almost surely and
 $k + 2 \le \ell$, <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,;$$
-the factor is `gaussianProjectionFactor k ℓ`, HMT's. The instance $r = n$ of
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+with HMT's factor. The instance $r = n$ of
 `Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le`,
 with Epperly and Webber's factor bounded by HMT's. A Haar frame (`NLAlib.haarFrame`) is an
 instance: its law is left unitarily invariant (`NLAlib.isLeftUnitarilyInvariant_haarFrame`), and
 for $\ell \le n$ it has full column rank almost surely
-(`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$).
+(`NLAlib.ae_rank_mul_eq_min_of_hasLaw_haarFrame` at $\mathbf{A} = \mathbf{I}$). Asymptotic form:
+`NLAlib.exists_forall_integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant`.
 [EpperlyWebber2026, Theorem 3.1 and Fact 3.5]; [TroppYurtseverUdellCevher2017a, Theorem A.1];
 there with a minimum over the comparison rank, for orthonormal test matrices (TYUC) or
 rotation-invariant ones (EW, the Nyström twin of their Theorem 3.1); here at one rank.
@@ -916,5 +978,33 @@ theorem _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUn
   exact mul_le_mul_of_nonneg_right (rotationInvariantFactor_le_gaussianProjectionFactor hk hln)
     (nuclearNorm_nonneg _)
 
+/-- **$O(k/\varepsilon)$ samples suffice for randomized Nyström, rotation-invariant test
+matrices**, trace: there are absolute constants $C, \varepsilon_0 > 0$ such that for positive
+semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law and
+full column rank almost surely, $k \ge 1$, $0 < \varepsilon \le \varepsilon_0$ and
+$\ell \ge Ck/\varepsilon$,
+$$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_* \le
+(1 + \varepsilon)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,.$$
+The asymptotic form of
+`Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant`; the proof
+takes $C = 3$ and $\varepsilon_0 = 1$.
+[EpperlyWebber2026, §4.2 and Fact 3.5]; [TroppYurtseverUdellCevher2017a, §4, after Theorem 4.1];
+there (EW) for the randomized SVD, the Gram twin, and (TYUC) for the truncated output of Gaussian
+or orthonormal test matrices, whose error is the larger.
+Asymptotic: Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant
+Result: randomized-nystrom-expected-error -/
+theorem exists_forall_integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω n l : Type} [MeasurableSpace Ω] [Fintype n] [Fintype l]
+      [DecidableEq n] (μ : Measure Ω) (ν : Measure (Matrix n l ℝ)) [IsProbabilityMeasure ν]
+      [IsLeftUnitarilyInvariant ν] (H : Matrix n n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε : ℝ),
+      H.PosSemidef → HasLaw X ν μ → (∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) →
+      0 < k → 0 < ε → ε ≤ ε₀ → C * ((k : ℝ) / ε) ≤ Fintype.card l →
+      ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
+        (1 + ε) * nuclearNorm (H - truncatedSVD H k) := by
+  refine ⟨3, 1, by norm_num, one_pos, ?_⟩
+  intro Ω n l _ _ _ _ μ ν _ _ H X k ε hH hX hXr hk hε hε1 hl
+  obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
+  exact (hH.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant hX hXr hkl).trans
+    (mul_le_mul_of_nonneg_right hg (nuclearNorm_nonneg _))
 
 end NLAlib

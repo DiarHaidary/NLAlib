@@ -598,6 +598,12 @@ template, and every docstring that names a registered bound shows its value. Aft
 bound, `--update NAME` rewrites its values inside the annotated spans from the registry's
 `previous_latex` and records the new body.
 
+`scripts/check_refs.py` also checks §5.2 rule 3's tags: each `Asymptotic: NAME` line is the last
+line (before `Result:`) of an `exists_forall_` theorem's docstring, `NAME` is declared in the same
+file, and each docstring names the other in backticks in a sentence (the explorer's "Related"),
+the explicit one with "Asymptotic form: `…`."; a tag too long for 100 characters puts
+`NAME` alone on the next line.
+
 `scripts/Duplicates.lean` is a report, not a gate: it lists library theorems (private ones
 included) whose statements coincide with another library or Mathlib theorem up to universe
 levels, binder names, metadata and eta, confirmed by reducible `isDefEq`. A private lemma that
