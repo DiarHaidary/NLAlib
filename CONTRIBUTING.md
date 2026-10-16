@@ -368,6 +368,8 @@ those layers are designed.
 | function of a Hermitian matrix | Mathlib's `cfc f A`, `f : ℝ → ℝ`; no `matrixExp`, `matrixLog`, `traceExp`, `lambdaMax` names | `cfc_eq_mul_diagonal_mul_conjTranspose`, `Matrix.IsHermitian.re_trace_cfc` |
 | matrix exponential, logarithm | `NormedSpace.exp A`; `cfc Real.log A` | `Matrix.IsHermitian.exp_eq_cfc` |
 | real power, absolute value, positive part, inverse square root | Mathlib's `A ^ r`, `CFC.abs A` (rectangular: `CFC.sqrt (Aᴴ * A)`), `A⁺`, `(CFC.sqrt A)⁻¹`, under `MatrixOrder` | `CFC.rpow_eq_cfc_real`, `CFC.abs_eq_cfc_norm`, `Matrix.PosDef.inv_sqrt_eq_cfc` |
+| uniform scalar/function approximation | `Metric.IsUniformApproxOn g f s ε`: pointwise `dist (g x) (f x) ≤ ε` on `s`, with only a pseudometric codomain; degree, continuity, compactness and nonnegative error remain separate | `Metric.isUniformApproxOn_iff`; `Metric.isUniformApproxOn_iff_dist_le` uses Mathlib `ContinuousMap.dist_le` on compact domains |
+| normalized Chebyshev residual | `chebyshevResidual a b q : ℝ[X]`, the affine composition of Mathlib `Polynomial.Chebyshev.T`, normalized at zero for `0 < a < b`; scalar approximation bounds use the shared metric predicate | `eval_chebyshevResidual`, `degree_chebyshevResidual_le`, `eval_chebyshevResidual_zero`; inverse/division junk values documented in the definition |
 | location of the spectrum | `spectrum ℝ A ⊆ s`; for an interval the Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` | `Matrix.IsHermitian.spectrum_subset_iff` |
 | transfer from `𝕜` to `ℂ` | `complexify A = A.map RCLike.toComplex` | `complexify_cfc`, `complexify_le_complexify_iff` |
 | operator convexity | `OperatorConvexOn s f`; convex combinations as `a • A + b • B`, `a + b = 1` | `OperatorConvexOn.cfc_smul_add_smul_le` |

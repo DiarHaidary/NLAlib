@@ -1,6 +1,7 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
+public import NLAlib.ForMathlib.Algebra.Polynomial.Div
 public import NLAlib.ForMathlib.Analysis.CStarAlgebra.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
@@ -12,6 +13,7 @@ public import NLAlib.ForMathlib.Analysis.Real.Sqrt
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
 public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.ForMathlib.Data.Matrix.Block
@@ -39,6 +41,7 @@ public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
 public import NLAlib.LowRank.Gaussian.EarlyTruncationHaar
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
@@ -203,6 +206,8 @@ public import NLAlib.Matrix.Subspaces.ObliqueProjector
 public import NLAlib.Matrix.Subspaces.PrincipalAngles
 public import NLAlib.Matrix.Subspaces.ProjectorPair
 public import NLAlib.Matrix.Subspaces.Tangent
+public import NLAlib.Polynomial.Approximation.Inverse
+public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare
