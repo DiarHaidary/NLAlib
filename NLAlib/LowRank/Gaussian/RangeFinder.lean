@@ -184,26 +184,6 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
 
 end SymmetricGauge
 
-/-- **The Gaussian projection factor at $\ell \ge 3k/\varepsilon$**: for $k \ge 1$,
-$0 < \varepsilon \le 1$ and $3k/\varepsilon \le \ell$, the size condition $k + 2 \le \ell$ holds
-and <!-- value gaussianProjectionFactor k \ell --> $1 + k/(\ell - k - 1) \le 1 + \varepsilon$. The
-arithmetic of the asymptotic forms of the
-expected-error bounds with HMT's factor. -/
-theorem gaussianProjectionFactor_le_one_add_of_three_mul_div_le {k l : ℕ} {ε : ℝ} (hk : 0 < k)
-    (hε : 0 < ε) (hε1 : ε ≤ 1) (hl : 3 * ((k : ℝ) / ε) ≤ l) :
-    k + 2 ≤ l ∧ gaussianProjectionFactor k l ≤ 1 + ε := by
-  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
-  have hl' : 3 * (k : ℝ) ≤ l * ε := by rwa [← mul_div_assoc, div_le_iff₀ hε] at hl
-  have hεk := mul_le_mul_of_nonneg_right hε1 (Nat.cast_nonneg (α := ℝ) k)
-  have hεl := mul_le_mul_of_nonneg_right hε1 (Nat.cast_nonneg (α := ℝ) l)
-  have hkl : k + 2 ≤ l := by
-    have : (k : ℝ) + 2 ≤ l := by linarith
-    exact_mod_cast this
-  refine ⟨hkl, ?_⟩
-  have hden : 0 < (l : ℝ) - k - 1 := by linarith
-  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ hden]
-  nlinarith
-
 open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Frobenius norm** (HMT Theorem 10.5, squared):
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and
