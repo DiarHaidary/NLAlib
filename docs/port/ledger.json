@@ -12613,6 +12613,16 @@
   "new": "Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose",
   "stage": "M10"
  },
+ "NLAlib.exists_degree_le_abs_sub_eval_le_of_open_bernsteinEllipse": {
+  "new": "NLAlib.isUniformApproxOn_chebyshevTrunc_of_open_ellipse",
+  "note": "Constructive successor using the canonical degree-N truncation instead of an existential real witness; generalized to RCLike norm/Metric error and compatible complex extension. Uses focal-distance open ellipse for rho>1; no object alias or unproved image-set equality claimed.",
+  "stage": "Poly3"
+ },
+ "NLAlib.exists_degree_le_abs_sub_eval_le_of_open_bernsteinEllipse_interval": {
+  "new": "NLAlib.exists_degree_le_isUniformApproxOn_of_open_ellipse_interval",
+  "note": "Affine interval approximation generalized from real absolute error to RCLike norm/Metric error with the same degree-N rate and compatible complex extension. Uses focal-distance open ellipse for rho>1; no object alias or unproved image-set equality claimed.",
+  "stage": "Poly3"
+ },
  "NLAlib.exists_degree_lt_abs_eval_sub_inv_le": {
   "new": "NLAlib.exists_degree_lt_isUniformApproxOn_inv",
   "note": "equivalent pointwise real bound through Metric.IsUniformApproxOn and Real.dist_eq",

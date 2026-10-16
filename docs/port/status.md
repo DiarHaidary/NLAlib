@@ -2,6 +2,28 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Polynomial Poly3 (2026-10-16)
+
+Complete and independently reviewed: `docs/design/Polynomial-Analytic.md`. All five proof steps
+and eleven public declarations are approved: focal ellipse definition, ten theorems for canonical
+coefficient bridges/decay, generic reconstruction, inclusive truncation error and affine existence.
+Four new modules plus the coefficient-owner extension preserve the approved generic f/compatible
+complex-extension interface, open-domain hypotheses, endpoints, N=0 and M=0. Four root imports,
+one vocabulary row/addition note and two genuine headline successor mappings are recorded;
+previous mappings unchanged, no object aliases or unproved ellipse equivalence claimed.
+
+Final-source full two-thread build passed (3907 jobs, zero warnings), both root checks passed,
+audit 7398/zero violations, 14 linters 5069 plus 2329 generated/zero errors, duplicates 4667
+and zero classes. Refs (56 keys/40 forms), constants (25), KaTeX (5516 docstrings/18168 spans),
+11 metadata tests and eleven reuse targets passed. Prior target/capped checks passed. The reviewed
+period amendment reuses Mathlib `Polynomial.instTwoPiPos` locally, with no new public Fact witnesses;
+final gates were rerun against those sources. Logs: `/tmp/nlalib-poly3-checks`.
+Fresh extraction `/tmp/nlalib-poly3-explore.json`: 313 modules/3510 public declarations, all source
+hashes matching and eleven additions proved. Strict unchanged Explorer build: 312 visible modules,
+254 results/172 enriched definitions; Rates unchanged at 32 rows/nine guarantees/three families.
+No UI/Rate edits, redundant browser/stage build, active validation process, commit or push.
+Root handles commit and extraction restamp; later stages retain exact design checkpoints.
+
 ## Polynomial Poly2 (2026-10-16)
 
 Complete and independently reviewed: `docs/design/Polynomial-Series.md`. Both files/all nine
@@ -20,7 +42,7 @@ Fresh extraction `/tmp/nlalib-poly2-explore.json`: 309 modules/3499 public decla
 hashes matching and nine additions proved. Strict unchanged Explorer build: 308 visible modules,
 252 results/171 enriched definitions; Rates remains 32 rows/nine guarantees/three families.
 No active validation process, commit or push; root handles commit and extraction restamp.
-Poly3 extension-interface decision is pending user approval; dependent implementation is paused.
+The subsequently approved Poly3 interface is implemented in the completed stage above.
 
 ## Polynomial Poly1 (2026-10-16)
 

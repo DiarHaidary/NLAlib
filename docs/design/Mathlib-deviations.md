@@ -431,6 +431,12 @@ cosine substitution, orthogonality and polynomial sequence span machinery. The c
 one RCLike cosine-integral spelling; later contour/Fourier representations must be bridges,
 not competing objects. No numbered deviation is introduced.
 
+Poly3 (2026-10-16): `openBernsteinEllipse` adds a focal-distance sublevel set absent from
+pinned Mathlib. Openness uses continuity of the focal-distance sum; Joukowski annulus membership
+is a bridge, not a claim of equality with the prototype image for every parameter. Analytic
+hypotheses use existing `DifferentiableOn`, `Set.EqOn` and `Metric.IsUniformApproxOn`; coefficients
+and truncation retain their Poly2 spelling. No numbered deviation is introduced.
+
 ## Used as Mathlib has them
 
 `Matrix.IsHermitian`, `Matrix.PosSemidef`, `Matrix.PosDef` and the Loewner order,

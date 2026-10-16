@@ -213,8 +213,9 @@ explicit/asymptotic pairs where applicable, without calling every degree estimat
 A stage report states source reuse, changed hypotheses/constants, anything scaffolded and
 remaining consumers. Do not claim proof completion from lexical token scans or green imports.
 
-**Current state: Poly0 complete (`e33043d`), Poly1 complete, and Poly2 complete with independent
-reviews and all mechanical gates passed (reports: `docs/design/Polynomial-Minimax.md` and
-`docs/design/Polynomial-Series.md`). Poly2 implements the user-approved full coefficients, one
-RCLike API and inclusive degree-N truncation. Poly3 extension-interface shape awaits user approval;
-dependent implementation remains paused. Later exact APIs retain their design checkpoints.**
+**Current state: Poly0–Poly3 complete with independent reviews and full mechanical gates passed.
+Reports: `docs/design/Polynomial-Chebyshev.md`, `Polynomial-Minimax.md`, `Polynomial-Series.md`
+and `Polynomial-Analytic.md` in the same directory. Poly3 uses the approved generic function plus
+compatible complex extension, canonical full coefficients and inclusive degree-N truncation.
+Later stages retain their exact design/consumer checkpoints; no later-stage implementation is
+claimed here.**

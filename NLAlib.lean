@@ -207,7 +207,11 @@ public import NLAlib.Matrix.Subspaces.ObliqueProjector
 public import NLAlib.Matrix.Subspaces.PrincipalAngles
 public import NLAlib.Matrix.Subspaces.ProjectorPair
 public import NLAlib.Matrix.Subspaces.Tangent
+public import NLAlib.Polynomial.Approximation.AnalyticApproximation
+public import NLAlib.Polynomial.Approximation.AnalyticCoefficients
+public import NLAlib.Polynomial.Approximation.BernsteinEllipse
 public import NLAlib.Polynomial.Approximation.ChebyshevCoefficients
+public import NLAlib.Polynomial.Approximation.ChebyshevSeries
 public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Chebyshev.Residual

@@ -6,6 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.RCLike.Basic
+public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
+public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Basic
 public import Mathlib.Tactic.FieldSimp
@@ -95,5 +97,49 @@ theorem chebyshevCoeff_eval_T (j k : ℕ) :
   simp_rw [eval_T_ofReal, T_real_cos, Int.cast_natCast, ← RCLike.ofReal_mul]
   rw [RCLike.intervalIntegral_ofReal, integral_cos_mul_cos]
   split_ifs <;> simp [Real.pi_ne_zero]
+
+/-- A uniform bound $\|f(x)\|\le M$ on $[-1,1]$ bounds the zeroth full coefficient by $M$.
+No continuity or integrability assumption is required for this total Bochner-integral bound.
+This extends the zeroth-coefficient estimate of [Trefethen2019, Theorem 8.1] beyond analytic
+functions, directly from its cosine integral. -/
+theorem norm_chebyshevCoeff_zero_le {f : ℝ → 𝕜} {M : ℝ}
+    (hM : Metric.IsUniformApproxOn f (fun _ => 0) (Set.Icc (-1 : ℝ) 1) M) :
+    ‖chebyshevCoeff f 0‖ ≤ M := by
+  have hi : ‖∫ θ in 0..Real.pi, f (Real.cos θ)‖ ≤ M * Real.pi := by
+    have h := intervalIntegral.norm_integral_le_of_norm_le_const
+      (a := 0) (b := Real.pi) (f := fun θ => f (Real.cos θ)) (C := M)
+      (fun θ _ => by
+        simpa only [dist_zero_right] using
+          hM.apply (show Real.cos θ ∈ Set.Icc (-1 : ℝ) 1 from
+            ⟨Real.neg_one_le_cos θ, Real.cos_le_one θ⟩))
+    simpa only [sub_zero, abs_of_pos Real.pi_pos] using h
+  simp only [chebyshevCoeff, ↓reduceIte, Nat.cast_zero, zero_mul, Real.cos_zero,
+    RCLike.ofReal_one, mul_one, norm_mul, RCLike.norm_ofReal,
+    abs_of_pos (div_pos zero_lt_one Real.pi_pos)]
+  calc
+    (1 / Real.pi) * ‖∫ θ in 0..Real.pi, f (Real.cos θ)‖ ≤
+        (1 / Real.pi) * (M * Real.pi) :=
+      mul_le_mul_of_nonneg_left hi (by positivity)
+    _ = M := by field_simp
+
+/-- The canonical Chebyshev coefficient commutes with the existing RCLike embedding into
+$\mathbb C$. The identity is unconditional, including nonintegrable weighted integrands,
+by Mathlib's interval-integral commutation for linear isometries. -/
+theorem toComplex_chebyshevCoeff (f : ℝ → 𝕜) (k : ℕ) :
+    RCLike.toComplex (chebyshevCoeff f k) =
+      chebyshevCoeff (fun x => RCLike.toComplex (f x)) k := by
+  let L : 𝕜 →ₗᵢ[ℝ] ℂ :=
+    { RCLike.toComplex.toAlgHom.toLinearMap with
+      norm_map' := RCLike.norm_toComplex }
+  have hi := L.intervalIntegral_comp_comm
+    (fun θ => f (Real.cos θ) * (Real.cos ((k : ℝ) * θ) : 𝕜))
+    (a := 0) (b := Real.pi) (μ := volume)
+  change (∫ θ in 0..Real.pi,
+      RCLike.toComplex (f (Real.cos θ) * (Real.cos ((k : ℝ) * θ) : 𝕜))) =
+    RCLike.toComplex (∫ θ in 0..Real.pi,
+      f (Real.cos θ) * (Real.cos ((k : ℝ) * θ) : 𝕜)) at hi
+  simp only [map_mul, RCLike.toComplex_ofReal] at hi
+  simp only [chebyshevCoeff, map_mul, RCLike.toComplex_ofReal]
+  exact congrArg (fun z : ℂ => (((if k = 0 then 1 else 2) / Real.pi : ℝ) : ℂ) * z) hi.symm
 
 end NLAlib
