@@ -2,6 +2,69 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Polynomial Poly3 (2026-10-16)
+
+Complete and independently reviewed: `docs/design/Polynomial-Analytic.md`. All five proof steps
+and eleven public declarations are approved: focal ellipse definition, ten theorems for canonical
+coefficient bridges/decay, generic reconstruction, inclusive truncation error and affine existence.
+Four new modules plus the coefficient-owner extension preserve the approved generic f/compatible
+complex-extension interface, open-domain hypotheses, endpoints, N=0 and M=0. Four root imports,
+one vocabulary row/addition note and two genuine headline successor mappings are recorded;
+previous mappings unchanged, no object aliases or unproved ellipse equivalence claimed.
+
+Final-source full two-thread build passed (3907 jobs, zero warnings), both root checks passed,
+audit 7398/zero violations, 14 linters 5069 plus 2329 generated/zero errors, duplicates 4667
+and zero classes. Refs (56 keys/40 forms), constants (25), KaTeX (5516 docstrings/18168 spans),
+11 metadata tests and eleven reuse targets passed. Prior target/capped checks passed. The reviewed
+period amendment reuses Mathlib `Polynomial.instTwoPiPos` locally, with no new public Fact witnesses;
+final gates were rerun against those sources. Logs: `/tmp/nlalib-poly3-checks`.
+Fresh extraction `/tmp/nlalib-poly3-explore.json`: 313 modules/3510 public declarations, all source
+hashes matching and eleven additions proved. Strict unchanged Explorer build: 312 visible modules,
+254 results/172 enriched definitions; Rates unchanged at 32 rows/nine guarantees/three families.
+No UI/Rate edits, redundant browser/stage build, active validation process, commit or push.
+Root handles commit and extraction restamp; later stages retain exact design checkpoints.
+
+## Polynomial Poly2 (2026-10-16)
+
+Complete and independently reviewed: `docs/design/Polynomial-Series.md`. Both files/all nine
+public declarations are approved: one canonical full RCLike coefficient, four coefficient facts,
+inclusive degree-N truncation, evaluation/degree and exact arbitrary-polynomial reproduction.
+Two root imports, two approved vocabulary rows and one genuine real-coefficient prototype mapping
+are recorded; prior ledger entries are unchanged. Analytic contour/real-part objects remain
+unmapped pending true representation bridges. No numbered Mathlib deviation or proof changes.
+
+Full two-thread build passed (3900 jobs, zero warnings), both root checks passed, audit 7300/zero
+violations, 14 linters 5033 plus 2267 generated/zero errors, duplicates 4632 theorems/zero classes.
+References (56 keys/40 asymptotic forms), constants (25), KaTeX (5501 docstrings/18134 spans),
+11 metadata tests and nine reuse targets passed. Prior target/capped checks passed; no redundant
+stage build or browser run. Logs: `/tmp/nlalib-poly2-checks`.
+Fresh extraction `/tmp/nlalib-poly2-explore.json`: 309 modules/3499 public declarations, all source
+hashes matching and nine additions proved. Strict unchanged Explorer build: 308 visible modules,
+252 results/171 enriched definitions; Rates remains 32 rows/nine guarantees/three families.
+No active validation process, commit or push; root handles commit and extraction restamp.
+The subsequently approved Poly3 interface is implemented in the completed stage above.
+
+## Polynomial Poly1 (2026-10-16)
+
+Complete and independently reviewed: `docs/design/Polynomial-Minimax.md`. Both files/all six
+new statements are approved: external modulus comparison, monic minimax and exact normalized
+residual minimax, preserving Poly0 API and including q=0. One new root import and six genuine
+prototype mappings were recorded; previous ledger entries are unchanged. No new vocabulary,
+Mathlib deviation or proof edits during mechanical validation.
+
+Full two-thread build passed (3895 jobs, zero warnings), both root checks passed, audit 7278/zero
+violations, 14 linters 5020 plus 2258 generated/zero errors, duplicates 4621 theorems/zero classes.
+References (56 keys/40 asymptotic forms), constants (25), KaTeX (5490 docstrings/18117 spans),
+11 metadata tests and six reuse targets passed. Prior target/capped checks passed; no redundant
+stage build. Logs: `/tmp/nlalib-poly1-checks`.
+Fresh extraction `/tmp/nlalib-poly1-explore.json`: 307 modules/3490 public declarations, all source
+hashes matching and all six additions proved. Strict unchanged Explorer build passed: 306 visible
+modules/251 results/169 enriched definitions; Rates remains 32 rows/nine guarantees/three families.
+No active validation process, commit or push; root handles the commit and extraction restamp.
+
+Poly2 full coefficient normalization, one generic RCLike API and inclusive degree-N truncation
+(0 through N) are explicitly user-approved. These choices are implemented in the completed Poly2 stage above. Available-agent fallback continues.
+
 ## Polynomial Poly0 (2026-10-16)
 
 Complete and independently reviewed; user-approved roadmap and stage design:

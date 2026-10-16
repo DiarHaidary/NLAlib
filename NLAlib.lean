@@ -13,6 +13,7 @@ public import NLAlib.ForMathlib.Analysis.Real.Sqrt
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
 public import NLAlib.ForMathlib.Data.Finset.Max
@@ -206,6 +207,12 @@ public import NLAlib.Matrix.Subspaces.ObliqueProjector
 public import NLAlib.Matrix.Subspaces.PrincipalAngles
 public import NLAlib.Matrix.Subspaces.ProjectorPair
 public import NLAlib.Matrix.Subspaces.Tangent
+public import NLAlib.Polynomial.Approximation.AnalyticApproximation
+public import NLAlib.Polynomial.Approximation.AnalyticCoefficients
+public import NLAlib.Polynomial.Approximation.BernsteinEllipse
+public import NLAlib.Polynomial.Approximation.ChebyshevCoefficients
+public import NLAlib.Polynomial.Approximation.ChebyshevSeries
+public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Probability.BoundedDifferences

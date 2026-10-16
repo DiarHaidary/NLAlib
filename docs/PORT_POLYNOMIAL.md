@@ -103,8 +103,8 @@ Recommended order (decision for the user):
 | --- | --- | --- | --- |
 | Poly0 Scalar interface/growth/residual/inverse | Proposed uniform approximation predicate and Matrix hypothesis migration; missing growth; normalized residual and inverse existence | Mathlib Chebyshev; CG, Chebyshev iteration and inverse actions | Small–medium; interface review is the main risk |
 | Poly1 Minimax follow-up | Outside modulus comparison, exact residual and monic minimax | Mathlib Extremal and Poly0; optimization reading of CG residual | Small–medium; largely upstream corollaries |
-| Poly2 Chebyshev series | Canonical real coefficients, finite truncation and its degree; orthogonality/cosine/Fourier bridges | Mathlib measureT/Fourier; Poly3/Poly4 | Medium; normalization and convergence hypotheses |
-| Poly3 Analytic approximation | Bernstein ellipse geometry, coefficient decay, series reconstruction, geometric truncation error and interval rescaling | Poly2 and complex analysis; matrix-function/Lanczos analytic quadrature | High; ellipse/Fourier boundary conditions |
+| Poly2 Chebyshev series | Canonical RCLike coefficients, finite degree-N truncation, linearity, basis identification and polynomial reproduction | Mathlib orthogonality/sequence spans; Poly3/Poly4 | Complete; no arbitrary-function reconstruction claimed |
+| Poly3 Analytic approximation | Bernstein ellipse geometry, cosine-to-Fourier/contour bridges, coefficient decay, series reconstruction, geometric truncation error and interval rescaling | Poly2 and complex analysis; matrix-function/Lanczos analytic quadrature | High; ellipse/Fourier boundary conditions |
 | Poly4 Explicit approximants | Compressed monomials and exponential with degree/error bounds | Poly0/Poly2 as needed; exp-action and quadrature | Medium; cutoff and quantitative tail bookkeeping |
 | Poly5 Interpolation | Node-polynomial identities and derivative remainder; Chebyshev extrema-grid aliasing/analytic interpolation | Mathlib Lagrange; roots vs extrema kept distinct; Poly3 for analytic error | Medium–high; nodes and analytic/derivative routes |
 | Poly6 Derivative inequalities | Schur/Bernstein/Markov with sharp constants and interval forms | Mathlib Extremal and Poly5 lemmas only where needed | Medium–high; interior/endpoint distinctions |
@@ -213,4 +213,9 @@ explicit/asymptotic pairs where applicable, without calling every degree estimat
 A stage report states source reuse, changed hypotheses/constants, anything scaffolded and
 remaining consumers. Do not claim proof completion from lexical token scans or green imports.
 
-**Current state: Poly0 implementation in progress; later exact APIs remain design checkpoints.**
+**Current state: Poly0–Poly3 complete with independent reviews and full mechanical gates passed.
+Reports: `docs/design/Polynomial-Chebyshev.md`, `Polynomial-Minimax.md`, `Polynomial-Series.md`
+and `Polynomial-Analytic.md` in the same directory. Poly3 uses the approved generic function plus
+compatible complex extension, canonical full coefficients and inclusive degree-N truncation.
+Later stages retain their exact design/consumer checkpoints; no later-stage implementation is
+claimed here.**

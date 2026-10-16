@@ -9775,6 +9775,16 @@
   "note": "equivalent pointwise real bound through Metric.IsUniformApproxOn and Real.dist_eq",
   "stage": "Poly0"
  },
+ "NLAlib.abs_eval_le_abs_eval_T_real_of_forall_abs_le_one": {
+  "new": "Polynomial.Chebyshev.abs_eval_le_abs_eval_T_real_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
+ "NLAlib.abs_eval_le_mul_abs_eval_T_real_of_forall_abs_le": {
+  "new": "Polynomial.Chebyshev.abs_eval_le_mul_abs_eval_T_real_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
  "NLAlib.abs_exp_neg_le_one": {
   "new": null,
   "note": "private step or covered by the covariance form; Sudakov-Fernique follows from Gordon",
@@ -10632,6 +10642,11 @@
   "new": "NLAlib.charpoly_mul_mul_of_mul_eq_one",
   "note": "with S' = S⁻¹; over a commutative ring; for a unit of the matrix ring it is Mathlib's Matrix.charpoly_units_conj'",
   "stage": "M10"
+ },
+ "NLAlib.chebyshevCoeff": {
+  "new": "NLAlib.chebyshevCoeff",
+  "note": "Real arcsine coefficient generalized to RCLike cosine-integral coefficient; prototype chebyshevCoeff_eq_cosine_integral proves equality of the real specialization, including total integral behavior.",
+  "stage": "Poly2"
  },
  "NLAlib.chebyshevResidual": {
   "new": "NLAlib.chebyshevResidual",
@@ -12597,6 +12612,16 @@
  "NLAlib.exists_definite_pair_congruence_diagonal": {
   "new": "Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose",
   "stage": "M10"
+ },
+ "NLAlib.exists_degree_le_abs_sub_eval_le_of_open_bernsteinEllipse": {
+  "new": "NLAlib.isUniformApproxOn_chebyshevTrunc_of_open_ellipse",
+  "note": "Constructive successor using the canonical degree-N truncation instead of an existential real witness; generalized to RCLike norm/Metric error and compatible complex extension. Uses focal-distance open ellipse for rho>1; no object alias or unproved image-set equality claimed.",
+  "stage": "Poly3"
+ },
+ "NLAlib.exists_degree_le_abs_sub_eval_le_of_open_bernsteinEllipse_interval": {
+  "new": "NLAlib.exists_degree_le_isUniformApproxOn_of_open_ellipse_interval",
+  "note": "Affine interval approximation generalized from real absolute error to RCLike norm/Metric error with the same degree-N rate and compatible complex extension. Uses focal-distance open ellipse for rho>1; no object alias or unproved image-set equality claimed.",
+  "stage": "Poly3"
  },
  "NLAlib.exists_degree_lt_abs_eval_sub_inv_le": {
   "new": "NLAlib.exists_degree_lt_isUniformApproxOn_inv",
@@ -17753,6 +17778,11 @@
   "note": "Mathlib: Matrix.inv_diagonal",
   "stage": "M10"
  },
+ "NLAlib.inv_eval_T_real_le_of_forall_abs_eval_le": {
+  "new": "NLAlib.inv_eval_T_real_le_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
  "NLAlib.inv_gram_eq_zero_of_not_posDef": {
   "new": null,
   "note": "cut: D9, Wishart and the hard edge; PORT_PROBABILITY.md D9, R4 §0",
@@ -17807,6 +17837,11 @@
  "NLAlib.inv_submatrix_le_submatrix_inv": {
   "new": "Matrix.PosDef.inv_submatrix_le",
   "stage": "M7"
+ },
+ "NLAlib.inv_two_pow_le_of_monic_of_forall_abs_eval_le": {
+  "new": "Polynomial.Chebyshev.inv_two_pow_le_of_monic_of_isUniformApproxOn",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
  },
  "NLAlib.invariantNorm_rectangularDiagonal_singularValues_add_sub_le": {
   "new": "NLAlib.SymmetricGauge.apply_singularValuesFinsupp_sub_le",
@@ -18159,6 +18194,16 @@
  "NLAlib.isLeastSquaresSolution_toEuclideanLin_pinv": {
   "new": "NLAlib.isLeastSquaresSolution_pinv_mulVec",
   "stage": "M6"
+ },
+ "NLAlib.isLeast_chebyshev_minimax": {
+  "new": "NLAlib.isLeast_chebyshev_minimax",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
+ },
+ "NLAlib.isLeast_chebyshev_monic_minimax": {
+  "new": "Polynomial.Chebyshev.isLeast_chebyshev_monic_minimax",
+  "note": "same bound/minimax statement through Metric.IsUniformApproxOn and Real.dist_eq; generic extremal statements in Polynomial.Chebyshev",
+  "stage": "Poly1"
  },
  "NLAlib.isLeast_frobSq_sub_orthogonal_mul": {
   "new": "NLAlib.isLeast_frobNorm_sub_mul_sq",

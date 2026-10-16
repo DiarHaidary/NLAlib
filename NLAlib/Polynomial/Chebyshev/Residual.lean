@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
@@ -22,6 +23,7 @@ Degree and error remain separate, so the same metric approximation interface ser
 * `NLAlib.eval_chebyshevResidual_zero`: normalization on a positive nondegenerate interval.
 * `NLAlib.isUniformApproxOn_chebyshevResidual`: the reciprocal-Chebyshev error bound.
 * `NLAlib.isUniformApproxOn_chebyshevResidual_two_mul_pow`: geometric decay.
+* `NLAlib.isLeast_chebyshev_minimax`: exact optimality among normalized residuals.
 -/
 
 @[expose] public section
@@ -128,5 +130,67 @@ theorem isUniformApproxOn_chebyshevResidual_two_mul_pow {a b : ℝ} (q : ℕ)
     rw [inv_div]
   rw [hinv, inv_pow, ← div_eq_mul_inv, ← one_div, div_le_div_iff₀ hT hρ]
   linarith
+
+/-- A polynomial of degree at most $q$, equal to one at zero and uniformly bounded by $M$
+on $[a,b]$ with $0<a<b$, satisfies
+$$T_q((b+a)/(b-a))^{-1}\le M.$$
+[Saad2003, Theorem 6.25 and following corollary], expressed through the metric approximation
+interface. This includes $q=0$, when the lower bound is one. -/
+theorem inv_eval_T_real_le_of_isUniformApproxOn
+    {a b M : ℝ} {q : ℕ} {p : ℝ[X]}
+    (ha : 0 < a) (hab : a < b) (hp : p.degree ≤ (q : WithBot ℕ)) (hp0 : p.eval 0 = 1)
+    (hb : Metric.IsUniformApproxOn p.eval (fun _ => 0) (Set.Icc a b) M) :
+    ((Polynomial.Chebyshev.T ℝ (q : ℤ)).eval ((b + a) / (b - a)))⁻¹ ≤ M := by
+  have hba : 0 < b - a := by linarith
+  have hs : 1 ≤ (b + a) / (b - a) := by
+    rw [le_div_iff₀ hba]
+    linarith
+  have hT := one_le_eval_T_real (q : ℤ) hs
+  let L : ℝ[X] := C ((b + a) / 2) - C ((b - a) / 2) * X
+  have hLe : ∀ t, L.eval t = (b + a) / 2 - (b - a) / 2 * t := fun t => by
+    simp only [L, eval_sub, eval_C, eval_mul, eval_X]
+  have hP : (p.comp L).degree ≤ (q : WithBot ℕ) := by
+    refine degree_le_natDegree.trans ?_
+    have hn : (p.comp L).natDegree ≤ q := by
+      refine natDegree_comp_le.trans ?_
+      have hL : L.natDegree ≤ 1 := by
+        refine (natDegree_sub_le _ _).trans (max_le (by simp only [natDegree_C, zero_le]) ?_)
+        exact (natDegree_C_mul_le _ _).trans (by simp only [natDegree_X, le_refl])
+      exact (Nat.mul_le_mul (natDegree_le_iff_degree_le.mpr hp) hL).trans_eq (mul_one q)
+    exact_mod_cast hn
+  have hPb : Metric.IsUniformApproxOn (p.comp L).eval (fun _ => 0)
+      (Set.Icc (-1 : ℝ) 1) M := by
+    intro t ht
+    change |(p.comp L).eval t - 0| ≤ M
+    rw [eval_comp, hLe]
+    have hi : (b + a) / 2 - (b - a) / 2 * t ∈ Set.Icc a b :=
+      ⟨by nlinarith [ht.2], by nlinarith [ht.1]⟩
+    simpa only [Real.dist_eq] using hb.apply hi
+  have hPs : (p.comp L).eval ((b + a) / (b - a)) = 1 := by
+    rw [eval_comp, hLe, ← hp0]
+    congr 1
+    field_simp
+    ring
+  have h := abs_eval_le_mul_abs_eval_T_real_of_isUniformApproxOn hP hPb
+    (hs.trans (le_abs_self _))
+  rw [hPs, abs_one, abs_of_pos (show 0 < (T ℝ (q : ℤ)).eval ((b + a) / (b - a)) by
+    linarith)] at h
+  rw [← one_div, div_le_iff₀ (by linarith)]
+  exact h
+
+/-- Among polynomials of degree at most $q$ equal to one at zero, the least uniform bound
+on $[a,b]$, where $0<a<b$, is $T_q((b+a)/(b-a))^{-1}$. It is attained by
+`chebyshevResidual`, including $q=0$ with optimum one.
+[Saad2003, Theorem 6.25 and following corollary].
+
+Result: chebyshev-minimax
+-/
+theorem isLeast_chebyshev_minimax {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a < b) :
+    IsLeast {M : ℝ | ∃ p : ℝ[X], p.degree ≤ (q : WithBot ℕ) ∧ p.eval 0 = 1 ∧
+      Metric.IsUniformApproxOn p.eval (fun _ => 0) (Set.Icc a b) M}
+      (((Polynomial.Chebyshev.T ℝ (q : ℤ)).eval ((b + a) / (b - a)))⁻¹) :=
+  ⟨⟨chebyshevResidual a b q, degree_chebyshevResidual_le a b q,
+      eval_chebyshevResidual_zero q ha hab, isUniformApproxOn_chebyshevResidual q ha hab⟩,
+    fun _ ⟨_, hp, hp0, hb⟩ => inv_eval_T_real_le_of_isUniformApproxOn ha hab hp hp0 hb⟩
 
 end NLAlib
