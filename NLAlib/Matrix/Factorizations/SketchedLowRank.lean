@@ -143,6 +143,14 @@ theorem range_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) :
   range_mulVecLin_le_iff_exists_mul.mpr
     ⟨pinv (A * Ω) * A, by rw [rsvd, ← mul_pinv, Matrix.mul_assoc]⟩
 
+/-- The randomized SVD does not see a nonzero scaling of the test matrix:
+$\mathsf{rsvd}(\mathbf{A}, c\mathbf{\Omega}) = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ for
+$c \ne 0$. A family whose sketch is normalised, $\ell^{-1/2}\mathbf{\Omega}^{\mathsf{H}}$, is
+analysed at the scaled test matrix and concluded at the raw one through it. -/
+theorem rsvd_smul_right (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) {c : 𝕜} (hc : c ≠ 0) :
+    rsvd A (c • Ω) = rsvd A Ω := by
+  rw [rsvd, rsvd, Matrix.mul_smul, rangeProjector_smul hc]
+
 omit [Fintype m] in
 /-- When the sketch keeps the rank of $\mathbf{A}$ its range is the range of $\mathbf{A}$. -/
 private theorem range_mul_eq_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
