@@ -490,6 +490,16 @@ theorem eigenvalue_add_le ...
    | real part, adjugate, Frobenius inner product | `\operatorname{Re}`, `\operatorname{adj}`, `\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}` | |
    | absolute value; epsilon, phi | `\lvert x \rvert`; `\varepsilon`, `\varphi` | |
 
+   **Probability notation** (maintainer, 2026-10-16): mathematical probability statements use
+   `$\mathbb{P}[E]$`, with square brackets around the event. Use
+   `$\mathbb{P}\bigl[E\bigr]$` or `$\mathbb{P}\left[E\right]$` when sizing is needed;
+   preserve parentheses belonging to functions inside the event. Conditional probability is
+   `$\mathbb{P}[E \mid F]$`; a subscript may identify the random sketch or law. Do not use
+   `$P(E)$`, `$\Pr(E)$` or round event delimiters. A displayed high-probability guarantee
+   states its event explicitly, for example `$\mathbb{P}[\mathrm{error}\le t]\ge1-\delta$`;
+   prose may still say "with probability at least $1-\delta$". This is a documentation
+   convention; formal Lean statements keep the measure interface in §5.4.
+
    A conclusion with a fraction or longer than a line is displayed (`$$…$$`), a long display split
    with `\begin{aligned}`; `\frac` in displays, `/` inline. Punctuation that ends a sentence after
    a display goes inside it (`… \,.$$`). Mathematics stays out of citation brackets: the label in
