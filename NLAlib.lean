@@ -204,6 +204,7 @@ public import NLAlib.Probability.Distributions.GaussianIntegrationByParts
 public import NLAlib.Probability.Distributions.GaussianLogOverlap
 public import NLAlib.Probability.Distributions.GaussianLogSobolev
 public import NLAlib.Probability.Distributions.GaussianLogSobolevOneDim
+public import NLAlib.Probability.Distributions.GaussianMoments
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.Distributions.Sampling
 public import NLAlib.Probability.Distributions.UniformInjection
@@ -247,6 +248,7 @@ public import NLAlib.RandomMatrix.Gaussian.BlockTail
 public import NLAlib.RandomMatrix.Gaussian.ClippedInverseMoments
 public import NLAlib.RandomMatrix.Gaussian.Concentration
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
+public import NLAlib.RandomMatrix.Gaussian.FourthMoment
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius

@@ -88,3 +88,14 @@ The skeleton `NLAlib/RandomMatrix/Gaussian/Moments.lean` is the statement where 
    `Y := (S, T)`.
 4. New: `integrable_frobNorm_mul_mul_sq_iff_of_…_of_indepFun` (the two sides are integrable
    together), which the range finder's Jensen step needs (D3).
+
+## 2026-10-16 amendment: Gaussian fourth-moment follow-up
+
+The follow-up stage [Gaussian fourth moments](Gaussian-FourthMoments.md), on
+`feat/gaussian-fourth-moments`, now covers the fourth-order linear-form Wick identity,
+the exact Gaussian sandwich fourth moment, and centered and normalized Gaussian AMM moments.
+This overrides the fourth-moment/AMM scope cut in §0 only for that new stage; R2's completed
+second-moment statements and interfaces retain their original scope. The follow-up uses the
+existing Gaussian laws and `HasLaw`, with no new enduring interface. Its design received an
+independent bounded review before proof work began; implementation is sequential in the two
+files specified there.

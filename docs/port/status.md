@@ -42,6 +42,35 @@ Updated at every stopping point. Newest entry first within each section.
   4. Random matrices with orthonormal columns (normalised Gaussians) are a first-class
      distribution alongside Gaussian, sub-Gaussian, sparse and structured ones.
 
+## Gaussian fourth-moment follow-up (2026-10-16)
+
+- **Complete and independently reviewed**, branch `feat/gaussian-fourth-moments`, base
+  `0daf947`; execution worktree `/tmp/nlalib-gaussian-fourth-moments`. User authorized exact
+  Gaussian fourth moments and useful fourth-order Wick, then requested a local commit.
+  No push was requested.
+- Delivery worktree: `/home/tyler/Documents/NLA-lib/nlalib-gaussian-fourth-moments`, relocated
+  after validation; the main checkout's ongoing work was preserved.
+- `Probability/Distributions/GaussianMoments.lean` (182 lines, four public theorems) and
+  `RandomMatrix/Gaussian/FourthMoment.lean` (300 lines, eight public theorems) are proved and
+  registered. Headline results: fourth-order Wick, Gaussian vector linear-image fourth moment,
+  sandwich fourth moment with factor-three bound, centered Gram error, exact normalized AMM
+  error with factor-two bound. Normalized expectation formulas require nonempty sketch type;
+  integrability includes empty sketch types. Full arbitrary-order Wick remains outside scope.
+- Design and full statement read-backs: `docs/design/Gaussian-FourthMoments.md`, including the
+  final stage report and honest available-model fallback for unavailable requested aliases.
+  Independent bounded design/file/stage reviews approved; no new enduring interface, global
+  instance, object, or placement deviation. R2's old scope cut has a dated follow-up amendment.
+- Added verified `Isserlis1918`; reconsidered exactly twelve existing R2-cut ledger entries,
+  preserving every other entry. Prototype coverage is zero missing of twelve declarations;
+  generic Fubini and second-moment wrappers remain explicitly not reproduced via existing APIs.
+- Checks: full `NLAlib NLAlibScaffold` build 3860 jobs, zero warnings; required stage check
+  287 proved modules, zero unproved, build 3856 jobs, zero warnings; audit 6950 declarations,
+  zero violations; 14 linters, 4856 plus 2094 generated declarations, zero errors; 55 reference
+  keys, zero problems; constants and KaTeX clean; duplicate report 4461 theorems, zero classes.
+  Both root checks passed; targeted reuse covers all twelve public theorems. Individual module
+  and `lake lean` checks passed. Logs: `/tmp/nlalib-gaussian-fourth-checks`; see the stage report
+  for exact checks and read-backs. Final `git diff --check` and ledger structural checks clean.
+
 ## Current
 
 **Probability round started, 2026-10-14.** The maintainer decided §2 of `docs/PORT_PROBABILITY.md`
