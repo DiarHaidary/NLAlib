@@ -10643,6 +10643,11 @@
   "note": "with S' = S⁻¹; over a commutative ring; for a unit of the matrix ring it is Mathlib's Matrix.charpoly_units_conj'",
   "stage": "M10"
  },
+ "NLAlib.chebyshevCoeff": {
+  "new": "NLAlib.chebyshevCoeff",
+  "note": "Real arcsine coefficient generalized to RCLike cosine-integral coefficient; prototype chebyshevCoeff_eq_cosine_integral proves equality of the real specialization, including total integral behavior.",
+  "stage": "Poly2"
+ },
  "NLAlib.chebyshevResidual": {
   "new": "NLAlib.chebyshevResidual",
   "stage": "Poly0"

@@ -2,6 +2,26 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Polynomial Poly2 (2026-10-16)
+
+Complete and independently reviewed: `docs/design/Polynomial-Series.md`. Both files/all nine
+public declarations are approved: one canonical full RCLike coefficient, four coefficient facts,
+inclusive degree-N truncation, evaluation/degree and exact arbitrary-polynomial reproduction.
+Two root imports, two approved vocabulary rows and one genuine real-coefficient prototype mapping
+are recorded; prior ledger entries are unchanged. Analytic contour/real-part objects remain
+unmapped pending true representation bridges. No numbered Mathlib deviation or proof changes.
+
+Full two-thread build passed (3900 jobs, zero warnings), both root checks passed, audit 7300/zero
+violations, 14 linters 5033 plus 2267 generated/zero errors, duplicates 4632 theorems/zero classes.
+References (56 keys/40 asymptotic forms), constants (25), KaTeX (5501 docstrings/18134 spans),
+11 metadata tests and nine reuse targets passed. Prior target/capped checks passed; no redundant
+stage build or browser run. Logs: `/tmp/nlalib-poly2-checks`.
+Fresh extraction `/tmp/nlalib-poly2-explore.json`: 309 modules/3499 public declarations, all source
+hashes matching and nine additions proved. Strict unchanged Explorer build: 308 visible modules,
+252 results/171 enriched definitions; Rates remains 32 rows/nine guarantees/three families.
+No active validation process, commit or push; root handles commit and extraction restamp.
+Poly3 extension-interface decision is pending user approval; dependent implementation is paused.
+
 ## Polynomial Poly1 (2026-10-16)
 
 Complete and independently reviewed: `docs/design/Polynomial-Minimax.md`. Both files/all six
@@ -21,8 +41,7 @@ modules/251 results/169 enriched definitions; Rates remains 32 rows/nine guarant
 No active validation process, commit or push; root handles the commit and extraction restamp.
 
 Poly2 full coefficient normalization, one generic RCLike API and inclusive degree-N truncation
-(0 through N) are explicitly user-approved. No Poly2 code has started; its exact stage design
-and sequential proof work follow separately. Available-agent fallback continues.
+(0 through N) are explicitly user-approved. These choices are implemented in the completed Poly2 stage above. Available-agent fallback continues.
 
 ## Polynomial Poly0 (2026-10-16)
 

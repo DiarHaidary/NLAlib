@@ -425,6 +425,12 @@ pinned Mathlib; it uses Mathlib's `dist` directly and its compact continuous-map
 of Mathlib's `Polynomial.Chebyshev.T`, not another Chebyshev family. These are additions with
 no competing Mathlib spelling, so no numbered deviation is introduced.
 
+Poly2 (2026-10-16): `chebyshevCoeff` and `chebyshevTrunc` add the canonical full coefficient
+and finite inclusive truncation absent from pinned Mathlib. They reuse Mathlib's Chebyshev T,
+cosine substitution, orthogonality and polynomial sequence span machinery. The coefficient is
+one RCLike cosine-integral spelling; later contour/Fourier representations must be bridges,
+not competing objects. No numbered deviation is introduced.
+
 ## Used as Mathlib has them
 
 `Matrix.IsHermitian`, `Matrix.PosSemidef`, `Matrix.PosDef` and the Loewner order,
