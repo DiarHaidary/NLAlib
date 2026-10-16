@@ -9765,6 +9765,16 @@
   "new": "NLAlib.abs_eigenvalue_sub_le",
   "stage": "M6"
  },
+ "NLAlib.abs_eval_chebyshevResidual_le": {
+  "new": "NLAlib.isUniformApproxOn_chebyshevResidual",
+  "note": "equivalent pointwise real bound through Metric.IsUniformApproxOn and Real.dist_eq",
+  "stage": "Poly0"
+ },
+ "NLAlib.abs_eval_chebyshevResidual_le_two_mul_pow": {
+  "new": "NLAlib.isUniformApproxOn_chebyshevResidual_two_mul_pow",
+  "note": "equivalent pointwise real bound through Metric.IsUniformApproxOn and Real.dist_eq",
+  "stage": "Poly0"
+ },
  "NLAlib.abs_exp_neg_le_one": {
   "new": null,
   "note": "private step or covered by the covariance form; Sudakov-Fernique follows from Gordon",
@@ -10623,6 +10633,10 @@
   "note": "with S' = S⁻¹; over a commutative ring; for a unit of the matrix ring it is Mathlib's Matrix.charpoly_units_conj'",
   "stage": "M10"
  },
+ "NLAlib.chebyshevResidual": {
+  "new": "NLAlib.chebyshevResidual",
+  "stage": "Poly0"
+ },
  "NLAlib.chernoffCgfCoefficient": {
   "new": null,
   "note": "written out in the statements, CONTRIBUTING §5.2 Numerical bounds rule 2",
@@ -11350,6 +11364,10 @@
   "new": null,
   "note": "bundle of the definite-pair statements of Spectral/Congruence.lean",
   "stage": "M10"
+ },
+ "NLAlib.degree_chebyshevResidual_le": {
+  "new": "NLAlib.degree_chebyshevResidual_le",
+  "stage": "Poly0"
  },
  "NLAlib.dense_exists_injective_charpoly_factors_complex": {
   "new": "NLAlib.dense_setOf_separable_charpoly",
@@ -12361,10 +12379,22 @@
   "note": "not ported: Jacobian matrix of a differentiable map; belongs with map conditioning outside Matrix/, Matrix-Perturbation §7.7",
   "stage": "M6"
  },
+ "NLAlib.eval_T_real_eq_of_one_le": {
+  "new": "Polynomial.Chebyshev.eval_T_real_eq_of_one_le",
+  "stage": "Poly0"
+ },
  "NLAlib.eval_charpoly_add_vecMulVec_mul_sub": {
   "new": "NLAlib.charpoly_add_vecMulVec_mul",
   "note": "the polynomial identity; evaluate at z, the hypothesis eval z A.charpoly ≠ 0 is not needed",
   "stage": "M10"
+ },
+ "NLAlib.eval_chebyshevResidual": {
+  "new": "NLAlib.eval_chebyshevResidual",
+  "stage": "Poly0"
+ },
+ "NLAlib.eval_chebyshevResidual_zero": {
+  "new": "NLAlib.eval_chebyshevResidual_zero",
+  "stage": "Poly0"
  },
  "NLAlib.eval_interpolate_eigenvalues": {
   "new": null,
@@ -12567,6 +12597,16 @@
  "NLAlib.exists_definite_pair_congruence_diagonal": {
   "new": "Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose",
   "stage": "M10"
+ },
+ "NLAlib.exists_degree_lt_abs_eval_sub_inv_le": {
+  "new": "NLAlib.exists_degree_lt_isUniformApproxOn_inv",
+  "note": "equivalent pointwise real bound through Metric.IsUniformApproxOn and Real.dist_eq",
+  "stage": "Poly0"
+ },
+ "NLAlib.exists_degree_lt_one_sub_eq_X_mul_of_eval_zero_eq_one": {
+  "new": "Polynomial.exists_degree_lt_one_sub_eq_X_mul_of_eval_zero_eq_one",
+  "note": "generalized from real coefficients to a nontrivial ring",
+  "stage": "Poly0"
  },
  "NLAlib.exists_diagonal_add_vecMulVec_charpoly": {
   "new": "Matrix.IsHermitian.exists_eigenvalue_add_vecMulVec_star_eq",
@@ -21765,6 +21805,10 @@
   "note": "Mathlib: Matrix.IsUnit.posSemidef_star_right_conjugate_iff",
   "stage": "M8"
  },
+ "NLAlib.pow_div_two_le_eval_T_real": {
+  "new": "Polynomial.Chebyshev.pow_div_two_le_eval_T_real",
+  "stage": "Poly0"
+ },
  "NLAlib.pow_mul_eq_mul_pow_of_mul_eq": {
   "new": "NLAlib.pow_mul_eq_mul_pow_of_mul_eq_mul",
   "stage": "M8"
@@ -24321,6 +24365,10 @@
   "new": "NLAlib.HasOrthonormalCols.specNorm_tangentMatrix",
   "note": "with HasOrthonormalCols.singularValues_one_sub_mul_conjTranspose_mul: tangent and sine of the same angle",
   "stage": "M5"
+ },
+ "NLAlib.sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real": {
+  "new": "Polynomial.Chebyshev.sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real",
+  "stage": "Poly0"
  },
  "NLAlib.sqrt_add_sq_frobNorm_sinePrincipalAngles_le_sqrt_add_sq_perturbation_frame_div": {
   "new": "NLAlib.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub",

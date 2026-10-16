@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Algebra.Polynomial.AlgebraMap
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Matrix.Functions.HermitianCalculus
@@ -142,17 +143,20 @@ theorem specNorm_aeval_le_of_forall_mem_Icc {A : Matrix n n 𝕜} {a b : ℝ}
 scalar approximation on an interval containing the spectrum: if
 $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$, $c \ge 0$ and
 $\lvert f(x) - p(x) \rvert \le c$ on $[a, b]$, then $\|f(\mathbf{A}) - p(\mathbf{A})\|_2 \le c$.
-This is the bound behind Krylov methods for $f(\mathbf{A})\mathbf{b}$.
+The shared `Metric.IsUniformApproxOn` interface transfers scalar approximation constructors
+directly to matrix error bounds, including Krylov methods for $f(\mathbf{A})\mathbf{b}$.
 [Higham2008, §13.2 context]; [Saad2003, §6.11]. -/
 theorem specNorm_cfc_sub_aeval_le {A : Matrix n n 𝕜} {a b : ℝ}
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) {f : ℝ → ℝ} (p : ℝ[X])
-    {c : ℝ} (hc : 0 ≤ c) (h : ∀ x ∈ Set.Icc a b, |f x - p.eval x| ≤ c) :
+    {c : ℝ} (hc : 0 ≤ c) (h : Metric.IsUniformApproxOn p.eval f (Set.Icc a b) c) :
     specNorm (cfc f A - aeval A p) ≤ c := by
   have hA := isHermitian_of_le_smul_one h₂
   have hsa : IsSelfAdjoint A := hA
   rw [← cfc_polynomial p A hsa, ← cfc_sub f p.eval A (A.finite_real_spectrum.continuousOn _)
     (A.finite_real_spectrum.continuousOn _)]
-  exact hA.specNorm_cfc_le hc fun x hx => h x (spectrum_subset_Icc_of_le h₁ h₂ hx)
+  exact hA.specNorm_cfc_le hc fun x hx => by
+    simpa only [Real.dist_eq, abs_sub_comm] using
+      h.apply (spectrum_subset_Icc_of_le h₁ h₂ hx)
 
 /-- The trace of a polynomial in a Hermitian matrix:
 $\operatorname{Re} \operatorname{tr} p(\mathbf{A})

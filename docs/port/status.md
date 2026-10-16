@@ -2,6 +2,34 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Polynomial Poly0 (2026-10-16)
+
+Complete and independently reviewed; user-approved roadmap and stage design:
+`docs/PORT_POLYNOMIAL.md`, `docs/design/Polynomial-Chebyshev.md`. Five new modules provide
+18 public declarations for the shared metric approximation interface, Chebyshev growth,
+normalized residual, generic degree-controlled factorization and inverse approximation,
+including q=0. The existing Matrix approximation theorem now consumes the named interface
+in place. All six topic reviews approved; no proof edits during mechanical validation.
+
+Five root imports, two approved CONTRIBUTING vocabulary rows and eleven genuine prototype
+ledger mappings are recorded. The Mathlib comparison records additions with existing `dist`,
+`Chebyshev.T` and `ContinuousMap.dist_le`, without a competing spelling or numbered deviation.
+No future-stage prototype dispositions were added. Full two-thread build passed (3893 jobs,
+zero warnings), both root checks passed, audit 7267 declarations/zero violations, 14 linters
+5012 plus 2255 generated/zero errors, duplicate report 4613 theorems/zero classes. References
+(55 keys, 40 asymptotic forms), constants (25 bounds), KaTeX (5483 docstrings/18083 spans),
+11 metadata tests and all nineteen reuse targets passed. Target/capped file checks had already
+passed. Logs: `/tmp/nlalib-poly0-checks`; no redundant overlapping stage build was run.
+
+Fresh extraction `/tmp/nlalib-poly0-explore.json`: 306 modules, 3484 public declarations,
+all source hashes matching and all nineteen changed/new targets proved. The unchanged actual
+Explorer metadata passes a strict build (305 visible modules, 248 results, 169 enriched
+definitions); its 32 Rates rows/nine guarantees/three families remain unchanged. No Explorer
+edit or new Rates family. Final source/read-back and verified Saad2003 locators are in the design
+report. No active build/process and no validation-agent commit or push; root handles the commit.
+The already-approved roadmap's next exact stage receives bounded design review before proofs;
+important lasting changes retain user assessment. Available-agent fallback continues.
+
 ## Regression rates (2026-10-16)
 
 Complete and independently reviewed on `feat/regression-rates`; design, source read-back and

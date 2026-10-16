@@ -419,6 +419,12 @@ S2b, `docs/design/LowRank-S2b.md` §1, §8). `svdU` and `svdV`, the chosen thin 
 `HasProjectionCostPreserving`, the tail form of `IsProjectionCostPreserving` (LowRank S9,
 `docs/design/LowRank-S9.md` §1, §8 item 7).
 
+Poly0 (2026-10-16): `Metric.IsUniformApproxOn` adds a fixed-error predicate absent from the
+pinned Mathlib; it uses Mathlib's `dist` directly and its compact continuous-map bridge is
+`ContinuousMap.dist_le`. `chebyshevResidual` is an affine composition and scalar normalization
+of Mathlib's `Polynomial.Chebyshev.T`, not another Chebyshev family. These are additions with
+no competing Mathlib spelling, so no numbered deviation is introduced.
+
 ## Used as Mathlib has them
 
 `Matrix.IsHermitian`, `Matrix.PosSemidef`, `Matrix.PosDef` and the Loewner order,
