@@ -2,6 +2,20 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Regression organization (2026-10-16)
+
+Completed user-approved whole-file relocation on `feat/regression-organization`:
+`Regression/{Embedding,Oblique,Oblivious,SketchAndSolve}.lean`, with consumers and root imports
+updated. Names, statements and proof bodies are unchanged; the import DAG is acyclic and
+Sketching core does not import Regression. No aliases or ledger edits are needed. Public direct
+module imports migrate according to `docs/design/Regression-Organization.md` (design/read-back/report).
+Validation passed: full two-thread build (3871 jobs, no warnings), four moved-file Lean checks,
+root generation/audit/lint/duplicate checks, references/constants/LaTeX. The redundant stage
+script was omitted because the root checks cover its gates. Fresh extraction has 299 modules,
+3455 declarations and validated Regression source hashes; old paths are absent.
+Logs: `/tmp/nlalib-regression-checks`; extraction: `/tmp/nlalib-regression-explore.json`.
+Validated for the requested local commit; no push requested.
+
 ## Standing instructions
 
 - 2026-10-14, maintainer: no approval stop for the Matrix layer. Each stage's design note is

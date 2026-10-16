@@ -412,7 +412,7 @@ $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \operatorname{diag}([p_i \ne 0]
 $p_i = (\ell_i / d + 1 / \lvert n \rvert) / 2$ for the leverage scores $\ell_i$ of $\mathbf{U}$ and
 $d = \operatorname{rank}\mathbf{U}$, restores isotropy at the price of a factor $2$ in the
 domination constant ($\ell_i \le 2 d p_i$). A weakening of the fixed-subspace injection tails of
-`NLAlib.Sketching.Properties.Injection` to
+`NLAlib.Regression.Oblivious` to
 $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] \preceq \mathbf{I}$ (sub-isotropy) would admit zero
 weights; it is open work for an S1 interface review (`docs/design/Sketching-S4.md` §8, item 10).
 [MartinssonTropp2020, §9.6.3]. -/

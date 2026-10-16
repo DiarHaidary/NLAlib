@@ -7,7 +7,7 @@ module
 
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
-public import NLAlib.Sketching.Properties.Injection
+public import NLAlib.Regression.Oblivious
 
 /-!
 # The randomized SVD and Nyström with an oblivious subspace injection

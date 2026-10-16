@@ -98,7 +98,7 @@ theorem measureReal_abs_ge_le_add (X : Ω → ℝ) (t : ℝ) :
 with mean $m$ (and vanishes when $m = 0$), and on $G$ the event $E$ forces $t m < M$, then for
 $t > 0$
 $$\mu(E) \le \delta + \frac{1}{t}\,.$$
-The common step of the subspace-injection tails (`NLAlib.Sketching.Properties.Injection`) and
+The common step of the subspace-injection tails (`NLAlib.Regression.Oblivious`) and
 the oblivious low-rank tails. -/
 theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {δ t : ℝ} {G E : Set Ω}
     (hG : μ.real Gᶜ ≤ δ) {M : Ω → ℝ} (hM0 : ∀ ω, 0 ≤ M ω) (hM : Integrable M μ) {m : ℝ}

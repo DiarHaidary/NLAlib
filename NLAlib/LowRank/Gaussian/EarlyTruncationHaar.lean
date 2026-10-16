@@ -7,7 +7,7 @@ module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.LowRank.Random.RangeFinder
-public import NLAlib.Sketching.Gaussian.LeastSquares
+public import NLAlib.Regression.SketchAndSolve
 
 /-!
 # Early-truncated generalized Nyström with a Haar co-range test matrix

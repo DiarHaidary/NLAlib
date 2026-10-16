@@ -9,7 +9,7 @@ public import NLAlib.Matrix.Basic.OrthonormalBasis
 public import NLAlib.Matrix.Norms.UnitarilyInvariant
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 public import NLAlib.Matrix.Subspaces.ObliqueProjector
-public import NLAlib.Sketching.Properties.LeastSquares
+public import NLAlib.Regression.Embedding
 
 /-!
 # Sketched least squares through the oblique projector
@@ -20,7 +20,7 @@ $$\|\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{Y}\|_{\mathsf{F}}^2 \le
 \|\mathbf{S}\mathbf{Y}\|_{\mathsf{F}}^2 / a\,.$$
 With the split this gives the sketch-and-solve bound
 `NLAlib.IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le` of
-`NLAlib.Sketching.Properties.LeastSquares`, whose left side is
+`NLAlib.Regression.Embedding`, whose left side is
 $(\mathbf{I} - \mathbf{\Pi}_{\mathbf{A},\mathbf{S}})\mathbf{Y}$ by `NLAlib.mul_sketchAndSolve`.
 
 The same injection bounds the sketched term in every unitarily invariant norm by an
@@ -29,9 +29,9 @@ $\|\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{Y}\|_{\Phi} \le
 \|\mathbf{P}_{\mathbf{A}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{Y}\|_{\Phi} / a$, which decays
 with the sketch size when $\mathbf{P}_{\mathbf{A}}\mathbf{Y} = \mathbf{0}$ (LowRank stage S7).
 
-This file holds the LowRank stage S0 addition to `NLAlib.Sketching.Properties.LeastSquares` and
-merges into it at the round's wrap-up, where `frobNorm_sub_mul_pinv_mul_sq_le` is reproved from the
-split and this lemma. Design: `docs/design/LowRank-S0.md` §3.7, §8.
+The oblique-projector bounds complement `NLAlib.Regression.Embedding`.
+Design: `docs/design/LowRank-S0.md` §3.7, §8; placement:
+`docs/design/Regression-Organization.md`.
 
 ## Main results
 

@@ -29,7 +29,7 @@ most $\sqrt{b / a}$ (sketch-and-precondition).
 The injection alone controls the error of the sketched solution against the sketched residual
 (CEMT's Lemma 2.6), for a vector and for a matrix right-hand side, and gives the deterministic
 half of CEMT's Lemma 2.1. These are what the tail bounds for oblivious subspace injections in
-`NLAlib.Sketching.Properties.Injection` use. Design: `docs/design/Sketching-S0.md` §3.2.
+`NLAlib.Regression.Oblivious` use. Design: `docs/design/Sketching-S0.md` §3.2.
 
 ## Main results
 

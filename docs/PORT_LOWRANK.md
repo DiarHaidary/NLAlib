@@ -647,15 +647,20 @@ and 4.2(b). Do they belong to this round?
 
 *Rework:* low.
 
-**D8. Where sketched regression lives (decided).**
-- The deterministic sketch-and-solve facts already live in
-  `Sketching/Properties/LeastSquares.lean`. `sketchAndSolve` and the exact split go in the Matrix
-  layer with `obliqueProjector` (S0).
-- GN (layer 4) needs the exact Gaussian and Haar sketch-and-solve formulas (EW Theorem 2.1), so
-  they cannot wait for the Solvers layer (layer 5). They go in a new
-  `Sketching/Gaussian/LeastSquares.lean` (S6), and Solvers imports them later.
+**D8. Where sketched regression lives (decided; placement amended 2026-10-16).**
+- Generic deterministic `sketchAndSolve`, least-squares foundations and oblique-projector algebra
+  remain in Matrix. Sketched regression is a root application topic `Regression`, above the
+  Sketching core and available to LowRank before Solvers.
+- The deterministic embedding/injection bounds live in `Regression/Embedding.lean` and
+  `Regression/Oblique.lean`; their oblivious tails live in `Regression/Oblivious.lean`.
+- GN (layer 4) consumes the exact Gaussian/Haar completion identities and unbiasedness from
+  `Regression/SketchAndSolve.lean`; Solvers can import them later. The two laws share one topic
+  file because their proofs share private helpers.
+- This replaces the former `Sketching/Properties/{LeastSquares,LeastSquaresOblique,Injection}`
+  and `Sketching/Gaussian/LeastSquares` placement by whole-file moves, preserving all declaration
+  names, statements and proofs. Design: `docs/design/Regression-Organization.md`.
 
-*Rework:* file moves only.
+*Rework:* module import paths only; no declaration aliases.
 
 **D9. Constants.**
 - Source constants are written in the statements:

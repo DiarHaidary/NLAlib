@@ -8,7 +8,7 @@ module
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RotationInvariant
-public import NLAlib.Sketching.Gaussian.LeastSquares
+public import NLAlib.Regression.SketchAndSolve
 
 /-!
 # Generalized Nyström in expectation with a Gaussian or Haar co-range test matrix
