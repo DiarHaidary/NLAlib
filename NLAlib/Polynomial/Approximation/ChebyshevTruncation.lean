@@ -73,25 +73,6 @@ private lemma exists_finite_T_expansion {p : 𝕜[X]} {N : ℕ}
   rw [hset] at hmem
   exact (Submodule.mem_span_image_finset_iff_exists_fun' 𝕜).mp hmem
 
-private lemma coeff_finite_T_expansion (c : ℕ → 𝕜) (N k : ℕ) :
-    chebyshevCoeff (fun x : ℝ =>
-      (∑ j ∈ Finset.range (N + 1), c j • T 𝕜 (j : ℤ)).eval (x : 𝕜)) k =
-      ∑ j ∈ Finset.range (N + 1), c j * (if j = k then 1 else 0) := by
-  have hsum : ∀ s : Finset ℕ,
-      chebyshevCoeff (fun x : ℝ => (∑ j ∈ s, c j • T 𝕜 (j : ℤ)).eval (x : 𝕜)) k =
-        ∑ j ∈ s, c j * (if j = k then 1 else 0) := by
-    intro s
-    induction s using Finset.induction_on with
-    | empty => simp only [Finset.sum_empty, eval_zero, chebyshevCoeff_zero]
-    | @insert j s hj ih =>
-      simp only [Finset.sum_insert hj, eval_add, eval_smul, smul_eq_mul]
-      rw [chebyshevCoeff_add (by apply Continuous.intervalIntegrable; fun_prop)
-        (by apply Continuous.intervalIntegrable; fun_prop), chebyshevCoeff_const_mul,
-        chebyshevCoeff_eval_T]
-      simpa only [eval_finsetSum, eval_smul, smul_eq_mul] using congrArg
-        (fun z => c j * (if j = k then 1 else 0) + z) ih
-  exact hsum _
-
 /-- Every polynomial of degree at most $N$ is recovered by its degree-$N$ Chebyshev truncation.
 This finite-basis consequence of [Trefethen2019, p. 16 and Exercise 3.7] is generalized to
 RCLike coefficients using Mathlib's polynomial-sequence span and Chebyshev orthogonality.
@@ -107,7 +88,7 @@ theorem chebyshevTrunc_eval_eq {p : 𝕜[X]} {N : ℕ}
   rw [← hc]
   apply Finset.sum_congr rfl
   intro k hk
-  rw [coeff_finite_T_expansion]
+  rw [chebyshevCoeff_sum_smul_T]
   simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', hk, if_true]
   exact C_mul' _ _
 

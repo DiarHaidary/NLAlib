@@ -2,6 +2,37 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Jackson kernel and constructive approximation complete (2026-10-16)
+
+The user-approved stages 1 and 2 are complete and independently reviewed. Design, exact APIs,
+source relation and mathematical read-back: `docs/design/Polynomial-Jackson-Moments.md`.
+`Polynomial/Approximation/JacksonKernel.lean` has 2 definitions and 11 theorems;
+`Polynomial/Approximation/Jackson.lean` has 1 definition and 5 theorems. One shared finite
+Chebyshev-expansion coefficient theorem in the existing coefficient owner replaces both private
+consumer inductions. Twenty public additions total; prior truncation API unchanged. All three
+CONTRIBUTING vocabulary rows and the shared-owner placement passed independent review.
+
+The canonical approximant has degree at most N, its full coefficients are exactly the damped input
+coefficients and each contracts. For an interval-Lipschitz real- or complex-valued function the
+uniform error on [-1,1] is at most π²L/(2(N+2)), including N=0/L=0 and endpoints. Kernel positivity,
+normalization and first cosine moment are proved. Source is Chen–Trogdon–Ubaru arXiv:2204.01941v1
+Appendix C; no new coefficient spelling, global Lipschitz or analytic assumption is introduced.
+
+Combined checks: full build 3909 jobs/0 warnings; axiom audit 7502 reachable declarations/0
+violations; 14 linters on 5112+2390 declarations/0 errors; duplicates 4707 theorems/0 classes;
+root import checks, references, constants, LaTeX and proof reuse pass. Affected-target builds and
+capped file checks are clean. Logs: `/tmp/nlalib-jackson-{build,audit,lint,duplicates,reuse}.log`,
+`/tmp/nlalib-j0-checks/`, `/tmp/nlalib-j2-checks/`. Explorer extraction contains 315 modules,
+3530 declarations and the documented `jackson-lipschitz` result, with all source hashes checked.
+Artifact: `/tmp/nlalib-jackson-explore.json`; this is extraction validation, not site deployment.
+
+The unchanged textual ledger checker reports its documented false positive for the generated
+`IsSVD.eq` field; a direct Lean check confirms the field exists. No genuine prototype dispositions
+apply: the prototype's sharper existential/sawtooth Jackson results remain outstanding, so the
+ledger is unchanged. No new scaffolds or remaining proof gaps; no active builds at handoff.
+Available-agent fallback continues. J1 coefficient decay, noisy moment comparison and finite OP
+results remain later exact-design checkpoints. No Wasserstein/duality identity is claimed.
+
 ## Polynomial Poly3 (2026-10-16)
 
 Complete and independently reviewed: `docs/design/Polynomial-Analytic.md`. All five proof steps

@@ -6,6 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.RCLike.Basic
+public import Mathlib.Algebra.Polynomial.Eval.SMul
+public import Mathlib.Topology.Algebra.Polynomial
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality
@@ -97,6 +99,24 @@ theorem chebyshevCoeff_eval_T (j k : ℕ) :
   simp_rw [eval_T_ofReal, T_real_cos, Int.cast_natCast, ← RCLike.ofReal_mul]
   rw [RCLike.intervalIntegral_ofReal, integral_cos_mul_cos]
   split_ifs <;> simp [Real.pi_ne_zero]
+
+/-- Canonical coefficients of a finite Chebyshev expansion are its basis coordinates.
+This finite-linearity consequence of [Trefethen2019, Exercise 3.7] extends the basis
+orthogonality to RCLike coefficients. Polynomial continuity supplies the integrability
+hypotheses. -/
+theorem chebyshevCoeff_sum_smul_T (c : ℕ → 𝕜) (s : Finset ℕ) (k : ℕ) :
+    chebyshevCoeff (fun x : ℝ =>
+      (∑ j ∈ s, c j • Polynomial.Chebyshev.T 𝕜 (j : ℤ)).eval (x : 𝕜)) k =
+      ∑ j ∈ s, c j * (if j = k then 1 else 0) := by
+  induction s using Finset.induction_on with
+  | empty => simp only [Finset.sum_empty, eval_zero, chebyshevCoeff_zero]
+  | @insert j s hj ih =>
+    simp only [Finset.sum_insert hj, eval_add, eval_smul, smul_eq_mul]
+    rw [chebyshevCoeff_add (by apply Continuous.intervalIntegrable; fun_prop)
+      (by apply Continuous.intervalIntegrable; fun_prop), chebyshevCoeff_const_mul,
+      chebyshevCoeff_eval_T]
+    simpa only [eval_finsetSum, eval_smul, smul_eq_mul] using congrArg
+      (fun z => c j * (if j = k then 1 else 0) + z) ih
 
 /-- A uniform bound $\|f(x)\|\le M$ on $[-1,1]$ bounds the zeroth full coefficient by $M$.
 No continuity or integrability assumption is required for this total Bochner-integral bound.
