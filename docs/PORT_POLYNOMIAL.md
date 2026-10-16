@@ -97,7 +97,7 @@ facts out of bespoke NLAlib wrappers; keep matrix applications in Matrix/Krylov.
 “Bernstein” has three meanings here: derivative inequality, analytic ellipse, and Mathlib's
 Bernstein polynomial density theorem. Use filenames/titles that distinguish them.
 
-Recommended order (decision for the user):
+Completed foundation and approved next priority:
 
 | Stage | Coherent deliverable | Main dependencies/consumers | Effort/risk |
 | --- | --- | --- | --- |
@@ -105,17 +105,27 @@ Recommended order (decision for the user):
 | Poly1 Minimax follow-up | Outside modulus comparison, exact residual and monic minimax | Mathlib Extremal and Poly0; optimization reading of CG residual | Small–medium; largely upstream corollaries |
 | Poly2 Chebyshev series | Canonical RCLike coefficients, finite degree-N truncation, linearity, basis identification and polynomial reproduction | Mathlib orthogonality/sequence spans; Poly3/Poly4 | Complete; no arbitrary-function reconstruction claimed |
 | Poly3 Analytic approximation | Bernstein ellipse geometry, cosine-to-Fourier/contour bridges, coefficient decay, series reconstruction, geometric truncation error and interval rescaling | Poly2 and complex analysis; matrix-function/Lanczos analytic quadrature | High; ellipse/Fourier boundary conditions |
+| Jackson J0/J2, then coefficient/moment comparison J1/M0–M1 | Positive kernel and one canonical damped polynomial, coefficient control, exact/noisy Lipschitz test bounds for spectral distributions | Poly2; finite positive measures; later ESD/SLQ/KPM | Kernel and constructive approximation complete; coefficient regularity/noisy moments remain later |
+| OP follow-up | Finite scalar orthogonality, recurrence/CD, Gauss exactness, then Jacobi/Lanczos adapters | Existing polynomial/measure APIs; moment matching consumers | Separate exact designs; not a prerequisite for Jackson/moment bounds |
 | Poly4 Explicit approximants | Compressed monomials and exponential with degree/error bounds | Poly0/Poly2 as needed; exp-action and quadrature | Medium; cutoff and quantitative tail bookkeeping |
 | Poly5 Interpolation | Node-polynomial identities and derivative remainder; Chebyshev extrema-grid aliasing/analytic interpolation | Mathlib Lagrange; roots vs extrema kept distinct; Poly3 for analytic error | Medium–high; nodes and analytic/derivative routes |
 | Poly6 Derivative inequalities | Schur/Bernstein/Markov with sharp constants and interval forms | Mathlib Extremal and Poly5 lemmas only where needed | Medium–high; interior/endpoint distinctions |
 | Poly7 Jackson/Lipschitz | Quantitative interval approximation with degree/error estimate | Periodic convolution/trigonometric-polynomial infrastructure; Lipschitz quadrature | Highest; substantial reusable analysis infrastructure |
 | Poly8 Specialized filters | Amplifier and even second-kind/weighted filters, only with a concrete consumer | Poly0/growth; block Krylov/eigenvalue approximation | Medium; specialized consumer and source review |
 
-This order deliberately puts real function approximation near the front rather than treating it
-as an optional appendix to CG. Poly0 includes inverse approximation, including degree-zero edge cases. The small exact-minimax
-follow-up is placed before analytic series; Poly5/Poly6 may move earlier for a reviewed consumer. Work remains sequential:
-only the currently designed, approved stage is implemented, one file at a time. A changed ordering
-is recorded before implementation, not used to launch all stages concurrently.
+The user's current priority is spectral-distribution approximation from exact or noisy moments,
+with orthogonal-polynomial results supporting spectral measures, Gauss/Jacobi/Lanczos and
+moment-based approximation. The design is `docs/design/Polynomial-Jackson-Moments.md`:
+Jackson and moment comparison now precede previously queued Poly4; OP follow-up remains below
+Matrix and does not delay the first distribution bound. The historical Poly7 scope is addressed
+by the new J stages rather than duplicated. Pointwise spectral density requires a separate smoothing
+consumer; finitely many matched moments alone do not give a density estimate.
+
+Poly0–Poly3 are complete. Work remains sequential: only a designed, approved stage is implemented,
+one file at a time. The user approved the kernel/damping and constructive approximation stages
+on 2026-10-16. J0/J2 are complete and independently reviewed, with the existing coefficient
+owner extended by one shared finite-expansion theorem. Noisy moments and OP retain their later
+exact-design checkpoints; J1 coefficient regularity is deferred until the noisy comparison.
 
 ## 4. Prototype coverage and intended reuse decisions
 
@@ -213,9 +223,10 @@ explicit/asymptotic pairs where applicable, without calling every degree estimat
 A stage report states source reuse, changed hypotheses/constants, anything scaffolded and
 remaining consumers. Do not claim proof completion from lexical token scans or green imports.
 
-**Current state: Poly0–Poly3 complete with independent reviews and full mechanical gates passed.
-Reports: `docs/design/Polynomial-Chebyshev.md`, `Polynomial-Minimax.md`, `Polynomial-Series.md`
-and `Polynomial-Analytic.md` in the same directory. Poly3 uses the approved generic function plus
-compatible complex extension, canonical full coefficients and inclusive degree-N truncation.
-Later stages retain their exact design/consumer checkpoints; no later-stage implementation is
-claimed here.**
+**Current state: Poly0–Poly3 complete. The user requested Jackson/moment matching for spectral
+distributions ahead of Poly4, with relevant finite orthogonal-polynomial follow-up.
+`docs/design/Polynomial-Jackson-Moments.md` records the reviewed roadmap and approved kernel/
+constructive approximation scope and completed J0/J2 read-back. The exact kernel API, canonical
+damped polynomial and generic Lipschitz bound are proved; combined validation passed apart from
+the documented textual ledger parser false positive for the existing `IsSVD.eq` field.
+Later stages retain exact design/consumer checkpoints.**
