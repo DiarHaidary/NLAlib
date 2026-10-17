@@ -252,6 +252,47 @@ theorem HasOrthonormalCols.pinv_mul_conjTranspose_right [DecidableEq n] {Q : Mat
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) : pinv (A * Qᴴ) = Q * pinv A := by
   exact ((isPinv_pinv A).mul_conjTranspose_right hQ).pinv_eq
 
+/-- $(\mathbf{Q}\mathbf{B})^{+} = \mathbf{B}^{+}\mathbf{Q}^{\mathsf{H}}$ whenever
+$\mathbf{Q}^{\mathsf{H}}\mathbf{Q}\mathbf{B} = \mathbf{B}$, for instance for a partial isometry
+$\mathbf{Q}$ and $\mathbf{B} = \mathbf{Q}^{\mathsf{H}}\mathbf{C}$; generalises
+`HasOrthonormalCols.pinv_mul_left`. -/
+theorem pinv_mul_of_conjTranspose_mul_self_mul_eq {Q : Matrix l m 𝕜} {B : Matrix m n 𝕜}
+    (h : Qᴴ * Q * B = B) : pinv (Q * B) = pinv B * Qᴴ := by
+  have hBQ : Bᴴ * (Qᴴ * Q) = Bᴴ := by
+    have h' := congrArg Matrix.conjTranspose h
+    rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+      at h'
+  have h1 : pinv B = pinv B * (pinv B)ᴴ * Bᴴ := by
+    conv_lhs => rw [← pinv_mul_mul_pinv B, Matrix.mul_assoc,
+      ← (isPinv_pinv B).isHermitian_left.eq, Matrix.conjTranspose_mul]
+    rw [Matrix.mul_assoc]
+  have hB : pinv B * (Qᴴ * Q) = pinv B := by
+    rw [h1, Matrix.mul_assoc _ Bᴴ, hBQ]
+  have hBA : pinv B * Qᴴ * (Q * B) = pinv B * B := by
+    rw [Matrix.mul_assoc, ← Matrix.mul_assoc Qᴴ, ← Matrix.mul_assoc (pinv B), hB]
+  refine IsPinv.pinv_eq ⟨?_, ?_, ?_, ?_⟩
+  · rw [Matrix.mul_assoc (Q * B), hBA, Matrix.mul_assoc Q, ← Matrix.mul_assoc B,
+      mul_pinv_mul_self]
+  · rw [hBA, ← Matrix.mul_assoc, pinv_mul_mul_pinv]
+  · rw [show Q * B * (pinv B * Qᴴ) = Q * (B * pinv B) * Qᴴ by simp only [Matrix.mul_assoc]]
+    exact Matrix.isHermitian_mul_mul_conjTranspose Q (isPinv_pinv B).isHermitian_left
+  · rw [hBA]
+    exact (isPinv_pinv B).isHermitian_right
+
+/-- $(\mathbf{B}\mathbf{Q}^{\mathsf{H}})^{+} = \mathbf{Q}\mathbf{B}^{+}$ whenever
+$\mathbf{B}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{B}$; generalises
+`HasOrthonormalCols.pinv_mul_conjTranspose_right`. -/
+theorem pinv_mul_conjTranspose_of_mul_conjTranspose_mul_self_eq {Q : Matrix l n 𝕜}
+    {B : Matrix m n 𝕜} (h : B * (Qᴴ * Q) = B) : pinv (B * Qᴴ) = Q * pinv B := by
+  have h' : Qᴴ * Q * Bᴴ = Bᴴ := by
+    have h'' := congrArg Matrix.conjTranspose h
+    rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+      at h''
+  rw [← Matrix.conjTranspose_conjTranspose (B * Qᴴ), pinv_conjTranspose, Matrix.conjTranspose_mul,
+    Matrix.conjTranspose_conjTranspose, pinv_mul_of_conjTranspose_mul_self_mul_eq h',
+    Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, pinv_conjTranspose,
+    Matrix.conjTranspose_conjTranspose]
+
 /-- The pseudoinverse of the Gram matrix:
 $(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+} = \mathbf{A}^{+}(\mathbf{A}^{+})^{\mathsf{H}}$.
 Port of `NLAlib.moorePenroseInverse_conjTranspose_mul_self`. -/

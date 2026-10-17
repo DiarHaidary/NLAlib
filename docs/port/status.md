@@ -2,6 +2,49 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Krylov K1, K2, K2b complete (2026-10-17)
+
+Branch `krylov/brief`, uncommitted on top of `1908a3f` (K1 checkpoint 5): `WorstCase.lean`
+(Greenbaum for CG and MINRES), the new `Krylov/Functions/Optimality.lean` (Chen–Persson Theorem 2,
+its fixed-shift form and CG case), `NLAlib.lean`. K1 (`Krylov-LinearSystems.md`) checkpoints 1 to
+5, K2 (`Krylov-Functions.md`) C1 to C5 and K2b (`Krylov-Sharpness.md`) KB1 to KB3 are proved; K2
+C6 (quadrature) is open. Docstring follow-ups of `Krylov-Sharpness.md` §10 done (no "stage K2b"
+forward references remain). Placement flags closed: `exists_hasOrthonormalCols_range_eq_krylovSpace`
+public in `Krylov/Basic/Grade.lean`; `Matrix.IsHermitian.preconditionedLanczosState_z_eq_zero_of_le`
+and `…_beta_eq_zero_of_le` public in `Processes/PreconditionedLanczos.lean` (the private conjunction
+split); the private grade identity in `MINRESRecurrence.lean` replaced by `krylovGrade_mul_mulVec`;
+`mgsArnoldiHessenberg_apply_eq_zero_of_le`, `injective_mulVec_mgsArnoldiHessenberg_iff` public in
+`Processes/ArnoldiRecurrence.lean`; `Matrix.mulVec_eq_submatrix_castLE_mulVec` in
+`ForMathlib/Data/Matrix/Mul.lean`. No statement changed. `Greenbaum1979`, `GreenbaumGurvits1994`
+checked against Crossref (DOIs added); theorem locators still to verify. Notes amended (all three
+design notes, `PORT_KRYLOV.md` "Progress"). Ledger: one missing K1 entry added
+(`krylovSpace_mul_mulVec_eq_map`); the K2b files port nothing.
+
+Checks (`scripts/stage_check.sh`): 342 proved modules, build 3938 jobs, 0 warnings; audit 8696
+declarations, 0 violations; lint 5706 declarations, 0 errors; references 72 keys, 0 problems;
+constants 26, 0 problems; duplicates 5195 theorems, 0 classes; LaTeX 20845 spans, 0 problems;
+`mk_all --check` clean (NLAlib, NLAlibScaffold). `ledger_check.py` reports only its documented
+`IsSVD.eq` false positive. NLAlibScaffold not rebuilt.
+
+## Krylov K0 (CG slice) complete (2026-10-17)
+
+Branch `krylov/brief`, uncommitted on top of checkpoint `71fb07c`. All eight Krylov files of
+`docs/design/Krylov-CG.md` §6 are proved and registered in `NLAlib.lean` (`lake exe mk_all`).
+Placement pass (CONTRIBUTING §8 item 5): `conjTranspose_mul_apply` and
+`conjTranspose_mul_mul_apply` now public in `Matrix/Basic/Gram.lean` (two private copies deleted);
+`HasOrthonormalCols.star_col_dotProduct_eq_zero_of_mem_span` public in
+`Matrix/Basic/Orthonormal.lean`; `krylovGrade_le_of_mem_of_mulVec_eq` public in
+`Krylov/Basic/Grade.lean`. A private `conjTranspose_mul_mul_apply` in
+`Sketching/Properties/Isotropic.lean` clashed and is renamed `conjTranspose_mul_mul_apply_eq_sum`.
+Note amended ("Implementation (2026-10-17)": added lemmas, the direct Lanczos and
+Hestenes–Stiefel routes, the moves, counts); no statement changed. Ledger: 9 K0 entries.
+
+Checks (`scripts/stage_check.sh`): 322 proved modules, build 3913 jobs, 0 warnings; audit 7784
+declarations, 0 violations; lint 5282 declarations, 0 errors; references 61 keys, 0 problems;
+constants 26, 0 problems; duplicates 4848 theorems, 0 classes; LaTeX 18643 spans, 0 problems;
+`mk_all --check` clean. Open: the note's Saad2003/Saad2011/TrefethenBau1997 locators still to be
+checked against the books before the PR; NLAlibScaffold not rebuilt in this pass.
+
 ## Stronger Jackson bound complete (2026-10-16)
 
 The public `isUniformApproxOn_jacksonApprox_of_lipschitz` now exposes the proved error

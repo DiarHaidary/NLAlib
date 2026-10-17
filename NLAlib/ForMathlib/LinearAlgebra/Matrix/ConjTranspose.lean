@@ -17,7 +17,8 @@ transpose; upstream candidate for `Mathlib.Analysis.RCLike.Basic` or a file on H
 matrices. The cross-Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{B}$ is the sum of the rank-one
 products of the rows; upstream candidate for `Mathlib.LinearAlgebra.Matrix.ConjTranspose`, beside
 `Matrix.conjTranspose_vecMulVec`. A congruence by a scaled product of Hermitian matrices is
-written out; upstream candidate for the same file.
+written out, and so is the residual of a congruent linear system; upstream candidates for the
+same file.
 
 ## Main results
 
@@ -29,6 +30,9 @@ written out; upstream candidate for the same file.
   $\mathbf{a}_i$, $\mathbf{b}_i$.
 * `Matrix.conjTranspose_smul_mul_mul_smul`: a congruence by
   $\sqrt{c}\,\mathbf{S}\mathbf{R}$ for Hermitian $\mathbf{S}$, $\mathbf{R}$.
+* `Matrix.conjTranspose_mulVec_sub_mulVec_mulVec`: the residual of the congruent system,
+  $\mathbf{C}^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\mathbf{C}\mathbf{y})
+  = \mathbf{C}^{\mathsf{H}}\mathbf{b} - \mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}\mathbf{y}$.
 -/
 
 @[expose] public section
@@ -84,6 +88,18 @@ theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S R : Matrix n
   rw [Matrix.conjTranspose_smul, Matrix.conjTranspose_mul, hR, hS, star_trivial]
   simp only [Matrix.smul_mul, Matrix.mul_smul, _root_.smul_smul, Real.mul_self_sqrt hc,
     Matrix.mul_assoc]
+
+/-- **The split residual**: the residual of $\mathbf{C}\mathbf{y}$ for
+$\mathbf{A}\mathbf{x} = \mathbf{b}$, multiplied by $\mathbf{C}^{\mathsf{H}}$, is the residual of
+$\mathbf{y}$ for the congruent system
+$(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\mathbf{y} = \mathbf{C}^{\mathsf{H}}\mathbf{b}$:
+$$\mathbf{C}^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\mathbf{C}\mathbf{y})
+= \mathbf{C}^{\mathsf{H}}\mathbf{b} - \mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}\mathbf{y}\,.$$
+The step that turns split preconditioning (PCG, preconditioned MINRES) into the unpreconditioned
+method on $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$. -/
+theorem conjTranspose_mulVec_sub_mulVec_mulVec (A C : Matrix n n 𝕜) (b y : n → 𝕜) :
+    Cᴴ *ᵥ (b - A *ᵥ (C *ᵥ y)) = Cᴴ *ᵥ b - (Cᴴ * A * C) *ᵥ y := by
+  rw [Matrix.mulVec_sub, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec]
 
 end Congruence
 

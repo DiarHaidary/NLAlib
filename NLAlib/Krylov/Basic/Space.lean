@@ -1,0 +1,224 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import Mathlib.Analysis.RCLike.Basic
+public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.RingTheory.Polynomial.Tower
+
+/-!
+# Krylov matrices and Krylov spaces
+
+The Krylov matrix $\mathbf{K}_q(\mathbf{A}, \mathbf{b}) =
+[\mathbf{b}, \mathbf{A}\mathbf{b}, \dots, \mathbf{A}^{q-1}\mathbf{b}]$ and its column space, the
+Krylov space $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$. The space is the column space of a matrix,
+so the projector, rank, pseudoinverse and Gram–Schmidt API of the Matrix layer applies to it. Its
+vectors are the $p(\mathbf{A})\mathbf{b}$ with $\deg p < q$, for polynomials over $\Bbbk$ or over
+any subfield, in particular $\mathbb{R}$, which is how real polynomial bounds reach it.
+
+The index $q$ counts generators: $\mathcal{K}_0 = \{\mathbf{0}\}$, and $q$ matrix-vector products
+reach $\mathcal{K}_{q+1}$.
+
+## Main definitions
+
+* `NLAlib.krylovMatrix`: the Krylov matrix, columns indexed by `Fin q`.
+* `NLAlib.krylovSpace`: its column space.
+
+## Main results
+
+* `NLAlib.krylovSpace_eq_span`, `NLAlib.krylovSpace_succ`: the span of the Krylov vectors, one
+  generator per step.
+* `NLAlib.mem_krylovSpace_iff`: the polynomial description over $\Bbbk[X]$.
+* `NLAlib.aeval_mulVec_mem_krylovSpace`: membership for polynomials over any subfield.
+* `NLAlib.krylovSpace_mono`, `NLAlib.mulVec_mem_krylovSpace_succ`: monotonicity and
+  $\mathbf{A}\mathcal{K}_q \subseteq \mathcal{K}_{q+1}$.
+* `NLAlib.krylovSpace_add_smul_one`: shift invariance,
+  $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{b}) = \mathcal{K}_q(\mathbf{A}, \mathbf{b})$.
+* `NLAlib.krylovMatrix_mul_mulVec`, `NLAlib.krylovSpace_mul_mulVec`: a change of variables,
+  $\mathcal{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
+  \mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$, which maps a split Krylov space
+  onto a preconditioned one.
+-/
+
+@[expose] public section
+
+open scoped Matrix
+open Polynomial
+
+namespace NLAlib
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The **Krylov matrix** $\mathbf{K}_q(\mathbf{A}, \mathbf{b}) =
+[\mathbf{b}, \mathbf{A}\mathbf{b}, \dots, \mathbf{A}^{q-1}\mathbf{b}]$: column $j$ is
+$\mathbf{A}^j\mathbf{b}$, for $j < q$. For $q = 0$ it has no columns.
+[Saad2003, §6.2]. -/
+def krylovMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) : Matrix n (Fin q) 𝕜 :=
+  Matrix.of fun i j => (A ^ (j : ℕ) *ᵥ b) i
+
+/-- Column $j$ of the Krylov matrix is $\mathbf{A}^j\mathbf{b}$. -/
+@[simp]
+theorem krylovMatrix_apply (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} (i : n) (j : Fin q) :
+    krylovMatrix A b q i j = (A ^ (j : ℕ) *ᵥ b) i :=
+  rfl
+
+/-- The first $q$ columns of a longer Krylov matrix form the shorter one. -/
+theorem krylovMatrix_submatrix_castLE (A : Matrix n n 𝕜) (b : n → 𝕜) {q q' : ℕ} (h : q ≤ q') :
+    (krylovMatrix A b q').submatrix id (Fin.castLE h) = krylovMatrix A b q :=
+  rfl
+
+/-- The **Krylov space** $\mathcal{K}_q(\mathbf{A}, \mathbf{b}) =
+\operatorname{span}\{\mathbf{b}, \mathbf{A}\mathbf{b}, \dots, \mathbf{A}^{q-1}\mathbf{b}\}$, the
+column space of `krylovMatrix A b q`; $\mathcal{K}_0 = \{\mathbf{0}\}$.
+[Saad2003, §6.2]. -/
+def krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) : Submodule 𝕜 (n → 𝕜) :=
+  LinearMap.range (krylovMatrix A b q).mulVecLin
+
+/-- The Krylov space is the span of the Krylov vectors $\mathbf{A}^j\mathbf{b}$, $j < q$. -/
+theorem krylovSpace_eq_span (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
+    krylovSpace A b q = Submodule.span 𝕜 (Set.range fun j : Fin q => A ^ (j : ℕ) *ᵥ b) := by
+  rw [krylovSpace, Matrix.range_mulVecLin]
+  rfl
+
+/-- The Krylov vector $\mathbf{A}^j\mathbf{b}$ lies in $\mathcal{K}_q$ for $j < q$. -/
+theorem pow_mulVec_mem_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) {q j : ℕ} (hj : j < q) :
+    A ^ j *ᵥ b ∈ krylovSpace A b q := by
+  rw [krylovSpace_eq_span]
+  exact Submodule.subset_span ⟨⟨j, hj⟩, rfl⟩
+
+private lemma aeval_sum_fin_mulVec (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} (c : Fin q → 𝕜) :
+    aeval A (∑ i : Fin q, C (c i) * X ^ (i : ℕ)) *ᵥ b = ∑ i : Fin q, c i • (A ^ (i : ℕ) *ᵥ b) := by
+  simp [map_sum, Matrix.sum_mulVec, Algebra.algebraMap_eq_smul_one, Matrix.smul_mulVec]
+
+/-- **The polynomial description of the Krylov space**: $\mathbf{x} \in \mathcal{K}_q$ exactly
+when $\mathbf{x} = p(\mathbf{A})\mathbf{b}$ for a polynomial $p \in \Bbbk[X]$ of degree less
+than $q$. [Saad2003, §6.2].
+Port of `NLAlib.mem_krylovSpace_iff` (prototype, real scalars). -/
+theorem mem_krylovSpace_iff {A : Matrix n n 𝕜} {b x : n → 𝕜} {q : ℕ} :
+    x ∈ krylovSpace A b q ↔ ∃ p : 𝕜[X], p.degree < q ∧ aeval A p *ᵥ b = x := by
+  rw [krylovSpace_eq_span]
+  constructor
+  · intro hx
+    obtain ⟨c, rfl⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).1 hx
+    exact ⟨_, degree_sum_fin_lt c, aeval_sum_fin_mulVec A b c⟩
+  · rintro ⟨p, hp, rfl⟩
+    by_cases hp0 : p = 0
+    · subst hp0
+      simp
+    have hnat : p.natDegree < q := (natDegree_lt_iff_degree_lt hp0).2 hp
+    rw [p.as_sum_range' q hnat]
+    simp_rw [← C_mul_X_pow_eq_monomial]
+    rw [← Fin.sum_univ_eq_sum_range (fun i => C (p.coeff i) * X ^ i), aeval_sum_fin_mulVec]
+    exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+
+/-- A polynomial of degree less than $q$ with coefficients in any subfield, in particular a
+real polynomial, applied to $\mathbf{b}$ lies in $\mathcal{K}_q$. -/
+theorem aeval_mulVec_mem_krylovSpace {R : Type*} [CommSemiring R] [Algebra R 𝕜]
+    (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} {p : R[X]} (hp : p.degree < q) :
+    aeval A p *ᵥ b ∈ krylovSpace A b q := by
+  rw [← aeval_map_algebraMap 𝕜]
+  exact mem_krylovSpace_iff.2 ⟨_, (degree_map_le).trans_lt hp, rfl⟩
+
+/-- The Krylov spaces increase with $q$. -/
+theorem krylovSpace_mono (A : Matrix n n 𝕜) (b : n → 𝕜) : Monotone (krylovSpace A b) := by
+  intro q q' h
+  rw [krylovSpace_eq_span]
+  refine Submodule.span_le.2 ?_
+  rintro _ ⟨j, rfl⟩
+  exact pow_mulVec_mem_krylovSpace A b (j.isLt.trans_le h)
+
+/-- The empty Krylov space. -/
+@[simp]
+theorem krylovSpace_zero (A : Matrix n n 𝕜) (b : n → 𝕜) : krylovSpace A b 0 = ⊥ := by
+  rw [krylovSpace_eq_span, Set.range_eq_empty, Submodule.span_empty]
+
+/-- One step adds one generator: $\mathcal{K}_{q+1} = \mathcal{K}_q +
+\operatorname{span}\{\mathbf{A}^q\mathbf{b}\}$.
+Port of `NLAlib.krylovSpace_succ` (prototype). -/
+theorem krylovSpace_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
+    krylovSpace A b (q + 1) = krylovSpace A b q ⊔ Submodule.span 𝕜 {A ^ q *ᵥ b} := by
+  rw [krylovSpace_eq_span, krylovSpace_eq_span, ← Submodule.span_union]
+  congr 1
+  ext x
+  simp only [Set.mem_range, Set.mem_union, Set.mem_singleton_iff]
+  constructor
+  · rintro ⟨i, rfl⟩
+    rcases Fin.eq_castSucc_or_eq_last i with ⟨j, rfl⟩ | rfl
+    · exact Or.inl ⟨j, rfl⟩
+    · exact Or.inr rfl
+  · rintro (⟨i, rfl⟩ | rfl)
+    · exact ⟨i.castSucc, rfl⟩
+    · exact ⟨Fin.last q, rfl⟩
+
+/-- The starting vector lies in every nonempty Krylov space. -/
+theorem self_mem_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} (hq : 0 < q) :
+    b ∈ krylovSpace A b q := by
+  simpa using pow_mulVec_mem_krylovSpace A b hq
+
+/-- $\mathbf{A}\mathcal{K}_q \subseteq \mathcal{K}_{q+1}$.
+Port of `NLAlib.mulVec_mem_krylovSpace_succ` (prototype). -/
+theorem mulVec_mem_krylovSpace_succ {A : Matrix n n 𝕜} {b x : n → 𝕜} {q : ℕ}
+    (hx : x ∈ krylovSpace A b q) : A *ᵥ x ∈ krylovSpace A b (q + 1) := by
+  have hle : krylovSpace A b q ≤ (krylovSpace A b (q + 1)).comap A.mulVecLin := by
+    rw [krylovSpace_eq_span A b q]
+    refine Submodule.span_le.2 ?_
+    rintro _ ⟨j, rfl⟩
+    change A *ᵥ (A ^ (j : ℕ) *ᵥ b) ∈ krylovSpace A b (q + 1)
+    rw [Matrix.mulVec_mulVec, ← pow_succ']
+    exact pow_mulVec_mem_krylovSpace A b (Nat.succ_lt_succ j.isLt)
+  exact hle hx
+
+/-- One inclusion of shift invariance: the generators $(\mathbf{A} + s\mathbf{I})^j\mathbf{b}$
+are the real polynomials $(X + s)^j$ in $\mathbf{A}$ applied to $\mathbf{b}$. -/
+private theorem krylovSpace_add_smul_one_le (A : Matrix n n 𝕜) (s : ℝ) (b : n → 𝕜) (q : ℕ) :
+    krylovSpace (A + s • (1 : Matrix n n 𝕜)) b q ≤ krylovSpace A b q := by
+  rw [krylovSpace_eq_span]
+  refine Submodule.span_le.2 ?_
+  rintro _ ⟨j, rfl⟩
+  have h : (A + s • (1 : Matrix n n 𝕜)) ^ (j : ℕ) = aeval A ((X + C s) ^ (j : ℕ)) := by
+    rw [map_pow, map_add, aeval_X, aeval_C, Algebra.algebraMap_eq_smul_one]
+  change (A + s • (1 : Matrix n n 𝕜)) ^ (j : ℕ) *ᵥ b ∈ krylovSpace A b q
+  rw [h]
+  refine aeval_mulVec_mem_krylovSpace A b ?_
+  rw [degree_pow, degree_X_add_C, nsmul_one]
+  exact_mod_cast j.isLt
+
+/-- **Shift invariance**: $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{b}) =
+\mathcal{K}_q(\mathbf{A}, \mathbf{b})$ for every real shift $s$ (the shifts of its consumers,
+shifted CG and Lanczos-FA for $(x + s)^{-1}$, are real). [Saad2003, §6.2]. -/
+theorem krylovSpace_add_smul_one (A : Matrix n n 𝕜) (s : ℝ) (b : n → 𝕜) (q : ℕ) :
+    krylovSpace (A + s • (1 : Matrix n n 𝕜)) b q = krylovSpace A b q := by
+  refine le_antisymm (krylovSpace_add_smul_one_le A s b q) ?_
+  have h := krylovSpace_add_smul_one_le (A + s • (1 : Matrix n n 𝕜)) (-s) b q
+  rwa [add_assoc, ← add_smul, add_neg_cancel, zero_smul, add_zero] at h
+
+/-- **Krylov matrices under a change of variables**:
+$\mathbf{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
+\mathbf{C}\,\mathbf{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$, since
+$(\mathbf{C}\mathbf{B})^j\mathbf{C} = \mathbf{C}(\mathbf{B}\mathbf{C})^j$. With
+$\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{C}^{\mathsf{H}}\mathbf{A}$ it carries the split Krylov matrix
+$\mathbf{K}_q(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}, \mathbf{C}^{\mathsf{H}}\mathbf{r})$ to
+the preconditioned one $\mathbf{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{r})$. -/
+theorem krylovMatrix_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : ℕ) :
+    krylovMatrix (C * B) (C *ᵥ v) q = C * krylovMatrix (B * C) v q := by
+  ext i j
+  have hs : SemiconjBy C (B * C) (C * B) := (Matrix.mul_assoc C B C).symm
+  have h : (C * B) ^ (j : ℕ) * C = C * (B * C) ^ (j : ℕ) := (hs.pow_right _).eq.symm
+  rw [krylovMatrix_apply, Matrix.mulVec_mulVec, h, ← Matrix.mulVec_mulVec]
+  rfl
+
+/-- **Krylov spaces under a change of variables**:
+$\mathcal{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
+\mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$.
+Port of `NLAlib.krylovSpace_mul_mulVec_eq_map` (prototype). -/
+theorem krylovSpace_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : ℕ) :
+    krylovSpace (C * B) (C *ᵥ v) q = (krylovSpace (B * C) v q).map C.mulVecLin := by
+  rw [krylovSpace, krylovSpace, krylovMatrix_mul_mulVec, Matrix.mulVecLin_mul,
+    LinearMap.range_comp]
+
+end NLAlib

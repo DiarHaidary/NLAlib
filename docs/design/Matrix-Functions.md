@@ -116,11 +116,13 @@ The skeleton is the authority; this is the map.
 `Matrix.IsHermitian.specNorm_cfc_le`, `abs_re_quadForm_cfc_le`, `mul_card_le_re_trace_cfc`;
 `Matrix.PosDef.inv_sqrt_eq_cfc`, `Matrix.PosDef.isUnit_sqrt`.
 
-`Polynomial.lean`: `aeval_diagonal`, `aeval_mul_mul_conjTranspose`,
+`Polynomial.lean`: `aeval_diagonal`, `aeval_diagonal_self` (over the matrix's own scalars),
+`aeval_mul_mul_conjTranspose`,
 `Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq`, `exists_cfc_eq_aeval` (degree below the
 size), `Matrix.IsHermitian.aeval`, `specNorm_aeval_le`, `specNorm_aeval_le_of_forall_mem_Icc` (the
 Chebyshev form), `specNorm_cfc_sub_aeval_le`, `re_trace_aeval`, `re_quadForm_aeval_mulVec_le`
-(energy norm); `aeval_mul_eq_mul_aeval_of_mul_eq_mul`, `aeval_mul_conjTranspose_self_mul`
+(energy norm); `aeval_mul_eq_mul_aeval_of_mul_eq_mul` (any scalar ring `S` with `[Algebra S 𝕜]`,
+so real polynomials and polynomials over `𝕜`), `aeval_mul_conjTranspose_self_mul`
 (`p(A Aᴴ) A = A p(Aᴴ A)`), `IsSVD.mul_aeval_conjTranspose_mul_self`,
 `singularValues_pow_mul_conjTranspose_self_mul`, `rank_pow_mul_conjTranspose_self_mul`.
 

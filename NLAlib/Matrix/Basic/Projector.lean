@@ -36,11 +36,15 @@ $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is treated in `NLAlib.Matrix.Basic.Comple
 * `NLAlib.rangeProjector_mul_eq_self_iff`: $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{Y}$ iff
   the range of $\mathbf{Y}$ is inside the range of $\mathbf{B}$.
 * `NLAlib.HasOrthonormalCols.rangeProjector_eq`: for $\mathbf{Q}$ with orthonormal columns the
-  projector is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
+  projector is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$;
+  `NLAlib.rangeProjector_eq_mul_conjTranspose_of_mul_conjTranspose_mul_self`, the same for a
+  partial isometry.
 * `NLAlib.HasOrthonormalCols.rangeProjector_mul`: equivariance,
   $\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$.
 * `NLAlib.rangeProjector_eq_mul_inv_mul_conjTranspose`: the full-column-rank formula.
 * `NLAlib.toEuclideanLin_rangeProjector`: the bridge to Mathlib's `Submodule.starProjection`.
+* `NLAlib.forall_mem_range_star_dotProduct_eq_zero_iff`: orthogonality to a column space as
+  $\mathbf{X}^{\mathsf{H}}\mathbf{w} = \mathbf{0}$.
 -/
 
 @[expose] public section
@@ -305,6 +309,23 @@ theorem rangeProjector_mulVec_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m 
     rw [← conjTranspose_rangeProjector, hC, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec, h,
       Matrix.mulVec_zero]
 
+/-- **Orthogonality to a column space**: a vector $\mathbf{w}$ is orthogonal to every vector of
+the column space of $\mathbf{X}$ exactly when $\mathbf{X}^{\mathsf{H}}\mathbf{w} = \mathbf{0}$.
+Statements take the right-hand side; this bridge turns it into the quantified form and back. -/
+theorem forall_mem_range_star_dotProduct_eq_zero_iff [Fintype m] [Fintype n] {X : Matrix m n 𝕜}
+    {w : m → 𝕜} :
+    (∀ v ∈ LinearMap.range X.mulVecLin, star v ⬝ᵥ w = 0) ↔ Xᴴ *ᵥ w = 0 := by
+  have key : ∀ c : n → 𝕜, star (X *ᵥ c) ⬝ᵥ w = star c ⬝ᵥ (Xᴴ *ᵥ w) := by
+    intro c
+    rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec]
+  constructor
+  · intro h
+    have h0 := h (X *ᵥ (Xᴴ *ᵥ w)) (LinearMap.mem_range.mpr ⟨_, rfl⟩)
+    rw [key] at h0
+    exact dotProduct_star_self_eq_zero.mp h0
+  · rintro h v ⟨c, rfl⟩
+    rw [Matrix.mulVecLin_apply, key, h, dotProduct_zero]
+
 /-- A star projection with the same range as $\mathbf{A}$ is $\mathbf{P}_{\mathbf{A}}$. -/
 theorem _root_.IsStarProjection.eq_rangeProjector [Fintype m] [Fintype n] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) {A : Matrix m n 𝕜}
@@ -418,6 +439,21 @@ theorem HasOrthonormalCols.rangeProjector_eq [Fintype m] [Fintype n] [DecidableE
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : rangeProjector Q = Q * Qᴴ := by
   rw [← rangeProjector_mul_conjTranspose_self,
     hQ.isStarProjection_mul_conjTranspose.rangeProjector_eq]
+
+/-- **The projector of a partial isometry**: for $\mathbf{Q}$ with
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$ (orthonormal columns, possibly with
+some zero columns), $\mathbf{P}_{\mathbf{Q}} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
+Generalises `NLAlib.HasOrthonormalCols.rangeProjector_eq`. -/
+theorem rangeProjector_eq_mul_conjTranspose_of_mul_conjTranspose_mul_self [Fintype m]
+    [Fintype n] {Q : Matrix m n 𝕜} (hQ : Q * Qᴴ * Q = Q) : rangeProjector Q = Q * Qᴴ := by
+  refine (IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩) ?_).symm
+  · rw [← Matrix.mul_assoc, hQ]
+  · exact Matrix.isHermitian_mul_conjTranspose_self _
+  · refine le_antisymm ?_ ?_
+    · rw [Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
+    · conv_lhs => rw [← hQ, Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
 
 /-- The projector onto the column space of $\mathbf{Q}\mathbf{X}$, for $\mathbf{Q}$ with
 orthonormal columns:

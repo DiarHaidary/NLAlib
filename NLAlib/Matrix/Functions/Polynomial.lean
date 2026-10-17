@@ -26,12 +26,20 @@ and act on the singular values.
 
 * `Matrix.IsHermitian.exists_cfc_eq_aeval`: every function of $\mathbf{A}$ is a polynomial in
   $\mathbf{A}$.
+* `NLAlib.exists_eval_eq_of_mem_spectrum`: one interpolating polynomial on two spectra.
+* `Matrix.IsHermitian.aeval_nodal_eq_zero`: the nodal polynomial of a set containing the
+  spectrum annihilates $\mathbf{A}$.
+* `Matrix.IsHermitian.exists_star_aeval_mulVec_dotProduct_cfc_mulVec_eq_sum`: a vector with
+  prescribed spectral weights.
 * `Matrix.IsHermitian.specNorm_aeval_le`:
   $\|p(\mathbf{A})\|_2 \le \max_i \lvert p(\lambda_i(\mathbf{A})) \rvert$.
 * `Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le`: the same bound for the quadratic form
   of a polynomial weight $g(\mathbf{A})$, with `NLAlib.re_quadForm_aeval_mulVec_le` the case
   $g(t) = t$.
 * `NLAlib.specNorm_cfc_sub_aeval_le`: polynomial approximation of $f(\mathbf{A})$.
+* `NLAlib.aeval_diagonal_self`: $p(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(p(d_i))$.
+* `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq_mul`: polynomials intertwine, for real polynomials
+  and polynomials over $\Bbbk$.
 * `NLAlib.aeval_mul_conjTranspose_self_mul`: intertwining.
 * `NLAlib.IsSVD.mul_aeval_conjTranspose_mul_self`: a polynomial filter applied to an SVD.
 -/
@@ -59,6 +67,15 @@ theorem aeval_diagonal (d : n → ℝ) (p : ℝ[X]) :
     rw [Matrix.isHermitian_diagonal_iff]
     exact fun i => RCLike.conj_ofReal (d i)
   rw [← cfc_polynomial p _ hD, cfc_diagonal]
+
+/-- A polynomial in a diagonal matrix over its own scalars is the diagonal of its values:
+$p(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(p(d_i))$ for $p \in R[X]$. -/
+theorem aeval_diagonal_self {R : Type*} [CommSemiring R] (d : n → R) (p : R[X]) :
+    aeval (Matrix.diagonal d) p = Matrix.diagonal fun i => p.eval (d i) := by
+  change aeval (Matrix.diagonalAlgHom R d) p = _
+  rw [aeval_algHom_apply, aeval_pi_apply]
+  simp only [coe_aeval_eq_eval]
+  rfl
 
 /-- A polynomial commutes with unitary conjugation:
 $p(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
@@ -93,6 +110,15 @@ theorem _root_.Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq {A : Matrix n n
   rw [← cfc_polynomial p A hsa]
   exact cfc_congr fun x hx => (h x hx).symm
 
+/-- **The nodal polynomial of a set containing the spectrum annihilates a Hermitian matrix**:
+if $\sigma(\mathbf{A}) \subseteq s$ then $\pi_s(\mathbf{A}) = \mathbf{0}$ for
+$\pi_s(z) = \prod_{\theta \in s}(z - \theta)$ (`Lagrange.nodal s id`). -/
+theorem _root_.Matrix.IsHermitian.aeval_nodal_eq_zero {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    {s : Finset ℝ} (hs : spectrum ℝ A ⊆ ↑s) : aeval A (Lagrange.nodal s id) = 0 := by
+  have hA' : IsSelfAdjoint A := hA
+  rw [← cfc_polynomial (Lagrange.nodal s id) A hA', ← cfc_const_zero ℝ A]
+  exact cfc_congr fun x hx => Lagrange.eval_nodal_at_node (v := id) (Finset.mem_coe.mp (hs hx))
+
 /-- **Every function of a Hermitian matrix is a polynomial in it** of degree less than the size:
 $f(\mathbf{A}) = p(\mathbf{A})$ for a real polynomial $p$ of degree less than $\lvert n \rvert$,
 so $f(\mathbf{A})\mathbf{b}$ lies in the Krylov space of $\mathbf{A}$ and $\mathbf{b}$.
@@ -108,6 +134,21 @@ theorem _root_.Matrix.IsHermitian.exists_cfc_eq_aeval {A : Matrix n n 𝕜} (hA 
     obtain ⟨i, rfl⟩ := hx
     exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
       (Finset.mem_image_of_mem _ (Finset.mem_univ i))
+
+/-- **One polynomial for two matrices**: for any square matrices $\mathbf{M}$, $\mathbf{N}$
+(of possibly different sizes) and $f : \mathbb{R} \to \mathbb{R}$, some real polynomial $p$
+satisfies $p(x) = f(x)$ on the real spectra of both, the Lagrange interpolant on their union,
+which is finite. With `Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq` it writes
+$f(\mathbf{M})$ and $f(\mathbf{N})$ as the same polynomial. -/
+theorem exists_eval_eq_of_mem_spectrum (M : Matrix n n 𝕜) (N : Matrix m m 𝕜) (f : ℝ → ℝ) :
+    ∃ p : ℝ[X], (∀ x ∈ spectrum ℝ M, p.eval x = f x) ∧ ∀ x ∈ spectrum ℝ N, p.eval x = f x := by
+  classical
+  set s := (M.finite_real_spectrum.union N.finite_real_spectrum).toFinset
+  refine ⟨Lagrange.interpolate s id f, fun x hx => ?_, fun x hx => ?_⟩
+  · exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
+      ((Set.Finite.mem_toFinset _).mpr (Or.inl hx))
+  · exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
+      ((Set.Finite.mem_toFinset _).mpr (Or.inr hx))
 
 /-- A polynomial in a Hermitian matrix is Hermitian. Port of `NLAlib.transpose_aeval`. -/
 theorem _root_.Matrix.IsHermitian.aeval {A : Matrix n n 𝕜} (hA : A.IsHermitian) (p : ℝ[X]) :
@@ -239,10 +280,12 @@ theorem pow_mul_eq_mul_pow_of_mul_eq_mul {R : Type*} [Semiring R] {B : Matrix m 
       ← pow_succ]
 
 /-- Polynomials intertwine: if $\mathbf{B}\mathbf{A} = \mathbf{A}\mathbf{C}$ then
-$p(\mathbf{B})\mathbf{A} = \mathbf{A}\,p(\mathbf{C})$ for every real polynomial $p$.
-Port of `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq`. -/
-theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {B : Matrix m m 𝕜} {A : Matrix m n 𝕜}
-    {C : Matrix n n 𝕜} (h : B * A = A * C) (p : ℝ[X]) : aeval B p * A = A * aeval C p := by
+$p(\mathbf{B})\mathbf{A} = \mathbf{A}\,p(\mathbf{C})$ for every polynomial $p$ with
+coefficients in any scalar ring $S$ acting on $\Bbbk$ (real polynomials, or polynomials over
+$\Bbbk$ itself). Port of `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq`. -/
+theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {S : Type*} [CommSemiring S] [Algebra S 𝕜]
+    {B : Matrix m m 𝕜} {A : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : B * A = A * C) (p : S[X]) :
+    aeval B p * A = A * aeval C p := by
   induction p using Polynomial.induction_on' with
   | add p q hp hq => rw [map_add, map_add, Matrix.add_mul, Matrix.mul_add, hp, hq]
   | monomial j a =>
@@ -317,5 +360,79 @@ theorem rank_pow_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (q : ℕ) :
   rw [← singularValues_pos_iff ((A * Aᴴ) ^ q * A), ← singularValues_pos_iff A,
     singularValues_pow_mul_conjTranspose_self_mul]
   exact (odd_two_mul_add_one q).pow_pos_iff
+
+/-! ### Vectors with prescribed spectral weights -/
+
+/-- **A vector with prescribed spectral weights**: for Hermitian $\mathbf{A}$ with spectrum the
+finite set $s$ and weights $w \ge 0$ on $s$ there is a vector $\mathbf{v}$ whose spectral
+measure is $\sum_{x \in s} w_x\delta_x$: for every real function $g$ and all
+$p, r \in \Bbbk[X]$,
+$$\bigl(p(\mathbf{A})\mathbf{v}\bigr)^{\mathsf{H}} g(\mathbf{A})\, r(\mathbf{A})\mathbf{v} =
+\sum_{x \in s} w_x\, g(x)\,\overline{p(x)}\,r(x) \,.$$
+With $p = r$ and $g = 1$, $g = \mathrm{id}$ or $g = \nu$ this is the squared Euclidean,
+$\mathbf{A}$- or $\nu(\mathbf{A})$-norm of $p(\mathbf{A})\mathbf{v}$; weights vanishing off a
+subset $T \subseteq s$ give a vector in the span of eigenvectors of the eigenvalues in $T$.
+The vector is $\mathbf{v} = \sum_{x \in s}\sqrt{w_x}\,\mathbf{u}_x$ for one unit eigenvector
+$\mathbf{u}_x$ of each eigenvalue $x$. -/
+theorem _root_.Matrix.IsHermitian.exists_star_aeval_mulVec_dotProduct_cfc_mulVec_eq_sum
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {s : Finset ℝ} (hs : spectrum ℝ A = ↑s)
+    {w : ℝ → ℝ} (hw : ∀ x ∈ s, 0 ≤ w x) :
+    ∃ v : n → 𝕜, ∀ (g : ℝ → ℝ) (p r : 𝕜[X]),
+      star (aeval A p *ᵥ v) ⬝ᵥ (cfc g A *ᵥ (aeval A r *ᵥ v)) =
+        ∑ x ∈ s, ((w x * g x : ℝ) : 𝕜) * (star (p.eval (x : 𝕜)) * r.eval (x : 𝕜)) := by
+  set U : Matrix n n 𝕜 := (hA.eigenvectorUnitary : Matrix n n 𝕜)
+  set e := hA.eigenvalues
+  have hU : HasOrthonormalCols U := hA.hasOrthonormalCols_eigenvectorUnitary
+  have hAU : A * U = U * Matrix.diagonal fun j => ((e j : ℝ) : 𝕜) := by
+    have h := hA.spectral_theorem
+    rw [Unitary.conjStarAlgAut_apply] at h
+    conv_lhs => rw [h]
+    simp only [U, e, Matrix.mul_assoc]
+    rw [Matrix.star_eq_conjTranspose, hU.conjTranspose_mul_self, Matrix.mul_one]
+    rfl
+  have hcU : ∀ g : ℝ → ℝ, cfc g A * U = U * Matrix.diagonal fun j => ((g (e j) : ℝ) : 𝕜) := by
+    intro g
+    rw [hA.cfc_eq, Matrix.IsHermitian.cfc, Unitary.conjStarAlgAut_apply]
+    change U * _ * star U * U = _
+    rw [Matrix.mul_assoc, Matrix.star_eq_conjTranspose, hU.conjTranspose_mul_self, Matrix.mul_one]
+    rfl
+  have hpU : ∀ p : 𝕜[X], aeval A p * U = U * Matrix.diagonal fun j => p.eval ((e j : ℝ) : 𝕜) :=
+    fun p => by rw [aeval_mul_eq_mul_aeval_of_mul_eq_mul hAU p, aeval_diagonal_self]
+  rcases s.eq_empty_or_nonempty with rfl | ⟨x₀, hx₀⟩
+  · exact ⟨0, fun g p r => by simp only [Matrix.mulVec_zero, dotProduct_zero, Finset.sum_empty]⟩
+  -- one eigenvalue index for each point of the spectrum
+  have hmem : ∀ x ∈ s, ∃ j, e j = x := fun x hx => by
+    have : x ∈ spectrum ℝ A := by rw [hs]; exact hx
+    rwa [hA.spectrum_real_eq_range_eigenvalues] at this
+  have : Nonempty n := ⟨(hmem x₀ hx₀).choose⟩
+  choose! idx hidx using hmem
+  set T := s.image idx
+  set c : n → 𝕜 := fun j => if j ∈ T then ((Real.sqrt (w (e j)) : ℝ) : 𝕜) else 0
+  refine ⟨U *ᵥ c, fun g p r => ?_⟩
+  have hmv : ∀ {M D : Matrix n n 𝕜}, M * U = U * D → ∀ y, M *ᵥ (U *ᵥ y) = U *ᵥ (D *ᵥ y) :=
+    fun h y => by rw [Matrix.mulVec_mulVec, h, ← Matrix.mulVec_mulVec]
+  rw [hmv (hpU r), hmv (hcU g), hmv (hpU p), hU.star_mulVec_dotProduct_mulVec, dotProduct]
+  set F : ℝ → 𝕜 := fun x => ((w x * g x : ℝ) : 𝕜) * (star (p.eval (x : 𝕜)) * r.eval (x : 𝕜))
+  have key : ∀ j, star ((Matrix.diagonal fun j => p.eval ((e j : ℝ) : 𝕜)) *ᵥ c) j *
+      ((Matrix.diagonal fun j => ((g (e j) : ℝ) : 𝕜)) *ᵥ
+        ((Matrix.diagonal fun j => r.eval ((e j : ℝ) : 𝕜)) *ᵥ c)) j =
+      if j ∈ T then F (e j) else 0 := by
+    intro j
+    simp only [Matrix.mulVec_diagonal, Pi.star_apply, c, F]
+    split_ifs with hj
+    · obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hj
+      have hw' : 0 ≤ w (e (idx x)) := by rw [hidx x hx]; exact hw x hx
+      have hsq : ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) * ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) =
+          ((w (e (idx x)) : ℝ) : 𝕜) := by
+        rw [← RCLike.ofReal_mul, Real.mul_self_sqrt hw']
+      have hc : star ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) =
+          ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) := RCLike.conj_ofReal _
+      rw [star_mul', hc, RCLike.ofReal_mul]
+      linear_combination (star (p.eval ((e (idx x) : ℝ) : 𝕜)) * ((g (e (idx x)) : ℝ) : 𝕜) *
+        r.eval ((e (idx x) : ℝ) : 𝕜)) * hsq
+    · rw [mul_zero, mul_zero, star_zero, mul_zero, mul_zero]
+  rw [Finset.sum_congr rfl fun j _ => key j, Finset.sum_ite_mem, Finset.univ_inter,
+    Finset.sum_image fun x hx y hy hxy => by rw [← hidx x hx, ← hidx y hy, hxy]]
+  exact Finset.sum_congr rfl fun x hx => by rw [hidx x hx]
 
 end NLAlib

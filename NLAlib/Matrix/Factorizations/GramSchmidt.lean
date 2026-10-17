@@ -23,6 +23,7 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
 ## Main definitions
 
 * `NLAlib.gramSchmidtQ`, `NLAlib.gramSchmidtR`: the two factors.
+* `NLAlib.mgsSweep`: the modified Gram–Schmidt sweep of a vector against a sequence.
 
 ## Main results
 
@@ -30,6 +31,15 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
 * `NLAlib.isUpperTriangular_gramSchmidtR`, `NLAlib.gramSchmidtR_apply_self_nonneg`.
 * `NLAlib.gramSchmidtR_apply_self_smul_col`: the classical recursion.
 * `NLAlib.isQR_gramSchmidt`: the QR factorization of a matrix of full column rank.
+* `NLAlib.range_gramSchmidtQ`, `NLAlib.gramSchmidtQ_mul_conjTranspose`: with no rank assumption,
+  $\mathbf{Q}$ spans the column space and
+  $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$.
+* `NLAlib.gramSchmidtQ_submatrix`, `NLAlib.gramSchmidtQ_submatrix_castLE`: restriction to an
+  initial segment of the columns.
+* `NLAlib.gramSchmidtQ_col_eq_zero_iff`, `NLAlib.gramSchmidtQ_col_bot`: zero columns and the first
+  column.
+* `NLAlib.mgsSweep_eq_sub_sum`: the modified Gram–Schmidt sweep `NLAlib.mgsSweep` equals the
+  classical one against pairwise orthogonal vectors.
 -/
 
 @[expose] public section
@@ -314,5 +324,156 @@ theorem gramSchmidtR_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matri
     (hW : HasOrthonormalCols W) (A : Matrix m n 𝕜) :
     gramSchmidtR (W * A) = gramSchmidtR A := by
   rw [gramSchmidtR, gramSchmidtQ_mul_left hW, hW.conjTranspose_mul_mul, gramSchmidtR]
+
+/-- **The Gram–Schmidt vectors span the column space**: $\operatorname{range}\mathbf{Q} =
+\operatorname{range}\mathbf{A}$ for $\mathbf{Q}$ = `gramSchmidtQ A`, with no rank assumption (the
+zero columns contribute nothing). -/
+theorem range_gramSchmidtQ (A : Matrix m n 𝕜) :
+    LinearMap.range (gramSchmidtQ A).mulVecLin = LinearMap.range A.mulVecLin := by
+  apply le_antisymm
+  · rw [Matrix.range_mulVecLin, Matrix.range_mulVecLin, Submodule.span_le]
+    rintro _ ⟨j, rfl⟩
+    have hj : (gramSchmidtQ A).col j ∈ Submodule.span 𝕜 ((gramSchmidtQ A).col '' Set.Iic j) :=
+      Submodule.subset_span ⟨j, Set.mem_Iic.mpr le_rfl, rfl⟩
+    rw [span_gramSchmidtQ_col_image_Iic] at hj
+    exact Submodule.span_mono (Set.image_subset_range _ _) hj
+  · conv_lhs => rw [← gramSchmidtQ_mul_gramSchmidtR A]
+    rw [Matrix.mulVecLin_mul]
+    exact LinearMap.range_comp_le_range _ _
+
+/-- A column of the Gram–Schmidt matrix vanishes exactly when the corresponding diagonal entry
+of the triangular factor does. -/
+theorem gramSchmidtQ_col_eq_zero_iff (A : Matrix m n 𝕜) (j : n) :
+    (gramSchmidtQ A).col j = 0 ↔ gramSchmidtR A j j = 0 := by
+  rw [gramSchmidtR_apply_self, RCLike.ofReal_eq_zero, norm_eq_zero]
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · by_contra h0
+    have h1 := inner_gramSchmidtNormed_self_of_ne_zero (𝕜 := 𝕜) (colVec A) h0
+    have h2 : InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) j = 0 := by
+      ext i
+      exact congrFun h i
+    rw [h2, inner_zero_left] at h1
+    exact zero_ne_one h1
+  · ext i
+    change InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) j i = 0
+    rw [InnerProductSpace.gramSchmidtNormed, h, smul_zero]
+    rfl
+
+/-- The first Gram–Schmidt vector is the normalised first column,
+$\mathbf{q}_0 = \|\mathbf{a}_0\|^{-1}\mathbf{a}_0$ (zero when $\mathbf{a}_0 = \mathbf{0}$). -/
+theorem gramSchmidtQ_col_bot [OrderBot n] (A : Matrix m n 𝕜) :
+    (gramSchmidtQ A).col ⊥ = (‖WithLp.toLp 2 (A.col ⊥)‖⁻¹ : 𝕜) • A.col ⊥ := by
+  have h : InnerProductSpace.gramSchmidt 𝕜 (colVec A) ⊥ = colVec A ⊥ := by
+    rw [InnerProductSpace.gramSchmidt_def, Finset.sum_eq_zero, sub_zero]
+    intro i hi
+    exact absurd (Finset.mem_Iio.mp hi) not_lt_bot
+  ext i
+  change InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) ⊥ i = _
+  rw [InnerProductSpace.gramSchmidtNormed, h]
+  rfl
+
+/-- The Gram–Schmidt matrix is fixed by its Gram matrix:
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$, with no rank assumption, since the
+columns on which $\mathbf{Q}^{\mathsf{H}}\mathbf{Q}$ vanishes are zero. -/
+theorem gramSchmidtQ_mul_conjTranspose_gramSchmidtQ_mul_self (A : Matrix m n 𝕜) :
+    gramSchmidtQ A * ((gramSchmidtQ A)ᴴ * gramSchmidtQ A) = gramSchmidtQ A := by
+  classical
+  rw [conjTranspose_gramSchmidtQ_mul_self]
+  ext i j
+  rw [Matrix.mul_diagonal]
+  split_ifs with h
+  · rw [mul_zero]
+    exact (congrFun ((gramSchmidtQ_col_eq_zero_iff A j).mpr h) i).symm
+  · rw [mul_one]
+
+/-- **The Gram–Schmidt matrix is a partial isometry onto the column space**:
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$ for $\mathbf{Q}$ = `gramSchmidtQ A`,
+with no rank assumption. -/
+theorem gramSchmidtQ_mul_conjTranspose (A : Matrix m n 𝕜) :
+    gramSchmidtQ A * (gramSchmidtQ A)ᴴ = rangeProjector A := by
+  have hQ := gramSchmidtQ_mul_conjTranspose_gramSchmidtQ_mul_self A
+  refine IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩) ?_
+  · rw [← Matrix.mul_assoc, Matrix.mul_assoc (gramSchmidtQ A), hQ]
+  · exact Matrix.isHermitian_mul_conjTranspose_self _
+  · rw [← range_gramSchmidtQ A]
+    refine le_antisymm ?_ ?_
+    · rw [Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
+    · conv_lhs => rw [← hQ, ← Matrix.mul_assoc, Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
+
+/-- **Gram–Schmidt commutes with restriction to an initial segment of columns**: for an order
+embedding $e$ whose range is a lower set, the Gram–Schmidt matrix of the columns $e(j)$ of
+$\mathbf{A}$ consists of the columns $e(j)$ of the Gram–Schmidt matrix of $\mathbf{A}$. -/
+theorem gramSchmidtQ_submatrix {p : Type*} [Fintype p] [LinearOrder p] [LocallyFiniteOrderBot p]
+    (A : Matrix m n 𝕜) (e : p ↪o n) (he : IsLowerSet (Set.range e)) :
+    gramSchmidtQ (A.submatrix id e) = (gramSchmidtQ A).submatrix id e := by
+  have hIio : ∀ j : p, (Finset.Iio j).map e.toEmbedding = Finset.Iio (e j) := by
+    intro j
+    ext x
+    simp only [Finset.mem_map, Finset.mem_Iio, RelEmbedding.coe_toEmbedding]
+    refine ⟨?_, fun hx => ?_⟩
+    · rintro ⟨y, hy, rfl⟩
+      exact e.lt_iff_lt.mpr hy
+    · obtain ⟨y, rfl⟩ := he hx.le ⟨j, rfl⟩
+      exact ⟨y, e.lt_iff_lt.mp hx, rfl⟩
+  have hgs : ∀ j : p, InnerProductSpace.gramSchmidt 𝕜 (fun k => colVec A (e k)) j =
+      InnerProductSpace.gramSchmidt 𝕜 (colVec A) (e j) := by
+    intro j
+    induction j using WellFoundedLT.induction with
+    | ind j ih =>
+      rw [InnerProductSpace.gramSchmidt_def, InnerProductSpace.gramSchmidt_def 𝕜 (colVec A),
+        ← hIio, Finset.sum_map]
+      congr 1
+      refine Finset.sum_congr rfl fun i hi => ?_
+      rw [ih i (Finset.mem_Iio.mp hi)]
+      rfl
+  ext i j
+  change InnerProductSpace.gramSchmidtNormed 𝕜 (fun k => colVec A (e k)) j i =
+    InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) (e j) i
+  rw [InnerProductSpace.gramSchmidtNormed, InnerProductSpace.gramSchmidtNormed, hgs]
+
+/-- Gram–Schmidt of the first $q$ columns is the first $q$ columns of Gram–Schmidt. -/
+theorem gramSchmidtQ_submatrix_castLE {q q' : ℕ} (h : q ≤ q') (A : Matrix m (Fin q') 𝕜) :
+    gramSchmidtQ (A.submatrix id (Fin.castLE h)) = (gramSchmidtQ A).submatrix id (Fin.castLE h) :=
+  gramSchmidtQ_submatrix A (Fin.castLEOrderEmb h) (by
+    rintro a b hba ⟨c, rfl⟩
+    exact ⟨⟨b, lt_of_le_of_lt (Fin.le_def.mp hba) c.2⟩, rfl⟩)
+
+/-! ### Modified Gram–Schmidt -/
+
+section Modified
+
+variable {m : Type*} [Fintype m]
+
+/-- The **modified Gram–Schmidt sweep**: $\mathbf{u}_0 = \mathbf{w}$ and
+$\mathbf{u}_{i+1} = \mathbf{u}_i - (\mathbf{v}_i^{\mathsf{H}}\mathbf{u}_i)\mathbf{v}_i$; the value
+at $k$ is $\mathbf{w}$ reduced against $\mathbf{v}_0, \dots, \mathbf{v}_{k-1}$, one vector at a
+time, each coefficient computed from the partially reduced vector. The vectors are not assumed
+normalised. It is the inner loop of the Arnoldi process. [GolubVanLoan2013, §5.2.8]. -/
+def mgsSweep (V : ℕ → m → 𝕜) (w : m → 𝕜) : ℕ → m → 𝕜
+  | 0 => w
+  | i + 1 => mgsSweep V w i - (star (V i) ⬝ᵥ mgsSweep V w i) • V i
+
+/-- **Modified and classical Gram–Schmidt agree in exact arithmetic**: if
+$\mathbf{v}_i^{\mathsf{H}}\mathbf{v}_j = 0$ for $j < i < k$, then
+$$\mathsf{mgsSweep}(\mathbf{v}, \mathbf{w}, k) = \mathbf{w} - \sum_{i < k}
+(\mathbf{v}_i^{\mathsf{H}}\mathbf{w})\mathbf{v}_i\,.$$
+[GolubVanLoan2013, §5.2.8]. -/
+theorem mgsSweep_eq_sub_sum {V : ℕ → m → 𝕜} {k : ℕ}
+    (h : ∀ i < k, ∀ j < i, star (V i) ⬝ᵥ V j = 0) (w : m → 𝕜) :
+    mgsSweep V w k = w - ∑ i ∈ Finset.range k, (star (V i) ⬝ᵥ w) • V i := by
+  induction k with
+  | zero => simp [mgsSweep]
+  | succ k ih =>
+    have ih' := ih fun i hi j hj => h i (Nat.lt_succ_of_lt hi) j hj
+    have hc : star (V k) ⬝ᵥ mgsSweep V w k = star (V k) ⬝ᵥ w := by
+      rw [ih', dotProduct_sub, dotProduct_sum, sub_eq_self]
+      refine Finset.sum_eq_zero fun i hi => ?_
+      rw [dotProduct_smul, h k (Nat.lt_succ_self k) i (Finset.mem_range.mp hi), smul_zero]
+    change mgsSweep V w k - (star (V k) ⬝ᵥ mgsSweep V w k) • V k = _
+    rw [hc, ih', Finset.sum_range_succ, sub_sub]
+
+end Modified
 
 end NLAlib

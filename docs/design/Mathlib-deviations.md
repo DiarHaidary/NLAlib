@@ -437,6 +437,19 @@ is a bridge, not a claim of equality with the prototype image for every paramete
 hypotheses use existing `DifferentiableOn`, `Set.EqOn` and `Metric.IsUniformApproxOn`; coefficients
 and truncation retain their Poly2 spelling. No numbered deviation is introduced.
 
+Krylov K0 (2026-10-17, `docs/design/Krylov-CG.md`): `krylovMatrix` and `krylovSpace`, the Krylov
+space as the column space of the Krylov matrix. Mathlib's nearest notion is the cyclic submodule
+`Submodule.span R[X] {AEval'.of φ b}` in the type synonym `Module.AEval'`, which cannot be stated
+about vectors `n → 𝕜` without transport; the column space plugs the space into `rangeProjector`,
+`rank`, `pinv` and `gramSchmidtQ`, and `mem_krylovSpace_iff` is the polynomial description.
+`krylovGrade`, the grade, is the rank of the Krylov matrix with `Fintype.card n` columns, the
+dimension of that cyclic submodule; a bridge to Mathlib's `minpoly` (the grade is at most the
+degree of the minimal polynomial) is planned with the stage that needs it. `galerkinInverse` and
+`cgIterate` (the Galerkin approximation and the CG iterate, with `IsMinOn` as the bridge for
+optimality), `IsGradedKrylovBasis` and `arnoldiMatrix` (on Mathlib's `gramSchmidtNormed` through
+`gramSchmidtQ`), and the recurrences `lanczosState` and `cgState` are additions with no Mathlib
+counterpart. No numbered deviation is introduced.
+
 ## Used as Mathlib has them
 
 `Matrix.IsHermitian`, `Matrix.PosSemidef`, `Matrix.PosDef` and the Loewner order,

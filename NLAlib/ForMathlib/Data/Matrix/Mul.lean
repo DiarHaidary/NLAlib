@@ -10,18 +10,21 @@ public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Tactic.Ring
 
 /-!
-# Bilinear forms of a matrix as dot products of flattened matrices
+# Bilinear forms as dot products of flattened matrices; products through leading columns
 
 The bilinear form $\mathbf{x}^{\mathsf{T}}\mathbf{G}\mathbf{y}$ is the dot product of the
 flattened matrix $(\mathbf{G}_{i,j})_{(i,j)}$ (`Function.uncurry G`) with the flattened outer
 product $(\mathbf{x}_i \mathbf{y}_j)_{(i,j)}$, and dot products of flattened outer products factor.
 Together they turn a bilinear form of a random matrix into a linear form of its entries (Gaussian
-comparison for random matrices). Upstream candidates for `Mathlib.Data.Matrix.Mul`.
+comparison for random matrices). A matrix whose columns from $k$ on vanish acts through its
+first $k$ columns (the Krylov realisations past the grade). Upstream candidates for
+`Mathlib.Data.Matrix.Mul`.
 
 ## Main results
 
 * `Matrix.dotProduct_mulVec_eq_dotProduct_uncurry`: $\mathbf{x}^{\mathsf{T}}\mathbf{G}\mathbf{y}$
   as a dot product with `Function.uncurry G`.
+* `Matrix.mulVec_eq_submatrix_castLE_mulVec`: a product through the leading $k$ columns.
 * `dotProduct_mul_eq_mul_dotProduct`: the dot product of two flattened outer products is
   $(\mathbf{x}^{\mathsf{T}}\mathbf{x}') (\mathbf{y}^{\mathsf{T}}\mathbf{y}')$.
 -/
@@ -54,5 +57,21 @@ theorem dotProduct_mulVec_eq_dotProduct_uncurry (x : m → R) (G : Matrix m n R)
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
   change _ = _ * G i j
   ring
+
+/-- **A product through the leading columns**: if the columns of
+$\mathbf{Q} \in R^{m \times q}$ from $k \le q$ on vanish, then
+$\mathbf{Q}\mathbf{y} = \mathbf{Q}_{:,<k}\,\mathbf{y}_{<k}$, the first $k$ columns of
+$\mathbf{Q}$ applied to the first $k$ entries of $\mathbf{y}$. -/
+theorem mulVec_eq_submatrix_castLE_mulVec {α : Type*} [NonUnitalNonAssocSemiring α] {l : Type*}
+    {q k : ℕ} (h : k ≤ q) (Q : Matrix l (Fin q) α) (hQ : ∀ j : Fin q, k ≤ (j : ℕ) → Q.col j = 0)
+    (y : Fin q → α) : Q *ᵥ y = Q.submatrix id (Fin.castLE h) *ᵥ (y ∘ Fin.castLE h) := by
+  ext i
+  simp only [Matrix.mulVec, dotProduct, Matrix.submatrix_apply, id_eq, Function.comp_apply]
+  refine (Fintype.sum_of_injective (Fin.castLE h) (Fin.castLE_injective h) _ _
+    (fun j hj => ?_) fun j => rfl).symm
+  have hkj : k ≤ (j : ℕ) := by
+    by_contra hjk
+    exact hj ⟨⟨j, not_le.mp hjk⟩, Fin.ext rfl⟩
+  rw [show Q i j = Q.col j i from rfl, hQ j hkj, Pi.zero_apply, zero_mul]
 
 end Matrix

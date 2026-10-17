@@ -29,6 +29,8 @@ Orthonormal rows are `HasOrthonormalCols Qᴴ`; a unitary matrix is a square $\m
 * `NLAlib.hasOrthonormalCols_iff_mem_unitaryGroup`: the bridge to `Matrix.unitaryGroup`.
 * `NLAlib.HasOrthonormalCols.norm_toLp_mulVec`: multiplication by $\mathbf{Q}$ preserves the
   Euclidean norm.
+* `NLAlib.HasOrthonormalCols.star_col_dotProduct_eq_zero_of_mem_span`: a column is orthogonal to
+  the span of the other columns.
 * `NLAlib.hasOrthonormalCols_replicateCol`: a unit vector as a column.
 * `NLAlib.exists_norm_eq_one_and_norm_mulVec_sq_sub_norm_sq_eq`: the distortion
   $\|\mathbf{A}\mathbf{x}\|^2 - \|\mathbf{x}\|^2$ at $\mathbf{x} \ne \mathbf{0}$ through a unit
@@ -235,6 +237,23 @@ $\mathbf{x} = \mathbf{y}$. -/
 theorem star_mulVec_dotProduct_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (x y : n → 𝕜) : star (Q *ᵥ x) ⬝ᵥ (Q *ᵥ y) = star x ⬝ᵥ y := by
   rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec, hQ.conjTranspose_mulVec_mulVec]
+
+omit [Fintype n] in
+/-- A column of a matrix with orthonormal columns is orthogonal to the span of the other columns:
+for $i \notin s$ and $\mathbf{x} \in \operatorname{span}\{\mathbf{q}_k : k \in s\}$,
+$\mathbf{q}_i^{\mathsf{H}}\mathbf{x} = 0$, with $\mathbf{q}_k$ column $k$ of $\mathbf{Q}$. -/
+theorem star_col_dotProduct_eq_zero_of_mem_span {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
+    {s : Set n} {i : n} (hi : i ∉ s) {x : m → 𝕜} (hx : x ∈ Submodule.span 𝕜 (Q.col '' s)) :
+    star (Q.col i) ⬝ᵥ x = 0 := by
+  induction hx using Submodule.span_induction with
+  | mem x hx =>
+    obtain ⟨k, hk, rfl⟩ := hx
+    have h := congrFun (congrFun hQ.conjTranspose_mul_self i) k
+    rw [Matrix.one_apply_ne (fun h => hi (by rw [h]; exact hk)), Matrix.mul_apply'] at h
+    exact h
+  | zero => exact dotProduct_zero _
+  | add x y _ _ hx hy => rw [dotProduct_add, hx, hy, add_zero]
+  | smul a x _ hx => rw [dotProduct_smul, hx, smul_zero]
 
 /-- Multiplication by a matrix with orthonormal columns preserves the Euclidean norm:
 $\|\mathbf{Q}\mathbf{x}\| = \|\mathbf{x}\|$. -/
