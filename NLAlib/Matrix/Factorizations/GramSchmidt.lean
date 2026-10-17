@@ -35,6 +35,8 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
   $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$.
 * `NLAlib.gramSchmidtQ_submatrix`, `NLAlib.gramSchmidtQ_submatrix_castLE`: restriction to an
   initial segment of the columns.
+* `NLAlib.gramSchmidtQ_col_eq_zero_iff`, `NLAlib.gramSchmidtQ_col_bot`: zero columns and the first
+  column.
 -/
 
 @[expose] public section
@@ -336,26 +338,97 @@ theorem range_gramSchmidtQ (A : Matrix m n 𝕜) :
     rw [Matrix.mulVecLin_mul]
     exact LinearMap.range_comp_le_range _ _
 
+/-- A column of the Gram–Schmidt matrix vanishes exactly when the corresponding diagonal entry
+of the triangular factor does. -/
+theorem gramSchmidtQ_col_eq_zero_iff (A : Matrix m n 𝕜) (j : n) :
+    (gramSchmidtQ A).col j = 0 ↔ gramSchmidtR A j j = 0 := by
+  rw [gramSchmidtR_apply_self, RCLike.ofReal_eq_zero, norm_eq_zero]
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · by_contra h0
+    have h1 := inner_gramSchmidtNormed_self_of_ne_zero (𝕜 := 𝕜) (colVec A) h0
+    have h2 : InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) j = 0 := by
+      ext i
+      exact congrFun h i
+    rw [h2, inner_zero_left] at h1
+    exact zero_ne_one h1
+  · ext i
+    change InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) j i = 0
+    rw [InnerProductSpace.gramSchmidtNormed, h, smul_zero]
+    rfl
+
+/-- The first Gram–Schmidt vector is the normalised first column,
+$\mathbf{q}_0 = \|\mathbf{a}_0\|^{-1}\mathbf{a}_0$ (zero when $\mathbf{a}_0 = \mathbf{0}$). -/
+theorem gramSchmidtQ_col_bot [OrderBot n] (A : Matrix m n 𝕜) :
+    (gramSchmidtQ A).col ⊥ = (‖WithLp.toLp 2 (A.col ⊥)‖⁻¹ : 𝕜) • A.col ⊥ := by
+  have h : InnerProductSpace.gramSchmidt 𝕜 (colVec A) ⊥ = colVec A ⊥ := by
+    rw [InnerProductSpace.gramSchmidt_def, Finset.sum_eq_zero, sub_zero]
+    intro i hi
+    exact absurd (Finset.mem_Iio.mp hi) not_lt_bot
+  ext i
+  change InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) ⊥ i = _
+  rw [InnerProductSpace.gramSchmidtNormed, h]
+  rfl
+
+/-- The Gram–Schmidt matrix is fixed by its Gram matrix:
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$, with no rank assumption, since the
+columns on which $\mathbf{Q}^{\mathsf{H}}\mathbf{Q}$ vanishes are zero. -/
+theorem gramSchmidtQ_mul_conjTranspose_gramSchmidtQ_mul_self (A : Matrix m n 𝕜) :
+    gramSchmidtQ A * ((gramSchmidtQ A)ᴴ * gramSchmidtQ A) = gramSchmidtQ A := by
+  classical
+  rw [conjTranspose_gramSchmidtQ_mul_self]
+  ext i j
+  rw [Matrix.mul_diagonal]
+  split_ifs with h
+  · rw [mul_zero]
+    exact (congrFun ((gramSchmidtQ_col_eq_zero_iff A j).mpr h) i).symm
+  · rw [mul_one]
+
 /-- **The Gram–Schmidt matrix is a partial isometry onto the column space**:
 $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$ for $\mathbf{Q}$ = `gramSchmidtQ A`,
-with no rank assumption.
-Proof: `conjTranspose_gramSchmidtQ_mul_self` makes $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ a star
-projection with the range of $\mathbf{Q}$; then `IsStarProjection.eq_rangeProjector` and
-`range_gramSchmidtQ`. Small. -/
+with no rank assumption. -/
 theorem gramSchmidtQ_mul_conjTranspose (A : Matrix m n 𝕜) :
     gramSchmidtQ A * (gramSchmidtQ A)ᴴ = rangeProjector A := by
-  sorry
+  have hQ := gramSchmidtQ_mul_conjTranspose_gramSchmidtQ_mul_self A
+  refine IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩) ?_
+  · rw [← Matrix.mul_assoc, Matrix.mul_assoc (gramSchmidtQ A), hQ]
+  · exact Matrix.isHermitian_mul_conjTranspose_self _
+  · rw [← range_gramSchmidtQ A]
+    refine le_antisymm ?_ ?_
+    · rw [Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
+    · conv_lhs => rw [← hQ, ← Matrix.mul_assoc, Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
 
 /-- **Gram–Schmidt commutes with restriction to an initial segment of columns**: for an order
 embedding $e$ whose range is a lower set, the Gram–Schmidt matrix of the columns $e(j)$ of
-$\mathbf{A}$ consists of the columns $e(j)$ of the Gram–Schmidt matrix of $\mathbf{A}$.
-Proof: Mathlib's `gramSchmidt` at $j$ depends only on the vectors at indices $\le j$; induction
-on $j$ through `InnerProductSpace.gramSchmidt_def`, with `Finset.Iio` transported along $e$.
-Small to medium. -/
+$\mathbf{A}$ consists of the columns $e(j)$ of the Gram–Schmidt matrix of $\mathbf{A}$. -/
 theorem gramSchmidtQ_submatrix {p : Type*} [Fintype p] [LinearOrder p] [LocallyFiniteOrderBot p]
     (A : Matrix m n 𝕜) (e : p ↪o n) (he : IsLowerSet (Set.range e)) :
     gramSchmidtQ (A.submatrix id e) = (gramSchmidtQ A).submatrix id e := by
-  sorry
+  have hIio : ∀ j : p, (Finset.Iio j).map e.toEmbedding = Finset.Iio (e j) := by
+    intro j
+    ext x
+    simp only [Finset.mem_map, Finset.mem_Iio, RelEmbedding.coe_toEmbedding]
+    refine ⟨?_, fun hx => ?_⟩
+    · rintro ⟨y, hy, rfl⟩
+      exact e.lt_iff_lt.mpr hy
+    · obtain ⟨y, rfl⟩ := he hx.le ⟨j, rfl⟩
+      exact ⟨y, e.lt_iff_lt.mp hx, rfl⟩
+  have hgs : ∀ j : p, InnerProductSpace.gramSchmidt 𝕜 (fun k => colVec A (e k)) j =
+      InnerProductSpace.gramSchmidt 𝕜 (colVec A) (e j) := by
+    intro j
+    induction j using WellFoundedLT.induction with
+    | ind j ih =>
+      rw [InnerProductSpace.gramSchmidt_def, InnerProductSpace.gramSchmidt_def 𝕜 (colVec A),
+        ← hIio, Finset.sum_map]
+      congr 1
+      refine Finset.sum_congr rfl fun i hi => ?_
+      rw [ih i (Finset.mem_Iio.mp hi)]
+      rfl
+  ext i j
+  change InnerProductSpace.gramSchmidtNormed 𝕜 (fun k => colVec A (e k)) j i =
+    InnerProductSpace.gramSchmidtNormed 𝕜 (colVec A) (e j) i
+  rw [InnerProductSpace.gramSchmidtNormed, InnerProductSpace.gramSchmidtNormed, hgs]
 
 /-- Gram–Schmidt of the first $q$ columns is the first $q$ columns of Gram–Schmidt. -/
 theorem gramSchmidtQ_submatrix_castLE {q q' : ℕ} (h : q ≤ q') (A : Matrix m (Fin q') 𝕜) :

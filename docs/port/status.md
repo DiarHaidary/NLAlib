@@ -2,6 +2,25 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Krylov K0 (CG slice) complete (2026-10-17)
+
+Branch `krylov/brief`, uncommitted on top of checkpoint `71fb07c`. All eight Krylov files of
+`docs/design/Krylov-CG.md` §6 are proved and registered in `NLAlib.lean` (`lake exe mk_all`).
+Placement pass (CONTRIBUTING §8 item 5): `conjTranspose_mul_apply` and
+`conjTranspose_mul_mul_apply` now public in `Matrix/Basic/Gram.lean` (two private copies deleted);
+`HasOrthonormalCols.star_col_dotProduct_eq_zero_of_mem_span` public in
+`Matrix/Basic/Orthonormal.lean`; `krylovGrade_le_of_mem_of_mulVec_eq` public in
+`Krylov/Basic/Grade.lean`. A private `conjTranspose_mul_mul_apply` in
+`Sketching/Properties/Isotropic.lean` clashed and is renamed `conjTranspose_mul_mul_apply_eq_sum`.
+Note amended ("Implementation (2026-10-17)": added lemmas, the direct Lanczos and
+Hestenes–Stiefel routes, the moves, counts); no statement changed. Ledger: 9 K0 entries.
+
+Checks (`scripts/stage_check.sh`): 322 proved modules, build 3913 jobs, 0 warnings; audit 7784
+declarations, 0 violations; lint 5282 declarations, 0 errors; references 61 keys, 0 problems;
+constants 26, 0 problems; duplicates 4848 theorems, 0 classes; LaTeX 18643 spans, 0 problems;
+`mk_all --check` clean. Open: the note's Saad2003/Saad2011/TrefethenBau1997 locators still to be
+checked against the books before the PR; NLAlibScaffold not rebuilt in this pass.
+
 ## Stronger Jackson bound complete (2026-10-16)
 
 The public `isUniformApproxOn_jacksonApprox_of_lipschitz` now exposes the proved error

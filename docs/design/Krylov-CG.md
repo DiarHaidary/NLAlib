@@ -454,3 +454,64 @@ $1/x$ (K1). The error polynomial and the comparison: MINRES and polynomial itera
 `IsGradedKrylovBasis`, `arnoldiMatrix`, `mul_arnoldiMatrix`: Arnoldi and GMRES (K3), Ritz values
 (K4), SLQ (K7). `lanczosState`: SLQ's implementation statement and a finite-precision round.
 `cgState`: the exhibited algorithm, needed by no later theorem by design.
+
+## Implementation (2026-10-17)
+
+All files of §6 are proved and registered in `NLAlib.lean`. No statement of this note changed;
+the amendments are additions and placement.
+
+- **Space** (`Krylov/Basic/Space.lean`): three public lemmas beyond §3.2,
+  `krylovSpace_eq_span` (the span of $\mathbf{A}^j\mathbf{b}$, $j < q$),
+  `pow_mulVec_mem_krylovSpace` ($\mathbf{A}^j\mathbf{b} \in \mathcal{K}_q$ for $j < q$) and
+  `krylovSpace_succ` ($\mathcal{K}_{q+1} = \mathcal{K}_q + \operatorname{span}\{\mathbf{A}^q\mathbf{b}\}$),
+  used by Grade, Lanczos and CGRecurrence.
+- **Gram–Schmidt** (`Matrix/Factorizations/GramSchmidt.lean`): three public lemmas beyond §3.1,
+  `gramSchmidtQ_col_eq_zero_iff` (a column vanishes iff its `gramSchmidtR` diagonal entry does),
+  `gramSchmidtQ_mul_conjTranspose_gramSchmidtQ_mul_self`
+  ($\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$, no rank assumption) and
+  `gramSchmidtQ_col_bot` (the first column is the normalised first column).
+- **Placement of the constructor.** `isGradedKrylovBasis_of_forall_col_mem` lives in
+  `Krylov/Processes/Lanczos.lean`, beside `IsGradedKrylovBasis`, not in Grade.
+- **Lanczos realisation.** Proved directly, not through `IsGradedKrylovBasis.eq_arnoldiMatrix`:
+  an induction shows that the recurrence state equals a canonical state built from the columns
+  $\mathbf{q}_j$ of `arnoldiMatrix` and their Gram–Schmidt coefficients $r_j \ge 0$. The step
+  works because $r_j\mathbf{w} - r_{j+1}\mathbf{q}_{j+1}$ lies in $\mathcal{K}_{j+1}$ and is
+  orthogonal to $\mathbf{q}_0, \dots, \mathbf{q}_j$, hence is zero; this covers the steps past
+  the grade, where both sides are zero, with no case split on breakdown.
+- **Hestenes–Stiefel route.** Two hypothesis-free invariants, for every $\mathbf{A}$:
+  $\mathbf{x}_k - \mathbf{x}_0 \in \mathcal{K}_k$ and $\mathbf{p}_k - \mathbf{r}_k \in \mathcal{K}_k$.
+  Then one joint induction for positive definite $\mathbf{A}$: $\mathbf{r}_k \perp \mathcal{K}_k$
+  and $\mathbf{A}\mathbf{p}_k \perp \mathcal{K}_k$. `cgState_x_eq` follows with no further
+  induction from the Galerkin characterisation
+  `Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero`.
+- **Moves to the Matrix layer** (placement, CONTRIBUTING §8 item 5): private helpers of the Krylov
+  files became public lemmas where their topic lives.
+  `conjTranspose_mul_apply` ($(\mathbf{A}^{\mathsf{H}}\mathbf{B})_{i,j} =
+  \mathbf{a}_i^{\mathsf{H}}\mathbf{b}_j$; it was private twice, in Lanczos and LanczosRecurrence;
+  `conjTranspose_mul_self_apply` is now its specialisation) and `conjTranspose_mul_mul_apply`
+  (the compression entry $\mathbf{q}_i^{\mathsf{H}}\mathbf{A}\mathbf{q}_j$) go to
+  `Matrix/Basic/Gram.lean`. Mathlib has only `Matrix.mul_apply'` (a row against a column)
+  and the square `Matrix.mul_mul_apply`. `HasOrthonormalCols.star_col_dotProduct_eq_zero_of_mem_span`
+  (a column is orthogonal to the span of the others) goes to `Matrix/Basic/Orthonormal.lean`;
+  searched, none. `krylovGrade_le_of_mem_of_mulVec_eq` ($\nu \le k$ when
+  $\mathbf{c} = \mathbf{A}\mathbf{y}$, $\mathbf{y} \in \mathcal{K}_k(\mathbf{A}, \mathbf{c})$) moves
+  from CGRecurrence to `Krylov/Basic/Grade.lean`. The public name `conjTranspose_mul_mul_apply`
+  clashed with a private helper of `Sketching/Properties/Isotropic.lean` stating the entry as a
+  double sum; that helper is renamed `conjTranspose_mul_mul_apply_eq_sum`, statement unchanged.
+  No placement flag is open.
+
+Final counts (public definitions + public theorems; lines):
+
+| File | Definitions + theorems | Lines (whole file) |
+|---|---|---|
+| `Matrix/Basic/Gram.lean` (additions) | 0 + 2 | 178 |
+| `Matrix/Basic/Orthonormal.lean` (addition) | 0 + 1 | 342 |
+| `Matrix/Factorizations/GramSchmidt.lean` (additions) | 0 + 7 | 440 |
+| `Krylov/Basic/Space.lean` | 2 + 11 | 169 |
+| `Krylov/Basic/Grade.lean` | 1 + 9 | 242 |
+| `Krylov/LinearSystems/Galerkin.lean` | 1 + 8 | 197 |
+| `Krylov/LinearSystems/CG.lean` | 1 + 13 | 288 |
+| `Krylov/Processes/Lanczos.lean` | 2 + 12 | 236 |
+| `Krylov/Processes/LanczosRecurrence.lean` | 6 + 3 | 466 |
+| `Krylov/LinearSystems/CGRecurrence.lean` | 3 + 8 | 367 |
+| `Krylov/LinearSystems/CGLanczos.lean` | 0 + 2 | 58 |

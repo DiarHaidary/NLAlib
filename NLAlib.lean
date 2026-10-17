@@ -43,6 +43,14 @@ public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
+public import NLAlib.Krylov.Basic.Grade
+public import NLAlib.Krylov.Basic.Space
+public import NLAlib.Krylov.LinearSystems.CG
+public import NLAlib.Krylov.LinearSystems.CGLanczos
+public import NLAlib.Krylov.LinearSystems.CGRecurrence
+public import NLAlib.Krylov.LinearSystems.Galerkin
+public import NLAlib.Krylov.Processes.Lanczos
+public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
 public import NLAlib.LowRank.Gaussian.EarlyTruncationHaar
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom

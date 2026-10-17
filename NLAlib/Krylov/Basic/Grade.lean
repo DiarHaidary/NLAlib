@@ -28,6 +28,8 @@ layer: Lanczos and conjugate gradients break down, or terminate, exactly at the 
 * `NLAlib.mulVec_mem_krylovSpace_of_krylovGrade_le`: invariance from the grade on.
 * `NLAlib.mem_krylovSpace_of_krylovGrade_le`: the solution of $\mathbf{A}\mathbf{x} = \mathbf{b}$
   lies in the Krylov space of the grade.
+* `NLAlib.krylovGrade_le_of_mem_of_mulVec_eq`: $\nu \le k$ when $\mathbf{b} = \mathbf{A}\mathbf{y}$
+  with $\mathbf{y} \in \mathcal{K}_k$.
 -/
 
 @[expose] public section
@@ -45,53 +47,196 @@ $\mathbf{b} = \mathbf{0}$. [Saad2003, §6.2]. -/
 noncomputable def krylovGrade (A : Matrix n n 𝕜) (b : n → 𝕜) : ℕ :=
   (krylovMatrix A b (Fintype.card n)).rank
 
+/-! ### The first index at which the Krylov spaces stop growing -/
+
+section Index
+
+variable {A : Matrix n n 𝕜} {b : n → 𝕜}
+
+/-- Linear independence of $\mathbf{b}, \dots, \mathbf{A}^q\mathbf{b}$ splits off the last
+vector. -/
+private lemma linearIndependent_pow_mulVec_succ_iff (q : ℕ) :
+    LinearIndependent 𝕜 (fun i : Fin (q + 1) => A ^ (i : ℕ) *ᵥ b) ↔
+      LinearIndependent 𝕜 (fun i : Fin q => A ^ (i : ℕ) *ᵥ b) ∧
+        A ^ q *ᵥ b ∉ krylovSpace A b q := by
+  have h : (fun i : Fin (q + 1) => A ^ (i : ℕ) *ᵥ b) =
+      Fin.snoc (fun i : Fin q => A ^ (i : ℕ) *ᵥ b) (A ^ q *ᵥ b) := by
+    funext i
+    refine Fin.lastCases ?_ (fun j => ?_) i <;> simp
+  rw [h, linearIndependent_finSnoc, krylovSpace_eq_span]
+
+private lemma linearIndependent_pow_mulVec_of_forall_notMem {q : ℕ}
+    (h : ∀ i < q, A ^ i *ᵥ b ∉ krylovSpace A b i) :
+    LinearIndependent 𝕜 (fun i : Fin q => A ^ (i : ℕ) *ᵥ b) := by
+  induction q with
+  | zero => exact linearIndependent_empty_type
+  | succ q ih =>
+    exact (linearIndependent_pow_mulVec_succ_iff q).2
+      ⟨ih fun i hi => h i (Nat.lt_succ_of_lt hi), h q (Nat.lt_succ_self q)⟩
+
+/-- Once $\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$, the space $\mathcal{K}_q$ is invariant. -/
+private lemma mulVec_mem_of_pow_mulVec_mem {q : ℕ} (hq : A ^ q *ᵥ b ∈ krylovSpace A b q)
+    {x : n → 𝕜} (hx : x ∈ krylovSpace A b q) : A *ᵥ x ∈ krylovSpace A b q := by
+  have h := mulVec_mem_krylovSpace_succ hx
+  rw [krylovSpace_succ] at h
+  exact (sup_le le_rfl ((Submodule.span_singleton_le_iff_mem _ _).2 hq)) h
+
+private lemma pow_mulVec_mem_of_pow_mulVec_mem {q : ℕ} (hq : A ^ q *ᵥ b ∈ krylovSpace A b q)
+    (i : ℕ) : A ^ i *ᵥ b ∈ krylovSpace A b q := by
+  induction i with
+  | zero =>
+    rcases Nat.eq_zero_or_pos q with rfl | hpos
+    · exact hq
+    · exact pow_mulVec_mem_krylovSpace A b hpos
+  | succ i ih =>
+    rw [pow_succ', ← Matrix.mulVec_mulVec]
+    exact mulVec_mem_of_pow_mulVec_mem hq ih
+
+private lemma krylovSpace_eq_of_pow_mulVec_mem {q q' : ℕ}
+    (hq : A ^ q *ᵥ b ∈ krylovSpace A b q) (h : q ≤ q') :
+    krylovSpace A b q' = krylovSpace A b q := by
+  refine le_antisymm ?_ (krylovSpace_mono A b h)
+  rw [krylovSpace_eq_span A b q']
+  refine Submodule.span_le.2 ?_
+  rintro _ ⟨j, rfl⟩
+  exact pow_mulVec_mem_of_pow_mulVec_mem hq j
+
+/-- The first index $m$ with $\mathbf{A}^m\mathbf{b} \in \mathcal{K}_m$ exists. -/
+private lemma exists_index :
+    ∃ m, (∀ i < m, A ^ i *ᵥ b ∉ krylovSpace A b i) ∧ A ^ m *ᵥ b ∈ krylovSpace A b m := by
+  classical
+  have hex : ∃ q, A ^ q *ᵥ b ∈ krylovSpace A b q := by
+    by_contra hne
+    push Not at hne
+    have hli := linearIndependent_pow_mulVec_of_forall_notMem
+      (A := A) (b := b) (q := Fintype.card n + 1) fun i _ => hne i
+    have := hli.fintype_card_le_finrank
+    rw [Module.finrank_fintype_fun_eq_card, Fintype.card_fin] at this
+    omega
+  exact ⟨Nat.find hex, fun i hi => Nat.find_min hex hi, Nat.find_spec hex⟩
+
+private lemma index_le_card {m : ℕ} (hm : ∀ i < m, A ^ i *ᵥ b ∉ krylovSpace A b i) :
+    m ≤ Fintype.card n := by
+  have := (linearIndependent_pow_mulVec_of_forall_notMem hm).fintype_card_le_finrank
+  rwa [Module.finrank_fintype_fun_eq_card, Fintype.card_fin] at this
+
+private lemma finrank_krylovSpace_of_le {m q : ℕ}
+    (hm : ∀ i < m, A ^ i *ᵥ b ∉ krylovSpace A b i) (hq : q ≤ m) :
+    Module.finrank 𝕜 (krylovSpace A b q) = q := by
+  rw [krylovSpace_eq_span, finrank_span_eq_card
+    (linearIndependent_pow_mulVec_of_forall_notMem fun i hi => hm i (hi.trans_le hq)),
+    Fintype.card_fin]
+
+private lemma finrank_krylovSpace_eq_min {m : ℕ} (hm : ∀ i < m, A ^ i *ᵥ b ∉ krylovSpace A b i)
+    (hm' : A ^ m *ᵥ b ∈ krylovSpace A b m) (q : ℕ) :
+    Module.finrank 𝕜 (krylovSpace A b q) = min q m := by
+  rcases le_total q m with h | h
+  · rw [finrank_krylovSpace_of_le hm h, min_eq_left h]
+  · rw [krylovSpace_eq_of_pow_mulVec_mem hm' h, finrank_krylovSpace_of_le hm le_rfl,
+      min_eq_right h]
+
+private lemma krylovGrade_eq_index {m : ℕ} (hm : ∀ i < m, A ^ i *ᵥ b ∉ krylovSpace A b i)
+    (hm' : A ^ m *ᵥ b ∈ krylovSpace A b m) : krylovGrade A b = m := by
+  change Module.finrank 𝕜 (krylovSpace A b (Fintype.card n)) = m
+  rw [finrank_krylovSpace_eq_min hm hm', min_eq_right (index_le_card hm)]
+
+end Index
+
 /-- **The Krylov spaces stop growing exactly at the grade**: $\nu \le q$ iff
-$\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$.
-Proof: once $\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$ the space is invariant
-(`mulVec_mem_krylovSpace_succ`), so all later spaces equal it; before, each step adds a dimension.
-Medium; the core of this file. -/
+$\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$. [Saad2003, §6.2].
+Proof ported from the prototype `NLAlib.krylovGrade_le_of_pow_mulVec_mem` and
+`NLAlib.pow_mulVec_notMem_krylovSpace_of_lt_krylovGrade`, there for a `finrank` definition. -/
 theorem krylovGrade_le_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} :
     krylovGrade A b ≤ q ↔ A ^ q *ᵥ b ∈ krylovSpace A b q := by
-  sorry
+  obtain ⟨m, hm, hm'⟩ := exists_index (A := A) (b := b)
+  rw [krylovGrade_eq_index hm hm']
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · exact krylovSpace_mono A b h (pow_mulVec_mem_of_pow_mulVec_mem hm' q)
+  · by_contra hlt
+    exact hm q (not_le.1 hlt) h
+
+/-- The dimension of $\mathcal{K}_q$ is $\min(q, \nu)$. [Saad2003, §6.2].
+Port of `NLAlib.finrank_krylovSpace` (prototype, real scalars). -/
+theorem finrank_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
+    Module.finrank 𝕜 (krylovSpace A b q) = min q (krylovGrade A b) := by
+  obtain ⟨m, hm, hm'⟩ := exists_index (A := A) (b := b)
+  rw [krylovGrade_eq_index hm hm', finrank_krylovSpace_eq_min hm hm']
 
 /-- The rank of the Krylov matrix is $\min(q, \nu)$. -/
 theorem rank_krylovMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
-    (krylovMatrix A b q).rank = min q (krylovGrade A b) := by
-  sorry
-
-/-- The dimension of $\mathcal{K}_q$ is $\min(q, \nu)$. -/
-theorem finrank_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
-    Module.finrank 𝕜 (krylovSpace A b q) = min q (krylovGrade A b) := by
-  sorry
+    (krylovMatrix A b q).rank = min q (krylovGrade A b) :=
+  finrank_krylovSpace A b q
 
 /-- The grade is at most the dimension. -/
 theorem krylovGrade_le_card (A : Matrix n n 𝕜) (b : n → 𝕜) :
     krylovGrade A b ≤ Fintype.card n := by
-  sorry
+  obtain ⟨m, hm, hm'⟩ := exists_index (A := A) (b := b)
+  rw [krylovGrade_eq_index hm hm']
+  exact index_le_card hm
 
 /-- The Krylov vectors $\mathbf{b}, \dots, \mathbf{A}^{q-1}\mathbf{b}$ are linearly independent
-exactly up to the grade: the Krylov matrix has full column rank iff $q \le \nu$. -/
+exactly up to the grade: the Krylov matrix has full column rank iff $q \le \nu$.
+Port of `NLAlib.linearIndependent_pow_mulVec_iff_le_krylovGrade` (prototype). -/
 theorem krylovMatrix_mulVec_injective_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} :
     Function.Injective (krylovMatrix A b q).mulVec ↔ q ≤ krylovGrade A b := by
-  sorry
+  obtain ⟨m, hm, hm'⟩ := exists_index (A := A) (b := b)
+  rw [krylovGrade_eq_index hm hm', Matrix.mulVec_injective_iff]
+  change LinearIndependent 𝕜 (fun i : Fin q => A ^ (i : ℕ) *ᵥ b) ↔ q ≤ m
+  refine ⟨fun hli => ?_, fun hq => ?_⟩
+  · have h := finrank_krylovSpace_eq_min hm hm' q
+    rw [krylovSpace_eq_span, finrank_span_eq_card hli, Fintype.card_fin] at h
+    omega
+  · exact linearIndependent_pow_mulVec_of_forall_notMem fun i hi => hm i (hi.trans_le hq)
 
 /-- From the grade on, the Krylov spaces are constant. -/
 theorem krylovSpace_eq_of_krylovGrade_le {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ}
-    (h : krylovGrade A b ≤ q) : krylovSpace A b q = krylovSpace A b (krylovGrade A b) := by
-  sorry
+    (h : krylovGrade A b ≤ q) : krylovSpace A b q = krylovSpace A b (krylovGrade A b) :=
+  krylovSpace_eq_of_pow_mulVec_mem (krylovGrade_le_iff.1 le_rfl) h
 
 /-- From the grade on, the Krylov space is invariant under $\mathbf{A}$. -/
 theorem mulVec_mem_krylovSpace_of_krylovGrade_le {A : Matrix n n 𝕜} {b x : n → 𝕜} {q : ℕ}
-    (h : krylovGrade A b ≤ q) (hx : x ∈ krylovSpace A b q) : A *ᵥ x ∈ krylovSpace A b q := by
-  sorry
+    (h : krylovGrade A b ≤ q) (hx : x ∈ krylovSpace A b q) : A *ᵥ x ∈ krylovSpace A b q :=
+  mulVec_mem_of_pow_mulVec_mem (krylovGrade_le_iff.1 h) hx
 
 /-- **The solution lies in the Krylov space of the grade**: for invertible $\mathbf{A}$ and
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, $\mathbf{x}_\star \in \mathcal{K}_q$ once $\nu \le q$.
 [Saad2003, §6.2].
-Proof: $\mathbf{A}$ maps the invariant space $\mathcal{K}_q$ injectively, hence onto, itself, and
-$\mathbf{b} \in \mathcal{K}_q$. Small. -/
+Port of `NLAlib.sub_mem_krylovSpace_krylovGrade` (prototype). -/
 theorem mem_krylovSpace_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) {b xs : n → 𝕜}
     (hxs : A *ᵥ xs = b) {q : ℕ} (h : krylovGrade A b ≤ q) : xs ∈ krylovSpace A b q := by
-  sorry
+  set K := krylovSpace A b q
+  have hbK : b ∈ K := by
+    simpa using pow_mulVec_mem_of_pow_mulVec_mem (krylovGrade_le_iff.1 h) 0
+  let f : K →ₗ[𝕜] K := A.mulVecLin.restrict fun x hx =>
+    mulVec_mem_krylovSpace_of_krylovGrade_le h hx
+  have hinjA : Function.Injective A.mulVec := Matrix.mulVec_injective_iff_isUnit.2 hA
+  have hinj : Function.Injective f := fun x y hxy =>
+    Subtype.ext (hinjA (congrArg Subtype.val hxy))
+  obtain ⟨y, hy⟩ := (LinearMap.injective_iff_surjective.1 hinj) ⟨b, hbK⟩
+  have hy' : A *ᵥ (y : n → 𝕜) = A *ᵥ xs := by
+    rw [hxs]
+    exact congrArg Subtype.val hy
+  rw [← hinjA hy']
+  exact y.2
+
+/-- **The grade of a vector in $\mathbf{A}\mathcal{K}_k$**: if $\mathbf{c} = \mathbf{A}\mathbf{y}$
+with $\mathbf{y} \in \mathcal{K}_k(\mathbf{A}, \mathbf{c})$, then the grade $\nu$ of
+$\mathbf{c}$ is at most $k$, for every $\mathbf{A}$: then
+$\mathcal{K}_{k+1} \subseteq \mathbf{A}\mathcal{K}_k$ has dimension at most that of
+$\mathcal{K}_k$. It is the converse of `NLAlib.mem_krylovSpace_of_krylovGrade_le`, without
+invertibility; conjugate gradients use it to stop at the grade. -/
+theorem krylovGrade_le_of_mem_of_mulVec_eq {A : Matrix n n 𝕜} {c y : n → 𝕜} {k : ℕ}
+    (hy : y ∈ krylovSpace A c k) (hAy : A *ᵥ y = c) : krylovGrade A c ≤ k := by
+  have hle : krylovSpace A c (k + 1) ≤ (krylovSpace A c k).map A.mulVecLin := by
+    rw [krylovSpace_eq_span A c (k + 1)]
+    refine Submodule.span_le.2 ?_
+    rintro _ ⟨⟨j, hj⟩, rfl⟩
+    rcases j with _ | i
+    · exact ⟨y, hy, by simp [hAy]⟩
+    · refine ⟨A ^ i *ᵥ c, pow_mulVec_mem_krylovSpace A c (by omega), ?_⟩
+      simp [Matrix.mulVec_mulVec, pow_succ']
+  have h := (Submodule.finrank_mono hle).trans (Submodule.finrank_map_le A.mulVecLin _)
+  rw [finrank_krylovSpace, finrank_krylovSpace] at h
+  omega
 
 end NLAlib

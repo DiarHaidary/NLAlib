@@ -82,7 +82,8 @@ theorem cgIterate_mem_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : �
 /-- The zeroth iterate is zero. -/
 @[simp]
 theorem cgIterate_zero (A : Matrix n n 𝕜) (b : n → 𝕜) : cgIterate A b 0 = 0 := by
-  sorry
+  have h := cgIterate_mem_krylovSpace A b 0
+  rwa [krylovSpace_zero, Submodule.mem_bot] at h
 
 /-- **CG in any orthonormal basis of the Krylov space**, for every $\mathbf{A}$:
 $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, q) =
@@ -91,7 +92,8 @@ theorem HasOrthonormalCols.cgIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonorm
     {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) :
     cgIterate A b q = Q *ᵥ (pinv (Qᴴ * A * Q) *ᵥ (Qᴴ *ᵥ b)) := by
-  sorry
+  rw [cgIterate, hQ.galerkinInverse_eq hK A, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec,
+    Matrix.mul_assoc]
 
 /-- **CG is
 $\mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})^{-1}\mathbf{Q}^{\mathsf{H}}\mathbf{b}$
@@ -102,7 +104,8 @@ theorem _root_.Matrix.PosDef.cgIterate_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
     {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q) {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) :
     cgIterate A b q = Q *ᵥ ((Qᴴ * A * Q)⁻¹ *ᵥ (Qᴴ *ᵥ b)) := by
-  sorry
+  rw [cgIterate, hA.galerkinInverse_eq hQ hK, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec,
+    Matrix.mul_assoc]
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The Galerkin condition**: for positive definite $\mathbf{A}$ the residual
@@ -113,7 +116,10 @@ $\mathbf{K}_q^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\,\mathsf{cgIterate}(\mathbf{A
 theorem _root_.Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIterate_eq_zero
     {A : Matrix n n 𝕜} (hA : A.PosDef) (b : n → 𝕜) (q : ℕ) :
     (krylovMatrix A b q)ᴴ *ᵥ (b - A *ᵥ cgIterate A b q) = 0 := by
-  sorry
+  have h := congrArg (· *ᵥ b)
+    (hA.conjTranspose_mul_one_sub_mul_galerkinInverse (krylovMatrix A b q))
+  simpa only [Matrix.mul_sub, Matrix.mul_one, Matrix.sub_mulVec, ← Matrix.mulVec_mulVec,
+    Matrix.zero_mulVec, Matrix.mulVec_sub, cgIterate] using h
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The Galerkin condition characterises CG**: for positive definite $\mathbf{A}$, a vector of
@@ -141,41 +147,58 @@ omit [Fintype r] [DecidableEq r] in
 /-- **The CG error polynomial**: for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ there is
 $p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ such that
 $\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, q) = p(\mathbf{A})\mathbf{x}_\star$.
-No assumption on $\mathbf{A}$. [Saad2003, §6.11.3].
-Proof: `cgIterate_mem_krylovSpace` and `mem_krylovSpace_iff` give $s$; take $p = 1 - Xs$. Small. -/
+No assumption on $\mathbf{A}$. [Saad2003, §6.11.3]. -/
 theorem exists_sub_cgIterate_eq_aeval {A : Matrix n n 𝕜} {b xs : n → 𝕜} (hxs : A *ᵥ xs = b)
     (q : ℕ) : ∃ p : 𝕜[X], p.degree ≤ q ∧ p.eval 0 = 1 ∧
       xs - cgIterate A b q = aeval A p *ᵥ xs := by
-  sorry
+  obtain ⟨s, hs, hsb⟩ := mem_krylovSpace_iff.1 (cgIterate_mem_krylovSpace A b q)
+  refine ⟨1 - s * X, ?_, by simp, ?_⟩
+  · rcases eq_or_ne s 0 with rfl | h0
+    · simp only [zero_mul, sub_zero]
+      exact degree_one_le.trans (by exact_mod_cast Nat.zero_le q)
+    · have hnat : s.natDegree < q := (natDegree_lt_iff_degree_lt h0).2 hs
+      refine degree_le_of_natDegree_le ((natDegree_sub_le _ _).trans (max_le ?_ ?_))
+      · rw [natDegree_one]
+        exact Nat.zero_le q
+      · exact natDegree_mul_le.trans (by rw [natDegree_X]; omega)
+  · rw [← hsb, ← hxs, map_sub, map_one, map_mul, aeval_X, Matrix.sub_mulVec, Matrix.one_mulVec,
+      Matrix.mulVec_mulVec]
 
 omit [Fintype r] [DecidableEq r] in
 /-- **CG beats every residual polynomial**: for positive definite $\mathbf{A}$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and every real $p$ with $\deg p \le q$, $p(0) = 1$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, q)\|_{\mathbf{A}}^2 \le
-\|p(\mathbf{A})\mathbf{x}_\star\|_{\mathbf{A}}^2 \,.$$ [Saad2003, §6.11.3].
-Proof: `Polynomial.exists_degree_lt_one_sub_eq_X_mul_of_eval_zero_eq_one`, then
-`aeval_mulVec_mem_krylovSpace` and `Matrix.PosDef.isMinOn_cgIterate`. Small. -/
+\|p(\mathbf{A})\mathbf{x}_\star\|_{\mathbf{A}}^2 \,.$$ [Saad2003, §6.11.3]. -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_re_quadForm_aeval {A : Matrix n n 𝕜}
     (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) {q : ℕ} {p : ℝ[X]}
     (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
     RCLike.re (quadForm A (xs - cgIterate A b q)) ≤
       RCLike.re (quadForm A (aeval A p *ᵥ xs)) := by
-  sorry
+  obtain ⟨s, hs, hps⟩ := exists_degree_lt_one_sub_eq_X_mul_of_eval_zero_eq_one hp hp₀
+  have hy : aeval A s *ᵥ b ∈ krylovSpace A b q := aeval_mulVec_mem_krylovSpace A b hs
+  have hp' : p = 1 - s * X := by rw [mul_comm, ← hps, sub_sub_cancel]
+  have heq : xs - aeval A s *ᵥ b = aeval A p *ᵥ xs := by
+    rw [hp', ← hxs, map_sub, map_one, map_mul, aeval_X, Matrix.sub_mulVec, Matrix.one_mulVec,
+      Matrix.mulVec_mulVec]
+  have h : RCLike.re (quadForm A (xs - cgIterate A b q)) ≤
+      RCLike.re (quadForm A (xs - aeval A s *ᵥ b)) := hA.isMinOn_cgIterate hxs q hy
+  rwa [heq] at h
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The polynomial bound for CG**: if $\mathbf{A}$ is positive definite with spectrum in a set
 $s$, $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, and a real $p$ with $\deg p \le q$, $p(0) = 1$
 satisfies $\lvert p \rvert \le M$ on $s$, then
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, q)\|_{\mathbf{A}}^2 \le
-M^2 \|\mathbf{x}_\star\|_{\mathbf{A}}^2 \,.$$ [Saad2003, §6.11.3].
-Proof: the comparison theorem, then `Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le` with
-weight $X$ on the spectrum. Small. -/
+M^2 \|\mathbf{x}_\star\|_{\mathbf{A}}^2 \,.$$ [Saad2003, §6.11.3]. -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le {A : Matrix n n 𝕜} (hA : A.PosDef)
     {s : Set ℝ} (hs : spectrum ℝ A ⊆ s) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) {q : ℕ}
     {p : ℝ[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) {M : ℝ}
     (hM : ∀ x ∈ s, |p.eval x| ≤ M) :
     RCLike.re (quadForm A (xs - cgIterate A b q)) ≤ M ^ 2 * RCLike.re (quadForm A xs) := by
-  sorry
+  refine (hA.re_quadForm_sub_cgIterate_le_re_quadForm_aeval hxs hp hp₀).trans ?_
+  have h := hA.isHermitian.re_quadForm_aeval_aeval_mulVec_le subset_rfl X p
+    (fun x hx => by rw [eval_X]; exact (hA.spectrum_subset_Ioi hx).le) (fun x hx => hM x (hs hx)) xs
+  rwa [aeval_X] at h
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The Chebyshev bound for CG**: if $\mathbf{A}$ is Hermitian with spectrum in $[a, a']$,
@@ -188,9 +211,6 @@ A Loewner sandwich $a\mathbf{I} \preceq \mathbf{A} \preceq a'\mathbf{I}$ gives t
 [Saad2003, Theorem 6.29]; stated there for the $\mathbf{A}$-norm itself, here squared, over any
 `RCLike` field and with an interval $[a, a']$ containing the spectrum in place of the extreme
 eigenvalues.
-Proof: for $a < a'$ the polynomial bound at `chebyshevResidual a a' q`
-(`isUniformApproxOn_chebyshevResidual_two_mul_pow`); for $a = a'$ at $1 - X/a$; for $a' < a$ the
-index type is empty. Small.
 Result: cg-chebyshev-bound -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_two_mul_pow {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a')
@@ -198,21 +218,63 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_two_mul_pow {A : 
     RCLike.re (quadForm A (xs - cgIterate A b q)) ≤
       (2 * ((Real.sqrt a' - Real.sqrt a) / (Real.sqrt a' + Real.sqrt a)) ^ q) ^ 2 *
         RCLike.re (quadForm A xs) := by
-  sorry
+  have hpd : A.PosDef := hA.posDef_iff_eigenvalue_pos.mpr fun k hk =>
+    ha.trans_le (hA.spectrum_subset_iff.mp hs k hk).1
+  rcases lt_trichotomy a a' with hlt | rfl | hgt
+  · refine hpd.re_quadForm_sub_cgIterate_le hs hxs (degree_chebyshevResidual_le a a' q)
+      (eval_chebyshevResidual_zero q ha hlt) fun x hx => ?_
+    have h := (isUniformApproxOn_chebyshevResidual_two_mul_pow q ha hlt) x hx
+    rwa [Real.dist_eq, sub_zero] at h
+  · rcases Nat.eq_zero_or_pos q with rfl | hq
+    · refine hpd.re_quadForm_sub_cgIterate_le hs hxs (p := 1) (by
+        exact degree_one_le.trans le_rfl) (by simp) fun x _ => ?_
+      norm_num
+    · refine hpd.re_quadForm_sub_cgIterate_le hs hxs (p := 1 - C a⁻¹ * X) ?_ (by simp)
+        fun x hx => ?_
+      · refine (degree_sub_le _ _).trans (max_le (degree_one_le.trans ?_) ?_)
+        · exact_mod_cast Nat.zero_le q
+        · exact (degree_C_mul_X_le _).trans (by exact_mod_cast hq)
+      · rw [Set.Icc_self, Set.mem_singleton_iff] at hx
+        subst hx
+        simp [ha.ne', zero_pow hq.ne']
+  · refine hpd.re_quadForm_sub_cgIterate_le hs hxs (p := 1) (degree_one_le.trans (by
+      exact_mod_cast Nat.zero_le q)) (by simp) fun x hx => ?_
+    exact absurd (hx.1.trans hx.2) (not_le.mpr hgt)
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The Chebyshev bound in the condition number**: for positive definite $\mathbf{A}$ with
 $\kappa = \kappa(\mathbf{A})$ and $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, q)\|_{\mathbf{A}}^2 \le
 \Bigl(2\Bigl(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\Bigr)^q\Bigr)^2
-\|\mathbf{x}_\star\|_{\mathbf{A}}^2 \,.$$ [Saad2003, (6.128)].
-Proof: the rate at the extreme eigenvalues and `Matrix.PosDef.pseudoConditionNumber_eq`. Small. -/
+\|\mathbf{x}_\star\|_{\mathbf{A}}^2 \,.$$ [Saad2003, (6.128)]. -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_two_mul_pow_pseudoConditionNumber
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (q : ℕ) :
     RCLike.re (quadForm A (xs - cgIterate A b q)) ≤
       (2 * ((Real.sqrt (pseudoConditionNumber A) - 1) /
         (Real.sqrt (pseudoConditionNumber A) + 1)) ^ q) ^ 2 * RCLike.re (quadForm A xs) := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · simp [quadForm_eq_sum]
+  obtain ⟨k, hk⟩ : ∃ k, k + 1 = Fintype.card n := ⟨Fintype.card n - 1, by
+    have := Fintype.card_pos (α := n)
+    omega⟩
+  have hpos : 0 < eigenvalue A k :=
+    hA.isHermitian.posDef_iff_eigenvalue_pos.mp hA k (by omega)
+  have hs : spectrum ℝ A ⊆ Set.Icc (eigenvalue A k) (eigenvalue A 0) := by
+    rw [hA.isHermitian.spectrum_subset_iff]
+    intro i hi
+    exact ⟨hA.isHermitian.eigenvalue_le_eigenvalue (by omega) (by omega),
+      hA.isHermitian.eigenvalue_le_eigenvalue (Nat.zero_le i) hi⟩
+  have h := hA.isHermitian.re_quadForm_sub_cgIterate_le_two_mul_pow hpos hs hxs q
+  have hl0 : 0 < eigenvalue A 0 :=
+    hpos.trans_le (hA.isHermitian.eigenvalue_le_eigenvalue (Nat.zero_le k) (by omega))
+  have hκ : (Real.sqrt (pseudoConditionNumber A) - 1) / (Real.sqrt (pseudoConditionNumber A) + 1) =
+      (Real.sqrt (eigenvalue A 0) - Real.sqrt (eigenvalue A k)) /
+        (Real.sqrt (eigenvalue A 0) + Real.sqrt (eigenvalue A k)) := by
+    have hsk := Real.sqrt_pos.2 hpos
+    have hs0 := Real.sqrt_pos.2 hl0
+    rw [hA.pseudoConditionNumber_eq hk, Real.sqrt_div' _ hpos.le]
+    field_simp
+  rwa [hκ]
 
 omit [Fintype r] [DecidableEq r] in
 /-- **Finite termination**: for positive definite $\mathbf{A}$, CG reaches the solution once $q$

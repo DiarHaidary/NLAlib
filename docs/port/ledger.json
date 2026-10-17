@@ -10542,6 +10542,10 @@
   "new": "NLAlib.cfc_mul_mul_conjTranspose",
   "stage": "M8"
  },
+ "NLAlib.cgRecurrence_r_eq": {
+  "new": "NLAlib.cgState_r_eq",
+  "stage": "K0"
+ },
  "NLAlib.cgf_const_mul": {
   "new": null,
   "note": "Mathlib ProbabilityTheory.mgf_const_mul, unfolding cgf",
@@ -13610,6 +13614,10 @@
  "NLAlib.finrank_ker_toBlock_eq_finrank_ker_inverse_complement": {
   "new": "Matrix.finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not",
   "stage": "M1"
+ },
+ "NLAlib.finrank_krylovSpace": {
+  "new": "NLAlib.finrank_krylovSpace",
+  "stage": "K0"
  },
  "NLAlib.finrank_le_card_eigenvalues₀_nonneg": {
   "new": null,
@@ -18616,6 +18624,15 @@
   "note": "added at the follow-up pass",
   "stage": "M9"
  },
+ "NLAlib.krylovGrade_le_of_pow_mulVec_mem": {
+  "new": "NLAlib.krylovGrade_le_iff",
+  "note": "proof ported; merged into the iff",
+  "stage": "K0"
+ },
+ "NLAlib.krylovSpace_succ": {
+  "new": "NLAlib.krylovSpace_succ",
+  "stage": "K0"
+ },
  "NLAlib.kyFanInvariantNorm": {
   "new": "NLAlib.kyFanGauge_matrixNorm",
   "stage": "M3b"
@@ -18988,6 +19005,10 @@
   "new": null,
   "note": "the dot product of the uncurried matrix",
   "stage": "R1"
+ },
+ "NLAlib.linearIndependent_pow_mulVec_iff_le_krylovGrade": {
+  "new": "NLAlib.krylovMatrix_mulVec_injective_iff",
+  "stage": "K0"
  },
  "NLAlib.linearIndependent_real_imag_of_nonreal_eigen_equations": {
   "new": null,
@@ -20133,6 +20154,10 @@
   "note": "object not reproduced: gershgorinRowUnion, §7.5; for ⋃ i ∈ I it is Set.mem_biUnion",
   "stage": "M10"
  },
+ "NLAlib.mem_krylovSpace_iff": {
+  "new": "NLAlib.mem_krylovSpace_iff",
+  "stage": "K0"
+ },
  "NLAlib.mem_span_of_gramSchmidtResidual_eq_zero": {
   "new": "NLAlib.gramSchmidtR_apply_self_eq_zero_iff",
   "note": "forward direction",
@@ -20443,6 +20468,10 @@
  "NLAlib.mulVec_injective_of_rank_eq_card": {
   "new": "NLAlib.mulVec_injective_iff_rank_eq",
   "stage": "M6"
+ },
+ "NLAlib.mulVec_mem_krylovSpace_succ": {
+  "new": "NLAlib.mulVec_mem_krylovSpace_succ",
+  "stage": "K0"
  },
  "NLAlib.mulVec_moorePenroseInverse_mulVec_ne_zero": {
   "new": null,
@@ -21853,6 +21882,11 @@
  "NLAlib.pow_div_two_le_eval_T_real": {
   "new": "Polynomial.Chebyshev.pow_div_two_le_eval_T_real",
   "stage": "Poly0"
+ },
+ "NLAlib.pow_mulVec_notMem_krylovSpace_of_lt_krylovGrade": {
+  "new": "NLAlib.krylovGrade_le_iff",
+  "note": "proof ported; merged into the iff",
+  "stage": "K0"
  },
  "NLAlib.pow_mul_eq_mul_pow_of_mul_eq": {
   "new": "NLAlib.pow_mul_eq_mul_pow_of_mul_eq_mul",
@@ -24645,6 +24679,10 @@
   "new": null,
   "note": "private gramErr_eq",
   "stage": "S1"
+ },
+ "NLAlib.sub_mem_krylovSpace_krylovGrade": {
+  "new": "NLAlib.mem_krylovSpace_of_krylovGrade_le",
+  "stage": "K0"
  },
  "NLAlib.sub_mul_max_le_max_of_coupled": {
   "new": null,

@@ -192,7 +192,7 @@ private theorem memLp_mul_of_indepFun {f g : Ω → 𝕜} (hfg : IndepFun f g μ
 omit [Fintype l] [Fintype n] [Fintype p] [DecidableEq n] in
 /-- The entries of $\mathbf{B}^{\mathsf{H}}\mathbf{M}\mathbf{B}$, with the middle factor kept
 intact. -/
-private theorem conjTranspose_mul_mul_apply (B : Matrix k n 𝕜) (M : Matrix k k 𝕜) (i j : n) :
+private theorem conjTranspose_mul_mul_apply_eq_sum (B : Matrix k n 𝕜) (M : Matrix k k 𝕜) (i j : n) :
     (Bᴴ * M * B) i j = ∑ b, ∑ a, M a b * (star (B a i) * B b j) := by
   simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Finset.sum_mul]
   exact Finset.sum_congr rfl fun b _ => Finset.sum_congr rfl fun a _ => by ring
@@ -229,7 +229,7 @@ theorem IsIsotropicSketch.mul [DecidableEq k] {S₂ : Ω → Matrix l k 𝕜}
   rw [Matrix.integral_apply (Matrix.integrable_iff.1 hT)]
   have e (ω : Ω) : ((S₂ ω * S ω)ᴴ * (S₂ ω * S ω)) i j =
       ∑ b, ∑ a, ((S₂ ω)ᴴ * S₂ ω) a b * (star (S ω a i) * S ω b j) := by
-    rw [← conjTranspose_mul_mul_apply, Matrix.conjTranspose_mul]
+    rw [← conjTranspose_mul_mul_apply_eq_sum, Matrix.conjTranspose_mul]
     simp only [Matrix.mul_assoc]
   have hind' (a b : k) : IndepFun (fun ω => ((S₂ ω)ᴴ * S₂ ω) a b)
       (fun ω => star (S ω a i) * S ω b j) μ := hind.comp

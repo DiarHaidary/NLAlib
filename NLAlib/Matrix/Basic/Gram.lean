@@ -18,8 +18,10 @@ The Gram matrix of $\mathbf{A}$ is $\mathbf{A}^{\mathsf{H}}\mathbf{A}$; it has n
 its own. Mathlib has its positive
 semidefiniteness (`Matrix.posSemidef_conjTranspose_mul_self`), rank
 (`Matrix.rank_conjTranspose_mul_self`) and kernel (`Matrix.ker_mulVecLin_conjTranspose_mul_self`).
-This file adds the characterisations of invertibility, and two identities for a matrix scaled as
-a sketch: its action on a vector row by row, and its Gram matrix.
+This file adds the entries of $\mathbf{A}^{\mathsf{H}}\mathbf{B}$, of the Gram matrix and of a
+compression $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ as pairings of columns, the
+characterisations of invertibility, and two identities for a matrix scaled as a sketch: its action
+on a vector row by row, and its Gram matrix.
 
 "Full column rank" is spelled `Function.Injective A.mulVec` throughout the library, the
 hypothesis of Mathlib's `Matrix.PosDef.conjTranspose_mul_self`. The equivalent forms
@@ -27,6 +29,8 @@ hypothesis of Mathlib's `Matrix.PosDef.conjTranspose_mul_self`. The equivalent f
 
 ## Main results
 
+* `NLAlib.conjTranspose_mul_apply`, `NLAlib.conjTranspose_mul_self_apply`,
+  `NLAlib.conjTranspose_mul_mul_apply`: entries as pairings of columns.
 * `NLAlib.isUnit_conjTranspose_mul_self_iff`: $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ is invertible iff
   $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective.
 * `NLAlib.mulVec_injective_iff_rank_eq`: $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective iff
@@ -49,13 +53,30 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*}
 
+/-- An entry of $\mathbf{A}^{\mathsf{H}}\mathbf{B}$ is the pairing of a column of $\mathbf{A}$
+with a column of $\mathbf{B}$:
+$(\mathbf{A}^{\mathsf{H}}\mathbf{B})_{i,j} = \mathbf{a}_i^{\mathsf{H}}\mathbf{b}_j$, with
+$\mathbf{a}_i$ column $i$ of $\mathbf{A}$ and $\mathbf{b}_j$ column $j$ of $\mathbf{B}$. -/
+theorem conjTranspose_mul_apply {p : Type*} [Fintype m] (A : Matrix m n 𝕜) (B : Matrix m p 𝕜)
+    (i : n) (j : p) : (Aᴴ * B) i j = star (A.col i) ⬝ᵥ B.col j := by
+  simp only [Matrix.mul_apply, dotProduct, Matrix.conjTranspose_apply, Matrix.col_apply,
+    Pi.star_apply]
+
 /-- An entry of the Gram matrix is the pairing of two columns of $\mathbf{A}$:
 $(\mathbf{A}^{\mathsf{H}}\mathbf{A})_{i,j} = \mathbf{a}_i^{\mathsf{H}}\mathbf{a}_j$, with
 $\mathbf{a}_i$ column $i$ of $\mathbf{A}$. -/
 theorem conjTranspose_mul_self_apply [Fintype m] (A : Matrix m n 𝕜) (i j : n) :
-    (Aᴴ * A) i j = star (A.col i) ⬝ᵥ A.col j := by
-  simp only [Matrix.mul_apply, dotProduct, Matrix.conjTranspose_apply, Matrix.col_apply,
-    Pi.star_apply]
+    (Aᴴ * A) i j = star (A.col i) ⬝ᵥ A.col j :=
+  conjTranspose_mul_apply A A i j
+
+/-- An entry of the compression $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is the form of
+$\mathbf{A}$ on two columns of $\mathbf{Q}$,
+$(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})_{i,j} =
+\mathbf{q}_i^{\mathsf{H}}\mathbf{A}\mathbf{q}_j$, with $\mathbf{q}_i$ column $i$ of $\mathbf{Q}$. -/
+theorem conjTranspose_mul_mul_apply [Fintype m] (Q : Matrix m n 𝕜) (A : Matrix m m 𝕜)
+    (i j : n) : (Qᴴ * A * Q) i j = star (Q.col i) ⬝ᵥ (A *ᵥ Q.col j) := by
+  rw [Matrix.mul_assoc, conjTranspose_mul_apply]
+  rfl
 
 /-- $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ is Mathlib's `Matrix.gram` of the columns of $\mathbf{A}$
 in `EuclideanSpace 𝕜 m`. -/
