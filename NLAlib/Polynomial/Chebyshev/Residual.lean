@@ -9,6 +9,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshe
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
+public import Mathlib.Topology.Algebra.Polynomial
 
 /-!
 # Normalized Chebyshev residuals
@@ -24,6 +25,11 @@ Degree and error remain separate, so the same metric approximation interface ser
 * `NLAlib.isUniformApproxOn_chebyshevResidual`: the reciprocal-Chebyshev error bound.
 * `NLAlib.isUniformApproxOn_chebyshevResidual_two_mul_pow`: geometric decay.
 * `NLAlib.isLeast_chebyshev_minimax`: exact optimality among normalized residuals.
+* `NLAlib.residualMinimax`: the residual minimax value of a set, with
+  `NLAlib.residualMinimax_le` and its Chebyshev value on an interval,
+  `NLAlib.residualMinimax_Icc`.
+* `NLAlib.exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow`: a residual polynomial that
+  kills finitely many outliers and decays at the Chebyshev rate on an interval.
 -/
 
 @[expose] public section
@@ -192,5 +198,127 @@ theorem isLeast_chebyshev_minimax {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a < 
   ⟨⟨chebyshevResidual a b q, degree_chebyshevResidual_le a b q,
       eval_chebyshevResidual_zero q ha hab, isUniformApproxOn_chebyshevResidual q ha hab⟩,
     fun _ ⟨_, hp, hp0, hb⟩ => inv_eval_T_real_le_of_isUniformApproxOn ha hab hp hp0 hb⟩
+
+/-! ### The residual minimax value -/
+
+/-- The **residual minimax value** of a set $s$ at degree $q$:
+$\mathsf{residualMinimax}(s, q) := \inf_{p}\,\sup_{x \in s}\lvert p(x) \rvert$ over real $p$ with
+$\deg p \le q$ and $p(0) = 1$. Junk values: $0$ for $s = \emptyset$; for unbounded $s$ and
+$q \ge 1$ every nonconstant $\lvert p \rvert$ is unbounded on $s$ and its supremum is $0$
+(Mathlib's `Real.iSup` of an unbounded family), so the value is $0$; at $q = 0$ it is $1$ on any
+nonempty $s$. It is meaningful for bounded $s$, in particular a finite spectrum and $[a, a']$.
+[Greenbaum1997, §3.1]; locator to verify. -/
+noncomputable def residualMinimax (s : Set ℝ) (q : ℕ) : ℝ :=
+  ⨅ p : {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1}, ⨆ x ∈ s, |p.1.eval x|
+
+/-- The residual minimax value is nonnegative. -/
+theorem residualMinimax_nonneg (s : Set ℝ) (q : ℕ) : 0 ≤ residualMinimax s q :=
+  Real.iInf_nonneg fun _ => Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
+
+/-- **Every residual polynomial bounds the minimax value**: if $\deg p \le q$, $p(0) = 1$ and
+$\lvert p \rvert \le \eta$ on $s$ with $0 \le \eta$, then $\mathsf{residualMinimax}(s, q) \le
+\eta$. -/
+theorem residualMinimax_le {s : Set ℝ} {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1)
+    {η : ℝ} (hη₀ : 0 ≤ η) (hη : ∀ x ∈ s, |p.eval x| ≤ η) : residualMinimax s q ≤ η := by
+  refine (ciInf_le ⟨0, ?_⟩ (⟨p, hp, hp₀⟩ : {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1})).trans ?_
+  · rintro _ ⟨p, rfl⟩
+    exact Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
+  · exact Real.iSup_le (fun x => Real.iSup_le (fun hx => hη x hx) hη₀) hη₀
+
+/-- **The minimax value of an interval is the Chebyshev value**: for $0 < a < a'$,
+$\mathsf{residualMinimax}([a, a'], q) = T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1}$.
+[Saad2003, Theorem 6.25]. -/
+theorem residualMinimax_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
+    residualMinimax (Set.Icc a a') q = ((T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)))⁻¹ := by
+  have hT : 0 ≤ ((T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)))⁻¹ :=
+    inv_nonneg.mpr ((zero_le_one).trans (one_le_eval_T_real (q : ℤ) (by
+      rw [le_div_iff₀ (by linarith)]
+      linarith)))
+  refine le_antisymm (residualMinimax_le (degree_chebyshevResidual_le a a' q)
+    (eval_chebyshevResidual_zero q ha haa) hT fun x hx => ?_) ?_
+  · have h := isUniformApproxOn_chebyshevResidual q ha haa x hx
+    rwa [Real.dist_eq, sub_zero] at h
+  · have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} :=
+      ⟨⟨1, degree_one_le.trans (by exact_mod_cast Nat.zero_le q), eval_one⟩⟩
+    refine le_ciInf fun ⟨p, hp, hp₀⟩ => inv_eval_T_real_le_of_isUniformApproxOn ha haa hp hp₀ ?_
+    intro x hx
+    rw [Real.dist_eq, sub_zero]
+    obtain ⟨M, hM⟩ := (isCompact_Icc.image (Polynomial.continuous p).abs).bddAbove
+    refine le_ciSup₂ (f := fun x (_ : x ∈ Set.Icc a a') => |p.eval x|) ⟨M, fun z hz => ?_⟩ x hx
+    simp only [Set.mem_iUnion, Set.mem_range] at hz
+    obtain ⟨y, hy, rfl⟩ := hz
+    exact hM ⟨y, hy, rfl⟩
+
+/-! ### Killing outliers -/
+
+/-- The polynomial $\prod_{t \in T}(1 - X/t)$: value $1$ at $0$, zero at every nonzero
+$t \in T$, degree at most $\lvert T \rvert$. -/
+private lemma exists_outlierPolynomial (T : Finset ℝ) :
+    ∃ P : ℝ[X], P.natDegree ≤ T.card ∧ P.eval 0 = 1 ∧ (∀ t ∈ T, t ≠ 0 → P.eval t = 0) ∧
+      ∀ x, P.eval x = ∏ t ∈ T, (1 - x / t) := by
+  refine ⟨∏ t ∈ T, (1 - C t⁻¹ * X), ?_, ?_, fun t ht ht0 => ?_, fun x => ?_⟩
+  · refine (natDegree_prod_le _ _).trans ?_
+    refine (Finset.sum_le_card_nsmul _ _ 1 fun t _ => ?_).trans (by rw [smul_eq_mul, mul_one])
+    refine (natDegree_sub_le _ _).trans (max_le (by rw [natDegree_one]; exact zero_le_one) ?_)
+    exact (natDegree_C_mul_le _ _).trans (by rw [natDegree_X])
+  · simp only [eval_prod, eval_sub, eval_one, eval_mul, eval_C, eval_X, mul_zero, sub_zero,
+      Finset.prod_const_one]
+  · rw [eval_prod]
+    refine Finset.prod_eq_zero ht ?_
+    simp only [eval_sub, eval_one, eval_mul, eval_C, eval_X, inv_mul_cancel₀ ht0, sub_self]
+  · simp only [eval_prod, eval_sub, eval_one, eval_mul, eval_C, eval_X, div_eq_inv_mul]
+
+/-- **Killing outliers with a Chebyshev residual**: for $0 < a$, a finite set $T$ of reals and
+$\lvert\prod_{t \in T}(1 - x/t)\rvert \le C$ on $[a, a']$, there is a real polynomial $p$ with
+$\deg p \le \lvert T \rvert + d$, $p(0) = 1$, $p(t) = 0$ for every nonzero $t \in T$, and
+$$\lvert p(x) \rvert \le 2C\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^d
+\quad (x \in [a, a']) \,.$$
+For $a < a'$ it is $\prod_{t \in T}(1 - X/t)$ times `chebyshevResidual a a' d`; for $a = a'$ the
+second factor is $(1 - X/a)^d$; for $a' < a$ the interval is empty and the product alone serves.
+[Greenbaum1997, §3.1]; locator to verify. -/
+theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow {a a' : ℝ} (ha : 0 < a)
+    (T : Finset ℝ) (d : ℕ) {C : ℝ} (hC : ∀ x ∈ Set.Icc a a', |∏ t ∈ T, (1 - x / t)| ≤ C) :
+    ∃ p : ℝ[X], p.degree ≤ ↑(T.card + d) ∧ p.eval 0 = 1 ∧ (∀ t ∈ T, t ≠ 0 → p.eval t = 0) ∧
+      ∀ x ∈ Set.Icc a a',
+        |p.eval x| ≤ 2 * C * ((Real.sqrt (a' / a) - 1) / (Real.sqrt (a' / a) + 1)) ^ d := by
+  obtain ⟨P, hPd, hP₀, hPT, hPe⟩ := exists_outlierPolynomial T
+  rcases lt_trichotomy a a' with hlt | rfl | hgt
+  · refine ⟨P * chebyshevResidual a a' d, ?_, ?_, fun t ht ht0 => ?_, fun x hx => ?_⟩
+    · refine degree_le_of_natDegree_le (natDegree_mul_le.trans (Nat.add_le_add hPd ?_))
+      exact natDegree_le_iff_degree_le.mpr (degree_chebyshevResidual_le a a' d)
+    · rw [eval_mul, hP₀, eval_chebyshevResidual_zero d ha hlt, mul_one]
+    · rw [eval_mul, hPT t ht ht0, zero_mul]
+    · have hC0 : 0 ≤ C := (abs_nonneg _).trans (hC x hx)
+      have hr := isUniformApproxOn_chebyshevResidual_two_mul_pow d ha hlt x hx
+      rw [Real.dist_eq, sub_zero] at hr
+      have hρ : (Real.sqrt a' - Real.sqrt a) / (Real.sqrt a' + Real.sqrt a) =
+          (Real.sqrt (a' / a) - 1) / (Real.sqrt (a' / a) + 1) := by
+        have hsa := Real.sqrt_pos.2 ha
+        rw [Real.sqrt_div' _ ha.le]
+        field_simp
+      rw [hρ] at hr
+      rw [eval_mul, abs_mul, hPe, mul_assoc, mul_left_comm]
+      exact mul_le_mul (hC x hx) hr (abs_nonneg _) hC0
+  · refine ⟨P * (1 - Polynomial.C a⁻¹ * X) ^ d, ?_, ?_, fun t ht ht0 => ?_, fun x hx => ?_⟩
+    · refine degree_le_of_natDegree_le (natDegree_mul_le.trans (Nat.add_le_add hPd ?_))
+      refine natDegree_pow_le.trans ?_
+      have h1 : (1 - Polynomial.C a⁻¹ * X : ℝ[X]).natDegree ≤ 1 :=
+        (natDegree_sub_le _ _).trans (max_le (by rw [natDegree_one]; exact zero_le_one)
+          ((natDegree_C_mul_le _ _).trans (by rw [natDegree_X])))
+      exact (Nat.mul_le_mul_left d h1).trans_eq (mul_one d)
+    · simp only [eval_mul, hP₀, eval_pow, eval_sub, eval_one, eval_C, eval_X, mul_zero, sub_zero,
+        one_pow, mul_one]
+    · rw [eval_mul, hPT t ht ht0, zero_mul]
+    · rw [Set.Icc_self, Set.mem_singleton_iff] at hx
+      subst hx
+      have hC0 : 0 ≤ C := (abs_nonneg _).trans (hC x (Set.left_mem_Icc.mpr le_rfl))
+      have hP := hC x (Set.left_mem_Icc.mpr le_rfl)
+      rw [div_self ha.ne', Real.sqrt_one, sub_self, zero_div]
+      simp only [eval_mul, eval_pow, eval_sub, eval_one, eval_C, eval_X, inv_mul_cancel₀ ha.ne',
+        sub_self, abs_mul, abs_pow, abs_zero, hPe]
+      exact mul_le_mul_of_nonneg_right (by linarith) (pow_nonneg le_rfl d)
+  · refine ⟨P, degree_le_of_natDegree_le (hPd.trans (Nat.le_add_right _ _)), hP₀, hPT,
+      fun x hx => ?_⟩
+    exact absurd (hx.1.trans hx.2) (not_le.mpr hgt)
 
 end NLAlib

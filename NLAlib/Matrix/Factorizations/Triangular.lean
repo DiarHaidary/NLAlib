@@ -34,6 +34,9 @@ substitution.
 * `Matrix.IsUpperTriangular.inv_apply_self`: the diagonal of the inverse.
 * `NLAlib.IsUnitLowerTriangular.mul`, `.inv`, `.det_eq_one`.
 * `NLAlib.mulVec_forwardSubst`, `NLAlib.mulVec_backSubst`: the substitutions solve the systems.
+* `NLAlib.backSubst_castLE_of_apply_eq_zero`, `NLAlib.backSubst_apply_eq_zero_of_le`: on a matrix
+  whose rows and columns from $r$ on vanish, back substitution is that of the leading
+  $r \times r$ block, extended by zeros.
 -/
 
 @[expose] public section
@@ -497,6 +500,73 @@ theorem backSubst_eq_inv_mulVec {U : Matrix (Fin n) (Fin n) K} (hU : U.IsUpperTr
         rw [Matrix.nonsing_inv_mul U hu, Matrix.one_mulVec]
     _ = U⁻¹ *ᵥ (U *ᵥ backSubst U b) := (Matrix.mulVec_mulVec _ _ _).symm
     _ = U⁻¹ *ᵥ b := by rw [mulVec_backSubst hU hd b]
+
+/-! ### Back substitution past a zero block -/
+
+/-- The entries not yet computed by back substitution are zero: after $k$ steps, entry $i$ with
+$i + k < n$. -/
+private theorem backSubstState_apply_of_add_lt (U : Matrix (Fin n) (Fin n) K) (b : Fin n → K)
+    {k : ℕ} {i : Fin n} (hi : (i : ℕ) + k < n) : backSubstState U b k i = 0 := by
+  rw [backSubstState_eq, Function.comp_apply]
+  exact forwardSubstState_apply_of_le _ _ (by rw [Fin.val_rev]; omega)
+
+/-- **Back substitution past a zero block, the trailing entries**: if $\mathbf{U}_{i,j} = 0$
+whenever $i \ge r$ or $j \ge r$, the entries of $\mathsf{backSubst}(\mathbf{U}, \mathbf{b})$ from
+$r$ on are $0$, for every $\mathbf{b}$: their pivots are zero and Lean's $0^{-1} = 0$. -/
+theorem backSubst_apply_eq_zero_of_le {r : ℕ} {U : Matrix (Fin n) (Fin n) K}
+    (hU : ∀ i j : Fin n, r ≤ (i : ℕ) ∨ r ≤ (j : ℕ) → U i j = 0) (b : Fin n → K) {i : Fin n}
+    (hi : r ≤ (i : ℕ)) : backSubst U b i = 0 := by
+  suffices h : ∀ k, backSubstState U b k i = 0 from h n
+  intro k
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [backSubstState_succ]
+    split_ifs
+    · rw [hU i i (Or.inl hi), div_zero]
+    · exact ih
+
+/-- On a matrix whose rows and columns from $r$ on vanish, steps $n - r$ to $n$ of back
+substitution are the steps of back substitution on the leading $r \times r$ block. -/
+private theorem backSubstState_castLE_of_apply_eq_zero {r : ℕ} (h : r ≤ n)
+    {U : Matrix (Fin n) (Fin n) K}
+    (hU : ∀ i j : Fin n, r ≤ (i : ℕ) ∨ r ≤ (j : ℕ) → U i j = 0) (b : Fin n → K) (k : ℕ)
+    (i : Fin r) :
+    backSubstState U b (n - r + k) (Fin.castLE h i) =
+      backSubstState (U.submatrix (Fin.castLE h) (Fin.castLE h)) (b ∘ Fin.castLE h) k i := by
+  induction k generalizing i with
+  | zero =>
+    rw [backSubstState_apply_of_add_lt U b (by simp only [Fin.val_castLE]; omega)]
+    rfl
+  | succ k ih =>
+    have hsum : ∑ j, U (Fin.castLE h i) j * backSubstState U b (n - r + k) j =
+        ∑ j, U.submatrix (Fin.castLE h) (Fin.castLE h) i j *
+          backSubstState (U.submatrix (Fin.castLE h) (Fin.castLE h)) (b ∘ Fin.castLE h) k j := by
+      refine (Fintype.sum_of_injective (Fin.castLE h) (Fin.castLE_injective h) _ _
+        (fun j hj => ?_) fun j => ?_).symm
+      · have hrj : r ≤ (j : ℕ) := by
+          by_contra hjr
+          exact hj ⟨⟨j, not_le.mp hjr⟩, Fin.ext rfl⟩
+        rw [hU _ _ (Or.inr hrj), zero_mul]
+      · rw [Matrix.submatrix_apply, ih]
+    have hiff : ((Fin.castLE h i : ℕ) + (n - r + k) + 1 = n) ↔ ((i : ℕ) + k + 1 = r) := by
+      simp only [Fin.val_castLE]
+      omega
+    rw [show n - r + (k + 1) = n - r + k + 1 by omega, backSubstState_succ, backSubstState_succ,
+      hsum, ih]
+    simp only [hiff, Matrix.submatrix_apply, Function.comp_apply]
+
+/-- **Back substitution past a zero block, the leading entries**: if $\mathbf{U}_{i,j} = 0$
+whenever $i \ge r$ or $j \ge r$, the first $r$ entries of $\mathsf{backSubst}(\mathbf{U},
+\mathbf{b})$
+are back substitution on the leading $r \times r$ block. Proof: the entries from $r$ on are zero
+(`backSubst_apply_eq_zero_of_le`), so the sums for $i < r$ see the leading block only. -/
+theorem backSubst_castLE_of_apply_eq_zero {r : ℕ} (h : r ≤ n) {U : Matrix (Fin n) (Fin n) K}
+    (hU : ∀ i j : Fin n, r ≤ (i : ℕ) ∨ r ≤ (j : ℕ) → U i j = 0) (b : Fin n → K) (i : Fin r) :
+    backSubst U b (Fin.castLE h i) =
+      backSubst (U.submatrix (Fin.castLE h) (Fin.castLE h)) (b ∘ Fin.castLE h) i := by
+  have hs := backSubstState_castLE_of_apply_eq_zero h hU b r i
+  rwa [Nat.sub_add_cancel h] at hs
 
 end Substitution
 

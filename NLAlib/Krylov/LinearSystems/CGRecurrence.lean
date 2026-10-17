@@ -16,7 +16,8 @@ Breakdown is a value: with $0^{-1} = 0$ a zero residual makes both step sizes ze
 stays at the solution.
 
 The realisation theorem says that for positive definite $\mathbf{A}$ the computed iterates are
-the conjugate gradient iterates `NLAlib.cgIterate`, for every $k$ and with no breakdown
+the conjugate gradient iterates `NLAlib.cgIterate` from the same start, for every $k$ and with no
+breakdown
 hypothesis. Its proof needs only that $\mathbf{x}_k - \mathbf{x}_0$ lies in the Krylov space and
 that the residual is orthogonal to it, through the Galerkin characterisation
 `Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero`.
@@ -336,18 +337,16 @@ theorem _root_.Matrix.PosDef.star_cgState_p_dotProduct_mulVec_eq_zero (hA : A.Po
 
 /-- **The Hestenes–Stiefel iterates are the CG iterates**: for positive definite $\mathbf{A}$ and
 every $k$, with no breakdown hypothesis,
-$\mathbf{x}_k = \mathbf{x}_0 +
-\mathsf{cgIterate}(\mathbf{A}, \mathbf{b} - \mathbf{A}\mathbf{x}_0, k)$.
+$\mathbf{x}_k = \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, k)$.
 [HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1].
 Result: cg-recurrence -/
 theorem _root_.Matrix.PosDef.cgState_x_eq (hA : A.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
-    (cgState A b x₀ k).x = x₀ + cgIterate A (b - A *ᵥ x₀) k := by
-  have h : (krylovMatrix A (b - A *ᵥ x₀) k)ᴴ *ᵥ
-      ((b - A *ᵥ x₀) - A *ᵥ ((cgState A b x₀ k).x - x₀)) = 0 := by
-    rw [← cgState_r_eq_sub]
+    (cgState A b x₀ k).x = cgIterate A b x₀ k := by
+  have h : (krylovMatrix A (b - A *ᵥ x₀) k)ᴴ *ᵥ (b - A *ᵥ (cgState A b x₀ k).x) = 0 := by
+    rw [← cgState_r_eq]
     exact hA.conjTranspose_krylovMatrix_mulVec_cgState_r_eq_zero b x₀ k
-  rw [← hA.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero
-    (cgState_x_sub_mem_krylovSpace A b x₀ k) h, add_sub_cancel]
+  exact hA.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero
+    (cgState_x_sub_mem_krylovSpace A b x₀ k) h
 
 /-- **CG stops exactly at the grade**: for positive definite $\mathbf{A}$ the computed residual
 vanishes iff $k$ is at least the grade of $\mathbf{r}_0$. [Saad2003, §6.7]. -/
@@ -358,10 +357,10 @@ theorem _root_.Matrix.PosDef.cgState_r_eq_zero_iff (hA : A.PosDef) (b x₀ : n �
     rw [cgState_r_eq_sub, sub_eq_zero] at h
     exact krylovGrade_le_of_mem_of_mulVec_eq (cgState_x_sub_mem_krylovSpace A b x₀ k) h.symm
   · intro hν
-    have hxs : A *ᵥ (A⁻¹ *ᵥ (b - A *ᵥ x₀)) = b - A *ᵥ x₀ := by
+    have hxs : A *ᵥ (A⁻¹ *ᵥ b) = b := by
       rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
         hA.isUnit), Matrix.one_mulVec]
-    rw [cgState_r_eq_sub, hA.cgState_x_eq, add_sub_cancel_left,
-      hA.cgIterate_eq_of_krylovGrade_le hxs hν, hxs, sub_self]
+    rw [cgState_r_eq, hA.cgState_x_eq, hA.cgIterate_eq_of_krylovGrade_le hxs x₀ hν, hxs,
+      sub_self]
 
 end NLAlib

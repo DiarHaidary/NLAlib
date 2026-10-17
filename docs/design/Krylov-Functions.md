@@ -275,7 +275,7 @@ named.
 (`lanczosFA A (fun x => x⁻¹) b q = cgIterate A b 0 q`, K1's `cgIterate` from the zero start, every
 Hermitian $\mathbf{A}$, through $0^{-1} = 0$ and `pinv`); `.lanczosFA_inv_add_eq_cgIterate`
 (`cgIterate (A + s • 1) b 0 q`); `lanczosFA_eq_arnoldiMatrix` (every $\mathbf{A}$ and every $q$,
-with no grade hypothesis: stronger than K0's `Matrix.PosDef.cgIterate_eq_arnoldiMatrix` and
+with no grade hypothesis: stronger than K0's `NLAlib.cgIterate_eq_arnoldiMatrix` and
 `cgIterate_eq_lanczosMatrix`, which take `q + 1 ≤ krylovGrade A b` because $\mathbf{T}^{-1}$ fails
 on the padded compression; for $f(\mathbf{T})$ the partial-isometry frame form
 `compressedCfc_eq_of_mul_conjTranspose_mul_self` with
@@ -442,7 +442,8 @@ polynomials of degree at most $q$ of the maximum over the spectrum, relative to 
 error (resp. residual). It shares the machinery of Theorem 2: explicit CG and Lanczos on a
 matrix with few distinct eigenvalues, and discrete minimax duality. Shared lemmas foreseen:
 the Ritz polynomial of a prescribed weighting (given weights $w_i > 0$ on $q + 1$ eigenvalues,
-the $\mathbf{b}$ with $\lvert\mathbf{u}_i^{\mathsf{H}}\mathbf{b}vert^2 = w_i$ and its nodal
+the $\mathbf{b}$ with $\lvert\mathbf{u}_i^{\mathsf{H}}\mathbf{b}
+vert^2 = w_i$ and its nodal
 polynomial, the paper's Lemma 8, with uniqueness of the monic degree-$q$ polynomial
 orthogonal to $\mathcal{K}_q$); Ritz values as Gauss quadrature nodes and weights for the
 discrete spectral measure; divided differences on $q + 1$ nodes and the weighted
@@ -634,7 +635,7 @@ PCG (K8) only through shifted CG. The abstract step: any later near-optimality p
 factored error (the rational case of [Ams+24] in the paper's list). The CG corollaries: K1's
 Euclidean-norm statements for CG may cite `norm_sub_cgIterate_le_mul_norm_sub`, beside K1's
 Chebyshev rate `Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow` (K1's rename of
-K0's `re_quadForm_sub_cgIterate_le_two_mul_pow`, the $\kappa = a'/a$ form).
+K0's `re_quadForm_sub_cgIterate_le_four_mul_pow`, the $\kappa = a'/a$ form).
 
 ## 11. Decisions
 

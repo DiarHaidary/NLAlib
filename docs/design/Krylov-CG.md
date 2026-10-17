@@ -515,3 +515,16 @@ Final counts (public definitions + public theorems; lines):
 | `Krylov/Processes/LanczosRecurrence.lean` | 6 + 3 | 466 |
 | `Krylov/LinearSystems/CGRecurrence.lean` | 3 + 8 | 367 |
 | `Krylov/LinearSystems/CGLanczos.lean` | 0 + 2 | 58 |
+
+## Renamed in K1 (2026-10-17)
+
+K1 checkpoint 1 gave `cgIterate` an initial guess (`cgIterate A b x₀ q`) and renamed:
+`cgIterate_mem_krylovSpace` to `cgIterate_sub_mem_krylovSpace`;
+`Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_two_mul_pow` to
+`Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow` (κ = a'/a form);
+`Matrix.PosDef.re_quadForm_sub_cgIterate_le_two_mul_pow_pseudoConditionNumber` to
+`Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_pow_pseudoConditionNumber`;
+`Matrix.PosDef.cgIterate_eq_arnoldiMatrix` to `NLAlib.cgIterate_eq_arnoldiMatrix` and
+`Matrix.PosDef.cgIterate_eq_lanczosMatrix` to `Matrix.IsHermitian.cgIterate_eq_lanczosMatrix`,
+both now for every `q` through the pseudoinverse of the tridiagonal matrix (maintainer: algorithms
+return the same iterate once they reach the grade). See `docs/design/Krylov-LinearSystems.md`.

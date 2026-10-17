@@ -679,3 +679,18 @@ checked: `Greenbaum1997` (§2.5, §3.1, §8.1, §8.2), `SaadSchultz1986` (Propos
 (§4.2, Algorithm 4.1, Theorem 4.14). `Saad2003` locators (§6.5.3, §8.3, §9.2, Algorithms 6.2,
 6.9, 9.1, Propositions 6.4 to 6.18, Theorem 6.30) and `TrefethenBau1997` Lectures 35 and 38 are
 from memory and are verified before the PR.
+
+## Implementation notes (2026-10-17)
+
+- Checkpoint 1 landed with no statement changes. The two `Pinv` lemmas of §3.1
+  (`pinv_mul_of_conjTranspose_mul_self_mul_eq`, `pinv_mul_conjTranspose_of_mul_conjTranspose_mul_self_eq`)
+  were proved early, because `galerkinInverse_krylovMatrix_eq_arnoldiMatrix` needs them; checkpoint 3
+  does not add them again. Bib keys `Greenbaum1997`, `PaigeSaunders1975` added (Greenbaum locators to
+  verify).
+- Checkpoint 5, Matrix layer: the six Givens QR theorems that mention `IsUpperHessenberg` live in a
+  new `Matrix/Factorizations/GivensHessenberg.lean` (imports `Givens` and `Hessenberg`), not in
+  `Givens.lean`: `Hessenberg.lean` defines `IsUpperHessenberg` and already imports `Givens.lean`, so
+  the planned placement is an import cycle. The alternative, moving the definition of
+  `IsUpperHessenberg` into `Triangular.lean` so the theorems can join `Givens.lean`, was not taken
+  (it edits `Hessenberg.lean`, outside the stage's file list); it remains open for the maintainer.
+  Five step lemmas of `Givens.lean` are public because the new file uses them.

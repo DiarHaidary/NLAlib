@@ -93,6 +93,7 @@ public import NLAlib.Matrix.Factorizations.ColumnVolume
 public import NLAlib.Matrix.Factorizations.Elimination
 public import NLAlib.Matrix.Factorizations.GaussState
 public import NLAlib.Matrix.Factorizations.Givens
+public import NLAlib.Matrix.Factorizations.GivensHessenberg
 public import NLAlib.Matrix.Factorizations.GramSchmidt
 public import NLAlib.Matrix.Factorizations.Hessenberg
 public import NLAlib.Matrix.Factorizations.Householder
