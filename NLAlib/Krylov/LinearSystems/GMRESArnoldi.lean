@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Matrix.Factorizations.GivensHessenberg
@@ -94,42 +95,7 @@ theorem gmresIterate_eq_mgsArnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → �
         (pinv (mgsArnoldiHessenberg A (b - A *ᵥ x₀) q) *ᵥ Pi.single 0 1)) := by
   rw [mgsArnoldiMatrix_eq_arnoldiMatrix, mgsArnoldiHessenberg_eq, gmresIterate_eq_arnoldiMatrix]
 
-/-! ### The computed Hessenberg matrix past the grade -/
-
-/-- Past the grade the computed Hessenberg matrix vanishes: its rows and columns from $\nu$ on
-are zero. -/
-private theorem mgsArnoldiHessenberg_apply_eq_zero_of_le (A : Matrix n n 𝕜) (r : n → 𝕜) {q : ℕ}
-    {a : Fin (q + 1)} {b : Fin q} (h : krylovGrade A r ≤ a ∨ krylovGrade A r ≤ b) :
-    mgsArnoldiHessenberg A r q a b = 0 := by
-  rw [mgsArnoldiHessenberg_eq, Matrix.mul_assoc, conjTranspose_mul_apply,
-    show (A * arnoldiMatrix A r q).col b = A *ᵥ (arnoldiMatrix A r q).col b from rfl,
-    arnoldiMatrix_col_eq_col_last A r a, arnoldiMatrix_col_eq_col_last A r b]
-  rcases h with h | h
-  · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h, star_zero, zero_dotProduct]
-  · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h, Matrix.mulVec_zero, dotProduct_zero]
-
-/-- For invertible $\mathbf{A}$ the computed Hessenberg matrix has full column rank exactly up to
-the grade. -/
-private theorem injective_mulVec_mgsArnoldiHessenberg_iff {A : Matrix n n 𝕜} (hA : IsUnit A)
-    (r : n → 𝕜) (q : ℕ) :
-    Function.Injective (mgsArnoldiHessenberg A r q).mulVec ↔ q ≤ krylovGrade A r := by
-  constructor
-  · intro h
-    by_contra hq
-    push Not at hq
-    have h0 : mgsArnoldiHessenberg A r q *ᵥ Pi.single ⟨krylovGrade A r, hq⟩ 1 =
-        mgsArnoldiHessenberg A r q *ᵥ 0 := by
-      ext a
-      rw [Matrix.mulVec_single_one, Matrix.col_apply, Matrix.mulVec_zero, Pi.zero_apply]
-      exact mgsArnoldiHessenberg_apply_eq_zero_of_le A r (Or.inr le_rfl)
-    exact one_ne_zero (Pi.single_eq_zero_iff.mp (h h0))
-  · intro hq x y hxy
-    have hQ : HasOrthonormalCols (mgsArnoldiMatrix A r q) := by
-      rw [mgsArnoldiMatrix_eq_arnoldiMatrix]
-      exact hasOrthonormalCols_arnoldiMatrix_iff.mpr hq
-    refine hQ.mulVec_injective (Matrix.mulVec_injective_iff_isUnit.mpr hA ?_)
-    rw [Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, mul_mgsArnoldiMatrix, ← Matrix.mulVec_mulVec,
-      ← Matrix.mulVec_mulVec, hxy]
+/-! ### Pivots and the computed basis past the grade -/
 
 /-- **When the pivots are nonzero**: for invertible $\mathbf{A}$, the computed Givens pivots of
 $\underline{\mathbf{H}}_q$ are all nonzero exactly for $q \le \nu$, the grade of $\mathbf{r}_0$. A
@@ -140,20 +106,6 @@ theorem forall_givensHessenbergR_mgsArnoldiHessenberg_ne_zero_iff {A : Matrix n 
       q ≤ krylovGrade A r :=
   (forall_givensHessenbergR_apply_self_ne_zero_iff (isUpperHessenberg_mgsArnoldiHessenberg A r q)
     (Nat.le_succ q)).trans (injective_mulVec_mgsArnoldiHessenberg_iff hA r q)
-
-omit [Fintype n] [DecidableEq n] in
-/-- A matrix whose columns from $k$ on vanish acts through its first $k$ columns. -/
-private theorem mulVec_eq_submatrix_castLE_mulVec {q k : ℕ} (h : k ≤ q) (Q : Matrix n (Fin q) 𝕜)
-    (hQ : ∀ b : Fin q, k ≤ (b : ℕ) → Q.col b = 0) (y : Fin q → 𝕜) :
-    Q *ᵥ y = Q.submatrix id (Fin.castLE h) *ᵥ (y ∘ Fin.castLE h) := by
-  ext i
-  simp only [Matrix.mulVec, dotProduct, Matrix.submatrix_apply, id_eq, Function.comp_apply]
-  refine (Fintype.sum_of_injective (Fin.castLE h) (Fin.castLE_injective h) _ _
-    (fun j hj => ?_) fun j => rfl).symm
-  have hkj : k ≤ (j : ℕ) := by
-    by_contra hjk
-    exact hj ⟨⟨j, not_le.mp hjk⟩, Fin.ext rfl⟩
-  rw [show Q i j = Q.col j i from rfl, hQ j hkj, Pi.zero_apply, zero_mul]
 
 /-- The computed basis past the grade: its columns from $\nu$ on vanish. -/
 private theorem mgsArnoldiMatrix_col_eq_zero (A : Matrix n n 𝕜) (r : n → 𝕜) {q : ℕ} (b : Fin q)
@@ -210,7 +162,7 @@ theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : I
     have key := pinv_submatrix_mulVec_single_eq_backSubst hHH hq.le
       (hsub ▸ (injective_mulVec_mgsArnoldiHessenberg_iff hA r ν).mpr le_rfl)
     rw [hsub] at key
-    rw [key, mulVec_eq_submatrix_castLE_mulVec hq.le (mgsArnoldiMatrix A r q)
+    rw [key, Matrix.mulVec_eq_submatrix_castLE_mulVec hq.le (mgsArnoldiMatrix A r q)
       (fun c hc => mgsArnoldiMatrix_col_eq_zero A r c hc)]
     have hrows := (givensHessenbergState_apply_eq_zero_of_le (H := H) (r := ν)
       (fun a c ha => mgsArnoldiHessenberg_apply_eq_zero_of_le A r (Or.inl ha))

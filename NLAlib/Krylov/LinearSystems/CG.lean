@@ -396,8 +396,10 @@ $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
 the minimum over real $p$ with $\deg p \le q$, $p(0) = 1$ (`residualMinimax`). Every other bound
 of this file follows from it by bounding the minimax value. For each $\mathbf{A}$ some
-$\mathbf{b}$ attains it (Greenbaum); that theorem is stage K2b's. [Greenbaum1997, §3.1];
-locator to verify. -/
+$\mathbf{b}$ attains it (Greenbaum):
+`Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul` and
+`Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div` in
+`NLAlib.Krylov.LinearSystems.WorstCase`. [Greenbaum1997, §3.1]; locator to verify. -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜)
     (q : ℕ) :

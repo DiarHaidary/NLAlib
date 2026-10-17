@@ -48,6 +48,7 @@ public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Basic.Space
 public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Krylov.Functions.NearOptimality
+public import NLAlib.Krylov.Functions.Optimality
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGRecurrence

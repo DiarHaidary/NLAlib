@@ -209,8 +209,11 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_iSup_mul {A : 
 $$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
 \Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)\|\mathbf{r}_0\|
 \,,$$
-the minimum over real residual polynomials of degree at most $q$ (`residualMinimax`). Greenbaum's
-theorem that some $\mathbf{b}$ attains it for each $\mathbf{A}$ is stage K2b's.
+the minimum over real residual polynomials of degree at most $q$ (`residualMinimax`). For each
+$\mathbf{A}$ some $\mathbf{b}$ attains it (Greenbaum):
+`Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul` and
+`Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div` in
+`NLAlib.Krylov.LinearSystems.WorstCase`.
 [Greenbaum1997, §3.1]; locator to verify. -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (b x₀ : n → 𝕜) (q : ℕ) :

@@ -28,7 +28,8 @@ Degree and error remain separate, so the same metric approximation interface ser
 * `NLAlib.isLeast_chebyshev_minimax`: exact optimality among normalized residuals.
 * `NLAlib.residualMinimax`: the residual minimax value of a set, with
   `NLAlib.residualMinimax_le` and its Chebyshev value on an interval,
-  `NLAlib.residualMinimax_Icc`.
+  `NLAlib.residualMinimax_Icc`; its weighted least-squares dual on a finite set is in
+  `NLAlib.Polynomial.Chebyshev.ResidualMinimax`.
 * `NLAlib.inv_eval_T_real_eq_two_mul_pow_div`: the Chebyshev value
   $T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1} = \frac{2\rho^q}{1 + \rho^{2q}}$ in
   $\rho = \frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}$.

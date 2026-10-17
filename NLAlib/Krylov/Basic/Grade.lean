@@ -7,6 +7,7 @@ module
 
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import NLAlib.Krylov.Basic.Space
+public import NLAlib.Matrix.Basic.OrthonormalBasis
 
 /-!
 # The grade of a vector
@@ -23,6 +24,8 @@ layer: Lanczos and conjugate gradients break down, or terminate, exactly at the 
 ## Main results
 
 * `NLAlib.rank_krylovMatrix`, `NLAlib.finrank_krylovSpace`: the dimension is $\min(q, \nu)$.
+* `NLAlib.exists_hasOrthonormalCols_range_eq_krylovSpace`: an orthonormal basis of
+  $\mathcal{K}_q$.
 * `NLAlib.krylovMatrix_mulVec_injective_iff`: the Krylov vectors are independent iff $q \le \nu$.
 * `NLAlib.krylovGrade_le_iff`: $\nu \le q$ iff $\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$.
 * `NLAlib.mulVec_mem_krylovSpace_of_krylovGrade_le`: invariance from the grade on.
@@ -168,6 +171,17 @@ theorem finrank_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
 theorem rank_krylovMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     (krylovMatrix A b q).rank = min q (krylovGrade A b) :=
   finrank_krylovSpace A b q
+
+/-- **An orthonormal basis of the Krylov space**: there are $k$ and a $\mathbf{Q}$ with $k$
+orthonormal columns whose column space is $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$; necessarily
+$k = \min(q, \nu)$, $\nu$ the grade (`finrank_krylovSpace`). It supplies the frame that the
+statements about any orthonormal basis of a Krylov space (Lanczos-FA, compressions) are applied
+to; the number of columns is left existential so that rewriting $\mathbf{b}$ or $q$ does not
+change the type of $\mathbf{Q}$. -/
+theorem exists_hasOrthonormalCols_range_eq_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
+    ∃ (k : ℕ) (Q : Matrix n (Fin k) 𝕜), HasOrthonormalCols Q ∧
+      LinearMap.range Q.mulVecLin = krylovSpace A b q :=
+  ⟨_, exists_hasOrthonormalCols_range_eq _ (Fintype.card_fin _)⟩
 
 /-- The grade is at most the dimension. -/
 theorem krylovGrade_le_card (A : Matrix n n 𝕜) (b : n → 𝕜) :

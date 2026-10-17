@@ -490,28 +490,6 @@ private theorem re_quadForm_sub_mulVec_pminresIterate (hA : A.IsHermitian) (hAu 
     norm_sub_mulVec_gmresIterate_eq_norm_givensHessenbergQ hÂ,
     hr, preconditionedLanczosTridiagonal_submatrix_eq hA hMC, sqrt_re_quadForm_eq_norm hMC]
 
-/-- The preconditioned grade is the grade of the split system. -/
-private theorem krylovGrade_mul_mulVec_eq (hC : IsUnit C) (hMC : M = C * Cᴴ) (r : n → 𝕜) :
-    krylovGrade (M * A) (M *ᵥ r) = krylovGrade (Cᴴ * A * C) (Cᴴ *ᵥ r) := by
-  rw [hMC, Matrix.mul_assoc, ← Matrix.mulVec_mulVec, krylovGrade_mul_mulVec hC]
-
-/-- **Breakdown of the preconditioned Lanczos recurrence**: from the grade of the split system
-on, $\mathbf{z}_l = \mathbf{0}$ and $\beta_l = 0$. -/
-private theorem preconditionedLanczosState_eq_zero_of_le (hA : A.IsHermitian) (hMC : M = C * Cᴴ)
-    (r : n → 𝕜) {l : ℕ} (hl : krylovGrade (Cᴴ * A * C) (Cᴴ *ᵥ r) ≤ l) :
-    (preconditionedLanczosState A M r l).z = 0 ∧ (preconditionedLanczosState A M r l).beta = 0 := by
-  have hH := Matrix.isHermitian_conjTranspose_mul_mul C hA
-  refine ⟨?_, ?_⟩
-  · rw [preconditionedLanczosState_z_eq_mulVec hMC]
-    have h := congrArg (fun Q => Q.col (Fin.last l))
-      (hH.lanczosMatrix_eq_arnoldiMatrix (Cᴴ *ᵥ r) (l + 1))
-    simp only [arnoldiMatrix_col_last_eq_zero_iff.mpr hl] at h
-    rw [show (lanczosState (Cᴴ * A * C) (Cᴴ *ᵥ r) l).cur = 0 from h, Matrix.mulVec_zero]
-  · rcases l with _ | l
-    · rfl
-    · rw [preconditionedLanczosState_beta_eq hMC, hH.lanczosState_beta_eq_zero_iff]
-      exact hl
-
 end Realisation
 
 variable {A M : Matrix n n 𝕜}
@@ -576,7 +554,8 @@ theorem _root_.Matrix.IsHermitian.minresState_x_eq (hA : A.IsHermitian) (hAu : I
   · exact minresState_x_eq_of_le hA hAu hC hMC b x₀ hk
   have hfreeze : ∀ l, ν ≤ l → (minresState A M b x₀ (l + 1)).x = (minresState A M b x₀ l).x := by
     intro l hl
-    obtain ⟨hz, hβ⟩ := preconditionedLanczosState_eq_zero_of_le hA hMC (b - A *ᵥ x₀) hl
+    have hz := hA.preconditionedLanczosState_z_eq_zero_of_le hMC (b - A *ᵥ x₀) hl
+    have hβ := hA.preconditionedLanczosState_beta_eq_zero_of_le hMC (b - A *ᵥ x₀) hl
     have hd : (minresState A M b x₀ (l + 1)).d₁ = 0 := by
       rw [show minresState A M b x₀ (l + 1) = minresStep A M (minresState A M b x₀ l) from rfl,
         minresStep_d₁, minresEps, minresDelta, minresDelta0, minresAlpha, minresBeta,
@@ -593,7 +572,9 @@ theorem _root_.Matrix.IsHermitian.minresState_x_eq (hA : A.IsHermitian) (hAu : I
   have hdet := (Matrix.isUnit_iff_isUnit_det A).mp hAu
   have hxs : A *ᵥ (A⁻¹ *ᵥ b) = b := by
     rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv A hdet, Matrix.one_mulVec]
-  have hg := krylovGrade_mul_mulVec_eq (A := A) hC hMC (b - A *ᵥ x₀)
+  have hg : krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) =
+      krylovGrade (Cᴴ * A * C) (Cᴴ *ᵥ (b - A *ᵥ x₀)) := by
+    rw [hMC, Matrix.mul_assoc, ← Matrix.mulVec_mulVec, krylovGrade_mul_mulVec hC]
   rw [hxk k hk.le, minresState_x_eq_of_le hA hAu hC hMC b x₀ le_rfl,
     pminresIterate_eq_of_krylovGrade_le hAu hM hxs x₀ (hg.trans_le hk.le),
     pminresIterate_eq_of_krylovGrade_le hAu hM hxs x₀ hg.le]

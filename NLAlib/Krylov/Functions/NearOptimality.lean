@@ -16,9 +16,11 @@ definite $\mathbf{A}$ with spectrum in $[a, a']$ and real $\alpha$, the Lanczos-
 $\mathbf{A}^\alpha$-norm is within the factor
 $\tfrac12\bigl(\kappa^{E/2} + \kappa^{-E/2}\bigr)$, $\kappa = a'/a$,
 $E = \max(\alpha, 1 - \alpha)$, of the error of the best approximation from the Krylov space
-[ChenPersson2026, Theorem 1]. The factor cannot be improved [ChenPersson2026, Theorem 2]; that
-is stage K2b. At $\alpha = 0$ this is a Euclidean-norm guarantee with factor
-$\tfrac12(\sqrt\kappa + 1/\sqrt\kappa)$, also for CG.
+[ChenPersson2026, Theorem 1]. The factor cannot be improved [ChenPersson2026, Theorem 2]:
+`Matrix.PosDef.exists_inv_add_le_re_quadForm_rpow_cfc_mulVec_sub_lanczosFA` and its CG case
+`Matrix.PosDef.exists_le_norm_sub_cgIterate` in `NLAlib.Krylov.Functions.Optimality`, which
+also shows the general ratio bound of this file optimal. At $\alpha = 0$ this is a
+Euclidean-norm guarantee with factor $\tfrac12(\sqrt\kappa + 1/\sqrt\kappa)$, also for CG.
 
 Errors are squared norms `RCLike.re (quadForm N (w - y))` with `N = A ^ α` or `N = cfc ν A`,
 as for CG in K0, and the best approximation is not named: the theorems compare with every
@@ -396,7 +398,8 @@ $$\|f(\mathbf{A})\mathbf{b} -
 \le \Bigl(\frac{(a'/a)^{E/2} + (a'/a)^{-E/2}}{2}\Bigr)^2
 \|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \,.$$
 The kernel ratio of $\nu(x) = x^\alpha$ is `rpow_mul_add_le`. The factor is optimal
-[ChenPersson2026, Theorem 2] (stage K2b).
+[ChenPersson2026, Theorem 2]:
+`Matrix.PosDef.exists_inv_add_le_re_quadForm_rpow_cfc_mulVec_sub_lanczosFA`.
 [ChenPersson2026, Theorem 1]; there with $\kappa(\mathbf{A})$ and the unsquared norms, here
 for any interval containing the spectrum (the $\kappa$ form is
 `Matrix.PosDef.re_quadForm_rpow_cfc_mulVec_sub_lanczosFA_le_pseudoConditionNumber`); it

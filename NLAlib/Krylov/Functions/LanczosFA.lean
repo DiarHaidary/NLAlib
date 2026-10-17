@@ -183,12 +183,6 @@ theorem lanczosFA_zero (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) 
   have h := lanczosFA_mem_krylovSpace A f b 0
   rwa [krylovSpace_zero, Submodule.mem_bot] at h
 
-/-- An orthonormal basis of the Krylov space, with as many columns as its dimension. -/
-private theorem exists_hasOrthonormalCols_range_eq_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜)
-    (q : ℕ) : ∃ (k : ℕ) (Q : Matrix n (Fin k) 𝕜), HasOrthonormalCols Q ∧
-      LinearMap.range Q.mulVecLin = krylovSpace A b q :=
-  ⟨_, exists_hasOrthonormalCols_range_eq _ (Fintype.card_fin _)⟩
-
 /-- **Lanczos-FA in any orthonormal basis of the Krylov space**, for every $\mathbf{A}$:
 $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q) =
 \mathbf{Q}f(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})\mathbf{Q}^{\mathsf{H}}\mathbf{b}$.

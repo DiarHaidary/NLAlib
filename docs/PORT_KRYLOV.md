@@ -58,6 +58,31 @@ Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` is reached by a bridge lemma
 `algebraMap_le_iff_le_spectrum` for the converse), so callers holding Loewner bounds still apply the
 theorems in one step. `A.PosDef`, ranged `eigenvalue A k` and the eigenvector form are unchanged.
 
+## Progress (2026-10-17)
+
+The stages were renumbered when designed: the roadmap's "K2 GMRES, MINRES, CGLS, PCG" and "K3
+Arnoldi" became stage K1 (`docs/design/Krylov-LinearSystems.md`), its "K1 Lanczos-FA" became K2
+(`Krylov-Functions.md`), and K2b (`Krylov-Sharpness.md`) was added for sharpness.
+
+Done, all proved, branch `krylov/brief`:
+- **K0**, the CG slice (`Krylov-CG.md`): Krylov space and grade, `galerkinInverse`, `cgIterate`,
+  the canonical Arnoldi/Lanczos basis, the Lanczos and Hestenes–Stiefel realisations.
+- **K1**, checkpoints 1 to 5: CG with a start, PCG and its recurrence, CGLS, the rates in
+  $\kappa$, outliers and the spectrum-optimal bounds through `residualMinimax`; GMRES, MINRES and
+  preconditioned MINRES; MGS Arnoldi, preconditioned Lanczos, GMRES through Givens QR and back
+  substitution, the Paige–Saunders recurrence; the Chebyshev worst cases on one and two intervals.
+- **K2**, checkpoints C1 to C5: compressions, `lanczosFA`, Stieltjes functions, Chen–Persson
+  Theorems 5 and 1 with their $\kappa$, Euclidean and CG forms.
+- **K2b**: Greenbaum's theorem for CG and MINRES on every spectrum (discrete minimax duality),
+  and Chen–Persson Theorem 2 (the near-optimality factor is optimal) with its CG case.
+
+Remaining: K2 C6 (Gauss quadrature for $\mathbf{b}^{\mathsf{H}}\,\mathsf{lanczosFA}$); K1's
+deferred items (L12: MINRES-QLP, the general two-interval bound, real GMRES with complex
+eigenvalues, Richardson and Chebyshev iterations); Greenbaum–Gurvits for GMRES with normal
+matrices (`Krylov-Sharpness.md` question 2); and the roadmap of §8 from K4 on (Ritz values and
+eigenvalue bounds, random-start power and Lanczos, sketched solvers, Hutch++ and SLQ, Nyström PCG,
+Kaczmarz and sketch-and-project). Block methods stay out of this round (D11).
+
 ## Maintainer decisions
 
 Only the directions above so far. Answers to §2 and §10 are recorded here, dated, before any

@@ -18629,6 +18629,10 @@
   "note": "proof ported; merged into the iff",
   "stage": "K0"
  },
+ "NLAlib.krylovSpace_mul_mulVec_eq_map": {
+  "new": "NLAlib.krylovSpace_mul_mulVec",
+  "stage": "K1"
+ },
  "NLAlib.krylovSpace_succ": {
   "new": "NLAlib.krylovSpace_succ",
   "stage": "K0"

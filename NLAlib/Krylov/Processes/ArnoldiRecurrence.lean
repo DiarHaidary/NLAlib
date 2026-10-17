@@ -35,6 +35,9 @@ hypothesis, because past the grade both sides are zero. Breakdown happens exactl
 * `NLAlib.isUpperHessenberg_mgsArnoldiHessenberg`: the computed matrix is Hessenberg.
 * `NLAlib.mul_mgsArnoldiMatrix`: the computed Arnoldi relation.
 * `NLAlib.mgsArnoldiHessenberg_apply_succ_eq_zero_iff`: breakdown exactly at the grade.
+* `NLAlib.mgsArnoldiHessenberg_apply_eq_zero_of_le`: past the grade the computed matrix is zero.
+* `NLAlib.injective_mulVec_mgsArnoldiHessenberg_iff`: for invertible $\mathbf{A}$, full column
+  rank exactly up to the grade.
 -/
 
 @[expose] public section
@@ -264,5 +267,41 @@ theorem mgsArnoldiHessenberg_apply_succ_eq_zero_iff (A : Matrix n n 𝕜) (b : n
     show (arnoldiMatrix A b ((j : ℕ) + 1 + 1)).col (Fin.last ((j : ℕ) + 1)) = _ from
       arnoldiMatrix_col_succ A b j, smul_eq_zero, inv_eq_zero, RCLike.ofReal_eq_zero, norm_eq_zero,
     WithLp.toLp_eq_zero, or_self]
+
+/-- **The computed Hessenberg matrix past the grade**: for every $\mathbf{A}$, the entry
+$h_{a,c}$ of $\underline{\mathbf{H}}_q$ vanishes when $\nu \le a$ or $\nu \le c$, $\nu$ the
+grade: its rows and columns from $\nu$ on are zero. -/
+theorem mgsArnoldiHessenberg_apply_eq_zero_of_le (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ}
+    {a : Fin (q + 1)} {c : Fin q} (h : krylovGrade A b ≤ a ∨ krylovGrade A b ≤ c) :
+    mgsArnoldiHessenberg A b q a c = 0 := by
+  rw [mgsArnoldiHessenberg_eq, Matrix.mul_assoc, conjTranspose_mul_apply,
+    show (A * arnoldiMatrix A b q).col c = A *ᵥ (arnoldiMatrix A b q).col c from rfl,
+    arnoldiMatrix_col_eq_col_last A b a, arnoldiMatrix_col_eq_col_last A b c]
+  rcases h with h | h
+  · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h, star_zero, zero_dotProduct]
+  · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h, Matrix.mulVec_zero, dotProduct_zero]
+
+/-- **Full column rank of the computed Hessenberg matrix**: for invertible $\mathbf{A}$,
+$\underline{\mathbf{H}}_q$ has full column rank iff $q \le \nu$, the grade of $\mathbf{b}$. -/
+theorem injective_mulVec_mgsArnoldiHessenberg_iff {A : Matrix n n 𝕜} (hA : IsUnit A)
+    (b : n → 𝕜) (q : ℕ) :
+    Function.Injective (mgsArnoldiHessenberg A b q).mulVec ↔ q ≤ krylovGrade A b := by
+  constructor
+  · intro h
+    by_contra hq
+    push Not at hq
+    have h0 : mgsArnoldiHessenberg A b q *ᵥ Pi.single ⟨krylovGrade A b, hq⟩ 1 =
+        mgsArnoldiHessenberg A b q *ᵥ 0 := by
+      ext a
+      rw [Matrix.mulVec_single_one, Matrix.col_apply, Matrix.mulVec_zero, Pi.zero_apply]
+      exact mgsArnoldiHessenberg_apply_eq_zero_of_le A b (Or.inr le_rfl)
+    exact one_ne_zero (Pi.single_eq_zero_iff.mp (h h0))
+  · intro hq x y hxy
+    have hQ : HasOrthonormalCols (mgsArnoldiMatrix A b q) := by
+      rw [mgsArnoldiMatrix_eq_arnoldiMatrix]
+      exact hasOrthonormalCols_arnoldiMatrix_iff.mpr hq
+    refine hQ.mulVec_injective (Matrix.mulVec_injective_iff_isUnit.mpr hA ?_)
+    rw [Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, mul_mgsArnoldiMatrix, ← Matrix.mulVec_mulVec,
+      ← Matrix.mulVec_mulVec, hxy]
 
 end NLAlib

@@ -1,6 +1,7 @@
 # Design note: Krylov stage K2b, sharpness of the Krylov bounds
 
-Status: draft, 2026-10-17, for review before any proof. Sources: the K2 note
+Status: draft, 2026-10-17, for review before any proof; implemented 2026-10-17 (see
+"Implementation" at the end). Sources: the K2 note
 (`Krylov-Functions.md` §6, which fixes Theorem 2's statement and lists the foreseen shared
 lemmas), the K1 note (`Krylov-LinearSystems.md` L11, §3.8), the proved `NLAlib/Krylov/**` and
 `Polynomial/Chebyshev/Residual.lean` at `ec180ed`, and `ChenPersson2026` (arXiv:2608.07160:
@@ -582,3 +583,27 @@ rational-function lower bound.
    interface `HasSpectralWeights A b w T` (the sesquilinear identity, with a constructor from the
    Matrix lemma). Recommended: keep the three parts private in K2b and decide the predicate with
    K4 or K7, its first public consumer.
+
+## Implementation (2026-10-17)
+
+- KB1, KB2a, KB2, KB3a and KB3b landed with the headline statements of §2 unchanged: 1 definition
+  and 15 public theorems, as planned; no `sorry`.
+- Private-lemma hypotheses dropped in `Optimality.lean` against the skeleton (unused by the
+  proofs): `exists_mul_eval_eq_mul_nodalWeight` loses `hTA : ↑T ⊆ spectrum ℝ A`;
+  `re_quadForm_cfc_inv_add_mulVec_sub_aeval_mulVec_eq` loses `hs : 0 ≤ s` (any real `s`);
+  `exists_mem_krylovSpace_re_quadForm_eq` loses `hs`. New private helpers:
+  `re_quadForm_cfc_aeval_mulVec_eq_sum`, `eval_map_algebraMap_ofReal`,
+  `mul_sq_rpow_add_rpow_neg_le`, `exists_mem_spectrum_lt_pseudoConditionNumber_eq`
+  (Optimality); `re_sum_ofReal_mul_star_mul_self`, `exists_finset_spectrum_eq` (WorstCase); six in
+  ResidualMinimax, one in DividedDifference. Question 3 stands: the spectral-weights parts stay
+  private.
+- Files and sizes (§6): `DividedDifference.lean` 204 lines (1 + 6 public, 1 private);
+  `ResidualMinimax.lean` 272 (1 public, 14 private); `Matrix/Functions/Polynomial.lean` +76 (438);
+  `WorstCase.lean` +177 (460 to 637); `Optimality.lean` 692 (3 public, 10 private). No placement
+  flag opened.
+- The §10 docstring follow-ups are done: `CG.lean`, `MINRES.lean` and `NearOptimality.lean` name
+  the Greenbaum theorems of `WorstCase.lean` and Theorem 2 of `Optimality.lean` in place of "stage
+  K2b"; `NearOptimality.lean`'s module docstring points to `Optimality.lean`; `Residual.lean`'s
+  points to `ResidualMinimax.lean`. `Greenbaum1979` and `GreenbaumGurvits1994` checked against
+  Crossref (fields as above, DOIs `10.1007/BF01399553`, `10.1137/0915024` added); their theorem
+  locators remain to verify.

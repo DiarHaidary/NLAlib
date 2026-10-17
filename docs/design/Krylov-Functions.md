@@ -442,8 +442,7 @@ polynomials of degree at most $q$ of the maximum over the spectrum, relative to 
 error (resp. residual). It shares the machinery of Theorem 2: explicit CG and Lanczos on a
 matrix with few distinct eigenvalues, and discrete minimax duality. Shared lemmas foreseen:
 the Ritz polynomial of a prescribed weighting (given weights $w_i > 0$ on $q + 1$ eigenvalues,
-the $\mathbf{b}$ with $\lvert\mathbf{u}_i^{\mathsf{H}}\mathbf{b}
-vert^2 = w_i$ and its nodal
+the $\mathbf{b}$ with $\lvert\mathbf{u}_i^{\mathsf{H}}\mathbf{b}\rvert^2 = w_i$ and its nodal
 polynomial, the paper's Lemma 8, with uniqueness of the monic degree-$q$ polynomial
 orthogonal to $\mathcal{K}_q$); Ritz values as Gauss quadrature nodes and weights for the
 discrete spectral measure; divided differences on $q + 1$ nodes and the weighted
@@ -667,3 +666,10 @@ No question is open.
   `exists_hasOrthonormalCols_range_eq_krylovSpace` is private in `LanczosFA.lean`; its home is
   `Krylov/Basic/Space.lean`.
 - Theorem 2 (optimality of the constant) is K2b and is not in the library yet.
+- 2026-10-17, K2b landed (`Krylov-Sharpness.md`): Theorem 2 is
+  `Matrix.PosDef.exists_inv_add_le_re_quadForm_rpow_cfc_mulVec_sub_lanczosFA`, with the fixed-shift
+  form `Matrix.PosDef.exists_inv_add_le_re_quadForm_cfc_cfc_mulVec_sub_lanczosFA` and the CG
+  corollary `Matrix.PosDef.exists_le_norm_sub_cgIterate`, in `Krylov/Functions/Optimality.lean` (the
+  §6 split by statement); the flag above is closed: `exists_hasOrthonormalCols_range_eq_krylovSpace`
+  is public in `Krylov/Basic/Grade.lean` (beside `finrank_krylovSpace`, which fixes its number of
+  columns), statement unchanged. C6 (quadrature) is still open.

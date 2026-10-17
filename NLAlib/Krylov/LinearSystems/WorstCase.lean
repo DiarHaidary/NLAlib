@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.MINRES
+public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import Mathlib.Algebra.Polynomial.Expand
 
 /-!
@@ -28,9 +29,14 @@ $\pm\sqrt{\cdot}$
 gives the same for MINRES on $[-a', -a] \cup [a, a']$ at the rate of
 `Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_div_two`.
 
-Greenbaum's theorem that for every positive definite $\mathbf{A}$ some $\mathbf{b}$ attains the
-spectrum minimax value `NLAlib.residualMinimax` is not here: it is stage K2b's, with the
-machinery it shares there.
+On every spectrum (Greenbaum's theorem): for every positive definite $\mathbf{A}$ and start
+some right-hand side makes the CG error exactly `NLAlib.residualMinimax` of the spectrum times
+the initial error, and for every Hermitian $\mathbf{A}$ the same holds for the MINRES residual.
+So the spectrum-optimal bounds
+`Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul` and
+`Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul` are the worst cases.
+The right-hand side carries the dual weights of the minimax problem on the spectrum
+(`NLAlib.exists_residualMinimax_sq_le_sum_mul_norm_sq`) as its spectral weights.
 
 ## Main definitions
 
@@ -43,6 +49,10 @@ machinery it shares there.
 * `NLAlib.re_quadForm_sub_cgIterate_chebyshevExtremaMatrix_eq_four_mul_pow_div`: in $\rho$.
 * `NLAlib.norm_sub_mulVec_gmresIterate_chebyshevExtremaMatrix`: so does MINRES.
 * `NLAlib.norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix`: two symmetric intervals.
+* `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul`,
+  `Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div`: Greenbaum's theorem for CG.
+* `Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul`,
+  `Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div`: the same for MINRES.
 -/
 
 @[expose] public section
@@ -459,5 +469,169 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix {a a' : ℝ} (ha
       exact hres
     exact (pow_le_pow_iff_left₀ (mul_nonneg (inv_nonneg.mpr hτ.le) (norm_nonneg _))
       (norm_nonneg _) two_ne_zero).mp hsq
+
+/-! ### Every spectrum: Greenbaum's theorem -/
+
+section Greenbaum
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The real part of a spectral sum with $p = r$:
+$\operatorname{Re}\sum_x a_x\,\overline{z_x}\,z_x = \sum_x a_x\lvert z_x \rvert^2$. -/
+private lemma re_sum_ofReal_mul_star_mul_self {ι : Type*} (s : Finset ι) (a : ι → ℝ)
+    (z : ι → 𝕜) :
+    RCLike.re (∑ x ∈ s, ((a x : ℝ) : 𝕜) * (star (z x) * z x)) = ∑ x ∈ s, a x * ‖z x‖ ^ 2 := by
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow, ← RCLike.ofReal_mul,
+    RCLike.ofReal_re]
+
+/-- The spectrum of a Hermitian matrix on a nonempty index type is a nonempty finite set. -/
+private lemma exists_finset_spectrum_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian) [Nonempty n] :
+    ∃ S : Finset ℝ, spectrum ℝ A = ↑S ∧ S.Nonempty := by
+  obtain ⟨S, hS⟩ := A.finite_real_spectrum.exists_finset_coe
+  have h := hA.eigenvalue_mem_spectrum (k := 0) Fintype.card_pos
+  rw [← hS] at h
+  exact ⟨S, hS.symm, _, h⟩
+
+/-- **The spectrum-minimax bound for CG is attained** (Greenbaum): for positive definite
+$\mathbf{A}$, every start $\mathbf{x}_0$ and every $q$ there is a solution
+$\mathbf{x}_\star \ne \mathbf{x}_0$ with, for $\mathbf{b} = \mathbf{A}\mathbf{x}_\star$,
+$$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
+= \Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)^2
+\|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
+the minimum over real $p$ with $\deg p \le q$, $p(0) = 1$ (`residualMinimax`). So
+`Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul` cannot be improved for any
+spectrum. The interval case with an explicit instance is
+`re_quadForm_sub_cgIterate_chebyshevExtremaMatrix`. The initial error carries the dual weights
+$w_\lambda$ of `exists_residualMinimax_sq_le_sum_mul_norm_sq`, divided by $\lambda$, as its
+spectral weights. [Greenbaum1979]; [Greenbaum1997, §3.1]; locators to verify.
+Result: cg-spectrum-minimax-sharp -/
+theorem _root_.Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul
+    {A : Matrix n n 𝕜} (hA : A.PosDef) [Nonempty n] (x₀ : n → 𝕜) (q : ℕ) :
+    ∃ xs : n → 𝕜, xs ≠ x₀ ∧
+      RCLike.re (quadForm A (xs - cgIterate A (A *ᵥ xs) x₀ q)) =
+        residualMinimax (spectrum ℝ A) q ^ 2 * RCLike.re (quadForm A (xs - x₀)) := by
+  obtain ⟨S, hS, hSne⟩ := exists_finset_spectrum_eq hA.isHermitian
+  obtain ⟨w, hw, hw1, hmin⟩ := exists_residualMinimax_sq_le_sum_mul_norm_sq 𝕜 hSne q
+  have hpos : ∀ x ∈ S, 0 < x := fun x hx =>
+    hA.spectrum_subset_Ioi (show x ∈ spectrum ℝ A by rw [hS]; exact hx)
+  obtain ⟨e, he⟩ := hA.isHermitian.exists_star_aeval_mulVec_dotProduct_cfc_mulVec_eq_sum hS
+    (w := fun x => w x / x) fun x hx => div_nonneg (hw x hx) (hpos x hx).le
+  -- the squared `A`-norm of `p(A) e` in the dual weights
+  have hnorm : ∀ p : 𝕜[X], RCLike.re (quadForm A (aeval A p *ᵥ e)) =
+      ∑ x ∈ S, w x * ‖p.eval (x : 𝕜)‖ ^ 2 := by
+    intro p
+    have hA' : IsSelfAdjoint A := hA.isHermitian
+    have h := he (fun x => x) p p
+    rw [cfc_id' ℝ A hA'] at h
+    rw [quadForm_def, h, re_sum_ofReal_mul_star_mul_self]
+    exact Finset.sum_congr rfl fun x hx => by rw [div_mul_cancel₀ _ (hpos x hx).ne']
+  have he1 : RCLike.re (quadForm A e) = 1 := by
+    have h := hnorm 1
+    simp only [map_one, Matrix.one_mulVec, eval_one, norm_one, one_pow, mul_one, hw1] at h
+    exact h
+  have he0 : e ≠ 0 := by
+    rintro rfl
+    rw [quadForm_def, Matrix.mulVec_zero, dotProduct_zero, map_zero] at he1
+    exact zero_ne_one he1
+  refine ⟨x₀ + e, fun h => he0 (add_eq_left.mp h), ?_⟩
+  obtain ⟨p, hp, hp₀, hpe⟩ := exists_sub_cgIterate_eq_aeval (A := A) (b := A *ᵥ (x₀ + e))
+    (xs := x₀ + e) rfl x₀ q
+  refine le_antisymm (hA.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul rfl x₀ q) ?_
+  rw [hpe, add_sub_cancel_left, he1, mul_one, hnorm, hS]
+  exact hmin p hp hp₀
+
+/-- **The worst case of CG is the spectrum minimax value**: for positive definite
+$\mathbf{A}$, a start $\mathbf{x}_0$ and $q$, the largest ratio
+$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{A}\mathbf{x}_\star, \mathbf{x}_0,
+q)\|_{\mathbf{A}}^2 / \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2$ over
+$\mathbf{x}_\star \ne \mathbf{x}_0$ is $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)^2$: the
+equation of `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul` with
+the bound `Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul`.
+[Greenbaum1979]; locator to verify. -/
+theorem _root_.Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div {A : Matrix n n 𝕜}
+    (hA : A.PosDef) [Nonempty n] (x₀ : n → 𝕜) (q : ℕ) :
+    IsGreatest ((fun xs => RCLike.re (quadForm A (xs - cgIterate A (A *ᵥ xs) x₀ q)) /
+        RCLike.re (quadForm A (xs - x₀))) '' {xs | xs ≠ x₀})
+      (residualMinimax (spectrum ℝ A) q ^ 2) := by
+  have hD : ∀ xs : n → 𝕜, xs ≠ x₀ → 0 < RCLike.re (quadForm A (xs - x₀)) :=
+    fun xs h => hA.re_quadForm_pos (sub_ne_zero.mpr h)
+  obtain ⟨xs, hne, heq⟩ := hA.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul x₀ q
+  refine ⟨⟨xs, hne, ?_⟩, ?_⟩
+  · simp only
+    rw [heq, mul_div_cancel_right₀ _ (hD xs hne).ne']
+  · rintro _ ⟨y, hy, rfl⟩
+    exact (div_le_iff₀ (hD y hy)).mpr
+      (hA.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul rfl x₀ q)
+
+/-- **The spectrum-minimax bound for MINRES is attained**: for Hermitian $\mathbf{A}$
+(indefinite or singular allowed), every start $\mathbf{x}_0$ and every $q$ there is a
+$\mathbf{b}$ with $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0 \ne \mathbf{0}$ and
+$$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|
+= \mathsf{residualMinimax}(\sigma(\mathbf{A}), q)\,\|\mathbf{r}_0\| \,.$$
+So `Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul` cannot be improved
+for any spectrum. For singular $\mathbf{A}$ the value is $1$ ($p(0) = 1$ on the eigenvalue $0$).
+The initial residual carries the dual weights of
+`exists_residualMinimax_sq_le_sum_mul_norm_sq` as its spectral weights.
+[GreenbaumGurvits1994]; [Greenbaum1997, §3.1]; locators to verify.
+Result: minres-spectrum-minimax-sharp -/
+theorem _root_.Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) [Nonempty n] (x₀ : n → 𝕜) (q : ℕ) :
+    ∃ b : n → 𝕜, b ≠ A *ᵥ x₀ ∧
+      ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ =
+        residualMinimax (spectrum ℝ A) q * ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
+  obtain ⟨S, hS, hSne⟩ := exists_finset_spectrum_eq hA
+  obtain ⟨w, hw, hw1, hmin⟩ := exists_residualMinimax_sq_le_sum_mul_norm_sq 𝕜 hSne q
+  obtain ⟨r, hr⟩ := hA.exists_star_aeval_mulVec_dotProduct_cfc_mulVec_eq_sum hS hw
+  -- the squared norm of `p(A) r` in the dual weights
+  have hnorm : ∀ p : 𝕜[X], ‖WithLp.toLp 2 (aeval A p *ᵥ r)‖ ^ 2 =
+      ∑ x ∈ S, w x * ‖p.eval (x : 𝕜)‖ ^ 2 := by
+    intro p
+    have h := hr (fun _ => 1) p p
+    rw [cfc_const_one ℝ A, Matrix.one_mulVec] at h
+    rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, h, re_sum_ofReal_mul_star_mul_self]
+    simp only [mul_one]
+  have hr1 : ‖WithLp.toLp 2 r‖ = 1 := by
+    have h := hnorm 1
+    simp only [map_one, Matrix.one_mulVec, eval_one, norm_one, one_pow, mul_one, hw1] at h
+    exact (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).mp h
+  refine ⟨A *ᵥ x₀ + r, fun h => ?_, ?_⟩
+  · rw [add_eq_left.mp h, WithLp.toLp_zero, norm_zero] at hr1
+    exact zero_ne_one hr1
+  obtain ⟨p, hp, hp₀, hpe⟩ := exists_sub_mulVec_gmresIterate_eq_aeval A (A *ᵥ x₀ + r) x₀ q
+  have hup := hA.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul (A *ᵥ x₀ + r) x₀ q
+  rw [add_sub_cancel_left] at hpe hup ⊢
+  rw [hr1, mul_one] at hup ⊢
+  refine le_antisymm hup ?_
+  rw [hpe]
+  refine (pow_le_pow_iff_left₀ (residualMinimax_nonneg _ q) (norm_nonneg _) two_ne_zero).mp ?_
+  rw [hnorm, hS]
+  exact hmin p hp hp₀
+
+/-- **The worst case of MINRES is the spectrum minimax value**: for Hermitian $\mathbf{A}$, a
+start $\mathbf{x}_0$ and $q$, the largest ratio
+$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| /
+\|\mathbf{b} - \mathbf{A}\mathbf{x}_0\|$ over $\mathbf{b} \ne \mathbf{A}\mathbf{x}_0$ is
+$\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)$: the equation of
+`Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul` with the bound
+`Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul`.
+[GreenbaumGurvits1994]; locator to verify. -/
+theorem _root_.Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) [Nonempty n] (x₀ : n → 𝕜) (q : ℕ) :
+    IsGreatest ((fun b => ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ /
+        ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖) '' {b | b ≠ A *ᵥ x₀})
+      (residualMinimax (spectrum ℝ A) q) := by
+  have hD : ∀ b : n → 𝕜, b ≠ A *ᵥ x₀ → 0 < ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := fun b h =>
+    norm_pos_iff.mpr fun h0 => h (sub_eq_zero.mp (by rwa [WithLp.toLp_eq_zero] at h0))
+  obtain ⟨b, hne, heq⟩ := hA.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul x₀ q
+  refine ⟨⟨b, hne, ?_⟩, ?_⟩
+  · simp only
+    rw [heq, mul_div_cancel_right₀ _ (hD b hne).ne']
+  · rintro _ ⟨c, hc, rfl⟩
+    exact (div_le_iff₀ (hD c hc)).mpr
+      (hA.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul c x₀ q)
+
+end Greenbaum
 
 end NLAlib

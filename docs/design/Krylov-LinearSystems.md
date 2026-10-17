@@ -743,3 +743,19 @@ from memory and are verified before the PR.
   `givensHessenbergState_apply_of_lt`. Open placement flags (private helpers): two preconditioned
   Lanczos breakdown facts in `MINRESRecurrence.lean` (home `PreconditionedLanczos.lean`), two MGS
   Hessenberg facts in `GMRESArnoldi.lean` (home `ArnoldiRecurrence.lean`), one generic submatrix fact.
+- 2026-10-17, K2b landed (`Krylov-Sharpness.md`): Greenbaum's theorem (L11, L12) is
+  `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul`,
+  `Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div` (CG) and
+  `Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul`,
+  `Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div` (MINRES) in `WorstCase.lean`,
+  through the duality of `Polynomial/Chebyshev/ResidualMinimax.lean`; `residualMinimax` stays in
+  `Residual.lean`. The checkpoint 5 flags are closed: the breakdown fact is public in
+  `PreconditionedLanczos.lean`, split into
+  `Matrix.IsHermitian.preconditionedLanczosState_z_eq_zero_of_le` and
+  `Matrix.IsHermitian.preconditionedLanczosState_beta_eq_zero_of_le`; the private grade identity
+  was `krylovGrade_mul_mulVec` (Grade) after one rewrite and is replaced by it;
+  `mgsArnoldiHessenberg_apply_eq_zero_of_le` and `injective_mulVec_mgsArnoldiHessenberg_iff` are
+  public in `ArnoldiRecurrence.lean`; the submatrix fact is
+  `Matrix.mulVec_eq_submatrix_castLE_mulVec` in `ForMathlib/Data/Matrix/Mul.lean`, generalised to
+  any non-unital semiring and row type (`GMRESArnoldi` imports it). Statements unchanged; no
+  placement flag remains open.

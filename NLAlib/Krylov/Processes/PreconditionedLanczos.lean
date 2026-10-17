@@ -47,6 +47,9 @@ $\mathbf{M}$ is our $\mathbf{M}^{-1}$.
   `Matrix.IsHermitian.preconditionedLanczosTridiagonal_eq`: the realisation through a factor.
 * `Matrix.IsHermitian.range_preconditionedLanczosMatrix`: the computed vectors span
   $\mathcal{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{b})$.
+* `Matrix.IsHermitian.preconditionedLanczosState_z_eq_zero_of_le`,
+  `Matrix.IsHermitian.preconditionedLanczosState_beta_eq_zero_of_le`: breakdown from the grade of
+  the split system on.
 -/
 
 @[expose] public section
@@ -277,5 +280,34 @@ theorem _root_.Matrix.IsHermitian.range_preconditionedLanczosMatrix (hA : A.IsHe
   rw [hA.preconditionedLanczosMatrix_eq hMC, Matrix.mulVecLin_mul, LinearMap.range_comp,
     range_arnoldiMatrix, hMC, show C * Cᴴ * A = C * (Cᴴ * A) from Matrix.mul_assoc _ _ _,
     ← Matrix.mulVec_mulVec b C Cᴴ, krylovSpace_mul_mulVec]
+
+/-- **Breakdown of the preconditioned recurrence, vectors**: for Hermitian $\mathbf{A}$ and any
+$\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$, from the grade $\nu$ of
+$\mathbf{C}^{\mathsf{H}}\mathbf{b}$ for the split matrix
+$\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ on, $\mathbf{z}_l = \mathbf{0}$. -/
+theorem _root_.Matrix.IsHermitian.preconditionedLanczosState_z_eq_zero_of_le (hA : A.IsHermitian)
+    {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) (b : n → 𝕜) {l : ℕ}
+    (hl : krylovGrade (Cᴴ * A * C) (Cᴴ *ᵥ b) ≤ l) :
+    (preconditionedLanczosState A M b l).z = 0 := by
+  have h := congrArg (fun Q => Q.col (Fin.last l))
+    ((Matrix.isHermitian_conjTranspose_mul_mul C hA).lanczosMatrix_eq_arnoldiMatrix (Cᴴ *ᵥ b)
+      (l + 1))
+  simp only [arnoldiMatrix_col_last_eq_zero_iff.mpr hl] at h
+  rw [preconditionedLanczosState_z_eq_mulVec hM,
+    show (lanczosState (Cᴴ * A * C) (Cᴴ *ᵥ b) l).cur = 0 from h, Matrix.mulVec_zero]
+
+/-- **Breakdown of the preconditioned recurrence, coefficients**: for Hermitian $\mathbf{A}$ and
+any $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$, from the grade $\nu$ of
+$\mathbf{C}^{\mathsf{H}}\mathbf{b}$ for $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ on,
+$\beta_l = 0$. -/
+theorem _root_.Matrix.IsHermitian.preconditionedLanczosState_beta_eq_zero_of_le
+    (hA : A.IsHermitian) {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) (b : n → 𝕜) {l : ℕ}
+    (hl : krylovGrade (Cᴴ * A * C) (Cᴴ *ᵥ b) ≤ l) :
+    (preconditionedLanczosState A M b l).beta = 0 := by
+  rcases l with _ | l
+  · rfl
+  · rw [preconditionedLanczosState_beta_eq hM,
+      (Matrix.isHermitian_conjTranspose_mul_mul C hA).lanczosState_beta_eq_zero_iff]
+    exact hl
 
 end NLAlib
