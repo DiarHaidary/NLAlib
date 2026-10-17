@@ -44,6 +44,20 @@ and the scope), `~/Documents/prove2me/lean/docs/KRYLOV_DEFINITIONS.md`, the loca
 Martinsson–Tropp and Tropp–Webber, and the tree at `b0f4a2c` (origin/main). Every library and
 Mathlib name below was checked by grep; names marked *new* do not exist yet.
 
+
+**Decisions (2026-10-17).** The maintainer: "D8: I think the interval and union should be the same
+format. For the others the default is fine. Let's just proceed with the CG stuff and then I will
+examine". So D1 to D7 and D9 to D12 are approved as recommended, and D8 is amended: every spectral
+location hypothesis of the round, interval or union, is `spectrum ℝ A ⊆ s` for Hermitian
+$\mathbf{A}$, with `s = Set.Icc a b` for an interval and a union of intervals for the indefinite
+case; polynomial bounds are `∀ x ∈ s, |p.eval x| ≤ M`, the form of
+`Matrix.IsHermitian.specNorm_aeval_le` in `Matrix/Functions/Polynomial.lean` (whose `Icc` corollary
+`specNorm_aeval_le_of_forall_mem_Icc` takes the Loewner form). The
+Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` is reached by a bridge lemma
+(`spectrum_subset_Icc_of_le`, and Mathlib's `le_algebraMap_iff_spectrum_le`,
+`algebraMap_le_iff_le_spectrum` for the converse), so callers holding Loewner bounds still apply the
+theorems in one step. `A.PosDef`, ranged `eigenvalue A k` and the eigenvector form are unchanged.
+
 ## Maintainer decisions
 
 Only the directions above so far. Answers to §2 and §10 are recorded here, dated, before any
@@ -341,7 +355,7 @@ depending on $\mathbf{b}$, and the grade hypothesis only where orthonormality is
 `hasOrthonormalCols_arnoldiMatrix_iff`). The basis-free definitions of D3 need no hypothesis at all.
 Recommendation: (c). Rework: medium (index types).
 
-**D8. Spectral hypotheses in Loewner form.** (a) The prototype's raw conditions; (b) the §5.3 rows:
+**D8. Spectral hypotheses (amended by the maintainer 2026-10-17: interval and union both as `spectrum ℝ A ⊆ s`; see Maintainer directions).** (a) The prototype's raw conditions; (b) the §5.3 rows:
 an interval is `a • 1 ≤ A`, `A ≤ b • 1`; a union (MINRES, indefinite) is `spectrum ℝ A ⊆ s`;
 `A.PosDef`, `A.PosSemidef`; `eigenvalue A k` with ranged indices; eigenvectors as hypotheses
 `A *ᵥ u = eigenvalue A 0 • u` with unit norm; polynomial bounds `∀ x ∈ Set.Icc a b, |p.eval x| ≤ M`,
