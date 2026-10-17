@@ -30,6 +30,11 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
 * `NLAlib.isUpperTriangular_gramSchmidtR`, `NLAlib.gramSchmidtR_apply_self_nonneg`.
 * `NLAlib.gramSchmidtR_apply_self_smul_col`: the classical recursion.
 * `NLAlib.isQR_gramSchmidt`: the QR factorization of a matrix of full column rank.
+* `NLAlib.range_gramSchmidtQ`, `NLAlib.gramSchmidtQ_mul_conjTranspose`: with no rank assumption,
+  $\mathbf{Q}$ spans the column space and
+  $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$.
+* `NLAlib.gramSchmidtQ_submatrix`, `NLAlib.gramSchmidtQ_submatrix_castLE`: restriction to an
+  initial segment of the columns.
 -/
 
 @[expose] public section
@@ -314,5 +319,49 @@ theorem gramSchmidtR_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matri
     (hW : HasOrthonormalCols W) (A : Matrix m n 𝕜) :
     gramSchmidtR (W * A) = gramSchmidtR A := by
   rw [gramSchmidtR, gramSchmidtQ_mul_left hW, hW.conjTranspose_mul_mul, gramSchmidtR]
+
+/-- **The Gram–Schmidt vectors span the column space**: $\operatorname{range}\mathbf{Q} =
+\operatorname{range}\mathbf{A}$ for $\mathbf{Q}$ = `gramSchmidtQ A`, with no rank assumption (the
+zero columns contribute nothing). -/
+theorem range_gramSchmidtQ (A : Matrix m n 𝕜) :
+    LinearMap.range (gramSchmidtQ A).mulVecLin = LinearMap.range A.mulVecLin := by
+  apply le_antisymm
+  · rw [Matrix.range_mulVecLin, Matrix.range_mulVecLin, Submodule.span_le]
+    rintro _ ⟨j, rfl⟩
+    have hj : (gramSchmidtQ A).col j ∈ Submodule.span 𝕜 ((gramSchmidtQ A).col '' Set.Iic j) :=
+      Submodule.subset_span ⟨j, Set.mem_Iic.mpr le_rfl, rfl⟩
+    rw [span_gramSchmidtQ_col_image_Iic] at hj
+    exact Submodule.span_mono (Set.image_subset_range _ _) hj
+  · conv_lhs => rw [← gramSchmidtQ_mul_gramSchmidtR A]
+    rw [Matrix.mulVecLin_mul]
+    exact LinearMap.range_comp_le_range _ _
+
+/-- **The Gram–Schmidt matrix is a partial isometry onto the column space**:
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$ for $\mathbf{Q}$ = `gramSchmidtQ A`,
+with no rank assumption.
+Proof: `conjTranspose_gramSchmidtQ_mul_self` makes $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ a star
+projection with the range of $\mathbf{Q}$; then `IsStarProjection.eq_rangeProjector` and
+`range_gramSchmidtQ`. Small. -/
+theorem gramSchmidtQ_mul_conjTranspose (A : Matrix m n 𝕜) :
+    gramSchmidtQ A * (gramSchmidtQ A)ᴴ = rangeProjector A := by
+  sorry
+
+/-- **Gram–Schmidt commutes with restriction to an initial segment of columns**: for an order
+embedding $e$ whose range is a lower set, the Gram–Schmidt matrix of the columns $e(j)$ of
+$\mathbf{A}$ consists of the columns $e(j)$ of the Gram–Schmidt matrix of $\mathbf{A}$.
+Proof: Mathlib's `gramSchmidt` at $j$ depends only on the vectors at indices $\le j$; induction
+on $j$ through `InnerProductSpace.gramSchmidt_def`, with `Finset.Iio` transported along $e$.
+Small to medium. -/
+theorem gramSchmidtQ_submatrix {p : Type*} [Fintype p] [LinearOrder p] [LocallyFiniteOrderBot p]
+    (A : Matrix m n 𝕜) (e : p ↪o n) (he : IsLowerSet (Set.range e)) :
+    gramSchmidtQ (A.submatrix id e) = (gramSchmidtQ A).submatrix id e := by
+  sorry
+
+/-- Gram–Schmidt of the first $q$ columns is the first $q$ columns of Gram–Schmidt. -/
+theorem gramSchmidtQ_submatrix_castLE {q q' : ℕ} (h : q ≤ q') (A : Matrix m (Fin q') 𝕜) :
+    gramSchmidtQ (A.submatrix id (Fin.castLE h)) = (gramSchmidtQ A).submatrix id (Fin.castLE h) :=
+  gramSchmidtQ_submatrix A (Fin.castLEOrderEmb h) (by
+    rintro a b hba ⟨c, rfl⟩
+    exact ⟨⟨b, lt_of_le_of_lt (Fin.le_def.mp hba) c.2⟩, rfl⟩)
 
 end NLAlib

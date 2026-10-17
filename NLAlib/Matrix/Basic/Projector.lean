@@ -41,6 +41,8 @@ $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is treated in `NLAlib.Matrix.Basic.Comple
   $\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$.
 * `NLAlib.rangeProjector_eq_mul_inv_mul_conjTranspose`: the full-column-rank formula.
 * `NLAlib.toEuclideanLin_rangeProjector`: the bridge to Mathlib's `Submodule.starProjection`.
+* `NLAlib.forall_mem_range_star_dotProduct_eq_zero_iff`: orthogonality to a column space as
+  $\mathbf{X}^{\mathsf{H}}\mathbf{w} = \mathbf{0}$.
 -/
 
 @[expose] public section
@@ -304,6 +306,23 @@ theorem rangeProjector_mulVec_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m 
     obtain ⟨C, hC⟩ := exists_rangeProjector_eq_mul B
     rw [← conjTranspose_rangeProjector, hC, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec, h,
       Matrix.mulVec_zero]
+
+/-- **Orthogonality to a column space**: a vector $\mathbf{w}$ is orthogonal to every vector of
+the column space of $\mathbf{X}$ exactly when $\mathbf{X}^{\mathsf{H}}\mathbf{w} = \mathbf{0}$.
+Statements take the right-hand side; this bridge turns it into the quantified form and back. -/
+theorem forall_mem_range_star_dotProduct_eq_zero_iff [Fintype m] [Fintype n] {X : Matrix m n 𝕜}
+    {w : m → 𝕜} :
+    (∀ v ∈ LinearMap.range X.mulVecLin, star v ⬝ᵥ w = 0) ↔ Xᴴ *ᵥ w = 0 := by
+  have key : ∀ c : n → 𝕜, star (X *ᵥ c) ⬝ᵥ w = star c ⬝ᵥ (Xᴴ *ᵥ w) := by
+    intro c
+    rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec]
+  constructor
+  · intro h
+    have h0 := h (X *ᵥ (Xᴴ *ᵥ w)) (LinearMap.mem_range.mpr ⟨_, rfl⟩)
+    rw [key] at h0
+    exact dotProduct_star_self_eq_zero.mp h0
+  · rintro h v ⟨c, rfl⟩
+    rw [Matrix.mulVecLin_apply, key, h, dotProduct_zero]
 
 /-- A star projection with the same range as $\mathbf{A}$ is $\mathbf{P}_{\mathbf{A}}$. -/
 theorem _root_.IsStarProjection.eq_rangeProjector [Fintype m] [Fintype n] {P : Matrix m m 𝕜}
