@@ -23,6 +23,7 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
 ## Main definitions
 
 * `NLAlib.gramSchmidtQ`, `NLAlib.gramSchmidtR`: the two factors.
+* `NLAlib.mgsSweep`: the modified Gram–Schmidt sweep of a vector against a sequence.
 
 ## Main results
 
@@ -37,6 +38,8 @@ The process is Mathlib's `InnerProductSpace.gramSchmidtNormed` on the columns.
   initial segment of the columns.
 * `NLAlib.gramSchmidtQ_col_eq_zero_iff`, `NLAlib.gramSchmidtQ_col_bot`: zero columns and the first
   column.
+* `NLAlib.mgsSweep_eq_sub_sum`: the modified Gram–Schmidt sweep `NLAlib.mgsSweep` equals the
+  classical one against pairwise orthogonal vectors.
 -/
 
 @[expose] public section
@@ -436,5 +439,41 @@ theorem gramSchmidtQ_submatrix_castLE {q q' : ℕ} (h : q ≤ q') (A : Matrix m 
   gramSchmidtQ_submatrix A (Fin.castLEOrderEmb h) (by
     rintro a b hba ⟨c, rfl⟩
     exact ⟨⟨b, lt_of_le_of_lt (Fin.le_def.mp hba) c.2⟩, rfl⟩)
+
+/-! ### Modified Gram–Schmidt -/
+
+section Modified
+
+variable {m : Type*} [Fintype m]
+
+/-- The **modified Gram–Schmidt sweep**: $\mathbf{u}_0 = \mathbf{w}$ and
+$\mathbf{u}_{i+1} = \mathbf{u}_i - (\mathbf{v}_i^{\mathsf{H}}\mathbf{u}_i)\mathbf{v}_i$; the value
+at $k$ is $\mathbf{w}$ reduced against $\mathbf{v}_0, \dots, \mathbf{v}_{k-1}$, one vector at a
+time, each coefficient computed from the partially reduced vector. The vectors are not assumed
+normalised. It is the inner loop of the Arnoldi process. [GolubVanLoan2013, §5.2.8]. -/
+def mgsSweep (V : ℕ → m → 𝕜) (w : m → 𝕜) : ℕ → m → 𝕜
+  | 0 => w
+  | i + 1 => mgsSweep V w i - (star (V i) ⬝ᵥ mgsSweep V w i) • V i
+
+/-- **Modified and classical Gram–Schmidt agree in exact arithmetic**: if
+$\mathbf{v}_i^{\mathsf{H}}\mathbf{v}_j = 0$ for $j < i < k$, then
+$$\mathsf{mgsSweep}(\mathbf{v}, \mathbf{w}, k) = \mathbf{w} - \sum_{i < k}
+(\mathbf{v}_i^{\mathsf{H}}\mathbf{w})\mathbf{v}_i\,.$$
+[GolubVanLoan2013, §5.2.8]. -/
+theorem mgsSweep_eq_sub_sum {V : ℕ → m → 𝕜} {k : ℕ}
+    (h : ∀ i < k, ∀ j < i, star (V i) ⬝ᵥ V j = 0) (w : m → 𝕜) :
+    mgsSweep V w k = w - ∑ i ∈ Finset.range k, (star (V i) ⬝ᵥ w) • V i := by
+  induction k with
+  | zero => simp [mgsSweep]
+  | succ k ih =>
+    have ih' := ih fun i hi j hj => h i (Nat.lt_succ_of_lt hi) j hj
+    have hc : star (V k) ⬝ᵥ mgsSweep V w k = star (V k) ⬝ᵥ w := by
+      rw [ih', dotProduct_sub, dotProduct_sum, sub_eq_self]
+      refine Finset.sum_eq_zero fun i hi => ?_
+      rw [dotProduct_smul, h k (Nat.lt_succ_self k) i (Finset.mem_range.mp hi), smul_zero]
+    change mgsSweep V w k - (star (V k) ⬝ᵥ mgsSweep V w k) • V k = _
+    rw [hc, ih', Finset.sum_range_succ, sub_sub]
+
+end Modified
 
 end NLAlib

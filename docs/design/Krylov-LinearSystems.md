@@ -724,3 +724,10 @@ from memory and are verified before the PR.
   `ForMathlib/LinearAlgebra/Matrix/ConjTranspose.lean` (no NLAlib vocabulary, beside the other
   congruence identity). No placement flag remains open. Bib
   keys `SaadSchultz1986`, `EisenstatElmanSchultz1983`, `ElmanSilvesterWathen2014` added.
+- Checkpoint 4 landed with no statement changes. K0's private Lanczos layer is now the public column
+  API of `Lanczos.lean` (stated on `(arnoldiMatrix A b (j + 1)).col (Fin.last j)`, no `arnoldiVec`);
+  `LanczosRecurrence.lean` keeps only real-valued wrappers (`lanczosR` as the real part of
+  `gramSchmidtR`). `PreconditionedLanczos.lean` imports `Matrix/Spectral/Congruence.lean` for the factor
+  of `M`. The Givens theorems of `GMRESArnoldi.lean` move to checkpoint 5. All realisations hold for
+  every `q`: Arnoldi with no hypothesis, Lanczos for Hermitian `A`, preconditioned MINRES through
+  preconditioned Lanczos for Hermitian invertible `A` and positive definite `M`.
