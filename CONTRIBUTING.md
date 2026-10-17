@@ -59,7 +59,8 @@ NLAlib/
   ForMathlib/      general facts not about NLAlib's objects, headed upstream;
                    files named after the Mathlib file they would join            (layer −1)
   Matrix/          deterministic matrix analysis                                  (layer 0)
-  Polynomial/      Chebyshev, minimax, Markov, interpolation                        (layer 0)
+  Polynomial/      scalar approximation theory and the function classes it
+                   approximates (amended 2026-10-17)                             (layer 0)
   Probability/     scalar and vector probability, concentration                    (layer 1)
   Krylov/          deterministic Krylov theory                                      (layer 1)
   RandomMatrix/    Gaussian, sub-Gaussian, Haar random matrices                     (layer 2)
