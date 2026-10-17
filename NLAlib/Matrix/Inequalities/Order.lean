@@ -34,6 +34,10 @@ generalized eigenvalues of the pair).
   preconditioned matrix.
 * `Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset`: spectral equivalence through the
   generalized eigenvalues.
+* `NLAlib.spectrum_mul_conjTranspose_mul`, `Matrix.PosDef.spectrum_mul_subset_Icc_of_le`: the
+  spectrum of a preconditioned matrix $\mathbf{M}\mathbf{A}$, $\mathbf{M} \approx \mathbf{A}^{-1}$,
+  is that of the split matrix, and spectral equivalence in the preconditioner's orientation
+  bounds it.
 * `NLAlib.convex_setOf_posDef`, `NLAlib.convex_setOf_posSemidef`: the positive definite and the
   positive semidefinite matrices form convex sets.
 -/
@@ -458,6 +462,34 @@ theorem _root_.Matrix.PosDef.spectrum_inv_mul_subset_range_ofReal {A B : Matrix 
     (Matrix.isHermitian_conjTranspose_mul_mul C hB).spectrum_eq_image_range]
   rintro _ ⟨r, -, rfl⟩
   exact ⟨r, rfl⟩
+
+/-- **The preconditioned spectrum is the split spectrum**: for invertible $\mathbf{C}$,
+$\mathbf{C}\mathbf{C}^{\mathsf{H}}\mathbf{A} =
+\mathbf{C}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\mathbf{C}^{-1}$, so the two have the same
+real spectrum. With $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ it moves a hypothesis on the
+spectrum of $\mathbf{M}\mathbf{A}$ to the split matrix
+$\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$. -/
+theorem spectrum_mul_conjTranspose_mul {C : Matrix n n 𝕜} (hC : IsUnit C) (A : Matrix n n 𝕜) :
+    spectrum ℝ (C * Cᴴ * A) = spectrum ℝ (Cᴴ * A * C) := by
+  have h : C * Cᴴ * A = (hC.unit : Matrix n n 𝕜) * (Cᴴ * A * C) *
+      ((hC.unit⁻¹ : (Matrix n n 𝕜)ˣ) : Matrix n n 𝕜) := by
+    simp only [Matrix.mul_assoc, IsUnit.mul_val_inv, Matrix.mul_one, IsUnit.unit_spec]
+  rw [h, spectrum.units_conjugate]
+
+/-- **Spectral equivalence in the preconditioner's orientation**: for positive definite
+$\mathbf{M}$ and $a\mathbf{M}^{-1} \preceq \mathbf{A} \preceq a'\mathbf{M}^{-1}$, the real spectrum
+of $\mathbf{M}\mathbf{A}$ lies in $[a, a']$. The hypothesis form of the preconditioned conjugate
+gradient and minimal residual bounds, whose $\mathbf{M}$ approximates $\mathbf{A}^{-1}$. -/
+theorem _root_.Matrix.PosDef.spectrum_mul_subset_Icc_of_le {M A : Matrix n n 𝕜} (hM : M.PosDef)
+    {a a' : ℝ} (h₁ : a • M⁻¹ ≤ A) (h₂ : A ≤ a' • M⁻¹) : spectrum ℝ (M * A) ⊆ Set.Icc a a' := by
+  have hMi : M⁻¹.PosDef := hM.inv
+  have hs : (a • M⁻¹).IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_smul, star_trivial, hMi.isHermitian.eq]
+  have hA : A.IsHermitian := by
+    have h := (Matrix.le_iff.mp h₁).isHermitian.add hs
+    rwa [sub_add_cancel] at h
+  have h := (hMi.smul_le_and_le_smul_iff_spectrum_subset hA a a').mp ⟨h₁, h₂⟩
+  rwa [Matrix.nonsing_inv_nonsing_inv M ((Matrix.isUnit_iff_isUnit_det M).mp hM.isUnit)] at h
 
 /-- $\mathbf{B}^2 \preceq \mathbf{A}^2$ exactly when $\|\mathbf{B}\mathbf{A}^{-1}\|_2 \le 1$, for
 positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$.

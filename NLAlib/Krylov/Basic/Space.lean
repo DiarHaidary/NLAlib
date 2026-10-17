@@ -38,6 +38,10 @@ reach $\mathcal{K}_{q+1}$.
   $\mathbf{A}\mathcal{K}_q \subseteq \mathcal{K}_{q+1}$.
 * `NLAlib.krylovSpace_add_smul_one`: shift invariance,
   $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{b}) = \mathcal{K}_q(\mathbf{A}, \mathbf{b})$.
+* `NLAlib.krylovMatrix_mul_mulVec`, `NLAlib.krylovSpace_mul_mulVec`: a change of variables,
+  $\mathcal{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
+  \mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$, which maps a split Krylov space
+  onto a preconditioned one.
 -/
 
 @[expose] public section
@@ -191,5 +195,30 @@ theorem krylovSpace_add_smul_one (A : Matrix n n 𝕜) (s : ℝ) (b : n → 𝕜
   refine le_antisymm (krylovSpace_add_smul_one_le A s b q) ?_
   have h := krylovSpace_add_smul_one_le (A + s • (1 : Matrix n n 𝕜)) (-s) b q
   rwa [add_assoc, ← add_smul, add_neg_cancel, zero_smul, add_zero] at h
+
+/-- **Krylov matrices under a change of variables**:
+$\mathbf{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
+\mathbf{C}\,\mathbf{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$, since
+$(\mathbf{C}\mathbf{B})^j\mathbf{C} = \mathbf{C}(\mathbf{B}\mathbf{C})^j$. With
+$\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ and
+$\mathbf{B} = \mathbf{C}^{\mathsf{H}}\mathbf{A}$ it carries the split Krylov matrix
+$\mathbf{K}_q(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}, \mathbf{C}^{\mathsf{H}}\mathbf{r})$ to
+the preconditioned one $\mathbf{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{r})$. -/
+theorem krylovMatrix_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : ℕ) :
+    krylovMatrix (C * B) (C *ᵥ v) q = C * krylovMatrix (B * C) v q := by
+  ext i j
+  have hs : SemiconjBy C (B * C) (C * B) := (Matrix.mul_assoc C B C).symm
+  have h : (C * B) ^ (j : ℕ) * C = C * (B * C) ^ (j : ℕ) := (hs.pow_right _).eq.symm
+  rw [krylovMatrix_apply, Matrix.mulVec_mulVec, h, ← Matrix.mulVec_mulVec]
+  rfl
+
+/-- **Krylov spaces under a change of variables**:
+$\mathcal{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
+\mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$.
+Port of `NLAlib.krylovSpace_mul_mulVec_eq_map` (prototype). -/
+theorem krylovSpace_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : ℕ) :
+    krylovSpace (C * B) (C *ᵥ v) q = (krylovSpace (B * C) v q).map C.mulVecLin := by
+  rw [krylovSpace, krylovSpace, krylovMatrix_mul_mulVec, Matrix.mulVecLin_mul,
+    LinearMap.range_comp]
 
 end NLAlib

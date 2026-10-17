@@ -26,6 +26,7 @@ and act on the singular values.
 
 * `Matrix.IsHermitian.exists_cfc_eq_aeval`: every function of $\mathbf{A}$ is a polynomial in
   $\mathbf{A}$.
+* `NLAlib.exists_eval_eq_of_mem_spectrum`: one interpolating polynomial on two spectra.
 * `Matrix.IsHermitian.aeval_nodal_eq_zero`: the nodal polynomial of a set containing the
   spectrum annihilates $\mathbf{A}$.
 * `Matrix.IsHermitian.specNorm_aeval_le`:
@@ -119,6 +120,21 @@ theorem _root_.Matrix.IsHermitian.exists_cfc_eq_aeval {A : Matrix n n 𝕜} (hA 
     obtain ⟨i, rfl⟩ := hx
     exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
       (Finset.mem_image_of_mem _ (Finset.mem_univ i))
+
+/-- **One polynomial for two matrices**: for any square matrices $\mathbf{M}$, $\mathbf{N}$
+(of possibly different sizes) and $f : \mathbb{R} \to \mathbb{R}$, some real polynomial $p$
+satisfies $p(x) = f(x)$ on the real spectra of both, the Lagrange interpolant on their union,
+which is finite. With `Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq` it writes
+$f(\mathbf{M})$ and $f(\mathbf{N})$ as the same polynomial. -/
+theorem exists_eval_eq_of_mem_spectrum (M : Matrix n n 𝕜) (N : Matrix m m 𝕜) (f : ℝ → ℝ) :
+    ∃ p : ℝ[X], (∀ x ∈ spectrum ℝ M, p.eval x = f x) ∧ ∀ x ∈ spectrum ℝ N, p.eval x = f x := by
+  classical
+  set s := (M.finite_real_spectrum.union N.finite_real_spectrum).toFinset
+  refine ⟨Lagrange.interpolate s id f, fun x hx => ?_, fun x hx => ?_⟩
+  · exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
+      ((Set.Finite.mem_toFinset _).mpr (Or.inl hx))
+  · exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
+      ((Set.Finite.mem_toFinset _).mpr (Or.inr hx))
 
 /-- A polynomial in a Hermitian matrix is Hermitian. Port of `NLAlib.transpose_aeval`. -/
 theorem _root_.Matrix.IsHermitian.aeval {A : Matrix n n 𝕜} (hA : A.IsHermitian) (p : ℝ[X]) :

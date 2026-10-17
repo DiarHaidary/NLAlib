@@ -648,3 +648,22 @@ Stieltjes functions**, `Polynomial/Approximation/Stieltjes.lean` and
 `Polynomial/Interpolation/Stieltjes.lean` (§7), with the measure a `Measure ℝ` null on
 $(-\infty, 0)$ and the values constrained on $(0, \infty)$ only; CONTRIBUTING §2 amended.
 No question is open.
+
+## Implementation (2026-10-17)
+
+- C1 to C5 landed. Statement changes: Theorem 5
+  (`Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure`) takes
+  `(hR₀ : 0 < R)`: with the zero measure the a.e. kernel bound is vacuous and the original statement
+  fails (`μ = 0`, `f = 0`, `A = 1`, `R = -2`); `0 < R` suffices, since the proof passes `max R 1` to
+  the abstract step. The `IsStieltjes` corollary and Theorem 1 are unchanged.
+- `Matrix.IsHermitian.lanczosFA_sub` is now `NLAlib.lanczosFA_sub` for every `A` (the hypothesis was
+  unused).
+- Shifted CG is proved as a corollary of Theorem 1 with `f = (x + s)⁻¹`
+  (`hasStieltjesMeasure_inv_add`), not by the measure-free route, since the Stieltjes files were
+  already proved; the matrix argument sits in the abstract step and one private core lemma.
+- Helpers moved to their homes as public lemmas:
+  `NLAlib.rangeProjector_eq_mul_conjTranspose_of_mul_conjTranspose_mul_self` (Matrix/Basic/Projector),
+  `NLAlib.exists_eval_eq_of_mem_spectrum` (Matrix/Functions/Polynomial). Open flag:
+  `exists_hasOrthonormalCols_range_eq_krylovSpace` is private in `LanczosFA.lean`; its home is
+  `Krylov/Basic/Space.lean`.
+- Theorem 2 (optimality of the constant) is K2b and is not in the library yet.

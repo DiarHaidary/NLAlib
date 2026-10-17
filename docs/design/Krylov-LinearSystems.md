@@ -694,3 +694,14 @@ from memory and are verified before the PR.
   `IsUpperHessenberg` into `Triangular.lean` so the theorems can join `Givens.lean`, was not taken
   (it edits `Hessenberg.lean`, outside the stage's file list); it remains open for the maintainer.
   Five step lemmas of `Givens.lean` are public because the new file uses them.
+- Checkpoint 2 landed with no statement changes. `PCG.lean` imports `Matrix/Spectral/Congruence.lean`
+  for the factor `M = C Cᴴ` (`Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose`),
+  which no module of the chain imported before; no cycle. New public lemmas: `krylovMatrix_mul_mulVec`,
+  `krylovSpace_mul_mulVec` (Space), `krylovGrade_mul_mulVec` (Grade), `spectrum_mul_conjTranspose_mul`,
+  `Matrix.PosDef.spectrum_mul_subset_Icc_of_le` (Order). The PCG realisation takes only `A.PosDef`
+  and `M.PosDef`.
+- Checkpoint 2b (sharpness for CG): `eval_chebyshevResidual_chebyshevExtremum` drops its unused
+  hypothesis `0 < a` (alternation needs only `a < a'`). `WorstCase.lean` holds only the CG part
+  (`chebyshevExtremaMatrix`, `chebyshevErrorVector`, their positivity and spectrum, the two CG
+  theorems); `chebyshevWeightVector`, the two-interval definitions and the MINRES theorems join it in
+  checkpoint 3, with the import of `MINRES`.

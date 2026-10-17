@@ -30,6 +30,8 @@ layer: Lanczos and conjugate gradients break down, or terminate, exactly at the 
   lies in the Krylov space of the grade.
 * `NLAlib.krylovGrade_le_of_mem_of_mulVec_eq`: $\nu \le k$ when $\mathbf{b} = \mathbf{A}\mathbf{y}$
   with $\mathbf{y} \in \mathcal{K}_k$.
+* `NLAlib.krylovGrade_mul_mulVec`: invariance under an invertible change of variables, so that a
+  preconditioned recurrence breaks down at the grade of its split system.
 -/
 
 @[expose] public section
@@ -238,5 +240,14 @@ theorem krylovGrade_le_of_mem_of_mulVec_eq {A : Matrix n n 𝕜} {c y : n → �
   have h := (Submodule.finrank_mono hle).trans (Submodule.finrank_map_le A.mulVecLin _)
   rw [finrank_krylovSpace, finrank_krylovSpace] at h
   omega
+
+/-- **The grade under a change of variables**: for invertible $\mathbf{C}$, the grade of
+$\mathbf{C}\mathbf{v}$ for $\mathbf{C}\mathbf{B}$ is that of $\mathbf{v}$ for
+$\mathbf{B}\mathbf{C}$. The preconditioned recurrences break down at the grade of the split
+system. -/
+theorem krylovGrade_mul_mulVec {C : Matrix n n 𝕜} (hC : IsUnit C) (B : Matrix n n 𝕜)
+    (v : n → 𝕜) : krylovGrade (C * B) (C *ᵥ v) = krylovGrade (B * C) v := by
+  rw [krylovGrade, krylovGrade, krylovMatrix_mul_mulVec,
+    Matrix.rank_mul_eq_right_of_isUnit_det _ _ ((Matrix.isUnit_iff_isUnit_det C).mp hC)]
 
 end NLAlib

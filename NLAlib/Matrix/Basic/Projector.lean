@@ -36,7 +36,9 @@ $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is treated in `NLAlib.Matrix.Basic.Comple
 * `NLAlib.rangeProjector_mul_eq_self_iff`: $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{Y}$ iff
   the range of $\mathbf{Y}$ is inside the range of $\mathbf{B}$.
 * `NLAlib.HasOrthonormalCols.rangeProjector_eq`: for $\mathbf{Q}$ with orthonormal columns the
-  projector is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
+  projector is $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$;
+  `NLAlib.rangeProjector_eq_mul_conjTranspose_of_mul_conjTranspose_mul_self`, the same for a
+  partial isometry.
 * `NLAlib.HasOrthonormalCols.rangeProjector_mul`: equivariance,
   $\mathbf{P}_{\mathbf{Q}\mathbf{X}} = \mathbf{Q}\mathbf{P}_{\mathbf{X}}\mathbf{Q}^{\mathsf{H}}$.
 * `NLAlib.rangeProjector_eq_mul_inv_mul_conjTranspose`: the full-column-rank formula.
@@ -437,6 +439,21 @@ theorem HasOrthonormalCols.rangeProjector_eq [Fintype m] [Fintype n] [DecidableE
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : rangeProjector Q = Q * Qᴴ := by
   rw [← rangeProjector_mul_conjTranspose_self,
     hQ.isStarProjection_mul_conjTranspose.rangeProjector_eq]
+
+/-- **The projector of a partial isometry**: for $\mathbf{Q}$ with
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$ (orthonormal columns, possibly with
+some zero columns), $\mathbf{P}_{\mathbf{Q}} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
+Generalises `NLAlib.HasOrthonormalCols.rangeProjector_eq`. -/
+theorem rangeProjector_eq_mul_conjTranspose_of_mul_conjTranspose_mul_self [Fintype m]
+    [Fintype n] {Q : Matrix m n 𝕜} (hQ : Q * Qᴴ * Q = Q) : rangeProjector Q = Q * Qᴴ := by
+  refine (IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩) ?_).symm
+  · rw [← Matrix.mul_assoc, hQ]
+  · exact Matrix.isHermitian_mul_conjTranspose_self _
+  · refine le_antisymm ?_ ?_
+    · rw [Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
+    · conv_lhs => rw [← hQ, Matrix.mulVecLin_mul]
+      exact LinearMap.range_comp_le_range _ _
 
 /-- The projector onto the column space of $\mathbf{Q}\mathbf{X}$, for $\mathbf{Q}$ with
 orthonormal columns:
