@@ -214,7 +214,8 @@ theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix {a a' : ℝ} (ha : 0 < 
 
 /-- **The CG bound is tight up to $(1 + \rho^{2q})^2$**: on the same instance the squared error
 ratio is $\frac{4\rho^{2q}}{(1 + \rho^{2q})^2}$, against the bound $4\rho^{2q}$ of
-`Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow`. -/
+`Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow`.
+Result: cg-chebyshev-sharp -/
 theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix_eq_four_mul_pow_div {a a' : ℝ}
     (ha : 0 < a) (haa : a < a') (q : ℕ) :
     RCLike.re (quadForm (chebyshevExtremaMatrix 𝕜 a a' q) (chebyshevErrorVector 𝕜 a a' q -
@@ -380,7 +381,8 @@ polynomial is even. For a residual $p$ of degree at most $q$ and $u = p(\sqrt{\x
 $v = p(-\sqrt{\xi_j})$, $\lvert u \rvert^2 + \lvert v \rvert^2 \ge 2\lvert (u + v)/2 \rvert^2$, and
 $(u + v)/2 = P(\xi_j)$ for the even part $P(x^2)$ of $p$, of degree at most $\lfloor q/2 \rfloor$;
 so the residual is at least the interval value on $[a^2, a'^2]$, which the even Chebyshev residual
-attains. [Greenbaum1997, §3.1]; locator to verify. -/
+attains. [Greenbaum1997, §3.1]; locator to verify.
+Result: minres-two-interval-sharp -/
 theorem norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix {a a' : ℝ} (ha : 0 < a)
     (haa : a < a') (q : ℕ) :
     ‖WithLp.toLp 2 (chebyshevTwoIntervalVector 𝕜 a a' (q / 2) -
@@ -549,7 +551,8 @@ q)\|_{\mathbf{A}}^2 / \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2$ over
 $\mathbf{x}_\star \ne \mathbf{x}_0$ is $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)^2$: the
 equation of `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul` with
 the bound `Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul`.
-[Greenbaum1979]; locator to verify. -/
+[Greenbaum1979]; locator to verify.
+Result: cg-spectrum-minimax-sharp -/
 theorem _root_.Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div {A : Matrix n n 𝕜}
     (hA : A.PosDef) [Nonempty n] (x₀ : n → 𝕜) (q : ℕ) :
     IsGreatest ((fun xs => RCLike.re (quadForm A (xs - cgIterate A (A *ᵥ xs) x₀ q)) /
@@ -616,7 +619,8 @@ $\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathb
 $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)$: the equation of
 `Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul` with the bound
 `Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul`.
-[GreenbaumGurvits1994]; locator to verify. -/
+[GreenbaumGurvits1994]; locator to verify.
+Result: minres-spectrum-minimax-sharp -/
 theorem _root_.Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) [Nonempty n] (x₀ : n → 𝕜) (q : ℕ) :
     IsGreatest ((fun b => ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ /

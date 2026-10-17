@@ -114,7 +114,8 @@ theorem _root_.Matrix.PosDef.cgIterate_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The Galerkin condition**: for positive definite $\mathbf{A}$ the residual of the CG iterate
-is orthogonal to $\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$. -/
+is orthogonal to $\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$.
+Result: cg-galerkin-condition -/
 theorem _root_.Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIterate_eq_zero
     {A : Matrix n n 𝕜} (hA : A.PosDef) (b x₀ : n → 𝕜) (q : ℕ) :
     (krylovMatrix A (b - A *ᵥ x₀) q)ᴴ *ᵥ (b - A *ᵥ cgIterate A b x₀ q) = 0 := by
@@ -129,7 +130,8 @@ theorem _root_.Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIter
 omit [Fintype r] [DecidableEq r] in
 /-- **The Galerkin condition characterises CG**: for positive definite $\mathbf{A}$, a vector of
 $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$ whose residual is orthogonal to the Krylov
-space is $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$. -/
+space is $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$.
+Result: cg-galerkin-condition -/
 theorem _root_.Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b x₀ y : n → 𝕜} {q : ℕ}
     (hy : y - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q)
@@ -190,7 +192,8 @@ omit [Fintype r] [DecidableEq r] in
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and every real $p$ with $\deg p \le q$, $p(0) = 1$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
 \le \|p(\mathbf{A})(\mathbf{x}_\star - \mathbf{x}_0)\|_{\mathbf{A}}^2 \,.$$
-[Saad2003, §6.11.3]. -/
+[Saad2003, §6.11.3].
+Result: cg-polynomial-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_re_quadForm_aeval {A : Matrix n n 𝕜}
     (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ} {p : ℝ[X]}
     (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
@@ -216,7 +219,8 @@ omit [Fintype r] [DecidableEq r] in
 $s$, $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, and a real $p$ with $\deg p \le q$, $p(0) = 1$
 satisfies $\lvert p \rvert \le \eta$ on $s$, then
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
-\le \eta^2 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$ [Saad2003, §6.11.3]. -/
+\le \eta^2 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$ [Saad2003, §6.11.3].
+Result: cg-polynomial-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le {A : Matrix n n 𝕜} (hA : A.PosDef)
     {s : Set ℝ} (hs : spectrum ℝ A ⊆ s) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜)
     {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) {η : ℝ}
@@ -263,7 +267,8 @@ $\mathbf{A}$ with $\kappa = \kappa(\mathbf{A})$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
 \le 4\Bigl(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\Bigr)^{2q}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-The interval form at $[\lambda_{\min}, \lambda_{\max}]$. [Saad2003, (6.128)]. -/
+The interval form at $[\lambda_{\min}, \lambda_{\max}]$. [Saad2003, (6.128)].
+Result: cg-chebyshev-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_pow_pseudoConditionNumber
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜)
     (q : ℕ) :
@@ -297,7 +302,8 @@ d)\|_{\mathbf{A}}^2
 $m$ steps are spent on the outliers, and the rate on $[a, a']$ applies to the rest.
 No hypothesis on $T$: an element $0$ of $T$ contributes the factor $1$ (Lean's $0^{-1} = 0$) and
 is not in the spectrum. [Greenbaum1997, §3.1]; [TrefethenBau1997, Lecture 38]; locators to
-verify. -/
+verify.
+Result: cg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_sq_mul_pow
     {A : Matrix n n 𝕜} (hA : A.PosDef) {a a' : ℝ} (ha : 0 < a) {T : Finset ℝ}
     (hs : spectrum ℝ A ⊆ Set.Icc a a' ∪ ↑T) {C : ℝ}
@@ -325,7 +331,8 @@ $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 
 d)\|_{\mathbf{A}}^2
 \le 4\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2d}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-[Greenbaum1997, §3.1]; locator to verify. -/
+[Greenbaum1997, §3.1]; locator to verify.
+Result: cg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_pow_of_forall_le
     {A : Matrix n n 𝕜} (hA : A.PosDef) {a a' : ℝ} (ha : 0 < a) {T : Finset ℝ}
     (hs : spectrum ℝ A ⊆ Set.Icc a a' ∪ ↑T) (hT : ∀ t ∈ T, a' ≤ t) {b xs : n → 𝕜}
@@ -352,7 +359,8 @@ d)\|_{\mathbf{A}}^2
 \le 4\Bigl(\prod_{t \in T}\Bigl(\frac{a'}{t} - 1\Bigr)\Bigr)^2
 \Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2d}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-[Greenbaum1997, §3.1]; locator to verify. -/
+[Greenbaum1997, §3.1]; locator to verify.
+Result: cg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_sq_mul_pow_of_forall_lt
     {A : Matrix n n 𝕜} (hA : A.PosDef) {a a' : ℝ} (ha : 0 < a) {T : Finset ℝ}
     (hs : spectrum ℝ A ⊆ Set.Icc a a' ∪ ↑T) (hT : ∀ t ∈ T, 0 < t ∧ t < a) {b xs : n → 𝕜}
@@ -376,7 +384,8 @@ real $p$ with $\deg p \le q$, $p(0) = 1$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
 \le \Bigl(\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)^2
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-The maximum is the supremum over the finite spectrum. [Greenbaum1997, §3.1]; locator to verify. -/
+The maximum is the supremum over the finite spectrum. [Greenbaum1997, §3.1]; locator to verify.
+Result: cg-polynomial-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_iSup_sq_mul {A : Matrix n n 𝕜}
     (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ} {p : ℝ[X]}
     (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
@@ -399,7 +408,8 @@ of this file follows from it by bounding the minimax value. For each $\mathbf{A}
 $\mathbf{b}$ attains it (Greenbaum):
 `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul` and
 `Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div` in
-`NLAlib.Krylov.LinearSystems.WorstCase`. [Greenbaum1997, §3.1]; locator to verify. -/
+`NLAlib.Krylov.LinearSystems.WorstCase`. [Greenbaum1997, §3.1]; locator to verify.
+Result: cg-spectrum-minimax-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜)
     (q : ℕ) :
@@ -437,7 +447,8 @@ with $\kappa = \kappa(\mathbf{A})$,
 $$\|\mathbf{A}(\mathbf{x}_\star - \mathbf{x}_q)\|^2 \le
 4\Bigl(\frac{\kappa - 1}{\kappa + 1}\Bigr)^{2q}\|\mathbf{A}(\mathbf{x}_\star - \mathbf{x}_0)\|^2
 \,,$$
-written in the $\mathbf{A}^{\mathsf{H}}\mathbf{A}$-norm. [Saad2003, §8.3]; locator to verify. -/
+written in the $\mathbf{A}^{\mathsf{H}}\mathbf{A}$-norm. [Saad2003, §8.3]; locator to verify.
+Result: cgls -/
 theorem re_quadForm_sub_cgIterate_conjTranspose_mul_le_four_mul_pow {m : Type*} [Fintype m]
     {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec) {b : m → 𝕜} {xs : n → 𝕜}
     (hxs : (Aᴴ * A) *ᵥ xs = Aᴴ *ᵥ b) (x₀ : n → 𝕜) (q : ℕ) :
@@ -452,7 +463,8 @@ theorem re_quadForm_sub_cgIterate_conjTranspose_mul_le_four_mul_pow {m : Type*} 
 omit [Fintype r] [DecidableEq r] in
 /-- **Finite termination**: for positive definite $\mathbf{A}$, CG reaches the solution once $q$
 is at least the grade of $\mathbf{r}_0$, in particular at $q = \lvert n \rvert$.
-[Saad2003, §6.2]. -/
+[Saad2003, §6.2].
+Result: cg-finite-termination -/
 theorem _root_.Matrix.PosDef.cgIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : A.PosDef)
     {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ}
     (h : krylovGrade A (b - A *ᵥ x₀) ≤ q) : cgIterate A b x₀ q = xs := by

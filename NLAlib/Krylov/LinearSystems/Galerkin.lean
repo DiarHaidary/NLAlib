@@ -166,7 +166,8 @@ $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$ minimises
 $\|\mathbf{x}_\star - \mathbf{y}\|_{\mathbf{A}}^2 =
 \operatorname{Re}\bigl((\mathbf{x}_\star - \mathbf{y})^{\mathsf{H}}\mathbf{A}
 (\mathbf{x}_\star - \mathbf{y})\bigr)$ over the column space of $\mathbf{X}$.
-[Saad2003, §5.2]. -/
+[Saad2003, §5.2].
+Result: galerkin-optimality -/
 theorem _root_.Matrix.PosDef.isMinOn_galerkinInverse_mulVec {A : Matrix n n 𝕜} (hA : A.PosDef)
     (X : Matrix n p 𝕜) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) :
     IsMinOn (fun y => RCLike.re (quadForm A (xs - y)))

@@ -320,7 +320,8 @@ theorem _root_.Matrix.PosDef.span_cgState_p (hA : A.PosDef) (k : ℕ) :
 omit [DecidableEq n] in
 /-- **The residuals are orthogonal**, for positive definite $\mathbf{A}$:
 $\mathbf{r}_j^{\mathsf{H}}\mathbf{r}_k = 0$ for $j < k$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1]. -/
+[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1].
+Result: cg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_cgState_r_dotProduct_eq_zero (hA : A.PosDef) {j k : ℕ}
     (hjk : j < k) : star (cgState A b x₀ j).r ⬝ᵥ (cgState A b x₀ k).r = 0 := by
   classical
@@ -329,7 +330,8 @@ theorem _root_.Matrix.PosDef.star_cgState_r_dotProduct_eq_zero (hA : A.PosDef) {
 omit [DecidableEq n] in
 /-- **The search directions are $\mathbf{A}$-conjugate**, for positive definite $\mathbf{A}$:
 $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_k = 0$ for $j < k$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1]. -/
+[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1].
+Result: cg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_cgState_p_dotProduct_mulVec_eq_zero (hA : A.PosDef) {j k : ℕ}
     (hjk : j < k) : star (cgState A b x₀ j).p ⬝ᵥ (A *ᵥ (cgState A b x₀ k).p) = 0 := by
   classical

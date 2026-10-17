@@ -135,7 +135,8 @@ theorem compressedCfc_eq_of_mul_conjTranspose_mul_self {Q : Matrix n r 𝕜}
 orthonormal columns spanning the column space of $\mathbf{X}$,
 $\mathsf{compressedCfc}(\mathbf{A}, f, \mathbf{X}) =
 \mathbf{Q}f(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})\mathbf{Q}^{\mathsf{H}}$; when
-$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is not Hermitian both sides are $\mathbf{0}$. -/
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is not Hermitian both sides are $\mathbf{0}$.
+Result: lanczos-fa-formula -/
 theorem HasOrthonormalCols.compressedCfc_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
     {X : Matrix n p 𝕜} (h : LinearMap.range Q.mulVecLin = LinearMap.range X.mulVecLin)
     (A : Matrix n n 𝕜) (f : ℝ → ℝ) :
@@ -145,7 +146,8 @@ theorem HasOrthonormalCols.compressedCfc_eq {Q : Matrix n r 𝕜} (hQ : HasOrtho
 /-- **The compressed inverse is the Galerkin inverse**, for Hermitian $\mathbf{A}$:
 $\mathsf{compressedCfc}(\mathbf{A}, x \mapsto x^{-1}, \mathbf{X}) =
 \mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})$, through
-`Matrix.IsHermitian.cfc_inv_eq_pinv` on the compression to an orthonormal basis. -/
+`Matrix.IsHermitian.cfc_inv_eq_pinv` on the compression to an orthonormal basis.
+Result: lanczos-fa-cg -/
 theorem _root_.Matrix.IsHermitian.compressedCfc_inv_eq_galerkinInverse {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (X : Matrix n p 𝕜) :
     compressedCfc A (fun x => x⁻¹) X = galerkinInverse A X := by
@@ -200,7 +202,8 @@ less than $q$ that agrees with $f$ on the spectrum of
 $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$,
 $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q) = p(\mathbf{A})\mathbf{b}$. The Lagrange
 interpolant at the Ritz values is such a $p$.
-[ChenPersson2026, (9)]. -/
+[ChenPersson2026, (9)].
+Result: lanczos-fa-interpolation -/
 theorem HasOrthonormalCols.lanczosFA_eq_aeval_mulVec {Q : Matrix n r 𝕜}
     (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) {f : ℝ → ℝ} {p : ℝ[X]}
@@ -212,7 +215,8 @@ theorem HasOrthonormalCols.lanczosFA_eq_aeval_mulVec {Q : Matrix n r 𝕜}
 
 /-- **Exactness**: for Hermitian $\mathbf{A}$ and a real polynomial of degree less than $q$,
 $\mathsf{lanczosFA}(\mathbf{A}, p, \mathbf{b}, q) = p(\mathbf{A})\mathbf{b}$.
-[Saad1992, Lemma 3.1]. -/
+[Saad1992, Lemma 3.1].
+Result: lanczos-fa-exactness -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_eval {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) {q : ℕ} {p : ℝ[X]} (hp : p.degree < q) :
     lanczosFA A (fun x => p.eval x) b q = aeval A p *ᵥ b := by
@@ -245,7 +249,8 @@ theorem lanczosFA_sub (A : Matrix n n 𝕜) (f g : ℝ → ℝ) (b : n → 𝕜)
 
 /-- **Lanczos-FA is exact past the grade**: for Hermitian $\mathbf{A}$ and
 $\nu \le q$, $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q) = f(\mathbf{A})\mathbf{b}$, since
-the Krylov space is then invariant. [Saad1992, §3.2]. -/
+the Krylov space is then invariant. [Saad1992, §3.2].
+Result: lanczos-fa-exactness -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_eq_cfc_mulVec_of_krylovGrade_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (f : ℝ → ℝ) {b : n → 𝕜} {q : ℕ} (h : krylovGrade A b ≤ q) :
     lanczosFA A f b q = cfc f A *ᵥ b := by
@@ -323,7 +328,8 @@ theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformA
 $\mathsf{lanczosFA}(\mathbf{A}, x \mapsto x^{-1}, \mathbf{b}, q) =
 \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{0}, q)$ (CG from the zero start), with
 Lean's $0^{-1} = 0$ matching the
-pseudoinverse junk value of `galerkinInverse`. [ChenPersson2026, §1.1]; [Saad2003, §6.7]. -/
+pseudoinverse junk value of `galerkinInverse`. [ChenPersson2026, §1.1]; [Saad2003, §6.7].
+Result: lanczos-fa-cg -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_inv_eq_cgIterate {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
     lanczosFA A (fun x => x⁻¹) b q = cgIterate A b 0 q := by
@@ -333,7 +339,8 @@ theorem _root_.Matrix.IsHermitian.lanczosFA_inv_eq_cgIterate {A : Matrix n n �
 /-- **Shifted CG is Lanczos-FA for a shifted inverse**, for Hermitian $\mathbf{A}$ and real
 $s$: $\mathsf{lanczosFA}(\mathbf{A}, x \mapsto (x + s)^{-1}, \mathbf{b}, q) =
 \mathsf{cgIterate}(\mathbf{A} + s\mathbf{I}, \mathbf{b}, \mathbf{0}, q)$, by shift
-invariance of the Krylov space (`krylovSpace_add_smul_one`) and the frame forms. -/
+invariance of the Krylov space (`krylovSpace_add_smul_one`) and the frame forms.
+Result: lanczos-fa-cg -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (s : ℝ) (b : n → 𝕜) (q : ℕ) :
     lanczosFA A (fun x => (x + s)⁻¹) b q = cgIterate (A + s • (1 : Matrix n n 𝕜)) b 0 q := by
@@ -365,7 +372,8 @@ $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1) =
 \|\mathbf{b}\|\,\mathbf{Q}f(\mathbf{T})\mathbf{e}_0$, by the partial-isometry form
 `compressedCfc_eq_of_mul_conjTranspose_mul_self` and
 $\mathbf{Q}^{\mathsf{H}}\mathbf{b} = \|\mathbf{b}\|\mathbf{e}_0$
-(`conjTranspose_arnoldiMatrix_mulVec_self`). [Saad1992, §2]. -/
+(`conjTranspose_arnoldiMatrix_mulVec_self`). [Saad1992, §2].
+Result: lanczos-fa-recurrence -/
 theorem lanczosFA_eq_arnoldiMatrix (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     lanczosFA A f b (q + 1) = (‖WithLp.toLp 2 b‖ : 𝕜) • (arnoldiMatrix A b (q + 1) *ᵥ
       (cfc f ((arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b (q + 1)) *ᵥ

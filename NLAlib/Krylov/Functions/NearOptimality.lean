@@ -319,7 +319,8 @@ $R < 0$ would make the right side negative); for $\mu \ne 0$ the bound at $x = y
 $R \ge 1$. [ChenPersson2026, Theorem 5]; there with $R$ the ratio of $\nu\varsigma_m$ at the
 eigenvalues, which depends on the Ritz values; here a bound on the kernel over the support of
 $\mu$, which a user can check, and
-$(R + 1)^2/(4R) = \bigl(\tfrac12(\sqrt R + 1/\sqrt R)\bigr)^2$. -/
+$(R + 1)^2/(4R) = \bigl(\tfrac12(\sqrt R + 1/\sqrt R)\bigr)^2$.
+Result: lanczos-fa-kernel-near-optimality -/
 theorem _root_.Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure
     {A : Matrix n n 𝕜} (hA : A.PosDef) {f : ℝ → ℝ} {μ : MeasureTheory.Measure ℝ}
     (hf : HasStieltjesMeasure f μ ∨ HasStieltjesMeasure (fun z => f z / z) μ)
@@ -352,7 +353,8 @@ $$\|f(\mathbf{A})\mathbf{b} -
 \le \frac{(R + 1)^2}{4R}\,\|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{\nu(\mathbf{A})}^2$$
 for every $\mathbf{y} \in \mathcal{K}_q(\mathbf{A}, \mathbf{b})$. A corollary of
 `Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure`, which is
-sharper for a given $f$. [ChenPersson2026, Theorem 5]. -/
+sharper for a given $f$. [ChenPersson2026, Theorem 5].
+Result: lanczos-fa-kernel-near-optimality -/
 theorem _root_.Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le {A : Matrix n n 𝕜}
     (hA : A.PosDef) {f : ℝ → ℝ} (hf : IsStieltjes f ∨ IsStieltjes fun z => f z / z)
     {ν : ℝ → ℝ} {R : ℝ} (hν : ∀ x ∈ spectrum ℝ A, 0 < ν x)
@@ -431,7 +433,8 @@ $$\|f(\mathbf{A})\mathbf{b} -
 \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)\|_{\mathbf{A}^\alpha}^2
 \le \Bigl(\frac{\kappa^{E/2} + \kappa^{-E/2}}{2}\Bigr)^2
 \|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \,.$$
-The interval form at $[\lambda_{\min}, \lambda_{\max}]$. [ChenPersson2026, Theorem 1]. -/
+The interval form at $[\lambda_{\min}, \lambda_{\max}]$. [ChenPersson2026, Theorem 1].
+Result: lanczos-fa-near-optimality -/
 theorem _root_.Matrix.PosDef.re_quadForm_rpow_cfc_mulVec_sub_lanczosFA_le_pseudoConditionNumber
     {A : Matrix n n 𝕜} (hA : A.PosDef) {f : ℝ → ℝ}
     (hf : IsStieltjes f ∨ IsStieltjes fun z => f z / z) (α : ℝ) (b : n → 𝕜) {q : ℕ}
@@ -511,7 +514,8 @@ $$\|\mathbf{x}_\star -
 \|\mathbf{x}_\star - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \,.$$
 Shifted CG from $\mathbf{x}_0$ is $\mathbf{x}_0$ plus Lanczos-FA for $(z + s)^{-1}$ on
 $\mathbf{r}_0$ (`Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate`), and $(z + s)^{-1}$ is a
-Stieltjes function. [ChenPersson2026, Theorem 1] for $f(z) = (z + s)^{-1}$. -/
+Stieltjes function. [ChenPersson2026, Theorem 1] for $f(z) = (z + s)^{-1}$.
+Result: cg-near-optimality -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_rpow_sub_cgIterate_add_smul_one_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a)
     (hσ : spectrum ℝ A ⊆ Set.Icc a a') {s : ℝ} (hs : 0 ≤ s) (α : ℝ) {b xs : n → 𝕜}
@@ -561,7 +565,8 @@ $$\|\mathbf{x}_\star -
 \le \Bigl(\frac{(a'/a)^{E/2} + (a'/a)^{-E/2}}{2}\Bigr)^2
 \|\mathbf{x}_\star - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \,.$$
 At $\alpha = 1$ CG is optimal (`Matrix.PosDef.isMinOn_cgIterate`), so this bound is useful for
-$\alpha \ne 1$. [ChenPersson2026, Theorem 1 and (5)]. -/
+$\alpha \ne 1$. [ChenPersson2026, Theorem 1 and (5)].
+Result: cg-near-optimality -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_rpow_sub_cgIterate_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a)
     (hσ : spectrum ℝ A ⊆ Set.Icc a a') (α : ℝ) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b)
@@ -581,7 +586,8 @@ $\mathbf{y} \in \mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{b} - \mathbf{A}
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
 \frac{\sqrt{a'/a} + 1/\sqrt{a'/a}}{2}\,\|\mathbf{x}_\star - \mathbf{y}\| \,,$$
 improving the factor $\sqrt{a'/a}$ from $\mathbf{A}$-norm optimality and norm equivalence.
-[ChenPersson2026, Remark 3]. -/
+[ChenPersson2026, Remark 3].
+Result: cg-near-optimality -/
 theorem _root_.Matrix.IsHermitian.norm_sub_cgIterate_le_mul_norm_sub
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a)
     (hσ : spectrum ℝ A ⊆ Set.Icc a a') {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜)

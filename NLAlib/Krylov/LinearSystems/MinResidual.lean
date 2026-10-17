@@ -144,7 +144,8 @@ omit [DecidableEq r] in
 /-- **Minimal residual approximations minimise the residual**: for every $\mathbf{A}$,
 $\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$ minimises
 $\|\mathbf{b} - \mathbf{A}\mathbf{y}\|$ over the column space of $\mathbf{X}$.
-[Saad2003, §5.3.2]. -/
+[Saad2003, §5.3.2].
+Result: min-residual-optimality -/
 theorem isMinOn_minResidualInverse_mulVec (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) (b : m → 𝕜) :
     IsMinOn (fun y => ‖WithLp.toLp 2 (b - A *ᵥ y)‖)
       (LinearMap.range X.mulVecLin : Set (n → 𝕜)) (minResidualInverse A X *ᵥ b) := by
