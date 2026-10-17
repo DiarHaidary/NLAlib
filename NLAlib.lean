@@ -56,6 +56,7 @@ public import NLAlib.Krylov.LinearSystems.GMRESArnoldi
 public import NLAlib.Krylov.LinearSystems.Galerkin
 public import NLAlib.Krylov.LinearSystems.MINRES
 public import NLAlib.Krylov.LinearSystems.MINRESLanczos
+public import NLAlib.Krylov.LinearSystems.MINRESRecurrence
 public import NLAlib.Krylov.LinearSystems.MinResidual
 public import NLAlib.Krylov.LinearSystems.PCG
 public import NLAlib.Krylov.LinearSystems.PCGRecurrence
@@ -240,6 +241,8 @@ public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.Residual
+public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
+public import NLAlib.Polynomial.Interpolation.DividedDifference
 public import NLAlib.Polynomial.Interpolation.Stieltjes
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder

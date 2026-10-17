@@ -29,6 +29,8 @@ and act on the singular values.
 * `NLAlib.exists_eval_eq_of_mem_spectrum`: one interpolating polynomial on two spectra.
 * `Matrix.IsHermitian.aeval_nodal_eq_zero`: the nodal polynomial of a set containing the
   spectrum annihilates $\mathbf{A}$.
+* `Matrix.IsHermitian.exists_star_aeval_mulVec_dotProduct_cfc_mulVec_eq_sum`: a vector with
+  prescribed spectral weights.
 * `Matrix.IsHermitian.specNorm_aeval_le`:
   $\|p(\mathbf{A})\|_2 \le \max_i \lvert p(\lambda_i(\mathbf{A})) \rvert$.
 * `Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le`: the same bound for the quadratic form
@@ -358,5 +360,79 @@ theorem rank_pow_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (q : ℕ) :
   rw [← singularValues_pos_iff ((A * Aᴴ) ^ q * A), ← singularValues_pos_iff A,
     singularValues_pow_mul_conjTranspose_self_mul]
   exact (odd_two_mul_add_one q).pow_pos_iff
+
+/-! ### Vectors with prescribed spectral weights -/
+
+/-- **A vector with prescribed spectral weights**: for Hermitian $\mathbf{A}$ with spectrum the
+finite set $s$ and weights $w \ge 0$ on $s$ there is a vector $\mathbf{v}$ whose spectral
+measure is $\sum_{x \in s} w_x\delta_x$: for every real function $g$ and all
+$p, r \in \Bbbk[X]$,
+$$\bigl(p(\mathbf{A})\mathbf{v}\bigr)^{\mathsf{H}} g(\mathbf{A})\, r(\mathbf{A})\mathbf{v} =
+\sum_{x \in s} w_x\, g(x)\,\overline{p(x)}\,r(x) \,.$$
+With $p = r$ and $g = 1$, $g = \mathrm{id}$ or $g = \nu$ this is the squared Euclidean,
+$\mathbf{A}$- or $\nu(\mathbf{A})$-norm of $p(\mathbf{A})\mathbf{v}$; weights vanishing off a
+subset $T \subseteq s$ give a vector in the span of eigenvectors of the eigenvalues in $T$.
+The vector is $\mathbf{v} = \sum_{x \in s}\sqrt{w_x}\,\mathbf{u}_x$ for one unit eigenvector
+$\mathbf{u}_x$ of each eigenvalue $x$. -/
+theorem _root_.Matrix.IsHermitian.exists_star_aeval_mulVec_dotProduct_cfc_mulVec_eq_sum
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {s : Finset ℝ} (hs : spectrum ℝ A = ↑s)
+    {w : ℝ → ℝ} (hw : ∀ x ∈ s, 0 ≤ w x) :
+    ∃ v : n → 𝕜, ∀ (g : ℝ → ℝ) (p r : 𝕜[X]),
+      star (aeval A p *ᵥ v) ⬝ᵥ (cfc g A *ᵥ (aeval A r *ᵥ v)) =
+        ∑ x ∈ s, ((w x * g x : ℝ) : 𝕜) * (star (p.eval (x : 𝕜)) * r.eval (x : 𝕜)) := by
+  set U : Matrix n n 𝕜 := (hA.eigenvectorUnitary : Matrix n n 𝕜)
+  set e := hA.eigenvalues
+  have hU : HasOrthonormalCols U := hA.hasOrthonormalCols_eigenvectorUnitary
+  have hAU : A * U = U * Matrix.diagonal fun j => ((e j : ℝ) : 𝕜) := by
+    have h := hA.spectral_theorem
+    rw [Unitary.conjStarAlgAut_apply] at h
+    conv_lhs => rw [h]
+    simp only [U, e, Matrix.mul_assoc]
+    rw [Matrix.star_eq_conjTranspose, hU.conjTranspose_mul_self, Matrix.mul_one]
+    rfl
+  have hcU : ∀ g : ℝ → ℝ, cfc g A * U = U * Matrix.diagonal fun j => ((g (e j) : ℝ) : 𝕜) := by
+    intro g
+    rw [hA.cfc_eq, Matrix.IsHermitian.cfc, Unitary.conjStarAlgAut_apply]
+    change U * _ * star U * U = _
+    rw [Matrix.mul_assoc, Matrix.star_eq_conjTranspose, hU.conjTranspose_mul_self, Matrix.mul_one]
+    rfl
+  have hpU : ∀ p : 𝕜[X], aeval A p * U = U * Matrix.diagonal fun j => p.eval ((e j : ℝ) : 𝕜) :=
+    fun p => by rw [aeval_mul_eq_mul_aeval_of_mul_eq_mul hAU p, aeval_diagonal_self]
+  rcases s.eq_empty_or_nonempty with rfl | ⟨x₀, hx₀⟩
+  · exact ⟨0, fun g p r => by simp only [Matrix.mulVec_zero, dotProduct_zero, Finset.sum_empty]⟩
+  -- one eigenvalue index for each point of the spectrum
+  have hmem : ∀ x ∈ s, ∃ j, e j = x := fun x hx => by
+    have : x ∈ spectrum ℝ A := by rw [hs]; exact hx
+    rwa [hA.spectrum_real_eq_range_eigenvalues] at this
+  have : Nonempty n := ⟨(hmem x₀ hx₀).choose⟩
+  choose! idx hidx using hmem
+  set T := s.image idx
+  set c : n → 𝕜 := fun j => if j ∈ T then ((Real.sqrt (w (e j)) : ℝ) : 𝕜) else 0
+  refine ⟨U *ᵥ c, fun g p r => ?_⟩
+  have hmv : ∀ {M D : Matrix n n 𝕜}, M * U = U * D → ∀ y, M *ᵥ (U *ᵥ y) = U *ᵥ (D *ᵥ y) :=
+    fun h y => by rw [Matrix.mulVec_mulVec, h, ← Matrix.mulVec_mulVec]
+  rw [hmv (hpU r), hmv (hcU g), hmv (hpU p), hU.star_mulVec_dotProduct_mulVec, dotProduct]
+  set F : ℝ → 𝕜 := fun x => ((w x * g x : ℝ) : 𝕜) * (star (p.eval (x : 𝕜)) * r.eval (x : 𝕜))
+  have key : ∀ j, star ((Matrix.diagonal fun j => p.eval ((e j : ℝ) : 𝕜)) *ᵥ c) j *
+      ((Matrix.diagonal fun j => ((g (e j) : ℝ) : 𝕜)) *ᵥ
+        ((Matrix.diagonal fun j => r.eval ((e j : ℝ) : 𝕜)) *ᵥ c)) j =
+      if j ∈ T then F (e j) else 0 := by
+    intro j
+    simp only [Matrix.mulVec_diagonal, Pi.star_apply, c, F]
+    split_ifs with hj
+    · obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hj
+      have hw' : 0 ≤ w (e (idx x)) := by rw [hidx x hx]; exact hw x hx
+      have hsq : ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) * ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) =
+          ((w (e (idx x)) : ℝ) : 𝕜) := by
+        rw [← RCLike.ofReal_mul, Real.mul_self_sqrt hw']
+      have hc : star ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) =
+          ((Real.sqrt (w (e (idx x))) : ℝ) : 𝕜) := RCLike.conj_ofReal _
+      rw [star_mul', hc, RCLike.ofReal_mul]
+      linear_combination (star (p.eval ((e (idx x) : ℝ) : 𝕜)) * ((g (e (idx x)) : ℝ) : 𝕜) *
+        r.eval ((e (idx x) : ℝ) : 𝕜)) * hsq
+    · rw [mul_zero, mul_zero, star_zero, mul_zero, mul_zero]
+  rw [Finset.sum_congr rfl fun j _ => key j, Finset.sum_ite_mem, Finset.univ_inter,
+    Finset.sum_image fun x hx y hy hxy => by rw [← hidx x hx, ← hidx y hy, hxy]]
+  exact Finset.sum_congr rfl fun x hx => by rw [hidx x hx]
 
 end NLAlib

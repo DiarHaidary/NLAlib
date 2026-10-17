@@ -20,8 +20,8 @@ every $q$. Preconditioned MINRES is the same with the preconditioned Lanczos rec
 application of $\mathbf{M}$ per step) and $\beta_0 = \|\mathbf{r}_0\|_{\mathbf{M}}$.
 
 The Paige–Saunders short recurrence, which updates the iterate through Givens rotations of
-$\underline{\mathbf{T}}_q$ with three vectors of storage, is not part of this stage; this file is
-the statement it would be proved against.
+$\underline{\mathbf{T}}_q$ with three vectors of storage, is proved equal to these forms in
+`NLAlib/Krylov/LinearSystems/MINRESRecurrence.lean` (`Matrix.IsHermitian.minresState_x_eq`).
 
 ## Main results
 

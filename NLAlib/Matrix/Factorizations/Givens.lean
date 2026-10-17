@@ -39,6 +39,10 @@ clear the subdiagonal entry of column $k$. It never breaks down (a zero pair giv
 * `NLAlib.hasOrthonormalCols_givensHessenbergState_fst`,
   `NLAlib.givensHessenbergState_fst_mul_snd`: every step of Givens QR factors the matrix with a
   unitary first factor.
+* `NLAlib.givensHessenbergState_apply_of_lt`, `NLAlib.givensHessenbergState_apply_eq_zero_of_le`,
+  `NLAlib.givensHessenbergState_snd_apply_eq_zero_of_col`: later steps leave the leading rows
+  alone, and trailing zero rows and zero columns stay zero (the freeze of Givens QR past a
+  breakdown).
 -/
 
 @[expose] public section
@@ -331,6 +335,12 @@ theorem neg_star_givensCoeffs_snd_mul_add (u v : 𝕜) :
   · rw [star_div₀, star_div₀, star_star, star_star, RCLike.star_def, RCLike.conj_ofReal]
     ring
 
+/-- A pair with second entry zero has zero Givens sine: $(c, s) = (\bar{u}/\lvert u \rvert, 0)$, or
+$(1, 0)$ for $u = 0$. -/
+theorem givensCoeffs_snd_zero (u : 𝕜) : (givensCoeffs u 0).2 = 0 := by
+  unfold givensCoeffs
+  split_ifs <;> simp
+
 /-- The **clearing rotation** of $\mathbf{x}$ in the plane $(i, j)$: the Givens rotation with
 the coefficients of $(\mathbf{x}_i, \mathbf{x}_j)$, which sends $\mathbf{x}_j$ to $0$ and
 $\mathbf{x}_i$ to $\sqrt{\lvert\mathbf{x}_i\rvert^2 + \lvert\mathbf{x}_j\rvert^2}$.
@@ -456,6 +466,112 @@ theorem givensHessenbergState_fst_mul_snd (H : Matrix (Fin m) (Fin p) 𝕜) (k :
     rw [givensHessenbergState, Matrix.mul_assoc,
       ← Matrix.mul_assoc (givensHessenbergStep (givensHessenbergState H k).2 k)ᴴ,
       (hasOrthonormalCols_givensHessenbergStep _ k).conjTranspose_mul_self, Matrix.one_mul, ih]
+
+/-- One more step of Givens QR on the triangularised part. -/
+theorem givensHessenbergState_succ_snd (H : Matrix (Fin m) (Fin p) 𝕜) (k : ℕ) :
+    (givensHessenbergState H (k + 1)).2 =
+      givensHessenbergStep (givensHessenbergState H k).2 k * (givensHessenbergState H k).2 :=
+  rfl
+
+/-- One more step of Givens QR on a rotated vector: the conjugate transpose of the accumulated
+factor is multiplied on the left by the new rotation. -/
+theorem conjTranspose_givensHessenbergState_succ_fst_mulVec (H : Matrix (Fin m) (Fin p) 𝕜)
+    (k : ℕ) (v : Fin m → 𝕜) :
+    (givensHessenbergState H (k + 1)).1ᴴ *ᵥ v =
+      givensHessenbergStep (givensHessenbergState H k).2 k *ᵥ
+        ((givensHessenbergState H k).1ᴴ *ᵥ v) := by
+  rw [show (givensHessenbergState H (k + 1)).1 = (givensHessenbergState H k).1 *
+      (givensHessenbergStep (givensHessenbergState H k).2 k)ᴴ from rfl,
+    Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mulVec_mulVec]
+
+/-- Step $k$ changes only coordinates $k$ and $k + 1$ of a vector. -/
+theorem givensHessenbergStep_mulVec_apply_of_ne (W : Matrix (Fin m) (Fin p) 𝕜) {k : ℕ}
+    (v : Fin m → 𝕜) {a : Fin m} (ha : (a : ℕ) ≠ k) (ha' : (a : ℕ) ≠ k + 1) :
+    (givensHessenbergStep W k *ᵥ v) a = v a :=
+  givensHessenbergStep_mul_apply_of_ne W (Matrix.of fun i (_ : Unit) => v i) ha ha' ()
+
+/-- One step keeps the coordinates of a column from $r$ on zero, provided the entry it clears is
+zero when its plane is $(r - 1, r)$. -/
+private theorem givensHessenbergStep_mul_apply_eq_zero_of_le {l : Type*}
+    (W : Matrix (Fin m) (Fin p) 𝕜) {k r : ℕ}
+    (hW : ∀ (h : k + 1 < m) (h' : k < p), k + 1 = r → W ⟨k + 1, h⟩ ⟨k, h'⟩ = 0)
+    (X : Matrix (Fin m) l 𝕜) (b : l) (hX : ∀ a : Fin m, r ≤ (a : ℕ) → X a b = 0) (a : Fin m)
+    (ha : r ≤ (a : ℕ)) : (givensHessenbergStep W k * X) a b = 0 := by
+  by_cases hak : (a : ℕ) = k ∨ (a : ℕ) = k + 1
+  · by_cases h : k + 1 < m ∧ k < p
+    · rw [givensHessenbergStep_of_lt W h.1 h.2]
+      have hne := givensHessenbergStep_plane_ne h.1
+      rcases hak with hak | hak
+      · rw [show a = ⟨k, by omega⟩ from Fin.ext hak, givens_mul_apply_left hne,
+          hX _ (by simp only; omega), hX _ (by simp only; omega), mul_zero, mul_zero, add_zero]
+      · rw [show a = ⟨k + 1, h.1⟩ from Fin.ext hak, givens_mul_apply_right hne,
+          hX ⟨k + 1, h.1⟩ (by simp only; omega)]
+        rcases eq_or_lt_of_le (show r ≤ k + 1 by omega) with hr | hr
+        · rw [hW h.1 h.2 hr.symm, givensCoeffs_snd_zero]
+          simp
+        · rw [hX _ (by simp only; omega)]
+          simp
+    · rw [givensHessenbergStep, dif_neg h, Matrix.one_mul]
+      exact hX a ha
+  · push Not at hak
+    rw [givensHessenbergStep_mul_apply_of_ne W X hak.1 hak.2]
+    exact hX a ha
+
+/-- **Givens QR keeps trailing zero rows**: if the rows of $\mathbf{H}$ from $r$ on vanish, so do
+the rows from $r$ on of every state of its Givens QR, and so do the coordinates from $r$ on of every
+rotated vector $\mathbf{v}$ whose coordinates from $r$ on vanish. The rotation of step $r - 1$
+clears a zero entry, so its sine is zero. -/
+theorem givensHessenbergState_apply_eq_zero_of_le {H : Matrix (Fin m) (Fin p) 𝕜} {r : ℕ}
+    (hH : ∀ (a : Fin m) (b : Fin p), r ≤ (a : ℕ) → H a b = 0) {v : Fin m → 𝕜}
+    (hv : ∀ a : Fin m, r ≤ (a : ℕ) → v a = 0) (k : ℕ) :
+    (∀ (a : Fin m) (b : Fin p), r ≤ (a : ℕ) → (givensHessenbergState H k).2 a b = 0) ∧
+      ∀ a : Fin m, r ≤ (a : ℕ) → ((givensHessenbergState H k).1ᴴ *ᵥ v) a = 0 := by
+  induction k with
+  | zero =>
+    refine ⟨hH, fun a ha => ?_⟩
+    simp only [givensHessenbergState, Matrix.conjTranspose_one, Matrix.one_mulVec]
+    exact hv a ha
+  | succ k ih =>
+    have hW : ∀ (h : k + 1 < m) (h' : k < p), k + 1 = r →
+        (givensHessenbergState H k).2 ⟨k + 1, h⟩ ⟨k, h'⟩ = 0 :=
+      fun h h' hr => ih.1 _ _ (by simp only; omega)
+    refine ⟨fun a b ha => ?_, fun a ha => ?_⟩
+    · rw [givensHessenbergState_succ_snd]
+      exact givensHessenbergStep_mul_apply_eq_zero_of_le _ hW _ b (fun a ha => ih.1 a b ha) a ha
+    · rw [conjTranspose_givensHessenbergState_succ_fst_mulVec]
+      exact givensHessenbergStep_mul_apply_eq_zero_of_le _ hW
+        (Matrix.of fun i (_ : Unit) => ((givensHessenbergState H k).1ᴴ *ᵥ v) i) ()
+        (fun a ha => ih.2 a ha) a ha
+
+/-- **Givens QR keeps zero columns**: a column of $\mathbf{H}$ that vanishes vanishes in every
+state of its Givens QR. -/
+theorem givensHessenbergState_snd_apply_eq_zero_of_col {H : Matrix (Fin m) (Fin p) 𝕜}
+    {b : Fin p} (hH : ∀ a : Fin m, H a b = 0) (k : ℕ) (a : Fin m) :
+    (givensHessenbergState H k).2 a b = 0 := by
+  induction k generalizing a with
+  | zero => exact hH a
+  | succ k ih =>
+    rw [givensHessenbergState_succ_snd,
+      givensHessenbergStep_mul_apply_of_apply_eq_zero _ _ (fun a _ => ih a)]
+    exact ih a
+
+/-- **Later steps leave the leading rows alone**: for $k \le j$, rows $a < k$ of the state after
+$j$ steps are those after $k$ steps, and so are the coordinates $a < k$ of a rotated vector, since
+step $l$ acts on rows $l$ and $l + 1$ only. -/
+theorem givensHessenbergState_apply_of_lt (H : Matrix (Fin m) (Fin p) 𝕜) (v : Fin m → 𝕜)
+    {k j : ℕ} (hkj : k ≤ j) {a : Fin m} (ha : (a : ℕ) < k) :
+    (∀ b : Fin p, (givensHessenbergState H j).2 a b = (givensHessenbergState H k).2 a b) ∧
+      ((givensHessenbergState H j).1ᴴ *ᵥ v) a = ((givensHessenbergState H k).1ᴴ *ᵥ v) a := by
+  induction j, hkj using Nat.le_induction with
+  | base => exact ⟨fun b => rfl, rfl⟩
+  | succ j hkj ih =>
+    refine ⟨fun b => ?_, ?_⟩
+    · rw [givensHessenbergState_succ_snd,
+        givensHessenbergStep_mul_apply_of_ne _ _ (by omega) (by omega)]
+      exact ih.1 b
+    · rw [conjTranspose_givensHessenbergState_succ_fst_mulVec,
+        givensHessenbergStep_mulVec_apply_of_ne _ _ (by omega) (by omega)]
+      exact ih.2
 
 end QR
 

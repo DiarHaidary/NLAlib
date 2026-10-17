@@ -731,3 +731,15 @@ from memory and are verified before the PR.
   of `M`. The Givens theorems of `GMRESArnoldi.lean` move to checkpoint 5. All realisations hold for
   every `q`: Arnoldi with no hypothesis, Lanczos for Hermitian `A`, preconditioned MINRES through
   preconditioned Lanczos for Hermitian invertible `A` and positive definite `M`.
+- Checkpoint 5 landed with no statement changes; every realisation holds for every `q` or `k` under
+  problem-level hypotheses only (`IsUnit A` for GMRES via Givens; `A.IsHermitian`, `IsUnit A`,
+  `M.PosDef` for Paige–Saunders). Route: Paige–Saunders is proved through the Givens realisation of
+  GMRES on the split system `CᴴAC`, whose MGS Hessenberg matrix is the computed tridiagonal, rather
+  than through the progressive form on the tridiagonal directly; the pivots up to the grade come from
+  the GMRES pivot lemma. New public Givens-QR facts in `Givens.lean` (no Hessenberg hypothesis):
+  `givensCoeffs_snd_zero`, `givensHessenbergState_succ_snd`,
+  `conjTranspose_givensHessenbergState_succ_fst_mulVec`, `givensHessenbergStep_mulVec_apply_of_ne`,
+  `givensHessenbergState_apply_eq_zero_of_le`, `givensHessenbergState_snd_apply_eq_zero_of_col`,
+  `givensHessenbergState_apply_of_lt`. Open placement flags (private helpers): two preconditioned
+  Lanczos breakdown facts in `MINRESRecurrence.lean` (home `PreconditionedLanczos.lean`), two MGS
+  Hessenberg facts in `GMRESArnoldi.lean` (home `ArnoldiRecurrence.lean`), one generic submatrix fact.
