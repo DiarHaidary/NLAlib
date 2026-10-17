@@ -10,6 +10,7 @@ public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Basic
 public import NLAlib.Matrix.Spectral.CourantFischer
 public import NLAlib.Matrix.Norms.Loewner
+public import NLAlib.Matrix.Pseudoinverse.Pinv
 
 /-!
 # Functions of a Hermitian matrix
@@ -40,7 +41,13 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
 * `NLAlib.cfc_eq_mul_diagonal_mul_conjTranspose`:
   $f(\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}})
   = \mathbf{U} f(\mathbf{D}) \mathbf{U}^{\mathsf{H}}$.
+* `NLAlib.HasOrthonormalCols.cfc_mul_mul_conjTranspose`: a function of a zero-padded
+  compression, $f(\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}) =
+  \mathbf{U}f(\mathbf{T})\mathbf{U}^{\mathsf{H}}
+  + f(0)(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})$.
 * `Matrix.IsHermitian.spectrum_subset_iff`: the spectrum through the sorted eigenvalues.
+* `Matrix.IsHermitian.spectrum_conjTranspose_mul_mul_subset_Icc`: Ritz values stay in an
+  interval containing the spectrum.
 * `Matrix.IsHermitian.re_trace_cfc`:
   $\operatorname{tr} f(\mathbf{A}) = \sum_i f(\lambda_i(\mathbf{A}))$.
 * `Matrix.IsHermitian.eigenvalue_cfc_of_monotoneOn`: eigenvalues of $f(\mathbf{A})$ for monotone
@@ -48,9 +55,15 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
 * `Matrix.IsHermitian.specNorm_cfc_le`: $\|f(\mathbf{A})\|_2 \le \max \lvert f \rvert$ on the
   spectrum.
 * `NLAlib.re_quadForm_cfc_eq_sum`: the quadratic form of $f(\mathbf{A})$ as a weighted sum.
+* `Matrix.IsHermitian.norm_toLp_cfc_mulVec_sq`,
+  `Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_le`: the norm of
+  $\psi(\mathbf{A})\mathbf{x}$ as a quadratic form, and a Cauchy–Schwarz inequality for
+  functions of one Hermitian matrix.
 * `NLAlib.cfc_fromBlocks_diagonal`, `NLAlib.cfc_blockDiagonal`: block diagonal sums.
 * `Matrix.PosDef.inv_eq_cfc`, `Matrix.PosDef.inv_sqrt_eq_cfc`: the inverse and the inverse
   square root.
+* `Matrix.IsHermitian.cfc_inv_eq_pinv`: the pseudoinverse of a Hermitian matrix is the function
+  $x \mapsto x^{-1}$ of it (with $0^{-1} = 0$).
 -/
 
 @[expose] public section
@@ -299,6 +312,41 @@ theorem cfc_blockDiagonal {ι : Type*} [Fintype ι] [DecidableEq ι]
   exact congrArg _ (funext fun i =>
     (cfc_eq_mul_diagonal_mul_conjTranspose (hU i) (Fintype.card_fin _) (hAU i) f).symm)
 
+/-- **A function of a zero-padded compression**: for $\mathbf{U}$ with orthonormal columns
+(not necessarily square) and Hermitian $\mathbf{T}$,
+$f(\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}) = \mathbf{U}f(\mathbf{T})\mathbf{U}^{\mathsf{H}}
++ f(0)(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})$: the padding contributes the eigenvalue
+$0$. Generalises `NLAlib.cfc_mul_mul_conjTranspose`, which needs $\mathbf{U}$ square. -/
+theorem HasOrthonormalCols.cfc_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+    {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) {T : Matrix r r 𝕜} (hT : T.IsHermitian)
+    (f : ℝ → ℝ) : cfc f (U * T * Uᴴ) = U * cfc f T * Uᴴ + f 0 • (1 - U * Uᴴ) := by
+  -- complete $\mathbf{U}$ to a unitary $[\mathbf{U}, \mathbf{U}']$ and use the square case
+  set p := Fin (Fintype.card n - Fintype.card r)
+  have hcard : Fintype.card r + Fintype.card p = Fintype.card n := by
+    have := hU.card_le
+    simp only [p, Fintype.card_fin]
+    omega
+  obtain ⟨U', hW⟩ := hU.exists_fromCols hcard
+  have hsum := HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose hW hcard
+  have hWc : Fintype.card (r ⊕ p) = Fintype.card n := by rw [Fintype.card_sum, hcard]
+  have hblock : ∀ (X : Matrix r r 𝕜) (Y : Matrix p p 𝕜),
+      Matrix.fromCols U U' * Matrix.fromBlocks X 0 0 Y * (Matrix.fromCols U U')ᴴ =
+        U * X * Uᴴ + U' * Y * U'ᴴ := by
+    intro X Y
+    rw [Matrix.conjTranspose_fromCols_eq_fromRows_conjTranspose, Matrix.fromCols_mul_fromBlocks,
+      Matrix.fromCols_mul_fromRows]
+    simp only [Matrix.mul_zero, add_zero, zero_add]
+  have hTB : (Matrix.fromBlocks T 0 0 (0 : Matrix p p 𝕜)).IsHermitian :=
+    hT.fromBlocks (by simp) Matrix.isHermitian_zero
+  have hUTU : U * T * Uᴴ = Matrix.fromCols U U' * Matrix.fromBlocks T 0 0 (0 : Matrix p p 𝕜) *
+      (Matrix.fromCols U U')ᴴ := by
+    rw [hblock]
+    simp
+  rw [hUTU, NLAlib.cfc_mul_mul_conjTranspose hW hWc hTB,
+    cfc_fromBlocks_diagonal hT Matrix.isHermitian_zero, hblock, cfc_apply_zero,
+    Algebra.algebraMap_eq_smul_one, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul,
+    ← hsum, add_sub_cancel_left]
+
 /-! ### The spectrum -/
 
 /-- The real spectrum of a Hermitian matrix lies in a set $s$ exactly when its eigenvalues
@@ -322,6 +370,30 @@ theorem spectrum_subset_Icc_of_le {A : Matrix n n 𝕜} {a b : ℝ}
   exact ⟨((hA.smul_one_le_iff hk).mp h₁).trans
       (hA.eigenvalue_le_eigenvalue (by omega) (by omega)),
     (hA.eigenvalue_le_eigenvalue (Nat.zero_le i) hi).trans (hA.le_smul_one_iff.mp h₂)⟩
+
+/-- **Ritz values lie in every interval containing the spectrum**: for Hermitian $\mathbf{A}$
+with spectrum in $[a, a']$ and $\mathbf{Q}$ with orthonormal columns, the spectrum of
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ lies in $[a, a']$. A zero-padded compression
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ has the extra
+eigenvalue $0$, which is why a frame is assumed. -/
+theorem _root_.Matrix.IsHermitian.spectrum_conjTranspose_mul_mul_subset_Icc {r : Type*}
+    [Fintype r] [DecidableEq r] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ}
+    (hs : spectrum ℝ A ⊆ Set.Icc a a') {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q) :
+    spectrum ℝ (Qᴴ * A * Q) ⊆ Set.Icc a a' := by
+  have hA' : IsSelfAdjoint A := hA
+  have h₁ : a • (1 : Matrix n n 𝕜) ≤ A := by
+    rw [← Algebra.algebraMap_eq_smul_one]
+    exact (algebraMap_le_iff_le_spectrum hA').mpr fun x hx => (hs hx).1
+  have h₂ : A ≤ a' • (1 : Matrix n n 𝕜) := by
+    rw [← Algebra.algebraMap_eq_smul_one]
+    exact (le_algebraMap_iff_spectrum_le hA').mpr fun x hx => (hs hx).2
+  have hc : ∀ c : ℝ, Qᴴ * (c • (1 : Matrix n n 𝕜)) * Q = c • 1 := fun c => by
+    rw [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hQ.conjTranspose_mul_self]
+  refine spectrum_subset_Icc_of_le ?_ ?_
+  · rw [← hc]
+    exact conjTranspose_mul_mul_le_conjTranspose_mul_mul h₁ Q
+  · rw [← hc]
+    exact conjTranspose_mul_mul_le_conjTranspose_mul_mul h₂ Q
 
 /-- The spectrum of a positive semidefinite matrix is nonnegative. -/
 theorem _root_.Matrix.PosSemidef.spectrum_subset_Ici {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
@@ -461,6 +533,59 @@ theorem _root_.Matrix.IsHermitian.abs_re_quadForm_cfc_le {A : Matrix n n 𝕜}
     |RCLike.re (quadForm (cfc f A) x)| ≤ c * ‖WithLp.toLp 2 x‖ ^ 2 := by
   exact abs_re_quadForm_cfc_le_aux hA h x
 
+/-- The squared norm of $\psi(\mathbf{A})\mathbf{x}$ is a quadratic form in
+$\psi^2(\mathbf{A})$, for Hermitian $\mathbf{A}$ and real $\psi$:
+$\|\psi(\mathbf{A})\mathbf{x}\|^2 = \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\psi^2(\mathbf{A})
+\mathbf{x})$. -/
+theorem _root_.Matrix.IsHermitian.norm_toLp_cfc_mulVec_sq {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (ψ : ℝ → ℝ) (x : n → 𝕜) :
+    ‖WithLp.toLp 2 (cfc ψ A *ᵥ x)‖ ^ 2 = RCLike.re (quadForm (cfc (fun t => ψ t ^ 2) A) x) := by
+  have hH : (cfc ψ A).IsHermitian := cfc_predicate ψ A
+  have hsq : cfc (fun t => ψ t ^ 2) A = cfc ψ A * cfc ψ A :=
+    (cfc_pow ψ 2 A (A.finite_real_spectrum.continuousOn _) hA).trans (sq _)
+  rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, hsq, quadForm_def, Matrix.star_mulVec,
+    ← Matrix.dotProduct_mulVec, hH.eq, Matrix.mulVec_mulVec]
+
+/-- **Cauchy–Schwarz for functions of one Hermitian matrix**: if
+$\lvert\varphi\rvert \le \lvert\psi\rvert\,\lvert\chi\rvert$ on the spectrum of $\mathbf{A}$,
+then $\lvert\mathbf{x}^{\mathsf{H}}\varphi(\mathbf{A})\mathbf{y}\rvert \le
+\|\psi(\mathbf{A})\mathbf{x}\|\,\|\chi(\mathbf{A})\mathbf{y}\|$. -/
+theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_le {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {φ ψ χ : ℝ → ℝ} (h : ∀ x ∈ spectrum ℝ A, |φ x| ≤ |ψ x| * |χ x|)
+    (x y : n → 𝕜) :
+    ‖star x ⬝ᵥ (cfc φ A *ᵥ y)‖ ≤
+      ‖WithLp.toLp 2 (cfc ψ A *ᵥ x)‖ * ‖WithLp.toLp 2 (cfc χ A *ᵥ y)‖ := by
+  have hc : ∀ g : ℝ → ℝ, ContinuousOn g (spectrum ℝ A) := fun g =>
+    A.finite_real_spectrum.continuousOn g
+  -- $\varphi = \psi\,\omega\,\chi$ on the spectrum with $\lvert\omega\rvert \le 1$
+  set ω : ℝ → ℝ := fun t => φ t / (ψ t * χ t)
+  have hω : ∀ t ∈ spectrum ℝ A, |ω t| ≤ 1 := fun t ht => by
+    simp only [ω, abs_div, abs_mul]
+    exact div_le_one_of_le₀ (h t ht) (by positivity)
+  have hφ : cfc φ A = cfc ψ A * (cfc ω A * cfc χ A) := by
+    rw [← cfc_mul _ _ A (hc _) (hc _), ← cfc_mul _ _ A (hc _) (hc _)]
+    refine cfc_congr fun t ht => ?_
+    by_cases h0 : ψ t * χ t = 0
+    · have : |φ t| ≤ 0 := by
+        have := h t ht
+        rwa [← abs_mul, h0, abs_zero] at this
+      rw [abs_nonpos_iff.mp this, ← mul_assoc, mul_comm (ψ t), mul_assoc, h0, mul_zero]
+    · simp only [ω]
+      have h1 : ψ t ≠ 0 := left_ne_zero_of_mul h0
+      have h2 : χ t ≠ 0 := right_ne_zero_of_mul h0
+      field_simp
+  have hH : (cfc ψ A).IsHermitian := cfc_predicate ψ A
+  have hdot : star x ⬝ᵥ (cfc φ A *ᵥ y) =
+      star (cfc ψ A *ᵥ x) ⬝ᵥ (cfc ω A *ᵥ (cfc χ A *ᵥ y)) := by
+    rw [Matrix.star_mulVec, hH.eq, ← Matrix.dotProduct_mulVec, hφ]
+    simp only [Matrix.mulVec_mulVec]
+  rw [hdot]
+  refine (norm_star_dotProduct_mulVec_le _ _ _).trans ?_
+  have hω' : specNorm (cfc ω A) ≤ 1 := hA.specNorm_cfc_le zero_le_one hω
+  calc ‖WithLp.toLp 2 (cfc ψ A *ᵥ x)‖ * specNorm (cfc ω A) * ‖WithLp.toLp 2 (cfc χ A *ᵥ y)‖
+      ≤ ‖WithLp.toLp 2 (cfc ψ A *ᵥ x)‖ * 1 * ‖WithLp.toLp 2 (cfc χ A *ᵥ y)‖ := by gcongr
+    _ = _ := by rw [mul_one]
+
 /-- A lower bound for the trace of $f(\mathbf{A})$ from a lower bound of $f$ on the spectrum: for
 Hermitian $\mathbf{A}$, if $b \le f(x)$ for every $x$ in the spectrum, then
 $b \lvert n \rvert \le \operatorname{Re} \operatorname{tr} f(\mathbf{A})$.
@@ -489,6 +614,41 @@ theorem _root_.Matrix.PosDef.inv_eq_cfc {A : Matrix n n 𝕜} (hA : A.PosDef) :
     exact inv_mul_cancel₀ (hA.spectrum_subset_Ioi hx).ne'
   rw [cfc_id' ℝ A hH] at h
   exact Matrix.inv_eq_left_inv h
+
+/-- **The pseudoinverse of a Hermitian matrix is a function of it**:
+$\mathbf{A}^{+} = f(\mathbf{A})$ for $f(x) = x^{-1}$, $f(0) = 0$ (Lean's convention for
+$0^{-1}$). Generalises `Matrix.PosDef.inv_eq_cfc`. -/
+theorem _root_.Matrix.IsHermitian.cfc_inv_eq_pinv {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    cfc (fun x : ℝ => x⁻¹) A = pinv A := by
+  have hA' : IsSelfAdjoint A := hA
+  have hc : ∀ g : ℝ → ℝ, ContinuousOn g (spectrum ℝ A) := fun g =>
+    A.finite_real_spectrum.continuousOn g
+  have hid : cfc (fun x : ℝ => x) A = A := cfc_id' ℝ A hA'
+  have hl : A * cfc (fun x : ℝ => x⁻¹) A = cfc (fun x : ℝ => x * x⁻¹) A := by
+    rw [cfc_mul (fun x : ℝ => x) (fun x => x⁻¹) A (hc _) (hc _), hid]
+  have hr : cfc (fun x : ℝ => x⁻¹) A * A = cfc (fun x : ℝ => x⁻¹ * x) A := by
+    rw [cfc_mul (fun x : ℝ => x⁻¹) (fun x => x) A (hc _) (hc _), hid]
+  -- the four Penrose conditions, each an identity of real functions
+  symm
+  refine pinv_eq_iff.mpr ⟨?_, ?_, ?_, ?_⟩
+  · rw [hl]
+    calc cfc (fun x : ℝ => x * x⁻¹) A * A
+        = cfc (fun x : ℝ => x * x⁻¹) A * cfc (fun x : ℝ => x) A := by rw [hid]
+      _ = cfc (fun x : ℝ => x * x⁻¹ * x) A := (cfc_mul _ _ A (hc _) (hc _)).symm
+      _ = cfc (fun x : ℝ => x) A := cfc_congr fun x _ => by
+          by_cases hx : x = 0
+          · simp [hx]
+          · field_simp
+      _ = A := hid
+  · rw [hr, ← cfc_mul _ _ A (hc _) (hc _)]
+    refine cfc_congr fun x _ => ?_
+    by_cases hx : x = 0
+    · simp [hx]
+    · field_simp
+  · rw [hl]
+    exact cfc_predicate _ A
+  · rw [hr]
+    exact cfc_predicate _ A
 
 /-- The functional calculus of $x \mapsto 1/\sqrt{x}$ is a left inverse of the square root of a
 positive definite matrix. -/

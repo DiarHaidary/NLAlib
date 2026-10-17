@@ -43,6 +43,7 @@ public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
+public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Basic.Space
 public import NLAlib.Krylov.LinearSystems.CG
@@ -224,7 +225,9 @@ public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
+public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.Residual
+public import NLAlib.Polynomial.Interpolation.Stieltjes
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare

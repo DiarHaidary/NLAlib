@@ -26,6 +26,8 @@ and act on the singular values.
 
 * `Matrix.IsHermitian.exists_cfc_eq_aeval`: every function of $\mathbf{A}$ is a polynomial in
   $\mathbf{A}$.
+* `Matrix.IsHermitian.aeval_nodal_eq_zero`: the nodal polynomial of a set containing the
+  spectrum annihilates $\mathbf{A}$.
 * `Matrix.IsHermitian.specNorm_aeval_le`:
   $\|p(\mathbf{A})\|_2 \le \max_i \lvert p(\lambda_i(\mathbf{A})) \rvert$.
 * `Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le`: the same bound for the quadratic form
@@ -92,6 +94,15 @@ theorem _root_.Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq {A : Matrix n n
   have hsa : IsSelfAdjoint A := hA
   rw [← cfc_polynomial p A hsa]
   exact cfc_congr fun x hx => (h x hx).symm
+
+/-- **The nodal polynomial of a set containing the spectrum annihilates a Hermitian matrix**:
+if $\sigma(\mathbf{A}) \subseteq s$ then $\pi_s(\mathbf{A}) = \mathbf{0}$ for
+$\pi_s(z) = \prod_{\theta \in s}(z - \theta)$ (`Lagrange.nodal s id`). -/
+theorem _root_.Matrix.IsHermitian.aeval_nodal_eq_zero {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    {s : Finset ℝ} (hs : spectrum ℝ A ⊆ ↑s) : aeval A (Lagrange.nodal s id) = 0 := by
+  have hA' : IsSelfAdjoint A := hA
+  rw [← cfc_polynomial (Lagrange.nodal s id) A hA', ← cfc_const_zero ℝ A]
+  exact cfc_congr fun x hx => Lagrange.eval_nodal_at_node (v := id) (Finset.mem_coe.mp (hs hx))
 
 /-- **Every function of a Hermitian matrix is a polynomial in it** of degree less than the size:
 $f(\mathbf{A}) = p(\mathbf{A})$ for a real polynomial $p$ of degree less than $\lvert n \rvert$,

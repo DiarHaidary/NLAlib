@@ -36,6 +36,8 @@ reach $\mathcal{K}_{q+1}$.
 * `NLAlib.aeval_mulVec_mem_krylovSpace`: membership for polynomials over any subfield.
 * `NLAlib.krylovSpace_mono`, `NLAlib.mulVec_mem_krylovSpace_succ`: monotonicity and
   $\mathbf{A}\mathcal{K}_q \subseteq \mathcal{K}_{q+1}$.
+* `NLAlib.krylovSpace_add_smul_one`: shift invariance,
+  $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{b}) = \mathcal{K}_q(\mathbf{A}, \mathbf{b})$.
 -/
 
 @[expose] public section
@@ -165,5 +167,29 @@ theorem mulVec_mem_krylovSpace_succ {A : Matrix n n 𝕜} {b x : n → 𝕜} {q 
     rw [Matrix.mulVec_mulVec, ← pow_succ']
     exact pow_mulVec_mem_krylovSpace A b (Nat.succ_lt_succ j.isLt)
   exact hle hx
+
+/-- One inclusion of shift invariance: the generators $(\mathbf{A} + s\mathbf{I})^j\mathbf{b}$
+are the real polynomials $(X + s)^j$ in $\mathbf{A}$ applied to $\mathbf{b}$. -/
+private theorem krylovSpace_add_smul_one_le (A : Matrix n n 𝕜) (s : ℝ) (b : n → 𝕜) (q : ℕ) :
+    krylovSpace (A + s • (1 : Matrix n n 𝕜)) b q ≤ krylovSpace A b q := by
+  rw [krylovSpace_eq_span]
+  refine Submodule.span_le.2 ?_
+  rintro _ ⟨j, rfl⟩
+  have h : (A + s • (1 : Matrix n n 𝕜)) ^ (j : ℕ) = aeval A ((X + C s) ^ (j : ℕ)) := by
+    rw [map_pow, map_add, aeval_X, aeval_C, Algebra.algebraMap_eq_smul_one]
+  change (A + s • (1 : Matrix n n 𝕜)) ^ (j : ℕ) *ᵥ b ∈ krylovSpace A b q
+  rw [h]
+  refine aeval_mulVec_mem_krylovSpace A b ?_
+  rw [degree_pow, degree_X_add_C, nsmul_one]
+  exact_mod_cast j.isLt
+
+/-- **Shift invariance**: $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{b}) =
+\mathcal{K}_q(\mathbf{A}, \mathbf{b})$ for every real shift $s$ (the shifts of its consumers,
+shifted CG and Lanczos-FA for $(x + s)^{-1}$, are real). [Saad2003, §6.2]. -/
+theorem krylovSpace_add_smul_one (A : Matrix n n 𝕜) (s : ℝ) (b : n → 𝕜) (q : ℕ) :
+    krylovSpace (A + s • (1 : Matrix n n 𝕜)) b q = krylovSpace A b q := by
+  refine le_antisymm (krylovSpace_add_smul_one_le A s b q) ?_
+  have h := krylovSpace_add_smul_one_le (A + s • (1 : Matrix n n 𝕜)) (-s) b q
+  rwa [add_assoc, ← add_smul, add_neg_cancel, zero_smul, add_zero] at h
 
 end NLAlib
