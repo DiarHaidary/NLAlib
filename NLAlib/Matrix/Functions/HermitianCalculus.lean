@@ -46,6 +46,9 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
   \mathbf{U}f(\mathbf{T})\mathbf{U}^{\mathsf{H}}
   + f(0)(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})$.
 * `Matrix.IsHermitian.spectrum_subset_iff`: the spectrum through the sorted eigenvalues.
+* `Matrix.IsHermitian.smul_one_le_iff_spectrum_subset_Ici`,
+  `Matrix.IsHermitian.le_smul_one_iff_spectrum_subset_Iic`: one-sided Loewner bounds are
+  spectral bounds.
 * `Matrix.IsHermitian.spectrum_conjTranspose_mul_mul_subset_Icc`: Ritz values stay in an
   interval containing the spectrum.
 * `Matrix.IsHermitian.re_trace_cfc`:
@@ -370,6 +373,22 @@ theorem spectrum_subset_Icc_of_le {A : Matrix n n 𝕜} {a b : ℝ}
   exact ⟨((hA.smul_one_le_iff hk).mp h₁).trans
       (hA.eigenvalue_le_eigenvalue (by omega) (by omega)),
     (hA.eigenvalue_le_eigenvalue (Nat.zero_le i) hi).trans (hA.le_smul_one_iff.mp h₂)⟩
+
+/-- **A lower spectral bound is a Loewner bound**: for Hermitian $\mathbf{A}$,
+$a\mathbf{I} \preceq \mathbf{A}$ iff the real spectrum lies in $[a, \infty)$. The converse half
+of `spectrum_subset_Icc_of_le`, by Mathlib's `algebraMap_le_iff_le_spectrum`. -/
+theorem _root_.Matrix.IsHermitian.smul_one_le_iff_spectrum_subset_Ici {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (a : ℝ) : a • (1 : Matrix n n 𝕜) ≤ A ↔ spectrum ℝ A ⊆ Set.Ici a := by
+  rw [← Algebra.algebraMap_eq_smul_one]
+  exact algebraMap_le_iff_le_spectrum (a := A) hA
+
+/-- **An upper spectral bound is a Loewner bound**: for Hermitian $\mathbf{A}$,
+$\mathbf{A} \preceq b\mathbf{I}$ iff the real spectrum lies in $(-\infty, b]$, by Mathlib's
+`le_algebraMap_iff_spectrum_le`. -/
+theorem _root_.Matrix.IsHermitian.le_smul_one_iff_spectrum_subset_Iic {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (b : ℝ) : A ≤ b • (1 : Matrix n n 𝕜) ↔ spectrum ℝ A ⊆ Set.Iic b := by
+  rw [← Algebra.algebraMap_eq_smul_one]
+  exact le_algebraMap_iff_spectrum_le (a := A) hA
 
 /-- **Ritz values lie in every interval containing the spectrum**: for Hermitian $\mathbf{A}$
 with spectrum in $[a, a']$ and $\mathbf{Q}$ with orthonormal columns, the spectrum of

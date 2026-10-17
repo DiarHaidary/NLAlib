@@ -10,6 +10,7 @@ public import NLAlib.Matrix.Spectral.Weyl
 public import NLAlib.Matrix.Spectral.SingularValues
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Matrix.Basic.SchurComplement
+public import NLAlib.Matrix.Functions.HermitianCalculus
 
 /-!
 # Consequences of the Loewner order
@@ -383,34 +384,12 @@ private theorem exists_conjTranspose_mul_mul_eq_one_and_inv_mul_eq {A : Matrix n
     rw [Matrix.nonsing_inv_mul _ hdet, Matrix.mul_one]
 
 private theorem smul_one_le_iff_forall_le_spectrum {H : Matrix n n 𝕜} (hH : H.IsHermitian)
-    (a : ℝ) : a • (1 : Matrix n n 𝕜) ≤ H ↔ ∀ z ∈ spectrum ℝ H, a ≤ z := by
-  rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | hpos
-  · have : IsEmpty n := Fintype.card_eq_zero_iff.mp h0
-    refine iff_of_true (le_of_eq (Subsingleton.elim _ _)) fun z hz => ?_
-    rw [hH.spectrum_eq_image_eigenvalue, h0] at hz
-    simp at hz
-  · obtain ⟨k, hk⟩ : ∃ k, k + 1 = Fintype.card n := ⟨Fintype.card n - 1, by omega⟩
-    rw [hH.smul_one_le_iff hk, hH.spectrum_eq_image_eigenvalue]
-    constructor
-    · rintro h z ⟨j, hj, rfl⟩
-      exact h.trans (hH.eigenvalue_le_eigenvalue (by have := Set.mem_Iio.mp hj; omega) (by omega))
-    · intro h
-      exact h _ ⟨k, Set.mem_Iio.mpr (by omega), rfl⟩
+    (a : ℝ) : a • (1 : Matrix n n 𝕜) ≤ H ↔ ∀ z ∈ spectrum ℝ H, a ≤ z :=
+  hH.smul_one_le_iff_spectrum_subset_Ici a
 
 private theorem le_smul_one_iff_forall_spectrum_le {H : Matrix n n 𝕜} (hH : H.IsHermitian)
-    (b : ℝ) : H ≤ b • (1 : Matrix n n 𝕜) ↔ ∀ z ∈ spectrum ℝ H, z ≤ b := by
-  rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | hpos
-  · have : IsEmpty n := Fintype.card_eq_zero_iff.mp h0
-    refine iff_of_true (le_of_eq (Subsingleton.elim _ _)) fun z hz => ?_
-    rw [hH.spectrum_eq_image_eigenvalue, h0] at hz
-    simp at hz
-  · have : Nonempty n := Fintype.card_pos_iff.mp hpos
-    rw [hH.le_smul_one_iff, hH.spectrum_eq_image_eigenvalue]
-    constructor
-    · rintro h z ⟨j, hj, rfl⟩
-      exact (hH.eigenvalue_le_eigenvalue (Nat.zero_le j) (Set.mem_Iio.mp hj)).trans h
-    · intro h
-      exact h _ ⟨0, Set.mem_Iio.mpr hpos, rfl⟩
+    (b : ℝ) : H ≤ b • (1 : Matrix n n 𝕜) ↔ ∀ z ∈ spectrum ℝ H, z ≤ b :=
+  hH.le_smul_one_iff_spectrum_subset_Iic b
 
 /-- **Spectral equivalence through generalized eigenvalues.** For positive definite $\mathbf{A}$
 and Hermitian $\mathbf{B}$, $a\mathbf{A} \preceq \mathbf{B} \preceq b\mathbf{A}$ exactly when the

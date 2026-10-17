@@ -35,6 +35,9 @@ and act on the singular values.
   of a polynomial weight $g(\mathbf{A})$, with `NLAlib.re_quadForm_aeval_mulVec_le` the case
   $g(t) = t$.
 * `NLAlib.specNorm_cfc_sub_aeval_le`: polynomial approximation of $f(\mathbf{A})$.
+* `NLAlib.aeval_diagonal_self`: $p(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(p(d_i))$.
+* `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq_mul`: polynomials intertwine, for real polynomials
+  and polynomials over $\Bbbk$.
 * `NLAlib.aeval_mul_conjTranspose_self_mul`: intertwining.
 * `NLAlib.IsSVD.mul_aeval_conjTranspose_mul_self`: a polynomial filter applied to an SVD.
 -/
@@ -62,6 +65,15 @@ theorem aeval_diagonal (d : n → ℝ) (p : ℝ[X]) :
     rw [Matrix.isHermitian_diagonal_iff]
     exact fun i => RCLike.conj_ofReal (d i)
   rw [← cfc_polynomial p _ hD, cfc_diagonal]
+
+/-- A polynomial in a diagonal matrix over its own scalars is the diagonal of its values:
+$p(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(p(d_i))$ for $p \in R[X]$. -/
+theorem aeval_diagonal_self {R : Type*} [CommSemiring R] (d : n → R) (p : R[X]) :
+    aeval (Matrix.diagonal d) p = Matrix.diagonal fun i => p.eval (d i) := by
+  change aeval (Matrix.diagonalAlgHom R d) p = _
+  rw [aeval_algHom_apply, aeval_pi_apply]
+  simp only [coe_aeval_eq_eval]
+  rfl
 
 /-- A polynomial commutes with unitary conjugation:
 $p(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
@@ -266,10 +278,12 @@ theorem pow_mul_eq_mul_pow_of_mul_eq_mul {R : Type*} [Semiring R] {B : Matrix m 
       ← pow_succ]
 
 /-- Polynomials intertwine: if $\mathbf{B}\mathbf{A} = \mathbf{A}\mathbf{C}$ then
-$p(\mathbf{B})\mathbf{A} = \mathbf{A}\,p(\mathbf{C})$ for every real polynomial $p$.
-Port of `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq`. -/
-theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {B : Matrix m m 𝕜} {A : Matrix m n 𝕜}
-    {C : Matrix n n 𝕜} (h : B * A = A * C) (p : ℝ[X]) : aeval B p * A = A * aeval C p := by
+$p(\mathbf{B})\mathbf{A} = \mathbf{A}\,p(\mathbf{C})$ for every polynomial $p$ with
+coefficients in any scalar ring $S$ acting on $\Bbbk$ (real polynomials, or polynomials over
+$\Bbbk$ itself). Port of `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq`. -/
+theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {S : Type*} [CommSemiring S] [Algebra S 𝕜]
+    {B : Matrix m m 𝕜} {A : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : B * A = A * C) (p : S[X]) :
+    aeval B p * A = A * aeval C p := by
   induction p using Polynomial.induction_on' with
   | add p q hp hq => rw [map_add, map_add, Matrix.add_mul, Matrix.mul_add, hp, hq]
   | monomial j a =>

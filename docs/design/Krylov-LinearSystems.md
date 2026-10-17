@@ -705,3 +705,22 @@ from memory and are verified before the PR.
   (`chebyshevExtremaMatrix`, `chebyshevErrorVector`, their positivity and spectrum, the two CG
   theorems); `chebyshevWeightVector`, the two-interval definitions and the MINRES theorems join it in
   checkpoint 3, with the import of `MINRES`.
+- Checkpoint 3 landed with no statement changes. `Matrix/Inequalities/Order.lean` now imports
+  `HermitianCalculus` (no cycle), so its two private Loewner lemmas are one-line corollaries of the
+  public converses. Imports beyond §5: `MinResidual` adds `ComplementaryProjector`,
+  `Pseudoinverse/LeastSquares` and Mathlib's `Analysis/Matrix/Order` (the factor $\mathbf{M} =
+  \mathbf{D}^{\mathsf{H}}\mathbf{D}$ of the weighted residual); `GMRES` adds `ForMathlib/…/Div` and
+  `HermitianCalculus`; `MINRES` adds `Spectral/Congruence` (the invertible factor of the PMINRES
+  bound); `WorstCase` adds Mathlib's `Polynomial/Expand` (`contract 2 p`, the even part used for
+  the two-interval lower bound). Placement cleanup after checkpoint 3: the general polynomial facts
+  over $\Bbbk[X]$ that `GMRES.lean` and `WorstCase.lean` held privately now live in
+  `Matrix/Functions/Polynomial.lean`, as the new `aeval_diagonal_self` and as
+  `aeval_mul_eq_mul_aeval_of_mul_eq_mul` generalised from real polynomials to any scalar ring
+  acting on $\Bbbk$ (`GMRES` now imports `Polynomial`); the split residual
+  $\mathbf{C}^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\mathbf{C}\mathbf{y}) =
+  \mathbf{C}^{\mathsf{H}}\mathbf{b} - \mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}\mathbf{y}$,
+  public in `PCG.lean` and private in `MINRES.lean`, is now
+  `Matrix.conjTranspose_mulVec_sub_mulVec_mulVec` in
+  `ForMathlib/LinearAlgebra/Matrix/ConjTranspose.lean` (no NLAlib vocabulary, beside the other
+  congruence identity). No placement flag remains open. Bib
+  keys `SaadSchultz1986`, `EisenstatElmanSchultz1983`, `ElmanSilvesterWathen2014` added.

@@ -226,7 +226,7 @@ private lemma pcgState_corr {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) {b x₀ y�
       (pcgState A M b x₀ k).p = C *ᵥ (cgState (Cᴴ * A * C) (Cᴴ *ᵥ b) y₀ k).p := by
   induction k with
   | zero =>
-    have hr := conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀
+    have hr := Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀
     rw [hy₀] at hr
     have hz : M *ᵥ (b - A *ᵥ x₀) = C *ᵥ (Cᴴ *ᵥ b - (Cᴴ * A * C) *ᵥ y₀) := by
       rw [hM, ← Matrix.mulVec_mulVec, hr]
@@ -301,7 +301,7 @@ theorem _root_.Matrix.PosDef.pcgState_r_eq_zero_iff (hA : A.PosDef) (hM : M.PosD
   obtain ⟨S, hS, hSv, hMS⟩ := exists_factor hM
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   have hinj : Function.Injective Sᴴ.mulVec := Matrix.mulVec_injective_of_isUnit (A := Sᴴ) hS.star
-  have hr := conjTranspose_mulVec_sub_mulVec_mulVec A S b (S⁻¹ *ᵥ x₀)
+  have hr := Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A S b (S⁻¹ *ᵥ x₀)
   rw [hSv] at hr
   have hg : krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) =
       krylovGrade (Sᴴ * A * S) (Sᴴ *ᵥ b - (Sᴴ * A * S) *ᵥ (S⁻¹ *ᵥ x₀)) := by

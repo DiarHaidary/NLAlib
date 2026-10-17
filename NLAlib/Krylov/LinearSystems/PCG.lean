@@ -144,15 +144,6 @@ theorem _root_.Matrix.PosDef.isMinOn_pcgIterate {A : Matrix n n 𝕜} (hA : A.Po
     (krylovMatrix (M * A) (M *ᵥ (b - A *ᵥ x₀)) q) hxs') (y - x₀) hy'
   rwa [sub_sub_sub_cancel_right, ← sub_add_eq_sub_sub_swap, add_comm] at h
 
-omit [DecidableEq n] in
-/-- **The split residual**: the residual of $\mathbf{C}\mathbf{y}$ for
-$\mathbf{A}\mathbf{x} = \mathbf{b}$, multiplied by $\mathbf{C}^{\mathsf{H}}$, is the residual of
-$\mathbf{y}$ for the split system
-$(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\mathbf{y} = \mathbf{C}^{\mathsf{H}}\mathbf{b}$. -/
-theorem conjTranspose_mulVec_sub_mulVec_mulVec (A C : Matrix n n 𝕜) (b y : n → 𝕜) :
-    Cᴴ *ᵥ (b - A *ᵥ (C *ᵥ y)) = Cᴴ *ᵥ b - (Cᴴ * A * C) *ᵥ y := by
-  rw [Matrix.mulVec_sub, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec]
-
 omit [Fintype r] [DecidableEq r] in
 /-- **PCG is CG on the split system**: for positive definite $\mathbf{A}$, invertible
 $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ and
@@ -166,7 +157,7 @@ theorem _root_.Matrix.PosDef.pcgIterate_eq_mulVec_cgIterate {A : Matrix n n 𝕜
     (hy₀ : C *ᵥ y₀ = x₀) (q : ℕ) :
     pcgIterate A M b x₀ q = C *ᵥ cgIterate (Cᴴ * A * C) (Cᴴ *ᵥ b) y₀ q := by
   have hA' : (Cᴴ * A * C).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hC).mpr hA
-  have hr := conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀
+  have hr := Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀
   rw [hy₀] at hr
   have hK : krylovMatrix (M * A) (M *ᵥ (b - A *ᵥ x₀)) q =
       C * krylovMatrix (Cᴴ * A * C) (Cᴴ *ᵥ b - (Cᴴ * A * C) *ᵥ y₀) q := by
@@ -179,7 +170,7 @@ theorem _root_.Matrix.PosDef.pcgIterate_eq_mulVec_cgIterate {A : Matrix n n 𝕜
     rw [hK, ← Matrix.mulVec_mulVec, hw, Matrix.mulVec_sub, hy₀]
   · have h := hA'.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIterate_eq_zero (Cᴴ *ᵥ b) y₀ q
     rwa [hK, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec,
-      conjTranspose_mulVec_sub_mulVec_mulVec]
+      Matrix.conjTranspose_mulVec_sub_mulVec_mulVec]
 
 /-- The split system behind every PCG bound: a factor $\mathbf{M} =
 \mathbf{S}\mathbf{S}^{\mathsf{H}}$, the solution and start $\mathbf{S}^{-1}\mathbf{x}_\star$,
@@ -305,7 +296,7 @@ theorem _root_.Matrix.PosDef.pcgIterate_eq_of_krylovGrade_le {A M : Matrix n n �
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   have hys : (Sᴴ * A * S) *ᵥ (S⁻¹ *ᵥ xs) = Sᴴ *ᵥ b := by
     rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, hSv, hxs]
-  have hr := conjTranspose_mulVec_sub_mulVec_mulVec A S b (S⁻¹ *ᵥ x₀)
+  have hr := Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A S b (S⁻¹ *ᵥ x₀)
   rw [hSv] at hr
   have hg : krylovGrade (Sᴴ * A * S) (Sᴴ *ᵥ b - (Sᴴ * A * S) *ᵥ (S⁻¹ *ᵥ x₀)) ≤ q := by
     rwa [← hr, ← krylovGrade_mul_mulVec hS (Sᴴ * A), Matrix.mulVec_mulVec, ← Matrix.mul_assoc,

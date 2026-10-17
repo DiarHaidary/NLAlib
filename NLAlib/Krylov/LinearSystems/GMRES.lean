@@ -1,0 +1,335 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.Krylov.Basic.Grade
+public import NLAlib.Krylov.LinearSystems.MinResidual
+public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
+public import NLAlib.Matrix.Spectral.Diagonalizable
+public import NLAlib.Matrix.Spectral.HermitianPart
+public import NLAlib.ForMathlib.Algebra.Polynomial.Div
+public import NLAlib.Matrix.Functions.HermitianCalculus
+public import NLAlib.Matrix.Functions.Polynomial
+public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
+
+/-!
+# The GMRES iterate
+
+The GMRES iterate is defined mathematically: from a start $\mathbf{x}_0$ it is $\mathbf{x}_0$
+plus the minimal residual approximation from the Krylov space of the initial residual,
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
+\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{K}_q(\mathbf{A}, \mathbf{r}_0))\,\mathbf{r}_0$,
+for every square $\mathbf{A}$. It minimises the residual over $\mathbf{x}_0 + \mathcal{K}_q$, its
+residual is $(\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{K}_q})\mathbf{r}_0 =
+p(\mathbf{A})\mathbf{r}_0$
+for a residual polynomial $p$, it beats every residual polynomial, and it terminates at the
+grade. MINRES is the Hermitian case, with its bounds in `NLAlib.Krylov.LinearSystems.MINRES`; the
+Arnoldi realisation is in `NLAlib.Krylov.LinearSystems.GMRESArnoldi`.
+
+Residual norms are the Euclidean `‖WithLp.toLp 2 _‖`, unsquared. Polynomials are over $\Bbbk$,
+since the eigenvalues of a general $\mathbf{A}$ are complex; a real matrix with complex
+eigenvalues is moved to $\mathbb{C}$ by `complexify` before the diagonalisable bound applies.
+
+## Main definitions
+
+* `NLAlib.gmresIterate`.
+
+## Main results
+
+* `NLAlib.HasOrthonormalCols.gmresIterate_eq`: the frame form.
+* `NLAlib.sub_mulVec_gmresIterate`: the residual is a projection residual.
+* `NLAlib.isMinOn_gmresIterate`: residual optimality over $\mathbf{x}_0 + \mathcal{K}_q$.
+* `NLAlib.eq_gmresIterate_of_conjTranspose_mul_krylovMatrix_mulVec_sub_eq_zero`: the
+  Petrov–Galerkin characterisation.
+* `NLAlib.norm_sub_mulVec_gmresIterate_succ_le`: the residual norms do not increase.
+* `NLAlib.exists_sub_mulVec_gmresIterate_eq_aeval`: the residual polynomial.
+* `NLAlib.norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec`: GMRES beats every residual
+  polynomial.
+* `NLAlib.gmresIterate_eq_of_krylovGrade_le`: finite termination.
+* `NLAlib.norm_sub_mulVec_gmresIterate_le_pseudoConditionNumber_mul`: the bound for
+  diagonalisable $\mathbf{A}$.
+* `NLAlib.norm_sub_mulVec_gmresIterate_le_sqrt_one_sub_sq_pow`: the field-of-values bound.
+-/
+
+@[expose] public section
+
+open scoped Matrix ComplexOrder MatrixOrder
+open Polynomial
+
+namespace NLAlib
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n r : Type*} [Fintype n] [DecidableEq n] [Fintype r]
+  [DecidableEq r]
+
+/-- The **GMRES iterate** after $q$ steps from $\mathbf{x}_0$, with
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) := \mathbf{x}_0 +
+\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{K}_q(\mathbf{A}, \mathbf{r}_0))\,\mathbf{r}_0$,
+which is $\mathbf{x}_0 + \mathbf{Q}(\mathbf{A}\mathbf{Q})^{+}\mathbf{r}_0$ for every orthonormal
+basis $\mathbf{Q}$ of $\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$. For Hermitian $\mathbf{A}$ it is
+the MINRES iterate. Basis-free, total, not an algorithm; for singular $\mathbf{A}$ the correction
+of least norm among the minimisers. Arnoldi with a small least-squares problem computes it
+(`gmresIterate_eq_mgsArnoldiMatrix`); for Hermitian $\mathbf{A}$, Lanczos does
+(`Matrix.IsHermitian.gmresIterate_eq_lanczosMatrix`).
+[SaadSchultz1986]; [Saad2003, §6.5]; [PaigeSaunders1975]. -/
+noncomputable def gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
+  x₀ + minResidualInverse A (krylovMatrix A (b - A *ᵥ x₀) q) *ᵥ (b - A *ᵥ x₀)
+
+/-- The correction lies in the Krylov space of the initial residual. -/
+theorem gmresIterate_sub_mem_krylovSpace (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
+    gmresIterate A b x₀ q - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q := by
+  rw [gmresIterate, add_sub_cancel_left]
+  exact minResidualInverse_mulVec_mem A _ _
+
+/-- The zeroth iterate is the start. -/
+@[simp]
+theorem gmresIterate_zero (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : gmresIterate A b x₀ 0 = x₀ := by
+  have h := gmresIterate_sub_mem_krylovSpace A b x₀ 0
+  rwa [krylovSpace_zero, Submodule.mem_bot, sub_eq_zero] at h
+
+/-- **GMRES in any orthonormal basis of the Krylov space**, for every $\mathbf{A}$:
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
+\mathbf{Q}(\mathbf{A}\mathbf{Q})^{+}\mathbf{r}_0$. [Saad2003, §6.5.1]. -/
+theorem HasOrthonormalCols.gmresIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
+    {A : Matrix n n 𝕜} {b x₀ : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A (b - A *ᵥ x₀) q) :
+    gmresIterate A b x₀ q = x₀ + Q *ᵥ (pinv (A * Q) *ᵥ (b - A *ᵥ x₀)) := by
+  rw [gmresIterate, hQ.minResidualInverse_eq hK A, Matrix.mulVec_mulVec]
+
+omit [Fintype r] [DecidableEq r] in
+/-- **The GMRES residual is a projection residual**:
+$\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) =
+(\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{K}_q})\mathbf{r}_0$, for every $\mathbf{A}$. -/
+theorem sub_mulVec_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
+    b - A *ᵥ gmresIterate A b x₀ q =
+      (1 - rangeProjector (A * krylovMatrix A (b - A *ᵥ x₀) q)) *ᵥ (b - A *ᵥ x₀) := by
+  rw [gmresIterate, Matrix.mulVec_add, Matrix.mulVec_mulVec, mul_minResidualInverse,
+    Matrix.sub_mulVec, Matrix.one_mulVec]
+  abel
+
+omit [Fintype r] [DecidableEq r] in
+/-- **The Petrov–Galerkin condition characterises GMRES** for invertible $\mathbf{A}$: a vector
+$\mathbf{y}$ of $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$ whose residual is
+orthogonal
+to $\mathbf{A}\mathcal{K}_q$ is the GMRES iterate. The parallel of
+`Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero`. -/
+theorem eq_gmresIterate_of_conjTranspose_mul_krylovMatrix_mulVec_sub_eq_zero {A : Matrix n n 𝕜}
+    (hA : IsUnit A) {b x₀ y : n → 𝕜} {q : ℕ} (hy : y - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q)
+    (h : (A * krylovMatrix A (b - A *ᵥ x₀) q)ᴴ *ᵥ (b - A *ᵥ y) = 0) :
+    y = gmresIterate A b x₀ q := by
+  have h' : (A * krylovMatrix A (b - A *ᵥ x₀) q)ᴴ *ᵥ ((b - A *ᵥ x₀) - A *ᵥ (y - x₀)) = 0 := by
+    rwa [Matrix.mulVec_sub A y x₀, sub_sub_sub_cancel_right]
+  rw [gmresIterate, ← eq_minResidualInverse_mulVec_of_conjTranspose_mulVec_sub_eq_zero
+    (Matrix.mulVec_injective_iff_isUnit.mpr hA) hy h', add_sub_cancel]
+
+omit [Fintype r] [DecidableEq r] in
+/-- **GMRES minimises the residual** over $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$,
+for every $\mathbf{A}$. [SaadSchultz1986]; [Saad2003, Proposition 6.18]; locator to verify.
+Result: gmres-optimality -/
+theorem isMinOn_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
+    IsMinOn (fun y => ‖WithLp.toLp 2 (b - A *ᵥ y)‖)
+      (AffineSubspace.mk' x₀ (krylovSpace A (b - A *ᵥ x₀) q) : Set (n → 𝕜))
+      (gmresIterate A b x₀ q) := by
+  refine isMinOn_iff.mpr fun y hy => ?_
+  have hy' : y - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q := by
+    rw [SetLike.mem_coe, AffineSubspace.mem_mk', vsub_eq_sub] at hy
+    exact hy
+  have h := isMinOn_iff.mp (isMinOn_minResidualInverse_mulVec A
+    (krylovMatrix A (b - A *ᵥ x₀) q) (b - A *ᵥ x₀)) (y - x₀) hy'
+  have e : ∀ w, b - A *ᵥ x₀ - A *ᵥ w = b - A *ᵥ (x₀ + w) := fun w => by
+    rw [Matrix.mulVec_add]
+    abel
+  rwa [e, e, add_sub_cancel] at h
+
+omit [Fintype r] [DecidableEq r] in
+/-- **The residual norms do not increase**, for every $\mathbf{A}$. -/
+theorem norm_sub_mulVec_gmresIterate_succ_le (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
+    ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ (q + 1))‖ ≤
+      ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ := by
+  have hmem : gmresIterate A b x₀ q ∈
+      (AffineSubspace.mk' x₀ (krylovSpace A (b - A *ᵥ x₀) (q + 1)) : Set (n → 𝕜)) := by
+    rw [SetLike.mem_coe, AffineSubspace.mem_mk', vsub_eq_sub]
+    exact krylovSpace_mono A _ (Nat.le_succ q) (gmresIterate_sub_mem_krylovSpace A b x₀ q)
+  exact isMinOn_iff.mp (isMinOn_gmresIterate A b x₀ (q + 1)) _ hmem
+
+omit [Fintype r] [DecidableEq r] in
+/-- **The GMRES residual polynomial**: there is $p \in \Bbbk[X]$ with $\deg p \le q$, $p(0) = 1$
+and $\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) =
+p(\mathbf{A})\mathbf{r}_0$, for every $\mathbf{A}$. [Saad2003, §6.11.4]. -/
+theorem exists_sub_mulVec_gmresIterate_eq_aeval (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
+    ∃ p : 𝕜[X], p.degree ≤ q ∧ p.eval 0 = 1 ∧
+      b - A *ᵥ gmresIterate A b x₀ q = aeval A p *ᵥ (b - A *ᵥ x₀) := by
+  obtain ⟨s, hs, hsb⟩ := mem_krylovSpace_iff.1 (gmresIterate_sub_mem_krylovSpace A b x₀ q)
+  refine ⟨1 - X * s, ?_, by simp, ?_⟩
+  · rcases eq_or_ne s 0 with rfl | h0
+    · simp only [mul_zero, sub_zero]
+      exact degree_one_le.trans (by exact_mod_cast Nat.zero_le q)
+    · have hnat : s.natDegree < q := (natDegree_lt_iff_degree_lt h0).2 hs
+      refine degree_le_of_natDegree_le ((natDegree_sub_le _ _).trans (max_le ?_ ?_))
+      · rw [natDegree_one]
+        exact Nat.zero_le q
+      · exact natDegree_mul_le.trans (by rw [natDegree_X]; omega)
+  · rw [map_sub, map_one, map_mul, aeval_X, Matrix.sub_mulVec, Matrix.one_mulVec,
+      ← Matrix.mulVec_mulVec, hsb, Matrix.mulVec_sub]
+    abel
+
+omit [Fintype r] [DecidableEq r] in
+/-- **GMRES beats every residual polynomial**: for every $\mathbf{A}$ and $p \in \Bbbk[X]$ with
+$\deg p \le q$, $p(0) = 1$, $\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A},
+\mathbf{b}, \mathbf{x}_0, q)\| \le \|p(\mathbf{A})\mathbf{r}_0\|$. [Saad2003, §6.11.4]. -/
+theorem norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec (A : Matrix n n 𝕜) (b x₀ : n → 𝕜)
+    {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
+    ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
+      ‖WithLp.toLp 2 (aeval A p *ᵥ (b - A *ᵥ x₀))‖ := by
+  obtain ⟨s, hs, hps⟩ := exists_degree_lt_one_sub_eq_X_mul_of_eval_zero_eq_one hp hp₀
+  have hy : aeval A s *ᵥ (b - A *ᵥ x₀) ∈ krylovSpace A (b - A *ᵥ x₀) q :=
+    aeval_mulVec_mem_krylovSpace A _ hs
+  have hp' : p = 1 - X * s := by rw [← hps, sub_sub_cancel]
+  have heq : b - A *ᵥ (x₀ + aeval A s *ᵥ (b - A *ᵥ x₀)) = aeval A p *ᵥ (b - A *ᵥ x₀) := by
+    rw [hp', map_sub, map_one, map_mul, aeval_X, Matrix.sub_mulVec, Matrix.one_mulVec,
+      ← Matrix.mulVec_mulVec, Matrix.mulVec_add]
+    abel
+  have hmem : x₀ + aeval A s *ᵥ (b - A *ᵥ x₀) ∈
+      (AffineSubspace.mk' x₀ (krylovSpace A (b - A *ᵥ x₀) q) : Set (n → 𝕜)) := by
+    rw [SetLike.mem_coe, AffineSubspace.mem_mk', vsub_eq_sub, add_sub_cancel_left]
+    exact hy
+  have h := isMinOn_iff.mp (isMinOn_gmresIterate A b x₀ q) _ hmem
+  rwa [heq] at h
+
+omit [Fintype r] [DecidableEq r] in
+/-- **Finite termination**: for invertible $\mathbf{A}$, GMRES reaches the solution once $q$ is
+at least the grade of $\mathbf{r}_0$. [Saad2003, Proposition 6.10]; locator to verify. -/
+theorem gmresIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) {b xs : n → 𝕜}
+    (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ} (h : krylovGrade A (b - A *ᵥ x₀) ≤ q) :
+    gmresIterate A b x₀ q = xs := by
+  have hxs' : A *ᵥ (xs - x₀) = b - A *ᵥ x₀ := by rw [Matrix.mulVec_sub, hxs]
+  rw [gmresIterate, minResidualInverse_mulVec_eq_of_mem (Matrix.mulVec_injective_iff_isUnit.mpr hA)
+    hxs' (mem_krylovSpace_of_krylovGrade_le hA hxs' h), add_sub_cancel]
+
+omit [DecidableEq n] [Fintype r] [DecidableEq r] in
+/-- On an empty index type every Euclidean norm vanishes. -/
+private lemma norm_toLp_eq_zero_of_isEmpty [IsEmpty n] (v : n → 𝕜) : ‖WithLp.toLp 2 v‖ = 0 := by
+  rw [Subsingleton.elim v 0, WithLp.toLp_zero, norm_zero]
+
+omit [Fintype r] [DecidableEq r] in
+/-- **The GMRES bound for diagonalisable $\mathbf{A}$**: if
+$\mathbf{A}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and
+$p \in \Bbbk[X]$, $\deg p \le q$, $p(0) = 1$, satisfies $\lvert p(d_i) \rvert \le \eta$ for every
+eigenvalue, then
+$$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
+\kappa(\mathbf{V})\,\eta\,\|\mathbf{r}_0\| \,.$$
+The hypothesis is the body of `IsDiagonalizable` with its witness ($\mathbf{V}$ invertible, as
+`IsUnit V`; `Matrix.isUnit_iff_isUnit_det` converts from `IsDiagonalizable`'s determinant form).
+[SaadSchultz1986, Proposition 4]; [TrefethenBau1997, Theorem 35.2]; locators to verify. -/
+theorem norm_sub_mulVec_gmresIterate_le_pseudoConditionNumber_mul {A V : Matrix n n 𝕜}
+    {d : n → 𝕜} (hV : IsUnit V) (hAV : A * V = V * Matrix.diagonal d) (b x₀ : n → 𝕜)
+    {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) {η : ℝ}
+    (hη : ∀ i, ‖p.eval (d i)‖ ≤ η) :
+    ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
+      pseudoConditionNumber V * η * ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
+  rcases isEmpty_or_nonempty n with hn | ⟨⟨i⟩⟩
+  · rw [norm_toLp_eq_zero_of_isEmpty, norm_toLp_eq_zero_of_isEmpty, mul_zero]
+  have hη0 : 0 ≤ η := (norm_nonneg _).trans (hη i)
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hpA : aeval A p = V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹ := by
+    rw [← aeval_diagonal_self, ← aeval_mul_eq_mul_aeval_of_mul_eq_mul hAV, Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv _ hdet, Matrix.mul_one]
+  have hnorm : specNorm (aeval A p) ≤ pseudoConditionNumber V * η := by
+    rw [hpA, pseudoConditionNumber_of_isUnit hV]
+    calc specNorm (V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹)
+        ≤ specNorm V * specNorm (Matrix.diagonal fun i => p.eval (d i)) * specNorm V⁻¹ :=
+          (specNorm_mul_le _ _).trans
+            (mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) (specNorm_nonneg _))
+      _ ≤ specNorm V * η * specNorm V⁻¹ := by
+          gcongr
+          exact specNorm_diagonal_le hη0 hη
+      _ = specNorm V * specNorm V⁻¹ * η := by ring
+  refine (norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec A b x₀ hp hp₀).trans ?_
+  exact (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_right hnorm (norm_nonneg _))
+
+omit [Fintype r] [DecidableEq r] in
+/-- **The field-of-values bound** (Elman): if the Hermitian part of $\mathbf{A}$ has spectrum in
+$[a, \infty)$, $0 < a$, and $\|\mathbf{A}\|_2 \le a'$, then
+$$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
+\Bigl(1 - \frac{a^2}{a'^2}\Bigr)^{q/2}\|\mathbf{r}_0\| \,.$$
+The residual polynomial is $(1 - \alpha x)^q$ with $\alpha = a/a'^2$.
+[EisenstatElmanSchultz1983, Theorem 3.3]; [Saad2003, Theorem 6.30]; locators to verify. -/
+theorem norm_sub_mulVec_gmresIterate_le_sqrt_one_sub_sq_pow {A : Matrix n n 𝕜} {a a' : ℝ}
+    (ha : 0 < a) (hs : spectrum ℝ (hermitianPart A) ⊆ Set.Ici a) (hA : specNorm A ≤ a')
+    (b x₀ : n → 𝕜) (q : ℕ) :
+    ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
+      Real.sqrt (1 - (a / a') ^ 2) ^ q * ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
+  set c := Real.sqrt (1 - (a / a') ^ 2)
+  have h1 : ((1 : 𝕜[X])).degree ≤ q := degree_one_le.trans (by exact_mod_cast Nat.zero_le q)
+  rcases eq_or_ne a' 0 with rfl | ha'
+  · have hc : c = 1 := by simp only [c, div_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+      zero_pow, sub_zero, Real.sqrt_one]
+    rw [hc, one_pow, one_mul]
+    have h := norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec A b x₀ h1 eval_one
+    rwa [map_one, Matrix.one_mulVec] at h
+  have ha'0 : 0 < a' := lt_of_le_of_ne ((specNorm_nonneg A).trans hA) (Ne.symm ha')
+  set α : ℝ := a / a' ^ 2 with hα
+  have hα0 : 0 ≤ α := by positivity
+  set B : Matrix n n 𝕜 := 1 - (α : 𝕜) • A
+  have hH : a • (1 : Matrix n n 𝕜) ≤ hermitianPart A :=
+    ((isHermitian_hermitianPart A).smul_one_le_iff_spectrum_subset_Ici a).mpr hs
+  have hB : ∀ v, ‖WithLp.toLp 2 (B *ᵥ v)‖ ≤ c * ‖WithLp.toLp 2 v‖ := by
+    intro v
+    have hq : a * ‖WithLp.toLp 2 v‖ ^ 2 ≤ RCLike.re (quadForm A v) := by
+      have h := re_quadForm_le_re_quadForm_of_le hH v
+      rwa [re_quadForm_real_smul_one, re_quadForm_hermitianPart] at h
+    have hAv : ‖WithLp.toLp 2 (A *ᵥ v)‖ ≤ a' * ‖WithLp.toLp 2 v‖ :=
+      (norm_toLp_mulVec_le A v).trans (mul_le_mul_of_nonneg_right hA (norm_nonneg _))
+    have hexp : ‖WithLp.toLp 2 (B *ᵥ v)‖ ^ 2 = ‖WithLp.toLp 2 v‖ ^ 2 -
+        2 * α * RCLike.re (quadForm A v) + α ^ 2 * ‖WithLp.toLp 2 (A *ᵥ v)‖ ^ 2 := by
+      have e : WithLp.toLp 2 (B *ᵥ v) =
+          WithLp.toLp 2 v - (α : 𝕜) • WithLp.toLp 2 (A *ᵥ v) := by
+        rw [Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec, WithLp.toLp_sub,
+          WithLp.toLp_smul]
+      rw [e, @norm_sub_sq 𝕜, inner_smul_right, EuclideanSpace.inner_toLp_toLp, dotProduct_comm,
+        ← quadForm_def, RCLike.re_ofReal_mul, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hα0]
+      ring
+    have hle : ‖WithLp.toLp 2 (B *ᵥ v)‖ ^ 2 ≤ (1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2 := by
+      have h2 : α ^ 2 * ‖WithLp.toLp 2 (A *ᵥ v)‖ ^ 2 ≤ α ^ 2 * (a' * ‖WithLp.toLp 2 v‖) ^ 2 :=
+        mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (norm_nonneg _) hAv 2) (sq_nonneg _)
+      have h3 : 2 * α * (a * ‖WithLp.toLp 2 v‖ ^ 2) ≤ 2 * α * RCLike.re (quadForm A v) :=
+        mul_le_mul_of_nonneg_left hq (by positivity)
+      have hid : ‖WithLp.toLp 2 v‖ ^ 2 - 2 * α * (a * ‖WithLp.toLp 2 v‖ ^ 2) +
+          α ^ 2 * (a' * ‖WithLp.toLp 2 v‖) ^ 2 = (1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2 := by
+        rw [hα]
+        field_simp
+        ring
+      rw [hexp]
+      linarith
+    calc ‖WithLp.toLp 2 (B *ᵥ v)‖ = Real.sqrt (‖WithLp.toLp 2 (B *ᵥ v)‖ ^ 2) :=
+          (Real.sqrt_sq (norm_nonneg _)).symm
+      _ ≤ Real.sqrt ((1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2) := Real.sqrt_le_sqrt hle
+      _ = c * ‖WithLp.toLp 2 v‖ := by
+          rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
+  have hpow : ∀ k v, ‖WithLp.toLp 2 ((B ^ k) *ᵥ v)‖ ≤ c ^ k * ‖WithLp.toLp 2 v‖ := by
+    intro k
+    induction k with
+    | zero => intro v; rw [pow_zero, pow_zero, Matrix.one_mulVec, one_mul]
+    | succ k ih =>
+      intro v
+      rw [pow_succ', ← Matrix.mulVec_mulVec, pow_succ, mul_comm (c ^ k) c, mul_assoc]
+      exact (hB _).trans (mul_le_mul_of_nonneg_left (ih v) (Real.sqrt_nonneg _))
+  have hd1 : (1 - C (α : 𝕜) * X : 𝕜[X]).natDegree ≤ 1 :=
+    (natDegree_sub_le _ _).trans (max_le (by rw [natDegree_one]; exact zero_le_one)
+      ((natDegree_C_mul_le _ _).trans (by rw [natDegree_X])))
+  have hp : ((1 - C (α : 𝕜) * X) ^ q).degree ≤ (q : WithBot ℕ) :=
+    degree_le_of_natDegree_le (natDegree_pow_le.trans
+      ((Nat.mul_le_mul_left q hd1).trans_eq (mul_one q)))
+  have hp₀ : ((1 - C (α : 𝕜) * X) ^ q).eval 0 = 1 := by
+    simp only [eval_pow, eval_sub, eval_one, eval_mul, eval_C, eval_X, mul_zero, sub_zero, one_pow]
+  have haeval : aeval A ((1 - C (α : 𝕜) * X) ^ q) = B ^ q := by
+    rw [map_pow, map_sub, map_one, map_mul, aeval_C, aeval_X, Algebra.algebraMap_eq_smul_one,
+      Matrix.smul_mul, Matrix.one_mul]
+  refine (norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec A b x₀ hp hp₀).trans ?_
+  rw [haeval]
+  exact hpow q _
+
+end NLAlib

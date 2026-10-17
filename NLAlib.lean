@@ -51,9 +51,13 @@ public import NLAlib.Krylov.Functions.NearOptimality
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
+public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.LinearSystems.Galerkin
+public import NLAlib.Krylov.LinearSystems.MINRES
+public import NLAlib.Krylov.LinearSystems.MinResidual
 public import NLAlib.Krylov.LinearSystems.PCG
 public import NLAlib.Krylov.LinearSystems.PCGRecurrence
+public import NLAlib.Krylov.LinearSystems.WorstCase
 public import NLAlib.Krylov.Processes.Lanczos
 public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
