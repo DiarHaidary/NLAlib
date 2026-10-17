@@ -409,7 +409,8 @@ For the pair maximising $R$ this is the factor of
 $\mu = \delta_s$: the near-optimality factor cannot be improved, for any $\nu$ and any $s$.
 The vector $\mathbf{b}$ lives on $q + 1$ eigenvalues containing $x_1, x_2$, with spectral
 weights for which the error ratio is [ChenPersson2026, (15)].
-[ChenPersson2026, proof of Theorem 2]; the method is Greenbaum's [Greenbaum1979]. -/
+[ChenPersson2026, proof of Theorem 2]; the method is Greenbaum's [Greenbaum1979].
+Result: lanczos-fa-near-optimality-lower-bound -/
 theorem _root_.Matrix.PosDef.exists_inv_add_le_re_quadForm_cfc_cfc_mulVec_sub_lanczosFA
     {A : Matrix n n 𝕜} (hA : A.PosDef) {q : ℕ} (hq : 0 < q)
     (hcard : q + 1 ≤ (spectrum ℝ A).ncard) {ν : ℝ → ℝ} (hν : ∀ x ∈ spectrum ℝ A, 0 < ν x)
@@ -642,7 +643,8 @@ $$(1 - \eta)\,\frac{\sqrt\kappa + 1/\sqrt\kappa}{2}\,\|\mathbf{x}_\star - \mathb
 So the factor of `Matrix.IsHermitian.norm_sub_cgIterate_le_mul_norm_sub` is optimal. The
 instance is that of `Matrix.PosDef.exists_inv_add_le_re_quadForm_cfc_cfc_mulVec_sub_lanczosFA`
 with $\nu = 1$, $s = 0$ and the extreme eigenvalues, where Lanczos-FA for $z^{-1}$ is CG
-(`Matrix.IsHermitian.lanczosFA_inv_eq_cgIterate`). [ChenPersson2026, Remark 3]. -/
+(`Matrix.IsHermitian.lanczosFA_inv_eq_cgIterate`). [ChenPersson2026, Remark 3].
+Result: cg-near-optimality-lower-bound -/
 theorem _root_.Matrix.PosDef.exists_le_norm_sub_cgIterate {A : Matrix n n 𝕜} (hA : A.PosDef)
     {q : ℕ} (hq : 0 < q) (hcard : q + 1 ≤ (spectrum ℝ A).ncard) {η : ℝ} (hη : 0 < η)
     (hη₁ : η ≤ 1) :

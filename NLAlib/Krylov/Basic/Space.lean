@@ -97,7 +97,8 @@ private lemma aeval_sum_fin_mulVec (A : Matrix n n 𝕜) (b : n → 𝕜) {q : �
 /-- **The polynomial description of the Krylov space**: $\mathbf{x} \in \mathcal{K}_q$ exactly
 when $\mathbf{x} = p(\mathbf{A})\mathbf{b}$ for a polynomial $p \in \Bbbk[X]$ of degree less
 than $q$. [Saad2003, §6.2].
-Port of `NLAlib.mem_krylovSpace_iff` (prototype, real scalars). -/
+Port of `NLAlib.mem_krylovSpace_iff` (prototype, real scalars).
+Result: krylov-space-polynomial -/
 theorem mem_krylovSpace_iff {A : Matrix n n 𝕜} {b x : n → 𝕜} {q : ℕ} :
     x ∈ krylovSpace A b q ↔ ∃ p : 𝕜[X], p.degree < q ∧ aeval A p *ᵥ b = x := by
   rw [krylovSpace_eq_span]

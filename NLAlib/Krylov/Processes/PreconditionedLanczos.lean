@@ -257,7 +257,8 @@ theorem _root_.Matrix.IsHermitian.preconditionedLanczosMatrix_eq (hA : A.IsHermi
 /-- **The preconditioned recurrence computes the split tridiagonal matrix**: under the
 hypotheses of `Matrix.IsHermitian.preconditionedLanczosMatrix_eq`, the computed matrix is
 $\hat{\mathbf{Q}}^{\mathsf{H}}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\hat{\mathbf{Q}}$ for
-the canonical basis $\hat{\mathbf{Q}}$ of the split system. -/
+the canonical basis $\hat{\mathbf{Q}}$ of the split system.
+Result: preconditioned-lanczos-recurrence -/
 theorem _root_.Matrix.IsHermitian.preconditionedLanczosTridiagonal_eq (hA : A.IsHermitian)
     {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) (b : n → 𝕜) (q : ℕ) :
     preconditionedLanczosTridiagonal A M b q =

@@ -151,7 +151,8 @@ $\mathbf{C}\mathbf{y}_0 = \mathbf{x}_0$,
 $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) =
 \mathbf{C}\,\mathsf{cgIterate}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C},
 \mathbf{C}^{\mathsf{H}}\mathbf{b}, \mathbf{y}_0, q)$. Any factor works, the Cholesky factor or
-$\mathbf{M}^{1/2}$. [Saad2003, §9.2.1]. -/
+$\mathbf{M}^{1/2}$. [Saad2003, §9.2.1].
+Result: pcg-split-system -/
 theorem _root_.Matrix.PosDef.pcgIterate_eq_mulVec_cgIterate {A : Matrix n n 𝕜} (hA : A.PosDef)
     {M C : Matrix n n 𝕜} (hC : IsUnit C) (hM : M = C * Cᴴ) {b x₀ y₀ : n → 𝕜}
     (hy₀ : C *ᵥ y₀ = x₀) (q : ℕ) :
@@ -253,7 +254,8 @@ $0 < a$, and $\lvert\prod_{t \in T}(1 - x/t)\rvert \le C$ on $[a, a']$,
 $$\|\mathbf{x}_\star - \mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0,
 m + d)\|_{\mathbf{A}}^2 \le 4C^2\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2d}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
-$m = \lvert T \rvert$. The form used for low-rank-plus-identity preconditioners. -/
+$m = \lvert T \rvert$. The form used for low-rank-plus-identity preconditioners.
+Result: pcg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_four_mul_sq_mul_pow
     {A M : Matrix n n 𝕜} (hA : A.PosDef) (hM : M.PosDef) {a a' : ℝ} (ha : 0 < a)
     {T : Finset ℝ} (hs : spectrum ℝ (M * A) ⊆ Set.Icc a a' ∪ ↑T) {C : ℝ}
@@ -272,7 +274,8 @@ omit [Fintype r] [DecidableEq r] in
 $$\|\mathbf{x}_\star - \mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0,
 q)\|_{\mathbf{A}}^2 \le \Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{M}\mathbf{A})}\lvert
 p(\lambda) \rvert\Bigr)^2\|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-It is the CG theorem for the split system. -/
+It is the CG theorem for the split system.
+Result: pcg-spectrum-minimax-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_residualMinimax_sq_mul
     {A M : Matrix n n 𝕜} (hA : A.PosDef) (hM : M.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b)
     (x₀ : n → 𝕜) (q : ℕ) :
@@ -284,7 +287,8 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_residualMinimax_sq_mu
 
 omit [Fintype r] [DecidableEq r] in
 /-- **Finite termination**: for positive definite $\mathbf{A}$ and $\mathbf{M}$, PCG reaches the
-solution once $q$ is at least the grade of $\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$. -/
+solution once $q$ is at least the grade of $\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$.
+Result: pcg-finite-termination -/
 theorem _root_.Matrix.PosDef.pcgIterate_eq_of_krylovGrade_le {A M : Matrix n n 𝕜}
     (hA : A.PosDef) (hM : M.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ}
     (h : krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) ≤ q) : pcgIterate A M b x₀ q = xs := by

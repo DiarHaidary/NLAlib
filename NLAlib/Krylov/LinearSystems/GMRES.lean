@@ -115,7 +115,8 @@ omit [Fintype r] [DecidableEq r] in
 $\mathbf{y}$ of $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$ whose residual is
 orthogonal
 to $\mathbf{A}\mathcal{K}_q$ is the GMRES iterate. The parallel of
-`Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero`. -/
+`Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero`.
+Result: gmres-petrov-galerkin -/
 theorem eq_gmresIterate_of_conjTranspose_mul_krylovMatrix_mulVec_sub_eq_zero {A : Matrix n n 𝕜}
     (hA : IsUnit A) {b x₀ y : n → 𝕜} {q : ℕ} (hy : y - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q)
     (h : (A * krylovMatrix A (b - A *ᵥ x₀) q)ᴴ *ᵥ (b - A *ᵥ y) = 0) :
@@ -179,7 +180,8 @@ theorem exists_sub_mulVec_gmresIterate_eq_aeval (A : Matrix n n 𝕜) (b x₀ : 
 omit [Fintype r] [DecidableEq r] in
 /-- **GMRES beats every residual polynomial**: for every $\mathbf{A}$ and $p \in \Bbbk[X]$ with
 $\deg p \le q$, $p(0) = 1$, $\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A},
-\mathbf{b}, \mathbf{x}_0, q)\| \le \|p(\mathbf{A})\mathbf{r}_0\|$. [Saad2003, §6.11.4]. -/
+\mathbf{b}, \mathbf{x}_0, q)\| \le \|p(\mathbf{A})\mathbf{r}_0\|$. [Saad2003, §6.11.4].
+Result: gmres-polynomial-bound -/
 theorem norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec (A : Matrix n n 𝕜) (b x₀ : n → 𝕜)
     {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
@@ -201,7 +203,8 @@ theorem norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec (A : Matrix n n 𝕜) 
 
 omit [Fintype r] [DecidableEq r] in
 /-- **Finite termination**: for invertible $\mathbf{A}$, GMRES reaches the solution once $q$ is
-at least the grade of $\mathbf{r}_0$. [Saad2003, Proposition 6.10]; locator to verify. -/
+at least the grade of $\mathbf{r}_0$. [Saad2003, Proposition 6.10]; locator to verify.
+Result: gmres-finite-termination -/
 theorem gmresIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) {b xs : n → 𝕜}
     (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ} (h : krylovGrade A (b - A *ᵥ x₀) ≤ q) :
     gmresIterate A b x₀ q = xs := by
@@ -223,7 +226,8 @@ $$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \math
 \kappa(\mathbf{V})\,\eta\,\|\mathbf{r}_0\| \,.$$
 The hypothesis is the body of `IsDiagonalizable` with its witness ($\mathbf{V}$ invertible, as
 `IsUnit V`; `Matrix.isUnit_iff_isUnit_det` converts from `IsDiagonalizable`'s determinant form).
-[SaadSchultz1986, Proposition 4]; [TrefethenBau1997, Theorem 35.2]; locators to verify. -/
+[SaadSchultz1986, Proposition 4]; [TrefethenBau1997, Theorem 35.2]; locators to verify.
+Result: gmres-diagonalizable-bound -/
 theorem norm_sub_mulVec_gmresIterate_le_pseudoConditionNumber_mul {A V : Matrix n n 𝕜}
     {d : n → 𝕜} (hV : IsUnit V) (hAV : A * V = V * Matrix.diagonal d) (b x₀ : n → 𝕜)
     {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) {η : ℝ}
@@ -256,7 +260,8 @@ $[a, \infty)$, $0 < a$, and $\|\mathbf{A}\|_2 \le a'$, then
 $$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
 \Bigl(1 - \frac{a^2}{a'^2}\Bigr)^{q/2}\|\mathbf{r}_0\| \,.$$
 The residual polynomial is $(1 - \alpha x)^q$ with $\alpha = a/a'^2$.
-[EisenstatElmanSchultz1983, Theorem 3.3]; [Saad2003, Theorem 6.30]; locators to verify. -/
+[EisenstatElmanSchultz1983, Theorem 3.3]; [Saad2003, Theorem 6.30]; locators to verify.
+Result: gmres-field-of-values-bound -/
 theorem norm_sub_mulVec_gmresIterate_le_sqrt_one_sub_sq_pow {A : Matrix n n 𝕜} {a a' : ℝ}
     (ha : 0 < a) (hs : spectrum ℝ (hermitianPart A) ⊆ Set.Ici a) (hA : specNorm A ≤ a')
     (b x₀ : n → 𝕜) (q : ℕ) :

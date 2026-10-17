@@ -110,7 +110,8 @@ $[-a', -a] \cup [a, a']$, $0 < a$, and $\kappa = a'/a$,
 $$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
 2\Bigl(\frac{a'/a - 1}{a'/a + 1}\Bigr)^{\lfloor q/2 \rfloor}\|\mathbf{r}_0\| \,.$$
 The residual polynomial is a Chebyshev residual on $[a^2, a'^2]$ composed with $x^2$.
-[Greenbaum1997, §3.1]; [ElmanSilvesterWathen2014, Theorem 4.14]; locators to verify. -/
+[Greenbaum1997, §3.1]; [ElmanSilvesterWathen2014, Theorem 4.14]; locators to verify.
+Result: minres-two-interval-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_div_two
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ A ⊆ Set.Icc (-a') (-a) ∪ Set.Icc a a') (b x₀ : n → 𝕜) (q : ℕ) :
@@ -147,7 +148,8 @@ The outliers may be negative (an indefinite matrix with a few negative eigenvalu
 hypothesis $0 \notin T$ is needed, since every residual polynomial is $1$ at an eigenvalue $0$.
 The hypothesis $a \le a'$ is needed too: for an empty interval the rate is negative and the
 right side can be negative, while the CG and PCG forms are squares.
-[Greenbaum1997, §3.1]; locator to verify. -/
+[Greenbaum1997, §3.1]; locator to verify.
+Result: minres-outlier-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_mul_pow
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a) (haa : a ≤ a')
     {T : Finset ℝ}
@@ -169,7 +171,8 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_mul_po
     exact mul_nonneg (mul_nonneg zero_le_two hC0) (pow_nonneg hρ d)
 
 /-- **Large outliers cost MINRES one step each**: if every outlier is at least $a'$, the outlier
-bound holds with $C = 1$ (for $a \le a'$, as in the general form). -/
+bound holds with $C = 1$ (for $a \le a'$, as in the general form).
+Result: minres-outlier-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_of_forall_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a) (haa : a ≤ a')
     {T : Finset ℝ}
@@ -192,7 +195,8 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_of
 with $\deg p \le q$, $p(0) = 1$,
 $\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
 \max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\,\|\mathbf{r}_0\|$, the maximum
-being the supremum over the finite spectrum. -/
+being the supremum over the finite spectrum.
+Result: minres-polynomial-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_iSup_mul {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b x₀ : n → 𝕜) {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q)
     (hp₀ : p.eval 0 = 1) :
@@ -214,7 +218,8 @@ $\mathbf{A}$ some $\mathbf{b}$ attains it (Greenbaum):
 `Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul` and
 `Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div` in
 `NLAlib.Krylov.LinearSystems.WorstCase`.
-[Greenbaum1997, §3.1]; locator to verify. -/
+[Greenbaum1997, §3.1]; locator to verify.
+Result: minres-spectrum-minimax-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (b x₀ : n → 𝕜) (q : ℕ) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
@@ -304,7 +309,8 @@ $\mathbf{C}\mathbf{y}_0 = \mathbf{x}_0$,
 $\mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) =
 \mathbf{C}\,\mathsf{gmresIterate}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C},
 \mathbf{C}^{\mathsf{H}}\mathbf{b}, \mathbf{y}_0, q)$. Invertibility of $\mathbf{A}$ makes both
-minimisers unique; for singular $\mathbf{A}$ the two least-norm choices differ. -/
+minimisers unique; for singular $\mathbf{A}$ the two least-norm choices differ.
+Result: pminres-split-system -/
 theorem pminresIterate_eq_mulVec_gmresIterate {A M C : Matrix n n 𝕜} (hA : IsUnit A)
     (hC : IsUnit C) (hM : M = C * Cᴴ) {b x₀ y₀ : n → 𝕜} (hy₀ : C *ᵥ y₀ = x₀) (q : ℕ) :
     pminresIterate A M b x₀ q = C *ᵥ gmresIterate (Cᴴ * A * C) (Cᴴ *ᵥ b) y₀ q := by
@@ -354,7 +360,8 @@ $$\|\mathbf{b} - \mathbf{A}\,\mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \ma
 \mathbf{x}_0, q)\|_{\mathbf{M}}^2 \le \eta^2\|\mathbf{r}_0\|_{\mathbf{M}}^2 \,.$$
 No invertibility: the comparison is with the candidate $\mathbf{x}_0 + s(\mathbf{M}\mathbf{A})
 \mathbf{M}\mathbf{r}_0$, $p = 1 - Xs$, through `Matrix.PosDef.isMinOn_pminresIterate`; its
-residual is $p(\mathbf{A}\mathbf{M})\mathbf{r}_0$. -/
+residual is $p(\mathbf{A}\mathbf{M})\mathbf{r}_0$.
+Result: pminres-polynomial-bound -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_sub_mulVec_pminresIterate_le {A M : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hM : M.PosDef) {s : Set ℝ} (hs : spectrum ℝ (M * A) ⊆ s)
     (b x₀ : n → 𝕜) {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) {η : ℝ}
@@ -410,7 +417,8 @@ $\mathbf{A}$, positive definite $\mathbf{M}$ and the spectrum of $\mathbf{M}\mat
 $[a, a']$, $0 < a$,
 $$\|\mathbf{b} - \mathbf{A}\,\mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b},
 \mathbf{x}_0, q)\|_{\mathbf{M}}^2 \le 4\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2q}
-\|\mathbf{r}_0\|_{\mathbf{M}}^2 \,.$$ [ElmanSilvesterWathen2014, §4.2]; locator to verify. -/
+\|\mathbf{r}_0\|_{\mathbf{M}}^2 \,.$$ [ElmanSilvesterWathen2014, §4.2]; locator to verify.
+Result: pminres-chebyshev-bound -/
 theorem _root_.Matrix.IsHermitian.re_quadForm_sub_mulVec_pminresIterate_le_four_mul_pow
     {A M : Matrix n n 𝕜} (hA : A.IsHermitian) (hM : M.PosDef) {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ (M * A) ⊆ Set.Icc a a') (b x₀ : n → 𝕜) (q : ℕ) :
@@ -425,7 +433,8 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_mulVec_pminresIterate_le_four_
 
 /-- **Finite termination for preconditioned MINRES**: for invertible $\mathbf{A}$ and positive
 definite $\mathbf{M}$, the iterate is the solution once $q$ is at least the grade of
-$\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$. -/
+$\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$.
+Result: pminres-finite-termination -/
 theorem pminresIterate_eq_of_krylovGrade_le {A M : Matrix n n 𝕜} (hA : IsUnit A) (hM : M.PosDef)
     {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ}
     (h : krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) ≤ q) : pminresIterate A M b x₀ q = xs := by

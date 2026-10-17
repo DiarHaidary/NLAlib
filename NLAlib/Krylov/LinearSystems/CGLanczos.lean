@@ -67,7 +67,8 @@ and $\mathbf{T} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$,
 $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q + 1) =
 \mathbf{x}_0 + \|\mathbf{r}_0\|\,\mathbf{Q}\mathbf{T}^{+}\mathbf{e}_0$. For positive definite
 $\mathbf{A}$ and $q + 1 \le \nu$, $\mathbf{T}^{+} = \mathbf{T}^{-1}$ (`pinv_of_isUnit`).
-[Saad2003, §6.7.1]. -/
+[Saad2003, §6.7.1].
+Result: cg-lanczos -/
 theorem cgIterate_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     cgIterate A b x₀ (q + 1) = x₀ + (‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ : 𝕜) •
       (arnoldiMatrix A (b - A *ᵥ x₀) (q + 1) *ᵥ
@@ -81,7 +82,8 @@ theorem cgIterate_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (
 $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q + 1) =
 \mathbf{x}_0 + \|\mathbf{r}_0\|\,\mathbf{Q}\mathbf{T}^{+}\mathbf{e}_0$ with $\mathbf{Q}$ and
 $\mathbf{T}$ computed by $q + 1$ steps of the recurrence from $\mathbf{r}_0$; past the grade the
-recurrence has frozen at zero and the iterate is unchanged. [Saad2003, §6.7.1]. -/
+recurrence has frozen at zero and the iterate is unchanged. [Saad2003, §6.7.1].
+Result: cg-lanczos -/
 theorem _root_.Matrix.IsHermitian.cgIterate_eq_lanczosMatrix {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b x₀ : n → 𝕜) (q : ℕ) :
     cgIterate A b x₀ (q + 1) = x₀ + (‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ : 𝕜) •

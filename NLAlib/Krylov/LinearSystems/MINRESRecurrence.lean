@@ -580,14 +580,16 @@ theorem _root_.Matrix.IsHermitian.minresState_x_eq (hA : A.IsHermitian) (hAu : I
     pminresIterate_eq_of_krylovGrade_le hAu hM hxs x₀ hg.le]
 
 /-- **MINRES without a preconditioner**: for invertible Hermitian $\mathbf{A}$ the recurrence
-with $\mathbf{M} = \mathbf{I}$ computes `gmresIterate`. -/
+with $\mathbf{M} = \mathbf{I}$ computes `gmresIterate`.
+Result: minres-recurrence -/
 theorem _root_.Matrix.IsHermitian.minresState_x_eq_gmresIterate (hA : A.IsHermitian)
     (hAu : IsUnit A) (b x₀ : n → 𝕜) (k : ℕ) :
     (minresState A 1 b x₀ k).x = gmresIterate A b x₀ k := by
   rw [hA.minresState_x_eq hAu Matrix.PosDef.one, pminresIterate_one]
 
 /-- **The residual estimate**: $\lvert\bar\varphi_k\rvert^2 =
-\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\|_{\mathbf{M}}^2$, available without forming the residual. -/
+\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\|_{\mathbf{M}}^2$, available without forming the residual.
+Result: minres-residual-estimate -/
 theorem _root_.Matrix.IsHermitian.norm_minresState_phi_sq (hA : A.IsHermitian) (hAu : IsUnit A)
     (hM : M.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
     ‖(minresState A M b x₀ k).phi‖ ^ 2 =

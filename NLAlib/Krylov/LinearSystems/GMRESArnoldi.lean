@@ -88,7 +88,8 @@ theorem gmresIterate_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜
     Matrix.mulVec_smul, Matrix.mulVec_smul]
 
 /-- **The Arnoldi process yields GMRES**, for every $\mathbf{A}$ and $q$, with the basis and the
-Hessenberg matrix computed by `arnoldiState`. -/
+Hessenberg matrix computed by `arnoldiState`.
+Result: gmres-arnoldi -/
 theorem gmresIterate_eq_mgsArnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     gmresIterate A b x₀ q = x₀ + (‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ : 𝕜) •
       (mgsArnoldiMatrix A (b - A *ᵥ x₀) q *ᵥ
@@ -132,7 +133,8 @@ $\mathbf{e}_0$, for invertible $\mathbf{A}$ and every $q$,
 $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
 \|\mathbf{r}_0\|\,\mathbf{Q}_q\,\mathsf{backSubst}(\mathbf{R}, \mathbf{g})$, with no
 hypothesis on the grade or on the computed pivots.
-[SaadSchultz1986]; [Saad2003, Algorithm 6.9]; locators to verify. -/
+[SaadSchultz1986]; [Saad2003, Algorithm 6.9]; locators to verify.
+Result: gmres-givens -/
 theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : IsUnit A)
     (b x₀ : n → 𝕜) (q : ℕ) :
     gmresIterate A b x₀ q = x₀ + (‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ : 𝕜) •
@@ -185,7 +187,8 @@ theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : I
 
 /-- **The GMRES residual estimate**: for invertible $\mathbf{A}$ and every $q$, the residual norm is
 $\|\mathbf{r}_0\|$ times the modulus of the last entry of the rotated $\mathbf{e}_0$, available
-without forming the iterate. [Saad2003, Proposition 6.9]; locator to verify. -/
+without forming the iterate. [Saad2003, Proposition 6.9]; locator to verify.
+Result: gmres-residual-estimate -/
 theorem norm_sub_mulVec_gmresIterate_eq_norm_givensHessenbergQ {A : Matrix n n 𝕜}
     (hA : IsUnit A) (b x₀ : n → 𝕜) (q : ℕ) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ = ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ *

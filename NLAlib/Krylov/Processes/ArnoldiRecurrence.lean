@@ -214,7 +214,8 @@ theorem mgsArnoldiMatrix_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜)
 
 /-- **The Arnoldi process computes the Hessenberg matrix**: for every $\mathbf{A}$ and $q$,
 the computed matrix is $\underline{\mathbf{H}}_q =
-\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ for the canonical bases. [Saad2003, §6.3]. -/
+\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ for the canonical bases. [Saad2003, §6.3].
+Result: arnoldi-recurrence -/
 theorem mgsArnoldiHessenberg_eq (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     mgsArnoldiHessenberg A b q = (arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b q := by
   ext i j
@@ -248,7 +249,8 @@ theorem isUpperHessenberg_mgsArnoldiHessenberg (A : Matrix n n 𝕜) (b : n → 
 omit [DecidableEq n] in
 /-- **The computed Arnoldi relation**
 $\mathbf{A}\mathbf{Q}_q = \mathbf{Q}_{q+1}\underline{\mathbf{H}}_q$, for every $\mathbf{A}$ and
-$q$, with the matrices the process computes. [Saad2003, Proposition 6.5]. -/
+$q$, with the matrices the process computes. [Saad2003, Proposition 6.5].
+Result: arnoldi-recurrence -/
 theorem mul_mgsArnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     A * mgsArnoldiMatrix A b q = mgsArnoldiMatrix A b (q + 1) * mgsArnoldiHessenberg A b q := by
   classical
@@ -257,7 +259,8 @@ theorem mul_mgsArnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
   exact mul_arnoldiMatrix A b q
 
 /-- **Arnoldi breaks down exactly at the grade**: $h_{j+1,j} = 0$ iff $\nu \le j + 1$, for every
-$\mathbf{A}$. [Saad2003, Proposition 6.6]. -/
+$\mathbf{A}$. [Saad2003, Proposition 6.6].
+Result: arnoldi-breakdown -/
 theorem mgsArnoldiHessenberg_apply_succ_eq_zero_iff (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ}
     (j : Fin q) : mgsArnoldiHessenberg A b q j.succ j = 0 ↔ krylovGrade A b ≤ j + 1 := by
   simp only [mgsArnoldiHessenberg, Matrix.of_apply, Fin.val_succ, Nat.not_succ_le_self,

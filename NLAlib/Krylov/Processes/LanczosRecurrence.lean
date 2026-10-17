@@ -366,7 +366,8 @@ theorem _root_.Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix {A : Matrix n n
 
 /-- **The Lanczos recurrence computes the compression**: for Hermitian $\mathbf{A}$ and every
 $q$, the computed tridiagonal matrix is $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ for the
-canonical basis $\mathbf{Q}$. -/
+canonical basis $\mathbf{Q}$.
+Result: lanczos-recurrence -/
 theorem _root_.Matrix.IsHermitian.lanczosTridiagonal_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) (q : ℕ) :
     lanczosTridiagonal A b q = (arnoldiMatrix A b q)ᴴ * A * arnoldiMatrix A b q := by
@@ -388,7 +389,8 @@ theorem _root_.Matrix.IsHermitian.lanczosTridiagonal_eq {A : Matrix n n 𝕜} (h
     · exact (star_arnoldiMatrix_col_last_dotProduct_mulVec_of_lt A b h).symm
 
 /-- **Lanczos breaks down exactly at the grade**: for Hermitian $\mathbf{A}$,
-$\beta_{j+1} = 0$ iff $\nu \le j + 1$. -/
+$\beta_{j+1} = 0$ iff $\nu \le j + 1$.
+Result: lanczos-breakdown -/
 theorem _root_.Matrix.IsHermitian.lanczosState_beta_eq_zero_iff {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
     (lanczosState A b (j + 1)).beta = 0 ↔ krylovGrade A b ≤ j + 1 := by

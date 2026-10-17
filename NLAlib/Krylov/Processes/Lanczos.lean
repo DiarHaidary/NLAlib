@@ -112,7 +112,8 @@ theorem IsGradedKrylovBasis.le_krylovGrade (hQ : IsGradedKrylovBasis A b Q) :
   rw [Matrix.rank, hQ.range_eq, finrank_krylovSpace, Fintype.card_fin] at h
   omega
 
-/-- **The compression to a graded basis is upper Hessenberg.** [Saad2003, §6.3]. -/
+/-- **The compression to a graded basis is upper Hessenberg.** [Saad2003, §6.3].
+Result: arnoldi-hessenberg -/
 theorem IsGradedKrylovBasis.isUpperHessenberg (hQ : IsGradedKrylovBasis A b Q) :
     IsUpperHessenberg (Qᴴ * A * Q) := by
   intro i j hij
@@ -129,7 +130,8 @@ theorem IsGradedKrylovBasis.isUpperHessenberg (hQ : IsGradedKrylovBasis A b Q) :
   exact hij
 
 /-- **For Hermitian $\mathbf{A}$ the compression to a graded basis is tridiagonal**: the Lanczos
-matrix $\mathbf{T} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$. [Saad2003, §6.6]. -/
+matrix $\mathbf{T} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$. [Saad2003, §6.6].
+Result: lanczos-tridiagonal -/
 theorem IsGradedKrylovBasis.isTridiagonal (hQ : IsGradedKrylovBasis A b Q)
     (hA : A.IsHermitian) : IsTridiagonal (Qᴴ * A * Q) :=
   hQ.isUpperHessenberg.isTridiagonal (Matrix.isHermitian_conjTranspose_mul_mul Q hA)
@@ -160,7 +162,8 @@ theorem hasOrthonormalCols_arnoldiMatrix_iff :
   rw [Matrix.rank, range_arnoldiMatrix, finrank_krylovSpace, Fintype.card_fin] at h'
   omega
 
-/-- Up to the grade the canonical basis is graded. -/
+/-- Up to the grade the canonical basis is graded.
+Result: arnoldi-basis -/
 theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
     IsGradedKrylovBasis A b (arnoldiMatrix A b q) := by
   refine isGradedKrylovBasis_of_forall_col_mem (hasOrthonormalCols_arnoldiMatrix_iff.mpr h)
@@ -175,7 +178,8 @@ theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
 
 /-- **Uniqueness of the graded basis**: a graded basis whose matrix
 $\mathbf{Q}^{\mathsf{H}}\mathbf{K}_q(\mathbf{A}, \mathbf{b})$ has positive diagonal (in the order
-of $\Bbbk$, so real positive) is the canonical one. -/
+of $\Bbbk$, so real positive) is the canonical one.
+Result: arnoldi-basis -/
 theorem IsGradedKrylovBasis.eq_arnoldiMatrix (hQ : IsGradedKrylovBasis A b Q)
     (hpos : ∀ j, 0 < (Qᴴ * krylovMatrix A b q) j j) : Q = arnoldiMatrix A b q := by
   have hK : Function.Injective (krylovMatrix A b q).mulVec :=
@@ -228,7 +232,8 @@ theorem conjTranspose_arnoldiMatrix_mulVec_self (A : Matrix n n 𝕜) (b : n →
 
 /-- **The Arnoldi relation**, for every $q$:
 $\mathbf{A}\mathbf{Q}_q = \mathbf{Q}_{q+1}(\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q)$
-for the canonical bases $\mathbf{Q}_q$, $\mathbf{Q}_{q+1}$. [Saad2003, §6.3]. -/
+for the canonical bases $\mathbf{Q}_q$, $\mathbf{Q}_{q+1}$. [Saad2003, §6.3].
+Result: arnoldi-relation -/
 theorem mul_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     A * arnoldiMatrix A b q =
       arnoldiMatrix A b (q + 1) * ((arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b q) := by

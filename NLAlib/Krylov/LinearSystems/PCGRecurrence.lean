@@ -268,7 +268,8 @@ theorem _root_.Matrix.PosDef.pcgState_x_eq (hA : A.PosDef) (hM : M.PosDef) (b x�
 
 omit [DecidableEq n] in
 /-- **The residuals are $\mathbf{M}$-orthogonal**: for positive definite $\mathbf{A}$ and
-$\mathbf{M}$, $\mathbf{z}_j^{\mathsf{H}}\mathbf{r}_k = 0$ for $j < k$. [Saad2003, §9.2]. -/
+$\mathbf{M}$, $\mathbf{z}_j^{\mathsf{H}}\mathbf{r}_k = 0$ for $j < k$. [Saad2003, §9.2].
+Result: pcg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_pcgState_z_dotProduct_eq_zero (hA : A.PosDef) (hM : M.PosDef)
     {b x₀ : n → 𝕜} {j k : ℕ} (hjk : j < k) :
     star (pcgState A M b x₀ j).z ⬝ᵥ (pcgState A M b x₀ k).r = 0 := by
@@ -281,7 +282,8 @@ theorem _root_.Matrix.PosDef.star_pcgState_z_dotProduct_eq_zero (hA : A.PosDef) 
 
 omit [DecidableEq n] in
 /-- **The search directions are $\mathbf{A}$-conjugate**, for positive definite $\mathbf{A}$ and
-$\mathbf{M}$: $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_k = 0$ for $j < k$. -/
+$\mathbf{M}$: $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_k = 0$ for $j < k$.
+Result: pcg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_pcgState_p_dotProduct_mulVec_eq_zero (hA : A.PosDef)
     (hM : M.PosDef) {b x₀ : n → 𝕜} {j k : ℕ} (hjk : j < k) :
     star (pcgState A M b x₀ j).p ⬝ᵥ (A *ᵥ (pcgState A M b x₀ k).p) = 0 := by
