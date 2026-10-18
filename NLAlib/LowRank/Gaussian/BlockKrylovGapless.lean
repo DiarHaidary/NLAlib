@@ -8,7 +8,6 @@ module
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.LowRank.Gaussian.BlockKrylov
 public import NLAlib.Matrix.Functions.TraceFunctions
-public import NLAlib.Polynomial.Chebyshev.Filter
 
 /-!
 # Gapless bounds for randomized block Krylov and subspace iteration
@@ -173,12 +172,6 @@ private theorem antitone_exp_mul (p : ℕ) :
   have hp : (0 : ℝ) ≤ p := Nat.cast_nonneg p
   exact Real.exp_le_exp.2 (by nlinarith)
 
-/-- The weight $r/(\ell - r - 1)$ is nonnegative for $r + 2 \le \ell$. -/
-private theorem div_card_sub_nonneg {r : ℕ} (hr : r + 2 ≤ Fintype.card l) :
-    0 ≤ (r : ℝ) / ((Fintype.card l : ℝ) - r - 1) := by
-  have : (r : ℝ) + 2 ≤ Fintype.card l := by exact_mod_cast hr
-  exact div_nonneg (Nat.cast_nonneg _) (by linarith)
-
 /-- **The gapless bound for truncated randomized block Krylov iteration, $(1 + \varepsilon)$
 form**: for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a
 target rank $r$ with $r + 2 \le \ell$, and every $\varepsilon > 0$,
@@ -207,7 +200,7 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_one_add_sq_mul_of_hasLaw_g
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (ε / (2 + ε))) *
           ((r : ℝ) / ((Fintype.card l : ℝ) - r - 1)) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   have := hX.isProbabilityMeasure
-  refine integral_le_one_add_sq_mul_of_gapped A hε (div_card_sub_nonneg hr)
+  refine integral_le_one_add_sq_mul_of_gapped A hε (natCast_div_sub_sub_one_nonneg hr)
     (antitone_four_mul_exp_sqrt hq) (by positivity) (fun ω => sq_nonneg _) (fun ω => ?_)
     (fun h hhr => ?_)
   · have h := singularValues_sub_truncatedSVD_rsvd_le_of_le A
@@ -243,7 +236,7 @@ theorem integral_specNorm_sub_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
           ((r : ℝ) / ((Fintype.card l : ℝ) - r - 1)) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   classical
   have := hX.isProbabilityMeasure
-  refine integral_le_one_add_sq_mul_of_gapped A hε (div_card_sub_nonneg hr)
+  refine integral_le_one_add_sq_mul_of_gapped A hε (natCast_div_sub_sub_one_nonneg hr)
     (antitone_four_mul_exp_sqrt hq) (by positivity) (fun ω => sq_nonneg _) (fun ω => ?_)
     (fun h hhr =>
       integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX rfl hhr hr
@@ -273,7 +266,7 @@ integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_g
         Real.exp (-8 * (p : ℝ) * (ε / (2 + ε))) *
           ((r : ℝ) / ((Fintype.card l : ℝ) - r - 1)) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   have := hX.isProbabilityMeasure
-  refine integral_le_one_add_sq_mul_of_gapped A hε (div_card_sub_nonneg hr)
+  refine integral_le_one_add_sq_mul_of_gapped A hε (natCast_div_sub_sub_one_nonneg hr)
     (antitone_exp_mul p) (by positivity) (fun ω => sq_nonneg _) (fun ω => ?_)
     (fun h hhr => ?_)
   · have h := singularValues_sub_truncatedSVD_rsvd_le_of_le A ((Aᴴ * A) ^ p * X ω)
@@ -313,7 +306,7 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussi
           ((r : ℝ) / ((Fintype.card l : ℝ) - r - 1)) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   classical
   have := hX.isProbabilityMeasure
-  refine integral_le_one_add_sq_mul_of_gapped A hε (div_card_sub_nonneg hr)
+  refine integral_le_one_add_sq_mul_of_gapped A hε (natCast_div_sub_sub_one_nonneg hr)
     (antitone_exp_mul p) (by positivity) (fun ω => sq_nonneg _) (fun ω => ?_)
     (fun h hhr =>
       integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX rfl
@@ -459,7 +452,7 @@ theorem exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_hasLaw_ga
 open Polynomial.Chebyshev in
 /-- The rescaled Chebyshev filter $\varphi(y) = y\,T_j(2y/s - 1)^2$ has a supporting line on
 $[0, \infty)$ at every $x \ge s > 0$: it is $s\,\psi(y/s)$ for the filter $\psi$ of
-`NLAlib.hasSupportingLineOn_mul_eval_T_sq`. -/
+`Polynomial.Chebyshev.hasSupportingLineOn_mul_eval_T_sq`. -/
 private theorem hasSupportingLineOn_mul_eval_T_div_sq (j : ℕ) {s x : ℝ} (hs : 0 < s)
     (hx : s ≤ x) :
     HasSupportingLineOn (fun y => y * ((T ℝ (j : ℤ)).eval (2 * (y / s) - 1)) ^ 2)

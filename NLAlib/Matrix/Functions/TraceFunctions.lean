@@ -579,39 +579,6 @@ theorem apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn {φ : ℝ �
   exact Finset.sum_le_sum fun i _ => smul_le_smul_of_nonneg_left
     (hc _ (hAs (hA.eigenvalue_mem_spectrum i.isLt))) (hw0 i)
 
-omit [DecidableEq m] [DecidableEq n] [DecidableEq p] in
-/-- The top eigenvector of $\mathbf{P}\mathbf{A}\mathbf{A}^{\mathsf{H}}\mathbf{P}$ lies in the
-range of the orthogonal projector $\mathbf{P}$ when $\|\mathbf{P}\mathbf{A}\|_2 > 0$: there is a
-unit $\mathbf{u}$ with $\mathbf{P}\mathbf{u} = \mathbf{u}$ and
-$\operatorname{Re}(\mathbf{u}^{\mathsf{H}}\mathbf{A}\mathbf{A}^{\mathsf{H}}\mathbf{u}) =
-\|\mathbf{P}\mathbf{A}\|_2^2$. -/
-private theorem exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_sq {A : Matrix m n 𝕜}
-    {P : Matrix m m 𝕜} (hP : IsStarProjection P) (h₀ : 0 < specNorm (P * A)) :
-    ∃ u : m → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ P *ᵥ u = u ∧
-      RCLike.re (quadForm (A * Aᴴ) u) = specNorm (P * A) ^ 2 := by
-  have hne : Nonempty m := by
-    by_contra h
-    have : P * A = 0 := by
-      have := not_nonempty_iff.mp h
-      exact Subsingleton.elim _ _
-    rw [this, specNorm_zero] at h₀
-    exact lt_irrefl _ h₀
-  have hM : (P * A * (P * A)ᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose _
-  obtain ⟨u, hu, hMu⟩ := hM.exists_norm_eq_one_and_mulVec_eq_specNorm_smul
-  rw [specNorm_mul_conjTranspose_self] at hMu
-  have hMe : P * A * (P * A)ᴴ = Pᴴ * (A * Aᴴ) * P := by
-    rw [Matrix.conjTranspose_mul, hP.conjTranspose_eq]
-    simp only [Matrix.mul_assoc]
-  have hPM : P * (P * A * (P * A)ᴴ) = P * A * (P * A)ᴴ := by
-    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hP.mul_self]
-  have hc : (specNorm (P * A) ^ 2 : ℝ) ≠ 0 := pow_ne_zero 2 h₀.ne'
-  have hPu : P *ᵥ u = u := by
-    have h := congrArg (fun M => M *ᵥ u) hPM
-    simp only [← Matrix.mulVec_mulVec, hMu, Matrix.mulVec_smul] at h
-    exact smul_right_injective _ hc h
-  refine ⟨u, hu, hPu, ?_⟩
-  rw [← re_quadForm_of_mulVec_eq_smul hu hMu, hMe, quadForm_conjTranspose_mul_mul, hPu]
-
 omit [DecidableEq n] [DecidableEq p] in
 /-- **The projection half of the almost-convex Jensen inequality**: for an orthogonal projector
 $\mathbf{P}$ with $\mathbf{P}\mathbf{A} \ne \mathbf{0}$, a matrix $\mathbf{B}$ with
@@ -627,7 +594,8 @@ theorem apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn {φ : �
     (hP : IsStarProjection P) (h₀ : 0 < specNorm (P * A))
     (hφ : HasSupportingLineOn φ (Set.Ici 0) (specNorm (P * A) ^ 2)) :
     φ (specNorm (P * A) ^ 2) ≤ specNorm (P * B) ^ 2 := by
-  obtain ⟨u, hu, hPu, hq⟩ := exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_sq hP h₀
+  obtain ⟨u, hu, hPu, hq⟩ :=
+    hP.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq h₀
   have hH : (A * Aᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose A
   have h1 := apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn hH.isHermitian
     hH.spectrum_subset_Ici hu (hq ▸ hφ)

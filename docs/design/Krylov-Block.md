@@ -1,7 +1,8 @@
 # Design note: block Krylov spaces and the Tropp–Webber bounds for RBKI and RSI
 
-Status: draft, 2026-10-18, branch `krylov/block` (off `origin/main` at `f4e1255`). Written from
-the orchestrator's brief, read against the tree, the prototype atlas and the two papers; revised the
+Status: approved and implemented, 2026-10-18 (Decisions; Implementation, with "What was proved",
+"Wrap-up amendments" and "Later targets"). Drafted 2026-10-18, branch `krylov/block` (off
+`origin/main` at `f4e1255`). Written from the orchestrator's brief, read against the tree, the prototype atlas and the two papers; revised the
 same day after an independent review (`review-1`: no false statement found; the depth translation,
 Chebyshev degrees and exponents checked against the PDF; findings on BD3, the B0 bridges, the §6.1
 statement shapes and the stage sizes adopted below). No Lean file exists yet; the signatures below
@@ -993,3 +994,143 @@ Departures from the signatures of §3 to §8, with the reason; none changes a de
 Result ids used: `rbki-gapped-error`, `rsi-gapped-error`, `rbki-gapless-error`,
 `rsi-gapless-error`, `nysbki-gapped-error`, `nyssi-gapped-error`, `filtered-range-finder-bound`,
 and the new `nysbki-gapless-error`, `nyssi-gapless-error`; `gram-correspondence` reused.
+
+### What was proved (2026-10-18)
+
+All stages B0 to B7 are proved on branch `krylov/block`; `import NLAlib` has no `sorry`. Per stage,
+the files and the headline names (all in namespace `NLAlib` unless written otherwise):
+
+- **B0** (block Krylov spaces). `Krylov/Basic/BlockSpace.lean`: `blockKrylovMatrix`,
+  `blockKrylovSpace`, the one-column bridges `blockKrylovMatrix_replicateCol`,
+  `blockKrylovSpace_replicateCol`, `blockKrylovSpace_eq_iSup_krylovSpace`, prefix and successor
+  (`blockKrylovMatrix_submatrix_castLE`, `blockKrylovSpace_mono`, `blockKrylovSpace_succ`,
+  `mulVec_mem_blockKrylovSpace_succ`), shift (`blockKrylovSpace_add_smul_one`), change of variables
+  (`blockKrylovMatrix_mul_mul`, `blockKrylovSpace_mul_mul`), `rank_blockKrylovMatrix_le`,
+  `mem_blockKrylovSpace_iff`, the polynomial inclusion `exists_aeval_mul_eq_blockKrylovMatrix_mul`,
+  `range_aeval_mul_le_blockKrylovSpace`. `Krylov/LinearSystems/CG.lean`: block CG with one column
+  is CG, `galerkinInverse_blockKrylovMatrix_replicateCol(_mul)`. `Probability/Measurability/Krylov.lean`:
+  `measurable_blockKrylovMatrix`. `Matrix/Functions/Polynomial.lean`: `Matrix.mul_pow_mul`.
+- **B1a** (TW Lemma 5.1, the relative gap). `Matrix/Spectral/SingularValueInequalities.lean`:
+  `singularValues_one_sub_rangeProjector_mul_le_of_range_le`, `singularGapRatio` with
+  `singularGapRatio_nonneg`, `singularGapRatio_le_one`,
+  `one_sub_singularGapRatio_div_one_add_singularGapRatio`. `Matrix/Norms/UnitarilyInvariant.lean`:
+  `SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_le_of_range_le`.
+  `Matrix/Functions/HermitianCalculus.lean`: `Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq`.
+- **B1b** (supporting lines, TW Lemma 9.4, HMT Proposition 8.6). `ForMathlib/Analysis/Convex/SupportingLine.lean`:
+  `HasSupportingLineOn`, `ConvexOn.hasSupportingLineOn`. `ForMathlib/Analysis/Convex/Integral.lean`:
+  `HasSupportingLineOn.le_integral_comp`. `Matrix/Functions/TraceFunctions.lean`:
+  `apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn`,
+  `apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn`. `Matrix/Norms/Projector.lean`:
+  `IsStarProjection.specNorm_mul_pow_le`.
+- **B2a, B2b** (TW Lemma 9.3). `ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Growth.lean`
+  (namespace `Polynomial.Chebyshev`): `eval_T_two_mul`, `monotoneOn_eval_T_real`,
+  `exp_mul_sqrt_div_two_le_eval_T_real` (parts 1 to 3), `le_exp_of_eval_T_real_le` (part 4),
+  `eval_iterate_derivative_T_real_nonneg`, `monotoneOn_eval_iterate_derivative_T_real`,
+  `hasSupportingLineOn_mul_eval_T_sq` (part 5). `ForMathlib/Analysis/SpecialFunctions/Log/Deriv.lean`:
+  `Real.exp_two_mul_le_one_add_div_one_sub` (TW (C.1)).
+- **B3** (RBKI and NysBKI). `LowRank/Structural/BlockKrylov.lean`: `rbki`, `nystromBKI`, `rbki_def`,
+  `rbki_eq_rangeProjector`, `rbki_one`, `rbki_zero`, `singularValues_sub_rbki_le_of_degree_lt`,
+  `singularValues_sub_rbki_le_sub_rsvd_pow`, `singularValues_sub_rbki_le_of_le`,
+  `nystromBKI_conjTranspose_mul_self`, `conjTranspose_mul_self_sub_nystromBKI`,
+  `Matrix.PosSemidef.sub_nystromBKI_eq`.
+- **B4** (TW Lemma 9.5, deterministic). `LowRank/Structural/Filter.lean`:
+  `HasOrthonormalCols.singularValues_one_sub_rangeProjector_mul_mul_le`,
+  `HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le`,
+  `SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le`,
+  `HasOrthonormalCols.specNorm_sub_rsvd_cfc_sq_le`, `HasOrthonormalCols.frobNorm_sub_rsvd_cfc_sq_le`.
+  `LowRank/Structural/RangeFinder.lean`: `HasOrthonormalCols.mul_pinv_self_of_rank_eq`,
+  `HasOrthonormalCols.specNorm_sub_rsvd_mul_pinv_sq_le`. `LowRank/Structural/Truncation.lean`:
+  `truncatedSVD_rsvd_eq_rangeProjector_mul`, `singularValues_sub_truncatedSVD_rsvd_le_of_le`.
+  `Matrix/Spectral/LowRank.lean`: `range_mulVecLin_truncatedSVD_mono`.
+- **B5a** (TW Lemma 9.5 in expectation). `LowRank/Gaussian/Filter.lean`:
+  `integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_gaussianMatrix`,
+  `integral_specNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix`,
+  `integral_frobNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix`,
+  `integral_frobNorm_one_sub_rangeProjector_mul_truncatedSVD_sq_le_of_hasLaw_gaussianMatrix`.
+  `Matrix/Spectral/LowRank.lean`: `exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal`.
+- **B5b** (TW Theorem 9.2). `LowRank/Gaussian/BlockKrylov.lean`:
+  `integral_{spec,frob}Norm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`,
+  `integral_{spec,frob}Norm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`, their
+  Gram forms in `SymmetricGauge`, and the truncated lines
+  `integral_{spec,frob}Norm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_…` and
+  `integral_{spec,frob}Norm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_…`.
+  `LowRank/Random/RangeFinder.lean`: the five `integrable_*_rbki*` companions.
+- **B6a** (gapless, Musco–Musco $(1 + \varepsilon)$ form). `LowRank/Gaussian/BlockKrylovGapless.lean`:
+  `integral_specNorm_sub_{truncatedSVD_,}rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix`,
+  `integral_specNorm_sub_{truncatedSVD_,}rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix`,
+  and the asymptotic form
+  `exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_hasLaw_gaussianMatrix`
+  (depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\varepsilon})$).
+- **B6b** (TW Theorem 9.1). Same file: `integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix`,
+  `integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatrix`.
+  `LowRank/Gaussian/RangeFinder.lean`: `rangeFinderTailRatio`, `one_le_rangeFinderTailRatio`,
+  `sq_singularValues_mul_rangeFinderTailRatio` (registered in `docs/constants.toml`).
+- **B7** (Nyström by the Gram correspondence). `LowRank/Gaussian/NystromBlockKrylov.lean`
+  (namespace `Matrix.PosSemidef`): `rangeFinderTailRatio_sqrt`, the gapped
+  `integral_specNorm_sub_{nystromBKI,nystrom_pow_mul}_le_singularGapRatio_…`, the gapless
+  `…_le_one_add_sq_mul_…` and `…_le_mul_exp_…`, `…_le_mul_rpow_…`, and the trace-norm truncated
+  lines `integral_nuclearNorm_sub_truncatedSVD_{nystromBKI,nystrom_pow_mul}_le_singularGapRatio_…`.
+  `Matrix/Functions/AbsoluteValue.lean`: `Matrix.PosSemidef.conjTranspose_sqrt_mul_sqrt`,
+  `sq_singularValues_sqrt`, `frobNorm_sqrt_sub_truncatedSVD_sq`,
+  `singularGapRatio_le_two_mul_singularGapRatio_sqrt`.
+
+Result ids: as listed at the end of Skeleton changes. §5.3 rows for `singularGapRatio` and
+`HasSupportingLineOn` added to CONTRIBUTING (BD9); `rangeFinderTailRatio` has none (BD9). Ledger:
+eleven prototype entries (stages B0, B1b, B3).
+
+### Wrap-up amendments (2026-10-18)
+
+Placement pass over every new public declaration of the round (CONTRIBUTING §8 item 5):
+
+1. The private top-eigenvector helper of `TraceFunctions.lean` is public as
+   `IsStarProjection.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq` in
+   `Matrix/Spectral/CourantFischer.lean`, beside
+   `Matrix.PosSemidef.exists_norm_eq_one_and_mulVec_eq_specNorm_smul` (spectral-norm attainment);
+   it imports `Matrix/Basic/Projector.lean`, no cycle.
+2. The private "$\sigma_t = 0$ gives $\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t = \mathbf{0}$" helper of
+   `LowRank/Gaussian/BlockKrylov.lean` is replaced by the public
+   `truncatedSVD_of_singularValues_eq_zero` in `Matrix/Spectral/LowRank.lean`, beside
+   `truncatedSVD_of_rank_le` (no existing public lemma said it).
+3. §8's flag closed: `Polynomial/Chebyshev/Filter.lean` held one fact with no NLAlib vocabulary;
+   `hasSupportingLineOn_mul_eval_T_sq` moved into ForMathlib's Chebyshev growth file (now in
+   namespace `Polynomial.Chebyshev`, beside the derivative monotonicity it uses) and the file is
+   deleted.
+4. Skeleton change 5's placement: `Real.exp_two_mul_le_one_add_div_one_sub` moved from the
+   Chebyshev growth file to `ForMathlib/Analysis/SpecialFunctions/Log/Deriv.lean`, the file of the
+   Mathlib series (`Real.hasSum_log_sub_log_of_abs_lt_one`) it is the first term of.
+5. `scripts/Duplicates.lean` found three private copies of $0 \le t/(\ell - t - 1)$ for
+   $t + 2 \le \ell$ (in `BlockKrylov.lean`, `BlockKrylovGapless.lean`, `NystromBlockKrylov.lean`);
+   they are replaced by the public `natCast_div_sub_sub_one_nonneg` in
+   `LowRank/Gaussian/RangeFinder.lean`, beside `rangeFinderTailRatio`, whose weight it is.
+
+Checked and left in place, each recorded above: the gauge Lemma 5.1 in `UnitarilyInvariant.lean`
+(change 3, import cycle), the integrability companions in `LowRank/Random/RangeFinder.lean` (change
+10), the B7 square-root helpers in `AbsoluteValue.lean` (change 17), and
+`Matrix.PosSemidef.rangeFinderTailRatio_sqrt` in the Nyström file (change 14; its only content is
+the Nyström-native ratio). No flag is open.
+
+### Deviations
+
+None from Mathlib (§8: every object is an addition; no `Mathlib-deviations.md` entry). From the
+note's signatures: Skeleton changes 1 to 17 above, none of which changes a decision; the largest are
+the gauge Lemma 5.1's file (3), the a.e. Jensen hypothesis (4), the Nyström Tropp–Webber form
+through `rangeFinderTailRatio (CFC.sqrt H)` with no spectral truncated Nyström line (14), and no
+exact-constant gapless bound for the truncated RBKI output (15).
+
+### Later targets
+
+- A Tropp–Webber-constant gapless bound for the truncated RBKI output (Skeleton change 15): the
+  skeleton review found that it needs the machinery of MM Theorem 11.
+- MM Theorem 11: the Frobenius gapless bound for truncated RBKI.
+- MM's per-vector guarantees (Theorems 1 and 12) and the gap-dependent Theorem 13.
+- Schatten-$p$ bounds for the truncated outputs (BD8 (b)).
+- Odd multiplication counts and early truncation on an orthonormal Krylov basis (BD6 (b)).
+- Parallel sums and TW Lemma 8.3, with TW Theorem 8.7 at $k \in \{r, r + 1\}$ (BD5 (a)).
+- Block Lanczos and Arnoldi with a realisation theorem and block grade, then block CG and GMRES
+  theory (BD2 (b), (c)).
+- **Next planned target**: the upper bound of Bakshi, Clarkson and Woodruff, "Low-rank approximation
+  with $1/\varepsilon^{1/3}$ matrix-vector products" (STOC 2022, arXiv:2202.05120), Theorem 5.1,
+  upper bound only; the lower bounds are a separate later project, from a newer paper (maintainer,
+  2026-10-18). It needs: MM's per-vector and gap-dependent guarantees (Theorems 12 and 13 above);
+  BCW's Schatten-$p$ projection lemma (their Lemma 5.5) and per-vector-to-Schatten lemma (their
+  Lemma 5.7); pinching; and statements about several Krylov subspaces at once.

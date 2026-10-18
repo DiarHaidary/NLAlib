@@ -9,6 +9,7 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExt
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.LowRank.Gaussian.Filter
 public import NLAlib.LowRank.Structural.BlockKrylov
+import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 
 /-!
 # Gapped bounds for randomized block Krylov and subspace iteration
@@ -61,18 +62,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type
 
 /-! ### Shared reductions -/
 
-/-- The tail factor $t/(\ell - t - 1)$ is nonnegative for $t + 2 \le \ell$. -/
-private theorem tailFactor_nonneg {t : ℕ} (ht : t + 2 ≤ Fintype.card l) :
-    0 ≤ (t : ℝ) / ((Fintype.card l : ℝ) - t - 1) := by
-  have : (t : ℝ) + 2 ≤ Fintype.card l := by exact_mod_cast ht
-  exact div_nonneg (Nat.cast_nonneg t) (by linarith)
-
-omit [DecidableEq n] in
-/-- Truncating at an index whose singular value vanishes returns the matrix. -/
-private theorem sub_truncatedSVD_eq_zero_of_singularValues_eq_zero (A : Matrix m n ℝ) {t : ℕ}
-    (h : singularValues A t = 0) : A - truncatedSVD A t = 0 := by
-  rw [truncatedSVD_of_rank_le A ((singularValues_eq_zero_iff A).mp h), sub_self]
-
 /-- The filtered range finder in expectation, Gram form, with the constant $(a/c)^2$ replaced by
 any $K$ that dominates it in front of the tail, and the head index $r'$ replaced by any $r$ with
 the same truncation. -/
@@ -93,7 +82,7 @@ private theorem integral_gram_sub_rsvd_aeval_le (Φ : SymmetricGauge) (A : Matri
   rw [hr'] at h
   refine h.trans (add_le_add le_rfl ?_)
   have hΦ : 0 ≤ Φ (Finsupp.single 0 1) := apply_nonneg _ _
-  have hτ := tailFactor_nonneg ht
+  have hτ := natCast_div_sub_sub_one_nonneg ht
   calc Φ (Finsupp.single 0 1) * (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
         frobNorm (A - truncatedSVD A t) ^ 2
       = Φ (Finsupp.single 0 1) * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
@@ -173,7 +162,7 @@ private theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
   refine (integral_mono (integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hY r) hI hpt).trans ?_
   rw [integral_add (integrable_const _) hint, integral_const, probReal_univ, one_smul]
   refine add_le_add le_rfl (hH.trans ?_)
-  have hτ := tailFactor_nonneg ht
+  have hτ := natCast_div_sub_sub_one_nonneg ht
   calc (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
         frobNorm (A - truncatedSVD A t) ^ 2
       = ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
@@ -222,7 +211,7 @@ private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h 
   · -- $\sigma_t = 0$: the tail vanishes and the constant filter does.
     refine ⟨1, by rw [degree_one]; exact_mod_cast hq, 1, 1, one_pos, fun i _ => by simp,
       fun x _ => by simp, ?_⟩
-    rw [sub_truncatedSVD_eq_zero_of_singularValues_eq_zero A hσ.symm, frobNorm_zero]
+    rw [truncatedSVD_of_singularValues_eq_zero A hσ.symm, sub_self, frobNorm_zero]
     simp
   set σt := singularValues A t
   set γ := singularGapRatio A h t
@@ -324,9 +313,9 @@ private theorem exists_rsi_filter (A : Matrix m n ℝ) {h r t : ℕ} (hr : h + 1
   rcases (singularValues_nonneg A h).eq_or_lt with h0 | hpos
   · -- $\sigma_h = 0$: the head is the rank of $\mathbf{A}$ and the tail vanishes.
     have hrk : A.rank ≤ h := (singularValues_eq_zero_iff A).mp h0.symm
-    have hF : A - truncatedSVD A t = 0 :=
-      sub_truncatedSVD_eq_zero_of_singularValues_eq_zero A (le_antisymm (h0 ▸ hσh)
-        (singularValues_nonneg A t))
+    have hF : A - truncatedSVD A t = 0 := by
+      rw [truncatedSVD_of_singularValues_eq_zero A (le_antisymm (h0 ▸ hσh)
+        (singularValues_nonneg A t)), sub_self]
     have hK : ∀ c a : ℝ, (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           frobNorm (A - truncatedSVD A t) ^ 2 := fun _ _ => by simp [hF]
@@ -348,7 +337,7 @@ private theorem exists_rsi_filter (A : Matrix m n ℝ) {h r t : ℕ} (hr : h + 1
       rw [eval_pow, eval_X, abs_of_nonneg (by positivity)]
       exact pow_le_pow_left₀ (by positivity) (pow_le_pow_left₀ hpos.le hi' 2) p
     rcases (singularValues_nonneg A t).eq_or_lt with ht0 | htpos
-    · simp [sub_truncatedSVD_eq_zero_of_singularValues_eq_zero A ht0.symm]
+    · simp [truncatedSVD_of_singularValues_eq_zero A ht0.symm]
     refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
     set γ := singularGapRatio A h t
     have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht

@@ -10259,6 +10259,19 @@
   "note": "object not reproduced: bestRankFrobSq, written frobNorm (A - truncatedSVD A k) ^ 2; nonnegativity is sq_nonneg",
   "stage": "M6"
  },
+ "NLAlib.blockKrylovSpace": {
+  "new": "NLAlib.blockKrylovSpace",
+  "note": "the range of blockKrylovMatrix; over RCLike",
+  "stage": "B0"
+ },
+ "NLAlib.blockKrylovSpace_eq_iSup": {
+  "new": "NLAlib.blockKrylovSpace_eq_iSup_krylovSpace",
+  "stage": "B0"
+ },
+ "NLAlib.blockKrylovSpace_mono": {
+  "new": "NLAlib.blockKrylovSpace_mono",
+  "stage": "B0"
+ },
  "NLAlib.border_eq_sum_sub_trace_of_charpoly_eq_prod": {
   "new": null,
   "note": "one step from NLAlib.IsEigenvalueListing.trace_eq_sum: the trace of the bordered matrix is trace A + a",
@@ -13595,6 +13608,11 @@
   "new": null,
   "note": "private helper finite_setOf_not_separable_charpoly of NLAlib.dense_setOf_separable_charpoly",
   "stage": "M10"
+ },
+ "NLAlib.finrank_blockKrylovSpace_le": {
+  "new": "NLAlib.rank_blockKrylovMatrix_le",
+  "note": "the space is the range of the matrix",
+  "stage": "B0"
  },
  "NLAlib.finrank_ker_eq_card_eigenvalues_zero": {
   "new": "Matrix.IsHermitian.rank_eq_card_eigenvalue_ne_zero",
@@ -18629,6 +18647,10 @@
   "note": "proof ported; merged into the iff",
   "stage": "K0"
  },
+ "NLAlib.krylovSpace_col_le_blockKrylovSpace": {
+  "new": "NLAlib.krylovSpace_col_le_blockKrylovSpace",
+  "stage": "B0"
+ },
  "NLAlib.krylovSpace_mul_mulVec_eq_map": {
   "new": "NLAlib.krylovSpace_mul_mulVec",
   "stage": "K1"
@@ -20148,6 +20170,10 @@
   "note": "HasLaw.memLp_comp_iff with integrable_rademacherMeasure",
   "stage": "P2"
  },
+ "NLAlib.mem_blockKrylovSpace_iff": {
+  "new": "NLAlib.mem_blockKrylovSpace_iff",
+  "stage": "B0"
+ },
  "NLAlib.mem_convexHull_permutations_iff_exists_doublyStochastic": {
   "new": null,
   "note": "the two characterisations are separate iffs",
@@ -20472,6 +20498,10 @@
  "NLAlib.mulVec_injective_of_rank_eq_card": {
   "new": "NLAlib.mulVec_injective_iff_rank_eq",
   "stage": "M6"
+ },
+ "NLAlib.mulVec_mem_blockKrylovSpace_succ": {
+  "new": "NLAlib.mulVec_mem_blockKrylovSpace_succ",
+  "stage": "B0"
  },
  "NLAlib.mulVec_mem_krylovSpace_succ": {
   "new": "NLAlib.mulVec_mem_krylovSpace_succ",
@@ -21887,6 +21917,11 @@
   "new": "Polynomial.Chebyshev.pow_div_two_le_eval_T_real",
   "stage": "Poly0"
  },
+ "NLAlib.pow_mulVec_col_mem_blockKrylovSpace": {
+  "new": "NLAlib.krylovSpace_col_le_blockKrylovSpace",
+  "note": "with the vector Krylov membership lemmas",
+  "stage": "B0"
+ },
  "NLAlib.pow_mulVec_notMem_krylovSpace_of_lt_krylovGrade": {
   "new": "NLAlib.krylovGrade_le_iff",
   "note": "proof ported; merged into the iff",
@@ -22317,6 +22352,10 @@
  "NLAlib.rangeProjector_zero": {
   "new": "NLAlib.rangeProjector_zero",
   "stage": "M1"
+ },
+ "NLAlib.range_aeval_mul_le_blockKrylovSpace": {
+  "new": "NLAlib.range_aeval_mul_le_blockKrylovSpace",
+  "stage": "B0"
  },
  "NLAlib.range_castLE_eq_image_Iic": {
   "new": null,
@@ -24124,6 +24163,11 @@
   "note": "with HasOrthonormalCols.singularValues_one_sub_mul_conjTranspose_mul: tangent and sine of the same angle",
   "stage": "M5"
  },
+ "NLAlib.specNorm_residual_pow_le": {
+  "new": "IsStarProjection.specNorm_mul_pow_le",
+  "note": "any orthogonal projector, RCLike",
+  "stage": "B1b"
+ },
  "NLAlib.specNorm_residual_sq_eq_one_sub_singularValues_last_sq": {
   "new": "IsStarProjection.specNorm_one_sub_mul_sq",
   "stage": "M5"
@@ -24763,6 +24807,11 @@
   "new": null,
   "note": "object not reproduced: borderedMatrix, §1 and §2 item 2",
   "stage": "M9"
+ },
+ "NLAlib.subspaceIterate_le_blockKrylovSpace": {
+  "new": "NLAlib.singularValues_sub_rbki_le_sub_rsvd_pow",
+  "note": "no subspaceIterate, BD3b; RSI is rsvd A ((Aᴴ * A) ^ p * Ω)",
+  "stage": "B3"
  },
  "NLAlib.subspaceTangent": {
   "new": null,

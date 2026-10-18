@@ -17,8 +17,9 @@ $-\log(1 - u) \le u + u^2 / (2(1 - u))$ on $[0, 1)$. They are the log terms of t
 bounds for $\chi^2$ and for sums of squares (Dasgupta and Gupta's exponent
 $\varepsilon^2/4 - \varepsilon^3/6$, and the sub-gamma bound of a weighted $\chi^2$), where
 $1 + v \le e^v$ is too weak. The numerical bound $\log 9 \le 9/4$ is the margin of the covering
-number $9^d$ of a $1/4$-net of a sphere. Upstream candidates for
-`Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
+number $9^d$ of a $1/4$-net of a sphere. The same series gives the lower bound
+$e^{2r} \le (1 + r)/(1 - r)$ on $[0, 1)$ of Tropp and Webber's Chebyshev growth. Upstream
+candidates for `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 
 ## Main results
 
@@ -26,6 +27,8 @@ number $9^d$ of a $1/4$-net of a sphere. Upstream candidates for
 * `Real.log_one_sub_le_quadratic`.
 * `Real.neg_log_one_sub_le`.
 * `Real.log_nine_le_nine_div_four`.
+* `Real.exp_two_mul_le_one_add_div_one_sub`: $e^{2r} \le (1 + r)/(1 - r)$ on $[0, 1)$, the first
+  term of the series of $\log(1 + r) - \log(1 - r)$.
 -/
 
 @[expose] public section
@@ -124,5 +127,16 @@ theorem log_nine_le_nine_div_four : log 9 ≤ 9 / 4 := by
   rw [show (9 / 4 : ℝ) = ((8 : ℕ) : ℝ) * (9 / 32) by norm_num, exp_nat_mul]
   calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
     _ ≤ exp (9 / 32) ^ 8 := by gcongr
+
+/-- $e^{2r} \le \frac{1 + r}{1 - r}$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
+[TroppWebber2023, (C.1)]. -/
+theorem exp_two_mul_le_one_add_div_one_sub {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
+    exp (2 * r) ≤ (1 + r) / (1 - r) := by
+  -- The first term of $\log(1 + r) - \log(1 - r) = \sum_k 2r^{2k+1}/(2k+1)$ is $2r$.
+  have hs := hasSum_log_sub_log_of_abs_lt_one (abs_lt.2 ⟨by linarith, h₁⟩)
+  have h := le_hasSum hs 0 (fun j _ => by positivity)
+  rw [← log_div (by linarith) (by linarith)] at h
+  rw [← exp_log (div_pos (by linarith) (by linarith : (0 : ℝ) < 1 - r))]
+  exact exp_le_exp.2 (by simpa using h)
 
 end Real

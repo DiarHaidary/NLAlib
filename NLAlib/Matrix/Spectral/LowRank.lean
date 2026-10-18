@@ -221,6 +221,14 @@ theorem truncatedSVD_of_rank_le (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤
   rw [hT k, hd]
   exact h.eq.symm
 
+/-- Truncating at an index whose singular value vanishes returns the matrix:
+$\sigma_k(\mathbf{A}) = 0$ gives $\llbracket \mathbf{A} \rrbracket_k = \mathbf{A}$, so the
+truncation error $\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k$ is $\mathbf{0}$. The
+singular-value form of `NLAlib.truncatedSVD_of_rank_le`. -/
+theorem truncatedSVD_of_singularValues_eq_zero (A : Matrix m n 𝕜) {k : ℕ}
+    (h : singularValues A k = 0) : truncatedSVD A k = A :=
+  truncatedSVD_of_rank_le A ((singularValues_eq_zero_iff A).mp h)
+
 /-- The truncated SVD has rank $\min(k, \operatorname{rank} \mathbf{A})$: exactly $k$ when $k$ is
 at most the rank of $\mathbf{A}$, and the rank of $\mathbf{A}$ otherwise. -/
 theorem rank_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :

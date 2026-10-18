@@ -249,7 +249,6 @@ public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.Stieltjes
-public import NLAlib.Polynomial.Chebyshev.Filter
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import NLAlib.Polynomial.Interpolation.DividedDifference

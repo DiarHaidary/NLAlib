@@ -82,12 +82,6 @@ private theorem singularValues_sqrt_pos (hH : H.PosSemidef) {r : ℕ}
   rw [← hH.sq_singularValues_sqrt, ← h] at hσ
   norm_num at hσ
 
-/-- The tail weight $t/(\ell - t - 1)$ is nonnegative for $t + 2 \le \ell$. -/
-private theorem div_card_sub_nonneg {t : ℕ} (ht : t + 2 ≤ Fintype.card l) :
-    0 ≤ (t : ℝ) / ((Fintype.card l : ℝ) - t - 1) := by
-  have : (t : ℝ) + 2 ≤ Fintype.card l := by exact_mod_cast ht
-  exact div_nonneg (Nat.cast_nonneg t) (by linarith)
-
 /-! ### Spectral errors through the square root -/
 
 -- `CFC.sqrt` takes the `DecidableEq` instance only inside a proof argument, so the statements above
@@ -153,7 +147,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of
     (CFC.sqrt H) hX hr hrt ht hq).trans ?_
   rw [hH.sq_singularValues_sqrt, hH.frobNorm_sqrt_sub_truncatedSVD_sq]
   have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right
-    (mul_le_mul_of_nonneg_left hexp zero_le_four) (div_card_sub_nonneg ht))
+    (mul_le_mul_of_nonneg_left hexp zero_le_four) (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
@@ -189,7 +183,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRat
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
   simp only [specNorm_sub_nystrom_pow_mul_eq hH]
   refine hb.trans ?_
-  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (div_card_sub_nonneg ht))
+  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
@@ -353,7 +347,7 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_sin
     (CFC.sqrt H) hX hr hrt ht hq).trans ?_
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq]
   have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right
-    (mul_le_mul_of_nonneg_left hexp zero_le_four) (div_card_sub_nonneg ht))
+    (mul_le_mul_of_nonneg_left hexp zero_le_four) (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
@@ -385,7 +379,7 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_l
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
   simp only [hH.nuclearNorm_sub_truncatedSVD_nystrom]
   refine hb.trans ?_
-  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (div_card_sub_nonneg ht))
+  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
