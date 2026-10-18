@@ -902,4 +902,72 @@ revisited after B6b with the same rule.
 
 ## Implementation
 
-Not started.
+Skeleton written 2026-10-18 (all statements of B0 to B7 with `sorry` proofs, stage markers
+`-- Stage Bx` above each group, `-- SKELETON-NOTE:` above the statements with a proof caution).
+
+### Skeleton changes
+
+Departures from the signatures of §3 to §8, with the reason; none changes a decision.
+
+1. **CG bridge (§3).** `cgIterate` takes a start, `cgIterate A b x₀ q`; the method-level bridge is
+   `galerkinInverse_blockKrylovMatrix_replicateCol_mul … = replicateCol Unit (cgIterate A b 0 q)`
+   (zero start). The note's `cgIterate A b q` was ill-typed.
+2. **Invariant-frame `cfc` lemma (§5).** `Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq`
+   drops `HasOrthonormalCols W`: each nonzero column of $\mathbf{W}$ is an eigenvector and a zero
+   column maps to zero, so the hypothesis is not needed (§5.2, minimal hypotheses).
+3. **Gauge form of Lemma 5.1 (§5, §8).** Placed in `Matrix/Norms/UnitarilyInvariant.lean`, beside
+   `SymmetricGauge.matrixNorm_mul_le_of_isStarProjection`, not in `Matrix/Norms/Projector.lean`:
+   `Projector.lean` is imported by `SingularValueInequalities.lean` and so cannot import the gauge
+   file (cycle). The singular-value form is in `SingularValueInequalities.lean` as planned.
+4. **Supporting-line Jensen (§5).** `HasSupportingLineOn.le_integral_comp` takes
+   `∀ᵐ ω ∂μ, X ω ∈ t` in place of `∀ ω`, which is weaker and what a random variable gives.
+5. **Chebyshev composition (§5).** `Polynomial.Chebyshev.eval_T_two_mul` is stated over any
+   commutative ring and integer index (`T R (2 * j)`), Mathlib's generality for `T_mul`;
+   Mathlib's `T` is `ℤ`-indexed, so the real statements cast `(q : ℤ)`. The scalar
+   `Real.exp_two_mul_le_one_add_div_one_sub` sits in the Chebyshev growth file ("or beside it",
+   §5), in namespace `Real`, since ForMathlib has no exponential-inequality file.
+6. **Polynomial reduction of RBKI (§4.2).** `singularValues_sub_rbki_le_of_degree_lt` takes a
+   polynomial over any `R` with `[Algebra R 𝕜]` (as `exists_aeval_mul_eq_blockKrylovMatrix_mul`),
+   not only `ℝ[X]`.
+7. **Competitor projector (§5).** Stated as `HasOrthonormalCols.specNorm_sub_rsvd_mul_pinv_sq_le` with
+   the file's `A` for the note's `B`; the private `mul_pinv_self_of_rank_eq` is now public as
+   `HasOrthonormalCols.mul_pinv_self_of_rank_eq` (one call site updated).
+8. **Truncation monotone in rank (§5).** The helper "`range_truncatedSVD_mono`" is
+   `range_mulVecLin_truncatedSVD_mono` (a `Monotone` statement) in `Matrix/Spectral/LowRank.lean`,
+   the home of `truncatedSVD` and of `range_mulVecLin_truncatedSVD_le` (placement by topic).
+9. **B5a glue.** The public frame glue is one Matrix-layer lemma,
+   `exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal` in
+   `Matrix/Spectral/LowRank.lean` (topic: frames of the truncated SVD, beside
+   `exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion`): nested invariant
+   frames $\mathbf{Z}$, $\mathbf{V}$ of $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ whose prefixes give every
+   $\llbracket\mathbf{A}\rrbracket_r$, $r \le k$. The almost-sure-rank glue already exists
+   (`ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix`). B5a adds head capture in
+   expectation, `integral_frobNorm_one_sub_rangeProjector_mul_truncatedSVD_sq_le_of_hasLaw_gaussianMatrix`,
+   which the truncated lines of B5b and the case split of B6a need. No separate `integrable_`
+   companions for the filtered range finder: the law-free `integrable_*_sub_rsvd*` lemmas apply at
+   the test matrix $f(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{X}$.
+10. **RBKI integrability (B5b).** The five `integrable_*_rbki*` lemmas are in
+    `LowRank/Random/RangeFinder.lean`, with the other law-free integrability companions (the
+    precedent stated in the module docstring of `LowRank/Gaussian/RangeFinder.lean`), over
+    `RCLike 𝕜` for any a.e.-measurable test matrix, not in `LowRank/Gaussian/BlockKrylov.lean`.
+11. **Truncated RSI (B5b).** Added the RSI twins of the truncated lines (§7.1 table, BD8 (a)):
+    `integral_{spec,frob}Norm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_…`.
+12. **RSI in the $(1 + \varepsilon)$ form (B6a).** Added
+    `integral_specNorm_sub_{truncatedSVD_,}rsvd_pow_mul_sq_le_one_add_sq_mul_…` with
+    $e^{-8p\varepsilon/(2+\varepsilon)}$ (§7.1 table, BD8 (a)).
+13. **`rangeFinderTailRatio` (§6.4).** Over `RCLike 𝕜`; registered in `docs/constants.toml`
+    (it is a named quantity used by name in statements, so docstrings show its value).
+14. **Nyström (B7).** The Tropp–Webber form uses `rangeFinderTailRatio (CFC.sqrt H) r ℓ` with the
+    bridge `Matrix.PosSemidef.rangeFinderTailRatio_sqrt` to the Nyström-native ratio
+    $1 + \frac{r}{\ell - r - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*/\sigma_r(\mathbf{H})$
+    (no new named quantity). The truncations are the trace-norm gapped lines for NysBKI and NysSI
+    (exact through `Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`); spectral truncated
+    Nyström and the gapless truncated Nyström lines are not stated (§7.1: optional; the spectral
+    error of a truncated Nyström output depends on the tie-break).
+15. **Not stated:** a Tropp–Webber-form (exact constant) gapless bound for the *truncated* RBKI
+    output; the truncated gapless bound of this round is the $(1 + \varepsilon)$ form (§6.3).
+    Revisit with MM Theorem 11 after B6b.
+
+Result ids used: `rbki-gapped-error`, `rsi-gapped-error`, `rbki-gapless-error`,
+`rsi-gapless-error`, `nysbki-gapped-error`, `nyssi-gapped-error`, `filtered-range-finder-bound`,
+and the new `nysbki-gapless-error`, `nyssi-gapless-error`; `gram-correspondence` reused.

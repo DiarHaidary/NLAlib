@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
+public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.LinearSystems.Galerkin
 public import NLAlib.Matrix.Functions.Polynomial
@@ -51,6 +52,7 @@ in $[a, a']$.
 * `Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul`: the spectrum-optimal bound.
 * `NLAlib.re_quadForm_sub_cgIterate_conjTranspose_mul_le_four_mul_pow`: CGLS.
 * `Matrix.PosDef.cgIterate_eq_of_krylovGrade_le`: finite termination.
+* `NLAlib.galerkinInverse_blockKrylovMatrix_replicateCol_mul`: block CG with one column is CG.
 -/
 
 @[expose] public section
@@ -471,5 +473,30 @@ theorem _root_.Matrix.PosDef.cgIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜
   have hxs' : A *ᵥ (xs - x₀) = b - A *ᵥ x₀ := by rw [Matrix.mulVec_sub, hxs]
   rw [cgIterate, hA.galerkinInverse_mulVec_eq_of_mem hxs'
     (mem_krylovSpace_of_krylovGrade_le hA.isUnit hxs' h), add_sub_cancel]
+
+/-! ### One column -/
+
+-- Stage B0
+
+omit [Fintype r] [DecidableEq r] in
+/-- The Galerkin inverse on the one-column block Krylov space is the Galerkin inverse on the
+vector Krylov space: both depend only on the column space, and the two column spaces agree
+(`NLAlib.blockKrylovSpace_replicateCol`). -/
+theorem galerkinInverse_blockKrylovMatrix_replicateCol (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
+    galerkinInverse A (blockKrylovMatrix A (Matrix.replicateCol Unit b) q) =
+      galerkinInverse A (krylovMatrix A b q) := by
+  sorry
+
+omit [Fintype r] [DecidableEq r] in
+/-- **Block CG with one column is CG**: the block Galerkin approximation
+$\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{K}_q(\mathbf{A}, \mathbf{B}))\,\mathbf{B}$ at the
+one-column block $\mathbf{B} = [\mathbf{b}]$ is the column of the CG iterate from the zero start,
+$[\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{0}, q)]$. -/
+theorem galerkinInverse_blockKrylovMatrix_replicateCol_mul (A : Matrix n n 𝕜) (b : n → 𝕜)
+    (q : ℕ) :
+    galerkinInverse A (blockKrylovMatrix A (Matrix.replicateCol Unit b) q) *
+        Matrix.replicateCol Unit b =
+      Matrix.replicateCol Unit (cgIterate A b 0 q) := by
+  sorry
 
 end NLAlib

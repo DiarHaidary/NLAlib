@@ -50,6 +50,9 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm`: truncated generalized
   Nyström.
+* `NLAlib.truncatedSVD_rsvd_eq_rangeProjector_mul`,
+  `NLAlib.singularValues_sub_truncatedSVD_rsvd_le_of_le`: the truncated randomized SVD is a
+  projection of $\mathbf{A}$, and its error decreases with the rank.
 -/
 
 @[expose] public section
@@ -427,5 +430,32 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm
   rw [hsplit, ← hC, ← hEq]
   have := pow_le_pow_left₀ (frobNorm_nonneg _) hb 2
   linarith
+
+/-! ### Truncation as a projection -/
+
+-- Stage B4
+
+/-- **The truncated randomized SVD is a projection of $\mathbf{A}$**: with
+$\mathbf{T} = \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k$,
+$$\mathbf{T} = \mathbf{P}_{\mathbf{T}}\mathbf{A}\,,$$
+since the leading left singular vectors of $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}\mathbf{A}$ lie in
+the range of $\mathbf{P}_{\mathbf{A}\mathbf{\Omega}}$. Its error
+$\mathbf{A} - \mathbf{T} = (\mathbf{I} - \mathbf{P}_{\mathbf{T}})\mathbf{A}$ is therefore a
+projection residual. [MuscoMusco2015, Lemma 2 (proof)]. -/
+theorem truncatedSVD_rsvd_eq_rangeProjector_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
+    truncatedSVD (rsvd A Ω) k = rangeProjector (truncatedSVD (rsvd A Ω) k) * A := by
+  sorry
+
+/-- **The truncated randomized SVD improves with the rank**: for $k \le k'$ and every $i$,
+$$\sigma_i(\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_{k'}) \le
+\sigma_i(\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k)\,,$$
+so in every unitarily invariant norm. Stated for the chosen truncation: with ties among the
+singular values of $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ two arbitrary best approximations
+need not be nested. [MuscoMusco2015, Theorem 10 (proof)]. -/
+theorem singularValues_sub_truncatedSVD_rsvd_le_of_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
+    {k k' : ℕ} (h : k ≤ k') (i : ℕ) :
+    singularValues (A - truncatedSVD (rsvd A Ω) k') i ≤
+      singularValues (A - truncatedSVD (rsvd A Ω) k) i := by
+  sorry
 
 end NLAlib

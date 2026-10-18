@@ -38,6 +38,9 @@ $\mathbf{P}_{\mathbf{Y}}$ the orthogonal projector onto the range of $\mathbf{Y}
   residual.
 * `NLAlib.specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero`: a matrix with one
   vanishing block relative to two orthogonal projectors.
+* `IsStarProjection.specNorm_mul_pow_le`: the power lemma
+  $\|\mathbf{P}\mathbf{A}\|_2^{2j+1} \le
+  \|\mathbf{P}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^j\mathbf{A}\|_2$.
 -/
 
 @[expose] public section
@@ -355,5 +358,22 @@ theorem specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero [Decidabl
     (norm_nonneg _)) two_ne_zero).mp ?_
   rw [hout, mul_pow, mul_pow, hin]
   nlinarith
+
+/-! ### Powers -/
+
+-- Stage B1b
+
+/-- **The power lemma**: for an orthogonal projector $\mathbf{P}$ and every $j$,
+$$\|\mathbf{P}\mathbf{A}\|_2^{2j+1} \le
+\|\mathbf{P}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^j\mathbf{A}\|_2\,,$$
+so a power iteration can only improve the projection error. With $\mathbf{P}$ the residual
+projector of a range finder it turns a bound for the sketch of
+$(\mathbf{A}\mathbf{A}^{\mathsf{H}})^j\mathbf{A}$ into one for $\mathbf{A}$.
+[HalkoMartinssonTropp2011, Proposition 8.6]; [TroppWebber2023, §9.3 (proof of Theorem 9.1)].
+Port of `NLAlib.specNorm_residual_pow_le` (prototype, `LowRank/Structural/PowerIteration.lean`). -/
+theorem _root_.IsStarProjection.specNorm_mul_pow_le {P : Matrix m m 𝕜} (hP : IsStarProjection P)
+    (A : Matrix m n 𝕜) (j : ℕ) :
+    specNorm (P * A) ^ (2 * j + 1) ≤ specNorm (P * ((A * Aᴴ) ^ j * A)) := by
+  sorry
 
 end NLAlib

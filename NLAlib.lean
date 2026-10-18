@@ -7,6 +7,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
+public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Analysis.Real.Sqrt
@@ -43,6 +44,7 @@ public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
+public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Basic.Space
@@ -66,10 +68,14 @@ public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Krylov.Processes.Lanczos
 public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
+public import NLAlib.LowRank.Gaussian.BlockKrylov
+public import NLAlib.LowRank.Gaussian.BlockKrylovGapless
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
 public import NLAlib.LowRank.Gaussian.EarlyTruncationHaar
+public import NLAlib.LowRank.Gaussian.Filter
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.Nystrom
+public import NLAlib.LowRank.Gaussian.NystromBlockKrylov
 public import NLAlib.LowRank.Gaussian.NystromTail
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
@@ -88,7 +94,9 @@ public import NLAlib.LowRank.Oblivious.SubGaussian
 public import NLAlib.LowRank.Oblivious.WithoutReplacement
 public import NLAlib.LowRank.Random.Nystrom
 public import NLAlib.LowRank.Random.RangeFinder
+public import NLAlib.LowRank.Structural.BlockKrylov
 public import NLAlib.LowRank.Structural.EarlyTruncation
+public import NLAlib.LowRank.Structural.Filter
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.Matrix.Basic.ComplementaryProjector
@@ -241,6 +249,7 @@ public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.Stieltjes
+public import NLAlib.Polynomial.Chebyshev.Filter
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import NLAlib.Polynomial.Interpolation.DividedDifference
@@ -280,6 +289,7 @@ public import NLAlib.Probability.MatrixConcentration.Subadditivity
 public import NLAlib.Probability.MatrixConcentration.Variance
 public import NLAlib.Probability.MatrixConditionalExpectation
 public import NLAlib.Probability.MatrixIntegral
+public import NLAlib.Probability.Measurability.Krylov
 public import NLAlib.Probability.Measurability.Matrix
 public import NLAlib.Probability.Orlicz
 public import NLAlib.Probability.QuadraticForm.HansonWright

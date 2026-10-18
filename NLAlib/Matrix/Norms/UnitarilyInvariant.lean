@@ -38,6 +38,8 @@ $\mathbf{A}\mathbf{B}$ and $\mathbf{B}$ have different shapes.
   low-rank approximation in every unitarily invariant norm, and its error is the least one.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_le_of_sq_smul_one_le`: a factor bounded below cannot
   shrink a unitarily invariant norm by more than its lower bound.
+* `NLAlib.SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_le_of_range_le`: a larger range
+  gives a smaller projection residual.
 -/
 
 @[expose] public section
@@ -421,6 +423,20 @@ theorem forall_matrixNorm_le_iff_forall_kyFanNorm_le {A : Matrix m n 𝕜} {B : 
   · rw [kyFanNorm_zero_left, kyFanNorm_zero_left]
   · have hk' := h (kyFanGauge k hk)
     rwa [kyFanGauge_matrixNorm, kyFanGauge_matrixNorm] at hk'
+
+-- Stage B1a
+
+/-- **A larger range gives a smaller projection residual**, in every unitarily invariant norm: if
+the range of $\mathbf{Y}$ is contained in the range of $\mathbf{B}$ then
+$$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}\|_{\Phi} \le
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}\|_{\Phi}\,.$$
+[TroppWebber2023, Lemma 5.1]; [HalkoMartinssonTropp2011, Proposition 8.5]; there in the Schatten
+and spectral norms. -/
+theorem SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_le_of_range_le (Φ : SymmetricGauge)
+    [DecidableEq m] {B : Matrix m p 𝕜} {Y : Matrix m l 𝕜}
+    (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) (A : Matrix m n 𝕜) :
+    Φ.matrixNorm ((1 - rangeProjector B) * A) ≤ Φ.matrixNorm ((1 - rangeProjector Y) * A) := by
+  sorry
 
 end NLAlib
 

@@ -41,6 +41,9 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
 * `NLAlib.cfc_eq_mul_diagonal_mul_conjTranspose`:
   $f(\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}})
   = \mathbf{U} f(\mathbf{D}) \mathbf{U}^{\mathsf{H}}$.
+* `Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq`: a function of $\mathbf{A}$ on an
+  invariant frame, $\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})
+  \Rightarrow f(\mathbf{A})\mathbf{W} = \mathbf{W}\operatorname{diag}(f(\mathbf{d}_i))$.
 * `NLAlib.HasOrthonormalCols.cfc_mul_mul_conjTranspose`: a function of a zero-padded
   compression, $f(\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}) =
   \mathbf{U}f(\mathbf{T})\mathbf{U}^{\mathsf{H}}
@@ -693,5 +696,20 @@ theorem _root_.Matrix.PosDef.inv_sqrt_eq_cfc {A : Matrix n n 𝕜} (hA : A.PosDe
 theorem _root_.Matrix.PosDef.isUnit_sqrt {A : Matrix n n 𝕜} (hA : A.PosDef) :
     IsUnit (CFC.sqrt A) := by
   exact IsUnit.of_mul_eq_one_right _ (cfc_inv_sqrt_mul_sqrt hA)
+
+-- Stage B1a
+
+omit [DecidableEq m] in
+/-- **A function of a Hermitian matrix on an invariant frame**: if
+$\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$ with $\mathbf{d}$ real, then
+$$f(\mathbf{A})\mathbf{W} = \mathbf{W}\operatorname{diag}(f(\mathbf{d}_i))\,,$$
+for any columns $\mathbf{W}$ (each nonzero column is an eigenvector, a zero column is mapped to
+zero). The partial form of `NLAlib.cfc_eq_mul_diagonal_mul_conjTranspose`; the polynomial twin is
+`NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq_mul`. -/
+theorem _root_.Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq {r : Type*} [Fintype r]
+    [DecidableEq r] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n r 𝕜} {d : r → ℝ}
+    (hAW : A * W = W * Matrix.diagonal fun i => (d i : 𝕜)) (f : ℝ → ℝ) :
+    cfc f A * W = W * Matrix.diagonal fun i => (f (d i) : 𝕜) := by
+  sorry
 
 end NLAlib

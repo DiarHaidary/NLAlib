@@ -44,6 +44,9 @@ same for every $k$ and makes the truncation measurable in $\mathbf{A}$.
   $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$.
 * `NLAlib.exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD_completion`: that frame
   with an orthonormal completion carrying $\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k$.
+* `NLAlib.exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal`: the same frames
+  as invariant frames of $\mathbf{A}^{\mathsf{H}}\mathbf{A}$, nested in $k$.
+* `NLAlib.range_mulVecLin_truncatedSVD_mono`: the column spaces of the truncations are nested.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD`: the truncation of
   $\mathbf{Q}\mathbf{X}$ stays in the range of $\mathbf{Q}$.
 * `Matrix.PosSemidef.truncatedSVD`, `Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD`,
@@ -644,5 +647,45 @@ theorem isLeast_frobNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
   refine ⟨⟨truncatedSVD A k, rank_truncatedSVD_le A k, rfl⟩, ?_⟩
   rintro _ ⟨B, hB, rfl⟩
   exact frobNorm_sub_truncatedSVD_le_of_rank_le A hB
+
+-- Stage B4
+
+/-- The column spaces of the truncations are nested:
+$\operatorname{range}\llbracket\mathbf{A}\rrbracket_k \subseteq
+\operatorname{range}\llbracket\mathbf{A}\rrbracket_{k'}$ for $k \le k'$, since every truncation
+is built from the same chosen SVD. With ties among the singular values this can fail for other
+best approximations. -/
+theorem range_mulVecLin_truncatedSVD_mono (A : Matrix m n 𝕜) :
+    Monotone fun k => LinearMap.range (truncatedSVD A k).mulVecLin := by
+  sorry
+
+-- Stage B5a
+
+-- SKELETON-NOTE: true as stated, but the last clause (every prefix gives the chosen truncation)
+-- forces Z to be built from the chosen `svdV A` (then completed by null vectors of A when
+-- k > rank A); a frame of right singular vectors chosen otherwise fails it under ties.
+/-- **Nested invariant frames of the Gram matrix**: for $k \le \lvert n \rvert$ there are
+$\mathbf{Z} \in \Bbbk^{n \times k}$ and $\mathbf{V} \in \Bbbk^{n \times (\lvert n \rvert - k)}$ with
+orthonormal columns, $\mathbf{Z}^{\mathsf{H}}\mathbf{V} = \mathbf{0}$ and
+$\mathbf{Z}\mathbf{Z}^{\mathsf{H}} + \mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{I}$, made of right
+singular vectors:
+$$\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{Z} =
+\mathbf{Z}\operatorname{diag}(\sigma_i(\mathbf{A})^2)_{i < k}\,,\qquad
+\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\sigma_{k+j}(\mathbf{A})^2)_j\,,$$
+and whose first $r$ columns $\mathbf{Z}_r$ give the chosen truncation,
+$\mathbf{A}\mathbf{Z}_r\mathbf{Z}_r^{\mathsf{H}} = \llbracket\mathbf{A}\rrbracket_r$, for every
+$r \le k$. These are the head frame $\mathbf{W} = \mathbf{Z}_r$, the frame $\mathbf{Z}$ and its
+completion $\mathbf{V}$ of the filtered range finder. -/
+theorem exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal [DecidableEq n]
+    (A : Matrix m n 𝕜) {k : ℕ} (hk : k ≤ Fintype.card n) :
+    ∃ (Z : Matrix n (Fin k) 𝕜) (V : Matrix n (Fin (Fintype.card n - k)) 𝕜),
+      HasOrthonormalCols Z ∧ HasOrthonormalCols V ∧ Zᴴ * V = 0 ∧ Z * Zᴴ + V * Vᴴ = 1 ∧
+      Aᴴ * A * Z = Z * Matrix.diagonal (fun i : Fin k => ((singularValues A i ^ 2 : ℝ) : 𝕜)) ∧
+      Aᴴ * A * V = V * Matrix.diagonal
+        (fun j : Fin (Fintype.card n - k) => ((singularValues A (k + j) ^ 2 : ℝ) : 𝕜)) ∧
+      ∀ r (hr : r ≤ k), A * Z.submatrix id (Fin.castLE hr) * (Z.submatrix id (Fin.castLE hr))ᴴ =
+        truncatedSVD A r := by
+  sorry
 
 end NLAlib

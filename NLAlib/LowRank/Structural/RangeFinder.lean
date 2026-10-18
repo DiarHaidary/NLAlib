@@ -63,6 +63,9 @@ bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = [0]$). Design:
   approximate-multiplication error.
 * `NLAlib.SymmetricGauge.matrixNorm_sub_nystrom_le_of_hasOrthonormalCols`: the structural bound of
   Nyström approximation.
+* `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_mul_pinv_sq_le`: the range finder at the competitor's
+  test matrix $\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$, whose range has
+  dimension at most $\lvert r \rvert$.
 -/
 
 @[expose] public section
@@ -95,9 +98,12 @@ theorem range_mul_mul_pinv_mul_conjTranspose_le (A : Matrix m n 𝕜) (Ω : Matr
 
 variable [DecidableEq r]
 
+-- Stage B4 (made public)
+
 /-- Under the rank hypothesis, $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ has a right inverse, its
-pseudoinverse. -/
-private theorem mul_pinv_self_of_rank_eq (hZ : HasOrthonormalCols Z)
+pseudoinverse: $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}
+= \mathbf{I}$. -/
+theorem HasOrthonormalCols.mul_pinv_self_of_rank_eq (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) : Zᴴ * Ω * pinv (Zᴴ * Ω) = 1 := by
   refine mul_pinv_self_of_injective_conjTranspose ?_
   rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, mulVec_injective_iff_rank_eq,
@@ -130,7 +136,7 @@ theorem HasOrthonormalCols.sub_mul_mul_pinv_mul_conjTranspose_eq (hZ : HasOrthon
       (A - A * Z * Zᴴ) - (A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) * Zᴴ := by
   have hC : A * Z * Zᴴ * Ω * pinv (Zᴴ * Ω) * Zᴴ = A * Z * Zᴴ := by
     rw [Matrix.mul_assoc (A * Z) Zᴴ Ω, Matrix.mul_assoc (A * Z) (Zᴴ * Ω),
-      mul_pinv_self_of_rank_eq hZ hΩ, Matrix.mul_one]
+      hZ.mul_pinv_self_of_rank_eq hΩ, Matrix.mul_one]
   rw [Matrix.sub_mul A (A * Z * Zᴴ) Ω, Matrix.sub_mul, Matrix.sub_mul, hC]
   abel
 
@@ -445,5 +451,27 @@ theorem SymmetricGauge.matrixNorm_sub_nystrom_le_of_hasOrthonormalCols [Decidabl
     simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
   have h := Φ.matrixNorm_conjTranspose_mul_self_sub_rsvd_le hZ hΩ F
   rwa [hE, hM] at h
+
+/-! ### The competitor projector -/
+
+-- Stage B4
+
+/-- **The range finder at the competitor's test matrix**: for $\mathbf{Z}$ with orthonormal columns
+and $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, the test matrix
+$\mathbf{\Omega}' = \mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$ has
+$\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}' = \mathbf{I}$, at most $\lvert r \rvert$ columns, and a
+sketch whose range lies in that of $\mathbf{A}\mathbf{\Omega}$, and
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}')\|_2^2 \le \|\mathbf{E}\|_2^2 +
+\|\mathbf{M}\|_2^2\,,\qquad
+\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}},\quad
+\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}\,:$$
+the bound of `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_sq_le` for a projector of rank at most
+$\lvert r \rvert$ inside the range of the sketch.
+[TroppWebber2023, §9.3 (proof of Theorem 9.1)], there the rank-$r$ projector $\mathbf{Q}$. -/
+theorem HasOrthonormalCols.specNorm_sub_rsvd_mul_pinv_sq_le (hZ : HasOrthonormalCols Z)
+    (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
+    specNorm (A - rsvd A (Ω * pinv (Zᴴ * Ω))) ^ 2 ≤
+      specNorm (A - A * Z * Zᴴ) ^ 2 + specNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
+  sorry
 
 end NLAlib

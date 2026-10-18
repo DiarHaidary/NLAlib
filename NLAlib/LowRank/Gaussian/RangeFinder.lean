@@ -55,6 +55,9 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
   as printed.
 * `NLAlib.integral_schattenNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: TW Theorem 8.1 (RSVD2).
+* `NLAlib.rangeFinderTailRatio`: the spectral bound of TW Theorem 8.1 (RSVD2) divided by
+  $\sigma_k(\mathbf{A})^2$, with `NLAlib.one_le_rangeFinderTailRatio` and
+  `NLAlib.sq_singularValues_mul_rangeFinderTailRatio`. <!-- mention rangeFinderTailRatio -->
 * `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.6;
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_pinvSpecNormBound`: its
   second-moment form.
@@ -566,5 +569,47 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
   integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix A hX hk
     (fun _ => isBestRankApprox_truncatedSVD _ k)
     (((measurable_rsvd A).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+
+/-! ### The normalised spectral bound -/
+
+-- Stage B6b
+
+/-- The **range-finder tail ratio** (casts to $\mathbb{R}$),
+the number <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->
+$$1 + \frac{r}{\ell - r - 1}\,
+\frac{\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2}{\sigma_r(\mathbf{A})^2}\,:$$
+the expected squared spectral error bound of the randomized SVD with a Gaussian $n \times \ell$
+test matrix at rank $r$ (TW Theorem 8.1 (RSVD2),
+`NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`) divided by
+$\sigma_r(\mathbf{A})^2$. It is the quantity whose logarithm the gapless bounds of randomized block
+Krylov and subspace iteration shrink. Junk values: $1$ when $\sigma_r(\mathbf{A}) = 0$ (Lean's
+$x/0 = 0$), and possibly below $1$ for $\ell \le r + 1$; theorems carry $0 < \sigma_r(\mathbf{A})$
+and $r + 2 \le \ell$. A plain definition, because its body is the source's formula.
+[TroppWebber2023, Theorem 9.1]. -/
+noncomputable def rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) (r l : ℕ) : ℝ :=
+  1 + (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 / singularValues A r ^ 2
+
+/-- The range-finder tail ratio is at least $1$ for $r + 2 \le \ell$:
+in full, <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->
+$$1 \le 1 + \frac{r}{\ell - r - 1}\,
+\frac{\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2}{\sigma_r(\mathbf{A})^2}\,.$$
+-/
+theorem one_le_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) {r l : ℕ}
+    (hl : r + 2 ≤ l) : 1 ≤ rangeFinderTailRatio A r l := by
+  sorry
+
+/-- The range-finder tail ratio times $\sigma_r(\mathbf{A})^2$ is the spectral bound of the
+randomized SVD: for $\sigma_r(\mathbf{A}) > 0$,
+the identity <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->
+$$\sigma_r(\mathbf{A})^2\Bigl(1 + \frac{r}{\ell - r - 1}\,
+\frac{\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2}{\sigma_r(\mathbf{A})^2}
+\Bigr) = \sigma_r(\mathbf{A})^2 + \frac{r}{\ell - r - 1}
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$ -/
+theorem sq_singularValues_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜)
+    {r : ℕ} (l : ℕ) (hσ : 0 < singularValues A r) :
+    singularValues A r ^ 2 * rangeFinderTailRatio A r l =
+      singularValues A r ^ 2 +
+        (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 := by
+  sorry
 
 end NLAlib

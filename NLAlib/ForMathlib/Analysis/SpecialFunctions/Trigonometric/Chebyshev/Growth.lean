@@ -24,6 +24,13 @@ These are upstream candidates in `Polynomial.Chebyshev`.
 * `Polynomial.Chebyshev.pow_div_two_le_eval_T_real`: exponential lower growth.
 * `Polynomial.Chebyshev.sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real`:
   the square-root condition-ratio lower bound.
+* `Polynomial.Chebyshev.eval_T_two_mul`: $T_{2j}(x) = T_j(2x^2 - 1)$.
+* `Polynomial.Chebyshev.monotoneOn_eval_T_real`: $T_q$ is monotone on $[1, \infty)$.
+* `Real.exp_two_mul_le_one_add_div_one_sub`: $e^{2r} \le (1 + r)/(1 - r)$ on $[0, 1)$.
+* `Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real`: the gap form of Chebyshev growth,
+  $\tfrac12 e^{2q\sqrt{r}} \le T_q((1 + r)/(1 - r))$.
+* `Polynomial.Chebyshev.le_exp_of_eval_T_real_le`: an inverse of Chebyshev growth,
+  $T_q(x) \le y \Rightarrow x \le \exp((\log(2y)/q)^2/2)$.
 -/
 
 @[expose] public section
@@ -87,5 +94,54 @@ theorem sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real {a b : ℝ}
   rw [Real.sq_sqrt ha.le, Real.sq_sqrt (by linarith)] at h
   rw [← h]
   exact pow_div_two_le_eval_T_real (by rw [le_div_iff₀ (by linarith)]; linarith) q
+
+-- Stage B2a
+
+/-- **Chebyshev composition with $T_2$**: $T_{2j}(x) = T_j(2x^2 - 1)$, for every integer $j$ and
+every commutative ring. [TroppWebber2023, Lemma 9.3], part 1 in the form used there. -/
+theorem eval_T_two_mul {R : Type*} [CommRing R] (j : ℤ) (x : R) :
+    (T R (2 * j)).eval x = (T R j).eval (2 * x ^ 2 - 1) := by
+  sorry
+
+/-- **Monotonicity outside the unit interval**: $T_q$ is non-decreasing on $[1, \infty)$.
+[TroppWebber2023, Lemma 9.3], part 3. -/
+theorem monotoneOn_eval_T_real (q : ℕ) :
+    MonotoneOn (fun x : ℝ => (T ℝ (q : ℤ)).eval x) (Set.Ici 1) := by
+  sorry
+
+end Polynomial.Chebyshev
+
+namespace Real
+
+/-- $e^{2r} \le \frac{1 + r}{1 - r}$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
+[TroppWebber2023, (C.1)]. -/
+theorem exp_two_mul_le_one_add_div_one_sub {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
+    exp (2 * r) ≤ (1 + r) / (1 - r) := by
+  sorry
+
+end Real
+
+namespace Polynomial.Chebyshev
+
+open Real
+
+/-- **Chebyshev growth in terms of a relative gap**: for $0 \le r < 1$,
+$$\frac12 e^{2q\sqrt{r}} \le T_q\Bigl(\frac{1 + r}{1 - r}\Bigr)\,.$$
+With $r$ a relative gap $\gamma$, $(1 + \gamma)/(1 - \gamma)$ is the ratio of the two singular
+values. [TroppWebber2023, Lemma 9.3], part 3. -/
+theorem exp_mul_sqrt_div_two_le_eval_T_real (q : ℕ) {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
+    exp (2 * q * √r) / 2 ≤ (T ℝ (q : ℤ)).eval ((1 + r) / (1 - r)) := by
+  sorry
+
+-- Stage B2b
+
+/-- **Inverting Chebyshev growth**: for $q > 0$ and $x \ge 1$, if $T_q(x) \le y$ then
+$$x \le \exp\Bigl(\frac{1}{2}\Bigl(\frac{\log(2y)}{q}\Bigr)^2\Bigr)\,.$$
+Stated as an implication, with no inverse function: $T_q(x) = \cosh(q\operatorname{arcosh}x)$,
+$\operatorname{arcosh} y \le \log(2y)$ and $\cosh t \le e^{t^2/2}$. The hypothesis $1 \le y$ follows
+from the others. [TroppWebber2023, Lemma 9.3], part 4. -/
+theorem le_exp_of_eval_T_real_le {q : ℕ} (hq : 0 < q) {x y : ℝ} (hx : 1 ≤ x)
+    (h : (T ℝ (q : ℤ)).eval x ≤ y) : x ≤ exp ((log (2 * y) / q) ^ 2 / 2) := by
+  sorry
 
 end Polynomial.Chebyshev
