@@ -19,9 +19,6 @@ against the post (HTML formulas) and derived independently:
 | Rademacher | $2(\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{ii}^2)$ | same |
 | real sphere, radius $\sqrt n$ | $\frac{2n}{n+2}(\|\mathbf{A}\|_{\mathsf{F}}^2 - (\operatorname{tr}\mathbf{A})^2/n)$ | same |
 | Haar frame $n \times k$, $\operatorname{tr}(\mathbf{Q}^{\mathsf{T}}\mathbf{A}\mathbf{Q})$ | $\frac{2k(n-k)}{(n-1)n(n+2)}(\|\mathbf{A}\|_{\mathsf{F}}^2 - (\operatorname{tr}\mathbf{A})^2/n)$ | same, $n \ge 2$ |
-| complex Gaussian | $\|\mathbf{A}\|_{\mathsf{F}}^2$ | any complex |
-| Steinhaus | $\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \lvert\mathbf{A}_{ii}\rvert^2$ | any complex |
-| complex sphere, radius $\sqrt n$ | $\frac{n}{n+1}(\|\mathbf{A}\|_{\mathsf{F}}^2 - \lvert\operatorname{tr}\mathbf{A}\rvert^2/n)$ | any complex |
 
 Haar derivation (ours): $\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{T}}$,
 $\mathbf{R} = \mathbf{U}^{\mathsf{T}}\mathbf{Q}$ is a Haar frame, and
@@ -44,20 +41,9 @@ under `1 < Fintype.card n`, so that no statement relies on $(n - 1)^{-1} = 0$. T
 needs no hypothesis (the $n - 1$ cancels at $k = 1$; $n = 1$ is handled in the proof). Recommended
 and done.
 
-**D2. Complex laws as parallel definitions** (as `Probability-P2.md` §7 Q1, R5 Q5 planned).
-`complexGaussianMeasure : Measure ℂ` is the product of two $\mathcal{N}(0, 1/2)$ read in ℂ;
-`complexGaussianVector n` its product. `steinhausMeasure` is Mathlib's `haarAddCircle` on
-`AddCircle 1` pushed by `toCircle`; `steinhausVector n` its product. Both mirror
-`gaussianVector`/`rademacherVector` (`abbrev` products, so `HasLaw.eval`, `HasLaw.iIndepFun_eval`
-apply). The complex Gaussian departs from Mathlib's `stdGaussian ℂ` (variance 2): deviation entry
-20, bridge planned, not proved. **[maintainer]** whether the bridge should be proved before merge.
+**D2. Complex laws as parallel definitions.** Moot (2026-10-18): removed, see "Deferred: complex probes".
 
-**D3. Complex sphere as the image of the real sphere** (Epperly's derivation 1, the brief's
-recommendation). `complexUniformSphereVector n := (uniformSphereVector (n ⊕ n)).map
-complexOfRealPair`, with `complexOfRealPair v i = v (inl i) + v (inr i) * I` a new public map.
-Its variance reduces to the real sphere on `n ⊕ n`. Not done: the bridge to `g / ‖g‖` for a
-complex Gaussian `g` (entry 20). **[maintainer]** the name `complexOfRealPair` (alternatives:
-inline lambda in the definition; a `MeasurableEquiv` `(n ⊕ n → ℝ) ≃ᵐ (n → ℂ)`).
+**D3. Complex sphere as the image of the real sphere.** Moot (2026-10-18): removed, see "Deferred: complex probes".
 
 **D4. Complex variance spelled as a second moment about the mean.** Mathlib's `variance` is
 real-valued, so complex statements conclude
@@ -85,23 +71,16 @@ spaces, `variance_quadForm_of_hasLaw_rademacherVector_le`, from $m_4 \ge 1$. The
 worst-case optimality over unitarily invariant classes is skipped (not short: it needs the
 radius–direction decomposition of an isotropic vector).
 
-**D8. Complex Haar frames deferred.** A `complexHaarFrame n k` (polar factor of a complex Gaussian
-matrix) needs a complex Gaussian matrix law with unitary invariance and full rank a.s., and the
-Haar API of `Haar/{Basic,Uniqueness,Sphere,Blocks}.lean` over ℂ: not modest. Later target, with
-expected variance $\frac{k(n-k)}{(n-1)n(n+1)}(\|\mathbf{A}\|_{\mathsf{F}}^2 -
-\lvert\operatorname{tr}\mathbf{A}\rvert^2/n)$ (its $k = 1$ case times $n^2$ is the complex sphere
-line, which is proved).
+**D8. Complex Haar frames deferred.** Moot (2026-10-18): the complex laws are removed, see "Deferred: complex probes".
 
 ## 3. Placement
 
 | Declaration(s) | Home | Reason |
 |---|---|---|
 | `quadForm_hermitianPart`, `trace_conjTranspose_mul_hermitianPart_mul` | `Matrix/Spectral/HermitianPart.lean` | facts about the Hermitian part |
-| `complexGaussianMeasure`, `complexGaussianVector`, moments | new `Probability/Distributions/ComplexGaussian.lean` | a law |
-| `steinhausMeasure`, `steinhausVector`, moments | new `Probability/Distributions/Steinhaus.lean` | a law |
-| complex Gaussian, Steinhaus, general real Gaussian/Rademacher variances, Rademacher optimality | `Probability/QuadraticForm/Moments.lean` | second moments of quadratic forms with independent coordinates |
-| `hasLaw_replicateCol_of_hasLaw_uniformSphereVector`, `complexOfRealPair`, `complexUniformSphereVector` | `RandomMatrix/Haar/Basic.lean` | beside `uniformSphereVector` |
-| Haar compression mean and variance, real and complex sphere variances | `RandomMatrix/Haar/Moments.lean` (now "Moments of Haar frames") | moments of Haar frames; the sphere is the one-column frame |
+| general real Gaussian/Rademacher variances, Rademacher optimality | `Probability/QuadraticForm/Moments.lean` | second moments of quadratic forms with independent coordinates |
+| `hasLaw_replicateCol_of_hasLaw_uniformSphereVector` | `RandomMatrix/Haar/Basic.lean` | beside `uniformSphereVector` |
+| Haar compression mean and variance, real sphere variance | `RandomMatrix/Haar/Moments.lean` (now "Moments of Haar frames") | moments of Haar frames; the sphere is the one-column frame |
 | `girardHutchinson`, mean, $m$-probe variance, Haar test matrix | new `Estimation/Trace/GirardHutchinson.lean` | the estimator's topic |
 
 No flags: everything is at its topic's home. Sphere variances cannot live in `Probability/`
@@ -133,17 +112,8 @@ theorem variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector
     variance (fun ω => quadForm A (√(card n) • u ω)) μ =
       2 * card n / (card n + 2) * (frobNorm A ^ 2 - A.trace ^ 2 / card n)
 theorem variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector_hermitianPart (hu) (A) : …
-theorem integral_norm_quadForm_sqrt_smul_sub_trace_sq_of_hasLaw_complexUniformSphereVector
-    (hw : HasLaw w (complexUniformSphereVector n) μ) (A : Matrix n n ℂ) :
-    ∫ ω, ‖quadForm A ((√(card n) : ℂ) • w ω) - A.trace‖ ^ 2 ∂μ =
-      card n / (card n + 1) * (frobNorm A ^ 2 - ‖A.trace‖ ^ 2 / card n)
 
 -- Probability/QuadraticForm/Moments.lean
-theorem integral_norm_quadForm_sub_trace_sq_of_hasLaw_complexGaussianVector
-    (hg : HasLaw g (complexGaussianVector n) μ) (A : Matrix n n ℂ) :
-    ∫ ω, ‖quadForm A (g ω) - A.trace‖ ^ 2 ∂μ = frobNorm A ^ 2
-theorem integral_norm_quadForm_sub_trace_sq_of_hasLaw_steinhausVector (hz) (A) :
-    … = frobNorm A ^ 2 - ∑ i, ‖A i i‖ ^ 2
 theorem variance_quadForm_of_hasLaw_gaussianVector_hermitianPart (hg) (A : Matrix n n ℝ) :
     variance … = 2 * frobNorm (hermitianPart A) ^ 2
 theorem variance_quadForm_of_hasLaw_rademacherVector_hermitianPart (hx) (A) :
@@ -171,27 +141,26 @@ theorem variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame [Nonempty k] (hX
 
 No named constants (every constant is exact and small, written in the statement). No asymptotic
 forms (none are sample-size results). §5.3 rows proposed: the Girard–Hutchinson estimate
-`girardHutchinson A Ω` (`\mathsf{girardHutchinson}`), and the complex probe laws
-`complexGaussianVector n`, `steinhausVector n`, `complexUniformSphereVector n` beside the real
-ones; not yet added to CONTRIBUTING (a §5.3 change needs two approvals).
+`girardHutchinson A Ω` (`\mathsf{girardHutchinson}`);
+not yet added to CONTRIBUTING (a §5.3 change needs two approvals).
 
 ## 5. Consumers
 
 Hutch++ (`Estimation-HutchPP.md`: `girardHutchinson`, its unbiasedness and mean-square formula,
 the Hermitian-part bridges, and later the sphere formula in dimension $N - r$); XTrace and
-Nyström++ (orthonormal and sphere probes); any complex trace estimator (complex laws).
+Nyström++ (orthonormal and sphere probes).
 
 ## 6. Material
 
 Prototype atlas (`prove2me/lean/atlas/declarations.json`): `hutchinsonEstimate`,
 `integral_hutchinsonEstimate_eq_trace` (`Estimation/Trace/{HutchinsonTail,Unbiased}`), real only,
 Gaussian and Rademacher variances (already ported in P3). No sphere, Haar, complex or Steinhaus
-variance existed. Reused: the definition's shape; ledger entries for the two names. Not reproduced:
+variance existed (the complex material is now deferred). Reused: the definition's shape; ledger entries for the two names. Not reproduced:
 `hutchinsonBlock` (Hutch++'s P7 owns the vectorized tail).
 
 ## Implementation (2026-10-18)
 
-All of §4 is proved, no `sorry`. Files: the two new laws, `Estimation/Trace/GirardHutchinson.lean`,
+All of §4 is proved, no `sorry`. Files: `Estimation/Trace/GirardHutchinson.lean`,
 additions to `HermitianPart.lean`, `QuadraticForm/Moments.lean`, `Haar/Basic.lean`,
 `Haar/Moments.lean` (903 lines). Proof notes:
 
@@ -201,13 +170,26 @@ additions to `HermitianPart.lean`, `QuadraticForm/Moments.lean`, `Haar/Basic.lea
   diagonalisation is `exists_hasOrthonormalCols_eq_mul_diagonal_mul_conjTranspose`.
 - Sphere: `hasLaw_replicateCol_of_hasLaw_uniformSphereVector` makes the sphere vector a
   one-column Haar frame; the radius–direction "camel" argument of the post is not used.
-- Complex sphere: the real form $\begin{bmatrix}\operatorname{Re}\mathbf{H} & -\operatorname{Im}
-  \mathbf{H}\\ \operatorname{Im}\mathbf{H} & \operatorname{Re}\mathbf{H}\end{bmatrix}$ of the
-  Hermitian parts of $\mathbf{A}$ and $-i\mathbf{A}$ carries the real and imaginary parts;
-  $\|\mathbf{H}_1\|_{\mathsf{F}}^2 + \|\mathbf{H}_2\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2$
-  is the parallelogram law.
-- Steinhaus: $\mathbb{E}Z = \mathbb{E}Z^2 = 0$ from invariance of `haarAddCircle` under the quarter
-  turn ($Z \mapsto iZ$), no integral computed.
 
-Later targets: complex Haar frames (D8); the bridges of deviation entry 20; the sphere's worst-case
+Later targets: the sphere's worst-case
 optimality; m-probe corollaries for each law (one line each from `variance_girardHutchinson`).
+
+## Deferred: complex probes
+
+Removed on 2026-10-18, at the maintainer's request: "Let's actually remove the complex
+distributions for now until we think about this more carefully. use girardHutchinson". Removed:
+`Probability/Distributions/ComplexGaussian.lean` (`complexGaussianMeasure`, `complexGaussianVector`
+and moments), `Probability/Distributions/Steinhaus.lean` (`steinhausMeasure`, `steinhausVector`
+and moments), `complexOfRealPair` and `complexUniformSphereVector` with the complex sphere
+variance (`n/(n+1)(‖A‖² − |tr A|²/n)`) in `RandomMatrix/Haar/{Basic,Moments}.lean`, the complex
+Gaussian and Steinhaus variances in `Probability/QuadraticForm/Moments.lean` (`‖A‖²` and
+`‖A‖² − Σ|aᵢᵢ|²`, every complex `A`), and deviation entry 20. The general RCLike variance formula
+in `Moments.lean` stays, so the complex cases are one instantiation away once a law exists.
+Everything is recoverable from commit `f1d3e75` (branch `probability/trace-estimation`).
+
+**Open question.** NLAlib's complex Gaussian was normalised as $\mathrm{CN}(0,1)$,
+$\mathbb{E}\lvert zvert^2 = 1$ (real and imaginary parts $\mathcal{N}(0, 1/2)$), the
+random-matrix and isotropy (`IsIsotropic`) convention, whereas Mathlib's `stdGaussian ℂ` has
+$\mathbb{E}\lvert zvert^2 = 2$. Which should the library adopt, or both with a bridge? The
+bridges (`complexGaussianMeasure = (stdGaussian ℂ).map ((√2)⁻¹ • ·)`, and the complex sphere as
+`g / ‖g‖`) were planned and not proved. Complex Haar frames (old D8) wait on the same decision.

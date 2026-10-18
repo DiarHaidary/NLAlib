@@ -396,34 +396,6 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Status: proposed** in LowRank S0 (`docs/design/LowRank-S0.md` §8 item 3), 2026-10-15; not
   approved by the maintainer.
 
-## 20. Complex Gaussian and complex sphere laws
-
-- **Mathlib.** `ProbabilityTheory.stdGaussian E` on a finite-dimensional real inner product space
-  `E`; for `E = ℂ` it is the law of `g₁ + i g₂` with `E |z|² = 2`, and on `EuclideanSpace ℂ n` the
-  law with `2n` real standard coordinates. `Measure.toSphere` on `EuclideanSpace ℂ n` (as a real
-  inner product space) is the surface measure of the complex unit sphere.
-- **NLAlib.** `complexGaussianMeasure : Measure ℂ`, the law of `X + iY` with `X, Y` independent
-  `N(0, 1/2)` (the product of two `gaussianReal 0 2⁻¹` read through
-  `Complex.measurableEquivRealProd`), and `complexGaussianVector n`, its product, on `n → ℂ`
-  (`NLAlib/Probability/Distributions/ComplexGaussian.lean`); `complexUniformSphereVector n`, the
-  image of `uniformSphereVector (n ⊕ n)` under `complexOfRealPair`
-  (`NLAlib/RandomMatrix/Haar/Basic.lean`). Design: `docs/design/Probability-TraceEstimation.md`
-  D2, D3.
-- **Why.** The standard complex Gaussian of numerical linear algebra has `E |z|² = 1`, the
-  isotropy normalisation of every probe (`IsIsotropic`); `stdGaussian ℂ` has `E |z|² = 2`. The
-  product form gives independent coordinates on the library's vectors `n → ℂ` directly, as
-  `gaussianVector n` does over ℝ (`docs/design/Probability-P2.md` §7 Q1), and the moments by
-  Fubini. The complex sphere as an image of the real one gives its moments from the real sphere's,
-  which is the only route the library has (its fourth moments come from invariance, entry 16).
-- **Cost.** A user holding `stdGaussian ℂ`, or a normalised complex Gaussian vector, needs the
-  bridges below before applying the variance theorems.
-- **Bridge (planned).** `complexGaussianMeasure = (stdGaussian ℂ).map ((√2)⁻¹ • ·)`; and
-  `complexUniformSphereVector n` is the law of `g / ‖g‖` for `g ∼ complexGaussianVector n` (from
-  `gaussianVector (n ⊕ n)` mapped by `(√2)⁻¹ • complexOfRealPair` and normalisation commuting with
-  the scaling).
-- **Status: bridges not proved** (2026-10-18). The Steinhaus law needs no entry: it is Mathlib's
-  `AddCircle.haarAddCircle` pushed forward by `AddCircle.toCircle`.
-
 ## Small spelling choices
 
 - `principalMinor A s` for `(A.submatrix (↑) (↑)).det` with `s : Finset n`
@@ -445,8 +417,7 @@ factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tan
 S2b, `docs/design/LowRank-S2b.md` §1, §8). `svdU` and `svdV`, the chosen thin SVD from which
 `truncatedSVD` is now built (LowRank S2c, `docs/design/LowRank-S2c.md` §8 items 1, 2, 12).
 `HasProjectionCostPreserving`, the tail form of `IsProjectionCostPreserving` (LowRank S9,
-`docs/design/LowRank-S9.md` §1, §8 item 7). `steinhausMeasure` and `steinhausVector`, on
-Mathlib's `AddCircle.haarAddCircle`, and `girardHutchinson` (trace estimation,
+`docs/design/LowRank-S9.md` §1, §8 item 7). `girardHutchinson` (trace estimation,
 `docs/design/Probability-TraceEstimation.md`).
 
 Poly0 (2026-10-16): `Metric.IsUniformApproxOn` adds a fixed-error predicate absent from the

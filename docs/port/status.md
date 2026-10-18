@@ -6,25 +6,20 @@ Updated at every stopping point. Newest entry first within each section.
 
 Branch `probability/trace-estimation` (worktree `nlalib-block`), uncommitted on top of `b1d21fa`
 (the Hutch++ design note). Design and implementation: `docs/design/Probability-TraceEstimation.md`
-(decisions D1 to D8; **[maintainer]** flags on D2 bridge, D3 `complexOfRealPair`, D5 suffix
-`_hermitianPart`, D6 name `girardHutchinson`). Proved, no `sorry`:
+(decisions D1 to D8; D2, D3, D8 moot; **[maintainer]** flags on D5 suffix `_hermitianPart`, D6 name
+`girardHutchinson`). Proved, no `sorry`:
 
-- New laws: `Probability/Distributions/ComplexGaussian.lean` (`complexGaussianMeasure`,
-  `complexGaussianVector`), `Probability/Distributions/Steinhaus.lean` (`steinhausMeasure` on
-  Mathlib's `haarAddCircle`, `steinhausVector`), `complexUniformSphereVector` in
-  `RandomMatrix/Haar/Basic.lean`; deviation entry 20 (bridges to `stdGaussian ℂ` and to the
-  normalised complex Gaussian planned, not proved).
 - `RandomMatrix/Haar/Moments.lean`: exact variance of `tr (Qᴴ A Q)` for Haar frames (multiplied
-  form for every `n`, divided for `n ≥ 2`, any real `A`), real sphere `2n/(n+2)(‖A‖² − tr²/n)`,
-  complex sphere `n/(n+1)(‖A‖² − |tr A|²/n)` for every complex `A`.
-- `Probability/QuadraticForm/Moments.lean`: complex Gaussian `‖A‖²`, Steinhaus `‖A‖² − Σ|aᵢᵢ|²`
-  (every complex `A`), real Gaussian/Rademacher for any real `A`, Rademacher optimality.
+  form for every `n`, divided for `n ≥ 2`, any real `A`), real sphere `2n/(n+2)(‖A‖² − tr²/n)`.
+- `Probability/QuadraticForm/Moments.lean`: real Gaussian/Rademacher for any real `A`, Rademacher optimality.
 - New `Estimation/Trace/GirardHutchinson.lean`: `girardHutchinson`, unbiasedness, `v / m` for
   independent probes (𝕜 and real `variance` forms), orthonormal Haar probes.
 - `Matrix/Spectral/HermitianPart.lean`: `quadForm_hermitianPart`,
   `trace_conjTranspose_mul_hermitianPart_mul` (the Hutch++ note's A3).
 
-Later targets: complex Haar frames (D8), the entry-20 bridges, the sphere's worst-case optimality.
+Deferred, maintainer request: the complex probe laws (Gaussian, Steinhaus, sphere) were removed
+(recoverable from `f1d3e75`; see "Deferred: complex probes" in the design note). Later target: the
+sphere's worst-case optimality.
 Ledger: `hutchinsonEstimate`, `integral_hutchinsonEstimate_eq_trace`. Not mine and not touched:
 the concurrent edit of `Probability/SubGaussianVector/Basic.lean` (Hutch++ P8).
 

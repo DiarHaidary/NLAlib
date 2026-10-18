@@ -258,7 +258,6 @@ public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare
 public import NLAlib.Probability.Distributions.ChiSquareMoments
-public import NLAlib.Probability.Distributions.ComplexGaussian
 public import NLAlib.Probability.Distributions.Gaussian
 public import NLAlib.Probability.Distributions.GaussianComparison
 public import NLAlib.Probability.Distributions.GaussianConcentration
@@ -269,7 +268,6 @@ public import NLAlib.Probability.Distributions.GaussianLogSobolevOneDim
 public import NLAlib.Probability.Distributions.GaussianMoments
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.Distributions.Sampling
-public import NLAlib.Probability.Distributions.Steinhaus
 public import NLAlib.Probability.Distributions.UniformInjection
 public import NLAlib.Probability.Entropy
 public import NLAlib.Probability.EntropyTensorization
