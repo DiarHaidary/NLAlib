@@ -226,13 +226,15 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_one_add_sq_mul_of_hasLaw_g
     rw [singularValues_zero_eq_specNorm, singularValues_zero_eq_specNorm, ← rbki_def] at h
     exact pow_le_pow_left₀ (specNorm_nonneg _) h 2
 
-/-- **The gapless bound for randomized block Krylov iteration, $(1 + \varepsilon)$ form**: under
-the hypotheses of the truncated form
-(`NLAlib.integral_specNorm_sub_truncatedSVD_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix`),
+/-- **The gapless bound for randomized block Krylov iteration, $(1 + \varepsilon)$ form**: for a
+standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a target rank $r$ with
+$r + 2 \le \ell$, and every $\varepsilon > 0$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_2^2
 \le (1 + \varepsilon)^2\sigma_r(\mathbf{A})^2 +
 4e^{-8(q-1)\sqrt{\varepsilon/(2 + \varepsilon)}}\,\frac{r}{\ell - r - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
+The same bound as the truncated form
+(`NLAlib.integral_specNorm_sub_truncatedSVD_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix`).
 [MuscoMusco2015, Theorem 10 (proof)]; [TroppWebber2023, Theorem 9.2]; constants composed here.
 Result: rbki-gapless-error -/
 theorem integral_specNorm_sub_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
@@ -296,14 +298,16 @@ integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_g
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapless bound for randomized subspace iteration, $(1 + \varepsilon)$ form**: under the
-hypotheses of the truncated form
-(`NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix`),
+/-- **The gapless bound for randomized subspace iteration, $(1 + \varepsilon)$ form**: for a
+standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a target rank $r$ with
+$r + 2 \le \ell$, and every $\varepsilon > 0$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A},
 (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\|_2^2
 \le (1 + \varepsilon)^2\sigma_r(\mathbf{A})^2 +
 e^{-8p\varepsilon/(2 + \varepsilon)}\,\frac{r}{\ell - r - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
+The same bound as the truncated form
+(`NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix`).
 [MuscoMusco2015, Theorem 10 (proof)]; [TroppWebber2023, Theorem 9.2 (RSI)]; constants composed
 here.
 Result: rsi-gapless-error -/

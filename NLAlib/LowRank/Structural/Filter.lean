@@ -51,13 +51,18 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n r s : Type*} [Fintype l] [Fintype m
 
 -- Stage B4
 
-/-- **Head capture by a filtered sketch, singular value by singular value**: under the hypotheses
-of `NLAlib.HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le`, for every $i$,
+/-- **Head capture by a filtered sketch, singular value by singular value**: for a real function
+$g$, an orthonormal frame $\mathbf{W}$ invariant under $\mathbf{A}^{\mathsf{H}}\mathbf{A}$,
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$, with
+$\lvert g(\mathbf{d}_i) \rvert \ge c > 0$ for every $i$, and an orthonormal frame $\mathbf{Z}$ whose
+range contains that of $\mathbf{W}$ and with $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row
+rank, for every $i$,
 $$\sigma_i\bigl((\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{\Omega}})
 \mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}}\bigr) \le
 c^{-1}\,\sigma_i\bigl((\mathbf{B} - \mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}})
 \mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}\bigr)\,,\qquad
 \mathbf{B} = \mathbf{A}g(\mathbf{A}^{\mathsf{H}}\mathbf{A})\,.$$
+The norm form is `NLAlib.HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le`.
 The pointwise form survives squaring, which the Gram form of the filtered structural bound needs.
 Proof: $\mathbf{A}\mathbf{W} = \mathbf{B}\mathbf{W}g(\mathbf{D})^{-1}$ and
 $\mathbf{W} = \mathbf{Z}\mathbf{Z}^{\mathsf{H}}\mathbf{W}$, and the competitor identity gives
@@ -129,10 +134,12 @@ theorem HasOrthonormalCols.singularValues_one_sub_rangeProjector_mul_mul_le {A :
               exact inv_anti₀ hc (hg j)
     _ = c⁻¹ * singularValues M i := mul_comm _ _
 
-/-- **Head capture by a filtered sketch**: for an invariant frame $\mathbf{W}$ of
-$\mathbf{A}^{\mathsf{H}}\mathbf{A}$ with eigenvalues $\mathbf{d}$ on which
-$\lvert g \rvert \ge c > 0$, a frame $\mathbf{Z}$ whose range contains that of $\mathbf{W}$, and
-$\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, in every unitarily invariant norm,
+/-- **Head capture by a filtered sketch**: for a real function $g$, an orthonormal frame
+$\mathbf{W}$ invariant under $\mathbf{A}^{\mathsf{H}}\mathbf{A}$,
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$, with
+$\lvert g(\mathbf{d}_i) \rvert \ge c > 0$ for every $i$, and an orthonormal frame $\mathbf{Z}$ whose
+range contains that of $\mathbf{W}$ and with $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row
+rank, in every unitarily invariant norm $\|\cdot\|_{\Phi}$,
 $$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{\Omega}})\mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}}
 \|_{\Phi} \le c^{-1}\,\bigl\|(\mathbf{B} - \mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}})
 \mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}\bigr\|_{\Phi}\,,\qquad
@@ -159,9 +166,12 @@ theorem HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le (Φ : Sy
   rwa [Φ.matrixNorm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.mpr hc)] at h
 
 omit [DecidableEq m] in
-/-- **The filtered structural bound, Gram form**: under the hypotheses of the head-capture lemma
-(`NLAlib.HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le`), in every unitarily
-invariant norm,
+/-- **The filtered structural bound, Gram form**: for a real function $g$, an orthonormal frame
+$\mathbf{W}$ invariant under $\mathbf{A}^{\mathsf{H}}\mathbf{A}$,
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$, with
+$\lvert g(\mathbf{d}_i) \rvert \ge c > 0$ for every $i$, and an orthonormal frame $\mathbf{Z}$ whose
+range contains that of $\mathbf{W}$ and with $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row
+rank, in every unitarily invariant norm $\|\cdot\|_{\Phi}$,
 $$\bigl\|\mathbf{E}_g^{\mathsf{H}}\mathbf{E}_g\bigr\|_{\Phi} \le
 \bigl\|(\mathbf{A} - \mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}})^{\mathsf{H}}
 (\mathbf{A} - \mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}})\bigr\|_{\Phi} +
@@ -238,12 +248,18 @@ theorem SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le (Φ : S
   exact add_le_add hE hN
 
 omit [DecidableEq m] in
-/-- **The filtered structural bound, spectral form**: under the hypotheses of the head-capture
-lemma,
+/-- **The filtered structural bound, spectral form**: for a real function $g$, an orthonormal frame
+$\mathbf{W}$ invariant under $\mathbf{A}^{\mathsf{H}}\mathbf{A}$,
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$, with
+$\lvert g(\mathbf{d}_i) \rvert \ge c > 0$ for every $i$, and an orthonormal frame $\mathbf{Z}$ whose
+range contains that of $\mathbf{W}$ and with $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row
+rank,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A},
 g(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{\Omega})\|_2^2 \le
 \|\mathbf{A} - \mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}}\|_2^2 + c^{-2}\|\mathbf{M}\|_2^2\,,$$
-with $\mathbf{M}$ the sketch residual of
+with $\mathbf{B} = \mathbf{A}g(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ and the sketch residual
+$\mathbf{M} = (\mathbf{B} - \mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}})\mathbf{\Omega}
+(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$. The Gram form, in every unitarily invariant norm, is
 `NLAlib.SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le`.
 [TroppWebber2023, Lemma 9.5], at $p = \infty$.
 Result: filtered-range-finder-bound -/
@@ -262,13 +278,19 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_cfc_sq_le {A : Matrix m n 𝕜} {Ω
   simpa only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self] using h
 
 omit [DecidableEq m] in
-/-- **The filtered structural bound, Frobenius form**: under the hypotheses of the head-capture
-lemma,
+/-- **The filtered structural bound, Frobenius form**: for a real function $g$, an orthonormal frame
+$\mathbf{W}$ invariant under $\mathbf{A}^{\mathsf{H}}\mathbf{A}$,
+$\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$, with
+$\lvert g(\mathbf{d}_i) \rvert \ge c > 0$ for every $i$, and an orthonormal frame $\mathbf{Z}$ whose
+range contains that of $\mathbf{W}$ and with $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row
+rank,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A},
 g(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{\Omega})\|_{\mathsf{F}}^2
 \le \|\mathbf{A} - \mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}}\|_{\mathsf{F}}^2 +
 c^{-2}\|\mathbf{M}\|_{\mathsf{F}}^2\,,$$
-with $\mathbf{M}$ the sketch residual of
+with $\mathbf{B} = \mathbf{A}g(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ and the sketch residual
+$\mathbf{M} = (\mathbf{B} - \mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}})\mathbf{\Omega}
+(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$. The Gram form, in every unitarily invariant norm, is
 `NLAlib.SymmetricGauge.matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le`.
 [TroppWebber2023, Lemma 9.5], at $p = 2$.
 Result: filtered-range-finder-bound -/

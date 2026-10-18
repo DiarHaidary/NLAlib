@@ -421,13 +421,16 @@ theorem integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for randomized block Krylov iteration, Frobenius norm**: under the
-hypotheses of the spectral form
-(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
+/-- **The gapped bound for randomized block Krylov iteration, Frobenius norm**: for a standard
+Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of $r = h + 1$ singular
+values, a tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_{\mathsf{F}}^2 \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+The spectral form is
+`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`.
 Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RBKI)], at $p = 2$; there with $m = 2q$ products.
@@ -446,8 +449,11 @@ theorem integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
 
 -- The declaration name alone, with its `SymmetricGauge` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for randomized block Krylov iteration, Gram form**: under the hypotheses of
-the spectral form, in every unitarily invariant norm,
+/-- **The gapped bound for randomized block Krylov iteration, Gram form**: for a standard Gaussian
+$n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of $r = h + 1$ singular values, a
+tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$,
 $$\mathbb{E}\bigl\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\bigr\|_{\Phi} \le
 \bigl\|(\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r)^{\mathsf{H}}
 (\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r)\bigr\|_{\Phi} +
@@ -499,13 +505,16 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for randomized subspace iteration, Frobenius norm**: under the hypotheses
-of the spectral form
-(`NLAlib.integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
+/-- **The gapped bound for randomized subspace iteration, Frobenius norm**: for a standard Gaussian
+$n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$ singular values, a
+tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p
 \mathbf{X})\|_{\mathsf{F}}^2 \le \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+The spectral form is
+`NLAlib.integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`.
 Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RSI)], at $p = 2$; there with $m = 2p + 2$ products.
@@ -524,15 +533,19 @@ theorem integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
 
 -- The declaration name alone, with its `SymmetricGauge` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for randomized subspace iteration, Gram form**: under the hypotheses of the
-spectral form, in every unitarily invariant norm,
+/-- **The gapped bound for randomized subspace iteration, Gram form**: for a standard Gaussian
+$n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$ singular values, a
+tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, in every unitarily invariant norm
+$\|\cdot\|_{\Phi}$,
 $$\mathbb{E}\bigl\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\bigr\|_{\Phi} \le
 \bigl\|(\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r)^{\mathsf{H}}
 (\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r)\bigr\|_{\Phi} +
 \Phi(\mathbf{e}_0)\,e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,,$$
 with $\mathbf{E} = \mathbf{A} - \mathsf{rsvd}(\mathbf{A},
-(\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})$.
+(\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})$: every quadratic unitarily invariant norm,
+squared Schatten norms for $p \ge 2$ included ($\Phi(\mathbf{e}_0) = 1$).
 [TroppWebber2023, Theorem 9.2 (RSI)]; there for Schatten $2 \le p \le \infty$ and $m = 2p + 2$.
 Result: rsi-gapped-error -/
 theorem
@@ -549,10 +562,12 @@ SymmetricGauge.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_pow_mul_le_si
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for truncated randomized block Krylov iteration, spectral norm**: under the
-hypotheses of the untruncated form
-(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`), the rank-$r$
-truncation keeps its right side,
+/-- **The gapped bound for truncated randomized block Krylov iteration, spectral norm**: for a
+standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, the rank-$r$ truncation keeps the right side
+of the untruncated form
+(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r\|_2^2 \le
 \sigma_r(\mathbf{A})^2 + 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,,$$
@@ -578,8 +593,12 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for truncated randomized block Krylov iteration, Frobenius norm**: under
-the hypotheses of the untruncated form, the rank-$r$ truncation keeps its right side,
+/-- **The gapped bound for truncated randomized block Krylov iteration, Frobenius norm**: for a
+standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, the rank-$r$ truncation keeps the right side
+of the untruncated form
+(`NLAlib.integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r
 \|_{\mathsf{F}}^2 \le \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
@@ -605,8 +624,12 @@ theorem integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for truncated randomized subspace iteration, spectral norm**: under the
-hypotheses of the untruncated form, the rank-$r$ truncation keeps its right side,
+/-- **The gapped bound for truncated randomized subspace iteration, spectral norm**: for a standard
+Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$ singular
+values, a tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, the rank-$r$ truncation keeps the right side
+of the untruncated form
+(`NLAlib.integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
 (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_2^2 \le \sigma_r(\mathbf{A})^2 +
 e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
@@ -630,8 +653,12 @@ integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for truncated randomized subspace iteration, Frobenius norm**: under the
-hypotheses of the untruncated form, the rank-$r$ truncation keeps its right side,
+/-- **The gapped bound for truncated randomized subspace iteration, Frobenius norm**: for a standard
+Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$ singular
+values, a tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, the rank-$r$ truncation keeps the right side
+of the untruncated form
+(`NLAlib.integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
 (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_{\mathsf{F}}^2 \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
@@ -763,8 +790,10 @@ exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw
 set_option linter.style.longLine false in
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for randomized block
 Krylov iteration with a gap**, Frobenius norm: there are absolute constants $C, \varepsilon_0 > 0$
-such that under the hypotheses of the spectral form
-(`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, $0 < \varepsilon \le \varepsilon_0$ and
+$q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$ blocks,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
 The asymptotic form of
@@ -849,8 +878,10 @@ exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_o
 set_option linter.style.longLine false in
 /-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for randomized subspace
 iteration with a gap**, Frobenius norm: there are absolute constants $C, \varepsilon_0 > 0$ such
-that under the hypotheses of the spectral form
-(`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, $0 < \varepsilon \le \varepsilon_0$ and
+$p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power steps,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p
 \mathbf{X})\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
@@ -893,8 +924,11 @@ exists_forall_integral_frobNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_o
 set_option linter.style.longLine false in
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for truncated randomized
 block Krylov iteration with a gap**, spectral norm: there are absolute constants
-$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
-(`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a
+head of $r = h + 1$ singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive
+relative gap $\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$,
+$0 < \varepsilon \le \varepsilon_0$ and $q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$
+blocks,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r\|_2^2
 \le (1 + \varepsilon)\,\sigma_r(\mathbf{A})^2\,.$$
 The asymptotic form of
@@ -935,8 +969,11 @@ exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_
 set_option linter.style.longLine false in
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for truncated randomized
 block Krylov iteration with a gap**, Frobenius norm: there are absolute constants
-$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
-(`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a
+head of $r = h + 1$ singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive
+relative gap $\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$,
+$0 < \varepsilon \le \varepsilon_0$ and $q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$
+blocks,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r
 \|_{\mathsf{F}}^2 \le (1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r
 \|_{\mathsf{F}}^2\,.$$
@@ -978,9 +1015,11 @@ exists_forall_integral_frobNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for truncated randomized
-subspace iteration with a gap**, spectral norm: there are absolute constants
-$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
-(`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+subspace iteration with a gap**, spectral norm: there are absolute constants $C, \varepsilon_0 > 0$
+such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, $0 < \varepsilon \le \varepsilon_0$ and
+$p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power steps,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
 (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_2^2 \le
 (1 + \varepsilon)\,\sigma_r(\mathbf{A})^2\,.$$
@@ -1020,9 +1059,11 @@ exists_forall_integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularG
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for truncated randomized
-subspace iteration with a gap**, Frobenius norm: there are absolute constants
-$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
-(`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+subspace iteration with a gap**, Frobenius norm: there are absolute constants $C, \varepsilon_0 > 0$
+such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, $0 < \varepsilon \le \varepsilon_0$ and
+$p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power steps,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
 (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$

@@ -165,8 +165,8 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of
 set_option linter.style.longLine false in
 /-- **The gapped bound for Nyström subspace iteration**: for positive semidefinite $\mathbf{H}$, a
 standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$
-eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, and the relative gap $\gamma$ of
-$\sigma_h(\mathbf{H})$ and $\sigma_t(\mathbf{H})$,
+eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, and $\gamma = (\sigma_h(\mathbf{H}) -
+\sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{H}^p\mathbf{X})\|_2 \le
 \sigma_r(\mathbf{H}) + e^{-4p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_t\|_*\,.$$
@@ -320,15 +320,17 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_mul_rpow_of_ha
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for truncated block Krylov Nyström, trace norm**: under the hypotheses of
-the untruncated form
-(`Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
+/-- **The gapped bound for truncated block Krylov Nyström, trace norm**: for positive semidefinite
+$\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head
+of $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, and $\gamma =
+(\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\rrbracket_r\|_*
 \le \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_* +
 4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_t\|_*\,,$$
 by the truncated Gram correspondence (`Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`)
-from the truncated Frobenius RBKI bound at $\mathbf{H}^{1/2}$.
+from the truncated Frobenius RBKI bound at $\mathbf{H}^{1/2}$. The untruncated spectral form is
+`Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of_hasLaw_gaussianMatrix`.
 Asymptotic form:
 `NLAlib.exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, §9.1, remark after Theorem 9.2]; there stated without a proof.
@@ -371,11 +373,17 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_sin
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The gapped bound for truncated Nyström subspace iteration, trace norm**: under the hypotheses
-of the untruncated form,
+/-- **The gapped bound for truncated Nyström subspace iteration, trace norm**: for positive
+semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $p$ power
+steps, a head of $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, and
+$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{H}^p\mathbf{X})
 \rrbracket_r\|_* \le \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_* +
 e^{-4p\gamma}\,\frac{t}{\ell - t - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_t\|_*\,.$$
+By the truncated Gram correspondence from the truncated Frobenius RSI bound at
+$\mathbf{H}^{1/2}$. The untruncated spectral form is
+`Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRatio_of_hasLaw_gaussianMatrix`.
 Asymptotic form:
 `NLAlib.exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, §9.1, remark after Theorem 9.2]; there stated without a proof.
@@ -461,8 +469,9 @@ set_option linter.style.longLine false in
 iteration with a gap**: there are absolute constants $C, \varepsilon_0 > 0$ such that for positive
 semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of
 $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
-$\gamma$ of $\sigma_h(\mathbf{H})$ and $\sigma_t(\mathbf{H})$, $0 < \varepsilon \le \varepsilon_0$
-and $p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power steps,
+$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$, $0 < \varepsilon \le \varepsilon_0$ and
+$p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power steps,
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{H}^p\mathbf{X})\|_2 \le
 (1 + \varepsilon)\,\sigma_r(\mathbf{H})\,.$$
 The asymptotic form of
@@ -503,10 +512,13 @@ exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_singularGapRatio_pos_o
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for truncated block
-Krylov Nyström with a gap**, trace norm: there are absolute constants $C, \varepsilon_0 > 0$ such
-that under the hypotheses of the untruncated form
-(`NLAlib.exists_forall_integral_specNorm_sub_nystromBKI_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+/-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for truncated block Krylov
+Nyström with a gap**, trace norm: there are absolute constants $C, \varepsilon_0 > 0$ such that for
+positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a
+head of $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative
+gap $\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$, $0 < \varepsilon \le \varepsilon_0$ and
+$q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$ blocks,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\rrbracket_r\|_*
 \le (1 + \varepsilon)\,\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*\,.$$
 The asymptotic form of
@@ -552,9 +564,13 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_of_singularGap
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for truncated Nyström
-subspace iteration with a gap**, trace norm: there are absolute constants
-$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
-(`NLAlib.exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+subspace iteration with a gap**, trace norm: there are absolute constants $C, \varepsilon_0 > 0$
+such that for positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix
+$\mathbf{X}$, a head of $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, a
+positive relative gap $\gamma = (\sigma_h(\mathbf{H}) -
+\sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
+$0 < \varepsilon \le \varepsilon_0$ and $p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power
+steps,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{H}^p\mathbf{X})
 \rrbracket_r\|_* \le (1 + \varepsilon)\,\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*\,.$$
 The asymptotic form of

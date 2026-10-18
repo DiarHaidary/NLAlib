@@ -232,8 +232,8 @@ private theorem integral_frobNorm_head_filter_le_of_le_card [DecidableEq m] (A :
 
 namespace SymmetricGauge
 
-/-- **The filtered range finder in expectation, Gram form**: for a standard Gaussian
-$n \times \ell$ test matrix $\mathbf{X}$, a real polynomial $f$ with
+/-- **The filtered range finder in expectation, Gram form**: for a standard Gaussian $n \times \ell$
+test matrix $\mathbf{X}$, a real polynomial $f$ and $c > 0$ with
 $c \le \lvert f(\sigma_i(\mathbf{A})^2) \rvert$ for $i < r$ and $\lvert f \rvert \le a$ on
 $[0, \sigma_t(\mathbf{A})^2]$, $r \le t$, $t + 2 \le \ell$ and every unitarily invariant norm,
 $$\mathbb{E}\bigl\|\mathbf{E}_f^{\mathsf{H}}\mathbf{E}_f\bigr\|_{\Phi} \le
@@ -271,12 +271,16 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_g
 end SymmetricGauge
 
 open SymmetricGauge in
-/-- **The filtered range finder in expectation, spectral norm**: under the hypotheses of the Gram
-form above,
+/-- **The filtered range finder in expectation, spectral norm**: for a standard Gaussian
+$n \times \ell$ test matrix $\mathbf{X}$, a real polynomial $f$ and $c > 0$ with
+$c \le \lvert f(\sigma_i(\mathbf{A})^2) \rvert$ for $i < r$ and $\lvert f \rvert \le a$ on
+$[0, \sigma_t(\mathbf{A})^2]$, $r \le t$ and $t + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A},
 f(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{X})\|_2^2 \le \sigma_r(\mathbf{A})^2 +
 \Bigl(\frac{a}{c}\Bigr)^2\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+The Gram form, in every unitarily invariant norm, is
+`NLAlib.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Lemma 9.5], at $p = \infty$.
 Result: filtered-range-finder-bound -/
 theorem integral_specNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
@@ -296,13 +300,17 @@ theorem integral_specNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix (A : Mat
   exact h
 
 open SymmetricGauge in
-/-- **The filtered range finder in expectation, Frobenius norm**: under the hypotheses of the Gram
-form above,
+/-- **The filtered range finder in expectation, Frobenius norm**: for a standard Gaussian
+$n \times \ell$ test matrix $\mathbf{X}$, a real polynomial $f$ and $c > 0$ with
+$c \le \lvert f(\sigma_i(\mathbf{A})^2) \rvert$ for $i < r$ and $\lvert f \rvert \le a$ on
+$[0, \sigma_t(\mathbf{A})^2]$, $r \le t$ and $t + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A},
 f(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{X})\|_{\mathsf{F}}^2 \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 \Bigl(\frac{a}{c}\Bigr)^2\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+The Gram form, in every unitarily invariant norm, is
+`NLAlib.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Lemma 9.5], at $p = 2$.
 Result: filtered-range-finder-bound -/
 theorem integral_frobNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
@@ -321,8 +329,11 @@ theorem integral_frobNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix (A : Mat
     lpGauge_apply_single_zero, one_mul] at h
   exact h
 
-/-- **Head capture in expectation**: under the hypotheses of the Gram form above, the
-filtered sketch captures the best rank-$r$ approximation up to
+/-- **Head capture in expectation**: for a standard Gaussian $n \times \ell$ test matrix
+$\mathbf{X}$, a real polynomial $f$ and $c > 0$ with $c \le \lvert f(\sigma_i(\mathbf{A})^2) \rvert$
+for $i < r$ and $\lvert f \rvert \le a$ on $[0, \sigma_t(\mathbf{A})^2]$, $r \le t$ and
+$t + 2 \le \ell$, the filtered sketch $\mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{X}$
+captures the best rank-$r$ approximation up to
 $$\mathbb{E}\bigl\|(\mathbf{I} -
 \mathbf{P}_{\mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})\mathbf{X}})
 \llbracket\mathbf{A}\rrbracket_r\bigr\|_{\mathsf{F}}^2 \le
