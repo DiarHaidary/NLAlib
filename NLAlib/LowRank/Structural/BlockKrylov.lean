@@ -63,6 +63,15 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*} [Fintype l] [Fintype m] [F
 
 -- Stage B3
 
+omit [Fintype m] in
+/-- The range of $\mathbf{A}\,\mathbf{K}_q(\mathbf{B}, \mathbf{\Omega})$ is the image of the block
+Krylov space under $\mathbf{A}$. -/
+private theorem range_mul_blockKrylovMatrix (A : Matrix m n 𝕜) (B : Matrix n n 𝕜)
+    (Ω : Matrix n l 𝕜) (q : ℕ) :
+    LinearMap.range (A * blockKrylovMatrix B Ω q).mulVecLin =
+      (blockKrylovSpace B Ω q).map A.mulVecLin := by
+  rw [Matrix.mulVecLin_mul, LinearMap.range_comp, blockKrylovSpace]
+
 /-- **Randomized block Krylov iteration** with $q$ blocks,
 $$\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q) := \mathsf{rsvd}(\mathbf{A},
 \mathbf{K}_q(\mathbf{A}^{\mathsf{H}}\mathbf{A}, \mathbf{\Omega})) =
@@ -93,8 +102,8 @@ $\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q) = \mathsf{rsvd}(\mathbf{A},
 \mathbf{K}_q(\mathbf{A}^{\mathsf{H}}\mathbf{A}, \mathbf{\Omega}))$, the rewrite that makes every
 `NLAlib.rsvd` lemma apply. -/
 theorem rbki_def (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (q : ℕ) :
-    rbki A Ω q = rsvd A (blockKrylovMatrix (Aᴴ * A) Ω q) := by
-  sorry
+    rbki A Ω q = rsvd A (blockKrylovMatrix (Aᴴ * A) Ω q) :=
+  rfl
 
 /-- RBKI projects onto the block Krylov space of the sketch:
 $$\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q) =
@@ -103,17 +112,22 @@ $$\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q) =
 by the change of variables `NLAlib.blockKrylovMatrix_mul_mul`. [TroppWebber2023, §5.3]. -/
 theorem rbki_eq_rangeProjector [DecidableEq m] (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (q : ℕ) :
     rbki A Ω q = rangeProjector (blockKrylovMatrix (A * Aᴴ) (A * Ω) q) * A := by
-  sorry
+  rw [rbki, rsvd, blockKrylovMatrix_mul_mul]
 
 /-- One block is the randomized SVD:
 $\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, 1) = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$. -/
 theorem rbki_one (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) : rbki A Ω 1 = rsvd A Ω := by
-  sorry
+  rw [rbki, rsvd, rsvd]
+  congr 1
+  refine rangeProjector_inj.mpr ?_
+  rw [range_mul_blockKrylovMatrix, blockKrylovSpace_one, Matrix.mulVecLin_mul,
+    LinearMap.range_comp]
 
 /-- No block gives the zero matrix: $\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, 0) = \mathbf{0}$. -/
 @[simp]
 theorem rbki_zero (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) : rbki A Ω 0 = 0 := by
-  sorry
+  rw [rbki, rsvd, Subsingleton.elim (A * blockKrylovMatrix (Aᴴ * A) Ω 0) 0, rangeProjector_zero,
+    Matrix.zero_mul]
 
 /-- **RBKI beats every polynomial filter**: for a polynomial $f$ of degree less than $q$, with
 coefficients in any subfield (in particular real), and every $i$,
@@ -128,7 +142,12 @@ Krylov content of the analysis of RBKI.
 theorem singularValues_sub_rbki_le_of_degree_lt {R : Type*} [CommSemiring R] [Algebra R 𝕜]
     (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) {q : ℕ} {f : R[X]} (hf : f.degree < q) (i : ℕ) :
     singularValues (A - rbki A Ω q) i ≤ singularValues (A - rsvd A (aeval (Aᴴ * A) f * Ω)) i := by
-  sorry
+  classical
+  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Ω hf
+  rw [rbki, sub_rsvd, sub_rsvd]
+  refine singularValues_one_sub_rangeProjector_mul_le_of_range_le
+    (range_mulVecLin_le_iff_exists_mul.mpr ⟨C, ?_⟩) A i
+  rw [hC, Matrix.mul_assoc]
 
 /-- **RBKI beats RSI with one block fewer**: with $p$ power steps,
 $$\sigma_i(\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, p + 1)) \le
@@ -138,7 +157,9 @@ for every $i$; the two use $2p + 2$ products. [TroppWebber2023, §5.3]. -/
 theorem singularValues_sub_rbki_le_sub_rsvd_pow (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (p i : ℕ) :
     singularValues (A - rbki A Ω (p + 1)) i ≤
       singularValues (A - rsvd A ((Aᴴ * A) ^ p * Ω)) i := by
-  sorry
+  have h := singularValues_sub_rbki_le_of_degree_lt A Ω (q := p + 1) (f := (X : 𝕜[X]) ^ p)
+    (by rw [degree_X_pow]; exact_mod_cast p.lt_succ_self) i
+  rwa [aeval_X_pow] at h
 
 /-- **More blocks, smaller error**: for $q \le q'$ and every $i$,
 $$\sigma_i(\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q')) \le
@@ -146,7 +167,11 @@ $$\sigma_i(\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q')) \le
 theorem singularValues_sub_rbki_le_of_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) {q q' : ℕ}
     (h : q ≤ q') (i : ℕ) :
     singularValues (A - rbki A Ω q') i ≤ singularValues (A - rbki A Ω q) i := by
-  sorry
+  classical
+  rw [rbki, rbki, sub_rsvd, sub_rsvd]
+  refine singularValues_one_sub_rangeProjector_mul_le_of_range_le ?_ A i
+  rw [range_mul_blockKrylovMatrix, range_mul_blockKrylovMatrix]
+  exact Submodule.map_mono (blockKrylovSpace_mono _ _ h)
 
 /-! ### Block Krylov Nyström through the Gram correspondence -/
 
@@ -158,8 +183,8 @@ $$\mathsf{nystromBKI}(\mathbf{F}^{\mathsf{H}}\mathbf{F}, \mathbf{\Omega}, q) =
 [TroppWebber2023, §5.4]; there for $\mathbf{F} = \mathbf{H}^{1/2}$.
 Result: gram-correspondence -/
 theorem nystromBKI_conjTranspose_mul_self (F : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (q : ℕ) :
-    nystromBKI (Fᴴ * F) Ω q = (rbki F Ω q)ᴴ * rbki F Ω q := by
-  sorry
+    nystromBKI (Fᴴ * F) Ω q = (rbki F Ω q)ᴴ * rbki F Ω q :=
+  nystrom_conjTranspose_mul_self F _
 
 /-- **The Gram correspondence for block Krylov Nyström, error form**:
 $$\mathbf{F}^{\mathsf{H}}\mathbf{F} - \mathsf{nystromBKI}(\mathbf{F}^{\mathsf{H}}\mathbf{F},
@@ -168,8 +193,8 @@ $$\mathbf{F}^{\mathsf{H}}\mathbf{F} - \mathsf{nystromBKI}(\mathbf{F}^{\mathsf{H}
 [TroppWebber2023, §5.4]; there for $\mathbf{F} = \mathbf{H}^{1/2}$.
 Result: gram-correspondence -/
 theorem conjTranspose_mul_self_sub_nystromBKI (F : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (q : ℕ) :
-    Fᴴ * F - nystromBKI (Fᴴ * F) Ω q = (F - rbki F Ω q)ᴴ * (F - rbki F Ω q) := by
-  sorry
+    Fᴴ * F - nystromBKI (Fᴴ * F) Ω q = (F - rbki F Ω q)ᴴ * (F - rbki F Ω q) :=
+  conjTranspose_mul_self_sub_nystrom F _
 
 /-- **The Gram correspondence for block Krylov Nyström of a positive semidefinite matrix**: the
 error of NysBKI is the Gram matrix of the error of RBKI of the square root,
@@ -185,6 +210,11 @@ theorem _root_.Matrix.PosSemidef.sub_nystromBKI_eq {H : Matrix n n 𝕜} (hH : H
     (Ω : Matrix n l 𝕜) (q : ℕ) :
     H - nystromBKI H Ω q =
       (CFC.sqrt H - rbki (CFC.sqrt H) Ω q)ᴴ * (CFC.sqrt H - rbki (CFC.sqrt H) Ω q) := by
-  sorry
+  have hR : (CFC.sqrt H)ᴴ = CFC.sqrt H :=
+    (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg H)).isHermitian.eq
+  have hH' : H = (CFC.sqrt H)ᴴ * CFC.sqrt H := by
+    rw [hR, CFC.sqrt_mul_sqrt_self H hH.nonneg]
+  conv_lhs => rw [hH']
+  exact conjTranspose_mul_self_sub_nystromBKI (CFC.sqrt H) Ω q
 
 end NLAlib
