@@ -2,6 +2,39 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Trace estimation variances (2026-10-18)
+
+Branch `probability/trace-estimation` (worktree `nlalib-block`), uncommitted on top of `b1d21fa`
+(the Hutch++ design note). Design and implementation: `docs/design/Probability-TraceEstimation.md`
+(decisions D1 to D8; **[maintainer]** flags on D2 bridge, D3 `complexOfRealPair`, D5 suffix
+`_hermitianPart`, D6 name `girardHutchinson`). Proved, no `sorry`:
+
+- New laws: `Probability/Distributions/ComplexGaussian.lean` (`complexGaussianMeasure`,
+  `complexGaussianVector`), `Probability/Distributions/Steinhaus.lean` (`steinhausMeasure` on
+  Mathlib's `haarAddCircle`, `steinhausVector`), `complexUniformSphereVector` in
+  `RandomMatrix/Haar/Basic.lean`; deviation entry 20 (bridges to `stdGaussian ℂ` and to the
+  normalised complex Gaussian planned, not proved).
+- `RandomMatrix/Haar/Moments.lean`: exact variance of `tr (Qᴴ A Q)` for Haar frames (multiplied
+  form for every `n`, divided for `n ≥ 2`, any real `A`), real sphere `2n/(n+2)(‖A‖² − tr²/n)`,
+  complex sphere `n/(n+1)(‖A‖² − |tr A|²/n)` for every complex `A`.
+- `Probability/QuadraticForm/Moments.lean`: complex Gaussian `‖A‖²`, Steinhaus `‖A‖² − Σ|aᵢᵢ|²`
+  (every complex `A`), real Gaussian/Rademacher for any real `A`, Rademacher optimality.
+- New `Estimation/Trace/GirardHutchinson.lean`: `girardHutchinson`, unbiasedness, `v / m` for
+  independent probes (𝕜 and real `variance` forms), orthonormal Haar probes.
+- `Matrix/Spectral/HermitianPart.lean`: `quadForm_hermitianPart`,
+  `trace_conjTranspose_mul_hermitianPart_mul` (the Hutch++ note's A3).
+
+Later targets: complex Haar frames (D8), the entry-20 bridges, the sphere's worst-case optimality.
+Ledger: `hutchinsonEstimate`, `integral_hutchinsonEstimate_eq_trace`. Not mine and not touched:
+the concurrent edit of `Probability/SubGaussianVector/Basic.lean` (Hutch++ P8).
+
+Checks: `lake build NLAlib` 3952 jobs, 0 warnings; `scripts/stage_check.sh`: 354 proved modules,
+build 3950 jobs, 0 warnings; audit 9133 declarations, 0 violations; lint 5969 declarations, 0
+errors; references 74 keys, 0 problems; constants 28, 0 problems; duplicates 5439 theorems, 0
+classes; LaTeX 22523 spans, 0 problems; `mk_all --check` clean (NLAlib); `ledger_check.py` only
+the documented `IsSVD.eq` false positive. NLAlibScaffold not rebuilt. (Counts include the
+concurrent Hutch++ work in the same worktree.)
+
 ## Krylov block round complete (2026-10-18)
 
 Branch `krylov/block` (worktree `nlalib-block`), uncommitted on top of `657cd18` (B7). Stages B0 to

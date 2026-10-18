@@ -15941,6 +15941,11 @@
   "new": "NLAlib.householder_zero",
   "stage": "M9"
  },
+ "NLAlib.hutchinsonEstimate": {
+  "new": "NLAlib.girardHutchinson",
+  "note": "test matrix over RCLike; the prototype's was real",
+  "stage": "TraceEstimation"
+ },
  "NLAlib.iIndepFun_centered_sq": {
   "new": null,
   "note": "Mathlib ProbabilityTheory.iIndepFun.comp",
@@ -17192,6 +17197,11 @@
   "new": null,
   "note": "the abbrev and the uncurry law",
   "stage": "R1"
+ },
+ "NLAlib.integral_hutchinsonEstimate_eq_trace": {
+  "new": "NLAlib.integral_girardHutchinson",
+  "note": "columns IsIsotropic",
+  "stage": "TraceEstimation"
  },
  "NLAlib.integral_iSup_abs_le_of_hasSubgaussianMGF": {
   "new": null,

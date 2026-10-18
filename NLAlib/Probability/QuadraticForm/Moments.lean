@@ -7,8 +7,11 @@ module
 
 public import Mathlib.Probability.Moments.Variance
 public import NLAlib.Matrix.Norms.Frobenius
+public import NLAlib.Matrix.Spectral.HermitianPart
+public import NLAlib.Probability.Distributions.ComplexGaussian
 public import NLAlib.Probability.Distributions.Gaussian
 public import NLAlib.Probability.Distributions.Rademacher
+public import NLAlib.Probability.Distributions.Steinhaus
 
 /-!
 # Second moments of quadratic forms
@@ -26,7 +29,13 @@ $$\mathbb{E}\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}
 One statement covers real probes ($s = 1$: Gaussian $m_4 = 3$, Rademacher $m_4 = 1$) and complex
 ones ($s = 0$: complex Gaussian $m_4 = 2$, Steinhaus $m_4 = 1$). For real symmetric $\mathbf{A}$
 it is the variance $2 \|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3) \sum_i \mathbf{A}_{i,i}^2$, stated
-with its Gaussian and Rademacher cases.
+with its Gaussian and Rademacher cases, their forms for any real $\mathbf{A}$ through the symmetric
+part, and the optimality of Rademacher probes ($m_4 \ge 1$). For complex Gaussian and Steinhaus
+probes the second moment about the mean is $\|\mathbf{A}\|_{\mathsf{F}}^2$ and
+$\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \lvert \mathbf{A}_{i,i}\rvert^2$, for every complex
+$\mathbf{A}$. These are the single-probe variances of the Girard–Hutchinson trace estimator
+(`NLAlib/Estimation/Trace/GirardHutchinson.lean`); sphere probes, whose coordinates are not
+independent, are in `NLAlib/RandomMatrix/Haar/Moments.lean`.
 
 ## Main results
 
@@ -34,7 +43,13 @@ with its Gaussian and Rademacher cases.
 * `NLAlib.integral_norm_quadForm_sub_trace_sq`: the second moment about the mean.
 * `NLAlib.variance_quadForm_of_isHermitian`: the real symmetric case.
 * `NLAlib.variance_quadForm_of_hasLaw_gaussianVector`,
-  `NLAlib.variance_quadForm_of_hasLaw_rademacherVector`.
+  `NLAlib.variance_quadForm_of_hasLaw_rademacherVector`, and for any real matrix
+  `NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart`,
+  `NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart`.
+* `NLAlib.variance_quadForm_of_hasLaw_rademacherVector_le`: Rademacher probes are optimal among
+  probes with independent coordinates.
+* `NLAlib.integral_norm_quadForm_sub_trace_sq_of_hasLaw_complexGaussianVector`,
+  `NLAlib.integral_norm_quadForm_sub_trace_sq_of_hasLaw_steinhausVector`: complex probes.
 -/
 
 @[expose] public section
@@ -346,7 +361,10 @@ theorem variance_quadForm_of_isHermitian {x : Ω → n → ℝ} (hind : iIndepFu
 
 /-- Hutchinson's variance with a Gaussian probe:
 $\operatorname{Var}(\mathbf{g}^{\mathsf{T}}\mathbf{A}\mathbf{g}) = 2 \|\mathbf{A}\|_{\mathsf{F}}^2$
-for a standard Gaussian vector $\mathbf{g}$ and real symmetric $\mathbf{A}$. -/
+for a standard Gaussian vector $\mathbf{g}$ and real symmetric $\mathbf{A}$; any real
+$\mathbf{A}$ is `NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart`.
+[Epperly2023, Real-Valued Test Vectors].
+Result: hutchinson-variance-gaussian -/
 theorem variance_quadForm_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
     (hg : HasLaw g (gaussianVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     variance (fun ω => quadForm A (g ω)) μ = 2 * frobNorm A ^ 2 := by
@@ -365,7 +383,11 @@ theorem variance_quadForm_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
 /-- Hutchinson's variance with a Rademacher probe:
 $\operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})
 = 2 (\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{i,i}^2)$ for a vector $\mathbf{x}$ of
-independent random signs and real symmetric $\mathbf{A}$. -/
+independent random signs and real symmetric $\mathbf{A}$; any real $\mathbf{A}$ is
+`NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart`, and these probes are optimal
+(`NLAlib.variance_quadForm_of_hasLaw_rademacherVector_le`).
+[Epperly2023, Real-Valued Test Vectors].
+Result: hutchinson-variance-rademacher -/
 theorem variance_quadForm_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
     (hx : HasLaw x (rademacherVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
     variance (fun ω => quadForm A (x ω)) μ = 2 * (frobNorm A ^ 2 - ∑ i, A i i ^ 2) := by
@@ -373,6 +395,120 @@ theorem variance_quadForm_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
     (fun i => integral_of_hasLaw_rademacherMeasure (hx.eval i))
     (fun i => integral_sq_of_hasLaw_rademacherMeasure (hx.eval i))
     (fun i => integral_pow_four_of_hasLaw_rademacherMeasure (hx.eval i)) hA]
+  ring
+
+/-- **Hutchinson's variance with a Gaussian probe, any real matrix**:
+$\operatorname{Var}(\mathbf{g}^{\mathsf{T}}\mathbf{A}\mathbf{g}) = 2 \|\mathbf{H}\|_{\mathsf{F}}^2$
+for a standard Gaussian vector $\mathbf{g}$ and any real $\mathbf{A}$ with symmetric part
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$: the quadratic form sees only
+$\mathbf{H}$ (`NLAlib.quadForm_hermitianPart`).
+[Epperly2023, Real-Valued Test Vectors]. -/
+theorem variance_quadForm_of_hasLaw_gaussianVector_hermitianPart {g : Ω → n → ℝ}
+    (hg : HasLaw g (gaussianVector n) μ) (A : Matrix n n ℝ) :
+    variance (fun ω => quadForm A (g ω)) μ = 2 * frobNorm (hermitianPart A) ^ 2 := by
+  rw [← variance_quadForm_of_hasLaw_gaussianVector hg (isHermitian_hermitianPart A)]
+  simp only [quadForm_hermitianPart]
+
+/-- **Hutchinson's variance with a Rademacher probe, any real matrix**:
+$\operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})
+= 2 (\|\mathbf{H}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{i,i}^2)$ for a vector $\mathbf{x}$ of
+independent random signs and any real $\mathbf{A}$ with symmetric part
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$ (which has the diagonal of
+$\mathbf{A}$). [Epperly2023, Real-Valued Test Vectors]. -/
+theorem variance_quadForm_of_hasLaw_rademacherVector_hermitianPart {x : Ω → n → ℝ}
+    (hx : HasLaw x (rademacherVector n) μ) (A : Matrix n n ℝ) :
+    variance (fun ω => quadForm A (x ω)) μ =
+      2 * (frobNorm (hermitianPart A) ^ 2 - ∑ i, A i i ^ 2) := by
+  have hd (i : n) : hermitianPart A i i = A i i := by
+    simp only [hermitianPart, Matrix.smul_apply, Matrix.add_apply, Matrix.conjTranspose_apply,
+      star_trivial, smul_eq_mul]
+    ring
+  rw [show ∑ i, A i i ^ 2 = ∑ i, hermitianPart A i i ^ 2 by simp only [hd],
+    ← variance_quadForm_of_hasLaw_rademacherVector hx (isHermitian_hermitianPart A)]
+  simp only [quadForm_hermitianPart]
+
+/-- **Optimality of Rademacher probes** (Hutchinson): among real probes with independent
+coordinates of mean $0$ and variance $1$, random signs minimise the variance of the
+Girard–Hutchinson estimate for every real symmetric $\mathbf{A}$:
+$\operatorname{Var}(\boldsymbol{\varepsilon}^{\mathsf{T}}\mathbf{A}\boldsymbol{\varepsilon})
+\le \operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})$ for a Rademacher vector
+$\boldsymbol{\varepsilon}$, on any probability space. The variance
+$2\|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3)\sum_i \mathbf{A}_{i,i}^2$
+(`NLAlib.variance_quadForm_of_isHermitian`) is increasing in $m_4$, and
+$m_4 = \mathbb{E}\mathbf{x}_i^4 \ge (\mathbb{E}\mathbf{x}_i^2)^2 = 1$ with equality for
+signs. Due to Hutchinson;
+[Epperly2023, Optimality: Independent Vectors with Independent Coordinates].
+Result: rademacher-probe-optimality -/
+theorem variance_quadForm_of_hasLaw_rademacherVector_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
+    {ν : Measure Ω'} {ε : Ω' → n → ℝ} (hε : HasLaw ε (rademacherVector n) ν) {x : Ω → n → ℝ}
+    (hind : iIndepFun (fun i ω => x ω i) μ) (hL4 : ∀ i, MemLp (fun ω => x ω i) 4 μ)
+    (hmean : ∀ i, ∫ ω, x ω i ∂μ = 0) (hvar : ∀ i, ∫ ω, x ω i ^ 2 ∂μ = 1) {m₄ : ℝ}
+    (hm₄ : ∀ i, ∫ ω, x ω i ^ 4 ∂μ = m₄) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
+    variance (fun ω => quadForm A (ε ω)) ν ≤ variance (fun ω => quadForm A (x ω)) μ := by
+  have := hind.isProbabilityMeasure
+  rw [variance_quadForm_of_hasLaw_rademacherVector hε hA,
+    variance_quadForm_of_isHermitian hind hL4 hmean hvar hm₄ hA]
+  rcases isEmpty_or_nonempty n with hn | ⟨⟨i⟩⟩
+  · simp
+  -- $m_4 - 1 = \mathbb{E}(\mathbf{x}_i^2 - 1)^2 \ge 0$
+  have h4 : Integrable (fun ω => x ω i ^ 4) μ := by
+    have h := (hL4 i).integrable_norm_pow' (p := 4)
+    simpa only [Real.norm_eq_abs, Even.pow_abs ⟨2, rfl⟩] using h
+  have h2 : Integrable (fun ω => x ω i ^ 2) μ :=
+    ((hL4 i).mono_exponent (by norm_num : (2 : ℝ≥0∞) ≤ 4)).integrable_sq
+  have hm : 1 ≤ m₄ := by
+    have h0 : 0 ≤ ∫ ω, (x ω i ^ 2 - 1) ^ 2 ∂μ := integral_nonneg fun ω => sq_nonneg _
+    have he (ω : Ω) : (x ω i ^ 2 - 1) ^ 2 = x ω i ^ 4 - 2 * x ω i ^ 2 + 1 := by ring
+    simp only [he] at h0
+    have hi : Integrable (fun ω => x ω i ^ 4 - 2 * x ω i ^ 2) μ := h4.sub (h2.const_mul 2)
+    rw [integral_add hi (integrable_const _),
+      integral_sub h4 (h2.const_mul 2), integral_const_mul, hm₄ i, hvar i, integral_const,
+      probReal_univ, one_smul] at h0
+    linarith
+  have hs : 0 ≤ ∑ i, A i i ^ 2 := Finset.sum_nonneg fun _ _ => sq_nonneg _
+  nlinarith
+
+/-! ### Complex probes -/
+
+/-- **Hutchinson's variance with a complex Gaussian probe**: for a standard complex Gaussian vector
+$\mathbf{g}$ and any complex $\mathbf{A}$,
+$\mathbb{E}\lvert \mathbf{g}^{\mathsf{H}}\mathbf{A}\mathbf{g} - \operatorname{tr}\mathbf{A}
+\rvert^2 = \|\mathbf{A}\|_{\mathsf{F}}^2$: the case $s = 0$, $m_4 = 2$ of
+`NLAlib.integral_norm_quadForm_sub_trace_sq`. The left side is the variance of the complex
+random variable $\mathbf{g}^{\mathsf{H}}\mathbf{A}\mathbf{g}$, whose mean is
+$\operatorname{tr}\mathbf{A}$. [Epperly2023, Complex-Valued Test Vectors], there for Hermitian
+$\mathbf{A}$ and general $\mathbf{A}$ through the Cartesian decomposition; here every
+$\mathbf{A}$ at once.
+Result: hutchinson-variance-complex-gaussian -/
+theorem integral_norm_quadForm_sub_trace_sq_of_hasLaw_complexGaussianVector {g : Ω → n → ℂ}
+    (hg : HasLaw g (complexGaussianVector n) μ) (A : Matrix n n ℂ) :
+    ∫ ω, ‖quadForm A (g ω) - A.trace‖ ^ 2 ∂μ = frobNorm A ^ 2 := by
+  rw [integral_norm_quadForm_sub_trace_sq hg.iIndepFun_eval
+    (fun i => memLp_of_hasLaw_complexGaussianMeasure (hg.eval i) 4 (by simp))
+    (fun i => integral_of_hasLaw_complexGaussianMeasure (hg.eval i))
+    (fun i => integral_norm_sq_of_hasLaw_complexGaussianMeasure (hg.eval i))
+    (fun i => integral_sq_of_hasLaw_complexGaussianMeasure (hg.eval i))
+    (fun i => integral_norm_pow_four_of_hasLaw_complexGaussianMeasure (hg.eval i)) A]
+  simp
+
+/-- **Hutchinson's variance with a Steinhaus probe**: for a vector $\mathbf{z}$ of independent
+uniform random phases and any complex $\mathbf{A}$,
+$\mathbb{E}\lvert \mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z} - \operatorname{tr}\mathbf{A}
+\rvert^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \lvert \mathbf{A}_{i,i} \rvert^2$, the sum of
+$\lvert \mathbf{A}_{i,j} \rvert^2$ over $i \ne j$: the case $s = 0$, $m_4 = 1$ of
+`NLAlib.integral_norm_quadForm_sub_trace_sq`. [Epperly2023, Complex-Valued Test Vectors], there for
+Hermitian $\mathbf{A}$; here every $\mathbf{A}$.
+Result: hutchinson-variance-steinhaus -/
+theorem integral_norm_quadForm_sub_trace_sq_of_hasLaw_steinhausVector {z : Ω → n → ℂ}
+    (hz : HasLaw z (steinhausVector n) μ) (A : Matrix n n ℂ) :
+    ∫ ω, ‖quadForm A (z ω) - A.trace‖ ^ 2 ∂μ = frobNorm A ^ 2 - ∑ i, ‖A i i‖ ^ 2 := by
+  rw [integral_norm_quadForm_sub_trace_sq hz.iIndepFun_eval
+    (fun i => memLp_of_hasLaw_steinhausMeasure (hz.eval i) 4)
+    (fun i => integral_of_hasLaw_steinhausMeasure (hz.eval i))
+    (fun i => integral_norm_sq_of_hasLaw_steinhausMeasure (hz.eval i))
+    (fun i => integral_sq_of_hasLaw_steinhausMeasure (hz.eval i))
+    (fun i => integral_norm_pow_four_of_hasLaw_steinhausMeasure (hz.eval i)) A]
+  simp
   ring
 
 end NLAlib

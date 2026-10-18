@@ -35,8 +35,11 @@ Access is through the `HasLaw` bridges `hasLaw_polarFactor_of_hasLaw_gaussianMat
 * `NLAlib.hasLaw_conjTranspose_of_hasLaw_haarFrame`.
 * `NLAlib.isLeftUnitarilyInvariant_haarFrame`, `NLAlib.isRightUnitarilyInvariant_haarFrame`.
 * `NLAlib.uniformSphereVector`, `NLAlib.hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`,
-  `NLAlib.hasLaw_col_unit_of_hasLaw_haarFrame`; `NLAlib.measurable_inv_norm_smul`, the
-  normalisation map.
+  `NLAlib.hasLaw_col_unit_of_hasLaw_haarFrame` and its converse
+  `NLAlib.hasLaw_replicateCol_of_hasLaw_uniformSphereVector`; `NLAlib.measurable_inv_norm_smul`,
+  the normalisation map.
+* `NLAlib.complexUniformSphereVector`, the uniform law on the sphere of $\mathbb{C}^n$, as the
+  image of `uniformSphereVector (n ⊕ n)` under `NLAlib.complexOfRealPair`.
 -/
 
 @[expose] public section
@@ -204,5 +207,49 @@ theorem hasLaw_col_unit_of_hasLaw_haarFrame {X : Ω → Matrix n Unit ℝ}
   change (fun i => polarFactor G i ()) = _
   rw [h G, polarFactor_replicateCol]
   rfl
+
+/-- **A uniform unit vector is a one-column Haar frame**: for $\mathbf{u}$ uniform on the sphere,
+the $n \times 1$ matrix with column $\mathbf{u}$ has law `haarFrame n Unit`. The converse of
+`hasLaw_col_unit_of_hasLaw_haarFrame`; it lets results about Haar frames specialise to sphere
+probes. -/
+theorem hasLaw_replicateCol_of_hasLaw_uniformSphereVector {u : Ω → n → ℝ}
+    (hu : HasLaw u (uniformSphereVector n) μ) :
+    HasLaw (fun ω => Matrix.replicateCol Unit (u ω)) (haarFrame n Unit) μ := by
+  have hcol : Measurable fun (x : Matrix n Unit ℝ) i => x i () :=
+    measurable_pi_lambda _ fun i => (measurable_pi_apply ()).comp (measurable_pi_apply i)
+  have hrep : Measurable (Matrix.replicateCol Unit : (n → ℝ) → Matrix n Unit ℝ) :=
+    measurable_pi_lambda _ fun i => measurable_pi_lambda _ fun _ => measurable_pi_apply i
+  refine HasLaw.fun_comp (Y := Matrix.replicateCol Unit) ⟨hrep.aemeasurable, ?_⟩ hu
+  have h := (hasLaw_col_unit_of_hasLaw_haarFrame (HasLaw.id (μ := haarFrame n Unit))).map_eq
+  simp only [id] at h
+  rw [← h, Measure.map_map hrep hcol]
+  convert Measure.map_id
+  funext x i j
+  rfl
+
+/-- The map $\mathbb{R}^{n \sqcup n} \to \mathbb{C}^n$,
+$\mathbf{v} \mapsto (\mathbf{v}_{\mathrm{inl}\, i} + i\,\mathbf{v}_{\mathrm{inr}\, i})_i$, that
+reads the first block as the real part and the second as the imaginary part. -/
+noncomputable def complexOfRealPair (v : n ⊕ n → ℝ) : n → ℂ :=
+  fun i => (v (Sum.inl i) : ℂ) + (v (Sum.inr i) : ℂ) * Complex.I
+
+omit [Fintype n] in
+/-- The map `complexOfRealPair` is continuous. -/
+theorem continuous_complexOfRealPair : Continuous (complexOfRealPair (n := n)) := by
+  unfold complexOfRealPair
+  fun_prop
+
+/-- The **uniform law on the unit sphere of $\mathbb{C}^n$**: the image of the uniform law on the
+unit sphere of $\mathbb{R}^{n \sqcup n}$ under `complexOfRealPair`, the identification of
+$\mathbb{R}^{2n}$ with $\mathbb{C}^n$. [Epperly2023, Uniform on the Complex Sphere: Derivation 1 by
+Reduction to Real Case], where this identification is the definition's content. For empty $n$ it
+is the point mass at the unique vector. -/
+noncomputable def complexUniformSphereVector (n : Type*) [Fintype n] : Measure (n → ℂ) :=
+  (uniformSphereVector (n ⊕ n)).map complexOfRealPair
+
+/-- The uniform law on the complex sphere is a probability measure. -/
+instance isProbabilityMeasure_complexUniformSphereVector :
+    IsProbabilityMeasure (complexUniformSphereVector n) :=
+  Measure.isProbabilityMeasure_map continuous_complexOfRealPair.measurable.aemeasurable
 
 end NLAlib
