@@ -367,14 +367,14 @@ $1 + 10c$: the constant factor in front of
 $\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ in the error of the randomized
 SVD with a sub-Gaussian test matrix with proxy $c$, at failure probability $\delta$ and
 $\ell = O(c^2(k + \log(1/\delta)))$ columns
-(`NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`). Meyer, Musco, Musco
-and Woodruff (2021, §3, proof of Theorem 1) use the factor $2$ at an unspecified sample size,
-citing Musco and Musco (2020, Corollary 7 and Claim 1); the proof here (a subspace injection with
-constant $1/2$ and the Hsu–Kakade–Zhang tail of
+(`NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`). The proof (a
+subspace injection with constant $1/2$ and the Hsu–Kakade–Zhang tail of
 $\|(\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k)\mathbf{\Omega}\|_{\mathsf{F}}^2$) reaches
 $1 + 10c$, at least $11$ since isotropy forces $c \ge 1$. Smaller is better; consumers use only
 `one_le_subgaussianRangeFinderFactor`, `subgaussianRangeFinderFactor_mono` and
-`subgaussianRangeFinderFactor_le`. -/
+`subgaussianRangeFinderFactor_le`.
+[MeyerMuscoMuscoWoodruff2021, §3, proof of Theorem 1]; there the factor $2$ at an unspecified
+sample size, citing Musco and Musco (2020, Corollary 7 and Claim 1). -/
 noncomputable irreducible_def subgaussianRangeFinderFactor (c : ℝ) : ℝ := 1 + 10 * c
 
 /-- The sub-Gaussian range-finder factor is at least $1$ for $c \ge 0$. -/
@@ -453,9 +453,9 @@ probability $\delta/2$. The condition $\log(2/\delta) \le \ell$ that step needs 
 size hypothesis, since isotropy forces $c \ge 1$
 (`NLAlib.IsSubgaussianVector.one_le_of_isIsotropic`). Asymptotic form:
 `NLAlib.exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`.
-Meyer, Musco, Musco and Woodruff (2021, §3, proof of Theorem 1) use this step with the factor $2$
-at an unspecified sample size, citing Musco and Musco (2020, Corollary 7 and Claim 1); here by a
-different route, with the factor and the size explicit.
+[MeyerMuscoMuscoWoodruff2021, §3, proof of Theorem 1]; there as the range-finder step of
+Hutch++, with the factor $2$ at an unspecified sample size, citing Musco and Musco (2020,
+Corollary 7 and Claim 1); here by a different route, with the factor and the size explicit.
 Result: randomized-svd-tail -/
 theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonempty l]
     (A : Matrix m n ℝ) {c : ℝ≥0} (hind : iIndepFun (fun i ω => (X ω)ᴴ i) μ)

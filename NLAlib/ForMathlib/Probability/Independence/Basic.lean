@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.MeasureTheory.Integral.Prod
 public import Mathlib.MeasureTheory.Measure.Prod
 public import Mathlib.MeasureTheory.Measure.Real
 public import Mathlib.Probability.Independence.Basic
@@ -14,7 +15,7 @@ public import Mathlib.Probability.Independence.Basic
 
 If $X$ and $Y$ are independent, their joint law is the product $\mu_X \otimes \mu_Y$
 (`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`), so integrals and probabilities of
-the pair are iterated ones against the two laws. This file records two consequences.
+the pair are iterated ones against the two laws. This file records three consequences.
 
 * The lower integral of a measurable $f \ge 0$ of the pair is the iterated integral against the
   two laws, $\int f(X, Y)\,d\mu = \int\!\int f(x, y)\,d\mu_Y(y)\,d\mu_X(x)$ (Tonelli,
@@ -24,18 +25,22 @@ the pair are iterated ones against the two laws. This file records two consequen
   probabilities of its sections $\{X \in E_y\}$ (Fubini, `MeasureTheory.Measure.prod_apply_symm`);
   it is bounded by a uniform bound $\delta_1$ on the sections over a good set $G$ plus the
   probability $\delta_2$ that $Y$ leaves $G$.
+* The Bochner integral of a function of the pair, integrable for the product of the two laws, is
+  the iterated integral (Fubini, `MeasureTheory.integral_prod`), the conditioning step of a mean
+  or a variance of a function of two independent random matrices.
 
 Mathlib has the ingredients but not these statements. Upstream candidates for
 `Mathlib/Probability/Independence/Basic.lean`.
 
 Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15); LowRank stage S6
-(`docs/design/LowRank-S6.md` §4, L1).
+(`docs/design/LowRank-S6.md` §4, L1); Hutch++ (`docs/design/Estimation-HutchPP.md` §2.2, P1).
 
 ## Main results
 
 * `ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral`: Tonelli for an independent
   pair.
 * `ProbabilityTheory.IndepFun.measureReal_mem_le_add`: the sections bound.
+* `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`: Fubini for an independent pair.
 -/
 @[expose] public section
 
@@ -101,5 +106,22 @@ theorem IndepFun.measureReal_mem_le_add [IsProbabilityMeasure μ] {α β : Type*
             exact ENNReal.ofReal_le_ofReal hGc
   rw [← ENNReal.ofReal_add hδ₁ hδ₂] at hle
   exact ENNReal.toReal_le_of_le_ofReal (add_nonneg hδ₁ hδ₂) hle
+
+-- Stage TE-1
+
+/-- **Iterated integral against an independent pair** (Fubini): for independent, almost
+everywhere measurable $U$, $W$ on a finite measure space and $f$ integrable for the product
+$\mu_U \otimes \mu_W$ of their laws,
+$$\int f(U, W)\,d\mu = \int\!\!\int f(u, w)\,d\mu_W(w)\,d\mu_U(u)\,.$$
+The Bochner form of `ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral`; with
+it the mean and the mean-square error of Hutch++ are averages over the sketch of those of the
+Girard–Hutchinson estimator. Upstream candidate.
+[MeyerMuscoMuscoWoodruff2021, proof of Theorem 10]; there as conditioning on the sketch. -/
+theorem IndepFun.integral_comp_eq_integral_integral [IsFiniteMeasure μ] {α β E : Type*}
+    [MeasurableSpace α] [MeasurableSpace β] [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {U : Ω → α} {W : Ω → β} (hUW : IndepFun U W μ) (hU : AEMeasurable U μ)
+    (hW : AEMeasurable W μ) {f : α × β → E} (hf : Integrable f ((μ.map U).prod (μ.map W))) :
+    ∫ ω, f (U ω, W ω) ∂μ = ∫ u, ∫ w, f (u, w) ∂(μ.map W) ∂(μ.map U) := by
+  sorry
 
 end ProbabilityTheory

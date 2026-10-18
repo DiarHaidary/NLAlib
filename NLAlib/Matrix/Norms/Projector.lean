@@ -35,6 +35,8 @@ $\mathbf{P}_{\mathbf{Y}}$ the orthogonal projector onto the range of $\mathbf{Y}
   `NLAlib.specNorm_one_sub_rangeProjector_mul_le_specNorm_sub_mul`: the projection residual is
   the smallest residual $\mathbf{A} - \mathbf{B}\mathbf{X}$.
 * `NLAlib.frobNorm_sub_mul_sq`: the exact error split for an arbitrary $\mathbf{X}$.
+* `NLAlib.frobNorm_one_sub_rangeProjector_mul_sq_eq_add`: Pythagoras for the compressed residual
+  $(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A}(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})$.
 * `NLAlib.specNorm_one_sub_rangeProjector_mul_le_of_range_le`: a larger range gives a smaller
   residual.
 * `NLAlib.specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero`: a matrix with one
@@ -222,6 +224,24 @@ Port of `NLAlib.frobSq_sub_rangeProjector_mul_le`. -/
 theorem frobNorm_one_sub_rangeProjector_mul_le (Y : Matrix m p 𝕜) (A : Matrix m n 𝕜) :
     frobNorm ((1 - rangeProjector Y) * A) ≤ frobNorm A := by
   exact (isStarProjection_one_sub_rangeProjector Y).frobNorm_mul_le A
+
+-- Stage TE-0
+
+/-- **Pythagoras for the compressed residual.** For any $\mathbf{Y}$ with $m$ rows and any square
+$\mathbf{A}$ of size $m$, with $\mathbf{P} = \mathbf{P}_{\mathbf{Y}}$,
+$$\|(\mathbf{I} - \mathbf{P})\mathbf{A}\|_{\mathsf{F}}^2 =
+\|(\mathbf{I} - \mathbf{P})\mathbf{A}\mathbf{P}\|_{\mathsf{F}}^2 +
+\|(\mathbf{I} - \mathbf{P})\mathbf{A}(\mathbf{I} - \mathbf{P})\|_{\mathsf{F}}^2\,,$$
+`IsStarProjection.frobNorm_sq_eq_add` applied on the right. With
+$\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ the left side is
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{S})\|_{\mathsf{F}}^2$ and the last term is the
+squared Frobenius norm of the residual Hutch++ estimates; it is the exact form of the
+submultiplicativity step in [MeyerMuscoMuscoWoodruff2021, proof of Theorem 10]. -/
+theorem frobNorm_one_sub_rangeProjector_mul_sq_eq_add (Y : Matrix m p 𝕜) (A : Matrix m m 𝕜) :
+    frobNorm ((1 - rangeProjector Y) * A) ^ 2 =
+      frobNorm ((1 - rangeProjector Y) * A * rangeProjector Y) ^ 2 +
+        frobNorm ((1 - rangeProjector Y) * A * (1 - rangeProjector Y)) ^ 2 := by
+  sorry
 
 /-- **The exact error split.** For any coefficient matrix $\mathbf{X}$, the squared Frobenius
 error of $\mathbf{B}\mathbf{X}$ as an approximation of $\mathbf{A}$ is the squared projection

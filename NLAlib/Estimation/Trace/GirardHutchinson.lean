@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Probability.QuadraticForm.HansonWright
 public import NLAlib.Probability.QuadraticForm.Moments
 public import NLAlib.RandomMatrix.Haar.Moments
 
@@ -18,8 +19,8 @@ $$\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega}) :=
 = \frac{1}{m}\sum_{j=1}^m \boldsymbol{\omega}_j^{\mathsf{H}}\mathbf{A}\boldsymbol{\omega}_j\,.$$
 It is unbiased when every probe is isotropic, and with independent probes its variance is the
 single-probe variance divided by $m$. The single-probe variances are proved where their laws live:
-independent coordinates (real and complex Gaussian, Rademacher, Steinhaus) in
-`NLAlib/Probability/QuadraticForm/Moments.lean`, the real and complex spheres and Haar frames in
+independent coordinates (real Gaussian, Rademacher) in
+`NLAlib/Probability/QuadraticForm/Moments.lean`, the real sphere and Haar frames in
 `NLAlib/RandomMatrix/Haar/Moments.lean`. With the probes $\sqrt{\lvert n \rvert}$ times the columns
 of a Haar frame, which are not independent, the variance is computed exactly here.
 
@@ -34,12 +35,14 @@ of a Haar frame, which are not independent, the variance is computed exactly her
 * `NLAlib.integral_norm_girardHutchinson_sub_trace_sq`, `NLAlib.variance_girardHutchinson`: the
   variance with $m$ independent probes is the single-probe variance divided by $m$.
 * `NLAlib.variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame`: orthonormal (Haar) probes.
+* `NLAlib.measureReal_abs_girardHutchinson_sub_trace_ge_le`: the tail with independent
+  sub-Gaussian entries, from Hanson–Wright.
 -/
 
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory
-open scoped Matrix
+open scoped Matrix NNReal
 
 namespace NLAlib
 
@@ -219,5 +222,37 @@ theorem variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame {k : Type*} [Fin
   have hN1 : (Fintype.card n : ℝ) - 1 ≠ 0 := by linarith
   have hN2 : (Fintype.card n : ℝ) + 2 ≠ 0 := by linarith
   field_simp
+
+-- Stage TE-1
+
+/-- **The tail of the Girard–Hutchinson estimator with sub-Gaussian probes.** If the entries of
+the real $n \times m$ test matrix $\mathbf{\Omega}$ are independent, each satisfies the
+sub-Gaussian moment generating function bound with variance proxy $c$ (`HasSubgaussianMGF`) and
+has second moment $1$, then for every real square $\mathbf{B}$ and every
+$\tau \ge 0$, <!-- value hansonWrightConstant -->
+$$\mathbb{P}\bigl[\lvert \mathsf{girardHutchinson}(\mathbf{B}, \mathbf{\Omega}) -
+\operatorname{tr}\mathbf{B} \rvert \ge \tau\bigr] \le 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
+\frac{m\tau^2}{c^2\|\mathbf{B}\|_{\mathsf{F}}^2}, \frac{m\tau}{c\|\mathbf{B}\|_2}\Bigr)\Bigr)\,;$$
+the constant is `hansonWrightConstant`. No symmetry of $\mathbf{B}$ is needed. Junk cases: with no
+columns ($m = 0$) the estimate is $0$ and the bound is $2$; a zero denominator makes its fraction
+$0$, and the bound is again $2$. The proof is Hanson–Wright
+(`NLAlib.measureReal_abs_quadForm_sub_integral_ge_le`) for
+$m \cdot \mathsf{girardHutchinson}(\mathbf{B}, \mathbf{\Omega}) =
+\operatorname{vec}(\mathbf{\Omega})^{\mathsf{T}}(\mathbf{I}_m \otimes \mathbf{B})
+\operatorname{vec}(\mathbf{\Omega})$, whose matrix has squared Frobenius norm
+$m\|\mathbf{B}\|_{\mathsf{F}}^2$ and spectral norm $\|\mathbf{B}\|_2$.
+[MeyerMuscoMuscoWoodruff2021, Lemma 2 and Appendix A]; there with unspecified constants, in the
+sample-size form $m = O(\log(1/\delta)/\varepsilon^2)$ for
+$\lvert \cdot \rvert \le \varepsilon\|\mathbf{B}\|_{\mathsf{F}}$.
+Result: girard-hutchinson-tail -/
+theorem measureReal_abs_girardHutchinson_sub_trace_ge_le {X : Ω → Matrix n m ℝ} {c : ℝ≥0}
+    (hind : iIndepFun (fun p : n × m => fun ω => X ω p.1 p.2) μ)
+    (hsub : ∀ i j, HasSubgaussianMGF (fun ω => X ω i j) c μ)
+    (hvar : ∀ i j, ∫ ω, X ω i j ^ 2 ∂μ = 1) (B : Matrix n n ℝ) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | τ ≤ |girardHutchinson B (X ω) - B.trace|} ≤
+      2 * Real.exp (-(hansonWrightConstant *
+        min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm B ^ 2))
+          (Fintype.card m * τ / ((c : ℝ) * specNorm B)))) := by
+  sorry
 
 end NLAlib

@@ -28,6 +28,9 @@ applied to a matrix it gives the projection residual $(\mathbf{I} -
   its range and its rank.
 * `NLAlib.norm_one_sub_rangeProjector_mulVec_le`: the projection is the best approximation.
 * `NLAlib.norm_toLp_sq_eq_add_one_sub_rangeProjector`: Pythagoras for a vector and a column space.
+* `IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub`: the trace split
+  $\operatorname{tr}(\mathbf{P}\mathbf{A}) + \operatorname{tr}((\mathbf{I} - \mathbf{P})\mathbf{A}
+  (\mathbf{I} - \mathbf{P})) = \operatorname{tr}\mathbf{A}$ for an idempotent $\mathbf{P}$.
 -/
 
 @[expose] public section
@@ -121,5 +124,23 @@ theorem norm_toLp_sq_eq_add_one_sub_rangeProjector [Fintype m] [Fintype n] [Deci
       ‖WithLp.toLp 2 (rangeProjector B *ᵥ x)‖ ^ 2 +
         ‖WithLp.toLp 2 ((1 - rangeProjector B) *ᵥ x)‖ ^ 2 :=
   (isStarProjection_rangeProjector B).norm_toLp_sq_eq_add x
+
+-- Stage TE-0
+
+/-- **The trace split** for an idempotent $\mathbf{P}$ ($\mathbf{P}^2 = \mathbf{P}$, not
+necessarily Hermitian): for every square $\mathbf{A}$,
+$$\operatorname{tr}(\mathbf{P}\mathbf{A}) +
+\operatorname{tr}\bigl((\mathbf{I} - \mathbf{P})\mathbf{A}(\mathbf{I} - \mathbf{P})\bigr) =
+\operatorname{tr}\mathbf{A}\,,$$
+by cyclicity of the trace and $(\mathbf{I} - \mathbf{P})^2 = \mathbf{I} - \mathbf{P}$. With
+$\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ it splits $\operatorname{tr}\mathbf{A}$ into the
+part Hutch++ computes exactly and the compressed residual its probes estimate
+(`NLAlib.hutchpp_sub_trace`).
+[MeyerMuscoMuscoWoodruff2021, §3, proof of Theorem 1]; there for
+$\mathbf{P} = \mathbf{Q}\mathbf{Q}^{\mathsf{T}}$ with orthonormal $\mathbf{Q}$. -/
+theorem _root_.IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub [Fintype m]
+    [DecidableEq m] {P : Matrix m m 𝕜} (hP : IsIdempotentElem P) (A : Matrix m m 𝕜) :
+    (P * A).trace + ((1 - P) * A * (1 - P)).trace = A.trace := by
+  sorry
 
 end NLAlib

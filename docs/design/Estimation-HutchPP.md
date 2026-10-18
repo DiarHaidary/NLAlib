@@ -583,3 +583,67 @@ Key facts for a later round, checked against ETW:
   which the library lacks (first moments only, `LowRank/Gaussian/Nystrom.lean:224`, `:110`).
 * Estimated size when resumed: about 900 lines; the variance proof (three conditionings over
   subtype sketches) is the hard part.
+
+## Implementation
+
+### Statement skeleton (2026-10-18)
+
+Every remaining declaration of TE-0 to TE-3 and TE-5 is stated, with its docstring, each group
+under a `-- Stage TE-x` marker; definitions have bodies, theorems are `sorry`. TE-4 was already
+proved; P8 (`IsSubgaussianVector.uncurry_of_iIndepFun`) already existed with it. Files:
+`Matrix/Basic/ComplementaryProjector.lean`, `Matrix/Norms/Projector.lean`,
+`Matrix/Spectral/BestRankApprox.lean` (TE-0); `ForMathlib/Probability/Independence/Basic.lean`,
+`Estimation/Trace/GirardHutchinson.lean` (TE-1); new `Estimation/Trace/HutchPlusPlus.lean` (TE-2,
+TE-3) and `Estimation/Trace/HutchPlusPlusTail.lean` (TE-5). Bibliography entries added:
+[MeyerMuscoMuscoWoodruff2021], [EpperlyTroppWebber2024], [GilbertStraussTroppVershynin2007]; the
+prose citations of MMMW in `LowRank/Oblivious/SubGaussian.lean` (TE-4) now use the key.
+
+### Skeleton changes
+
+Changes from §1 to §3 and §6, with the reason:
+
+1. **A1** takes `IsIdempotentElem P`, not `IsStarProjection P` (the minimal hypothesis; the trace
+   split never uses self-adjointness): `IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub`.
+2. **A5** is named `frobNorm_one_sub_rangeProjector_mul_sq_eq_add` (its left side is
+   `‖(1 - P) * A‖²`, and it parallels `IsStarProjection.frobNorm_sq_eq_add`), not
+   `frobNorm_one_sub_rangeProjector_mul_mul_sq`.
+3. **A6** lives in `Matrix/Spectral/BestRankApprox.lean`, beside the nuclear reverse Eckart–Young
+   bound, not in `Matrix/Spectral/LowRank.lean`, which does not import `Matrix/Norms/Nuclear.lean`
+   (BestRankApprox imports both). Its PSD corollary is
+   `Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div` (over `𝕜`, so `re (tr A)`).
+4. **P1** is in the existing `ForMathlib/Probability/Independence/Basic.lean`, beside its Tonelli
+   twin `IndepFun.lintegral_comp_eq_lintegral_lintegral`, not a new `Integration.lean`, and has
+   the twin's iterated form `∫ f (U, W) = ∫ u, ∫ w, f (u, w) ∂(μ.map W) ∂(μ.map U)` for `f`
+   integrable for the product of the laws. The `μ.real` set form is not added: the existing
+   `IndepFun.measureReal_mem_le_add` (sections bound) is the form TE-5 uses.
+5. **H2** `integral_hutchpp` carries `[IsProbabilityMeasure μ]`, which isotropy and
+   `IndepFun S G μ` do not imply.
+6. **H3** `integral_norm_hutchpp_sub_trace_sq`: the probe hypothesis is
+   `∀ i j, MemLp (fun ω => G ω i j) 4 μ` (makes both sides integrable; no isotropy or column
+   independence needed), with `[IsProbabilityMeasure μ]`. Rademacher identity
+   `variance_hutchpp_of_hasLaw_rademacherMatrix` with
+   `HasLaw (fun ω => (G ω)ᴴ) (rademacherMatrix t n) μ` (the library's sign law is row-wise); the
+   Pythagorean form is `Matrix.IsHermitian.variance_hutchpp_of_hasLaw_gaussianMatrix`.
+7. **H4** EW form `variance_hutchpp_le_of_hasLaw_gaussianMatrix_of_rank_le` takes L4's hypotheses
+   (`A.rank ≤ r`, `card s ≤ r`, `q + 2 ≤ card s`) and factor
+   `rotationInvariantFactor r (card s) q`. PSD corollary
+   `Matrix.PosSemidef.variance_hutchpp_le_trace_sq_of_hasLaw_gaussianMatrix`.
+8. **H5** sub-Gaussian instance: two proxies, `c` for the sketch rows and `c'` for the probe
+   entries; L7 is used at failure `δ` (size `subgaussianEmbeddingDim c r (1/2) (δ/2)`), so the
+   tail is `δ + 2 exp(…)`. The Gaussian instance goes through L7 at `c = 1` (via the Gaussian
+   triple), not L5.
+9. **H5 relative form** `measureReal_abs_hutchpp_sub_trace_gt_le_of_isSubgaussianVector` (MMMW
+   Theorem 5) has the strict event `ε * nuclearNorm A < |hutchpp − tr A|` (with `≤` it is false
+   at `A = 0`), and explicit conditions: `subgaussianEmbeddingDim c r (1/2) (δ/4) ≤ card s`,
+   `log(4/δ) ≤ C_HW · 4ℓrε²/(c'²K)`, `log(4/δ) ≤ C_HW · 2ℓ√r ε/(c'√K)`, `K` the range-finder
+   factor. PSD halves:
+   `Matrix.PosSemidef.measureReal_hutchpp_lt_one_sub_mul_trace_le_of_isSubgaussianVector`,
+   `Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector`.
+   The asymptotic form is
+   `exists_forall_measureReal_abs_hutchpp_sub_trace_gt_le_of_isSubgaussianVector` (named after
+   the explicit conclusion), with one proxy `c` for both test matrices and `[Nonempty s]` in its
+   binders: without it, `s`, `t` empty, `n` nonempty and `c = 0` satisfy every hypothesis while
+   the event is sure.
+10. Open points marked `-- SKELETON-NOTE:` in the Lean: the generic tail's `hK` and `hτ` are
+    redundant (the bound is at least `2` otherwise), kept as in §3.4; the asymptotic tail's
+    `ε ≤ ε₀` is not needed by the inversion, and its `C` is fixed only by the proof.
