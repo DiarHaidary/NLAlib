@@ -596,7 +596,12 @@ $$1 \le 1 + \frac{r}{\ell - r - 1}\,
 -/
 theorem one_le_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) {r l : ℕ}
     (hl : r + 2 ≤ l) : 1 ≤ rangeFinderTailRatio A r l := by
-  sorry
+  have hl' : (r : ℝ) + 2 ≤ l := by exact_mod_cast hl
+  have hk : 0 ≤ (r : ℝ) / ((l : ℝ) - r - 1) := div_nonneg (Nat.cast_nonneg _) (by linarith)
+  have h := div_nonneg (mul_nonneg hk (sq_nonneg (frobNorm (A - truncatedSVD A r))))
+    (sq_nonneg (singularValues A r))
+  rw [rangeFinderTailRatio]
+  linarith
 
 /-- The range-finder tail ratio times $\sigma_r(\mathbf{A})^2$ is the spectral bound of the
 randomized SVD: for $\sigma_r(\mathbf{A}) > 0$,
@@ -610,6 +615,6 @@ theorem sq_singularValues_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] 
     singularValues A r ^ 2 * rangeFinderTailRatio A r l =
       singularValues A r ^ 2 +
         (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 := by
-  sorry
+  rw [rangeFinderTailRatio, mul_add, mul_one, mul_div_cancel₀ _ (pow_ne_zero 2 hσ.ne')]
 
 end NLAlib
