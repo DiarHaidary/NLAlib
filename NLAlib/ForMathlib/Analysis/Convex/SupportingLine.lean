@@ -44,4 +44,12 @@ convex on $s$, $x \in s$ and $f$ is differentiable at $x$, its tangent
 $y \mapsto f(x) + f'(x)(y - x)$ supports it on $s$. -/
 theorem ConvexOn.hasSupportingLineOn {f : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ s f) {x : ℝ}
     (hx : x ∈ s) (hd : DifferentiableAt ℝ f x) : HasSupportingLineOn f s x := by
-  sorry
+  refine ⟨deriv f x, fun y hy => ?_⟩
+  rcases lt_trichotomy x y with hxy | rfl | hxy
+  · have h := hf.deriv_le_slope hx hy hxy hd
+    rw [slope_def_field, le_div_iff₀ (sub_pos.mpr hxy)] at h
+    linarith
+  · simp
+  · have h := hf.slope_le_deriv hy hx hxy hd
+    rw [slope_def_field, div_le_iff₀ (sub_pos.mpr hxy)] at h
+    linarith

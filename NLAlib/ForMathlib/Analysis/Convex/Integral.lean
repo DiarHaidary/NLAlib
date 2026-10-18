@@ -65,4 +65,13 @@ theorem HasSupportingLineOn.le_integral_comp [IsProbabilityMeasure μ] {φ : ℝ
     {X : α → ℝ} (h : HasSupportingLineOn φ t (∫ ω, X ω ∂μ)) (hX : ∀ᵐ ω ∂μ, X ω ∈ t)
     (hi : Integrable X μ) (hφi : Integrable (φ ∘ X) μ) :
     φ (∫ ω, X ω ∂μ) ≤ ∫ ω, φ (X ω) ∂μ := by
-  sorry
+  obtain ⟨c, hc⟩ := h
+  set a := ∫ ω, X ω ∂μ
+  have hs : Integrable (fun ω => c * (X ω - a)) μ := (hi.sub (integrable_const a)).const_mul c
+  have hli : Integrable (fun ω => φ a + c * (X ω - a)) μ := (integrable_const _).add hs
+  have hl : ∫ ω, (φ a + c * (X ω - a)) ∂μ = φ a := by
+    rw [integral_add (integrable_const _) hs, integral_const_mul,
+      integral_sub hi (integrable_const a)]
+    simp [a]
+  calc φ a = ∫ ω, (φ a + c * (X ω - a)) ∂μ := hl.symm
+    _ ≤ ∫ ω, φ (X ω) ∂μ := integral_mono_ae hli hφi (hX.mono fun ω hω => hc _ hω)

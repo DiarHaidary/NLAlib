@@ -8,6 +8,7 @@ module
 public import Mathlib.NumberTheory.Real.GoldenRatio
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.OrthonormalBasis
+public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Norms.Compare
 
 /-!
@@ -374,6 +375,23 @@ Port of `NLAlib.specNorm_residual_pow_le` (prototype, `LowRank/Structural/PowerI
 theorem _root_.IsStarProjection.specNorm_mul_pow_le {P : Matrix m m 𝕜} (hP : IsStarProjection P)
     (A : Matrix m n 𝕜) (j : ℕ) :
     specNorm (P * A) ^ (2 * j + 1) ≤ specNorm (P * ((A * Aᴴ) ^ j * A)) := by
-  sorry
+  rcases (specNorm_nonneg (P * A)).eq_or_lt with h₀ | h₀
+  · rw [← h₀, zero_pow (Nat.succ_ne_zero _)]
+    exact specNorm_nonneg _
+  have hH : (A * Aᴴ).IsHermitian := Matrix.isHermitian_mul_conjTranspose_self A
+  have hsa : IsSelfAdjoint (A * Aᴴ) := hH
+  have hB : (A * Aᴴ) ^ j * A * ((A * Aᴴ) ^ j * A)ᴴ =
+      cfc (fun t : ℝ => t ^ (2 * j + 1)) (A * Aᴴ) := by
+    rw [cfc_pow_id (A * Aᴴ) (2 * j + 1) hsa, Matrix.conjTranspose_mul, Matrix.conjTranspose_pow,
+      hH.eq, pow_succ, two_mul, pow_add]
+    simp only [Matrix.mul_assoc, (Commute.pow_left (Commute.refl (A * Aᴴ)) j).eq]
+  have hφ : HasSupportingLineOn (fun t : ℝ => t ^ (2 * j + 1)) (Set.Ici 0)
+      (specNorm (P * A) ^ 2) :=
+    (convexOn_pow (2 * j + 1)).hasSupportingLineOn (Set.mem_Ici.mpr (sq_nonneg _))
+      (differentiableAt_pow _)
+  have h := apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn hB hP h₀ hφ
+  rw [← pow_mul, mul_comm, pow_mul] at h
+  exact (pow_le_pow_iff_left₀ (pow_nonneg (specNorm_nonneg _) _) (specNorm_nonneg _)
+    two_ne_zero).mp h
 
 end NLAlib
