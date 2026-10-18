@@ -472,6 +472,13 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_mul_pinv_sq_le (hZ : HasOrthonormal
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
     specNorm (A - rsvd A (Ω * pinv (Zᴴ * Ω))) ^ 2 ≤
       specNorm (A - A * Z * Zᴴ) ^ 2 + specNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  sorry
+  have hI : Zᴴ * (Ω * pinv (Zᴴ * Ω)) = 1 := by
+    rw [← Matrix.mul_assoc, hZ.mul_pinv_self_of_rank_eq hΩ]
+  have hΩ' : ((Ω * pinv (Zᴴ * Ω))ᴴ * Z).rank = Z.rank := by
+    have hT : (Ω * pinv (Zᴴ * Ω))ᴴ * Z = (Zᴴ * (Ω * pinv (Zᴴ * Ω)))ᴴ := by
+      rw [Matrix.conjTranspose_mul Zᴴ, Matrix.conjTranspose_conjTranspose]
+    rw [hT, hI, Matrix.conjTranspose_one, Matrix.rank_one, hZ.rank_eq]
+  have h := hZ.specNorm_sub_rsvd_sq_le hΩ' A
+  rwa [hI, pinv_of_isUnit isUnit_one, inv_one, Matrix.mul_one, ← Matrix.mul_assoc] at h
 
 end NLAlib

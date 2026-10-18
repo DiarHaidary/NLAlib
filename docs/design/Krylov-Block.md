@@ -967,6 +967,13 @@ Departures from the signatures of §3 to §8, with the reason; none changes a de
 15. **Not stated:** a Tropp–Webber-form (exact constant) gapless bound for the *truncated* RBKI
     output; the truncated gapless bound of this round is the $(1 + \varepsilon)$ form (§6.3).
     Revisit with MM Theorem 11 after B6b.
+16. **Pointwise head capture (B4).** Added
+    `HasOrthonormalCols.singularValues_one_sub_rangeProjector_mul_mul_le` in
+    `LowRank/Structural/Filter.lean`, the singular-value form of head capture
+    ($\sigma_i((\mathbf{I}-\mathbf{P})\mathbf{A}\mathbf{W}\mathbf{W}^{\mathsf{H}}) \le c^{-1}\sigma_i(\mathbf{M})$),
+    as the skeleton review suggested: the Gram form squares it, which the gauge form alone does not
+    allow (weak majorization does not survive squaring in the library). The gauge head capture is
+    its corollary.
 
 Result ids used: `rbki-gapped-error`, `rsi-gapped-error`, `rbki-gapless-error`,
 `rsi-gapless-error`, `nysbki-gapped-error`, `nyssi-gapped-error`, `filtered-range-finder-bound`,

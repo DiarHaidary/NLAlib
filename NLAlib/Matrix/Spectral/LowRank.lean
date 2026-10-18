@@ -657,7 +657,18 @@ is built from the same chosen SVD. With ties among the singular values this can 
 best approximations. -/
 theorem range_mulVecLin_truncatedSVD_mono (A : Matrix m n 𝕜) :
     Monotone fun k => LinearMap.range (truncatedSVD A k).mulVecLin := by
-  sorry
+  intro k k' hk
+  obtain ⟨U, V, h, hT⟩ := exists_isSVD_truncatedSVD A
+  refine range_mulVecLin_le_iff_exists_mul.mpr ⟨V * (Matrix.diagonal
+    (fun i : Fin (min (Fintype.card m) (Fintype.card n)) => if (i : ℕ) < k then (1 : 𝕜) else 0) *
+      Vᴴ), ?_⟩
+  rw [hT k, hT k']
+  simp only [Matrix.mul_assoc]
+  rw [h.hasOrthonormalCols_right.conjTranspose_mul_cancel_left,
+    ← Matrix.mul_assoc (Matrix.diagonal _), Matrix.diagonal_mul_diagonal]
+  congr 3
+  funext i
+  split_ifs with h₁ h₂ <;> first | rfl | (exfalso; omega) | simp
 
 -- Stage B5a
 
@@ -686,6 +697,107 @@ theorem exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal [De
         (fun j : Fin (Fintype.card n - k) => ((singularValues A (k + j) ^ 2 : ℝ) : 𝕜)) ∧
       ∀ r (hr : r ≤ k), A * Z.submatrix id (Fin.castLE hr) * (Z.submatrix id (Fin.castLE hr))ᴴ =
         truncatedSVD A r := by
-  sorry
+  have hex := exists_isSVD_truncatedSVD A
+  have hμN := min_le_right (Fintype.card m) (Fintype.card n)
+  have hrank := le_min A.rank_le_card_height A.rank_le_card_width
+  generalize min (Fintype.card m) (Fintype.card n) = μ at hex hμN hrank
+  obtain ⟨U, V₀, h, hT⟩ := hex
+  obtain ⟨V₁, hV⟩ := h.hasOrthonormalCols_right.exists_fromCols (p := Fin (Fintype.card n - μ))
+    (by rw [Fintype.card_fin, Fintype.card_fin]; omega)
+  obtain ⟨-, -, h01⟩ := hasOrthonormalCols_fromCols_iff.mp hV
+  -- the chosen right singular vectors completed to a unitary frame `F = [svdV A, V₁]`
+  let F : Matrix n (Fin (μ + (Fintype.card n - μ))) 𝕜 :=
+    (Matrix.fromCols V₀ V₁).submatrix (Equiv.refl n) finSumFinEquiv.symm
+  have hF : HasOrthonormalCols F := hV.submatrix (Equiv.refl n) finSumFinEquiv.symm.injective
+  have hF₀ (a : n) (j : Fin μ) : F a (Fin.castAdd (Fintype.card n - μ) j) = V₀ a j := by simp [F]
+  have hF₁ (a : n) (j : Fin (Fintype.card n - μ)) : F a (Fin.natAdd μ j) = V₁ a j := by simp [F]
+  have hσ (i : ℕ) (hi : μ ≤ i) : singularValues A i = 0 :=
+    (singularValues_eq_zero_iff A).mpr (hrank.trans hi)
+  have hAF : Aᴴ * A * F = F * Matrix.diagonal
+      fun i : Fin (μ + (Fintype.card n - μ)) => ((singularValues A i ^ 2 : ℝ) : 𝕜) := by
+    have hG := h.conjTranspose_mul_self_eq
+    have h0 : Aᴴ * A * V₀ =
+        V₀ * Matrix.diagonal fun j : Fin μ => ((singularValues A j ^ 2 : ℝ) : 𝕜) := by
+      rw [hG, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
+    have h1 : Aᴴ * A * V₁ = 0 := by
+      rw [hG, Matrix.mul_assoc, h01, Matrix.mul_zero]
+    ext a i
+    rw [Matrix.mul_diagonal]
+    refine Fin.addCases (fun j => ?_) (fun j => ?_) i
+    · have e := congrFun (congrFun h0 a) j
+      rw [Matrix.mul_diagonal] at e
+      rw [hF₀, Fin.val_castAdd, ← e]
+      simp only [Matrix.mul_apply (M := Aᴴ * A), hF₀]
+    · have e := congrFun (congrFun h1 a) j
+      rw [Fin.val_natAdd, hσ _ (Nat.le_add_right _ _), zero_pow two_ne_zero,
+        RCLike.ofReal_zero, mul_zero]
+      rw [Matrix.zero_apply] at e
+      rw [← e]
+      simp only [Matrix.mul_apply (M := Aᴴ * A), hF₁]
+  have hkL : k ≤ μ + (Fintype.card n - μ) := by omega
+  let c : Fin k → Fin (μ + (Fintype.card n - μ)) := Fin.castLE hkL
+  let c' : Fin (Fintype.card n - k) → Fin (μ + (Fintype.card n - μ)) := fun j => ⟨k + j, by omega⟩
+  let e : Fin k ⊕ Fin (Fintype.card n - k) → Fin (μ + (Fintype.card n - μ)) := Sum.elim c c'
+  have he : Function.Injective e := by
+    rintro (x | x) (y | y) hxy <;> simp [e, c, c', Fin.ext_iff] at hxy ⊢ <;> omega
+  have hZV : HasOrthonormalCols (Matrix.fromCols (F.submatrix id c) (F.submatrix id c')) := by
+    have hfc : Matrix.fromCols (F.submatrix id c) (F.submatrix id c') = F.submatrix id e := by
+      ext a (j | j) <;> rfl
+    rw [hfc]
+    exact hF.submatrix (Equiv.refl n) he
+  obtain ⟨hZ, hV', hZV0⟩ := hasOrthonormalCols_fromCols_iff.mp hZV
+  refine ⟨F.submatrix id c, F.submatrix id c', hZ, hV', hZV0,
+    hZV.mul_conjTranspose_add_mul_conjTranspose (by rw [Fintype.card_fin, Fintype.card_fin]; omega),
+    ?_, ?_, ?_⟩
+  · ext a i
+    calc (Aᴴ * A * F.submatrix id c) a i = (Aᴴ * A * F) a (c i) := rfl
+      _ = F a (c i) * ((singularValues A (c i) ^ 2 : ℝ) : 𝕜) := by rw [hAF, Matrix.mul_diagonal]
+      _ = _ := by rw [Matrix.mul_diagonal]; rfl
+  · ext a j
+    calc (Aᴴ * A * F.submatrix id c') a j = (Aᴴ * A * F) a (c' j) := rfl
+      _ = F a (c' j) * ((singularValues A (c' j) ^ 2 : ℝ) : 𝕜) := by
+        rw [hAF, Matrix.mul_diagonal]
+      _ = _ := by rw [Matrix.mul_diagonal]; rfl
+  · intro r hr
+    have hZr : (F.submatrix id c).submatrix id (Fin.castLE hr) =
+        F.submatrix id (Fin.castLE (hr.trans hkL)) := rfl
+    rw [hZr]
+    set Zr := F.submatrix id (Fin.castLE (hr.trans hkL))
+    have hV₀F : V₀ = F.submatrix id (Fin.castAdd (Fintype.card n - μ)) := by
+      ext a j
+      exact (hF₀ a j).symm
+    have hZrV₀ : Zrᴴ * V₀ =
+        (Fᴴ * F).submatrix (Fin.castLE (hr.trans hkL)) (Fin.castAdd (Fintype.card n - μ)) := by
+      rw [hV₀F]
+      rfl
+    have hP : Zr * Zrᴴ * V₀ =
+        V₀ * Matrix.diagonal fun j : Fin μ => if (j : ℕ) < r then (1 : 𝕜) else 0 := by
+      rw [Matrix.mul_assoc, hZrV₀, hF.conjTranspose_mul_self]
+      ext a j
+      rw [Matrix.mul_diagonal, Matrix.mul_apply]
+      simp only [Matrix.submatrix_apply, Matrix.one_apply, Fin.ext_iff, Fin.val_castLE,
+        Fin.val_castAdd, mul_ite, mul_one, mul_zero]
+      split_ifs with hj
+      · rw [Finset.sum_eq_single_of_mem ⟨j, hj⟩ (Finset.mem_univ _) fun i _ hi => if_neg
+          fun hij => hi (Fin.ext hij), if_pos rfl, ← hF₀]
+        rfl
+      · exact Finset.sum_eq_zero fun i _ => if_neg fun hij => hj (by have := i.isLt; omega)
+    have hVD : V₀ᴴ * (Zr * Zrᴴ) =
+        (Matrix.diagonal fun j : Fin μ => if (j : ℕ) < r then (1 : 𝕜) else 0) * V₀ᴴ := by
+      have hc := congrArg Matrix.conjTranspose hP
+      simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+        Matrix.diagonal_conjTranspose] at hc
+      rw [hc]
+      congr 2
+      funext j
+      rw [Pi.star_apply]
+      split_ifs <;> simp
+    have hA : A * V₀ * V₀ᴴ = A := by
+      rw [h.mul_right_eq, ← h.eq]
+    rw [Matrix.mul_assoc A Zr]
+    conv_lhs => rw [← hA]
+    rw [Matrix.mul_assoc (A * V₀), hVD, h.mul_right_eq, hT r, ← Matrix.mul_assoc,
+      Matrix.mul_assoc U, Matrix.diagonal_mul_diagonal]
+    simp only [mul_ite, mul_one, mul_zero]
 
 end NLAlib

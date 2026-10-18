@@ -444,7 +444,15 @@ $\mathbf{A} - \mathbf{T} = (\mathbf{I} - \mathbf{P}_{\mathbf{T}})\mathbf{A}$ is 
 projection residual. [MuscoMusco2015, Lemma 2 (proof)]. -/
 theorem truncatedSVD_rsvd_eq_rangeProjector_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     truncatedSVD (rsvd A Ω) k = rangeProjector (truncatedSVD (rsvd A Ω) k) * A := by
-  sorry
+  have hle : LinearMap.range (truncatedSVD (rsvd A Ω) k).mulVecLin ≤
+      LinearMap.range (A * Ω).mulVecLin :=
+    (range_mulVecLin_truncatedSVD_le _ k).trans (range_rsvd_le A Ω)
+  calc truncatedSVD (rsvd A Ω) k
+      = rangeProjector (truncatedSVD (rsvd A Ω) k) * rsvd A Ω :=
+        (rangeProjector_truncatedSVD_mul _ k).symm
+    _ = rangeProjector (truncatedSVD (rsvd A Ω) k) * (rangeProjector (A * Ω) * A) := rfl
+    _ = rangeProjector (truncatedSVD (rsvd A Ω) k) * A := by
+        rw [← Matrix.mul_assoc, rangeProjector_mul_rangeProjector_of_range_le' hle]
 
 /-- **The truncated randomized SVD improves with the rank**: for $k \le k'$ and every $i$,
 $$\sigma_i(\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_{k'}) \le
@@ -456,6 +464,13 @@ theorem singularValues_sub_truncatedSVD_rsvd_le_of_le (A : Matrix m n 𝕜) (Ω 
     {k k' : ℕ} (h : k ≤ k') (i : ℕ) :
     singularValues (A - truncatedSVD (rsvd A Ω) k') i ≤
       singularValues (A - truncatedSVD (rsvd A Ω) k) i := by
-  sorry
+  classical
+  have hsub (j : ℕ) : A - truncatedSVD (rsvd A Ω) j =
+      (1 - rangeProjector (truncatedSVD (rsvd A Ω) j)) * A := by
+    conv_lhs => rw [truncatedSVD_rsvd_eq_rangeProjector_mul A Ω j]
+    rw [Matrix.sub_mul, Matrix.one_mul]
+  rw [hsub k', hsub k]
+  exact singularValues_one_sub_rangeProjector_mul_le_of_range_le
+    (range_mulVecLin_truncatedSVD_mono _ h) A i
 
 end NLAlib
