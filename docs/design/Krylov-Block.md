@@ -974,6 +974,21 @@ Departures from the signatures of §3 to §8, with the reason; none changes a de
     as the skeleton review suggested: the Gram form squares it, which the gauge form alone does not
     allow (weak majorization does not survive squaring in the library). The gauge head capture is
     its corollary.
+17. **Square-root bridge (B7).** `Matrix.PosSemidef.rangeFinderTailRatio_sqrt` is restated on the
+    file's `H : Matrix n n ℝ` instead of a fresh `{k} [Fintype k] {G}` (skeleton review 3.1). The
+    review's instance concern does not arise: `CFC.sqrt` on matrices takes the `DecidableEq`
+    instance only inside a `Prop`-valued argument (the functional-calculus instance), so the
+    classical and section spellings of `CFC.sqrt H` are defeq by proof irrelevance and the
+    `Classical` lemmas (`Matrix.PosSemidef.sub_nystrom_eq`,
+    `Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom`) rewrite section-instance goals
+    directly, no `convert`. Lean's `unusedDecidableInType` linter flags a section `[DecidableEq n]`
+    on such a statement, so the bridge is stated `open scoped Classical in` before the file's
+    `variable [DecidableEq n]` (the variable line is split; the B7 theorems keep the instance).
+    The B7 helpers are in `Matrix/Functions/AbsoluteValue.lean` (topic: the square root as a
+    factor): `Matrix.PosSemidef.conjTranspose_sqrt_mul_sqrt`, `sq_singularValues_sqrt`,
+    `frobNorm_sqrt_sub_truncatedSVD_sq` and the scalar gap bridge
+    `singularGapRatio_le_two_mul_singularGapRatio_sqrt` ($\gamma_{\mathbf{H}} \le
+    2\gamma_{\mathbf{H}^{1/2}}$).
 
 Result ids used: `rbki-gapped-error`, `rsi-gapped-error`, `rbki-gapless-error`,
 `rsi-gapless-error`, `nysbki-gapped-error`, `nyssi-gapped-error`, `filtered-range-finder-bound`,

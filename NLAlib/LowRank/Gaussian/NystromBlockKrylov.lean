@@ -54,7 +54,7 @@ open scoped Matrix ENNReal MatrixOrder
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n l : Type*} [Fintype n]
-  [Fintype l] [DecidableEq n] {X : Ω → Matrix n l ℝ} {H : Matrix n n ℝ}
+  [Fintype l] {X : Ω → Matrix n l ℝ} {H : Matrix n n ℝ}
 
 -- Stage B7
 
@@ -68,12 +68,43 @@ $$1 + \frac{r}{\ell - r - 1}\,
 {\sigma_r(\mathbf{H}^{1/2})^2} = 1 + \frac{r}{\ell - r - 1}\,
 \frac{\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*}{\sigma_r(\mathbf{H})}\,,$$
 the Nyström-native ratio of the gapless Nyström bounds. -/
-theorem _root_.Matrix.PosSemidef.rangeFinderTailRatio_sqrt {k : Type*} [Fintype k]
-    {G : Matrix k k ℝ} (hG : G.PosSemidef) (r l : ℕ) :
-    rangeFinderTailRatio (CFC.sqrt G) r l =
-      1 + (r : ℝ) / ((l : ℝ) - r - 1) * nuclearNorm (G - truncatedSVD G r) /
-        singularValues G r := by
-  sorry
+theorem _root_.Matrix.PosSemidef.rangeFinderTailRatio_sqrt (hH : H.PosSemidef) (r l : ℕ) :
+    rangeFinderTailRatio (CFC.sqrt H) r l =
+      1 + (r : ℝ) / ((l : ℝ) - r - 1) * nuclearNorm (H - truncatedSVD H r) /
+        singularValues H r := by
+  rw [rangeFinderTailRatio, hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.sq_singularValues_sqrt]
+
+open scoped Classical in
+/-- Positivity of $\sigma_r(\mathbf{H})$ passes to $\sigma_r(\mathbf{H}^{1/2})$. -/
+private theorem singularValues_sqrt_pos (hH : H.PosSemidef) {r : ℕ}
+    (hσ : 0 < singularValues H r) : 0 < singularValues (CFC.sqrt H) r := by
+  refine (singularValues_nonneg _ r).lt_of_ne fun h => ?_
+  rw [← hH.sq_singularValues_sqrt, ← h] at hσ
+  norm_num at hσ
+
+/-- The tail weight $t/(\ell - t - 1)$ is nonnegative for $t + 2 \le \ell$. -/
+private theorem div_card_sub_nonneg {t : ℕ} (ht : t + 2 ≤ Fintype.card l) :
+    0 ≤ (t : ℝ) / ((Fintype.card l : ℝ) - t - 1) := by
+  have : (t : ℝ) + 2 ≤ Fintype.card l := by exact_mod_cast ht
+  exact div_nonneg (Nat.cast_nonneg t) (by linarith)
+
+/-! ### Spectral errors through the square root -/
+
+-- `CFC.sqrt` takes the `DecidableEq` instance only inside a proof argument, so the statements above
+-- are stated under `Classical` and rewrite every spelling of `CFC.sqrt H`.
+variable [DecidableEq n]
+
+/-- The Gram correspondence in the spectral norm: the spectral error of NysBKI is the squared
+spectral error of RBKI of the square root. -/
+private theorem specNorm_sub_nystromBKI_eq (hH : H.PosSemidef) (Y : Matrix n l ℝ) (q : ℕ) :
+    specNorm (H - nystromBKI H Y q) = specNorm (CFC.sqrt H - rbki (CFC.sqrt H) Y q) ^ 2 := by
+  rw [hH.sub_nystromBKI_eq, specNorm_conjTranspose_mul_self]
+
+/-- The same for NysSI and RSI of the square root, at the test matrix $\mathbf{H}^p\mathbf{Y}$. -/
+private theorem specNorm_sub_nystrom_pow_mul_eq (hH : H.PosSemidef) (Y : Matrix n l ℝ) (p : ℕ) :
+    specNorm (H - nystrom H (H ^ p * Y)) =
+      specNorm (CFC.sqrt H - rsvd (CFC.sqrt H) (H ^ p * Y)) ^ 2 := by
+  rw [hH.sub_nystrom_eq, specNorm_conjTranspose_mul_self]
 
 /-! ### Gapped bounds -/
 
@@ -101,7 +132,30 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of
       singularValues H r +
         4 * Real.exp (-4 * Real.sqrt 2 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * nuclearNorm (H - truncatedSVD H t) := by
-  sorry
+  have hht : h ≤ t := by omega
+  have hq1 : (0 : ℝ) ≤ (q : ℝ) - 1 := by
+    have : (1 : ℝ) ≤ q := by exact_mod_cast hq
+    linarith
+  have hgap := hH.singularGapRatio_le_two_mul_singularGapRatio_sqrt hht
+  have hγ : Real.sqrt 2 * Real.sqrt (singularGapRatio H h t) ≤
+      2 * Real.sqrt (singularGapRatio (CFC.sqrt H) h t) := by
+    rw [← Real.sqrt_mul zero_le_two]
+    calc Real.sqrt (2 * singularGapRatio H h t)
+        ≤ Real.sqrt (2 ^ 2 * singularGapRatio (CFC.sqrt H) h t) :=
+          Real.sqrt_le_sqrt (by linarith)
+      _ = 2 * Real.sqrt (singularGapRatio (CFC.sqrt H) h t) := by
+        rw [Real.sqrt_mul (by positivity), Real.sqrt_sq zero_le_two]
+  have hexp : Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio (CFC.sqrt H) h t)) ≤
+      Real.exp (-4 * Real.sqrt 2 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t)) :=
+    Real.exp_le_exp.mpr (by nlinarith [mul_le_mul_of_nonneg_left hγ hq1])
+  simp only [specNorm_sub_nystromBKI_eq hH]
+  refine (integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+    (CFC.sqrt H) hX hr hrt ht hq).trans ?_
+  rw [hH.sq_singularValues_sqrt, hH.frobNorm_sqrt_sub_truncatedSVD_sq]
+  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hexp zero_le_four) (div_card_sub_nonneg ht))
+    (nuclearNorm_nonneg (H - truncatedSVD H t))
+  linarith
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -125,7 +179,19 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRat
       singularValues H r +
         Real.exp (-4 * (p : ℝ) * singularGapRatio H h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * nuclearNorm (H - truncatedSVD H t) := by
-  sorry
+  have hgap := hH.singularGapRatio_le_two_mul_singularGapRatio_sqrt (show h ≤ t by omega)
+  have hexp : Real.exp (-8 * (p : ℝ) * singularGapRatio (CFC.sqrt H) h t) ≤
+      Real.exp (-4 * (p : ℝ) * singularGapRatio H h t) :=
+    Real.exp_le_exp.mpr (by nlinarith [mul_le_mul_of_nonneg_left hgap (Nat.cast_nonneg (α := ℝ) p)])
+  have hb := integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+    (CFC.sqrt H) hX hr hrt ht p
+  rw [hH.conjTranspose_sqrt_mul_sqrt, hH.sq_singularValues_sqrt,
+    hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
+  simp only [specNorm_sub_nystrom_pow_mul_eq hH]
+  refine hb.trans ?_
+  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (div_card_sub_nonneg ht))
+    (nuclearNorm_nonneg (H - truncatedSVD H t))
+  linarith
 
 /-! ### Gapless bounds -/
 
@@ -151,7 +217,10 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_one_add_sq_mul_of_h
       (1 + ε) ^ 2 * singularValues H r +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (ε / (2 + ε))) *
           ((r : ℝ) / ((Fintype.card l : ℝ) - r - 1)) * nuclearNorm (H - truncatedSVD H r) := by
-  sorry
+  simp only [specNorm_sub_nystromBKI_eq hH]
+  have hb := integral_specNorm_sub_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
+    (CFC.sqrt H) hX hr hq hε
+  rwa [hH.sq_singularValues_sqrt, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -173,7 +242,11 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_one_add_sq_mul
       (1 + ε) ^ 2 * singularValues H r +
         Real.exp (-8 * (p : ℝ) * (ε / (2 + ε))) *
           ((r : ℝ) / ((Fintype.card l : ℝ) - r - 1)) * nuclearNorm (H - truncatedSVD H r) := by
-  sorry
+  simp only [specNorm_sub_nystrom_pow_mul_eq hH]
+  have hb := integral_specNorm_sub_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
+    (CFC.sqrt H) hX hr p hε
+  rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.sq_singularValues_sqrt,
+    hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -200,7 +273,10 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_mul_exp_of_hasLaw_g
       singularValues H r *
         Real.exp (Real.log (4 * rangeFinderTailRatio (CFC.sqrt H) r (Fintype.card l)) ^ 2 /
           (16 * ((q : ℝ) - 1) ^ 2)) := by
-  sorry
+  simp only [specNorm_sub_nystromBKI_eq hH]
+  have hb := integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (CFC.sqrt H) hX hr
+    hq (singularValues_sqrt_pos hH hσ)
+  rwa [hH.sq_singularValues_sqrt] at hb
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -225,7 +301,10 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_mul_rpow_of_ha
     ∫ ω, specNorm (H - nystrom H (H ^ p * X ω)) ∂μ ≤
       singularValues H r *
         rangeFinderTailRatio (CFC.sqrt H) r (Fintype.card l) ^ (1 / (2 * (p : ℝ) + 1)) := by
-  sorry
+  simp only [specNorm_sub_nystrom_pow_mul_eq hH]
+  have hb := integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatrix
+    (CFC.sqrt H) hX hr p (singularValues_sqrt_pos hH hσ)
+  rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.sq_singularValues_sqrt] at hb
 
 /-! ### The late-truncated outputs -/
 
@@ -250,7 +329,33 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_sin
       nuclearNorm (H - truncatedSVD H r) +
         4 * Real.exp (-4 * Real.sqrt 2 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * nuclearNorm (H - truncatedSVD H t) := by
-  sorry
+  have hht : h ≤ t := by omega
+  have hq1 : (0 : ℝ) ≤ (q : ℝ) - 1 := by
+    have : (1 : ℝ) ≤ q := by exact_mod_cast hq
+    linarith
+  have hgap := hH.singularGapRatio_le_two_mul_singularGapRatio_sqrt hht
+  have hγ : Real.sqrt 2 * Real.sqrt (singularGapRatio H h t) ≤
+      2 * Real.sqrt (singularGapRatio (CFC.sqrt H) h t) := by
+    rw [← Real.sqrt_mul zero_le_two]
+    calc Real.sqrt (2 * singularGapRatio H h t)
+        ≤ Real.sqrt (2 ^ 2 * singularGapRatio (CFC.sqrt H) h t) :=
+          Real.sqrt_le_sqrt (by linarith)
+      _ = 2 * Real.sqrt (singularGapRatio (CFC.sqrt H) h t) := by
+        rw [Real.sqrt_mul (by positivity), Real.sqrt_sq zero_le_two]
+  have hexp : Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio (CFC.sqrt H) h t)) ≤
+      Real.exp (-4 * Real.sqrt 2 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t)) :=
+    Real.exp_le_exp.mpr (by nlinarith [mul_le_mul_of_nonneg_left hγ hq1])
+  have key : ∀ ω, nuclearNorm (H - truncatedSVD (nystromBKI H (X ω) q) r) =
+      frobNorm (CFC.sqrt H - truncatedSVD (rbki (CFC.sqrt H) (X ω) q) r) ^ 2 := fun ω => by
+    rw [nystromBKI, hH.nuclearNorm_sub_truncatedSVD_nystrom, rbki, hH.conjTranspose_sqrt_mul_sqrt]
+  simp only [key]
+  refine (integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+    (CFC.sqrt H) hX hr hrt ht hq).trans ?_
+  rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq]
+  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hexp zero_le_four) (div_card_sub_nonneg ht))
+    (nuclearNorm_nonneg (H - truncatedSVD H t))
+  linarith
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -269,6 +374,19 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_l
       nuclearNorm (H - truncatedSVD H r) +
         Real.exp (-4 * (p : ℝ) * singularGapRatio H h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * nuclearNorm (H - truncatedSVD H t) := by
-  sorry
+  have hgap := hH.singularGapRatio_le_two_mul_singularGapRatio_sqrt (show h ≤ t by omega)
+  have hexp : Real.exp (-8 * (p : ℝ) * singularGapRatio (CFC.sqrt H) h t) ≤
+      Real.exp (-4 * (p : ℝ) * singularGapRatio H h t) :=
+    Real.exp_le_exp.mpr (by nlinarith [mul_le_mul_of_nonneg_left hgap (Nat.cast_nonneg (α := ℝ) p)])
+  have hb :=
+    integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+      (CFC.sqrt H) hX hr hrt ht p
+  rw [hH.conjTranspose_sqrt_mul_sqrt, hH.frobNorm_sqrt_sub_truncatedSVD_sq,
+    hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
+  simp only [hH.nuclearNorm_sub_truncatedSVD_nystrom]
+  refine hb.trans ?_
+  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (div_card_sub_nonneg ht))
+    (nuclearNorm_nonneg (H - truncatedSVD H t))
+  linarith
 
 end NLAlib
