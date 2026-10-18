@@ -417,7 +417,8 @@ factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tan
 S2b, `docs/design/LowRank-S2b.md` §1, §8). `svdU` and `svdV`, the chosen thin SVD from which
 `truncatedSVD` is now built (LowRank S2c, `docs/design/LowRank-S2c.md` §8 items 1, 2, 12).
 `HasProjectionCostPreserving`, the tail form of `IsProjectionCostPreserving` (LowRank S9,
-`docs/design/LowRank-S9.md` §1, §8 item 7).
+`docs/design/LowRank-S9.md` §1, §8 item 7). `girardHutchinson` (trace estimation,
+`docs/design/Probability-TraceEstimation.md`).
 
 Poly0 (2026-10-16): `Metric.IsUniformApproxOn` adds a fixed-error predicate absent from the
 pinned Mathlib; it uses Mathlib's `dist` directly and its compact continuous-map bridge is

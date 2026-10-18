@@ -56,6 +56,9 @@ Every statement holds for every choice of the truncations involved. Design:
   `NLAlib.IsBestRankApprox.matrixNorm_sub_le_add_two_mul`: the truncation lemma.
 * `NLAlib.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_rank_le`,
   `NLAlib.specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le`: reverse Eckart–Young.
+* `NLAlib.frobNorm_sub_truncatedSVD_le_nuclearNorm_div`,
+  `Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div`: the Frobenius tail is at most
+  $\|\mathbf{A}\|_*/(2\sqrt{r})$.
 * `NLAlib.IsBestRankApprox.frobNorm_sub_le_add_frobNorm_truncatedSVD`,
   `NLAlib.IsBestRankApprox.frobNorm_sub_le_add_specNorm`: perturbed truncation.
 * `NLAlib.nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD`,
@@ -663,6 +666,66 @@ theorem specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix 
         singularValues (A - B) (i + 1) :=
     Finset.sum_le_sum fun i _ => singularValues_add_le_singularValues_sub_of_rank_le A hB (i + 1)
   linarith
+
+-- Stage TE-0
+
+/-- **The tail of the singular values in the nuclear norm.** For every $\mathbf{A}$ and every
+$r \ge 1$,
+$$\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}} \le
+\frac{\|\mathbf{A}\|_*}{2\sqrt{r}}\,:$$
+the tail $\sum_{i \ge r}\sigma_i^2$ is at most $\sigma_{r-1}\sum_{i \ge r}\sigma_i \le
+\frac1r\bigl(\sum_{i < r}\sigma_i\bigr)\bigl(\sum_{i \ge r}\sigma_i\bigr) \le
+\|\mathbf{A}\|_*^2/(4r)$. The positive semidefinite form, with
+$\operatorname{Re}\operatorname{tr}\mathbf{A}$, is
+`Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div`.
+[GilbertStraussTroppVershynin2007, Lemma 7]; [MeyerMuscoMuscoWoodruff2021, Imported Lemma 13 and
+§5 after Theorem 10]; [EpperlyTroppWebber2024, Fact 5.5]; GSTV state it for vectors and the
+$\ell_1$ norm, MMMW for positive semidefinite matrices with the trace, remarking that the proof
+gives the nuclear norm for any $\mathbf{A}$.
+Result: frobenius-tail-nuclear-norm -/
+theorem frobNorm_sub_truncatedSVD_le_nuclearNorm_div (A : Matrix m n 𝕜) {r : ℕ} (hr : 0 < r) :
+    frobNorm (A - truncatedSVD A r) ≤ nuclearNorm A / (2 * √(r : ℝ)) := by
+  set N := min (Fintype.card m) (Fintype.card n)
+  set σ := singularValues A
+  have hrN : A.rank ≤ r + N :=
+    (le_min A.rank_le_card_height A.rank_le_card_width).trans (Nat.le_add_left _ _)
+  set a := ∑ i ∈ Finset.range r, σ i
+  set b := ∑ i ∈ Finset.Ico r (r + N), σ i
+  have hnuc : nuclearNorm A = a + b := by
+    rw [nuclearNorm_eq_sum_range A hrN, Finset.sum_range_add_sum_Ico _ (Nat.le_add_right r N)]
+  have hσ := singularValues_nonneg A
+  have hT : frobNorm (A - truncatedSVD A r) ^ 2 ≤ σ r * b := by
+    rw [frobNorm_sub_truncatedSVD_sq, Finset.mul_sum]
+    refine (Finset.sum_le_sum_of_subset_of_nonneg (Finset.Ico_subset_Ico_right
+      (Nat.le_add_left N r)) fun i _ _ => sq_nonneg _).trans (Finset.sum_le_sum fun i hi => ?_)
+    rw [sq]
+    exact mul_le_mul_of_nonneg_right (singularValues_antitone A (Finset.mem_Ico.mp hi).1) (hσ i)
+  have ha : (r : ℝ) * σ r ≤ a := by
+    have := Finset.sum_le_sum fun i (hi : i ∈ Finset.range r) =>
+      singularValues_antitone A (Finset.mem_range.mp hi).le
+    simpa only [Finset.sum_const, Finset.card_range, nsmul_eq_mul] using this
+  have hb : 0 ≤ b := Finset.sum_nonneg fun i _ => hσ i
+  have hr' : (0 : ℝ) < r := by exact_mod_cast hr
+  have hsq : (frobNorm (A - truncatedSVD A r) * (2 * √(r : ℝ))) ^ 2 ≤ nuclearNorm A ^ 2 := by
+    rw [mul_pow, mul_pow, Real.sq_sqrt hr'.le, hnuc]
+    nlinarith [mul_le_mul_of_nonneg_right ha hb, sq_nonneg (a - b),
+      mul_le_mul_of_nonneg_left hT hr'.le]
+  rw [le_div_iff₀ (by positivity)]
+  exact (pow_le_pow_iff_left₀ (by positivity) (nuclearNorm_nonneg A) two_ne_zero).mp hsq
+
+/-- **The tail of the eigenvalues of a positive semidefinite matrix.** For positive semidefinite
+$\mathbf{A}$ and $r \ge 1$,
+$$\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}} \le
+\frac{\operatorname{Re}\operatorname{tr}\mathbf{A}}{2\sqrt{r}}\,,$$
+`NLAlib.frobNorm_sub_truncatedSVD_le_nuclearNorm_div` with
+$\|\mathbf{A}\|_* = \operatorname{Re}\operatorname{tr}\mathbf{A}$.
+[MeyerMuscoMuscoWoodruff2021, Imported Lemma 13]; [GilbertStraussTroppVershynin2007, Lemma 7];
+MMMW's Lemma 3 is the same bound without the factor $1/2$. -/
+theorem _root_.Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div {A : Matrix n n 𝕜}
+    (hA : A.PosSemidef) {r : ℕ} (hr : 0 < r) :
+    frobNorm (A - truncatedSVD A r) ≤ RCLike.re A.trace / (2 * √(r : ℝ)) := by
+  rw [← hA.nuclearNorm_eq_re_trace]
+  exact frobNorm_sub_truncatedSVD_le_nuclearNorm_div A hr
 
 /-! ### Perturbed truncation, Gram matrices -/
 

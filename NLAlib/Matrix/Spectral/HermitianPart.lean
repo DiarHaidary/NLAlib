@@ -30,6 +30,8 @@ Hermitian part (Ky Fan), so they lie between its extreme eigenvalues (Bendixson)
   Bendixson's bounds.
 * `NLAlib.det_ne_zero_of_posDef_hermitianPart`: a matrix with positive definite Hermitian part is
   invertible.
+* `NLAlib.quadForm_hermitianPart`, `NLAlib.trace_conjTranspose_mul_hermitianPart_mul`: over
+  $\mathbb{R}$, quadratic forms and traces of compressions see only the symmetric part.
 -/
 
 @[expose] public section
@@ -63,6 +65,18 @@ theorem _root_.Matrix.IsHermitian.hermitianPart_eq {A : Matrix n n 𝕜} (hA : A
 
 variable [Fintype n]
 
+/-- The Hermitian part does not increase the Frobenius norm:
+$$\|\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\|_{\mathsf{F}} \le
+\|\mathbf{A}\|_{\mathsf{F}}\,,$$
+by the triangle inequality and $\|\mathbf{A}^{\mathsf{H}}\|_{\mathsf{F}} =
+\|\mathbf{A}\|_{\mathsf{F}}$. -/
+theorem frobNorm_hermitianPart_le (A : Matrix n n 𝕜) : frobNorm (hermitianPart A) ≤ frobNorm A := by
+  rw [hermitianPart, frobNorm_real_smul]
+  have h := frobNorm_add_le A Aᴴ
+  rw [frobNorm_conjTranspose] at h
+  rw [abs_of_pos (by norm_num : (0 : ℝ) < 2⁻¹)]
+  linarith
+
 /-- The quadratic form of the Hermitian part is the real part of the quadratic form:
 $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{H}\mathbf{x}) =
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for
@@ -72,6 +86,29 @@ theorem re_quadForm_hermitianPart (A : Matrix n n 𝕜) (x : n → 𝕜) :
   rw [hermitianPart, RCLike.real_smul_eq_coe_smul (K := 𝕜), quadForm_smul_left,
     quadForm_add_left, ← star_quadForm, RCLike.re_ofReal_mul, map_add, RCLike.star_def,
     RCLike.conj_re]
+  ring
+
+/-- Over $\mathbb{R}$ a quadratic form sees only the symmetric part:
+$\mathbf{x}^{\mathsf{T}}\mathbf{H}\mathbf{x} = \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x}$ for
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$. The real case of
+`NLAlib.re_quadForm_hermitianPart`; it turns a statement about symmetric matrices into one about
+all real matrices. -/
+theorem quadForm_hermitianPart (A : Matrix n n ℝ) (x : n → ℝ) :
+    quadForm (hermitianPart A) x = quadForm A x := by
+  simpa only [RCLike.re_to_real] using re_quadForm_hermitianPart A x
+
+/-- Over $\mathbb{R}$ the trace of a compression sees only the symmetric part:
+$\operatorname{tr}(\mathbf{Q}^{\mathsf{T}}\mathbf{H}\mathbf{Q})
+= \operatorname{tr}(\mathbf{Q}^{\mathsf{T}}\mathbf{A}\mathbf{Q})$ for
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$ and any $\mathbf{Q}$. -/
+theorem trace_conjTranspose_mul_hermitianPart_mul {k : Type*} [Fintype k] (Q : Matrix n k ℝ)
+    (A : Matrix n n ℝ) : (Qᴴ * hermitianPart A * Q).trace = (Qᴴ * A * Q).trace := by
+  have h : (Qᴴ * Aᴴ * Q).trace = (Qᴴ * A * Q).trace := by
+    have e : Qᴴ * Aᴴ * Q = (Qᴴ * A * Q)ᴴ := by
+      simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc]
+    rw [e, Matrix.trace_conjTranspose, star_trivial]
+  rw [hermitianPart, Matrix.mul_smul, Matrix.smul_mul, Matrix.trace_smul, Matrix.mul_add,
+    Matrix.add_mul, Matrix.trace_add, h, smul_eq_mul]
   ring
 
 /-- The Hermitian part commutes with unitary conjugation: the Hermitian part of

@@ -1,5 +1,8 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import NLAlib.Estimation.Trace.GirardHutchinson
+public import NLAlib.Estimation.Trace.HutchPlusPlus
+public import NLAlib.Estimation.Trace.HutchPlusPlusTail
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
 public import NLAlib.ForMathlib.Analysis.CStarAlgebra.Matrix

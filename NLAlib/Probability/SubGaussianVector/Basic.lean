@@ -32,6 +32,8 @@ sub-Gaussian vectors.
 
 * `NLAlib.IsSubgaussianVector.mulVec`: $\mathbf{A}\mathbf{x}$ has proxy $c \|\mathbf{A}\|_2^2$.
 * `NLAlib.IsSubgaussianVector.of_iIndepFun`: independent real sub-Gaussian coordinates.
+* `NLAlib.IsSubgaussianVector.uncurry_of_iIndepFun`: independent sub-Gaussian vectors, stacked
+  (vectorization).
 * `NLAlib.isSubgaussianVector_of_hasLaw_gaussianVector`,
   `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`: proxy $1$.
 * `ProbabilityTheory.HasLaw.isSubgaussianVector_iff`: the property depends only on the law.
@@ -137,6 +139,34 @@ theorem of_iIndepFun {x : Ω → n → ℝ} (hind : iIndepFun (fun i ω => x ω 
     rw [EuclideanSpace.nnnorm_eq, NNReal.sq_sqrt, ← Finset.sum_mul, mul_comm]
   rw [hc] at hu
   simpa only [RCLike.re_to_real, dotProduct] using hu
+
+/-- **Vectorization**: independent sub-Gaussian vectors $\mathbf{x}_1, \dots, \mathbf{x}_t$ with
+proxy $c$, stacked into one vector indexed by pairs $(i, j)$, form a sub-Gaussian vector with
+proxy $c$. For the columns of a random matrix $\mathbf{X}$ this is $\operatorname{vec}\mathbf{X}$,
+on which $\|\mathbf{E}\mathbf{X}\|_{\mathsf{F}}^2 = \|(\mathbf{I} \otimes \mathbf{E})
+\operatorname{vec}\mathbf{X}\|^2$ brings the tails of `NLAlib.IsSubgaussianVector` to matrices.
+The proof: $\operatorname{Re}(\mathbf{u}^{\mathsf{T}}\mathbf{x}) = \sum_i
+\operatorname{Re}(\mathbf{u}_i^{\mathsf{T}}\mathbf{x}_i)$ is a sum of independent sub-Gaussian
+variables with proxies $c\|\mathbf{u}_i\|^2$. -/
+theorem uncurry_of_iIndepFun {ι : Type*} [Fintype ι] {x : Ω → ι → n → 𝕜}
+    (hind : iIndepFun (fun i ω => x ω i) μ)
+    (h : ∀ i, IsSubgaussianVector (fun ω => x ω i) c μ) :
+    IsSubgaussianVector (fun ω => Function.uncurry (x ω)) c μ := by
+  refine ⟨fun u => ?_⟩
+  have hg : ∀ i, Measurable fun v : n → 𝕜 => RCLike.re ((fun j => u (i, j)) ⬝ᵥ v) := by
+    intro i
+    simp only [dotProduct]
+    fun_prop
+  have hs := HasSubgaussianMGF.sum_of_iIndepFun (hind.comp _ hg) (s := Finset.univ)
+    fun i _ => (h i).hasSubgaussianMGF fun j => u (i, j)
+  have hc : ∑ i, c * ‖WithLp.toLp 2 (fun j => u (i, j))‖₊ ^ 2 = c * ‖WithLp.toLp 2 u‖₊ ^ 2 := by
+    rw [← Finset.mul_sum]
+    congr 1
+    simp only [EuclideanSpace.nnnorm_eq, NNReal.sq_sqrt, Fintype.sum_prod_type]
+  rw [hc] at hs
+  convert hs using 2 with ω
+  simp only [Function.comp_apply, dotProduct, Fintype.sum_prod_type, Function.uncurry_apply_pair,
+    map_sum]
 
 end IsSubgaussianVector
 
