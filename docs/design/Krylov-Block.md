@@ -891,7 +891,14 @@ statement. Recommendation: **(a)**; each appears in four or more statements.
 
 ## Decisions
 
-None yet.
+Maintainer, 2026-10-18: "the gapless bounds are more important, but it is okay to defer them if
+its a big task. other stuff looks good". So BD1 to BD9 are approved as recommended (BD1 (b), BD2
+(a), BD3a (iii), BD3b (i), BD4 (c), BD5 (b), BD6 (a), BD7 (a), BD8 (a), BD9 (a)). Priority: the
+gapless bounds (TW Theorem 9.1 and its truncated forms) are the more important target. The stage
+order stays (Theorem 9.2 first, since the Musco–Musco ε-form gapless bound is derived from it), but
+B6a and B6b are not optional; a gapless item is deferred only if it proves to be a large task, and
+then the gap is recorded here. The deferred truncated Frobenius gapless bound (MM Theorem 11) is
+revisited after B6b with the same rule.
 
 ## Implementation
 
