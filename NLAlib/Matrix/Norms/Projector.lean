@@ -241,7 +241,12 @@ theorem frobNorm_one_sub_rangeProjector_mul_sq_eq_add (Y : Matrix m p 𝕜) (A :
     frobNorm ((1 - rangeProjector Y) * A) ^ 2 =
       frobNorm ((1 - rangeProjector Y) * A * rangeProjector Y) ^ 2 +
         frobNorm ((1 - rangeProjector Y) * A * (1 - rangeProjector Y)) ^ 2 := by
-  sorry
+  set M := (1 - rangeProjector Y) * A
+  have hP := isStarProjection_rangeProjector Y
+  have h := hP.frobNorm_sq_eq_add Mᴴ
+  rwa [← hP.conjTranspose_eq, ← Matrix.conjTranspose_mul, ← Matrix.conjTranspose_one,
+    ← Matrix.conjTranspose_sub, ← Matrix.conjTranspose_mul, frobNorm_conjTranspose,
+    frobNorm_conjTranspose, frobNorm_conjTranspose] at h
 
 /-- **The exact error split.** For any coefficient matrix $\mathbf{X}$, the squared Frobenius
 error of $\mathbf{B}\mathbf{X}$ as an approximation of $\mathbf{A}$ is the squared projection

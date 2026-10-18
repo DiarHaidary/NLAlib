@@ -65,6 +65,18 @@ theorem _root_.Matrix.IsHermitian.hermitianPart_eq {A : Matrix n n 𝕜} (hA : A
 
 variable [Fintype n]
 
+/-- The Hermitian part does not increase the Frobenius norm:
+$$\|\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\|_{\mathsf{F}} \le
+\|\mathbf{A}\|_{\mathsf{F}}\,,$$
+by the triangle inequality and $\|\mathbf{A}^{\mathsf{H}}\|_{\mathsf{F}} =
+\|\mathbf{A}\|_{\mathsf{F}}$. -/
+theorem frobNorm_hermitianPart_le (A : Matrix n n 𝕜) : frobNorm (hermitianPart A) ≤ frobNorm A := by
+  rw [hermitianPart, frobNorm_real_smul]
+  have h := frobNorm_add_le A Aᴴ
+  rw [frobNorm_conjTranspose] at h
+  rw [abs_of_pos (by norm_num : (0 : ℝ) < 2⁻¹)]
+  linarith
+
 /-- The quadratic form of the Hermitian part is the real part of the quadratic form:
 $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{H}\mathbf{x}) =
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for

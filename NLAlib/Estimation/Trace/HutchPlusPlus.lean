@@ -45,8 +45,8 @@ definition, the error identity and unbiasedness are over any `RCLike` field. Des
 ## Main results
 
 * `NLAlib.HasOrthonormalCols.hutchpp_eq`: the papers' form with an orthonormal basis of the sketch.
-* `NLAlib.hutchpp_sub_trace`: the error identity; `NLAlib.hutchpp_eq_trace_of_rank_eq`: exactness
-  when the sketch captures the range.
+* `NLAlib.hutchpp_sub_trace`: the error identity; `NLAlib.hutchpp_eq_trace_of_rsvd_eq`,
+  `NLAlib.hutchpp_eq_trace_of_rank_eq`: exactness when the sketch captures $\mathbf{A}$.
 * `NLAlib.integral_hutchpp`: unbiasedness.
 * `NLAlib.integral_norm_hutchpp_sub_trace_sq`: the mean-square error as an average over the sketch.
 * `NLAlib.variance_hutchpp_of_hasLaw_gaussianMatrix`,
@@ -63,7 +63,7 @@ definition, the error identity and unbiasedness are over any `RCLike` field. Des
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory
-open scoped Matrix
+open scoped Matrix ENNReal
 
 namespace NLAlib
 
@@ -92,6 +92,199 @@ noncomputable def hutchpp (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) (G : Matri
   (rsvd A S).trace +
     girardHutchinson ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))) G
 
+/-! #### Deterministic helpers -/
+
+/-- The compression of $\mathbf{B}$ by the residual projector of the sketch of $\mathbf{A}$ is
+no larger than $\mathbf{B}$ in the Frobenius norm. -/
+private theorem frobNorm_compress_le (A B : Matrix n n 𝕜) (S : Matrix n s 𝕜) :
+    frobNorm ((1 - rangeProjector (A * S)) * B * (1 - rangeProjector (A * S))) ≤ frobNorm B :=
+  ((isStarProjection_one_sub_rangeProjector (A * S)).frobNorm_mul_right_le _).trans
+    (frobNorm_one_sub_rangeProjector_mul_le (A * S) B)
+
+/-- Compression by a residual projector commutes with taking the Hermitian part. -/
+private theorem hermitianPart_compress (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) :
+    (1 - rangeProjector (A * S)) * hermitianPart A * (1 - rangeProjector (A * S)) =
+      hermitianPart ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))) := by
+  have h := hermitianPart_mul_mul_conjTranspose (1 - rangeProjector (A * S)) A
+  rw [(isStarProjection_one_sub_rangeProjector (A * S)).conjTranspose_eq] at h
+  exact h.symm
+
+/-- The compressed Hermitian part is no larger than the error of the randomized SVD:
+$\|(\mathbf{I} - \mathbf{P})\mathbf{H}(\mathbf{I} - \mathbf{P})\|_{\mathsf{F}} \le
+\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{S})\|_{\mathsf{F}}$. -/
+private theorem frobNorm_compress_hermitianPart_le (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) :
+    frobNorm ((1 - rangeProjector (A * S)) * hermitianPart A * (1 - rangeProjector (A * S))) ≤
+      frobNorm (A - rsvd A S) := by
+  rw [hermitianPart_compress, sub_rsvd]
+  exact (frobNorm_hermitianPart_le _).trans
+    ((isStarProjection_one_sub_rangeProjector (A * S)).frobNorm_mul_right_le _)
+
+omit [DecidableEq n] in
+/-- The Girard–Hutchinson estimate is at most
+$\|\mathbf{B}\|_{\mathsf{F}}\|\mathbf{G}\|_{\mathsf{F}}^2$ in modulus. -/
+private theorem norm_girardHutchinson_le (B : Matrix n n 𝕜) (g : Matrix n t 𝕜) :
+    ‖girardHutchinson B g‖ ≤ frobNorm B * frobNorm g ^ 2 := by
+  have h1 : ‖(gᴴ * B * g).trace‖ ≤ frobNorm B * frobNorm g ^ 2 := by
+    refine (norm_trace_le_nuclearNorm _).trans ?_
+    rw [Matrix.mul_assoc]
+    refine (nuclearNorm_mul_le_frobNorm_mul_frobNorm _ _).trans ?_
+    rw [frobNorm_conjTranspose]
+    calc frobNorm g * frobNorm (B * g) ≤ frobNorm g * (frobNorm B * frobNorm g) :=
+          mul_le_mul_of_nonneg_left (frobNorm_mul_le B g) (frobNorm_nonneg g)
+      _ = frobNorm B * frobNorm g ^ 2 := by ring
+  rw [girardHutchinson, norm_div, RCLike.norm_natCast]
+  rcases Nat.eq_zero_or_pos (Fintype.card t) with h | h
+  · rw [h, Nat.cast_zero, div_zero]
+    exact mul_nonneg (frobNorm_nonneg _) (sq_nonneg _)
+  · exact (div_le_self (norm_nonneg _) (by exact_mod_cast h)).trans h1
+
+omit [DecidableEq n] in
+/-- The trace is at most $\lvert n \rvert \|\mathbf{B}\|_{\mathsf{F}}$ in modulus. -/
+private theorem norm_trace_le_card_mul_frobNorm (B : Matrix n n 𝕜) :
+    ‖B.trace‖ ≤ Fintype.card n * frobNorm B := by
+  rw [Matrix.trace]
+  refine (norm_sum_le _ _).trans ?_
+  simpa only [Matrix.diag_apply, Finset.sum_const, Finset.card_univ, nsmul_eq_mul] using
+    Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => norm_apply_le_frobNorm B i i
+
+/-- The residual error is bounded by
+$\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{G}\|_{\mathsf{F}}^2 +
+\lvert n \rvert \|\mathbf{A}\|_{\mathsf{F}}$, uniformly in the sketch. -/
+private theorem norm_girardHutchinson_compress_sub_trace_le (A : Matrix n n 𝕜)
+    (S : Matrix n s 𝕜) (g : Matrix n t 𝕜) :
+    ‖girardHutchinson ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))) g -
+        ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))).trace‖ ≤
+      frobNorm A * frobNorm g ^ 2 + Fintype.card n * frobNorm A := by
+  have hΔ := frobNorm_compress_le A A S
+  refine (norm_sub_le _ _).trans (add_le_add ?_ ?_)
+  · exact (norm_girardHutchinson_le _ g).trans (mul_le_mul_of_nonneg_right hΔ (sq_nonneg _))
+  · exact (norm_trace_le_card_mul_frobNorm _).trans
+      (mul_le_mul_of_nonneg_left hΔ (Nat.cast_nonneg _))
+
+omit [DecidableEq n] in
+/-- Over $\mathbb{R}$ the Girard–Hutchinson estimate sees only the symmetric part. -/
+private theorem girardHutchinson_hermitianPart (B : Matrix n n ℝ) (g : Matrix n t ℝ) :
+    girardHutchinson (hermitianPart B) g = girardHutchinson B g := by
+  rw [girardHutchinson, girardHutchinson, trace_conjTranspose_mul_hermitianPart_mul]
+
+omit [DecidableEq n] in
+/-- Over $\mathbb{R}$ the trace sees only the symmetric part. -/
+private theorem trace_hermitianPart (B : Matrix n n ℝ) : (hermitianPart B).trace = B.trace := by
+  classical
+  simpa only [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one] using
+    trace_conjTranspose_mul_hermitianPart_mul (1 : Matrix n n ℝ) B
+
+/-! #### Measurability and integrability helpers -/
+
+private theorem measurable_one_sub_rangeProjector_mul (A : Matrix n n 𝕜) :
+    Measurable fun S : Matrix n s 𝕜 => 1 - rangeProjector (A * S) :=
+  measurable_const.matrix_sub
+    (measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id))
+
+private theorem measurable_compress (A B : Matrix n n 𝕜) :
+    Measurable fun S : Matrix n s 𝕜 =>
+      (1 - rangeProjector (A * S)) * B * (1 - rangeProjector (A * S)) :=
+  ((measurable_one_sub_rangeProjector_mul A).matrix_mul measurable_const).matrix_mul
+    (measurable_one_sub_rangeProjector_mul A)
+
+omit [DecidableEq n] in
+private theorem measurable_girardHutchinson :
+    Measurable fun p : Matrix n n 𝕜 × Matrix n t 𝕜 => girardHutchinson p.1 p.2 := by
+  unfold girardHutchinson
+  exact (((Measurable.matrix_conjTranspose continuous_star.measurable measurable_snd).matrix_mul
+    measurable_fst).matrix_mul measurable_snd).matrix_trace.div_const _
+
+/-- The residual error as a function of the pair of test matrices is measurable. -/
+private theorem measurable_girardHutchinson_compress_sub_trace (A : Matrix n n 𝕜) :
+    Measurable fun p : Matrix n s 𝕜 × Matrix n t 𝕜 =>
+      girardHutchinson ((1 - rangeProjector (A * p.1)) * A * (1 - rangeProjector (A * p.1))) p.2 -
+        ((1 - rangeProjector (A * p.1)) * A * (1 - rangeProjector (A * p.1))).trace :=
+  (measurable_girardHutchinson.comp
+    (((measurable_compress A A).comp measurable_fst).prodMk measurable_snd)).sub
+    ((measurable_compress A A).comp measurable_fst).matrix_trace
+
+private theorem aemeasurable_of_memLp_apply {a b : Type*} [Countable a] [Countable b]
+    {G : Ω → Matrix a b 𝕜} {p : ℝ≥0∞} (hG : ∀ i j, MemLp (fun ω => G ω i j) p μ) :
+    AEMeasurable G μ :=
+  aemeasurable_pi_lambda _ fun i => aemeasurable_pi_lambda _ fun j =>
+    (hG i j).aestronglyMeasurable.aemeasurable
+
+omit [Fintype s] [DecidableEq n] in
+private theorem integrable_frobNorm_sq_of_memLp [IsFiniteMeasure μ] {G : Ω → Matrix n t 𝕜}
+    (hG : ∀ i j, MemLp (fun ω => G ω i j) 2 μ) :
+    Integrable (fun ω => frobNorm (G ω) ^ 2) μ := by
+  simp only [frobNorm_sq_eq_sum]
+  exact integrable_finsetSum _ fun i _ => integrable_finsetSum _ fun j _ =>
+    (hG i j).integrable_norm_pow' (p := 2)
+
+omit [Fintype s] [DecidableEq n] in
+private theorem integrable_frobNorm_pow_four_of_memLp [IsFiniteMeasure μ]
+    {G : Ω → Matrix n t 𝕜} (hG : ∀ i j, MemLp (fun ω => G ω i j) 4 μ) :
+    Integrable (fun ω => frobNorm (G ω) ^ 4) μ := by
+  have hm : AEMeasurable G μ := aemeasurable_of_memLp_apply hG
+  have hb : Integrable (fun ω => ((Fintype.card n * Fintype.card t : ℕ) : ℝ) *
+      ∑ i, ∑ j, ‖G ω i j‖ ^ 4) μ :=
+    (integrable_finsetSum _ fun i _ => integrable_finsetSum _ fun j _ =>
+      (hG i j).integrable_norm_pow' (p := 4)).const_mul _
+  refine hb.mono'
+    ((continuous_frobNorm.measurable.comp_aemeasurable hm).pow_const 4).aestronglyMeasurable
+    (ae_of_all _ fun ω => ?_)
+  have h := sq_sum_le_card_mul_sum_sq (s := (Finset.univ : Finset (n × t)))
+    (f := fun p => ‖G ω p.1 p.2‖ ^ 2)
+  rw [Real.norm_of_nonneg (by positivity), show frobNorm (G ω) ^ 4 = (frobNorm (G ω) ^ 2) ^ 2 by
+    ring, frobNorm_sq_eq_sum]
+  simpa only [Fintype.sum_prod_type, Finset.card_univ, Fintype.card_prod, ← pow_mul] using h
+
+/-- **Conditioning on the sketch**: for independent $\mathbf{S}$, $\mathbf{G}$ and a measurable
+$f$ dominated by an integrable function of $\mathbf{G}$,
+$\mathbb{E} f(\mathbf{S}, \mathbf{G}) = \mathbb{E}_{\mathbf{S}}\mathbb{E}_{\mathbf{G}'}
+f(\mathbf{S}, \mathbf{G}')$. -/
+private theorem integral_comp_eq_integral_integral_of_norm_le [IsProbabilityMeasure μ]
+    {α β E : Type*} [MeasurableSpace α] [MeasurableSpace β] [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {S : Ω → α} {G : Ω → β} (hS : AEMeasurable S μ) (hG : AEMeasurable G μ)
+    (hSG : IndepFun S G μ) {f : α × β → E} (hf : StronglyMeasurable f) {b : β → ℝ}
+    (hb : Integrable (fun ω => b (G ω)) μ) (hfb : ∀ x, ‖f x‖ ≤ b x.2) :
+    ∫ ω, f (S ω, G ω) ∂μ = ∫ ω, ∫ ω', f (S ω, G ω') ∂μ ∂μ := by
+  have hint : Integrable f ((μ.map S).prod (μ.map G)) := by
+    rw [← (indepFun_iff_map_prod_eq_prod_map_map hS hG).1 hSG,
+      integrable_map_measure hf.aestronglyMeasurable (hS.prodMk hG)]
+    exact hb.mono' (hf.aestronglyMeasurable.comp_aemeasurable (hS.prodMk hG))
+      (ae_of_all _ fun ω => hfb _)
+  rw [IndepFun.integral_comp_eq_integral_integral hSG hS hG hint,
+    integral_map hS hf.integral_prod_right'.aestronglyMeasurable]
+  exact integral_congr_ae (ae_of_all _ fun ω =>
+    integral_map hG (hf.comp_measurable measurable_prodMk_left).aestronglyMeasurable)
+
+omit [DecidableEq n] in
+private theorem integrable_girardHutchinson [IsFiniteMeasure μ] (B : Matrix n n 𝕜)
+    {G : Ω → Matrix n t 𝕜} (hG : ∀ i j, MemLp (fun ω => G ω i j) 2 μ) :
+    Integrable (fun ω => girardHutchinson B (G ω)) μ := by
+  have hm : Measurable fun g : Matrix n t 𝕜 => girardHutchinson B g := by
+    unfold girardHutchinson
+    exact (((Measurable.matrix_conjTranspose continuous_star.measurable measurable_id).matrix_mul
+      measurable_const).matrix_mul measurable_id).matrix_trace.div_const _
+  exact ((integrable_frobNorm_sq_of_memLp hG).const_mul (frobNorm B)).mono'
+    (hm.comp_aemeasurable (aemeasurable_of_memLp_apply hG)).aestronglyMeasurable
+    (ae_of_all _ fun ω => norm_girardHutchinson_le B (G ω))
+
+/-- A bounded measurable function of the sketch is integrable. -/
+private theorem integrable_comp_of_norm_le [IsFiniteMeasure μ] {α : Type*} [MeasurableSpace α]
+    {S : Ω → α} (hS : AEMeasurable S μ) {F : α → ℝ} (hF : Measurable F) {C : ℝ}
+    (hC : ∀ x, ‖F x‖ ≤ C) : Integrable (fun ω => F (S ω)) μ :=
+  (integrable_const C).mono' (hF.comp_aemeasurable hS).aestronglyMeasurable
+    (ae_of_all _ fun _ => hC _)
+
+omit [Fintype t] in
+private theorem integrable_frobNorm_compress_hermitianPart_sq [IsFiniteMeasure μ]
+    (A : Matrix n n 𝕜) {S : Ω → Matrix n s 𝕜} (hS : AEMeasurable S μ) :
+    Integrable (fun ω => frobNorm ((1 - rangeProjector (A * S ω)) * hermitianPart A *
+      (1 - rangeProjector (A * S ω))) ^ 2) μ :=
+  integrable_comp_of_norm_le hS
+    ((continuous_frobNorm.measurable.comp (measurable_compress A (hermitianPart A))).pow_const 2)
+    (C := frobNorm (hermitianPart A) ^ 2) fun x => by
+      rw [Real.norm_of_nonneg (sq_nonneg _)]
+      exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_compress_le _ _ _) 2
+
 /-- **Hutch++ with an orthonormal basis of the sketch**: if $\mathbf{Q}$ has orthonormal columns
 and $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$, then
 $$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) =
@@ -99,13 +292,15 @@ $$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) =
 \mathsf{girardHutchinson}\bigl((\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{A}
 (\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}}), \mathbf{G}\bigr)\,,$$
 the form in which the papers state the algorithm. A bridge to `NLAlib.hutchpp`; such a
-$\mathbf{Q}$ exists for every sketch (`NLAlib.HasOrthonormalCols.rangeProjector_eq`). -/
+$\mathbf{Q}$ exists for every sketch (`NLAlib.HasOrthonormalCols.rangeProjector_eq`). The proof
+uses only $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ and cyclicity of
+the trace; orthonormality is kept for the reading. -/
 theorem HasOrthonormalCols.hutchpp_eq {q : Type*} [Fintype q] [DecidableEq q] {Q : Matrix n q 𝕜}
-    (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
+    (_hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
     (hQS : Q * Qᴴ = rangeProjector (A * S)) (G : Matrix n t 𝕜) :
     hutchpp A S G =
       (Qᴴ * A * Q).trace + girardHutchinson ((1 - Q * Qᴴ) * A * (1 - Q * Qᴴ)) G := by
-  sorry
+  rw [hutchpp, rsvd, ← hQS, Matrix.mul_assoc Q Qᴴ A, Matrix.trace_mul_comm Q (Qᴴ * A)]
 
 /-- **The error of Hutch++ is the error of Girard–Hutchinson on the compressed residual**: for
 every square $\mathbf{A}$ and all test matrices $\mathbf{S}$, $\mathbf{G}$, with
@@ -120,7 +315,23 @@ theorem hutchpp_sub_trace (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) (G : Matri
     hutchpp A S G - A.trace =
       girardHutchinson ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))) G -
         ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))).trace := by
-  sorry
+  have h := (isStarProjection_rangeProjector (A * S)).isIdempotentElem
+    |>.trace_mul_add_trace_one_sub_mul_mul_one_sub A
+  rw [hutchpp, rsvd]
+  linear_combination h
+
+/-- **Hutch++ is exact when the randomized SVD is**: if
+$\mathsf{rsvd}(\mathbf{A}, \mathbf{S}) = \mathbf{A}$, then
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) = \operatorname{tr}\mathbf{A}$ for every
+residual test matrix $\mathbf{G}$: the residual $(\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{S}})
+\mathbf{A} = \mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{S})$ vanishes, hence so does the
+compressed residual and its Girard–Hutchinson estimate. In particular Hutch++ is exact when
+$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{S})\|_{\mathsf{F}} = 0$. -/
+theorem hutchpp_eq_trace_of_rsvd_eq {A : Matrix n n 𝕜} {S : Matrix n s 𝕜} (h : rsvd A S = A)
+    (G : Matrix n t 𝕜) : hutchpp A S G = A.trace := by
+  have h0 : (1 - rangeProjector (A * S)) * A = 0 := by rw [← sub_rsvd, h, sub_self]
+  rw [hutchpp, h, h0, Matrix.zero_mul, girardHutchinson, Matrix.mul_zero, Matrix.zero_mul,
+    Matrix.trace_zero, zero_div, add_zero]
 
 /-- **Hutch++ is exact when the sketch captures the range**: if
 $\operatorname{rank}(\mathbf{A}\mathbf{S}) = \operatorname{rank}\mathbf{A}$, then
@@ -128,14 +339,19 @@ $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) = \operatorname{tr}\mathbf
 residual test matrix $\mathbf{G}$: the randomized SVD recovers $\mathbf{A}$
 (`NLAlib.rsvd_eq_self_of_rank_eq`) and the compressed residual is $\mathbf{0}$. -/
 theorem hutchpp_eq_trace_of_rank_eq {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
-    (h : (A * S).rank = A.rank) (G : Matrix n t 𝕜) : hutchpp A S G = A.trace := by
-  sorry
+    (h : (A * S).rank = A.rank) (G : Matrix n t 𝕜) : hutchpp A S G = A.trace :=
+  hutchpp_eq_trace_of_rsvd_eq (rsvd_eq_self_of_rank_eq h) G
 
 /-- Hutch++ is a Borel measurable function of the pair of test matrices
 $(\mathbf{S}, \mathbf{G})$, from `NLAlib.measurable_rangeProjector`. -/
 theorem measurable_hutchpp (A : Matrix n n 𝕜) :
     Measurable fun p : Matrix n s 𝕜 × Matrix n t 𝕜 => hutchpp A p.1 p.2 := by
-  sorry
+  have h := ((measurable_rsvd (l := s) A).comp
+    (measurable_fst (β := Matrix n t 𝕜))).matrix_trace.add
+    ((measurable_girardHutchinson (n := n) (t := t) (𝕜 := 𝕜)).comp
+      (((measurable_compress A A).comp measurable_fst).prodMk measurable_snd))
+  unfold hutchpp
+  exact h
 
 /-- **Hutch++ is unbiased**: if the sketch test matrix $\mathbf{S}$ is almost everywhere
 measurable, the residual test matrix $\mathbf{G}$ is independent of it and has at least one
@@ -154,7 +370,32 @@ theorem integral_hutchpp [IsProbabilityMeasure μ] [Nonempty t] (A : Matrix n n 
     {S : Ω → Matrix n s 𝕜} {G : Ω → Matrix n t 𝕜} (hS : AEMeasurable S μ)
     (hSG : IndepFun S G μ) (hG : ∀ j, IsIsotropic (fun ω i => G ω i j) μ) :
     ∫ ω, hutchpp A (S ω) (G ω) ∂μ = A.trace := by
-  sorry
+  have hL2 (i : n) (j : t) : MemLp (fun ω => G ω i j) 2 μ := (hG j).memLp i
+  have hGm := aemeasurable_of_memLp_apply hL2
+  have hb : Integrable (fun ω => frobNorm A * frobNorm (G ω) ^ 2 + Fintype.card n * frobNorm A) μ :=
+    ((integrable_frobNorm_sq_of_memLp hL2).const_mul _).add (integrable_const _)
+  have hm := measurable_girardHutchinson_compress_sub_trace (s := s) (t := t) A
+  have hint : Integrable (fun ω =>
+      girardHutchinson ((1 - rangeProjector (A * S ω)) * A * (1 - rangeProjector (A * S ω))) (G ω) -
+        ((1 - rangeProjector (A * S ω)) * A * (1 - rangeProjector (A * S ω))).trace) μ :=
+    hb.mono' (hm.comp_aemeasurable (hS.prodMk hGm)).aestronglyMeasurable
+      (ae_of_all _ fun ω => norm_girardHutchinson_compress_sub_trace_le A (S ω) (G ω))
+  have he (ω : Ω) : hutchpp A (S ω) (G ω) = A.trace +
+      (girardHutchinson ((1 - rangeProjector (A * S ω)) * A * (1 - rangeProjector (A * S ω)))
+        (G ω) - ((1 - rangeProjector (A * S ω)) * A * (1 - rangeProjector (A * S ω))).trace) := by
+    rw [← hutchpp_sub_trace]
+    ring
+  simp only [he]
+  rw [integral_add (integrable_const _) hint, integral_const, probReal_univ, one_smul,
+    integral_comp_eq_integral_integral_of_norm_le hS hGm hSG hm.stronglyMeasurable
+      (b := fun g => frobNorm A * frobNorm g ^ 2 + Fintype.card n * frobNorm A) hb
+      fun x => norm_girardHutchinson_compress_sub_trace_le A x.1 x.2]
+  have hinner (u : Matrix n s 𝕜) : ∫ ω', (girardHutchinson ((1 - rangeProjector (A * u)) * A *
+      (1 - rangeProjector (A * u))) (G ω') -
+        ((1 - rangeProjector (A * u)) * A * (1 - rangeProjector (A * u))).trace) ∂μ = 0 := by
+    rw [integral_sub (integrable_girardHutchinson _ hL2) (integrable_const _),
+      integral_girardHutchinson hG, integral_const, probReal_univ, one_smul, sub_self]
+  simp only [hinner, integral_zero, add_zero]
 
 /-- **The mean-square error of Hutch++ is an average over the sketch**: if the sketch test matrix
 $\mathbf{S}$ is almost everywhere measurable, the residual test matrix $\mathbf{G}$ is independent
@@ -177,7 +418,100 @@ theorem integral_norm_hutchpp_sub_trace_sq [IsProbabilityMeasure μ] (A : Matrix
       ∫ ω, ∫ ω', ‖girardHutchinson ((1 - rangeProjector (A * S ω)) * A *
           (1 - rangeProjector (A * S ω))) (G ω') -
         ((1 - rangeProjector (A * S ω)) * A * (1 - rangeProjector (A * S ω))).trace‖ ^ 2 ∂μ ∂μ := by
-  sorry
+  have hGm := aemeasurable_of_memLp_apply hG
+  have hL2 (i : n) (j : t) : MemLp (fun ω => G ω i j) 2 μ :=
+    (hG i j).mono_exponent (by norm_num)
+  have hb : Integrable (fun ω => 2 * (frobNorm A ^ 2 * frobNorm (G ω) ^ 4) +
+      2 * (Fintype.card n * frobNorm A) ^ 2) μ :=
+    (((integrable_frobNorm_pow_four_of_memLp hG).const_mul _).const_mul _).add (integrable_const _)
+  simp only [hutchpp_sub_trace]
+  refine integral_comp_eq_integral_integral_of_norm_le hS hGm hSG
+    ((measurable_girardHutchinson_compress_sub_trace A).norm.pow_const 2).stronglyMeasurable
+    (b := fun g => 2 * (frobNorm A ^ 2 * frobNorm g ^ 4) + 2 * (Fintype.card n * frobNorm A) ^ 2)
+    hb fun x => ?_
+  have h := norm_girardHutchinson_compress_sub_trace_le A x.1 x.2
+  have h0 := norm_nonneg (girardHutchinson ((1 - rangeProjector (A * x.1)) * A *
+    (1 - rangeProjector (A * x.1))) x.2 -
+      ((1 - rangeProjector (A * x.1)) * A * (1 - rangeProjector (A * x.1))).trace)
+  rw [norm_pow, norm_norm]
+  nlinarith [sq_nonneg (frobNorm A * frobNorm x.2 ^ 2 - Fintype.card n * frobNorm A),
+    mul_le_mul h h h0 (h0.trans h)]
+
+omit [DecidableEq n] in
+/-- The mean-square error of Girard–Hutchinson with a standard Gaussian test matrix, for a fixed
+real $\mathbf{B}$: $\frac{2}{\ell}\|\mathbf{H}\|_{\mathsf{F}}^2$ with $\mathbf{H}$ the symmetric
+part of $\mathbf{B}$. -/
+private theorem integral_girardHutchinson_sub_trace_sq_of_hasLaw_gaussianMatrix [Nonempty t]
+    {G : Ω → Matrix n t ℝ} (hG : HasLaw G (gaussianMatrix n t) μ) (B : Matrix n n ℝ) :
+    ∫ ω, (girardHutchinson B (G ω) - B.trace) ^ 2 ∂μ =
+      2 / Fintype.card t * frobNorm (hermitianPart B) ^ 2 := by
+  classical
+  have := hG.isProbabilityMeasure_iff.2 inferInstance
+  have hcol := hasLaw_col_of_hasLaw_gaussianMatrix hG
+  have hX (j : t) := isIsotropic_of_hasLaw_gaussianVector (hcol j)
+  have hL4 (j : t) (i : n) : MemLp (fun ω => G ω i j) 4 μ :=
+    (((hcol j).eval i).memLp_comp_iff (f := id) aestronglyMeasurable_id).2
+      (memLp_id_gaussianReal' 4 (by simp))
+  have e (ω : Ω) : girardHutchinson B (G ω) - B.trace =
+      girardHutchinson (hermitianPart B) (G ω) - (hermitianPart B).trace := by
+    rw [girardHutchinson_hermitianPart, trace_hermitianPart]
+  have hH := isHermitian_hermitianPart B
+  have h := integral_norm_girardHutchinson_sub_trace_sq (iIndepFun_col_of_hasLaw_gaussianMatrix hG)
+    hX (A := hermitianPart B) (fun j => memLp_quadForm (hL4 j) _)
+    (v := 2 * frobNorm (hermitianPart B) ^ 2) fun j => by
+      rw [← variance_quadForm_of_hasLaw_gaussianVector (hcol j) hH,
+        variance_eq_integral (memLp_quadForm (hL4 j) _).aestronglyMeasurable.aemeasurable,
+        (hX j).integral_quadForm]
+      simp only [Real.norm_eq_abs, sq_abs]
+  simp only [Real.norm_eq_abs, sq_abs] at h
+  simp only [e, h]
+  ring
+
+omit [DecidableEq n] in
+/-- The columns of $\mathbf{G}$ are the rows of $\mathbf{G}^{\mathsf{H}}$: a sign law on the rows
+of $\mathbf{G}^{\mathsf{H}}$ gives independent sign columns of $\mathbf{G}$. -/
+private theorem hasLaw_col_of_hasLaw_conjTranspose_rademacherMatrix {G : Ω → Matrix n t ℝ}
+    (hG : HasLaw (fun ω => (G ω)ᴴ) (rademacherMatrix t n) μ) :
+    (∀ j, HasLaw (fun ω i => G ω i j) (rademacherVector n) μ) ∧
+      iIndepFun (fun j ω i => G ω i j) μ := by
+  have e (j : t) : (fun ω => (G ω)ᴴ j) = fun ω i => G ω i j := by
+    funext ω i
+    simp only [Matrix.conjTranspose_apply, star_trivial]
+  refine ⟨fun j => ?_, ?_⟩
+  · convert hG.eval j using 1
+    exact (e j).symm
+  · convert hG.iIndepFun_eval using 1
+    exact (funext e).symm
+
+omit [DecidableEq n] in
+/-- The mean-square error of Girard–Hutchinson with sign probes, for a fixed real $\mathbf{B}$:
+$\frac{2}{\ell}(\|\mathbf{H}\|_{\mathsf{F}}^2 - \sum_i \mathbf{H}_{i,i}^2)$ with $\mathbf{H}$
+the symmetric part of $\mathbf{B}$. -/
+private theorem integral_girardHutchinson_sub_trace_sq_of_hasLaw_rademacherMatrix [Nonempty t]
+    {G : Ω → Matrix n t ℝ} (hG : HasLaw (fun ω => (G ω)ᴴ) (rademacherMatrix t n) μ)
+    (B : Matrix n n ℝ) :
+    ∫ ω, (girardHutchinson B (G ω) - B.trace) ^ 2 ∂μ =
+      2 / Fintype.card t * (frobNorm (hermitianPart B) ^ 2 - ∑ i, hermitianPart B i i ^ 2) := by
+  classical
+  have := hG.isProbabilityMeasure_iff.2 inferInstance
+  obtain ⟨hcol, hind⟩ := hasLaw_col_of_hasLaw_conjTranspose_rademacherMatrix hG
+  have hX (j : t) := isIsotropic_of_hasLaw_rademacherVector (hcol j)
+  have hL4 (j : t) (i : n) : MemLp (fun ω => G ω i j) 4 μ :=
+    memLp_of_hasLaw_rademacherVector (hcol j) 4 i
+  have e (ω : Ω) : girardHutchinson B (G ω) - B.trace =
+      girardHutchinson (hermitianPart B) (G ω) - (hermitianPart B).trace := by
+    rw [girardHutchinson_hermitianPart, trace_hermitianPart]
+  have hH := isHermitian_hermitianPart B
+  have h := integral_norm_girardHutchinson_sub_trace_sq hind hX (A := hermitianPart B)
+    (fun j => memLp_quadForm (hL4 j) _)
+    (v := 2 * (frobNorm (hermitianPart B) ^ 2 - ∑ i, hermitianPart B i i ^ 2)) fun j => by
+      rw [← variance_quadForm_of_hasLaw_rademacherVector (hcol j) hH,
+        variance_eq_integral (memLp_quadForm (hL4 j) _).aestronglyMeasurable.aemeasurable,
+        (hX j).integral_quadForm]
+      simp only [Real.norm_eq_abs, sq_abs]
+  simp only [Real.norm_eq_abs, sq_abs] at h
+  simp only [e, h]
+  ring
 
 /-- **The exact variance of Hutch++ with a Gaussian residual test matrix**: if the sketch test
 matrix $\mathbf{S}$ is almost everywhere measurable and the $n \times \ell$ residual test matrix
@@ -203,7 +537,23 @@ theorem variance_hutchpp_of_hasLaw_gaussianMatrix [Nonempty t] (A : Matrix n n �
     variance (fun ω => hutchpp A (S ω) (G ω)) μ =
       2 / Fintype.card t * ∫ ω, frobNorm ((1 - rangeProjector (A * S ω)) * hermitianPart A *
         (1 - rangeProjector (A * S ω))) ^ 2 ∂μ := by
-  sorry
+  have := hG.isProbabilityMeasure_iff.2 inferInstance
+  have hcol := hasLaw_col_of_hasLaw_gaussianMatrix hG
+  have hL4 (i : n) (j : t) : MemLp (fun ω => G ω i j) 4 μ :=
+    ((((hcol j).eval i).memLp_comp_iff (f := id) aestronglyMeasurable_id).2
+      (memLp_id_gaussianReal' 4 (by simp)))
+  have hm' := (measurable_hutchpp (s := s) (t := t) A).comp_aemeasurable
+    (hS.prodMk (aemeasurable_of_memLp_apply hL4))
+  have hm : AEMeasurable (fun ω => hutchpp A (S ω) (G ω)) μ := hm'
+  have hmean := integral_hutchpp A hS hSG fun j => isIsotropic_of_hasLaw_gaussianVector (hcol j)
+  have h3 := integral_norm_hutchpp_sub_trace_sq A hS hL4 hSG
+  simp only [Real.norm_eq_abs, sq_abs] at h3
+  rw [variance_eq_integral hm]
+  simp only [hmean]
+  rw [h3, ← integral_const_mul]
+  refine integral_congr_ae (ae_of_all _ fun ω => ?_)
+  simp only [hermitianPart_compress]
+  exact integral_girardHutchinson_sub_trace_sq_of_hasLaw_gaussianMatrix hG _
 
 /-- **The exact variance of Hutch++ with a sign residual test matrix**: if the sketch test matrix
 $\mathbf{S}$ is almost everywhere measurable and the $n \times \ell$ residual test matrix
@@ -228,7 +578,22 @@ theorem variance_hutchpp_of_hasLaw_rademacherMatrix [Nonempty t] (A : Matrix n n
           (1 - rangeProjector (A * S ω))) ^ 2 -
         ∑ i, ((1 - rangeProjector (A * S ω)) * hermitianPart A *
           (1 - rangeProjector (A * S ω))) i i ^ 2) ∂μ := by
-  sorry
+  have := hG.isProbabilityMeasure_iff.2 inferInstance
+  obtain ⟨hcol, -⟩ := hasLaw_col_of_hasLaw_conjTranspose_rademacherMatrix hG
+  have hL4 (i : n) (j : t) : MemLp (fun ω => G ω i j) 4 μ :=
+    memLp_of_hasLaw_rademacherVector (hcol j) 4 i
+  have hm' := (measurable_hutchpp (s := s) (t := t) A).comp_aemeasurable
+    (hS.prodMk (aemeasurable_of_memLp_apply hL4))
+  have hm : AEMeasurable (fun ω => hutchpp A (S ω) (G ω)) μ := hm'
+  have hmean := integral_hutchpp A hS hSG fun j => isIsotropic_of_hasLaw_rademacherVector (hcol j)
+  have h3 := integral_norm_hutchpp_sub_trace_sq A hS hL4 hSG
+  simp only [Real.norm_eq_abs, sq_abs] at h3
+  rw [variance_eq_integral hm]
+  simp only [hmean]
+  rw [h3, ← integral_const_mul]
+  refine integral_congr_ae (ae_of_all _ fun ω => ?_)
+  simp only [hermitianPart_compress]
+  exact integral_girardHutchinson_sub_trace_sq_of_hasLaw_rademacherMatrix hG _
 
 /-- **The exact variance of Hutch++ for a symmetric matrix, Pythagorean form**: for real symmetric
 $\mathbf{A}$, an almost everywhere measurable sketch test matrix $\mathbf{S}$ and a standard
@@ -246,7 +611,24 @@ theorem _root_.Matrix.IsHermitian.variance_hutchpp_of_hasLaw_gaussianMatrix [Non
     variance (fun ω => hutchpp A (S ω) (G ω)) μ =
       2 / Fintype.card t * (∫ ω, frobNorm (A - rsvd A (S ω)) ^ 2 ∂μ -
         ∫ ω, frobNorm ((1 - rangeProjector (A * S ω)) * A * rangeProjector (A * S ω)) ^ 2 ∂μ) := by
-  sorry
+  have := hG.isProbabilityMeasure_iff.2 inferInstance
+  have hint : Integrable (fun ω =>
+      frobNorm ((1 - rangeProjector (A * S ω)) * A * rangeProjector (A * S ω)) ^ 2) μ :=
+    integrable_comp_of_norm_le hS ((continuous_frobNorm.measurable.comp
+      (((measurable_one_sub_rangeProjector_mul A).matrix_mul measurable_const).matrix_mul
+        (measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)))).pow_const 2)
+      (C := frobNorm A ^ 2) fun x => by
+        rw [Real.norm_of_nonneg (sq_nonneg _)]
+        exact pow_le_pow_left₀ (frobNorm_nonneg _)
+          (((isStarProjection_rangeProjector _).frobNorm_mul_right_le _).trans
+            (frobNorm_one_sub_rangeProjector_mul_le _ _)) 2
+  rw [NLAlib.variance_hutchpp_of_hasLaw_gaussianMatrix A hS hG hSG, hA.hermitianPart_eq,
+    ← integral_sub (integrable_frobNorm_sub_rsvd_sq A hS) hint]
+  congr 1
+  refine integral_congr_ae (ae_of_all _ fun ω => ?_)
+  have h := frobNorm_one_sub_rangeProjector_mul_sq_eq_add (A * S ω) A
+  simp only [sub_rsvd]
+  linarith
 
 /-- **Hutch++ is exact at low rank with a Gaussian sketch**: if the $n \times \lvert s \rvert$
 sketch test matrix $\mathbf{S}$ is standard Gaussian and
@@ -259,7 +641,8 @@ theorem ae_hutchpp_eq_trace_of_hasLaw_gaussianMatrix (A : Matrix n n ℝ) {S : �
     (hS : HasLaw S (gaussianMatrix n s) μ) (hA : A.rank ≤ Fintype.card s)
     (G : Ω → Matrix n t ℝ) :
     ∀ᵐ ω ∂μ, hutchpp A (S ω) (G ω) = A.trace := by
-  sorry
+  filter_upwards [ae_rsvd_eq_self_of_hasLaw_gaussianMatrix A hS hA] with ω hω
+  exact hutchpp_eq_trace_of_rsvd_eq hω (G ω)
 
 -- Stage TE-3
 
@@ -289,7 +672,13 @@ theorem variance_hutchpp_le_of_hasLaw_gaussianMatrix [Nonempty t] (A : Matrix n 
     variance (fun ω => hutchpp A (S ω) (G ω)) μ ≤
       2 / Fintype.card t * gaussianProjectionFactor r (Fintype.card s) *
         frobNorm (A - truncatedSVD A r) ^ 2 := by
-  sorry
+  have := hS.isProbabilityMeasure_iff.2 inferInstance
+  rw [variance_hutchpp_of_hasLaw_gaussianMatrix A hS.aemeasurable hG hSG, mul_assoc]
+  refine mul_le_mul_of_nonneg_left (le_trans ?_
+    (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hS hr)) (by positivity)
+  exact integral_mono (integrable_frobNorm_compress_hermitianPart_sq A hS.aemeasurable)
+    (integrable_frobNorm_sub_rsvd_sq A hS.aemeasurable) fun ω =>
+      pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_compress_hermitianPart_le A (S ω)) 2
 
 /-- **The variance of Gaussian Hutch++, Epperly–Webber form**: if the $n \times \lvert s \rvert$
 sketch test matrix $\mathbf{S}$ and the $n \times \ell$ residual test matrix $\mathbf{G}$,
@@ -312,7 +701,14 @@ theorem variance_hutchpp_le_of_hasLaw_gaussianMatrix_of_rank_le [Nonempty t] (A 
     variance (fun ω => hutchpp A (S ω) (G ω)) μ ≤
       2 / Fintype.card t * rotationInvariantFactor r (Fintype.card s) q *
         frobNorm (A - truncatedSVD A q) ^ 2 := by
-  sorry
+  have := hS.isProbabilityMeasure_iff.2 inferInstance
+  rw [variance_hutchpp_of_hasLaw_gaussianMatrix A hS.aemeasurable hG hSG, mul_assoc]
+  refine mul_le_mul_of_nonneg_left (le_trans ?_
+    (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le A hS hr hsr hq))
+    (by positivity)
+  exact integral_mono (integrable_frobNorm_compress_hermitianPart_sq A hS.aemeasurable)
+    (integrable_frobNorm_sub_rsvd_sq A hS.aemeasurable) fun ω =>
+      pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_compress_hermitianPart_le A (S ω)) 2
 
 /-- **The variance of Gaussian Hutch++, nuclear form**: if the $n \times \lvert s \rvert$ sketch
 test matrix $\mathbf{S}$ and the $n \times \ell$ residual test matrix $\mathbf{G}$, $\ell \ge 1$,
@@ -337,7 +733,25 @@ theorem variance_hutchpp_le_nuclearNorm_of_hasLaw_gaussianMatrix [Nonempty t] (A
     (hr : 2 * r + 1 ≤ Fintype.card s) :
     variance (fun ω => hutchpp A (S ω) (G ω)) μ ≤
       nuclearNorm A ^ 2 / (Fintype.card t * r) := by
-  sorry
+  refine (variance_hutchpp_le_of_hasLaw_gaussianMatrix A hS hG hSG (r := r) (by omega)).trans ?_
+  have hr' : (0 : ℝ) < r := by exact_mod_cast hr0
+  have hℓ : (0 : ℝ) < Fintype.card t := by exact_mod_cast Fintype.card_pos
+  have hq : (2 * r + 1 : ℝ) ≤ Fintype.card s := by exact_mod_cast hr
+  have hfac : gaussianProjectionFactor r (Fintype.card s) ≤ 2 := by
+    rw [gaussianProjectionFactor_def]
+    have hpos : (0 : ℝ) < Fintype.card s - r - 1 := by linarith
+    have := (div_le_one hpos).2 (show (r : ℝ) ≤ Fintype.card s - r - 1 by linarith)
+    linarith
+  have hsq : frobNorm (A - truncatedSVD A r) ^ 2 ≤ nuclearNorm A ^ 2 / (4 * r) := by
+    have h := pow_le_pow_left₀ (frobNorm_nonneg _)
+      (frobNorm_sub_truncatedSVD_le_nuclearNorm_div A hr0) 2
+    rwa [div_pow, mul_pow, Real.sq_sqrt hr'.le, show (2 : ℝ) ^ 2 = 4 by norm_num] at h
+  calc 2 / (Fintype.card t : ℝ) * gaussianProjectionFactor r (Fintype.card s) *
+        frobNorm (A - truncatedSVD A r) ^ 2
+      ≤ 2 / (Fintype.card t : ℝ) * 2 * (nuclearNorm A ^ 2 / (4 * r)) := by gcongr
+    _ = nuclearNorm A ^ 2 / (Fintype.card t * r) := by
+        field_simp
+        ring
 
 /-- **The variance of Gaussian Hutch++ for a positive semidefinite matrix**: if the
 $n \times \lvert s \rvert$ sketch test matrix $\mathbf{S}$ and the $n \times \ell$ residual test
@@ -358,7 +772,8 @@ theorem _root_.Matrix.PosSemidef.variance_hutchpp_le_trace_sq_of_hasLaw_gaussian
     (hG : HasLaw G (gaussianMatrix n t) μ) (hSG : IndepFun S G μ) {r : ℕ} (hr0 : 0 < r)
     (hr : 2 * r + 1 ≤ Fintype.card s) :
     variance (fun ω => hutchpp A (S ω) (G ω)) μ ≤ A.trace ^ 2 / (Fintype.card t * r) := by
-  sorry
+  have h := variance_hutchpp_le_nuclearNorm_of_hasLaw_gaussianMatrix A hS hG hSG hr0 hr
+  rwa [hA.nuclearNorm_eq_re_trace, RCLike.re_to_real] at h
 
 /-- **$O(\eta^{-1/2})$ products suffice for Gaussian Hutch++ to reach variance
 $\eta\|\mathbf{A}\|_*^2$**: there is an absolute constant $C > 0$ such that if the
@@ -381,6 +796,38 @@ theorem exists_forall_variance_hutchpp_le_of_hasLaw_gaussianMatrix :
       HasLaw S (gaussianMatrix n s) μ → HasLaw G (gaussianMatrix n t) μ → IndepFun S G μ →
       0 < η → η ≤ 1 → C / √η ≤ Fintype.card s → C / √η ≤ Fintype.card t →
       variance (fun ω => hutchpp A (S ω) (G ω)) μ ≤ η * nuclearNorm A ^ 2 := by
-  sorry
+  refine ⟨4, by norm_num, ?_⟩
+  intro Ω n s t _ _ _ _ _ μ A S G η hS hG hSG hη hη1 hs ht
+  have hsη : 0 < √η := Real.sqrt_pos.2 hη
+  set x := 1 / √η with hx
+  have hx1 : 1 ≤ x := by
+    rw [hx, le_div_iff₀ hsη, one_mul]
+    exact Real.sqrt_le_one.mpr hη1
+  have hxx : x * x = 1 / η := by
+    rw [hx, div_mul_div_comm, one_mul, Real.mul_self_sqrt hη.le]
+  have h4 : 4 / √η = 4 * x := by rw [hx, mul_one_div]
+  rw [h4] at hs ht
+  have hq4 : 4 ≤ Fintype.card s := by exact_mod_cast (show (4 : ℝ) ≤ Fintype.card s by linarith)
+  have hℓ : 0 < Fintype.card t := by exact_mod_cast (show (0 : ℝ) < Fintype.card t by linarith)
+  have : Nonempty t := Fintype.card_pos_iff.mp hℓ
+  set r := (Fintype.card s - 1) / 2 with hr
+  have hr0 : 0 < r := by omega
+  have hr1 : 2 * r + 1 ≤ Fintype.card s := by omega
+  refine (variance_hutchpp_le_nuclearNorm_of_hasLaw_gaussianMatrix A hS hG hSG hr0 hr1).trans ?_
+  have hr2 : (Fintype.card s : ℝ) ≤ 2 * r + 2 := by
+    exact_mod_cast (show Fintype.card s ≤ 2 * r + 2 by omega)
+  have hrx : x ≤ r := by linarith
+  have hℓx : x ≤ Fintype.card t := by linarith
+  have hprod : 1 / η ≤ Fintype.card t * r := by
+    rw [← hxx]
+    exact mul_le_mul hℓx hrx (by linarith) (by linarith)
+  have hpos : (0 : ℝ) < Fintype.card t * r := by
+    have : (0 : ℝ) < 1 / η := by positivity
+    linarith
+  have h1 : 1 ≤ η * (Fintype.card t * r) := by
+    have := mul_le_mul_of_nonneg_left hprod hη.le
+    rwa [mul_one_div_cancel hη.ne'] at this
+  rw [div_le_iff₀ hpos]
+  nlinarith [sq_nonneg (nuclearNorm A)]
 
 end NLAlib

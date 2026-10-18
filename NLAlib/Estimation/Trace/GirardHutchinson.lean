@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Matrix.Norms.Block
 public import NLAlib.Probability.QuadraticForm.HansonWright
 public import NLAlib.Probability.QuadraticForm.Moments
 public import NLAlib.RandomMatrix.Haar.Moments
@@ -225,6 +226,22 @@ theorem variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame {k : Type*} [Fin
 
 -- Stage TE-1
 
+/-- The quadratic form of the stacked columns $\operatorname{vec}(\mathbf{X})$ in
+$\mathbf{I}_m \otimes \mathbf{B}$ is the sum of the quadratic forms of the columns:
+$\operatorname{vec}(\mathbf{X})^{\mathsf{H}}(\mathbf{I}_m \otimes \mathbf{B})
+\operatorname{vec}(\mathbf{X}) = \sum_j \mathbf{x}_j^{\mathsf{H}}\mathbf{B}\mathbf{x}_j$. -/
+private theorem quadForm_blockDiagonal_const [DecidableEq m] (B : Matrix n n 𝕜)
+    (X : Matrix n m 𝕜) :
+    quadForm (Matrix.blockDiagonal fun _ : m => B) (fun p => X p.1 p.2) =
+      ∑ j, quadForm B fun i => X i j := by
+  simp only [quadForm_def, dotProduct, Fintype.sum_prod_type_right]
+  refine Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun i _ => ?_
+  congr 1
+  simp only [Matrix.mulVec, dotProduct, Fintype.sum_prod_type_right, Matrix.blockDiagonal_apply,
+    ite_mul, zero_mul]
+  rw [Finset.sum_comm]
+  simp [Finset.sum_ite_eq]
+
 /-- **The tail of the Girard–Hutchinson estimator with sub-Gaussian probes.** If the entries of
 the real $n \times m$ test matrix $\mathbf{\Omega}$ are independent, each satisfies the
 sub-Gaussian moment generating function bound with variance proxy $c$ (`HasSubgaussianMGF`) and
@@ -253,6 +270,38 @@ theorem measureReal_abs_girardHutchinson_sub_trace_ge_le {X : Ω → Matrix n m 
       2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm B ^ 2))
           (Fintype.card m * τ / ((c : ℝ) * specNorm B)))) := by
-  sorry
+  classical
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty m with hm | hm
+  · simp only [Fintype.card_eq_zero, Nat.cast_zero, zero_mul, zero_div, min_self, mul_zero,
+      neg_zero, Real.exp_zero, mul_one]
+    exact measureReal_le_one.trans one_le_two
+  set x : Ω → n × m → ℝ := fun ω p => X ω p.1 p.2 with hx
+  set M : Matrix (n × m) (n × m) ℝ := Matrix.blockDiagonal fun _ : m => B with hM
+  have hiso : IsIsotropic x μ := IsIsotropic.of_iIndepFun hind (fun p => by
+      simpa using (hsub p.1 p.2).memLp 2) (fun p => (hsub p.1 p.2).integral_eq_zero)
+    fun p => by simpa only [Real.norm_eq_abs, sq_abs] using hvar p.1 p.2
+  have hL : (0 : ℝ) < Fintype.card m := Nat.cast_pos.2 Fintype.card_pos
+  have hmean : ∫ ω, quadForm M (x ω) ∂μ = Fintype.card m * B.trace := by
+    rw [hiso.integral_quadForm, hM, Matrix.trace_blockDiagonal, Finset.sum_const,
+      Finset.card_univ, nsmul_eq_mul]
+  have hq (ω : Ω) : quadForm M (x ω) = Fintype.card m * girardHutchinson B (X ω) := by
+    rw [hM, hx, quadForm_blockDiagonal_const, girardHutchinson_eq_sum]
+    field_simp
+  have hset : {ω | τ ≤ |girardHutchinson B (X ω) - B.trace|} =
+      {ω | Fintype.card m * τ ≤ |quadForm M (x ω) - ∫ ω', quadForm M (x ω') ∂μ|} := by
+    ext ω
+    rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, hmean, hq, ← mul_sub, abs_mul, Nat.abs_cast]
+    exact (mul_le_mul_iff_of_pos_left hL).symm
+  rw [hset]
+  have h := measureReal_abs_quadForm_sub_integral_ge_le (x := x) hind (fun p => hsub p.1 p.2) M
+    (mul_nonneg hL.le hτ)
+  have hF : frobNorm M ^ 2 = Fintype.card m * frobNorm B ^ 2 := by
+    rw [hM, frobNorm_blockDiagonal_const_sq]
+  have hS : specNorm M = specNorm B := by rw [hM, specNorm_blockDiagonal_const]
+  rw [hF, hS] at h
+  convert h using 6
+  rw [mul_pow, sq (Fintype.card m : ℝ), mul_assoc, mul_left_comm ((c : ℝ) ^ 2),
+    mul_div_mul_left _ _ hL.ne']
 
 end NLAlib

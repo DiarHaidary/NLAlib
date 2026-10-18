@@ -24,6 +24,8 @@ orthogonal ranges. Submatrices have smaller norms.
   spectral norms.
 * `NLAlib.specNorm_add_sq_le_of_conjTranspose_mul_eq_zero`: summands with orthogonal ranges.
 * `NLAlib.specNorm_dilation`: the Hermitian dilation has the spectral norm of the matrix.
+* `NLAlib.frobNorm_blockDiagonal_sq`, `NLAlib.specNorm_blockDiagonal_le`,
+  `NLAlib.specNorm_blockDiagonal_const`: block diagonal matrices.
 -/
 
 @[expose] public section
@@ -270,5 +272,71 @@ theorem frobNorm_dilation_sq (A : Matrix m n 𝕜) :
   rw [dilation_def, frobNorm_fromBlocks_sq]
   simp only [frobNorm_zero, frobNorm_conjTranspose]
   ring
+
+/-! ### Block diagonal matrices -/
+
+section BlockDiagonal
+
+variable {o : Type*} [Fintype o] [DecidableEq o]
+
+/-- The squared Frobenius norm of a block diagonal matrix is the sum over the blocks:
+$\|\operatorname{diag}(\mathbf{M}_1, \dots, \mathbf{M}_k)\|_{\mathsf{F}}^2 =
+\sum_i \|\mathbf{M}_i\|_{\mathsf{F}}^2$. -/
+theorem frobNorm_blockDiagonal_sq (M : o → Matrix m n 𝕜) :
+    frobNorm (Matrix.blockDiagonal M) ^ 2 = ∑ k, frobNorm (M k) ^ 2 := by
+  simp only [frobNorm_sq_eq_sum, Fintype.sum_prod_type_right, Matrix.blockDiagonal_apply]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [Finset.sum_comm]
+  simp [apply_ite (fun z : 𝕜 => ‖z‖ ^ 2)]
+
+/-- $k$ copies of one block: $\|\mathbf{I}_k \otimes \mathbf{B}\|_{\mathsf{F}}^2 =
+k\,\|\mathbf{B}\|_{\mathsf{F}}^2$, for the block diagonal matrix with every block
+$\mathbf{B}$. -/
+theorem frobNorm_blockDiagonal_const_sq (B : Matrix m n 𝕜) :
+    frobNorm (Matrix.blockDiagonal fun _ : o => B) ^ 2 = Fintype.card o * frobNorm B ^ 2 := by
+  rw [frobNorm_blockDiagonal_sq, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+
+omit [Fintype m] in
+/-- A block diagonal matrix acts blockwise: the block $k$ of
+$\operatorname{diag}(\mathbf{M}_1, \dots)\mathbf{x}$ is $\mathbf{M}_k\mathbf{x}_k$. -/
+private theorem blockDiagonal_mulVec_apply (M : o → Matrix m n 𝕜) (x : n × o → 𝕜) (i : m)
+    (k : o) : (Matrix.blockDiagonal M *ᵥ x) (i, k) = (M k *ᵥ fun j => x (j, k)) i := by
+  simp only [Matrix.mulVec, dotProduct, Fintype.sum_prod_type_right, Matrix.blockDiagonal_apply,
+    ite_mul, zero_mul]
+  rw [Finset.sum_comm]
+  simp [Finset.sum_ite_eq]
+
+/-- The spectral norm of a block diagonal matrix is at most any common bound $c \ge 0$ on the
+spectral norms of its blocks. -/
+theorem specNorm_blockDiagonal_le (M : o → Matrix m n 𝕜) {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ k, specNorm (M k) ≤ c) : specNorm (Matrix.blockDiagonal M) ≤ c := by
+  refine (specNorm_le_iff hc).2 fun x => ?_
+  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
+  rw [mul_pow, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type_right,
+    Fintype.sum_prod_type_right, Finset.mul_sum]
+  refine Finset.sum_le_sum fun k _ => ?_
+  have h1 := pow_le_pow_left₀ (norm_nonneg _)
+    ((norm_toLp_mulVec_le (M k) fun j => x (j, k)).trans
+      (mul_le_mul_of_nonneg_right (h k) (norm_nonneg _))) 2
+  rw [mul_pow, EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq] at h1
+  simpa only [PiLp.toLp_apply, blockDiagonal_mulVec_apply] using h1
+
+/-- Each block has spectral norm at most that of the block diagonal matrix. -/
+theorem specNorm_le_specNorm_blockDiagonal (M : o → Matrix m n 𝕜) (k : o) :
+    specNorm (M k) ≤ specNorm (Matrix.blockDiagonal M) := by
+  have h := specNorm_submatrix_le (Matrix.blockDiagonal M) (r := fun i : m => (i, k))
+    (c := fun j : n => (j, k)) (fun _ _ h => (Prod.mk.inj h).1) (fun _ _ h => (Prod.mk.inj h).1)
+  convert h using 2
+  ext i j
+  simp
+
+/-- $k \ge 1$ copies of one block: $\|\mathbf{I}_k \otimes \mathbf{B}\|_2 = \|\mathbf{B}\|_2$,
+for the block diagonal matrix with every block $\mathbf{B}$. -/
+theorem specNorm_blockDiagonal_const [Nonempty o] (B : Matrix m n 𝕜) :
+    specNorm (Matrix.blockDiagonal fun _ : o => B) = specNorm B :=
+  le_antisymm (specNorm_blockDiagonal_le _ (specNorm_nonneg B) fun _ => le_rfl)
+    (specNorm_le_specNorm_blockDiagonal (fun _ : o => B) (Classical.arbitrary o))
+
+end BlockDiagonal
 
 end NLAlib

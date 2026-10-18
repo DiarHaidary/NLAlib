@@ -685,7 +685,33 @@ gives the nuclear norm for any $\mathbf{A}$.
 Result: frobenius-tail-nuclear-norm -/
 theorem frobNorm_sub_truncatedSVD_le_nuclearNorm_div (A : Matrix m n 𝕜) {r : ℕ} (hr : 0 < r) :
     frobNorm (A - truncatedSVD A r) ≤ nuclearNorm A / (2 * √(r : ℝ)) := by
-  sorry
+  set N := min (Fintype.card m) (Fintype.card n)
+  set σ := singularValues A
+  have hrN : A.rank ≤ r + N :=
+    (le_min A.rank_le_card_height A.rank_le_card_width).trans (Nat.le_add_left _ _)
+  set a := ∑ i ∈ Finset.range r, σ i
+  set b := ∑ i ∈ Finset.Ico r (r + N), σ i
+  have hnuc : nuclearNorm A = a + b := by
+    rw [nuclearNorm_eq_sum_range A hrN, Finset.sum_range_add_sum_Ico _ (Nat.le_add_right r N)]
+  have hσ := singularValues_nonneg A
+  have hT : frobNorm (A - truncatedSVD A r) ^ 2 ≤ σ r * b := by
+    rw [frobNorm_sub_truncatedSVD_sq, Finset.mul_sum]
+    refine (Finset.sum_le_sum_of_subset_of_nonneg (Finset.Ico_subset_Ico_right
+      (Nat.le_add_left N r)) fun i _ _ => sq_nonneg _).trans (Finset.sum_le_sum fun i hi => ?_)
+    rw [sq]
+    exact mul_le_mul_of_nonneg_right (singularValues_antitone A (Finset.mem_Ico.mp hi).1) (hσ i)
+  have ha : (r : ℝ) * σ r ≤ a := by
+    have := Finset.sum_le_sum fun i (hi : i ∈ Finset.range r) =>
+      singularValues_antitone A (Finset.mem_range.mp hi).le
+    simpa only [Finset.sum_const, Finset.card_range, nsmul_eq_mul] using this
+  have hb : 0 ≤ b := Finset.sum_nonneg fun i _ => hσ i
+  have hr' : (0 : ℝ) < r := by exact_mod_cast hr
+  have hsq : (frobNorm (A - truncatedSVD A r) * (2 * √(r : ℝ))) ^ 2 ≤ nuclearNorm A ^ 2 := by
+    rw [mul_pow, mul_pow, Real.sq_sqrt hr'.le, hnuc]
+    nlinarith [mul_le_mul_of_nonneg_right ha hb, sq_nonneg (a - b),
+      mul_le_mul_of_nonneg_left hT hr'.le]
+  rw [le_div_iff₀ (by positivity)]
+  exact (pow_le_pow_iff_left₀ (by positivity) (nuclearNorm_nonneg A) two_ne_zero).mp hsq
 
 /-- **The tail of the eigenvalues of a positive semidefinite matrix.** For positive semidefinite
 $\mathbf{A}$ and $r \ge 1$,
@@ -698,7 +724,8 @@ MMMW's Lemma 3 is the same bound without the factor $1/2$. -/
 theorem _root_.Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {r : ℕ} (hr : 0 < r) :
     frobNorm (A - truncatedSVD A r) ≤ RCLike.re A.trace / (2 * √(r : ℝ)) := by
-  sorry
+  rw [← hA.nuclearNorm_eq_re_trace]
+  exact frobNorm_sub_truncatedSVD_le_nuclearNorm_div A hr
 
 /-! ### Perturbed truncation, Gram matrices -/
 

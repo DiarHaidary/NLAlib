@@ -632,7 +632,7 @@ Changes from §1 to §3 and §6, with the reason:
    entries; L7 is used at failure `δ` (size `subgaussianEmbeddingDim c r (1/2) (δ/2)`), so the
    tail is `δ + 2 exp(…)`. The Gaussian instance goes through L7 at `c = 1` (via the Gaussian
    triple), not L5.
-9. **H5 relative form** `measureReal_abs_hutchpp_sub_trace_gt_le_of_isSubgaussianVector` (MMMW
+9. **H5 relative form** (renamed in item 11) `measureReal_abs_hutchpp_sub_trace_gt_le_of_isSubgaussianVector` (MMMW
    Theorem 5) has the strict event `ε * nuclearNorm A < |hutchpp − tr A|` (with `≤` it is false
    at `A = 0`), and explicit conditions: `subgaussianEmbeddingDim c r (1/2) (δ/4) ≤ card s`,
    `log(4/δ) ≤ C_HW · 4ℓrε²/(c'²K)`, `log(4/δ) ≤ C_HW · 2ℓ√r ε/(c'√K)`, `K` the range-finder
@@ -647,3 +647,41 @@ Changes from §1 to §3 and §6, with the reason:
 10. Open points marked `-- SKELETON-NOTE:` in the Lean: the generic tail's `hK` and `hτ` are
     redundant (the bound is at least `2` otherwise), kept as in §3.4; the asymptotic tail's
     `ε ≤ ε₀` is not needed by the inversion, and its `C` is fixed only by the proof.
+11. **TE-1 and TE-5 proofs (after the skeleton review).** Statement changes:
+    * The generic tail `measureReal_abs_hutchpp_sub_trace_ge_le` drops `hK : 0 ≤ K` (for
+      `K < 0` the range-finder event forces the compressed residual to vanish, and the proof
+      never uses the sign); `hτ` is kept, as in Hanson–Wright.
+    * The relative form is renamed
+      `measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector` (was
+      `measureReal_abs_hutchpp_sub_trace_gt_le_of_isSubgaussianVector`, too close to the
+      `_ge_le_` instance), and its asymptotic form
+      `exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`.
+    * The asymptotic form drops `ε₀` (and `ε ≤ ε₀`): `∃ C : ℝ, 0 < C ∧ …`, proved with
+      `C = 20000` at `r = ⌊|s| / (4608 c²)⌋`.
+    * When `‖E_r‖_F = 0` the relative form takes a separate branch: the sub-Gaussian range finder
+      gives `rsvd A S = A` outside probability `δ/2`, where Hutch++ is exact
+      (`hutchpp_eq_trace_of_rsvd_eq`); the PSD halves follow from the relative form, so need no
+      branch of their own. The asymptotic form's arithmetic is in private lemmas (one
+      declaration exceeded the heartbeat limit).
+    * The Gaussian instance's docstring says it goes through the sub-Gaussian range finder at
+      `c = 1` (factor 11) and is weaker than the Gaussian range-finder tail
+      (`RangeFinderTail.lean`).
+    * New helpers in `Matrix/Norms/Block.lean` for the Girard–Hutchinson tail:
+      `frobNorm_blockDiagonal_sq`, `frobNorm_blockDiagonal_const_sq`,
+      `specNorm_blockDiagonal_le`, `specNorm_le_specNorm_blockDiagonal`,
+      `specNorm_blockDiagonal_const`.
+12. **TE-0, TE-2 and TE-3 proofs (after the skeleton review).** Statement changes:
+    * **A1** `IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub` is over any
+      commutative ring `R` (review item 6; the proof is three rewrites).
+    * `HasOrthonormalCols.hutchpp_eq`: the orthonormality hypothesis is now named `_hQ`; the
+      identity uses only `Q * Qᴴ = P_{AS}` and cyclicity of the trace (the linter flagged `hQ`
+      as unused). Kept for the reading and for dot notation; it could be dropped.
+    * New `hutchpp_eq_trace_of_rsvd_eq (h : rsvd A S = A) : hutchpp A S G = A.trace`
+      (review item 1); `hutchpp_eq_trace_of_rank_eq` and
+      `ae_hutchpp_eq_trace_of_hasLaw_gaussianMatrix` go through it, and TE-5 uses it.
+    * New helper `frobNorm_hermitianPart_le` in `Matrix/Spectral/HermitianPart.lean`
+      (review item 2), for the step `‖(I − P) H (I − P)‖_F ≤ ‖A − rsvd A S‖_F` of the HMT,
+      Epperly–Webber and nuclear bounds.
+    * The conditioning step P1 is used through a private wrapper in `HutchPlusPlus.lean`
+      (integrability on the product of the laws from a bound by an integrable function of `G`:
+      `‖gh(Δ, G)‖ ≤ ‖A‖_F ‖G‖_F²`, `‖tr Δ‖ ≤ |n| ‖A‖_F`).
