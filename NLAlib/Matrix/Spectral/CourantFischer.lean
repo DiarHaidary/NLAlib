@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Matrix.Norms.Loewner
 public import NLAlib.Matrix.Spectral.EigenvalueTransform
+import NLAlib.Matrix.Basic.Projector
 
 /-!
 # The Courant–Fischer variational characterisation of eigenvalues
@@ -31,7 +32,9 @@ largest and smallest eigenvalue of a random matrix are stated and used.
 * `Matrix.IsHermitian.le_smul_one_iff`, `Matrix.IsHermitian.smul_one_le_iff`: the largest and
   smallest eigenvalue in the Loewner order.
 * `Matrix.IsHermitian.specNorm_eq_max`, `Matrix.PosSemidef.specNorm_eq_eigenvalue_zero`: the
-  spectral norm of a Hermitian matrix.
+  spectral norm of a Hermitian matrix;
+  `IsStarProjection.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq`:
+  the spectral norm of $\mathbf{P}\mathbf{A}$ is attained in the range of $\mathbf{P}$.
 -/
 
 @[expose] public section
@@ -519,5 +522,40 @@ theorem _root_.Matrix.PosSemidef.exists_norm_eq_one_and_mulVec_eq_specNorm_smul 
     ∃ u : n → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ A *ᵥ u = specNorm A • u := by
   rw [hA.specNorm_eq_eigenvalue_zero]
   exact hA.isHermitian.exists_norm_eq_one_and_mulVec_eq Fintype.card_pos
+
+/-- **The spectral norm of a projected matrix is attained in the range of the projector**: for an
+orthogonal projector $\mathbf{P}$ with $\|\mathbf{P}\mathbf{A}\|_2 > 0$ there is a unit vector
+$\mathbf{u}$ with $\mathbf{P}\mathbf{u} = \mathbf{u}$ and
+$\operatorname{Re}(\mathbf{u}^{\mathsf{H}}\mathbf{A}\mathbf{A}^{\mathsf{H}}\mathbf{u}) =
+\|\mathbf{P}\mathbf{A}\|_2^2$: a top eigenvector of
+$\mathbf{P}\mathbf{A}\mathbf{A}^{\mathsf{H}}\mathbf{P}$, which lies in the range of $\mathbf{P}$.
+[TroppWebber2023, Lemma 9.4 (proof)], the step before (9.4). -/
+theorem _root_.IsStarProjection.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq
+    {m : Type*} [Fintype m] {A : Matrix m n 𝕜} {P : Matrix m m 𝕜} (hP : IsStarProjection P)
+    (h₀ : 0 < specNorm (P * A)) :
+    ∃ u : m → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ P *ᵥ u = u ∧
+      RCLike.re (quadForm (A * Aᴴ) u) = specNorm (P * A) ^ 2 := by
+  have hne : Nonempty m := by
+    by_contra h
+    have : P * A = 0 := by
+      have := not_nonempty_iff.mp h
+      exact Subsingleton.elim _ _
+    rw [this, specNorm_zero] at h₀
+    exact lt_irrefl _ h₀
+  have hM : (P * A * (P * A)ᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose _
+  obtain ⟨u, hu, hMu⟩ := hM.exists_norm_eq_one_and_mulVec_eq_specNorm_smul
+  rw [specNorm_mul_conjTranspose_self] at hMu
+  have hMe : P * A * (P * A)ᴴ = Pᴴ * (A * Aᴴ) * P := by
+    rw [Matrix.conjTranspose_mul, hP.conjTranspose_eq]
+    simp only [Matrix.mul_assoc]
+  have hPM : P * (P * A * (P * A)ᴴ) = P * A * (P * A)ᴴ := by
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hP.mul_self]
+  have hc : (specNorm (P * A) ^ 2 : ℝ) ≠ 0 := pow_ne_zero 2 h₀.ne'
+  have hPu : P *ᵥ u = u := by
+    have h := congrArg (fun M => M *ᵥ u) hPM
+    simp only [← Matrix.mulVec_mulVec, hMu, Matrix.mulVec_smul] at h
+    exact smul_right_injective _ hc h
+  refine ⟨u, hu, hPu, ?_⟩
+  rw [← re_quadForm_of_mulVec_eq_smul hu hMu, hMe, quadForm_conjTranspose_mul_mul, hPu]
 
 end NLAlib

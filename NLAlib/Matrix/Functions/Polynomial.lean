@@ -38,6 +38,8 @@ and act on the singular values.
   $g(t) = t$.
 * `NLAlib.specNorm_cfc_sub_aeval_le`: polynomial approximation of $f(\mathbf{A})$.
 * `NLAlib.aeval_diagonal_self`: $p(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(p(d_i))$.
+* `Matrix.mul_pow_mul`: $(\mathbf{C}\mathbf{D})^j\mathbf{C} = \mathbf{C}(\mathbf{D}\mathbf{C})^j$
+  for rectangular $\mathbf{C}$, $\mathbf{D}$.
 * `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq_mul`: polynomials intertwine, for real polynomials
   and polynomials over $\Bbbk$.
 * `NLAlib.aeval_mul_conjTranspose_self_mul`: intertwining.
@@ -278,6 +280,14 @@ theorem pow_mul_eq_mul_pow_of_mul_eq_mul {R : Type*} [Semiring R] {B : Matrix m 
   | zero => rw [pow_zero, pow_zero, Matrix.one_mul, Matrix.mul_one]
   | succ j ih => rw [pow_succ, Matrix.mul_assoc, h, ← Matrix.mul_assoc, ih, Matrix.mul_assoc,
       ← pow_succ]
+
+/-- Powers of the two products of rectangular matrices intertwine:
+$(\mathbf{C}\mathbf{D})^j\mathbf{C} = \mathbf{C}(\mathbf{D}\mathbf{C})^j$ for
+$\mathbf{C} \in R^{m \times n}$ and $\mathbf{D} \in R^{n \times m}$. The rectangular form of
+Mathlib's `mul_pow_mul`. -/
+theorem _root_.Matrix.mul_pow_mul {R : Type*} [Semiring R] (C : Matrix m n R) (D : Matrix n m R)
+    (j : ℕ) : (C * D) ^ j * C = C * (D * C) ^ j := by
+  exact pow_mul_eq_mul_pow_of_mul_eq_mul (Matrix.mul_assoc C D C) j
 
 /-- Polynomials intertwine: if $\mathbf{B}\mathbf{A} = \mathbf{A}\mathbf{C}$ then
 $p(\mathbf{B})\mathbf{A} = \mathbf{A}\,p(\mathbf{C})$ for every polynomial $p$ with

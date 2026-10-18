@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Convex.Integral
+public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 
 /-!
 # Jensen's inequality on a convex set that is not closed
@@ -20,6 +21,8 @@ matrices, which is open. Upstream candidate for `Mathlib.Analysis.Convex.Integra
 
 * `ConcaveOn.le_map_integral_of_integral_mem`: Jensen's inequality for a concave function, on a
   convex set containing the mean.
+* `HasSupportingLineOn.le_integral_comp`: Jensen's inequality for a function with a supporting line
+  at the mean, convex or not.
 -/
 
 @[expose] public section
@@ -49,3 +52,26 @@ theorem ConcaveOn.le_map_integral_of_integral_mem [IsProbabilityMeasure μ] (hg 
     (hgc _ hm).tendsto.comp (tendsto_nhdsWithin_iff.mpr
       ⟨(continuous_fst.tendsto _).comp hlim, Eventually.of_forall fun k => (hu k).1⟩)
   exact le_of_tendsto_of_tendsto' ((continuous_snd.tendsto _).comp hlim) hglim fun k => (hu k).2
+
+-- Stage B1b
+
+/-- **Jensen's inequality from a supporting line**: for a probability measure $\mu$, a real random
+variable $X$ with values in $s$ almost everywhere, and $\varphi$ with a supporting line on $s$ at
+the mean of $X$,
+$$\varphi\Bigl(\int X \, d\mu\Bigr) \le \int \varphi(X) \, d\mu\,,$$
+with no convexity assumed. [TroppWebber2023, Lemma 9.4], the scalar half of the almost-convex
+Jensen inequality; there with $X$ a Gaussian functional. -/
+theorem HasSupportingLineOn.le_integral_comp [IsProbabilityMeasure μ] {φ : ℝ → ℝ} {t : Set ℝ}
+    {X : α → ℝ} (h : HasSupportingLineOn φ t (∫ ω, X ω ∂μ)) (hX : ∀ᵐ ω ∂μ, X ω ∈ t)
+    (hi : Integrable X μ) (hφi : Integrable (φ ∘ X) μ) :
+    φ (∫ ω, X ω ∂μ) ≤ ∫ ω, φ (X ω) ∂μ := by
+  obtain ⟨c, hc⟩ := h
+  set a := ∫ ω, X ω ∂μ
+  have hs : Integrable (fun ω => c * (X ω - a)) μ := (hi.sub (integrable_const a)).const_mul c
+  have hli : Integrable (fun ω => φ a + c * (X ω - a)) μ := (integrable_const _).add hs
+  have hl : ∫ ω, (φ a + c * (X ω - a)) ∂μ = φ a := by
+    rw [integral_add (integrable_const _) hs, integral_const_mul,
+      integral_sub hi (integrable_const a)]
+    simp [a]
+  calc φ a = ∫ ω, (φ a + c * (X ω - a)) ∂μ := hl.symm
+    _ ≤ ∫ ω, φ (X ω) ∂μ := integral_mono_ae hli hφi (hX.mono fun ω hω => hc _ hω)

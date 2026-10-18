@@ -25,6 +25,8 @@ $k$ largest singular values from the rest.
 ## Main definitions
 
 * `NLAlib.singularGap`: the gap below the $k$ largest singular values.
+* `NLAlib.singularGapRatio`: the relative gap
+  $(\sigma_i(\mathbf{A}) - \sigma_j(\mathbf{A}))/(\sigma_i(\mathbf{A}) + \sigma_j(\mathbf{A}))$.
 
 ## Main results
 
@@ -34,6 +36,8 @@ $k$ largest singular values from the rest.
 * `NLAlib.singularValues_add_le_of_rank_le`: low-rank perturbations.
 * `NLAlib.singularValues_submatrix_le`: submatrices.
 * `IsStarProjection.singularValues_mul_le`: projections.
+* `NLAlib.singularValues_one_sub_rangeProjector_mul_le_of_range_le`: a larger range gives a smaller
+  projection residual, singular value by singular value.
 * `NLAlib.specNorm_conjTranspose_mul_self_sub_one_le_iff`,
   `NLAlib.specNorm_conjTranspose_mul_self_sub_one_eq_iSup`: the Gram error
   $\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - \mathbf{I}\|_2$ through the singular values.
@@ -485,5 +489,62 @@ theorem abs_singularGap_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :
   have h₂ := abs_le.mp (abs_singularValues_sub_le_specNorm A B k)
   rw [singularGap, singularGap, abs_le]
   constructor <;> linarith
+
+-- Stage B1a
+
+/-- **A larger range gives a smaller projection residual**, singular value by singular value: if
+the range of $\mathbf{Y}$ is contained in the range of $\mathbf{B}$ then
+$$\sigma_i((\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{A}) \le
+\sigma_i((\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{A})$$
+for every $i$, so in every unitarily invariant norm.
+[TroppWebber2023, Lemma 5.1]; [HalkoMartinssonTropp2011, Proposition 8.5]; there in the Schatten
+and spectral norms. -/
+theorem singularValues_one_sub_rangeProjector_mul_le_of_range_le [DecidableEq m]
+    {B : Matrix m p 𝕜} {Y : Matrix m l 𝕜}
+    (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) (A : Matrix m n 𝕜) (i : ℕ) :
+    singularValues ((1 - rangeProjector B) * A) i ≤
+      singularValues ((1 - rangeProjector Y) * A) i := by
+  have hmul : (1 - rangeProjector B) * (1 - rangeProjector Y) = 1 - rangeProjector B := by
+    rw [Matrix.mul_sub, Matrix.mul_one, Matrix.sub_mul, Matrix.one_mul,
+      rangeProjector_mul_rangeProjector_of_range_le h, sub_self, sub_zero]
+  rw [← hmul, Matrix.mul_assoc]
+  exact (isStarProjection_one_sub_rangeProjector B).singularValues_mul_le _ i
+
+/-- The **relative singular gap**
+$$\gamma = \frac{\sigma_i(\mathbf{A}) - \sigma_j(\mathbf{A})}{\sigma_i(\mathbf{A}) +
+\sigma_j(\mathbf{A})}$$
+between the singular values of indices $i$ and $j$ (from $0$), in $[0, 1]$ when $i \le j$
+(`NLAlib.singularGapRatio_nonneg`, `NLAlib.singularGapRatio_le_one`). It is the gap of the gapped
+bounds for Krylov methods, through $(1 - \gamma)/(1 + \gamma) = \sigma_j/\sigma_i$
+(`NLAlib.one_sub_singularGapRatio_div_one_add_singularGapRatio`). Junk value: $0$ when
+$\sigma_i(\mathbf{A}) = \sigma_j(\mathbf{A}) = 0$.
+[TroppWebber2023, Theorem 9.2]; there $\sigma_r$ and $\sigma_s$ indexed from $1$. -/
+noncomputable def singularGapRatio (A : Matrix m n 𝕜) (i j : ℕ) : ℝ :=
+  (singularValues A i - singularValues A j) / (singularValues A i + singularValues A j)
+
+/-- The relative singular gap is nonnegative for $i \le j$. -/
+theorem singularGapRatio_nonneg (A : Matrix m n 𝕜) {i j : ℕ} (h : i ≤ j) :
+    0 ≤ singularGapRatio A i j := by
+  exact div_nonneg (sub_nonneg.mpr (singularValues_antitone A h))
+    (add_nonneg (singularValues_nonneg A i) (singularValues_nonneg A j))
+
+/-- The relative singular gap is at most $1$. -/
+theorem singularGapRatio_le_one (A : Matrix m n 𝕜) (i j : ℕ) : singularGapRatio A i j ≤ 1 := by
+  have hi := singularValues_nonneg A i
+  have hj := singularValues_nonneg A j
+  exact div_le_one_of_le₀ (by linarith) (by linarith)
+
+/-- The relative singular gap recovers the ratio of the two singular values:
+$$\frac{1 - \gamma}{1 + \gamma} = \frac{\sigma_j(\mathbf{A})}{\sigma_i(\mathbf{A})}$$
+for $\sigma_i(\mathbf{A}) > 0$. -/
+theorem one_sub_singularGapRatio_div_one_add_singularGapRatio (A : Matrix m n 𝕜) {i j : ℕ}
+    (hi : 0 < singularValues A i) :
+    (1 - singularGapRatio A i j) / (1 + singularGapRatio A i j) =
+      singularValues A j / singularValues A i := by
+  have hj := singularValues_nonneg A j
+  have hsum : singularValues A i + singularValues A j ≠ 0 := by positivity
+  rw [singularGapRatio]
+  field_simp [hi.ne']
+  ring
 
 end NLAlib

@@ -2,6 +2,34 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Krylov block round complete (2026-10-18)
+
+Branch `krylov/block` (worktree `nlalib-block`), uncommitted on top of `657cd18` (B7). Stages B0 to
+B7 of `docs/design/Krylov-Block.md` are proved: block Krylov spaces, `rbki` and `nystromBKI`, TW
+Lemma 9.5, TW Theorem 9.2 (gapped) and Theorem 9.1 (gapless) for RBKI and RSI, the Musco–Musco
+$(1 + \varepsilon)$ gapless form with its truncated lines and asymptotic depth, the Nyström variants.
+The note's Implementation now has "What was proved", "Wrap-up amendments", "Deviations" and
+"Later targets" (next: BCW arXiv:2202.05120 Theorem 5.1, upper bound only); `PORT_KRYLOV.md` has the
+2026-10-18 directions and progress. CONTRIBUTING §5.3: rows for `singularGapRatio` and
+`HasSupportingLineOn` (BD9; `rangeFinderTailRatio` needs none).
+
+Wrap-up placement pass (no statement changed): the private attainment helper of `TraceFunctions.lean`
+is public as `IsStarProjection.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq` in
+`Matrix/Spectral/CourantFischer.lean`; the private "$\sigma_t = 0$" helper of
+`Gaussian/BlockKrylov.lean` is replaced by the public `truncatedSVD_of_singularValues_eq_zero`
+in `Matrix/Spectral/LowRank.lean`; `Polynomial/Chebyshev/Filter.lean` is deleted, its one fact now
+`Polynomial.Chebyshev.hasSupportingLineOn_mul_eval_T_sq` in ForMathlib's Chebyshev growth file;
+`Real.exp_two_mul_le_one_add_div_one_sub` moved to `ForMathlib/Analysis/SpecialFunctions/Log/Deriv.lean`;
+three private copies of $0 \le t/(\ell - t - 1)$ (Duplicates) replaced by the public
+`natCast_div_sub_sub_one_nonneg` in `Gaussian/RangeFinder.lean`. No placement flag open. Ledger:
+eleven prototype entries (B0, B1b, B3).
+
+Checks (`scripts/stage_check.sh`): 351 proved modules, build 3947 jobs, 0 warnings; audit 8924
+declarations, 0 violations; lint 5848 declarations, 0 errors; references 73 keys, 41 asymptotic
+forms, 0 problems; constants 27, 0 problems; duplicates 5332 theorems, 0 classes; LaTeX 21703 spans,
+0 problems; `lake build NLAlib` 3949 jobs; `mk_all --check` clean (NLAlib). `ledger_check.py`
+reports only its documented `IsSVD.eq` false positive. NLAlibScaffold not rebuilt.
+
 ## Krylov K1, K2, K2b complete (2026-10-17)
 
 Branch `krylov/brief`, uncommitted on top of `1908a3f` (K1 checkpoint 5): `WorstCase.lean`

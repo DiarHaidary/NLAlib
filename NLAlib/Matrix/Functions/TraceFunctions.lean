@@ -8,6 +8,7 @@ module
 public import Mathlib.Analysis.Calculus.Deriv.Basic
 public import Mathlib.Analysis.Convex.Deriv
 public import Mathlib.Analysis.Convex.Mul
+public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.Matrix.Functions.Exponential
 public import NLAlib.Matrix.Norms.Block
 public import NLAlib.Matrix.Spectral.Weyl
@@ -39,6 +40,9 @@ trace bounds.
 * `NLAlib.convexOn_re_trace_cfc`: convex $f$ gives a convex trace function.
 * `NLAlib.re_trace_mul_cfc_le_re_trace_cfc_sub`: Klein's inequality.
 * `NLAlib.apply_re_quadForm_le_re_quadForm_cfc`: Jensen for quadratic forms.
+* `NLAlib.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn`,
+  `NLAlib.apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn`: Jensen for a function
+  with a supporting line, for quadratic forms and for the norm of a projected matrix.
 * `NLAlib.re_quadForm_mem_of_spectrum_subset`: the quadratic form at a unit vector lies in every
   convex set containing the spectrum.
 * `NLAlib.sum_apply_re_quadForm_le_re_trace_cfc`: Peierls' inequality.
@@ -542,5 +546,66 @@ theorem _root_.Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul {A : Mat
   rw [hφ0, smul_zero, zero_add, zero_add, smul_eq_mul, smul_eq_mul,
     div_mul_cancel₀ _ hpos.ne'] at hc
   exact hc
+
+/-! ### Jensen from a supporting line -/
+
+-- Stage B1b
+
+omit [DecidableEq m] [DecidableEq p] in
+/-- **Jensen's inequality for a quadratic form, from a supporting line**: for Hermitian
+$\mathbf{A}$ with spectrum in $s$, a unit vector $\mathbf{x}$ and $\varphi$ with a supporting line
+on $s$ at $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$,
+$$\varphi(\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})) \le
+\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\varphi(\mathbf{A})\mathbf{x})\,,$$
+with no convexity assumed. Generalises `NLAlib.apply_re_quadForm_le_re_quadForm_cfc` (a convex
+$\varphi$ differentiable at the point has a supporting line there, `ConvexOn.hasSupportingLineOn`).
+[TroppWebber2023, Lemma 9.4 (proof)]. -/
+theorem apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn {φ : ℝ → ℝ} {s : Set ℝ}
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) (hAs : spectrum ℝ A ⊆ s) {x : n → 𝕜}
+    (hx : ‖WithLp.toLp 2 x‖ = 1) (hφ : HasSupportingLineOn φ s (RCLike.re (quadForm A x))) :
+    φ (RCLike.re (quadForm A x)) ≤ RCLike.re (quadForm (cfc φ A) x) := by
+  obtain ⟨w, hw0, hw1, hw⟩ := exists_weights_re_quadForm_cfc hA hx
+  obtain ⟨c, hc⟩ := hφ
+  have hsa : IsSelfAdjoint A := hA
+  have hid := hw fun x => x
+  rw [cfc_id' ℝ A hsa] at hid
+  set a := RCLike.re (quadForm A x)
+  have hsum : ∑ i, w i • (φ a + c * (eigenvalue A i - a)) =
+      φ a * ∑ i, w i + c * (∑ i, w i • eigenvalue A i - a * ∑ i, w i) := by
+    simp only [smul_eq_mul, Finset.mul_sum, ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun i _ => by ring
+  rw [hw1, ← hid, mul_one, mul_one, sub_self, mul_zero, add_zero] at hsum
+  rw [hw φ, ← hsum]
+  exact Finset.sum_le_sum fun i _ => smul_le_smul_of_nonneg_left
+    (hc _ (hAs (hA.eigenvalue_mem_spectrum i.isLt))) (hw0 i)
+
+omit [DecidableEq n] [DecidableEq p] in
+/-- **The projection half of the almost-convex Jensen inequality**: for an orthogonal projector
+$\mathbf{P}$ with $\mathbf{P}\mathbf{A} \ne \mathbf{0}$, a matrix $\mathbf{B}$ with
+$\mathbf{B}\mathbf{B}^{\mathsf{H}} = \varphi(\mathbf{A}\mathbf{A}^{\mathsf{H}})$, and $\varphi$
+with a supporting line on $[0, \infty)$ at $\|\mathbf{P}\mathbf{A}\|_2^2$,
+$$\varphi(\|\mathbf{P}\mathbf{A}\|_2^2) \le \|\mathbf{P}\mathbf{B}\|_2^2\,.$$
+The top eigenvector of $\mathbf{P}\mathbf{A}\mathbf{A}^{\mathsf{H}}\mathbf{P}$ lies in the range of
+$\mathbf{P}$, and the quadratic-form half applies there. The hypothesis
+$\|\mathbf{P}\mathbf{A}\|_2 > 0$ is needed: at $\mathbf{P} = \mathbf{0}$ the conclusion is
+$\varphi(0) \le 0$. [TroppWebber2023, Lemma 9.4, (9.4)]. -/
+theorem apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn {φ : ℝ → ℝ}
+    {A : Matrix m n 𝕜} {B : Matrix m p 𝕜} (hB : B * Bᴴ = cfc φ (A * Aᴴ)) {P : Matrix m m 𝕜}
+    (hP : IsStarProjection P) (h₀ : 0 < specNorm (P * A))
+    (hφ : HasSupportingLineOn φ (Set.Ici 0) (specNorm (P * A) ^ 2)) :
+    φ (specNorm (P * A) ^ 2) ≤ specNorm (P * B) ^ 2 := by
+  obtain ⟨u, hu, hPu, hq⟩ :=
+    hP.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq h₀
+  have hH : (A * Aᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose A
+  have h1 := apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn hH.isHermitian
+    hH.spectrum_subset_Ici hu (hq ▸ hφ)
+  rw [hq, ← hB] at h1
+  have hBe : quadForm (B * Bᴴ) u = quadForm (P * B * (P * B)ᴴ) u := by
+    rw [Matrix.conjTranspose_mul, hP.conjTranspose_eq, ← hPu, ← quadForm_conjTranspose_mul_mul,
+      hP.conjTranspose_eq, hPu]
+    simp only [Matrix.mul_assoc]
+  have h2 := abs_re_quadForm_le (P * B * (P * B)ᴴ) u
+  rw [← hBe, hu, one_pow, mul_one, specNorm_mul_conjTranspose_self] at h2
+  exact h1.trans ((le_abs_self _).trans h2)
 
 end NLAlib

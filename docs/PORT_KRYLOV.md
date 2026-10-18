@@ -58,11 +58,38 @@ Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` is reached by a bridge lemma
 `algebraMap_le_iff_le_spectrum` for the converse), so callers holding Loewner bounds still apply the
 theorems in one step. `A.PosDef`, ranged `eigenvalue A k` and the eigenvector form are unchanged.
 
-## Progress (2026-10-17)
+## Maintainer directions (2026-10-18, block round)
+
+The block round (`docs/design/Krylov-Block.md`, branch `krylov/block`) reopened D11 at the
+maintainer's request. His directions, in order:
+- "let's build block krylov and then work towards formalizing the bounds in Tropp Webber": block
+  Krylov spaces first (one block definition beside the vector one, D10(c), BD1 (b)), then Tropp and
+  Webber's Theorems 9.1 and 9.2 for RBKI and RSI;
+- the bounds should also hold for the truncated outputs, borrowing from Musco and Musco where
+  needed (late truncation `truncatedSVD (alg …) r`; early truncation if natural, deferred as BD6);
+- on the design note: "the gapless bounds are more important, but it is okay to defer them if its
+  a big task. other stuff looks good" (BD1 to BD9 approved as recommended; gapless bounds
+  prioritised, both the Tropp–Webber form and the Musco–Musco $(1 + \varepsilon)$ form proved);
+- next: the upper bound of Bakshi, Clarkson and Woodruff (arXiv:2202.05120), Theorem 5.1 only; the
+  lower bounds are a separate later project, from a newer paper.
+
+## Progress (2026-10-18)
 
 The stages were renumbered when designed: the roadmap's "K2 GMRES, MINRES, CGLS, PCG" and "K3
 Arnoldi" became stage K1 (`docs/design/Krylov-LinearSystems.md`), its "K1 Lanczos-FA" became K2
 (`Krylov-Functions.md`), and K2b (`Krylov-Sharpness.md`) was added for sharpness.
+
+Done, all proved, branch `krylov/block` (2026-10-18; `Krylov-Block.md`, Implementation):
+- **Block round B0 to B7**: `blockKrylovMatrix`, `blockKrylovSpace` and their one-column, CG,
+  shift, change-of-variables and polynomial bridges (`Krylov/Basic/BlockSpace.lean`); `rbki` and
+  `nystromBKI` (`LowRank/Structural/BlockKrylov.lean`); Tropp–Webber Lemma 9.5, the filtered range
+  finder, deterministic and in expectation; TW Theorem 9.2 (gapped) for RBKI and RSI in the spectral,
+  Frobenius and every quadratic unitarily invariant norm, with the late-truncated spectral and
+  Frobenius lines; the gapless bounds in TW's Theorem 9.1 form and in the Musco–Musco
+  $(1 + \varepsilon)$ form (truncated and untruncated, with the asymptotic depth
+  $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\varepsilon})$); the Nyström variants through the Gram
+  correspondence. Later targets, among them MM Theorems 1 and 11 to 13 and BCW Theorem 5.1, are listed
+  in the note.
 
 Done, all proved, branch `krylov/brief`:
 - **K0**, the CG slice (`Krylov-CG.md`): Krylov space and grade, `galerkinInverse`, `cgIterate`,
@@ -81,7 +108,8 @@ deferred items (L12: MINRES-QLP, the general two-interval bound, real GMRES with
 eigenvalues, Richardson and Chebyshev iterations); Greenbaum–Gurvits for GMRES with normal
 matrices (`Krylov-Sharpness.md` question 2); and the roadmap of §8 from K4 on (Ritz values and
 eigenvalue bounds, random-start power and Lanczos, sketched solvers, Hutch++ and SLQ, Nyström PCG,
-Kaczmarz and sketch-and-project). Block methods stay out of this round (D11).
+Kaczmarz and sketch-and-project). Block methods beyond the block round (block Lanczos, CG and
+GMRES, BD2) stay deferred.
 
 ## Maintainer decisions
 
