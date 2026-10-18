@@ -11,6 +11,7 @@ public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity
 public import Mathlib.Tactic.Ring
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 
 /-!
 # Chebyshev growth outside the unit interval
@@ -101,13 +102,22 @@ theorem sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real {a b : ℝ}
 every commutative ring. [TroppWebber2023, Lemma 9.3], part 1 in the form used there. -/
 theorem eval_T_two_mul {R : Type*} [CommRing R] (j : ℤ) (x : R) :
     (T R (2 * j)).eval x = (T R j).eval (2 * x ^ 2 - 1) := by
-  sorry
+  rw [mul_comm, T_mul, eval_comp, T_two]
+  simp
 
 /-- **Monotonicity outside the unit interval**: $T_q$ is non-decreasing on $[1, \infty)$.
 [TroppWebber2023, Lemma 9.3], part 3. -/
 theorem monotoneOn_eval_T_real (q : ℕ) :
     MonotoneOn (fun x : ℝ => (T ℝ (q : ℤ)).eval x) (Set.Ici 1) := by
-  sorry
+  intro x hx y hy hxy
+  have hx' : (1 : ℝ) ≤ x := hx
+  have hy' : (1 : ℝ) ≤ y := hy
+  simp only
+  rw [← cosh_arcosh hx', ← cosh_arcosh hy', T_real_cosh, T_real_cosh, cosh_le_cosh,
+    abs_of_nonneg (by have := arcosh_nonneg hx'; positivity),
+    abs_of_nonneg (by have := arcosh_nonneg hy'; positivity)]
+  exact mul_le_mul_of_nonneg_left
+    ((arcosh_le_arcosh (by linarith) (by linarith)).2 hxy) (Nat.cast_nonneg q)
 
 end Polynomial.Chebyshev
 
@@ -117,7 +127,12 @@ namespace Real
 [TroppWebber2023, (C.1)]. -/
 theorem exp_two_mul_le_one_add_div_one_sub {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
     exp (2 * r) ≤ (1 + r) / (1 - r) := by
-  sorry
+  -- The first term of $\log(1 + r) - \log(1 - r) = \sum_k 2r^{2k+1}/(2k+1)$ is $2r$.
+  have hs := hasSum_log_sub_log_of_abs_lt_one (abs_lt.2 ⟨by linarith, h₁⟩)
+  have h := le_hasSum hs 0 (fun j _ => by positivity)
+  rw [← log_div (by linarith) (by linarith)] at h
+  rw [← exp_log (div_pos (by linarith) (by linarith : (0 : ℝ) < 1 - r))]
+  exact exp_le_exp.2 (by simpa using h)
 
 end Real
 
@@ -131,7 +146,16 @@ With $r$ a relative gap $\gamma$, $(1 + \gamma)/(1 - \gamma)$ is the ratio of th
 values. [TroppWebber2023, Lemma 9.3], part 3. -/
 theorem exp_mul_sqrt_div_two_le_eval_T_real (q : ℕ) {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
     exp (2 * q * √r) / 2 ≤ (T ℝ (q : ℤ)).eval ((1 + r) / (1 - r)) := by
-  sorry
+  rcases h₀.eq_or_lt with rfl | hr
+  · norm_num [T_eval_one]
+  have hs₁ : √r < 1 := by rw [Real.sqrt_lt' one_pos]; linarith
+  have h := sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real hr h₁ q
+  rw [Real.sqrt_one] at h
+  refine le_trans ?_ h
+  gcongr
+  rw [show 2 * (q : ℝ) * √r = q * (2 * √r) by ring, Real.exp_nat_mul]
+  gcongr
+  exact exp_two_mul_le_one_add_div_one_sub (Real.sqrt_nonneg r) hs₁
 
 -- Stage B2b
 
