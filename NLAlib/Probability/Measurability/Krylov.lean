@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.RCLike.Lemmas
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.Krylov.Basic.BlockSpace
 
@@ -37,6 +38,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n p : Type*} [Fintype n] [DecidableEq n]
 measurable function of the starting block. -/
 theorem measurable_blockKrylovMatrix (A : Matrix n n 𝕜) (q : ℕ) :
     Measurable fun B : Matrix n p 𝕜 => blockKrylovMatrix A B q := by
-  sorry
+  refine Matrix.measurable_iff.2 fun i jc => ?_
+  change Measurable fun B : Matrix n p 𝕜 => (A ^ (jc.1 : ℕ) * B) i jc.2
+  exact (Matrix.measurable_apply i jc.2).comp (measurable_const.matrix_mul measurable_id)
 
 end NLAlib

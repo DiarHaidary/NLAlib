@@ -484,8 +484,8 @@ vector Krylov space: both depend only on the column space, and the two column sp
 (`NLAlib.blockKrylovSpace_replicateCol`). -/
 theorem galerkinInverse_blockKrylovMatrix_replicateCol (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     galerkinInverse A (blockKrylovMatrix A (Matrix.replicateCol Unit b) q) =
-      galerkinInverse A (krylovMatrix A b q) := by
-  sorry
+      galerkinInverse A (krylovMatrix A b q) :=
+  galerkinInverse_eq_of_range_eq A (blockKrylovSpace_replicateCol A b q)
 
 omit [Fintype r] [DecidableEq r] in
 /-- **Block CG with one column is CG**: the block Galerkin approximation
@@ -497,6 +497,7 @@ theorem galerkinInverse_blockKrylovMatrix_replicateCol_mul (A : Matrix n n 𝕜)
     galerkinInverse A (blockKrylovMatrix A (Matrix.replicateCol Unit b) q) *
         Matrix.replicateCol Unit b =
       Matrix.replicateCol Unit (cgIterate A b 0 q) := by
-  sorry
+  rw [galerkinInverse_blockKrylovMatrix_replicateCol, cgIterate, Matrix.mulVec_zero, sub_zero,
+    zero_add, Matrix.replicateCol_mulVec]
 
 end NLAlib
