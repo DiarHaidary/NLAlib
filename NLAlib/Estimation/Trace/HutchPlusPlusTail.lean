@@ -23,8 +23,9 @@ tail bound (`NLAlib.frobNorm_sub_truncatedSVD_le_nuclearNorm_div`) turn it into 
 guarantee of Meyer, Musco, Musco and Woodruff: $O(\sqrt{\log(1/\delta)}/\varepsilon +
 \log(1/\delta))$ products give $\lvert \mathsf{hutchpp} - \operatorname{tr}\mathbf{A} \rvert \le
 \varepsilon\|\mathbf{A}\|_*$ with probability $1 - \delta$. Real throughout. The constants are
-explicit: the range-finder factor $1 + 10c$ replaces MMMW's $2$ (their route through Musco and
-Musco is not in the library), and the Hanson–Wright constant is $1/196$. Design:
+explicit: the range-finder factor <!-- value subgaussianRangeFinderFactor c -->$1 + 10c$
+replaces MMMW's $2$ (their route through Musco and Musco is not in the library), and the
+Hanson–Wright constant is <!-- value hansonWrightConstant -->$1/196$. Design:
 `docs/design/Estimation-HutchPP.md` §3.4.
 
 ## Main results

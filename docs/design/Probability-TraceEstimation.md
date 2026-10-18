@@ -142,7 +142,8 @@ theorem variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame [Nonempty k] (hX
 No named constants (every constant is exact and small, written in the statement). No asymptotic
 forms (none are sample-size results). §5.3 rows proposed: the Girard–Hutchinson estimate
 `girardHutchinson A Ω` (`\mathsf{girardHutchinson}`);
-not yet added to CONTRIBUTING (a §5.3 change needs two approvals).
+added to CONTRIBUTING at the Hutch++ wrap-up (2026-10-18; a §5.3 change needs two approvals
+at review).
 
 ## 5. Consumers
 
@@ -188,8 +189,8 @@ in `Moments.lean` stays, so the complex cases are one instantiation away once a 
 Everything is recoverable from commit `f1d3e75` (branch `probability/trace-estimation`).
 
 **Open question.** NLAlib's complex Gaussian was normalised as $\mathrm{CN}(0,1)$,
-$\mathbb{E}\lvert zvert^2 = 1$ (real and imaginary parts $\mathcal{N}(0, 1/2)$), the
+$\mathbb{E}\lvert z\rvert^2 = 1$ (real and imaginary parts $\mathcal{N}(0, 1/2)$), the
 random-matrix and isotropy (`IsIsotropic`) convention, whereas Mathlib's `stdGaussian ℂ` has
-$\mathbb{E}\lvert zvert^2 = 2$. Which should the library adopt, or both with a bridge? The
+$\mathbb{E}\lvert z\rvert^2 = 2$. Which should the library adopt, or both with a bridge? The
 bridges (`complexGaussianMeasure = (stdGaussian ℂ).map ((√2)⁻¹ • ·)`, and the complex sphere as
 `g / ‖g‖`) were planned and not proved. Complex Haar frames (old D8) wait on the same decision.

@@ -2,6 +2,36 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Hutch++ round complete (2026-10-18)
+
+Branch `probability/trace-estimation` (worktree `nlalib-block`), uncommitted on top of `e2b2d91`.
+Stages TE-0 to TE-5 of `docs/design/Estimation-HutchPP.md` are proved; `import NLAlib` has no
+`sorry`. The last one, P1 `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`
+(`ForMathlib/Probability/Independence/Basic.lean`), is three rewrites: the joint law is the
+product of the laws (`indepFun_iff_map_prod_eq_prod_map_map`), then `integral_map`,
+`integral_prod`; Mathlib has only the product forms (`IndepFun.integral_fun_comp_mul_comp`,
+searched). `HutchPlusPlusTail.lean` now builds in the full library (it had been checked only
+against a scratch olean). Fixes from the checks: a 100-character line in the module docstring of
+`Probability/QuadraticForm/Moments.lean`; value markers for `subgaussianRangeFinderFactor c` and
+`hansonWrightConstant` in the `HutchPlusPlusTail.lean` module docstring. In
+`Probability-TraceEstimation.md` two `\rvert` that had become carriage returns are restored. The asymptotic `C = 20000`
+stays existential (CONTRIBUTING §5.2 rule 3; the docstring says "the proof takes $C = 20000$", as
+the other asymptotic forms do). The note's Implementation has "What was proved", "Deviations"
+(Skeleton changes 1 to 12) and "Later targets" (XTrace, NA-Hutch++, complex probes, the TE4 probe
+interface). CONTRIBUTING §5.3: rows for independent test matrices (`IndepFun S G μ`),
+`girardHutchinson` and `hutchpp`; `subgaussianRangeFinderFactor` gets none (a named factor with a
+registry entry, like the others). Ledger: twenty prototype entries from
+`Estimation.Trace.Unbiased` and `Estimation.Trace.HutchinsonTail` (stages TE-0, TE-1, TE-2); the
+prototype's XTrace declarations and Gaussian/Rademacher corollaries of the Hutchinson tail remain
+unported.
+
+Checks: `lake build NLAlib` 3952 jobs, 0 warnings; `lake exe mk_all --check` clean;
+`scripts/stage_check.sh`: 354 proved modules, build 3950 jobs, 0 warnings; audit 9153
+declarations, 0 violations; lint 5983 declarations, 0 errors; references 77 keys, 61 asymptotic
+forms, 0 problems; constants 28, 306 value markers, 0 problems; duplicates 5464 theorems, 0
+classes; LaTeX 22889 spans, 0 problems; `ledger_check.py` only the documented `IsSVD.eq` false
+positive. NLAlibScaffold not rebuilt.
+
 ## Trace estimation variances (2026-10-18)
 
 Branch `probability/trace-estimation` (worktree `nlalib-block`), uncommitted on top of `b1d21fa`

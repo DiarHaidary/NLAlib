@@ -685,3 +685,91 @@ Changes from §1 to §3 and §6, with the reason:
     * The conditioning step P1 is used through a private wrapper in `HutchPlusPlus.lean`
       (integrability on the product of the laws from a bound by an integrable function of `G`:
       `‖gh(Δ, G)‖ ≤ ‖A‖_F ‖G‖_F²`, `‖tr Δ‖ ≤ |n| ‖A‖_F`).
+
+### What was proved (2026-10-18)
+
+All stages TE-0 to TE-5 are proved on branch `probability/trace-estimation`; `import NLAlib` has
+no `sorry`. Per stage, the files and the headline names (namespace `NLAlib` unless written
+otherwise):
+
+- **TE-0** (matrix facts A1, A5, A6). `Matrix/Basic/ComplementaryProjector.lean`: the trace split
+  `IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub` (A1, any commutative ring).
+  `Matrix/Norms/Projector.lean`: `frobNorm_one_sub_rangeProjector_mul_sq_eq_add` (A5).
+  `Matrix/Spectral/BestRankApprox.lean`: the GSTV tail bound
+  `frobNorm_sub_truncatedSVD_le_nuclearNorm_div` (A6, `Result: frobenius-tail-nuclear-norm`) and
+  `Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div`.
+  `Matrix/Spectral/HermitianPart.lean`: `frobNorm_hermitianPart_le` (Skeleton change 12).
+- **TE-1** (P1, P7, P8). `ForMathlib/Probability/Independence/Basic.lean`: Fubini for an
+  independent pair, `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral` (P1; the joint
+  law is the product of the laws by Mathlib's `indepFun_iff_map_prod_eq_prod_map_map`, then
+  `integral_map` and `integral_prod`; Mathlib has only the product forms
+  `IndepFun.integral_fun_comp_mul_comp` and relatives, searched). `Estimation/Trace/GirardHutchinson.lean`:
+  the Girard–Hutchinson tail `measureReal_abs_girardHutchinson_sub_trace_ge_le` (P7,
+  `Result: girard-hutchinson-tail`), through the block-diagonal helpers of `Matrix/Norms/Block.lean`
+  (`frobNorm_blockDiagonal_sq`, `frobNorm_blockDiagonal_const_sq`, `specNorm_blockDiagonal_le`,
+  `specNorm_le_specNorm_blockDiagonal`, `specNorm_blockDiagonal_const`).
+  `Probability/SubGaussianVector/Basic.lean`: `IsSubgaussianVector.uncurry_of_iIndepFun` (P8).
+- **TE-2** (H1 to H3). `Estimation/Trace/HutchPlusPlus.lean`: `hutchpp`, the bridge
+  `HasOrthonormalCols.hutchpp_eq`, the error identity `hutchpp_sub_trace`, exactness
+  `hutchpp_eq_trace_of_rsvd_eq`, `hutchpp_eq_trace_of_rank_eq`, `measurable_hutchpp`;
+  unbiasedness `integral_hutchpp` (`Result: hutchpp-unbiased`); the mean-square error as an average
+  over the sketch `integral_norm_hutchpp_sub_trace_sq`; the exact variances
+  `variance_hutchpp_of_hasLaw_gaussianMatrix`, `variance_hutchpp_of_hasLaw_rademacherMatrix`,
+  `Matrix.IsHermitian.variance_hutchpp_of_hasLaw_gaussianMatrix` (TE10 (a),
+  `Result: hutchpp-variance`); `ae_hutchpp_eq_trace_of_hasLaw_gaussianMatrix`.
+- **TE-3** (H4). Same file: `variance_hutchpp_le_of_hasLaw_gaussianMatrix` (MMMW Theorem 10),
+  `variance_hutchpp_le_of_hasLaw_gaussianMatrix_of_rank_le` (Epperly–Webber form),
+  `variance_hutchpp_le_nuclearNorm_of_hasLaw_gaussianMatrix`,
+  `Matrix.PosSemidef.variance_hutchpp_le_trace_sq_of_hasLaw_gaussianMatrix`, and the asymptotic
+  form `exists_forall_variance_hutchpp_le_of_hasLaw_gaussianMatrix`.
+- **TE-4** (L7). `LowRank/Oblivious/SubGaussian.lean`: the named factor
+  `subgaussianRangeFinderFactor` (registry entry; API `one_le_subgaussianRangeFinderFactor`,
+  `subgaussianRangeFinderFactor_mono`, `subgaussianRangeFinderFactor_le`), the constant-factor
+  range finder with $\log(1/\delta)$ failure
+  `measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector` and its asymptotic form
+  `exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`
+  (`Result: randomized-svd-tail`).
+- **TE-5** (H5). `Estimation/Trace/HutchPlusPlusTail.lean`: the generic tail given a range-finder
+  guarantee `measureReal_abs_hutchpp_sub_trace_ge_le`, its sub-Gaussian and Gaussian instances
+  `measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector`,
+  `measureReal_abs_hutchpp_sub_trace_ge_le_of_hasLaw_gaussianMatrix` (`Result: hutchpp-tail`); the
+  relative error `measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`
+  (MMMW Theorem 5), its PSD halves
+  `Matrix.PosSemidef.measureReal_hutchpp_lt_one_sub_mul_trace_le_of_isSubgaussianVector`,
+  `Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector`, and the
+  asymptotic form
+  `exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`
+  ($O(c^4(\sqrt{\log(1/\delta)}/\varepsilon + \log(1/\delta)))$ products; the proof takes
+  $C = 20000$; `Result: hutchpp-relative-error`).
+
+Records: §5.3 rows for `hutchpp`, `girardHutchinson` and the independence of the two test
+matrices (§6); `subgaussianRangeFinderFactor` is a named bound with its registry entry and needs
+no row, like the library's other named factors. Ledger: twenty prototype entries from
+`NLAlib.Estimation.Trace.Unbiased` and `NLAlib.Estimation.Trace.HutchinsonTail` (stages TE-0,
+TE-1, TE-2); the XTrace declarations of those modules and the prototype's Gaussian and Rademacher
+corollaries of the Girard–Hutchinson tail are not ported this round.
+
+### Deviations
+
+None from Mathlib (§6: `hutchpp` and `girardHutchinson` are new objects; no
+`Mathlib-deviations.md` entry beyond the existing `girardHutchinson` mention). From the note's
+signatures: Skeleton changes 1 to 12 above, none of which changes a decision. The largest are the
+minimal hypotheses of A1 (1, 12), P1 placed beside its Tonelli twin in the existing independence
+file in iterated form (4), the $L^4$ probe hypothesis of the mean-square identity (6), the
+two-proxy sub-Gaussian instance with L7 at failure $\delta$ (8), and in TE-5 the strict relative
+event, the rename of the relative form, the generic tail without `hK` and the asymptotic form
+without $\varepsilon_0$ (9, 11).
+
+### Later targets
+
+- **XTrace** and XNysTrace (deferred by the maintainer, 2026-10-18): §8 lists the definitions,
+  ETW Proposition 5.1's proof plan, the library inputs and the new lemmas they need.
+- **NA-Hutch++** (TE11; MMMW Algorithm 2, Theorem 6): the low-rank part is
+  `generalizedNystrom A R S` for symmetric $\mathbf{A}$; it needs [CW09, Theorem 4.7] (approximate
+  matrix multiplication for sketched regression), not yet in the library.
+- **Complex probes**: the variance identities of TE-2 are real because the Gaussian matrix law is;
+  complex Gaussian, Steinhaus and sphere probe laws were withdrawn from the companion round
+  (`docs/design/Probability-TraceEstimation.md`, "Deferred: complex probes", recoverable from
+  `f1d3e75`). With them, complex instances of the exact variance ($\kappa = 1$ in place of $2$)
+  and of the tail follow the real proofs.
+- The probe-variance interface of TE4 (option (a)), revisited with XTrace.

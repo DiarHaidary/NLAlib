@@ -10438,6 +10438,11 @@
   "note": "deferred, PORT_SKETCHING D6 and §4a: SparseStack and OSNAP",
   "stage": "S7"
  },
+ "NLAlib.card_hutchPlusPlusBasis_le": {
+  "new": null,
+  "note": "object not reproduced: no Hutch++ basis; rangeProjector (A * S), Estimation-HutchPP §6",
+  "stage": "TE-2"
+ },
  "NLAlib.card_image_univ_sequence_le": {
   "new": null,
   "note": "step 1 of Hoeffding's comparison, private; Sketching-S5 §5",
@@ -11396,6 +11401,11 @@
   "new": null,
   "note": "bundle of the definite-pair statements of Spectral/Congruence.lean",
   "stage": "M10"
+ },
+ "NLAlib.deflatedTraceEstimate": {
+  "new": "NLAlib.HasOrthonormalCols.hutchpp_eq",
+  "note": "a supplied orthonormal basis Q of the sketch image is the bridge, not a second definition",
+  "stage": "TE-2"
  },
  "NLAlib.degree_chebyshevResidual_le": {
   "new": "NLAlib.degree_chebyshevResidual_le",
@@ -14171,6 +14181,11 @@
   "note": "cut: D9, Wishart and the hard edge; PORT_PROBABILITY.md D9, R4 §0",
   "stage": "R4"
  },
+ "NLAlib.frobSq_hutchinsonBlock": {
+  "new": "NLAlib.frobNorm_blockDiagonal_const_sq",
+  "note": "unscaled: ‖diag(B, …, B)‖_F² = m ‖B‖_F²",
+  "stage": "TE-1"
+ },
  "NLAlib.frobSq_kronecker": {
   "new": "NLAlib.frobNorm_kronecker",
   "note": "frobSq is frobNorm ^ 2; over 𝕜",
@@ -15544,6 +15559,10 @@
   "note": "Mathlib ProbabilityTheory.map_pi_eq_stdGaussian",
   "stage": "P2"
  },
+ "NLAlib.hasLaw_uncurry_gaussianMatrix": {
+  "new": "NLAlib.hasLaw_uncurry_of_hasLaw_gaussianMatrix",
+  "stage": "TE-1"
+ },
  "NLAlib.hasLocalMatrixSecondMoment_condExp_sq": {
   "new": null,
   "note": "private step in the P5d files, or inlined",
@@ -15607,6 +15626,11 @@
  "NLAlib.hasOrthonormalCols_householderQ": {
   "new": "NLAlib.hasOrthonormalCols_householderQ",
   "stage": "M9"
+ },
+ "NLAlib.hasOrthonormalCols_hutchPlusPlusBasis": {
+  "new": null,
+  "note": "object not reproduced: no Hutch++ basis; rangeProjector (A * S), Estimation-HutchPP §6",
+  "stage": "TE-2"
  },
  "NLAlib.hasOrthonormalCols_iff_conjTranspose_mul_self": {
   "new": "NLAlib.hasOrthonormalCols_iff",
@@ -15940,6 +15964,21 @@
  "NLAlib.householder_zero": {
   "new": "NLAlib.householder_zero",
   "stage": "M9"
+ },
+ "NLAlib.hutchPlusPlusBasis": {
+  "new": null,
+  "note": "object not reproduced: rangeProjector (A * S) replaces the Fin (finrank …) basis, Estimation-HutchPP §6",
+  "stage": "TE-2"
+ },
+ "NLAlib.hutchPlusPlusEstimate": {
+  "new": "NLAlib.hutchpp",
+  "note": "basis-free through rangeProjector (A * S), over RCLike; any orthonormal basis of the sketch image through NLAlib.HasOrthonormalCols.hutchpp_eq",
+  "stage": "TE-2"
+ },
+ "NLAlib.hutchinsonBlock": {
+  "new": null,
+  "note": "proof-internal: Matrix.blockDiagonal fun _ => B, unscaled, in the private quadForm_blockDiagonal_const of Estimation/Trace/GirardHutchinson.lean",
+  "stage": "TE-1"
  },
  "NLAlib.hutchinsonEstimate": {
   "new": "NLAlib.girardHutchinson",
@@ -16838,6 +16877,11 @@
   "note": "with Mathlib HasLaw.integral_comp",
   "stage": "R1"
  },
+ "NLAlib.integral_comp_of_indepFun_of_forall_integral_eq": {
+  "new": "ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral",
+  "note": "iterated-integral form over any Banach space; a constant inner integral is one rewrite with integral_const",
+  "stage": "TE-1"
+ },
  "NLAlib.integral_coord_mul_coord": {
   "new": "NLAlib.IsIsotropic.of_iIndepFun",
   "note": "its integral_mul_star field",
@@ -16896,6 +16940,16 @@
   "new": null,
   "note": "private conditional step of the trace form; the sign moment is P3's integral_norm_quadForm_sub_trace_sq",
   "stage": "S7"
+ },
+ "NLAlib.integral_deflatedTraceEstimate_comp_eq_trace": {
+  "new": "NLAlib.integral_hutchpp",
+  "note": "the deflation basis is that of the random sketch image; hsecond as IsIsotropic columns",
+  "stage": "TE-2"
+ },
+ "NLAlib.integral_deflatedTraceEstimate_eq_trace": {
+  "new": "NLAlib.integral_hutchpp",
+  "note": "a fixed sketch is a constant S, independent of G; hsecond as IsIsotropic columns",
+  "stage": "TE-2"
  },
  "NLAlib.integral_deriv_mul_eq_integral_mul_mul_sub_deriv_gaussianReal": {
   "new": null,
@@ -17197,6 +17251,16 @@
   "new": null,
   "note": "the abbrev and the uncurry law",
   "stage": "R1"
+ },
+ "NLAlib.integral_hutchPlusPlusEstimate_eq_trace": {
+  "new": "NLAlib.integral_hutchpp",
+  "note": "a fixed sketch is a constant S; hsecond as IsIsotropic columns",
+  "stage": "TE-2"
+ },
+ "NLAlib.integral_hutchPlusPlusEstimate_eq_trace_of_hasLaw_gaussianMatrix": {
+  "new": "NLAlib.integral_hutchpp",
+  "note": "Gaussian columns are isotropic by NLAlib.isIsotropic_of_hasLaw_gaussianVector",
+  "stage": "TE-2"
  },
  "NLAlib.integral_hutchinsonEstimate_eq_trace": {
   "new": "NLAlib.integral_girardHutchinson",
@@ -19806,6 +19870,11 @@
   "note": "other route: HasMatrixMGFBound.neg with the λmax forms in MatrixConcentration/MGFBound.lean",
   "stage": "P5a"
  },
+ "NLAlib.measureReal_le_abs_hutchinsonEstimate_sub_integral_le": {
+  "new": "NLAlib.measureReal_abs_girardHutchinson_sub_trace_ge_le",
+  "note": "centred at tr B under unit second moments; constant hansonWrightConstant = 1/196 in place of 1/(256e²)",
+  "stage": "TE-1"
+ },
  "NLAlib.measureReal_le_abs_sum_sq_sub_card_of_hasSubgaussianMGF": {
   "new": "NLAlib.hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector",
   "stage": "R3"
@@ -22213,6 +22282,11 @@
   "new": "NLAlib.re_quadForm_fromBlocks",
   "stage": "M7"
  },
+ "NLAlib.quadForm_hutchinsonBlock": {
+  "new": null,
+  "note": "private quadForm_blockDiagonal_const in Estimation/Trace/GirardHutchinson.lean, for the unscaled block matrix",
+  "stage": "TE-1"
+ },
  "NLAlib.quadForm_map_pow_vecMulVec_self": {
   "new": null,
   "note": "private helper of Matrix.PosSemidef.posDef_map_exp_iff: map_pow_vecMulVec with NLAlib.quadForm_vecMulVec_star",
@@ -22376,6 +22450,11 @@
   "new": null,
   "note": "object not reproduced: eigenvalueProjector, Matrix-Perturbation §6",
   "stage": "M6"
+ },
+ "NLAlib.range_hutchPlusPlusBasis": {
+  "new": null,
+  "note": "object not reproduced: no Hutch++ basis; rangeProjector (A * S), Estimation-HutchPP §6",
+  "stage": "TE-2"
  },
  "NLAlib.range_mulVecLin_eq_of_range_toEuclideanLin_eq": {
   "new": null,
@@ -23860,6 +23939,11 @@
   "new": "NLAlib.specNorm_conjTranspose_mul_self_sub_one_le_iff",
   "note": "Matrix layer, already ported; Sketching-S0 §5",
   "stage": "S0"
+ },
+ "NLAlib.specNorm_hutchinsonBlock_le": {
+  "new": "NLAlib.specNorm_blockDiagonal_const",
+  "note": "unscaled, an equality",
+  "stage": "TE-1"
  },
  "NLAlib.specNorm_idempotent_eq_secant_of_range_frames": {
   "new": "IsIdempotentElem.specNorm_mul_cos_principalAngle",
@@ -25868,6 +25952,21 @@
  "NLAlib.trace_eq_sum_of_charpoly_eq_prod": {
   "new": "NLAlib.IsEigenvalueListing.trace_eq_sum",
   "stage": "M10"
+ },
+ "NLAlib.trace_eq_trace_mul_mul_add_trace_sub_mul_mul_sub": {
+  "new": "IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub",
+  "note": "over any commutative ring; first term tr (P * A), equal to tr (P * A * P) by cyclicity and P * P = P",
+  "stage": "TE-0"
+ },
+ "NLAlib.trace_eq_trace_transpose_mul_mul_add": {
+  "new": "IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub",
+  "note": "at P = Q * Qᴴ, idempotent for HasOrthonormalCols Q; tr (Qᴴ * A * Q) = tr (Q * Qᴴ * A) by cyclicity",
+  "stage": "TE-0"
+ },
+ "NLAlib.trace_hutchinsonBlock": {
+  "new": null,
+  "note": "Mathlib Matrix.trace_blockDiagonal",
+  "stage": "TE-1"
  },
  "NLAlib.trace_inv_gram_pow_succ_mul_gram": {
   "new": null,

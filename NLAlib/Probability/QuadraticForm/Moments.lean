@@ -30,7 +30,8 @@ distribution is in the library (`docs/design/Probability-TraceEstimation.md`, "D
 probes"). For real symmetric $\mathbf{A}$
 it is the variance $2 \|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3) \sum_i \mathbf{A}_{i,i}^2$, stated
 with its Gaussian and Rademacher cases, their forms for any real $\mathbf{A}$ through the symmetric
-part, and the optimality of Rademacher probes ($m_4 \ge 1$). These are the single-probe variances of the Girard–Hutchinson trace estimator
+part, and the optimality of Rademacher probes ($m_4 \ge 1$). These are the single-probe
+variances of the Girard–Hutchinson trace estimator
 (`NLAlib/Estimation/Trace/GirardHutchinson.lean`); sphere probes, whose coordinates are not
 independent, are in `NLAlib/RandomMatrix/Haar/Moments.lean`.
 

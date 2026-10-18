@@ -122,6 +122,8 @@ theorem IndepFun.integral_comp_eq_integral_integral [IsFiniteMeasure μ] {α β 
     {U : Ω → α} {W : Ω → β} (hUW : IndepFun U W μ) (hU : AEMeasurable U μ)
     (hW : AEMeasurable W μ) {f : α × β → E} (hf : Integrable f ((μ.map U).prod (μ.map W))) :
     ∫ ω, f (U ω, W ω) ∂μ = ∫ u, ∫ w, f (u, w) ∂(μ.map W) ∂(μ.map U) := by
-  sorry
+  have hmap := (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW
+  rw [← integral_prod _ hf, ← hmap,
+    integral_map (hU.prodMk hW) (hmap ▸ hf.aestronglyMeasurable)]
 
 end ProbabilityTheory
