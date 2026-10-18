@@ -1109,6 +1109,49 @@ Checked and left in place, each recorded above: the gauge Lemma 5.1 in `Unitaril
 `Matrix.PosSemidef.rangeFinderTailRatio_sqrt` in the Nyström file (change 14; its only content is
 the Nyström-native ratio). No flag is open.
 
+### Asymptotic forms for the Rates page (2026-10-18)
+
+Maintainer: "add to the explorer rates page too" (low-rank approximation only; no rates for the
+linear-system solvers). Every Rates row resolves to a proved `exists_forall_` corollary paired
+with its explicit theorem (CONTRIBUTING §5.2 rule 3), so seventeen corollaries were added, each
+in the file of its explicit theorem, whose docstring now names it ("Asymptotic form: …"). All
+conclude relative error $1 + \varepsilon$ against the best rank-$r$ error in the theorem's own norm
+and power, with $\lvert n \rvert$ the number of columns:
+
+| Explicit family | Corollaries | Sufficient resource | Constants in the proof |
+|---|---|---|---|
+| gapped RBKI, spectral/Frobenius, untruncated/truncated (`BlockKrylov.lean`) | 4 | $q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$ | $C = 3$, $\varepsilon_0 = 1/2$ |
+| gapped RSI, same four (`BlockKrylov.lean`) | 4 | $p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ | $C = 1$, $\varepsilon_0 = 1/2$ |
+| gapped NysBKI spectral and truncated trace (`NystromBlockKrylov.lean`) | 2 | as RBKI | $C = 3$, $\varepsilon_0 = 1/2$ |
+| gapped NysSI spectral and truncated trace (same file) | 2 | as RSI | $C = 1$, $\varepsilon_0 = 1/2$ |
+| TW gapless RBKI, NysBKI (`BlockKrylovGapless.lean`, Nyström file) | 2 | $q \ge C\log(\lvert n \rvert + 1)/\sqrt{\varepsilon}$ | $C = 4$, $\varepsilon_0 = 1$ |
+| TW gapless RSI, NysSI (same files) | 2 | $p \ge C\log(\lvert n \rvert + 1)/\varepsilon$ | $C = 2$, $\varepsilon_0 = 1$ |
+| MM gapless truncated RSI (`BlockKrylovGapless.lean`) | 1 | $p \ge C\log(\lvert n \rvert/\varepsilon)/\varepsilon$ | $C = 11$, $\varepsilon_0 = 1/2$ |
+
+The gapped forms carry `0 < singularGapRatio A h t` (at $\gamma = 0$ Lean's $x/0 = 0$ would make
+the threshold vacuous) and are named `exists_forall_…_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`,
+since their conclusions coincide with the gapless ones. The tail is bounded by dimensions only:
+$\frac{t}{\ell-t-1}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2 \le
+\lvert n \rvert^2\sigma_r^2$ and $\le \lvert n \rvert\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2$.
+The Tropp–Webber gapless forms bound the tail ratio by $1 + \lvert n \rvert^2$ and so need no
+$\log(1/\varepsilon)$; their explicit theorems assume $\sigma_r > 0$, but the corollaries do not:
+at $\sigma_r = 0$ the $(1 + \varepsilon)$ form of the same algorithm gives error $0$. The
+untruncated Musco–Musco forms got no corollary, being dominated in rate by these; the existing
+truncated RBKI corollary ($C = 6$, $\varepsilon_0 = 1/2$) is unchanged.
+
+New supporting declarations, each beside the quantity it bounds: in
+`LowRank/Gaussian/RangeFinder.lean` (with `natCast_div_sub_sub_one_nonneg` and
+`rangeFinderTailRatio`) the two tail-weight bounds
+`natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq`,
+`…_le_card_mul_frobNorm_sub_truncatedSVD_sq` and `rangeFinderTailRatio_le_one_add_card_sq`; in
+`LowRank/Gaussian/BlockKrylov.lean`, the first file of the round's import chain, the threshold
+arithmetic shared by the three files: `one_half_le_log_div`, `le_add_mul_of_le_add_mul_exp`,
+`one_le_and_log_div_le_sub_one_mul`; in `BlockKrylovGapless.lean`, the gapless thresholds
+`two_le_and_exp_log_four_mul_sq_div_le_one_add`, `rpow_one_div_two_mul_add_one_le_one_add` (and a
+private $\varepsilon/2 \le \log(1 + \varepsilon)$). The scalar threshold lemmas are specific to
+these thresholds, so they stay with their users rather than in ForMathlib (flag: revisit if a
+later round needs them elsewhere).
+
 ### Deviations
 
 None from Mathlib (§8: every object is an addition; no `Mathlib-deviations.md` entry). From the

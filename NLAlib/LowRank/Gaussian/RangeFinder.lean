@@ -58,6 +58,8 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
 * `NLAlib.rangeFinderTailRatio`: the spectral bound of TW Theorem 8.1 (RSVD2) divided by
   $\sigma_k(\mathbf{A})^2$, with `NLAlib.one_le_rangeFinderTailRatio` and
   `NLAlib.sq_singularValues_mul_rangeFinderTailRatio`. <!-- mention rangeFinderTailRatio -->
+* `NLAlib.rangeFinderTailRatio_le_one_add_card_sq` and the two tail-weight bounds before it:
+  dimension bounds for the asymptotic forms of the block Krylov and subspace iteration bounds.
 * `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.6;
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_pinvSpecNormBound`: its
   second-moment form.
@@ -622,5 +624,101 @@ theorem sq_singularValues_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] 
       singularValues A r ^ 2 +
         (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   rw [rangeFinderTailRatio, mul_add, mul_one, mul_div_cancel₀ _ (pow_ne_zero 2 hσ.ne')]
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- The tail term of the Gaussian range-finder bounds is at most $\lvert n \rvert^2$ times the best
+squared spectral error at a smaller rank: for $r \le t$ and $t + 2 \le \ell$ (casts to
+$\mathbb{R}$), with $\lvert n \rvert$ the number of columns,
+$$\frac{t}{\ell - t - 1}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2 \le
+\lvert n \rvert^2\sigma_r(\mathbf{A})^2\,,$$
+from $t/(\ell - t - 1) \le t$ and $\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2
+\le (\min(\lvert m \rvert, \lvert n \rvert) - t)\,\sigma_r(\mathbf{A})^2$. It turns the gapped and
+gapless spectral bounds of randomized block Krylov and subspace iteration into relative errors, for
+their asymptotic forms. -/
+theorem
+natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq
+    {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) {r t l : ℕ} (hrt : r ≤ t) (hl : t + 2 ≤ l) :
+    (t : ℝ) / ((l : ℝ) - t - 1) * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+      (Fintype.card n : ℝ) ^ 2 * singularValues A r ^ 2 := by
+  set N := min (Fintype.card m) (Fintype.card n) with hN
+  have hκ : (t : ℝ) / ((l : ℝ) - t - 1) ≤ t := div_le_self (Nat.cast_nonneg _) (by
+    have : (t : ℝ) + 2 ≤ l := by exact_mod_cast hl
+    linarith)
+  have hF : frobNorm (A - truncatedSVD A t) ^ 2 ≤ ((N - t : ℕ) : ℝ) * singularValues A r ^ 2 := by
+    rw [frobNorm_sub_truncatedSVD_sq]
+    calc ∑ i ∈ Finset.Ico t N, singularValues A i ^ 2
+        ≤ ∑ _i ∈ Finset.Ico t N, singularValues A r ^ 2 :=
+          Finset.sum_le_sum fun i hi => pow_le_pow_left₀ (singularValues_nonneg _ _)
+            (singularValues_antitone A (hrt.trans (Finset.mem_Ico.1 hi).1)) 2
+      _ = _ := by rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
+  have htN : t * (N - t) ≤ Fintype.card n * Fintype.card n := by
+    have := min_le_right (Fintype.card m) (Fintype.card n)
+    rcases le_or_gt N t with h | h
+    · rw [Nat.sub_eq_zero_of_le h, mul_zero]
+      exact Nat.zero_le _
+    · exact Nat.mul_le_mul (by omega) (by omega)
+  have htNR : (t : ℝ) * ((N - t : ℕ) : ℝ) ≤ (Fintype.card n : ℝ) ^ 2 := by
+    rw [sq]
+    exact_mod_cast htN
+  calc (t : ℝ) / ((l : ℝ) - t - 1) * frobNorm (A - truncatedSVD A t) ^ 2
+      ≤ t * frobNorm (A - truncatedSVD A t) ^ 2 := mul_le_mul_of_nonneg_right hκ (sq_nonneg _)
+    _ ≤ t * (((N - t : ℕ) : ℝ) * singularValues A r ^ 2) :=
+        mul_le_mul_of_nonneg_left hF (Nat.cast_nonneg _)
+    _ ≤ (Fintype.card n : ℝ) ^ 2 * singularValues A r ^ 2 := by
+        rw [← mul_assoc]
+        exact mul_le_mul_of_nonneg_right htNR (sq_nonneg _)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- The tail term of the Gaussian range-finder bounds is at most $\lvert n \rvert$ times the best
+squared Frobenius error at a smaller rank: for $r \le t$ and $t + 2 \le \ell$ (casts to
+$\mathbb{R}$), with $\lvert n \rvert$ the number of columns,
+$$\frac{t}{\ell - t - 1}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2 \le
+\lvert n \rvert\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
+For $t$ at least the rank bound $\min(\lvert m \rvert, \lvert n \rvert)$ the left side is $0$;
+otherwise $t/(\ell - t - 1) \le t < \lvert n \rvert$. The Frobenius companion of
+`NLAlib.natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq`,
+for the asymptotic forms of the Frobenius bounds of randomized block Krylov and subspace
+iteration. -/
+theorem
+natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
+    {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) {r t l : ℕ} (hrt : r ≤ t) (hl : t + 2 ≤ l) :
+    (t : ℝ) / ((l : ℝ) - t - 1) * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+      (Fintype.card n : ℝ) * frobNorm (A - truncatedSVD A r) ^ 2 := by
+  set N := min (Fintype.card m) (Fintype.card n) with hN
+  rw [frobNorm_sub_truncatedSVD_sq, frobNorm_sub_truncatedSVD_sq]
+  rcases le_or_gt N t with h | h
+  · rw [Finset.Ico_eq_empty_of_le h, Finset.sum_empty, mul_zero]
+    exact mul_nonneg (Nat.cast_nonneg _)
+      (Finset.sum_nonneg fun i _ => sq_nonneg (singularValues A i))
+  · have hκ : (t : ℝ) / ((l : ℝ) - t - 1) ≤ Fintype.card n := by
+      have hl' : (t : ℝ) + 2 ≤ l := by exact_mod_cast hl
+      have htn : (t : ℝ) ≤ Fintype.card n := by
+        have := min_le_right (Fintype.card m) (Fintype.card n)
+        exact_mod_cast (show t ≤ Fintype.card n by omega)
+      exact (div_le_self (Nat.cast_nonneg _) (by linarith)).trans htn
+    calc (t : ℝ) / ((l : ℝ) - t - 1) * ∑ i ∈ Finset.Ico t N, singularValues A i ^ 2
+        ≤ (Fintype.card n : ℝ) * ∑ i ∈ Finset.Ico t N, singularValues A i ^ 2 :=
+          mul_le_mul_of_nonneg_right hκ (Finset.sum_nonneg fun i _ => sq_nonneg _)
+      _ ≤ (Fintype.card n : ℝ) * ∑ i ∈ Finset.Ico r N, singularValues A i ^ 2 :=
+          mul_le_mul_of_nonneg_left (Finset.sum_le_sum_of_subset_of_nonneg
+            (Finset.Ico_subset_Ico_left hrt) fun i _ _ => sq_nonneg _) (Nat.cast_nonneg _)
+
+/-- The range-finder tail ratio is at most $1 + \lvert n \rvert^2$, with $\lvert n \rvert$ the
+number of columns: for $r + 2 \le \ell$ and $\sigma_r(\mathbf{A}) > 0$,
+in full, <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->
+$$1 + \frac{r}{\ell - r - 1}\,
+\frac{\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2}{\sigma_r(\mathbf{A})^2}
+\le 1 + \lvert n \rvert^2\,,$$
+by the spectral tail-weight bound above at $t = r$. It bounds the logarithm in the gapless
+bounds by $O(\log\lvert n \rvert)$. -/
+theorem rangeFinderTailRatio_le_one_add_card_sq {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜)
+    {r l : ℕ} (hl : r + 2 ≤ l) (hσ : 0 < singularValues A r) :
+    rangeFinderTailRatio A r l ≤ 1 + (Fintype.card n : ℝ) ^ 2 := by
+  rw [rangeFinderTailRatio, add_le_add_iff_left, div_le_iff₀ (pow_pos hσ 2)]
+  exact
+    natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
+      le_rfl hl
 
 end NLAlib
