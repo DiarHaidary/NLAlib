@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.LowRank.Gaussian.Filter
 public import NLAlib.LowRank.Structural.BlockKrylov
@@ -48,7 +49,7 @@ The integrability companions are law-free, in `NLAlib.LowRank.Random.RangeFinder
 
 @[expose] public section
 
-open MeasureTheory ProbabilityTheory
+open MeasureTheory ProbabilityTheory Polynomial
 open scoped Matrix ENNReal
 
 namespace NLAlib
@@ -57,6 +58,341 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type
   [Fintype n] [Fintype l] [DecidableEq n] {X : Ω → Matrix n l ℝ}
 
 -- Stage B5b
+
+/-! ### Shared reductions -/
+
+/-- The tail factor $t/(\ell - t - 1)$ is nonnegative for $t + 2 \le \ell$. -/
+private theorem tailFactor_nonneg {t : ℕ} (ht : t + 2 ≤ Fintype.card l) :
+    0 ≤ (t : ℝ) / ((Fintype.card l : ℝ) - t - 1) := by
+  have : (t : ℝ) + 2 ≤ Fintype.card l := by exact_mod_cast ht
+  exact div_nonneg (Nat.cast_nonneg t) (by linarith)
+
+omit [DecidableEq n] in
+/-- Truncating at an index whose singular value vanishes returns the matrix. -/
+private theorem sub_truncatedSVD_eq_zero_of_singularValues_eq_zero (A : Matrix m n ℝ) {t : ℕ}
+    (h : singularValues A t = 0) : A - truncatedSVD A t = 0 := by
+  rw [truncatedSVD_of_rank_le A ((singularValues_eq_zero_iff A).mp h), sub_self]
+
+/-- The filtered range finder in expectation, Gram form, with the constant $(a/c)^2$ replaced by
+any $K$ that dominates it in front of the tail, and the head index $r'$ replaced by any $r$ with
+the same truncation. -/
+private theorem integral_gram_sub_rsvd_aeval_le (Φ : SymmetricGauge) (A : Matrix m n ℝ)
+    (hX : HasLaw X (gaussianMatrix n l) μ) (f : ℝ[X]) {r' r t : ℕ}
+    (hr' : truncatedSVD A r' = truncatedSVD A r) (hrt : r' ≤ t) (ht : t + 2 ≤ Fintype.card l)
+    {c a K : ℝ} (hc : 0 < c) (hhead : ∀ i < r', c ≤ |f.eval (singularValues A i ^ 2)|)
+    (htail : ∀ x ∈ Set.Icc 0 (singularValues A t ^ 2), |f.eval x| ≤ a)
+    (hK : (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+      K * frobNorm (A - truncatedSVD A t) ^ 2) :
+    ∫ ω, Φ.matrixNorm ((A - rsvd A (aeval (Aᴴ * A) f * X ω))ᴴ *
+        (A - rsvd A (aeval (Aᴴ * A) f * X ω))) ∂μ ≤
+      Φ.matrixNorm ((A - truncatedSVD A r)ᴴ * (A - truncatedSVD A r)) +
+        Φ (Finsupp.single 0 1) * K * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+          frobNorm (A - truncatedSVD A t) ^ 2 := by
+  have h := Φ.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_gaussianMatrix
+    A hX f hrt ht hc hhead htail
+  rw [hr'] at h
+  refine h.trans (add_le_add le_rfl ?_)
+  have hΦ : 0 ≤ Φ (Finsupp.single 0 1) := apply_nonneg _ _
+  have hτ := tailFactor_nonneg ht
+  calc Φ (Finsupp.single 0 1) * (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+        frobNorm (A - truncatedSVD A t) ^ 2
+      = Φ (Finsupp.single 0 1) * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+          ((a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2) := by ring
+    _ ≤ Φ (Finsupp.single 0 1) * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+          (K * frobNorm (A - truncatedSVD A t) ^ 2) := by gcongr
+    _ = _ := by ring
+
+/-- RBKI beats every polynomial filter of degree below $q$ in expectation, Gram form. -/
+private theorem integral_gram_sub_rbki_le_sub_rsvd_aeval (Φ : SymmetricGauge) (A : Matrix m n ℝ)
+    (hX : HasLaw X (gaussianMatrix n l) μ) {q : ℕ} {f : ℝ[X]} (hf : f.degree < q) :
+    ∫ ω, Φ.matrixNorm ((A - rbki A (X ω) q)ᴴ * (A - rbki A (X ω) q)) ∂μ ≤
+      ∫ ω, Φ.matrixNorm ((A - rsvd A (aeval (Aᴴ * A) f * X ω))ᴴ *
+        (A - rsvd A (aeval (Aᴴ * A) f * X ω))) ∂μ := by
+  have := hX.isProbabilityMeasure
+  have hmeas : AEMeasurable (fun ω => aeval (Aᴴ * A) f * X ω) μ :=
+    (measurable_const.matrix_mul measurable_id).comp_aemeasurable hX.aemeasurable
+  refine integral_mono (Φ.integrable_matrixNorm_conjTranspose_mul_self_sub_rbki A hX.aemeasurable q)
+    (Φ.integrable_matrixNorm_conjTranspose_mul_self_sub_rsvd A hmeas) fun ω => ?_
+  refine Φ.matrixNorm_le_of_singularValues_le fun i => ?_
+  rw [singularValues_conjTranspose_mul_self, singularValues_conjTranspose_mul_self]
+  exact pow_le_pow_left₀ (singularValues_nonneg _ _)
+    (singularValues_sub_rbki_le_of_degree_lt A (X ω) hf i) 2
+
+/-- The range of the filtered sketch lies in that of the block Krylov sketch. -/
+private theorem range_mul_aeval_mul_le_range_mul_blockKrylovMatrix (A : Matrix m n ℝ)
+    (Y : Matrix n l ℝ) {q : ℕ} {f : ℝ[X]} (hf : f.degree < q) :
+    LinearMap.range (A * aeval (Aᴴ * A) f * Y).mulVecLin ≤
+      LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
+  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
+  exact range_mulVecLin_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
+
+/-- The late-truncated randomized SVD at any test matrix $\mathbf{Y}$ whose sketch range contains
+that of the filtered sketch, in expectation, Frobenius norm: Gu's projected form and head capture
+in expectation. -/
+private theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : Type*} [Fintype k]
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) (f : ℝ[X])
+    {Y : Ω → Matrix n k ℝ} (hY : AEMeasurable Y μ)
+    (hrange : ∀ ω, LinearMap.range (A * aeval (Aᴴ * A) f * X ω).mulVecLin ≤
+      LinearMap.range (A * Y ω).mulVecLin) {r' r t : ℕ}
+    (hr' : truncatedSVD A r' = truncatedSVD A r) (hrt : r' ≤ t) (ht : t + 2 ≤ Fintype.card l)
+    {c a K : ℝ} (hc : 0 < c) (hhead : ∀ i < r', c ≤ |f.eval (singularValues A i ^ 2)|)
+    (htail : ∀ x ∈ Set.Icc 0 (singularValues A t ^ 2), |f.eval x| ≤ a)
+    (hK : (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+      K * frobNorm (A - truncatedSVD A t) ^ 2) :
+    ∫ ω, frobNorm (A - truncatedSVD (rsvd A (Y ω)) r) ^ 2 ∂μ ≤
+      frobNorm (A - truncatedSVD A r) ^ 2 +
+        K * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
+  classical
+  have := hX.isProbabilityMeasure
+  have hH :=
+    integral_frobNorm_one_sub_rangeProjector_mul_truncatedSVD_sq_le_of_hasLaw_gaussianMatrix A hX f
+      hrt ht hc hhead htail
+  rw [hr'] at hH
+  have hm : Measurable fun Z : Matrix n l ℝ =>
+      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * Z)) * truncatedSVD A r) ^ 2 :=
+    (measurable_frobNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
+      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
+  have hint : Integrable (fun ω =>
+      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * X ω)) * truncatedSVD A r) ^ 2) μ :=
+    Integrable.of_bound (hm.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable
+      (frobNorm (truncatedSVD A r) ^ 2) (Filter.Eventually.of_forall fun ω => by
+        rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+        exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_one_sub_rangeProjector_mul_le _ _) 2)
+  have hpt : ∀ ω, frobNorm (A - truncatedSVD (rsvd A (Y ω)) r) ^ 2 ≤
+      frobNorm (A - truncatedSVD A r) ^ 2 +
+        frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * X ω)) * truncatedSVD A r) ^ 2 := by
+    intro ω
+    refine (frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add A (Y ω) r).trans
+      (add_le_add le_rfl (pow_le_pow_left₀ (frobNorm_nonneg _) ?_ 2))
+    have h := (lpGauge 2 one_le_two).matrixNorm_le_of_singularValues_le
+      (singularValues_one_sub_rangeProjector_mul_le_of_range_le (hrange ω) (truncatedSVD A r))
+    rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, Matrix.sub_mul, Matrix.one_mul] at h
+  have hI : Integrable (fun ω => frobNorm (A - truncatedSVD A r) ^ 2 +
+      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * X ω)) * truncatedSVD A r) ^ 2) μ :=
+    (integrable_const _).add hint
+  refine (integral_mono (integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hY r) hI hpt).trans ?_
+  rw [integral_add (integrable_const _) hint, integral_const, probReal_univ, one_smul]
+  refine add_le_add le_rfl (hH.trans ?_)
+  have hτ := tailFactor_nonneg ht
+  calc (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+        frobNorm (A - truncatedSVD A t) ^ 2
+      = ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+          ((a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2) := by ring
+    _ ≤ ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
+          (K * frobNorm (A - truncatedSVD A t) ^ 2) := by gcongr
+    _ = _ := by ring
+
+/-- The spectral twin of the previous bound, by reverse Eckart–Young in expectation. -/
+private theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : Type*} [Fintype k]
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) (f : ℝ[X])
+    {Y : Ω → Matrix n k ℝ} (hY : AEMeasurable Y μ)
+    (hrange : ∀ ω, LinearMap.range (A * aeval (Aᴴ * A) f * X ω).mulVecLin ≤
+      LinearMap.range (A * Y ω).mulVecLin) {r' r t : ℕ}
+    (hr' : truncatedSVD A r' = truncatedSVD A r) (hrt : r' ≤ t) (ht : t + 2 ≤ Fintype.card l)
+    {c a K : ℝ} (hc : 0 < c) (hhead : ∀ i < r', c ≤ |f.eval (singularValues A i ^ 2)|)
+    (htail : ∀ x ∈ Set.Icc 0 (singularValues A t ^ 2), |f.eval x| ≤ a)
+    (hK : (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+      K * frobNorm (A - truncatedSVD A t) ^ 2) :
+    ∫ ω, specNorm (A - truncatedSVD (rsvd A (Y ω)) r) ^ 2 ∂μ ≤
+      singularValues A r ^ 2 +
+        K * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
+  have := hX.isProbabilityMeasure
+  have h1 := integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f hY hrange hr' hrt ht
+    hc hhead htail hK
+  have h2 := integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD_sq_le A hY r
+  linarith
+
+/-! ### The filters -/
+
+omit [DecidableEq n] in
+/-- **The Chebyshev filter of RBKI**: for $q \ge 1$, a head of $r = h + 1$ singular values and a
+tail index $t \ge r$, the filter $f(x) = T_{q-1}(2x/\sigma_t^2 - 1)$ (or $f = 1$ when
+$\sigma_t = 0$) has degree below $q$, $\lvert f \rvert \ge \tfrac12 e^{4(q-1)\sqrt\gamma}$ on the
+head, $\lvert f \rvert \le 1$ on $[0, \sigma_t^2]$, and so $(a/c)^2 \le 4e^{-8(q-1)\sqrt\gamma}$
+in front of the tail. -/
+private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h + 1 = r)
+    (hrt : r ≤ t) (hq : 1 ≤ q) :
+    ∃ f : ℝ[X], f.degree < q ∧ ∃ c a : ℝ, 0 < c ∧
+      (∀ i < r, c ≤ |f.eval (singularValues A i ^ 2)|) ∧
+      (∀ x ∈ Set.Icc 0 (singularValues A t ^ 2), |f.eval x| ≤ a) ∧
+      (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+        4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
+          frobNorm (A - truncatedSVD A t) ^ 2 := by
+  rcases (singularValues_nonneg A t).eq_or_lt with hσ | hσ
+  · -- $\sigma_t = 0$: the tail vanishes and the constant filter does.
+    refine ⟨1, by rw [degree_one]; exact_mod_cast hq, 1, 1, one_pos, fun i _ => by simp,
+      fun x _ => by simp, ?_⟩
+    rw [sub_truncatedSVD_eq_zero_of_singularValues_eq_zero A hσ.symm, frobNorm_zero]
+    simp
+  set σt := singularValues A t
+  set γ := singularGapRatio A h t
+  have hht : h ≤ t := by omega
+  have hσh : σt ≤ singularValues A h := singularValues_antitone A hht
+  have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht
+  have hγ1 : γ < 1 := by
+    rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl,
+      div_lt_one (by linarith)]
+    linarith
+  have hratio : (1 + γ) / (1 - γ) = singularValues A h / σt := by
+    have hs : singularValues A h + σt ≠ 0 := by linarith
+    have h1 : 1 + γ = 2 * singularValues A h / (singularValues A h + σt) := by
+      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
+      field_simp
+      ring
+    have h2 : 1 - γ = 2 * σt / (singularValues A h + σt) := by
+      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
+      field_simp
+      ring
+    rw [h1, h2]
+    field_simp
+  refine ⟨(Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp (C (2 / σt ^ 2) * Polynomial.X - 1), ?_,
+    Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2, 1, by positivity, ?_, ?_, ?_⟩
+  · refine degree_le_natDegree.trans_lt ?_
+    have h1 : (C (2 / σt ^ 2) * Polynomial.X - 1 : ℝ[X]).natDegree ≤ 1 := by compute_degree
+    have h2 := natDegree_comp_le (p := Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ))
+      (q := C (2 / σt ^ 2) * Polynomial.X - 1)
+    rw [Polynomial.Chebyshev.natDegree_T, Int.natAbs_natCast] at h2
+    have h3 : ((Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp
+        (C (2 / σt ^ 2) * Polynomial.X - 1)).natDegree < q := by
+      have := Nat.mul_le_mul_left (q - 1) h1
+      omega
+    exact_mod_cast h3
+  · intro i hi
+    have hih : i ≤ h := by omega
+    have hσi : singularValues A h ≤ singularValues A i := singularValues_antitone A hih
+    have hx : 2 / σt ^ 2 * singularValues A i ^ 2 - 1 =
+        2 * (singularValues A i / σt) ^ 2 - 1 := by
+      rw [div_pow]; ring
+    have h1h : 1 ≤ singularValues A h / σt := by rw [le_div_iff₀ hσ]; linarith
+    have hhi : singularValues A h / σt ≤ singularValues A i / σt := by gcongr
+    have hmono := Polynomial.Chebyshev.monotoneOn_eval_T_real (2 * (q - 1)) h1h
+      (h1h.trans hhi) hhi
+    have hgrowth := Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real (2 * (q - 1)) hγ0 hγ1
+    rw [hratio] at hgrowth
+    have hT : (Polynomial.Chebyshev.T ℝ (((2 * (q - 1) : ℕ) : ℤ))).eval
+        (singularValues A i / σt) =
+        (Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).eval
+          (2 * (singularValues A i / σt) ^ 2 - 1) := by
+      rw [← Polynomial.Chebyshev.eval_T_two_mul]
+      push_cast
+      rfl
+    have hexp : Real.exp (2 * ((2 * (q - 1) : ℕ) : ℝ) * Real.sqrt γ) =
+        Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) := by
+      congr 1
+      push_cast [Nat.cast_sub hq]
+      ring
+    rw [hexp] at hgrowth
+    simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
+    rw [hx, ← hT]
+    have hc : 0 < Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2 := by positivity
+    exact (hgrowth.trans hmono).trans (le_abs_self _)
+  · intro x hx
+    simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
+    refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)
+    · have : 0 ≤ 2 / σt ^ 2 * x := mul_nonneg (by positivity) hx.1
+      linarith
+    · have : 2 / σt ^ 2 * x ≤ 2 := by
+        rw [div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
+        linarith [hx.2]
+      linarith
+  · refine le_of_eq (congrArg (· * _) ?_)
+    rw [div_div_eq_mul_div, one_mul, div_pow, show -8 * ((q : ℝ) - 1) * Real.sqrt γ =
+      -(4 * ((q : ℝ) - 1) * Real.sqrt γ) + -(4 * ((q : ℝ) - 1) * Real.sqrt γ) by ring,
+      Real.exp_add, Real.exp_neg]
+    field_simp
+    ring
+
+omit [DecidableEq n] in
+/-- **The power filter of RSI**: for a head of $r = h + 1$ singular values and a tail index
+$t \ge r$, the filter $x^p$ meets the hypotheses of the filtered range finder with
+$(a/c)^2 \le e^{-8p\gamma}$ in front of the tail, at the head index $r$ when $\sigma_h > 0$ and at
+the rank of $\mathbf{A}$ otherwise, which has the same truncation. -/
+private theorem exists_rsi_filter (A : Matrix m n ℝ) {h r t : ℕ} (hr : h + 1 = r)
+    (hrt : r ≤ t) (p : ℕ) :
+    ∃ r', truncatedSVD A r' = truncatedSVD A r ∧ r' ≤ t ∧ ∃ c a : ℝ, 0 < c ∧
+      (∀ i < r', c ≤ |(Polynomial.X ^ p : ℝ[X]).eval (singularValues A i ^ 2)|) ∧
+      (∀ x ∈ Set.Icc 0 (singularValues A t ^ 2), |(Polynomial.X ^ p : ℝ[X]).eval x| ≤ a) ∧
+      (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+        Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
+          frobNorm (A - truncatedSVD A t) ^ 2 := by
+  have hht : h ≤ t := by omega
+  have hσh : singularValues A t ≤ singularValues A h := singularValues_antitone A hht
+  have htail : ∀ x ∈ Set.Icc 0 (singularValues A t ^ 2),
+      |(Polynomial.X ^ p : ℝ[X]).eval x| ≤ (singularValues A t ^ 2) ^ p := fun x hx => by
+    rw [eval_pow, eval_X, abs_of_nonneg (pow_nonneg hx.1 p)]
+    exact pow_le_pow_left₀ hx.1 hx.2 p
+  rcases (singularValues_nonneg A h).eq_or_lt with h0 | hpos
+  · -- $\sigma_h = 0$: the head is the rank of $\mathbf{A}$ and the tail vanishes.
+    have hrk : A.rank ≤ h := (singularValues_eq_zero_iff A).mp h0.symm
+    have hF : A - truncatedSVD A t = 0 :=
+      sub_truncatedSVD_eq_zero_of_singularValues_eq_zero A (le_antisymm (h0 ▸ hσh)
+        (singularValues_nonneg A t))
+    have hK : ∀ c a : ℝ, (a / c) ^ 2 * frobNorm (A - truncatedSVD A t) ^ 2 ≤
+        Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
+          frobNorm (A - truncatedSVD A t) ^ 2 := fun _ _ => by simp [hF]
+    refine ⟨A.rank, by rw [truncatedSVD_of_rank_le A le_rfl,
+      truncatedSVD_of_rank_le A (by omega)], by omega, ?_⟩
+    rcases Nat.eq_zero_or_pos A.rank with h0r | hposr
+    · exact ⟨1, _, one_pos, fun i hi => by omega, htail, hK _ _⟩
+    · have hk : 0 < singularValues A (A.rank - 1) :=
+        (singularValues_pos_iff A).mpr (by omega)
+      refine ⟨(singularValues A (A.rank - 1) ^ 2) ^ p, _, by positivity, fun i hi => ?_, htail,
+        hK _ _⟩
+      have hi' : singularValues A (A.rank - 1) ≤ singularValues A i :=
+        singularValues_antitone A (by omega)
+      rw [eval_pow, eval_X, abs_of_nonneg (by positivity)]
+      exact pow_le_pow_left₀ (by positivity) (pow_le_pow_left₀ hk.le hi' 2) p
+  · refine ⟨r, rfl, hrt, (singularValues A h ^ 2) ^ p, _, by positivity, fun i hi => ?_, htail,
+      ?_⟩
+    · have hi' : singularValues A h ≤ singularValues A i := singularValues_antitone A (by omega)
+      rw [eval_pow, eval_X, abs_of_nonneg (by positivity)]
+      exact pow_le_pow_left₀ (by positivity) (pow_le_pow_left₀ hpos.le hi' 2) p
+    rcases (singularValues_nonneg A t).eq_or_lt with ht0 | htpos
+    · simp [sub_truncatedSVD_eq_zero_of_singularValues_eq_zero A ht0.symm]
+    refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+    set γ := singularGapRatio A h t
+    have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht
+    have hγ1 : γ < 1 := by
+      rw [show γ = (singularValues A h - singularValues A t) /
+        (singularValues A h + singularValues A t) from rfl, div_lt_one (by linarith)]
+      linarith
+    -- $\sigma_t/\sigma_h = (1 - \gamma)/(1 + \gamma) \le e^{-2\gamma}$.
+    have hratio : singularValues A t / singularValues A h ≤ Real.exp (-2 * γ) := by
+      rw [← one_sub_singularGapRatio_div_one_add_singularGapRatio A hpos,
+        show -2 * γ = -(2 * γ) by ring, Real.exp_neg,
+        ← inv_div (1 + γ) (1 - γ)]
+      exact inv_anti₀ (Real.exp_pos _) (Real.exp_two_mul_le_one_add_div_one_sub hγ0 hγ1)
+    calc ((singularValues A t ^ 2) ^ p / (singularValues A h ^ 2) ^ p) ^ 2
+        = (singularValues A t / singularValues A h) ^ (4 * p) := by
+          rw [← div_pow, ← div_pow, ← pow_mul, ← pow_mul]; ring_nf
+      _ ≤ Real.exp (-2 * γ) ^ (4 * p) := pow_le_pow_left₀ (by positivity) hratio _
+      _ = Real.exp (-8 * (p : ℝ) * γ) := by
+          rw [← Real.exp_nat_mul]; push_cast; ring_nf
+
+/-- The RBKI gapped bound, Gram form, proved before its spectral and Frobenius corollaries. -/
+private theorem integral_gram_sub_rbki_le (Φ : SymmetricGauge) (A : Matrix m n ℝ)
+    (hX : HasLaw X (gaussianMatrix n l) μ) {h r t q : ℕ} (hr : h + 1 = r) (hrt : r ≤ t)
+    (ht : t + 2 ≤ Fintype.card l) (hq : 1 ≤ q) :
+    ∫ ω, Φ.matrixNorm ((A - rbki A (X ω) q)ᴴ * (A - rbki A (X ω) q)) ∂μ ≤
+      Φ.matrixNorm ((A - truncatedSVD A r)ᴴ * (A - truncatedSVD A r)) +
+        Φ (Finsupp.single 0 1) *
+          (4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t))) *
+            ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
+  obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
+  exact (integral_gram_sub_rbki_le_sub_rsvd_aeval Φ A hX hf).trans
+    (integral_gram_sub_rsvd_aeval_le Φ A hX f rfl hrt ht hc hhead htail hK)
+
+/-- The RSI gapped bound, Gram form, proved before its spectral and Frobenius corollaries. -/
+private theorem integral_gram_sub_rsi_le (Φ : SymmetricGauge) (A : Matrix m n ℝ)
+    (hX : HasLaw X (gaussianMatrix n l) μ) {h r t : ℕ} (hr : h + 1 = r) (hrt : r ≤ t)
+    (ht : t + 2 ≤ Fintype.card l) (p : ℕ) :
+    ∫ ω, Φ.matrixNorm ((A - rsvd A ((Aᴴ * A) ^ p * X ω))ᴴ * (A - rsvd A ((Aᴴ * A) ^ p * X ω))) ∂μ ≤
+      Φ.matrixNorm ((A - truncatedSVD A r)ᴴ * (A - truncatedSVD A r)) +
+        Φ (Finsupp.single 0 1) * Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
+          ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
+  obtain ⟨r', hr', hr't, c, a, hc, hhead, htail, hK⟩ := exists_rsi_filter A hr hrt p
+  have h := integral_gram_sub_rsvd_aeval_le Φ A hX (Polynomial.X ^ p) hr' hr't ht hc hhead htail hK
+  rwa [aeval_X_pow] at h
 
 /-! ### Randomized block Krylov iteration -/
 
@@ -79,7 +415,10 @@ theorem integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
       singularValues A r ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  have h := integral_gram_sub_rbki_le (lpGauge ⊤ le_top) A hX hr hrt ht hq
+  simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
+    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+  exact h
 
 /-- **The gapped bound for randomized block Krylov iteration, Frobenius norm**: under the
 hypotheses of the spectral form
@@ -97,7 +436,10 @@ theorem integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
       frobNorm (A - truncatedSVD A r) ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  have h := integral_gram_sub_rbki_le (lpGauge 1 le_rfl) A hX hr hrt ht hq
+  simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
+    lpGauge_apply_single_zero, one_mul] at h
+  exact h
 
 -- The declaration name alone, with its `SymmetricGauge` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -120,13 +462,11 @@ SymmetricGauge.integral_matrixNorm_conjTranspose_mul_self_sub_rbki_le_singularGa
       Φ.matrixNorm ((A - truncatedSVD A r)ᴴ * (A - truncatedSVD A r)) +
         Φ (Finsupp.single 0 1) *
           (4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t))) *
-            ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+            ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 :=
+  integral_gram_sub_rbki_le Φ A hX hr hrt ht hq
 
 /-! ### Randomized subspace iteration -/
 
--- SKELETON-NOTE: the filter x ↦ x^p has c = σ_h^{2p}, zero when σ_h = 0 and p ≥ 1; that case
--- (rank A ≤ h) needs exact recovery, not the filtered bound. Likewise σ_t = 0 for RBKI (§6.2).
 /-- **The gapped bound for randomized subspace iteration, spectral norm**: for a standard Gaussian
 $n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$ singular values, a
 tail index $t \ge r$ with $t + 2 \le \ell$, and $\gamma = (\sigma_h - \sigma_t)/(\sigma_h +
@@ -145,7 +485,10 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
       singularValues A r ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  have h := integral_gram_sub_rsi_le (lpGauge ⊤ le_top) A hX hr hrt ht p
+  simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
+    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+  exact h
 
 /-- **The gapped bound for randomized subspace iteration, Frobenius norm**: under the hypotheses
 of the spectral form
@@ -163,7 +506,10 @@ theorem integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
       frobNorm (A - truncatedSVD A r) ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  have h := integral_gram_sub_rsi_le (lpGauge 1 le_rfl) A hX hr hrt ht p
+  simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
+    lpGauge_apply_single_zero, one_mul] at h
+  exact h
 
 -- The declaration name alone, with its `SymmetricGauge` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -185,8 +531,8 @@ SymmetricGauge.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_pow_mul_le_si
     ∫ ω, Φ.matrixNorm ((A - rsvd A ((Aᴴ * A) ^ p * X ω))ᴴ * (A - rsvd A ((Aᴴ * A) ^ p * X ω))) ∂μ ≤
       Φ.matrixNorm ((A - truncatedSVD A r)ᴴ * (A - truncatedSVD A r)) +
         Φ (Finsupp.single 0 1) * Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
-          ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+          ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 :=
+  integral_gram_sub_rsi_le Φ A hX hr hrt ht p
 
 /-! ### The late-truncated outputs -/
 
@@ -209,7 +555,11 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
       singularValues A r ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
+  exact integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f
+    ((measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX.aemeasurable)
+    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
+    htail hK
 
 /-- **The gapped bound for truncated randomized block Krylov iteration, Frobenius norm**: under
 the hypotheses of the untruncated form, the rank-$r$ truncation keeps its right side,
@@ -228,7 +578,11 @@ theorem integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
       frobNorm (A - truncatedSVD A r) ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
+  exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f
+    ((measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX.aemeasurable)
+    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
+    htail hK
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -248,7 +602,10 @@ integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw
       singularValues A r ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  obtain ⟨r', hr', hr't, c, a, hc, hhead, htail, hK⟩ := exists_rsi_filter A hr hrt p
+  exact integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX (Polynomial.X ^ p)
+    ((measurable_const.matrix_mul measurable_id).comp_aemeasurable hX.aemeasurable)
+    (fun ω => by rw [aeval_X_pow, Matrix.mul_assoc]; exact le_rfl) hr' hr't ht hc hhead htail hK
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -269,6 +626,9 @@ integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw
       frobNorm (A - truncatedSVD A r) ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  sorry
+  obtain ⟨r', hr', hr't, c, a, hc, hhead, htail, hK⟩ := exists_rsi_filter A hr hrt p
+  exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX (Polynomial.X ^ p)
+    ((measurable_const.matrix_mul measurable_id).comp_aemeasurable hX.aemeasurable)
+    (fun ω => by rw [aeval_X_pow, Matrix.mul_assoc]; exact le_rfl) hr' hr't ht hc hhead htail hK
 
 end NLAlib
