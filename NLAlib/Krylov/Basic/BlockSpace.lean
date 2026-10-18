@@ -7,6 +7,7 @@ module
 
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import NLAlib.Krylov.Basic.Space
+public import NLAlib.Matrix.Functions.Polynomial
 
 /-!
 # Block Krylov matrices and block Krylov spaces
@@ -211,17 +212,6 @@ theorem blockKrylovSpace_add_smul_one (A : Matrix n n 𝕜) (s : ℝ) (B : Matri
     blockKrylovSpace (A + s • (1 : Matrix n n 𝕜)) B q = blockKrylovSpace A B q := by
   simp_rw [blockKrylovSpace_eq_iSup_krylovSpace, krylovSpace_add_smul_one]
 
-/-- $(\mathbf{C}\mathbf{D})^j\mathbf{C} = \mathbf{C}(\mathbf{D}\mathbf{C})^j$ for rectangular
-$\mathbf{C}$, $\mathbf{D}$. -/
-private theorem pow_mul_mul_eq_mul_pow_mul [DecidableEq m] (C : Matrix m n 𝕜) (D : Matrix n m 𝕜)
-    (j : ℕ) : (C * D) ^ j * C = C * (D * C) ^ j := by
-  induction j with
-  | zero => rw [pow_zero, pow_zero, Matrix.one_mul, Matrix.mul_one]
-  | succ j ih =>
-    calc (C * D) ^ (j + 1) * C = (C * D) ^ j * C * (D * C) := by
-          rw [pow_succ]; simp only [Matrix.mul_assoc]
-      _ = C * (D * C) ^ (j + 1) := by rw [ih, pow_succ, Matrix.mul_assoc]
-
 omit [Fintype p] in
 /-- **Block Krylov matrices under a change of variables**, for rectangular
 $\mathbf{C} \in \Bbbk^{m \times n}$ and $\mathbf{D} \in \Bbbk^{n \times m}$:
@@ -236,7 +226,7 @@ theorem blockKrylovMatrix_mul_mul [DecidableEq m] (C : Matrix m n 𝕜) (D : Mat
     (B : Matrix n p 𝕜) (q : ℕ) :
     blockKrylovMatrix (C * D) (C * B) q = C * blockKrylovMatrix (D * C) B q := by
   ext i ⟨j, c⟩
-  rw [blockKrylovMatrix_apply, ← Matrix.mul_assoc, pow_mul_mul_eq_mul_pow_mul, Matrix.mul_assoc]
+  rw [blockKrylovMatrix_apply, ← Matrix.mul_assoc, Matrix.mul_pow_mul, Matrix.mul_assoc]
   rfl
 
 /-- **Block Krylov spaces under a change of variables**:

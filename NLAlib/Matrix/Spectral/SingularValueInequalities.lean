@@ -504,7 +504,11 @@ theorem singularValues_one_sub_rangeProjector_mul_le_of_range_le [DecidableEq m]
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) (A : Matrix m n 𝕜) (i : ℕ) :
     singularValues ((1 - rangeProjector B) * A) i ≤
       singularValues ((1 - rangeProjector Y) * A) i := by
-  sorry
+  have hmul : (1 - rangeProjector B) * (1 - rangeProjector Y) = 1 - rangeProjector B := by
+    rw [Matrix.mul_sub, Matrix.mul_one, Matrix.sub_mul, Matrix.one_mul,
+      rangeProjector_mul_rangeProjector_of_range_le h, sub_self, sub_zero]
+  rw [← hmul, Matrix.mul_assoc]
+  exact (isStarProjection_one_sub_rangeProjector B).singularValues_mul_le _ i
 
 /-- The **relative singular gap**
 $$\gamma = \frac{\sigma_i(\mathbf{A}) - \sigma_j(\mathbf{A})}{\sigma_i(\mathbf{A}) +
@@ -521,11 +525,14 @@ noncomputable def singularGapRatio (A : Matrix m n 𝕜) (i j : ℕ) : ℝ :=
 /-- The relative singular gap is nonnegative for $i \le j$. -/
 theorem singularGapRatio_nonneg (A : Matrix m n 𝕜) {i j : ℕ} (h : i ≤ j) :
     0 ≤ singularGapRatio A i j := by
-  sorry
+  exact div_nonneg (sub_nonneg.mpr (singularValues_antitone A h))
+    (add_nonneg (singularValues_nonneg A i) (singularValues_nonneg A j))
 
 /-- The relative singular gap is at most $1$. -/
 theorem singularGapRatio_le_one (A : Matrix m n 𝕜) (i j : ℕ) : singularGapRatio A i j ≤ 1 := by
-  sorry
+  have hi := singularValues_nonneg A i
+  have hj := singularValues_nonneg A j
+  exact div_le_one_of_le₀ (by linarith) (by linarith)
 
 /-- The relative singular gap recovers the ratio of the two singular values:
 $$\frac{1 - \gamma}{1 + \gamma} = \frac{\sigma_j(\mathbf{A})}{\sigma_i(\mathbf{A})}$$
@@ -534,6 +541,10 @@ theorem one_sub_singularGapRatio_div_one_add_singularGapRatio (A : Matrix m n �
     (hi : 0 < singularValues A i) :
     (1 - singularGapRatio A i j) / (1 + singularGapRatio A i j) =
       singularValues A j / singularValues A i := by
-  sorry
+  have hj := singularValues_nonneg A j
+  have hsum : singularValues A i + singularValues A j ≠ 0 := by positivity
+  rw [singularGapRatio]
+  field_simp [hi.ne']
+  ring
 
 end NLAlib

@@ -710,6 +710,15 @@ theorem _root_.Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq {r : Type*} 
     [DecidableEq r] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n r 𝕜} {d : r → ℝ}
     (hAW : A * W = W * Matrix.diagonal fun i => (d i : 𝕜)) (f : ℝ → ℝ) :
     cfc f A * W = W * Matrix.diagonal fun i => (f (d i) : 𝕜) := by
-  sorry
+  obtain ⟨U, hU, hUU, hAU, hcfc⟩ := exists_cfc_eq hA
+  set Λ := Matrix.diagonal fun i : Fin (Fintype.card n) => ((eigenvalue A i : ℝ) : 𝕜)
+  have hZ : Λ * (Uᴴ * W) = Uᴴ * W * Matrix.diagonal fun i => ((d i : ℝ) : 𝕜) := by
+    calc Λ * (Uᴴ * W) = Uᴴ * (U * Λ * Uᴴ) * W := by
+          simp only [Matrix.mul_assoc, hU.conjTranspose_mul_cancel_left]
+      _ = Uᴴ * (A * W) := by rw [← hAU, Matrix.mul_assoc]
+      _ = Uᴴ * W * Matrix.diagonal fun i => ((d i : ℝ) : 𝕜) := by
+          rw [hAW, Matrix.mul_assoc]
+  rw [hcfc, Matrix.mul_assoc, Matrix.mul_assoc, diagonal_mul_eq_mul_diagonal_of_eq hZ f,
+    ← Matrix.mul_assoc, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
 
 end NLAlib

@@ -436,7 +436,8 @@ theorem SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_le_of_range_le (Φ 
     [DecidableEq m] {B : Matrix m p 𝕜} {Y : Matrix m l 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) (A : Matrix m n 𝕜) :
     Φ.matrixNorm ((1 - rangeProjector B) * A) ≤ Φ.matrixNorm ((1 - rangeProjector Y) * A) := by
-  sorry
+  exact Φ.matrixNorm_le_of_singularValues_le
+    (singularValues_one_sub_rangeProjector_mul_le_of_range_le h A)
 
 end NLAlib
 
