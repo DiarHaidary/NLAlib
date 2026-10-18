@@ -44,6 +44,12 @@ $T_{q-1}(2x/\sigma_t^2 - 1)$, of degree $q - 1$, through
 * `NLAlib.integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`,
   and their RSI twins: the late-truncated outputs.
+* the asymptotic forms of these eight spectral and Frobenius bounds at a positive gap $\gamma$:
+  depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ for RBKI and
+  $O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps for RSI give relative error
+  $1 + \varepsilon$; named `NLAlib.exists_forall_` followed by the explicit name with
+  `_le_singularGapRatio_` replaced by `_le_of_singularGapRatio_pos_`, with their threshold
+  arithmetic `NLAlib.le_add_mul_of_le_add_mul_exp`.
 
 The integrability companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`.
 -/
@@ -385,6 +391,8 @@ private theorem integral_gram_sub_rsi_le (Φ : SymmetricGauge) (A : Matrix m n �
 
 /-! ### Randomized block Krylov iteration -/
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The gapped bound for randomized block Krylov iteration, spectral norm**: for a standard
 Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of $r = h + 1$
 singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, and
@@ -393,6 +401,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_2^2 \le
 \sigma_r(\mathbf{A})^2 + 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
 No positivity hypothesis: when $\sigma_t = 0$ the error is zero almost surely.
+Asymptotic form:
+`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RBKI)], at $p = \infty$; there with $m$ products and the exponent
 $4(m - 2)\sqrt{\gamma}$, indices from $1$ ($\sigma_r$, $\sigma_s$ for our $\sigma_h$, $\sigma_t$),
 $k \ge s + 1$ for our $t + 2 \le \ell$; here $m = 2q$ (odd $m$ is not covered).
@@ -409,6 +419,8 @@ theorem integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
     lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The gapped bound for randomized block Krylov iteration, Frobenius norm**: under the
 hypotheses of the spectral form
 (`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
@@ -416,6 +428,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_{\mathsf{F
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RBKI)], at $p = 2$; there with $m = 2q$ products.
 Result: rbki-gapped-error -/
 theorem integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
@@ -456,6 +470,8 @@ SymmetricGauge.integral_matrixNorm_conjTranspose_mul_self_sub_rbki_le_singularGa
 
 /-! ### Randomized subspace iteration -/
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The gapped bound for randomized subspace iteration, spectral norm**: for a standard Gaussian
 $n \times \ell$ test matrix $\mathbf{X}$, $p$ power steps, a head of $r = h + 1$ singular values, a
 tail index $t \ge r$ with $t + 2 \le \ell$, and $\gamma = (\sigma_h - \sigma_t)/(\sigma_h +
@@ -464,6 +480,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, (\mathbf{A}^{\mathsf{H}}\ma
 \mathbf{X})\|_2^2 \le \sigma_r(\mathbf{A})^2 + e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
 At $p = 0$ it is the bound of the randomized SVD at rank $t$, weakened to $\sigma_r$.
+Asymptotic form:
+`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RSI)], at $p = \infty$; there with $m$ products and the exponent
 $4(m - 2)\gamma$; here $m = 2p + 2$ (odd $m$ is not covered).
 Result: rsi-gapped-error -/
@@ -479,6 +497,8 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
     lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The gapped bound for randomized subspace iteration, Frobenius norm**: under the hypotheses
 of the spectral form
 (`NLAlib.integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`),
@@ -486,6 +506,8 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, (\mathbf{A}^{\mathsf{H}}\ma
 \mathbf{X})\|_{\mathsf{F}}^2 \le \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RSI)], at $p = 2$; there with $m = 2p + 2$ products.
 Result: rsi-gapped-error -/
 theorem integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
@@ -525,6 +547,8 @@ SymmetricGauge.integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_pow_mul_le_si
 
 /-! ### The late-truncated outputs -/
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The gapped bound for truncated randomized block Krylov iteration, spectral norm**: under the
 hypotheses of the untruncated form
 (`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`), the rank-$r$
@@ -536,6 +560,8 @@ by reverse Eckart–Young
 (`NLAlib.IsBestRankApprox.specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le`) and Gu's projected
 form. [TroppWebber2023, §9.1, remark after Theorem 9.2]; [Gu2015, Theorem 3.4]; there stated
 without a proof.
+Asymptotic form:
+`NLAlib.exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 Result: rbki-gapped-error -/
 theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {h r t q : ℕ} (hr : h + 1 = r)
@@ -550,6 +576,8 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
     (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
     htail hK
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **The gapped bound for truncated randomized block Krylov iteration, Frobenius norm**: under
 the hypotheses of the untruncated form, the rank-$r$ truncation keeps its right side,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r
@@ -559,6 +587,8 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rr
 by Gu's projected form
 (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add`) and head capture
 in expectation. [TroppWebber2023, §9.1, remark after Theorem 9.2]; there stated without a proof.
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 Result: rbki-gapped-error -/
 theorem integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {h r t q : ℕ} (hr : h + 1 = r)
@@ -581,6 +611,8 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
 (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_2^2 \le \sigma_r(\mathbf{A})^2 +
 e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+Asymptotic form:
+`NLAlib.exists_forall_integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, §9.1, remark after Theorem 9.2]; there stated without a proof.
 Result: rsi-gapped-error -/
 theorem
@@ -605,6 +637,8 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 +
 e^{-8p\gamma}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, §9.1, remark after Theorem 9.2]; there stated without a proof.
 Result: rsi-gapped-error -/
 theorem
@@ -619,5 +653,411 @@ integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw
   exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX (Polynomial.X ^ p)
     ((measurable_const.matrix_mul measurable_id).comp_aemeasurable hX.aemeasurable)
     (fun ω => by rw [aeval_X_pow, Matrix.mul_assoc]; exact le_rfl) hr' hr't ht hc hhead htail hK
+
+/-! ### Asymptotic forms -/
+
+/-- The logarithm in the depth thresholds of the asymptotic forms is at least $1/2$: for
+$N \ge 1$ and $0 < \varepsilon \le 1/2$, $\log(N/\varepsilon) \ge \log 2 \ge 1/2$. -/
+theorem one_half_le_log_div {N ε : ℝ} (hN : 1 ≤ N) (hε : 0 < ε) (hε₀ : ε ≤ 1 / 2) :
+    1 / 2 ≤ Real.log (N / ε) := by
+  have hlog2 : (1 / 2 : ℝ) ≤ Real.log 2 := by
+    have h := Real.one_sub_inv_le_log_of_pos (x := 2) (by norm_num)
+    norm_num at h ⊢
+    linarith
+  exact hlog2.trans (Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hε]; linarith))
+
+/-- The threshold arithmetic of the asymptotic forms of the Krylov bounds: if
+$E \le aO + c\,e^{y}\kappa T$ with $0 \le c \le 4$, $\kappa T \le N^2 O$ and $O \ge 0$, then for
+$N \ge 1$, $0 < \varepsilon \le 1/2$ and $y \le -4\log(N/\varepsilon)$,
+$$E \le (a + \varepsilon)\,O\,,$$
+since then $4N^2e^{y} \le \varepsilon$. -/
+theorem le_add_mul_of_le_add_mul_exp {E O T κ a c y N ε : ℝ}
+    (hE : E ≤ a * O + c * Real.exp y * κ * T) (hO : 0 ≤ O) (hc0 : 0 ≤ c) (hc : c ≤ 4)
+    (hT : κ * T ≤ N ^ 2 * O) (hN : 1 ≤ N) (hε : 0 < ε) (hε₀ : ε ≤ 1 / 2)
+    (hy : y ≤ -(4 * Real.log (N / ε))) : E ≤ (a + ε) * O := by
+  have hL : Real.log (N / ε) = Real.log N - Real.log ε := Real.log_div (by positivity) hε.ne'
+  have hlogε : Real.log ε ≤ -Real.log 2 := by
+    rw [← Real.log_inv]
+    exact Real.log_le_log hε (by linarith)
+  have hlogN : 0 ≤ Real.log N := Real.log_nonneg hN
+  have hlog2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
+  have h4 : Real.log 4 = 2 * Real.log 2 := by
+    rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    norm_num
+  have hNe : 4 * N ^ 2 * Real.exp y ≤ ε := by
+    have h : 4 * N ^ 2 = Real.exp (Real.log 4 + 2 * Real.log N) := by
+      rw [Real.exp_add, Real.exp_log (by norm_num), two_mul, Real.exp_add,
+        Real.exp_log (by positivity)]
+      ring
+    rw [h, ← Real.exp_add]
+    calc Real.exp (Real.log 4 + 2 * Real.log N + y) ≤ Real.exp (Real.log ε) :=
+          Real.exp_le_exp.2 (by rw [hL] at hy; linarith)
+      _ = ε := Real.exp_log hε
+  have hce : 0 ≤ c * Real.exp y := mul_nonneg hc0 (Real.exp_pos y).le
+  have h1 : c * Real.exp y * κ * T ≤ c * Real.exp y * (N ^ 2 * O) := by
+    rw [mul_assoc (c * Real.exp y)]
+    exact mul_le_mul_of_nonneg_left hT hce
+  have h2 : c * Real.exp y * N ^ 2 ≤ ε :=
+    calc c * Real.exp y * N ^ 2 = c * (Real.exp y * N ^ 2) := by ring
+      _ ≤ 4 * (Real.exp y * N ^ 2) := mul_le_mul_of_nonneg_right hc (by positivity)
+      _ = 4 * N ^ 2 * Real.exp y := by ring
+      _ ≤ ε := hNe
+  have h3 : c * Real.exp y * (N ^ 2 * O) ≤ ε * O := by
+    rw [← mul_assoc]
+    exact mul_le_mul_of_nonneg_right h2 hO
+  linarith
+
+/-- The depth threshold of the gapped asymptotic forms of block Krylov iteration: for $N \ge 1$,
+$0 < \varepsilon \le 1/2$, $0 < s \le 1$ and $q \ge 3\log(N/\varepsilon)/s$, both $q \ge 1$ and
+$(q - 1)s \ge \log(N/\varepsilon)$. -/
+theorem one_le_and_log_div_le_sub_one_mul {N ε s : ℝ} {q : ℕ} (hN : 1 ≤ N) (hε : 0 < ε)
+    (hε₀ : ε ≤ 1 / 2) (hs : 0 < s) (hs1 : s ≤ 1) (hq : 3 * Real.log (N / ε) / s ≤ q) :
+    1 ≤ q ∧ Real.log (N / ε) ≤ ((q : ℝ) - 1) * s := by
+  have hL := one_half_le_log_div hN hε hε₀
+  have hqs : 3 * Real.log (N / ε) ≤ q * s := by rwa [div_le_iff₀ hs] at hq
+  refine ⟨?_, by nlinarith⟩
+  have h : (0 : ℝ) < q := lt_of_lt_of_le (div_pos (by linarith) hs) hq
+  exact_mod_cast h
+
+/-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for randomized block
+Krylov iteration with a gap**, spectral norm: there are absolute constants $C, \varepsilon_0 > 0$
+such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, $0 < \varepsilon \le \varepsilon_0$ and
+$q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$ blocks,
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_2^2 \le
+(1 + \varepsilon)\,\sigma_r(\mathbf{A})^2\,.$$
+The asymptotic form of
+`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`, whose tail
+term is at most $4\lvert n \rvert^2e^{-8(q-1)\sqrt{\gamma}}\sigma_r(\mathbf{A})^2$; the proof takes
+$C = 3$ and $\varepsilon_0 = 1/2$. [TroppWebber2023, Theorem 9.2 (RBKI)]; there in explicit form.
+Asymptotic:
+NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rbki-gapped-error -/
+theorem
+exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t q : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / Real.sqrt (singularGapRatio A h t) ≤ q →
+      ∫ ω, specNorm (A - rbki A (X ω) q) ^ 2 ∂μ ≤ (1 + ε) * singularValues A r ^ 2 := by
+  refine ⟨3, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t q ε hX hr hrt ht hγ hε hε₀ hq
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+    (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
+  have hexp :=
+    integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt ht hq1
+  rw [← one_mul (singularValues A r ^ 2)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+    (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
+      hrt ht) hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for randomized block
+Krylov iteration with a gap**, Frobenius norm: there are absolute constants $C, \varepsilon_0 > 0$
+such that under the hypotheses of the spectral form
+(`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`, whose tail
+term is at most $4\lvert n \rvert e^{-8(q-1)\sqrt{\gamma}}
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2$; the proof takes $C = 3$ and
+$\varepsilon_0 = 1/2$. [TroppWebber2023, Theorem 9.2 (RBKI)]; there in explicit form.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rbki-gapped-error -/
+theorem
+exists_forall_integral_frobNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t q : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / Real.sqrt (singularGapRatio A h t) ≤ q →
+      ∫ ω, frobNorm (A - rbki A (X ω) q) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A r) ^ 2 := by
+  refine ⟨3, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t q ε hX hr hrt ht hγ hε hε₀ hq
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+    (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
+  have hexp :=
+    integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt ht hq1
+  rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+    ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
+      A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
+    hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for randomized subspace
+iteration with a gap**, spectral norm: there are absolute constants $C, \varepsilon_0 > 0$ such
+that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
+singular values, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
+$\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$, $0 < \varepsilon \le \varepsilon_0$ and
+$p \ge C\log(\lvert n \rvert/\varepsilon)/\gamma$ power steps,
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p
+\mathbf{X})\|_2^2 \le (1 + \varepsilon)\,\sigma_r(\mathbf{A})^2\,.$$
+The asymptotic form of
+`NLAlib.integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`, whose
+tail term is at most $\lvert n \rvert^2e^{-8p\gamma}\sigma_r(\mathbf{A})^2$; the proof takes $C = 1$
+and $\varepsilon_0 = 1/2$. [TroppWebber2023, Theorem 9.2 (RSI)]; there in explicit form.
+Asymptotic:
+NLAlib.integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rsi-gapped-error -/
+theorem
+exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t p : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / singularGapRatio A h t ≤ p →
+      ∫ ω, specNorm (A - rsvd A ((Aᴴ * A) ^ p * X ω)) ^ 2 ∂μ ≤
+        (1 + ε) * singularValues A r ^ 2 := by
+  refine ⟨1, 1 / 2, one_pos, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t p ε hX hr hrt ht hγ hε hε₀ hp
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  rw [one_mul, div_le_iff₀ hγ] at hp
+  have hexp :=
+    integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt
+      ht p
+  rw [← one_mul (singularValues A r ^ 2), ← one_mul (Real.exp _)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+    (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
+      hrt ht) hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for randomized subspace
+iteration with a gap**, Frobenius norm: there are absolute constants $C, \varepsilon_0 > 0$ such
+that under the hypotheses of the spectral form
+(`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, (\mathbf{A}^{\mathsf{H}}\mathbf{A})^p
+\mathbf{X})\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`, whose
+tail term is at most $\lvert n \rvert e^{-8p\gamma}\|\mathbf{A} -
+\llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2$; the proof takes $C = 1$ and
+$\varepsilon_0 = 1/2$. [TroppWebber2023, Theorem 9.2 (RSI)]; there in explicit form.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rsi-gapped-error -/
+theorem
+exists_forall_integral_frobNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t p : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / singularGapRatio A h t ≤ p →
+      ∫ ω, frobNorm (A - rsvd A ((Aᴴ * A) ^ p * X ω)) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A r) ^ 2 := by
+  refine ⟨1, 1 / 2, one_pos, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t p ε hX hr hrt ht hγ hε hε₀ hp
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  rw [one_mul, div_le_iff₀ hγ] at hp
+  have hexp :=
+    integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt
+      ht p
+  rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2), ← one_mul (Real.exp _)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+    ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
+      A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
+    hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for truncated randomized
+block Krylov iteration with a gap**, spectral norm: there are absolute constants
+$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
+(`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r\|_2^2
+\le (1 + \varepsilon)\,\sigma_r(\mathbf{A})^2\,.$$
+The asymptotic form of
+`NLAlib.integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`;
+the proof takes $C = 3$ and $\varepsilon_0 = 1/2$. [TroppWebber2023, §9.1, remark after
+Theorem 9.2]; there stated without a proof.
+Asymptotic:
+NLAlib.integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rbki-gapped-error -/
+theorem
+exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t q : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / Real.sqrt (singularGapRatio A h t) ≤ q →
+      ∫ ω, specNorm (A - truncatedSVD (rbki A (X ω) q) r) ^ 2 ∂μ ≤
+        (1 + ε) * singularValues A r ^ 2 := by
+  refine ⟨3, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t q ε hX hr hrt ht hγ hε hε₀ hq
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+    (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
+  have hexp :=
+    integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX
+      hr hrt ht hq1
+  rw [← one_mul (singularValues A r ^ 2)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+    (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
+      hrt ht) hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for truncated randomized
+block Krylov iteration with a gap**, Frobenius norm: there are absolute constants
+$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
+(`NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\rrbracket_r
+\|_{\mathsf{F}}^2 \le (1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r
+\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`;
+the proof takes $C = 3$ and $\varepsilon_0 = 1/2$. [TroppWebber2023, §9.1, remark after
+Theorem 9.2]; there stated without a proof.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rbki-gapped-error -/
+theorem
+exists_forall_integral_frobNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t q : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / Real.sqrt (singularGapRatio A h t) ≤ q →
+      ∫ ω, frobNorm (A - truncatedSVD (rbki A (X ω) q) r) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A r) ^ 2 := by
+  refine ⟨3, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t q ε hX hr hrt ht hγ hε hε₀ hq
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+    (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
+  have hexp :=
+    integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX
+      hr hrt ht hq1
+  rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+    ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
+      A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
+    hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for truncated randomized
+subspace iteration with a gap**, spectral norm: there are absolute constants
+$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
+(`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
+(\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_2^2 \le
+(1 + \varepsilon)\,\sigma_r(\mathbf{A})^2\,.$$
+The asymptotic form of
+`NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`;
+the proof takes $C = 1$ and $\varepsilon_0 = 1/2$. [TroppWebber2023, §9.1, remark after
+Theorem 9.2]; there stated without a proof.
+Asymptotic:
+NLAlib.integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rsi-gapped-error -/
+theorem
+exists_forall_integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t p : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / singularGapRatio A h t ≤ p →
+      ∫ ω, specNorm (A - truncatedSVD (rsvd A ((Aᴴ * A) ^ p * X ω)) r) ^ 2 ∂μ ≤
+        (1 + ε) * singularValues A r ^ 2 := by
+  refine ⟨1, 1 / 2, one_pos, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t p ε hX hr hrt ht hγ hε hε₀ hp
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  rw [one_mul, div_le_iff₀ hγ] at hp
+  have hexp :=
+    integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+      A hX hr hrt ht p
+  rw [← one_mul (singularValues A r ^ 2), ← one_mul (Real.exp _)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+    (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
+      hrt ht) hN hε hε₀ (by nlinarith)
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps suffice for truncated randomized
+subspace iteration with a gap**, Frobenius norm: there are absolute constants
+$C, \varepsilon_0 > 0$ such that under the hypotheses of the untruncated form
+(`NLAlib.exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`),
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A},
+(\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\mathbf{X})\rrbracket_r\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$
+The asymptotic form of
+`NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`;
+the proof takes $C = 1$ and $\varepsilon_0 = 1/2$. [TroppWebber2023, §9.1, remark after
+Theorem 9.2]; there stated without a proof.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+Result: rsi-gapped-error -/
+theorem
+exists_forall_integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [DecidableEq n] [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (h r t p : ℕ) (ε : ℝ), HasLaw X (gaussianMatrix n l) μ → h + 1 = r → r ≤ t →
+      t + 2 ≤ Fintype.card l → 0 < singularGapRatio A h t → 0 < ε → ε ≤ ε₀ →
+      C * Real.log (Fintype.card n / ε) / singularGapRatio A h t ≤ p →
+      ∫ ω, frobNorm (A - truncatedSVD (rsvd A ((Aᴴ * A) ^ p * X ω)) r) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A r) ^ 2 := by
+  refine ⟨1, 1 / 2, one_pos, by norm_num, ?_⟩
+  intro Ω m n l _ _ _ _ _ μ A X h r t p ε hX hr hrt ht hγ hε hε₀ hp
+  have hN : (1 : ℝ) ≤ Fintype.card n := by
+    rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+    · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
+        singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
+    · exact_mod_cast h0
+  have hL := one_half_le_log_div hN hε hε₀
+  rw [one_mul, div_le_iff₀ hγ] at hp
+  have hexp :=
+    integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
+      A hX hr hrt ht p
+  rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2), ← one_mul (Real.exp _)] at hexp
+  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+    ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
+      A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
+    hN hε hε₀ (by nlinarith)
 
 end NLAlib
