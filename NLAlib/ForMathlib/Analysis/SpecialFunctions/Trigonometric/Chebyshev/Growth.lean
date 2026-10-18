@@ -12,6 +12,7 @@ public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity
 public import Mathlib.Tactic.Ring
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Series
 
 /-!
 # Chebyshev growth outside the unit interval
@@ -32,6 +33,9 @@ These are upstream candidates in `Polynomial.Chebyshev`.
   $\tfrac12 e^{2q\sqrt{r}} \le T_q((1 + r)/(1 - r))$.
 * `Polynomial.Chebyshev.le_exp_of_eval_T_real_le`: an inverse of Chebyshev growth,
   $T_q(x) \le y \Rightarrow x \le \exp((\log(2y)/q)^2/2)$.
+* `Polynomial.Chebyshev.eval_iterate_derivative_T_real_nonneg`,
+  `Polynomial.Chebyshev.monotoneOn_eval_iterate_derivative_T_real`: every derivative of $T_n$ is
+  nonnegative and non-decreasing on $[1, \infty)$.
 -/
 
 @[expose] public section
@@ -166,6 +170,54 @@ $\operatorname{arcosh} y \le \log(2y)$ and $\cosh t \le e^{t^2/2}$. The hypothes
 from the others. [TroppWebber2023, Lemma 9.3], part 4. -/
 theorem le_exp_of_eval_T_real_le {q : ℕ} (hq : 0 < q) {x y : ℝ} (hx : 1 ≤ x)
     (h : (T ℝ (q : ℤ)).eval x ≤ y) : x ≤ exp ((log (2 * y) / q) ^ 2 / 2) := by
-  sorry
+  have ha : 0 ≤ arcosh x := arcosh_nonneg hx
+  have hT := T_real_cosh (arcosh x) (q : ℤ)
+  rw [cosh_arcosh hx, Int.cast_natCast] at hT
+  have hqa : 0 ≤ q * arcosh x := by positivity
+  -- $e^{q a} \le 2\cosh(q a) = 2 T_q(x) \le 2y$, so $q a \le \log(2y)$.
+  have h2y : exp (q * arcosh x) ≤ 2 * y := by
+    have := cosh_eq (q * arcosh x)
+    have := exp_pos (-(q * arcosh x))
+    linarith
+  have hlog : q * arcosh x ≤ log (2 * y) :=
+    (le_log_iff_exp_le (lt_of_lt_of_le (exp_pos _) h2y)).2 h2y
+  have hle : arcosh x ≤ log (2 * y) / q := by
+    rw [le_div_iff₀ (by exact_mod_cast hq)]
+    linarith
+  calc x = cosh (arcosh x) := (cosh_arcosh hx).symm
+    _ ≤ exp (arcosh x ^ 2 / 2) := cosh_le_exp_half_sq _
+    _ ≤ exp ((log (2 * y) / q) ^ 2 / 2) := by gcongr
+
+/-- Every derivative of $T_n$ is a combination of $T_0, \dots, T_n$ with natural coefficients, so it
+is nonnegative and non-decreasing on $[1, \infty)$. -/
+private theorem iterate_derivative_T_real_aux (n k : ℕ) :
+    (∀ x : ℝ, 1 ≤ x → 0 ≤ (derivative^[k] (T ℝ (n : ℤ))).eval x) ∧
+      MonotoneOn (fun x : ℝ => (derivative^[k] (T ℝ (n : ℤ))).eval x) (Set.Ici 1) := by
+  refine Submodule.span_induction (p := fun p _ => (∀ x : ℝ, 1 ≤ x → 0 ≤ p.eval x) ∧
+      MonotoneOn (fun x : ℝ => p.eval x) (Set.Ici 1)) ?_ ?_ ?_ ?_
+    (T_iterate_derivative_mem_span_T n k)
+  · rintro _ ⟨m, -, rfl⟩
+    refine ⟨fun x hx => ?_, monotoneOn_eval_T_real m⟩
+    have := monotoneOn_eval_T_real m (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 hx) hx
+    simp only [T_eval_one] at this
+    linarith
+  · exact ⟨fun _ _ => by simp, fun _ _ _ _ _ => by simp⟩
+  · rintro p r - - ⟨hp₀, hp⟩ ⟨hr₀, hr⟩
+    refine ⟨fun x hx => by simpa using add_nonneg (hp₀ x hx) (hr₀ x hx), fun x hx y hy hxy => ?_⟩
+    simpa using add_le_add (hp hx hy hxy) (hr hx hy hxy)
+  · rintro a p - ⟨hp₀, hp⟩
+    refine ⟨fun x hx => by simpa using mul_nonneg a.cast_nonneg (hp₀ x hx),
+      fun x hx y hy hxy => ?_⟩
+    simpa using mul_le_mul_of_nonneg_left (hp hx hy hxy) a.cast_nonneg
+
+/-- The derivatives of $T_n$ are nonnegative on $[1, \infty)$. -/
+theorem eval_iterate_derivative_T_real_nonneg (n k : ℕ) {x : ℝ} (hx : 1 ≤ x) :
+    0 ≤ (derivative^[k] (T ℝ (n : ℤ))).eval x :=
+  (iterate_derivative_T_real_aux n k).1 x hx
+
+/-- The derivatives of $T_n$ are non-decreasing on $[1, \infty)$. -/
+theorem monotoneOn_eval_iterate_derivative_T_real (n k : ℕ) :
+    MonotoneOn (fun x : ℝ => (derivative^[k] (T ℝ (n : ℤ))).eval x) (Set.Ici 1) :=
+  (iterate_derivative_T_real_aux n k).2
 
 end Polynomial.Chebyshev
