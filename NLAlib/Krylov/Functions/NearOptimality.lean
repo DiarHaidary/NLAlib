@@ -96,6 +96,19 @@ private theorem sq_le_mul_sq_sub_two_mul_add_sq {R D E X : ℝ} (hR : 1 ≤ R)
         rw [← mul_assoc, h2, one_mul]
     _ ≤ _ := mul_le_mul_of_nonneg_left h1 (by positivity)
 
+/-- The constant of the abstract step: if $g(x) \le R\,g(y)$ on the spectrum, then some $c$ has
+$c \le g \le Rc$ there ($c = \min g$, or anything for an empty spectrum). -/
+private theorem exists_forall_mem_spectrum_le_and_le_mul (A : Matrix n n 𝕜) {g : ℝ → ℝ} {R : ℝ}
+    (hR : ∀ x ∈ spectrum ℝ A, ∀ y ∈ spectrum ℝ A, g x ≤ R * g y) :
+    ∃ c, ∀ x ∈ spectrum ℝ A, c ≤ g x ∧ g x ≤ R * c := by
+  rcases (spectrum ℝ A).eq_empty_or_nonempty with hemp | hne
+  · exact ⟨0, fun x hx => by simp [hemp] at hx⟩
+  · obtain ⟨x₀, hx₀, hmin⟩ :=
+      A.finite_real_spectrum.toFinset.exists_min_image g (by simpa using hne)
+    rw [Set.Finite.mem_toFinset] at hx₀
+    exact ⟨g x₀, fun x hx =>
+      ⟨hmin x ((Set.Finite.mem_toFinset _).mpr hx), hR x hx x₀ hx₀⟩⟩
+
 /-- **Near-optimality from a factored error**: let $\mathbf{A}$ be Hermitian, $\nu > 0$ and
 $\varsigma \ge 0$ on its spectrum with $\nu(x)\varsigma(x) \le R\,\nu(y)\varsigma(y)$ for all
 eigenvalues $x, y$ and some $R \ge 1$, and $\pi$ a real polynomial with
@@ -126,14 +139,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_cfc_sub_le_of_sub_eq_aeval_mulVec
     A.finite_real_spectrum.continuousOn φ
   set g : ℝ → ℝ := fun x => ν x * ς x with hg
   -- a constant `c` with `c ≤ g ≤ R c` on the spectrum
-  obtain ⟨c, hcg⟩ : ∃ c, ∀ x ∈ spectrum ℝ A, c ≤ g x ∧ g x ≤ R * c := by
-    rcases (spectrum ℝ A).eq_empty_or_nonempty with hemp | hne
-    · exact ⟨0, fun x hx => by simp [hemp] at hx⟩
-    · obtain ⟨x₀, hx₀, hmin⟩ :=
-        A.finite_real_spectrum.toFinset.exists_min_image g (by simpa using hne)
-      rw [Set.Finite.mem_toFinset] at hx₀
-      exact ⟨g x₀, fun x hx =>
-        ⟨hmin x ((Set.Finite.mem_toFinset _).mpr hx), hR x hx x₀ hx₀⟩⟩
+  obtain ⟨c, hcg⟩ := exists_forall_mem_spectrum_le_and_le_mul A (g := g) hR
   set ĝ := 2 * R * c / (R + 1)
   set τ := (R - 1) / (R + 1)
   have hτ : 0 ≤ τ := div_nonneg (by linarith) (by linarith)

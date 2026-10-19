@@ -49,7 +49,6 @@
    "NLAlib/Polynomial/Interpolation/Stieltjes.lean": 2
   },
   "S4": {
-   "NLAlib/Krylov/Functions/NearOptimality.lean": 1,
    "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 1,
    "NLAlib/LowRank/Gaussian/BlockKrylovGapless.lean": 2,
    "NLAlib/LowRank/Gaussian/EarlyTruncation.lean": 1,
