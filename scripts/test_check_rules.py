@@ -1,0 +1,387 @@
+#!/usr/bin/env python3
+"""Regressions for scripts/check_rules.py: for every rule id, a fixture that breaks the rule and a
+fixture that keeps it, on a throw-away repository (source rules) or on hand-written declarations
+in the extraction format (extraction rules). A rule added without a fixture fails
+`test_every_rule_has_a_fixture`."""
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+import check_rules
+from check_rules import RULES, Ctx, run
+
+HDR = """/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import Mathlib.Data.Real.Basic
+
+"""
+MODDOC = """/-!
+# Title
+
+Text.
+
+## Main results
+
+* `NLAlib.foo`
+-/
+
+"""
+OPEN = "@[expose] public section\n\nnamespace NLAlib\n\n"
+CLOSE = "\n\nend NLAlib\n"
+FOO = "/-- A docstring. -/\ntheorem foo : True := trivial"
+
+
+def lean(body=FOO, moddoc=MODDOC, header=HDR, open_=OPEN, close=CLOSE):
+    return header + moddoc + open_ + body + close
+
+
+BIB = """% header
+@book{Abc2000,
+  title = {A}, year = {2000}, doi = {10.1/a}
+}
+
+@book{Def2001,
+  title = {B}, year = {2001}, doi = {10.1/b}
+}
+"""
+CONTRIB = """# Contributing
+
+## 4. Names
+
+`made_up_example_name` is a pattern here.
+
+## 5. Statements
+
+| short algorithm names in `\\mathsf` | `\\mathsf{gn}` for `generalizedNystrom` | — |
+
+The bridge `foo_bar_baz` exists.
+"""
+DEVIATIONS = """# Deviations
+
+## 1. Good
+
+- **Mathlib.** a
+- **NLAlib.** b
+- **Bridge.** c
+- **Why.** d
+- **Cost.** e
+- **Status.** f
+"""
+CONSTANTS = """[[constant]]
+name = "NLAlib.fooConstant"
+kind = "constant"
+file = "NLAlib/Matrix/A.lean"
+args = []
+latex = '1'
+lean_body = 'fooConstant : ℝ := 1'
+body_hash = "0"
+"""
+CITED = ("/-- **Foo.** A result. [Abc2000, Theorem 1]; [Def2001, §2].\nResult: foo-result -/\n"
+         "theorem foo : True := trivial")
+
+
+def make_root(tmp, files=None, docs=None):
+    root = Path(tmp)
+    base = {'NLAlib/Matrix/A.lean': lean(CITED), 'docs/references.bib': BIB,
+            'CONTRIBUTING.md': CONTRIB, 'docs/design/Mathlib-deviations.md': DEVIATIONS,
+            'docs/constants.toml': CONSTANTS}
+    base.update(docs or {})
+    base.update(files or {})
+    for p, t in base.items():
+        if t is None:
+            continue
+        f = root / p
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(t)
+    (root / 'NLAlibScaffold').mkdir(exist_ok=True)
+    ml = root / 'mathlib'
+    for p, t in {'Data/Real/Basic.lean': 'theorem foo_bar_baz : True := trivial\n',
+                 'Analysis/Calculus/Deriv/Basic.lean': ''}.items():
+        (ml / p).parent.mkdir(parents=True, exist_ok=True)
+        (ml / p).write_text(t)
+    return root, ml
+
+
+def decl(name, sig, kind='theorem', doc='A docstring.', module='NLAlib.Matrix.A', deps=(), line=10):
+    return {'name': name, 'kind': kind, 'module': module, 'signature': f'{name} {sig}', 'doc': doc,
+            'typeDeps': list(deps), 'line': str(line)}
+
+
+def data(*decls):
+    mods = sorted({d['module'] for d in decls} | {'NLAlib.Matrix.A'})
+    return {'decls': list(decls), 'modules': [{'name': m, 'path': m.replace('.', '/') + '.lean'}
+                                              for m in mods]}
+
+
+ALG = decl('NLAlib.rsvd', '(A : Matrix m n 𝕜) (X : Matrix n l 𝕜) : Matrix m n 𝕜', kind='def',
+           doc='$\\mathsf{rsvd}(\\mathbf{A}, \\mathbf{X}) := \\mathbf{P}\\mathbf{A}$.')
+
+# rule id -> (bad, good). A source fixture is {path: text} (or a body string for NLAlib/Matrix/A.lean);
+# an extraction fixture is a list of declarations.
+S = 'src'
+FIX = {
+    'F1': ({'NLAlib/Matrix/A.lean': lean(header=HDR.replace('Authors: NLAlib contributors', 'Authors:'))},
+           {}),
+    'F2': ({'NLAlib/Matrix/A.lean': lean(open_='namespace NLAlib\n\n')}, {}),
+    'F3': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'import Mathlib\n\n')}, {}),
+    'F4': ({'NLAlib/Matrix/A.lean': lean(open_='@[expose] public section\n\nnamespace Foo\n\n',
+                                         close='\n\nend Foo\n')}, {}),
+    'F5': ('set_option maxHeartbeats 400000\n\n' + CITED, '-- heavy\nset_option maxHeartbeats 400000 in\n' + CITED),
+    'F6': ('set_option maxHeartbeats 400000 in\n' + CITED, '-- heavy\nset_option maxHeartbeats 400000 in\n' + CITED),
+    'F7': ('open Classical\n\n' + CITED, 'open Classical in\n' + CITED),
+    'F8': ('noncomputable section\n\n' + CITED, CITED),
+    'F9': ('attribute [instance] foo\n\n' + CITED, 'attribute [local instance] foo in\n' + CITED),
+    'F10': (CITED + '\n' * 1001, CITED),
+    'F11': ({'NLAlib/Matrix/A.lean': None, 'NLAlib/Matrix/AToolkit.lean': lean(CITED)}, {}),
+    'P1': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlib.Sketching.B\n\n')}, {}),
+    'P2': ({'NLAlib/Matrix/B.lean': lean('')}, {}),
+    'P3': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibScaffold.Matrix.B\n\n')}, {}),
+    'P4': ([decl('Real.foo', ': specNorm 0 = 0', module='NLAlib.ForMathlib.Data.Real.Basic',
+                 deps=['NLAlib.specNorm'])],
+           [decl('Real.foo', ': (0 : ℝ) = 0', module='NLAlib.ForMathlib.Data.Real.Basic')]),
+    'P5': ({'NLAlib/ForMathlib/Data/Real/Basic.lean': lean(moddoc=MODDOC.replace('Text.', 'Upstream candidates.'))},
+           {'NLAlib/ForMathlib/Data/Real/Basic.lean': lean(moddoc=MODDOC.replace('Text.', 'Upstream candidates.'),
+                                                           open_='@[expose] public section\n\nnamespace Real\n\n',
+                                                           close='\n\nend Real\n')}),
+    'P6': ({'NLAlib/ForMathlib/Data/Real/Basic.lean': lean(open_='@[expose] public section\n\n', close='\n')},
+           {'NLAlib/ForMathlib/Data/Real/Basic.lean': lean(moddoc=MODDOC.replace('Text.', 'Upstream candidates.'),
+                                                           open_='@[expose] public section\n\n', close='\n')}),
+    'P7': ({'NLAlib/ForMathlib/Nowhere/Basic.lean': lean(moddoc=MODDOC.replace('Text.', 'Upstream.'),
+                                                         open_='@[expose] public section\n\n', close='\n')},
+           {'NLAlib/ForMathlib/Data/Real/Other.lean': lean(moddoc=MODDOC.replace('Text.', 'Upstream.'),
+                                                           open_='@[expose] public section\n\n', close='\n')}),
+    'P8': ('/-- Doc. -/\ntheorem _root_.Foo.bar : True := trivial',
+           '/-- Doc. -/\ntheorem _root_.Matrix.IsHermitian.bar : True := trivial'),
+    'P9': ([decl('NLAlib.one_le_two', ': (1 : ℝ) ≤ 2')],
+           [decl('NLAlib.specNorm_nonneg', '(A : Matrix m n 𝕜) : 0 ≤ specNorm A', deps=['NLAlib.specNorm'])]),
+    'P10': ([decl('NLAlib.specNorm', '(A : Matrix m n 𝕜) : ℝ', kind='def'),
+             decl('NLAlib.foo', '(A : Matrix m n 𝕜) : 0 ≤ specNorm A', module='NLAlib.LowRank.B',
+                  deps=['NLAlib.specNorm'])],
+            [decl('NLAlib.specNorm', '(A : Matrix m n 𝕜) : ℝ', kind='def'),
+             decl('NLAlib.foo', '(A : Matrix m n 𝕜) : 0 ≤ specNorm A', deps=['NLAlib.specNorm'])]),
+    'S1': (CITED.replace('trivial', 'by simp_all'), CITED),
+    'S2': (CITED.replace('trivial', 'by exact?'), CITED),
+    'S3': (CITED.replace('trivial', 'by decide'), CITED),
+    'S4': (CITED.replace('trivial', 'by\n' + '  skip\n' * 81 + '  trivial'), CITED),
+    'S5': ({'NLAlib/Matrix/A.lean': lean(CITED + '\n\nprivate theorem helper : True := trivial'),
+            'NLAlib/Matrix/B.lean': lean(FOO.replace('foo', 'baz') + '\n\nprivate theorem helper : True := trivial')},
+           {'NLAlib/Matrix/A.lean': lean(CITED + '\n\nprivate theorem helper : True := trivial')}),
+    'S6': ([decl('Matrix.instFoo', ': Foo (Matrix m n ℝ)', kind='instance')],
+           [decl('NLAlib.instFoo', ': Foo (specNorm A)', kind='instance', deps=['NLAlib.specNorm'])]),
+    'S7': (CITED.replace('A result.', 'A result ' + 'x ' * 50 + '.'),
+           CITED.replace('[Def2001, §2].', '[Def2001, §2],\n`' + 'x' * 110 + '`.')),
+    'S8': ('-- why\nset_option linter.style.longLine false in\n' + CITED,
+           '-- why\nset_option linter.style.longLine false in\n' + CITED.replace('A result.', '`' + 'x' * 110 + '`.')),
+    'T1': ([decl('NLAlib.t', '(x : n → ℝ) : √(x ⬝ᵥ x) = 0')], [decl('NLAlib.t', '(x : n → ℝ) : ‖x‖ = 0')]),
+    'T2': ([decl('NLAlib.t', '(x : ℝ) : P x.toNNReal')], [decl('NLAlib.t', '(x : ℝ) : P ‖x‖₊')]),
+    'T3': ('open scoped Matrix.Norms.Frobenius\n\n' + CITED, 'open scoped Matrix.Norms.Frobenius in\n' + CITED),
+    'T4': ([decl('NLAlib.t', '(A : Matrix m n ℝ) : ‖A‖ = 0')],
+           [decl('NLAlib.t', '(A : Matrix m n ℝ) : specNorm A = 0')]),
+    'T5': ([decl('NLAlib.t', '(A : Matrix m n ℝ) : Aᵀ = 0')], [decl('NLAlib.t', '(A : Matrix m n ℝ) : Aᴴ = 0')]),
+    'T6': ([decl('NLAlib.t', '(A : Matrix (Fin k) n ℝ) : A = 0')], [decl('NLAlib.t', '(A : Matrix m n 𝕜) : A = 0')]),
+    'T7': ([decl('NLAlib.t', '(A : Matrix m n ℝ) : A = 0')], [decl('NLAlib.t', '[RCLike 𝕜] (A : Matrix m n 𝕜) : A = 0')]),
+    'T8': ([decl('NLAlib.t', ': ∀ i, P (hA.eigenvectorBasis i)')], [decl('NLAlib.t', ': ∀ u, P u')]),
+    'T9': ([decl('NLAlib.t', ': f ⟨k, ⋯⟩ = 0')], [decl('NLAlib.t', '(hk : k < n) : f ⟨k, hk⟩ = 0')]),
+    'T10': ([decl('NLAlib.t', ': ∀ θ : ℕ, θ • Y = 0')], [decl('NLAlib.t', ': ∀ θ : ℝ, θ • Y = 0')]),
+    'T11': ([decl('NLAlib.t', ': 0 ≤ x ∧ x ≤ 1')], [decl('NLAlib.t', ': 0 ≤ x')]),
+    'T12': ([decl('NLAlib.t', ': ∃ k, 0 < eigenvalue A k')], [decl('NLAlib.t', ': ∃ k < n, 0 < eigenvalue A k')]),
+    'T13': ([decl('NLAlib.t', '(_hQ : P Q) : Q = Q')], [decl('NLAlib.t', '(hQ : P Q) : Q = Q')]),
+    'T14': ([decl('NLAlib.t', ': μ {ω | b < X ω} ≤ δ')], [decl('NLAlib.t', ': μ.real {ω | b < X ω} ≤ δ')]),
+    'V1': ([decl('NLAlib.t', '(hQ : Qᴴ * Q = 1) : P Q')], [decl('NLAlib.t', '(h : Aᴴ * A + Bᴴ * B = 1) : P A')]),
+    'V2': ([decl('NLAlib.t', ': f k = Fintype.card n - k')], [decl('NLAlib.t', '(hd : k + d = Fintype.card n) : f d = 0')]),
+    'V3': ([decl('NLAlib.t', ': singularValues A j / singularValues A i ≤ 1')],
+           [decl('NLAlib.t', ': singularGapRatio A i j ≤ 1')]),
+    'V4': ([decl('NLAlib.t', ': frobNorm A * frobNorm A = 0')], [decl('NLAlib.t', ': frobNorm A ^ 2 = 0')]),
+    'V5': ('/-- Doc. -/\ndef matrixExp : ℝ := 0', '/-- Doc. -/\ndef specNorm : ℝ := 0'),
+    'V6': ({'CONTRIBUTING.md': CONTRIB + '\nAnd `missing_lemma_here`.\n'}, {}),
+    'V7': ([decl('NLAlib.newThing', ': ℝ', kind='def')], [decl('NLAlib.generalizedNystrom', ': ℝ', kind='def')]),
+    'B1': ('/-- Doc. -/\ndef barConstant : ℝ := 1', '/-- Doc. -/\ndef fooConstant : ℝ := 1'),
+    'B2': ([decl('NLAlib.t', ': ∃ C : ℝ, 0 < C')], [decl('NLAlib.exists_forall_t', ': ∃ C : ℝ, 0 < C')]),
+    'B3': ('/-- An asymptotic form.\nAsymptotic: NLAlib.foo -/\ntheorem exists_forall_foo : True := trivial',
+           '/-- $O(k)$ suffices.\nAsymptotic: NLAlib.foo -/\ntheorem exists_forall_foo : True := trivial'),
+    'B4': ([decl('NLAlib.exists_forall_t', '{m : Type u_1} : ∃ C : ℝ, 0 < C', doc='$O(1)$ suffices.\nAsymptotic: NLAlib.t')],
+           [decl('NLAlib.exists_forall_t', ': ∃ C : ℝ, ∀ {m : Type}, 0 < C', doc='$O(1)$ suffices.\nAsymptotic: NLAlib.t')]),
+    'B5': ([decl('NLAlib.t', '(hε : 0 < ε) (hk : f ε ≤ Fintype.card k) : P', module='NLAlib.Sketching.B', doc='X.\nResult: r-id')],
+           [decl('NLAlib.t', '(hε : 0 < ε) (hk : f ε ≤ Fintype.card k) : P', module='NLAlib.Sketching.B',
+                 doc='X. Asymptotic form: `NLAlib.exists_forall_t`.\nResult: r-id')]),
+    'D1': (CITED.replace('**Foo.** ', ''), CITED),
+    'D2': (CITED.replace('A result.', 'Under the hypotheses of `NLAlib.bar`, it holds.'), CITED),
+    'D3': ([decl('NLAlib.t', ': x ≤ 1 / k', doc='$x \\le 1/k$.\nResult: r-id')],
+           [decl('NLAlib.t', ': x ≤ 1 / k', doc='$$x \\le \\frac{1}{k}\\,.$$\nResult: r-id')]),
+    'D4': (CITED.replace('A result.', 'A result $x \\le \\frac{1}{2}$.'),
+           CITED.replace('A result.', 'A result $$x \\le \\frac{1}{2}\\,.$$')),
+    'D5': (CITED.replace('A result.', 'A result $$x \\le 1$$.'), CITED.replace('A result.', 'A result $$x \\le 1\\,.$$')),
+    'D6': (CITED.replace('A result.', 'A result $specNorm(x)$.'), CITED.replace('A result.', 'A result `specNorm`.')),
+    'D7': (CITED.replace('A result.', 'A result `‖A‖₂ ≤ 1`.'), CITED.replace('A result.', 'A result $\\|A\\|_2 \\le 1$.')),
+    'D8': (CITED.replace('A result.', 'A result.\nProof: by induction.'), CITED),
+    'D9': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc='')}, {}),
+    'D10': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc=MODDOC.replace('## Main results', 'More'))}, {}),
+    'D11': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc=MODDOC.replace('`NLAlib.foo`', '`NLAlib.gone`'))}, {}),
+    'M1': (CITED.replace('A result.', 'A result $\\mathbb{P}(E) \\le 1$.'),
+           CITED.replace('A result.', 'A result $\\mathbb{P}[E] \\le 1$.')),
+    'M2': ([ALG, decl('NLAlib.t', '(A : Matrix m n 𝕜) : frobNorm (A - rsvd A X) ≤ 1', deps=['NLAlib.rsvd'],
+                      doc='$\\|\\mathbf{A} - \\mathbf{P}\\mathbf{A}\\| \\le 1$.\nResult: r-id')],
+           [ALG, decl('NLAlib.t', '(A : Matrix m n 𝕜) : frobNorm (A - rsvd A X) ≤ 1', deps=['NLAlib.rsvd'],
+                      doc='$\\|\\mathbf{A} - \\mathsf{rsvd}(\\mathbf{A}, \\mathbf{X})\\| \\le 1$.\nResult: r-id')]),
+    'M3': ([ALG, decl('NLAlib.t', '(A : Matrix m n 𝕜) : frobNorm (A - rsvd A X) ≤ 1', deps=['NLAlib.rsvd'],
+                      doc='$\\|\\mathbf{A} - \\mathbf{P}\\mathbf{A}\\| \\le 1$.')],
+           [ALG, decl('NLAlib.t', '(A : Matrix m n 𝕜) : frobNorm (A - rsvd A X) ≤ 1', deps=['NLAlib.rsvd'],
+                      doc='$\\mathsf{rsvd}(\\mathbf{A}, \\mathbf{X})$.')]),
+    'M4': (CITED.replace('A result.', 'A result $\\mathsf{rangeFinder}(\\mathbf{A})$.'),
+           CITED.replace('A result.', 'A result $\\mathsf{gn}(\\mathbf{A}) = \\mathsf{foo}(\\mathbf{A})$.')),
+    'M5': ([decl('NLAlib.alg', '(A : Matrix m n 𝕜) : Matrix m n 𝕜', kind='def', module='NLAlib.LowRank.B', doc='An algorithm.'),
+            decl('NLAlib.t1', ': P', deps=['NLAlib.alg'], doc='X.\nResult: a-id'),
+            decl('NLAlib.t2', ': P', deps=['NLAlib.alg'], doc='X.\nResult: b-id')],
+           [decl('NLAlib.alg', '(A : Matrix m n 𝕜) : Matrix m n 𝕜', kind='def', module='NLAlib.LowRank.B',
+                 doc='$\\mathsf{alg}(\\mathbf{A}) := \\mathbf{A}$.'),
+            decl('NLAlib.t1', ': P', deps=['NLAlib.alg'], doc='X.\nResult: a-id'),
+            decl('NLAlib.t2', ': P', deps=['NLAlib.alg'], doc='X.\nResult: b-id')]),
+    'M6': (CITED.replace('A result.', 'A result $\\|\\mathbf{A}\\|_F$.'),
+           CITED.replace('A result.', 'A result $\\|\\mathbf{A}\\|_{\\mathsf{F}}$.')),
+    'M7': (CITED.replace('A result.', 'A result $\\mathbf{A}^*$.'),
+           CITED.replace('A result.', 'A result $\\mathbf{A}^{\\mathsf{H}}$, $\\|\\mathbf{A}\\|_*$.')),
+    'M8': (CITED.replace('A result.', 'A result $\\epsilon$.'), CITED.replace('A result.', 'A result $\\varepsilon$.')),
+    'M9': (CITED.replace('A result.', 'A result $\\mathrm{tr}(\\mathbf{A})$.'),
+           CITED.replace('A result.', 'A result $\\operatorname{tr}(\\mathbf{A})$.')),
+    'M10': (CITED.replace('A result.', 'A result $E[X]$.'), CITED.replace('A result.', 'A result $\\mathbb{E}[X]$.')),
+    'M11': (CITED.replace('A result.', 'A result $\\boldsymbol{\\Omega}$.'),
+            CITED.replace('A result.', 'A result $\\mathbf{\\Omega}$.')),
+    'M12': (CITED.replace('A result.', 'A result $\\R$.'), CITED.replace('A result.', 'A result $\\mathbb{R}$.')),
+    'M13': (CITED.replace('A result.', 'A result $\\mathbb{K}$.'), CITED.replace('A result.', 'A result $\\Bbbk$.')),
+    'M14': (CITED.replace('A result.', 'A result $\\lfloor \\mathbf{A} \\rfloor_k$.'),
+            CITED.replace('A result.', 'A result $\\llbracket \\mathbf{A} \\rrbracket_k$.')),
+    'M15': (CITED.replace('A result.', 'A result $\\|\\mathbf{A}\\|$.'), CITED.replace('A result.', 'A result $\\|\\mathbf{A}\\|_2$.')),
+    'M16': (CITED.replace('A result.', 'A result $|n|$.'), CITED.replace('A result.', 'A result $\\lvert n \\rvert$.')),
+    'M17': (CITED.replace('A result.', 'A result $\\mathbf{A} \\succcurlyeq 0$.'),
+            CITED.replace('A result.', 'A result $\\mathbf{0} \\preceq \\mathbf{A}$.')),
+    'M18': ([decl('NLAlib.t', '(A : Matrix m n ℝ) : A = A', doc='$A = A$.')],
+            [decl('NLAlib.t', '(A : Matrix m n ℝ) : A = A', doc='$\\mathbf{A} = \\mathbf{A}$.')]),
+    'C1': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', ''),
+           CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', ' No printed source.')),
+    'C2': (CITED.replace('Theorem 1', '').replace(', ]', ']'), CITED),
+    'C3': (CITED.replace('Theorem 1', 'Theorem 1, $k = 2$'), CITED),
+    'C4': (CITED.replace('[Def2001, §2]', '[Smith et al. 2001]'), CITED),
+    'C5': ({'docs/references.bib': BIB + '\n@book{abc_2002,\n  title = {C}\n}\n'}, {}),
+    'C6': ({'docs/references.bib': BIB.replace('10.1/b', '10.1/a')}, {}),
+    'C7': ({'docs/references.bib': BIB.replace('Abc2000', 'Xyz2000')}, {}),
+    'C8': ({'docs/references.bib': BIB + '\n@book{Ghi2002,\n  title = {C}\n}\n'}, {}),
+    'C9': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', '').replace('\nResult: foo-result', ''), CITED),
+    'R1': ('/-- **A def.** [Abc2000, Definition 1].\nResult: a-def -/\ndef bar : ℝ := 0',
+           '/-- **Invariant.** [Abc2000, Theorem 1].\nResult: a-inv -/\ninstance isFoo_bar : IsFoo bar := ⟨⟩'),
+    'R2': (CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'foo-resukt'),
+           CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'bar-result')),
+    'R3': (None, None),  # needs the explore repository; covered by test_orphans
+    'G1': ({'docs/design/Mathlib-deviations.md': DEVIATIONS + '\n## 2. Bad\n\n- **Mathlib.** a\n'}, {}),
+}
+
+
+def violations(rid, fixture):
+    """Number of violations of rule `rid` on a fixture."""
+    with tempfile.TemporaryDirectory() as tmp:
+        if RULES[rid]['tier'] == 'x':
+            root, ml = make_root(tmp)
+            c = Ctx(root, data(*fixture), None, ml)
+        else:
+            files = fixture if isinstance(fixture, dict) else {'NLAlib/Matrix/A.lean': lean(fixture)}
+            root, ml = make_root(tmp, files)
+            c = Ctx(root, None, None, ml)
+        return [v for v in RULES[rid]['fn'](c) if v.rule == rid]
+
+
+class RuleTests(unittest.TestCase):
+    def test_every_rule_has_a_fixture(self):
+        self.assertEqual(set(RULES) - set(FIX), set())
+
+    def test_rules(self):
+        for rid, (bad, good) in sorted(FIX.items()):
+            if bad is None:
+                continue
+            with self.subTest(rule=rid):
+                self.assertTrue(violations(rid, bad), f'{rid}: the bad fixture passes')
+                self.assertEqual([v.text() for v in violations(rid, good)], [], f'{rid}: the good fixture fails')
+
+    def test_message_shape(self):
+        v = violations('S1', FIX['S1'][0])[0].text()
+        self.assertRegex(v, r'^S1 NLAlib/Matrix/A\.lean:\d+ \S+: `simp_all`')
+
+    def test_long_line_exemption(self):
+        self.assertTrue(check_rules.long_line_exempt('  `' + 'x' * 120 + '`.'))
+        self.assertTrue(check_rules.long_line_exempt('* `' + 'x' * 120 + '`:'))
+        self.assertTrue(check_rules.long_line_exempt('see https://example.org/' + 'x' * 100))
+        self.assertFalse(check_rules.long_line_exempt('theorem ' + 'x' * 120))
+
+    def test_orphans(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, ml = make_root(tmp)
+            ex = root / 'explore'
+            ex.mkdir()
+            (ex / 'collections.toml').write_text('results = ["foo-result", "gone-result"]\n')
+            c = Ctx(root, None, ex, ml)
+            self.assertEqual([v.decl for v in RULES['R3']['fn'](c)], ['gone-result'])
+
+
+class RatchetTests(unittest.TestCase):
+    def run_main(self, root, *args):
+        import contextlib
+        import io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = run(['--root', str(root), '--mathlib', str(root / 'mathlib'), '--no-names',
+                        '--baseline', str(root / 'baseline.json'), '--allow', str(root / 'allow.toml'),
+                        *args])
+        return code, out.getvalue()
+
+    def test_baseline_ratchet(self):
+        bad = CITED.replace('trivial', 'by simp_all')
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = make_root(tmp, {'NLAlib/Matrix/A.lean': lean(bad)})
+            code, out = self.run_main(root)
+            self.assertEqual(code, 1)
+            self.assertIn('S1 NLAlib/Matrix/A.lean', out)
+            # the extraction rules have counts: a baseline needs DATA.json
+            code, out = self.run_main(root, '--update-baseline')
+            self.assertEqual(code, 1)
+            (root / 'd.json').write_text(json.dumps(data()))
+            code, out = self.run_main(root, str(root / 'd.json'), '--update-baseline')
+            self.assertEqual(code, 1)  # creating an entry is a rise
+            code, out = self.run_main(root, str(root / 'd.json'), '--update-baseline', '--force')
+            self.assertEqual(code, 0, out)
+            self.assertEqual(json.loads((root / 'baseline.json').read_text())['rules']['S1'],
+                             {'NLAlib/Matrix/A.lean': 1})
+            code, out = self.run_main(root)
+            self.assertEqual(code, 0, out)
+            # a second violation in the same file fails, and the update refuses to raise the count
+            (root / 'NLAlib/Matrix/A.lean').write_text(lean(bad + '\n\n' + bad.replace('foo', 'baz')
+                                                            .replace('foo-result', 'baz-result')))
+            code, out = self.run_main(root)
+            self.assertEqual(code, 1)
+            self.assertIn('baseline 1', out)
+            code, out = self.run_main(root, str(root / 'd.json'), '--update-baseline')
+            self.assertEqual(code, 1)
+            self.assertIn('would rise', out)
+            # fixing it reminds to lower the baseline
+            (root / 'NLAlib/Matrix/A.lean').write_text(lean(CITED))
+            code, out = self.run_main(root)
+            self.assertEqual(code, 0)
+            self.assertIn('Counts below the baseline', out)
+
+    def test_allowlist_needs_reason_and_goes_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = make_root(tmp)
+            (root / 'allow.toml').write_text('[[allow]]\nrule = "S1"\npath = "x"\n')
+            with self.assertRaises(SystemExit):
+                self.run_main(root)
+            (root / 'allow.toml').write_text('[[allow]]\nrule = "D1"\ndecl = "NLAlib.foo"\nreason = "r"\n')
+            code, out = self.run_main(root)
+            self.assertEqual(code, 1)
+            self.assertIn('stale allowlist entry', out)
+
+
+if __name__ == '__main__':
+    unittest.main()

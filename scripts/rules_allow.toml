@@ -1,0 +1,50 @@
+# Allowlist of scripts/check_rules.py (CONTRIBUTING §9). One entry per false positive: the rule id,
+# the declaration (`decl`, its full name) or, for a file-level rule, the file (`path`), and a
+# one-line reason saying why the check misreads it. Reviewed like code; never the fix for a real
+# violation, which goes in the ratchet (`scripts/rules_baseline.json`) until it is fixed. The
+# checker fails on a stale entry.
+
+[[allow]]
+rule = "B1"
+decl = "NLAlib.polarFactor"
+reason = "the polar factor of a matrix, not a numerical bound; `Factor` is the matrix-analysis word"
+
+[[allow]]
+rule = "V3"
+decl = "NLAlib.pseudoConditionNumber_eq_singularValues_div"
+reason = "the bridge from the pseudo-condition number to the classical ratio σ₀/σₖ, not a gap"
+
+[[allow]]
+rule = "V3"
+decl = "NLAlib.one_sub_singularGapRatio_div_one_add_singularGapRatio"
+reason = "the §5.3 bridge `(1 - γ) / (1 + γ) = σⱼ / σᵢ` of `singularGapRatio` itself"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.instL2OpNormedSpaceReal"
+reason = "a `def`, made an instance only inside `open scoped Matrix.Norms.L2Operator`, not global"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.instOrderClosedTopology"
+reason = "the Loewner order is closed: the instance Mathlib would add with `MatrixOrder` (§7)"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.compactSpace_unitaryGroup"
+reason = "compactness of `Matrix.unitaryGroup`: the instance Mathlib would add (§7), upstream candidate"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.instBorelSpace"
+reason = "companion of `Matrix.instMeasurableSpace`, the §7 exception: Borel for the product σ-algebra"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.instSecondCountableTopology"
+reason = "the product-topology instance Mathlib would add for `Matrix` (§7), as for `m → n → R`"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.instMetrizableSpace"
+reason = "the product-topology instance Mathlib would add for `Matrix` (§7), as for `m → n → R`"

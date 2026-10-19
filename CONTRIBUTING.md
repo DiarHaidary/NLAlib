@@ -512,6 +512,7 @@ those layers are designed.
 | trapezoidal, Hessenberg, tridiagonal, quasi-triangular | `IsUpperTrapezoidal`, `IsUpperHessenberg`, `IsTridiagonal`, `IsUpperQuasiTriangular`, for matrices indexed by `Fin` | — |
 | factorizations | predicates `IsLU A L U`, `IsCholesky A L`, `IsQR A Q R` (thin); a full QR is a square `Q` with `HasOrthonormalCols Q` and `IsUpperTrapezoidal R` | — |
 | algorithm | a total recursion indexed by the step (`gaussState`, `householderState`), breakdown as a value, a realisation theorem under a hypothesis on the computed pivots | `isLU_luLower_luUpper` |
+| short algorithm names in `\mathsf` | `\mathsf{gn}` for `generalizedNystrom`, `\mathsf{earlyTruncatedGN}` for `earlyTruncatedGeneralizedNystrom`: the only short names a docstring may write in `\mathsf` (§6 item 5, M4); every other algorithm output is written with its Lean name verbatim. `scripts/check_rules.py` reads this row (maintainer, 2026-10-19) | — |
 | elimination | `eliminationStep A t`; in the natural order `gaussState A k`; along pivots `l.foldl eliminationStep A` | `gaussState_eq_foldl` |
 | leading principal minor | `principalMinor A (Finset.Iic i)`; proper ones `Finset.Iio i` | — |
 | polar factor | `polarFactor A = A * pinv (CFC.sqrt (Aᴴ * A))`, every shape and rank | `IsSVD.polarFactor_eq` |
