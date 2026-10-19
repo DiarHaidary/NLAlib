@@ -625,8 +625,6 @@ theorem singularValues_sq_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] 
         (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   rw [rangeFinderTailRatio, mul_add, mul_one, mul_div_cancel₀ _ (pow_ne_zero 2 hσ.ne')]
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- The tail term of the Gaussian range-finder bounds is at most $\lvert n \rvert^2$ times the best
 squared spectral error at a smaller rank: for $r \le t$ and $t + 2 \le \ell$ (casts to
 $\mathbb{R}$), with $\lvert n \rvert$ the number of columns,
@@ -669,8 +667,6 @@ natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singular
         rw [← mul_assoc]
         exact mul_le_mul_of_nonneg_right htNR (sq_nonneg _)
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- The tail term of the Gaussian range-finder bounds is at most $\lvert n \rvert$ times the best
 squared Frobenius error at a smaller rank: for $r \le t$ and $t + 2 \le \ell$ (casts to
 $\mathbb{R}$), with $\lvert n \rvert$ the number of columns,

@@ -326,13 +326,12 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of
   rw [gaussianProjectionFactor_def] at h2
   linarith
 
--- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The expected spectral error of truncated Nyström** (Martinsson and Tropp's Theorem 14.1):
 for positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix
 $\mathbf{X}$ and $k + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
-\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 eigenvalues indexed from $0$ (MT's $\lambda_{k+1}$). The direct form of
 `Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix`,
 which covers any other measurable choice of the truncation.

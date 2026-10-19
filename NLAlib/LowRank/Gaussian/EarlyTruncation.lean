@@ -295,8 +295,9 @@ theorem
     simp only [h0, sub_zero, truncatedSVD_zero, integral_const, probReal_univ, one_smul]
     nlinarith [sq_nonneg (frobNorm A)]
   obtain ⟨hkp, hfac⟩ := one_add_half_mul_gaussianProjectionFactor_le hk hε hp
-  have h1 := integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix
-    A hX hΨ hXΨ hkp
+  have h1 :=
+    integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix
+      A hX hΨ hXΨ hkp
   have hg : 0 ≤ gaussianProjectionFactor k (Fintype.card p) :=
     zero_le_one.trans (one_le_gaussianProjectionFactor hkp)
   calc _ ≤ _ := h1

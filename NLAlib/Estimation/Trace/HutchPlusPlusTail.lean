@@ -578,7 +578,6 @@ private theorem asymptotic_hansonWright₂ {γ K Lg u ℓ r ε : ℝ} (hγ1 : 1 
   have hYL : 588 * Lg ≤ Y := (pow_le_pow_iff_left₀ (by positivity) hY0 two_ne_zero).1 hY'
   nlinarith [mul_le_mul_of_nonneg_right le_hansonWrightConstant hY0]
 
-set_option linter.style.longLine false in
 -- The theorem's name alone exceeds 100 characters.
 /-- **$O(c^4(\sqrt{\log(1/\delta)}/\varepsilon + \log(1/\delta)))$ products suffice for Hutch++
 to relative error $\varepsilon$ in the nuclear norm**: there is an absolute constant $C > 0$

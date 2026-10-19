@@ -427,7 +427,8 @@ set_option linter.style.longLine false in
 $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely and
 $k + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
-\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 eigenvalues indexed from $0$. The direct form of
 `Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant`,
 which covers any other measurable choice of the truncation.
@@ -755,7 +756,8 @@ theorem
     ⟨_, hH.nystrom_eq⟩
   have hg : Measurable fun P : Matrix n n ℝ => nuclearNorm (H - S * P * S) :=
     continuous_nuclearNorm.measurable.comp
-      (measurable_const.sub ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
+      (measurable_const.sub
+        ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
   rw [integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant S hX hXr
     (f := fun Y => nuclearNorm (H - nystrom H Y)) hg fun Y => by rw [hS]]
   by_cases hrn : r ≤ Fintype.card n
@@ -765,8 +767,6 @@ theorem
     exact mul_le_mul_of_nonneg_right
       (rotationInvariantFactor_le_rotationInvariantFactor hq hln (by omega)) (nuclearNorm_nonneg _)
 
--- A proof line names the rank-parameter Nyström bound, whose name exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The sharp expected error of the randomized SVD, rotation-invariant test matrices**: for
 $\mathbf{A}$ of rank at most $r$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
 and full column rank almost surely, $\ell \le r$ and
@@ -786,13 +786,13 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le
     {r q : ℕ} (hr : A.rank ≤ r) (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
-  have h := (Matrix.posSemidef_conjTranspose_mul_self A).integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le
-    hX hXr (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
+  have h :=
+    Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le
+      (Matrix.posSemidef_conjTranspose_mul_self A) hX hXr
+      (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
   simpa only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD] using h
 
--- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
-set_option linter.style.longLine false in
 omit [DecidableEq n] in
 /-- **The sharp expected trace error of randomized Nyström, Gaussian test matrices**: for positive
 semidefinite $\mathbf{H}$ of rank at most $r$, a standard Gaussian $n \times \ell$ test matrix
@@ -828,8 +828,6 @@ theorem
     simp only [nuclearNorm_zero, integral_zero]
     exact mul_nonneg (rotationInvariantFactor_nonneg hq hlr) (nuclearNorm_nonneg _)
 
--- A proof line names the rank-parameter Nyström bound, whose name exceeds 100 characters.
-set_option linter.style.longLine false in
 omit [DecidableEq n] in
 /-- **The sharp expected error of the randomized SVD, Gaussian test matrices**: for $\mathbf{A}$
 of rank at most $r$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $\ell \le r$
@@ -849,8 +847,10 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
   classical
-  have h := (Matrix.posSemidef_conjTranspose_mul_self A).integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le
-    hX (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
+  have h :=
+    Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le
+      (Matrix.posSemidef_conjTranspose_mul_self A) hX
+      (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
   simpa only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD] using h
 
@@ -948,8 +948,6 @@ theorem exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvaria
   exact (integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant A hX hXr hkl).trans
     (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
 
--- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The expected trace error of randomized Nyström, rotation-invariant test matrices**: for
 positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
 and full column rank almost surely and

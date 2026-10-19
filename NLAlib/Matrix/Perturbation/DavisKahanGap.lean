@@ -333,7 +333,8 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
 [YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian
 $\mathbf{A} + \mathbf{E}$.
 Result: davis-kahan -/
-theorem _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le
+theorem
+    _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le
     [DecidableEq n] {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
@@ -383,7 +384,8 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
   {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
 [YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian
 $\mathbf{A} + \mathbf{E}$. -/
-theorem _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le
+theorem
+    _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le
     [DecidableEq n] {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))

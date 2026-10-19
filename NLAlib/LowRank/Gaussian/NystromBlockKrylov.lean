@@ -115,7 +115,8 @@ set_option linter.style.longLine false in
 /-- **The gapped bound for block Krylov Nyström**: for positive semidefinite $\mathbf{H}$, a
 standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of
 $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, and
-$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
+$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$,
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \le
 \sigma_r(\mathbf{H}) + 4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_t\|_*\,.$$
@@ -195,14 +196,13 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRat
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
   simp only [specNorm_sub_nystrom_pow_mul_eq hH]
   refine hb.trans ?_
-  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
+  have := mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
 /-! ### Gapless bounds -/
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The gapless bound for block Krylov Nyström, $(1 + \varepsilon)$ form**: for positive
 semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$
 blocks, a target rank $r$ with $r + 2 \le \ell$ and every $\varepsilon > 0$,
@@ -254,8 +254,6 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_one_add_sq_mul
   rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.singularValues_sqrt_sq,
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **Tropp and Webber's gapless bound for block Krylov Nyström, Nyström-native shape**: for
 positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$,
 $q \ge 2$ blocks, a target rank $r$ with $r + 2 \le \ell$ and $\sigma_r(\mathbf{H}) > 0$,
@@ -286,8 +284,6 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_mul_exp_of_hasLaw_g
     hq (singularValues_sqrt_pos hH hσ)
   rwa [hH.singularValues_sqrt_sq] at hb
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **Tropp and Webber's gapless bound for Nyström subspace iteration, Nyström-native shape**: for
 positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$,
 $p$ power steps, a target rank $r$ with $r + 2 \le \ell$ and $\sigma_r(\mathbf{H}) > 0$,
@@ -407,19 +403,19 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_l
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
   simp only [hH.nuclearNorm_sub_truncatedSVD_nystrom]
   refine hb.trans ?_
-  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
+  have := mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
 /-! ### Asymptotic forms -/
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for block Krylov
 Nyström with a gap**: there are absolute constants $C, \varepsilon_0 > 0$ such that for positive
 semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of
 $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
-$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
+$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$,
 $0 < \varepsilon \le \varepsilon_0$ and $q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$
 blocks,
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \le

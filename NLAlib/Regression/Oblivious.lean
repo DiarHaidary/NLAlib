@@ -255,8 +255,6 @@ theorem IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_union_gt_le
       · exact absurd hω hEω
       · exact hEω
 
--- A declaration name below is too long for a 100-character line.
-set_option linter.style.longLine false in
 /-- **Sketch-and-solve with an OSI and a random design**: if $\mathbf{S}$ is an OSI for dimension
 $d$ with constant $a > 0$ and failure probability $\delta$, independent of a random design
 $\mathbf{Y}$ of rank at most $d$ and a right-hand side $\mathbf{B}$, then for $t > 0$
@@ -269,7 +267,8 @@ completion step of generalized Nyström and of its early-truncated form with a s
 sketch. [CamanoEpperlyMeyerTropp2025, Theorem 2.7 and proof of Corollary 2.8]; there a fixed
 design, a vector right-hand side and probability $9/10$.
 Result: sketch-and-solve-ls -/
-theorem IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
+theorem
+    IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
     [IsProbabilityMeasure μ] (h : IsObliviousSubspaceInjection S d a δ μ) (ha : 0 < a)
     (ht : 0 < t) {Y : Ω → Matrix n q 𝕜} {B : Ω → Matrix n r 𝕜}
     (hind : IndepFun S (fun ω => (Y ω, B ω)) μ) (hS : AEMeasurable S μ) (hY : AEMeasurable Y μ)
