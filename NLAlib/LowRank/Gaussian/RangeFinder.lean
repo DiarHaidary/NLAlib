@@ -380,7 +380,7 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le \s
 \sigma_k^2\Bigl(\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\Bigr)^2\,,$$
 singular values of $\mathbf{A}$ from $0$; the bound is written in HMT's pseudoinverse
 constant, whence the name's suffix. The last factor being $O(1/\ell)$,
-the Frobenius tail enters with weight $O(1/\ell)$, against $\frac{k}{\ell-k-1}$ in
+the Frobenius tail enters with weight $O(1/\ell)$, against $k/(\ell-k-1)$ in
 `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`; the two are incomparable
 (this one is better when the tail is heavy and $\ell \gg k$). Applied at a comparison rank near
 $\ell/2$ with the tail flattening

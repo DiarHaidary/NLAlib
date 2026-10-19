@@ -292,7 +292,7 @@ $\mathbf{V}$ with orthonormal columns indexed by $p$,
 $\operatorname{Re} \operatorname{tr}(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V})
 \le \|\mathbf{A}\|_{(\lvert p \rvert)}$. The proof applies the eigenvalue principle to the
 Hermitian dilation, compressed to the columns of
-$\frac{1}{\sqrt{2}} \begin{bmatrix} \mathbf{U} \\ \mathbf{V} \end{bmatrix}$; the modulus form is
+$(1/\sqrt{2}) \begin{bmatrix} \mathbf{U} \\ \mathbf{V} \end{bmatrix}$; the modulus form is
 `NLAlib.norm_trace_conjTranspose_mul_mul_le_kyFanNorm`.
 [HornJohnson1991, Theorem 3.4.1]. -/
 theorem re_trace_conjTranspose_mul_mul_le_kyFanNorm [DecidableEq p] (A : Matrix m n 𝕜)

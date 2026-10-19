@@ -66,7 +66,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-! ### The abstract step -/
 
 /-- The scalar fact behind the abstract step: on $[c, Rc]$, $R \ge 1$, the constant
-$\hat g = 2Rc/(R + 1)$ satisfies $\lvert g - \hat g\rvert \le \frac{R - 1}{R + 1}\,g$. -/
+$\hat g = 2Rc/(R + 1)$ satisfies $\lvert g - \hat g\rvert \le ((R - 1)/(R + 1))\,g$. -/
 private theorem abs_sub_two_mul_div_le {R c g : ℝ} (hR : 1 ≤ R) (hc : c ≤ g) (hg : g ≤ R * c) :
     |g - 2 * R * c / (R + 1)| ≤ (R - 1) / (R + 1) * g := by
   have hR1 : 0 < R + 1 := by linarith
@@ -77,7 +77,7 @@ private theorem abs_sub_two_mul_div_le {R c g : ℝ} (hR : 1 ≤ R) (hc : c ≤ 
 
 /-- The completed square behind the abstract step: if
 $X \le \tau D E$ with $\tau = (R - 1)/(R + 1)$, $R \ge 1$, then
-$E^2 \le \frac{(R + 1)^2}{4R}(E^2 - 2X + D^2)$, since
+$E^2 \le ((R + 1)^2/(4R))(E^2 - 2X + D^2)$, since
 $E^2 - 2X + D^2 \ge (D - \tau E)^2 + (1 - \tau^2)E^2$ and $1/(1 - \tau^2) = (R + 1)^2/(4R)$. -/
 private theorem sq_le_mul_sq_sub_two_mul_add_sq {R D E X : ℝ} (hR : 1 ≤ R)
     (hX : X ≤ (R - 1) / (R + 1) * D * E) :

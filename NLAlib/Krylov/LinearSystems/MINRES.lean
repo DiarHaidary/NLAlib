@@ -18,8 +18,8 @@ MINRES has no definition of its own: it is `NLAlib.gmresIterate` for Hermitian $
 the theorems here are Hermitian theorems about it. For Hermitian $\mathbf{A}$ with spectrum in
 $s$, the residual is at most $\eta\|\mathbf{r}_0\|$ for every real residual polynomial bounded by
 $\eta$ on $s$; on an interval $[a, a']$ with $0 < a$ this gives the rate
-$2\bigl(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\bigr)^q$, $\kappa = a'/a$; on two symmetric
-intervals $[-a', -a] \cup [a, a']$ the rate $2\bigl(\frac{\kappa - 1}{\kappa + 1}\bigr)^{\lfloor q/2
+$2\bigl((\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1)\bigr)^q$, $\kappa = a'/a$; on two symmetric
+intervals $[-a', -a] \cup [a, a']$ the rate $2\bigl((\kappa - 1)/(\kappa + 1)\bigr)^{\lfloor q/2
 \rfloor}$; and outliers are killed one step each.
 
 Preconditioned MINRES, with a positive definite preconditioner $\mathbf{M}$ applied as

@@ -15,8 +15,8 @@ public import Mathlib.Algebra.Polynomial.Expand
 
 For every $q$ and $0 < a < a'$ there are a positive definite matrix with spectrum in $[a, a']$
 and a right-hand side for which the CG error and the MINRES residual after $q$ steps are exactly
-$T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1} = \frac{2\rho^q}{1 + \rho^{2q}}$ times their initial
-values, $\rho = \frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}$. So the bounds $2\rho^q$ (and $4\rho^{2q}$
+$T_q\bigl((a' + a)/(a' - a)\bigr)^{-1} = 2\rho^q/(1 + \rho^{2q})$ times their initial
+values, $\rho = (\sqrt{a'/a} - 1)/(\sqrt{a'/a} + 1)$. So the bounds $2\rho^q$ (and $4\rho^{2q}$
 squared) of `NLAlib.Krylov.LinearSystems.CG` and `NLAlib.Krylov.LinearSystems.MINRES` are tight
 up to the factor $1 + \rho^{2q}$ (squared: $(1 + \rho^{2q})^2$), which tends to $1$.
 
@@ -133,7 +133,7 @@ private lemma re_quadForm_chebyshevErrorVector {a a' : ℝ} (ha : 0 < a) (haa : 
 
 /-- Cauchy–Schwarz against the signed dual weights: every $p \in \Bbbk[X]$ with $\deg p \le q$
 and $p(0) = 1$ has $\sum_k\omega_k\lvert p(\xi_k)\rvert^2 \ge
-T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1}$. -/
+T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$. -/
 private lemma inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq {a a' : ℝ} (ha : 0 < a)
     (haa : a < a') {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
     ((T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)))⁻¹ ≤
@@ -213,7 +213,7 @@ theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix {a a' : ℝ} (ha : 0 < 
     exact inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq ha haa hp hp₀
 
 /-- **The CG bound is tight up to $(1 + \rho^{2q})^2$**: on the same instance the squared error
-ratio is $\frac{4\rho^{2q}}{(1 + \rho^{2q})^2}$, against the bound $4\rho^{2q}$ of
+ratio is $4\rho^{2q}/((1 + \rho^{2q})^2)$, against the bound $4\rho^{2q}$ of
 `Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow`.
 Result: cg-chebyshev-sharp -/
 theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix_eq_four_mul_pow_div {a a' : ℝ}
@@ -375,7 +375,7 @@ theorem spectrum_chebyshevTwoIntervalMatrix_subset {a a' : ℝ} (ha : 0 < a) (ha
 $k = \lfloor q/2 \rfloor$, the two-interval matrix and right-hand side give
 $$\|\mathbf{w} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{w}, \mathbf{0}, q)\| =
 T_k\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1}\|\mathbf{w}\| \,,$$
-which is $\frac{2\rho_2^k}{1 + \rho_2^{2k}}$ with $\rho_2 = \frac{a'/a - 1}{a'/a + 1}$, against the
+which is $2\rho_2^k/(1 + \rho_2^{2k})$ with $\rho_2 = (a'/a - 1)/(a'/a + 1)$, against the
 bound $2\rho_2^k$. Odd steps gain nothing: the data are symmetric, so the least-squares residual
 polynomial is even. For a residual $p$ of degree at most $q$ and $u = p(\sqrt{\xi_j})$,
 $v = p(-\sqrt{\xi_j})$, $\lvert u \rvert^2 + \lvert v \rvert^2 \ge 2\lvert (u + v)/2 \rvert^2$, and

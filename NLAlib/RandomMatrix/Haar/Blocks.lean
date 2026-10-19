@@ -339,7 +339,7 @@ namespace NLAlib
 $1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$ (casts to $\mathbb{R}$): the factor by which a Haar
 sketch of size $p$ in ambient dimension $d$ inflates the least-squares error of a basis of rank
 $q$, Epperly and Webber's random orthonormal constant, and their
-$1 + \gamma\frac{\ell}{p - \ell - 1}$ with $\gamma = \frac{d - p}{d - \ell}$ at $q = \ell$. Junk for
+$1 + \gamma\ell/(p - \ell - 1)$ with $\gamma = (d - p)/(d - \ell)$ at $q = \ell$. Junk for
 $p \le q + 1$ or $d \le q$ (Lean's $x/0 = 0$, signs); theorems carry `q + 2 ≤ p` and `p ≤ d`. A
 plain definition, because its body is the source's formula.
 [EpperlyWebber2026, Theorem 2.1]. -/
@@ -504,7 +504,7 @@ every $\mathbf{B}$,
 $$\mathbb{E}\|(\mathbf{Q}^{\mathsf{H}}\mathbf{V}_1)^{+}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\mathbf{B}
 \|_{\mathsf{F}}^2 = \frac{m-p}{m-r}\cdot\frac{r}{p-r-1}\,\|\mathbf{B}\|_{\mathsf{F}}^2\,,$$
 the Haar twin of `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix`, smaller than
-the Gaussian value $\frac{r}{p-r-1}$ by the factor $\frac{m-p}{m-r}$. Unlike the Gaussian case the
+the Gaussian value $r/(p-r-1)$ by the factor $(m-p)/(m-r)$. Unlike the Gaussian case the
 frames must be complementary: the proof uses
 $\mathbf{\Omega}_1^{\mathsf{H}}\mathbf{\Omega}_1 + \mathbf{\Omega}_2^{\mathsf{H}}\mathbf{\Omega}_2 =
 \mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$ for the blocks

@@ -664,7 +664,7 @@ theorem integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix
   ring
 
 /-- $\mathbb{E} \|\mathbf{G}^{+}\|_2
-\le \frac{e}{\lvert k \rvert - \lvert r \rvert} \sqrt{(\lvert k \rvert + \lvert r \rvert - 1)/2}$
+\le (e/(\lvert k \rvert - \lvert r \rvert)) \sqrt{(\lvert k \rvert + \lvert r \rvert - 1)/2}$
 for a standard Gaussian $r \times k$ matrix with $\lvert r \rvert < \lvert k \rvert$: the case
 $q = 1$. -/
 theorem integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)

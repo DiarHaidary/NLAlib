@@ -242,7 +242,7 @@ private theorem measurable_specNorm_obliqueProjector_sub_rsvd_sq (A : Matrix m n
 /-- The arithmetic of the spectral residual: from $\ell\sigma^2 \le 4\,\mathrm{OPT}^2$,
 $w \le \mathrm{OPT}$, $h \le 3$ and $\ell\beta^2 \le 32.4$ with $\ell \ge 4$, the second-moment
 bound $\sigma^2 + (\sigma\sqrt h + \beta w)^2 + \sigma^2\beta^2$ is at most
-$\frac{121}{\ell}\mathrm{OPT}^2$. -/
+$(121/\ell)\mathrm{OPT}^2$. -/
 private theorem residual_arith {L u w O h β : ℝ} (hL : 4 ≤ L) (hw0 : 0 ≤ w)
     (hwO : w ≤ O) (hu : L * u ^ 2 ≤ 4 * O ^ 2) (hh0 : 0 ≤ h) (hh : h ≤ 3)
     (hβ : L * β ^ 2 ≤ 32.4) :
@@ -268,7 +268,7 @@ private theorem residual_arith {L u w O h β : ℝ} (hL : 4 ≤ L) (hw0 : 0 ≤ 
   nlinarith [mul_le_mul_of_nonneg_left hcross hL0.le]
 
 /-- The constants of the range finder at the comparison rank $j = \lceil \ell/2 \rceil$: for
-$\ell \ge 4$, $\frac{j}{\ell - j - 1} \le 3$. -/
+$\ell \ge 4$, $j/(\ell - j - 1) \le 3$. -/
 private theorem div_le_three_of_half {L j : ℕ} (hL : 4 ≤ L) (hj : j = (L + 1) / 2) :
     (j : ℝ) / ((L : ℝ) - j - 1) ≤ 3 := by
   rcases (by omega : L = 4 ∨ 5 ≤ L) with h | h
@@ -318,7 +318,7 @@ private theorem mul_gaussianPinvSpecNormBound_sq_le_of_half {L j : ℕ} (hL : 4 
 /-- **The spectral residual of the range finder**: for a standard Gaussian $n \times \ell$ test
 matrix, $k \ge 1$ and $4k \le \ell$,
 $\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le
-\frac{121}{\ell}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$, from the second
+(121/\ell)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$, from the second
 spectral moment at the comparison rank $\lceil \ell/2 \rceil$ and the tail flattening. -/
 private theorem integral_specNorm_sub_rsvd_sq_le_div (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : 1 ≤ k) (hkl : 4 * k ≤ Fintype.card l) :
@@ -358,7 +358,7 @@ set_option linter.style.longLine false in
 matrices, $k \ge 1$, $4k \le \ell$ and $4\ell \le p$, the core noise
 $e = \|\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}(\mathbf{A} -
 \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))\|_2$ is square integrable with
-$\mathbb{E}e^2 \le \frac{25g + 484}{p}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+$\mathbb{E}e^2 \le ((25g + 484)/p)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2$, $g$ the value of the Gaussian projection factor at $(k, \ell)$. -/
 private theorem integral_specNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ)
@@ -439,7 +439,7 @@ private theorem integral_specNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
 matrices, any law of the range test matrix and $\ell + 2 \le p$, the core noise
 $\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))$ is square integrable with
-$\mathbb{E}\|\mathbf{N}\|_{\mathsf{F}}^2 \le \frac{\ell}{p - \ell - 1}\,
+$\mathbb{E}\|\mathbf{N}\|_{\mathsf{F}}^2 \le (\ell/(p - \ell - 1))\,
 \mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2$. -/
 private theorem integral_frobNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ)
@@ -679,7 +679,7 @@ theorem
       A hX hΨ hXΨ hε hε1 (by nlinarith [Nat.cast_nonneg (α := ℝ) k]) (by linarith)
 
 /-- **Truncated generalized Nyström, Frobenius core-noise form**: for independent standard Gaussian
-test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \frac{\ell}{p - \ell - 1}$,
+test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \ell/(p - \ell - 1)$,
 the bound is <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1} +

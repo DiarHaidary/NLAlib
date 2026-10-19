@@ -188,7 +188,7 @@ end Aux
 
 omit [FiniteDimensional ℝ E] in
 /-- Herbst's argument for a bounded $C^1$ $L$-Lipschitz $f$: the predicate applied to
-$e^{s f / 2}$ gives $\operatorname{Ent}(e^{s f}) \le \frac{c L^2 s^2}{2}\, \mathbb{E} e^{s f}$. -/
+$e^{s f / 2}$ gives $\operatorname{Ent}(e^{s f}) \le (c L^2 s^2/2)\, \mathbb{E} e^{s f}$. -/
 private theorem HasLogSobolev.hasSubgaussianMGF_of_bounded [IsProbabilityMeasure ν]
     (h : HasLogSobolev ν c) {f : E → ℝ} {L : ℝ≥0} (hf : LipschitzWith L f)
     (hfc : ContDiff ℝ 1 f) {M : ℝ} (hM : ∀ x, |f x| ≤ M) :

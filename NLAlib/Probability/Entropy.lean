@@ -24,7 +24,7 @@ order in $s$ makes $f - \mathbb{E} f$ sub-Gaussian (Herbst's argument). These ar
 logarithmic Sobolev inequality to concentration.
 
 If $g$ takes values in $[a, b]$, then
-$\operatorname{Ent}(e^{s g}) \le \frac{s^2 (b - a)^2}{8}\, \mathbb{E} e^{s g}$: the entropy form of
+$\operatorname{Ent}(e^{s g}) \le (s^2 (b - a)^2/8)\, \mathbb{E} e^{s g}$: the entropy form of
 Hoeffding's lemma. With Herbst's argument it recovers Hoeffding's lemma; with the
 tensorization of entropy (`NLAlib.entropy_pi_le_sum`) applied on the fibres of a function of
 independent coordinates it gives the bounded differences inequality
@@ -154,7 +154,7 @@ private theorem integral_exp_mul_le_exp_of_entropy_le [IsProbabilityMeasure μ] 
 
 /-- **Herbst's argument** ([BoucheronLugosiMassart2013], Proposition 6.1): under a probability
 measure, if $e^{s f}$ is integrable and
-$\operatorname{Ent}(e^{s f}) \le \frac{c s^2}{2}\, \mathbb{E} e^{s f}$ for every real $s$, then
+$\operatorname{Ent}(e^{s f}) \le (c s^2/2)\, \mathbb{E} e^{s f}$ for every real $s$, then
 $f - \mathbb{E} f$ is sub-Gaussian with proxy $c$. The hypothesis for $s > 0$ gives the upper
 tail, for $s < 0$ the lower one. -/
 theorem hasSubgaussianMGF_sub_integral_of_entropy_le [IsProbabilityMeasure μ] {f : Ω → ℝ}
@@ -268,7 +268,7 @@ theorem entropy_exp_mul_le_of_mem_Icc [IsProbabilityMeasure ν] {g : Ω → ℝ}
 
 /-- **The entropy of an exponential of a function of bounded oscillation**: under a probability
 measure, if $\lvert g(x) - g(y)\rvert \le c$ for all $x$, $y$, then
-$\operatorname{Ent}(e^{s g}) \le \frac{s^2 c^2}{8}\, \mathbb{E} e^{s g}$ for every real $s$. The
+$\operatorname{Ent}(e^{s g}) \le (s^2 c^2/8)\, \mathbb{E} e^{s g}$ for every real $s$. The
 pointwise form used on the fibres of a function with bounded differences.
 [BoucheronLugosiMassart2013, proof of Theorem 6.2]. -/
 theorem entropy_exp_mul_le_of_abs_sub_le [IsProbabilityMeasure ν] {g : Ω → ℝ}

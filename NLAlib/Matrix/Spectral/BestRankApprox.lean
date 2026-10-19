@@ -674,7 +674,7 @@ $r \ge 1$,
 $$\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}} \le
 \frac{\|\mathbf{A}\|_*}{2\sqrt{r}}\,:$$
 the tail $\sum_{i \ge r}\sigma_i^2$ is at most $\sigma_{r-1}\sum_{i \ge r}\sigma_i \le
-\frac1r\bigl(\sum_{i < r}\sigma_i\bigr)\bigl(\sum_{i \ge r}\sigma_i\bigr) \le
+(1/r)\bigl(\sum_{i < r}\sigma_i\bigr)\bigl(\sum_{i \ge r}\sigma_i\bigr) \le
 \|\mathbf{A}\|_*^2/(4r)$. The positive semidefinite form, with
 $\operatorname{Re}\operatorname{tr}\mathbf{A}$, is
 `Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div`.

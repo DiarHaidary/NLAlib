@@ -621,7 +621,7 @@ $$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2} \le (2q + 1)\, \mathbb{E} \oper
 [MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). Proof: with $\mathbf{Y}^{(i)}$ the
 series with the $i$-th sign flipped (same law, `measurePreserving_update_neg_rademacherVector`),
 $\mathbb{E}[\varepsilon_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^{2q+1})]
-= \frac14 \mathbb{E} \operatorname{tr}\bigl((\mathbf{Y} - \mathbf{Y}^{(i)})
+= (1/4) \mathbb{E} \operatorname{tr}\bigl((\mathbf{Y} - \mathbf{Y}^{(i)})
 (\mathbf{Y}^{2q+1} - (\mathbf{Y}^{(i)})^{2q+1})\bigr)$; the mean value trace inequality
 (`Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le`) with
 $\mathbf{Y} - \mathbf{Y}^{(i)} = 2 \varepsilon_i \mathbf{A}_i$ and $\varepsilon_i^2 = 1$, and a

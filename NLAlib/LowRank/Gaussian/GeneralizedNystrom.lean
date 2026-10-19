@@ -18,7 +18,7 @@ standard Gaussian co-range test matrix $\mathbf{\Psi}$, the expected squared Fro
 generalized Nyström $\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})$
 (`NLAlib.generalizedNystrom`) is that of the randomized SVD
 $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ times the completion factor
-$1 + \frac{q}{p - q - 1}$ at the rank $q = \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$,
+$1 + q/(p - q - 1)$ at the rank $q = \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$,
 inside the expectation:
 $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mathsf{F}}^2 =
 \mathbb{E}\Bigl[\Bigl(1 + \frac{q}{p-q-1}\Bigr)
@@ -125,7 +125,7 @@ private theorem gaussianProjectionFactor_le_one_add {q c : ℕ} (h : q + 2 ≤ c
   rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
   nlinarith
 
-/-- The right side of the identity, $(1 + \frac{q}{p-q-1})\|\mathbf{A} - \mathsf{rsvd}\|^2$ at the
+/-- The right side of the identity, $(1 + q/(p-q-1))\|\mathbf{A} - \mathsf{rsvd}\|^2$ at the
 random rank, is integrable. -/
 private theorem integrable_gaussianProjectionFactor_mul [IsFiniteMeasure μ] (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p) :
@@ -515,7 +515,7 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \Bigl(1 + \frac{m - p}{m - \ell'}\cdot\frac{\ell'}{p - \ell' - 1}\Bigr)\,
 \mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2\,,$$
 Epperly and Webber's factor
-$1 + \gamma\frac{\ell'}{p - \ell' - 1}$ with $\gamma = \frac{m - p}{m - \ell'}$.
+$1 + \gamma\ell'/(p - \ell' - 1)$ with $\gamma = (m - p)/(m - \ell')$.
 [EpperlyWebber2026, proof of Theorem 4.2(a), random orthonormal co-range]; there for
 $\operatorname{rank}\mathbf{A} \ge p$.
 Result: generalized-nystrom-expected-error -/
@@ -581,7 +581,7 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
 smaller than
 the Gaussian co-range bound by the ratio of the completion factors.
-[EpperlyWebber2026, Theorem 4.2(a), $\gamma = \frac{d - k}{d - \ell}$ in their letters]; there
+[EpperlyWebber2026, Theorem 4.2(a), $\gamma = (d - k)/(d - \ell)$ in their letters]; there
 $r = \operatorname{rank}\mathbf{A} \ge p$ and a minimum over $q$.
 Result: generalized-nystrom-expected-error -/
 theorem

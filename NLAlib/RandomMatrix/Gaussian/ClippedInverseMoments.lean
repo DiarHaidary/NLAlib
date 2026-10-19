@@ -339,7 +339,7 @@ private theorem mul_le_exp_sub_five_sq {M a : ℝ} (hM : 900 ≤ M) (ha : 0.9 * 
   exact h5.trans (h3.trans (Real.exp_le_exp.2 h2))
 
 /-- The inverse-moment constant of the transpose: for $100n \le m$,
-$m\beta(n, m)^2 \le 3.82$ with $\beta(n, m) = \frac{e}{m - n}\sqrt{(m + n - 1)/2}$. -/
+$m\beta(n, m)^2 \le 3.82$ with $\beta(n, m) = (e/(m - n))\sqrt{(m + n - 1)/2}$. -/
 private theorem mul_sq_le {M N : ℝ} (hN : 0 ≤ N) (hNM : 100 * N ≤ M) (hM : 900 ≤ M) :
     M * (Real.exp 1 / (M - N) * √((M + N - 1) / 2)) ^ 2 ≤ 3.82 := by
   have he : Real.exp 1 ^ 2 ≤ 7.3891 := by

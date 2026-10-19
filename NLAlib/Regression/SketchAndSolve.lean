@@ -19,7 +19,7 @@ public import NLAlib.RandomMatrix.Haar.Blocks
 For a standard Gaussian $p \times m$ sketch $\mathbf{S}$, a fixed basis $\mathbf{X}$ of rank $q$
 with $q + 2 \le p$ and every $\mathbf{B}$, the oblique projection
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ (`NLAlib.obliqueProjector`) inflates the error of the
-orthogonal projection by exactly the factor $1 + \frac{q}{p - q - 1}$, in expectation:
+orthogonal projection by exactly the factor $1 + q/(p - q - 1)$, in expectation:
 $$\mathbb{E}\|(\mathbf{I}-\mathbf{\Pi}_{\mathbf{X},\mathbf{S}})\mathbf{B}\|_{\mathsf{F}}^2 =
 \Bigl(1 + \frac{q}{p-q-1}\Bigr)
 \|(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2\,.$$
@@ -264,7 +264,7 @@ $$\mathbb{E}\|\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{E}\|_2^2 \le
 \frac{e}{p - q}\sqrt{(p + q - 1)/2}\Bigr)^2 +
 \|\mathbf{E}\|_2^2\Bigl(\frac{e}{p - q}\sqrt{(p + q - 1)/2}\Bigr)^2\,,$$
 the constant being `gaussianPinvSpecNormBound q p`. For $4q \le p$ this is at most
-$\frac{25}{p}\|\mathbf{E}\|_{\mathsf{F}}^2 + \frac{4q}{p}\|\mathbf{E}\|_2^2$ (the theorem of
+$(25/p)\|\mathbf{E}\|_{\mathsf{F}}^2 + (4q/p)\|\mathbf{E}\|_2^2$ (the theorem of
 the same name with `_le_div_card` in place of `_le`): the excess is spectrally flat. It is the
 core noise of generalized Nyström in projector form.
 Proved without a literature source; inputs [TroppWebber2023, Lemmas B.1, B.3] (in the forms of
@@ -528,7 +528,7 @@ variable {Q : Ω → Matrix m p ℝ}
 /-- **Orthogonality helps, but only a bit**: the Haar projection factor is at most the Gaussian
 one, <!-- value haarProjectionFactor d p q --> <!-- value gaussianProjectionFactor q p -->
 $1 + (d - p)/(d - q) \cdot (q/(p - q - 1)) \le 1 + q/(p - q - 1)$ for $q + 2 \le p \le d$; the
-excesses over $1$ are in the ratio $\frac{d-p}{d-q}$.
+excesses over $1$ are in the ratio $(d-p)/(d-q)$.
 [EpperlyWebber2026, §2.1]. -/
 theorem haarProjectionFactor_le_gaussianProjectionFactor {d p q : ℕ} (hqp : q + 2 ≤ p)
     (hpd : p ≤ d) : haarProjectionFactor d p q ≤ gaussianProjectionFactor q p := by

@@ -94,7 +94,7 @@ theorem log_one_sub_le_quadratic {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
 
 /-- **Laurent and Massart's log bound**: for $0 \le u < 1$,
 $$-\log(1 - u) \le u + \frac{u^2}{2 (1 - u)} \,,$$
-by comparing the series $\sum_{k \ge 1} u^k / k$ term by term with $u + \frac{u}{2} \sum_{k \ge 1}
+by comparing the series $\sum_{k \ge 1} u^k / k$ term by term with $u + (u/2) \sum_{k \ge 1}
 u^k$. It turns the Laplace transform $(1 - 2\theta)^{-1/2}$ of $\chi^2_1$ into a sub-gamma
 bound (Laurent and Massart 2000, proof of Lemma 1). -/
 theorem neg_log_one_sub_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
@@ -124,7 +124,7 @@ theorem log_nine_le_nine_div_four : log 9 ≤ 9 / 4 := by
   calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
     _ ≤ exp (9 / 32) ^ 8 := by gcongr
 
-/-- $e^{2r} \le \frac{1 + r}{1 - r}$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
+/-- $e^{2r} \le (1 + r)/(1 - r)$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
 [TroppWebber2023, (C.1)]. -/
 theorem exp_two_mul_le_one_add_div_one_sub {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
     exp (2 * r) ≤ (1 + r) / (1 - r) := by

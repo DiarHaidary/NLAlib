@@ -439,7 +439,7 @@ theorem integral_norm_trace_sub_hutchpp_sq [IsProbabilityMeasure μ] (A : Matrix
 
 omit [DecidableEq n] in
 /-- The mean-square error of Girard–Hutchinson with a standard Gaussian test matrix, for a fixed
-real $\mathbf{B}$: $\frac{2}{\ell}\|\mathbf{H}\|_{\mathsf{F}}^2$ with $\mathbf{H}$ the symmetric
+real $\mathbf{B}$: $(2/\ell)\|\mathbf{H}\|_{\mathsf{F}}^2$ with $\mathbf{H}$ the symmetric
 part of $\mathbf{B}$. -/
 private theorem integral_girardHutchinson_sub_trace_sq_of_hasLaw_gaussianMatrix [Nonempty t]
     {G : Ω → Matrix n t ℝ} (hG : HasLaw G (gaussianMatrix n t) μ) (B : Matrix n n ℝ) :
@@ -485,7 +485,7 @@ private theorem hasLaw_col_of_hasLaw_conjTranspose_rademacherMatrix {G : Ω → 
 
 omit [DecidableEq n] in
 /-- The mean-square error of Girard–Hutchinson with sign probes, for a fixed real $\mathbf{B}$:
-$\frac{2}{\ell}(\|\mathbf{H}\|_{\mathsf{F}}^2 - \sum_i \mathbf{H}_{i,i}^2)$ with $\mathbf{H}$
+$(2/\ell)(\|\mathbf{H}\|_{\mathsf{F}}^2 - \sum_i \mathbf{H}_{i,i}^2)$ with $\mathbf{H}$
 the symmetric part of $\mathbf{B}$. -/
 private theorem integral_girardHutchinson_sub_trace_sq_of_hasLaw_rademacherMatrix [Nonempty t]
     {G : Ω → Matrix n t ℝ} (hG : HasLaw (fun ω => (G ω)ᴴ) (rademacherMatrix t n) μ)

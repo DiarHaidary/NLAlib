@@ -17,7 +17,7 @@ public import NLAlib.RandomMatrix.Haar.Transfer
 Epperly and Webber's sharp factor for rotation-invariant test matrices,
 `NLAlib.rotationInvariantFactor r l q`, <!-- value rotationInvariantFactor r \ell q -->
 $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$, is HMT's factor times
-$\frac{r - \ell}{r - q}$, with $r$ a bound on the rank, $\ell$ the number of samples and $q$ the
+$(r - \ell)/(r - q)$, with $r$ a bound on the rank, $\ell$ the number of samples and $q$ the
 comparison rank. It is computed on the matrix
 $\mathbf{D} = \operatorname{diag}(a\mathbf{I}_s, b\mathbf{I}_t)$ with two eigenvalues: for a test
 matrix with a left unitarily invariant law and full column rank almost surely, the expected trace
@@ -54,7 +54,7 @@ $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$: the sharp expected squared Fr
 the randomized SVD, relative to the best rank-$q$ error, over matrices of rank $r$ and full-rank
 rotation-invariant test matrices with $\ell$ columns, and the sharp expected trace error of
 randomized Nyström relative to $\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$. It is HMT's
-factor times $\frac{r - \ell}{r - q}$. A plain definition, because its body is the source's formula.
+factor times $(r - \ell)/(r - q)$. A plain definition, because its body is the source's formula.
 Junk: $0$ at $r = q$ (Lean's $x/0 = 0$), and HMT's factor is junk at $\ell = q + 1$; theorems carry
 $q + 2 \le \ell \le r$. [EpperlyWebber2026, Theorems 3.2, 3.3]; there with
 $\alpha_{\mathbb{R}} = 1$ in place of the $1$ in $\ell - q - 1$, and a minimum over $q$. -/
@@ -79,7 +79,7 @@ theorem rotationInvariantFactor_nonneg {r l q : ℕ} (hq : q + 2 ≤ l) (hl : l 
 
 /-- Epperly and Webber's factor is at most HMT's, <!-- value gaussianProjectionFactor q \ell -->
 $1 + q/(\ell - q - 1)$ (the Lean name is `gaussianProjectionFactor q l`), for
-$q + 2 \le \ell \le r$: the factor $\frac{r - \ell}{r - q}$ is at most one. -/
+$q + 2 \le \ell \le r$: the factor $(r - \ell)/(r - q)$ is at most one. -/
 theorem rotationInvariantFactor_le_gaussianProjectionFactor {r l q : ℕ} (hq : q + 2 ≤ l)
     (hl : l ≤ r) : rotationInvariantFactor r l q ≤ gaussianProjectionFactor q l := by
   have hq' : (q : ℝ) + 2 ≤ l := by exact_mod_cast hq
@@ -91,7 +91,7 @@ theorem rotationInvariantFactor_le_gaussianProjectionFactor {r l q : ℕ} (hq : 
 
 /-- Epperly and Webber's factor increases with the rank parameter: for
 $q + 2 \le \ell \le r \le r'$ the factor at $r$ is at most the factor at $r'$, since
-$\frac{r - \ell}{r - q} = 1 - \frac{\ell - q}{r - q}$. -/
+$(r - \ell)/(r - q) = 1 - (\ell - q)/(r - q)$. -/
 theorem rotationInvariantFactor_le_rotationInvariantFactor {r r' l q : ℕ} (hq : q + 2 ≤ l)
     (hl : l ≤ r) (hr : r ≤ r') :
     rotationInvariantFactor r l q ≤ rotationInvariantFactor r' l q := by
@@ -127,7 +127,7 @@ $a, b \ge 0$, <!-- value rotationInvariantFactor r \ell q -->
 $$\mathbb{E}\bigl\|\mathbf{D} - \mathsf{nystrom}(\mathbf{D}, \mathbf{Y})\bigr\|_* \le
 \frac{r - \ell}{r - q}\Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)\,b\,\lvert t\rvert,\qquad
 \mathbf{D} = \begin{bmatrix} a\mathbf{I} & \mathbf{0} \\ \mathbf{0} & b\mathbf{I}\end{bmatrix},$$
-that is $b(r - \ell)(1 + \frac{q}{\ell-q-1})$; $b\lvert t\rvert$ is the best rank-$q$ trace error
+that is $b(r - \ell)(1 + q/(\ell-q-1))$; $b\lvert t\rvert$ is the best rank-$q$ trace error
 when $a \ge b$. No hypothesis $\ell \le r$: the full-rank hypothesis forces it (for $r < \ell$ the
 statement is vacuous, not false). [EpperlyWebber2026, Lemma 6.2]; there the limit as
 $a \to \infty$ (an equality) for $a > b > 0$, here the upper bound at every $a, b \ge 0$.

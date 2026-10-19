@@ -31,8 +31,8 @@ Degree and error remain separate, so the same metric approximation interface ser
   `NLAlib.residualMinimax_Icc`; its weighted least-squares dual on a finite set is in
   `NLAlib.Polynomial.Chebyshev.ResidualMinimax`.
 * `NLAlib.inv_eval_T_real_eq_two_mul_pow_div`: the Chebyshev value
-  $T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1} = \frac{2\rho^q}{1 + \rho^{2q}}$ in
-  $\rho = \frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}$.
+  $T_q\bigl((a' + a)/(a' - a)\bigr)^{-1} = 2\rho^q/(1 + \rho^{2q})$ in
+  $\rho = (\sqrt{a'/a} - 1)/(\sqrt{a'/a} + 1)$.
 * `NLAlib.exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow`: a residual polynomial that
   kills finitely many outliers and decays at the Chebyshev rate on an interval.
 * `NLAlib.chebyshevExtremum`, `NLAlib.chebyshevWeight`: the $q + 1$ points where the normalised
@@ -236,7 +236,7 @@ theorem residualMinimax_le {s : Set ℝ} {q : ℕ} {p : ℝ[X]} (hp : p.degree �
   · exact Real.iSup_le (fun x => Real.iSup_le (fun hx => hη x hx) hη₀) hη₀
 
 /-- **The minimax value of an interval is the Chebyshev value**: for $0 < a < a'$,
-$\mathsf{residualMinimax}([a, a'], q) = T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1}$.
+$\mathsf{residualMinimax}([a, a'], q) = T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$.
 [Saad2003, Theorem 6.25]. -/
 theorem residualMinimax_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
     residualMinimax (Set.Icc a a') q = ((T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)))⁻¹ := by
@@ -376,8 +376,8 @@ theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow {a a' : ℝ} (
 /-! ### Chebyshev extrema and the dual weights -/
 
 /-- The $k$-th **Chebyshev extremum** on $[a, a']$ at degree $q$:
-$\xi_k = \frac{a' + a}{2} - \frac{a' - a}{2}\cos\frac{k\pi}{q}$, increasing in $k = 0, \dots, q$,
-where the normalised Chebyshev residual takes the values $\pm T_q(\frac{a' + a}{a' - a})^{-1}$
+$\xi_k = (a' + a)/2 - ((a' - a)/2)\cos(k\pi/q)$, increasing in $k = 0, \dots, q$,
+where the normalised Chebyshev residual takes the values $\pm T_q((a' + a)/(a' - a))^{-1}$
 alternately. Junk value: for $q = 0$ it is $a$. -/
 noncomputable def chebyshevExtremum (a a' : ℝ) (q k : ℕ) : ℝ :=
   (a' + a) / 2 - (a' - a) / 2 * Real.cos (k * Real.pi / q)
@@ -418,7 +418,7 @@ private lemma chebyshevResidual_arg_chebyshevExtremum {a a' : ℝ} (haa : a < a'
   ring
 
 /-- **The residual alternates at the extrema**: for $a < a'$ and $k \le q$,
-$p_q(\xi_k) = (-1)^k T_q\bigl(\frac{a' + a}{a' - a}\bigr)^{-1}$ for $p_q$ =
+$p_q(\xi_k) = (-1)^k T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$ for $p_q$ =
 `chebyshevResidual a a' q`. -/
 theorem eval_chebyshevResidual_chebyshevExtremum {a a' : ℝ} (haa : a < a')
     {q k : ℕ} (hk : k ≤ q) :
@@ -448,7 +448,7 @@ private lemma eval_lagrangeBasis_ofReal_zero {𝕜 : Type*} [RCLike 𝕜] {ι : 
     RCLike.ofReal_zero]
 
 /-- The Lagrange basis at the Chebyshev extrema has $\ell_k(0) = (-1)^k\omega_k$: the nodes are
-positive and increasing, so $\ell_k(0) = \prod_{j \ne k}\frac{\xi_j}{\xi_j - \xi_k}$ has $k$
+positive and increasing, so $\ell_k(0) = \prod_{j \ne k}\xi_j/(\xi_j - \xi_k)$ has $k$
 negative factors. -/
 private lemma eval_lagrangeBasis_chebyshevExtremum_zero {a a' : ℝ} (ha : 0 < a) (haa : a < a')
     {q : ℕ} (k : Fin (q + 1)) :
@@ -502,7 +502,7 @@ theorem sum_neg_one_pow_mul_chebyshevWeight_mul_eval {𝕜 : Type*} [RCLike 𝕜
     eval_lagrangeBasis_chebyshevExtremum_zero ha haa, mul_comm]
 
 /-- **The dual weights sum to the Chebyshev value**: for $0 < a < a'$,
-$\sum_k \omega_k = T_q\bigl(\frac{a' + a}{a' - a}\bigr)$. -/
+$\sum_k \omega_k = T_q\bigl((a' + a)/(a' - a)\bigr)$. -/
 theorem sum_chebyshevWeight {a a' : ℝ} (ha : 0 < a) (haa : a < a') (q : ℕ) :
     ∑ k : Fin (q + 1), chebyshevWeight a a' q k = (T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)) := by
   have hT : 0 < (T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)) :=

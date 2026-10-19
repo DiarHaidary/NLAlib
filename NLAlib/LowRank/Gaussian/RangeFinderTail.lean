@@ -133,7 +133,7 @@ private theorem measureReal_le_of_frame (A : Matrix m n ℝ) (hX : HasLaw X (gau
 /-- The reduction of the (RSVD1) tails to the Frobenius block tail: a statistic $F$ bounded, under
 the rank hypothesis, by $b + c\|\mathbf{M}\|_{\mathsf{F}}^2$ for the noise term $\mathbf{M}$ of the
 structural bound, and by $b$ when the error vanishes, exceeds
-$b + c\,\frac{utk}{d}\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at
+$b + c\,(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at
 most <!-- value gaussianPinvFrobTail k d t -->
 $e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
 `gaussianPinvFrobTail k d t`). -/

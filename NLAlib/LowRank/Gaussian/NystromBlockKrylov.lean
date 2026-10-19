@@ -262,7 +262,7 @@ $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \l
 \sigma_r(\mathbf{H})\exp\biggl(\frac{1}{16(q-1)^2}\log^2\biggl(4\Bigl(1 + \frac{r}{\ell - r - 1}\,
 \frac{\|\mathbf{H}^{1/2} - \llbracket\mathbf{H}^{1/2}\rrbracket_r\|_{\mathsf{F}}^2}
 {\sigma_r(\mathbf{H}^{1/2})^2}\Bigr)\biggr)\biggr)\,,$$
-where the ratio is $1 + \frac{r}{\ell - r - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*/
+where the ratio is $1 + (r/(\ell - r - 1))\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*/
 \sigma_r(\mathbf{H})$ (`Matrix.PosSemidef.rangeFinderTailRatio_sqrt`). By the Gram correspondence
 from `NLAlib.integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix` at
 $\mathbf{H}^{1/2}$. [TroppWebber2023, Theorem 9.1 (NysBKI)]; there on the squared error with the

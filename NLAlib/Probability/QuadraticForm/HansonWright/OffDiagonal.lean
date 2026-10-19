@@ -127,7 +127,7 @@ private lemma sum_cut_weight [DecidableEq n] (i j : n) :
 
 /-- The off-diagonal form is four times the average of the cut forms:
 $\sum_\delta 2^{-\lvert n\rvert}\, \mathbf{x}^{\mathsf{T}}\mathbf{A}_\delta\mathbf{x}
-= \frac14\, \mathbf{x}^{\mathsf{T}}(\mathbf{A} - \operatorname{diag}(\mathbf{A}))\mathbf{x}$. -/
+= (1/4)\, \mathbf{x}^{\mathsf{T}}(\mathbf{A} - \operatorname{diag}(\mathbf{A}))\mathbf{x}$. -/
 private lemma sum_quadForm_cut [DecidableEq n] (A : Matrix n n ℝ) (x : n → ℝ) :
     ∑ δ : n → Bool, (1 / 2 : ℝ) ^ Fintype.card n * quadForm (cut A δ) x =
       1 / 4 * quadForm (A - Matrix.diagonal A.diag) x := by

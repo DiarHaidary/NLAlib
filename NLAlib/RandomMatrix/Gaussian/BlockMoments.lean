@@ -70,7 +70,7 @@ $1 + k/(l - k - 1)$ (casts to $\mathbb{R}$). For a
 real $k \times l$ standard Gaussian matrix $\mathbf{G}$ it is
 $1 + \mathbb{E}\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$, the factor in front of the optimal Frobenius
 error in the expected error of the randomized SVD [HalkoMartinssonTropp2011, Theorem 10.5], and
-in Gaussian sketch-and-solve it is the completion factor $1 + \frac{q}{p - q - 1}$. Junk for
+in Gaussian sketch-and-solve it is the completion factor $1 + q/(p - q - 1)$. Junk for
 $l \le k + 1$, where the denominator is at most $0$ (and Lean's $x/0 = 0$ at $l = k + 1$);
 theorems carry `k + 2 ≤ l`. A plain definition, because its body is the source's formula. -/
 noncomputable def gaussianProjectionFactor (k l : ℕ) : ℝ := 1 + (k : ℝ) / ((l : ℝ) - k - 1)

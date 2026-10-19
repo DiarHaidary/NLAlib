@@ -383,7 +383,7 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_of_rank_eq (Φ : Sy
   linarith
 
 /-- For matrices of equal rank, $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_2
-\le \frac{1 + \sqrt{5}}{2} \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2$.
+\le ((1 + \sqrt{5})/2) \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2$.
 [Wedin1973]; [StewartSun1990, Theorem III.3.9].
 Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_mul_of_rank_eq`. -/
 theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq {A B : Matrix m n 𝕜}

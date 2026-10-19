@@ -243,7 +243,7 @@ $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 
 \le 4\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2q}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
 the square of the classical
-$\|\mathbf{e}_q\|_{\mathbf{A}} \le 2\bigl(\frac{\sqrt\kappa - 1}{\sqrt\kappa + 1}\bigr)^q
+$\|\mathbf{e}_q\|_{\mathbf{A}} \le 2\bigl((\sqrt\kappa - 1)/(\sqrt\kappa + 1)\bigr)^q
 \|\mathbf{e}_0\|_{\mathbf{A}}$. A Loewner sandwich gives the hypotheses by
 `isHermitian_of_le_smul_one` and `spectrum_subset_Icc_of_le`.
 [Saad2003, Theorem 6.29]; [TrefethenBau1997, Theorem 38.5]; stated there for the extreme

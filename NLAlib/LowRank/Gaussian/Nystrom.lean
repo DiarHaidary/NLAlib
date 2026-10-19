@@ -401,7 +401,7 @@ the spectrum decays past $k$.
 Direct form at `truncatedSVD`:
 `Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`.
 [TroppYurtseverUdellCevher2017a, Theorem 4.2 (4.4)]; there
-$2(1 + \frac{q}{\ell - q - 1})\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$ in place of the
+$2(1 + q/(\ell - q - 1))\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$ in place of the
 last two terms and a minimum over $q$.
 Result: randomized-nystrom-expected-error -/
 theorem
@@ -440,7 +440,7 @@ at $q = k$ it is dominated by
 `Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_hasLaw_gaussianMatrix`, and for
 $q > k$ the two are incomparable, this one better when the spectrum decays past $k$.
 [TroppYurtseverUdellCevher2017a, Theorem 4.2 (4.4)]; there
-$2(1 + \frac{q}{\ell - q - 1})\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$ in place of the
+$2(1 + q/(\ell - q - 1))\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*$ in place of the
 last two terms and a minimum over $q$.
 Result: randomized-nystrom-expected-error -/
 theorem

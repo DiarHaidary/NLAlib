@@ -449,8 +449,8 @@ $k \ge 1$ columns with $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket
 c^2\sigma_{k-1}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z})^2\}$ and $0 < \theta < 1$, with
 $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$ and $\mathbf{S} = c\mathbf{\Omega}$,
 $\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
-\frac{\|\mathbf{E}\|_{\mathsf{F}}^2 + \sqrt{k}\,w}{1 - \theta}a^{-1} +
-\frac{\chi^2}{\theta(1-\theta)}a^{-2}$, $w = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}
+((\|\mathbf{E}\|_{\mathsf{F}}^2 + \sqrt{k}\,w)/(1 - \theta))a^{-1} +
+(\chi^2/(\theta(1-\theta)))a^{-2}$, $w = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}
 \mathbf{E}^{\mathsf{H}} - \mathbf{E}\mathbf{E}^{\mathsf{H}}\|_{\mathsf{F}}$,
 $\chi = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}\mathbf{Z}\|_{\mathsf{F}}$. The projector is
 that of the unnormalised sketch, so no scale equivariance of the truncation is needed. -/

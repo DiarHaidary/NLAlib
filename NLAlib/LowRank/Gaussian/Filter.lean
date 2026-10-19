@@ -60,7 +60,7 @@ with the nested frames of
 $\mathbf{M} = (\mathbf{B}\mathbf{V})(\mathbf{V}^{\mathsf{H}}\mathbf{X})
 (\mathbf{Z}^{\mathsf{H}}\mathbf{X})^{+}$,
 $\mathbf{B} = \mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})$, has
-$\mathbb{E}\|\mathbf{M}\|_{\mathsf{F}}^2 \le a^2 \frac{t}{\ell - t - 1}
+$\mathbb{E}\|\mathbf{M}\|_{\mathsf{F}}^2 \le a^2 (t/(\ell - t - 1))
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2$ and bounds, almost surely, the
 Gram-form error and the head capture of the deterministic filtered range finder. -/
 private theorem exists_filter_residual [DecidableEq m] (A : Matrix m n ℝ)

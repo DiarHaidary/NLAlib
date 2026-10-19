@@ -866,7 +866,7 @@ $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rr
 \Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,.$$
 Better than
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`'s
-$1 + \frac{q}{\ell-q-1}$ by the factor $\frac{r-\ell}{r-q}$. Incomparable with
+$1 + q/(\ell-q-1)$ by the factor $(r-\ell)/(r-q)$. Incomparable with
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant` at
 $q = k$ as well: better iff $(r-\ell)(\ell-1) < k(r-k)$, that is for rank close to $\ell$ (at
 $r = \ell$ it gives the best rank-$k$ error with constant one); for $q > k$ better when the tail

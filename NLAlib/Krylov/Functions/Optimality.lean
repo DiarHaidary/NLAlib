@@ -27,7 +27,7 @@ is optimal too [ChenPersson2026, Remark 3].
 
 Behind both is one statement for a fixed shift and any norm $\nu(\mathbf{A})$: for any two
 eigenvalues $x_1, x_2$, the ratio of squared errors comes arbitrarily close to
-$(R + 1)^2/(4R)$, $R = \frac{\nu(x_1)(x_2 + s)}{\nu(x_2)(x_1 + s)}$, which is the factor of
+$(R + 1)^2/(4R)$, $R = \nu(x_1)(x_2 + s)/(\nu(x_2)(x_1 + s))$, which is the factor of
 `Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure` for the
 measure $\delta_s$ when $x_1, x_2$ maximise $R$. So that theorem is optimal for every $\nu$ and
 every $s \ge 0$.
@@ -403,7 +403,7 @@ $$(1 - \eta)^2\,\frac{(R + 1)^2}{4R}\,\|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{
 \le \|\mathbf{e}\|_{\nu(\mathbf{A})}^2 \,, \qquad
 R = \frac{\nu(x_1)(x_2 + s)}{\nu(x_2)(x_1 + s)} \,,$$
 written in the statement as
-$\frac{(\nu(x_1)(x_2 + s) + \nu(x_2)(x_1 + s))^2}{4\,\nu(x_1)(x_2 + s)\,\nu(x_2)(x_1 + s)}$.
+$(\nu(x_1)(x_2 + s) + \nu(x_2)(x_1 + s))^2/(4\,\nu(x_1)(x_2 + s)\,\nu(x_2)(x_1 + s))$.
 For the pair maximising $R$ this is the factor of
 `Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure` for
 $\mu = \delta_s$: the near-optimality factor cannot be improved, for any $\nu$ and any $s$.
@@ -500,7 +500,7 @@ $$\theta\Bigl(\frac{\kappa^{E/2} + \kappa^{-E/2}}{2}\Bigr)^2 \le
 \frac{(\varphi(a) + \varphi(a'))^2}{4\varphi(a)\varphi(a')} \,:$$
 $s = 0$ if $\alpha \le 1/2$ (then $\varphi(a)/\varphi(a') = \kappa^E$), and
 $s = a'/(1 - \theta)$ if $\alpha > 1/2$ (then $\varphi(a')/\varphi(a) =
-\kappa^\alpha\frac{a + s}{a' + s}$ with $\theta \le \frac{a + s}{a' + s} \le 1$). -/
+\kappa^\alpha(a + s)/(a' + s)$ with $\theta \le (a + s)/(a' + s) \le 1$). -/
 private theorem exists_mul_sq_le_rpow {a a' : ℝ} (ha : 0 < a) (haa : a < a') (α : ℝ) {θ : ℝ}
     (hθ : 0 < θ) (hθ₁ : θ < 1) :
     ∃ s : ℝ, 0 ≤ s ∧

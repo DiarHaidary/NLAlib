@@ -160,7 +160,7 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeas
   linarith
 
 /-- The arithmetic of the $(1 + \varepsilon)$ form: for $0 < x \le 1/8$,
-$\frac{1 + x}{(1 - x)^2} + \frac{x}{(1 - x)^3} \le 1 + 8x$. -/
+$(1 + x)/((1 - x)^2) + x/((1 - x)^3) \le 1 + 8x$. -/
 private theorem one_add_div_sq_add_div_cube_le {x : ℝ} (hx : 0 < x) (hx1 : x ≤ 1 / 8) :
     (1 + x) / (1 - x) ^ 2 + x / (1 - x) ^ 3 ≤ 1 + 8 * x := by
   have h1 : 0 < 1 - x := by linarith
@@ -173,8 +173,8 @@ private theorem one_add_div_sq_add_div_cube_le {x : ℝ} (hx : 0 < x) (hx1 : x �
 omit [Fintype p] [DecidableEq m] [DecidableEq n] in
 /-- **Early truncation to relative error, any optimal projector**: with injection constant
 $1 - \varepsilon/8$ and $0 < \varepsilon \le 1$, if the tail–tail error exceeds
-$\frac{\varepsilon}{8\sqrt{k}}\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at most $\delta_w$
-and the tail–head error exceeds $\frac{\varepsilon}{8}\|\mathbf{E}\|_{\mathsf{F}}$ with probability
+$(\varepsilon/(8\sqrt{k}))\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at most $\delta_w$
+and the tail–head error exceeds $(\varepsilon/8)\|\mathbf{E}\|_{\mathsf{F}}$ with probability
 at most $\delta_\chi$, $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$, then for every
 random orthogonal projector $\mathbf{P}$ of rank at most $k$ with
 $\|\mathbf{A}\mathbf{\Omega} - \mathbf{P}\mathbf{A}\mathbf{\Omega}\|_{\mathsf{F}} \le
