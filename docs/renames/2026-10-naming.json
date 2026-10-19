@@ -1568,6 +1568,41 @@
    "new": "NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant",
    "rule": "T15",
    "removed": true
+  },
+  {
+   "old": "NLAlib.norm_fderiv_le_of_norm_iteratedFDeriv_two_le",
+   "new": "norm_fderiv_le_of_norm_iteratedFDeriv_two_le",
+   "rule": "P5"
+  },
+  {
+   "old": "NLAlib.norm_sub_le_of_norm_iteratedFDeriv_two_le",
+   "new": "norm_sub_le_of_norm_iteratedFDeriv_two_le",
+   "rule": "P5"
+  },
+  {
+   "old": "NLAlib.apply_eq_sum_mul_apply_single",
+   "new": "apply_eq_sum_mul_apply_single",
+   "rule": "P5"
+  },
+  {
+   "old": "NLAlib.contDiff_two_of_hasFDerivAt_sum_smul_proj",
+   "new": "contDiff_two_of_hasFDerivAt_sum_smul_proj",
+   "rule": "P5"
+  },
+  {
+   "old": "NLAlib.fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj",
+   "new": "fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj",
+   "rule": "P5"
+  },
+  {
+   "old": "NLAlib.norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj",
+   "new": "norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj",
+   "rule": "P5"
+  },
+  {
+   "old": "NLAlib.hasFDerivAt_exp_mul_apply_sum_smul_proj",
+   "new": "hasFDerivAt_exp_mul_apply_sum_smul_proj",
+   "rule": "P5"
   }
  ],
  "statementChanged": [

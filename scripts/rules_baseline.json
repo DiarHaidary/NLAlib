@@ -148,9 +148,6 @@
    "NLAlib/LowRank/Structural/Truncation.lean": 2,
    "NLAlib/Matrix/Factorizations/NystromOrder.lean": 1
   },
-  "P5": {
-   "NLAlib/ForMathlib/Analysis/Calculus/ContDiff/Hessian.lean": 7
-  },
   "P8": {
    "NLAlib/Matrix/Basic/Projector.lean": 1,
    "NLAlib/Matrix/Functions/Complexification.lean": 1,
