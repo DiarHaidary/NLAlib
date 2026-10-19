@@ -65,8 +65,8 @@ theorem integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian (hg : HasLaw g (s
   exact (hg.integrable_comp_iff hf.continuous.aestronglyMeasurable).2
     (hasLogSobolev_stdGaussian.integrable_of_lipschitzWith hf)
 
-/-- **Gaussian concentration of Lipschitz functions** ([BoucheronLugosiMassart2013],
-Theorem 5.6): for $\mathbf{g}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
+/-- **Gaussian concentration of Lipschitz functions** ([BoucheronLugosiMassart2013,
+Theorem 5.6]): for $\mathbf{g}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
 $f(\mathbf{g}) - \mathbb{E} f(\mathbf{g})$ is sub-Gaussian with proxy $L^2$.
 Result: gaussian-lipschitz-concentration -/
 theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian

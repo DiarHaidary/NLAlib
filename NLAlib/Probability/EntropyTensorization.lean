@@ -440,7 +440,7 @@ private theorem integral_entropy_update (i : ι) {g : (∀ j, X j) → ℝ}
 
 end Nonneg
 
-/-- **Tensorization of entropy** ([BoucheronLugosiMassart2013], Theorem 4.10): the entropy of a
+/-- **Tensorization of entropy** ([BoucheronLugosiMassart2013, Theorem 4.10]): the entropy of a
 function under a product of probability measures is at most the sum over coordinates of the
 mean entropy in that coordinate, the others fixed. For $f \ge 0$ measurable with $f$ and
 $f \log f$ integrable under $\nu = \bigotimes_i \nu_i$,

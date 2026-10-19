@@ -152,7 +152,7 @@ private theorem integral_exp_mul_le_exp_of_entropy_le [IsProbabilityMeasure μ] 
   calc M s = rexp (Real.log (M s)) := (Real.exp_log (hMpos s)).symm
     _ ≤ _ := Real.exp_le_exp.mpr hlog
 
-/-- **Herbst's argument** ([BoucheronLugosiMassart2013], Proposition 6.1): under a probability
+/-- **Herbst's argument** ([BoucheronLugosiMassart2013, Proposition 6.1]): under a probability
 measure, if $e^{s f}$ is integrable and
 $\operatorname{Ent}(e^{s f}) \le (c s^2/2)\, \mathbb{E} e^{s f}$ for every real $s$, then
 $f - \mathbb{E} f$ is sub-Gaussian with proxy $c$. The hypothesis for $s > 0$ gives the upper

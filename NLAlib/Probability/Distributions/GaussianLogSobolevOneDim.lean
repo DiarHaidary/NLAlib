@@ -314,7 +314,7 @@ private lemma entropy_comp_sum_le {ι : Type*} [Fintype ι] {g : ℝ → ℝ}
 
 /-- **Gross's logarithmic Sobolev inequality** on $\mathbb{R}$ for a compactly supported $C^1$
 function: $\operatorname{Ent}_\gamma(g^2) \le 2\, \mathbb{E}_\gamma[g'^2]$ for the standard Gaussian
-$\gamma$ ([BoucheronLugosiMassart2013], Theorem 5.4, whose proof by random signs and the central
+$\gamma$ ([BoucheronLugosiMassart2013, Theorem 5.4], whose proof by random signs and the central
 limit theorem is followed here). The
 general integrable form is `NLAlib.entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal`.
 Port: the old library's `entropy_sq_le_two_mul_integral_sq_deriv_gaussianReal_of_hasCompactSupport`,
