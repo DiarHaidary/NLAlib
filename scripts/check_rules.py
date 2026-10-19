@@ -799,6 +799,8 @@ def v_stale_names(c):
         full = c.contrib if path == 'CONTRIBUTING.md' else c.deviations
         for row in text.split('\n'):
             for tok in re.findall(r'`([^`]+)`', row):
+                if re.search(r'/|\.(py|lean|toml|md|json|mjs|sh|bib)\b', tok):
+                    continue  # a path or a file name, not a declaration
                 for name in re.findall(r"(?:^|[\s(])((?:[A-Za-z_][\w'.₀-₉]*\.)*[a-z][\w'₀-₉]*_[\w'₀-₉]+)",
                                        tok):
                     short = name.split('.')[-1]

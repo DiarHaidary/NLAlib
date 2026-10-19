@@ -313,6 +313,14 @@ class RuleTests(unittest.TestCase):
                 self.assertTrue(violations(rid, bad), f'{rid}: the bad fixture passes')
                 self.assertEqual([v.text() for v in violations(rid, good)], [], f'{rid}: the good fixture fails')
 
+    def test_every_rule_is_cited_where_it_is_stated(self):
+        # CONTRIBUTING §9.2: each rule's prose cites its id, as its messages do
+        import re
+        text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
+        cited = {x.strip() for m in re.finditer(r'\[((?:[A-Z]\d+)(?:,\s*[A-Z]\d+)*)\]', text)
+                 for x in m.group(1).split(',')}
+        self.assertEqual(set(RULES) - cited, set())
+
     def test_message_shape(self):
         v = violations('S1', FIX['S1'][0])[0].text()
         self.assertRegex(v, r'^S1 NLAlib/Matrix/A\.lean:\d+ \S+: `simp_all`')

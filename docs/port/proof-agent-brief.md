@@ -64,7 +64,10 @@ Two agents may be working on this machine at once, each on its own file. Memory 
 
 `lake lean` on your file prints nothing: no errors, no warnings (including "declaration uses
 sorry" and the `unusedFintypeInType`, `unusedArguments`, `unusedSectionVars`, style and long-line
-linters). Lines are at most 100 characters.
+linters). Lines are at most 100 characters, except one that a single identifier or URL makes long
+(CONTRIBUTING §3, S7). `python3 scripts/check_rules.py --files <your files>` prints no error: its
+messages cite the rule id (CONTRIBUTING §9.1) and say how to fix it; list its warnings in your
+report. A `Proof:` line goes from a docstring when its proof lands (D8).
 
 ## Report (your final message)
 

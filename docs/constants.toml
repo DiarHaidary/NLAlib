@@ -16,7 +16,8 @@
 #              are the definition's; each docstring passes its own (`k \ell`, `(\varepsilon/2)`).
 #   latex      template of the current value: inline LaTeX in CONTRIBUTING §6 notation (`/` rather
 #              than `\frac`), placeholders `#1`…`#9` never followed by a letter. `C` in a sample
-#              size is the constant it uses, whose value the same docstring shows (`$C = 1/64$`).
+#              size is the constant it uses, whose value the same docstring shows (`$C = 1/64$`,
+#              the one symbol CONTRIBUTING §5.2 rule 2 allows).
 #   display    optional: the same value with `\frac`, accepted (besides `latex`) in a `$$…$$`
 #              display.
 #   lean_body  the definition from its name to its end, whitespace-normalised: the text `latex`
