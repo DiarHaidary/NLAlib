@@ -68,12 +68,6 @@
    "NLAlib/ForMathlib/LinearAlgebra/Matrix/PosDef.lean": 3,
    "NLAlib/ForMathlib/LinearAlgebra/Matrix/Rank.lean": 1,
    "NLAlib/LowRank/Structural/RangeFinder.lean": 3,
-   "NLAlib/Polynomial/Approximation/AnalyticApproximation.lean": 2,
-   "NLAlib/Polynomial/Approximation/AnalyticCoefficients.lean": 1,
-   "NLAlib/Polynomial/Approximation/ChebyshevTruncation.lean": 1,
-   "NLAlib/Polynomial/Approximation/Inverse.lean": 1,
-   "NLAlib/Polynomial/Approximation/Jackson.lean": 1,
-   "NLAlib/Polynomial/Chebyshev/Residual.lean": 3,
    "NLAlib/Probability/QuadraticForm/Moments.lean": 2
   },
   "D2": {

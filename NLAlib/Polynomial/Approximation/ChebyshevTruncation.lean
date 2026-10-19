@@ -73,7 +73,8 @@ private lemma exists_finite_T_expansion {p : 𝕜[X]} {N : ℕ}
   rw [hset] at hmem
   exact (Submodule.mem_span_image_finset_iff_exists_fun' 𝕜).mp hmem
 
-/-- Every polynomial of degree at most $N$ is recovered by its degree-$N$ Chebyshev truncation.
+/-- **Chebyshev truncation reproduces polynomials.** Every polynomial of degree at most $N$ is
+recovered by its degree-$N$ Chebyshev truncation.
 This finite-basis consequence of [Trefethen2019, p. 16 and Exercise 3.7] is generalized to
 RCLike coefficients using Mathlib's polynomial-sequence span and Chebyshev orthogonality.
 It includes zero polynomials and $N=0$; polynomial continuity supplies integrability.

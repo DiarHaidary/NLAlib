@@ -157,7 +157,8 @@ private lemma complex_coeff_radius {F : ℂ → ℂ} {ρ r M : ℝ} (hρ : 1 < �
   rw [mul_div_assoc]
   linarith
 
-/-- A compatible extension holomorphic and bounded by $M$ on the OPEN Bernstein ellipse gives
+/-- **Chebyshev coefficient decay for analytic functions.** A compatible extension holomorphic
+and bounded by $M$ on the OPEN Bernstein ellipse gives
 $$\|a_k\|\le\frac{2M}{\rho^k}\quad(k>0).$$
 [Trefethen2019, Theorem 8.1], generalized to RCLike values via the compatible complex extension.
 The proof takes smaller radii up to $\rho$; no outer-boundary continuity is assumed. The zero

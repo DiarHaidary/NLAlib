@@ -85,8 +85,9 @@ private lemma geometric_tail {ρ M : ℝ} (hρ : 1 < ρ) (N : ℕ) :
     simp only [inv_pow]
     field_simp
 
-/-- With a compatible extension holomorphic and bounded by $M$ on the OPEN Bernstein ellipse,
-the canonical degree-$N$ truncation satisfies
+/-- **Chebyshev truncation error for analytic functions.** With a compatible extension
+holomorphic and bounded by $M$ on the OPEN Bernstein ellipse, the canonical degree-$N$
+truncation satisfies
 $$\|p_N(x)-f(x)\|\le\frac{2M}{\rho^N(\rho-1)}\quad(x\in[-1,1]).$$
 [Trefethen2019, Theorem 8.2, Eq. (8.2)], generalized to RCLike values. Every $N\ge0$ and
 $M=0$ are included. No continuous extension to the ellipse boundary is required.
@@ -124,7 +125,8 @@ theorem isUniformApproxOn_chebyshevTrunc_of_open_ellipse
   rw [dist_eq_norm, norm_sub_rev, herr]
   exact tsum_of_norm_bounded (geometric_tail hρ N) ht
 
-/-- On $[a,b]$ with $a<b$, a compatible extension of the affine pullback of $f$, holomorphic
+/-- **Polynomial approximation of analytic functions on an interval.** On $[a,b]$ with $a<b$,
+a compatible extension of the affine pullback of $f$, holomorphic
 and bounded by $M$ on the open Bernstein ellipse, gives a polynomial of degree at most $N$
 with uniform error $2M/(\rho^N(\rho-1))$.
 An affine-rescaling corollary of [Trefethen2019, Theorem 8.2], generalized to RCLike values.

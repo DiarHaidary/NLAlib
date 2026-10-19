@@ -95,7 +95,7 @@ theorem eval_chebyshevResidual_zero {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a 
     linarith)
   rw [eval_chebyshevResidual, mul_zero, sub_zero, div_self (by linarith)]
 
-/-- On $[a,b]$, where $0<a<b$, the residual satisfies
+/-- **Chebyshev residual bound.** On $[a,b]$, where $0<a<b$, the residual satisfies
 $$|r_q(x)|\le T_q((b+a)/(b-a))^{-1}.$$
 [Saad2003, Theorem 6.25 and following corollary].
 
@@ -121,7 +121,8 @@ theorem isUniformApproxOn_chebyshevResidual {a b : ℝ} (q : ℕ)
     ← one_div]
   exact div_le_div_of_nonneg_right (abs_eval_T_real_le_one _ hy) (by linarith)
 
-/-- For $0<a<b$, the uniform residual bound has geometric form
+/-- **Chebyshev residual bound (geometric form).** For $0<a<b$, the uniform residual bound has
+geometric form
 $$|r_q(x)|\le2\left(\frac{\sqrt b-\sqrt a}{\sqrt b+\sqrt a}\right)^q
 \quad(x\in[a,b]).$$
 At $q=0$ this remains valid with residual one and upper bound two.
@@ -194,8 +195,9 @@ theorem inv_eval_T_real_le_of_isUniformApproxOn
   rw [← one_div, div_le_iff₀ (by linarith)]
   exact h
 
-/-- Among polynomials of degree at most $q$ equal to one at zero, the least uniform bound
-on $[a,b]$, where $0<a<b$, is $T_q((b+a)/(b-a))^{-1}$. It is attained by
+/-- **Chebyshev minimax property of the residual.** Among polynomials of degree at most $q$
+equal to one at zero, the least uniform bound on $[a,b]$, where $0<a<b$, is
+$T_q((b+a)/(b-a))^{-1}$. It is attained by
 `chebyshevResidual`, including $q=0$ with optimum one.
 [Saad2003, Theorem 6.25 and following corollary].
 
