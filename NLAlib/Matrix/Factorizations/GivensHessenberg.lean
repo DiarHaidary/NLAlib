@@ -129,8 +129,7 @@ theorem givensHessenbergR_apply_eq_zero_of_add_two_lt {H : Matrix (Fin m) (Fin p
   exact (givensHessenbergState_snd_apply_eq_zero_of_add_two_lt hH' p).1 i j hij
 
 /-- **Nonzero pivots exactly at full column rank**: for upper Hessenberg $\mathbf{H}$ with
-$p \le m$, the diagonal of $\mathbf{R}$ has no zero iff $\mathbf{H}$ has full column rank.
-Proof: `isQR_givensHessenberg` and `IsQR`'s rank. -/
+$p \le m$, the diagonal of $\mathbf{R}$ has no zero iff $\mathbf{H}$ has full column rank. -/
 theorem forall_givensHessenbergR_apply_self_ne_zero_iff {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH : IsUpperHessenberg H) (h : p ≤ m) :
     (∀ i : Fin p, givensHessenbergR H (Fin.castLE h i) i ≠ 0) ↔ Function.Injective H.mulVec := by
@@ -234,10 +233,7 @@ pivots by `forall_givensHessenbergR_apply_self_ne_zero_iff`), the least-squares 
 $\mathbf{H}_k^{+}\mathbf{e}_0$ of the leading $(k + 1) \times k$ block is back substitution with
 the leading $k \times k$ block of the rotated matrix and the first $k$ entries of the rotated
 $\mathbf{e}_0$. Later steps do not change these blocks, so the problems of all sizes are solved
-along the way. [Saad2003, §6.5.3]; locator to verify.
-Proof: the rotations of steps $j < k$ touch rows $j, j + 1 \le k$ only, so the state restricted
-to the block is the Givens QR of the block; then `IsQR.isLeastSquaresSolution_backSubst` and
-uniqueness at full column rank. -/
+along the way. [Saad2003, §6.5.3]; locator to verify. -/
 theorem pinv_submatrix_mulVec_single_eq_backSubst {q : ℕ} {H : Matrix (Fin (q + 1)) (Fin q) 𝕜}
     (hH : IsUpperHessenberg H) {k : ℕ} (hk : k ≤ q)
     (hHk : Function.Injective

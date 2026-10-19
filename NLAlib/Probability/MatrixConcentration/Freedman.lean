@@ -85,18 +85,7 @@ with conditional matrix MGF bounds, the potential
 $\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$, with
 $\mathbf{Y}_k = \sum_{j<k} \mathbf{X}_j$, $\mathbf{W}_k = \sum_{j<k} \mathbf{A}_j$ and
 $\theta \in s$, is a supermartingale. Its integrability is a hypothesis here (it is derived in
-Freedman's inequality from boundedness). [Tropp2011, §2].
-Proof: adaptedness from `hX` and the $\mathcal{F}_j$-measurability of $\mathbf{A}_j$. One step
-suffices (`Supermartingale` from the one-step inequality and the tower property): with
-$\mathbf{H} = \theta \mathbf{Y}_k - g(\theta) \mathbf{W}_{k+1}$, $\mathcal{F}_k$-measurable
-because $\mathbf{A}_k$ is, `NLAlib.condExp_re_trace_exp_add_le` gives
-$\mathbb{E}[\operatorname{tr} e^{\mathbf{H} + \theta \mathbf{X}_k} \mid \mathcal{F}_k]
-\le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E}[e^{\theta \mathbf{X}_k} \mid \mathcal{F}_k]}$;
-the bound $\mathbb{E}[e^{\theta \mathbf{X}_k} \mid \mathcal{F}_k] \preceq
-e^{g(\theta) \mathbf{A}_k}$, almost surely positive definite, and the operator monotonicity of the
-logarithm give $\log \mathbb{E}[\ldots] \preceq g(\theta) \mathbf{A}_k$; then monotonicity of
-$\operatorname{tr} \exp$ (`Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le`) returns
-$\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$. Medium. -/
+Freedman's inequality from boundedness). [Tropp2011, §2]. -/
 theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθ : θ ∈ s)
     (hint : ∀ k, Integrable (fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
@@ -154,13 +143,7 @@ $\theta \in s$, $\theta > 0$ and $g(\theta) \ge 0$, with an integrable trace pot
 $$\mathbb{P}\bigl(\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
 \mathbf{W}_k \preceq w\mathbf{I}\bigr) \le \lvert n\rvert\, e^{-\theta t + g(\theta) w}\,.$$
 [Tropp2011, §2]; the martingale form of
-`NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp`.
-Proof: on the event the potential of `supermartingale_re_trace_exp` is at least
-$e^{\theta t - g(\theta) w}$
-($\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k \succeq \theta \mathbf{Y}_k - g(\theta) w\mathbf{I}$
-since $g(\theta) \ge 0$, and $\operatorname{tr} e^{\mathbf{M}} \ge e^{\lambda_0(\mathbf{M})}$);
-Ville's inequality (`MeasureTheory.Supermartingale.measureReal_exists_ge_le`) with the potential at
-$k = 0$ equal to $\operatorname{tr} \mathbf{I} = \lvert n\rvert$. Easy given the supermartingale. -/
+`NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp`. -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
     (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθs : θ ∈ s)
@@ -257,16 +240,6 @@ $$\mathbb{P}\Bigl(\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t
 conditional variance as the predictable quadratic variation, here over any `RCLike` field, any
 finite index type, with square-integrable increments. The source's constant. No hypothesis on
 $v$: for $v < 0$ the event is empty.
-Proof: case split $v < 0$ first (the event is empty, the left side is $0$); $t = 0$ (the right
-side is $\lvert n\rvert \ge 1$). Otherwise the conditional Bernstein bound
-`NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`, the master tail
-`NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le` at $w = v$ with
-$\theta$ from P5a's `NLAlib.exists_bernstein_exponent` (which needs $0 \le v$); on the event
-$\|\mathbf{W}_k\|_2 \le v$ gives $\mathbf{W}_k \preceq v\mathbf{I}$ ($\mathbf{W}_k$ is almost
-surely Hermitian). The potential's integrability: it is almost surely at most
-$\operatorname{tr} e^{\theta \mathbf{Y}_k} \le \lvert n\rvert\, e^{\theta k L}$, since
-$\mathbf{W}_k \succeq \mathbf{0}$, $g(\theta) \ge 0$ and $\mathbf{Y}_k \preceq k L\mathbf{I}$, and
-it is measurable. Medium.
 Result: matrix-freedman -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
     {X : ℕ → Ω → Matrix n n 𝕜} (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
@@ -315,10 +288,7 @@ $\lambda_0(\sum_{j<k} \mathbf{X}_j) \ge t$ for some $k$:
 $$\mathbb{P}\Bigl(\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t\Bigr)
 \le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
 [Tropp2011, Theorem 1.2]; the form used for adaptive sampling and streaming. A finite horizon is
-$\mathbf{X}_j = \mathbf{0}$ for $j \ge N$.
-Proof: `hv` holds for all $k$ simultaneously almost surely (countable intersection), so the
-event agrees almost everywhere with the event of
-`NLAlib.measureReal_exists_eigenvalue_zero_sum_ge_le_freedman`. Easy. -/
+$\mathbf{X}_j = \mathbf{0}$ for $j \ge N$. -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman_of_ae_le [Nonempty n]
     {X : ℕ → Ω → Matrix n n 𝕜} (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (hX2 : ∀ j, MemLp (X j) 2 μ) (hmean : ∀ j, μ[X j | ℱ j] =ᵐ[μ] 0) {L : ℝ} (hL : 0 < L)
@@ -346,13 +316,7 @@ $\|\sum_{j<k} \mathbb{E}[\mathbf{S}_j^{\mathsf{H}} \mathbf{S}_j \mid \mathcal{F}
 most $v$ is at most
 $$(\lvert r\rvert + \lvert n\rvert) \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
 [Tropp2011, Corollary 1.3]; over any `RCLike` field and finite index types. The source's
-constant.
-Proof: the Hermitian Freedman inequality for the dilations `dilation (S j)`, with
-`Matrix.condExp_dilation` (centring), `Matrix.condExp_dilation_sq` (the predictable quadratic
-variation is block diagonal, so its norm is the $\max$),
-$\lambda_0(\operatorname{dilation} \mathbf{M}) = \|\mathbf{M}\|_2$ and
-$\operatorname{dilation} \mathbf{S}_j \preceq L\mathbf{I}$ from $\|\mathbf{S}_j\|_2 \le L$.
-Medium. -/
+constant. -/
 theorem measureReal_exists_specNorm_sum_ge_le_freedman [Nonempty n] {r : Type*} [Fintype r]
     [DecidableEq r] {S : ℕ → Ω → Matrix r n 𝕜} (hS : ∀ j, StronglyMeasurable[ℱ (j + 1)] (S j))
     (hS2 : ∀ j, MemLp (S j) 2 μ) (hmean : ∀ j, μ[S j | ℱ j] =ᵐ[μ] 0) {L : ℝ} (hL : 0 < L)

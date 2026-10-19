@@ -36,11 +36,7 @@ candidates for `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 namespace Real
 
 /-- For $-1 < u \le 0$,
-$$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$
-Proof: with $x = -u \in [0, 1)$ the series $-\log(1 - x) = \sum_{k \ge 1} x^k / k$
-(`Real.hasSum_pow_div_log_of_abs_lt_one`) has nonnegative terms, so it is at least the sum of its
-first three terms, $x + x^2/2 + x^3/3$. Substituting $x = -u$ gives the claim. The bound for every
-$u > -1$ is `Real.log_one_add_le_cubic`. -/
+$$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$ -/
 theorem log_one_add_le_cubic_of_nonpos {u : ℝ} (h1 : -1 < u) (h0 : u ≤ 0) :
     log (1 + u) ≤ u - u ^ 2 / 2 + u ^ 3 / 3 := by
   have hu : 0 ≤ -u := by linarith

@@ -64,10 +64,6 @@ c^{-1}\,\sigma_i\bigl((\mathbf{B} - \mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}})
 \mathbf{B} = \mathbf{A}g(\mathbf{A}^{\mathsf{H}}\mathbf{A})\,.$$
 The norm form is `NLAlib.HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le`.
 The pointwise form survives squaring, which the Gram form of the filtered structural bound needs.
-Proof: $\mathbf{A}\mathbf{W} = \mathbf{B}\mathbf{W}g(\mathbf{D})^{-1}$ and
-$\mathbf{W} = \mathbf{Z}\mathbf{Z}^{\mathsf{H}}\mathbf{W}$, and the competitor identity gives
-$(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{\Omega}})\mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} =
--(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{\Omega}})\mathbf{M}\mathbf{Z}^{\mathsf{H}}$.
 [TroppWebber2023, Lemma 9.5 (proof, (9.6))]. -/
 theorem HasOrthonormalCols.singularValues_one_sub_rangeProjector_mul_mul_le {A : Matrix m n 𝕜}
     {Ω : Matrix n l 𝕜} (g : ℝ → ℝ) {W : Matrix n r 𝕜} (hW : HasOrthonormalCols W) {d : r → ℝ}

@@ -171,20 +171,6 @@
    "NLAlib/RandomMatrix/Haar/Moments.lean": 1,
    "NLAlib/Regression/SketchAndSolve.lean": 3
   },
-  "D8": {
-   "NLAlib/ForMathlib/Analysis/SpecialFunctions/Log/Deriv.lean": 1,
-   "NLAlib/ForMathlib/MeasureTheory/Function/ConditionalExpectation/CondJensen.lean": 1,
-   "NLAlib/ForMathlib/Probability/Martingale/OptionalStopping.lean": 1,
-   "NLAlib/LowRank/Structural/Filter.lean": 1,
-   "NLAlib/Matrix/Factorizations/GivensHessenberg.lean": 2,
-   "NLAlib/Probability/BoundedDifferences.lean": 2,
-   "NLAlib/Probability/Entropy.lean": 2,
-   "NLAlib/Probability/MatrixConcentration/ConditionalMGFBound.lean": 6,
-   "NLAlib/Probability/MatrixConcentration/Freedman.lean": 5,
-   "NLAlib/Probability/MatrixConcentration/IntrinsicDimension.lean": 1,
-   "NLAlib/Probability/MatrixConditionalExpectation.lean": 8,
-   "NLAlib/Probability/Orlicz.lean": 7
-  },
   "D10": {
    "NLAlib/Matrix/Basic/FromCols.lean": 1
   },
@@ -331,7 +317,6 @@
    "NLAlib/LowRank/Gaussian/NystromBlockKrylov.lean": 4,
    "NLAlib/LowRank/Gaussian/RotationInvariant.lean": 4,
    "NLAlib/Matrix/Perturbation/DavisKahanGap.lean": 2,
-   "NLAlib/Probability/MatrixConcentration/ConditionalMGFBound.lean": 1,
    "NLAlib/Regression/Oblivious.lean": 1
   },
   "S8": {

@@ -85,8 +85,7 @@ namespace HasCondMatrixMGFBound
 
 variable {hm : m ≤ mΩ} {X : Ω → Matrix n n 𝕜} {g : ℝ → ℝ} {A : Ω → Matrix n n 𝕜} {s : Set ℝ}
 
-/-- The bound depends only on the almost-everywhere class of $\mathbf{X}$.
-Proof: as `NLAlib.HasMatrixMGFBound.congr`, with `condExp_congr_ae`. Easy. -/
+/-- The bound depends only on the almost-everywhere class of $\mathbf{X}$. -/
 theorem congr {Y : Ω → Matrix n n 𝕜} (h : HasCondMatrixMGFBound m hm X g A s μ)
     (hXY : X =ᵐ[μ] Y) : HasCondMatrixMGFBound m hm Y g A s μ := by
   have he : ∀ θ : ℝ, (fun ω => exp (θ • X ω)) =ᵐ[μ] fun ω => exp (θ • Y ω) := fun θ =>
@@ -97,8 +96,7 @@ theorem congr {Y : Ω → Matrix n n 𝕜} (h : HasCondMatrixMGFBound m hm X g A
   filter_upwards [h.ae_isHermitian, hXY] with ω h1 h2
   rwa [← h2]
 
-/-- A bound on a set holds on every subset.
-Proof: restrict each field. Easy. -/
+/-- A bound on a set holds on every subset. -/
 theorem mono_set (h : HasCondMatrixMGFBound m hm X g A s μ) {s' : Set ℝ} (hs : s' ⊆ s) :
     HasCondMatrixMGFBound m hm X g A s' μ :=
   ⟨h.ae_isHermitian, h.stronglyMeasurable_bound, h.ae_isHermitian_bound,
@@ -132,14 +130,7 @@ $$\mathbb{E}\bigl[\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \bigm| m\bigr]
 almost surely. [Tropp2011, §2]; the conditional form of
 `Matrix.IsHermitian.integral_re_trace_exp_add_le`
 ([Tropp2015, Corollary 3.4.2]). No integrability of
-$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is assumed: if it fails the left side is $0$.
-Proof: with $\mathbf{F} = e^{\mathbf{X}}$, almost surely positive definite,
-$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} = \varphi(\mathbf{F})$ for Lieb's concave map
-$\varphi(\mathbf{M}) = \operatorname{Re} \operatorname{tr} e^{\mathbf{H} + \log \mathbf{M}}$ on the
-positive definite cone (`Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log`), continuous there;
-the conditional mean $\mathbb{E}[\mathbf{F} \mid m]$ is almost surely positive definite
-(`Matrix.ae_posDef_condExp`), so `ConcaveOn.condExp_map_le_of_condExp_mem` applies. Integrability
-of $\varphi \circ \mathbf{F}$ by the case split above. Medium. -/
+$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is assumed: if it fails the left side is $0$. -/
 theorem condExp_re_trace_exp_const_add_le (hm : m ≤ mΩ) {H : Matrix n n 𝕜} (hH : H.IsHermitian)
     {X : Ω → Matrix n n 𝕜} (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian)
     (hint : Integrable (fun ω => exp (X ω)) μ) :
@@ -195,8 +186,6 @@ private theorem ae_condExp_re_trace_exp_add_le_exp_mul (hm : m ≤ mΩ) {H X : �
   rw [← hs']
   exact h hωC
 
--- A declaration name below is too long for a 100-character line.
-set_option linter.style.longLine false in
 /-- **Conditional Lieb inequality**: for $\mathbf{H}$ $m$-measurable and almost surely Hermitian
 and an almost surely Hermitian $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under a probability
 measure,
@@ -204,19 +193,7 @@ $$\mathbb{E}\bigl[\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \bigm| m\bigr]
 \le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E}[e^{\mathbf{X}} \mid m]}$$
 almost surely. [Tropp2011, §2]; there for $\mathbf{H}$ measurable with respect to the past of a
 martingale. No integrability of $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is assumed: if it
-fails the left side is $0$ and the right side is nonnegative.
-Proof: if $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is not integrable the left side is $0$.
-Otherwise take a dense sequence $\mathbf{U}_j$ of Hermitian matrices;
-`NLAlib.condExp_re_trace_exp_const_add_le` holds for all $\mathbf{U}_j$ on one null set. On the
-$m$-measurable set $\{\|\mathbf{H} - \mathbf{U}_j\|_2 < \delta\}$,
-$\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \le e^\delta \operatorname{tr} e^{\mathbf{U}_j +
-\mathbf{X}}$ (`Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul`), and conditional
-expectations are monotone on $m$-measurable sets (`condExp_indicator`); the same perturbation bound on the right
-side gives the inequality up to a factor $e^{2\delta}$, and $\delta \to 0$. This replaces the
-rounding of $\mathbf{H}$ to a grid suggested by the design note: no limit of conditional
-expectations is taken. The conditional expectation kernel would not shorten it:
-`condExpKernel_ae_eq_condExp` holds per measurable set, so an $m$-measurable $\mathbf{H}$ is
-constant under `condExpKernel μ m ω'` only through the same approximation. -/
+fails the left side is $0$ and the right side is nonnegative. -/
 theorem condExp_re_trace_exp_add_le (hm : m ≤ mΩ) {H X : Ω → Matrix n n 𝕜}
     (hHm : StronglyMeasurable[m] H) (hH : ∀ᵐ ω ∂μ, (H ω).IsHermitian)
     (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian) (hint : Integrable (fun ω => exp (X ω)) μ) :
@@ -278,13 +255,7 @@ $$\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq
 \exp\Bigl(\frac{\theta^2/2}{1 - L\theta/3}\, \mathbb{E}[\mathbf{X}^2 \mid m]\Bigr)$$
 almost surely, for $0 < \theta < 3/L$. The input of Freedman's inequality. [Tropp2011, §2]; the
 conditional form of `NLAlib.hasMatrixMGFBound_of_integral_eq_zero_of_le`
-([Tropp2015, Lemma 6.6.2]).
-Proof: as the unconditional bound: the pointwise
-$e^{\theta \mathbf{X}} \preceq \mathbf{I} + \theta \mathbf{X} + g(\theta) \mathbf{X}^2$ (P5a's
-`exp_mul_le_bernstein` through `exp_smul_le_one_add_smul_add_smul_sq`), `condExp_mono`,
-linearity (`condExp_add`, `condExp_smul`, `condExp_const hm`), `hmean`, then
-$\mathbf{I} + \mathbf{B} \preceq e^{\mathbf{B}}$ (`Matrix.IsHermitian.one_add_le_exp`) for the
-a.s. Hermitian $\mathbf{B} = g(\theta)\, \mathbb{E}[\mathbf{X}^2 \mid m]$. Easy to medium. -/
+([Tropp2015, Lemma 6.6.2]). -/
 theorem hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (hm : m ≤ mΩ) {X : Ω → Matrix n n 𝕜}
     {L : ℝ} (hL : 0 < L) (hX2 : MemLp X 2 μ) (hmean : μ[X | m] =ᵐ[μ] 0)
     (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -345,15 +316,7 @@ $\mathbb{E}[e^{\theta \gamma \mathbf{B}} \mid m] \preceq e^{(\theta^2/2)\, c \ma
 every real $\theta$, under a finite measure on a standard Borel space.
 The bridge of `docs/design/Mathlib-deviations.md` entry 17, and the only statement of the
 conditional interface that needs `[StandardBorelSpace Ω]`. With it, matrix Azuma-type tails
-follow from the master tail of `NLAlib/Probability/MatrixConcentration/Freedman.lean`.
-Proof: diagonalise $\mathbf{B} = \sum_i \lambda_i \mathbf{P}_i$ (spectral projections);
-$e^{\theta \gamma \mathbf{B}} = \sum_i e^{\theta \lambda_i \gamma} \mathbf{P}_i$, so
-$\mathbb{E}[e^{\theta \gamma \mathbf{B}} \mid m]
-= \sum_i \mathbb{E}[e^{\theta \lambda_i \gamma} \mid m]\, \mathbf{P}_i$ almost surely by
-linearity, and each scalar conditional expectation is at most
-$e^{c \theta^2 \lambda_i^2 / 2}$ almost surely by Mathlib's `HasCondSubgaussianMGF.ae_condExp_le`
-(finitely many $i$); the difference is a nonnegative combination of the $\mathbf{P}_i$.
-Integrability from `HasCondSubgaussianMGF.integrable_exp_mul`. Medium. -/
+follow from the master tail of `NLAlib/Probability/MatrixConcentration/Freedman.lean`. -/
 theorem hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF [StandardBorelSpace Ω]
     [IsFiniteMeasure μ] {hm : m ≤ mΩ} {γ : Ω → ℝ} {c : ℝ≥0}
     (hγ : HasCondSubgaussianMGF m hm γ c μ) {B : Matrix n n 𝕜} (hB : B.IsHermitian) :

@@ -139,15 +139,6 @@ sub-Gaussian about its mean, $f(X) - \mathbb{E} f(X)$, with proxy $\sum_i c_i^2 
 [BoucheronLugosiMassart2013, Theorem 6.2]; [McDiarmid1989]. Coordinates in arbitrary measurable
 spaces; no integrability or probability hypothesis ($f$ is bounded; `iIndepFun` gives a
 probability measure).
-Proof: transport to the product `Measure.pi ν` of the coordinate laws (`iIndepFun` and `hX`
-give the law of $X$, `iIndepFun_iff_map_fun_eq_pi_map`). There, for each $s$, P4's
-`NLAlib.entropy_pi_le_sum` bounds the entropy of $e^{s f}$ by the sum over $i$ of the expected
-entropies in the $i$-th coordinate; on the fibre $y \mapsto f(x \text{ with } x_i := y)$ the
-oscillation is at most $c_i$, so `NLAlib.entropy_exp_mul_le_of_abs_sub_le` bounds each by
-$s^2 c_i^2 / 8$ times the fibre mean of $e^{s f}$, and `MeasureTheory.integral_integral_update_pi`
-reassembles $\mathbb{E} e^{s f}$. Herbst's argument
-(`NLAlib.hasSubgaussianMGF_sub_integral_of_entropy_le`) with $c s^2 / 2 = s^2 \sum_i c_i^2 / 8$
-concludes. The fibre measurability and the product law are the work. Medium.
 Result: bounded-differences -/
 theorem hasSubgaussianMGF_sub_integral_of_abs_update_sub_le
     (hX : ∀ i, AEMeasurable (fun ω => X ω i) μ) (hind : iIndepFun (fun i ω => X ω i) μ)
@@ -170,9 +161,6 @@ $$\mathbb{P}\bigl(t \le f(X) - \mathbb{E} f(X)\bigr)
 \le \exp\Bigl(-\frac{2t^2}{\sum_i c_i^2}\Bigr).$$
 [McDiarmid1989]; [BoucheronLugosiMassart2013, Theorem 6.2]. The source's constant. At
 $\sum_i c_i^2 = 0$ the bound is $e^0 = 1$ (Lean's $x / 0 = 0$), which is true.
-Proof: `HasSubgaussianMGF.measure_ge_le` for
-`NLAlib.hasSubgaussianMGF_sub_integral_of_abs_update_sub_le`, with
-$t^2 / (2 \sum_i c_i^2 / 4) = 2t^2 / \sum_i c_i^2$. Easy.
 Result: mcdiarmid -/
 theorem measureReal_sub_integral_ge_le_mcdiarmid (hX : ∀ i, AEMeasurable (fun ω => X ω i) μ)
     (hind : iIndepFun (fun i ω => X ω i) μ) (hf : Measurable f)

@@ -332,8 +332,7 @@ a better bound. Use only `psiTwoSubgaussianConstant_le`. -/
 noncomputable irreducible_def psiTwoSubgaussianConstant : ℝ≥0 := Real.toNNReal (1 + Real.log 2)
 
 /-- An explicit upper bound on `psiTwoSubgaussianConstant`,
-namely <!-- value psiTwoSubgaussianConstant -->$1 + \log 2 \le 2$.
-Proof: `psiTwoSubgaussianConstant_def`. Easy. -/
+namely <!-- value psiTwoSubgaussianConstant -->$1 + \log 2 \le 2$. -/
 theorem psiTwoSubgaussianConstant_le : psiTwoSubgaussianConstant ≤ 2 := by
   rw [psiTwoSubgaussianConstant_def, Real.toNNReal_le_iff_le_coe]
   have := log_two_le_one
@@ -352,12 +351,6 @@ is not centred, use `NLAlib.hasSubgaussianMGF_sub_integral_of_integral_exp_sq_di
 $\psi_2$ Hanson–Wright inequality is
 `measureReal_quadForm_sub_integral_ge_le hind fun i => this (hψ i)`, with exponent Vershynin's
 at <!-- value psiTwoSubgaussianConstant -->$c = (1 + \log 2) K$.
-Proof: $e^y \le y + e^{y^2}$, so $\mathbb{E} e^{\lambda X} \le \mathbb{E} e^{\lambda^2 X^2}$ (the
-linear term vanishes). If $\lambda^2 K \le 1$, Jensen for the concave $x \mapsto x^{\lambda^2 K}$
-gives at most $2^{\lambda^2 K} = e^{\lambda^2 K \log 2}$; otherwise
-$\lambda X \le \lambda^2 K / 2 + X^2 / (2K)$ and Jensen at exponent $1/2$ give at most
-$e^{\lambda^2 K / 2} \sqrt{2}$. Both are at most $e^{(1 + \log 2) K \lambda^2 / 2}$. Integrability
-of $e^{\lambda X}$ from $e^{\lambda X} \le e^{\lambda^2 K / 2} e^{X^2 / (2K)}$. Medium.
 Result: subgaussian-def -/
 theorem hasSubgaussianMGF_of_integral_exp_sq_div_le_two [IsProbabilityMeasure μ] {X : Ω → ℝ}
     (hX : AEMeasurable X μ) (hmean : ∫ ω, X ω ∂μ = 0) {K : ℝ≥0} (hK : 0 < K)
@@ -378,14 +371,7 @@ $X - \mathbb{E} X$ is sub-Gaussian with
 proxy <!-- value psiTwoSubgaussianConstant -->$(1 + \log 2) \cdot 4K$; the constant is
 `psiTwoSubgaussianConstant`.
 [Vershynin2018, Lemma 2.6.8] (centring costs a constant factor in the $\psi_2$ norm), here with the
-explicit factor $4$ in the squared scale.
-Proof: $X - \mathbb{E} X$ satisfies the $\psi_2$ condition with squared scale $4K$:
-$(\mathbb{E} X)^2 \le K \log 2$ by Jensen
-($e^{(\mathbb{E} X)^2 / K} \le \mathbb{E} e^{X^2 / K} \le 2$),
-$(X - \mathbb{E} X)^2 \le 2X^2 + 2(\mathbb{E} X)^2$, and $\mathbb{E} e^{X^2 / (2K)} \le \sqrt{2}$
-by Jensen, so $\mathbb{E} e^{(X - \mathbb{E} X)^2 / (4K)} \le \sqrt{2} \cdot \sqrt{2} = 2$; then
-`NLAlib.hasSubgaussianMGF_of_integral_exp_sq_div_le_two`. Integrability of $X$ from
-$\lvert X\rvert \le K + e^{X^2 / K}$, up to constants. Easy to medium. -/
+explicit factor $4$ in the squared scale. -/
 theorem hasSubgaussianMGF_sub_integral_of_integral_exp_sq_div_le_two [IsProbabilityMeasure μ]
     {X : Ω → ℝ} (hX : AEMeasurable X μ) {K : ℝ≥0} (hK : 0 < K)
     (hint : Integrable (fun ω => rexp (X ω ^ 2 / K)) μ)
@@ -456,8 +442,7 @@ Use only `psiOneSubexponentialScaleConstant_le`. -/
 noncomputable irreducible_def psiOneSubexponentialScaleConstant : ℝ≥0 := 2
 
 /-- An explicit upper bound on `psiOneSubexponentialVarianceConstant`,
-namely <!-- value psiOneSubexponentialVarianceConstant -->$32/e^2 \le 5$.
-Proof: `psiOneSubexponentialVarianceConstant_def`. Easy. -/
+namely <!-- value psiOneSubexponentialVarianceConstant -->$32/e^2 \le 5$. -/
 theorem psiOneSubexponentialVarianceConstant_le : psiOneSubexponentialVarianceConstant ≤ 5 := by
   rw [psiOneSubexponentialVarianceConstant_def, Real.toNNReal_le_iff_le_coe]
   rw [NNReal.coe_ofNat, div_le_iff₀ (Real.exp_pos 2)]
@@ -467,8 +452,7 @@ theorem psiOneSubexponentialVarianceConstant_le : psiOneSubexponentialVarianceCo
   nlinarith
 
 /-- An explicit upper bound, $2$, on `psiOneSubexponentialScaleConstant`, whose value
-is <!-- value psiOneSubexponentialScaleConstant -->$2$.
-Proof: `psiOneSubexponentialScaleConstant_def`. Easy. -/
+is <!-- value psiOneSubexponentialScaleConstant -->$2$. -/
 theorem psiOneSubexponentialScaleConstant_le : psiOneSubexponentialScaleConstant ≤ 2 := by
   rw [psiOneSubexponentialScaleConstant_def]
 
@@ -484,11 +468,6 @@ variable is centred, `NLAlib.HasSubexponentialMGF.integral_eq_zero`); for a vari
 centred, use `NLAlib.hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two`. A
 $\psi_1$ Bernstein inequality is this bridge followed by
 `NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun`.
-Proof: for $\lvert\lambda\rvert < 1 / (2K)$, $e^y \le 1 + y + y^2 e^{\lvert y\rvert} / 2$ gives
-$\mathbb{E} e^{\lambda X} \le 1 + \lambda^2\, \mathbb{E}[X^2 e^{\lvert X\rvert / (2K)}] / 2$, and
-$X^2 \le (16 K^2 / e^2)\, e^{\lvert X\rvert / (2K)}$ (from $u^2 \le 4 e^{u - 2}$) bounds the
-expectation by $(16 K^2 / e^2)\, \mathbb{E} e^{\lvert X\rvert / K} \le 32 K^2 / e^2$; then
-$1 + a \le e^a$. Medium.
 Result: subexponential-def -/
 theorem hasSubexponentialMGF_of_integral_exp_abs_div_le_two [IsProbabilityMeasure μ]
     {X : Ω → ℝ} (hX : AEMeasurable X μ) (hmean : ∫ ω, X ω ∂μ = 0) {K : ℝ≥0} (hK : 0 < K)
@@ -516,12 +495,7 @@ proxy <!-- value psiOneSubexponentialVarianceConstant -->$(32/e^2)(2K)^2$ and
 scale <!-- value psiOneSubexponentialScaleConstant -->$2 \cdot 2K$ (the constants
 `psiOneSubexponentialVarianceConstant` and `psiOneSubexponentialScaleConstant`). The $\psi_1$
 analogue of the centring lemma [Vershynin2018, Lemma 2.6.8], with the explicit factor $2$ in the
-scale.
-Proof: $X - \mathbb{E} X$ satisfies the $\psi_1$ condition with scale $2K$:
-$\lvert \mathbb{E} X\rvert \le K \log 2$ by Jensen, $\mathbb{E} e^{\lvert X\rvert / (2K)} \le
-\sqrt{2}$ by Jensen, and $\lvert X - \mathbb{E} X\rvert \le \lvert X\rvert + \lvert \mathbb{E}
-X\rvert$, so $\mathbb{E} e^{\lvert X - \mathbb{E} X\rvert / (2K)} \le 2$; then
-`NLAlib.hasSubexponentialMGF_of_integral_exp_abs_div_le_two`. Easy to medium. -/
+scale. -/
 theorem hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two
     [IsProbabilityMeasure μ] {X : Ω → ℝ} (hX : AEMeasurable X μ) {K : ℝ≥0} (hK : 0 < K)
     (hint : Integrable (fun ω => rexp (|X ω| / K)) μ)

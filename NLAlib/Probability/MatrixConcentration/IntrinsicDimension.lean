@@ -727,7 +727,6 @@ the constant is `intrinsicBernsteinMeanConstant`.
 [Tropp2015, Corollary 7.3.2]; here with any upper bound $\mathbf{V}$ in Loewner order. Better
 than `integral_eigenvalue_zero_sum_le_bernstein` when $\operatorname{intdim}(\mathbf{V})$ is much
 smaller than $\lvert n\rvert$; its constant is worse.
-Proof: integrate the tail above the threshold.
 Result: intrinsic-matrix-bernstein -/
 theorem integral_eigenvalue_zero_sum_le_bernstein_intrinsicDimension (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
