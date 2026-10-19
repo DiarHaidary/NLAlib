@@ -429,8 +429,8 @@ theorem _root_.Matrix.IsHermitian.smul_one_le_iff [DecidableEq n] {A : Matrix n 
   · exact (mul_le_mul_of_nonneg_right h (sq_nonneg _)).trans
       (hA.eigenvalue_last_mul_le_re_quadForm hk x)
 
-/-- The largest eigenvalue of a Hermitian matrix on a nonempty index type is the supremum of its
-quadratic form over unit vectors:
+/-- **Rayleigh–Ritz theorem, largest eigenvalue.** The largest eigenvalue of a Hermitian matrix
+on a nonempty index type is the supremum of its quadratic form over unit vectors:
 $\lambda_0(\mathbf{A}) = \sup_{\|\mathbf{x}\| = 1}
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$. [HornJohnson2013, Theorem 4.2.2].
 Result: rayleigh-ritz -/
@@ -448,8 +448,9 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_zero_eq_iSup [Nonempty n] {A : Matr
   exact le_ciSup (f := fun x : {x : n → 𝕜 // ‖WithLp.toLp 2 x‖ = 1} =>
     RCLike.re (quadForm A x.1)) ⟨eigenvalue A 0, by rintro _ ⟨x, rfl⟩; exact hle x⟩ ⟨u, hu⟩
 
-/-- The smallest eigenvalue of a Hermitian matrix is the infimum of its quadratic form over
-unit vectors: $\lambda_k(\mathbf{A}) = \inf_{\|\mathbf{x}\| = 1}
+/-- **Rayleigh–Ritz theorem, smallest eigenvalue.** The smallest eigenvalue of a Hermitian matrix
+is the infimum of its quadratic form over unit vectors:
+$\lambda_k(\mathbf{A}) = \inf_{\|\mathbf{x}\| = 1}
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for $k + 1 = \lvert n \rvert$.
 [HornJohnson2013, Theorem 4.2.2].
 Port of `Matrix.IsHermitian.eigenvalues₀_last_eq_iInf`.

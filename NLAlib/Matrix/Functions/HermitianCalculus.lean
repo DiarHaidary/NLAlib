@@ -447,6 +447,8 @@ theorem _root_.Matrix.PosDef.spectrum_subset_Ioi {A : Matrix n n 𝕜} (hA : A.P
 $\mathbf{A}$,
 $\operatorname{Re} \operatorname{tr} f(\mathbf{A})
 = \sum_{i < \lvert n \rvert} f(\lambda_i(\mathbf{A}))$.
+[Tropp2015, Definition 8.3.1]; there the sum defines the trace function, with the remark that it
+agrees with the trace of the standard matrix function.
 Port of `NLAlib.re_trace_cfc_eq_sum_eigenvalues`.
 Result: trace-of-matrix-function -/
 theorem _root_.Matrix.IsHermitian.re_trace_cfc {A : Matrix n n 𝕜} (hA : A.IsHermitian)

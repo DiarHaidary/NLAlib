@@ -122,7 +122,9 @@ private theorem givensHessenbergState_snd_apply_eq_zero_of_add_two_lt
 /-- **The tridiagonal case**: if $\mathbf{H}^{\mathsf{H}}$ is upper Hessenberg, in particular
 for a rectangular tridiagonal matrix (as $\underline{\mathbf{T}}_q$ in MINRES), the factor
 $\mathbf{R}$ has only three nonzero diagonals: $\mathbf{R}_{i,j} = 0$ for $j > i + 2$.
-[PaigeSaunders1975]; locator to verify. -/
+[PaigeSaunders1975, (5.5)]; there in transposed form: the LQ factorization by plane rotations of
+the symmetric tridiagonal Lanczos matrix has a lower triangular factor with three nonzero
+diagonals. -/
 theorem givensHessenbergR_apply_eq_zero_of_add_two_lt {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH' : IsUpperHessenberg Hᴴ) {i : Fin m} {j : Fin p}
     (hij : (i : ℕ) + 2 < j) : givensHessenbergR H i j = 0 := by

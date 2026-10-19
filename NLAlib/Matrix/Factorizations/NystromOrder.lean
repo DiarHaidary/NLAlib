@@ -142,7 +142,8 @@ private theorem re_quadForm_sum_smul {ι : Type*} (s : Finset ι) (w : ι → �
 /-- **Concavity of the Schur complement** $\mathbf{H} \mapsto \mathbf{H}/\mathbf{\Omega}$, as
 superadditivity with nonnegative weights: for positive semidefinite $\mathbf{H}_i$ and $w_i \ge 0$,
 $$\sum_i w_i (\mathbf{H}_i/\mathbf{\Omega}) \preceq
-\Bigl(\sum_i w_i \mathbf{H}_i\Bigr)/\mathbf{\Omega}\,.$$
+\Bigl(\sum_i w_i \mathbf{H}_i\Bigr)/\mathbf{\Omega}\,,$$
+where $\mathbf{H}/\mathbf{\Omega} = \mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$.
 Weights summing to one give concavity, equal weights the group average of a symmetrisation.
 [EpperlyWebber2026, Fact 6.1(c)]; there with weights summing to one.
 Result: schur-complement-concave -/
@@ -538,9 +539,13 @@ private theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom_le_of_pos 
     field_simp
   linarith
 
-/-- **The pointwise bound behind Epperly and Webber's sharp bounds**: with the notation of
-`NLAlib.HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom`, $\mathbf{\Psi}_1$ of full row
-rank and any $a, b \ge 0$,
+/-- **The pointwise bound behind Epperly and Webber's sharp bounds**: let $\mathbf{\Psi}$ have
+$\ell = \lvert l \rvert$ orthonormal columns and rows indexed by $s \sqcup t$, split as
+$\mathbf{\Psi}_1$ (the rows indexed by $s$) and $\mathbf{\Psi}_2$ (those indexed by $t$), with
+$\mathbf{\Psi}_1$ of full row rank ($\mathbf{\Psi}_1^{\mathsf{H}}$ injective), and let
+$a, b \ge 0$ and
+$\mathbf{D} = \begin{bmatrix} a\mathbf{I} & \mathbf{0} \\ \mathbf{0} & b\mathbf{I}\end{bmatrix}$
+(blocks indexed by $s$ and $t$). Then
 $$\|\mathbf{D} - \mathsf{nystrom}(\mathbf{D}, \mathbf{\Psi})\|_* \le
 b\,\|\mathbf{\Psi}_1^{+}\|_{\mathsf{F}}^2 + b(\lvert t\rvert - \ell)\,,$$
 independent of $a$: the error of the two-level matrix is at most its limit as $a \to \infty$.

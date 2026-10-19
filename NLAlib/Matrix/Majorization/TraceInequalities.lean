@@ -181,7 +181,7 @@ theorem norm_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matrix m n
   rw [Matrix.mul_smul, Matrix.trace_smul, smul_eq_mul, ← hct, RCLike.ofReal_re] at h
   simpa only [singularValues_smul, hc, one_mul] using h
 
-/-- von Neumann's trace inequality for the Frobenius inner product:
+/-- **von Neumann's trace inequality** for the Frobenius inner product:
 $\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
 \le \sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})$.
 [HornJohnson2013, Theorem 7.4.1.1].

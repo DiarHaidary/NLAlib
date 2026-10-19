@@ -112,8 +112,8 @@ theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue [Decida
   rw [Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
   exact Φ.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue hM hL₁ hL₂ hMsep _
 
-/-- The $\sin \Theta$ theorem in residual form with a one-sided separation: for Hermitian
-$\mathbf{A}$ with $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$, if
+/-- **The $\sin \Theta$ theorem, one-sided form.** In residual form with a one-sided separation:
+for Hermitian $\mathbf{A}$ with $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$, if
 $\mathbf{M} \preceq (\alpha - \delta)\mathbf{I}$ and $\alpha\mathbf{I} \preceq \mathbf{L}$, then
 $\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\Phi}
 \le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}$ in every

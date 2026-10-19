@@ -101,8 +101,8 @@ theorem _root_.Matrix.IsHermitian.majorized_re_diag_eigenvalues {A : Matrix n n 
   rfl
 
 omit [DecidableEq n] in
-/-- Schur's theorem as partial sums: for every $k$, the sum of the $k$ largest diagonal entries
-$\operatorname{Re} \mathbf{A}_{i,i}$ of a Hermitian matrix (`NLAlib.sumLargest`) is at most
+/-- **Schur's theorem**, partial-sum form: for every $k$, the sum of the $k$ largest diagonal
+entries $\operatorname{Re} \mathbf{A}_{i,i}$ of a Hermitian matrix (`NLAlib.sumLargest`) is at most
 $\sum_{i < k} \lambda_i(\mathbf{A})$, the sum of its $k$ largest eigenvalues.
 [HornJohnson2013, Theorem 4.3.45].
 Result: schur-majorization -/

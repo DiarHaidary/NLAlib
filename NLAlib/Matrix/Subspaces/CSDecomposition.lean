@@ -193,7 +193,8 @@ with $\mathbf{K}$ the canonical matrix `NLAlib.csMatrix` of $\mathbf{c}$, $\math
 unitary $\mathbf{V}_1$, $\mathbf{W}_1$, $\mathbf{V}_2$, $\mathbf{W}_2$, and
 $\mathbf{c}_i, \mathbf{s}_i \ge 0$, $\mathbf{c}_i^2 + \mathbf{s}_i^2 = 1$; the cosines
 $\mathbf{c}$ are the singular values of the leading block, in some order.
-[HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3]; [PaigeWei1994].
+[HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3]; [PaigeWei1994, Theorem 8.1];
+Paige and Wei allow any $2 \times 2$ partitioning, here the diagonal blocks are square.
 Port of `NLAlib.exists_cs_decomposition_of_embedding` and
 `NLAlib.exists_complex_cs_decomposition_of_embedding`.
 Result: cs-decomposition -/

@@ -632,9 +632,9 @@ theorem frobNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix m n 𝕜) {B : Matri
   rw [frobNorm_sub_truncatedSVD_sq]
   exact sum_Ico_singularValues_sq_le_frobNorm_sub_sq_of_rank_le A hB
 
-/-- Eckart–Young in the spectral norm as a least element: $\sigma_k(\mathbf{A})$ is the smallest
-spectral distance $\|\mathbf{A} - \mathbf{B}\|_2$ from $\mathbf{A}$ to a matrix $\mathbf{B}$ of
-rank at most $k$.
+/-- **Eckart–Young in the spectral norm**, as a least element: $\sigma_k(\mathbf{A})$ is the
+smallest spectral distance $\|\mathbf{A} - \mathbf{B}\|_2$ from $\mathbf{A}$ to a matrix
+$\mathbf{B}$ of rank at most $k$.
 Port of `NLAlib.isLeast_specNorm_sub_of_rank_le`.
 Result: eckart-young-spectral -/
 theorem isLeast_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :

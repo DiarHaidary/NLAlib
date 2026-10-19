@@ -233,8 +233,9 @@ theorem sum_abs_singularValues_add_sub_le_kyFanNorm (A E : Matrix m n 𝕜) (S :
     (Finset.mem_filter.mp hi).2).trans
       (kyFanNorm_mono_left E (Finset.card_le_card (Finset.filter_subset _ S)))
 
-/-- The absolute differences of the first $N$ singular values are weakly majorized by the first
-$N$ singular values of the perturbation, for every $N$:
+/-- **Lidskii's inequality for singular values**, weak majorization form. The absolute
+differences of the first $N$ singular values are weakly majorized by the first $N$ singular values
+of the perturbation, for every $N$:
 $(\lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert)_{i < N}$ is weakly
 majorized by $(\sigma_i(\mathbf{E}))_{i < N}$.
 [Bhatia1997, Theorem IV.3.4].

@@ -241,9 +241,10 @@ private theorem singularValues_eq_singularValues_diagonal (h : IsSVD A U σ V) :
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.singularValues_mul_left,
     h.hasOrthonormalCols_right.singularValues_mul_conjTranspose_right]
 
-/-- In an SVD with columns indexed by `Fin k` and $\boldsymbol{\sigma}$ non-increasing,
-$\boldsymbol{\sigma}$ is the sequence of singular values: $\sigma_i(\mathbf{A}) =
-\boldsymbol{\sigma}_i$ for $i < k$. Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
+/-- **Uniqueness of the singular values.** In an SVD with columns indexed by `Fin k` and
+$\boldsymbol{\sigma}$ non-increasing, $\boldsymbol{\sigma}$ is the sequence of singular values:
+$\sigma_i(\mathbf{A}) = \boldsymbol{\sigma}_i$ for $i < k$.
+Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
 Result: svd-uniqueness -/
 theorem singularValues_eq {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → ℝ}
     {V : Matrix n (Fin k) 𝕜} (h : IsSVD A U σ V) (hσ : Antitone σ) (i : Fin k) :

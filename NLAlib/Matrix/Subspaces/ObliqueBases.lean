@@ -91,7 +91,7 @@ theorem HasOrthonormalCols.specNorm_obliqueProjector [Fintype q] [DecidableEq p]
   rw [obliqueProjector, Matrix.mul_assoc, hU.specNorm_mul_left,
     hV.specNorm_mul_conjTranspose_right]
 
-/-- The norm of the oblique projector of two frames through the principal angle: for $\mathbf{U}$,
+/-- **The norm of an oblique projector and the largest principal angle**: for $\mathbf{U}$,
 $\mathbf{V}$ with orthonormal columns indexed by $p$ and $\mathbf{V}^{\mathsf{H}}\mathbf{U}$
 invertible,
 $\|\mathbf{\Pi}_{\mathbf{U},\mathbf{V}^{\mathsf{H}}}\|_2 \cos\theta_j(\mathbf{U}, \mathbf{V}) = 1$

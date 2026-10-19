@@ -479,8 +479,8 @@ theorem _root_.IsStarProjection.rank_eq_of_specNorm_sub_lt_one {P Q : Matrix n n
   have h2 := (hQ.specNorm_one_sub_mul_lt_one_iff hP).mp h.2
   exact le_antisymm (h1 ▸ Matrix.rank_mul_le_left Q P) (h2 ▸ Matrix.rank_mul_le_left P Q)
 
-/-- For orthogonal projectors of equal rank,
-$\|\mathbf{P} - \mathbf{Q}\|_2 = \|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2$.
+/-- **The gap between orthogonal projectors of equal rank.** For orthogonal projectors of equal
+rank, $\|\mathbf{P} - \mathbf{Q}\|_2 = \|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2$.
 Port of `NLAlib.specNorm_sub_projector_eq_complement_mul_of_rank_eq`.
 Result: projector-gap -/
 theorem _root_.IsStarProjection.specNorm_sub_eq_of_rank_eq {P Q : Matrix n n 𝕜}

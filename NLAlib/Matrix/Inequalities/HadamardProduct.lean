@@ -130,9 +130,12 @@ theorem hadamard_le_hadamard_of_neg_le_of_le {A B C D : Matrix n n 𝕜} (hAB : 
   exact ((hp.hadamard hm').add (hm.hadamard hp')).smul (by norm_num : (0 : ℝ) ≤ 1 / 2)
 
 omit [Fintype n] [DecidableEq n] in
-/-- A two-sided bound is preserved by Hadamard products, lower half: under the hypotheses of
-`NLAlib.hadamard_le_hadamard_of_neg_le_of_le`,
-$-(\mathbf{A} \circ \mathbf{C}) \preceq \mathbf{B} \circ \mathbf{D}$.
+/-- A two-sided bound is preserved by Hadamard products, lower half: for square matrices
+$\mathbf{A}, \mathbf{B}, \mathbf{C}, \mathbf{D}$ over $\Bbbk$, if
+$-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$ and
+$-\mathbf{C} \preceq \mathbf{D} \preceq \mathbf{C}$ then
+$-(\mathbf{A} \circ \mathbf{C}) \preceq \mathbf{B} \circ \mathbf{D}$, with $\circ$ the
+Hadamard (entrywise) product. The upper half is `NLAlib.hadamard_le_hadamard_of_neg_le_of_le`.
 Port of `NLAlib.neg_hadamard_le_hadamard_of_neg_le_of_le`, there over $\mathbb{R}$. -/
 theorem neg_hadamard_le_hadamard_of_neg_le_of_le {A B C D : Matrix n n 𝕜} (hAB : -A ≤ B)
     (hBA : B ≤ A) (hCD : -C ≤ D) (hDC : D ≤ C) : -(A ⊙ C) ≤ B ⊙ D := by

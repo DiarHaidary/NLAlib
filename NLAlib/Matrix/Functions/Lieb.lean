@@ -266,7 +266,9 @@ $(\mathbf{A}, \mathbf{H})$ of positive definite matrices, $D(\mathbf{A}; \mathbf
 function, so for $a, b \ge 0$ with $a + b = 1$
 $$D(a\mathbf{A}_1 + b\mathbf{A}_2; a\mathbf{H}_1 + b\mathbf{H}_2)
   \le a D(\mathbf{A}_1; \mathbf{H}_1) + b D(\mathbf{A}_2; \mathbf{H}_2) \,.$$
-[Tropp2015, §8.3 and §8.8]; [Lindblad1974].
+[Tropp2015, §8.3 and §8.8]; [Lindblad1974, Lemma 2]; Lindblad states it for positive trace-class
+operators on a separable Hilbert space and finite convex combinations, with the same definition
+$\operatorname{tr}(\mathbf{A}\log\mathbf{A} - \mathbf{A}\log\mathbf{H} + \mathbf{H} - \mathbf{A})$.
 Port of `NLAlib.convexOn_relativeEntropy`, there over $\mathbb{C}$ on `Fin d`.
 Result: relative-entropy -/
 theorem convexOn_relativeEntropy :
@@ -351,7 +353,8 @@ theorem _root_.Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log {H : Matri
 /-- **Lieb's concavity theorem.** For a fixed Hermitian $\mathbf{H}$, the function
 $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ is
 concave on the positive definite matrices.
-[Lieb1973]; [Tropp2015, Theorem 8.1.1].
+[Lieb1973, Theorem 6]; [Tropp2015, Theorem 8.1.1]; Lieb states it for the trace on a
+finite-dimensional complex Hilbert space, here over $\Bbbk$ with the real part of the trace.
 Port of `NLAlib.lieb_concavity`, there over $\mathbb{C}$.
 Result: lieb-concavity -/
 theorem _root_.Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜}
