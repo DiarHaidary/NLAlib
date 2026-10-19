@@ -15,7 +15,7 @@ public import NLAlib.Probability.Measurability.Matrix
 
 For a random Hermitian matrix $\mathbf{Y}$, the tail of its largest eigenvalue
 $\lambda_0(\mathbf{Y})$ is bounded by the trace of its matrix moment generating function,
-$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le e^{-\theta t}\, \mathbb{E} \operatorname{tr}
+$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t] \le e^{-\theta t}\, \mathbb{E} \operatorname{tr}
 e^{\theta \mathbf{Y}}$ for $\theta > 0$, and its mean by
 $\theta^{-1} \log \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}$ (Tropp 2015, Proposition
 3.2.1). The smallest eigenvalue, $\lambda_k(\mathbf{Y})$ with $k + 1 = \lvert n\rvert$, is handled
@@ -24,7 +24,7 @@ so the means here are not junk values. Traces are real parts in Lean (`RCLike.re
 nothing for Hermitian matrices.
 
 More generally, for a nonnegative $\psi$, nondecreasing on $[0, \infty)$,
-$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le \mathbb{E} \operatorname{tr} \psi(\mathbf{Y}) /
+$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t] \le \mathbb{E} \operatorname{tr} \psi(\mathbf{Y}) /
 \psi(t)$ for $t \ge 0$ with $\psi(t) > 0$ (Tropp 2015, Proposition 7.4.1). The exponential
 $\psi(a) = e^{\theta a}$ gives the bound above; the intrinsic-dimension tails
 (`NLAlib/Probability/MatrixConcentration/IntrinsicDimension.lean`) use
@@ -126,7 +126,7 @@ theorem measureReal_eigenvalue_zero_ge_le_integral_re_trace_cfc_div [Nonempty n]
 
 variable [IsProbabilityMeasure μ]
 
-/-- Markov's inequality in the form $\mathbb{P}(s) \le e^{-c}\, \mathbb{E} f$ when $e^c \le f$
+/-- Markov's inequality in the form $\mathbb{P}[s] \le e^{-c}\, \mathbb{E} f$ when $e^c \le f$
 almost everywhere on $s$, for $f \ge 0$ integrable. -/
 private theorem measureReal_le_exp_neg_mul_integral {f : Ω → ℝ} {s : Set Ω} (hnn : 0 ≤ᵐ[μ] f)
     (hf : Integrable f μ) {c : ℝ} (hs : ∀ᵐ ω ∂μ, ω ∈ s → Real.exp c ≤ f ω) :
@@ -155,7 +155,7 @@ theorem exp_integral_le_integral {Z f : Ω → ℝ} (hZ : Integrable Z μ) (hf :
 
 /-- **The matrix Laplace transform bound** for the largest eigenvalue: for $\mathbf{Y}$ almost
 surely Hermitian, $\theta > 0$ and every real $t$,
-$$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t)
+$$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t]
 \le e^{-\theta t}\, \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}\,.$$
 [Tropp2015, Proposition 3.2.1]. -/
 theorem measureReal_eigenvalue_zero_ge_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian)
@@ -172,7 +172,7 @@ theorem measureReal_eigenvalue_zero_ge_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y
 
 /-- The matrix Laplace transform bound for the smallest eigenvalue, with $\theta < 0$: for
 $k + 1 = \lvert n\rvert$ and every real $t$,
-$\mathbb{P}(\lambda_k(\mathbf{Y}) \le t)
+$\mathbb{P}[\lambda_k(\mathbf{Y}) \le t]
 \le e^{-\theta t}\, \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}$. -/
 theorem measureReal_eigenvalue_le_le (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) {k : ℕ}
     (hk : k + 1 = Fintype.card n) {θ : ℝ} (hθ : θ < 0)

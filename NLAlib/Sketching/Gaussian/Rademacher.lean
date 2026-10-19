@@ -139,7 +139,7 @@ theorem isIsotropicSketch_of_hasLaw_rademacherMatrix [DecidableEq n] [Nonempty k
 
 /-- **Sign-sketch distributional JL** with Gaussian constants: for every unit $\mathbf{x}$ and
 every $\varepsilon \ge 0$,
-$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,,$$
 the bound of `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`. From
 `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le`, with

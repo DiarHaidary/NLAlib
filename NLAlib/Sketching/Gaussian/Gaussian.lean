@@ -537,7 +537,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix
 
 /-- **Distributional Johnson–Lindenstrauss for a Gaussian sketch**: for every unit $\mathbf{x}$
 and every $\varepsilon \ge 0$,
-$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,;$$
 $\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{G}\mathbf{x}\|^2/\lvert k \rvert$ is
 $\chi^2_{\lvert k \rvert} / \lvert k \rvert$

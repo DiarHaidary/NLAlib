@@ -147,7 +147,7 @@ private theorem integrable_and_integral_le_of_tendsto {F : ℕ → Ω → ℝ} {
 
 /-- A uniform bound for the mean of $F$ from the uncentred sub-Gaussian bound, using a set $A$ of
 positive mass on which $\lvert F\rvert \le a$:
-$\lvert \mathbb{E} F\rvert \le a + q/2 - \log \mathbb{P}(A)$. -/
+$\lvert \mathbb{E} F\rvert \le a + q/2 - \log \mathbb{P}[A]$. -/
 private theorem abs_integral_le_of_integral_exp_le [IsProbabilityMeasure μ] {F : Ω → ℝ}
     (hexp : ∀ s, Integrable (fun x => rexp (s * F x)) μ) {q : ℝ}
     (hraw : ∀ s, ∫ x, rexp (s * F x) ∂μ ≤ rexp (s * ∫ x, F x ∂μ + q * s ^ 2 / 2))

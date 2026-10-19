@@ -223,7 +223,7 @@ FIX = {
     'D9': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc='')}, {}),
     'D10': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc=MODDOC.replace('## Main results', 'More'))}, {}),
     'D11': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc=MODDOC.replace('`NLAlib.foo`', '`NLAlib.gone`'))}, {}),
-    'M1': (CITED.replace('A result.', 'A result $\\mathbb{P}(E) \\le 1$.'),
+    'M1': (CITED.replace('A result.', 'A result $\\mathbb{P}\\bigl\\{E\\bigr\\} \\le \\mathbb{P}(E)$.'),
            CITED.replace('A result.', 'A result $\\mathbb{P}[E] \\le 1$.')),
     'M2': ([ALG, decl('NLAlib.t', '(A : Matrix m n 𝕜) : frobNorm (A - rsvd A X) ≤ 1', deps=['NLAlib.rsvd'],
                       doc='$\\|\\mathbf{A} - \\mathbf{P}\\mathbf{A}\\| \\le 1$.\nResult: r-id')],

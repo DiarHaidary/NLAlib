@@ -20,9 +20,9 @@ $\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} \le \mathbb{E} \, \sigma_{\min}
 upper bound $\mathbb{E} \|\mathbf{G}\|_2 \le \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert}$ is in
 `NLAlib/RandomMatrix/Gaussian/SpectralNorm.lean`), Gaussian concentration of every singular value
 with proxy $1$, the deviation tails
-$\mathbb{P}(\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)
+$\mathbb{P}[\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t]
 \le e^{-t^2/2}$ and
-$\mathbb{P}(\sigma_{\min}(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)
+$\mathbb{P}[\sigma_{\min}(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t]
 \le e^{-t^2/2}$, and the same conclusions as Loewner bounds on $\mathbf{G}^{\mathsf{H}}\mathbf{G}$,
 the shape of the subspace-embedding predicate.
 
@@ -330,7 +330,7 @@ theorem hasSubgaussianMGF_singularValues_sub_integral_of_hasLaw_gaussianMatrix
   rwa [one_pow] at h
 
 /-- The upper deviation tail of the spectral norm: for $t \ge 0$,
-$\mathbb{P}(\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)
+$\mathbb{P}[\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t]
 \le e^{-t^2/2}$. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor $2$ of the
 source's two-sided form. -/
 theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ)
@@ -350,7 +350,7 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaus
 
 /-- The lower deviation tail of the smallest singular value: for $t \ge 0$ and
 $k + 1 = \lvert n \rvert$,
-$\mathbb{P}(\sigma_k(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)
+$\mathbb{P}[\sigma_k(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t]
 \le e^{-t^2/2}$. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor $2$ of the
 source's two-sided form. -/
 theorem measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix

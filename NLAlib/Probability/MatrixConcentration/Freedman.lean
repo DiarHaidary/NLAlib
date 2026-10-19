@@ -140,8 +140,8 @@ theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
 
 /-- **The martingale master tail**: for increments with conditional matrix MGF bounds,
 $\theta \in s$, $\theta > 0$ and $g(\theta) \ge 0$, with an integrable trace potential,
-$$\mathbb{P}\bigl(\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
-\mathbf{W}_k \preceq w\mathbf{I}\bigr) \le \lvert n\rvert\, e^{-\theta t + g(\theta) w}\,.$$
+$$\mathbb{P}\bigl[\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
+\mathbf{W}_k \preceq w\mathbf{I}\bigr] \le \lvert n\rvert\, e^{-\theta t + g(\theta) w}\,.$$
 [Tropp2011, §2]; the martingale form of
 `NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp`. -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
@@ -233,8 +233,8 @@ end HasCondMatrixMGFBound
 $\mathcal{F}_{j+1}$-measurable, square-integrable, conditionally centred
 ($\mathbb{E}[\mathbf{X}_j \mid \mathcal{F}_j] = \mathbf{0}$) and with
 $\mathbf{X}_j \preceq L\mathbf{I}$ almost surely, $L > 0$ and $t \ge 0$,
-$$\mathbb{P}\Bigl(\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t \text{ and }
-\Bigl\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\Bigr\|_2 \le v\Bigr)
+$$\mathbb{P}\Bigl[\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t \text{ and }
+\Bigl\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\Bigr\|_2 \le v\Bigr]
 \le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
 [Tropp2011, Theorem 1.2]; stated there for Hermitian martingales over $\mathbb{C}$ with the
 conditional variance as the predictable quadratic variation, here over any `RCLike` field, any
@@ -285,7 +285,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
 bound $\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\|_2 \le v$ on the predictable
 quadratic variation at every time $k$, so that the event is only
 $\lambda_0(\sum_{j<k} \mathbf{X}_j) \ge t$ for some $k$:
-$$\mathbb{P}\Bigl(\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t\Bigr)
+$$\mathbb{P}\Bigl[\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t\Bigr]
 \le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
 [Tropp2011, Theorem 1.2]; the form used for adaptive sampling and streaming. A finite horizon is
 $\mathbf{X}_j = \mathbf{0}$ for $j \ge N$. -/

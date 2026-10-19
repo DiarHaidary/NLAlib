@@ -444,7 +444,7 @@ theorem measureReal_not_conjTranspose_mul_self_le_smul_one_le_of_isSubgaussianVe
   exact fun hω h => hω (conjTranspose_mul_self_le_of_specNorm_le (Nat.cast_nonneg _) hw0 h)
 
 /-- The lower tail of the smallest singular value for independent isotropic sub-Gaussian rows:
-$\mathbb{P}(\sigma_k(\mathbf{X}) \le \sqrt{\lvert m \rvert} - w) \le 2 e^{-t^2}$,
+$\mathbb{P}[\sigma_k(\mathbf{X}) \le \sqrt{\lvert m \rvert} - w] \le 2 e^{-t^2}$,
 with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
 `subgaussianRowsConstant`) and $0 \le t$; $\sigma_k = \sigma_{\min}$ is the singular value of
 index $k$ with $k + 1 = \lvert n \rvert$. The rows must exist (`[Nonempty m]`): with no rows the
@@ -470,7 +470,7 @@ theorem measureReal_singularValues_le_le_of_isSubgaussianVector [Nonempty m]
   exact fun hω h => (not_le.mpr (lt_singularValues_of_specNorm_lt (Nat.cast_nonneg _) hw0 hk h)) hω
 
 /-- The upper tail of the spectral norm for independent isotropic sub-Gaussian rows:
-$\mathbb{P}(\|\mathbf{X}\|_2 \ge \sqrt{\lvert m \rvert} + w) \le 2 e^{-t^2}$,
+$\mathbb{P}[\|\mathbf{X}\|_2 \ge \sqrt{\lvert m \rvert} + w] \le 2 e^{-t^2}$,
 with <!-- value subgaussianRowsConstant -->$w = 24c(\sqrt{\lvert n \rvert} + t)$ (the constant is
 `subgaussianRowsConstant`) and $0 \le t$. The rows must exist (`[Nonempty m]`), as in
 `NLAlib.measureReal_singularValues_le_le_of_isSubgaussianVector`. [Vershynin2018, Theorem 4.6.1].

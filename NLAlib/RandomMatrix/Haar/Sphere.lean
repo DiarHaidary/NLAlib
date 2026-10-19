@@ -81,7 +81,7 @@ private theorem measureReal_mem_eq_gaussianVector (hu : HasLaw u (uniformSphereV
 
 /-- **Chernoff's bound for a weighted sum of squared Gaussians**: for a standard Gaussian
 vector $\mathbf{g}$ and weights $\varphi_i < 1/2$,
-$\mathbb{P}(0 \le \sum_i \varphi_i \mathbf{g}_i^2) \le \prod_i (1 - 2\varphi_i)^{-1/2}$, in
+$\mathbb{P}[0 \le \sum_i \varphi_i \mathbf{g}_i^2] \le \prod_i (1 - 2\varphi_i)^{-1/2}$, in
 exponential form. -/
 private theorem measureReal_nonneg_sum_mul_sq_le {ι : Type*} [Fintype ι] {g : Ω → ι → ℝ}
     (hg : HasLaw g (gaussianVector ι) μ) {φ : ι → ℝ} (hφ : ∀ i, 2 * φ i < 1) :
@@ -326,8 +326,8 @@ private theorem measureReal_upper_tail_of_one_le (hu : HasLaw u (uniformSphereVe
 
 /-- **Projection of a uniform unit vector, upper tail**: for $\mathbf{u}$ uniform on the unit
 sphere, $\mathbf{V}$ with orthonormal columns and $\beta \ge 1$,
-$$\mathbb{P}\bigl(\beta \lvert k \rvert / \lvert n \rvert
-\le \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2\bigr)
+$$\mathbb{P}\bigl[\beta \lvert k \rvert / \lvert n \rvert
+\le \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2\bigr]
 \le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
 The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
 with an unspecified constant $c$. The $\chi^2_{\lvert k \rvert}$ tail
@@ -385,8 +385,8 @@ theorem measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniform
 
 /-- **Projection of a uniform unit vector, lower tail**: for $\mathbf{u}$ uniform on the unit
 sphere, $\mathbf{V}$ with orthonormal columns and $0 < \beta \le 1$,
-$$\mathbb{P}\bigl(\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2
-\le \beta \lvert k \rvert / \lvert n \rvert\bigr)
+$$\mathbb{P}\bigl[\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2
+\le \beta \lvert k \rvert / \lvert n \rvert\bigr]
 \le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
 The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
 with an unspecified constant $c$. -/
@@ -439,8 +439,8 @@ theorem measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniform
 
 /-- **Projection of a uniform unit vector, relative deviation**: for $\mathbf{u}$ uniform on the
 unit sphere, $\mathbf{V}$ with orthonormal columns and $\varepsilon \ge 0$,
-$$\mathbb{P}\Bigl(\varepsilon \le \Bigl\lvert \frac{\lvert n \rvert}{\lvert k \rvert}
-\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 - 1 \Bigr\rvert\Bigr)
+$$\mathbb{P}\Bigl[\varepsilon \le \Bigl\lvert \frac{\lvert n \rvert}{\lvert k \rvert}
+\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 - 1 \Bigr\rvert\Bigr]
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,,$$
 from the two tails as for $\chi^2_{\lvert k \rvert}$
 (`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`). At least $2$

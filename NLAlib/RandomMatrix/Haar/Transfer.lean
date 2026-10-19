@@ -179,7 +179,7 @@ theorem integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant [Decidab
 /-- **Tails transfer from a rotation-invariant test matrix to the Gaussian**: with the hypotheses
 of `NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`, for every $f$ that
 factors measurably through the range projector and every $c$,
-$\mathbb{P}\{f(\mathbf{X}) > c\} = \mathbb{P}\{f(\mathbf{G}) > c\}$ for a standard Gaussian
+$\mathbb{P}[f(\mathbf{X}) > c] = \mathbb{P}[f(\mathbf{G}) > c]$ for a standard Gaussian
 $\mathbf{G}$ of the same shape. -/
 theorem measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant [DecidableEq n]
     {m : Type*} [Fintype m] {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν]

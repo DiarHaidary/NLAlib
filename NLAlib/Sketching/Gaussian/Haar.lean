@@ -268,7 +268,7 @@ private theorem integral_norm_conjTranspose_mulVec_pow_four [Nonempty k]
   exact integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector HasLaw.id hV
 
 /-- **Distributional Johnson–Lindenstrauss for a Haar sketch**, with the Gaussian's constants:
-$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$$
 for every unit $\mathbf{x}$ and $\varepsilon \ge 0$; $\|\mathbf{S}\mathbf{x}\|^2
 = (\lvert n \rvert / \lvert k \rvert) \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2$ for $\mathbf{u}$

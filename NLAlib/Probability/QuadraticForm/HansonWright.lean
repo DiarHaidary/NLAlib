@@ -19,8 +19,8 @@ For a real random vector $\mathbf{x}$ with independent coordinates, each sub-Gau
 $c$, and any real square matrix $\mathbf{A}$, the quadratic form
 $\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x}$ concentrates about its
 mean: <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
+$$\mathbb{P}\bigl[\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr]
 \le 2 \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr),$$
 where the constant in the exponent (`NLAlib.hansonWrightConstant`) is universal, unspecified in
@@ -177,8 +177,8 @@ private lemma hansonWrightConstant_mul_min_le (A : Matrix n n ℝ) {t : ℝ} (ht
 /-- The upper tail of a quadratic form in independent sub-Gaussian coordinates: under the
 hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
 $t \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \ge t\bigr)
+$$\mathbb{P}\bigl[\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \ge t\bigr]
 \le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
 theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x ω i) μ)
@@ -192,8 +192,8 @@ theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x
 /-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: under the
 hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
 $t \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \le -t\bigr)
+$$\mathbb{P}\bigl[\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \le -t\bigr]
 \le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
 theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x ω i) μ)
@@ -208,8 +208,8 @@ theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x
 $\mathbf{x}$ are independent and each satisfies the sub-Gaussian moment generating function bound
 with variance proxy $c$ (`HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and
 every $t \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
+$$\mathbb{P}\bigl[\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr]
 \le 2 \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr);$$
 the explicit constant is `hansonWrightConstant`.

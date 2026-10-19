@@ -413,7 +413,7 @@ private theorem integrable_exp_mul_sum_sq (hind : iIndepFun Y μ)
   exact (hsub i).integrable_exp_mul_sq (by rw [NNReal.coe_one, mul_one]; exact hθ)
 
 /-- **Upper Chernoff tail**: for $\varepsilon \ge 0$,
-$\mathbb{P}\bigl((1 + \varepsilon) k \le \sum_i Y_i^2\bigr)
+$\mathbb{P}\bigl[(1 + \varepsilon) k \le \sum_i Y_i^2\bigr]
 \le e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$, $k = \lvert \iota \rvert$, at
 $\theta = \varepsilon/(2(1 + \varepsilon))$ with
 $\mathbb{E}[e^{\theta Y_i^2}] \le (1 - 2\theta)^{-1/2}$. -/
@@ -457,7 +457,7 @@ private theorem measureReal_mul_card_le_sum_sq_le (hind : iIndepFun Y μ)
       nlinarith
 
 /-- **Lower Chernoff tail**: for $\varepsilon \ge 0$,
-$\mathbb{P}\bigl(\sum_i Y_i^2 \le (1 - \varepsilon) k\bigr)
+$\mathbb{P}\bigl[\sum_i Y_i^2 \le (1 - \varepsilon) k\bigr]
 \le e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$, $k = \lvert \iota \rvert$, at
 $\theta = \varepsilon/(2(1 + \varepsilon))$ with
 $\mathbb{E}[e^{-\theta Y_i^2}] \le 1 - \theta + 3\theta^2/2$ (the fourth moment) and
@@ -529,7 +529,7 @@ private theorem measureReal_sum_sq_le_mul_card_le (hind : iIndepFun Y μ)
 /-- **Dasgupta–Gupta tail for sums of squares**: for independent real $Y_i$, $i \in \iota$, each
 sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and $\mathbb{E}[Y_i^4] \le 3$, and
 $\varepsilon \ge 0$,
-$$\mathbb{P}\Bigl(\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr)
+$$\mathbb{P}\Bigl[\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr]
 \le 2 e^{-k(\varepsilon^2/4 - \varepsilon^3/6)} \,, \qquad k = \lvert \iota \rvert \,.$$
 The exponent of Dasgupta and Gupta (2003) for $\chi^2_k$, cited by name only
 (`docs/PORT_SKETCHING.md` §7.2); here for any variables with the Gaussian's proxy and its second

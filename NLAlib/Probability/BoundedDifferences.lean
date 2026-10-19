@@ -157,7 +157,7 @@ theorem hasSubgaussianMGF_sub_integral_of_abs_update_sub_le
 
 /-- **McDiarmid's inequality**: for a measurable function $f$ of independent coordinates with
 bounded differences $c_i$ and $t \ge 0$,
-$$\mathbb{P}\bigl(t \le f(X) - \mathbb{E} f(X)\bigr)
+$$\mathbb{P}\bigl[t \le f(X) - \mathbb{E} f(X)\bigr]
 \le \exp\Bigl(-\frac{2t^2}{\sum_i c_i^2}\Bigr).$$
 [McDiarmid1989]; [BoucheronLugosiMassart2013, Theorem 6.2]. The source's constant. At
 $\sum_i c_i^2 = 0$ the bound is $e^0 = 1$ (Lean's $x / 0 = 0$), which is true.

@@ -64,7 +64,7 @@ theorem hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix
     (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) (lipschitzWith_curry hf)
 
 /-- The upper tail: for $f$ $L$-Lipschitz for the Frobenius distance and $t \ge 0$,
-$\mathbb{P}\bigl(f(\mathbf{G}) \ge \mathbb{E} f(\mathbf{G}) + t\bigr) \le \exp(-t^2 / (2L^2))$. -/
+$\mathbb{P}\bigl[f(\mathbf{G}) \ge \mathbb{E} f(\mathbf{G}) + t\bigr] \le \exp(-t^2 / (2L^2))$. -/
 theorem measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B))
     {t : ℝ} (ht : 0 ≤ t) :
@@ -116,7 +116,7 @@ private theorem gaussianMatrix_lt_le {g : Matrix m n ℝ → ℝ} {L c : ℝ} (h
 /-- **Gaussian concentration with an independent random factor**: if $\mathbf{G}$ is a standard
 Gaussian matrix independent of $Y$ and, for each $y$, $f(y, \cdot)$ is $L(y)$-Lipschitz for the
 Frobenius distance, with $L \ge 0$ and Gaussian mean at most $c(y)$, then for $t \ge 0$
-$$\mathbb{P}\{f(Y, \mathbf{G}) > c(Y) + L(Y)\,t\} \le e^{-t^2/2}\,.$$
+$$\mathbb{P}[f(Y, \mathbf{G}) > c(Y) + L(Y)\,t] \le e^{-t^2/2}\,.$$
 The fixed-factor form is `NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix`; this one
 conditions on $Y$ through the product law of the pair. $L \ge 0$ is needed when the matrices are
 empty, where the Lipschitz hypothesis holds for every $L$.

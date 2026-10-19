@@ -16,7 +16,7 @@ public import NLAlib.Probability.SubGaussian.Basic
 
 For fixed Hermitian $d \times d$ matrices $\mathbf{B}_k$ and independent real coefficients
 $\gamma_k$ with `HasSubgaussianMGF (γ k) (c k)`, the series $\sum_k \gamma_k \mathbf{B}_k$
-satisfies $\mathbb{P}(\lambda_{\max} \ge t) \le d\, e^{-t^2 / (2v)}$ with
+satisfies $\mathbb{P}[\lambda_{\max} \ge t] \le d\, e^{-t^2 / (2v)}$ with
 $v = \|\sum_k c_k \mathbf{B}_k^2\|_2$, and $\mathbb{E} \lambda_{\max} \le \sqrt{2 v \log d}$.
 Rectangular coefficients go through the dilation. Gaussian and Rademacher series are the case
 $c_k = 1$ (Tropp 2015, Theorem 4.1.1, which states the Gaussian and Rademacher cases; the
@@ -95,7 +95,7 @@ private theorem isHermitian_sum_smul_sq [Fintype ι] (c : ι → ℝ≥0) {B : �
 
 /-- **The matrix series tail**, Hermitian coefficients: for independent real $\gamma_k$, each
 sub-Gaussian with proxy $c_k$, fixed Hermitian $\mathbf{B}_k$ and $t \ge 0$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr) \ge t\Bigr)
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr) \ge t\Bigr]
 \le \lvert n\rvert \exp\Bigl(-\frac{t^2}{2 \|\sum_k c_k \mathbf{B}_k^2\|_2}\Bigr)\,.$$
 [Tropp2015, Theorem 4.1.1]. -/
 theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ)
@@ -198,7 +198,7 @@ variable {B : ι → Matrix m n 𝕜}
 /-- **The matrix series tail**, rectangular coefficients: for independent real $\gamma_k$, each
 sub-Gaussian with proxy $c_k$, fixed $\mathbf{B}_k$ with row index $m$ and column index $n$, and
 $t \ge 0$,
-$$\mathbb{P}\Bigl(\Bigl\|\sum_k \gamma_k \mathbf{B}_k\Bigr\|_2 \ge t\Bigr)
+$$\mathbb{P}\Bigl[\Bigl\|\sum_k \gamma_k \mathbf{B}_k\Bigr\|_2 \ge t\Bigr]
 \le (\lvert m\rvert + \lvert n\rvert)\, e^{-t^2 / (2v)}\,,$$
 with $v = \max\bigl(\|\sum_k c_k \mathbf{B}_k \mathbf{B}_k^{\mathsf{H}}\|_2,
 \|\sum_k c_k \mathbf{B}_k^{\mathsf{H}} \mathbf{B}_k\|_2\bigr)$.

@@ -178,7 +178,7 @@ theorem integrable_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ} (h
     ⟨ENNReal.mul_lt_top (measure_lt_top μ _) ENNReal.ofReal_lt_top, ENNReal.ofReal_lt_top⟩)
 
 /-- **The layer-cake bound**: under a probability measure, if $f \ge 0$ almost everywhere and
-$\mathbb{P}\{t \le f\} \le F(t)$ for all $t > a$, with $F$ integrable on $(a, \infty)$, then
+$\mathbb{P}[t \le f] \le F(t)$ for all $t > a$, with $F$ integrable on $(a, \infty)$, then
 $$\mathbb{E} f \le a + \int_a^\infty F(t) \, dt\,.$$
 Applied to $f^p$, whose tail at $t$ is the tail of $f$ at $t^{1/p}$, it bounds the moments of $f$.
 Integrability of $f$ is `integrable_of_measureReal_ge_le`. -/

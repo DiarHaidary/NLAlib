@@ -217,7 +217,7 @@ Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
 $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$, then for
 $\delta \ge 0$
-$$\mathbb{P}\bigl(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr)
+$$\mathbb{P}\bigl[\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr]
 \le \lvert n\rvert \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L}
 \,.$$
 [Tropp2015, Theorem 5.1.1]. -/
@@ -261,7 +261,7 @@ Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
 $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta < 0$, then for
 $0 \le \delta < 1$ and the smallest eigenvalue, index $k + 1 = \lvert n\rvert$,
-$$\mathbb{P}\bigl(\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})\bigr)
+$$\mathbb{P}\bigl[\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})\bigr]
 \le \lvert n\rvert
 \Bigl(\frac{e^{-\delta}}{(1 - \delta)^{1-\delta}}\Bigr)^{\lambda_k(\mathbf{V}) / L}\,.$$
 [Tropp2015, Theorem 5.1.1]. -/
@@ -310,7 +310,7 @@ theorem measureReal_eigenvalue_le_le_chernoff_of_integral_le (hY : ∀ᵐ ω ∂
 
 /-- The simplified Chernoff upper tail from a trace bound: under the hypotheses of
 `measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le`, for $0 \le \delta \le 1$,
-$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V}))
+$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})]
 \le \lvert n\rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)}$; weaker than the source form in
 every regime and proved from it. -/
 theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty n]
@@ -334,7 +334,7 @@ theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty 
 /-- The simplified Chernoff lower tail from a trace bound: under the hypotheses of
 `measureReal_eigenvalue_le_le_chernoff_of_integral_le`, for $0 \le \delta < 1$ and
 $k + 1 = \lvert n\rvert$,
-$\mathbb{P}(\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V}))
+$\mathbb{P}[\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})]
 \le \lvert n\rvert\, e^{-\delta^2 \lambda_k(\mathbf{V}) / (2L)}$; weaker than the source form in
 every regime and proved from it. -/
 theorem measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le

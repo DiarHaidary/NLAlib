@@ -167,7 +167,7 @@ private theorem ae_isHermitian_sum (h : ∀ k, HasMatrixMGFBound (X k) g (A k) s
 
 /-- **The master tail bound**: for independent summands with matrix MGF bounds, $\theta \in s$,
 $\theta > 0$ and every real $t$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr]
 \le e^{-\theta t} \operatorname{tr} e^{g(\theta) \sum_k \mathbf{A}_k}\,.$$
 [Tropp2015, Theorem 3.6.1]. -/
 theorem measureReal_eigenvalue_zero_sum_ge_le [Nonempty n] (hind : iIndepFun X μ)
@@ -180,7 +180,7 @@ theorem measureReal_eigenvalue_zero_sum_ge_le [Nonempty n] (hind : iIndepFun X �
     (mul_le_mul_of_nonneg_left (integral_re_trace_exp_sum_le hind h hθs) (Real.exp_pos _).le)
 
 /-- The master tail bound in the dimension form: if moreover $g(\theta) \ge 0$, then
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr]
 \le \lvert n\rvert\, e^{-\theta t + g(\theta) \lambda_0(\sum_k \mathbf{A}_k)}\,.$$ -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iIndepFun X μ)
     (h : ∀ k, HasMatrixMGFBound (X k) g (A k) s μ) {θ : ℝ} (hθs : θ ∈ s) (hθ : 0 < θ)

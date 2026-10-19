@@ -188,8 +188,8 @@ private theorem chernoff_hyps_of_hasLaw_uniformOn_injective
 $\mathbf{0} \preceq \mathbf{X}_i \preceq L\mathbf{I}$ with $L > 0$, a uniformly random injection
 $\iota : k \to n$, $\mathbf{V} = (\lvert k \rvert / \lvert n \rvert) \sum_i \mathbf{X}_i$ and
 $\delta \ge 0$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
-(1 + \delta) \lambda_0(\mathbf{V})\Bigr) \le \lvert m \rvert
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
+(1 + \delta) \lambda_0(\mathbf{V})\Bigr] \le \lvert m \rvert
 \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L} \,.$$
 [Tropp2011a] (sampling without replacement); [Tropp2015, Theorem 5.1.1] (the i.i.d. form, the
 same bound). No $\lvert k \rvert \le \lvert n \rvert$: otherwise $\mu = 0$.
@@ -213,8 +213,8 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injec
 /-- **Matrix Chernoff without replacement, lower tail**, source form. Under the hypotheses of
 `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injective`, for
 $0 \le \delta < 1$ and the smallest eigenvalue, index $j + 1 = \lvert m \rvert$,
-$$\mathbb{P}\Bigl(\lambda_j\Bigl(\sum_{j'} \mathbf{X}_{\iota(j')}\Bigr) \le
-(1 - \delta) \lambda_j(\mathbf{V})\Bigr) \le \lvert m \rvert
+$$\mathbb{P}\Bigl[\lambda_j\Bigl(\sum_{j'} \mathbf{X}_{\iota(j')}\Bigr) \le
+(1 - \delta) \lambda_j(\mathbf{V})\Bigr] \le \lvert m \rvert
 \Bigl(\frac{e^{-\delta}}{(1 - \delta)^{1-\delta}}\Bigr)^{\lambda_j(\mathbf{V}) / L} \,.$$
 [Tropp2011a]; [Tropp2015, Theorem 5.1.1] (the i.i.d. form, the same bound).
 Result: matrix-chernoff-without-replacement -/
@@ -238,8 +238,8 @@ theorem measureReal_eigenvalue_sum_le_le_chernoff_of_hasLaw_uniformOn_injective
 /-- **Matrix Chernoff without replacement, upper tail**, simplified: under the hypotheses of
 `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injective`, for
 $0 \le \delta \le 1$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
-(1 + \delta) \lambda_0(\mathbf{V})\Bigr) \le
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
+(1 + \delta) \lambda_0(\mathbf{V})\Bigr] \le
 \lvert m \rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)} \,;$$
 weaker than the source form in every regime and proved from the same trace bound.
 [Tropp2015, Theorem 5.1.1] (the i.i.d. form). -/
@@ -262,8 +262,8 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp_of_hasLaw_uniformOn_i
 /-- **Matrix Chernoff without replacement, lower tail**, simplified: under the hypotheses of
 `NLAlib.measureReal_eigenvalue_sum_le_le_chernoff_of_hasLaw_uniformOn_injective`, for
 $0 \le \delta < 1$ and $j + 1 = \lvert m \rvert$,
-$$\mathbb{P}\Bigl(\lambda_j\Bigl(\sum_{j'} \mathbf{X}_{\iota(j')}\Bigr) \le
-(1 - \delta) \lambda_j(\mathbf{V})\Bigr) \le
+$$\mathbb{P}\Bigl[\lambda_j\Bigl(\sum_{j'} \mathbf{X}_{\iota(j')}\Bigr) \le
+(1 - \delta) \lambda_j(\mathbf{V})\Bigr] \le
 \lvert m \rvert\, e^{-\delta^2 \lambda_j(\mathbf{V}) / (2L)} \,;$$
 weaker than the source form in every regime and proved from the same trace bound.
 [Tropp2015, Theorem 5.1.1] (the i.i.d. form). -/

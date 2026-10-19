@@ -179,7 +179,7 @@ section Chernoff
 semidefinite $\mathbf{Y}$ with $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$, a nonzero
 positive semidefinite $\mathbf{V}$ and $\delta \ge L / \lambda_0(\mathbf{V})$,
-$$\mathbb{P}\bigl(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr)
+$$\mathbb{P}\bigl[\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr]
 \le 2 \operatorname{intdim}(\mathbf{V})
 \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L}\,.$$
 [Tropp2015, Theorem 7.2.1]; there for independent sums, here from the trace bound alone, so any
@@ -285,8 +285,8 @@ private theorem chernoff_intrinsic_hyps [IsProbabilityMeasure μ] (hind : iIndep
 measurable random matrices with $\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost
 surely, $L > 0$, a matrix $\mathbf{M} \ne \mathbf{0}$ with
 $\sum_k \mathbb{E}\mathbf{X}_k \preceq \mathbf{M}$ and $\delta \ge L / \lambda_0(\mathbf{M})$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge (1 + \delta) \lambda_0(\mathbf{M})
-\Bigr) \le 2 \operatorname{intdim}(\mathbf{M})
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge (1 + \delta) \lambda_0(\mathbf{M})
+\Bigr] \le 2 \operatorname{intdim}(\mathbf{M})
 \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{M}) / L}\,.$$
 [Tropp2015, Theorem 7.2.1]; here with any upper bound $\mathbf{M}$ in Loewner order in place of
 $\sum_k \mathbb{E}\mathbf{X}_k$. Better than `measureReal_eigenvalue_zero_sum_ge_le_chernoff` when
@@ -383,7 +383,7 @@ section Bernstein
 /-- The generalised Laplace bound with $\psi(a) = e^{\theta a} - \theta a - 1$ for a centred
 $\mathbf{Y}$ with a trace bound $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{c\mathbf{V}}$: for $t > 0$,
-$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le \operatorname{intdim}(\mathbf{V})
+$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t] \le \operatorname{intdim}(\mathbf{V})
 (e^{c \|\mathbf{V}\|_2} - 1) / (e^{\theta t} - \theta t - 1)$. -/
 private theorem bernstein_intrinsic_core [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜}
     {V : Matrix n n 𝕜} (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi : Integrable Y μ)
@@ -450,7 +450,7 @@ $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((\theta^2/2)/(1 - L\theta/3))\, \mathbf{V}}$ for
 $\theta \in (0, 3/L)$, a positive semidefinite $\mathbf{V}$, and
 $t \ge \sqrt{\|\mathbf{V}\|_2} + L/3$,
-$$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le 4 \operatorname{intdim}(\mathbf{V})
+$$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t] \le 4 \operatorname{intdim}(\mathbf{V})
 \exp\Bigl(\frac{-t^2/2}{\|\mathbf{V}\|_2 + L t / 3}\Bigr)\,.$$
 [Tropp2015, Theorem 7.7.1]; here from the trace bound alone. No $\mathbf{V} \ne \mathbf{0}$: at
 $\mathbf{V} = \mathbf{0}$ the bound $0$ holds because
@@ -548,7 +548,7 @@ variable {X : ι → Ω → Matrix n n 𝕜}
 centred random matrices in $L^2$ with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
 a matrix $\mathbf{V}$ with $\sum_k \mathbb{E}\mathbf{X}_k^2 \preceq \mathbf{V}$ and
 $t \ge \sqrt{\|\mathbf{V}\|_2} + L/3$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr]
 \le 4 \operatorname{intdim}(\mathbf{V})
 \exp\Bigl(\frac{-t^2/2}{\|\mathbf{V}\|_2 + L t / 3}\Bigr)\,.$$
 [Tropp2015, Corollary 7.3.2; Theorem 7.7.1]; here with any upper bound $\mathbf{V}$ in Loewner
@@ -598,7 +598,7 @@ centred random matrices $\mathbf{S}_k$ in $L^2$ with $\|\mathbf{S}_k\|_2 \le L$ 
 $L > 0$, matrices $\mathbf{V}_1 \succeq \sum_k \mathbb{E}\mathbf{S}_k\mathbf{S}_k^{\mathsf{H}}$
 and $\mathbf{V}_2 \succeq \sum_k \mathbb{E}\mathbf{S}_k^{\mathsf{H}}\mathbf{S}_k$,
 $v = \max(\|\mathbf{V}_1\|_2, \|\mathbf{V}_2\|_2)$ and $t \ge \sqrt{v} + L/3$,
-$$\mathbb{P}\Bigl(\Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \ge t\Bigr)
+$$\mathbb{P}\Bigl[\Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \ge t\Bigr]
 \le 4 \operatorname{intdim}\begin{bmatrix} \mathbf{V}_1 & \mathbf{0} \\ \mathbf{0} &
 \mathbf{V}_2 \end{bmatrix} \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
 [Tropp2015, Theorem 7.3.1]; through the Hermitian dilation, with any upper bounds

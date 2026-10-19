@@ -329,7 +329,7 @@ variable [DecidableEq n]
 sub-Gaussian rows with proxy $c$, the sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$
 has the JL property at every $\varepsilon$: for every
 unit $\mathbf{x}$, <!-- value subgaussianJLConstant -->
-$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\frac{1}{64} \lvert k \rvert \min(\varepsilon^2/c^2, \, \varepsilon/c)} \,,$$
 the constant being `subgaussianJLConstant`. [Vershynin2018, Exercise 5.3.3 (2020 draft)], there
 with an unspecified constant. Replaces the prototype's

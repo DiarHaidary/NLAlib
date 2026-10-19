@@ -1004,8 +1004,8 @@ def math_rule(rid, level, pat, text, fix):
 
 
 math_rule('M1', 'error',
-          r'\\Pr\b|\\mathbb\{P\}\s*(_\{[^}]*\}|_\w)?\s*(\(|\\left\(|\\bigl\(|\\Bigl\(|\\biggl\()',
-          'a probability with round delimiters or `\\Pr`',
+          r'\\Pr\b|\\mathbb\{P\}\s*(_\{[^}]*\}|_\w)?\s*(\\left|\\[bB]igg?l)?(\(|\\\{)',
+          'a probability with round or brace delimiters, or `\\Pr`',
           'Write `\\mathbb{P}[E]` (sized `\\mathbb{P}\\bigl[E\\bigr]`)')
 
 

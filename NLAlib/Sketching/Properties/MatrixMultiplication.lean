@@ -311,9 +311,9 @@ theorem HasJLMoment.integral_frobNorm_conjTranspose_mul_sub_rpow_le (h : HasJLMo
 
 /-- **Approximate matrix multiplication, tail form**: for $\varepsilon > 0$, $p \ge 2$ and nonzero
 $\mathbf{A}$, $\mathbf{B}$,
-$$\mathbb{P}\bigl(\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
+$$\mathbb{P}\bigl[\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
 \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
-\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr) \le \delta\,.$$
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr] \le \delta\,.$$
 [Woodruff2014, Theorem 13]; there $3 \varepsilon$. -/
 theorem HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le (h : HasJLMoment S ε δ p μ)
     (hε : 0 < ε) (hp : 2 ≤ p) (hS : AEMeasurable S μ) {A : Matrix n q ℝ} {B : Matrix n r ℝ}

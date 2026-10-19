@@ -110,7 +110,7 @@ theorem integrable_comp_of_lipschitzWith_of_hasLaw_gaussianVector
 
 /-- The upper tail of a Lipschitz function of a standard Gaussian vector: for $f$ $L$-Lipschitz
 for the Euclidean norm and $t \ge 0$,
-$$\mathbb{P}\bigl(\mathbb{E} f(\mathbf{g}) + t \le f(\mathbf{g})\bigr)
+$$\mathbb{P}\bigl[\mathbb{E} f(\mathbf{g}) + t \le f(\mathbf{g})\bigr]
 \le \exp\Bigl(-\frac{t^2}{2L^2}\Bigr),$$
 with the event in the form the random-matrix consumers use. -/
 theorem measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector

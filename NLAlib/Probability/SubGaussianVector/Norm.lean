@@ -21,11 +21,11 @@ is at most the Laplace transform of $c \chi^2_n$, and the upper tails of a weigh
 $\sum_i w_i \mathbf{x}_i^2$ and of the squared norm $\|\mathbf{A}\mathbf{x}\|^2$ of its image
 under a fixed matrix $\mathbf{A}$ are Hsu, Kakade and Zhang's, with Laurent and Massart's
 constants,
-$$\mathbb{P}\Bigl(\|\mathbf{A}\mathbf{x}\|^2 \ge c\,\bigl(\|\mathbf{A}\|_{\mathsf{F}}^2 +
+$$\mathbb{P}\Bigl[\|\mathbf{A}\mathbf{x}\|^2 \ge c\,\bigl(\|\mathbf{A}\|_{\mathsf{F}}^2 +
   2 \|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\mathsf{F}} \sqrt{t} +
-  2 \|\mathbf{A}\|_2^2\, t\bigr)\Bigr) \le e^{-t}\,.$$
+  2 \|\mathbf{A}\|_2^2\, t\bigr)\Bigr] \le e^{-t}\,.$$
 At $\mathbf{A} = \mathbf{I}$ this is
-$\mathbb{P}(\|\mathbf{x}\|^2 \ge c (n + 2\sqrt{n t} + 2t)) \le e^{-t}$. For independent
+$\mathbb{P}[\|\mathbf{x}\|^2 \ge c (n + 2\sqrt{n t} + 2t)] \le e^{-t}$. For independent
 sub-Gaussian coordinates, the two-sided tail of $\|\mathbf{x}\|^2$ about its mean is Bernstein's
 inequality for the centred squares.
 

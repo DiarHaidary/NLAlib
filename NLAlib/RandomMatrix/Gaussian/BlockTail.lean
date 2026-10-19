@@ -18,7 +18,7 @@ For a standard Gaussian $r \times k$ matrix $\mathbf{G}$ with $d = \lvert k \rve
 $1/\chi^2_d$, so the exact small ball of $\chi^2$ bounds their upper tails, and their sum, the
 trace $\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$, has the
 tail <!-- value gaussianPinvFrobTail {\lvert r\rvert} d t -->
-$$\mathbb{P}\Bigl\{\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{t\lvert r\rvert}{d}\Bigr\} \le
+$$\mathbb{P}\Bigl[\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{t\lvert r\rvert}{d}\Bigr] \le
 \frac{2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}$$
 for $t > 0$, the right side being `NLAlib.gaussianPinvFrobTail` (Tropp and Webber's (B.3), with a
 smaller constant, by Markov's inequality on a truncated $d$-th power and the layer-cake formula in
@@ -67,7 +67,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k r s a : 
 
 /-- **The tail of the Frobenius norm of a Gaussian pseudoinverse**, the right side of
 the bound <!-- value gaussianPinvFrobTail k d t -->
-$$\mathbb{P}\Bigl\{\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{tk}{d}\Bigr\} \le
+$$\mathbb{P}\Bigl[\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{tk}{d}\Bigr] \le
 \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}$$
 for a real $k \times (k + d - 1)$ standard Gaussian $\mathbf{G}$ and $t > 0$
 (`NLAlib.measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`). Source value
@@ -137,7 +137,7 @@ private theorem inv_mul_conjTranspose_apply_self_nonneg [Fintype k] [DecidableEq
 
 /-- **The upper tail of a diagonal entry of an inverse Wishart matrix**: for an $r \times k$
 standard Gaussian $\mathbf{G}$, $d = \lvert k \rvert - \lvert r \rvert + 1$ and $s > 0$,
-$$\mathbb{P}\{s \le (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}_{ii}\} \le
+$$\mathbb{P}[s \le (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}_{ii}] \le
 \frac{(1/(2s))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
 the exact small ball of $\chi^2_d$
 (`NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector`) at $u = 1/s$, since
@@ -170,7 +170,7 @@ theorem measureReal_inv_mul_conjTranspose_apply_self_ge_le_of_hasLaw_gaussianMat
   simp only [id, Fintype.card_fin] at h
   rwa [show 1 / s / 2 = 1 / (2 * s) by field_simp] at h
 
-/-- **Truncated mean by the layer cake**: if $Z \ge 0$ has $\mathbb{P}\{Z > s\} \le K s^{-1/2}$
+/-- **Truncated mean by the layer cake**: if $Z \ge 0$ has $\mathbb{P}[Z > s] \le K s^{-1/2}$
 for every $s > 0$, then $\mathbb{E}\min(a, Z) \le 2K\sqrt{a}$. -/
 private theorem integral_min_le_two_mul_sqrt {α : Type*} [MeasurableSpace α] {ν : Measure α}
     [IsProbabilityMeasure ν] {Z : α → ℝ} (hZ : Measurable Z) (hZ0 : ∀ x, 0 ≤ Z x) {c K : ℝ}
@@ -218,8 +218,8 @@ private theorem integral_min_le_two_mul_sqrt {α : Type*} [MeasurableSpace α] {
         ring
 
 /-- **The sum of variables with polynomial tails**: if $D_i \ge 0$, $i \in r$, $R = \lvert r \rvert
-\ge 1$, have $\mathbb{P}\{u \le D_i\} \le K u^{-d/2}$ for every $u > 0$, with $d \ge 1$, then
-$\mathbb{P}\{v < \sum_i D_i\} \le 2KR\sqrt{R^{d-1}}\,v^{-d/2}$, by Markov's inequality on
+\ge 1$, have $\mathbb{P}[u \le D_i] \le K u^{-d/2}$ for every $u > 0$, with $d \ge 1$, then
+$\mathbb{P}[v < \sum_i D_i] \le 2KR\sqrt{R^{d-1}}\,v^{-d/2}$, by Markov's inequality on
 $\min(v^d, (\sum_i D_i)^d) \le R^{d-1}\sum_i \min(v^d/R^{d-1}, D_i^d)$ and the layer cake. -/
 private theorem measureReal_lt_sum_le {α : Type*} [MeasurableSpace α] {ν : Measure α}
     [IsProbabilityMeasure ν] {D : r → α → ℝ} (hD : ∀ i, Measurable (D i))
@@ -370,7 +370,7 @@ private theorem gaussianMatrix_real_lt_sum_le [DecidableEq r]
 /-- **The trace tail of an inverse Wishart matrix**: for an $r \times k$ standard Gaussian
 $\mathbf{G}$, $d = \lvert k\rvert - \lvert r\rvert + 1$ and
 $t > 0$, <!-- value gaussianPinvFrobTail {\lvert r\rvert} d t -->
-$$\mathbb{P}\Bigl\{\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{t\lvert r\rvert}{d}\Bigr\} \le
+$$\mathbb{P}\Bigl[\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{t\lvert r\rvert}{d}\Bigr] \le
 \frac{2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
 the right side being `gaussianPinvFrobTail |r| d t`. Off a null set
 $\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 = \sum_i D_i$ with
@@ -427,8 +427,8 @@ theorem measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix
 /-- **The spectral tail of a Gaussian pseudoinverse**: for an $r \times k$ standard Gaussian
 $\mathbf{G}$ with $\lvert r\rvert < \lvert k\rvert$ and
 $t > 0$, <!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
-$$\mathbb{P}\Bigl\{\|\mathbf{G}^{+}\|_2 > t\,\frac{e}{\lvert k\rvert - \lvert r\rvert}
-\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}\Bigr\} \le
+$$\mathbb{P}\Bigl[\|\mathbf{G}^{+}\|_2 > t\,\frac{e}{\lvert k\rvert - \lvert r\rvert}
+\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}\Bigr] \le
 t^{-(\lvert k\rvert - \lvert r\rvert)}\,,$$
 the constant being `gaussianPinvSpecNormBound |r| |k|`, by Markov's inequality at the spectral
 moment of order $\lvert k\rvert - \lvert r\rvert$
@@ -533,8 +533,8 @@ Gaussian $n \times k$ matrix $\mathbf{G}$, frames $\mathbf{V}_1$ ($n \times r$) 
 $\mathbf{V}_2$ ($n \times s$) with $\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, the blocks
 $\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$, $d = \lvert k\rvert - \lvert r\rvert + 1$, any
 $u$ and $t > 0$, <!-- value gaussianPinvFrobTail {\lvert r\rvert} d t -->
-$$\mathbb{P}\Bigl\{\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_{\mathsf{F}}^2 >
-\frac{ut\lvert r\rvert}{d}\|\mathbf{S}\|_{\mathsf{F}}^2\Bigr\} \le e^{-(u-2)/4} +
+$$\mathbb{P}\Bigl[\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_{\mathsf{F}}^2 >
+\frac{ut\lvert r\rvert}{d}\|\mathbf{S}\|_{\mathsf{F}}^2\Bigr] \le e^{-(u-2)/4} +
 \frac{2\sqrt{\lvert r\rvert}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,.$$
 Conditionally on $\mathbf{T} = \mathbf{G}_1^{+}$, $\mathbf{G} \mapsto
 \|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}}$ is

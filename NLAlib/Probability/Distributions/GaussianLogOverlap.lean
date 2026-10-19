@@ -20,7 +20,7 @@ random start and a fixed direction, the quantity a random-start analysis of the 
 the Lanczos method has to control [KuczynskiWozniakowski1992]. Its inverse
 $\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2$ has infinite mean, but its logarithm
 $L = \log(\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2)$ has an exponential tail
-beyond $\log(2N)$: $\mathbb{P}(t \le L) \le \sqrt{2N}\, e^{-t/2}$ for every real $t$, and so finite
+beyond $\log(2N)$: $\mathbb{P}[t \le L] \le \sqrt{2N}\, e^{-t/2}$ for every real $t$, and so finite
 first and second moments, $\mathbb{E} L \le \log(2N) + 2$ and
 $\mathbb{E} L^2 \le \log(2N)^2 + 4 \log(2N) + 8$.
 
@@ -31,8 +31,8 @@ $\langle \mathbf{u}, \mathbf{g} \rangle = \mathbf{g}_i$.
 
 The proof rotates $\mathbf{u}$ to a coordinate vector, splits that coordinate $g$ from the others,
 whose squared norm $R$ is independent of it, and uses the small-ball bound
-$\mathbb{P}(\lvert g\rvert \le a) \le a$ (the standard Gaussian density is at most $1/2$):
-$\mathbb{P}(v \le R / g^2) \le \mathbb{E}\sqrt{R / v} \le \sqrt{(N - 1) / v}$.
+$\mathbb{P}[\lvert g\rvert \le a] \le a$ (the standard Gaussian density is at most $1/2$):
+$\mathbb{P}[v \le R / g^2] \le \mathbb{E}\sqrt{R / v} \le \sqrt{(N - 1) / v}$.
 
 ## Main results
 
@@ -72,7 +72,7 @@ private theorem gaussianPDFReal_le_half (x : ℝ) : gaussianPDFReal 0 1 x ≤ 1 
   exact (mul_le_mul_of_nonneg_left hexp (inv_nonneg.mpr (Real.sqrt_nonneg _))).trans
     (by simpa only [mul_one] using hinv)
 
-/-- The small ball $\mathbb{P}(\lvert g\rvert \le a) \le a$ of a standard Gaussian. -/
+/-- The small ball $\mathbb{P}[\lvert g\rvert \le a] \le a$ of a standard Gaussian. -/
 private theorem gaussianReal_abs_le_le (a : ℝ) :
     gaussianReal 0 1 {x : ℝ | |x| ≤ a} ≤ ENNReal.ofReal a := by
   have hSet : {x : ℝ | |x| ≤ a} = Icc (-a) a := by
@@ -91,7 +91,7 @@ private theorem gaussianReal_abs_le_le (a : ℝ) :
       congr 1
       ring
 
-/-- $\mathbb{P}(v \le s / g^2) \le \sqrt{s / v}$ for a standard Gaussian $g$ and $v > 0$. -/
+/-- $\mathbb{P}[v \le s / g^2] \le \sqrt{s / v}$ for a standard Gaussian $g$ and $v > 0$. -/
 private theorem gaussianReal_le_div_sq_le {s v : ℝ} (hv : 0 < v) :
     gaussianReal 0 1 {x : ℝ | v ≤ s / x ^ 2} ≤ ENNReal.ofReal √(s / v) := by
   refine (measure_mono fun x (hx : v ≤ s / x ^ 2) => ?_).trans (gaussianReal_abs_le_le _)
@@ -147,7 +147,7 @@ private theorem lintegral_sqrt_norm_sq_div_le {m : Type*} [Fintype m] {v : ℝ}
       linear_combination (-2 * √v) * h1
 
 /-- With $R$ the squared norm of the coordinates other than $i$,
-$\mathbb{P}(v \le R / \mathbf{g}_i^2) \le \sqrt{(N - 1) / v}$: $\mathbf{g}_i$ is independent of
+$\mathbb{P}[v \le R / \mathbf{g}_i^2] \le \sqrt{(N - 1) / v}$: $\mathbf{g}_i$ is independent of
 $R$, so the small ball of $\mathbf{g}_i$ is integrated against the law of $R$. -/
 private theorem gaussianVector_le_div_sq_le [DecidableEq n] (i : n) {v : ℝ} (hv : 0 < v) :
     gaussianVector n {x | v ≤ ‖WithLp.toLp 2 (fun j : {j // ¬j = i} => x j)‖ ^ 2 / x i ^ 2} ≤
@@ -456,8 +456,8 @@ private theorem exists_hasLaw_gaussianVector_eq (hg : HasLaw g (gaussianVector n
 
 /-- **The tail of the logarithmic overlap.** For a standard Gaussian vector $\mathbf{g}$ in
 $\mathbb{R}^n$ and a unit vector $\mathbf{u}$, for every real $t$,
-$$\mathbb{P}\Bigl(t \le \log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \rangle^2}
-\Bigr) \le \sqrt{2N}\, e^{-t/2},$$
+$$\mathbb{P}\Bigl[t \le \log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \rangle^2}
+\Bigr] \le \sqrt{2N}\, e^{-t/2},$$
 with $N = \lvert n \rvert$; the bound is below $1$ exactly when $t > \log(2N)$. The logarithm is
 $0$ on the null event $\langle \mathbf{u}, \mathbf{g} \rangle = 0$. The random-start step of the
 power and Lanczos methods [KuczynskiWozniakowski1992], in logarithmic form.

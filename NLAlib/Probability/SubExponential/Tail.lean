@@ -11,7 +11,7 @@ public import NLAlib.Probability.SubExponential.Basic
 # Tails of sub-exponential random variables
 
 The tail of a sub-exponential variable,
-$\mathbb{P}(X \ge t) \le \exp(-\min(t^2 / (2v), t / (2b)))$, its two regimes, the lower and
+$\mathbb{P}[X \ge t] \le \exp(-\min(t^2 / (2v), t / (2b)))$, its two regimes, the lower and
 two-sided tails, and Bernstein's inequality for sums of independent sub-exponential variables.
 
 ## Main results

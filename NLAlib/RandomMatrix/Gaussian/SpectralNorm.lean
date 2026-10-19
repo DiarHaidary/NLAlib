@@ -277,9 +277,9 @@ theorem integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix
   le_of_forall_mul_one_sub_le fun _ hε0 hε => integral_specNorm_mul_mul_mul_one_sub_le hX S T hε0 hε
 
 /-- The tail of $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ above Chevet's bound: for $t \ge 0$,
-$$\mathbb{P}\bigl(\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
+$$\mathbb{P}\bigl[\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
   \ge \|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} + \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2 +
-  t\bigr)
+  t\bigr]
 \le \exp\Bigl(-\frac{t^2}{2 \|\mathbf{S}\|_2^2 \|\mathbf{T}\|_2^2}\Bigr) \,,$$
 by Gaussian concentration (`NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix`) with
 Lipschitz constant $\|\mathbf{S}\|_2 \|\mathbf{T}\|_2$ and Chevet's inequality.

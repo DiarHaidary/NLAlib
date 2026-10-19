@@ -21,7 +21,7 @@ public import NLAlib.Sketching.Properties.Oblivious
 A random sketch $\mathbf{S}$ with values in $\Bbbk^{k \times n}$ has the *distributional
 Johnson–Lindenstrauss property* with distortion $\varepsilon$ and failure probability $\delta$
 when, for every unit vector $\mathbf{x}$,
-$\mathbb{P}(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert) \le \delta$; it has the
+$\mathbb{P}[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert] \le \delta$; it has the
 *JL moment property* with exponent $p$ when
 $\mathbb{E}\lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert^p \le \varepsilon^p \delta$ for unit
 $\mathbf{x}$. The moment property implies the tail property (Markov), and both scale to every
@@ -78,7 +78,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {k n : Type*} [Fintype k] [Fintype n] {S : Ω → Matrix k n 𝕜} {ε ε' δ δ' p : ℝ}
 
 /-- **Distributional Johnson–Lindenstrauss property** on unit vectors: for every unit
-$\mathbf{x}$, $\mathbb{P}(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert) \le \delta$.
+$\mathbf{x}$, $\mathbb{P}[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert] \le \delta$.
 [Woodruff2014, proof of Lemma 18]; [MartinssonTropp2020, §8.6]. -/
 def HasJLProperty (S : Ω → Matrix k n 𝕜) (ε δ : ℝ) (μ : Measure Ω) : Prop :=
   ∀ x : n → 𝕜, ‖WithLp.toLp 2 x‖ = 1 →
@@ -152,8 +152,8 @@ theorem HasJLMoment.mono (h : HasJLMoment S ε δ p μ) (hε : ε ≤ ε') (hδ 
     _ ≤ ε' ^ p * δ' := mul_le_mul_of_nonneg_left hδ (Real.rpow_nonneg hε' p)
 
 /-- The JL property at a nonzero vector $\mathbf{x}$:
-$\mathbb{P}(\varepsilon \|\mathbf{x}\|^2 \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2
-\rvert) \le \delta$. -/
+$\mathbb{P}[\varepsilon \|\mathbf{x}\|^2 \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2
+\rvert] \le \delta$. -/
 theorem HasJLProperty.measureReal_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
     {x : n → 𝕜} (hx : x ≠ 0) :
     μ.real {ω | ε * ‖WithLp.toLp 2 x‖ ^ 2 ≤
@@ -367,8 +367,8 @@ theorem HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le (h : HasJLMoment S 
 
 /-- **Frobenius-norm preservation, tail form**: for $\varepsilon > 0$, $p \ge 1$ and
 $\mathbf{X} \ne \mathbf{0}$,
-$$\mathbb{P}\bigl(\varepsilon\|\mathbf{X}\|_{\mathsf{F}}^2 \le
-\bigl\lvert\|\mathbf{S}\mathbf{X}\|_{\mathsf{F}}^2 - \|\mathbf{X}\|_{\mathsf{F}}^2\bigr\rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon\|\mathbf{X}\|_{\mathsf{F}}^2 \le
+\bigl\lvert\|\mathbf{S}\mathbf{X}\|_{\mathsf{F}}^2 - \|\mathbf{X}\|_{\mathsf{F}}^2\bigr\rvert\bigr]
 \le \delta\,,$$
 from `NLAlib.HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le` by Markov's inequality; the
 matrix twin of `NLAlib.HasJLProperty.measureReal_abs_norm_mulVec_sq_sub_ge_le` through

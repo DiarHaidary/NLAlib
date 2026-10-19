@@ -624,9 +624,9 @@ theorem integral_frobNorm_conjTranspose_mul_sub_sq_le_of_hasLaw_countSketch
 
 /-- **AMM with a CountSketch, tail form**: for $\varepsilon > 0$ and nonzero $\mathbf{A}$,
 $\mathbf{B}$,
-$$\mathbb{P}\bigl(\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
+$$\mathbb{P}\bigl[\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
 \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
-\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr)
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr]
 \le \frac{2}{\lvert k \rvert \varepsilon^2}\,.$$
 S1's AMM route (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le` at
 `NLAlib.hasJLMoment_of_hasLaw_countSketch`) is over $\mathbb{R}$ only, where it gives the same
