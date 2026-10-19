@@ -80,9 +80,15 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **NLAlib.** `singularValues A : ℕ → ℝ` for a matrix: Mathlib's definition applied to
   `x ↦ A *ᵥ x` between Euclidean spaces, coerced to a function. `singularValuesFinsupp A` keeps
   the finitely supported form for symmetric gauges.
+- **Bridge.** `singularValues_eq_linearMap`
+  (`singularValues A = ⇑(Matrix.toEuclideanLin A).singularValues`, by `rfl`),
+  `singularValuesFinsupp_eq_linearMap`, `coe_singularValuesFinsupp`.
 - **Why.** Statements are about matrices, and Mathlib has no matrix-level name. The indexing is
   Mathlib's own.
-- **Cost.** One unfolding to reach Mathlib's API. **Status: low risk.**
+- **Cost.** One unfolding to reach Mathlib's API. The bridge needs `[DecidableEq n]` (for
+  `Matrix.toEuclideanLin`), which the definition does not.
+- **Status: not yet reviewed by the maintainer.** Judged low risk when made: the indexing and
+  the zero padding are Mathlib's.
 
 ## 3. Matrix norms are named functions
 
@@ -96,7 +102,10 @@ None of these was approved by the maintainer when it was made. Status is given p
   it is read, and one statement often needs two norms at once. `specNorm` also needs no
   `DecidableEq`, which Mathlib's instance does.
 - **Cost.** Mathlib's normed-space lemmas apply only after the bridge, inside a proof, with the
-  scope opened locally. **Status: in the contract from the start (§5.1).**
+  scope opened locally.
+- **Status: not yet reviewed by the maintainer.** In the contract from the start (§5.1). The
+  maintainer's decision of 2026-10-14 that `Matrix.Norms.L2Operator` is the only scope opened for
+  analysis (entry 13) concerns which scope a proof opens, not the named norms.
 
 ## 4. Orthonormal columns and unitaries
 
@@ -108,8 +117,8 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Why.** Most orthonormal factors in numerical linear algebra are rectangular (thin QR, SVD
   factors, Krylov bases, range finders); the unitary group cannot express them, and bundled
   group elements need coercions in every product.
-- **Cost.** Mathlib's group structure on unitaries is one bridge away. **Status: in the contract
-  from the start (§5.3).**
+- **Cost.** Mathlib's group structure on unitaries is one bridge away.
+- **Status: not yet reviewed by the maintainer.** In the contract from the start (§5.3).
 
 ## 5. Vectors and column spaces
 
@@ -121,16 +130,23 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Bridge.** `toEuclideanLin_rangeProjector`, `rayleighQuotient_eq_toEuclideanCLM`.
 - **Why.** Statements stay in the type where `*ᵥ`, `⬝ᵥ` and matrix products live, with no
   transport between `n → 𝕜` and `EuclideanSpace 𝕜 n` in statements.
-- **Cost.** The norm spelling is long. **Status: in the contract (§5.1, §5.3).**
+- **Cost.** The norm spelling is long.
+- **Status: not yet reviewed by the maintainer.** In the contract (§5.1, §5.3). The primitive
+  projector is listed for confirmation in `docs/design/Matrix-REPORT.md` §3, item 4.
 
 ## 6. The matrix logarithm
 
 - **Mathlib.** `CFC.log A`, defined for a `NormedRing` with a `NormedAlgebra ℝ` structure.
 - **NLAlib.** `cfc Real.log A`, which is what `CFC.log` unfolds to.
+- **Bridge.** None as a lemma: `CFC.log A` is `cfc Real.log A` by Mathlib's definition, so under
+  `open scoped Matrix.Norms.L2Operator` the two agree by `rfl`. `Matrix.PosDef.cfc_log_le_cfc_log`
+  applies `CFC.log_le_log` this way, on complex matrices through `complexify`.
 - **Why.** Matrices have no global normed ring structure (entry 3), so `CFC.log` does not
   elaborate without opening a norm scope in the statement.
 - **Cost.** Mathlib lemmas named `CFC.log_*` need the scope opened locally and a `rfl`.
-  **Status: forced by Mathlib's instances; revisit if Mathlib relaxes the hypothesis.**
+- **Status: not yet reviewed by the maintainer.** Forced by Mathlib's instances; revisit if
+  Mathlib relaxes the hypothesis. Listed for confirmation in `docs/design/Matrix-REPORT.md` §3,
+  item 6 (`Matrix-Functions.md` §7.2).
 
 ## 7. Spectral radius
 
@@ -141,7 +157,9 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Why.** It is always finite for a matrix, and a real value works with `positivity`, `gcongr`
   and comparison with `specNorm`. Going through `ℂ` makes it the modulus of the largest complex
   eigenvalue also for a real matrix, whose real spectrum may be empty.
-- **Cost.** A second name next to Mathlib's. **Status: open (`Matrix-Structured.md` §7.3).**
+- **Cost.** A second name next to Mathlib's.
+- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Structured.md` §7.3); listed for
+  confirmation in `docs/design/Matrix-REPORT.md` §3, item 8.
 
 ## 8. Eigenvalues of a general matrix
 
@@ -153,7 +171,9 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Why.** Theorems such as Schur's inequality, Hoffman–Wielandt or the eigenvalues of a
   Kronecker product speak of the eigenvalues with multiplicity in some order. A set loses
   multiplicity; a multiset has no indices to sum over or to match with a diagonal.
-- **Cost.** A predicate with its own API. **Status: open (`Matrix-Structured.md` §7.1).**
+- **Cost.** A predicate with its own API.
+- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Structured.md` §7.1); listed for
+  confirmation in `docs/design/Matrix-REPORT.md` §3, item 8.
 
 ## 9. Diagonalisability
 
@@ -162,6 +182,10 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Bridge.** `isDiagonalizable_iff_isSemisimple` (algebraically closed field),
   `isDiagonalizable_iff_iSup_eigenspace_eq_top`.
 - **Why.** Semisimple and diagonalisable differ over a field that is not algebraically closed.
+- **Cost.** A predicate with its own API. Mathlib's `Module.End.IsSemisimple` lemmas reach it
+  only through `Matrix.toLin'` and the bridge, and over a field that is not algebraically closed
+  (`ℝ`) only in one direction (`IsDiagonalizable.isSemisimple`). The predicate needs
+  `[DecidableEq n]` (for `Matrix.diagonal`).
 - **Status: open (`Matrix-Structured.md` §7.4).**
 
 ## 10. Derivatives of matrix-valued curves
@@ -169,7 +193,13 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Mathlib.** `HasDerivAt` in a normed space, which for matrices needs a norm scope.
 - **NLAlib.** Entrywise: `∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t`.
 - **Bridge.** `Matrix.hasDerivAt_iff_forall_apply`.
-- **Why.** No norm scope in statements (entry 3). **Status: open (`Matrix-Functions.md` §7.6).**
+- **Why.** No norm scope in statements (entry 3).
+- **Cost.** Hypotheses are `∀ i j` families rather than one `HasDerivAt`, so Mathlib's calculus
+  rules are not applied to the matrix curve: the product, power, trace, determinant and inverse
+  rules are proved again entrywise (`Matrix.hasDerivAt_mul_apply`,
+  `Matrix.hasDerivAt_pow_succ_apply`, `Matrix.hasDerivAt_det`, `Matrix.hasDerivAt_inv_apply`). A
+  user holding a Mathlib `HasDerivAt A A' t` converts with the bridge.
+- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Functions.md` §7.6).
 
 ## 11. Inertia
 
@@ -177,7 +207,15 @@ None of these was approved by the maintainer when it was made. Status is given p
   `{1, 0, -1}` (`QuadraticForm.equivalent_one_zero_neg_one_weighted_sum_squared`).
 - **NLAlib.** `inertiaPos A`, `inertiaNeg A`: the numbers of positive and negative eigenvalues of
   a Hermitian matrix over `𝕜`, with Sylvester's law proved for matrices.
+- **Bridge.** None yet. It would say that, for a real symmetric `A`, the numbers of weights `1`
+  and `-1` in Mathlib's weighted sum of squares equivalent to the quadratic form of `A` are
+  `inertiaPos A` and `inertiaNeg A`. The nearest statements are `inertiaPos_diagonal`,
+  `inertiaNeg_diagonal` and Sylvester's law `Matrix.IsHermitian.inertiaPos_conjTranspose_mul_mul`.
 - **Why.** Hermitian matrices over `𝕜`, and numbers that statements can compute with.
+- **Cost.** Sylvester's law is proved a second time, and Mathlib's quadratic-form API
+  (equivalence of forms, the weighted-sum normal form) does not apply to the counts without the
+  missing bridge. The counts are defined through `eigenvalue` and are `0` for a matrix that is
+  not Hermitian, so statements carry `hA : A.IsHermitian` (entry 1).
 - **Status: open (`Matrix-Structured.md` §7.2).**
 
 ## 12. A measurable space on matrices
@@ -185,12 +223,20 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Mathlib.** None.
 - **NLAlib.** `Matrix.instMeasurableSpace`, the product σ-algebra, as a global instance in
   `NLAlib/ForMathlib/MeasureTheory/Matrix.lean`.
+- **Bridge.** To Mathlib's σ-algebra on `m → n → R`: the instance is `MeasurableSpace.pi` by
+  definition; `Matrix.measurable_iff` (measurable exactly when every entry is) and
+  `Matrix.instBorelSpace` (the Borel σ-algebra of Mathlib's global matrix topology, by
+  `inferInstanceAs` from `m → n → R`).
 - **Risk.** If Mathlib adds an instance later, the two may differ syntactically.
 - **Why.** Mathlib has a global `TopologicalSpace (Matrix m n R)`
   (`Mathlib/Topology/Instances/Matrix.lean`); the product σ-algebra is the measurable-space
   counterpart, and it is the Borel σ-algebra of that topology for second-countable `R`
   (the Borel instance in the same file). Transporting to `m → n → R` at each use is what the
   prototype did and cost a lemma per statement.
+- **Cost.** A global instance on a Mathlib type, seen by every file that imports it: a project
+  that puts another σ-algebra on matrices meets a conflict, and if Mathlib adds its own
+  instance every statement about random matrices may have to switch to it (the risk above).
+  Upstreamed statements need Mathlib to take the instance first.
 - **Status: kept (maintainer, 2026-10-14; `docs/PORT_PROBABILITY.md` D8).** The Matrix layer does
   not import it; the statements that use it are in `NLAlib/Probability/Measurability/Matrix.lean`.
   If Mathlib adds an instance, this one is deleted in its favour.
@@ -230,6 +276,8 @@ None of these was approved by the maintainer when it was made. Status is given p
   it). A user must open the scope to state a matrix expectation. If Mathlib makes the global
   topology reducibly the product one, Frobenius would work too; switching would change instance
   arguments only.
+- **Status: decided (maintainer, 2026-10-14; `docs/PORT_PROBABILITY.md` D10 (a), the scope
+  amended from Frobenius to `L2Operator` in `docs/design/Probability-P0.md` §7 Q1).**
 - **Rule.** For analysis on matrices (integrals, Mathlib's normed API), open only
   `Matrix.Norms.L2Operator` (`CONTRIBUTING.md` §5.1).
 - **Bridges.** `Matrix.integral_apply`, `Matrix.integrable_iff` and the rest of
@@ -295,6 +343,10 @@ None of these was approved by the maintainer when it was made. Status is given p
   `n → ℝ` (CONTRIBUTING §5.1) and with the Gaussian construction the Haar frames use.
 - **Why.** Consumers (JL, the column law of a Haar frame) hold vectors in `n → ℝ` and a probability
   measure; the subtype carrier and the normalisation would be re-done at every use.
+- **Cost.** A user with Mathlib's `Measure.toSphere` rewrites with the bridge, which needs
+  `[Nonempty n]`: for empty `n` the two laws differ. The law lives on all of `n → ℝ`, so that a
+  sample has norm `1` is an almost-sure fact, not part of its type, and the library states it
+  only as a private lemma.
 - **Bridge (planned, R5).** `uniformSphereVector n` is the normalisation of `Measure.toSphere` on
   `EuclideanSpace ℝ n`, pushed forward by `WithLp.ofLp ∘ Subtype.val`.
 - **Status: bridge proved** (`uniformSphereVector_eq_map_toSphere`, `RandomMatrix/Haar/Uniqueness.lean`; needs `[Nonempty n]`: for empty `n` the sphere is empty while `uniformSphereVector n` is a point mass).
