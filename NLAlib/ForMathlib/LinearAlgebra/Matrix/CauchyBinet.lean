@@ -91,7 +91,8 @@ theorem det_mul_eq_sum_powersetCard [DecidableEq m] (A : Matrix m n R) (B : Matr
     ← submatrix_mul _ _ _ _ _ Function.bijective_id, det_submatrix_equiv_self,
     ← submatrix_mul _ _ _ _ _ Function.bijective_id]
 
-/-- A Gram determinant is the sum of the Gram determinants of the maximal row selections:
+/-- **Cauchy–Binet formula for Gram determinants.** A Gram determinant is the sum of the Gram
+determinants of the maximal row selections:
 $\det(\mathbf{A}^{\mathsf{H}}\mathbf{A})
 = \sum_s \det(\mathbf{A}_{s,:}^{\mathsf{H}} \mathbf{A}_{s,:})$, over the sets $s$ of rows with as
 many elements as $\mathbf{A}$ has columns. Over $\mathbb{R}$ or $\mathbb{C}$ each term is the

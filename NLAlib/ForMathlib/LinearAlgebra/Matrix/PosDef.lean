@@ -156,7 +156,8 @@ theorem PosSemidef.re_trace_eq_zero_iff {A : Matrix n n 𝕜} (hA : A.PosSemidef
   rw [← hA.trace_eq_zero_iff, ← hA.isHermitian.coe_re_trace, RCLike.ofReal_eq_zero,
     RCLike.ofReal_re]
 
-/-- The trace of a product of two positive semidefinite matrices is nonnegative:
+/-- **Nonnegative trace pairing of positive semidefinite matrices.** The trace of a product of
+two positive semidefinite matrices is nonnegative:
 $0 \le \operatorname{tr}(\mathbf{A}\mathbf{B})$, in the order of $\Bbbk$ (so the trace is real).
 [HornJohnson2013, Theorem 7.5.4]. Port of `NLAlib.trace_mul_nonneg_of_posSemidef`.
 Result: psd-cone-self-dual -/
@@ -167,8 +168,9 @@ theorem PosSemidef.trace_mul_nonneg {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
   rw [← Matrix.mul_assoc, trace_mul_comm, ← Matrix.mul_assoc, star_eq_conjTranspose]
   exact (hA.mul_mul_conjTranspose_same C).trace_nonneg
 
-/-- For positive semidefinite $\mathbf{A}$ and $\mathbf{B}$,
-$\operatorname{tr}(\mathbf{A}\mathbf{B}) = 0$ exactly when $\mathbf{A}\mathbf{B} = \mathbf{0}$.
+/-- **Vanishing trace pairing of positive semidefinite matrices.** For positive semidefinite
+$\mathbf{A}$ and $\mathbf{B}$, $\operatorname{tr}(\mathbf{A}\mathbf{B}) = 0$ exactly when
+$\mathbf{A}\mathbf{B} = \mathbf{0}$.
 [HornJohnson2013, Theorem 7.5.4]. Port of `NLAlib.trace_mul_eq_zero_iff_of_posSemidef`.
 Result: psd-cone-self-dual -/
 theorem PosSemidef.trace_mul_eq_zero_iff {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
@@ -196,7 +198,8 @@ theorem IsHermitian.posSemidef_iff_trace_mul_nonneg {A : Matrix n n 𝕜} (hA : 
   simpa only [mul_vecMulVec, trace_vecMulVec, dotProduct_comm] using
     h (vecMulVec x (star x)) (posSemidef_vecMulVec_self_star x)
 
-/-- The trace pairing with a positive semidefinite matrix is monotone in the Loewner order: for
+/-- **Monotonicity of the trace pairing in the Loewner order.** The trace pairing with a
+positive semidefinite matrix is monotone in the Loewner order: for
 $\mathbf{0} \preceq \mathbf{A}$ and $\mathbf{B} \preceq \mathbf{C}$,
 $\operatorname{tr}(\mathbf{A}\mathbf{B}) \le \operatorname{tr}(\mathbf{A}\mathbf{C})$.
 [HornJohnson2013, Theorem 7.5.4]. Port of `NLAlib.trace_mul_le_trace_mul_of_posSemidef`.

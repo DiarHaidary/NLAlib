@@ -255,7 +255,7 @@ theorem finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not [DecidableEq n] (A : 
     exact disjoint_compl_right
   · rw [add_comm, ← toBlock_mul_eq_add, hAB, toBlock_one_self]
 
-/-- The rank form of complementary nullities, stated additively: the rank of the block of
+/-- **Law of complementary nullities.** The rank form, stated additively: the rank of the block of
 $\mathbf{A}$ on rows $r$ and columns $c$, plus the number of indices outside $r$, equals the rank
 of the complementary block of $\mathbf{A}^{-1}$ (rows outside $c$, columns outside $r$) plus the
 number of indices in $c$.

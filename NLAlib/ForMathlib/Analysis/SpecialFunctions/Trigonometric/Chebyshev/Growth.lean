@@ -52,7 +52,7 @@ namespace Polynomial.Chebyshev
 
 open Real
 
-/-- For $x\ge1$, the radical closed form is
+/-- **Radical closed form of Chebyshev polynomials.** For $x\ge1$,
 $$T_q(x)=\frac{(x+\sqrt{x^2-1})^q+(x-\sqrt{x^2-1})^q}{2}.$$
 [Saad2003, §6.11.1, Eq. (6.111)], with the reciprocal term rewritten algebraically.
 

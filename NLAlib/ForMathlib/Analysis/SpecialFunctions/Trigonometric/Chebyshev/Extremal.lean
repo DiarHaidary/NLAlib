@@ -46,8 +46,8 @@ private lemma abs_eval_le_eval_T_of_one_le {q : ℕ} {p : ℝ[X]} {x : ℝ}
   simp only [Function.iterate_zero, id_eq, eval_neg] at h₁ h₂
   exact abs_le.mpr ⟨by linarith, h₁⟩
 
-/-- If $\deg p\le q$ and $|p|\le1$ on $[-1,1]$, then
-$|p(x)|\le|T_q(x)|$ for $|x|\ge1$. This is an external-comparison corollary of
+/-- **Extremal growth of Chebyshev polynomials.** If $\deg p\le q$ and $|p|\le1$ on $[-1,1]$,
+then $|p(x)|\le|T_q(x)|$ for $|x|\ge1$. This is an external-comparison corollary of
 [Saad2003, Theorem 6.25]; the proof uses Mathlib's extremal derivative inequality at order zero.
 
 Result: chebyshev-extremal
@@ -132,8 +132,8 @@ theorem inv_two_pow_le_of_monic_of_isUniformApproxOn
   rw [leadingCoeff_mul, leadingCoeff_C, hp.leadingCoeff, mul_one] at h
   exact inv_le_of_inv_le₀ hM h
 
-/-- Among monic real polynomials of degree $q$, the least uniform bound on $[-1,1]$ is
-$1/2^{q-1}$, attained by $T_q/2^{q-1}$.
+/-- **Minimax property of monic Chebyshev polynomials.** Among monic real polynomials of
+degree $q$, the least uniform bound on $[-1,1]$ is $1/2^{q-1}$, attained by $T_q/2^{q-1}$.
 [GolubMeurant2010, §2.5.1, Theorem 2.15] for $q\ge1$. The $q=0$ extension has witness one
 and value one; the exponent uses natural subtraction.
 

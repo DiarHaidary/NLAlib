@@ -62,16 +62,10 @@
    "NLAlib/Sketching/Structured/SRHT.lean": 5
   },
   "D1": {
-   "NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Extremal.lean": 2,
-   "NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Growth.lean": 1,
-   "NLAlib/ForMathlib/LinearAlgebra/Matrix/CauchyBinet.lean": 1,
-   "NLAlib/ForMathlib/LinearAlgebra/Matrix/PosDef.lean": 3,
-   "NLAlib/ForMathlib/LinearAlgebra/Matrix/Rank.lean": 1,
    "NLAlib/LowRank/Structural/RangeFinder.lean": 3,
    "NLAlib/Probability/QuadraticForm/Moments.lean": 2
   },
   "D2": {
-   "NLAlib/ForMathlib/MeasureTheory/Constructions/BorelSpace/MeasurableSelection.lean": 1,
    "NLAlib/LowRank/Gaussian/NystromTail.lean": 6,
    "NLAlib/LowRank/Gaussian/RangeFinderTail.lean": 6,
    "NLAlib/LowRank/Oblivious/GeneralizedNystrom.lean": 1,
