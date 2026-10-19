@@ -87,9 +87,6 @@
   "C3": {
    "NLAlib/LowRank/Gaussian/GeneralizedNystrom.lean": 1
   },
-  "C7": {
-   "docs/references.bib": 26
-  },
   "D1": {
    "NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Extremal.lean": 2,
    "NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Growth.lean": 1,
@@ -329,12 +326,10 @@
    "NLAlib/RandomMatrix/Gaussian/InverseMoments.lean": 2
   },
   "S7": {
-   "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 6,
-   "NLAlib/LowRank/Gaussian/EarlyTruncation.lean": 2,
+   "NLAlib/LowRank/Gaussian/EarlyTruncation.lean": 1,
    "NLAlib/LowRank/Gaussian/Nystrom.lean": 1,
-   "NLAlib/LowRank/Gaussian/NystromBlockKrylov.lean": 7,
+   "NLAlib/LowRank/Gaussian/NystromBlockKrylov.lean": 4,
    "NLAlib/LowRank/Gaussian/RotationInvariant.lean": 4,
-   "NLAlib/LowRank/Gaussian/TruncatedGeneralizedNystrom.lean": 1,
    "NLAlib/Matrix/Perturbation/DavisKahanGap.lean": 2,
    "NLAlib/Probability/MatrixConcentration/ConditionalMGFBound.lean": 1,
    "NLAlib/Regression/Oblivious.lean": 1
