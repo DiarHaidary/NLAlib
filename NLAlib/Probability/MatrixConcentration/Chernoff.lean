@@ -308,11 +308,16 @@ theorem measureReal_eigenvalue_le_le_chernoff_of_integral_le (hY : ∀ᵐ ω ∂
         field_simp
         ring
 
-/-- The simplified Chernoff upper tail from a trace bound: under the hypotheses of
-`measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le`, for $0 \le \delta \le 1$,
+/-- The simplified Chernoff upper tail from a trace bound: if, on a probability space, the random
+$n \times n$ matrix $\mathbf{Y}$ over $\Bbbk$ ($n$ nonempty) is almost surely Hermitian,
+$\mathbf{V}$ is positive semidefinite, $L > 0$, and for every $\theta > 0$ the trace exponential
+$\operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}$ is integrable with
+$\mathbb{E} \operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{Re} \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$, then for
+$0 \le \delta \le 1$ and the largest eigenvalue $\lambda_0$,
 $\mathbb{P}[\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})]
-\le \lvert n\rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)}$; weaker than the source form in
-every regime and proved from it. -/
+\le \lvert n\rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)}$. Weaker than the source form
+`measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le` in every regime and proved from it. -/
 theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty n]
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L)
     (hint : ∀ θ : ℝ, 0 < θ → Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
@@ -331,12 +336,16 @@ theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty 
         mul_le_mul_of_nonneg_right (sub_mul_log_one_add_le hδ0 hδ1) (div_nonneg hm hL.le)
     _ = -δ ^ 2 * eigenvalue V 0 / (3 * L) := by ring
 
-/-- The simplified Chernoff lower tail from a trace bound: under the hypotheses of
-`measureReal_eigenvalue_le_le_chernoff_of_integral_le`, for $0 \le \delta < 1$ and
-$k + 1 = \lvert n\rvert$,
+/-- The simplified Chernoff lower tail from a trace bound: if, on a probability space, the random
+$n \times n$ matrix $\mathbf{Y}$ over $\Bbbk$ is almost surely Hermitian, $\mathbf{V}$ is
+positive semidefinite, $L > 0$, and for every $\theta < 0$ the trace exponential
+$\operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}$ is integrable with
+$\mathbb{E} \operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{Re} \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$, then for
+$0 \le \delta < 1$ and the smallest eigenvalue, index $k + 1 = \lvert n\rvert$,
 $\mathbb{P}[\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})]
-\le \lvert n\rvert\, e^{-\delta^2 \lambda_k(\mathbf{V}) / (2L)}$; weaker than the source form in
-every regime and proved from it. -/
+\le \lvert n\rvert\, e^{-\delta^2 \lambda_k(\mathbf{V}) / (2L)}$. Weaker than the source form
+`measureReal_eigenvalue_le_le_chernoff_of_integral_le` in every regime and proved from it. -/
 theorem measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L) {k : ℕ}
     (hk : k + 1 = Fintype.card n)

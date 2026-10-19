@@ -129,7 +129,10 @@ theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFu
         field_simp
         ring
 
-/-- The matrix series mean, Hermitian coefficients: under the hypotheses of the tail,
+/-- The matrix series mean, Hermitian coefficients: for finitely many independent real
+$\gamma_k$, each sub-Gaussian with variance proxy $c_k$
+($\mathbb{E}\, e^{s \gamma_k} \le e^{c_k s^2 / 2}$ for every real $s$), and fixed Hermitian
+$n \times n$ matrices $\mathbf{B}_k$ over $\Bbbk$, $n$ nonempty, the largest eigenvalue satisfies
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr)
 \le \sqrt{2 \Bigl\|\sum_k c_k \mathbf{B}_k^2\Bigr\|_2 \log \lvert n\rvert}\,.$$
 [Tropp2015, Theorem 4.1.1]. -/
@@ -216,8 +219,12 @@ theorem measureReal_specNorm_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ
     specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
   exact h
 
-/-- The matrix series mean, rectangular coefficients: under the hypotheses of the tail, with the
-same $v$,
+/-- The matrix series mean, rectangular coefficients: for finitely many independent real
+$\gamma_k$, each sub-Gaussian with variance proxy $c_k$
+($\mathbb{E}\, e^{s \gamma_k} \le e^{c_k s^2 / 2}$ for every real $s$), and fixed $m \times n$
+matrices $\mathbf{B}_k$ over $\Bbbk$, $n$ nonempty, with
+$v = \max\bigl(\|\sum_k c_k \mathbf{B}_k \mathbf{B}_k^{\mathsf{H}}\|_2,
+\|\sum_k c_k \mathbf{B}_k^{\mathsf{H}} \mathbf{B}_k\|_2\bigr)$,
 $\mathbb{E} \|\sum_k \gamma_k \mathbf{B}_k\|_2
 \le \sqrt{2 v \log(\lvert m\rvert + \lvert n\rvert)}$.
 [Tropp2015, Theorem 4.1.1]. -/

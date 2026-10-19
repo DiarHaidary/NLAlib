@@ -81,7 +81,9 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff [Nonempty n] (hind : iInd
   exact measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le hY hV hL (fun θ _ => hint θ)
     (fun θ _ => htr θ) hδ
 
-/-- **Matrix Chernoff, lower tail**: under the hypotheses of the upper tail, with
+/-- **Matrix Chernoff, lower tail**: for finitely many independent, almost everywhere
+measurable random $n \times n$ matrices $\mathbf{X}_k$ over $\Bbbk$ with
+$\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
 $\mu_{\min} = \lambda_j(\sum_k \mathbb{E}\mathbf{X}_k)$ the smallest eigenvalue
 ($j + 1 = \lvert n\rvert$) and $0 \le \delta < 1$,
 $$\mathbb{P}\Bigl[\lambda_j\Bigl(\sum_k \mathbf{X}_k\Bigr) \le (1 - \delta) \mu_{\min}\Bigr]
@@ -128,7 +130,9 @@ theorem measureReal_eigenvalue_sum_le_le_card_mul_exp (hind : iIndepFun X μ)
   exact measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le hY hV hL hj
     (fun θ _ => hint θ) (fun θ _ => htr θ) hδ0 hδ1
 
-/-- Matrix Chernoff for the mean of the largest eigenvalue: under the hypotheses of the tails,
+/-- Matrix Chernoff for the mean of the largest eigenvalue: for finitely many independent,
+almost everywhere measurable random $n \times n$ matrices $\mathbf{X}_k$ over $\Bbbk$, $n$
+nonempty, with $\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely and $L > 0$,
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
 \le (e - 1) \mu_{\max} + L \log \lvert n\rvert$$
 with $\mu_{\max} = \lambda_0(\sum_k \mathbb{E}\mathbf{X}_k)$.
@@ -163,8 +167,10 @@ theorem integral_eigenvalue_zero_sum_le_chernoff [Nonempty n] (hind : iIndepFun 
         field_simp
         ring
 
-/-- Matrix Chernoff for the mean of the smallest eigenvalue: under the hypotheses of the tails,
-with $j + 1 = \lvert n\rvert$,
+/-- Matrix Chernoff for the mean of the smallest eigenvalue: for finitely many independent,
+almost everywhere measurable random $n \times n$ matrices $\mathbf{X}_k$ over $\Bbbk$ with
+$\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$ and
+$j + 1 = \lvert n\rvert$,
 $$\mathbb{E}\, \lambda_j\Bigl(\sum_k \mathbf{X}_k\Bigr)
 \ge (1 - e^{-1}) \mu_{\min} - L \log \lvert n\rvert$$
 with $\mu_{\min} = \lambda_j(\sum_k \mathbb{E}\mathbf{X}_k)$.
@@ -213,8 +219,10 @@ theorem le_integral_eigenvalue_sum_chernoff (hind : iIndepFun X μ)
         mul_le_mul_of_nonpos_left hlog (neg_nonpos.mpr hL.le)
 
 /-- **Spectral approximation of the identity by a sum of bounded positive semidefinite
-matrices**: under the hypotheses of the tails, if $\sum_k \mathbb{E}\mathbf{X}_k = \mathbf{I}$,
-then for $0 \le \varepsilon < 1$
+matrices**: for finitely many independent, almost everywhere measurable random $n \times n$
+matrices $\mathbf{X}_k$ over $\Bbbk$, $n$ nonempty, with
+$\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$ and
+$\sum_k \mathbb{E}\mathbf{X}_k = \mathbf{I}$, for $0 \le \varepsilon < 1$
 $$\mathbb{P}\Bigl[\Bigl\|\sum_k \mathbf{X}_k - \mathbf{I}\Bigr\|_2 \ge \varepsilon\Bigr]
 \le 2 \lvert n\rvert\, e^{-\varepsilon^2 / (3L)}\,,$$
 the form row-sampling and subspace-embedding arguments use. -/

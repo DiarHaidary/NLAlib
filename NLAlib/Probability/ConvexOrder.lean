@@ -253,7 +253,8 @@ $\sum_j \mathbf{a}_{J(j)}$,
 $$\mathbb{E}_{\iota} f\Bigl(\sum_j \mathbf{a}_{\iota(j)}\Bigr) \le
 \mathbb{E}_{J} f\Bigl(\sum_j \mathbf{a}_{J(j)}\Bigr) \,,$$
 $\iota : k \to n$ a uniform injection, $J$ a vector of $\lvert k \rvert$ i.i.d. uniform indices.
-[Hoeffding1963] (there scalar, $f$ continuous and convex); [GrossNesme2010] (the matrix form).
+[Hoeffding1963, Theorem 4] (there scalar, $f$ continuous and convex); [GrossNesme2010, Section D]
+(there a finite set in a vector space and $f$ convex on its convex hull, applied to matrices).
 Here any real Banach space and any $f$ convex and continuous on a closed convex $s$; the hypothesis
 $\lvert k \rvert \le \lvert n \rvert$ is needed since otherwise the left side is $0$ and a convex
 $f$ may be negative. Proof: the kernel form with a private kernel that composes the injection

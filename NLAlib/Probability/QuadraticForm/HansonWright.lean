@@ -174,13 +174,17 @@ private lemma hansonWrightConstant_mul_min_le (A : Matrix n n ℝ) {t : ℝ} (ht
           mul_le_mul_of_nonneg_left (min_le_right _ _) (by norm_num)
       _ ≤ 1 / 56 * (t / (c * specNorm A)) := by nlinarith
 
-/-- The upper tail of a quadratic form in independent sub-Gaussian coordinates: under the
-hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
+/-- The upper tail of a quadratic form in independent sub-Gaussian coordinates: if the
+coordinates $\mathbf{x}_i$ of a real random vector $\mathbf{x}$ are independent and each is
+sub-Gaussian with variance proxy $c$ ($\mathbb{E}\, e^{s \mathbf{x}_i} \le e^{c s^2 / 2}$ for every
+real $s$, `HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and every
 $t \ge 0$, <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl[\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \ge t\bigr]
 \le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
-\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
+\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$
+A one-sided form of the Hanson–Wright inequality `measureReal_abs_quadForm_sub_integral_ge_le`;
+the constant is `hansonWrightConstant`. -/
 theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ} ≤
@@ -189,13 +193,17 @@ theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x
   ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_ge_le ht).trans
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
-/-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: under the
-hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
+/-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: if the
+coordinates $\mathbf{x}_i$ of a real random vector $\mathbf{x}$ are independent and each is
+sub-Gaussian with variance proxy $c$ ($\mathbb{E}\, e^{s \mathbf{x}_i} \le e^{c s^2 / 2}$ for every
+real $s$, `HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and every
 $t \ge 0$, <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl[\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
 \mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \le -t\bigr]
 \le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
-\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
+\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$
+A one-sided form of the Hanson–Wright inequality `measureReal_abs_quadForm_sub_integral_ge_le`;
+the constant is `hansonWrightConstant`. -/
 theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ ≤ -t} ≤

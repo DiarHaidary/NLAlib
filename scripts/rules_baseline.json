@@ -23,9 +23,7 @@
    "NLAlib/Matrix/Spectral/LowRank.lean": 2,
    "NLAlib/Matrix/Spectral/SVD.lean": 1,
    "NLAlib/Matrix/Subspaces/ProjectorPair.lean": 1,
-   "NLAlib/Probability/Isotropic.lean": 1,
    "NLAlib/Probability/SubGaussianVector/Norm.lean": 1,
-   "NLAlib/Probability/Tail.lean": 2,
    "NLAlib/Sketching/Gaussian/Gaussian.lean": 2,
    "NLAlib/Sketching/Gaussian/Haar.lean": 1,
    "NLAlib/Sketching/Gaussian/HaarEmbedding.lean": 6,
@@ -51,10 +49,8 @@
    "NLAlib/Matrix/Subspaces/ObliqueBases.lean": 2,
    "NLAlib/Polynomial/Chebyshev/ResidualMinimax.lean": 1,
    "NLAlib/Probability/BoundedDifferences.lean": 2,
-   "NLAlib/Probability/ConvexOrder.lean": 2,
    "NLAlib/Probability/Distributions/GaussianComparison.lean": 2,
    "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
-   "NLAlib/Probability/MatrixConcentration/ChernoffWithoutReplacement.lean": 4,
    "NLAlib/Probability/Tail.lean": 1,
    "NLAlib/Sketching/Properties/ProjectionCost.lean": 1,
    "NLAlib/Sketching/Sampling/WithoutReplacement.lean": 5,
@@ -62,8 +58,7 @@
    "NLAlib/Sketching/Structured/SRHT.lean": 5
   },
   "D1": {
-   "NLAlib/LowRank/Structural/RangeFinder.lean": 3,
-   "NLAlib/Probability/QuadraticForm/Moments.lean": 2
+   "NLAlib/LowRank/Structural/RangeFinder.lean": 3
   },
   "D2": {
    "NLAlib/LowRank/Gaussian/NystromTail.lean": 6,
@@ -71,13 +66,6 @@
    "NLAlib/LowRank/Oblivious/GeneralizedNystrom.lean": 1,
    "NLAlib/LowRank/Oblivious/RangeFinder.lean": 5,
    "NLAlib/LowRank/Structural/EarlyTruncation.lean": 2,
-   "NLAlib/Probability/MatrixConcentration/Bernstein.lean": 2,
-   "NLAlib/Probability/MatrixConcentration/Chernoff.lean": 2,
-   "NLAlib/Probability/MatrixConcentration/ChernoffSum.lean": 4,
-   "NLAlib/Probability/MatrixConcentration/ChernoffWithoutReplacement.lean": 3,
-   "NLAlib/Probability/MatrixConcentration/Series.lean": 2,
-   "NLAlib/Probability/MatrixConditionalExpectation.lean": 1,
-   "NLAlib/Probability/QuadraticForm/HansonWright.lean": 2,
    "NLAlib/RandomMatrix/Gaussian/BlockMoments.lean": 3,
    "NLAlib/RandomMatrix/Gaussian/BlockTail.lean": 2,
    "NLAlib/RandomMatrix/Haar/Transfer.lean": 1,

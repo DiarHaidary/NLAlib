@@ -374,10 +374,14 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein [Nonempty n] (hind : iIn
   exact (add_le_add_right (mul_le_mul_of_nonneg_left
     ((le_abs_self _).trans (hV.abs_eigenvalue_le_specNorm 0)) hg) _).trans hexp
 
-/-- **Matrix Bernstein** for the mean, Hermitian summands: under the hypotheses of the tail,
+/-- **Matrix Bernstein** for the mean, Hermitian summands: for finitely many independent,
+centred, square-integrable random $n \times n$ matrices $\mathbf{X}_k$ over $\Bbbk$, $n$ nonempty,
+with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$ and
+$v = \|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$, the largest eigenvalue $\lambda_0$ satisfies
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
 \le \sqrt{2 v \log \lvert n\rvert} + \frac{L \log \lvert n\rvert}{3}\,.$$
-[Tropp2015, Theorem 6.6.1]. -/
+[Tropp2015, Theorem 6.6.1]. The mean form of
+`NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein`. -/
 theorem integral_eigenvalue_zero_sum_le_bernstein [Nonempty n] (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) :
@@ -441,10 +445,14 @@ theorem measureReal_specNorm_sum_ge_le_bernstein [Nonempty n]
     Finset.sum_const_zero, specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
   exact h
 
-/-- **Matrix Bernstein** for the mean, rectangular summands: under the hypotheses of the tail, with
-the same $v$ and $d = \lvert m\rvert + \lvert n\rvert$,
+/-- **Matrix Bernstein** for the mean, rectangular summands: for finitely many independent,
+centred, square-integrable random $m \times n$ matrices $\mathbf{S}_k$ over $\Bbbk$, $n$
+nonempty, with $\|\mathbf{S}_k\|_2 \le L$ almost surely, $L > 0$, variance
+$v = \max\bigl(\|\sum_k \mathbb{E}\mathbf{S}_k\mathbf{S}_k^{\mathsf{H}}\|_2,
+\|\sum_k \mathbb{E}\mathbf{S}_k^{\mathsf{H}}\mathbf{S}_k\|_2\bigr)$ and
+$d = \lvert m\rvert + \lvert n\rvert$,
 $$\mathbb{E} \Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \le \sqrt{2 v \log d} + \frac{L \log d}{3}\,.$$
-[Tropp2015, Theorem 6.1.1]. -/
+[Tropp2015, Theorem 6.1.1]. The mean form of `NLAlib.measureReal_specNorm_sum_ge_le_bernstein`. -/
 theorem integral_specNorm_sum_le_bernstein [Nonempty n] (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, specNorm (S k ω) ≤ L) :

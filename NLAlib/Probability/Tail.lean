@@ -53,6 +53,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 /-- **Markov's inequality** as a failure probability: $\mu\{t \le f\} \le (\int f \, d\mu) / t$ for
 $f$ integrable and nonnegative almost everywhere, and $t > 0$. Integrability is needed: otherwise
 the Bochner integral $\int f \, d\mu$ is $0$.
+[Vershynin2018, Proposition 1.2.4]; there for a probability measure, here any measure.
 Result: markov-inequality -/
 theorem measureReal_ge_le_integral_div {f : Ω → ℝ} (hf0 : 0 ≤ᵐ[μ] f) (hf : Integrable f μ)
     {t : ℝ} (ht : 0 < t) : μ.real {ω | t ≤ f ω} ≤ (∫ ω, f ω ∂μ) / t := by
@@ -77,6 +78,7 @@ theorem measureReal_abs_ge_le_integral_rpow_div {X : Ω → ℝ} {p : ℝ} (hp :
 /-- **Chebyshev's inequality** as a failure probability: for a finite measure $\mu$, $X \in L^2$
 and $t > 0$, $\mu\{t \le \lvert X - \mathbb{E} X\rvert\} \le \operatorname{Var} X / t^2$, with
 $\mathbb{E} X = \int X \, d\mu$.
+[Vershynin2018, Corollary 1.2.5]; there for a probability measure, here any finite measure.
 Result: chebyshev-inequality -/
 theorem measureReal_ge_le_variance_div_sq [IsFiniteMeasure μ] {X : Ω → ℝ} (hX : MemLp X 2 μ)
     {t : ℝ} (ht : 0 < t) :

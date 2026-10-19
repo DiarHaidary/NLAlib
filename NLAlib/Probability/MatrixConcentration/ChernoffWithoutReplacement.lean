@@ -94,8 +94,9 @@ $$\mathbb{E} \operatorname{tr} e^{\theta \sum_j \mathbf{X}_{\iota(j)}} \le
 \operatorname{tr} \exp\Bigl(\frac{e^{\theta L} - 1}{L} \cdot \frac{\lvert k \rvert}{\lvert n \rvert}
 \sum_i \mathbf{X}_i\Bigr) \,,$$
 the bound of the i.i.d. sum with the same mean; the hypothesis `htr` of the trace-form tails of
-`NLAlib.Probability.MatrixConcentration.Chernoff`. [GrossNesme2010]; [Tropp2011a] (its proof of
-the matrix Chernoff bound without replacement, through Gross and Nesme's comparison);
+`NLAlib.Probability.MatrixConcentration.Chernoff`. [GrossNesme2010, Section D];
+[Tropp2011a, proof of Theorem 2.1] (the matrix Chernoff bound without replacement, through Gross
+and Nesme's comparison);
 [Tropp2015, Theorem 5.1.1] (the i.i.d. form). Here real parts of traces over any `RCLike` field,
 any population index type and any $\theta$. -/
 theorem integral_re_trace_exp_sum_le_of_hasLaw_uniformOn_injective
@@ -191,8 +192,10 @@ $\delta \ge 0$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
 (1 + \delta) \lambda_0(\mathbf{V})\Bigr] \le \lvert m \rvert
 \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L} \,.$$
-[Tropp2011a] (sampling without replacement); [Tropp2015, Theorem 5.1.1] (the i.i.d. form, the
-same bound). No $\lvert k \rvert \le \lvert n \rvert$: otherwise $\mu = 0$.
+[Tropp2011a, Theorem 2.1] (sampling without replacement from a finite set of matrices; there $B$
+is $L$ and $\mu_{\max}$ is $\lambda_0(\mathbf{V})$, here a population that may repeat members);
+[Tropp2015, Theorem 5.1.1] (the i.i.d. form, the same bound). No
+$\lvert k \rvert \le \lvert n \rvert$: otherwise $\mu = 0$.
 Result: matrix-chernoff-without-replacement -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injective [Nonempty m]
     (hι : HasLaw ι (uniformOn {f : k → n | Function.Injective f}) μ) (hL : 0 < L)
@@ -210,13 +213,16 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injec
   exact measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le hY hV hL (fun θ _ => hint θ)
     (fun θ _ => htr θ) hδ
 
-/-- **Matrix Chernoff without replacement, lower tail**, source form. Under the hypotheses of
-`NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injective`, for
+/-- **Matrix Chernoff without replacement, lower tail**, source form. For a population of
+$m \times m$ matrices $\mathbf{0} \preceq \mathbf{X}_i \preceq L\mathbf{I}$ over $\Bbbk$,
+$i \in n$, with $L > 0$, a uniformly random injection $\iota : k \to n$ (its law under $\mu$ is
+uniform on the injections), $\mathbf{V} = (\lvert k \rvert / \lvert n \rvert) \sum_i \mathbf{X}_i$,
 $0 \le \delta < 1$ and the smallest eigenvalue, index $j + 1 = \lvert m \rvert$,
 $$\mathbb{P}\Bigl[\lambda_j\Bigl(\sum_{j'} \mathbf{X}_{\iota(j')}\Bigr) \le
 (1 - \delta) \lambda_j(\mathbf{V})\Bigr] \le \lvert m \rvert
 \Bigl(\frac{e^{-\delta}}{(1 - \delta)^{1-\delta}}\Bigr)^{\lambda_j(\mathbf{V}) / L} \,.$$
-[Tropp2011a]; [Tropp2015, Theorem 5.1.1] (the i.i.d. form, the same bound).
+[Tropp2011a, Theorem 2.1] (sampling without replacement); [Tropp2015, Theorem 5.1.1] (the i.i.d.
+form, the same bound).
 Result: matrix-chernoff-without-replacement -/
 theorem measureReal_eigenvalue_sum_le_le_chernoff_of_hasLaw_uniformOn_injective
     (hι : HasLaw ι (uniformOn {f : k → n | Function.Injective f}) μ) (hL : 0 < L)
@@ -235,14 +241,17 @@ theorem measureReal_eigenvalue_sum_le_le_chernoff_of_hasLaw_uniformOn_injective
   exact measureReal_eigenvalue_le_le_chernoff_of_integral_le hY hV hL hj (fun θ _ => hint θ)
     (fun θ _ => htr θ) hδ0 hδ1
 
-/-- **Matrix Chernoff without replacement, upper tail**, simplified: under the hypotheses of
-`NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injective`, for
-$0 \le \delta \le 1$,
+/-- **Matrix Chernoff without replacement, upper tail**, simplified: for a population of
+$m \times m$ matrices $\mathbf{0} \preceq \mathbf{X}_i \preceq L\mathbf{I}$ over $\Bbbk$,
+$i \in n$, $m$ nonempty, with $L > 0$, a uniformly random injection $\iota : k \to n$ (its law
+under $\mu$ is uniform on the injections),
+$\mathbf{V} = (\lvert k \rvert / \lvert n \rvert) \sum_i \mathbf{X}_i$ and $0 \le \delta \le 1$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
 (1 + \delta) \lambda_0(\mathbf{V})\Bigr] \le
 \lvert m \rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)} \,;$$
-weaker than the source form in every regime and proved from the same trace bound.
-[Tropp2015, Theorem 5.1.1] (the i.i.d. form). -/
+weaker than the source form
+`NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_of_hasLaw_uniformOn_injective` in every
+regime and proved from the same trace bound. [Tropp2015, Theorem 5.1.1] (the i.i.d. form). -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp_of_hasLaw_uniformOn_injective
     [Nonempty m] (hι : HasLaw ι (uniformOn {f : k → n | Function.Injective f}) μ) (hL : 0 < L)
     (hpsd : ∀ i, (X i).PosSemidef) (hle : ∀ i, X i ≤ L • (1 : Matrix m m 𝕜)) (hδ0 : 0 ≤ δ)
@@ -259,14 +268,17 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp_of_hasLaw_uniformOn_i
   exact measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le hY hV hL
     (fun θ _ => hint θ) (fun θ _ => htr θ) hδ0 hδ1
 
-/-- **Matrix Chernoff without replacement, lower tail**, simplified: under the hypotheses of
-`NLAlib.measureReal_eigenvalue_sum_le_le_chernoff_of_hasLaw_uniformOn_injective`, for
-$0 \le \delta < 1$ and $j + 1 = \lvert m \rvert$,
+/-- **Matrix Chernoff without replacement, lower tail**, simplified: for a population of
+$m \times m$ matrices $\mathbf{0} \preceq \mathbf{X}_i \preceq L\mathbf{I}$ over $\Bbbk$,
+$i \in n$, with $L > 0$, a uniformly random injection $\iota : k \to n$ (its law under $\mu$ is
+uniform on the injections), $\mathbf{V} = (\lvert k \rvert / \lvert n \rvert) \sum_i \mathbf{X}_i$,
+$0 \le \delta < 1$ and the smallest eigenvalue, index $j + 1 = \lvert m \rvert$,
 $$\mathbb{P}\Bigl[\lambda_j\Bigl(\sum_{j'} \mathbf{X}_{\iota(j')}\Bigr) \le
 (1 - \delta) \lambda_j(\mathbf{V})\Bigr] \le
 \lvert m \rvert\, e^{-\delta^2 \lambda_j(\mathbf{V}) / (2L)} \,;$$
-weaker than the source form in every regime and proved from the same trace bound.
-[Tropp2015, Theorem 5.1.1] (the i.i.d. form). -/
+weaker than the source form
+`NLAlib.measureReal_eigenvalue_sum_le_le_chernoff_of_hasLaw_uniformOn_injective` in every regime
+and proved from the same trace bound. [Tropp2015, Theorem 5.1.1] (the i.i.d. form). -/
 theorem measureReal_eigenvalue_sum_le_le_card_mul_exp_of_hasLaw_uniformOn_injective
     (hι : HasLaw ι (uniformOn {f : k → n | Function.Injective f}) μ) (hL : 0 < L)
     (hpsd : ∀ i, (X i).PosSemidef) (hle : ∀ i, X i ≤ L • (1 : Matrix m m 𝕜)) {j : ℕ}

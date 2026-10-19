@@ -355,7 +355,7 @@ theorem variance_quadForm_of_isHermitian {x : Ω → n → ℝ} (hind : iIndepFu
   rw [variance_eq_integral (memLp_quadForm hL4 A).aestronglyMeasurable.aemeasurable, hmeanq, h]
   ring
 
-/-- Hutchinson's variance with a Gaussian probe:
+/-- **Hutchinson's variance with a Gaussian probe.**
 $\operatorname{Var}(\mathbf{g}^{\mathsf{T}}\mathbf{A}\mathbf{g}) = 2 \|\mathbf{A}\|_{\mathsf{F}}^2$
 for a standard Gaussian vector $\mathbf{g}$ and real symmetric $\mathbf{A}$; any real
 $\mathbf{A}$ is `NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart`.
@@ -376,7 +376,7 @@ theorem variance_quadForm_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
     (fun i => integral_of_hasLaw_gaussianReal (hg.eval i)) hvar hm₄ hA]
   ring
 
-/-- Hutchinson's variance with a Rademacher probe:
+/-- **Hutchinson's variance with a Rademacher probe.**
 $\operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})
 = 2 (\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{i,i}^2)$ for a vector $\mathbf{x}$ of
 independent random signs and real symmetric $\mathbf{A}$; any real $\mathbf{A}$ is

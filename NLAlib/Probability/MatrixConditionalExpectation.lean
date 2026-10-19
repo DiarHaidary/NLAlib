@@ -165,12 +165,13 @@ theorem _root_.Matrix.ae_posDef_condExp (hm : m ≤ mΩ) [IsFiniteMeasure μ]
   exact Matrix.PosDef.posDef_of_le (Matrix.PosDef.smul Matrix.PosDef.one h₃) h₁
 
 /-- **The functional calculus of a fixed Hermitian matrix commutes with the conditional
-expectation**: for Hermitian $\mathbf{B}$, if $\omega \mapsto f_\omega(x)$ is integrable for every
-$x$, then almost surely
+expectation**: for a fixed Hermitian $n \times n$ matrix $\mathbf{B}$ over $\Bbbk$, a
+$\sigma$-algebra $\mathcal{G}$ on $\Omega$ and real functions $f_\omega$, if
+$\omega \mapsto f_\omega(x)$ is integrable for every real $x$, then almost surely
 $$\mathbb{E}[f_\omega(\mathbf{B}) \mid \mathcal{G}] = g(\mathbf{B}), \qquad
 g(x) = \mathbb{E}[f_\omega(x) \mid \mathcal{G}],$$
 where $f(\mathbf{B})$ is the functional calculus `cfc f B`. The conditional form of
-`Matrix.IsHermitian.cfc_integral`; as there, no continuity in $\omega$ or $x$ is needed, since the
+`Matrix.IsHermitian.cfc_integral`. No continuity in $\omega$ or $x$ is needed, since the
 spectrum of a matrix is finite. Proof: through a unitary diagonalisation
 $\mathbf{B} = \mathbf{U} \operatorname{diag}(\lambda_i)_i \mathbf{U}^{\mathsf{H}}$,
 $g(\mathbf{B})$ is a real-linear image of $(g(\lambda_i))_i$, and `comp_condExp_comm` passes it
