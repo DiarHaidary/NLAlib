@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.ForMathlib.Probability.Moments.Variance
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
@@ -180,14 +181,6 @@ private theorem integrable_and_integral_comp_le_of_indepFun {α β : Type*} [Mea
   · rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hF0 _) hm,
       integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hH0 _) hHi.aestronglyMeasurable]
     exact ENNReal.toReal_mono hHi.lintegral_lt_top.ne hL
-
-/-- Jensen for the square: $\mathbb{E}f \le \sqrt{\mathbb{E}f^2}$. -/
-private theorem integral_le_sqrt_integral_sq [IsProbabilityMeasure μ] {f : Ω → ℝ}
-    (hf : MemLp f 2 μ) : ∫ ω, f ω ∂μ ≤ √(∫ ω, f ω ^ 2 ∂μ) := by
-  have hvar := variance_nonneg f μ
-  rw [variance_eq_sub hf] at hvar
-  simp only [Pi.pow_apply] at hvar
-  exact (le_abs_self _).trans (Real.abs_le_sqrt (by linarith))
 
 /-- The joint rank event of the two test matrices: almost surely
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) =

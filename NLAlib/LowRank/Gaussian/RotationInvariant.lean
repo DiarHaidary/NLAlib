@@ -50,9 +50,8 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   $\operatorname{rank}\mathbf{A} \le \ell$.
 * the Gram form, in the `NLAlib.SymmetricGauge` namespace:
   `integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitarilyInvariant`.
-* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`,
-  `NLAlib.integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant`: HMT Theorem 10.5 and
-  Epperly and Webber's Theorem 3.1, squared and as printed.
+* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`: HMT Theorem 10.5 and
+  Epperly and Webber's Theorem 3.1, squared (the printed first-moment form follows by Jensen).
 * `NLAlib.integral_specNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant`: HMT Theorem 10.6.
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant`: the
   truncated output.
@@ -150,25 +149,6 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitaril
     HasLaw.id hk
 
 end SymmetricGauge
-
-/-- **The expected error of the randomized SVD, Frobenius norm, as printed, rotation-invariant
-test matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full
-column rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}\,.$$
-[EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) with a
-minimum over the number $q$ of directions, here at $q = k$.
-Result: randomized-svd-expected-error -/
-theorem integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
-    (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}
-    (hk : k + 2 ≤ Fintype.card l) :
-    ∫ ω, frobNorm (A - rsvd A (X ω)) ∂μ ≤
-      √(gaussianProjectionFactor k (Fintype.card l)) * frobNorm (A - truncatedSVD A k) := by
-  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
-    (f := fun Ω => frobNorm (A - rsvd A Ω)) (measurable_frobNorm.comp (measurable_sub_mul A))
-    fun _ => rfl).trans_le ?_
-  exact integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix A HasLaw.id hk
 
 /-- **The average spectral error of the randomized SVD, rotation-invariant test matrices**: for a
 test matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely
@@ -910,7 +890,13 @@ Webber's factor bounded by HMT's; kept for the form consumers cite. Asymptotic f
 `NLAlib.exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`.
 [EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) over
 $\mathbb{R}$ and $\mathbb{C}$ with a minimum over the number $q$ of directions, here over
-$\mathbb{R}$ at $q = k$.
+$\mathbb{R}$ at $q = k$. [EpperlyWebber2026, Theorem 3.1] and [HalkoMartinssonTropp2011,
+Theorem 10.5] print the first-moment form <!-- value gaussianProjectionFactor k \ell -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}\,,$$
+which follows from this bound by Jensen's inequality
+(`ProbabilityTheory.integral_le_sqrt_integral_sq`).
 Result: randomized-svd-expected-error -/
 theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
     (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}

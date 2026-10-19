@@ -1,6 +1,6 @@
 {
  "date": "2026-10-19",
- "note": "Naming grammar (docs/design/Naming.md, CONTRIBUTING §4). Before v0.1: no deprecated aliases. statementChanged lists the declarations (new names) whose statements changed: scalar tail events stated positively (N15) and trace-estimation errors flipped to tr A - estimate (N10). N18 entries move a theorem into the namespace of its first explicit hypothesis (dot notation).",
+ "note": "Naming grammar (docs/design/Naming.md, CONTRIBUTING §4). Before v0.1: no deprecated aliases. statementChanged lists the declarations (new names) whose statements changed: scalar tail events stated positively (N15) and trace-estimation errors flipped to tr A - estimate (N10). N18 entries move a theorem into the namespace of its first explicit hypothesis (dot notation). Entries with \"removed\": true (rule T15, 2026-10-19) delete a Jensen corollary: \"new\" is the higher-moment theorem whose docstring now cites the printed first-moment form; the explorer redirects the old link there.",
  "renames": [
   {
    "old": "IsStarProjection.sq_singularValues_one_sub_mul",
@@ -1556,6 +1556,18 @@
    "old": "ProbabilityTheory.HasSubgaussianMGF.measure_le_le",
    "new": "ProbabilityTheory.HasSubgaussianMGF.measureReal_le_le",
    "rule": "N14"
+  },
+  {
+   "old": "NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix",
+   "rule": "T15",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant",
+   "new": "NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant",
+   "rule": "T15",
+   "removed": true
   }
  ],
  "statementChanged": [

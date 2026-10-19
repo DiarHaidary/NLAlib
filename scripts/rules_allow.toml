@@ -48,3 +48,13 @@ reason = "the product-topology instance Mathlib would add for `Matrix` (§7), as
 rule = "S6"
 decl = "Matrix.instMetrizableSpace"
 reason = "the product-topology instance Mathlib would add for `Matrix` (§7), as for `m → n → R`"
+
+[[allow]]
+rule = "T15"
+decl = "NLAlib.IsIsotropic.integral_norm_mulVec_le"
+reason = "used by gaussNormMean_sq_le (ChiSquareMoments) and the Gaussian extreme-singular-value and spectral-norm proofs"
+
+[[allow]]
+rule = "T15"
+decl = "NLAlib.integral_frobNorm_mul_mul_le_of_hasLaw_gaussianMatrix"
+reason = "used by the three Gaussian block tails of RandomMatrix/Gaussian/BlockTail.lean"

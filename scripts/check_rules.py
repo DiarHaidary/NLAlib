@@ -696,6 +696,34 @@ def t_tail_measure(c):
             and re.search(r'\bμ \{[^}]*\} ≤', split_sig(d['signature'])[1])]
 
 
+JENSEN_FROM = re.compile(r"\b(?:by|via|from) Jensen\b|\bJensen(?:'s inequality)? (?:from|and|applied to)\b")
+JENSEN_LEMMAS = {'integral_le_sqrt_integral_sq', 'map_integral_le', 'le_map_integral',
+                 'le_map_integral_of_integral_mem', 'exp_integral_le_integral', 'le_integral_comp'}
+
+
+@rule('T15', 'error', 'src', '§5.2', 'a theorem derived by Jensen from another library statement '
+      '(a lower moment from a higher one) is a separate theorem', 'Delete it: the higher-moment '
+      'theorem\'s docstring says in a sentence that the source prints the lower-moment form, which '
+      'follows by Jensen (`ProbabilityTheory.integral_le_sqrt_integral_sq`); it stays only if another '
+      'proof uses it, allowlisted with "used by …" (maintainer, 2026-10-19)')
+def t_jensen_corollary(c):
+    out = []
+    for p, d in public_src(c):
+        if d['kind'] not in ('theorem', 'lemma') or not d['doc']:
+            continue
+        flat = ' '.join(d['doc'].split())
+        for sent in re.split(r'(?<=[.;])\s+', flat):
+            if not JENSEN_FROM.search(sent):
+                continue
+            names = {n for n in re.findall(r"`([A-Za-z_][\w'.₀-₉]*)`", sent)
+                     if ('_' in n or '.' in n) and n.split('.')[-1] not in JENSEN_LEMMAS
+                     and n.split('.')[-1] != d['full'].split('.')[-1]}
+            if names:
+                out.append(V('T15', p, d['line'], d['full'], 'from ' + ', '.join(sorted(names))))
+                break
+    return out
+
+
 # ================================================================== V: vocabulary (§5.3)
 @rule('V1', 'error', 'x', '§5.3', 'a raw `Qᴴ * Q = 1` hypothesis', 'Take `HasOrthonormalCols Q`')
 def v_raw_ortho(c):

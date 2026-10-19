@@ -193,6 +193,11 @@ FIX = {
     'T12': ([decl('NLAlib.t', ': ∃ k, 0 < eigenvalue A k')], [decl('NLAlib.t', ': ∃ k < n, 0 < eigenvalue A k')]),
     'T13': ([decl('NLAlib.t', '(_hQ : P Q) : Q = Q')], [decl('NLAlib.t', '(hQ : P Q) : Q = Q')]),
     'T14': ([decl('NLAlib.t', ': μ {ω | b < X ω} ≤ δ')], [decl('NLAlib.t', ': μ.real {ω | b < X ω} ≤ δ')]),
+    'T15': ('/-- **First moment.** By Jensen from the squared form `NLAlib.foo_sq`.\nResult: r-id -/\n'
+            'theorem bar : True := trivial',
+            '/-- **Second moment.** [Abc2000, Theorem 1] prints the first-moment form, which follows by '
+            'Jensen\'s inequality (`ProbabilityTheory.integral_le_sqrt_integral_sq`).\nResult: r-id -/\n'
+            'theorem bar : True := trivial'),
     'V1': ([decl('NLAlib.t', '(hQ : Qᴴ * Q = 1) : P Q')], [decl('NLAlib.t', '(h : Aᴴ * A + Bᴴ * B = 1) : P A')]),
     'V2': ([decl('NLAlib.t', ': f k = Fintype.card n - k')], [decl('NLAlib.t', '(hd : k + d = Fintype.card n) : f d = 0')]),
     'V3': ([decl('NLAlib.t', ': singularValues A j / singularValues A i ≤ 1')],

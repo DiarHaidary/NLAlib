@@ -50,9 +50,8 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
 * the Gram form, every quadratic unitarily invariant norm, in the `NLAlib.SymmetricGauge`
   namespace:
   `integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix`.
-* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.5, squared and
-  as printed.
+* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.5, squared
+  (the printed first-moment form follows by Jensen).
 * `NLAlib.integral_schattenNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: TW Theorem 8.1 (RSVD2).
 * `NLAlib.rangeFinderTailRatio`: the spectral bound of TW Theorem 8.1 (RSVD2) divided by
@@ -200,10 +199,14 @@ The Frobenius instance of the Gram-form bound above;
 Epperly and Webber's sharper factor, with a rank parameter, is
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le`.
 Asymptotic form: `NLAlib.exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
-[HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; HMT state the
-bound for $\mathbb{E}\|\cdot\|_{\mathsf{F}}$ (it follows by Jensen,
-`NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`) and assume $k \ge 2$ and
-$k + p \le \min\{m, n\}$, neither needed here.
+[HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; HMT assume $k \ge 2$
+and $k + p \le \min\{m, n\}$, neither needed here. [HalkoMartinssonTropp2011, Theorem 10.5]
+prints the first-moment form <!-- value gaussianProjectionFactor k \ell -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}\,,$$
+which follows from this bound by Jensen's inequality
+(`ProbabilityTheory.integral_le_sqrt_integral_sq`).
 Result: randomized-svd-expected-error -/
 theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
@@ -237,32 +240,6 @@ theorem exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix 
   obtain ⟨hkl, hg⟩ := gaussianProjectionFactor_le_one_add_of_three_mul_div_le hk hε hε1 hl
   exact (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hkl).trans
     (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
-
-/-- **The expected error of the randomized SVD, Frobenius norm, as printed** (HMT Theorem 10.5):
-for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}\,,$$
-by Jensen from the squared form `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
-[HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; there (HMT) with
-$k \ge 2$ and $k + p \le \min\{m, n\}$, neither needed here.
-Result: randomized-svd-expected-error -/
-theorem integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
-    ∫ ω, frobNorm (A - rsvd A (X ω)) ∂μ ≤
-      √(gaussianProjectionFactor k (Fintype.card l)) * frobNorm (A - truncatedSVD A k) := by
-  have := hX.isProbabilityMeasure
-  have hm : AEStronglyMeasurable (fun ω => frobNorm (A - rsvd A (X ω))) μ :=
-    (integrable_frobNorm_sub_rsvd A hX.aemeasurable).aestronglyMeasurable
-  have hL2 : MemLp (fun ω => frobNorm (A - rsvd A (X ω))) 2 μ :=
-    (memLp_two_iff_integrable_sq hm).2 (integrable_frobNorm_sub_rsvd_sq A hX.aemeasurable)
-  have hvar := variance_nonneg (fun ω => frobNorm (A - rsvd A (X ω))) μ
-  rw [variance_eq_sub hL2] at hvar
-  simp only [Pi.pow_apply] at hvar
-  have h2 := integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hk
-  rw [← Real.sqrt_sq (frobNorm_nonneg (A - truncatedSVD A k)), ← Real.sqrt_mul
-    (zero_le_one.trans (one_le_gaussianProjectionFactor hk))]
-  exact (le_abs_self _).trans (Real.abs_le_sqrt (by linarith))
 
 open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Schatten norms** (TW Theorem 8.1 (RSVD2)): for a
