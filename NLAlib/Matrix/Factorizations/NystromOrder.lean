@@ -395,7 +395,7 @@ spectrum between $a$ and $b$.
 [EpperlyWebber2026, proof of Lemma 6.2]; there with $a > b$ through a QR factor of
 $\mathbf{\Psi}^{\mathsf{H}}$, here basis-free and for all $a, b > 0$. EW's display after "another
 explicit calculation" divides by $a - b$ with a slip ($(b/(a-b))\mathbf{I}$, not
-$(b/(a-b))\mathbf{R}_2\mathbf{R}_2^{*}$); the identity here is derived independently. -/
+$(b/(a-b))\mathbf{R}_2\mathbf{R}_2^{\mathsf{H}}$); the identity here is derived independently. -/
 theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
     {Ψ : Matrix (s ⊕ t) l 𝕜} (hΨ : HasOrthonormalCols Ψ) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
     nuclearNorm (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • 1) -

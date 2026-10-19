@@ -345,7 +345,7 @@ private theorem integral_norm_countSketchMatrix_mulVec_sq (h : n → k) (x : n �
 
 /-- **CountSketch is isotropic**, $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, for
 nonempty `k`. [CamanoEpperlyMeyerTropp2025, Lemma B.1] (first part, there
-$\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^*] = \mathbf{I}$). -/
+$\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^{\mathsf{H}}] = \mathbf{I}$). -/
 theorem isIsotropicSketch_of_hasLaw_countSketch [Nonempty k] [DecidableEq n]
     (hS : HasLaw S (countSketch k n) μ) : IsIsotropicSketch S μ := by
   let _ : MeasurableSpace k := ⊤
@@ -447,8 +447,9 @@ $$\mathbb{E}\lvert \operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S
 \rvert^2 = \frac{\|\mathbf{M}\|_{\mathsf{F}}^2 + \langle \mathbf{M}, \mathbf{M}^{\mathsf{T}}
 \rangle_{\mathsf{F}} - 2 \sum_i \lvert \mathbf{M}_{i,i} \rvert^2}{\lvert k \rvert}\,.$$
 [CamanoEpperlyMeyerTropp2025, Lemma B.1 and its proof] (there for self-adjoint $\mathbf{M}$, the
-uncentred moment $\mathbb{E}[\operatorname{tr}(\mathbf{M}\mathbf{\Phi}\mathbf{\Phi}^*)^2]$, which
-adds $(\operatorname{tr}\mathbf{M})^2$; the exact expression is in the proof, the statement is
+uncentred moment
+$\mathbb{E}[\operatorname{tr}(\mathbf{M}\mathbf{\Phi}\mathbf{\Phi}^{\mathsf{H}})^2]$, which adds
+$(\operatorname{tr}\mathbf{M})^2$; the exact expression is in the proof, the statement is
 the bound $(\operatorname{tr}\mathbf{M})^2 + 2\|\mathbf{M}\|_{\mathsf{F}}^2/b$ for $b$ rows).
 Here centred, any $\mathbf{M}$, any field. For a fixed hash,
 $\operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))$ is a hollow

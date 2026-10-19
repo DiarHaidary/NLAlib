@@ -13,6 +13,11 @@ public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 The two range facts about `Matrix.fromCols` moved to
 `NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned`, in the `Matrix` namespace, on 2026-10-15.
 This file keeps the old names as deprecated aliases for one release; import the new file instead.
+
+## Main declarations
+
+* `NLAlib.range_le_range_fromCols_left`, `NLAlib.mem_range_fromCols_replicateCol`: deprecated
+  aliases.
 -/
 
 @[expose] public section

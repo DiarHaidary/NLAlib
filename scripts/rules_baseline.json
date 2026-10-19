@@ -79,9 +79,6 @@
    "NLAlib/Sketching/Structured/Flattening.lean": 4,
    "NLAlib/Sketching/Structured/SRHT.lean": 5
   },
-  "C3": {
-   "NLAlib/LowRank/Gaussian/GeneralizedNystrom.lean": 1
-  },
   "D1": {
    "NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Extremal.lean": 2,
    "NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/Growth.lean": 1,
@@ -131,9 +128,6 @@
    "NLAlib/RandomMatrix/Haar/Transfer.lean": 1,
    "NLAlib/RandomMatrix/UnitaryInvariance.lean": 1
   },
-  "D10": {
-   "NLAlib/Matrix/Basic/FromCols.lean": 1
-  },
   "G1": {
    "docs/design/Mathlib-deviations.md": 13
   },
@@ -154,18 +148,8 @@
    "NLAlib/LowRank/Structural/Truncation.lean": 2,
    "NLAlib/Matrix/Factorizations/NystromOrder.lean": 1
   },
-  "M7": {
-   "NLAlib/Matrix/Factorizations/NystromOrder.lean": 1,
-   "NLAlib/Sketching/Sparse/CountSketch.lean": 2
-  },
-  "M11": {
-   "NLAlib/Sketching/Structured/SRHT.lean": 1
-  },
   "P5": {
    "NLAlib/ForMathlib/Analysis/Calculus/ContDiff/Hessian.lean": 7
-  },
-  "P6": {
-   "NLAlib/ForMathlib/LinearAlgebra/Matrix/Hadamard.lean": 1
   },
   "P8": {
    "NLAlib/Matrix/Basic/Projector.lean": 1,

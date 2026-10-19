@@ -581,7 +581,7 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2\,,$$
 smaller than
 the Gaussian co-range bound by the ratio of the completion factors.
-[EpperlyWebber2026, Theorem 4.2(a), $\gamma = (d - k)/(d - \ell)$ in their letters]; there
+[EpperlyWebber2026, Theorem 4.2(a)], with $\gamma = (d - k)/(d - \ell)$ in their letters; there
 $r = \operatorname{rank}\mathbf{A} \ge p$ and a minimum over $q$.
 Result: generalized-nystrom-expected-error -/
 theorem

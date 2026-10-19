@@ -16,7 +16,8 @@ index pairs. Inequalities for Hadamard products follow from those for Kronecker 
 compressions.
 
 Also the distributivity of the Hadamard product over subtraction, the companion of Mathlib's
-`Matrix.add_hadamard` and `Matrix.hadamard_add`.
+`Matrix.add_hadamard` and `Matrix.hadamard_add`. Upstream candidates for
+`Mathlib.LinearAlgebra.Matrix.Hadamard`.
 
 ## Main results
 

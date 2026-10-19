@@ -419,7 +419,7 @@ theorem HasOrthonormalCols.ae_mul_conjTranspose_eq_of_hasLaw_srht [DecidableEq k
 
 /-- **The spectral norm of the SRHT**: for a unitary $\mathbf{F}$, almost surely
 $\|\mathbf{S}\|_2 = \sqrt{\lvert n \rvert / \lvert k \rvert}$ ($0$ for empty `k`). The bound
-$\|\boldsymbol{\Omega}_2\|_2 \le \sqrt{n/\ell}$ of [HalkoMartinssonTropp2011, Theorem 11.2] and
+$\|\mathbf{\Omega}_2\|_2 \le \sqrt{n/\ell}$ of [HalkoMartinssonTropp2011, Theorem 11.2] and
 [MartinssonTropp2020, Theorem 11.6]. -/
 theorem HasOrthonormalCols.ae_specNorm_eq_of_hasLaw_srht (hF : HasOrthonormalCols F)
     (hS : HasLaw S (srht k F) μ) :
