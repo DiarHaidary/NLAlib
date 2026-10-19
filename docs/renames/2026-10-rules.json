@@ -160,6 +160,11 @@
    "old": "NLAlib.natCast_div_sub_sub_one_nonneg",
    "new": "natCast_div_sub_sub_one_nonneg",
    "rule": "P9"
+  },
+  {
+   "old": "NLAlib.HasOrthonormalCols.hutchpp_eq",
+   "new": "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
+   "rule": "T13"
   }
  ],
  "statementChanged": [
@@ -167,6 +172,9 @@
   "NLAlib.pinv_submatrix_mulVec_single_eq_backSubst",
   "NLAlib.norm_sub_mulVec_pinv_submatrix_mulVec_single_eq",
   "NLAlib.SymmetricGauge.map_abs",
-  "NLAlib.hasSubexponentialMGF_quadForm_sub_diagonal"
+  "NLAlib.hasSubexponentialMGF_quadForm_sub_diagonal",
+  "NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix",
+  "NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame",
+  "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector"
  ]
 }

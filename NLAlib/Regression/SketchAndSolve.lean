@@ -803,7 +803,8 @@ theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame [Decid
 
 /-- **Gaussian sketch-and-solve, expected relative residual**: for a standard Gaussian
 $p\times m$ sketch $\mathbf{S}$, $r=\operatorname{rank}\mathbf{A}$,
-$r+2\le p$, $\varepsilon>0$ and $p\ge r+1+r/\varepsilon$,
+$r+2\le p$ and a real $\varepsilon$ with $r\le\varepsilon(p-r-1)$ (for $\varepsilon>0$:
+$p\ge r+1+r/\varepsilon$),
 $$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},\mathbf{B})
 \|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
 \|_{\mathsf{F}}^2\,.$$
@@ -816,7 +817,7 @@ Asymptotic form:
 Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
     (hS : HasLaw S (gaussianMatrix p m) μ) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
-    {ε : ℝ} (_hε : 0 < ε) (hA : A.rank + 2 ≤ Fintype.card p)
+    {ε : ℝ} (hA : A.rank + 2 ≤ Fintype.card p)
     (hp : (A.rank : ℝ) ≤ ε * ((Fintype.card p : ℝ) - A.rank - 1)) :
     ∫ ω, frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2 ∂μ ≤
       (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
@@ -828,7 +829,8 @@ theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gau
 
 /-- **Haar sketch-and-solve, expected relative residual**: for an $m\times p$ Haar frame
 $\mathbf{Q}$, the sketch $\mathbf{Q}^{\mathsf{H}}$, $r=\operatorname{rank}\mathbf{A}$,
-$r+2\le p\le m$, $\varepsilon>0$ and $p\ge r+1+r/\varepsilon$,
+$r+2\le p\le m$ and a real $\varepsilon$ with $r\le\varepsilon(p-r-1)$ (for $\varepsilon>0$:
+$p\ge r+1+r/\varepsilon$),
 $$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{Q}^{\mathsf{H}},
 \mathbf{B})\|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
 \|_{\mathsf{F}}^2\,.$$
@@ -842,7 +844,7 @@ Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
     [DecidableEq p] {Q : Ω → Matrix m p ℝ} (hQ : HasLaw Q (haarFrame m p) μ)
     (hpm : Fintype.card p ≤ Fintype.card m) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
-    {ε : ℝ} (_hε : 0 < ε) (hA : A.rank + 2 ≤ Fintype.card p)
+    {ε : ℝ} (hA : A.rank + 2 ≤ Fintype.card p)
     (hp : (A.rank : ℝ) ≤ ε * ((Fintype.card p : ℝ) - A.rank - 1)) :
     ∫ ω, frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2 ∂μ ≤
       (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
@@ -888,7 +890,7 @@ theorem exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_g
   have hfac' := (gaussianProjectionFactor_le_gaussianProjectionFactor (Nat.le_succ _) hA).trans hfac
   rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)] at hfac'
   exact integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
-    hS A B hε (by omega) hfac'
+    hS A B (by omega) hfac'
 
 /-- **Haar sketch-and-solve, asymptotic expected relative residual**:
 $O((r+1)/\varepsilon)$ orthonormal sketch rows suffice, where $r=\operatorname{rank}\mathbf{A}$:
@@ -925,6 +927,6 @@ theorem exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_h
   have hfac' := (gaussianProjectionFactor_le_gaussianProjectionFactor (Nat.le_succ _) hA).trans hfac
   rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)] at hfac'
   exact integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
-    hQ hpm A B hε (by omega) hfac'
+    hQ hpm A B (by omega) hfac'
 
 end NLAlib

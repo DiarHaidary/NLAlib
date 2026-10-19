@@ -44,7 +44,8 @@ definition, the error identity and unbiasedness are over any `RCLike` field. Des
 
 ## Main results
 
-* `NLAlib.HasOrthonormalCols.hutchpp_eq`: the papers' form with an orthonormal basis of the sketch.
+* `NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector`: the papers' form with an
+  orthonormal basis of the sketch.
 * `NLAlib.trace_sub_hutchpp`: the error identity; `NLAlib.hutchpp_eq_trace_of_rsvd_eq`,
   `NLAlib.hutchpp_eq_trace_of_rank_eq`: exactness when the sketch captures $\mathbf{A}$.
 * `NLAlib.integral_hutchpp`: unbiasedness.
@@ -84,7 +85,7 @@ compressed residual. It uses $\lvert s \rvert$ products to form $\mathbf{A}\math
 $\lvert s \rvert$ more for $\mathbf{A}\mathbf{Q}$ with $\mathbf{Q}$ a basis of its range, and
 $\lvert t \rvert$ for the residual. Junk value: with no residual probes ($t$ empty) the estimate
 of the residual is $0$ and the output is $\operatorname{tr}\mathsf{rsvd}(\mathbf{A}, \mathbf{S})$.
-The basis form of the papers is `NLAlib.HasOrthonormalCols.hutchpp_eq`.
+The basis form of the papers is `NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector`.
 [MeyerMuscoMuscoWoodruff2021, Algorithm 1 and Algorithm 3]; [EpperlyTroppWebber2024, (1.3)];
 there with an orthonormal basis $\mathbf{Q}$ of the range of $\mathbf{A}\mathbf{S}$ and
 $\mathbf{S}$, $\mathbf{G}$ random (sign or Gaussian entries). -/
@@ -285,8 +286,9 @@ private theorem integrable_frobNorm_compress_hermitianPart_sq [IsFiniteMeasure �
       rw [Real.norm_of_nonneg (sq_nonneg _)]
       exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_compress_le _ _ _) 2
 
-/-- **Hutch++ with an orthonormal basis of the sketch**: if $\mathbf{Q}$ has orthonormal columns
-and $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$, then
+/-- **Hutch++ with an orthonormal basis of the sketch**: if
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ (as for an orthonormal
+basis $\mathbf{Q}$ of the range of $\mathbf{A}\mathbf{S}$), then
 $$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) =
 \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) +
 \mathsf{girardHutchinson}\bigl((\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{A}
@@ -294,9 +296,9 @@ $$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) =
 the form in which the papers state the algorithm. A bridge to `NLAlib.hutchpp`; such a
 $\mathbf{Q}$ exists for every sketch (`NLAlib.HasOrthonormalCols.rangeProjector_eq`). The proof
 uses only $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ and cyclicity of
-the trace; orthonormality is kept for the reading. -/
-theorem HasOrthonormalCols.hutchpp_eq {q : Type*} [Fintype q] [DecidableEq q] {Q : Matrix n q 𝕜}
-    (_hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
+the trace, so orthonormality of the columns is not assumed. -/
+theorem hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector {q : Type*} [Fintype q]
+    {Q : Matrix n q 𝕜} {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
     (hQS : Q * Qᴴ = rangeProjector (A * S)) (G : Matrix n t 𝕜) :
     hutchpp A S G =
       (Qᴴ * A * Q).trace + girardHutchinson ((1 - Q * Qᴴ) * A * (1 - Q * Qᴴ)) G := by
