@@ -83,8 +83,9 @@ $d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$: flattening with
 failure probability $\delta$ makes every leverage score at most $\beta$ times this over $n$
 (`measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector`).
 The value the proof reaches, at $t = \log(n/\delta)$ in the Hsu–Kakade–Zhang tail. Tropp 2011a has
-$(\sqrt{d} + \sqrt{8 \log(n/\delta)})^2$ ([Tropp2011a], cited by name, paper not in hand; the $8$
-is as in [HalkoMartinssonTropp2011, Theorem 11.1], $[\sqrt{k} + \sqrt{8 \log(kn)}]^2$), which is
+$(\sqrt{d} + \sqrt{8 \log(n/\delta)})^2$ ([Tropp2011a, Lemma 3.3], Walsh–Hadamard, failure
+probability $\delta$; the $8$ is as in [HalkoMartinssonTropp2011, Theorem 11.1],
+$[\sqrt{k} + \sqrt{8 \log(kn)}]^2$), which is
 larger (`NLAlib.srhtRowBound_le`). Consumers use the API. Junk values: for $\delta > n$ the
 logarithm is negative, the square root is $0$, and the value may be below $d$; the flattening tail
 is then trivial. -/
@@ -263,8 +264,9 @@ $$\ell_i(\mathbf{F}\mathbf{D}\mathbf{U}) \le \frac{\beta\,(d + 2\sqrt{d t} + 2t)
 \,.$$
 [CamanoEpperlyMeyerTropp2025, Imported Theorem 4.3] (there $O((d + \log(n/\delta))/n)$ for a
 unitary Walsh–Hadamard, cosine or Fourier transform with entries $O(n^{-1/2})$; they note the
-argument needs only these two features); [Tropp2011a] (real signs, Walsh;
-$(\sqrt{d} + \sqrt{8 \log(\beta n)})^2 / n$, through CEMT, paper not in hand). Here any
+argument needs only these two features); [Tropp2011a, Lemma 3.3] (real signs, Walsh–Hadamard,
+orthonormal $\mathbf{U}$; $(\sqrt{d} + \sqrt{8 \log(n/\delta)})^2 / n$ outside probability
+$\delta$). Here any
 $\mathbf{F}$ with $n \lvert \mathbf{F}_{i,j} \rvert^2 \le \beta$, any field, any $\mathbf{U}$, the
 Hsu–Kakade–Zhang constant.
 The proof passes to an orthonormal basis $\mathbf{Q}$ of $\operatorname{range}\mathbf{U}$
@@ -394,9 +396,9 @@ $\operatorname{rank}\mathbf{U}$ whose leverage scores are at most $L / \lvert n 
 with an independent random unitary $\mathbf{T}$ that makes $\mathbf{T}\mathbf{U}$ so incoherent
 outside probability $\delta_2$, is a subspace injection for $\operatorname{range}\mathbf{U}$ with
 constant $a$ outside probability $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed: for $L < 0$
-and nonempty `n` the sampling hypothesis is vacuous. [Tropp2011a] (the structure of the SRHT
-proof, through CEMT); [CamanoEpperlyMeyerTropp2025, §4.5] (the same two steps for SparseRTT, where
-their Theorem 4.4 is the sampling hypothesis). -/
+and nonempty `n` the sampling hypothesis is vacuous. [Tropp2011a, §3.1] (the structure of the
+SRHT proof: Lemma 3.3 flattens, Lemma 3.4 samples); [CamanoEpperlyMeyerTropp2025, §4.5] (the
+same two steps for SparseRTT, where their Theorem 4.4 is the sampling hypothesis). -/
 theorem hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
     (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))
@@ -416,7 +418,7 @@ $L / \lvert n \rvert$, composed with an independent random unitary $\mathbf{T}$ 
 $\mathbf{T}\mathbf{U}$ so incoherent outside probability $\delta_2$, is a subspace embedding for
 $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ outside probability
 $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed, as in
-`NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`. [Tropp2011a];
+`NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`. [Tropp2011a, §3.1];
 [CamanoEpperlyMeyerTropp2025, §4.5]. -/
 theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)

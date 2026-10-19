@@ -778,7 +778,11 @@ $\ell_i(\mathbf{U}) \le L p_i$ is a subspace injection for $\operatorname{range}
 constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
 and <!-- value samplingInjectionDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingInjectionDim U.rank L ε δ`). Asymptotic form:
+(`NLAlib.samplingInjectionDim U.rank L ε δ`). [Woodruff2014, Theorem 17] (the two-sided form for
+orthonormal columns, more than $144 d \log(2d/\delta)/(\beta\varepsilon^2)$ samples with
+$d = \operatorname{rank}\mathbf{U}$ and $L = d/\beta$);
+[Tropp2015, Theorem 5.1.1, (5.1.5)] (the lower tail, here weakened and solved for the sample
+size). Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`.
 Result: leverage-sampling-osi -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le

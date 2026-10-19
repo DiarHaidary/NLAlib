@@ -130,7 +130,8 @@ variable (k) in
 replacement). The measurable space on `n` is `⊤` inside the definition (no statement carries an
 instance on `n`); `NLAlib.srht_eq_map_prod` writes it through the row-sampling law
 `NLAlib.samplingSketchWithoutReplacement`. Junk value: the zero measure when
-$\lvert n \rvert < \lvert k \rvert$. [Tropp2011a]; [HalkoMartinssonTropp2011, §11]. -/
+$\lvert n \rvert < \lvert k \rvert$. [Tropp2011a, §1.1] (there with the Walsh–Hadamard matrix);
+[HalkoMartinssonTropp2011, §11]. -/
 noncomputable def srht (F : Matrix n n 𝕜) : Measure (Matrix k n 𝕜) :=
   let _ : MeasurableSpace n := ⊤
   ((rademacherVector n).prod (uniformOn {ι : k → n | Function.Injective ι})).map
@@ -541,7 +542,9 @@ $$d \exp\Bigl(-\frac{\varepsilon^2 \lvert k \rvert}{2 \beta (d + 2\sqrt{d t} + 2
   \lvert n \rvert e^{-t}\,:$$
 the lower matrix Chernoff half after flattening.
 [CamanoEpperlyMeyerTropp2025, §1.5.2] (the OSI view; $k = \Omega(d \log d)$ is necessary, their
-citation of Tropp 2011a); [Tropp2011a]. Flattening
+citation of Tropp 2011a); [Tropp2011a, Theorem 3.1] (Walsh–Hadamard, orthonormal columns:
+$\sigma_{\min} \ge 1/\sqrt{6}$ at $4(\sqrt{d} + \sqrt{8 \log(d \lvert n \rvert)})^2 \log d$
+rows, outside probability $3/d$ for both halves). Flattening
 (`NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`), then
 `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement` through
 `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`.
@@ -570,7 +573,10 @@ $$2 d \exp\Bigl(-\frac{\varepsilon^2 \lvert k \rvert}{3 \beta (d + 2\sqrt{d t} +
 $r = \Omega(\varepsilon^{-2} \log d\, (\sqrt{d} + \sqrt{\log n})^2)$ rows, probability $0.99$,
 real Walsh, $n$ a power of two); [MartinssonTropp2020, §9.3]
 ($d = O(k \log k)$, any SRTT); [HalkoMartinssonTropp2011, Theorem 11.1] (the SRFT with complex
-signs, $0.40 \le \sigma_{\min}$, $\sigma_{\max} \le 1.48$, failure $O(1/k)$); [Tropp2011a]. Here
+signs, $0.40 \le \sigma_{\min}$, $\sigma_{\max} \le 1.48$, failure $O(1/k)$);
+[Tropp2011a, Theorems 1.3 and 3.1] (Walsh–Hadamard, orthonormal columns: the same constants at
+$4(\sqrt{d} + \sqrt{8 \log(d \lvert n \rvert)})^2 \log d$ rows, and $1/\sqrt{6} \le \sigma_{\min}$,
+$\sigma_{\max} \le \sqrt{13/6}$ outside probability $3/d$). Here
 any field, any $\mathbf{F}$ with entry bound $\beta$, the tail in natural parameters. For
 $\lvert n \rvert < \lvert k \rvert$ the law is $0$, so $\mu = 0$.
 Result: srht-ose -/
@@ -676,7 +682,9 @@ $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
 is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; flattening and sampling each
 fail with probability at most $\delta/2$. The size of uniform row sampling at the flattened
-coherence. [Woodruff2014, Theorem 7]; [Tropp2011a]. The tail
+coherence. [Woodruff2014, Theorem 7]; [Tropp2011a, Theorem 3.1] (Walsh–Hadamard, constant
+distortion at $4(\sqrt{d} + \sqrt{8 \log(d \lvert n \rvert)})^2 \log d$ rows, failure
+$3/d$). The tail
 `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht` at $t = \log(2\lvert n \rvert / \delta)$,
 where $\lvert n \rvert e^{-t} = \delta/2$. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht`.
@@ -771,7 +779,8 @@ $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
 is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; the tail
 `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht` at $t = \log(2\lvert n \rvert / \delta)$.
-[Tropp2011a]. Asymptotic form:
+[Tropp2011a, Theorem 3.1] (Walsh–Hadamard: $\sigma_{\min} \ge 1/\sqrt{6}$ at
+$4(\sqrt{d} + \sqrt{8 \log(d \lvert n \rvert)})^2 \log d$ rows, failure $3/d$). Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht`.
 Result: srht-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le [Nonempty k]
@@ -957,7 +966,11 @@ coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
 $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
 is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; flattening and sampling each
-fail with probability at most $\delta/2$. Asymptotic form:
+fail with probability at most $\delta/2$. [Tropp2011a, Theorem 3.1] (without replacement,
+Walsh–Hadamard: $\sigma_{\min} \ge 1/\sqrt{6}$ at
+$4(\sqrt{d} + \sqrt{8 \log(d \lvert n \rvert)})^2 \log d$ rows, failure $3/d$);
+[MartinssonTropp2020, §9.6.2] (the sampling step with replacement,
+$2\varepsilon^{-2}\mu\log(2d)$ rows at coherence $\mu$). Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement`.
 Result: srht-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le

@@ -354,8 +354,10 @@ $\mathbf{U}$ satisfy $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, the sketch is
 injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ outside probability
 $\operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (2L)}$, for every $\varepsilon \ge 0$
 (vacuous for $\varepsilon \ge 1$). Matrix Chernoff's lower tail without replacement with
-$R = L / \lvert k \rvert$. [Tropp2011a] (sampling without replacement); [Tropp2015, Theorem 5.1.1,
-(5.1.5), weakened after (5.1.8)] (the i.i.d. form, the same bound). -/
+$R = L / \lvert k \rvert$. [Tropp2011a, Theorem 2.1 and Lemma 3.4] (sampling without
+replacement; there for orthonormal columns with $L = \lvert n \rvert \max_i \ell_i$ and the
+Chernoff tail before its weakening); [Tropp2015, Theorem 5.1.1, (5.1.5), weakened after (5.1.8)]
+(the i.i.d. form, the same bound). -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
     (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hε : 0 ≤ ε) :
@@ -390,7 +392,8 @@ $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, the sketch satisfies
 $(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U}
 \preceq (1 + \varepsilon)\, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ outside probability
 $\operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
-$0 \le \varepsilon \le 1$; the lower constant $0$ holds surely. [Tropp2011a];
+$0 \le \varepsilon \le 1$; the lower constant $0$ holds surely. [Tropp2011a, Theorem 2.1 and
+Lemma 3.4] (the upper tail, there for orthonormal columns);
 [Tropp2015, Theorem 5.1.1, (5.1.6)] (the i.i.d. form), with
 $\varepsilon - (1 + \varepsilon) \log (1 + \varepsilon) \le -\varepsilon^2/3$ on $[0, 1]$. -/
 theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketchWithoutReplacement
@@ -429,8 +432,9 @@ constants $1 \mp \varepsilon$ outside probability
 $2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
 $0 \le \varepsilon \le 1$. Sampling without replacement is never worse than with replacement
 (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch` at uniform weights has the same bound).
-[Tropp2011a] (the sampling step of the SRHT, there for orthonormal columns and
-$L = \lvert n \rvert \max_i \ell_i$); [Tropp2015, Theorem 5.1.1] (the i.i.d. form).
+[Tropp2011a, Lemma 3.4] (the sampling step of the SRHT, there for orthonormal columns and
+$L = \lvert n \rvert \max_i \ell_i$, with the two Chernoff tails before weakening);
+[Tropp2015, Theorem 5.1.1] (the i.i.d. form).
 Result: sampling-without-replacement-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
@@ -458,7 +462,9 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement
 $\mathbf{U}$ the domination always holds, and the sketch is a subspace embedding with constants
 $1 \mp \varepsilon$ outside probability
 $2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3 \operatorname{coh}\mathbf{U})}$,
-for $0 \le \varepsilon \le 1$. [MartinssonTropp2020, §9.6.2] (with replacement); [Tropp2011a]. -/
+for $0 \le \varepsilon \le 1$. [MartinssonTropp2020, §9.6.2] (with replacement);
+[Tropp2011a, Lemma 3.4] (there for orthonormal columns, with the Chernoff tails before
+weakening). -/
 theorem hasSubspaceEmbedding_coherence_of_hasLaw_samplingSketchWithoutReplacement
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ) (hε : 0 ≤ ε) (hε1 : ε ≤ 1) :
     HasSubspaceEmbedding S U (1 - ε) (1 + ε)
@@ -475,7 +481,8 @@ probability $\delta$, for $0 < \varepsilon \le 1$, $\delta > 0$
 and <!-- value samplingEmbeddingDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
 (`NLAlib.samplingEmbeddingDim U.rank L ε δ`), the size of sampling with replacement.
-[Tropp2011a]. Asymptotic form:
+[Tropp2011a, Lemma 3.4] (there for orthonormal columns, the sample size $\alpha L \log d$ with
+$d = \operatorname{rank}\mathbf{U}$ and the Chernoff tails left explicit). Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement`.
 Result: sampling-without-replacement-ose -/
 theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le
@@ -537,7 +544,9 @@ injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ a
 probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
 and <!-- value samplingInjectionDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingInjectionDim U.rank L ε δ`). Asymptotic form:
+(`NLAlib.samplingInjectionDim U.rank L ε δ`). [Tropp2011a, Lemma 3.4] (the lower bound, there
+for orthonormal columns, the sample size $\alpha L \log d$ with $d = \operatorname{rank}\mathbf{U}$
+and the Chernoff tail left explicit). Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`.
 Result: sampling-without-replacement-osi -/
 theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le

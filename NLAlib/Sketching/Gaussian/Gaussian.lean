@@ -791,7 +791,10 @@ least <!-- value gaussianInjectionDim d \varepsilon \delta -->
 $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$ rows (`gaussianInjectionDim d ε δ`) give
 an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$; $k$ is nonempty because
-the dimension is positive. Asymptotic form:
+the dimension is positive. [MartinssonTropp2020, §8.7.2] (the tail form: the smallest
+singular value of the sketch on the subspace is at most
+$1 - (1 + \sqrt{d})/\sqrt{\lvert k \rvert} - t$ with probability at most
+$e^{-\lvert k \rvert t^2/2}$); here solved for the row count. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`.
 Result: gaussian-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
@@ -838,7 +841,9 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix :
 /-- **Gaussian distributional JL, sample-size form**: at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property with distortion $\varepsilon$ and failure
-probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. Replaces the prototype's
+probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. [Woodruff2014, Theorem 4]
+(there $\Omega(\varepsilon^{-2} \log(f/\delta))$ rows for $f$ points, unspecified constant,
+proved in Lemma 18; here $f = 1$ with Dasgupta and Gupta's exponent). Replaces the prototype's
 `jl_lemma_prob_le_of_log_le`. Asymptotic form:
 `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`.
 Result: jl-distributional -/

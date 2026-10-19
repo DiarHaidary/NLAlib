@@ -573,9 +573,10 @@ $$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
 = \frac{\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{B}\|_{\mathsf{F}}^2 +
 \|\mathbf{A}^{\mathsf{T}}\mathbf{B}\|_{\mathsf{F}}^2 -
 2\sum_i \|\mathbf{a}_i\|^2 \|\mathbf{b}_i\|^2}{\lvert k \rvert}$$
-for the rows $\mathbf{a}_i$, $\mathbf{b}_i$ of $\mathbf{A}$, $\mathbf{B}$. Proved without a
-literature source; Woodruff's proof of Theorem 14 computes its case
-$\mathbf{A} = \mathbf{B} = \mathbf{x}$ over $\mathbb{R}$. Entry $(a, b)$ of the error is
+for the rows $\mathbf{a}_i$, $\mathbf{b}_i$ of $\mathbf{A}$, $\mathbf{B}$.
+[Woodruff2014, proof of Theorem 14] computes its case $\mathbf{A} = \mathbf{B} = \mathbf{x}$ over
+$\mathbb{R}$ (there as $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^4$, then bounded); the general case is
+proved here without a literature source. Entry $(a, b)$ of the error is
 $\operatorname{tr}(\mathbf{M}_{ab}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))$ for the
 rank-one $\mathbf{M}_{ab}$ with entries $\mathbf{B}_{j,b}\overline{\mathbf{A}_{i,a}}$, and the
 exact second moment is summed over $(a, b)$.

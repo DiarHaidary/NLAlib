@@ -24,17 +24,9 @@
    "NLAlib/Matrix/Spectral/SVD.lean": 1,
    "NLAlib/Matrix/Subspaces/ProjectorPair.lean": 1,
    "NLAlib/Probability/SubGaussianVector/Norm.lean": 1,
-   "NLAlib/Sketching/Gaussian/Gaussian.lean": 2,
-   "NLAlib/Sketching/Gaussian/Haar.lean": 1,
-   "NLAlib/Sketching/Gaussian/HaarEmbedding.lean": 6,
-   "NLAlib/Sketching/Gaussian/Rademacher.lean": 2,
-   "NLAlib/Sketching/Sampling/RowSampling.lean": 1,
-   "NLAlib/Sketching/Sampling/WithoutReplacement.lean": 1,
-   "NLAlib/Sketching/Sparse/CountSketch.lean": 1,
-   "NLAlib/Sketching/Structured/SRHT.lean": 1
+   "NLAlib/Sketching/Gaussian/HaarEmbedding.lean": 6
   },
   "C2": {
-   "NLAlib/Estimation/Trace/HutchPlusPlus.lean": 1,
    "NLAlib/ForMathlib/MeasureTheory/Constructions/BorelSpace/MeasurableSelection.lean": 2,
    "NLAlib/Krylov/Functions/Optimality.lean": 1,
    "NLAlib/Krylov/LinearSystems/WorstCase.lean": 4,
@@ -51,11 +43,7 @@
    "NLAlib/Probability/BoundedDifferences.lean": 2,
    "NLAlib/Probability/Distributions/GaussianComparison.lean": 2,
    "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
-   "NLAlib/Probability/Tail.lean": 1,
-   "NLAlib/Sketching/Properties/ProjectionCost.lean": 1,
-   "NLAlib/Sketching/Sampling/WithoutReplacement.lean": 5,
-   "NLAlib/Sketching/Structured/Flattening.lean": 4,
-   "NLAlib/Sketching/Structured/SRHT.lean": 5
+   "NLAlib/Probability/Tail.lean": 1
   },
   "D1": {
    "NLAlib/LowRank/Structural/RangeFinder.lean": 3

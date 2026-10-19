@@ -692,7 +692,8 @@ the factor is `rotationInvariantFactor r (Fintype.card s) q`, below the Halko–
 factor of `NLAlib.variance_hutchpp_le_of_hasLaw_gaussianMatrix` and better when the rank $r$ is
 close to $\lvert s \rvert$. From the exact variance and
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le`.
-[EpperlyWebber2026]; there for the randomized SVD alone.
+[EpperlyWebber2026, Theorem 3.2]; there for the randomized SVD alone, with
+$r = \operatorname{rank}\mathbf{A}$.
 Result: hutchpp-variance -/
 theorem variance_hutchpp_le_of_hasLaw_gaussianMatrix_of_rank_le [Nonempty t] (A : Matrix n n ℝ)
     {S : Ω → Matrix n s ℝ} {G : Ω → Matrix n t ℝ} (hS : HasLaw S (gaussianMatrix n s) μ)

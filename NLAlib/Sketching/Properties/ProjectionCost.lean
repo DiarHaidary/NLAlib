@@ -555,7 +555,9 @@ failure $v/(\lvert k \rvert \varepsilon_J^2)$ at every $\varepsilon_J > 0$ (for 
 its approximate-multiplication tail), at least this many rows make the three tail events of
 `NLAlib.HasSubspaceEmbedding.hasProjectionCostPreserving_of_hasOrthonormalCols` fail with total
 probability at most $\delta/2$ at the budgets $\varepsilon_J = \varepsilon/(8\sqrt{d+1})$ of the
-family statements. The proof's value; [CohenElderMuscoMuscoPersu2015] has no constant.
+family statements. The proof's value; [CohenElderMuscoMuscoPersu2015, proof of Theorem 12]
+bounds the same tail terms through approximate matrix multiplication at accuracy
+$\varepsilon/\sqrt{d}$ for rank $d$, with no constant.
 Consumers use `NLAlib.projectionCostTailDim_le`. Junk value: $0$ at $\varepsilon = 0$ or
 $\delta = 0$. -/
 noncomputable irreducible_def projectionCostTailDim (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ :=
