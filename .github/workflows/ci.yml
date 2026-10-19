@@ -36,7 +36,7 @@ jobs:
       - name: Extract the declaration data (about a minute on the built library)
         run: bash scripts/explore_data.sh "$RUNNER_TEMP/explore-data.json"
       - name: Names follow the grammar (CONTRIBUTING §4)
-        run: python3 scripts/check_names.py "$RUNNER_TEMP/explore-data.json" --warn
+        run: python3 scripts/check_names.py "$RUNNER_TEMP/explore-data.json"
       - uses: actions/setup-node@v4
         with:
           node-version: 20

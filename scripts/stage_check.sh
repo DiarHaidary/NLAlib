@@ -30,7 +30,7 @@ tail -1 "$tmp/constants.log"
 { cat "$tmp/imports.txt"; sed '1d' scripts/Explore.lean; } > "$tmp/Explore.lean"
 EXPLORE_OUT="$tmp/explore-data.json" LEAN_NUM_THREADS=1 lake env lean -M 8000 "$tmp/Explore.lean" \
   > "$tmp/explore.log" 2>&1 || { tail -20 "$tmp/explore.log"; exit 1; }
-python3 scripts/check_names.py "$tmp/explore-data.json" --partial --warn > "$tmp/names.log" || \
+python3 scripts/check_names.py "$tmp/explore-data.json" --partial > "$tmp/names.log" || \
   { cat "$tmp/names.log"; exit 1; }
 grep -v '^check_names:' "$tmp/names.log" || true
 tail -1 "$tmp/names.log"
