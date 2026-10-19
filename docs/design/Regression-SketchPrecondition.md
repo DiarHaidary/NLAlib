@@ -2,7 +2,7 @@
 
 Draft of 2026-10-19, revised the same day after a bounded review (no blocking findings; the review
 is in the session scratchpad), branch `regression/sketch-precondition` (worktree `nlalib-block`,
-head `bc72b8d`). Not approved. Maintainer request (2026-10-19): "Let's do sketch and precondition
+head `bc72b8d`). Approved 2026-10-19. Maintainer request (2026-10-19): "Let's do sketch and precondition
 and Randomized kaczmarz." This note covers sketch-and-precondition as an algorithm with convergence
 guarantees, not only the conditioning estimate. Randomized Kaczmarz has its own note,
 `docs/design/Regression-Kaczmarz.md`. §9 lists the names the two notes share.
@@ -11,13 +11,14 @@ Maintainer decision (2026-10-19): "for sketch and precondition, dont worry about
 explorer Rates rows are deferred (§7). The `exists_forall_` forms that CONTRIBUTING §5.2 rule 3
 requires are still in scope.
 
-**Decisions needing the maintainer:**
+**Approved by the maintainer, 2026-10-19** ("good to all"):
 * **D1:** what the algorithm is, as a definition.
 * **D2:** the new names and §5.3 rows, with the explicit start.
-* **D3:** the shape of `richardsonIterate`. The recommendation is rectangular, `A : Matrix m n 𝕜`
-  with `M : Matrix n m 𝕜`, because the Kaczmarz note shares the definition.
+* **D3:** the shape of `richardsonIterate`: rectangular, `A : Matrix m n 𝕜` with
+  `M : Matrix n m 𝕜`, because the Kaczmarz note shares the definition.
 
-Everything else in §8 goes ahead as recommended, under the probability-round approval rule.
+Everything else in §8 goes ahead as recommended. The skeleton waits for the library-wide naming
+audit (maintainer: "just wait for audit"), and names here follow its grammar once adopted.
 
 **Scope recommendation.** In this round:
 * sketch-and-precondition (PCG on the normal equations, preconditioned by the sketched Gram matrix)

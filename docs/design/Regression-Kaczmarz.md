@@ -2,7 +2,7 @@
 
 Draft of 2026-10-19, revised the same day after a bounded Fable review (verdict: approve after two
 blocking fixes and the should-fixes; all are folded in, see the revision log at the end). Branch
-`regression/sketch-precondition` (worktree `nlalib-block`, head `bc72b8d`). Not approved.
+`regression/sketch-precondition` (worktree `nlalib-block`, head `bc72b8d`). Approved 2026-10-19.
 Maintainer request (2026-10-19): "Let's do sketch and precondition and Randomized kaczmarz." This
 note covers randomized Kaczmarz with its convergence guarantees, framed as an instance of
 sketch-and-project. Sketch-and-precondition and iterative sketching are in the concurrent note
@@ -14,11 +14,14 @@ Maintainer decision (2026-10-19), applied to the whole round: "for sketch and pr
 worry about rates now". No explorer Rates rows are proposed; the `exists_forall_` forms that
 CONTRIBUTING §5.2 rule 3 requires stay.
 
-**Decisions needing the maintainer: D1 (sketch-and-project as the definition, Kaczmarz as its
-instance), D2 (the i.i.d.-sequence idiom `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ`, a new
-§5.3 row) and D3 (a named Frobenius condition number, which reverses a remark in
-`Matrix-Pseudoinverse.md` §8).** Everything else in §11 proceeds as recommended, under the
-probability-round rule.
+**Approved by the maintainer, 2026-10-19** ("good to all, except frobConditionNumber add pseudo
+since it is A^+"): D1 (sketch-and-project as the definition, Kaczmarz as its instance), D2 (the
+i.i.d.-sequence idiom `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ`, a new §5.3 row) and D3 (a
+named Frobenius condition number, which reverses a remark in `Matrix-Pseudoinverse.md` §8), with D3's
+name changed to `frobPseudoConditionNumber`, since it is built from $\mathbf{A}^{+}$, in line with
+`pseudoConditionNumber`. Everything else in §11 proceeds as recommended. The skeleton waits for the
+library-wide naming audit (maintainer: "just wait for audit"), and names here follow its grammar
+once adopted.
 
 **Scope recommendation.** This round:
 * the sketch-and-project step and iterate (Euclidean metric) and their deterministic geometry;
@@ -375,7 +378,7 @@ two files differ:
 * **Kaczmarz** statements take no hypothesis on $\mathbf{A}$, because their law is fixed. If
   $\mathbf{A} \ne \mathbf{0}$ the weights sum to one and the law is a probability measure. If
   $\mathbf{A} = \mathbf{0}$ then $\mu = 0$, and every right-hand side is nonnegative through the
-  junk values: `frobConditionNumber 0 = 0`, so the rate $1 - 1/0^2 = 1$; the horizon terms are
+  junk values: `frobPseudoConditionNumber 0 = 0`, so the rate $1 - 1/0^2 = 1$; the horizon terms are
   `… / frobNorm 0 ^ 2 = 0`; and $\varepsilon\|\cdot\|^2 \ge 0$. The exact identity is $0 = 0$. The
   exception is the mean iterate (§5.3), whose right-hand side is a vector: it takes `A ≠ 0`.
 
@@ -522,11 +525,11 @@ theorem exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_mul :
 ### 5.2 Randomized Kaczmarz (`Solvers/Kaczmarz.lean`)
 
 The rate is written with the Frobenius condition number of D3,
-`frobConditionNumber A := frobNorm A * specNorm (pinv A)` (Strohmer–Vershynin's $\kappa(\mathbf{A})$,
+`frobPseudoConditionNumber A := frobNorm A * specNorm (pinv A)` (Strohmer–Vershynin's $\kappa(\mathbf{A})$,
 Zouzias–Freris's $\kappa_{\mathsf{F}}$; docstrings write it out,
 $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$, never $\kappa$, per CONTRIBUTING §6). It needs no
 rank hypothesis: $\|\mathbf{A}^{+}\|_2^{-1}$ is the smallest *nonzero* singular value
-(`specNorm_pinv`). For $\mathbf{A} \ne \mathbf{0}$, `one_le_frobConditionNumber` gives
+(`specNorm_pinv`). For $\mathbf{A} \ne \mathbf{0}$, `one_le_frobPseudoConditionNumber` gives
 $\rho = 1 - 1/\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{A}^{+}\|_2^2 \in [0, 1)$.
 
 ```lean
@@ -591,8 +594,8 @@ theorem integral_norm_sub_kaczmarzIterate_sq_le_add
     (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
     {xs : n → 𝕜} (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
-      (1 - 1 / frobConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 +
-        (1 - (1 - 1 / frobConditionNumber A ^ 2) ^ q) * specNorm (pinv A) ^ 2 *
+      (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 +
+        (1 - (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q) * specNorm (pinv A) ^ 2 *
           ‖WithLp.toLp 2 (b - A *ᵥ xs)‖ ^ 2
 
 /-- **From any start, randomized Kaczmarz converges to the least-squares solution nearest the
@@ -609,8 +612,8 @@ theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le
     (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
     (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (x₀ + pinv A *ᵥ (b - A *ᵥ x₀) - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
-      (1 - 1 / frobConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (pinv A *ᵥ (b - A *ᵥ x₀))‖ ^ 2 +
-        (1 - (1 - 1 / frobConditionNumber A ^ 2) ^ q) * specNorm (pinv A) ^ 2 *
+      (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (pinv A *ᵥ (b - A *ᵥ x₀))‖ ^ 2 +
+        (1 - (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q) * specNorm (pinv A) ^ 2 *
           ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ b)‖ ^ 2
 
 /-- Its consistent case, $\mathbf{b} \in \operatorname{range}\mathbf{A}$, where the horizon
@@ -620,7 +623,7 @@ theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_mem_range
     (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
     (hb : b ∈ LinearMap.range A.mulVecLin) (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (x₀ + pinv A *ᵥ (b - A *ᵥ x₀) - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
-      (1 - 1 / frobConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (pinv A *ᵥ (b - A *ᵥ x₀))‖ ^ 2
+      (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (pinv A *ᵥ (b - A *ᵥ x₀))‖ ^ 2
 
 /-- **Randomized Kaczmarz converges linearly in expectation** (Strohmer–Vershynin), any rank: for
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, $\mathbf{x}_\star - \mathbf{x}_0$ in the row space of
@@ -630,14 +633,14 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathbf{x}_q\|^2 \le
 \|\mathbf{x}_\star - \mathbf{x}_0\|^2\,,$$
 the rate in $[0, 1)$ for $\mathbf{A} \ne \mathbf{0}$. [StrohmerVershynin2009, Theorem 2]; there for
 full column rank, where the row-space hypothesis is empty. [ZouziasFreris2013, Theorem 4]. Port of
-`NLAlib.integral_sqErr_kaczmarz_le_frobConditionNumber`. Iteration-count form:
+`NLAlib.integral_sqErr_kaczmarz_le_frobPseudoConditionNumber`. Iteration-count form:
 `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le`.
 Result: randomized-kaczmarz -/
 theorem integral_norm_sub_kaczmarzIterate_sq_le
     (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
-      (1 - 1 / frobConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2
+      (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2
 ```
 
 **Iteration counts** (CONTRIBUTING §5.2 rule 3). From
@@ -646,7 +649,7 @@ $(1 - \kappa_{\mathsf{F}}^{-2})^q \le e^{-q/\kappa_{\mathsf{F}}^2}$:
 theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le
     (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin)
-    {ε : ℝ} (hε : 0 < ε) {q : ℕ} (hq : frobConditionNumber A ^ 2 * Real.log (1 / ε) ≤ q) :
+    {ε : ℝ} (hε : 0 < ε) {q : ℕ} (hq : frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε) ≤ q) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
       ε * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2
 
@@ -667,7 +670,7 @@ theorem exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul :
       (μ : Measure Ω) (A : Matrix m n 𝕜) (b : m → 𝕜) (ι : Ω → ℕ → m) (xs x₀ : n → 𝕜) (q : ℕ) (ε : ℝ),
       HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ →
       A *ᵥ xs = b → xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin → 0 < ε → ε ≤ ε₀ →
-      C * (frobConditionNumber A ^ 2 * Real.log (1 / ε)) ≤ q →
+      C * (frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε)) ≤ q →
       ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
         ε * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2
 ```
@@ -806,7 +809,7 @@ name.
 | `ForMathlib/Probability/Independence/InfinitePi.lean` | new | `HasLaw.integral_comp_eq_integral_integral_of_dependsOn` | ~80 | the above, `Mathlib.Probability.Independence.InfinitePi` |
 | `Probability/Law.lean` | grows (171) | `hasLaw_infinitePi_iff` | +25 | `Mathlib.Probability.Independence.InfinitePi` |
 | `Matrix/Pseudoinverse/Pinv.lean` | grows | `pinv_replicateRow` | +20 | — |
-| `Matrix/Pseudoinverse/ConditionNumber.lean` | grows | `frobConditionNumber` and API (D3) | +70 | `Matrix.Norms.Frobenius` |
+| `Matrix/Pseudoinverse/ConditionNumber.lean` | grows | `frobPseudoConditionNumber` and API (D3) | +70 | `Matrix.Norms.Frobenius` |
 | `Matrix/Norms/Frobenius.lean` | grows (~460) | `rowNormSqDistribution`, `coe_…`, `sum_…` | +30 | — |
 | `Solvers/SketchAndProject.lean` | new | §3.1 definitions, §3.2, §5.1 | ~450 | Pseudoinverse, Projector, Selection, MatrixIntegral, Measurability.Matrix, the ForMathlib file |
 | `Solvers/Kaczmarz.lean` | new | §3.1 `kaczmarzIterate`, realisation, §5.2, §5.3 | ~550 | SketchAndProject, Sampling, ConditionNumber, `Krylov.LinearSystems.Richardson` (sibling) for the mean identity |
@@ -825,7 +828,7 @@ name.
 * `pinv_replicateRow` (the pseudoinverse of a one-row matrix,
   $(\mathbf{a}^{\mathsf{T}})^{+} = \overline{\mathbf{a}}/\|\mathbf{a}\|^2$, and $\mathbf{0}$ for
   $\mathbf{a} = \mathbf{0}$) → `Pinv.lean`: a pseudoinverse fact.
-* `frobConditionNumber` → `ConditionNumber.lean`, beside `pseudoConditionNumber`.
+* `frobPseudoConditionNumber` → `ConditionNumber.lean`, beside `pseudoConditionNumber`.
 * `rowNormSqDistribution` → `Frobenius.lean`, beside `frobNorm_sq_eq_sum_row`, which is its
   normalisation. Row norms are a Frobenius quantity; `leverageScoreDistribution` lives in
   `Matrix/Subspaces/` because leverage is a subspace quantity (the review's reading, adopted).
@@ -846,7 +849,7 @@ No `Mathlib-deviations.md` entry: every Mathlib object (`Measure.infinitePi`, `H
 | i.i.d. sequence | `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ` for `ξ : Ω → ℕ → β`; a function of the first `q` terms is `DependsOn F (Set.Iio q)`; conditioning on the past is `HasLaw.integral_comp_eq_integral_integral_of_dependsOn` | `hasLaw_infinitePi_iff`; Mathlib's `iIndepFun_iff_hasLaw_Pi_infinitePi` |
 | sketch-and-project | `sketchAndProject A S b x := x + pinv (S * A) *ᵥ (S *ᵥ (b - A *ᵥ x))`, iterate `sketchAndProjectIterate A S b x₀ q` for `S : ℕ → Matrix k m 𝕜`; expected projector `∫ T, rangeProjector (T * A)ᴴ ∂ν`, no definition; error `xs - …` | `isLeastSquaresSolution_sketchAndProject`; Mathlib has none |
 | randomized Kaczmarz | `kaczmarzIterate A ι b x₀ q`, rows `ι : ℕ → m`, law `samplingMeasure (rowNormSqDistribution A)` | `kaczmarzIterate_succ` (row-action formula); Mathlib has none |
-| Frobenius condition number | `frobConditionNumber A := frobNorm A * specNorm (pinv A)`, any shape and rank; written out in docstrings, $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$ (CONTRIBUTING §6 keeps $\kappa$ for the classical one) | `frobConditionNumber_eq_frobNorm_div_singularValues`; Mathlib has none |
+| Frobenius condition number | `frobPseudoConditionNumber A := frobNorm A * specNorm (pinv A)`, any shape and rank; written out in docstrings, $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$ (CONTRIBUTING §6 keeps $\kappa$ for the classical one) | `frobPseudoConditionNumber_eq_frobNorm_div_singularValues`; Mathlib has none |
 
 **Named constants.** None. Every constant is the source's and the proof reaches it: the rate
 $1 - \kappa_{\mathsf{F}}^{-2}$ (Strohmer–Vershynin's), the horizon $\|\mathbf{A}^{+}\|_2^2\|\mathbf{r}\|^2$
@@ -860,7 +863,7 @@ Easy: under a day and 60 lines; medium: up to a few days or 150 lines.
 | Theorem | Uses | Estimate |
 |---|---|---|
 | `pinv_replicateRow` | `pinv_eq_conjTranspose_mul_pinv_mul_conjTranspose_self`; $\mathbf{R}\mathbf{R}^{\mathsf{H}} = \|\mathbf{a}\|^2 \cdot \mathbf{1}$ on `Unit`; `pinv_smul`, `pinv_of_isUnit isUnit_one`; `Matrix.conjTranspose_replicateRow` | easy, 20 |
-| `frobConditionNumber` API: `frobConditionNumber_nonneg`, `frobConditionNumber_zero`, `frobConditionNumber_eq_frobNorm_div_singularValues` (`k + 1 = rank`), `pseudoConditionNumber_le_frobConditionNumber`, `rank_le_frobConditionNumber_sq`, `frobConditionNumber_sq_le_rank_mul_pseudoConditionNumber_sq`, `one_le_frobConditionNumber` (`A ≠ 0`, which gives $0 \le \rho$), `frobConditionNumber_conjTranspose` | `specNorm_pinv`, `frobNorm_sq_eq_sum_range_singularValues_sq`, `singularValues_antitone`, `pseudoConditionNumber_def`, `pinv_conjTranspose` | easy, 60 |
+| `frobPseudoConditionNumber` API: `frobPseudoConditionNumber_nonneg`, `frobPseudoConditionNumber_zero`, `frobPseudoConditionNumber_eq_frobNorm_div_singularValues` (`k + 1 = rank`), `pseudoConditionNumber_le_frobPseudoConditionNumber`, `rank_le_frobPseudoConditionNumber_sq`, `frobPseudoConditionNumber_sq_le_rank_mul_pseudoConditionNumber_sq`, `one_le_frobPseudoConditionNumber` (`A ≠ 0`, which gives $0 \le \rho$), `frobPseudoConditionNumber_conjTranspose` | `specNorm_pinv`, `frobNorm_sq_eq_sum_range_singularValues_sq`, `singularValues_antitone`, `pseudoConditionNumber_def`, `pinv_conjTranspose` | easy, 60 |
 | `rowNormSqDistribution` API | `frobNorm_sq_eq_sum_row`, `frobNorm_eq_zero_iff`, `NNReal` coercions | easy, 25 |
 | `hasLaw_infinitePi_iff` | `iIndepFun_iff_hasLaw_Pi_infinitePi`, `measurePreserving_eval_infinitePi` with `fun_comp_hasLaw`, `aemeasurable_pi_lambda` | easy, 25 |
 | `iIndepFun.indepFun_comp_of_dependsOn` | `iIndepFun.indepFun_finset₀` with `s` and `{t}`; `dependsOn_iff_exists_comp` to factor $F$ through `s.restrict`, measurably, by extending with a default point. That needs `∀ i, Nonempty (β i)`, which follows from `Nonempty Ω` (each `X i ω` inhabits `β i`); the case `Ω` empty is trivial ($\mu = 0$), so the proof opens with that case split. `IndepFun.comp`. Mathlib's `FactorsThrough.lean` has only the converse, so nothing shortens this | medium, 70 (plumbing) |
@@ -871,7 +874,7 @@ Easy: under a day and 60 lines; medium: up to a few days or 150 lines.
 | §5.1 exact identity and bound | the ForMathlib lemma with $F$ = the iterate; `integral_map`; `Matrix.integral_quadForm` under the Loewner order (`Matrix.le_iff`, the `Matrix.PosSemidef` quadratic form); integrability from `norm_sub_sketchAndProjectIterate_le` (bounded) and boundedness of projectors; `rangeProjector_mono` and $\nu(\mathrm{univ}) = 1$ for $\lambda \le 1$; induction | medium, 100 |
 | §5.1 mean error | the same Fubini step for a vector-valued $f$; Bochner integral commuting with `mulVec` (`ContinuousLinearMap.integral_comp_comm`, or `Matrix.integral_mulVec` added to `MatrixIntegral.lean`) | medium, 50 |
 | §5.2 one-step inequality and identity | ForMathlib lemma; `integral_samplingMeasure`; `norm_sub_kaczmarzIterate_succ_sq` weighted by $p_i$; `frobNorm_sq_eq_sum_row`, `EuclideanSpace.norm_sq_eq`; the residual sum over rows with `A i ≠ 0` is at most, and under `hA` equal to, $\|\mathbf{r}\|^2$, **cases on `A i = 0` per row**; integrability (finitely valued: the iterate factors through `Fin q → m`); cases on $\mathbf{A} = \mathbf{0}$ (then $\mu = 0$) | medium, 80 |
-| §5.2 primary bound and corollaries | the inequality; `sketchAndProjectIterate_sub_mem_range` plus `hx₀`; `norm_le_specNorm_pinv_mul_norm_mulVec_of_mem_range`; `integral_mono`; the recurrence $E_{q+1} \le \rho E_q + (1 - \rho)h$ by induction ($0 \le \rho$ from `one_le_frobConditionNumber`); consistent: $\mathbf{r} = \mathbf{0}$; nearest least-squares solution: $\mathbf{x}_\star := \mathbf{x}_0 + \mathbf{A}^{+}(\mathbf{b} - \mathbf{A}\mathbf{x}_0)$, its residual $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{b}$ by `mul_pinv`, `range_mulVecLin_pinv` for the row-space hypothesis; its consistent case by `rangeProjector_mulVec_eq_self_iff` | medium, 60 + 3 × 15 |
+| §5.2 primary bound and corollaries | the inequality; `sketchAndProjectIterate_sub_mem_range` plus `hx₀`; `norm_le_specNorm_pinv_mul_norm_mulVec_of_mem_range`; `integral_mono`; the recurrence $E_{q+1} \le \rho E_q + (1 - \rho)h$ by induction ($0 \le \rho$ from `one_le_frobPseudoConditionNumber`); consistent: $\mathbf{r} = \mathbf{0}$; nearest least-squares solution: $\mathbf{x}_\star := \mathbf{x}_0 + \mathbf{A}^{+}(\mathbf{b} - \mathbf{A}\mathbf{x}_0)$, its residual $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{b}$ by `mul_pinv`, `range_mulVecLin_pinv` for the row-space hypothesis; its consistent case by `rangeProjector_mulVec_eq_self_iff` | medium, 60 + 3 × 15 |
 | iteration counts, asymptotic forms | `Real.one_sub_le_exp_neg`, `pow_le_pow_left₀`, `Real.exp_log`; $C = 1$ | easy, 6 × 25 |
 | §5.3 bridge and any-$p$ Kaczmarz | `integral_samplingMeasure`, `pinv_replicateRow`, `pinv_mul`, `Matrix.conjTranspose_mul_eq_sum_vecMulVec`; the HasLaw of the sketch sequence by `Measure.infinitePi_map_pi`; §5.1 | easy, 40 + 30 |
 | mean iterate | the Fubini step, the bridge, linearity of the integral; induction against `richardsonIterate_succ` | easy, 40 |
@@ -964,8 +967,8 @@ marginals. Recommendation: **(a)**: one hypothesis for all $q$, Mathlib's produc
 Kaczmarz, fresh-sketch iterative sketching, SGD-type analyses) will take. It is library-wide
 vocabulary, hence here.
 
-**D3. A named Frobenius condition number.** (a) `frobConditionNumber A := frobNorm A * specNorm (pinv A)`
-in `ConditionNumber.lean` (§7), rate `1 - 1 / frobConditionNumber A ^ 2`; (b) no definition, the rate
+**D3. A named Frobenius condition number.** (a) `frobPseudoConditionNumber A := frobNorm A * specNorm (pinv A)`
+in `ConditionNumber.lean` (§7), rate `1 - 1 / frobPseudoConditionNumber A ^ 2`; (b) no definition, the rate
 written out `1 - 1 / (frobNorm A * specNorm (pinv A)) ^ 2` in every statement, as
 `Matrix-Pseudoinverse.md` §8 recorded ("There is no 'scaled condition number' definition; the
 Kaczmarz rate is `1 - singularValues A k ^ 2 / frobNorm A ^ 2` with `k + 1 = card n`"); (c) the
@@ -1026,7 +1029,7 @@ this consumer; (a) reverses it, so it is asked.
   `k`, `q` as in the sibling; full asymptotic docstrings shown; $\rho \in [0, 1)$ in the
   Strohmer–Vershynin docstring; the length-squared remark on `rowNormSqDistribution`; Kaczmarz with
   any row probabilities moved into this round; the placement flag on `rowNormSqDistribution` resolved;
-  the `frobConditionNumber` API names listed.
+  the `frobPseudoConditionNumber` API names listed.
 * Coordination: the mean iterate stated so that it holds under either `richardsonIterate` signature,
   with the Landweber form for the rectangular one.
 * All changed signatures re-elaborated (scratch file `Scratch2.lean` in the session scratchpad,
