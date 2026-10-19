@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Data.Real.Basic
 public import Mathlib.LinearAlgebra.Lagrange
+public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
 
 /-!
 # Divided differences
@@ -18,7 +19,7 @@ nodes it is the coefficient of $X^q$ of the interpolant (`dividedDifference_eq_c
 from Mathlib's `Lagrange.coeff_eq_sum`), so it is the leading coefficient of every polynomial
 of degree at most $q$ and annihilates every polynomial of degree less than $q$. Conversely a
 vector of values orthogonal, in the plain sum, to every polynomial of degree less than $q$ on
-the nodes is a multiple of the nodal weights (`exists_eq_mul_nodalWeight`). With positive
+the nodes is a multiple of the nodal weights (`Lagrange.exists_eq_mul_nodalWeight`). With positive
 weights $u_i$ the weighted least-squares distance from $r$ to the polynomials of degree less
 than $q$ is $r[s]^2 / \sum_i w_i^2/u_i$ (`isLeast_sum_mul_sq_sub_eval`).
 
@@ -37,12 +38,9 @@ definition is still the sum; every theorem assumes `Set.InjOn v s`.
 
 ## Main results
 
-* `NLAlib.nodalWeight_map`: nodal weights commute with ring homomorphisms.
 * `NLAlib.dividedDifference_eq_coeff_interpolate`: the coefficient of $X^q$ of the interpolant.
 * `NLAlib.dividedDifference_eval_eq_coeff`, `NLAlib.dividedDifference_eval_eq_zero`: on the
   values of a polynomial.
-* `NLAlib.exists_eq_mul_nodalWeight`: the orthogonal complement of the polynomials of degree
-  less than $q$ on $q + 1$ nodes is spanned by the nodal weights.
 * `NLAlib.isLeast_sum_mul_sq_sub_eval`: the weighted least-squares distance.
 -/
 
@@ -62,13 +60,6 @@ $\lvert s \rvert = q + 1$ it is the coefficient of $X^q$ of the interpolant
 contain $0^{-1} = 0$. [Higham2008, (1.10)]; locator to verify. -/
 noncomputable def dividedDifference (s : Finset ι) (v : ι → F) (r : ι → F) : F :=
   ∑ i ∈ s, Lagrange.nodalWeight s v i * r i
-
-/-- **Nodal weights commute with ring homomorphisms**: for a ring homomorphism $f$ between
-fields, the nodal weights of the nodes $f(v_i)$ are the images of those of $v_i$. Used with
-`algebraMap ℝ 𝕜` for real nodes viewed in $\Bbbk$. -/
-theorem nodalWeight_map {K : Type*} [Field K] (f : F →+* K) (s : Finset ι) (v : ι → F) (i : ι) :
-    Lagrange.nodalWeight s (fun j => f (v j)) i = f (Lagrange.nodalWeight s v i) := by
-  simp only [Lagrange.nodalWeight, map_prod, map_inv₀, map_sub]
 
 /-- **The divided difference is a coefficient of the interpolant**: on $q + 1$ distinct nodes,
 $r[s]$ is the coefficient of $X^q$ of `Lagrange.interpolate s v r`; this is Mathlib's
@@ -106,42 +97,6 @@ private theorem degree_lt_of_degree_le_of_coeff_eq_zero {p : F[X]} {q : ℕ} (hp
   rcases hm.eq_or_lt with rfl | hm
   · exact hq
   · exact coeff_eq_zero_of_degree_lt (hp.trans_lt (by exact_mod_cast hm))
-
-/-- **Orthogonality to low degrees forces the nodal weights**: on $q + 1$ distinct nodes, if
-$\sum_{i \in s} z_i\,p(v_i) = 0$ for every $p$ with $\deg p < q$, then $z_i = c\,w_i$ for some
-$c$ and every $i \in s$, $w_i$ the nodal weights.
-The constant is $c = \sum_{i \in s} z_i v_i^q$.
-This is the content of [ChenPersson2026, Lemma 8] (the Ritz polynomial of a prescribed
-weighting) and of the proof of [ChenPersson2026, Lemma 9]. -/
-theorem exists_eq_mul_nodalWeight {s : Finset ι} {v : ι → F} (hvs : Set.InjOn v s) {q : ℕ}
-    (hs : #s = q + 1) {z : ι → F}
-    (hz : ∀ p : F[X], p.degree < q → ∑ i ∈ s, z i * p.eval (v i) = 0) :
-    ∃ c : F, ∀ i ∈ s, z i = c * Lagrange.nodalWeight s v i := by
-  refine ⟨∑ i ∈ s, z i * v i ^ q, fun j hj => ?_⟩
-  set b := Lagrange.basis s v j
-  have hb : b.degree ≤ q := by
-    rw [Lagrange.degree_basis hvs hj, hs, Nat.add_sub_cancel]
-  -- the values of the basis polynomial are a Kronecker delta
-  have hval : ∀ i ∈ s, b.eval (v i) = if i = j then 1 else 0 := by
-    intro i hi
-    split_ifs with hij
-    · rw [hij]; exact Lagrange.eval_basis_self hvs hj
-    · exact Lagrange.eval_basis_of_ne (Ne.symm hij) hi
-  -- its coefficient of `X ^ q` is the nodal weight of `j`
-  have hcoeff : b.coeff q = Lagrange.nodalWeight s v j := by
-    rw [← dividedDifference_eval_eq_coeff hvs hs hb, dividedDifference,
-      Finset.sum_congr rfl fun i hi => by rw [hval i hi], Finset.sum_eq_single_of_mem j hj
-        fun i _ hij => by rw [if_neg hij, mul_zero], if_pos rfl, mul_one]
-  have hlow : (b - C (b.coeff q) * X ^ q).degree < (q : WithBot ℕ) := by
-    refine degree_lt_of_degree_le_of_coeff_eq_zero ((degree_sub_le _ _).trans
-      (max_le hb (degree_C_mul_X_pow_le _ _))) ?_
-    rw [coeff_sub, coeff_C_mul_X_pow, if_pos rfl, sub_self]
-  have h0 := hz _ hlow
-  simp only [eval_sub, eval_mul, eval_C, eval_X, eval_pow, mul_sub, Finset.sum_sub_distrib] at h0
-  rw [Finset.sum_congr rfl fun i hi => by rw [hval i hi], Finset.sum_eq_single_of_mem j hj
-    fun i _ hij => by rw [if_neg hij, mul_zero], if_pos rfl, mul_one, sub_eq_zero] at h0
-  rw [h0, hcoeff, Finset.sum_mul]
-  exact Finset.sum_congr rfl fun i _ => by ring
 
 /-- **Weighted least squares on $q + 1$ nodes**: for distinct real nodes $v_i$, $i \in s$,
 $\lvert s \rvert = q + 1$, weights $u_i > 0$ and values $r_i$,

@@ -24,7 +24,7 @@ Upstream candidate for `Mathlib.Algebra.Order.Field.Basic`.
 
 @[expose] public section
 
-/-- **The rational parametrisation of the circle**: $c = (1 - t^2) / (1 + t^2)$ and
+/-- The rational parametrisation of the circle: $c = (1 - t^2) / (1 + t^2)$ and
 $s = 2t / (1 + t^2)$ satisfy $c^2 + s^2 = 1$.
 Port of `NLAlib.sq_rational_rotation_coefficients`. -/
 theorem one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq {K : Type*} [Field K]

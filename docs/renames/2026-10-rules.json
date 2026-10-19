@@ -48,6 +48,21 @@
    "old": "NLAlib.exists_forall_le_apply_eq_zero",
    "new": "Finsupp.exists_forall_le_apply_eq_zero",
    "rule": "P9"
+  },
+  {
+   "old": "NLAlib.rpow_mul_add_le",
+   "new": "Real.rpow_mul_add_le",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.nodalWeight_map",
+   "new": "Lagrange.nodalWeight_map",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_eq_mul_nodalWeight",
+   "new": "Lagrange.exists_eq_mul_nodalWeight",
+   "rule": "P9"
   }
  ],
  "statementChanged": [

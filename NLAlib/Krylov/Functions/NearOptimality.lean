@@ -399,7 +399,7 @@ $$\|f(\mathbf{A})\mathbf{b} -
 \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)\|_{\mathbf{A}^\alpha}^2
 \le \Bigl(\frac{(a'/a)^{E/2} + (a'/a)^{-E/2}}{2}\Bigr)^2
 \|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \,.$$
-The kernel ratio of $\nu(x) = x^\alpha$ is `rpow_mul_add_le`. The factor is optimal
+The kernel ratio of $\nu(x) = x^\alpha$ is `Real.rpow_mul_add_le`. The factor is optimal
 [ChenPersson2026, Theorem 2]:
 `Matrix.PosDef.exists_inv_add_le_re_quadForm_rpow_cfc_mulVec_sub_lanczosFA`.
 [ChenPersson2026, Theorem 1]; there with $\kappa(\mathbf{A})$ and the unsquared norms, here
@@ -424,7 +424,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_rpow_cfc_mulVec_sub_lanczosFA_le
   rw [CFC.rpow_eq_cfc_real hpd.posSemidef.nonneg, ← add_one_sq_div_rpow_eq hK]
   exact hpd.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le hf (ν := fun x => x ^ α)
     (fun x hx => Real.rpow_pos_of_pos (hpd.spectrum_subset_Ioi hx) α)
-    (fun x hx y hy t ht => rpow_mul_add_le ha (hs hx) (hs hy) ht α) b hy
+    (fun x hx y hy t ht => Real.rpow_mul_add_le ha (hs hx) (hs hy) ht α) b hy
 
 /-- **The same in the condition number**: for positive definite $\mathbf{A}$ with
 $\kappa = \kappa(\mathbf{A})$, $f$ or $f(z)/z$ Stieltjes, real $\alpha$,

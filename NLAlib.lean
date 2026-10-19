@@ -19,6 +19,7 @@ public import NLAlib.ForMathlib.Analysis.Real.Sqrt
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
@@ -32,6 +33,7 @@ public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
+public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.CauchyBinet
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.ConjTranspose

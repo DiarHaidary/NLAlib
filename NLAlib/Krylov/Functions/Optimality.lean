@@ -39,7 +39,7 @@ $(z + s)^{-1}$ is CG on $\mathbf{A} + s\mathbf{I}$
 (`Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate`),
 whose residual polynomial $\pi$ is orthogonal to the polynomials of degree less than $q$ in the
 weights $w$ on $T$; so $w\,\pi$ is a multiple of the nodal weights of $T$
-(`exists_eq_mul_nodalWeight`), the paper's Lemma 8 without Ritz values. The best error is a
+(`Lagrange.exists_eq_mul_nodalWeight`), the paper's Lemma 8 without Ritz values. The best error is a
 weighted least-squares distance on $T$ (`isLeast_sum_mul_sq_sub_eval`, the paper's Lemma 9).
 For free positive weights $h$ on $T$ this gives the exact ratio [ChenPersson2026, (15)]
 $$\frac{\sum_T h\varphi^2\,\sum_T h}{(\sum_T h\varphi)^2} \,, \qquad
@@ -101,7 +101,7 @@ $s \ge 0$ and let Lanczos-FA for $(z + s)^{-1}$ be $p(\mathbf{A})\mathbf{b}$ wit
 Then $\pi = 1 - (X + s)p$ satisfies $w_x\pi(x) = c\,W_x$ on $T$ for some $c \ne 0$, $W$ the
 nodal weights of $T$: the Galerkin condition of CG on $\mathbf{A} + s\mathbf{I}$ makes
 $w\,\overline{\pi}$ orthogonal to the polynomials of degree less than $q$ on $T$
-(`exists_eq_mul_nodalWeight`), and $\pi(-s) = 1$ excludes $c = 0$. -/
+(`Lagrange.exists_eq_mul_nodalWeight`), and $\pi(-s) = 1$ excludes $c = 0$. -/
 private theorem exists_mul_eval_eq_mul_nodalWeight {A : Matrix n n 𝕜} (hA : A.PosDef)
     {T : Finset ℝ} {q : ℕ} (hT : #T = q + 1) {w : ℝ → ℝ}
     (hw : ∀ x ∈ T, 0 < w x) {b : n → 𝕜}
@@ -140,11 +140,11 @@ private theorem exists_mul_eval_eq_mul_nodalWeight {A : Matrix n n 𝕜} (hA : A
     rw [cfc_const_one ℝ A, Matrix.one_mulVec, horth r hr] at h
     refine Eq.trans (Finset.sum_congr rfl fun x _ => ?_) h.symm
     rw [mul_one, mul_assoc]
-  obtain ⟨c, hc⟩ := exists_eq_mul_nodalWeight (v := fun x : ℝ => (x : 𝕜))
+  obtain ⟨c, hc⟩ := Lagrange.exists_eq_mul_nodalWeight (v := fun x : ℝ => (x : 𝕜))
     (fun x _ y _ h => RCLike.ofReal_injective h) hT hz
   have hW : ∀ x, Lagrange.nodalWeight T (fun x : ℝ => (x : 𝕜)) x =
       ((Lagrange.nodalWeight T (id : ℝ → ℝ) x : ℝ) : 𝕜) := fun x =>
-    nodalWeight_map (algebraMap ℝ 𝕜) T id x
+    Lagrange.nodalWeight_map (algebraMap ℝ 𝕜) T id x
   have hmain : ∀ x ∈ T, (w x : 𝕜) * π.eval (x : 𝕜) =
       star c * ((Lagrange.nodalWeight T (id : ℝ → ℝ) x : ℝ) : 𝕜) := by
     intro x hx
