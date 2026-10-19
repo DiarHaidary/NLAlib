@@ -395,6 +395,12 @@ def p_ns_root(c):
             and not NS_ROOT_OK.match(d['full'])]
 
 
+# Matrix vocabulary in the source statement: the pretty-printed signature drops binder types
+# (`{A | A.PosDef}`, `cfc f (diagonal d)`), so `Matrix` alone misses matrix statements.
+MATRIX_VOCAB = re.compile(r'\bMatrix\b|\b(?:circulant|diagonal|vecMulVec|fromBlocks)\b|mulVec|\*ᵥ|ᴴ|'
+                          r'\.(?:PosDef|PosSemidef|IsHermitian|charpoly|det|trace|rank)\b')
+
+
 @rule('P9', 'error', 'x', '§2', 'a general fact outside ForMathlib: a statement with no NLAlib, '
       'matrix or measure vocabulary (heuristic)', 'Move it to the ForMathlib file of its Mathlib '
       'subject; a false positive goes on the allowlist with a reason')
@@ -402,7 +408,7 @@ def p_fm_candidate(c):
     return [V('P9', c.path_of(d), d['line'], d['name']) for d in c.decls
             if c.topic(d) not in ('ForMathlib', '(root)') and d['kind'] == 'theorem'
             and not nl_deps(d) and not d['name'].startswith('Mathlib.Meta')
-            and 'Matrix' not in d['signature']
+            and not MATRIX_VOCAB.search(d['signature'] + '\n' + (d.get('statement') or ''))
             and not re.search(r'Measure|∫|HasLaw|IndepFun|∂|Integrable|Measurable|ℙ|condExp|μ',
                               d['signature'])]
 
