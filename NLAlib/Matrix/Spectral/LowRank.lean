@@ -680,6 +680,58 @@ theorem range_truncatedSVD_mono (A : Matrix m n 𝕜) :
 
 -- Stage B5a
 
+/-- The truncation clause of
+`exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal`: the first $r$ columns
+$\mathbf{Z}_r$ of an orthonormal frame $\mathbf{F}$ extending the right singular vectors
+$\mathbf{V}_0$ of the chosen SVD give
+$\mathbf{A}\mathbf{Z}_r\mathbf{Z}_r^{\mathsf{H}} = \llbracket\mathbf{A}\rrbracket_r$. -/
+private theorem mul_submatrix_castLE_mul_conjTranspose_eq_truncatedSVD {A : Matrix m n 𝕜}
+    {μ p r : ℕ} {U : Matrix m (Fin μ) 𝕜} {V₀ : Matrix n (Fin μ) 𝕜}
+    (h : IsSVD A U (fun i => singularValues A i) V₀)
+    (hT : ∀ k, truncatedSVD A k = U * Matrix.diagonal (fun i : Fin μ =>
+      if (i : ℕ) < k then ((singularValues A i : ℝ) : 𝕜) else 0) * V₀ᴴ)
+    {F : Matrix n (Fin (μ + p)) 𝕜} (hF : HasOrthonormalCols F)
+    (hF₀ : ∀ a j, F a (Fin.castAdd p j) = V₀ a j) (hrL : r ≤ μ + p) :
+    A * F.submatrix id (Fin.castLE hrL) * (F.submatrix id (Fin.castLE hrL))ᴴ =
+      truncatedSVD A r := by
+  set Zr := F.submatrix id (Fin.castLE hrL)
+  have hV₀F : V₀ = F.submatrix id (Fin.castAdd p) := by
+    ext a j
+    exact (hF₀ a j).symm
+  have hZrV₀ : Zrᴴ * V₀ =
+      (Fᴴ * F).submatrix (Fin.castLE hrL) (Fin.castAdd p) := by
+    rw [hV₀F]
+    rfl
+  have hP : Zr * Zrᴴ * V₀ =
+      V₀ * Matrix.diagonal fun j : Fin μ => if (j : ℕ) < r then (1 : 𝕜) else 0 := by
+    rw [Matrix.mul_assoc, hZrV₀, hF.conjTranspose_mul_self]
+    ext a j
+    rw [Matrix.mul_diagonal, Matrix.mul_apply]
+    simp only [Matrix.submatrix_apply, Matrix.one_apply, Fin.ext_iff, Fin.val_castLE,
+      Fin.val_castAdd, mul_ite, mul_one, mul_zero]
+    split_ifs with hj
+    · rw [Finset.sum_eq_single_of_mem ⟨j, hj⟩ (Finset.mem_univ _) fun i _ hi => if_neg
+        fun hij => hi (Fin.ext hij), if_pos rfl, ← hF₀]
+      rfl
+    · exact Finset.sum_eq_zero fun i _ => if_neg fun hij => hj (by have := i.isLt; omega)
+  have hVD : V₀ᴴ * (Zr * Zrᴴ) =
+      (Matrix.diagonal fun j : Fin μ => if (j : ℕ) < r then (1 : 𝕜) else 0) * V₀ᴴ := by
+    have hc := congrArg Matrix.conjTranspose hP
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      Matrix.diagonal_conjTranspose] at hc
+    rw [hc]
+    congr 2
+    funext j
+    rw [Pi.star_apply]
+    split_ifs <;> simp
+  have hA : A * V₀ * V₀ᴴ = A := by
+    rw [h.mul_right_eq, ← h.eq]
+  rw [Matrix.mul_assoc A Zr]
+  conv_lhs => rw [← hA]
+  rw [Matrix.mul_assoc (A * V₀), hVD, h.mul_right_eq, hT r, ← Matrix.mul_assoc,
+    Matrix.mul_assoc U, Matrix.diagonal_mul_diagonal]
+  simp only [mul_ite, mul_one, mul_zero]
+
 -- SKELETON-NOTE: true as stated, but the last clause (every prefix gives the chosen truncation)
 -- forces Z to be built from the chosen `svdV A` (then completed by null vectors of A when
 -- k > rank A); a frame of right singular vectors chosen otherwise fails it under ties.
@@ -767,45 +819,6 @@ theorem exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal [De
         rw [hAF, Matrix.mul_diagonal]
       _ = _ := by rw [Matrix.mul_diagonal]; rfl
   · intro r hr
-    have hZr : (F.submatrix id c).submatrix id (Fin.castLE hr) =
-        F.submatrix id (Fin.castLE (hr.trans hkL)) := rfl
-    rw [hZr]
-    set Zr := F.submatrix id (Fin.castLE (hr.trans hkL))
-    have hV₀F : V₀ = F.submatrix id (Fin.castAdd (Fintype.card n - μ)) := by
-      ext a j
-      exact (hF₀ a j).symm
-    have hZrV₀ : Zrᴴ * V₀ =
-        (Fᴴ * F).submatrix (Fin.castLE (hr.trans hkL)) (Fin.castAdd (Fintype.card n - μ)) := by
-      rw [hV₀F]
-      rfl
-    have hP : Zr * Zrᴴ * V₀ =
-        V₀ * Matrix.diagonal fun j : Fin μ => if (j : ℕ) < r then (1 : 𝕜) else 0 := by
-      rw [Matrix.mul_assoc, hZrV₀, hF.conjTranspose_mul_self]
-      ext a j
-      rw [Matrix.mul_diagonal, Matrix.mul_apply]
-      simp only [Matrix.submatrix_apply, Matrix.one_apply, Fin.ext_iff, Fin.val_castLE,
-        Fin.val_castAdd, mul_ite, mul_one, mul_zero]
-      split_ifs with hj
-      · rw [Finset.sum_eq_single_of_mem ⟨j, hj⟩ (Finset.mem_univ _) fun i _ hi => if_neg
-          fun hij => hi (Fin.ext hij), if_pos rfl, ← hF₀]
-        rfl
-      · exact Finset.sum_eq_zero fun i _ => if_neg fun hij => hj (by have := i.isLt; omega)
-    have hVD : V₀ᴴ * (Zr * Zrᴴ) =
-        (Matrix.diagonal fun j : Fin μ => if (j : ℕ) < r then (1 : 𝕜) else 0) * V₀ᴴ := by
-      have hc := congrArg Matrix.conjTranspose hP
-      simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
-        Matrix.diagonal_conjTranspose] at hc
-      rw [hc]
-      congr 2
-      funext j
-      rw [Pi.star_apply]
-      split_ifs <;> simp
-    have hA : A * V₀ * V₀ᴴ = A := by
-      rw [h.mul_right_eq, ← h.eq]
-    rw [Matrix.mul_assoc A Zr]
-    conv_lhs => rw [← hA]
-    rw [Matrix.mul_assoc (A * V₀), hVD, h.mul_right_eq, hT r, ← Matrix.mul_assoc,
-      Matrix.mul_assoc U, Matrix.diagonal_mul_diagonal]
-    simp only [mul_ite, mul_one, mul_zero]
+    exact mul_submatrix_castLE_mul_conjTranspose_eq_truncatedSVD h hT hF hF₀ (hr.trans hkL)
 
 end NLAlib

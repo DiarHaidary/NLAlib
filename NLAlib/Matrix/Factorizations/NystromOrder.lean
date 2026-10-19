@@ -384,6 +384,53 @@ private theorem HasOrthonormalCols.posSemidef_one_sub_toRows₁_mul_conjTranspos
     one_smul, Matrix.conjTranspose_conjTranspose, Matrix.le_iff] at h1
   exact h1
 
+omit [DecidableEq t] in
+/-- The trace step of the two-level Nyström error: for $\mathbf{M} = b\mathbf{I} +
+(a-b)\mathbf{K}^{\mathsf{H}}\mathbf{K}$ and $\mathbf{N} = b\mathbf{I} + (a-b)\mathbf{K}
+\mathbf{K}^{\mathsf{H}}$ invertible, $b\operatorname{tr}\mathbf{M}^{-1} -
+b\operatorname{tr}\mathbf{N}^{-1} = \ell - \lvert s\rvert$. -/
+private theorem trace_inv_smul_one_add_smul_sub [DecidableEq l] (K : Matrix s l 𝕜) (a b : ℝ)
+    (hMu : IsUnit (b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K)).det)
+    (hNu : IsUnit (b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ)).det) :
+    (b : 𝕜) * ((b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K))⁻¹).trace -
+        (b : 𝕜) * ((b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ))⁻¹).trace =
+      Fintype.card l - Fintype.card s := by
+  set M := b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K) with hMdef
+  set N := b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ) with hNdef
+  have hKM : K * M = N * K := by
+    rw [hMdef, hNdef]
+    simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
+      Matrix.one_mul, Matrix.mul_assoc]
+  have hKMi : K * M⁻¹ = N⁻¹ * K := by
+    calc K * M⁻¹ = N⁻¹ * (N * K) * M⁻¹ := by
+          rw [← Matrix.mul_assoc, Matrix.nonsing_inv_mul _ hNu, Matrix.one_mul]
+      _ = N⁻¹ * K := by
+          rw [← hKM, Matrix.mul_assoc, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hMu,
+            Matrix.mul_one]
+  have h1 : (b : 𝕜) * (M⁻¹).trace + ((a : 𝕜) - b) * (N⁻¹ * (K * Kᴴ)).trace =
+      Fintype.card l := by
+    have e : (b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K)) * M⁻¹ = 1 :=
+      Matrix.mul_nonsing_inv M hMu
+    rw [Matrix.add_mul, Matrix.smul_mul, Matrix.smul_mul, Matrix.one_mul, Matrix.mul_assoc,
+      hKMi] at e
+    have e2 := congrArg Matrix.trace e
+    rw [Matrix.trace_add, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
+      Matrix.trace_mul_comm, Matrix.mul_assoc, RCLike.real_smul_eq_coe_mul,
+      RCLike.real_smul_eq_coe_mul] at e2
+    push_cast at e2
+    exact e2
+  have h2 : (b : 𝕜) * (N⁻¹).trace + ((a : 𝕜) - b) * (N⁻¹ * (K * Kᴴ)).trace =
+      Fintype.card s := by
+    have e : N⁻¹ * (b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ)) = 1 :=
+      Matrix.nonsing_inv_mul N hNu
+    rw [Matrix.mul_add, Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_one] at e
+    have e2 := congrArg Matrix.trace e
+    rw [Matrix.trace_add, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
+      RCLike.real_smul_eq_coe_mul, RCLike.real_smul_eq_coe_mul] at e2
+    push_cast at e2
+    exact e2
+  linear_combination h1 - h2
+
 /-- **The trace error of Nyström for a matrix with two eigenvalues**: for $\mathbf{\Psi}$ with
 orthonormal columns, rows split as $\mathbf{\Psi}_1$ (indexed by $s$) and $\mathbf{\Psi}_2$, and
 $a, b > 0$,
@@ -448,38 +495,7 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
       RCLike.real_smul_eq_coe_mul]
     push_cast
     ring
-  have hKM : K * M = N * K := by
-    rw [hMdef, hNdef]
-    simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
-      Matrix.one_mul, Matrix.mul_assoc]
-  have hKMi : K * M⁻¹ = N⁻¹ * K := by
-    calc K * M⁻¹ = N⁻¹ * (N * K) * M⁻¹ := by
-          rw [← Matrix.mul_assoc, Matrix.nonsing_inv_mul _ hNu, Matrix.one_mul]
-      _ = N⁻¹ * K := by
-          rw [← hKM, Matrix.mul_assoc, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hMu,
-            Matrix.mul_one]
-  have h1 : (b : 𝕜) * (M⁻¹).trace + ((a : 𝕜) - b) * (N⁻¹ * (K * Kᴴ)).trace =
-      Fintype.card l := by
-    have e : (b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K)) * M⁻¹ = 1 :=
-      Matrix.mul_nonsing_inv M hMu
-    rw [Matrix.add_mul, Matrix.smul_mul, Matrix.smul_mul, Matrix.one_mul, Matrix.mul_assoc,
-      hKMi] at e
-    have e2 := congrArg Matrix.trace e
-    rw [Matrix.trace_add, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
-      Matrix.trace_mul_comm, Matrix.mul_assoc, RCLike.real_smul_eq_coe_mul,
-      RCLike.real_smul_eq_coe_mul] at e2
-    push_cast at e2
-    exact e2
-  have h2 : (b : 𝕜) * (N⁻¹).trace + ((a : 𝕜) - b) * (N⁻¹ * (K * Kᴴ)).trace =
-      Fintype.card s := by
-    have e : N⁻¹ * (b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ)) = 1 :=
-      Matrix.nonsing_inv_mul N hNu
-    rw [Matrix.mul_add, Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_one] at e
-    have e2 := congrArg Matrix.trace e
-    rw [Matrix.trace_add, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
-      RCLike.real_smul_eq_coe_mul, RCLike.real_smul_eq_coe_mul] at e2
-    push_cast at e2
-    exact e2
+  have h12 := trace_inv_smul_one_add_smul_sub K a b hMu hNu
   have hE : (D - nystrom D Ψ).PosSemidef :=
     Matrix.le_iff.mp ((posSemidef_fromBlocks_smul_one ha.le hb.le).nystrom_le Ψ)
   have key : D.trace - (nystrom D Ψ).trace =
@@ -487,7 +503,7 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
         ((a * b : ℝ) : 𝕜) * (N⁻¹).trace := by
     rw [hD1, hnys]
     push_cast
-    linear_combination (a : 𝕜) * (h1 - h2)
+    linear_combination (a : 𝕜) * h12
   rw [hE.nuclearNorm_eq_re_trace, Matrix.trace_sub, key, map_add, RCLike.ofReal_re,
     RCLike.re_ofReal_mul]
 

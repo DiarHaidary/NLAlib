@@ -55,9 +55,6 @@
    "NLAlib/LowRank/Gaussian/EarlyTruncation.lean": 1,
    "NLAlib/LowRank/Gaussian/RotationInvariant.lean": 1,
    "NLAlib/LowRank/Oblivious/SubGaussian.lean": 1,
-   "NLAlib/Matrix/Factorizations/NystromOrder.lean": 1,
-   "NLAlib/Matrix/Spectral/BestRankApprox.lean": 1,
-   "NLAlib/Matrix/Spectral/LowRank.lean": 1,
    "NLAlib/RandomMatrix/Gaussian/BlockTail.lean": 1,
    "NLAlib/RandomMatrix/Gaussian/InverseMoments.lean": 2
   },
