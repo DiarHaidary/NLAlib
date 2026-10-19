@@ -160,7 +160,8 @@ theorem krylovGrade_le_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} :
   · by_contra hlt
     exact hm q (not_le.1 hlt) h
 
-/-- The dimension of $\mathcal{K}_q$ is $\min(q, \nu)$. [Saad2003, §6.2].
+/-- **The dimension of a Krylov space**: $\dim\mathcal{K}_q(\mathbf{A}, \mathbf{b}) = \min(q, \nu)$,
+$\nu$ the grade of $\mathbf{b}$ for $\mathbf{A}$. [Saad2003, Proposition 6.2]; it is (6.4) there.
 Port of `NLAlib.finrank_krylovSpace` (prototype, real scalars).
 Result: krylov-space-dimension -/
 theorem finrank_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :

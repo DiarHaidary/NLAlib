@@ -203,7 +203,9 @@ private theorem star_arnoldiMatrix_col_succ_dotProduct_mulVec (j : ℕ) :
 end Canonical
 
 /-- **The Arnoldi process computes the canonical basis**, for every $\mathbf{A}$ and every $q$,
-with no breakdown hypothesis: past the grade both are zero. [Saad2003, Proposition 6.4].
+with no breakdown hypothesis: the basis computed by $q$ steps from $\mathbf{b}$ is
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$; past the grade both are zero.
+[Saad2003, Proposition 6.4].
 Result: arnoldi-recurrence -/
 theorem mgsArnoldiMatrix_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     mgsArnoldiMatrix A b q = arnoldiMatrix A b q := by
@@ -213,8 +215,9 @@ theorem mgsArnoldiMatrix_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜)
   exact congrFun (arnoldiMatrix_col_eq_col_last A b j).symm i
 
 /-- **The Arnoldi process computes the Hessenberg matrix**: for every $\mathbf{A}$ and $q$,
-the computed matrix is $\underline{\mathbf{H}}_q =
-\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ for the canonical bases. [Saad2003, §6.3].
+the matrix computed by $q$ steps from $\mathbf{b}$ is $\underline{\mathbf{H}}_q =
+\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ for the canonical bases
+$\mathbf{Q}_j = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j)$. [Saad2003, §6.3].
 Result: arnoldi-recurrence -/
 theorem mgsArnoldiHessenberg_eq (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     mgsArnoldiHessenberg A b q = (arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b q := by

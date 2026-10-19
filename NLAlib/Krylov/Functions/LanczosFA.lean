@@ -136,6 +136,8 @@ orthonormal columns spanning the column space of $\mathbf{X}$,
 $\mathsf{compressedCfc}(\mathbf{A}, f, \mathbf{X}) =
 \mathbf{Q}f(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})\mathbf{Q}^{\mathsf{H}}$; when
 $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is not Hermitian both sides are $\mathbf{0}$.
+No printed source: the projector form of `compressedCfc` is the library's definition, and this
+bridge identifies it with the frame form in which the literature writes Lanczos-FA.
 Result: lanczos-fa-formula -/
 theorem HasOrthonormalCols.compressedCfc_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
     {X : Matrix n p 𝕜} (h : LinearMap.range Q.mulVecLin = LinearMap.range X.mulVecLin)
@@ -147,6 +149,7 @@ theorem HasOrthonormalCols.compressedCfc_eq {Q : Matrix n r 𝕜} (hQ : HasOrtho
 $\mathsf{compressedCfc}(\mathbf{A}, x \mapsto x^{-1}, \mathbf{X}) =
 \mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})$, through
 `Matrix.IsHermitian.cfc_inv_eq_pinv` on the compression to an orthonormal basis.
+No printed source: a bridge between two of the library's definitions.
 Result: lanczos-fa-cg -/
 theorem _root_.Matrix.IsHermitian.compressedCfc_inv_eq_galerkinInverse {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (X : Matrix n p 𝕜) :
@@ -340,6 +343,10 @@ theorem _root_.Matrix.IsHermitian.lanczosFA_inv_eq_cgIterate {A : Matrix n n �
 $s$: $\mathsf{lanczosFA}(\mathbf{A}, x \mapsto (x + s)^{-1}, \mathbf{b}, q) =
 \mathsf{cgIterate}(\mathbf{A} + s\mathbf{I}, \mathbf{b}, \mathbf{0}, q)$, by shift
 invariance of the Krylov space (`krylovSpace_add_smul_one`) and the frame forms.
+[Saad2003, §6.7.1]; (6.86) there writes the CG iterate as
+$\mathbf{x}_0 + \mathbf{V}_m\mathbf{T}_m^{-1}(\beta\mathbf{e}_1)$ with the Lanczos basis
+$\mathbf{V}_m$, $\beta = \|\mathbf{r}_0\|$, which at $\mathbf{x}_0 = \mathbf{0}$ is the Lanczos-FA
+approximation for $f(x) = x^{-1}$; the shift $s$ and the singular case are the library's.
 Result: lanczos-fa-cg -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (s : ℝ) (b : n → 𝕜) (q : ℕ) :
@@ -366,7 +373,8 @@ theorem _root_.Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate {A : Matrix n n
     hadd, hHs.cfc_inv_eq_pinv]
 
 /-- **The Lanczos basis yields Lanczos-FA**, for every $\mathbf{A}$ and every $q$: with
-$\mathbf{Q}$ the canonical basis of $\mathcal{K}_{q+1}$ (zero columns past the grade) and
+$\mathbf{Q} = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q + 1)$ the canonical basis of
+$\mathcal{K}_{q+1}(\mathbf{A}, \mathbf{b})$ (zero columns past the grade) and
 $\mathbf{T} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$,
 $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1) =
 \|\mathbf{b}\|\,\mathbf{Q}f(\mathbf{T})\mathbf{e}_0$, by the partial-isometry form

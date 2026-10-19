@@ -170,8 +170,13 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_mul_po
   · rw [hpT x hT' (fun h => hT (h ▸ hT')), abs_zero]
     exact mul_nonneg (mul_nonneg zero_le_two hC0) (pow_nonneg hρ d)
 
-/-- **Large outliers cost MINRES one step each**: if every outlier is at least $a'$, the outlier
-bound holds with $C = 1$ (for $a \le a'$, as in the general form).
+/-- **Large outliers cost MINRES one step each**: for Hermitian $\mathbf{A}$ with spectrum in
+$[a, a'] \cup T$, $0 < a \le a'$, every outlier $t \in T$ at least $a'$, and $m = \lvert T \rvert$,
+$$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, m + d)\|
+\le 2\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^d\|\mathbf{r}_0\| \,,$$
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$: the outlier bound
+`Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_mul_pow` with $C = 1$, since
+$\lvert 1 - x/t \rvert \le 1$ for $x \in [a, a']$ and $t \ge a'$.
 Result: minres-outlier-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_of_forall_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (ha : 0 < a) (haa : a ≤ a')
@@ -195,7 +200,11 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_of
 with $\deg p \le q$, $p(0) = 1$,
 $\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
 \max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\,\|\mathbf{r}_0\|$, the maximum
-being the supremum over the finite spectrum.
+being the supremum over the finite spectrum and
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$.
+[Saad2003, Proposition 6.32]; its proof gives this bound for each $p$, for diagonalisable
+$\mathbf{A} = \mathbf{X}\mathbf{\Lambda}\mathbf{X}^{-1}$ with the factor $\kappa_2(\mathbf{X})$,
+which is $1$ for Hermitian $\mathbf{A}$ ($\mathbf{X}$ unitary).
 Result: minres-polynomial-bound -/
 theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_iSup_mul {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b x₀ : n → 𝕜) {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q)
@@ -209,11 +218,14 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_iSup_mul {A : 
   obtain ⟨y, hy, rfl⟩ := hz
   exact hM ⟨y, hy, rfl⟩
 
-/-- **The spectrum-optimal bound for MINRES**: for Hermitian $\mathbf{A}$,
+/-- **The spectrum-optimal bound for MINRES**: for Hermitian $\mathbf{A}$ and
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$,
 $$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
-\Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)\|\mathbf{r}_0\|
-\,,$$
-the minimum over real residual polynomials of degree at most $q$ (`residualMinimax`). For each
+\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)\,\|\mathbf{r}_0\| \,,$$
+where $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q) =
+\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert$, the minimum over real
+residual polynomials of degree at most $q$. [Saad2003, Proposition 6.32] is this bound for
+diagonalisable $\mathbf{A}$ with the factor $\kappa_2(\mathbf{X})$, which is $1$ here. For each
 $\mathbf{A}$ some $\mathbf{b}$ attains it (Greenbaum):
 `Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul` and
 `Matrix.IsHermitian.isGreatest_norm_sub_mulVec_gmresIterate_div` in
@@ -285,7 +297,10 @@ theorem pminresIterate_one (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ)
 
 /-- **Preconditioned MINRES minimises the residual in the $\mathbf{M}$-norm** over
 $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{r}_0)$, for positive definite
-$\mathbf{M}$ and every $\mathbf{A}$. [ElmanSilvesterWathen2014, §4.2]; locator to verify.
+$\mathbf{M}$ and every $\mathbf{A}$, with $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\|\mathbf{b} - \mathbf{A}\,\mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b},
+\mathbf{x}_0, q)\|_{\mathbf{M}}^2 \le \|\mathbf{b} - \mathbf{A}\mathbf{y}\|_{\mathbf{M}}^2$ for
+every such $\mathbf{y}$. [ElmanSilvesterWathen2014, §4.2]; locator to verify.
 Result: pminres-optimality -/
 theorem _root_.Matrix.PosDef.isMinOn_pminresIterate {M : Matrix n n 𝕜} (hM : M.PosDef)
     (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -432,8 +447,10 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_mulVec_pminresIterate_le_four_
   ring
 
 /-- **Finite termination for preconditioned MINRES**: for invertible $\mathbf{A}$ and positive
-definite $\mathbf{M}$, the iterate is the solution once $q$ is at least the grade of
-$\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$.
+definite $\mathbf{M}$ and $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, the iterate is the solution
+once $q$ is at least the grade of $\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$,
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_\star$.
 Result: pminres-finite-termination -/
 theorem pminresIterate_eq_of_krylovGrade_le {A M : Matrix n n 𝕜} (hA : IsUnit A) (hM : M.PosDef)
     {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ}

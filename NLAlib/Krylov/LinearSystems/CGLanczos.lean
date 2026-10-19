@@ -62,8 +62,10 @@ theorem galerkinInverse_krylovMatrix_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b :
     Matrix.mul_assoc]
 
 /-- **The Lanczos basis yields CG**, for every $\mathbf{A}$ and every $q$, with no grade
-hypothesis: with $\mathbf{Q}$ the canonical basis of $\mathcal{K}_{q+1}(\mathbf{A}, \mathbf{r}_0)$
-and $\mathbf{T} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$,
+hypothesis: with $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$, the canonical basis
+$\mathbf{Q} = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{r}_0, q + 1)$ of
+$\mathcal{K}_{q+1}(\mathbf{A}, \mathbf{r}_0)$ and
+$\mathbf{T} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$,
 $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q + 1) =
 \mathbf{x}_0 + \|\mathbf{r}_0\|\,\mathbf{Q}\mathbf{T}^{+}\mathbf{e}_0$. For positive definite
 $\mathbf{A}$ and $q + 1 \le \nu$, $\mathbf{T}^{+} = \mathbf{T}^{-1}$ (`pinv_of_isUnit`).

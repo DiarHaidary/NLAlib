@@ -128,7 +128,11 @@ theorem _root_.Matrix.PosDef.eq_pcgIterate_of_conjTranspose_krylovMatrix_mulVec_
 omit [Fintype r] [DecidableEq r] in
 /-- **PCG minimises the $\mathbf{A}$-norm error** over
 $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{r}_0)$, for positive definite
-$\mathbf{A}$ and every $\mathbf{M}$. [Saad2003, §9.2].
+$\mathbf{A}$ and every $\mathbf{M}$, with $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\|\mathbf{x}_\star - \mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0,
+q)\|_{\mathbf{A}}^2 \le \|\mathbf{x}_\star - \mathbf{y}\|_{\mathbf{A}}^2$ for every such
+$\mathbf{y}$. [Saad2003, §9.2].
 Result: pcg-optimality -/
 theorem _root_.Matrix.PosDef.isMinOn_pcgIterate {A : Matrix n n 𝕜} (hA : A.PosDef)
     (M : Matrix n n 𝕜) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) (q : ℕ) :
@@ -270,11 +274,19 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_four_mul_sq_mul_pow
     y₀ d
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The spectrum-optimal bound for PCG**: for positive definite $\mathbf{A}$ and $\mathbf{M}$,
+/-- **The spectrum-optimal bound for PCG**: for positive definite $\mathbf{A}$ and $\mathbf{M}$
+and $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
 $$\|\mathbf{x}_\star - \mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0,
-q)\|_{\mathbf{A}}^2 \le \Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{M}\mathbf{A})}\lvert
-p(\lambda) \rvert\Bigr)^2\|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-It is the CG theorem for the split system.
+q)\|_{\mathbf{A}}^2 \le \mathsf{residualMinimax}(\sigma(\mathbf{M}\mathbf{A}), q)^2
+\|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
+where $\mathsf{residualMinimax}(\sigma(\mathbf{M}\mathbf{A}), q) =
+\min_{p}\max_{\lambda \in \sigma(\mathbf{M}\mathbf{A})}\lvert p(\lambda) \rvert$ over real $p$
+with $\deg p \le q$, $p(0) = 1$. It is the CG theorem for the split system.
+[Saad2003, Theorem 6.29]; [Saad2003, §9.2.1]. The proof of Theorem 6.29 gives the CG bound with
+the maximum over the eigenvalues, and §9.2.1 shows that PCG is CG on the split system
+$\mathbf{L}^{-1}\mathbf{A}\mathbf{L}^{-\mathsf{H}}$, $\mathbf{M}^{-1} =
+\mathbf{L}\mathbf{L}^{\mathsf{H}}$, whose spectrum is that of $\mathbf{M}\mathbf{A}$ (Saad's
+preconditioner is $\mathbf{M}^{-1}$ here); Saad works over $\mathbb{R}$.
 Result: pcg-spectrum-minimax-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_residualMinimax_sq_mul
     {A M : Matrix n n 𝕜} (hA : A.PosDef) (hM : M.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b)
@@ -286,8 +298,14 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_residualMinimax_sq_mu
   exact hA'.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul hys y₀ q
 
 omit [Fintype r] [DecidableEq r] in
-/-- **Finite termination**: for positive definite $\mathbf{A}$ and $\mathbf{M}$, PCG reaches the
-solution once $q$ is at least the grade of $\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$.
+/-- **Finite termination**: for positive definite $\mathbf{A}$ and $\mathbf{M}$ and
+$\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, PCG reaches the solution once $q$ is at least the grade
+of $\mathbf{M}\mathbf{r}_0$ for $\mathbf{M}\mathbf{A}$, $\mathbf{r}_0 = \mathbf{b} -
+\mathbf{A}\mathbf{x}_0$:
+$\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_\star$.
+[Saad2003, Proposition 5.6]; [Saad2003, §9.2.1]. A projection method onto an invariant subspace
+containing the right side is exact (Proposition 5.6), the Krylov space is invariant from the
+grade on ([Saad2003, Proposition 6.1]), and PCG is CG on the split system (§9.2.1).
 Result: pcg-finite-termination -/
 theorem _root_.Matrix.PosDef.pcgIterate_eq_of_krylovGrade_le {A M : Matrix n n 𝕜}
     (hA : A.PosDef) (hM : M.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ}

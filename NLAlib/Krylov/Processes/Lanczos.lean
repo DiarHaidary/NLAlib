@@ -163,7 +163,11 @@ theorem hasOrthonormalCols_arnoldiMatrix_iff :
   rw [Matrix.rank, range_arnoldiMatrix, finrank_krylovSpace, Fintype.card_fin] at h'
   omega
 
-/-- Up to the grade the canonical basis is graded.
+/-- **The canonical basis is graded up to the grade**: for $q \le \nu$, the grade of
+$\mathbf{b}$, $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$ has orthonormal columns and,
+for each $j < q$, its first $j + 1$ columns span $\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{b})$.
+[Saad2003, Proposition 6.4]; stated there for the vectors of the Arnoldi process before it stops,
+which are these columns (`mgsArnoldiMatrix_eq_arnoldiMatrix`).
 Result: arnoldi-basis -/
 theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
     IsGradedKrylovBasis A b (arnoldiMatrix A b q) := by
@@ -180,7 +184,9 @@ theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
 
 /-- **Uniqueness of the graded basis**: a graded basis whose matrix
 $\mathbf{Q}^{\mathsf{H}}\mathbf{K}_q(\mathbf{A}, \mathbf{b})$ has positive diagonal (in the order
-of $\Bbbk$, so real positive) is the canonical one.
+of $\Bbbk$, so real positive) is the canonical one: an orthonormal $\mathbf{Q}$ with $q$ columns
+whose first $j + 1$ columns span $\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{b})$ for each $j < q$ is
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$.
 Result: arnoldi-basis -/
 theorem IsGradedKrylovBasis.eq_arnoldiMatrix (hQ : IsGradedKrylovBasis A b Q)
     (hpos : ∀ j, 0 < (Qᴴ * krylovMatrix A b q) j j) : Q = arnoldiMatrix A b q := by
@@ -234,7 +240,9 @@ theorem conjTranspose_arnoldiMatrix_mulVec_self (A : Matrix n n 𝕜) (b : n →
 
 /-- **The Arnoldi relation**, for every $q$:
 $\mathbf{A}\mathbf{Q}_q = \mathbf{Q}_{q+1}(\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q)$
-for the canonical bases $\mathbf{Q}_q$, $\mathbf{Q}_{q+1}$. [Saad2003, §6.3].
+for the canonical bases $\mathbf{Q}_j = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j)$.
+[Saad2003, §6.3]. It is (6.7) of [Saad2003, Proposition 6.5], there up to the step where the
+process stops.
 Result: arnoldi-relation -/
 theorem mul_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     A * arnoldiMatrix A b q =

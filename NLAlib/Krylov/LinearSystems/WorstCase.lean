@@ -212,8 +212,12 @@ theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix {a a' : ℝ} (ha : 0 < 
     rw [hv, re_quadForm_chebyshevErrorVector ha haa q]
     exact inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq ha haa hp hp₀
 
-/-- **The CG bound is tight up to $(1 + \rho^{2q})^2$**: on the same instance the squared error
-ratio is $4\rho^{2q}/((1 + \rho^{2q})^2)$, against the bound $4\rho^{2q}$ of
+/-- **The CG bound is tight up to $(1 + \rho^{2q})^2$**: for $0 < a < a'$, on the Chebyshev
+extrema matrix $\mathbf{A}$ (`chebyshevExtremaMatrix`) with solution $\mathbf{x}_\star$ =
+`chebyshevErrorVector` and the zero start, with $\rho = (\sqrt{a'/a} - 1)/(\sqrt{a'/a} + 1)$,
+$$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{A}\mathbf{x}_\star, \mathbf{0},
+q)\|_{\mathbf{A}}^2 = \frac{4\rho^{2q}}{(1 + \rho^{2q})^2}\|\mathbf{x}_\star\|_{\mathbf{A}}^2 \,,$$
+against the bound $4\rho^{2q}$ of
 `Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow`.
 Result: cg-chebyshev-sharp -/
 theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix_eq_four_mul_pow_div {a a' : ℝ}
@@ -500,9 +504,11 @@ private lemma exists_finset_spectrum_eq {A : Matrix n n 𝕜} (hA : A.IsHermitia
 $\mathbf{A}$, every start $\mathbf{x}_0$ and every $q$ there is a solution
 $\mathbf{x}_\star \ne \mathbf{x}_0$ with, for $\mathbf{b} = \mathbf{A}\mathbf{x}_\star$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
-= \Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)^2
+= \mathsf{residualMinimax}(\sigma(\mathbf{A}), q)^2
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
-the minimum over real $p$ with $\deg p \le q$, $p(0) = 1$ (`residualMinimax`). So
+where $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q) =
+\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert$, the minimum over real
+$p$ with $\deg p \le q$, $p(0) = 1$. So
 `Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul` cannot be improved for any
 spectrum. The interval case with an explicit instance is
 `re_quadForm_sub_cgIterate_chebyshevExtremaMatrix`. The initial error carries the dual weights

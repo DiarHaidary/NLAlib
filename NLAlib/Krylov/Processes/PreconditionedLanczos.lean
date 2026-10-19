@@ -242,7 +242,10 @@ theorem preconditionedLanczosAlpha_eq {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) 
 $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$, the computed
 $\mathbf{z}_j$ are $\mathbf{C}\mathbf{q}_j$ for the canonical Lanczos basis of
 $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ from $\mathbf{C}^{\mathsf{H}}\mathbf{b}$, every $q$,
-with no breakdown hypothesis and no invertibility of $\mathbf{C}$.
+with no breakdown hypothesis and no invertibility of $\mathbf{C}$: the matrix of the
+$\mathbf{z}_j$ computed by $q$ steps from $\mathbf{b}$ is
+$\mathbf{C}\,\mathsf{arnoldiMatrix}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C},
+\mathbf{C}^{\mathsf{H}}\mathbf{b}, q)$.
 [ElmanSilvesterWathen2014, Algorithm 4.1]; locator to verify.
 Result: preconditioned-lanczos-recurrence -/
 theorem _root_.Matrix.IsHermitian.preconditionedLanczosMatrix_eq (hA : A.IsHermitian)
@@ -254,10 +257,14 @@ theorem _root_.Matrix.IsHermitian.preconditionedLanczosMatrix_eq (hA : A.IsHermi
   rw [preconditionedLanczosState_z_eq_mulVec hM]
   rfl
 
-/-- **The preconditioned recurrence computes the split tridiagonal matrix**: under the
-hypotheses of `Matrix.IsHermitian.preconditionedLanczosMatrix_eq`, the computed matrix is
+/-- **The preconditioned recurrence computes the split tridiagonal matrix**: for Hermitian
+$\mathbf{A}$, any $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ (no
+invertibility), every $q$ and no breakdown hypothesis, the tridiagonal matrix computed by $q$
+steps of the preconditioned recurrence from $\mathbf{b}$ is
 $\hat{\mathbf{Q}}^{\mathsf{H}}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\hat{\mathbf{Q}}$ for
-the canonical basis $\hat{\mathbf{Q}}$ of the split system.
+the canonical basis $\hat{\mathbf{Q}} = \mathsf{arnoldiMatrix}(\mathbf{C}^{\mathsf{H}}\mathbf{A}
+\mathbf{C}, \mathbf{C}^{\mathsf{H}}\mathbf{b}, q)$ of the split system. The tridiagonal form of
+`Matrix.IsHermitian.preconditionedLanczosMatrix_eq`.
 Result: preconditioned-lanczos-recurrence -/
 theorem _root_.Matrix.IsHermitian.preconditionedLanczosTridiagonal_eq (hA : A.IsHermitian)
     {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) (b : n → 𝕜) (q : ℕ) :

@@ -59,10 +59,16 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The Arnoldi basis yields GMRES**, for every $\mathbf{A}$ and $q$:
+/-- **The Arnoldi basis yields GMRES**, for every $\mathbf{A}$ and $q$: with
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$, the canonical bases
+$\mathbf{Q}_j = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{r}_0, j)$ and
+$\underline{\mathbf{H}}_q = \mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$,
 $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
 \|\mathbf{r}_0\|\,\mathbf{Q}_q\underline{\mathbf{H}}_q^{+}\mathbf{e}_0$, with no grade
-hypothesis. [SaadSchultz1986]; [Saad2003, Proposition 6.18]; locators to verify.
+hypothesis. [SaadSchultz1986, §3.1]; [Saad2003, §6.5.1]. It is (8) there, and (6.29)–(6.30) in
+Saad's book, with the least-squares minimiser of
+$\|\|\mathbf{r}_0\|\mathbf{e}_0 - \underline{\mathbf{H}}_q\mathbf{y}\|$ in place of the
+pseudoinverse, for $q$ up to the breakdown step.
 Result: gmres-arnoldi -/
 theorem gmresIterate_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     gmresIterate A b x₀ q = x₀ + (‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ : 𝕜) •
@@ -87,8 +93,13 @@ theorem gmresIterate_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜
     ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, conjTranspose_arnoldiMatrix_mulVec_self,
     Matrix.mulVec_smul, Matrix.mulVec_smul]
 
-/-- **The Arnoldi process yields GMRES**, for every $\mathbf{A}$ and $q$, with the basis and the
-Hessenberg matrix computed by `arnoldiState`.
+/-- **The Arnoldi process yields GMRES**, for every $\mathbf{A}$ and $q$, with the basis
+$\mathbf{V}_q$ and the Hessenberg matrix $\underline{\mathbf{H}}_q$ computed by `arnoldiState`
+from $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
+\|\mathbf{r}_0\|\,\mathbf{V}_q\underline{\mathbf{H}}_q^{+}\mathbf{e}_0$.
+[SaadSchultz1986, Algorithm 3]; [Saad2003, Algorithm 6.9]; both stop at the first zero
+$h_{j+1,j}$, here the formula holds for every $q$.
 Result: gmres-arnoldi -/
 theorem gmresIterate_eq_mgsArnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     gmresIterate A b x₀ q = x₀ + (‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ : 𝕜) •
@@ -133,7 +144,9 @@ $\mathbf{e}_0$, for invertible $\mathbf{A}$ and every $q$,
 $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
 \|\mathbf{r}_0\|\,\mathbf{Q}_q\,\mathsf{backSubst}(\mathbf{R}, \mathbf{g})$, with no
 hypothesis on the grade or on the computed pivots.
-[SaadSchultz1986]; [Saad2003, Algorithm 6.9]; locators to verify.
+[SaadSchultz1986, §3.2]; [Saad2003, Proposition 6.9]. Both solve the small least-squares problem
+by plane rotations and back substitution on the triangular system left after deleting the last
+row; the rotation signs here follow `NLAlib.givens`.
 Result: gmres-givens -/
 theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : IsUnit A)
     (b x₀ : n → 𝕜) (q : ℕ) :
@@ -185,9 +198,13 @@ theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : I
       exact ((givensHessenbergState_apply_of_lt H (Pi.single 0 1) hq.le
         (a := (Fin.castLE hq.le a).castSucc) a.2).2).symm
 
-/-- **The GMRES residual estimate**: for invertible $\mathbf{A}$ and every $q$, the residual norm is
-$\|\mathbf{r}_0\|$ times the modulus of the last entry of the rotated $\mathbf{e}_0$, available
-without forming the iterate. [Saad2003, Proposition 6.9]; locator to verify.
+/-- **The GMRES residual estimate**: for invertible $\mathbf{A}$ and every $q$, with
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$, $\underline{\mathbf{H}}_q$ computed by the
+Arnoldi process and $\mathbf{G}$ its Givens factor,
+$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| =
+\|\mathbf{r}_0\|\,\lvert(\mathbf{G}^{\mathsf{H}}\mathbf{e}_0)_q\rvert$, the modulus of the last
+entry of the rotated $\mathbf{e}_0$, available without forming the iterate.
+[SaadSchultz1986, Proposition 1]; [Saad2003, Proposition 6.9]. It is (6.42) in Saad's book.
 Result: gmres-residual-estimate -/
 theorem norm_sub_mulVec_gmresIterate_eq_norm_givensHessenbergQ {A : Matrix n n 𝕜}
     (hA : IsUnit A) (b x₀ : n → 𝕜) (q : ℕ) :
