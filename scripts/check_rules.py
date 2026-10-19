@@ -1326,6 +1326,16 @@ def g_deviation_fields(c):
     return out
 
 
+@rule('G2', 'error', 'src', '§9, AGENTS.md', 'a port-ledger entry whose target is not declared',
+      'Point the entry of docs/port/ledger.json at the current name (scripts/ledger_check.py)')
+def g_ledger(c):
+    if not (c.root / 'docs/port/ledger.json').exists():
+        return []
+    import ledger_check
+    return [V('G2', 'docs/port/ledger.json', 0, old, f'{new}, stage {stage}')
+            for old, new, stage in ledger_check.missing(c.root)[1]]
+
+
 # ================================================================== allowlist, baseline, main
 def load_allow(path):
     if not path.exists():

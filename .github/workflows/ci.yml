@@ -29,6 +29,8 @@ jobs:
         run: lake env lean scripts/Lint.lean
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
+      - name: Port-ledger targets exist (rule G2)
+        run: python3 scripts/ledger_check.py
       - name: Documentation metadata regressions
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Named bounds show their current values

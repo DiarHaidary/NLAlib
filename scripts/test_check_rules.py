@@ -277,6 +277,8 @@ FIX = {
     'R2': (CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'foo-resukt'),
            CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'bar-result')),
     'R3': (None, None),  # needs the explore repository; covered by test_orphans
+    'G2': ({'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.gone", "stage": "M1"}}'},
+           {'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.foo", "stage": "M1"}}'}),
     'G1': ({'docs/design/Mathlib-deviations.md': DEVIATIONS + '\n## 2. Bad\n\n- **Mathlib.** a\n'}, {}),
 }
 
