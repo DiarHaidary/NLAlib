@@ -607,6 +607,37 @@ private theorem integral_frobNorm_mul_inv_le {q : Type*} [Fintype q] [DecidableE
   exact mul_le_mul_of_nonneg_right hEw (integral_nonneg fun ω => inv_nonneg.2
     (le_min zero_le_one (div_nonneg (sq_nonneg _) hL0.le)))
 
+/-- The Gaussian-product identity of `integral_frobNorm_sq_mul_inv_sq_le`: for
+$\mathbf{E}\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{E}$ and $u \ge 0$,
+$\|\mathbf{E}(c\mathbf{Y})(c\mathbf{Y})^{\mathsf{H}}\mathbf{Z}\|_{\mathsf{F}}^2u^2 =
+\|\mathbf{E}\mathbf{V}(\mathbf{V}^{\mathsf{H}}\mathbf{Y})\,c^2u\,
+(\mathbf{Z}^{\mathsf{H}}\mathbf{Y})^{\mathsf{H}}\|_{\mathsf{F}}^2$. -/
+private theorem frobNorm_mul_smul_mul_sq_mul_sq {q r : Type*} [Fintype q] [Fintype r]
+    {E : Matrix m n ℝ} {V : Matrix n q ℝ} (hEV : E * V * Vᴴ = E) (c : ℝ) {u : ℝ} (hu : 0 ≤ u)
+    (Y : Matrix n l ℝ) (Z : Matrix n r ℝ) :
+    frobNorm (E * (c • Y) * (c • Y)ᴴ * Z) ^ 2 * u ^ 2 =
+      frobNorm (E * V * (Vᴴ * Y) * ((c ^ 2 * u) • (Zᴴ * Y)ᴴ)) ^ 2 := by
+  have e1 : E * (c • Y) * (c • Y)ᴴ * Z = c ^ 2 • ((E * V) * (Vᴴ * Y) * (Zᴴ * Y)ᴴ) := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_smul,
+      star_trivial]
+    simp only [Matrix.mul_smul, Matrix.smul_mul, smul_smul, ← Matrix.mul_assoc, hEV]
+    ring_nf
+  rw [e1, Matrix.mul_smul, frobNorm_smul, frobNorm_smul, Real.norm_of_nonneg (sq_nonneg c),
+    Real.norm_of_nonneg (mul_nonneg (sq_nonneg c) hu)]
+  ring
+
+/-- A product of squares is integrable when both fourth powers are, by
+$f^2g^2 \le (f^4 + g^4)/2$. -/
+private theorem integrable_sq_mul_sq_of_integrable_pow_four {f g : Ω → ℝ}
+    (hf : AEStronglyMeasurable (fun ω => f ω ^ 2) μ)
+    (hg : AEStronglyMeasurable (fun ω => g ω ^ 2) μ)
+    (hf4 : Integrable (fun ω => f ω ^ 4) μ) (hg4 : Integrable (fun ω => g ω ^ 4) μ) :
+    Integrable (fun ω => f ω ^ 2 * g ω ^ 2) μ := by
+  refine ((hf4.add hg4).div_const 2).mono' (hf.mul hg) (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_of_nonneg (by positivity)]
+  change f ω ^ 2 * g ω ^ 2 ≤ (f ω ^ 4 + g ω ^ 4) / 2
+  nlinarith [sq_nonneg (f ω ^ 2 - g ω ^ 2)]
+
 /-- The tail–head term of the structural bound in expectation: with
 $\chi = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}\mathbf{Z}\|_{\mathsf{F}}$,
 $\mathbf{S} = \ell^{-1/2}\mathbf{\Omega}$, and $u$ the clipped inverse of the head
@@ -653,20 +684,8 @@ private theorem integral_frobNorm_sq_mul_inv_sq_le {q : Type*} [Fintype q] [Deci
   -- the identity with the Gaussian product
   have hid (ω : Ω) : frobNorm (E * (c • X ω) * (c • X ω)ᴴ * Z) ^ 2 * U (Zᴴ * X ω) ^ 2 =
       frobNorm ((fun _ : Matrix (Fin k) l ℝ => E * V) (Zᴴ * X ω) * (Vᴴ * X ω) *
-        T (Zᴴ * X ω)) ^ 2 := by
-    have e1 : E * (c • X ω) * (c • X ω)ᴴ * Z =
-        c ^ 2 • ((E * V) * (Vᴴ * X ω) * (Zᴴ * X ω)ᴴ) := by
-      rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_smul,
-        star_trivial]
-      simp only [Matrix.mul_smul, Matrix.smul_mul, smul_smul, ← Matrix.mul_assoc, hEV]
-      ring_nf
-    have e2 : (E * V) * (Vᴴ * X ω) * T (Zᴴ * X ω) =
-        (c ^ 2 * U (Zᴴ * X ω)) • ((E * V) * (Vᴴ * X ω) * (Zᴴ * X ω)ᴴ) := by
-      simp only [T, Matrix.mul_smul]
-    simp only []
-    rw [e1, e2, frobNorm_smul, frobNorm_smul, Real.norm_of_nonneg (sq_nonneg c),
-      Real.norm_of_nonneg (mul_nonneg (sq_nonneg c) (hU0 _))]
-    ring
+        T (Zᴴ * X ω)) ^ 2 :=
+    frobNorm_mul_smul_mul_sq_mul_sq hEV c (hU0 _) (X ω) Z
   have hTn (H : Matrix (Fin k) l ℝ) :
       frobNorm (E * V) ^ 2 * frobNorm (T H) ^ 2 =
         frobNorm E ^ 2 * L⁻¹ ^ 2 * (U H ^ 2 * frobNorm H ^ 2) := by
@@ -686,12 +705,9 @@ private theorem integral_frobNorm_sq_mul_inv_sq_le {q : Type*} [Fintype q] [Deci
     ((hU.comp_aemeasurable hG₁m).pow_const 2).aestronglyMeasurable
   have hFm : AEStronglyMeasurable (fun ω => frobNorm (Zᴴ * X ω) ^ 2) μ :=
     ((measurable_frobNorm.comp_aemeasurable hG₁m).pow_const 2).aestronglyMeasurable
-  have hprod : Integrable (fun ω => U (Zᴴ * X ω) ^ 2 * frobNorm (Zᴴ * X ω) ^ 2) μ := by
-    refine ((hU4i.add hG4i).div_const 2).mono' (hUm.mul hFm) (ae_of_all _ fun ω => ?_)
-    rw [Real.norm_of_nonneg (by positivity)]
-    change U (Zᴴ * X ω) ^ 2 * frobNorm (Zᴴ * X ω) ^ 2 ≤
-      (U (Zᴴ * X ω) ^ 4 + frobNorm (Zᴴ * X ω) ^ 4) / 2
-    nlinarith [sq_nonneg (U (Zᴴ * X ω) ^ 2 - frobNorm (Zᴴ * X ω) ^ 2)]
+  have hprod : Integrable (fun ω => U (Zᴴ * X ω) ^ 2 * frobNorm (Zᴴ * X ω) ^ 2) μ :=
+    integrable_sq_mul_sq_of_integrable_pow_four (f := fun ω => U (Zᴴ * X ω))
+      (g := fun ω => frobNorm (Zᴴ * X ω)) hUm hFm hU4i hG4i
   have hR : Integrable (fun ω => frobNorm ((fun _ : Matrix (Fin k) l ℝ => E * V) (Zᴴ * X ω)) ^ 2 *
       frobNorm (T (Zᴴ * X ω)) ^ 2) μ := by
     simp only [hTn]

@@ -434,6 +434,94 @@ private theorem specNorm_one_kronecker_le [DecidableEq l] (B : Matrix m n ℝ) :
   rw [mul_pow, EuclideanSpace.norm_sq_eq (WithLp.toLp 2 fun j => v (i, j))] at h
   simpa only [PiLp.toLp_apply] using h
 
+omit [DecidableEq n] in
+/-- The injection step of `measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`: on
+the subspace injection event of the normalised sketch, the error of the randomized SVD is at most
+$\|\mathbf{E}\|_{\mathsf{F}}^2 + 2\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}^2/\ell$,
+$\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$. -/
+private theorem frobNorm_sub_rsvd_sq_le_add_of_isSubspaceInjection [Nonempty l] {p : Type*}
+    [Fintype p] [DecidableEq p] {A : Matrix m n ℝ} {k : ℕ} {Z : Matrix n p ℝ}
+    (hZ : HasOrthonormalCols Z) (hAZ : A * Z * Zᴴ = truncatedSVD A k) {Y : Matrix n l ℝ}
+    (h : IsSubspaceInjection ((√(Fintype.card l : ℝ))⁻¹ • Y)ᴴ Z (1 - 1 / 2)) :
+    frobNorm (A - rsvd A Y) ^ 2 ≤ frobNorm (A - truncatedSVD A k) ^ 2 +
+      2 * frobNorm ((A - truncatedSVD A k) * Y) ^ 2 / Fintype.card l := by
+  have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 Fintype.card_pos
+  have h1 := h.frobNorm_sub_rsvd_sq_le hZ (by norm_num) A
+  rw [hAZ, rsvd_smul_right _ _ (inv_ne_zero (Real.sqrt_pos.2 hL).ne'), Matrix.mul_smul,
+    frobNorm_smul, mul_pow, norm_inv, Real.norm_of_nonneg (Real.sqrt_nonneg _), inv_pow,
+    Real.sq_sqrt hL.le] at h1
+  refine h1.trans (le_of_eq ?_)
+  field_simp
+  ring
+
+/-- The size step of `measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`: for
+$c \ge 1$ and $0 < \delta < 1$, the embedding size at constant $1/2$ and failure $\delta/2$ is
+at least $\log(2/\delta)$. -/
+private theorem log_two_div_le_of_subgaussianEmbeddingDim_le {c : ℝ≥0} {k : ℕ} {δ L : ℝ}
+    (hc1 : (1 : ℝ) ≤ c) (hδ : 0 < δ) (hδ1 : δ < 1)
+    (hl : subgaussianEmbeddingDim c k (1 / 2) (δ / 2) ≤ L) : Real.log (2 / δ) ≤ L := by
+  set t := Real.log (2 / δ) with ht
+  have ht0 : 0 ≤ t := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  rw [subgaussianEmbeddingDim_def, subgaussianJLConstant_def] at hl
+  have h4 : t ≤ Real.log (2 / (δ / 2)) :=
+    Real.log_le_log (by positivity) (div_le_div_of_nonneg_left (by norm_num) (by positivity)
+      (by linarith))
+  have h9 : 0 ≤ (k : ℝ) * Real.log 9 :=
+    mul_nonneg (Nat.cast_nonneg _) (Real.log_nonneg (by norm_num))
+  have hc2 : (1 : ℝ) ≤ (c : ℝ) ^ 2 := by nlinarith
+  have e : 4 * (c : ℝ) ^ 2 * (k * Real.log 9 + Real.log (2 / (δ / 2))) /
+      (1 / 64 * (1 / 2) ^ 2) =
+        1024 * ((c : ℝ) ^ 2 * (k * Real.log 9 + Real.log (2 / (δ / 2)))) := by
+    ring
+  rw [e] at hl
+  nlinarith
+
+omit [DecidableEq n] in
+/-- The Hsu–Kakade–Zhang threshold step of
+`measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`: for
+$\mathbf{M} = \mathbf{I}_\ell \otimes \mathbf{E}$ and $0 \le t \le \ell$,
+$c(\|\mathbf{M}\|_{\mathsf{F}}^2 + 2\|\mathbf{M}^{\mathsf{H}}\mathbf{M}\|_{\mathsf{F}}\sqrt t
++ 2\|\mathbf{M}\|_2^2t) \le 5c\ell\|\mathbf{E}\|_{\mathsf{F}}^2$. -/
+private theorem mul_frobNorm_one_kronecker_add_le [DecidableEq l] (E : Matrix m n ℝ) (c : ℝ≥0)
+    {t : ℝ} (ht0 : 0 ≤ t) (htL : t ≤ Fintype.card l) :
+    (c : ℝ) * (frobNorm ((1 : Matrix l l ℝ) ⊗ₖ E) ^ 2 +
+        2 * frobNorm (((1 : Matrix l l ℝ) ⊗ₖ E)ᴴ * ((1 : Matrix l l ℝ) ⊗ₖ E)) * √t +
+        2 * specNorm ((1 : Matrix l l ℝ) ⊗ₖ E) ^ 2 * t) ≤
+      5 * c * (Fintype.card l : ℝ) * frobNorm E ^ 2 := by
+  set L : ℝ := (Fintype.card l : ℝ) with hLdef
+  have hL0 : 0 ≤ L := Nat.cast_nonneg _
+  set M : Matrix (l × m) (l × n) ℝ := (1 : Matrix l l ℝ) ⊗ₖ E with hM
+  have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := frobNorm_one_kronecker_sq E
+  have hEF : frobNorm (Eᴴ * E) ≤ frobNorm E ^ 2 := by
+    have := frobNorm_mul_le Eᴴ E
+    rwa [frobNorm_conjTranspose, ← sq] at this
+  have hG : frobNorm (Mᴴ * M) * √t ≤ L * frobNorm E ^ 2 := by
+    have e : Mᴴ * M = (1 : Matrix l l ℝ) ⊗ₖ (Eᴴ * E) := by
+      rw [hM, Matrix.conjTranspose_kronecker, Matrix.conjTranspose_one,
+        ← Matrix.mul_kronecker_mul, Matrix.one_mul]
+    have hF2 : frobNorm (Mᴴ * M) = √L * frobNorm (Eᴴ * E) := by
+      rw [e, ← Real.sqrt_sq (frobNorm_nonneg _), frobNorm_one_kronecker_sq, Real.sqrt_mul hL0,
+        Real.sqrt_sq (frobNorm_nonneg _)]
+    have hst : √t ≤ √L := Real.sqrt_le_sqrt htL
+    rw [hF2]
+    calc √L * frobNorm (Eᴴ * E) * √t ≤ √L * frobNorm E ^ 2 * √L := by
+          gcongr
+      _ = L * frobNorm E ^ 2 := by
+          rw [mul_comm, ← mul_assoc, Real.mul_self_sqrt hL0]
+  have hS : specNorm M ^ 2 * t ≤ L * frobNorm E ^ 2 := by
+    have h1 : specNorm M ≤ frobNorm E :=
+      (specNorm_one_kronecker_le E).trans (specNorm_le_frobNorm E)
+    have h2 : specNorm M ^ 2 ≤ frobNorm E ^ 2 := pow_le_pow_left₀ (specNorm_nonneg _) h1 2
+    calc specNorm M ^ 2 * t ≤ frobNorm E ^ 2 * L := by
+          gcongr
+      _ = L * frobNorm E ^ 2 := mul_comm _ _
+  have : frobNorm M ^ 2 + 2 * frobNorm (Mᴴ * M) * √t + 2 * specNorm M ^ 2 * t ≤
+      5 * (L * frobNorm E ^ 2) := by
+    linarith
+  calc (c : ℝ) * (frobNorm M ^ 2 + 2 * frobNorm (Mᴴ * M) * √t + 2 * specNorm M ^ 2 * t)
+      ≤ c * (5 * (L * frobNorm E ^ 2)) := mul_le_mul_of_nonneg_left this c.2
+    _ = 5 * c * L * frobNorm E ^ 2 := by ring
+
 /-- **The randomized SVD with a sub-Gaussian test matrix, constant factor**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian rows with proxy $c$,
 $\delta > 0$ and <!-- value subgaussianEmbeddingDim c k (1/2) (\delta/2) -->
@@ -501,15 +589,8 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
   have hinj : μ.real {ω | ¬ IsSubspaceInjection ((√L)⁻¹ • X ω)ᴴ Z (1 - 1 / 2)} ≤ δ / 2 :=
     hOSI.hasSubspaceInjection hZk
   have hgood : ∀ ω, IsSubspaceInjection ((√L)⁻¹ • X ω)ᴴ Z (1 - 1 / 2) →
-      frobNorm (A - rsvd A (X ω)) ^ 2 ≤ frobNorm E ^ 2 + 2 * frobNorm (E * X ω) ^ 2 / L := by
-    intro ω h
-    have h1 := h.frobNorm_sub_rsvd_sq_le hZ (by norm_num) A
-    rw [hAZ, rsvd_smul_right _ _ (inv_ne_zero (Real.sqrt_pos.2 hL).ne'), Matrix.mul_smul,
-      frobNorm_smul, mul_pow, norm_inv, Real.norm_of_nonneg (Real.sqrt_nonneg _), inv_pow,
-      Real.sq_sqrt hL.le] at h1
-    refine h1.trans (le_of_eq ?_)
-    field_simp
-    ring
+      frobNorm (A - rsvd A (X ω)) ^ 2 ≤ frobNorm E ^ 2 + 2 * frobNorm (E * X ω) ^ 2 / L :=
+    fun ω h => frobNorm_sub_rsvd_sq_le_add_of_isSubspaceInjection hZ hAZ h
   by_cases hE0 : E = 0
   · refine (measureReal_mono fun ω hω => ?_).trans (hinj.trans (by linarith))
     intro h
@@ -521,20 +602,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
   -- The Hsu–Kakade–Zhang event, on the vectorization of the test matrix.
   set t := Real.log (2 / δ) with ht
   have ht0 : 0 ≤ t := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have htL : t ≤ L := by
-    rw [subgaussianEmbeddingDim_def, subgaussianJLConstant_def] at hl
-    have h4 : t ≤ Real.log (2 / (δ / 2)) :=
-      Real.log_le_log (by positivity) (div_le_div_of_nonneg_left (by norm_num) (by positivity)
-        (by linarith))
-    have h9 : 0 ≤ (k : ℝ) * Real.log 9 :=
-      mul_nonneg (Nat.cast_nonneg _) (Real.log_nonneg (by norm_num))
-    have hc2 : (1 : ℝ) ≤ (c : ℝ) ^ 2 := by nlinarith
-    have e : 4 * (c : ℝ) ^ 2 * (k * Real.log 9 + Real.log (2 / (δ / 2))) /
-        (1 / 64 * (1 / 2) ^ 2) =
-          1024 * ((c : ℝ) ^ 2 * (k * Real.log 9 + Real.log (2 / (δ / 2)))) := by
-      ring
-    rw [e] at hl
-    nlinarith
+  have htL : t ≤ L := log_two_div_le_of_subgaussianEmbeddingDim_le hc1 hδ hδ1 hl
   set M : Matrix (l × m) (l × n) ℝ := (1 : Matrix l l ℝ) ⊗ₖ E with hM
   have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := frobNorm_one_kronecker_sq E
   have hM0 : M ≠ 0 := by
@@ -554,37 +622,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
     rw [hM, norm_one_kronecker_mulVec_sq, frobNorm_sq_eq_sum_col]
     refine Finset.sum_congr rfl fun i _ => ?_
     congr 3
-  have hEF : frobNorm (Eᴴ * E) ≤ frobNorm E ^ 2 := by
-    have := frobNorm_mul_le Eᴴ E
-    rwa [frobNorm_conjTranspose, ← sq] at this
-  have hG : frobNorm (Mᴴ * M) * √t ≤ L * frobNorm E ^ 2 := by
-    have e : Mᴴ * M = (1 : Matrix l l ℝ) ⊗ₖ (Eᴴ * E) := by
-      rw [hM, Matrix.conjTranspose_kronecker, Matrix.conjTranspose_one,
-        ← Matrix.mul_kronecker_mul, Matrix.one_mul]
-    have hF2 : frobNorm (Mᴴ * M) = √L * frobNorm (Eᴴ * E) := by
-      rw [e, ← Real.sqrt_sq (frobNorm_nonneg _), frobNorm_one_kronecker_sq, Real.sqrt_mul hL.le,
-        Real.sqrt_sq (frobNorm_nonneg _)]
-    have hst : √t ≤ √L := Real.sqrt_le_sqrt htL
-    rw [hF2]
-    calc √L * frobNorm (Eᴴ * E) * √t ≤ √L * frobNorm E ^ 2 * √L := by
-          gcongr
-      _ = L * frobNorm E ^ 2 := by
-          rw [mul_comm, ← mul_assoc, Real.mul_self_sqrt hL.le]
-  have hS : specNorm M ^ 2 * t ≤ L * frobNorm E ^ 2 := by
-    have h1 : specNorm M ≤ frobNorm E :=
-      (specNorm_one_kronecker_le E).trans (specNorm_le_frobNorm E)
-    have h2 : specNorm M ^ 2 ≤ frobNorm E ^ 2 := pow_le_pow_left₀ (specNorm_nonneg _) h1 2
-    calc specNorm M ^ 2 * t ≤ frobNorm E ^ 2 * L := by
-          gcongr
-      _ = L * frobNorm E ^ 2 := mul_comm _ _
-  have hT : (c : ℝ) * (frobNorm M ^ 2 + 2 * frobNorm (Mᴴ * M) * √t + 2 * specNorm M ^ 2 * t) ≤
-      5 * c * L * frobNorm E ^ 2 := by
-    have : frobNorm M ^ 2 + 2 * frobNorm (Mᴴ * M) * √t + 2 * specNorm M ^ 2 * t ≤
-        5 * (L * frobNorm E ^ 2) := by
-      linarith
-    calc (c : ℝ) * (frobNorm M ^ 2 + 2 * frobNorm (Mᴴ * M) * √t + 2 * specNorm M ^ 2 * t)
-        ≤ c * (5 * (L * frobNorm E ^ 2)) := mul_le_mul_of_nonneg_left this c.2
-      _ = 5 * c * L * frobNorm E ^ 2 := by ring
+  have hT := mul_frobNorm_one_kronecker_add_le E c ht0 htL
   -- Outside both events the error is at most `(1 + 10c)‖E‖²`.
   refine le_trans (measureReal_mono ?_ (measure_ne_top _ _))
     ((measureReal_union_le _ _).trans ((add_le_add hinj hHKZ).trans_eq (add_halves δ)))

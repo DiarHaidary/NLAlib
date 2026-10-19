@@ -329,6 +329,53 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussi
   rw [sub_rsvd]
   exact pow_le_pow_left₀ (specNorm_nonneg _) (specNorm_one_sub_rangeProjector_mul_le _ _) 2
 
+/-- The depth step of the depth bound for RBKI: for $N \ge 1$, $0 < \varepsilon \le 1/2$ and
+$6\log(N/\varepsilon) \le q\sqrt\varepsilon$, $16N^2e^{-8(q-1)s} \le \varepsilon$ with
+$s = \sqrt{(\varepsilon/3)/(2 + \varepsilon/3)} \ge \sqrt\varepsilon/3$. -/
+private theorem sixteen_mul_sq_mul_exp_le {N ε : ℝ} {q : ℕ} (hN : 1 ≤ N) (hε : 0 < ε)
+    (hε₀ : ε ≤ 1 / 2) (hq1 : 1 ≤ q) (hqε : 6 * Real.log (N / ε) ≤ q * Real.sqrt ε) :
+    16 * N ^ 2 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (ε / 3 / (2 + ε / 3))) ≤ ε := by
+  have hN0 : 0 < N := by linarith
+  have hlogε : Real.log ε ≤ -Real.log 2 := by
+    rw [← Real.log_inv]
+    exact Real.log_le_log hε (by linarith)
+  have hlogN : 0 ≤ Real.log N := Real.log_nonneg hN
+  have hL : Real.log (N / ε) = Real.log N - Real.log ε := Real.log_div hN0.ne' hε.ne'
+  have hlog2 : (1 / 2 : ℝ) ≤ Real.log 2 := by
+    have h := Real.one_sub_inv_le_log_of_pos (x := 2) (by norm_num)
+    norm_num at h ⊢
+    linarith
+  have hsε1 : Real.sqrt ε ≤ 1 := Real.sqrt_le_one.mpr (by linarith)
+  have hq' : (0 : ℝ) ≤ (q : ℝ) - 1 := by
+    have : (1 : ℝ) ≤ q := by exact_mod_cast hq1
+    linarith
+  set s := Real.sqrt (ε / 3 / (2 + ε / 3)) with hsdef
+  have hs : Real.sqrt ε / 3 ≤ s := by
+    have h9 : Real.sqrt ε / 3 = Real.sqrt (ε / 9) := by
+      rw [Real.sqrt_div' ε (by norm_num : (0 : ℝ) ≤ 9), show (9 : ℝ) = 3 ^ 2 by norm_num,
+        Real.sqrt_sq (by norm_num)]
+    rw [h9, hsdef]
+    refine Real.sqrt_le_sqrt ?_
+    rw [div_div, div_le_div_iff₀ (by norm_num) (by positivity)]
+    nlinarith
+  have h16 : Real.log 16 = 4 * Real.log 2 := by
+    rw [show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow]
+    norm_num
+  have harg : Real.log 16 + 2 * Real.log N - Real.log ε ≤ 8 * ((q : ℝ) - 1) * s := by
+    have h1 : 8 * ((q : ℝ) - 1) * (Real.sqrt ε / 3) ≤ 8 * ((q : ℝ) - 1) * s :=
+      mul_le_mul_of_nonneg_left hs (by linarith)
+    have h2 : 8 * ((q : ℝ) - 1) * (Real.sqrt ε / 3) =
+        8 / 3 * (q * Real.sqrt ε) - 8 / 3 * Real.sqrt ε := by ring
+    linarith
+  have h : 16 * (N : ℝ) ^ 2 = Real.exp (Real.log 16 + 2 * Real.log N) := by
+    rw [Real.exp_add, Real.exp_log (by norm_num), two_mul, Real.exp_add,
+      Real.exp_log hN0]
+    ring
+  rw [h, ← Real.exp_add]
+  calc Real.exp (Real.log 16 + 2 * Real.log N + -8 * ((q : ℝ) - 1) * s)
+      ≤ Real.exp (Real.log ε) := Real.exp_le_exp.2 (by linarith)
+    _ = ε := Real.exp_log hε
+
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\varepsilon})$ suffices for randomized
 block Krylov iteration**, spectral norm, truncated output: there are absolute constants
 $C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$,
@@ -395,59 +442,11 @@ theorem exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_hasLaw_ga
   set s := Real.sqrt (ε / 3 / (2 + ε / 3)) with hsdef
   set E := Real.exp (-8 * ((q : ℝ) - 1) * s) with hE
   -- $\kappa\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 \le N^2\sigma_r^2$.
-  have hκr : κ ≤ r := div_le_self (Nat.cast_nonneg _) (by
-    have : (r : ℝ) + 2 ≤ Fintype.card l := by exact_mod_cast hr
-    linarith)
-  have hF2 : F ^ 2 ≤ ((min (Fintype.card m) N - r : ℕ) : ℝ) * σ ^ 2 := by
-    rw [hF, frobNorm_sub_truncatedSVD_sq]
-    calc ∑ i ∈ Finset.Ico r (min (Fintype.card m) N), singularValues A i ^ 2
-        ≤ ∑ _i ∈ Finset.Ico r (min (Fintype.card m) N), σ ^ 2 :=
-          Finset.sum_le_sum fun i hi => pow_le_pow_left₀ (singularValues_nonneg _ _)
-            (singularValues_antitone A (Finset.mem_Ico.1 hi).1) 2
-      _ = _ := by rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
-  have hrN : r * (min (Fintype.card m) N - r) ≤ N * N := by
-    have := min_le_right (Fintype.card m) N
-    rcases le_or_gt (min (Fintype.card m) N) r with h | h
-    · rw [Nat.sub_eq_zero_of_le h, mul_zero]
-      exact Nat.zero_le _
-    · exact Nat.mul_le_mul (by omega) (by omega)
-  have hrNR : (r : ℝ) * ((min (Fintype.card m) N - r : ℕ) : ℝ) ≤ (N : ℝ) ^ 2 := by
-    rw [sq]
-    exact_mod_cast hrN
   have hκF : κ * F ^ 2 ≤ (N : ℝ) ^ 2 * σ ^ 2 :=
-    calc κ * F ^ 2 ≤ r * F ^ 2 := mul_le_mul_of_nonneg_right hκr (sq_nonneg _)
-      _ ≤ r * (((min (Fintype.card m) N - r : ℕ) : ℝ) * σ ^ 2) :=
-          mul_le_mul_of_nonneg_left hF2 (Nat.cast_nonneg _)
-      _ ≤ (N : ℝ) ^ 2 * σ ^ 2 := by
-          rw [← mul_assoc]
-          exact mul_le_mul_of_nonneg_right hrNR (sq_nonneg _)
+    natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
+      le_rfl hr
   -- $16N^2 e^{-8(q-1)s} \le \varepsilon$, from $s \ge \sqrt{\varepsilon}/3$.
-  have hs : Real.sqrt ε / 3 ≤ s := by
-    have h9 : Real.sqrt ε / 3 = Real.sqrt (ε / 9) := by
-      rw [Real.sqrt_div' ε (by norm_num : (0 : ℝ) ≤ 9), show (9 : ℝ) = 3 ^ 2 by norm_num,
-        Real.sqrt_sq (by norm_num)]
-    rw [h9, hsdef]
-    refine Real.sqrt_le_sqrt ?_
-    rw [div_div, div_le_div_iff₀ (by norm_num) (by positivity)]
-    nlinarith
-  have h16 : Real.log 16 = 4 * Real.log 2 := by
-    rw [show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow]
-    norm_num
-  have harg : Real.log 16 + 2 * Real.log N - Real.log ε ≤ 8 * ((q : ℝ) - 1) * s := by
-    have h1 : 8 * ((q : ℝ) - 1) * (Real.sqrt ε / 3) ≤ 8 * ((q : ℝ) - 1) * s :=
-      mul_le_mul_of_nonneg_left hs (by positivity)
-    have h2 : 8 * ((q : ℝ) - 1) * (Real.sqrt ε / 3) =
-        8 / 3 * (q * Real.sqrt ε) - 8 / 3 * Real.sqrt ε := by ring
-    linarith
-  have hEε : 16 * (N : ℝ) ^ 2 * E ≤ ε := by
-    have h : 16 * (N : ℝ) ^ 2 = Real.exp (Real.log 16 + 2 * Real.log N) := by
-      rw [Real.exp_add, Real.exp_log (by norm_num), two_mul, Real.exp_add,
-        Real.exp_log (by positivity)]
-      ring
-    rw [h, hE, ← Real.exp_add]
-    calc Real.exp (Real.log 16 + 2 * Real.log N + -8 * ((q : ℝ) - 1) * s)
-        ≤ Real.exp (Real.log ε) := Real.exp_le_exp.2 (by linarith)
-      _ = ε := Real.exp_log hε
+  have hEε : 16 * (N : ℝ) ^ 2 * E ≤ ε := sixteen_mul_sq_mul_exp_le hNR hε hε₀ hq1 hqε
   have hσ2 : 0 ≤ σ ^ 2 := sq_nonneg _
   have h13 : (1 + ε / 3) ^ 2 ≤ 1 + 3 / 4 * ε := by nlinarith
   have htail : 4 * E * κ * F ^ 2 ≤ ε / 4 * σ ^ 2 :=
@@ -619,6 +618,94 @@ private theorem exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le (A : Matrix m n
       _ = _ := by ring
 
 omit [DecidableEq n] in
+/-- The rescaled Chebyshev filter evaluates as
+$T_j(2x/s - 1) = T_j(2(x/s) - 1)$. -/
+private theorem eval_T_comp_C_mul_X_sub_one (j : ℕ) (s y : ℝ) :
+    ((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp (Polynomial.C (2 / s) * Polynomial.X - 1)).eval y =
+      (Polynomial.Chebyshev.T ℝ (j : ℤ)).eval (2 * (y / s) - 1) := by
+  simp only [Polynomial.eval_comp, Polynomial.eval_sub, Polynomial.eval_mul,
+    Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_one]
+  ring_nf
+
+/-- The rescaled Chebyshev filter $T_j(2x/s - 1)$ has degree below $q$ for $j < q$. -/
+private theorem degree_T_comp_C_mul_X_sub_one_lt {j q : ℕ} {s : ℝ} (hjq : j < q) :
+    ((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
+      (Polynomial.C (2 / s) * Polynomial.X - 1)).degree < q := by
+  have h1 : (Polynomial.C (2 / s) * Polynomial.X - 1 : Polynomial ℝ).natDegree ≤ 1 := by
+    compute_degree
+  have h2 : ((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
+      (Polynomial.C (2 / s) * Polynomial.X - 1)).natDegree ≤ j := by
+    refine Polynomial.natDegree_comp_le.trans ?_
+    rw [Polynomial.Chebyshev.natDegree_T, Int.natAbs_natCast]
+    exact (Nat.mul_le_mul_left _ h1).trans_eq (mul_one _)
+  exact Polynomial.degree_le_natDegree.trans_lt (by exact_mod_cast h2.trans_lt hjq)
+
+/-- The rescaled Chebyshev filter $T_j(2x/s - 1)$ is at most $1$ in absolute value on
+$[0, s]$. -/
+private theorem abs_eval_T_comp_C_mul_X_sub_one_le (j : ℕ) {s x : ℝ} (hs : 0 < s)
+    (hx : x ∈ Set.Icc 0 s) :
+    |((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
+      (Polynomial.C (2 / s) * Polynomial.X - 1)).eval x| ≤ 1 := by
+  rw [eval_T_comp_C_mul_X_sub_one]
+  refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)
+  · linarith [div_nonneg hx.1 hs.le]
+  · linarith [(div_le_one hs).2 hx.2]
+
+/-- The Gram matrix of $\mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ is
+$\varphi(\mathbf{A}\mathbf{A}^{\mathsf{H}})$ with $\varphi(y) = f(y)\,y\,f(y)$. -/
+private theorem mul_aeval_mul_conjTranspose_eq_cfc [DecidableEq m] (A : Matrix m n ℝ)
+    (f : Polynomial ℝ) :
+    A * Polynomial.aeval (Aᴴ * A) f * (A * Polynomial.aeval (Aᴴ * A) f)ᴴ =
+      cfc (fun y => f.eval y * (y * f.eval y)) (A * Aᴴ) := by
+  have hH : IsSelfAdjoint (A * Aᴴ) := Matrix.isHermitian_mul_conjTranspose_self A
+  have hc : Continuous fun y => f.eval y := f.continuous
+  have hF : cfc (fun y => f.eval y) (A * Aᴴ) * A = A * Polynomial.aeval (Aᴴ * A) f := by
+    rw [cfc_polynomial f (A * Aᴴ) hH, aeval_mul_conjTranspose_self_mul]
+  have hFH : (cfc (fun y => f.eval y) (A * Aᴴ))ᴴ = cfc (fun y => f.eval y) (A * Aᴴ) :=
+    (cfc_predicate (fun y => f.eval y) (A * Aᴴ)).star_eq
+  rw [← hF, Matrix.conjTranspose_mul, hFH,
+    cfc_mul (fun y => f.eval y) (fun y => y * f.eval y) (A * Aᴴ) hc.continuousOn
+      (continuous_id.mul hc).continuousOn,
+    cfc_mul (fun y => y) (fun y => f.eval y) (A * Aᴴ) continuous_id.continuousOn
+      hc.continuousOn, cfc_id' ℝ (A * Aᴴ) hH]
+  simp only [Matrix.mul_assoc]
+
+/-- A filter of degree below $q$ gives a competitor in the Krylov range: the error of RBKI is at
+most that of the projector onto the range of $\mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})
+\mathbf{X}\mathbf{P}$, for every $\mathbf{P}$. -/
+private theorem specNorm_sub_rbki_sq_le_of_degree_lt [DecidableEq m] {k : Type*} [Fintype k]
+    (A : Matrix m n ℝ) {f : Polynomial ℝ} {q : ℕ} (hf : f.degree < q) (Y : Matrix n l ℝ)
+    (P : Matrix l k ℝ) :
+    specNorm (A - rbki A Y q) ^ 2 ≤
+      specNorm ((1 - rangeProjector (A * Polynomial.aeval (Aᴴ * A) f * (Y * P))) * A) ^ 2 := by
+  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
+  have hrange : LinearMap.range (A * Polynomial.aeval (Aᴴ * A) f * (Y * P)).mulVecLin ≤
+      LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
+    refine range_le_iff_exists_mul.mpr ⟨C * P, ?_⟩
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc (Polynomial.aeval (Aᴴ * A) f) Y, hC, Matrix.mul_assoc]
+  rw [rbki, sub_rsvd]
+  exact pow_le_pow_left₀ (specNorm_nonneg _)
+    (specNorm_one_sub_rangeProjector_mul_le_of_range_le hrange A) 2
+
+omit [DecidableEq n] in
+/-- The projector error $\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{Y}})\mathbf{A}\|_2^2$ is
+integrable for an almost everywhere measurable $\mathbf{Y}$: it is at most $\|\mathbf{A}\|_2^2$. -/
+private theorem integrable_specNorm_one_sub_rangeProjector_mul_sq_of_aemeasurable
+    [IsFiniteMeasure μ] [DecidableEq m] {k : Type*} [Fintype k] (A B : Matrix m n ℝ)
+    {Y : Ω → Matrix n k ℝ} (hY : AEMeasurable Y μ) :
+    Integrable (fun ω => specNorm ((1 - rangeProjector (B * Y ω)) * A) ^ 2) μ := by
+  have hxm : Measurable fun Y : Matrix n k ℝ =>
+      specNorm ((1 - rangeProjector (B * Y)) * A) ^ 2 :=
+    (measurable_specNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
+      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
+  exact Integrable.of_bound (hxm.comp_aemeasurable hY).aestronglyMeasurable (specNorm A ^ 2)
+    (Filter.Eventually.of_forall fun ω => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+      exact pow_le_pow_left₀ (specNorm_nonneg _)
+        (specNorm_one_sub_rangeProjector_mul_le _ _) 2)
+
+omit [DecidableEq n] in
 /-- A target rank with $\sigma_r(\mathbf{A}) > 0$ is below the number of columns. -/
 private theorem le_card_of_singularValues_pos (A : Matrix m n ℝ) {r : ℕ}
     (hσ : 0 < singularValues A r) : r ≤ Fintype.card n := by
@@ -664,23 +751,11 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
   set f : Polynomial ℝ := (Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
     (Polynomial.C (2 / σ ^ 2) * Polynomial.X - 1) with hf
   have hfe (y : ℝ) :
-      f.eval y = (Polynomial.Chebyshev.T ℝ (j : ℤ)).eval (2 * (y / σ ^ 2) - 1) := by
-    simp only [hf, Polynomial.eval_comp, Polynomial.eval_sub, Polynomial.eval_mul,
-      Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_one]
-    ring_nf
-  have hfdeg : f.degree < q := by
-    have h1 : (Polynomial.C (2 / σ ^ 2) * Polynomial.X - 1 : Polynomial ℝ).natDegree ≤ 1 := by
-      compute_degree
-    have h2 : f.natDegree ≤ j := by
-      refine Polynomial.natDegree_comp_le.trans ?_
-      rw [Polynomial.Chebyshev.natDegree_T, Int.natAbs_natCast]
-      exact (Nat.mul_le_mul_left _ h1).trans_eq (mul_one _)
-    exact Polynomial.degree_le_natDegree.trans_lt (by exact_mod_cast h2.trans_lt (by omega))
-  have htail : ∀ x ∈ Set.Icc 0 (σ ^ 2), |f.eval x| ≤ 1 := fun x hx => by
-    rw [hfe]
-    refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)
-    · linarith [div_nonneg hx.1 hσ2.le]
-    · linarith [(div_le_one hσ2).2 hx.2]
+      f.eval y = (Polynomial.Chebyshev.T ℝ (j : ℤ)).eval (2 * (y / σ ^ 2) - 1) :=
+    eval_T_comp_C_mul_X_sub_one j (σ ^ 2) y
+  have hfdeg : f.degree < q := degree_T_comp_C_mul_X_sub_one_lt (by omega)
+  have htail : ∀ x ∈ Set.Icc 0 (σ ^ 2), |f.eval x| ≤ 1 := fun x hx =>
+    abs_eval_T_comp_C_mul_X_sub_one_le j hσ2 hx
   obtain ⟨W, hW⟩ := exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le A hX f
     (le_card_of_singularValues_pos A hσ) hr htail
   rw [one_pow, one_mul, ← singularValues_sq_mul_rangeFinderTailRatio A _ hσ] at hW
@@ -692,22 +767,12 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
     (2 * (y / σ ^ 2) - 1)) ^ 2 with hφ
   -- $\mathbf{B}\mathbf{B}^{\mathsf{H}} = \varphi(\mathbf{A}\mathbf{A}^{\mathsf{H}})$.
   have hBB : B * Bᴴ = cfc φ (A * Aᴴ) := by
-    have hH : IsSelfAdjoint (A * Aᴴ) := Matrix.isHermitian_mul_conjTranspose_self A
-    have hc : Continuous fun y => f.eval y := f.continuous
-    have hF : cfc (fun y => f.eval y) (A * Aᴴ) * A = B := by
-      rw [cfc_polynomial f (A * Aᴴ) hH, aeval_mul_conjTranspose_self_mul]
-    have hFH : (cfc (fun y => f.eval y) (A * Aᴴ))ᴴ = cfc (fun y => f.eval y) (A * Aᴴ) :=
-      (cfc_predicate (fun y => f.eval y) (A * Aᴴ)).star_eq
     have hφ' : φ = fun y => f.eval y * (y * f.eval y) := by
       funext y
       rw [hφ, hfe]
       ring
-    rw [← hF, Matrix.conjTranspose_mul, hFH, hφ',
-      cfc_mul (fun y => f.eval y) (fun y => y * f.eval y) (A * Aᴴ) hc.continuousOn
-        (continuous_id.mul hc).continuousOn,
-      cfc_mul (fun y => y) (fun y => f.eval y) (A * Aᴴ) continuous_id.continuousOn
-        hc.continuousOn, cfc_id' ℝ (A * Aᴴ) hH]
-    simp only [Matrix.mul_assoc]
+    rw [hφ']
+    exact mul_aeval_mul_conjTranspose_eq_cfc A f
   -- Each competitor projector has rank at most $r$, so $\sigma_r^2 \le x$.
   have hlow (ω : Ω) : σ ≤ specNorm ((1 - rangeProjector (B * Ω' ω)) * A) := by
     have hrk : (rangeProjector (B * Ω' ω) * A).rank ≤ r :=
@@ -717,16 +782,8 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
     rwa [Matrix.sub_mul, Matrix.one_mul]
   have hlow2 (ω : Ω) : σ ^ 2 ≤ x ω := pow_le_pow_left₀ hσ.le (hlow ω) 2
   -- The competitor lies in the Krylov range, so RBKI does at least as well.
-  have hup (ω : Ω) : specNorm (A - rbki A (X ω) q) ^ 2 ≤ x ω := by
-    obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) (X ω) hfdeg
-    have hrange : LinearMap.range (B * Ω' ω).mulVecLin ≤
-        LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) (X ω) q).mulVecLin := by
-      refine range_le_iff_exists_mul.mpr ⟨C * pinv (Wᴴ * X ω), ?_⟩
-      simp only [hBdef, hΩ', Matrix.mul_assoc]
-      rw [← Matrix.mul_assoc G (X ω), hC, Matrix.mul_assoc]
-    rw [rbki, sub_rsvd]
-    exact pow_le_pow_left₀ (specNorm_nonneg _)
-      (specNorm_one_sub_rangeProjector_mul_le_of_range_le hrange A) 2
+  have hup (ω : Ω) : specNorm (A - rbki A (X ω) q) ^ 2 ≤ x ω :=
+    specNorm_sub_rbki_sq_le_of_degree_lt A hfdeg (X ω) (pinv (Wᴴ * X ω))
   -- The projection half of the almost-convex Jensen inequality, pointwise.
   have hjen (ω : Ω) : φ (x ω) ≤ specNorm (B - rsvd B (Ω' ω)) ^ 2 := by
     rw [sub_rsvd]
@@ -737,16 +794,8 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
   have hΩ'm : AEMeasurable Ω' μ :=
     (measurable_id.matrix_mul (measurable_pinv.comp
       (measurable_const.matrix_mul measurable_id))).comp_aemeasurable hX.aemeasurable
-  have hxm : Measurable fun Y : Matrix n (Fin r) ℝ =>
-      specNorm ((1 - rangeProjector (B * Y)) * A) ^ 2 :=
-    (measurable_specNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
-      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
   have hxi : Integrable x μ :=
-    Integrable.of_bound (hxm.comp_aemeasurable hΩ'm).aestronglyMeasurable (specNorm A ^ 2)
-      (Filter.Eventually.of_forall fun ω => by
-        rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
-        exact pow_le_pow_left₀ (specNorm_nonneg _)
-          (specNorm_one_sub_rangeProjector_mul_le _ _) 2)
+    integrable_specNorm_one_sub_rangeProjector_mul_sq_of_aemeasurable A B hΩ'm
   have hBi := integrable_specNorm_sub_rsvd_sq B hΩ'm
   have hφc : Continuous φ :=
     continuous_id.mul (((Polynomial.Chebyshev.T ℝ (j : ℤ)).continuous.comp

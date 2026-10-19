@@ -48,13 +48,6 @@
    "NLAlib/Polynomial/Chebyshev/Residual.lean": 4,
    "NLAlib/Polynomial/Interpolation/Stieltjes.lean": 2
   },
-  "S4": {
-   "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 1,
-   "NLAlib/LowRank/Gaussian/BlockKrylovGapless.lean": 2,
-   "NLAlib/LowRank/Gaussian/EarlyTruncation.lean": 1,
-   "NLAlib/LowRank/Gaussian/RotationInvariant.lean": 1,
-   "NLAlib/LowRank/Oblivious/SubGaussian.lean": 1
-  },
   "T9": {
    "NLAlib/Matrix/Norms/GaugeExamples.lean": 2,
    "NLAlib/Matrix/Norms/UnitarilyInvariant.lean": 3,

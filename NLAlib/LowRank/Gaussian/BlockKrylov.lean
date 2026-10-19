@@ -201,6 +201,63 @@ private theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
 /-! ### The filters -/
 
 omit [DecidableEq n] in
+/-- The head bound of `exists_rbki_filter`: for $\sigma_t > 0$ and $i \le h \le t$, the
+Chebyshev filter has $\lvert T_{q-1}(2\sigma_i^2/\sigma_t^2 - 1)\rvert \ge
+\tfrac12 e^{4(q-1)\sqrt\gamma}$, with $\gamma$ the gap ratio of $h$ and $t$. -/
+private theorem exp_div_two_le_abs_eval_T_comp (A : Matrix m n ℝ) {h t q i : ℕ} (hq : 1 ≤ q)
+    (hσ : 0 < singularValues A t) (hht : h ≤ t) (hih : i ≤ h) :
+    Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) / 2 ≤
+      |((Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp
+        (C (2 / singularValues A t ^ 2) * Polynomial.X - 1)).eval (singularValues A i ^ 2)| := by
+  set σt := singularValues A t
+  set γ := singularGapRatio A h t
+  have hσh : σt ≤ singularValues A h := singularValues_antitone A hht
+  have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht
+  have hγ1 : γ < 1 := by
+    rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl,
+      div_lt_one (by linarith)]
+    linarith
+  have hratio : (1 + γ) / (1 - γ) = singularValues A h / σt := by
+    have hs : singularValues A h + σt ≠ 0 := by linarith
+    have h1 : 1 + γ = 2 * singularValues A h / (singularValues A h + σt) := by
+      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
+      field_simp
+      ring
+    have h2 : 1 - γ = 2 * σt / (singularValues A h + σt) := by
+      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
+      field_simp
+      ring
+    rw [h1, h2]
+    field_simp
+  have hσi : singularValues A h ≤ singularValues A i := singularValues_antitone A hih
+  have hx : 2 / σt ^ 2 * singularValues A i ^ 2 - 1 =
+      2 * (singularValues A i / σt) ^ 2 - 1 := by
+    rw [div_pow]; ring
+  have h1h : 1 ≤ singularValues A h / σt := by rw [le_div_iff₀ hσ]; linarith
+  have hhi : singularValues A h / σt ≤ singularValues A i / σt := by gcongr
+  have hmono := Polynomial.Chebyshev.monotoneOn_eval_T_real (2 * (q - 1)) h1h
+    (h1h.trans hhi) hhi
+  have hgrowth := Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real (2 * (q - 1)) hγ0 hγ1
+  rw [hratio] at hgrowth
+  have hT : (Polynomial.Chebyshev.T ℝ (((2 * (q - 1) : ℕ) : ℤ))).eval
+      (singularValues A i / σt) =
+      (Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).eval
+        (2 * (singularValues A i / σt) ^ 2 - 1) := by
+    rw [← Polynomial.Chebyshev.eval_T_two_mul]
+    push_cast
+    rfl
+  have hexp : Real.exp (2 * ((2 * (q - 1) : ℕ) : ℝ) * Real.sqrt γ) =
+      Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) := by
+    congr 1
+    push_cast [Nat.cast_sub hq]
+    ring
+  rw [hexp] at hgrowth
+  simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
+  rw [hx, ← hT]
+  have hc : 0 < Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2 := by positivity
+  exact (hgrowth.trans hmono).trans (le_abs_self _)
+
+omit [DecidableEq n] in
 /-- **The Chebyshev filter of RBKI**: for $q \ge 1$, a head of $r = h + 1$ singular values and a
 tail index $t \ge r$, the filter $f(x) = T_{q-1}(2x/\sigma_t^2 - 1)$ (or $f = 1$ when
 $\sigma_t = 0$) has degree below $q$, $\lvert f \rvert \ge \tfrac12 e^{4(q-1)\sqrt\gamma}$ on the
@@ -223,24 +280,6 @@ private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h 
   set σt := singularValues A t
   set γ := singularGapRatio A h t
   have hht : h ≤ t := by omega
-  have hσh : σt ≤ singularValues A h := singularValues_antitone A hht
-  have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht
-  have hγ1 : γ < 1 := by
-    rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl,
-      div_lt_one (by linarith)]
-    linarith
-  have hratio : (1 + γ) / (1 - γ) = singularValues A h / σt := by
-    have hs : singularValues A h + σt ≠ 0 := by linarith
-    have h1 : 1 + γ = 2 * singularValues A h / (singularValues A h + σt) := by
-      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
-      field_simp
-      ring
-    have h2 : 1 - γ = 2 * σt / (singularValues A h + σt) := by
-      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
-      field_simp
-      ring
-    rw [h1, h2]
-    field_simp
   refine ⟨(Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp (C (2 / σt ^ 2) * Polynomial.X - 1), ?_,
     Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2, 1, by positivity, ?_, ?_, ?_⟩
   · refine degree_le_natDegree.trans_lt ?_
@@ -254,34 +293,7 @@ private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h 
       omega
     exact_mod_cast h3
   · intro i hi
-    have hih : i ≤ h := by omega
-    have hσi : singularValues A h ≤ singularValues A i := singularValues_antitone A hih
-    have hx : 2 / σt ^ 2 * singularValues A i ^ 2 - 1 =
-        2 * (singularValues A i / σt) ^ 2 - 1 := by
-      rw [div_pow]; ring
-    have h1h : 1 ≤ singularValues A h / σt := by rw [le_div_iff₀ hσ]; linarith
-    have hhi : singularValues A h / σt ≤ singularValues A i / σt := by gcongr
-    have hmono := Polynomial.Chebyshev.monotoneOn_eval_T_real (2 * (q - 1)) h1h
-      (h1h.trans hhi) hhi
-    have hgrowth := Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real (2 * (q - 1)) hγ0 hγ1
-    rw [hratio] at hgrowth
-    have hT : (Polynomial.Chebyshev.T ℝ (((2 * (q - 1) : ℕ) : ℤ))).eval
-        (singularValues A i / σt) =
-        (Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).eval
-          (2 * (singularValues A i / σt) ^ 2 - 1) := by
-      rw [← Polynomial.Chebyshev.eval_T_two_mul]
-      push_cast
-      rfl
-    have hexp : Real.exp (2 * ((2 * (q - 1) : ℕ) : ℝ) * Real.sqrt γ) =
-        Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) := by
-      congr 1
-      push_cast [Nat.cast_sub hq]
-      ring
-    rw [hexp] at hgrowth
-    simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
-    rw [hx, ← hT]
-    have hc : 0 < Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2 := by positivity
-    exact (hgrowth.trans hmono).trans (le_abs_self _)
+    exact exp_div_two_le_abs_eval_T_comp A hq hσ hht (by omega)
   · intro x hx
     simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
     refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)

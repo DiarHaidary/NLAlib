@@ -505,6 +505,44 @@ private theorem diagonal_sumElim_const {s t : Type*} [DecidableEq s] [DecidableE
       Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0 (b • (1 : Matrix t t ℝ)) := by
   rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
 
+/-- The average of the cyclic shifts of the tail block in
+`integral_nuclearNorm_diagonal_sub_nystrom_le`:
+the mean over $k$ of $\operatorname{diag}(a, \boldsymbol{\sigma}_2)$ shifted by $k$ is
+$\operatorname{diag}(a\mathbf{I}, \bar\sigma_2\mathbf{I})$, $\bar\sigma_2$ the mean of
+$\boldsymbol{\sigma}_2$. -/
+private theorem sum_smul_submatrix_sumCongr_addRight {s : Type*} [DecidableEq s] {d : ℕ}
+    [NeZero d] (a : ℝ) (σ₂ : Fin d → ℝ) :
+    ∑ k : Fin d, (1 / d : ℝ) • (Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂)).submatrix
+        (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k))
+        (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)) =
+      Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
+        (((∑ j, σ₂ j) / d) • (1 : Matrix (Fin d) (Fin d) ℝ)) := by
+  have hd0 : (0 : ℝ) < d := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne d)
+  set e : Fin d → (s ⊕ Fin d) ≃ (s ⊕ Fin d) := fun k =>
+    Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)
+  rw [← diagonal_sumElim_const]
+  have e1 : ∀ k, (Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂)).submatrix
+      (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)) (Equiv.sumCongr (Equiv.refl s)
+        (Equiv.addRight k)) = Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂ ∘ e k) := fun k =>
+    Matrix.submatrix_diagonal_equiv _ _
+  simp only [e1]
+  ext i j
+  simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.diagonal_apply, smul_eq_mul]
+  split_ifs with hij
+  · subst hij
+    cases i with
+    | inl i =>
+      simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
+        Sum.elim_inl, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+      field_simp
+    | inr j =>
+      simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inr, Equiv.coe_addRight,
+        Sum.elim_inr, ← Finset.mul_sum]
+      rw [show (∑ k : Fin d, σ₂ (j + k)) = ∑ k, σ₂ k from
+        Equiv.sum_comp (Equiv.addLeft j) σ₂]
+      ring
+  · simp
+
 /-- **The diagonal case of the sharp Nyström bound** (Epperly and Webber's §6.3 at a fixed
 eigenbasis): for a standard Gaussian test matrix on $(s \oplus \mathrm{Fin}\,d) \times l$, the
 expected trace error of Nyström for
@@ -553,27 +591,7 @@ private theorem integral_nuclearNorm_diagonal_sub_nystrom_le {Ω' : Type*} {mΩ'
   set b₀ : ℝ := (∑ j, σ₂ j) / d
   have hb₀ : 0 ≤ b₀ := div_nonneg (Finset.sum_nonneg fun j _ => h₂ j) hd0.le
   have hbar : ∑ k, w • Dk k = Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
-      (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ)) := by
-    rw [← diagonal_sumElim_const]
-    have e1 : ∀ k, Dk k = Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂ ∘ e k) := fun k =>
-      Matrix.submatrix_diagonal_equiv _ _
-    simp only [e1]
-    ext i j
-    simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.diagonal_apply, smul_eq_mul]
-    split_ifs with hij
-    · subst hij
-      cases i with
-      | inl i =>
-        simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
-          Sum.elim_inl, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, w]
-        field_simp
-      | inr j =>
-        simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inr, Equiv.coe_addRight,
-          Sum.elim_inr, b₀, w, ← Finset.mul_sum]
-        rw [show (∑ k : Fin d, σ₂ (j + k)) = ∑ k, σ₂ k from
-          Equiv.sum_comp (Equiv.addLeft j) σ₂]
-        ring
-    · simp
+      (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ)) := sum_smul_submatrix_sumCongr_addRight a σ₂
   have hDbar : (Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
       (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ))).PosSemidef := by
     rw [← hbar]
