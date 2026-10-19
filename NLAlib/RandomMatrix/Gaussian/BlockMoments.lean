@@ -182,11 +182,17 @@ theorem integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix [DecidableE
   exact integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂ hrk Sᴴ
 
 /-- **The transposed block bound** (Halko, Martinsson and Tropp 2011, proof of Theorem 10.5,
-conjugate-transposed): under the hypotheses of
-`integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`,
+conjugate-transposed): for a random
+$\mathbf{G} \in \mathbb{R}^{n \times k}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n k) μ`), $\mathbf{V}_1 \in \mathbb{R}^{n \times r}$ and
+$\mathbf{V}_2 \in \mathbb{R}^{n \times s}$ with orthonormal columns and
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, $\lvert r \rvert + 2 \le \lvert k \rvert$
+and any $\mathbf{S} \in \mathbb{R}^{s \times a}$,
 $$\mathbb{E} \|(\mathbf{G}^{\mathsf{H}}\mathbf{V}_1)^{+} (\mathbf{G}^{\mathsf{H}}\mathbf{V}_2)
   \mathbf{S}\|_{\mathsf{F}}^2
 = \frac{\|\mathbf{S}\|_{\mathsf{F}}^2 \lvert r \rvert}{\lvert k \rvert - \lvert r \rvert - 1} \,.$$
+The conjugate transpose of
+`NLAlib.integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`.
 This is the form the Nyström approximation's completion step uses. -/
 theorem integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix [DecidableEq r]
     [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ) {V₁ : Matrix n r ℝ}
@@ -210,17 +216,22 @@ theorem integrable_specNorm_mul_mul_pinv_of_hasLaw_gaussianMatrix [DecidableEq r
     (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
     (S := fun _ => S) measurable_const measurable_pinv (integrable_chevet_pinv hX hV₁ hrk S)
 
-/-- **The range finder's spectral block bound**:
-$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2
-\le \|\mathbf{S}\|_2 \, \mathbb{E} \|\mathbf{G}_1^{+}\|_{\mathsf{F}} +
-\|\mathbf{S}\|_{\mathsf{F}} \, \mathbb{E} \|\mathbf{G}_1^{+}\|_2$ with
-$\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$ and the moments of $\mathbf{G}_1^{+}$, that
-is, under the hypotheses of `integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`,
+/-- **The range finder's spectral block bound**: for a random
+$\mathbf{G} \in \mathbb{R}^{n \times k}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n k) μ`), $\mathbf{V}_1 \in \mathbb{R}^{n \times r}$ and
+$\mathbf{V}_2 \in \mathbb{R}^{n \times s}$ with orthonormal columns and
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, $\lvert r \rvert + 2 \le \lvert k \rvert$
+and any $\mathbf{S} \in \mathbb{R}^{a \times s}$,
 $$\mathbb{E} \|\mathbf{S} (\mathbf{V}_2^{\mathsf{H}}\mathbf{G})
   (\mathbf{V}_1^{\mathsf{H}}\mathbf{G})^{+}\|_2
 \le \|\mathbf{S}\|_2 \sqrt{\frac{\lvert r \rvert}{\lvert k \rvert - \lvert r \rvert - 1}} +
   \|\mathbf{S}\|_{\mathsf{F}} \frac{e}{\lvert k \rvert - \lvert r \rvert}
   \sqrt{\frac{\lvert k \rvert + \lvert r \rvert - 1}{2}} \,.$$
+With $\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$, it comes from
+$\mathbb{E} \|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2
+\le \|\mathbf{S}\|_2 \, \mathbb{E} \|\mathbf{G}_1^{+}\|_{\mathsf{F}} +
+\|\mathbf{S}\|_{\mathsf{F}} \, \mathbb{E} \|\mathbf{G}_1^{+}\|_2$ and the moments of
+$\mathbf{G}_1^{+}$.
 [HalkoMartinssonTropp2011, proof of Theorem 10.6], there with
 $e \sqrt{\lvert k \rvert} / (\lvert k \rvert - \lvert r \rvert)$ in the second term;
 `NLAlib.integral_specNorm_mul_mul_pinv_le_add_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix`
@@ -417,14 +428,20 @@ theorem integrable_specNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix [DecidableE
   simp only [specNorm_pinv_mul_mul_eq]
   exact integrable_specNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂ hrk Sᴴ
 
-/-- **The second spectral moment of the transposed Gaussian block**: under the hypotheses of
-`NLAlib.integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix`, the sketch-and-solve
-noise satisfies <!-- value gaussianPinvSpecNormBound r k -->
+/-- **The second spectral moment of the transposed Gaussian block**: for a random
+$\mathbf{X} \in \mathbb{R}^{n \times k}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n k) μ`), $\mathbf{V}_1 \in \mathbb{R}^{n \times r}$ and
+$\mathbf{V}_2 \in \mathbb{R}^{n \times s}$ with orthonormal columns and
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, $\lvert r \rvert + 2 \le \lvert k \rvert$
+and any $\mathbf{S} \in \mathbb{R}^{s \times a}$,
+with $\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{X}$, $r = \lvert r \rvert$ and
+$k = \lvert k \rvert$, the sketch-and-solve noise
+satisfies <!-- value gaussianPinvSpecNormBound r k -->
 $$\mathbb{E}\|\mathbf{G}_1^{\mathsf{H}+}\mathbf{G}_2^{\mathsf{H}}\mathbf{S}\|_2^2 \le
 \Bigl(\|\mathbf{S}\|_2\sqrt{\tfrac{r}{k-r-1}} +
 \|\mathbf{S}\|_{\mathsf{F}}\,\frac{e}{k - r}\sqrt{(k + r - 1)/2}\Bigr)^2 +
 \|\mathbf{S}\|_2^2\Bigl(\frac{e}{k - r}\sqrt{(k + r - 1)/2}\Bigr)^2\,,$$
-with $\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{X}$ and the constant
+where $\mathbf{G}_1^{\mathsf{H}+} = (\mathbf{G}_1^{\mathsf{H}})^{+}$ and the constant is
 `gaussianPinvSpecNormBound r k`.
 [HalkoMartinssonTropp2011, proof of Theorem 10.6]; [TroppWebber2023, Lemmas B.1, B.3]; there the
 first moment (HMT) or the second without the last term (TW), not transposed. -/

@@ -611,17 +611,21 @@ theorem measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix
   exact add_le_add (hB.trans hexp) hA
 
 /-- **The spectral block tail**, in the shape of [HalkoMartinssonTropp2011, proof of Theorem 10.8]:
-with the hypotheses of
-`NLAlib.measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`, $u \ge 0$ and
-$t > 0$, <!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
-$$\begin{aligned}\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2 \le{}&
-t\Bigl(\|\mathbf{S}\|_2\sqrt{\lvert r\rvert/d} + \frac{e}{\lvert k\rvert - \lvert r\rvert}
-\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}\,\|\mathbf{S}\|_{\mathsf{F}}\Bigr) \\
-&+ ut\,\frac{e}{\lvert k\rvert - \lvert r\rvert}\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}\,
-\|\mathbf{S}\|_2\end{aligned}$$
-outside probability <!-- value gaussianPinvFrobTail {\lvert r\rvert} d t^2 -->
-$$t^{-(\lvert k\rvert - \lvert r\rvert)} +
-\frac{2\sqrt{\lvert r\rvert}\,(d/(2t^2))^{d/2}}{\Gamma(d/2 + 1)} + e^{-u^2/2}\,;$$
+for a random
+$\mathbf{G} \in \mathbb{R}^{n \times k}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n k) μ`), $\mathbf{V}_1 \in \mathbb{R}^{n \times r}$ and
+$\mathbf{V}_2 \in \mathbb{R}^{n \times s}$ with orthonormal columns and
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, the blocks
+$\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$, any $\mathbf{S} \in \mathbb{R}^{a \times s}$,
+writing $r = \lvert r\rvert$ and $k = \lvert k\rvert$ with $r < k$ (`hrk`) and $d = k - r + 1$
+(`hd : Fintype.card r + d = Fintype.card k + 1`), $u \ge 0$ and
+$t > 0$, <!-- value gaussianPinvSpecNormBound r k --> <!-- value gaussianPinvFrobTail r d t^2 -->
+$$\begin{aligned}&\mathbb{P}\Bigl[\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2 >
+t\Bigl(\|\mathbf{S}\|_2\sqrt{r/d} + \frac{e}{k - r}\sqrt{(k + r - 1)/2}\,
+\|\mathbf{S}\|_{\mathsf{F}}\Bigr) +
+ut\,\frac{e}{k - r}\sqrt{(k + r - 1)/2}\,\|\mathbf{S}\|_2\Bigr] \\
+&\qquad\le t^{-(k - r)} + \frac{2\sqrt{r}\,(d/(2t^2))^{d/2}}{\Gamma(d/2 + 1)} + e^{-u^2/2}\,;
+\end{aligned}$$
 the constant is `gaussianPinvSpecNormBound |r| |k|`, the second failure term
 `gaussianPinvFrobTail |r| d (t ^ 2)`. On the good event of $\mathbf{G}_1^{+}$
 (`NLAlib.measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix`, and the trace tail at
@@ -667,15 +671,20 @@ theorem measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix
     nlinarith
 
 /-- **The Frobenius block tail**, in the shape of [HalkoMartinssonTropp2011, proof of
-Theorem 10.7]: with the hypotheses of
-`NLAlib.measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix`, the block
-satisfies <!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
-$$\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_{\mathsf{F}} \le t\sqrt{\lvert r\rvert/d}\,
-\|\mathbf{S}\|_{\mathsf{F}} + ut\,\frac{e}{\lvert k\rvert - \lvert r\rvert}
-\sqrt{(\lvert k\rvert + \lvert r\rvert - 1)/2}\,\|\mathbf{S}\|_2$$
-outside probability <!-- value gaussianPinvFrobTail {\lvert r\rvert} d t^2 -->
-$$t^{-(\lvert k\rvert - \lvert r\rvert)} +
-\frac{2\sqrt{\lvert r\rvert}\,(d/(2t^2))^{d/2}}{\Gamma(d/2 + 1)} + e^{-u^2/2}\,;$$
+Theorem 10.7]: for a random
+$\mathbf{G} \in \mathbb{R}^{n \times k}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n k) μ`), $\mathbf{V}_1 \in \mathbb{R}^{n \times r}$ and
+$\mathbf{V}_2 \in \mathbb{R}^{n \times s}$ with orthonormal columns and
+$\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, the blocks
+$\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$, any $\mathbf{S} \in \mathbb{R}^{a \times s}$,
+writing $r = \lvert r\rvert$ and $k = \lvert k\rvert$ with $r < k$ (`hrk`) and $d = k - r + 1$
+(`hd : Fintype.card r + d = Fintype.card k + 1`), $u \ge 0$ and
+$t > 0$, <!-- value gaussianPinvSpecNormBound r k --> <!-- value gaussianPinvFrobTail r d t^2 -->
+$$\begin{aligned}&\mathbb{P}\Bigl[\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_{\mathsf{F}} >
+t\sqrt{r/d}\,\|\mathbf{S}\|_{\mathsf{F}} + ut\,\frac{e}{k - r}\sqrt{(k + r - 1)/2}\,
+\|\mathbf{S}\|_2\Bigr] \\
+&\qquad\le t^{-(k - r)} + \frac{2\sqrt{r}\,(d/(2t^2))^{d/2}}{\Gamma(d/2 + 1)} + e^{-u^2/2}\,;
+\end{aligned}$$
 the constant is `gaussianPinvSpecNormBound |r| |k|`, the second failure term
 `gaussianPinvFrobTail |r| d (t ^ 2)`. The proof: concentration of the
 $\|\mathbf{S}\|_2\|\mathbf{G}_1^{+}\|_2$-Lipschitz map about the Frobenius mean

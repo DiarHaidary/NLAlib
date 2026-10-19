@@ -176,11 +176,16 @@ theorem integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant [Decidab
   simp only [hfg]
   exact h
 
-/-- **Tails transfer from a rotation-invariant test matrix to the Gaussian**: with the hypotheses
-of `NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`, for every $f$ that
-factors measurably through the range projector and every $c$,
+/-- **Tails transfer from a rotation-invariant test matrix to the Gaussian**: let
+$\mathbf{A} \in \mathbb{R}^{m \times n}$ and let the random $\mathbf{X} \in \mathbb{R}^{n \times k}$
+have a law $\nu$ that is a left unitarily invariant probability measure
+(`IsLeftUnitarilyInvariant ν`) and full column rank almost surely. Then for every
+$f : \mathbb{R}^{n \times k} \to \mathbb{R}$ that factors measurably through the range projector,
+$f(\mathbf{Y}) = g(\mathbf{P}_{\mathbf{A}\mathbf{Y}})$ for all $\mathbf{Y}$ with $g$ measurable,
+and every $c$,
 $\mathbb{P}[f(\mathbf{X}) > c] = \mathbb{P}[f(\mathbf{G}) > c]$ for a standard Gaussian
-$\mathbf{G}$ of the same shape. -/
+$\mathbf{G} \in \mathbb{R}^{n \times k}$ (law `gaussianMatrix n k`). The tail form of
+`NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`. -/
 theorem measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant [DecidableEq n]
     {m : Type*} [Fintype m] {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν]
     [IsLeftUnitarilyInvariant ν] (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
