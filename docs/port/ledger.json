@@ -11403,7 +11403,7 @@
   "stage": "M10"
  },
  "NLAlib.deflatedTraceEstimate": {
-  "new": "NLAlib.HasOrthonormalCols.hutchpp_eq",
+  "new": "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
   "note": "a supplied orthonormal basis Q of the sketch image is the bridge, not a second definition",
   "stage": "TE-2"
  },
@@ -15972,7 +15972,7 @@
  },
  "NLAlib.hutchPlusPlusEstimate": {
   "new": "NLAlib.hutchpp",
-  "note": "basis-free through rangeProjector (A * S), over RCLike; any orthonormal basis of the sketch image through NLAlib.HasOrthonormalCols.hutchpp_eq",
+  "note": "basis-free through rangeProjector (A * S), over RCLike; any orthonormal basis of the sketch image through NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
   "stage": "TE-2"
  },
  "NLAlib.hutchinsonBlock": {
@@ -17840,7 +17840,7 @@
   "stage": "S5"
  },
  "NLAlib.integral_uniform_subset_convex_le_iid": {
-  "new": "ConvexOn.integral_uniformOn_injective_le_integral_pi",
+  "new": "NLAlib.integral_uniformOn_injective_le_integral_pi",
   "stage": "S5"
  },
  "NLAlib.integral_update_neg_rademacherVector": {
@@ -26304,7 +26304,7 @@
   "stage": "S5"
  },
  "NLAlib.uniform_subset_average_convex_le_iid": {
-  "new": "ConvexOn.integral_uniformOn_injective_le_integral_pi",
+  "new": "NLAlib.integral_uniformOn_injective_le_integral_pi",
   "stage": "S5"
  },
  "NLAlib.upper_fromBlocks_eq_diagonal_of_normal": {

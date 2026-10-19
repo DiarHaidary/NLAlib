@@ -121,7 +121,7 @@ theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
   have hXk : ∀ᵐ ω ∂μ, (θ • X k ω).IsHermitian :=
     (h k).ae_isHermitian.mono fun ω hω => (IsSelfAdjoint.all θ).smul hω
   have hL := condExp_re_trace_exp_add_le (ℱ.le k) hHm hHH hXk ((h k).integrable_exp θ hθ)
-  have hpd := Matrix.ae_posDef_condExp (ℱ.le k) ((h k).integrable_exp θ hθ)
+  have hpd := ae_posDef_condExp (ℱ.le k) ((h k).integrable_exp θ hθ)
     (hXk.mono fun ω hω => hω.posDef_exp)
   rw [heq]
   filter_upwards [hL, hpd, (h k).condExp_exp_le θ hθ, hHH, (h k).ae_isHermitian_bound]
@@ -333,7 +333,7 @@ theorem measureReal_exists_specNorm_sum_ge_le_freedman [Nonempty n] {r : Type*} 
     D.continuous.comp_stronglyMeasurable (hS j)
   have hD2 : ∀ j, MemLp (fun ω => dilation (S j ω)) 2 μ := fun j => D.comp_memLp' (hS2 j)
   have hDmean : ∀ j, μ[fun ω => dilation (S j ω) | ℱ j] =ᵐ[μ] 0 := fun j => by
-    filter_upwards [Matrix.condExp_dilation (m := ℱ j) ((hS2 j).integrable one_le_two),
+    filter_upwards [condExp_dilation (m := ℱ j) ((hS2 j).integrable one_le_two),
       hmean j] with ω h1 h2
     rw [h1, h2, Pi.zero_apply, Pi.zero_apply, dilation_zero]
   have hDle : ∀ j, ∀ᵐ ω ∂μ, dilation (S j ω) ≤ L • (1 : Matrix (r ⊕ n) (r ⊕ n) 𝕜) := fun j =>
@@ -344,7 +344,7 @@ theorem measureReal_exists_specNorm_sum_ge_le_freedman [Nonempty n] {r : Type*} 
   have hsq : ∀ᵐ ω ∂μ, ∀ j, μ[fun ω' => dilation (S j ω') ^ 2 | ℱ j] ω =
       Matrix.fromBlocks (μ[fun ω' => S j ω' * (S j ω')ᴴ | ℱ j] ω) 0 0
         (μ[fun ω' => (S j ω')ᴴ * S j ω' | ℱ j] ω) :=
-    ae_all_iff.mpr fun j => Matrix.condExp_dilation_sq (hS2 j)
+    ae_all_iff.mpr fun j => condExp_dilation_sq (hS2 j)
   have hsub : {ω | ∃ k, t ≤ specNorm (∑ j ∈ Finset.range k, S j ω) ∧
       max (specNorm (∑ j ∈ Finset.range k, μ[fun ω' => S j ω' * (S j ω')ᴴ | ℱ j] ω))
         (specNorm (∑ j ∈ Finset.range k, μ[fun ω' => (S j ω')ᴴ * S j ω' | ℱ j] ω)) ≤ v} ≤ᵐ[μ]

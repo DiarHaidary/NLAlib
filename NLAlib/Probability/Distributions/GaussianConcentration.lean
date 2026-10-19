@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 public import NLAlib.Probability.Distributions.GaussianLogSobolev
 public import NLAlib.Probability.SubGaussian.Basic
 
@@ -16,14 +17,13 @@ $L^2$, where $L$ is its Lipschitz constant for the Euclidean norm (Tsirelson, Ib
 Sudakov); the constant is sharp. The general statement is for Mathlib's `stdGaussian E` on a
 Euclidean space; for `f : (n → ℝ) → ℝ` and $\mathbf{g}$ with law `gaussianVector n`, the Lipschitz
 hypothesis is stated on `EuclideanSpace ℝ n`, since `n → ℝ` carries the sup metric, and
-`NLAlib.lipschitzWith_ofLp_iff` turns it into the explicit inequality.
+`EuclideanSpace.lipschitzWith_ofLp_iff` turns it into the explicit inequality.
 
 ## Main results
 
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian`.
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector`.
 * `NLAlib.measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector`: the upper tail.
-* `NLAlib.lipschitzWith_ofLp_iff`.
 
 ## References
 
@@ -39,20 +39,6 @@ open scoped NNReal
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
-
-/-- Lipschitz for the Euclidean norm, as an inequality on `n → ℝ`: $f$ is $L$-Lipschitz on
-`EuclideanSpace ℝ n` if and only if
-$\lvert f(\mathbf{x}) - f(\mathbf{y})\rvert \le L \|\mathbf{x} - \mathbf{y}\|$ for all
-$\mathbf{x}, \mathbf{y}$. -/
-theorem lipschitzWith_ofLp_iff {n : Type*} [Fintype n] {f : (n → ℝ) → ℝ} {L : ℝ≥0} :
-    LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) ↔
-      ∀ x y, |f x - f y| ≤ L * ‖WithLp.toLp 2 (x - y)‖ := by
-  simp only [lipschitzWith_iff_dist_le_mul, dist_eq_norm, Real.norm_eq_abs]
-  constructor
-  · intro h x y
-    simpa only [WithLp.toLp_sub] using h (WithLp.toLp 2 x) (WithLp.toLp 2 y)
-  · intro h x y
-    simpa only [WithLp.toLp_sub, WithLp.toLp_ofLp] using h (WithLp.ofLp x) (WithLp.ofLp y)
 
 section Euclidean
 

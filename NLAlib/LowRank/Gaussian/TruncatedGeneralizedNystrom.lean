@@ -501,7 +501,8 @@ theorem integrable_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_of_hasLaw_gau
   have hm : AEStronglyMeasurable
       (fun ω => frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2) μ :=
     (((continuous_frobNorm.measurable.comp (measurable_const.sub
-      ((measurable_generalizedNystrom A).truncatedSVD k))).pow_const 2).comp_aemeasurable
+      ((measurable_truncatedSVD k).comp
+        (measurable_generalizedNystrom A)))).pow_const 2).comp_aemeasurable
         (hX.prodMk hΨ.aemeasurable)).aestronglyMeasurable
   have hB : Integrable (fun ω => 8 * frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 +
       2 * frobNorm (A - truncatedSVD A k) ^ 2) μ :=

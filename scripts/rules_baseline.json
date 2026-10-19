@@ -42,23 +42,11 @@
    "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
    "NLAlib/Probability/Tail.lean": 1
   },
-  "P8": {
-   "NLAlib/Probability/ConvexOrder.lean": 1,
-   "NLAlib/Probability/MatrixConditionalExpectation.lean": 8,
-   "NLAlib/Probability/MatrixIntegral.lean": 13,
-   "NLAlib/Probability/Measurability/Matrix.lean": 2
-  },
   "P9": {
-   "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 3,
-   "NLAlib/LowRank/Gaussian/BlockKrylovGapless.lean": 2,
-   "NLAlib/LowRank/Gaussian/RangeFinder.lean": 1,
    "NLAlib/Matrix/Majorization/Horn.lean": 1,
    "NLAlib/Polynomial/Approximation/Inverse.lean": 1,
    "NLAlib/Polynomial/Chebyshev/Residual.lean": 4,
-   "NLAlib/Polynomial/Interpolation/Stieltjes.lean": 2,
-   "NLAlib/Probability/Distributions/GaussianConcentration.lean": 1,
-   "NLAlib/Probability/MatrixConcentration/Bernstein.lean": 4,
-   "NLAlib/Probability/MatrixConcentration/Chernoff.lean": 1
+   "NLAlib/Polynomial/Interpolation/Stieltjes.lean": 2
   },
   "S4": {
    "NLAlib/Krylov/Functions/NearOptimality.lean": 1,
@@ -73,17 +61,10 @@
    "NLAlib/RandomMatrix/Gaussian/BlockTail.lean": 1,
    "NLAlib/RandomMatrix/Gaussian/InverseMoments.lean": 2
   },
-  "T2": {
-   "NLAlib/Probability/QuadraticForm/HansonWright/OffDiagonal.lean": 1
-  },
   "T9": {
    "NLAlib/Matrix/Norms/GaugeExamples.lean": 2,
    "NLAlib/Matrix/Norms/UnitarilyInvariant.lean": 3,
    "NLAlib/Probability/MatrixConcentration/Freedman.lean": 2
-  },
-  "T13": {
-   "NLAlib/Estimation/Trace/HutchPlusPlus.lean": 1,
-   "NLAlib/Regression/SketchAndSolve.lean": 2
   }
  }
 }

@@ -14,7 +14,7 @@ rule = "N3"
 reason = "structure-field style API: the relation is the predicate's own, named by the namespace"
 
 [[allow]]
-name = "NLAlib.exists_bernstein_exponent"
+name = "exists_bernstein_exponent"
 rule = "N3"
 reason = "names the optimised exponent θ of Bernstein's argument; the inequality has no token form shorter than the statement"
 

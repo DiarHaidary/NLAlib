@@ -12,9 +12,10 @@ public import Mathlib.Analysis.InnerProductSpace.PiL2
 
 Bridges between the Euclidean norm $\|\mathbf{x}\|$ (`‖WithLp.toLp 2 x‖`) of a vector
 `x : n → 𝕜` and the pairing $\mathbf{x}^{\mathsf{H}}\mathbf{x}$ (`star x ⬝ᵥ x`), the
-Cauchy–Schwarz inequality for the dot product, and the behaviour of that norm under conjugation,
-reindexing, extension by zero, concatenation and scaling by $\lvert k \rvert^{-1/2}$. Upstream
-candidates for `Mathlib.Analysis.InnerProductSpace.PiL2`.
+Cauchy–Schwarz inequality for the dot product, the behaviour of that norm under conjugation,
+reindexing, extension by zero, concatenation and scaling by $\lvert k \rvert^{-1/2}$, and the
+Lipschitz condition for the Euclidean norm read on coordinate vectors. Upstream candidates for
+`Mathlib.Analysis.InnerProductSpace.PiL2`.
 
 ## Main results
 
@@ -38,6 +39,8 @@ candidates for `Mathlib.Analysis.InnerProductSpace.PiL2`.
   $\mathbb{R}$.
 * `EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq`:
   $\|\lvert k \rvert^{-1/2} \mathbf{v}\|^2 = \|\mathbf{v}\|^2 / \lvert k \rvert$.
+* `EuclideanSpace.lipschitzWith_ofLp_iff`: Lipschitz on `EuclideanSpace ℝ n` as an inequality on
+  `n → ℝ`.
 -/
 
 @[expose] public section
@@ -138,5 +141,20 @@ theorem norm_toLp_inv_sqrt_card_smul_sq {k : Type*} [Fintype k] (v : k → 𝕜)
       ‖WithLp.toLp 2 v‖ ^ 2 / Fintype.card k := by
   rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs, inv_pow,
     Real.sq_sqrt (Nat.cast_nonneg _), inv_mul_eq_div]
+
+open scoped NNReal in
+/-- Lipschitz for the Euclidean norm, as an inequality on `n → ℝ`: $f$ is $L$-Lipschitz on
+`EuclideanSpace ℝ n` if and only if
+$\lvert f(\mathbf{x}) - f(\mathbf{y})\rvert \le L \|\mathbf{x} - \mathbf{y}\|$ for all
+$\mathbf{x}, \mathbf{y}$. -/
+theorem lipschitzWith_ofLp_iff {f : (n → ℝ) → ℝ} {L : ℝ≥0} :
+    LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) ↔
+      ∀ x y, |f x - f y| ≤ L * ‖WithLp.toLp 2 (x - y)‖ := by
+  simp only [lipschitzWith_iff_dist_le_mul, dist_eq_norm, Real.norm_eq_abs]
+  constructor
+  · intro h x y
+    simpa only [WithLp.toLp_sub] using h (WithLp.toLp 2 x) (WithLp.toLp 2 y)
+  · intro h x y
+    simpa only [WithLp.toLp_sub, WithLp.toLp_ofLp] using h (WithLp.ofLp x) (WithLp.ofLp y)
 
 end EuclideanSpace

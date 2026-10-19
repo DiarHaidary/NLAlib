@@ -40,7 +40,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*}
 private theorem lipschitzWith_curry (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B)) :
     LipschitzWith L (fun x : EuclideanSpace ℝ (m × n) =>
       f (Matrix.of (Function.curry (WithLp.ofLp x)))) := by
-  refine lipschitzWith_ofLp_iff (f := fun x => f (Matrix.of (Function.curry x))) |>.2 ?_
+  refine EuclideanSpace.lipschitzWith_ofLp_iff
+    (f := fun x => f (Matrix.of (Function.curry x))) |>.2 ?_
   intro x y
   have h := hf (Matrix.of (Function.curry x)) (Matrix.of (Function.curry y))
   rwa [frobNorm_eq_norm_toLp_uncurry] at h

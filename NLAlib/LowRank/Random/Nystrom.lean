@@ -35,7 +35,8 @@ choice `truncatedSVD` makes. Statements about it are stated for any measurable c
 $\mathbf{Y}$ of best approximations, `hY : ∀ ω, IsBestRankApprox (nystrom H (X ω)) k (Y ω)` with
 `hYm : AEStronglyMeasurable Y μ`, and each has its direct form at `truncatedSVD`, which is Borel
 measurable (`NLAlib.measurable_truncatedSVD`), with
-`hYm := ((measurable_nystrom H).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
+`hYm := ((measurable_truncatedSVD k).comp_aemeasurable
+((measurable_nystrom H).comp_aemeasurable hX)).aestronglyMeasurable`.
 
 Design: `docs/design/LowRank-S5.md` §3.2, §8; `docs/design/LowRank-S2c.md` §8 item 8.
 
@@ -174,7 +175,8 @@ theorem _root_.Matrix.PosSemidef.integrable_specNorm_sub_truncatedSVD_nystrom [I
     Integrable (fun ω => specNorm (H - truncatedSVD (nystrom H (X ω)) k)) μ :=
   hH.integrable_specNorm_sub_of_isBestRankApprox_nystrom
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_nystrom H).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_nystrom H).comp_aemeasurable hX)).aestronglyMeasurable
 
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -233,6 +235,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_add_nuclearN
       singularValues H k + ∫ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ∂μ :=
   hH.integral_specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_isBestRankApprox_nystrom hX
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_nystrom H).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_nystrom H).comp_aemeasurable hX)).aestronglyMeasurable
 
 end NLAlib

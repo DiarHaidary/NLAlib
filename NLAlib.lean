@@ -16,6 +16,7 @@ public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Analysis.Real.Sqrt
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.ExpDeriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
@@ -47,9 +48,11 @@ public import NLAlib.ForMathlib.LinearAlgebra.UnitaryGroup
 public import NLAlib.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableSelection
 public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
+public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
+public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping

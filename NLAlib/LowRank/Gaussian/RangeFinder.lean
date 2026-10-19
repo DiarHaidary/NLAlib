@@ -547,7 +547,8 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * frobNorm (A - truncatedSVD A k) ^ 2 :=
   integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix A hX hk
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_rsvd A).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_rsvd A).comp_aemeasurable hX.aemeasurable)).aestronglyMeasurable
 
 /-! ### The normalised spectral bound -/
 

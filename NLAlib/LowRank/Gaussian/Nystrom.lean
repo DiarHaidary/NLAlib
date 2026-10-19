@@ -347,7 +347,8 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_hasLaw
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) :=
   hH.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix hX hk
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_nystrom H).comp_aemeasurable hX.aemeasurable)).aestronglyMeasurable
 
 -- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -452,7 +453,8 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_add_of_ha
         (q : ℝ) / ((Fintype.card l : ℝ) - q - 1) * nuclearNorm (H - truncatedSVD H q) :=
   hH.integral_specNorm_sub_le_add_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix hX
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_nystrom H).comp_aemeasurable hX.aemeasurable)).aestronglyMeasurable
     hq
 
 end NLAlib

@@ -424,7 +424,8 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_isLeft
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) :=
   hH.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant hX hXr hk
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_nystrom H).comp_aemeasurable hX.aemeasurable)).aestronglyMeasurable
 
 namespace SymmetricGauge
 

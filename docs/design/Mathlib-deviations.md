@@ -265,9 +265,14 @@ None of these was approved by the maintainer when it was made. Status is given p
   with `NormedSpace.complexToReal` by `with_reducible_and_instances rfl`, checked), and the Matrix
   layer's `Matrix.instOrderClosedTopology` (scoped to `MatrixOrder`, over `𝕜`) makes Mathlib's
   `integral_mono_ae` apply to the Loewner order. Statements never mention the norm, only the integral, whose value
-  does not depend on it; `NLAlib/Probability/MatrixIntegral.lean` proves the norm-free bridges
-  (`(∫ X) i j = ∫ X · i j`, integrability iff entrywise, trace, conjugate transpose, products,
-  Hermitian and positive semidefinite integrals).
+  does not depend on it; `NLAlib/ForMathlib/MeasureTheory/SpecificCodomains/Matrix.lean` proves
+  the norm-free bridges (`(∫ X) i j = ∫ X · i j`, integrability iff entrywise, trace, conjugate
+  transpose, products, Hermitian, positive semidefinite and positive definite integrals), and
+  `NLAlib/ForMathlib/MeasureTheory/Function/ConditionalExpectation/Matrix.lean` their conditional
+  forms; the bridges about NLAlib's objects (quadratic forms, the functional calculus, the
+  dilation, positive definite conditional expectations) are in
+  `NLAlib/Probability/MatrixIntegral.lean` and
+  `NLAlib/Probability/MatrixConditionalExpectation.lean`.
 - **Why.** Mathlib's integral, conditional-expectation and Jensen API applies as is; the
   alternative, entrywise integrals with their own API, would rebuild conditional expectation and
   Jensen. (Maintainer: D10, 2026-10-14; the scope amended from Frobenius to `L2Operator` on
@@ -281,7 +286,7 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Rule.** For analysis on matrices (integrals, Mathlib's normed API), open only
   `Matrix.Norms.L2Operator` (`CONTRIBUTING.md` §5.1).
 - **Bridges.** `Matrix.integral_apply`, `Matrix.integrable_iff` and the rest of
-  `NLAlib/Probability/MatrixIntegral.lean`.
+  `NLAlib/ForMathlib/MeasureTheory/SpecificCodomains/Matrix.lean`.
 
 ## 14. Unitarily invariant laws of random matrices
 

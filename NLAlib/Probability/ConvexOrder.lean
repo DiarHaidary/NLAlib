@@ -22,7 +22,7 @@ and integration in $a$ give the comparison
 here, is **Hoeffding's comparison**: a population sum $\sum_j \mathbf{a}_{\iota(j)}$ over a
 uniformly random injection $\iota : k \to n$ (sampling without replacement) is dominated in convex
 order by the same sum over $\lvert k \rvert$ i.i.d. uniform indices (sampling with replacement)
-(`ConvexOn.integral_uniformOn_injective_le_integral_pi`). Through one convex function each, it
+(`NLAlib.integral_uniformOn_injective_le_integral_pi`). Through one convex function each, it
 transfers every exponential-moment tail of sampling with replacement to sampling without
 replacement; the matrix Chernoff tails without replacement are the first consumer
 (`NLAlib.Probability.MatrixConcentration.ChernoffWithoutReplacement`).
@@ -30,13 +30,13 @@ replacement; the matrix Chernoff tails without replacement are the first consume
 The values lie in any real Banach space, and $f$ is convex and continuous on a closed convex set
 $s$ holding the values (the positive semidefinite cone for $\operatorname{tr} e^{\theta \cdot}$,
 which is convex only on Hermitian matrices). Hoeffding's comparison is stated with Mathlib objects
-only and declared in the `ConvexOn` namespace for dot notation; it uses the library's API for
-uniform injections (`NLAlib.Probability.Distributions.UniformInjection`), so it stays here.
+only, but its proof uses the library's API for uniform injections
+(`NLAlib.Probability.Distributions.UniformInjection`), so it stays here, in `namespace NLAlib`.
 
 
 ## Main results
 
-* `ConvexOn.integral_uniformOn_injective_le_integral_pi`: Hoeffding's comparison of sampling
+* `NLAlib.integral_uniformOn_injective_le_integral_pi`: Hoeffding's comparison of sampling
   without and with replacement.
 -/
 
@@ -264,7 +264,7 @@ The statement is that of the prototype's `integral_uniform_subset_convex_le_iid`
 `PMF`, `Fin k` and $s$ the whole space); the proof is new, the pattern kernel and two permutation
 averages replacing the prototype's explicit coupling and conditional weights.
 Result: hoeffding-sampling-without-replacement -/
-theorem _root_.ConvexOn.integral_uniformOn_injective_le_integral_pi {k n : Type*} [Fintype k]
+theorem integral_uniformOn_injective_le_integral_pi {k n : Type*} [Fintype k]
     [Fintype n] [MeasurableSpace n] [MeasurableSingletonClass n] (hf : ConvexOn ℝ s f)
     (hfc : ContinuousOn f s) (hs : IsClosed s) (hk : Fintype.card k ≤ Fintype.card n) (A : n → E)
     (hA : ∀ J : k → n, ∑ j, A (J j) ∈ s) :

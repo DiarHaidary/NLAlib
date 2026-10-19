@@ -137,7 +137,7 @@ theorem condExp_re_trace_exp_const_add_le (hm : m ≤ mΩ) {H : Matrix n n 𝕜}
     μ[fun ω => RCLike.re (exp (H + X ω)).trace | m] ≤ᵐ[μ]
       fun ω => RCLike.re (exp (H + cfc Real.log (μ[fun ω => exp (X ω) | m] ω))).trace := by
   have hpd : ∀ᵐ ω ∂μ, (exp (X ω)).PosDef := hX.mono fun ω hω => hω.posDef_exp
-  have hmean := Matrix.ae_posDef_condExp hm hint hpd
+  have hmean := ae_posDef_condExp hm hint hpd
   have heq : (fun ω => RCLike.re (exp (H + cfc Real.log (exp (X ω)))).trace) =ᵐ[μ]
       fun ω => RCLike.re (exp (H + X ω)).trace :=
     hX.mono fun ω hω => by simp only [hω.cfc_log_exp]
@@ -277,7 +277,7 @@ theorem hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (hm : m ≤ mΩ) {X : Ω 
     intro θ hθ
     filter_upwards [hle, hH] with ω hω hωH
     refine exp_smul_le_one_add_smul_add_smul_sq (a := -specNorm (X ω)) ?_ hω
-      fun x hx => exp_mul_le_bernstein hθ.1 (mul_lt_three_of_mem_Ioo hL hθ) hx.2
+      fun x hx => Real.exp_mul_le_bernstein hθ.1 (mul_lt_three_of_mem_Ioo hL hθ) hx.2
     rw [neg_smul]
     exact hωH.neg_specNorm_smul_one_le
   have hint : ∀ θ ∈ Set.Ioo 0 (3 / L), Integrable (fun ω => exp (θ • X ω)) μ := by

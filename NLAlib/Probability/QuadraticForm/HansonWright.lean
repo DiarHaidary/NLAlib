@@ -130,6 +130,8 @@ private lemma hasSubexponentialMGF_quadForm_sub_integral (hind : iIndepFun (fun 
   have := hind.isProbabilityMeasure
   have hD := hasSubexponentialMGF_diag hind h A
   have hO := hasSubexponentialMGF_quadForm_sub_diagonal hind h A
+  rw [Real.nnnorm_of_nonneg (frobNorm_nonneg A), Real.nnnorm_of_nonneg (specNorm_nonneg A),
+    ← Real.toNNReal_of_nonneg, ← Real.toNNReal_of_nonneg] at hO
   have hsq : ∀ i, Integrable (fun ω => A i i * x ω i ^ 2) μ := fun i =>
     (((h i).memLp 2).integrable_sq).const_mul _
   have hEQ : ∫ ω', quadForm A (x ω') ∂μ = ∑ i, A i i * ∫ ω', x ω' i ^ 2 ∂μ := by

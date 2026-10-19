@@ -34,7 +34,8 @@ are stated for any measurable choice $\mathbf{Y}$ of best approximations,
 covers an algorithm's own tie-break, and each has its direct form at `truncatedSVD`, which is
 Borel measurable (`NLAlib.measurable_truncatedSVD`), with
 `hY := fun _ => isBestRankApprox_truncatedSVD _ k` and
-`hYm := ((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
+`hYm := ((measurable_truncatedSVD k).comp_aemeasurable
+((measurable_rsvd A).comp_aemeasurable hX)).aestronglyMeasurable`.
 
 Design: `docs/design/LowRank-S3.md` §3.1, §8 items 6 and 8; `docs/design/LowRank-S2c.md` §8
 item 7.
@@ -274,7 +275,8 @@ theorem integrable_specNorm_sub_truncatedSVD_rsvd_sq [IsFiniteMeasure μ] (A : M
     (hX : AEMeasurable X μ) (k : ℕ) :
     Integrable (fun ω => specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2) μ :=
   integrable_specNorm_sub_sq_of_isBestRankApprox A (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_rsvd A).comp_aemeasurable hX)).aestronglyMeasurable
 
 /-- **Reverse Eckart–Young in expectation**: for a measurable test matrix $\mathbf{X}$ and a
 measurable choice $\mathbf{Y}$ of best rank-$k$ approximations of
@@ -327,7 +329,8 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD
       singularValues A k ^ 2 + ∫ ω, frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ :=
   integral_specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le_of_isBestRankApprox A hX
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_rsvd A).comp_aemeasurable hX)).aestronglyMeasurable
 
 /-! ### Randomized block Krylov iteration -/
 

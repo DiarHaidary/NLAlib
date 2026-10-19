@@ -24,7 +24,7 @@ $$\mathbf{V} = \frac{\lvert k \rvert}{\lvert n \rvert} \sum_i \mathbf{X}_i \,,$$
 and the matrix Chernoff trace bound of the i.i.d. sum with the same mean,
 $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every real $\theta$. It follows
-from Hoeffding's comparison (`ConvexOn.integral_uniformOn_injective_le_integral_pi`) with
+from Hoeffding's comparison (`NLAlib.integral_uniformOn_injective_le_integral_pi`) with
 $f = \operatorname{re} \operatorname{tr} e^{\theta \cdot}$ on the positive semidefinite cone and the
 i.i.d. bound (`NLAlib.HasMatrixMGFBound.integral_re_trace_exp_sum_le`). The trace-form tails of
 `NLAlib.Probability.MatrixConcentration.Chernoff` then give the Chernoff tails of the extreme
@@ -145,7 +145,7 @@ theorem integral_re_trace_exp_sum_le_of_hasLaw_uniformOn_injective
   have hfc : ContinuousOn (fun A : Matrix m m 𝕜 => RCLike.re (exp (θ • A)).trace)
       {A | A.PosSemidef} :=
     (RCLike.continuous_re.comp (hexp.comp (continuous_const_smul θ)).matrix_trace).continuousOn
-  have h2 := hf.integral_uniformOn_injective_le_integral_pi hfc Matrix.isClosed_setOf_posSemidef
+  have h2 := integral_uniformOn_injective_le_integral_pi hf hfc Matrix.isClosed_setOf_posSemidef
     hk X fun J => Matrix.posSemidef_sum _ fun j _ => hpsd (J j)
   -- the i.i.d. bound
   have hind : iIndepFun (fun j (J : k → n) => X (J j))

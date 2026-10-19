@@ -6,19 +6,26 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
-# A ratio inequality for real powers
+# A ratio inequality for real powers, and the Chernoff base
 
 For $0 < a$, $x, y \in [a, a']$, $t \ge 0$ and real $\alpha$, the ratio of
 $z^\alpha / (z + t)$ at $x$ and $y$ is at most $(a'/a)^{\max(\alpha, 1 - \alpha)}$: the kernel
-inequality behind the near-optimality of Krylov methods for $\mathbf{A}^\alpha$. Upstream
-candidate for `Mathlib.Analysis.SpecialFunctions.Pow.Real`.
+inequality behind the near-optimality of Krylov methods for $\mathbf{A}^\alpha$. The base
+$e^s / (1 + s)^{1+s}$ of the Chernoff tails, raised to a real power, in exponential form. The
+power threshold $R^{1/(2p+1)} \le 1 + \varepsilon$ of subspace iteration. Upstream candidates for
+`Mathlib.Analysis.SpecialFunctions.Pow.Real`.
 
 ## Main results
 
 * `Real.rpow_mul_add_le`:
   $x^\alpha (y + t) \le (a'/a)^{\max(\alpha, 1 - \alpha)}\, y^\alpha (x + t)$.
+* `Real.exp_div_rpow_rpow_eq_exp`:
+  $\bigl(e^s / (1 + s)^{1+s}\bigr)^a = e^{(s - (1 + s) \log(1 + s)) a}$.
+* `Real.rpow_one_div_two_mul_add_one_le_one_add`: $R^{1/(2p+1)} \le 1 + \varepsilon$ for
+  $p \ge 2\log(N + 1)/\varepsilon$ and $1 \le R \le 1 + N^2$.
 -/
 
 @[expose] public section
@@ -80,5 +87,36 @@ theorem rpow_mul_add_le {a a' x y t : ℝ} (ha : 0 < a) (hx : x ∈ Set.Icc a a'
     calc x ^ α * (y + t) ≤ x ^ α * (x + t) := by gcongr
       _ = s ^ α * (y ^ α * (x + t)) := by rw [hxα]; ring
       _ ≤ (a' / a) ^ max α (1 - α) * (y ^ α * (x + t)) := by gcongr
+
+/-- The Chernoff tail base in exponential form: for $s > -1$ and real $a$,
+$\bigl(e^s / (1 + s)^{1+s}\bigr)^a = e^{(s - (1 + s) \log(1 + s)) a}$. It turns the source form
+of the Chernoff tails into an exponent to optimise. -/
+theorem exp_div_rpow_rpow_eq_exp {s : ℝ} (hs : 0 < 1 + s) (a : ℝ) :
+    (exp s / (1 + s) ^ (1 + s)) ^ a = exp ((s - (1 + s) * log (1 + s)) * a) := by
+  rw [rpow_def_of_pos (div_pos (exp_pos _) (rpow_pos_of_pos hs _)),
+    log_div (exp_pos _).ne' (rpow_pos_of_pos hs _).ne', log_exp, log_rpow hs]
+
+/-- The power threshold of the Tropp–Webber form of the gapless bound for subspace iteration: for
+$N \ge 0$, $1 \le R \le 1 + N^2$, $0 < \varepsilon \le 1$ and
+$p \ge 2\log(N + 1)/\varepsilon$, $$R^{1/(2p+1)} \le 1 + \varepsilon\,,$$ since
+$\log R \le 2\log(N + 1) \le p\varepsilon$. -/
+theorem rpow_one_div_two_mul_add_one_le_one_add {N R ε : ℝ} {p : ℕ} (hN : 0 ≤ N) (hR1 : 1 ≤ R)
+    (hR : R ≤ 1 + N ^ 2) (hε : 0 < ε) (hε₁ : ε ≤ 1) (hp : 2 * Real.log (N + 1) / ε ≤ p) :
+    R ^ (1 / (2 * (p : ℝ) + 1)) ≤ 1 + ε := by
+  have hpε : 2 * Real.log (N + 1) ≤ p * ε := by rwa [div_le_iff₀ hε] at hp
+  have hlogR0 : 0 ≤ Real.log R := Real.log_nonneg hR1
+  have hlogR : Real.log R ≤ 2 * Real.log (N + 1) := by
+    calc Real.log R ≤ Real.log ((N + 1) ^ 2) := Real.log_le_log (by linarith) (by nlinarith)
+      _ = 2 * Real.log (N + 1) := by rw [Real.log_pow]; norm_num
+  have hden : 0 < 2 * (p : ℝ) + 1 := by positivity
+  have hratio : Real.log R * (1 / (2 * (p : ℝ) + 1)) ≤ Real.log (1 + ε) := by
+    rw [mul_one_div, div_le_iff₀ hden]
+    have := div_two_le_log_one_add hε hε₁
+    have hp0 : (0 : ℝ) ≤ p := Nat.cast_nonneg p
+    nlinarith
+  rw [Real.rpow_def_of_pos (by linarith)]
+  calc Real.exp (Real.log R * (1 / (2 * (p : ℝ) + 1))) ≤ Real.exp (Real.log (1 + ε)) :=
+        Real.exp_le_exp.2 hratio
+    _ = 1 + ε := Real.exp_log (by linarith)
 
 end Real

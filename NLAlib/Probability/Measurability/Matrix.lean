@@ -45,10 +45,10 @@ Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
   `NLAlib.measurable_generalizedNystrom`, `NLAlib.measurable_nystrom`: the randomized SVD and
   (generalized) Nyström as functions of the test matrices.
 * `NLAlib.measurable_svdU`, `NLAlib.measurable_svdV`: the chosen SVD;
-  `NLAlib.measurable_truncatedSVD`, `Measurable.truncatedSVD`, `AEMeasurable.truncatedSVD`: the
-  truncated SVD. With them every theorem stated for a measurable choice of best approximations
-  $\mathbf{Y}$ applies to the truncation of a random output, for instance with
-  `hYm := ((measurable_rsvd A).comp_aemeasurable hX).truncatedSVD k |>.aestronglyMeasurable`.
+  `NLAlib.measurable_truncatedSVD`: the truncated SVD. With it every theorem stated for a
+  measurable choice of best approximations $\mathbf{Y}$ applies to the truncation of a random
+  output, for instance with `hYm := ((measurable_truncatedSVD k).comp_aemeasurable
+  ((measurable_rsvd A).comp_aemeasurable hX)).aestronglyMeasurable`.
 * `NLAlib.measurable_earlyTruncatedRSVD`, `NLAlib.measurable_earlyTruncatedGeneralizedNystrom`:
   the early-truncated randomized SVD and generalized Nyström, built from the truncated SVD of the
   sketch.
@@ -246,19 +246,6 @@ theorem measurable_truncatedSVD (k : ℕ) :
   exact (measurable_svdU.matrix_mul hD.measurable).matrix_mul
     ((continuous_id.matrix_conjTranspose.measurable).comp measurable_svdV)
 
-/-- Truncation preserves measurability: $x \mapsto \llbracket f(x) \rrbracket_k$ is measurable
-for measurable $f$. -/
-theorem _root_.Measurable.truncatedSVD {α : Type*} [MeasurableSpace α] {f : α → Matrix m n 𝕜}
-    (hf : Measurable f) (k : ℕ) : Measurable fun x => truncatedSVD (f x) k :=
-  (measurable_truncatedSVD k).comp hf
-
-/-- Truncation preserves almost-everywhere measurability: $x \mapsto \llbracket f(x) \rrbracket_k$
-is almost everywhere measurable for almost everywhere measurable $f$. -/
-theorem _root_.AEMeasurable.truncatedSVD {α : Type*} [MeasurableSpace α]
-    {μ : MeasureTheory.Measure α} {f : α → Matrix m n 𝕜} (hf : AEMeasurable f μ) (k : ℕ) :
-    AEMeasurable (fun x => truncatedSVD (f x) k) μ :=
-  (measurable_truncatedSVD k).comp_aemeasurable hf
-
 section EarlyTruncation
 
 variable {l p : Type*} [Fintype l] [Fintype p]
@@ -269,7 +256,8 @@ measurable function of the test matrix. -/
 theorem measurable_earlyTruncatedRSVD (A : Matrix m n 𝕜) (k : ℕ) :
     Measurable fun Ω : Matrix n l 𝕜 => earlyTruncatedRSVD A Ω k :=
   (measurable_rangeProjector.comp
-    ((measurable_const.matrix_mul measurable_id).truncatedSVD k)).matrix_mul measurable_const
+    ((measurable_truncatedSVD k).comp
+      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const
 
 /-- Early-truncated generalized Nyström
 $(\mathbf{\Omega}, \mathbf{\Psi}) \mapsto \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega},
@@ -280,7 +268,7 @@ theorem measurable_earlyTruncatedGeneralizedNystrom (A : Matrix m n 𝕜) (k : �
   have hΨ : Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 => ΩΨ.2ᴴ :=
     (continuous_id.matrix_conjTranspose.measurable).comp measurable_snd
   have hT : Measurable fun ΩΨ : Matrix n l 𝕜 × Matrix m p 𝕜 => truncatedSVD (A * ΩΨ.1) k :=
-    (measurable_const.matrix_mul measurable_fst).truncatedSVD k
+    (measurable_truncatedSVD k).comp (measurable_const.matrix_mul measurable_fst)
   simp only [earlyTruncatedGeneralizedNystrom, obliqueProjector]
   exact ((hT.matrix_mul (measurable_pinv.comp (hΨ.matrix_mul hT))).matrix_mul hΨ).matrix_mul
     measurable_const

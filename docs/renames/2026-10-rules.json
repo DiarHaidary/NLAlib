@@ -1,6 +1,6 @@
 {
  "date": "2026-10-20",
- "note": "Rules enforcement, stage 2 (CONTRIBUTING §2, §9.1; docs/rules/stage2-worklist.md). Before v0.1: no deprecated aliases. Rule P8 renames a declaration outside NLAlib into NLAlib; rule P9 moves a general fact to the ForMathlib file of its Mathlib subject, in Mathlib's namespace. Entries with \"removed\": true delete a declaration whose content Mathlib or another declaration already carries (\"new\"); the explorer redirects the old link there. statementChanged lists the declarations (new names) whose statements changed: rule T9 replaces a proof term in a signature by a hypothesis or an existing definition.",
+ "note": "Rules enforcement, stage 2 (CONTRIBUTING §2, §9.1; docs/rules/stage2-worklist.md). Before v0.1: no deprecated aliases. Rule P8 renames a declaration outside NLAlib into NLAlib; rule P9 moves a general fact to the ForMathlib file of its Mathlib subject, in Mathlib's namespace. Entries with \"removed\": true delete a declaration whose content Mathlib or another declaration already carries (\"new\"); the explorer redirects the old link there. statementChanged lists the declarations (new names) whose statements changed: rule T9 replaces a proof term in a signature by a hypothesis or an existing definition; rule T2 writes an ℝ≥0 quantity with ‖·‖₊ instead of Real.toNNReal; rule T13 drops an unused hypothesis (a rename when the namespace came from that hypothesis).",
  "renames": [
   {
    "old": "Commute.complexify",
@@ -63,12 +63,80 @@
    "old": "NLAlib.exists_eq_mul_nodalWeight",
    "new": "Lagrange.exists_eq_mul_nodalWeight",
    "rule": "P9"
+  },
+  {
+   "old": "Matrix.integral_quadForm",
+   "new": "NLAlib.integral_quadForm",
+   "rule": "P8"
+  },
+  {
+   "old": "Matrix.ae_posDef_condExp",
+   "new": "NLAlib.ae_posDef_condExp",
+   "rule": "P8"
+  },
+  {
+   "old": "Matrix.condExp_dilation",
+   "new": "NLAlib.condExp_dilation",
+   "rule": "P8"
+  },
+  {
+   "old": "Matrix.condExp_dilation_sq",
+   "new": "NLAlib.condExp_dilation_sq",
+   "rule": "P8"
+  },
+  {
+   "old": "ConvexOn.integral_uniformOn_injective_le_integral_pi",
+   "new": "NLAlib.integral_uniformOn_injective_le_integral_pi",
+   "rule": "P8"
+  },
+  {
+   "old": "Measurable.truncatedSVD",
+   "new": "NLAlib.measurable_truncatedSVD",
+   "rule": "P8",
+   "removed": true
+  },
+  {
+   "old": "AEMeasurable.truncatedSVD",
+   "new": "NLAlib.measurable_truncatedSVD",
+   "rule": "P8",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.lipschitzWith_ofLp_iff",
+   "new": "EuclideanSpace.lipschitzWith_ofLp_iff",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exp_mul_le_bernstein",
+   "new": "Real.exp_mul_le_bernstein",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.mul_lt_three_of_mem_Ioo",
+   "new": "mul_lt_three_of_mem_Ioo",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.sq_div_two_div_nonneg_of_mem_Ioo",
+   "new": "sq_div_two_div_nonneg_of_mem_Ioo",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_bernstein_exponent",
+   "new": "exists_bernstein_exponent",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exp_div_rpow_rpow_eq_exp",
+   "new": "Real.exp_div_rpow_rpow_eq_exp",
+   "rule": "P9"
   }
  ],
  "statementChanged": [
   "NLAlib.givensHessenbergStep_of_lt",
   "NLAlib.pinv_submatrix_mulVec_single_eq_backSubst",
   "NLAlib.norm_sub_mulVec_pinv_submatrix_mulVec_single_eq",
-  "NLAlib.SymmetricGauge.map_abs"
+  "NLAlib.SymmetricGauge.map_abs",
+  "NLAlib.hasSubexponentialMGF_quadForm_sub_diagonal"
  ]
 }

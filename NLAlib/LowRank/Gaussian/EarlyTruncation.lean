@@ -120,7 +120,8 @@ private theorem measurable_gaussianProjectionFactor_rank_truncatedSVD (A : Matri
     Measurable fun x : Matrix n l ℝ =>
       gaussianProjectionFactor (truncatedSVD (A * x) k).rank c :=
   (measurable_from_nat (f := fun q => gaussianProjectionFactor q c)).comp
-    (measurable_rank.comp ((measurable_const.matrix_mul measurable_id).truncatedSVD k))
+    (measurable_rank.comp ((measurable_truncatedSVD k).comp
+      (measurable_const.matrix_mul measurable_id)))
 
 /-- The completion factor at the rank of the truncated sketch lies in $[1, 1 + p]$. -/
 private theorem gaussianProjectionFactor_rank_truncatedSVD_mem (A : Matrix m n ℝ)

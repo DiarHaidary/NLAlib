@@ -22,8 +22,8 @@ square-integrable $\mathbf{X}_k$ (Tropp 2015, (2.2.5)), the identity that makes 
 statistic $\|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$ of the matrix Bernstein inequality the variance
 of the sum. Expectations are
 Bochner integrals under `open scoped Matrix.Norms.L2Operator`
-(`NLAlib/Probability/MatrixIntegral.lean`); square integrability is `MemLp _ 2 μ`, which does
-not depend on the norm chosen.
+(`NLAlib/ForMathlib/MeasureTheory/SpecificCodomains/Matrix.lean`); square integrability is
+`MemLp _ 2 μ`, which does not depend on the norm chosen.
 
 ## Main results
 

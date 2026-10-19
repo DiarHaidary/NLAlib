@@ -247,7 +247,7 @@ theorem measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDimension_of_integra
   refine hlap.trans ((div_le_div_of_nonneg_right hE (by linarith)).trans ?_)
   refine (mul_sub_one_div_sub_one_le (intrinsicDimension_nonneg_of_posSemidef hV)
     (Real.exp_pos _).le hX2).trans_eq ?_
-  rw [exp_div_rpow_rpow_eq_exp h1δ, mul_div_assoc, ← Real.exp_sub]
+  rw [Real.exp_div_rpow_rpow_eq_exp h1δ, mul_div_assoc, ← Real.exp_sub]
   congr 2
   rw [htdef, hθdef]
   field_simp

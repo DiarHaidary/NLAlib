@@ -393,7 +393,8 @@ private lemma hasSubexponentialMGF_of_lintegral_le {Y : Ω → ℝ} {v b : ℝ�
 with proxy $c$, is sub-exponential with variance proxy $18 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and
 scale $12 c \|\mathbf{A}\|_2$. The off-diagonal part
 $\sum_{i \ne j} \mathbf{A}_{i,j} \mathbf{x}_i \mathbf{x}_j$ is written
-`quadForm (A - diagonal (diag A)) x`; the norms are those of $\mathbf{A}$ itself.
+`quadForm (A - diagonal (diag A)) x`; the norms are those of $\mathbf{A}$ itself, in `ℝ≥0` as
+`‖frobNorm A‖₊` and `‖specNorm A‖₊`.
 [Vershynin2018, proof of Theorem 6.2.1]; the off-diagonal step of the Hanson–Wright inequality,
 with the decoupling constant $4$ of the random cuts and explicit constants in place of the
 source's unspecified ones. -/
@@ -401,22 +402,22 @@ theorem hasSubexponentialMGF_quadForm_sub_diagonal [DecidableEq n]
     (hind : iIndepFun (fun i ω => x ω i) μ) (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ)
     (A : Matrix n n ℝ) :
     HasSubexponentialMGF (fun ω => quadForm (A - Matrix.diagonal A.diag) (x ω))
-      (18 * c ^ 2 * (frobNorm A).toNNReal ^ 2) (12 * c * (specNorm A).toNNReal) μ := by
+      (18 * c ^ 2 * ‖frobNorm A‖₊ ^ 2) (12 * c * ‖specNorm A‖₊) μ := by
   have hxm : AEMeasurable x μ := aemeasurable_pi_lambda _ fun i => (h i).aemeasurable
   have hY : AEMeasurable (fun ω => quadForm (A - Matrix.diagonal A.diag) (x ω)) μ := by
     have h' := (continuous_quadForm (A - Matrix.diagonal A.diag)).measurable.comp_aemeasurable hxm
     exact h'
   refine hasSubexponentialMGF_of_lintegral_le hY fun l hl => ?_
-  have hb : ((12 * c * (specNorm A).toNNReal : ℝ≥0) : ℝ) = 12 * c * specNorm A := by
+  have hb : ((12 * c * ‖specNorm A‖₊ : ℝ≥0) : ℝ) = 12 * c * specNorm A := by
     push_cast
-    rw [Real.coe_toNNReal _ (specNorm_nonneg A)]
+    rw [Real.norm_of_nonneg (specNorm_nonneg A)]
   have hl' : 12 * (c * specNorm A * |l|) ≤ 1 := by
     rw [hb] at hl
     linarith
   refine (lintegral_exp_quadForm_sub_diagonal_le hind h A hl').trans (le_of_eq ?_)
   congr 2
   push_cast
-  rw [Real.coe_toNNReal _ (frobNorm_nonneg A)]
+  rw [Real.norm_of_nonneg (frobNorm_nonneg A)]
   ring
 
 end NLAlib

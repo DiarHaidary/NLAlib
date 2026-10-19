@@ -7,19 +7,27 @@ module
 
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity
 public import Mathlib.Tactic.Ring
 
 /-!
-# The rational parametrisation of the circle
+# The rational parametrisation of the circle, the Bernstein exponent, a tail weight
 
 For every $t$ in an ordered field, $c = (1 - t^2) / (1 + t^2)$ and $s = 2t / (1 + t^2)$ satisfy
 $c^2 + s^2 = 1$: the coefficients of a plane rotation as rational functions of one parameter.
-Upstream candidate for `Mathlib.Algebra.Order.Field.Basic`.
+The Bernstein coefficient $g(\theta) = (\theta^2/2)/(1 - L\theta/3)$ is nonnegative on
+$(0, 3/L)$, and the choice of $\theta$ there that turns $-\theta t + g(\theta) v$ into the
+Bernstein exponent $-(t^2/2)/(v + Lt/3)$. The weight $r/(\ell - r - 1)$ of the Gaussian
+range-finder bounds is nonnegative for $r + 2 \le \ell$. Upstream candidates for
+`Mathlib.Algebra.Order.Field.Basic`.
 
 ## Main results
 
 * `one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq`: $c^2 + s^2 = 1$.
+* `mul_lt_three_of_mem_Ioo`, `sq_div_two_div_nonneg_of_mem_Ioo`: the Bernstein coefficient.
+* `exists_bernstein_exponent`: the optimised exponent of the Bernstein tail.
+* `natCast_div_sub_sub_one_nonneg`: $0 \le r/(\ell - r - 1)$.
 -/
 
 @[expose] public section
@@ -33,3 +41,61 @@ theorem one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq {K : Type*} [
   have hden : 1 + t ^ 2 ≠ 0 := ne_of_gt (by positivity)
   field_simp
   ring
+
+section Bernstein
+
+variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+
+/-- On $(0, 3/L)$, $L\theta < 3$: the Bernstein coefficient $(\theta^2/2)/(1 - L\theta/3)$ has a
+positive denominator. -/
+theorem mul_lt_three_of_mem_Ioo {L θ : K} (hL : 0 < L) (hθ : θ ∈ Set.Ioo 0 (3 / L)) :
+    L * θ < 3 := by
+  have := hθ.2
+  rw [lt_div_iff₀ hL] at this
+  linarith
+
+/-- On $(0, 3/L)$, the Bernstein coefficient $(\theta^2/2)/(1 - L\theta/3)$ is nonnegative. -/
+theorem sq_div_two_div_nonneg_of_mem_Ioo {L θ : K} (hL : 0 < L) (hθ : θ ∈ Set.Ioo 0 (3 / L)) :
+    0 ≤ θ ^ 2 / 2 / (1 - L * θ / 3) :=
+  div_nonneg (by positivity) (by linarith [mul_lt_three_of_mem_Ioo hL hθ])
+
+/-- The choice of $\theta$ in the Bernstein tail: for $L > 0$, $v \ge 0$ and $t > 0$, some
+$\theta \in (0, 3/L)$ ($\theta = t / (v + Lt/3)$, or $\theta = 3/(2L)$ when $v = 0$) gives
+$-\theta t + g(\theta) v \le -(t^2/2)/(v + Lt/3)$, with $g(\theta) = (\theta^2/2)/(1 - L\theta/3)$.
+-/
+theorem exists_bernstein_exponent {L v t : K} (hL : 0 < L) (hv : 0 ≤ v) (ht : 0 < t) :
+    ∃ θ ∈ Set.Ioo 0 (3 / L),
+      -θ * t + θ ^ 2 / 2 / (1 - L * θ / 3) * v ≤ -(t ^ 2 / 2) / (v + L * t / 3) := by
+  rcases hv.eq_or_lt with rfl | hv'
+  · refine ⟨3 / (2 * L), ⟨by positivity, ?_⟩, le_of_eq ?_⟩
+    · rw [div_lt_div_iff₀ (by positivity) hL]
+      nlinarith
+    · field_simp
+      ring
+  set D := v + L * t / 3 with hD
+  have hD0 : 0 < D := by positivity
+  refine ⟨t / D, ⟨div_pos ht hD0, ?_⟩, le_of_eq ?_⟩
+  · rw [div_lt_div_iff₀ hD0 hL, hD]
+    nlinarith
+  · have hq : 1 - L * (t / D) / 3 = v / D := by
+      field_simp
+      rw [hD]
+      ring
+    rw [hq]
+    field_simp
+    ring
+
+end Bernstein
+
+section Cast
+
+variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+
+/-- The tail weight $r/(\ell - r - 1)$ of the Gaussian range-finder bounds is nonnegative for
+$r + 2 \le \ell$ (casts to an ordered field). -/
+theorem natCast_div_sub_sub_one_nonneg {r l : ℕ} (hl : r + 2 ≤ l) :
+    0 ≤ (r : K) / ((l : K) - r - 1) := by
+  have hl' : (r : K) + 2 ≤ l := by exact_mod_cast hl
+  exact div_nonneg (Nat.cast_nonneg _) (by linarith)
+
+end Cast
