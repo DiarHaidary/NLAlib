@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Normed.Lp.PiLp
+public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.Matrix.Norms.SymmetricGauge
 
 /-!
@@ -83,7 +84,7 @@ private theorem lpFun_zero {q : ℝ≥0∞} (hq : 1 ≤ q) : lpFun q 0 = 0 := by
 private theorem lpFun_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (x y : ℕ →₀ ℝ) :
     lpFun q (x + y) ≤ lpFun q x + lpFun q y := by
   have := Fact.mk hq
-  obtain ⟨N, hx, hy⟩ := exists_forall_le_apply_eq_zero x y
+  obtain ⟨N, hx, hy⟩ := Finsupp.exists_forall_le_apply_eq_zero x y
   have hxy : ∀ i, N ≤ i → (x + y) i = 0 := fun i hi => by
     rw [Finsupp.add_apply, hx i hi, hy i hi, add_zero]
   rw [lpFun_eq_norm_toLp hq hx, lpFun_eq_norm_toLp hq hy, lpFun_eq_norm_toLp hq hxy]
@@ -92,7 +93,7 @@ private theorem lpFun_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (x y : ℕ →₀ �
 private theorem lpFun_smul {q : ℝ≥0∞} (hq : 1 ≤ q) (c : ℝ) (x : ℕ →₀ ℝ) :
     lpFun q (c • x) = ‖c‖ * lpFun q x := by
   have := Fact.mk hq
-  obtain ⟨N, hx, -⟩ := exists_forall_le_apply_eq_zero x x
+  obtain ⟨N, hx, -⟩ := Finsupp.exists_forall_le_apply_eq_zero x x
   have hcx : ∀ i, N ≤ i → (c • x) i = 0 := fun i hi => by
     rw [Finsupp.smul_apply, hx i hi, smul_zero]
   rw [lpFun_eq_norm_toLp hq hx, lpFun_eq_norm_toLp hq hcx]
@@ -105,7 +106,7 @@ private theorem lpFun_neg {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →₀ ℝ) :
 private theorem eq_zero_of_lpFun_eq_zero {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →₀ ℝ)
     (h : lpFun q x = 0) : x = 0 := by
   have := Fact.mk hq
-  obtain ⟨N, hx, -⟩ := exists_forall_le_apply_eq_zero x x
+  obtain ⟨N, hx, -⟩ := Finsupp.exists_forall_le_apply_eq_zero x x
   rw [lpFun_eq_norm_toLp hq hx, norm_eq_zero] at h
   ext i
   obtain hi | hi := lt_or_ge i N
@@ -279,7 +280,7 @@ theorem sum_abs_le_kyFanGauge {k : ℕ} (hk : k ≠ 0) (x : ℕ →₀ ℝ) {s :
 
 /-- A non-increasing finitely supported sequence is nonnegative. -/
 private theorem nonneg_of_antitone {x : ℕ →₀ ℝ} (hx : Antitone x) (i : ℕ) : 0 ≤ x i := by
-  obtain ⟨N, hN, -⟩ := exists_forall_le_apply_eq_zero x x
+  obtain ⟨N, hN, -⟩ := Finsupp.exists_forall_le_apply_eq_zero x x
   exact (hN (max i N) (le_max_right i N)).symm.trans_le (hx (le_max_left i N))
 
 /-- The Ky Fan $k$-gauge of a non-increasing sequence is the sum of its first $k$ entries. A
@@ -291,7 +292,7 @@ theorem kyFanGauge_apply_of_antitone {k : ℕ} (hk : k ≠ 0) {x : ℕ →₀ �
     Finset.sum_congr rfl fun i _ => abs_of_nonneg (hx0 i)
   refine le_antisymm (kyFanFun_le fun s hs => ?_) ?_
   · calc ∑ i ∈ s, |x i| = ∑ i ∈ s, x i := habs s
-      _ ≤ ∑ i ∈ Finset.range s.card, x i := sum_le_sum_range_card_of_antitone hx s
+      _ ≤ ∑ i ∈ Finset.range s.card, x i := Finset.sum_le_sum_range_card_of_antitone hx s
       _ ≤ ∑ i ∈ Finset.range k, x i :=
         Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono hs) fun i _ _ => hx0 i
   · rw [← habs]

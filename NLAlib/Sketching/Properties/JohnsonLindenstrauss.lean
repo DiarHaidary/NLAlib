@@ -9,6 +9,7 @@ public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Data.Sym.Card
 public import NLAlib.ForMathlib.Data.Finset.Max
+public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
 public import NLAlib.Matrix.Norms.Net
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.Tail
@@ -438,7 +439,7 @@ theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] {p : Type*} [Fin
       _ ≤ _ := le_mul_of_one_le_left hδ h9
   obtain ⟨net, hcard, hunit, hnet⟩ :=
     exists_finset_specNorm_le_div_of_isHermitian 𝕜 p (ε := 1 / 4) (by norm_num) (by norm_num)
-  rw [finrank_real_fun] at hcard
+  rw [Module.finrank_fun] at hcard
   norm_num at hcard
   refine hU.hasSubspaceEmbedding_of_measureReal_le ?_
   have hsub : {ω | 2 * ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)} ⊆

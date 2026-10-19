@@ -163,7 +163,7 @@ theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : I
   · have key : pinv H *ᵥ Pi.single 0 1 =
         backSubst ((givensHessenbergR H).submatrix Fin.castSucc id)
           (fun i => ((givensHessenbergQ H)ᴴ *ᵥ Pi.single 0 1) i.castSucc) :=
-      pinv_submatrix_mulVec_single_eq_backSubst hHH le_rfl
+      pinv_submatrix_mulVec_single_eq_backSubst hHH le_rfl le_rfl
         ((injective_mulVec_mgsArnoldiHessenberg_iff hA r q).mpr hq)
     rw [gmresIterate_eq_mgsArnoldiMatrix, key]
   · set ν := krylovGrade A r with hν
@@ -174,7 +174,7 @@ theorem gmresIterate_eq_backSubst_givensHessenberg {A : Matrix n n 𝕜} (hA : I
       ← gmresIterate_eq_of_krylovGrade_le hA hxs x₀ (le_refl ν), gmresIterate_eq_mgsArnoldiMatrix]
     have hsub : H.submatrix (Fin.castLE (Nat.succ_le_succ hq.le)) (Fin.castLE hq.le) =
         mgsArnoldiHessenberg A r ν := rfl
-    have key := pinv_submatrix_mulVec_single_eq_backSubst hHH hq.le
+    have key := pinv_submatrix_mulVec_single_eq_backSubst hHH hq.le (Nat.succ_le_succ hq.le)
       (hsub ▸ (injective_mulVec_mgsArnoldiHessenberg_iff hA r ν).mpr le_rfl)
     rw [hsub] at key
     rw [key, Matrix.mulVec_eq_submatrix_castLE_mulVec hq.le (mgsArnoldiMatrix A r q)
@@ -217,7 +217,7 @@ theorem norm_sub_mulVec_gmresIterate_eq_norm_givensHessenbergQ {A : Matrix n n �
   · have key : ‖WithLp.toLp 2 (Pi.single 0 1 - H *ᵥ (pinv H *ᵥ Pi.single 0 1))‖ =
         ‖((givensHessenbergQ H)ᴴ *ᵥ Pi.single 0 1) (Fin.last q)‖ :=
       norm_sub_mulVec_pinv_submatrix_mulVec_single_eq
-        (isUpperHessenberg_mgsArnoldiHessenberg A r q) le_rfl
+        (isUpperHessenberg_mgsArnoldiHessenberg A r q) le_rfl le_rfl
         ((injective_mulVec_mgsArnoldiHessenberg_iff hA r q).mpr hq.le)
     have hQ : HasOrthonormalCols (mgsArnoldiMatrix A r (q + 1)) := by
       rw [mgsArnoldiMatrix_eq_arnoldiMatrix]

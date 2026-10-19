@@ -395,18 +395,13 @@ noncomputable def givensHessenbergQ (H : Matrix (Fin m) (Fin p) 𝕜) : Matrix (
 noncomputable def givensHessenbergR (H : Matrix (Fin m) (Fin p) 𝕜) : Matrix (Fin m) (Fin p) 𝕜 :=
   (givensHessenbergState H p).2
 
-/-- The two coordinates of the plane of a step are distinct. -/
-theorem givensHessenbergStep_plane_ne {k : ℕ} (hk : k + 1 < m) :
-    (⟨k, by omega⟩ : Fin m) ≠ ⟨k + 1, hk⟩ := by
-  exact Fin.ne_of_val_ne (Nat.succ_ne_self k).symm
-
 /-- The rotation of a step inside the matrix, written out: the Givens rotation in the plane
 $(k, k + 1)$ with the coefficients of $(\mathbf{W}_{k,k}, \mathbf{W}_{k+1,k})$. -/
-theorem givensHessenbergStep_of_lt (W : Matrix (Fin m) (Fin p) 𝕜) {k : ℕ} (hm : k + 1 < m)
-    (hp : k < p) :
-    givensHessenbergStep W k = givens ⟨k, by omega⟩ ⟨k + 1, hm⟩
-      (givensCoeffs (W ⟨k, by omega⟩ ⟨k, hp⟩) (W ⟨k + 1, hm⟩ ⟨k, hp⟩)).1
-      (givensCoeffs (W ⟨k, by omega⟩ ⟨k, hp⟩) (W ⟨k + 1, hm⟩ ⟨k, hp⟩)).2 := by
+theorem givensHessenbergStep_of_lt (W : Matrix (Fin m) (Fin p) 𝕜) {k : ℕ} (hk : k < m)
+    (hm : k + 1 < m) (hp : k < p) :
+    givensHessenbergStep W k = givens ⟨k, hk⟩ ⟨k + 1, hm⟩
+      (givensCoeffs (W ⟨k, hk⟩ ⟨k, hp⟩) (W ⟨k + 1, hm⟩ ⟨k, hp⟩)).1
+      (givensCoeffs (W ⟨k, hk⟩ ⟨k, hp⟩) (W ⟨k + 1, hm⟩ ⟨k, hp⟩)).2 := by
   rw [givensHessenbergStep, dif_pos ⟨hm, hp⟩]
   rfl
 
@@ -415,7 +410,7 @@ theorem hasOrthonormalCols_givensHessenbergStep (W : Matrix (Fin m) (Fin p) 𝕜
     HasOrthonormalCols (givensHessenbergStep W k) := by
   unfold givensHessenbergStep
   split_ifs with h
-  · exact hasOrthonormalCols_givensOf (givensHessenbergStep_plane_ne h.1) _
+  · exact hasOrthonormalCols_givensOf (Fin.ne_of_val_ne (Nat.succ_ne_self k).symm) _
   · exact hasOrthonormalCols_one
 
 /-- Step $k$ changes only rows $k$ and $k + 1$. -/
@@ -436,13 +431,15 @@ theorem givensHessenbergStep_mul_apply_of_apply_eq_zero {l : Type*}
   · by_cases h : k + 1 < m ∧ k < p
     · have h0 : M ⟨k, by omega⟩ b = 0 := hb _ (Or.inl rfl)
       have h1 : M ⟨k + 1, h.1⟩ b = 0 := hb _ (Or.inr rfl)
-      rw [givensHessenbergStep_of_lt W h.1 h.2, hb a ha]
+      have hne : (⟨k, by omega⟩ : Fin m) ≠ ⟨k + 1, h.1⟩ :=
+        Fin.ne_of_val_ne (Nat.succ_ne_self k).symm
+      rw [givensHessenbergStep_of_lt W (by omega) h.1 h.2, hb a ha]
       rcases ha with ha | ha
       · rw [show a = ⟨k, by omega⟩ from Fin.ext ha,
-          givens_mul_apply_left (givensHessenbergStep_plane_ne h.1), h0, h1, mul_zero, mul_zero,
+          givens_mul_apply_left hne, h0, h1, mul_zero, mul_zero,
           add_zero]
       · rw [show a = ⟨k + 1, h.1⟩ from Fin.ext ha,
-          givens_mul_apply_right (givensHessenbergStep_plane_ne h.1), h0, h1, mul_zero, mul_zero,
+          givens_mul_apply_right hne, h0, h1, mul_zero, mul_zero,
           add_zero]
     · rw [givensHessenbergStep, dif_neg h, Matrix.one_mul]
   · push Not at ha
@@ -499,8 +496,9 @@ private theorem givensHessenbergStep_mul_apply_eq_zero_of_le {l : Type*}
     (ha : r ≤ (a : ℕ)) : (givensHessenbergStep W k * X) a b = 0 := by
   by_cases hak : (a : ℕ) = k ∨ (a : ℕ) = k + 1
   · by_cases h : k + 1 < m ∧ k < p
-    · rw [givensHessenbergStep_of_lt W h.1 h.2]
-      have hne := givensHessenbergStep_plane_ne h.1
+    · rw [givensHessenbergStep_of_lt W (by omega) h.1 h.2]
+      have hne : (⟨k, by omega⟩ : Fin m) ≠ ⟨k + 1, h.1⟩ :=
+        Fin.ne_of_val_ne (Nat.succ_ne_self k).symm
       rcases hak with hak | hak
       · rw [show a = ⟨k, by omega⟩ from Fin.ext hak, givens_mul_apply_left hne,
           hX _ (by simp only; omega), hX _ (by simp only; omega), mul_zero, mul_zero, add_zero]

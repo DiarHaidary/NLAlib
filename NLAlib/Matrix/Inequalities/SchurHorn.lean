@@ -203,7 +203,7 @@ $\mathbf{x}_p$ on the diagonal, keeping $\mathbf{x}$ majorized. -/
 private theorem exists_majorized_transfer {ι : Type*} [Fintype ι] [DecidableEq ι] {x y : ι → ℝ}
     (h : Majorized x y) {s : Finset ι} (hs : ∀ k ∉ s, x k = y k) {p : ι} (hp : p ∈ s) :
     ∃ i ∈ s, ∃ j ∈ s, y j ≤ x p ∧ x p ≤ y i ∧ Majorized x (transfer y i j (y i - x p)) := by
-  obtain ⟨e, he⟩ := exists_equiv_antitone_comp fun k : s => y k
+  obtain ⟨e, he⟩ := Fintype.exists_equiv_antitone_comp fun k : s => y k
   have h' := (majorized_comp_equiv_iff e).mpr ((majorized_subtype_iff hs).mpr h)
   obtain ⟨i, j, hj, hi, hmaj⟩ := exists_majorized_transfer_of_antitone he h' (e.symm ⟨p, hp⟩)
   simp only [Function.comp_apply, Equiv.apply_symm_apply] at hj hi hmaj

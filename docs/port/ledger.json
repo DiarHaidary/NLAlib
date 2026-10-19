@@ -12779,7 +12779,7 @@
   "stage": "M2"
  },
  "NLAlib.exists_finset_sphere_net": {
-  "new": "NLAlib.exists_finite_isCover_sphere",
+  "new": "Metric.exists_finset_isCover_sphere_card_le",
   "stage": "M2"
  },
  "NLAlib.exists_frame_projector_of_isHermitian_of_isIdempotentElem": {
@@ -24566,7 +24566,7 @@
   "stage": "M5"
  },
  "NLAlib.sq_rational_rotation_coefficients": {
-  "new": "NLAlib.sq_div_add_sq_div_one_add_sq",
+  "new": "one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq",
   "stage": "M1"
  },
  "NLAlib.sq_singularValues_eq_eigenvalues₀": {

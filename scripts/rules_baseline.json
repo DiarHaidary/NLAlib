@@ -42,15 +42,7 @@
    "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
    "NLAlib/Probability/Tail.lean": 1
   },
-  "D1": {},
-  "D2": {},
-  "G1": {},
-  "M2": {},
   "P8": {
-   "NLAlib/Matrix/Basic/Projector.lean": 1,
-   "NLAlib/Matrix/Functions/Complexification.lean": 1,
-   "NLAlib/Matrix/Functions/Polynomial.lean": 1,
-   "NLAlib/Matrix/Norms/Net.lean": 1,
    "NLAlib/Probability/ConvexOrder.lean": 1,
    "NLAlib/Probability/MatrixConditionalExpectation.lean": 8,
    "NLAlib/Probability/MatrixIntegral.lean": 13,
@@ -60,13 +52,7 @@
    "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 3,
    "NLAlib/LowRank/Gaussian/BlockKrylovGapless.lean": 2,
    "NLAlib/LowRank/Gaussian/RangeFinder.lean": 1,
-   "NLAlib/Matrix/Basic/PlaneRotation.lean": 1,
-   "NLAlib/Matrix/Factorizations/GaussState.lean": 1,
-   "NLAlib/Matrix/Factorizations/Givens.lean": 1,
-   "NLAlib/Matrix/Majorization/Basic.lean": 2,
    "NLAlib/Matrix/Majorization/Horn.lean": 1,
-   "NLAlib/Matrix/Norms/Net.lean": 3,
-   "NLAlib/Matrix/Norms/SymmetricGauge.lean": 1,
    "NLAlib/Polynomial/Approximation/Inverse.lean": 1,
    "NLAlib/Polynomial/Approximation/Stieltjes.lean": 1,
    "NLAlib/Polynomial/Chebyshev/Residual.lean": 4,
@@ -93,10 +79,7 @@
    "NLAlib/Probability/QuadraticForm/HansonWright/OffDiagonal.lean": 1
   },
   "T9": {
-   "NLAlib/Matrix/Factorizations/Givens.lean": 2,
-   "NLAlib/Matrix/Factorizations/GivensHessenberg.lean": 2,
    "NLAlib/Matrix/Norms/GaugeExamples.lean": 2,
-   "NLAlib/Matrix/Norms/SymmetricGauge.lean": 1,
    "NLAlib/Matrix/Norms/UnitarilyInvariant.lean": 3,
    "NLAlib/Probability/MatrixConcentration/Freedman.lean": 2
   },

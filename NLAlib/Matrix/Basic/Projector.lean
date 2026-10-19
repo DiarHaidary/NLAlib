@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Star.StarProjection
 public import Mathlib.Analysis.InnerProductSpace.Adjoint
 public import Mathlib.Analysis.Matrix.Order
+public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Hermitian
 public import NLAlib.Matrix.Basic.Gram
 public import NLAlib.Matrix.Basic.Orthonormal
 
@@ -56,11 +57,6 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*}
 
 /-! ### Star projections of matrices -/
-
-/-- A matrix is a star projection exactly when it is idempotent and Hermitian. -/
-theorem _root_.Matrix.isStarProjection_iff [Fintype m] {P : Matrix m m 𝕜} :
-    IsStarProjection P ↔ P * P = P ∧ P.IsHermitian :=
-  _root_.isStarProjection_iff P
 
 /-- A star projection is a Hermitian matrix. -/
 theorem _root_.IsStarProjection.isHermitian [Fintype m] {P : Matrix m m 𝕜}

@@ -305,13 +305,14 @@ private theorem givensHessenbergState_eq_minresRot
   | succ j ih =>
     obtain ⟨ih1, ih2⟩ := ih (by omega)
     have hjk : j < k := by omega
-    have hne := givensHessenbergStep_plane_ne (m := k + 1) (k := j) (by omega)
+    have hne : (⟨j, by omega⟩ : Fin (k + 1)) ≠ ⟨j + 1, by omega⟩ :=
+      Fin.ne_of_val_ne (Nat.succ_ne_self j).symm
     have e1 : minresRot A S j j j = minresGammaBar A (S j) := by simp [minresRot]
     have e2 : minresRot A S j (j + 1) j = minresBeta (S (j + 1)) := by
       simp (disch := omega) only [minresRot, if_pos, if_neg, ite_true]
     have hG : givensHessenbergStep (givensHessenbergState H j).2 j =
         givens ⟨j, by omega⟩ ⟨j + 1, by omega⟩ (S (j + 1)).c₁ (S (j + 1)).s₁ := by
-      rw [givensHessenbergStep_of_lt _ (by omega) hjk, ih1, ih1]
+      rw [givensHessenbergStep_of_lt _ (by omega) (by omega) hjk, ih1, ih1]
       dsimp only
       rw [e1, e2, hS j]
       rfl

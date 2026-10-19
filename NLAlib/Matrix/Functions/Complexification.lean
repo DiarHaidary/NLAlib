@@ -148,8 +148,8 @@ theorem complexify_eq_self (A : Matrix m n ℂ) : complexify A = A := by
   rw [complexify_apply, RCLike.toComplex_complex]
 
 /-- The complexifications of commuting matrices commute. -/
-theorem _root_.Commute.complexify [Fintype n] {A B : Matrix n n 𝕜} (h : Commute A B) :
-    Commute (NLAlib.complexify A) (NLAlib.complexify B) := by
+theorem commute_complexify [Fintype n] {A B : Matrix n n 𝕜} (h : Commute A B) :
+    Commute (complexify A) (complexify B) := by
   rw [commute_iff_eq, ← complexify_mul, ← complexify_mul, h.eq]
 
 /-- The characteristic polynomial of the complexification is the image of the characteristic

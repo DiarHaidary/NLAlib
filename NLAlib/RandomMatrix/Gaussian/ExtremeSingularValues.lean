@@ -255,8 +255,10 @@ private theorem le_integral_singularValues_add (hX : HasLaw X (gaussianMatrix m 
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have : Nonempty n := Fintype.card_pos_iff.1 (by omega)
   have : Nonempty m := Fintype.card_pos_iff.1 (by omega)
-  obtain ⟨Nn, hNn1, hNn, -⟩ := exists_finite_isCover_sphere ℝ n (ε := ⟨ε, hε0.le⟩) hε0
-  obtain ⟨Nm, hNm1, hNm, -⟩ := exists_finite_isCover_sphere ℝ m (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Nn, hNn1, hNn, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ n) (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Nm, hNm1, hNm, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ m) (ε := ⟨ε, hε0.le⟩) hε0
   let u : Nn → n → ℝ := fun i => WithLp.ofLp i.1
   let t : Nm → m → ℝ := fun j => WithLp.ofLp j.1
   have hu1 (i : Nn) : ‖WithLp.toLp 2 (u i)‖ = 1 := by

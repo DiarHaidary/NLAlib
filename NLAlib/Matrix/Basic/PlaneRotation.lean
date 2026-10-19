@@ -146,13 +146,4 @@ theorem hasOrthonormalCols_planeRotation [Fintype n] {u v : n → 𝕜}
   simp only [Matrix.add_apply, Matrix.smul_apply, Matrix.neg_apply, smul_eq_mul]
   linear_combination hcoef * P i j
 
-/-- The rational parametrisation of the circle: $c = (1 - t^2) / (1 + t^2)$ and
-$s = 2t / (1 + t^2)$ satisfy $c^2 + s^2 = 1$.
-Port of `NLAlib.sq_rational_rotation_coefficients`. -/
-theorem sq_div_add_sq_div_one_add_sq (t : ℝ) :
-    ((1 - t ^ 2) / (1 + t ^ 2)) ^ 2 + (2 * t / (1 + t ^ 2)) ^ 2 = 1 := by
-  have hden : 1 + t ^ 2 ≠ 0 := ne_of_gt (by positivity)
-  field_simp
-  ring
-
 end NLAlib

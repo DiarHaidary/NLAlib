@@ -22,8 +22,3 @@ reason = "names the optimised exponent θ of Bernstein's argument; the inequalit
 name = "Matrix.IsHermitian.ext_quadForm"
 rule = "N4"
 reason = "an ext lemma is named for the hypothesis it compares (`quadForm A z = quadForm B z`), as Mathlib's `ext_…`"
-
-[[allow]]
-name = "NLAlib.givensHessenbergStep_plane_ne"
-rule = "N4"
-reason = "the two plane indices of `givensHessenbergStep` appear as anonymous-constructor terms `⟨k, ⋯⟩`, which the pretty-printer does not name"

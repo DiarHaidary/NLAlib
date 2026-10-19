@@ -194,8 +194,10 @@ private theorem integral_specNorm_mul_mul_mul_one_sub_le (hX : HasLaw X (gaussia
       specNorm S * frobNorm T + frobNorm S * specNorm T := by
   classical
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
-  obtain ⟨Nb, hNb1, hNb, -⟩ := exists_finite_isCover_sphere ℝ b (ε := ⟨ε, hε0.le⟩) hε0
-  obtain ⟨Na, hNa1, hNa, -⟩ := exists_finite_isCover_sphere ℝ a (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Nb, hNb1, hNb, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ b) (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Na, hNa1, hNa, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ a) (ε := ⟨ε, hε0.le⟩) hε0
   let I := Bool × Na × Nb
   let u : I → a → ℝ := fun i => cond i.1 (WithLp.ofLp i.2.1.1) (-WithLp.ofLp i.2.1.1)
   let v : I → b → ℝ := fun i => WithLp.ofLp i.2.2.1

@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Analysis.Seminorm
 public import Mathlib.Data.Finsupp.Basic
+public import NLAlib.ForMathlib.Data.Finsupp.Basic
+public import NLAlib.ForMathlib.Data.Finsupp.Order
 public import NLAlib.Matrix.Majorization.DoublyStochastic
 
 /-!
@@ -53,20 +55,6 @@ structure SymmetricGauge extends Seminorm ℝ (ℕ →₀ ℝ) where
   map_equivMapDomain' : ∀ (σ : Equiv.Perm ℕ) x, toFun (x.equivMapDomain σ) = toFun x
   /-- Invariance under taking absolute values of the entries. -/
   map_abs' : ∀ x, toFun (x.mapRange abs abs_zero) = toFun x
-
-/-- Two finitely supported sequences vanish beyond a common index. This is how statements about
-gauges are reduced to vectors on `Fin N`. -/
-theorem exists_forall_le_apply_eq_zero (x y : ℕ →₀ ℝ) :
-    ∃ N, (∀ i, N ≤ i → x i = 0) ∧ ∀ i, N ≤ i → y i = 0 := by
-  classical
-  obtain ⟨N, hN⟩ := (x.support ∪ y.support).exists_nat_subset_range
-  refine ⟨N, fun i hi => ?_, fun i hi => ?_⟩
-  · by_contra hne
-    exact (Finset.mem_range.mp
-      (hN (Finset.mem_union_left _ (Finsupp.mem_support_iff.mpr hne)))).not_ge hi
-  · by_contra hne
-    exact (Finset.mem_range.mp
-      (hN (Finset.mem_union_right _ (Finsupp.mem_support_iff.mpr hne)))).not_ge hi
 
 /-- Extension by zero of a vector on `Fin N` to a finitely supported sequence. -/
 private noncomputable def extendFin (N : ℕ) : (Fin N → ℝ) →ₗ[ℝ] (ℕ →₀ ℝ) :=
@@ -142,18 +130,22 @@ theorem convexOn : ConvexOn ℝ Set.univ Φ := by
 theorem map_equivMapDomain (σ : Equiv.Perm ℕ) (x : ℕ →₀ ℝ) : Φ (x.equivMapDomain σ) = Φ x :=
   Φ.map_equivMapDomain' σ x
 
-/-- A gauge depends only on the absolute values of the entries.
+/-- A gauge depends only on the absolute values of the entries: $\Phi(\lvert x \rvert) = \Phi(x)$.
 Port of `NLAlib.SymmetricGauge.value_abs`. -/
 @[simp]
-theorem map_abs (x : ℕ →₀ ℝ) : Φ (x.mapRange abs abs_zero) = Φ x :=
-  Φ.map_abs' x
+theorem map_abs (x : ℕ →₀ ℝ) : Φ |x| = Φ x := by
+  have h : |x| = x.mapRange abs abs_zero := by
+    ext i
+    rw [Finsupp.abs_apply, Finsupp.mapRange_apply]
+  rw [h]
+  exact Φ.map_abs' x
 
 /-- Two sequences with the same absolute values have the same gauge. -/
 theorem eq_of_abs_eq {x y : ℕ →₀ ℝ} (h : ∀ i, |x i| = |y i|) : Φ x = Φ y := by
   rw [← Φ.map_abs x, ← Φ.map_abs y]
   congr 1
   ext i
-  simpa only [Finsupp.mapRange_apply] using h i
+  simpa only [Finsupp.abs_apply] using h i
 
 /-! ### Monotonicity and majorization -/
 
@@ -243,7 +235,7 @@ $\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$: gauges respect weak majorization.
 Port of `NLAlib.SymmetricGauge.value_le_of_weaklyMajorized`. -/
 theorem le_of_forall_sum_le {x y : ℕ →₀ ℝ} (hy : Antitone y)
     (h : ∀ S : Finset ℕ, ∑ i ∈ S, |x i| ≤ ∑ i ∈ Finset.range S.card, y i) : Φ x ≤ Φ y := by
-  obtain ⟨N, hx0, hy0⟩ := exists_forall_le_apply_eq_zero x y
+  obtain ⟨N, hx0, hy0⟩ := Finsupp.exists_forall_le_apply_eq_zero x y
   have hmaj : WeaklyMajorized (fun i : Fin N => |x i|) (fun i : Fin N => y i) := by
     refine weaklyMajorized_fin_of_forall_sum_le (hy.antitoneOn _) fun S => ?_
     have hS := h (S.map Fin.valEmbedding)

@@ -25,11 +25,9 @@ hide the cover and give a finite set of unit vectors in `n → 𝕜` that works 
   bound $M$ on the net.
 * `Matrix.IsHermitian.specNorm_le_div_of_isCover`: for Hermitian $\mathbf{A}$, from a bound on the
   quadratic form on the net, with $1 - 2\varepsilon$.
-* `Metric.IsCover.exists_mem_norm_toLp_sub_le`: a unit vector is within $\varepsilon$ of the net.
-* `NLAlib.exists_finite_isCover_sphere`: a net of the sphere with at most
-  $(1 + 2/\varepsilon)^d$ points.
 * `NLAlib.exists_finset_specNorm_le_div`, `NLAlib.exists_finset_specNorm_le_div_of_isHermitian`:
-  the two combined.
+  the bounds combined with a net of the sphere with at most $(1 + 2/\varepsilon)^d$ points
+  (`Metric.exists_finset_isCover_sphere_card_le`).
 -/
 
 @[expose] public section
@@ -42,26 +40,6 @@ universe u
 namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
-
-/-- The real dimension of `n → 𝕜` is the number of coordinates times the real dimension of `𝕜`:
-$\lvert n \rvert$ over $\mathbb{R}$ and $2 \lvert n \rvert$ over $\mathbb{C}$. -/
-theorem finrank_real_fun (𝕜 : Type*) [RCLike 𝕜] (n : Type*) [Fintype n] :
-    Module.finrank ℝ (n → 𝕜) = Fintype.card n * Module.finrank ℝ 𝕜 := by
-  rw [Module.finrank_pi_fintype, Finset.sum_const, Finset.card_univ, smul_eq_mul]
-
-/-- **A unit vector is within $\varepsilon$ of an $\varepsilon$-net of the sphere, in
-coordinates**: if $N$ is an $\varepsilon$-net of the unit sphere of `EuclideanSpace 𝕜 n` and
-$\mathbf{y}$ in `n → 𝕜` has Euclidean norm $1$, some $\mathbf{x} \in N$ has
-$\|\mathbf{y} - \mathbf{x}\| \le \varepsilon$. The coordinate form of
-`Metric.IsCover.subset_iUnion_closedBall`. -/
-theorem _root_.Metric.IsCover.exists_mem_norm_toLp_sub_le {N : Set (EuclideanSpace 𝕜 n)}
-    {ε : ℝ≥0} (hN : IsCover ε (sphere (0 : EuclideanSpace 𝕜 n) 1) N) {y : n → 𝕜}
-    (hy : ‖WithLp.toLp 2 y‖ = 1) : ∃ x ∈ N, ‖WithLp.toLp 2 (y - WithLp.ofLp x)‖ ≤ ε := by
-  have h := hN.subset_iUnion_closedBall (mem_sphere_zero_iff_norm.2 hy)
-  simp only [Set.mem_iUnion, mem_closedBall, exists_prop] at h
-  obtain ⟨x, hx, hxy⟩ := h
-  refine ⟨x, hx, ?_⟩
-  rwa [WithLp.toLp_sub, WithLp.toLp_ofLp, ← dist_eq_norm]
 
 /-- **Spectral norm from a net.** If $N$ is an $\varepsilon$-net of the unit sphere with
 $\varepsilon < 1$, $M \ge 0$ and $\|\mathbf{A}\mathbf{x}\| \le M$ for every $\mathbf{x}$ in $N$,
@@ -164,19 +142,6 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_div_of_isCover {A : Matrix n n �
   rw [le_div_iff₀ (by linarith)]
   linarith [specNorm_nonneg A]
 
-/-- **A finite net of the sphere.** For every $\varepsilon > 0$ the unit sphere of
-`EuclideanSpace 𝕜 n` has an $\varepsilon$-net of unit vectors with at most
-$(1 + 2/\varepsilon)^d$ points, $d$ the real dimension.
-[Vershynin2018, Corollary 4.2.13]. Port of `NLAlib.exists_finset_sphere_net`, there over
-$\mathbb{R}$. -/
-theorem exists_finite_isCover_sphere (𝕜 : Type*) [RCLike 𝕜] (n : Type*) [Fintype n] {ε : ℝ≥0}
-    (hε : 0 < ε) :
-    ∃ N : Finset (EuclideanSpace 𝕜 n),
-      (N : Set (EuclideanSpace 𝕜 n)) ⊆ Metric.sphere 0 1 ∧
-      Metric.IsCover ε (Metric.sphere (0 : EuclideanSpace 𝕜 n) 1) (N : Set (EuclideanSpace 𝕜 n)) ∧
-      (N.card : ℝ) ≤ (1 + 2 / (ε : ℝ)) ^ Module.finrank ℝ (EuclideanSpace 𝕜 n) :=
-  Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace 𝕜 n) hε
-
 /-- The coordinates of a finite net of the sphere: a finite set of unit vectors of `n → 𝕜`, of the
 volumetric cardinality, whose image in `EuclideanSpace 𝕜 n` is an $\varepsilon$-net of the unit
 sphere. -/
@@ -187,7 +152,8 @@ private theorem exists_finset_isCover_image_toLp (𝕜 : Type*) [RCLike 𝕜] (n
       IsCover ⟨ε, hε.le⟩ (sphere (0 : EuclideanSpace 𝕜 n) 1)
         (WithLp.toLp 2 '' (N : Set (n → 𝕜))) := by
   classical
-  obtain ⟨N, hN1, hN2, hN3⟩ := exists_finite_isCover_sphere 𝕜 n (ε := ⟨ε, hε.le⟩) hε
+  obtain ⟨N, hN1, hN2, hN3⟩ :=
+    exists_finset_isCover_sphere_card_le (EuclideanSpace 𝕜 n) (ε := ⟨ε, hε.le⟩) hε
   refine ⟨N.image WithLp.ofLp, ?_, fun x hx => ?_, ?_⟩
   · rw [← (WithLp.linearEquiv 2 ℝ (n → 𝕜)).finrank_eq]
     exact (Nat.cast_le.2 Finset.card_image_le).trans hN3

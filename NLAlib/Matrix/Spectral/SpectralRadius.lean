@@ -242,7 +242,7 @@ $\rho(\mathbf{A} + \mathbf{B}) \le \rho(\mathbf{A}) + \rho(\mathbf{B})$. -/
 theorem specRadius_add_le_of_commute {A B : Matrix n n 𝕜} (h : Commute A B) :
     specRadius (A + B) ≤ specRadius A + specRadius B := by
   obtain ⟨a, b, ha, hb, hab, -⟩ :=
-    exists_isEigenvalueListing_add_mul_of_commute h.complexify
+    exists_isEigenvalueListing_add_mul_of_commute (commute_complexify h)
   rw [← complexify_add] at hab
   refine (hab.specRadius_le_iff
     (add_nonneg (specRadius_nonneg A) (specRadius_nonneg B))).mpr fun i => ?_
@@ -254,7 +254,7 @@ $\rho(\mathbf{A}\mathbf{B}) \le \rho(\mathbf{A}) \, \rho(\mathbf{B})$. -/
 theorem specRadius_mul_le_of_commute {A B : Matrix n n 𝕜} (h : Commute A B) :
     specRadius (A * B) ≤ specRadius A * specRadius B := by
   obtain ⟨a, b, ha, hb, -, hab⟩ :=
-    exists_isEigenvalueListing_add_mul_of_commute h.complexify
+    exists_isEigenvalueListing_add_mul_of_commute (commute_complexify h)
   rw [← complexify_mul] at hab
   refine (hab.specRadius_le_iff
     (mul_nonneg (specRadius_nonneg A) (specRadius_nonneg B))).mpr fun i => ?_

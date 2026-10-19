@@ -1,0 +1,59 @@
+{
+ "date": "2026-10-20",
+ "note": "Rules enforcement, stage 2 (CONTRIBUTING §2, §9.1; docs/rules/stage2-worklist.md). Before v0.1: no deprecated aliases. Rule P8 renames a declaration outside NLAlib into NLAlib; rule P9 moves a general fact to the ForMathlib file of its Mathlib subject, in Mathlib's namespace. Entries with \"removed\": true delete a declaration whose content Mathlib or another declaration already carries (\"new\"); the explorer redirects the old link there. statementChanged lists the declarations (new names) whose statements changed: rule T9 replaces a proof term in a signature by a hypothesis or an existing definition.",
+ "renames": [
+  {
+   "old": "Commute.complexify",
+   "new": "NLAlib.commute_complexify",
+   "rule": "P8"
+  },
+  {
+   "old": "NLAlib.sq_div_add_sq_div_one_add_sq",
+   "new": "one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_perm_forall_le_apply_self",
+   "new": "Fin.exists_perm_forall_le_apply_self",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.givensHessenbergStep_plane_ne",
+   "new": "NLAlib.hasOrthonormalCols_givensHessenbergStep",
+   "rule": "P9",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.sum_le_sum_range_card_of_antitone",
+   "new": "Finset.sum_le_sum_range_card_of_antitone",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_equiv_antitone_comp",
+   "new": "Fintype.exists_equiv_antitone_comp",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.finrank_real_fun",
+   "new": "Module.finrank_fun",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_finite_isCover_sphere",
+   "new": "Metric.exists_finset_isCover_sphere_card_le",
+   "rule": "P9",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_forall_le_apply_eq_zero",
+   "new": "Finsupp.exists_forall_le_apply_eq_zero",
+   "rule": "P9"
+  }
+ ],
+ "statementChanged": [
+  "NLAlib.givensHessenbergStep_of_lt",
+  "NLAlib.pinv_submatrix_mulVec_single_eq_backSubst",
+  "NLAlib.norm_sub_mulVec_pinv_submatrix_mulVec_single_eq",
+  "NLAlib.SymmetricGauge.map_abs"
+ ]
+}
