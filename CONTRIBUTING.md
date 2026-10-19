@@ -108,7 +108,7 @@ arbitrary matrices.
 
 ## Main results
 
-* `NLAlib.eigenvalue_add_le`: Weyl's inequality `λ_{i+j}(A + B) ≤ λ_i(A) + λ_j(B)`.
+* `Matrix.IsHermitian.eigenvalue_add_le`: Weyl's inequality `λ_{i+j}(A + B) ≤ λ_i(A) + λ_j(B)`.
 * `NLAlib.singularValues_add_le`: the singular-value form.
 -/
 
@@ -144,7 +144,12 @@ Rules:
 
 ## 4. Names
 
-Mathlib's conventions, https://leanprover-community.github.io/contribute/naming.html, in full.
+Mathlib's conventions, https://leanprover-community.github.io/contribute/naming.html, in full,
+refined below into one grammar for the whole library (maintainer, 2026-10-19; the evidence and
+the decisions are in `docs/design/Naming.md`). Each rule has an id, N1 to N18, which briefs,
+reviews and `scripts/check_names.py` cite. A theorem's name is its conclusion read left to
+right, then its hypotheses: someone who knows the statement can guess the name, and someone
+who reads the name knows the statement.
 
 | Kind | Case | Examples |
 |---|---|---|
@@ -153,26 +158,136 @@ Mathlib's conventions, https://leanprover-community.github.io/contribute/naming.
 | structure, class, Prop-valued predicate | `UpperCamelCase` | `IsSVD`, `HasOrthonormalCols`, `IsSubspaceEmbedding` |
 | namespace, file, directory | `UpperCamelCase` | `NLAlib.Matrix.Spectral.Weyl` |
 
-A theorem name spells its conclusion left to right from the head symbols:
-`frobNorm_mul_le_specNorm_mul_frobNorm` is `frobNorm (A * B) ≤ specNorm A * frobNorm B`.
-Standard suffixes `_eq`, `_le`, `_lt`, `_iff`, `_ne_zero`, `_pos`, `_nonneg`, `_left`, `_right`,
-`_apply`, `exists_`, `_of_<hypothesis>`; measure-theory prefixes `integral_`, `measurable_`,
-`integrable_`, `variance_`. Hypotheses are `h`-prefixed (`hA`, `hQ`, `hk`).
+### 4.1 Grammar
 
-Tail bounds (all in `μ.real`, `docs/PORT_PROBABILITY.md` D3): a lemma in the namespace of an
-interface it is about takes Mathlib's prefix there, `measure_` (`HasSubgaussianMGF.measure_ge_le`,
-`HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`, `IsSubgaussianVector.measure_norm_sq_ge_le`);
-a root-level tail takes `measureReal_` (`measureReal_ge_le_variance_div_sq`,
-`measureReal_norm_sq_le_of_hasLaw_gaussianVector`). (2026-10-14.)
+```
+name    ::= [ns "."] body
+body    ::= ["exists_forall_"] concl {"_of_" hyp}                      -- N3; N17 for exists_forall_
+concl   ::= det | stat | "exists_" concl | "forall_" concl | "ae_" concl
+det     ::= expr ["_" rel ["_" rhs]]                                  -- `=` usually omitted
+rel     ::= "le" | "lt" | "eq" | "ne" | "iff" | "nonneg" | "pos" | "mem" | "subset"
+          | "ge" | "gt"                                -- only when the second argument varies
+expr    ::= head {"_" arg}                             -- left to right from the head symbol (N2)
+          | norm "_sub_" alg                           -- an error ‖exact − computed‖ (N10)
+          | expr "_sq" | expr "_pow" | expr "_rpow"    -- after the argument (N6)
+rhs     ::= tokens of the right side, only to tell coexisting theorems apart (N8)
+stat    ::= "integral_" expr ["_sq"] "_" rel [rhs]     -- 𝔼 f(X); 𝔼‖·‖² has _sq (N13)
+          | "variance_" expr "_" rel [rhs]             -- Var[f(X); μ]
+          | "measureReal_" event "_" ("le" | "eq") [rhs] -- μ.real {ω | event} ≤ δ (N14)
+          | "measure_" event "_" ("le" | "eq") [rhs]   -- μ {ω | event} ≤ δ, in ℝ≥0∞
+          | ("integrable_" | "measurable_" | "aemeasurable_" | "memLp_") expr
+event   ::= [subject "_"] ("ge" | "gt" | "le" | "lt") ["_" rhs]  -- subject first (N15)
+          | "not_" pred | "exists_" event | subject "_mem"
+hyp     ::= "hasLaw_" law | class | predicate | relation              -- N9
+ns      ::= the predicate or structure a lemma is API for, or the sketch-property interface it
+            consumes (N9); never `HasLaw`, never for exists_forall_
+```
 
-Never name a declaration after its source, its chapter, its author, a paper's lemma number or a
-project, and never after how good its bound is (`_sharp`, `_improved`; §5.2 "Numerical
-bounds"). The source goes in the docstring. Named quantities and tail expressions are definitions
-named for what they are (`bernsteinTail d v L t`, `pseudoConditionNumber A`), never inline formulas
-repeated across statements.
+Tokens are the lowerCamel forms of the identifiers in the statement (`IsSVD` → `isSVD`), in the
+spellings of §4.3. Hypothesis variables are `h`-prefixed (`hA`, `hQ`, `hk`). Examples:
 
-Renames after the `v0.1` tag keep `@[deprecated (since := "YYYY-MM-DD")] alias old := new` for one
-release.
+| statement | name |
+|---|---|
+| `frobNorm (A * B) ≤ specNorm A * frobNorm B` | `frobNorm_mul_le_specNorm_mul_frobNorm` |
+| `δ * Φ.matrixNorm (V⊥ᴴ * U) ≤ Φ.matrixNorm R` (Davis–Kahan) | `mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue` |
+| `re (quadForm A (xs - cgIterate A b x₀ q)) ≤ …` | `re_quadForm_sub_cgIterate_le_four_mul_pow` |
+| `IsLU A (luLower A) (luUpper A)` | `isLU_luLower_luUpper` |
+| `singularValues A k ^ 2 = eigenvalue (Aᴴ * A) k` | `singularValues_sq` |
+| `∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤ …`, Gaussian `X` | `integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix` |
+| `μ.real {ω \| b < frobNorm (A - rsvd A (X ω))} ≤ δ` | `measureReal_frobNorm_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix` |
+| the same under an injection interface `hS : HasSubspaceInjection …` | `HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le` |
+| `μ.real {ω \| ε * nuclearNorm A < \|A.trace - hutchpp A (S ω) (G ω)\|} ≤ δ` | `measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector` |
+| `μ.real {ω \| ¬ (a • 1 ≤ (X ω)ᴴ * X ω)} ≤ δ` (Loewner) | `measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussianMatrix` |
+| `μ.real {ω \| ∫ ω', f (X ω') ∂μ + t ≤ f (X ω)} ≤ …` (subject a variable) | `measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix` |
+| `Var[fun ω => hutchpp A (S ω) (G ω); μ] ≤ …` | `variance_hutchpp_le_nuclearNorm_of_hasLaw_gaussianMatrix` |
+| its O(·) form | `exists_forall_variance_hutchpp_le_of_hasLaw_gaussianMatrix` |
+
+### 4.2 Rules for every topic
+
+| id | rule | checked |
+|---|---|---|
+| N1 | Case by kind, as in the table above; acronyms follow Mathlib's grouping (`rsvd`, `earlyTruncatedRSVD`). | yes |
+| N2 | The first token is the head of the conclusion's left side, or an operator on its leftmost spine (`mul_` for `c * f x ≤ …`), `nonneg`/`pos` for `0 ≤ x`/`0 < x` (`frobNorm_nonneg`), or the layer `exists_`, `forall_`, `ae_`. Mathlib's dot-notation readings stand: `(M).submatrix e f` is `submatrix_…`, a measure `ν.map f` is `ν_map_…` (`gaussianReal_map_add_const`). | yes |
+| N3 | The conclusion part ends at the first `_of_` and names the main relation: `le`, `lt`, `ne`, `iff`, `mem`, `subset`, `nonneg`, `pos`; `eq` may be omitted, as in Mathlib; `ge`/`gt` only when the second argument is the one that varies; Mathlib's `mono`, `anti`, `monotone`, `antitone` count. Nothing of the conclusion comes after `_of_` (`variance_quadForm_le_of_hasLaw_rademacherVector`, not `…_of_hasLaw_rademacherVector_le`). | yes |
+| N4 | Every token that is a library function occurs in the statement, conclusion tokens in the conclusion and hypothesis tokens in the hypotheses. Matrix notation counts (`conjTranspose` for `ᴴ`, `mulVec` for `*ᵥ`, `integral` for `∫`). | yes |
+| N5 | One token per concept: the spellings of §4.3, never a synonym. | the listed synonyms |
+| N6 | A power comes after its argument, for every head: `frobNorm_sub_rsvd_sq`, `singularValues_sq`, `sum_singularValues_sub_sq_le` (Mathlib's `norm_sub_sq`). `^ 2` is `sq`, `^ n` is `pow`, `^ r` (real) is `rpow`. Mathlib's own `sq_abs`, `sq_sqrt` are Mathlib's names, not a pattern. | `sq_f` anywhere, `pow_f` on the left |
+| N7 | No source, chapter, author, lemma number or project in a name, and no word for how good a bound is (`_sharp`, `_improved`, `_tight`, `_v2`, `_strong`) or for its role (`aux`, `main`, `key`); the source goes in the docstring (§5.2 "Numerical bounds"). Classical names stay where the subject uses them (`bernstein`, `hansonWright`, `freedman`). | yes |
+| N8 | Right-side tokens only to tell coexisting theorems apart (§5.2 rule 4): `measureReal_norm_sq_ge_mul_card_le` next to `measureReal_norm_sq_le_mul_card_le`. A bound that improves keeps its name. | no |
+| N9 | Hypotheses. A law is the suffix `_of_hasLaw_<law>`, for any law (`_of_hasLaw_gaussianMatrix`, `_of_hasLaw_haarFrame`). A distribution class is `_of_<class>`, also when it is an instance argument (`_of_isSubgaussianVector`, `_of_isLeftUnitarilyInvariant`, `_of_isIsotropic`). A sketch-property interface that is the main hypothesis (`HasSubspaceInjection`, `IsObliviousSubspaceInjection`, `HasSubspaceEmbedding`, `IsObliviousSubspaceEmbedding`, `HasJLMoment`, `HasJLProperty`, `HasProjectionCostPreserving`, `HasGramTraceMoment`, `HasMatrixMGFBound`) is the namespace: `HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`. The API of a predicate or structure lives in its namespace (§5.2, dot notation), and so does a theorem whose first explicit argument is one of the hypotheses of N18. `HasLaw.` is never a namespace for a consumer; a law hypothesis first is named by its suffix. Other hypotheses are named only when they distinguish the theorem from a sibling. | the law suffix |
+| N10 | Errors are `exact − computed`, so names say `norm_sub_<alg>`: `frobNorm_sub_rsvd`, `quadForm_sub_cgIterate`, `trace_sub_hutchpp`. A name never has `<alg>_sub_…`, except `<alg>_sub_truncatedSVD` (the optimal approximation of the algorithm's output, `frobNorm_rsvd_sub_truncatedSVD_le`), `<iterate>_sub_mem` (`x_k − x_0 ∈ K`, not an error) and a final `_sub` of a linearity lemma (`lanczosFA_sub`). | yes |
+| N11 | Named quantities and tail expressions are definitions named for what they are (`bernsteinTail d v L t`, `pseudoConditionNumber A`), never inline formulas repeated across statements. A named bound (`docs/constants.toml`) ends in its kind: `…Constant` (an absolute constant), `…Factor` (a multiplier in a bound), `…Tail` (a failure probability), `…Bound` (another bound), `…Ratio`, `…Dim` (a sample size, §4.4). | the suffix |
+| N12 | Renames. Before the `v0.1` tag a rename needs no alias; it is listed in a rename map `docs/renames/<YYYY-MM>-<topic>.json` (`{"renames": [{"old", "new", "rule"}], "statementChanged": [names]}`, full names), from which the explorer redirects old `#d/` links. After `v0.1`, a rename keeps `@[deprecated (since := "YYYY-MM-DD")] alias old := new` for one release, and is also listed in a rename map. | no |
+| N18 | Dot notation (§5.2, maintainer, 2026-10-19: enforced). A root-namespace theorem whose first explicit argument is `hA : A.IsHermitian`, `hA : A.PosSemidef`, `hA : A.PosDef` (of any matrix expression, `(fromBlocks A B Bᴴ C).PosSemidef` included), `h : IsSVD A U σ V` or `hU : HasOrthonormalCols U` lives in that predicate's namespace (`Matrix.IsHermitian.eigenvalue_add_le`, `HasOrthonormalCols.gramSchmidtQ_mul_left`), so that `hA.eigenvalue_add_le hB k` works; the name then drops the `_of_<predicate>` it no longer needs (`Matrix.PosSemidef.re_det_fromBlocks_le`). A theorem already in an interface namespace (N9) or another predicate's namespace keeps it, and asymptotic forms stay in the root namespace (N17). | yes |
+
+### 4.3 Spellings
+
+The tokens of the §5.3 vocabulary, and the ones a statement shape forces:
+
+| concept | token | not |
+|---|---|---|
+| `Aᴴ * A`, `A * Aᴴ` | `conjTranspose_mul_self`, `mul_conjTranspose_self` | `gram`, which is Mathlib's `Matrix.gram` |
+| `fromBlocks A 0 0 B` | `fromBlocks_zero₁₂_zero₂₁` (Mathlib's `fromBlocks_zero₁₂`, `fromBlocks_zero₂₁`) | `fromBlocks_diagonal`, which Mathlib uses for `fromBlocks (diagonal d₁) 0 0 (diagonal d₂)` |
+| column space, kernel `LinearMap.range A.mulVecLin`, `…ker` | `range`, `ker`: `range_rangeProjector`, `range_le_iff_exists_mul`, `_of_range_le` | `range_mulVecLin` |
+| intrinsic dimension | `intrinsicDimension` | `intrinsicDim` |
+| `singularValues A k ^ 2` | `singularValues_sq` (N6) | `sq_singularValues` |
+| an algorithm's output | the definition's name: `rsvd`, `nystrom`, `generalizedNystrom`, `rbki`, `nystromBKI`, `earlyTruncatedRSVD`, `sketchAndSolve`, `hutchpp`, `girardHutchinson`, `cgIterate`, `lanczosFA` | `rangeFinder`, `randomizedSVD` |
+| norms, pseudoinverse, eigenvalues | `specNorm`, `frobNorm`, `nuclearNorm`, `schattenNorm`, `matrixNorm`, `pinv`, `eigenvalue` | `opNorm`, `pseudoinverse`, `eig` |
+| the vector 2-norm `‖WithLp.toLp 2 x‖` | `norm` | |
+
+### 4.4 Rules for one topic
+
+**Probability: statistics and tails** (Probability, RandomMatrix, and every tail bound elsewhere).
+
+| id | rule | checked |
+|---|---|---|
+| N13 | A statistic on the left is the prefix: `integral_` (Bochner `∫ … ∂μ`), `variance_` (`Var[…]`), `covariance_` (`cov[…]`), `condExp_` (`μ[…\|m]`); never `expected`, `expectation`, `mean`. A mean square `∫ ‖·‖ ^ 2` has `_sq` before the relation (`integral_frobNorm_sub_rsvd_sq_le`); a mean `∫ ‖·‖` has none. | yes |
+| N14 | The tail prefix follows the statement, in every namespace, Mathlib's included: `μ.real {…}` is `measureReal_`, `μ {…}` (in `ℝ≥0∞`) is `measure_`. Tails are stated in `μ.real` (`docs/PORT_PROBABILITY.md` D3). (Replaces the 2026-10-14 rule, namespaced `measure_`; Mathlib's own `HasSubgaussianMGF.measure_ge_le` keeps its name.) | yes |
+| N15 | The event comes first, subject first: the subject is the side that mentions `ω`, named by its tokens, then the event relation, then the tail relation: `{ω \| b < X ω}` is `X_gt`, `{ω \| b ≤ X ω}` `X_ge`, `{ω \| X ω ≤ b}` `X_le`, `{ω \| X ω < b}` `X_lt`; so a tail name has two relation tokens, `measureReal_frobNorm_sub_rsvd_sq_gt_le`. A subject with no token (a variable function `f (X ω)`) is left out: `measureReal_ge_integral_add_le`. A scalar event is stated positively, `{ω \| b < err ω}`, never `{ω \| ¬ (err ω ≤ b)}`, and `¬ ∀ i, x i ≤ b` is stated `∃ i, b < x i` (`measureReal_exists_…_gt_le`). `¬` stays only where there is no `<` form: a Loewner inequality, a conjunction, a named predicate (`measureReal_not_isSubspaceEmbedding_le`); the name says `not_`. | yes |
+
+**Sketching, low-rank approximation, regression.**
+
+| id | rule | checked |
+|---|---|---|
+| N16 | A sample size (rows of a sketch) is a named bound `<sketch><property>Dim`: `jlDim`, `gaussianEmbeddingDim`, `gaussianInjectionDim`, `subgaussianJLDim`, `subgaussianEmbeddingDim`, `countSketchEmbeddingDim`, `samplingEmbeddingDim`, `samplingInjectionDim`, `projectionCostTailDim`; never `…Rows`, `…Size`. The theorem that assumes it is `_of_<size>_le`. Algorithm errors follow N10 and the algorithm tokens of §4.3; interfaces give the namespace (N9). | the suffix (N11) |
+
+**Trace estimation.** No rule of its own: errors are `tr A − estimate` (N10), so
+`trace_sub_hutchpp`, `integral_norm_trace_sub_girardHutchinson_sq`,
+`measureReal_abs_trace_sub_hutchpp_ge_le` (flipped 2026-10-19 from `estimate − trace`).
+
+**Matrix and Krylov.** No rule of its own beyond §4.3. A leading scalar factor is named
+(`mul_matrixNorm_…` for `δ * ‖·‖`), so a reader looking for the measured quantity skips
+`mul_`. `x_k − x_0 ∈ K` statements are `cgIterate_sub_mem_krylovSpace` (N10).
+
+**Asymptotic forms** (§5.2 rule 3).
+
+| id | rule | checked |
+|---|---|---|
+| N17 | The name of an `O(·)` corollary is derived from its explicit theorem: `exists_forall_`, then the explicit conclusion part (for `integral_`/`variance_` names, up to its main relation, the right-side tokens dropped), then `_of_singularGapRatio_pos` for a gapped bound, then the explicit hypotheses without the size threshold (`_of_jlDim_le`, `_of_le_card`, …). It is in the root namespace: `∃ C` comes before every hypothesis, so dot notation is impossible. `integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix` → `exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`. | yes |
+
+### 4.5 Exceptions and the allowlist
+
+There are no standing exceptions. A name the checker misreads, because the grammar has no
+readable form for its statement or the splitter misparses it, goes in `scripts/names_allow.toml`
+with the rule it is excused from and a one-line reason that says why:
+
+```
+[[allow]]
+name = "NLAlib.exists_bernstein_exponent"
+rule = "N3"
+reason = "names the optimised exponent θ; the inequality has no readable token form"
+```
+
+An entry is reviewed like code and is never the fix for a real violation. The checker fails on a
+stale entry (the declaration is gone or no longer breaks the rule), so the list stays short.
+
+### 4.6 Checking
+
+`scripts/check_names.py` checks the rules marked "yes" on the extraction (§9) in CI, and prints
+`N<k> <name>: <what is wrong>`. It reads Lean's pretty-printed statements, so it cannot judge
+what needs judgement: whether a right side should be named (N8), whether a hypothesis deserves
+mention or a side condition the namespace (N9), argument order inside a long deterministic
+name, classical names, or whether a `_sub_` is an error or a comparison. Reviewers check those.
 
 ## 5. Statements
 
@@ -229,7 +344,8 @@ release.
 - General form first, corollaries after, in the same file. A corollary specialises the field, the
   index type, or a hypothesis; it does not restate the proof.
 - Probabilistic results are stated as tails, not sample sizes: the primary theorem bounds the
-  failure probability in closed form (`μ.real {ω | ¬ good ω} ≤ 2 d exp (−ε² k / (3 L))`); the
+  failure probability in closed form (`μ.real {ω | ¬ good ω} ≤ 2 d exp (−ε² k / (3 L))` for a
+  predicate `good`; a scalar event is stated positively, `{ω | b < err ω}`, §4 N15); the
   "`k ≥ …` suffices" form is a corollary. Inverting the tail is where ugly constants and side
   conditions appear, so it is done once, not by every consumer.
 - **Numerical bounds** (maintainer, 2026-10-14; `docs/PORT_PROBABILITY.md` D5). A later
@@ -301,13 +417,13 @@ release.
      constant is existential and comes before every dimension, type, measure, matrix and
      parameter, so it is absolute; a dimension dependence the result really has (a $\log n$)
      appears in the threshold, never inside $C$. Index types are fixed to `Type`. The name starts
-     `exists_forall_` followed by the explicit theorem's conclusion; the proof instantiates the
-     explicit theorem, which stays primary and whose docstring names its asymptotic form. The
+     `exists_forall_`, derived from the explicit theorem's name (§4 N17); the proof instantiates
+     the explicit theorem, which stays primary and whose docstring names its asymptotic form. The
      asymptotic form's docstring says "$O(\ldots)$ suffices" in words and ends with the line
      `Asymptotic: <full name of the explicit theorem>` (before any `Result:` line), so tools (the
      explorer, `scripts/check_refs.py`) can find and check these corollaries.
   4. Incomparable bounds coexist, each named by what distinguishes it: its hypothesis
-     (`_of_bounded`, `_of_variance_le`) or the parameter its bound is in (`_intrinsicDim`). Each
+     (`_of_bounded`, `_of_variance_le`) or the parameter its bound is in (`_intrinsicDimension`). Each
      docstring says in which regime it is better and names the other.
   5. A statement whose bound is the minimum of two others is added only when both have identical
      hypotheses and side conditions.
@@ -322,7 +438,8 @@ release.
   Lean elaborates `θ : ℕ` (`ℕ` acts on every additive monoid), and the hypothesis silently quantifies
   over natural numbers (found in P5a's Chernoff skeleton, 2026-10-14).
 - Dot notation: a lemma whose first explicit argument is `hA : A.IsHermitian` lives in
-  `Matrix.IsHermitian`; one about an `IsSVD` lives in `IsSVD`.
+  `Matrix.IsHermitian`; one about an `IsSVD` lives in `IsSVD` (§4 N18, checked for `IsHermitian`,
+  `PosSemidef`, `PosDef`, `IsSVD` and `HasOrthonormalCols`).
 
 ### 5.3 Vocabulary
 
@@ -373,7 +490,7 @@ those layers are designed.
 | column selection as a matrix | `selectionMatrix s`; a bare selection is `A.submatrix id s` | `mul_selectionMatrix` |
 | Hermitian dilation | `dilation A := fromBlocks 0 A Aᴴ 0` | `dilation_def`, `rfl` |
 | plane rotation | `planeRotation u v c s`, `c s : ℝ` | — |
-| function of a Hermitian matrix | Mathlib's `cfc f A`, `f : ℝ → ℝ`; no `matrixExp`, `matrixLog`, `traceExp`, `lambdaMax` names | `cfc_eq_mul_diagonal_mul_conjTranspose`, `Matrix.IsHermitian.re_trace_cfc` |
+| function of a Hermitian matrix | Mathlib's `cfc f A`, `f : ℝ → ℝ`; no `matrixExp`, `matrixLog`, `traceExp`, `lambdaMax` names | `HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose`, `Matrix.IsHermitian.re_trace_cfc` |
 | matrix exponential, logarithm | `NormedSpace.exp A`; `cfc Real.log A` | `Matrix.IsHermitian.exp_eq_cfc` |
 | real power, absolute value, positive part, inverse square root | Mathlib's `A ^ r`, `CFC.abs A` (rectangular: `CFC.sqrt (Aᴴ * A)`), `A⁺`, `(CFC.sqrt A)⁻¹`, under `MatrixOrder` | `CFC.rpow_eq_cfc_real`, `CFC.abs_eq_cfc_norm`, `Matrix.PosDef.inv_sqrt_eq_cfc` |
 | uniform scalar/function approximation | `Metric.IsUniformApproxOn g f s ε`: pointwise `dist (g x) (f x) ≤ ε` on `s`, with only a pseudometric codomain; degree, continuity, compactness and nonnegative error remain separate | `Metric.isUniformApproxOn_iff`; `Metric.isUniformApproxOn_iff_dist_le` uses Mathlib `ContinuousMap.dist_le` on compact domains |
@@ -387,7 +504,7 @@ those layers are designed.
 | Jackson approximation factor | `jacksonApproximationConstant : ℝ`, currently `Real.pi`, improving the source's `π²/2`; supporting numerical API | `jacksonApproximationConstant_pos`, `jacksonApproximationConstant_le`; the current-value comparison is `≤ Real.pi` |
 | divided difference | `dividedDifference s v r := ∑ i ∈ s, Lagrange.nodalWeight s v i * r i` for nodes `v : ι → F` on `s : Finset ι`, Mathlib's nodal weights; distinct nodes as `Set.InjOn v s`, the count as `#s = q + 1` (stage K2b, 2026-10-17) | `dividedDifference_eq_coeff_interpolate` (from Mathlib's `Lagrange.coeff_eq_sum`) |
 | location of the spectrum | `spectrum ℝ A ⊆ s` for Hermitian `A`, the same format for an interval (`s = Set.Icc a b`) and a union of intervals; polynomial bounds on it are `∀ x ∈ s, \|p.eval x\| ≤ M`; a Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` reaches it through a bridge (maintainer, 2026-10-17) | `Matrix.IsHermitian.spectrum_subset_iff`, `spectrum_subset_Icc_of_le`; Mathlib's `le_algebraMap_iff_spectrum_le`, `algebraMap_le_iff_le_spectrum` |
-| transfer from `𝕜` to `ℂ` | `complexify A = A.map RCLike.toComplex` | `complexify_cfc`, `complexify_le_complexify_iff` |
+| transfer from `𝕜` to `ℂ` | `complexify A = A.map RCLike.toComplex` | `Matrix.IsHermitian.complexify_cfc`, `complexify_le_complexify_iff` |
 | operator convexity | `OperatorConvexOn s f`; convex combinations as `a • A + b • B`, `a + b = 1` | `OperatorConvexOn.cfc_smul_add_smul_le` |
 | supporting line of a real function | `HasSupportingLineOn f s x := ∃ c, ∀ y ∈ s, f x + c * (y - x) ≤ f y` (ForMathlib, root namespace), for `f : ℝ → ℝ`; the hypothesis of Jensen's inequality for a function that need not be convex, never a raw `∃ c` in a statement (block Krylov round, BD9, 2026-10-18) | `ConvexOn.hasSupportingLineOn` (convex and differentiable at `x ∈ s`); Mathlib has no subgradient of a real function (searched) |
 | derivative of a matrix curve | entrywise, `∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t` | `Matrix.hasDerivAt_iff_forall_apply` |
@@ -408,12 +525,12 @@ those layers are designed.
 | structured matrices | Mathlib's `A ⊗ₖ B`, `Matrix.circulant v`; `fourierMatrix n`, `walshHadamard R b`, `cauchyMatrix x y` | `Matrix.IsHadamard` |
 | random matrix | `X : Ω → Matrix m n 𝕜`, `Measurable X` (global `Matrix.instMeasurableSpace`, `ForMathlib`) | — |
 | law | `HasLaw X ν μ` | Mathlib's |
-| tail | `μ.real {ω | ¬ good ω} ≤ δ` | — |
+| tail | `μ.real {ω \| b < err ω} ≤ δ` for a scalar error, the event stated positively (amended 2026-10-19); `μ.real {ω \| ¬ P ω} ≤ δ` only for a Loewner, conjunction or predicate event `P`; names by §4 N14, N15 | — |
 | expectation | `∫ ω, f (X ω) ∂μ` (Bochner) | — |
 | sub-Gaussian | `HasSubgaussianMGF X c μ` | Mathlib's |
 | independent test matrices | `IndepFun S G μ` for two random matrices (Hutch++'s sketch and residual test matrices, of any widths and laws; a deterministic one is a constant map); conditioning on one is `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral` (Hutch++ note §6, 2026-10-18) | Mathlib's; `indepFun_iff_map_prod_eq_prod_map_map` |
 | Girard–Hutchinson estimate | `girardHutchinson A Ω := (Ωᴴ * A * Ω).trace / card m`, the probes the `m` columns of `Ω : Matrix n m 𝕜`; `0` with no columns; the column average is `girardHutchinson_eq_sum` (trace estimation note §4, 2026-10-18) | `girardHutchinson_eq_sum`; Mathlib has none |
-| Hutch++ | `hutchpp A S G := (rsvd A S).trace + girardHutchinson ((1 - P) * A * (1 - P)) G`, `P = rangeProjector (A * S)`, basis-free; the papers' orthonormal-basis form is a bridge (Hutch++ note §6, 2026-10-18) | `HasOrthonormalCols.hutchpp_eq`, `hutchpp_sub_trace`; Mathlib has none |
+| Hutch++ | `hutchpp A S G := (rsvd A S).trace + girardHutchinson ((1 - P) * A * (1 - P)) G`, `P = rangeProjector (A * S)`, basis-free; the papers' orthonormal-basis form is a bridge (Hutch++ note §6, 2026-10-18) | `HasOrthonormalCols.hutchpp_eq`, `trace_sub_hutchpp`; Mathlib has none |
 | projection-cost-preserving sketch | deterministic: `IsProjectionCostPreserving A Ã k a b` (S2b); random: `HasProjectionCostPreserving S A k a b δ μ`, the tail `μ.real {ω \| ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ`, with the sketch `S : Ω → Matrix l n 𝕜` in the Sketching orientation; on a LowRank test matrix, `fun ω => (X ω)ᴴ`; no oblivious (all-`A`) predicate | `HasSubspaceEmbedding.hasProjectionCostPreserving`, `IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`, `hasProjectionCostPreserving_conjTranspose_iff` (the LowRank orientation); Mathlib has none |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
@@ -461,7 +578,7 @@ non-increasing and indexed from $0$.
 [HornJohnson2013, Theorem 4.3.1]; stated there over $\mathbb{C}$ with eigenvalues in increasing
 order, here over any `RCLike` field, any finite index type, non-increasing.
 Result: weyl-inequality -/
-theorem eigenvalue_add_le ...
+theorem Matrix.IsHermitian.eigenvalue_add_le ...
 ```
 
 1. **First sentence:** what it asserts, in words, with the bold name of the result if it has one.
@@ -640,8 +757,14 @@ lake env lean scripts/Audit.lean
 lake env lean scripts/Lint.lean
 python3 scripts/check_refs.py
 python3 scripts/check_constants.py
+bash scripts/explore_data.sh /tmp/explore-data.json && python3 scripts/check_names.py /tmp/explore-data.json
 lake env lean scripts/Duplicates.lean
 ```
+
+`scripts/check_names.py` checks the naming grammar (§4) on the extraction that
+`scripts/explore_data.sh` writes from the built library (about a minute after `lake build NLAlib`);
+its messages cite the rule ids N1–N18, and `scripts/names_allow.toml` is its allowlist (§4.5).
+`scripts/stage_check.sh` runs it on the proved modules.
 
 `scripts/check_constants.py` enforces §5.2 rule 2's displayed values: every named bound's body
 matches `docs/constants.toml`, every math span annotated by a value marker contains its filled
