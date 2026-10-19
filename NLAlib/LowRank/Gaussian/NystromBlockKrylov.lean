@@ -443,8 +443,8 @@ exists_forall_integral_specNorm_sub_nystromBKI_le_of_singularGapRatio_pos_of_has
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one H h t)) hq
   have hexp :=
     hH.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of_hasLaw_gaussianMatrix hX hr hrt ht
@@ -456,8 +456,8 @@ exists_forall_integral_specNorm_sub_nystromBKI_le_of_singularGapRatio_pos_of_has
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.singularValues_sqrt_sq] at hT
   have hs2 : 1 ≤ Real.sqrt 2 := Real.one_le_sqrt.2 (by norm_num)
   have hqγ : 0 ≤ ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t) := by linarith
-  exact le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) (by norm_num) le_rfl hT hN
-    hε hε₀ (by nlinarith [mul_le_mul_of_nonneg_right hs2 hqγ])
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) (by norm_num) le_rfl hT
+    hN hε hε₀ (by nlinarith [mul_le_mul_of_nonneg_right hs2 hqγ])
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -493,7 +493,7 @@ exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_singularGapRatio_pos_o
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     hH.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRatio_of_hasLaw_gaussianMatrix hX hr
@@ -503,7 +503,7 @@ exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_singularGapRatio_pos_o
     natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq
       (CFC.sqrt H) hrt ht
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.singularValues_sqrt_sq] at hT
-  exact le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) zero_le_one (by norm_num)
     hT hN hε hε₀ (by nlinarith)
 
 -- The declaration name alone exceeds 100 characters.
@@ -540,8 +540,8 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_of_singularGap
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one H h t)) hq
   have hexp :=
     hH.integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_singularGapRatio_of_hasLaw_gaussianMatrix
@@ -553,7 +553,7 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_of_singularGap
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hT
   have hs2 : 1 ≤ Real.sqrt 2 := Real.one_le_sqrt.2 (by norm_num)
   have hqγ : 0 ≤ ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t) := by linarith
-  exact le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) (by norm_num) le_rfl
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) (by norm_num) le_rfl
     (hT.trans (mul_le_mul_of_nonneg_right (by nlinarith) (nuclearNorm_nonneg _))) hN hε hε₀
     (by nlinarith [mul_le_mul_of_nonneg_right hs2 hqγ])
 
@@ -592,7 +592,7 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_of_singul
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_singularGapRatio_of_hasLaw_gaussianMatrix
@@ -602,7 +602,7 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_of_singul
     natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
       (CFC.sqrt H) hrt ht
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hT
-  exact le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) zero_le_one (by norm_num)
     (hT.trans (mul_le_mul_of_nonneg_right (by nlinarith) (nuclearNorm_nonneg _))) hN hε hε₀
     (by nlinarith)
 
@@ -642,7 +642,7 @@ theorem exists_forall_integral_specNorm_sub_nystromBKI_le_of_hasLaw_gaussianMatr
     simp only [h0, specNorm_zero, integral_zero]
     exact mul_nonneg (by linarith) (singularValues_nonneg _ _)
   have hN : (1 : ℝ) ≤ Fintype.card n := by exact_mod_cast hNpos
-  obtain ⟨hq2, hexp⟩ := two_le_and_exp_log_four_mul_sq_div_le_one_add hN hε hε₁ hq
+  obtain ⟨hq2, hexp⟩ := Real.two_le_and_exp_log_four_mul_sq_div_le_one_add hN hε hε₁ hq
   rcases (singularValues_nonneg H r).eq_or_lt with hσ0 | hσ
   · -- $\sigma_r(\mathbf{H}) = 0$: the $(1 + \varepsilon)$ form bounds the error by $0$.
     have hH0 : H - truncatedSVD H r = 0 := by
@@ -700,7 +700,7 @@ theorem exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_hasLaw_gaussia
   refine (hH.integral_specNorm_sub_nystrom_pow_mul_le_mul_rpow_of_hasLaw_gaussianMatrix hX hr p
     hσ).trans ?_
   rw [mul_comm (1 + ε)]
-  exact mul_le_mul_of_nonneg_left (rpow_one_div_two_mul_add_one_le_one_add (Nat.cast_nonneg _)
+  exact mul_le_mul_of_nonneg_left (Real.rpow_one_div_two_mul_add_one_le_one_add (Nat.cast_nonneg _)
     (one_le_rangeFinderTailRatio _ hr)
     (rangeFinderTailRatio_le_one_add_card_sq _ hr (singularValues_sqrt_pos hH hσ)) hε hε₁ hp)
     (singularValues_nonneg _ _)

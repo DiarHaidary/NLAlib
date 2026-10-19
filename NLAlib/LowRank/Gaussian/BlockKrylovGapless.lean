@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
 public import NLAlib.LowRank.Gaussian.BlockKrylov
 public import NLAlib.Matrix.Functions.TraceFunctions
 
@@ -854,77 +855,6 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatr
 
 /-! ### Asymptotic forms -/
 
-/-- $\varepsilon/2 \le \log(1 + \varepsilon)$ for $0 < \varepsilon \le 1$. -/
-private theorem div_two_le_log_one_add {ε : ℝ} (hε : 0 < ε) (hε₁ : ε ≤ 1) :
-    ε / 2 ≤ Real.log (1 + ε) := by
-  have h := Real.one_sub_inv_le_log_of_pos (x := 1 + ε) (by linarith)
-  have hinv : (1 + ε)⁻¹ * (1 + ε) = 1 := inv_mul_cancel₀ (by positivity)
-  have hpos : 0 < (1 + ε)⁻¹ := inv_pos.2 (by positivity)
-  nlinarith
-
-/-- The depth threshold of the Tropp–Webber form of the gapless bound for block Krylov
-iteration: for $N \ge 1$, $0 < \varepsilon \le 1$ and $q \ge 4\log(N + 1)/\sqrt{\varepsilon}$,
-$q \ge 2$, and every $R$ with $1 \le R \le 1 + N^2$ has
-$$\exp\Bigl(\frac{\log^2(4R)}{16(q - 1)^2}\Bigr) \le 1 + \varepsilon\,,$$
-since $\log(4R) \le 4\log(N + 1) \le 2(q - 1)\sqrt{\varepsilon}$. -/
-theorem two_le_and_exp_log_four_mul_sq_div_le_one_add {N ε : ℝ} {q : ℕ} (hN : 1 ≤ N)
-    (hε : 0 < ε) (hε₁ : ε ≤ 1) (hq : 4 * Real.log (N + 1) / Real.sqrt ε ≤ q) :
-    2 ≤ q ∧ ∀ R : ℝ, 1 ≤ R → R ≤ 1 + N ^ 2 →
-      Real.exp (Real.log (4 * R) ^ 2 / (16 * ((q : ℝ) - 1) ^ 2)) ≤ 1 + ε := by
-  set M := Real.log (N + 1) with hM
-  have hlog2 : (1 / 2 : ℝ) ≤ Real.log 2 := by
-    have h := Real.one_sub_inv_le_log_of_pos (x := 2) (by norm_num)
-    norm_num at h ⊢
-    linarith
-  have hM2 : 1 / 2 ≤ M := hlog2.trans (Real.log_le_log (by norm_num) (by linarith))
-  have hs : 0 < Real.sqrt ε := Real.sqrt_pos.2 hε
-  have hs1 : Real.sqrt ε ≤ 1 := Real.sqrt_le_one.2 hε₁
-  have hqs : 4 * M ≤ q * Real.sqrt ε := by rwa [div_le_iff₀ hs] at hq
-  have hq0 : (0 : ℝ) ≤ q := Nat.cast_nonneg q
-  have hq2 : (2 : ℝ) ≤ q := by nlinarith
-  refine ⟨by exact_mod_cast hq2, fun R hR1 hR => ?_⟩
-  have hq1 : 2 * M ≤ ((q : ℝ) - 1) * Real.sqrt ε := by nlinarith
-  have hsq : Real.sqrt ε ^ 2 = ε := Real.sq_sqrt hε.le
-  have hq1' : 4 * M ^ 2 ≤ ((q : ℝ) - 1) ^ 2 * ε := by
-    rw [← hsq]
-    nlinarith
-  have hlog4R0 : 0 ≤ Real.log (4 * R) := Real.log_nonneg (by linarith)
-  have hlog4R : Real.log (4 * R) ≤ 4 * M := by
-    have h4 : 4 * R ≤ (N + 1) ^ 4 := by nlinarith [sq_nonneg (N - 1), sq_nonneg N]
-    calc Real.log (4 * R) ≤ Real.log ((N + 1) ^ 4) := Real.log_le_log (by linarith) h4
-      _ = 4 * M := by rw [Real.log_pow, ← hM]; norm_num
-  have hden : 0 < 16 * ((q : ℝ) - 1) ^ 2 := by nlinarith
-  have hratio : Real.log (4 * R) ^ 2 / (16 * ((q : ℝ) - 1) ^ 2) ≤ Real.log (1 + ε) := by
-    rw [div_le_iff₀ hden]
-    have := div_two_le_log_one_add hε hε₁
-    nlinarith
-  calc Real.exp (Real.log (4 * R) ^ 2 / (16 * ((q : ℝ) - 1) ^ 2))
-      ≤ Real.exp (Real.log (1 + ε)) := Real.exp_le_exp.2 hratio
-    _ = 1 + ε := Real.exp_log (by linarith)
-
-/-- The power threshold of the Tropp–Webber form of the gapless bound for subspace iteration: for
-$N \ge 0$, $1 \le R \le 1 + N^2$, $0 < \varepsilon \le 1$ and
-$p \ge 2\log(N + 1)/\varepsilon$, $$R^{1/(2p+1)} \le 1 + \varepsilon\,,$$ since
-$\log R \le 2\log(N + 1) \le p\varepsilon$. -/
-theorem rpow_one_div_two_mul_add_one_le_one_add {N R ε : ℝ} {p : ℕ} (hN : 0 ≤ N) (hR1 : 1 ≤ R)
-    (hR : R ≤ 1 + N ^ 2) (hε : 0 < ε) (hε₁ : ε ≤ 1) (hp : 2 * Real.log (N + 1) / ε ≤ p) :
-    R ^ (1 / (2 * (p : ℝ) + 1)) ≤ 1 + ε := by
-  have hpε : 2 * Real.log (N + 1) ≤ p * ε := by rwa [div_le_iff₀ hε] at hp
-  have hlogR0 : 0 ≤ Real.log R := Real.log_nonneg hR1
-  have hlogR : Real.log R ≤ 2 * Real.log (N + 1) := by
-    calc Real.log R ≤ Real.log ((N + 1) ^ 2) := Real.log_le_log (by linarith) (by nlinarith)
-      _ = 2 * Real.log (N + 1) := by rw [Real.log_pow]; norm_num
-  have hden : 0 < 2 * (p : ℝ) + 1 := by positivity
-  have hratio : Real.log R * (1 / (2 * (p : ℝ) + 1)) ≤ Real.log (1 + ε) := by
-    rw [mul_one_div, div_le_iff₀ hden]
-    have := div_two_le_log_one_add hε hε₁
-    have hp0 : (0 : ℝ) ≤ p := Nat.cast_nonneg p
-    nlinarith
-  rw [Real.rpow_def_of_pos (by linarith)]
-  calc Real.exp (Real.log R * (1 / (2 * (p : ℝ) + 1))) ≤ Real.exp (Real.log (1 + ε)) :=
-        Real.exp_le_exp.2 hratio
-    _ = 1 + ε := Real.exp_log (by linarith)
-
 /-- **Depth $O(\log(\lvert n \rvert + 1)/\sqrt{\varepsilon})$ suffices for randomized block Krylov
 iteration**, spectral norm, no gap: there are absolute constants $C, \varepsilon_0 > 0$ such that
 for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a target rank $r$ with
@@ -959,7 +889,7 @@ theorem exists_forall_integral_specNorm_sub_rbki_sq_le_of_hasLaw_gaussianMatrix 
       integral_zero]
     positivity
   have hN : (1 : ℝ) ≤ Fintype.card n := by exact_mod_cast hNpos
-  obtain ⟨hq2, hexp⟩ := two_le_and_exp_log_four_mul_sq_div_le_one_add hN hε hε₁ hq
+  obtain ⟨hq2, hexp⟩ := Real.two_le_and_exp_log_four_mul_sq_div_le_one_add hN hε hε₁ hq
   rcases (singularValues_nonneg A r).eq_or_lt with hσ0 | hσ
   · -- $\sigma_r(\mathbf{A}) = 0$: the $(1 + \varepsilon)$ form bounds the error by $0$.
     have hA : A - truncatedSVD A r = 0 := by
@@ -1013,7 +943,7 @@ theorem exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_hasLaw_gaussia
   refine (integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatrix A hX hr p
     hσ).trans ?_
   rw [mul_comm (1 + ε)]
-  exact mul_le_mul_of_nonneg_left (rpow_one_div_two_mul_add_one_le_one_add (Nat.cast_nonneg _)
+  exact mul_le_mul_of_nonneg_left (Real.rpow_one_div_two_mul_add_one_le_one_add (Nat.cast_nonneg _)
     (one_le_rangeFinderTailRatio A hr) (rangeFinderTailRatio_le_one_add_card_sq A hr hσ) hε hε₁
     hp) (sq_nonneg _)
 
@@ -1081,7 +1011,7 @@ exists_forall_integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_hasLaw_ga
     integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
       A hX hr p (ε := ε / 3) (by positivity)
   rw [← one_mul (Real.exp _)] at hexp
-  have h := le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+  have h := Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
     (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
       le_rfl hr) hN (by positivity) (by linarith) hy
   refine h.trans (mul_le_mul_of_nonneg_right ?_ (sq_nonneg _))

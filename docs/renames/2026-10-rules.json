@@ -130,6 +130,36 @@
    "old": "NLAlib.exp_div_rpow_rpow_eq_exp",
    "new": "Real.exp_div_rpow_rpow_eq_exp",
    "rule": "P9"
+  },
+  {
+   "old": "NLAlib.one_half_le_log_div",
+   "new": "Real.one_half_le_log_div",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.le_add_mul_of_le_add_mul_exp",
+   "new": "Real.le_add_mul_of_le_add_mul_exp",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.one_le_and_log_div_le_sub_one_mul",
+   "new": "Real.one_le_and_log_div_le_sub_one_mul",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.two_le_and_exp_log_four_mul_sq_div_le_one_add",
+   "new": "Real.two_le_and_exp_log_four_mul_sq_div_le_one_add",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.rpow_one_div_two_mul_add_one_le_one_add",
+   "new": "Real.rpow_one_div_two_mul_add_one_le_one_add",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.natCast_div_sub_sub_one_nonneg",
+   "new": "natCast_div_sub_sub_one_nonneg",
+   "rule": "P9"
   }
  ],
  "statementChanged": [

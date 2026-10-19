@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
 public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.Matrix.Norms.GaugeExamples
@@ -554,13 +555,6 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
 
 -- Stage B6b
 
-/-- The tail weight $r/(\ell - r - 1)$ of the Gaussian range-finder bounds is nonnegative for
-$r + 2 \le \ell$ (casts to $\mathbb{R}$). -/
-theorem natCast_div_sub_sub_one_nonneg {r l : ℕ} (hl : r + 2 ≤ l) :
-    0 ≤ (r : ℝ) / ((l : ℝ) - r - 1) := by
-  have hl' : (r : ℝ) + 2 ≤ l := by exact_mod_cast hl
-  exact div_nonneg (Nat.cast_nonneg _) (by linarith)
-
 /-- The **range-finder tail ratio** (casts to $\mathbb{R}$),
 the number <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->
 $$1 + \frac{r}{\ell - r - 1}\,
@@ -583,7 +577,7 @@ $$1 \le 1 + \frac{r}{\ell - r - 1}\,
 -/
 theorem one_le_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) {r l : ℕ}
     (hl : r + 2 ≤ l) : 1 ≤ rangeFinderTailRatio A r l := by
-  have hk := natCast_div_sub_sub_one_nonneg hl
+  have hk := natCast_div_sub_sub_one_nonneg (K := ℝ) hl
   have h := div_nonneg (mul_nonneg hk (sq_nonneg (frobNorm (A - truncatedSVD A r))))
     (sq_nonneg (singularValues A r))
   rw [rangeFinderTailRatio]
