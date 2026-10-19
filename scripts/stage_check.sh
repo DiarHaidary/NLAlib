@@ -6,10 +6,10 @@
 # Builds every module that `scripts/proved_modules.py` lists (minus those matching EXCLUDE_REGEX,
 # for files an agent is editing), then runs the axiom audit and the environment linters on exactly
 # those modules, the reference check, the named-bound value check (scripts/check_constants.py, on
-# the whole library), the naming check (scripts/check_names.py, on an extraction of those modules),
-# the rules check (scripts/check_rules.py, by rule id, on the same extraction) and the
-# duplicate-statement report (which never fails the script). Logs go to $TMPDIR (default /tmp).
-# Run from the repository root; never while another build is running (CONTRIBUTING §10).
+# the whole library), the rules check (scripts/check_rules.py, by rule id, the naming rules N1–N18
+# included, on an extraction of those modules) and the duplicate-statement report (which never
+# fails the script). Logs go to $TMPDIR (default /tmp). Run from the repository root; never while
+# another build is running (CONTRIBUTING §10).
 set -euo pipefail
 tmp="${TMPDIR:-/tmp}/nlalib-stage-check"
 mkdir -p "$tmp"
@@ -30,11 +30,8 @@ tail -1 "$tmp/constants.log"
 { cat "$tmp/imports.txt"; sed '1d' scripts/Explore.lean; } > "$tmp/Explore.lean"
 EXPLORE_OUT="$tmp/explore-data.json" LEAN_NUM_THREADS=1 lake env lean -M 8000 "$tmp/Explore.lean" \
   > "$tmp/explore.log" 2>&1 || { tail -20 "$tmp/explore.log"; exit 1; }
-python3 scripts/check_names.py "$tmp/explore-data.json" --partial > "$tmp/names.log" || \
-  { cat "$tmp/names.log"; exit 1; }
-grep -v '^check_names:' "$tmp/names.log" || true
-tail -1 "$tmp/names.log"
-python3 scripts/check_rules.py "$tmp/explore-data.json" --partial --no-names --warn > "$tmp/rules.log"
+python3 scripts/check_rules.py "$tmp/explore-data.json" --partial > "$tmp/rules.log" || \
+  { cat "$tmp/rules.log"; exit 1; }
 grep -v '^check_rules:' "$tmp/rules.log" || true
 tail -1 "$tmp/rules.log"
 { cat "$tmp/imports.txt"; sed '1d' scripts/Duplicates.lean; } > "$tmp/Duplicates.lean"

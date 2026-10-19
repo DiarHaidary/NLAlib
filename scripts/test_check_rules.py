@@ -314,7 +314,9 @@ class RuleTests(unittest.TestCase):
         self.assertTrue(check_rules.long_line_exempt('  `' + 'x' * 120 + '`.'))
         self.assertTrue(check_rules.long_line_exempt('* `' + 'x' * 120 + '`:'))
         self.assertTrue(check_rules.long_line_exempt('see https://example.org/' + 'x' * 100))
+        self.assertTrue(check_rules.long_line_exempt('    ' + 'x' * 120 + ' :'))
         self.assertFalse(check_rules.long_line_exempt('theorem ' + 'x' * 120))
+        self.assertFalse(check_rules.long_line_exempt('  have h := ' + 'x' * 120))
 
     def test_orphans(self):
         with tempfile.TemporaryDirectory() as tmp:

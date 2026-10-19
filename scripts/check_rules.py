@@ -495,13 +495,15 @@ def s_instance(c):
 
 def long_line_exempt(line):
     """Decision 8 (maintainer, 2026-10-19): a line over 100 characters is allowed only when a single
-    identifier or a URL makes it long: the line, after its indentation and an optional list
-    marker, is one token, or it contains a URL."""
+    identifier or a URL makes it long: the line, after its indentation, an optional list marker
+    and trailing punctuation (`name :`, `name :=`), is one token, or it contains a URL."""
     if 'http://' in line or 'https://' in line:
         return True
     toks = line.split()
     if toks and toks[0] in ('*', '-', '+') or (toks and re.fullmatch(r'\d+\.', toks[0])):
         toks = toks[1:]
+    while len(toks) > 1 and toks[-1] in (':', ':=', ',', '.', '|'):
+        toks = toks[:-1]
     return len(toks) == 1
 
 
