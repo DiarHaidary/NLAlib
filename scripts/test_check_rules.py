@@ -320,6 +320,14 @@ class RuleTests(unittest.TestCase):
         self.assertFalse(check_rules.long_line_exempt('theorem ' + 'x' * 120))
         self.assertFalse(check_rules.long_line_exempt('  have h := ' + 'x' * 120))
 
+    def test_name_on_its_own_line(self):
+        # `theorem` alone, the long name in column 0 on the next line: one declaration, whose
+        # exemption is needed (S8) and whose name line is one identifier (S7)
+        body = ('-- why\nset_option linter.style.longLine false in\n/-- Doc. -/\ntheorem\n'
+                + 'x' * 110 + ' :\n    True := trivial')
+        self.assertEqual(violations('S8', body), [])
+        self.assertEqual(violations('S7', body), [])
+
     def test_orphans(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, ml = make_root(tmp)

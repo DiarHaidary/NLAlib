@@ -336,13 +336,9 @@
   },
   "S8": {
    "NLAlib/Estimation/Trace/HutchPlusPlusTail.lean": 1,
-   "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 7,
-   "NLAlib/LowRank/Gaussian/Nystrom.lean": 3,
-   "NLAlib/LowRank/Gaussian/NystromBlockKrylov.lean": 4,
-   "NLAlib/LowRank/Gaussian/NystromTail.lean": 3,
+   "NLAlib/LowRank/Gaussian/NystromBlockKrylov.lean": 3,
    "NLAlib/LowRank/Gaussian/RangeFinder.lean": 2,
-   "NLAlib/LowRank/Gaussian/RotationInvariant.lean": 3,
-   "NLAlib/LowRank/Random/Nystrom.lean": 1
+   "NLAlib/LowRank/Gaussian/RotationInvariant.lean": 2
   },
   "T2": {
    "NLAlib/Probability/QuadraticForm/HansonWright/OffDiagonal.lean": 1

@@ -116,8 +116,10 @@ def parse(text):
             attrs = pending_attrs + (m.group(1) or "")
             kind = m.group(3)
             name = m.group(4)
+            name_line = False
             if not name and kind not in ("instance", "example") and i + 1 < len(lines):
                 name = (re.match(r"\s*([^\s:({\[]+)", lines[i + 1]) or [None, ""])[1]
+                name_line = bool(name)
             full = name[7:] if name.startswith("_root_.") else ".".join(namespaces + [name]) \
                 if name else None
             se = _stmt_end(lines, i)
@@ -127,6 +129,8 @@ def parse(text):
                 "doc_line": pending_doc[0] if pending_doc else None,
                 "stmt": "\n".join(lines[i:se + 1]), "stmt_end": se + 1,
                 "namespaces": list(namespaces), "idx": len(starts) - 1})
+            if name_line:  # `theorem` alone, the name on the next line (possibly in column 0)
+                i += 1
         else:
             res["commands"].append((i + 1, line))
         pending_doc = None
