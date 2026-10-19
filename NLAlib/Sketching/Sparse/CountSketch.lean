@@ -437,7 +437,7 @@ private theorem sum_sum_ite_ne [DecidableEq n] (M : Matrix n n 𝕜) :
   have e (i j : n) : (if i ≠ j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0) =
       ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) -
         if i = j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0 := by
-    split_ifs <;> simp_all
+    by_cases h : i = j <;> simp [h]
   simp only [e, Finset.sum_sub_distrib, Finset.sum_ite_eq, Finset.mem_univ, if_true, hd,
     Finset.sum_add_distrib, frobNorm_sq_eq_sum, frobInner_eq_sum, Matrix.transpose_apply,
     ← Finset.mul_sum]

@@ -582,12 +582,6 @@ private theorem integral_comp_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [
     HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq h₁ h₂,
     integral_map (hm V₂).aemeasurable hF.aestronglyMeasurable]
 
-omit [Fintype n] in
-/-- The pair `![a, b]` of distinct indices is injective. -/
-private theorem injective_vecCons_pair {a b : n} (hab : a ≠ b) : Function.Injective ![a, b] := by
-  intro x y hxy
-  fin_cases x <;> fin_cases y <;> simp_all [eq_comm]
-
 /-- $\mathbb{E}\,\mathbf{u}_a^2 \mathbf{u}_b^2$ is the same for every pair of distinct
 coordinates. -/
 private theorem integral_sq_mul_sq_eq [Nonempty n] {a b i₁ i₂ : n} (hab : a ≠ b)
@@ -596,8 +590,8 @@ private theorem integral_sq_mul_sq_eq [Nonempty n] {a b i₁ i₂ : n} (hab : a 
       ∫ v, v i₁ ^ 2 * v i₂ ^ 2 ∂uniformSphereVector n := by
   classical
   have h := integral_comp_conjTranspose_mulVec_eq
-    (hasOrthonormalCols_selectionMatrix (𝕜 := ℝ) (injective_vecCons_pair hab))
-    (hasOrthonormalCols_selectionMatrix (𝕜 := ℝ) (injective_vecCons_pair h12))
+    (hasOrthonormalCols_selectionMatrix (𝕜 := ℝ) (injective_pair_iff_ne.2 hab))
+    (hasOrthonormalCols_selectionMatrix (𝕜 := ℝ) (injective_pair_iff_ne.2 h12))
     (F := fun w : Fin 2 → ℝ => w 0 ^ 2 * w 1 ^ 2) (by fun_prop)
   simpa only [conjTranspose_selectionMatrix_mulVec, Function.comp_apply, Matrix.cons_val_zero,
     Matrix.cons_val_one] using h
@@ -623,7 +617,7 @@ private theorem integral_pow_four_eq_three_mul [Nonempty n] {i₁ i₂ : n} (h12
       3 * ∫ v, v i₁ ^ 2 * v i₂ ^ 2 ∂uniformSphereVector n := by
   classical
   set E : Matrix n (Fin 2) ℝ := selectionMatrix ![i₁, i₂] with hEdef
-  have hE : HasOrthonormalCols E := hasOrthonormalCols_selectionMatrix (injective_vecCons_pair h12)
+  have hE : HasOrthonormalCols E := hasOrthonormalCols_selectionMatrix (injective_pair_iff_ne.2 h12)
   set c : ℝ := (√2)⁻¹ with hcdef
   have h2 : c ^ 2 = 1 / 2 := by
     rw [hcdef, inv_pow, Real.sq_sqrt zero_le_two, one_div]

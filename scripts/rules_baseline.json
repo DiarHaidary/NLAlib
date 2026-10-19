@@ -194,10 +194,6 @@
    "NLAlib/Probability/MatrixConcentration/Bernstein.lean": 4,
    "NLAlib/Probability/MatrixConcentration/Chernoff.lean": 1
   },
-  "S1": {
-   "NLAlib/RandomMatrix/Haar/Sphere.lean": 1,
-   "NLAlib/Sketching/Sparse/CountSketch.lean": 1
-  },
   "S4": {
    "NLAlib/Krylov/Functions/NearOptimality.lean": 1,
    "NLAlib/LowRank/Gaussian/BlockKrylov.lean": 1,
