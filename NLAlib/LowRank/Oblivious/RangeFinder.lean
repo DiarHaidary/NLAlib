@@ -226,12 +226,21 @@ theorem IsObliviousSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le [IsF
   (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
     ).measureReal_frobNorm_sub_rsvd_sq_gt_le h.isotropic ha ht
 
-/-- **The randomized SVD with a subspace injection, spectral norm**: with the hypotheses of
-`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`, for $t > 0$
-$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le \sigma_k(\mathbf{A})^2 +
-\frac{t}{a}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta + 1/t$. Its neighbour without isotropy and without the Frobenius
-term is the bounded-sketch form
+/-- **The randomized SVD with a subspace injection, spectral norm**: for
+$\mathbf{A} \in \Bbbk^{m \times n}$, a target rank $k$, a finite measure $\mathbb{P}$ and a random
+test matrix $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ whose sketch $\mathbf{\Omega}^{\mathsf{H}}$
+is isotropic (square-integrable entries and
+$\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, `IsIsotropicSketch`) and
+injects $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ with constant $a > 0$
+except with probability $\delta$ (the event that
+$a\|\mathbf{y}\|^2 \le \|\mathbf{\Omega}^{\mathsf{H}}\mathbf{y}\|^2$ fails for some $\mathbf{y}$
+in that range has probability at most $\delta$, `HasSubspaceInjection`), and any $t > 0$,
+$$\mathbb{P}\Bigl[\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 >
+\sigma_k(\mathbf{A})^2 + \frac{t}{a}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
+\Bigr] \le \delta + \frac{1}{t}\,,$$
+singular values indexed from $0$. The spectral-norm companion of
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`. Its neighbour without
+isotropy and without the Frobenius term is the bounded-sketch form
 `HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le`
 at the spectral gauge. [CamanoEpperlyMeyerTropp2025, Theorem 2.2], here in the spectral norm; the
 shape of [TroppWebber2023, Theorem 8.1 (RSVD1)].
@@ -259,11 +268,21 @@ theorem HasSubspaceInjection.measureReal_specNorm_sub_rsvd_sq_gt_le [IsFiniteMea
       t * frobNorm (A - truncatedSVD A k) ^ 2 / a := by ring
   linarith
 
-/-- **The rank-$k$ randomized SVD with a subspace injection**: with the hypotheses of
-`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`, for $t > 0$
-$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
-\le \Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta + 1/t$, the same constant as the untruncated output.
+/-- **The rank-$k$ randomized SVD with a subspace injection**: for
+$\mathbf{A} \in \Bbbk^{m \times n}$, a target rank $k$, a finite measure $\mathbb{P}$ and a random
+test matrix $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ whose sketch $\mathbf{\Omega}^{\mathsf{H}}$
+is isotropic (square-integrable entries and
+$\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, `IsIsotropicSketch`) and
+injects $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ with constant $a > 0$
+except with probability $\delta$ (the event that
+$a\|\mathbf{y}\|^2 \le \|\mathbf{\Omega}^{\mathsf{H}}\mathbf{y}\|^2$ fails for some $\mathbf{y}$
+in that range has probability at most $\delta$, `HasSubspaceInjection`), and any $t > 0$,
+$$\mathbb{P}\Bigl[
+\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2 >
+\Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\Bigr]
+\le \delta + \frac{1}{t}\,,$$
+the same constant as the untruncated output
+(`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`).
 [CamanoEpperlyMeyerTropp2025, remark after Theorem 1.3]; there by HMT Theorem 9.3, which is
 spectral only; here in the Frobenius norm through the rank-$k$ competitor of [Woodruff2014,
 Lemma 48].
@@ -592,13 +611,20 @@ theorem IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le [
   exact h.measureReal_frobNorm_sub_rsvd_sq_gt_le ha ht
 
 /-- **Randomized Nyström with an oblivious subspace injection**, every unitarily invariant norm:
-with the hypotheses of
-`NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`,
-for $t > 0$
-$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi} \le
+for a positive semidefinite $\mathbf{H} \in \Bbbk^{n \times n}$, a target rank $k$, a finite
+measure $\mathbb{P}$ and a random test matrix $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ whose
+sketch $\mathbf{\Omega}^{\mathsf{H}}$ is an oblivious subspace injection for dimension $k$ with
+constant $a > 0$ and failure probability $\delta$ (isotropic,
+$\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, and for every
+$\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $k$,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{\Omega}^{\mathsf{H}}\mathbf{y}\|^2$ for all
+$\mathbf{y} \in \operatorname{range}\mathbf{U}$ except with probability $\delta$;
+`IsObliviousSubspaceInjection`), any $t > 0$ and every symmetric gauge $\Phi$ (`SymmetricGauge`)
+with its unitarily invariant norm $\|\cdot\|_{\Phi}$,
+$$\mathbb{P}\Bigl[\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi} >
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{t}{a}\,
-\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-except with probability $\delta + 1/t$, with $\mathbf{e}_0$ the first unit coordinate sequence.
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\Bigr] \le \delta + \frac{1}{t}\,,$$
+with $\mathbf{e}_0$ the first unit coordinate sequence.
 [CamanoEpperlyMeyerTropp2025, Corollary 2.5]; there the trace norm.
 Result: randomized-nystrom-tail -/
 theorem IsObliviousSubspaceInjection.measureReal_matrixNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
@@ -616,12 +642,20 @@ theorem IsObliviousSubspaceInjection.measureReal_matrixNorm_sub_nystrom_gt_le [I
   exact (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le F k)
     ).measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le h.isotropic ha ht Φ
 
-/-- **Randomized Nyström with an oblivious subspace injection**, spectral norm: with the
-hypotheses of `NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`, for
-$t > 0$
-$$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_2 \le \lambda_k(\mathbf{H}) +
-\frac{t}{a}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-except with probability $\delta + 1/t$, the eigenvalue written $\sigma_k(\mathbf{H})$. The form a
+/-- **Randomized Nyström with an oblivious subspace injection**, spectral norm: for a
+positive semidefinite $\mathbf{H} \in \Bbbk^{n \times n}$, a target rank $k$, a finite
+measure $\mathbb{P}$ and a random test matrix $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ whose
+sketch $\mathbf{\Omega}^{\mathsf{H}}$ is an oblivious subspace injection for dimension $k$ with
+constant $a > 0$ and failure probability $\delta$ (isotropic,
+$\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, and for every
+$\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $k$,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{\Omega}^{\mathsf{H}}\mathbf{y}\|^2$ for all
+$\mathbf{y} \in \operatorname{range}\mathbf{U}$ except with probability $\delta$;
+`IsObliviousSubspaceInjection`), and any $t > 0$,
+$$\mathbb{P}\Bigl[\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_2 >
+\sigma_k(\mathbf{H}) + \frac{t}{a}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\Bigr]
+\le \delta + \frac{1}{t}\,,$$
+where $\sigma_k(\mathbf{H}) = \lambda_k(\mathbf{H})$, indexed from $0$. The form a
 Nyström preconditioner consumes. [CamanoEpperlyMeyerTropp2025, Corollary 2.5]; there the trace
 norm.
 Result: randomized-nystrom-tail -/
@@ -637,12 +671,21 @@ theorem IsObliviousSubspaceInjection.measureReal_specNorm_sub_nystrom_gt_le [IsF
   exact (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le F k)
     ).measureReal_specNorm_sub_rsvd_sq_gt_le h.isotropic ha ht
 
-/-- **Truncated randomized Nyström with an oblivious subspace injection**, trace norm: with the
-hypotheses of `NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`, for
-$t > 0$
-$$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_* \le
-\Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
-except with probability $\delta + 1/t$. [CamanoEpperlyMeyerTropp2025, remark after Theorem 1.3].
+/-- **Truncated randomized Nyström with an oblivious subspace injection**, trace norm: for
+a positive semidefinite $\mathbf{H} \in \Bbbk^{n \times n}$, a target rank $k$, a finite
+measure $\mathbb{P}$ and a random test matrix $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ whose
+sketch $\mathbf{\Omega}^{\mathsf{H}}$ is an oblivious subspace injection for dimension $k$ with
+constant $a > 0$ and failure probability $\delta$ (isotropic,
+$\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, and for every
+$\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $k$,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{\Omega}^{\mathsf{H}}\mathbf{y}\|^2$ for all
+$\mathbf{y} \in \operatorname{range}\mathbf{U}$ except with probability $\delta$;
+`IsObliviousSubspaceInjection`), and any $t > 0$,
+$$\mathbb{P}\Bigl[
+\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_* >
+\Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\Bigr]
+\le \delta + \frac{1}{t}\,,$$
+the bound of the untruncated output. [CamanoEpperlyMeyerTropp2025, remark after Theorem 1.3].
 Result: randomized-nystrom-tail -/
 theorem IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_truncatedSVD_nystrom_gt_le
     [IsFiniteMeasure μ] {H : Matrix n n 𝕜} (hH : H.PosSemidef) {k : ℕ} {a δ t : ℝ}

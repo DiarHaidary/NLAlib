@@ -215,7 +215,8 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$, over any `RCLike` field. The asymptotic form of
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch`, proved from it with
-$C = 16$ and $\varepsilon_0 = 1$.
+$C = 16$ and $\varepsilon_0 = 1$. [Woodruff2014, Remark 46]; there $O(k^2 + k/\varepsilon)$ rows of
+a sparse embedding matrix at constant failure probability, real.
 Asymptotic: NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch
 Result: randomized-svd-tail -/
 theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch :
@@ -323,7 +324,11 @@ $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$, over any `RCLike` field. The asymptotic form of
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch`, proved from
-it with $C = 384$ and $\varepsilon_0 = 1$.
+it with $C = 384$ and $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3];
+there $\mathbf{A}\mathbf{\Omega}$ is a projection-cost-preserving sketch with error
+$O(\varepsilon)$ for the fully sparse embedding of Lemma 11 (family 2) with
+$O(k^2/(\varepsilon^2\delta))$ rows, and Lemma 3 carries the sketch's best rank-$k$ projection
+over to $\mathbf{A}$; real.
 Asymptotic: NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch
 Result: etrsvd -/
 theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch :

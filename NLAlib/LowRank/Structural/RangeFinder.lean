@@ -246,7 +246,12 @@ theorem SymmetricGauge.matrixNorm_sub_rsvd_le (Φ : SymmetricGauge) (hZ : HasOrt
   refine (Φ.matrixNorm_add_le _ _).trans_eq ?_
   rw [Φ.matrixNorm_neg, Φ.matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols hZ]
 
-/-- Spectral form of the structural bound:
+/-- **The structural bound of the range finder, spectral form.**
+For $\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times l}$ and
+$\mathbf{Z} \in \Bbbk^{n \times r}$ with orthonormal columns and
+$\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank (`(Ωᴴ * Z).rank = Z.rank`), with
+$\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$ and
+$\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le
 \|\mathbf{E}\|_2^2 + \|\mathbf{M}\|_2^2\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.1], there for a top-$k$ frame; here any frame.
@@ -259,7 +264,12 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_sq_le (hZ : HasOrthonormalCols Z)
   have h := (lpGauge ⊤ le_top).matrixNorm_conjTranspose_mul_self_sub_rsvd_le hZ hΩ A
   simpa only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self] using h
 
-/-- Unsquared spectral form of the structural bound:
+/-- **The structural bound of the range finder, unsquared spectral form.**
+For $\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times l}$ and
+$\mathbf{Z} \in \Bbbk^{n \times r}$ with orthonormal columns and
+$\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank (`(Ωᴴ * Z).rank = Z.rank`), with
+$\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$ and
+$\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2 \le
 \|\mathbf{E}\|_2 + \|\mathbf{M}\|_2\,.$$
 Dominated by `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_sq_le`, kept because HMT 10.6 uses this
@@ -275,7 +285,12 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_le (hZ : HasOrthonormalCols Z)
   have h := (lpGauge ⊤ le_top).matrixNorm_sub_rsvd_le hZ hΩ A
   simpa only [lpGauge_top_matrixNorm] using h
 
-/-- Frobenius form of the structural bound:
+/-- **The structural bound of the range finder, Frobenius form.**
+For $\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times l}$ and
+$\mathbf{Z} \in \Bbbk^{n \times r}$ with orthonormal columns and
+$\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank (`(Ωᴴ * Z).rank = Z.rank`), with
+$\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$ and
+$\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$,
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \|\mathbf{E}\|_{\mathsf{F}}^2 + \|\mathbf{M}\|_{\mathsf{F}}^2\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.1]; [Woodruff2014, Lemma 48];

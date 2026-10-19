@@ -529,9 +529,9 @@ For real sketches with the JL moment property
 projection-cost-preserving event and has no $1/t$ term; this is the form for a sketch known only
 to be projection-cost-preserving.
 [TroppYurtseverUdellCevher2017, §7.3.1], the algorithm and the remark that the results of
-[CohenElderMuscoMuscoPersu2015] imply a $(1+\varepsilon)$ bound at $\Theta(r/\varepsilon^2)$ for
-both sketch sizes, with unspecified constants; here explicit, with failure probability
-$\delta + \delta' + 1/t$.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and §10.1] imply a $(1+\varepsilon)$ bound at
+$\Theta(r/\varepsilon^2)$ for both sketch sizes, with unspecified constants; here explicit, with
+failure probability $\delta + \delta' + 1/t$.
 Result: early-truncation-pcp-bound -/
 theorem
     HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le

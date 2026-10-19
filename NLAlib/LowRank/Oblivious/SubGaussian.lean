@@ -195,7 +195,8 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$; the proxy stays in the threshold. The asymptotic form of
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`, proved from it with
-$C = 6912$ and $\varepsilon_0 = 1$.
+$C = 6912$ and $\varepsilon_0 = 1$. [Woodruff2014, Lemma 45 and Remark 46]; there $O(k/\varepsilon)$
+i.i.d. normal rows at constant failure probability; here any isotropic sub-Gaussian rows.
 Asymptotic: NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector
 Result: randomized-svd-tail -/
 theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector :
@@ -324,7 +325,12 @@ $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$. The asymptotic form of
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`, proved
-from it with $C = 147456$ and $\varepsilon_0 = 1$.
+from it with $C = 147456$ and $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and
+Lemma 3]; there $\mathbf{A}\mathbf{\Omega}$ is a projection-cost-preserving sketch with error
+$O(\varepsilon)$ for the dense sign matrices of Lemma 11 (family 1) with
+$O((k + \log(1/\delta))/\varepsilon^2)$ rows, and Lemma 3 carries the sketch's best rank-$k$
+projection over to $\mathbf{A}$; here any isotropic sub-Gaussian rows, with $k/\delta$ in place of
+$k$ from the route through the JL moment.
 Asymptotic: NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector
 Result: etrsvd -/
 theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector :
@@ -605,7 +611,8 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 except with probability $\delta$; the factor is `subgaussianRangeFinderFactor c`, and the proxy
 stays in the threshold. The asymptotic form of
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`, proved from it with
-$C = 6912$.
+$C = 6912$. [MeyerMuscoMuscoWoodruff2021, §3, proof of Theorem 1]; there for a random sign sketch
+with $O(k + \log(1/\delta))$ columns and the factor $2$, citing Musco and Musco (2020).
 Asymptotic: NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector
 Result: randomized-svd-tail -/
 theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector :

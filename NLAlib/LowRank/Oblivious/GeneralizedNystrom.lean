@@ -139,15 +139,26 @@ private theorem sq_add_add_mul_sq_le {u v c : ℝ} (hu : 0 ≤ u) (hc : 0 ≤ c)
   rw [← hs]
   nlinarith [mul_le_mul_of_nonneg_left huv hc, mul_le_mul_of_nonneg_left huu (mul_nonneg hc hc)]
 
-/-- **Late-truncated generalized Nyström with oblivious subspace injections**: with the hypotheses
-of `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le`, for
-$t, t' > 0$
-$$\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
-\|_{\mathsf{F}}^2 \le \Bigl(1 + 2\sqrt{t'/a'}\Bigr)^2\Bigl(1 + \frac{t}{a}\Bigr)
-\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta + 1/t + \delta' + 1/t'$: a rank-$k$ single-pass output with a
-constant factor. Proved without a literature source; [CamanoEpperlyMeyerTropp2025, Remark 2.9]
-discusses a different, core-truncated estimator.
+/-- **Late-truncated generalized Nyström with oblivious subspace injections**: let
+$\mathbf{A} \in \Bbbk^{m \times n}$, $k$ a target rank and $\mathbb{P}$ a probability measure,
+and let $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and $\mathbf{\Psi} \in \Bbbk^{m \times p}$ be
+independent, almost everywhere measurable random test matrices such that
+$\mathbf{\Omega}^{\mathsf{H}}$ is isotropic
+($\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, square-integrable
+entries) and injects $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ with
+constant $a > 0$ except with probability $\delta$ (`HasSubspaceInjection`), and
+$\mathbf{\Psi}^{\mathsf{H}}$ is an oblivious subspace injection for dimension
+$d \ge \min(\operatorname{rank}\mathbf{A}, \ell)$ with constant $a' > 0$ and failure
+probability $\delta'$ (`IsObliviousSubspaceInjection`). Then for $t, t' > 0$
+$$\mathbb{P}\Bigl[
+\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
+\|_{\mathsf{F}}^2 > \Bigl(1 + 2\sqrt{t'/a'}\Bigr)^2\Bigl(1 + \frac{t}{a}\Bigr)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\Bigr]
+\le \delta + \frac{1}{t} + \delta' + \frac{1}{t'}\,:$$
+a rank-$k$ single-pass output with a constant factor. The truncated form of
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le`. Proved without
+a literature source; [CamanoEpperlyMeyerTropp2025, Remark 2.9] discusses a different,
+core-truncated estimator.
 Result: generalized-nystrom-tail -/
 theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le
     [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {k d : ℕ} {a δ t a' δ' t' : ℝ}

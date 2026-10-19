@@ -147,11 +147,26 @@ theorem IsSubspaceInjection.mul_frobNorm_sub_mul_sq_add_le {A : Matrix m n 𝕜}
   rw [hcross, htail] at hopt2
   linarith
 
-/-- **The early-truncation structural bound, in the error alone**: under the hypotheses of
-`NLAlib.IsSubspaceInjection.mul_frobNorm_sub_mul_sq_add_le` and $\lambda \le 1$, with
-$\mathbf{E}$, $w$, $\chi$ as there,
+/-- **The early-truncation structural bound, in the error alone.** For
+$\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
+$\mathbf{Z} \in \Bbbk^{n \times r}$ with orthonormal columns such that
+$\mathbf{\Omega}^{\mathsf{H}}$ is a subspace injection for $\operatorname{range}\mathbf{Z}$ with
+constant $\lambda$
+($\lambda\,\mathbf{Z}^{\mathsf{H}}\mathbf{Z} \preceq
+(\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z})^{\mathsf{H}}\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z}$),
+$\lambda \le 1$,
+and an orthogonal projector $\mathbf{P} \in \Bbbk^{m \times m}$ of rank at most $k$ whose sketch
+residual is at most that of the frame's competitor,
+$\|\mathbf{A}\mathbf{\Omega} - \mathbf{P}\mathbf{A}\mathbf{\Omega}\|_{\mathsf{F}} \le
+\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}$, with
+$$\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}},\qquad
+w = \|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{E}^{\mathsf{H}} -
+\mathbf{E}\mathbf{E}^{\mathsf{H}}\|_{\mathsf{F}},\qquad
+\chi = \|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z} -
+\mathbf{E}\mathbf{Z}\|_{\mathsf{F}},$$
 $$\lambda\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 \le \|\mathbf{E}\|_{\mathsf{F}}^2 +
 \sqrt{k}\,w + 2\chi\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}\,.$$
+A consequence of `NLAlib.IsSubspaceInjection.mul_frobNorm_sub_mul_sq_add_le`.
 For $\lambda > 1$ apply it at $1$ through `NLAlib.IsSubspaceInjection.mono`. Proved without a
 literature source; the sketch quantities are those of
 [CohenElderMuscoMuscoPersu2015, proof of Theorem 12].
@@ -178,9 +193,23 @@ theorem IsSubspaceInjection.mul_frobNorm_sub_mul_sq_le {A : Matrix m n 𝕜} {Ω
   rw [hs]
   nlinarith
 
-/-- **The early-truncation bound with all unboundedness in the head constant**: under the
-hypotheses of `NLAlib.IsSubspaceInjection.mul_frobNorm_sub_mul_sq_add_le`, for $0 < \lambda \le 1$
-and $0 < \theta < 1$, with $\mathbf{E}$, $w$, $\chi$ as there,
+/-- **The early-truncation bound with all unboundedness in the head constant.** For
+$\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
+$\mathbf{Z} \in \Bbbk^{n \times r}$ with orthonormal columns such that
+$\mathbf{\Omega}^{\mathsf{H}}$ is a subspace injection for $\operatorname{range}\mathbf{Z}$ with
+constant $\lambda$
+($\lambda\,\mathbf{Z}^{\mathsf{H}}\mathbf{Z} \preceq
+(\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z})^{\mathsf{H}}\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z}$),
+$0 < \lambda \le 1$, $0 < \theta < 1$,
+and an orthogonal projector $\mathbf{P} \in \Bbbk^{m \times m}$ of rank at most $k$ whose sketch
+residual is at most that of the frame's competitor,
+$\|\mathbf{A}\mathbf{\Omega} - \mathbf{P}\mathbf{A}\mathbf{\Omega}\|_{\mathsf{F}} \le
+\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}$, with
+$$\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}},\qquad
+w = \|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{E}^{\mathsf{H}} -
+\mathbf{E}\mathbf{E}^{\mathsf{H}}\|_{\mathsf{F}},\qquad
+\chi = \|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z} -
+\mathbf{E}\mathbf{Z}\|_{\mathsf{F}},$$
 $$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 \le
 \frac{\|\mathbf{E}\|_{\mathsf{F}}^2 + \sqrt{k}\,w}{(1-\theta)\lambda} +
 \frac{\chi^2}{\theta(1-\theta)\lambda^2}\,.$$
