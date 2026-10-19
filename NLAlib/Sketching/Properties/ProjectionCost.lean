@@ -96,8 +96,7 @@ The sketch $\tilde{\mathbf{A}}$ is any matrix with the rows of $\mathbf{A}$, not
 $\mathbf{A}\mathbf{\Omega}$.
 [CohenElderMuscoMuscoPersu2015, Definitions 1 and 2]; there over $\mathbb{R}$, with $\varepsilon$,
 and for projectors of rank exactly $k$; here constants $a$, $b$, any `RCLike` field, rank at most
-$k$, so that projectors of smaller rank (a rank-deficient truncation) are covered.
-Result: projection-cost-preserving-sketch -/
+$k$, so that projectors of smaller rank (a rank-deficient truncation) are covered. -/
 def IsProjectionCostPreserving (A : Matrix m n 𝕜) (Ã : Matrix m l 𝕜) (k : ℕ) (a b : ℝ) : Prop :=
   ∃ c : ℝ, 0 ≤ c ∧ ∀ P : Matrix m m 𝕜, IsStarProjection P → P.rank ≤ k →
     a * frobNorm (A - P * A) ^ 2 ≤ frobNorm (Ã - P * Ã) ^ 2 + c ∧
@@ -343,8 +342,7 @@ $\omega$. With a test matrix $\mathbf{\Omega}$ the sketch is $\mathbf{\Omega}^{\
 predicate bounds the real measure of an arbitrary set.
 [CohenElderMuscoMuscoPersu2015, Definition 1] for the predicate at each $\omega$;
 [CohenElderMuscoMuscoPersu2015, Theorem 12] for the form "with probability at least
-$1 - O(\delta)$", there with error $O(\varepsilon)$.
-Result: projection-cost-preserving-sketch -/
+$1 - O(\delta)$", there with error $O(\varepsilon)$. -/
 def HasProjectionCostPreserving (S : Ω → Matrix l n 𝕜) (A : Matrix m n 𝕜) (k : ℕ) (a b δ : ℝ)
     (μ : Measure Ω) : Prop :=
   μ.real {ω | ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ

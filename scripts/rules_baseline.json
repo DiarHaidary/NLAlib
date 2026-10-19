@@ -288,12 +288,6 @@
    "NLAlib/Probability/MatrixConcentration/Bernstein.lean": 4,
    "NLAlib/Probability/MatrixConcentration/Chernoff.lean": 1
   },
-  "R1": {
-   "NLAlib/Matrix/Subspaces/Leverage.lean": 1,
-   "NLAlib/Sketching/Properties/Oblivious.lean": 2,
-   "NLAlib/Sketching/Properties/ProjectionCost.lean": 2,
-   "NLAlib/Sketching/Properties/SubspaceEmbedding.lean": 2
-  },
   "S1": {
    "NLAlib/RandomMatrix/Haar/Sphere.lean": 1,
    "NLAlib/Sketching/Sparse/CountSketch.lean": 1

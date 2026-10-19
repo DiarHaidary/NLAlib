@@ -60,8 +60,7 @@ $\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $d$, $\mathbf{S}$ is a subsp
 $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ with probability $1 - \delta$.
 [Woodruff2014, Definition 2], there $1 \mp \varepsilon$; [CamanoEpperlyMeyerTropp2025,
 Definition 1.1], there $\alpha$, $\beta$; both for subspaces of dimension exactly $d$, here at
-most $d$.
-Result: ose-def -/
+most $d$. -/
 def IsObliviousSubspaceEmbedding (S : Ω → Matrix k n 𝕜) (d : ℕ) (a b δ : ℝ) (μ : Measure Ω) :
     Prop :=
   ∀ U : Matrix n n 𝕜, U.rank ≤ d → HasSubspaceEmbedding S U a b δ μ
@@ -70,8 +69,7 @@ def IsObliviousSubspaceEmbedding (S : Ω → Matrix k n 𝕜) (d : ℕ) (a b δ 
 $\mathbf{U} \in \Bbbk^{n \times n}$ of rank at most $d$, a subspace injection for
 $\operatorname{range}\mathbf{U}$ with constant $a$ with probability $1 - \delta$.
 [CamanoEpperlyMeyerTropp2025, Definition 1.2]; there $\delta = 1/20$ and $\alpha \in (0, 1]$,
-here any $\delta$ and $a$.
-Result: osi-def -/
+here any $\delta$ and $a$. -/
 structure IsObliviousSubspaceInjection [DecidableEq n] (S : Ω → Matrix k n 𝕜) (d : ℕ) (a δ : ℝ)
     (μ : Measure Ω) : Prop where
   /-- The sketch is isotropic. -/

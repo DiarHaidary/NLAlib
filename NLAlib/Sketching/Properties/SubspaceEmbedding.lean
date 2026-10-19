@@ -70,8 +70,7 @@ $a\,\mathbf{U}^{\mathsf{H}}\mathbf{U} \preceq
 $a \|\mathbf{U}\mathbf{x}\|^2 \le \|\mathbf{S}\mathbf{U}\mathbf{x}\|^2$ for every $\mathbf{x}$
 (`NLAlib.isSubspaceInjection_iff_forall_mem_range`). Vacuous for $a \le 0$.
 [CamanoEpperlyMeyerTropp2025, Definition 1.2 (1.3)]; there $\alpha \in (0, 1]$ and $\mathbf{U}$
-with orthonormal columns, here any real $a$ and any $\mathbf{U}$.
-Result: subspace-injection -/
+with orthonormal columns, here any real $a$ and any $\mathbf{U}$. -/
 def IsSubspaceInjection (S : Matrix k n 𝕜) (U : Matrix n p 𝕜) (a : ℝ) : Prop :=
   a • (Uᴴ * U) ≤ (S * U)ᴴ * (S * U)
 
@@ -80,8 +79,7 @@ constant $b$: $a \|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b \|\mathbf
 $\mathbf{y} \in \operatorname{range}\mathbf{U}$, in Loewner form on Gram matrices.
 [Woodruff2014, Definition 1], there $1 \mp \varepsilon$ and squared norms;
 [CamanoEpperlyMeyerTropp2025, Definition 1.1], there $\alpha$, $\beta$;
-[MartinssonTropp2020, §8.1], there unsquared norms.
-Result: ose-def -/
+[MartinssonTropp2020, §8.1], there unsquared norms. -/
 structure IsSubspaceEmbedding (S : Matrix k n 𝕜) (U : Matrix n p 𝕜) (a b : ℝ) : Prop where
   /-- The lower half: $\mathbf{S}$ is a subspace injection with constant $a$. -/
   lower : IsSubspaceInjection S U a
