@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build NLAlib and NLAlibScaffold with the Mathlib cache
+      - name: Build NLAlib and NLAlibScaffold with the Mathlib cache; warnings are fatal
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          build-args: "NLAlib NLAlibScaffold"
+          build-args: "--wfail NLAlib NLAlibScaffold"
           lint: false
           test: false
       - name: Root modules are current

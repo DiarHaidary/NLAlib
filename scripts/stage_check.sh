@@ -4,12 +4,13 @@
 #
 # Usage: scripts/stage_check.sh [EXCLUDE_REGEX]
 # Builds every module that `scripts/proved_modules.py` lists (minus those matching EXCLUDE_REGEX,
-# for files an agent is editing), then runs the axiom audit and the environment linters on exactly
-# those modules, the reference check, the named-bound value check (scripts/check_constants.py, on
-# the whole library), the rules check (scripts/check_rules.py, by rule id, the naming rules N1–N18
-# included, on an extraction of those modules) and the duplicate-statement report (which never
-# fails the script). Logs go to $TMPDIR (default /tmp). Run from the repository root; never while
-# another build is running (CONTRIBUTING §10).
+# for files an agent is editing) with warnings fatal (`--wfail`, as in CI), then runs the axiom
+# audit and the environment linters on exactly those modules, the reference check, the named-bound
+# value check (scripts/check_constants.py, on the whole library), the rules check
+# (scripts/check_rules.py, by rule id, the naming rules N1–N18 included, on an extraction of those
+# modules) and the duplicate-statement report (which never fails the script). Logs go to $TMPDIR
+# (default /tmp). Run from the repository root; never while another build is running
+# (CONTRIBUTING §10).
 set -euo pipefail
 tmp="${TMPDIR:-/tmp}/nlalib-stage-check"
 mkdir -p "$tmp"
@@ -17,7 +18,7 @@ python3 scripts/proved_modules.py | grep -v '^NLAlib$' | grep -Ev "${1:-^$}" > "
 sed 's/^/import /' "$tmp/modules.txt" > "$tmp/imports.txt"
 echo "$(wc -l < "$tmp/modules.txt") proved modules;" \
   "$(python3 scripts/proved_modules.py bad | grep -c . || true) not yet"
-LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" lake build $(tr '\n' ' ' < "$tmp/modules.txt") \
+LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" lake build --wfail $(tr '\n' ' ' < "$tmp/modules.txt") \
   > "$tmp/build.log" 2>&1 || { tail -30 "$tmp/build.log"; exit 1; }
 echo "build: $(tail -1 "$tmp/build.log"); warnings: $(grep -c 'warning' "$tmp/build.log" || true)"
 for check in Audit Lint; do
