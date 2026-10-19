@@ -382,7 +382,7 @@ theorem exists_embedding_eq_mul_pinv_mul [Fintype n] (A : Matrix m n 𝕜) :
   obtain ⟨e, he, hmax⟩ := exists_embedding_forall_re_det_le A le_rfl
   refine ⟨e, isLocalMaxVolume_one_of_forall_re_det_le he hmax, ?_⟩
   have hle : LinearMap.range (A.submatrix id e).mulVecLin ≤ LinearMap.range A.mulVecLin :=
-    range_mulVecLin_le_iff_exists_mul.mpr ⟨selectionMatrix e, (mul_selectionMatrix A e).symm⟩
+    range_le_iff_exists_mul.mpr ⟨selectionMatrix e, (mul_selectionMatrix A e).symm⟩
   have heq : LinearMap.range (A.submatrix id e).mulVecLin = LinearMap.range A.mulVecLin := by
     refine Submodule.eq_of_le_of_finrank_eq hle ?_
     change (A.submatrix id e).rank = A.rank

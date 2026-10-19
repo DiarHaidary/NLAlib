@@ -60,7 +60,7 @@ private theorem prod_sq_singularValues_mul_le (A : Matrix m p 𝕜) {k : ℕ}
     rw [h1, h2]
     simp only [Matrix.det_mul]
     ring
-  simp only [det_conjTranspose_mul_self_eq_prod_sq_singularValues, Fintype.card_fin] at hdet
+  simp only [det_conjTranspose_mul_self_eq_prod_singularValues_sq, Fintype.card_fin] at hdet
   have hdet' : ∏ i ∈ Finset.range k, singularValues (A * Y) i ^ 2 =
       (∏ i ∈ Finset.range k, singularValues (A * U) i ^ 2) *
         ∏ i ∈ Finset.range k, singularValues Y i ^ 2 := by

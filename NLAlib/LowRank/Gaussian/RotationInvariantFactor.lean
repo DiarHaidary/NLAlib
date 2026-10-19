@@ -117,8 +117,8 @@ private theorem posSemidef_fromBlocks_smul_one' {s t : Type*} [DecidableEq s] [D
 private theorem range_polarFactor {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
     (A : Matrix m n ℝ) :
     LinearMap.range A.mulVecLin = LinearMap.range (polarFactor A).mulVecLin := by
-  refine le_antisymm (range_mulVecLin_le_iff_exists_mul.mpr ⟨_, (polarFactor_mul_sqrt A).symm⟩)
-    (range_mulVecLin_le_iff_exists_mul.mpr ⟨_, rfl⟩)
+  refine le_antisymm (range_le_iff_exists_mul.mpr ⟨_, (polarFactor_mul_sqrt A).symm⟩)
+    (range_le_iff_exists_mul.mpr ⟨_, rfl⟩)
 
 /-- **Nyström for a matrix with two eigenvalues** (the hard instance): for $\mathbf{Y}$ on
 $(s \oplus t) \times l$ with a left unitarily invariant law and full column rank almost surely,

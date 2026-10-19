@@ -216,7 +216,7 @@ $-t$. No finiteness assumption on $\mu$: integrability at $\theta = 0$ gives it.
 at $v = b = 0$ the constant $0$ satisfies the hypothesis and the event is everything. The exact
 constant, which the $\min(t^2/v, t/b)$ forms of `NLAlib.Probability.SubExponential.Tail` lose; the
 step behind every exact-constant Bernstein-type tail (the Hsu–Kakade–Zhang tail
-`NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`). [BoucheronLugosiMassart2013] (the
+`NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le`). [BoucheronLugosiMassart2013] (the
 sub-gamma tail of their Chapter 2; locator not checked against the book). -/
 theorem measureReal_ge_le_exp_neg_of_mgf_le {X : Ω → ℝ} {v b : ℝ} (hv : 0 < v) (hb : 0 ≤ b)
     (hint : ∀ θ : ℝ, 0 ≤ θ → b * θ < 1 → Integrable (fun ω => Real.exp (θ * X ω)) μ)

@@ -26,7 +26,7 @@ $\mathbf{A}$ (`Matrix.PosSemidef.fromBlocks₁₁`).
 ## Main results
 
 * `NLAlib.posSemidef_fromBlocks_iff_exists`: Albert's criterion, without the pseudoinverse.
-* `NLAlib.quadForm_fromBlocks_eq_add`: completing the square.
+* `Matrix.IsHermitian.quadForm_fromBlocks_eq_add`: completing the square.
 * `NLAlib.posDef_fromBlocks_iff`: the positive definite criterion.
 -/
 
@@ -47,7 +47,8 @@ $$\begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}^{\mathsf{H}} \mathbf{M}
   \mathbf{x}^{\mathsf{H}}(\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X})\mathbf{x}\,.$$
 Port of `NLAlib.dotProduct_fromBlocks_eq_generalizedSchurComplement_square`, there with
 $\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$. -/
-theorem quadForm_fromBlocks_eq_add [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
+theorem _root_.Matrix.IsHermitian.quadForm_fromBlocks_eq_add [Fintype m] [Fintype n]
+    {A : Matrix m m 𝕜}
     {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hX : A * X = B) (y : m → 𝕜) (x : n → 𝕜) :
     quadForm (Matrix.fromBlocks A B Bᴴ C) (Sum.elim y x) =
@@ -63,7 +64,8 @@ theorem quadForm_fromBlocks_eq_add [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
 
 /-- For Hermitian $\mathbf{A}$, the matrix $\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is the
 same for every solution $\mathbf{X}$ of $\mathbf{A}\mathbf{X} = \mathbf{B}$. -/
-theorem conjTranspose_mul_mul_eq_of_mul_eq [Fintype m] {A : Matrix m m 𝕜} {B X Y : Matrix m n 𝕜}
+theorem _root_.Matrix.IsHermitian.conjTranspose_mul_mul_eq_of_mul_eq [Fintype m] {A : Matrix m m 𝕜}
+    {B X Y : Matrix m n 𝕜}
     (hA : A.IsHermitian) (hX : A * X = B) (hY : A * Y = B) : Xᴴ * A * X = Yᴴ * A * Y := by
   calc Xᴴ * A * X = Xᴴ * (A * Y) := by rw [Matrix.mul_assoc, hX, hY]
     _ = (A * X)ᴴ * Y := by rw [Matrix.conjTranspose_mul, hA.eq, Matrix.mul_assoc]
@@ -73,7 +75,7 @@ theorem conjTranspose_mul_mul_eq_of_mul_eq [Fintype m] {A : Matrix m m 𝕜} {B 
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, the kernel of the leading block $\mathbf{A}$ is
 contained in the kernel of $\mathbf{B}^{\mathsf{H}}$. Port of
 `NLAlib.conjTranspose_mulVec_eq_zero_of_fromBlocks_posSemidef`. -/
-theorem conjTranspose_mulVec_eq_zero_of_posSemidef_fromBlocks [Fintype m] [Finite n]
+theorem _root_.Matrix.PosSemidef.conjTranspose_mulVec_eq_zero_of_fromBlocks [Fintype m] [Finite n]
     {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) {z : m → 𝕜} (hz : A *ᵥ z = 0) :
     Bᴴ *ᵥ z = 0 := by
@@ -92,7 +94,7 @@ theorem conjTranspose_mulVec_eq_zero_of_posSemidef_fromBlocks [Fintype m] [Finit
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, the columns of the off-diagonal block
 $\mathbf{B}$ lie in the column space of the leading block $\mathbf{A}$.
 Port of `NLAlib.one_sub_mul_moorePenroseInverse_mul_eq_zero_of_fromBlocks_posSemidef`. -/
-theorem range_mulVecLin_le_of_posSemidef_fromBlocks [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.range_le_of_fromBlocks [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
     LinearMap.range B.mulVecLin ≤ LinearMap.range A.mulVecLin := by
   classical
@@ -102,7 +104,7 @@ theorem range_mulVecLin_le_of_posSemidef_fromBlocks [Fintype m] [Fintype n] {A :
   have hBF : Bᴴ * (1 - rangeProjector A) = 0 := by
     refine Matrix.ext_iff_mulVec.mpr fun v => ?_
     rw [Matrix.zero_mulVec, ← Matrix.mulVec_mulVec]
-    refine conjTranspose_mulVec_eq_zero_of_posSemidef_fromBlocks h ?_
+    refine Matrix.PosSemidef.conjTranspose_mulVec_eq_zero_of_fromBlocks h ?_
     rw [Matrix.mulVec_mulVec, hAF, Matrix.zero_mulVec]
   have hFB : (1 - rangeProjector A) * B = 0 := by
     have hc := congrArg Matrix.conjTranspose hBF
@@ -117,7 +119,7 @@ theorem range_mulVecLin_le_of_posSemidef_fromBlocks [Fintype m] [Fintype n] {A :
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ is positive semidefinite exactly when
 $\mathbf{A}$ is, the equation $\mathbf{A}\mathbf{X} = \mathbf{B}$ has a solution, and
 $\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is positive semidefinite for one such
-solution (equivalently for all, `NLAlib.conjTranspose_mul_mul_eq_of_mul_eq`).
+solution (equivalently for all, `Matrix.IsHermitian.conjTranspose_mul_mul_eq_of_mul_eq`).
 [HornJohnson2013, Theorem 7.7.9]; stated there with the pseudoinverse solution
 $\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$ and the range condition
 $\mathbf{A}\mathbf{A}^{+}\mathbf{B} = \mathbf{B}$, here with any solution, so that no
@@ -134,18 +136,19 @@ theorem posSemidef_fromBlocks_iff_exists [Fintype m] [Finite n] {A : Matrix m m 
     have hA : A.PosSemidef := h.submatrix (Sum.inl : m → m ⊕ n)
     have hC : C.PosSemidef := h.submatrix (Sum.inr : n → m ⊕ n)
     obtain ⟨X, hX⟩ :=
-      range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_le_of_posSemidef_fromBlocks h)
+      range_le_iff_exists_mul.mp (Matrix.PosSemidef.range_le_of_fromBlocks h)
     refine ⟨hA, X, hX.symm, posSemidef_iff_quadForm_nonneg.mpr ⟨hC.isHermitian.sub
       (Matrix.isHermitian_conjTranspose_mul_mul X hA.isHermitian), fun x => ?_⟩⟩
     have hx := h.quadForm_nonneg (Sum.elim (-(X *ᵥ x)) x)
-    rwa [quadForm_fromBlocks_eq_add hA.isHermitian hX.symm, neg_add_cancel, quadForm_zero_right,
+    rwa [Matrix.IsHermitian.quadForm_fromBlocks_eq_add hA.isHermitian hX.symm, neg_add_cancel,
+      quadForm_zero_right,
       zero_add] at hx
   · rintro ⟨hA, X, hX, hS⟩
     have hC : C.IsHermitian := by
       simpa only [sub_add_cancel] using
         hS.isHermitian.add (Matrix.isHermitian_conjTranspose_mul_mul X hA.isHermitian)
     refine posSemidef_iff_quadForm_nonneg.mpr ⟨hA.isHermitian.fromBlocks rfl hC, fun z => ?_⟩
-    rw [← Sum.elim_comp_inl_inr z, quadForm_fromBlocks_eq_add hA.isHermitian hX]
+    rw [← Sum.elim_comp_inl_inr z, Matrix.IsHermitian.quadForm_fromBlocks_eq_add hA.isHermitian hX]
     exact add_nonneg (hA.quadForm_nonneg _) (hS.quadForm_nonneg _)
 
 /-- If the block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} &
@@ -153,12 +156,13 @@ theorem posSemidef_fromBlocks_iff_exists [Fintype m] [Finite n] {A : Matrix m m 
 $\mathbf{A}\mathbf{X} = \mathbf{B}$ the Schur complement $\mathbf{C} -
 \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is positive semidefinite.
 Port of `NLAlib.generalizedSchurComplement_nonneg`. -/
-theorem posSemidef_sub_conjTranspose_mul_mul_of_posSemidef_fromBlocks [Fintype m] [Finite n]
+theorem _root_.Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_mul_of_fromBlocks [Fintype m]
+    [Finite n]
     {A : Matrix m m 𝕜} {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) (hX : A * X = B) :
     (C - Xᴴ * A * X).PosSemidef := by
   obtain ⟨hA, Y, hY, hS⟩ := posSemidef_fromBlocks_iff_exists.mp h
-  rwa [conjTranspose_mul_mul_eq_of_mul_eq hA.isHermitian hX hY]
+  rwa [Matrix.IsHermitian.conjTranspose_mul_mul_eq_of_mul_eq hA.isHermitian hX hY]
 
 /-- **The Schur complement as a partial minimum.** If $\mathbf{M} = \begin{bmatrix} \mathbf{A} &
 \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ is positive semidefinite and
@@ -167,22 +171,24 @@ $$\mathbf{x}^{\mathsf{H}}(\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{
   \le \begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}^{\mathsf{H}} \mathbf{M} \begin{bmatrix}
   \mathbf{y} \\ \mathbf{x} \end{bmatrix}\,,$$
 in the order of $\Bbbk$. Equality holds at $\mathbf{y} = -\mathbf{X}\mathbf{x}$
-(`NLAlib.quadForm_fromBlocks_eq_add`).
+(`Matrix.IsHermitian.quadForm_fromBlocks_eq_add`).
 Port of `NLAlib.dotProduct_generalizedSchurComplement_mulVec_le`.
 Result: schur-complement-variational -/
-theorem quadForm_sub_conjTranspose_mul_mul_le [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.quadForm_sub_conjTranspose_mul_mul_le [Fintype m] [Fintype n]
+    {A : Matrix m m 𝕜}
     {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef)
     (hX : A * X = B) (y : m → 𝕜) (x : n → 𝕜) :
     quadForm (C - Xᴴ * A * X) x ≤ quadForm (Matrix.fromBlocks A B Bᴴ C) (Sum.elim y x) := by
   have hA : A.PosSemidef := h.submatrix (Sum.inl : m → m ⊕ n)
-  rw [quadForm_fromBlocks_eq_add hA.isHermitian hX]
+  rw [Matrix.IsHermitian.quadForm_fromBlocks_eq_add hA.isHermitian hX]
   exact le_add_of_nonneg_left (hA.quadForm_nonneg _)
 
 /-- The Schur complement of a positive semidefinite leading block is below $\mathbf{C}$ in the
 Loewner order: $\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} \preceq \mathbf{C}$ for
 $\mathbf{0} \preceq \mathbf{A}$ and any $\mathbf{X}$. Port of
 `NLAlib.generalizedSchurComplement_le`. -/
-theorem sub_conjTranspose_mul_mul_le [Fintype m] [Finite n] {A : Matrix m m 𝕜} (hA : A.PosSemidef)
+theorem _root_.Matrix.PosSemidef.sub_conjTranspose_mul_mul_le [Fintype m] [Finite n]
+    {A : Matrix m m 𝕜} (hA : A.PosSemidef)
     (X : Matrix m n 𝕜) (C : Matrix n n 𝕜) : C - Xᴴ * A * X ≤ C := by
   rw [Matrix.le_iff, sub_sub_cancel]
   exact hA.conjTranspose_mul_mul_same X
@@ -216,7 +222,8 @@ theorem posDef_fromBlocks_iff [Fintype m] [Finite n] [DecidableEq m] {A : Matrix
           simpa only [Sum.elim_comp_inr, Pi.zero_comp] using
             congrArg (fun v : m ⊕ n → 𝕜 => v ∘ Sum.inr) h0)
       have hpos := h.quadForm_pos hne
-      rwa [quadForm_fromBlocks_eq_add hA.isHermitian hAB, neg_add_cancel, quadForm_zero_right,
+      rwa [Matrix.IsHermitian.quadForm_fromBlocks_eq_add hA.isHermitian hAB, neg_add_cancel,
+        quadForm_zero_right,
         zero_add, hS] at hpos
   · rintro ⟨hA, hSd⟩
     obtain ⟨hAB, hS⟩ := key hA
@@ -226,7 +233,7 @@ theorem posDef_fromBlocks_iff [Fintype m] [Finite n] [DecidableEq m] {A : Matrix
         hSd.isHermitian.add
           (Matrix.isHermitian_conjTranspose_mul_mul (A⁻¹ * B) hA.isHermitian)
     refine posDef_iff_quadForm_pos.mpr ⟨hA.isHermitian.fromBlocks rfl hC, fun z hz => ?_⟩
-    rw [← Sum.elim_comp_inl_inr z, quadForm_fromBlocks_eq_add hA.isHermitian hAB]
+    rw [← Sum.elim_comp_inl_inr z, Matrix.IsHermitian.quadForm_fromBlocks_eq_add hA.isHermitian hAB]
     rcases eq_or_ne (z ∘ Sum.inr) 0 with hx | hx
     · have hy : z ∘ Sum.inl ≠ 0 := fun hy => hz (by
         rw [← Sum.elim_comp_inl_inr z, hx, hy]

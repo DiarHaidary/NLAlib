@@ -1,0 +1,1600 @@
+{
+ "date": "2026-10-19",
+ "note": "Naming grammar (docs/design/Naming.md, CONTRIBUTING §4). Before v0.1: no deprecated aliases. statementChanged lists the declarations (new names) whose statements changed: scalar tail events stated positively (N15) and trace-estimation errors flipped to tr A - estimate (N10). N18 entries move a theorem into the namespace of its first explicit hypothesis (dot notation).",
+ "renames": [
+  {
+   "old": "IsStarProjection.sq_singularValues_one_sub_mul",
+   "new": "IsStarProjection.singularValues_one_sub_mul_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "Matrix.IsHermitian.inertiaNeg_fromBlocks_diagonal",
+   "new": "Matrix.IsHermitian.inertiaNeg_fromBlocks_zero₁₂_zero₂₁",
+   "rule": "N5"
+  },
+  {
+   "old": "Matrix.IsHermitian.inertiaPos_fromBlocks_diagonal",
+   "new": "Matrix.IsHermitian.inertiaPos_fromBlocks_zero₁₂_zero₂₁",
+   "rule": "N5"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_not_nuclearNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix",
+   "new": "Matrix.PosSemidef.measureReal_nuclearNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_not_nuclearNorm_sub_truncatedSVD_nystrom_le_le_of_hasLaw_gaussianMatrix",
+   "new": "Matrix.PosSemidef.measureReal_nuclearNorm_sub_truncatedSVD_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_not_schattenNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix",
+   "new": "Matrix.PosSemidef.measureReal_schattenNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_not_specNorm_sub_le_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix",
+   "new": "Matrix.PosSemidef.measureReal_specNorm_sub_gt_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_not_specNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix",
+   "new": "Matrix.PosSemidef.measureReal_specNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_not_specNorm_sub_truncatedSVD_nystrom_le_le_of_hasLaw_gaussianMatrix",
+   "new": "Matrix.PosSemidef.measureReal_specNorm_sub_truncatedSVD_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector",
+   "new": "Matrix.PosSemidef.measureReal_hutchpp_gt_one_add_mul_trace_le_of_isSubgaussianVector",
+   "rule": "N15"
+  },
+  {
+   "old": "Matrix.PosSemidef.sq_singularValues_sqrt",
+   "new": "Matrix.PosSemidef.singularValues_sqrt_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "Matrix.finrank_ker_mulVecLin_add_rank",
+   "new": "Matrix.finrank_ker_add_rank",
+   "rule": "N5"
+  },
+  {
+   "old": "Matrix.mem_range_mulVecLin_fromCols_replicateCol",
+   "new": "Matrix.mem_range_fromCols_replicateCol",
+   "rule": "N5"
+  },
+  {
+   "old": "Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq",
+   "new": "Matrix.range_conjTranspose_mul_eq_of_rank_eq",
+   "rule": "N5"
+  },
+  {
+   "old": "Matrix.range_mulVecLin_le_range_fromCols_left",
+   "new": "Matrix.range_le_range_fromCols_left",
+   "rule": "N5"
+  },
+  {
+   "old": "MeasureTheory.Supermartingale.measure_exists_ge_le",
+   "new": "MeasureTheory.Supermartingale.measureReal_exists_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasCondMatrixMGFBound.measure_exists_eigenvalue_zero_sum_ge_le",
+   "new": "NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasGramTraceMoment.measure_specNorm_ge_le",
+   "new": "NLAlib.HasGramTraceMoment.measureReal_specNorm_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_abs_frobNorm_mul_sq_sub_ge_le",
+   "new": "NLAlib.HasJLMoment.measureReal_abs_frobNorm_mul_sq_sub_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_rsvd_sq_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLMoment.measure_nuclearNorm_sub_nystrom_gt_le",
+   "new": "NLAlib.HasJLMoment.measureReal_nuclearNorm_sub_nystrom_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLProperty.measure_abs_norm_mulVec_sq_sub_ge_le",
+   "new": "NLAlib.HasJLProperty.measureReal_abs_norm_mulVec_sq_sub_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le",
+   "new": "NLAlib.HasJLProperty.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le",
+   "new": "NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le_card_mul_exp",
+   "new": "NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasOrthonormalCols.fromBlocks_diagonal",
+   "new": "NLAlib.HasOrthonormalCols.fromBlocks_zero₁₂_zero₂₁",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_sq_singularValues",
+   "new": "NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.HasOrthonormalCols.sq_singularValues_toBlocks₂₁",
+   "new": "NLAlib.HasOrthonormalCols.singularValues_toBlocks₂₁_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le",
+   "new": "NLAlib.HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le",
+   "new": "NLAlib.HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubexponentialMGF.measure_abs_ge_le",
+   "new": "NLAlib.HasSubexponentialMGF.measureReal_abs_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubexponentialMGF.measure_ge_le",
+   "new": "NLAlib.HasSubexponentialMGF.measureReal_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubexponentialMGF.measure_ge_le_of_le_mul",
+   "new": "NLAlib.HasSubexponentialMGF.measureReal_ge_le_of_le_mul",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubexponentialMGF.measure_ge_le_of_mul_le",
+   "new": "NLAlib.HasSubexponentialMGF.measureReal_ge_le_of_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubexponentialMGF.measure_le_le",
+   "new": "NLAlib.HasSubexponentialMGF.measureReal_le_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun",
+   "new": "NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_norm_sub_mulVec_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.HasSubspaceInjection.measure_specNorm_sub_rsvd_sq_gt_le",
+   "new": "NLAlib.HasSubspaceInjection.measureReal_specNorm_sub_rsvd_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indepFun",
+   "new": "NLAlib.IsObliviousSubspaceEmbedding.measureReal_not_isSubspaceEmbedding_le_of_indepFun",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_matrixNorm_sub_nystrom_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_matrixNorm_sub_nystrom_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_norm_sub_mulVec_sq_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_le_of_indepFun",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_not_isSubspaceInjection_le_of_indepFun",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_truncatedSVD_nystrom_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_truncatedSVD_nystrom_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsObliviousSubspaceInjection.measure_specNorm_sub_nystrom_gt_le",
+   "new": "NLAlib.IsObliviousSubspaceInjection.measureReal_specNorm_sub_nystrom_gt_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsPinv.range_mulVecLin_eq",
+   "new": "NLAlib.IsPinv.range_eq",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le",
+   "new": "NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le",
+   "new": "NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.IsSubgaussianVector.measure_sum_mul_sq_ge_le",
+   "new": "NLAlib.IsSubgaussianVector.measureReal_sum_mul_sq_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "NLAlib.SymmetricGauge.measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.SymmetricGauge.measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_haarFrame",
+   "new": "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_haarFrame",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.SymmetricGauge.measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant",
+   "new": "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.SymmetricGauge.measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.SymmetricGauge.measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.SymmetricGauge.measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant",
+   "new": "NLAlib.SymmetricGauge.measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.abs_eigengap_sub_le",
+   "new": "Matrix.IsHermitian.abs_eigengap_sub_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.abs_eigenvalue_sub_le",
+   "new": "Matrix.IsHermitian.abs_eigenvalue_sub_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector",
+   "new": "NLAlib.HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.ae_mul_conjTranspose_eq_of_hasLaw_srht",
+   "new": "NLAlib.HasOrthonormalCols.ae_mul_conjTranspose_eq_of_hasLaw_srht",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.ae_specNorm_eq_of_hasLaw_srht",
+   "new": "NLAlib.HasOrthonormalCols.ae_specNorm_eq_of_hasLaw_srht",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.aeval_mul_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.aeval_mul_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn",
+   "new": "Matrix.IsHermitian.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.cfc_eq_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.cfc_fromBlocks_diagonal",
+   "new": "Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁",
+   "rule": "N5,N18"
+  },
+  {
+   "old": "NLAlib.cfc_mul_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.cfc_submatrix_equiv",
+   "new": "Matrix.IsHermitian.cfc_submatrix_equiv",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.charpoly_add_vecMulVec_mul",
+   "new": "NLAlib.X_sub_C_mul_charpoly_add_vecMulVec",
+   "rule": "N2"
+  },
+  {
+   "old": "NLAlib.complexify_cfc",
+   "new": "Matrix.IsHermitian.complexify_cfc",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.concaveOn_re_trace_exp_add_cfc_log",
+   "new": "Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc",
+   "new": "NLAlib.submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc",
+   "rule": "N2"
+  },
+  {
+   "old": "NLAlib.conjTranspose_mulVec_eq_zero_of_posSemidef_fromBlocks",
+   "new": "Matrix.PosSemidef.conjTranspose_mulVec_eq_zero_of_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.conjTranspose_mul_mul_eq_of_mul_eq",
+   "new": "Matrix.IsHermitian.conjTranspose_mul_mul_eq_of_mul_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.conjTranspose_mul_mul_sub_mul_eq",
+   "new": "Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.countSketchRows",
+   "new": "NLAlib.countSketchEmbeddingDim",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.countSketchRows_def",
+   "new": "NLAlib.countSketchEmbeddingDim_def",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.countSketchRows_le",
+   "new": "NLAlib.countSketchEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.countSketchRows_mono",
+   "new": "NLAlib.countSketchEmbeddingDim_mono",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.countSketchRows_nonneg",
+   "new": "NLAlib.countSketchEmbeddingDim_nonneg",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.det_conjTranspose_mul_self_eq_prod_sq_singularValues",
+   "new": "NLAlib.det_conjTranspose_mul_self_eq_prod_singularValues_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.det_ne_zero_of_posDef_hermitianPart",
+   "new": "Matrix.PosDef.det_ne_zero_of_hermitianPart",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigengap_mul_frobNorm_one_sub_mul_sq_le",
+   "new": "Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner",
+   "new": "Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le",
+   "new": "Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_add_eigenvalue_last_le",
+   "new": "Matrix.IsHermitian.eigenvalue_add_eigenvalue_last_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_add_le",
+   "new": "Matrix.IsHermitian.eigenvalue_add_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_add_le_add_eigenvalue_zero",
+   "new": "Matrix.IsHermitian.eigenvalue_add_le_add_eigenvalue_zero",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_add_le_of_rank_le",
+   "new": "Matrix.IsHermitian.eigenvalue_add_le_of_rank_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_add_vecMulVec_star_le",
+   "new": "Matrix.IsHermitian.eigenvalue_add_vecMulVec_star_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_le_eigenvalue_add_of_posSemidef",
+   "new": "Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_posSemidef",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_le_eigenvalue_add_of_rank_le",
+   "new": "Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_rank_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_le_eigenvalue_add_vecMulVec_star",
+   "new": "Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_vecMulVec_star",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_le_eigenvalue_sub_vecMulVec_star",
+   "new": "Matrix.IsHermitian.eigenvalue_le_eigenvalue_sub_vecMulVec_star",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_sub_vecMulVec_star_le",
+   "new": "Matrix.IsHermitian.eigenvalue_sub_vecMulVec_star_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_zero_kronecker",
+   "new": "Matrix.PosSemidef.eigenvalue_zero_kronecker",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eigenvalue_zero_kronecker_one_add_one_kronecker",
+   "new": "Matrix.IsHermitian.eigenvalue_zero_kronecker_one_add_one_kronecker",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eq_sqrt_of_hasOrthonormalCols_mul_eq",
+   "new": "NLAlib.HasOrthonormalCols.eq_sqrt_of_mul_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.eq_zero_of_mul_eq_mul_of_eigenvalue_ne",
+   "new": "Matrix.IsHermitian.eq_zero_of_mul_eq_mul_of_eigenvalue_ne",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exists_cs_decomposition",
+   "new": "NLAlib.HasOrthonormalCols.exists_cs_decomposition",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exists_eq_mul_diagonal_of_isUpperHessenberg",
+   "new": "NLAlib.HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector",
+   "new": "NLAlib.exists_forall_measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector",
+   "rule": "N15,N10"
+  },
+  {
+   "old": "NLAlib.exists_real_orthogonal_of_complexify",
+   "new": "NLAlib.HasOrthonormalCols.exists_real_orthogonal_of_complexify",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exp_fromBlocks_diagonal",
+   "new": "NLAlib.exp_fromBlocks_zero₁₂_zero₂₁",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.exp_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.exp_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exp_mul_eigenvalue_le_re_trace_exp",
+   "new": "Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.exp_mul_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.exp_mul_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.forall_eq_of_mul_sqrt_eq_iff",
+   "new": "NLAlib.HasOrthonormalCols.forall_eq_of_mul_sqrt_eq_iff",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap",
+   "new": "Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le",
+   "new": "Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap",
+   "new": "Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le",
+   "new": "Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.frobNorm_sub_mul_sq_of_mul_sqrt_eq",
+   "new": "NLAlib.HasOrthonormalCols.frobNorm_sub_mul_sq_of_mul_sqrt_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.gramSchmidtQ_mul_left",
+   "new": "NLAlib.HasOrthonormalCols.gramSchmidtQ_mul_left",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.gramSchmidtR_mul_left",
+   "new": "NLAlib.HasOrthonormalCols.gramSchmidtR_mul_left",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le",
+   "new": "NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le",
+   "new": "NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le",
+   "new": "NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le",
+   "new": "NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.hutchpp_sub_trace",
+   "new": "NLAlib.trace_sub_hutchpp",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.integrable_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.integrable_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integrable_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.integrable_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integrable_re_trace_exp_add_of_le",
+   "new": "Matrix.IsHermitian.integrable_re_trace_exp_add_of_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim",
+   "new": "NLAlib.integral_eigenvalue_zero_sum_le_bernstein_intrinsicDimension",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integral_eigenvalue_zero_sum_le_chernoff_intrinsicDim",
+   "new": "NLAlib.integral_eigenvalue_zero_sum_le_chernoff_intrinsicDimension",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integral_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.integral_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integral_frobNorm_mul_smul_gram_mul_sub_sq_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_le_of_hasLaw_gaussianMatrix",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integral_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.integral_norm_girardHutchinson_sub_trace_sq",
+   "new": "NLAlib.integral_norm_trace_sub_girardHutchinson_sq",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.integral_norm_hutchpp_sub_trace_sq",
+   "new": "NLAlib.integral_norm_trace_sub_hutchpp_sq",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.integral_re_trace_exp_add_le",
+   "new": "Matrix.IsHermitian.integral_re_trace_exp_add_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.integral_specNorm_sum_le_bernstein_intrinsicDim",
+   "new": "NLAlib.integral_specNorm_sum_le_bernstein_intrinsicDimension",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.intrinsicDimension_fromBlocks_le",
+   "new": "Matrix.PosSemidef.intrinsicDimension_fromBlocks_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isDiagonalizable_fromBlocks_diagonal_iff",
+   "new": "NLAlib.isDiagonalizable_fromBlocks_zero₁₂_zero₂₁_iff",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.isEigenvalueListing_of_isUpperTriangular_conjTranspose_mul_mul",
+   "new": "NLAlib.HasOrthonormalCols.isEigenvalueListing_of_isUpperTriangular_conjTranspose_mul_mul",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isGradedKrylovBasis_of_forall_col_mem",
+   "new": "NLAlib.HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isGreatest_re_trace_exp_add_cfc_log",
+   "new": "Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isGreatest_re_trace_mul_cfc_log_sub",
+   "new": "Matrix.PosDef.isGreatest_re_trace_mul_cfc_log_sub",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isIsotropicSketch_of_hasLaw_srht",
+   "new": "NLAlib.HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srht",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isIsotropicSketch_of_hasLaw_srhtWithReplacement",
+   "new": "NLAlib.HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srhtWithReplacement",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isLeast_re_quadForm_fromBlocks",
+   "new": "Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le",
+   "new": "NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSize_le",
+   "new": "NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le",
+   "new": "NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le",
+   "new": "NLAlib.isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le",
+   "new": "NLAlib.isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le",
+   "new": "NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.isQR_submatrix_castLE",
+   "new": "NLAlib.HasOrthonormalCols.isQR_submatrix_castLE",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.isStarNormal_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.isStarNormal_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.ker_mulVecLin_le_ker_eliminationStep",
+   "new": "NLAlib.ker_le_ker_eliminationStep",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.le_eigenvalue_add",
+   "new": "Matrix.IsHermitian.le_eigenvalue_add",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.le_sq_singularValues_last_of_smul_one_le",
+   "new": "NLAlib.le_singularValues_last_sq_of_smul_one_le",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.majorized_eigenvalue_add",
+   "new": "Matrix.IsHermitian.majorized_eigenvalue_add",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.majorized_eigenvalue_add_sub",
+   "new": "Matrix.IsHermitian.majorized_eigenvalue_add_sub",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.majorized_re_diag_of_mul_eq_mul_diagonal",
+   "new": "NLAlib.HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.matrixPerspective_mul_diagonal_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.matrixPerspective_mul_diagonal_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap",
+   "new": "NLAlib.HasOrthonormalCols.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.measureReal_abs_girardHutchinson_sub_trace_ge_le",
+   "new": "NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le",
+   "new": "NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector",
+   "new": "NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector",
+   "rule": "N10"
+  },
+  {
+   "old": "NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDim_of_integral_le",
+   "new": "NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDimension_of_integral_le",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le",
+   "new": "NLAlib.measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDimension_of_integral_le",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim",
+   "new": "NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDimension",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDim",
+   "new": "NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDimension",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant",
+   "new": "NLAlib.measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector",
+   "new": "NLAlib.measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_le_inv_mul_conjTranspose_apply_self_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_inv_mul_conjTranspose_apply_self_ge_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_mul_card_le_norm_sq_le_of_hasLaw_gaussianVector",
+   "new": "NLAlib.measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector",
+   "new": "NLAlib.measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector",
+   "new": "NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector",
+   "rule": "N15,N10"
+  },
+  {
+   "old": "NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector",
+   "new": "NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector",
+   "new": "NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_hasLaw_rademacherVector",
+   "new": "NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_frobNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_frobNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_frobNorm_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun",
+   "new": "NLAlib.measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_specNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_specNorm_pinv_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_specNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_specNorm_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_specNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_specNorm_sub_sq_gt_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_not_specNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix",
+   "new": "NLAlib.measureReal_specNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+   "rule": "N15"
+  },
+  {
+   "old": "NLAlib.measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim",
+   "new": "NLAlib.measureReal_specNorm_sum_ge_le_bernstein_intrinsicDimension",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.min_intrinsicDimension_le_intrinsicDimension_fromBlocks",
+   "new": "Matrix.PosSemidef.min_intrinsicDimension_le_intrinsicDimension_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.mul_exp_le_of_samplingInjectionSize_le",
+   "new": "NLAlib.mul_exp_le_of_samplingInjectionDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.mul_frobNorm_conjTranspose_mul_le",
+   "new": "Matrix.IsHermitian.mul_frobNorm_conjTranspose_mul_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.mul_frobNorm_le_frobNorm_mul_sub_mul",
+   "new": "Matrix.IsHermitian.mul_frobNorm_le_frobNorm_mul_sub_mul",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.mul_norm_conjTranspose_mulVec_le",
+   "new": "Matrix.IsHermitian.mul_norm_conjTranspose_mulVec_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.mul_pinv_mul_eq_of_posSemidef_fromBlocks",
+   "new": "Matrix.PosSemidef.mul_pinv_mul_eq_of_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.mul_sq_singularValues_le_of_smul_le",
+   "new": "NLAlib.mul_singularValues_sq_le_of_smul_le",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.mul_sq_singularValues_le_of_smul_one_le",
+   "new": "NLAlib.mul_singularValues_sq_le_of_smul_one_le",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.neg_le_and_le_iff_forall_abs_re_quadForm_le",
+   "new": "Matrix.IsHermitian.neg_le_and_le_iff_forall_abs_re_quadForm_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.norm_sq_star_dotProduct_mulVec_le_of_posSemidef_fromBlocks",
+   "new": "Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal",
+   "new": "Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.one_sub_mul_mul_one_sub_le_of_smul_one_le",
+   "new": "Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_smul_one_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.polarFactor_mul_left",
+   "new": "NLAlib.HasOrthonormalCols.polarFactor_mul_left",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.polarFactor_mul_right",
+   "new": "NLAlib.HasOrthonormalCols.polarFactor_mul_right",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.posDef_of_exp_mul",
+   "new": "NLAlib.posDef_exp_mul_of_injective",
+   "rule": "N3"
+  },
+  {
+   "old": "NLAlib.posSemidef_fromBlocks_conjTranspose_mul_inv_mul",
+   "new": "Matrix.PosDef.posSemidef_fromBlocks_conjTranspose_mul_inv_mul",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt",
+   "new": "Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.posSemidef_fromBlocks_iff_forall_norm_sq_le",
+   "new": "Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.posSemidef_sub_conjTranspose_mul_mul_of_posSemidef_fromBlocks",
+   "new": "Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_mul_of_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.posSemidef_sub_conjTranspose_mul_pinv_mul_of_posSemidef_fromBlocks",
+   "new": "Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_pinv_mul_of_fromBlocks",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.projectionCostTailRows",
+   "new": "NLAlib.projectionCostTailDim",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.projectionCostTailRows_def",
+   "new": "NLAlib.projectionCostTailDim_def",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.projectionCostTailRows_le",
+   "new": "NLAlib.projectionCostTailDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.projectionCostTailRows_mono",
+   "new": "NLAlib.projectionCostTailDim_mono",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.projectionCostTailRows_nonneg",
+   "new": "NLAlib.projectionCostTailDim_nonneg",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.quadForm_fromBlocks_eq_add",
+   "new": "Matrix.IsHermitian.quadForm_fromBlocks_eq_add",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.quadForm_sub_conjTranspose_mul_mul_le",
+   "new": "Matrix.PosSemidef.quadForm_sub_conjTranspose_mul_mul_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_le_iff_exists_mul",
+   "new": "NLAlib.range_le_iff_exists_mul",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_le_of_posSemidef_fromBlocks",
+   "new": "Matrix.PosSemidef.range_le_of_fromBlocks",
+   "rule": "N5,N18"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_one_sub_rangeProjector",
+   "new": "NLAlib.range_one_sub_rangeProjector",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_pinv",
+   "new": "NLAlib.range_pinv",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_rangeProjector",
+   "new": "NLAlib.range_rangeProjector",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_truncatedSVD_le",
+   "new": "NLAlib.range_truncatedSVD_le",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.range_mulVecLin_truncatedSVD_mono",
+   "new": "NLAlib.range_truncatedSVD_mono",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.re_det_fromBlocks_eq_iff_of_posDef",
+   "new": "Matrix.PosDef.re_det_fromBlocks_eq_iff",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_det_fromBlocks_le_of_posSemidef",
+   "new": "Matrix.PosSemidef.re_det_fromBlocks_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_quadForm_cfc_eq_sum",
+   "new": "NLAlib.HasOrthonormalCols.re_quadForm_cfc_eq_sum",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_cfc_le_re_trace_cfc_of_le",
+   "new": "Matrix.IsHermitian.re_trace_cfc_le_re_trace_cfc_of_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_cfc_mul_cfc_eq_sum",
+   "new": "NLAlib.HasOrthonormalCols.re_trace_cfc_mul_cfc_eq_sum",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_exp_add_le",
+   "new": "Matrix.IsHermitian.re_trace_exp_add_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_exp_fromBlocks_diagonal",
+   "new": "NLAlib.re_trace_exp_fromBlocks_zero₁₂_zero₂₁",
+   "rule": "N5"
+  },
+  {
+   "old": "NLAlib.re_trace_exp_le_exp_specNorm_sub_mul",
+   "new": "Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_exp_le_re_trace_exp_of_le",
+   "new": "Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_exp_mul_mul_conjTranspose",
+   "new": "NLAlib.HasOrthonormalCols.re_trace_exp_mul_mul_conjTranspose",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_mul_diagonal_mul_mul_diagonal",
+   "new": "Matrix.IsHermitian.re_trace_mul_diagonal_mul_mul_diagonal",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_mul_le_re_trace_rpow_add",
+   "new": "Matrix.PosSemidef.re_trace_mul_le_re_trace_rpow_add",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_mul_pow_le_add",
+   "new": "Matrix.PosSemidef.re_trace_mul_pow_le_add",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_mul_pow_mul_pow_le",
+   "new": "Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.re_trace_sub_mul_pow_sub_pow_le",
+   "new": "Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.relativeEntropy_nonneg",
+   "new": "Matrix.PosDef.relativeEntropy_nonneg",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.samplingInjectionSize",
+   "new": "NLAlib.samplingInjectionDim",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingInjectionSize_def",
+   "new": "NLAlib.samplingInjectionDim_def",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingInjectionSize_le",
+   "new": "NLAlib.samplingInjectionDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingInjectionSize_mono",
+   "new": "NLAlib.samplingInjectionDim_mono",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingInjectionSize_nonneg",
+   "new": "NLAlib.samplingInjectionDim_nonneg",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingSize",
+   "new": "NLAlib.samplingEmbeddingDim",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingSize_def",
+   "new": "NLAlib.samplingEmbeddingDim_def",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingSize_le",
+   "new": "NLAlib.samplingEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingSize_mono",
+   "new": "NLAlib.samplingEmbeddingDim_mono",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.samplingSize_nonneg",
+   "new": "NLAlib.samplingEmbeddingDim_nonneg",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one",
+   "new": "NLAlib.HasOrthonormalCols.singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one",
+   "new": "NLAlib.HasOrthonormalCols.singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.specNorm_conjTranspose_mul_mul_pow_le",
+   "new": "Matrix.PosSemidef.specNorm_conjTranspose_mul_mul_pow_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap",
+   "new": "Matrix.IsHermitian.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal",
+   "new": "NLAlib.HasOrthonormalCols.specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub",
+   "new": "NLAlib.HasOrthonormalCols.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sq_singularValues",
+   "new": "NLAlib.singularValues_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sq_singularValues_eq_eigenvalue_mul_conjTranspose_self",
+   "new": "NLAlib.singularValues_sq_eq_eigenvalue_mul_conjTranspose_self",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one",
+   "new": "NLAlib.singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sq_singularValues_last_smul_one_le",
+   "new": "NLAlib.singularValues_last_sq_smul_one_le",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sq_singularValues_le_mul_of_le_smul",
+   "new": "NLAlib.singularValues_sq_le_mul_of_le_smul",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sq_singularValues_mul_le_of_conjTranspose_mul_self_le",
+   "new": "NLAlib.singularValues_mul_sq_le_of_conjTranspose_mul_self_le",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sq_singularValues_mul_rangeFinderTailRatio",
+   "new": "NLAlib.singularValues_sq_mul_rangeFinderTailRatio",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.sub_conjTranspose_mul_mul_le",
+   "new": "Matrix.PosSemidef.sub_conjTranspose_mul_mul_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sub_mul_diagonal_mul_conjTranspose_eq",
+   "new": "NLAlib.HasOrthonormalCols.sub_mul_diagonal_mul_conjTranspose_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le",
+   "new": "NLAlib.HasOrthonormalCols.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sum_abs_eigenvalue_sub_le_kyFanNorm_sub",
+   "new": "Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_kyFanNorm_sub",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sum_abs_eigenvalue_sub_le_nuclearNorm_sub",
+   "new": "Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_nuclearNorm_sub",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sum_eigenvalue_add_sub_le_sum_range",
+   "new": "Matrix.IsHermitian.sum_eigenvalue_add_sub_le_sum_range",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sum_range_eigenvalue_add_le",
+   "new": "Matrix.IsHermitian.sum_range_eigenvalue_add_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sum_re_trace_cfc_mul_cfc_le_of_forall",
+   "new": "Matrix.IsHermitian.sum_re_trace_cfc_mul_cfc_le_of_forall",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.sum_sq_eigenvalue_sub_le_frobNorm_sub_sq",
+   "new": "Matrix.IsHermitian.sum_eigenvalue_sub_sq_le_frobNorm_sub_sq",
+   "rule": "N6,N18"
+  },
+  {
+   "old": "NLAlib.sum_sq_singularValues_sub_le_frobNorm_sub_sq",
+   "new": "NLAlib.sum_singularValues_sub_sq_le_frobNorm_sub_sq",
+   "rule": "N6"
+  },
+  {
+   "old": "NLAlib.toLex_equivFun_svdU_svdV_le",
+   "new": "NLAlib.IsSVD.toLex_equivFun_svdU_svdV_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.two_mul_mul_exp_le_of_samplingSize_le",
+   "new": "NLAlib.two_mul_mul_exp_le_of_samplingEmbeddingDim_le",
+   "rule": "N16"
+  },
+  {
+   "old": "NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq",
+   "new": "NLAlib.HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.variance_quadForm_of_hasLaw_rademacherVector_le",
+   "new": "NLAlib.variance_quadForm_le_of_hasLaw_rademacherVector",
+   "rule": "N3"
+  },
+  {
+   "old": "ProbabilityTheory.HasSubgaussianMGF.measure_abs_ge_le",
+   "new": "ProbabilityTheory.HasSubgaussianMGF.measureReal_abs_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "ProbabilityTheory.HasSubgaussianMGF.measure_exists_abs_ge_le",
+   "new": "ProbabilityTheory.HasSubgaussianMGF.measureReal_exists_abs_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le",
+   "new": "ProbabilityTheory.HasSubgaussianMGF.measureReal_exists_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "ProbabilityTheory.HasSubgaussianMGF.measure_iSup_ge_le",
+   "new": "ProbabilityTheory.HasSubgaussianMGF.measureReal_iSup_ge_le",
+   "rule": "N14"
+  },
+  {
+   "old": "ProbabilityTheory.HasSubgaussianMGF.measure_le_le",
+   "new": "ProbabilityTheory.HasSubgaussianMGF.measureReal_le_le",
+   "rule": "N14"
+  }
+ ],
+ "statementChanged": [
+  "Matrix.PosSemidef.measureReal_nuclearNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_nuclearNorm_sub_truncatedSVD_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_schattenNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_specNorm_sub_gt_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_specNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_specNorm_sub_truncatedSVD_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_haarFrame",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant",
+  "NLAlib.exists_forall_measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector",
+  "NLAlib.integral_norm_trace_sub_girardHutchinson_sq",
+  "NLAlib.integral_norm_trace_sub_hutchpp_sq",
+  "NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le",
+  "NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le",
+  "NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector",
+  "NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector",
+  "NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector",
+  "NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector",
+  "NLAlib.measureReal_frobNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun",
+  "NLAlib.measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant",
+  "NLAlib.measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_sq_gt_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.trace_sub_hutchpp"
+ ]
+}

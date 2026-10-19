@@ -72,7 +72,7 @@ private theorem conjTranspose_mul_diagonal_mul_conjTranspose (U : Matrix n n �
 /-- A unitarily diagonalisable matrix is normal: for unitary $\mathbf{U}$,
 $\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ is normal.
 Port of `NLAlib.mul_conjTranspose_eq_conjTranspose_mul_of_unitary_diagonalization`. -/
-theorem isStarNormal_mul_diagonal_mul_conjTranspose {U : Matrix n n 𝕜}
+theorem HasOrthonormalCols.isStarNormal_mul_diagonal_mul_conjTranspose {U : Matrix n n 𝕜}
     (hU : HasOrthonormalCols U) (d : n → 𝕜) : IsStarNormal (U * Matrix.diagonal d * Uᴴ) := by
   refine ⟨?_⟩
   rw [Commute, SemiconjBy, Matrix.star_eq_conjTranspose]
@@ -156,7 +156,7 @@ theorem isStarNormal_iff_exists_eq_mul_diagonal_mul_conjTranspose {A : Matrix n 
     obtain ⟨U, hU, h⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose_of_isEigenvalueListing hd
     exact ⟨U, d, hU, h⟩
   · rintro ⟨U, d, hU, rfl⟩
-    exact isStarNormal_mul_diagonal_mul_conjTranspose hU d
+    exact HasOrthonormalCols.isStarNormal_mul_diagonal_mul_conjTranspose hU d
 
 omit [DecidableEq m] [DecidableEq n] in
 open scoped ComplexOrder in

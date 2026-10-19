@@ -446,7 +446,7 @@ theorem truncatedSVD_rsvd_eq_rangeProjector_mul (A : Matrix m n 𝕜) (Ω : Matr
     truncatedSVD (rsvd A Ω) k = rangeProjector (truncatedSVD (rsvd A Ω) k) * A := by
   have hle : LinearMap.range (truncatedSVD (rsvd A Ω) k).mulVecLin ≤
       LinearMap.range (A * Ω).mulVecLin :=
-    (range_mulVecLin_truncatedSVD_le _ k).trans (range_rsvd_le A Ω)
+    (range_truncatedSVD_le _ k).trans (range_rsvd_le A Ω)
   calc truncatedSVD (rsvd A Ω) k
       = rangeProjector (truncatedSVD (rsvd A Ω) k) * rsvd A Ω :=
         (rangeProjector_truncatedSVD_mul _ k).symm
@@ -471,6 +471,6 @@ theorem singularValues_sub_truncatedSVD_rsvd_le_of_le (A : Matrix m n 𝕜) (Ω 
     rw [Matrix.sub_mul, Matrix.one_mul]
   rw [hsub k', hsub k]
   exact singularValues_one_sub_rangeProjector_mul_le_of_range_le
-    (range_mulVecLin_truncatedSVD_mono _ h) A i
+    (range_truncatedSVD_mono _ h) A i
 
 end NLAlib

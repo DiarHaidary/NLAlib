@@ -27,9 +27,8 @@ spectral, Frobenius and nuclear norms, the rank, the pseudoinverse and the pseud
   `NLAlib.rank_kronecker`, `NLAlib.IsPinv.kronecker`, `NLAlib.pinv_kronecker`,
   `NLAlib.pseudoConditionNumber_kronecker`.
 * `NLAlib.kronecker_eq_mul_diagonal_mul_conjTranspose`,
-  `NLAlib.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose`: eigenvalues of a
-  Kronecker product and of a Kronecker sum.
--/
+  `NLAlib.HasOrthonormalCols.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose`:
+  eigenvalues of a Kronecker product and of a Kronecker sum. -/
 
 @[expose] public section
 
@@ -128,7 +127,8 @@ $\mathbf{U}$, $\mathbf{V}$ unitary, then
 $$\mathbf{A} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{V})
   \operatorname{diag}(\mathbf{a}_i + \mathbf{b}_j) (\mathbf{U} \otimes \mathbf{V})^{\mathsf{H}}\,.$$
 [HornJohnson1991, Theorem 4.4.5]. Port of `NLAlib.multiset_eigenvalues_kronecker_sum`. -/
-theorem kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose [Fintype m] [Fintype n]
+theorem HasOrthonormalCols.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose
+    [Fintype m] [Fintype n]
     [DecidableEq m] [DecidableEq n] {A U : Matrix m m 𝕜} {B V : Matrix n n 𝕜} {a : m → 𝕜}
     {b : n → 𝕜} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
     (hA : A = U * Matrix.diagonal a * Uᴴ) (hB : B = V * Matrix.diagonal b * Vᴴ) :
@@ -226,7 +226,8 @@ private theorem eigenvalue_zero_eq_of_eq_mul_diagonal_mul_conjTranspose [Fintype
     (hr : Fintype.card m = Fintype.card r)
     (h : M = W * (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) * Wᴴ) {i₀ : r}
     (hi₀ : ∀ i, d i ≤ d i₀) : eigenvalue M 0 = d i₀ := by
-  obtain ⟨e, he⟩ := exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose hW hr h
+  obtain ⟨e, he⟩ :=
+    HasOrthonormalCols.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose hW hr h
   have hpos : 0 < Fintype.card m := hr ▸ Fintype.card_pos_iff.mpr ⟨i₀⟩
   refine le_antisymm ?_ ?_
   · calc eigenvalue M 0 = d (e.symm ⟨0, hpos⟩) := by rw [he, Equiv.apply_symm_apply]
@@ -238,7 +239,8 @@ private theorem eigenvalue_zero_eq_of_eq_mul_diagonal_mul_conjTranspose [Fintype
 of the largest eigenvalues:
 $\lambda_0(\mathbf{A} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{B})
 = \lambda_0(\mathbf{A}) + \lambda_0(\mathbf{B})$. -/
-theorem eigenvalue_zero_kronecker_one_add_one_kronecker [Fintype m] [Fintype n] [DecidableEq m]
+theorem _root_.Matrix.IsHermitian.eigenvalue_zero_kronecker_one_add_one_kronecker [Fintype m]
+    [Fintype n] [DecidableEq m]
     [DecidableEq n] [Nonempty m] [Nonempty n] {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) :
     eigenvalue (A ⊗ₖ (1 : Matrix n n 𝕜) + (1 : Matrix m m 𝕜) ⊗ₖ B) 0 =
@@ -259,7 +261,8 @@ theorem eigenvalue_zero_kronecker_one_add_one_kronecker [Fintype m] [Fintype n] 
 /-- The largest eigenvalue of a Kronecker product of positive semidefinite matrices is the
 product of the largest eigenvalues:
 $\lambda_0(\mathbf{A} \otimes \mathbf{B}) = \lambda_0(\mathbf{A}) \lambda_0(\mathbf{B})$. -/
-theorem eigenvalue_zero_kronecker [Fintype m] [Fintype n] {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
+theorem _root_.Matrix.PosSemidef.eigenvalue_zero_kronecker [Fintype m] [Fintype n]
+    {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
     eigenvalue (A ⊗ₖ B) 0 = eigenvalue A 0 * eigenvalue B 0 := by
   rcases isEmpty_or_nonempty m with hm | hm

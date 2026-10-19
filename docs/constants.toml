@@ -169,24 +169,24 @@ lean_body = 'jlDim (ε δ : ℝ) : ℝ := Real.log (2 / δ) / (ε ^ 2 / 4 - ε ^
 body_hash = "fee45691d92c18c2"
 
 [[constant]]
-name = "NLAlib.countSketchRows"
+name = "NLAlib.countSketchEmbeddingDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Sparse/CountSketchEmbedding.lean"
 args = ["d", "ε", "δ"]
 latex = '(#1^2 + #1)/(#3 #2^2)'
 display = '\frac{#1^2 + #1}{#3 #2^2}'
-lean_body = 'countSketchRows (d : ℕ) (ε δ : ℝ) : ℝ := ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)'
-body_hash = "56a83724a3db7928"
+lean_body = 'countSketchEmbeddingDim (d : ℕ) (ε δ : ℝ) : ℝ := ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)'
+body_hash = "1f33598dd90b716d"
 
 [[constant]]
-name = "NLAlib.projectionCostTailRows"
+name = "NLAlib.projectionCostTailDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Properties/ProjectionCost.lean"
 args = ["v", "d", "ε", "δ"]
 latex = '384 \cdot #1 (#2 + 1)/(#3^2 #4)'
 display = '\frac{384 \cdot #1 (#2 + 1)}{#3^2 #4}'
-lean_body = 'projectionCostTailRows (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ)'
-body_hash = "85efc63753bb852f"
+lean_body = 'projectionCostTailDim (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ)'
+body_hash = "893ffd6f2a85691e"
 
 [[constant]]
 name = "NLAlib.srhtRowBound"
@@ -198,24 +198,24 @@ lean_body = 'srhtRowBound (n d : ℕ) (δ : ℝ) : ℝ := d + 2 * √(d * Real.l
 body_hash = "0eb15d450ab8bc8b"
 
 [[constant]]
-name = "NLAlib.samplingSize"
+name = "NLAlib.samplingEmbeddingDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Sampling/RowSampling.lean"
 args = ["d", "L", "ε", "δ"]
 latex = '3 #2 \log(2#1/#4)/#3^2'
 display = '\frac{3 #2 \log(2#1/#4)}{#3^2}'
-lean_body = 'samplingSize (d : ℕ) (L ε δ : ℝ) : ℝ := 3 * L * Real.log (2 * d / δ) / ε ^ 2'
-body_hash = "c25e01a1e1a16d83"
+lean_body = 'samplingEmbeddingDim (d : ℕ) (L ε δ : ℝ) : ℝ := 3 * L * Real.log (2 * d / δ) / ε ^ 2'
+body_hash = "7c97a7a40bcc17db"
 
 [[constant]]
-name = "NLAlib.samplingInjectionSize"
+name = "NLAlib.samplingInjectionDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Sampling/RowSampling.lean"
 args = ["d", "L", "ε", "δ"]
 latex = '2 #2 \log(#1/#4)/#3^2'
 display = '\frac{2 #2 \log(#1/#4)}{#3^2}'
-lean_body = 'samplingInjectionSize (d : ℕ) (L ε δ : ℝ) : ℝ := 2 * L * Real.log (d / δ) / ε ^ 2'
-body_hash = "41d18f4b66378b27"
+lean_body = 'samplingInjectionDim (d : ℕ) (L ε δ : ℝ) : ℝ := 2 * L * Real.log (d / δ) / ε ^ 2'
+body_hash = "8e11e6d7640a2a17"
 
 [[constant]]
 name = "NLAlib.subgaussianRangeFinderFactor"

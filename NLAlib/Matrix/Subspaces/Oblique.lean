@@ -88,7 +88,7 @@ private theorem specNorm_add_mul_conjTranspose_self {R : Matrix n n 𝕜} (hR : 
       exact (Matrix.posSemidef_self_mul_conjTranspose M).add Matrix.PosSemidef.one
     rw [← singularValues_zero_eq_specNorm, hps.singularValues_eq_eigenvalue,
       (Matrix.isHermitian_mul_conjTranspose_self M).eigenvalue_add_smul_one 1 hn,
-      ← sq_singularValues_eq_eigenvalue_mul_conjTranspose_self, singularValues_zero_eq_specNorm]
+      ← singularValues_sq_eq_eigenvalue_mul_conjTranspose_self, singularValues_zero_eq_specNorm]
   refine le_antisymm ?_ ?_
   · have h1 := specNorm_add_le R (M * Mᴴ)
     rw [specNorm_mul_conjTranspose_self] at h1
@@ -131,7 +131,7 @@ private theorem specNorm_sq_eq_and [DecidableEq n] {P : Matrix n n 𝕜}
   have hQP : Q * P = P := by rw [hQdef, rangeProjector_mul_self]
   have hPQ : P * Q = Q := by
     rw [hQdef]
-    exact hP.mul_eq_of_range_le (range_mulVecLin_rangeProjector P).le
+    exact hP.mul_eq_of_range_le (range_rangeProjector P).le
   have hPeq : P = Q + N := by rw [hN]; abel
   have hQN : Q * N = N := by rw [hN, Matrix.mul_sub, hQP, hQ.mul_self]
   have hNQ : N * Q = 0 := by rw [hN, Matrix.sub_mul, hPQ, hQ.mul_self, sub_self]
@@ -312,7 +312,7 @@ theorem _root_.IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le {P : Matrix
     (hP : IsIdempotentElem P) {X Y : Matrix n p 𝕜} (hX : Function.Injective X.mulVec)
     (hXP : LinearMap.range X.mulVecLin ≤ LinearMap.range P.mulVecLin)
     (hYP : LinearMap.range Pᴴ.mulVecLin ≤ LinearMap.range Y.mulVecLin) : IsUnit (Yᴴ * X) := by
-  obtain ⟨D, hD⟩ := range_mulVecLin_le_iff_exists_mul.mp hYP
+  obtain ⟨D, hD⟩ := range_le_iff_exists_mul.mp hYP
   have hPX : Dᴴ * (Yᴴ * X) = X := by
     rw [← Matrix.mul_assoc, ← Matrix.conjTranspose_mul, ← hD, Matrix.conjTranspose_conjTranspose]
     exact hP.mul_eq_of_range_le hXP
@@ -341,7 +341,7 @@ theorem _root_.IsIdempotentElem.eq_mul_inv_mul_conjTranspose {P : Matrix n n �
     (hYP : LinearMap.range Y.mulVecLin = LinearMap.range Pᴴ.mulVecLin) :
     P = X * (Yᴴ * X)⁻¹ * Yᴴ := by
   have hu := hP.isUnit_conjTranspose_mul_of_range_le hX hXP.le hYP.ge
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp hXP.ge
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp hXP.ge
   have hPH : IsIdempotentElem Pᴴ := by
     rw [IsIdempotentElem, ← Matrix.conjTranspose_mul, hP.eq]
   have hYP' : Yᴴ * P = Yᴴ := by

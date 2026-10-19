@@ -122,7 +122,7 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_add_inertiaNeg {A : Matrix n n 𝕜
 private theorem exists_equiv_eq_eigenvalue_diagonal [DecidableEq n] (d : n → ℝ) :
     ∃ e : n ≃ Fin (Fintype.card n),
       ∀ i, d i = eigenvalue (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) (e i) :=
-  exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose
+  HasOrthonormalCols.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose
     (U := (1 : Matrix n n 𝕜)) hasOrthonormalCols_one rfl
     (by rw [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one])
 
@@ -483,7 +483,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_add_le_of_inertiaPos
     {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {i : ℕ} (hi : i + inertiaPos B < Fintype.card n) :
     eigenvalue (A + B) (i + inertiaPos B) ≤ eigenvalue A i := by
-  have h1 := eigenvalue_add_le hA hB hi
+  have h1 := Matrix.IsHermitian.eigenvalue_add_le hA hB hi
   have h2 : eigenvalue B (inertiaPos B) ≤ 0 := by
     by_contra h
     exact lt_irrefl _ (hB.lt_inertiaPos_iff.mpr ⟨by omega, not_le.mp h⟩)

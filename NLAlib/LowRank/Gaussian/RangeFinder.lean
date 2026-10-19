@@ -57,7 +57,7 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: TW Theorem 8.1 (RSVD2).
 * `NLAlib.rangeFinderTailRatio`: the spectral bound of TW Theorem 8.1 (RSVD2) divided by
   $\sigma_k(\mathbf{A})^2$, with `NLAlib.one_le_rangeFinderTailRatio` and
-  `NLAlib.sq_singularValues_mul_rangeFinderTailRatio`. <!-- mention rangeFinderTailRatio -->
+  `NLAlib.singularValues_sq_mul_rangeFinderTailRatio`. <!-- mention rangeFinderTailRatio -->
 * `NLAlib.rangeFinderTailRatio_le_one_add_card_sq` and the two tail-weight bounds before it:
   dimension bounds for the asymptotic forms of the block Krylov and subspace iteration bounds.
 * `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.6;
@@ -618,7 +618,7 @@ $$\sigma_r(\mathbf{A})^2\Bigl(1 + \frac{r}{\ell - r - 1}\,
 \frac{\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2}{\sigma_r(\mathbf{A})^2}
 \Bigr) = \sigma_r(\mathbf{A})^2 + \frac{r}{\ell - r - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$ -/
-theorem sq_singularValues_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜)
+theorem singularValues_sq_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜)
     {r : ℕ} (l : ℕ) (hσ : 0 < singularValues A r) :
     singularValues A r ^ 2 * rangeFinderTailRatio A r l =
       singularValues A r ^ 2 +

@@ -628,7 +628,7 @@ $$\mathbb{P}\bigl(\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\maths
 \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
 \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr)
 \le \frac{2}{\lvert k \rvert \varepsilon^2}\,.$$
-S1's AMM route (`NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le` at
+S1's AMM route (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le` at
 `NLAlib.hasJLMoment_of_hasLaw_countSketch`) is over $\mathbb{R}$ only, where it gives the same
 $2/(\lvert k \rvert \varepsilon^2)$; the direct identity is the only AMM for a complex
 CountSketch, and is a factor $2$ better in the failure probability than the

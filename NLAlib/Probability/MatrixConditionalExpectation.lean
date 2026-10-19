@@ -208,7 +208,7 @@ theorem _root_.Matrix.IsHermitian.condExp_cfc {B : Matrix n n 𝕜} (hB : B.IsHe
         rw [RingHom.id_apply, hd, Matrix.diagonal_smul, Matrix.mul_smul, Matrix.smul_mul,
           ← RCLike.real_smul_eq_coe_smul] }
   have hcfc : ∀ g : ℝ → ℝ, cfc g B = Lc (fun i => g (eigenvalue B i)) := fun g =>
-    cfc_eq_mul_diagonal_mul_conjTranspose hU hr hBU g
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hBU g
   let v : Ω → Fin (Fintype.card n) → ℝ := fun ω i => f ω (eigenvalue B i)
   have hv : Integrable v μ := integrable_pi_iff.2 fun i => hf _
   have hcomp : (fun ω => cfc (f ω) B) = Lc ∘ v := funext fun ω => hcfc (f ω)

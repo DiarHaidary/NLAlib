@@ -29,7 +29,7 @@ Frobenius norm.
   unitarily invariant norm.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue`: interval
   separation for Hermitian matrices.
-* `NLAlib.mul_frobNorm_le_frobNorm_mul_sub_mul`: arbitrary separation, Frobenius norm.
+* `Matrix.IsHermitian.mul_frobNorm_le_frobNorm_mul_sub_mul`: arbitrary separation, Frobenius norm.
 -/
 
 @[expose] public section
@@ -237,7 +237,8 @@ $\delta \|\mathbf{X}\|_{\mathsf{F}} \le
 [Bhatia1997, §VII.2]; [StewartSun1990, §V.3].
 Port of `NLAlib.mul_frobNorm_le_frobNorm_sylvester`, there over $\mathbb{R}$.
 Result: sylvester-separation -/
-theorem mul_frobNorm_le_frobNorm_mul_sub_mul {L : Matrix m m 𝕜} {M : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.mul_frobNorm_le_frobNorm_mul_sub_mul {L : Matrix m m 𝕜}
+    {M : Matrix n n 𝕜}
     (hL : L.IsHermitian) (hM : M.IsHermitian) {δ : ℝ}
     (hsep : ∀ i, i < Fintype.card m → ∀ j, j < Fintype.card n →
       δ ≤ |eigenvalue L i - eigenvalue M j|)
@@ -263,7 +264,8 @@ theorem mul_frobNorm_le_frobNorm_mul_sub_mul {L : Matrix m m 𝕜} {M : Matrix n
 /-- A Sylvester equation with separated Hermitian coefficients has only the trivial homogeneous
 solution: if $\mathbf{L}\mathbf{X} = \mathbf{X}\mathbf{M}$ and the spectra are disjoint, then
 $\mathbf{X} = \mathbf{0}$. -/
-theorem eq_zero_of_mul_eq_mul_of_eigenvalue_ne {L : Matrix m m 𝕜} {M : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.eq_zero_of_mul_eq_mul_of_eigenvalue_ne {L : Matrix m m 𝕜}
+    {M : Matrix n n 𝕜}
     (hL : L.IsHermitian) (hM : M.IsHermitian)
     (hsep : ∀ i, i < Fintype.card m → ∀ j, j < Fintype.card n → eigenvalue L i ≠ eigenvalue M j)
     {X : Matrix m n 𝕜} (h : L * X = X * M) : X = 0 := by

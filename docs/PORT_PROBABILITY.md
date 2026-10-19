@@ -181,7 +181,7 @@ every later layer takes; the most expensive decision of the round.
 
 **D7. Matrices with orthonormal columns (Haar).** (a) A measure `haarFrame n k` on
 `Matrix n k ℝ`, defined as the law of `polarFactor G` for a standard Gaussian `G`
-(`card k ≤ card n` where orthonormality is claimed); left invariance from `polarFactor_mul_left`
+(`card k ≤ card n` where orthonormality is claimed); left invariance from `HasOrthonormalCols.polarFactor_mul_left`
 and Gaussian invariance; right invariance from a new Matrix lemma
 `polarFactor (A * V) = polarFactor A * V` for unitary `V`; moments and the law of a column
 derived from invariance alone (a matrix commuting with every unitary is scalar); uniqueness (Haar
@@ -276,7 +276,7 @@ or `RandomMatrix-<Stage>.md`. Consumers are from the surveys (counts are prototy
   centred function. Consumer: R3's tails. Material: `P/Gaussian/Concentration`, the part of
   `P/Concentration/Entropy` the Gaussian proof needs.
 - **P5 Matrix concentration.** `HasMatrixMGFBound`; the Laplace transform method, the master bound
-  through Lieb's theorem (Matrix layer: `concaveOn_re_trace_exp_add_cfc_log`), Chernoff, Bernstein,
+  through Lieb's theorem (Matrix layer: `Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log`), Chernoff, Bernstein,
   matrix series with sub-Gaussian coefficients, intrinsic dimension, rectangular matrices through
   the dilation once; the CGF-level statements that sampling without replacement uses; trace
   moments and noncommutative Khintchine (one recursion for both laws); Freedman last. Consumers:

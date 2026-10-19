@@ -36,14 +36,14 @@ and the Bernstein tails hold only above the threshold $t \ge \sqrt{\|\mathbf{V}\
 
 ## Main results
 
-* `NLAlib.measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le`,
-  `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDim`,
-  `NLAlib.integral_eigenvalue_zero_sum_le_chernoff_intrinsicDim`: intrinsic Chernoff.
-* `NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDim_of_integral_le`,
-  `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim`,
-  `NLAlib.measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim`: intrinsic Bernstein tails.
-* `NLAlib.integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim`,
-  `NLAlib.integral_specNorm_sum_le_bernstein_intrinsicDim`: the means, with the constant
+* `NLAlib.measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDimension_of_integral_le`,
+  `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDimension`,
+  `NLAlib.integral_eigenvalue_zero_sum_le_chernoff_intrinsicDimension`: intrinsic Chernoff.
+* `NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDimension_of_integral_le`,
+  `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDimension`,
+  `NLAlib.measureReal_specNorm_sum_ge_le_bernstein_intrinsicDimension`: intrinsic Bernstein tails.
+* `NLAlib.integral_eigenvalue_zero_sum_le_bernstein_intrinsicDimension`,
+  `NLAlib.integral_specNorm_sum_le_bernstein_intrinsicDimension`: the means, with the constant
   `NLAlib.intrinsicBernsteinMeanConstant`, of
   value <!-- value intrinsicBernsteinMeanConstant -->$8$.
 
@@ -186,7 +186,7 @@ $$\mathbb{P}\bigl(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\b
 $\mathbf{Y}$ with that bound (sampling without replacement) gets the tail.
 $\mathbf{V} \ne \mathbf{0}$ is needed: at $\mathbf{V} = \mathbf{0}$ the event is everything and the
 bound $0$. -/
-theorem measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le
+theorem measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDimension_of_integral_le
     [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜} {V : Matrix n n 𝕜}
     (hY : ∀ᵐ ω ∂μ, (Y ω).PosSemidef) (hV : V.PosSemidef) (hV0 : V ≠ 0) (hL : 0 < L)
     (hint : ∀ θ : ℝ, 0 < θ → Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
@@ -277,7 +277,8 @@ private theorem chernoff_intrinsic_hyps [IsProbabilityMeasure μ] (hind : iIndep
   · refine (HasMatrixMGFBound.integral_re_trace_exp_sum_le hind h (Set.mem_univ θ)).trans ?_
     have hc : 0 ≤ (Real.exp (θ * L) - 1) / L :=
       div_nonneg (sub_nonneg.mpr (Real.one_le_exp (mul_nonneg hθ hL.le))) hL.le
-    exact re_trace_exp_le_re_trace_exp_of_le ((IsSelfAdjoint.all _).smul hS.isHermitian)
+    exact Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le
+      ((IsSelfAdjoint.all _).smul hS.isHermitian)
       (Matrix.le_iff.mpr (by rw [← smul_sub]; exact (Matrix.le_iff.mp hM).smul hc))
 
 /-- **Intrinsic-dimension matrix Chernoff**: for finitely many independent, almost everywhere
@@ -292,7 +293,7 @@ $\sum_k \mathbb{E}\mathbf{X}_k$. Better than `measureReal_eigenvalue_zero_sum_ge
 $2 \operatorname{intdim}(\mathbf{M}) < \lvert n\rvert$, but only for
 $\delta \ge L / \lambda_0(\mathbf{M})$.
 Result: intrinsic-matrix-chernoff -/
-theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDim (hind : iIndepFun X μ)
+theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDimension (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {M : Matrix n n 𝕜}
     (hM : ∑ k, ∫ ω, X k ω ∂μ ≤ M) (hM0 : M ≠ 0) {δ : ℝ} (hδ : L / eigenvalue M 0 ≤ δ) :
@@ -300,7 +301,7 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDim (hind : iInd
       2 * intrinsicDimension M * (Real.exp δ / (1 + δ) ^ (1 + δ)) ^ (eigenvalue M 0 / L) := by
   have := hind.isProbabilityMeasure
   obtain ⟨hY, hMpsd, hint, htr⟩ := chernoff_intrinsic_hyps hind hXm hL hpsd hle hM
-  exact measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDim_of_integral_le
+  exact measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDimension_of_integral_le
     (Y := fun ω => ∑ k, X k ω) hY hMpsd hM0 hL (fun θ _ => hint θ) (fun θ hθ => htr θ hθ.le) hδ
 
 /-- **Intrinsic-dimension matrix Chernoff for the mean**: for summands $\mathbf{X}_k$ as in the
@@ -318,7 +319,7 @@ trace bound at $s = \theta / L$ and monotonicity after the trace; the intrinsic 
 $1 + D (e^a - 1) \le 2 D e^a$ for $D = \operatorname{intdim}(\mathbf{M})$, from
 `Matrix.PosSemidef.one_le_intrinsicDimension` (case split on $\mathbf{M} = \mathbf{0}$).
 Result: intrinsic-matrix-chernoff -/
-theorem integral_eigenvalue_zero_sum_le_chernoff_intrinsicDim (hind : iIndepFun X μ)
+theorem integral_eigenvalue_zero_sum_le_chernoff_intrinsicDimension (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {M : Matrix n n 𝕜}
     (hM : ∑ k, ∫ ω, X k ω ∂μ ≤ M) {θ : ℝ} (hθ : 0 < θ) :
@@ -455,7 +456,7 @@ $$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge t) \le 4 \operatorname{intdim}(\mathbf{V}
 $\mathbf{V} = \mathbf{0}$ the bound $0$ holds because
 $\mathbb{E} \operatorname{tr}(e^{\theta\mathbf{Y}} - \theta\mathbf{Y} - \mathbf{I}) \le 0$ forces
 $\mathbf{Y} = \mathbf{0}$ almost surely. -/
-theorem measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDim_of_integral_le
+theorem measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDimension_of_integral_le
     [IsProbabilityMeasure μ] {Y : Ω → Matrix n n 𝕜} {V : Matrix n n 𝕜}
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi : Integrable Y μ) (hmean : ∫ ω, Y ω ∂μ = 0)
     (hV : V.PosSemidef) (hL : 0 < L)
@@ -535,7 +536,8 @@ private theorem bernstein_intrinsic_hyps [IsProbabilityMeasure μ] {X : ι → �
       rw [lt_div_iff₀ hL] at this
       linarith
     have hc : 0 ≤ θ ^ 2 / 2 / (1 - L * θ / 3) := div_nonneg (by positivity) (by linarith)
-    exact re_trace_exp_le_re_trace_exp_of_le ((IsSelfAdjoint.all _).smul hS.isHermitian)
+    exact Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le
+      ((IsSelfAdjoint.all _).smul hS.isHermitian)
       (Matrix.le_iff.mpr (by rw [← smul_sub]; exact (Matrix.le_iff.mp hV).smul hc))
 
 section Hermitian
@@ -554,7 +556,7 @@ order and a one-sided bound on the summands. Better than
 `measureReal_eigenvalue_zero_sum_ge_le_bernstein` when
 $4 \operatorname{intdim}(\mathbf{V}) < \lvert n\rvert$, and only for $t$ above the threshold.
 Result: intrinsic-matrix-bernstein -/
-theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim (hind : iIndepFun X μ)
+theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDimension (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {V : Matrix n n 𝕜}
     (hV : ∑ k, ∫ ω, X k ω ^ 2 ∂μ ≤ V) {t : ℝ} (ht : √(specNorm V) + L / 3 ≤ t) :
@@ -562,7 +564,7 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim (hind : iIn
       4 * intrinsicDimension V * Real.exp (-(t ^ 2 / 2) / (specNorm V + L * t / 3)) := by
   have := hind.isProbabilityMeasure
   obtain ⟨hY, hYi, hm, hVpsd, hint, htr⟩ := bernstein_intrinsic_hyps hind hL hX2 hmean hle hV
-  exact measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDim_of_integral_le
+  exact measureReal_eigenvalue_zero_ge_le_bernstein_intrinsicDimension_of_integral_le
     (Y := fun ω => ∑ k, X k ω) hY hYi hm hVpsd hL hint htr ht
 
 end Hermitian
@@ -604,7 +606,7 @@ $\mathbf{V}_1$, $\mathbf{V}_2$. Better than `measureReal_specNorm_sum_ge_le_bern
 times the intrinsic dimension of the block diagonal proxy is below
 $\lvert m\rvert + \lvert n\rvert$.
 Result: intrinsic-matrix-bernstein -/
-theorem measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim (hind : iIndepFun S μ)
+theorem measureReal_specNorm_sum_ge_le_bernstein_intrinsicDimension (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, specNorm (S k ω) ≤ L) {V₁ : Matrix m m 𝕜} {V₂ : Matrix n n 𝕜}
     (hV₁ : ∑ k, ∫ ω, S k ω * (S k ω)ᴴ ∂μ ≤ V₁) (hV₂ : ∑ k, ∫ ω, (S k ω)ᴴ * S k ω ∂μ ≤ V₂)
@@ -613,7 +615,8 @@ theorem measureReal_specNorm_sum_ge_le_bernstein_intrinsicDim (hind : iIndepFun 
       4 * intrinsicDimension (Matrix.fromBlocks V₁ 0 0 V₂) *
         Real.exp (-(t ^ 2 / 2) / (max (specNorm V₁) (specNorm V₂) + L * t / 3)) := by
   have := hind.isProbabilityMeasure
-  have h := measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim (iIndepFun_dilation hind)
+  have h := measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDimension
+    (iIndepFun_dilation hind)
     hL (fun k => memLp_dilation (hS2 k))
     (fun k => integral_dilation_eq_zero ((hS2 k).integrable one_le_two) (hmean k))
     (fun k => (hle k).mono fun ω h =>
@@ -726,7 +729,7 @@ than `integral_eigenvalue_zero_sum_le_bernstein` when $\operatorname{intdim}(\ma
 smaller than $\lvert n\rvert$; its constant is worse.
 Proof: integrate the tail above the threshold.
 Result: intrinsic-matrix-bernstein -/
-theorem integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim (hind : iIndepFun X μ)
+theorem integral_eigenvalue_zero_sum_le_bernstein_intrinsicDimension (hind : iIndepFun X μ)
     (hL : 0 < L) (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L • (1 : Matrix n n 𝕜)) {V : Matrix n n 𝕜}
     (hV : ∑ k, ∫ ω, X k ω ^ 2 ∂μ ≤ V) :
@@ -778,7 +781,8 @@ theorem integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim (hind : iIndepFun
     (F := fun t => 4 * intrinsicDimension V * Real.exp (-c * t))
     ((exp_neg_integrableOn_Ioi μ₀ hc0).const_mul _) fun t ht => by
       rw [hset t (hμ0.trans ht)]
-      refine (measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDim hind hL hX2 hmean hle
+      refine (measureReal_eigenvalue_zero_sum_ge_le_bernstein_intrinsicDimension hind hL hX2 hmean
+        hle
         hV (hthr.trans ht.le)).trans ?_
       exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr
         (bernstein_exponent_le_linear (specNorm_nonneg V) hL hμ0 ht.le)) (by positivity)
@@ -804,7 +808,7 @@ the constant is `intrinsicBernsteinMeanConstant`.
 than `integral_specNorm_sum_le_bernstein` when $D$ is much smaller than
 $\lvert m\rvert + \lvert n\rvert$.
 Result: intrinsic-matrix-bernstein -/
-theorem integral_specNorm_sum_le_bernstein_intrinsicDim (hind : iIndepFun S μ)
+theorem integral_specNorm_sum_le_bernstein_intrinsicDimension (hind : iIndepFun S μ)
     (hL : 0 < L) (hS2 : ∀ k, MemLp (S k) 2 μ) (hmean : ∀ k, ∫ ω, S k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, specNorm (S k ω) ≤ L) {V₁ : Matrix m m 𝕜} {V₂ : Matrix n n 𝕜}
     (hV₁ : ∑ k, ∫ ω, S k ω * (S k ω)ᴴ ∂μ ≤ V₁) (hV₂ : ∑ k, ∫ ω, (S k ω)ᴴ * S k ω ∂μ ≤ V₂) :
@@ -813,7 +817,7 @@ theorem integral_specNorm_sum_le_bernstein_intrinsicDim (hind : iIndepFun S μ)
           Real.log (1 + intrinsicDimension (Matrix.fromBlocks V₁ 0 0 V₂))) +
         L * Real.log (1 + intrinsicDimension (Matrix.fromBlocks V₁ 0 0 V₂))) := by
   have := hind.isProbabilityMeasure
-  have h := integral_eigenvalue_zero_sum_le_bernstein_intrinsicDim (iIndepFun_dilation hind)
+  have h := integral_eigenvalue_zero_sum_le_bernstein_intrinsicDimension (iIndepFun_dilation hind)
     hL (fun k => memLp_dilation (hS2 k))
     (fun k => integral_dilation_eq_zero ((hS2 k).integrable one_le_two) (hmean k))
     (fun k => (hle k).mono fun ω h =>

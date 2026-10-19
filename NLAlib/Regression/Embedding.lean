@@ -118,8 +118,8 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le_of_fromCols
     (hx : IsLeastSquaresSolution (S * A) (S *ᵥ y) x) :
     ‖WithLp.toLp 2 (y - A *ᵥ x)‖ ^ 2 ≤
       b / a * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  exact h.norm_sub_mulVec_sq_le ha (Matrix.range_mulVecLin_le_range_fromCols_left A _)
-    (Matrix.mem_range_mulVecLin_fromCols_replicateCol A y) hx
+  exact h.norm_sub_mulVec_sq_le ha (Matrix.range_le_range_fromCols_left A _)
+    (Matrix.mem_range_fromCols_replicateCol A y) hx
 
 end LeastSquares
 

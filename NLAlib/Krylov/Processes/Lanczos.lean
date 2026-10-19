@@ -32,7 +32,8 @@ that Lanczos yields the conjugate gradient iterate is in `NLAlib.Krylov.LinearSy
 
 ## Main results
 
-* `NLAlib.isGradedKrylovBasis_of_forall_col_mem`: the constructor from column membership.
+* `NLAlib.HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem`: the constructor from column
+  membership.
 * `NLAlib.IsGradedKrylovBasis.isUpperHessenberg`, `NLAlib.IsGradedKrylovBasis.isTridiagonal`.
 * `NLAlib.IsGradedKrylovBasis.eq_arnoldiMatrix`: uniqueness under a positive diagonal.
 * `NLAlib.hasOrthonormalCols_arnoldiMatrix_iff`, `NLAlib.isGradedKrylovBasis_arnoldiMatrix`.
@@ -45,7 +46,7 @@ that Lanczos yields the conjugate gradient iterate is in `NLAlib.Krylov.LinearSy
   `NLAlib.arnoldiMatrix_col_last_eq_zero_iff` (zero exactly from the grade on),
   `NLAlib.norm_arnoldiMatrix_col_last`.
 * `NLAlib.arnoldiMatrix_col_succ`: the canonical Arnoldi step.
-* `NLAlib.conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc`: the rectangular
+* `NLAlib.submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc`: the rectangular
   Hessenberg matrix inside the square compression.
 -/
 
@@ -75,7 +76,7 @@ variable {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} {Q : Matrix n (Fin q) 
 
 /-- **Constructor**: orthonormal columns with column $j$ in $\mathcal{K}_{j+1}(\mathbf{A},
 \mathbf{b})$ form a graded Krylov basis. -/
-theorem isGradedKrylovBasis_of_forall_col_mem (hQ : HasOrthonormalCols Q)
+theorem HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem (hQ : HasOrthonormalCols Q)
     (h : ∀ j : Fin q, Q.col j ∈ krylovSpace A b ((j : ℕ) + 1)) : IsGradedKrylovBasis A b Q := by
   refine ⟨hQ, fun j => ?_⟩
   have hle : Submodule.span 𝕜 (Q.col '' Set.Iic j) ≤ krylovSpace A b ((j : ℕ) + 1) := by
@@ -166,7 +167,8 @@ theorem hasOrthonormalCols_arnoldiMatrix_iff :
 Result: arnoldi-basis -/
 theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
     IsGradedKrylovBasis A b (arnoldiMatrix A b q) := by
-  refine isGradedKrylovBasis_of_forall_col_mem (hasOrthonormalCols_arnoldiMatrix_iff.mpr h)
+  refine HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem
+    (hasOrthonormalCols_arnoldiMatrix_iff.mpr h)
     fun j => ?_
   have hj : (arnoldiMatrix A b q).col j ∈
       Submodule.span 𝕜 ((arnoldiMatrix A b q).col '' Set.Iic j) :=
@@ -442,7 +444,7 @@ theorem arnoldiMatrix_col_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) 
 \mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ is the first $q$ columns of the square
 compression $\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_{q+1}$, so the Lanczos tridiagonal
 matrix of size $q + 1$ gives it for Hermitian $\mathbf{A}$. -/
-theorem conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc
+theorem submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc
     (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     ((arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b (q + 1)).submatrix id Fin.castSucc =
       (arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b q := by

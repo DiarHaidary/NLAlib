@@ -25,7 +25,7 @@ $$\frac{1}{\lvert k \rvert} \Bigl( \sum_i \frac{\|\mathbf{A}_i\|^2 \|\mathbf{B}_
 and under the domination $\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$ that mean is at most
 $L \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}} / \lvert k \rvert$; Markov's
 inequality gives the tail. The error and its event are those of the JL-moment form
-(`NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le`), here over `𝕜`.
+(`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`), here over `𝕜`.
 
 Degenerate cases: for empty `k`, $\mathbf{S} = \mathbf{0}$ and the sampled product is
 $\mathbf{0}$, hence `[Nonempty k]` on every mean and tail; the integrability statements need
@@ -365,7 +365,7 @@ $\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$ with proba
 $$\frac{L}{\lvert k \rvert \, \varepsilon^2
   \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}}$$
 for $\varepsilon > 0$ and nonzero $\mathbf{A}$, $\mathbf{B}$: the event of the JL-moment form
-`NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le`, the instance
+`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`, the instance
 $t = \varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$ of
 `NLAlib.measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch`.
 [MartinssonTropp2020, §7.1]. -/

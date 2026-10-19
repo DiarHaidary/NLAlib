@@ -129,7 +129,7 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le [IsFiniteMeasu
     (h : μ.real {ω | singularValues (S ω * U) j ^ 2 ≤ a} ≤ δ) :
     HasSubspaceInjection S U a δ μ := by
   refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans h
-  rw [hU.isSubspaceInjection_iff_le_sq_singularValues hj, not_le] at hω
+  rw [hU.isSubspaceInjection_iff_le_singularValues_sq hj, not_le] at hω
   exact hω.le
 
 /-- **From a largest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail

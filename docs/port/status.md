@@ -2,6 +2,25 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Naming grammar and renames (2026-10-19)
+
+Branch `naming/grammar` (worktree `nlalib-block`), from `origin/main` at bc72b8d. Design note
+`docs/design/Naming.md` (the audit, the maintainer's decisions of 2026-10-19, the dot-notation
+scope addition); grammar CONTRIBUTING §4, rules N1–N18. 311 public declarations renamed (194 by
+the grammar rules, 117 more by N18 dot notation) and 37 statements changed (28 scalar tails stated
+positively, 9 trace-estimation errors flipped to `tr A − estimate`), no aliases (before `v0.1`);
+rename map `docs/renames/2026-10-naming.json` for the explorer's `#d/` redirects. No exception
+kept; 5 checker false positives on `scripts/names_allow.toml`. `scripts/check_names.py` runs on the
+extraction in CI (error mode) and in `scripts/stage_check.sh`. Private helpers keep their names.
+
+Checks: `lake build NLAlib NLAlibScaffold` 3954 jobs, 0 warnings; `lake exe mk_all --check` clean;
+`scripts/stage_check.sh`: 354 proved modules, build 3950 jobs, 0 warnings; audit 9164
+declarations, 0 violations; lint 5983 declarations, 0 errors; references 77 keys, 61 asymptotic
+forms, 0 problems; constants 28, 306 value markers, 0 problems; names 4105 declarations, 0
+violations, 5 allowlisted; duplicates 5464 theorems, 0 classes; LaTeX 22889 spans, 0 problems;
+no `sorry`. Open: `docs/design/Naming.md` §4 (`norm_toLp`, `truncatedGNFactor`, explorer
+redirects and its two TOML citations; the rules-enforcement stage absorbs `check_names.py`).
+
 ## Hutch++ round complete (2026-10-18)
 
 Branch `probability/trace-estimation` (worktree `nlalib-block`), uncommitted on top of `e2b2d91`.
@@ -444,7 +463,7 @@ P4 proceeded on the orchestrator's recommendations (Lipschitz as `LipschitzWith`
 | P0 | checks on the proved part | orchestrator | done | `stage_check.sh`: 147 modules, 0 warnings, audit 3537 declarations 0 violations, lint 2714 clean, 34 keys; ledger +9 |
 | P1 | design note `docs/design/Probability-P1.md` | orchestrator | written, Fable-reviewed | |
 | P1 | `SubGaussian/Basic.lean`, `Moments.lean` | Opus agent | proved | `HasSubgaussianMGF.isFiniteMeasure` made public |
-| P1 | `SubExponential/Basic.lean`, `Tail.lean` | Opus agent | proved | split at the skeleton (file budget); `measure_ge_le_of_le_mul` lost a redundant `0 ≤ t` |
+| P1 | `SubExponential/Basic.lean`, `Tail.lean` | Opus agent | proved | split at the skeleton (file budget); `measureReal_ge_le_of_le_mul` lost a redundant `0 ≤ t` |
 | P1 | `SubGaussian/Square.lean` | Opus agent | proved | reached the literature's constants `32 c²`, `4 c`, now literals in the statement; stage report in the note |
 | P2 | design note `docs/design/Probability-P2.md` | orchestrator | written, Fable-reviewed (§8 amendments) | |
 | P2 | `Distributions/Rademacher.lean`, `Sampling.lean` | Opus agent | proved | `samplingMeasure_singleton` public |

@@ -21,8 +21,9 @@ eigenvalues and sorted singular values are $1$-Lipschitz in the Frobenius norm, 
 
 * `Matrix.IsHermitian.re_trace_mul_le_sum_eigenvalue_mul`: the Hermitian trace inequality.
 * `NLAlib.norm_trace_conjTranspose_mul_le_sum_singularValues_mul`: von Neumann's trace inequality.
-* `NLAlib.sum_sq_eigenvalue_sub_le_frobNorm_sub_sq`: Hoffman–Wielandt for Hermitian matrices.
-* `NLAlib.sum_sq_singularValues_sub_le_frobNorm_sub_sq`: Mirsky's inequality.
+* `Matrix.IsHermitian.sum_eigenvalue_sub_sq_le_frobNorm_sub_sq`: Hoffman–Wielandt for Hermitian
+  matrices.
+* `NLAlib.sum_singularValues_sub_sq_le_frobNorm_sub_sq`: Mirsky's inequality.
 -/
 
 @[expose] public section
@@ -200,7 +201,8 @@ $$\sum_{i \in S} \bigl(\lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B})\bigr)^2
 [HornJohnson2013, Corollary 6.3.8].
 Port of `NLAlib.sum_sq_eigenvalues₀_sub_le_frobSq_sub`, there over $\mathbb{R}$.
 Result: hoffman-wielandt -/
-theorem sum_sq_eigenvalue_sub_le_frobNorm_sub_sq {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.sum_eigenvalue_sub_sq_le_frobNorm_sub_sq {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) (S : Finset ℕ) :
     ∑ i ∈ S, (eigenvalue A i - eigenvalue B i) ^ 2 ≤ frobNorm (A - B) ^ 2 := by
   refine (sum_le_sum_range_of_forall_eq_zero (N := Fintype.card n) (fun i => sq_nonneg _)
@@ -224,7 +226,7 @@ $$\sum_{i \in S} \bigl(\sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B})\bigr)^2
 [HornJohnson2013, Corollary 7.4.1.3].
 Port of `NLAlib.sum_sq_singularValues_add_sub_le_frobSq`, there over $\mathbb{R}$.
 Result: mirsky-inequality -/
-theorem sum_sq_singularValues_sub_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S : Finset ℕ) :
+theorem sum_singularValues_sub_sq_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S : Finset ℕ) :
     ∑ i ∈ S, (singularValues A i - singularValues B i) ^ 2 ≤ frobNorm (A - B) ^ 2 := by
   refine (sum_le_sum_range_of_forall_eq_zero (N := min (Fintype.card m) (Fintype.card n))
     (fun i => sq_nonneg _) (fun i hi => ?_) S).trans ?_

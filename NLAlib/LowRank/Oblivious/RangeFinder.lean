@@ -40,21 +40,22 @@ Sketching predicates' tails. Design: `docs/design/LowRank-S7.md` §3.2, §8.
 
 ## Main results
 
-* `NLAlib.HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le`,
-  `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`,
-  `NLAlib.HasSubspaceInjection.measure_specNorm_sub_rsvd_sq_gt_le`,
-  `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`: the injection
-  route; `NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`, CEMT
+* `NLAlib.HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le`,
+  `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`,
+  `NLAlib.HasSubspaceInjection.measureReal_specNorm_sub_rsvd_sq_gt_le`,
+  `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`: the injection
+  route; `NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`, CEMT
   Theorem 2.2 as printed.
-* `HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le`:
-  the bounded-sketch route.
-* `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le`,
-  `NLAlib.HasJLMoment.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`,
-  `NLAlib.HasJLMoment.measure_frobNorm_sub_rsvd_sq_gt_le`: the approximate-multiplication route,
-  with its tail–head input
-  `HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le`.
-* `NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le` and its gauge,
-  spectral and truncated forms; `NLAlib.HasJLMoment.measure_nuclearNorm_sub_nystrom_gt_le`.
+* in `HasSubspaceInjection`,
+  `measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le`: the bounded-sketch
+  route.
+* `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le`,
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`,
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le`: the approximate-multiplication route,
+  with its tail–head input, in `HasJLMoment`,
+  `measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le`.
+* `NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le` and its gauge,
+  spectral and truncated forms; `NLAlib.HasJLMoment.measureReal_nuclearNorm_sub_nystrom_gt_le`.
 -/
 
 @[expose] public section
@@ -149,7 +150,7 @@ there an OSI, the Frobenius norm and $C/\alpha$ with probability $9/10$; here on
 every quadratic unitarily invariant norm, the factor and the failure probability explicit in $t$;
 the shape of [TroppWebber2023, Theorem 8.1 (RSVD1)].
 Result: randomized-svd-tail -/
-theorem HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le
+theorem HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le
     [IsFiniteMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a δ t : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t)
@@ -184,11 +185,11 @@ constant $a > 0$ except with probability $\delta$, then for $t > 0$
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. The OSI form is
-`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`.
+`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.2]; there an OSI and $C/\alpha$ at probability $9/10$;
 here one fixed subspace, the factor and the failure probability explicit in $t$.
 Result: randomized-svd-tail -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {a δ t : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t) :
@@ -214,28 +215,28 @@ $t > 0$
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. The fixed-subspace form, which also covers row sampling,
-is `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`.
+is `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.2]; there $C/\alpha$ at probability $9/10$.
 Result: randomized-svd-tail -/
-theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
+theorem IsObliviousSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (X ω)ᴴ) k a δ μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | (1 + t / a) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + 1 / t :=
   (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measure_frobNorm_sub_rsvd_sq_gt_le h.isotropic ha ht
+    ).measureReal_frobNorm_sub_rsvd_sq_gt_le h.isotropic ha ht
 
 /-- **The randomized SVD with a subspace injection, spectral norm**: with the hypotheses of
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`, for $t > 0$
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`, for $t > 0$
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le \sigma_k(\mathbf{A})^2 +
 \frac{t}{a}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. Its neighbour without isotropy and without the Frobenius
 term is the bounded-sketch form
-`HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le`
+`HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le`
 at the spectral gauge. [CamanoEpperlyMeyerTropp2025, Theorem 2.2], here in the spectral norm; the
 shape of [TroppWebber2023, Theorem 8.1 (RSVD1)].
 Result: randomized-svd-tail -/
-theorem HasSubspaceInjection.measure_specNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_specNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {a δ t : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t) :
@@ -259,7 +260,7 @@ theorem HasSubspaceInjection.measure_specNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure
   linarith
 
 /-- **The rank-$k$ randomized SVD with a subspace injection**: with the hypotheses of
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`, for $t > 0$
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`, for $t > 0$
 $$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
 \le \Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$, the same constant as the untruncated output.
@@ -267,7 +268,7 @@ except with probability $\delta + 1/t$, the same constant as the untruncated out
 spectral only; here in the Frobenius norm through the rank-$k$ competitor of [Woodruff2014,
 Lemma 48].
 Result: randomized-svd-tail -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {a δ t : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t) :
@@ -303,7 +304,7 @@ $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))^{\mathsf{H}}
 (\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k)\bigr\|_{\Phi}$$
 except with probability $\delta$; at the spectral gauge the right side is
 $(1 + L^2/a)\,\sigma_k(\mathbf{A})^2$. No isotropy and no Markov step. Its neighbour
-`NLAlib.HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le` needs
+`NLAlib.HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le` needs
 isotropy and no bound on the sketch, and pays $\delta + 1/t$.
 [HalkoMartinssonTropp2011, Theorem 11.2]; there the SRFT, $L^2 = n/\ell$, factor $1 + 7n/\ell$ in
 the spectral and Frobenius norms and failure probability $O(k^{-1})$; here any sketch, every
@@ -311,7 +312,7 @@ quadratic unitarily invariant norm; at the SRHT a sharper factor ($1 + 2n/\ell$)
 failure probability and an incomparable size condition.
 Result: randomized-svd-tail -/
 theorem
-    HasSubspaceInjection.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le
+    HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le
     [IsFiniteMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a δ L : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ) (ha : 0 < a)
     (hL : ∀ᵐ ω ∂μ, specNorm (X ω) ≤ L) (Φ : SymmetricGauge) :
@@ -381,11 +382,11 @@ probability at most $\delta'$, then
 $$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
 \le \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2 + \frac{\eta^2}{a^2}$$
 except with probability $\delta + \delta'$. The form a family with its own multiplication tail uses;
-the JL-moment form is `NLAlib.HasJLMoment.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`.
+the JL-moment form is `NLAlib.HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`.
 [Woodruff2014, proof of Lemma 45]; there constants $1 \pm 1/3$, here any injection constant and
 any multiplication tail.
 Result: randomized-svd-tail -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le
     [IsFiniteMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a δ η δ' : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ) (ha : 0 < a)
     (hχ : μ.real {ω | η < frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ *
@@ -436,10 +437,11 @@ except with probability $\delta'$: the left side is an approximate-multiplicatio
 $(\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k)
 \mathbf{P}_{\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}} = \mathbf{0}$, and
 $\|\mathbf{P}_{\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}}\|_{\mathsf{F}} \le \sqrt{k}$.
-The hypothesis of `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le`
+The hypothesis of
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le`
 and of the early-truncation tails at the JL moment. [Woodruff2014, proof of Lemma 45]. -/
 theorem
-    HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+    HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
     [IsFiniteMeasure μ] {X : Ω → Matrix n l ℝ}
     {A : Matrix m n ℝ} {k : ℕ} {ε δ' p : ℝ} (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ' p μ)
     (hX : AEMeasurable X μ) (hε : 0 < ε) (hp : 2 ≤ p) (hδ' : 0 ≤ δ') :
@@ -468,7 +470,7 @@ theorem
     rw [he, measureReal_empty]
     exact hδ'
   rw [not_or] at h0
-  have hF := hJL.measure_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS
+  have hF := hJL.measureReal_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS
     (A := (A - truncatedSVD A k)ᴴ) (B := rangeProjector (truncatedSVD A k)ᴴ)
     (by rw [Ne, Matrix.conjTranspose_eq_zero]; exact h0.1) h0.2
   refine (measureReal_mono fun ω hω => ?_).trans hF
@@ -500,13 +502,13 @@ $$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_
 \le \Bigl(1 + \frac{k\varepsilon^2}{a^2}\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta'$. Its neighbour without the moment property,
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`, has the constant
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le`, has the constant
 factor $1 + t/a$ at failure probability $\delta + 1/t$; this one reaches $1 + \varepsilon$ when
 $\delta'$ decays with the sketch size. [Woodruff2014, Lemmas 44 and 45]; there constants
 $1 \pm 1/3$ and the $(\sqrt{\varepsilon/k}, 9/10, \ell)$ moment; here any injection constant,
 explicit.
 Result: randomized-svd-tail -/
-theorem HasJLMoment.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le [IsFiniteMeasure μ]
+theorem HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le [IsFiniteMeasure μ]
     {X : Ω → Matrix n l ℝ} {A : Matrix m n ℝ} {k : ℕ} {a δ ε δ' p : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ' p μ)
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
@@ -515,8 +517,9 @@ theorem HasJLMoment.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le [IsFiniteMea
       frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2} ≤ δ + δ' := by
   classical
   refine (measureReal_mono fun ω hω => ?_).trans
-    (h.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le ha
-      (hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le hX hε
+    (h.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le ha
+      (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le hX
+        hε
         hp hδ'))
   have hω' : (1 + (k : ℝ) * ε ^ 2 / a ^ 2) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 := hω
@@ -540,12 +543,12 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 \Bigl(1 + \frac{k\varepsilon^2}{a^2}\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta'$. Its neighbour without the moment property is
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le`, with the constant factor
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le`, with the constant factor
 $1 + t/a$; this one reaches $1 + \varepsilon$ at $\ell = O(k/(\varepsilon\delta'))$ for the dense
 families. [Woodruff2014, Lemma 45]; there constants $1 \pm 1/3$ and the
 $(\sqrt{\varepsilon/k}, 9/10, \ell)$ moment; here any injection constant, explicit.
 Result: randomized-svd-tail -/
-theorem HasJLMoment.measure_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
+theorem HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
     {X : Ω → Matrix n l ℝ} {A : Matrix m n ℝ} {k : ℕ} {a δ ε δ' p : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ' p μ)
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
@@ -554,7 +557,7 @@ theorem HasJLMoment.measure_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMeasure μ]
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + δ' := by
   classical
   refine (measureReal_mono fun ω hω => ?_).trans
-    (hJL.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le h hX ha hε hp hδ')
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le h hX ha hε hp hδ')
   have hω' : (1 + (k : ℝ) * ε ^ 2 / a ^ 2) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2 := hω
   have h1 := frobNorm_sub_truncatedSVD_rsvd_sq A (X ω) k
@@ -577,7 +580,7 @@ $\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$, whose dominant subspace under 
 eigenvalues need not be that of $\llbracket\mathbf{H}\rrbracket_k$.
 [CamanoEpperlyMeyerTropp2025, Corollary 2.5]; there $C/\alpha$ at probability $9/10$.
 Result: randomized-nystrom-tail -/
-theorem IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
+theorem IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
     {H : Matrix n n 𝕜} (hH : H.PosSemidef) {k : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (X ω)ᴴ) k a δ μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | (1 + t / a) * nuclearNorm (H - truncatedSVD H k) <
@@ -586,10 +589,11 @@ theorem IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le [IsFi
   rw [Matrix.star_eq_conjTranspose]
   simp only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
-  exact h.measure_frobNorm_sub_rsvd_sq_gt_le ha ht
+  exact h.measureReal_frobNorm_sub_rsvd_sq_gt_le ha ht
 
 /-- **Randomized Nyström with an oblivious subspace injection**, every unitarily invariant norm:
-with the hypotheses of `NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le`,
+with the hypotheses of
+`NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`,
 for $t > 0$
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi} \le
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{t}{a}\,
@@ -597,7 +601,7 @@ $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_{\Phi} \le
 except with probability $\delta + 1/t$, with $\mathbf{e}_0$ the first unit coordinate sequence.
 [CamanoEpperlyMeyerTropp2025, Corollary 2.5]; there the trace norm.
 Result: randomized-nystrom-tail -/
-theorem IsObliviousSubspaceInjection.measure_matrixNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
+theorem IsObliviousSubspaceInjection.measureReal_matrixNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
     {H : Matrix n n 𝕜} (hH : H.PosSemidef) {k : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (X ω)ᴴ) k a δ μ) (ha : 0 < a) (ht : 0 < t)
     (Φ : SymmetricGauge) :
@@ -610,10 +614,10 @@ theorem IsObliviousSubspaceInjection.measure_matrixNorm_sub_nystrom_gt_le [IsFin
     Φ.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
   exact (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le F k)
-    ).measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le h.isotropic ha ht Φ
+    ).measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le h.isotropic ha ht Φ
 
 /-- **Randomized Nyström with an oblivious subspace injection**, spectral norm: with the
-hypotheses of `NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le`, for
+hypotheses of `NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`, for
 $t > 0$
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_2 \le \lambda_k(\mathbf{H}) +
 \frac{t}{a}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
@@ -621,7 +625,7 @@ except with probability $\delta + 1/t$, the eigenvalue written $\sigma_k(\mathbf
 Nyström preconditioner consumes. [CamanoEpperlyMeyerTropp2025, Corollary 2.5]; there the trace
 norm.
 Result: randomized-nystrom-tail -/
-theorem IsObliviousSubspaceInjection.measure_specNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
+theorem IsObliviousSubspaceInjection.measureReal_specNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
     {H : Matrix n n 𝕜} (hH : H.PosSemidef) {k : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (X ω)ᴴ) k a δ μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | singularValues H k + t / a * nuclearNorm (H - truncatedSVD H k) <
@@ -631,16 +635,16 @@ theorem IsObliviousSubspaceInjection.measure_specNorm_sub_nystrom_gt_le [IsFinit
   simp only [conjTranspose_mul_self_sub_nystrom, specNorm_conjTranspose_mul_self,
     singularValues_conjTranspose_mul_self, nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
   exact (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le F k)
-    ).measure_specNorm_sub_rsvd_sq_gt_le h.isotropic ha ht
+    ).measureReal_specNorm_sub_rsvd_sq_gt_le h.isotropic ha ht
 
 /-- **Truncated randomized Nyström with an oblivious subspace injection**, trace norm: with the
-hypotheses of `NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le`, for
+hypotheses of `NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`, for
 $t > 0$
 $$\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\rrbracket_k\|_* \le
 \Bigl(1 + \frac{t}{a}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
 except with probability $\delta + 1/t$. [CamanoEpperlyMeyerTropp2025, remark after Theorem 1.3].
 Result: randomized-nystrom-tail -/
-theorem IsObliviousSubspaceInjection.measure_nuclearNorm_sub_truncatedSVD_nystrom_gt_le
+theorem IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_truncatedSVD_nystrom_gt_le
     [IsFiniteMeasure μ] {H : Matrix n n 𝕜} (hH : H.PosSemidef) {k : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (X ω)ᴴ) k a δ μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | (1 + t / a) * nuclearNorm (H - truncatedSVD H k) <
@@ -650,7 +654,7 @@ theorem IsObliviousSubspaceInjection.measure_nuclearNorm_sub_truncatedSVD_nystro
   simp only [nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
   exact (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le F k)
-    ).measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le h.isotropic ha ht
+    ).measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le h.isotropic ha ht
 
 /-- **Randomized Nyström to relative error through approximate multiplication**, trace norm: for
 real positive semidefinite $\mathbf{H}$ and a real OSI $\mathbf{\Omega}^{\mathsf{H}}$ for dimension
@@ -659,10 +663,10 @@ property, $\varepsilon > 0$, $p \ge 2$, $\delta' \ge 0$,
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})\|_* \le
 \Bigl(1 + \frac{k\varepsilon^2}{a^2}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
 except with probability $\delta + \delta'$. Its constant-factor neighbour is
-`NLAlib.IsObliviousSubspaceInjection.measure_nuclearNorm_sub_nystrom_gt_le`.
+`NLAlib.IsObliviousSubspaceInjection.measureReal_nuclearNorm_sub_nystrom_gt_le`.
 [Woodruff2014, Lemma 45] through [CamanoEpperlyMeyerTropp2025, Imported Theorem 2.4].
 Result: randomized-nystrom-tail -/
-theorem HasJLMoment.measure_nuclearNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
+theorem HasJLMoment.measureReal_nuclearNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
     {X : Ω → Matrix n l ℝ} {H : Matrix n n ℝ} (hH : H.PosSemidef) {k : ℕ} {a δ ε δ' p : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ' p μ)
     (h : IsObliviousSubspaceInjection (fun ω => (X ω)ᴴ) k a δ μ) (hX : AEMeasurable X μ)
@@ -673,7 +677,7 @@ theorem HasJLMoment.measure_nuclearNorm_sub_nystrom_gt_le [IsFiniteMeasure μ]
   rw [Matrix.star_eq_conjTranspose]
   simp only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
-  exact hJL.measure_frobNorm_sub_rsvd_sq_gt_le
+  exact hJL.measureReal_frobNorm_sub_rsvd_sq_gt_le
     (h.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le F k))
     hX ha hε hp hδ'
 

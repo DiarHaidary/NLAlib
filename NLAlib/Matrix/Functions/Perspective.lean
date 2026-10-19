@@ -23,8 +23,8 @@ the joint convexity of the matrix relative entropy.
 
 ## Main results
 
-* `NLAlib.matrixPerspective_mul_diagonal_mul_conjTranspose`: for two matrices diagonalised by
-  the same frame it is the scalar perspective $a f(h/a)$ of the eigenvalues.
+* `NLAlib.HasOrthonormalCols.matrixPerspective_mul_diagonal_mul_conjTranspose`: for two matrices
+  diagonalised by the same frame it is the scalar perspective $a f(h/a)$ of the eigenvalues.
 * `NLAlib.matrixPerspective_smul_one`: the case of multiples of the identity.
 * `NLAlib.matrixPerspective_smul_smul`: positive homogeneity.
 * `NLAlib.OperatorConvexOn.matrixPerspective_smul_add_smul_le`: joint operator convexity.
@@ -86,7 +86,8 @@ $$\psi_f(\mathbf{U}\operatorname{diag}(\mathbf{a})\mathbf{U}^{\mathsf{H}},
   \mathbf{U}\operatorname{diag}(\mathbf{h})\mathbf{U}^{\mathsf{H}})
   = \mathbf{U}\operatorname{diag}\bigl(\mathbf{a}_i f(\mathbf{h}_i / \mathbf{a}_i)\bigr)
   \mathbf{U}^{\mathsf{H}} \,.$$ -/
-theorem matrixPerspective_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+theorem HasOrthonormalCols.matrixPerspective_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
+    [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n)
     (f : ℝ → ℝ) {a : r → ℝ} (ha : ∀ i, 0 < a i) (h : r → ℝ) :
     matrixPerspective f (U * Matrix.diagonal (fun i => ((a i : ℝ) : 𝕜)) * Uᴴ)
@@ -107,8 +108,8 @@ theorem matrixPerspective_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
     rw [hmul]
     simp only [Real.mul_self_sqrt (ha _).le]
   rw [matrixPerspective, hA.inv_sqrt_eq_cfc, hsqrt,
-    cfc_eq_mul_diagonal_mul_conjTranspose hU hr rfl, hmul, hmul,
-    cfc_eq_mul_diagonal_mul_conjTranspose hU hr rfl, hmul, hmul]
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr rfl, hmul, hmul,
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr rfl, hmul, hmul]
   congr 3
   funext i
   have hs := Real.mul_self_sqrt (ha i).le
@@ -128,7 +129,8 @@ theorem matrixPerspective_smul_one (f : ℝ → ℝ) {a : ℝ} (ha : 0 < a) (h :
     rw [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one, ← Matrix.smul_one_eq_diagonal,
       RCLike.real_smul_eq_coe_smul (K := 𝕜)]
   rw [key a, key h, key]
-  exact matrixPerspective_mul_diagonal_mul_conjTranspose hasOrthonormalCols_one rfl f
+  exact HasOrthonormalCols.matrixPerspective_mul_diagonal_mul_conjTranspose hasOrthonormalCols_one
+    rfl f
     (fun _ => ha) fun _ => h
 
 /-- The inverse of a nonzero real multiple of a matrix, singular or not:

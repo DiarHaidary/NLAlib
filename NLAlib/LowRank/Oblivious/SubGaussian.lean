@@ -126,7 +126,7 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 except with probability $\delta$; the first size is `subgaussianEmbeddingDim c k (1 / 2) (δ / 2)`
 and $C$ is `subgaussianJLConstant`. The route: the OSI at constant $1/2$ and failure $\delta/2$,
 the JL moment property at $\sqrt{\varepsilon/(4k)}$ and
-`NLAlib.HasJLMoment.measure_frobNorm_sub_rsvd_sq_gt_le`. Asymptotic form:
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le`. Asymptotic form:
 `NLAlib.exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`.
 [Woodruff2014, Lemma 45 and Remark 46]; there for dense sign and Gaussian sketches, constants
 unspecified.
@@ -164,7 +164,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector [Nonempty 
   have hδJ : (0 : ℝ) ≤ (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * √(ε / (4 * k)) ^ 2) := by
     have : (0 : ℝ) ≤ 16 * (c : ℝ) ^ 2 - 1 := by nlinarith
     positivity
-  have h := hJL.measure_frobNorm_sub_rsvd_sq_gt_le (A := A) (hOSI.hasSubspaceInjection
+  have h := hJL.measureReal_frobNorm_sub_rsvd_sq_gt_le (A := A) (hOSI.hasSubspaceInjection
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
     (aemeasurable_inv_sqrt_card_smul_of_isSubgaussianVector hsub) (by norm_num) hεJ le_rfl hδJ
   have hsq : √(ε / (4 * k)) ^ 2 = ε / (4 * k) := Real.sq_sqrt (by positivity)
@@ -282,12 +282,13 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
   have hc16 : (0 : ℝ) ≤ 16 * (c : ℝ) ^ 2 - 1 := by nlinarith
   have hδJ : (0 : ℝ) ≤ (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * (ε / (8 * √(k : ℝ))) ^ 2) := by
     positivity
-  have hχ := hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
     (A := A) (k := k) hX' hεJ le_rfl hδJ
   rw [show ε / (8 * √(k : ℝ)) * √(k : ℝ) = ε / 8 by field_simp] at hχ
   have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measure_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
     (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
     (fun ω => isStarProjection_rangeProjector _)
     (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
@@ -296,7 +297,7 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
         frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
       exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
         ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
-    (hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
       hεJ le_rfl hδJ) hχ
   refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
   · have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
@@ -444,7 +445,7 @@ $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$: the OSI at constan
 failure $\delta/2$ for the normalised sketch $\ell^{-1/2}\mathbf{\Omega}^{\mathsf{H}}$; the
 structural bound `NLAlib.IsSubspaceInjection.frobNorm_sub_rsvd_sq_le`, giving
 $\|\mathbf{E}\|_{\mathsf{F}}^2 + 2\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}^2/\ell$; and the
-Hsu–Kakade–Zhang tail `NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le` for
+Hsu–Kakade–Zhang tail `NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le` for
 $\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}^2 = \|(\mathbf{I}_\ell \otimes \mathbf{E})
 \operatorname{vec}\mathbf{\Omega}\|^2$ at $t = \log(2/\delta)$ (the vectorization has proxy $c$
 by `NLAlib.IsSubgaussianVector.uncurry_of_iIndepFun`), which gives
@@ -536,7 +537,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
     rw [← frobNorm_eq_zero_iff, ← pow_eq_zero_iff two_ne_zero]
     rw [h, frobNorm_zero, zero_pow two_ne_zero] at hFM
     exact (mul_eq_zero.1 hFM.symm).resolve_left hL.ne'
-  have hHKZ := (IsSubgaussianVector.uncurry_of_iIndepFun hind hsub).measure_norm_mulVec_sq_ge_le
+  have hHKZ := (IsSubgaussianVector.uncurry_of_iIndepFun hind hsub).measureReal_norm_mulVec_sq_ge_le
     (by rintro rfl; norm_num at hc1) hM0 ht0
   have hexp : Real.exp (-t) = δ / 2 := by
     rw [Real.exp_neg, Real.exp_log (by positivity), inv_div]

@@ -51,7 +51,7 @@ theorem _root_.Matrix.IsHermitian.gmresIterate_eq_lanczosMatrix {A : Matrix n n 
         (pinv ((lanczosTridiagonal A (b - A *ᵥ x₀) (q + 1)).submatrix id Fin.castSucc) *ᵥ
           Pi.single 0 1)) := by
   rw [hA.lanczosMatrix_eq_arnoldiMatrix, hA.lanczosTridiagonal_eq,
-    conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc,
+    submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc,
     gmresIterate_eq_arnoldiMatrix]
 
 /-- **The preconditioned Lanczos recurrence yields preconditioned MINRES**: for invertible

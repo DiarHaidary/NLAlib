@@ -38,7 +38,7 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
 
 ## Main results
 
-* `NLAlib.cfc_eq_mul_diagonal_mul_conjTranspose`:
+* `NLAlib.HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose`:
   $f(\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}})
   = \mathbf{U} f(\mathbf{D}) \mathbf{U}^{\mathsf{H}}$.
 * `Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq`: a function of $\mathbf{A}$ on an
@@ -60,12 +60,14 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
   $f$.
 * `Matrix.IsHermitian.specNorm_cfc_le`: $\|f(\mathbf{A})\|_2 \le \max \lvert f \rvert$ on the
   spectrum.
-* `NLAlib.re_quadForm_cfc_eq_sum`: the quadratic form of $f(\mathbf{A})$ as a weighted sum.
+* `NLAlib.HasOrthonormalCols.re_quadForm_cfc_eq_sum`: the quadratic form of $f(\mathbf{A})$ as a
+  weighted sum.
 * `Matrix.IsHermitian.norm_toLp_cfc_mulVec_sq`,
   `Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_le`: the norm of
   $\psi(\mathbf{A})\mathbf{x}$ as a quadratic form, and a Cauchy–Schwarz inequality for
   functions of one Hermitian matrix.
-* `NLAlib.cfc_fromBlocks_diagonal`, `NLAlib.cfc_blockDiagonal`: block diagonal sums.
+* `Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁`, `NLAlib.cfc_blockDiagonal`: block diagonal
+  sums.
 * `Matrix.PosDef.inv_eq_cfc`, `Matrix.PosDef.inv_sqrt_eq_cfc`: the inverse and the inverse
   square root.
 * `Matrix.IsHermitian.cfc_inv_eq_pinv`: the pseudoinverse of a Hermitian matrix is the function
@@ -112,7 +114,8 @@ of the spectral theorem `Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTrans
 $\mathbf{U}$.
 Port of `NLAlib.cfc_eq_eigenvectorUnitary_mul_diagonal_mul_conjTranspose`, there for the chosen
 eigenvector matrix. -/
-theorem cfc_eq_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+theorem HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
+    [DecidableEq r]
     {A : Matrix n n 𝕜} {U : Matrix n r 𝕜} {d : r → ℝ} (hU : HasOrthonormalCols U)
     (hr : Fintype.card r = Fintype.card n)
     (hA : A = U * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Uᴴ) (f : ℝ → ℝ) :
@@ -166,7 +169,7 @@ private theorem exists_cfc_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
   obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
   have hr := Fintype.card_fin (Fintype.card n)
   exact ⟨U, hU, hU.mul_conjTranspose_self_of_card_eq hr.symm, hAU,
-    cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU⟩
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU⟩
 
 /-- $f$ of a real diagonal matrix is the diagonal matrix of the values of $f$:
 $f(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(f(\mathbf{d}_i))$.
@@ -174,7 +177,8 @@ Port of `NLAlib.cfc_diagonal_real`. -/
 theorem cfc_diagonal (f : ℝ → ℝ) (d : n → ℝ) :
     cfc f (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) =
       Matrix.diagonal fun i => ((f (d i) : ℝ) : 𝕜) := by
-  have h := cfc_eq_mul_diagonal_mul_conjTranspose (𝕜 := 𝕜) (U := (1 : Matrix n n 𝕜)) (d := d)
+  have h := HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose (𝕜 := 𝕜)
+    (U := (1 : Matrix n n 𝕜)) (d := d)
     hasOrthonormalCols_one rfl (by rw [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one]) f
   rwa [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one] at h
 
@@ -211,7 +215,8 @@ $f(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}) = \mathbf{U} f(\mathbf{A}) \math
 for Hermitian $\mathbf{A}$ and $\mathbf{U}$ unitary, that is, with orthonormal columns and as many
 columns as rows, on any column index type.
 Port of `NLAlib.cfc_unitary_conj`, there over $\mathbb{C}$. -/
-theorem cfc_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r] {U : Matrix n r 𝕜}
+theorem HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq {r : Type*} [Fintype r]
+    [DecidableEq r] {U : Matrix n r 𝕜}
     (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n) {A : Matrix r r 𝕜}
     (hA : A.IsHermitian) (f : ℝ → ℝ) : cfc f (U * A * Uᴴ) = U * cfc f A * Uᴴ := by
   obtain ⟨V, hV, -, hAV, hcfc⟩ := exists_cfc_eq hA
@@ -221,13 +226,14 @@ theorem cfc_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r] {U : M
       ((eigenvalue A i : ℝ) : 𝕜)) * (U * V)ᴴ := by
     conv_lhs => rw [hAV]
     simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose (hU.mul hV) hr' hUV f, hcfc f]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose (hU.mul hV) hr' hUV f, hcfc f]
   simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
 
 /-- $f$ commutes with relabelling: for Hermitian $\mathbf{A}$ and a bijection $e$ of index types,
 $f$ of $\mathbf{A}$ with rows and columns relabelled by $e$ is $f(\mathbf{A})$ relabelled by $e$.
 Port of `NLAlib.cfc_reindex_of_isHermitian`. -/
-theorem cfc_submatrix_equiv {A : Matrix n n 𝕜} (hA : A.IsHermitian) (f : ℝ → ℝ) (e : m ≃ n) :
+theorem _root_.Matrix.IsHermitian.cfc_submatrix_equiv {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (f : ℝ → ℝ) (e : m ≃ n) :
     cfc f (A.submatrix e e) = (cfc f A).submatrix e e := by
   obtain ⟨V, hV, -, hAV, hcfc⟩ := exists_cfc_eq hA
   have hr : Fintype.card (Fin (Fintype.card n)) = Fintype.card m := by
@@ -244,7 +250,8 @@ theorem cfc_submatrix_equiv {A : Matrix n n 𝕜} (hA : A.IsHermitian) (f : ℝ 
         (V.submatrix e (Equiv.refl _))ᴴ := by
     conv_lhs => rw [hAV]
     exact hsub _
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose (hV.submatrix e (Equiv.refl _).injective) hr hA' f,
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose (hV.submatrix e (Equiv.refl
+    _).injective) hr hA' f,
     hcfc f, hsub]
 
 /-- **$f$ of a block diagonal matrix** with Hermitian blocks $\mathbf{A}$, $\mathbf{B}$ is the
@@ -252,7 +259,8 @@ block diagonal matrix of $f(\mathbf{A})$ and $f(\mathbf{B})$:
 $$f\left(\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}\right)
   = \begin{bmatrix} f(\mathbf{A}) & \mathbf{0} \\ \mathbf{0} & f(\mathbf{B}) \end{bmatrix} .$$
 Port of `NLAlib.cfc_fromBlocks`, there over $\mathbb{C}$. -/
-theorem cfc_fromBlocks_diagonal {A : Matrix m m 𝕜} {B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁ {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) (f : ℝ → ℝ) :
     cfc f (Matrix.fromBlocks A 0 0 B) = Matrix.fromBlocks (cfc f A) 0 0 (cfc f B) := by
   obtain ⟨V, hV, -, hAV, hcfcA⟩ := exists_cfc_eq hA
@@ -285,14 +293,15 @@ theorem cfc_fromBlocks_diagonal {A : Matrix m m 𝕜} {B : Matrix n n 𝕜} (hA 
         (fun i : Fin (Fintype.card n) => eigenvalue B i) i : ℝ) : 𝕜)) *
         (Matrix.fromBlocks V 0 0 W)ᴴ := by
     rw [← hblock, ← hAV, ← hBW]
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAB f, hcfcA f, hcfcB f, hblock]
+  rw
+    [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAB f, hcfcA f, hcfcB f, hblock]
   congr 3
   funext i
   cases i <;> rfl
 
 /-- **$f$ of a block diagonal matrix** with Hermitian blocks $\mathbf{A}_i$ is the block diagonal
-matrix of the $f(\mathbf{A}_i)$; the version of `cfc_fromBlocks_diagonal` for a family of blocks
-of one size. -/
+matrix of the $f(\mathbf{A}_i)$; the version of `Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁`
+for a family of blocks of one size. -/
 theorem cfc_blockDiagonal {ι : Type*} [Fintype ι] [DecidableEq ι]
     {A : ι → Matrix m m 𝕜} (hA : ∀ i, (A i).IsHermitian) (f : ℝ → ℝ) :
     cfc f (Matrix.blockDiagonal A) = Matrix.blockDiagonal fun i => cfc f (A i) := by
@@ -314,15 +323,17 @@ theorem cfc_blockDiagonal {ι : Type*} [Fintype ι] [DecidableEq ι]
       (Matrix.diagonal fun p : Fin (Fintype.card m) × ι =>
         ((eigenvalue (A p.2) p.1 : ℝ) : 𝕜)) * (Matrix.blockDiagonal U)ᴴ := by
     exact (congrArg _ (funext hAU)).trans (hdiag id)
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose hW hr hA' f, ← hdiag f]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hW hr hA' f, ← hdiag f]
   exact congrArg _ (funext fun i =>
-    (cfc_eq_mul_diagonal_mul_conjTranspose (hU i) (Fintype.card_fin _) (hAU i) f).symm)
+    (HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose (hU i) (Fintype.card_fin _) (hAU i)
+        f).symm)
 
 /-- **A function of a zero-padded compression**: for $\mathbf{U}$ with orthonormal columns
 (not necessarily square) and Hermitian $\mathbf{T}$,
 $f(\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}) = \mathbf{U}f(\mathbf{T})\mathbf{U}^{\mathsf{H}}
 + f(0)(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})$: the padding contributes the eigenvalue
-$0$. Generalises `NLAlib.cfc_mul_mul_conjTranspose`, which needs $\mathbf{U}$ square. -/
+$0$. Generalises `NLAlib.HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq`, which needs
+$\mathbf{U}$ square. -/
 theorem HasOrthonormalCols.cfc_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) {T : Matrix r r 𝕜} (hT : T.IsHermitian)
     (f : ℝ → ℝ) : cfc f (U * T * Uᴴ) = U * cfc f T * Uᴴ + f 0 • (1 - U * Uᴴ) := by
@@ -348,8 +359,9 @@ theorem HasOrthonormalCols.cfc_mul_mul_conjTranspose {r : Type*} [Fintype r] [De
       (Matrix.fromCols U U')ᴴ := by
     rw [hblock]
     simp
-  rw [hUTU, NLAlib.cfc_mul_mul_conjTranspose hW hWc hTB,
-    cfc_fromBlocks_diagonal hT Matrix.isHermitian_zero, hblock, cfc_apply_zero,
+  rw [hUTU, NLAlib.HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq hW hWc hTB,
+    Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁ hT Matrix.isHermitian_zero, hblock,
+      cfc_apply_zero,
     Algebra.algebraMap_eq_smul_one, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul,
     ← hsum, add_sub_cancel_left]
 
@@ -458,7 +470,8 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_cfc_of_monotoneOn {A : Matrix n n �
   have hanti : Antitone fun i : Fin (Fintype.card n) => f (eigenvalue A i) := fun i j hij =>
     hf (hs (hA.eigenvalue_mem_spectrum j.isLt)) (hs (hA.eigenvalue_mem_spectrum i.isLt))
       (hA.eigenvalue_le_eigenvalue hij j.isLt)
-  exact eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hanti (hcfc f) ⟨k, hk⟩
+  exact HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hanti (hcfc f)
+    ⟨k, hk⟩
 
 /-- Eigenvalues of $f(\mathbf{A})$ for a non-increasing $f$: for Hermitian $\mathbf{A}$ and $f$
 antitone on a set containing the spectrum,
@@ -481,14 +494,16 @@ $$\operatorname{Re}(\mathbf{x}^{\mathsf{H}} f(\mathbf{A}) \mathbf{x})
 This is the identity behind Gauss quadrature for $\mathbf{x}^{\mathsf{H}} f(\mathbf{A}) \mathbf{x}$.
 Port of `NLAlib.dotProduct_cfc_mulVec_eq_sum`, there over $\mathbb{R}$ with the chosen
 eigenbasis. -/
-theorem re_quadForm_cfc_eq_sum {r : Type*} [Fintype r] [DecidableEq r] {A : Matrix n n 𝕜}
+theorem HasOrthonormalCols.re_quadForm_cfc_eq_sum {r : Type*} [Fintype r] [DecidableEq r]
+    {A : Matrix n n 𝕜}
     {U : Matrix n r 𝕜} {d : r → ℝ} (hU : HasOrthonormalCols U)
     (hr : Fintype.card r = Fintype.card n)
     (hA : A = U * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Uᴴ) (f : ℝ → ℝ) (x : n → 𝕜) :
     RCLike.re (quadForm (cfc f A) x) = ∑ i, f (d i) * ‖(Uᴴ *ᵥ x) i‖ ^ 2 := by
   have h := quadForm_conjTranspose_mul_mul (Matrix.diagonal fun i => ((f (d i) : ℝ) : 𝕜)) Uᴴ x
   rw [Matrix.conjTranspose_conjTranspose] at h
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hA f, h, quadForm_diagonal, map_sum]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hA f, h, quadForm_diagonal,
+    map_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← RCLike.ofReal_mul, RCLike.ofReal_re]
 
@@ -528,7 +543,7 @@ private theorem abs_re_quadForm_cfc_le_aux {A : Matrix n n 𝕜} (hA : A.IsHermi
     |RCLike.re (quadForm (cfc f A) x)| ≤ c * ‖WithLp.toLp 2 x‖ ^ 2 := by
   obtain ⟨U, hU, -, hAU, -⟩ := exists_cfc_eq hA
   have hr := Fintype.card_fin (Fintype.card n)
-  rw [re_quadForm_cfc_eq_sum hU hr hAU f x,
+  rw [HasOrthonormalCols.re_quadForm_cfc_eq_sum hU hr hAU f x,
     ← (hU.conjTranspose_of_card_eq hr.symm).norm_toLp_mulVec x, EuclideanSpace.norm_sq_eq,
     Finset.mul_sum]
   refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun i _ => ?_)
@@ -704,8 +719,8 @@ omit [DecidableEq m] in
 $\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$ with $\mathbf{d}$ real, then
 $$f(\mathbf{A})\mathbf{W} = \mathbf{W}\operatorname{diag}(f(\mathbf{d}_i))\,,$$
 for any columns $\mathbf{W}$ (each nonzero column is an eigenvector, a zero column is mapped to
-zero). The partial form of `NLAlib.cfc_eq_mul_diagonal_mul_conjTranspose`; the polynomial twin is
-`NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq_mul`. -/
+zero). The partial form of `NLAlib.HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose`; the
+polynomial twin is `NLAlib.aeval_mul_eq_mul_aeval_of_mul_eq_mul`. -/
 theorem _root_.Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq {r : Type*} [Fintype r]
     [DecidableEq r] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n r 𝕜} {d : r → ℝ}
     (hAW : A * W = W * Matrix.diagonal fun i => (d i : 𝕜)) (f : ℝ → ℝ) :

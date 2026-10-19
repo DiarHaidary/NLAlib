@@ -96,7 +96,7 @@ private theorem exists_frames (X : Matrix m s ℝ) (B : Matrix m r ℝ) :
   obtain ⟨Q₂, hQ₂, hR₂⟩ := exists_hasOrthonormalCols_range_eq
     (p := Fin (1 - rangeProjector X).rank) (1 - rangeProjector X) (Fintype.card_fin _)
   refine ⟨_, Q₁, Q₂, hQ₁, hQ₂, ?_, hR₁, ?_⟩
-  · obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp hR₂.le
+  · obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp hR₂.le
     have hP : rangeProjector X = Q₁ * Q₁ᴴ := by
       rw [← rangeProjector_inj.mpr hR₁, hQ₁.rangeProjector_eq]
     have h0 : Q₁ᴴ * (1 - rangeProjector X) = 0 := by
@@ -387,8 +387,8 @@ private theorem pinv_mul_mul_sketchAndSolve (A : Matrix m n ℝ) (S₀ : Matrix 
     (E : Matrix m r ℝ) : pinv A * (A * sketchAndSolve A S₀ E) = sketchAndSolve A S₀ E := by
   have h : rangeProjector Aᴴ * pinv (S₀ * A) = pinv (S₀ * A) := by
     refine rangeProjector_mul_eq_self_iff.mpr ?_
-    rw [range_mulVecLin_pinv]
-    exact range_mulVecLin_le_iff_exists_mul.mpr ⟨S₀ᴴ, Matrix.conjTranspose_mul _ _⟩
+    rw [range_pinv]
+    exact range_le_iff_exists_mul.mpr ⟨S₀ᴴ, Matrix.conjTranspose_mul _ _⟩
   rw [← Matrix.mul_assoc, pinv_mul, sketchAndSolve, ← Matrix.mul_assoc, h]
 
 omit [DecidableEq m] in

@@ -35,7 +35,7 @@ statement about Hermitian matrices that holds over $\mathbb{C}$ holds over $\Bbb
 * `NLAlib.eigenvalue_complexify`, `NLAlib.singularValues_complexify`,
   `NLAlib.specNorm_complexify`: eigenvalues, singular values and the spectral norm are preserved.
 * `NLAlib.continuous_complexify`: it is continuous.
-* `NLAlib.complexify_cfc`, `NLAlib.complexify_exp`.
+* `Matrix.IsHermitian.complexify_cfc`, `NLAlib.complexify_exp`.
 * `NLAlib.continuousOn_cfc_log`: the matrix logarithm is continuous on the positive definite
   matrices over $\Bbbk$, by transfer from $\mathbb{C}$.
 -/
@@ -207,7 +207,7 @@ private theorem eigenvalue_complexify_of_isHermitian [Fintype n] {A : Matrix n n
           (complexify U)ᴴ := by
       conv_lhs => rw [hAU]
       exact complexify_mul_diagonal_mul_conjTranspose U _
-    exact eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU.complexify rfl
+    exact HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU.complexify rfl
       hA.antitone_eigenvalue_coe hc ⟨k, hk⟩
 
 /-- The complexification preserves and reflects positive semidefiniteness. -/
@@ -283,7 +283,7 @@ theorem singularValues_complexify [Fintype m] [Fintype n] (A : Matrix m n 𝕜) 
     singularValues (complexify A) = singularValues A := by
   funext k
   refine (sq_eq_sq₀ (singularValues_nonneg _ k) (singularValues_nonneg _ k)).mp ?_
-  rw [sq_singularValues, sq_singularValues, ← complexify_conjTranspose, ← complexify_mul,
+  rw [singularValues_sq, singularValues_sq, ← complexify_conjTranspose, ← complexify_mul,
     eigenvalue_complexify]
 
 /-- The complexification is continuous for the entrywise topology on matrices. -/
@@ -292,7 +292,8 @@ theorem continuous_complexify :
   continuous_id.matrix_map RCLike.continuous_toComplex
 
 /-- **The complexification commutes with the functional calculus** of a Hermitian matrix. -/
-theorem complexify_cfc [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.complexify_cfc [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (f : ℝ → ℝ) : complexify (cfc f A) = cfc f (complexify A) := by
   obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
   have hr := Fintype.card_fin (Fintype.card n)
@@ -301,8 +302,8 @@ theorem complexify_cfc [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜} (hA : A
         (complexify U)ᴴ := by
     conv_lhs => rw [hAU]
     exact complexify_mul_diagonal_mul_conjTranspose U _
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU f,
-    cfc_eq_mul_diagonal_mul_conjTranspose hU.complexify hr hc f]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU f,
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU.complexify hr hc f]
   exact complexify_mul_diagonal_mul_conjTranspose U _
 
 /-- The entrywise left inverse of `NLAlib.complexify`. -/
@@ -327,7 +328,8 @@ theorem continuousOn_cfc_log [Fintype n] [DecidableEq n] :
   refine (hd.comp_continuousOn (hlog.comp continuous_complexify.continuousOn
     fun A hA => posDef_complexify_iff.mpr hA)).congr fun A hA => ?_
   simp only [Function.comp_apply]
-  rw [← complexify_cfc (show A.PosDef from hA).isHermitian, decomplexify_complexify]
+  rw [← Matrix.IsHermitian.complexify_cfc (show A.PosDef from hA).isHermitian,
+    decomplexify_complexify]
 
 open scoped Classical in
 /-- The complexification commutes with the square root. -/
@@ -351,7 +353,7 @@ theorem complexify_rpow [Fintype n] [DecidableEq n] (A : Matrix n n 𝕜) (r : �
   · rw [CFC.rpow_eq_cfc_real (Matrix.nonneg_iff_posSemidef.mpr hA),
       CFC.rpow_eq_cfc_real
         (Matrix.nonneg_iff_posSemidef.mpr (posSemidef_complexify_iff.mpr hA))]
-    exact complexify_cfc hA.isHermitian _
+    exact Matrix.IsHermitian.complexify_cfc hA.isHermitian _
   · have hA' : ¬ (0 : Matrix n n 𝕜) ≤ A := mt Matrix.nonneg_iff_posSemidef.mp hA
     have hc : ¬ (0 : Matrix n n ℂ) ≤ complexify A :=
       mt (fun h => posSemidef_complexify_iff.mp (Matrix.nonneg_iff_posSemidef.mp h)) hA

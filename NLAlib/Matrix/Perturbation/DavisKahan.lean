@@ -37,15 +37,15 @@ separation, in the Frobenius norm.
 
 * `NLAlib.SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue`: the $\sin \Theta$
   theorem in residual form, interval separation, every unitarily invariant norm.
-* `NLAlib.mul_frobNorm_conjTranspose_mul_le`: arbitrary separation, Frobenius norm.
+* `Matrix.IsHermitian.mul_frobNorm_conjTranspose_mul_le`: arbitrary separation, Frobenius norm.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_mul_le_of_mul_mul_le`: the projector form.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le`: a Ritz pair against a
   leading eigenspace, no complement frame.
 * `NLAlib.SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_eigenvalue_sub`: leading eigenspaces of
   $\mathbf{A}$ and $\mathbf{A} + \mathbf{E}$.
-* `NLAlib.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal`,
-  `NLAlib.one_sub_mul_mul_one_sub_le_of_smul_one_le`: a Hermitian matrix on the complement of a
-  leading invariant subspace, in the Loewner order.
+* `Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal`,
+  `Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_smul_one_le`: a Hermitian matrix on the
+  complement of a leading invariant subspace, in the Loewner order.
 
 The bounds that involve only the eigenvalue gap of the unperturbed matrix, and the variational
 form, are in `NLAlib.Matrix.Perturbation.DavisKahanGap`.
@@ -84,7 +84,8 @@ $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$ and $\mathbf{M}$ is Hermitian, the
 $\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L}) =
 \mathbf{M}(\mathbf{V}^{\mathsf{H}}\mathbf{U}) - (\mathbf{V}^{\mathsf{H}}\mathbf{U})\mathbf{L}$.
 Port of `NLAlib.sylvester_complement_overlap_eq`. -/
-theorem conjTranspose_mul_mul_sub_mul_eq {A : Matrix n n 𝕜} {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
+theorem _root_.Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq {A : Matrix n n 𝕜}
+    {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
     (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M) (U : Matrix n p 𝕜)
     (L : Matrix p p 𝕜) : Vᴴ * (A * U - U * L) = M * (Vᴴ * U) - Vᴴ * U * L := by
   rw [Matrix.mul_sub, ← Matrix.mul_assoc, conjTranspose_mul_eq_of_mul_eq hA hM hAV,
@@ -108,7 +109,7 @@ theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue [Decida
     {a b δ : ℝ} (hL₁ : a • (1 : Matrix p p 𝕜) ≤ L) (hL₂ : L ≤ b • (1 : Matrix p p 𝕜))
     (hMsep : ∀ i, i < Fintype.card q → eigenvalue M i ≤ a - δ ∨ b + δ ≤ eigenvalue M i) :
     δ * Φ.matrixNorm (Vᴴ * U) ≤ Φ.matrixNorm (Vᴴ * (A * U - U * L)) := by
-  rw [conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
+  rw [Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
   exact Φ.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue hM hL₁ hL₂ hMsep _
 
 /-- The $\sin \Theta$ theorem in residual form with a one-sided separation: for Hermitian
@@ -125,7 +126,7 @@ theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_le [DecidableEq p]
     {L : Matrix p p 𝕜} {α δ : ℝ}
     (hM : M ≤ (α - δ) • (1 : Matrix q q 𝕜)) (hL : α • (1 : Matrix p p 𝕜) ≤ L) :
     δ * Φ.matrixNorm (Vᴴ * U) ≤ Φ.matrixNorm (Vᴴ * (A * U - U * L)) := by
-  rw [conjTranspose_mul_mul_sub_mul_eq hA (isHermitian_of_le_smul_one hM) hAV]
+  rw [Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq hA (isHermitian_of_le_smul_one hM) hAV]
   exact Φ.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le hM hL _
 
 /-- **The $\sin \Theta$ theorem in the Frobenius norm**, residual form, for an arbitrary separation:
@@ -137,14 +138,15 @@ are pairwise at distance at least $\delta$, then $\delta
 [DavisKahan1970]; [StewartSun1990, Theorem V.3.4].
 Port of `NLAlib.frobNorm_sinePrincipalAngles_le_compressed_residual_div`, there over $\mathbb{R}$.
 Result: davis-kahan -/
-theorem mul_frobNorm_conjTranspose_mul_le {A : Matrix n n 𝕜} {V : Matrix n q 𝕜}
+theorem _root_.Matrix.IsHermitian.mul_frobNorm_conjTranspose_mul_le {A : Matrix n n 𝕜}
+    {V : Matrix n q 𝕜}
     {M : Matrix q q 𝕜} (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M)
     {U : Matrix n p 𝕜} {L : Matrix p p 𝕜} (hL : L.IsHermitian) {δ : ℝ}
     (hsep : ∀ i, i < Fintype.card q → ∀ j, j < Fintype.card p →
       δ ≤ |eigenvalue M i - eigenvalue L j|) :
     δ * frobNorm (Vᴴ * U) ≤ frobNorm (Vᴴ * (A * U - U * L)) := by
-  rw [conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
-  exact mul_frobNorm_le_frobNorm_mul_sub_mul hM hL hsep _
+  rw [Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq hA hM hAV]
+  exact Matrix.IsHermitian.mul_frobNorm_le_frobNorm_mul_sub_mul hM hL hsep _
 
 /-- **Distance of a vector from an invariant subspace, from its residual.** If $\mathbf{A}$ is
 Hermitian, $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$ with $\mathbf{M}$ Hermitian, and every
@@ -155,7 +157,8 @@ the complement of an eigenspace this bounds the sine of the angle between $\math
 eigenspace by $\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\| / \delta$.
 [Parlett1998, Theorem 11.7.1 context].
 Port of `NLAlib.sqrt_complement_eigenvalueProjector_le_residual_div`. -/
-theorem mul_norm_conjTranspose_mulVec_le {A : Matrix n n 𝕜} {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
+theorem _root_.Matrix.IsHermitian.mul_norm_conjTranspose_mulVec_le {A : Matrix n n 𝕜}
+    {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
     (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M) {ρ δ : ℝ}
     (hsep : ∀ i, i < Fintype.card q → δ ≤ |eigenvalue M i - ρ|) (x : n → 𝕜) :
     δ * ‖WithLp.toLp 2 (Vᴴ *ᵥ x)‖ ≤ ‖WithLp.toLp 2 (Vᴴ *ᵥ (A *ᵥ x - ρ • x))‖ := by
@@ -346,7 +349,8 @@ $$(\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}) \mathbf{A}
   (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}})
   \preceq \lambda_{j+1}(\mathbf{A}) (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}).$$
 This holds with repeated eigenvalues. -/
-theorem one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal [DecidableEq n] {A : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal [DecidableEq n]
+    {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {j : ℕ} {W : Matrix n (Fin (j + 1)) 𝕜} (hW : HasOrthonormalCols W)
     (hAW : A * W = W * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜)) :
     (1 - W * Wᴴ) * A * (1 - W * Wᴴ) ≤ eigenvalue A (j + 1) • (1 - W * Wᴴ) :=
@@ -424,7 +428,8 @@ $$(\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}) \mathbf{A}
   \preceq \lambda_{j+1}(\mathbf{A}) (\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}}).$$
 The gap is needed: with a repeated eigenvalue the bound on $\mathbf{\Lambda}$ does not determine the
 subspace. -/
-theorem one_sub_mul_mul_one_sub_le_of_smul_one_le [DecidableEq n] [DecidableEq p]
+theorem _root_.Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_smul_one_le [DecidableEq n]
+    [DecidableEq p]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {W : Matrix n p 𝕜} {Λ : Matrix p p 𝕜}
     (hW : HasOrthonormalCols W) (hAW : A * W = W * Λ)
     {j : ℕ} (hp : Fintype.card p = j + 1) (hΛ : eigenvalue A j • (1 : Matrix p p 𝕜) ≤ Λ)
@@ -454,7 +459,7 @@ theorem SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le [Decidab
     rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul,
       hW.mul_conjTranspose_commute_of_mul_eq_mul hA hAW]
   have h := Φ.mul_matrixNorm_mul_le_of_mul_mul_le hQ hcomm
-    (one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal hA hW hAW) hL (U := U)
+    (Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal hA hW hAW) hL (U := U)
   exact h.trans (Φ.matrixNorm_mul_le_of_isStarProjection hQ _)
 
 /-! ### Two matrices -/

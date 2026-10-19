@@ -62,7 +62,8 @@ theorem _root_.Matrix.PosSemidef.rpow_le_rpow [DecidableEq n] {A B : Matrix n n 
   have hAc : (0 : Matrix n n ℂ) ≤ complexify A := (posSemidef_complexify_iff.mpr hA).nonneg
   have hBc : (0 : Matrix n n ℂ) ≤ complexify B := (posSemidef_complexify_iff.mpr hB).nonneg
   rw [CFC.rpow_eq_cfc_real hA.nonneg, CFC.rpow_eq_cfc_real hB.nonneg,
-    ← complexify_le_complexify_iff, complexify_cfc hA.isHermitian, complexify_cfc hB.isHermitian,
+    ← complexify_le_complexify_iff, Matrix.IsHermitian.complexify_cfc hA.isHermitian,
+      Matrix.IsHermitian.complexify_cfc hB.isHermitian,
     ← CFC.rpow_eq_cfc_real hAc, ← CFC.rpow_eq_cfc_real hBc]
   open scoped Matrix.Norms.L2Operator in
   exact CFC.rpow_le_rpow hr (complexify_le_complexify_iff.mpr h)
@@ -87,8 +88,8 @@ Result: loewner-heinz -/
 theorem _root_.Matrix.PosDef.cfc_log_le_cfc_log {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (h : A ≤ B) : cfc Real.log A ≤ cfc Real.log B := by
   have hB : B.PosDef := hA.posDef_of_le h
-  rw [← complexify_le_complexify_iff, complexify_cfc hA.isHermitian,
-    complexify_cfc hB.isHermitian]
+  rw [← complexify_le_complexify_iff, Matrix.IsHermitian.complexify_cfc hA.isHermitian,
+    Matrix.IsHermitian.complexify_cfc hB.isHermitian]
   open scoped Matrix.Norms.L2Operator in
   exact CFC.log_le_log (complexify_le_complexify_iff.mpr h)
     (posDef_complexify_iff.mpr hA).isStrictlyPositive

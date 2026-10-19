@@ -44,7 +44,7 @@ independent, are in `NLAlib/RandomMatrix/Haar/Moments.lean`.
   `NLAlib.variance_quadForm_of_hasLaw_rademacherVector`, and for any real matrix
   `NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart`,
   `NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart`.
-* `NLAlib.variance_quadForm_of_hasLaw_rademacherVector_le`: Rademacher probes are optimal among
+* `NLAlib.variance_quadForm_le_of_hasLaw_rademacherVector`: Rademacher probes are optimal among
   probes with independent coordinates.
 -/
 
@@ -381,8 +381,7 @@ $\operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})
 = 2 (\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{i,i}^2)$ for a vector $\mathbf{x}$ of
 independent random signs and real symmetric $\mathbf{A}$; any real $\mathbf{A}$ is
 `NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart`, and these probes are optimal
-(`NLAlib.variance_quadForm_of_hasLaw_rademacherVector_le`).
-[Epperly2023, Real-Valued Test Vectors].
+(`NLAlib.variance_quadForm_le_of_hasLaw_rademacherVector`). [Epperly2023, Real-Valued Test Vectors].
 Result: hutchinson-variance-rademacher -/
 theorem variance_quadForm_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
     (hx : HasLaw x (rademacherVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
@@ -435,7 +434,7 @@ $m_4 = \mathbb{E}\mathbf{x}_i^4 \ge (\mathbb{E}\mathbf{x}_i^2)^2 = 1$ with equal
 signs. Due to Hutchinson;
 [Epperly2023, Optimality: Independent Vectors with Independent Coordinates].
 Result: rademacher-probe-optimality -/
-theorem variance_quadForm_of_hasLaw_rademacherVector_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
+theorem variance_quadForm_le_of_hasLaw_rademacherVector {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
     {ν : Measure Ω'} {ε : Ω' → n → ℝ} (hε : HasLaw ε (rademacherVector n) ν) {x : Ω → n → ℝ}
     (hind : iIndepFun (fun i ω => x ω i) μ) (hL4 : ∀ i, MemLp (fun ω => x ω i) 4 μ)
     (hmean : ∀ i, ∫ ω, x ω i ∂μ = 0) (hvar : ∀ i, ∫ ω, x ω i ^ 2 ∂μ = 1) {m₄ : ℝ}

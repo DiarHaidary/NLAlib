@@ -175,8 +175,8 @@ theorem rank_eliminationStep_add_one {A : Matrix n n K} {t : n} (ht : A t t ≠ 
     exact ht hh
   have hker := Submodule.finrank_sup_span_singleton he
   rw [← ker_eliminationStep_eq_sup_span_singleton ht] at hker
-  have hA := A.finrank_ker_mulVecLin_add_rank
-  have hS := (eliminationStep A t).finrank_ker_mulVecLin_add_rank
+  have hA := A.finrank_ker_add_rank
+  have hS := (eliminationStep A t).finrank_ker_add_rank
   omega
 
 /-- **The determinant through an elimination step**: for $\mathbf{A}_{t,t} \ne 0$,

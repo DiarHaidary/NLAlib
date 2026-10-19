@@ -78,13 +78,13 @@ theorem isUpperTrapezoidal_givensHessenbergR {H : Matrix (Fin m) (Fin p) 𝕜}
   exact fun i j hji => givensHessenbergState_snd_apply_eq_zero hH p i j hji (Or.inl j.2)
 
 /-- **Givens QR gives the thin QR factorization** of a tall upper Hessenberg matrix.
-[GolubVanLoan2013, Algorithm 5.2.4]. Proof: `isQR_submatrix_castLE`.
+[GolubVanLoan2013, Algorithm 5.2.4]. Proof: `HasOrthonormalCols.isQR_submatrix_castLE`.
 Result: givens-qr -/
 theorem isQR_givensHessenberg {H : Matrix (Fin m) (Fin p) 𝕜} (hH : IsUpperHessenberg H)
     (h : p ≤ m) :
     IsQR H ((givensHessenbergQ H).submatrix id (Fin.castLE h))
       ((givensHessenbergR H).submatrix (Fin.castLE h) id) := by
-  exact isQR_submatrix_castLE (hasOrthonormalCols_givensHessenbergState_fst H p)
+  exact HasOrthonormalCols.isQR_submatrix_castLE (hasOrthonormalCols_givensHessenbergState_fst H p)
     (isUpperTrapezoidal_givensHessenbergR hH) (givensHessenbergState_fst_mul_snd H p).symm h
 
 /-- The band of the triangularised matrix for $\mathbf{H}^{\mathsf{H}}$ upper Hessenberg: after

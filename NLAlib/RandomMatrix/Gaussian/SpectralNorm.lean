@@ -281,7 +281,7 @@ $$\mathbb{P}\bigl(\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
   \ge \|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} + \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2 +
   t\bigr)
 \le \exp\Bigl(-\frac{t^2}{2 \|\mathbf{S}\|_2^2 \|\mathbf{T}\|_2^2}\Bigr) \,,$$
-by Gaussian concentration (`NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`) with
+by Gaussian concentration (`NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix`) with
 Lipschitz constant $\|\mathbf{S}\|_2 \|\mathbf{T}\|_2$ and Chevet's inequality.
 [HalkoMartinssonTropp2011, proof of Theorem 10.8], the deviation step of the range finder's
 spectral tail. If $\mathbf{S} = \mathbf{0}$ or $\mathbf{T} = \mathbf{0}$ the right side is
@@ -294,7 +294,8 @@ theorem measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hc := integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix hX S T
   refine (measureReal_mono fun ω hω => ?_).trans
-    (measureReal_integral_add_le_of_hasLaw_gaussianMatrix hX (abs_specNorm_mul_mul_sub_le S T) ht)
+    (measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX (abs_specNorm_mul_mul_sub_le S T)
+        ht)
   simp only [Set.mem_ofPred_eq] at hω ⊢
   linarith
 

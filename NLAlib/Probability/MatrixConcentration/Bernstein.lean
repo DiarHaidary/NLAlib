@@ -368,7 +368,7 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein [Nonempty n] (hind : iIn
   obtain ⟨θ, hθ, hexp⟩ := exists_bernstein_exponent hL
     (specNorm_nonneg (∑ k, ∫ ω, X k ω ^ 2 ∂μ)) ht'
   have hg := sq_div_two_div_nonneg_of_mem_Ioo hL hθ
-  refine (HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le_card_mul_exp hind h hθ hθ.1
+  refine (HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp hind h hθ hθ.1
     hg t).trans ?_
   refine mul_le_mul_of_nonneg_left (Real.exp_le_exp.2 ?_) (Nat.cast_nonneg _)
   exact (add_le_add_right (mul_le_mul_of_nonneg_left

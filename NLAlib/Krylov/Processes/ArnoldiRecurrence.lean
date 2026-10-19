@@ -172,7 +172,7 @@ private theorem star_arnoldiMatrix_col_succ_dotProduct_mulVec (j : ℕ) :
         (A *ᵥ (arnoldiMatrix A b (j + 1)).col (Fin.last j)))‖ : 𝕜) := by
   have hPv : rangeProjector (krylovMatrix A b (j + 1)) *ᵥ
       (A *ᵥ (arnoldiMatrix A b (j + 1)).col (Fin.last j)) ∈ krylovSpace A b (j + 1) := by
-    rw [krylovSpace, ← range_mulVecLin_rangeProjector]
+    rw [krylovSpace, ← range_rangeProjector]
     exact ⟨_, rfl⟩
   have hv : A *ᵥ (arnoldiMatrix A b (j + 1)).col (Fin.last j) =
       rangeProjector (krylovMatrix A b (j + 1)) *ᵥ

@@ -140,7 +140,7 @@ $$\operatorname{range}(\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})) \subseteq
 \operatorname{range}(\mathbf{A}\mathbf{\Omega})\,.$$ -/
 theorem range_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) :
     LinearMap.range (rsvd A Ω).mulVecLin ≤ LinearMap.range (A * Ω).mulVecLin :=
-  range_mulVecLin_le_iff_exists_mul.mpr
+  range_le_iff_exists_mul.mpr
     ⟨pinv (A * Ω) * A, by rw [rsvd, ← mul_pinv, Matrix.mul_assoc]⟩
 
 /-- The randomized SVD does not see a nonzero scaling of the test matrix:
@@ -156,7 +156,7 @@ omit [Fintype m] in
 private theorem range_mul_eq_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
     (h : (A * Ω).rank = A.rank) :
     LinearMap.range (A * Ω).mulVecLin = LinearMap.range A.mulVecLin :=
-  Submodule.eq_of_le_of_finrank_eq (range_mulVecLin_le_iff_exists_mul.mpr ⟨Ω, rfl⟩) h
+  Submodule.eq_of_le_of_finrank_eq (range_le_iff_exists_mul.mpr ⟨Ω, rfl⟩) h
 
 /-- **Exactness of the randomized SVD at low rank**: if
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$ then
@@ -237,7 +237,7 @@ $$\operatorname{range}(\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})) 
 \operatorname{range}(\mathbf{A}\mathbf{\Omega})\,.$$ -/
 theorem range_generalizedNystrom_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (Ψ : Matrix m p 𝕜) :
     LinearMap.range (generalizedNystrom A Ω Ψ).mulVecLin ≤ LinearMap.range (A * Ω).mulVecLin :=
-  range_mulVecLin_le_iff_exists_mul.mpr ⟨pinv (Ψᴴ * (A * Ω)) * Ψᴴ * A, by
+  range_le_iff_exists_mul.mpr ⟨pinv (Ψᴴ * (A * Ω)) * Ψᴴ * A, by
     rw [generalizedNystrom, obliqueProjector]
     simp only [Matrix.mul_assoc]⟩
 

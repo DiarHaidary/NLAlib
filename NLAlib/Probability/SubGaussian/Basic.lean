@@ -26,13 +26,12 @@ and the union bound for a maximum. Proxies are `ℝ≥0` throughout (`docs/PORT_
 * `ProbabilityTheory.HasSubgaussianMGF.mono`: a larger proxy.
 * `ProbabilityTheory.HasSubgaussianMGF.integral_eq_zero`, `.integral_sq_le`: mean zero and
   second moment at most the proxy.
-* `ProbabilityTheory.HasSubgaussianMGF.measure_le_le`, `.measure_abs_ge_le`: lower and two-sided
-  tails.
+* `ProbabilityTheory.HasSubgaussianMGF.measureReal_le_le`, `.measureReal_abs_ge_le`: lower and
+  two-sided tails.
 * `ProbabilityTheory.HasSubgaussianMGF.sum_const_mul_of_iIndepFun`: $\sum_i a_i X_i$ has proxy
   $\sum_i a_i^2 c_i$.
-* `ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le`, `.measure_iSup_ge_le`,
-  `.measure_exists_abs_ge_le`: the union bound for a maximum.
--/
+* `ProbabilityTheory.HasSubgaussianMGF.measureReal_exists_ge_le`, `.measureReal_iSup_ge_le`,
+  `.measureReal_exists_abs_ge_le`: the union bound for a maximum. -/
 
 @[expose] public section
 
@@ -144,7 +143,7 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_sq_le [IsProbability
 /-- The lower tail of a sub-Gaussian variable with proxy $c$: for $t \ge 0$,
 $\mu(X \le -t) \le e^{-t^2 / (2c)}$. With $c = 0$, Lean's $t^2 / 0 = 0$ makes the bound $1$; the
 variable is then $0$ almost everywhere. -/
-theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_le_le (h : HasSubgaussianMGF X c μ)
+theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measureReal_le_le (h : HasSubgaussianMGF X c μ)
     {t : ℝ} (ht : 0 ≤ t) : μ.real {ω | X ω ≤ -t} ≤ rexp (-t ^ 2 / (2 * c)) := by
   have hset : {ω | X ω ≤ -t} = {ω | t ≤ (-X) ω} := by
     ext ω
@@ -154,10 +153,10 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_le_le (h : HasSubgaus
 
 /-- The two-sided tail of a sub-Gaussian variable with proxy $c$: for $t \ge 0$,
 $\mu(\lvert X\rvert \ge t) \le 2 e^{-t^2 / (2c)}$. -/
-theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_abs_ge_le
+theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measureReal_abs_ge_le
     (h : HasSubgaussianMGF X c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ |X ω|} ≤ 2 * rexp (-t ^ 2 / (2 * c)) := by
-  linarith [measureReal_abs_ge_le_add (μ := μ) X t, h.measure_ge_le ht, h.measure_le_le ht]
+  linarith [measureReal_abs_ge_le_add (μ := μ) X t, h.measure_ge_le ht, h.measureReal_le_le ht]
 
 /-- A weighted sum $\sum_{i \in s} a_i X_i$ of independent variables, $X_i$ sub-Gaussian with proxy
 $c_i$, is sub-Gaussian with proxy $\sum_{i \in s} a_i^2 c_i$. -/
@@ -172,7 +171,7 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.sum_const_mul_of_iIndepFun {�
 /-- The union bound for the maximum of finitely many sub-Gaussian variables with a common proxy
 $c$: for $t \ge 0$, $\mu(\exists i,\ X_i \ge t) \le \lvert \iota\rvert\, e^{-t^2 / (2c)}$. No
 independence is assumed. -/
-theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le {ι : Type*} [Fintype ι]
+theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measureReal_exists_ge_le {ι : Type*} [Fintype ι]
     {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ∃ i, t ≤ X i ω} ≤ Fintype.card ι * rexp (-t ^ 2 / (2 * c)) := by
   rw [Set.ofPred_exists]
@@ -182,7 +181,7 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_exists_ge_le {ι : Ty
 
 /-- The union bound for the maximum, with the event written through the supremum: for $t \ge 0$,
 $\mu(\max_i X_i \ge t) \le \lvert \iota\rvert\, e^{-t^2 / (2c)}$. -/
-theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_iSup_ge_le {ι : Type*} [Fintype ι]
+theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measureReal_iSup_ge_le {ι : Type*} [Fintype ι]
     [Nonempty ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ ⨆ i, X i ω} ≤ Fintype.card ι * rexp (-t ^ 2 / (2 * c)) := by
   have hset : {ω | t ≤ ⨆ i, X i ω} = {ω | ∃ i, t ≤ X i ω} := by
@@ -195,16 +194,16 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_iSup_ge_le {ι : Type
     · rintro ⟨i, hi⟩
       exact hi.trans (le_ciSup (f := fun i => X i ω) (Finite.bddAbove_range _) i)
   rw [hset]
-  exact HasSubgaussianMGF.measure_exists_ge_le h ht
+  exact HasSubgaussianMGF.measureReal_exists_ge_le h ht
 
 /-- The union bound for the maximum of absolute values: for $t \ge 0$,
 $\mu(\exists i,\ \lvert X_i\rvert \ge t) \le 2 \lvert \iota\rvert\, e^{-t^2 / (2c)}$. -/
-theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measure_exists_abs_ge_le {ι : Type*}
+theorem _root_.ProbabilityTheory.HasSubgaussianMGF.measureReal_exists_abs_ge_le {ι : Type*}
     [Fintype ι] {X : ι → Ω → ℝ} (h : ∀ i, HasSubgaussianMGF (X i) c μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ∃ i, t ≤ |X i ω|} ≤ 2 * Fintype.card ι * rexp (-t ^ 2 / (2 * c)) := by
   rw [Set.ofPred_exists]
   refine (measureReal_iUnion_fintype_le _).trans ?_
-  refine (Finset.sum_le_sum fun i _ => (h i).measure_abs_ge_le ht).trans_eq ?_
+  refine (Finset.sum_le_sum fun i _ => (h i).measureReal_abs_ge_le ht).trans_eq ?_
   simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   ring
 

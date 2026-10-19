@@ -32,8 +32,8 @@ the `Haar.lean` and `HaarEmbedding.lean` precedent. Design: `docs/design/Sketchi
 
 ## Main definitions
 
-* `NLAlib.countSketchRows`: the number of rows; for dimension $d$ the OSE
-  needs <!-- value countSketchRows d \varepsilon \delta -->
+* `NLAlib.countSketchEmbeddingDim`: the number of rows; for dimension $d$ the OSE
+  needs <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
   $\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$.
 
 ## Main results
@@ -44,8 +44,8 @@ the `Haar.lean` and `HaarEmbedding.lean` precedent. Design: `docs/design/Sketchi
 * `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch`,
   `NLAlib.isObliviousSubspaceInjection_of_hasLaw_countSketch`: the CountSketch OSE and OSI.
 * `NLAlib.hasJLMoment_of_hasLaw_countSketch`: the JL moment at $p = 2$.
-* `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le`,
-  `NLAlib.isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le`,
+* `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le`,
+  `NLAlib.isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le`,
   `NLAlib.hasJLMoment_of_hasLaw_countSketch_of_le_card`: sizes.
 * `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch`: the asymptotic
   form, $O(d^2/(\delta \varepsilon^2))$ rows.
@@ -249,48 +249,52 @@ theorem hasJLMoment_of_hasLaw_countSketch (hS : HasLaw S (countSketch k n) μ) (
 
 /-! ### Sizes -/
 
-/-- The **CountSketch rows** <!-- value countSketchRows d \varepsilon \delta -->
+/-- The **CountSketch embedding
+dimension** <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
 $(d^2 + d)/(\delta \varepsilon^2)$: a CountSketch with at least this
 many rows is an OSE (and, with a row, an OSI) for dimension $d$ with constants $1 \mp \varepsilon$
 and failure probability $\delta$
-(`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le`). The value the
-proof reaches; [Woodruff2014, Theorem 9] has $O(d^2/(\delta\varepsilon^2))$ with no constant.
-Consumers use `NLAlib.countSketchRows_le`. Junk value: $0$ at $\varepsilon = 0$ or
+(`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le`). The
+value the proof reaches; [Woodruff2014, Theorem 9] has $O(d^2/(\delta\varepsilon^2))$ with no
+constant. Consumers use `NLAlib.countSketchEmbeddingDim_le`. Junk value: $0$ at $\varepsilon = 0$ or
 $\delta = 0$. -/
-noncomputable irreducible_def countSketchRows (d : ℕ) (ε δ : ℝ) : ℝ :=
+noncomputable irreducible_def countSketchEmbeddingDim (d : ℕ) (ε δ : ℝ) : ℝ :=
   ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)
 
 /-- The number of CountSketch rows is nonnegative for $\delta \ge 0$. -/
-theorem countSketchRows_nonneg (d : ℕ) (ε : ℝ) (hδ : 0 ≤ δ) : 0 ≤ countSketchRows d ε δ := by
-  rw [countSketchRows_def]
+theorem countSketchEmbeddingDim_nonneg (d : ℕ) (ε : ℝ) (hδ : 0 ≤ δ) :
+    0 ≤ countSketchEmbeddingDim d ε δ := by
+  rw [countSketchEmbeddingDim_def]
   positivity
 
 /-- The number of CountSketch rows is monotone in the dimension $d$ and antitone in the
 distortion $\varepsilon > 0$ and the failure probability $\delta > 0$. -/
-theorem countSketchRows_mono {d d' : ℕ} {ε' δ' : ℝ} (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε ≤ ε')
-    (hδ : 0 < δ) (hδδ' : δ ≤ δ') : countSketchRows d ε' δ' ≤ countSketchRows d' ε δ := by
-  rw [countSketchRows_def, countSketchRows_def]
+theorem countSketchEmbeddingDim_mono {d d' : ℕ} {ε' δ' : ℝ} (hd : d ≤ d') (hε : 0 < ε)
+    (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') :
+    countSketchEmbeddingDim d ε' δ' ≤ countSketchEmbeddingDim d' ε δ := by
+  rw [countSketchEmbeddingDim_def, countSketchEmbeddingDim_def]
   have hdd : (d : ℝ) ≤ d' := Nat.cast_le.2 hd
   exact div_le_div₀ (by positivity) (by gcongr) (by positivity)
     (mul_le_mul hδδ' (pow_le_pow_left₀ hε.le hεε' 2) (by positivity) (hδ.le.trans hδδ'))
 
-/-- The explicit comparison: `NLAlib.countSketchRows d ε δ` is at
-most <!-- value countSketchRows d \varepsilon \delta -->
+/-- The explicit comparison: `NLAlib.countSketchEmbeddingDim d ε δ` is at
+most <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
 $(d^2 + d)/(\delta \varepsilon^2)$, the value consumers invert with (at present an equality); an
 improved definition keeps it true. -/
-theorem countSketchRows_le (d : ℕ) (ε δ : ℝ) :
-    countSketchRows d ε δ ≤ ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2) := by
-  rw [countSketchRows_def]
+theorem countSketchEmbeddingDim_le (d : ℕ) (ε δ : ℝ) :
+    countSketchEmbeddingDim d ε δ ≤ ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2) := by
+  rw [countSketchEmbeddingDim_def]
 
 omit [DecidableEq k] in
-/-- For $\varepsilon, \delta > 0$ and <!-- value countSketchRows d \varepsilon \delta -->
-$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`),
+/-- For $\varepsilon, \delta > 0$ and <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
+$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows
+(`NLAlib.countSketchEmbeddingDim d ε δ`),
 $(d^2 + d)/(\lvert k \rvert \varepsilon^2) \le \delta$: the rows give the failure probability
 $\delta$. -/
 private theorem div_card_mul_sq_le_of_countSketchRows_le {d : ℕ} (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : countSketchRows d ε δ ≤ Fintype.card k) :
+    (hk : countSketchEmbeddingDim d ε δ ≤ Fintype.card k) :
     ((d : ℝ) ^ 2 + d) / (Fintype.card k * ε ^ 2) ≤ δ := by
-  rw [countSketchRows_def] at hk
+  rw [countSketchEmbeddingDim_def] at hk
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · simp only [CharP.cast_eq_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
       add_zero, zero_div]
@@ -301,16 +305,17 @@ private theorem div_card_mul_sq_le_of_countSketchRows_le {d : ℕ} (hε : 0 < ε
     rw [div_le_iff₀ (by positivity)] at hk
     nlinarith
 
-/-- **CountSketch OSE, size form**: with <!-- value countSketchRows d \varepsilon \delta -->
-$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`), for
+/-- **CountSketch OSE, size form**: with <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
+$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows
+(`NLAlib.countSketchEmbeddingDim d ε δ`), for
 $\varepsilon, \delta > 0$, a CountSketch is an oblivious subspace embedding for dimension $d$ with
 constants $1 \mp \varepsilon$ and failure probability $\delta$. [Woodruff2014, Theorem 9] (there
 $O(d^2/(\delta\varepsilon^2))$ rows). Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch`.
 Result: sparse-ose -/
-theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le
+theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le
     (hS : HasLaw S (countSketch k n) μ) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : countSketchRows d ε δ ≤ Fintype.card k) :
+    (hk : countSketchEmbeddingDim d ε δ ≤ Fintype.card k) :
     IsObliviousSubspaceEmbedding S d (1 - ε) (1 + ε) δ μ := by
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   exact (isObliviousSubspaceEmbedding_of_hasLaw_countSketch hS d hε).mono le_rfl le_rfl le_rfl
@@ -320,9 +325,10 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le
 CountSketch to be an oblivious subspace embedding for dimension $d$ with constants
 $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ below an absolute constant;
 the constants come before every dimension. Proved from
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le` with $C = 2$
-and $\varepsilon_0 = 1$. [Woodruff2014, Theorem 9].
-Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le -/
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le` with
+$C = 2$ and $\varepsilon_0 = 1$. [Woodruff2014, Theorem 9].
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le
+-/
 theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
       [Fintype n] [DecidableEq k] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜) (d : ℕ) (ε δ : ℝ),
@@ -331,8 +337,8 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch :
       IsObliviousSubspaceEmbedding S d (1 - ε) (1 + ε) δ μ := by
   refine ⟨2, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ μ S d ε δ hS hε _ hδ hk
-  refine isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le hS d hε hδ
-    ((countSketchRows_le d ε δ).trans (le_trans ?_ hk))
+  refine isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hS d hε hδ
+    ((countSketchEmbeddingDim_le d ε δ).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
   refine div_le_div_of_nonneg_right ?_ (by positivity)
   have hd : (d : ℝ) ≤ (d : ℝ) ^ 2 := by
@@ -341,13 +347,15 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch :
     · nlinarith [(Nat.one_le_cast (α := ℝ)).2 hd]
   linarith
 
-/-- **CountSketch OSI, size form**: with <!-- value countSketchRows d \varepsilon \delta -->
-$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows (`NLAlib.countSketchRows d ε δ`), for
+/-- **CountSketch OSI, size form**: with <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
+$\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows
+(`NLAlib.countSketchEmbeddingDim d ε δ`), for
 $\varepsilon, \delta > 0$ and nonempty `k`, a CountSketch is an oblivious subspace injection for
 dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$. -/
-theorem isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le [Nonempty k]
+theorem isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le
+    [Nonempty k]
     [DecidableEq n] (hS : HasLaw S (countSketch k n) μ) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : countSketchRows d ε δ ≤ Fintype.card k) :
+    (hk : countSketchEmbeddingDim d ε δ ≤ Fintype.card k) :
     IsObliviousSubspaceInjection S d (1 - ε) δ μ := by
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   exact (isObliviousSubspaceInjection_of_hasLaw_countSketch hS d hε).mono le_rfl le_rfl
@@ -417,16 +425,17 @@ private theorem hasProjectionCostPreserving_of_hasLaw_countSketch_of_frame [Fint
     linarith
   · have hEh : Eᴴ ≠ 0 := by rwa [Ne, Matrix.conjTranspose_eq_zero]
     refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans
-      ((hasJLMoment_of_hasLaw_countSketch hS hεJ).measure_abs_frobNorm_mul_sq_sub_ge_le hεJ
+      ((hasJLMoment_of_hasLaw_countSketch hS hεJ).measureReal_abs_frobNorm_mul_sq_sub_ge_le hεJ
         one_le_two hS.aemeasurable hEh)
     rw [frobNorm_conjTranspose]
     exact le_abs.2 (Or.inl (by linarith))
 
 /-- **A CountSketch is a projection-cost-preserving sketch**, size form, over any field: for
-$\varepsilon, \delta > 0$, at least <!-- value countSketchRows d (\varepsilon/2) (\delta/2) -->
-$(d^2 + d)/((\delta/2) (\varepsilon/2)^2)$ rows (`countSketchRows d (ε / 2) (δ / 2)`) and at
-least <!-- value projectionCostTailRows 2 d \varepsilon \delta -->
-$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailRows 2 d ε δ`),
+$\varepsilon, \delta > 0$, at
+least <!-- value countSketchEmbeddingDim d (\varepsilon/2) (\delta/2) -->
+$(d^2 + d)/((\delta/2) (\varepsilon/2)^2)$ rows (`countSketchEmbeddingDim d (ε / 2) (δ / 2)`) and at
+least <!-- value projectionCostTailDim 2 d \varepsilon \delta -->
+$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailDim 2 d ε δ`),
 $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ is a rank-$d$ projection-cost-preserving sketch of $\mathbf{A}$
 with constants $1 \mp \varepsilon$, for every $\mathbf{A}$, except with probability $\delta$. The
 head is the OSE size form at $(\varepsilon/2, \delta/2)$, the tail CountSketch's own
@@ -438,13 +447,13 @@ there as here; here any field, explicit. Asymptotic form:
 Result: sparse-pcp -/
 theorem hasProjectionCostPreserving_of_hasLaw_countSketch_of_le_card {m : Type*} [Fintype m]
     (hS : HasLaw S (countSketch k n) μ) (A : Matrix m n 𝕜) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk₁ : countSketchRows d (ε / 2) (δ / 2) ≤ Fintype.card k)
-    (hk₂ : projectionCostTailRows 2 d ε δ ≤ Fintype.card k) :
+    (hk₁ : countSketchEmbeddingDim d (ε / 2) (δ / 2) ≤ Fintype.card k)
+    (hk₂ : projectionCostTailDim 2 d ε δ ≤ Fintype.card k) :
     HasProjectionCostPreserving S A d (1 - ε) (1 + ε) δ μ := by
   classical
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
-  have hpos : 0 < projectionCostTailRows 2 d ε δ := by
-    rw [projectionCostTailRows_def]; positivity
+  have hpos : 0 < projectionCostTailDim 2 d ε δ := by
+    rw [projectionCostTailDim_def]; positivity
   have hK : (0 : ℝ) < Fintype.card k := hpos.trans_le hk₂
   have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
   have hbud : 1 - ε ≤ 1 - ε / 2 - 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ∧
@@ -465,7 +474,7 @@ theorem hasProjectionCostPreserving_of_hasLaw_countSketch_of_le_card {m : Type*}
         (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
     refine ⟨by linarith, by linarith, ?_⟩
     have hk := hk₂
-    rw [projectionCostTailRows_def, div_le_iff₀ (by positivity)] at hk
+    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
     have e : 2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
         64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
       rw [div_pow, mul_pow, hss]
@@ -476,7 +485,7 @@ theorem hasProjectionCostPreserving_of_hasLaw_countSketch_of_le_card {m : Type*}
       nlinarith
     linarith
   obtain ⟨h₁, h₂, h₃⟩ := hbud
-  have hose := isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchRows_le hS d
+  have hose := isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hS d
     (half_pos hε) (half_pos hδ) hk₁
   rcases le_or_gt d (Fintype.card n) with hd | hd
   · obtain ⟨Z, hZ, hAZ⟩ :=
@@ -510,10 +519,10 @@ theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_countSketch :
   have hD : 0 < ε ^ 2 * δ := by positivity
   have hd0 := Nat.cast_nonneg (α := ℝ) d
   refine hasProjectionCostPreserving_of_hasLaw_countSketch_of_le_card hS A d hε hδ ?_ ?_
-  · refine (countSketchRows_le d (ε / 2) (δ / 2)).trans (le_trans ?_ hk)
+  · refine (countSketchEmbeddingDim_le d (ε / 2) (δ / 2)).trans (le_trans ?_ hk)
     rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
     nlinarith [mul_pos hD hD]
-  · refine (projectionCostTailRows_le 2 d ε δ).trans (le_trans ?_ hk)
+  · refine (projectionCostTailDim_le 2 d ε δ).trans (le_trans ?_ hk)
     rw [mul_div_assoc']
     refine div_le_div_of_nonneg_right ?_ hD.le
     nlinarith

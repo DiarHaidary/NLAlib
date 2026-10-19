@@ -36,8 +36,8 @@ norm. The Procrustes problems it solves are in `NLAlib.Matrix.Factorizations.Pro
 * `NLAlib.conjTranspose_polarFactor_mul_self`, `NLAlib.polarFactor_mul_conjTranspose_self`: the
   polar factor is a partial isometry from the row space onto the range.
 * `NLAlib.hasOrthonormalCols_polarFactor_iff`, `NLAlib.mul_polarFactor_eq_polarFactor_mul`.
-* `NLAlib.exists_hasOrthonormalCols_mul_sqrt_eq`, `NLAlib.eq_sqrt_of_hasOrthonormalCols_mul_eq`,
-  `NLAlib.forall_eq_of_mul_sqrt_eq_iff`: existence and uniqueness.
+* `NLAlib.exists_hasOrthonormalCols_mul_sqrt_eq`, `NLAlib.HasOrthonormalCols.eq_sqrt_of_mul_eq`,
+  `NLAlib.HasOrthonormalCols.forall_eq_of_mul_sqrt_eq_iff`: existence and uniqueness.
 * `NLAlib.SymmetricGauge.matrixNorm_sub_le_matrixNorm_sub_of_mul_sqrt_eq`: the nearest isometry.
 * `NLAlib.trace_eq_nuclearNorm_iff_posSemidef`.
 -/
@@ -220,7 +220,8 @@ theorem hasOrthonormalCols_polarFactor_iff {A : Matrix m n 𝕜} :
 
 /-- The polar factor commutes with a factor $\mathbf{W}$ with orthonormal columns on the left:
 the polar factor of $\mathbf{W}\mathbf{A}$ is $\mathbf{W}\mathbf{U}$. -/
-theorem polarFactor_mul_left [DecidableEq m] {W : Matrix l m 𝕜} (hW : HasOrthonormalCols W)
+theorem HasOrthonormalCols.polarFactor_mul_left [DecidableEq m] {W : Matrix l m 𝕜}
+    (hW : HasOrthonormalCols W)
     (A : Matrix m n 𝕜) : polarFactor (W * A) = W * polarFactor A := by
   rw [polarFactor, polarFactor, hW.conjTranspose_mul_mul, Matrix.mul_assoc]
 
@@ -277,7 +278,7 @@ theorem exists_hasOrthonormalCols_mul_sqrt_eq (A : Matrix m n 𝕜)
 with $\mathbf{U}$ having orthonormal columns and $\mathbf{P}$ positive semidefinite, then
 $\mathbf{P} = (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$.
 Port of `NLAlib.eq_sqrt_gram_of_isometry_mul_eq`. -/
-theorem eq_sqrt_of_hasOrthonormalCols_mul_eq {A U : Matrix m n 𝕜} {P : Matrix n n 𝕜}
+theorem HasOrthonormalCols.eq_sqrt_of_mul_eq {A U : Matrix m n 𝕜} {P : Matrix n n 𝕜}
     (hU : HasOrthonormalCols U) (hP : P.PosSemidef) (h : U * P = A) :
     P = CFC.sqrt (Aᴴ * A) := by
   refine (CFC.sqrt_unique ?_ hP.nonneg).symm
@@ -300,7 +301,8 @@ one $\mathbf{U}$ with orthonormal columns and
 $\mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2} = \mathbf{A}$, every other such factor equals
 $\mathbf{U}$ if and only if $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective.
 Port of `NLAlib.polar_isometry_unique_iff_rank_eq_card`. -/
-theorem forall_eq_of_mul_sqrt_eq_iff {A U : Matrix m n 𝕜} (hU : HasOrthonormalCols U)
+theorem HasOrthonormalCols.forall_eq_of_mul_sqrt_eq_iff {A U : Matrix m n 𝕜}
+    (hU : HasOrthonormalCols U)
     (h : U * CFC.sqrt (Aᴴ * A) = A) :
     (∀ V : Matrix m n 𝕜, HasOrthonormalCols V → V * CFC.sqrt (Aᴴ * A) = A → V = U) ↔
       Function.Injective A.mulVec := by

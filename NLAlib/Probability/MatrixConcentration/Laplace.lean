@@ -74,7 +74,8 @@ theorem integrable_specNorm {m : Type*} [Fintype m] {S : Ω → Matrix m n 𝕜}
 
 /-- $e^{\theta \lambda_j(\mathbf{A})} \le \operatorname{tr} e^{\theta \mathbf{A}}$ for a Hermitian
 $\mathbf{A}$, any real $\theta$ and any valid index $j < \lvert n\rvert$. -/
-theorem exp_mul_eigenvalue_le_re_trace_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (θ : ℝ) {j : ℕ} (hj : j < Fintype.card n) :
     Real.exp (θ * eigenvalue A j) ≤ RCLike.re (exp (θ • A)).trace := by
   have hθA : (θ • A).IsHermitian := (IsSelfAdjoint.all θ).smul hA
@@ -86,7 +87,7 @@ theorem exp_mul_eigenvalue_le_re_trace_exp {A : Matrix n n 𝕜} (hA : A.IsHermi
 eigenvalue index $j < \lvert n\rvert$. -/
 private theorem re_trace_exp_smul_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian) (θ : ℝ)
     {j : ℕ} (hj : j < Fintype.card n) : 0 ≤ RCLike.re (exp (θ • A)).trace :=
-  (Real.exp_pos _).le.trans (exp_mul_eigenvalue_le_re_trace_exp hA θ hj)
+  (Real.exp_pos _).le.trans (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hA θ hj)
 
 /-- **The generalised matrix Laplace transform bound**: for $\mathbf{Y}$ almost surely Hermitian,
 $\psi \ge 0$ nondecreasing on $[0, \infty)$, $t \ge 0$ and $\psi(t) > 0$,
@@ -167,7 +168,7 @@ theorem measureReal_eigenvalue_zero_ge_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y
     (hY.mono fun ω hω => re_trace_exp_smul_nonneg hω θ Fintype.card_pos) hint ?_
   filter_upwards [hY] with ω hω ht
   exact (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left ht hθ.le)).trans
-    (exp_mul_eigenvalue_le_re_trace_exp hω θ Fintype.card_pos)
+    (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hω θ Fintype.card_pos)
 
 /-- The matrix Laplace transform bound for the smallest eigenvalue, with $\theta < 0$: for
 $k + 1 = \lvert n\rvert$ and every real $t$,
@@ -184,7 +185,7 @@ theorem measureReal_eigenvalue_le_le (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) 
     (hY.mono fun ω hω => re_trace_exp_smul_nonneg hω θ hkn) hint ?_
   filter_upwards [hY] with ω hω ht
   exact (Real.exp_le_exp.mpr (mul_le_mul_of_nonpos_left ht hθ.le)).trans
-    (exp_mul_eigenvalue_le_re_trace_exp hω θ hkn)
+    (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hω θ hkn)
 
 /-- The matrix Laplace transform bound for the mean of the largest eigenvalue: for an integrable,
 almost surely Hermitian $\mathbf{Y}$ with $\operatorname{tr} e^{\theta \mathbf{Y}}$ integrable and
@@ -196,7 +197,8 @@ theorem integral_eigenvalue_zero_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).I
     (hint : Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ) :
     ∫ ω, eigenvalue (Y ω) 0 ∂μ ≤ θ⁻¹ * Real.log (∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ) := by
   have h := exp_integral_le_integral ((integrable_eigenvalue hYi 0).const_mul θ) hint
-    (hY.mono fun ω hω => exp_mul_eigenvalue_le_re_trace_exp hω θ Fintype.card_pos)
+    (hY.mono fun ω hω => Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hω θ
+        Fintype.card_pos)
   rw [integral_const_mul] at h
   rw [le_inv_mul_iff₀ hθ, Real.le_log_iff_exp_le ((Real.exp_pos _).trans_le h)]
   exact h
@@ -211,7 +213,7 @@ theorem le_integral_eigenvalue (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi :
     θ⁻¹ * Real.log (∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ) ≤ ∫ ω, eigenvalue (Y ω) k ∂μ := by
   have hkn : k < Fintype.card n := by omega
   have h := exp_integral_le_integral ((integrable_eigenvalue hYi k).const_mul θ) hint
-    (hY.mono fun ω hω => exp_mul_eigenvalue_le_re_trace_exp hω θ hkn)
+    (hY.mono fun ω hω => Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hω θ hkn)
   rw [integral_const_mul] at h
   have hlog : θ * ∫ ω, eigenvalue (Y ω) k ∂μ ≤
       Real.log (∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ) :=

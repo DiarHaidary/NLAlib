@@ -40,19 +40,23 @@ Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18; `docs/design/LowR
 
 ## Main results
 
-* `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_le`: the core tail, any optimal
-  projector; `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le`, its
+* `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le`: the core tail, any optimal
+  projector; `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le`, its
   $(1 + \varepsilon)$ form.
-* `NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le`: the early-truncated
-  randomized SVD from an injection and the JL moment property, with its tail–tail input
-  `HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le`.
-* `IsObliviousSubspaceInjection.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`,
-  `NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`: the
+* `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le`: the early-truncated
+  randomized SVD from an injection and the JL moment property, with its tail–tail input, in
+  `HasJLMoment`,
+  `measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le`.
+* in `IsObliviousSubspaceInjection`,
+  `measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`, and
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`: the
   completion step, any law of $\mathbf{\Omega}$;
-  `NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le`: both sides.
-* `NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le`: the
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le`: both
+  sides.
+* `NLAlib.HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le`: the
   early-truncated randomized SVD through a random projection-cost-preserving sketch, and
-  [generalized Nyström](https://nla-lib.org/explore/#d/NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le)
+  [generalized
+  Nyström](https://nla-lib.org/explore/#d/NLAlib.HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le)
   through it and an OSI.
 -/
 
@@ -92,7 +96,7 @@ projector of the output at $c^{-1}\mathbf{\Omega}$ when the analysis runs at $\m
 Proved without a literature source (the deterministic core of LowRank S2b); the sketch conditions
 are those of [CohenElderMuscoMuscoPersu2015, §7.2 and proof of Theorem 12].
 Result: etrsvd -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {a θ δ ηw δw ηχ δχ : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ) (ha : 0 < a)
     (ha1 : a ≤ 1) (hθ : 0 < θ) (hθ1 : θ < 1) {P : Ω → Matrix m m 𝕜}
@@ -178,11 +182,11 @@ $\|\mathbf{A}\mathbf{\Omega} - \mathbf{P}\mathbf{A}\mathbf{\Omega}\|_{\mathsf{F}
 $$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta_w + \delta_\chi$: the core tail
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_le` at $\theta = \varepsilon/8$. The
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le` at $\theta = \varepsilon/8$. The
 form every family statement instantiates. Proved without a literature source;
 [CohenElderMuscoMuscoPersu2015, §7.2] for the sketch conditions.
 Result: etrsvd -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {ε δ δw δχ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ (1 - ε / 8) δ μ)
     {P : Ω → Matrix m m 𝕜} (hP : ∀ ω, IsStarProjection (P ω)) (hPk : ∀ ω, (P ω).rank ≤ k)
@@ -199,7 +203,7 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le [IsFi
   classical
   have hx : 0 < ε / 8 := by positivity
   have hx1 : ε / 8 ≤ 1 / 8 := by linarith
-  have h1 := h.measure_frobNorm_sub_mul_sq_gt_le (by linarith) (by linarith) hx (by linarith) hP
+  have h1 := h.measureReal_frobNorm_sub_mul_sq_gt_le (by linarith) (by linarith) hx (by linarith) hP
     hPk hopt hw hχ
   refine (measureReal_mono fun ω hω => ?_).trans h1
   have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 < frobNorm (A - P ω * A) ^ 2 := hω
@@ -234,6 +238,8 @@ section Real
 
 variable {X : Ω → Matrix n l ℝ} {Ψ : Ω → Matrix m p ℝ}
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 omit [Fintype p] [DecidableEq m] [DecidableEq n] in
 /-- **The tail–tail multiplication error from the JL moment property**: if the real sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ has the $(\varepsilon, \delta', q)$ JL moment property,
@@ -242,12 +248,12 @@ $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$
 $$\|\mathbf{E}\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}\mathbf{E}^{\mathsf{H}} -
 \mathbf{E}\mathbf{E}^{\mathsf{H}}\|_{\mathsf{F}} \le \varepsilon\|\mathbf{E}\|_{\mathsf{F}}^2$$
 except with probability $\delta'$: approximate multiplication of $\mathbf{E}$ with itself. The
-tail–tail hypothesis of `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_le` at the JL
-moment; its tail–head twin is
-`HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le`.
+tail–tail hypothesis of `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le` at the
+JL moment; its tail–head twin is
+`HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le`.
 [Woodruff2014, Theorem 13]. -/
 theorem
-    HasJLMoment.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le
+    HasJLMoment.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le
     [IsFiniteMeasure μ] {A : Matrix m n ℝ} {k : ℕ} {ε δ' q : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ' q μ) (hX : AEMeasurable X μ) (hε : 0 < ε)
     (hq : 2 ≤ q) (hδ' : 0 ≤ δ') :
@@ -267,7 +273,7 @@ theorem
     exact hδ'
   have h0' : (A - truncatedSVD A k)ᴴ ≠ 0 := by rwa [Ne, Matrix.conjTranspose_eq_zero]
   refine (measureReal_mono fun ω hω => ?_).trans
-    (hJL.measure_frobNorm_conjTranspose_mul_sub_ge_le hε hq hS h0' h0')
+    (hJL.measureReal_frobNorm_conjTranspose_mul_sub_ge_le hε hq hS h0' h0')
   have hω' : ε * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ * (A - truncatedSVD A k)ᴴ -
         (A - truncatedSVD A k) * (A - truncatedSVD A k)ᴴ) := hω
@@ -295,7 +301,7 @@ Gaussian expectation twin is
 Proved without a literature source (the deterministic core of LowRank S2b);
 [CohenElderMuscoMuscoPersu2015, §7.2]; [Woodruff2014, Theorem 61] is the full-row-space form.
 Result: etrsvd -/
-theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le [IsFiniteMeasure μ]
+theorem HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n ℝ} {k : ℕ} {a θ δ ε δ' q : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ' q μ)
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
@@ -310,12 +316,12 @@ theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le [IsFiniteMe
     rw [rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
     exact frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
       ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))
-  have h1 := h.measure_frobNorm_sub_mul_sq_gt_le ha ha1 hθ hθ1
+  have h1 := h.measureReal_frobNorm_sub_mul_sq_gt_le ha ha1 hθ hθ1
     (fun ω => isStarProjection_rangeProjector (truncatedSVD (A * X ω) k))
     (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k)) hopt
-    (hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX
       hε hq hδ')
-    (hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le hX hε
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le hX hε
       hq hδ')
   refine (measureReal_mono fun ω hω => ?_).trans (h1.trans_eq (by ring))
   have hω' : ((1 + √(k : ℝ) * ε) / ((1 - θ) * a) +
@@ -341,6 +347,8 @@ private theorem sub_earlyTruncatedGeneralizedNystrom_eq (A : Matrix m n 𝕜) (�
   classical
   rw [sub_earlyTruncatedGeneralizedNystrom, mul_sketchAndSolve, Matrix.sub_mul, Matrix.one_mul]
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 omit [DecidableEq n] in
 /-- **Early-truncated generalized Nyström: the completion step with a structured co-range
 sketch**: for any law of $\mathbf{\Omega}$ and an independent $\mathbf{\Psi}$ whose
@@ -351,11 +359,11 @@ $$\|\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{
 \|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. Every early-truncated RSVD tail composes with it. Proved
 without a literature source, as a composition with
-`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`;
+`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`;
 the algorithm is [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].
 Result: etgn -/
 theorem
-    IsObliviousSubspaceInjection.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le
+    IsObliviousSubspaceInjection.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le
     [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (Ψ ω)ᴴ) k a δ μ) (ha : 0 < a) (ht : 0 < t)
     (hind : IndepFun X Ψ μ) (hX : AEMeasurable X μ) (hΨ : AEMeasurable Ψ μ) :
@@ -363,7 +371,7 @@ theorem
       frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2} ≤ δ + 1 / t := by
   classical
   simp only [sub_earlyTruncatedRSVD, sub_earlyTruncatedGeneralizedNystrom_eq]
-  exact h.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun ha ht
+  exact h.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun ha ht
     (hind.symm.comp continuous_id.matrix_conjTranspose.measurable
       (((measurable_truncatedSVD k).comp (measurable_const.matrix_mul measurable_id)).prodMk
         measurable_const))
@@ -376,6 +384,8 @@ section Real
 
 variable {X : Ω → Matrix n l ℝ} {Ψ : Ω → Matrix m p ℝ}
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 omit [DecidableEq n] in
 /-- **Early-truncated generalized Nyström: the completion through approximate multiplication**:
 for any law of $\mathbf{\Omega}$ and an independent real $\mathbf{\Psi}$ whose
@@ -386,11 +396,11 @@ $$\|\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf{
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k\varepsilon^2}{a^2}\Bigr)
 \|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta'$. Its constant-factor neighbour is
-`IsObliviousSubspaceInjection.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`.
+`IsObliviousSubspaceInjection.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`.
 Proved without a literature source, as a composition; the algorithm is
 [TroppYurtseverUdellCevher2017, §7.3.1, (7.3)].
 Result: etgn -/
-theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le
+theorem HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le
     [IsProbabilityMeasure μ] {A : Matrix m n ℝ} {k : ℕ} {a δ ε δ' q : ℝ}
     (hJL : HasJLMoment (fun ω => (Ψ ω)ᴴ) ε δ' q μ)
     (h : IsObliviousSubspaceInjection (fun ω => (Ψ ω)ᴴ) k a δ μ) (ha : 0 < a) (hε : 0 < ε)
@@ -400,7 +410,7 @@ theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_
       frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2} ≤ δ + δ' := by
   classical
   simp only [sub_earlyTruncatedRSVD, sub_earlyTruncatedGeneralizedNystrom_eq]
-  exact hJL.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun h ha hε hq hδ'
+  exact hJL.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun h ha hε hq hδ'
     (hind.symm.comp continuous_id.matrix_conjTranspose.measurable
       (((measurable_truncatedSVD k).comp (measurable_const.matrix_mul measurable_id)).prodMk
         measurable_const))
@@ -428,7 +438,7 @@ $\ell = O(k/\varepsilon_0^2)$ and $p = O(k/\varepsilon_0)$ at constant failure p
 without a literature source, as a composition; [TroppYurtseverUdellCevher2017, §7.3.1] states the
 algorithm and the rate $\Theta(r/\varepsilon^2)$ for both sizes, with unspecified constants.
 Result: etgn -/
-theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le
+theorem HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le
     [IsProbabilityMeasure μ] {A : Matrix m n ℝ} {k : ℕ} {a θ δ ε δ₁ q a' δ' ε' δ₂ q' : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ₁ q μ)
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
@@ -450,8 +460,8 @@ theorem HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_
         frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2})
       fun ω hω => ?_).trans
     ((measureReal_union_le _ _).trans (add_le_add
-      (hJL.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le h hX ha ha1 hθ hθ1 hε hq hδ₁)
-      (hJLΨ.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le hΨ ha' hε' hq'
+      (hJL.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le h hX ha ha1 hθ hθ1 hε hq hδ₁)
+      (hJLΨ.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le hΨ ha' hε' hq'
         hδ₂ hind hX hΨm)))
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_lt] at hc
@@ -480,13 +490,13 @@ $$(1 - \varepsilon)\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathb
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 The tail form of `NLAlib.IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le`.
 For a sketch of a known family the structural route
-`NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` (the tail form of
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` (the tail form of
 `NLAlib.IsSubspaceInjection.frobNorm_sub_earlyTruncatedRSVD_sq_le`) uses fewer events and gives
 better constants; this is the form for a sketch known only to be projection-cost-preserving.
 [CohenElderMuscoMuscoPersu2015, Lemma 3, §7.2]; there for a fixed sketch with $\varepsilon$, here
 a tail with constants $a$, $b$ and the named output.
 Result: early-truncation-pcp-bound -/
-theorem HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le
+theorem HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le
     [IsFiniteMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a b δ : ℝ}
     (h : HasProjectionCostPreserving (fun ω => (X ω)ᴴ) A k a b δ μ) :
     μ.real {ω | b * frobNorm (A - truncatedSVD A k) ^ 2 <
@@ -511,11 +521,11 @@ $$a\|\mathbf{A} - \mathsf{earlyTruncatedGN}(\mathbf{A}, \mathbf{\Omega}, \mathbf
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta' + 1/t$. One pass, rank at most $k$. Proved as the union
 of the events of
-`NLAlib.HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` and the
-completion step
-`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`.
+`NLAlib.HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` and
+the completion step
+`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`.
 For real sketches with the JL moment property
-`NLAlib.HasJLMoment.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le` uses no
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le` uses no
 projection-cost-preserving event and has no $1/t$ term; this is the form for a sketch known only
 to be projection-cost-preserving.
 [TroppYurtseverUdellCevher2017, §7.3.1], the algorithm and the remark that the results of
@@ -524,7 +534,7 @@ both sketch sizes, with unspecified constants; here explicit, with failure proba
 $\delta + \delta' + 1/t$.
 Result: early-truncation-pcp-bound -/
 theorem
-    HasProjectionCostPreserving.measure_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le
+    HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_le
     [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {k : ℕ} {a b δ a' δ' t : ℝ}
     (h : HasProjectionCostPreserving (fun ω => (X ω)ᴴ) A k a b δ μ) (ha : 0 ≤ a)
     (hΨ : IsObliviousSubspaceInjection (fun ω => (Ψ ω)ᴴ) k a' δ' μ) (ha' : 0 < a') (ht : 0 < t)
@@ -538,8 +548,8 @@ theorem
         frobNorm (A - earlyTruncatedGeneralizedNystrom A (X ω) (Ψ ω) k) ^ 2})
       fun ω hω => ?_).trans
     ((measureReal_union_le _ _).trans ((add_le_add
-      h.measure_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le
-      (hΨ.measure_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le ha' ht hind hX
+      h.measureReal_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le
+      (hΨ.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le ha' ht hind hX
         hΨm)).trans_eq (add_assoc _ _ _).symm))
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_lt] at hc

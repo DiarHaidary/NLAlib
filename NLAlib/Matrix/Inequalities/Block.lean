@@ -24,8 +24,8 @@ special cases with identity or equal diagonal blocks. The Schur complement crite
 
 * `Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le`: Cauchy–Schwarz for a positive
   semidefinite form.
-* `NLAlib.posSemidef_fromBlocks_iff_forall_norm_sq_le`: the bilinear test.
-* `NLAlib.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt`: the contraction factor.
+* `Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le`: the bilinear test.
+* `Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt`: the contraction factor.
 * `NLAlib.posSemidef_fromBlocks_one_iff_specNorm_le_one`.
 * `NLAlib.posSemidef_fromBlocks_self_iff`: equal diagonal blocks.
 -/
@@ -92,7 +92,7 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y} \rvert^2 \le
 \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$
 [HornJohnson2013, Theorem 7.7.7].
 Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_fromBlocks_posSemidef`, there over $\mathbb{R}$. -/
-theorem norm_sq_star_dotProduct_mulVec_le_of_posSemidef_fromBlocks {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef)
     (x : m → 𝕜) (y : n → 𝕜) :
     ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm C y) := by
@@ -111,12 +111,13 @@ for all $\mathbf{x}$, $\mathbf{y}$.
 [HornJohnson2013, Theorem 7.7.7].
 Port of `NLAlib.posSemidef_fromBlocks_iff_bilinear_tests`, there over $\mathbb{R}$.
 Result: block-positivity -/
-theorem posSemidef_fromBlocks_iff_forall_norm_sq_le {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
+theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le {A : Matrix m m 𝕜}
+    {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (hA : A.PosSemidef) (hC : C.PosSemidef) :
     (Matrix.fromBlocks A B Bᴴ C).PosSemidef ↔
       ∀ (x : m → 𝕜) (y : n → 𝕜),
         ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm C y) := by
-  refine ⟨norm_sq_star_dotProduct_mulVec_le_of_posSemidef_fromBlocks, fun h => ?_⟩
+  refine ⟨Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks, fun h => ?_⟩
   have hH : (Matrix.fromBlocks A B Bᴴ C).IsHermitian :=
     Matrix.IsHermitian.fromBlocks hA.isHermitian rfl hC.isHermitian
   rw [posSemidef_iff_quadForm_nonneg]
@@ -224,12 +225,12 @@ private theorem exists_specNorm_le_one_and_eq_mul_mul {A : Matrix m m 𝕜} {B :
     rwa [Matrix.fromBlocks_submatrix_sum_swap_sum_swap,
       ← Matrix.conjTranspose_conjTranspose B, Matrix.conjTranspose_conjTranspose Bᴴ] at h1
   have hB1 : S * pinv S * B = B := mul_pinv_mul_eq_of_range_le
-    ((range_mulVecLin_le_of_posSemidef_fromBlocks h).trans
-      (range_mulVecLin_le_iff_exists_mul.mpr ⟨S, rfl⟩))
+    ((Matrix.PosSemidef.range_le_of_fromBlocks h).trans
+      (range_le_iff_exists_mul.mpr ⟨S, rfl⟩))
   have hB2 : B * pinv T * T = B := by
     have h2 : T * pinv T * Bᴴ = Bᴴ := mul_pinv_mul_eq_of_range_le
-      ((range_mulVecLin_le_of_posSemidef_fromBlocks h').trans
-        (range_mulVecLin_le_iff_exists_mul.mpr ⟨T, rfl⟩))
+      ((Matrix.PosSemidef.range_le_of_fromBlocks h').trans
+        (range_le_iff_exists_mul.mpr ⟨T, rfl⟩))
     have h3 := congrArg Matrix.conjTranspose h2
     rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, hT.pinv.eq, hT.eq,
       Matrix.conjTranspose_conjTranspose, ← Matrix.mul_assoc] at h3
@@ -239,7 +240,7 @@ private theorem exists_specNorm_le_one_and_eq_mul_mul {A : Matrix m m 𝕜} {B :
         star (pinv S *ᵥ u) ⬝ᵥ B *ᵥ (pinv T *ᵥ v) := by
       rw [Matrix.star_mulVec, hS.pinv.eq, ← Matrix.dotProduct_mulVec, Matrix.mulVec_mulVec,
         Matrix.mulVec_mulVec]
-    have key := norm_sq_star_dotProduct_mulVec_le_of_posSemidef_fromBlocks h (pinv S *ᵥ u)
+    have key := Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks h (pinv S *ᵥ u)
       (pinv T *ᵥ v)
     have h1 := re_quadForm_mul_self_pinv_mulVec_le hS u
     have h2 := re_quadForm_mul_self_pinv_mulVec_le hT v
@@ -261,7 +262,8 @@ block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}}
 Port of `NLAlib.posSemidef_fromBlocks_iff_exists_sqrt_contraction_factor`, there over
 $\mathbb{R}$.
 Result: block-positivity -/
-theorem posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt
+    {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (hA : A.PosSemidef) (hC : C.PosSemidef) :
     (Matrix.fromBlocks A B Bᴴ C).PosSemidef ↔
       ∃ X : Matrix m n 𝕜, specNorm X ≤ 1 ∧ B = CFC.sqrt A * X * CFC.sqrt C := by
@@ -289,7 +291,8 @@ omit [Fintype n] in
 $\begin{bmatrix} \mathbf{A} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} &
 \mathbf{X}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{X} \end{bmatrix}$ is positive semidefinite.
 Port of `NLAlib.fromBlocks_inverse_gram_posSemidef`. -/
-theorem posSemidef_fromBlocks_conjTranspose_mul_inv_mul [Finite n] [DecidableEq m]
+theorem _root_.Matrix.PosDef.posSemidef_fromBlocks_conjTranspose_mul_inv_mul [Finite n]
+    [DecidableEq m]
     {A : Matrix m m 𝕜} (hA : A.PosDef) (X : Matrix m n 𝕜) :
     (Matrix.fromBlocks A X Xᴴ (Xᴴ * A⁻¹ * X)).PosSemidef := by
   have hAA : A * A⁻¹ = 1 :=
@@ -350,7 +353,8 @@ $-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$ is the quadratic-form bound
 $\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{x}) \rvert
 \le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for all $\mathbf{x}$.
 Port of `NLAlib.abs_quadForm_le_iff_neg_le_and_le`, there over $\mathbb{R}$. -/
-theorem neg_le_and_le_iff_forall_abs_re_quadForm_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.neg_le_and_le_iff_forall_abs_re_quadForm_le {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
     -A ≤ B ∧ B ≤ A ↔ ∀ x : n → 𝕜, |RCLike.re (quadForm B x)| ≤ RCLike.re (quadForm A x) := by
   rw [hA.neg.le_iff_re_quadForm_le hB, hB.le_iff_re_quadForm_le hA, ← forall_and]

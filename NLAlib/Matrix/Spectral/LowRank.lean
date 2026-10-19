@@ -46,7 +46,7 @@ same for every $k$ and makes the truncation measurable in $\mathbf{A}$.
   with an orthonormal completion carrying $\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k$.
 * `NLAlib.exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal`: the same frames
   as invariant frames of $\mathbf{A}^{\mathsf{H}}\mathbf{A}$, nested in $k$.
-* `NLAlib.range_mulVecLin_truncatedSVD_mono`: the column spaces of the truncations are nested.
+* `NLAlib.range_truncatedSVD_mono`: the column spaces of the truncations are nested.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD`: the truncation of
   $\mathbf{Q}\mathbf{X}$ stays in the range of $\mathbf{Q}$.
 * `Matrix.PosSemidef.truncatedSVD`, `Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD`,
@@ -374,10 +374,10 @@ theorem rangeProjector_truncatedSVD_mul (A : Matrix m n 𝕜) (k : ℕ) :
   rwa [Matrix.mul_sub, rangeProjector_mul_self, sub_eq_zero] at h
 
 /-- The column space of the truncated SVD is inside the column space of $\mathbf{A}$. -/
-theorem range_mulVecLin_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
+theorem range_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
     LinearMap.range (truncatedSVD A k).mulVecLin ≤ LinearMap.range A.mulVecLin := by
   obtain ⟨U, V, h, hT⟩ := exists_isSVD_truncatedSVD A
-  refine range_mulVecLin_le_iff_exists_mul.mpr ⟨V * (Matrix.diagonal
+  refine range_le_iff_exists_mul.mpr ⟨V * (Matrix.diagonal
     (fun i : Fin (min (Fintype.card m) (Fintype.card n)) => if (i : ℕ) < k then (1 : 𝕜) else 0) *
       Vᴴ), ?_⟩
   rw [← Matrix.mul_assoc, h.mul_right_eq, ← Matrix.mul_assoc, Matrix.mul_assoc U,
@@ -401,8 +401,8 @@ theorem HasOrthonormalCols.mul_conjTranspose_mul_truncatedSVD {q : Type*} [Finty
     [DecidableEq q] {Q : Matrix m q 𝕜} (hQ : HasOrthonormalCols Q) (X : Matrix q n 𝕜) (k : ℕ) :
     Q * (Qᴴ * truncatedSVD (Q * X) k) = truncatedSVD (Q * X) k := by
   rw [← Matrix.mul_assoc, ← hQ.rangeProjector_eq, rangeProjector_mul_eq_self_iff]
-  exact (range_mulVecLin_truncatedSVD_le _ k).trans
-    (range_mulVecLin_le_iff_exists_mul.mpr ⟨X, rfl⟩)
+  exact (range_truncatedSVD_le _ k).trans
+    (range_le_iff_exists_mul.mpr ⟨X, rfl⟩)
 
 /-! ### Row spaces, frames of dominant singular subspaces, positive semidefinite inputs -/
 
@@ -663,11 +663,11 @@ $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k \subseteq
 \operatorname{range}\llbracket\mathbf{A}\rrbracket_{k'}$ for $k \le k'$, since every truncation
 is built from the same chosen SVD. With ties among the singular values this can fail for other
 best approximations. -/
-theorem range_mulVecLin_truncatedSVD_mono (A : Matrix m n 𝕜) :
+theorem range_truncatedSVD_mono (A : Matrix m n 𝕜) :
     Monotone fun k => LinearMap.range (truncatedSVD A k).mulVecLin := by
   intro k k' hk
   obtain ⟨U, V, h, hT⟩ := exists_isSVD_truncatedSVD A
-  refine range_mulVecLin_le_iff_exists_mul.mpr ⟨V * (Matrix.diagonal
+  refine range_le_iff_exists_mul.mpr ⟨V * (Matrix.diagonal
     (fun i : Fin (min (Fintype.card m) (Fintype.card n)) => if (i : ℕ) < k then (1 : 𝕜) else 0) *
       Vᴴ), ?_⟩
   rw [hT k, hT k']

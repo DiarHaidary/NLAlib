@@ -302,7 +302,7 @@ theorem mul_matrixNorm_le_of_sq_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜
     rw [singularValues_smul, RCLike.norm_ofReal, abs_of_nonneg hc,
       ← sq_le_sq₀ (mul_nonneg hc (singularValues_nonneg X i)) (singularValues_nonneg _ i),
       mul_pow]
-    exact mul_sq_singularValues_le_of_smul_one_le h X i
+    exact mul_singularValues_sq_le_of_smul_one_le h X i
   rwa [matrixNorm_smul, RCLike.norm_ofReal, abs_of_nonneg hc] at h'
 
 /-! ### Comparison with the spectral and nuclear norms -/

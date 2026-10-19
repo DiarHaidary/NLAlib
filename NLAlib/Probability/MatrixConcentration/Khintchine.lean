@@ -113,7 +113,7 @@ $\operatorname{tr}(\mathbf{V} \mathbf{Y}^{2q})$ is not integrable its integral i
 makes the left side at most $0$; if $\operatorname{tr} \mathbf{Y}^{2q+2}$ is not integrable the
 left side is $0$; in both cases the right side is nonnegative
 (`Matrix.PosSemidef.re_trace_pow_nonneg`). Otherwise integrate trace Young
-(`re_trace_mul_pow_le_add`),
+(`Matrix.PosSemidef.re_trace_mul_pow_le_add`),
 $(q + 1)(2q + 1) \operatorname{tr}(\mathbf{V} \mathbf{Y}^{2q})
 \le (2q + 1)^{q+1} \operatorname{tr} \mathbf{V}^{q+1} + q \operatorname{tr} \mathbf{Y}^{2q+2}$,
 and combine with `hrec`. -/
@@ -136,7 +136,7 @@ theorem integral_re_trace_pow_le_of_recursion [IsProbabilityMeasure μ] {Y : Ω 
   have hpoint : ∀ᵐ ω ∂μ, (q + 1 : ℝ) * (2 * q + 1) * RCLike.re (V * Y ω ^ (2 * q)).trace ≤
       (2 * q + 1 : ℝ) ^ (q + 1) * RCLike.re (V ^ (q + 1)).trace +
         q * RCLike.re (Y ω ^ (2 * q + 2)).trace :=
-    hY.mono fun ω hω => re_trace_mul_pow_le_add hV hω q
+    hY.mono fun ω hω => Matrix.PosSemidef.re_trace_mul_pow_le_add hV hω q
   have hi := integral_mono_ae (hW.const_mul ((q + 1 : ℝ) * (2 * q + 1)))
     ((integrable_const _).add (hM.const_mul (q : ℝ))) hpoint
   simp only [Pi.add_apply] at hi
@@ -408,7 +408,8 @@ private theorem integral_mul_re_trace_le_of_hasLaw_gaussianVector {g : Ω → ι
           refine Finset.sum_le_sum fun l hl => ?_
           rw [Finset.mem_range] at hl
           have hl' : 2 * q - l + l = 2 * q := by omega
-          have h := re_trace_mul_pow_mul_pow_le (hA i) (isHermitian_sum_smul hA x)
+          have h := Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le (hA i)
+            (isHermitian_sum_smul hA x)
             (l := 2 * q - l) (k := l) (by rw [hl']; exact even_two_mul q)
           rwa [hl'] at h
       _ = _ := by
@@ -445,7 +446,8 @@ Stein's identity for derivatives of polynomial growth
 in each coordinate gives
 $\sum_{l \le 2q} \mathbb{E} \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^l \mathbf{A}_i
 \mathbf{Y}^{2q-l})$, each term at most
-$\mathbb{E} \operatorname{tr}(\mathbf{A}_i^2 \mathbf{Y}^{2q})$ (`re_trace_mul_pow_mul_pow_le`). -/
+$\mathbb{E} \operatorname{tr}(\mathbf{A}_i^2 \mathbf{Y}^{2q})$
+(`Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le`). -/
 theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_gaussianVector {g : Ω → ι → ℝ}
     (hg : HasLaw g (gaussianVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (q : ℕ) :
     ∫ ω, RCLike.re ((∑ i, g ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
@@ -553,7 +555,7 @@ private theorem sign_flip_le [DecidableEq ι] (hA : ∀ i, (A i).IsHermitian) (q
       (by simp), hyi]
     congr 1
     ring
-  have hmean := re_trace_sub_mul_pow_sub_pow_le (isHermitian_sum_smul hA x)
+  have hmean := Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le (isHermitian_sum_smul hA x)
     (isHermitian_sum_smul hA y) (even_two_mul q)
   rw [hD] at hmean
   have hsq : ((2 * x i) • A i) ^ 2 = (4 : ℝ) • A i ^ 2 := by
@@ -621,7 +623,7 @@ series with the $i$-th sign flipped (same law, `measurePreserving_update_neg_rad
 $\mathbb{E}[\varepsilon_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^{2q+1})]
 = \frac14 \mathbb{E} \operatorname{tr}\bigl((\mathbf{Y} - \mathbf{Y}^{(i)})
 (\mathbf{Y}^{2q+1} - (\mathbf{Y}^{(i)})^{2q+1})\bigr)$; the mean value trace inequality
-(`re_trace_sub_mul_pow_sub_pow_le`) with
+(`Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le`) with
 $\mathbf{Y} - \mathbf{Y}^{(i)} = 2 \varepsilon_i \mathbf{A}_i$ and $\varepsilon_i^2 = 1$, and a
 second flip. -/
 theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_rademacherVector {ε : Ω → ι → ℝ}

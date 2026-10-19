@@ -23,7 +23,7 @@ inequality is in `NLAlib.Matrix.Inequalities.Minkowski`.
 * `Matrix.IsHermitian.re_det_mul`, `NLAlib.det_eq_det_toBlocks₁₁_mul_det`: the determinant of a
   Hermitian matrix inside a real part, and the Schur determinant formula on a sum type.
 * `Matrix.PosSemidef.re_det_le_prod_re_diag`, `NLAlib.norm_det_le_prod_norm_col`: Hadamard.
-* `NLAlib.re_det_fromBlocks_le_of_posSemidef`: Fischer.
+* `Matrix.PosSemidef.re_det_fromBlocks_le`: Fischer.
 * `NLAlib.principalMinor`, `NLAlib.det_submatrix_eq_principalMinor`,
   `NLAlib.sum_principalMinor`, `NLAlib.principalMinor_transpose`,
   `NLAlib.principalMinor_conjTranspose`: principal minors.
@@ -72,7 +72,7 @@ $$\operatorname{Re} \det \begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{
 [HornJohnson2013, Theorem 7.8.5].
 Port of `NLAlib.det_fromBlocks_le_mul_det_of_posSemidef`, there over $\mathbb{R}$.
 Result: fischer-inequality -/
-theorem re_det_fromBlocks_le_of_posSemidef {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
+theorem _root_.Matrix.PosSemidef.re_det_fromBlocks_le {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
     RCLike.re (Matrix.fromBlocks A B Bᴴ C).det ≤ RCLike.re A.det * RCLike.re C.det := by
   have hA : A.PosSemidef := h.submatrix Sum.inl
@@ -89,7 +89,8 @@ theorem re_det_fromBlocks_le_of_posSemidef {A : Matrix m m 𝕜} {B : Matrix m n
       hA.posDef_iff_isUnit.mpr ((Matrix.isUnit_iff_isUnit_det _).mpr (IsUnit.mk0 _ hdet))
     let : Invertible A := hAPD.isUnit.invertible
     have hS : (C - Bᴴ * A⁻¹ * B).PosSemidef := (Matrix.PosDef.fromBlocks₁₁ B C hAPD).mp h
-    have hle : C - Bᴴ * A⁻¹ * B ≤ C := sub_conjTranspose_mul_mul_le hAPD.inv.posSemidef B C
+    have hle : C - Bᴴ * A⁻¹ * B ≤ C := Matrix.PosSemidef.sub_conjTranspose_mul_mul_le
+      hAPD.inv.posSemidef B C
     rw [Matrix.det_fromBlocks₁₁, Matrix.invOf_eq_nonsing_inv, hA.isHermitian.re_det_mul]
     exact mul_le_mul_of_nonneg_left (hS.re_det_le_re_det_of_le hle)
       (RCLike.nonneg_iff.mp hA.det_nonneg).1
@@ -113,14 +114,15 @@ private theorem eq_zero_of_conjTranspose_mul_mul_eq_zero [Finite n] {A : Matrix 
 $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
 holds exactly when the off-diagonal block vanishes, $\mathbf{B} = \mathbf{0}$.
 Port of `NLAlib.det_fromBlocks_eq_mul_det_iff_of_posDef`, there over $\mathbb{R}$. -/
-theorem re_det_fromBlocks_eq_iff_of_posDef {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
+theorem _root_.Matrix.PosDef.re_det_fromBlocks_eq_iff {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosDef) :
     RCLike.re (Matrix.fromBlocks A B Bᴴ C).det = RCLike.re A.det * RCLike.re C.det ↔ B = 0 := by
   have hA : A.PosDef := h.submatrix Sum.inl_injective
   have hC : C.PosDef := h.submatrix Sum.inr_injective
   let : Invertible A := hA.isUnit.invertible
   have hS : (C - Bᴴ * A⁻¹ * B).PosDef := (posDef_fromBlocks_iff.mp h).2
-  have hle : C - Bᴴ * A⁻¹ * B ≤ C := sub_conjTranspose_mul_mul_le hA.inv.posSemidef B C
+  have hle : C - Bᴴ * A⁻¹ * B ≤ C := Matrix.PosSemidef.sub_conjTranspose_mul_mul_le
+    hA.inv.posSemidef B C
   constructor
   · intro heq
     rw [Matrix.det_fromBlocks₁₁, Matrix.invOf_eq_nonsing_inv, hA.isHermitian.re_det_mul] at heq
@@ -141,7 +143,7 @@ private theorem re_det_le_re_det_inl_mul_re_det_inr {M : Matrix (m ⊕ n) (m ⊕
   have hM' : M = Matrix.fromBlocks M.toBlocks₁₁ M.toBlocks₁₂ M.toBlocks₁₂ᴴ M.toBlocks₂₂ := by
     ext (i | i) (j | j) <;>
       simp [Matrix.toBlocks₁₁, Matrix.toBlocks₁₂, Matrix.toBlocks₂₂, hM.isHermitian.apply]
-  have h := re_det_fromBlocks_le_of_posSemidef (A := M.toBlocks₁₁) (B := M.toBlocks₁₂)
+  have h := Matrix.PosSemidef.re_det_fromBlocks_le (A := M.toBlocks₁₁) (B := M.toBlocks₁₂)
     (C := M.toBlocks₂₂) (by rwa [← hM'])
   rwa [← hM'] at h
 
@@ -153,7 +155,7 @@ private theorem re_det_eq_re_det_inl_mul_re_det_inr_iff {M : Matrix (m ⊕ n) (m
   have hM' : M = Matrix.fromBlocks M.toBlocks₁₁ M.toBlocks₁₂ M.toBlocks₁₂ᴴ M.toBlocks₂₂ := by
     ext (i | i) (j | j) <;>
       simp [Matrix.toBlocks₁₁, Matrix.toBlocks₁₂, Matrix.toBlocks₂₂, hM.isHermitian.apply]
-  have h := re_det_fromBlocks_eq_iff_of_posDef (A := M.toBlocks₁₁) (B := M.toBlocks₁₂)
+  have h := Matrix.PosDef.re_det_fromBlocks_eq_iff (A := M.toBlocks₁₁) (B := M.toBlocks₁₂)
     (C := M.toBlocks₂₂) (by rwa [← hM'])
   rw [← hM'] at h
   exact h.trans ⟨fun h0 i j => congrFun (congrFun h0 i) j, fun h0 => Matrix.ext h0⟩

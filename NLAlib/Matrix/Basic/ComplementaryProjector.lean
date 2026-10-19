@@ -24,7 +24,7 @@ applied to a matrix it gives the projection residual $(\mathbf{I} -
   annihilates the columns of $\mathbf{A}$, on both sides.
 * `NLAlib.one_sub_rangeProjector_mul_sub_mul`: the residual of $\mathbf{A} - \mathbf{B}\mathbf{X}$
   is the residual of $\mathbf{A}$.
-* `NLAlib.range_mulVecLin_one_sub_rangeProjector`, `NLAlib.rank_one_sub_rangeProjector_add_rank`:
+* `NLAlib.range_one_sub_rangeProjector`, `NLAlib.rank_one_sub_rangeProjector_add_rank`:
   its range and its rank.
 * `NLAlib.norm_one_sub_rangeProjector_mulVec_le`: the projection is the best approximation.
 * `NLAlib.norm_toLp_sq_eq_add_one_sub_rangeProjector`: Pythagoras for a vector and a column space.
@@ -82,7 +82,7 @@ theorem one_sub_rangeProjector_mul_sub_mul [Fintype m] [Fintype p] [DecidableEq 
 /-- The range of the complementary projector $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is the kernel
 of $\mathbf{A}^{\mathsf{H}}$: the orthogonal complement of the column space, expressed without
 leaving `m → 𝕜`. -/
-theorem range_mulVecLin_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
+theorem range_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
     (A : Matrix m n 𝕜) :
     LinearMap.range (1 - rangeProjector A).mulVecLin = LinearMap.ker Aᴴ.mulVecLin := by
   ext x
@@ -97,7 +97,7 @@ theorem rank_one_sub_rangeProjector_add_rank [Fintype m] [Fintype n] [DecidableE
     (A : Matrix m n 𝕜) : (1 - rangeProjector A).rank + A.rank = Fintype.card m := by
   have h := LinearMap.finrank_range_add_finrank_ker Aᴴ.mulVecLin
   rw [Module.finrank_fintype_fun_eq_card] at h
-  rw [Matrix.rank, range_mulVecLin_one_sub_rangeProjector, ← Matrix.rank_conjTranspose A,
+  rw [Matrix.rank, range_one_sub_rangeProjector, ← Matrix.rank_conjTranspose A,
     Matrix.rank, add_comm]
   exact h
 
@@ -135,8 +135,7 @@ $$\operatorname{tr}(\mathbf{P}\mathbf{A}) +
 by cyclicity of the trace and $(\mathbf{I} - \mathbf{P})^2 = \mathbf{I} - \mathbf{P}$. With
 $\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ it splits $\operatorname{tr}\mathbf{A}$ into the
 part Hutch++ computes exactly and the compressed residual its probes estimate
-(`NLAlib.hutchpp_sub_trace`).
-[MeyerMuscoMuscoWoodruff2021, §3, proof of Theorem 1]; there for
+(`NLAlib.trace_sub_hutchpp`). [MeyerMuscoMuscoWoodruff2021, §3, proof of Theorem 1]; there for
 $\mathbf{P} = \mathbf{Q}\mathbf{Q}^{\mathsf{T}}$ with orthonormal $\mathbf{Q}$. -/
 theorem _root_.IsIdempotentElem.trace_mul_add_trace_one_sub_mul_mul_one_sub {R : Type*}
     [CommRing R] [Fintype m] [DecidableEq m] {P : Matrix m m R} (hP : IsIdempotentElem P)

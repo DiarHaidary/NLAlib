@@ -104,7 +104,7 @@ Port of `NLAlib.continuous_eigenvalues₀_pencil`, there along a line. -/
 theorem continuousOn_eigenvalue (k : ℕ) :
     ContinuousOn (fun A : Matrix n n 𝕜 => eigenvalue A k) {A | A.IsHermitian} := by
   exact continuousOn_of_abs_sub_le continuous_specNorm specNorm_zero fun A hA B hB =>
-    abs_eigenvalue_sub_le hB hA k
+    Matrix.IsHermitian.abs_eigenvalue_sub_le hB hA k
 
 /-- The Ky Fan norms $\|\mathbf{A}\|_{(k)}$ are continuous. -/
 theorem continuous_kyFanNorm (k : ℕ) : Continuous fun A : Matrix m n 𝕜 => kyFanNorm k A := by

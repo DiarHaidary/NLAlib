@@ -432,7 +432,7 @@ private theorem preconditionedLanczosTridiagonal_submatrix_eq (hA : A.IsHermitia
       mgsArnoldiHessenberg (Cᴴ * A * C) (Cᴴ *ᵥ r) k := by
   classical
   rw [mgsArnoldiHessenberg_eq,
-    ← conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc,
+    ← submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc,
     ← hA.preconditionedLanczosTridiagonal_eq hMC]
 
 omit [DecidableEq n] in

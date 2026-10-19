@@ -68,7 +68,7 @@ theorem _root_.Matrix.IsHermitian.abs_eigenvalue_add_smul_sub_mul_le {A E : Matr
       t ^ 2 * specNorm E ^ 2 := by
   have hB : (A + t • E).IsHermitian := hA.add (hE.smul (IsSelfAdjoint.all t))
   have hweyl (i : ℕ) : |eigenvalue (A + t • E) i - eigenvalue A i| ≤ |t| * specNorm E := by
-    have h := abs_eigenvalue_sub_le hB hA i
+    have h := Matrix.IsHermitian.abs_eigenvalue_sub_le hB hA i
     rwa [add_sub_cancel_left, specNorm_real_smul] at h
   have hq : RCLike.re (quadForm A x) = eigenvalue A k := by
     rw [quadForm_def, hAx, dotProduct_smul, EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq,

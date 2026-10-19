@@ -21,8 +21,8 @@ Gaussian vector indexed by $m \times n$.
 ## Main results
 
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix`.
-* `NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`: the upper tail.
-* `NLAlib.measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun`: the upper tail
+* `NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix`: the upper tail.
+* `NLAlib.measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun`: the upper tail
   for a function of the Gaussian matrix and an independent random factor.
 -/
 
@@ -65,11 +65,11 @@ theorem hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix
 
 /-- The upper tail: for $f$ $L$-Lipschitz for the Frobenius distance and $t \ge 0$,
 $\mathbb{P}\bigl(f(\mathbf{G}) \ge \mathbb{E} f(\mathbf{G}) + t\bigr) \le \exp(-t^2 / (2L^2))$. -/
-theorem measureReal_integral_add_le_of_hasLaw_gaussianMatrix
+theorem measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B))
     {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ∫ ω', f (X ω') ∂μ + t ≤ f (X ω)} ≤ Real.exp (-t ^ 2 / (2 * L ^ 2)) := by
-  exact measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
+  exact measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
     (f := fun x => f (Matrix.of (Function.curry x)))
     (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) (lipschitzWith_curry hf) ht
 
@@ -102,7 +102,7 @@ private theorem gaussianMatrix_lt_le {g : Matrix m n ℝ → ℝ} {L c : ℝ} (h
       intro A B
       rw [coe_nnnorm, Real.norm_of_nonneg hL.le]
       exact hlip A B
-    have h := measureReal_integral_add_le_of_hasLaw_gaussianMatrix (X := id) (f := g)
+    have h := measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix (X := id) (f := g)
       (μ := gaussianMatrix m n) HasLaw.id hlip' (t := L * t) (by positivity)
     rw [coe_nnnorm, Real.norm_of_nonneg hL.le] at h
     have he : -(L * t) ^ 2 / (2 * L ^ 2) = -t ^ 2 / 2 := by
@@ -117,18 +117,18 @@ private theorem gaussianMatrix_lt_le {g : Matrix m n ℝ → ℝ} {L c : ℝ} (h
 Gaussian matrix independent of $Y$ and, for each $y$, $f(y, \cdot)$ is $L(y)$-Lipschitz for the
 Frobenius distance, with $L \ge 0$ and Gaussian mean at most $c(y)$, then for $t \ge 0$
 $$\mathbb{P}\{f(Y, \mathbf{G}) > c(Y) + L(Y)\,t\} \le e^{-t^2/2}\,.$$
-The fixed-factor form is `NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`; this one
+The fixed-factor form is `NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix`; this one
 conditions on $Y$ through the product law of the pair. $L \ge 0$ is needed when the matrices are
 empty, where the Lipschitz hypothesis holds for every $L$.
 Result: gaussian-lipschitz-concentration -/
-theorem measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun {β : Type*}
+theorem measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun {β : Type*}
     [MeasurableSpace β] {X : Ω → Matrix m n ℝ} {Y : Ω → β} (hX : HasLaw X (gaussianMatrix m n) μ)
     (hY : AEMeasurable Y μ) (hXY : IndepFun Y X μ) {f : β → Matrix m n ℝ → ℝ}
     (hf : Measurable (Function.uncurry f)) {L c : β → ℝ} (hL : Measurable L)
     (hL0 : ∀ y, 0 ≤ L y) (hc : Measurable c)
     (hlip : ∀ y A B, |f y A - f y B| ≤ L y * frobNorm (A - B))
     (hmean : ∀ y, ∫ A, f y A ∂(gaussianMatrix m n) ≤ c y) {t : ℝ} (ht : 0 ≤ t) :
-    μ.real {ω | ¬ f (Y ω) (X ω) ≤ c (Y ω) + L (Y ω) * t} ≤ Real.exp (-t ^ 2 / 2) := by
+    μ.real {ω | c (Y ω) + L (Y ω) * t < f (Y ω) (X ω)} ≤ Real.exp (-t ^ 2 / 2) := by
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
   set E : Set (β × Matrix m n ℝ) := {p | c p.1 + L p.1 * t < f p.1 p.2} with hE_def
   have hE : MeasurableSet E :=
@@ -136,9 +136,9 @@ theorem measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun {β :
   have hpair : AEMeasurable (fun ω => (Y ω, X ω)) μ := hY.prodMk hX.aemeasurable
   have hmap : μ.map (fun ω => (Y ω, X ω)) = (μ.map Y).prod (gaussianMatrix m n) := by
     rw [(indepFun_iff_map_prod_eq_prod_map_map hY hX.aemeasurable).1 hXY, hX.map_eq]
-  have hset : {ω | ¬ f (Y ω) (X ω) ≤ c (Y ω) + L (Y ω) * t} = (fun ω => (Y ω, X ω)) ⁻¹' E := by
+  have hset : {ω | c (Y ω) + L (Y ω) * t < f (Y ω) (X ω)} = (fun ω => (Y ω, X ω)) ⁻¹' E := by
     ext ω
-    simp only [Set.mem_ofPred_eq, not_le, Set.mem_preimage, hE_def]
+    simp only [Set.mem_ofPred_eq, Set.mem_preimage, hE_def]
   have : IsProbabilityMeasure (μ.map Y) := Measure.isProbabilityMeasure_map hY
   have hslice : ∀ y, gaussianMatrix m n (Prod.mk y ⁻¹' E) ≤
       ENNReal.ofReal (Real.exp (-t ^ 2 / 2)) := fun y => by

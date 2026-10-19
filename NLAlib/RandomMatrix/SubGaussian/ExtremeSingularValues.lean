@@ -215,7 +215,7 @@ private lemma lt_singularValues_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} 
     √N - w < singularValues A k := by
   rcases lt_or_ge (√N) w with hwN | hwN
   · exact (sub_neg.mpr hwN).trans_le (singularValues_nonneg A k)
-  have h2 := le_sq_singularValues_last_of_smul_one_le hk
+  have h2 := le_singularValues_last_sq_of_smul_one_le hk
     (sub_smul_one_le_conjTranspose_mul_self A N)
   have hm : max (√N * w) (w ^ 2) = √N * w := max_eq_left (by nlinarith)
   have e : (√N - w) ^ 2 = N - 2 * (√N * w) + w ^ 2 := by rw [sub_sq, Real.sq_sqrt hN]; ring
@@ -260,7 +260,7 @@ private lemma measureReal_half_le_abs_le [Nonempty m]
     have := pow_le_pow_left₀ (mul_nonneg (Real.sqrt_nonneg N) hw0) hr1 2
     rwa [mul_pow, Real.sq_sqrt hN0] at this
   refine ((hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector hind hsub hiso
-    hx).measure_abs_ge_le (by positivity)).trans ?_
+    hx).measureReal_abs_ge_le (by positivity)).trans ?_
   gcongr
   push_cast
   have hdt2 : 0 ≤ d + t ^ 2 := by positivity

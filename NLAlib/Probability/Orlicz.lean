@@ -38,8 +38,8 @@ integrability of $e^{X^2 / K}$ does not give it (the sign is lost).
 
 A $\psi_2$ Hanson–Wright inequality is the $\psi_2$ bridge followed by
 `NLAlib.measureReal_quadForm_sub_integral_ge_le`, and a $\psi_1$ Bernstein inequality is the
-$\psi_1$ bridge followed by `NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`; neither is
-restated (`docs/design/Probability-P7.md` §7 D3, D4).
+$\psi_1$ bridge followed by `NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun`;
+neither is restated (`docs/design/Probability-P7.md` §7 D3, D4).
 
 ## Main definitions
 
@@ -483,7 +483,7 @@ the constants named. The hypothesis $\mathbb{E} X = 0$ is needed (every `HasSube
 variable is centred, `NLAlib.HasSubexponentialMGF.integral_eq_zero`); for a variable that is not
 centred, use `NLAlib.hasSubexponentialMGF_sub_integral_of_integral_exp_abs_div_le_two`. A
 $\psi_1$ Bernstein inequality is this bridge followed by
-`NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`.
+`NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun`.
 Proof: for $\lvert\lambda\rvert < 1 / (2K)$, $e^y \le 1 + y + y^2 e^{\lvert y\rvert} / 2$ gives
 $\mathbb{E} e^{\lambda X} \le 1 + \lambda^2\, \mathbb{E}[X^2 e^{\lvert X\rvert / (2K)}] / 2$, and
 $X^2 \le (16 K^2 / e^2)\, e^{\lvert X\rvert / (2K)}$ (from $u^2 \le 4 e^{u - 2}$) bounds the

@@ -22,9 +22,9 @@ Upstream candidate for `Mathlib.Data.Matrix.ColumnRowPartitioned` (or
 
 ## Main results
 
-* `Matrix.range_mulVecLin_le_range_fromCols_left`: $\operatorname{range} \mathbf{A} \le
+* `Matrix.range_le_range_fromCols_left`: $\operatorname{range} \mathbf{A} \le
   \operatorname{range} \begin{bmatrix} \mathbf{A} & \mathbf{B} \end{bmatrix}$.
-* `Matrix.mem_range_mulVecLin_fromCols_replicateCol`: $\mathbf{y} \in
+* `Matrix.mem_range_fromCols_replicateCol`: $\mathbf{y} \in
   \operatorname{range} \begin{bmatrix} \mathbf{A} & \mathbf{y} \end{bmatrix}$.
 -/
 
@@ -36,7 +36,7 @@ variable {R : Type*} [CommSemiring R] {n q r : Type*} [Fintype q] [Fintype r]
 
 /-- The column space of $\mathbf{A}$ lies in the column space of `Matrix.fromCols A B`, the matrix
 $\begin{bmatrix} \mathbf{A} & \mathbf{B} \end{bmatrix}$. -/
-theorem range_mulVecLin_le_range_fromCols_left (A : Matrix n q R) (B : Matrix n r R) :
+theorem range_le_range_fromCols_left (A : Matrix n q R) (B : Matrix n r R) :
     LinearMap.range A.mulVecLin ≤ LinearMap.range (fromCols A B).mulVecLin := by
   rintro _ ⟨v, rfl⟩
   refine ⟨Sum.elim v 0, ?_⟩
@@ -45,7 +45,7 @@ theorem range_mulVecLin_le_range_fromCols_left (A : Matrix n q R) (B : Matrix n 
 /-- The vector $\mathbf{y}$ lies in the column space of
 $\begin{bmatrix} \mathbf{A} & \mathbf{y} \end{bmatrix}$, the matrix $\mathbf{A}$ with
 $\mathbf{y}$ appended as one column. -/
-theorem mem_range_mulVecLin_fromCols_replicateCol (A : Matrix n q R) (y : n → R) :
+theorem mem_range_fromCols_replicateCol (A : Matrix n q R) (y : n → R) :
     y ∈ LinearMap.range (fromCols A (replicateCol Unit y)).mulVecLin := by
   refine ⟨Sum.elim 0 fun _ => 1, ?_⟩
   ext i

@@ -22,8 +22,8 @@ cumulant generating functions and the operator monotonicity of the logarithm), w
 master tail and mean bounds.
 
 The bound is not monotone in $\mathbf{A}$: the matrix exponential is not operator monotone.
-Monotonicity in $\mathbf{A}$ holds after the trace (`NLAlib.re_trace_exp_le_re_trace_exp_of_le`),
-which is where the
+Monotonicity in $\mathbf{A}$ holds after the trace
+(`Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le`), which is where the
 consumers use it.
 
 ## Main definitions
@@ -33,7 +33,7 @@ consumers use it.
 ## Main results
 
 * `NLAlib.HasMatrixMGFBound.integral_re_trace_exp_sum_le`: the trace-level master bound.
-* `NLAlib.HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le`: the master tail bound.
+* `NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le`: the master tail bound.
 * `NLAlib.HasMatrixMGFBound.integral_eigenvalue_zero_sum_le`: the master bound for the mean.
 
 ## References
@@ -155,7 +155,7 @@ theorem integral_re_trace_exp_sum_le (hind : iIndepFun X μ)
     rw [← hgA.cfc_log_exp]
     exact hpd.cfc_log_le_cfc_log ((h k).integral_exp_le θ hθ)
   rw [Finset.smul_sum]
-  exact re_trace_exp_le_re_trace_exp_of_le
+  exact Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le
     (isSelfAdjoint_sum _ fun k _ => cfc_predicate Real.log _)
     (Finset.sum_le_sum fun k _ => hlog k)
 
@@ -170,7 +170,7 @@ $\theta > 0$ and every real $t$,
 $$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
 \le e^{-\theta t} \operatorname{tr} e^{g(\theta) \sum_k \mathbf{A}_k}\,.$$
 [Tropp2015, Theorem 3.6.1]. -/
-theorem measure_eigenvalue_zero_sum_ge_le [Nonempty n] (hind : iIndepFun X μ)
+theorem measureReal_eigenvalue_zero_sum_ge_le [Nonempty n] (hind : iIndepFun X μ)
     (h : ∀ k, HasMatrixMGFBound (X k) g (A k) s μ) {θ : ℝ} (hθs : θ ∈ s) (hθ : 0 < θ) (t : ℝ) :
     μ.real {ω | t ≤ eigenvalue (∑ k, X k ω) 0} ≤
       Real.exp (-θ * t) * RCLike.re (exp (g θ • ∑ k, A k)).trace := by
@@ -182,7 +182,7 @@ theorem measure_eigenvalue_zero_sum_ge_le [Nonempty n] (hind : iIndepFun X μ)
 /-- The master tail bound in the dimension form: if moreover $g(\theta) \ge 0$, then
 $$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr)
 \le \lvert n\rvert\, e^{-\theta t + g(\theta) \lambda_0(\sum_k \mathbf{A}_k)}\,.$$ -/
-theorem measure_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iIndepFun X μ)
+theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iIndepFun X μ)
     (h : ∀ k, HasMatrixMGFBound (X k) g (A k) s μ) {θ : ℝ} (hθs : θ ∈ s) (hθ : 0 < θ)
     (hg : 0 ≤ g θ) (t : ℝ) :
     μ.real {ω | t ≤ eigenvalue (∑ k, X k ω) 0} ≤
@@ -191,7 +191,7 @@ theorem measure_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iInd
     (IsSelfAdjoint.all _).smul (isSelfAdjoint_sum _ fun k _ => (h k).isHermitian_bound)
   have htr := hA.re_trace_exp_le_card_mul_exp
   rw [eigenvalue_real_smul _ hg] at htr
-  refine (measure_eigenvalue_zero_sum_ge_le hind h hθs hθ t).trans ?_
+  refine (measureReal_eigenvalue_zero_sum_ge_le hind h hθs hθ t).trans ?_
   calc Real.exp (-θ * t) * RCLike.re (exp (g θ • ∑ k, A k)).trace
       ≤ Real.exp (-θ * t) * (Fintype.card n * Real.exp (g θ * eigenvalue (∑ k, A k) 0)) :=
         mul_le_mul_of_nonneg_left htr (Real.exp_pos _).le

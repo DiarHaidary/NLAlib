@@ -45,7 +45,7 @@ theorem exists_norm_eq_one_and_norm_mulVec_eq_singularValues (A : Matrix m n �
     (Matrix.isHermitian_conjTranspose_mul_self A).exists_norm_eq_one_and_mulVec_eq hk
   refine ⟨u, hu, ?_⟩
   have h := re_quadForm_of_mulVec_eq_smul hu hAu
-  rw [quadForm_conjTranspose_mul_self, RCLike.ofReal_re, ← sq_singularValues] at h
+  rw [quadForm_conjTranspose_mul_self, RCLike.ofReal_re, ← singularValues_sq] at h
   exact (sq_eq_sq₀ (norm_nonneg _) (singularValues_nonneg A k)).mp h
 
 /-- **A small least singular value puts a column near the span of the others.** If the least

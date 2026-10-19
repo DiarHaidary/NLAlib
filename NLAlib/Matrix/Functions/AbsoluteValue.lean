@@ -35,7 +35,7 @@ $\mathbf{A}^{+}$, $\mathbf{A}^{-}$ are Mathlib's, with `CFC.le_posPart`,
   $\|\mathbf{A}\|_{S_p}^p = \operatorname{tr} (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{p/2}$.
 * `Matrix.IsHermitian.le_abs`, `Matrix.IsHermitian.neg_abs_le`.
 * in the `Matrix.PosSemidef` namespace, the square root as a factor:
-  `sq_singularValues_sqrt`, `frobNorm_sqrt_sub_truncatedSVD_sq`,
+  `singularValues_sqrt_sq`, `frobNorm_sqrt_sub_truncatedSVD_sq`,
   `singularGapRatio_le_two_mul_singularGapRatio_sqrt`.
 -/
 
@@ -57,7 +57,7 @@ theorem eigenvalue_sqrt_conjTranspose_mul_self (A : Matrix m n 𝕜) {k : ℕ}
   rw [CFC.sqrt_eq_real_sqrt (Aᴴ * A) hG.nonneg, cfcₙ_eq_cfc,
     hG.isHermitian.eigenvalue_cfc_of_monotoneOn (s := Set.univ)
       (fun x _ y _ h => Real.sqrt_le_sqrt h) (Set.subset_univ _) hk,
-    ← sq_singularValues, Real.sqrt_sq (singularValues_nonneg A k)]
+    ← singularValues_sq, Real.sqrt_sq (singularValues_nonneg A k)]
 
 open scoped Classical in
 /-- The absolute value has the same singular values as the matrix. -/
@@ -99,7 +99,7 @@ open scoped Classical in
 /-- **The singular values of the square root**: for positive semidefinite $\mathbf{H}$,
 $\sigma_k(\mathbf{H}^{1/2})^2 = \sigma_k(\mathbf{H})$ at every index, the zero padding
 included. -/
-theorem _root_.Matrix.PosSemidef.sq_singularValues_sqrt {H : Matrix n n 𝕜}
+theorem _root_.Matrix.PosSemidef.singularValues_sqrt_sq {H : Matrix n n 𝕜}
     (hH : H.PosSemidef) (k : ℕ) : singularValues (CFC.sqrt H) k ^ 2 = singularValues H k := by
   rw [← singularValues_conjTranspose_mul_self, hH.conjTranspose_sqrt_mul_sqrt]
 
@@ -116,7 +116,7 @@ theorem _root_.Matrix.PosSemidef.frobNorm_sqrt_sub_truncatedSVD_sq {H : Matrix n
     frobNorm_sq_eq_sum_range_singularValues_sq _ (Matrix.rank_le_card_width _)]
   exact Finset.sum_congr rfl fun i _ => by
     rw [singularValues_sub_truncatedSVD, singularValues_sub_truncatedSVD,
-      hH.sq_singularValues_sqrt]
+      hH.singularValues_sqrt_sq]
 
 open scoped Classical in
 /-- **The relative gap of the square root is at least half that of the matrix**: for positive
@@ -130,8 +130,8 @@ $\sqrt{(1 + \gamma)/(1 - \gamma)} \ge (1 + \gamma/2)/(1 - \gamma/2)$. -/
 theorem _root_.Matrix.PosSemidef.singularGapRatio_le_two_mul_singularGapRatio_sqrt
     {H : Matrix n n 𝕜} (hH : H.PosSemidef) {i j : ℕ} (hij : i ≤ j) :
     singularGapRatio H i j ≤ 2 * singularGapRatio (CFC.sqrt H) i j := by
-  rw [singularGapRatio, singularGapRatio, ← hH.sq_singularValues_sqrt i,
-    ← hH.sq_singularValues_sqrt j]
+  rw [singularGapRatio, singularGapRatio, ← hH.singularValues_sqrt_sq i,
+    ← hH.singularValues_sqrt_sq j]
   set a := singularValues (CFC.sqrt H) i
   set b := singularValues (CFC.sqrt H) j
   have hb : 0 ≤ b := singularValues_nonneg _ j
@@ -157,7 +157,7 @@ theorem schattenNorm_rpow_eq_re_trace_rpow [DecidableEq n] (A : Matrix m n 𝕜)
   rw [ENNReal.toReal_ofReal hp.le] at h
   rw [h, CFC.rpow_eq_cfc_real hG.nonneg, hG.isHermitian.re_trace_cfc]
   refine Finset.sum_congr rfl fun i _ => ?_
-  rw [← sq_singularValues, ← Real.rpow_natCast, ← Real.rpow_mul (singularValues_nonneg A i)]
+  rw [← singularValues_sq, ← Real.rpow_natCast, ← Real.rpow_mul (singularValues_nonneg A i)]
   congr 1
   push_cast
   ring

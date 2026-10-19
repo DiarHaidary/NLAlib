@@ -26,7 +26,7 @@ secular equation, are in `NLAlib.Matrix.Spectral.InterlacingConverse`.
 * `NLAlib.charpoly_diagonal_add_vecMulVec`: the secular equation.
 * `NLAlib.charpoly_fromBlocks_diagonal_replicateCol`: the characteristic polynomial of an
   arrowhead matrix.
-* `NLAlib.charpoly_add_vecMulVec_mul`: Brauer's theorem.
+* `NLAlib.X_sub_C_mul_charpoly_add_vecMulVec`: Brauer's theorem.
 * `Matrix.IsHermitian.isEigenvalueListing_eigenvalue`: the sorted eigenvalues are a listing.
 -/
 
@@ -199,7 +199,7 @@ $$(X - \mu) \, p_{\mathbf{A} + \mathbf{x}\mathbf{y}^{\mathsf{T}}}(X)
 with $p_{\mathbf{M}}(X) = \det(X\mathbf{I} - \mathbf{M})$.
 [HornJohnson2013, Example 1.2.8], there over $\mathbb{C}$.
 Port of `NLAlib.charpoly_add_vecMulVec_mul_X_sub_C`. -/
-theorem charpoly_add_vecMulVec_mul {R : Type*} [CommRing R] {A : Matrix n n R} {x : n → R}
+theorem X_sub_C_mul_charpoly_add_vecMulVec {R : Type*} [CommRing R] {A : Matrix n n R} {x : n → R}
     {μ : R} (hAx : A *ᵥ x = μ • x) (y : n → R) :
     (X - C μ) * (A + Matrix.vecMulVec x y).charpoly = (X - C (μ + y ⬝ᵥ x)) * A.charpoly := by
   have hcm : (A + Matrix.vecMulVec x y).charmatrix =

@@ -84,7 +84,8 @@ theorem OperatorConvexOn.cfc_smul_add_smul_le {s : Set ℝ} {f : ℝ → ℝ}
     (isHermitian_complexify_iff.mpr hM).submatrix e
   have hcfc : ∀ M : Matrix n n 𝕜, M.IsHermitian → cfc f (R M) = R (cfc f M) := fun M hM => by
     change cfc f ((complexify M).submatrix e e) = (complexify (cfc f M)).submatrix e e
-    rw [cfc_submatrix_equiv (isHermitian_complexify_iff.mpr hM) f e, complexify_cfc hM]
+    rw [Matrix.IsHermitian.cfc_submatrix_equiv (isHermitian_complexify_iff.mpr hM) f e,
+      Matrix.IsHermitian.complexify_cfc hM]
   have hsp : ∀ M : Matrix n n 𝕜, spectrum ℝ (R M) = spectrum ℝ M := fun M => by
     rw [← spectrum_complexify M]
     exact AlgEquiv.spectrum_eq (Matrix.reindexAlgEquiv ℝ ℂ e.symm) (complexify M)
@@ -183,7 +184,8 @@ private theorem spectrum_mul_mul_conjTranspose_subset {U A : Matrix n n 𝕜}
     spectrum ℝ (U * A * Uᴴ) ⊆ s := by
   refine spectrum_subset_of_cfc_indicator_compl_eq_zero
     (Matrix.isHermitian_mul_mul_conjTranspose U hA) ?_
-  rw [cfc_mul_mul_conjTranspose hU rfl hA, cfc_indicator_compl_eq_zero hAs, Matrix.mul_zero,
+  rw [HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq hU rfl hA, cfc_indicator_compl_eq_zero
+    hAs, Matrix.mul_zero,
     Matrix.zero_mul]
 
 /-- Averaging a block matrix with its conjugate by the reflection
@@ -218,8 +220,10 @@ private theorem OperatorConvexOn.cfc_toBlocks₂₂_le {s : Set ℝ} {f : ℝ �
     (by norm_num) (by norm_num)
   have h11 : X.toBlocks₁₁.IsHermitian := hX.submatrix Sum.inl
   have h22 : X.toBlocks₂₂.IsHermitian := hX.submatrix Sum.inr
-  rw [cfc_mul_mul_conjTranspose hV rfl hX, half_smul_add_half_smul_reflection,
-    half_smul_add_half_smul_reflection, cfc_fromBlocks_diagonal h11 h22, Matrix.le_iff] at h
+  rw [HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq hV rfl hX,
+    half_smul_add_half_smul_reflection,
+    half_smul_add_half_smul_reflection, Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁ h11 h22,
+      Matrix.le_iff] at h
   rw [Matrix.le_iff]
   exact h.submatrix (Sum.inr : n → m ⊕ n)
 
@@ -284,7 +288,7 @@ theorem OperatorConvexOn.cfc_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ →
   have hDcfc : ∀ g : ℝ → ℝ, cfc g (Matrix.fromBlocks A 0 0
       (algebraMap ℝ (Matrix n n 𝕜) (eigenvalue A 0))) =
         Matrix.fromBlocks (cfc g A) 0 0 (algebraMap ℝ (Matrix n n 𝕜) (g (eigenvalue A 0))) :=
-    fun g => by rw [cfc_fromBlocks_diagonal hA hB, cfc_algebraMap]
+    fun g => by rw [Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁ hA hB, cfc_algebraMap]
   have hDs : spectrum ℝ (Matrix.fromBlocks A 0 0
       (algebraMap ℝ (Matrix n n 𝕜) (eigenvalue A 0))) ⊆ s := by
     refine spectrum_subset_of_cfc_indicator_compl_eq_zero hD ?_
@@ -292,7 +296,8 @@ theorem OperatorConvexOn.cfc_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ →
       Set.indicator_of_notMem (Set.notMem_compl_iff.mpr hc), map_zero, Matrix.fromBlocks_zero]
   have h := hf.cfc_toBlocks₂₂_le (Matrix.isHermitian_mul_mul_conjTranspose _ hD)
     (spectrum_mul_mul_conjTranspose_subset hU hD hDs)
-  rwa [cfc_mul_mul_conjTranspose hU rfl hD, hDcfc, toBlocks₂₂_fromBlocks_one_sub_mul_mul,
+  rwa [HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq hU rfl hD, hDcfc,
+    toBlocks₂₂_fromBlocks_one_sub_mul_mul,
     toBlocks₂₂_fromBlocks_one_sub_mul_mul] at h
 
 omit [Fintype n] [DecidableEq m] [DecidableEq n] in

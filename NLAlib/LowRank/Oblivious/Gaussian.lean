@@ -67,8 +67,8 @@ $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{
 except with probability $\delta$; the first size is `gaussianInjectionDim k (ε / 8) (δ / 3)`.
 The route: the OSI at constant $1 - \varepsilon/8$ and failure $\delta/3$, the JL moment property
 at $\varepsilon/(8\sqrt{k})$ for the two multiplication tails, and
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le`. Its expectation twin,
-at $\ell \ge 900k/\varepsilon^2$, is
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le`. Its expectation
+twin, at $\ell \ge 900k/\varepsilon^2$, is
 `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`; a
 tail from that by Markov's inequality needs $\ell$ of order $k/(\varepsilon\delta)^2$.
 Asymptotic form:
@@ -111,12 +111,13 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianM
   have hX' : AEMeasurable (fun ω => (√(Fintype.card l : ℝ))⁻¹ • X ω) μ :=
     (continuous_const_smul _).measurable.comp_aemeasurable hX.aemeasurable
   have hδJ : (0 : ℝ) ≤ 2 / (Fintype.card l * (ε / (8 * √(k : ℝ))) ^ 2) := by positivity
-  have hχ := hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
     (A := A) (k := k) hX' hεJ le_rfl hδJ
   rw [show ε / (8 * √(k : ℝ)) * √(k : ℝ) = ε / 8 by field_simp] at hχ
   have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measure_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
     (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
     (fun ω => isStarProjection_rangeProjector _)
     (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
@@ -125,7 +126,7 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianM
         frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
       exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
         ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
-    (hJL.measure_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
       hεJ le_rfl hδJ) hχ
   refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
   · have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <

@@ -247,7 +247,7 @@ theorem singularValues_one_sub_rangeProjector_mul_rangeProjector (X : Matrix n p
     (Y : Matrix n q 𝕜) {i j : ℕ} (hij : i + j + 1 = Y.rank) :
     singularValues ((1 - rangeProjector X) * rangeProjector Y) i =
       Real.sin (principalAngle X Y j) := by
-  have h := (isStarProjection_rangeProjector Y).sq_singularValues_one_sub_mul
+  have h := (isStarProjection_rangeProjector Y).singularValues_one_sub_mul_sq
     (isStarProjection_rangeProjector X) (i := i) (j := j) (by rw [rank_rangeProjector, hij])
   rw [sin_principalAngle, ← h, Real.sqrt_sq (singularValues_nonneg _ _)]
 

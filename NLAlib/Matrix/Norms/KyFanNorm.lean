@@ -28,8 +28,8 @@ inner product. The relation to the nuclear norm is in `NLAlib.Matrix.Norms.Nucle
 * `NLAlib.specNorm_le_kyFanNorm`, `NLAlib.kyFanNorm_le_sqrt_mul_frobNorm`,
   `NLAlib.kyFanNorm_mul_le_specNorm_mul`: comparison and products.
 * `NLAlib.sum_abs_singularValues_sub_le_kyFanNorm_sub`,
-  `NLAlib.sum_abs_eigenvalue_sub_le_kyFanNorm_sub`: perturbation of singular values and of
-  eigenvalues in the Ky Fan norms.
+  `Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_kyFanNorm_sub`: perturbation of singular values and
+  of eigenvalues in the Ky Fan norms.
 * `Matrix.IsHermitian.sumLargest_abs_eigenvalue`: for a Hermitian matrix, the Ky Fan norms are the
   sums of the largest absolute values of the eigenvalues.
 * `NLAlib.exists_rank_le_specNorm_le_one_frobInner_eq_kyFanNorm`: attainment in the variational
@@ -181,13 +181,14 @@ and any finite set $S$ of indices, eigenvalues non-increasing and indexed from $
 $$\sum_{i \in S} \lvert \lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B}) \rvert
   \le \|\mathbf{A} - \mathbf{B}\|_{(\lvert S \rvert)}\,.$$
 [Bhatia1997, Theorem III.4.4]. -/
-theorem sum_abs_eigenvalue_sub_le_kyFanNorm_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_kyFanNorm_sub {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) (S : Finset ℕ) :
     ∑ i ∈ S, |eigenvalue A i - eigenvalue B i| ≤ kyFanNorm S.card (A - B) := by
   classical
   let d : Fin (Fintype.card n) → ℝ := fun i => eigenvalue A i - eigenvalue B i
   have hmaj : Majorized d fun i : Fin (Fintype.card n) => eigenvalue (A - B) i := by
-    have h := majorized_eigenvalue_add_sub hB (hA.sub hB)
+    have h := Matrix.IsHermitian.majorized_eigenvalue_add_sub hB (hA.sub hB)
     rwa [add_sub_cancel] at h
   let T : Finset (Fin (Fintype.card n)) := Finset.univ.filter fun i => (i : ℕ) ∈ S
   have hsub : T.map Fin.valEmbedding ⊆ S := fun j hj => by

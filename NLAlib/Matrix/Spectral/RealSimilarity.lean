@@ -23,7 +23,7 @@ is the orthogonal similarity.
 ## Main results
 
 * `NLAlib.exists_real_similarity_of_complexify`: similarity.
-* `NLAlib.exists_real_orthogonal_of_complexify`: unitary similarity.
+* `NLAlib.HasOrthonormalCols.exists_real_orthogonal_of_complexify`: unitary similarity.
 -/
 
 @[expose] public section
@@ -115,12 +115,13 @@ unitary, there is a real orthogonal $\mathbf{Q}$ with
 $\mathbf{A}_i = \mathbf{Q}\mathbf{B}_i\mathbf{Q}^{\mathsf{T}}$ for every $i$.
 [HornJohnson2013, Theorem 2.5.21].
 Port of `NLAlib.exists_real_orthogonal_similarity_of_complex_unitary_similarity`. -/
-theorem exists_real_orthogonal_of_complexify {A B : ι → Matrix n n ℝ} {U : Matrix n n ℂ}
-    (hU : HasOrthonormalCols U) (h : ∀ i, complexify (A i) = U * complexify (B i) * Uᴴ) :
+theorem HasOrthonormalCols.exists_real_orthogonal_of_complexify {A B : ι → Matrix n n ℝ}
+    {U : Matrix n n ℂ} (hU : HasOrthonormalCols U)
+    (h : ∀ i, NLAlib.complexify (A i) = U * NLAlib.complexify (B i) * Uᴴ) :
     ∃ Q : Matrix n n ℝ, HasOrthonormalCols Q ∧ ∀ i, A i = Q * B i * Qᴴ := by
-  have h₁ (i : ι) : complexify (A i) * U = U * complexify (B i) := by
+  have h₁ (i : ι) : NLAlib.complexify (A i) * U = U * NLAlib.complexify (B i) := by
     rw [h i, Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
-  have h₂ (i : ι) : complexify (A i)ᴴ * U = U * complexify (B i)ᴴ := by
+  have h₂ (i : ι) : NLAlib.complexify (A i)ᴴ * U = U * NLAlib.complexify (B i)ᴴ := by
     rw [complexify_conjTranspose, complexify_conjTranspose, h i, Matrix.conjTranspose_mul,
       Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc,
       Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]

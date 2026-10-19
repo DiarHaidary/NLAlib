@@ -383,7 +383,7 @@ theorem majorized_iff_exists_hasOrthonormalCols_diag_eq {d lam : n → ℝ} :
       ∃ Q : Matrix n n ℝ, HasOrthonormalCols Q ∧ (Q * Matrix.diagonal lam * Qᴴ).diag = d := by
   refine ⟨exists_hasOrthonormalCols_diag_eq_of_majorized, ?_⟩
   rintro ⟨Q, hQ, rfl⟩
-  have h := majorized_re_diag_of_mul_eq_mul_diagonal (𝕜 := ℝ)
+  have h := HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal (𝕜 := ℝ)
     (A := Q * Matrix.diagonal lam * Qᴴ) (d := lam) hQ (by
       rw [Matrix.mul_assoc, hQ.conjTranspose_mul_self, Matrix.mul_one]
       rfl)
@@ -434,7 +434,7 @@ theorem _root_.Matrix.IsHermitian.majorized_iff_exists_diag_conj_eq {A : Matrix 
   · rintro ⟨U, hU, hUd⟩
     have hW : HasOrthonormalCols (Uᴴ * (hA.eigenvectorUnitary : Matrix n n 𝕜)) :=
       hU.conjTranspose.mul hV
-    have h := majorized_re_diag_of_mul_eq_mul_diagonal (A := Uᴴ * A * U) hW (by
+    have h := HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal (A := Uᴴ * A * U) hW (by
       rw [Matrix.mul_assoc, ← Matrix.mul_assoc U, hU.mul_conjTranspose_self, Matrix.one_mul,
         Matrix.mul_assoc, hAV, Matrix.mul_assoc])
     simpa only [hUd, RCLike.ofReal_re] using h

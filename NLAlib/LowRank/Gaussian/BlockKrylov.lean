@@ -119,7 +119,7 @@ private theorem range_mul_aeval_mul_le_range_mul_blockKrylovMatrix (A : Matrix m
     LinearMap.range (A * aeval (Aᴴ * A) f * Y).mulVecLin ≤
       LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
   obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
-  exact range_mulVecLin_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
+  exact range_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
 
 /-- The late-truncated randomized SVD at any test matrix $\mathbf{Y}$ whose sketch range contains
 that of the filtered sketch, in expectation, Frobenius norm: Gu's projected form and head capture

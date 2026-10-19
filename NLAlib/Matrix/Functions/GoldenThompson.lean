@@ -32,7 +32,7 @@ not use Lieb's theorem.
 * `Matrix.PosSemidef.re_trace_mul_pow_two_pow_le`:
   $\operatorname{tr} (\mathbf{A}\mathbf{B})^m \le \operatorname{tr}(\mathbf{A}^m\mathbf{B}^m)$ for
   $m = 2^k$.
-* `NLAlib.re_trace_exp_add_le`: the Golden–Thompson inequality.
+* `Matrix.IsHermitian.re_trace_exp_add_le`: the Golden–Thompson inequality.
 * `Matrix.PosDef.re_trace_exp_add_cfc_log_le`: the form
   $\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{X}))
   \le \operatorname{tr}(\exp(\mathbf{H})\mathbf{X})$.
@@ -280,7 +280,8 @@ $$\operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \mathbf{K})
 Port of the statement of `NLAlib.golden_thompson`, there over $\mathbb{C}$ and derived from Lieb's
 theorem by pinching; the proof here is by the Lie product formula.
 Result: golden-thompson -/
-theorem re_trace_exp_add_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian) (hK : K.IsHermitian) :
+theorem _root_.Matrix.IsHermitian.re_trace_exp_add_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian)
+    (hK : K.IsHermitian) :
     RCLike.re (exp (H + K)).trace ≤ RCLike.re (exp H * exp K).trace := by
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [Matrix.trace_eq_zero_of_isEmpty, Matrix.trace_eq_zero_of_isEmpty]
@@ -307,7 +308,8 @@ Port of `NLAlib.traceExp_add_matrixLog_le`, there over $\mathbb{C}$. -/
 theorem _root_.Matrix.PosDef.re_trace_exp_add_cfc_log_le {H X : Matrix n n 𝕜}
     (hH : H.IsHermitian) (hX : X.PosDef) :
     RCLike.re (exp (H + cfc Real.log X)).trace ≤ RCLike.re (exp H * X).trace := by
-  have h := re_trace_exp_add_le hH (cfc_predicate Real.log X : IsSelfAdjoint (cfc Real.log X))
+  have h := Matrix.IsHermitian.re_trace_exp_add_le hH
+    (cfc_predicate Real.log X : IsSelfAdjoint (cfc Real.log X))
   rwa [hX.exp_cfc_log] at h
 
 end NLAlib

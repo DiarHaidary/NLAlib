@@ -26,7 +26,7 @@ $\mathbb{P}(\varepsilon \le \lvert \|\mathbf{g}\|^2/d - 1 \rvert)
 \le 2 e^{-d(\varepsilon^2/4 - \varepsilon^3/6)}$ is the case of standard Gaussian coordinates of
 the sums-of-squares tail `NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun`.
 Laurent and Massart's upper tail is the sub-Gaussian-vector bound
-`NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le` at proxy $1$. The weighted Laplace transform
+`NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le` at proxy $1$. The weighted Laplace transform
 $\mathbb{E} \exp(\sum_i \theta_i \mathbf{g}_i^2)$ is the input of the projection tails of a
 uniform unit vector (`NLAlib/RandomMatrix/Haar/Sphere.lean`) and of the weighted squares of a
 sub-Gaussian vector (`NLAlib/Probability/SubGaussianVector/Norm.lean`).
@@ -37,11 +37,11 @@ sub-Gaussian vector (`NLAlib/Probability/SubGaussianVector/Norm.lean`).
   $\mathbb{E} \exp(\sum_i \theta_i \mathbf{g}_i^2) = \prod_i (1 - 2\theta_i)^{-1/2}$.
 * `NLAlib.integral_exp_mul_norm_sq_of_hasLaw_gaussianVector`:
   $\mathbb{E}\, e^{\theta \|\mathbf{g}\|^2} = (1 - 2\theta)^{-d/2}$.
-* `NLAlib.measureReal_mul_card_le_norm_sq_le_of_hasLaw_gaussianVector`: the upper Chernoff tail,
+* `NLAlib.measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector`: the upper Chernoff tail,
   $\beta \ge 1$.
 * `NLAlib.measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector`: the lower Chernoff tail,
   $0 < \beta \le 1$.
-* `NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector`:
+* `NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector`:
   $\mathbb{P}(\|\mathbf{g}\|^2 \le d - 2\sqrt{d t}) \le e^{-t}$.
 * `NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector`: the exact small
   ball $\mathbb{P}(\|\mathbf{g}\|^2 \le u) \le (u/2)^{d/2} / \Gamma(d/2 + 1)$.
@@ -149,11 +149,11 @@ $d = \lvert n \rvert$ and $\beta \ge 1$,
 $\mathbb{P}(\beta d \le \|\mathbf{g}\|^2) \le e^{(d/2)(1 - \beta + \log \beta)}$, Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. At every
 threshold it is at least as good as Laurent and Massart's upper tail, which stays in the library
-as the sub-Gaussian-vector bound `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le` at proxy $1$
+as the sub-Gaussian-vector bound `NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le` at proxy $1$
 (rule 6: that theorem is about every sub-Gaussian vector and keeps its form). The exponent of
 Dasgupta and Gupta (2003), there for the projection of a uniform unit vector.
 Result: chi-square-upper-tail -/
-theorem measureReal_mul_card_le_norm_sq_le_of_hasLaw_gaussianVector
+theorem measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ) (hβ : 1 ≤ β) :
     μ.real {ω | β * Fintype.card n ≤ ‖WithLp.toLp 2 (g ω)‖ ^ 2} ≤
       rexp (Fintype.card n / 2 * (1 - β + Real.log β)) := by
@@ -173,7 +173,7 @@ $d = \lvert n \rvert$ and $0 < \beta \le 1$,
 $\mathbb{P}(\|\mathbf{g}\|^2 \le \beta d) \le e^{(d/2)(1 - \beta + \log \beta)}$, Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. It dominates
 (CONTRIBUTING §5.2 rule 6) Laurent and Massart's
-`NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (at $\beta = 1 - 2\sqrt{t/d}$, with
+`NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector` (at $\beta = 1 - 2\sqrt{t/d}$, with
 $\log(1 - u) \le -u - u^2/2$), which is proved from it, and the small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector` (at $\beta = u/d$, after dropping
 the factor $e^{-u/2} \le 1$), which is proved from the sharper exact small ball
@@ -219,7 +219,7 @@ $d = 0$ the event is everything. A corollary of
 `NLAlib.measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector` at
 $\beta = 1 - 2\sqrt{t/d}$.
 Result: laurent-massart -/
-theorem measureReal_norm_sq_le_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
+theorem measureReal_norm_sq_le_le_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)
     (hn : 0 < Fintype.card n) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ Fintype.card n - 2 * √(Fintype.card n * t)} ≤
       rexp (-t) := by
@@ -331,8 +331,8 @@ A corollary of the exact small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector` by
 $\Gamma(x + 1) \ge (x/e)^x$ at $x = d/2$; it is also Chernoff's bound at $\beta = u/d$, after
 dropping the factor $e^{-u/2} \le 1$. It decays like $u^{d/2}$ as $u \to 0$, which
-`NLAlib.measureReal_norm_sq_le_of_hasLaw_gaussianVector` (better for thresholds near $d$) does not
-see; it is at least $1$ for $u \ge d$ and for $d = 0$.
+`NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector` (better for thresholds near $d$) does
+not see; it is at least $1$ for $u \ge d$ and for $d = 0$.
 Port of `NLAlib.measureReal_sum_sq_le_le_gaussianVector`, there for `Fin d`, $d \ge 1$ and
 $u \le d$. -/
 theorem measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector

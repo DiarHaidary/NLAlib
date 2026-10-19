@@ -41,7 +41,8 @@ matrices indexed by `Fin`. Existence is read off Mathlib's
 * `NLAlib.IsQR.isCholesky`: $\mathbf{R}^{\mathsf{H}}$ is the Cholesky factor of the Gram matrix.
 * `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`,
   `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal_nonneg`: the full factorization.
-* `NLAlib.isQR_submatrix_castLE`, `NLAlib.IsQR.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`:
+* `NLAlib.HasOrthonormalCols.isQR_submatrix_castLE`,
+  `NLAlib.IsQR.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`:
   from the full factorization to the thin one and back.
 -/
 
@@ -350,7 +351,7 @@ theorem exists_hasOrthonormalCols_mul_isUpperTrapezoidal_nonneg {m n : ℕ}
 
 /-- The thin factorization from the full one: for $n \le m$, the first $n$ columns of
 $\mathbf{Q}$ and the first $n$ rows of $\mathbf{R}$. Port of `NLAlib.IsFullQR.isQR_castLE`. -/
-theorem isQR_submatrix_castLE {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜}
+theorem HasOrthonormalCols.isQR_submatrix_castLE {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜}
     {Q : Matrix (Fin m) (Fin m) 𝕜} {R : Matrix (Fin m) (Fin n) 𝕜} (hQ : HasOrthonormalCols Q)
     (hR : IsUpperTrapezoidal R) (hA : A = Q * R) (h : n ≤ m) :
     IsQR A (Q.submatrix id (Fin.castLE h)) (R.submatrix (Fin.castLE h) id) := by
@@ -366,7 +367,8 @@ theorem isQR_submatrix_castLE {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜}
   exact hk ⟨⟨k, not_le.mp hkn⟩, Fin.ext rfl⟩
 
 /-- **A thin QR factorization extends to a full one**, the converse of
-`NLAlib.isQR_submatrix_castLE`: for a thin QR factorization $\mathbf{A} = \mathbf{Q}\mathbf{R}$
+`NLAlib.HasOrthonormalCols.isQR_submatrix_castLE`: for a thin QR factorization
+$\mathbf{A} = \mathbf{Q}\mathbf{R}$
 of an $m \times n$ matrix, $n \le m$, there are a square unitary $\mathbf{Q}'$ whose first $n$
 columns are $\mathbf{Q}$ and an upper trapezoidal $\mathbf{R}'$ whose first $n$ rows are
 $\mathbf{R}$ (the others vanish), with $\mathbf{A} = \mathbf{Q}'\mathbf{R}'$. -/
@@ -418,7 +420,7 @@ private theorem IsQR.exists_nonneg {A Q : Matrix m n 𝕜} {R : Matrix n n 𝕜}
 private theorem exists_isQR_fin {m n : ℕ} (A : Matrix (Fin m) (Fin n) 𝕜) (h : n ≤ m) :
     ∃ (Q : Matrix (Fin m) (Fin n) 𝕜) (R : Matrix (Fin n) (Fin n) 𝕜), IsQR A Q R := by
   obtain ⟨Q, R, hQ, hR, hA⟩ := exists_hasOrthonormalCols_mul_isUpperTrapezoidal A
-  exact ⟨_, _, isQR_submatrix_castLE hQ hR hA h⟩
+  exact ⟨_, _, HasOrthonormalCols.isQR_submatrix_castLE hQ hR hA h⟩
 
 /-- **Every matrix with at least as many rows as columns has a QR factorization**, with
 nonnegative diagonal: if $\lvert n \rvert \le \lvert m \rvert$, then

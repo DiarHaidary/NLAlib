@@ -163,7 +163,8 @@ theorem hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix [LinearOrder k] [LocallyFin
   have : IsProbabilityMeasure ((gaussianMatrix n k).map gramSchmidtQ) :=
     Measure.isProbabilityMeasure_map measurable_gramSchmidtQ.aemeasurable
   have : IsLeftUnitarilyInvariant ((gaussianMatrix n k).map gramSchmidtQ) :=
-    isLeftUnitarilyInvariant_map measurable_gramSchmidtQ fun _ hU x => gramSchmidtQ_mul_left hU x
+    isLeftUnitarilyInvariant_map measurable_gramSchmidtQ fun _ hU x =>
+      HasOrthonormalCols.gramSchmidtQ_mul_left hU x
   refine hasLaw_haarFrame_of_isLeftUnitarilyInvariant
     (HasLaw.fun_comp (Y := gramSchmidtQ) ⟨measurable_gramSchmidtQ.aemeasurable, rfl⟩ hG) ?_
   filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hG] with ω hω
@@ -188,7 +189,7 @@ theorem hasLaw_polarFactor_of_isLeftUnitarilyInvariant [DecidableEq n] [Decidabl
   have : IsProbabilityMeasure (ν.map polarFactor) :=
     Measure.isProbabilityMeasure_map hm.aemeasurable
   have : IsLeftUnitarilyInvariant (ν.map polarFactor) :=
-    isLeftUnitarilyInvariant_map hm fun _ hU x => polarFactor_mul_left hU x
+    isLeftUnitarilyInvariant_map hm fun _ hU x => HasOrthonormalCols.polarFactor_mul_left hU x
   refine hasLaw_haarFrame_of_isLeftUnitarilyInvariant
     (HasLaw.fun_comp (Y := polarFactor) ⟨hm.aemeasurable, rfl⟩ hX) ?_
   filter_upwards [hXr] with ω hω

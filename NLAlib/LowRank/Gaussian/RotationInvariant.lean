@@ -57,7 +57,7 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant`: the
   truncated output.
 * the Gram-form tail (TW Theorem 8.1 (RSVD1)), in the `NLAlib.SymmetricGauge` namespace:
-  `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant`.
+  `measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant`.
 * Epperly and Webber's sharp bounds, with a rank parameter $r \ge \operatorname{rank}$ and the
   factor <!-- value rotationInvariantFactor r \ell q -->
   $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$:
@@ -80,7 +80,7 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   `ae_nystrom_eq_self_of_isLeftUnitarilyInvariant`; in the
   `NLAlib.SymmetricGauge` namespace,
   `integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant` and
-  `measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant`.
+  `measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant`.
 * the asymptotic forms, $O(k/\varepsilon)$ samples for relative error $1 + \varepsilon$, of
   `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant` and of the two Nyström
   trace bounds: `NLAlib.exists_forall_` followed by their names (without `Matrix.PosSemidef`).
@@ -236,24 +236,24 @@ $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 outside probability <!-- value gaussianPinvFrobTail k d t -->
 $e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
 matrix (in this namespace,
-`measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`).
+`measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and Schatten norms
 $p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$, which the library's is below.
 Result: randomized-svd-tail -/
-theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant
+theorem measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant
     (Φ : SymmetricGauge) (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
     (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω))) ≤
-        Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
-          Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
+    μ.real {ω | Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
+        Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2 <
+        Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
   have hg : Measurable fun P : Matrix m m ℝ => Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) :=
     Φ.measurable_matrixNorm.comp ((Measurable.matrix_conjTranspose continuous_star.measurable
       (measurable_sub_mul A)).matrix_mul (measurable_sub_mul A))
-  refine (measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
+  refine (measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => Φ.matrixNorm ((A - rsvd A Ω)ᴴ * (A - rsvd A Ω))) hg (fun _ => rfl) _).trans_le ?_
-  exact measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix Φ
+  exact measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix Φ
     A HasLaw.id hd u ht
 
 end SymmetricGauge
@@ -457,24 +457,24 @@ $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
 outside probability <!-- value gaussianPinvFrobTail k d t -->
 $e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
 matrix (in this namespace,
-`measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`).
+`measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Gaussian test matrices and Schatten norms,
 with a larger second failure term.
 Result: randomized-nystrom-tail -/
-theorem measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant
+theorem measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant
     (Φ : SymmetricGauge) {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
     (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ Φ.matrixNorm (H - nystrom H (X ω)) ≤
-        Φ.matrixNorm (H - truncatedSVD H k) +
-          Φ (Finsupp.single 0 1) * (u * t * k / d) * nuclearNorm (H - truncatedSVD H k)} ≤
+    μ.real {ω | Φ.matrixNorm (H - truncatedSVD H k) + Φ (Finsupp.single 0 1) * (u * t * k / d) *
+        nuclearNorm (H - truncatedSVD H k) <
+        Φ.matrixNorm (H - nystrom H (X ω))} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
   obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
   simp only [Matrix.star_eq_conjTranspose, conjTranspose_mul_self_sub_nystrom,
     Φ.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
   exact
-    Φ.measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant
+    Φ.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant
       F hX hXr hd u ht
 
 end SymmetricGauge

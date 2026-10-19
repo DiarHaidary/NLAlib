@@ -15,13 +15,13 @@ The deviation of Hutch++ (`NLAlib.hutchpp`) with residual probes that have indep
 sub-Gaussian entries. The primary theorem takes the range-finder guarantee as a hypothesis: if
 $\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{S})\|_{\mathsf{F}}^2 \le
 K\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2$ fails with probability at most
-$\delta_1$, the Girard–Hutchinson tail (`NLAlib.measureReal_abs_girardHutchinson_sub_trace_ge_le`,
+$\delta_1$, the Girard–Hutchinson tail (`NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le`,
 from Hanson–Wright) on the compressed residual, conditionally on the sketch, adds a sub-exponential
 term. The sub-Gaussian range finder
 (`NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`) and the nuclear-norm
 tail bound (`NLAlib.frobNorm_sub_truncatedSVD_le_nuclearNorm_div`) turn it into the relative-error
 guarantee of Meyer, Musco, Musco and Woodruff: $O(\sqrt{\log(1/\delta)}/\varepsilon +
-\log(1/\delta))$ products give $\lvert \mathsf{hutchpp} - \operatorname{tr}\mathbf{A} \rvert \le
+\log(1/\delta))$ products give $\lvert \operatorname{tr}\mathbf{A} - \mathsf{hutchpp} \rvert \le
 \varepsilon\|\mathbf{A}\|_*$ with probability $1 - \delta$. Real throughout. The constants are
 explicit: the range-finder factor <!-- value subgaussianRangeFinderFactor c -->$1 + 10c$
 replaces MMMW's $2$ (their route through Musco and Musco is not in the library), and the
@@ -30,15 +30,15 @@ Hanson–Wright constant is <!-- value hansonWrightConstant -->$1/196$. Design:
 
 ## Main results
 
-* `NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le`: the tail given a range-finder guarantee.
-* `NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector`,
-  `NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_hasLaw_gaussianMatrix`: sub-Gaussian and
+* `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le`: the tail given a range-finder guarantee.
+* `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector`,
+  `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix`: sub-Gaussian and
   Gaussian sketches.
-* `NLAlib.measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`: the
+* `NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector`: the
   relative error in the nuclear norm, and its asymptotic form
-  `exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`.
+  `exists_forall_measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector`.
 * `Matrix.PosSemidef.measureReal_hutchpp_lt_one_sub_mul_trace_le_of_isSubgaussianVector`,
-  `Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector`: the two
+  `Matrix.PosSemidef.measureReal_hutchpp_gt_one_add_mul_trace_le_of_isSubgaussianVector`: the two
   one-sided $(1 \pm \varepsilon)$ bounds for positive semidefinite matrices.
 -/
 
@@ -63,35 +63,36 @@ $\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{S})\|_{\mathsf{F}}^2 \le
 K\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2$ fails with probability at most
 $\delta_1$, then for every real square $\mathbf{A}$ and every $\tau \ge 0$, with
 $\mathbf{E}_r = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_r$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl[\lvert \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) -
-\operatorname{tr}\mathbf{A} \rvert \ge \tau\bigr] \le \delta_1 + 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
-\frac{\ell\tau^2}{c^2 K\|\mathbf{E}_r\|_{\mathsf{F}}^2},
+$$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert \ge \tau\bigr] \le \delta_1 +
+2\exp\Bigl(-\frac{1}{196}\min\Bigl( \frac{\ell\tau^2}{c^2 K\|\mathbf{E}_r\|_{\mathsf{F}}^2},
 \frac{\ell\tau}{c\sqrt{K}\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
 the constant is `hansonWrightConstant`. On the range-finder event the compressed residual has
 Frobenius (hence spectral) norm at most $\sqrt{K}\|\mathbf{E}_r\|_{\mathsf{F}}$; conditionally on
 $\mathbf{S}$ the Girard–Hutchinson tail applies
-(`NLAlib.measureReal_abs_girardHutchinson_sub_trace_ge_le`), and
+(`NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le`), and
 `ProbabilityTheory.IndepFun.measureReal_mem_le_add` integrates it over the sketch. A zero
 denominator makes its fraction $0$, and the bound is then at least $2$; in particular, when
 $\|\mathbf{E}_r\|_{\mathsf{F}} = 0$ the bound says nothing, and that case is handled through
 exactness of Hutch++ on the range-finder event instead. Instances:
-`NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector`,
-`NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_hasLaw_gaussianMatrix`.
+`NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector`,
+`NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix`.
 [MeyerMuscoMuscoWoodruff2021, Theorem 4 and Lemma 2]; there for positive semidefinite
 $\mathbf{A}$ with $\|\mathbf{\Delta}\|_{\mathsf{F}} \le 2\|\mathbf{E}_r\|_{\mathsf{F}}$ given,
 unspecified constants and a sample-size form.
 Result: hutchpp-tail -/
-theorem measureReal_abs_hutchpp_sub_trace_ge_le (A : Matrix n n ℝ) {S : Ω → Matrix n s ℝ}
+theorem measureReal_abs_trace_sub_hutchpp_ge_le (A : Matrix n n ℝ) {S : Ω → Matrix n s ℝ}
     {G : Ω → Matrix n t ℝ} {c : ℝ≥0} (hS : AEMeasurable S μ) (hSG : IndepFun S G μ)
     (hGind : iIndepFun (fun p : n × t => fun ω => G ω p.1 p.2) μ)
     (hGsub : ∀ i j, HasSubgaussianMGF (fun ω => G ω i j) c μ)
     (hGvar : ∀ i j, ∫ ω, G ω i j ^ 2 ∂μ = 1) {r : ℕ} {K δ₁ : ℝ}
     (hRF : μ.real {ω | K * frobNorm (A - truncatedSVD A r) ^ 2 <
       frobNorm (A - rsvd A (S ω)) ^ 2} ≤ δ₁) {τ : ℝ} (hτ : 0 ≤ τ) :
-    μ.real {ω | τ ≤ |hutchpp A (S ω) (G ω) - A.trace|} ≤
+    μ.real {ω | τ ≤ |A.trace - hutchpp A (S ω) (G ω)|} ≤
       δ₁ + 2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card t * τ ^ 2 / ((c : ℝ) ^ 2 * K * frobNorm (A - truncatedSVD A r) ^ 2))
           (Fintype.card t * τ / ((c : ℝ) * √K * frobNorm (A - truncatedSVD A r))))) := by
+  simp only [abs_sub_comm A.trace]
   classical
   have := hGind.isProbabilityMeasure
   set F := frobNorm (A - truncatedSVD A r) with hF
@@ -125,7 +126,7 @@ theorem measureReal_abs_hutchpp_sub_trace_ge_le (A : Matrix n n ℝ) {S : Ω →
         {ω | τ ≤ |girardHutchinson Δ (G ω) - Δ.trace|} := by
       ext ω
       simp only [hEdef, Set.mem_ofPred_eq]
-      rw [hutchpp_sub_trace]
+      rw [abs_sub_comm, trace_sub_hutchpp, abs_sub_comm]
     rw [hset]
     by_cases hΔ0 : Δ = 0
     · have hempty : {ω | τ ≤ |girardHutchinson Δ (G ω) - Δ.trace|} = ∅ := by
@@ -133,7 +134,8 @@ theorem measureReal_abs_hutchpp_sub_trace_ge_le (A : Matrix n n ℝ) {S : Ω →
         simp [hΔ0, girardHutchinson, not_le.2 hτ0]
       rw [hempty, measureReal_empty]
       exact hb0
-    refine (measureReal_abs_girardHutchinson_sub_trace_ge_le hGind hGsub hGvar Δ hτ).trans ?_
+    refine (le_of_eq_of_le (by simp only [abs_sub_comm])
+      (measureReal_abs_trace_sub_girardHutchinson_ge_le hGind hGsub hGvar Δ hτ)).trans ?_
     rw [hb]
     gcongr 2 * Real.exp (-(hansonWrightConstant * ?_))
     · exact hansonWrightConstant_pos.le
@@ -178,19 +180,20 @@ $\lvert s \rvert \ge 4 c^2 (r \log 9 + \log(2/(\delta/2)))/(C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/64$, then for every real square $\mathbf{A}$ and
 every $\tau \ge 0$, with $\mathbf{E}_r = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_r$, we
 get <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl[\lvert \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) -
-\operatorname{tr}\mathbf{A} \rvert \ge \tau\bigr] \le \delta + 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
+$$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert \ge \tau\bigr] \le \delta +
+2\exp\Bigl(-\frac{1}{196}\min\Bigl(
 \frac{\ell\tau^2}{c'^2 (1 + 10c)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
 \frac{\ell\tau}{c'\sqrt{1 + 10c}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
 the size is `subgaussianEmbeddingDim c r (1 / 2) (δ / 2)`, $C$ is `subgaussianJLConstant`, the
 factor is `subgaussianRangeFinderFactor c` and the constant in the exponent is
-`hansonWrightConstant`. `NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le` with the range finder
+`hansonWrightConstant`. `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le` with the range finder
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`. Sign sketches and
 residual probes are the case $c = c' = 1$.
 [MeyerMuscoMuscoWoodruff2021, Theorem 4 and §3, proof of Theorem 1]; there with sign test
 matrices, the factor $2$ and unspecified constants.
 Result: hutchpp-tail -/
-theorem measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector [Nonempty s]
+theorem measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector [Nonempty s]
     (A : Matrix n n ℝ) {S : Ω → Matrix n s ℝ} {G : Ω → Matrix n t ℝ} {c c' : ℝ≥0}
     (hSind : iIndepFun (fun i ω => (S ω)ᴴ i) μ)
     (hSsub : ∀ i, IsSubgaussianVector (fun ω => (S ω)ᴴ i) c μ)
@@ -200,7 +203,7 @@ theorem measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector [Nonempty
     (hGvar : ∀ i j, ∫ ω, G ω i j ^ 2 ∂μ = 1) (hSG : IndepFun S G μ) {r : ℕ} {δ : ℝ}
     (hδ : 0 < δ) (hs : subgaussianEmbeddingDim c r (1 / 2) (δ / 2) ≤ Fintype.card s) {τ : ℝ}
     (hτ : 0 ≤ τ) :
-    μ.real {ω | τ ≤ |hutchpp A (S ω) (G ω) - A.trace|} ≤
+    μ.real {ω | τ ≤ |A.trace - hutchpp A (S ω) (G ω)|} ≤
       δ + 2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card t * τ ^ 2 / ((c' : ℝ) ^ 2 * subgaussianRangeFinderFactor c *
             frobNorm (A - truncatedSVD A r) ^ 2))
@@ -210,7 +213,7 @@ theorem measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector [Nonempty
   have hS : AEMeasurable S μ := aemeasurable_pi_lambda _ fun j => aemeasurable_pi_lambda _ fun i =>
     by simpa [Matrix.conjTranspose_apply] using
       ((hSiso i).memLp j).aestronglyMeasurable.aemeasurable
-  exact measureReal_abs_hutchpp_sub_trace_ge_le A hS hSG hGind hGsub hGvar
+  exact measureReal_abs_trace_sub_hutchpp_ge_le A hS hSG hGind hGsub hGvar
     (measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector A hSind hSsub hSiso hδ hs) hτ
 
 /-- **The deviation of Gaussian Hutch++.** Let the $n \times \lvert s \rvert$ sketch test matrix
@@ -222,29 +225,30 @@ with <!-- value subgaussianJLConstant -->$C = 1/64$, that is
 $\lvert s \rvert \ge 1024(r \log 9 + \log(4/\delta))$, then for every real square $\mathbf{A}$
 and every $\tau \ge 0$, with $\mathbf{E}_r = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_r$, we
 get <!-- value subgaussianRangeFinderFactor {\cdot 1} --> <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl[\lvert \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) -
-\operatorname{tr}\mathbf{A} \rvert \ge \tau\bigr] \le \delta + 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
+$$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert \ge \tau\bigr] \le \delta +
+2\exp\Bigl(-\frac{1}{196}\min\Bigl(
 \frac{\ell\tau^2}{(1 + 10\cdot 1)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
 \frac{\ell\tau}{\sqrt{1 + 10\cdot 1}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
 the size is `subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2)`, $C$ is `subgaussianJLConstant`, the
 factor is `subgaussianRangeFinderFactor 1` and the constant in the exponent is
 `hansonWrightConstant`. The case $c = c' = 1$ of
-`NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector`: the range-finder step goes
+`NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector`: the range-finder step goes
 through the sub-Gaussian range finder
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector` at $c = 1$, with the
 factor $11$ and the size $1024(r \log 9 + \log(4/\delta))$. This is weaker than the Gaussian
-range-finder tail `NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`
+range-finder tail `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`
 (`NLAlib/LowRank/Gaussian/RangeFinderTail.lean`), whose factor $1 + utr/d$ is reached at the size
-$\lvert s \rvert = r + d - 1$; the generic `NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le`
+$\lvert s \rvert = r + d - 1$; the generic `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le`
 takes that tail as its range-finder hypothesis directly.
 [MeyerMuscoMuscoWoodruff2021, Theorem 4 and §5, Algorithm 3]; there with unspecified constants.
 Result: hutchpp-tail -/
-theorem measureReal_abs_hutchpp_sub_trace_ge_le_of_hasLaw_gaussianMatrix [Nonempty s]
+theorem measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix [Nonempty s]
     (A : Matrix n n ℝ) {S : Ω → Matrix n s ℝ} {G : Ω → Matrix n t ℝ}
     (hS : HasLaw S (gaussianMatrix n s) μ) (hG : HasLaw G (gaussianMatrix n t) μ)
     (hSG : IndepFun S G μ) {r : ℕ} {δ : ℝ} (hδ : 0 < δ)
     (hs : subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ Fintype.card s) {τ : ℝ} (hτ : 0 ≤ τ) :
-    μ.real {ω | τ ≤ |hutchpp A (S ω) (G ω) - A.trace|} ≤
+    μ.real {ω | τ ≤ |A.trace - hutchpp A (S ω) (G ω)|} ≤
       δ + 2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card t * τ ^ 2 / (subgaussianRangeFinderFactor 1 *
             frobNorm (A - truncatedSVD A r) ^ 2))
@@ -253,7 +257,7 @@ theorem measureReal_abs_hutchpp_sub_trace_ge_le_of_hasLaw_gaussianMatrix [Nonemp
   classical
   have hSt := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
   have hGu := hasLaw_uncurry_of_hasLaw_gaussianMatrix hG
-  have h := measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector A (c := 1) (c' := 1)
+  have h := measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector A (c := 1) (c' := 1)
     hSt.iIndepFun_eval (fun i => isSubgaussianVector_of_hasLaw_gaussianVector (hSt.eval i))
     (fun i => isIsotropic_of_hasLaw_gaussianVector (hSt.eval i)) hGu.iIndepFun_eval
     (fun i j => hasSubgaussianMGF_of_hasLaw_gaussianReal (hGu.eval (i, j)))
@@ -274,24 +278,25 @@ and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstan
 $$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
 \log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,,$$
 then for every real square $\mathbf{A}$
-$$\mathbb{P}\bigl[\lvert \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) -
-\operatorname{tr}\mathbf{A} \rvert > \varepsilon\|\mathbf{A}\|_*\bigr] \le \delta\,;$$
+$$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert > \varepsilon\|\mathbf{A}\|_*\bigr] \le
+\delta\,;$$
 the size is `subgaussianEmbeddingDim c r (1 / 2) (δ / 4)`, $C$ is `subgaussianJLConstant`, the
 factor is `subgaussianRangeFinderFactor c` and $1/196$ is `hansonWrightConstant`. From
-`NLAlib.measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector` at $\delta/2$ and
+`NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector` at $\delta/2$ and
 $\tau = \varepsilon\|\mathbf{A}\|_*$, with
 $\|\mathbf{E}_r\|_{\mathsf{F}} \le \|\mathbf{A}\|_*/(2\sqrt{r})$
 (`NLAlib.frobNorm_sub_truncatedSVD_le_nuclearNorm_div`); when
 $\|\mathbf{E}_r\|_{\mathsf{F}} = 0$ that tail says nothing, and instead the randomized SVD
 recovers $\mathbf{A}$ outside probability $\delta/2$, where Hutch++ is exact. Asymptotic form:
-`exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`. The
+`exists_forall_measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector`. The
 positive semidefinite forms are
 `Matrix.PosSemidef.measureReal_hutchpp_lt_one_sub_mul_trace_le_of_isSubgaussianVector` and
-`Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector`.
+`Matrix.PosSemidef.measureReal_hutchpp_gt_one_add_mul_trace_le_of_isSubgaussianVector`.
 [MeyerMuscoMuscoWoodruff2021, Theorem 5]; there with sign test matrices and
 $m = O(\sqrt{\log(1/\delta)}/\varepsilon + \log(1/\delta))$, constants unspecified.
 Result: hutchpp-relative-error -/
-theorem measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector
+theorem measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector
     [Nonempty s] (A : Matrix n n ℝ) {S : Ω → Matrix n s ℝ} {G : Ω → Matrix n t ℝ} {c c' : ℝ≥0}
     (hSind : iIndepFun (fun i ω => (S ω)ᴴ i) μ)
     (hSsub : ∀ i, IsSubgaussianVector (fun ω => (S ω)ᴴ i) c μ)
@@ -305,7 +310,7 @@ theorem measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussian
       (4 * Fintype.card t * r * ε ^ 2 / ((c' : ℝ) ^ 2 * subgaussianRangeFinderFactor c)))
     (ht₂ : Real.log (4 / δ) ≤ hansonWrightConstant *
       (2 * Fintype.card t * √(r : ℝ) * ε / ((c' : ℝ) * √(subgaussianRangeFinderFactor c)))) :
-    μ.real {ω | ε * nuclearNorm A < |hutchpp A (S ω) (G ω) - A.trace|} ≤ δ := by
+    μ.real {ω | ε * nuclearNorm A < |A.trace - hutchpp A (S ω) (G ω)|} ≤ δ := by
   classical
   have := hSind.isProbabilityMeasure
   rcases le_or_gt 1 δ with hδ1 | hδ1
@@ -346,7 +351,7 @@ theorem measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussian
   have hK0 : 0 < K := by linarith
   have hsK : 0 < √K := Real.sqrt_pos.2 hK0
   have hL0 : 0 ≤ L := Nat.cast_nonneg _
-  have h := measureReal_abs_hutchpp_sub_trace_ge_le_of_isSubgaussianVector A hSind hSsub hSiso
+  have h := measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector A hSind hSsub hSiso
     hGind hGsub hGvar hSG (half_pos hδ) hs' (τ := ε * N) (mul_nonneg hε.le (nuclearNorm_nonneg A))
   have h4 : 4 * r * F ^ 2 ≤ N ^ 2 := by
     have h2 := pow_le_pow_left₀ (mul_nonneg (mul_pos two_pos hr0).le hF0.le) hFN 2
@@ -377,15 +382,15 @@ theorem measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussian
         rw [Real.exp_neg, Real.exp_log (div_pos four_pos hδ)]
         field_simp
         norm_num
-  calc μ.real {ω | ε * N < |hutchpp A (S ω) (G ω) - A.trace|}
-      ≤ μ.real {ω | ε * N ≤ |hutchpp A (S ω) (G ω) - A.trace|} :=
+  calc μ.real {ω | ε * N < |A.trace - hutchpp A (S ω) (G ω)|}
+      ≤ μ.real {ω | ε * N ≤ |A.trace - hutchpp A (S ω) (G ω)|} :=
         measureReal_mono fun ω (hω : ε * N < _) => (le_of_lt hω : ε * N ≤ _)
     _ ≤ δ / 2 + δ / 2 := h.trans (by linarith)
     _ = δ := add_halves δ
 
 /-- **Hutch++ does not underestimate a positive semidefinite trace by a factor $1 - \varepsilon$.**
 With the hypotheses of
-`NLAlib.measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`:
+`NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector`:
 the sketch $\mathbf{S}^{\mathsf{H}}$, $\lvert s \rvert \ge 1$, has independent, isotropic,
 sub-Gaussian rows with proxy $c$; the $n \times \ell$ residual test matrix $\mathbf{G}$ is
 independent of $\mathbf{S}$ with independent entries, sub-Gaussian with variance proxy $c'$ and of
@@ -402,7 +407,7 @@ $$\mathbb{P}\bigl[\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) <
 since $\|\mathbf{A}\|_* = \operatorname{tr}\mathbf{A}$; the size is
 `subgaussianEmbeddingDim c r (1 / 2) (δ / 4)`, $C$ is `subgaussianJLConstant`, the factor is
 `subgaussianRangeFinderFactor c` and $1/196$ is `hansonWrightConstant`. The upper half is
-`Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector`.
+`Matrix.PosSemidef.measureReal_hutchpp_gt_one_add_mul_trace_le_of_isSubgaussianVector`.
 [MeyerMuscoMuscoWoodruff2021, Theorem 1]; there both halves together, with sign test matrices and
 unspecified constants.
 Result: hutchpp-relative-error -/
@@ -425,15 +430,14 @@ theorem _root_.Matrix.PosSemidef.measureReal_hutchpp_lt_one_sub_mul_trace_le_of_
   have hN : nuclearNorm A = A.trace := by
     rw [hA.nuclearNorm_eq_re_trace, RCLike.re_to_real]
   refine (measureReal_mono fun ω hω => ?_).trans
-    (measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector A hSind hSsub
+    (measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector A hSind hSsub
       hSiso hGind hGsub hGvar hSG hr hε hδ hs ht₁ ht₂)
   simp only [Set.mem_ofPred_eq, hN] at hω ⊢
-  rw [abs_sub_comm]
   exact lt_of_lt_of_le (by linarith) (le_abs_self _)
 
 /-- **Hutch++ does not overestimate a positive semidefinite trace by a factor $1 + \varepsilon$.**
 With the hypotheses of
-`NLAlib.measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`:
+`NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector`:
 the sketch $\mathbf{S}^{\mathsf{H}}$, $\lvert s \rvert \ge 1$, has independent, isotropic,
 sub-Gaussian rows with proxy $c$; the $n \times \ell$ residual test matrix $\mathbf{G}$ is
 independent of $\mathbf{S}$ with independent entries, sub-Gaussian with variance proxy $c'$ and of
@@ -453,7 +457,7 @@ is `Matrix.PosSemidef.measureReal_hutchpp_lt_one_sub_mul_trace_le_of_isSubgaussi
 [MeyerMuscoMuscoWoodruff2021, Theorem 1]; there both halves together, with sign test matrices and
 unspecified constants.
 Result: hutchpp-relative-error -/
-theorem _root_.Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_isSubgaussianVector
+theorem _root_.Matrix.PosSemidef.measureReal_hutchpp_gt_one_add_mul_trace_le_of_isSubgaussianVector
     [Nonempty s] {A : Matrix n n ℝ} (hA : A.PosSemidef) {S : Ω → Matrix n s ℝ}
     {G : Ω → Matrix n t ℝ} {c c' : ℝ≥0} (hSind : iIndepFun (fun i ω => (S ω)ᴴ i) μ)
     (hSsub : ∀ i, IsSubgaussianVector (fun ω => (S ω)ᴴ i) c μ)
@@ -472,9 +476,10 @@ theorem _root_.Matrix.PosSemidef.measureReal_one_add_mul_trace_lt_hutchpp_le_of_
   have hN : nuclearNorm A = A.trace := by
     rw [hA.nuclearNorm_eq_re_trace, RCLike.re_to_real]
   refine (measureReal_mono fun ω hω => ?_).trans
-    (measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector A hSind hSsub
+    (measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector A hSind hSsub
       hSiso hGind hGsub hGvar hSG hr hε hδ hs ht₁ ht₂)
   simp only [Set.mem_ofPred_eq, hN] at hω ⊢
+  rw [abs_sub_comm]
   exact lt_of_lt_of_le (by linarith) (le_abs_self _)
 
 /-! ### Arithmetic for the asymptotic form -/
@@ -586,18 +591,19 @@ $1$, $\varepsilon > 0$, $0 < \delta \le 1/2$ and both
 $\lvert s \rvert$ and $\lvert t \rvert$ are at least
 $Cc^4(\sqrt{\log(1/\delta)}/\varepsilon + \log(1/\delta))$, then for every real square
 $\mathbf{A}$
-$$\mathbb{P}\bigl[\lvert \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) -
-\operatorname{tr}\mathbf{A} \rvert > \varepsilon\|\mathbf{A}\|_*\bigr] \le \delta\,,$$
-with $m = 2\lvert s \rvert + \lvert t \rvert$ products in all. The asymptotic form of
-`NLAlib.measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector`, at
+$$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert > \varepsilon\|\mathbf{A}\|_*\bigr] \le
+\delta\,,$$ with $m = 2\lvert s \rvert + \lvert t \rvert$ products in all. The asymptotic form of
+`NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector`, at
 $r = \lfloor \lvert s \rvert/(4608c^2) \rfloor$; the proxy stays in the threshold, and isotropy
 forces $c \ge 1$. No cap on $\varepsilon$ is needed: with $L = \log(1/\delta)$, the residual
 size gives $\ell\varepsilon \ge Cc^4\sqrt{L}$ and the sketch size $r\varepsilon \gtrsim c^2\sqrt{L}$
 and $r \gtrsim c^2 L$, which cover both Hanson–Wright conditions.
 [MeyerMuscoMuscoWoodruff2021, Theorem 5 and Theorem 1]; there with sign test matrices ($c = 1$).
-Asymptotic: NLAlib.measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector
+Asymptotic: NLAlib.measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector
 Result: hutchpp-relative-error -/
-theorem exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector :
+theorem exists_forall_measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector
+    :
     ∃ C : ℝ, 0 < C ∧ ∀ {Ω n s t : Type} [MeasurableSpace Ω] [Fintype n]
       [Fintype s] [Fintype t] [DecidableEq n] [Nonempty s] (μ : Measure Ω) (A : Matrix n n ℝ)
       (S : Ω → Matrix n s ℝ) (G : Ω → Matrix n t ℝ) (c : ℝ≥0) (ε δ : ℝ),
@@ -608,14 +614,14 @@ theorem exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of
       IndepFun S G μ → 0 < ε → 0 < δ → δ ≤ 1 / 2 →
       C * ((c : ℝ) ^ 4 * (√(Real.log (1 / δ)) / ε + Real.log (1 / δ))) ≤ Fintype.card s →
       C * ((c : ℝ) ^ 4 * (√(Real.log (1 / δ)) / ε + Real.log (1 / δ))) ≤ Fintype.card t →
-      μ.real {ω | ε * nuclearNorm A < |hutchpp A (S ω) (G ω) - A.trace|} ≤ δ := by
+      μ.real {ω | ε * nuclearNorm A < |A.trace - hutchpp A (S ω) (G ω)|} ≤ δ := by
   refine ⟨20000, by norm_num, ?_⟩
   intro Ω n s t _ _ _ _ _ _ μ A S G c ε δ hSind hSsub hSiso hGind hGsub hGvar hSG hε hδ hδ2 hs ht
   classical
   have := hSind.isProbabilityMeasure
   rcases isEmpty_or_nonempty n with hn | hn
   · -- with `n` empty the error is `0` and the event is empty
-    have hset : {ω | ε * nuclearNorm A < |hutchpp A (S ω) (G ω) - A.trace|} = ∅ := by
+    have hset : {ω | ε * nuclearNorm A < |A.trace - hutchpp A (S ω) (G ω)|} = ∅ := by
       ext ω
       simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_lt]
       rw [hutchpp_eq_trace_of_rsvd_eq (Subsingleton.elim _ _), sub_self, abs_zero]
@@ -687,7 +693,7 @@ theorem exists_forall_measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of
     (asymptotic_hansonWright₁ hγ1 hK0 hK11 hLg0.le hu2 hu0 hε hℓ0 hr0' hℓu hrε)
   have ht₂ := hlog4.trans
     (asymptotic_hansonWright₂ hγ1 hK0 hK11 hLg0.le hu2 hu0 hε hℓ0 hr0' hℓu hrL)
-  exact measureReal_mul_nuclearNorm_lt_abs_hutchpp_sub_trace_le_of_isSubgaussianVector A hSind
+  exact measureReal_abs_trace_sub_hutchpp_gt_mul_nuclearNorm_le_of_isSubgaussianVector A hSind
     hSsub hSiso hGind hGsub hGvar hSG hr0 hε hδ hs' ht₁ ht₂
 
 end NLAlib

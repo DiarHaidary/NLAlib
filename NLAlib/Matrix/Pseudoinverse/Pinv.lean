@@ -147,9 +147,9 @@ theorem conjTranspose_mul_mul_pinv (A : Matrix m n 𝕜) : Aᴴ * (A * pinv A) =
   rw [mul_pinv, conjTranspose_mul_rangeProjector]
 
 /-- The column space of $\mathbf{A}^{+}$ is the column space of $\mathbf{A}^{\mathsf{H}}$. -/
-theorem range_mulVecLin_pinv (A : Matrix m n 𝕜) :
+theorem range_pinv (A : Matrix m n 𝕜) :
     LinearMap.range (pinv A).mulVecLin = LinearMap.range Aᴴ.mulVecLin := by
-  exact (isPinv_pinv A).range_mulVecLin_eq
+  exact (isPinv_pinv A).range_eq
 
 /-- The pseudoinverse has the rank of the matrix:
 $\operatorname{rank} \mathbf{A}^{+} = \operatorname{rank} \mathbf{A}$. -/

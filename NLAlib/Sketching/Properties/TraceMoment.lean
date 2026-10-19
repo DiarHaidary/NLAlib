@@ -31,7 +31,7 @@ hold. Design: `docs/design/Sketching-S1.md` §3.7.
 
 ## Main results
 
-* `NLAlib.HasGramTraceMoment.measure_specNorm_ge_le`: the Markov step.
+* `NLAlib.HasGramTraceMoment.measureReal_specNorm_ge_le`: the Markov step.
 * `NLAlib.HasGramTraceMoment.hasSubspaceEmbedding`.
 * `NLAlib.isObliviousSubspaceEmbedding_of_hasGramTraceMoment`.
 -/
@@ -83,7 +83,7 @@ $$\mathbb{P}\bigl(\varepsilon \le \|(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S
 \mathbf{I}\|_2\bigr) \le \frac{B}{\varepsilon^{2q}}\,,$$
 from $\|\mathbf{E}\|_2^{2q} \le \operatorname{Re}\operatorname{tr}\mathbf{E}^{2q}$.
 [Woodruff2014, proof of Theorem 9]. -/
-theorem HasGramTraceMoment.measure_specNorm_ge_le [IsFiniteMeasure μ]
+theorem HasGramTraceMoment.measureReal_specNorm_ge_le [IsFiniteMeasure μ]
     (h : HasGramTraceMoment S U q B μ) (hε : 0 < ε) :
     μ.real {ω | ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)} ≤ B / ε ^ (2 * q) := by
   rcases Nat.eq_zero_or_pos q with rfl | hq
@@ -124,7 +124,7 @@ probability $B / \varepsilon^{2q}$. -/
 theorem HasGramTraceMoment.hasSubspaceEmbedding [IsFiniteMeasure μ]
     (h : HasGramTraceMoment S U q B μ) (hU : HasOrthonormalCols U) (hε : 0 < ε) :
     HasSubspaceEmbedding S U (1 - ε) (1 + ε) (B / ε ^ (2 * q)) μ := by
-  exact hU.hasSubspaceEmbedding_of_measureReal_le (h.measure_specNorm_ge_le hε)
+  exact hU.hasSubspaceEmbedding_of_measureReal_le (h.measureReal_specNorm_ge_le hε)
 
 /-- **OSE from trace moments**: for $\lvert p \rvert \le \lvert n \rvert$, a trace-moment bound for
 every $\mathbf{U} \in \Bbbk^{n \times p}$ with orthonormal columns makes $\mathbf{S}$ an OSE for

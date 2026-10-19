@@ -21,9 +21,8 @@ $\mathbf{A}\mathbf{X} = \mathbf{B}$; here $\mathbf{X} = \mathbf{A}^{+}\mathbf{B}
 ## Main results
 
 * `NLAlib.posSemidef_fromBlocks_iff_pinv`: Albert's criterion.
-* `NLAlib.isLeast_re_quadForm_fromBlocks`: the generalized Schur complement is the partial
-  minimum of the quadratic form.
--/
+* `Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks`: the generalized Schur complement is the
+  partial minimum of the quadratic form. -/
 
 @[expose] public section
 
@@ -45,11 +44,11 @@ private theorem mul_pinv_mul_eq_aux [Fintype n] {A : Matrix m m 𝕜} {B : Matri
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, $\mathbf{A}\mathbf{A}^{+}\mathbf{B} =
 \mathbf{B}$. Port of `NLAlib.one_sub_mul_moorePenroseInverse_mul_eq_zero_of_fromBlocks_posSemidef`.
 -/
-theorem mul_pinv_mul_eq_of_posSemidef_fromBlocks [Finite n] {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.mul_pinv_mul_eq_of_fromBlocks [Finite n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
     A * pinv A * B = B := by
   have := Fintype.ofFinite n
-  exact mul_pinv_mul_eq_of_range_le (range_mulVecLin_le_of_posSemidef_fromBlocks h)
+  exact mul_pinv_mul_eq_of_range_le (Matrix.PosSemidef.range_le_of_fromBlocks h)
 
 /-- For Hermitian $\mathbf{A}$, the solution $\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$ gives
 $\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} = \mathbf{B}^{\mathsf{H}}\mathbf{A}^{+}\mathbf{B}$. -/
@@ -75,8 +74,8 @@ theorem posSemidef_fromBlocks_iff_pinv [Fintype n] {A : Matrix m m 𝕜} {B : Ma
   constructor
   · intro h
     have hA : A.PosSemidef := h.submatrix (Sum.inl : m → m ⊕ n)
-    have hr := range_mulVecLin_le_of_posSemidef_fromBlocks h
-    have hS := posSemidef_sub_conjTranspose_mul_mul_of_posSemidef_fromBlocks h
+    have hr := Matrix.PosSemidef.range_le_of_fromBlocks h
+    have hS := Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_mul_of_fromBlocks h
       (mul_pinv_mul_eq_aux hr)
     rw [conjTranspose_pinv_mul_mul_pinv_mul hA.isHermitian] at hS
     exact ⟨hA, hr, hS⟩
@@ -89,7 +88,7 @@ theorem posSemidef_fromBlocks_iff_pinv [Fintype n] {A : Matrix m m 𝕜} {B : Ma
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ the generalized Schur complement $\mathbf{C} -
 \mathbf{B}^{\mathsf{H}}\mathbf{A}^{+}\mathbf{B}$ is positive semidefinite. Port of
 `NLAlib.generalizedSchurComplement_nonneg`. -/
-theorem posSemidef_sub_conjTranspose_mul_pinv_mul_of_posSemidef_fromBlocks [Finite n]
+theorem _root_.Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_pinv_mul_of_fromBlocks [Finite n]
     {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) : (C - Bᴴ * pinv A * B).PosSemidef := by
   have := Fintype.ofFinite n
@@ -104,7 +103,8 @@ $\begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}$.
 [HornJohnson2013, §7.7].
 Port of `NLAlib.isLeast_generalizedSchurComplement_quadratic`.
 Result: schur-complement-variational -/
-theorem isLeast_re_quadForm_fromBlocks [Fintype n] {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
+theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks [Fintype n] {A : Matrix m m 𝕜}
+    {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) (x : n → 𝕜) :
     IsLeast
       (Set.range fun y : m → 𝕜 =>
@@ -112,15 +112,16 @@ theorem isLeast_re_quadForm_fromBlocks [Fintype n] {A : Matrix m m 𝕜} {B : Ma
       (RCLike.re (quadForm (C - Bᴴ * pinv A * B) x)) := by
   have hA : A.PosSemidef := h.submatrix (Sum.inl : m → m ⊕ n)
   have hX : A * (pinv A * B) = B :=
-    mul_pinv_mul_eq_aux (range_mulVecLin_le_of_posSemidef_fromBlocks h)
+    mul_pinv_mul_eq_aux (Matrix.PosSemidef.range_le_of_fromBlocks h)
   have hS := conjTranspose_pinv_mul_mul_pinv_mul (B := B) hA.isHermitian
   constructor
   · refine ⟨-((pinv A * B) *ᵥ x), ?_⟩
     change RCLike.re (quadForm _ (Sum.elim (-((pinv A * B) *ᵥ x)) x)) = _
-    rw [quadForm_fromBlocks_eq_add hA.isHermitian hX, neg_add_cancel, quadForm_zero_right,
+    rw [Matrix.IsHermitian.quadForm_fromBlocks_eq_add hA.isHermitian hX, neg_add_cancel,
+      quadForm_zero_right,
       zero_add, hS]
   · rintro _ ⟨y, rfl⟩
-    have hle := quadForm_sub_conjTranspose_mul_mul_le h hX y x
+    have hle := Matrix.PosSemidef.quadForm_sub_conjTranspose_mul_mul_le h hX y x
     rw [hS] at hle
     exact (RCLike.le_iff_re_im.mp hle).1
 

@@ -31,7 +31,7 @@ $\mathbf{I} - \mathbf{P}_{\mathbf{A}}$ is treated in `NLAlib.Matrix.Basic.Comple
 ## Main results
 
 * `NLAlib.isStarProjection_rangeProjector`, `NLAlib.rangeProjector_mul_self`,
-  `NLAlib.range_mulVecLin_rangeProjector`: the characterising properties.
+  `NLAlib.range_rangeProjector`: the characterising properties.
 * `IsStarProjection.eq_rangeProjector`: uniqueness.
 * `NLAlib.rangeProjector_mul_eq_self_iff`: $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{Y}$ iff
   the range of $\mathbf{Y}$ is inside the range of $\mathbf{B}$.
@@ -221,7 +221,7 @@ theorem conjTranspose_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n �
 
 /-- The range of $\mathbf{P}_{\mathbf{A}}$ is the column space of $\mathbf{A}$.
 Port of `NLAlib.range_mulVecLin_rangeProjector`. -/
-theorem range_mulVecLin_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
+theorem range_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     LinearMap.range (rangeProjector A).mulVecLin = LinearMap.range A.mulVecLin := by
   ext x
   rw [← (isStarProjection_rangeProjector A).mulVec_eq_self_iff,
@@ -232,7 +232,7 @@ $\mathbf{P}_{\mathbf{A}}\mathbf{A} = \mathbf{A}$. Port of `NLAlib.rangeProjector
 @[simp]
 theorem rangeProjector_mul_self [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     rangeProjector A * A = A :=
-  (isStarProjection_rangeProjector A).mul_eq_self_iff.mpr (range_mulVecLin_rangeProjector A).ge
+  (isStarProjection_rangeProjector A).mul_eq_self_iff.mpr (range_rangeProjector A).ge
 
 /-- $\mathbf{A}^{\mathsf{H}}\mathbf{P}_{\mathbf{A}} = \mathbf{A}^{\mathsf{H}}$. -/
 @[simp]
@@ -259,11 +259,11 @@ Port of `NLAlib.rangeProjector_mul_of_range_le`, there one direction. -/
 theorem rangeProjector_mul_eq_self_iff [Fintype m] [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} :
     rangeProjector B * Y = Y ↔ LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin := by
-  rw [(isStarProjection_rangeProjector B).mul_eq_self_iff, range_mulVecLin_rangeProjector]
+  rw [(isStarProjection_rangeProjector B).mul_eq_self_iff, range_rangeProjector]
 
 /-- The column space of $\mathbf{Y}$ is contained in that of $\mathbf{B}$ exactly when
 $\mathbf{Y} = \mathbf{B}\mathbf{C}$ for some $\mathbf{C}$. -/
-theorem range_mulVecLin_le_iff_exists_mul [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
+theorem range_le_iff_exists_mul [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} :
     LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin ↔ ∃ C : Matrix n p 𝕜, Y = B * C := by
   constructor
@@ -282,7 +282,7 @@ theorem range_mulVecLin_le_iff_exists_mul [Fintype n] [Fintype p] {B : Matrix m 
 
 private theorem exists_rangeProjector_eq_mul [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     ∃ C : Matrix n m 𝕜, rangeProjector A = A * C :=
-  range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_rangeProjector A).le
+  range_le_iff_exists_mul.mp (range_rangeProjector A).le
 
 /-- $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{0}$ exactly when the columns of $\mathbf{Y}$
 are orthogonal to those of $\mathbf{B}$, $\mathbf{B}^{\mathsf{H}}\mathbf{Y} = \mathbf{0}$. -/
@@ -331,7 +331,7 @@ theorem _root_.IsStarProjection.eq_rangeProjector [Fintype m] [Fintype n] {P : M
     (hP : IsStarProjection P) {A : Matrix m n 𝕜}
     (h : LinearMap.range P.mulVecLin = LinearMap.range A.mulVecLin) : P = rangeProjector A :=
   hP.eq_of_range_eq (isStarProjection_rangeProjector A)
-    (h.trans (range_mulVecLin_rangeProjector A).symm)
+    (h.trans (range_rangeProjector A).symm)
 
 /-- The range projector of a star projection is the projection itself. -/
 theorem _root_.IsStarProjection.rangeProjector_eq [Fintype m] {P : Matrix m m 𝕜}
@@ -347,10 +347,10 @@ theorem rangeProjector_inj [Fintype m] [Fintype n] [Fintype p] {A : Matrix m n �
       LinearMap.range A.mulVecLin = LinearMap.range B.mulVecLin := by
   constructor
   · intro h
-    rw [← range_mulVecLin_rangeProjector A, h, range_mulVecLin_rangeProjector]
+    rw [← range_rangeProjector A, h, range_rangeProjector]
   · intro h
     exact (isStarProjection_rangeProjector A).eq_rangeProjector
-      ((range_mulVecLin_rangeProjector A).trans h)
+      ((range_rangeProjector A).trans h)
 
 /-- If the column space of $\mathbf{Y}$ is inside that of $\mathbf{B}$, projecting onto
 $\mathbf{B}$ after $\mathbf{Y}$ is projecting onto $\mathbf{Y}$:
@@ -360,7 +360,7 @@ theorem rangeProjector_mul_rangeProjector_of_range_le [Fintype m] [Fintype n] [F
     {B : Matrix m n 𝕜} {Y : Matrix m p 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) :
     rangeProjector B * rangeProjector Y = rangeProjector Y := by
-  rw [rangeProjector_mul_eq_self_iff, range_mulVecLin_rangeProjector]
+  rw [rangeProjector_mul_eq_self_iff, range_rangeProjector]
   exact h
 
 /-- If the column space of $\mathbf{Y}$ is inside that of $\mathbf{B}$, projecting onto
@@ -463,17 +463,17 @@ theorem HasOrthonormalCols.rangeProjector_mul [Fintype m] [Fintype n] [Fintype p
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (X : Matrix n p 𝕜) :
     rangeProjector (Q * X) = Q * rangeProjector X * Qᴴ := by
   have hP := isStarProjection_rangeProjector X
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_rangeProjector X).le
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp (range_rangeProjector X).le
   refine (IsStarProjection.eq_rangeProjector (Matrix.isStarProjection_iff.mpr ⟨?_, ?_⟩)
     (le_antisymm ?_ ?_)).symm
   · rw [Matrix.mul_assoc (Q * rangeProjector X), ← Matrix.mul_assoc Qᴴ,
       hQ.conjTranspose_mul_cancel_left, ← Matrix.mul_assoc, Matrix.mul_assoc Q, hP.mul_self]
   · rw [Matrix.IsHermitian, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
       Matrix.conjTranspose_conjTranspose, hP.conjTranspose_eq, Matrix.mul_assoc]
-  · refine range_mulVecLin_le_iff_exists_mul.mpr ⟨C * Qᴴ, ?_⟩
+  · refine range_le_iff_exists_mul.mpr ⟨C * Qᴴ, ?_⟩
     rw [hC]
     simp only [Matrix.mul_assoc]
-  · refine range_mulVecLin_le_iff_exists_mul.mpr ⟨Q * X, ?_⟩
+  · refine range_le_iff_exists_mul.mpr ⟨Q * X, ?_⟩
     rw [Matrix.mul_assoc, hQ.conjTranspose_mul_cancel_left, Matrix.mul_assoc,
       rangeProjector_mul_self]
 
@@ -498,15 +498,15 @@ theorem rangeProjector_eq_mul_inv_mul_conjTranspose [Fintype m] [Fintype n] [Dec
         Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc]
   refine (hP.eq_rangeProjector (le_antisymm ?_ ?_)).symm
   · rw [Matrix.mul_assoc]
-    exact range_mulVecLin_le_iff_exists_mul.mpr ⟨_, rfl⟩
-  · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨_, hfix.symm⟩
+    exact range_le_iff_exists_mul.mpr ⟨_, rfl⟩
+  · exact range_le_iff_exists_mul.mpr ⟨_, hfix.symm⟩
 
 /-- $\operatorname{rank} \mathbf{P}_{\mathbf{A}} = \operatorname{rank} \mathbf{A}$.
 Port of `NLAlib.rank_rangeProjector`. -/
 @[simp]
 theorem rank_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     (rangeProjector A).rank = A.rank := by
-  rw [Matrix.rank, range_mulVecLin_rangeProjector, Matrix.rank]
+  rw [Matrix.rank, range_rangeProjector, Matrix.rank]
 
 /-! ### Bridge to Mathlib -/
 

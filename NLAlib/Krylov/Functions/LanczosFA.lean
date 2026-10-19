@@ -173,7 +173,7 @@ noncomputable def lanczosFA (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → �
 /-- The approximation lies in the Krylov space. -/
 theorem lanczosFA_mem_krylovSpace (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     lanczosFA A f b q ∈ krylovSpace A b q := by
-  rw [krylovSpace, ← range_mulVecLin_rangeProjector]
+  rw [krylovSpace, ← range_rangeProjector]
   refine ⟨(cfc f (rangeProjector (krylovMatrix A b q) * A * rangeProjector (krylovMatrix A b q)) *
     rangeProjector (krylovMatrix A b q)) *ᵥ b, ?_⟩
   rw [Matrix.mulVecLin_apply, Matrix.mulVec_mulVec, ← Matrix.mul_assoc]

@@ -32,7 +32,7 @@ verbatim for a Haar test matrix, in every shape and rank.
   `NLAlib.ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant`: the same for every full-rank test
   matrix with a left unitarily invariant law.
 * `NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`,
-  `NLAlib.measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant`: expectations
+  `NLAlib.measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant`: expectations
   and tails of statistics of the range projector, in the form a range-finder consumer applies.
 -/
 
@@ -181,15 +181,14 @@ of `NLAlib.integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant`, for
 factors measurably through the range projector and every $c$,
 $\mathbb{P}\{f(\mathbf{X}) > c\} = \mathbb{P}\{f(\mathbf{G}) > c\}$ for a standard Gaussian
 $\mathbf{G}$ of the same shape. -/
-theorem measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant [DecidableEq n]
+theorem measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant [DecidableEq n]
     {m : Type*} [Fintype m] {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν]
     [IsLeftUnitarilyInvariant ν] (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {f : Matrix n k ℝ → ℝ}
     {g : Matrix m m ℝ → ℝ} (hg : Measurable g) (hfg : ∀ Y, f Y = g (rangeProjector (A * Y)))
     (c : ℝ) :
-    μ.real {ω | ¬ f (X ω) ≤ c} = (gaussianMatrix n k).real {G | ¬ f G ≤ c} := by
-  have hs : MeasurableSet {P : Matrix m m ℝ | ¬ g P ≤ c} :=
-    (measurableSet_le hg measurable_const).compl
+    μ.real {ω | c < f (X ω)} = (gaussianMatrix n k).real {G | c < f G} := by
+  have hs : MeasurableSet {P : Matrix m m ℝ | c < g P} := measurableSet_lt measurable_const hg
   have hG : HasLaw (fun G : Matrix n k ℝ => rangeProjector (A * G))
       ((gaussianMatrix n k).map fun G => rangeProjector (A * G)) (gaussianMatrix n k) :=
     ⟨(measurable_rangeProjector_mul A).aemeasurable, rfl⟩

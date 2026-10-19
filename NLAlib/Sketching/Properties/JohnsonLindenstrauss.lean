@@ -55,13 +55,13 @@ for `mono`. Design: `docs/design/Sketching-S3.md` §3.1.
 
 ## Main results
 
-* `NLAlib.HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le`: the JL lemma.
+* `NLAlib.HasJLProperty.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le`: the JL lemma.
 * `NLAlib.HasJLMoment.hasJLProperty`: moments give tails.
 * `NLAlib.HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le`: the moment bound for every
   $\mathbf{x}$.
 * `NLAlib.HasJLMoment.integrable_abs_frobNorm_mul_sq_sub_rpow`,
   `NLAlib.HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le`,
-  `NLAlib.HasJLMoment.measure_abs_frobNorm_mul_sq_sub_ge_le`: Frobenius-norm preservation, the
+  `NLAlib.HasJLMoment.measureReal_abs_frobNorm_mul_sq_sub_ge_le`: Frobenius-norm preservation, the
   moment bound summed over the columns of a matrix, any field.
 * `NLAlib.HasJLProperty.hasSubspaceEmbedding`: JL plus a net, for a fixed $\mathbf{U}$.
 * `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`: the oblivious form.
@@ -154,7 +154,7 @@ theorem HasJLMoment.mono (h : HasJLMoment S ε δ p μ) (hε : ε ≤ ε') (hδ 
 /-- The JL property at a nonzero vector $\mathbf{x}$:
 $\mathbb{P}(\varepsilon \|\mathbf{x}\|^2 \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2
 \rvert) \le \delta$. -/
-theorem HasJLProperty.measure_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
+theorem HasJLProperty.measureReal_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
     {x : n → 𝕜} (hx : x ≠ 0) :
     μ.real {ω | ε * ‖WithLp.toLp 2 x‖ ^ 2 ≤
       |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - ‖WithLp.toLp 2 x‖ ^ 2|} ≤ δ := by
@@ -185,7 +185,7 @@ is at most $\binom{\lvert \iota \rvert}{2} \delta$ (union over unordered pairs).
 [Woodruff2014, Definition 3]; there inner products on a finite set, here squared norms of
 differences.
 Result: jl-lemma -/
-theorem HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
+theorem HasJLProperty.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProperty S ε δ μ)
     (hδ : 0 ≤ δ) {ι : Type*} [Fintype ι] (x : ι → n → 𝕜) :
     μ.real {ω | ∃ i j, x i ≠ x j ∧ ε * ‖WithLp.toLp 2 (x i - x j)‖ ^ 2 ≤
       |‖WithLp.toLp 2 (S ω *ᵥ (x i - x j))‖ ^ 2 - ‖WithLp.toLp 2 (x i - x j)‖ ^ 2|} ≤
@@ -225,7 +225,7 @@ theorem HasJLProperty.measure_exists_abs_norm_mulVec_sq_sub_ge_le (h : HasJLProp
           ext ω
           simp only [Set.mem_ofPred_eq, ne_eq, hne, not_false_eq_true, true_and]
         rw [hs]
-        exact h.measure_abs_norm_mulVec_sq_sub_ge_le (sub_ne_zero.2 hne)
+        exact h.measureReal_abs_norm_mulVec_sq_sub_ge_le (sub_ne_zero.2 hne)
   change μ.real {ω | ∃ i j, x i ≠ x j ∧ P (x i - x j) ω} ≤ _
   rw [e]
   refine (measureReal_iUnion_fintype_le _).trans ?_
@@ -371,11 +371,11 @@ $$\mathbb{P}\bigl(\varepsilon\|\mathbf{X}\|_{\mathsf{F}}^2 \le
 \bigl\lvert\|\mathbf{S}\mathbf{X}\|_{\mathsf{F}}^2 - \|\mathbf{X}\|_{\mathsf{F}}^2\bigr\rvert\bigr)
 \le \delta\,,$$
 from `NLAlib.HasJLMoment.integral_abs_frobNorm_mul_sq_sub_rpow_le` by Markov's inequality; the
-matrix twin of `NLAlib.HasJLProperty.measure_abs_norm_mulVec_sq_sub_ge_le` through
+matrix twin of `NLAlib.HasJLProperty.measureReal_abs_norm_mulVec_sq_sub_ge_le` through
 `NLAlib.HasJLMoment.hasJLProperty`. [Woodruff2014, proof of Theorem 13];
 [CohenElderMuscoMuscoPersu2015, §7, discussion after Lemma 11].
 Result: jl-moment-frobenius -/
-theorem HasJLMoment.measure_abs_frobNorm_mul_sq_sub_ge_le (h : HasJLMoment S ε δ p μ)
+theorem HasJLMoment.measureReal_abs_frobNorm_mul_sq_sub_ge_le (h : HasJLMoment S ε δ p μ)
     (hε : 0 < ε) (hp : 1 ≤ p) (hS : AEMeasurable S μ) {X : Matrix n q 𝕜} (hX : X ≠ 0) :
     μ.real {ω | ε * frobNorm X ^ 2 ≤ |frobNorm (S ω * X) ^ 2 - frobNorm X ^ 2|} ≤ δ := by
   have hp0 : 0 < p := by linarith

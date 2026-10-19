@@ -33,7 +33,7 @@ The vector $\mathbf{x}$ is real: the proofs linearise with a standard Gaussian v
 dimension (`NLAlib.lintegral_exp_mul_dotProduct_gaussianVector`), which exists over $\mathbb{R}$
 only in this library for now. The matrix $\mathbf{A}$ may be over any `RCLike` field, and the
 bound has no field factor (see the docstring of
-`NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`).
+`NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le`).
 
 Proofs. The diagonal form linearises $e^{\theta \sum_i w_i \mathbf{x}_i^2}$ with a standard
 Gaussian vector at $\sqrt{\mathbf{w}} \odot \mathbf{g}$, applies the proxy, evaluates the weighted
@@ -50,9 +50,9 @@ vector.
 
 * `NLAlib.IsSubgaussianVector.integral_exp_mul_norm_sq_le`:
   $\mathbb{E} e^{\theta \|\mathbf{x}\|^2} \le (1 - 2\theta c)^{-n/2}$.
-* `NLAlib.IsSubgaussianVector.measure_sum_mul_sq_ge_le`: weighted squares (the diagonal form).
-* `NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`: the Hsu–Kakade–Zhang tail.
-* `NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le`: the upper tail of $\|\mathbf{x}\|^2$.
+* `NLAlib.IsSubgaussianVector.measureReal_sum_mul_sq_ge_le`: weighted squares (the diagonal form).
+* `NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le`: the Hsu–Kakade–Zhang tail.
+* `NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le`: the upper tail of $\|\mathbf{x}\|^2$.
 * `NLAlib.measureReal_abs_norm_sq_sub_integral_ge_le`: the two-sided tail for independent
   coordinates.
 -/
@@ -385,7 +385,7 @@ The proof: Gaussian linearisation at $\sqrt{\mathbf{w}} \odot \mathbf{g}$, the w
 $\chi^2$ transform, Laurent and Massart's log-moment bound, then
 `NLAlib.measureReal_ge_le_exp_neg_of_mgf_le` with variance factor $2 c^2 \sum_i w_i^2$ and scale
 $2 c b$. -/
-theorem measure_sum_mul_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {w : n → ℝ}
+theorem measureReal_sum_mul_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {w : n → ℝ}
     (hw : ∀ i, 0 ≤ w i) (hw0 : w ≠ 0) {b : ℝ} (hwb : ∀ i, w i ≤ b) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | c * (∑ i, w i + 2 * √(∑ i, w i ^ 2) * √t + 2 * b * t) ≤
       ∑ i, w i * x ω i ^ 2} ≤ Real.exp (-t) := by
@@ -435,8 +435,8 @@ $\|\mathbf{A}\|_{\mathsf{F}}^2$ (the realified operator is
 $\begin{bmatrix} \operatorname{Re}\mathbf{A} & -\operatorname{Im}\mathbf{A} \\
 \operatorname{Im}\mathbf{A} & \operatorname{Re}\mathbf{A} \end{bmatrix}$).
 $\mathbf{A} \ne \mathbf{0}$ and $c \ne 0$ are needed for the non-strict event, as in
-`NLAlib.IsSubgaussianVector.measure_sum_mul_sq_ge_le`. The case $\mathbf{A} = \mathbf{I}$ is
-`NLAlib.IsSubgaussianVector.measure_norm_sq_ge_le`.
+`NLAlib.IsSubgaussianVector.measureReal_sum_mul_sq_ge_le`. The case $\mathbf{A} = \mathbf{I}$ is
+`NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le`.
 The proof: the diagonal form at the eigenvalues $\lambda_i$ of
 $\mathbf{A}_r^{\mathsf{T}}\mathbf{A}_r = \operatorname{Re}(\mathbf{A}^{\mathsf{H}}\mathbf{A})
 = \mathbf{V} \operatorname{diag}(\boldsymbol{\lambda}) \mathbf{V}^{\mathsf{T}}$ (the spectral
@@ -445,7 +445,7 @@ theorem over $\mathbb{R}$; $\mathbf{V}^{\mathsf{T}}\mathbf{x}$ has proxy $c$ by
 sum to at most $\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\mathsf{F}}^2$, and which are at most
 $\|\mathbf{A}\|_2^2$.
 Result: hsu-kakade-zhang -/
-theorem measure_norm_mulVec_sq_ge_le {m : Type*} [Fintype m] {𝕜 : Type*} [RCLike 𝕜]
+theorem measureReal_norm_mulVec_sq_ge_le {m : Type*} [Fintype m] {𝕜 : Type*} [RCLike 𝕜]
     (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {A : Matrix m n 𝕜} (hA : A ≠ 0) {t : ℝ}
     (ht : 0 ≤ t) :
     μ.real {ω | c * (frobNorm A ^ 2 + 2 * frobNorm (Aᴴ * A) * √t + 2 * specNorm A ^ 2 * t) ≤
@@ -465,7 +465,7 @@ theorem measure_norm_mulVec_sq_ge_le {m : Type*} [Fintype m] {𝕜 : Type*} [RCL
     exact hV.specNorm_le_one
   have hc0 : (0 : ℝ) ≤ c := c.2
   refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top _ _))
-    (hz.measure_sum_mul_sq_ge_le hc hlam0 hlam_ne hlamb ht)
+    (hz.measureReal_sum_mul_sq_ge_le hc hlam0 hlam_ne hlamb ht)
   simp only [Set.mem_ofPred_eq] at hω ⊢
   rw [hquad] at hω
   refine le_trans ?_ hω
@@ -478,8 +478,8 @@ $$\mu\bigl(\|\mathbf{x}\|^2 \ge c\,(n + 2\sqrt{n t} + 2t)\bigr) \le e^{-t}\,.$$
 Hsu, Kakade and Zhang 2012, Theorem 2.1 with $\mathbf{A} = \mathbf{I}$; for a standard Gaussian
 vector this is Laurent and Massart's bound. $c \ne 0$ is needed for the non-strict event: with
 $c = 0$ the vector is $\mathbf{0}$ almost surely and the event is everything. The case
-$\mathbf{A} = \mathbf{I}$ of `NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`. -/
-theorem measure_norm_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {t : ℝ}
+$\mathbf{A} = \mathbf{I}$ of `NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le`. -/
+theorem measureReal_norm_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {t : ℝ}
     (ht : 0 ≤ t) :
     μ.real {ω | c * (Fintype.card n + 2 * √(Fintype.card n * t) + 2 * t) ≤
       ‖WithLp.toLp 2 (x ω)‖ ^ 2} ≤ rexp (-t) := by
@@ -508,7 +508,7 @@ theorem measure_norm_sq_ge_le (h : IsSubgaussianVector x c μ) (hc : c ≠ 0) {t
     rw [← frobNorm_one_sq (𝕜 := ℝ), sqrt_sq (frobNorm_nonneg _)]
   have hS : specNorm (1 : Matrix n n ℝ) ^ 2 ≤ 1 := pow_le_one₀ (specNorm_nonneg _) specNorm_one_le
   refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top _ _))
-    (h.measure_norm_mulVec_sq_ge_le hc (one_ne_zero (α := Matrix n n ℝ)) ht)
+    (h.measureReal_norm_mulVec_sq_ge_le hc (one_ne_zero (α := Matrix n n ℝ)) ht)
   simp only [Set.mem_ofPred_eq, RCLike.ofReal_real_eq_id, id_eq, Matrix.one_mulVec,
     Matrix.conjTranspose_one, Matrix.mul_one, hF] at hω ⊢
   refine le_trans ?_ hω
@@ -546,7 +546,7 @@ theorem measureReal_abs_norm_sq_sub_integral_ge_le (hind : iIndepFun (fun i ω =
     push_cast
     rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   have hb : ((4 * c : ℝ≥0) : ℝ) = 4 * c := by push_cast; ring
-  have key := hsum.measure_abs_ge_le ht
+  have key := hsum.measureReal_abs_ge_le ht
   rw [hv, hb] at key
   simp only [hfun]
   exact key

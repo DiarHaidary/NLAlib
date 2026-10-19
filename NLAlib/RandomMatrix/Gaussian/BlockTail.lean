@@ -29,7 +29,7 @@ For frames $\mathbf{V}_1$, $\mathbf{V}_2$ with $\mathbf{V}_1^{\mathsf{H}}\mathbf
 and a fixed $\mathbf{S}$, the blocks $\mathbf{G}_i = \mathbf{V}_i^{\mathsf{H}}\mathbf{G}$ are
 independent standard Gaussian matrices; conditioning on $\mathbf{G}_1$ through the
 independent-factor concentration
-`NLAlib.measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun` gives the tails of
+`NLAlib.measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun` gives the tails of
 $\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|$ that the range finder's tail bounds consume: Tropp and
 Webber's Proposition 8.6 (8.9) in the Frobenius norm, and the shapes of Halko, Martinsson and
 Tropp's proofs of Theorems 10.7 and 10.8.
@@ -42,14 +42,14 @@ Tropp's proofs of Theorems 10.7 and 10.8.
 
 * `NLAlib.gaussianPinvFrobTail_nonneg`, `NLAlib.gaussianPinvFrobTail_le`,
   `NLAlib.one_le_gaussianPinvFrobTail_zero`: the API of the named tail.
-* `NLAlib.measureReal_le_inv_mul_conjTranspose_apply_self_le_of_hasLaw_gaussianMatrix`.
-* `NLAlib.measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix`: the trace tail of an
+* `NLAlib.measureReal_inv_mul_conjTranspose_apply_self_ge_le_of_hasLaw_gaussianMatrix`.
+* `NLAlib.measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`: the trace tail of an
   inverse Wishart matrix.
-* `NLAlib.measureReal_not_specNorm_pinv_le_le_of_hasLaw_gaussianMatrix`.
-* `NLAlib.measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix`: the block
+* `NLAlib.measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix`.
+* `NLAlib.measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`: the block
   tail.
-* `NLAlib.measureReal_not_specNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.measureReal_not_frobNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix`: the block tails
+* `NLAlib.measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix`,
+  `NLAlib.measureReal_frobNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix`: the block tails
   in the shape of Halko, Martinsson and Tropp.
 -/
 
@@ -70,7 +70,7 @@ the bound <!-- value gaussianPinvFrobTail k d t -->
 $$\mathbb{P}\Bigl\{\|\mathbf{G}^{+}\|_{\mathsf{F}}^2 > \frac{tk}{d}\Bigr\} \le
 \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}$$
 for a real $k \times (k + d - 1)$ standard Gaussian $\mathbf{G}$ and $t > 0$
-(`NLAlib.measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix`). Source value
+(`NLAlib.measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`). Source value
 $\sqrt{\pi k/d}\,(e/t)^{d/2}$ [TroppWebber2023, Lemma B.2 (B.3)], printed as
 $\sqrt{\pi k}\,(e/t)^{d/2}$ in [TroppWebber2023, Theorem 8.1]. The proved value is smaller for every
 $d \ge 1$: by $\Gamma(x + 1) \ge \sqrt{2\pi x}\,(x/e)^x$ it is at most $2/\pi$ times (B.3)'s and
@@ -144,7 +144,7 @@ the exact small ball of $\chi^2_d$
 the entry is $1/\chi^2_d$
 (`NLAlib.hasLaw_inv_mul_conjTranspose_apply_self_of_hasLaw_gaussianMatrix`). The input of
 [TroppWebber2023, Lemma B.2]. -/
-theorem measureReal_le_inv_mul_conjTranspose_apply_self_le_of_hasLaw_gaussianMatrix
+theorem measureReal_inv_mul_conjTranspose_apply_self_ge_le_of_hasLaw_gaussianMatrix
     [DecidableEq r] {X : Ω → Matrix r k ℝ} (hX : HasLaw X (gaussianMatrix r k) μ) {d : ℕ}
     (hd : Fintype.card r + d = Fintype.card k + 1) (i : r) {s : ℝ} (hs : 0 < s) :
     μ.real {ω | s ≤ (X ω * (X ω)ᴴ)⁻¹ i i} ≤
@@ -332,7 +332,7 @@ private theorem gaussianMatrix_real_lt_sum_le [DecidableEq r]
   have htail : ∀ i : r, ∀ u : ℝ, 0 < u →
       (gaussianMatrix r k).real {G | u ≤ (G * Gᴴ)⁻¹ i i} ≤ ((1 / 2) ^ x / Γ) * u ^ (-x) := by
     intro i u hu
-    refine (measureReal_le_inv_mul_conjTranspose_apply_self_le_of_hasLaw_gaussianMatrix
+    refine (measureReal_inv_mul_conjTranspose_apply_self_ge_le_of_hasLaw_gaussianMatrix
       (HasLaw.id (μ := gaussianMatrix r k)) hd i hu).trans (le_of_eq ?_)
     rw [show 1 / (2 * u) = 1 / 2 * u⁻¹ by field_simp, Real.mul_rpow (by norm_num)
       (inv_nonneg.2 hu.le), Real.inv_rpow hu.le, Real.rpow_neg hu.le]
@@ -383,11 +383,12 @@ in their notation ($k = \lvert r\rvert$, $p = d - 1$), $4t^{-p}$ at $\sqrt{12k/p
 bound is below unless $k > 4(12/e)^{p+1}t^2$. For
 $d = 0$ the bound is at least $2$; for empty $r$ the event is empty.
 Result: inverse-wishart-trace-tail -/
-theorem measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix
     {X : Ω → Matrix r k ℝ} (hX : HasLaw X (gaussianMatrix r k) μ) {d : ℕ}
     (hd : Fintype.card r + d = Fintype.card k + 1) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ frobNorm (pinv (X ω)) ^ 2 ≤ t * Fintype.card r / d} ≤
+    μ.real {ω | t * Fintype.card r / d < frobNorm (pinv (X ω)) ^ 2} ≤
       gaussianPinvFrobTail (Fintype.card r) d t := by
+  simp only [← not_le]
   classical
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
   have h0 := gaussianPinvFrobTail_nonneg (Fintype.card r) d ht
@@ -434,12 +435,13 @@ moment of order $\lvert k\rvert - \lvert r\rvert$
 (`NLAlib.integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix`).
 HMT's (10.6) has $t^{-(p+1)}$ at $e\sqrt{k+p}/(p+1)$, through the smallest-singular-value density,
 not reached by moments [HalkoMartinssonTropp2011, Proposition 10.4]. -/
-theorem measureReal_not_specNorm_pinv_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix
     {X : Ω → Matrix r k ℝ} (hX : HasLaw X (gaussianMatrix r k) μ)
     (hrk : Fintype.card r < Fintype.card k) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ specNorm (pinv (X ω)) ≤
-        t * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k)} ≤
+    μ.real {ω | t * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) <
+        specNorm (pinv (X ω))} ≤
       t ^ (-((Fintype.card k : ℝ) - Fintype.card r)) := by
+  simp only [← not_le]
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
   have hq : (0 : ℝ) < (Fintype.card k : ℝ) - Fintype.card r := by
     have : (Fintype.card r : ℝ) < Fintype.card k := by exact_mod_cast hrk
@@ -515,13 +517,14 @@ private theorem measureReal_block_le_of_good (hX : HasLaw X (gaussianMatrix n k)
     by_contra hn
     simp only [A₁, A₂, B, Set.mem_union, Set.mem_ofPred_eq, not_or, not_not] at hn hω
     exact hω (hn.2.trans (hgood _ hn.1.1 hn.1.2))
-  have h₁ := measureReal_not_specNorm_pinv_le_le_of_hasLaw_gaussianMatrix hG₁ hrk ht
-  have h₂ := measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix hG₁ hd
+  have h₁ := measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix hG₁ hrk ht
+  have h₂ := measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix hG₁ hd
     (pow_pos ht 2)
-  have h₃ := measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun hG₂
+  have h₃ := measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun hG₂
     (measurable_pinv.comp_aemeasurable hG₁.aemeasurable)
     ((indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂).comp measurable_pinv
       measurable_id) hf hL hL0 hc hlip hmean hu
+  simp only [← not_le] at h₁ h₂ h₃
   refine (measureReal_mono hsub).trans ((measureReal_union_le _ _).trans ?_)
   exact add_le_add ((measureReal_union_le _ _).trans (add_le_add h₁ h₂)) h₃
 
@@ -537,17 +540,18 @@ Conditionally on $\mathbf{T} = \mathbf{G}_1^{+}$, $\mathbf{G} \mapsto
 \|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}}$ is
 $\|\mathbf{S}\|_{\mathsf{F}}\|\mathbf{T}\|_{\mathsf{F}}$-Lipschitz with mean at most that constant;
 concentration at deviation $\sqrt{u} - 1$ and $e^{-(\sqrt{u}-1)^2/2} \le e^{-(u-2)/4}$, plus the
-trace tail `NLAlib.measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix`. The second
+trace tail `NLAlib.measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`. The second
 failure term, `gaussianPinvFrobTail |r| d t`, is smaller than TW's
 $\sqrt{\pi\lvert r\rvert}\,(e/t)^{d/2}$. For $u \le 2$ the bound is at least $1$. -/
-theorem measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix n k) μ) (hV₁ : HasOrthonormalCols V₁)
     (hV₂ : HasOrthonormalCols V₂) (h₁₂ : V₁ᴴ * V₂ = 0) {d : ℕ}
     (hd : Fintype.card r + d = Fintype.card k + 1) (S : Matrix a s ℝ) (u : ℝ) {t : ℝ}
     (ht : 0 < t) :
-    μ.real {ω | ¬ frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ^ 2 ≤
-        u * t * Fintype.card r / d * frobNorm S ^ 2} ≤
+    μ.real {ω | u * t * Fintype.card r / d * frobNorm S ^ 2 <
+        frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ^ 2} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail (Fintype.card r) d t := by
+  simp only [← not_le]
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
   have h0 := gaussianPinvFrobTail_nonneg (Fintype.card r) d ht
   rcases le_or_gt u 2 with hu | hu
@@ -575,12 +579,12 @@ theorem measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix
     calc u * (frobNorm S ^ 2 * frobNorm (pinv (V₁ᴴ * X ω)) ^ 2)
         ≤ u * (frobNorm S ^ 2 * (t * Fintype.card r / d)) := by gcongr
       _ = u * t * Fintype.card r / d * frobNorm S ^ 2 := by ring
-  have hA := measureReal_not_frobNorm_pinv_sq_le_le_of_hasLaw_gaussianMatrix hG₁ hd ht
+  have hA := measureReal_frobNorm_pinv_sq_gt_le_of_hasLaw_gaussianMatrix hG₁ hd ht
   have hf : Measurable (Function.uncurry fun (T : Matrix k r ℝ) (M : Matrix s k ℝ) =>
       frobNorm (S * M * T)) :=
     (continuous_frobNorm.comp ((continuous_const.matrix_mul continuous_snd).matrix_mul
       continuous_fst)).measurable
-  have hB := measureReal_not_le_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun hG₂
+  have hB := measureReal_gt_add_mul_le_of_hasLaw_gaussianMatrix_of_indepFun hG₂
     (measurable_pinv.comp_aemeasurable hG₁.aemeasurable)
     ((indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂).comp measurable_pinv
       measurable_id) hf
@@ -602,12 +606,13 @@ theorem measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix
     rw [Real.exp_le_exp]
     have h2 := Real.sq_sqrt (show 0 ≤ u by linarith)
     nlinarith [sq_nonneg (√u - 2)]
+  simp only [← not_le] at hA hB
   refine (measureReal_mono hsub).trans ((measureReal_union_le _ _).trans ?_)
   exact add_le_add (hB.trans hexp) hA
 
 /-- **The spectral block tail**, in the shape of [HalkoMartinssonTropp2011, proof of Theorem 10.8]:
 with the hypotheses of
-`NLAlib.measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix`, $u \ge 0$ and
+`NLAlib.measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`, $u \ge 0$ and
 $t > 0$, <!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
 $$\begin{aligned}\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_2 \le{}&
 t\Bigl(\|\mathbf{S}\|_2\sqrt{\lvert r\rvert/d} + \frac{e}{\lvert k\rvert - \lvert r\rvert}
@@ -619,20 +624,21 @@ $$t^{-(\lvert k\rvert - \lvert r\rvert)} +
 \frac{2\sqrt{\lvert r\rvert}\,(d/(2t^2))^{d/2}}{\Gamma(d/2 + 1)} + e^{-u^2/2}\,;$$
 the constant is `gaussianPinvSpecNormBound |r| |k|`, the second failure term
 `gaussianPinvFrobTail |r| d (t ^ 2)`. On the good event of $\mathbf{G}_1^{+}$
-(`NLAlib.measureReal_not_specNorm_pinv_le_le_of_hasLaw_gaussianMatrix`, and the trace tail at
+(`NLAlib.measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix`, and the trace tail at
 $t^2$), concentration of the $\|\mathbf{S}\|_2\|\mathbf{G}_1^{+}\|_2$-Lipschitz map about
 Chevet's mean bound. Given `hd`, `hrk` is $d \ge 2$. -/
-theorem measureReal_not_specNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix n k) μ) (hV₁ : HasOrthonormalCols V₁)
     (hV₂ : HasOrthonormalCols V₂) (h₁₂ : V₁ᴴ * V₂ = 0) {d : ℕ}
     (hd : Fintype.card r + d = Fintype.card k + 1) (hrk : Fintype.card r < Fintype.card k)
     (S : Matrix a s ℝ) {u t : ℝ} (hu : 0 ≤ u) (ht : 0 < t) :
-    μ.real {ω | ¬ specNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ≤
-        t * (specNorm S * √((Fintype.card r : ℝ) / d) +
+    μ.real {ω | t * (specNorm S * √((Fintype.card r : ℝ) / d) +
           frobNorm S * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k)) +
-        u * t * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) * specNorm S} ≤
+        u * t * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) * specNorm S <
+        specNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω))} ≤
       t ^ (-((Fintype.card k : ℝ) - Fintype.card r)) +
         gaussianPinvFrobTail (Fintype.card r) d (t ^ 2) + Real.exp (-u ^ 2 / 2) := by
+  simp only [← not_le]
   set C := gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k)
   have hf : Measurable (Function.uncurry fun (T : Matrix k r ℝ) (M : Matrix s k ℝ) =>
       specNorm (S * M * T)) :=
@@ -662,7 +668,7 @@ theorem measureReal_not_specNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix
 
 /-- **The Frobenius block tail**, in the shape of [HalkoMartinssonTropp2011, proof of
 Theorem 10.7]: with the hypotheses of
-`NLAlib.measureReal_not_specNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix`, the block
+`NLAlib.measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix`, the block
 satisfies <!-- value gaussianPinvSpecNormBound {\lvert r\rvert} {\lvert k\rvert} -->
 $$\|\mathbf{S}\mathbf{G}_2\mathbf{G}_1^{+}\|_{\mathsf{F}} \le t\sqrt{\lvert r\rvert/d}\,
 \|\mathbf{S}\|_{\mathsf{F}} + ut\,\frac{e}{\lvert k\rvert - \lvert r\rvert}
@@ -674,16 +680,17 @@ the constant is `gaussianPinvSpecNormBound |r| |k|`, the second failure term
 `gaussianPinvFrobTail |r| d (t ^ 2)`. The proof: concentration of the
 $\|\mathbf{S}\|_2\|\mathbf{G}_1^{+}\|_2$-Lipschitz map about the Frobenius mean
 `NLAlib.integral_frobNorm_mul_mul_le_of_hasLaw_gaussianMatrix`. Given `hd`, `hrk` is $d \ge 2$. -/
-theorem measureReal_not_frobNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_frobNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix n k) μ) (hV₁ : HasOrthonormalCols V₁)
     (hV₂ : HasOrthonormalCols V₂) (h₁₂ : V₁ᴴ * V₂ = 0) {d : ℕ}
     (hd : Fintype.card r + d = Fintype.card k + 1) (hrk : Fintype.card r < Fintype.card k)
     (S : Matrix a s ℝ) {u t : ℝ} (hu : 0 ≤ u) (ht : 0 < t) :
-    μ.real {ω | ¬ frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ≤
-        t * √((Fintype.card r : ℝ) / d) * frobNorm S +
-        u * t * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) * specNorm S} ≤
+    μ.real {ω | t * √((Fintype.card r : ℝ) / d) * frobNorm S + u * t *
+        gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) * specNorm S <
+        frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω))} ≤
       t ^ (-((Fintype.card k : ℝ) - Fintype.card r)) +
         gaussianPinvFrobTail (Fintype.card r) d (t ^ 2) + Real.exp (-u ^ 2 / 2) := by
+  simp only [← not_le]
   have hf : Measurable (Function.uncurry fun (T : Matrix k r ℝ) (M : Matrix s k ℝ) =>
       frobNorm (S * M * T)) :=
     (continuous_frobNorm.comp ((continuous_const.matrix_mul continuous_snd).matrix_mul

@@ -28,7 +28,7 @@ Hermitian part (Ky Fan), so they lie between its extreme eigenvalues (Bendixson)
 * `NLAlib.majorized_re_of_isEigenvalueListing`: Ky Fan's majorization.
 * `NLAlib.re_le_eigenvalue_zero_hermitianPart`, `NLAlib.eigenvalue_hermitianPart_le_re`:
   Bendixson's bounds.
-* `NLAlib.det_ne_zero_of_posDef_hermitianPart`: a matrix with positive definite Hermitian part is
+* `Matrix.PosDef.det_ne_zero_of_hermitianPart`: a matrix with positive definite Hermitian part is
   invertible.
 * `NLAlib.quadForm_hermitianPart`, `NLAlib.trace_conjTranspose_mul_hermitianPart_mul`: over
   $\mathbb{R}$, quadratic forms and traces of compressions see only the symmetric part.
@@ -199,7 +199,8 @@ open scoped ComplexOrder in
 null vector $\mathbf{v}$ of $\mathbf{A}$ would have
 $\operatorname{Re}(\mathbf{v}^{\mathsf{H}}\mathbf{A}\mathbf{v}) = 0$, which is the quadratic form
 of the Hermitian part. [HornJohnson2013, §7.1 context]. -/
-theorem det_ne_zero_of_posDef_hermitianPart {A : Matrix n n 𝕜} (h : (hermitianPart A).PosDef) :
+theorem _root_.Matrix.PosDef.det_ne_zero_of_hermitianPart {A : Matrix n n 𝕜}
+    (h : (hermitianPart A).PosDef) :
     A.det ≠ 0 := by
   intro hdet
   obtain ⟨v, hv, hAv⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hdet

@@ -216,7 +216,7 @@ private theorem measurable_svdU_svdV :
     (Module.finBasis ℝ _) (fun _ => ⟨Set.univ, Filter.univ_mem, _,
       isCompact_setOf_hasOrthonormalCols.prod isCompact_setOf_hasOrthonormalCols,
       fun _ _ y hy => ⟨hy.hasOrthonormalCols_left, hy.hasOrthonormalCols_right⟩⟩)
-    fun A => ⟨isSVD_svdU_svdV A, fun y hy => toLex_equivFun_svdU_svdV_le hy⟩
+    fun A => ⟨isSVD_svdU_svdV A, fun y hy => IsSVD.toLex_equivFun_svdU_svdV_le hy⟩
 
 /-- The left factor of the chosen SVD, $\mathbf{A} \mapsto \mathsf{svdU}(\mathbf{A})$, is Borel
 measurable (it is not continuous: it jumps where singular values meet). -/

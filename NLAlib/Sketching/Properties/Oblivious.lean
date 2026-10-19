@@ -39,7 +39,7 @@ Theorems that compare two events take `[IsFiniteMeasure μ]`. Design:
 
 * `NLAlib.IsObliviousSubspaceEmbedding.of_hasOrthonormalCols`: the constructor families use.
 * `NLAlib.IsObliviousSubspaceEmbedding.isObliviousSubspaceInjection`: an isotropic OSE is an OSI.
-* `NLAlib.IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indepFun`: transfer
+* `NLAlib.IsObliviousSubspaceEmbedding.measureReal_not_isSubspaceEmbedding_le_of_indepFun`: transfer
   to an independent random subspace.
 * `NLAlib.IsObliviousSubspaceEmbedding.mul`: composition of independent sketches.
 -/
@@ -102,7 +102,7 @@ theorem _root_.ProbabilityTheory.HasLaw.isObliviousSubspaceInjection_iff [Decida
 theorem IsObliviousSubspaceEmbedding.hasSubspaceEmbedding [Fintype p]
     (h : IsObliviousSubspaceEmbedding S d a b δ μ) {U : Matrix n p 𝕜} (hU : U.rank ≤ d) :
     HasSubspaceEmbedding S U a b δ μ := by
-  have hr := range_mulVecLin_rangeProjector U
+  have hr := range_rangeProjector U
   have e : {ω | ¬ IsSubspaceEmbedding (S ω) U a b} =
       {ω | ¬ IsSubspaceEmbedding (S ω) (rangeProjector U) a b} :=
     Set.ext fun ω => not_congr ⟨fun h' => h'.of_range_le hr.le, fun h' => h'.of_range_le hr.ge⟩
@@ -114,7 +114,7 @@ theorem IsObliviousSubspaceEmbedding.hasSubspaceEmbedding [Fintype p]
 theorem IsObliviousSubspaceInjection.hasSubspaceInjection [DecidableEq n] [Fintype p]
     (h : IsObliviousSubspaceInjection S d a δ μ) {U : Matrix n p 𝕜} (hU : U.rank ≤ d) :
     HasSubspaceInjection S U a δ μ := by
-  have hr := range_mulVecLin_rangeProjector U
+  have hr := range_rangeProjector U
   have e : {ω | ¬ IsSubspaceInjection (S ω) U a} =
       {ω | ¬ IsSubspaceInjection (S ω) (rangeProjector U) a} :=
     Set.ext fun ω => not_congr ⟨fun h' => h'.of_range_le hr.le, fun h' => h'.of_range_le hr.ge⟩
@@ -172,7 +172,7 @@ $\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails 
 $\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. Fubini on the closed
 set of `NLAlib.isClosed_setOf_isSubspaceEmbedding`: the sections bound
 `ProbabilityTheory.IndepFun.measureReal_mem_le_add` with the good set of rank at most $d$. -/
-theorem IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indepFun
+theorem IsObliviousSubspaceEmbedding.measureReal_not_isSubspaceEmbedding_le_of_indepFun
     [IsProbabilityMeasure μ] [Fintype q] (h : IsObliviousSubspaceEmbedding S d a b δ μ)
     {V : Ω → Matrix n q 𝕜} (hind : IndepFun S V μ) (hS : AEMeasurable S μ)
     (hV : AEMeasurable V μ) (hrank : ∀ᵐ ω ∂μ, (V ω).rank ≤ d) :
@@ -187,7 +187,7 @@ theorem IsObliviousSubspaceEmbedding.measure_not_isSubspaceEmbedding_le_of_indep
 /-- **Transfer of an OSI to an independent random subspace**: if $\mathbf{V}$ is independent of
 $\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to inject
 $\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. -/
-theorem IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_le_of_indepFun
+theorem IsObliviousSubspaceInjection.measureReal_not_isSubspaceInjection_le_of_indepFun
     [IsProbabilityMeasure μ] [DecidableEq n] [Fintype q]
     (h : IsObliviousSubspaceInjection S d a δ μ) {V : Ω → Matrix n q 𝕜} (hind : IndepFun S V μ)
     (hS : AEMeasurable S μ) (hV : AEMeasurable V μ) (hrank : ∀ᵐ ω ∂μ, (V ω).rank ≤ d) :
@@ -212,7 +212,7 @@ theorem IsObliviousSubspaceEmbedding.mul [IsProbabilityMeasure μ] {S₂ : Ω �
   intro U hU
   have hc : Continuous fun A : Matrix k n 𝕜 => A * U := continuous_id.matrix_mul continuous_const
   have hindU : IndepFun S₂ (fun ω => S ω * U) μ := hind.comp measurable_id hc.measurable
-  have h₁ := h₂.measure_not_isSubspaceEmbedding_le_of_indepFun hindU hS₂
+  have h₁ := h₂.measureReal_not_isSubspaceEmbedding_le_of_indepFun hindU hS₂
     (hc.measurable.comp_aemeasurable hS)
     (ae_of_all _ fun ω => (Matrix.rank_mul_le_right _ _).trans hU)
   have h₀ := h U hU
@@ -236,7 +236,7 @@ theorem IsObliviousSubspaceInjection.mul [IsProbabilityMeasure μ] [DecidableEq 
   refine ⟨h₂.isotropic.mul h.isotropic hind, fun U hU => ?_⟩
   have hc : Continuous fun A : Matrix k n 𝕜 => A * U := continuous_id.matrix_mul continuous_const
   have hindU : IndepFun S₂ (fun ω => S ω * U) μ := hind.comp measurable_id hc.measurable
-  have h₁ := h₂.measure_not_isSubspaceInjection_le_of_indepFun hindU hS₂
+  have h₁ := h₂.measureReal_not_isSubspaceInjection_le_of_indepFun hindU hS₂
     (hc.measurable.comp_aemeasurable hS)
     (ae_of_all _ fun ω => (Matrix.rank_mul_le_right _ _).trans hU)
   have h₀ := h.injection U hU

@@ -37,7 +37,7 @@ $\mathbf{X}_j = \mathbf{0}$ for $j \ge N$.
 ## Main results
 
 * `NLAlib.HasCondMatrixMGFBound.supermartingale_re_trace_exp`: the trace supermartingale.
-* `NLAlib.HasCondMatrixMGFBound.measure_exists_eigenvalue_zero_sum_ge_le`: the martingale master
+* `NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le`: the martingale master
   tail.
 * `NLAlib.measureReal_exists_eigenvalue_zero_sum_ge_le_freedman`: Freedman's inequality.
 * `NLAlib.measureReal_exists_eigenvalue_zero_sum_ge_le_freedman_of_ae_le`: with an almost sure
@@ -95,7 +95,7 @@ $\mathbb{E}[\operatorname{tr} e^{\mathbf{H} + \theta \mathbf{X}_k} \mid \mathcal
 the bound $\mathbb{E}[e^{\theta \mathbf{X}_k} \mid \mathcal{F}_k] \preceq
 e^{g(\theta) \mathbf{A}_k}$, almost surely positive definite, and the operator monotonicity of the
 logarithm give $\log \mathbb{E}[\ldots] \preceq g(\theta) \mathbf{A}_k$; then monotonicity of
-$\operatorname{tr} \exp$ (`NLAlib.re_trace_exp_le_re_trace_exp_of_le`) returns
+$\operatorname{tr} \exp$ (`Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le`) returns
 $\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$. Medium. -/
 theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθ : θ ∈ s)
@@ -146,7 +146,7 @@ theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
     simp only [H, Finset.sum_range_succ, smul_add]
     abel
   rw [← hfin]
-  exact re_trace_exp_le_re_trace_exp_of_le (h4.add (cfc_predicate Real.log _))
+  exact Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le (h4.add (cfc_predicate Real.log _))
     (add_le_add le_rfl hlog)
 
 /-- **The martingale master tail**: for increments with conditional matrix MGF bounds,
@@ -154,14 +154,14 @@ $\theta \in s$, $\theta > 0$ and $g(\theta) \ge 0$, with an integrable trace pot
 $$\mathbb{P}\bigl(\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
 \mathbf{W}_k \preceq w\mathbf{I}\bigr) \le \lvert n\rvert\, e^{-\theta t + g(\theta) w}\,.$$
 [Tropp2011, §2]; the martingale form of
-`NLAlib.HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le_card_mul_exp`.
+`NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp`.
 Proof: on the event the potential of `supermartingale_re_trace_exp` is at least
 $e^{\theta t - g(\theta) w}$
 ($\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k \succeq \theta \mathbf{Y}_k - g(\theta) w\mathbf{I}$
 since $g(\theta) \ge 0$, and $\operatorname{tr} e^{\mathbf{M}} \ge e^{\lambda_0(\mathbf{M})}$);
-Ville's inequality (`MeasureTheory.Supermartingale.measure_exists_ge_le`) with the potential at
+Ville's inequality (`MeasureTheory.Supermartingale.measureReal_exists_ge_le`) with the potential at
 $k = 0$ equal to $\operatorname{tr} \mathbf{I} = \lvert n\rvert$. Easy given the supermartingale. -/
-theorem measure_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
+theorem measureReal_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
     (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
     (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθs : θ ∈ s)
     (hθ : 0 < θ) (hg : 0 ≤ g θ)
@@ -175,7 +175,7 @@ theorem measure_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
   have hΦ0 : ∀ k, 0 ≤ᵐ[μ] fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
       g θ • ∑ j ∈ Finset.range k, A j ω)).trace := fun k =>
     hherm.mono fun ω hω => (hω k).re_trace_exp_nonneg
-  have hV := hsup.measure_exists_ge_le hΦ0 (Real.exp_pos (θ * t - g θ * w))
+  have hV := hsup.measureReal_exists_ge_le hΦ0 (Real.exp_pos (θ * t - g θ * w))
   have h0 : ∫ ω, RCLike.re (exp (θ • ∑ j ∈ Finset.range 0, X j ω -
       g θ • ∑ j ∈ Finset.range 0, A j ω)).trace ∂μ = Fintype.card n := by
     simp only [Finset.range_zero, Finset.sum_empty, smul_zero, sub_zero, NormedSpace.exp_zero,
@@ -200,12 +200,13 @@ theorem measure_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
           mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hk1 hθ.le))
             (Real.exp_pos _).le
       _ ≤ Real.exp (-(g θ * w)) * RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω)).trace :=
-          mul_le_mul_of_nonneg_left (exp_mul_eigenvalue_le_re_trace_exp hY θ Fintype.card_pos)
+          mul_le_mul_of_nonneg_left
+            (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hY θ Fintype.card_pos)
             (Real.exp_pos _).le
       _ = RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω +
             (-(g θ * w)) • (1 : Matrix n n 𝕜))).trace :=
           (re_trace_exp_add_real_smul_one _ _).symm
-      _ ≤ _ := re_trace_exp_le_re_trace_exp_of_le
+      _ ≤ _ := Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le
           (hθY.add ((IsSelfAdjoint.all _).smul (Matrix.isHermitian_one))) hle
   refine (measureReal_mono_ae' hsub).trans (hV.trans_eq ?_)
   rw [h0, div_eq_mul_inv, ← Real.exp_neg]
@@ -240,7 +241,7 @@ private theorem integrable_potential (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
       0 + (θ * (k * L)) • (1 : Matrix n n 𝕜) := by
     rw [zero_add, ← smul_smul]
     exact (sub_le_self _ hW).trans (smul_le_smul_of_nonneg_left hY hθ)
-  refine (re_trace_exp_le_re_trace_exp_of_le (h1 k) hle').trans_eq ?_
+  refine (Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le (h1 k) hle').trans_eq ?_
   rw [re_trace_exp_add_real_smul_one, NormedSpace.exp_zero, Matrix.trace_one, RCLike.natCast_re]
 
 end HasCondMatrixMGFBound
@@ -259,7 +260,7 @@ $v$: for $v < 0$ the event is empty.
 Proof: case split $v < 0$ first (the event is empty, the left side is $0$); $t = 0$ (the right
 side is $\lvert n\rvert \ge 1$). Otherwise the conditional Bernstein bound
 `NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`, the master tail
-`NLAlib.HasCondMatrixMGFBound.measure_exists_eigenvalue_zero_sum_ge_le` at $w = v$ with
+`NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le` at $w = v$ with
 $\theta$ from P5a's `NLAlib.exists_bernstein_exponent` (which needs $0 \le v$); on the event
 $\|\mathbf{W}_k\|_2 \le v$ gives $\mathbf{W}_k \preceq v\mathbf{I}$ ($\mathbf{W}_k$ is almost
 surely Hermitian). The potential's integrability: it is almost surely at most
@@ -294,7 +295,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
     Matrix.ae_posSemidef_condExp ((h j).ae_isHermitian.mono fun ω hω => by
       have h2 := Matrix.posSemidef_conjTranspose_mul_self (X j ω)
       rwa [hω.eq, ← sq] at h2)
-  have hM := HasCondMatrixMGFBound.measure_exists_eigenvalue_zero_sum_ge_le hX h hθ hθ.1 hg
+  have hM := HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le hX h hθ hθ.1 hg
     (HasCondMatrixMGFBound.integrable_potential hX h hθ.1.le hg hle hA) t v
   have hsub : {ω | ∃ k, t ≤ eigenvalue (∑ j ∈ Finset.range k, X j ω) 0 ∧
       specNorm (∑ j ∈ Finset.range k, μ[fun ω' => X j ω' ^ 2 | ℱ j] ω) ≤ v} ≤ᵐ[μ]

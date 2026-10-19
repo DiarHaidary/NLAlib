@@ -94,7 +94,7 @@ $$\operatorname{range}(\mathbf{A}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{
 theorem range_mul_mul_pinv_mul_conjTranspose_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
     (Z : Matrix n r 𝕜) :
     LinearMap.range (A * Ω * pinv (Zᴴ * Ω) * Zᴴ).mulVecLin ≤ LinearMap.range (A * Ω).mulVecLin :=
-  range_mulVecLin_le_iff_exists_mul.mpr ⟨pinv (Zᴴ * Ω) * Zᴴ, by simp only [Matrix.mul_assoc]⟩
+  range_le_iff_exists_mul.mpr ⟨pinv (Zᴴ * Ω) * Zᴴ, by simp only [Matrix.mul_assoc]⟩
 
 variable [DecidableEq r]
 

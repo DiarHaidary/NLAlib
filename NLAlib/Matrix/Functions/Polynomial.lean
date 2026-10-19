@@ -83,7 +83,8 @@ theorem aeval_diagonal_self {R : Type*} [CommSemiring R] (d : n → R) (p : R[X]
 $p(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
 = \mathbf{U}\,p(\mathbf{A})\,\mathbf{U}^{\mathsf{H}}$ for $\mathbf{U}$ with orthonormal columns
 and as many columns as rows. -/
-theorem aeval_mul_mul_conjTranspose {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U)
+theorem HasOrthonormalCols.aeval_mul_mul_conjTranspose {U : Matrix n r 𝕜}
+    (hU : HasOrthonormalCols U)
     (hr : Fintype.card r = Fintype.card n) (A : Matrix r r 𝕜) (p : ℝ[X]) :
     aeval (U * A * Uᴴ) p = U * aeval A p * Uᴴ := by
   have hUU : U * Uᴴ = 1 := hU.mul_conjTranspose_self_of_card_eq hr.symm

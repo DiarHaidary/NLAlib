@@ -39,15 +39,15 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-- **CountSketch regression, relative residual with high probability**: for a CountSketch
 $\mathbf{S}$ with $p$ rows, $r=\operatorname{rank}\mathbf{A}$ and $\varepsilon,\delta>0$,
-if <!-- value countSketchRows r (1/2) (\delta/2) -->
+if <!-- value countSketchEmbeddingDim r (1/2) (\delta/2) -->
 $$p\ge\frac{r^2+r}{(\delta/2)(1/2)^2}$$
 and $p\ge16(r+1)/(\varepsilon\delta)$, then
 $$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
 \|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},
 \mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,.$$
 Over any `RCLike` field, for any rank of $\mathbf{A}$ and a matrix right-hand side. The first
-size is `NLAlib.countSketchRows A.rank (1 / 2) (δ / 2)`; the sketch is unscaled, with one sign
-per column. [Woodruff2014, proof of Theorem 23]; there real vector regression and constant
+size is `NLAlib.countSketchEmbeddingDim A.rank (1 / 2) (δ / 2)`; the sketch is unscaled, with one
+sign per column. [Woodruff2014, proof of Theorem 23]; there real vector regression and constant
 success probability, here squared matrix residuals with a separate injection and multiplication
 budget, and complex support from the direct CountSketch moment identity.
 Asymptotic form:
@@ -56,7 +56,7 @@ Result: sketch-and-solve-ls -/
 theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_countSketch
     (hS : HasLaw S (countSketch p m) μ) (A : Matrix m n 𝕜) (B : Matrix m r 𝕜)
     {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
-    (hp : countSketchRows A.rank (1 / 2) (δ / 2) ≤ Fintype.card p)
+    (hp : countSketchEmbeddingDim A.rank (1 / 2) (δ / 2) ≤ Fintype.card p)
     (hp' : 16 * ((A.rank : ℝ) + 1) ≤ ε * δ * Fintype.card p) :
     μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
       frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ := by
@@ -104,10 +104,10 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_countSket
         div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
       nlinarith
     exact (mul_le_mul_of_nonneg_right hth (frobNorm_nonneg _)).trans hω.le
-  have hOSI := isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le
     hS A.rank (by norm_num) (half_pos hδ) hp
   have h := (hOSI.hasSubspaceInjection (U := A) le_rfl
-    ).measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
       (by norm_num) hε.le B (by simpa only [show (1 - 1 / 2 : ℝ) = 1 / 2 by norm_num] using hAMM)
   exact h.trans (by linarith)
 
@@ -144,9 +144,9 @@ theorem exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_ha
     rwa [← mul_div_assoc, div_le_iff₀ hδ] at hp
   refine measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_countSketch
     hS A B hε hδ ?_ ?_
-  · have e : countSketchRows A.rank (1 / 2) (δ / 2) =
+  · have e : countSketchEmbeddingDim A.rank (1 / 2) (δ / 2) =
         8 * ((A.rank : ℝ) ^ 2 + A.rank) / δ := by
-      rw [countSketchRows_def]
+      rw [countSketchEmbeddingDim_def]
       field_simp
       ring
     rw [e, div_le_iff₀ hδ]

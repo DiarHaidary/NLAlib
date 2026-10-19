@@ -168,7 +168,7 @@ theorem re_det_conjTranspose_mul_self_fromCols [DecidableEq m] [DecidableEq p]
       by_contra h
       exact hC (isUnit_conjTranspose_mul_self_iff.mp
         ((Matrix.isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr h)))
-    have hle := re_det_fromBlocks_le_of_posSemidef (hGram ▸
+    have hle := Matrix.PosSemidef.re_det_fromBlocks_le (hGram ▸
       Matrix.posSemidef_conjTranspose_mul_self (Matrix.fromCols C V))
     have hge := (Matrix.posSemidef_conjTranspose_mul_self (Matrix.fromCols C V)).det_nonneg
     rw [h0, map_zero, zero_mul] at hle ⊢
@@ -253,7 +253,7 @@ theorem singularValues_fromCols_le_sqrt_mul {C : Matrix m p 𝕜} {T : Matrix p 
       ring
   have hCiD : Ciᴴ * D = 0 := by
     have h1 : rangeProjector C * Ci = Ci :=
-      rangeProjector_mul_eq_self_iff.mpr (range_mulVecLin_truncatedSVD_le C i)
+      rangeProjector_mul_eq_self_iff.mpr (range_truncatedSVD_le C i)
     rw [← h1, Matrix.conjTranspose_mul, conjTranspose_rangeProjector, Matrix.mul_assoc,
       rangeProjector_mul_eq_zero_iff.mpr hD, Matrix.mul_zero]
   have horth : (E * Matrix.fromCols (1 : Matrix p p 𝕜) T)ᴴ * Matrix.fromCols (0 : Matrix m p 𝕜) D

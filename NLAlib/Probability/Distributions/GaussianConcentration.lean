@@ -22,7 +22,7 @@ hypothesis is stated on `EuclideanSpace ℝ n`, since `n → ℝ` carries the su
 
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian`.
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector`.
-* `NLAlib.measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector`: the upper tail.
+* `NLAlib.measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector`: the upper tail.
 * `NLAlib.lipschitzWith_ofLp_iff`.
 
 ## References
@@ -113,7 +113,7 @@ for the Euclidean norm and $t \ge 0$,
 $$\mathbb{P}\bigl(\mathbb{E} f(\mathbf{g}) + t \le f(\mathbf{g})\bigr)
 \le \exp\Bigl(-\frac{t^2}{2L^2}\Bigr),$$
 with the event in the form the random-matrix consumers use. -/
-theorem measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
+theorem measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) {t : ℝ}
     (ht : 0 ≤ t) :

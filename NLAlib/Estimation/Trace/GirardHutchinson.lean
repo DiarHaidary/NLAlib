@@ -33,10 +33,10 @@ of a Haar frame, which are not independent, the variance is computed exactly her
 
 * `NLAlib.girardHutchinson_eq_sum`: the average of the single-probe estimates.
 * `NLAlib.integral_girardHutchinson`: unbiasedness.
-* `NLAlib.integral_norm_girardHutchinson_sub_trace_sq`, `NLAlib.variance_girardHutchinson`: the
+* `NLAlib.integral_norm_trace_sub_girardHutchinson_sq`, `NLAlib.variance_girardHutchinson`: the
   variance with $m$ independent probes is the single-probe variance divided by $m$.
 * `NLAlib.variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame`: orthonormal (Haar) probes.
-* `NLAlib.measureReal_abs_girardHutchinson_sub_trace_ge_le`: the tail with independent
+* `NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le`: the tail with independent
   sub-Gaussian entries, from Hanson–Wright.
 -/
 
@@ -108,17 +108,19 @@ private theorem integral_mul_star_eq_zero [DecidableEq n] {X : Ω → Matrix n m
 
 /-- **The variance of the Girard–Hutchinson estimator**: for $m$ independent isotropic probes
 whose single-probe estimates are square integrable with second moment $v$ about the mean,
-$\mathbb{E}\lvert \mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega}) -
-\operatorname{tr}\mathbf{A}\rvert^2 = v / m$. Over $\mathbb{C}$ the left side is the variance of
+$\mathbb{E}\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})\rvert^2 = v /
+m$. Over $\mathbb{C}$ the left side is the variance of
 the complex estimate; the real `variance` form is `NLAlib.variance_girardHutchinson`.
 [Epperly2023, Variance].
 Result: girard-hutchinson-variance -/
-theorem integral_norm_girardHutchinson_sub_trace_sq [DecidableEq n] [Nonempty m]
+theorem integral_norm_trace_sub_girardHutchinson_sq [DecidableEq n] [Nonempty m]
     {X : Ω → Matrix n m 𝕜} (hind : iIndepFun (fun j ω i => X ω i j) μ)
     (hX : ∀ j, IsIsotropic (fun ω i => X ω i j) μ) {A : Matrix n n 𝕜}
     (hL2 : ∀ j, MemLp (fun ω => quadForm A fun i => X ω i j) 2 μ) {v : ℝ}
     (hv : ∀ j, ∫ ω, ‖(quadForm A fun i => X ω i j) - A.trace‖ ^ 2 ∂μ = v) :
-    ∫ ω, ‖girardHutchinson A (X ω) - A.trace‖ ^ 2 ∂μ = v / Fintype.card m := by
+    ∫ ω, ‖A.trace - girardHutchinson A (X ω)‖ ^ 2 ∂μ = v / Fintype.card m := by
+  simp only [norm_sub_rev A.trace]
   classical
   have := hind.isProbabilityMeasure
   set Y : m → Ω → 𝕜 := fun j ω => (quadForm A fun i => X ω i j) - A.trace
@@ -180,11 +182,11 @@ theorem variance_girardHutchinson [DecidableEq n] [Nonempty m] {X : Ω → Matri
     rw [he]
     exact h1.mul_const _
   rw [variance_eq_integral hGH.aestronglyMeasurable.aemeasurable, integral_girardHutchinson hX]
-  have h := integral_norm_girardHutchinson_sub_trace_sq hind hX hL2 (v := v) fun j => by
+  have h := integral_norm_trace_sub_girardHutchinson_sq hind hX hL2 (v := v) fun j => by
     rw [← hv j, variance_eq_integral (hL2 j).aestronglyMeasurable.aemeasurable,
       (hX j).integral_quadForm A]
     simp only [Real.norm_eq_abs, sq_abs]
-  simpa only [Real.norm_eq_abs, sq_abs] using h
+  simpa only [norm_sub_rev A.trace, Real.norm_eq_abs, sq_abs] using h
 
 /-- **The Girard–Hutchinson estimator with orthonormal probes**: with the test matrix
 $\sqrt{\lvert n \rvert}\,\mathbf{Q}$ for an $n \times k$ Haar frame $\mathbf{Q}$,
@@ -247,8 +249,9 @@ the real $n \times m$ test matrix $\mathbf{\Omega}$ are independent, each satisf
 sub-Gaussian moment generating function bound with variance proxy $c$ (`HasSubgaussianMGF`) and
 has second moment $1$, then for every real square $\mathbf{B}$ and every
 $\tau \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl[\lvert \mathsf{girardHutchinson}(\mathbf{B}, \mathbf{\Omega}) -
-\operatorname{tr}\mathbf{B} \rvert \ge \tau\bigr] \le 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
+$$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{B} -
+\mathsf{girardHutchinson}(\mathbf{B}, \mathbf{\Omega}) \rvert \ge \tau\bigr] \le
+2\exp\Bigl(-\frac{1}{196}\min\Bigl(
 \frac{m\tau^2}{c^2\|\mathbf{B}\|_{\mathsf{F}}^2}, \frac{m\tau}{c\|\mathbf{B}\|_2}\Bigr)\Bigr)\,;$$
 the constant is `hansonWrightConstant`. No symmetry of $\mathbf{B}$ is needed. Junk cases: with no
 columns ($m = 0$) the estimate is $0$ and the bound is $2$; a zero denominator makes its fraction
@@ -262,14 +265,15 @@ $m\|\mathbf{B}\|_{\mathsf{F}}^2$ and spectral norm $\|\mathbf{B}\|_2$.
 sample-size form $m = O(\log(1/\delta)/\varepsilon^2)$ for
 $\lvert \cdot \rvert \le \varepsilon\|\mathbf{B}\|_{\mathsf{F}}$.
 Result: girard-hutchinson-tail -/
-theorem measureReal_abs_girardHutchinson_sub_trace_ge_le {X : Ω → Matrix n m ℝ} {c : ℝ≥0}
+theorem measureReal_abs_trace_sub_girardHutchinson_ge_le {X : Ω → Matrix n m ℝ} {c : ℝ≥0}
     (hind : iIndepFun (fun p : n × m => fun ω => X ω p.1 p.2) μ)
     (hsub : ∀ i j, HasSubgaussianMGF (fun ω => X ω i j) c μ)
     (hvar : ∀ i j, ∫ ω, X ω i j ^ 2 ∂μ = 1) (B : Matrix n n ℝ) {τ : ℝ} (hτ : 0 ≤ τ) :
-    μ.real {ω | τ ≤ |girardHutchinson B (X ω) - B.trace|} ≤
+    μ.real {ω | τ ≤ |B.trace - girardHutchinson B (X ω)|} ≤
       2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm B ^ 2))
           (Fintype.card m * τ / ((c : ℝ) * specNorm B)))) := by
+  simp only [abs_sub_comm B.trace]
   classical
   have := hind.isProbabilityMeasure
   rcases isEmpty_or_nonempty m with hm | hm

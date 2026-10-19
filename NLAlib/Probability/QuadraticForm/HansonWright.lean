@@ -186,7 +186,7 @@ theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x
     μ.real {ω | t ≤ quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ} ≤
       rexp (-(hansonWrightConstant *
         min (t ^ 2 / (c ^ 2 * frobNorm A ^ 2)) (t / (c * specNorm A)))) :=
-  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_ge_le ht).trans
+  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_ge_le ht).trans
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
 /-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: under the
@@ -201,7 +201,7 @@ theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x
     μ.real {ω | quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ ≤ -t} ≤
       rexp (-(hansonWrightConstant *
         min (t ^ 2 / (c ^ 2 * frobNorm A ^ 2)) (t / (c * specNorm A)))) :=
-  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_le_le ht).trans
+  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_le_le ht).trans
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
 /-- **The Hanson–Wright inequality.** If the coordinates $\mathbf{x}_i$ of a real random vector
@@ -221,7 +221,7 @@ theorem measureReal_abs_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω 
     μ.real {ω | t ≤ |quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ|} ≤
       2 * rexp (-(hansonWrightConstant *
         min (t ^ 2 / (c ^ 2 * frobNorm A ^ 2)) (t / (c * specNorm A)))) :=
-  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_abs_ge_le ht).trans
+  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_abs_ge_le ht).trans
     (mul_le_mul_of_nonneg_left
       (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht))) zero_le_two)
 

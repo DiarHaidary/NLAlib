@@ -30,7 +30,7 @@ $\mathbf{W} = \begin{bmatrix} \mathbf{V} & \mathbf{V}_{\perp} \end{bmatrix}^{\ma
 which reduce $\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 \le c$ to the event
 $0 \le \sum_i \theta_i \mathbf{g}_i^2$ with two weights, and Chernoff's bound with
 `NLAlib.integral_exp_sum_mul_sq_of_hasLaw_gaussianVector`. The fourth moment uses invariance
-alone (`NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`: the law of
+alone (`NLAlib.HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq`: the law of
 $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the column type of $\mathbf{V}$):
 $\sum_i \mathbf{u}_i^2 = 1$ and a $45^\circ$ rotation give
 $\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ when
@@ -41,12 +41,12 @@ $\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$. Design
 
 * `NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`: $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ has
   the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$.
-* `NLAlib.measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector`,
+* `NLAlib.measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector`,
   `NLAlib.measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector`:
   the two Chernoff tails.
 * The relative deviation (in namespace `NLAlib`):
   `measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uniformSphereVector`
-* `NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`: sphere invariance.
+* `NLAlib.HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq`: sphere invariance.
 * `NLAlib.integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector`: the fourth
   moment.
 -/
@@ -331,9 +331,9 @@ $$\mathbb{P}\bigl(\beta \lvert k \rvert / \lvert n \rvert
 \le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
 The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
 with an unspecified constant $c$. The $\chi^2_{\lvert k \rvert}$ tail
-`NLAlib.measureReal_mul_card_le_norm_sq_le_of_hasLaw_gaussianVector` is the limit
+`NLAlib.measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector` is the limit
 $\lvert n \rvert \to \infty$. -/
-theorem measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector
+theorem measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector
     (hu : HasLaw u (uniformSphereVector n) μ) (hV : HasOrthonormalCols V) (hβ : 1 ≤ β) :
     μ.real {ω | β * (Fintype.card k / Fintype.card n) ≤ ‖WithLp.toLp 2 (Vᴴ *ᵥ u ω)‖ ^ 2} ≤
       Real.exp (Fintype.card k / 2 * (1 - β + Real.log β)) := by
@@ -476,7 +476,7 @@ measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uni
       exact mul_le_mul_of_nonneg_left (by linarith) (by positivity)
   have hup : μ.real {ω | (1 + ε) * (K / N) ≤ X ω} ≤
       Real.exp (-(K * (ε ^ 2 / 4 - ε ^ 3 / 6))) := by
-    refine (measureReal_mul_div_le_norm_conjTranspose_mulVec_sq_le_of_hasLaw_uniformSphereVector
+    refine (measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector
       hu hV (by linarith)).trans (Real.exp_le_exp.2 ?_)
     have := Real.log_one_add_le_cubic (u := ε) (by linarith)
     have : K / 2 * (1 - (1 + ε) + Real.log (1 + ε)) ≤ K / 2 * (-(ε ^ 2 / 2) + ε ^ 3 / 3) :=
@@ -556,7 +556,8 @@ law: both are the law of $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ for an $n \times r$
 $\mathbf{Q}$ and a fixed unit $\mathbf{x}$
 (`NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`). For square $\mathbf{V}_2 = \mathbf{I}$
 this is the orthogonal invariance of the uniform law. -/
-theorem uniformSphereVector_map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r]
+theorem HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*}
+    [Finite r]
     [DecidableEq r] {V₁ V₂ : Matrix n r ℝ} (h₁ : HasOrthonormalCols V₁)
     (h₂ : HasOrthonormalCols V₂) :
     (uniformSphereVector n).map (V₁ᴴ *ᵥ ·) = (uniformSphereVector n).map (V₂ᴴ *ᵥ ·) := by
@@ -569,7 +570,8 @@ theorem uniformSphereVector_map_conjTranspose_mulVec_eq [Nonempty n] {r : Type*}
     hx).map_eq, (hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame
     (HasLaw.id (μ := haarFrame n r)) h₂ hx).map_eq]
 
-/-- The integral form of `NLAlib.uniformSphereVector_map_conjTranspose_mulVec_eq`. -/
+/-- The integral form of
+`NLAlib.HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq`. -/
 private theorem integral_comp_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [Finite r]
     [DecidableEq r] {V₁ V₂ : Matrix n r ℝ} (h₁ : HasOrthonormalCols V₁)
     (h₂ : HasOrthonormalCols V₂) {F : (r → ℝ) → ℝ} (hF : Continuous F) :
@@ -577,7 +579,7 @@ private theorem integral_comp_conjTranspose_mulVec_eq [Nonempty n] {r : Type*} [
   have hm (W : Matrix n r ℝ) : Measurable (Wᴴ *ᵥ · : (n → ℝ) → r → ℝ) :=
     (continuous_const.matrix_mulVec continuous_id).measurable
   rw [← integral_map (hm V₁).aemeasurable hF.aestronglyMeasurable,
-    uniformSphereVector_map_conjTranspose_mulVec_eq h₁ h₂,
+    HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq h₁ h₂,
     integral_map (hm V₂).aemeasurable hF.aestronglyMeasurable]
 
 omit [Fintype n] in

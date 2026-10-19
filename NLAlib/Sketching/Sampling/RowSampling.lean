@@ -34,8 +34,9 @@ constants $1 \mp \varepsilon$ and failure probability $2 d\, e^{-\varepsilon^2 k
 $0 \le \varepsilon \le 1$, $d = \operatorname{rank}\mathbf{U}$ and $k$ the number of samples
 (matrix Chernoff). Exact leverage sampling is $L = \operatorname{rank}\mathbf{U}$, uniform
 sampling $L = \operatorname{coh}\mathbf{U}$, the coherence. The sample sizes are named quantities
-(CONTRIBUTING §5.2, rule 2), with their inversions `NLAlib.two_mul_mul_exp_le_of_samplingSize_le`
-and `NLAlib.mul_exp_le_of_samplingInjectionSize_le`; the "$k \ge \ldots$ suffices" forms are
+(CONTRIBUTING §5.2, rule 2), with their inversions
+`NLAlib.two_mul_mul_exp_le_of_samplingEmbeddingDim_le`
+and `NLAlib.mul_exp_le_of_samplingInjectionDim_le`; the "$k \ge \ldots$ suffices" forms are
 corollaries of the tails.
 
 Degenerate cases. Rank zero ($\mathbf{U} = \mathbf{0}$): every failure event is empty and every
@@ -65,10 +66,10 @@ the same identity at $\mathbf{A} = \mathbf{B} = \mathbf{I}$.
 
 * `NLAlib.samplingSketchMatrix`: the sketch built from given indices.
 * `NLAlib.samplingSketch`: its law for i.i.d. indices.
-* `NLAlib.samplingSize`, `NLAlib.samplingInjectionSize`: the sample sizes for a subspace of
-  dimension $d$; the embedding needs <!-- value samplingSize d L \varepsilon \delta -->
+* `NLAlib.samplingEmbeddingDim`, `NLAlib.samplingInjectionDim`: the sample sizes for a subspace of
+  dimension $d$; the embedding needs <!-- value samplingEmbeddingDim d L \varepsilon \delta -->
   $\lvert k \rvert \ge 3 L \log(2d/\delta)/\varepsilon^2$ samples, the
-  injection <!-- value samplingInjectionSize d L \varepsilon \delta -->
+  injection <!-- value samplingInjectionDim d L \varepsilon \delta -->
   $\lvert k \rvert \ge 2 L \log(d/\delta)/\varepsilon^2$.
 
 ## Main results
@@ -88,10 +89,10 @@ the same identity at $\mathbf{A} = \mathbf{B} = \mathbf{I}$.
 * `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_leverageScoreDistribution`,
   `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card`: exact leverage and
   uniform sampling.
-* `NLAlib.two_mul_mul_exp_le_of_samplingSize_le`,
-  `NLAlib.mul_exp_le_of_samplingInjectionSize_le`: the tails inverted at the sample sizes.
-* `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le`,
-  `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le`: sample
+* `NLAlib.two_mul_mul_exp_le_of_samplingEmbeddingDim_le`,
+  `NLAlib.mul_exp_le_of_samplingInjectionDim_le`: the tails inverted at the sample sizes.
+* `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le`,
+  `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le`: sample
   sizes.
 * `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch`,
   `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`: the asymptotic forms,
@@ -396,7 +397,7 @@ private theorem hasSubspaceEmbedding_zero_samplingSketchMatrix [Nonempty k] [Non
     eigenvalue_one Fintype.card_pos] at hC
   refine hQ.hasSubspaceEmbedding_zero_of_measureReal_le
     ((measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_))
-  · rw [sq_singularValues, conjTranspose_samplingSketchMatrix_mul_mul] at hι
+  · rw [singularValues_sq, conjTranspose_samplingSketchMatrix_mul_mul] at hι
     rw [mul_one]
     exact hι
   · congr 2
@@ -568,36 +569,37 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_card
 
 /-! ### Sample sizes -/
 
-/-- The **row-sampling size** <!-- value samplingSize d L \varepsilon \delta -->
+/-- The **row-sampling size** <!-- value samplingEmbeddingDim d L \varepsilon \delta -->
 $3 L \log(2d/\delta)/\varepsilon^2$: with at least this many
 samples, row sampling under leverage domination with constant $L$ is a subspace embedding with
 constants $1 \mp \varepsilon$ and failure probability $\delta$ for a subspace of dimension $d$,
 for $0 < \varepsilon \le 1$
-(`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le`). The value the proof
-reaches, inverting $2 d \, e^{-\varepsilon^2 k / (3L)} \le \delta$
-(`NLAlib.two_mul_mul_exp_le_of_samplingSize_le`); [Woodruff2014, Theorem 17] has
+(`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le`). The value the
+proof reaches, inverting $2 d \, e^{-\varepsilon^2 k / (3L)} \le \delta$
+(`NLAlib.two_mul_mul_exp_le_of_samplingEmbeddingDim_le`); [Woodruff2014, Theorem 17] has
 $144 d \log(2d/\delta) / (\beta \varepsilon^2)$, which at $L = d/\beta$ is $48$ times larger.
-Consumers use `NLAlib.samplingSize_le`. Junk values: $0$ at $\varepsilon = 0$; at most $0$ for
-$\delta \ge 2d$, where the tail bound is at least $1$. -/
-noncomputable irreducible_def samplingSize (d : ℕ) (L ε δ : ℝ) : ℝ :=
+Consumers use `NLAlib.samplingEmbeddingDim_le`. Junk values: $0$ at $\varepsilon = 0$; at most $0$
+for $\delta \ge 2d$, where the tail bound is at least $1$. -/
+noncomputable irreducible_def samplingEmbeddingDim (d : ℕ) (L ε δ : ℝ) : ℝ :=
   3 * L * Real.log (2 * d / δ) / ε ^ 2
 
 /-- The row-sampling size is nonnegative for $0 \le L$ and $0 < \delta \le 2d$. -/
-theorem samplingSize_nonneg {d : ℕ} (hL : 0 ≤ L) (hδ : 0 < δ) (hδd : δ ≤ 2 * d) :
-    0 ≤ samplingSize d L ε δ := by
-  rw [samplingSize_def]
+theorem samplingEmbeddingDim_nonneg {d : ℕ} (hL : 0 ≤ L) (hδ : 0 < δ) (hδd : δ ≤ 2 * d) :
+    0 ≤ samplingEmbeddingDim d L ε δ := by
+  rw [samplingEmbeddingDim_def]
   have hlog : 0 ≤ Real.log (2 * d / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδd)
   exact div_nonneg (mul_nonneg (mul_nonneg (by norm_num) hL) hlog) (sq_nonneg ε)
 
 /-- The row-sampling size is monotone in the dimension $d$ and in the domination constant
 $L \ge 0$, and antitone in the distortion $\varepsilon > 0$ and the failure probability
 $\delta > 0$, as long as the larger side is in its nontrivial range $\delta \le 2 d'$. -/
-theorem samplingSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 0 ≤ L) (hLL' : L ≤ L')
+theorem samplingEmbeddingDim_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 0 ≤ L)
+    (hLL' : L ≤ L')
     (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδd : δ ≤ 2 * d') :
-    samplingSize d L ε' δ' ≤ samplingSize d' L' ε δ := by
-  have hR := samplingSize_nonneg (ε := ε) (hL.trans hLL') hδ hδd
-  rw [samplingSize_def] at hR ⊢
-  rw [samplingSize_def]
+    samplingEmbeddingDim d L ε' δ' ≤ samplingEmbeddingDim d' L' ε δ := by
+  have hR := samplingEmbeddingDim_nonneg (ε := ε) (hL.trans hLL') hδ hδd
+  rw [samplingEmbeddingDim_def] at hR ⊢
+  rw [samplingEmbeddingDim_def]
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   rcases le_or_gt (Real.log (2 * d / δ')) 0 with h0 | h0
   · exact (div_nonpos_of_nonpos_of_nonneg
@@ -613,43 +615,43 @@ theorem samplingSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 
       (mul_le_mul (by linarith) hlog h0.le (mul_nonneg (by norm_num) (hL.trans hLL')))
       (by positivity) (pow_le_pow_left₀ hε.le hεε' 2)
 
-/-- The explicit comparison: `samplingSize d L ε δ` is at
-most <!-- value samplingSize d L \varepsilon \delta -->
+/-- The explicit comparison: `samplingEmbeddingDim d L ε δ` is at
+most <!-- value samplingEmbeddingDim d L \varepsilon \delta -->
 $3 L \log(2d/\delta)/\varepsilon^2$, the value the proof reaches (at present an equality); an
 improved definition keeps it true. -/
-theorem samplingSize_le (d : ℕ) (L ε δ : ℝ) :
-    samplingSize d L ε δ ≤ 3 * L * Real.log (2 * d / δ) / ε ^ 2 := by
-  rw [samplingSize_def]
+theorem samplingEmbeddingDim_le (d : ℕ) (L ε δ : ℝ) :
+    samplingEmbeddingDim d L ε δ ≤ 3 * L * Real.log (2 * d / δ) / ε ^ 2 := by
+  rw [samplingEmbeddingDim_def]
 
-/-- The **row-sampling injection size** <!-- value samplingInjectionSize d L \varepsilon \delta -->
+/-- The **row-sampling injection size** <!-- value samplingInjectionDim d L \varepsilon \delta -->
 $2 L \log(d/\delta)/\varepsilon^2$: with at least this
 many samples, row sampling under leverage domination with constant $L$ is a subspace injection
 with constant $1 - \varepsilon$ and failure probability $\delta$ for a subspace of dimension $d$,
 for $\varepsilon > 0$
-(`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le`). The value
+(`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le`). The value
 the proof reaches, inverting $d \, e^{-\varepsilon^2 k / (2L)} \le \delta$
-(`NLAlib.mul_exp_le_of_samplingInjectionSize_le`); one tail, against the embedding's two.
-Consumers use `NLAlib.samplingInjectionSize_le`. Junk values: $0$ at $\varepsilon = 0$; at most
+(`NLAlib.mul_exp_le_of_samplingInjectionDim_le`); one tail, against the embedding's two.
+Consumers use `NLAlib.samplingInjectionDim_le`. Junk values: $0$ at $\varepsilon = 0$; at most
 $0$ for $\delta \ge d$, where the tail bound is at least $1$. -/
-noncomputable irreducible_def samplingInjectionSize (d : ℕ) (L ε δ : ℝ) : ℝ :=
+noncomputable irreducible_def samplingInjectionDim (d : ℕ) (L ε δ : ℝ) : ℝ :=
   2 * L * Real.log (d / δ) / ε ^ 2
 
 /-- The row-sampling injection size is nonnegative for $0 \le L$ and $0 < \delta \le d$. -/
-theorem samplingInjectionSize_nonneg {d : ℕ} (hL : 0 ≤ L) (hδ : 0 < δ) (hδd : δ ≤ d) :
-    0 ≤ samplingInjectionSize d L ε δ := by
-  rw [samplingInjectionSize_def]
+theorem samplingInjectionDim_nonneg {d : ℕ} (hL : 0 ≤ L) (hδ : 0 < δ) (hδd : δ ≤ d) :
+    0 ≤ samplingInjectionDim d L ε δ := by
+  rw [samplingInjectionDim_def]
   have hlog : 0 ≤ Real.log (d / δ) := Real.log_nonneg ((one_le_div₀ hδ).2 hδd)
   exact div_nonneg (mul_nonneg (mul_nonneg (by norm_num) hL) hlog) (sq_nonneg ε)
 
 /-- The row-sampling injection size is monotone in the dimension $d$ and in the domination
 constant $L \ge 0$, and antitone in the distortion $\varepsilon > 0$ and the failure probability
 $\delta > 0$, as long as the larger side is in its nontrivial range $\delta \le d'$. -/
-theorem samplingInjectionSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 0 ≤ L)
+theorem samplingInjectionDim_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d') (hL : 0 ≤ L)
     (hLL' : L ≤ L') (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') (hδd : δ ≤ d') :
-    samplingInjectionSize d L ε' δ' ≤ samplingInjectionSize d' L' ε δ := by
-  have hR := samplingInjectionSize_nonneg (ε := ε) (hL.trans hLL') hδ hδd
-  rw [samplingInjectionSize_def] at hR ⊢
-  rw [samplingInjectionSize_def]
+    samplingInjectionDim d L ε' δ' ≤ samplingInjectionDim d' L' ε δ := by
+  have hR := samplingInjectionDim_nonneg (ε := ε) (hL.trans hLL') hδ hδd
+  rw [samplingInjectionDim_def] at hR ⊢
+  rw [samplingInjectionDim_def]
   have hδ' : 0 < δ' := hδ.trans_le hδδ'
   rcases le_or_gt (Real.log (d / δ')) 0 with h0 | h0
   · exact (div_nonpos_of_nonpos_of_nonneg
@@ -665,27 +667,27 @@ theorem samplingInjectionSize_mono {d d' : ℕ} {L' ε' δ' : ℝ} (hd : d ≤ d
       (mul_le_mul (by linarith) hlog h0.le (mul_nonneg (by norm_num) (hL.trans hLL')))
       (by positivity) (pow_le_pow_left₀ hε.le hεε' 2)
 
-/-- The explicit comparison: `samplingInjectionSize d L ε δ` is at
-most <!-- value samplingInjectionSize d L \varepsilon \delta -->
+/-- The explicit comparison: `samplingInjectionDim d L ε δ` is at
+most <!-- value samplingInjectionDim d L \varepsilon \delta -->
 $2 L \log(d/\delta)/\varepsilon^2$, the value the proof reaches (at present an equality); an
 improved definition keeps it true. -/
-theorem samplingInjectionSize_le (d : ℕ) (L ε δ : ℝ) :
-    samplingInjectionSize d L ε δ ≤ 2 * L * Real.log (d / δ) / ε ^ 2 := by
-  rw [samplingInjectionSize_def]
+theorem samplingInjectionDim_le (d : ℕ) (L ε δ : ℝ) :
+    samplingInjectionDim d L ε δ ≤ 2 * L * Real.log (d / δ) / ε ^ 2 := by
+  rw [samplingInjectionDim_def]
 
-/-- **Inverting the embedding tail at `NLAlib.samplingSize`**: for $L > 0$, $\varepsilon > 0$,
-$\delta > 0$ and <!-- value samplingSize d L \varepsilon \delta -->
-$K \ge 3 L \log(2d/\delta)/\varepsilon^2$ (`samplingSize d L ε δ`),
+/-- **Inverting the embedding tail at `NLAlib.samplingEmbeddingDim`**: for $L > 0$,
+$\varepsilon > 0$, $\delta > 0$ and <!-- value samplingEmbeddingDim d L \varepsilon \delta -->
+$K \ge 3 L \log(2d/\delta)/\varepsilon^2$ (`samplingEmbeddingDim d L ε δ`),
 $2 d \, e^{-\varepsilon^2 K / (3L)} \le \delta$. The step from the tails of row sampling (with or
 without replacement, and after flattening in the SRHT) to their sample-size forms. -/
-theorem two_mul_mul_exp_le_of_samplingSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
-    (hδ : 0 < δ) (hK : samplingSize d L ε δ ≤ K) :
+theorem two_mul_mul_exp_le_of_samplingEmbeddingDim_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
+    (hδ : 0 < δ) (hK : samplingEmbeddingDim d L ε δ ≤ K) :
     2 * d * Real.exp (-ε ^ 2 * K / (3 * L)) ≤ δ := by
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · rw [Nat.cast_zero, mul_zero, zero_mul]
     exact hδ.le
   have hd' : (0 : ℝ) < d := Nat.cast_pos.2 hd
-  rw [samplingSize_def, div_le_iff₀ (by positivity)] at hK
+  rw [samplingEmbeddingDim_def, div_le_iff₀ (by positivity)] at hK
   have hlog : Real.log (2 * d / δ) ≤ ε ^ 2 * K / (3 * L) := by
     rw [le_div_iff₀ (by positivity)]
     linarith
@@ -693,18 +695,18 @@ theorem two_mul_mul_exp_le_of_samplingSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (
   rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
   linarith
 
-/-- **Inverting the injection tail at `NLAlib.samplingInjectionSize`**: for $L > 0$,
-$\varepsilon > 0$, $\delta > 0$ and <!-- value samplingInjectionSize d L \varepsilon \delta -->
-$K \ge 2 L \log(d/\delta)/\varepsilon^2$ (`samplingInjectionSize d L ε δ`),
+/-- **Inverting the injection tail at `NLAlib.samplingInjectionDim`**: for $L > 0$,
+$\varepsilon > 0$, $\delta > 0$ and <!-- value samplingInjectionDim d L \varepsilon \delta -->
+$K \ge 2 L \log(d/\delta)/\varepsilon^2$ (`samplingInjectionDim d L ε δ`),
 $d \, e^{-\varepsilon^2 K / (2L)} \le \delta$. -/
-theorem mul_exp_le_of_samplingInjectionSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
-    (hδ : 0 < δ) (hK : samplingInjectionSize d L ε δ ≤ K) :
+theorem mul_exp_le_of_samplingInjectionDim_le {d : ℕ} {K : ℝ} (hL : 0 < L) (hε : 0 < ε)
+    (hδ : 0 < δ) (hK : samplingInjectionDim d L ε δ ≤ K) :
     d * Real.exp (-ε ^ 2 * K / (2 * L)) ≤ δ := by
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · rw [Nat.cast_zero, zero_mul]
     exact hδ.le
   have hd' : (0 : ℝ) < d := Nat.cast_pos.2 hd
-  rw [samplingInjectionSize_def, div_le_iff₀ (by positivity)] at hK
+  rw [samplingInjectionDim_def, div_le_iff₀ (by positivity)] at hK
   have hlog : Real.log (d / δ) ≤ ε ^ 2 * K / (2 * L) := by
     rw [le_div_iff₀ (by positivity)]
     linarith
@@ -715,16 +717,17 @@ theorem mul_exp_le_of_samplingInjectionSize_le {d : ℕ} {K : ℝ} (hL : 0 < L) 
 /-- **Row sampling, sample-size form**: row sampling under leverage domination
 $\ell_i(\mathbf{U}) \le L p_i$ is a subspace embedding for $\operatorname{range}\mathbf{U}$ with
 constants $1 \mp \varepsilon$ and failure probability $\delta$, for $0 < \varepsilon \le 1$,
-$\delta > 0$ and <!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+$\delta > 0$
+and <!-- value samplingEmbeddingDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingSize U.rank L ε δ`). [Woodruff2014, Theorem 17], constant
+(`NLAlib.samplingEmbeddingDim U.rank L ε δ`). [Woodruff2014, Theorem 17], constant
 $144/\beta$ there, $3$ here at $L = d/\beta$; [MartinssonTropp2020, §9.6.3]. Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch`.
 Result: leverage-sampling-ose -/
-theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
+theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
     (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
-    (hk : samplingSize U.rank L ε δ ≤ Fintype.card k) :
+    (hk : samplingEmbeddingDim U.rank L ε δ ≤ Fintype.card k) :
     HasSubspaceEmbedding S U (1 - ε) (1 + ε) δ μ := by
   have : IsProbabilityMeasure μ :=
     hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_samplingSketch hp)
@@ -732,7 +735,7 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, mul_zero, zero_mul]
     exact hδ.le
-  exact two_mul_mul_exp_le_of_samplingSize_le
+  exact two_mul_mul_exp_le_of_samplingEmbeddingDim_le
     ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
 /-- **Row sampling, asymptotic form**: with $d = \operatorname{rank}\mathbf{U}$,
@@ -741,9 +744,9 @@ $\ell_i(\mathbf{U}) \le L p_i$ to be a subspace embedding for $\operatorname{ran
 with constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and
 $\delta$ below absolute constants; the constants come before every dimension and before $L$, which
 stays in the threshold ($L = d$ at the leverage scores, $O(d \log(d/\delta)/\varepsilon^2)$).
-Proved from `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le` with
+Proved from `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le` with
 $C = 6$, $\varepsilon_0 = 1$ and $\delta \le 1/2$. [Woodruff2014, Theorem 17].
-Asymptotic: NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le -/
+Asymptotic: NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le -/
 theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
       [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
@@ -754,8 +757,9 @@ theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch :
       HasSubspaceEmbedding S U (1 - ε) (1 + ε) δ μ := by
   refine ⟨6, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n r _ _ _ _ _ _ μ S p U L ε δ hS hp hdom hε hε1 hδ hδ2 hk
-  refine hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingSize_le hS hp hdom hε hε1 hδ
-    ((samplingSize_le _ L ε δ).trans (le_trans ?_ hk))
+  refine hasSubspaceEmbedding_of_hasLaw_samplingSketch_of_samplingEmbeddingDim_le hS hp hdom hε hε1
+    hδ
+    ((samplingEmbeddingDim_le _ L ε δ).trans (le_trans ?_ hk))
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · simp [hd]
   have hL : (1 : ℝ) ≤ L := (Nat.one_le_cast.2 hd).trans (rank_le_of_leverageScore_le hp hdom)
@@ -772,15 +776,15 @@ theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketch :
 /-- **The lower half, sample-size form**: row sampling under leverage domination
 $\ell_i(\mathbf{U}) \le L p_i$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with
 constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
-and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+and <!-- value samplingInjectionDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingInjectionSize U.rank L ε δ`). Asymptotic form:
+(`NLAlib.samplingInjectionDim U.rank L ε δ`). Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`.
 Result: leverage-sampling-osi -/
-theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le
+theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
     (hdom : ∀ i, leverageScore U i ≤ L * p i) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : samplingInjectionSize U.rank L ε δ ≤ Fintype.card k) :
+    (hk : samplingInjectionDim U.rank L ε δ ≤ Fintype.card k) :
     HasSubspaceInjection S U (1 - ε) δ μ := by
   have : IsProbabilityMeasure μ :=
     hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_samplingSketch hp)
@@ -788,7 +792,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_l
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, zero_mul]
     exact hδ.le
-  exact mul_exp_le_of_samplingInjectionSize_le
+  exact mul_exp_le_of_samplingInjectionDim_le
     ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
 /-- **The lower half, asymptotic form**: with $d = \operatorname{rank}\mathbf{U}$,
@@ -797,9 +801,9 @@ $\ell_i(\mathbf{U}) \le L p_i$ to be a subspace injection for $\operatorname{ran
 with constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ below an
 absolute constant; the constants come before every dimension and before $L$, which stays in the
 threshold. Proved from
-`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le` with $C = 2$
+`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le` with $C = 2$
 and $\varepsilon_0 = 1$.
-Asymptotic: NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le -/
+Asymptotic: NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le -/
 theorem exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
       [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
@@ -809,8 +813,8 @@ theorem exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch :
       HasSubspaceInjection S U (1 - ε) δ μ := by
   refine ⟨2, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n r _ _ _ _ _ _ μ S p U L ε δ hS hp hdom hε _ hδ hk
-  refine hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le hS hp hdom hε
-    hδ ((samplingInjectionSize_le _ L ε δ).trans (le_of_eq_of_le ?_ hk))
+  refine hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le hS hp hdom hε
+    hδ ((samplingInjectionDim_le _ L ε δ).trans (le_of_eq_of_le ?_ hk))
   ring
 
 end NLAlib

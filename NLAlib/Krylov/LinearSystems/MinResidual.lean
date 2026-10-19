@@ -71,9 +71,9 @@ omit [Fintype m] [DecidableEq r] in
 /-- The column space of $\mathbf{A}\mathbf{P}_{\mathbf{X}}$ is that of $\mathbf{A}\mathbf{X}$. -/
 private lemma range_mulVecLin_mul_rangeProjector (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) :
     LinearMap.range (A * rangeProjector X).mulVecLin = LinearMap.range (A * X).mulVecLin := by
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp (range_mulVecLin_rangeProjector X).le
-  refine le_antisymm (range_mulVecLin_le_iff_exists_mul.mpr ⟨C, ?_⟩)
-    (range_mulVecLin_le_iff_exists_mul.mpr ⟨X, ?_⟩)
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp (range_rangeProjector X).le
+  refine le_antisymm (range_le_iff_exists_mul.mpr ⟨C, ?_⟩)
+    (range_le_iff_exists_mul.mpr ⟨X, ?_⟩)
   · rw [hC, Matrix.mul_assoc]
   · rw [Matrix.mul_assoc, rangeProjector_mul_self]
 
@@ -81,8 +81,8 @@ omit [DecidableEq r] in
 /-- The range of the minimal residual inverse lies in the column space of $\mathbf{X}$. -/
 private lemma range_mulVecLin_minResidualInverse_le (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) :
     LinearMap.range (minResidualInverse A X).mulVecLin ≤ LinearMap.range X.mulVecLin := by
-  rw [minResidualInverse, range_mulVecLin_pinv, Matrix.conjTranspose_mul,
-    conjTranspose_rangeProjector, Matrix.mulVecLin_mul, ← range_mulVecLin_rangeProjector X]
+  rw [minResidualInverse, range_pinv, Matrix.conjTranspose_mul,
+    conjTranspose_rangeProjector, Matrix.mulVecLin_mul, ← range_rangeProjector X]
   exact LinearMap.range_comp_le_range _ _
 
 omit [DecidableEq r] in
@@ -99,7 +99,7 @@ private lemma galerkinInverse_mul_rangeProjector (G : Matrix n n 𝕜) (X : Matr
   set P := rangeProjector X
   set H := P * G * P
   have hle : LinearMap.range H.mulVecLin ≤ LinearMap.range P.mulVecLin :=
-    range_mulVecLin_le_iff_exists_mul.mpr ⟨G * P, by simp only [H, Matrix.mul_assoc]⟩
+    range_le_iff_exists_mul.mpr ⟨G * P, by simp only [H, Matrix.mul_assoc]⟩
   have hHP : rangeProjector H * P = rangeProjector H := by
     have h := rangeProjector_mul_rangeProjector_of_range_le' hle
     rwa [(isStarProjection_rangeProjector X).rangeProjector_eq] at h

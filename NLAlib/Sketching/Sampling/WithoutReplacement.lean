@@ -33,11 +33,11 @@ replacement (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch_const_inv_car
 matrix Chernoff inequalities without replacement
 (`NLAlib.Probability.MatrixConcentration.ChernoffWithoutReplacement`). With $L$ the coherence of
 $\mathbf{U}$ the domination always holds. The sample sizes are those of sampling with
-replacement: <!-- value samplingSize d L \varepsilon \delta -->
-$\lvert k \rvert \ge 3 L \log(2d/\delta)/\varepsilon^2$ for the embedding (`NLAlib.samplingSize`)
-and <!-- value samplingInjectionSize d L \varepsilon \delta -->
+replacement: <!-- value samplingEmbeddingDim d L \varepsilon \delta -->
+$\lvert k \rvert \ge 3 L \log(2d/\delta)/\varepsilon^2$ for the embedding
+(`NLAlib.samplingEmbeddingDim`) and <!-- value samplingInjectionDim d L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(d/\delta)/\varepsilon^2$ for the injection
-(`NLAlib.samplingInjectionSize`).
+(`NLAlib.samplingInjectionDim`).
 
 Degenerate cases. For $\lvert n \rvert < \lvert k \rvert$ there is no injection and the law is the
 zero measure, so `HasLaw` forces $\mu = 0$ and every tail holds; no $\lvert k \rvert \le
@@ -65,9 +65,9 @@ The tails rest on Hoeffding's comparison of sampling without and with replacemen
   replacement under leverage domination;
   `NLAlib.hasSubspaceEmbedding_coherence_of_hasLaw_samplingSketchWithoutReplacement` at the
   coherence.
-* `NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le`
+* `hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le`
   and its lower-half twin
-  `hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le`:
+  `hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le`:
   sample sizes.
 * `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement`,
   `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`: the
@@ -317,7 +317,7 @@ private theorem hasSubspaceInjection_uniformOn_injective [Nonempty k] [Nonempty 
   rw [hV, eigenvalue_one (by omega)] at hC
   refine hQ.hasSubspaceInjection_of_measureReal_le hj₀
     ((measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_))
-  · rw [sq_singularValues, conjTranspose_samplingSketchMatrix_mul_mul] at hι
+  · rw [singularValues_sq, conjTranspose_samplingSketchMatrix_mul_mul] at hι
     rw [mul_one]
     exact hι
   · rw [Fintype.card_fin]
@@ -340,7 +340,7 @@ private theorem hasSubspaceEmbedding_zero_uniformOn_injective [Nonempty k] [None
   rw [hV, eigenvalue_one Fintype.card_pos] at hC
   refine hQ.hasSubspaceEmbedding_zero_of_measureReal_le
     ((measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_))
-  · rw [sq_singularValues, conjTranspose_samplingSketchMatrix_mul_mul] at hι
+  · rw [singularValues_sq, conjTranspose_samplingSketchMatrix_mul_mul] at hι
     rw [mul_one]
     exact hι
   · rw [Fintype.card_fin]
@@ -472,16 +472,16 @@ theorem hasSubspaceEmbedding_coherence_of_hasLaw_samplingSketchWithoutReplacemen
 replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace
 embedding for $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 1$, $\delta > 0$
-and <!-- value samplingSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+and <!-- value samplingEmbeddingDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 3 L \log(2\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingSize U.rank L ε δ`), the size of sampling with replacement.
+(`NLAlib.samplingEmbeddingDim U.rank L ε δ`), the size of sampling with replacement.
 [Tropp2011a]. Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement`.
 Result: sampling-without-replacement-ose -/
-theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le
+theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
     (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hε : 0 < ε) (hε1 : ε ≤ 1)
-    (hδ : 0 < δ) (hk : samplingSize U.rank L ε δ ≤ Fintype.card k) :
+    (hδ : 0 < δ) (hk : samplingEmbeddingDim U.rank L ε δ ≤ Fintype.card k) :
     HasSubspaceEmbedding S U (1 - ε) (1 + ε) δ μ := by
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   refine (hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement hS hdom hε.le
@@ -489,7 +489,8 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, mul_zero, zero_mul]
     exact hδ.le
-  exact two_mul_mul_exp_le_of_samplingSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
+  exact two_mul_mul_exp_le_of_samplingEmbeddingDim_le (pos_of_leverageScore_le_mul_inv_card hdom hd)
+    hε
     hδ hk
 
 /-- **Row sampling without replacement, asymptotic form**: with
@@ -499,10 +500,10 @@ be a subspace embedding for $\operatorname{range}\mathbf{U}$ with constants $1 \
 and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the
 constants come before every dimension and before $L$ (the coherence parameter), which stays in the
 threshold. Proved from
-`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le` with
-$C = 6$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
+`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le`
+with $C = 6$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
 Asymptotic:
-NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le -/
+NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le -/
 theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
       [Fintype k] [Fintype n] [Fintype r] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
@@ -514,8 +515,9 @@ theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplac
       HasSubspaceEmbedding S U (1 - ε) (1 + ε) δ μ := by
   refine ⟨6, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n r _ _ _ _ _ _ μ S U L ε δ hS hdom hε hε1 hδ hδ2 hk
-  refine hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingSize_le hS
-    hdom hε hε1 hδ ((samplingSize_le _ L ε δ).trans (le_trans ?_ hk))
+  refine hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_samplingEmbeddingDim_le
+    hS
+    hdom hε hε1 hδ ((samplingEmbeddingDim_le _ L ε δ).trans (le_trans ?_ hk))
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · simp [hd]
   have hL : 0 < L := pos_of_leverageScore_le_mul_inv_card hdom hd
@@ -533,15 +535,15 @@ theorem exists_forall_hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplac
 replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ is a subspace
 injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $\varepsilon > 0$, $\delta > 0$
-and <!-- value samplingInjectionSize \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
+and <!-- value samplingInjectionDim \operatorname{rank}\mathbf{U} L \varepsilon \delta -->
 $\lvert k \rvert \ge 2 L \log(\operatorname{rank}\mathbf{U}/\delta)/\varepsilon^2$ samples
-(`NLAlib.samplingInjectionSize U.rank L ε δ`). Asymptotic form:
+(`NLAlib.samplingInjectionDim U.rank L ε δ`). Asymptotic form:
 `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`.
 Result: sampling-without-replacement-osi -/
-theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
+theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le
     (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
     (hdom : ∀ i, leverageScore U i ≤ L * (Fintype.card n : ℝ)⁻¹) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : samplingInjectionSize U.rank L ε δ ≤ Fintype.card k) :
+    (hk : samplingInjectionDim U.rank L ε δ ≤ Fintype.card k) :
     HasSubspaceInjection S U (1 - ε) δ μ := by
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   refine (hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement hS hdom hε.le).mono
@@ -549,7 +551,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   rcases Nat.eq_zero_or_pos U.rank with hd | hd
   · rw [hd, Nat.cast_zero, zero_mul]
     exact hδ.le
-  exact mul_exp_le_of_samplingInjectionSize_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
+  exact mul_exp_le_of_samplingInjectionDim_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
     hδ hk
 
 /-- **The lower half without replacement, asymptotic form**: with
@@ -558,10 +560,10 @@ sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \l
 be a subspace injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and
 failure probability $\delta$, for $\varepsilon$ below an absolute constant; the constants come
 before every dimension and before $L$, which stays in the threshold. Proved from
-`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le`
+`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le`
 with $C = 2$ and $\varepsilon_0 = 1$.
 Asymptotic:
-NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
+NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le
 -/
 theorem exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n r : Type} [MeasurableSpace Ω] [RCLike 𝕜]
@@ -573,8 +575,8 @@ theorem exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplac
       HasSubspaceInjection S U (1 - ε) δ μ := by
   refine ⟨2, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n r _ _ _ _ _ _ μ S U L ε δ hS hdom hε _ hδ hk
-  refine hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionSize_le
-    hS hdom hε hδ ((samplingInjectionSize_le _ L ε δ).trans (le_of_eq_of_le ?_ hk))
+  refine hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_samplingInjectionDim_le
+    hS hdom hε hδ ((samplingInjectionDim_le _ L ε δ).trans (le_of_eq_of_le ?_ hk))
   ring
 
 end NLAlib

@@ -349,7 +349,7 @@ theorem ae_generalizedNystrom_eq_self_of_hasLaw_gaussianMatrix (A : Matrix m n �
   refine generalizedNystrom_eq_self_of_rank_eq hAX ?_
   have hinj := Matrix.rank_mul_eq_iff_injOn.mp hΨ'
   refine Matrix.rank_mul_eq_iff_injOn.mpr (hinj.mono ?_)
-  exact range_mulVecLin_le_iff_exists_mul.mpr ⟨X ω, rfl⟩
+  exact range_le_iff_exists_mul.mpr ⟨X ω, rfl⟩
 
 /-! ### A Haar co-range test matrix -/
 

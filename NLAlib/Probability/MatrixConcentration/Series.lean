@@ -116,7 +116,7 @@ theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFu
   rcases (show 0 ≤ v from specNorm_nonneg _).eq_or_lt with hv0 | hv0
   · rw [← hv0, mul_zero, div_zero, Real.exp_zero, mul_one]
     exact hP.trans hd
-  refine (HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le_card_mul_exp
+  refine (HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp
     hX (fun k => hasMatrixMGFBound_smul_of_hasSubgaussianMGF (hγ k) (hB k))
     (Set.mem_univ (t / v)) (div_pos ht' hv0) (div_nonneg (sq_nonneg _) two_pos.le) t).trans ?_
   have hlam : eigenvalue (∑ k, (c k : ℝ) • B k ^ 2) 0 ≤ v :=

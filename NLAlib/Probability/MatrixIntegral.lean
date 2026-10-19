@@ -239,7 +239,7 @@ private theorem integrable_and_integral_cfc {B : Matrix n n 𝕜} (hB : B.IsHerm
           ← RCLike.real_smul_eq_coe_smul] }
   let Lc := LinearMap.toContinuousLinearMap L
   have hcfc : ∀ g : ℝ → ℝ, cfc g B = Lc (fun i => g (eigenvalue B i)) := fun g =>
-    cfc_eq_mul_diagonal_mul_conjTranspose hU hr hBU g
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hBU g
   have hv : Integrable (fun ω => fun i : Fin (Fintype.card n) => f ω (eigenvalue B i)) μ :=
     integrable_pi_iff.2 fun i => hf _
   simp only [hcfc]

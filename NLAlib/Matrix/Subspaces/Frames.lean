@@ -180,7 +180,7 @@ omit [Fintype p] [Fintype q] in
 orthonormal columns, so does
 $\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$.
 Port of `NLAlib.HasOrthonormalCols.fromBlocks_diagonal`. -/
-theorem HasOrthonormalCols.fromBlocks_diagonal [DecidableEq p] [DecidableEq q]
+theorem HasOrthonormalCols.fromBlocks_zero₁₂_zero₂₁ [DecidableEq p] [DecidableEq q]
     {A : Matrix m p 𝕜} {B : Matrix n q 𝕜} (hA : HasOrthonormalCols A)
     (hB : HasOrthonormalCols B) : HasOrthonormalCols (Matrix.fromBlocks A 0 0 B) := by
   rw [HasOrthonormalCols, Matrix.fromBlocks_conjTranspose, Matrix.fromBlocks_multiply]

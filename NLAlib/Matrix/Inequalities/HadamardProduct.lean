@@ -217,11 +217,11 @@ theorem _root_.Matrix.PosDef.one_le_hadamard_inv {A : Matrix n n 𝕜} (hA : A.P
     1 ≤ A ⊙ A⁻¹ := by
   have h1 : (Matrix.fromBlocks A 1 1 A⁻¹).PosSemidef := by
     simpa only [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one] using
-      posSemidef_fromBlocks_conjTranspose_mul_inv_mul hA (1 : Matrix n n 𝕜)
+      Matrix.PosDef.posSemidef_fromBlocks_conjTranspose_mul_inv_mul hA (1 : Matrix n n 𝕜)
   have h2 : (Matrix.fromBlocks A⁻¹ 1 1 A).PosSemidef := by
     simpa only [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one,
       Matrix.nonsing_inv_nonsing_inv A ((Matrix.isUnit_iff_isUnit_det A).mp hA.isUnit)] using
-      posSemidef_fromBlocks_conjTranspose_mul_inv_mul hA.inv (1 : Matrix n n 𝕜)
+      Matrix.PosDef.posSemidef_fromBlocks_conjTranspose_mul_inv_mul hA.inv (1 : Matrix n n 𝕜)
   have e : Matrix.fromBlocks A 1 1 A⁻¹ ⊙ Matrix.fromBlocks A⁻¹ 1 1 A =
       Matrix.fromBlocks (A ⊙ A⁻¹) 1 1 (A ⊙ A⁻¹) := by
     ext (i | i) (j | j) <;> simp [Matrix.hadamard_apply, Matrix.one_apply, mul_comm]

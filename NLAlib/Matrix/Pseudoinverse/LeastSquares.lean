@@ -376,7 +376,7 @@ theorem sketchAndSolve_eq_pinv_mul_add [DecidableEq m] {A : Matrix m n 𝕜}
     (h : (S * A).rank = A.rank) (B : Matrix m p 𝕜) :
     sketchAndSolve A S B = pinv A * B + sketchAndSolve A S ((1 - rangeProjector A) * B) := by
   have hP : rangeProjector (S * A)ᴴ = rangeProjector Aᴴ :=
-    rangeProjector_inj.mpr (Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq h)
+    rangeProjector_inj.mpr (Matrix.range_conjTranspose_mul_eq_of_rank_eq h)
   have key : pinv (S * A) * (S * (rangeProjector A * B)) = pinv A * B := by
     calc pinv (S * A) * (S * (rangeProjector A * B))
         = pinv (S * A) * (S * A) * pinv A * B := by

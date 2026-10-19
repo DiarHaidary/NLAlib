@@ -28,7 +28,7 @@ item 3.
 ## Main results
 
 * The Gram form, every unitarily invariant norm, in the namespace `NLAlib.SymmetricGauge`:
-  `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_haarFrame`.
+  `measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_haarFrame`.
 -/
 
 @[expose] public section
@@ -55,18 +55,18 @@ outside probability <!-- value gaussianPinvFrobTail k d t -->
 $e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
 `gaussianPinvFrobTail k d t`), with $\mathbf{e}_0$ the first unit coordinate sequence: the bound
 of the Gaussian statement
-`measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`
+`measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix`
 (in this namespace) verbatim, since the range of $\mathbf{A}\mathbf{\Omega}$ has the same law for
 both (`NLAlib.hasLaw_rangeProjector_mul_of_hasLaw_haarFrame`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and squared Schatten
 norms.
 Result: randomized-svd-tail -/
-theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_haarFrame
+theorem measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_haarFrame
     [DecidableEq l] (Φ : SymmetricGauge) (A : Matrix m n ℝ) (hX : HasLaw X (haarFrame n l) μ)
     {k d : ℕ} (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω))) ≤
-        Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
-          Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
+    μ.real {ω | Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
+        Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2 <
+        Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
   classical
   set c := Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
@@ -77,19 +77,19 @@ theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasL
     exact Φ.measurable_matrixNorm.comp
       ((Measurable.matrix_conjTranspose continuous_star.measurable h1).matrix_mul h1)
   have hS : MeasurableSet
-      {P : Matrix m m ℝ | Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) ≤ c}ᶜ :=
-    (measurableSet_le hf measurable_const).compl
+      {P : Matrix m m ℝ | c < Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A))} :=
+    measurableSet_lt measurable_const hf
   have hT := hasLaw_rangeProjector_mul_of_hasLaw_haarFrame A hX
   have hg : Measurable fun G : Matrix n l ℝ => rangeProjector (A * G) :=
     measurable_rangeProjector.comp (measurable_const.matrix_mul measurable_id)
   have hG :=
-    measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix Φ A
+    measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix Φ A
       (HasLaw.id (μ := gaussianMatrix n l)) hd u ht
-  calc μ.real {ω | ¬ Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω))) ≤ c}
+  calc μ.real {ω | c < Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))}
       = μ.real ((fun ω => rangeProjector (A * X ω)) ⁻¹'
-          {P : Matrix m m ℝ | Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) ≤ c}ᶜ) := rfl
+          {P : Matrix m m ℝ | c < Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A))}) := rfl
     _ = (gaussianMatrix n l).real ((fun G => rangeProjector (A * G)) ⁻¹'
-          {P : Matrix m m ℝ | Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) ≤ c}ᶜ) := by
+          {P : Matrix m m ℝ | c < Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A))}) := by
         rw [← map_measureReal_apply_of_aemeasurable hT.aemeasurable hS, hT.map_eq,
           map_measureReal_apply hg hS]
     _ ≤ Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := hG

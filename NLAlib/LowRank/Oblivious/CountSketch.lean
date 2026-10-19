@@ -24,13 +24,13 @@ $\ell = O(k^2/(\varepsilon^2\delta))$. Both run the injection of the family at t
 CountSketch's own approximate-multiplication tail
 (`NLAlib.measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_countSketch`, failure
 $2/(\ell\varepsilon^2)$, over any field), through the generic forms that take a multiplication
-tail: `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le` and
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le`.
+tail: `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le` and
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le`.
 
 **Statements with no per-family form.** Nyström, generalized Nyström and the truncations apply
 through the family's OSI:
 ```
-isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le hX k hε hδ hl
+isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hX k hε hδ hl
 ```
 about `fun ω => (X ω)ᴴ` itself (the CountSketch is isotropic unscaled). Design:
 `docs/design/LowRank-S7.md` §3.5, §8.
@@ -141,20 +141,20 @@ private theorem measureReal_frobNorm_tail_tail_gt_le_of_hasLaw_countSketch
 
 /-- **The randomized SVD with a CountSketch test matrix, relative error**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ is a CountSketch, $\varepsilon, \delta > 0$, $\ell$ is at
-least <!-- value countSketchRows k (1/2) (\delta/2) -->
-$(k^2 + k)/((\delta/2)(1/2)^2)$ (`countSketchRows k (1 / 2) (δ / 2)`) and
+least <!-- value countSketchEmbeddingDim k (1/2) (\delta/2) -->
+$(k^2 + k)/((\delta/2)(1/2)^2)$ (`countSketchEmbeddingDim k (1 / 2) (δ / 2)`) and
 $\ell \ge 16k/(\varepsilon\delta)$, then
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$, over any `RCLike` field. The route: the OSI at constant $1/2$
 and failure $\delta/2$, the tail–head multiplication tail at accuracy $\sqrt{\varepsilon/(4k)}$ and
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le`. Asymptotic
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le`. Asymptotic
 form: `NLAlib.exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch`.
 [Woodruff2014, Remark 46]; there $O(k^2 + k/\varepsilon)$ rows at constant probability, real.
 Result: randomized-svd-tail -/
 theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch (A : Matrix m n 𝕜)
     (hX : HasLaw (fun ω => (X ω)ᴴ) (countSketch l n) μ) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hδ : 0 < δ) (hl : countSketchRows k (1 / 2) (δ / 2) ≤ Fintype.card l)
+    (hδ : 0 < δ) (hl : countSketchEmbeddingDim k (1 / 2) (δ / 2) ≤ Fintype.card l)
     (hl' : 16 * (k : ℝ) ≤ ε * δ * Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
@@ -171,15 +171,15 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch (A : Matrix
   have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
   have hl0 : (0 : ℝ) < Fintype.card l := by
     refine lt_of_lt_of_le ?_ hl
-    rw [countSketchRows_def]
+    rw [countSketchEmbeddingDim_def]
     positivity
   have : Nonempty l := Fintype.card_pos_iff.1 (by exact_mod_cast hl0)
   have hεJ : 0 < √(ε / (4 * k)) := Real.sqrt_pos.2 (by positivity)
-  have hOSI := isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le hX k
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hX k
     (by norm_num) (half_pos hδ) hl
   have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le (by norm_num)
+    ).measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_add_le (by norm_num)
     (measureReal_frobNorm_tail_head_gt_le_of_hasLaw_countSketch hX A k hεJ)
   have hsq : √(ε / (4 * k)) ^ 2 = ε / (4 * k) := Real.sq_sqrt (by positivity)
   refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
@@ -233,7 +233,7 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSket
   have hl' := hl
   rw [mul_div_assoc', div_le_iff₀ hδ] at hl'
   refine measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSketch A hX hε hδ
-    ((countSketchRows_le k (1 / 2) (δ / 2)).trans (le_trans ?_ hl)) ?_
+    ((countSketchEmbeddingDim_le k (1 / 2) (δ / 2)).trans (le_trans ?_ hl)) ?_
   · rw [show ((k : ℝ) ^ 2 + k) / (δ / 2 * (1 / 2) ^ 2) = 8 * (((k : ℝ) ^ 2 + k) / δ) by
       field_simp; ring]
     have : 0 ≤ (k : ℝ) / ε := by positivity
@@ -246,15 +246,15 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_countSket
 
 /-- **Early-truncated randomized SVD with a CountSketch test matrix, tail**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ is a CountSketch, $0 < \varepsilon \le 1$, $\delta > 0$, $\ell$ is at
-least <!-- value countSketchRows k (\varepsilon/8) (\delta/3) -->
-$(k^2 + k)/((\delta/3)(\varepsilon/8)^2)$ (`countSketchRows k (ε / 8) (δ / 3)`) and
+least <!-- value countSketchEmbeddingDim k (\varepsilon/8) (\delta/3) -->
+$(k^2 + k)/((\delta/3)(\varepsilon/8)^2)$ (`countSketchEmbeddingDim k (ε / 8) (δ / 3)`) and
 $\ell \ge 384k/(\varepsilon^2\delta)$, then
 $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$, over any `RCLike` field. The route: the OSI at constant
 $1 - \varepsilon/8$ and failure $\delta/3$, the two multiplication tails of the CountSketch at
 accuracy $\varepsilon/(8\sqrt{k})$, and
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_sq_gt_one_add_mul_le`. Asymptotic form:
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le`. Asymptotic form:
 `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch`.
 [CohenElderMuscoMuscoPersu2015, §7.2]; there for sparse sketches with unspecified constants,
 real.
@@ -262,7 +262,7 @@ Result: etrsvd -/
 theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch
     (A : Matrix m n 𝕜) (hX : HasLaw (fun ω => (X ω)ᴴ) (countSketch l n) μ) {k : ℕ} {ε δ : ℝ}
     (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
-    (hl : countSketchRows k (ε / 8) (δ / 3) ≤ Fintype.card l)
+    (hl : countSketchEmbeddingDim k (ε / 8) (δ / 3) ≤ Fintype.card l)
     (hl' : 384 * (k : ℝ) ≤ ε ^ 2 * δ * Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
@@ -278,18 +278,18 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSket
     nlinarith [sq_nonneg (frobNorm A)]
   have hl0 : (0 : ℝ) < Fintype.card l := by
     refine lt_of_lt_of_le ?_ hl
-    rw [countSketchRows_def]
+    rw [countSketchEmbeddingDim_def]
     positivity
   have : Nonempty l := Fintype.card_pos_iff.1 (by exact_mod_cast hl0)
   have hk0 : (0 : ℝ) < √(k : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hk)
   have hεJ : 0 < ε / (8 * √(k : ℝ)) := by positivity
-  have hOSI := isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchRows_le hX k
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hX k
     (by positivity) (by positivity) hl
   have hχ := measureReal_frobNorm_tail_head_gt_le_of_hasLaw_countSketch hX A k hεJ
   rw [show ε / (8 * √(k : ℝ)) * √(k : ℝ) = ε / 8 by field_simp] at hχ
   have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measure_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
     (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
     (fun ω => isStarProjection_rangeProjector _)
     (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
@@ -339,7 +339,7 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_ha
   have hl' := hl
   rw [mul_div_assoc', div_le_iff₀ (by positivity)] at hl'
   refine measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch A hX hε hε1 hδ
-    ((countSketchRows_le k (ε / 8) (δ / 3)).trans (le_trans ?_ hl)) ?_
+    ((countSketchEmbeddingDim_le k (ε / 8) (δ / 3)).trans (le_trans ?_ hl)) ?_
   · rw [show ((k : ℝ) ^ 2 + k) / (δ / 3 * (ε / 8) ^ 2) = 192 * (((k : ℝ) ^ 2 + k) / (ε ^ 2 * δ)) by
       field_simp; ring]
     have : 0 ≤ ((k : ℝ) ^ 2 + k) / (ε ^ 2 * δ) := by positivity

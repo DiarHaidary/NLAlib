@@ -22,7 +22,7 @@ file: `Procrustes.lean` imports it, and it imports both `Polar.lean` and `Orthon
 
 ## Main results
 
-* `NLAlib.polarFactor_mul_right`: the polar factor of $\mathbf{A}\mathbf{V}$ is
+* `NLAlib.HasOrthonormalCols.polarFactor_mul_right`: the polar factor of $\mathbf{A}\mathbf{V}$ is
   $\mathbf{U}\mathbf{V}$ for a coisometry $\mathbf{V}$, $\mathbf{U}$ the polar factor of
   $\mathbf{A}$.
 * `NLAlib.rangeProjector_mul_polarFactor`: $\mathbf{A}\mathbf{U}$ and $\mathbf{A}\mathbf{B}$ have
@@ -48,12 +48,12 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n q : Type*} [Fintype l] [Fintype m] 
 /-- **The polar factor commutes with a coisometry on the right**: for $\mathbf{V}$ with
 orthonormal rows ($\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{I}$; in particular any unitary), the
 polar factor of $\mathbf{A}\mathbf{V}$ is $\mathbf{U}\mathbf{V}$, with $\mathbf{U}$ the polar
-factor of $\mathbf{A}$. The right-hand twin of `polarFactor_mul_left`. -/
-theorem polarFactor_mul_right [DecidableEq n] [DecidableEq q] {V : Matrix n q 𝕜}
+factor of $\mathbf{A}$. The right-hand twin of `HasOrthonormalCols.polarFactor_mul_left`. -/
+theorem HasOrthonormalCols.polarFactor_mul_right [DecidableEq n] [DecidableEq q] {V : Matrix n q 𝕜}
     (hV : HasOrthonormalCols Vᴴ) (A : Matrix m n 𝕜) :
     polarFactor (A * V) = polarFactor A * V := by
   classical
-  have h := polarFactor_mul_left hV Aᴴ
+  have h := HasOrthonormalCols.polarFactor_mul_left hV Aᴴ
   rw [polarFactor_conjTranspose, ← Matrix.conjTranspose_mul, polarFactor_conjTranspose] at h
   have h' := congrArg Matrix.conjTranspose h
   rwa [Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_mul,
@@ -67,8 +67,8 @@ $\mathbf{B} = \mathbf{U}(\mathbf{B}^{\mathsf{H}}\mathbf{B})^{1/2}$. -/
 theorem rangeProjector_mul_polarFactor [DecidableEq n] (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
     rangeProjector (A * polarFactor B) = rangeProjector (A * B) := by
   rw [rangeProjector_inj]
-  refine le_antisymm (range_mulVecLin_le_iff_exists_mul.mpr ⟨pinv (CFC.sqrt (Bᴴ * B)), ?_⟩)
-    (range_mulVecLin_le_iff_exists_mul.mpr ⟨CFC.sqrt (Bᴴ * B), ?_⟩)
+  refine le_antisymm (range_le_iff_exists_mul.mpr ⟨pinv (CFC.sqrt (Bᴴ * B)), ?_⟩)
+    (range_le_iff_exists_mul.mpr ⟨CFC.sqrt (Bᴴ * B), ?_⟩)
   · rw [polarFactor, Matrix.mul_assoc]
   · rw [Matrix.mul_assoc, polarFactor_mul_sqrt]
 

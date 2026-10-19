@@ -339,7 +339,7 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaus
       Real.exp (-t ^ 2 / 2) := by
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hc := integral_specNorm_le_of_hasLaw_gaussianMatrix hX
-  have h := measureReal_integral_add_le_of_hasLaw_gaussianMatrix hX (f := specNorm) (L := 1)
+  have h := measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX (f := specNorm) (L := 1)
     (fun A B => by
       rw [NNReal.coe_one, one_mul]
       exact (abs_specNorm_sub_specNorm_le A B).trans (specNorm_le_frobNorm _)) ht
@@ -360,7 +360,7 @@ theorem measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix
       Real.exp (-t ^ 2 / 2) := by
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hc := le_integral_singularValues_of_hasLaw_gaussianMatrix hX hk
-  have h := measureReal_integral_add_le_of_hasLaw_gaussianMatrix hX
+  have h := measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX
     (f := fun A => -singularValues A k) (L := 1)
     (fun A B => by
       rw [neg_sub_neg, abs_sub_comm]
@@ -416,7 +416,7 @@ theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussian
     by_contra hlt
     rw [not_le] at hlt
     exact hω ((smul_one_le_smul_one (pow_le_pow_left₀ hc hlt.le 2)).trans
-      (sq_singularValues_last_smul_one_le (X ω) hk))
+      (singularValues_last_sq_smul_one_le (X ω) hk))
 
 /-- **The Gaussian Gram sandwich**:
 $$(\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)^2 \mathbf{I}

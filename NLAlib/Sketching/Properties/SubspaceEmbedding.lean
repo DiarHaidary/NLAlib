@@ -43,7 +43,7 @@ $\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous. Design:
 * `NLAlib.isSubspaceInjection_iff_forall_mem_range`,
   `NLAlib.isSubspaceEmbedding_iff_forall_mem_range`: the vector forms.
 * `NLAlib.HasOrthonormalCols.isSubspaceEmbedding_iff_specNorm_le`: the Gram-error form.
-* `NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_sq_singularValues`: the
+* `NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq`: the
   $\sigma_{\min}$ form.
 * `NLAlib.IsSubspaceEmbedding.of_range_le`, `NLAlib.IsSubspaceEmbedding.mul_right`,
   `NLAlib.IsSubspaceEmbedding.smul`, `NLAlib.IsSubspaceEmbedding.mul`: subspaces, scaling and
@@ -239,12 +239,12 @@ theorem HasOrthonormalCols.isSubspaceEmbedding_iff_specNorm_le [Fintype p] [Deci
 $a \le \sigma_{\min}(\mathbf{S}\mathbf{U})^2$, the smallest singular value being index $j$ with
 $j + 1 = \lvert p \rvert$. The upper half is `NLAlib.specNorm_sq_le_iff_conjTranspose_mul_self_le`
 after `hU`. -/
-theorem HasOrthonormalCols.isSubspaceInjection_iff_le_sq_singularValues [Fintype p] [DecidableEq p]
+theorem HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq [Fintype p] [DecidableEq p]
     (hU : HasOrthonormalCols U) {j : ℕ} (hj : j + 1 = Fintype.card p) :
     IsSubspaceInjection S U a ↔ a ≤ singularValues (S * U) j ^ 2 := by
   rw [hU.isSubspaceInjection_iff]
-  exact ⟨le_sq_singularValues_last_of_smul_one_le hj, fun h =>
-    (smul_one_le_smul_one h).trans (sq_singularValues_last_smul_one_le _ hj)⟩
+  exact ⟨le_singularValues_last_sq_of_smul_one_le hj, fun h =>
+    (smul_one_le_smul_one h).trans (singularValues_last_sq_smul_one_le _ hj)⟩
 
 /-- An approximate-matrix-multiplication bound at $\mathbf{A} = \mathbf{B} = \mathbf{U}$,
 $\|\mathbf{U}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{U} -
@@ -277,7 +277,7 @@ $\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
 theorem IsSubspaceInjection.of_range_le [Fintype p] [Fintype q] (h : IsSubspaceInjection S U a)
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
     IsSubspaceInjection S V a := by
-  obtain ⟨C, rfl⟩ := range_mulVecLin_le_iff_exists_mul.mp hVU
+  obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hVU
   exact isSubspaceInjection_mul_right h C
 
 /-- A subspace embedding for $\operatorname{range}\mathbf{U}$ is one for every subspace
@@ -285,7 +285,7 @@ $\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
 theorem IsSubspaceEmbedding.of_range_le [Fintype p] [Fintype q] (h : IsSubspaceEmbedding S U a b)
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
     IsSubspaceEmbedding S V a b := by
-  obtain ⟨C, rfl⟩ := range_mulVecLin_le_iff_exists_mul.mp hVU
+  obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hVU
   exact ⟨isSubspaceInjection_mul_right h.lower C, upper_mul_right h.upper C⟩
 
 /-- A subspace injection for $\operatorname{range}\mathbf{U}$ is one for

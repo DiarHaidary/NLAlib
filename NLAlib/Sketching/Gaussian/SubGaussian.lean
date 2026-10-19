@@ -376,7 +376,7 @@ theorem hasJLProperty_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω
       EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq]
     rw [div_sub_one hK0.ne', abs_div, abs_of_pos hK0, le_div_iff₀ hK0]
   rw [hev]
-  refine (hZ.measure_abs_ge_le (by positivity)).trans ?_
+  refine (hZ.measureReal_abs_ge_le (by positivity)).trans ?_
   gcongr
   push_cast
   rw [subgaussianJLConstant_def]
@@ -721,9 +721,9 @@ least <!-- value subgaussianEmbeddingDim c d (\varepsilon/2) (\delta/2) -->
 $4 c^2 (d \log 9 + \log(2/(\delta/2)))/(C (\varepsilon/2)^2)$ rows
 (`subgaussianEmbeddingDim c d (ε / 2) (δ / 2)`,
 with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`) and at
-least <!-- value projectionCostTailRows {(16c^2 - 1)} d \varepsilon \delta -->
+least <!-- value projectionCostTailDim {(16c^2 - 1)} d \varepsilon \delta -->
 $384 \cdot (16c^2 - 1) (d + 1)/(\varepsilon^2 \delta)$ rows
-(`projectionCostTailRows (16 * c ^ 2 - 1) d ε δ`), $\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{X}$
+(`projectionCostTailDim (16 * c ^ 2 - 1) d ε δ`), $\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{X}$
 makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$ projection-cost-preserving sketch of
 $\mathbf{A}$ with constants $1 \mp \varepsilon$, for every $\mathbf{A}$, except with probability
 $\delta$. A Rademacher sketch is the case $c = 1$
@@ -740,7 +740,7 @@ theorem hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card [Nonempty 
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ)
     (d : ℕ) (hε : 0 < ε) (hεc : ε ≤ 4 * c) (hδ : 0 < δ)
     (hk₁ : subgaussianEmbeddingDim c d (ε / 2) (δ / 2) ≤ Fintype.card k)
-    (hk₂ : projectionCostTailRows (16 * (c : ℝ) ^ 2 - 1) d ε δ ≤ Fintype.card k) :
+    (hk₂ : projectionCostTailDim (16 * (c : ℝ) ^ 2 - 1) d ε δ ≤ Fintype.card k) :
     HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) A d (1 - ε) (1 + ε)
       δ μ := by
   have := hind.isProbabilityMeasure
@@ -770,7 +770,7 @@ theorem hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card [Nonempty 
         (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
     refine ⟨by linarith, by linarith, ?_⟩
     have hk := hk₂
-    rw [projectionCostTailRows_def, div_le_iff₀ (by positivity)] at hk
+    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
     have e : (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
         64 * (16 * (c : ℝ) ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
       rw [div_pow, mul_pow, hss]
@@ -833,7 +833,7 @@ theorem exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector :
     rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
     have hcc := sq_nonneg (c : ℝ)
     nlinarith [mul_le_mul_of_nonneg_right h1 (mul_nonneg hcc (sq_nonneg ε))]
-  · refine (projectionCostTailRows_le _ d ε δ).trans (le_trans ?_ hk)
+  · refine (projectionCostTailDim_le _ d ε δ).trans (le_trans ?_ hk)
     rw [mul_div_assoc']
     refine div_le_div_of_nonneg_right ?_ hD.le
     nlinarith [Nat.cast_nonneg (α := ℝ) d]

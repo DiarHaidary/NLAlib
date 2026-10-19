@@ -73,7 +73,7 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianM
   have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     (d := A.rank) hG (by norm_num) (by norm_num) (half_pos hδ) (by linarith) hp
   have h := (hasJLMoment_of_hasLaw_gaussianMatrix hG hη
-    ).measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
     (hOSI.hasSubspaceInjection (U := A) le_rfl)
     (hG.aemeasurable.const_smul ((√(Fintype.card p : ℝ))⁻¹)) (by norm_num) hη
     (by norm_num) (by positivity) B

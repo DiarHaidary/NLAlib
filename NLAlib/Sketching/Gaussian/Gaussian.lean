@@ -691,8 +691,8 @@ $0 < \varepsilon \le 2$, $\delta > 0$, at
 least <!-- value gaussianEmbeddingDim d (\varepsilon/2) (\delta/2) -->
 $9 (\sqrt{d} + \sqrt{2 \log(2/(\delta/2))})^2/(\varepsilon/2)^2$ rows
 (`gaussianEmbeddingDim d (ε / 2) (δ / 2)`) and at
-least <!-- value projectionCostTailRows 2 d \varepsilon \delta -->
-$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailRows 2 d ε δ`),
+least <!-- value projectionCostTailDim 2 d \varepsilon \delta -->
+$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailDim 2 d ε δ`),
 $\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{G}$ makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$
 projection-cost-preserving sketch of $\mathbf{A}$ with constants $1 \mp \varepsilon$, for every
 $\mathbf{A}$, except with probability $\delta$. The head is the OSE size form at
@@ -708,12 +708,12 @@ theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
     (hG : HasLaw G (gaussianMatrix k n) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ) (d : ℕ)
     (hε : 0 < ε) (hε2 : ε ≤ 2) (hδ : 0 < δ)
     (hk₁ : gaussianEmbeddingDim d (ε / 2) (δ / 2) ≤ Fintype.card k)
-    (hk₂ : projectionCostTailRows 2 d ε δ ≤ Fintype.card k) :
+    (hk₂ : projectionCostTailDim 2 d ε δ ≤ Fintype.card k) :
     HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) A d (1 - ε) (1 + ε) δ
       μ := by
   have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
-  have hpos : 0 < projectionCostTailRows 2 d ε δ := by
-    rw [projectionCostTailRows_def]; positivity
+  have hpos : 0 < projectionCostTailDim 2 d ε δ := by
+    rw [projectionCostTailDim_def]; positivity
   have hK : (0 : ℝ) < Fintype.card k := hpos.trans_le hk₂
   have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK)
   have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
@@ -735,7 +735,7 @@ theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
         (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
     refine ⟨by linarith, by linarith, ?_⟩
     have hk := hk₂
-    rw [projectionCostTailRows_def, div_le_iff₀ (by positivity)] at hk
+    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
     have e : 2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
         64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
       rw [div_pow, mul_pow, hss]
@@ -783,7 +783,7 @@ theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix :
       nlinarith [Nat.cast_nonneg (α := ℝ) d]
     rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
     nlinarith [mul_le_mul_of_nonneg_right h1 (sq_nonneg ε)]
-  · refine (projectionCostTailRows_le 2 d ε δ).trans (le_trans (le_of_eq ?_) hk)
+  · refine (projectionCostTailDim_le 2 d ε δ).trans (le_trans (le_of_eq ?_) hk)
     ring
 
 /-- **Gaussian OSI, sample-size form**: at
@@ -890,7 +890,7 @@ theorem exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le [Fintype ι] (x : ι
   have hδ : (0 : ℝ) < 1 / (((Fintype.card ι).choose 2 : ℕ) + 1 : ℝ) := by positivity
   have hJL := hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le
     (HasLaw.id (μ := gaussianMatrix k n)) hε hε1 hδ hk
-  have hm := hJL.measure_exists_abs_norm_mulVec_sq_sub_ge_le hδ.le x
+  have hm := hJL.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le hδ.le x
   by_contra hcon
   push Not at hcon
   have huniv : {ω : Matrix k n ℝ | ∃ i j, x i ≠ x j ∧ ε * ‖WithLp.toLp 2 (x i - x j)‖ ^ 2 ≤

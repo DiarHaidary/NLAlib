@@ -38,10 +38,10 @@ for every $t \ge 0$: flattening (`NLAlib.Sketching.Structured.Flattening`) follo
 sampling (`NLAlib.Sketching.Sampling.RowSampling`, `NLAlib.Sketching.Sampling.WithoutReplacement`),
 through the flatten-then-sample transfer. The sample sizes are the row-sampling sizes with the
 failure split $\delta/2 + \delta/2$: the embedding
-needs <!-- value samplingSize d L \varepsilon (\delta/2) -->
-$\lvert k \rvert \ge 3 L \log(2d/(\delta/2))/\varepsilon^2$ rows (`NLAlib.samplingSize`), the
-injection <!-- value samplingInjectionSize d L \varepsilon (\delta/2) -->
-$\lvert k \rvert \ge 2 L \log(d/(\delta/2))/\varepsilon^2$ (`NLAlib.samplingInjectionSize`), at
+needs <!-- value samplingEmbeddingDim d L \varepsilon (\delta/2) -->
+$\lvert k \rvert \ge 3 L \log(2d/(\delta/2))/\varepsilon^2$ rows (`NLAlib.samplingEmbeddingDim`),
+the injection <!-- value samplingInjectionDim d L \varepsilon (\delta/2) -->
+$\lvert k \rvert \ge 2 L \log(d/(\delta/2))/\varepsilon^2$ (`NLAlib.samplingInjectionDim`), at
 the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
 $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
@@ -77,15 +77,15 @@ $\mathbf{S}$ is unitary and every event is empty. Rank zero: every event is empt
 * `NLAlib.srht_eq_map_prod`, `NLAlib.srhtWithReplacement_eq_map_prod`,
   `NLAlib.hasLaw_srhtMatrix_of_hasLaw_uniformOn_injective`, `NLAlib.hasLaw_srhtMatrix_of_hasLaw_pi`:
   the laws through row sampling, and the bridges.
-* `NLAlib.isIsotropicSketch_of_hasLaw_srht`,
-  `NLAlib.isIsotropicSketch_of_hasLaw_srhtWithReplacement`: isotropy.
-* `NLAlib.ae_mul_conjTranspose_eq_of_hasLaw_srht`, `NLAlib.ae_specNorm_eq_of_hasLaw_srht`: the
-  scaled partial isometry.
+* `NLAlib.HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srht`,
+  `NLAlib.HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srhtWithReplacement`: isotropy.
+* `NLAlib.HasOrthonormalCols.ae_mul_conjTranspose_eq_of_hasLaw_srht`,
+  `NLAlib.HasOrthonormalCols.ae_specNorm_eq_of_hasLaw_srht`: the scaled partial isometry.
 * `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht`,
   `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht` and their with-replacement forms: the SRHT
   OSI and OSE.
-* `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le`,
-  `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le` and their
+* `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le`,
+  `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le` and their
   with-replacement forms: sample sizes.
 * `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht`,
   `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht` and their with-replacement
@@ -340,7 +340,7 @@ private theorem isIsotropicSketch_map_prod [IsProbabilityMeasure ρ] (hF : HasOr
         |>.aestronglyMeasurable) _ hb
     · have h1 : (fun x : (n → ℝ) × Matrix k n 𝕜 => (F * Matrix.diagonal fun i => (x.1 i : 𝕜))ᴴ *
           (F * Matrix.diagonal fun i => (x.1 i : 𝕜))) =ᵐ[(rademacherVector n).prod ρ] fun _ => 1 :=
-        ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector hF hfst
+        HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector hF hfst
       rw [integral_congr_ae h1]
       simp
   exact (hasLaw_snd_prod.isIsotropicSketch_iff.2 hρ).mul hT (indepFun_snd_mul_diagonal F)
@@ -352,7 +352,7 @@ unitary $\mathbf{F}$, nonempty `k` and $\lvert k \rvert \le \lvert n \rvert$.
 $\mathbf{S} = \mathbf{P}\mathbf{T}$ with $\mathbf{P}$ row sampling without replacement and
 $\mathbf{T} = \mathbf{F}\mathbf{D}$ (unitary almost surely) independent and isotropic
 (`NLAlib.IsIsotropicSketch.mul`). [CamanoEpperlyMeyerTropp2025, §1.5.2]. -/
-theorem isIsotropicSketch_of_hasLaw_srht [Nonempty k] (hF : HasOrthonormalCols F)
+theorem HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srht [Nonempty k] (hF : HasOrthonormalCols F)
     (hS : HasLaw S (srht k F) μ) (hk : Fintype.card k ≤ Fintype.card n) :
     IsIsotropicSketch S μ := by
   have := isProbabilityMeasure_samplingSketchWithoutReplacement (𝕜 := 𝕜) hk
@@ -363,7 +363,7 @@ theorem isIsotropicSketch_of_hasLaw_srht [Nonempty k] (hF : HasOrthonormalCols F
 
 /-- **The SRHT with replacement is isotropic**, for a unitary $\mathbf{F}$ and nonempty `k`,
 `n`. [CamanoEpperlyMeyerTropp2025, §1.5.2]. -/
-theorem isIsotropicSketch_of_hasLaw_srhtWithReplacement [Nonempty k] [Nonempty n]
+theorem HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srhtWithReplacement [Nonempty k] [Nonempty n]
     (hF : HasOrthonormalCols F) (hS : HasLaw S (srhtWithReplacement k F) μ) :
     IsIsotropicSketch S μ := by
   have hp := NNReal.sum_const_inv_card (ι := n)
@@ -379,7 +379,8 @@ replacement only: repeated rows break it. [HalkoMartinssonTropp2011, §11.1];
 [MartinssonTropp2020, §9.3]. Almost surely the signs are $\pm 1$, so
 $\mathbf{S}\mathbf{S}^{\mathsf{H}} = \mathbf{P}\mathbf{P}^{\mathsf{H}}$, and the sampled rows are
 distinct (`NLAlib.samplingSketchMatrix_mul_conjTranspose_of_injective`). -/
-theorem ae_mul_conjTranspose_eq_of_hasLaw_srht [DecidableEq k] (hF : HasOrthonormalCols F)
+theorem HasOrthonormalCols.ae_mul_conjTranspose_eq_of_hasLaw_srht [DecidableEq k]
+    (hF : HasOrthonormalCols F)
     (hS : HasLaw S (srht k F) μ) :
     ∀ᵐ ω ∂μ, S ω * (S ω)ᴴ = ((Fintype.card n : ℝ) / Fintype.card k) • (1 : Matrix k k 𝕜) := by
   have hset : MeasurableSet {A : Matrix k n 𝕜 |
@@ -420,10 +421,11 @@ theorem ae_mul_conjTranspose_eq_of_hasLaw_srht [DecidableEq k] (hF : HasOrthonor
 $\|\mathbf{S}\|_2 = \sqrt{\lvert n \rvert / \lvert k \rvert}$ ($0$ for empty `k`). The bound
 $\|\boldsymbol{\Omega}_2\|_2 \le \sqrt{n/\ell}$ of [HalkoMartinssonTropp2011, Theorem 11.2] and
 [MartinssonTropp2020, Theorem 11.6]. -/
-theorem ae_specNorm_eq_of_hasLaw_srht (hF : HasOrthonormalCols F) (hS : HasLaw S (srht k F) μ) :
+theorem HasOrthonormalCols.ae_specNorm_eq_of_hasLaw_srht (hF : HasOrthonormalCols F)
+    (hS : HasLaw S (srht k F) μ) :
     ∀ᵐ ω ∂μ, specNorm (S ω) = √(Fintype.card n / Fintype.card k : ℝ) := by
   classical
-  filter_upwards [ae_mul_conjTranspose_eq_of_hasLaw_srht hF hS] with ω h
+  filter_upwards [HasOrthonormalCols.ae_mul_conjTranspose_eq_of_hasLaw_srht hF hS] with ω h
   rcases isEmpty_or_nonempty k with hk | hk
   · rw [Subsingleton.elim (S ω) 0, specNorm_eq_zero_iff.2 rfl, Fintype.card_eq_zero (α := k),
       Nat.cast_zero, div_zero, Real.sqrt_zero]
@@ -503,9 +505,10 @@ private theorem hasSubspaceInjection_map_prod [IsProbabilityMeasure ρ]
   rw [mul_diagonal_eq]
   exact hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le (indepFun_snd_mul_diagonal F)
     measurable_snd.aemeasurable (measurable_mul_diagonal_fst F).aemeasurable
-    (ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector hF.hasOrthonormalCols hfst) hδ₁
+    (HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
+        hF.hasOrthonormalCols hfst) hδ₁
     (fun V hV hl => hasLaw_snd_prod.hasSubspaceInjection_iff.2 (hsample V hV hl))
-    (measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector hF hfst U ht)
+    (measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector hF hfst U ht)
 
 /-- **Flatten, then sample** on the product space (embedding), as
 `hasSubspaceInjection_map_prod`. -/
@@ -523,9 +526,10 @@ private theorem hasSubspaceEmbedding_map_prod [IsProbabilityMeasure ρ]
   rw [mul_diagonal_eq]
   exact hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le (indepFun_snd_mul_diagonal F)
     measurable_snd.aemeasurable (measurable_mul_diagonal_fst F).aemeasurable
-    (ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector hF.hasOrthonormalCols hfst) hδ₁
+    (HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
+        hF.hasOrthonormalCols hfst) hδ₁
     (fun V hV hl => hasLaw_snd_prod.hasSubspaceEmbedding_iff.2 (hsample V hV hl))
-    (measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector hF hfst U ht)
+    (measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector hF hfst U ht)
 
 end Product
 
@@ -538,7 +542,7 @@ $$d \exp\Bigl(-\frac{\varepsilon^2 \lvert k \rvert}{2 \beta (d + 2\sqrt{d t} + 2
 the lower matrix Chernoff half after flattening.
 [CamanoEpperlyMeyerTropp2025, §1.5.2] (the OSI view; $k = \Omega(d \log d)$ is necessary, their
 citation of Tropp 2011a); [Tropp2011a]. Flattening
-(`NLAlib.measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector`), then
+(`NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`), then
 `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement` through
 `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`.
 Result: srht-osi -/
@@ -549,7 +553,8 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srht [Nonempty k] (hF : IsBounded
       (d * Real.exp (-ε ^ 2 * Fintype.card k / (2 * (β * (d + 2 * √(d * t) + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
   have := isProbabilityMeasure_samplingSketchWithoutReplacement (𝕜 := 𝕜) hk
-  refine ⟨isIsotropicSketch_of_hasLaw_srht hF.hasOrthonormalCols hS hk, fun U hU => ?_⟩
+  refine ⟨HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srht hF.hasOrthonormalCols hS hk, fun U hU
+    => ?_⟩
   refine hS.hasSubspaceInjection_iff.2 ?_
   rw [srht_eq_map_prod]
   refine hasSubspaceInjection_map_prod hF U (by positivity) ht fun V hV hl => ?_
@@ -600,7 +605,8 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement [Nonempty k] 
       (d * Real.exp (-ε ^ 2 * Fintype.card k / (2 * (β * (d + 2 * √(d * t) + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
   have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k) (NNReal.sum_const_inv_card (ι := n))
-  refine ⟨isIsotropicSketch_of_hasLaw_srhtWithReplacement hF.hasOrthonormalCols hS,
+  refine ⟨HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srhtWithReplacement hF.hasOrthonormalCols
+    hS,
     fun U hU => ?_⟩
   refine hS.hasSubspaceInjection_iff.2 ?_
   rw [srhtWithReplacement_eq_map_prod]
@@ -661,9 +667,10 @@ private theorem log_div_half_spec [Nonempty n] (hF : IsBoundedOrthonormal F β) 
 
 /-- **The SRHT OSE, sample-size form**: for $0 < \varepsilon \le 1$ and $\delta > 0$, the SRHT
 is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
-failure probability $\delta$ once it has <!-- value samplingSize d L \varepsilon (\delta/2) -->
+failure probability $\delta$ once it
+has <!-- value samplingEmbeddingDim d L \varepsilon (\delta/2) -->
 $$\lvert k \rvert \ge \frac{3 L \log(2d/(\delta/2))}{\varepsilon^2}$$
-rows (`NLAlib.samplingSize d L ε (δ/2)`), where the flattened
+rows (`NLAlib.samplingEmbeddingDim d L ε (δ/2)`), where the flattened
 coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
 $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
@@ -674,10 +681,10 @@ coherence. [Woodruff2014, Theorem 7]; [Tropp2011a]. The tail
 where $\lvert n \rvert e^{-t} = \delta/2$. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht`.
 Result: srht-ose -/
-theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le
+theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le
     (hF : IsBoundedOrthonormal F β) (hS : HasLaw S (srht k F) μ) (d : ℕ) (hε : 0 < ε)
     (hε1 : ε ≤ 1) (hδ : 0 < δ)
-    (hk : samplingSize d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
+    (hk : samplingEmbeddingDim d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
       Fintype.card k) :
     IsObliviousSubspaceEmbedding S d (1 - ε) (1 + ε) δ μ := by
   rcases isEmpty_or_nonempty n with hn | hn
@@ -691,7 +698,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le
   refine (isObliviousSubspaceEmbedding_of_hasLaw_srht hF hS d hε.le hε1 ht).mono le_rfl le_rfl
     le_rfl ?_
   rw [hL, hexp]
-  linarith [two_mul_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
+  linarith [two_mul_mul_exp_le_of_samplingEmbeddingDim_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSE, asymptotic form**:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
@@ -699,9 +706,9 @@ SRHT to be an oblivious subspace embedding for dimension $d$ with constants $1 \
 and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the
 constants come before every dimension and before $\beta$, and the $\log \lvert n \rvert$ of the
 flattening stays in the threshold. Proved from
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le` with
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le` with
 $C = 72$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
-Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le -/
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le -/
 theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
       [Fintype n] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜) (F : Matrix n n 𝕜)
@@ -716,8 +723,8 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht :
   · intro U _
     rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
     exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero hδ.le
-  refine isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingSize_le hF hS d hε hε1 hδ
-    ((samplingSize_le _ _ ε _).trans (le_trans ?_ hk))
+  refine isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le hF hS d hε hε1 hδ
+    ((samplingEmbeddingDim_le _ _ ε _).trans (le_trans ?_ hk))
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · simp
   have hβ : 1 ≤ β := hF.one_le
@@ -756,9 +763,9 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht :
 /-- **The SRHT OSI, sample-size form**: for $\varepsilon > 0$, $\delta > 0$, nonempty `k` and
 $\lvert k \rvert \le \lvert n \rvert$, the SRHT is an oblivious subspace injection for dimension
 $d$ with constant $1 - \varepsilon$ and failure probability $\delta$ once it
-has <!-- value samplingInjectionSize d L \varepsilon (\delta/2) -->
+has <!-- value samplingInjectionDim d L \varepsilon (\delta/2) -->
 $$\lvert k \rvert \ge \frac{2 L \log(d/(\delta/2))}{\varepsilon^2}$$
-rows (`NLAlib.samplingInjectionSize d L ε (δ/2)`), where the flattened
+rows (`NLAlib.samplingInjectionDim d L ε (δ/2)`), where the flattened
 coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
 $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
@@ -767,21 +774,21 @@ is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; the tail
 [Tropp2011a]. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht`.
 Result: srht-osi -/
-theorem isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le [Nonempty k]
+theorem isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le [Nonempty k]
     (hF : IsBoundedOrthonormal F β) (hS : HasLaw S (srht k F) μ)
     (hkn : Fintype.card k ≤ Fintype.card n) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : samplingInjectionSize d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
+    (hk : samplingInjectionDim d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
       Fintype.card k) :
     IsObliviousSubspaceInjection S d (1 - ε) δ μ := by
   have : IsProbabilityMeasure μ := hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srht F hkn)
   have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hkn)
   rcases le_or_gt 1 δ with hδ1 | hδ1
-  · exact ⟨isIsotropicSketch_of_hasLaw_srht hF.hasOrthonormalCols hS hkn,
+  · exact ⟨HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srht hF.hasOrthonormalCols hS hkn,
       fun U _ => measureReal_le_one.trans hδ1⟩
   obtain ⟨ht, hexp, hL, hLpos⟩ := log_div_half_spec hF d hδ hδ1
   refine (isObliviousSubspaceInjection_of_hasLaw_srht hF hS hkn d hε.le ht).mono le_rfl le_rfl ?_
   rw [hL, hexp]
-  linarith [mul_exp_le_of_samplingInjectionSize_le hLpos hε (half_pos hδ) hk]
+  linarith [mul_exp_le_of_samplingInjectionDim_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSI, asymptotic form**:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
@@ -789,9 +796,9 @@ SRHT with $\lvert k \rvert \le \lvert n \rvert$ to be an oblivious subspace inje
 $d$ with constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$
 below absolute constants; the constants come before every dimension and before $\beta$, and the
 $\log \lvert n \rvert$ of the flattening stays in the threshold. Proved from
-`NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le` with $C = 32$,
+`NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le` with $C = 32$,
 $\varepsilon_0 = 1$ and $\delta \le 1/2$.
-Asymptotic: NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le -/
+Asymptotic: NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le -/
 theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
       [Fintype n] [DecidableEq n] [Nonempty k] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜)
@@ -804,8 +811,8 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht :
   refine ⟨32, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ _ μ S F β d ε δ hF hS hkn hε hε1 hδ hδ2 hk
   have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hkn)
-  refine isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le hF hS hkn d hε hδ
-    ((samplingInjectionSize_le _ _ ε _).trans (le_trans ?_ hk))
+  refine isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hS hkn d hε hδ
+    ((samplingInjectionDim_le _ _ ε _).trans (le_trans ?_ hk))
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · simp
   have hβ : 1 ≤ β := hF.one_le
@@ -844,9 +851,10 @@ $\mathbf{F}$ with bound $\beta$ (`NLAlib.IsBoundedOrthonormal`),
 $0 < \varepsilon \le 1$ and $\delta > 0$, the
 SRHT with i.i.d. uniform row indices is an oblivious subspace embedding for dimension $d$
 with constants $1 \mp \varepsilon$
-and failure probability $\delta$ once it has <!-- value samplingSize d L \varepsilon (\delta/2) -->
+and failure probability $\delta$ once it
+has <!-- value samplingEmbeddingDim d L \varepsilon (\delta/2) -->
 $$\lvert k \rvert \ge \frac{3 L \log(2d/(\delta/2))}{\varepsilon^2}$$
-rows (`NLAlib.samplingSize d L ε (δ/2)`), where the flattened
+rows (`NLAlib.samplingEmbeddingDim d L ε (δ/2)`), where the flattened
 coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
 $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
@@ -854,10 +862,10 @@ is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; flattening a
 fail with probability at most $\delta/2$. [MartinssonTropp2020, §9.3]. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement`.
 Result: srht-ose -/
-theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSize_le
+theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le
     (hF : IsBoundedOrthonormal F β) (hS : HasLaw S (srhtWithReplacement k F) μ) (d : ℕ)
     (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
-    (hk : samplingSize d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
+    (hk : samplingEmbeddingDim d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
       Fintype.card k) :
     IsObliviousSubspaceEmbedding S d (1 - ε) (1 + ε) δ μ := by
   rcases isEmpty_or_nonempty n with hn | hn
@@ -872,7 +880,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSi
   refine (isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement hF hS d hε.le hε1 ht).mono
     le_rfl le_rfl le_rfl ?_
   rw [hL, hexp]
-  linarith [two_mul_mul_exp_le_of_samplingSize_le hLpos hε (half_pos hδ) hk]
+  linarith [two_mul_mul_exp_le_of_samplingEmbeddingDim_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSE with replacement, asymptotic form**:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
@@ -880,9 +888,10 @@ SRHT with replacement to be an oblivious subspace embedding for dimension $d$ wi
 $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension and before $\beta$, and the
 $\log \lvert n \rvert$ of the flattening stays in the threshold. Proved from
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSize_le` with
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le` with
 $C = 72$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
-Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSize_le -/
+Asymptotic:
+NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le -/
 theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
       [Fintype n] [DecidableEq n] (μ : Measure Ω) (S : Ω → Matrix k n 𝕜) (F : Matrix n n 𝕜)
@@ -898,8 +907,9 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement
   · intro U _
     rw [show U = 0 from Matrix.ext fun i => isEmptyElim i]
     exact hasSubspaceEmbedding_of_rank_eq_zero Matrix.rank_zero hδ.le
-  refine isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingSize_le hF hS d hε
-    hε1 hδ ((samplingSize_le _ _ ε _).trans (le_trans ?_ hk))
+  refine isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le hF hS
+    d hε
+    hε1 hδ ((samplingEmbeddingDim_le _ _ ε _).trans (le_trans ?_ hk))
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · simp
   have hβ : 1 ≤ β := hF.one_le
@@ -940,9 +950,9 @@ $\mathbf{F}$ with bound $\beta$ (`NLAlib.IsBoundedOrthonormal`), $\varepsilon > 
 $\delta > 0$ and nonempty `k` and `n`, the SRHT with i.i.d. uniform row indices is an oblivious
 subspace injection for dimension $d$ with constant $1 - \varepsilon$
 and failure probability $\delta$ once the
-row count satisfies <!-- value samplingInjectionSize d L \varepsilon (\delta/2) -->
+row count satisfies <!-- value samplingInjectionDim d L \varepsilon (\delta/2) -->
 $$\lvert k \rvert \ge \frac{2 L \log(d/(\delta/2))}{\varepsilon^2}$$
-rows (`NLAlib.samplingInjectionSize d L ε (δ/2)`), where the flattened
+rows (`NLAlib.samplingInjectionDim d L ε (δ/2)`), where the flattened
 coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
 $$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
@@ -950,22 +960,23 @@ is $\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`; flattening a
 fail with probability at most $\delta/2$. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement`.
 Result: srht-osi -/
-theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le
+theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le
     [Nonempty k] [Nonempty n] (hF : IsBoundedOrthonormal F β)
     (hS : HasLaw S (srhtWithReplacement k F) μ) (d : ℕ) (hε : 0 < ε) (hδ : 0 < δ)
-    (hk : samplingInjectionSize d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
+    (hk : samplingInjectionDim d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
       Fintype.card k) :
     IsObliviousSubspaceInjection S d (1 - ε) δ μ := by
   have : IsProbabilityMeasure μ :=
     hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
   rcases le_or_gt 1 δ with hδ1 | hδ1
-  · exact ⟨isIsotropicSketch_of_hasLaw_srhtWithReplacement hF.hasOrthonormalCols hS,
+  · exact
+      ⟨HasOrthonormalCols.isIsotropicSketch_of_hasLaw_srhtWithReplacement hF.hasOrthonormalCols hS,
       fun U _ => measureReal_le_one.trans hδ1⟩
   obtain ⟨ht, hexp, hL, hLpos⟩ := log_div_half_spec hF d hδ hδ1
   refine (isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement hF hS d hε.le ht).mono le_rfl
     le_rfl ?_
   rw [hL, hexp]
-  linarith [mul_exp_le_of_samplingInjectionSize_le hLpos hε (half_pos hδ) hk]
+  linarith [mul_exp_le_of_samplingInjectionDim_le hLpos hε (half_pos hδ) hk]
 
 /-- **The SRHT OSI with replacement, asymptotic form**:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
@@ -973,10 +984,10 @@ SRHT with replacement to be an oblivious subspace injection for dimension $d$ wi
 $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension and before $\beta$, and the
 $\log \lvert n \rvert$ of the flattening stays in the threshold. Proved from
-`NLAlib.isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le`
+`NLAlib.isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le`
 with $C = 32$, $\varepsilon_0 = 1$ and $\delta \le 1/2$.
 Asymptotic:
-NLAlib.isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le -/
+NLAlib.isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le -/
 theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
       [Fintype n] [DecidableEq n] [Nonempty k] [Nonempty n] (μ : Measure Ω)
@@ -988,8 +999,8 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement
       IsObliviousSubspaceInjection S d (1 - ε) δ μ := by
   refine ⟨32, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ _ _ μ S F β d ε δ hF hS hε hε1 hδ hδ2 hk
-  refine isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le hF
-    hS d hε hδ ((samplingInjectionSize_le _ _ ε _).trans (le_trans ?_ hk))
+  refine isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le hF
+    hS d hε hδ ((samplingInjectionDim_le _ _ ε _).trans (le_trans ?_ hk))
   rcases Nat.eq_zero_or_pos d with rfl | hd
   · simp
   have hβ : 1 ≤ β := hF.one_le

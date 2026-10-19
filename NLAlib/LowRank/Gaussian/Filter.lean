@@ -89,7 +89,7 @@ private theorem exists_filter_residual [DecidableEq m] (A : Matrix m n ℝ)
       ← Matrix.submatrix_mul Zᴴ Z (Fin.castLE hrt) id (Fin.castLE hrt) Function.bijective_id,
       hZ.conjTranspose_mul_self, Matrix.submatrix_one _ (Fin.castLE_injective hrt)]
   have hWZ : LinearMap.range W.mulVecLin ≤ LinearMap.range Z.mulVecLin :=
-    range_mulVecLin_le_iff_exists_mul.mpr
+    range_le_iff_exists_mul.mpr
       ⟨(1 : Matrix (Fin t) (Fin t) ℝ).submatrix (Equiv.refl _) (Fin.castLE hrt), by
         rw [Matrix.mul_submatrix_one]; rfl⟩
   have hAW : Aᴴ * A * W =

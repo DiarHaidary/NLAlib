@@ -100,7 +100,7 @@ private theorem inertia_fromBlocks_diagonal {A : Matrix m m 𝕜} {C : Matrix n 
 $\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{C} \end{bmatrix}$ with Hermitian
 blocks is the sum of those of the blocks.
 Port of `NLAlib.inertiaPos_fromBlocks_zero`. -/
-theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks_diagonal
+theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks_zero₁₂_zero₂₁
     {A : Matrix m m 𝕜} {C : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hC : C.IsHermitian) :
     inertiaPos (Matrix.fromBlocks A 0 0 C) = inertiaPos A + inertiaPos C :=
@@ -110,7 +110,7 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks_diagonal
 $\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{C} \end{bmatrix}$ with Hermitian
 blocks is the sum of those of the blocks.
 Port of `NLAlib.inertiaNeg_fromBlocks_zero`. -/
-theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks_diagonal
+theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks_zero₁₂_zero₂₁
     {A : Matrix m m 𝕜} {C : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hC : C.IsHermitian) :
     inertiaNeg (Matrix.fromBlocks A 0 0 C) = inertiaNeg A + inertiaNeg C :=
@@ -155,7 +155,7 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_fromBlocks [DecidableEq m]
     Matrix.IsHermitian.fromBlocks hA (by rw [Matrix.conjTranspose_zero]) hS
   rw [fromBlocks_eq_conjTranspose_mul_fromBlocks_mul hA hAu B C,
     hD.inertiaPos_conjTranspose_mul_mul (by rw [Matrix.det_fromBlocks_zero₂₁]; simp),
-    hA.inertiaPos_fromBlocks_diagonal hS]
+    hA.inertiaPos_fromBlocks_zero₁₂_zero₂₁ hS]
 
 /-- **Haynsworth inertia additivity**, negative index: for Hermitian $\mathbf{A}$ and $\mathbf{C}$
 with $\mathbf{A}$ invertible, the number of negative eigenvalues of the block matrix
@@ -175,7 +175,7 @@ theorem _root_.Matrix.IsHermitian.inertiaNeg_fromBlocks [DecidableEq m]
     Matrix.IsHermitian.fromBlocks hA (by rw [Matrix.conjTranspose_zero]) hS
   rw [fromBlocks_eq_conjTranspose_mul_fromBlocks_mul hA hAu B C,
     hD.inertiaNeg_conjTranspose_mul_mul (by rw [Matrix.det_fromBlocks_zero₂₁]; simp),
-    hA.inertiaNeg_fromBlocks_diagonal hS]
+    hA.inertiaNeg_fromBlocks_zero₁₂_zero₂₁ hS]
 
 /-- For $\mathbf{A}$ positive definite, $\mathbf{B}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{B}$ has the
 rank of $\mathbf{B}$. -/
@@ -190,8 +190,8 @@ private theorem rank_conjTranspose_mul_inv_mul [DecidableEq m] {A : Matrix m m �
       rw [← quadForm_conjTranspose_mul_mul, quadForm_def, h, dotProduct_zero, map_zero] at h1
       exact lt_irrefl _ h1
     · rw [← Matrix.mulVec_mulVec, h, Matrix.mulVec_zero]
-  have h1 := Matrix.finrank_ker_mulVecLin_add_rank (Bᴴ * A⁻¹ * B)
-  have h2 := Matrix.finrank_ker_mulVecLin_add_rank B
+  have h1 := Matrix.finrank_ker_add_rank (Bᴴ * A⁻¹ * B)
+  have h2 := Matrix.finrank_ker_add_rank B
   rw [hker] at h1
   omega
 

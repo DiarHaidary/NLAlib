@@ -326,10 +326,12 @@ vectors: for every finite set $S$ of indices, eigenvalues non-increasing and ind
 $\sum_{i \in S} \lvert \lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B}) \rvert
 \le \|\mathbf{A} - \mathbf{B}\|_*$.
 Port of `NLAlib.sum_abs_eigenvalues₀_add_sub_le_nuclearNorm`, there over $\mathbb{R}$. -/
-theorem sum_abs_eigenvalue_sub_le_nuclearNorm_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_nuclearNorm_sub {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) (S : Finset ℕ) :
     ∑ i ∈ S, |eigenvalue A i - eigenvalue B i| ≤ nuclearNorm (A - B) := by
-  exact (sum_abs_eigenvalue_sub_le_kyFanNorm_sub hA hB S).trans (kyFanNorm_le_nuclearNorm _ _)
+  exact (Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_kyFanNorm_sub hA hB S).trans
+    (kyFanNorm_le_nuclearNorm _ _)
 
 /-- The sorted singular values are $1$-Lipschitz in the nuclear norm, as vectors: for every
 finite set $S$ of indices,

@@ -129,14 +129,15 @@ an almost surely Hermitian $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under 
 measure,
 $$\mathbb{E}\bigl[\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \bigm| m\bigr]
 \le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E}[e^{\mathbf{X}} \mid m]}$$
-almost surely. [Tropp2011, §2]; the conditional form of `NLAlib.integral_re_trace_exp_add_le`
+almost surely. [Tropp2011, §2]; the conditional form of
+`Matrix.IsHermitian.integral_re_trace_exp_add_le`
 ([Tropp2015, Corollary 3.4.2]). No integrability of
 $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is assumed: if it fails the left side is $0$.
 Proof: with $\mathbf{F} = e^{\mathbf{X}}$, almost surely positive definite,
 $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} = \varphi(\mathbf{F})$ for Lieb's concave map
 $\varphi(\mathbf{M}) = \operatorname{Re} \operatorname{tr} e^{\mathbf{H} + \log \mathbf{M}}$ on the
-positive definite cone (`NLAlib.concaveOn_re_trace_exp_add_cfc_log`), continuous there; the
-conditional mean $\mathbb{E}[\mathbf{F} \mid m]$ is almost surely positive definite
+positive definite cone (`Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log`), continuous there;
+the conditional mean $\mathbb{E}[\mathbf{F} \mid m]$ is almost surely positive definite
 (`Matrix.ae_posDef_condExp`), so `ConcaveOn.condExp_map_le_of_condExp_mem` applies. Integrability
 of $\varphi \circ \mathbf{F}$ by the case split above. Medium. -/
 theorem condExp_re_trace_exp_const_add_le (hm : m ≤ mΩ) {H : Matrix n n 𝕜} (hH : H.IsHermitian)
@@ -150,9 +151,11 @@ theorem condExp_re_trace_exp_const_add_le (hm : m ≤ mΩ) {H : Matrix n n 𝕜}
       fun ω => RCLike.re (exp (H + X ω)).trace :=
     hX.mono fun ω hω => by simp only [hω.cfc_log_exp]
   have hi : Integrable (fun ω => RCLike.re (exp (H + X ω)).trace) μ :=
-    integrable_re_trace_exp_add_of_le hH (aemeasurable_of_integrable_exp hX hint) hX hint.norm
+    Matrix.IsHermitian.integrable_re_trace_exp_add_of_le hH (aemeasurable_of_integrable_exp hX hint)
+      hX hint.norm
       (ae_of_all _ fun ω => (specNorm_eq_norm _).le)
-  have hJ := (concaveOn_re_trace_exp_add_cfc_log hH).condExp_map_le_of_condExp_mem hm
+  have hJ :=
+    (Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log hH).condExp_map_le_of_condExp_mem hm
     (continuousOn_re_trace_exp_add_cfc_log H) hpd hint (hi.congr heq.symm) hmean
   filter_upwards [hJ, condExp_congr_ae (m := m) heq] with ω h1 h2
   rw [← h2]
@@ -174,12 +177,13 @@ private theorem ae_condExp_re_trace_exp_add_le_exp_mul (hm : m ≤ mΩ) {H X : �
   have hC : MeasurableSet[m] C :=
     measurableSet_lt (hHm.sub stronglyMeasurable_const).norm.measurable measurable_const
   have hip : Integrable (fun ω => RCLike.re (exp (p + X ω)).trace) μ :=
-    integrable_re_trace_exp_add_of_le hp (aemeasurable_of_integrable_exp hX hint) hX hint.norm
+    Matrix.IsHermitian.integrable_re_trace_exp_add_of_le hp (aemeasurable_of_integrable_exp hX hint)
+      hX hint.norm
       (ae_of_all _ fun ω => (specNorm_eq_norm _).le)
   have hpt : ∀ᵐ ω ∂μ, ω ∈ C → RCLike.re (exp (H ω + X ω)).trace ≤
       Real.exp δ * RCLike.re (exp (p + X ω)).trace := by
     filter_upwards [hH, hX] with ω hHω hXω hωC
-    have h := re_trace_exp_le_exp_specNorm_sub_mul (hHω.add hXω) (hp.add hXω)
+    have h := Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul (hHω.add hXω) (hp.add hXω)
     rw [add_sub_add_right_eq_sub, specNorm_eq_norm] at h
     exact h.trans (mul_le_mul_of_nonneg_right (Real.exp_le_exp.mpr (le_of_lt hωC))
       ((hp.add hXω).re_trace_exp_nonneg))
@@ -191,6 +195,8 @@ private theorem ae_condExp_re_trace_exp_add_le_exp_mul (hm : m ≤ mΩ) {H X : �
   rw [← hs']
   exact h hωC
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 /-- **Conditional Lieb inequality**: for $\mathbf{H}$ $m$-measurable and almost surely Hermitian
 and an almost surely Hermitian $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under a probability
 measure,
@@ -204,8 +210,8 @@ Otherwise take a dense sequence $\mathbf{U}_j$ of Hermitian matrices;
 `NLAlib.condExp_re_trace_exp_const_add_le` holds for all $\mathbf{U}_j$ on one null set. On the
 $m$-measurable set $\{\|\mathbf{H} - \mathbf{U}_j\|_2 < \delta\}$,
 $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}} \le e^\delta \operatorname{tr} e^{\mathbf{U}_j +
-\mathbf{X}}$ (`NLAlib.re_trace_exp_le_exp_specNorm_sub_mul`), and conditional expectations are
-monotone on $m$-measurable sets (`condExp_indicator`); the same perturbation bound on the right
+\mathbf{X}}$ (`Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul`), and conditional
+expectations are monotone on $m$-measurable sets (`condExp_indicator`); the same perturbation bound on the right
 side gives the inequality up to a factor $e^{2\delta}$, and $\delta \to 0$. This replaces the
 rounding of $\mathbf{H}$ to a grid suggested by the design note: no limit of conditional
 expectations is taken. The conditional expectation kernel would not shorten it:
@@ -246,7 +252,8 @@ theorem condExp_re_trace_exp_add_le (hm : m ≤ mΩ) {H X : Ω → Matrix n n �
       Real.exp (2 * δ k) * R := by
     intro k
     obtain ⟨j, hj⟩ := hdense (H ω) hHω (δ k) (by positivity)
-    have hrev := re_trace_exp_le_exp_specNorm_sub_mul ((hu j).add hL) (hHω.add hL)
+    have hrev := Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul ((hu j).add hL)
+      (hHω.add hL)
     rw [add_sub_add_right_eq_sub, specNorm_eq_norm, norm_sub_rev] at hrev
     calc μ[fun ω => RCLike.re (exp (H ω + X ω)).trace | m] ω
         ≤ Real.exp (δ k) * μ[fun ω => RCLike.re (exp (u j + X ω)).trace | m] ω := hcω j k hj

@@ -466,7 +466,7 @@ private theorem frobNorm_sub_earlyTruncatedRSVD_sq_le_inv {A : Matrix m n ℝ} {
           a⁻¹ ^ 2 := by
   classical
   have hinj : IsSubspaceInjection (c • X₀)ᴴ Z a := by
-    rw [hZ.isSubspaceInjection_iff_le_sq_singularValues (j := k - 1)
+    rw [hZ.isSubspaceInjection_iff_le_singularValues_sq (j := k - 1)
       (by rw [Fintype.card_fin]; omega), Matrix.conjTranspose_smul, star_trivial,
       Matrix.smul_mul, singularValues_smul, Real.norm_of_nonneg hc.le, mul_pow]
     exact haσ

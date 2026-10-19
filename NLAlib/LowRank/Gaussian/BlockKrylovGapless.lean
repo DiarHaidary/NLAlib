@@ -682,7 +682,7 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
     · linarith [(div_le_one hσ2).2 hx.2]
   obtain ⟨W, hW⟩ := exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le A hX f
     (le_card_of_singularValues_pos A hσ) hr htail
-  rw [one_pow, one_mul, ← sq_singularValues_mul_rangeFinderTailRatio A _ hσ] at hW
+  rw [one_pow, one_mul, ← singularValues_sq_mul_rangeFinderTailRatio A _ hσ] at hW
   set G := Polynomial.aeval (Aᴴ * A) f with hGdef
   set B := A * G with hBdef
   set Ω' : Ω → Matrix n (Fin r) ℝ := fun ω => X ω * pinv (Wᴴ * X ω) with hΩ'
@@ -720,7 +720,7 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
     obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) (X ω) hfdeg
     have hrange : LinearMap.range (B * Ω' ω).mulVecLin ≤
         LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) (X ω) q).mulVecLin := by
-      refine range_mulVecLin_le_iff_exists_mul.mpr ⟨C * pinv (Wᴴ * X ω), ?_⟩
+      refine range_le_iff_exists_mul.mpr ⟨C * pinv (Wᴴ * X ω), ?_⟩
       simp only [hBdef, hΩ', Matrix.mul_assoc]
       rw [← Matrix.mul_assoc G (X ω), hC, Matrix.mul_assoc]
     rw [rbki, sub_rsvd]
@@ -802,7 +802,7 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatr
     exact pow_le_pow_left₀ hx.1 hx.2 p
   obtain ⟨W, hW⟩ := exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le A hX (Polynomial.X ^ p)
     (le_card_of_singularValues_pos A hσ) hr htail
-  rw [← sq_singularValues_mul_rangeFinderTailRatio A _ hσ, Polynomial.aeval_X_pow] at hW
+  rw [← singularValues_sq_mul_rangeFinderTailRatio A _ hσ, Polynomial.aeval_X_pow] at hW
   set B := A * (Aᴴ * A) ^ p with hBdef
   set Ω' : Ω → Matrix n (Fin r) ℝ := fun ω => X ω * pinv (Wᴴ * X ω) with hΩ'
   set y : Ω → ℝ := fun ω => specNorm (A - rsvd A ((Aᴴ * A) ^ p * X ω)) ^ 2 with hy
@@ -815,7 +815,7 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatr
     rw [hBA] at h
     have h2 := specNorm_one_sub_rangeProjector_mul_le_of_range_le
       (B := A * ((Aᴴ * A) ^ p * X ω)) (Y := B * Ω' ω)
-      (range_mulVecLin_le_iff_exists_mul.mpr ⟨pinv (Wᴴ * X ω), by
+      (range_le_iff_exists_mul.mpr ⟨pinv (Wᴴ * X ω), by
         simp only [hBdef, hΩ', Matrix.mul_assoc]⟩) B
     rw [← sub_rsvd B (Ω' ω)] at h2
     simp only [hy]

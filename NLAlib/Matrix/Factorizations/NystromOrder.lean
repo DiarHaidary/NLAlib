@@ -71,7 +71,7 @@ semidefinite $\mathbf{H}$,
 $$\operatorname{Re}\langle\mathbf{x}, (\mathbf{H}/\mathbf{\Omega})\mathbf{x}\rangle =
 \min_{\mathbf{y}} \operatorname{Re}\langle\mathbf{x}-\mathbf{\Omega}\mathbf{y},
 \mathbf{H}(\mathbf{x}-\mathbf{\Omega}\mathbf{y})\rangle\,,$$
-the minimum attained. An instance of `NLAlib.isLeast_re_quadForm_fromBlocks`.
+the minimum attained. An instance of `Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks`.
 [MartinssonTropp2020, §2.7]; [HornJohnson2013, §7.7]. -/
 theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_sub_mulVec {H : Matrix n n 𝕜}
     (hH : H.PosSemidef) (Ω : Matrix n l 𝕜) (x : n → 𝕜) :
@@ -87,7 +87,7 @@ theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_sub_mulVec {H : Matrix n n 
   have hPSD : (Matrix.fromBlocks (Ωᴴ * H * Ω) (Ωᴴ * H) (Ωᴴ * H)ᴴ H).PosSemidef := by
     rw [← hblk]
     exact hH.conjTranspose_mul_mul_same _
-  have hL := isLeast_re_quadForm_fromBlocks hPSD x
+  have hL := Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks hPSD x
   have hschur : H - (Ωᴴ * H)ᴴ * pinv (Ωᴴ * H * Ω) * (Ωᴴ * H) = H - nystrom H Ω := by
     rw [nystrom_def, Matrix.conjTranspose_mul, hH.isHermitian.eq,
       Matrix.conjTranspose_conjTranspose]
@@ -180,9 +180,9 @@ theorem _root_.Matrix.PosSemidef.nystrom_le_nystrom_of_range_le [Fintype q] {H :
   rw [hH.nystrom_eq, hH.nystrom_eq]
   have hR : (CFC.sqrt H)ᴴ = CFC.sqrt H :=
     (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg H)).isHermitian.eq
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp h
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp h
   have hP : rangeProjector (CFC.sqrt H * Ω) ≤ rangeProjector (CFC.sqrt H * Ω') :=
-    rangeProjector_mono (range_mulVecLin_le_iff_exists_mul.mpr
+    rangeProjector_mono (range_le_iff_exists_mul.mpr
       ⟨C, by rw [Matrix.mul_assoc, ← hC]⟩)
   have := conjTranspose_mul_mul_le_conjTranspose_mul_mul hP (CFC.sqrt H)
   rwa [hR] at this
