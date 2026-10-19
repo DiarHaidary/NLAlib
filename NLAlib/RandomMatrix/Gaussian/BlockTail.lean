@@ -217,6 +217,38 @@ private theorem integral_min_le_two_mul_sqrt {α : Type*} [MeasurableSpace α] {
         norm_num
         ring
 
+/-- The pointwise step of `measureReal_lt_sum_le`: for $D_i \ge 0$, $R = \lvert r \rvert \ge 1$
+and $N = R^{d-1}$, $\min(v^d, (\sum_i D_i)^d) \le N\sum_i \min(v^d/N, D_i^d)$. -/
+private theorem min_pow_sum_le_mul_sum_min {D : r → ℝ} (hD0 : ∀ i, 0 ≤ D i)
+    (hr : 0 < Fintype.card r) {d : ℕ} (hd : 0 < d) {v : ℝ} (hv : 0 ≤ v) :
+    min (v ^ d) ((∑ i, D i) ^ d) ≤ (Fintype.card r : ℝ) ^ (d - 1) *
+      ∑ i, min (v ^ d / (Fintype.card r : ℝ) ^ (d - 1)) (D i ^ d) := by
+  set N : ℝ := (Fintype.card r : ℝ) ^ (d - 1) with hN_def
+  have hN : 0 < N := pow_pos (Nat.cast_pos.2 hr) _
+  set c : ℝ := v ^ d / N with hc_def
+  have hc : 0 ≤ c := by positivity
+  have hpow : (∑ i, D i) ^ d ≤ N * ∑ i, D i ^ d := by
+    obtain ⟨e, rfl⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
+    have h := pow_sum_div_card_le_sum_pow (s := Finset.univ) (fun i _ => hD0 i) e
+    rw [div_le_iff₀' (by positivity), Finset.card_univ] at h
+    simpa only [hN_def, Nat.add_sub_cancel] using h
+  have hmin : min c (∑ i, D i ^ d) ≤ ∑ i, min c (D i ^ d) := by
+    by_cases h : ∃ i, c ≤ D i ^ d
+    · obtain ⟨i, hi⟩ := h
+      calc min c (∑ i, D i ^ d) ≤ c := min_le_left _ _
+        _ = min c (D i ^ d) := (min_eq_left hi).symm
+        _ ≤ ∑ j, min c (D j ^ d) :=
+          Finset.single_le_sum (f := fun j => min c (D j ^ d))
+            (fun j _ => le_min hc (pow_nonneg (hD0 j) d)) (Finset.mem_univ i)
+    · push Not at h
+      refine (min_le_right _ _).trans (le_of_eq ?_)
+      exact Finset.sum_congr rfl fun i _ => (min_eq_right (h i).le).symm
+  calc min (v ^ d) ((∑ i, D i) ^ d) ≤ min (v ^ d) (N * ∑ i, D i ^ d) :=
+        min_le_min le_rfl hpow
+    _ = N * min c (∑ i, D i ^ d) := by
+        rw [mul_min_of_nonneg _ _ hN.le, hc_def, mul_div_cancel₀ _ hN.ne']
+    _ ≤ N * ∑ i, min c (D i ^ d) := mul_le_mul_of_nonneg_left hmin hN.le
+
 /-- **The sum of variables with polynomial tails**: if $D_i \ge 0$, $i \in r$, $R = \lvert r \rvert
 \ge 1$, have $\mathbb{P}[u \le D_i] \le K u^{-d/2}$ for every $u > 0$, with $d \ge 1$, then
 $\mathbb{P}[v < \sum_i D_i] \le 2KR\sqrt{R^{d-1}}\,v^{-d/2}$, by Markov's inequality on
@@ -255,29 +287,8 @@ private theorem measureReal_lt_sum_le {α : Type*} [MeasurableSpace α] {ν : Me
       congr 2
       field_simp
   -- the pointwise bound
-  have hpt : ∀ x, min (v ^ d) ((∑ i, D i x) ^ d) ≤ N * ∑ i, min c (D i x ^ d) := by
-    intro x
-    have hpow : (∑ i, D i x) ^ d ≤ N * ∑ i, D i x ^ d := by
-      obtain ⟨e, rfl⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
-      have h := pow_sum_div_card_le_sum_pow (s := Finset.univ) (fun i _ => hD0 i x) e
-      rw [div_le_iff₀' (by positivity), Finset.card_univ] at h
-      simpa only [hN_def, Nat.add_sub_cancel] using h
-    have hmin : min c (∑ i, D i x ^ d) ≤ ∑ i, min c (D i x ^ d) := by
-      by_cases h : ∃ i, c ≤ D i x ^ d
-      · obtain ⟨i, hi⟩ := h
-        calc min c (∑ i, D i x ^ d) ≤ c := min_le_left _ _
-          _ = min c (D i x ^ d) := (min_eq_left hi).symm
-          _ ≤ ∑ j, min c (D j x ^ d) :=
-            Finset.single_le_sum (f := fun j => min c (D j x ^ d))
-              (fun j _ => le_min hc (pow_nonneg (hD0 j x) d)) (Finset.mem_univ i)
-      · push Not at h
-        refine (min_le_right _ _).trans (le_of_eq ?_)
-        exact Finset.sum_congr rfl fun i _ => (min_eq_right (h i).le).symm
-    calc min (v ^ d) ((∑ i, D i x) ^ d) ≤ min (v ^ d) (N * ∑ i, D i x ^ d) :=
-          min_le_min le_rfl hpow
-      _ = N * min c (∑ i, D i x ^ d) := by
-          rw [mul_min_of_nonneg _ _ hN.le, hc_def, mul_div_cancel₀ _ hN.ne']
-      _ ≤ N * ∑ i, min c (D i x ^ d) := mul_le_mul_of_nonneg_left hmin hN.le
+  have hpt : ∀ x, min (v ^ d) ((∑ i, D i x) ^ d) ≤ N * ∑ i, min c (D i x ^ d) := fun x =>
+    min_pow_sum_le_mul_sum_min (fun i => hD0 i x) hr hd hv.le
   have hWm : Measurable fun x => min (v ^ d) ((∑ i, D i x) ^ d) :=
     measurable_const.min ((Finset.measurable_sum _ fun i _ => hD i).pow_const d)
   have hWint : Integrable (fun x => min (v ^ d) ((∑ i, D i x) ^ d)) ν := by
