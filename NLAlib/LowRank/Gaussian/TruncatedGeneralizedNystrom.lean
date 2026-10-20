@@ -141,6 +141,44 @@ theorem truncatedGNFactor_le_one_add {k l p : ℕ} {ε : ℝ} (hε : 0 < ε) (h�
   rw [show 2 * (k : ℝ) * c = 2 * k * c from rfl] at hs
   linarith
 
+/-- The shared-size comparison of the truncated generalized Nyström factor, for the asymptotic
+form: for $0 < \varepsilon \le 1$, $160k \le \varepsilon\ell$ and
+$160\ell \le \varepsilon p$, <!-- value truncatedGNFactor k \ell p -->
+$$1 + \frac{k}{\ell - k - 1} + 4\sqrt{\frac{2k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}
+\Bigr) + 484\Bigr)} + \frac{8k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr) + 484\Bigr) \le
+1 + \varepsilon\,:$$
+$k/(\ell - k - 1) \le \varepsilon/150$, $k/p \le \varepsilon^2/25600$, and
+$\varepsilon/150 + 4\sqrt{1020/25600}\,\varepsilon + 8 \cdot 510\,\varepsilon^2/25600 \le
+\varepsilon$. -/
+private theorem truncatedGNFactor_le_one_add_of_mul_le {k l p : ℕ} {ε : ℝ} (hε : 0 < ε)
+    (hε1 : ε ≤ 1) (hl : 160 * (k : ℝ) ≤ ε * l) (hp : 160 * (l : ℝ) ≤ ε * p) :
+    truncatedGNFactor k l p ≤ 1 + ε := by
+  rw [truncatedGNFactor_def]
+  rcases Nat.eq_zero_or_pos k with hk | hk
+  · subst hk
+    simp only [gaussianProjectionFactor_def, Nat.cast_zero, zero_div, add_zero, mul_zero,
+      zero_mul, Real.sqrt_zero]
+    linarith
+  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hl' : 160 * (k : ℝ) ≤ l := by nlinarith
+  have hp0 : (0 : ℝ) < p := by nlinarith
+  have hden : 0 < (l : ℝ) - k - 1 := by linarith
+  set g := gaussianProjectionFactor k l with hgdef
+  have hg : g ≤ 1 + ε / 150 := by
+    rw [hgdef, gaussianProjectionFactor_def, add_le_add_iff_left,
+      div_le_div_iff₀ hden (by norm_num)]
+    nlinarith
+  set c := (25 * g + 484) / p with hcdef
+  have hkp : 25600 * (k : ℝ) ≤ ε ^ 2 * p := by nlinarith
+  have hkc : (k : ℝ) * c ≤ 510 / 25600 * ε ^ 2 := by
+    rw [hcdef, mul_div_assoc', div_le_iff₀ hp0]
+    nlinarith
+  have hs : √(2 * k * c) ≤ 0.2 * ε := by
+    rw [show (0.2 : ℝ) * ε = √((0.2 * ε) ^ 2) from (Real.sqrt_sq (by positivity)).symm]
+    exact Real.sqrt_le_sqrt (by nlinarith)
+  have h8 : 8 * k * c ≤ 0.16 * ε := by nlinarith
+  linarith
+
 /-! ### Helpers: conditioning, Jensen, the joint rank event -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Type*} [Fintype m]
@@ -650,8 +688,9 @@ $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 The asymptotic form of
-`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`;
-the proof takes $C = 8000$ and $\varepsilon_0 = 1$.
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`
+through the factor's comparison at one shared $C$; the proof takes $C = 160$ and
+$\varepsilon_0 = 1$, against the explicit theorem's $6$ and $8000$ for the two sizes.
 Asymptotic:
 NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
 Result: tgn-expected-error -/
@@ -665,12 +704,21 @@ theorem
       C * ((Fintype.card l : ℝ) / ε) ≤ Fintype.card p →
       ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
         (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  refine ⟨8000, 1, by norm_num, one_pos, ?_⟩
+  refine ⟨160, 1, by norm_num, one_pos, ?_⟩
   intro Ω m n l p _ _ _ _ _ μ A X Ψ k ε hX hΨ hXΨ hε hε1 hl hp
   rw [← mul_div_assoc, div_le_iff₀ hε] at hl hp
-  exact
-    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
-      A hX hΨ hXΨ hε hε1 (by nlinarith [Nat.cast_nonneg (α := ℝ) k]) (by linarith)
+  have hl' : 160 * (k : ℝ) ≤ ε * Fintype.card l := by linarith
+  have hp' : 160 * (Fintype.card l : ℝ) ≤ ε * Fintype.card p := by linarith
+  have hkl : 4 * k ≤ Fintype.card l := by
+    have : 4 * (k : ℝ) ≤ Fintype.card l := by nlinarith [Nat.cast_nonneg (α := ℝ) k]
+    exact_mod_cast this
+  have hlp : 4 * Fintype.card l ≤ Fintype.card p := by
+    have : 4 * (Fintype.card l : ℝ) ≤ Fintype.card p := by
+      nlinarith [Nat.cast_nonneg (α := ℝ) (Fintype.card l)]
+    exact_mod_cast this
+  exact (integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix A hX
+    hΨ hXΨ hkl hlp).trans (mul_le_mul_of_nonneg_right
+      (truncatedGNFactor_le_one_add_of_mul_le hε hε1 hl' hp') (sq_nonneg _))
 
 /-- **Truncated generalized Nyström, Frobenius core-noise form**: for independent standard Gaussian
 test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \ell/(p - \ell - 1)$,
