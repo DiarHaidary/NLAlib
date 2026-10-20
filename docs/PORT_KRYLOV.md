@@ -492,6 +492,12 @@ the form of `specNorm_aeval_le_of_forall_mem_Icc`. $\kappa$ forms are corollarie
   | i.i.d. iterates on `Measure.infinitePi` | `Probability/` | a probability fact |
 
 - Not this round: the QR algorithm, `jacobiMatrix`, the spectral measure (D6). Rework: import paths.
+- Amendment (2026-10-20, sketch-and-precondition skeleton): Richardson's iteration lives in
+  `Krylov/LinearSystems/Richardson.lean`, not `PolynomialIteration.lean`: the file holds one
+  recursion (`NLAlib.richardsonIterate`, rectangular), not polynomial methods
+  (`docs/design/Regression-SketchPrecondition.md` §6). The i.i.d.-iterate lemma went to
+  `ForMathlib/Probability/Independence/InfinitePi.lean` and `Probability/Law.lean`
+  (`docs/design/Regression-Kaczmarz.md` §7).
 
 ## 3. Decisions the orchestrator takes
 

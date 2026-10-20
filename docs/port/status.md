@@ -2,6 +2,19 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Sketch-and-precondition and randomized Kaczmarz: skeleton (2026-10-20)
+
+Branch `regression/sketch-precondition` (worktree `nlalib-block`), rebased onto `rules/stage3`.
+Statement skeleton of `docs/design/Regression-SketchPrecondition.md` and
+`docs/design/Regression-Kaczmarz.md` (both approved 2026-10-19; each note's last section lists the
+changes during the skeleton). New files with `sorry` statements:
+`Krylov/LinearSystems/Richardson.lean`, `Regression/{SketchAndPrecondition, IterativeSketching,
+SubGaussian, SRHT}.lean`, `Solvers/{SketchAndProject, Kaczmarz}.lean`; the family forms added to
+`Regression/{Gaussian, CountSketch}.lean` are `sorry` too. Proved and sorry-free: the additions to
+`ForMathlib/Probability/Independence/{Basic, InfinitePi}.lean`, `Probability/Law.lean`,
+`Matrix/Pseudoinverse/{Pinv, ConditionNumber}.lean`, `Matrix/Norms/Frobenius.lean` and
+`Regression/Embedding.lean`. Next: proofs, one file at a time, Richardson first.
+
 ## Naming grammar and renames (2026-10-19)
 
 Branch `naming/grammar` (worktree `nlalib-block`), from `origin/main` at bc72b8d. Design note

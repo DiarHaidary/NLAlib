@@ -9,13 +9,15 @@ public import Mathlib.MeasureTheory.Integral.Prod
 public import Mathlib.MeasureTheory.Measure.Prod
 public import Mathlib.MeasureTheory.Measure.Real
 public import Mathlib.Probability.Independence.Basic
+public import Mathlib.Logic.Function.DependsOn
 
 /-!
 # Integrals and events of two independent random variables
 
 If $X$ and $Y$ are independent, their joint law is the product $\mu_X \otimes \mu_Y$
 (`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`), so integrals and probabilities of
-the pair are iterated ones against the two laws. This file records three consequences.
+the pair are iterated ones against the two laws. This file records three consequences, and one
+fact about independent families.
 
 * The lower integral of a measurable $f \ge 0$ of the pair is the iterated integral against the
   two laws, $\int f(X, Y)\,d\mu = \int\!\int f(x, y)\,d\mu_Y(y)\,d\mu_X(x)$ (Tonelli,
@@ -28,12 +30,16 @@ the pair are iterated ones against the two laws. This file records three consequ
 * The Bochner integral of a function of the pair, integrable for the product of the two laws, is
   the iterated integral (Fubini, `MeasureTheory.integral_prod`), the conditioning step of a mean
   or a variance of a function of two independent random matrices.
+* A measurable function of the coordinates in a finite set $s$ of an independent family is
+  independent of every coordinate outside $s$: the step that conditions an iterated random
+  method on its past.
 
 Mathlib has the ingredients but not these statements. Upstream candidates for
 `Mathlib/Probability/Independence/Basic.lean`.
 
 Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15); LowRank stage S6
-(`docs/design/LowRank-S6.md` §4, L1); Hutch++ (`docs/design/Estimation-HutchPP.md` §2.2, P1).
+(`docs/design/LowRank-S6.md` §4, L1); Hutch++ (`docs/design/Estimation-HutchPP.md` §2.2, P1);
+randomized Kaczmarz (`docs/design/Regression-Kaczmarz.md` §4).
 
 ## Main results
 
@@ -41,6 +47,8 @@ Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15); L
   pair.
 * `ProbabilityTheory.IndepFun.measureReal_mem_le_add`: the sections bound.
 * `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`: Fubini for an independent pair.
+* `ProbabilityTheory.iIndepFun.indepFun_comp_of_dependsOn`: a function of some coordinates of an
+  independent family is independent of another coordinate.
 -/
 @[expose] public section
 
@@ -125,5 +133,38 @@ theorem IndepFun.integral_comp_eq_integral_integral [IsFiniteMeasure μ] {α β 
   have hmap := (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW
   rw [← integral_prod _ hf, ← hmap,
     integral_map (hU.prodMk hW) (hmap ▸ hf.aestronglyMeasurable)]
+
+/-- **A function of some coordinates is independent of another coordinate**: for an independent
+family $(X_i)_i$ of almost everywhere measurable random variables, a measurable $F$ of the whole
+family that depends only on the coordinates in a finite set $s$, and an index $t \notin s$, the
+random variables $F((X_i)_i)$ and $X_t$ are independent. With $s = \{0, \dots, q - 1\}$ and
+$t = q$ it is the independence of the $q$-th sample of an i.i.d. sequence from everything computed
+from the earlier ones. Upstream candidate. -/
+theorem iIndepFun.indepFun_comp_of_dependsOn {ι γ : Type*} {β : ι → Type*}
+    [∀ i, MeasurableSpace (β i)] [MeasurableSpace γ] {X : (i : ι) → Ω → β i}
+    (hX : iIndepFun X μ) (hXm : ∀ i, AEMeasurable (X i) μ) {s : Finset ι} {t : ι} (ht : t ∉ s)
+    {F : ((i : ι) → β i) → γ} (hF : Measurable F) (hFs : DependsOn F s) :
+    IndepFun (fun ω => F fun i => X i ω) (X t) μ := by
+  classical
+  rcases isEmpty_or_nonempty Ω with hΩ | ⟨⟨ω₀⟩⟩
+  · rw [Measure.eq_zero_of_isEmpty μ]
+    simp [IndepFun]
+  have hst : Disjoint s {t} := Finset.disjoint_singleton_right.mpr ht
+  have h := hX.indepFun_finset₀ s {t} hst hXm
+  let G : ((i : s) → β i) → γ :=
+    fun y => F fun i => if hi : i ∈ s then y ⟨i, hi⟩ else X i ω₀
+  have hG : Measurable G := by
+    refine hF.comp (measurable_pi_iff.mpr fun i => ?_)
+    by_cases hi : i ∈ s
+    · simp only [hi, dif_pos]
+      exact measurable_pi_apply _
+    · simp only [hi, dif_neg, not_false_eq_true]
+      exact measurable_const
+  have hFG : (fun ω => F fun i => X i ω) = G ∘ fun ω (i : s) => X i ω := by
+    funext ω
+    refine hFs fun i hi => ?_
+    simp [Finset.mem_coe.mp hi]
+  rw [hFG]
+  exact h.comp hG (measurable_pi_apply ⟨t, Finset.mem_singleton_self t⟩)
 
 end ProbabilityTheory

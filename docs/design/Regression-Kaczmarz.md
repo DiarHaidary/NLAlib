@@ -1034,3 +1034,50 @@ this consumer; (a) reverses it, so it is asked.
   with the Landweber form for the rectangular one.
 * All changed signatures re-elaborated (scratch file `Scratch2.lean` in the session scratchpad,
   one Lean process, `sorry` warnings only).
+
+## Changes during the skeleton (2026-10-20)
+
+The skeleton is on `regression/sketch-precondition`, rebased onto `rules/stage3`. Every
+declaration of §§3–5 and §7 is stated with its final docstring. Changes against the note:
+
+* **N10, nearest point.** `norm_sketchAndProject_sub_le_of_isLeastSquaresSolution` would put
+  `sketchAndProject_sub_` in a name; the statement is written `‖x - sketchAndProject A S b x‖ ≤
+  ‖x - y‖` and named `norm_sub_sketchAndProject_le_of_isLeastSquaresSolution`, with `x` explicit
+  after `hy`.
+* **N17, asymptotic names.** Derived from the explicit iteration-count theorems:
+  `exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_log_div_le` and
+  `exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_mul_log_le`. The inconsistent form's
+  derived name would collide with the consistent one, so it keeps its right side:
+  `exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le`, on
+  `scripts/names_allow.toml` for N17 with that reason.
+* **API added.** `sketchAndProjectIterate_zero`, `sketchAndProjectIterate_succ` (`rfl`) and
+  `frobPseudoConditionNumber_def`. The `frobPseudoConditionNumber` API of §8 has the signatures
+  `frobPseudoConditionNumber_nonneg`, `frobPseudoConditionNumber_zero`,
+  `frobPseudoConditionNumber_conjTranspose`,
+  `frobPseudoConditionNumber_eq_frobNorm_div_singularValues` (`k + 1 = A.rank`),
+  `pseudoConditionNumber_le_frobPseudoConditionNumber`, `one_le_frobPseudoConditionNumber`
+  (`A ≠ 0`), `rank_le_frobPseudoConditionNumber_sq` and
+  `frobPseudoConditionNumber_sq_le_rank_mul_pseudoConditionNumber_sq`.
+* **Instance arguments.** `hasLaw_infinitePi_iff` takes `[Countable ι]` (the joint
+  measurability from the marginals needs it); `integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_samplingMeasure`
+  drops `[DecidableEq n]` (unused, Lean's `unusedDecidableInType` linter).
+* **Mean iterate.** Both forms are stated; the Landweber form
+  `integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose` is the primary one in the
+  docstrings, as §5.3 says for the rectangular `richardsonIterate`, and the names are the note's.
+* **D2, D12.** Every expectation docstring says that the rows (or sketches) are drawn
+  independently and gives their law; no docstring defers to another statement.
+* **Proved now.** The lower-layer additions are proved, so those files stay sorry-free:
+  `ProbabilityTheory.iIndepFun.indepFun_comp_of_dependsOn`,
+  `ProbabilityTheory.HasLaw.integral_comp_eq_integral_integral_of_dependsOn`,
+  `hasLaw_infinitePi_iff`, `pinv_replicateRow`, `frobPseudoConditionNumber` and its eight API
+  lemmas, `rowNormSqDistribution` with `coe_rowNormSqDistribution` and
+  `sum_rowNormSqDistribution`. The `Solvers` statements are `sorry`.
+* **Citations.** All locators were read in the arXiv versions recorded in the bibliography;
+  [ZouziasFreris2013, Lemma 6, (5)] is [ZouziasFreris2013, Theorem 7, (5)], where (5) is printed.
+  The seven new keys have Crossref-checked metadata.
+* **Open (N9).** The i.i.d. hypotheses `HasLaw ι (Measure.infinitePi fun _ : ℕ => …) μ` carry no
+  `_of_hasLaw_<law>` suffix in the names (the note's names; `scripts/check_names.py` does not read a
+  law written `Measure.infinitePi …`). Whether N9 asks for `_of_hasLaw_infinitePi` here is a
+  question for the maintainer.
+* **Files.** As §7; the new topic directory `NLAlib/Solvers` has its generated `RULES.md`.
+  CONTRIBUTING §5.3 has the four rows of §7.

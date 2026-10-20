@@ -54,6 +54,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
 public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Probability.Moments.Variance
@@ -80,6 +81,7 @@ public import NLAlib.Krylov.LinearSystems.MINRESRecurrence
 public import NLAlib.Krylov.LinearSystems.MinResidual
 public import NLAlib.Krylov.LinearSystems.PCG
 public import NLAlib.Krylov.LinearSystems.PCGRecurrence
+public import NLAlib.Krylov.LinearSystems.Richardson
 public import NLAlib.Krylov.LinearSystems.WorstCase
 public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Krylov.Processes.Lanczos
@@ -345,9 +347,13 @@ public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Regression.CountSketch
 public import NLAlib.Regression.Embedding
 public import NLAlib.Regression.Gaussian
+public import NLAlib.Regression.IterativeSketching
 public import NLAlib.Regression.Oblique
 public import NLAlib.Regression.Oblivious
+public import NLAlib.Regression.SRHT
+public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Regression.SketchAndSolve
+public import NLAlib.Regression.SubGaussian
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.Haar
 public import NLAlib.Sketching.Gaussian.HaarEmbedding
@@ -368,3 +374,5 @@ public import NLAlib.Sketching.Sparse.CountSketch
 public import NLAlib.Sketching.Sparse.CountSketchEmbedding
 public import NLAlib.Sketching.Structured.Flattening
 public import NLAlib.Sketching.Structured.SRHT
+public import NLAlib.Solvers.Kaczmarz
+public import NLAlib.Solvers.SketchAndProject

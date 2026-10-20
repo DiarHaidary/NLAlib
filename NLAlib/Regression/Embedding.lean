@@ -35,6 +35,8 @@ half of CEMT's Lemma 2.1. These are what the tail bounds for oblivious subspace 
 
 * `NLAlib.IsSubspaceEmbedding.norm_sub_mulVec_sq_le`: sketch-and-solve.
 * `NLAlib.IsSubspaceEmbedding.pseudoConditionNumber_mul_sq_le`: sketch-and-precondition.
+* `NLAlib.IsSubspaceEmbedding.spectrum_pinv_mul_subset_Icc`: its spectral form, the spectrum
+  of the sketch-preconditioned normal equations, used by `NLAlib.sketchAndPrecondition`.
 * `NLAlib.IsSubspaceInjection.norm_sub_mulVec_sq_le`: the sketch-and-solve error formula.
 * `NLAlib.IsSubspaceInjection.frobNorm_sub_mul_pinv_mul_sq_le`: its matrix form.
 * `NLAlib.IsSubspaceInjection.frobNorm_mul_pinv_sq_le`: the deterministic half of CEMT
@@ -43,7 +45,7 @@ half of CEMT's Lemma 2.1. These are what the tail bounds for oblivious subspace 
 
 @[expose] public section
 
-open scoped Matrix MatrixOrder
+open scoped Matrix MatrixOrder ComplexOrder
 
 namespace NLAlib
 
@@ -201,6 +203,53 @@ theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR [LinearO
   refine h.pseudoConditionNumber_mul_sq_le ha hb ?_
   rw [hQ]
   exact hQR.hasOrthonormalCols
+
+/-- **The upper constant of an embedding is positive**: if $\mathbf{S}$ is a subspace embedding
+of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range),
+$\mathbf{A}$ has full column rank and at least one column, then $0 < b$. -/
+theorem IsSubspaceEmbedding.pos_right_of_injective [Nonempty q] (h : IsSubspaceEmbedding S A a b)
+    (ha : 0 < a) (hA : Function.Injective A.mulVec) : 0 < b := by
+  classical
+  obtain ⟨i⟩ := ‹Nonempty q›
+  have hv : A *ᵥ Pi.single i (1 : 𝕜) ≠ 0 := by
+    intro h0
+    have h1 : Pi.single i (1 : 𝕜) = 0 := hA (by rw [h0, Matrix.mulVec_zero])
+    simpa using congrFun h1 i
+  have hpos : 0 < ‖WithLp.toLp 2 (A *ᵥ Pi.single i (1 : 𝕜))‖ ^ 2 :=
+    pow_pos (norm_pos_iff.mpr (by simpa using hv)) 2
+  obtain ⟨h1, h2⟩ :=
+    isSubspaceEmbedding_iff_forall_mem_range.mp h _ ⟨Pi.single i (1 : 𝕜), rfl⟩
+  simp only [Matrix.mulVecLin_apply] at h1 h2
+  nlinarith
+
+/-- **Sketch-and-precondition, spectral form**: if $\mathbf{S}$ is a subspace embedding of
+$\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range) and
+$\mathbf{A}$ has full column rank, then with
+$\mathbf{G} = (\mathbf{S}\mathbf{A})^{\mathsf{H}}\mathbf{S}\mathbf{A}$ the real spectrum of
+$\mathbf{G}^{+}\mathbf{A}^{\mathsf{H}}\mathbf{A}$ lies in $[b^{-1}, a^{-1}]$: the preconditioned
+normal equations have condition number at most $b/a$. [Epperly2024, Fact 3], there as singular
+values of $\mathbf{A}\mathbf{R}^{-1}$ in the unsquared convention
+$(1 - \eta)\|\mathbf{y}\| \le \|\mathbf{S}\mathbf{y}\| \le (1 + \eta)\|\mathbf{y}\|$, the
+case $a = (1 - \eta)^2$, $b = (1 + \eta)^2$. -/
+theorem IsSubspaceEmbedding.spectrum_pinv_mul_subset_Icc [DecidableEq q]
+    (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hA : Function.Injective A.mulVec) :
+    spectrum ℝ (pinv ((S * A)ᴴ * (S * A)) * (Aᴴ * A)) ⊆ Set.Icc b⁻¹ a⁻¹ := by
+  rcases isEmpty_or_nonempty q with hq | hq
+  · rw [spectrum.of_subsingleton]
+    exact Set.empty_subset _
+  have hb := h.pos_right_of_injective ha hA
+  have hG : ((S * A)ᴴ * (S * A)).PosDef :=
+    posDef_conjTranspose_mul_self_iff.mpr (h.lower.injective_mulVec ha hA)
+  rw [pinv_of_isUnit hG.isUnit]
+  refine (hG.smul_le_and_le_smul_iff_spectrum_subset (Matrix.isHermitian_conjTranspose_mul_self A)
+    _ _).mp ⟨?_, ?_⟩
+  · have h' := smul_le_smul_of_nonneg_left h.upper (inv_nonneg.mpr hb.le)
+    rwa [smul_smul, inv_mul_cancel₀ hb.ne', one_smul] at h'
+  · have hlow : a • (Aᴴ * A) ≤ (S * A)ᴴ * (S * A) := h.lower
+    have h' := smul_le_smul_of_nonneg_left hlow (inv_nonneg.mpr ha.le)
+    rwa [smul_smul, inv_mul_cancel₀ ha.ne', one_smul] at h'
 
 /-! ### The error formula, from the injection alone -/
 

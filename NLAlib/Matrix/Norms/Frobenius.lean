@@ -28,6 +28,7 @@ that form; `positivity` knows `frobNorm`, so `gcongr` passes between a bound and
 
 * `NLAlib.frobInner`: the real Frobenius inner product.
 * `NLAlib.frobNorm`: the Frobenius norm.
+* `NLAlib.rowNormSqDistribution`: the squared-row-norm sampling weights.
 
 ## Main results
 
@@ -39,11 +40,14 @@ that form; `positivity` knows `frobNorm`, so `gcongr` passes between a bound and
 * `NLAlib.abs_frobInner_le`: Cauchy–Schwarz.
 * `NLAlib.frobInner_mul_left`, `NLAlib.frobInner_mul_right`: adjoints move across the pairing.
 * `NLAlib.frobNorm_eq_norm`: the bridge to Mathlib's Frobenius norm.
+* `NLAlib.sum_rowNormSqDistribution`: the squared-row-norm weights
+  $\|\mathbf{a}_i\|^2/\|\mathbf{A}\|_{\mathsf{F}}^2$ are a probability vector for
+  $\mathbf{A} \ne \mathbf{0}$.
 -/
 
 @[expose] public section
 
-open scoped Matrix
+open scoped Matrix NNReal
 
 namespace NLAlib
 
@@ -452,6 +456,37 @@ theorem norm_toLp_mulVec_le_frobNorm_mul (A : Matrix m n 𝕜) (x : n → 𝕜) 
 theorem continuous_frobNorm : Continuous (frobNorm : Matrix m n 𝕜 → ℝ) := by
   change Continuous fun A : Matrix m n 𝕜 => √(∑ i, ∑ j, ‖A i j‖ ^ 2)
   fun_prop
+
+/-! ### The squared-row-norm distribution -/
+
+/-- The **squared-row-norm distribution**
+$p_i = \|\mathbf{a}_i\|^2/\|\mathbf{A}\|_{\mathsf{F}}^2$ of the rows $\mathbf{a}_i$ of
+$\mathbf{A}$: the weights of length-squared row sampling, for use with `NLAlib.samplingMeasure`
+(randomized Kaczmarz) and `NLAlib.samplingSketch` (row sampling). Junk value: all weights $0$
+when $\mathbf{A} = \mathbf{0}$; otherwise they sum to one
+(`NLAlib.sum_rowNormSqDistribution`). [StrohmerVershynin2009, Algorithm 1]. -/
+noncomputable def rowNormSqDistribution (A : Matrix m n 𝕜) (i : m) : ℝ≥0 :=
+  ‖WithLp.toLp 2 (A i)‖₊ ^ 2 / ‖frobNorm A‖₊ ^ 2
+
+/-- The squared-row-norm weights as real numbers:
+$p_i = \|\mathbf{a}_i\|^2/\|\mathbf{A}\|_{\mathsf{F}}^2$, with $\mathbf{a}_i$ the $i$-th row
+of $\mathbf{A}$. -/
+theorem coe_rowNormSqDistribution (A : Matrix m n 𝕜) (i : m) :
+    (rowNormSqDistribution A i : ℝ) = ‖WithLp.toLp 2 (A i)‖ ^ 2 / frobNorm A ^ 2 := by
+  rw [rowNormSqDistribution, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_pow, coe_nnnorm,
+    coe_nnnorm, Real.norm_of_nonneg (frobNorm_nonneg A)]
+
+/-- The squared-row-norm weights of a nonzero matrix sum to one:
+$\sum_i \|\mathbf{a}_i\|^2/\|\mathbf{A}\|_{\mathsf{F}}^2 = 1$ for $\mathbf{A} \ne \mathbf{0}$,
+with $\mathbf{a}_i$ the rows of $\mathbf{A}$. -/
+theorem sum_rowNormSqDistribution {A : Matrix m n 𝕜} (hA : A ≠ 0) :
+    ∑ i, rowNormSqDistribution A i = 1 := by
+  have hF : frobNorm A ^ 2 ≠ 0 := pow_ne_zero 2 (mt frobNorm_eq_zero_iff.mp hA)
+  apply NNReal.coe_injective
+  rw [NNReal.coe_sum, NNReal.coe_one]
+  simp only [coe_rowNormSqDistribution]
+  rw [← Finset.sum_div, div_eq_one_iff_eq hF, frobNorm_sq_eq_sum_row]
+  rfl
 
 end NLAlib
 

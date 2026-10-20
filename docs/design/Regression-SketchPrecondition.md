@@ -1090,3 +1090,50 @@ New `docs/references.bib` entries, each added in the commit that first cites it:
 
 Existing keys used: `MartinssonTropp2020`, `Saad2003`, `Greenbaum1997`, `Woodruff2014`,
 `GolubVanLoan2013`.
+
+## 12. Changes during the skeleton (2026-10-20)
+
+The skeleton is on `regression/sketch-precondition`, rebased onto `rules/stage3`. Every
+declaration of §§3–5 is stated with its final docstring; proofs are `sorry` except where noted.
+Changes against the note, each forced by a rule that landed after approval or by elaboration:
+
+* **N14, tails.** The four generic tails of §5.1 state `μ.real {…}`, so they are `measureReal_`,
+  not `measure_`: `HasSubspaceEmbedding.measureReal_norm_mulVec_sub_sketchAndPrecondition_sq_gt_le`,
+  `HasSubspaceEmbedding.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le`,
+  `HasSubspaceEmbedding.measureReal_norm_mulVec_sub_iterativeSketching_sq_gt_le`,
+  `HasSubspaceEmbedding.measureReal_norm_sub_mulVec_iterativeSketching_one_sub_sq_sq_gt_le`.
+* **N18, dot notation.** A first explicit `HasOrthonormalCols` hypothesis puts the theorem in that
+  namespace: `HasOrthonormalCols.sketchAndPrecondition_eq_mulVec_cgIterate` and
+  `HasOrthonormalCols.pinv_conjTranspose_mul_self_eq_mul_conjTranspose`.
+* **N16 renames used.** `samplingSize` is `samplingEmbeddingDim` and `countSketchRows` is
+  `countSketchEmbeddingDim`; the SRHT and CountSketch statements use the new names.
+* **Row type in the existing family files.** `Regression/Gaussian.lean` and
+  `Regression/CountSketch.lean` name the sketch rows `p` (hypothesis `hp`), as their sketch-and-solve
+  theorems do; the new files `SubGaussian.lean` and `SRHT.lean` keep `k`.
+* **D2, self-contained docstrings.** Every docstring states its embedding, its start and its
+  hypotheses in full (the note's "under the hypotheses of …", "under the same hypotheses" and "the
+  cold-start tail above" are gone), and the family docstrings describe each law (independent
+  standard normal entries; independent isotropic sub-Gaussian rows; random signs and a uniform
+  choice of distinct rows; one random sign per column in a uniformly random row, D12). Proof remarks
+  ("five-line induction") are dropped (D8).
+* **Instance arguments.** `[DecidableEq n]` is dropped from the iterative-sketching statements that
+  do not use it (Lean's `unusedDecidableInType` linter); the `IsQR` and `IsSVD` steps keep it.
+* **Proved now.** The additions outside the new files are proved, so those files stay sorry-free:
+  `HasOrthonormalCols.pinv_conjTranspose_mul_self_eq_mul_conjTranspose` (`Pinv.lean`),
+  `IsSubspaceEmbedding.pos_right_of_injective` and
+  `IsSubspaceEmbedding.spectrum_pinv_mul_subset_Icc` (`Embedding.lean`). The definitions and the
+  `rfl` lemmas of `Richardson.lean` are proved; every other new statement is `sorry`.
+* **Citations.** Locators were kept only where read in the source: [MartinssonTropp2020, §10.4,
+  §10.5], [Epperly2024, Algorithm 1, Algorithm 2, (3.2), (B.2), Fact 3, Fact 4, Theorem 5,
+  Theorem 10, (B.4)] (arXiv v2 numbering, recorded in the bibliography) and
+  [EpperlyMeierNakatsukasa2024, Fact 2.2, §2.1] (arXiv v3). The Saad and Greenbaum locators of §3.1
+  and §4.1 were not verified and are dropped; the Richardson rate says "No printed source."
+  [RokhlinTygert2008], [AvronMaymounkovToledo2010], [MengSaundersMahoney2014],
+  [PilanciWainwright2016] and [PaigeSaunders1982] were not read, so they are not cited and have no
+  bibliography entry yet. The bibliography metadata of the two new keys was checked against
+  Crossref; [EpperlyMeierNakatsukasa2024] is the arXiv version (now published in Comm. Pure Appl.
+  Math. 79(2), 2026).
+* **Files.** As §6; `Regression/Gaussian.lean` and `Regression/CountSketch.lean` are retitled
+  "Regression with …". `docs/PORT_KRYLOV.md` D12 has the dated amendment for `Richardson.lean`.
+  CONTRIBUTING §5.3 has the rows of D2.
+* **Not done** (unchanged scope): Rates rows; no `exists_forall_` form beyond the four of §5.3.

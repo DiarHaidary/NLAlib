@@ -8,6 +8,7 @@ module
 public import Mathlib.Probability.HasLaw
 public import Mathlib.Probability.IdentDistrib
 public import Mathlib.Probability.Independence.Basic
+public import Mathlib.Probability.Independence.InfinitePi
 public import Mathlib.Probability.ProductMeasure
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 
@@ -24,6 +25,8 @@ hypotheses apart into independence and marginals, and back, and transports integ
 ## Main results
 
 * `NLAlib.hasLaw_pi_iff`: a product law is independence plus marginals.
+* `NLAlib.hasLaw_infinitePi_iff`: the same for a countable family, the i.i.d.-sequence hypothesis
+  `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ`.
 * `ProbabilityTheory.HasLaw.eval`, `ProbabilityTheory.HasLaw.iIndepFun_eval`: its two halves.
 * `NLAlib.hasLaw_pi_pi_iff`: the same for the entries of a random matrix, indexed by the product
   type `m × n`.
@@ -73,6 +76,28 @@ theorem _root_.ProbabilityTheory.HasLaw.iIndepFun_eval [∀ i, IsProbabilityMeas
   exact (hasLaw_pi_iff.1 hX).1
 
 end Pi
+
+section InfinitePi
+
+variable {ι : Type*} [Countable ι] {E : ι → Type*} [∀ i, MeasurableSpace (E i)]
+  {ν : ∀ i, Measure (E i)} {X : Ω → ∀ i, E i}
+
+/-- **An infinite product law is independence plus marginals**: a random sequence or family
+$X = (X_i)_i$ with a countable index set has the product law `Measure.infinitePi ν` of the
+probability measures $\nu_i$ exactly when its coordinates are independent and the $i$-th
+coordinate $X_i$ has law $\nu_i$. For $\iota = \mathbb{N}$ and $\nu_i = \nu$ it reads the
+hypothesis `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ` of an i.i.d. sequence with law
+$\nu$. The countable analogue of `NLAlib.hasLaw_pi_iff`. -/
+theorem hasLaw_infinitePi_iff [IsProbabilityMeasure μ] [∀ i, IsProbabilityMeasure (ν i)] :
+    HasLaw X (Measure.infinitePi ν) μ ↔
+      iIndepFun (fun i ω => X ω i) μ ∧ ∀ i, HasLaw (fun ω => X ω i) (ν i) μ := by
+  refine ⟨fun hX => ?_, fun h => h.1.hasLaw_infinitePi h.2 ?_⟩
+  · have hev : ∀ i, HasLaw (fun ω => X ω i) (ν i) μ := fun i =>
+      (measurePreserving_eval_infinitePi ν i).fun_comp_hasLaw hX
+    exact ⟨(iIndepFun_iff_hasLaw_Pi_infinitePi hev hX.aemeasurable).2 hX, hev⟩
+  · exact aemeasurable_pi_lambda _ fun i => (h.2 i).aemeasurable
+
+end InfinitePi
 
 section Matrix
 
