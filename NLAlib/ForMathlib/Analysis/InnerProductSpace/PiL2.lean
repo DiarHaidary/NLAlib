@@ -19,6 +19,7 @@ Lipschitz condition for the Euclidean norm read on coordinate vectors. Upstream 
 
 ## Main results
 
+* `EuclideanSpace.norm_le_norm_toLp`: the sup norm is at most the Euclidean norm.
 * `EuclideanSpace.inner_toLp_toLp_eq_star_dotProduct`: the inner product is
   $\langle \mathbf{x}, \mathbf{y} \rangle = \mathbf{x}^{\mathsf{H}}\mathbf{y}$.
 * `EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct`:
@@ -48,6 +49,11 @@ Lipschitz condition for the Euclidean norm read on coordinate vectors. Upstream 
 namespace EuclideanSpace
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
+
+/-- The sup norm of a coordinate vector is at most its Euclidean norm:
+$\max_i \lvert x_i \rvert \le \|\mathbf{x}\|$. -/
+theorem norm_le_norm_toLp (x : n → 𝕜) : ‖x‖ ≤ ‖WithLp.toLp 2 x‖ :=
+  (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr fun i => PiLp.norm_apply_le (WithLp.toLp 2 x) i
 
 /-- The inner product of two coordinate vectors in Euclidean space is
 $\langle \mathbf{x}, \mathbf{y} \rangle = \mathbf{x}^{\mathsf{H}}\mathbf{y}$ (`star x ⬝ᵥ y`). -/

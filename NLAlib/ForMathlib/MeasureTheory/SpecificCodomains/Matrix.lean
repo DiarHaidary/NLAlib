@@ -19,10 +19,11 @@ norm of `open scoped Matrix.Norms.L2Operator`, with the real normed-space instan
 `NLAlib/ForMathlib/Analysis/CStarAlgebra/Matrix.lean` (`docs/design/Mathlib-deviations.md`
 entry 13). The value of the integral does not depend on the norm, and the statements here mention
 none: integrability and the integral are entrywise, and the integral commutes with the conjugate
-transpose, reindexing, submatrices, the trace and products with fixed matrices. An almost surely
-Hermitian (positive semidefinite) random matrix has a Hermitian (positive semidefinite) mean, with
-no integrability hypothesis, because a non-integrable function integrates to $\mathbf{0}$. Loewner
-monotonicity is Mathlib's `MeasureTheory.integral_mono_ae`, through
+transpose, reindexing, submatrices, the trace, products with fixed matrices and fixed vectors.
+An almost surely Hermitian (positive semidefinite) random matrix has a Hermitian (positive
+semidefinite) mean, with no integrability hypothesis, because a non-integrable function
+integrates to $\mathbf{0}$. Loewner monotonicity is Mathlib's `MeasureTheory.integral_mono_ae`,
+through
 `Matrix.instOrderClosedTopology` (`NLAlib/ForMathlib/LinearAlgebra/Matrix/PosDef.lean`). Upstream
 candidates for a file `Mathlib.MeasureTheory.SpecificCodomains.Matrix`, next to Mathlib's
 `Mathlib.MeasureTheory.SpecificCodomains.Pi`.
@@ -31,7 +32,8 @@ candidates for a file `Mathlib.MeasureTheory.SpecificCodomains.Matrix`, next to 
 
 * `Matrix.integrable_iff`, `Matrix.memLp_iff`, `Matrix.integral_apply`: entrywise.
 * `Matrix.integral_conjTranspose`, `Matrix.integral_reindex`, `Matrix.integral_submatrix`,
-  `Matrix.integral_trace`, `Matrix.integral_const_mul`, `Matrix.integral_mul_const`.
+  `Matrix.integral_trace`, `Matrix.integral_const_mul`, `Matrix.integral_mul_const`,
+  `Matrix.integral_mulVec`.
 * `Matrix.isHermitian_integral`, `Matrix.posSemidef_integral`, `Matrix.posDef_integral`.
 -/
 
@@ -147,6 +149,16 @@ theorem integral_mul_const (hX : Integrable X μ) (B : Matrix n k 𝕜) :
     { toFun := fun A => A * B
       map_add' := fun A A' => Matrix.add_mul A A' B
       map_smul' := fun r A => Matrix.smul_mul r A B }
+  exact L.toContinuousLinearMap.integral_comp_comm hX
+
+/-- A fixed vector comes out of the integral: for integrable $\mathbf{X}$,
+$\mathbb{E}[\mathbf{X}\mathbf{v}] = (\mathbb{E}\mathbf{X})\,\mathbf{v}$. -/
+theorem integral_mulVec (hX : Integrable X μ) (v : n → 𝕜) :
+    ∫ ω, X ω *ᵥ v ∂μ = (∫ ω, X ω ∂μ) *ᵥ v := by
+  let L : Matrix m n 𝕜 →ₗ[ℝ] (m → 𝕜) :=
+    { toFun := fun A => A *ᵥ v
+      map_add' := fun A A' => Matrix.add_mulVec A A' v
+      map_smul' := fun r A => by rw [RingHom.id_apply, Matrix.smul_mulVec] }
   exact L.toContinuousLinearMap.integral_comp_comm hX
 
 end Linear
