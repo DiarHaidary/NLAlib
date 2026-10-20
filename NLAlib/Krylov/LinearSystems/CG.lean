@@ -261,7 +261,12 @@ $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
 the square of the classical
 $\|\mathbf{e}_q\|_{\mathbf{A}} \le 2\bigl((\sqrt\kappa - 1)/(\sqrt\kappa + 1)\bigr)^q
-\|\mathbf{e}_0\|_{\mathbf{A}}$. A Loewner sandwich gives the hypotheses by
+\|\mathbf{e}_0\|_{\mathbf{A}}$. The proof's polynomial is the shifted Chebyshev residual
+(`NLAlib.chebyshevResidual`), whose factor is
+$T_q((a' + a)/(a' - a))^{-2} = \operatorname{sech}^2(q \log(1/\rho)) = 4\rho^{2q}/(1 + \rho^{2q})^2$
+with $\rho = (\sqrt{a'/a} - 1)/(\sqrt{a'/a} + 1)$ (`NLAlib.inv_eval_T_real_eq_two_mul_pow_div`);
+the statement drops the factor $(1 + \rho^{2q})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+rule 7). A Loewner sandwich gives the hypotheses by
 `isHermitian_of_le_smul_one` and `spectrum_subset_Icc_of_le`.
 [Saad2003, Theorem 6.29]; [TrefethenBau1997, Theorem 38.5]; stated there for the extreme
 eigenvalues and the unsquared $\mathbf{A}$-norm, here for any interval containing the spectrum.

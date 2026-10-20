@@ -411,7 +411,15 @@ $\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_2^2 \le
 \sigma_r(\mathbf{A})^2 + 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
-No positivity hypothesis: when $\sigma_t = 0$ the error is zero almost surely.
+No positivity hypothesis: when $\sigma_t = 0$ the error is zero almost surely. The proof's
+filter $T_{q-1}(2x/\sigma_t^2 - 1)$ is $T_{2(q-1)}(\sigma_i/\sigma_t)$ at $x = \sigma_i^2$, so
+the tail factor it gives is
+$T_{2(q-1)}((1 + \gamma)/(1 - \gamma))^{-2} =
+\operatorname{sech}^2(4(q-1)\operatorname{artanh}\sqrt{\gamma}) \le
+\operatorname{sech}^2(4(q-1)\sqrt{\gamma}) =
+4e^{-8(q-1)\sqrt{\gamma}}/(1 + e^{-8(q-1)\sqrt{\gamma}})^2$; every RBKI bound of this file drops
+the factor $(1 + e^{-8(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+rule 7).
 Asymptotic form:
 `NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RBKI)], at $p = \infty$; there with $m$ products and the exponent

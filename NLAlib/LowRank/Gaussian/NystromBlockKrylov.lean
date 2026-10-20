@@ -121,8 +121,13 @@ $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \l
 \sigma_r(\mathbf{H}) + 4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_t\|_*\,.$$
 By the Gram correspondence from the RBKI bound at $\mathbf{H}^{1/2}$
-(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`), whose gap is
-at least $\gamma/2$. [TroppWebber2023, Theorem 9.2 (NysBKI)]; there for
+(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`), whose gap
+$\gamma_{1/2}$ is at least $\gamma/2$; its Chebyshev filter gives the factor
+$\operatorname{sech}^2(4(q-1)\operatorname{artanh}\sqrt{\gamma_{1/2}}) \le
+\operatorname{sech}^2(2\sqrt{2}(q-1)\sqrt{\gamma}) =
+4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}/(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2$, and the statement
+drops $(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+rule 7). [TroppWebber2023, Theorem 9.2 (NysBKI)]; there for
 $\mathbb{E}\|\mathbf{H} - \hat{\mathbf{H}}\|_p^2$ with a squared Frobenius tail and exponent
 $4(m - 3/2)\sqrt{2\gamma}$ for $m = q$ products; this statement is the Nyström-native shape of TW
 Corollary 8.2, obtained from the RBKI line at $\mathbf{H}^{1/2}$; the two are incomparable.
