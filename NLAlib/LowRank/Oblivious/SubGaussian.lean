@@ -234,14 +234,14 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVec
 /-- **Early-truncated randomized SVD with a sub-Gaussian test matrix, tail**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian rows with proxy $c$,
 $0 < \varepsilon \le 1$, $\delta > 0$, at
-least <!-- value subgaussianEmbeddingDim c k (\varepsilon/8) (\delta/3) -->
-$\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/3)))/(16C (\varepsilon/8)^2)$,
+least <!-- value subgaussianEmbeddingDim c k (\varepsilon/6) (\delta/3) -->
+$\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/3)))/(16C (\varepsilon/6)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$, and
-$\ell \ge 192(16c^2 - 1)k/(\varepsilon^2\delta)$, then
+$\ell \ge 108(16c^2 - 1)k/(\varepsilon^2\delta)$, then
 $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$; the first size is
-`subgaussianEmbeddingDim c k (ε / 8) (δ / 3)` and $C$ is `subgaussianJLConstant`. The route of
+`subgaussianEmbeddingDim c k (ε / 6) (δ / 3)` and $C$ is `subgaussianJLConstant`. The route of
 the Gaussian statement
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, with the
 family's OSI and JL moment property. Asymptotic form:
@@ -253,8 +253,8 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
     (A : Matrix m n ℝ) {c : ℝ≥0} (hind : iIndepFun (fun i ω => (X ω)ᴴ i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => (X ω)ᴴ i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => (X ω)ᴴ i) μ) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hl : subgaussianEmbeddingDim c k (ε / 8) (δ / 3) ≤ Fintype.card l)
-    (hl' : 192 * (16 * (c : ℝ) ^ 2 - 1) * k ≤ ε ^ 2 * δ * Fintype.card l) :
+    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hl : subgaussianEmbeddingDim c k (ε / 6) (δ / 3) ≤ Fintype.card l)
+    (hl' : 108 * (16 * (c : ℝ) ^ 2 - 1) * k ≤ ε ^ 2 * δ * Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
   classical
@@ -272,19 +272,19 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
     nlinarith [sq_nonneg (frobNorm A)]
   have hc1 : (1 : ℝ) ≤ c := (hsub (Classical.arbitrary l)).one_le_of_isIsotropic
     (hiso (Classical.arbitrary l))
-  have hεJ : 0 < ε / (8 * √(k : ℝ)) := by positivity
+  have hεJ : 0 < ε / (6 * √(k : ℝ)) := by positivity
   have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (d := k) hind hsub hiso (by positivity) (by linarith) (by positivity) hl
   have hJL := hasJLMoment_of_isSubgaussianVector hind hsub hiso hεJ
   rw [inv_sqrt_card_smul_conjTranspose] at hOSI hJL
   have hX' := aemeasurable_inv_sqrt_card_smul_of_isSubgaussianVector hsub
   have hc16 : (0 : ℝ) ≤ 16 * (c : ℝ) ^ 2 - 1 := by nlinarith
-  have hδJ : (0 : ℝ) ≤ (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * (ε / (8 * √(k : ℝ))) ^ 2) := by
+  have hδJ : (0 : ℝ) ≤ (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) := by
     positivity
   have hχ :=
     hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
     (A := A) (k := k) hX' hεJ le_rfl hδJ
-  rw [show ε / (8 * √(k : ℝ)) * √(k : ℝ) = ε / 8 by field_simp] at hχ
+  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
   have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
     ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
@@ -303,12 +303,12 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
     rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
     exact hω'
-  · have e : (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * (ε / (8 * √(k : ℝ))) ^ 2) =
-        64 * (16 * (c : ℝ) ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) := by
+  · have e : (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) =
+        36 * (16 * (c : ℝ) ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) := by
       rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
       field_simp
       ring
-    have h3 : 64 * (16 * (c : ℝ) ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
+    have h3 : 36 * (16 * (c : ℝ) ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
       rw [div_le_iff₀ (by positivity)]
       nlinarith
     rw [e]
@@ -323,7 +323,7 @@ $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta$. The asymptotic form of
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`, proved
-from it with $C = 44032$ and $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and
+from it with $C = 24768$ and $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and
 Lemma 3]; there $\mathbf{A}\mathbf{\Omega}$ is a projection-cost-preserving sketch with error
 $O(\varepsilon)$ for the dense sign matrices of Lemma 11 (family 1) with
 $O((k + \log(1/\delta))/\varepsilon^2)$ rows, and Lemma 3 carries the sketch's best rank-$k$
@@ -340,7 +340,7 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_is
       C * ((c : ℝ) ^ 2 * ((k : ℝ) / δ + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  refine ⟨44032, 1, by norm_num, one_pos, ?_⟩
+  refine ⟨24768, 1, by norm_num, one_pos, ?_⟩
   intro Ω m n l _ _ _ _ _ _ μ A X c k ε δ hind hsub hiso hε hε1 hδ hδ2 hl
   have hL1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
   have hkδ : (k : ℝ) ≤ k / δ := le_div_self (Nat.cast_nonneg k) hδ (by linarith)
@@ -349,7 +349,7 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_is
   have hl' := hl
   rw [mul_div_assoc', div_le_iff₀ (by positivity)] at hl'
   refine measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector A hind hsub
-    hiso hε hε1 hδ ((subgaussianEmbeddingDim_le c k (ε / 8) (by positivity) (by linarith)).trans
+    hiso hε hε1 hδ ((subgaussianEmbeddingDim_le c k (ε / 6) (by positivity) (by linarith)).trans
       ?_) ?_
   · have hlog : Real.log (2 / (δ / 3)) ≤ 4 * Real.log (1 / δ) := by
       rw [show (4 : ℝ) * Real.log (1 / δ) = Real.log ((1 / δ) ^ 4) by
@@ -358,7 +358,7 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_is
       rw [div_pow, one_pow, div_div_eq_mul_div, div_le_div_iff₀ (by positivity) (by positivity)]
       nlinarith [pow_pos hδ 2, pow_pos hδ 3, pow_pos hδ 4]
     rw [div_le_iff₀ (by positivity)]
-    have e : (Fintype.card l : ℝ) * (ε / 8) ^ 2 = Fintype.card l * ε ^ 2 / 64 := by ring
+    have e : (Fintype.card l : ℝ) * (ε / 6) ^ 2 = Fintype.card l * ε ^ 2 / 36 := by ring
     rw [e]
     nlinarith [mul_le_mul_of_nonneg_left hlog hc2, mul_le_mul_of_nonneg_left hkδ hc2,
       mul_nonneg hc2 hL1]

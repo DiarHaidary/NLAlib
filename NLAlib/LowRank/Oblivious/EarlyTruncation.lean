@@ -159,22 +159,11 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeas
     gcongr
   linarith
 
-/-- The arithmetic of the $(1 + \varepsilon)$ form: for $0 < x \le 1/8$,
-$(1 + x)/((1 - x)^2) + x/((1 - x)^3) \le 1 + 8x$. -/
-private theorem one_add_div_sq_add_div_cube_le {x : ℝ} (hx : 0 < x) (hx1 : x ≤ 1 / 8) :
-    (1 + x) / (1 - x) ^ 2 + x / (1 - x) ^ 3 ≤ 1 + 8 * x := by
-  have h1 : 0 < 1 - x := by linarith
-  have e : (1 + x) / (1 - x) ^ 2 + x / (1 - x) ^ 3 = (1 + x - x ^ 2) / (1 - x) ^ 3 := by
-    field_simp
-    ring
-  rw [e, div_le_iff₀ (by positivity)]
-  nlinarith [mul_pos hx hx, mul_pos (mul_pos hx hx) hx, mul_pos (mul_pos hx hx) (mul_pos hx hx)]
-
 omit [Fintype p] [DecidableEq m] [DecidableEq n] in
 /-- **Early truncation to relative error, any optimal projector**: with injection constant
-$1 - \varepsilon/8$ and $0 < \varepsilon \le 1$, if the tail–tail error exceeds
-$(\varepsilon/(8\sqrt{k}))\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at most $\delta_w$
-and the tail–head error exceeds $(\varepsilon/8)\|\mathbf{E}\|_{\mathsf{F}}$ with probability
+$1 - \varepsilon/6$ and $0 < \varepsilon \le 1$, if the tail–tail error exceeds
+$(\varepsilon/(6\sqrt{k}))\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at most $\delta_w$
+and the tail–head error exceeds $(\varepsilon/6)\|\mathbf{E}\|_{\mathsf{F}}$ with probability
 at most $\delta_\chi$, $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$, then for every
 random orthogonal projector $\mathbf{P}$ of rank at most $k$ with
 $\|\mathbf{A}\mathbf{\Omega} - \mathbf{P}\mathbf{A}\mathbf{\Omega}\|_{\mathsf{F}} \le
@@ -182,55 +171,61 @@ $\|\mathbf{A}\mathbf{\Omega} - \mathbf{P}\mathbf{A}\mathbf{\Omega}\|_{\mathsf{F}
 $$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta_w + \delta_\chi$: the core tail
-`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le` at $\theta = \varepsilon/8$. The
-form every family statement instantiates. Proved without a literature source;
-[CohenElderMuscoMuscoPersu2015, proof of Theorem 12] for the sketch conditions.
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le` at
+$\theta = \varepsilon/(6 + \varepsilon)$, the minimiser of its right side, which solves the
+quadratic $\lambda s^2 \le c + 2\chi s$ of the structural bound exactly: with $x = \varepsilon/6$
+it gives $((1 + x)/(1 - x))^2\|\mathbf{E}\|_{\mathsf{F}}^2$, at most
+$(1 + \varepsilon)\|\mathbf{E}\|_{\mathsf{F}}^2$. The form every family statement instantiates.
+Proved without a literature source; [CohenElderMuscoMuscoPersu2015, proof of Theorem 12] for the
+sketch conditions.
 Result: etrsvd -/
 theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {ε δ δw δχ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
-    (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ (1 - ε / 8) δ μ)
+    (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ (1 - ε / 6) δ μ)
     {P : Ω → Matrix m m 𝕜} (hP : ∀ ω, IsStarProjection (P ω)) (hPk : ∀ ω, (P ω).rank ≤ k)
     (hopt : ∀ ω, frobNorm (A * X ω - P ω * (A * X ω)) ≤
       frobNorm ((A - truncatedSVD A k) * X ω))
-    (hw : μ.real {ω | ε / (8 * √(k : ℝ)) * frobNorm (A - truncatedSVD A k) ^ 2 <
+    (hw : μ.real {ω | ε / (6 * √(k : ℝ)) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ * (A - truncatedSVD A k)ᴴ -
         (A - truncatedSVD A k) * (A - truncatedSVD A k)ᴴ)} ≤ δw)
-    (hχ : μ.real {ω | ε / 8 * frobNorm (A - truncatedSVD A k) <
+    (hχ : μ.real {ω | ε / 6 * frobNorm (A - truncatedSVD A k) <
       frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ *
         rangeProjector (truncatedSVD A k)ᴴ)} ≤ δχ) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - P ω * A) ^ 2} ≤ δ + δw + δχ := by
   classical
-  have hx : 0 < ε / 8 := by positivity
-  have hx1 : ε / 8 ≤ 1 / 8 := by linarith
-  have h1 := h.measureReal_frobNorm_sub_mul_sq_gt_le (by linarith) (by linarith) hx (by linarith) hP
-    hPk hopt hw hχ
+  have hx : 0 < ε / 6 := by positivity
+  have h1x : 0 < 1 - ε / 6 := by linarith
+  have hθ0 : 0 < ε / (6 + ε) := by positivity
+  have hθ1 : ε / (6 + ε) < 1 := by rw [div_lt_one (by linarith)]; linarith
+  have h1 := h.measureReal_frobNorm_sub_mul_sq_gt_le h1x (by linarith) hθ0 hθ1 hP hPk hopt hw hχ
   refine (measureReal_mono fun ω hω => ?_).trans h1
   have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 < frobNorm (A - P ω * A) ^ 2 := hω
   refine lt_of_le_of_lt ?_ hω'
   set y := frobNorm (A - truncatedSVD A k) ^ 2 with hy
   have hy0 : 0 ≤ y := sq_nonneg _
-  have hs : √(k : ℝ) * (ε / (8 * √(k : ℝ)) * y) ≤ ε / 8 * y := by
+  have hs : √(k : ℝ) * (ε / (6 * √(k : ℝ)) * y) ≤ ε / 6 * y := by
     rcases eq_or_lt_of_le (Real.sqrt_nonneg (k : ℝ)) with h0 | h0
     · rw [← h0, zero_mul]
       positivity
-    · rw [← mul_assoc, show √(k : ℝ) * (ε / (8 * √(k : ℝ))) = ε / 8 by field_simp]
-  have h1x : 0 < 1 - ε / 8 := by linarith
-  have e1 : (y + √(k : ℝ) * (ε / (8 * √(k : ℝ)) * y)) / ((1 - ε / 8) * (1 - ε / 8)) ≤
-      (1 + ε / 8) * y / (1 - ε / 8) ^ 2 := by
-    rw [show (1 - ε / 8) * (1 - ε / 8) = (1 - ε / 8) ^ 2 by ring]
-    gcongr
-    linarith
-  have e2 : (ε / 8 * frobNorm (A - truncatedSVD A k)) ^ 2 /
-      (ε / 8 * (1 - ε / 8) * (1 - ε / 8) ^ 2) = ε / 8 * y / (1 - ε / 8) ^ 3 := by
-    rw [hy]
+    · rw [← mul_assoc, show √(k : ℝ) * (ε / (6 * √(k : ℝ))) = ε / 6 by field_simp]
+  have h1θ : 1 - ε / (6 + ε) = 6 / (6 + ε) := by field_simp; ring
+  have hd : 0 < (1 - ε / (6 + ε)) * (1 - ε / 6) := by rw [h1θ]; positivity
+  have e1 : (y + √(k : ℝ) * (ε / (6 * √(k : ℝ)) * y)) / ((1 - ε / (6 + ε)) * (1 - ε / 6)) ≤
+      (1 + ε / 6) * y / ((1 - ε / (6 + ε)) * (1 - ε / 6)) :=
+    div_le_div_of_nonneg_right (by linarith) hd.le
+  have e2 : (1 + ε / 6) * y / ((1 - ε / (6 + ε)) * (1 - ε / 6)) +
+      (ε / 6 * frobNorm (A - truncatedSVD A k)) ^ 2 /
+        (ε / (6 + ε) * (1 - ε / (6 + ε)) * (1 - ε / 6) ^ 2) =
+      (6 + ε) ^ 2 / (6 - ε) ^ 2 * y := by
+    rw [h1θ, mul_pow, ← hy]
+    have : (6 : ℝ) - ε ≠ 0 := by linarith
     field_simp
-  have hf := one_add_div_sq_add_div_cube_le hx hx1
-  have e3 : (1 + ε / 8) * y / (1 - ε / 8) ^ 2 + ε / 8 * y / (1 - ε / 8) ^ 3 =
-      ((1 + ε / 8) / (1 - ε / 8) ^ 2 + ε / 8 / (1 - ε / 8) ^ 3) * y := by ring
-  have h4 := mul_le_mul_of_nonneg_right hf hy0
-  rw [e2]
-  nlinarith
+    ring
+  have hf : (6 + ε) ^ 2 / (6 - ε) ^ 2 ≤ 1 + ε := by
+    rw [div_le_iff₀ (by nlinarith)]
+    nlinarith [mul_nonneg hε.le (sub_nonneg.2 hε1), pow_pos hε 3]
+  nlinarith [mul_le_mul_of_nonneg_right hf hy0]
 
 /-! ### The early-truncated randomized SVD at the JL moment -/
 
