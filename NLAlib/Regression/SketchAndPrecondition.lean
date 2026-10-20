@@ -112,7 +112,20 @@ theorem HasOrthonormalCols.sketchAndPrecondition_eq_mulVec_cgIterate {M : Matrix
     (q : ℕ) :
     sketchAndPrecondition A S y x₀ q =
       M *ᵥ cgIterate ((A * M)ᴴ * (A * M)) ((A * M)ᴴ *ᵥ y) z₀ q := by
-  sorry
+  have hinj := hSAM.mulVec_injective
+  have hM : IsUnit M := Matrix.mulVec_injective_iff_isUnit.mp fun u v h => hinj (by
+    rw [← Matrix.mulVec_mulVec, h, Matrix.mulVec_mulVec])
+  have hMd : IsUnit M.det := (Matrix.isUnit_iff_isUnit_det M).mp hM
+  have hA : Function.Injective A.mulVec := fun u v h => by
+    have hu : ∀ w, M *ᵥ (M⁻¹ *ᵥ w) = w := fun w => by
+      rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hMd, Matrix.one_mulVec]
+    have : M⁻¹ *ᵥ u = M⁻¹ *ᵥ v := hinj (by simp only [← Matrix.mulVec_mulVec, hu, h])
+    rw [← hu u, ← hu v, this]
+  have hAA : (Aᴴ * A).PosDef := posDef_conjTranspose_mul_self_iff.mpr hA
+  rw [sketchAndPrecondition, hSAM.pinv_conjTranspose_mul_self_eq_mul_conjTranspose,
+    hAA.pcgIterate_eq_mulVec_cgIterate hM rfl hz₀ q, Matrix.conjTranspose_mul,
+    Matrix.mulVec_mulVec, show Mᴴ * (Aᴴ * A) * M = Mᴴ * Aᴴ * (A * M) by
+      simp only [Matrix.mul_assoc]]
 
 /-- **Sketch-and-precondition with QR** (Blendenpik): for a thin QR factorization
 $\mathbf{S}\mathbf{A} = \mathbf{Q}\mathbf{R}$ with $\mathbf{R}$ invertible, the iterate is
@@ -126,7 +139,12 @@ theorem IsQR.sketchAndPrecondition_eq_mulVec_cgIterate [LinearOrder n] {Q : Matr
     {R : Matrix n n 𝕜} (hQR : IsQR (S * A) Q R) (hR : IsUnit R) (y : m → 𝕜) (q : ℕ) :
     sketchAndPrecondition A S y x₀ q =
       R⁻¹ *ᵥ cgIterate ((A * R⁻¹)ᴴ * (A * R⁻¹)) ((A * R⁻¹)ᴴ *ᵥ y) (R *ᵥ x₀) q := by
-  sorry
+  have hRu : IsUnit R.det := (Matrix.isUnit_iff_isUnit_det R).mp hR
+  have hQ : HasOrthonormalCols (S * A * R⁻¹) := by
+    rw [hQR.eq_mul, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hRu, Matrix.mul_one]
+    exact hQR.hasOrthonormalCols
+  exact hQ.sketchAndPrecondition_eq_mulVec_cgIterate y
+    (by rw [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ hRu, Matrix.one_mulVec]) q
 
 /-- **Sketch-and-precondition with an SVD** (LSRN's preconditioner): for a singular value
 decomposition $\mathbf{S}\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ with square
@@ -148,7 +166,30 @@ theorem IsSVD.sketchAndPrecondition_eq_mulVec_cgIterate {U : Matrix k n 𝕜} {�
             (A * (V * Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜))))
           ((A * (V * Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜)))ᴴ *ᵥ y)
           ((Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) *ᵥ (Vᴴ *ᵥ x₀)) q := by
-  sorry
+  have hV := hSVD.hasOrthonormalCols_right
+  have hd : ∀ i, ((σ i : ℝ) : 𝕜) ≠ 0 := fun i => RCLike.ofReal_ne_zero.mpr (hσ i).ne'
+  have hDD : (Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) *
+      (Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜)) = 1 := by
+    rw [Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+    congr 1
+    funext i
+    exact mul_inv_cancel₀ (hd i)
+  have hDD' : (Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜)) *
+      (Matrix.diagonal fun i => ((σ i : ℝ) : 𝕜)) = 1 := by
+    rw [Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+    congr 1
+    funext i
+    exact inv_mul_cancel₀ (hd i)
+  have hN : HasOrthonormalCols (S * A * (V * Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜))) := by
+    rw [hSVD.eq, show U * Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) * Vᴴ *
+        (V * Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜)) = U * (Matrix.diagonal (fun i =>
+          ((σ i : ℝ) : 𝕜)) * (Vᴴ * V) * Matrix.diagonal fun i => ((σ i)⁻¹ : 𝕜)) by
+        simp only [Matrix.mul_assoc],
+      hV.conjTranspose_mul_self, Matrix.mul_one, hDD, Matrix.mul_one]
+    exact hSVD.hasOrthonormalCols_left
+  refine hN.sketchAndPrecondition_eq_mulVec_cgIterate y ?_ q
+  rw [Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, Matrix.mul_assoc V, hDD', Matrix.mul_one,
+    hV.mul_conjTranspose_self, Matrix.one_mulVec]
 
 /-- **The preconditioned Hestenes–Stiefel recurrence computes sketch-and-precondition**: when
 $\mathbf{S}\mathbf{A}$ has full column rank (so that $\mathbf{A}$ does), the $\mathbf{x}$-field of
@@ -164,9 +205,37 @@ theorem pcgState_x_eq_sketchAndPrecondition (hSA : Function.Injective (S * A).mu
     (y : m → 𝕜) (x₀ : n → 𝕜) (q : ℕ) :
     (pcgState (Aᴴ * A) (pinv ((S * A)ᴴ * (S * A))) (Aᴴ *ᵥ y) x₀ q).x =
       sketchAndPrecondition A S y x₀ q := by
-  sorry
+  have hA : Function.Injective A.mulVec := fun u v h =>
+    hSA (by rw [← Matrix.mulVec_mulVec, h, Matrix.mulVec_mulVec])
+  have hG : ((S * A)ᴴ * (S * A)).PosDef := posDef_conjTranspose_mul_self_iff.mpr hSA
+  have hM : (pinv ((S * A)ᴴ * (S * A))).PosDef := by
+    rw [pinv_of_isUnit hG.isUnit]
+    exact hG.inv
+  exact (posDef_conjTranspose_mul_self_iff.mpr hA).pcgState_x_eq hM _ _ q
 
 /-! ### Deterministic convergence -/
+
+/-- The rate of sketch-and-precondition at constants $1 \mp \varepsilon$ lies in
+$[0, \varepsilon]$. -/
+private lemma sketchAndPreconditionRate_nonneg_and_le {ε : ℝ} (hε : 0 < ε) (hε1 : ε < 1) :
+    0 ≤ (√((1 + ε) / (1 - ε)) - 1) / (√((1 + ε) / (1 - ε)) + 1) ∧
+      (√((1 + ε) / (1 - ε)) - 1) / (√((1 + ε) / (1 - ε)) + 1) ≤ ε := by
+  have h1 : 0 < 1 - ε := by linarith
+  have hq : 1 ≤ (1 + ε) / (1 - ε) := by
+    rw [le_div_iff₀ h1]
+    linarith
+  have hs1 : 1 ≤ √((1 + ε) / (1 - ε)) := Real.one_le_sqrt.mpr hq
+  have hs2 := Real.sq_sqrt (by linarith : (0 : ℝ) ≤ (1 + ε) / (1 - ε))
+  set s := √((1 + ε) / (1 - ε))
+  refine ⟨div_nonneg (by linarith) (by linarith), ?_⟩
+  rw [div_le_iff₀ (by linarith)]
+  have ht : (s * (1 - ε)) ^ 2 ≤ (1 + ε) ^ 2 := by
+    rw [mul_pow, hs2]
+    field_simp
+    nlinarith
+  have ht' : s * (1 - ε) ≤ 1 + ε :=
+    (pow_le_pow_iff_left₀ (mul_nonneg (by linarith) h1.le) (by linarith) two_ne_zero).mp ht
+  nlinarith
 
 /-- **Sketch-and-precondition converges geometrically**: if $\mathbf{S}$ is a subspace embedding
 of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ in squared norms
@@ -188,7 +257,26 @@ theorem IsSubspaceEmbedding.norm_mulVec_sub_sketchAndPrecondition_sq_le_four_mul
     ‖WithLp.toLp 2 (A *ᵥ (xs - sketchAndPrecondition A S y x₀ q))‖ ^ 2 ≤
       4 * ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q) *
         ‖WithLp.toLp 2 (A *ᵥ (xs - x₀))‖ ^ 2 := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have h0 : ∀ v : n → 𝕜, v = 0 := fun v => Subsingleton.elim v 0
+    rw [h0 (xs - sketchAndPrecondition A S y x₀ q), h0 (xs - x₀), Matrix.mulVec_zero,
+      WithLp.toLp_zero, norm_zero]
+    simp
+  have hb := h.pos_right_of_injective ha hA
+  have hG : ((S * A)ᴴ * (S * A)).PosDef :=
+    posDef_conjTranspose_mul_self_iff.mpr (h.lower.injective_mulVec ha hA)
+  have hM : (pinv ((S * A)ᴴ * (S * A))).PosDef := by
+    rw [pinv_of_isUnit hG.isUnit]
+    exact hG.inv
+  have hxs' : (Aᴴ * A) *ᵥ xs = Aᴴ *ᵥ y := by
+    rw [← Matrix.mulVec_mulVec]
+    exact isLeastSquaresSolution_iff_normal_equations.mp hxs
+  have hc :=
+    (Matrix.isHermitian_conjTranspose_mul_self A).re_quadForm_sub_pcgIterate_le_four_mul_pow hM
+      (inv_pos.mpr hb) (h.spectrum_pinv_mul_subset_Icc ha hA) hxs' x₀ q
+  rw [quadForm_conjTranspose_mul_self, quadForm_conjTranspose_mul_self, RCLike.ofReal_re,
+    RCLike.ofReal_re, inv_div_inv] at hc
+  exact hc
 
 /-- **Sketch-and-precondition, $\varepsilon$ form**: if $\mathbf{S}$ is a subspace embedding of
 $\operatorname{range}\mathbf{A}$ with constants $1 \mp \varepsilon$ in squared norms
@@ -209,7 +297,11 @@ theorem
     (q : ℕ) :
     ‖WithLp.toLp 2 (A *ᵥ (xs - sketchAndPrecondition A S y x₀ q))‖ ^ 2 ≤
       4 * ε ^ (2 * q) * ‖WithLp.toLp 2 (A *ᵥ (xs - x₀))‖ ^ 2 := by
-  sorry
+  obtain ⟨h0, hle⟩ := sketchAndPreconditionRate_nonneg_and_le hε hε1
+  refine (h.norm_mulVec_sub_sketchAndPrecondition_sq_le_four_mul_pow (by linarith) hA hxs x₀
+    q).trans ?_
+  exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ h0 hle _)
+    (by norm_num)) (sq_nonneg _)
 
 section Residual
 
@@ -239,7 +331,18 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sketchAndPrecondition_sq_le [Fintype
     ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A S y x₀ q)‖ ^ 2 ≤
       (1 + 4 * (b / a - 1) * ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q)) *
         ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  sorry
+  have h' : IsSubspaceEmbedding S A a b := h.of_range_le hAU
+  obtain ⟨xs, hxs⟩ := exists_isLeastSquaresSolution A y
+  have hc := h'.norm_mulVec_sub_sketchAndPrecondition_sq_le_four_mul_pow ha hA hxs x₀ q
+  have hss := h.norm_sub_mulVec_sq_le ha hAU hy hx₀
+  have hp0 := hxs.norm_sub_mulVec_sq_eq_add x₀
+  have hpq := hxs.norm_sub_mulVec_sq_eq_add (sketchAndPrecondition A S y x₀ q)
+  rw [hxs.norm_sub_mulVec_eq] at hp0 hpq
+  have hρ : 0 ≤ ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q) := (even_two_mul q).pow_nonneg _
+  have hE0 : ‖WithLp.toLp 2 (A *ᵥ (xs - x₀))‖ ^ 2 ≤
+      (b / a - 1) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by linarith
+  rw [hpq]
+  nlinarith [mul_le_mul_of_nonneg_left hE0 (mul_nonneg (by norm_num : (0 : ℝ) ≤ 4) hρ)]
 
 /-- **Sketch-and-precondition from the sketch-and-solve start, $\varepsilon$ form**: if
 $\mathbf{S}$ is a subspace embedding of $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with
@@ -258,7 +361,23 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sketchAndPrecondition_sq_le_of_one_s
     ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A S y x₀ q)‖ ^ 2 ≤
       (1 + 8 * ε ^ (2 * q + 1) / (1 - ε)) *
         ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  sorry
+  obtain ⟨h0, hle⟩ := sketchAndPreconditionRate_nonneg_and_le hε hε1
+  have hne : 1 - ε ≠ 0 := by linarith
+  refine (h.norm_sub_mulVec_sketchAndPrecondition_sq_le (by linarith)
+    (Matrix.range_le_range_fromCols_left A _) (Matrix.mem_range_fromCols_replicateCol A y) hA hx₀
+    q).trans (mul_le_mul_of_nonneg_right ?_ (sq_nonneg _))
+  have e1 : (1 + ε) / (1 - ε) - 1 = 2 * ε / (1 - ε) := by
+    field_simp
+    ring
+  have hp := pow_le_pow_left₀ h0 hle (2 * q)
+  have h2 : 0 ≤ 4 * (2 * ε / (1 - ε)) := mul_nonneg (by norm_num) (div_nonneg (by linarith)
+    (by linarith))
+  have h3 : 4 * (2 * ε / (1 - ε)) * ε ^ (2 * q) = 8 * ε ^ (2 * q + 1) / (1 - ε) := by
+    rw [pow_succ]
+    field_simp
+    ring
+  rw [e1]
+  nlinarith [mul_le_mul_of_nonneg_left hp h2]
 
 /-- **Sketch-and-precondition, iteration count**: if $\mathbf{S}$ is a subspace embedding of
 $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with constants $1 \mp \varepsilon$ in squared norms
@@ -276,7 +395,13 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sketchAndPrecondition_sq_le_one_add_
     (hq : 16 * ε ^ (2 * q + 1) ≤ τ) :
     ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A S y x₀ q)‖ ^ 2 ≤
       (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  sorry
+  refine (h.norm_sub_mulVec_sketchAndPrecondition_sq_le_of_one_sub_one_add hε (by linarith) hA
+    hx₀ q).trans (mul_le_mul_of_nonneg_right ?_ (sq_nonneg _))
+  have hp : 0 ≤ ε ^ (2 * q + 1) := by positivity
+  have : 8 * ε ^ (2 * q + 1) / (1 - ε) ≤ 16 * ε ^ (2 * q + 1) := by
+    rw [div_le_iff₀ (by linarith)]
+    nlinarith
+  linarith
 
 /-- **Forward error of sketch-and-precondition from the sketch-and-solve start**: if $\mathbf{S}$
 is a subspace embedding with constants $a > 0$, $b$ in squared norms
@@ -303,7 +428,20 @@ theorem IsSubspaceEmbedding.singularValues_sq_mul_norm_sub_sketchAndPrecondition
     singularValues A j ^ 2 * ‖WithLp.toLp 2 (xs - sketchAndPrecondition A S y x₀ q)‖ ^ 2 ≤
       4 * (b / a - 1) * ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q) *
         ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by
-  sorry
+  have h' : IsSubspaceEmbedding S A a b := h.of_range_le hAU
+  have hc := h'.norm_mulVec_sub_sketchAndPrecondition_sq_le_four_mul_pow ha hA hxs x₀ q
+  have hss := h.norm_sub_mulVec_sq_le ha hAU hy hx₀
+  have hp0 := hxs.norm_sub_mulVec_sq_eq_add x₀
+  rw [hxs.norm_sub_mulVec_eq] at hp0
+  have hσ := singularValues_last_mul_norm_le A hj (xs - sketchAndPrecondition A S y x₀ q)
+  have hσ2 : singularValues A j ^ 2 * ‖WithLp.toLp 2 (xs - sketchAndPrecondition A S y x₀ q)‖ ^ 2
+      ≤ ‖WithLp.toLp 2 (A *ᵥ (xs - sketchAndPrecondition A S y x₀ q))‖ ^ 2 := by
+    rw [← mul_pow]
+    exact pow_le_pow_left₀ (mul_nonneg (singularValues_nonneg _ _) (norm_nonneg _)) hσ 2
+  have hρ : 0 ≤ ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q) := (even_two_mul q).pow_nonneg _
+  have hE0 : ‖WithLp.toLp 2 (A *ᵥ (xs - x₀))‖ ^ 2 ≤
+      (b / a - 1) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 := by linarith
+  nlinarith [mul_le_mul_of_nonneg_left hE0 (mul_nonneg (by norm_num : (0 : ℝ) ≤ 4) hρ)]
 
 end Residual
 
@@ -331,7 +469,11 @@ theorem HasSubspaceEmbedding.measureReal_norm_mulVec_sub_sketchAndPrecondition_s
     μ.real {ω | 4 * ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q) *
         ‖WithLp.toLp 2 (A *ᵥ (xs - x₀))‖ ^ 2 <
       ‖WithLp.toLp 2 (A *ᵥ (xs - sketchAndPrecondition A (S ω) y x₀ q))‖ ^ 2} ≤ δ := by
-  sorry
+  refine (measureReal_mono fun ω hω => ?_).trans h
+  change ¬ IsSubspaceEmbedding (S ω) A a b
+  intro hemb
+  exact (not_le.mpr hω)
+    (hemb.norm_mulVec_sub_sketchAndPrecondition_sq_le_four_mul_pow ha hA hxs x₀ q)
 
 /-- **Sketch-and-precondition with a random embedding, sketch-and-solve start**: if the random
 sketch $\mathbf{S}$ is a subspace embedding of $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with
@@ -355,7 +497,47 @@ theorem HasSubspaceEmbedding.measureReal_norm_sub_mulVec_sketchAndPrecondition_s
     μ.real {ω | (1 + 4 * (b / a - 1) * ((√(b / a) - 1) / (√(b / a) + 1)) ^ (2 * q)) *
         ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  refine le_trans ?_ h
+  rw [measureReal_def, measureReal_def]
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)
+  filter_upwards [hx₀] with ω hω hbad
+  change ¬ IsSubspaceEmbedding (S ω) (Matrix.fromCols A (Matrix.replicateCol Unit y)) a b
+  intro hemb
+  exact (not_le.mpr hbad) (hemb.norm_sub_mulVec_sketchAndPrecondition_sq_le ha
+    (Matrix.range_le_range_fromCols_left A _) (Matrix.mem_range_fromCols_replicateCol A y) hA hω q)
+
+-- The declaration name with its indentation exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Sketch-and-precondition with a random embedding, iteration count**: if the random sketch
+$\mathbf{S}$ is a subspace embedding of $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with
+constants $1 \mp \varepsilon$ in squared norms ($(1 - \varepsilon)\|\mathbf{v}\|^2 \le
+\|\mathbf{S}\mathbf{v}\|^2 \le (1 + \varepsilon)\|\mathbf{v}\|^2$ on that range) except with
+probability $\delta$, $0 < \varepsilon \le 1/2$, $\mathbf{A}$ has full column rank, almost surely
+$\mathbf{x}_0$ minimizes $\|\mathbf{S}(\mathbf{A}\mathbf{x} - \mathbf{y})\|$ and
+$16\varepsilon^{2q+1} \le \tau$, then
+$$\mathbb{P}\Bigl[\|\mathbf{y} - \mathbf{A}\,\mathsf{sketchAndPrecondition}(\mathbf{A},
+\mathbf{S}, \mathbf{y}, \mathbf{x}_0, q)\|^2 > (1 + \tau)\|(\mathbf{I} -
+\mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2\Bigr] \le \delta\,,$$
+the form the corollaries for the sketch families apply. -/
+theorem
+    HasSubspaceEmbedding.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add
+    [DecidableEq m] [IsFiniteMeasure μ] {S : Ω → Matrix k m 𝕜}
+    (h : HasSubspaceEmbedding S (Matrix.fromCols A (Matrix.replicateCol Unit y))
+      (1 - ε) (1 + ε) δ μ)
+    (hε : 0 < ε) (hε1 : ε ≤ 1 / 2) (hA : Function.Injective A.mulVec) {x₀ : Ω → n → 𝕜}
+    (hx₀ : ∀ᵐ ω ∂μ, IsLeastSquaresSolution (S ω * A) (S ω *ᵥ y) (x₀ ω)) {q : ℕ} {τ : ℝ}
+    (hq : 16 * ε ^ (2 * q + 1) ≤ τ) :
+    μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
+      ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
+  refine le_trans ?_ h
+  rw [measureReal_def, measureReal_def]
+  refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)
+  filter_upwards [hx₀] with ω hω hbad
+  change ¬ IsSubspaceEmbedding (S ω) (Matrix.fromCols A (Matrix.replicateCol Unit y))
+    (1 - ε) (1 + ε)
+  intro hemb
+  exact (not_le.mpr hbad)
+    (hemb.norm_sub_mulVec_sketchAndPrecondition_sq_le_one_add_mul hε hε1 hA hω hq)
 
 end Random
 
