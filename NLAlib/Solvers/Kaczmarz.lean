@@ -20,7 +20,7 @@ $\{\mathbf{y} : (\mathbf{A}\mathbf{y})_{\iota_q} = b_{\iota_q}\}$, and the famil
 update is `NLAlib.kaczmarzIterate_succ`. Randomized Kaczmarz draws the rows independently with
 the squared-row-norm probabilities $p_i = \|\mathbf{a}_i\|^2/\|\mathbf{A}\|_{\mathsf{F}}^2$
 (`NLAlib.rowNormSqDistribution`), written as the i.i.d.-sequence hypothesis
-`HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ`.
+`HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ`.
 
 The rate is $1 - (\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2)^{-2}$, with the Frobenius
 pseudo-condition number `NLAlib.frobPseudoConditionNumber`, and no rank assumption is needed.
@@ -43,19 +43,23 @@ Design: `docs/design/Regression-Kaczmarz.md`.
 ## Main results
 
 * `NLAlib.kaczmarzIterate_succ`: the row-action formula.
-* `NLAlib.integral_norm_sub_kaczmarzIterate_succ_sq_le`: the one-step bound in expectation.
-* `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_add`: randomized Kaczmarz for any right-hand
-  side.
-* `NLAlib.integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le`: convergence to the
-  least-squares solution nearest the start, up to the horizon.
-* `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le`: Strohmer and Vershynin's theorem, any rank.
-* `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_samplingMeasure`: any row
-  probabilities.
-* `NLAlib.integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose`,
-  `NLAlib.integral_kaczmarzIterate`: the mean iterate is Landweber's iteration.
-* `NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_mul_log_le`,
-  `NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le`:
-  the iteration counts.
+* `NLAlib.integral_norm_sub_kaczmarzIterate_succ_sq_le_of_hasLaw_iidSequence`: the one-step
+  bound in expectation.
+* `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_add_of_hasLaw_iidSequence`: randomized
+  Kaczmarz for any right-hand side.
+* `NLAlib.integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence`:
+  convergence to the least-squares solution nearest the start, up to the horizon.
+* `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence`: Strohmer and
+  Vershynin's theorem, any rank.
+* Any row probabilities:
+  `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_smul_rangeProjector_le`.
+* `NLAlib.integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose_of_hasLaw_iidSequence`,
+  `NLAlib.integral_kaczmarzIterate_of_hasLaw_iidSequence`: the mean iterate is Landweber's
+  iteration.
+* The iteration counts
+  `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le` and
+  `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le`,
+  with their asymptotic forms.
 -/
 
 @[expose] public section
@@ -267,7 +271,7 @@ private lemma integrable_comp_kaczmarzIterate {E : Type*} [NormedAddCommGroup E]
 /-- Conditioning on the past for the Kaczmarz iterate. -/
 private lemma integral_comp_kaczmarzIterate {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E] {p : m → ℝ≥0}
-    (hp : ∑ i, p i = 1) (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure p) μ)
+    (hp : ∑ i, p i = 1) (hι : HasLaw ι (iidSequence (samplingMeasure p)) μ)
     (A : Matrix m n 𝕜) (b : m → 𝕜) (x₀ : n → 𝕜) (q : ℕ) {f : (n → 𝕜) × m → E}
     (hf : ∀ i, Continuous fun x => f (x, i)) :
     ∫ ω, f (kaczmarzIterate A (ι ω) b x₀ q, ι ω q) ∂μ =
@@ -291,13 +295,12 @@ private lemma integral_comp_kaczmarzIterate {E : Type*} [NormedAddCommGroup E] [
 omit [DecidableEq m] [MeasurableSingletonClass m] in
 /-- For $\mathbf{A} = \mathbf{0}$ the squared-row-norm law is zero, so is the sample space. -/
 private lemma eq_zero_of_hasLaw_rowNormSqDistribution_zero
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ =>
-      samplingMeasure (rowNormSqDistribution (0 : Matrix m n 𝕜))) μ) : μ = 0 := by
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution (0 : Matrix m n 𝕜)))) μ) :
+    μ = 0 := by
   have h0 : samplingMeasure (rowNormSqDistribution (0 : Matrix m n 𝕜)) = 0 := by
     simp [samplingMeasure, rowNormSqDistribution]
-  have hpi : Measure.infinitePi
-      (fun _ : ℕ => samplingMeasure (rowNormSqDistribution (0 : Matrix m n 𝕜))) = 0 := by
-    rw [Measure.infinitePi, dif_neg]
+  have hpi : iidSequence (samplingMeasure (rowNormSqDistribution (0 : Matrix m n 𝕜))) = 0 := by
+    rw [iidSequence, Measure.infinitePi, dif_neg]
     intro h
     have h1 := (h 0).measure_univ
     rw [h0] at h1
@@ -366,7 +369,7 @@ private lemma continuous_sketchAndProject_conjTranspose_selectionMatrix (A : Mat
 
 /-- The expected squared error after one Kaczmarz step, for $\mathbf{A} \ne \mathbf{0}$. -/
 private lemma integral_norm_sub_kaczmarzIterate_succ_sq_eq (hA : A ≠ 0)
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (xs : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ (q + 1))‖ ^ 2 ∂μ =
       ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ -
@@ -444,11 +447,11 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathbf{x}_{q+1}\|^2 \le \mathbb{E}\|\mathbf{x}
 {\|\mathbf{A}\|_{\mathsf{F}}^2} + \frac{\|\mathbf{b} - \mathbf{A}\mathbf{x}_\star\|^2}
 {\|\mathbf{A}\|_{\mathsf{F}}^2}\,.$$
 The gap is the residual on the zero rows, which are never chosen; with no zero row it is an
-identity (`NLAlib.integral_norm_sub_kaczmarzIterate_succ_sq`).
+identity (`NLAlib.integral_norm_sub_kaczmarzIterate_succ_sq_of_hasLaw_iidSequence`).
 [StrohmerVershynin2009, proof of Theorem 2]; [ZouziasFreris2013, Theorem 7, (5)], there after
 the singular-value bound. -/
-theorem integral_norm_sub_kaczmarzIterate_succ_sq_le
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_norm_sub_kaczmarzIterate_succ_sq_le_of_hasLaw_iidSequence
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (xs : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ (q + 1))‖ ^ 2 ∂μ ≤
       ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ -
@@ -480,8 +483,8 @@ Without the hypothesis it fails: for
 $\mathbf{A} = \begin{bmatrix} 1 \\ 0 \end{bmatrix}$, $\mathbf{b} = (0, 1)$ and
 $\mathbf{x}_0 = \mathbf{x}_\star = \mathbf{0}$ the left side is $0$ and the right side $1$.
 [StrohmerVershynin2009, proof of Theorem 2], there for a consistent system. -/
-theorem integral_norm_sub_kaczmarzIterate_succ_sq (hA : ∀ i, A i ≠ 0)
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_norm_sub_kaczmarzIterate_succ_sq_of_hasLaw_iidSequence (hA : ∀ i, A i ≠ 0)
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (xs : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ (q + 1))‖ ^ 2 ∂μ =
       ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ -
@@ -507,7 +510,8 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 No rank assumption. **The reference point.** For $\mathbf{x}_0 = \mathbf{0}$ take
 $\mathbf{x}_\star = \mathbf{A}^{+}\mathbf{b}$; in general take the least-squares solution
 nearest $\mathbf{x}_0$, $\mathbf{x}_0 + \mathbf{A}^{+}(\mathbf{b} - \mathbf{A}\mathbf{x}_0)$,
-which minimises the horizon (`NLAlib.integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le`).
+which minimises the horizon; see
+`NLAlib.integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence`.
 The choice $\mathbf{x}_\star = \mathbf{A}^{+}\mathbf{b}$ with a generic $\mathbf{x}_0$ violates the
 row-space hypothesis, and the bound then fails. [ZouziasFreris2013, Theorem 7]; the same horizon
 $\|\mathbf{w}\|^2/\sigma_{\min}^2$, here with the factor $1 - \rho^q$. [Needell2010,
@@ -515,10 +519,10 @@ Theorem 2.1]; there for full column rank, in the unsquared norm and with the lar
 $R\gamma^2 \ge \|\mathbf{A}^{+}\|_2^2\|\mathbf{b} - \mathbf{A}\mathbf{x}_\star\|^2$, which this
 implies by Jensen's inequality. Port of `NLAlib.Kaczmarz.expErr_le_add_of_sub_mem_range` and
 five variants. Iteration count:
-`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le`.
+`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le`.
 Result: kaczmarz-inconsistent -/
-theorem integral_norm_sub_kaczmarzIterate_sq_le_add
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_norm_sub_kaczmarzIterate_sq_le_add_of_hasLaw_iidSequence
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     {xs : n → 𝕜} (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
       (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 +
@@ -545,7 +549,8 @@ theorem integral_norm_sub_kaczmarzIterate_sq_le_add
         ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ j)‖ ^ 2 ∂μ +
       (1 - (1 - 1 / frobPseudoConditionNumber A ^ 2)) * specNorm (pinv A) ^ 2 *
         ‖WithLp.toLp 2 (b - A *ᵥ xs)‖ ^ 2 := fun j => by
-    have h1 := integral_norm_sub_kaczmarzIterate_succ_sq_le (b := b) (x₀ := x₀) hι xs j
+    have h1 := integral_norm_sub_kaczmarzIterate_succ_sq_le_of_hasLaw_iidSequence (b := b)
+      (x₀ := x₀) hι xs j
     have h2 : (∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ j)‖ ^ 2 ∂μ) /
         specNorm (pinv A) ^ 2 ≤
         ∫ ω, ‖WithLp.toLp 2 (A *ᵥ (xs - kaczmarzIterate A (ι ω) b x₀ j))‖ ^ 2 ∂μ := by
@@ -608,8 +613,8 @@ From $\mathbf{x}_0 = \mathbf{0}$ the limit is $\mathbf{A}^{+}\mathbf{b}$.
 [LeventhalLewis2010, Theorem 4.7], there for consistent systems.
 Port of `NLAlib.Kaczmarz.expErr_zero_le_moorePenroseInverse`.
 Result: kaczmarz-rank-deficient -/
-theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (x₀ + pinv A *ᵥ (b - A *ᵥ x₀) - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
       (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q *
@@ -624,7 +629,7 @@ theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le
       Matrix.mulVec_sub (rangeProjector A), Matrix.mulVec_mulVec x₀ (rangeProjector A) A,
       rangeProjector_mul_self]
     abel
-  have h := integral_norm_sub_kaczmarzIterate_sq_le_add (b := b) hι hx q
+  have h := integral_norm_sub_kaczmarzIterate_sq_le_add_of_hasLaw_iidSequence (b := b) hι hx q
   rwa [hr, add_sub_cancel_left] at h
 
 /-- **Randomized Kaczmarz for a consistent system converges to the projection of the start onto
@@ -638,15 +643,16 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 \Bigr)^q\|\mathbf{A}^{+}(\mathbf{b} - \mathbf{A}\mathbf{x}_0)\|^2\,.$$
 [LeventhalLewis2010, Theorem 4.7]; [ZouziasFreris2013, Theorem 4], there from
 $\mathbf{x}_0 = \mathbf{0}$. -/
-theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_mem_range
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_mem_range
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (hb : b ∈ LinearMap.range A.mulVecLin) (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (x₀ + pinv A *ᵥ (b - A *ᵥ x₀) - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
       (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q *
         ‖WithLp.toLp 2 (pinv A *ᵥ (b - A *ᵥ x₀))‖ ^ 2 := by
   have hb' : (1 - rangeProjector A) *ᵥ b = 0 := by
     rw [Matrix.sub_mulVec, Matrix.one_mulVec, rangeProjector_mulVec_eq_self_iff.mpr hb, sub_self]
-  have h := integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le (b := b) hι x₀ q
+  have h :=
+    integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence (b := b) hι x₀ q
   rwa [hb', WithLp.toLp_zero, norm_zero, zero_pow two_ne_zero, mul_zero, add_zero] at h
 
 /-- **Randomized Kaczmarz converges linearly in expectation** (Strohmer–Vershynin), any rank: for
@@ -659,14 +665,14 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 the rate in $[0, 1)$ for $\mathbf{A} \ne \mathbf{0}$. [StrohmerVershynin2009, Theorem 2]; there
 for full column rank, where the row-space hypothesis is empty. [ZouziasFreris2013, Theorem 4].
 Port of `NLAlib.integral_sqErr_kaczmarz_le_frobPseudoConditionNumber`. Iteration count:
-`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le`.
+`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le`.
 Result: randomized-kaczmarz -/
-theorem integral_norm_sub_kaczmarzIterate_sq_le
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
       (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 := by
-  have h := integral_norm_sub_kaczmarzIterate_sq_le_add (b := b) hι hx₀ q
+  have h := integral_norm_sub_kaczmarzIterate_sq_le_add_of_hasLaw_iidSequence (b := b) hι hx₀ q
   rwa [hxs, sub_self, WithLp.toLp_zero, norm_zero, zero_pow two_ne_zero, mul_zero, add_zero] at h
 
 /-- **Randomized Kaczmarz, iteration count**: for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
@@ -680,9 +686,10 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 [StrohmerVershynin2009, (11)], which counts $2\kappa(\mathbf{A})^2\log(1/\varepsilon)$ steps for
 the unsquared error.
 Asymptotic form:
-`NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_mul_log_le`. -/
-theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+`exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_mul_log_le`.
+-/
+theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin)
     {ε : ℝ} (hε : 0 < ε) {q : ℕ} (hq : frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε) ≤ q) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
@@ -690,7 +697,7 @@ theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le
   rcases eq_or_ne A 0 with rfl | hA
   · rw [eq_zero_of_hasLaw_rowNormSqDistribution_zero hι, integral_zero_measure]
     exact mul_nonneg hε.le (sq_nonneg _)
-  exact (integral_norm_sub_kaczmarzIterate_sq_le hι hxs hx₀ q).trans
+  exact (integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence hι hxs hx₀ q).trans
     (mul_le_mul_of_nonneg_right (one_sub_one_div_frobPseudoConditionNumber_sq_pow_le hA hε hq)
       (sq_nonneg _))
 
@@ -705,9 +712,10 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 \|\mathbf{A}^{+}\|_2^2\,\|\mathbf{b} - \mathbf{A}\mathbf{x}_\star\|^2\,.$$
 [ZouziasFreris2013, Theorem 7].
 Asymptotic form:
-`NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le`. -/
-theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+`exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le`.
+-/
+theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     {xs : n → 𝕜} (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin)
     {ε : ℝ} (hε : 0 < ε) {q : ℕ} (hq : frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε) ≤ q) :
     ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
@@ -719,7 +727,7 @@ theorem integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le
   have hρq := one_sub_one_div_frobPseudoConditionNumber_sq_pow_le hA hε hq
   have hρ0 := pow_nonneg (zero_le_one_sub_one_div_frobPseudoConditionNumber_sq hA) q
   have hh : 0 ≤ specNorm (pinv A) ^ 2 * ‖WithLp.toLp 2 (b - A *ᵥ xs)‖ ^ 2 := by positivity
-  refine (integral_norm_sub_kaczmarzIterate_sq_le_add hι hx₀ q).trans ?_
+  refine (integral_norm_sub_kaczmarzIterate_sq_le_add_of_hasLaw_iidSequence hι hx₀ q).trans ?_
   nlinarith [mul_le_mul_of_nonneg_right hρq (sq_nonneg ‖WithLp.toLp 2 (xs - x₀)‖),
     mul_nonneg hρ0 hh]
 
@@ -782,11 +790,12 @@ $\mathbf{P}_{\overline{\mathbf{a}_i}}$ the projector onto the span of $\overline
 $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \mathbf{b},
 \mathbf{x}_0, q)\|^2 \le (1 - \lambda)^q\|\mathbf{x}_\star - \mathbf{x}_0\|^2\,.$$
 Uniform sampling is $p_i = 1/\lvert m \rvert$. The sketch-and-project theorem
-`NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le` with row-selection sketches.
+`NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence`
+with row-selection sketches.
 [GowerRichtarik2015, §3.3]. -/
-theorem integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_samplingMeasure
+theorem integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_smul_rangeProjector_le
     {p : m → ℝ≥0} (hp : ∑ i, p i = 1)
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure p) μ)
+    (hι : HasLaw ι (iidSequence (samplingMeasure p)) μ)
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin) {lam : ℝ}
     (hlam : lam • rangeProjector Aᴴ ≤
       ∑ i, (p i : ℝ) • rangeProjector (Matrix.replicateCol Unit (star (A i)))) (q : ℕ) :
@@ -800,13 +809,13 @@ theorem integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_samplingMeasure
       (selectionMatrix fun _ : Unit => i : Matrix m Unit 𝕜)ᴴ) :=
     Measure.isProbabilityMeasure_map hT.aemeasurable
   have hS : HasLaw (fun ω j => (selectionMatrix fun _ : Unit => ι ω j : Matrix m Unit 𝕜)ᴴ)
-      (Measure.infinitePi fun _ : ℕ => (samplingMeasure p).map fun i : m =>
-        (selectionMatrix fun _ : Unit => i : Matrix m Unit 𝕜)ᴴ) μ := by
+      (iidSequence ((samplingMeasure p).map fun i : m =>
+        (selectionMatrix fun _ : Unit => i : Matrix m Unit 𝕜)ᴴ)) μ := by
     have hmp : MeasurePreserving (fun (s : ℕ → m) j =>
         (selectionMatrix fun _ : Unit => s j : Matrix m Unit 𝕜)ᴴ)
-        (Measure.infinitePi fun _ : ℕ => samplingMeasure p)
-        (Measure.infinitePi fun _ : ℕ => (samplingMeasure p).map fun i : m =>
-          (selectionMatrix fun _ : Unit => i : Matrix m Unit 𝕜)ᴴ) :=
+        (iidSequence (samplingMeasure p))
+        (iidSequence ((samplingMeasure p).map fun i : m =>
+          (selectionMatrix fun _ : Unit => i : Matrix m Unit 𝕜)ᴴ)) :=
       ⟨measurable_pi_lambda _ fun j => hT.comp (measurable_pi_apply j),
         Measure.infinitePi_map_pi (fun _ => samplingMeasure p) fun _ => hT⟩
     exact hmp.fun_comp_hasLaw hι
@@ -819,7 +828,8 @@ theorem integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_samplingMeasure
         (measurable_id.matrix_mul measurable_const))).aestronglyMeasurable
     rw [integral_map hT.aemeasurable hm]
     exact integral_rangeProjector_conjTranspose_selectionMatrix_mul A p
-  exact integral_norm_sub_sketchAndProjectIterate_sq_le hS hxs hx₀ (hE ▸ hlam) q
+  exact integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence hS hxs hx₀
+    (hE ▸ hlam) q
 
 /-- **The mean Kaczmarz iterate is Landweber's iteration** with step
 $\|\mathbf{A}\|_{\mathsf{F}}^{-2}$, for any right-hand side: for $\mathbf{A} \ne \mathbf{0}$ and
@@ -833,9 +843,10 @@ that is $\mathbb{E}[\mathbf{x}_{q+1}] = \mathbb{E}[\mathbf{x}_q] +
 \mathbf{A}\mathbb{E}[\mathbf{x}_q])$. For $\mathbf{A} = \mathbf{0}$ the law is the zero measure and
 the identity fails. The averaged form of the observation that randomized Kaczmarz is stochastic
 gradient descent on the least-squares objective [MaNeedellRamdas2015, §2.1]. Its
-normal-equations form is `NLAlib.integral_kaczmarzIterate`. -/
-theorem integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose (hA : A ≠ 0)
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+normal-equations form is `NLAlib.integral_kaczmarzIterate_of_hasLaw_iidSequence`. -/
+theorem integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose_of_hasLaw_iidSequence
+    (hA : A ≠ 0)
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, kaczmarzIterate A (ι ω) b x₀ q ∂μ =
       richardsonIterate A ((frobNorm A ^ 2)⁻¹ • Aᴴ) b x₀ q := by
@@ -901,14 +912,14 @@ $$\mathbb{E}[\mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \mathbf{b}, \mathbf{x}_
 \mathsf{richardsonIterate}(\mathbf{A}^{\mathsf{H}}\mathbf{A}, \|\mathbf{A}\|_{\mathsf{F}}^{-2}
 \mathbf{I}, \mathbf{A}^{\mathsf{H}}\mathbf{b}, \mathbf{x}_0, q)\,.$$
 The Landweber form, which avoids $\mathbf{A}^{\mathsf{H}}\mathbf{A}$, is
-`NLAlib.integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose`.
+`NLAlib.integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose_of_hasLaw_iidSequence`.
 [MaNeedellRamdas2015, §2.1], the stochastic-gradient reading. -/
-theorem integral_kaczmarzIterate [DecidableEq n] (hA : A ≠ 0)
-    (hι : HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ)
+theorem integral_kaczmarzIterate_of_hasLaw_iidSequence [DecidableEq n] (hA : A ≠ 0)
+    (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
     (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, kaczmarzIterate A (ι ω) b x₀ q ∂μ =
       richardsonIterate (Aᴴ * A) ((frobNorm A ^ 2)⁻¹ • (1 : Matrix n n 𝕜)) (Aᴴ *ᵥ b) x₀ q := by
-  rw [integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose hA hι x₀ q,
+  rw [integral_kaczmarzIterate_eq_richardsonIterate_conjTranspose_of_hasLaw_iidSequence hA hι x₀ q,
     show (frobNorm A ^ 2)⁻¹ • Aᴴ = ((frobNorm A ^ 2)⁻¹ • (1 : Matrix n n 𝕜)) * Aᴴ by
       rw [Matrix.smul_mul, Matrix.one_mul], richardsonIterate_mul_conjTranspose]
 
@@ -926,26 +937,29 @@ $q \ge C\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{A}^{+}\|_2^2\log(1/\varepsilon)$,
 $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \mathbf{b},
 \mathbf{x}_0, q)\|^2 \le \varepsilon\|\mathbf{x}_\star - \mathbf{x}_0\|^2\,.$$
 The constants come before every dimension. Proved from
-`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le` with $C = 1$ and
+`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le`
+with $C = 1$ and
 $\varepsilon_0 = 1$. [StrohmerVershynin2009, (11)], which counts
 $2\kappa(\mathbf{A})^2\log(1/\varepsilon)$ steps for the unsquared error.
-Asymptotic: NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le
+Asymptotic: NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le
 Result: randomized-kaczmarz -/
-theorem exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_mul_log_le :
+theorem exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_mul_log_le :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 m n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype m]
       [Fintype n] [DecidableEq m] [MeasurableSpace m] [MeasurableSingletonClass m]
       (μ : Measure Ω) (A : Matrix m n 𝕜) (b : m → 𝕜) (ι : Ω → ℕ → m) (xs x₀ : n → 𝕜) (q : ℕ)
       (ε : ℝ),
-      HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ →
+      HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ →
       A *ᵥ xs = b → xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin → 0 < ε → ε ≤ ε₀ →
       C * (frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε)) ≤ q →
       ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
         ε * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 := by
   refine ⟨1, 1, one_pos, one_pos, ?_⟩
   intro Ω 𝕜 m n _ _ _ _ _ _ _ μ A b ι xs x₀ q ε hι hxs hx₀ hε _ hq
-  exact integral_norm_sub_kaczmarzIterate_sq_le_mul_of_mul_log_le hι hxs hx₀ hε
-    (by rwa [one_mul] at hq)
+  exact integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le hι hxs hx₀
+    hε (by rwa [one_mul] at hq)
 
+-- The declaration name with its indentation exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **$O(\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{A}^{+}\|_2^2\log(1/\varepsilon))$ iterations
 suffice for randomized Kaczmarz to reach its horizon**, for any right-hand side: there are
 absolute constants $C, \varepsilon_0 > 0$ such that for every $\mathbf{x}_\star$ with
@@ -958,16 +972,19 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 \mathbf{x}_0, q)\|^2 \le \varepsilon\|\mathbf{x}_\star - \mathbf{x}_0\|^2 +
 \|\mathbf{A}^{+}\|_2^2\,\|\mathbf{b} - \mathbf{A}\mathbf{x}_\star\|^2\,.$$
 The constants come before every dimension. Proved from
-`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le` with $C = 1$ and
+`NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le`
+with $C = 1$ and
 $\varepsilon_0 = 1$. [ZouziasFreris2013, Theorem 7].
-Asymptotic: NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le
+Asymptotic:
+NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le
 Result: kaczmarz-inconsistent -/
-theorem exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le :
+theorem
+    exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 m n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype m]
       [Fintype n] [DecidableEq m] [MeasurableSpace m] [MeasurableSingletonClass m]
       (μ : Measure Ω) (A : Matrix m n 𝕜) (b : m → 𝕜) (ι : Ω → ℕ → m) (xs x₀ : n → 𝕜) (q : ℕ)
       (ε : ℝ),
-      HasLaw ι (Measure.infinitePi fun _ : ℕ => samplingMeasure (rowNormSqDistribution A)) μ →
+      HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ →
       xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin → 0 < ε → ε ≤ ε₀ →
       C * (frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε)) ≤ q →
       ∫ ω, ‖WithLp.toLp 2 (xs - kaczmarzIterate A (ι ω) b x₀ q)‖ ^ 2 ∂μ ≤
@@ -975,7 +992,8 @@ theorem exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log
           specNorm (pinv A) ^ 2 * ‖WithLp.toLp 2 (b - A *ᵥ xs)‖ ^ 2 := by
   refine ⟨1, 1, one_pos, one_pos, ?_⟩
   intro Ω 𝕜 m n _ _ _ _ _ _ _ μ A b ι xs x₀ q ε hι hx₀ hε _ hq
-  exact integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_mul_log_le hι hx₀ hε
+  exact integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le hι hx₀
+    hε
     (by rwa [one_mul] at hq)
 
 end NLAlib

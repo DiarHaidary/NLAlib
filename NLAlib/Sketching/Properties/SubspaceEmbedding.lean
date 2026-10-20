@@ -45,6 +45,8 @@ $\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous. Design:
 * `NLAlib.HasOrthonormalCols.isSubspaceEmbedding_iff_specNorm_le`: the Gram-error form.
 * `NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq`: the
   $\sigma_{\min}$ form.
+* `NLAlib.IsSubspaceEmbedding.pos_right_of_injective`: a positive lower constant on a nonzero
+  range forces a positive upper constant.
 * `NLAlib.IsSubspaceEmbedding.of_range_le`, `NLAlib.IsSubspaceEmbedding.mul_right`,
   `NLAlib.IsSubspaceEmbedding.smul`, `NLAlib.IsSubspaceEmbedding.mul`: subspaces, scaling and
   composition.
@@ -269,6 +271,25 @@ theorem IsSubspaceInjection.mono (h : IsSubspaceInjection S U a) (ha : a' ≤ a)
 theorem IsSubspaceEmbedding.mono (h : IsSubspaceEmbedding S U a b) (ha : a' ≤ a) (hb : b ≤ b') :
     IsSubspaceEmbedding S U a' b' := by
   exact ⟨h.lower.mono ha, h.upper.trans (smul_gram_le_smul_gram U hb)⟩
+
+/-- **The upper constant of an embedding is positive**: if $\mathbf{S}$ is a subspace embedding
+of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range),
+$\mathbf{A}$ has full column rank and at least one column, then $0 < b$. -/
+theorem IsSubspaceEmbedding.pos_right_of_injective [Fintype q] [Nonempty q] {A : Matrix n q 𝕜}
+    (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hA : Function.Injective A.mulVec) : 0 < b := by
+  classical
+  obtain ⟨i⟩ := ‹Nonempty q›
+  have hv : A *ᵥ Pi.single i (1 : 𝕜) ≠ 0 := by
+    intro h0
+    have h1 : Pi.single i (1 : 𝕜) = 0 := hA (by rw [h0, Matrix.mulVec_zero])
+    simpa using congrFun h1 i
+  have hpos : 0 < ‖WithLp.toLp 2 (A *ᵥ Pi.single i (1 : 𝕜))‖ ^ 2 :=
+    pow_pos (norm_pos_iff.mpr (by simpa using hv)) 2
+  obtain ⟨h1, h2⟩ :=
+    isSubspaceEmbedding_iff_forall_mem_range.mp h _ ⟨Pi.single i (1 : 𝕜), rfl⟩
+  simp only [Matrix.mulVecLin_apply] at h1 h2
+  nlinarith
 
 /-- A subspace injection for $\operatorname{range}\mathbf{U}$ is one for every subspace
 $\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/

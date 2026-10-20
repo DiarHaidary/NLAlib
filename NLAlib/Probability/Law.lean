@@ -22,11 +22,16 @@ the nested product law `Measure.pi fun i => Measure.pi fun j => ν i j`. This fi
 hypotheses apart into independence and marginals, and back, and transports integrability and
 `MemLp` along a law.
 
+## Main definitions
+
+* `NLAlib.iidSequence`: the law of an i.i.d. sequence, the product measure
+  `Measure.infinitePi fun _ : ℕ => ν`.
+
 ## Main results
 
 * `NLAlib.hasLaw_pi_iff`: a product law is independence plus marginals.
-* `NLAlib.hasLaw_infinitePi_iff`: the same for a countable family, the i.i.d.-sequence hypothesis
-  `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ`.
+* `NLAlib.hasLaw_infinitePi_iff`: the same for a countable family, which unfolds the
+  i.i.d.-sequence hypothesis `HasLaw ξ (NLAlib.iidSequence ν) μ`.
 * `ProbabilityTheory.HasLaw.eval`, `ProbabilityTheory.HasLaw.iIndepFun_eval`: its two halves.
 * `NLAlib.hasLaw_pi_pi_iff`: the same for the entries of a random matrix, indexed by the product
   type `m × n`.
@@ -98,6 +103,19 @@ theorem hasLaw_infinitePi_iff [IsProbabilityMeasure μ] [∀ i, IsProbabilityMea
   · exact aemeasurable_pi_lambda _ fun i => (h.2 i).aemeasurable
 
 end InfinitePi
+
+/-- The **law of an i.i.d. sequence** with marginal $\nu$: the product measure
+$\nu^{\otimes \mathbb{N}}$ on sequences, Mathlib's `Measure.infinitePi fun _ : ℕ => ν`. The
+hypothesis `HasLaw ξ (NLAlib.iidSequence ν) μ` for
+$\xi : \Omega \to (\mathbb{N} \to \beta)$ says that $\xi_0, \xi_1, \ldots$ are independent,
+each with law $\nu$ (`NLAlib.hasLaw_infinitePi_iff`); a function of the first $q$ terms is
+`DependsOn F (Set.Iio q)`, and conditioning on the past is
+`ProbabilityTheory.HasLaw.integral_comp_eq_integral_integral_of_dependsOn`. An abbreviation, so
+that the `Measure.infinitePi` API applies unchanged. Junk value: the zero measure unless $\nu$ is
+a probability measure. -/
+noncomputable abbrev iidSequence {β : Type*} [MeasurableSpace β] (ν : Measure β) :
+    Measure (ℕ → β) :=
+  Measure.infinitePi fun _ : ℕ => ν
 
 section Matrix
 

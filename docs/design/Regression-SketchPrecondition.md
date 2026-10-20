@@ -1137,3 +1137,9 @@ Changes against the note, each forced by a rule that landed after approval or by
   "Regression with …". `docs/PORT_KRYLOV.md` D12 has the dated amendment for `Richardson.lean`.
   CONTRIBUTING §5.3 has the rows of D2.
 * **Not done** (unchanged scope): Rates rows; no `exists_forall_` form beyond the four of §5.3.
+* **Placement (P10), maintainer decision 2026-10-20.** `IsSubspaceEmbedding.pos_right_of_injective`
+  is about the embedding alone, so it moved from `Regression/Embedding.lean` to
+  `Sketching/Properties/SubspaceEmbedding.lean`, with its name and namespace. The i.i.d. law of
+  the sibling note is now named `NLAlib.iidSequence` (`docs/design/Regression-Kaczmarz.md`,
+  "Changes during the skeleton"); nothing in this note's files takes it.
+

@@ -1081,3 +1081,23 @@ declaration of §§3–5 and §7 is stated with its final docstring. Changes aga
   question for the maintainer.
 * **Files.** As §7; the new topic directory `NLAlib/Solvers` has its generated `RULES.md`.
   CONTRIBUTING §5.3 has the four rows of §7.
+
+**Maintainer decision (2026-10-20): a named i.i.d. law (N9).** The pending N9 question above is
+settled. The law of an i.i.d. sequence is the named abbreviation
+`NLAlib.iidSequence ν := Measure.infinitePi fun _ : ℕ => ν` in `Probability/Law.lean`, beside
+`hasLaw_infinitePi_iff`; every i.i.d. hypothesis is `HasLaw ξ (iidSequence ν) μ`, and the theorems
+taking it carry `_of_hasLaw_iidSequence` (CONTRIBUTING §5.3 row "i.i.d. sequence"). Renames, never
+released, so no rename map: in `Solvers/SketchAndProject.lean`
+`integral_norm_sub_sketchAndProjectIterate_succ_sq_of_hasLaw_iidSequence`,
+`integral_sub_sketchAndProjectIterate_of_hasLaw_iidSequence`,
+`integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence`,
+`integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le` and
+`exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence_of_log_div_le`;
+in `Solvers/Kaczmarz.lean` the same suffix on every `integral_` statement with an i.i.d. row
+sequence and on the two `exists_forall_` forms. The Kaczmarz theorem with any row probabilities,
+formerly `…_sq_le_of_hasLaw_samplingMeasure`, would collide with the squared-row-norm default
+`integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence`; N9 names the hypothesis that
+tells it apart, the Loewner bound:
+`integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_smul_rangeProjector_le`. The
+`scripts/names_allow.toml` entry for the inconsistent asymptotic form follows the rename.
+

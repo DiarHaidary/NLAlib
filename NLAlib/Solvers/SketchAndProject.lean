@@ -26,7 +26,7 @@ sketch-and-project and coordinate methods are others.
 
 Every step moves the iterate within the row space of $\mathbf{A}$ and, for a consistent system,
 never increases the error. With independent sketches drawn from a law $\nu$, written as the
-i.i.d.-sequence hypothesis `HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ`, the expected
+i.i.d.-sequence hypothesis `HasLaw S (iidSequence ν) μ`, the expected
 squared error contracts by the expected projector
 $\mathbb{E}_{\nu}[(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{A}]$ (Gower and Richtárik's
 $\mathbb{E}[\mathbf{Z}]$ in the Euclidean metric), and its least eigenvalue on the row space of
@@ -47,10 +47,11 @@ Design: `docs/design/Regression-Kaczmarz.md`.
 * `NLAlib.norm_sub_sketchAndProject_sq`: Pythagoras for one step.
 * `NLAlib.sketchAndProjectIterate_sub_mem_range`, `NLAlib.norm_sub_sketchAndProjectIterate_le`:
   row-space invariance and monotonicity.
-* `NLAlib.integral_sub_sketchAndProjectIterate`: the mean error.
-* `NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le`: linear convergence in expectation.
-* `NLAlib.exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_log_div_le`: its
-  asymptotic iteration count.
+* `NLAlib.integral_sub_sketchAndProjectIterate_of_hasLaw_iidSequence`: the mean error.
+* `NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence`: linear
+  convergence in expectation.
+* `NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le`:
+  the iteration count, with its asymptotic form.
 -/
 
 @[expose] public section
@@ -307,7 +308,7 @@ omit [DecidableEq n] in
 /-- A bounded continuous function of the iterate is integrable. -/
 private lemma integrable_comp_sketchAndProjectIterate {E : Type*} [NormedAddCommGroup E]
     {ν : Measure (Matrix k m 𝕜)} [IsProbabilityMeasure ν] {S : Ω → ℕ → Matrix k m 𝕜}
-    (hS : HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ) (A : Matrix m n 𝕜) (b : m → 𝕜)
+    (hS : HasLaw S (iidSequence ν) μ) (A : Matrix m n 𝕜) (b : m → 𝕜)
     (x₀ : n → 𝕜) (q : ℕ) {f : (n → 𝕜) → E} (hf : Continuous f) {R : ℝ}
     (hR : ∀ T : ℕ → Matrix k m 𝕜, ‖f (sketchAndProjectIterate A T b x₀ q)‖ ≤ R) :
     Integrable (fun ω => f (sketchAndProjectIterate A (S ω) b x₀ q)) μ := by
@@ -320,7 +321,7 @@ omit [DecidableEq n] in
 /-- Conditioning on the past for the sketch-and-project iterate. -/
 private lemma integral_comp_sketchAndProjectIterate {E : Type*} [NormedAddCommGroup E]
     [NormedSpace ℝ E] {ν : Measure (Matrix k m 𝕜)} [IsProbabilityMeasure ν]
-    {S : Ω → ℕ → Matrix k m 𝕜} (hS : HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ)
+    {S : Ω → ℕ → Matrix k m 𝕜} (hS : HasLaw S (iidSequence ν) μ)
     (A : Matrix m n 𝕜) (b : m → 𝕜) (x₀ : n → 𝕜) (q : ℕ) {f : (n → 𝕜) × Matrix k m 𝕜 → E}
     (hf : AEStronglyMeasurable f
       ((μ.map fun ω => sketchAndProjectIterate A (S ω) b x₀ q).prod ν))
@@ -407,9 +408,9 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathbf{x}_{q+1}\|^2 = \mathbb{E}\|\mathbf{x}_\
 \mathbf{x}_q\|^2 - \mathbb{E}\operatorname{Re}\langle \mathbf{x}_\star - \mathbf{x}_q,
 \mathbb{E}_{\nu}[\mathbf{Z}](\mathbf{x}_\star - \mathbf{x}_q)\rangle\,.$$
 [GowerRichtarik2015, proof of Theorem 4.6]. -/
-theorem integral_norm_sub_sketchAndProjectIterate_succ_sq
+theorem integral_norm_sub_sketchAndProjectIterate_succ_sq_of_hasLaw_iidSequence
     {ν : Measure (Matrix k m 𝕜)} [IsProbabilityMeasure ν] {S : Ω → ℕ → Matrix k m 𝕜}
-    (hS : HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
+    (hS : HasLaw S (iidSequence ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - sketchAndProjectIterate A (S ω) b x₀ (q + 1))‖ ^ 2 ∂μ =
       ∫ ω, ‖WithLp.toLp 2 (xs - sketchAndProjectIterate A (S ω) b x₀ q)‖ ^ 2 ∂μ -
@@ -454,9 +455,9 @@ $$\mathbf{x}_\star - \mathbb{E}[\mathbf{x}_q] = (\mathbf{I} - \mathbb{E}_{\nu}[\
 (\mathbf{x}_\star - \mathbf{x}_0)\,,\qquad
 \mathbf{Z} = (\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{A}\,,\ \mathbf{S} \sim \nu\,.$$
 [GowerRichtarik2015, Theorem 4.4, (4.6)], there with a metric $\mathbf{B}$. -/
-theorem integral_sub_sketchAndProjectIterate
+theorem integral_sub_sketchAndProjectIterate_of_hasLaw_iidSequence
     {ν : Measure (Matrix k m 𝕜)} [IsProbabilityMeasure ν] {S : Ω → ℕ → Matrix k m 𝕜}
-    (hS : HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
+    (hS : HasLaw S (iidSequence ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
     {xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) (q : ℕ) :
     ∫ ω, (xs - sketchAndProjectIterate A (S ω) b x₀ q) ∂μ =
       (1 - ∫ T, rangeProjector (T * A)ᴴ ∂ν) ^ q *ᵥ (xs - x₀) := by
@@ -515,11 +516,11 @@ column rank) and $\lambda = \lambda_{\min}(\mathbb{E}[\mathbf{Z}])$, with a metr
 here any rank, any law and $\mathbf{B} = \mathbf{I}$. Since $\nu$ is a probability measure and
 $\mathbf{Z} \preceq \mathbf{P}_{\mathbf{A}^{\mathsf{H}}}$, $\lambda \le 1$ whenever
 $\mathbf{A} \ne \mathbf{0}$. Iteration count:
-`NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_log_div_le`.
+`NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le`.
 Result: sketch-and-project -/
-theorem integral_norm_sub_sketchAndProjectIterate_sq_le
+theorem integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence
     {ν : Measure (Matrix k m 𝕜)} [IsProbabilityMeasure ν] {S : Ω → ℕ → Matrix k m 𝕜}
-    (hS : HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
+    (hS : HasLaw S (iidSequence ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
     {xs x₀ : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin)
     {lam : ℝ} (hlam : lam • rangeProjector Aᴴ ≤ ∫ T, rangeProjector (T * A)ᴴ ∂ν) (q : ℕ) :
     ∫ ω, ‖WithLp.toLp 2 (xs - sketchAndProjectIterate A (S ω) b x₀ q)‖ ^ 2 ∂μ ≤
@@ -551,7 +552,7 @@ theorem integral_norm_sub_sketchAndProjectIterate_sq_le
     simp only [sketchAndProjectIterate_zero, pow_zero, one_mul, integral_const, probReal_univ,
       one_smul, le_refl]
   | succ q ih =>
-    rw [integral_norm_sub_sketchAndProjectIterate_succ_sq hS hxs x₀ q]
+    rw [integral_norm_sub_sketchAndProjectIterate_succ_sq_of_hasLaw_iidSequence hS hxs x₀ q]
     have hIq := integrable_comp_sketchAndProjectIterate hS A b x₀ q hcq fun T => by
       rw [re_quadForm_integral_rangeProjector, Real.norm_eq_abs,
         abs_of_nonneg (integral_nonneg fun _ => sq_nonneg _)]
@@ -581,17 +582,19 @@ $q \ge \lambda^{-1}\log(1/\varepsilon)$,
 $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{sketchAndProjectIterate}(\mathbf{A}, \mathbf{S},
 \mathbf{b}, \mathbf{x}_0, q)\|^2 \le \varepsilon\|\mathbf{x}_\star - \mathbf{x}_0\|^2\,.$$
 Asymptotic form:
-`NLAlib.exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_log_div_le`. -/
-theorem integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_log_div_le
+`exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence_of_log_div_le`.
+-/
+theorem integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le
     {ν : Measure (Matrix k m 𝕜)} [IsProbabilityMeasure ν] {S : Ω → ℕ → Matrix k m 𝕜}
-    (hS : HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
+    (hS : HasLaw S (iidSequence ν) μ) {A : Matrix m n 𝕜} {b : m → 𝕜}
     {xs x₀ : n → 𝕜} (hxs : A *ᵥ xs = b) (hx₀ : xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin)
     {lam : ℝ} (hlam0 : 0 < lam)
     (hlam : lam • rangeProjector Aᴴ ≤ ∫ T, rangeProjector (T * A)ᴴ ∂ν)
     {ε : ℝ} (hε : 0 < ε) {q : ℕ} (hq : Real.log (1 / ε) / lam ≤ q) :
     ∫ ω, ‖WithLp.toLp 2 (xs - sketchAndProjectIterate A (S ω) b x₀ q)‖ ^ 2 ∂μ ≤
       ε * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 := by
-  refine (integral_norm_sub_sketchAndProjectIterate_sq_le hS hxs hx₀ hlam q).trans ?_
+  refine (integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence hS hxs hx₀ hlam
+    q).trans ?_
   rcases eq_or_ne (xs - x₀) 0 with h0 | h0
   · simp [h0]
   have hlam1 := le_one_of_smul_rangeProjector_le hlam hx₀ h0
@@ -608,6 +611,8 @@ theorem integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_log_div_le
 
 end Random
 
+-- The declaration name with its indentation exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **$O(\lambda^{-1}\log(1/\varepsilon))$ iterations suffice for sketch-and-project**: there are
 absolute constants $C, \varepsilon_0 > 0$ such that for a consistent system
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, a start with $\mathbf{x}_\star - \mathbf{x}_0$ in the
@@ -619,16 +624,19 @@ $0 < \varepsilon \le \varepsilon_0$ and $q \ge C\lambda^{-1}\log(1/\varepsilon)$
 $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{sketchAndProjectIterate}(\mathbf{A}, \mathbf{S},
 \mathbf{b}, \mathbf{x}_0, q)\|^2 \le \varepsilon\|\mathbf{x}_\star - \mathbf{x}_0\|^2\,.$$
 The constants come before every dimension and the law. Proved from
-`NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_log_div_le` with $C = 1$ and
+`NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le`
+with $C = 1$ and
 $\varepsilon_0 = 1$. [GowerRichtarik2015, Theorem 4.6].
-Asymptotic: NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_log_div_le
+Asymptotic:
+NLAlib.integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le
 Result: sketch-and-project -/
-theorem exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_log_div_le :
+theorem
+    exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence_of_log_div_le :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω 𝕜 k m n : Type} [MeasurableSpace Ω] [RCLike 𝕜] [Fintype k]
       [Fintype m] [Fintype n] [DecidableEq n] (μ : Measure Ω) (ν : Measure (Matrix k m 𝕜))
       [IsProbabilityMeasure ν] (S : Ω → ℕ → Matrix k m 𝕜) (A : Matrix m n 𝕜) (b : m → 𝕜)
       (xs x₀ : n → 𝕜) (lam : ℝ) (q : ℕ) (ε : ℝ),
-      HasLaw S (Measure.infinitePi fun _ : ℕ => ν) μ → A *ᵥ xs = b →
+      HasLaw S (iidSequence ν) μ → A *ᵥ xs = b →
       xs - x₀ ∈ LinearMap.range Aᴴ.mulVecLin → 0 < lam →
       lam • rangeProjector Aᴴ ≤ ∫ T, rangeProjector (T * A)ᴴ ∂ν → 0 < ε → ε ≤ ε₀ →
       C * (Real.log (1 / ε) / lam) ≤ q →
@@ -636,7 +644,7 @@ theorem exists_forall_integral_norm_sub_sketchAndProjectIterate_sq_le_of_log_div
         ε * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 := by
   refine ⟨1, 1, one_pos, one_pos, ?_⟩
   intro Ω 𝕜 k m n _ _ _ _ _ _ μ ν _ S A b xs x₀ lam q ε hS hxs hx₀ hlam0 hlam hε _ hq
-  exact integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_log_div_le hS hxs hx₀ hlam0 hlam
-    hε (by rwa [one_mul] at hq)
+  exact integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequence_of_log_div_le
+    hS hxs hx₀ hlam0 hlam hε (by rwa [one_mul] at hq)
 
 end NLAlib

@@ -204,25 +204,6 @@ theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR [LinearO
   rw [hQ]
   exact hQR.hasOrthonormalCols
 
-/-- **The upper constant of an embedding is positive**: if $\mathbf{S}$ is a subspace embedding
-of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
-$a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range),
-$\mathbf{A}$ has full column rank and at least one column, then $0 < b$. -/
-theorem IsSubspaceEmbedding.pos_right_of_injective [Nonempty q] (h : IsSubspaceEmbedding S A a b)
-    (ha : 0 < a) (hA : Function.Injective A.mulVec) : 0 < b := by
-  classical
-  obtain ⟨i⟩ := ‹Nonempty q›
-  have hv : A *ᵥ Pi.single i (1 : 𝕜) ≠ 0 := by
-    intro h0
-    have h1 : Pi.single i (1 : 𝕜) = 0 := hA (by rw [h0, Matrix.mulVec_zero])
-    simpa using congrFun h1 i
-  have hpos : 0 < ‖WithLp.toLp 2 (A *ᵥ Pi.single i (1 : 𝕜))‖ ^ 2 :=
-    pow_pos (norm_pos_iff.mpr (by simpa using hv)) 2
-  obtain ⟨h1, h2⟩ :=
-    isSubspaceEmbedding_iff_forall_mem_range.mp h _ ⟨Pi.single i (1 : 𝕜), rfl⟩
-  simp only [Matrix.mulVecLin_apply] at h1 h2
-  nlinarith
-
 /-- **Sketch-and-precondition, spectral form**: if $\mathbf{S}$ is a subspace embedding of
 $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
 $a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range) and
