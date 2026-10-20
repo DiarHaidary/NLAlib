@@ -477,6 +477,15 @@ an error or a comparison. Reviewers check those.
   6. A dominated result (the new bound is at least as good in every regime) is reproved from the
      new one and keeps its name when consumers cite its simpler form; otherwise it becomes
      `@[deprecated]` and is removed after a release.
+  7. A bound is stated in its readable form when a sharper form differs from it only by a factor
+     that is at most an absolute constant and tends to 1 as the bound becomes small (maintainer,
+     2026-10-20) [B6]. The typical case is a Chebyshev value: the proof bounds
+     $1/T_q(\cdot)^2 = \operatorname{sech}^2(x) = 4e^{-2x}/(1 + e^{-2x})^2$, and the statement
+     gives $4e^{-2x}$, as the sources print it (the CG bound $4\rho^{2q}$, the gapped block Krylov
+     factor). The docstring gives the sharp form in one sentence and names the lost factor
+     ($(1 + e^{-2x})^2 \le 4$). A separate sharp theorem is added only when another proof in the
+     library uses it; an exact (equality) result, such as the CG worst case, is a result of its
+     own and stays.
 - Spectral statements never quantify over `hA.eigenvectorBasis i` [T8]; they take an eigenvector `u`
   with `A *ᵥ u = c • u` and `‖WithLp.toLp 2 u‖ = 1`, an invariance equation `A * U = U * M` with
   `HasOrthonormalCols U`, or speak of `eigenvalue A k`.

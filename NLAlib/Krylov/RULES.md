@@ -11,6 +11,7 @@ and `docs/rules/DIGEST.md`.
 ## This topic
 
 - **V3** A singular-value ratio is `singularGapRatio`, never spelled out. Fix: Use `singularGapRatio` (a bridge lemma relating the two is allowlisted). [§5.3]
+- **B6** (review) State the readable bound when the sharp form gains only a factor that is bounded and tends to 1 as the bound becomes small (a Chebyshev value, sech², $(1 + \rho^{2q})^2$). Fix: State the readable form; give the sharp form and the lost factor in one docstring sentence. [§5.2] rule 7
 - **M2** A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`. Fix: Write `\mathsf{name}(…)`, never the formula it unfolds to. [§6] item 5
 - **M3** (warning) A theorem about an algorithm writes its output `\mathsf{name}(…)`. Fix: Write `\mathsf{name}(…)`. [§6] item 5
 - **M5** (warning) An algorithm definition shows its formula as `\mathsf{name}(…) := …`. Fix: Show its formula as `\mathsf{name}(…) := …`. [§6] item 5

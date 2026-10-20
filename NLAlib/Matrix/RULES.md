@@ -81,6 +81,7 @@ and `docs/rules/DIGEST.md`.
 - **B2** No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form. [§5.2] rule 3
 - **B3** An asymptotic form says "$O(\ldots)$ suffices" in its docstring. [§5.2] rule 3
 - **B4** An asymptotic form puts its constants first and fixes index types to `Type`. [§5.2] rule 3
+- **B6** (review) State the readable bound when the sharp form gains only a factor that is bounded and tends to 1 as the bound becomes small (a Chebyshev value, sech², $(1 + \rho^{2q})^2$). [§5.2] rule 7
 
 ### Docstrings
 

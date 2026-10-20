@@ -83,6 +83,7 @@ and `docs/rules/DIGEST.md`.
 ### Bounds
 
 - **B1** A named bound (`…Constant`, `…Bound`, `…Tail`, `…Dim`, `…Factor`) is in docs/constants.toml. [§5.2] rule 2
+- **B6** (review) State the readable bound when the sharp form gains only a factor that is bounded and tends to 1 as the bound becomes small (a Chebyshev value, sech², $(1 + \rho^{2q})^2$). [§5.2] rule 7
 
 ### Docstrings
 
