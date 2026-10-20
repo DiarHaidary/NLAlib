@@ -26,8 +26,8 @@ forms of the block Krylov bounds). Upstream candidates for
 * `Real.div_two_le_log_one_add`: $\varepsilon/2 \le \log(1 + \varepsilon)$ for
   $0 < \varepsilon \le 1$.
 * `Real.one_half_le_log_div`, `Real.le_add_mul_of_le_add_mul_exp`,
-  `Real.one_le_and_log_div_le_sub_one_mul`, `Real.two_le_and_exp_log_four_mul_sq_div_le_one_add`:
-  depth thresholds.
+  `Real.one_le_and_log_div_le_sub_one_mul`, `Real.two_le_and_exp_log_four_mul_sq_div_le_one_add`,
+  `Real.mul_pow_le_of_mul_log_le`: depth and iteration thresholds.
 -/
 
 @[expose] public section
@@ -178,5 +178,21 @@ theorem two_le_and_exp_log_four_mul_sq_div_le_one_add {N ε : ℝ} {q : ℕ} (hN
   calc Real.exp (Real.log (4 * R) ^ 2 / (16 * ((q : ℝ) - 1) ^ 2))
       ≤ Real.exp (Real.log (1 + ε)) := Real.exp_le_exp.2 hratio
     _ = 1 + ε := Real.exp_log (by linarith)
+
+/-- The iteration threshold of a squared error contracting by $1/4$ per step: for
+$0 < \tau \le 1/2$ and $q \ge 4\log(1/\tau)$, $16 \cdot (1/2)^{2q+1} \le \tau$. -/
+theorem mul_pow_le_of_mul_log_le {τ : ℝ} (hτ : 0 < τ) (hτ1 : τ ≤ 1 / 2) {q : ℕ}
+    (hq : 4 * Real.log (1 / τ) ≤ q) : 16 * (1 / 2 : ℝ) ^ (2 * q + 1) ≤ τ := by
+  have hl2 : 1 / 2 ≤ Real.log 2 := by
+    have := Real.one_sub_inv_le_log_of_pos (by norm_num : (0 : ℝ) < 2)
+    norm_num at this ⊢
+    linarith
+  have hL : Real.log 2 ≤ Real.log (1 / τ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hτ]; linarith)
+  rw [← Real.log_le_log_iff (by positivity) hτ, Real.log_mul (by norm_num) (by positivity),
+    Real.log_pow, show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow, one_div, Real.log_inv]
+  rw [one_div, Real.log_inv] at hL hq
+  push_cast
+  nlinarith
 
 end Real

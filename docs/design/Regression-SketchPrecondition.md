@@ -1143,3 +1143,11 @@ Changes against the note, each forced by a rule that landed after approval or by
   the sibling note is now named `NLAlib.iidSequence` (`docs/design/Regression-Kaczmarz.md`,
   "Changes during the skeleton"); nothing in this note's files takes it.
 
+**Proofs (2026-10-20).** All statements proved, none changed. Additions: the tail
+`HasSubspaceEmbedding.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add`
+(`Regression/SketchAndPrecondition.lean`, the random form of
+`IsSubspaceEmbedding.norm_sub_mulVec_sketchAndPrecondition_sq_le_one_add_mul`, applied by the four
+family files) and the scalar threshold `Real.mul_pow_le_of_mul_log_le`
+(`ForMathlib/Analysis/SpecialFunctions/Log/Basic.lean`). The asymptotic forms take the constants
+their docstrings state.
+

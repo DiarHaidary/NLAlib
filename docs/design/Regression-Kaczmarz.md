@@ -1101,3 +1101,10 @@ tells it apart, the Loewner bound:
 `integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_smul_rangeProjector_le`. The
 `scripts/names_allow.toml` entry for the inconsistent asymptotic form follows the rename.
 
+**Proofs (2026-10-20).** All statements proved, none changed. Additions outside the two Solvers
+files: `EuclideanSpace.norm_le_norm_toLp` (`ForMathlib/Analysis/InnerProductSpace/PiL2.lean`) and
+`Matrix.integral_mulVec` (`ForMathlib/MeasureTheory/SpecificCodomains/Matrix.lean`, beside
+`Matrix.integral_mul_const`), the placement amendment that §7 anticipated for
+`Probability/MatrixIntegral.lean`: the statement has no NLAlib vocabulary, so it is ForMathlib's.
+$\mathbf{A} = \mathbf{0}$ goes through the zero law, as §4 planned.
+

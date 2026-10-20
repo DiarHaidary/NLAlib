@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Sketching.Gaussian.SubGaussian
 
@@ -73,7 +74,13 @@ theorem measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgauss
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card k : ℝ))⁻¹ • X ω) y
         (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  have := hind.isProbabilityMeasure
+  exact ((isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le hind
+    hsub hiso hε hεc hδ hk).hasSubspaceEmbedding
+      (U := Matrix.fromCols A (Matrix.replicateCol Unit y)) ((Matrix.rank_le_card_width _).trans_eq
+      (by rw [Fintype.card_sum, Fintype.card_unit]))
+    ).measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add hε hε1 hA
+      (hx₀.mono fun ω h => by rwa [Matrix.smul_mulVec]) hq
 
 /-- **Sub-Gaussian sketch-and-precondition from the sketch-and-solve solution**, the algorithm as
 run: for a random $\mathbf{X} \in \mathbb{R}^{k \times m}$ with independent rows, each isotropic
@@ -103,7 +110,8 @@ theorem
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card k : ℝ))⁻¹ • X ω) y
         (pinv ((√(Fintype.card k : ℝ))⁻¹ • X ω * A) *ᵥ ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ y))
         q)‖ ^ 2} ≤ δ := by
-  sorry
+  exact measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector hind hsub
+    hiso hA y (ae_of_all _ fun ω => isLeastSquaresSolution_pinv_mulVec _ _) hε hε1 hεc hδ hk hq
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -141,6 +149,33 @@ theorem
       μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
         ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card k : ℝ))⁻¹ • X ω) y
           (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  refine ⟨4608, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω k m n _ _ _ _ _ _ _ μ X c A y x₀ τ δ q hind hsub hiso hA hx₀ hτ hτ1 hδ hδ2 hk hq
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty m with hm | hm
+  · refine (measureReal_mono (s₂ := ∅) (fun ω hω => ?_) (by simp)).trans
+      (by rw [measureReal_empty]; exact hδ.le)
+    simp only [Set.mem_ofPred_eq, Subsingleton.elim ((1 - rangeProjector A) *ᵥ y) 0,
+      Subsingleton.elim (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card k : ℝ))⁻¹ • X ω) y
+        (x₀ ω) q) 0, WithLp.toLp_zero, norm_zero] at hω
+    simp at hω
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
+  refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector hind hsub
+    hiso hA y hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl (by linarith) hδ ?_
+    (Real.mul_pow_le_of_mul_log_le hτ hτ1 (by nlinarith))
+  refine (subgaussianEmbeddingDim_le _ _ _ hδ (by linarith)).trans (le_trans ?_ hk)
+  push_cast
+  rw [div_le_iff₀ (by norm_num)]
+  nlinarith [mul_le_mul_of_nonneg_left hl2 (sq_nonneg (c : ℝ)),
+    mul_nonneg (sq_nonneg (c : ℝ)) (Nat.cast_nonneg (α := ℝ) (Fintype.card n)),
+    mul_nonneg (sq_nonneg (c : ℝ)) hl1, sq_nonneg (c : ℝ)]
 
 end NLAlib

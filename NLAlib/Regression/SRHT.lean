@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Sketching.Structured.SRHT
 
@@ -76,7 +77,12 @@ theorem measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_srh
     {q : ℕ} (hq : 16 * ε ^ (2 * q + 1) ≤ τ) :
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
+  exact ((isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le hF hS _ hε
+    (by linarith) hδ hk).hasSubspaceEmbedding
+      (U := Matrix.fromCols A (Matrix.replicateCol Unit y)) ((Matrix.rank_le_card_width _).trans_eq
+      (by rw [Fintype.card_sum, Fintype.card_unit]))
+    ).measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add hε hε1 hA hx₀ hq
 
 /-- **SRHT sketch-and-precondition from the sketch-and-solve solution**, the algorithm as run:
 for a bounded orthonormal transform $\mathbf{F} \in \Bbbk^{m \times m}$ with coherence $\beta$, an
@@ -109,7 +115,8 @@ theorem measureReal_norm_sub_mulVec_sketchAndPrecondition_pinv_mulVec_sq_gt_le_o
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y
         (pinv (S ω * A) *ᵥ (S ω *ᵥ y)) q)‖ ^ 2} ≤ δ := by
-  sorry
+  exact measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_srht hF hS hA y
+    (ae_of_all _ fun ω => isLeastSquaresSolution_pinv_mulVec _ _) hε hε1 hδ hk hq
 
 /-- **SRHT sketch-and-precondition, asymptotic form**:
 $O(\beta(\lvert n\rvert + 1 + \log(\lvert m\rvert/\delta))\log((\lvert n\rvert + 1)/\delta))$
@@ -144,6 +151,56 @@ theorem exists_forall_measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le
       C * Real.log (1 / τ) ≤ q →
       μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
         ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  refine ⟨288, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω 𝕜 k m n _ _ _ _ _ _ _ μ S F β A y x₀ τ δ q hF hS hA hx₀ hτ hτ1 hδ hδ2 hk hq
+  rcases isEmpty_or_nonempty m with hm | hm
+  · refine (measureReal_mono (s₂ := ∅) (fun ω hω => ?_) (by simp)).trans
+      (by rw [measureReal_empty]; exact hδ.le)
+    simp only [Set.mem_ofPred_eq, Subsingleton.elim ((1 - rangeProjector A) *ᵥ y) 0,
+      Subsingleton.elim (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q) 0, WithLp.toLp_zero,
+      norm_zero] at hω
+    simp at hω
+  have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
+  refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_srht hF hS hA y hx₀
+    (by norm_num : (0 : ℝ) < 1 / 2) le_rfl hδ ?_
+    (Real.mul_pow_le_of_mul_log_le hτ hτ1 (by nlinarith))
+  refine (samplingEmbeddingDim_le _ _ _ _).trans (le_trans ?_ hk)
+  have hβ : 1 ≤ β := hF.one_le
+  have hd1 : (1 : ℝ) ≤ (Fintype.card n : ℝ) + 1 := by
+    linarith [Nat.cast_nonneg (α := ℝ) (Fintype.card n)]
+  have hN : (1 : ℝ) ≤ Fintype.card m := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card m / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have h2d : Real.log 2 ≤ Real.log (((Fintype.card n : ℝ) + 1) / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hlN : Real.log (Fintype.card m / (δ / 2)) = Real.log 2 + Real.log (Fintype.card m / δ) := by
+    rw [show (Fintype.card m : ℝ) / (δ / 2) = 2 * (Fintype.card m / δ) by ring,
+      Real.log_mul (by norm_num) (by positivity)]
+  have hR : srhtRowBound (Fintype.card m) (Fintype.card n + 1) (δ / 2) ≤
+      8 * ((Fintype.card n : ℝ) + 1 + Real.log (Fintype.card m / δ)) := by
+    have h := srhtRowBound_le (Fintype.card m) (Fintype.card n + 1) (δ / 2)
+    have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) (Fintype.card n + 1))
+    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card m / (δ / 2)))
+    push_cast at h ha
+    nlinarith [sq_nonneg (√((Fintype.card n : ℝ) + 1) -
+      √(2 * Real.log (Fintype.card m / (δ / 2))))]
+  have hl : Real.log (2 * ((Fintype.card n : ℝ) + 1) / (δ / 2)) =
+      2 * Real.log 2 + Real.log (((Fintype.card n : ℝ) + 1) / δ) := by
+    rw [show 2 * ((Fintype.card n : ℝ) + 1) / (δ / 2) = 2 * 2 * (((Fintype.card n : ℝ) + 1) / δ) by
+      ring, Real.log_mul (by norm_num) (by positivity), Real.log_mul (by norm_num) (by norm_num)]
+    ring
+  push_cast
+  rw [hl]
+  have hB : 0 ≤ β * (8 * ((Fintype.card n : ℝ) + 1 + Real.log (Fintype.card m / δ))) :=
+    mul_nonneg (by linarith) (by linarith)
+  calc 3 * (β * srhtRowBound (Fintype.card m) (Fintype.card n + 1) (δ / 2)) *
+        (2 * Real.log 2 + Real.log (((Fintype.card n : ℝ) + 1) / δ)) / (1 / 2) ^ 2
+      ≤ 3 * (β * (8 * ((Fintype.card n : ℝ) + 1 + Real.log (Fintype.card m / δ)))) *
+        (3 * Real.log (((Fintype.card n : ℝ) + 1) / δ)) / (1 / 2) ^ 2 := by
+        gcongr ?_ / _
+        exact mul_le_mul (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)])
+          (by linarith) (by linarith) (by positivity)
+    _ = _ := by ring
 
 end NLAlib

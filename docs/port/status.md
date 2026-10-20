@@ -2,6 +2,18 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Sketch-and-precondition and randomized Kaczmarz: proofs (2026-10-20)
+
+Every statement of the skeleton is proved; no `sorry` remains in the round's files, and all of
+them count as proved modules. No statement changed. Maintainer decisions of 2026-10-20 applied:
+the i.i.d. law is `NLAlib.iidSequence` with `_of_hasLaw_iidSequence` names (N9), and
+`IsSubspaceEmbedding.pos_right_of_injective` moved to `Sketching/Properties/SubspaceEmbedding.lean`
+(P10). Helpers added: `EuclideanSpace.norm_le_norm_toLp` (ForMathlib PiL2),
+`Matrix.integral_mulVec` (ForMathlib SpecificCodomains.Matrix), `Real.mul_pow_le_of_mul_log_le`
+(ForMathlib Log.Basic), and the tail
+`HasSubspaceEmbedding.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add`
+in `Regression/SketchAndPrecondition.lean`, which the four family files apply.
+
 ## Sketch-and-precondition and randomized Kaczmarz: skeleton (2026-10-20)
 
 Branch `regression/sketch-precondition` (worktree `nlalib-block`), rebased onto `rules/stage3`.

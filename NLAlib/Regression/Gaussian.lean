@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.Regression.Oblivious
 public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Sketching.Gaussian.Gaussian
@@ -197,7 +198,13 @@ theorem measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_gau
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card p : ℝ))⁻¹ • G ω) y
         (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  have : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  have hE := (isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le hG hε
+    (by linarith) hδ hp).hasSubspaceEmbedding
+      (U := Matrix.fromCols A (Matrix.replicateCol Unit y)) ((Matrix.rank_le_card_width _).trans_eq
+      (by rw [Fintype.card_sum, Fintype.card_unit]))
+  exact hE.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add hε hε1 hA
+    (hx₀.mono fun ω h => by rwa [Matrix.smul_mulVec]) hq
 
 /-- **Gaussian sketch-and-precondition from the sketch-and-solve solution**, the algorithm as
 run: for a standard Gaussian $\mathbf{G} \in \mathbb{R}^{p \times m}$ (independent standard
@@ -222,7 +229,8 @@ theorem
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card p : ℝ))⁻¹ • G ω) y
         (pinv ((√(Fintype.card p : ℝ))⁻¹ • G ω * A) *ᵥ ((√(Fintype.card p : ℝ))⁻¹ • G ω *ᵥ y))
         q)‖ ^ 2} ≤ δ := by
-  sorry
+  exact measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_gaussianMatrix hG hA y
+    (ae_of_all _ fun ω => isLeastSquaresSolution_pinv_mulVec _ _) hε hε1 hδ hp hq
 
 end SketchAndPrecondition
 
@@ -259,6 +267,21 @@ theorem
       μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
         ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card p : ℝ))⁻¹ • G ω) y
           (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  refine ⟨288, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω p m n _ _ _ _ _ _ μ G A y x₀ τ δ q hG hA hx₀ hτ hτ1 hδ hδ2 hp hq
+  have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
+    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
+  refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_gaussianMatrix hG hA y
+    hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl hδ ?_
+    (Real.mul_pow_le_of_mul_log_le hτ hτ1 (by nlinarith))
+  refine (gaussianEmbeddingDim_le _ _ hδ (by linarith)).trans (le_trans ?_ hp)
+  push_cast
+  rw [div_le_iff₀ (by norm_num)]
+  nlinarith [Nat.cast_nonneg (α := ℝ) (Fintype.card n)]
 
 end NLAlib

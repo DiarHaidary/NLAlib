@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.Regression.Oblivious
 public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Sketching.Sparse.CountSketchEmbedding
@@ -201,7 +202,12 @@ theorem measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_cou
     {q : ℕ} (hq : 16 * ε ^ (2 * q + 1) ≤ τ) :
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
+  exact ((isObliviousSubspaceEmbedding_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hS _ hε
+    hδ hp).hasSubspaceEmbedding
+      (U := Matrix.fromCols A (Matrix.replicateCol Unit y)) ((Matrix.rank_le_card_width _).trans_eq
+      (by rw [Fintype.card_sum, Fintype.card_unit]))
+    ).measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_one_sub_one_add hε hε1 hA hx₀ hq
 
 /-- **CountSketch sketch-and-precondition from the sketch-and-solve solution**, the algorithm as
 run: for a CountSketch $\mathbf{S}$ with $p$ rows (each column has one nonzero entry, an
@@ -225,7 +231,8 @@ theorem
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y
         (pinv (S ω * A) *ᵥ (S ω *ᵥ y)) q)‖ ^ 2} ≤ δ := by
-  sorry
+  exact measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_countSketch hS hA y
+    (ae_of_all _ fun ω => isLeastSquaresSolution_pinv_mulVec _ _) hε hε1 hδ hp hq
 
 end SketchAndPrecondition
 
@@ -259,6 +266,18 @@ theorem
       C * Real.log (1 / τ) ≤ q →
       μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
         ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A (S ω) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  refine ⟨8, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω 𝕜 p m n _ _ _ _ _ _ _ _ μ S A y x₀ τ δ q hS hA hx₀ hτ hτ1 hδ hp hq
+  have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
+  refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_countSketch hS hA y
+    hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl hδ ?_
+    (Real.mul_pow_le_of_mul_log_le hτ hτ1 (by nlinarith))
+  refine (countSketchEmbeddingDim_le _ _ _).trans (le_trans ?_ hp)
+  have hd : (1 : ℝ) ≤ (Fintype.card n : ℝ) + 1 := by
+    linarith [Nat.cast_nonneg (α := ℝ) (Fintype.card n)]
+  push_cast
+  rw [div_le_iff₀ (by positivity), show (8 : ℝ) * (((Fintype.card n : ℝ) + 1) ^ 2 / δ) *
+    (δ * (1 / 2) ^ 2) = 2 * ((Fintype.card n : ℝ) + 1) ^ 2 by field_simp; ring]
+  nlinarith
 
 end NLAlib
