@@ -207,34 +207,37 @@ namespace SymmetricGauge
 
 /-- **The tail of the randomized SVD, Gram form, rotation-invariant test matrices**: for a test
 matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
-$d = \ell - k + 1$, every unitarily invariant norm, any $u$ and $t > 0$,
+$d = \ell - k + 1$, every unitarily invariant norm, $s \ge 0$ and $t > 0$,
 $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
-\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
-\|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
+\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{tk}{d}\,
+\bigl(\|\mathbf{E}\|_{\mathsf{F}} + s\,\sigma_k(\mathbf{A})\bigr)^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
 matrix (in this namespace,
 `measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and Schatten norms
-$p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$, which the library's is below.
+$p \ge 2$, with the noise term $(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ and the failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at $s = \sqrt{u} - 1$; the
+library's second failure term is smaller.
 Result: randomized-svd-tail -/
 theorem measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant
     (Φ : SymmetricGauge) (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
     μ.real {ω | Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
-        Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2 <
+        Φ (Finsupp.single 0 1) * (t * k / d) *
+          (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
         Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
   have hg : Measurable fun P : Matrix m m ℝ => Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) :=
     Φ.measurable_matrixNorm.comp ((Measurable.matrix_conjTranspose continuous_star.measurable
       (measurable_sub_mul A)).matrix_mul (measurable_sub_mul A))
   refine (measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => Φ.matrixNorm ((A - rsvd A Ω)ᴴ * (A - rsvd A Ω))) hg (fun _ => rfl) _).trans_le ?_
   exact measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix Φ
-    A HasLaw.id hd u ht
+    A HasLaw.id hd hs ht
 
 end SymmetricGauge
 
@@ -431,33 +434,37 @@ namespace SymmetricGauge
 
 /-- **The tail of randomized Nyström, every unitarily invariant norm, rotation-invariant test
 matrices**: for positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left
-unitarily invariant law and full column rank almost surely, $d = \ell - k + 1$, any $u$ and
+unitarily invariant law and full column rank almost surely, $d = \ell - k + 1$, $s \ge 0$ and
 $t > 0$,
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
-\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
-\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{tk}{d}\,
+\bigl(\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*^{1/2} +
+s\,\sigma_k(\mathbf{H})^{1/2}\bigr)^2$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
 matrix (in this namespace,
 `measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Gaussian test matrices and Schatten norms,
-with a larger second failure term.
+with the noise term $(utk/d)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$ and the failure
+probability $e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at
+$s = \sqrt{u} - 1$.
 Result: randomized-nystrom-tail -/
 theorem measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant
     (Φ : SymmetricGauge) {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | Φ.matrixNorm (H - truncatedSVD H k) + Φ (Finsupp.single 0 1) * (u * t * k / d) *
-        nuclearNorm (H - truncatedSVD H k) <
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | Φ.matrixNorm (H - truncatedSVD H k) + Φ (Finsupp.single 0 1) * (t * k / d) *
+        (√(nuclearNorm (H - truncatedSVD H k)) + s * √(singularValues H k)) ^ 2 <
         Φ.matrixNorm (H - nystrom H (X ω))} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
   obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
   simp only [Matrix.star_eq_conjTranspose, conjTranspose_mul_self_sub_nystrom,
     Φ.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD,
-    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD, singularValues_conjTranspose_mul_self]
+  rw [Real.sqrt_sq (frobNorm_nonneg _), Real.sqrt_sq (singularValues_nonneg _ _)]
   exact
     Φ.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant
-      F hX hXr hd u ht
+      F hX hXr hd hs ht
 
 end SymmetricGauge
 

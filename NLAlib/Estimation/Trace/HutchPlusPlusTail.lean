@@ -238,9 +238,12 @@ through the sub-Gaussian range finder
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector` at $c = 1$, with the
 factor $11$ and the size $1024(r \log 9 + \log(4/\delta))$. This is weaker than the Gaussian
 range-finder tail `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`
-(`NLAlib/LowRank/Gaussian/RangeFinderTail.lean`), whose factor $1 + utr/d$ is reached at the size
-$\lvert s \rvert = r + d - 1$; the generic `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le`
-takes that tail as its range-finder hypothesis directly.
+(`NLAlib/LowRank/Gaussian/RangeFinderTail.lean`), whose factor $1 + (tr/d)(1 + u)^2$ at
+deviation $u$ (since
+$\sigma_r(\mathbf{A}) \le \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}$) is
+reached at the size $\lvert s \rvert = r + d - 1$; the generic
+`NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le` takes that tail as its range-finder hypothesis
+directly.
 [MeyerMuscoMuscoWoodruff2021, Theorem 4 and §5, Algorithm 3]; there with unspecified constants.
 Result: hutchpp-tail -/
 theorem measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix [Nonempty s]

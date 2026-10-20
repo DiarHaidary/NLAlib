@@ -1,0 +1,25 @@
+{
+ "date": "2026-10-20",
+ "note": "LowRank constants round (2026-10-20, maintainer approval of the round; CONTRIBUTING §5.2 rules 2, 6 and 7). Before v0.1: no deprecated aliases. statementChanged lists the declarations (new names) whose statements changed. Item 1: the Gaussian (RSVD1)/(NysSVD1) tails measure the deviation with the Lipschitz constant ‖S‖₂‖G₁⁺‖₂ instead of ‖S‖_F‖G₁⁺‖_F and keep the concentration exponent: the noise term (utk/d)‖E‖_F² with failure e^{-(u-2)/4} becomes (tk/d)(‖E‖_F + s σ_k)² with failure e^{-s²/2}, s ≥ 0 (Tropp–Webber's printed form is the case s = √u − 1, stated in each docstring).",
+ "renames": [],
+ "statementChanged": [
+  "NLAlib.measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_sq_gt_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix",
+  "NLAlib.measureReal_specNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_haarFrame",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "NLAlib.SymmetricGauge.measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant",
+  "Matrix.PosSemidef.measureReal_schattenNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_nuclearNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_specNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_nuclearNorm_sub_truncatedSVD_nystrom_gt_le_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_specNorm_sub_gt_le_of_isBestRankApprox_nystrom_of_hasLaw_gaussianMatrix",
+  "Matrix.PosSemidef.measureReal_specNorm_sub_truncatedSVD_nystrom_gt_le_of_hasLaw_gaussianMatrix"
+ ]
+}
