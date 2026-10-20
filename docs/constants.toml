@@ -223,9 +223,9 @@ name = "NLAlib.subgaussianRangeFinderFactor"
 kind = "factor"
 file = "NLAlib/LowRank/Oblivious/SubGaussian.lean"
 args = ["c"]
-latex = '1 + 10#1'
-lean_body = 'subgaussianRangeFinderFactor (c : ℝ) : ℝ := 1 + 10 * c'
-body_hash = "389375a1274ffee4"
+latex = '1 + 5#1/2'
+lean_body = 'subgaussianRangeFinderFactor (c : ℝ) : ℝ := 1 + 5 / 2 * c'
+body_hash = "8e384935cb01a8eb"
 
 [[constant]]
 name = "NLAlib.gaussianProjectionFactor"

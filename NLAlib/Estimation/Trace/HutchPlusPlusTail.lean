@@ -23,7 +23,7 @@ tail bound (`NLAlib.frobNorm_sub_truncatedSVD_le_nuclearNorm_div`) turn it into 
 guarantee of Meyer, Musco, Musco and Woodruff: $O(\sqrt{\log(1/\delta)}/\varepsilon +
 \log(1/\delta))$ products give $\lvert \operatorname{tr}\mathbf{A} - \mathsf{hutchpp} \rvert \le
 \varepsilon\|\mathbf{A}\|_*$ with probability $1 - \delta$. Real throughout. The constants are
-explicit: the range-finder factor <!-- value subgaussianRangeFinderFactor c -->$1 + 10c$
+explicit: the range-finder factor <!-- value subgaussianRangeFinderFactor c -->$1 + 5c/2$
 replaces MMMW's $2$ (their route through Musco and Musco is not in the library), and the
 Hanson–Wright constant is <!-- value hansonWrightConstant -->$1/196$. Design:
 `docs/design/Estimation-HutchPP.md` §3.4.
@@ -183,8 +183,8 @@ get <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstan
 $$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
 \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert \ge \tau\bigr] \le \delta +
 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
-\frac{\ell\tau^2}{c'^2 (1 + 10c)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
-\frac{\ell\tau}{c'\sqrt{1 + 10c}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
+\frac{\ell\tau^2}{c'^2 (1 + 5c/2)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
+\frac{\ell\tau}{c'\sqrt{1 + 5c/2}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
 the size is `subgaussianEmbeddingDim c r (1 / 2) (δ / 2)`, $C$ is `subgaussianJLConstant`, the
 factor is `subgaussianRangeFinderFactor c` and the constant in the exponent is
 `hansonWrightConstant`. `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le` with the range finder
@@ -228,15 +228,15 @@ get <!-- value subgaussianRangeFinderFactor {\cdot 1} --> <!-- value hansonWrigh
 $$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
 \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert \ge \tau\bigr] \le \delta +
 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
-\frac{\ell\tau^2}{(1 + 10\cdot 1)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
-\frac{\ell\tau}{\sqrt{1 + 10\cdot 1}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
+\frac{\ell\tau^2}{(1 + 5\cdot 1/2)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
+\frac{\ell\tau}{\sqrt{1 + 5\cdot 1/2}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
 the size is `subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2)`, $C$ is `subgaussianJLConstant`, the
 factor is `subgaussianRangeFinderFactor 1` and the constant in the exponent is
 `hansonWrightConstant`. The case $c = c' = 1$ of
 `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector`: the range-finder step goes
 through the sub-Gaussian range finder
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector` at $c = 1$, with the
-factor $11$ and the size $225(r \log 21 + \log(4/\delta))$. This is weaker than the Gaussian
+factor $7/2$ and the size $225(r \log 21 + \log(4/\delta))$. This is weaker than the Gaussian
 range-finder tail `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`
 (`NLAlib/LowRank/Gaussian/RangeFinderTail.lean`), whose factor $1 + (tr/d)(1 + u)^2$ at
 deviation $u$ (since
@@ -278,8 +278,8 @@ $\delta > 0$, <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/4) -->
 $\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/4)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$,
 and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
-$$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
-\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,,$$
+$$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 5c/2)}\,,\qquad
+\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 5c/2}}\,,$$
 then for every real square $\mathbf{A}$
 $$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
 \mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) \rvert > \varepsilon\|\mathbf{A}\|_*\bigr] \le
@@ -402,8 +402,8 @@ $\delta > 0$, <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/4) -->
 $\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/4)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$,
 and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
-$$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
-\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,.$$
+$$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 5c/2)}\,,\qquad
+\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 5c/2}}\,.$$
 Then for every real positive semidefinite $\mathbf{A}$
 $$\mathbb{P}\bigl[\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) <
 (1 - \varepsilon)\operatorname{tr}\mathbf{A}\bigr] \le \delta\,,$$
@@ -449,8 +449,8 @@ $\delta > 0$, <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/4) -->
 $\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/4)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$,
 and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
-$$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
-\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,.$$
+$$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 5c/2)}\,,\qquad
+\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 5c/2}}\,.$$
 Then for every real positive semidefinite $\mathbf{A}$
 $$\mathbb{P}\bigl[\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) >
 (1 + \varepsilon)\operatorname{tr}\mathbf{A}\bigr] \le \delta\,;$$
