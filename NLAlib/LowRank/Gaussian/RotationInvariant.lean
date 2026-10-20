@@ -586,7 +586,7 @@ private theorem integral_nuclearNorm_diagonal_sub_nystrom_le {Ω' : Type*} {mΩ'
       (hG.integral_comp hf.aestronglyMeasurable).symm
   -- the average of the shifts
   have hd0 : (0 : ℝ) < d := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne d)
-  set w : ℝ := 1 / d with hwdef
+  set w : ℝ := 1 / d
   have hw : 0 ≤ w := by positivity
   set b₀ : ℝ := (∑ j, σ₂ j) / d
   have hb₀ : 0 ≤ b₀ := div_nonneg (Finset.sum_nonneg fun j _ => h₂ j) hd0.le
@@ -648,7 +648,7 @@ private theorem integral_nuclearNorm_sub_nystrom_le_of_rank_le_of_le_card {Ω' :
       rotationInvariantFactor r (Fintype.card l) q * nuclearNorm (H - truncatedSVD H q) := by
   classical
   obtain ⟨U, hU, hHU⟩ := hH.isHermitian.exists_eq_mul_diagonal_mul_conjTranspose
-  set d := r - q with hd'
+  set d := r - q
   have hd : q + d = r := by omega
   have : NeZero d := ⟨by omega⟩
   set ι : Fin q ⊕ Fin d → Fin (Fintype.card n) :=
@@ -887,7 +887,7 @@ theorem
   have hpt : ∀ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ≤
       nuclearNorm (H - truncatedSVD H k) + nuclearNorm (H - nystrom H (X ω)) := fun ω => by
     simpa only [lpGauge_one_matrixNorm] using
-      (lpGauge 1 le_rfl).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
+      (lpGauge 1).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
   have hN := hH.integrable_nuclearNorm_sub_nystrom hX.aemeasurable
   have hI : Integrable (fun ω => nuclearNorm (H - truncatedSVD H k) +
       nuclearNorm (H - nystrom H (X ω))) μ := (integrable_const _).add hN

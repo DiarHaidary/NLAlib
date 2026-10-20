@@ -355,8 +355,7 @@ private theorem abs_apply_mul_le {F : (ι → ℝ) → ℝ} {K : ℝ} {k : ℕ}
         mul_le_mul hi (hb x) (abs_nonneg _) (by linarith [norm_nonneg x])
     _ = _ := by ring
 
-/-- The polynomial trace moments of a Gaussian matrix series are integrable. Proof: Gaussian
-moments of every order (`HasGaussianLaw.memLp`). -/
+/-- The polynomial trace moments of a Gaussian matrix series are integrable. -/
 theorem integrable_re_trace_sum_smul_pow_of_hasLaw_gaussianVector {g : Ω → ι → ℝ}
     (hg : HasLaw g (gaussianVector ι) μ) (A : ι → Matrix n n 𝕜) (r : ℕ) :
     Integrable (fun ω => RCLike.re ((∑ i, g ω i • A i) ^ r).trace) μ := by
@@ -438,16 +437,7 @@ private theorem integral_mul_re_trace_le_of_hasLaw_gaussianVector {g : Ω → ι
 $\mathbf{A}_i$, with $\mathbf{Y} = \sum_i g_i \mathbf{A}_i$,
 $$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2} \le (2q + 1)\, \mathbb{E} \operatorname{tr}
 \Bigl(\Bigl(\sum_i \mathbf{A}_i^2\Bigr) \mathbf{Y}^{2q}\Bigr)\,.$$
-[MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). Proof:
-$\operatorname{tr} \mathbf{Y}^{2q+2}
-= \sum_i g_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^{2q+1})$;
-Stein's identity for derivatives of polynomial growth
-(`integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow`)
-in each coordinate gives
-$\sum_{l \le 2q} \mathbb{E} \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^l \mathbf{A}_i
-\mathbf{Y}^{2q-l})$, each term at most
-$\mathbb{E} \operatorname{tr}(\mathbf{A}_i^2 \mathbf{Y}^{2q})$
-(`Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le`). -/
+[MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). -/
 theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_gaussianVector {g : Ω → ι → ℝ}
     (hg : HasLaw g (gaussianVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (q : ℕ) :
     ∫ ω, RCLike.re ((∑ i, g ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤
@@ -521,8 +511,7 @@ private theorem integrable_comp_of_hasLaw_rademacherVector {ε : Ω → ι → �
   gcongr
   linarith
 
-/-- The polynomial trace moments of a Rademacher matrix series are integrable. Proof: the
-coordinates are almost surely bounded. -/
+/-- The polynomial trace moments of a Rademacher matrix series are integrable. -/
 theorem integrable_re_trace_sum_smul_pow_of_hasLaw_rademacherVector {ε : Ω → ι → ℝ}
     (hε : HasLaw ε (rademacherVector ι) μ) (A : ι → Matrix n n 𝕜) (r : ℕ) :
     Integrable (fun ω => RCLike.re ((∑ i, ε ω i • A i) ^ r).trace) μ := by
@@ -618,14 +607,7 @@ private theorem integral_mul_re_trace_le_of_hasLaw_rademacherVector {ε : Ω →
 random signs and Hermitian $\mathbf{A}_i$, with $\mathbf{Y} = \sum_i \varepsilon_i \mathbf{A}_i$,
 $$\mathbb{E} \operatorname{tr} \mathbf{Y}^{2q+2} \le (2q + 1)\, \mathbb{E} \operatorname{tr}
 \Bigl(\Bigl(\sum_i \mathbf{A}_i^2\Bigr) \mathbf{Y}^{2q}\Bigr)\,.$$
-[MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). Proof: with $\mathbf{Y}^{(i)}$ the
-series with the $i$-th sign flipped (same law, `measurePreserving_update_neg_rademacherVector`),
-$\mathbb{E}[\varepsilon_i \operatorname{tr}(\mathbf{A}_i \mathbf{Y}^{2q+1})]
-= (1/4) \mathbb{E} \operatorname{tr}\bigl((\mathbf{Y} - \mathbf{Y}^{(i)})
-(\mathbf{Y}^{2q+1} - (\mathbf{Y}^{(i)})^{2q+1})\bigr)$; the mean value trace inequality
-(`Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le`) with
-$\mathbf{Y} - \mathbf{Y}^{(i)} = 2 \varepsilon_i \mathbf{A}_i$ and $\varepsilon_i^2 = 1$, and a
-second flip. -/
+[MackeyEtAl2014, Theorem 7.1] (there by exchangeable pairs). -/
 theorem integral_re_trace_sum_smul_pow_le_mul_of_hasLaw_rademacherVector {ε : Ω → ι → ℝ}
     (hε : HasLaw ε (rademacherVector ι) μ) (hA : ∀ i, (A i).IsHermitian) (q : ℕ) :
     ∫ ω, RCLike.re ((∑ i, ε ω i • A i) ^ (2 * q + 2)).trace ∂μ ≤

@@ -1,0 +1,1236 @@
+# The rules of CONTRIBUTING.md, one entry per id: the single source of the rule data.
+# scripts/check_rules.py and scripts/check_names.py read severity, statement, fix and scope from it;
+# scripts/gen_rules_md.py generates NLAlib/<Topic>/RULES.md and docs/rules/DIGEST.md from it
+# (`--check` fails when they are stale). The prose, with the reasons, is in CONTRIBUTING.md at
+# `section`. A new rule gets its entry here, its check, a fixture in scripts/test_check_rules.py and
+# its id in brackets where CONTRIBUTING states it (§9.2).
+#
+# id        area letter and number, never reused
+# area      the area of the letter
+# severity  error (fails CI, ratcheted), warning (a heuristic, a review list) or review (no check)
+# check     source (the sources and documents), extraction (needs scripts/explore_data.sh), none
+# scope     "library", or the topic directories the rule applies to; exclude removes directories
+# exempt    directories exempt while the rule `exempt_while` has no violation (optional)
+# home      topics that list a library-wide rule first in their RULES.md (optional)
+# statement the rule, one line, read as the check's message
+# fix       what to do about a violation
+
+[[rule]]
+id = "B1"
+area = "bounds"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§5.2 rule 2"
+statement = '''A named bound (`…Constant`, `…Bound`, `…Tail`, `…Dim`, `…Factor`) is in docs/constants.toml'''
+fix = '''Add its registry entry in the same commit'''
+
+[[rule]]
+id = "B2"
+area = "bounds"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Sketching", "NLAlib/LowRank"]
+section = "§5.2 rule 3"
+statement = '''No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form'''
+fix = '''Use a named constant, or an asymptotic form with `∃ C` before every dimension'''
+
+[[rule]]
+id = "B3"
+area = "bounds"
+severity = "error"
+check = "source"
+scope = "library"
+home = ["NLAlib/Sketching", "NLAlib/LowRank"]
+section = "§5.2 rule 3"
+statement = '''An asymptotic form says "$O(\ldots)$ suffices" in its docstring'''
+fix = '''Say in words which $O(\cdot)$ size suffices'''
+
+[[rule]]
+id = "B4"
+area = "bounds"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Sketching", "NLAlib/LowRank"]
+section = "§5.2 rule 3"
+statement = '''An asymptotic form puts its constants first and fixes index types to `Type`'''
+fix = '''State `∃ C ε₀ : ℝ, … ∀ {Ω m n … : Type} …`'''
+
+[[rule]]
+id = "B5"
+area = "bounds"
+severity = "warning"
+check = "extraction"
+scope = ["NLAlib/Sketching", "NLAlib/LowRank"]
+section = "§5.2 rule 3"
+statement = '''A Sketching or LowRank sample-size result has its asymptotic form'''
+fix = '''Add its `exists_forall_` corollary'''
+
+[[rule]]
+id = "C1"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 2"
+statement = '''A `Result:` declaration cites `[Key, label]` or says "No printed source."'''
+fix = '''Cite where it is printed, or say "No printed source."'''
+
+[[rule]]
+id = "C2"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 2"
+statement = '''A declaration docstring cites with a label; a bare `[Key]` is for module docstrings only'''
+fix = '''Add the printed label, `[Key, Theorem 8.1]`; a bare `[Key]` is for module docstrings only'''
+
+[[rule]]
+id = "C3"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''No mathematics inside a citation bracket'''
+fix = '''The label is plain text; put the remark after the bracket'''
+
+[[rule]]
+id = "C4"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6"
+statement = '''Every citation-like bracket is one `check_refs.py` parses'''
+fix = '''Write `[Key, label]` with a bibliography key'''
+
+[[rule]]
+id = "C5"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6, references.bib"
+statement = '''A bibliography key is `AuthorSurnames` + year'''
+fix = '''Rename the key'''
+
+[[rule]]
+id = "C6"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6, references.bib"
+statement = '''No duplicate bibliography key or DOI'''
+fix = '''Keep one entry'''
+
+[[rule]]
+id = "C7"
+area = "citations"
+severity = "error"
+check = "source"
+scope = "library"
+section = "references.bib"
+statement = '''The bibliography is alphabetical by key'''
+fix = '''Move the entry to its place'''
+
+[[rule]]
+id = "C8"
+area = "citations"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "references.bib"
+statement = '''Every bibliography entry is cited'''
+fix = '''Cite it or delete it'''
+
+[[rule]]
+id = "C9"
+area = "citations"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§6 item 2"
+statement = '''A bold-named theorem has a citation or a `Result:` id'''
+fix = '''Cite its source and give it an id, or drop the bold name'''
+
+[[rule]]
+id = "D1"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 1"
+statement = '''A `Result:` declaration starts its docstring with a bold name'''
+fix = '''Start the docstring with the result's **bold name**'''
+
+[[rule]]
+id = "D2"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 1"
+statement = '''A docstring states its own hypotheses and notation, never deferring to another statement'''
+fix = '''State the hypotheses and the conclusion in this docstring'''
+
+[[rule]]
+id = "D3"
+area = "docstrings"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§6 item 5"
+statement = '''A `Result:` conclusion with a fraction is displayed (`$$…$$`)'''
+fix = '''Display the conclusion with `$$…$$`'''
+
+[[rule]]
+id = "D4"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''No `\frac` in inline mathematics'''
+fix = '''Write `/` inline (`\tfrac` for a small coefficient), `\frac` only in a `$$…$$` display'''
+
+[[rule]]
+id = "D5"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Punctuation after a `$$…$$` display goes inside it'''
+fix = '''Put it inside the display (`… \,.$$`)'''
+
+[[rule]]
+id = "D6"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''No Lean identifier inside `$…$`'''
+fix = '''Lean names go in backticks; an algorithm output is `\mathsf{name}`'''
+
+[[rule]]
+id = "D7"
+area = "docstrings"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Mathematics is LaTeX, not Unicode in backticks'''
+fix = '''Write it in LaTeX'''
+
+[[rule]]
+id = "D8"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''No `Proof:` sentence in a library docstring'''
+fix = '''Delete it: `Proof:` lines belong to scaffold statements and go when the proof lands'''
+
+[[rule]]
+id = "D9"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6"
+statement = '''Every file has a module docstring'''
+fix = '''Add `/-! # Title … ## Main results … -/`'''
+
+[[rule]]
+id = "D10"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6"
+statement = '''A module docstring starts with `# Title` and has `## Main results`'''
+fix = '''Follow Mathlib: `# Title`, a paragraph, `## Main results`'''
+
+[[rule]]
+id = "D11"
+area = "docstrings"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6"
+statement = '''Every name a module docstring lists is declared'''
+fix = '''List the current names'''
+
+[[rule]]
+id = "D12"
+area = "docstrings"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Probability", "NLAlib/RandomMatrix", "NLAlib/Sketching"]
+section = "§6 item 1"
+statement = '''A docstring says when summands are independent; a headline theorem names its laws'''
+fix = '''Say in words that the summands, rows or sketches are independent (`iIndepFun`, `IndepFun`), and, for a headline theorem, which law a `HasLaw` hypothesis gives'''
+
+[[rule]]
+id = "D13"
+area = "docstrings"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§6 item 1"
+statement = '''A headline theorem says in its docstring when it assumes `[Nonempty n]`'''
+fix = '''Say "$n$ nonempty" (or $\lvert n \rvert \ge 1$)'''
+
+[[rule]]
+id = "F1"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''Every file starts with the copyright header of the template'''
+fix = '''Copy the header of CONTRIBUTING §3, with a non-empty `Authors:` line'''
+
+[[rule]]
+id = "F2"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''A file is `module`, its imports, the module docstring, then `@[expose] public section`'''
+fix = '''Follow the template of CONTRIBUTING §3'''
+
+[[rule]]
+id = "F3"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3, §10"
+statement = '''No `import Mathlib` or `import Mathlib.Tactic`'''
+fix = '''Import the specific Mathlib files the module needs'''
+
+[[rule]]
+id = "F4"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+exclude = ["NLAlib/ForMathlib"]
+section = "§3"
+statement = '''A file outside ForMathlib puts its declarations in `namespace NLAlib`'''
+fix = '''Put the declarations in `namespace NLAlib`'''
+
+[[rule]]
+id = "F5"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''No file-level `set_option`'''
+fix = '''Scope it to the declaration that needs it: `set_option … in`, with a comment saying why'''
+
+[[rule]]
+id = "F6"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''Every `set_option maxHeartbeats N in` has a comment saying why'''
+fix = '''Add a `--` comment above it saying why the declaration needs the bump'''
+
+[[rule]]
+id = "F7"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''No file-level `open Classical` or `open scoped Classical`'''
+fix = '''Use `open Classical in` on one declaration, or the `classical` tactic'''
+
+[[rule]]
+id = "F8"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''No file-level `noncomputable section`'''
+fix = '''Mark the individual definitions `noncomputable`'''
+
+[[rule]]
+id = "F9"
+area = "file template"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''No file-level `attribute [instance]`'''
+fix = '''Use `attribute [local instance] … in` on the declaration that needs it, or a named instance'''
+
+[[rule]]
+id = "F10"
+area = "file template"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§1 rule 8"
+statement = '''A file has at most about 1000 lines (1500 is the hard ceiling)'''
+fix = '''Split it by topic'''
+
+[[rule]]
+id = "F11"
+area = "file template"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§1 rule 8"
+statement = '''A file is named after its topic, never a round, a bundle or a technique'''
+fix = '''Name the file after its topic'''
+
+[[rule]]
+id = "G1"
+area = "design records"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§8"
+statement = '''A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status'''
+fix = '''Fill the missing fields'''
+
+[[rule]]
+id = "G2"
+area = "design records"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§9, AGENTS.md"
+statement = '''Every port-ledger target is declared'''
+fix = '''Point the entry of docs/port/ledger.json at the current name (scripts/ledger_check.py)'''
+
+[[rule]]
+id = "M1"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''A probability is `\mathbb{P}[E]`, never with round or brace delimiters, never `\Pr`'''
+fix = '''Write `\mathbb{P}[E]` (sized `\mathbb{P}\bigl[E\bigr]`)'''
+
+[[rule]]
+id = "M2"
+area = "notation"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/LowRank", "NLAlib/Krylov", "NLAlib/Estimation"]
+section = "§6 item 5"
+statement = '''A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`'''
+fix = '''Write `\mathsf{name}(…)`, never the formula it unfolds to'''
+
+[[rule]]
+id = "M3"
+area = "notation"
+severity = "warning"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/LowRank", "NLAlib/Krylov", "NLAlib/Estimation"]
+section = "§6 item 5"
+statement = '''A theorem about an algorithm writes its output `\mathsf{name}(…)`'''
+fix = '''Write `\mathsf{name}(…)`'''
+
+[[rule]]
+id = "M4"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''`\mathsf{x}` is a declaration name or a short name registered in §5.3'''
+fix = '''Use the Lean name verbatim, or register the short name in the §5.3 row "short algorithm names in `\mathsf`"'''
+
+[[rule]]
+id = "M5"
+area = "notation"
+severity = "warning"
+check = "extraction"
+scope = ["NLAlib/Estimation", "NLAlib/Krylov", "NLAlib/LowRank", "NLAlib/Regression", "NLAlib/Sketching"]
+section = "§6 item 5"
+statement = '''An algorithm definition shows its formula as `\mathsf{name}(…) := …`'''
+fix = '''Show its formula as `\mathsf{name}(…) := …`'''
+
+[[rule]]
+id = "M6"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''The Frobenius norm is `\|\mathbf{A}\|_{\mathsf{F}}`'''
+fix = '''Use the notation table'''
+
+[[rule]]
+id = "M7"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Adjoint and transpose are `^{\mathsf{H}}` and `^{\mathsf{T}}`'''
+fix = '''Use `^{\mathsf{H}}` (adjoint), `^{\mathsf{T}}`, `^{+}` (pseudoinverse)'''
+
+[[rule]]
+id = "M8"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''`\varepsilon` and `\varphi`, never `\epsilon` or `\phi`'''
+fix = '''Write `\varepsilon`, `\varphi`'''
+
+[[rule]]
+id = "M9"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Operator names follow the notation table (`\operatorname{tr}`, `\det`, …)'''
+fix = '''Write `\operatorname{tr}`, `\operatorname{rank}`, `\operatorname{Var}`, `\det`, …'''
+
+[[rule]]
+id = "M10"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Expectation is `\mathbb{E}`'''
+fix = '''Write `\mathbb{E}`'''
+
+[[rule]]
+id = "M11"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''A bold Greek matrix is `\mathbf{\Sigma}`'''
+fix = '''Write `\mathbf{\Sigma}`, `\mathbf{\Omega}`'''
+
+[[rule]]
+id = "M12"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Standard LaTeX only: no custom or KaTeX-only macro'''
+fix = '''Standard LaTeX only'''
+
+[[rule]]
+id = "M13"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''The `RCLike` field is `\Bbbk`'''
+fix = '''Write `\Bbbk`'''
+
+[[rule]]
+id = "M14"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+home = ["NLAlib/LowRank"]
+section = "§6 item 5"
+statement = '''The truncated SVD is `\llbracket\mathbf{A}\rrbracket_k`'''
+fix = '''Write `\llbracket\mathbf{A}\rrbracket_k`'''
+
+[[rule]]
+id = "M15"
+area = "notation"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''A matrix norm has its subscript'''
+fix = '''Write `\|\mathbf{A}\|_2` or `\|\mathbf{A}\|_{\mathsf{F}}`'''
+
+[[rule]]
+id = "M16"
+area = "notation"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''Absolute values and cardinalities are `\lvert x \rvert`, not bare bars'''
+fix = '''Write `\lvert x \rvert` (`\left\lvert … \right\rvert` when sized); a cardinality is `\lvert n \rvert`'''
+
+[[rule]]
+id = "M17"
+area = "notation"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 5"
+statement = '''The Loewner order is `\preceq`'''
+fix = '''Write `\preceq`'''
+
+[[rule]]
+id = "M18"
+area = "notation"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§6 item 5"
+statement = '''A matrix variable is bold in mathematics'''
+fix = '''Write `\mathbf{A}`'''
+
+[[rule]]
+id = "N1"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase'''
+fix = '''Rename to the case of §4 (acronyms grouped as in Mathlib: `rsvd`)'''
+
+[[rule]]
+id = "N2"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`)'''
+fix = '''Start the name with the conclusion's left side, read left to right'''
+
+[[rule]]
+id = "N3"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''The conclusion part ends at the first `_of_` and names the main relation'''
+fix = '''Put `le`, `lt`, `ne`, `iff`, `mem`, … before the first `_of_`'''
+
+[[rule]]
+id = "N4"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''Every library-function token in a name occurs in the statement'''
+fix = '''Drop the token, or state what it names'''
+
+[[rule]]
+id = "N5"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''One token per concept: the spellings of §4.3, never a synonym'''
+fix = '''Use the §4.3 token'''
+
+[[rule]]
+id = "N6"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''A power comes after its argument: `f_sq`, `f_pow`, `f_rpow`'''
+fix = '''Move `sq`/`pow` after the argument'''
+
+[[rule]]
+id = "N7"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''No source, author, project, quality or role word in a name (`_sharp`, `aux`, `main`)'''
+fix = '''Put the source in the docstring'''
+
+[[rule]]
+id = "N8"
+area = "names"
+severity = "review"
+check = "none"
+scope = "library"
+section = "§4.2"
+statement = '''Right-side tokens only to tell coexisting theorems apart'''
+fix = '''Drop right-side tokens no sibling needs'''
+
+[[rule]]
+id = "N9"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''A law hypothesis is `_of_hasLaw_<law>`; an interface hypothesis is the namespace'''
+fix = '''Rename by §4 N9'''
+
+[[rule]]
+id = "N10"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/LowRank", "NLAlib/Krylov", "NLAlib/Estimation", "NLAlib/Regression"]
+section = "§4.2"
+statement = '''Errors are `exact − computed`: `norm_sub_<alg>`, never `<alg>_sub_`'''
+fix = '''State and name the error as `exact − computed`'''
+
+[[rule]]
+id = "N11"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''A named bound ends in its kind: `…Constant`, `…Factor`, `…Tail`, `…Bound`, `…Ratio`, `…Dim`'''
+fix = '''Add the kind suffix'''
+
+[[rule]]
+id = "N12"
+area = "names"
+severity = "review"
+check = "none"
+scope = "library"
+section = "§4.2"
+statement = '''A rename is listed in a rename map under docs/renames/ (an alias after v0.1)'''
+fix = '''Add the entry'''
+
+[[rule]]
+id = "N13"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Probability", "NLAlib/RandomMatrix"]
+section = "§4.4"
+statement = '''A statistic on the left is the prefix: `integral_`, `variance_`; a mean square has `_sq`'''
+fix = '''Rename by §4 N13'''
+
+[[rule]]
+id = "N14"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Probability", "NLAlib/RandomMatrix"]
+section = "§4.4"
+statement = '''A tail is `measureReal_` for `μ.real {…}`, `measure_` for `μ {…}`'''
+fix = '''Rename by the statement's form'''
+
+[[rule]]
+id = "N15"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Probability", "NLAlib/RandomMatrix"]
+section = "§4.4"
+statement = '''A tail event is named subject first, with two relation tokens; stated positively'''
+fix = '''Rename by §4 N15'''
+
+[[rule]]
+id = "N16"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = ["NLAlib/LowRank", "NLAlib/Regression", "NLAlib/Sketching"]
+section = "§4.4"
+statement = '''A sample size is a named bound `<sketch><property>Dim`'''
+fix = '''Rename it `…Dim`; the theorem assuming it is `_of_<size>_le`'''
+
+[[rule]]
+id = "N17"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.4"
+statement = '''An asymptotic form is `exists_forall_` + its explicit theorem's name, in the root namespace'''
+fix = '''Derive the name by §4 N17'''
+
+[[rule]]
+id = "N18"
+area = "names"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§4.2"
+statement = '''A theorem whose first explicit argument is `hA : A.P` lives in namespace `P` (dot notation)'''
+fix = '''Move it to the predicate's namespace and drop its `_of_<P>`'''
+
+[[rule]]
+id = "P1"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§2"
+statement = '''A module imports only its own layer and lower; Sketching never imports Regression'''
+fix = '''Move the declaration to the layer it belongs to (§2, §8 placement)'''
+
+[[rule]]
+id = "P2"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§2"
+statement = '''No file with imports only (no per-directory aggregator)'''
+fix = '''Delete it; a user imports the file they need'''
+
+[[rule]]
+id = "P3"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''An `NLAlib` file never imports `NLAlibScaffold`'''
+fix = '''The scaffold is never imported by the library; move the proved declaration to `NLAlib/`'''
+
+[[rule]]
+id = "P4"
+area = "placement and layers"
+severity = "error"
+check = "extraction"
+scope = ["NLAlib/ForMathlib"]
+section = "§2"
+statement = '''A ForMathlib statement uses no NLAlib vocabulary'''
+fix = '''Move it out of ForMathlib, to the topic file of that vocabulary'''
+
+[[rule]]
+id = "P5"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = ["NLAlib/ForMathlib"]
+section = "§2"
+statement = '''A ForMathlib declaration is in the Mathlib namespace it would have upstream, never `NLAlib`'''
+fix = '''Declare it in the Mathlib namespace it would have upstream'''
+
+[[rule]]
+id = "P6"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = ["NLAlib/ForMathlib"]
+section = "§2"
+statement = '''A ForMathlib module docstring marks the file as an upstream candidate'''
+fix = '''Say in the module docstring that its facts are upstream candidates'''
+
+[[rule]]
+id = "P7"
+area = "placement and layers"
+severity = "warning"
+check = "source"
+scope = ["NLAlib/ForMathlib"]
+section = "§2"
+statement = '''A ForMathlib file is named after the Mathlib file it would join'''
+fix = '''Name the file after the Mathlib file it would join'''
+
+[[rule]]
+id = "P8"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = "library"
+exclude = ["NLAlib/ForMathlib"]
+section = "§3"
+statement = '''Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure'''
+fix = '''Put it in `namespace NLAlib`, or move a general fact to ForMathlib (§2)'''
+
+[[rule]]
+id = "P9"
+area = "placement and layers"
+severity = "error"
+check = "extraction"
+scope = "library"
+exclude = ["NLAlib/ForMathlib"]
+exempt = ["NLAlib/Polynomial"]
+exempt_while = "P11"
+section = "§2"
+statement = '''A general fact (no NLAlib, matrix or measure vocabulary) lives in ForMathlib'''
+fix = '''Move it to the ForMathlib file of its Mathlib subject; a false positive goes on the allowlist with a reason'''
+
+[[rule]]
+id = "P10"
+area = "placement and layers"
+severity = "warning"
+check = "extraction"
+scope = "library"
+exclude = ["NLAlib/ForMathlib"]
+section = "§8 placement"
+statement = '''A statement lives with its topic, not in a higher layer than its vocabulary'''
+fix = '''Check that the file is where a user of its topic would look'''
+
+[[rule]]
+id = "P11"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = ["NLAlib/Polynomial"]
+section = "§2"
+statement = '''A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial`'''
+fix = '''Keep the Polynomial layer upstreamable: move what it needs to ForMathlib, or the declaration out of Polynomial'''
+
+[[rule]]
+id = "R1"
+area = "result ids"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 4"
+statement = '''`Result:` ids go on statements, never on definitions or structures'''
+fix = '''Ids name statements of results (maintainer, 2026-10-19); delete it, or move it to the theorem that states the result'''
+
+[[rule]]
+id = "R2"
+area = "result ids"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 4"
+statement = '''No two result ids one or two edits apart'''
+fix = '''Use the existing id; a deliberate variant goes on the allowlist'''
+
+[[rule]]
+id = "R3"
+area = "result ids"
+severity = "error"
+check = "source"
+scope = "library"
+section = "explore README"
+statement = '''Every id or declaration the explorer names exists'''
+fix = '''Restore it, or update the explorer'''
+
+[[rule]]
+id = "S1"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''No `simp_all`'''
+fix = '''Use `simp only [...]`, `simp at h ⊢` or a term'''
+
+[[rule]]
+id = "S2"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''No search tactic left in (`exact?`, `apply?`, `rw?`, `simp?`, `aesop?`)'''
+fix = '''Replace it by the proof term it suggests'''
+
+[[rule]]
+id = "S3"
+area = "source and proof style"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''`decide` only on tiny finite goals'''
+fix = '''Prefer `simp`, `omega` or `fin_cases` on anything but a tiny goal'''
+
+[[rule]]
+id = "S4"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7, §10"
+statement = '''A proof has at most 80 lines'''
+fix = '''Split it into named lemmas'''
+
+[[rule]]
+id = "S5"
+area = "source and proof style"
+severity = "warning"
+check = "source"
+scope = "library"
+section = "§3"
+statement = '''A helper two files need is one public lemma, not two private copies'''
+fix = '''Make it one public, documented lemma in the file that owns its subject'''
+
+[[rule]]
+id = "S6"
+area = "source and proof style"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§7"
+statement = '''No global instance on a Mathlib type, unless it is the one Mathlib would add'''
+fix = '''Only an instance Mathlib would add itself; allowlist it with the reason, or make it local'''
+
+[[rule]]
+id = "S7"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§10, proof-agent brief"
+statement = '''A line has at most 100 characters, unless one identifier or a URL makes it long'''
+fix = '''Wrap it; only a line that is one identifier or contains a URL may be longer, under `set_option linter.style.longLine false in` with a comment'''
+
+[[rule]]
+id = "S8"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§10"
+statement = '''`set_option linter.style.longLine false in` only on a declaration with a long line'''
+fix = '''Remove the option'''
+
+[[rule]]
+id = "T1"
+area = "types and statement shape"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.1"
+statement = '''The Euclidean norm is `‖WithLp.toLp 2 x‖`, never `√(x ⬝ᵥ x)`'''
+fix = '''Write `‖WithLp.toLp 2 x‖`'''
+
+[[rule]]
+id = "T2"
+area = "types and statement shape"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.1"
+statement = '''An `ℝ≥0` quantity in a statement is written with `‖·‖₊`, never `Real.toNNReal`'''
+fix = '''Write the `ℝ≥0` quantity with `‖·‖₊`'''
+
+[[rule]]
+id = "T3"
+area = "types and statement shape"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§5.1"
+statement = '''Only `Matrix.Norms.L2Operator` is opened, never `…Frobenius` or `…Elementwise`'''
+fix = '''Use the named norms `frobNorm`, `specNorm`; only `Matrix.Norms.L2Operator` is opened'''
+
+[[rule]]
+id = "T4"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§5.1"
+statement = '''Matrix norms in statements are named functions, not `‖A‖`'''
+fix = '''Use a named norm (`specNorm`, `frobNorm`)'''
+
+[[rule]]
+id = "T5"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§5.1"
+statement = '''Statements use `ᴴ`, not `ᵀ`'''
+fix = '''State it with `ᴴ`; over ℝ, `conjTranspose_eq_transpose_of_trivial` converts'''
+
+[[rule]]
+id = "T6"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = ["NLAlib/Matrix"]
+section = "§5.1"
+statement = '''Matrix theorems are over `[Fintype n]` index types; `Fin` only where order or recursion matters'''
+fix = '''Use `[Fintype n]` unless order or recursion carries content'''
+
+[[rule]]
+id = "T7"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = ["NLAlib/Matrix"]
+section = "§5.1"
+statement = '''Matrix theorems are over `[RCLike 𝕜]` where the proof allows, not ℝ only'''
+fix = '''State it over `[RCLike 𝕜]` if the proof allows'''
+
+[[rule]]
+id = "T8"
+area = "types and statement shape"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.2"
+statement = '''No statement quantifies over `eigenvectorBasis`'''
+fix = '''Take an eigenvector `u` with `A *ᵥ u = c • u`, or an invariance equation'''
+
+[[rule]]
+id = "T9"
+area = "types and statement shape"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.2"
+statement = '''No proof term inside a statement (`⋯` in the signature)'''
+fix = '''Introduce the hypothesis it proves, or state through a definition'''
+
+[[rule]]
+id = "T10"
+area = "types and statement shape"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.2"
+statement = '''A bound variable that meets `•` has its type written (`∀ θ : ℝ, …`)'''
+fix = '''Write the variable's type (`∀ θ : ℝ, …`)'''
+
+[[rule]]
+id = "T11"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§5.2"
+statement = '''A two-sided bound is two theorems, not a top-level conjunction'''
+fix = '''Split two-sided bounds into two theorems'''
+
+[[rule]]
+id = "T12"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Matrix"]
+section = "§5.2"
+statement = '''An `∃`-index into `eigenvalue` or `singularValues` carries its range'''
+fix = '''Bound the index (`k < Fintype.card n`)'''
+
+[[rule]]
+id = "T13"
+area = "types and statement shape"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.2"
+statement = '''No hypothesis named `_h…`: an unused hypothesis is dropped'''
+fix = '''Drop it; if it is kept for an interface, allowlist it with the reason'''
+
+[[rule]]
+id = "T14"
+area = "types and statement shape"
+severity = "warning"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/Probability", "NLAlib/RandomMatrix"]
+section = "§5.2, PORT_PROBABILITY D3"
+statement = '''Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`'''
+fix = '''State tails in `μ.real`'''
+
+[[rule]]
+id = "T15"
+area = "types and statement shape"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§5.2"
+statement = '''A lower moment obtained by Jensen from a higher one is not a separate theorem'''
+fix = '''Delete it: the higher-moment theorem's docstring says in a sentence that the source prints the lower-moment form, which follows by Jensen (`ProbabilityTheory.integral_le_sqrt_integral_sq`); it stays only if another proof uses it, allowlisted with "used by …" (maintainer, 2026-10-19)'''
+
+[[rule]]
+id = "V1"
+area = "vocabulary"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.3"
+statement = '''Orthonormal columns are `HasOrthonormalCols Q`, never a raw `Qᴴ * Q = 1`'''
+fix = '''Take `HasOrthonormalCols Q`'''
+
+[[rule]]
+id = "V2"
+area = "vocabulary"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.3"
+statement = '''No truncated subtraction `Fintype.card n - k` in a statement'''
+fix = '''Use an auxiliary `d` with `hd : k + d = Fintype.card n`'''
+
+[[rule]]
+id = "V3"
+area = "vocabulary"
+severity = "error"
+check = "extraction"
+scope = "library"
+home = ["NLAlib/LowRank", "NLAlib/Krylov"]
+section = "§5.3"
+statement = '''A singular-value ratio is `singularGapRatio`, never spelled out'''
+fix = '''Use `singularGapRatio` (a bridge lemma relating the two is allowlisted)'''
+
+[[rule]]
+id = "V4"
+area = "vocabulary"
+severity = "error"
+check = "extraction"
+scope = "library"
+section = "§5.3"
+statement = '''A squared Frobenius norm is `frobNorm A ^ 2`, never `frobNorm A * frobNorm A`'''
+fix = '''Write `frobNorm A ^ 2`'''
+
+[[rule]]
+id = "V5"
+area = "vocabulary"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§5.3"
+statement = '''No forbidden spelling (`matrixExp`, `matrixLog`, `traceExp`, `lambdaMax`, `conditionNumber`)'''
+fix = '''Use the §5.3 spelling'''
+
+[[rule]]
+id = "V6"
+area = "vocabulary"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§5.3"
+statement = '''Every Lean name cited in CONTRIBUTING (outside §4) or Mathlib-deviations.md exists'''
+fix = '''Update the document to the current name'''
+
+[[rule]]
+id = "V7"
+area = "vocabulary"
+severity = "warning"
+check = "extraction"
+scope = "library"
+section = "§5.3, §8"
+statement = '''A public definition has a §5.3 row or a Mathlib-deviations entry'''
+fix = '''A new concept gets a §5.3 row through its design note'''

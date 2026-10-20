@@ -152,9 +152,9 @@ theorem sub_sq_mul_frobNorm_sq_add_frobNorm_sq_le {D : Matrix m n 𝕜} {T : Mat
     (hD : specNorm D ≤ β) (X : Matrix m p 𝕜) (Y : Matrix n p 𝕜) :
     (α - β) ^ 2 * (frobNorm X ^ 2 + frobNorm Y ^ 2) ≤
       frobNorm (D * Y - X * T) ^ 2 + frobNorm (Dᴴ * X - Y * Tᴴ) ^ 2 := by
-  have h₁ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2 one_le_two)
+  have h₁ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2)
     (smul_one_le_mul_conjTranspose_self_of_smul_one_le hT) hD X Y
-  have h₂ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2 one_le_two) (D := Dᴴ) (T := Tᴴ)
+  have h₂ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2) (D := Dᴴ) (T := Tᴴ)
     (β := β) (by rwa [Matrix.conjTranspose_conjTranspose]) (by rwa [specNorm_conjTranspose]) Y X
   simp only [lpGauge_two_matrixNorm] at h₁ h₂
   exact sub_sq_mul_add_sq_le_add_sq ((specNorm_nonneg D).trans hD) hαβ (frobNorm_nonneg X)
@@ -496,7 +496,7 @@ theorem HasOrthonormalCols.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_sing
     ((hV.isStarProjection_mul_conjTranspose.one_sub.specNorm_mul_le V').trans hV'.specNorm_le_one)
   have hweyl := abs_singularValues_sub_le_specNorm (A + E) A j
   rw [add_sub_cancel_left] at hweyl
-  have h := (lpGauge ⊤ le_top).mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub hU hV hAV
+  have h := (lpGauge ⊤).mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub hU hV hAV
     hAU hAV' hAU' le_rfl
   simp only [lpGauge_top_matrixNorm] at h
   have hE : max (specNorm (E * V')) (specNorm (Eᴴ * U')) ≤ specNorm E := max_le

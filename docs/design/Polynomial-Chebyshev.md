@@ -328,3 +328,48 @@ family or frontend change was requested or made. `git diff --check` passed. The 
 stage script and browser reruns were omitted because the full root and strict rendering gates
 already passed. No active validation process or build remains; no commit or push was performed.
 The root orchestrator owns the requested commit and subsequent bounded Poly1 design review.
+
+## Upstreaming to Mathlib
+
+Maintainer decision 2026-10-20: the Polynomial layer keeps its headline scalar results (CONTRIBUTING
+§2, exempt from P9) on condition that it stays easy to upstream. Rule P11 checks the import
+discipline: `NLAlib/Polynomial` imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial`,
+and ForMathlib imports only ForMathlib (P1). An audit of the layer and of the ForMathlib files it
+imports (2026-10-20) found the frictions below.
+
+**Fixed in the audit** (renames in `docs/renames/2026-10-rules.json`):
+`norm_chebyshevCoeff_le_of_differentiableOn`, `isUniformApproxOn_chebyshevTrunc_of_differentiableOn`,
+`exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn` (named by the hypothesis, not
+`_of_open_ellipse`), `jacksonDamping_of_le` (was `_eq_closed_form`), `chebyshevTrunc_eval` (was
+`_eval_eq`; `eq` is omitted, N3), `HasStieltjesMeasure.monotoneOn_id_mul` (was `_mul_self`, which
+in Mathlib means `a * a`); two `:= by exact` one-liners made terms; stage comments removed from
+ForMathlib `Chebyshev/Growth.lean` and `Convex/SupportingLine.lean`.
+
+**What remains**, with an estimate:
+
+| friction | what Mathlib would want | effort |
+|---|---|---|
+| `Metric.IsUniformApproxOn` (ForMathlib, 38 uses); 20 of them only say `‖g x‖ ≤ M` | the raw `∀ x ∈ s, ‖g x‖ ≤ M`, as Mathlib's own Chebyshev extremal file states it; or upstream the predicate first in its own PR (it sits in a file about uniform limits) | 1 day |
+| namespace `NLAlib` (F4, P8 forbid moving now) | `Polynomial.Chebyshev` (coefficients, truncation, series, Jackson, residual, minimax, extrema, weights), `Lagrange` (`dividedDifference`, the interpolation-error formulas), `MeasureTheory` next to `resolventTransform` (`HasStieltjesMeasure`, renamed, since Mathlib's `StieltjesFunction` is another object), `Polynomial` (`residualMinimax`) | 1–2 days at PR time, with a rename map |
+| `𝕜`-valued analytic results through `RCLike.toComplex` | statements for `f : ℝ → ℂ`; `ToComplex` belongs in `Analysis/Complex/Basic` | 0.5–1 day |
+| `chebyshevCoeff` is a raw cosine integral | a definition (or at least a bridge) through Mathlib's `Polynomial.Chebyshev.measureT` | bridge 0.5 day, redefinition 1–2 days |
+| docstrings: `Result:` lines, value markers, `[Key, label]`, locator notes, references to NLAlib consumers | Mathlib docstrings with `[Key]` and its bibliography | a stripping script, 0.5 day |
+| `jacksonApproximationConstant` (`irreducible_def`, value `π`) | inline `π` | trivial |
+| ForMathlib `Chebyshev/Growth.lean` carries Tropp–Webber's supporting-line filter (81-line proof, `HasSupportingLineOn`), `Pow/Real` and `Log/Basic` carry application lemmas | split the application material out before the PR | 0.5 day |
+| ForMathlib Extremal corollaries are thin (`k = 0` of `eval_iterate_derivative_le_of_forall_abs_le_one`) | merge into the existing Mathlib lemmas | 0.5 day |
+| argument order in Growth (`eval_T_real_eq_of_one_le`, `pow_div_two_le_eval_T_real`, …): the degree is not first, as in Mathlib's `one_le_eval_T_real (n) {x} (hx)` | reorder (5 call sites) | 1 hour; a statement change, left for the maintainer |
+| small API: `@[simp]` on `chebyshevCoeff_zero`, `chebyshevCoeff_eval_T`, `jacksonDamping_zero`, `jacksonDamping_of_lt`; a shared `RCLike.toComplexLI`; `local instance : Fact (0 < 2 * π)` in place of borrowing Mathlib's local `Polynomial.instTwoPiPos`; a public `Polynomial.degree_lt_of_degree_le_of_coeff_eq_zero`; `chebyshevExtremum_eq_node` to Mathlib's `Polynomial.Chebyshev.node` | as stated | 2 hours, each needs the simp-normal-form and duplicate checks |
+| proofs of 47–63 lines (`pullback_coeff_nat`, `isLeast_sum_mul_sq_sub_eval`, `norm_error_cos`, `isLUB_weightedResidualMin`, `sine_correlation`) | shorter, split lemmas | 1–2 days |
+
+**An upstream PR series** would go bottom up: (1) the Div and degree lemmas into
+`Algebra/Polynomial`, nodal weights and `Lagrange.dividedDifference` into `LinearAlgebra/Lagrange`,
+`RCLike.toComplex` into `Analysis/Complex/Basic`; (2) Chebyshev growth (without the supporting
+line) as `Analysis/SpecialFunctions/Trigonometric/Chebyshev/Growth.lean` and the extremal
+corollaries into the existing `Extremal.lean`; (3) residual polynomials, minimax and the inverse
+approximation in a `Chebyshev/Residual.lean`, with `residualMinimax` and its Sion duality separate
+so that Residual does not import `Topology/Sion`; (4) coefficients, truncation and series through
+`measureT`, next to `Orthogonality.lean`, then the Bernstein ellipse and analytic decay; (5) the
+Jackson kernel (pure trigonometry) and Jackson's theorem; (6) the Stieltjes class beside
+`MeasureTheory/Measure/ResolventTransform.lean` and the interpolation-error theorems. On the way:
+the `IsUniformApproxOn` decision, the namespaces, ℂ-only or `RCLike`, the docstring strip, and the
+constant inlined.

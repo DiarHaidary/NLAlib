@@ -99,6 +99,18 @@ the general fact about neither: a scalar inequality, a real-analysis or measure-
 no matrix or measure in its statement [P9], and a declaration outside `NLAlib` that is not API of
 a Mathlib hypothesis structure [P8].
 
+The Polynomial layer is exempt from P9 (maintainer decision 2026-10-20): its headline scalar
+results (Chebyshev residuals and minimax, approximation of $1/x$, interpolation of Stieltjes
+functions) stay in `NLAlib/Polynomial`, where its design notes put them. The condition is that the
+layer stays easy to upstream to Mathlib as a whole: a file in `NLAlib/Polynomial` imports only
+Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial` [P11], and ForMathlib imports nothing outside
+ForMathlib (P1), so it never depends on the layer. The checker grants the exemption only while P11
+holds. What else an upstream PR would need is in `docs/design/Polynomial-Chebyshev.md`,
+section "Upstreaming to Mathlib". Weyl's majorant lemma `NLAlib.sum_range_rpow_le_of_forall_prod_range_le`
+is scalar but stays in `NLAlib/Matrix/Majorization/Horn.lean`, allowlisted for P9 (maintainer
+decision 2026-10-20): its proof needs the Matrix layer's majorization theory, which ForMathlib
+cannot import (P1).
+
 ## 3. File template
 
 Every file has this shape. The header linter checks the first lines; the module system is the
@@ -537,8 +549,8 @@ those layers are designed.
 | normalized Chebyshev residual | `chebyshevResidual a b q : ℝ[X]`, the affine composition of Mathlib `Polynomial.Chebyshev.T`, normalized at zero for `0 < a < b`; scalar approximation bounds use the shared metric predicate | `eval_chebyshevResidual`, `degree_chebyshevResidual_le`, `eval_chebyshevResidual_zero`; inverse/division junk values documented in the definition |
 | open Bernstein ellipse | `openBernsteinEllipse ρ : Set ℂ`, focal-distance sum `‖z-1‖+‖z+1‖ < ρ+ρ⁻¹`; approximation assumes `1 < ρ` | `isOpen_openBernsteinEllipse`, `ofReal_mem_openBernsteinEllipse`, `joukowski_mem_openBernsteinEllipse`; no outer-boundary regularity |
 | full Chebyshev coefficient | `chebyshevCoeff f k` for `f : ℝ → 𝕜`, `[RCLike 𝕜]`; cosine Bochner integral, normalization 1/π at zero and 2/π otherwise | raw cosine integral by definition; `chebyshevCoeff_eval_T` gives basis delta; Mathlib cosine substitution/orthogonality reused |
-| degree-N Chebyshev truncation | `chebyshevTrunc f N : 𝕜[X]`, inclusive terms 0 through N using the same coefficient | `eval_chebyshevTrunc`, `degree_chebyshevTrunc_le`, `chebyshevTrunc_eval_eq`; zero coefficients and N=0 included |
-| Jackson damping | `jacksonDamping N k : ℝ`, normalized sine autocorrelation; zero for `k > N`, zeroth mode 1, values in `[0,1]` | Raw autocorrelation by definition; `jacksonDamping_eq_closed_form` gives its trigonometric representation; no matching pinned Mathlib object |
+| degree-N Chebyshev truncation | `chebyshevTrunc f N : 𝕜[X]`, inclusive terms 0 through N using the same coefficient | `eval_chebyshevTrunc`, `degree_chebyshevTrunc_le`, `chebyshevTrunc_eval`; zero coefficients and N=0 included |
+| Jackson damping | `jacksonDamping N k : ℝ`, normalized sine autocorrelation; zero for `k > N`, zeroth mode 1, values in `[0,1]` | Raw autocorrelation by definition; `jacksonDamping_of_le` gives its trigonometric representation; no matching pinned Mathlib object |
 | nonnegative periodic Jackson kernel | `jacksonKernel N θ : ℝ`, finite cosine polynomial; period `2π`, integral `2π` | `jacksonKernel_eq_norm_sq`, `integral_jacksonKernel`, `integral_cos_mul_jacksonKernel`; ordinary functions, no new circle-function type |
 | canonical Jackson approximant | `jacksonApprox f N : 𝕜[X]` for `[RCLike 𝕜]`, `f : ℝ → 𝕜`; inclusive sum `0..N` with damping times the existing full coefficients | `eval_jacksonApprox`, `degree_jacksonApprox_le`, `chebyshevCoeff_jacksonApprox`; no arbitrary-function reconstruction claim |
 | Jackson approximation factor | `jacksonApproximationConstant : ℝ`, currently `Real.pi`, improving the source's `π²/2`; supporting numerical API | `jacksonApproximationConstant_pos`, `jacksonApproximationConstant_le`; the current-value comparison is `≤ Real.pi` |
@@ -626,7 +638,10 @@ theorem Matrix.IsHermitian.eigenvalue_add_le ...
    (a `Result:` declaration has one [D1]).
    Its mathematics is LaTeX (item 5); a reader of the documentation site or the explorer should
    learn the statement from it without reading the Lean. So the docstring states its hypotheses
-   and notation itself, never "under the hypotheses of `X`" or "as there" [D2].
+   and notation itself, never "under the hypotheses of `X`", "as there", "as in the tail", "on the
+   same instance" or "if moreover" [D2]. Independence of the summands, rows or sketches is always
+   said in words, and a headline theorem names the law of each `HasLaw` hypothesis [D12]; a
+   headline theorem's `[Nonempty n]` is said too ("$n$ nonempty", review list: [D13]).
 2. **Citation:** `[Key, label]` where `Key` is an entry of `docs/references.bib` and `label` is the
    printed theorem, section or equation, for every source where this result or the result it
    generalises or specialises appears. A citation of a specific result carries its label; a bare
@@ -812,6 +827,7 @@ lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --c
 lake env lean scripts/Audit.lean
 lake env lean scripts/Lint.lean
 python3 scripts/check_refs.py
+python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py
 python3 scripts/ledger_check.py
 bash scripts/explore_data.sh /tmp/explore-data.json && python3 scripts/check_rules.py /tmp/explore-data.json
@@ -825,6 +841,15 @@ a minute after `lake build NLAlib`); its messages cite the rule ids N1–N18, an
 with every other rule id (§9.1); `scripts/stage_check.sh` runs both on the proved modules.
 
 ### 9.1 The rules checker
+
+The rule data is in `docs/rules/rules.toml`, one entry per id (stage 3 of the rules enforcement,
+2026-10-20): area, severity, what the check needs, scope (the whole library or topic
+directories), the rule in one line, the fix and the section here. It is the single source:
+`scripts/check_rules.py` and `scripts/check_names.py` take severity, messages and scope from it,
+and `scripts/gen_rules_md.py` generates from it `NLAlib/<Topic>/RULES.md`, the rules of one topic
+with its own first, and `docs/rules/DIGEST.md`, every error rule in one line. CI and
+`scripts/stage_check.sh` fail when a generated file is stale (`--check`); a test checks that every
+id stated here is in `rules.toml` and the reverse.
 
 `python3 scripts/check_rules.py [DATA.json]` checks every rule with an id, the naming rules
 included, and prints each violation as `<ID> <file>:<line> <declaration>: <what is wrong and the
@@ -850,7 +875,8 @@ round; the 2026-10-19 rules audit (`docs/rules/stage2-worklist.md` has its resid
 every rule that shipped with a check and a sweep held, and the others drifted. So a PR that adds or
 changes a rule:
 
-1. ships with its check in `scripts/check_rules.py` (or `check_names.py`), with a fixture in
+1. ships with its entry in `docs/rules/rules.toml` (then `python3 scripts/gen_rules_md.py`) and
+   its check in `scripts/check_rules.py` (or `check_names.py`), with a fixture in
    `scripts/test_check_rules.py` that breaks it and one that keeps it, **and** with a sweep of the
    library in the same PR or the remaining count in the baseline; or it says in its text that it is
    judged by review only;
@@ -921,6 +947,10 @@ files on top of Mathlib take 3 to 6 GB each, and the terminal gets killed. Rules
 
 - Read this file, then the current stage's design note in `docs/design/` (or the port brief if the
   note is not yet written), then `docs/port/status.md`, then the file you are about to write.
+- A brief to an agent that writes or reviews library code includes `docs/rules/DIGEST.md` whole and
+  the `NLAlib/<Topic>/RULES.md` of each topic it touches, so that the rules are in its context
+  (maintainer, rules decision 7); the author runs `python3 scripts/check_rules.py --files <files>`
+  before reporting.
 - The library is built **sequentially**: one stage at a time, and within a stage one file at a
   time unless the design note marks files independent. At most two proof agents run at once. A
   proof agent normally owns one file; two or three small files that the note marks independent of

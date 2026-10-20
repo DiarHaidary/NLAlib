@@ -257,8 +257,8 @@ $1 - \varepsilon/8$ and failure $\delta/3$, the two multiplication tails of the 
 accuracy $\varepsilon/(8\sqrt{k})$, and
 `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le`. Asymptotic form:
 `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch`.
-[CohenElderMuscoMuscoPersu2015, §7.2]; there for sparse sketches with unspecified constants,
-real.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for sparse sketches with
+unspecified constants, real.
 Result: etrsvd -/
 theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_countSketch
     (A : Matrix m n 𝕜) (hX : HasLaw (fun ω => (X ω)ᴴ) (countSketch l n) μ) {k : ℕ} {ε δ : ℝ}

@@ -6,7 +6,8 @@
 # Builds every module that `scripts/proved_modules.py` lists (minus those matching EXCLUDE_REGEX,
 # for files an agent is editing) with warnings fatal (`--wfail`, as in CI), then runs the axiom
 # audit and the environment linters on exactly those modules, the reference check, the named-bound
-# value check (scripts/check_constants.py, on the whole library), the rules check
+# value check (scripts/check_constants.py, on the whole library), the freshness of the generated
+# rule files (scripts/gen_rules_md.py --check), the rules check
 # (scripts/check_rules.py, by rule id, the naming rules N1–N18 included, on an extraction of those
 # modules) and the duplicate-statement report (which never fails the script). Logs go to $TMPDIR
 # (default /tmp). Run from the repository root; never while another build is running
@@ -26,6 +27,7 @@ for check in Audit Lint; do
   LEAN_NUM_THREADS=1 lake env lean -M 8000 "$tmp/$check.lean" 2>&1 | tail -4
 done
 python3 scripts/check_refs.py | tail -1
+python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py > "$tmp/constants.log" || { cat "$tmp/constants.log"; exit 1; }
 tail -1 "$tmp/constants.log"
 { cat "$tmp/imports.txt"; sed '1d' scripts/Explore.lean; } > "$tmp/Explore.lean"

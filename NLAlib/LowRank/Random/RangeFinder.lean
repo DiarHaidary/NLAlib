@@ -136,14 +136,15 @@ $\|\mathbf{A}\|_{S_q}^2$. -/
 theorem integrable_schattenNorm_sub_rsvd_sq [IsFiniteMeasure μ] {q : ℝ≥0∞} (hq : 1 ≤ q)
     (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) :
     Integrable (fun ω => schattenNorm q (A - rsvd A (X ω)) ^ 2) μ := by
+  have := Fact.mk hq
   have hg : Measurable fun M : Matrix m n 𝕜 => schattenNorm q M := by
-    rw [show (fun M : Matrix m n 𝕜 => schattenNorm q M) = (lpGauge q hq).matrixNorm from
-      funext fun M => (lpGauge_matrixNorm hq M).symm]
-    exact (lpGauge q hq).measurable_matrixNorm
+    rw [show (fun M : Matrix m n 𝕜 => schattenNorm q M) = (lpGauge q).matrixNorm from
+      funext fun M => (lpGauge_matrixNorm M).symm]
+    exact (lpGauge q).measurable_matrixNorm
   refine integrable_comp_of_abs_le hX (g := fun Ω => schattenNorm q (A - rsvd A Ω) ^ 2)
     ((hg.comp (measurable_sub_rsvd A)).pow_const 2) (schattenNorm q A ^ 2) fun Ω => ?_
   rw [abs_of_nonneg (sq_nonneg _)]
-  have h := matrixNorm_sub_rsvd_le (lpGauge q hq) A Ω
+  have h := matrixNorm_sub_rsvd_le (lpGauge q) A Ω
   rw [lpGauge_matrixNorm, lpGauge_matrixNorm] at h
   exact pow_le_pow_left₀ (schattenNorm_nonneg _ _) h 2
 
@@ -161,7 +162,7 @@ error in its printed, unsquared form. -/
 theorem integrable_frobNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) : Integrable (fun ω => frobNorm (A - rsvd A (X ω))) μ := by
   simpa only [lpGauge_two_matrixNorm] using
-    (lpGauge 2 one_le_two).integrable_matrixNorm_sub_rsvd A hX
+    (lpGauge 2).integrable_matrixNorm_sub_rsvd A hX
 
 /-- The squared spectral error of the randomized SVD,
 $\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2$, is integrable for every
@@ -175,7 +176,7 @@ $\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2$, is integrable for ev
 test matrix $\mathbf{X}$ and finite measure. -/
 theorem integrable_specNorm_sub_rsvd [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) : Integrable (fun ω => specNorm (A - rsvd A (X ω))) μ := by
-  simpa only [lpGauge_top_matrixNorm] using (lpGauge ⊤ le_top).integrable_matrixNorm_sub_rsvd A hX
+  simpa only [lpGauge_top_matrixNorm] using (lpGauge ⊤).integrable_matrixNorm_sub_rsvd A hX
 
 /-! ### The truncated output -/
 
@@ -234,7 +235,7 @@ theorem integrable_frobNorm_sub_truncatedSVD_rsvd_sq [IsFiniteMeasure μ] (A : M
   refine integrable_comp_of_abs_le hX hg
     (frobNorm A ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2) fun Ω => ?_
   rw [abs_of_nonneg (sq_nonneg _), frobNorm_sub_truncatedSVD_rsvd_sq]
-  have h1 := matrixNorm_sub_rsvd_le (lpGauge 2 one_le_two) A Ω
+  have h1 := matrixNorm_sub_rsvd_le (lpGauge 2) A Ω
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h1
   have h2 := frobNorm_rsvd_sub_truncatedSVD_le A Ω k
   have h3 := pow_le_pow_left₀ (frobNorm_nonneg _) h1 2
@@ -257,7 +258,7 @@ theorem integrable_specNorm_sub_sq_of_isBestRankApprox [IsFiniteMeasure μ] (A :
   refine Integrable.of_bound hm (frobNorm A ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2)
     (Filter.Eventually.of_forall fun ω => ?_)
   rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
-  have h1 := matrixNorm_sub_rsvd_le (lpGauge 2 one_le_two) A (X ω)
+  have h1 := matrixNorm_sub_rsvd_le (lpGauge 2) A (X ω)
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h1
   have h2 : frobNorm (rsvd A (X ω) - Y ω) ≤ frobNorm (A - truncatedSVD A k) :=
     (hY ω).frobNorm_sub.trans_le (frobNorm_rsvd_sub_truncatedSVD_le A (X ω) k)

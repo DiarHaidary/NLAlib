@@ -73,7 +73,8 @@ twin, at $\ell \ge 900k/\varepsilon^2$, is
 tail from that by Markov's inequality needs $\ell$ of order $k/(\varepsilon\delta)^2$.
 Asymptotic form:
 `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`.
-[CohenElderMuscoMuscoPersu2015, §7.2]; there with unspecified constants.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
+with unspecified constants.
 Result: etrsvd -/
 theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε)

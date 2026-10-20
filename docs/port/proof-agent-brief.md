@@ -8,9 +8,11 @@ a proof, so that the file compiles with no errors, no `sorry` and no linter warn
 
 1. `CONTRIBUTING.md`, in full. §3 (file template), §5 (statements), §6 (docstrings), §7 (proofs),
    §10 (memory) and §11 (agent rules) bind you.
-2. The stage's design note, named in your task (`docs/design/Matrix-<Stage>.md`).
-3. Your file.
-4. The prototype files named in your task, under `~/Documents/prove2me/lean/`. They are read-only
+2. `docs/rules/DIGEST.md` (every error rule in one line) and the `NLAlib/<Topic>/RULES.md` of your
+   file's topic, generated from `docs/rules/rules.toml`.
+3. The stage's design note, named in your task (`docs/design/Matrix-<Stage>.md`).
+4. Your file.
+5. The prototype files named in your task, under `~/Documents/prove2me/lean/`. They are read-only
    proof material. Never edit anything there and never build there.
 
 ## Rules

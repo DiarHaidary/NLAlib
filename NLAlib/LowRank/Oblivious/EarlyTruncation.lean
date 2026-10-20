@@ -94,7 +94,7 @@ except with probability $\delta + \delta_w + \delta_\chi$. The projector of
 $\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ qualifies (Eckart–Young), and so does the
 projector of the output at $c^{-1}\mathbf{\Omega}$ when the analysis runs at $\mathbf{\Omega}$.
 Proved without a literature source (the deterministic core of LowRank S2b); the sketch conditions
-are those of [CohenElderMuscoMuscoPersu2015, §7.2 and proof of Theorem 12].
+are those of [CohenElderMuscoMuscoPersu2015, proof of Theorem 12].
 Result: etrsvd -/
 theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {a θ δ ηw δw ηχ δχ : ℝ}
@@ -184,7 +184,7 @@ $$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 except with probability $\delta + \delta_w + \delta_\chi$: the core tail
 `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le` at $\theta = \varepsilon/8$. The
 form every family statement instantiates. Proved without a literature source;
-[CohenElderMuscoMuscoPersu2015, §7.2] for the sketch conditions.
+[CohenElderMuscoMuscoPersu2015, proof of Theorem 12] for the sketch conditions.
 Result: etrsvd -/
 theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le [IsFiniteMeasure μ]
     {A : Matrix m n 𝕜} {k : ℕ} {ε δ δw δχ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
@@ -299,7 +299,8 @@ this is $1 + O(\varepsilon_0)$ at $\ell = O(k/(\varepsilon_0^2\delta'))$ for the
 Gaussian expectation twin is
 `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
 Proved without a literature source (the deterministic core of LowRank S2b);
-[CohenElderMuscoMuscoPersu2015, §7.2]; [Woodruff2014, Theorem 61] is the full-row-space form.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; [Woodruff2014, Theorem 61] is the
+full-row-space form.
 Result: etrsvd -/
 theorem HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix m n ℝ} {k : ℕ} {a θ δ ε δ' q : ℝ}
@@ -493,7 +494,7 @@ For a sketch of a known family the structural route
 `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le` (the tail form of
 `NLAlib.IsSubspaceInjection.frobNorm_sub_earlyTruncatedRSVD_sq_le`) uses fewer events and gives
 better constants; this is the form for a sketch known only to be projection-cost-preserving.
-[CohenElderMuscoMuscoPersu2015, Lemma 3, §7.2]; there for a fixed sketch with $\varepsilon$, here
+[CohenElderMuscoMuscoPersu2015, Lemma 3]; there for a fixed sketch with $\varepsilon$, here
 a tail with constants $a$, $b$ and the named output.
 Result: early-truncation-pcp-bound -/
 theorem HasProjectionCostPreserving.measureReal_mul_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le

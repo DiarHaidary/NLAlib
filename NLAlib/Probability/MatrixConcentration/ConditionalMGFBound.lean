@@ -13,7 +13,7 @@ public import NLAlib.Probability.MatrixConditionalExpectation
 /-!
 # Conditional matrix moment generating function bounds
 
-`NLAlib.HasCondMatrixMGFBound m hm X g A s μ` is the conditional form of
+`NLAlib.HasCondMatrixMGFBound m X g A s μ` is the conditional form of
 `NLAlib.HasMatrixMGFBound`: $\mathbf{X}$ is almost surely Hermitian and, conditionally on the
 σ-algebra $m$, $\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq e^{g(\theta) \mathbf{A}}$ in the
 Loewner order almost surely, for every $\theta \in s$, with $\mathbf{A}$ an $m$-measurable, almost
@@ -31,7 +31,7 @@ Bernstein bound `NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`.
 
 ## Main definitions
 
-* `NLAlib.HasCondMatrixMGFBound m hm X g A s μ`.
+* `NLAlib.HasCondMatrixMGFBound m X g A s μ`.
 
 ## Main results
 
@@ -61,12 +61,14 @@ variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Typ
 matrix moment generating function is bounded in the Loewner order, almost surely,
 $\mathbb{E}[e^{\theta \mathbf{X}} \mid m] \preceq e^{g(\theta) \mathbf{A}}$ with
 $e^{\theta \mathbf{X}}$ integrable, for every $\theta \in s$, with $\mathbf{A}$ an $m$-measurable,
-almost surely Hermitian random matrix. The conditional form of `NLAlib.HasMatrixMGFBound`. The
-hypothesis `hm` ($m \le$ the ambient σ-algebra) is a parameter, as in Mathlib's
-`HasCondSubgaussianMGF`: without it `μ[· | m]` would be $0$ and the bound vacuous. The quantifier
-over $\theta$ is outside the almost-everywhere statement (the supermartingale uses one $\theta$);
+almost surely Hermitian random matrix. The conditional form of `NLAlib.HasMatrixMGFBound`.
+Unlike Mathlib's `HasCondSubgaussianMGF m hm`, the predicate takes no proof of $m \le$ the ambient
+σ-algebra: `μ[· | m]` is defined for every $m$ (it is $0$ when $m$ is not a sub-σ-algebra, and the
+bound is then vacuous), and the consumers (`NLAlib.condExp_re_trace_exp_add_le`, the Freedman
+statements) take the inclusion where they use it, from the filtration. The quantifier over
+$\theta$ is outside the almost-everywhere statement (the supermartingale uses one $\theta$);
 `docs/design/Mathlib-deviations.md` entry 17. -/
-structure HasCondMatrixMGFBound (m : MeasurableSpace Ω) (hm : m ≤ mΩ) (X : Ω → Matrix n n 𝕜)
+structure HasCondMatrixMGFBound (m : MeasurableSpace Ω) (X : Ω → Matrix n n 𝕜)
     (g : ℝ → ℝ) (A : Ω → Matrix n n 𝕜) (s : Set ℝ) (μ : @Measure Ω mΩ) : Prop where
   /-- $\mathbf{X}$ is almost surely Hermitian. -/
   ae_isHermitian : ∀ᵐ ω ∂μ, (X ω).IsHermitian
@@ -83,11 +85,11 @@ structure HasCondMatrixMGFBound (m : MeasurableSpace Ω) (hm : m ≤ mΩ) (X : �
 
 namespace HasCondMatrixMGFBound
 
-variable {hm : m ≤ mΩ} {X : Ω → Matrix n n 𝕜} {g : ℝ → ℝ} {A : Ω → Matrix n n 𝕜} {s : Set ℝ}
+variable {X : Ω → Matrix n n 𝕜} {g : ℝ → ℝ} {A : Ω → Matrix n n 𝕜} {s : Set ℝ}
 
 /-- The bound depends only on the almost-everywhere class of $\mathbf{X}$. -/
-theorem congr {Y : Ω → Matrix n n 𝕜} (h : HasCondMatrixMGFBound m hm X g A s μ)
-    (hXY : X =ᵐ[μ] Y) : HasCondMatrixMGFBound m hm Y g A s μ := by
+theorem congr {Y : Ω → Matrix n n 𝕜} (h : HasCondMatrixMGFBound m X g A s μ)
+    (hXY : X =ᵐ[μ] Y) : HasCondMatrixMGFBound m Y g A s μ := by
   have he : ∀ θ : ℝ, (fun ω => exp (θ • X ω)) =ᵐ[μ] fun ω => exp (θ • Y ω) := fun θ =>
     hXY.mono fun ω hω => by simp only [hω]
   refine ⟨?_, h.stronglyMeasurable_bound, h.ae_isHermitian_bound,
@@ -97,8 +99,8 @@ theorem congr {Y : Ω → Matrix n n 𝕜} (h : HasCondMatrixMGFBound m hm X g A
   rwa [← h2]
 
 /-- A bound on a set holds on every subset. -/
-theorem mono_set (h : HasCondMatrixMGFBound m hm X g A s μ) {s' : Set ℝ} (hs : s' ⊆ s) :
-    HasCondMatrixMGFBound m hm X g A s' μ :=
+theorem mono_set (h : HasCondMatrixMGFBound m X g A s μ) {s' : Set ℝ} (hs : s' ⊆ s) :
+    HasCondMatrixMGFBound m X g A s' μ :=
   ⟨h.ae_isHermitian, h.stronglyMeasurable_bound, h.ae_isHermitian_bound,
     fun θ hθ => h.integrable_exp θ (hs hθ), fun θ hθ => h.condExp_exp_le θ (hs hθ)⟩
 
@@ -259,7 +261,7 @@ conditional form of `NLAlib.hasMatrixMGFBound_of_integral_eq_zero_of_le`
 theorem hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (hm : m ≤ mΩ) {X : Ω → Matrix n n 𝕜}
     {L : ℝ} (hL : 0 < L) (hX2 : MemLp X 2 μ) (hmean : μ[X | m] =ᵐ[μ] 0)
     (hle : ∀ᵐ ω ∂μ, X ω ≤ L • (1 : Matrix n n 𝕜)) :
-    HasCondMatrixMGFBound m hm X (fun θ => θ ^ 2 / 2 / (1 - L * θ / 3))
+    HasCondMatrixMGFBound m X (fun θ => θ ^ 2 / 2 / (1 - L * θ / 3))
       (μ[fun ω => X ω ^ 2 | m]) (Set.Ioo 0 (3 / L)) μ := by
   have hH : ∀ᵐ ω ∂μ, (X ω).IsHermitian := hle.mono fun ω h => isHermitian_of_le_smul_one h
   have hXi : Integrable X μ := hX2.integrable one_le_two
@@ -320,7 +322,7 @@ follow from the master tail of `NLAlib/Probability/MatrixConcentration/Freedman.
 theorem hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF [StandardBorelSpace Ω]
     [IsFiniteMeasure μ] {hm : m ≤ mΩ} {γ : Ω → ℝ} {c : ℝ≥0}
     (hγ : HasCondSubgaussianMGF m hm γ c μ) {B : Matrix n n 𝕜} (hB : B.IsHermitian) :
-    HasCondMatrixMGFBound m hm (fun ω => γ ω • B) (fun θ => θ ^ 2 / 2)
+    HasCondMatrixMGFBound m (fun ω => γ ω • B) (fun θ => θ ^ 2 / 2)
       (fun _ => (c : ℝ) • B ^ 2) Set.univ μ := by
   have hsa : IsSelfAdjoint B := hB
   have hcont : ∀ g : ℝ → ℝ, ContinuousOn g (spectrum ℝ B) := fun g =>

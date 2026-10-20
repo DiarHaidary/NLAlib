@@ -10,7 +10,9 @@ Every rule has a stable id: a letter for its area and a number, as the naming ru
 (§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
 vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
 notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9). `--list` prints every rule with its level and its section.
+records (§8, §9). The rule data, severity, statement, fix, scope and section, is in
+`docs/rules/rules.toml`, the single source this script, `check_names.py` and
+`scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
 
 Two tiers. The source tier reads the Lean sources and documents and needs no build. The
 extraction tier reads DATA.json, the output of `scripts/explore_data.sh` after `lake build NLAlib`
@@ -60,13 +62,47 @@ LAYER = {'ForMathlib': -1, 'Matrix': 0, 'Polynomial': 0, 'Probability': 1, 'Kryl
          'Solvers': 5}
 
 # ------------------------------------------------------------------ the rule registry
+# The rule data (severity, statement, fix, scope, section) is in docs/rules/rules.toml, the single
+# source; this file holds the checks, registered by id with `@rule`.
+RULES_TOML = ROOT / 'docs' / 'rules' / 'rules.toml'
+
+
+def load_specs(path=RULES_TOML):
+    """{id: entry of rules.toml}, in file order."""
+    return {r['id']: r for r in tomllib.loads(path.read_text())['rule']}
+
+
+SPECS = load_specs()
 RULES = {}
 
 
-def rule(rid, level, tier, ref, text, fix=''):
-    """Register a check. level: 'error' | 'warning'. tier: 'src' (sources) | 'x' (extraction)."""
+def in_scope_path(spec, path):
+    """Does the rule apply to `path`? `NLAlib/<Topic>` scopes cover `NLAlibScaffold/<Topic>` too;
+    a path outside the library (a document) is in every library-wide rule's scope."""
+    def under(prefixes):
+        return any(path == q or path.startswith(q + '/') or
+                   path.startswith(q.replace('NLAlib/', 'NLAlibScaffold/', 1) + '/') for q in prefixes)
+    if spec['scope'] != 'library' and not under(spec['scope']):
+        return False
+    return not under(spec.get('exclude', []))
+
+
+def rule(rid):
+    """Register the check of rule `rid` (its data is the rules.toml entry); the check's
+    violations outside the rule's scope are dropped."""
+    spec = SPECS.get(rid)
+    if spec is None or spec['check'] not in ('source', 'extraction'):
+        raise SystemExit(f'check_rules: rule {rid} has no checked entry in {RULES_TOML}')
+
     def deco(fn):
-        RULES[rid] = dict(level=level, tier=tier, ref=ref, text=text, fix=fix, fn=fn)
+        def scoped(c):
+            vs = [v for v in fn(c) if in_scope_path(spec, v.path)]
+            if spec.get('exempt') and not RULES[spec['exempt_while']]['fn'](c):
+                vs = [v for v in vs if not in_scope_path({'scope': spec['exempt']}, v.path)]
+            return vs
+        RULES[rid] = dict(level=spec['severity'], tier='src' if spec['check'] == 'source' else 'x',
+                          ref=spec['section'], text=spec['statement'], fix=spec['fix'], fn=scoped,
+                          spec=spec)
         return fn
     return deco
 
@@ -84,7 +120,7 @@ class V:
         if r and self.detail:
             msg += ' (' + ' '.join(str(self.detail).split()) + ')'
         if r and r['fix']:
-            msg += '. ' + r['fix']
+            msg += '. ' + r['fix'] + '.'
         return f'{self.rule} {self.path}:{self.line} {self.decl}: {msg}'
 
 
@@ -197,15 +233,13 @@ HEADER = re.compile(r'^/-\nCopyright \(c\) \d{4} [^\n]+\. All rights reserved\.\
                     r'Authors: \S[^\n]*\n-/$')
 
 
-@rule('F1', 'error', 'src', '§3', 'the file does not start with the copyright header of the template',
-      'Copy the header of CONTRIBUTING §3, with a non-empty `Authors:` line')
+@rule('F1')
 def f_header(c):
     return [V('F1', p, 1, '(file)') for p, (t, x) in c.files.items()
             if not (x['header'] and HEADER.match(x['header']))]
 
 
-@rule('F2', 'error', 'src', '§3', 'the file is not `module`, imports, module docstring, '
-      '`@[expose] public section` in that order', 'Follow the template of CONTRIBUTING §3')
+@rule('F2')
 def f_order(c):
     out = []
     for p, (t, x) in c.files.items():
@@ -226,31 +260,27 @@ def f_order(c):
     return out
 
 
-@rule('F3', 'error', 'src', '§3, §10', '`import Mathlib` or `import Mathlib.Tactic`',
-      'Import the specific Mathlib files the module needs')
+@rule('F3')
 def f_import_mathlib(c):
     return [V('F3', p, ln, '(file)', mod) for p, (t, x) in c.files.items()
             for ln, pub, mod in x['imports'] if mod in ('Mathlib', 'Mathlib.Tactic')]
 
 
-@rule('F4', 'error', 'src', '§3', 'a file outside ForMathlib with declarations but no `namespace NLAlib`',
-      'Put the declarations in `namespace NLAlib`')
+@rule('F4')
 def f_namespace(c):
     return [V('F4', p, 1, '(file)') for p, (t, x) in c.files.items()
             if topic_of_path(p) != 'ForMathlib' and x['decls']
             and not re.search(r'^namespace NLAlib\b', t, re.M)]
 
 
-@rule('F5', 'error', 'src', '§3', 'a file-level `set_option`',
-      'Scope it to the declaration that needs it: `set_option … in`, with a comment saying why')
+@rule('F5')
 def f_setoption(c):
     return [V('F5', p, ln, '(file)', l.strip()) for p, (t, x) in c.files.items()
             for ln, l in x['commands']
             if l.startswith('set_option') and not re.search(r'\bin\s*$', l)]
 
 
-@rule('F6', 'error', 'src', '§3', '`set_option maxHeartbeats N in` without a comment saying why',
-      'Add a `--` comment above it saying why the declaration needs the bump')
+@rule('F6')
 def f_heartbeat_comment(c):
     out = []
     for p, (t, x) in c.files.items():
@@ -263,31 +293,27 @@ def f_heartbeat_comment(c):
     return out
 
 
-@rule('F7', 'error', 'src', '§3', 'a file-level `open Classical` or `open scoped Classical`',
-      'Use `open Classical in` on one declaration, or the `classical` tactic')
+@rule('F7')
 def f_classical(c):
     return [V('F7', p, ln, '(file)', l.strip()) for p, (t, x) in c.files.items()
             for ln, l in x['commands']
             if re.match(r'open\b.*\bClassical\b', l) and not re.search(r'\bin\s*$', l)]
 
 
-@rule('F8', 'error', 'src', '§3', 'a file-level `noncomputable section`',
-      'Mark the individual definitions `noncomputable`')
+@rule('F8')
 def f_noncomputable(c):
     return [V('F8', p, ln, '(file)') for p, (t, x) in c.files.items() for ln, l in x['commands']
             if l.startswith('noncomputable section')]
 
 
-@rule('F9', 'error', 'src', '§7', 'a file-level `attribute [instance]`',
-      'Use `attribute [local instance] … in` on the declaration that needs it, or a named instance')
+@rule('F9')
 def f_attr_instance(c):
     return [V('F9', p, ln, '(file)', l.strip()) for p, (t, x) in c.files.items()
             for ln, l in x['commands']
             if re.match(r'attribute \[instance', l) and not re.search(r'\bin\s*$', l)]
 
 
-@rule('F10', 'warning', 'src', '§1 rule 8', 'a file over 1000 lines (1500 is the hard ceiling, '
-      'which the build linter enforces)', 'Split it by topic')
+@rule('F10')
 def f_length(c):
     return [V('F10', p, 1, '(file)', f"{len(x['lines'])} lines") for p, (t, x) in c.files.items()
             if len(x['lines']) > 1000]
@@ -296,16 +322,14 @@ def f_length(c):
 BAD_FILE_WORDS = re.compile(r'(Part\d|Toolkit|Bundle|Aux|Misc|Helpers?|Lemmas|Extra)')
 
 
-@rule('F11', 'warning', 'src', '§1 rule 8', 'a file named after a round, a bundle or a technique '
-      '(heuristic)', 'Name the file after its topic')
+@rule('F11')
 def f_name(c):
     return [V('F11', p, 1, '(file)', Path(p).stem) for p in c.files
             if BAD_FILE_WORDS.search(Path(p).stem)]
 
 
 # ================================================================== P: placement and layers
-@rule('P1', 'error', 'src', '§2', 'an import of a higher layer (or Sketching importing Regression)',
-      'Move the declaration to the layer it belongs to (§2, §8 placement)')
+@rule('P1')
 def p_layer(c):
     out = []
     for p, (t, x) in c.lib_files.items():
@@ -321,14 +345,12 @@ def p_layer(c):
     return out
 
 
-@rule('P2', 'error', 'src', '§2', 'a file with imports only (a per-directory aggregator)',
-      'Delete it; a user imports the file they need')
+@rule('P2')
 def p_aggregator(c):
     return [V('P2', p, 1, '(file)') for p, (t, x) in c.lib_files.items() if not x['decls']]
 
 
-@rule('P3', 'error', 'src', '§7', 'an `NLAlib` file imports `NLAlibScaffold`',
-      'The scaffold is never imported by the library; move the proved declaration to `NLAlib/`')
+@rule('P3')
 def p_scaffold(c):
     return [V('P3', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
             for ln, pub, mod in x['imports'] if mod.startswith('NLAlibScaffold')]
@@ -338,22 +360,19 @@ def nl_deps(d):
     return [t for t in d.get('typeDeps') or [] if t.startswith('NLAlib.')]
 
 
-@rule('P4', 'error', 'x', '§2', 'a ForMathlib statement uses NLAlib vocabulary',
-      'Move it out of ForMathlib, to the topic file of that vocabulary')
+@rule('P4')
 def p_fm_vocab(c):
     return [V('P4', c.path_of(d), d['line'], d['name'], ', '.join(nl_deps(d))[:120])
             for d in c.decls if c.topic(d) == 'ForMathlib' and nl_deps(d)]
 
 
-@rule('P5', 'error', 'src', '§2', 'a ForMathlib declaration in namespace `NLAlib`',
-      'Declare it in the Mathlib namespace it would have upstream')
+@rule('P5')
 def p_fm_namespace(c):
     return [V('P5', p, d['line'], d['full']) for p, d in public_src(c)
             if topic_of_path(p) == 'ForMathlib' and d['full'].startswith('NLAlib.')]
 
 
-@rule('P6', 'error', 'src', '§2', 'a ForMathlib module docstring does not mark the file as an '
-      'upstream candidate', 'Say in the module docstring that its facts are upstream candidates')
+@rule('P6')
 def p_fm_moddoc(c):
     out = []
     for p, (t, x) in c.lib_files.items():
@@ -364,8 +383,7 @@ def p_fm_moddoc(c):
     return out
 
 
-@rule('P7', 'warning', 'src', '§2', 'a ForMathlib file in a directory Mathlib does not have',
-      'Name the file after the Mathlib file it would join')
+@rule('P7')
 def p_fm_path(c):
     if not c.mathlib or not c.mathlib.exists():
         return []
@@ -385,9 +403,7 @@ NS_ROOT_OK = re.compile(r'^(NLAlib\.|Matrix\.(IsHermitian|PosSemidef|PosDef|IsDi
                         r'MeasureTheory\.HasLaw\.|Mathlib\.Meta\.Positivity\.)')
 
 
-@rule('P8', 'error', 'src', '§3', 'a declaration outside ForMathlib and outside `NLAlib`, not on a '
-      'Mathlib hypothesis structure', 'Put it in `namespace NLAlib`, or move a general fact to '
-      'ForMathlib (§2)')
+@rule('P8')
 def p_ns_root(c):
     return [V('P8', p, d['line'], d['full'], '.'.join(d['full'].split('.')[:-1]))
             for p, d in public_src(c)
@@ -401,10 +417,18 @@ MATRIX_VOCAB = re.compile(r'\bMatrix\b|\b(?:circulant|diagonal|vecMulVec|fromBlo
                           r'\.(?:PosDef|PosSemidef|IsHermitian|charpoly|det|trace|rank)\b')
 
 
-@rule('P9', 'error', 'x', '§2', 'a general fact outside ForMathlib: a statement with no NLAlib, '
-      'matrix or measure vocabulary (heuristic)', 'Move it to the ForMathlib file of its Mathlib '
-      'subject; a false positive goes on the allowlist with a reason')
+@rule('P11')
+def p_poly_imports(c):
+    return [V('P11', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
+            if topic_of_path(p) == 'Polynomial' for ln, pub, mod in x['imports']
+            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
+                                                        'NLAlib.Polynomial.')))]
+
+
+@rule('P9')
 def p_fm_candidate(c):
+    # The Polynomial layer is exempt while P11 holds (rules.toml `exempt`; maintainer decision
+    # 2026-10-20): its headline scalar results stay in NLAlib/Polynomial.
     return [V('P9', c.path_of(d), d['line'], d['name']) for d in c.decls
             if c.topic(d) not in ('ForMathlib', '(root)') and d['kind'] == 'theorem'
             and not nl_deps(d) and not d['name'].startswith('Mathlib.Meta')
@@ -413,8 +437,7 @@ def p_fm_candidate(c):
                               d['signature'])]
 
 
-@rule('P10', 'warning', 'x', '§8 placement', 'the statement uses only vocabulary of lower layers '
-      '(heuristic review list)', 'Check that the file is where a user of its topic would look')
+@rule('P10')
 def p_lower(c):
     def_topic = {d['name']: c.topic(d) for d in c.decls}
     A = algo_defs(c)
@@ -433,22 +456,20 @@ def p_lower(c):
 
 
 # ================================================================== S: source and proof style
-@rule('S1', 'error', 'src', '§7', '`simp_all`', 'Use `simp only [...]`, `simp at h ⊢` or a term')
+@rule('S1')
 def s_simp_all(c):
     return [V('S1', p, i + 1, '(proof)', l.strip()[:60]) for p in c.files
             for i, l in enumerate(c.code(p)) if re.search(r'\bsimp_all\b', l)]
 
 
-@rule('S2', 'error', 'src', '§7', 'a search tactic left in (`exact?`, `apply?`, `rw?`, `simp?`, '
-      '`aesop?`)', 'Replace it by the proof term it suggests')
+@rule('S2')
 def s_search(c):
     return [V('S2', p, i + 1, '(proof)', l.strip()[:60]) for p in c.files
             for i, l in enumerate(c.code(p))
             if re.search(r'\b(exact|apply|rw|simp|aesop|hint)\?(?!\s*says)', l)]
 
 
-@rule('S3', 'warning', 'src', '§7', '`decide` (allowed on tiny finite goals only; review)',
-      'Prefer `simp`, `omega` or `fin_cases` on anything but a tiny goal')
+@rule('S3')
 def s_decide(c):
     return [V('S3', p, i + 1, '(proof)', l.strip()[:60]) for p in c.files
             for i, l in enumerate(c.code(p))
@@ -456,8 +477,7 @@ def s_decide(c):
             and 'Decidable' not in l]
 
 
-@rule('S4', 'error', 'src', '§7, §10', 'a proof over 80 lines',
-      'Split it into named lemmas')
+@rule('S4')
 def s_long_proof(c):
     out = []
     for p, (t, x) in c.files.items():
@@ -469,9 +489,7 @@ def s_long_proof(c):
     return out
 
 
-@rule('S5', 'warning', 'src', '§3', 'the same private helper name in two or more files '
-      '(candidates for one public lemma; review)', 'Make it one public, documented lemma in the '
-      'file that owns its subject')
+@rule('S5')
 def s_private_dup(c):
     seen = collections.defaultdict(list)
     for p, (t, x) in c.lib_files.items():
@@ -486,8 +504,7 @@ def s_private_dup(c):
     return out
 
 
-@rule('S6', 'error', 'x', '§7', 'a global instance on a Mathlib type',
-      'Only an instance Mathlib would add itself; allowlist it with the reason, or make it local')
+@rule('S6')
 def s_instance(c):
     out = []
     for d in c.decls:
@@ -513,16 +530,13 @@ def long_line_exempt(line):
     return len(toks) == 1
 
 
-@rule('S7', 'error', 'src', '§10, proof-agent brief', 'a line over 100 characters',
-      'Wrap it; only a line that is one identifier or contains a URL may be longer, under '
-      '`set_option linter.style.longLine false in` with a comment')
+@rule('S7')
 def s_long_line(c):
     return [V('S7', p, i + 1, '(line)', f'{len(l)} characters') for p, (t, x) in c.files.items()
             for i, l in enumerate(x['lines']) if len(l) > 100 and not long_line_exempt(l)]
 
 
-@rule('S8', 'error', 'src', '§10', '`set_option linter.style.longLine false in` on a declaration '
-      'with no line over 100 characters', 'Remove the option')
+@rule('S8')
 def s_longline_option(c):
     out = []
     for p, (t, x) in c.files.items():
@@ -545,23 +559,20 @@ def public_thms(c):
     return [d for d in c.decls if d['kind'] == 'theorem']
 
 
-@rule('T1', 'error', 'x', '§5.1', 'a Euclidean norm written `√(x ⬝ᵥ x)` in a statement',
-      'Write `‖WithLp.toLp 2 x‖`')
+@rule('T1')
 def t_sqrt_dot(c):
     return [V('T1', c.path_of(d), d['line'], d['name']) for d in c.decls
             if re.search(r'(√|Real\.sqrt)\s*\(?[^)]*⬝ᵥ', d['signature'])]
 
 
-@rule('T2', 'error', 'x', '§5.1', '`Real.toNNReal` in a statement', 'Write the `ℝ≥0` quantity with '
-      '`‖·‖₊`')
+@rule('T2')
 def t_nnreal(c):
     return [V('T2', c.path_of(d), d['line'], d['name']) for d in c.decls
             if 'toNNReal' in d['signature'] and 'toNNReal' not in d['name']
             and not d['name'].endswith('_def') and d['kind'] == 'theorem']
 
 
-@rule('T3', 'error', 'src', '§5.1', '`open scoped Matrix.Norms.Frobenius` or `…Elementwise`',
-      'Use the named norms `frobNorm`, `specNorm`; only `Matrix.Norms.L2Operator` is opened')
+@rule('T3')
 def t_norm_scope(c):
     return [V('T3', p, ln, '(file)', l.strip()) for p, (t, x) in c.files.items()
             for ln, l in x['commands'] if re.match(r'open.*Matrix\.Norms\.(Frobenius|Elementwise)', l)
@@ -575,8 +586,7 @@ def matrix_vars(sig):
     return out
 
 
-@rule('T4', 'warning', 'x', '§5.1', '`‖A‖` of a matrix in a statement outside the L2Operator files '
-      '(heuristic)', 'Use a named norm (`specNorm`, `frobNorm`)')
+@rule('T4')
 def t_matrix_norm(c):
     l2 = {p for p, (t, x) in c.lib_files.items()
           if re.search(r'^open scoped.*Matrix\.Norms\.L2Operator', t, re.M)}
@@ -592,45 +602,39 @@ def t_matrix_norm(c):
     return out
 
 
-@rule('T5', 'warning', 'x', '§5.1', 'a statement written with `ᵀ` (heuristic)',
-      'State it with `ᴴ`; over ℝ, `conjTranspose_eq_transpose_of_trivial` converts')
+@rule('T5')
 def t_transpose(c):
     return [V('T5', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if 'ᵀ' in d['signature'] and 'transpose' not in d['name'].lower()]
 
 
-@rule('T6', 'warning', 'x', '§5.1', 'a Matrix-layer theorem over `Fin` index types (review)',
-      'Use `[Fintype n]` unless order or recursion carries content')
+@rule('T6')
 def t_fin(c):
     return [V('T6', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
-            if c.topic(d) == 'Matrix' and re.search(r'Matrix \(Fin ', d['signature'])
+            if re.search(r'Matrix \(Fin ', d['signature'])
             and '/Factorizations/' not in c.path_of(d) and '/Structured/' not in c.path_of(d)]
 
 
-@rule('T7', 'warning', 'x', '§5.1', 'a Matrix-layer theorem over ℝ only (review)',
-      'State it over `[RCLike 𝕜]` if the proof allows')
+@rule('T7')
 def t_real(c):
     return [V('T7', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
-            if c.topic(d) == 'Matrix' and re.search(r'Matrix \S+ \S+ ℝ', d['signature'])
+            if re.search(r'Matrix \S+ \S+ ℝ', d['signature'])
             and 'RCLike' not in d['signature']]
 
 
-@rule('T8', 'error', 'x', '§5.2', 'a statement quantifies over `eigenvectorBasis`',
-      'Take an eigenvector `u` with `A *ᵥ u = c • u`, or an invariance equation')
+@rule('T8')
 def t_eigbasis(c):
     return [V('T8', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if 'eigenvectorBasis' in d['signature'] and 'eigenvectorBasis' not in d['name']]
 
 
-@rule('T9', 'error', 'x', '§5.2', 'a proof term inside a statement (`⋯` in the signature)',
-      'Introduce the hypothesis it proves, or state through a definition')
+@rule('T9')
 def t_proof_term(c):
     return [V('T9', c.path_of(d), d['line'], d['name']) for d in c.decls
             if d['kind'] == 'theorem' and '⋯' in d['signature']]
 
 
-@rule('T10', 'error', 'x', '§5.2', 'a `ℕ`-typed bound variable meeting `•`',
-      'Write the variable\'s type (`∀ θ : ℝ, …`)')
+@rule('T10')
 def t_smul_nat(c):
     out = []
     for d in c.decls:
@@ -659,15 +663,13 @@ def conclusion_top_and(concl):
     return False
 
 
-@rule('T11', 'warning', 'x', '§5.2', 'the conclusion is a top-level conjunction (heuristic: a '
-      'uniqueness pair is fine)', 'Split two-sided bounds into two theorems')
+@rule('T11')
 def t_conj(c):
     return [V('T11', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if conclusion_top_and(split_sig(d['signature'])[1])]
 
 
-@rule('T12', 'warning', 'x', '§5.2', 'an `∃`-index into `eigenvalue`/`singularValues` without a '
-      'range bound (heuristic)', 'Bound the index (`k < Fintype.card n`)')
+@rule('T12')
 def t_padded(c):
     out = []
     for d in public_thms(c):
@@ -682,9 +684,7 @@ def t_padded(c):
     return out
 
 
-@rule('T13', 'error', 'x', '§5.2', 'a hypothesis named `_h…` in a public statement (unused, so the '
-      'statement is not minimal)', 'Drop it; if it is kept for an interface, allowlist it with the '
-      'reason')
+@rule('T13')
 def t_unused_hyp(c):
     out = []
     for d in c.decls:
@@ -694,8 +694,7 @@ def t_unused_hyp(c):
     return out
 
 
-@rule('T14', 'warning', 'x', '§5.2, PORT_PROBABILITY D3', 'a tail stated with `μ {…} ≤` in `ℝ≥0∞` '
-      '(heuristic)', 'State tails in `μ.real`')
+@rule('T14')
 def t_tail_measure(c):
     return [V('T14', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if c.topic(d) != 'ForMathlib'
@@ -707,11 +706,7 @@ JENSEN_LEMMAS = {'integral_le_sqrt_integral_sq', 'map_integral_le', 'le_map_inte
                  'le_map_integral_of_integral_mem', 'exp_integral_le_integral', 'le_integral_comp'}
 
 
-@rule('T15', 'error', 'src', '§5.2', 'a theorem derived by Jensen from another library statement '
-      '(a lower moment from a higher one) is a separate theorem', 'Delete it: the higher-moment '
-      'theorem\'s docstring says in a sentence that the source prints the lower-moment form, which '
-      'follows by Jensen (`ProbabilityTheory.integral_le_sqrt_integral_sq`); it stays only if another '
-      'proof uses it, allowlisted with "used by …" (maintainer, 2026-10-19)')
+@rule('T15')
 def t_jensen_corollary(c):
     out = []
     for p, d in public_src(c):
@@ -731,35 +726,32 @@ def t_jensen_corollary(c):
 
 
 # ================================================================== V: vocabulary (§5.3)
-@rule('V1', 'error', 'x', '§5.3', 'a raw `Qᴴ * Q = 1` hypothesis', 'Take `HasOrthonormalCols Q`')
+@rule('V1')
 def v_raw_ortho(c):
     return [V('V1', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if re.search(r"\([\w'₀-₉]+ : (\w+)ᴴ \* \1 = 1\)", split_sig(d['signature'])[0])
             and 'hasorthonormalcols' not in d['name'].lower()]
 
 
-@rule('V2', 'error', 'x', '§5.3', 'truncated subtraction `Fintype.card n - k` in a statement',
-      'Use an auxiliary `d` with `hd : k + d = Fintype.card n`')
+@rule('V2')
 def v_trunc_sub(c):
     return [V('V2', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if re.search(r'(?<!\()Fintype\.card \w+ - ', d['signature'])]
 
 
-@rule('V3', 'error', 'x', '§5.3', 'a singular-value ratio spelled out',
-      'Use `singularGapRatio` (a bridge lemma relating the two is allowlisted)')
+@rule('V3')
 def v_gap_ratio(c):
     return [V('V3', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if re.search(r'singularValues \S+ \S+ / singularValues', d['signature'])]
 
 
-@rule('V4', 'error', 'x', '§5.3', '`frobNorm A * frobNorm A`', 'Write `frobNorm A ^ 2`')
+@rule('V4')
 def v_frob_mul(c):
     return [V('V4', c.path_of(d), d['line'], d['name']) for d in c.decls
             if re.search(r'frobNorm (\S+) \* frobNorm \1(?!\S)', d['signature'])]
 
 
-@rule('V5', 'error', 'src', '§5.3', 'a forbidden spelling (`matrixExp`, `matrixLog`, `traceExp`, '
-      '`lambdaMax`, `conditionNumber`)', 'Use the §5.3 spelling')
+@rule('V5')
 def v_forbidden(c):
     pat = re.compile(r'\b(matrixExp|matrixLog|traceExp|lambdaMax|conditionNumber)\b')
     return [V('V5', p, d['line'], d['full']) for p, d in public_src(c)
@@ -790,9 +782,7 @@ def contrib_without_names_section(text):
     return re.sub(r'^## 4\. Names\n.*?(?=^## 5\.)', '', text, flags=re.S | re.M)
 
 
-@rule('V6', 'error', 'src', '§5.3', 'a Lean name cited in CONTRIBUTING (outside §4) or '
-      'Mathlib-deviations.md is declared neither in NLAlib nor in Mathlib',
-      'Update the document to the current name')
+@rule('V6')
 def v_stale_names(c):
     if not c.mathlib or not c.mathlib.exists():
         return []
@@ -816,8 +806,7 @@ def v_stale_names(c):
     return out
 
 
-@rule('V7', 'warning', 'x', '§5.3, §8', 'a public definition named neither in §5.3 nor in '
-      'Mathlib-deviations.md (review list)', 'A new concept gets a §5.3 row through its design note')
+@rule('V7')
 def v_unrecorded(c):
     text = c.contrib + c.deviations
     out = []
@@ -834,17 +823,14 @@ def v_unrecorded(c):
 BOUND_NAME = re.compile(r'(Constant|Bound|Tail|Dim|Factor|Size|Rows|Rate|Exponent|Threshold)$')
 
 
-@rule('B1', 'error', 'src', '§5.2 rule 2', 'a named bound (name ends in Constant, Bound, Tail, Dim, '
-      'Factor, …) missing from docs/constants.toml', 'Add its registry entry in the same commit')
+@rule('B1')
 def b_unregistered(c):
     return [V('B1', p, d['line'], d['full']) for p, d in c.src_decls
             if d['kind'] in ('def', 'irreducible_def', 'abbrev') and d['name'] and not d['private']
             and BOUND_NAME.search(d['name']) and d['full'] not in c.reg_names]
 
 
-@rule('B2', 'error', 'x', '§5.2 rule 3', 'a bare `∃ C` constant in a statement not named '
-      '`exists_forall_`', 'Use a named constant, or an asymptotic form with `∃ C` before every '
-      'dimension')
+@rule('B2')
 def b_exists_c(c):
     rx = re.compile(r"∃ \(?(C|c|K|C₀|c₀|C'|c'|κ|L)\b[^,]*?:\s*ℝ")
     return [V('B2', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
@@ -855,15 +841,13 @@ def asymptotic(doc):
     return bool(re.search(r'^\s*Asymptotic:', doc or '', re.M))
 
 
-@rule('B3', 'error', 'src', '§5.2 rule 3', 'an asymptotic form whose docstring does not say '
-      '"$O(\\ldots)$ suffices"', 'Say in words which $O(\\cdot)$ size suffices')
+@rule('B3')
 def b_asym_words(c):
     return [V('B3', p, d['line'], d['full']) for p, d in public_src(c)
             if asymptotic(d['doc']) and not (re.search(r'O\(', d['doc']) and 'suffice' in d['doc'])]
 
 
-@rule('B4', 'error', 'x', '§5.2 rule 3', 'an asymptotic form whose constants do not come first or '
-      'whose index types are not `Type`', 'State `∃ C ε₀ : ℝ, … ∀ {Ω m n … : Type} …`')
+@rule('B4')
 def b_asym_shape(c):
     out = []
     for d in c.decls:
@@ -882,12 +866,11 @@ def b_asym_shape(c):
     return out
 
 
-@rule('B5', 'warning', 'x', '§5.2 rule 3', 'a Sketching or LowRank result with an ε sample-size '
-      'hypothesis and no asymptotic form (review list)', 'Add its `exists_forall_` corollary')
+@rule('B5')
 def b_asym_missing(c):
     out = []
     for d in public_thms(c):
-        if c.topic(d) not in ('Sketching', 'LowRank') or not has_result(d.get('doc')):
+        if not has_result(d.get('doc')):
             continue
         if 'exists_forall_' in d['name'] or 'Asymptotic form:' in (d.get('doc') or ''):
             continue
@@ -898,8 +881,7 @@ def b_asym_missing(c):
 
 
 # ================================================================== D: docstrings (§6)
-@rule('D1', 'error', 'src', '§6 item 1', 'a `Result:` declaration whose docstring has no bold name',
-      'Start the docstring with the result\'s **bold name**')
+@rule('D1')
 def d_bold(c):
     return [V('D1', p, d['line'], d['full']) for p, d in public_src(c)
             if has_result(d['doc']) and '**' not in d['doc']]
@@ -908,45 +890,45 @@ def d_bold(c):
 SELF_STRONG = re.compile(r'(?:[Uu]nder|[Ww]ith)\s+the\s+(?:hypotheses|assumptions|notation|setting)\s+of\s+'
                          r'(?:`[^`]+`|the [a-z ]+?)(?!`?\s*:)(?=[ ,.;)(]|$)|\bas there\b|'
                          r'(?:frames|notation|hypotheses|quantities) as in `|\bas above\b|'
-                         r'[Ss]ame (?:hypotheses|setting) as')
+                         r'[Ss]ame (?:hypotheses|setting) as|'
+                         # stage 3: "as in the tail", "as in the general form", "on the same
+                         # instance", "if moreover …" point at another statement for the setting
+                         r'\bas in the (?!source\b|literature\b|paper\b|prototype\b)[a-z]+\b|'
+                         r'\b(?:on|for|in) the same (?:instance|example|setting|data)\b|'
+                         r'\b(?:[Ii]f|[Ww]hen) moreover\b')
 
 
-@rule('D2', 'error', 'src', '§6 item 1', 'the docstring defers its hypotheses or notation to another '
-      'declaration', 'State the hypotheses and the conclusion in this docstring')
+@rule('D2')
 def d_self_contained(c):
     out = []
     for p, d in public_src(c):
-        m = SELF_STRONG.search(d['doc'] or '')
+        m = SELF_STRONG.search(' '.join((d['doc'] or '').split()))
         if m:
             out.append(V('D2', p, d['line'], d['full'], m.group(0)[:50]))
     return out
 
 
-@rule('D3', 'warning', 'x', '§6 item 5', 'a `Result:` theorem with a fraction in its conclusion and '
-      'no display (heuristic)', 'Display the conclusion with `$$…$$`')
+@rule('D3')
 def d_no_display(c):
     return [V('D3', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
             if has_result(d.get('doc')) and '$$' not in d['doc']
             and re.search(r' / |\^ \(?-', split_sig(d['signature'])[1])]
 
 
-@rule('D4', 'error', 'src', '§6 item 5', '`\\frac` in inline mathematics',
-      'Write `/` inline (`\\tfrac` for a small coefficient), `\\frac` only in a `$$…$$` display')
+@rule('D4')
 def d_frac_inline(c):
     return [V('D4', p, ln, who) for p, ln, who, doc, k in c.alldocs
             if any(not disp and '\\frac' in s for disp, s in leansrc.math_spans(doc))]
 
 
-@rule('D5', 'error', 'src', '§6 item 5', 'sentence punctuation after a `$$…$$` display',
-      'Put it inside the display (`… \\,.$$`)')
+@rule('D5')
 def d_punct(c):
     return [V('D5', p, ln, who) for p, ln, who, doc, k in c.alldocs
             if re.search(r'(?<!\\)\$\$[ \t]*[.,;:](?!\w)', re.sub(r'<!--.*?-->', '', doc))
             and re.search(r'[^$]\$\$[ \t]*[.,;:]', doc)]
 
 
-@rule('D6', 'error', 'src', '§6 item 5', 'a Lean identifier inside `$…$`',
-      'Lean names go in backticks; an algorithm output is `\\mathsf{name}`')
+@rule('D6')
 def d_lean_in_math(c):
     out = []
     for p, ln, who, doc, k in c.alldocs:
@@ -963,8 +945,7 @@ MATH_UNI = re.compile(r'‖[^‖]*‖[₂ₖ₁*F]|[σλ][₀-₉ᵢⱼₖ]|[σ�
 LEAN_TOK = re.compile(r'[A-Za-z]\.[A-Za-z]|\bfun\b|:=|\bMatrix\b|Finset|toLp|μ\.real|∂|∀|∃|\b[a-z]+[A-Z]\w*')
 
 
-@rule('D7', 'warning', 'src', '§6 item 5', 'informal Unicode mathematics in backticks (old style; '
-      'heuristic)', 'Write it in LaTeX')
+@rule('D7')
 def d_unicode(c):
     out = []
     for p, ln, who, doc, k in c.alldocs:
@@ -977,20 +958,19 @@ def d_unicode(c):
     return out
 
 
-@rule('D8', 'error', 'src', '§7', 'a `Proof:` sketch line in a library docstring',
-      'Delete it: `Proof:` lines belong to scaffold statements and go when the proof lands')
+@rule('D8')
 def d_proof_line(c):
+    # a `Proof:` line, or a sentence starting `Proof:` in mid-line (stage 3)
     return [V('D8', p, ln, who) for p, ln, who, doc, k in c.alldocs
-            if re.search(r'^\s*Proof:', doc, re.M)]
+            if re.search(r'^\s*Proof:|(?:[.;:)]|\*\*|\$\$)\s+Proof(?: sketch)?:', doc, re.M)]
 
 
-@rule('D9', 'error', 'src', '§6', 'no module docstring', 'Add `/-! # Title … ## Main results … -/`')
+@rule('D9')
 def d_moddoc_missing(c):
     return [V('D9', p, 1, '(file)') for p, (t, x) in c.lib_files.items() if not x['moddocs']]
 
 
-@rule('D10', 'error', 'src', '§6', 'the module docstring does not start with `# Title` or has no '
-      '`## Main results`', 'Follow Mathlib: `# Title`, a paragraph, `## Main results`')
+@rule('D10')
 def d_moddoc_shape(c):
     out = []
     for p, (t, x) in c.lib_files.items():
@@ -1007,8 +987,7 @@ def d_moddoc_shape(c):
     return out
 
 
-@rule('D11', 'error', 'src', '§6', 'a name listed in the module docstring is not declared',
-      'List the current names')
+@rule('D11')
 def d_moddoc_names(c):
     allnames = {d['full'] for p, (t, x) in c.files.items() for d in x['decls'] if d['full']}
     out = []
@@ -1023,8 +1002,48 @@ def d_moddoc_names(c):
     return out
 
 
+def headline(doc):
+    """A headline theorem: a `Result:` id or a bold name first."""
+    return has_result(doc) or bool(doc and doc.lstrip().startswith('**'))
+
+
+LAW_WORDS = re.compile(r'law|distribut|gaussian|haar|uniform|rademacher|normal|\\sim\b|i\.i\.d|'
+                       r'sampl|invariant|countsketch|srht|random sign', re.I)
+
+
+@rule('D12')
+def d_hyp_omitted(c):
+    out = []
+    for d in public_thms(c):
+        doc = d.get('doc')
+        if not doc:
+            continue
+        b, _ = split_sig(d['signature'])
+        flat = ' '.join(doc.split())
+        if re.search(r'\b(?:iIndepFun|IndepFun)\b', b) and not re.search(r'independ|i\.i\.d', flat, re.I):
+            out.append(V('D12', c.path_of(d), d['line'], d['name'], 'independence'))
+        elif headline(doc) and 'HasLaw ' in b and not LAW_WORDS.search(flat):
+            out.append(V('D12', c.path_of(d), d['line'], d['name'], 'the law'))
+    return out
+
+
+@rule('D13')
+def d_nonempty_omitted(c):
+    out = []
+    for d in public_thms(c):
+        doc = d.get('doc')
+        if not doc or not headline(doc):
+            continue
+        b, _ = split_sig(d['signature'])
+        ts = re.findall(r'\[Nonempty (\w+)\]', b)
+        if ts and not re.search(r'non-?empty|\\ne(?:q)? \\emptyset|\\ge(?:q)? 1\b|at least one',
+                                ' '.join(doc.split()), re.I):
+            out.append(V('D13', c.path_of(d), d['line'], d['name'], ', '.join(ts)))
+    return out
+
+
 # ================================================================== M: notation (§6 item 5)
-def math_rule(rid, level, pat, text, fix):
+def math_rule(rid, pat):
     rx = re.compile(pat)
 
     def fn(c):
@@ -1036,13 +1055,10 @@ def math_rule(rid, level, pat, text, fix):
                     out.append(V(rid, p, ln, who, m.group(0)))
                     break
         return out
-    rule(rid, level, 'src', '§6 item 5', text, fix)(fn)
+    rule(rid)(fn)
 
 
-math_rule('M1', 'error',
-          r'\\Pr\b|\\mathbb\{P\}\s*(_\{[^}]*\}|_\w)?\s*(\\left|\\[bB]igg?l)?(\(|\\\{)',
-          'a probability with round or brace delimiters, or `\\Pr`',
-          'Write `\\mathbb{P}[E]` (sized `\\mathbb{P}\\bigl[E\\bigr]`)')
+math_rule('M1', r'\\Pr\b|\\mathbb\{P\}\s*(_\{[^}]*\}|_\w)?\s*(\\left|\\[bB]igg?l)?(\(|\\\{)')
 
 
 def algo_defs(c):
@@ -1077,17 +1093,13 @@ def mathsf_missing(c, results_only):
     return out
 
 
-@rule('M2', 'error', 'x', '§6 item 5', 'a `Result:` theorem about an algorithm whose docstring never '
-      'writes its output as `\\mathsf{name}(…)`', 'Write `\\mathsf{name}(…)`, never the formula it '
-      'unfolds to')
+@rule('M2')
 def m_mathsf_result(c):
     return [V('M2', c.path_of(d), d['line'], d['name'], ', '.join(miss))
             for d, miss in mathsf_missing(c, True)]
 
 
-@rule('M3', 'warning', 'x', '§6 item 5', 'a theorem about an algorithm (no `Result:` id) whose '
-      'docstring never writes `\\mathsf{name}` (heuristic: a bridge may write the formula)',
-      'Write `\\mathsf{name}(…)`')
+@rule('M3')
 def m_mathsf_other(c):
     return [V('M3', c.path_of(d), d['line'], d['name'], ', '.join(miss))
             for d, miss in mathsf_missing(c, False)]
@@ -1096,9 +1108,7 @@ def m_mathsf_other(c):
 MATHSF_STD = {'F', 'H', 'T', 'Haar', 'OSE', 'OSI', 'JL', 'PCP'}
 
 
-@rule('M4', 'error', 'src', '§6 item 5', '`\\mathsf{x}` where `x` is neither a declaration nor a short '
-      'name registered in §5.3', 'Use the Lean name verbatim, or register the short name in the '
-      '§5.3 row "short algorithm names in `\\mathsf`"')
+@rule('M4')
 def m_mathsf_unknown(c):
     known = MATHSF_STD | set(c.short_mathsf) | c.src_short
     out = []
@@ -1113,50 +1123,35 @@ def m_mathsf_unknown(c):
     return out
 
 
-@rule('M5', 'warning', 'x', '§6 item 5', 'an algorithm-like definition used by results whose '
-      'docstring never writes `\\mathsf{name}` (heuristic)', 'Show its formula as '
-      '`\\mathsf{name}(…) := …`')
+@rule('M5')
 def m_mathsf_def(c):
     A = algo_defs(c)
     used = collections.Counter(t for d in c.decls if has_result(d.get('doc')) for t in d.get('typeDeps') or [])
     out = []
     for d in c.decls:
         if d['kind'] in ('def', 'abbrev') and d['name'] not in A and used[d['name']] >= 2 and \
-                c.topic(d) in ('LowRank', 'Krylov', 'Estimation', 'Regression', 'Sketching') and \
                 re.search(r': Matrix|→ Matrix', ' :' + split_sig(d['signature'])[1]):
             out.append(V('M5', c.path_of(d), d['line'], d['name'], f'used by {used[d["name"]]} results'))
     return out
 
 
-math_rule('M6', 'error', r'\|_\{?(F|\\mathrm\{F\}|\\text\{F\}|\\rm F|fro|\\mathrm\{fro\})\}?(?![a-zA-Z])',
-          'a Frobenius norm not written `\\|\\mathbf{A}\\|_{\\mathsf{F}}`', 'Use the notation table')
-math_rule('M7', 'error', r'\^\{?(T|H|\*|\\top|\\ast|\\mathrm\{[TH]\}|\\intercal|\\dagger|\\star)\}?(?![a-zA-Z])',
-          'a transpose or adjoint not written `^{\\mathsf{H}}`, `^{\\mathsf{T}}`',
-          'Use `^{\\mathsf{H}}` (adjoint), `^{\\mathsf{T}}`, `^{+}` (pseudoinverse)')
-math_rule('M8', 'error', r'\\(epsilon|phi)(?![a-zA-Z])', '`\\epsilon` or `\\phi`',
-          'Write `\\varepsilon`, `\\varphi`')
-math_rule('M9', 'error', r'\\(mathrm|text)\{(tr|Tr|rank|diag|Var|Re|adj|det|card)\}|'
-          r'\\operatorname\{(Tr|trace|Rank|Diag)\}', 'an operator name not in the notation table',
-          'Write `\\operatorname{tr}`, `\\operatorname{rank}`, `\\operatorname{Var}`, `\\det`, …')
-math_rule('M10', 'error', r'\\(mathbf|mathrm|operatorname)\{E\}\s*(\[|\\left\[|\\bigl\[)|(?<![\w\\{])E\[',
-          'an expectation not written `\\mathbb{E}`', 'Write `\\mathbb{E}`')
-math_rule('M11', 'error', r'\\(boldsymbol|bm)\{\\[A-Z]', 'a bold Greek matrix not written '
-          '`\\mathbf{\\Sigma}`', 'Write `\\mathbf{\\Sigma}`, `\\mathbf{\\Omega}`')
-math_rule('M12', 'error', r'\\(R|N|Z|C|Q|RR|NN|ZZ|eps|Set|set|abs|norm|tr)\b(?![a-zA-Z{])',
-          'a custom or KaTeX-only macro', 'Standard LaTeX only')
-math_rule('M13', 'error', r'\\mathbb\{[Kk]\}', 'the `RCLike` field not written `\\Bbbk`', 'Write `\\Bbbk`')
-math_rule('M14', 'error', r'\[\\!\[|\\lfloor\s*\\mathbf', 'a truncated SVD not written '
-          '`\\llbracket\\mathbf{A}\\rrbracket_k`', 'Write `\\llbracket\\mathbf{A}\\rrbracket_k`')
-math_rule('M15', 'warning', r'\\\|\\mathbf\{[A-Z]\}\\\|(?!_)', 'a matrix norm without its subscript '
-          '(heuristic)', 'Write `\\|\\mathbf{A}\\|_2` or `\\|\\mathbf{A}\\|_{\\mathsf{F}}`')
-math_rule('M16', 'warning', r'\\(#|operatorname\{card\}|mathrm\{card\})|(?<![\\\w])\|[a-z]\|',
-          'a cardinality not written `\\lvert n \\rvert` (heuristic)', 'Write `\\lvert n \\rvert`')
-math_rule('M17', 'error', r'\\(succcurlyeq|preccurlyeq)', 'a Loewner order not written `\\preceq`',
-          'Write `\\preceq`')
+math_rule('M6', r'\|_\{?(F|\\mathrm\{F\}|\\text\{F\}|\\rm F|fro|\\mathrm\{fro\})\}?(?![a-zA-Z])')
+math_rule('M7', r'\^\{?(T|H|\*|\\top|\\ast|\\mathrm\{[TH]\}|\\intercal|\\dagger|\\star)\}?(?![a-zA-Z])')
+math_rule('M8', r'\\(epsilon|phi)(?![a-zA-Z])')
+math_rule('M9', r'\\(mathrm|text)\{(tr|Tr|rank|diag|Var|Re|adj|det|card)\}|'
+          r'\\operatorname\{(Tr|trace|Rank|Diag)\}')
+math_rule('M10', r'\\(mathbf|mathrm|operatorname)\{E\}\s*(\[|\\left\[|\\bigl\[)|(?<![\w\\{])E\[')
+math_rule('M11', r'\\(boldsymbol|bm)\{\\[A-Z]')
+math_rule('M12', r'\\(R|N|Z|C|Q|RR|NN|ZZ|eps|Set|set|abs|norm|tr)\b(?![a-zA-Z{])')
+math_rule('M13', r'\\mathbb\{[Kk]\}')
+math_rule('M14', r'\[\\!\[|\\lfloor\s*\\mathbf')
+math_rule('M15', r'\\\|\\mathbf\{[A-Z]\}\\\|(?!_)')
+math_rule('M16', r'\\(#|operatorname\{card\}|mathrm\{card\})|\\left\||'
+          r'(?<![\\\w{|])\|[^|{}\n]{1,40}?(?<!\\)\|')
+math_rule('M17', r'\\(succcurlyeq|preccurlyeq)')
 
 
-@rule('M18', 'warning', 'x', '§6 item 5', 'a matrix variable written non-bold in mathematics '
-      '(heuristic)', 'Write `\\mathbf{A}`')
+@rule('M18')
 def m_bare_matrix(c):
     out = []
     for d in c.decls:
@@ -1173,15 +1168,13 @@ def m_bare_matrix(c):
 
 
 # ================================================================== C: citations (§6)
-@rule('C1', 'error', 'src', '§6 item 2', 'a `Result:` declaration with no `[Key, label]` citation and '
-      'no "No printed source."', 'Cite where it is printed, or say "No printed source."')
+@rule('C1')
 def c_result_cited(c):
     return [V('C1', p, d['line'], d['full']) for p, d in public_src(c)
             if has_result(d['doc']) and not CITE.search(d['doc']) and not NO_SOURCE.search(d['doc'])]
 
 
-@rule('C2', 'error', 'src', '§6 item 2', 'a bare `[Key]` citation in a declaration docstring',
-      'Add the printed label, `[Key, Theorem 8.1]`; a bare `[Key]` is for module docstrings only')
+@rule('C2')
 def c_bare_key(c):
     out = []
     for p, ln, who, doc, k in c.alldocs:
@@ -1191,15 +1184,13 @@ def c_bare_key(c):
     return out
 
 
-@rule('C3', 'error', 'src', '§6 item 5', 'mathematics inside a citation bracket',
-      'The label is plain text; put the remark after the bracket')
+@rule('C3')
 def c_math_in_bracket(c):
     return [V('C3', p, ln, who, m.group(0)[:60]) for p, ln, who, doc, k in c.alldocs
             for m in re.finditer(r'\[[A-Z][A-Za-z]+\d{4}[a-z]?,[^\]]*\$[^\]]*\]', doc)]
 
 
-@rule('C4', 'error', 'src', '§6', 'a citation-like bracket that `check_refs.py` does not parse',
-      'Write `[Key, label]` with a bibliography key')
+@rule('C4')
 def c_unparsed(c):
     out = []
     pat = re.compile(r'\[([^\]\[\n`$]*?\b(?:19|20)\d{2}[a-z]?\b[^\]\[\n`$]*)\]')
@@ -1216,15 +1207,13 @@ def bib_entries(c):
             re.finditer(r'^@\w+\{([^,\s]+),(.*?)^\}', c.bib, re.M | re.S)]
 
 
-@rule('C5', 'error', 'src', '§6, references.bib', 'a bibliography key not `AuthorSurnames` + year',
-      'Rename the key')
+@rule('C5')
 def c_bib_key(c):
     return [V('C5', BIB, ln, k) for k, body, ln in bib_entries(c)
             if not re.fullmatch(r'(?:[A-Z][a-z]+(?:[A-Z][a-z]+)*(?:Van|De|Von)?)+\d{4}[a-z]?', k)]
 
 
-@rule('C6', 'error', 'src', '§6, references.bib', 'a duplicate bibliography key or DOI',
-      'Keep one entry')
+@rule('C6')
 def c_bib_dup(c):
     out = []
     keys = collections.Counter(k for k, _, _ in bib_entries(c))
@@ -1238,24 +1227,21 @@ def c_bib_dup(c):
     return out
 
 
-@rule('C7', 'error', 'src', 'references.bib', 'the bibliography is not alphabetical by key',
-      'Move the entry to its place')
+@rule('C7')
 def c_bib_order(c):
     E = bib_entries(c)
     return [V('C7', BIB, ln, b, f'after {a}') for (a, _, _), (b, _, ln) in zip(E, E[1:])
             if b.lower() < a.lower()]
 
 
-@rule('C8', 'warning', 'src', 'references.bib', 'a bibliography entry cited nowhere in the library',
-      'Cite it or delete it')
+@rule('C8')
 def c_bib_unused(c):
     alltext = '\n'.join(t for t, x in c.lib_files.values())
     return [V('C8', BIB, ln, k) for k, body, ln in bib_entries(c)
             if not re.search(r'\[' + re.escape(k) + r'[\],]', alltext)]
 
 
-@rule('C9', 'warning', 'src', '§6 item 2', 'a bold-named theorem with neither a citation nor a '
-      '`Result:` id (review list)', 'Cite its source and give it an id, or drop the bold name')
+@rule('C9')
 def c_headline(c):
     return [V('C9', p, d['line'], d['full']) for p, d in public_src(c)
             if d['kind'] in ('theorem', 'lemma') and d['doc'] and d['doc'][3:].lstrip().startswith('**')
@@ -1268,9 +1254,7 @@ def prop_instance(d):
     return d['kind'] == 'instance' and re.match(r'(is|has)[A-Z]', d['full'].split('.')[-1])
 
 
-@rule('R1', 'error', 'src', '§6 item 4', 'a `Result:` id on a definition or structure',
-      'Ids name statements of results (maintainer, 2026-10-19); delete it, or move it to the '
-      'theorem that states the result')
+@rule('R1')
 def r_on_def(c):
     return [V('R1', p, d['line'], d['full'], d['kind']) for p, d in public_src(c)
             if has_result(d['doc']) and d['kind'] not in ('theorem', 'lemma') and not prop_instance(d)]
@@ -1298,8 +1282,7 @@ def result_ids(c):
 VARIANTS = ({'ose', 'osi'}, {'pd', 'psd'}, {'lu', 'qr'}, {'rbki', 'rsi'}, {'nysbki', 'nyssi'})
 
 
-@rule('R2', 'error', 'src', '§6 item 4', 'two result ids one or two edits apart (a misspelt id?)',
-      'Use the existing id; a deliberate variant goes on the allowlist')
+@rule('R2')
 def r_near_dup(c):
     ids = result_ids(c)
     keys = sorted(ids)
@@ -1318,8 +1301,7 @@ def r_near_dup(c):
     return out
 
 
-@rule('R3', 'error', 'src', 'explore README', 'an id or declaration the explorer\'s TOML names is '
-      'not in the library (needs --explore-repo)', 'Restore it, or update the explorer')
+@rule('R3')
 def r_orphan(c):
     if not c.explore_repo:
         return []
@@ -1343,8 +1325,7 @@ def r_orphan(c):
 
 
 # ================================================================== G: design records
-@rule('G1', 'error', 'src', '§8', 'a Mathlib-deviations entry without all of Mathlib, NLAlib, '
-      'Bridge, Why, Cost, Status', 'Fill the missing fields')
+@rule('G1')
 def g_deviation_fields(c):
     out = []
     lines = c.deviations.split('\n')
@@ -1362,8 +1343,7 @@ def g_deviation_fields(c):
     return out
 
 
-@rule('G2', 'error', 'src', '§9, AGENTS.md', 'a port-ledger entry whose target is not declared',
-      'Point the entry of docs/port/ledger.json at the current name (scripts/ledger_check.py)')
+@rule('G2')
 def g_ledger(c):
     if not (c.root / 'docs/port/ledger.json').exists():
         return []
@@ -1422,11 +1402,26 @@ def names_violations(c, partial):
         if (rid, name) in ok:
             continue
         d = c.by_name.get(name)
-        out.append(f'{rid} {c.path_of(d) if d else "?"}:{d["line"] if d else 0} {name}: {msg}')
+        path = c.path_of(d) if d else '?'
+        if rid in SPECS and d and not in_scope_path(SPECS[rid], path):
+            continue
+        out.append(f'{rid} {path}:{d["line"] if d else 0} {name}: {msg}')
     stale = [f'stale allowlist entry (scripts/names_allow.toml): {x["name"]} ({x["rule"]})'
              for x in allow if (x['rule'], x['name']) not in flagged
              and not (partial and x['name'] not in names)]
     return out, stale
+
+
+def check_registry():
+    """Every checked rule of rules.toml outside N1–N18 (scripts/check_names.py) has a check here,
+    and every check has its entry."""
+    missing = [r for r, sp in SPECS.items() if sp['check'] != 'none' and not r.startswith('N')
+               and r not in RULES]
+    if missing:
+        raise SystemExit(f'check_rules: no check for {", ".join(missing)} ({RULES_TOML})')
+
+
+check_registry()
 
 
 def run(argv=None):
@@ -1449,10 +1444,10 @@ def run(argv=None):
     ap.add_argument('--list', action='store_true', help='print the rules and exit')
     a = ap.parse_args(argv)
     if a.list:
-        for rid in sorted(RULES, key=rid_key):
-            r = RULES[rid]
-            print(f'{rid:4s} {r["level"]:7s} {"extraction" if r["tier"] == "x" else "source":10s} '
-                  f'{r["ref"]}: {r["text"]}')
+        for rid in sorted(SPECS, key=rid_key):
+            r = SPECS[rid]
+            scope = '' if r['scope'] == 'library' else ' [' + ', '.join(r['scope']) + ']'
+            print(f'{rid:4s} {r["severity"]:7s} {r["check"]:10s} {r["section"]}: {r["statement"]}{scope}')
         return 0
     data = json.loads(a.data.read_text()) if a.data else None
     c = Ctx(a.root, data, a.explore_repo, a.mathlib)

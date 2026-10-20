@@ -332,7 +332,7 @@ $\|(\mathbf{I} - \mathbf{P})\mathbf{R}\|_2 \le \|(\mathbf{I} - \mathbf{P})\mathb
 theorem _root_.IsStarProjection.specNorm_one_sub_mul_le_add {P R : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hR : IsStarProjection R) (Q : Matrix n n 𝕜) :
     specNorm ((1 - P) * R) ≤ specNorm ((1 - P) * Q) + specNorm ((1 - Q) * R) := by
-  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge ⊤ le_top) hR Q
+  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge ⊤) hR Q
   rwa [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, lpGauge_top_matrixNorm] at h
 
 /-- The triangle inequality for directed gaps in the Frobenius norm:
@@ -341,7 +341,7 @@ $\|(\mathbf{I} - \mathbf{P})\mathbf{R}\|_{\mathsf{F}} \le \|(\mathbf{I} -
 theorem _root_.IsStarProjection.frobNorm_one_sub_mul_le_add {P R : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hR : IsStarProjection R) (Q : Matrix n n 𝕜) :
     frobNorm ((1 - P) * R) ≤ frobNorm ((1 - P) * Q) + frobNorm ((1 - Q) * R) := by
-  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge 2 one_le_two) hR Q
+  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge 2) hR Q
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h
 
 /-! ### Projectors of equal rank -/
@@ -389,7 +389,7 @@ Port of `NLAlib.frobSq_complement_mul_projector_eq_of_rank_eq`. -/
 theorem _root_.IsStarProjection.frobNorm_one_sub_mul_eq_of_rank_eq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) (h : P.rank = Q.rank) :
     frobNorm ((1 - Q) * P) = frobNorm ((1 - P) * Q) := by
-  have h2 := hP.matrixNorm_one_sub_mul_eq_of_rank_eq (lpGauge 2 one_le_two) hQ h
+  have h2 := hP.matrixNorm_one_sub_mul_eq_of_rank_eq (lpGauge 2) hQ h
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h2
 
 /-! ### The difference of two projectors -/

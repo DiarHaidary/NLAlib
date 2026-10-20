@@ -179,7 +179,10 @@ theorem measureReal_eigenvalue_zero_sum_ge_le [Nonempty n] (hind : iIndepFun X �
     (integrable_re_trace_exp_sum hind h hθs) t).trans
     (mul_le_mul_of_nonneg_left (integral_re_trace_exp_sum_le hind h hθs) (Real.exp_pos _).le)
 
-/-- The master tail bound in the dimension form: if moreover $g(\theta) \ge 0$, then
+/-- The master tail bound in the dimension form: for finitely many independent summands
+$\mathbf{X}_k$ with matrix MGF bounds $\mathbb{E} e^{\theta \mathbf{X}_k} \preceq
+e^{g(\theta) \mathbf{A}_k}$ on $s$, $n$ nonempty, $\theta \in s$, $\theta > 0$,
+$g(\theta) \ge 0$ and every real $t$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr]
 \le \lvert n\rvert\, e^{-\theta t + g(\theta) \lambda_0(\sum_k \mathbf{A}_k)}\,.$$ -/
 theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : iIndepFun X μ)

@@ -91,7 +91,6 @@ private theorem sq_le_mul_sq_sub_two_mul_add_sq {R D E X : ℝ} (hR : 1 ≤ R)
     rw [hτdef]
     field_simp
     ring
-  have hR' : 0 < R := by linarith
   calc E ^ 2 = (R + 1) ^ 2 / (4 * R) * ((1 - τ ^ 2) * E ^ 2) := by
         rw [← mul_assoc, h2, one_mul]
     _ ≤ _ := mul_le_mul_of_nonneg_left h1 (by positivity)
@@ -137,14 +136,14 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_cfc_sub_le_of_sub_eq_aeval_mulVec
       (R + 1) ^ 2 / (4 * R) * RCLike.re (quadForm (cfc ν A) (w - y)) := by
   have hc : ∀ φ : ℝ → ℝ, ContinuousOn φ (spectrum ℝ A) := fun φ =>
     A.finite_real_spectrum.continuousOn φ
-  set g : ℝ → ℝ := fun x => ν x * ς x with hg
+  set g : ℝ → ℝ := fun x => ν x * ς x
   -- a constant `c` with `c ≤ g ≤ R c` on the spectrum
   obtain ⟨c, hcg⟩ := exists_forall_mem_spectrum_le_and_le_mul A (g := g) hR
   set ĝ := 2 * R * c / (R + 1)
   set τ := (R - 1) / (R + 1)
   have hτ : 0 ≤ τ := div_nonneg (by linarith) (by linarith)
   have hNH : (cfc ν A).IsHermitian := cfc_predicate ν A
-  set e := w - y₀ with he_def
+  set e := w - y₀
   set d := y - y₀
   have hd : d ∈ krylovSpace A b q := Submodule.sub_mem _ hy hy₀
   have hwy : w - y = e - d := (sub_sub_sub_cancel_right w y y₀).symm
@@ -390,7 +389,6 @@ theorem _root_.Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le {A : Ma
 $\bigl(\tfrac12(\kappa^{E/2} + \kappa^{-E/2})\bigr)^2$. -/
 private theorem add_one_sq_div_rpow_eq {K : ℝ} (hK : 0 < K) (E : ℝ) :
     (K ^ E + 1) ^ 2 / (4 * K ^ E) = ((K ^ (E / 2) + K ^ (-(E / 2))) / 2) ^ 2 := by
-  have hu0 : 0 < K ^ (E / 2) := Real.rpow_pos_of_pos hK _
   have h1 : K ^ E = (K ^ (E / 2)) ^ 2 := by
     rw [← Real.rpow_natCast, ← Real.rpow_mul hK.le]
     norm_num
@@ -476,7 +474,6 @@ private theorem norm_toLp_le_of_re_quadForm_one_le {u v : n → 𝕜} {K : ℝ}
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [Subsingleton.elim u 0, Subsingleton.elim v 0, WithLp.toLp_zero, norm_zero, mul_zero]
   have hK0 := hK hn
-  have hc : 0 ≤ (Real.sqrt K + (Real.sqrt K)⁻¹) / 2 := by positivity
   rw [quadForm_one, quadForm_one, RCLike.ofReal_re, RCLike.ofReal_re,
     show max (0 : ℝ) (1 - 0) / 2 = 1 / 2 by norm_num, ← Real.sqrt_eq_rpow,
     Real.rpow_neg hK0, ← Real.sqrt_eq_rpow, ← mul_pow] at h

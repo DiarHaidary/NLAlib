@@ -257,9 +257,7 @@ $\iota : k \to n$ a uniform injection, $J$ a vector of $\lvert k \rvert$ i.i.d. 
 (there a finite set in a vector space and $f$ convex on its convex hull, applied to matrices).
 Here any real Banach space and any $f$ convex and continuous on a closed convex $s$; the hypothesis
 $\lvert k \rvert \le \lvert n \rvert$ is needed since otherwise the left side is $0$ and a convex
-$f$ may be negative. Proof: the kernel form with a private kernel that composes the injection
-with a random pattern $k \to k$ whose law is invariant under permutations of $k$ (the barycenter
-is the injective sum) and whose composition with a uniform injection is uniform on $k \to n$.
+$f$ may be negative.
 The statement is that of the prototype's `integral_uniform_subset_convex_le_iid` (there on subsets,
 `PMF`, `Fin k` and $s$ the whole space); the proof is new, the pattern kernel and two permutation
 averages replacing the prototype's explicit coupling and conditional weights.

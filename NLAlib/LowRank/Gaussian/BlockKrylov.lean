@@ -88,7 +88,6 @@ private theorem integral_gram_sub_rsvd_aeval_le (Φ : SymmetricGauge) (A : Matri
     A hX f hrt ht hc hhead htail
   rw [hr'] at h
   refine h.trans (add_le_add le_rfl ?_)
-  have hΦ : 0 ≤ Φ (Finsupp.single 0 1) := apply_nonneg _ _
   have hτ := natCast_div_sub_sub_one_nonneg (K := ℝ) ht
   calc Φ (Finsupp.single 0 1) * (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
         frobNorm (A - truncatedSVD A t) ^ 2
@@ -160,7 +159,7 @@ private theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
     intro ω
     refine (frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add A (Y ω) r).trans
       (add_le_add le_rfl (pow_le_pow_left₀ (frobNorm_nonneg _) ?_ 2))
-    have h := (lpGauge 2 one_le_two).matrixNorm_le_of_singularValues_le
+    have h := (lpGauge 2).matrixNorm_le_of_singularValues_le
       (singularValues_one_sub_rangeProjector_mul_le_of_range_le (hrange ω) (truncatedSVD A r))
     rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, Matrix.sub_mul, Matrix.one_mul] at h
   have hI : Integrable (fun ω => frobNorm (A - truncatedSVD A r) ^ 2 +
@@ -254,7 +253,6 @@ private theorem exp_div_two_le_abs_eval_T_comp (A : Matrix m n ℝ) {h t q i : �
   rw [hexp] at hgrowth
   simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
   rw [hx, ← hT]
-  have hc : 0 < Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2 := by positivity
   exact (hgrowth.trans hmono).trans (le_abs_self _)
 
 omit [DecidableEq n] in
@@ -427,9 +425,9 @@ theorem integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
       singularValues A r ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rbki_le (lpGauge ⊤ le_top) A hX hr hrt ht hq
+  have h := integral_gram_sub_rbki_le (lpGauge ⊤) A hX hr hrt ht hq
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 -- The declaration name alone exceeds 100 characters.
@@ -455,7 +453,7 @@ theorem integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
       frobNorm (A - truncatedSVD A r) ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rbki_le (lpGauge 1 le_rfl) A hX hr hrt ht hq
+  have h := integral_gram_sub_rbki_le (lpGauge 1) A hX hr hrt ht hq
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   exact h
@@ -511,9 +509,9 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
       singularValues A r ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rsi_le (lpGauge ⊤ le_top) A hX hr hrt ht p
+  have h := integral_gram_sub_rsi_le (lpGauge ⊤) A hX hr hrt ht p
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 -- The declaration name alone exceeds 100 characters.
@@ -539,7 +537,7 @@ theorem integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
       frobNorm (A - truncatedSVD A r) ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rsi_le (lpGauge 1 le_rfl) A hX hr hrt ht p
+  have h := integral_gram_sub_rsi_le (lpGauge 1) A hX hr hrt ht p
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   exact h

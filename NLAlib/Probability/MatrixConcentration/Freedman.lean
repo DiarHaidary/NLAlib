@@ -14,7 +14,7 @@ public import NLAlib.Probability.MatrixConcentration.ConditionalMGFBound
 
 For increments $\mathbf{X}_j$ adapted to a filtration $\mathcal{F}$ ($\mathbf{X}_j$ is
 $\mathcal{F}_{j+1}$-measurable) with conditional matrix MGF bounds
-`NLAlib.HasCondMatrixMGFBound (ℱ j) _ (X j) g (A j) s μ`, the trace potential
+`NLAlib.HasCondMatrixMGFBound (ℱ j) (X j) g (A j) s μ`, the trace potential
 $\operatorname{tr} e^{\theta \mathbf{Y}_k - g(\theta) \mathbf{W}_k}$, with
 $\mathbf{Y}_k = \sum_{j<k} \mathbf{X}_j$ and $\mathbf{W}_k = \sum_{j<k} \mathbf{A}_j$, is a
 supermartingale (conditional Lieb). Ville's maximal inequality for it is the martingale master
@@ -72,7 +72,7 @@ variable {X A : ℕ → Ω → Matrix n n 𝕜} {g : ℝ → ℝ} {s : Set ℝ}
 omit [IsProbabilityMeasure μ] in
 /-- The exponent of the trace potential is almost surely Hermitian, at every time at once. -/
 private theorem ae_isHermitian_potential
-    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) (θ : ℝ) :
+    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (X j) g (A j) s μ) (θ : ℝ) :
     ∀ᵐ ω ∂μ, ∀ k, (θ • ∑ j ∈ Finset.range k, X j ω -
       g θ • ∑ j ∈ Finset.range k, A j ω).IsHermitian := by
   filter_upwards [ae_all_iff.mpr fun j => (h j).ae_isHermitian,
@@ -87,7 +87,7 @@ $\mathbf{Y}_k = \sum_{j<k} \mathbf{X}_j$, $\mathbf{W}_k = \sum_{j<k} \mathbf{A}_
 $\theta \in s$, is a supermartingale. Its integrability is a hypothesis here (it is derived in
 Freedman's inequality from boundedness). [Tropp2011, §2]. -/
 theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
-    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθ : θ ∈ s)
+    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (X j) g (A j) s μ) {θ : ℝ} (hθ : θ ∈ s)
     (hint : ∀ k, Integrable (fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
       g θ • ∑ j ∈ Finset.range k, A j ω)).trace) μ) :
     Supermartingale (fun k ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
@@ -146,7 +146,7 @@ $$\mathbb{P}\bigl[\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
 `NLAlib.HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp`. -/
 theorem measureReal_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
     (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
-    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ : ℝ} (hθs : θ ∈ s)
+    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (X j) g (A j) s μ) {θ : ℝ} (hθs : θ ∈ s)
     (hθ : 0 < θ) (hg : 0 ≤ g θ)
     (hint : ∀ k, Integrable (fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
       g θ • ∑ j ∈ Finset.range k, A j ω)).trace) μ) (t w : ℝ) :
@@ -199,7 +199,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
 $\mathbf{X}_j \preceq L\mathbf{I}$, $\mathbf{A}_j \succeq \mathbf{0}$ and $\theta, g(\theta) \ge 0$:
 it is at most $\lvert n\rvert\, e^{\theta k L}$. -/
 private theorem integrable_potential (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)] (X j))
-    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) g (A j) s μ) {θ L : ℝ} (hθ : 0 ≤ θ)
+    (h : ∀ j, HasCondMatrixMGFBound (ℱ j) (X j) g (A j) s μ) {θ L : ℝ} (hθ : 0 ≤ θ)
     (hg : 0 ≤ g θ) (hle : ∀ j, ∀ᵐ ω ∂μ, X j ω ≤ L • (1 : Matrix n n 𝕜))
     (hA : ∀ j, ∀ᵐ ω ∂μ, (A j ω).PosSemidef) (k : ℕ) :
     Integrable (fun ω => RCLike.re (exp (θ • ∑ j ∈ Finset.range k, X j ω -
@@ -260,7 +260,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
   · rw [show -((0 : ℝ) ^ 2 / 2) / (v + L * 0 / 3) = 0 by ring, Real.exp_zero, mul_one]
     exact measureReal_le_one.trans hd
   obtain ⟨θ, hθ, hθb⟩ := exists_bernstein_exponent hL hv ht'
-  have h : ∀ j, HasCondMatrixMGFBound (ℱ j) (ℱ.le j) (X j) (fun θ => θ ^ 2 / 2 / (1 - L * θ / 3))
+  have h : ∀ j, HasCondMatrixMGFBound (ℱ j) (X j) (fun θ => θ ^ 2 / 2 / (1 - L * θ / 3))
       (μ[fun ω' => X j ω' ^ 2 | ℱ j]) (Set.Ioo 0 (3 / L)) μ := fun j =>
     hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (ℱ.le j) hL (hX2 j) (hmean j) (hle j)
   have hg := sq_div_two_div_nonneg_of_mem_Ioo hL hθ

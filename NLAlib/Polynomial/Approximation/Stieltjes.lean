@@ -43,7 +43,7 @@ transform of a measure, and `HasStieltjesMeasure.apply_eq_resolventTransform` is
 
 * `NLAlib.HasStieltjesMeasure.ae_nonneg`, `.integrable_inv_add`: the measure is carried by
   $[0, \infty)$ and each kernel $(z + t)^{-1}$, $z > 0$, is integrable.
-* `NLAlib.HasStieltjesMeasure.nonneg`, `.antitoneOn`, `.monotoneOn_mul_self`: $f \ge 0$,
+* `NLAlib.HasStieltjesMeasure.nonneg`, `.antitoneOn`, `.monotoneOn_id_mul`: $f \ge 0$,
   $f$ is non-increasing and $z f(z)$ is non-decreasing on $(0, \infty)$.
 * `NLAlib.HasStieltjesMeasure.mul_le_mul_of_ae_le`: a ratio bound on the kernel
   $\nu(z)/(z + t)$, for $\mu$-almost every $t \ge 0$, passes to $\nu f$.
@@ -155,7 +155,7 @@ theorem HasStieltjesMeasure.antitoneOn (hf : HasStieltjesMeasure f μ) :
   exact inv_anti₀ (by linarith) (by linarith)
 
 /-- $z \mapsto z f(z)$ is non-decreasing on $(0, \infty)$ for a Stieltjes function $f$. -/
-theorem HasStieltjesMeasure.monotoneOn_mul_self (hf : HasStieltjesMeasure f μ) :
+theorem HasStieltjesMeasure.monotoneOn_id_mul (hf : HasStieltjesMeasure f μ) :
     MonotoneOn (fun z => z * f z) (Set.Ioi 0) := by
   intro x hx y hy hxy
   have hx' : (0 : ℝ) < x := hx

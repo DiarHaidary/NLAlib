@@ -509,7 +509,7 @@ theorem integrable_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_of_hasLaw_gau
     (hgn.const_mul 8).add (integrable_const _)
   refine hB.mono' hm (ae_of_all _ fun ω => ?_)
   have h := (isBestRankApprox_truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k
-    ).matrixNorm_sub_le_add_two_mul (lpGauge 2 one_le_two) A
+    ).matrixNorm_sub_le_add_two_mul (lpGauge 2) A
   simp only [lpGauge_two_matrixNorm] at h
   rw [Real.norm_of_nonneg (sq_nonneg _)]
   have h2 := pow_le_pow_left₀ (frobNorm_nonneg _) h 2

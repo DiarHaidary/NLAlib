@@ -379,24 +379,24 @@ end SymmetricGauge
 /-- The norm of the $\ell^q$ gauge is the Schatten $q$-norm $\|\mathbf{A}\|_{S_q}$.
 Port of `NLAlib.schattenInvariantNorm_apply`. -/
 @[simp]
-theorem lpGauge_matrixNorm {q : ℝ≥0∞} (hq : 1 ≤ q) (A : Matrix m n 𝕜) :
-    (lpGauge q hq).matrixNorm A = schattenNorm q A := by
+theorem lpGauge_matrixNorm {q : ℝ≥0∞} [Fact (1 ≤ q)] (A : Matrix m n 𝕜) :
+    (lpGauge q).matrixNorm A = schattenNorm q A := by
   rw [SymmetricGauge.matrixNorm_def, schattenNorm]
-  exact lpGauge_apply_eq_norm_toLp hq fun i hi => singularValues_of_min_card_le A hi
+  exact lpGauge_apply_eq_norm_toLp fun i hi => singularValues_of_min_card_le A hi
 
 /-- The norm of the $\ell^\infty$ gauge is the spectral norm $\|\mathbf{A}\|_2$. -/
 theorem lpGauge_top_matrixNorm (A : Matrix m n 𝕜) :
-    (lpGauge ⊤ le_top).matrixNorm A = specNorm A := by
+    (lpGauge ⊤).matrixNorm A = specNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_top]
 
 /-- The norm of the $\ell^2$ gauge is the Frobenius norm $\|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem lpGauge_two_matrixNorm (A : Matrix m n 𝕜) :
-    (lpGauge 2 one_le_two).matrixNorm A = frobNorm A := by
+    (lpGauge 2).matrixNorm A = frobNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_two]
 
 /-- The norm of the $\ell^1$ gauge is the nuclear norm $\|\mathbf{A}\|_*$. -/
 theorem lpGauge_one_matrixNorm (A : Matrix m n 𝕜) :
-    (lpGauge 1 le_rfl).matrixNorm A = nuclearNorm A := by
+    (lpGauge 1).matrixNorm A = nuclearNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_one]
 
 /-- The norm of the Ky Fan $k$-gauge is the Ky Fan $k$-norm $\|\mathbf{A}\|_{(k)}$.

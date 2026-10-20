@@ -274,7 +274,7 @@ for every unit $\mathbf{x}$ and $\varepsilon \ge 0$; $\|\mathbf{S}\mathbf{x}\|^2
 = (\lvert n \rvert / \lvert k \rvert) \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2$ for $\mathbf{u}$
 uniform on the sphere (`NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`) and the
 relative-deviation tail of `NLAlib/RandomMatrix/Haar/Sphere.lean`.
-[Vershynin2018, Lemma 5.3.2 (2020 draft)], there with an unspecified constant $c$; the exponent of
+[Vershynin2018, Lemma 5.3.2], there with an unspecified constant $c$; the exponent of
 Dasgupta and Gupta (2003). -/
 theorem hasJLProperty_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 ≤ ε) :

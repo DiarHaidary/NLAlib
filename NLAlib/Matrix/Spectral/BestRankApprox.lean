@@ -480,7 +480,7 @@ private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : �
     rw [← truncatedSVD_def, truncatedSVD_of_rank_le C hk]
     exact (isBestRankApprox_iff_eq_of_rank_le hk).mp h
   rw [not_le] at hk
-  set r := min (Fintype.card m) (Fintype.card n) with hr
+  set r := min (Fintype.card m) (Fintype.card n)
   have hkm : k ≤ Fintype.card m := hk.le.trans C.rank_le_card_height
   have hkn : k ≤ Fintype.card n := hk.le.trans C.rank_le_card_width
   have hpos : ∀ i : Fin k, ((singularValues C i : ℝ) : 𝕜) ≠ 0 := fun i =>
@@ -830,12 +830,7 @@ theorem IsBestRankApprox.frobNorm_sub_le_add_frobNorm_truncatedSVD {C E Y : Matr
       (frobNorm (C - Y) + frobNorm (C - truncatedSVD C k)) :=
     (frobInner_le_frobNorm_mul_frobNorm_truncatedSVD_of_rank_le hrank E).trans
       (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left htri hβ)
-  have hx := frobNorm_nonneg (C - Y)
   have hΔ := frobNorm_nonneg (C - truncatedSVD C k)
-  have hquad : frobNorm (C - Y) ^ 2 ≤ frobNorm (C - truncatedSVD C k) ^ 2 +
-      2 * frobNorm (truncatedSVD E (2 * k)) *
-        (frobNorm (C - Y) + frobNorm (C - truncatedSVD C k)) := by
-    linarith
   by_contra hcon
   replace hcon := not_le.mp hcon
   have h1 : 0 < frobNorm (C - Y) + frobNorm (C - truncatedSVD C k) := by linarith

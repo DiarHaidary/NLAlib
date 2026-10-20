@@ -176,7 +176,7 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
       hX.aemeasurable) hI hpt).trans_eq ?_
     rw [integral_add (integrable_const _) (hMi.const_mul _), integral_const, probReal_univ,
       one_smul, integral_const_mul, hM, Fintype.card_fin]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
     rw [hF]
     ring
@@ -214,7 +214,7 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       gaussianProjectionFactor k (Fintype.card l) * frobNorm (A - truncatedSVD A k) ^ 2 := by
   have h := integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix
-    (lpGauge 1 le_rfl) A hX hk
+    (lpGauge 1) A hX hk
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   rw [gaussianProjectionFactor_def]
@@ -263,10 +263,11 @@ theorem integral_schattenNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matri
     exact hp
   have hq0 : p / 2 ≠ 0 := (zero_lt_one.trans_le hq).ne'
   have h2 : 2 * (p / 2) = p := ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top
+  have := Fact.mk hq
   have h := integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix
-    (lpGauge (p / 2) hq) A hX hk
-  simp only [lpGauge_matrixNorm hq, schattenNorm_conjTranspose_mul_self hq0, h2,
-    lpGauge_apply_single_zero hq, one_mul] at h
+    (lpGauge (p / 2)) A hX hk
+  simp only [lpGauge_matrixNorm, schattenNorm_conjTranspose_mul_self hq0, h2,
+    lpGauge_apply_single_zero, one_mul] at h
   exact h
 
 open SymmetricGauge in
@@ -286,9 +287,9 @@ theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
       singularValues A k ^ 2 +
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * frobNorm (A - truncatedSVD A k) ^ 2 := by
   have h := integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix
-    (lpGauge ⊤ le_top) A hX hk
+    (lpGauge ⊤) A hX hk
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 /-! ### The first spectral moment -/
@@ -338,9 +339,9 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
       (integrable_const _).add hMi
     refine (integral_mono_ae (integrable_specNorm_sub_rsvd A hX.aemeasurable) hI hpt).trans ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
-    have hS := (lpGauge ⊤ le_top).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hS := (lpGauge ⊤).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] at hS
     rw [hF, hS, Fintype.card_fin, ← gaussianPinvSpecNormBound_def] at hM
     linarith
@@ -400,9 +401,9 @@ theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_pinvSpecNormBo
       (integrable_const _).add hMi
     refine (integral_mono_ae (integrable_specNorm_sub_rsvd_sq A hX.aemeasurable) hI hpt).trans ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
-    have hS := (lpGauge ⊤ le_top).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hS := (lpGauge ⊤).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] at hS
     rw [hF, hS, Fintype.card_fin] at hM
     linarith
@@ -458,7 +459,7 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
       hI hpt).trans_eq ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul, hM,
       Fintype.card_fin, gaussianProjectionFactor_def]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
     rw [hF]
     ring

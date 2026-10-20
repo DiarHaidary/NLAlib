@@ -95,7 +95,7 @@ theorem _root_.Matrix.IsHermitian.specNorm_one_sub_mul_le_two_mul_specNorm_div_e
     smul_one_le_diagonal_iff.mpr fun i => by
       have := (hA.add hE).eigenvalue_le_eigenvalue (Nat.lt_succ_iff.mp i.2) hj
       linarith
-  have h' := (lpGauge ⊤ le_top).mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le hA hU hAU hL
+  have h' := (lpGauge ⊤).mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le hA hU hAU hL
     (U := U')
   rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, ← hAU', Matrix.add_mul,
     sub_add_cancel_left, specNorm_neg] at h'

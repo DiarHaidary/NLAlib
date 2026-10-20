@@ -163,6 +163,9 @@ FIX = {
             dict(decl('NLAlib.convex_setOf_posDef', ': Convex ℝ {A | A.PosDef}'),
                  statement='theorem convex_setOf_posDef : Convex ℝ {A : Matrix n n 𝕜 | A.PosDef}'),
             decl('NLAlib.cfc_diagonal', '(f : ℝ → ℝ) (d : n → ℝ) : cfc f (diagonal d) = diagonal (f ∘ d)')]),
+    'P11': ({'NLAlib/Polynomial/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.A\n\n')},
+            {'NLAlib/Polynomial/A.lean': lean(header=HDR + 'public import NLAlib.ForMathlib.Data.Real.Basic\n'
+                                              'public import NLAlib.Polynomial.B\n\n')}),
     'P10': ([decl('NLAlib.specNorm', '(A : Matrix m n 𝕜) : ℝ', kind='def'),
              decl('NLAlib.foo', '(A : Matrix m n 𝕜) : 0 ≤ specNorm A', module='NLAlib.LowRank.B',
                   deps=['NLAlib.specNorm'])],
@@ -229,6 +232,12 @@ FIX = {
     'D7': (CITED.replace('A result.', 'A result `‖A‖₂ ≤ 1`.'), CITED.replace('A result.', 'A result $\\|A\\|_2 \\le 1$.')),
     'D8': (CITED.replace('A result.', 'A result.\nProof: by induction.'), CITED),
     'D9': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc='')}, {}),
+    'D12': ([decl('NLAlib.t', '(hind : iIndepFun X μ) : P', doc='For summands $\\mathbf{X}_k$, $P$.')],
+            [decl('NLAlib.t', '(hind : iIndepFun X μ) : P', doc='For independent summands, $P$.'),
+             decl('NLAlib.u', '(hX : HasLaw X ν μ) : P', doc='**Gaussian tail**: for a standard Gaussian '
+                  '$\\mathbf{X}$, $P$.\nResult: r-id')]),
+    'D13': ([decl('NLAlib.t', '[Nonempty n] : P', doc='**Tail**: $P$.\nResult: r-id')],
+            [decl('NLAlib.t', '[Nonempty n] : P', doc='**Tail**: for $n$ nonempty, $P$.\nResult: r-id')]),
     'D10': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc=MODDOC.replace('## Main results', 'More'))}, {}),
     'D11': ({'NLAlib/Matrix/A.lean': lean(CITED, moddoc=MODDOC.replace('`NLAlib.foo`', '`NLAlib.gone`'))}, {}),
     'M1': (CITED.replace('A result.', 'A result $\\mathbb{P}\\bigl\\{E\\bigr\\} \\le \\mathbb{P}(E)$.'),
@@ -317,16 +326,42 @@ class RuleTests(unittest.TestCase):
                 self.assertEqual([v.text() for v in violations(rid, good)], [], f'{rid}: the good fixture fails')
 
     def test_every_rule_is_cited_where_it_is_stated(self):
-        # CONTRIBUTING §9.2: each rule's prose cites its id, as its messages do
+        # CONTRIBUTING §9.2: each rule's prose cites its id, as its messages do; and every id
+        # CONTRIBUTING states (in brackets, or a row of the §4 tables) is in rules.toml
         import re
         text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
         cited = {x.strip() for m in re.finditer(r'\[((?:[A-Z]\d+)(?:,\s*[A-Z]\d+)*)\]', text)
-                 for x in m.group(1).split(',')}
-        self.assertEqual(set(RULES) - cited, set())
+                 for x in m.group(1).split(',')} | set(re.findall(r'^\| ([A-Z]\d+) \|', text, re.M))
+        self.assertEqual(set(check_rules.SPECS) - cited, set(), 'in rules.toml, not in CONTRIBUTING')
+        self.assertEqual(cited - set(check_rules.SPECS), set(), 'in CONTRIBUTING, not in rules.toml')
+        self.assertEqual(set(RULES) - set(check_rules.SPECS), set())
+
+    def test_rules_toml_entries(self):
+        for rid, sp in check_rules.SPECS.items():
+            with self.subTest(rule=rid):
+                self.assertEqual(set(sp) - {'id', 'area', 'severity', 'check', 'scope', 'exclude', 'home',
+                                            'exempt', 'exempt_while', 'section', 'statement', 'fix'}, set())
+                self.assertIn(sp['severity'], ('error', 'warning', 'review'))
+                self.assertIn(sp['check'], ('source', 'extraction', 'none'))
+                self.assertEqual(sp['check'] == 'none', sp['severity'] == 'review')
+                self.assertTrue(sp['statement'] and sp['fix'] and '\n' not in sp['statement'])
+                self.assertFalse(sp['statement'].endswith('.'))
+                if sp['scope'] != 'library':
+                    self.assertTrue(all(s.startswith('NLAlib/') for s in sp['scope']))
+
+    def test_scope(self):
+        # a rule scoped to the Matrix layer (T7) ignores the same declaration in LowRank
+        bad = FIX['T7'][0][0]
+        self.assertTrue(violations('T7', [bad]))
+        self.assertEqual(violations('T7', [dict(bad, module='NLAlib.LowRank.B')]), [])
+
+    def test_generated_rule_files_are_current(self):
+        import gen_rules_md
+        self.assertEqual(gen_rules_md.main(['--check']), 0)
 
     def test_message_shape(self):
         v = violations('S1', FIX['S1'][0])[0].text()
-        self.assertRegex(v, r'^S1 NLAlib/Matrix/A\.lean:\d+ \S+: `simp_all`')
+        self.assertRegex(v, r'^S1 NLAlib/Matrix/A\.lean:\d+ \S+: No `simp_all`')
 
     def test_long_line_exemption(self):
         self.assertTrue(check_rules.long_line_exempt('  `' + 'x' * 120 + '`.'))
@@ -343,6 +378,44 @@ class RuleTests(unittest.TestCase):
                 + 'x' * 110 + ' :\n    True := trivial')
         self.assertEqual(violations('S8', body), [])
         self.assertEqual(violations('S7', body), [])
+
+    def test_deferral_phrasings(self):
+        # D2 misses found in stage 2: each phrasing defers the setting to another statement
+        for phrase in ('for summands $\\mathbf{X}_k$ as in the\ntail', 'as in the general form',
+                       'on the same instance the ratio is', 'if moreover $g \\ge 0$'):
+            with self.subTest(phrase=phrase):
+                self.assertTrue(violations('D2', CITED.replace('A result.', f'A result {phrase}.')))
+        for phrase in ('as in the source', 'with the same constants', 'as in `NLAlib.bar`'):
+            with self.subTest(phrase=phrase):
+                self.assertEqual(violations('D2', CITED.replace('A result.', f'A result {phrase}.')), [])
+
+    def test_proof_sentence_mid_line(self):
+        for doc in ('A result. Proof: by induction.', '**Foo.** Proof: by induction.',
+                    'A result (there scalar). Proof:\n$x = y$.'):
+            with self.subTest(doc=doc):
+                self.assertTrue(violations('D8', CITED.replace('**Foo.** A result.', doc)))
+        self.assertEqual(violations('D8', CITED.replace('A result.', 'A result; the proof is new.')), [])
+
+    def test_absolute_values(self):
+        # M16: an absolute value is `\lvert x \rvert` like a cardinality; `\|` norms and a bar in a
+        # subscript are not flagged
+        self.assertTrue(violations('M16', CITED.replace('A result.', 'A result $|p(x)| \\le 1$.')))
+        self.assertTrue(violations('M16', CITED.replace('A result.', 'A result $\\left|p\\right|$.')))
+        for ok in ('$\\lvert p \\rvert \\le 1$', '$\\|\\mathbf{A}\\|_2$', '$q_{t|u}$',
+                   '$\\mathbb{E}[X \\bigm| m]$'):
+            with self.subTest(ok=ok):
+                self.assertEqual(violations('M16', CITED.replace('A result.', f'A result {ok}.')), [])
+
+    def test_polynomial_exemption_needs_p11(self):
+        # P9 exempts the Polynomial layer only while P11 holds (maintainer decision 2026-10-20)
+        fact = decl('NLAlib.one_le_two', ': (1 : ℝ) ≤ 2', module='NLAlib.Polynomial.A')
+        clean = {'NLAlib/Polynomial/A.lean': lean(CITED)}
+        broken = {'NLAlib/Polynomial/A.lean': lean(CITED, header=HDR + 'public import NLAlib.Matrix.A\n\n')}
+        for files, n in ((clean, 0), (broken, 1)):
+            with tempfile.TemporaryDirectory() as tmp:
+                root, ml = make_root(tmp, files)
+                c = Ctx(root, data(fact), None, ml)
+                self.assertEqual(len(RULES['P9']['fn'](c)), n)
 
     def test_orphans(self):
         with tempfile.TemporaryDirectory() as tmp:

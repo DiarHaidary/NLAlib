@@ -143,7 +143,7 @@ theorem _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_g
     (hk : k + 2 ≤ Fintype.card l) :
     ∫ ω, nuclearNorm (H - nystrom H (X ω)) ∂μ ≤
       gaussianProjectionFactor k (Fintype.card l) * nuclearNorm (H - truncatedSVD H k) := by
-  have h := integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix (lpGauge 1 le_rfl) hH hX hk
+  have h := integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix (lpGauge 1) hH hX hk
   simp only [lpGauge_one_matrixNorm, lpGauge_apply_single_zero, one_mul] at h
   rw [gaussianProjectionFactor_def]
   linarith
@@ -190,8 +190,9 @@ theorem _root_.Matrix.PosSemidef.integral_schattenNorm_sub_nystrom_le_of_hasLaw_
     ∫ ω, schattenNorm p (H - nystrom H (X ω)) ∂μ ≤
       schattenNorm p (H - truncatedSVD H k) +
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) := by
-  have h := integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix (lpGauge p hp) hH hX hk
-  simpa only [lpGauge_matrixNorm hp, lpGauge_apply_single_zero hp, one_mul] using h
+  have := Fact.mk hp
+  have h := integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix (lpGauge p) hH hX hk
+  simpa only [lpGauge_matrixNorm, lpGauge_apply_single_zero, one_mul] using h
 
 open SymmetricGauge in
 /-- **The expected error of randomized Nyström, spectral norm**: for positive semidefinite
@@ -210,8 +211,8 @@ theorem _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_le_of_hasLaw_gaus
     ∫ ω, specNorm (H - nystrom H (X ω)) ∂μ ≤
       singularValues H k +
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) := by
-  have h := integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix (lpGauge ⊤ le_top) hH hX hk
-  simpa only [lpGauge_top_matrixNorm, lpGauge_apply_single_zero le_top, one_mul,
+  have h := integral_matrixNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix (lpGauge ⊤) hH hX hk
+  simpa only [lpGauge_top_matrixNorm, lpGauge_apply_single_zero, one_mul,
     specNorm_sub_truncatedSVD] using h
 
 /-- **The expected error of randomized Nyström, Frobenius norm**: for positive semidefinite
@@ -378,7 +379,7 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of
   have hpt : ∀ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ≤
       nuclearNorm (H - truncatedSVD H k) + nuclearNorm (H - nystrom H (X ω)) := fun ω => by
     simpa only [lpGauge_one_matrixNorm] using
-      (lpGauge 1 le_rfl).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
+      (lpGauge 1).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
   have hN := hH.integrable_nuclearNorm_sub_nystrom hX.aemeasurable
   have hI : Integrable (fun ω => nuclearNorm (H - truncatedSVD H k) +
       nuclearNorm (H - nystrom H (X ω))) μ := (integrable_const _).add hN
@@ -418,7 +419,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_le_add_of_isBestRankApprox_nystro
     fun ω => by
       simpa only [lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] using
         (hY ω).matrixNorm_sub_le_add_of_singularValues_le (hH.singularValues_nystrom_le (X ω))
-          (lpGauge ⊤ le_top)
+          (lpGauge ⊤)
   have hS := hH.integrable_specNorm_sub_nystrom hX.aemeasurable
   have hI : Integrable (fun ω => singularValues H k + specNorm (H - nystrom H (X ω))) μ :=
     (integrable_const _).add hS

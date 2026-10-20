@@ -190,16 +190,37 @@ None of these was approved by the maintainer when it was made. Status is given p
 
 ## 10. Derivatives of matrix-valued curves
 
-- **Mathlib.** `HasDerivAt` in a normed space, which for matrices needs a norm scope.
+- **Mathlib.** `HasDerivAt A A' t`. In the pinned Mathlib, `HasDerivAt` asks only for a
+  topological vector space (`[AddCommGroup F] [Module 𝕜 F] [TopologicalSpace F]
+  [ContinuousSMul 𝕜 F]`, `Mathlib/Analysis/Calculus/Deriv/Basic.lean`), so it is stated for a
+  matrix curve with Mathlib's global product topology and no norm scope; the bridge below is
+  stated that way. The calculus rules are not: `HasDerivAt.mul`, `HasDerivAt.pow` and the
+  inverse rules ask for `[NormedRing 𝔸] [NormedAlgebra 𝕜 𝔸]`, which matrices have only under a
+  norm scope (`Matrix.Norms.L2Operator`, and only over an `RCLike` field).
 - **NLAlib.** Entrywise: `∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t`.
 - **Bridge.** `Matrix.hasDerivAt_iff_forall_apply`.
-- **Why.** No norm scope in statements (entry 3).
+- **Why.** Corrected 2026-10-20: this entry said that `HasDerivAt` on matrices needs a norm scope,
+  which is false in the pinned Mathlib (above). What remains is the calculus rules: over a general
+  `NormedCommRing` entry ring (the generality of
+  `NLAlib/ForMathlib/Analysis/Calculus/Deriv/Matrix.lean`) no norm scope supplies the
+  `NormedRing` instance Mathlib's product, power and inverse rules need, and the entrywise proofs
+  go through the scalar rules. That is a reason for the proofs, not for the statements: a
+  statement with hypothesis `HasDerivAt A A' t` could be proved by the same entrywise argument
+  through the bridge.
 - **Cost.** Hypotheses are `∀ i j` families rather than one `HasDerivAt`, so Mathlib's calculus
   rules are not applied to the matrix curve: the product, power, trace, determinant and inverse
   rules are proved again entrywise (`Matrix.hasDerivAt_mul_apply`,
   `Matrix.hasDerivAt_pow_succ_apply`, `Matrix.hasDerivAt_det`, `Matrix.hasDerivAt_inv_apply`). A
   user holding a Mathlib `HasDerivAt A A' t` converts with the bridge.
-- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Functions.md` §7.6).
+- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Functions.md` §7.6). With the
+  norm-scope reason withdrawn (2026-10-20), removing the deviation would cost: restating the six
+  entrywise lemmas of `NLAlib/ForMathlib/Analysis/Calculus/Deriv/Matrix.lean`
+  (`Matrix.hasDerivAt_mul_apply`, `Matrix.hasDerivAt_trace`, `Matrix.hasDerivAt_pow_succ_apply`,
+  `Matrix.hasDerivAt_trace_pow_succ`, `Matrix.hasDerivAt_det`, `Matrix.hasDerivAt_inv_apply`) and
+  `Matrix.hasDerivAt_log_det` with `HasDerivAt A A' t` hypotheses and matrix conclusions, each
+  proof prefixed by the bridge; no other library file uses them (checked 2026-10-20), and the
+  matrix form is the one an upstream PR would want. Not done: a statement change awaiting the
+  maintainer.
 
 ## 11. Inertia
 
@@ -364,15 +385,22 @@ None of these was approved by the maintainer when it was made. Status is given p
   almost-sure set. The kernel needs `[StandardBorelSpace Ω]` (and `[IsFiniteMeasure μ]`). The
   form consumers use is `HasCondSubgaussianMGF.ae_condExp_le`:
   `∀ t, ∀ᵐ ω ∂μ, μ[fun ω => exp (t * X ω) | m] ω ≤ exp (c * t ^ 2 / 2)`.
-- **NLAlib.** `HasCondMatrixMGFBound m hm X g A s μ`, the conditional matrix MGF bound
+- **NLAlib.** `HasCondMatrixMGFBound m X g A s μ`, the conditional matrix MGF bound
   (`NLAlib/Probability/MatrixConcentration/ConditionalMGFBound.lean`), spelled with Mathlib's
   conditional expectation: `∀ θ ∈ s, μ[fun ω => exp (θ • X ω) | m] ≤ᵐ[μ] fun ω =>
   exp (g θ • A ω)` in the Loewner order, with an `m`-measurable, almost surely Hermitian bound
   `A`, the integrability of `exp (θ • X)` and `X` almost surely Hermitian as fields. The
-  quantifier over `θ` is outside the almost-everywhere statement; no Borel hypothesis.
+  quantifier over `θ` is outside the almost-everywhere statement; no Borel hypothesis. It takes
+  no proof of `m ≤ mΩ`, so it no longer mirrors the argument list of
+  `HasCondSubgaussianMGF m hm` (maintainer decision 2026-10-20): Mathlib needs `hm` there for
+  `μ.trim hm` to typecheck, while `μ[· | m]` is defined for every `m`. No field uses the
+  inclusion, so as a parameter it was unused, and every Freedman statement carried the proof
+  term `ℱ.le j` (rule T9). The constructors and lemmas that use it take it as a hypothesis
+  (`hasCondMatrixMGFBound_of_condExp_eq_zero_of_le`, `condExp_re_trace_exp_add_le`); Freedman's
+  statements get it from the filtration.
 - **Bridge.** `hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF [StandardBorelSpace Ω]
   [IsFiniteMeasure μ] (hγ : HasCondSubgaussianMGF m hm γ c μ) (hB : B.IsHermitian) :
-  HasCondMatrixMGFBound m hm (fun ω => γ ω • B) (fun θ => θ ^ 2 / 2)
+  HasCondMatrixMGFBound m (fun ω => γ ω • B) (fun θ => θ ^ 2 / 2)
   (fun _ => (c : ℝ) • B ^ 2) Set.univ μ`, in the same file, through
   `HasCondSubgaussianMGF.ae_condExp_le` on the spectral decomposition of `B`. It is the only
   statement of the conditional interface that needs `[StandardBorelSpace Ω]`.
@@ -392,6 +420,8 @@ None of these was approved by the maintainer when it was made. Status is given p
   Conditional Lieb for an `m`-measurable `H` was proved through a dense sequence of fixed
   Hermitian offsets and the perturbation bound `tr exp A ≤ e^{‖A - B‖} tr exp B`, not through an
   approximation of `H`; the kernel would not have shortened that either.
+  Amended 2026-10-20 (maintainer decision): the unused parameter `hm : m ≤ mΩ` was dropped
+  (`docs/renames/2026-10-rules.json`, `statementChanged`).
 
 ## 18. Bounded orthonormal transforms
 

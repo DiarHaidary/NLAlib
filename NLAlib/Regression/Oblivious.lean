@@ -320,7 +320,7 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_o
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_not, not_lt] at hc
   obtain ⟨hinj, hmul⟩ := hc
-  have hbound := hinj.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2 one_le_two) C
+  have hbound := hinj.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2) C
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hbound
   have hsmall : frobNorm (obliqueProjector A (S ω) * C) ≤ √ε * frobNorm C := by
     refine hbound.trans ((div_le_iff₀ ha).2 ?_)
@@ -374,7 +374,7 @@ theorem HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFini
     intro ω hω
     have e1 : B - A * sketchAndSolve A (S ω) B = (1 - obliqueProjector A (S ω)) * B := by
       rw [mul_sketchAndSolve, Matrix.sub_mul, Matrix.one_mul]
-    have hL1 := hω.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2 one_le_two) C
+    have hL1 := hω.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2) C
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hL1
     have e2 : Pᴴ * (S ω)ᴴ * S ω * C - Pᴴ * C = rangeProjector A * (S ω)ᴴ * S ω * C := by
       rw [hPdef, conjTranspose_rangeProjector, ← hPdef, hPC0, sub_zero]

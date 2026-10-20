@@ -90,8 +90,8 @@ semidefinite $\mathbf{H}$, every measurable test matrix $\mathbf{X}$ and finite 
 theorem _root_.Matrix.PosSemidef.integrable_schattenNorm_sub_nystrom [IsFiniteMeasure μ]
     (hH : H.PosSemidef) {q : ℝ≥0∞} (hq : 1 ≤ q) (hX : AEMeasurable X μ) :
     Integrable (fun ω => schattenNorm q (H - nystrom H (X ω))) μ := by
-  simpa only [lpGauge_matrixNorm hq] using
-    (lpGauge q hq).integrable_matrixNorm_sub_nystrom hH hX
+  have := Fact.mk hq
+  simpa only [lpGauge_matrixNorm] using (lpGauge q).integrable_matrixNorm_sub_nystrom hH hX
 
 /-- The trace error of Nyström,
 $\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_*$, is integrable for positive
@@ -100,7 +100,7 @@ theorem _root_.Matrix.PosSemidef.integrable_nuclearNorm_sub_nystrom [IsFiniteMea
     (hH : H.PosSemidef) (hX : AEMeasurable X μ) :
     Integrable (fun ω => nuclearNorm (H - nystrom H (X ω))) μ := by
   simpa only [lpGauge_one_matrixNorm] using
-    (lpGauge 1 le_rfl).integrable_matrixNorm_sub_nystrom hH hX
+    (lpGauge 1).integrable_matrixNorm_sub_nystrom hH hX
 
 /-- The Frobenius error of Nyström,
 $\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\mathsf{F}}$, is integrable for
@@ -110,7 +110,7 @@ theorem _root_.Matrix.PosSemidef.integrable_frobNorm_sub_nystrom [IsFiniteMeasur
     (hH : H.PosSemidef) (hX : AEMeasurable X μ) :
     Integrable (fun ω => frobNorm (H - nystrom H (X ω))) μ := by
   simpa only [lpGauge_two_matrixNorm] using
-    (lpGauge 2 one_le_two).integrable_matrixNorm_sub_nystrom hH hX
+    (lpGauge 2).integrable_matrixNorm_sub_nystrom hH hX
 
 /-- The spectral error of Nyström,
 $\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_2$, is integrable for positive
@@ -119,7 +119,7 @@ theorem _root_.Matrix.PosSemidef.integrable_specNorm_sub_nystrom [IsFiniteMeasur
     (hH : H.PosSemidef) (hX : AEMeasurable X μ) :
     Integrable (fun ω => specNorm (H - nystrom H (X ω))) μ := by
   simpa only [lpGauge_top_matrixNorm] using
-    (lpGauge ⊤ le_top).integrable_matrixNorm_sub_nystrom hH hX
+    (lpGauge ⊤).integrable_matrixNorm_sub_nystrom hH hX
 
 /-! ### Truncated Nyström -/
 

@@ -46,9 +46,10 @@ private lemma abs_eval_le_eval_T_of_one_le {q : ℕ} {p : ℝ[X]} {x : ℝ}
   simp only [Function.iterate_zero, id_eq, eval_neg] at h₁ h₂
   exact abs_le.mpr ⟨by linarith, h₁⟩
 
-/-- **Extremal growth of Chebyshev polynomials.** If $\deg p\le q$ and $|p|\le1$ on $[-1,1]$,
-then $|p(x)|\le|T_q(x)|$ for $|x|\ge1$. This is an external-comparison corollary of
-[Saad2003, Theorem 6.25]; the proof uses Mathlib's extremal derivative inequality at order zero.
+/-- **Extremal growth of Chebyshev polynomials.** If $\deg p\le q$ and $\lvert p\rvert\le1$ on
+$[-1,1]$, then $\lvert p(x)\rvert\le\lvert T_q(x)\rvert$ for $\lvert x\rvert\ge1$. This is an
+external-comparison corollary of [Saad2003, Theorem 6.25]; the proof uses Mathlib's extremal
+derivative inequality at order zero.
 
 Result: chebyshev-extremal
 -/
@@ -85,8 +86,8 @@ private lemma eq_zero_of_nonpos_error {p : ℝ[X]} {M : ℝ} (hM : M ≤ 0)
   have h : |p.eval x| ≤ M := by simpa only [Real.dist_eq, sub_zero] using hb.apply hx
   exact abs_eq_zero.mp (le_antisymm (h.trans hM) (abs_nonneg _))
 
-/-- If $\deg p\le q$ and $|p|\le M$ on $[-1,1]$, then
-$|p(x)|\le M|T_q(x)|$ for $|x|\ge1$, including $M=0$.
+/-- If $\deg p\le q$ and $\lvert p\rvert\le M$ on $[-1,1]$, then
+$\lvert p(x)\rvert\le M\lvert T_q(x)\rvert$ for $\lvert x\rvert\ge1$, including $M=0$.
 A scaled corollary of [Saad2003, Theorem 6.25], proved via Mathlib's extremal inequality. -/
 theorem abs_eval_le_mul_abs_eval_T_real_of_isUniformApproxOn
     {q : ℕ} {p : ℝ[X]} {M x : ℝ}

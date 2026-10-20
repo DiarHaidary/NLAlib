@@ -21,7 +21,7 @@ Analytic reconstruction and quantitative errors require additional hypotheses in
 
 * `NLAlib.chebyshevTrunc`: inclusive degree-$N$ truncation.
 * `NLAlib.degree_chebyshevTrunc_le`: unconditional degree bound.
-* `NLAlib.chebyshevTrunc_eval_eq`: exact reproduction of polynomials.
+* `NLAlib.chebyshevTrunc_eval`: exact reproduction of polynomials.
 -/
 
 @[expose] public section
@@ -81,7 +81,7 @@ It includes zero polynomials and $N=0$; polynomial continuity supplies integrabi
 
 Result: chebyshev-polynomial-reproduction
 -/
-theorem chebyshevTrunc_eval_eq {p : 𝕜[X]} {N : ℕ}
+theorem chebyshevTrunc_eval {p : 𝕜[X]} {N : ℕ}
     (hp : p.degree ≤ (N : WithBot ℕ)) :
     chebyshevTrunc (fun x : ℝ => p.eval (x : 𝕜)) N = p := by
   obtain ⟨c, hc⟩ := exists_finite_T_expansion hp

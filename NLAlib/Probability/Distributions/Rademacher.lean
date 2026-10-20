@@ -214,8 +214,7 @@ theorem measurePreserving_neg_rademacherMeasure :
 
 /-- Flipping the sign of one coordinate of a vector of independent random signs preserves its
 law: $\mathbf{x} \mapsto \mathbf{x}$ with $\mathbf{x}_i$ replaced by $-\mathbf{x}_i$ preserves
-`rademacherVector n`. Proof: Mathlib's `measurePreserving_pi`, with `-·` in coordinate $i$ and `id`
-elsewhere. -/
+`rademacherVector n`. -/
 theorem measurePreserving_update_neg_rademacherVector [DecidableEq n] (i : n) :
     MeasurePreserving (fun x : n → ℝ => Function.update x i (-x i))
       (rademacherVector n) (rademacherVector n) := by

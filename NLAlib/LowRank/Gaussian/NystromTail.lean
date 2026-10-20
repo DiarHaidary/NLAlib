@@ -126,9 +126,10 @@ _root_.Matrix.PosSemidef.measureReal_schattenNorm_sub_nystrom_gt_le_of_hasLaw_ga
         nuclearNorm (H - truncatedSVD H k) <
         schattenNorm p (H - nystrom H (X ω))} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
-  have h := measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix (lpGauge p hp)
+  have := Fact.mk hp
+  have h := measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix (lpGauge p)
     hH hX hd u ht
-  simpa only [lpGauge_matrixNorm hp, lpGauge_apply_single_zero hp, one_mul] using h
+  simpa only [lpGauge_matrixNorm, lpGauge_apply_single_zero, one_mul] using h
 
 open SymmetricGauge in
 /-- **The tail of randomized Nyström, trace**: for a positive semidefinite
@@ -151,7 +152,7 @@ _root_.Matrix.PosSemidef.measureReal_nuclearNorm_sub_nystrom_gt_le_of_hasLaw_gau
         nuclearNorm (H - nystrom H (X ω))} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
   have h := measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix
-    (lpGauge 1 le_rfl) hH hX hd u ht
+    (lpGauge 1) hH hX hd u ht
   simp only [lpGauge_one_matrixNorm, lpGauge_apply_single_zero, one_mul] at h
   rwa [add_mul, one_mul]
 
@@ -176,8 +177,8 @@ theorem _root_.Matrix.PosSemidef.measureReal_specNorm_sub_nystrom_gt_le_of_hasLa
         specNorm (H - nystrom H (X ω))} ≤
       Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
   have h := measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix
-    (lpGauge ⊤ le_top) hH hX hd u ht
-  simpa only [lpGauge_top_matrixNorm, lpGauge_apply_single_zero le_top, one_mul,
+    (lpGauge ⊤) hH hX hd u ht
+  simpa only [lpGauge_top_matrixNorm, lpGauge_apply_single_zero, one_mul,
     specNorm_sub_truncatedSVD] using h
 
 /-! ### The late-truncated output -/

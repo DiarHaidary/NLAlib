@@ -269,7 +269,7 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_cfc_sq_le {A : Matrix m n 𝕜} {Ω
       specNorm (A - A * W * Wᴴ) ^ 2 +
         c⁻¹ ^ 2 * specNorm
           ((A * cfc g (Aᴴ * A) - A * cfc g (Aᴴ * A) * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  have h := (lpGauge ⊤ le_top).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
+  have h := (lpGauge ⊤).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
     hWZ hc hg
   simpa only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self] using h
 
@@ -300,7 +300,7 @@ theorem HasOrthonormalCols.frobNorm_sub_rsvd_cfc_sq_le {A : Matrix m n 𝕜} {Ω
       frobNorm (A - A * W * Wᴴ) ^ 2 +
         c⁻¹ ^ 2 * frobNorm
           ((A * cfc g (Aᴴ * A) - A * cfc g (Aᴴ * A) * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  have h := (lpGauge 1 le_rfl).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
+  have h := (lpGauge 1).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
     hWZ hc hg
   simpa only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self] using h
 

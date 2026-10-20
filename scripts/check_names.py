@@ -29,24 +29,11 @@ from leanexpr import (head_candidates, idents, lc_first, peel, split_signature, 
 
 ROOT = Path(__file__).resolve().parent.parent
 
-RULES = {
-    'N1': 'case convention of the declaration kind',
-    'N2': 'the name starts with the head of the conclusion',
-    'N3': 'the main relation is named before the first `_of_`',
-    'N4': 'every library-function token names something in the statement',
-    'N5': 'one token per concept (no synonym)',
-    'N6': 'a power comes after its argument (`f_…_sq`, never `sq_f`)',
-    'N7': 'no source, author, project or quality word',
-    'N9': 'a law hypothesis is named `_of_hasLaw_<law>`',
-    'N10': 'errors are `exact − computed` (`sub_<alg>`, never `<alg>_sub_`)',
-    'N11': 'a named bound has a kind suffix',
-    'N13': 'a statistic is named by its prefix (`integral_`, `variance_`, `_sq`)',
-    'N14': 'a tail prefix follows the statement (`μ.real` → `measureReal_`, `μ` → `measure_`)',
-    'N15': 'a tail event is named subject first, with two relation tokens, `¬` only where no `<` form exists',
-    'N16': 'a sample size is `<sketch><property>Dim`',
-    'N17': 'an asymptotic form is named by the derivation from its explicit theorem',
-    'N18': 'a theorem whose first explicit argument is `hA : A.P` lives in namespace `P` (dot notation)',
-}
+# The rule statements are in docs/rules/rules.toml, the single source of the rule data
+# (CONTRIBUTING §9.1); here the checked naming rules N1–N18.
+RULES = {r['id']: r['statement'] for r in
+         tomllib.loads((ROOT / 'docs' / 'rules' / 'rules.toml').read_text())['rule']
+         if r['id'].startswith('N') and r['check'] != 'none'}
 
 REL_TOKENS = {'le', 'lt', 'eq', 'ne', 'iff', 'ge', 'gt', 'nonneg', 'pos', 'mem', 'subset', 'nonpos'}
 REL_NAME = {'le': {'le', 'nonneg', 'ge', 'antitone', 'monotone', 'mono', 'anti', 'subset', 'max', 'min'},

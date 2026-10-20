@@ -261,7 +261,7 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_sq_le (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
     specNorm (A - rsvd A Ω) ^ 2 ≤
       specNorm (A - A * Z * Zᴴ) ^ 2 + specNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  have h := (lpGauge ⊤ le_top).matrixNorm_conjTranspose_mul_self_sub_rsvd_le hZ hΩ A
+  have h := (lpGauge ⊤).matrixNorm_conjTranspose_mul_self_sub_rsvd_le hZ hΩ A
   simpa only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self] using h
 
 /-- **The structural bound of the range finder, unsquared spectral form.**
@@ -282,7 +282,7 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_le (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
     specNorm (A - rsvd A Ω) ≤
       specNorm (A - A * Z * Zᴴ) + specNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) := by
-  have h := (lpGauge ⊤ le_top).matrixNorm_sub_rsvd_le hZ hΩ A
+  have h := (lpGauge ⊤).matrixNorm_sub_rsvd_le hZ hΩ A
   simpa only [lpGauge_top_matrixNorm] using h
 
 /-- **The structural bound of the range finder, Frobenius form.**

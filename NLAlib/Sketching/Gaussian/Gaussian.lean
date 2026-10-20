@@ -449,7 +449,9 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_gaussianMatrix
   simp only [Set.mem_ofPred_eq] at hω ⊢
   exact fun h' => hω h'.upper
 
-/-- **The upper half alone**: for $\mathbf{U}$ with orthonormal columns,
+/-- **The upper half alone**: for a standard Gaussian $k \times n$ matrix $\mathbf{G}$, the
+sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ and $\mathbf{U}$ with orthonormal
+columns,
 $$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})
 \preceq \Bigl(1 + \frac{\sqrt{\lvert p \rvert} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2 \mathbf{I}$$
 outside probability $e^{-t^2/2}$, for every $t \ge 0$; no condition relating $t$, $k$ and $p$, and

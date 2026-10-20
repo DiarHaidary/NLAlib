@@ -147,7 +147,6 @@ private theorem integral_le_one_add_sq_mul_of_gapped [IsProbabilityMeasure μ] (
       e (ε / (2 + ε)) * κ * frobNorm (A - truncatedSVD A r) ^ 2 := by
   have hT : 0 ≤ e (ε / (2 + ε)) * κ * frobNorm (A - truncatedSVD A r) ^ 2 :=
     mul_nonneg (mul_nonneg he₀ hκ) (sq_nonneg _)
-  have hs := singularValues_nonneg A r
   rcases singularValues_zero_le_or_exists_singularGapRatio A r hε with h0 | ⟨h, hhr, hσ, hgap⟩
   · rw [singularValues_zero_eq_specNorm] at h0
     have hA : specNorm A ^ 2 ≤ (1 + ε) ^ 2 * singularValues A r ^ 2 := by
@@ -178,7 +177,6 @@ private theorem antitone_four_mul_exp_sqrt {q : ℕ} (hq : 1 ≤ q) :
 private theorem antitone_exp_mul (p : ℕ) :
     Antitone fun γ : ℝ => Real.exp (-8 * (p : ℝ) * γ) := by
   intro a b hab
-  have hp : (0 : ℝ) ≤ p := Nat.cast_nonneg p
   exact Real.exp_le_exp.2 (by nlinarith)
 
 /-- **The gapless bound for truncated randomized block Krylov iteration, $(1 + \varepsilon)$
@@ -364,8 +362,6 @@ private theorem sixteen_mul_sq_mul_exp_le {N ε : ℝ} {q : ℕ} (hN : 1 ≤ N) 
   have harg : Real.log 16 + 2 * Real.log N - Real.log ε ≤ 8 * ((q : ℝ) - 1) * s := by
     have h1 : 8 * ((q : ℝ) - 1) * (Real.sqrt ε / 3) ≤ 8 * ((q : ℝ) - 1) * s :=
       mul_le_mul_of_nonneg_left hs (by linarith)
-    have h2 : 8 * ((q : ℝ) - 1) * (Real.sqrt ε / 3) =
-        8 / 3 * (q * Real.sqrt ε) - 8 / 3 * Real.sqrt ε := by ring
     linarith
   have h : 16 * (N : ℝ) ^ 2 = Real.exp (Real.log 16 + 2 * Real.log N) := by
     rw [Real.exp_add, Real.exp_log (by norm_num), two_mul, Real.exp_add,
@@ -412,7 +408,7 @@ theorem exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_hasLaw_ga
     simp only [h0, specNorm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
       integral_zero]
     positivity
-  set N := Fintype.card n with hN
+  set N := Fintype.card n
   have hNR : (1 : ℝ) ≤ N := by exact_mod_cast hNpos
   have hlogε : Real.log ε ≤ -Real.log 2 := by
     rw [← Real.log_inv]
@@ -424,23 +420,19 @@ theorem exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_hasLaw_ga
     norm_num at h ⊢
     linarith
   have hsε : 0 < Real.sqrt ε := Real.sqrt_pos.2 hε
-  have hsε1 : Real.sqrt ε ≤ 1 := Real.sqrt_le_one.mpr (by linarith)
   have hqε : 6 * Real.log (N / ε) ≤ q * Real.sqrt ε := by rwa [div_le_iff₀ hsε] at hq
   have hq1 : 1 ≤ q := by
     have hLpos : 0 < Real.log (N / ε) := by rw [hL]; linarith
     have h : (0 : ℝ) < q := lt_of_lt_of_le (div_pos (mul_pos (by norm_num) hLpos) hsε) hq
     exact_mod_cast h
-  have hq' : (0 : ℝ) ≤ (q : ℝ) - 1 := by
-    have : (1 : ℝ) ≤ q := by exact_mod_cast hq1
-    linarith
   have hexp :=
     integral_specNorm_sub_truncatedSVD_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix A hX hr
       hq1 (ε := ε / 3) (by positivity)
-  set σ := singularValues A r with hσ
-  set κ := (r : ℝ) / ((Fintype.card l : ℝ) - r - 1) with hκ
-  set F := frobNorm (A - truncatedSVD A r) with hF
-  set s := Real.sqrt (ε / 3 / (2 + ε / 3)) with hsdef
-  set E := Real.exp (-8 * ((q : ℝ) - 1) * s) with hE
+  set σ := singularValues A r
+  set κ := (r : ℝ) / ((Fintype.card l : ℝ) - r - 1)
+  set F := frobNorm (A - truncatedSVD A r)
+  set s := Real.sqrt (ε / 3 / (2 + ε / 3))
+  set E := Real.exp (-8 * ((q : ℝ) - 1) * s)
   -- $\kappa\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2 \le N^2\sigma_r^2$.
   have hκF : κ * F ^ 2 ≤ (N : ℝ) ^ 2 * σ ^ 2 :=
     natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
@@ -493,10 +485,10 @@ private theorem le_mul_exp_of_mul_eval_T_sq_le {j : ℕ} (hj : 0 < j) {s x R : �
     (hx : s ≤ x) (h : x * ((T ℝ (j : ℤ)).eval (2 * (x / s) - 1)) ^ 2 ≤ s * R) :
     x ≤ s * Real.exp (Real.log (4 * R) ^ 2 / (16 * (j : ℝ) ^ 2)) := by
   have hxs : 1 ≤ x / s := (one_le_div hs).2 hx
-  set u := Real.sqrt (x / s) with hu
+  set u := Real.sqrt (x / s)
   have hu1 : 1 ≤ u := Real.one_le_sqrt.mpr hxs
   have hu2 : u ^ 2 = x / s := Real.sq_sqrt (by linarith)
-  set τ := (T ℝ (j : ℤ)).eval (2 * (x / s) - 1) with hτdef
+  set τ := (T ℝ (j : ℤ)).eval (2 * (x / s) - 1)
   have hT : (T ℝ ((2 * j : ℕ) : ℤ)).eval u = τ := by
     rw [Nat.cast_mul, Nat.cast_ofNat, eval_T_two_mul, hu2]
   have hτ2 : τ ^ 2 ≤ R := by
@@ -741,15 +733,15 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
           (16 * ((q : ℝ) - 1) ^ 2)) := by
   classical
   have := hX.isProbabilityMeasure
-  set σ := singularValues A r with hσdef
-  set R := rangeFinderTailRatio A r (Fintype.card l) with hRdef
+  set σ := singularValues A r
+  set R := rangeFinderTailRatio A r (Fintype.card l)
   have hσ2 : 0 < σ ^ 2 := pow_pos hσ 2
   set j := q - 1 with hj
   have hj1 : 0 < j := by omega
   have hjq : (q : ℝ) - 1 = j := by rw [hj, Nat.cast_sub (by omega), Nat.cast_one]
   -- The filter $f(y) = T_j(2y/\sigma_r^2 - 1)$: degree $j < q$, at most $1$ on the tail.
   set f : Polynomial ℝ := (Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
-    (Polynomial.C (2 / σ ^ 2) * Polynomial.X - 1) with hf
+    (Polynomial.C (2 / σ ^ 2) * Polynomial.X - 1)
   have hfe (y : ℝ) :
       f.eval y = (Polynomial.Chebyshev.T ℝ (j : ℤ)).eval (2 * (y / σ ^ 2) - 1) :=
     eval_T_comp_C_mul_X_sub_one j (σ ^ 2) y
@@ -759,10 +751,10 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
   obtain ⟨W, hW⟩ := exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le A hX f
     (le_card_of_singularValues_pos A hσ) hr htail
   rw [one_pow, one_mul, ← singularValues_sq_mul_rangeFinderTailRatio A _ hσ] at hW
-  set G := Polynomial.aeval (Aᴴ * A) f with hGdef
-  set B := A * G with hBdef
-  set Ω' : Ω → Matrix n (Fin r) ℝ := fun ω => X ω * pinv (Wᴴ * X ω) with hΩ'
-  set x : Ω → ℝ := fun ω => specNorm ((1 - rangeProjector (B * Ω' ω)) * A) ^ 2 with hx
+  set G := Polynomial.aeval (Aᴴ * A) f
+  set B := A * G
+  set Ω' : Ω → Matrix n (Fin r) ℝ := fun ω => X ω * pinv (Wᴴ * X ω)
+  set x : Ω → ℝ := fun ω => specNorm ((1 - rangeProjector (B * Ω' ω)) * A) ^ 2
   set φ : ℝ → ℝ := fun y => y * ((Polynomial.Chebyshev.T ℝ (j : ℤ)).eval
     (2 * (y / σ ^ 2) - 1)) ^ 2 with hφ
   -- $\mathbf{B}\mathbf{B}^{\mathsf{H}} = \varphi(\mathbf{A}\mathbf{A}^{\mathsf{H}})$.
@@ -844,8 +836,8 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatr
         rangeFinderTailRatio A r (Fintype.card l) ^ (1 / (2 * (p : ℝ) + 1)) := by
   classical
   have := hX.isProbabilityMeasure
-  set σ := singularValues A r with hσdef
-  set R := rangeFinderTailRatio A r (Fintype.card l) with hRdef
+  set σ := singularValues A r
+  set R := rangeFinderTailRatio A r (Fintype.card l)
   have htail : ∀ x ∈ Set.Icc 0 (σ ^ 2),
       |(Polynomial.X ^ p : Polynomial ℝ).eval x| ≤ (σ ^ 2) ^ p := fun x hx => by
     rw [Polynomial.eval_pow, Polynomial.eval_X, abs_of_nonneg (pow_nonneg hx.1 p)]
@@ -1037,7 +1029,7 @@ exists_forall_integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_hasLaw_ga
       integral_zero]
     positivity
   have hN : (1 : ℝ) ≤ Fintype.card n := by exact_mod_cast hNpos
-  set N : ℝ := (Fintype.card n : ℝ) with hNdef
+  set N : ℝ := (Fintype.card n : ℝ)
   set L := Real.log (N / ε) with hLdef
   have hpε : 11 * L ≤ p * ε := by rwa [div_le_iff₀ hε] at hp
   have hlog2 : Real.log 2 ≤ L :=

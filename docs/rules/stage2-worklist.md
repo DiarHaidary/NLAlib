@@ -1,7 +1,8 @@
 # Stage 2 worklist: the rules debt left in the ratchet
 
 Regenerated on 2026-10-20 at the end of stage 2 of the rules enforcement (branch `rules/stage2`)
-from `scripts/rules_baseline.json`: 88 baselined errors, down from 399 at the end of stage 1.
+from `scripts/rules_baseline.json`: 88 baselined errors, down from 399 at the end of stage 1
+(73 after stage 3, which cleared P9 and T9).
 Every item below is a baselined error of `scripts/check_rules.py`; fixing one lowers the baseline
 (`python3 scripts/check_rules.py DATA.json --update-baseline`, CONTRIBUTING §9.1). Stage 2 cleared
 D1, D2, G1, M2, P8, S4, T2 and T13; its renames and statement changes are in
@@ -23,20 +24,12 @@ What is left, and what each needs:
   Theorem 2.1, for the sub-Gaussian norm tail; Ville 1939 or a textbook for Ville's inequality).
   The six Haar subspace-embedding results have no printed source found: either "No printed
   source." (if these Gaussian-transfer bounds count as the library's own) or a source.
-- **P9** (8): decisions, not moves. Seven are the Polynomial layer's headline scalar results,
-  placed there by the approved Polynomial design notes (CONTRIBUTING §2, amended 2026-10-17),
-  which the 2026-10-19 ForMathlib boundary would move out; the maintainer decides between an
-  exemption of the Polynomial layer from P9 and a move. The eighth, Weyl's majorant lemma
-  `sum_range_rpow_le_of_forall_prod_range_le`, is scalar but proved with the Matrix layer's
-  majorization theory, which ForMathlib cannot import (P1).
-- **T9** (7): interface changes. Five come from `lpGauge q hq` (the options: Mathlib's
-  `[Fact (1 ≤ q)]`, which reverses item 3 of `docs/design/Matrix-InvariantNorms.md`; a total
-  `lpGauge q` with a junk value; named gauges; a redundant local hypothesis; about 120 call sites
-  for the first). Two come from the unused `hm : m ≤ mΩ` argument of `HasCondMatrixMGFBound`
-  (drop it, about 13 lines and Mathlib-deviations entry 17; or a redundant local hypothesis; or an
-  allowlist entry).
+- **P9** and **T9** were settled by the maintainer's decisions of 2026-10-20 and cleared in stage 3
+  (branch `rules/stage3`): `lpGauge` takes `[Fact (1 ≤ q)]`, `HasCondMatrixMGFBound` drops `hm`,
+  the Polynomial layer is exempt from P9 while P11 holds, and Weyl's majorant lemma is
+  allowlisted. The baseline is 73 errors after stage 3.
 
-## Matrix (48)
+## Matrix (42)
 
 **C1** (15)
 
@@ -86,35 +79,13 @@ What is left, and what each needs:
 - `NLAlib/Matrix/Subspaces/ObliqueBases.lean:79` `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector` — [Szyld2006]
 - `NLAlib/Matrix/Subspaces/ObliqueBases.lean:94` `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector_mul_cos` — [Szyld2006]
 
-**P9** (1)
-
-- `NLAlib/Matrix/Majorization/Horn.lean:177` `NLAlib.sum_range_rpow_le_of_forall_prod_range_le`
-
-**T9** (5)
-
-- `NLAlib/Matrix/Norms/GaugeExamples.lean:156` `NLAlib.lpGauge_top_apply`
-- `NLAlib/Matrix/Norms/GaugeExamples.lean:160` `NLAlib.lpGauge_one_apply`
-- `NLAlib/Matrix/Norms/UnitarilyInvariant.lean:387` `NLAlib.lpGauge_top_matrixNorm`
-- `NLAlib/Matrix/Norms/UnitarilyInvariant.lean:392` `NLAlib.lpGauge_two_matrixNorm`
-- `NLAlib/Matrix/Norms/UnitarilyInvariant.lean:397` `NLAlib.lpGauge_one_matrixNorm`
-
-## Polynomial (8)
+## Polynomial (1)
 
 **C2** (1)
 
 - `NLAlib/Polynomial/Chebyshev/ResidualMinimax.lean:247` `NLAlib.exists_residualMinimax_sq_le_sum_mul_norm_sq` — [Greenbaum1979]
 
-**P9** (7)
-
-- `NLAlib/Polynomial/Approximation/Inverse.lean:28` `NLAlib.exists_degree_lt_isUniformApproxOn_inv`
-- `NLAlib/Polynomial/Chebyshev/Residual.lean:151` `NLAlib.inv_eval_T_real_le_of_isUniformApproxOn`
-- `NLAlib/Polynomial/Chebyshev/Residual.lean:198` `NLAlib.isLeast_chebyshev_minimax`
-- `NLAlib/Polynomial/Chebyshev/Residual.lean:264` `NLAlib.inv_eval_T_real_eq_two_mul_pow_div`
-- `NLAlib/Polynomial/Chebyshev/Residual.lean:325` `NLAlib.exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow`
-- `NLAlib/Polynomial/Interpolation/Stieltjes.lean:67` `NLAlib.inv_add_sub_eval_interpolate`
-- `NLAlib/Polynomial/Interpolation/Stieltjes.lean:117` `NLAlib.div_add_sub_eval_interpolate`
-
-## Probability (10)
+## Probability (8)
 
 **C1** (1)
 
@@ -129,11 +100,6 @@ What is left, and what each needs:
 - `NLAlib/Probability/Distributions/GaussianLogOverlap.lean:457` `NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector` — [KuczynskiWozniakowski1992]
 - `NLAlib/Probability/Distributions/GaussianLogOverlap.lean:491` `NLAlib.integral_log_norm_sq_div_sq_le_of_hasLaw_gaussianVector` — [KuczynskiWozniakowski1992]
 - `NLAlib/Probability/Tail.lean:210` `NLAlib.measureReal_ge_le_exp_neg_of_mgf_le` — [BoucheronLugosiMassart2013]
-
-**T9** (2)
-
-- `NLAlib/Probability/MatrixConcentration/Freedman.lean:83` `NLAlib.HasCondMatrixMGFBound.supermartingale_re_trace_exp`
-- `NLAlib/Probability/MatrixConcentration/Freedman.lean:141` `NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le`
 
 ## Krylov (13)
 
@@ -198,3 +164,6 @@ What is left, and what each needs:
 - **Renames of stage 2.** `docs/renames/2026-10-rules.json` lists the 32 renames and removals
   of stage 2 (rules P8, P9, T13) and its 8 statement changes; none of the old names is in the
   explorer's TOML (checked 2026-10-20), so only the `#d/` redirects need the map.
+- **Renames of stage 3.** `docs/renames/2026-10-rules.json` adds the six Polynomial renames of the
+  upstreaming audit (rule P11) and the statement changes of `lpGauge` and
+  `HasCondMatrixMGFBound`; none of the old names is in the explorer's TOML (checked 2026-10-20).

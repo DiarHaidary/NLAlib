@@ -96,7 +96,7 @@ theorem eval_chebyshevResidual_zero {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a 
   rw [eval_chebyshevResidual, mul_zero, sub_zero, div_self (by linarith)]
 
 /-- **Chebyshev residual bound.** On $[a,b]$, where $0<a<b$, the residual satisfies
-$$|r_q(x)|\le T_q((b+a)/(b-a))^{-1}.$$
+$$\lvert r_q(x)\rvert\le T_q((b+a)/(b-a))^{-1}.$$
 [Saad2003, Theorem 6.25 and following corollary].
 
 Result: chebyshev-residual
@@ -123,7 +123,7 @@ theorem isUniformApproxOn_chebyshevResidual {a b : ℝ} (q : ℕ)
 
 /-- **Chebyshev residual bound (geometric form).** For $0<a<b$, the uniform residual bound has
 geometric form
-$$|r_q(x)|\le2\left(\frac{\sqrt b-\sqrt a}{\sqrt b+\sqrt a}\right)^q
+$$\lvert r_q(x)\rvert\le2\left(\frac{\sqrt b-\sqrt a}{\sqrt b+\sqrt a}\right)^q
 \quad(x\in[a,b]).$$
 At $q=0$ this remains valid with residual one and upper bound two.
 [Saad2003, proof of Theorem 6.29, Eq. (6.128)], stated as a scalar residual estimate.

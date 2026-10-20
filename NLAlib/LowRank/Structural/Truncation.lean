@@ -87,7 +87,7 @@ $$\|\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) -
 [HalkoMartinssonTropp2011, Theorem 9.3 (proof)]; [Woodruff2014, Lemma 44]. -/
 theorem frobNorm_rsvd_sub_truncatedSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) ≤ frobNorm (A - truncatedSVD A k) := by
-  have h := (lpGauge 2 one_le_two).matrixNorm_sub_truncatedSVD_le_of_singularValues_le
+  have h := (lpGauge 2).matrixNorm_sub_truncatedSVD_le_of_singularValues_le
     (A := A) (Â := rsvd A Ω)
     (fun i => (isStarProjection_rangeProjector (A * Ω)).singularValues_mul_le A i) k
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h
@@ -320,7 +320,7 @@ _root_.Matrix.PosSemidef.nuclearNorm_sub_le_nuclearNorm_sub_truncatedSVD_nystrom
     Matrix.le_iff.mp ((hH.nystrom Ω).truncatedSVD_le k)
   have hY' : nuclearNorm (nystrom H Ω - Y) =
       nuclearNorm (nystrom H Ω - truncatedSVD (nystrom H Ω) k) := by
-    simpa only [lpGauge_one_matrixNorm] using hY.matrixNorm_sub (lpGauge 1 le_rfl)
+    simpa only [lpGauge_one_matrixNorm] using hY.matrixNorm_sub (lpGauge 1)
   calc nuclearNorm (H - Y) = nuclearNorm ((H - nystrom H Ω) + (nystrom H Ω - Y)) := by
         rw [sub_add_sub_cancel]
     _ ≤ nuclearNorm (H - nystrom H Ω) + nuclearNorm (nystrom H Ω - Y) := nuclearNorm_add_le _ _

@@ -461,7 +461,7 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
   have hY0 : (K * Kᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose K
   have hY1 : (1 - K * Kᴴ).PosSemidef := hΨ.posSemidef_one_sub_toRows₁_mul_conjTranspose
   set M := b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K) with hMdef
-  set N := b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ) with hNdef
+  set N := b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ)
   have hM : M.PosDef := posDef_smul_one_add_smul hX0 hX1 ha hb
   have hN : N.PosDef := posDef_smul_one_add_smul hY0 hY1 ha hb
   have hMu : IsUnit M.det := (Matrix.isUnit_iff_isUnit_det M).mp hM.isUnit
@@ -480,7 +480,6 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
     module
   -- the trace of the error
   have hpinv : pinv M = M⁻¹ := pinv_of_isUnit hM.isUnit
-  have hDh : Dᴴ = D := (posSemidef_fromBlocks_smul_one ha.le hb.le).isHermitian.eq
   have hD1 : D.trace = (a : 𝕜) * Fintype.card s + (b : 𝕜) * Fintype.card t := by
     rw [hD, Matrix.trace_fromBlocks, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
       Matrix.trace_one, RCLike.real_smul_eq_coe_mul, RCLike.real_smul_eq_coe_mul]

@@ -408,7 +408,7 @@ private theorem re_quadForm_gram_sub_one {p : Type*} [Fintype p] [DecidableEq p]
 finite measure, makes $\mathbf{S}$ a subspace embedding of a fixed $\mathbf{U}$ with orthonormal
 columns with constants $1 \mp 2\varepsilon$, failing with probability at most
 $9^{\lvert p \rvert \dim_{\mathbb{R}} \Bbbk} \delta$.
-[Vershynin2018, proof of Theorem 4.6.1, (4.22) (2020 draft)]; [Woodruff2014, Lemma 5 and
+[Vershynin2018, proof of Theorem 4.6.1, (4.22)]; [Woodruff2014, Lemma 5 and
 Theorem 6], there with a $1/2$-net and $O(\varepsilon)$. The net has radius $1/4$; another radius
 gives an incomparable family in the radius, to be added when wanted. -/
 theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] {p : Type*} [Fintype p]
@@ -471,7 +471,7 @@ $\delta \ge 0$, under a finite measure, makes $\mathbf{S}$ an oblivious subspace
 dimension $d$ with constants $1 \mp 2\varepsilon$ and failure probability
 $9^{d \dim_{\mathbb{R}} \Bbbk} \delta$. From `NLAlib.HasJLProperty.hasSubspaceEmbedding` at
 `Fin (min d (card n))` by `NLAlib.IsObliviousSubspaceEmbedding.of_hasOrthonormalCols` and `mono`.
-[Vershynin2018, proof of Theorem 4.6.1, (4.22) (2020 draft)]; [Woodruff2014, Theorem 6]. -/
+[Vershynin2018, proof of Theorem 4.6.1, (4.22)]; [Woodruff2014, Theorem 6]. -/
 theorem HasJLProperty.isObliviousSubspaceEmbedding [IsFiniteMeasure μ]
     (h : HasJLProperty S ε δ μ) (hδ : 0 ≤ δ) (d : ℕ) :
     IsObliviousSubspaceEmbedding S d (1 - 2 * ε) (1 + 2 * ε)

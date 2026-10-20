@@ -245,8 +245,6 @@ private theorem one_add_half_mul_gaussianProjectionFactor_le {k c : ℕ} {ε : �
   have hd : (2 + ε) * k / ε ≤ (c : ℝ) - k - 1 := by linarith
   have hd0 : 0 < (c : ℝ) - k - 1 := hpos.trans_le hd
   have hkc : k + 2 ≤ c := by
-    have h2 : (2 : ℝ) * k / ε < (2 + ε) * k / ε := by
-      apply div_lt_div_of_pos_right _ hε; nlinarith
     have h1 : (1 : ℝ) < (2 + ε) * k / ε := by
       rw [lt_div_iff₀ hε]; nlinarith
     have : (k : ℝ) + 2 < c + 1 := by linarith
@@ -383,7 +381,6 @@ theorem earlyTruncatedRSVDFactor_le_one_add {k l : ℕ} {ε : ℝ} (hk : 1 ≤ k
     linarith
   set t := ε / 30 with ht
   have ht0 : 0 < t := by positivity
-  have ht1 : t ≤ 1 / 30 := by linarith
   have hkl : (k : ℝ) / l ≤ t ^ 2 := by
     rw [div_le_iff₀ hl0, ht]; nlinarith
   have hl1 : 1 / (l : ℝ) ≤ t ^ 2 := by
@@ -391,7 +388,6 @@ theorem earlyTruncatedRSVDFactor_le_one_add {k l : ℕ} {ε : ℝ} (hk : 1 ≤ k
       _ ≤ t ^ 2 := hkl
   -- the three square roots and the inverse root
   have hy : √((k : ℝ) / l) ≤ t := Real.sqrt_le_iff.2 ⟨ht0.le, hkl⟩
-  have hy0 : 0 ≤ √((k : ℝ) / l) := Real.sqrt_nonneg _
   have hy2 : √(2 * (k : ℝ) / l) ≤ 3 / 2 * t := Real.sqrt_le_iff.2 ⟨by positivity, by
     rw [mul_div_assoc]; nlinarith⟩
   have hsl : 1 / √(l : ℝ) ≤ t := by
@@ -811,9 +807,6 @@ private theorem integral_min_one_inv_pow_le (hX : HasLaw X (gaussianMatrix n l) 
   have h4 := integral_min_one_singularValues_sq_div_inv_pow_le_of_hasLaw_gaussianMatrix hY hk' hn
     hl (q := 4) le_rfl
   simp only [pow_one, Fintype.card_fin, Nat.reduceMul] at h1 h4
-  have hs : 0 < √(Fintype.card l : ℝ) := Real.sqrt_pos.2 (by
-    have : (900 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
-    linarith)
   refine ⟨h1.trans ?_, h4.trans ?_⟩
   · gcongr
     exact gaussianClippedInvMomentConstant_one_le_10
@@ -837,9 +830,9 @@ private theorem integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_frame {q : Typ
     linarith
   have hypos : 0 < √((k : ℝ) / Fintype.card l) :=
     Real.sqrt_pos.2 (div_pos (by exact_mod_cast hk) hL0)
-  set E := A - truncatedSVD A k with hEdef
-  set L := (Fintype.card l : ℝ) with hL
-  set y := √((k : ℝ) / L) with hy
+  set E := A - truncatedSVD A k
+  set L := (Fintype.card l : ℝ)
+  set y := √((k : ℝ) / L)
   set c := (√L)⁻¹ with hc
   have hc0 : 0 < c := inv_pos.2 (Real.sqrt_pos.2 hL0)
   have hc2 : c ^ 2 = L⁻¹ := by rw [hc, inv_pow, Real.sq_sqrt hL0.le]
@@ -879,7 +872,6 @@ private theorem integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_frame {q : Typ
   rw [integral_add' (hu1i.const_mul _ |>.add (hwui.const_mul _)) (hχui.const_mul _),
     integral_add' (hu1i.const_mul _) (hwui.const_mul _), integral_const_mul, integral_const_mul,
     integral_const_mul]
-  have hd : 0 < 1 - 4 * y := by linarith
   refine le_trans ?_ (add_le_earlyTruncatedRSVDFactor_mul hk hkl (sq_nonneg (frobNorm E)) hIu
     hIu4)
   gcongr

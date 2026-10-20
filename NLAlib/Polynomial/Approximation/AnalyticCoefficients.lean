@@ -19,7 +19,7 @@ on the outer boundary. All contour expressions are private proof machinery.
 
 ## Main results
 
-* `NLAlib.norm_chebyshevCoeff_le_of_open_ellipse`: positive coefficients obey $2M/\rho^k$.
+* `NLAlib.norm_chebyshevCoeff_le_of_differentiableOn`: positive coefficients obey $2M/\rho^k$.
 -/
 
 @[expose] public section
@@ -166,7 +166,7 @@ coefficient has the more general bound `norm_chebyshevCoeff_zero_le`.
 
 Result: chebyshev-coeff-analytic-decay
 -/
-theorem norm_chebyshevCoeff_le_of_open_ellipse
+theorem norm_chebyshevCoeff_le_of_differentiableOn
     {𝕜 : Type*} [RCLike 𝕜] {f : ℝ → 𝕜} {F : ℂ → ℂ} {ρ M : ℝ} (hρ : 1 < ρ)
     (hFd : DifferentiableOn ℂ F (openBernsteinEllipse ρ))
     (hM : Metric.IsUniformApproxOn F (fun _ => 0) (openBernsteinEllipse ρ) M)

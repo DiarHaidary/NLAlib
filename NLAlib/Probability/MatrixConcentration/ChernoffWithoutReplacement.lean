@@ -185,10 +185,11 @@ private theorem chernoff_hyps_of_hasLaw_uniformOn_injective
     integrable_re_trace_exp_sum_of_hasLaw_uniformOn_injective hι,
     integral_re_trace_exp_sum_le_of_hasLaw_uniformOn_injective hι hL hpsd hle⟩
 
-/-- **Matrix Chernoff without replacement, upper tail**, source form. For a population
-$\mathbf{0} \preceq \mathbf{X}_i \preceq L\mathbf{I}$ with $L > 0$, a uniformly random injection
-$\iota : k \to n$, $\mathbf{V} = (\lvert k \rvert / \lvert n \rvert) \sum_i \mathbf{X}_i$ and
-$\delta \ge 0$,
+/-- **Matrix Chernoff without replacement, upper tail**, source form. For a population of
+$m \times m$ matrices $\mathbf{0} \preceq \mathbf{X}_i \preceq L\mathbf{I}$ over $\Bbbk$,
+$i \in n$, $m$ nonempty, with $L > 0$, a uniformly random injection $\iota : k \to n$ (its law
+under $\mu$ is uniform on the injections),
+$\mathbf{V} = (\lvert k \rvert / \lvert n \rvert) \sum_i \mathbf{X}_i$ and $\delta \ge 0$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \ge
 (1 + \delta) \lambda_0(\mathbf{V})\Bigr] \le \lvert m \rvert
 \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L} \,.$$

@@ -70,15 +70,15 @@ private theorem givensHessenbergState_snd_apply_eq_zero {H : Matrix (Fin m) (Fin
     · rw [givensHessenbergStep_mul_apply_of_ne _ _ (by omega) hi]
       exact ih i j hji (Or.inr (by omega))
 
-/-- **Givens QR of an upper Hessenberg matrix is upper trapezoidal.** Proof: by induction, after
-$k$ steps the first $k$ columns are upper trapezoidal and the rest is still Hessenberg; step $k$
-mixes rows $k$, $k + 1$ only. [GolubVanLoan2013, §5.2.5]. -/
+/-- **Givens QR of an upper Hessenberg matrix is upper trapezoidal**: for an upper Hessenberg
+matrix $\mathbf{H}$, the triangular factor $\mathsf{givensHessenbergR}(\mathbf{H})$ of its Givens
+QR is upper trapezoidal. [GolubVanLoan2013, §5.2.5]. -/
 theorem isUpperTrapezoidal_givensHessenbergR {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH : IsUpperHessenberg H) : IsUpperTrapezoidal (givensHessenbergR H) := by
   exact fun i j hji => givensHessenbergState_snd_apply_eq_zero hH p i j hji (Or.inl j.2)
 
 /-- **Givens QR gives the thin QR factorization** of a tall upper Hessenberg matrix.
-[GolubVanLoan2013, Algorithm 5.2.4]. Proof: `HasOrthonormalCols.isQR_submatrix_castLE`.
+[GolubVanLoan2013, Algorithm 5.2.4].
 Result: givens-qr -/
 theorem isQR_givensHessenberg {H : Matrix (Fin m) (Fin p) 𝕜} (hH : IsUpperHessenberg H)
     (h : p ≤ m) :

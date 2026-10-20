@@ -235,9 +235,10 @@ theorem measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix (A :
     exact hp
   have hq0 : p / 2 ≠ 0 := (zero_lt_one.trans_le hq).ne'
   have h2 : 2 * (p / 2) = p := ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top
+  have := Fact.mk hq
   have h := open SymmetricGauge in
     measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix
-      (lpGauge (p / 2) hq) A hX hd u ht
+      (lpGauge (p / 2)) A hX hd u ht
   simpa only [lpGauge_matrixNorm, schattenNorm_conjTranspose_mul_self hq0, h2,
     lpGauge_apply_single_zero, one_mul] using h
 

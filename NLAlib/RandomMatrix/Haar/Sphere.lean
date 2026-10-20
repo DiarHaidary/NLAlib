@@ -329,7 +329,7 @@ sphere, $\mathbf{V}$ with orthonormal columns and $\beta \ge 1$,
 $$\mathbb{P}\bigl[\beta \lvert k \rvert / \lvert n \rvert
 \le \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2\bigr]
 \le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
-The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
+The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2] has the fact
 with an unspecified constant $c$. The $\chi^2_{\lvert k \rvert}$ tail
 `NLAlib.measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector` is the limit
 $\lvert n \rvert \to \infty$. -/
@@ -388,7 +388,7 @@ sphere, $\mathbf{V}$ with orthonormal columns and $0 < \beta \le 1$,
 $$\mathbb{P}\bigl[\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2
 \le \beta \lvert k \rvert / \lvert n \rvert\bigr]
 \le e^{(\lvert k \rvert/2)(1 - \beta + \log \beta)} \,.$$
-The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2 (2020 draft)] has the fact
+The exponent of Dasgupta and Gupta (2003); [Vershynin2018, Lemma 5.3.2] has the fact
 with an unspecified constant $c$. -/
 theorem measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector
     (hu : HasLaw u (uniformSphereVector n) μ) (hV : HasOrthonormalCols V) (hβ0 : 0 < β)
@@ -444,7 +444,7 @@ $$\mathbb{P}\Bigl[\varepsilon \le \Bigl\lvert \frac{\lvert n \rvert}{\lvert k \r
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,,$$
 from the two tails as for $\chi^2_{\lvert k \rvert}$
 (`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`). At least $2$
-for empty $k$ and for $\varepsilon \ge 3/2$. [Vershynin2018, Lemma 5.3.2 (2020 draft)], there with
+for empty $k$ and for $\varepsilon \ge 3/2$. [Vershynin2018, Lemma 5.3.2], there with
 an unspecified constant $c$; the exponent of Dasgupta and Gupta (2003). -/
 theorem
 measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uniformSphereVector

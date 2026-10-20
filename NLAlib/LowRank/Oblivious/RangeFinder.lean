@@ -428,7 +428,7 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_ad
   have hinjZ : IsSubspaceInjection (X ω)ᴴ Z a := hinj.of_range_le hR.le
   have h1 := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le (hinjZ.rank_mul_eq ha) A
     (card_frame_head_le A k)
-  have h2 := hinjZ.matrixNorm_sub_mul_mul_pinv_le hZ ha (lpGauge 2 one_le_two) A
+  have h2 := hinjZ.matrixNorm_sub_mul_mul_pinv_le hZ ha (lpGauge 2) A
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h2
   rw [hAZ] at h1 h2
   have e : frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ * Z) =

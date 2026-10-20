@@ -304,20 +304,17 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_chernoff_intrinsicDimension (hind 
   exact measureReal_eigenvalue_zero_ge_le_chernoff_intrinsicDimension_of_integral_le
     (Y := fun ω => ∑ k, X k ω) hY hMpsd hM0 hL (fun θ _ => hint θ) (fun θ hθ => htr θ hθ.le) hδ
 
-/-- **Intrinsic-dimension matrix Chernoff for the mean**: for summands $\mathbf{X}_k$ as in the
-tail, any matrix $\mathbf{M}$ with $\sum_k \mathbb{E}\mathbf{X}_k \preceq \mathbf{M}$ (possibly
-$\mathbf{0}$) and every $\theta > 0$,
+/-- **Intrinsic-dimension matrix Chernoff for the mean**: for finitely many independent, almost
+everywhere measurable random $n \times n$ matrices $\mathbf{X}_k$ over $\Bbbk$ with
+$\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$, any matrix
+$\mathbf{M}$ with $\sum_k \mathbb{E}\mathbf{X}_k \preceq \mathbf{M}$ (possibly $\mathbf{0}$) and
+every $\theta > 0$,
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
 \le \frac{e^\theta - 1}{\theta} \lambda_0(\mathbf{M}) +
 \frac{L}{\theta} \log\bigl(2 \operatorname{intdim}(\mathbf{M})\bigr)\,.$$
 [Tropp2015, Theorem 7.2.1]; here with any upper bound $\mathbf{M}$ in Loewner order and a free
 $\theta$. No $\mathbf{M} \ne \mathbf{0}$: at $\mathbf{M} = \mathbf{0}$ both sides are $0$
-(`Real.log 0 = 0`). Proof: for positive semidefinite $\mathbf{Y}$,
-$e^{s \lambda_0(\mathbf{Y})} - 1 \le \operatorname{tr}(e^{s\mathbf{Y}} - \mathbf{I})$; Jensen; the
-trace bound at $s = \theta / L$ and monotonicity after the trace; the intrinsic dimension lemma
-(`Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul`); then
-$1 + D (e^a - 1) \le 2 D e^a$ for $D = \operatorname{intdim}(\mathbf{M})$, from
-`Matrix.PosSemidef.one_le_intrinsicDimension` (case split on $\mathbf{M} = \mathbf{0}$).
+(`Real.log 0 = 0`).
 Result: intrinsic-matrix-chernoff -/
 theorem integral_eigenvalue_zero_sum_le_chernoff_intrinsicDimension (hind : iIndepFun X μ)
     (hXm : ∀ k, AEMeasurable (X k) μ) (hL : 0 < L) (hpsd : ∀ k, ∀ᵐ ω ∂μ, (X k ω).PosSemidef)
@@ -718,8 +715,10 @@ section Hermitian
 
 variable {X : ι → Ω → Matrix n n 𝕜}
 
-/-- **Intrinsic-dimension matrix Bernstein for the mean**, Hermitian summands: for summands
-$\mathbf{X}_k$ and a proxy $\mathbf{V}$ as in the tail, with
+/-- **Intrinsic-dimension matrix Bernstein for the mean**, Hermitian summands: for finitely many
+independent, square-integrable, centred random $n \times n$ matrices $\mathbf{X}_k$ over $\Bbbk$
+with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$, and a proxy
+$\sum_k \mathbb{E}\mathbf{X}_k^2 \preceq \mathbf{V}$, with
 $D = \operatorname{intdim}(\mathbf{V})$, <!-- value intrinsicBernsteinMeanConstant -->
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
 \le 8 \Bigl(\sqrt{\|\mathbf{V}\|_2 \log(1 + D)} + L \log(1 + D)\Bigr);$$
@@ -795,8 +794,11 @@ section Rectangular
 
 variable {m : Type*} [Fintype m] [DecidableEq m] {S : ι → Ω → Matrix m n 𝕜}
 
-/-- **Intrinsic-dimension matrix Bernstein for the mean**, rectangular summands: for summands
-$\mathbf{S}_k$ and proxies $\mathbf{V}_1$, $\mathbf{V}_2$ as in the tail, with
+/-- **Intrinsic-dimension matrix Bernstein for the mean**, rectangular summands: for finitely many
+independent, square-integrable, centred random $m \times n$ matrices $\mathbf{S}_k$ over $\Bbbk$
+with $\|\mathbf{S}_k\|_2 \le L$ almost surely, $L > 0$, and proxies
+$\sum_k \mathbb{E}\mathbf{S}_k\mathbf{S}_k^{\mathsf{H}} \preceq \mathbf{V}_1$,
+$\sum_k \mathbb{E}\mathbf{S}_k^{\mathsf{H}}\mathbf{S}_k \preceq \mathbf{V}_2$, with
 $v = \max(\|\mathbf{V}_1\|_2, \|\mathbf{V}_2\|_2)$ and $D$ the intrinsic dimension of the block
 diagonal matrix with blocks $\mathbf{V}_1$,
 $\mathbf{V}_2$, <!-- value intrinsicBernsteinMeanConstant -->

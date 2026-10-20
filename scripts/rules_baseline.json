@@ -41,17 +41,6 @@
    "NLAlib/Probability/Distributions/GaussianComparison.lean": 2,
    "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
    "NLAlib/Probability/Tail.lean": 1
-  },
-  "P9": {
-   "NLAlib/Matrix/Majorization/Horn.lean": 1,
-   "NLAlib/Polynomial/Approximation/Inverse.lean": 1,
-   "NLAlib/Polynomial/Chebyshev/Residual.lean": 4,
-   "NLAlib/Polynomial/Interpolation/Stieltjes.lean": 2
-  },
-  "T9": {
-   "NLAlib/Matrix/Norms/GaugeExamples.lean": 2,
-   "NLAlib/Matrix/Norms/UnitarilyInvariant.lean": 3,
-   "NLAlib/Probability/MatrixConcentration/Freedman.lean": 2
   }
  }
 }

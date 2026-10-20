@@ -297,7 +297,7 @@ choice of the truncations. A pointwise statement: off the event where the sketch
 projection-cost-preserving sketch the error is bounded only by $\|\mathbf{A}\|_{\mathsf{F}}^2$, so
 no expectation bound follows from it; the structural bound
 `NLAlib.IsSubspaceInjection.frobNorm_sub_earlyTruncatedRSVD_sq_le` gives one.
-[CohenElderMuscoMuscoPersu2015, Lemma 3, §7.2]; there with $\varepsilon$ and a set of rank-$k$
+[CohenElderMuscoMuscoPersu2015, Lemma 3]; there with $\varepsilon$ and a set of rank-$k$
 projectors; here constants $a$, $b$ and the named output.
 Result: early-truncation-pcp-bound -/
 theorem IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le

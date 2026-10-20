@@ -1,6 +1,6 @@
 {
  "date": "2026-10-20",
- "note": "Rules enforcement, stage 2 (CONTRIBUTING §2, §9.1; docs/rules/stage2-worklist.md). Before v0.1: no deprecated aliases. Rule P8 renames a declaration outside NLAlib into NLAlib; rule P9 moves a general fact to the ForMathlib file of its Mathlib subject, in Mathlib's namespace. Entries with \"removed\": true delete a declaration whose content Mathlib or another declaration already carries (\"new\"); the explorer redirects the old link there. statementChanged lists the declarations (new names) whose statements changed: rule T9 replaces a proof term in a signature by a hypothesis or an existing definition; rule T2 writes an ℝ≥0 quantity with ‖·‖₊ instead of Real.toNNReal; rule T13 drops an unused hypothesis (a rename when the namespace came from that hypothesis).",
+ "note": "Rules enforcement, stage 2 (CONTRIBUTING §2, §9.1; docs/rules/stage2-worklist.md). Before v0.1: no deprecated aliases. Rule P8 renames a declaration outside NLAlib into NLAlib; rule P9 moves a general fact to the ForMathlib file of its Mathlib subject, in Mathlib's namespace. Entries with \"removed\": true delete a declaration whose content Mathlib or another declaration already carries (\"new\"); the explorer redirects the old link there. statementChanged lists the declarations (new names) whose statements changed: rule T9 replaces a proof term in a signature by a hypothesis or an existing definition; rule T2 writes an ℝ≥0 quantity with ‖·‖₊ instead of Real.toNNReal; rule T13 drops an unused hypothesis (a rename when the namespace came from that hypothesis). Stage 3 (2026-10-20, maintainer decisions 1-4): lpGauge takes [Fact (1 ≤ q)] and HasCondMatrixMGFBound drops its unused hm (rule T9, statementChanged); the renames with rule P11 are the Polynomial layer's upstreaming audit (Mathlib naming; docs/design/Polynomial-Chebyshev.md, \"Upstreaming to Mathlib\").",
  "renames": [
   {
    "old": "Commute.complexify",
@@ -165,6 +165,36 @@
    "old": "NLAlib.HasOrthonormalCols.hutchpp_eq",
    "new": "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
    "rule": "T13"
+  },
+  {
+   "old": "NLAlib.norm_chebyshevCoeff_le_of_open_ellipse",
+   "new": "NLAlib.norm_chebyshevCoeff_le_of_differentiableOn",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.isUniformApproxOn_chebyshevTrunc_of_open_ellipse",
+   "new": "NLAlib.isUniformApproxOn_chebyshevTrunc_of_differentiableOn",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.exists_degree_le_isUniformApproxOn_of_open_ellipse_interval",
+   "new": "NLAlib.exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.jacksonDamping_eq_closed_form",
+   "new": "NLAlib.jacksonDamping_of_le",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.chebyshevTrunc_eval_eq",
+   "new": "NLAlib.chebyshevTrunc_eval",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.HasStieltjesMeasure.monotoneOn_mul_self",
+   "new": "NLAlib.HasStieltjesMeasure.monotoneOn_id_mul",
+   "rule": "P11"
   }
  ],
  "statementChanged": [
@@ -175,6 +205,23 @@
   "NLAlib.hasSubexponentialMGF_quadForm_sub_diagonal",
   "NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix",
   "NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame",
-  "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector"
+  "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
+  "NLAlib.lpGauge",
+  "NLAlib.lpGauge_apply_of_ne_top",
+  "NLAlib.lpGauge_top_apply",
+  "NLAlib.lpGauge_one_apply",
+  "NLAlib.lpGauge_apply_eq_norm_toLp",
+  "NLAlib.lpGauge_apply_single_zero",
+  "NLAlib.lpGauge_matrixNorm",
+  "NLAlib.lpGauge_top_matrixNorm",
+  "NLAlib.lpGauge_two_matrixNorm",
+  "NLAlib.lpGauge_one_matrixNorm",
+  "NLAlib.HasCondMatrixMGFBound",
+  "NLAlib.HasCondMatrixMGFBound.congr",
+  "NLAlib.HasCondMatrixMGFBound.mono_set",
+  "NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le",
+  "NLAlib.hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF",
+  "NLAlib.HasCondMatrixMGFBound.supermartingale_re_trace_exp",
+  "NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le"
  ]
 }

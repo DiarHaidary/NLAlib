@@ -154,7 +154,6 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector [Nonempty 
     nlinarith [sq_nonneg (frobNorm A), frobNorm_nonneg ((1 - rangeProjector (A * X ω)) * A)]
   have hc1 : (1 : ℝ) ≤ c := (hsub (Classical.arbitrary l)).one_le_of_isIsotropic
     (hiso (Classical.arbitrary l))
-  have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
   have hεJ : 0 < √(ε / (4 * k)) := Real.sqrt_pos.2 (by positivity)
   have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (d := k) hind hsub hiso (by norm_num : (0 : ℝ) < 1 / 2) (by linarith) (half_pos hδ) hl
@@ -247,7 +246,8 @@ the Gaussian statement
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, with the
 family's OSI and JL moment property. Asymptotic form:
 `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`.
-[CohenElderMuscoMuscoPersu2015, §7.2]; there with unspecified constants.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
+with unspecified constants.
 Result: etrsvd -/
 theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector [Nonempty l]
     (A : Matrix m n ℝ) {c : ℝ≥0} (hind : iIndepFun (fun i ω => (X ω)ᴴ i) μ)
@@ -272,14 +272,12 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
     nlinarith [sq_nonneg (frobNorm A)]
   have hc1 : (1 : ℝ) ≤ c := (hsub (Classical.arbitrary l)).one_le_of_isIsotropic
     (hiso (Classical.arbitrary l))
-  have hk0 : (0 : ℝ) < √(k : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hk)
   have hεJ : 0 < ε / (8 * √(k : ℝ)) := by positivity
   have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (d := k) hind hsub hiso (by positivity) (by linarith) (by positivity) hl
   have hJL := hasJLMoment_of_isSubgaussianVector hind hsub hiso hεJ
   rw [inv_sqrt_card_smul_conjTranspose] at hOSI hJL
   have hX' := aemeasurable_inv_sqrt_card_smul_of_isSubgaussianVector hsub
-  have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 Fintype.card_pos
   have hc16 : (0 : ℝ) ≤ 16 * (c : ℝ) ^ 2 - 1 := by nlinarith
   have hδJ : (0 : ℝ) ≤ (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card l * (ε / (8 * √(k : ℝ))) ^ 2) := by
     positivity
@@ -460,7 +458,7 @@ at least $\log(2/\delta)$. -/
 private theorem log_two_div_le_of_subgaussianEmbeddingDim_le {c : ℝ≥0} {k : ℕ} {δ L : ℝ}
     (hc1 : (1 : ℝ) ≤ c) (hδ : 0 < δ) (hδ1 : δ < 1)
     (hl : subgaussianEmbeddingDim c k (1 / 2) (δ / 2) ≤ L) : Real.log (2 / δ) ≤ L := by
-  set t := Real.log (2 / δ) with ht
+  set t := Real.log (2 / δ)
   have ht0 : 0 ≤ t := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
   rw [subgaussianEmbeddingDim_def, subgaussianJLConstant_def] at hl
   have h4 : t ≤ Real.log (2 / (δ / 2)) :=
@@ -488,7 +486,7 @@ private theorem mul_frobNorm_one_kronecker_add_le [DecidableEq l] (E : Matrix m 
         2 * frobNorm (((1 : Matrix l l ℝ) ⊗ₖ E)ᴴ * ((1 : Matrix l l ℝ) ⊗ₖ E)) * √t +
         2 * specNorm ((1 : Matrix l l ℝ) ⊗ₖ E) ^ 2 * t) ≤
       5 * c * (Fintype.card l : ℝ) * frobNorm E ^ 2 := by
-  set L : ℝ := (Fintype.card l : ℝ) with hLdef
+  set L : ℝ := (Fintype.card l : ℝ)
   have hL0 : 0 ≤ L := Nat.cast_nonneg _
   set M : Matrix (l × m) (l × n) ℝ := (1 : Matrix l l ℝ) ⊗ₖ E with hM
   have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := frobNorm_one_kronecker_sq E
@@ -570,8 +568,8 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
     exact hδ.le
   have hc1 : (1 : ℝ) ≤ c := (hsub (Classical.arbitrary l)).one_le_of_isIsotropic
     (hiso (Classical.arbitrary l))
-  set E := A - truncatedSVD A k with hE
-  set L : ℝ := (Fintype.card l : ℝ) with hLdef
+  set E := A - truncatedSVD A k
+  set L : ℝ := (Fintype.card l : ℝ)
   have hL : (0 : ℝ) < L := Nat.cast_pos.2 Fintype.card_pos
   -- The injection event, for a frame of the head.
   obtain ⟨Z, hZ, hR⟩ :=
@@ -600,7 +598,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
       add_zero] at h1 hω'
     linarith
   -- The Hsu–Kakade–Zhang event, on the vectorization of the test matrix.
-  set t := Real.log (2 / δ) with ht
+  set t := Real.log (2 / δ)
   have ht0 : 0 ≤ t := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
   have htL : t ≤ L := log_two_div_le_of_subgaussianEmbeddingDim_le hc1 hδ hδ1 hl
   set M : Matrix (l × m) (l × n) ℝ := (1 : Matrix l l ℝ) ⊗ₖ E with hM

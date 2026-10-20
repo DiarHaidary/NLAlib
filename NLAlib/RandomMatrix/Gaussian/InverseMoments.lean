@@ -273,7 +273,7 @@ private theorem lintegral_comp_inv_mul_conjTranspose_apply_self
         ∂(gaussianVector (Fin (Fintype.card k - Fintype.card r + 1))) := by
   classical
   have := hX.isProbabilityMeasure
-  set d := Fintype.card k - Fintype.card r + 1 with hd
+  set d := Fintype.card k - Fintype.card r + 1
   set t := {j // j ≠ i}
   have hcard : Fintype.card t + d = Fintype.card k := card_subtype_ne_add hrk
   set ψ : (k → ℝ) × Matrix t k ℝ → ℝ≥0∞ := fun p =>
@@ -713,10 +713,10 @@ private theorem lintegral_inv_mul_conjTranspose_apply_sq (hX : HasLaw X (gaussia
   set t := {j // j ≠ i}
   have hcard : Fintype.card t + d = Fintype.card k := card_subtype_ne_add (by omega)
   set j' : t := ⟨j, hji⟩
-  set m₂ : ℝ := 1 / (((d : ℝ) - 2) * ((d : ℝ) - 4)) with hm₂
+  set m₂ : ℝ := 1 / (((d : ℝ) - 2) * ((d : ℝ) - 4))
   set ψ : (k → ℝ) × Matrix t k ℝ → ℝ≥0∞ := fun p =>
     ENNReal.ofReal ((pinv p.2ᴴ *ᵥ p.1) j' ^ 2 *
-      ((‖WithLp.toLp 2 ((1 - rangeProjector p.2ᴴ) *ᵥ p.1)‖ ^ 2)⁻¹) ^ 2) with hψ
+      ((‖WithLp.toLp 2 ((1 - rangeProjector p.2ᴴ) *ᵥ p.1)‖ ^ 2)⁻¹) ^ 2)
   have hψm : Measurable ψ := by
     have hc : Measurable fun p : (k → ℝ) × Matrix t k ℝ => (pinv p.2ᴴ *ᵥ p.1) j' :=
       (measurable_pi_apply j').comp ((measurable_pinv.comp
@@ -851,7 +851,7 @@ private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (ga
   have := hX.isProbabilityMeasure
   have hd : 5 ≤ Fintype.card k - Fintype.card r + 1 := by omega
   set a := 1 / ((((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) - 2) *
-    (((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) - 4)) with ha
+    (((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) - 4))
   have hsq (l : r) : ∫ ω, (X ω * (X ω)ᴴ)⁻¹ l l ^ 2 ∂μ = a :=
     integral_sq_of_hasLaw_invChiSq (hasLaw_inv_mul_conjTranspose_apply_self hX (by omega) l) hd
   by_cases hij : i = j

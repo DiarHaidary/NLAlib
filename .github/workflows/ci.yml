@@ -29,6 +29,8 @@ jobs:
         run: lake env lean scripts/Lint.lean
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
+      - name: Generated rule files are current (docs/rules/rules.toml)
+        run: python3 scripts/gen_rules_md.py --check
       - name: Port-ledger targets exist (rule G2)
         run: python3 scripts/ledger_check.py
       - name: Documentation metadata regressions

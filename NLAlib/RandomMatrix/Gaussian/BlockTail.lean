@@ -260,9 +260,9 @@ private theorem measureReal_lt_sum_le {α : Type*} [MeasurableSpace α] {ν : Me
     {v : ℝ} (hv : 0 < v) :
     ν.real {x | v < ∑ i, D i x} ≤
       2 * K * Fintype.card r * √((Fintype.card r : ℝ) ^ (d - 1)) / v ^ ((d : ℝ) / 2) := by
-  set R : ℝ := (Fintype.card r : ℝ) with hR_def
+  set R : ℝ := (Fintype.card r : ℝ)
   have hR : 0 < R := Nat.cast_pos.2 hr
-  set N : ℝ := R ^ (d - 1) with hN_def
+  set N : ℝ := R ^ (d - 1)
   have hN : 0 < N := by positivity
   set w : ℝ := v ^ ((d : ℝ) / 2) with hw_def
   have hw : 0 < w := Real.rpow_pos_of_pos hv _
@@ -323,7 +323,6 @@ private theorem measureReal_lt_sum_le {α : Type*} [MeasurableSpace α] {ν : Me
   refine (div_le_div_of_nonneg_right hE (by positivity)).trans (le_of_eq ?_)
   have hsq : √c = w / √N := by
     rw [hc_def, hvd, Real.sqrt_div' _ hN.le, Real.sqrt_sq hw.le]
-  have hsN : 0 < √N := Real.sqrt_pos.2 hN
   rw [hsq, hvd]
   field_simp
   rw [Real.sq_sqrt hN.le]
@@ -469,7 +468,6 @@ theorem measureReal_specNorm_pinv_gt_le_of_hasLaw_gaussianMatrix
     positivity
   have hC : 0 < C := by
     have hR : (1 : ℝ) ≤ Fintype.card r := by exact_mod_cast Fintype.card_pos
-    have hK : (Fintype.card r : ℝ) + 1 ≤ Fintype.card k := by exact_mod_cast hrk
     simp only [C, gaussianPinvSpecNormBound_def]
     exact mul_pos (div_pos (Real.exp_pos 1) hq) (Real.sqrt_pos.2 (by linarith))
   have hint := integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix hX hq le_rfl

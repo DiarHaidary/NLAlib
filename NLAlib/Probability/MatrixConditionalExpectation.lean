@@ -114,10 +114,7 @@ $$\mathbb{E}[f_\omega(\mathbf{B}) \mid \mathcal{G}] = g(\mathbf{B}), \qquad
 g(x) = \mathbb{E}[f_\omega(x) \mid \mathcal{G}],$$
 where $f(\mathbf{B})$ is the functional calculus `cfc f B`. The conditional form of
 `Matrix.IsHermitian.cfc_integral`. No continuity in $\omega$ or $x$ is needed, since the
-spectrum of a matrix is finite. Proof: through a unitary diagonalisation
-$\mathbf{B} = \mathbf{U} \operatorname{diag}(\lambda_i)_i \mathbf{U}^{\mathsf{H}}$,
-$g(\mathbf{B})$ is a real-linear image of $(g(\lambda_i))_i$, and `comp_condExp_comm` passes it
-through. -/
+spectrum of a matrix is finite. -/
 theorem _root_.Matrix.IsHermitian.condExp_cfc {B : Matrix n n 𝕜} (hB : B.IsHermitian)
     {f : Ω → ℝ → ℝ} (hf : ∀ x, Integrable (fun ω => f ω x) μ) :
     μ[fun ω => cfc (f ω) B | m] =ᵐ[μ] fun ω' => cfc (fun x => μ[fun ω => f ω x | m] ω') B := by
