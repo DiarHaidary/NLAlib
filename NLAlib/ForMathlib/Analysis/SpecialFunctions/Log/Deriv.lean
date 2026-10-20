@@ -26,7 +26,7 @@ candidates for `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 * `Real.log_one_add_le_cubic`, `Real.log_one_add_le_cubic_of_nonpos`.
 * `Real.log_one_sub_le_quadratic`.
 * `Real.neg_log_one_sub_le`.
-* `Real.log_nine_le_nine_div_four`.
+* `Real.log_nine_le_nine_div_four`, `Real.log_twentyOne_le_sixtyOne_div_twenty`.
 * `Real.exp_two_mul_le_one_add_div_one_sub`: $e^{2r} \le (1 + r)/(1 - r)$ on $[0, 1)$, the first
   term of the series of $\log(1 + r) - \log(1 - r)$.
 -/
@@ -123,6 +123,16 @@ theorem log_nine_le_nine_div_four : log 9 ≤ 9 / 4 := by
   rw [show (9 / 4 : ℝ) = ((8 : ℕ) : ℝ) * (9 / 32) by norm_num, exp_nat_mul]
   calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
     _ ≤ exp (9 / 32) ^ 8 := by gcongr
+
+/-- $\log 21 \le 61/20$, that is $21 \le e^{61/20}$: from $e^{61/640} \ge 1 + 61/640 +
+(61/640)^2/2$ raised to the $32$nd power. The margin that turns the $21^d$ points of a
+$1/10$-net of a $d$-dimensional sphere into a factor $e^{61d/20}$. -/
+theorem log_twentyOne_le_sixtyOne_div_twenty : log 21 ≤ 61 / 20 := by
+  rw [log_le_iff_le_exp (by norm_num)]
+  have h := quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 61 / 640 by norm_num)
+  rw [show (61 / 20 : ℝ) = ((32 : ℕ) : ℝ) * (61 / 640) by norm_num, exp_nat_mul]
+  calc (21 : ℝ) ≤ (1 + 61 / 640 + (61 / 640) ^ 2 / 2) ^ 32 := by norm_num
+    _ ≤ exp (61 / 640) ^ 32 := by gcongr
 
 /-- $e^{2r} \le (1 + r)/(1 - r)$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
 [TroppWebber2023, (C.1)]. -/

@@ -26,12 +26,13 @@ $\mathbb{E} \langle \boldsymbol{\xi}, \mathbf{x} \rangle^4
 $\boldsymbol{\xi}$ of random signs), the exact JL second moment
 $2 (\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4)/\lvert k \rvert$, at most the Gaussian's
 $2 \|\mathbf{x}\|^4/\lvert k \rvert$, and is an oblivious subspace embedding and injection
-through JL plus a net at $\varepsilon/2$. The sample sizes are the Gaussian sketch's
+through JL plus a net of radius $1/10$ at $4\varepsilon/5$. The sample sizes are the Gaussian
+sketch's
 `NLAlib.jlDim`: <!-- value jlDim \varepsilon \delta -->
 $\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$ rows (`jlDim ε δ`) for JL,
-and <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
-$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$ rows (`jlDim (ε/2) (δ/9^d)`)
-for the OSE and OSI. For
+and <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
+(`jlDim (4ε/5) (δ/21^d)`) for the OSE and OSI. For
 $\varepsilon \gtrsim 1.43$ the sub-Gaussian rows theorem at $c = 1$
 (`NLAlib.hasJLProperty_of_isSubgaussianVector` with
 `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`) is better; it is not restated here.
@@ -250,46 +251,46 @@ theorem hasJLMoment_of_hasLaw_rademacherMatrix [Nonempty k] (hX : HasLaw X (rade
 /-- **Sign-sketch OSE**: for $\varepsilon \ge 0$,
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious subspace embedding for
 dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
-$2 \cdot 9^d e^{-\lvert k \rvert (\varepsilon^2/16 - \varepsilon^3/48)}$: JL plus a net at
-$\varepsilon/2$ (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Woodruff2014, §2.1,
-Theorem 6], there with $O(\varepsilon)$ and unspecified constants.
+$2 \cdot 21^d e^{-\lvert k \rvert (4\varepsilon^2/25 - 32\varepsilon^3/375)}$: JL plus a net of
+radius $1/10$ at $4\varepsilon/5$ (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`).
+[Woodruff2014, §2.1, Theorem 6], there with $O(\varepsilon)$ and unspecified constants.
 Result: rademacher-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix
     (hX : HasLaw X (rademacherMatrix k n) μ) (d : ℕ) (hε : 0 ≤ ε) :
     IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε)
-      (2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48)))) μ := by
+      (2 * 21 ^ d * Real.exp (-(Fintype.card k * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375)))) μ := by
   have := hX.isProbabilityMeasure
-  have h := (hasJLProperty_of_hasLaw_rademacherMatrix hX (ε := ε / 2) (by linarith))
+  have h := (hasJLProperty_of_hasLaw_rademacherMatrix hX (ε := 4 * ε / 5) (by linarith))
     |>.isObliviousSubspaceEmbedding (by positivity) d
   rw [Module.finrank_self, mul_one] at h
   refine h.mono le_rfl (by linarith) (by linarith) (le_of_eq ?_)
-  rw [show (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 = ε ^ 2 / 16 - ε ^ 3 / 48 by ring]
+  rw [show (4 * ε / 5) ^ 2 / 4 - (4 * ε / 5) ^ 3 / 6 = 4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375 by ring]
   ring
 
 /-- **Sign-sketch OSI**: for $\varepsilon \ge 0$ and $k$ nonempty, $\mathbf{S}$ is an oblivious
 subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
-$2 \cdot 9^d e^{-\lvert k \rvert (\varepsilon^2/16 - \varepsilon^3/48)}$: the lower half of
+$2 \cdot 21^d e^{-\lvert k \rvert (4\varepsilon^2/25 - 32\varepsilon^3/375)}$: the lower half of
 `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`, with the sketch's isotropy.
 [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] [Nonempty k]
     (hX : HasLaw X (rademacherMatrix k n) μ) (d : ℕ) (hε : 0 ≤ ε) :
     IsObliviousSubspaceInjection (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε)
-      (2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48)))) μ := by
+      (2 * 21 ^ d * Real.exp (-(Fintype.card k * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375)))) μ := by
   have := hX.isProbabilityMeasure
   exact (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε)
     |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_rademacherMatrix hX)
 
 /-- The failure probability of the sign-sketch OSE is at most $\delta$
-once <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
-$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6) \le \lvert k \rvert$ (the left
-side is `jlDim (ε/2) (δ/9^d)`), for $0 < \varepsilon < 3$ and $\delta > 0$. -/
-private theorem two_mul_nine_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
-    (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
-    2 * 9 ^ d * Real.exp (-(Fintype.card k * (ε ^ 2 / 16 - ε ^ 3 / 48))) ≤ δ := by
-  have h9 : (0 : ℝ) < 9 ^ d := by positivity
+once <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6) \le \lvert k \rvert$ (the
+left side is `jlDim (4ε/5) (δ/21^d)`), for $0 < \varepsilon < 15/8$ and $\delta > 0$. -/
+private theorem two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 15 / 8)
+    (hδ : 0 < δ) (hk : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
+    2 * 21 ^ d * Real.exp (-(Fintype.card k * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375))) ≤ δ := by
+  have h21 : (0 : ℝ) < 21 ^ d := by positivity
   have h := two_mul_exp_le_of_jlDim_le (by linarith) (by linarith) (by positivity) hk
-  rw [show (ε / 2) ^ 2 / 4 - (ε / 2) ^ 3 / 6 = ε ^ 2 / 16 - ε ^ 3 / 48 by ring,
-    le_div_iff₀ h9] at h
+  rw [show (4 * ε / 5) ^ 2 / 4 - (4 * ε / 5) ^ 3 / 6 = 4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375 by ring,
+    le_div_iff₀ h21] at h
   linarith
 
 /-- **Sign-sketch JL, sample-size form**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and at
@@ -331,9 +332,10 @@ theorem exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix :
   rw [mul_div_assoc']
   exact div_le_div_of_nonneg_right (by linarith) (sq_nonneg ε)
 
-/-- **Sign-sketch OSE, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$ and at
-least <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
-$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$ rows (`jlDim (ε/2) (δ/9^d)`),
+/-- **Sign-sketch OSE, sample-size form**: for $0 < \varepsilon < 15/8$, $\delta > 0$ and at
+least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
+(`jlDim (4ε/5) (δ/21^d)`),
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious
 subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
 $\delta$. [Woodruff2014, Theorem 6] (Gaussian entries,
@@ -342,19 +344,19 @@ same net argument, §2.1 after Theorem 6). Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix`.
 Result: rademacher-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
-    (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3) (hδ : 0 < δ)
-    (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
+    (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 15 / 8) (hδ : 0 < δ)
+    (hk : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
     IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε) δ
       μ := by
   have := hX.isProbabilityMeasure
   refine (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl
-    le_rfl le_rfl (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
+    le_rfl le_rfl (two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
 /-- **Sign-sketch OSE, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice
 for the sign sketch to be an oblivious subspace embedding for dimension $d$ with constants
 $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension. Proved from
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le` with $C = 108$,
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le` with $C = 58$,
 $\varepsilon_0 = 1$ and $\delta \le 1/2$.
 Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le -/
 theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix :
@@ -364,36 +366,41 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix :
       C * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
       IsObliviousSubspaceEmbedding (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) (1 + ε) δ
         μ := by
-  refine ⟨108, 1, by norm_num, one_pos, fun μ X d ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
-  have h9 : (1 : ℝ) ≤ 9 ^ d := one_le_pow₀ (by norm_num)
+  refine ⟨58, 1, by norm_num, one_pos, fun μ X d ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
+  have h21 : (1 : ℝ) ≤ 21 ^ d := one_le_pow₀ (by norm_num)
   have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
     Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-  have hl : Real.log (2 / (δ / 9 ^ d)) = Real.log 2 + d * Real.log 9 + Real.log (1 / δ) := by
-    rw [show 2 / (δ / 9 ^ d) = 2 * 9 ^ d * (1 / δ) by field_simp,
+  have hl : Real.log (2 / (δ / 21 ^ d)) = Real.log 2 + d * Real.log 21 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 21 ^ d) = 2 * 21 ^ d * (1 / δ) by field_simp,
       Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by positivity),
       Real.log_pow]
-  have hd9 : (d : ℝ) * Real.log 9 ≤ d * (9 / 4) :=
-    mul_le_mul_of_nonneg_left Real.log_nine_le_nine_div_four (Nat.cast_nonneg d)
+  have hd21 : (d : ℝ) * Real.log 21 ≤ d * (61 / 20) :=
+    mul_le_mul_of_nonneg_left Real.log_twentyOne_le_sixtyOne_div_twenty (Nat.cast_nonneg d)
   refine isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le hX hε (by linarith) hδ
     ((jlDim_le (by linarith) (by positivity)
-      ((div_le_self hδ.le h9).trans (by linarith))).trans (le_trans ?_ hk))
-  rw [hl, mul_div_assoc', div_pow, div_div_eq_mul_div, mul_comm _ ((2 : ℝ) ^ 2)]
+      ((div_le_self hδ.le h21).trans (by linarith))).trans (le_trans ?_ hk))
+  have e : 12 * Real.log (2 / (δ / 21 ^ d)) / (4 * ε / 5) ^ 2 =
+      75 / 4 * Real.log (2 / (δ / 21 ^ d)) / ε ^ 2 := by
+    field_simp
+    ring
+  rw [e, hl, mul_div_assoc']
   exact div_le_div_of_nonneg_right
     (by nlinarith [Nat.cast_nonneg (α := ℝ) d, Real.log_nonneg (by norm_num : (1 : ℝ) ≤ 2)])
     (sq_nonneg ε)
 
-/-- **Sign-sketch OSI, sample-size form**: for $0 < \varepsilon < 3$, $\delta > 0$, $k$ nonempty
-and at least <!-- value jlDim (\varepsilon/2) (\delta/9^d) -->
-$\log(2/(\delta/9^d))/((\varepsilon/2)^2/4 - (\varepsilon/2)^3/6)$ rows (`jlDim (ε/2) (δ/9^d)`),
+/-- **Sign-sketch OSI, sample-size form**: for $0 < \varepsilon < 15/8$, $\delta > 0$, $k$
+nonempty and at least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
+(`jlDim (4ε/5) (δ/21^d)`),
 $\mathbf{S}$ is an oblivious subspace injection for
 dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$; the injection twin
 of `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le`. -/
 theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix_of_jlDim_le [DecidableEq n]
-    [Nonempty k] (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 3)
-    (hδ : 0 < δ) (hk : jlDim (ε / 2) (δ / 9 ^ d) ≤ Fintype.card k) :
+    [Nonempty k] (hX : HasLaw X (rademacherMatrix k n) μ) (hε : 0 < ε) (hε3 : ε < 15 / 8)
+    (hδ : 0 < δ) (hk : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
     IsObliviousSubspaceInjection (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) d (1 - ε) δ μ := by
   have := hX.isProbabilityMeasure
   exact (isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl le_rfl
-    (two_mul_nine_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
+    (two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
 end NLAlib

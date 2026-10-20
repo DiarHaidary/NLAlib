@@ -34,17 +34,17 @@ Both are stated with the non-strict threshold event $\{\varepsilon \le X\}$. Des
 `docs/design/Sketching-S1.md` §3.5.
 
 **From the JL property to subspace embeddings.** A distributional JL tail at $\varepsilon$ makes
-any sketch $\mathbf{S}$ a subspace embedding with constants $1 \mp 2\varepsilon$ of a fixed
-$\mathbf{U}$ with orthonormal columns, failing with probability at most $9^{D} \delta$,
-$D = \lvert p \rvert \dim_{\mathbb{R}} \Bbbk$ the real dimension of $\Bbbk^p$: on a $1/4$-net
+any sketch $\mathbf{S}$ a subspace embedding with constants $1 \mp (5/4)\varepsilon$ of a fixed
+$\mathbf{U}$ with orthonormal columns, failing with probability at most $21^{D} \delta$,
+$D = \lvert p \rvert \dim_{\mathbb{R}} \Bbbk$ the real dimension of $\Bbbk^p$: on a $1/10$-net
 of the unit sphere of $\Bbbk^p$ (`NLAlib.exists_finset_specNorm_le_div_of_isHermitian`, at most
-$9^{D}$ points), the Hermitian error
+$21^{D}$ points), the Hermitian error
 $\mathbf{E} = (\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U}) - \mathbf{I}$ has
 $\lvert \operatorname{Re} \mathbf{x}^{\mathsf{H}} \mathbf{E} \mathbf{x} \rvert
 = \lvert \|\mathbf{S}\mathbf{U}\mathbf{x}\|^2 - 1 \rvert < \varepsilon$ off the union of the JL
-events, hence $\|\mathbf{E}\|_2 < 2\varepsilon$. The real dimension is $\lvert p \rvert$ over
-$\mathbb{R}$ and $2 \lvert p \rvert$ over $\mathbb{C}$, so the factor is $9^{\lvert p \rvert}$
-and $81^{\lvert p \rvert}$. Any family with a JL tail and no Gram-level tail gets its OSE here.
+events, hence $\|\mathbf{E}\|_2 < (5/4)\varepsilon$. The real dimension is $\lvert p \rvert$ over
+$\mathbb{R}$ and $2 \lvert p \rvert$ over $\mathbb{C}$, so the factor is $21^{\lvert p \rvert}$
+and $441^{\lvert p \rvert}$. Any family with a JL tail and no Gram-level tail gets its OSE here.
 Degenerate cases: for empty $p$ every sketch is an embedding (`docs/design/Sketching-S3.md` §8,
 item 6); for $\varepsilon \le 0$ and nonempty $p$ the JL hypothesis bounds the whole space. No
 hypothesis on $\varepsilon$; $\delta \ge 0$ is needed for the union bound over an empty net and
@@ -406,24 +406,28 @@ private theorem re_quadForm_gram_sub_one {p : Type*} [Fintype p] [DecidableEq p]
 
 /-- **JL plus a net**: a JL tail at $\varepsilon$ with failure probability $\delta \ge 0$, under a
 finite measure, makes $\mathbf{S}$ a subspace embedding of a fixed $\mathbf{U}$ with orthonormal
-columns with constants $1 \mp 2\varepsilon$, failing with probability at most
-$9^{\lvert p \rvert \dim_{\mathbb{R}} \Bbbk} \delta$.
+columns with constants $1 \mp (5/4)\varepsilon$, failing with probability at most
+$21^{\lvert p \rvert \dim_{\mathbb{R}} \Bbbk} \delta$.
 [Vershynin2018, proof of Theorem 4.6.1, (4.22)]; [Woodruff2014, Lemma 5 and
-Theorem 6], there with a $1/2$-net and $O(\varepsilon)$. The net has radius $1/4$; another radius
-gives an incomparable family in the radius, to be added when wanted. -/
+Theorem 6], there with a $1/4$-net (Vershynin: constants $1 \mp 2\varepsilon$, $9^d$ points) and a
+$1/2$-net with $O(\varepsilon)$ (Woodruff). The net here has radius $\eta = 1/10$: a JL family
+with a sub-Gaussian exponent $\varepsilon^2$ needs $(1 - 2\eta)^{-2}(d \log(1 + 2/\eta) +
+\log(2/\delta))$ rows up to its constant, and both terms are smaller at $\eta = 1/10$
+($1.5625 \cdot (3.04d + \log(2/\delta))$) than at $\eta = 1/4$ ($4 \cdot (2.20d + \log(2/\delta))$),
+so the radius-$1/4$ statement is not kept beside it. -/
 theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] {p : Type*} [Fintype p]
     [DecidableEq p] {U : Matrix n p 𝕜} (h : HasJLProperty S ε δ μ) (hδ : 0 ≤ δ)
     (hU : HasOrthonormalCols U) :
-    HasSubspaceEmbedding S U (1 - 2 * ε) (1 + 2 * ε)
-      (9 ^ (Fintype.card p * Module.finrank ℝ 𝕜) * δ) μ := by
+    HasSubspaceEmbedding S U (1 - 5 / 4 * ε) (1 + 5 / 4 * ε)
+      (21 ^ (Fintype.card p * Module.finrank ℝ 𝕜) * δ) μ := by
   rcases isEmpty_or_nonempty p with hp | hp
-  · have hall : ∀ ω, IsSubspaceEmbedding (S ω) U (1 - 2 * ε) (1 + 2 * ε) := fun ω =>
+  · have hall : ∀ ω, IsSubspaceEmbedding (S ω) U (1 - 5 / 4 * ε) (1 + 5 / 4 * ε) := fun ω =>
       ⟨by unfold IsSubspaceInjection; exact le_of_eq (Subsingleton.elim _ _),
         le_of_eq (Subsingleton.elim _ _)⟩
     unfold HasSubspaceEmbedding
     simp only [hall, not_true_eq_false, Set.ofPred_false, measureReal_empty]
     positivity
-  have h9 : (1 : ℝ) ≤ 9 ^ (Fintype.card p * Module.finrank ℝ 𝕜) := one_le_pow₀ (by norm_num)
+  have h9 : (1 : ℝ) ≤ 21 ^ (Fintype.card p * Module.finrank ℝ 𝕜) := one_le_pow₀ (by norm_num)
   obtain ⟨x₀⟩ := hp
   rcases le_or_gt ε 0 with hε | hε
   · -- the JL event at any unit vector is everything
@@ -438,11 +442,11 @@ theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] {p : Type*} [Fin
       _ ≤ δ := huniv
       _ ≤ _ := le_mul_of_one_le_left hδ h9
   obtain ⟨net, hcard, hunit, hnet⟩ :=
-    exists_finset_specNorm_le_div_of_isHermitian 𝕜 p (ε := 1 / 4) (by norm_num) (by norm_num)
+    exists_finset_specNorm_le_div_of_isHermitian 𝕜 p (ε := 1 / 10) (by norm_num) (by norm_num)
   rw [Module.finrank_fun] at hcard
   norm_num at hcard
   refine hU.hasSubspaceEmbedding_of_measureReal_le ?_
-  have hsub : {ω | 2 * ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)} ⊆
+  have hsub : {ω | 5 / 4 * ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)} ⊆
       ⋃ x ∈ net, {ω | ε ≤ |‖WithLp.toLp 2 (S ω *ᵥ (U *ᵥ x))‖ ^ 2 - 1|} := by
     intro ω hω
     by_contra hnot
@@ -454,9 +458,9 @@ theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] {p : Type*} [Fin
     have hn := hnet _ hH hM0 fun x hx => by
       rw [re_quadForm_gram_sub_one, hunit x hx, one_pow]
       exact hM x hx
-    rw [show M / (1 - 2 * (1 / 4 : ℝ)) = 2 * M by ring] at hn
+    rw [show M / (1 - 2 * (1 / 10 : ℝ)) = 5 / 4 * M by ring] at hn
     linarith
-  calc μ.real {ω | 2 * ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)}
+  calc μ.real {ω | 5 / 4 * ε ≤ specNorm ((S ω * U)ᴴ * (S ω * U) - 1)}
     _ ≤ μ.real (⋃ x ∈ net, {ω | ε ≤ |‖WithLp.toLp 2 (S ω *ᵥ (U *ᵥ x))‖ ^ 2 - 1|}) :=
       measureReal_mono hsub (measure_ne_top _ _)
     _ ≤ ∑ x ∈ net, μ.real {ω | ε ≤ |‖WithLp.toLp 2 (S ω *ᵥ (U *ᵥ x))‖ ^ 2 - 1|} :=
@@ -468,14 +472,15 @@ theorem HasJLProperty.hasSubspaceEmbedding [IsFiniteMeasure μ] {p : Type*} [Fin
 
 /-- **JL plus a net, oblivious form**: a JL tail at $\varepsilon$ with failure probability
 $\delta \ge 0$, under a finite measure, makes $\mathbf{S}$ an oblivious subspace embedding for
-dimension $d$ with constants $1 \mp 2\varepsilon$ and failure probability
-$9^{d \dim_{\mathbb{R}} \Bbbk} \delta$. From `NLAlib.HasJLProperty.hasSubspaceEmbedding` at
+dimension $d$ with constants $1 \mp (5/4)\varepsilon$ and failure probability
+$21^{d \dim_{\mathbb{R}} \Bbbk} \delta$ (a net of radius $1/10$). From
+`NLAlib.HasJLProperty.hasSubspaceEmbedding` at
 `Fin (min d (card n))` by `NLAlib.IsObliviousSubspaceEmbedding.of_hasOrthonormalCols` and `mono`.
 [Vershynin2018, proof of Theorem 4.6.1, (4.22)]; [Woodruff2014, Theorem 6]. -/
 theorem HasJLProperty.isObliviousSubspaceEmbedding [IsFiniteMeasure μ]
     (h : HasJLProperty S ε δ μ) (hδ : 0 ≤ δ) (d : ℕ) :
-    IsObliviousSubspaceEmbedding S d (1 - 2 * ε) (1 + 2 * ε)
-      (9 ^ (d * Module.finrank ℝ 𝕜) * δ) μ := by
+    IsObliviousSubspaceEmbedding S d (1 - 5 / 4 * ε) (1 + 5 / 4 * ε)
+      (21 ^ (d * Module.finrank ℝ 𝕜) * δ) μ := by
   have hd : Fintype.card (Fin (min d (Fintype.card n))) ≤ Fintype.card n := by
     rw [Fintype.card_fin]; exact min_le_right _ _
   have h' := IsObliviousSubspaceEmbedding.of_hasOrthonormalCols hd

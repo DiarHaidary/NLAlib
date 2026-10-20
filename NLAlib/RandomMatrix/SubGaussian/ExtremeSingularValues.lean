@@ -86,27 +86,29 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*}
   [Fintype n] [DecidableEq n] {X : Ω → Matrix m n ℝ} {c : ℝ≥0}
 
 /-- **The fixed-vector bound**: for an $m \times n$ random matrix $\mathbf{X}$ with independent
-isotropic sub-Gaussian rows with proxy $c$ and a unit vector $\mathbf{x}$,
-$\|\mathbf{X}\mathbf{x}\|^2 - \lvert m \rvert$ is sub-exponential with parameters
-$32 c^2 \lvert m \rvert$ and $4 c$: each $\langle \mathbf{X}_{i,:}, \mathbf{x} \rangle^2 - 1$ is
-sub-exponential with parameters $32 c^2$, $4 c$
-(`HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral`), and the rows are independent.
+isotropic sub-Gaussian rows with proxy $c$, a unit vector $\mathbf{x}$ and $v, b \ge 0$ with
+$2c \le b$ and $16 c^2 b \le (b - 2c) v$, $\|\mathbf{X}\mathbf{x}\|^2 - \lvert m \rvert$ is
+sub-exponential with parameters $v \lvert m \rvert$ and $b$: each
+$\langle \mathbf{X}_{i,:}, \mathbf{x} \rangle^2 - 1$ is sub-exponential with parameters $v$, $b$
+(`HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral_of_le`), and the rows are independent.
+Honorio and Jaakkola's pair is $(32 c^2, 4 c)$.
 [Vershynin2018, proof of Theorem 4.6.1], with the constants of the squared sub-Gaussian. -/
 theorem hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
-    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {x : n → ℝ} (hx : ‖WithLp.toLp 2 x‖ = 1) :
+    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {x : n → ℝ} (hx : ‖WithLp.toLp 2 x‖ = 1)
+    {v b : ℝ≥0} (hb : 2 * c ≤ b) (hv : 16 * (c : ℝ) ^ 2 * b ≤ ((b : ℝ) - 2 * c) * v) :
     HasSubexponentialMGF (fun ω => ‖WithLp.toLp 2 (X ω *ᵥ x)‖ ^ 2 - Fintype.card m)
-      (32 * c ^ 2 * Fintype.card m) (4 * c) μ := by
+      (v * Fintype.card m) b μ := by
   have := hind.isProbabilityMeasure
   have hxn : ‖WithLp.toLp 2 x‖₊ = 1 := by rw [← NNReal.coe_eq_one, coe_nnnorm, hx]
   have hrow (i : m) :
-      HasSubexponentialMGF (fun ω => (x ⬝ᵥ X ω i) ^ 2 - 1) (32 * c ^ 2) (4 * c) μ := by
+      HasSubexponentialMGF (fun ω => (x ⬝ᵥ X ω i) ^ 2 - 1) v b μ := by
     have h := (hsub i).hasSubgaussianMGF x
     rw [hxn, one_pow, mul_one] at h
     have hint : ∫ ω, (RCLike.re (x ⬝ᵥ X ω i)) ^ 2 ∂μ = 1 := by
       have h2 := (hiso i).integral_norm_dotProduct_sq x
       simpa only [RCLike.re_to_real, Real.norm_eq_abs, sq_abs, hx, one_pow] using h2
-    have h2 := h.hasSubexponentialMGF_sq_sub_integral
+    have h2 := h.hasSubexponentialMGF_sq_sub_integral_of_le hb hv
     rw [hint] at h2
     simpa only [RCLike.re_to_real] using h2
   have hY : iIndepFun (fun i ω => (x ⬝ᵥ X ω i) ^ 2 - 1) μ :=
@@ -260,7 +262,9 @@ private lemma measureReal_half_le_abs_le [Nonempty m]
     have := pow_le_pow_left₀ (mul_nonneg (Real.sqrt_nonneg N) hw0) hr1 2
     rwa [mul_pow, Real.sq_sqrt hN0] at this
   refine ((hasSubexponentialMGF_norm_mulVec_sq_sub_of_isSubgaussianVector hind hsub hiso
-    hx).measureReal_abs_ge_le (by positivity)).trans ?_
+    hx (v := 32 * c ^ 2) (b := 4 * c) (mul_le_mul_of_nonneg_right (by norm_num) c.2)
+    (by push_cast; nlinarith [pow_nonneg c.coe_nonneg 3])).measureReal_abs_ge_le
+    (by positivity)).trans ?_
   gcongr
   push_cast
   have hdt2 : 0 ≤ d + t ^ 2 := by positivity

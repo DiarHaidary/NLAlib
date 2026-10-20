@@ -47,11 +47,11 @@ set_option linter.style.longLine false in
 with independent rows, each isotropic and sub-Gaussian with proxy $c$, the sketch
 $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{X}$, $\mathbf{A}$ of full column rank, $\mathbf{x}_0$
 almost surely a minimizer of $\|\mathbf{S}(\mathbf{A}\mathbf{x} - \mathbf{y})\|$,
-$0 < \varepsilon \le 1/2$, $\varepsilon \le 2c$, $\delta > 0$,
+$0 < \varepsilon \le 1/2$, $\varepsilon \le 5c/4$, $\delta > 0$,
 at least <!-- value subgaussianEmbeddingDim c {(\lvert n \rvert + 1)} \varepsilon \delta -->
-$$4 c^2 ((\lvert n \rvert + 1) \log 9 + \log(2/\delta))/(C \varepsilon^2)$$
+$$25 c^2 ((\lvert n \rvert + 1) \log 21 + \log(2/\delta))/(16C \varepsilon^2)$$
 rows (`subgaussianEmbeddingDim c (card n + 1) ε δ`,
-with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`) and
+with <!-- value subgaussianJLConstant -->$C = 1/36$ the constant `subgaussianJLConstant`) and
 $16\varepsilon^{2q+1} \le \tau$,
 $$\mathbb{P}\Bigl[(1 + \tau)\|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2 <
 \|\mathbf{y} - \mathbf{A}\,\mathsf{sketchAndPrecondition}(\mathbf{A}, \mathbf{S}, \mathbf{y},
@@ -68,7 +68,7 @@ theorem measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgauss
     (hA : Function.Injective A.mulVec) (y : m → ℝ) {x₀ : Ω → n → ℝ}
     (hx₀ : ∀ᵐ ω ∂μ, IsLeastSquaresSolution ((√(Fintype.card k : ℝ))⁻¹ • X ω * A)
       ((√(Fintype.card k : ℝ))⁻¹ • X ω *ᵥ y) (x₀ ω))
-    {ε δ τ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1 / 2) (hεc : ε ≤ 2 * c) (hδ : 0 < δ)
+    {ε δ τ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1 / 2) (hεc : ε ≤ 5 / 4 * c) (hδ : 0 < δ)
     (hk : subgaussianEmbeddingDim c (Fintype.card n + 1) ε δ ≤ Fintype.card k)
     {q : ℕ} (hq : 16 * ε ^ (2 * q + 1) ≤ τ) :
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
@@ -87,11 +87,11 @@ run: for a random $\mathbf{X} \in \mathbb{R}^{k \times m}$ with independent rows
 and sub-Gaussian with proxy $c$, the sketch $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{X}$,
 $\mathbf{A}$ of full column rank, the start
 $\mathbf{x}_0 = (\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{y}$,
-$0 < \varepsilon \le 1/2$, $\varepsilon \le 2c$, $\delta > 0$,
+$0 < \varepsilon \le 1/2$, $\varepsilon \le 5c/4$, $\delta > 0$,
 at least <!-- value subgaussianEmbeddingDim c {(\lvert n \rvert + 1)} \varepsilon \delta -->
-$$4 c^2 ((\lvert n \rvert + 1) \log 9 + \log(2/\delta))/(C \varepsilon^2)$$
+$$25 c^2 ((\lvert n \rvert + 1) \log 21 + \log(2/\delta))/(16C \varepsilon^2)$$
 rows (`subgaussianEmbeddingDim c (card n + 1) ε δ`,
-with <!-- value subgaussianJLConstant -->$C = 1/64$ the constant `subgaussianJLConstant`) and
+with <!-- value subgaussianJLConstant -->$C = 1/36$ the constant `subgaussianJLConstant`) and
 $16\varepsilon^{2q+1} \le \tau$,
 $$\mathbb{P}\Bigl[(1 + \tau)\|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|^2 <
 \|\mathbf{y} - \mathbf{A}\,\mathsf{sketchAndPrecondition}(\mathbf{A}, \mathbf{S}, \mathbf{y},
@@ -103,7 +103,7 @@ theorem
     (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {A : Matrix m n ℝ}
     (hA : Function.Injective A.mulVec) (y : m → ℝ)
-    {ε δ τ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1 / 2) (hεc : ε ≤ 2 * c) (hδ : 0 < δ)
+    {ε δ τ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1 / 2) (hεc : ε ≤ 5 / 4 * c) (hδ : 0 < δ)
     (hk : subgaussianEmbeddingDim c (Fintype.card n + 1) ε δ ≤ Fintype.card k)
     {q : ℕ} (hq : 16 * ε ^ (2 * q + 1) ≤ τ) :
     μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
@@ -129,7 +129,7 @@ $$\mathbb{P}\Bigl[(1 + \tau)\|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y}\|
 \mathbf{x}_0, q)\|^2\Bigr] \le \delta\,.$$
 The constants come before every dimension and the proxy. Squared residuals. Proved from
 `NLAlib.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector` at
-distortion $1/2$ with $C = 4608$ and $\varepsilon_0 = 1/2$; isotropy forces $c \ge 1$.
+distortion $1/2$ with $C = 1376$ and $\varepsilon_0 = 1/2$; isotropy forces $c \ge 1$.
 [MartinssonTropp2020, §10.5], there unsquared.
 Asymptotic:
 NLAlib.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector -/
@@ -149,7 +149,7 @@ theorem
       μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
         ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A ((√(Fintype.card k : ℝ))⁻¹ • X ω) y
           (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  refine ⟨4608, 1 / 2, by norm_num, by norm_num, ?_⟩
+  refine ⟨1376, 1 / 2, by norm_num, by norm_num, ?_⟩
   intro Ω k m n _ _ _ _ _ _ _ μ X c A y x₀ τ δ q hind hsub hiso hA hx₀ hτ hτ1 hδ hδ2 hk hq
   have := hind.isProbabilityMeasure
   rcases isEmpty_or_nonempty m with hm | hm

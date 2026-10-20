@@ -176,8 +176,8 @@ $n \times \ell$ residual test matrix $\mathbf{G}$ be independent of $\mathbf{S}$
 entries that each satisfy the sub-Gaussian moment generating function bound with variance proxy
 $c'$ and have second moment $1$. If $\delta > 0$
 and <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/2) -->
-$\lvert s \rvert \ge 4 c^2 (r \log 9 + \log(2/(\delta/2)))/(C (1/2)^2)$,
-with <!-- value subgaussianJLConstant -->$C = 1/64$, then for every real square $\mathbf{A}$ and
+$\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, then for every real square $\mathbf{A}$ and
 every $\tau \ge 0$, with $\mathbf{E}_r = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_r$, we
 get <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
@@ -220,9 +220,9 @@ theorem measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector [Nonempty
 $\mathbf{S}$, $\lvert s \rvert \ge 1$, and the $n \times \ell$ residual test matrix $\mathbf{G}$ be
 independent and standard Gaussian. If $\delta > 0$
 and <!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
-$\lvert s \rvert \ge 4 \cdot 1^2 (r \log 9 + \log(2/(\delta/2)))/(C (1/2)^2)$,
-with <!-- value subgaussianJLConstant -->$C = 1/64$, that is
-$\lvert s \rvert \ge 1024(r \log 9 + \log(4/\delta))$, then for every real square $\mathbf{A}$
+$\lvert s \rvert \ge 25 \cdot 1^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, that is
+$\lvert s \rvert \ge 225(r \log 21 + \log(4/\delta))$, then for every real square $\mathbf{A}$
 and every $\tau \ge 0$, with $\mathbf{E}_r = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_r$, we
 get <!-- value subgaussianRangeFinderFactor {\cdot 1} --> <!-- value hansonWrightConstant -->
 $$\mathbb{P}\bigl[\lvert \operatorname{tr}\mathbf{A} -
@@ -236,7 +236,7 @@ factor is `subgaussianRangeFinderFactor 1` and the constant in the exponent is
 `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_isSubgaussianVector`: the range-finder step goes
 through the sub-Gaussian range finder
 `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector` at $c = 1$, with the
-factor $11$ and the size $1024(r \log 9 + \log(4/\delta))$. This is weaker than the Gaussian
+factor $11$ and the size $225(r \log 21 + \log(4/\delta))$. This is weaker than the Gaussian
 range-finder tail `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`
 (`NLAlib/LowRank/Gaussian/RangeFinderTail.lean`), whose factor $1 + (tr/d)(1 + u)^2$ at
 deviation $u$ (since
@@ -275,8 +275,8 @@ test matrix $\mathbf{G}$ be independent of $\mathbf{S}$, with independent entrie
 the sub-Gaussian moment generating function bound with variance proxy $c'$ and have second moment
 $1$. If $r \ge 1$, $\varepsilon > 0$,
 $\delta > 0$, <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/4) -->
-$\lvert s \rvert \ge 4 c^2 (r \log 9 + \log(2/(\delta/4)))/(C (1/2)^2)$,
-with <!-- value subgaussianJLConstant -->$C = 1/64$,
+$\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/4)))/(16C (1/2)^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$,
 and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
 $$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
 \log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,,$$
@@ -399,8 +399,8 @@ sub-Gaussian rows with proxy $c$; the $n \times \ell$ residual test matrix $\mat
 independent of $\mathbf{S}$ with independent entries, sub-Gaussian with variance proxy $c'$ and of
 second moment $1$; $r \ge 1$, $\varepsilon > 0$,
 $\delta > 0$, <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/4) -->
-$\lvert s \rvert \ge 4 c^2 (r \log 9 + \log(2/(\delta/4)))/(C (1/2)^2)$,
-with <!-- value subgaussianJLConstant -->$C = 1/64$,
+$\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/4)))/(16C (1/2)^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$,
 and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
 $$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
 \log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,.$$
@@ -446,8 +446,8 @@ sub-Gaussian rows with proxy $c$; the $n \times \ell$ residual test matrix $\mat
 independent of $\mathbf{S}$ with independent entries, sub-Gaussian with variance proxy $c'$ and of
 second moment $1$; $r \ge 1$, $\varepsilon > 0$,
 $\delta > 0$, <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/4) -->
-$\lvert s \rvert \ge 4 c^2 (r \log 9 + \log(2/(\delta/4)))/(C (1/2)^2)$,
-with <!-- value subgaussianJLConstant -->$C = 1/64$,
+$\lvert s \rvert \ge 25 c^2 (r \log 21 + \log(2/(\delta/4)))/(16C (1/2)^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$,
 and <!-- value subgaussianRangeFinderFactor c --> <!-- value hansonWrightConstant -->
 $$\log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{4\ell r\varepsilon^2}{c'^2(1 + 10c)}\,,\qquad
 \log\frac{4}{\delta} \le \frac{1}{196}\cdot\frac{2\ell\sqrt{r}\,\varepsilon}{c'\sqrt{1 + 10c}}\,.$$
@@ -525,10 +525,10 @@ private theorem exists_asymptotic_rank {γ Lg B : ℝ} (hγ1 : 1 ≤ γ) (hLg : 
     linarith
 
 /-- The sketch size of the asymptotic form covers the range finder's:
-$2304\gamma^2(r + \ell_8) \le B$ when $\ell_8 \le 4L$. -/
+$688\gamma^2(r + \ell_8) \le B$ when $\ell_8 \le 4L$. -/
 private theorem asymptotic_sketch_size {γ Lg B l8 r : ℝ} (hγ1 : 1 ≤ γ) (hLg0 : 0 ≤ Lg)
     (hl8 : l8 ≤ 4 * Lg) (hBr : 4608 * γ ^ 2 * r ≤ B) (hBL : 20000 * γ ^ 4 * Lg ≤ B) :
-    576 * γ ^ 2 * (r + l8) / (1 / 2) ^ 2 ≤ B := by
+    172 * γ ^ 2 * (r + l8) / (1 / 2) ^ 2 ≤ B := by
   have hγ24 : γ ^ 2 ≤ γ ^ 4 := pow_le_pow_right₀ hγ1 (by norm_num)
   rw [div_le_iff₀ (by norm_num)]
   nlinarith [mul_le_mul_of_nonneg_left hl8 (sq_nonneg γ),

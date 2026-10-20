@@ -418,7 +418,7 @@ an error or a comparison. Reviewers check those.
      (maintainer, 2026-10-15). Statements keep the name; the docstring writes the value in place
      of the constant, in the formula itself. One exception (maintainer, 2026-10-19): a sample size
      that uses a named constant may write it as $C$ in its formula and give the value in the same
-     docstring, "with <!-- value subgaussianJLConstant -->$C = 1/64$", as the header of
+     docstring, "with <!-- value subgaussianJLConstant -->$C = 1/36$", as the header of
      `docs/constants.toml` says; the span after the marker is the value, as everywhere else:
      ```
      … the expected error satisfies <!-- value gaussianPinvSpecNormBound k \ell -->

@@ -16,7 +16,7 @@
 #              are the definition's; each docstring passes its own (`k \ell`, `(\varepsilon/2)`).
 #   latex      template of the current value: inline LaTeX in CONTRIBUTING §6 notation (`/` rather
 #              than `\frac`), placeholders `#1`…`#9` never followed by a letter. `C` in a sample
-#              size is the constant it uses, whose value the same docstring shows (`$C = 1/64$`,
+#              size is the constant it uses, whose value the same docstring shows (`$C = 1/36$`,
 #              the one symbol CONTRIBUTING §5.2 rule 2 allows).
 #   display    optional: the same value with `\frac`, accepted (besides `latex`) in a `$$…$$`
 #              display.
@@ -114,10 +114,10 @@ name = "NLAlib.subgaussianJLConstant"
 kind = "constant"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = []
-latex = '1/64'
-display = '\frac{1}{64}'
-lean_body = 'subgaussianJLConstant : ℝ := 1 / 64'
-body_hash = "ff06dbaad61b5d69"
+latex = '1/36'
+display = '\frac{1}{36}'
+lean_body = 'subgaussianJLConstant : ℝ := 1 / 36'
+body_hash = "b7449c47ea1e8b75"
 
 [[constant]]
 name = "NLAlib.subgaussianJLDim"
@@ -134,10 +134,10 @@ name = "NLAlib.subgaussianEmbeddingDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = ["c", "d", "ε", "δ"]
-latex = '4 #1^2 (#2 \log 9 + \log(2/#4))/(C #3^2)'
-display = '\frac{4 #1^2 (#2 \log 9 + \log(2/#4))}{C #3^2}'
-lean_body = 'subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 4 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / (subgaussianJLConstant * ε ^ 2)'
-body_hash = "c5cfdabba74f95da"
+latex = '25 #1^2 (#2 \log 21 + \log(2/#4))/(16 C #3^2)'
+display = '\frac{25 #1^2 (#2 \log 21 + \log(2/#4))}{16 C #3^2}'
+lean_body = 'subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 25 * c ^ 2 * (d * Real.log 21 + Real.log (2 / δ)) / (16 * subgaussianJLConstant * ε ^ 2)'
+body_hash = "b8c8495c1ba9eb99"
 
 [[constant]]
 name = "NLAlib.gaussianEmbeddingDim"
