@@ -109,7 +109,15 @@ $\mathbf{M} = \mathbf{N}\mathbf{A}^{\mathsf{H}}$, a least-squares solution
 theorem sub_richardsonIterate_eq {A : Matrix m n 𝕜} {M : Matrix n m 𝕜} {b : m → 𝕜}
     {xs : n → 𝕜} (hxs : M *ᵥ (b - A *ᵥ xs) = 0) (x₀ : n → 𝕜) (q : ℕ) :
     xs - richardsonIterate A M b x₀ q = ((1 - M * A) ^ q) *ᵥ (xs - x₀) := by
-  sorry
+  induction q with
+  | zero => rw [pow_zero, Matrix.one_mulVec, richardsonIterate_zero]
+  | succ q ih =>
+    have hr : b - A *ᵥ richardsonIterate A M b x₀ q =
+        (b - A *ᵥ xs) + A *ᵥ (xs - richardsonIterate A M b x₀ q) := by
+      rw [Matrix.mulVec_sub]; abel
+    rw [richardsonIterate_succ, ← sub_sub, hr, Matrix.mulVec_add, hxs, zero_add,
+      Matrix.mulVec_mulVec, ih, pow_succ', ← Matrix.mulVec_mulVec (M := 1 - M * A),
+      Matrix.sub_mulVec, Matrix.one_mulVec]
 
 /-- **The Richardson correction lies in the preconditioned Krylov space**: for every
 $\mathbf{A} \in \Bbbk^{m \times n}$ and $\mathbf{M} \in \Bbbk^{n \times m}$, the iterate
@@ -120,7 +128,19 @@ that preconditioned CG searches (`NLAlib.pcgIterate_sub_mem_krylovSpace`). -/
 theorem richardsonIterate_sub_mem_krylovSpace (A : Matrix m n 𝕜) (M : Matrix n m 𝕜)
     (b : m → 𝕜) (x₀ : n → 𝕜) (q : ℕ) :
     richardsonIterate A M b x₀ q - x₀ ∈ krylovSpace (M * A) (M *ᵥ (b - A *ᵥ x₀)) q := by
-  sorry
+  induction q with
+  | zero => rw [richardsonIterate_zero, sub_self]; exact Submodule.zero_mem _
+  | succ q ih =>
+    have hr : M *ᵥ (b - A *ᵥ richardsonIterate A M b x₀ q) = M *ᵥ (b - A *ᵥ x₀) -
+        (M * A) *ᵥ (richardsonIterate A M b x₀ q - x₀) := by
+      have h : b - A *ᵥ richardsonIterate A M b x₀ q =
+          (b - A *ᵥ x₀) - A *ᵥ (richardsonIterate A M b x₀ q - x₀) := by
+        rw [Matrix.mulVec_sub]; abel
+      rw [h, Matrix.mulVec_sub, Matrix.mulVec_mulVec]
+    rw [richardsonIterate_succ, add_sub_right_comm, hr]
+    refine Submodule.add_mem _ (krylovSpace_mono _ _ (Nat.le_succ q) ih)
+      (Submodule.sub_mem _ (self_mem_krylovSpace _ _ (Nat.succ_pos q))
+        (mulVec_mem_krylovSpace_succ ih))
 
 end DecidableEq
 
@@ -134,7 +154,11 @@ normal equations. -/
 theorem richardsonIterate_mul_conjTranspose (A : Matrix m n 𝕜) (M : Matrix n n 𝕜) (y : m → 𝕜)
     (x₀ : n → 𝕜) (q : ℕ) :
     richardsonIterate A (M * Aᴴ) y x₀ q = richardsonIterate (Aᴴ * A) M (Aᴴ *ᵥ y) x₀ q := by
-  sorry
+  induction q with
+  | zero => rfl
+  | succ q ih =>
+    rw [richardsonIterate_succ, richardsonIterate_succ, ih, ← Matrix.mulVec_mulVec _ M Aᴴ,
+      Matrix.mulVec_sub Aᴴ, Matrix.mulVec_mulVec _ Aᴴ A]
 
 section Square
 
@@ -158,7 +182,39 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_richardsonIterate_le {A M : Matrix 
     {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) (q : ℕ) :
     RCLike.re (quadForm A (xs - richardsonIterate A M b x₀ q)) ≤
       (max |1 - a| |1 - a'|) ^ (2 * q) * RCLike.re (quadForm A (xs - x₀)) := by
-  sorry
+  have hfix : M *ᵥ (b - A *ᵥ xs) = 0 := by rw [hxs, sub_self, Matrix.mulVec_zero]
+  obtain ⟨S, -, hSu, hMS, -⟩ :=
+    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
+  have hS : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hSu
+  have hB : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
+  have hspec : spectrum ℝ (Sᴴ * A * S) = spectrum ℝ (M * A) := by
+    rw [hMS, spectrum_mul_conjTranspose_mul hS]
+  have h1 : ∀ v, (1 - M * A) *ᵥ (S *ᵥ v) = S *ᵥ ((1 - Sᴴ * A * S) *ᵥ v) := fun v => by
+    rw [hMS, Matrix.sub_mulVec, Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.one_mulVec,
+      Matrix.mulVec_sub]
+    simp only [Matrix.mulVec_mulVec, Matrix.mul_assoc]
+  have hpow : ∀ j v, (1 - M * A) ^ j *ᵥ (S *ᵥ v) = S *ᵥ ((1 - Sᴴ * A * S) ^ j *ᵥ v) := by
+    intro j
+    induction j with
+    | zero => intro v; simp only [pow_zero, Matrix.one_mulVec]
+    | succ j ih =>
+      intro v
+      rw [pow_succ, pow_succ, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, h1, ih]
+  have hSv : S *ᵥ (S⁻¹ *ᵥ (xs - x₀)) = xs - x₀ := by
+    rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv S hSu, Matrix.one_mulVec]
+  have hp : ∀ x ∈ spectrum ℝ (Sᴴ * A * S),
+      |((1 - Polynomial.X) ^ q : Polynomial ℝ).eval x| ≤ (max |1 - a| |1 - a'|) ^ q := by
+    intro x hx
+    obtain ⟨hxa, hxa'⟩ := hs (hspec ▸ hx)
+    rw [Polynomial.eval_pow, Polynomial.eval_sub, Polynomial.eval_one, Polynomial.eval_X,
+      abs_pow, max_comm]
+    exact pow_le_pow_left₀ (abs_nonneg _) (abs_le_max_abs_abs (by linarith) (by linarith)) q
+  have h := hB.isHermitian.re_quadForm_aeval_aeval_mulVec_le subset_rfl Polynomial.X _
+    (fun x hx => by rw [Polynomial.eval_X]; exact (hB.spectrum_subset_Ioi hx).le) hp
+    (S⁻¹ *ᵥ (xs - x₀))
+  simp only [Polynomial.aeval_X, map_pow, map_sub, map_one] at h
+  rw [quadForm_conjTranspose_mul_mul, quadForm_conjTranspose_mul_mul] at h
+  rwa [sub_richardsonIterate_eq hfix, ← hSv, hpow, mul_comm 2 q, pow_mul]
 
 /-- **Preconditioned Richardson with the optimal step**: for positive definite
 $\mathbf{A}, \mathbf{M} \in \Bbbk^{n \times n}$ with the real spectrum of $\mathbf{M}\mathbf{A}$ in
@@ -177,7 +233,22 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_richardsonIterate_smul_le {A M : Ma
     (q : ℕ) :
     RCLike.re (quadForm A (xs - richardsonIterate A ((2 / (a + a')) • M) b x₀ q)) ≤
       ((a' - a) / (a' + a)) ^ (2 * q) * RCLike.re (quadForm A (xs - x₀)) := by
-  sorry
+  have hc : 0 < 2 / (a + a') := div_pos two_pos (by linarith)
+  have hs' : spectrum ℝ ((2 / (a + a')) • M * A) ⊆
+      Set.Icc ((2 / (a + a')) * a) ((2 / (a + a')) * a') := by
+    rw [smul_mul_assoc, ← Units.val_mk0 hc.ne', ← Units.smul_def,
+      spectrum.unit_smul_eq_smul]
+    rintro _ ⟨y, hy, rfl⟩
+    obtain ⟨hya, hya'⟩ := hs hy
+    simp only [Units.val_mk0, smul_eq_mul, Set.mem_Icc]
+    exact ⟨mul_le_mul_of_nonneg_left hya hc.le, mul_le_mul_of_nonneg_left hya' hc.le⟩
+  have hpos : 0 < a' + a := by linarith
+  have hne : a + a' ≠ 0 := by linarith
+  have hne' : a' + a ≠ 0 := hpos.ne'
+  have h1 : 1 - 2 / (a + a') * a = (a' - a) / (a' + a) := by field_simp; ring
+  have h2 : 1 - 2 / (a + a') * a' = -((a' - a) / (a' + a)) := by field_simp; ring
+  have h := (hA.re_quadForm_sub_richardsonIterate_le (hM.smul hc) hs' hxs x₀ q)
+  rwa [h1, h2, abs_neg, max_self, abs_of_nonneg (div_nonneg (by linarith) hpos.le)] at h
 
 /-- **Preconditioned CG is at least as good as Richardson** with the same preconditioner: for
 positive definite $\mathbf{A} \in \Bbbk^{n \times n}$, any $\mathbf{M} \in \Bbbk^{n \times n}$ and
@@ -194,7 +265,11 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_pcgIterate_le_re_quadForm_sub_richa
     (x₀ : n → 𝕜) (q : ℕ) :
     RCLike.re (quadForm A (xs - pcgIterate A M b x₀ q)) ≤
       RCLike.re (quadForm A (xs - richardsonIterate A M b x₀ q)) := by
-  sorry
+  have hmem : richardsonIterate A M b x₀ q ∈
+      (AffineSubspace.mk' x₀ (krylovSpace (M * A) (M *ᵥ (b - A *ᵥ x₀)) q) : Set (n → 𝕜)) := by
+    rw [SetLike.mem_coe, AffineSubspace.mem_mk', vsub_eq_sub]
+    exact richardsonIterate_sub_mem_krylovSpace A M b x₀ q
+  exact isMinOn_iff.mp (hA.isMinOn_pcgIterate M hxs x₀ q) _ hmem
 
 end Square
 
