@@ -132,7 +132,7 @@ theorem singularValues_add_le_of_rank_le (A : Matrix m n 𝕜) {B : Matrix m n �
   refine singularValues_le_of_forall_mem (A + B) (W ⊓ LinearMap.ker B.mulVecLin) ?_
     (singularValues_nonneg A k) fun x hx => ?_
   · have h₁ := Submodule.finrank_add_finrank_le_card_add_finrank_inf W (LinearMap.ker B.mulVecLin)
-    have h₂ := Matrix.finrank_ker_mulVecLin_add_rank B
+    have h₂ := Matrix.finrank_ker_add_rank B
     omega
   · have hx₂ : B *ᵥ x = 0 := LinearMap.mem_ker.mp hx.2
     rw [Matrix.add_mulVec, hx₂, add_zero]
@@ -219,7 +219,7 @@ private theorem conjTranspose_mul_smul_one_mul [DecidableEq m] (a : ℝ) (X : Ma
 /-- A left factor $\mathbf{T}$ with $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq a\mathbf{I}$
 enlarges squared singular values by at most $a$:
 $\sigma_k(\mathbf{T}\mathbf{X})^2 \le a \, \sigma_k(\mathbf{X})^2$. -/
-theorem sq_singularValues_mul_le_of_conjTranspose_mul_self_le [DecidableEq m]
+theorem singularValues_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m]
     {T : Matrix l m 𝕜} {a : ℝ} (h : Tᴴ * T ≤ a • (1 : Matrix m m 𝕜)) (X : Matrix m n 𝕜)
     (k : ℕ) : singularValues (T * X) k ^ 2 ≤ a * singularValues X k ^ 2 := by
   rcases isEmpty_or_nonempty m with hm | ⟨⟨i⟩⟩
@@ -233,13 +233,13 @@ theorem sq_singularValues_mul_le_of_conjTranspose_mul_self_le [DecidableEq m]
     rw [conjTranspose_mul_smul_one_mul, ← conjTranspose_mul_mul_mul] at hle
     have hk := eigenvalue_le_eigenvalue_of_le hle (Matrix.isHermitian_conjTranspose_mul_self _) k
     rwa [eigenvalue_real_smul _ ha,
-      ← sq_singularValues, ← sq_singularValues] at hk
+      ← singularValues_sq, ← singularValues_sq] at hk
 
 /-- A left factor $\mathbf{T}$ with $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ shrinks
 squared singular values by at most $a$:
 $a \, \sigma_k(\mathbf{X})^2 \le \sigma_k(\mathbf{T}\mathbf{X})^2$. This is how a subspace
 embedding transfers singular values from the sketched matrix to the original one. -/
-theorem mul_sq_singularValues_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {a : ℝ}
+theorem mul_singularValues_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {a : ℝ}
     (h : a • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) (k : ℕ) :
     a * singularValues X k ^ 2 ≤ singularValues (T * X) k ^ 2 := by
   rcases le_or_gt 0 a with ha | ha
@@ -248,7 +248,7 @@ theorem mul_sq_singularValues_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 
     have hk := eigenvalue_le_eigenvalue_of_le hle
       ((Matrix.isHermitian_conjTranspose_mul_self X).smul (IsSelfAdjoint.all a)) k
     rwa [eigenvalue_real_smul _ ha,
-      ← sq_singularValues, ← sq_singularValues] at hk
+      ← singularValues_sq, ← singularValues_sq] at hk
   · exact (mul_nonpos_of_nonpos_of_nonneg ha.le (sq_nonneg _)).trans (sq_nonneg _)
 
 /-- For a square matrix, a lower Loewner bound on $\mathbf{T}^{\mathsf{H}}\mathbf{T}$ is also a
@@ -262,8 +262,8 @@ theorem smul_one_le_mul_conjTranspose_self_of_smul_one_le [DecidableEq m] {T : M
   · have : IsEmpty m := Fintype.card_eq_zero_iff.mp h0
     exact le_of_eq (Subsingleton.elim _ _)
   · obtain ⟨k, hk⟩ : ∃ k, k + 1 = Fintype.card m := ⟨Fintype.card m - 1, by omega⟩
-    have h₁ := le_sq_singularValues_last_of_smul_one_le hk hT
-    have h₂ := sq_singularValues_last_smul_one_le Tᴴ hk
+    have h₁ := le_singularValues_last_sq_of_smul_one_le hk hT
+    have h₂ := singularValues_last_sq_smul_one_le Tᴴ hk
     rw [singularValues_conjTranspose, smul_one_le_conjTranspose_mul_self_iff] at h₂
     have e : T * Tᴴ = Tᴴᴴ * Tᴴ := by rw [Matrix.conjTranspose_conjTranspose]
     rw [e, smul_one_le_conjTranspose_mul_self_iff]
@@ -315,7 +315,7 @@ theorem singularValues_le_singularValues_submatrix_cols (A : Matrix m n 𝕜) {c
       exact Matrix.submatrix_mul_equiv Aᴴ A c (Equiv.refl m) c
     refine (pow_le_pow_iff_left₀ (singularValues_nonneg _ _) (singularValues_nonneg _ _)
       two_ne_zero).mp ?_
-    rw [sq_singularValues, sq_singularValues, hG]
+    rw [singularValues_sq, singularValues_sq, hG]
     exact (Matrix.isHermitian_conjTranspose_mul_self A).eigenvalue_le_eigenvalue_submatrix
       hc hk hd
   · rw [singularValues_of_card_cols_le A (by omega)]
@@ -367,7 +367,7 @@ theorem specNorm_conjTranspose_mul_self_sub_one_eq_iSup [DecidableEq n] (A : Mat
   have hH : (Aᴴ * A - 1).IsHermitian := hG.sub Matrix.isHermitian_one
   have he : ∀ k < Fintype.card n,
       eigenvalue (Aᴴ * A - 1) k = singularValues A k ^ 2 - 1 := fun k hk => by
-    rw [sq_singularValues, sub_eq_add_neg, ← neg_one_smul ℝ (1 : Matrix n n 𝕜),
+    rw [singularValues_sq, sub_eq_add_neg, ← neg_one_smul ℝ (1 : Matrix n n 𝕜),
       hG.eigenvalue_add_smul_one _ hk, ← sub_eq_add_neg]
   have hbdd : BddAbove (Set.range fun k : Fin (Fintype.card n) =>
       |singularValues A k ^ 2 - 1|) := (Set.finite_range _).bddAbove
@@ -448,7 +448,7 @@ theorem sqrt_mul_one_sub_le_singularValues_of_specNorm_sub_smul_one_le [Decidabl
   have hle : (N - N * max α (α ^ 2)) • (1 : Matrix n n 𝕜) ≤ Aᴴ * A := by
     rw [sub_smul, sub_le_iff_le_add]
     exact neg_le_sub_iff_le_add.mp (hH.neg_smul_one_le_of_specNorm_le h)
-  have h2 := le_sq_singularValues_last_of_smul_one_le hk hle
+  have h2 := le_singularValues_last_sq_of_smul_one_le hk hle
   rw [max_eq_left (by nlinarith)] at h2
   refine (sq_le_sq₀ (by have := Real.sqrt_nonneg N; nlinarith) (singularValues_nonneg A k)).mp
     (le_trans ?_ h2)

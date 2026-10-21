@@ -18,7 +18,7 @@ $\mathbf{\Omega}^{\mathsf{H}}$ has law `NLAlib.samplingSketch l p`. Sampling is 
 statement takes the domination of the leverage scores of the one subspace the analysis needs,
 $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$
 (`leverageScore (truncatedSVD A k)ᴴ i ≤ L * p i`), by the fixed-subspace injection route
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_rsvd_sq_gt_le` at constant $1/2$. Exact
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le` at constant $1/2$. Exact
 leverage sampling at the head is $L = k$. Any `RCLike` field.
 
 The factor is constant ($1 + 2t$ at failure probability $\delta + 1/t$) and there is no accuracy
@@ -48,8 +48,8 @@ $\mathbf{\Omega}^{\mathsf{H}}$ samples $\ell$ columns of $\mathbf{A}$ independen
 positive probabilities $p_i$ summing to $1$, the leverage scores of
 $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ satisfy $\tau_i \le Lp_i$,
 $\delta, t > 0$ and $\ell$ is at
-least <!-- value samplingInjectionSize k L (1/2) \delta -->
-$2 L \log(k/\delta)/(1/2)^2$ (`samplingInjectionSize k L (1 / 2) δ`), then
+least <!-- value samplingInjectionDim k L (1/2) \delta -->
+$2 L \log(k/\delta)/(1/2)^2$ (`samplingInjectionDim k L (1 / 2) δ`), then
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + 2t)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. The size is at the target rank $k$, an upper bound on the
@@ -64,7 +64,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_samplingSketch [Nonempt
     (A : Matrix m n 𝕜) {p : n → ℝ≥0} (hX : HasLaw (fun ω => (X ω)ᴴ) (samplingSketch l p) μ)
     (hp : ∑ i, p i = 1) (hpos : ∀ i, 0 < p i) {k : ℕ} {L δ t : ℝ}
     (hdom : ∀ i, leverageScore (truncatedSVD A k)ᴴ i ≤ L * p i) (hδ : 0 < δ) (ht : 0 < t)
-    (hl : samplingInjectionSize k L (1 / 2) δ ≤ Fintype.card l) :
+    (hl : samplingInjectionDim k L (1 / 2) δ ≤ Fintype.card l) :
     μ.real {ω | (1 + 2 * t) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + 1 / t := by
   have : IsProbabilityMeasure μ :=
@@ -72,20 +72,20 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_samplingSketch [Nonempt
   have hr : (truncatedSVD A k)ᴴ.rank ≤ k := by
     rw [Matrix.rank_conjTranspose]
     exact rank_truncatedSVD_le A k
-  have hk : samplingInjectionSize (truncatedSVD A k)ᴴ.rank L (1 / 2) δ ≤ Fintype.card l := by
+  have hk : samplingInjectionDim (truncatedSVD A k)ᴴ.rank L (1 / 2) δ ≤ Fintype.card l := by
     rcases Nat.eq_zero_or_pos (truncatedSVD A k)ᴴ.rank with h0 | h0
-    · rw [h0, samplingInjectionSize_def, Nat.cast_zero, zero_div, Real.log_zero, mul_zero,
+    · rw [h0, samplingInjectionDim_def, Nat.cast_zero, zero_div, Real.log_zero, mul_zero,
         zero_div]
       exact Nat.cast_nonneg _
     · refine le_trans ?_ hl
       have hL : (0 : ℝ) ≤ L := (Nat.cast_nonneg _).trans (rank_le_of_leverageScore_le hp hdom)
-      rw [samplingInjectionSize_def, samplingInjectionSize_def]
+      rw [samplingInjectionDim_def, samplingInjectionDim_def]
       have hrk : ((truncatedSVD A k)ᴴ.rank : ℝ) ≤ k := by exact_mod_cast hr
       have hlog : Real.log ((truncatedSVD A k)ᴴ.rank / δ) ≤ Real.log (k / δ) :=
         Real.log_le_log (by positivity) (div_le_div_of_nonneg_right hrk hδ.le)
       gcongr
-  have h := (hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionSize_le hX hp hdom
-    (by norm_num) hδ hk).measure_frobNorm_sub_rsvd_sq_gt_le
+  have h := (hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le hX hp hdom
+    (by norm_num) hδ hk).measureReal_frobNorm_sub_rsvd_sq_gt_le
     (isIsotropicSketch_of_hasLaw_samplingSketch hX hp hpos) (by norm_num) ht
   rwa [show (1 : ℝ) + t / (1 - 1 / 2) = 1 + 2 * t by ring] at h
 

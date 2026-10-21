@@ -62,7 +62,9 @@ noncomputable def lanczosAlpha (A : Matrix n n 𝕜) (s : LanczosState 𝕜 n) :
 $\mathbf{w} = \mathbf{A}\mathbf{q}_j - \beta_j\mathbf{q}_{j-1} - \alpha_j\mathbf{q}_j$,
 $\beta_{j+1} = \|\mathbf{w}\|$, $\mathbf{q}_{j+1} = \beta_{j+1}^{-1}\mathbf{w}$. At breakdown,
 $\beta_\nu = 0$ at the grade $\nu$, the state is $(\mathbf{q}_{\nu-1}, \mathbf{0}, 0)$, and it is
-zero from the following step on. [Paige1972]; [Saad2011, §6.6]. -/
+zero from the following step on. [Paige1972, §2]; [Saad2011, §6.6]. It is the variant A(2, 7)
+there, equations (2) to (5), (7) and (8), for real symmetric $\mathbf{A}$;
+[Saad2003, Algorithm 6.15] is the same order. -/
 noncomputable def lanczosStep (A : Matrix n n 𝕜) (s : LanczosState 𝕜 n) : LanczosState 𝕜 n :=
   let w := A *ᵥ s.cur - (s.beta : 𝕜) • s.prev - (lanczosAlpha A s : 𝕜) • s.cur
   ⟨s.cur, (‖WithLp.toLp 2 w‖⁻¹ : 𝕜) • w, ‖WithLp.toLp 2 w‖⟩
@@ -355,7 +357,9 @@ private theorem lanczosState_eq_lanczosC (hA : A.IsHermitian) (j : ℕ) :
 end Canonical
 
 /-- **The Lanczos recurrence computes the canonical basis**, for Hermitian $\mathbf{A}$ and every
-$q$, with no breakdown hypothesis: past the grade both are zero. [Saad2011, §6.6].
+$q$, with no breakdown hypothesis: the basis computed by $q$ steps from $\mathbf{b}$ is
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$; past the grade both are zero.
+[Saad2011, §6.6].
 Result: lanczos-recurrence -/
 theorem _root_.Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) : lanczosMatrix A b q = arnoldiMatrix A b q := by
@@ -365,8 +369,12 @@ theorem _root_.Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix {A : Matrix n n
   exact congrFun (arnoldiMatrix_col_eq_col_last A b j).symm i
 
 /-- **The Lanczos recurrence computes the compression**: for Hermitian $\mathbf{A}$ and every
-$q$, the computed tridiagonal matrix is $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ for the
-canonical basis $\mathbf{Q}$.
+$q$, the tridiagonal matrix computed by $q$ steps from $\mathbf{b}$ is
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ for the canonical basis
+$\mathbf{Q} = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$.
+[Saad2003, Theorem 6.19]; there the Arnoldi matrix $\mathbf{H}_m = \mathbf{V}_m^{\mathsf{T}}
+\mathbf{A}\mathbf{V}_m$ ([Saad2003, Proposition 6.5]) of a real symmetric $\mathbf{A}$ is the
+tridiagonal matrix of the Lanczos algorithm, before the process stops; here every $q$.
 Result: lanczos-recurrence -/
 theorem _root_.Matrix.IsHermitian.lanczosTridiagonal_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) (q : ℕ) :
@@ -388,8 +396,11 @@ theorem _root_.Matrix.IsHermitian.lanczosTridiagonal_eq {A : Matrix n n 𝕜} (h
     · exact (star_col_dotProduct_mulVec_of_lt' b hA h).symm
     · exact (star_arnoldiMatrix_col_last_dotProduct_mulVec_of_lt A b h).symm
 
-/-- **Lanczos breaks down exactly at the grade**: for Hermitian $\mathbf{A}$,
-$\beta_{j+1} = 0$ iff $\nu \le j + 1$.
+/-- **Lanczos breaks down exactly at the grade**: for Hermitian $\mathbf{A}$ and the recurrence
+from $\mathbf{b}$, $\beta_{j+1} = 0$ iff $\nu \le j + 1$, $\nu$ the grade of $\mathbf{b}$.
+[Saad2003, Proposition 6.6]; stated there for the Arnoldi process, of which Lanczos is the
+symmetric case ([Saad2003, Theorem 6.19]), at the first zero coefficient; here the coefficient
+stays zero from the grade on.
 Result: lanczos-breakdown -/
 theorem _root_.Matrix.IsHermitian.lanczosState_beta_eq_zero_iff {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :

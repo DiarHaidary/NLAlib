@@ -21,7 +21,7 @@ Analytic reconstruction and quantitative errors require additional hypotheses in
 
 * `NLAlib.chebyshevTrunc`: inclusive degree-$N$ truncation.
 * `NLAlib.degree_chebyshevTrunc_le`: unconditional degree bound.
-* `NLAlib.chebyshevTrunc_eval_eq`: exact reproduction of polynomials.
+* `NLAlib.chebyshevTrunc_eval`: exact reproduction of polynomials.
 -/
 
 @[expose] public section
@@ -73,14 +73,15 @@ private lemma exists_finite_T_expansion {p : 𝕜[X]} {N : ℕ}
   rw [hset] at hmem
   exact (Submodule.mem_span_image_finset_iff_exists_fun' 𝕜).mp hmem
 
-/-- Every polynomial of degree at most $N$ is recovered by its degree-$N$ Chebyshev truncation.
+/-- **Chebyshev truncation reproduces polynomials.** Every polynomial of degree at most $N$ is
+recovered by its degree-$N$ Chebyshev truncation.
 This finite-basis consequence of [Trefethen2019, p. 16 and Exercise 3.7] is generalized to
 RCLike coefficients using Mathlib's polynomial-sequence span and Chebyshev orthogonality.
 It includes zero polynomials and $N=0$; polynomial continuity supplies integrability.
 
 Result: chebyshev-polynomial-reproduction
 -/
-theorem chebyshevTrunc_eval_eq {p : 𝕜[X]} {N : ℕ}
+theorem chebyshevTrunc_eval {p : 𝕜[X]} {N : ℕ}
     (hp : p.degree ≤ (N : WithBot ℕ)) :
     chebyshevTrunc (fun x : ℝ => p.eval (x : 𝕜)) N = p := by
   obtain ⟨c, hc⟩ := exists_finite_T_expansion hp

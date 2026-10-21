@@ -382,6 +382,89 @@ private theorem rank_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq 
   rw [Matrix.mul_assoc, hU.rank_mul, ← Matrix.rank_conjTranspose, Matrix.conjTranspose_mul,
     Matrix.conjTranspose_conjTranspose, hV.rank_mul, Matrix.rank_conjTranspose]
 
+/-- The orthogonality step of `IsBestRankApprox.exists_isSVD_eq`: the error $\mathbf{C} -
+\mathbf{Y}$ of a best approximation annihilates the singular frames of $\mathbf{Y}$. -/
+private theorem IsBestRankApprox.conjTranspose_mul_sub_eq_zero_and_sub_mul_eq_zero
+    {C Y : Matrix m n 𝕜} {k : ℕ} (h : IsBestRankApprox C k Y) {U₁ : Matrix m (Fin k) 𝕜}
+    {V₁ : Matrix n (Fin k) 𝕜} (h₁ : IsSVD Y U₁ (fun i : Fin k => singularValues C i) V₁)
+    (hpos : ∀ i : Fin k, ((singularValues C i : ℝ) : 𝕜) ≠ 0) :
+    U₁ᴴ * (C - Y) = 0 ∧ (C - Y) * V₁ = 0 := by
+  have hYE : Yᴴ * (C - Y) = 0 := h.conjTranspose_mul_sub
+  have hEY : (C - Y) * Yᴴ = 0 := by
+    have h0 := h.conjTranspose.conjTranspose_mul_sub
+    rw [Matrix.conjTranspose_conjTranspose, ← Matrix.conjTranspose_sub] at h0
+    have h1 := congrArg Matrix.conjTranspose h0
+    rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      Matrix.conjTranspose_zero] at h1
+  constructor
+  · refine eq_zero_of_diagonal_mul_eq_zero hpos ?_
+    have h3 := congrArg Matrix.conjTranspose h₁.mul_right_eq
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_diagonal_ofReal] at h3
+    rw [← Matrix.mul_assoc, ← h3, Matrix.mul_assoc, hYE, Matrix.mul_zero]
+  · refine eq_zero_of_mul_diagonal_eq_zero hpos ?_
+    have h3 := congrArg Matrix.conjTranspose h₁.conjTranspose_mul_eq
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_diagonal_ofReal] at h3
+    rw [Matrix.mul_assoc, ← h3, ← Matrix.mul_assoc, hEY, Matrix.zero_mul]
+
+/-- The completion step of `IsBestRankApprox.exists_isSVD_eq`: a matrix annihilated by frames
+$\mathbf{U}_1$, $\mathbf{V}_1$ is $\mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{E}\mathbf{R})
+\mathbf{R}^{\mathsf{H}}$ for orthogonal completions $\mathbf{Q}$, $\mathbf{R}$. -/
+private theorem mul_mul_conjTranspose_eq_of_mul_eq_zero {p₁ p₂ q₁ q₂ : Type*} [Fintype p₁]
+    [Fintype p₂] [Fintype q₁] [Fintype q₂] [DecidableEq m] [DecidableEq n] {E : Matrix m n 𝕜}
+    {U₁ : Matrix m p₁ 𝕜} {Q : Matrix m p₂ 𝕜} {V₁ : Matrix n q₁ 𝕜} {R : Matrix n q₂ 𝕜}
+    (hQQ : Q * Qᴴ = 1 - U₁ * U₁ᴴ) (hRR : R * Rᴴ = 1 - V₁ * V₁ᴴ) (hU₁E : U₁ᴴ * E = 0)
+    (hEV₁ : E * V₁ = 0) :
+    Q * (Qᴴ * E * R) * Rᴴ = E := by
+  have h1 : Q * Qᴴ * E = E := by
+    rw [hQQ, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc, hU₁E, Matrix.mul_zero, sub_zero]
+  have h2 : E * (R * Rᴴ) = E := by
+    rw [hRR, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, hEV₁, Matrix.zero_mul,
+      sub_zero]
+  calc Q * (Qᴴ * E * R) * Rᴴ = Q * Qᴴ * E * (R * Rᴴ) := by simp only [Matrix.mul_assoc]
+    _ = E := by rw [h1, h2]
+
+/-- The relabelling step of `IsBestRankApprox.exists_isSVD_eq`: SVDs of $\mathbf{C}$ and
+$\mathbf{Y}$ on `Fin k ⊕ Fin (r - k)` with common frames, the singular values of $\mathbf{C}$ in
+order and those of $\mathbf{Y}$ truncated, give the conclusion on `Fin r`. -/
+private theorem exists_isSVD_eq_of_sumElim {C Y : Matrix m n 𝕜} {k r : ℕ} (hkr : k ≤ r)
+    {U : Matrix m (Fin k ⊕ Fin (r - k)) 𝕜} {V : Matrix n (Fin k ⊕ Fin (r - k)) 𝕜}
+    (hC : IsSVD C U (Sum.elim (fun i : Fin k => singularValues C i)
+      (fun j : Fin (r - k) => singularValues C (k + j))) V)
+    (hY : IsSVD Y U (Sum.elim (fun i : Fin k => singularValues C i)
+      (fun _ : Fin (r - k) => (0 : ℝ))) V) :
+    ∃ (U : Matrix m (Fin r) 𝕜) (V : Matrix n (Fin r) 𝕜),
+      IsSVD C U (fun i => singularValues C i) V ∧
+        Y = U * Matrix.diagonal (fun i : Fin r =>
+          if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0) * Vᴴ := by
+  have hrk : r = k + (r - k) := by omega
+  obtain ⟨e, he⟩ : ∃ e : Fin r ≃ Fin k ⊕ Fin (r - k),
+      e = (finCongr hrk).trans finSumFinEquiv.symm := ⟨_, rfl⟩
+  have happ : ∀ {α : Type} (f : Fin k → α) (g : Fin (r - k) → α) (i : Fin r),
+      Sum.elim f g (e i) = if hi : (i : ℕ) < k then f ⟨i, hi⟩ else g ⟨i - k, by omega⟩ :=
+    fun f g i => by rw [he, Equiv.trans_apply, sumElim_finSumFinEquiv_symm_finCongr]
+  refine ⟨U.submatrix id e, V.submatrix id e, ?_, (hY.reindex e).eq.trans ?_⟩
+  · have hσ : (Sum.elim (fun i : Fin k => singularValues C i)
+        (fun j : Fin (r - k) => singularValues C (k + j))) ∘ e =
+          fun i : Fin r => singularValues C i := by
+      funext i
+      rw [Function.comp_apply, happ]
+      split_ifs with hi
+      · rfl
+      · exact congrArg (singularValues C) (by simp only; omega)
+    have h3 := hC.reindex e
+    rwa [hσ] at h3
+  · have hd : (fun i : Fin r => (((Sum.elim (fun i : Fin k => singularValues C i)
+        (fun _ : Fin (r - k) => (0 : ℝ)) ∘ e) i : ℝ) : 𝕜)) =
+          fun i : Fin r => if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0 := by
+      funext i
+      rw [Function.comp_apply, happ]
+      split_ifs with hi
+      · rfl
+      · exact RCLike.ofReal_zero
+    rw [hd]
+
 /-- Every best approximation is the truncation of a thin SVD of $\mathbf{C}$ with sorted singular
 values: the direction (⇒) of `NLAlib.isBestRankApprox_iff_exists_isSVD`. -/
 private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : ℕ}
@@ -397,7 +480,7 @@ private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : �
     rw [← truncatedSVD_def, truncatedSVD_of_rank_le C hk]
     exact (isBestRankApprox_iff_eq_of_rank_le hk).mp h
   rw [not_le] at hk
-  set r := min (Fintype.card m) (Fintype.card n) with hr
+  set r := min (Fintype.card m) (Fintype.card n)
   have hkm : k ≤ Fintype.card m := hk.le.trans C.rank_le_card_height
   have hkn : k ≤ Fintype.card n := hk.le.trans C.rank_le_card_width
   have hpos : ∀ i : Fin k, ((singularValues C i : ℝ) : 𝕜) ≠ 0 := fun i =>
@@ -408,25 +491,7 @@ private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : �
     funext fun i => h.singularValues_eq_of_lt i.2
   rw [hσ₁] at h₁
   obtain ⟨E, hE⟩ : ∃ E, E = C - Y := ⟨_, rfl⟩
-  have hYE : Yᴴ * E = 0 := hE ▸ h.conjTranspose_mul_sub
-  have hEY : E * Yᴴ = 0 := by
-    have h0 := h.conjTranspose.conjTranspose_mul_sub
-    rw [Matrix.conjTranspose_conjTranspose, ← Matrix.conjTranspose_sub] at h0
-    have h1 := congrArg Matrix.conjTranspose h0
-    rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_zero,
-      ← hE] at h1
-  have hU₁E : U₁ᴴ * E = 0 := by
-    refine eq_zero_of_diagonal_mul_eq_zero hpos ?_
-    have h3 := congrArg Matrix.conjTranspose h₁.mul_right_eq
-    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
-      Matrix.conjTranspose_diagonal_ofReal] at h3
-    rw [← Matrix.mul_assoc, ← h3, Matrix.mul_assoc, hYE, Matrix.mul_zero]
-  have hEV₁ : E * V₁ = 0 := by
-    refine eq_zero_of_mul_diagonal_eq_zero hpos ?_
-    have h3 := congrArg Matrix.conjTranspose h₁.conjTranspose_mul_eq
-    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
-      Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_diagonal_ofReal] at h3
-    rw [Matrix.mul_assoc, ← h3, ← Matrix.mul_assoc, hEY, Matrix.zero_mul]
+  obtain ⟨hU₁E, hEV₁⟩ := hE ▸ h.conjTranspose_mul_sub_eq_zero_and_sub_mul_eq_zero h₁ hpos
   -- the error lives on the orthogonal completions of the leading frames
   obtain ⟨Q, hQ⟩ := h₁.hasOrthonormalCols_left.exists_fromCols
     (p := Fin (Fintype.card m - k)) (by simp only [Fintype.card_fin]; omega)
@@ -439,15 +504,7 @@ private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : �
   have hRR : R * Rᴴ = 1 - V₁ * V₁ᴴ := eq_sub_of_add_eq'
     (hR.mul_conjTranspose_add_mul_conjTranspose (by simp only [Fintype.card_fin]; omega))
   obtain ⟨M, hM⟩ : ∃ M, M = Qᴴ * E * R := ⟨_, rfl⟩
-  have hEM : Q * M * Rᴴ = E := by
-    have h1 : Q * Qᴴ * E = E := by
-      rw [hQQ, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc, hU₁E, Matrix.mul_zero, sub_zero]
-    have h2 : E * (R * Rᴴ) = E := by
-      rw [hRR, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, hEV₁, Matrix.zero_mul,
-        sub_zero]
-    rw [hM]
-    calc Q * (Qᴴ * E * R) * Rᴴ = Q * Qᴴ * E * (R * Rᴴ) := by simp only [Matrix.mul_assoc]
-      _ = E := by rw [h1, h2]
+  have hEM : Q * M * Rᴴ = E := hM ▸ mul_mul_conjTranspose_eq_of_mul_eq_zero hQQ hRR hU₁E hEV₁
   have hsvM : ∀ j, singularValues M j = singularValues C (k + j) := fun j => by
     rw [← hQo.singularValues_mul_left M, ← hRo.singularValues_mul_conjTranspose_right (Q * M), hEM,
       hE, h.singularValues_sub]
@@ -488,34 +545,7 @@ private theorem IsBestRankApprox.exists_isSVD_eq {C Y : Matrix m n 𝕜} {k : �
     · rw [fromCols_mul_diagonal_sumElim_mul_conjTranspose, ← h₁.eq]
       simp only [RCLike.ofReal_zero, Matrix.diagonal_zero, Matrix.mul_zero, Matrix.zero_mul,
         add_zero]
-  -- relabel `Fin k ⊕ Fin (r - k)` as `Fin r`
-  have hrk : r = k + (r - k) := by omega
-  obtain ⟨e, he⟩ : ∃ e : Fin r ≃ Fin k ⊕ Fin (r - k),
-      e = (finCongr hrk).trans finSumFinEquiv.symm := ⟨_, rfl⟩
-  have happ : ∀ {α : Type} (f : Fin k → α) (g : Fin (r - k) → α) (i : Fin r),
-      Sum.elim f g (e i) = if hi : (i : ℕ) < k then f ⟨i, hi⟩ else g ⟨i - k, by omega⟩ :=
-    fun f g i => by rw [he, Equiv.trans_apply, sumElim_finSumFinEquiv_symm_finCongr]
-  refine ⟨(Matrix.fromCols U₁ (Q * U')).submatrix id e,
-    (Matrix.fromCols V₁ (R * V')).submatrix id e, ?_, (hY.reindex e).eq.trans ?_⟩
-  · have hσ : (Sum.elim (fun i : Fin k => singularValues C i)
-        (fun j : Fin (r - k) => singularValues C (k + j))) ∘ e =
-          fun i : Fin r => singularValues C i := by
-      funext i
-      rw [Function.comp_apply, happ]
-      split_ifs with hi
-      · rfl
-      · exact congrArg (singularValues C) (by simp only; omega)
-    have h3 := hC.reindex e
-    rwa [hσ] at h3
-  · have hd : (fun i : Fin r => (((Sum.elim (fun i : Fin k => singularValues C i)
-        (fun _ : Fin (r - k) => (0 : ℝ)) ∘ e) i : ℝ) : 𝕜)) =
-          fun i : Fin r => if (i : ℕ) < k then ((singularValues C i : ℝ) : 𝕜) else 0 := by
-      funext i
-      rw [Function.comp_apply, happ]
-      split_ifs with hi
-      · rfl
-      · exact RCLike.ofReal_zero
-    rw [hd]
+  exact exists_isSVD_eq_of_sumElim (by omega) hC hY
 
 /-- **Every best approximation is a truncated SVD**: $\mathbf{Y}$ is a best approximation of
 $\mathbf{C}$ of rank at most $k$ if and only if, for some thin singular value decomposition
@@ -674,7 +704,7 @@ $r \ge 1$,
 $$\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}} \le
 \frac{\|\mathbf{A}\|_*}{2\sqrt{r}}\,:$$
 the tail $\sum_{i \ge r}\sigma_i^2$ is at most $\sigma_{r-1}\sum_{i \ge r}\sigma_i \le
-\frac1r\bigl(\sum_{i < r}\sigma_i\bigr)\bigl(\sum_{i \ge r}\sigma_i\bigr) \le
+(1/r)\bigl(\sum_{i < r}\sigma_i\bigr)\bigl(\sum_{i \ge r}\sigma_i\bigr) \le
 \|\mathbf{A}\|_*^2/(4r)$. The positive semidefinite form, with
 $\operatorname{Re}\operatorname{tr}\mathbf{A}$, is
 `Matrix.PosSemidef.frobNorm_sub_truncatedSVD_le_re_trace_div`.
@@ -800,12 +830,7 @@ theorem IsBestRankApprox.frobNorm_sub_le_add_frobNorm_truncatedSVD {C E Y : Matr
       (frobNorm (C - Y) + frobNorm (C - truncatedSVD C k)) :=
     (frobInner_le_frobNorm_mul_frobNorm_truncatedSVD_of_rank_le hrank E).trans
       (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left htri hβ)
-  have hx := frobNorm_nonneg (C - Y)
   have hΔ := frobNorm_nonneg (C - truncatedSVD C k)
-  have hquad : frobNorm (C - Y) ^ 2 ≤ frobNorm (C - truncatedSVD C k) ^ 2 +
-      2 * frobNorm (truncatedSVD E (2 * k)) *
-        (frobNorm (C - Y) + frobNorm (C - truncatedSVD C k)) := by
-    linarith
   by_contra hcon
   replace hcon := not_le.mp hcon
   have h1 : 0 < frobNorm (C - Y) + frobNorm (C - truncatedSVD C k) := by linarith

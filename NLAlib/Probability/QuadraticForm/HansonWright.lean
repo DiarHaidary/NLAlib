@@ -19,8 +19,8 @@ For a real random vector $\mathbf{x}$ with independent coordinates, each sub-Gau
 $c$, and any real square matrix $\mathbf{A}$, the quadratic form
 $\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x}$ concentrates about its
 mean: <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
+$$\mathbb{P}\bigl[\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr]
 \le 2 \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr),$$
 where the constant in the exponent (`NLAlib.hansonWrightConstant`) is universal, unspecified in
@@ -130,6 +130,8 @@ private lemma hasSubexponentialMGF_quadForm_sub_integral (hind : iIndepFun (fun 
   have := hind.isProbabilityMeasure
   have hD := hasSubexponentialMGF_diag hind h A
   have hO := hasSubexponentialMGF_quadForm_sub_diagonal hind h A
+  rw [Real.nnnorm_of_nonneg (frobNorm_nonneg A), Real.nnnorm_of_nonneg (specNorm_nonneg A),
+    ← Real.toNNReal_of_nonneg, ← Real.toNNReal_of_nonneg] at hO
   have hsq : ∀ i, Integrable (fun ω => A i i * x ω i ^ 2) μ := fun i =>
     (((h i).memLp 2).integrable_sq).const_mul _
   have hEQ : ∫ ω', quadForm A (x ω') ∂μ = ∑ i, A i i * ∫ ω', x ω' i ^ 2 ∂μ := by
@@ -174,42 +176,50 @@ private lemma hansonWrightConstant_mul_min_le (A : Matrix n n ℝ) {t : ℝ} (ht
           mul_le_mul_of_nonneg_left (min_le_right _ _) (by norm_num)
       _ ≤ 1 / 56 * (t / (c * specNorm A)) := by nlinarith
 
-/-- The upper tail of a quadratic form in independent sub-Gaussian coordinates: under the
-hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
+/-- The upper tail of a quadratic form in independent sub-Gaussian coordinates: if the
+coordinates $\mathbf{x}_i$ of a real random vector $\mathbf{x}$ are independent and each is
+sub-Gaussian with variance proxy $c$ ($\mathbb{E}\, e^{s \mathbf{x}_i} \le e^{c s^2 / 2}$ for every
+real $s$, `HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and every
 $t \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \ge t\bigr)
+$$\mathbb{P}\bigl[\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \ge t\bigr]
 \le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
-\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
+\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$
+A one-sided form of the Hanson–Wright inequality `measureReal_abs_quadForm_sub_integral_ge_le`;
+the constant is `hansonWrightConstant`. -/
 theorem measureReal_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω => x ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ} ≤
       rexp (-(hansonWrightConstant *
         min (t ^ 2 / (c ^ 2 * frobNorm A ^ 2)) (t / (c * specNorm A)))) :=
-  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_ge_le ht).trans
+  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_ge_le ht).trans
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
-/-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: under the
-hypotheses of `measureReal_abs_quadForm_sub_integral_ge_le`, for
+/-- The lower tail of a quadratic form in independent sub-Gaussian coordinates: if the
+coordinates $\mathbf{x}_i$ of a real random vector $\mathbf{x}$ are independent and each is
+sub-Gaussian with variance proxy $c$ ($\mathbb{E}\, e^{s \mathbf{x}_i} \le e^{c s^2 / 2}$ for every
+real $s$, `HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and every
 $t \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \le -t\bigr)
+$$\mathbb{P}\bigl[\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \le -t\bigr]
 \le \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
-\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$ -/
+\frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr)\,.$$
+A one-sided form of the Hanson–Wright inequality `measureReal_abs_quadForm_sub_integral_ge_le`;
+the constant is `hansonWrightConstant`. -/
 theorem measureReal_quadForm_sub_integral_le_le (hind : iIndepFun (fun i ω => x ω i) μ)
     (h : ∀ i, HasSubgaussianMGF (fun ω => x ω i) c μ) (A : Matrix n n ℝ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ ≤ -t} ≤
       rexp (-(hansonWrightConstant *
         min (t ^ 2 / (c ^ 2 * frobNorm A ^ 2)) (t / (c * specNorm A)))) :=
-  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_le_le ht).trans
+  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_le_le ht).trans
     (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht)))
 
 /-- **The Hanson–Wright inequality.** If the coordinates $\mathbf{x}_i$ of a real random vector
 $\mathbf{x}$ are independent and each satisfies the sub-Gaussian moment generating function bound
 with variance proxy $c$ (`HasSubgaussianMGF`), then for every real square matrix $\mathbf{A}$ and
 every $t \ge 0$, <!-- value hansonWrightConstant -->
-$$\mathbb{P}\bigl(\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
-\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr)
+$$\mathbb{P}\bigl[\lvert \mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} -
+\mathbb{E}\,\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x} \rvert \ge t\bigr]
 \le 2 \exp\Bigl(-\frac{1}{196} \min\Bigl(\frac{t^2}{c^2 \|\mathbf{A}\|_{\mathsf{F}}^2},
 \frac{t}{c \|\mathbf{A}\|_2}\Bigr)\Bigr);$$
 the explicit constant is `hansonWrightConstant`.
@@ -221,7 +231,7 @@ theorem measureReal_abs_quadForm_sub_integral_ge_le (hind : iIndepFun (fun i ω 
     μ.real {ω | t ≤ |quadForm A (x ω) - ∫ ω', quadForm A (x ω') ∂μ|} ≤
       2 * rexp (-(hansonWrightConstant *
         min (t ^ 2 / (c ^ 2 * frobNorm A ^ 2)) (t / (c * specNorm A)))) :=
-  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measure_abs_ge_le ht).trans
+  ((hasSubexponentialMGF_quadForm_sub_integral hind h A).measureReal_abs_ge_le ht).trans
     (mul_le_mul_of_nonneg_left
       (exp_le_exp.mpr (neg_le_neg (hansonWrightConstant_mul_min_le A ht))) zero_le_two)
 

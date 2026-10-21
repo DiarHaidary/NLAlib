@@ -37,6 +37,8 @@ The names `conditionNumber` and `conditionNumber_*` are deprecated aliases (2026
 
 * `NLAlib.pseudoConditionNumber`: $\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$, that is
   `specNorm A * specNorm (pinv A)`.
+* `NLAlib.frobPseudoConditionNumber`: $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$, that is
+  `frobNorm A * specNorm (pinv A)`, the rate constant of randomized Kaczmarz.
 
 ## Main results
 
@@ -49,6 +51,10 @@ The names `conditionNumber` and `conditionNumber_*` are deprecated aliases (2026
   $\|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$.
 * `NLAlib.singularValues_last_le_specNorm_of_not_injective_add`,
   `NLAlib.isLeast_specNorm_not_injective_add`: the distance to rank deficiency.
+* `NLAlib.one_le_frobPseudoConditionNumber`, `NLAlib.rank_le_frobPseudoConditionNumber_sq`,
+  `NLAlib.frobPseudoConditionNumber_sq_le_rank_mul_pseudoConditionNumber_sq`: the squared
+  Frobenius pseudo-condition number lies between the rank and the rank times the squared
+  pseudo-condition number.
 -/
 
 @[expose] public section
@@ -277,6 +283,108 @@ theorem isLeast_specNorm_div_not_isUnit_add [DecidableEq n] [Nonempty n] {A : Ma
   · rw [← hEn]
   · rintro _ ⟨F, hF, rfl⟩
     exact div_le_div_of_nonneg_right (hmin ⟨F, hF, rfl⟩) (specNorm_nonneg A)
+
+/-! ### The Frobenius pseudo-condition number -/
+
+/-- The **Frobenius pseudo-condition number** $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$,
+that is `frobNorm A * specNorm (pinv A)`, of a matrix of any shape and rank: the Frobenius norm
+divided by the smallest *nonzero* singular value
+(`NLAlib.frobPseudoConditionNumber_eq_frobNorm_div_singularValues`), and $0$ for the zero matrix.
+Its square is the inverse rate of randomized Kaczmarz. It lies between the pseudo-condition number
+and $\sqrt{\operatorname{rank}\mathbf{A}}$ times it, and its square is at least the rank.
+[StrohmerVershynin2009, Theorem 2], there $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{-1}\|_2$ for a
+left inverse (full column rank), Demmel's scaled condition number; [ZouziasFreris2013, (2)], there
+with the pseudoinverse. -/
+noncomputable def frobPseudoConditionNumber (A : Matrix m n 𝕜) : ℝ :=
+  frobNorm A * specNorm (pinv A)
+
+/-- `frobPseudoConditionNumber A` unfolds to $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$. -/
+theorem frobPseudoConditionNumber_def (A : Matrix m n 𝕜) :
+    frobPseudoConditionNumber A = frobNorm A * specNorm (pinv A) :=
+  rfl
+
+/-- The Frobenius pseudo-condition number is nonnegative:
+$0 \le \|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$. -/
+theorem frobPseudoConditionNumber_nonneg (A : Matrix m n 𝕜) : 0 ≤ frobPseudoConditionNumber A :=
+  mul_nonneg (frobNorm_nonneg _) (specNorm_nonneg _)
+
+/-- The Frobenius pseudo-condition number of the zero matrix is zero. -/
+@[simp]
+theorem frobPseudoConditionNumber_zero : frobPseudoConditionNumber (0 : Matrix m n 𝕜) = 0 := by
+  rw [frobPseudoConditionNumber, frobNorm_zero, zero_mul]
+
+/-- The Frobenius pseudo-condition number is invariant under the conjugate transpose:
+$\|\mathbf{A}^{\mathsf{H}}\|_{\mathsf{F}}\|(\mathbf{A}^{\mathsf{H}})^{+}\|_2 =
+\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$. -/
+@[simp]
+theorem frobPseudoConditionNumber_conjTranspose (A : Matrix m n 𝕜) :
+    frobPseudoConditionNumber Aᴴ = frobPseudoConditionNumber A := by
+  rw [frobPseudoConditionNumber, frobNorm_conjTranspose, pinv_conjTranspose,
+    specNorm_conjTranspose, frobPseudoConditionNumber]
+
+/-- **The Frobenius pseudo-condition number as a ratio**: for
+$k + 1 = \operatorname{rank}\mathbf{A}$,
+$$\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2 =
+\frac{\|\mathbf{A}\|_{\mathsf{F}}}{\sigma_k(\mathbf{A})}\,,$$
+the Frobenius norm over the smallest nonzero singular value. -/
+theorem frobPseudoConditionNumber_eq_frobNorm_div_singularValues (A : Matrix m n 𝕜) {k : ℕ}
+    (hk : k + 1 = A.rank) :
+    frobPseudoConditionNumber A = frobNorm A / singularValues A k := by
+  rw [frobPseudoConditionNumber, specNorm_pinv A hk, div_eq_mul_inv]
+
+/-- The pseudo-condition number is at most the Frobenius one:
+$\|\mathbf{A}\|_2\|\mathbf{A}^{+}\|_2 \le \|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$.
+[StrohmerVershynin2009, (3)], there for an invertible matrix. -/
+theorem pseudoConditionNumber_le_frobPseudoConditionNumber (A : Matrix m n 𝕜) :
+    pseudoConditionNumber A ≤ frobPseudoConditionNumber A :=
+  mul_le_mul_of_nonneg_right (specNorm_le_frobNorm A) (specNorm_nonneg _)
+
+/-- **The Frobenius pseudo-condition number of a nonzero matrix is at least one:**
+$1 \le \|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$ for $\mathbf{A} \ne \mathbf{0}$, so the
+Kaczmarz rate $1 - (\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2)^{-2}$ lies in $[0, 1)$. -/
+theorem one_le_frobPseudoConditionNumber {A : Matrix m n 𝕜} (hA : A ≠ 0) :
+    1 ≤ frobPseudoConditionNumber A :=
+  (one_le_pseudoConditionNumber hA).trans (pseudoConditionNumber_le_frobPseudoConditionNumber A)
+
+/-- **The square of the Frobenius pseudo-condition number is at least the rank**:
+$\operatorname{rank}\mathbf{A} \le (\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2)^2$, since each
+of the $\operatorname{rank}\mathbf{A}$ nonzero singular values is at least the smallest one.
+[StrohmerVershynin2009, (3)], there $n \le \kappa(\mathbf{A})^2$ at full column rank. -/
+theorem rank_le_frobPseudoConditionNumber_sq (A : Matrix m n 𝕜) :
+    (A.rank : ℝ) ≤ frobPseudoConditionNumber A ^ 2 := by
+  obtain h0 | ⟨k, hk⟩ : A.rank = 0 ∨ ∃ k, k + 1 = A.rank := by
+    rcases Nat.eq_zero_or_pos A.rank with h | h
+    · exact Or.inl h
+    · exact Or.inr ⟨A.rank - 1, by omega⟩
+  · rw [h0, Nat.cast_zero]
+    positivity
+  have hσ : 0 < singularValues A k := (singularValues_pos_iff A).2 (by omega)
+  have hsum : (A.rank : ℝ) * singularValues A k ^ 2 ≤ frobNorm A ^ 2 := by
+    rw [frobNorm_sq_eq_sum_range_singularValues_sq A le_rfl]
+    calc (A.rank : ℝ) * singularValues A k ^ 2
+        = ∑ _i ∈ Finset.range A.rank, singularValues A k ^ 2 := by
+          rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+      _ ≤ ∑ i ∈ Finset.range A.rank, singularValues A i ^ 2 :=
+          Finset.sum_le_sum fun i hi => pow_le_pow_left₀ (singularValues_nonneg A k)
+            (singularValues_antitone A (by rw [Finset.mem_range] at hi; omega)) 2
+  rw [frobPseudoConditionNumber, specNorm_pinv A hk, mul_pow, inv_pow, ← div_eq_mul_inv,
+    le_div_iff₀ (by positivity)]
+  exact hsum
+
+/-- **The Frobenius pseudo-condition number is at most $\sqrt{\operatorname{rank}\mathbf{A}}$
+times the pseudo-condition number**, squared:
+$(\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2)^2 \le
+\operatorname{rank}\mathbf{A}\,(\|\mathbf{A}\|_2\|\mathbf{A}^{+}\|_2)^2$.
+[StrohmerVershynin2009, (3)], there for an invertible matrix. -/
+theorem frobPseudoConditionNumber_sq_le_rank_mul_pseudoConditionNumber_sq (A : Matrix m n 𝕜) :
+    frobPseudoConditionNumber A ^ 2 ≤ A.rank * pseudoConditionNumber A ^ 2 := by
+  have h := mul_le_mul_of_nonneg_right (frobNorm_sq_le_rank_mul_specNorm_sq A)
+    (sq_nonneg (specNorm (pinv A)))
+  calc frobPseudoConditionNumber A ^ 2 = frobNorm A ^ 2 * specNorm (pinv A) ^ 2 := by
+        rw [frobPseudoConditionNumber, mul_pow]
+    _ ≤ A.rank * specNorm A ^ 2 * specNorm (pinv A) ^ 2 := h
+    _ = A.rank * pseudoConditionNumber A ^ 2 := by
+        rw [pseudoConditionNumber, mul_pow, mul_assoc]
 
 /-! ### Deprecated aliases -/
 

@@ -186,10 +186,14 @@ theorem IsClosed.measurable_of_forall_toLex_equivFun_le [MeasurableSpace Y] [Bor
   rw [hfg]
   exact hsymm.measurable.comp hg
 
-/-- **Measurable selection from a closed set with compact sections**: under the hypotheses of
-`IsClosed.measurable_of_forall_toLex_equivFun_le`, with $Y$ finite-dimensional and every section
-nonempty, there is a Borel measurable $f : X \to Y$ with $(x, f(x)) \in S$ for every $x$ (the
-lexicographically least point of each section). Upstream candidate.
+/-- **Measurable selection from a closed set with compact sections**: let $X$ be a topological
+space whose open sets are measurable, $Y$ a finite-dimensional Hausdorff real topological vector
+space with its Borel $\sigma$-algebra, and $S \subseteq X \times Y$ closed with every section
+$S_x = \{y \mid (x, y) \in S\}$ nonempty and the sections lying locally uniformly inside compact
+sets (each $x$ has a neighbourhood $U$ and a compact $K$ with $S_{x'} \subseteq K$ for
+$x' \in U$). Then there is a Borel measurable $f : X \to Y$ with $(x, f(x)) \in S$ for every $x$
+(the lexicographically least point of each section, in the coordinates of a basis, measurable
+by `IsClosed.measurable_of_forall_toLex_equivFun_le`). Upstream candidate.
 [KuratowskiRyllNardzewski1965]; [Kechris1995, Theorem 12.13]; there for weakly measurable
 closed-valued correspondences into a Polish space, here a closed set with locally compact
 sections in a finite-dimensional space.

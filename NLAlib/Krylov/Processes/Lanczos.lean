@@ -32,7 +32,8 @@ that Lanczos yields the conjugate gradient iterate is in `NLAlib.Krylov.LinearSy
 
 ## Main results
 
-* `NLAlib.isGradedKrylovBasis_of_forall_col_mem`: the constructor from column membership.
+* `NLAlib.HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem`: the constructor from column
+  membership.
 * `NLAlib.IsGradedKrylovBasis.isUpperHessenberg`, `NLAlib.IsGradedKrylovBasis.isTridiagonal`.
 * `NLAlib.IsGradedKrylovBasis.eq_arnoldiMatrix`: uniqueness under a positive diagonal.
 * `NLAlib.hasOrthonormalCols_arnoldiMatrix_iff`, `NLAlib.isGradedKrylovBasis_arnoldiMatrix`.
@@ -45,7 +46,7 @@ that Lanczos yields the conjugate gradient iterate is in `NLAlib.Krylov.LinearSy
   `NLAlib.arnoldiMatrix_col_last_eq_zero_iff` (zero exactly from the grade on),
   `NLAlib.norm_arnoldiMatrix_col_last`.
 * `NLAlib.arnoldiMatrix_col_succ`: the canonical Arnoldi step.
-* `NLAlib.conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc`: the rectangular
+* `NLAlib.submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc`: the rectangular
   Hessenberg matrix inside the square compression.
 -/
 
@@ -75,7 +76,7 @@ variable {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} {Q : Matrix n (Fin q) 
 
 /-- **Constructor**: orthonormal columns with column $j$ in $\mathcal{K}_{j+1}(\mathbf{A},
 \mathbf{b})$ form a graded Krylov basis. -/
-theorem isGradedKrylovBasis_of_forall_col_mem (hQ : HasOrthonormalCols Q)
+theorem HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem (hQ : HasOrthonormalCols Q)
     (h : ∀ j : Fin q, Q.col j ∈ krylovSpace A b ((j : ℕ) + 1)) : IsGradedKrylovBasis A b Q := by
   refine ⟨hQ, fun j => ?_⟩
   have hle : Submodule.span 𝕜 (Q.col '' Set.Iic j) ≤ krylovSpace A b ((j : ℕ) + 1) := by
@@ -162,11 +163,16 @@ theorem hasOrthonormalCols_arnoldiMatrix_iff :
   rw [Matrix.rank, range_arnoldiMatrix, finrank_krylovSpace, Fintype.card_fin] at h'
   omega
 
-/-- Up to the grade the canonical basis is graded.
+/-- **The canonical basis is graded up to the grade**: for $q \le \nu$, the grade of
+$\mathbf{b}$, $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$ has orthonormal columns and,
+for each $j < q$, its first $j + 1$ columns span $\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{b})$.
+[Saad2003, Proposition 6.4]; stated there for the vectors of the Arnoldi process before it stops,
+which are these columns (`mgsArnoldiMatrix_eq_arnoldiMatrix`).
 Result: arnoldi-basis -/
 theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
     IsGradedKrylovBasis A b (arnoldiMatrix A b q) := by
-  refine isGradedKrylovBasis_of_forall_col_mem (hasOrthonormalCols_arnoldiMatrix_iff.mpr h)
+  refine HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem
+    (hasOrthonormalCols_arnoldiMatrix_iff.mpr h)
     fun j => ?_
   have hj : (arnoldiMatrix A b q).col j ∈
       Submodule.span 𝕜 ((arnoldiMatrix A b q).col '' Set.Iic j) :=
@@ -178,7 +184,9 @@ theorem isGradedKrylovBasis_arnoldiMatrix (h : q ≤ krylovGrade A b) :
 
 /-- **Uniqueness of the graded basis**: a graded basis whose matrix
 $\mathbf{Q}^{\mathsf{H}}\mathbf{K}_q(\mathbf{A}, \mathbf{b})$ has positive diagonal (in the order
-of $\Bbbk$, so real positive) is the canonical one.
+of $\Bbbk$, so real positive) is the canonical one: an orthonormal $\mathbf{Q}$ with $q$ columns
+whose first $j + 1$ columns span $\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{b})$ for each $j < q$ is
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$.
 Result: arnoldi-basis -/
 theorem IsGradedKrylovBasis.eq_arnoldiMatrix (hQ : IsGradedKrylovBasis A b Q)
     (hpos : ∀ j, 0 < (Qᴴ * krylovMatrix A b q) j j) : Q = arnoldiMatrix A b q := by
@@ -232,7 +240,9 @@ theorem conjTranspose_arnoldiMatrix_mulVec_self (A : Matrix n n 𝕜) (b : n →
 
 /-- **The Arnoldi relation**, for every $q$:
 $\mathbf{A}\mathbf{Q}_q = \mathbf{Q}_{q+1}(\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q)$
-for the canonical bases $\mathbf{Q}_q$, $\mathbf{Q}_{q+1}$. [Saad2003, §6.3].
+for the canonical bases $\mathbf{Q}_j = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j)$.
+[Saad2003, §6.3]. It is (6.7) of [Saad2003, Proposition 6.5], there up to the step where the
+process stops.
 Result: arnoldi-relation -/
 theorem mul_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     A * arnoldiMatrix A b q =
@@ -442,7 +452,7 @@ theorem arnoldiMatrix_col_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) 
 \mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ is the first $q$ columns of the square
 compression $\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_{q+1}$, so the Lanczos tridiagonal
 matrix of size $q + 1$ gives it for Hermitian $\mathbf{A}$. -/
-theorem conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc
+theorem submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc
     (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     ((arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b (q + 1)).submatrix id Fin.castSucc =
       (arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b q := by

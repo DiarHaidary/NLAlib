@@ -22,15 +22,23 @@ $$\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k,\qquad
 \|\mathbf{E}\|_2 = \sigma_k(\mathbf{A}),\qquad d = \ell - k + 1\,,$$
 the last written `hd : k + d = Fintype.card l + 1` (singular values are indexed from $0$).
 
-Every statement bounds the probability of the failure event, written as the negation of the
-guarantee, `μ.real {ω | ¬ error ω ≤ bound}`. The primary tail is Tropp and Webber's (RSVD1): in Gram
-form for every unitarily invariant norm, with its Schatten, Frobenius and spectral corollaries and
-the truncated outputs; the failure probability is <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, whose second term
-(`NLAlib.gaussianPinvFrobTail k d t`) is smaller than their $\sqrt{\pi k}\,(e/t)^{d/2}$. Beside it,
+Every statement bounds the probability of the failure event, written positively
+(CONTRIBUTING §4 N15), `μ.real {ω | bound < error ω}`. The primary tail is Tropp and Webber's
+(RSVD1): in Gram form for every unitarily invariant norm, with its Schatten, Frobenius and spectral
+corollaries and
+the truncated outputs. Its noise term is
+$(tk/d)(\|\mathbf{E}\|_{\mathsf{F}} + s\,\sigma_k(\mathbf{A}))^2$ and its failure probability
+is <!-- value gaussianPinvFrobTail k d t -->
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, for $s \ge 0$ and $t > 0$. They print
+the noise term $(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ with failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(e/t)^{d/2}$, which follows at $s = \sqrt{u} - 1$: the deviation is
+measured with the Lipschitz constant $\|\mathbf{S}\|_2\|\mathbf{G}_1^{+}\|_2$ rather than
+$\|\mathbf{S}\|_{\mathsf{F}}\|\mathbf{G}_1^{+}\|_{\mathsf{F}}$, and the second term
+(`NLAlib.gaussianPinvFrobTail k d t`) is smaller than theirs. Beside it,
 Halko, Martinsson and Tropp's deviation bounds (Theorems 10.7 and 10.8) with the constants the
-library reaches; they are incomparable with (RSVD1) and better when
-$\sigma_k(\mathbf{A}) \ll \|\mathbf{E}\|_{\mathsf{F}}$.
+library reaches, in the squared form the Pythagorean structural bound gives; they are
+incomparable with (RSVD1) and better for a large oversampling $\ell - k$, at the cost of a
+spectral failure term $t^{-(\ell - k)}$.
 
 All proofs follow one route. A frame $\mathbf{Z}$ with
 $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket\mathbf{A}\rrbracket_k$ and its orthogonal
@@ -52,18 +60,19 @@ is measurable and the success-set form follows by `measureReal_compl`. Design:
 ## Main results
 
 * The Gram form, every unitarily invariant norm, in the namespace `NLAlib.SymmetricGauge`:
-  `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`.
-* `NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`: Schatten
+  `measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix`.
+* `NLAlib.measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`,
+  `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`,
+  `NLAlib.measureReal_specNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`: Schatten
   $p \in [2, \infty]$, Frobenius and spectral.
-* `NLAlib.measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix`,
-  `NLAlib.measureReal_not_specNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`: the
+* `NLAlib.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`,
+  `NLAlib.measureReal_specNorm_sub_sq_gt_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix`,
+  `NLAlib.measureReal_specNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`: the
   truncated outputs.
-* `NLAlib.measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.measureReal_not_specNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`: the deviation bounds
-  of Halko, Martinsson and Tropp.
+* The deviation bounds of Halko, Martinsson and Tropp, in squared (Pythagorean) form, in the
+  `NLAlib` namespace:
+  `measureReal_frobNorm_sub_rsvd_sq_gt_gaussianPinvSpecNormBound_le_of_hasLaw_gaussianMatrix`,
+  `measureReal_specNorm_sub_rsvd_sq_gt_gaussianPinvSpecNormBound_le_of_hasLaw_gaussianMatrix`.
 -/
 
 @[expose] public section
@@ -132,72 +141,83 @@ private theorem measureReal_le_of_frame (A : Matrix m n ℝ) (hX : HasLaw X (gau
 /-- The reduction of the (RSVD1) tails to the Frobenius block tail: a statistic $F$ bounded, under
 the rank hypothesis, by $b + c\|\mathbf{M}\|_{\mathsf{F}}^2$ for the noise term $\mathbf{M}$ of the
 structural bound, and by $b$ when the error vanishes, exceeds
-$b + c\,\frac{utk}{d}\|\mathbf{E}\|_{\mathsf{F}}^2$ with probability at
+$b + c\,(tk/d)(\|\mathbf{E}\|_{\mathsf{F}} + s\,\sigma_k(\mathbf{A}))^2$ with probability at
 most <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
 `gaussianPinvFrobTail k d t`). -/
 private theorem measureReal_not_le_of_frobNorm_sq_le (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1) (u : ℝ)
-    {t : ℝ} (ht : 0 < t) {F : Ω → ℝ} {b c : ℝ} (hc : 0 ≤ c)
+    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1)
+    {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) {F : Ω → ℝ} {b c : ℝ} (hc : 0 ≤ c)
     (hF₀ : ∀ ω, A - rsvd A (X ω) = 0 → truncatedSVD A k = A → F ω ≤ b)
     (hF : ∀ ω (Z : Matrix n (Fin k) ℝ), HasOrthonormalCols Z → A * Z * Zᴴ = truncatedSVD A k →
       ((X ω)ᴴ * Z).rank = Z.rank →
       F ω ≤ b + c * frobNorm ((A - A * Z * Zᴴ) * X ω * pinv (Zᴴ * X ω)) ^ 2) :
-    μ.real {ω | ¬ F ω ≤ b + c * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+    μ.real {ω | ¬ F ω ≤ b + c * (t * k / d) *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
   have h0 := gaussianPinvFrobTail_nonneg k d ht
-  have he := Real.exp_nonneg (-(u - 2) / 4)
+  have he := Real.exp_nonneg (-s ^ 2 / 2)
   rcases Nat.eq_zero_or_pos d with rfl | hd0
   · have := one_le_gaussianPinvFrobTail_zero (k := k) (by omega) t
     exact measureReal_le_one.trans (by linarith)
   refine measureReal_le_of_frame (k := k) A hX (by omega) (by positivity) (fun ω h hA => ?_)
-    (fun Z V₂ hZ hV₂ hZV hZA hSF _ hM => ?_)
+    (fun Z V₂ hZ hV₂ hZV hZA hSF hS2 hM => ?_)
   · simp only [Set.mem_ofPred_eq, not_not]
-    rw [hA, sub_self, frobNorm_zero]
-    simpa using hF₀ ω h hA
-  · have hB := measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix hX hZ hV₂
-      hZV (by rwa [Fintype.card_fin]) ((A - truncatedSVD A k) * V₂) u ht
-    simp only [Fintype.card_fin] at hB
+    have h1 := hF₀ ω h hA
+    have h2 : 0 ≤ c * (t * k / d) *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 := by positivity
+    linarith
+  · have hB := measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix hX hZ hV₂
+      hZV (by rwa [Fintype.card_fin]) ((A - truncatedSVD A k) * V₂) hs ht
+    simp only [Fintype.card_fin, hSF, hS2] at hB
+    simp only [← not_le] at hB
     refine ⟨_, hB, fun ω hω hs => ?_⟩
     simp only [Set.mem_ofPred_eq] at hs ⊢
     intro hB'
-    rw [hSF] at hB'
     refine hs ?_
     have h := hF ω Z hZ hZA hω
     rw [hM] at h
     calc F ω ≤ b + c * frobNorm ((A - truncatedSVD A k) * V₂ * (V₂ᴴ * X ω) *
           pinv (Zᴴ * X ω)) ^ 2 := h
-      _ ≤ b + c * (u * t * k / d * frobNorm (A - truncatedSVD A k) ^ 2) := by gcongr
-      _ = b + c * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2 := by ring
+      _ ≤ b + c * (t * k / d *
+          (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2) := by gcongr
+      _ = b + c * (t * k / d) *
+          (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 := by ring
 
 /-! ### The tail of the randomized SVD -/
 
 namespace SymmetricGauge
 
 /-- **The tail of the randomized SVD, Gram form**: for a standard Gaussian $n \times \ell$ test
-matrix $\mathbf{X}$, $d = \ell - k + 1$, every unitarily invariant norm, any $u$ and $t > 0$,
+matrix $\mathbf{X}$, $d = \ell - k + 1$, every unitarily invariant norm, $s \ge 0$ and $t > 0$,
 $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
-\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
-\|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
+\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{tk}{d}\,
+\bigl(\|\mathbf{E}\|_{\mathsf{F}} + s\,\sigma_k(\mathbf{A})\bigr)^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
 `gaussianPinvFrobTail k d t`), with $\mathbf{e}_0$ the first unit coordinate sequence.
-[TroppWebber2023, Theorem 8.1 (RSVD1)]; there for squared Schatten
-norms, $p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$; here every quadratic
-unitarily invariant norm, and the library's second failure term is smaller than theirs.
-For $u \le 2$, or $d = 0$, the bound is at least $1$.
+[TroppWebber2023, Theorem 8.1 (RSVD1)]; there for squared Schatten norms, $p \ge 2$, with
+the noise term $(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ and the failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at
+$s = \sqrt{u} - 1$ (since $\sigma_k(\mathbf{A}) \le \|\mathbf{E}\|_{\mathsf{F}}$ and
+$e^{-(\sqrt{u}-1)^2/2} \le e^{-(u-2)/4}$). Here every quadratic unitarily invariant norm, the
+deviation measured with the Lipschitz constant $\|\mathbf{S}\|_2\|\mathbf{G}_1^{+}\|_2$ in place of
+their $\|\mathbf{S}\|_{\mathsf{F}}\|\mathbf{G}_1^{+}\|_{\mathsf{F}}$, and a smaller second failure
+term. For $d = 0$ the bound is at least $1$.
 Result: randomized-svd-tail -/
-theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix
     (Φ : SymmetricGauge) (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω))) ≤
-        Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
-          Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
-  refine measureReal_not_le_of_frobNorm_sq_le A hX hd u ht Φ.apply_single_pos.le
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
+        Φ (Finsupp.single 0 1) * (t * k / d) *
+          (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
+  simp only [← not_le]
+  refine measureReal_not_le_of_frobNorm_sq_le A hX hd hs ht Φ.apply_single_pos.le
     (F := fun ω => Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω))))
     (b := Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)))
     (fun ω h hA => by rw [h, hA, sub_self]) (fun ω Z hZ hZA hω => ?_)
@@ -211,96 +231,124 @@ end SymmetricGauge
 
 /-- **The tail of the randomized SVD, Schatten norms**: for $2 \le p \le \infty$, with the
 hypotheses of the Gram form above
-(`measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`
+(`measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix`
 in the namespace `NLAlib.SymmetricGauge`),
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{S_p}^2 \le
-\|\mathbf{E}\|_{S_p}^2 + \frac{utk}{d}\,\|\mathbf{E}\|_{\mathsf{F}}^2$$
+\|\mathbf{E}\|_{S_p}^2 + \frac{tk}{d}\,
+\bigl(\|\mathbf{E}\|_{\mathsf{F}} + s\,\sigma_k(\mathbf{A})\bigr)^2$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
 `gaussianPinvFrobTail k d t`).
-[TroppWebber2023, Theorem 8.1 (RSVD1)]; as printed there, with a smaller second failure term.
+[TroppWebber2023, Theorem 8.1 (RSVD1)]; there with the noise term
+$(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ and the failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$,
+which follow from this bound at $s = \sqrt{u} - 1$.
 Result: randomized-svd-tail -/
-theorem measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
+theorem measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1)
-    {p : ℝ≥0∞} (hp : 2 ≤ p) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ schattenNorm p (A - rsvd A (X ω)) ^ 2 ≤
-        schattenNorm p (A - truncatedSVD A k) ^ 2 +
-          u * t * k / d * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+    {p : ℝ≥0∞} (hp : 2 ≤ p) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | schattenNorm p (A - truncatedSVD A k) ^ 2 + t * k / d *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        schattenNorm p (A - rsvd A (X ω)) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
   have hq : 1 ≤ p / 2 := by
     rw [ENNReal.le_div_iff_mul_le (by simp) (by simp), one_mul]
     exact hp
   have hq0 : p / 2 ≠ 0 := (zero_lt_one.trans_le hq).ne'
   have h2 : 2 * (p / 2) = p := ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top
+  have := Fact.mk hq
   have h := open SymmetricGauge in
-    measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix
-      (lpGauge (p / 2) hq) A hX hd u ht
+    measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix
+      (lpGauge (p / 2)) A hX hd hs ht
   simpa only [lpGauge_matrixNorm, schattenNorm_conjTranspose_mul_self hq0, h2,
     lpGauge_apply_single_zero, one_mul] using h
 
-/-- **The tail of the randomized SVD, Frobenius norm**: with the hypotheses of
-`NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
-\Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`).
-[TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = 2$, with a larger second failure term.
+/-- **The tail of the randomized SVD, Frobenius norm**: for
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, a test matrix $\mathbf{X} \in \mathbb{R}^{n \times \ell}$
+with independent standard Gaussian entries (`HasLaw X (gaussianMatrix n l) μ`), a target rank $k$
+with $d = \ell - k + 1$ (`hd : k + d = Fintype.card l + 1`),
+$s \ge 0$ and $t > 0$, <!-- value gaussianPinvFrobTail k d t -->
+$$\mathbb{P}\Bigl[\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 >
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2 + \frac{tk}{d}\bigl(
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+s\,\sigma_k(\mathbf{A})\bigr)^2\Bigr]
+\le e^{-s^2/2} + \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+the second failure term being `gaussianPinvFrobTail k d t`.
+[TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = 2$, with the noise term
+$(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ and the failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at $s = \sqrt{u} - 1$.
 Result: randomized-svd-tail -/
-theorem measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1) (u : ℝ)
-    {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ frobNorm (A - rsvd A (X ω)) ^ 2 ≤
-        (1 + u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
-  have h := measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix A hX hd le_rfl
-    u ht
-  simp only [schattenNorm_two] at h
-  rwa [add_mul, one_mul]
+theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
+    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1) {s t : ℝ}
+    (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | frobNorm (A - truncatedSVD A k) ^ 2 + t * k / d *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        frobNorm (A - rsvd A (X ω)) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
+  have h := measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix A hX hd le_rfl
+    hs ht
+  simpa only [schattenNorm_two] using h
 
-/-- **The tail of the randomized SVD, spectral norm**: with the hypotheses of
-`NLAlib.measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2 \le \sigma_k(\mathbf{A})^2 +
-\frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`).
-[TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = \infty$, with a larger second failure term.
-Incomparable with `NLAlib.measureReal_not_specNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`, which
-is better when
-$\sigma_k(\mathbf{A}) \ll \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}$ and small
-failure probabilities are wanted.
+/-- **The tail of the randomized SVD, spectral norm**: for
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, a test matrix $\mathbf{X} \in \mathbb{R}^{n \times \ell}$
+with independent standard Gaussian entries (`HasLaw X (gaussianMatrix n l) μ`), a target rank $k$
+with $d = \ell - k + 1$ (`hd : k + d = Fintype.card l + 1`),
+$s \ge 0$ and $t > 0$, <!-- value gaussianPinvFrobTail k d t -->
+$$\mathbb{P}\Bigl[\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2 >
+\sigma_k(\mathbf{A})^2 +
+\frac{tk}{d}\bigl(\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+s\,\sigma_k(\mathbf{A})\bigr)^2\Bigr]
+\le e^{-s^2/2} + \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+the second failure term being `gaussianPinvFrobTail k d t`. Singular values are indexed from $0$.
+[TroppWebber2023, Theorem 8.1 (RSVD1)]; there at $p = \infty$, with the noise term
+$(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ and the failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at $s = \sqrt{u} - 1$.
+Incomparable with
+`NLAlib.measureReal_specNorm_sub_rsvd_sq_gt_gaussianPinvSpecNormBound_le_of_hasLaw_gaussianMatrix`
+(Halko, Martinsson and Tropp's form), which is better for a large oversampling $\ell - k$; this
+one has no spectral failure term $t^{-(\ell - k)}$.
 Result: randomized-svd-tail -/
-theorem measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1) (u : ℝ)
-    {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ specNorm (A - rsvd A (X ω)) ^ 2 ≤
-        singularValues A k ^ 2 + u * t * k / d * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
-  have h := measureReal_not_schattenNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix A hX hd le_top
-    u ht
+theorem measureReal_specNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
+    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1) {s t : ℝ}
+    (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | singularValues A k ^ 2 + t * k / d *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        specNorm (A - rsvd A (X ω)) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
+  have h := measureReal_schattenNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix A hX hd le_top
+    hs ht
   simpa only [schattenNorm_top, specNorm_sub_truncatedSVD] using h
 
 /-! ### The tail of the truncated randomized SVD -/
 
-/-- **The tail of the truncated randomized SVD, Frobenius norm**: with the hypotheses of
-`NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2
-\le \Bigl(1 + \frac{utk}{d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`), for every choice of the truncation: the late truncation costs
-nothing. The error does not depend on the choice
-(`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`), so the failure event is measurable.
-[TroppWebber2023, Theorem 8.1 (RSVD1)] with [Woodruff2014, Lemma 48]; composed here.
+/-- **The tail of the truncated randomized SVD, Frobenius norm**: for
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, a test matrix $\mathbf{X} \in \mathbb{R}^{n \times \ell}$
+with independent standard Gaussian entries (`HasLaw X (gaussianMatrix n l) μ`), a target rank $k$
+with $d = \ell - k + 1$ (`hd : k + d = Fintype.card l + 1`),
+$s \ge 0$ and $t > 0$, <!-- value gaussianPinvFrobTail k d t -->
+$$\mathbb{P}\Bigl[
+\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_{\mathsf{F}}^2 >
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2 + \frac{tk}{d}\bigl(
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+s\,\sigma_k(\mathbf{A})\bigr)^2\Bigr]
+\le e^{-s^2/2} + \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+the second failure term being `gaussianPinvFrobTail k d t`. The bound is that of the untruncated
+output, for every choice of the truncation: the late truncation costs nothing. The error does not
+depend on the choice (`NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`), so the failure event is
+measurable.
+[TroppWebber2023, Theorem 8.1 (RSVD1)] with [Woodruff2014, Lemma 48]; composed here (they print the
+noise term
+$(utk/d)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ and the failure term
+$e^{-(u-2)/4}$, the case $s = \sqrt{u} - 1$ of this one).
 Result: randomized-svd-tail -/
-theorem measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ≤
-        (1 + u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
-  have h := measureReal_not_le_of_frobNorm_sq_le A hX hd u ht zero_le_one
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | frobNorm (A - truncatedSVD A k) ^ 2 + t * k / d *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
+  have h := measureReal_not_le_of_frobNorm_sq_le A hX hd hs ht zero_le_one
     (F := fun ω => frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2)
     (b := frobNorm (A - truncatedSVD A k) ^ 2)
     (fun ω h hA => by rw [← sub_eq_zero.mp h])
@@ -308,34 +356,42 @@ theorem measureReal_not_frobNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussi
       have h := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le hω A (Fintype.card_fin k).le
       rw [hZA] at h ⊢
       rwa [one_mul])
-  rw [add_mul, one_mul]
+  simp only [not_le] at h
   simpa only [one_mul] using h
 
 /-- **The tail of the truncated randomized SVD, spectral norm**, for any best rank-$k$
-approximations $\mathbf{Y}(\omega)$ of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X})$ (no
-measurability): with the hypotheses of
-`NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \mathbf{Y}\|_2^2 \le \sigma_k(\mathbf{A})^2 +
-\frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`), the bound of the untruncated
-output. The event may be non-measurable; `μ.real` is then the outer measure, so this bound says
-exactly that the failure event lies in a measurable event of at most this probability
-(`MeasureTheory.exists_measurable_superset`), and such bounds compose by
+approximations: for $\mathbf{A} \in \mathbb{R}^{m \times n}$, a test matrix
+$\mathbf{X} \in \mathbb{R}^{n \times \ell}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n l) μ`), a target rank $k$ with $d = \ell - k + 1$
+(`hd : k + d = Fintype.card l + 1`), any
+$\mathbf{Y}(\omega) \in \mathbb{R}^{m \times n}$ that is, for every $\omega$, a best rank-$k$
+approximation of $\mathsf{rsvd}(\mathbf{A}, \mathbf{X}(\omega))$ (`hY`; no measurability is
+assumed), $s \ge 0$ and $t > 0$, <!-- value gaussianPinvFrobTail k d t -->
+$$\mathbb{P}\Bigl[\|\mathbf{A} - \mathbf{Y}\|_2^2 > \sigma_k(\mathbf{A})^2 +
+\frac{tk}{d}\bigl(\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+s\,\sigma_k(\mathbf{A})\bigr)^2\Bigr]
+\le e^{-s^2/2} + \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+the second failure term being `gaussianPinvFrobTail k d t`. This is the bound of the untruncated
+output; singular values are indexed from $0$. The event may be non-measurable; `μ.real` is then
+the outer measure, so this bound says exactly that the failure event lies in a measurable event of
+at most this probability (`MeasureTheory.exists_measurable_superset`), and such bounds compose by
 `MeasureTheory.measureReal_union_le`. The success-set form, probability at least $1 - \delta$ for
 the good event, does not follow without measurability (`MeasureTheory.measureReal_compl` needs
 `MeasurableSet`).
-[TroppWebber2023, Theorem 8.1 (RSVD1)] with [Gu2015, Theorem 3.4]; composed here.
+[TroppWebber2023, Theorem 8.1 (RSVD1)] with [Gu2015, Theorem 3.4]; composed here (they print the
+noise term
+$(utk/d)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ and the failure term
+$e^{-(u-2)/4}$, the case $s = \sqrt{u} - 1$ of this one).
 Result: randomized-svd-tail -/
-theorem measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix
+theorem measureReal_specNorm_sub_sq_gt_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ}
     (hd : k + d = Fintype.card l + 1) {Y : Ω → Matrix m n ℝ}
-    (hY : ∀ ω, IsBestRankApprox (rsvd A (X ω)) k (Y ω)) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ specNorm (A - Y ω) ^ 2 ≤
-        singularValues A k ^ 2 + u * t * k / d * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
-  have h := measureReal_not_le_of_frobNorm_sq_le A hX hd u ht zero_le_one
+    (hY : ∀ ω, IsBestRankApprox (rsvd A (X ω)) k (Y ω)) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | singularValues A k ^ 2 + t * k / d *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        specNorm (A - Y ω) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
+  have h := measureReal_not_le_of_frobNorm_sq_le A hX hd hs ht zero_le_one
     (F := fun ω => specNorm (A - Y ω) ^ 2) (b := singularValues A k ^ 2)
     (fun ω h hA => by
       have h1 := (hY ω).specNorm_sub_sq_add_frobNorm_sub_truncatedSVD_sq_le
@@ -347,129 +403,154 @@ theorem measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaus
       have h2 := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le hω A (Fintype.card_fin k).le
       rw [hZA] at h2 ⊢
       linarith)
+  simp only [not_le] at h
   simpa only [one_mul] using h
 
 /-- **The tail of the truncated randomized SVD, spectral norm**, for the output
-`truncatedSVD (rsvd A (X ω)) k`: with the hypotheses of
-`NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`,
-$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2 \le
+`truncatedSVD (rsvd A (X ω)) k`: for $\mathbf{A} \in \mathbb{R}^{m \times n}$, a test matrix
+$\mathbf{X} \in \mathbb{R}^{n \times \ell}$ with independent standard Gaussian entries
+(`HasLaw X (gaussianMatrix n l) μ`), a target rank $k$ with $d = \ell - k + 1$
+(`hd : k + d = Fintype.card l + 1`),
+$s \ge 0$ and $t > 0$, <!-- value gaussianPinvFrobTail k d t -->
+$$\mathbb{P}\Bigl[
+\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{X})\rrbracket_k\|_2^2 >
 \sigma_k(\mathbf{A})^2 +
-\frac{utk}{d}\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$ (the second term is
-`gaussianPinvFrobTail k d t`). The event may be non-measurable (the truncation is a choice);
-`μ.real` is then the outer measure, and the bound says
-that the failure event lies in a measurable event of at most this probability. The success-set
-form, probability at least $1 - \delta$ for the good event, does not follow without measurability
-(`MeasureTheory.measureReal_compl` needs `MeasurableSet`).
-[TroppWebber2023, Theorem 8.1 (RSVD1)] with [Gu2015, Theorem 3.4]; composed here.
+\frac{tk}{d}\bigl(\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+s\,\sigma_k(\mathbf{A})\bigr)^2\Bigr]
+\le e^{-s^2/2} + \frac{2\sqrt{k}\,(d/(2t))^{d/2}}{\Gamma(d/2 + 1)}\,,$$
+the second failure term being `gaussianPinvFrobTail k d t`. Singular values are indexed from
+$0$. The event may be non-measurable (the truncation is a choice); `μ.real` is then the outer
+measure, and the bound says that the failure event lies in a measurable event of at most this
+probability. The success-set form, probability at least $1 - \delta$ for the good event, does not
+follow without measurability (`MeasureTheory.measureReal_compl` needs `MeasurableSet`).
+[TroppWebber2023, Theorem 8.1 (RSVD1)] with [Gu2015, Theorem 3.4]; composed here (they print the
+noise term
+$(utk/d)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ and the failure term
+$e^{-(u-2)/4}$, the case $s = \sqrt{u} - 1$ of this one).
 Result: randomized-svd-tail -/
-theorem measureReal_not_specNorm_sub_truncatedSVD_rsvd_sq_le_le_of_hasLaw_gaussianMatrix
+theorem measureReal_specNorm_sub_truncatedSVD_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ≤
-        singularValues A k ^ 2 + u * t * k / d * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t :=
-  measureReal_not_specNorm_sub_sq_le_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix A hX hd
-    (fun _ => isBestRankApprox_truncatedSVD _ k) u ht
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | singularValues A k ^ 2 + t * k / d *
+        (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        specNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t :=
+  measureReal_specNorm_sub_sq_gt_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix A hX hd
+    (fun _ => isBestRankApprox_truncatedSVD _ k) hs ht
 
 /-! ### The deviation bounds of Halko, Martinsson and Tropp -/
 
 /-- **Deviation bound for the Frobenius error of the randomized SVD**: for a standard Gaussian
 $n \times \ell$ test matrix, $k < \ell$, $d = \ell - k + 1$, $u \ge 0$ and
 $t > 0$, <!-- value gaussianPinvSpecNormBound k \ell -->
-$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
-\Bigl(1 + t\sqrt{k/d}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
-ut\,\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,\sigma_k(\mathbf{A})$$
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}}^2 \le
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2 + \Bigl(t\sqrt{k/d}\,
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+ut\,\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,\sigma_k(\mathbf{A})\Bigr)^2$$
 outside probability <!-- value gaussianPinvFrobTail k d t^2 -->
 $t^{-(\ell - k)} + 2\sqrt{k}\,(d/(2t^2))^{d/2}/\Gamma(d/2 + 1) + e^{-u^2/2}$; the constant is
 `gaussianPinvSpecNormBound k ℓ`, the second failure term `gaussianPinvFrobTail k d (t ^ 2)`.
-[HalkoMartinssonTropp2011, Theorem 10.7]; HMT print $\sqrt{12k/p}$, $e\sqrt{k+p}/(p+1)$ and
-$5t^{-p} + 2e^{-u^2/2}$ for $p = \ell - k \ge 4$ and $u, t \ge 1$, from their Proposition 10.4,
-whose tails are not reached here; the Frobenius part of this failure term is below HMT's in every
-practical regime, the spectral part loses one power of $t$. Given `hd`, `hkl` is $d \ge 2$.
-Incomparable with `NLAlib.measureReal_not_frobNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`
-(Tropp and Webber's form): this one is better when
-$\sigma_k(\mathbf{A}) \ll \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}$ and small
-failure probabilities are wanted.
+The structural bound is Pythagorean ($\|\mathbf{E}\|_{\mathsf{F}}^2 + \|\mathbf{M}\|_{\mathsf{F}}^2$
+for the noise term $\mathbf{M}$), so the noise enters squared: in relative-error use the factor is
+$1 + O(x^2)$ where the triangle form gives $1 + O(x)$.
+[HalkoMartinssonTropp2011, Theorem 10.7] prints the triangle form
+$(1 + t\sqrt{12k/p})\|\mathbf{E}\|_{\mathsf{F}} + ut\,e\sqrt{k+p}/(p+1)\,\sigma_k(\mathbf{A})$ with
+failure $5t^{-p} + 2e^{-u^2/2}$ for $p = \ell - k \ge 4$ and $u, t \ge 1$, from their
+Proposition 10.4, whose tails are not reached here; this bound implies the triangle form with the
+library's constants, $(1 + t\sqrt{k/d})\|\mathbf{E}\|_{\mathsf{F}} +
+ut\,e\sqrt{(\ell + k - 1)/2}/(\ell - k)\,\sigma_k(\mathbf{A})$, by $\sqrt{a^2 + b^2} \le a + b$.
+The Frobenius part of this failure term is below HMT's in every practical regime, the spectral part
+loses one power of $t$. Given `hd`, `hkl` is $d \ge 2$.
+Incomparable with `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`
+(Tropp and Webber's form): this one is better for a large oversampling $\ell - k$, where its
+coefficient of $\sigma_k(\mathbf{A})$ is below that one's $\sqrt{k/d}$ (at $t^2$); that one has no
+spectral failure term $t^{-(\ell - k)}$.
 Result: randomized-svd-deviation-bound -/
-theorem measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1)
-    (hkl : k < Fintype.card l) {u t : ℝ} (hu : 0 ≤ u) (ht : 0 < t) :
-    μ.real {ω | ¬ frobNorm (A - rsvd A (X ω)) ≤
-        (1 + t * √((k : ℝ) / d)) * frobNorm (A - truncatedSVD A k) +
-          u * t * gaussianPinvSpecNormBound k (Fintype.card l) * singularValues A k} ≤
+theorem measureReal_frobNorm_sub_rsvd_sq_gt_gaussianPinvSpecNormBound_le_of_hasLaw_gaussianMatrix
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ}
+    (hd : k + d = Fintype.card l + 1) (hkl : k < Fintype.card l) {u t : ℝ} (hu : 0 ≤ u)
+    (ht : 0 < t) :
+    μ.real {ω | frobNorm (A - truncatedSVD A k) ^ 2 +
+        (t * √((k : ℝ) / d) * frobNorm (A - truncatedSVD A k) + u * t *
+          gaussianPinvSpecNormBound k (Fintype.card l) * singularValues A k) ^ 2 <
+        frobNorm (A - rsvd A (X ω)) ^ 2} ≤
       t ^ (-((Fintype.card l : ℝ) - k)) + gaussianPinvFrobTail k d (t ^ 2) +
         Real.exp (-u ^ 2 / 2) := by
+  simp only [← not_le]
   have hC := gaussianPinvSpecNormBound_nonneg hkl
   refine measureReal_le_of_frame A hX hkl.le (by
       have := gaussianPinvFrobTail_nonneg k d (pow_pos ht 2)
       positivity) (fun ω h hA => ?_) (fun Z V₂ hZ hV₂ hZV hZA hSF hS2 hM => ?_)
   · simp only [Set.mem_ofPred_eq, not_not]
-    rw [h, frobNorm_zero]
-    have := singularValues_nonneg A k
+    rw [h, frobNorm_zero, sq, zero_mul]
     positivity
-  · have hB := measureReal_not_frobNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix hX hZ hV₂ hZV
+  · have hB := measureReal_frobNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix hX hZ hV₂ hZV
       (by rwa [Fintype.card_fin]) (by rwa [Fintype.card_fin]) ((A - truncatedSVD A k) * V₂) hu ht
     simp only [Fintype.card_fin, hSF, hS2] at hB
+    simp only [← not_le] at hB
     refine ⟨_, hB, fun ω hω hs => ?_⟩
     simp only [Set.mem_ofPred_eq] at hs ⊢
     intro hB'
     refine hs ?_
     have h := hZ.frobNorm_sub_rsvd_sq_le hω A
     rw [hM, hZA] at h
-    have hsq : frobNorm (A - rsvd A (X ω)) ≤ frobNorm (A - truncatedSVD A k) +
-        frobNorm ((A - truncatedSVD A k) * V₂ * (V₂ᴴ * X ω) * pinv (Zᴴ * X ω)) := by
-      refine (pow_le_pow_iff_left₀ (frobNorm_nonneg _) (by positivity) two_ne_zero).mp
-        (h.trans ?_)
-      nlinarith [frobNorm_nonneg (A - truncatedSVD A k),
-        frobNorm_nonneg ((A - truncatedSVD A k) * V₂ * (V₂ᴴ * X ω) * pinv (Zᴴ * X ω))]
+    have hsq := pow_le_pow_left₀ (frobNorm_nonneg _) hB' 2
     linarith
 
-/-- **Deviation bound for the spectral error of the randomized SVD**: with the hypotheses of
-`NLAlib.measureReal_not_frobNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`, the spectral
-error satisfies <!-- value gaussianPinvSpecNormBound k \ell -->
-$$\begin{aligned}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2 \le{}&
-\Bigl(1 + t\sqrt{k/d}\Bigr)\sigma_k(\mathbf{A}) +
+/-- **Deviation bound for the spectral error of the randomized SVD**: for
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, a test matrix $\mathbf{X} \in \mathbb{R}^{n \times \ell}$
+with independent standard Gaussian entries (`HasLaw X (gaussianMatrix n l) μ`), a target rank
+$k < \ell$ (`hkl`) with $d = \ell - k + 1$ (`hd : k + d = Fintype.card l + 1`), $u \ge 0$ and
+$t > 0$, <!-- value gaussianPinvSpecNormBound k \ell --> <!-- value gaussianPinvFrobTail k d t^2 -->
+$$\begin{aligned}&\mathbb{P}\Bigl[\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_2^2 >
+\sigma_k(\mathbf{A})^2 + \Bigl(t\sqrt{k/d}\,\sigma_k(\mathbf{A}) +
 t\,\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}} \\
-&+ ut\,\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,\sigma_k(\mathbf{A})\end{aligned}$$
-outside probability <!-- value gaussianPinvFrobTail k d t^2 -->
-$t^{-(\ell - k)} + 2\sqrt{k}\,(d/(2t^2))^{d/2}/\Gamma(d/2 + 1) + e^{-u^2/2}$; the constant is
-`gaussianPinvSpecNormBound k ℓ`, the second failure term `gaussianPinvFrobTail k d (t ^ 2)`.
-[HalkoMartinssonTropp2011, Theorem 10.8]; HMT print $\sqrt{12k/p}$, $e\sqrt{k+p}/(p+1)$ and
-$5t^{-p} + e^{-u^2/2}$ for $p = \ell - k \ge 4$ and $u, t \ge 1$, from their Proposition 10.4,
-whose tails are not reached here; the Frobenius part of this failure term is below HMT's in every
+&\qquad + ut\,\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\,\sigma_k(\mathbf{A})\Bigr)^2\Bigr]
+\le t^{-(\ell - k)} + \frac{2\sqrt{k}\,(d/(2t^2))^{d/2}}{\Gamma(d/2 + 1)} + e^{-u^2/2}\,,
+\end{aligned}$$
+singular values indexed from $0$; the constant is `gaussianPinvSpecNormBound k ℓ`, the second
+failure term `gaussianPinvFrobTail k d (t ^ 2)`. The structural bound is Pythagorean
+($\sigma_k(\mathbf{A})^2 + \|\mathbf{M}\|_2^2$ for the noise term $\mathbf{M}$).
+[HalkoMartinssonTropp2011, Theorem 10.8] prints the triangle form
+$(1 + t\sqrt{12k/p})\sigma_k(\mathbf{A}) + t\,e\sqrt{k+p}/(p+1)\,\|\mathbf{E}\|_{\mathsf{F}} +
+ut\,e\sqrt{k+p}/(p+1)\,\sigma_k(\mathbf{A})$ with failure $5t^{-p} + e^{-u^2/2}$ for
+$p = \ell - k \ge 4$ and $u, t \ge 1$, from their Proposition 10.4, whose tails are not reached
+here; this bound implies the triangle form with the library's constants by
+$\sqrt{a^2 + b^2} \le a + b$. The Frobenius part of this failure term is below HMT's in every
 practical regime, the spectral part loses one power of $t$. Given `hd`, `hkl` is $d \ge 2$.
-Incomparable with `NLAlib.measureReal_not_specNorm_sub_rsvd_sq_le_le_of_hasLaw_gaussianMatrix`
+Incomparable with `NLAlib.measureReal_specNorm_sub_rsvd_sq_gt_le_of_hasLaw_gaussianMatrix`
 (Tropp and Webber's form).
 Result: randomized-svd-deviation-bound -/
-theorem measureReal_not_specNorm_sub_rsvd_le_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ} (hd : k + d = Fintype.card l + 1)
-    (hkl : k < Fintype.card l) {u t : ℝ} (hu : 0 ≤ u) (ht : 0 < t) :
-    μ.real {ω | ¬ specNorm (A - rsvd A (X ω)) ≤
-        (1 + t * √((k : ℝ) / d)) * singularValues A k +
-          t * gaussianPinvSpecNormBound k (Fintype.card l) * frobNorm (A - truncatedSVD A k) +
-          u * t * gaussianPinvSpecNormBound k (Fintype.card l) * singularValues A k} ≤
+theorem measureReal_specNorm_sub_rsvd_sq_gt_gaussianPinvSpecNormBound_le_of_hasLaw_gaussianMatrix
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k d : ℕ}
+    (hd : k + d = Fintype.card l + 1) (hkl : k < Fintype.card l) {u t : ℝ} (hu : 0 ≤ u)
+    (ht : 0 < t) :
+    μ.real {ω | singularValues A k ^ 2 + (t * √((k : ℝ) / d) * singularValues A k + t *
+        gaussianPinvSpecNormBound k (Fintype.card l) * frobNorm (A - truncatedSVD A k) + u * t *
+        gaussianPinvSpecNormBound k (Fintype.card l) * singularValues A k) ^ 2 <
+        specNorm (A - rsvd A (X ω)) ^ 2} ≤
       t ^ (-((Fintype.card l : ℝ) - k)) + gaussianPinvFrobTail k d (t ^ 2) +
         Real.exp (-u ^ 2 / 2) := by
+  simp only [← not_le]
   have hC := gaussianPinvSpecNormBound_nonneg hkl
   refine measureReal_le_of_frame A hX hkl.le (by
       have := gaussianPinvFrobTail_nonneg k d (pow_pos ht 2)
       positivity) (fun ω h hA => ?_) (fun Z V₂ hZ hV₂ hZV hZA hSF hS2 hM => ?_)
   · simp only [Set.mem_ofPred_eq, not_not]
-    rw [h, specNorm_zero]
-    have := singularValues_nonneg A k
+    rw [h, specNorm_zero, sq, zero_mul]
     positivity
-  · have hB := measureReal_not_specNorm_mul_mul_pinv_le_le_of_hasLaw_gaussianMatrix hX hZ hV₂ hZV
+  · have hB := measureReal_specNorm_mul_mul_pinv_gt_le_of_hasLaw_gaussianMatrix hX hZ hV₂ hZV
       (by rwa [Fintype.card_fin]) (by rwa [Fintype.card_fin]) ((A - truncatedSVD A k) * V₂) hu ht
     simp only [Fintype.card_fin, hSF, hS2] at hB
+    simp only [← not_le] at hB
     refine ⟨_, hB, fun ω hω hs => ?_⟩
     simp only [Set.mem_ofPred_eq] at hs ⊢
     intro hB'
     refine hs ?_
-    have h := hZ.specNorm_sub_rsvd_le hω A
+    have h := hZ.specNorm_sub_rsvd_sq_le hω A
     rw [hM, hZA, specNorm_sub_truncatedSVD] at h
+    have hsq := pow_le_pow_left₀ (specNorm_nonneg _) hB' 2
     linarith
 
 end NLAlib

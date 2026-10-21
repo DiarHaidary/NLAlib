@@ -44,14 +44,12 @@ in that partial-sum form; the predicates are for unsorted vectors and for the ge
 * `NLAlib.convexOn_sumLargest_abs`: the sum of the $k$ largest absolute values is convex.
 * `NLAlib.sumLargest_eq_sum_of_forall_le`: an index set whose entries dominate all the others
   attains the maximum.
-* `NLAlib.sumLargest_fin_eq_sum_range`, `NLAlib.sum_le_sum_range_card_of_antitone`: partial sums
-  of a non-increasing sequence.
+* `NLAlib.sumLargest_fin_eq_sum_range`: partial sums of a non-increasing sequence.
 * `NLAlib.weaklyMajorized_iff_forall_sum_le`: weak majorization tested on arbitrary index sets.
 * `NLAlib.Majorized.trans`, `NLAlib.Majorized.comp_equiv_left`,
   `NLAlib.WeaklyMajorized.comp_equiv_left`: order properties and invariance under permutations.
 * `NLAlib.majorized_comp_equiv_iff`: invariance under relabelling both vectors.
-* `NLAlib.exists_equiv_antitone_comp`, `NLAlib.sumLargest_succ_of_antitone`: sorting a vector,
-  and the partial sums of a sorted one.
+* `NLAlib.sumLargest_succ_of_antitone`: the partial sums of a sorted vector.
 -/
 
 @[expose] public section
@@ -244,23 +242,6 @@ theorem sumLargest_fin_eq_sum_range {f : ℕ → ℝ} {N : ℕ} (hf : AntitoneOn
   ext i
   simp only [Finset.mem_filter, Finset.mem_range, lt_min_iff, and_comm]
 
-/-- A sum of values of a non-increasing sequence over an index set $s$ is at most the sum of its
-first $\lvert s \rvert$ values: $\sum_{i \in s} f(i) \le \sum_{i < \lvert s \rvert} f(i)$. This is
-`sum_le_sumLargest` for a sorted sequence indexed by $\mathbb{N}$, with no bound on the
-indices. -/
-theorem sum_le_sum_range_card_of_antitone {f : ℕ → ℝ} (hf : Antitone f) (s : Finset ℕ) :
-    ∑ i ∈ s, f i ≤ ∑ i ∈ Finset.range s.card, f i := by
-  induction s using Finset.induction_on_max with
-  | empty => simp
-  | insert a s ha ih =>
-    have has : a ∉ s := fun h => lt_irrefl a (ha a h)
-    have hcard : s.card ≤ a := by
-      have h := Finset.card_le_card (fun i hi => Finset.mem_range.mpr (ha i hi) :
-        s ⊆ Finset.range a)
-      rwa [Finset.card_range] at h
-    rw [Finset.sum_insert has, Finset.card_insert_of_notMem has, Finset.sum_range_succ, add_comm]
-    exact add_le_add ih (hf hcard)
-
 /-! ### Majorization -/
 
 /-- $\mathbf{x}$ is **weakly majorized** by $\mathbf{y}$: for every $k$, the sum of the $k$
@@ -408,18 +389,6 @@ theorem majorized_comp_equiv_iff {x y : ι → ℝ} (e : κ ≃ ι) :
     exact h.weaklyMajorized k
   · rw [hsum, hsum]
     exact h.sum_eq
-
-/-- **Sorting.** Every real vector on a finite index type $\iota$ is non-increasing after
-relabelling its indices by `Fin` $\lvert \iota \rvert$. With `sumLargest_comp_equiv` and
-`majorized_comp_equiv_iff` this
-reduces a statement about `sumLargest` or majorization to sorted vectors. -/
-theorem exists_equiv_antitone_comp (a : ι → ℝ) :
-    ∃ e : Fin (Fintype.card ι) ≃ ι, Antitone (a ∘ e) := by
-  classical
-  refine ⟨(Tuple.sort fun j => -a ((Fintype.equivFin ι).symm j)).trans (Fintype.equivFin ι).symm,
-    fun i j hij => ?_⟩
-  have h := Tuple.monotone_sort (fun j => -a ((Fintype.equivFin ι).symm j)) hij
-  simpa only [Function.comp_apply, neg_le_neg_iff, Equiv.trans_apply] using h
 
 /-- For a non-increasing family indexed by `Fin N`, the sum of the $i + 1$ largest entries is the
 sum of the $i$ largest plus the entry $i$: $S_{i+1}(\mathbf{y}) = S_i(\mathbf{y}) + \mathbf{y}_i$.

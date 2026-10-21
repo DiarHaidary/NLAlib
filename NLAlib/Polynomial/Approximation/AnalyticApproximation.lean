@@ -19,8 +19,8 @@ same error on any nondegenerate real interval. No boundary regularity is assumed
 
 ## Main results
 
-* `NLAlib.isUniformApproxOn_chebyshevTrunc_of_open_ellipse`: canonical uniform error.
-* `NLAlib.exists_degree_le_isUniformApproxOn_of_open_ellipse_interval`: affine interval transport.
+* `NLAlib.isUniformApproxOn_chebyshevTrunc_of_differentiableOn`: canonical uniform error.
+* `NLAlib.exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn`: affine interval transport.
 -/
 
 @[expose] public section
@@ -58,7 +58,7 @@ private lemma summable_coefficients {f : ℝ → 𝕜} {F : ℂ → ℂ} {ρ M :
   apply Summable.of_nonneg_of_le (fun _ => norm_nonneg _) _
     ((summable_nat_add_iff 1).mpr hg)
   intro k
-  exact norm_chebyshevCoeff_le_of_open_ellipse hρ hFd hM hExt (Nat.succ_pos k)
+  exact norm_chebyshevCoeff_le_of_differentiableOn hρ hFd hM hExt (Nat.succ_pos k)
 
 private lemma norm_T_real_input_le_one (k : ℕ) {x : ℝ} (hx : x ∈ Icc (-1 : ℝ) 1) :
     ‖(T 𝕜 (k : ℤ)).eval (x : 𝕜)‖ ≤ 1 := by
@@ -85,15 +85,16 @@ private lemma geometric_tail {ρ M : ℝ} (hρ : 1 < ρ) (N : ℕ) :
     simp only [inv_pow]
     field_simp
 
-/-- With a compatible extension holomorphic and bounded by $M$ on the OPEN Bernstein ellipse,
-the canonical degree-$N$ truncation satisfies
+/-- **Chebyshev truncation error for analytic functions.** With a compatible extension
+holomorphic and bounded by $M$ on the OPEN Bernstein ellipse, the canonical degree-$N$
+truncation satisfies
 $$\|p_N(x)-f(x)\|\le\frac{2M}{\rho^N(\rho-1)}\quad(x\in[-1,1]).$$
 [Trefethen2019, Theorem 8.2, Eq. (8.2)], generalized to RCLike values. Every $N\ge0$ and
 $M=0$ are included. No continuous extension to the ellipse boundary is required.
 
 Result: bernstein-ellipse-approx
 -/
-theorem isUniformApproxOn_chebyshevTrunc_of_open_ellipse
+theorem isUniformApproxOn_chebyshevTrunc_of_differentiableOn
     {f : ℝ → 𝕜} {F : ℂ → ℂ} {ρ M : ℝ} (hρ : 1 < ρ)
     (hFd : DifferentiableOn ℂ F (openBernsteinEllipse ρ))
     (hM : Metric.IsUniformApproxOn F (fun _ => 0) (openBernsteinEllipse ρ) M)
@@ -115,7 +116,7 @@ theorem isUniformApproxOn_chebyshevTrunc_of_open_ellipse
     abel
   have ht : ∀ i : ℕ, ‖u (i + (N + 1))‖ ≤ 2 * M / ρ ^ (i + (N + 1)) := by
     intro i
-    have hc := norm_chebyshevCoeff_le_of_open_ellipse hρ hFd hM hExt
+    have hc := norm_chebyshevCoeff_le_of_differentiableOn hρ hFd hM hExt
       (k := i + (N + 1)) (by omega)
     exact (by
       dsimp [u]
@@ -124,7 +125,8 @@ theorem isUniformApproxOn_chebyshevTrunc_of_open_ellipse
   rw [dist_eq_norm, norm_sub_rev, herr]
   exact tsum_of_norm_bounded (geometric_tail hρ N) ht
 
-/-- On $[a,b]$ with $a<b$, a compatible extension of the affine pullback of $f$, holomorphic
+/-- **Polynomial approximation of analytic functions on an interval.** On $[a,b]$ with $a<b$,
+a compatible extension of the affine pullback of $f$, holomorphic
 and bounded by $M$ on the open Bernstein ellipse, gives a polynomial of degree at most $N$
 with uniform error $2M/(\rho^N(\rho-1))$.
 An affine-rescaling corollary of [Trefethen2019, Theorem 8.2], generalized to RCLike values.
@@ -132,7 +134,7 @@ The polynomial is obtained from the canonical truncation, including $N=0$.
 
 Result: bernstein-ellipse-approx
 -/
-theorem exists_degree_le_isUniformApproxOn_of_open_ellipse_interval
+theorem exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn
     {f : ℝ → 𝕜} {F : ℂ → ℂ} {a b ρ M : ℝ} (hab : a < b) (hρ : 1 < ρ)
     (hFd : DifferentiableOn ℂ F (openBernsteinEllipse ρ))
     (hM : Metric.IsUniformApproxOn F (fun _ => 0) (openBernsteinEllipse ρ) M)
@@ -170,7 +172,7 @@ theorem exists_degree_le_isUniformApproxOn_of_open_ellipse_interval
       dsimp [t]
       push_cast
       ring
-    have h := (isUniformApproxOn_chebyshevTrunc_of_open_ellipse hρ hFd hM hExt N).apply ht
+    have h := (isUniformApproxOn_chebyshevTrunc_of_differentiableOn hρ hFd hM hExt N).apply ht
     change dist ((q.comp s).eval (x : 𝕜)) (f x) ≤ _
     rw [eval_comp, he]
     simpa only [g, hi] using h

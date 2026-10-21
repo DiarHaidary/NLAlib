@@ -53,8 +53,9 @@ theorem _root_.Matrix.IsHermitian.re_det_cfc {A : Matrix n n 𝕜} (hA : A.IsHer
     RCLike.re (cfc f A).det = ∏ i ∈ Finset.range (Fintype.card n), f (eigenvalue A i) := by
   obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
   have hr := Fintype.card_fin (Fintype.card n)
-  have hf := cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU f
-  obtain ⟨e, he⟩ := exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose hU hr.symm hf
+  have hf := HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU f
+  obtain ⟨e, he⟩ :=
+    HasOrthonormalCols.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose hU hr.symm hf
   have hH : (cfc f A).IsHermitian := cfc_predicate f A
   rw [hH.det_eq_prod_range_eigenvalue, RCLike.ofReal_re,
     ← Fin.prod_univ_eq_prod_range (fun i => eigenvalue (cfc f A) i),

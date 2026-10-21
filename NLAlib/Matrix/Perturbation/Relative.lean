@@ -22,7 +22,7 @@ sketch-and-precondition and sketched least squares consume.
 
 ## Main results
 
-* `NLAlib.mul_sq_singularValues_le_of_smul_le`, `NLAlib.sq_singularValues_le_mul_of_le_smul`:
+* `NLAlib.mul_singularValues_sq_le_of_smul_le`, `NLAlib.singularValues_sq_le_mul_of_le_smul`:
   singular values under comparable Gram matrices.
 * `NLAlib.rank_eq_of_smul_le_of_le_smul`: the rank is preserved.
 * `NLAlib.specNorm_pinv_sq_le_of_smul_le`: the pseudoinverse.
@@ -46,24 +46,24 @@ half of Ostrowski's theorem; the upper half for a product is
 [HornJohnson2013, Corollary 7.7.4 for the Gram matrices];
 [HornJohnson2013, Theorem 4.5.9 (Ostrowski)], for the congruence
 $\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{A}$. -/
-theorem mul_sq_singularValues_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ}
+theorem mul_singularValues_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ}
     (h : a • (Aᴴ * A) ≤ Bᴴ * B) (i : ℕ) :
     a * singularValues A i ^ 2 ≤ singularValues B i ^ 2 := by
   rcases le_or_gt 0 a with ha | ha
   · have hk := eigenvalue_le_eigenvalue_of_le h
       ((Matrix.isHermitian_conjTranspose_mul_self A).smul (IsSelfAdjoint.all a)) i
-    rwa [eigenvalue_real_smul _ ha, ← sq_singularValues, ← sq_singularValues] at hk
+    rwa [eigenvalue_real_smul _ ha, ← singularValues_sq, ← singularValues_sq] at hk
   · exact (mul_nonpos_of_nonpos_of_nonneg ha.le (sq_nonneg _)).trans (sq_nonneg _)
 
 /-- **Singular values under an upper Gram bound.** If
 $\mathbf{B}^{\mathsf{H}}\mathbf{B} \preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}$ for a real $b$, then
 $\sigma_i(\mathbf{B})^2 \le b \sigma_i(\mathbf{A})^2$ for every $i$. -/
-theorem sq_singularValues_le_mul_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {b : ℝ}
+theorem singularValues_sq_le_mul_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {b : ℝ}
     (h : Bᴴ * B ≤ b • (Aᴴ * A)) (i : ℕ) :
     singularValues B i ^ 2 ≤ b * singularValues A i ^ 2 := by
   rcases le_or_gt 0 b with hb | hb
   · have hk := eigenvalue_le_eigenvalue_of_le h (Matrix.isHermitian_conjTranspose_mul_self B) i
-    rwa [eigenvalue_real_smul _ hb, ← sq_singularValues, ← sq_singularValues] at hk
+    rwa [eigenvalue_real_smul _ hb, ← singularValues_sq, ← singularValues_sq] at hk
   · have hB : 0 ≤ Bᴴ * B := (Matrix.posSemidef_conjTranspose_mul_self B).nonneg
     have hA : 0 ≤ (-b) • (Aᴴ * A) :=
       ((Matrix.posSemidef_conjTranspose_mul_self A).smul (neg_nonneg.mpr hb.le)).nonneg
@@ -82,7 +82,7 @@ theorem rank_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {a : ℝ}
   refine Nat.le_of_not_gt fun hlt => ?_
   have hA := (singularValues_pos_iff A).mpr hlt
   have hB := (singularValues_eq_zero_iff B).mpr le_rfl
-  have h' := mul_sq_singularValues_le_of_smul_le h B.rank
+  have h' := mul_singularValues_sq_le_of_smul_le h B.rank
   rw [hB, zero_pow two_ne_zero] at h'
   exact absurd h' (not_le.mpr (mul_pos ha (pow_pos hA 2)))
 
@@ -96,7 +96,7 @@ theorem rank_eq_of_smul_le_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜
   refine le_antisymm (Nat.le_of_not_gt fun hlt => ?_) (rank_le_of_smul_le ha h₁)
   have hB := (singularValues_pos_iff B).mpr hlt
   have hA := (singularValues_eq_zero_iff A).mpr le_rfl
-  have h := sq_singularValues_le_mul_of_le_smul h₂ A.rank
+  have h := singularValues_sq_le_mul_of_le_smul h₂ A.rank
   rw [hA, zero_pow two_ne_zero, mul_zero] at h
   exact absurd h (not_le.mpr (pow_pos hB 2))
 
@@ -113,7 +113,7 @@ theorem specNorm_pinv_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n �
       specNorm_zero, specNorm_zero, zero_pow two_ne_zero, mul_zero]
   · obtain ⟨k, hk⟩ : ∃ k, k + 1 = A.rank := ⟨A.rank - 1, by omega⟩
     have hA := (singularValues_pos_iff A).mpr (by omega : k < A.rank)
-    have hle := mul_sq_singularValues_le_of_smul_le h k
+    have hle := mul_singularValues_sq_le_of_smul_le h k
     rw [specNorm_pinv A hk, specNorm_pinv B (hk.trans hr'.symm), inv_pow, inv_pow, ← mul_inv]
     exact inv_anti₀ (mul_pos ha (pow_pos hA 2)) hle
 
@@ -134,8 +134,8 @@ theorem pseudoConditionNumber_le_sqrt_div_mul_of_smul_le_of_le_smul {A : Matrix 
     have hr := rank_eq_of_smul_le_of_le_smul ha h₁ h₂
     have hA := (singularValues_pos_iff A).mpr (by omega : k < A.rank)
     have hB := (singularValues_pos_iff B).mpr (by omega : k < B.rank)
-    have hlo := mul_sq_singularValues_le_of_smul_le h₁ k
-    have hhi := sq_singularValues_le_mul_of_le_smul h₂ 0
+    have hlo := mul_singularValues_sq_le_of_smul_le h₁ k
+    have hhi := singularValues_sq_le_mul_of_le_smul h₂ 0
     rw [pseudoConditionNumber_eq_singularValues_div A hk,
       pseudoConditionNumber_eq_singularValues_div B (hk.trans hr.symm)]
     rw [← Real.sqrt_sq (div_nonneg (singularValues_nonneg A 0) hA.le),

@@ -27,7 +27,7 @@ proportional to the diagonal gives the expected step of randomly pivoted Cholesk
   semidefinite, below $\mathbf{A}$, zero on the selected columns, and the largest such matrix.
 * `Matrix.PosSemidef.foldl_eliminationStep_eq_sub`: elimination along pivots is the Nyström
   residual.
-* `NLAlib.ker_mulVecLin_le_ker_eliminationStep`: an elimination step does not shrink the kernel.
+* `NLAlib.ker_le_ker_eliminationStep`: an elimination step does not shrink the kernel.
 * `Matrix.PosSemidef.sum_smul_eliminationStep`,
   `Matrix.PosSemidef.sum_mul_re_trace_eliminationStep`: the expected step of randomly pivoted
   Cholesky and its trace.
@@ -65,7 +65,7 @@ It is a generalized Schur complement. -/
 theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul {p : Type*} [Fintype p]
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) (e : p → n) :
     (A - A.submatrix id e * pinv (A.submatrix e e) * A.submatrix e id).PosSemidef := by
-  have h := posSemidef_sub_conjTranspose_mul_pinv_mul_of_posSemidef_fromBlocks
+  have h := Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_pinv_mul_of_fromBlocks
     (posSemidef_fromBlocks_submatrix hA e)
   rwa [Matrix.conjTranspose_submatrix, hA.isHermitian.eq] at h
 
@@ -85,7 +85,7 @@ theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul_apply {p : Type*} [F
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) (e : p → n) (i : n) (k : p) :
     (A - A.submatrix id e * pinv (A.submatrix e e) * A.submatrix e id) i (e k) = 0 := by
   have h := congrArg Matrix.conjTranspose
-    (mul_pinv_mul_eq_of_posSemidef_fromBlocks (posSemidef_fromBlocks_submatrix hA e))
+    (Matrix.PosSemidef.mul_pinv_mul_eq_of_fromBlocks (posSemidef_fromBlocks_submatrix hA e))
   rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_submatrix,
     hA.isHermitian.eq, (hA.submatrix e).pinv.isHermitian.eq, (hA.submatrix e).isHermitian.eq,
     ← Matrix.mul_assoc] at h
@@ -186,7 +186,7 @@ in the kernel of the matrix eliminated at $t$, for any square matrix over a fiel
 zero or not. For a positive semidefinite matrix
 this is the exhaustion of the column space by the pivots of a partial Cholesky factorization.
 [ChenEtAl2025, §2]. Port of `NLAlib.ker_mulVecLin_le_ker_eliminationStep`. -/
-theorem ker_mulVecLin_le_ker_eliminationStep {K : Type*} [Field K] [Fintype n]
+theorem ker_le_ker_eliminationStep {K : Type*} [Field K] [Fintype n]
     (A : Matrix n n K) (t : n) :
     LinearMap.ker A.mulVecLin ≤ LinearMap.ker (eliminationStep A t).mulVecLin := by
   classical

@@ -16,7 +16,8 @@
 #              are the definition's; each docstring passes its own (`k \ell`, `(\varepsilon/2)`).
 #   latex      template of the current value: inline LaTeX in CONTRIBUTING §6 notation (`/` rather
 #              than `\frac`), placeholders `#1`…`#9` never followed by a letter. `C` in a sample
-#              size is the constant it uses, whose value the same docstring shows (`$C = 1/64$`).
+#              size is the constant it uses, whose value the same docstring shows (`$C = 1/36$`,
+#              the one symbol CONTRIBUTING §5.2 rule 2 allows).
 #   display    optional: the same value with `\frac`, accepted (besides `latex`) in a `$$…$$`
 #              display.
 #   lean_body  the definition from its name to its end, whitespace-normalised: the text `latex`
@@ -113,10 +114,10 @@ name = "NLAlib.subgaussianJLConstant"
 kind = "constant"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = []
-latex = '1/64'
-display = '\frac{1}{64}'
-lean_body = 'subgaussianJLConstant : ℝ := 1 / 64'
-body_hash = "ff06dbaad61b5d69"
+latex = '1/36'
+display = '\frac{1}{36}'
+lean_body = 'subgaussianJLConstant : ℝ := 1 / 36'
+body_hash = "b7449c47ea1e8b75"
 
 [[constant]]
 name = "NLAlib.subgaussianJLDim"
@@ -133,10 +134,10 @@ name = "NLAlib.subgaussianEmbeddingDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Gaussian/SubGaussian.lean"
 args = ["c", "d", "ε", "δ"]
-latex = '4 #1^2 (#2 \log 9 + \log(2/#4))/(C #3^2)'
-display = '\frac{4 #1^2 (#2 \log 9 + \log(2/#4))}{C #3^2}'
-lean_body = 'subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 4 * c ^ 2 * (d * Real.log 9 + Real.log (2 / δ)) / (subgaussianJLConstant * ε ^ 2)'
-body_hash = "c5cfdabba74f95da"
+latex = '25 #1^2 (#2 \log 21 + \log(2/#4))/(16 C #3^2)'
+display = '\frac{25 #1^2 (#2 \log 21 + \log(2/#4))}{16 C #3^2}'
+lean_body = 'subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 25 * c ^ 2 * (d * Real.log 21 + Real.log (2 / δ)) / (16 * subgaussianJLConstant * ε ^ 2)'
+body_hash = "b8c8495c1ba9eb99"
 
 [[constant]]
 name = "NLAlib.gaussianEmbeddingDim"
@@ -169,24 +170,24 @@ lean_body = 'jlDim (ε δ : ℝ) : ℝ := Real.log (2 / δ) / (ε ^ 2 / 4 - ε ^
 body_hash = "fee45691d92c18c2"
 
 [[constant]]
-name = "NLAlib.countSketchRows"
+name = "NLAlib.countSketchEmbeddingDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Sparse/CountSketchEmbedding.lean"
 args = ["d", "ε", "δ"]
 latex = '(#1^2 + #1)/(#3 #2^2)'
 display = '\frac{#1^2 + #1}{#3 #2^2}'
-lean_body = 'countSketchRows (d : ℕ) (ε δ : ℝ) : ℝ := ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)'
-body_hash = "56a83724a3db7928"
+lean_body = 'countSketchEmbeddingDim (d : ℕ) (ε δ : ℝ) : ℝ := ((d : ℝ) ^ 2 + d) / (δ * ε ^ 2)'
+body_hash = "1f33598dd90b716d"
 
 [[constant]]
-name = "NLAlib.projectionCostTailRows"
+name = "NLAlib.projectionCostTailDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Properties/ProjectionCost.lean"
 args = ["v", "d", "ε", "δ"]
 latex = '384 \cdot #1 (#2 + 1)/(#3^2 #4)'
 display = '\frac{384 \cdot #1 (#2 + 1)}{#3^2 #4}'
-lean_body = 'projectionCostTailRows (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ)'
-body_hash = "85efc63753bb852f"
+lean_body = 'projectionCostTailDim (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ := 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ)'
+body_hash = "893ffd6f2a85691e"
 
 [[constant]]
 name = "NLAlib.srhtRowBound"
@@ -198,33 +199,33 @@ lean_body = 'srhtRowBound (n d : ℕ) (δ : ℝ) : ℝ := d + 2 * √(d * Real.l
 body_hash = "0eb15d450ab8bc8b"
 
 [[constant]]
-name = "NLAlib.samplingSize"
+name = "NLAlib.samplingEmbeddingDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Sampling/RowSampling.lean"
 args = ["d", "L", "ε", "δ"]
 latex = '3 #2 \log(2#1/#4)/#3^2'
 display = '\frac{3 #2 \log(2#1/#4)}{#3^2}'
-lean_body = 'samplingSize (d : ℕ) (L ε δ : ℝ) : ℝ := 3 * L * Real.log (2 * d / δ) / ε ^ 2'
-body_hash = "c25e01a1e1a16d83"
+lean_body = 'samplingEmbeddingDim (d : ℕ) (L ε δ : ℝ) : ℝ := 3 * L * Real.log (2 * d / δ) / ε ^ 2'
+body_hash = "7c97a7a40bcc17db"
 
 [[constant]]
-name = "NLAlib.samplingInjectionSize"
+name = "NLAlib.samplingInjectionDim"
 kind = "sample size"
 file = "NLAlib/Sketching/Sampling/RowSampling.lean"
 args = ["d", "L", "ε", "δ"]
 latex = '2 #2 \log(#1/#4)/#3^2'
 display = '\frac{2 #2 \log(#1/#4)}{#3^2}'
-lean_body = 'samplingInjectionSize (d : ℕ) (L ε δ : ℝ) : ℝ := 2 * L * Real.log (d / δ) / ε ^ 2'
-body_hash = "41d18f4b66378b27"
+lean_body = 'samplingInjectionDim (d : ℕ) (L ε δ : ℝ) : ℝ := 2 * L * Real.log (d / δ) / ε ^ 2'
+body_hash = "8e11e6d7640a2a17"
 
 [[constant]]
 name = "NLAlib.subgaussianRangeFinderFactor"
 kind = "factor"
 file = "NLAlib/LowRank/Oblivious/SubGaussian.lean"
 args = ["c"]
-latex = '1 + 10#1'
-lean_body = 'subgaussianRangeFinderFactor (c : ℝ) : ℝ := 1 + 10 * c'
-body_hash = "389375a1274ffee4"
+latex = '1 + 5#1/2'
+lean_body = 'subgaussianRangeFinderFactor (c : ℝ) : ℝ := 1 + 5 / 2 * c'
+body_hash = "8e384935cb01a8eb"
 
 [[constant]]
 name = "NLAlib.gaussianProjectionFactor"

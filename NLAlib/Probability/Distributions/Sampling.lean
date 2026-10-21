@@ -28,7 +28,7 @@ the bridge to `PMF` is `NLAlib.samplingMeasure_toNNReal_eq_toMeasure`.
 
 * `NLAlib.isProbabilityMeasure_samplingMeasure`.
 * `NLAlib.integral_samplingMeasure`: $\int f = \sum_i p_i f(i)$.
-* `NLAlib.measureReal_eq_of_hasLaw_samplingMeasure`: $\mathbb{P}(X = i) = p_i$.
+* `NLAlib.measureReal_eq_of_hasLaw_samplingMeasure`: $\mathbb{P}[X = i] = p_i$.
 * `NLAlib.measureReal_pi_samplingMeasure_setOf_apply_eq_apply`: two coordinates of an i.i.d.
   sample collide with probability $\sum_r p_r^2$.
 * `NLAlib.samplingMeasure_const_inv_card`: uniform weights give Mathlib's uniform measure; they

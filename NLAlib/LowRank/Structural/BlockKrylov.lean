@@ -146,7 +146,7 @@ theorem singularValues_sub_rbki_le_of_degree_lt {R : Type*} [CommSemiring R] [Al
   obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Ω hf
   rw [rbki, sub_rsvd, sub_rsvd]
   refine singularValues_one_sub_rangeProjector_mul_le_of_range_le
-    (range_mulVecLin_le_iff_exists_mul.mpr ⟨C, ?_⟩) A i
+    (range_le_iff_exists_mul.mpr ⟨C, ?_⟩) A i
   rw [hC, Matrix.mul_assoc]
 
 /-- **RBKI beats RSI with one block fewer**: with $p$ power steps,

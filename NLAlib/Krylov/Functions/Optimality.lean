@@ -27,7 +27,7 @@ is optimal too [ChenPersson2026, Remark 3].
 
 Behind both is one statement for a fixed shift and any norm $\nu(\mathbf{A})$: for any two
 eigenvalues $x_1, x_2$, the ratio of squared errors comes arbitrarily close to
-$(R + 1)^2/(4R)$, $R = \frac{\nu(x_1)(x_2 + s)}{\nu(x_2)(x_1 + s)}$, which is the factor of
+$(R + 1)^2/(4R)$, $R = \nu(x_1)(x_2 + s)/(\nu(x_2)(x_1 + s))$, which is the factor of
 `Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure` for the
 measure $\delta_s$ when $x_1, x_2$ maximise $R$. So that theorem is optimal for every $\nu$ and
 every $s \ge 0$.
@@ -39,7 +39,7 @@ $(z + s)^{-1}$ is CG on $\mathbf{A} + s\mathbf{I}$
 (`Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate`),
 whose residual polynomial $\pi$ is orthogonal to the polynomials of degree less than $q$ in the
 weights $w$ on $T$; so $w\,\pi$ is a multiple of the nodal weights of $T$
-(`exists_eq_mul_nodalWeight`), the paper's Lemma 8 without Ritz values. The best error is a
+(`Lagrange.exists_eq_mul_nodalWeight`), the paper's Lemma 8 without Ritz values. The best error is a
 weighted least-squares distance on $T$ (`isLeast_sum_mul_sq_sub_eval`, the paper's Lemma 9).
 For free positive weights $h$ on $T$ this gives the exact ratio [ChenPersson2026, (15)]
 $$\frac{\sum_T h\varphi^2\,\sum_T h}{(\sum_T h\varphi)^2} \,, \qquad
@@ -101,7 +101,7 @@ $s \ge 0$ and let Lanczos-FA for $(z + s)^{-1}$ be $p(\mathbf{A})\mathbf{b}$ wit
 Then $\pi = 1 - (X + s)p$ satisfies $w_x\pi(x) = c\,W_x$ on $T$ for some $c \ne 0$, $W$ the
 nodal weights of $T$: the Galerkin condition of CG on $\mathbf{A} + s\mathbf{I}$ makes
 $w\,\overline{\pi}$ orthogonal to the polynomials of degree less than $q$ on $T$
-(`exists_eq_mul_nodalWeight`), and $\pi(-s) = 1$ excludes $c = 0$. -/
+(`Lagrange.exists_eq_mul_nodalWeight`), and $\pi(-s) = 1$ excludes $c = 0$. -/
 private theorem exists_mul_eval_eq_mul_nodalWeight {A : Matrix n n 𝕜} (hA : A.PosDef)
     {T : Finset ℝ} {q : ℕ} (hT : #T = q + 1) {w : ℝ → ℝ}
     (hw : ∀ x ∈ T, 0 < w x) {b : n → 𝕜}
@@ -140,11 +140,11 @@ private theorem exists_mul_eval_eq_mul_nodalWeight {A : Matrix n n 𝕜} (hA : A
     rw [cfc_const_one ℝ A, Matrix.one_mulVec, horth r hr] at h
     refine Eq.trans (Finset.sum_congr rfl fun x _ => ?_) h.symm
     rw [mul_one, mul_assoc]
-  obtain ⟨c, hc⟩ := exists_eq_mul_nodalWeight (v := fun x : ℝ => (x : 𝕜))
+  obtain ⟨c, hc⟩ := Lagrange.exists_eq_mul_nodalWeight (v := fun x : ℝ => (x : 𝕜))
     (fun x _ y _ h => RCLike.ofReal_injective h) hT hz
   have hW : ∀ x, Lagrange.nodalWeight T (fun x : ℝ => (x : 𝕜)) x =
       ((Lagrange.nodalWeight T (id : ℝ → ℝ) x : ℝ) : 𝕜) := fun x =>
-    nodalWeight_map (algebraMap ℝ 𝕜) T id x
+    Lagrange.nodalWeight_map (algebraMap ℝ 𝕜) T id x
   have hmain : ∀ x ∈ T, (w x : 𝕜) * π.eval (x : 𝕜) =
       star c * ((Lagrange.nodalWeight T (id : ℝ → ℝ) x : ℝ) : 𝕜) := by
     intro x hx
@@ -403,7 +403,7 @@ $$(1 - \eta)^2\,\frac{(R + 1)^2}{4R}\,\|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{
 \le \|\mathbf{e}\|_{\nu(\mathbf{A})}^2 \,, \qquad
 R = \frac{\nu(x_1)(x_2 + s)}{\nu(x_2)(x_1 + s)} \,,$$
 written in the statement as
-$\frac{(\nu(x_1)(x_2 + s) + \nu(x_2)(x_1 + s))^2}{4\,\nu(x_1)(x_2 + s)\,\nu(x_2)(x_1 + s)}$.
+$(\nu(x_1)(x_2 + s) + \nu(x_2)(x_1 + s))^2/(4\,\nu(x_1)(x_2 + s)\,\nu(x_2)(x_1 + s))$.
 For the pair maximising $R$ this is the factor of
 `Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le_of_hasStieltjesMeasure` for
 $\mu = \delta_s$: the near-optimality factor cannot be improved, for any $\nu$ and any $s$.
@@ -500,7 +500,7 @@ $$\theta\Bigl(\frac{\kappa^{E/2} + \kappa^{-E/2}}{2}\Bigr)^2 \le
 \frac{(\varphi(a) + \varphi(a'))^2}{4\varphi(a)\varphi(a')} \,:$$
 $s = 0$ if $\alpha \le 1/2$ (then $\varphi(a)/\varphi(a') = \kappa^E$), and
 $s = a'/(1 - \theta)$ if $\alpha > 1/2$ (then $\varphi(a')/\varphi(a) =
-\kappa^\alpha\frac{a + s}{a' + s}$ with $\theta \le \frac{a + s}{a' + s} \le 1$). -/
+\kappa^\alpha(a + s)/(a' + s)$ with $\theta \le (a + s)/(a' + s) \le 1$). -/
 private theorem exists_mul_sq_le_rpow {a a' : ℝ} (ha : 0 < a) (haa : a < a') (α : ℝ) {θ : ℝ}
     (hθ : 0 < θ) (hθ₁ : θ < 1) :
     ∃ s : ℝ, 0 ≤ s ∧

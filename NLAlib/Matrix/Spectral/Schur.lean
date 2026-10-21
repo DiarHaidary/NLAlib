@@ -118,7 +118,8 @@ theorem exists_hasOrthonormalCols_isUpperTriangular [LinearOrder n] (A : Matrix 
 /-- The diagonal of a triangular matrix unitarily similar to $\mathbf{A}$ lists the eigenvalues
 of $\mathbf{A}$: if $\mathbf{T} = \mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}$ is upper triangular
 with $\mathbf{U}$ unitary, the $\mathbf{T}_{i,i}$ list the eigenvalues. -/
-theorem isEigenvalueListing_of_isUpperTriangular_conjTranspose_mul_mul [LinearOrder n]
+theorem HasOrthonormalCols.isEigenvalueListing_of_isUpperTriangular_conjTranspose_mul_mul
+    [LinearOrder n]
     {A U : Matrix n n 𝕜} (hU : HasOrthonormalCols U) (hT : (Uᴴ * A * U).IsUpperTriangular) :
     IsEigenvalueListing A fun i => (Uᴴ * A * U) i i := by
   rw [isEigenvalueListing_iff, ← Matrix.charpoly_of_isUpperTriangular _ hT,

@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.ForMathlib.Probability.Moments.Variance
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
@@ -140,6 +141,44 @@ theorem truncatedGNFactor_le_one_add {k l p : ℕ} {ε : ℝ} (hε : 0 < ε) (h�
   rw [show 2 * (k : ℝ) * c = 2 * k * c from rfl] at hs
   linarith
 
+/-- The shared-size comparison of the truncated generalized Nyström factor, for the asymptotic
+form: for $0 < \varepsilon \le 1$, $160k \le \varepsilon\ell$ and
+$160\ell \le \varepsilon p$, <!-- value truncatedGNFactor k \ell p -->
+$$1 + \frac{k}{\ell - k - 1} + 4\sqrt{\frac{2k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}
+\Bigr) + 484\Bigr)} + \frac{8k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr) + 484\Bigr) \le
+1 + \varepsilon\,:$$
+$k/(\ell - k - 1) \le \varepsilon/150$, $k/p \le \varepsilon^2/25600$, and
+$\varepsilon/150 + 4\sqrt{1020/25600}\,\varepsilon + 8 \cdot 510\,\varepsilon^2/25600 \le
+\varepsilon$. -/
+private theorem truncatedGNFactor_le_one_add_of_mul_le {k l p : ℕ} {ε : ℝ} (hε : 0 < ε)
+    (hε1 : ε ≤ 1) (hl : 160 * (k : ℝ) ≤ ε * l) (hp : 160 * (l : ℝ) ≤ ε * p) :
+    truncatedGNFactor k l p ≤ 1 + ε := by
+  rw [truncatedGNFactor_def]
+  rcases Nat.eq_zero_or_pos k with hk | hk
+  · subst hk
+    simp only [gaussianProjectionFactor_def, Nat.cast_zero, zero_div, add_zero, mul_zero,
+      zero_mul, Real.sqrt_zero]
+    linarith
+  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hl' : 160 * (k : ℝ) ≤ l := by nlinarith
+  have hp0 : (0 : ℝ) < p := by nlinarith
+  have hden : 0 < (l : ℝ) - k - 1 := by linarith
+  set g := gaussianProjectionFactor k l with hgdef
+  have hg : g ≤ 1 + ε / 150 := by
+    rw [hgdef, gaussianProjectionFactor_def, add_le_add_iff_left,
+      div_le_div_iff₀ hden (by norm_num)]
+    nlinarith
+  set c := (25 * g + 484) / p with hcdef
+  have hkp : 25600 * (k : ℝ) ≤ ε ^ 2 * p := by nlinarith
+  have hkc : (k : ℝ) * c ≤ 510 / 25600 * ε ^ 2 := by
+    rw [hcdef, mul_div_assoc', div_le_iff₀ hp0]
+    nlinarith
+  have hs : √(2 * k * c) ≤ 0.2 * ε := by
+    rw [show (0.2 : ℝ) * ε = √((0.2 * ε) ^ 2) from (Real.sqrt_sq (by positivity)).symm]
+    exact Real.sqrt_le_sqrt (by nlinarith)
+  have h8 : 8 * k * c ≤ 0.16 * ε := by nlinarith
+  linarith
+
 /-! ### Helpers: conditioning, Jensen, the joint rank event -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Type*} [Fintype m]
@@ -180,14 +219,6 @@ private theorem integrable_and_integral_comp_le_of_indepFun {α β : Type*} [Mea
   · rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hF0 _) hm,
       integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hH0 _) hHi.aestronglyMeasurable]
     exact ENNReal.toReal_mono hHi.lintegral_lt_top.ne hL
-
-/-- Jensen for the square: $\mathbb{E}f \le \sqrt{\mathbb{E}f^2}$. -/
-private theorem integral_le_sqrt_integral_sq [IsProbabilityMeasure μ] {f : Ω → ℝ}
-    (hf : MemLp f 2 μ) : ∫ ω, f ω ∂μ ≤ √(∫ ω, f ω ^ 2 ∂μ) := by
-  have hvar := variance_nonneg f μ
-  rw [variance_eq_sub hf] at hvar
-  simp only [Pi.pow_apply] at hvar
-  exact (le_abs_self _).trans (Real.abs_le_sqrt (by linarith))
 
 /-- The joint rank event of the two test matrices: almost surely
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) =
@@ -242,7 +273,7 @@ private theorem measurable_specNorm_obliqueProjector_sub_rsvd_sq (A : Matrix m n
 /-- The arithmetic of the spectral residual: from $\ell\sigma^2 \le 4\,\mathrm{OPT}^2$,
 $w \le \mathrm{OPT}$, $h \le 3$ and $\ell\beta^2 \le 32.4$ with $\ell \ge 4$, the second-moment
 bound $\sigma^2 + (\sigma\sqrt h + \beta w)^2 + \sigma^2\beta^2$ is at most
-$\frac{121}{\ell}\mathrm{OPT}^2$. -/
+$(121/\ell)\mathrm{OPT}^2$. -/
 private theorem residual_arith {L u w O h β : ℝ} (hL : 4 ≤ L) (hw0 : 0 ≤ w)
     (hwO : w ≤ O) (hu : L * u ^ 2 ≤ 4 * O ^ 2) (hh0 : 0 ≤ h) (hh : h ≤ 3)
     (hβ : L * β ^ 2 ≤ 32.4) :
@@ -268,7 +299,7 @@ private theorem residual_arith {L u w O h β : ℝ} (hL : 4 ≤ L) (hw0 : 0 ≤ 
   nlinarith [mul_le_mul_of_nonneg_left hcross hL0.le]
 
 /-- The constants of the range finder at the comparison rank $j = \lceil \ell/2 \rceil$: for
-$\ell \ge 4$, $\frac{j}{\ell - j - 1} \le 3$. -/
+$\ell \ge 4$, $j/(\ell - j - 1) \le 3$. -/
 private theorem div_le_three_of_half {L j : ℕ} (hL : 4 ≤ L) (hj : j = (L + 1) / 2) :
     (j : ℝ) / ((L : ℝ) - j - 1) ≤ 3 := by
   rcases (by omega : L = 4 ∨ 5 ≤ L) with h | h
@@ -318,7 +349,7 @@ private theorem mul_gaussianPinvSpecNormBound_sq_le_of_half {L j : ℕ} (hL : 4 
 /-- **The spectral residual of the range finder**: for a standard Gaussian $n \times \ell$ test
 matrix, $k \ge 1$ and $4k \le \ell$,
 $\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le
-\frac{121}{\ell}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$, from the second
+(121/\ell)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$, from the second
 spectral moment at the comparison rank $\lceil \ell/2 \rceil$ and the tail flattening. -/
 private theorem integral_specNorm_sub_rsvd_sq_le_div (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : 1 ≤ k) (hkl : 4 * k ≤ Fintype.card l) :
@@ -358,7 +389,7 @@ set_option linter.style.longLine false in
 matrices, $k \ge 1$, $4k \le \ell$ and $4\ell \le p$, the core noise
 $e = \|\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}(\mathbf{A} -
 \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))\|_2$ is square integrable with
-$\mathbb{E}e^2 \le \frac{25g + 484}{p}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+$\mathbb{E}e^2 \le ((25g + 484)/p)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
 \|_{\mathsf{F}}^2$, $g$ the value of the Gaussian projection factor at $(k, \ell)$. -/
 private theorem integral_specNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ)
@@ -439,7 +470,7 @@ private theorem integral_specNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
 matrices, any law of the range test matrix and $\ell + 2 \le p$, the core noise
 $\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))$ is square integrable with
-$\mathbb{E}\|\mathbf{N}\|_{\mathsf{F}}^2 \le \frac{\ell}{p - \ell - 1}\,
+$\mathbb{E}\|\mathbf{N}\|_{\mathsf{F}}^2 \le (\ell/(p - \ell - 1))\,
 \mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2$. -/
 private theorem integral_frobNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ)
@@ -508,14 +539,15 @@ theorem integrable_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_of_hasLaw_gau
   have hm : AEStronglyMeasurable
       (fun ω => frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2) μ :=
     (((continuous_frobNorm.measurable.comp (measurable_const.sub
-      ((measurable_generalizedNystrom A).truncatedSVD k))).pow_const 2).comp_aemeasurable
+      ((measurable_truncatedSVD k).comp
+        (measurable_generalizedNystrom A)))).pow_const 2).comp_aemeasurable
         (hX.prodMk hΨ.aemeasurable)).aestronglyMeasurable
   have hB : Integrable (fun ω => 8 * frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 +
       2 * frobNorm (A - truncatedSVD A k) ^ 2) μ :=
     (hgn.const_mul 8).add (integrable_const _)
   refine hB.mono' hm (ae_of_all _ fun ω => ?_)
   have h := (isBestRankApprox_truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k
-    ).matrixNorm_sub_le_add_two_mul (lpGauge 2 one_le_two) A
+    ).matrixNorm_sub_le_add_two_mul (lpGauge 2) A
   simp only [lpGauge_two_matrixNorm] at h
   rw [Real.norm_of_nonneg (sq_nonneg _)]
   have h2 := pow_le_pow_left₀ (frobNorm_nonneg _) h 2
@@ -656,8 +688,9 @@ $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 The asymptotic form of
-`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`;
-the proof takes $C = 8000$ and $\varepsilon_0 = 1$.
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`
+through the factor's comparison at one shared $C$; the proof takes $C = 160$ and
+$\varepsilon_0 = 1$, against the explicit theorem's $6$ and $8000$ for the two sizes.
 Asymptotic:
 NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
 Result: tgn-expected-error -/
@@ -671,15 +704,24 @@ theorem
       C * ((Fintype.card l : ℝ) / ε) ≤ Fintype.card p →
       ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
         (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  refine ⟨8000, 1, by norm_num, one_pos, ?_⟩
+  refine ⟨160, 1, by norm_num, one_pos, ?_⟩
   intro Ω m n l p _ _ _ _ _ μ A X Ψ k ε hX hΨ hXΨ hε hε1 hl hp
   rw [← mul_div_assoc, div_le_iff₀ hε] at hl hp
-  exact
-    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
-      A hX hΨ hXΨ hε hε1 (by nlinarith [Nat.cast_nonneg (α := ℝ) k]) (by linarith)
+  have hl' : 160 * (k : ℝ) ≤ ε * Fintype.card l := by linarith
+  have hp' : 160 * (Fintype.card l : ℝ) ≤ ε * Fintype.card p := by linarith
+  have hkl : 4 * k ≤ Fintype.card l := by
+    have : 4 * (k : ℝ) ≤ Fintype.card l := by nlinarith [Nat.cast_nonneg (α := ℝ) k]
+    exact_mod_cast this
+  have hlp : 4 * Fintype.card l ≤ Fintype.card p := by
+    have : 4 * (Fintype.card l : ℝ) ≤ Fintype.card p := by
+      nlinarith [Nat.cast_nonneg (α := ℝ) (Fintype.card l)]
+    exact_mod_cast this
+  exact (integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix A hX
+    hΨ hXΨ hkl hlp).trans (mul_le_mul_of_nonneg_right
+      (truncatedGNFactor_le_one_add_of_mul_le hε hε1 hl' hp') (sq_nonneg _))
 
 /-- **Truncated generalized Nyström, Frobenius core-noise form**: for independent standard Gaussian
-test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \frac{\ell}{p - \ell - 1}$,
+test matrices, $k + 2 \le \ell$ and $\ell + 2 \le p$, writing $h = \ell/(p - \ell - 1)$,
 the bound is <!-- value gaussianProjectionFactor k \ell -->
 $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1} +

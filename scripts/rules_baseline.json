@@ -1,0 +1,46 @@
+{
+ "_comment": "Ratchet of scripts/check_rules.py (CONTRIBUTING §9): per error rule and file, the violations that existed when the rule became checked. Counts may only fall; regenerate with `python3 scripts/check_rules.py DATA.json --update-baseline`.",
+ "rules": {
+  "C1": {
+   "NLAlib/ForMathlib/Probability/Martingale/OptionalStopping.lean": 1,
+   "NLAlib/Krylov/LinearSystems/MINRES.lean": 4,
+   "NLAlib/Krylov/LinearSystems/PCG.lean": 1,
+   "NLAlib/Krylov/LinearSystems/WorstCase.lean": 1,
+   "NLAlib/Krylov/Processes/Lanczos.lean": 1,
+   "NLAlib/Krylov/Processes/PreconditionedLanczos.lean": 1,
+   "NLAlib/Matrix/Basic/SchurComplement.lean": 1,
+   "NLAlib/Matrix/Factorizations/Cholesky.lean": 1,
+   "NLAlib/Matrix/Functions/LogDet.lean": 1,
+   "NLAlib/Matrix/Inequalities/Order.lean": 1,
+   "NLAlib/Matrix/Majorization/KyFan.lean": 2,
+   "NLAlib/Matrix/Norms/Nuclear.lean": 1,
+   "NLAlib/Matrix/Perturbation/DavisKahan.lean": 1,
+   "NLAlib/Matrix/Perturbation/Wedin.lean": 1,
+   "NLAlib/Matrix/Spectral/Inertia.lean": 1,
+   "NLAlib/Matrix/Spectral/InertiaElimination.lean": 1,
+   "NLAlib/Matrix/Spectral/LowRank.lean": 2,
+   "NLAlib/Matrix/Spectral/SVD.lean": 1,
+   "NLAlib/Matrix/Subspaces/ProjectorPair.lean": 1,
+   "NLAlib/Probability/SubGaussianVector/Norm.lean": 1,
+   "NLAlib/Sketching/Gaussian/HaarEmbedding.lean": 6
+  },
+  "C2": {
+   "NLAlib/ForMathlib/MeasureTheory/Constructions/BorelSpace/MeasurableSelection.lean": 2,
+   "NLAlib/Krylov/Functions/Optimality.lean": 1,
+   "NLAlib/Krylov/LinearSystems/WorstCase.lean": 4,
+   "NLAlib/Matrix/Perturbation/Continuity.lean": 1,
+   "NLAlib/Matrix/Perturbation/DavisKahan.lean": 6,
+   "NLAlib/Matrix/Perturbation/LeastSquares.lean": 1,
+   "NLAlib/Matrix/Perturbation/Pseudoinverse.lean": 6,
+   "NLAlib/Matrix/Perturbation/Sylvester.lean": 1,
+   "NLAlib/Matrix/Perturbation/Wedin.lean": 6,
+   "NLAlib/Matrix/Subspaces/Oblique.lean": 4,
+   "NLAlib/Matrix/Subspaces/ObliqueBases.lean": 2,
+   "NLAlib/Polynomial/Chebyshev/ResidualMinimax.lean": 1,
+   "NLAlib/Probability/BoundedDifferences.lean": 2,
+   "NLAlib/Probability/Distributions/GaussianComparison.lean": 2,
+   "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
+   "NLAlib/Probability/Tail.lean": 1
+  }
+ }
+}

@@ -71,7 +71,7 @@ semidefinite $\mathbf{H}$,
 $$\operatorname{Re}\langle\mathbf{x}, (\mathbf{H}/\mathbf{\Omega})\mathbf{x}\rangle =
 \min_{\mathbf{y}} \operatorname{Re}\langle\mathbf{x}-\mathbf{\Omega}\mathbf{y},
 \mathbf{H}(\mathbf{x}-\mathbf{\Omega}\mathbf{y})\rangle\,,$$
-the minimum attained. An instance of `NLAlib.isLeast_re_quadForm_fromBlocks`.
+the minimum attained. An instance of `Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks`.
 [MartinssonTropp2020, §2.7]; [HornJohnson2013, §7.7]. -/
 theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_sub_mulVec {H : Matrix n n 𝕜}
     (hH : H.PosSemidef) (Ω : Matrix n l 𝕜) (x : n → 𝕜) :
@@ -87,7 +87,7 @@ theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_sub_mulVec {H : Matrix n n 
   have hPSD : (Matrix.fromBlocks (Ωᴴ * H * Ω) (Ωᴴ * H) (Ωᴴ * H)ᴴ H).PosSemidef := by
     rw [← hblk]
     exact hH.conjTranspose_mul_mul_same _
-  have hL := isLeast_re_quadForm_fromBlocks hPSD x
+  have hL := Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks hPSD x
   have hschur : H - (Ωᴴ * H)ᴴ * pinv (Ωᴴ * H * Ω) * (Ωᴴ * H) = H - nystrom H Ω := by
     rw [nystrom_def, Matrix.conjTranspose_mul, hH.isHermitian.eq,
       Matrix.conjTranspose_conjTranspose]
@@ -142,7 +142,8 @@ private theorem re_quadForm_sum_smul {ι : Type*} (s : Finset ι) (w : ι → �
 /-- **Concavity of the Schur complement** $\mathbf{H} \mapsto \mathbf{H}/\mathbf{\Omega}$, as
 superadditivity with nonnegative weights: for positive semidefinite $\mathbf{H}_i$ and $w_i \ge 0$,
 $$\sum_i w_i (\mathbf{H}_i/\mathbf{\Omega}) \preceq
-\Bigl(\sum_i w_i \mathbf{H}_i\Bigr)/\mathbf{\Omega}\,.$$
+\Bigl(\sum_i w_i \mathbf{H}_i\Bigr)/\mathbf{\Omega}\,,$$
+where $\mathbf{H}/\mathbf{\Omega} = \mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$.
 Weights summing to one give concavity, equal weights the group average of a symmetrisation.
 [EpperlyWebber2026, Fact 6.1(c)]; there with weights summing to one.
 Result: schur-complement-concave -/
@@ -180,9 +181,9 @@ theorem _root_.Matrix.PosSemidef.nystrom_le_nystrom_of_range_le [Fintype q] {H :
   rw [hH.nystrom_eq, hH.nystrom_eq]
   have hR : (CFC.sqrt H)ᴴ = CFC.sqrt H :=
     (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg H)).isHermitian.eq
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp h
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp h
   have hP : rangeProjector (CFC.sqrt H * Ω) ≤ rangeProjector (CFC.sqrt H * Ω') :=
-    rangeProjector_mono (range_mulVecLin_le_iff_exists_mul.mpr
+    rangeProjector_mono (range_le_iff_exists_mul.mpr
       ⟨C, by rw [Matrix.mul_assoc, ← hC]⟩)
   have := conjTranspose_mul_mul_le_conjTranspose_mul_mul hP (CFC.sqrt H)
   rwa [hR] at this
@@ -383,70 +384,19 @@ private theorem HasOrthonormalCols.posSemidef_one_sub_toRows₁_mul_conjTranspos
     one_smul, Matrix.conjTranspose_conjTranspose, Matrix.le_iff] at h1
   exact h1
 
-/-- **The trace error of Nyström for a matrix with two eigenvalues**: for $\mathbf{\Psi}$ with
-orthonormal columns, rows split as $\mathbf{\Psi}_1$ (indexed by $s$) and $\mathbf{\Psi}_2$, and
-$a, b > 0$,
-$$\|\mathbf{D} - \mathsf{nystrom}(\mathbf{D}, \mathbf{\Psi})\|_* =
-b(\lvert t\rvert - \ell) + ab\operatorname{tr}\bigl(b\mathbf{I} + (a-b)\mathbf{\Psi}_1
-\mathbf{\Psi}_1^{\mathsf{H}}\bigr)^{-1},\qquad
-\mathbf{D} = \begin{bmatrix} a\mathbf{I} & \mathbf{0} \\ \mathbf{0} & b\mathbf{I}\end{bmatrix}.$$
-The inverse exists: $b\mathbf{I} + (a-b)\mathbf{\Psi}_1\mathbf{\Psi}_1^{\mathsf{H}}$ has its
-spectrum between $a$ and $b$.
-[EpperlyWebber2026, proof of Lemma 6.2]; there with $a > b$ through a QR factor of
-$\mathbf{\Psi}^{\mathsf{H}}$, here basis-free and for all $a, b > 0$. EW's display after "another
-explicit calculation" divides by $a - b$ with a slip ($\frac{b}{a-b}\mathbf{I}$, not
-$\frac{b}{a-b}\mathbf{R}_2\mathbf{R}_2^{*}$); the identity here is derived independently. -/
-theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
-    {Ψ : Matrix (s ⊕ t) l 𝕜} (hΨ : HasOrthonormalCols Ψ) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
-    nuclearNorm (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • 1) -
-        nystrom (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • 1)) Ψ) =
-      b * ((Fintype.card t : ℝ) - Fintype.card l) +
-        a * b * RCLike.re
-          ((b • (1 : Matrix s s 𝕜) + (a - b) • (Ψ.toRows₁ * (Ψ.toRows₁)ᴴ))⁻¹).trace := by
-  set K := Ψ.toRows₁
-  set D := Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • (1 : Matrix t t 𝕜)) with hD
-  have hG := hΨ.toRows_gram
-  have hX0 : (Kᴴ * K).PosSemidef := Matrix.posSemidef_conjTranspose_mul_self K
-  have hX1 : (1 - Kᴴ * K).PosSemidef := by
-    rw [← hG, add_sub_cancel_left]
-    exact Matrix.posSemidef_conjTranspose_mul_self _
-  have hY0 : (K * Kᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose K
-  have hY1 : (1 - K * Kᴴ).PosSemidef := hΨ.posSemidef_one_sub_toRows₁_mul_conjTranspose
+omit [DecidableEq t] in
+/-- The trace step of the two-level Nyström error: for $\mathbf{M} = b\mathbf{I} +
+(a-b)\mathbf{K}^{\mathsf{H}}\mathbf{K}$ and $\mathbf{N} = b\mathbf{I} + (a-b)\mathbf{K}
+\mathbf{K}^{\mathsf{H}}$ invertible, $b\operatorname{tr}\mathbf{M}^{-1} -
+b\operatorname{tr}\mathbf{N}^{-1} = \ell - \lvert s\rvert$. -/
+private theorem trace_inv_smul_one_add_smul_sub [DecidableEq l] (K : Matrix s l 𝕜) (a b : ℝ)
+    (hMu : IsUnit (b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K)).det)
+    (hNu : IsUnit (b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ)).det) :
+    (b : 𝕜) * ((b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K))⁻¹).trace -
+        (b : 𝕜) * ((b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ))⁻¹).trace =
+      Fintype.card l - Fintype.card s := by
   set M := b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K) with hMdef
   set N := b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ) with hNdef
-  have hM : M.PosDef := posDef_smul_one_add_smul hX0 hX1 ha hb
-  have hN : N.PosDef := posDef_smul_one_add_smul hY0 hY1 ha hb
-  have hMu : IsUnit M.det := (Matrix.isUnit_iff_isUnit_det M).mp hM.isUnit
-  have hNu : IsUnit N.det := (Matrix.isUnit_iff_isUnit_det N).mp hN.isUnit
-  have hL : (Ψ.toRows₂)ᴴ * Ψ.toRows₂ = 1 - Kᴴ * K := eq_sub_of_add_eq' hG
-  have hMD : Ψᴴ * D * Ψ = M := by
-    rw [conjTranspose_mul_fromBlocks_mul, hL, hMdef]
-    module
-  have hDD : D * D = Matrix.fromBlocks ((a * a) • (1 : Matrix s s 𝕜)) 0 0
-      ((b * b) • (1 : Matrix t t 𝕜)) := by
-    rw [hD, Matrix.fromBlocks_multiply]
-    simp only [Matrix.mul_smul, Matrix.mul_one, Matrix.mul_zero, add_zero, zero_add, smul_smul,
-      smul_zero]
-  have hQ : Ψᴴ * D * (D * Ψ) = (a + b) • M - (a * b) • (1 : Matrix l l 𝕜) := by
-    rw [← Matrix.mul_assoc, Matrix.mul_assoc Ψᴴ, hDD, conjTranspose_mul_fromBlocks_mul, hL, hMdef]
-    module
-  -- the trace of the error
-  have hpinv : pinv M = M⁻¹ := pinv_of_isUnit hM.isUnit
-  have hDh : Dᴴ = D := (posSemidef_fromBlocks_smul_one ha.le hb.le).isHermitian.eq
-  have hD1 : D.trace = (a : 𝕜) * Fintype.card s + (b : 𝕜) * Fintype.card t := by
-    rw [hD, Matrix.trace_fromBlocks, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
-      Matrix.trace_one, RCLike.real_smul_eq_coe_mul, RCLike.real_smul_eq_coe_mul]
-  have hnys : (nystrom D Ψ).trace =
-      ((a : 𝕜) + b) * Fintype.card l - (a : 𝕜) * b * (M⁻¹).trace := by
-    rw [nystrom_def, hMD, hpinv]
-    have e : D * Ψ * M⁻¹ * Ψᴴ * D = (D * Ψ) * (M⁻¹ * (Ψᴴ * D)) := by
-      simp only [Matrix.mul_assoc]
-    rw [e, Matrix.trace_mul_comm, Matrix.mul_assoc, hQ, Matrix.mul_sub, Matrix.mul_smul,
-      Matrix.mul_smul, Matrix.nonsing_inv_mul _ hMu, Matrix.mul_one, Matrix.trace_sub,
-      Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one, RCLike.real_smul_eq_coe_mul,
-      RCLike.real_smul_eq_coe_mul]
-    push_cast
-    ring
   have hKM : K * M = N * K := by
     rw [hMdef, hNdef]
     simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
@@ -479,6 +429,72 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
       RCLike.real_smul_eq_coe_mul, RCLike.real_smul_eq_coe_mul] at e2
     push_cast at e2
     exact e2
+  linear_combination h1 - h2
+
+/-- **The trace error of Nyström for a matrix with two eigenvalues**: for $\mathbf{\Psi}$ with
+orthonormal columns, rows split as $\mathbf{\Psi}_1$ (indexed by $s$) and $\mathbf{\Psi}_2$, and
+$a, b > 0$,
+$$\|\mathbf{D} - \mathsf{nystrom}(\mathbf{D}, \mathbf{\Psi})\|_* =
+b(\lvert t\rvert - \ell) + ab\operatorname{tr}\bigl(b\mathbf{I} + (a-b)\mathbf{\Psi}_1
+\mathbf{\Psi}_1^{\mathsf{H}}\bigr)^{-1},\qquad
+\mathbf{D} = \begin{bmatrix} a\mathbf{I} & \mathbf{0} \\ \mathbf{0} & b\mathbf{I}\end{bmatrix}.$$
+The inverse exists: $b\mathbf{I} + (a-b)\mathbf{\Psi}_1\mathbf{\Psi}_1^{\mathsf{H}}$ has its
+spectrum between $a$ and $b$.
+[EpperlyWebber2026, proof of Lemma 6.2]; there with $a > b$ through a QR factor of
+$\mathbf{\Psi}^{\mathsf{H}}$, here basis-free and for all $a, b > 0$. EW's display after "another
+explicit calculation" divides by $a - b$ with a slip ($(b/(a-b))\mathbf{I}$, not
+$(b/(a-b))\mathbf{R}_2\mathbf{R}_2^{\mathsf{H}}$); the identity here is derived independently. -/
+theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
+    {Ψ : Matrix (s ⊕ t) l 𝕜} (hΨ : HasOrthonormalCols Ψ) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
+    nuclearNorm (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • 1) -
+        nystrom (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • 1)) Ψ) =
+      b * ((Fintype.card t : ℝ) - Fintype.card l) +
+        a * b * RCLike.re
+          ((b • (1 : Matrix s s 𝕜) + (a - b) • (Ψ.toRows₁ * (Ψ.toRows₁)ᴴ))⁻¹).trace := by
+  set K := Ψ.toRows₁
+  set D := Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • (1 : Matrix t t 𝕜)) with hD
+  have hG := hΨ.toRows_gram
+  have hX0 : (Kᴴ * K).PosSemidef := Matrix.posSemidef_conjTranspose_mul_self K
+  have hX1 : (1 - Kᴴ * K).PosSemidef := by
+    rw [← hG, add_sub_cancel_left]
+    exact Matrix.posSemidef_conjTranspose_mul_self _
+  have hY0 : (K * Kᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose K
+  have hY1 : (1 - K * Kᴴ).PosSemidef := hΨ.posSemidef_one_sub_toRows₁_mul_conjTranspose
+  set M := b • (1 : Matrix l l 𝕜) + (a - b) • (Kᴴ * K) with hMdef
+  set N := b • (1 : Matrix s s 𝕜) + (a - b) • (K * Kᴴ)
+  have hM : M.PosDef := posDef_smul_one_add_smul hX0 hX1 ha hb
+  have hN : N.PosDef := posDef_smul_one_add_smul hY0 hY1 ha hb
+  have hMu : IsUnit M.det := (Matrix.isUnit_iff_isUnit_det M).mp hM.isUnit
+  have hNu : IsUnit N.det := (Matrix.isUnit_iff_isUnit_det N).mp hN.isUnit
+  have hL : (Ψ.toRows₂)ᴴ * Ψ.toRows₂ = 1 - Kᴴ * K := eq_sub_of_add_eq' hG
+  have hMD : Ψᴴ * D * Ψ = M := by
+    rw [conjTranspose_mul_fromBlocks_mul, hL, hMdef]
+    module
+  have hDD : D * D = Matrix.fromBlocks ((a * a) • (1 : Matrix s s 𝕜)) 0 0
+      ((b * b) • (1 : Matrix t t 𝕜)) := by
+    rw [hD, Matrix.fromBlocks_multiply]
+    simp only [Matrix.mul_smul, Matrix.mul_one, Matrix.mul_zero, add_zero, zero_add, smul_smul,
+      smul_zero]
+  have hQ : Ψᴴ * D * (D * Ψ) = (a + b) • M - (a * b) • (1 : Matrix l l 𝕜) := by
+    rw [← Matrix.mul_assoc, Matrix.mul_assoc Ψᴴ, hDD, conjTranspose_mul_fromBlocks_mul, hL, hMdef]
+    module
+  -- the trace of the error
+  have hpinv : pinv M = M⁻¹ := pinv_of_isUnit hM.isUnit
+  have hD1 : D.trace = (a : 𝕜) * Fintype.card s + (b : 𝕜) * Fintype.card t := by
+    rw [hD, Matrix.trace_fromBlocks, Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one,
+      Matrix.trace_one, RCLike.real_smul_eq_coe_mul, RCLike.real_smul_eq_coe_mul]
+  have hnys : (nystrom D Ψ).trace =
+      ((a : 𝕜) + b) * Fintype.card l - (a : 𝕜) * b * (M⁻¹).trace := by
+    rw [nystrom_def, hMD, hpinv]
+    have e : D * Ψ * M⁻¹ * Ψᴴ * D = (D * Ψ) * (M⁻¹ * (Ψᴴ * D)) := by
+      simp only [Matrix.mul_assoc]
+    rw [e, Matrix.trace_mul_comm, Matrix.mul_assoc, hQ, Matrix.mul_sub, Matrix.mul_smul,
+      Matrix.mul_smul, Matrix.nonsing_inv_mul _ hMu, Matrix.mul_one, Matrix.trace_sub,
+      Matrix.trace_smul, Matrix.trace_smul, Matrix.trace_one, RCLike.real_smul_eq_coe_mul,
+      RCLike.real_smul_eq_coe_mul]
+    push_cast
+    ring
+  have h12 := trace_inv_smul_one_add_smul_sub K a b hMu hNu
   have hE : (D - nystrom D Ψ).PosSemidef :=
     Matrix.le_iff.mp ((posSemidef_fromBlocks_smul_one ha.le hb.le).nystrom_le Ψ)
   have key : D.trace - (nystrom D Ψ).trace =
@@ -486,7 +502,7 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
         ((a * b : ℝ) : 𝕜) * (N⁻¹).trace := by
     rw [hD1, hnys]
     push_cast
-    linear_combination (a : 𝕜) * (h1 - h2)
+    linear_combination (a : 𝕜) * h12
   rw [hE.nuclearNorm_eq_re_trace, Matrix.trace_sub, key, map_add, RCLike.ofReal_re,
     RCLike.re_ofReal_mul]
 
@@ -538,9 +554,13 @@ private theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom_le_of_pos 
     field_simp
   linarith
 
-/-- **The pointwise bound behind Epperly and Webber's sharp bounds**: with the notation of
-`NLAlib.HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom`, $\mathbf{\Psi}_1$ of full row
-rank and any $a, b \ge 0$,
+/-- **The pointwise bound behind Epperly and Webber's sharp bounds**: let $\mathbf{\Psi}$ have
+$\ell = \lvert l \rvert$ orthonormal columns and rows indexed by $s \sqcup t$, split as
+$\mathbf{\Psi}_1$ (the rows indexed by $s$) and $\mathbf{\Psi}_2$ (those indexed by $t$), with
+$\mathbf{\Psi}_1$ of full row rank ($\mathbf{\Psi}_1^{\mathsf{H}}$ injective), and let
+$a, b \ge 0$ and
+$\mathbf{D} = \begin{bmatrix} a\mathbf{I} & \mathbf{0} \\ \mathbf{0} & b\mathbf{I}\end{bmatrix}$
+(blocks indexed by $s$ and $t$). Then
 $$\|\mathbf{D} - \mathsf{nystrom}(\mathbf{D}, \mathbf{\Psi})\|_* \le
 b\,\|\mathbf{\Psi}_1^{+}\|_{\mathsf{F}}^2 + b(\lvert t\rvert - \ell)\,,$$
 independent of $a$: the error of the two-level matrix is at most its limit as $a \to \infty$.

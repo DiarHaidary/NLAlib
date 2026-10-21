@@ -44,10 +44,10 @@ $$\operatorname{Var}\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q
 \Bigr)\,,$$
 from invariance and the fourth moment of a projected sphere vector. Its case
 $\lvert k \rvert = 1$ is the variance of the Girard–Hutchinson estimate with a probe uniform on
-the sphere of radius $\sqrt{\lvert n \rvert}$, $\frac{2\lvert n \rvert}{\lvert n \rvert + 2}
+the sphere of radius $\sqrt{\lvert n \rvert}$, $(2\lvert n \rvert/(\lvert n \rvert + 2))
 (\|\mathbf{A}\|_{\mathsf{F}}^2 - (\operatorname{tr}\mathbf{A})^2/\lvert n \rvert)$, and the
 complex sphere of $\mathbb{C}^n$, the image of the real sphere of $\mathbb{R}^{n \sqcup n}$, gives
-$\frac{\lvert n \rvert}{\lvert n \rvert + 1}(\|\mathbf{A}\|_{\mathsf{F}}^2 -
+$(\lvert n \rvert/(\lvert n \rvert + 1))(\|\mathbf{A}\|_{\mathsf{F}}^2 -
 \lvert\operatorname{tr}\mathbf{A}\rvert^2/\lvert n \rvert)$ for every complex $\mathbf{A}$
 (Epperly's reduction to the real case). The $m$-probe estimator is
 `NLAlib/Estimation/Trace/GirardHutchinson.lean`.

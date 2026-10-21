@@ -21,22 +21,22 @@ method of exchangeable pairs for random matrices use.
 
 ## Main results
 
-* `NLAlib.re_trace_cfc_mul_cfc_eq_sum`: the overlap formula.
-* `NLAlib.sum_re_trace_cfc_mul_cfc_le_of_forall`: lifting a two-variable inequality.
+* `NLAlib.HasOrthonormalCols.re_trace_cfc_mul_cfc_eq_sum`: the overlap formula.
+* `Matrix.IsHermitian.sum_re_trace_cfc_mul_cfc_le_of_forall`: lifting a two-variable inequality.
 * `Matrix.IsHermitian.re_trace_pow_nonneg`, `Matrix.PosSemidef.re_trace_pow_nonneg`,
   `Matrix.IsHermitian.re_trace_pow_le_card_mul_specNorm_pow`: traces of powers through the
   eigenvalues (`Matrix.IsHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow`); the moment bound for
   the spectral norm is `NLAlib.specNorm_pow_le_re_trace_pow`.
-* `NLAlib.re_trace_mul_diagonal_mul_mul_diagonal`:
+* `Matrix.IsHermitian.re_trace_mul_diagonal_mul_mul_diagonal`:
   $\operatorname{tr}(\mathbf{C} \operatorname{diag}(\mathbf{x}) \mathbf{C}
   \operatorname{diag}(\mathbf{y}))$
   as a weighted sum.
-* `NLAlib.re_trace_mul_pow_mul_pow_le`:
+* `Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le`:
   $\operatorname{tr}(\mathbf{C}\mathbf{H}^l\mathbf{C}\mathbf{H}^k)
   \le \operatorname{tr}(\mathbf{C}^2\mathbf{H}^{l+k})$ for even $l + k$.
 * `NLAlib.re_trace_cfc_sub_mul_cfc_sub_le`: the mean value trace inequality.
-* `NLAlib.re_trace_mul_pow_le_add`, `NLAlib.re_trace_mul_le_re_trace_rpow_add`: trace Young.
--/
+* `Matrix.PosSemidef.re_trace_mul_pow_le_add`,
+  `Matrix.PosSemidef.re_trace_mul_le_re_trace_rpow_add`: trace Young. -/
 
 @[expose] public section
 
@@ -57,15 +57,16 @@ $$\operatorname{Re} \operatorname{tr}(f(\mathbf{A}) g(\mathbf{B}))
   = \sum_{i, j} \lvert (\mathbf{U}^{\mathsf{H}}\mathbf{V})_{i,j} \rvert^2 f(\mathbf{a}_i)
   g(\mathbf{b}_j) \,.$$
 Port of `NLAlib.re_trace_pow_mul_pow_eq_sum_overlap`, there for powers over $\mathbb{C}$. -/
-theorem re_trace_cfc_mul_cfc_eq_sum {r s : Type*} [Fintype r] [Fintype s] [DecidableEq r]
+theorem HasOrthonormalCols.re_trace_cfc_mul_cfc_eq_sum {r s : Type*} [Fintype r] [Fintype s]
+    [DecidableEq r]
     [DecidableEq s] {A B : Matrix n n 𝕜} {U : Matrix n r 𝕜} {V : Matrix n s 𝕜} {a : r → ℝ}
     {b : s → ℝ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
     (hr : Fintype.card r = Fintype.card n) (hs : Fintype.card s = Fintype.card n)
     (hA : A = U * Matrix.diagonal (fun i => ((a i : ℝ) : 𝕜)) * Uᴴ)
     (hB : B = V * Matrix.diagonal (fun i => ((b i : ℝ) : 𝕜)) * Vᴴ) (f g : ℝ → ℝ) :
     RCLike.re (cfc f A * cfc g B).trace = ∑ i, ∑ j, ‖(Uᴴ * V) i j‖ ^ 2 * (f (a i) * g (b j)) := by
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hA,
-    cfc_eq_mul_diagonal_mul_conjTranspose hV hs hB]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hA,
+    HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hV hs hB]
   have hw : Vᴴ * U = (Uᴴ * V)ᴴ := by
     rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
   have h1 : (U * Matrix.diagonal (fun i => ((f (a i) : ℝ) : 𝕜)) * Uᴴ *
@@ -97,7 +98,7 @@ private theorem exists_re_trace_cfc_mul_cfc_eq_sum {A B : Matrix n n 𝕜} (hA :
   obtain ⟨V, hV, hBV⟩ := hB.exists_eq_mul_diagonal_mul_conjTranspose
   have hr := Fintype.card_fin (Fintype.card n)
   exact ⟨fun i j => ‖(Uᴴ * V) i j‖ ^ 2, fun i j => by positivity,
-    fun f g => re_trace_cfc_mul_cfc_eq_sum hU hV hr hr hAU hBV f g⟩
+    fun f g => HasOrthonormalCols.re_trace_cfc_mul_cfc_eq_sum hU hV hr hr hAU hBV f g⟩
 
 /-- **Lifting a two-variable inequality to traces.** For Hermitian $\mathbf{A}$, $\mathbf{B}$ and
 finitely many functions, if $\sum_k f_k(x) g_k(y) \le \sum_k f'_k(x) g'_k(y)$ for all $x$ in the
@@ -105,7 +106,8 @@ spectrum of $\mathbf{A}$ and $y$ in that of $\mathbf{B}$, then
 $$\sum_k \operatorname{Re} \operatorname{tr}(f_k(\mathbf{A}) g_k(\mathbf{B}))
   \le \sum_k \operatorname{Re} \operatorname{tr}(f'_k(\mathbf{A}) g'_k(\mathbf{B})) \,.$$
 [Tropp2015, Proposition 8.3.5]. -/
-theorem sum_re_trace_cfc_mul_cfc_le_of_forall {ι : Type*} [Fintype ι] {A B : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.sum_re_trace_cfc_mul_cfc_le_of_forall {ι : Type*} [Fintype ι]
+    {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) {f g f' g' : ι → ℝ → ℝ}
     (h : ∀ x ∈ spectrum ℝ A, ∀ y ∈ spectrum ℝ B,
       ∑ k, f k x * g k y ≤ ∑ k, f' k x * g' k y) :
@@ -185,7 +187,8 @@ $\operatorname{tr}(\mathbf{C} f(\mathbf{H}) \mathbf{C} g(\mathbf{H}))$ through t
 $\mathbf{H}$.
 Port of `NLAlib.trace_mul_diagonal_pow_mul_mul_diagonal_pow`, there over $\mathbb{R}$ for powers
 of one diagonal matrix. -/
-theorem re_trace_mul_diagonal_mul_mul_diagonal {p : Type*} [Fintype p] [DecidableEq p]
+theorem _root_.Matrix.IsHermitian.re_trace_mul_diagonal_mul_mul_diagonal {p : Type*} [Fintype p]
+    [DecidableEq p]
     {C : Matrix p p 𝕜} (hC : C.IsHermitian) (x y : p → ℝ) :
     RCLike.re (C * Matrix.diagonal (fun i => ((x i : ℝ) : 𝕜)) * C *
       Matrix.diagonal (fun i => ((y i : ℝ) : 𝕜))).trace =
@@ -217,8 +220,8 @@ private theorem exists_re_trace_mul_pow_mul_pow_eq_sum {C H : Matrix n n 𝕜} (
         U * Matrix.diagonal (fun i : Fin (Fintype.card n) => ((eigenvalue H i ^ r : ℝ) : 𝕜)) *
           Uᴴ := fun r => by
       rw [← cfc_pow_id (R := ℝ) H r hH]
-      exact cfc_eq_mul_diagonal_mul_conjTranspose hU hr hHU _
-    rw [hpow l, hpow k, ← re_trace_mul_diagonal_mul_mul_diagonal hC']
+      exact HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hHU _
+    rw [hpow l, hpow k, ← Matrix.IsHermitian.re_trace_mul_diagonal_mul_mul_diagonal hC']
     congr 1
     generalize Matrix.diagonal (fun i : Fin (Fintype.card n) =>
       ((eigenvalue H i ^ l : ℝ) : 𝕜)) = Dl
@@ -233,7 +236,8 @@ even,
 $\operatorname{Re} \operatorname{tr}(\mathbf{C}\mathbf{H}^l\mathbf{C}\mathbf{H}^k)
 \le \operatorname{Re} \operatorname{tr}(\mathbf{C}^2\mathbf{H}^{l+k})$. [MackeyEtAl2014, §3].
 Port of `NLAlib.re_trace_mul_pow_mul_le_trace_sq_mul_pow`, there over $\mathbb{C}$. -/
-theorem re_trace_mul_pow_mul_pow_le {C H : Matrix n n 𝕜} (hC : C.IsHermitian)
+theorem _root_.Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le {C H : Matrix n n 𝕜}
+    (hC : C.IsHermitian)
     (hH : H.IsHermitian) {l k : ℕ} (h : Even (l + k)) :
     RCLike.re (C * H ^ l * C * H ^ k).trace ≤ RCLike.re (C ^ 2 * H ^ (l + k)).trace := by
   obtain ⟨w, hw0, hws, hw⟩ := exists_re_trace_mul_pow_mul_pow_eq_sum hC hH
@@ -433,7 +437,8 @@ $$\operatorname{Re} \operatorname{tr}\bigl((\mathbf{H} - \mathbf{K})
   (\mathbf{H}^m + \mathbf{K}^m)\bigr) \,.$$
 [MackeyEtAl2014, Lemma 3.4]. Port of `NLAlib.re_trace_sub_mul_sub_pow_le`, there over
 $\mathbb{C}$. -/
-theorem re_trace_sub_mul_pow_sub_pow_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian)
+theorem _root_.Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le {H K : Matrix n n 𝕜}
+    (hH : H.IsHermitian)
     (hK : K.IsHermitian) {m : ℕ} (hm : Even m) :
     RCLike.re ((H - K) * (H ^ (m + 1) - K ^ (m + 1))).trace ≤
       (m + 1 : ℝ) / 2 * RCLike.re ((H - K) ^ 2 * (H ^ m + K ^ m)).trace := by
@@ -481,7 +486,8 @@ $$(q + 1)(2q + 1) \operatorname{tr}(\mathbf{V}\mathbf{H}^{2q})
 traces through their real parts.
 [MackeyEtAl2014, proof of Theorem 7.1].
 Port of `NLAlib.nat_mul_mul_re_trace_mul_pow_le`, there over $\mathbb{C}$ with $p = q + 1$. -/
-theorem re_trace_mul_pow_le_add {V H : Matrix n n 𝕜} (hV : V.PosSemidef) (hH : H.IsHermitian)
+theorem _root_.Matrix.PosSemidef.re_trace_mul_pow_le_add {V H : Matrix n n 𝕜} (hV : V.PosSemidef)
+    (hH : H.IsHermitian)
     (q : ℕ) :
     (q + 1 : ℝ) * (2 * q + 1) * RCLike.re (V * H ^ (2 * q)).trace ≤
       (2 * q + 1 : ℝ) ^ (q + 1) * RCLike.re (V ^ (q + 1)).trace +
@@ -508,7 +514,8 @@ conjugate exponents $p$, $q$ (`Real.HolderConjugate`, so $1/p + 1/q = 1$),
 $\operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B})
 \le \operatorname{Re} \operatorname{tr} \mathbf{A}^p / p +
 \operatorname{Re} \operatorname{tr} \mathbf{B}^q / q$. [Bhatia1997, §IV.2 context]. -/
-theorem re_trace_mul_le_re_trace_rpow_add {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
+theorem _root_.Matrix.PosSemidef.re_trace_mul_le_re_trace_rpow_add {A B : Matrix n n 𝕜}
+    (hA : A.PosSemidef)
     (hB : B.PosSemidef) {p q : ℝ} (hpq : p.HolderConjugate q) :
     RCLike.re (A * B).trace ≤ RCLike.re (A ^ p).trace / p + RCLike.re (B ^ q).trace / q := by
   obtain ⟨w, hw0, hw⟩ := exists_re_trace_cfc_mul_cfc_eq_sum hA.isHermitian hB.isHermitian

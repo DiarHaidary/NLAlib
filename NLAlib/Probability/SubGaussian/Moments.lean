@@ -85,7 +85,7 @@ theorem _root_.ProbabilityTheory.HasSubgaussianMGF.integral_abs_rpow_le
     refine setLIntegral_mono' measurableSet_Ioi fun t (ht : 0 < t) => ?_
     rw [ENNReal.ofReal_mul (by positivity), ← ofReal_measureReal]
     gcongr
-    exact h.measure_abs_ge_le ht.le
+    exact h.measureReal_abs_ge_le ht.le
   rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => by positivity)
     (hXm.pow_const p).aestronglyMeasurable]
   calc (∫⁻ ω, ENNReal.ofReal (|X ω| ^ p) ∂μ).toReal

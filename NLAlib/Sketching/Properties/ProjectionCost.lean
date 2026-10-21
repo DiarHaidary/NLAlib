@@ -51,8 +51,8 @@ remains, which is why the family sizes carry $d + 1$. Design: `docs/design/LowRa
 
 * `NLAlib.IsProjectionCostPreserving A Ã k a b`: the predicate.
 * `NLAlib.HasProjectionCostPreserving S A k a b δ μ`: its tail form for a random sketch.
-* `NLAlib.projectionCostTailRows`: the rows of the tail events at the family budgets, at
-  present <!-- value projectionCostTailRows v d \varepsilon \delta -->
+* `NLAlib.projectionCostTailDim`: the rows of the tail events at the family budgets, at
+  present <!-- value projectionCostTailDim v d \varepsilon \delta -->
   $384 \cdot v (d + 1)/(\varepsilon^2 \delta)$.
 
 ## Main results
@@ -96,8 +96,7 @@ The sketch $\tilde{\mathbf{A}}$ is any matrix with the rows of $\mathbf{A}$, not
 $\mathbf{A}\mathbf{\Omega}$.
 [CohenElderMuscoMuscoPersu2015, Definitions 1 and 2]; there over $\mathbb{R}$, with $\varepsilon$,
 and for projectors of rank exactly $k$; here constants $a$, $b$, any `RCLike` field, rank at most
-$k$, so that projectors of smaller rank (a rank-deficient truncation) are covered.
-Result: projection-cost-preserving-sketch -/
+$k$, so that projectors of smaller rank (a rank-deficient truncation) are covered. -/
 def IsProjectionCostPreserving (A : Matrix m n 𝕜) (Ã : Matrix m l 𝕜) (k : ℕ) (a b : ℝ) : Prop :=
   ∃ c : ℝ, 0 ≤ c ∧ ∀ P : Matrix m m 𝕜, IsStarProjection P → P.rank ≤ k →
     a * frobNorm (A - P * A) ^ 2 ≤ frobNorm (Ã - P * Ã) ^ 2 + c ∧
@@ -343,8 +342,7 @@ $\omega$. With a test matrix $\mathbf{\Omega}$ the sketch is $\mathbf{\Omega}^{\
 predicate bounds the real measure of an arbitrary set.
 [CohenElderMuscoMuscoPersu2015, Definition 1] for the predicate at each $\omega$;
 [CohenElderMuscoMuscoPersu2015, Theorem 12] for the form "with probability at least
-$1 - O(\delta)$", there with error $O(\varepsilon)$.
-Result: projection-cost-preserving-sketch -/
+$1 - O(\delta)$", there with error $O(\varepsilon)$. -/
 def HasProjectionCostPreserving (S : Ω → Matrix l n 𝕜) (A : Matrix m n 𝕜) (k : ℕ) (a b δ : ℝ)
     (μ : Measure Ω) : Prop :=
   μ.real {ω | ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ
@@ -496,7 +494,7 @@ private theorem hasProjectionCostPreserving_of_hasJLMoment_of_frame [IsFiniteMea
       exact hδ'
   · have hEh : Eᴴ ≠ 0 := by rwa [Ne, Matrix.conjTranspose_eq_zero]
     refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans
-      (hJL.measure_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hEh hEh)
+      (hJL.measureReal_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hEh hEh)
     rw [Matrix.conjTranspose_conjTranspose, frobNorm_conjTranspose, mul_assoc, ← sq]
     exact hω.le
   · rcases eq_or_ne Z 0 with rfl | hZ0
@@ -506,14 +504,14 @@ private theorem hasProjectionCostPreserving_of_hasJLMoment_of_frame [IsFiniteMea
       exact absurd hω (not_lt.2 (by positivity))
     have hEh : Eᴴ ≠ 0 := by rwa [Ne, Matrix.conjTranspose_eq_zero]
     refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans
-      (hJL.measure_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hEh hZ0)
+      (hJL.measureReal_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hEh hZ0)
     rw [Matrix.conjTranspose_conjTranspose, frobNorm_conjTranspose]
     refine le_trans ?_ hω.le
     have := mul_le_mul_of_nonneg_left hZF (mul_nonneg hε.le (frobNorm_nonneg E))
     linarith
   · have hEh : Eᴴ ≠ 0 := by rwa [Ne, Matrix.conjTranspose_eq_zero]
     refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans
-      (hJL.measure_abs_frobNorm_mul_sq_sub_ge_le hε (by linarith) hS hEh)
+      (hJL.measureReal_abs_frobNorm_mul_sq_sub_ge_le hε (by linarith) hS hEh)
     rw [frobNorm_conjTranspose]
     exact le_abs.2 (Or.inl (by linarith))
 
@@ -524,7 +522,8 @@ $\delta' \ge 0$, is for every $\mathbf{A}$ a rank-$k$ projection-cost-preserving
 constants $a - 3\sqrt{k}\,\varepsilon$ and $b + 3\sqrt{k}\,\varepsilon + \varepsilon$, except with
 probability $\delta + 3\delta'$. No dimension of $\mathbf{A}$ enters: the head is the top-$k$ frame
 (the identity when $k$ exceeds the number of columns), the tail terms are approximate matrix
-multiplication and `NLAlib.HasJLMoment.measure_abs_frobNorm_mul_sq_sub_ge_le`. With JL moments at
+multiplication and `NLAlib.HasJLMoment.measureReal_abs_frobNorm_mul_sq_sub_ge_le`. With JL moments
+at
 $p = 2$ this is $O((k+1)/(\varepsilon^2\delta))$ rows; the $(k + \log(1/\delta))/\varepsilon^2$ of
 CEMMP's Lemma 11 needs stable-rank spectral approximate multiplication.
 [CohenElderMuscoMuscoPersu2015, proof of Theorem 12]; there $O(k\log(1/\delta)/\varepsilon^2)$ for
@@ -550,42 +549,44 @@ theorem IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment
     exact frobNorm_nonneg _
 
 /-- The **tail rows of the head–tail constructor**, at
-present <!-- value projectionCostTailRows v d \varepsilon \delta -->
+present <!-- value projectionCostTailDim v d \varepsilon \delta -->
 $384 \cdot v (d + 1)/(\varepsilon^2 \delta)$: for a sketch whose JL moment at $p = 2$ has
 failure $v/(\lvert k \rvert \varepsilon_J^2)$ at every $\varepsilon_J > 0$ (for CountSketch, also
 its approximate-multiplication tail), at least this many rows make the three tail events of
 `NLAlib.HasSubspaceEmbedding.hasProjectionCostPreserving_of_hasOrthonormalCols` fail with total
 probability at most $\delta/2$ at the budgets $\varepsilon_J = \varepsilon/(8\sqrt{d+1})$ of the
-family statements. The proof's value; [CohenElderMuscoMuscoPersu2015] has no constant.
-Consumers use `NLAlib.projectionCostTailRows_le`. Junk value: $0$ at $\varepsilon = 0$ or
+family statements. The proof's value; [CohenElderMuscoMuscoPersu2015, proof of Theorem 12]
+bounds the same tail terms through approximate matrix multiplication at accuracy
+$\varepsilon/\sqrt{d}$ for rank $d$, with no constant.
+Consumers use `NLAlib.projectionCostTailDim_le`. Junk value: $0$ at $\varepsilon = 0$ or
 $\delta = 0$. -/
-noncomputable irreducible_def projectionCostTailRows (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ :=
+noncomputable irreducible_def projectionCostTailDim (v : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ :=
   384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ)
 
 /-- The tail rows are nonnegative for $v \ge 0$ and $\delta \ge 0$. -/
-theorem projectionCostTailRows_nonneg {v : ℝ} (hv : 0 ≤ v) (d : ℕ) (ε : ℝ) {δ : ℝ}
-    (hδ : 0 ≤ δ) : 0 ≤ projectionCostTailRows v d ε δ := by
-  rw [projectionCostTailRows_def]
+theorem projectionCostTailDim_nonneg {v : ℝ} (hv : 0 ≤ v) (d : ℕ) (ε : ℝ) {δ : ℝ}
+    (hδ : 0 ≤ δ) : 0 ≤ projectionCostTailDim v d ε δ := by
+  rw [projectionCostTailDim_def]
   positivity
 
 /-- The tail rows are monotone in the JL constant $v \ge 0$ and the rank $d$, and antitone in the
 distortion $\varepsilon > 0$ and the failure probability $\delta > 0$. -/
-theorem projectionCostTailRows_mono {v v' : ℝ} {d d' : ℕ} {ε ε' δ δ' : ℝ} (hv : 0 ≤ v)
+theorem projectionCostTailDim_mono {v v' : ℝ} {d d' : ℕ} {ε ε' δ δ' : ℝ} (hv : 0 ≤ v)
     (hvv' : v ≤ v') (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') :
-    projectionCostTailRows v d ε' δ' ≤ projectionCostTailRows v' d' ε δ := by
-  rw [projectionCostTailRows_def, projectionCostTailRows_def]
+    projectionCostTailDim v d ε' δ' ≤ projectionCostTailDim v' d' ε δ := by
+  rw [projectionCostTailDim_def, projectionCostTailDim_def]
   have hdd : (d : ℝ) ≤ d' := Nat.cast_le.2 hd
   have hv' : 0 ≤ v' := hv.trans hvv'
   exact div_le_div₀ (by positivity) (by gcongr) (by positivity)
     (mul_le_mul (pow_le_pow_left₀ hε.le hεε' 2) hδδ' hδ.le (by positivity))
 
-/-- The explicit comparison: `NLAlib.projectionCostTailRows v d ε δ` is at
-most <!-- value projectionCostTailRows v d \varepsilon \delta -->
+/-- The explicit comparison: `NLAlib.projectionCostTailDim v d ε δ` is at
+most <!-- value projectionCostTailDim v d \varepsilon \delta -->
 $384 \cdot v (d + 1)/(\varepsilon^2 \delta)$, the value consumers invert with (at present an
 equality); an improved definition keeps it true. -/
-theorem projectionCostTailRows_le (v : ℝ) (d : ℕ) (ε δ : ℝ) :
-    projectionCostTailRows v d ε δ ≤ 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ) := by
-  rw [projectionCostTailRows_def]
+theorem projectionCostTailDim_le (v : ℝ) (d : ℕ) (ε δ : ℝ) :
+    projectionCostTailDim v d ε δ ≤ 384 * v * ((d : ℝ) + 1) / (ε ^ 2 * δ) := by
+  rw [projectionCostTailDim_def]
 
 end Random
 

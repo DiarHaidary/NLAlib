@@ -107,7 +107,7 @@ $$\operatorname{range}\mathbf{\Pi}_{\mathbf{X},\mathbf{S}} \subseteq
 \operatorname{range}\mathbf{X}\,.$$ -/
 theorem range_obliqueProjector_le (X : Matrix m r 𝕜) (S : Matrix k m 𝕜) :
     LinearMap.range (obliqueProjector X S).mulVecLin ≤ LinearMap.range X.mulVecLin :=
-  range_mulVecLin_le_iff_exists_mul.mpr ⟨pinv (S * X) * S, Matrix.mul_assoc _ _ _⟩
+  range_le_iff_exists_mul.mpr ⟨pinv (S * X) * S, Matrix.mul_assoc _ _ _⟩
 
 /-- The orthogonal projector onto $\operatorname{range}\mathbf{X}$ fixes the oblique projector:
 $(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{\Pi}_{\mathbf{X},\mathbf{S}} = \mathbf{0}$, for every
@@ -147,7 +147,7 @@ theorem obliqueProjector_mul_self_iff :
       _ = (S * X).rank := rank_obliqueProjector X S
   · intro h
     have hP : rangeProjector (S * X)ᴴ = rangeProjector Xᴴ :=
-      rangeProjector_inj.mpr (Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq h)
+      rangeProjector_inj.mpr (Matrix.range_conjTranspose_mul_eq_of_rank_eq h)
     calc obliqueProjector X S * X = X * (pinv (S * X) * (S * X)) := by
           simp only [obliqueProjector, Matrix.mul_assoc]
       _ = X := by rw [pinv_mul, hP, ← pinv_mul, ← Matrix.mul_assoc, mul_pinv_mul_self]
@@ -160,21 +160,21 @@ $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{B} = \mathbf{B}$. -/
 theorem obliqueProjector_mul_eq_self_of_range_le [Fintype n] {B : Matrix m n 𝕜}
     (h : (S * X).rank = X.rank) (hB : LinearMap.range B.mulVecLin ≤ LinearMap.range X.mulVecLin) :
     obliqueProjector X S * B = B := by
-  obtain ⟨C, rfl⟩ := range_mulVecLin_le_iff_exists_mul.mp hB
+  obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hB
   rw [← Matrix.mul_assoc, obliqueProjector_mul_self_iff.mpr h]
 
 /-- Under the rank hypothesis the oblique projector fixes the orthogonal projector onto the same
 range: $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{P}_{\mathbf{X}} = \mathbf{P}_{\mathbf{X}}$. -/
 theorem obliqueProjector_mul_rangeProjector (h : (S * X).rank = X.rank) :
     obliqueProjector X S * rangeProjector X = rangeProjector X :=
-  obliqueProjector_mul_eq_self_of_range_le h (range_mulVecLin_rangeProjector X).le
+  obliqueProjector_mul_eq_self_of_range_le h (range_rangeProjector X).le
 
 /-- Under the rank hypothesis the oblique projector projects onto the range of its basis:
 $\operatorname{range}\mathbf{\Pi}_{\mathbf{X},\mathbf{S}} = \operatorname{range}\mathbf{X}$. -/
 theorem range_obliqueProjector (h : (S * X).rank = X.rank) :
     LinearMap.range (obliqueProjector X S).mulVecLin = LinearMap.range X.mulVecLin := by
   refine le_antisymm (range_obliqueProjector_le X S) ?_
-  exact range_mulVecLin_le_iff_exists_mul.mpr ⟨X, (obliqueProjector_mul_self_iff.mpr h).symm⟩
+  exact range_le_iff_exists_mul.mpr ⟨X, (obliqueProjector_mul_self_iff.mpr h).symm⟩
 
 /-- **Range invariance**: under the rank hypothesis $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ depends
 on $\mathbf{X}$ only through its range,
@@ -186,12 +186,12 @@ two projectors differ. -/
 theorem obliqueProjector_eq_of_range_eq [Fintype q] {X' : Matrix m q 𝕜} (h : (S * X).rank = X.rank)
     (hX : LinearMap.range X.mulVecLin = LinearMap.range X'.mulVecLin) :
     obliqueProjector X S = obliqueProjector X' S := by
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp hX.ge
-  obtain ⟨D, hD⟩ := range_mulVecLin_le_iff_exists_mul.mp hX.le
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp hX.ge
+  obtain ⟨D, hD⟩ := range_le_iff_exists_mul.mp hX.le
   have hSX : rangeProjector (S * X') = rangeProjector (S * X) := by
     refine rangeProjector_inj.mpr (le_antisymm ?_ ?_)
-    · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, ← hC]⟩
-    · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨D, by rw [Matrix.mul_assoc, ← hD]⟩
+    · exact range_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, ← hC]⟩
+    · exact range_le_iff_exists_mul.mpr ⟨D, by rw [Matrix.mul_assoc, ← hD]⟩
   have hP : obliqueProjector X S * obliqueProjector X' S = obliqueProjector X' S :=
     obliqueProjector_mul_eq_self_of_range_le h ((range_obliqueProjector_le X' S).trans hX.ge)
   refine Eq.trans ?_ hP

@@ -203,6 +203,16 @@ found no false statement. Folded in:
    `schattenNorm_two_mul_natCast_pow`, the Hermitian form, `specNorm_pow_le_re_trace_pow`.
 3. `1 ≤ q` is an explicit hypothesis, not a `Fact` instance, on the triangle inequality and on
    `lpGauge`.
+   *Reversed for `lpGauge` (maintainer decision 2026-10-20):* `lpGauge q` takes
+   `[Fact (1 ≤ q)]`, as Mathlib's `PiLp` and `lp` do, and the gauges `lpGauge 1`, `lpGauge 2`,
+   `lpGauge ⊤` use Mathlib's instances `fact_one_le_one_ennreal`, `fact_one_le_two_ennreal`,
+   `fact_one_le_top_ennreal`. With the explicit argument, every statement at a fixed exponent
+   carried a proof term (`lpGauge 2 one_le_two`), which rule T9 forbids, and the definition's
+   signature differed from Mathlib's for the same parameter. A proof at a variable exponent writes
+   `have := Fact.mk hq`. The theorems about `schattenNorm` keep the explicit hypothesis
+   `(hq : 1 ≤ q)`: it is a hypothesis of a theorem, not an argument of a definition, so it puts
+   no proof term in a statement. The changed statements are listed in
+   `docs/renames/2026-10-rules.json` (`statementChanged`).
 4. The one-shape Fan dominance theorem was dropped: nothing in the library could be fed to it.
 5. One-step bridges `lpGauge_top_matrixNorm`, `lpGauge_two_matrixNorm`, `lpGauge_one_matrixNorm`;
    the index forms `sum_abs_singularValues_sub_le_kyFanNorm_sub` and

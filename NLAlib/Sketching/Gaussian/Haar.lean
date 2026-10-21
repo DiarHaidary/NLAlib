@@ -268,13 +268,13 @@ private theorem integral_norm_conjTranspose_mulVec_pow_four [Nonempty k]
   exact integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector HasLaw.id hV
 
 /-- **Distributional Johnson–Lindenstrauss for a Haar sketch**, with the Gaussian's constants:
-$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$$
 for every unit $\mathbf{x}$ and $\varepsilon \ge 0$; $\|\mathbf{S}\mathbf{x}\|^2
 = (\lvert n \rvert / \lvert k \rvert) \|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2$ for $\mathbf{u}$
 uniform on the sphere (`NLAlib.hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame`) and the
 relative-deviation tail of `NLAlib/RandomMatrix/Haar/Sphere.lean`.
-[Vershynin2018, Lemma 5.3.2 (2020 draft)], there with an unspecified constant $c$; the exponent of
+[Vershynin2018, Lemma 5.3.2], there with an unspecified constant $c$; the exponent of
 Dasgupta and Gupta (2003). -/
 theorem hasJLProperty_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 ≤ ε) :
@@ -386,7 +386,12 @@ theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property
 with distortion $\varepsilon$ and failure probability $\delta$, for $0 < \varepsilon < 3/2$ and
-$\delta > 0$. Asymptotic form: `NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`.
+$\delta > 0$. [Vershynin2018, Lemma 5.3.2] (the tail form: for the projection $\mathbf{P}$ onto
+a uniformly random $m$-dimensional subspace of $\mathbb{R}^n$ and a fixed $\mathbf{z}$,
+$\|\mathbf{P}\mathbf{z}\| = (1 \pm \varepsilon)\sqrt{m/n}\,\|\mathbf{z}\|$ outside probability
+$2e^{-c\varepsilon^2 m}$, with an unspecified constant $c$); here solved for the row
+count, with the Gaussian's exponent. Asymptotic form:
+`NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`.
 Result: jl-haar -/
 theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε) (hε1 : ε < 3 / 2) (hδ : 0 < δ)

@@ -35,7 +35,7 @@ sums $\sum_{i < k} \lambda_i(\mathbf{A})$ are written with `Finset.range` and ha
 * `Matrix.IsHermitian.re_trace_conjTranspose_mul_mul_le_sum_eigenvalue`: Ky Fan's maximum
   principle for eigenvalues, and
   `Matrix.IsHermitian.exists_re_trace_conjTranspose_mul_mul_eq_sum_eigenvalue`: attainment.
-* `NLAlib.sum_range_eigenvalue_add_le`: subadditivity of eigenvalue partial sums.
+* `Matrix.IsHermitian.sum_range_eigenvalue_add_le`: subadditivity of eigenvalue partial sums.
 * `Matrix.PosSemidef.sq_max_re_trace_sub_sum_Ico_eigenvalue_le`,
   `Matrix.PosSemidef.rank_le_of_sum_Ico_eigenvalue_eq_zero`: the trace above an eigenvalue tail.
 * `NLAlib.norm_trace_conjTranspose_mul_mul_le_kyFanNorm`,
@@ -69,8 +69,9 @@ theorem _root_.Matrix.IsHermitian.re_trace_conjTranspose_mul_mul_le_sum_eigenval
   exact Finset.sum_le_sum fun i hi =>
     hA.eigenvalue_conjTranspose_mul_mul_le hQ (Finset.mem_range.mp hi)
 
-/-- The maximum in Ky Fan's principle is attained by the leading eigenvectors: for Hermitian
-$\mathbf{A}$ and $k \le \lvert n \rvert$ there is $\mathbf{Q}$ with $k$ orthonormal columns and
+/-- **Ky Fan's maximum principle, equality case.** The maximum is attained by the leading
+eigenvectors: for Hermitian $\mathbf{A}$ and $k \le \lvert n \rvert$ there is $\mathbf{Q}$ with
+$k$ orthonormal columns and
 $\operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})
 = \sum_{i < k} \lambda_i(\mathbf{A})$.
 Port of `NLAlib.exists_trace_compression_eq_eigenvaluePrefix`, there over $\mathbb{R}$.
@@ -122,7 +123,8 @@ $$\sum_{i < k} \lambda_i(\mathbf{A} + \mathbf{B})
 [HornJohnson2013, Corollary 4.3.39 and Theorem 4.3.47].
 Port of `NLAlib.eigenvaluePrefix_add_le`, there over $\mathbb{R}$.
 Result: ky-fan-eigenvalue-sums -/
-theorem sum_range_eigenvalue_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.sum_range_eigenvalue_add_le {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) (k : ℕ) :
     ∑ i ∈ Finset.range k, eigenvalue (A + B) i ≤
       ∑ i ∈ Finset.range k, eigenvalue A i + ∑ i ∈ Finset.range k, eigenvalue B i := by
@@ -136,14 +138,16 @@ theorem sum_range_eigenvalue_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
   rw [← hQe, Matrix.mul_add, Matrix.add_mul, Matrix.trace_add, map_add]
   exact add_le_add h1 h2
 
-/-- The eigenvalues of $\mathbf{A} + \mathbf{B}$ are majorized by the sums of the sorted
-eigenvalues of $\mathbf{A}$ and $\mathbf{B}$: for Hermitian $\mathbf{A}$, $\mathbf{B}$, the vector
+/-- **Ky Fan's majorization for sums.** The eigenvalues of $\mathbf{A} + \mathbf{B}$ are
+majorized by the sums of the sorted eigenvalues of $\mathbf{A}$ and $\mathbf{B}$: for Hermitian
+$\mathbf{A}$, $\mathbf{B}$, the vector
 $(\lambda_i(\mathbf{A} + \mathbf{B}))_{i < \lvert n \rvert}$ is majorized by
 $(\lambda_i(\mathbf{A}) + \lambda_i(\mathbf{B}))_{i < \lvert n \rvert}$.
 [HornJohnson2013, Theorem 4.3.47].
 Port of `NLAlib.majorized_eigenvalues₀_add`, there over $\mathbb{R}$.
 Result: ky-fan-eigenvalue-sums -/
-theorem majorized_eigenvalue_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian) :
+theorem _root_.Matrix.IsHermitian.majorized_eigenvalue_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (hB : B.IsHermitian) :
     Majorized (fun i : Fin (Fintype.card n) => eigenvalue (A + B) i)
       (fun i : Fin (Fintype.card n) => eigenvalue A i + eigenvalue B i) := by
   refine ⟨?_, ?_⟩
@@ -153,7 +157,7 @@ theorem majorized_eigenvalue_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (h
     · exact fun i _ j hj hij =>
         add_le_add (hA.eigenvalue_le_eigenvalue hij hj) (hB.eigenvalue_le_eigenvalue hij hj)
     · rw [Finset.sum_add_distrib]
-      exact sum_range_eigenvalue_add_le hA hB k
+      exact Matrix.IsHermitian.sum_range_eigenvalue_add_le hA hB k
   · rw [Fin.sum_univ_eq_sum_range (fun i => eigenvalue (A + B) i),
       Fin.sum_univ_eq_sum_range (fun i => eigenvalue A i + eigenvalue B i),
       Finset.sum_add_distrib, ← (hA.add hB).re_trace_eq_sum_range_eigenvalue,
@@ -290,7 +294,7 @@ $\mathbf{V}$ with orthonormal columns indexed by $p$,
 $\operatorname{Re} \operatorname{tr}(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V})
 \le \|\mathbf{A}\|_{(\lvert p \rvert)}$. The proof applies the eigenvalue principle to the
 Hermitian dilation, compressed to the columns of
-$\frac{1}{\sqrt{2}} \begin{bmatrix} \mathbf{U} \\ \mathbf{V} \end{bmatrix}$; the modulus form is
+$(1/\sqrt{2}) \begin{bmatrix} \mathbf{U} \\ \mathbf{V} \end{bmatrix}$; the modulus form is
 `NLAlib.norm_trace_conjTranspose_mul_mul_le_kyFanNorm`.
 [HornJohnson1991, Theorem 3.4.1]. -/
 theorem re_trace_conjTranspose_mul_mul_le_kyFanNorm [DecidableEq p] (A : Matrix m n 𝕜)
@@ -341,9 +345,9 @@ theorem norm_trace_conjTranspose_mul_mul_le_kyFanNorm [DecidableEq p] (A : Matri
   have h := re_trace_conjTranspose_mul_mul_le_kyFanNorm A hU hV'
   rwa [Matrix.mul_smul, Matrix.trace_smul, smul_eq_mul, ← hct, RCLike.ofReal_re] at h
 
-/-- The maximum in Ky Fan's principle for singular values is attained by the leading singular
-vectors, with a real nonnegative trace: for $k$ at most both dimensions there are $\mathbf{U}$,
-$\mathbf{V}$ with $k$ orthonormal columns and
+/-- **Ky Fan's maximum principle for singular values, equality case.** The maximum is attained
+by the leading singular vectors, with a real nonnegative trace: for $k$ at most both dimensions
+there are $\mathbf{U}$, $\mathbf{V}$ with $k$ orthonormal columns and
 $\operatorname{tr}(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V}) = \|\mathbf{A}\|_{(k)}$.
 Port of `NLAlib.exists_trace_twoSided_compression_eq_kyFanNorm`, there over $\mathbb{R}$.
 Result: ky-fan-singular-values -/

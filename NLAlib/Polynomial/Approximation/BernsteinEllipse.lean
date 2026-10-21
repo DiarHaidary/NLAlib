@@ -38,8 +38,8 @@ noncomputable def openBernsteinEllipse (ρ : ℝ) : Set ℂ :=
   {z : ℂ | ‖z - 1‖ + ‖z + 1‖ < ρ + ρ⁻¹}
 
 /-- The focal-distance ellipse is open for every parameter. -/
-theorem isOpen_openBernsteinEllipse (ρ : ℝ) : IsOpen (openBernsteinEllipse ρ) := by
-  exact isOpen_lt (by fun_prop) continuous_const
+theorem isOpen_openBernsteinEllipse (ρ : ℝ) : IsOpen (openBernsteinEllipse ρ) :=
+  isOpen_lt (by fun_prop) continuous_const
 
 private lemma two_lt_radius_add_inv {ρ : ℝ} (hρ : 1 < ρ) : 2 < ρ + ρ⁻¹ := by
   have hp : 0 < ρ := zero_lt_one.trans hρ

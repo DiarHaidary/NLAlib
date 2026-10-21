@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.LowRank.Gaussian.Filter
 public import NLAlib.LowRank.Structural.BlockKrylov
@@ -48,8 +49,8 @@ $T_{q-1}(2x/\sigma_t^2 - 1)$, of degree $q - 1$, through
   depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ for RBKI and
   $O(\log(\lvert n \rvert/\varepsilon)/\gamma)$ power steps for RSI give relative error
   $1 + \varepsilon$; named `NLAlib.exists_forall_` followed by the explicit name with
-  `_le_singularGapRatio_` replaced by `_le_of_singularGapRatio_pos_`, with their threshold
-  arithmetic `NLAlib.le_add_mul_of_le_add_mul_exp`.
+  `_le_singularGapRatio_` replaced by `_le_of_singularGapRatio_pos_` (their threshold
+  arithmetic is in `NLAlib/ForMathlib/Analysis/SpecialFunctions/Log/Basic.lean`).
 
 The integrability companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`.
 -/
@@ -87,8 +88,7 @@ private theorem integral_gram_sub_rsvd_aeval_le (Φ : SymmetricGauge) (A : Matri
     A hX f hrt ht hc hhead htail
   rw [hr'] at h
   refine h.trans (add_le_add le_rfl ?_)
-  have hΦ : 0 ≤ Φ (Finsupp.single 0 1) := apply_nonneg _ _
-  have hτ := natCast_div_sub_sub_one_nonneg ht
+  have hτ := natCast_div_sub_sub_one_nonneg (K := ℝ) ht
   calc Φ (Finsupp.single 0 1) * (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
         frobNorm (A - truncatedSVD A t) ^ 2
       = Φ (Finsupp.single 0 1) * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
@@ -119,7 +119,7 @@ private theorem range_mul_aeval_mul_le_range_mul_blockKrylovMatrix (A : Matrix m
     LinearMap.range (A * aeval (Aᴴ * A) f * Y).mulVecLin ≤
       LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
   obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
-  exact range_mulVecLin_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
+  exact range_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
 
 /-- The late-truncated randomized SVD at any test matrix $\mathbf{Y}$ whose sketch range contains
 that of the filtered sketch, in expectation, Frobenius norm: Gu's projected form and head capture
@@ -159,7 +159,7 @@ private theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
     intro ω
     refine (frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add A (Y ω) r).trans
       (add_le_add le_rfl (pow_le_pow_left₀ (frobNorm_nonneg _) ?_ 2))
-    have h := (lpGauge 2 one_le_two).matrixNorm_le_of_singularValues_le
+    have h := (lpGauge 2).matrixNorm_le_of_singularValues_le
       (singularValues_one_sub_rangeProjector_mul_le_of_range_le (hrange ω) (truncatedSVD A r))
     rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, Matrix.sub_mul, Matrix.one_mul] at h
   have hI : Integrable (fun ω => frobNorm (A - truncatedSVD A r) ^ 2 +
@@ -168,7 +168,7 @@ private theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
   refine (integral_mono (integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hY r) hI hpt).trans ?_
   rw [integral_add (integrable_const _) hint, integral_const, probReal_univ, one_smul]
   refine add_le_add le_rfl (hH.trans ?_)
-  have hτ := natCast_div_sub_sub_one_nonneg ht
+  have hτ := natCast_div_sub_sub_one_nonneg (K := ℝ) ht
   calc (a / c) ^ 2 * ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
         frobNorm (A - truncatedSVD A t) ^ 2
       = ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) *
@@ -200,6 +200,62 @@ private theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
 /-! ### The filters -/
 
 omit [DecidableEq n] in
+/-- The head bound of `exists_rbki_filter`: for $\sigma_t > 0$ and $i \le h \le t$, the
+Chebyshev filter has $\lvert T_{q-1}(2\sigma_i^2/\sigma_t^2 - 1)\rvert \ge
+\tfrac12 e^{4(q-1)\sqrt\gamma}$, with $\gamma$ the gap ratio of $h$ and $t$. -/
+private theorem exp_div_two_le_abs_eval_T_comp (A : Matrix m n ℝ) {h t q i : ℕ} (hq : 1 ≤ q)
+    (hσ : 0 < singularValues A t) (hht : h ≤ t) (hih : i ≤ h) :
+    Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) / 2 ≤
+      |((Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp
+        (C (2 / singularValues A t ^ 2) * Polynomial.X - 1)).eval (singularValues A i ^ 2)| := by
+  set σt := singularValues A t
+  set γ := singularGapRatio A h t
+  have hσh : σt ≤ singularValues A h := singularValues_antitone A hht
+  have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht
+  have hγ1 : γ < 1 := by
+    rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl,
+      div_lt_one (by linarith)]
+    linarith
+  have hratio : (1 + γ) / (1 - γ) = singularValues A h / σt := by
+    have hs : singularValues A h + σt ≠ 0 := by linarith
+    have h1 : 1 + γ = 2 * singularValues A h / (singularValues A h + σt) := by
+      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
+      field_simp
+      ring
+    have h2 : 1 - γ = 2 * σt / (singularValues A h + σt) := by
+      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
+      field_simp
+      ring
+    rw [h1, h2]
+    field_simp
+  have hσi : singularValues A h ≤ singularValues A i := singularValues_antitone A hih
+  have hx : 2 / σt ^ 2 * singularValues A i ^ 2 - 1 =
+      2 * (singularValues A i / σt) ^ 2 - 1 := by
+    rw [div_pow]; ring
+  have h1h : 1 ≤ singularValues A h / σt := by rw [le_div_iff₀ hσ]; linarith
+  have hhi : singularValues A h / σt ≤ singularValues A i / σt := by gcongr
+  have hmono := Polynomial.Chebyshev.monotoneOn_eval_T_real (2 * (q - 1)) h1h
+    (h1h.trans hhi) hhi
+  have hgrowth := Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real (2 * (q - 1)) hγ0 hγ1
+  rw [hratio] at hgrowth
+  have hT : (Polynomial.Chebyshev.T ℝ (((2 * (q - 1) : ℕ) : ℤ))).eval
+      (singularValues A i / σt) =
+      (Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).eval
+        (2 * (singularValues A i / σt) ^ 2 - 1) := by
+    rw [← Polynomial.Chebyshev.eval_T_two_mul]
+    push_cast
+    rfl
+  have hexp : Real.exp (2 * ((2 * (q - 1) : ℕ) : ℝ) * Real.sqrt γ) =
+      Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) := by
+    congr 1
+    push_cast [Nat.cast_sub hq]
+    ring
+  rw [hexp] at hgrowth
+  simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
+  rw [hx, ← hT]
+  exact (hgrowth.trans hmono).trans (le_abs_self _)
+
+omit [DecidableEq n] in
 /-- **The Chebyshev filter of RBKI**: for $q \ge 1$, a head of $r = h + 1$ singular values and a
 tail index $t \ge r$, the filter $f(x) = T_{q-1}(2x/\sigma_t^2 - 1)$ (or $f = 1$ when
 $\sigma_t = 0$) has degree below $q$, $\lvert f \rvert \ge \tfrac12 e^{4(q-1)\sqrt\gamma}$ on the
@@ -222,24 +278,6 @@ private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h 
   set σt := singularValues A t
   set γ := singularGapRatio A h t
   have hht : h ≤ t := by omega
-  have hσh : σt ≤ singularValues A h := singularValues_antitone A hht
-  have hγ0 : 0 ≤ γ := singularGapRatio_nonneg A hht
-  have hγ1 : γ < 1 := by
-    rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl,
-      div_lt_one (by linarith)]
-    linarith
-  have hratio : (1 + γ) / (1 - γ) = singularValues A h / σt := by
-    have hs : singularValues A h + σt ≠ 0 := by linarith
-    have h1 : 1 + γ = 2 * singularValues A h / (singularValues A h + σt) := by
-      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
-      field_simp
-      ring
-    have h2 : 1 - γ = 2 * σt / (singularValues A h + σt) := by
-      rw [show γ = (singularValues A h - σt) / (singularValues A h + σt) from rfl]
-      field_simp
-      ring
-    rw [h1, h2]
-    field_simp
   refine ⟨(Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp (C (2 / σt ^ 2) * Polynomial.X - 1), ?_,
     Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2, 1, by positivity, ?_, ?_, ?_⟩
   · refine degree_le_natDegree.trans_lt ?_
@@ -253,34 +291,7 @@ private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h 
       omega
     exact_mod_cast h3
   · intro i hi
-    have hih : i ≤ h := by omega
-    have hσi : singularValues A h ≤ singularValues A i := singularValues_antitone A hih
-    have hx : 2 / σt ^ 2 * singularValues A i ^ 2 - 1 =
-        2 * (singularValues A i / σt) ^ 2 - 1 := by
-      rw [div_pow]; ring
-    have h1h : 1 ≤ singularValues A h / σt := by rw [le_div_iff₀ hσ]; linarith
-    have hhi : singularValues A h / σt ≤ singularValues A i / σt := by gcongr
-    have hmono := Polynomial.Chebyshev.monotoneOn_eval_T_real (2 * (q - 1)) h1h
-      (h1h.trans hhi) hhi
-    have hgrowth := Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real (2 * (q - 1)) hγ0 hγ1
-    rw [hratio] at hgrowth
-    have hT : (Polynomial.Chebyshev.T ℝ (((2 * (q - 1) : ℕ) : ℤ))).eval
-        (singularValues A i / σt) =
-        (Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).eval
-          (2 * (singularValues A i / σt) ^ 2 - 1) := by
-      rw [← Polynomial.Chebyshev.eval_T_two_mul]
-      push_cast
-      rfl
-    have hexp : Real.exp (2 * ((2 * (q - 1) : ℕ) : ℝ) * Real.sqrt γ) =
-        Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) := by
-      congr 1
-      push_cast [Nat.cast_sub hq]
-      ring
-    rw [hexp] at hgrowth
-    simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
-    rw [hx, ← hT]
-    have hc : 0 < Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2 := by positivity
-    exact (hgrowth.trans hmono).trans (le_abs_self _)
+    exact exp_div_two_le_abs_eval_T_comp A hq hσ hht (by omega)
   · intro x hx
     simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
     refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)
@@ -400,7 +411,15 @@ $\gamma = (\sigma_h - \sigma_t)/(\sigma_h + \sigma_t)$,
 $$\mathbb{E}\|\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{X}, q)\|_2^2 \le
 \sigma_r(\mathbf{A})^2 + 4e^{-8(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2\,.$$
-No positivity hypothesis: when $\sigma_t = 0$ the error is zero almost surely.
+No positivity hypothesis: when $\sigma_t = 0$ the error is zero almost surely. The proof's
+filter $T_{q-1}(2x/\sigma_t^2 - 1)$ is $T_{2(q-1)}(\sigma_i/\sigma_t)$ at $x = \sigma_i^2$, so
+the tail factor it gives is
+$T_{2(q-1)}((1 + \gamma)/(1 - \gamma))^{-2} =
+\operatorname{sech}^2(4(q-1)\operatorname{artanh}\sqrt{\gamma}) \le
+\operatorname{sech}^2(4(q-1)\sqrt{\gamma}) =
+4e^{-8(q-1)\sqrt{\gamma}}/(1 + e^{-8(q-1)\sqrt{\gamma}})^2$; every RBKI bound of this file drops
+the factor $(1 + e^{-8(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+rule 7).
 Asymptotic form:
 `NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.
 [TroppWebber2023, Theorem 9.2 (RBKI)], at $p = \infty$; there with $m$ products and the exponent
@@ -414,9 +433,9 @@ theorem integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
       singularValues A r ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rbki_le (lpGauge ⊤ le_top) A hX hr hrt ht hq
+  have h := integral_gram_sub_rbki_le (lpGauge ⊤) A hX hr hrt ht hq
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 -- The declaration name alone exceeds 100 characters.
@@ -442,7 +461,7 @@ theorem integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatr
       frobNorm (A - truncatedSVD A r) ^ 2 +
         4 * Real.exp (-8 * ((q : ℝ) - 1) * Real.sqrt (singularGapRatio A h t)) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rbki_le (lpGauge 1 le_rfl) A hX hr hrt ht hq
+  have h := integral_gram_sub_rbki_le (lpGauge 1) A hX hr hrt ht hq
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   exact h
@@ -498,9 +517,9 @@ theorem integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
       singularValues A r ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rsi_le (lpGauge ⊤ le_top) A hX hr hrt ht p
+  have h := integral_gram_sub_rsi_le (lpGauge ⊤) A hX hr hrt ht p
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 -- The declaration name alone exceeds 100 characters.
@@ -526,7 +545,7 @@ theorem integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaus
       frobNorm (A - truncatedSVD A r) ^ 2 +
         Real.exp (-8 * (p : ℝ) * singularGapRatio A h t) *
           ((t : ℝ) / ((Fintype.card l : ℝ) - t - 1)) * frobNorm (A - truncatedSVD A t) ^ 2 := by
-  have h := integral_gram_sub_rsi_le (lpGauge 1 le_rfl) A hX hr hrt ht p
+  have h := integral_gram_sub_rsi_le (lpGauge 1) A hX hr hrt ht p
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   exact h
@@ -683,69 +702,6 @@ integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw
 
 /-! ### Asymptotic forms -/
 
-/-- The logarithm in the depth thresholds of the asymptotic forms is at least $1/2$: for
-$N \ge 1$ and $0 < \varepsilon \le 1/2$, $\log(N/\varepsilon) \ge \log 2 \ge 1/2$. -/
-theorem one_half_le_log_div {N ε : ℝ} (hN : 1 ≤ N) (hε : 0 < ε) (hε₀ : ε ≤ 1 / 2) :
-    1 / 2 ≤ Real.log (N / ε) := by
-  have hlog2 : (1 / 2 : ℝ) ≤ Real.log 2 := by
-    have h := Real.one_sub_inv_le_log_of_pos (x := 2) (by norm_num)
-    norm_num at h ⊢
-    linarith
-  exact hlog2.trans (Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hε]; linarith))
-
-/-- The threshold arithmetic of the asymptotic forms of the Krylov bounds: if
-$E \le aO + c\,e^{y}\kappa T$ with $0 \le c \le 4$, $\kappa T \le N^2 O$ and $O \ge 0$, then for
-$N \ge 1$, $0 < \varepsilon \le 1/2$ and $y \le -4\log(N/\varepsilon)$,
-$$E \le (a + \varepsilon)\,O\,,$$
-since then $4N^2e^{y} \le \varepsilon$. -/
-theorem le_add_mul_of_le_add_mul_exp {E O T κ a c y N ε : ℝ}
-    (hE : E ≤ a * O + c * Real.exp y * κ * T) (hO : 0 ≤ O) (hc0 : 0 ≤ c) (hc : c ≤ 4)
-    (hT : κ * T ≤ N ^ 2 * O) (hN : 1 ≤ N) (hε : 0 < ε) (hε₀ : ε ≤ 1 / 2)
-    (hy : y ≤ -(4 * Real.log (N / ε))) : E ≤ (a + ε) * O := by
-  have hL : Real.log (N / ε) = Real.log N - Real.log ε := Real.log_div (by positivity) hε.ne'
-  have hlogε : Real.log ε ≤ -Real.log 2 := by
-    rw [← Real.log_inv]
-    exact Real.log_le_log hε (by linarith)
-  have hlogN : 0 ≤ Real.log N := Real.log_nonneg hN
-  have hlog2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
-  have h4 : Real.log 4 = 2 * Real.log 2 := by
-    rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
-    norm_num
-  have hNe : 4 * N ^ 2 * Real.exp y ≤ ε := by
-    have h : 4 * N ^ 2 = Real.exp (Real.log 4 + 2 * Real.log N) := by
-      rw [Real.exp_add, Real.exp_log (by norm_num), two_mul, Real.exp_add,
-        Real.exp_log (by positivity)]
-      ring
-    rw [h, ← Real.exp_add]
-    calc Real.exp (Real.log 4 + 2 * Real.log N + y) ≤ Real.exp (Real.log ε) :=
-          Real.exp_le_exp.2 (by rw [hL] at hy; linarith)
-      _ = ε := Real.exp_log hε
-  have hce : 0 ≤ c * Real.exp y := mul_nonneg hc0 (Real.exp_pos y).le
-  have h1 : c * Real.exp y * κ * T ≤ c * Real.exp y * (N ^ 2 * O) := by
-    rw [mul_assoc (c * Real.exp y)]
-    exact mul_le_mul_of_nonneg_left hT hce
-  have h2 : c * Real.exp y * N ^ 2 ≤ ε :=
-    calc c * Real.exp y * N ^ 2 = c * (Real.exp y * N ^ 2) := by ring
-      _ ≤ 4 * (Real.exp y * N ^ 2) := mul_le_mul_of_nonneg_right hc (by positivity)
-      _ = 4 * N ^ 2 * Real.exp y := by ring
-      _ ≤ ε := hNe
-  have h3 : c * Real.exp y * (N ^ 2 * O) ≤ ε * O := by
-    rw [← mul_assoc]
-    exact mul_le_mul_of_nonneg_right h2 hO
-  linarith
-
-/-- The depth threshold of the gapped asymptotic forms of block Krylov iteration: for $N \ge 1$,
-$0 < \varepsilon \le 1/2$, $0 < s \le 1$ and $q \ge 3\log(N/\varepsilon)/s$, both $q \ge 1$ and
-$(q - 1)s \ge \log(N/\varepsilon)$. -/
-theorem one_le_and_log_div_le_sub_one_mul {N ε s : ℝ} {q : ℕ} (hN : 1 ≤ N) (hε : 0 < ε)
-    (hε₀ : ε ≤ 1 / 2) (hs : 0 < s) (hs1 : s ≤ 1) (hq : 3 * Real.log (N / ε) / s ≤ q) :
-    1 ≤ q ∧ Real.log (N / ε) ≤ ((q : ℝ) - 1) * s := by
-  have hL := one_half_le_log_div hN hε hε₀
-  have hqs : 3 * Real.log (N / ε) ≤ q * s := by rwa [div_le_iff₀ hs] at hq
-  refine ⟨?_, by nlinarith⟩
-  have h : (0 : ℝ) < q := lt_of_lt_of_le (div_pos (by linarith) hs) hq
-  exact_mod_cast h
-
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for randomized block
 Krylov iteration with a gap**, spectral norm: there are absolute constants $C, \varepsilon_0 > 0$
 such that for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of $r = h + 1$
@@ -776,13 +732,13 @@ exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
   have hexp :=
     integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt ht hq1
   rw [← one_mul (singularValues A r ^ 2)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
     (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
       hrt ht) hN hε hε₀ (by nlinarith)
 
@@ -820,13 +776,13 @@ exists_forall_integral_frobNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
   have hexp :=
     integral_frobNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt ht hq1
   rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
     ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
       A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
     hN hε hε₀ (by nlinarith)
@@ -864,13 +820,13 @@ exists_forall_integral_specNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_o
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt
       ht p
   rw [← one_mul (singularValues A r ^ 2), ← one_mul (Real.exp _)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
     (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
       hrt ht) hN hε hε₀ (by nlinarith)
 
@@ -909,13 +865,13 @@ exists_forall_integral_frobNorm_sub_rsvd_pow_mul_sq_le_of_singularGapRatio_pos_o
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     integral_frobNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX hr hrt
       ht p
   rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2), ← one_mul (Real.exp _)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
     ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
       A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
     hN hε hε₀ (by nlinarith)
@@ -954,14 +910,14 @@ exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
   have hexp :=
     integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX
       hr hrt ht hq1
   rw [← one_mul (singularValues A r ^ 2)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
     (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
       hrt ht) hN hε hε₀ (by nlinarith)
 
@@ -1000,14 +956,14 @@ exists_forall_integral_frobNorm_sub_truncatedSVD_rbki_sq_le_of_singularGapRatio_
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one A h t)) hq
   have hexp :=
     integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix A hX
       hr hrt ht hq1
   rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) (by norm_num) le_rfl
     ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
       A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
     hN hε hε₀ (by nlinarith)
@@ -1046,13 +1002,13 @@ exists_forall_integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularG
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     integral_specNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
       A hX hr hrt ht p
   rw [← one_mul (singularValues A r ^ 2), ← one_mul (Real.exp _)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
     (natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq A
       hrt ht) hN hε hε₀ (by nlinarith)
 
@@ -1090,13 +1046,13 @@ exists_forall_integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_of_singularG
     · simp [singularGapRatio, singularValues_of_card_cols_le A (k := h) (by omega),
         singularValues_of_card_cols_le A (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     integral_frobNorm_sub_truncatedSVD_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
       A hX hr hrt ht p
   rw [← one_mul (frobNorm (A - truncatedSVD A r) ^ 2), ← one_mul (Real.exp _)] at hexp
-  exact le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (sq_nonneg _) zero_le_one (by norm_num)
     ((natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
       A hrt ht).trans (mul_le_mul_of_nonneg_right (by nlinarith) (sq_nonneg _)))
     hN hε hε₀ (by nlinarith)

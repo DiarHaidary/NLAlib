@@ -9,6 +9,7 @@ public import Mathlib.Analysis.Convex.Birkhoff
 public import Mathlib.Analysis.LocallyConvex.Separation
 public import Mathlib.Data.Fin.Tuple.Sort
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
+public import NLAlib.ForMathlib.Data.Fin.Tuple.Sort
 public import NLAlib.Matrix.Majorization.Basic
 
 /-!
@@ -182,8 +183,8 @@ or the weight is nonnegative. -/
 private theorem exists_perm_sum_mul_le_aux {x y : ι → ℝ} (h : WeaklyMajorized x y) (a : ι → ℝ)
     (hc : ∑ i, x i = ∑ i, y i ∨ ∀ i, 0 ≤ a i) :
     ∃ σ : Equiv.Perm ι, ∑ i, a i * x i ≤ ∑ i, a i * y (σ i) := by
-  obtain ⟨e₁, ha⟩ := exists_equiv_antitone_comp a
-  obtain ⟨e₂, hy⟩ := exists_equiv_antitone_comp y
+  obtain ⟨e₁, ha⟩ := Fintype.exists_equiv_antitone_comp a
+  obtain ⟨e₂, hy⟩ := Fintype.exists_equiv_antitone_comp y
   refine ⟨e₁.symm.trans e₂, ?_⟩
   have h1 : ∑ i, a i * x i = ∑ j, (a ∘ e₁) j * (x ∘ e₁) j :=
     (Equiv.sum_comp e₁ fun i => a i * x i).symm

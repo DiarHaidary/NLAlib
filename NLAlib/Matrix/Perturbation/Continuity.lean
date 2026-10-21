@@ -104,7 +104,7 @@ Port of `NLAlib.continuous_eigenvalues₀_pencil`, there along a line. -/
 theorem continuousOn_eigenvalue (k : ℕ) :
     ContinuousOn (fun A : Matrix n n 𝕜 => eigenvalue A k) {A | A.IsHermitian} := by
   exact continuousOn_of_abs_sub_le continuous_specNorm specNorm_zero fun A hA B hB =>
-    abs_eigenvalue_sub_le hB hA k
+    Matrix.IsHermitian.abs_eigenvalue_sub_le hB hA k
 
 /-- The Ky Fan norms $\|\mathbf{A}\|_{(k)}$ are continuous. -/
 theorem continuous_kyFanNorm (k : ℕ) : Continuous fun A : Matrix m n 𝕜 => kyFanNorm k A := by
@@ -129,7 +129,8 @@ theorem SymmetricGauge.continuous_matrixNorm (Φ : SymmetricGauge) :
 unitarily invariant norm of the $\ell^q$ gauge. -/
 theorem continuous_schattenNorm {q : ℝ≥0∞} (hq : 1 ≤ q) :
     Continuous fun A : Matrix m n 𝕜 => schattenNorm q A := by
-  have h := (lpGauge q hq).continuous_matrixNorm (𝕜 := 𝕜) (m := m) (n := n)
+  have := Fact.mk hq
+  have h := (lpGauge q).continuous_matrixNorm (𝕜 := 𝕜) (m := m) (n := n)
   simp only [lpGauge_matrixNorm] at h
   exact h
 
@@ -175,7 +176,7 @@ Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`. -/
 theorem abs_frobNorm_sub_truncatedSVD_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :
     |frobNorm (A - truncatedSVD A k) - frobNorm (B - truncatedSVD B k)| ≤ frobNorm (A - B) := by
   simpa only [lpGauge_two_matrixNorm] using
-    (lpGauge 2 one_le_two).abs_matrixNorm_sub_truncatedSVD_sub_le A B k
+    (lpGauge 2).abs_matrixNorm_sub_truncatedSVD_sub_le A B k
 
 /-- The optimal error $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi}$ of rank-$k$
 approximation, with $\llbracket \mathbf{A} \rrbracket_k$ the rank-$k$ truncated SVD, is continuous
@@ -213,7 +214,7 @@ theorem isClosed_setOf_isBestRankApprox [Fintype m] (k : ℕ) :
     exact isBestRankApprox_iff
   have hc : Continuous fun A : Matrix m n 𝕜 => frobNorm (A - truncatedSVD A k) := by
     simpa only [lpGauge_two_matrixNorm] using
-      (lpGauge 2 one_le_two).continuous_matrixNorm_sub_truncatedSVD (𝕜 := 𝕜) (m := m) (n := n) k
+      (lpGauge 2).continuous_matrixNorm_sub_truncatedSVD (𝕜 := 𝕜) (m := m) (n := n) k
   rw [h]
   exact ((isClosed_setOf_rank_le k).preimage continuous_snd).inter
     (isClosed_le (continuous_frobNorm.comp (continuous_fst.sub continuous_snd))

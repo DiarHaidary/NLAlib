@@ -345,7 +345,7 @@ private theorem integral_norm_countSketchMatrix_mulVec_sq (h : n → k) (x : n �
 
 /-- **CountSketch is isotropic**, $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$, for
 nonempty `k`. [CamanoEpperlyMeyerTropp2025, Lemma B.1] (first part, there
-$\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^*] = \mathbf{I}$). -/
+$\mathbb{E}[\mathbf{\Phi}\mathbf{\Phi}^{\mathsf{H}}] = \mathbf{I}$). -/
 theorem isIsotropicSketch_of_hasLaw_countSketch [Nonempty k] [DecidableEq n]
     (hS : HasLaw S (countSketch k n) μ) : IsIsotropicSketch S μ := by
   let _ : MeasurableSpace k := ⊤
@@ -437,7 +437,7 @@ private theorem sum_sum_ite_ne [DecidableEq n] (M : Matrix n n 𝕜) :
   have e (i j : n) : (if i ≠ j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0) =
       ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) -
         if i = j then ‖M i j‖ ^ 2 + RCLike.re (star (M i j) * M j i) else 0 := by
-    split_ifs <;> simp_all
+    by_cases h : i = j <;> simp [h]
   simp only [e, Finset.sum_sub_distrib, Finset.sum_ite_eq, Finset.mem_univ, if_true, hd,
     Finset.sum_add_distrib, frobNorm_sq_eq_sum, frobInner_eq_sum, Matrix.transpose_apply,
     ← Finset.mul_sum]
@@ -447,8 +447,9 @@ $$\mathbb{E}\lvert \operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S
 \rvert^2 = \frac{\|\mathbf{M}\|_{\mathsf{F}}^2 + \langle \mathbf{M}, \mathbf{M}^{\mathsf{T}}
 \rangle_{\mathsf{F}} - 2 \sum_i \lvert \mathbf{M}_{i,i} \rvert^2}{\lvert k \rvert}\,.$$
 [CamanoEpperlyMeyerTropp2025, Lemma B.1 and its proof] (there for self-adjoint $\mathbf{M}$, the
-uncentred moment $\mathbb{E}[\operatorname{tr}(\mathbf{M}\mathbf{\Phi}\mathbf{\Phi}^*)^2]$, which
-adds $(\operatorname{tr}\mathbf{M})^2$; the exact expression is in the proof, the statement is
+uncentred moment
+$\mathbb{E}[\operatorname{tr}(\mathbf{M}\mathbf{\Phi}\mathbf{\Phi}^{\mathsf{H}})^2]$, which adds
+$(\operatorname{tr}\mathbf{M})^2$; the exact expression is in the proof, the statement is
 the bound $(\operatorname{tr}\mathbf{M})^2 + 2\|\mathbf{M}\|_{\mathsf{F}}^2/b$ for $b$ rows).
 Here centred, any $\mathbf{M}$, any field. For a fixed hash,
 $\operatorname{tr}(\mathbf{M}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))$ is a hollow
@@ -572,9 +573,10 @@ $$\mathbb{E}\|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
 = \frac{\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{B}\|_{\mathsf{F}}^2 +
 \|\mathbf{A}^{\mathsf{T}}\mathbf{B}\|_{\mathsf{F}}^2 -
 2\sum_i \|\mathbf{a}_i\|^2 \|\mathbf{b}_i\|^2}{\lvert k \rvert}$$
-for the rows $\mathbf{a}_i$, $\mathbf{b}_i$ of $\mathbf{A}$, $\mathbf{B}$. Proved without a
-literature source; Woodruff's proof of Theorem 14 computes its case
-$\mathbf{A} = \mathbf{B} = \mathbf{x}$ over $\mathbb{R}$. Entry $(a, b)$ of the error is
+for the rows $\mathbf{a}_i$, $\mathbf{b}_i$ of $\mathbf{A}$, $\mathbf{B}$.
+[Woodruff2014, proof of Theorem 14] computes its case $\mathbf{A} = \mathbf{B} = \mathbf{x}$ over
+$\mathbb{R}$ (there as $\mathbb{E}\|\mathbf{S}\mathbf{x}\|^4$, then bounded); the general case is
+proved here without a literature source. Entry $(a, b)$ of the error is
 $\operatorname{tr}(\mathbf{M}_{ab}(\mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}))$ for the
 rank-one $\mathbf{M}_{ab}$ with entries $\mathbf{B}_{j,b}\overline{\mathbf{A}_{i,a}}$, and the
 exact second moment is summed over $(a, b)$.
@@ -624,11 +626,11 @@ theorem integral_frobNorm_conjTranspose_mul_sub_sq_le_of_hasLaw_countSketch
 
 /-- **AMM with a CountSketch, tail form**: for $\varepsilon > 0$ and nonzero $\mathbf{A}$,
 $\mathbf{B}$,
-$$\mathbb{P}\bigl(\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
+$$\mathbb{P}\bigl[\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
 \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
-\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr)
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr]
 \le \frac{2}{\lvert k \rvert \varepsilon^2}\,.$$
-S1's AMM route (`NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le` at
+S1's AMM route (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le` at
 `NLAlib.hasJLMoment_of_hasLaw_countSketch`) is over $\mathbb{R}$ only, where it gives the same
 $2/(\lvert k \rvert \varepsilon^2)$; the direct identity is the only AMM for a complex
 CountSketch, and is a factor $2$ better in the failure probability than the

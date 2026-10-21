@@ -147,7 +147,7 @@ private theorem integrable_and_integral_le_of_tendsto {F : ℕ → Ω → ℝ} {
 
 /-- A uniform bound for the mean of $F$ from the uncentred sub-Gaussian bound, using a set $A$ of
 positive mass on which $\lvert F\rvert \le a$:
-$\lvert \mathbb{E} F\rvert \le a + q/2 - \log \mathbb{P}(A)$. -/
+$\lvert \mathbb{E} F\rvert \le a + q/2 - \log \mathbb{P}[A]$. -/
 private theorem abs_integral_le_of_integral_exp_le [IsProbabilityMeasure μ] {F : Ω → ℝ}
     (hexp : ∀ s, Integrable (fun x => rexp (s * F x)) μ) {q : ℝ}
     (hraw : ∀ s, ∫ x, rexp (s * F x) ∂μ ≤ rexp (s * ∫ x, F x ∂μ + q * s ^ 2 / 2))
@@ -188,7 +188,7 @@ end Aux
 
 omit [FiniteDimensional ℝ E] in
 /-- Herbst's argument for a bounded $C^1$ $L$-Lipschitz $f$: the predicate applied to
-$e^{s f / 2}$ gives $\operatorname{Ent}(e^{s f}) \le \frac{c L^2 s^2}{2}\, \mathbb{E} e^{s f}$. -/
+$e^{s f / 2}$ gives $\operatorname{Ent}(e^{s f}) \le (c L^2 s^2/2)\, \mathbb{E} e^{s f}$. -/
 private theorem HasLogSobolev.hasSubgaussianMGF_of_bounded [IsProbabilityMeasure ν]
     (h : HasLogSobolev ν c) {f : E → ℝ} {L : ℝ≥0} (hf : LipschitzWith L f)
     (hfc : ContDiff ℝ 1 f) {M : ℝ} (hM : ∀ x, |f x| ≤ M) :

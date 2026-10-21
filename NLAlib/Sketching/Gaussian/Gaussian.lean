@@ -449,7 +449,9 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_gaussianMatrix
   simp only [Set.mem_ofPred_eq] at hω ⊢
   exact fun h' => hω h'.upper
 
-/-- **The upper half alone**: for $\mathbf{U}$ with orthonormal columns,
+/-- **The upper half alone**: for a standard Gaussian $k \times n$ matrix $\mathbf{G}$, the
+sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ and $\mathbf{U}$ with orthonormal
+columns,
 $$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})
 \preceq \Bigl(1 + \frac{\sqrt{\lvert p \rvert} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2 \mathbf{I}$$
 outside probability $e^{-t^2/2}$, for every $t \ge 0$; no condition relating $t$, $k$ and $p$, and
@@ -537,7 +539,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix
 
 /-- **Distributional Johnson–Lindenstrauss for a Gaussian sketch**: for every unit $\mathbf{x}$
 and every $\varepsilon \ge 0$,
-$$\mathbb{P}\bigl(\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr)
+$$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,;$$
 $\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{G}\mathbf{x}\|^2/\lvert k \rvert$ is
 $\chi^2_{\lvert k \rvert} / \lvert k \rvert$
@@ -691,8 +693,8 @@ $0 < \varepsilon \le 2$, $\delta > 0$, at
 least <!-- value gaussianEmbeddingDim d (\varepsilon/2) (\delta/2) -->
 $9 (\sqrt{d} + \sqrt{2 \log(2/(\delta/2))})^2/(\varepsilon/2)^2$ rows
 (`gaussianEmbeddingDim d (ε / 2) (δ / 2)`) and at
-least <!-- value projectionCostTailRows 2 d \varepsilon \delta -->
-$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailRows 2 d ε δ`),
+least <!-- value projectionCostTailDim 2 d \varepsilon \delta -->
+$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailDim 2 d ε δ`),
 $\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{G}$ makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$
 projection-cost-preserving sketch of $\mathbf{A}$ with constants $1 \mp \varepsilon$, for every
 $\mathbf{A}$, except with probability $\delta$. The head is the OSE size form at
@@ -708,12 +710,12 @@ theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
     (hG : HasLaw G (gaussianMatrix k n) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ) (d : ℕ)
     (hε : 0 < ε) (hε2 : ε ≤ 2) (hδ : 0 < δ)
     (hk₁ : gaussianEmbeddingDim d (ε / 2) (δ / 2) ≤ Fintype.card k)
-    (hk₂ : projectionCostTailRows 2 d ε δ ≤ Fintype.card k) :
+    (hk₂ : projectionCostTailDim 2 d ε δ ≤ Fintype.card k) :
     HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) A d (1 - ε) (1 + ε) δ
       μ := by
   have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
-  have hpos : 0 < projectionCostTailRows 2 d ε δ := by
-    rw [projectionCostTailRows_def]; positivity
+  have hpos : 0 < projectionCostTailDim 2 d ε δ := by
+    rw [projectionCostTailDim_def]; positivity
   have hK : (0 : ℝ) < Fintype.card k := hpos.trans_le hk₂
   have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK)
   have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
@@ -735,7 +737,7 @@ theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
         (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
     refine ⟨by linarith, by linarith, ?_⟩
     have hk := hk₂
-    rw [projectionCostTailRows_def, div_le_iff₀ (by positivity)] at hk
+    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
     have e : 2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
         64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
       rw [div_pow, mul_pow, hss]
@@ -783,7 +785,7 @@ theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix :
       nlinarith [Nat.cast_nonneg (α := ℝ) d]
     rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
     nlinarith [mul_le_mul_of_nonneg_right h1 (sq_nonneg ε)]
-  · refine (projectionCostTailRows_le 2 d ε δ).trans (le_trans (le_of_eq ?_) hk)
+  · refine (projectionCostTailDim_le 2 d ε δ).trans (le_trans (le_of_eq ?_) hk)
     ring
 
 /-- **Gaussian OSI, sample-size form**: at
@@ -791,7 +793,10 @@ least <!-- value gaussianInjectionDim d \varepsilon \delta -->
 $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$ rows (`gaussianInjectionDim d ε δ`) give
 an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 2$ and $0 < \delta < 1$; $k$ is nonempty because
-the dimension is positive. Asymptotic form:
+the dimension is positive. [MartinssonTropp2020, §8.7.2] (the tail form: the smallest
+singular value of the sketch on the subspace is at most
+$1 - (1 + \sqrt{d})/\sqrt{\lvert k \rvert} - t$ with probability at most
+$e^{-\lvert k \rvert t^2/2}$); here solved for the row count. Asymptotic form:
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`.
 Result: gaussian-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
@@ -838,7 +843,9 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix :
 /-- **Gaussian distributional JL, sample-size form**: at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property with distortion $\varepsilon$ and failure
-probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. Replaces the prototype's
+probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. [Woodruff2014, Theorem 4]
+(there $\Omega(\varepsilon^{-2} \log(f/\delta))$ rows for $f$ points, unspecified constant,
+proved in Lemma 18; here $f = 1$ with Dasgupta and Gupta's exponent). Replaces the prototype's
 `jl_lemma_prob_le_of_log_le`. Asymptotic form:
 `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`.
 Result: jl-distributional -/
@@ -890,7 +897,7 @@ theorem exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le [Fintype ι] (x : ι
   have hδ : (0 : ℝ) < 1 / (((Fintype.card ι).choose 2 : ℕ) + 1 : ℝ) := by positivity
   have hJL := hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le
     (HasLaw.id (μ := gaussianMatrix k n)) hε hε1 hδ hk
-  have hm := hJL.measure_exists_abs_norm_mulVec_sq_sub_ge_le hδ.le x
+  have hm := hJL.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le hδ.le x
   by_contra hcon
   push Not at hcon
   have huniv : {ω : Matrix k n ℝ | ∃ i j, x i ≠ x j ∧ ε * ‖WithLp.toLp 2 (x i - x j)‖ ^ 2 ≤

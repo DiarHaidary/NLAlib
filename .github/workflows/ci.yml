@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build NLAlib and NLAlibScaffold with the Mathlib cache
+      - name: Build NLAlib and NLAlibScaffold with the Mathlib cache; warnings are fatal
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          build-args: "NLAlib NLAlibScaffold"
+          build-args: "--wfail NLAlib NLAlibScaffold"
           lint: false
           test: false
       - name: Root modules are current
@@ -29,10 +29,18 @@ jobs:
         run: lake env lean scripts/Lint.lean
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
+      - name: Generated rule files are current (docs/rules/rules.toml)
+        run: python3 scripts/gen_rules_md.py --check
+      - name: Port-ledger targets exist (rule G2)
+        run: python3 scripts/ledger_check.py
       - name: Documentation metadata regressions
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Named bounds show their current values
         run: python3 scripts/check_constants.py
+      - name: Extract the declaration data (about a minute on the built library)
+        run: bash scripts/explore_data.sh "$RUNNER_TEMP/explore-data.json"
+      - name: Contribution rules by id, names (N1-N18) included, ratcheted (scripts/check_rules.py)
+        run: python3 scripts/check_rules.py "$RUNNER_TEMP/explore-data.json"
       - uses: actions/setup-node@v4
         with:
           node-version: 20

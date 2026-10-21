@@ -25,22 +25,20 @@ sum and exponential rules compute those gradients. Upstream candidates for
 
 ## Main results
 
-* `NLAlib.norm_fderiv_le_of_norm_iteratedFDeriv_two_le`: $\|Df(x)\| \le \|Df(0)\| + C \|x\|$.
-* `NLAlib.norm_sub_le_of_norm_iteratedFDeriv_two_le`:
+* `norm_fderiv_le_of_norm_iteratedFDeriv_two_le`: $\|Df(x)\| \le \|Df(0)\| + C \|x\|$.
+* `norm_sub_le_of_norm_iteratedFDeriv_two_le`:
   $\|f(x) - f(0)\| \le \|Df(0)\| \|x\| + C \|x\|^2$.
-* `NLAlib.contDiff_two_of_hasFDerivAt_sum_smul_proj`: explicit gradients give $C^2$.
-* `NLAlib.fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj`: the second derivative in
+* `contDiff_two_of_hasFDerivAt_sum_smul_proj`: explicit gradients give $C^2$.
+* `fderiv_fderiv_apply_of_hasFDerivAt_sum_smul_proj`: the second derivative in
   coordinates.
-* `NLAlib.norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj`:
+* `norm_iteratedFDeriv_two_le_of_hasFDerivAt_sum_smul_proj`:
   $\|D^2 f(\mathbf{x})\| \le \lvert \iota \rvert^2 K$ when $\lvert H_{i,j} \rvert \le K$.
-* `NLAlib.apply_eq_sum_mul_apply_single`: a linear form on $\mathbb{R}^{\iota}$ in the standard
+* `apply_eq_sum_mul_apply_single`: a linear form on $\mathbb{R}^{\iota}$ in the standard
   basis.
 * `HasFDerivAt.mul_sum_smul_proj` and its companions: calculus rules for coordinate gradients.
 -/
 
 @[expose] public section
-
-namespace NLAlib
 
 section Bounded
 
@@ -209,4 +207,3 @@ theorem hasFDerivAt_exp_mul_apply_sum_smul_proj [DecidableEq ι] (β : ℝ) (a :
 
 end Coordinates
 
-end NLAlib

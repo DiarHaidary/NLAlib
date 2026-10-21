@@ -80,14 +80,14 @@ theorem _root_.Matrix.PosSemidef.rangeFinderTailRatio_sqrt (hH : H.PosSemidef) (
     rangeFinderTailRatio (CFC.sqrt H) r l =
       1 + (r : ℝ) / ((l : ℝ) - r - 1) * nuclearNorm (H - truncatedSVD H r) /
         singularValues H r := by
-  rw [rangeFinderTailRatio, hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.sq_singularValues_sqrt]
+  rw [rangeFinderTailRatio, hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.singularValues_sqrt_sq]
 
 open scoped Classical in
 /-- Positivity of $\sigma_r(\mathbf{H})$ passes to $\sigma_r(\mathbf{H}^{1/2})$. -/
 private theorem singularValues_sqrt_pos (hH : H.PosSemidef) {r : ℕ}
     (hσ : 0 < singularValues H r) : 0 < singularValues (CFC.sqrt H) r := by
   refine (singularValues_nonneg _ r).lt_of_ne fun h => ?_
-  rw [← hH.sq_singularValues_sqrt, ← h] at hσ
+  rw [← hH.singularValues_sqrt_sq, ← h] at hσ
   norm_num at hσ
 
 /-! ### Spectral errors through the square root -/
@@ -115,13 +115,19 @@ set_option linter.style.longLine false in
 /-- **The gapped bound for block Krylov Nyström**: for positive semidefinite $\mathbf{H}$, a
 standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$ blocks, a head of
 $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, and
-$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
+$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$,
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \le
 \sigma_r(\mathbf{H}) + 4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}\,\frac{t}{\ell - t - 1}
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_t\|_*\,.$$
 By the Gram correspondence from the RBKI bound at $\mathbf{H}^{1/2}$
-(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`), whose gap is
-at least $\gamma/2$. [TroppWebber2023, Theorem 9.2 (NysBKI)]; there for
+(`NLAlib.integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix`), whose gap
+$\gamma_{1/2}$ is at least $\gamma/2$; its Chebyshev filter gives the factor
+$\operatorname{sech}^2(4(q-1)\operatorname{artanh}\sqrt{\gamma_{1/2}}) \le
+\operatorname{sech}^2(2\sqrt{2}(q-1)\sqrt{\gamma}) =
+4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}/(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2$, and the statement
+drops $(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+rule 7). [TroppWebber2023, Theorem 9.2 (NysBKI)]; there for
 $\mathbb{E}\|\mathbf{H} - \hat{\mathbf{H}}\|_p^2$ with a squared Frobenius tail and exponent
 $4(m - 3/2)\sqrt{2\gamma}$ for $m = q$ products; this statement is the Nyström-native shape of TW
 Corollary 8.2, obtained from the RBKI line at $\mathbf{H}^{1/2}$; the two are incomparable.
@@ -155,7 +161,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of
   simp only [specNorm_sub_nystromBKI_eq hH]
   refine (integral_specNorm_sub_rbki_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
     (CFC.sqrt H) hX hr hrt ht hq).trans ?_
-  rw [hH.sq_singularValues_sqrt, hH.frobNorm_sqrt_sub_truncatedSVD_sq]
+  rw [hH.singularValues_sqrt_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq]
   have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right
     (mul_le_mul_of_nonneg_left hexp zero_le_four) (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
@@ -191,18 +197,17 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRat
     Real.exp_le_exp.mpr (by nlinarith [mul_le_mul_of_nonneg_left hgap (Nat.cast_nonneg (α := ℝ) p)])
   have hb := integral_specNorm_sub_rsvd_pow_mul_sq_le_singularGapRatio_of_hasLaw_gaussianMatrix
     (CFC.sqrt H) hX hr hrt ht p
-  rw [hH.conjTranspose_sqrt_mul_sqrt, hH.sq_singularValues_sqrt,
+  rw [hH.conjTranspose_sqrt_mul_sqrt, hH.singularValues_sqrt_sq,
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
   simp only [specNorm_sub_nystrom_pow_mul_eq hH]
   refine hb.trans ?_
-  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
+  have := mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
 /-! ### Gapless bounds -/
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The gapless bound for block Krylov Nyström, $(1 + \varepsilon)$ form**: for positive
 semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $q \ge 1$
 blocks, a target rank $r$ with $r + 2 \le \ell$ and every $\varepsilon > 0$,
@@ -226,7 +231,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_one_add_sq_mul_of_h
   simp only [specNorm_sub_nystromBKI_eq hH]
   have hb := integral_specNorm_sub_rbki_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
     (CFC.sqrt H) hX hr hq hε
-  rwa [hH.sq_singularValues_sqrt, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
+  rwa [hH.singularValues_sqrt_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -251,11 +256,9 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_one_add_sq_mul
   simp only [specNorm_sub_nystrom_pow_mul_eq hH]
   have hb := integral_specNorm_sub_rsvd_pow_mul_sq_le_one_add_sq_mul_of_hasLaw_gaussianMatrix
     (CFC.sqrt H) hX hr p hε
-  rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.sq_singularValues_sqrt,
+  rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.singularValues_sqrt_sq,
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **Tropp and Webber's gapless bound for block Krylov Nyström, Nyström-native shape**: for
 positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$,
 $q \ge 2$ blocks, a target rank $r$ with $r + 2 \le \ell$ and $\sigma_r(\mathbf{H}) > 0$,
@@ -264,7 +267,7 @@ $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \l
 \sigma_r(\mathbf{H})\exp\biggl(\frac{1}{16(q-1)^2}\log^2\biggl(4\Bigl(1 + \frac{r}{\ell - r - 1}\,
 \frac{\|\mathbf{H}^{1/2} - \llbracket\mathbf{H}^{1/2}\rrbracket_r\|_{\mathsf{F}}^2}
 {\sigma_r(\mathbf{H}^{1/2})^2}\Bigr)\biggr)\biggr)\,,$$
-where the ratio is $1 + \frac{r}{\ell - r - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*/
+where the ratio is $1 + (r/(\ell - r - 1))\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_r\|_*/
 \sigma_r(\mathbf{H})$ (`Matrix.PosSemidef.rangeFinderTailRatio_sqrt`). By the Gram correspondence
 from `NLAlib.integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix` at
 $\mathbf{H}^{1/2}$. [TroppWebber2023, Theorem 9.1 (NysBKI)]; there on the squared error with the
@@ -284,10 +287,8 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystromBKI_le_mul_exp_of_hasLaw_g
   simp only [specNorm_sub_nystromBKI_eq hH]
   have hb := integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (CFC.sqrt H) hX hr
     hq (singularValues_sqrt_pos hH hσ)
-  rwa [hH.sq_singularValues_sqrt] at hb
+  rwa [hH.singularValues_sqrt_sq] at hb
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **Tropp and Webber's gapless bound for Nyström subspace iteration, Nyström-native shape**: for
 positive semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$,
 $p$ power steps, a target rank $r$ with $r + 2 \le \ell$ and $\sigma_r(\mathbf{H}) > 0$,
@@ -314,7 +315,7 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_nystrom_pow_mul_le_mul_rpow_of_ha
   simp only [specNorm_sub_nystrom_pow_mul_eq hH]
   have hb := integral_specNorm_sub_rsvd_pow_mul_sq_le_mul_rpow_of_hasLaw_gaussianMatrix
     (CFC.sqrt H) hX hr p (singularValues_sqrt_pos hH hσ)
-  rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.sq_singularValues_sqrt] at hb
+  rwa [hH.conjTranspose_sqrt_mul_sqrt, hH.singularValues_sqrt_sq] at hb
 
 /-! ### The late-truncated outputs -/
 
@@ -407,19 +408,19 @@ _root_.Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_l
     hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hb
   simp only [hH.nuclearNorm_sub_truncatedSVD_nystrom]
   refine hb.trans ?_
-  have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
+  have := mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_right hexp (natCast_div_sub_sub_one_nonneg ht))
     (nuclearNorm_nonneg (H - truncatedSVD H t))
   linarith
 
 /-! ### Asymptotic forms -/
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **Depth $O(\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma})$ suffices for block Krylov
 Nyström with a gap**: there are absolute constants $C, \varepsilon_0 > 0$ such that for positive
 semidefinite $\mathbf{H}$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, a head of
 $r = h + 1$ eigenvalues, a tail index $t \ge r$ with $t + 2 \le \ell$, a positive relative gap
-$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) + \sigma_t(\mathbf{H}))$,
+$\gamma = (\sigma_h(\mathbf{H}) - \sigma_t(\mathbf{H}))/(\sigma_h(\mathbf{H}) +
+\sigma_t(\mathbf{H}))$,
 $0 < \varepsilon \le \varepsilon_0$ and $q \ge C\log(\lvert n \rvert/\varepsilon)/\sqrt{\gamma}$
 blocks,
 $$\mathbb{E}\|\mathbf{H} - \mathsf{nystromBKI}(\mathbf{H}, \mathbf{X}, q)\|_2 \le
@@ -447,8 +448,8 @@ exists_forall_integral_specNorm_sub_nystromBKI_le_of_singularGapRatio_pos_of_has
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one H h t)) hq
   have hexp :=
     hH.integral_specNorm_sub_nystromBKI_le_singularGapRatio_of_hasLaw_gaussianMatrix hX hr hrt ht
@@ -457,11 +458,11 @@ exists_forall_integral_specNorm_sub_nystromBKI_le_of_singularGapRatio_pos_of_has
   have hT :=
     natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq
       (CFC.sqrt H) hrt ht
-  rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.sq_singularValues_sqrt] at hT
+  rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.singularValues_sqrt_sq] at hT
   have hs2 : 1 ≤ Real.sqrt 2 := Real.one_le_sqrt.2 (by norm_num)
   have hqγ : 0 ≤ ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t) := by linarith
-  exact le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) (by norm_num) le_rfl hT hN
-    hε hε₀ (by nlinarith [mul_le_mul_of_nonneg_right hs2 hqγ])
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) (by norm_num) le_rfl hT
+    hN hε hε₀ (by nlinarith [mul_le_mul_of_nonneg_right hs2 hqγ])
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -497,7 +498,7 @@ exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_singularGapRatio_pos_o
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     hH.integral_specNorm_sub_nystrom_pow_mul_le_singularGapRatio_of_hasLaw_gaussianMatrix hX hr
@@ -506,8 +507,8 @@ exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_singularGapRatio_pos_o
   have hT :=
     natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singularValues_sq
       (CFC.sqrt H) hrt ht
-  rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.sq_singularValues_sqrt] at hT
-  exact le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) zero_le_one (by norm_num)
+  rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.singularValues_sqrt_sq] at hT
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (singularValues_nonneg _ _) zero_le_one (by norm_num)
     hT hN hε hε₀ (by nlinarith)
 
 -- The declaration name alone exceeds 100 characters.
@@ -544,8 +545,8 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_of_singularGap
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
-  obtain ⟨hq1, hqL⟩ := one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
+  have hL := Real.one_half_le_log_div hN hε hε₀
+  obtain ⟨hq1, hqL⟩ := Real.one_le_and_log_div_le_sub_one_mul hN hε hε₀ (Real.sqrt_pos.2 hγ)
     (Real.sqrt_le_one.2 (singularGapRatio_le_one H h t)) hq
   have hexp :=
     hH.integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_singularGapRatio_of_hasLaw_gaussianMatrix
@@ -557,7 +558,7 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystromBKI_le_of_singularGap
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hT
   have hs2 : 1 ≤ Real.sqrt 2 := Real.one_le_sqrt.2 (by norm_num)
   have hqγ : 0 ≤ ((q : ℝ) - 1) * Real.sqrt (singularGapRatio H h t) := by linarith
-  exact le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) (by norm_num) le_rfl
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) (by norm_num) le_rfl
     (hT.trans (mul_le_mul_of_nonneg_right (by nlinarith) (nuclearNorm_nonneg _))) hN hε hε₀
     (by nlinarith [mul_le_mul_of_nonneg_right hs2 hqγ])
 
@@ -596,7 +597,7 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_of_singul
     · simp [singularGapRatio, singularValues_of_card_cols_le H (k := h) (by omega),
         singularValues_of_card_cols_le H (k := t) (by omega)] at hγ
     · exact_mod_cast h0
-  have hL := one_half_le_log_div hN hε hε₀
+  have hL := Real.one_half_le_log_div hN hε hε₀
   rw [one_mul, div_le_iff₀ hγ] at hp
   have hexp :=
     hH.integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_singularGapRatio_of_hasLaw_gaussianMatrix
@@ -606,7 +607,7 @@ exists_forall_integral_nuclearNorm_sub_truncatedSVD_nystrom_pow_mul_le_of_singul
     natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_mul_frobNorm_sub_truncatedSVD_sq
       (CFC.sqrt H) hrt ht
   rw [hH.frobNorm_sqrt_sub_truncatedSVD_sq, hH.frobNorm_sqrt_sub_truncatedSVD_sq] at hT
-  exact le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) zero_le_one (by norm_num)
+  exact Real.le_add_mul_of_le_add_mul_exp hexp (nuclearNorm_nonneg _) zero_le_one (by norm_num)
     (hT.trans (mul_le_mul_of_nonneg_right (by nlinarith) (nuclearNorm_nonneg _))) hN hε hε₀
     (by nlinarith)
 
@@ -646,7 +647,7 @@ theorem exists_forall_integral_specNorm_sub_nystromBKI_le_of_hasLaw_gaussianMatr
     simp only [h0, specNorm_zero, integral_zero]
     exact mul_nonneg (by linarith) (singularValues_nonneg _ _)
   have hN : (1 : ℝ) ≤ Fintype.card n := by exact_mod_cast hNpos
-  obtain ⟨hq2, hexp⟩ := two_le_and_exp_log_four_mul_sq_div_le_one_add hN hε hε₁ hq
+  obtain ⟨hq2, hexp⟩ := Real.two_le_and_exp_log_four_mul_sq_div_le_one_add hN hε hε₁ hq
   rcases (singularValues_nonneg H r).eq_or_lt with hσ0 | hσ
   · -- $\sigma_r(\mathbf{H}) = 0$: the $(1 + \varepsilon)$ form bounds the error by $0$.
     have hH0 : H - truncatedSVD H r = 0 := by
@@ -704,7 +705,7 @@ theorem exists_forall_integral_specNorm_sub_nystrom_pow_mul_le_of_hasLaw_gaussia
   refine (hH.integral_specNorm_sub_nystrom_pow_mul_le_mul_rpow_of_hasLaw_gaussianMatrix hX hr p
     hσ).trans ?_
   rw [mul_comm (1 + ε)]
-  exact mul_le_mul_of_nonneg_left (rpow_one_div_two_mul_add_one_le_one_add (Nat.cast_nonneg _)
+  exact mul_le_mul_of_nonneg_left (Real.rpow_one_div_two_mul_add_one_le_one_add (Nat.cast_nonneg _)
     (one_le_rangeFinderTailRatio _ hr)
     (rangeFinderTailRatio_le_one_add_card_sq _ hr (singularValues_sqrt_pos hH hσ)) hε hε₁ hp)
     (singularValues_nonneg _ _)

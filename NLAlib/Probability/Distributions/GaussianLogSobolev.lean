@@ -334,7 +334,7 @@ theorem integrable_sq_mul_log_sq_stdGaussian {g : E → ℝ} (hg : ContDiff ℝ 
 
 /-- **Gross's logarithmic Sobolev inequality** for the standard Gaussian on a Euclidean space:
 $\operatorname{Ent}(g^2) \le 2\, \mathbb{E}\|\nabla g\|^2$ for $g$ of class $C^1$ with $g^2$ and
-$\|\nabla g\|^2$ integrable ([BoucheronLugosiMassart2013], Theorem 5.4).
+$\|\nabla g\|^2$ integrable ([BoucheronLugosiMassart2013, Theorem 5.4]).
 Result: gaussian-log-sobolev -/
 theorem entropy_sq_le_two_mul_integral_norm_fderiv_sq_stdGaussian {g : E → ℝ}
     (hg : ContDiff ℝ 1 g) (hg2 : Integrable (fun x => g x ^ 2) (stdGaussian E))

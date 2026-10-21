@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
 public import NLAlib.Matrix.Factorizations.GaussState
 
 /-!
@@ -349,7 +350,7 @@ theorem exists_perm_forall_weight_gaussState_le (w : K → ℝ) (A : Matrix (Fin
     have hsub : A.submatrix (τ.trans σ) id = (A.submatrix σ id).submatrix τ id := rfl
     rw [hsub, gaussState_submatrix_left _ τ j fun l hl => hτ l (Fin.lt_def.mpr hl)]
     rfl
-  obtain ⟨σ, hσ⟩ := exists_perm_forall_le_apply_self
+  obtain ⟨σ, hσ⟩ := Fin.exists_perm_forall_le_apply_self
     (fun σ j i => w (gaussState (A.submatrix σ id) j i j)) hs n
   exact ⟨σ, fun j i hji => hσ j i j.2 hji⟩
 

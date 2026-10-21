@@ -89,7 +89,7 @@ private theorem ofReal_integral_norm_mulVec_sq
     (hS : ∀ i j, MemLp (fun ω => S ω i j) 2 μ) (x : n → 𝕜) :
     ((∫ ω, ‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 ∂μ : ℝ) : 𝕜) =
       quadForm (∫ ω, (S ω)ᴴ * S ω ∂μ) x := by
-  rw [← integral_ofReal, ← Matrix.integral_quadForm (integrable_conjTranspose_mul_self_of_memLp hS)]
+  rw [← integral_ofReal, ← integral_quadForm (integrable_conjTranspose_mul_self_of_memLp hS)]
   simp only [quadForm_conjTranspose_mul_self]
 
 /-- Isotropy in vector form: square-integrable entries and

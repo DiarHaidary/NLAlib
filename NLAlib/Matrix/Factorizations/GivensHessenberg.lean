@@ -66,25 +66,25 @@ private theorem givensHessenbergState_snd_apply_eq_zero {H : Matrix (Fin m) (Fin
       have hp : k < p := by omega
       rw [show i = ⟨k + 1, hm⟩ from Fin.ext hi, show j = ⟨k, hp⟩ from Fin.ext hjk',
         givensHessenbergStep, dif_pos ⟨hm, hp⟩]
-      exact givensOf_mulVec_apply_right (givensHessenbergStep_plane_ne hm) _
+      exact givensOf_mulVec_apply_right (Fin.ne_of_val_ne (Nat.succ_ne_self k).symm) _
     · rw [givensHessenbergStep_mul_apply_of_ne _ _ (by omega) hi]
       exact ih i j hji (Or.inr (by omega))
 
-/-- **Givens QR of an upper Hessenberg matrix is upper trapezoidal.** Proof: by induction, after
-$k$ steps the first $k$ columns are upper trapezoidal and the rest is still Hessenberg; step $k$
-mixes rows $k$, $k + 1$ only. [GolubVanLoan2013, §5.2.5]. -/
+/-- **Givens QR of an upper Hessenberg matrix is upper trapezoidal**: for an upper Hessenberg
+matrix $\mathbf{H}$, the triangular factor $\mathsf{givensHessenbergR}(\mathbf{H})$ of its Givens
+QR is upper trapezoidal. [GolubVanLoan2013, §5.2.5]. -/
 theorem isUpperTrapezoidal_givensHessenbergR {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH : IsUpperHessenberg H) : IsUpperTrapezoidal (givensHessenbergR H) := by
   exact fun i j hji => givensHessenbergState_snd_apply_eq_zero hH p i j hji (Or.inl j.2)
 
 /-- **Givens QR gives the thin QR factorization** of a tall upper Hessenberg matrix.
-[GolubVanLoan2013, Algorithm 5.2.4]. Proof: `isQR_submatrix_castLE`.
+[GolubVanLoan2013, Algorithm 5.2.4].
 Result: givens-qr -/
 theorem isQR_givensHessenberg {H : Matrix (Fin m) (Fin p) 𝕜} (hH : IsUpperHessenberg H)
     (h : p ≤ m) :
     IsQR H ((givensHessenbergQ H).submatrix id (Fin.castLE h))
       ((givensHessenbergR H).submatrix (Fin.castLE h) id) := by
-  exact isQR_submatrix_castLE (hasOrthonormalCols_givensHessenbergState_fst H p)
+  exact HasOrthonormalCols.isQR_submatrix_castLE (hasOrthonormalCols_givensHessenbergState_fst H p)
     (isUpperTrapezoidal_givensHessenbergR hH) (givensHessenbergState_fst_mul_snd H p).symm h
 
 /-- The band of the triangularised matrix for $\mathbf{H}^{\mathsf{H}}$ upper Hessenberg: after
@@ -122,15 +122,16 @@ private theorem givensHessenbergState_snd_apply_eq_zero_of_add_two_lt
 /-- **The tridiagonal case**: if $\mathbf{H}^{\mathsf{H}}$ is upper Hessenberg, in particular
 for a rectangular tridiagonal matrix (as $\underline{\mathbf{T}}_q$ in MINRES), the factor
 $\mathbf{R}$ has only three nonzero diagonals: $\mathbf{R}_{i,j} = 0$ for $j > i + 2$.
-[PaigeSaunders1975]; locator to verify. -/
+[PaigeSaunders1975, (5.5)]; there in transposed form: the LQ factorization by plane rotations of
+the symmetric tridiagonal Lanczos matrix has a lower triangular factor with three nonzero
+diagonals. -/
 theorem givensHessenbergR_apply_eq_zero_of_add_two_lt {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH' : IsUpperHessenberg Hᴴ) {i : Fin m} {j : Fin p}
     (hij : (i : ℕ) + 2 < j) : givensHessenbergR H i j = 0 := by
   exact (givensHessenbergState_snd_apply_eq_zero_of_add_two_lt hH' p).1 i j hij
 
 /-- **Nonzero pivots exactly at full column rank**: for upper Hessenberg $\mathbf{H}$ with
-$p \le m$, the diagonal of $\mathbf{R}$ has no zero iff $\mathbf{H}$ has full column rank.
-Proof: `isQR_givensHessenberg` and `IsQR`'s rank. -/
+$p \le m$, the diagonal of $\mathbf{R}$ has no zero iff $\mathbf{H}$ has full column rank. -/
 theorem forall_givensHessenbergR_apply_self_ne_zero_iff {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH : IsUpperHessenberg H) (h : p ≤ m) :
     (∀ i : Fin p, givensHessenbergR H (Fin.castLE h i) i ≠ 0) ↔ Function.Injective H.mulVec := by
@@ -190,10 +191,11 @@ private theorem givensHessenbergState_castLE {q : ℕ} (H : Matrix (Fin (q + 1))
           (Fin.castLE (Nat.succ_le_succ hk) ⟨j + 1, by omega⟩)
           (givensCoeffs (W' ⟨j, by omega⟩ ⟨j, hjk⟩) (W' ⟨j + 1, by omega⟩ ⟨j, hjk⟩)).1
           (givensCoeffs (W' ⟨j, by omega⟩ ⟨j, hjk⟩) (W' ⟨j + 1, by omega⟩ ⟨j, hjk⟩)).2 := by
-      rw [givensHessenbergStep_of_lt W (by omega) (by omega), e1, e2]
+      rw [givensHessenbergStep_of_lt W (by omega) (by omega) (by omega), e1, e2]
       rfl
-    have hG' := givensHessenbergStep_of_lt W' (k := j) (by omega) hjk
-    have hne := givensHessenbergStep_plane_ne (m := k + 1) (k := j) (by omega)
+    have hG' := givensHessenbergStep_of_lt W' (k := j) (by omega) (by omega) hjk
+    have hne : (⟨j, by omega⟩ : Fin (k + 1)) ≠ ⟨j + 1, by omega⟩ :=
+      Fin.ne_of_val_ne (Nat.succ_ne_self j).symm
     refine ⟨fun a b => ?_, fun a => ?_⟩
     · change (givensHessenbergStep W j * W) _ _ = (givensHessenbergStep W' j * W') a b
       rw [hG, hG']
@@ -234,22 +236,17 @@ pivots by `forall_givensHessenbergR_apply_self_ne_zero_iff`), the least-squares 
 $\mathbf{H}_k^{+}\mathbf{e}_0$ of the leading $(k + 1) \times k$ block is back substitution with
 the leading $k \times k$ block of the rotated matrix and the first $k$ entries of the rotated
 $\mathbf{e}_0$. Later steps do not change these blocks, so the problems of all sizes are solved
-along the way. [Saad2003, §6.5.3]; locator to verify.
-Proof: the rotations of steps $j < k$ touch rows $j, j + 1 \le k$ only, so the state restricted
-to the block is the Givens QR of the block; then `IsQR.isLeastSquaresSolution_backSubst` and
-uniqueness at full column rank. -/
+along the way. [Saad2003, §6.5.3]; locator to verify. -/
 theorem pinv_submatrix_mulVec_single_eq_backSubst {q : ℕ} {H : Matrix (Fin (q + 1)) (Fin q) 𝕜}
-    (hH : IsUpperHessenberg H) {k : ℕ} (hk : k ≤ q)
-    (hHk : Function.Injective
-      (H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk)).mulVec) :
-    pinv (H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk)) *ᵥ Pi.single 0 1 =
-      backSubst ((givensHessenbergState H k).2.submatrix (Fin.castLE (Nat.le_succ_of_le hk))
+    (hH : IsUpperHessenberg H) {k : ℕ} (hk : k ≤ q) (hk₁ : k + 1 ≤ q + 1)
+    (hHk : Function.Injective (H.submatrix (Fin.castLE hk₁) (Fin.castLE hk)).mulVec) :
+    pinv (H.submatrix (Fin.castLE hk₁) (Fin.castLE hk)) *ᵥ Pi.single 0 1 =
+      backSubst ((givensHessenbergState H k).2.submatrix (fun i => Fin.castLE hk₁ i.castSucc)
           (Fin.castLE hk))
         (fun i => ((givensHessenbergState H k).1ᴴ *ᵥ Pi.single 0 1)
-          (Fin.castLE (Nat.le_succ_of_le hk) i)) := by
+          (Fin.castLE hk₁ i.castSucc)) := by
   obtain ⟨h1, h2⟩ := givensHessenbergState_castLE H hk le_rfl
-  have hHkH : IsUpperHessenberg
-      (H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk)) :=
+  have hHkH : IsUpperHessenberg (H.submatrix (Fin.castLE hk₁) (Fin.castLE hk)) :=
     fun i j hij => hH _ _ hij
   rw [(pinv_mulVec_single_eq_backSubst_givensHessenberg hHkH hHk).1]
   congr 1
@@ -265,13 +262,12 @@ and MINRES, read off without forming the iterate. [Saad2003, Proposition 6.9]; l
 verify. -/
 theorem norm_sub_mulVec_pinv_submatrix_mulVec_single_eq {q : ℕ}
     {H : Matrix (Fin (q + 1)) (Fin q) 𝕜} (hH : IsUpperHessenberg H) {k : ℕ} (hk : k ≤ q)
-    (hHk : Function.Injective
-      (H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk)).mulVec) :
-    ‖WithLp.toLp 2 (Pi.single 0 1 - H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk)
-        *ᵥ (pinv (H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk)) *ᵥ
-          Pi.single 0 1))‖ =
-      ‖((givensHessenbergState H k).1ᴴ *ᵥ Pi.single 0 1) ⟨k, by omega⟩‖ := by
-  set Hk := H.submatrix (Fin.castLE (Nat.succ_le_succ hk)) (Fin.castLE hk) with hHk_def
+    (hk₁ : k + 1 ≤ q + 1)
+    (hHk : Function.Injective (H.submatrix (Fin.castLE hk₁) (Fin.castLE hk)).mulVec) :
+    ‖WithLp.toLp 2 (Pi.single 0 1 - H.submatrix (Fin.castLE hk₁) (Fin.castLE hk)
+        *ᵥ (pinv (H.submatrix (Fin.castLE hk₁) (Fin.castLE hk)) *ᵥ Pi.single 0 1))‖ =
+      ‖((givensHessenbergState H k).1ᴴ *ᵥ Pi.single 0 1) (Fin.castLE hk₁ (Fin.last k))‖ := by
+  set Hk := H.submatrix (Fin.castLE hk₁) (Fin.castLE hk) with hHk_def
   have hHkH : IsUpperHessenberg Hk := fun i j hij => hH _ _ hij
   obtain ⟨hx, hR⟩ := pinv_mulVec_single_eq_backSubst_givensHessenberg hHkH hHk
   set Q' := (givensHessenbergState Hk k).1
@@ -299,7 +295,6 @@ theorem norm_sub_mulVec_pinv_submatrix_mulVec_single_eq {q : ℕ}
       givensHessenbergState_fst_mul_snd]
   rw [hv, hQ'.norm_toLp_mulVec, PiLp.toLp_single, PiLp.norm_single,
     ← (givensHessenbergState_castLE H hk le_rfl).2 (Fin.last k)]
-  rfl
 
 end GivensHessenbergQR
 

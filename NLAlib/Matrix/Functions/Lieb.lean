@@ -29,12 +29,13 @@ is a partial maximum of an affine function minus a relative entropy.
 
 ## Main results
 
-* `NLAlib.relativeEntropy_nonneg`: nonnegativity.
+* `Matrix.PosDef.relativeEntropy_nonneg`: nonnegativity.
 * `NLAlib.convexOn_relativeEntropy`: joint convexity.
-* `NLAlib.isGreatest_re_trace_mul_cfc_log_sub`, `NLAlib.isGreatest_re_trace_exp_add_cfc_log`: the
+* `Matrix.PosDef.isGreatest_re_trace_mul_cfc_log_sub`,
+  `Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log`: the
   variational formulas for $\operatorname{tr} \mathbf{M}$ and
   $\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$.
-* `NLAlib.concaveOn_re_trace_exp_add_cfc_log`: Lieb's theorem.
+* `Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log`: Lieb's theorem.
 * `NLAlib.continuousOn_re_trace_exp_add_cfc_log`: continuity of
   $\mathbf{A} \mapsto \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ on the positive
   definite matrices.
@@ -91,7 +92,8 @@ $$D(\mathbf{A}; \mathbf{H}) = \operatorname{tr}\bigl(\mathbf{A}(\log(\mathbf{A})
 [Tropp2015, Proposition 8.3.5]. Port of `NLAlib.relativeEntropy_nonneg`, there over
 $\mathbb{C}$.
 Result: relative-entropy -/
-theorem relativeEntropy_nonneg {A H : Matrix n n 𝕜} (hA : A.PosDef) (hH : H.PosDef) :
+theorem _root_.Matrix.PosDef.relativeEntropy_nonneg {A H : Matrix n n 𝕜} (hA : A.PosDef)
+    (hH : H.PosDef) :
     0 ≤ relativeEntropy A H := by
   have hconv : ConvexOn ℝ (Set.Ioi 0) fun x : ℝ => x * Real.log x - x :=
     (Real.convexOn_mul_log.subset Set.Ioi_subset_Ici_self (convex_Ioi 0)).sub
@@ -228,14 +230,15 @@ private theorem matrixPerspective_neg_log_kronecker {A H : Matrix n n 𝕜} (hA 
         ((eigenvalue A p.1 * Real.log (eigenvalue A p.1) * 1 : ℝ) : 𝕜)) * (U ⊗ₖ Vᵀᴴ)ᴴ := by
     rw [← kronecker_mul_diagonal_mul_conjTranspose U Vᵀᴴ
       (fun i => eigenvalue A i * Real.log (eigenvalue A i)) fun _ => 1, ← hone _ hV',
-      ← cfc_mul_log hA.isHermitian, cfc_eq_mul_diagonal_mul_conjTranspose hU hc hAU]
+      ← cfc_mul_log hA.isHermitian, HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hc
+        hAU]
   have h2 : A ⊗ₖ (cfc Real.log H)ᵀ = (U ⊗ₖ Vᵀᴴ) * Matrix.diagonal
       (fun p : Fin (Fintype.card n) × Fin (Fintype.card n) =>
         ((eigenvalue A p.1 * Real.log (eigenvalue H p.2) : ℝ) : 𝕜)) * (U ⊗ₖ Vᵀᴴ)ᴴ := by
     rw [← kronecker_mul_diagonal_mul_conjTranspose U Vᵀᴴ (fun i => eigenvalue A i)
       fun i => Real.log (eigenvalue H i), ← hAU, ← transpose_mul_diagonal_mul_conjTranspose,
-      ← cfc_eq_mul_diagonal_mul_conjTranspose hV hc hHV]
-  rw [hL, hR, h1, h2, matrixPerspective_mul_diagonal_mul_conjTranspose hW hrW _
+      ← HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hV hc hHV]
+  rw [hL, hR, h1, h2, HasOrthonormalCols.matrixPerspective_mul_diagonal_mul_conjTranspose hW hrW _
     (fun p => by rw [mul_one]; exact ha p.1), ← Matrix.sub_mul, ← Matrix.mul_sub,
     Matrix.diagonal_sub]
   congr 3
@@ -263,7 +266,9 @@ $(\mathbf{A}, \mathbf{H})$ of positive definite matrices, $D(\mathbf{A}; \mathbf
 function, so for $a, b \ge 0$ with $a + b = 1$
 $$D(a\mathbf{A}_1 + b\mathbf{A}_2; a\mathbf{H}_1 + b\mathbf{H}_2)
   \le a D(\mathbf{A}_1; \mathbf{H}_1) + b D(\mathbf{A}_2; \mathbf{H}_2) \,.$$
-[Tropp2015, §8.3 and §8.8]; [Lindblad1974].
+[Tropp2015, §8.3 and §8.8]; [Lindblad1974, Lemma 2]; Lindblad states it for positive trace-class
+operators on a separable Hilbert space and finite convex combinations, with the same definition
+$\operatorname{tr}(\mathbf{A}\log\mathbf{A} - \mathbf{A}\log\mathbf{H} + \mathbf{H} - \mathbf{A})$.
 Port of `NLAlib.convexOn_relativeEntropy`, there over $\mathbb{C}$ on `Fin d`.
 Result: relative-entropy -/
 theorem convexOn_relativeEntropy :
@@ -301,7 +306,8 @@ $$\operatorname{tr} \mathbf{M} = \max_{\mathbf{T}} \operatorname{tr}(\mathbf{T}\
   \mathbf{T}\log(\mathbf{T}) + \mathbf{T})$$
 over positive definite $\mathbf{T}$, traces through their real parts.
 [Tropp2015, §8.3]. Port of `NLAlib.isGreatest_variational_trace`. -/
-theorem isGreatest_re_trace_mul_cfc_log_sub {M : Matrix n n 𝕜} (hM : M.PosDef) :
+theorem _root_.Matrix.PosDef.isGreatest_re_trace_mul_cfc_log_sub {M : Matrix n n 𝕜} (hM : M.PosDef)
+    :
     IsGreatest
       ((fun T : Matrix n n 𝕜 =>
         RCLike.re (T * cfc Real.log M - T * cfc Real.log T + T).trace) '' {T | T.PosDef})
@@ -310,7 +316,7 @@ theorem isGreatest_re_trace_mul_cfc_log_sub {M : Matrix n n 𝕜} (hM : M.PosDef
   · change RCLike.re (M * cfc Real.log M - M * cfc Real.log M + M).trace = RCLike.re M.trace
     rw [sub_self, zero_add]
   · rintro _ ⟨T, hT, rfl⟩
-    have h := relativeEntropy_nonneg hT hM
+    have h := Matrix.PosDef.relativeEntropy_nonneg hT hM
     rw [relativeEntropy_eq] at h
     change RCLike.re (T * cfc Real.log M - T * cfc Real.log T + T).trace ≤ RCLike.re M.trace
     rw [Matrix.trace_add, Matrix.trace_sub, map_add, map_sub]
@@ -324,7 +330,8 @@ over positive definite $\mathbf{T}$, traces through their real parts. The formul
 hypothesis on $\mathbf{A}$; it is used for positive definite $\mathbf{A}$.
 [Tropp2015, §8.3].
 Port of `NLAlib.isGreatest_variational_traceExp`, there over $\mathbb{C}$ on `Fin d`. -/
-theorem isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHermitian)
+theorem _root_.Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜}
+    (hH : H.IsHermitian)
     (A : Matrix n n 𝕜) :
     IsGreatest
       ((fun T : Matrix n n 𝕜 =>
@@ -332,7 +339,7 @@ theorem isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHerm
       (RCLike.re (exp (H + cfc Real.log A)).trace) := by
   have hX : (H + cfc Real.log A).IsHermitian :=
     hH.add (cfc_predicate Real.log A : IsSelfAdjoint _)
-  have hVar := isGreatest_re_trace_mul_cfc_log_sub hX.posDef_exp
+  have hVar := Matrix.PosDef.isGreatest_re_trace_mul_cfc_log_sub hX.posDef_exp
   rw [hX.cfc_log_exp] at hVar
   have score : (fun T : Matrix n n 𝕜 =>
       RCLike.re (T * (H + cfc Real.log A) - T * cfc Real.log T + T).trace) =
@@ -346,15 +353,17 @@ theorem isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHerm
 /-- **Lieb's concavity theorem.** For a fixed Hermitian $\mathbf{H}$, the function
 $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ is
 concave on the positive definite matrices.
-[Lieb1973]; [Tropp2015, Theorem 8.1.1].
+[Lieb1973, Theorem 6]; [Tropp2015, Theorem 8.1.1]; Lieb states it for the trace on a
+finite-dimensional complex Hilbert space, here over $\Bbbk$ with the real part of the trace.
 Port of `NLAlib.lieb_concavity`, there over $\mathbb{C}$.
 Result: lieb-concavity -/
-theorem concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHermitian) :
+theorem _root_.Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜}
+    (hH : H.IsHermitian) :
     ConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosDef}
       fun A => RCLike.re (exp (H + cfc Real.log A)).trace := by
   refine ⟨convex_setOf_posDef, fun A hA B hB a b ha hb hab => ?_⟩
-  obtain ⟨T, hT, hTA⟩ := (isGreatest_re_trace_exp_add_cfc_log hH A).1
-  obtain ⟨S, hS, hSB⟩ := (isGreatest_re_trace_exp_add_cfc_log hH B).1
+  obtain ⟨T, hT, hTA⟩ := (Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log hH A).1
+  obtain ⟨S, hS, hSB⟩ := (Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log hH B).1
   have hent : relativeEntropy (a • T + b • S) (a • A + b • B) ≤
       a * relativeEntropy T A + b * relativeEntropy S B :=
     convexOn_relativeEntropy.2 (show (T, A) ∈ _ from ⟨hT, hA⟩) (show (S, B) ∈ _ from ⟨hS, hB⟩)
@@ -362,7 +371,7 @@ theorem concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜} (hH : H.IsHermi
   have hmax : RCLike.re ((a • T + b • S) * H).trace + RCLike.re (a • A + b • B).trace -
       relativeEntropy (a • T + b • S) (a • A + b • B) ≤
         RCLike.re (exp (H + cfc Real.log (a • A + b • B))).trace :=
-    (isGreatest_re_trace_exp_add_cfc_log hH (a • A + b • B)).2
+    (Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log hH (a • A + b • B)).2
       ⟨a • T + b • S, convex_setOf_posDef hT hS ha hb hab, rfl⟩
   have htr : ∀ C D : Matrix n n 𝕜, RCLike.re (a • C + b • D).trace =
       a * RCLike.re C.trace + b * RCLike.re D.trace := fun C D => by
@@ -395,6 +404,7 @@ theorem continuousOn_re_trace_exp_add_cfc_log (H : Matrix n n 𝕜) :
       (hexp.comp_continuousOn (continuousOn_const.add
         (hlog.comp hc.continuousOn fun A hA => posDef_complexify_iff.mpr hA)))
   refine h.congr fun A hA => ?_
-  rw [← re_trace_complexify, complexify_exp, complexify_add, complexify_cfc hA.isHermitian]
+  rw [← re_trace_complexify, complexify_exp, complexify_add, Matrix.IsHermitian.complexify_cfc
+    hA.isHermitian]
 
 end NLAlib

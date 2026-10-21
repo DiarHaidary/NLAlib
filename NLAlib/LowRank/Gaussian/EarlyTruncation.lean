@@ -120,7 +120,8 @@ private theorem measurable_gaussianProjectionFactor_rank_truncatedSVD (A : Matri
     Measurable fun x : Matrix n l ℝ =>
       gaussianProjectionFactor (truncatedSVD (A * x) k).rank c :=
   (measurable_from_nat (f := fun q => gaussianProjectionFactor q c)).comp
-    (measurable_rank.comp ((measurable_const.matrix_mul measurable_id).truncatedSVD k))
+    (measurable_rank.comp ((measurable_truncatedSVD k).comp
+      (measurable_const.matrix_mul measurable_id)))
 
 /-- The completion factor at the rank of the truncated sketch lies in $[1, 1 + p]$. -/
 private theorem gaussianProjectionFactor_rank_truncatedSVD_mem (A : Matrix m n ℝ)
@@ -244,8 +245,6 @@ private theorem one_add_half_mul_gaussianProjectionFactor_le {k c : ℕ} {ε : �
   have hd : (2 + ε) * k / ε ≤ (c : ℝ) - k - 1 := by linarith
   have hd0 : 0 < (c : ℝ) - k - 1 := hpos.trans_le hd
   have hkc : k + 2 ≤ c := by
-    have h2 : (2 : ℝ) * k / ε < (2 + ε) * k / ε := by
-      apply div_lt_div_of_pos_right _ hε; nlinarith
     have h1 : (1 : ℝ) < (2 + ε) * k / ε := by
       rw [lt_div_iff₀ hε]; nlinarith
     have : (k : ℝ) + 2 < c + 1 := by linarith
@@ -295,8 +294,9 @@ theorem
     simp only [h0, sub_zero, truncatedSVD_zero, integral_const, probReal_univ, one_smul]
     nlinarith [sq_nonneg (frobNorm A)]
   obtain ⟨hkp, hfac⟩ := one_add_half_mul_gaussianProjectionFactor_le hk hε hp
-  have h1 := integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix
-    A hX hΨ hXΨ hkp
+  have h1 :=
+    integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_mul_integral_of_hasLaw_gaussianMatrix
+      A hX hΨ hXΨ hkp
   have hg : 0 ≤ gaussianProjectionFactor k (Fintype.card p) :=
     zero_le_one.trans (one_le_gaussianProjectionFactor hkp)
   calc _ ≤ _ := h1
@@ -381,7 +381,6 @@ theorem earlyTruncatedRSVDFactor_le_one_add {k l : ℕ} {ε : ℝ} (hk : 1 ≤ k
     linarith
   set t := ε / 30 with ht
   have ht0 : 0 < t := by positivity
-  have ht1 : t ≤ 1 / 30 := by linarith
   have hkl : (k : ℝ) / l ≤ t ^ 2 := by
     rw [div_le_iff₀ hl0, ht]; nlinarith
   have hl1 : 1 / (l : ℝ) ≤ t ^ 2 := by
@@ -389,7 +388,6 @@ theorem earlyTruncatedRSVDFactor_le_one_add {k l : ℕ} {ε : ℝ} (hk : 1 ≤ k
       _ ≤ t ^ 2 := hkl
   -- the three square roots and the inverse root
   have hy : √((k : ℝ) / l) ≤ t := Real.sqrt_le_iff.2 ⟨ht0.le, hkl⟩
-  have hy0 : 0 ≤ √((k : ℝ) / l) := Real.sqrt_nonneg _
   have hy2 : √(2 * (k : ℝ) / l) ≤ 3 / 2 * t := Real.sqrt_le_iff.2 ⟨by positivity, by
     rw [mul_div_assoc]; nlinarith⟩
   have hsl : 1 / √(l : ℝ) ≤ t := by
@@ -448,8 +446,8 @@ $k \ge 1$ columns with $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket
 c^2\sigma_{k-1}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{Z})^2\}$ and $0 < \theta < 1$, with
 $\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k$ and $\mathbf{S} = c\mathbf{\Omega}$,
 $\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
-\frac{\|\mathbf{E}\|_{\mathsf{F}}^2 + \sqrt{k}\,w}{1 - \theta}a^{-1} +
-\frac{\chi^2}{\theta(1-\theta)}a^{-2}$, $w = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}
+((\|\mathbf{E}\|_{\mathsf{F}}^2 + \sqrt{k}\,w)/(1 - \theta))a^{-1} +
+(\chi^2/(\theta(1-\theta)))a^{-2}$, $w = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}
 \mathbf{E}^{\mathsf{H}} - \mathbf{E}\mathbf{E}^{\mathsf{H}}\|_{\mathsf{F}}$,
 $\chi = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}\mathbf{Z}\|_{\mathsf{F}}$. The projector is
 that of the unnormalised sketch, so no scale equivariance of the truncation is needed. -/
@@ -466,7 +464,7 @@ private theorem frobNorm_sub_earlyTruncatedRSVD_sq_le_inv {A : Matrix m n ℝ} {
           a⁻¹ ^ 2 := by
   classical
   have hinj : IsSubspaceInjection (c • X₀)ᴴ Z a := by
-    rw [hZ.isSubspaceInjection_iff_le_sq_singularValues (j := k - 1)
+    rw [hZ.isSubspaceInjection_iff_le_singularValues_sq (j := k - 1)
       (by rw [Fintype.card_fin]; omega), Matrix.conjTranspose_smul, star_trivial,
       Matrix.smul_mul, singularValues_smul, Real.norm_of_nonneg hc.le, mul_pow]
     exact haσ
@@ -605,6 +603,37 @@ private theorem integral_frobNorm_mul_inv_le {q : Type*} [Fintype q] [DecidableE
   exact mul_le_mul_of_nonneg_right hEw (integral_nonneg fun ω => inv_nonneg.2
     (le_min zero_le_one (div_nonneg (sq_nonneg _) hL0.le)))
 
+/-- The Gaussian-product identity of `integral_frobNorm_sq_mul_inv_sq_le`: for
+$\mathbf{E}\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{E}$ and $u \ge 0$,
+$\|\mathbf{E}(c\mathbf{Y})(c\mathbf{Y})^{\mathsf{H}}\mathbf{Z}\|_{\mathsf{F}}^2u^2 =
+\|\mathbf{E}\mathbf{V}(\mathbf{V}^{\mathsf{H}}\mathbf{Y})\,c^2u\,
+(\mathbf{Z}^{\mathsf{H}}\mathbf{Y})^{\mathsf{H}}\|_{\mathsf{F}}^2$. -/
+private theorem frobNorm_mul_smul_mul_sq_mul_sq {q r : Type*} [Fintype q] [Fintype r]
+    {E : Matrix m n ℝ} {V : Matrix n q ℝ} (hEV : E * V * Vᴴ = E) (c : ℝ) {u : ℝ} (hu : 0 ≤ u)
+    (Y : Matrix n l ℝ) (Z : Matrix n r ℝ) :
+    frobNorm (E * (c • Y) * (c • Y)ᴴ * Z) ^ 2 * u ^ 2 =
+      frobNorm (E * V * (Vᴴ * Y) * ((c ^ 2 * u) • (Zᴴ * Y)ᴴ)) ^ 2 := by
+  have e1 : E * (c • Y) * (c • Y)ᴴ * Z = c ^ 2 • ((E * V) * (Vᴴ * Y) * (Zᴴ * Y)ᴴ) := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_smul,
+      star_trivial]
+    simp only [Matrix.mul_smul, Matrix.smul_mul, smul_smul, ← Matrix.mul_assoc, hEV]
+    ring_nf
+  rw [e1, Matrix.mul_smul, frobNorm_smul, frobNorm_smul, Real.norm_of_nonneg (sq_nonneg c),
+    Real.norm_of_nonneg (mul_nonneg (sq_nonneg c) hu)]
+  ring
+
+/-- A product of squares is integrable when both fourth powers are, by
+$f^2g^2 \le (f^4 + g^4)/2$. -/
+private theorem integrable_sq_mul_sq_of_integrable_pow_four {f g : Ω → ℝ}
+    (hf : AEStronglyMeasurable (fun ω => f ω ^ 2) μ)
+    (hg : AEStronglyMeasurable (fun ω => g ω ^ 2) μ)
+    (hf4 : Integrable (fun ω => f ω ^ 4) μ) (hg4 : Integrable (fun ω => g ω ^ 4) μ) :
+    Integrable (fun ω => f ω ^ 2 * g ω ^ 2) μ := by
+  refine ((hf4.add hg4).div_const 2).mono' (hf.mul hg) (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_of_nonneg (by positivity)]
+  change f ω ^ 2 * g ω ^ 2 ≤ (f ω ^ 4 + g ω ^ 4) / 2
+  nlinarith [sq_nonneg (f ω ^ 2 - g ω ^ 2)]
+
 /-- The tail–head term of the structural bound in expectation: with
 $\chi = \|\mathbf{E}\mathbf{S}\mathbf{S}^{\mathsf{H}}\mathbf{Z}\|_{\mathsf{F}}$,
 $\mathbf{S} = \ell^{-1/2}\mathbf{\Omega}$, and $u$ the clipped inverse of the head
@@ -651,20 +680,8 @@ private theorem integral_frobNorm_sq_mul_inv_sq_le {q : Type*} [Fintype q] [Deci
   -- the identity with the Gaussian product
   have hid (ω : Ω) : frobNorm (E * (c • X ω) * (c • X ω)ᴴ * Z) ^ 2 * U (Zᴴ * X ω) ^ 2 =
       frobNorm ((fun _ : Matrix (Fin k) l ℝ => E * V) (Zᴴ * X ω) * (Vᴴ * X ω) *
-        T (Zᴴ * X ω)) ^ 2 := by
-    have e1 : E * (c • X ω) * (c • X ω)ᴴ * Z =
-        c ^ 2 • ((E * V) * (Vᴴ * X ω) * (Zᴴ * X ω)ᴴ) := by
-      rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_smul,
-        star_trivial]
-      simp only [Matrix.mul_smul, Matrix.smul_mul, smul_smul, ← Matrix.mul_assoc, hEV]
-      ring_nf
-    have e2 : (E * V) * (Vᴴ * X ω) * T (Zᴴ * X ω) =
-        (c ^ 2 * U (Zᴴ * X ω)) • ((E * V) * (Vᴴ * X ω) * (Zᴴ * X ω)ᴴ) := by
-      simp only [T, Matrix.mul_smul]
-    simp only []
-    rw [e1, e2, frobNorm_smul, frobNorm_smul, Real.norm_of_nonneg (sq_nonneg c),
-      Real.norm_of_nonneg (mul_nonneg (sq_nonneg c) (hU0 _))]
-    ring
+        T (Zᴴ * X ω)) ^ 2 :=
+    frobNorm_mul_smul_mul_sq_mul_sq hEV c (hU0 _) (X ω) Z
   have hTn (H : Matrix (Fin k) l ℝ) :
       frobNorm (E * V) ^ 2 * frobNorm (T H) ^ 2 =
         frobNorm E ^ 2 * L⁻¹ ^ 2 * (U H ^ 2 * frobNorm H ^ 2) := by
@@ -684,12 +701,9 @@ private theorem integral_frobNorm_sq_mul_inv_sq_le {q : Type*} [Fintype q] [Deci
     ((hU.comp_aemeasurable hG₁m).pow_const 2).aestronglyMeasurable
   have hFm : AEStronglyMeasurable (fun ω => frobNorm (Zᴴ * X ω) ^ 2) μ :=
     ((measurable_frobNorm.comp_aemeasurable hG₁m).pow_const 2).aestronglyMeasurable
-  have hprod : Integrable (fun ω => U (Zᴴ * X ω) ^ 2 * frobNorm (Zᴴ * X ω) ^ 2) μ := by
-    refine ((hU4i.add hG4i).div_const 2).mono' (hUm.mul hFm) (ae_of_all _ fun ω => ?_)
-    rw [Real.norm_of_nonneg (by positivity)]
-    change U (Zᴴ * X ω) ^ 2 * frobNorm (Zᴴ * X ω) ^ 2 ≤
-      (U (Zᴴ * X ω) ^ 4 + frobNorm (Zᴴ * X ω) ^ 4) / 2
-    nlinarith [sq_nonneg (U (Zᴴ * X ω) ^ 2 - frobNorm (Zᴴ * X ω) ^ 2)]
+  have hprod : Integrable (fun ω => U (Zᴴ * X ω) ^ 2 * frobNorm (Zᴴ * X ω) ^ 2) μ :=
+    integrable_sq_mul_sq_of_integrable_pow_four (f := fun ω => U (Zᴴ * X ω))
+      (g := fun ω => frobNorm (Zᴴ * X ω)) hUm hFm hU4i hG4i
   have hR : Integrable (fun ω => frobNorm ((fun _ : Matrix (Fin k) l ℝ => E * V) (Zᴴ * X ω)) ^ 2 *
       frobNorm (T (Zᴴ * X ω)) ^ 2) μ := by
     simp only [hTn]
@@ -793,9 +807,6 @@ private theorem integral_min_one_inv_pow_le (hX : HasLaw X (gaussianMatrix n l) 
   have h4 := integral_min_one_singularValues_sq_div_inv_pow_le_of_hasLaw_gaussianMatrix hY hk' hn
     hl (q := 4) le_rfl
   simp only [pow_one, Fintype.card_fin, Nat.reduceMul] at h1 h4
-  have hs : 0 < √(Fintype.card l : ℝ) := Real.sqrt_pos.2 (by
-    have : (900 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
-    linarith)
   refine ⟨h1.trans ?_, h4.trans ?_⟩
   · gcongr
     exact gaussianClippedInvMomentConstant_one_le_10
@@ -819,9 +830,9 @@ private theorem integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_frame {q : Typ
     linarith
   have hypos : 0 < √((k : ℝ) / Fintype.card l) :=
     Real.sqrt_pos.2 (div_pos (by exact_mod_cast hk) hL0)
-  set E := A - truncatedSVD A k with hEdef
-  set L := (Fintype.card l : ℝ) with hL
-  set y := √((k : ℝ) / L) with hy
+  set E := A - truncatedSVD A k
+  set L := (Fintype.card l : ℝ)
+  set y := √((k : ℝ) / L)
   set c := (√L)⁻¹ with hc
   have hc0 : 0 < c := inv_pos.2 (Real.sqrt_pos.2 hL0)
   have hc2 : c ^ 2 = L⁻¹ := by rw [hc, inv_pow, Real.sq_sqrt hL0.le]
@@ -861,7 +872,6 @@ private theorem integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_frame {q : Typ
   rw [integral_add' (hu1i.const_mul _ |>.add (hwui.const_mul _)) (hχui.const_mul _),
     integral_add' (hu1i.const_mul _) (hwui.const_mul _), integral_const_mul, integral_const_mul,
     integral_const_mul]
-  have hd : 0 < 1 - 4 * y := by linarith
   refine le_trans ?_ (add_le_earlyTruncatedRSVDFactor_mul hk hkl (sq_nonneg (frobNorm E)) hIu
     hIu4)
   gcongr

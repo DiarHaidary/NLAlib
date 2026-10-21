@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.LinearAlgebra.Matrix.Rank
+public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.Krylov.Basic.Space
 public import NLAlib.Matrix.Functions.Polynomial
 

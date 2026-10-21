@@ -102,9 +102,9 @@ omit [DecidableEq r] in
 theorem galerkinInverse_mulVec_mem (A : Matrix n n 𝕜) (X : Matrix n p 𝕜) (b : n → 𝕜) :
     galerkinInverse A X *ᵥ b ∈ LinearMap.range X.mulVecLin := by
   have hle : LinearMap.range (galerkinInverse A X).mulVecLin ≤ LinearMap.range X.mulVecLin := by
-    rw [galerkinInverse, range_mulVecLin_pinv, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+    rw [galerkinInverse, range_pinv, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
       conjTranspose_rangeProjector, Matrix.mulVecLin_mul,
-      ← range_mulVecLin_rangeProjector X]
+      ← range_rangeProjector X]
     exact LinearMap.range_comp_le_range _ _
   exact hle ⟨b, rfl⟩
 

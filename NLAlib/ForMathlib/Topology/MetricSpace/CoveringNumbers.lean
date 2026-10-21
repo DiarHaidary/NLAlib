@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
 public import Mathlib.Topology.MetricSpace.CoveringNumbers
 
@@ -12,7 +13,8 @@ public import Mathlib.Topology.MetricSpace.CoveringNumbers
 # Nets of the unit sphere of a finite-dimensional normed space
 
 The volumetric bound on the size of a separated subset of the unit sphere of a finite-dimensional
-real normed space, and the finite $\varepsilon$-net of the sphere that it gives. Upstream candidates
+real normed space, and the finite $\varepsilon$-net of the sphere that it gives; in
+`EuclideanSpace 𝕜 n`, the net property read in coordinates. Upstream candidates
 for `Mathlib.Topology.MetricSpace.CoveringNumbers`, or for a file next to it, since the proof
 compares Haar measures of balls.
 
@@ -22,6 +24,8 @@ compares Haar measures of balls.
   the unit sphere has at most $(1 + 2 / \varepsilon)^d$ points, $d$ the real dimension.
 * `Metric.exists_finset_isCover_sphere_card_le`: the unit sphere has an $\varepsilon$-net of unit
   vectors with at most $(1 + 2 / \varepsilon)^d$ points.
+* `Metric.IsCover.exists_mem_norm_toLp_sub_le`: in `EuclideanSpace 𝕜 n`, a unit vector of
+  `n → 𝕜` is within $\varepsilon$ of the net.
 -/
 
 @[expose] public section
@@ -108,5 +112,20 @@ theorem exists_finset_isCover_sphere_card_le (E : Type*) [NormedAddCommGroup E]
   · simpa using isCover_maximalSeparatedSet htop
   · exact card_le_of_subset_sphere_of_isSeparated hε _ (by simpa using maximalSeparatedSet_subset)
       (by simpa using isSeparated_maximalSeparatedSet)
+
+/-- **A unit vector is within $\varepsilon$ of an $\varepsilon$-net of the sphere, in
+coordinates**: if $N$ is an $\varepsilon$-net of the unit sphere of `EuclideanSpace 𝕜 n` and
+$\mathbf{y}$ in `n → 𝕜` has Euclidean norm $1$, some $\mathbf{x} \in N$ has
+$\|\mathbf{y} - \mathbf{x}\| \le \varepsilon$. The coordinate form of
+`Metric.IsCover.subset_iUnion_closedBall`. -/
+theorem IsCover.exists_mem_norm_toLp_sub_le {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
+    {N : Set (EuclideanSpace 𝕜 n)} {ε : ℝ≥0} (hN : IsCover ε (sphere (0 : EuclideanSpace 𝕜 n) 1) N)
+    {y : n → 𝕜} (hy : ‖WithLp.toLp 2 y‖ = 1) :
+    ∃ x ∈ N, ‖WithLp.toLp 2 (y - WithLp.ofLp x)‖ ≤ ε := by
+  have h := hN.subset_iUnion_closedBall (mem_sphere_zero_iff_norm.2 hy)
+  simp only [Set.mem_iUnion, mem_closedBall, exists_prop] at h
+  obtain ⟨x, hx, hxy⟩ := h
+  refine ⟨x, hx, ?_⟩
+  rwa [WithLp.toLp_sub, WithLp.toLp_ofLp, ← dist_eq_norm]
 
 end Metric

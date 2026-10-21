@@ -74,7 +74,11 @@ the MINRES iterate. Basis-free, total, not an algorithm; for singular $\mathbf{A
 of least norm among the minimisers. Arnoldi with a small least-squares problem computes it
 (`gmresIterate_eq_mgsArnoldiMatrix`); for Hermitian $\mathbf{A}$, Lanczos does
 (`Matrix.IsHermitian.gmresIterate_eq_lanczosMatrix`).
-[SaadSchultz1986]; [Saad2003, §6.5]; [PaigeSaunders1975]. -/
+[SaadSchultz1986, Algorithm 3]; [Saad2003, §6.5]; [PaigeSaunders1975, §6]. Saad and Schultz define
+the iterate as the minimiser (4) of the residual over $\mathbf{x}_0 + \mathcal{K}_q$, computed in
+the Arnoldi basis; Paige and Saunders define MINRES, the real symmetric case with
+$\mathbf{x}_0 = \mathbf{0}$, by the minimum residual problem (2.7) in the Lanczos basis, whose
+solution is the one of minimum length. -/
 noncomputable def gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + minResidualInverse A (krylovMatrix A (b - A *ᵥ x₀) q) *ᵥ (b - A *ᵥ x₀)
 
@@ -111,11 +115,16 @@ theorem sub_mulVec_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q :
   abel
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The Petrov–Galerkin condition characterises GMRES** for invertible $\mathbf{A}$: a vector
-$\mathbf{y}$ of $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$ whose residual is
-orthogonal
-to $\mathbf{A}\mathcal{K}_q$ is the GMRES iterate. The parallel of
+/-- **The Petrov–Galerkin condition characterises GMRES** for invertible $\mathbf{A}$: with
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$, a vector $\mathbf{y}$ of
+$\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$ with
+$(\mathbf{A}\mathbf{K}_q(\mathbf{A}, \mathbf{r}_0))^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\mathbf{y})
+= \mathbf{0}$, a residual orthogonal to $\mathbf{A}\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$, is
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$. The parallel of
 `Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero`.
+[Saad2003, Proposition 5.3]; [Saad2003, §6.5]. Saad shows, for any square matrix, that this
+condition is equivalent to minimising the residual over $\mathbf{x}_0 + \mathcal{K}$, and GMRES
+is the method with $\mathcal{K} = \mathcal{K}_q$; invertibility makes the minimiser unique.
 Result: gmres-petrov-galerkin -/
 theorem eq_gmresIterate_of_conjTranspose_mul_krylovMatrix_mulVec_sub_eq_zero {A : Matrix n n 𝕜}
     (hA : IsUnit A) {b x₀ y : n → 𝕜} {q : ℕ} (hy : y - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q)
@@ -128,7 +137,11 @@ theorem eq_gmresIterate_of_conjTranspose_mul_krylovMatrix_mulVec_sub_eq_zero {A 
 
 omit [Fintype r] [DecidableEq r] in
 /-- **GMRES minimises the residual** over $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$,
-for every $\mathbf{A}$. [SaadSchultz1986]; [Saad2003, Proposition 6.18]; locator to verify.
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$, for every $\mathbf{A}$:
+$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| \le
+\|\mathbf{b} - \mathbf{A}\mathbf{y}\|$ for every such $\mathbf{y}$.
+[SaadSchultz1986, §3.1]; [Saad2003, §6.5.1]. Both define GMRES by this property, (4) and (6.26)
+there; [Saad2003, Proposition 5.3] proves it from the Petrov–Galerkin condition.
 Result: gmres-optimality -/
 theorem isMinOn_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     IsMinOn (fun y => ‖WithLp.toLp 2 (b - A *ᵥ y)‖)
@@ -202,8 +215,12 @@ theorem norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec (A : Matrix n n 𝕜) 
   rwa [heq] at h
 
 omit [Fintype r] [DecidableEq r] in
-/-- **Finite termination**: for invertible $\mathbf{A}$, GMRES reaches the solution once $q$ is
-at least the grade of $\mathbf{r}_0$. [Saad2003, Proposition 6.10]; locator to verify.
+/-- **Finite termination**: for invertible $\mathbf{A}$ and $\mathbf{A}\mathbf{x}_\star =
+\mathbf{b}$, GMRES reaches the solution once $q$ is at least the grade of
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_\star$.
+[SaadSchultz1986, Proposition 2]; [Saad2003, Proposition 6.10]. Both state that the iterate at
+the breakdown step, which is the grade ([Saad2003, Proposition 6.6]), is exact.
 Result: gmres-finite-termination -/
 theorem gmresIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) {b xs : n → 𝕜}
     (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ} (h : krylovGrade A (b - A *ᵥ x₀) ≤ q) :

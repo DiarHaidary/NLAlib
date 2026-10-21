@@ -268,7 +268,7 @@ theorem _root_.Matrix.PosSemidef.posDef_map_exp_iff [Finite n] {A : Matrix n n �
 /-- For distinct real numbers $\mathbf{b}_i$, the matrix with entries
 $e^{\mathbf{b}_i \mathbf{b}_j}$ is positive definite.
 Port of `NLAlib.posDef_sum_inv_factorial_map_pow_vecMulVec_of_injective`, in the limit. -/
-theorem posDef_of_exp_mul [Finite n] {b : n → ℝ} (hb : Function.Injective b) :
+theorem posDef_exp_mul_of_injective [Finite n] {b : n → ℝ} (hb : Function.Injective b) :
     (Matrix.of fun i j => Real.exp (b i * b j)).PosDef :=
   posDef_map_exp_vecMulVec hb
 

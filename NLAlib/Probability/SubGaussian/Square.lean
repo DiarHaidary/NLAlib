@@ -17,8 +17,9 @@ The exponential square moment $\mathbb{E} e^{\theta X^2}$ of a sub-Gaussian vari
 that its centred square $X^2 - \mathbb{E}[X^2]$ is sub-exponential, which is what Bernstein's
 inequality and the diagonal part of the Hanson–Wright inequality consume.
 
-The constants of the centred square, $32$ and $4$, are the literature's and are written in the
-statement (`CONTRIBUTING.md` §5.2, "Numerical bounds").
+The constants of the centred square are written in the statement (`CONTRIBUTING.md` §5.2,
+"Numerical bounds"): every pair $(v, b)$ with $2c \le b$ and $16 c^2 b \le (b - 2c) v$, among them
+the literature's $(32 c^2, 4 c)$ and the pair $(18 c^2, 18 c)$ that the JL constant uses.
 
 For $k$ independent real $Y_i$, each sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and
 $\mathbb{E}[Y_i^4] \le 3$ (the moments of a standard Gaussian), the relative deviation of
@@ -37,8 +38,11 @@ constants (Achlioptas).
 
 * `ProbabilityTheory.HasSubgaussianMGF.integral_exp_mul_sq_le`:
   $\mathbb{E} e^{\theta X^2} \le (1 - 2\theta c)^{-1/2}$.
-* `ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral`: the centred square
-  is sub-exponential with variance proxy $32 c^2$ and scale $4 c$.
+* `ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral_of_le`: the centred
+  square is sub-exponential with variance proxy $v$ and scale $b$ whenever $2c \le b$ and
+  $16 c^2 b \le (b - 2c) v$;
+  `ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral`, the case
+  $(32 c^2, 4 c)$.
 * `NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun`: the relative deviation of
   a sum of squares with Gaussian moments.
 -/
@@ -262,14 +266,30 @@ private lemma exp_neg_le_one_sub_add_sq_div_two {t : ℝ} (ht : 0 ≤ t) :
 
 /-! ### The centred square -/
 
+/-- For $bx < 1$, $16 c^2 \le v(1 - 2cx)$ when $2c \le b$ and $16 c^2 b \le (b - 2c) v$: the
+margin of the window $b\lvert l\rvert < 1$. -/
+private lemma sixteen_mul_sq_le_mul_one_sub {v b : ℝ} (hc : 0 ≤ (c : ℝ)) (hv0 : 0 ≤ v)
+    (hb : 2 * c ≤ b) (hv : 16 * (c : ℝ) ^ 2 * b ≤ (b - 2 * c) * v) {x : ℝ} (hx : b * x < 1) :
+    16 * (c : ℝ) ^ 2 ≤ v * (1 - 2 * c * x) := by
+  rcases eq_or_lt_of_le hc with h0 | h0
+  · rw [← h0]
+    nlinarith
+  have hb0 : 0 < b := by linarith
+  have h1 : 0 ≤ 2 * c * (1 - b * x) := by nlinarith
+  have h2 : (b - 2 * c) * v ≤ b * (v * (1 - 2 * c * x)) := by nlinarith [mul_nonneg hv0 h1]
+  by_contra! hlt
+  nlinarith [mul_lt_mul_of_pos_left hlt hb0]
+
 private lemma mgf_sq_sub_integral_le [IsProbabilityMeasure μ] (h : HasSubgaussianMGF X c μ)
-    {l : ℝ} (hl : 4 * c * |l| < 1) :
-    mgf (fun ω => X ω ^ 2 - ∫ ω', X ω' ^ 2 ∂μ) μ l ≤ rexp (32 * c ^ 2 * l ^ 2 / 2) := by
+    {v b : ℝ} (hv0 : 0 ≤ v) (hb : 2 * c ≤ b) (hv : 16 * (c : ℝ) ^ 2 * b ≤ (b - 2 * c) * v)
+    {l : ℝ} (hl : b * |l| < 1) :
+    mgf (fun ω => X ω ^ 2 - ∫ ω', X ω' ^ 2 ∂μ) μ l ≤ rexp (v * l ^ 2 / 2) := by
   set m := ∫ ω', X ω' ^ 2 ∂μ with hm
   have hm0 : 0 ≤ m := integral_nonneg fun _ => sq_nonneg _
   have hc : (0 : ℝ) ≤ c := c.coe_nonneg
   have hl2 : 2 * l * c < 1 := by
-    nlinarith [mul_le_mul_of_nonneg_right (le_abs_self l) hc, mul_nonneg hc (abs_nonneg l)]
+    nlinarith [mul_le_mul_of_nonneg_right (le_abs_self l) hc, mul_nonneg hc (abs_nonneg l),
+      mul_le_mul_of_nonneg_right hb (abs_nonneg l)]
   have hexp := h.integrable_exp_mul_sq hl2
   have hsq := integrable_pow h 2
   have hmgf : mgf (fun ω => X ω ^ 2 - m) μ l = rexp (-l * m) * ∫ ω, rexp (l * X ω ^ 2) ∂μ := by
@@ -277,6 +297,8 @@ private lemma mgf_sq_sub_integral_le [IsProbabilityMeasure μ] (h : HasSubgaussi
     congr 1 with ω
     rw [← exp_add]
     ring_nf
+  have hv16 : 16 * (c : ℝ) ^ 2 ≤ v := by
+    simpa using sixteen_mul_sq_le_mul_one_sub hc hv0 hb hv (x := 0) (by simp)
   rw [hmgf]
   rcases le_or_gt 0 l with hl0 | hl0
   · rw [abs_of_nonneg hl0] at hl
@@ -287,10 +309,11 @@ private lemma mgf_sq_sub_integral_le [IsProbabilityMeasure μ] (h : HasSubgaussi
         integral_sub hexp (integrable_const 1), integral_const_mul]
       simp only [integral_const, probReal_univ, smul_eq_mul, mul_one]
       ring
-    have htail : T ≤ 4 * (2 * l * c) ^ 2 := by
+    have hw := sixteen_mul_sq_le_mul_one_sub hc hv0 hb hv hl
+    have htail : T ≤ v * l ^ 2 / 2 := by
       refine (integral_exp_mul_sq_sub_le h hl0 hl2).trans ?_
       rw [div_le_iff₀ (by linarith)]
-      nlinarith [sq_nonneg (2 * l * c)]
+      nlinarith [mul_le_mul_of_nonneg_left hw (sq_nonneg l)]
     have hT0 : 0 ≤ T := integral_nonneg fun ω => by
       change (0 : ℝ) ≤ _
       linarith [add_one_le_exp (l * X ω ^ 2)]
@@ -304,61 +327,76 @@ private lemma mgf_sq_sub_integral_le [IsProbabilityMeasure μ] (h : HasSubgaussi
     rw [hI]
     calc rexp (-l * m) * (T + 1 + l * m) = rexp (-l * m) * (1 + l * m) + rexp (-l * m) * T := by
           ring
-      _ ≤ 1 + 4 * (2 * l * c) ^ 2 := by linarith
-      _ ≤ rexp (4 * (2 * l * c) ^ 2) := by linarith [add_one_le_exp (4 * (2 * l * c) ^ 2)]
-      _ = rexp (32 * c ^ 2 * l ^ 2 / 2) := by ring_nf
+      _ ≤ 1 + v * l ^ 2 / 2 := by linarith
+      _ ≤ rexp (v * l ^ 2 / 2) := by linarith [add_one_le_exp (v * l ^ 2 / 2)]
   · have hX4 := integrable_pow h 4
     have hM4 := integral_pow_two_mul_le h 1
     norm_num [Nat.factorial] at hM4
-    have hpt : ∀ ω, rexp (l * X ω ^ 2) ≤ 1 + l * X ω ^ 2 + l ^ 2 * X ω ^ 4 := by
+    have hpt : ∀ ω, rexp (l * X ω ^ 2) ≤ 1 + l * X ω ^ 2 + l ^ 2 / 2 * X ω ^ 4 := by
       intro ω
       have := exp_neg_le_one_sub_add_sq_div_two
         (mul_nonneg (neg_nonneg.mpr hl0.le) (sq_nonneg (X ω)))
-      have h4 : 0 ≤ l ^ 2 * X ω ^ 4 := by positivity
       calc rexp (l * X ω ^ 2) = rexp (-(-l * X ω ^ 2)) := by ring_nf
         _ ≤ 1 - -l * X ω ^ 2 + (-l * X ω ^ 2) ^ 2 / 2 := this
-        _ ≤ 1 + l * X ω ^ 2 + l ^ 2 * X ω ^ 4 := by nlinarith
-    have hI : ∫ ω, rexp (l * X ω ^ 2) ∂μ ≤ 1 + l * m + l ^ 2 * ∫ ω, X ω ^ 4 ∂μ := by
-      refine (integral_mono hexp (g := fun ω => 1 + l * X ω ^ 2 + l ^ 2 * X ω ^ 4)
-        (((integrable_const 1).add (hsq.const_mul l)).add (hX4.const_mul (l ^ 2))) hpt).trans_eq ?_
+        _ = 1 + l * X ω ^ 2 + l ^ 2 / 2 * X ω ^ 4 := by ring
+    have hI : ∫ ω, rexp (l * X ω ^ 2) ∂μ ≤ 1 + l * m + l ^ 2 / 2 * ∫ ω, X ω ^ 4 ∂μ := by
+      refine (integral_mono hexp (g := fun ω => 1 + l * X ω ^ 2 + l ^ 2 / 2 * X ω ^ 4)
+        (((integrable_const 1).add (hsq.const_mul l)).add (hX4.const_mul (l ^ 2 / 2))) hpt).trans_eq
+        ?_
       rw [integral_add (f := fun ω => 1 + l * X ω ^ 2)
-        ((integrable_const 1).add (hsq.const_mul l)) (hX4.const_mul (l ^ 2)),
+        ((integrable_const 1).add (hsq.const_mul l)) (hX4.const_mul (l ^ 2 / 2)),
         integral_add (integrable_const 1) (hsq.const_mul l), integral_const_mul,
         integral_const_mul]
       simp only [integral_const, probReal_univ, smul_eq_mul, mul_one]
       rfl
     calc rexp (-l * m) * ∫ ω, rexp (l * X ω ^ 2) ∂μ
-        ≤ rexp (-l * m) * (1 + l * m + l ^ 2 * ∫ ω, X ω ^ 4 ∂μ) := by gcongr
-      _ ≤ rexp (-l * m) * rexp (l * m + l ^ 2 * ∫ ω, X ω ^ 4 ∂μ) := by
+        ≤ rexp (-l * m) * (1 + l * m + l ^ 2 / 2 * ∫ ω, X ω ^ 4 ∂μ) := by gcongr
+      _ ≤ rexp (-l * m) * rexp (l * m + l ^ 2 / 2 * ∫ ω, X ω ^ 4 ∂μ) := by
           gcongr
-          linarith [add_one_le_exp (l * m + l ^ 2 * ∫ ω, X ω ^ 4 ∂μ)]
-      _ = rexp (l ^ 2 * ∫ ω, X ω ^ 4 ∂μ) := by rw [← exp_add]; ring_nf
-      _ ≤ rexp (32 * c ^ 2 * l ^ 2 / 2) := by
+          linarith [add_one_le_exp (l * m + l ^ 2 / 2 * ∫ ω, X ω ^ 4 ∂μ)]
+      _ = rexp (l ^ 2 / 2 * ∫ ω, X ω ^ 4 ∂μ) := by rw [← exp_add]; ring_nf
+      _ ≤ rexp (v * l ^ 2 / 2) := by
           gcongr
-          nlinarith [sq_nonneg l]
+          nlinarith [sq_nonneg l, mul_le_mul_of_nonneg_left hv16 (sq_nonneg l)]
+
+/-- **The centred square of a sub-Gaussian variable is sub-exponential, every window**: if $X$
+has proxy $c$ under a probability measure, $2c \le b$ and $16 c^2 b \le (b - 2c) v$, then
+$X^2 - \mathbb{E}[X^2]$ is sub-exponential with variance proxy $v$ and scale $b$: on the window
+$b\lvert\theta\rvert < 1$ the series of $e^{\theta X^2}$ against
+$\mathbb{E}[X^{2k}] \le 2\, k!\, (2c)^k$ is at most $8 c^2\theta^2/(1 - 2c\theta)$ for
+$\theta \ge 0$, and $e^{-x} \le 1 - x + x^2/2$ with $\mathbb{E}[X^4] \le 16 c^2$ covers
+$\theta < 0$. The pairs on the boundary are $v = 16 c^2 b/(b - 2c)$: $(32 c^2, 4 c)$ is Honorio
+and Jaakkola's (`ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral`), and
+$(18 c^2, 18 c)$ balances the two regimes of Bernstein's inequality (it gives the sub-Gaussian
+JL constant `NLAlib.subgaussianJLConstant`, <!-- value subgaussianJLConstant -->$1/36$). No
+printed source. -/
+theorem _root_.ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral_of_le
+    [IsProbabilityMeasure μ] (h : HasSubgaussianMGF X c μ) {v b : ℝ≥0} (hb : 2 * c ≤ b)
+    (hv : 16 * (c : ℝ) ^ 2 * b ≤ ((b : ℝ) - 2 * c) * v) :
+    HasSubexponentialMGF (fun ω => X ω ^ 2 - ∫ ω', X ω' ^ 2 ∂μ) v b μ := by
+  have hc : (0 : ℝ) ≤ c := c.coe_nonneg
+  have hb' : 2 * (c : ℝ) ≤ b := by exact_mod_cast hb
+  refine ⟨fun l hl => ?_, fun l hl => mgf_sq_sub_integral_le h v.2 hb' hv hl⟩
+  have hl2 : 2 * l * c < 1 := by
+    nlinarith [mul_le_mul_of_nonneg_right (le_abs_self l) hc, mul_nonneg hc (abs_nonneg l),
+      mul_le_mul_of_nonneg_right hb' (abs_nonneg l)]
+  refine ((h.integrable_exp_mul_sq hl2).const_mul
+    (rexp (-l * ∫ ω', X ω' ^ 2 ∂μ))).congr (ae_of_all _ fun ω => ?_)
+  simp only
+  rw [← exp_add]
+  ring_nf
 
 /-- The centred square of a sub-Gaussian variable is sub-exponential: if $X$ has proxy $c$ under a
 probability measure, then $X^2 - \mathbb{E}[X^2]$ has variance proxy $32 c^2$ and scale $4 c$, the
-constants of Honorio and Jaakkola (2014), reached by summing the series of $e^{\theta X^2}$ against
-$\mathbb{E}[X^{2k}] \le 2\, k!\, (2c)^k$. -/
+constants of Honorio and Jaakkola (2014): the window $b = 4c$ of
+`ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral_of_le`. -/
 theorem _root_.ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral
     [IsProbabilityMeasure μ] (h : HasSubgaussianMGF X c μ) :
     HasSubexponentialMGF (fun ω => X ω ^ 2 - ∫ ω', X ω' ^ 2 ∂μ) (32 * c ^ 2) (4 * c) μ := by
-  have hb : ((4 * c : ℝ≥0) : ℝ) = 4 * c := by push_cast; ring
-  have hv : ((32 * c ^ 2 : ℝ≥0) : ℝ) = 32 * c ^ 2 := by push_cast; ring
-  have hc : (0 : ℝ) ≤ c := c.coe_nonneg
-  refine ⟨fun l hl => ?_, fun l hl => ?_⟩
-  · rw [hb] at hl
-    have hl2 : 2 * l * c < 1 := by
-      nlinarith [mul_le_mul_of_nonneg_right (le_abs_self l) hc, mul_nonneg hc (abs_nonneg l)]
-    refine ((h.integrable_exp_mul_sq hl2).const_mul
-      (rexp (-l * ∫ ω', X ω' ^ 2 ∂μ))).congr (ae_of_all _ fun ω => ?_)
-    simp only
-    rw [← exp_add]
-    ring_nf
-  · rw [hb] at hl
-    rw [hv]
-    exact mgf_sq_sub_integral_le h hl
+  refine h.hasSubexponentialMGF_sq_sub_integral_of_le ?_ ?_
+  · exact mul_le_mul_of_nonneg_right (by norm_num) c.2
+  · push_cast
+    nlinarith [pow_nonneg c.coe_nonneg 3]
 
 /-! ### Sums of squares with Gaussian moments -/
 
@@ -413,7 +451,7 @@ private theorem integrable_exp_mul_sum_sq (hind : iIndepFun Y μ)
   exact (hsub i).integrable_exp_mul_sq (by rw [NNReal.coe_one, mul_one]; exact hθ)
 
 /-- **Upper Chernoff tail**: for $\varepsilon \ge 0$,
-$\mathbb{P}\bigl((1 + \varepsilon) k \le \sum_i Y_i^2\bigr)
+$\mathbb{P}\bigl[(1 + \varepsilon) k \le \sum_i Y_i^2\bigr]
 \le e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$, $k = \lvert \iota \rvert$, at
 $\theta = \varepsilon/(2(1 + \varepsilon))$ with
 $\mathbb{E}[e^{\theta Y_i^2}] \le (1 - 2\theta)^{-1/2}$. -/
@@ -457,7 +495,7 @@ private theorem measureReal_mul_card_le_sum_sq_le (hind : iIndepFun Y μ)
       nlinarith
 
 /-- **Lower Chernoff tail**: for $\varepsilon \ge 0$,
-$\mathbb{P}\bigl(\sum_i Y_i^2 \le (1 - \varepsilon) k\bigr)
+$\mathbb{P}\bigl[\sum_i Y_i^2 \le (1 - \varepsilon) k\bigr]
 \le e^{-k(\varepsilon^2/4 - \varepsilon^3/6)}$, $k = \lvert \iota \rvert$, at
 $\theta = \varepsilon/(2(1 + \varepsilon))$ with
 $\mathbb{E}[e^{-\theta Y_i^2}] \le 1 - \theta + 3\theta^2/2$ (the fourth moment) and
@@ -529,7 +567,7 @@ private theorem measureReal_sum_sq_le_mul_card_le (hind : iIndepFun Y μ)
 /-- **Dasgupta–Gupta tail for sums of squares**: for independent real $Y_i$, $i \in \iota$, each
 sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and $\mathbb{E}[Y_i^4] \le 3$, and
 $\varepsilon \ge 0$,
-$$\mathbb{P}\Bigl(\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr)
+$$\mathbb{P}\Bigl[\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr]
 \le 2 e^{-k(\varepsilon^2/4 - \varepsilon^3/6)} \,, \qquad k = \lvert \iota \rvert \,.$$
 The exponent of Dasgupta and Gupta (2003) for $\chi^2_k$, cited by name only
 (`docs/PORT_SKETCHING.md` §7.2); here for any variables with the Gaussian's proxy and its second

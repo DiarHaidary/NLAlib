@@ -146,7 +146,7 @@ instance isLeftUnitarilyInvariant_haarFrame [DecidableEq n] [DecidableEq k] :
     (measurable_const.matrix_mul measurable_id) ?_).map_eq⟩
   exact (hasLaw_polarFactor_of_hasLaw_gaussianMatrix
     (hasLaw_const_mul_of_hasLaw_gaussianMatrix HasLaw.id hU.conjTranspose)).congr
-    (ae_of_all _ fun G => (polarFactor_mul_left hU G).symm)
+    (ae_of_all _ fun G => (HasOrthonormalCols.polarFactor_mul_left hU G).symm)
 
 /-- **A Haar frame is right orthogonally invariant**: $\mathbf{Q}\mathbf{V}$ is a Haar frame for
 every orthogonal $\mathbf{V}$. Every shape. [Meckes2019, Ch. 1].
@@ -157,7 +157,7 @@ instance isRightUnitarilyInvariant_haarFrame [DecidableEq k] :
     (measurable_id.matrix_mul measurable_const) ?_).map_eq⟩
   exact (hasLaw_polarFactor_of_hasLaw_gaussianMatrix
     (hasLaw_mul_const_of_hasLaw_gaussianMatrix HasLaw.id hV)).congr
-    (ae_of_all _ fun G => (polarFactor_mul_right hV.conjTranspose G).symm)
+    (ae_of_all _ fun G => (HasOrthonormalCols.polarFactor_mul_right hV.conjTranspose G).symm)
 
 /-! ### The uniform law on the sphere -/
 

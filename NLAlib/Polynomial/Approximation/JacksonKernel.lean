@@ -25,7 +25,7 @@ coefficient one and integral $2\pi$, matching the library's unhalved Chebyshev c
 
 ## Main results
 
-* `jacksonDamping_eq_closed_form`: the classical closed form of the damping factors.
+* `jacksonDamping_of_le`: the classical closed form of the damping factors.
 * `jacksonDamping_nonneg`, `jacksonDamping_le_one`: damping factors lie in $[0,1]$.
 * `integral_jacksonKernel`, `integral_cos_mul_jacksonKernel`: mass and first cosine moment.
 * `jacksonKernel_eq_norm_sq`, `jacksonKernel_nonneg`: autocorrelation identity and positivity.
@@ -144,12 +144,12 @@ private lemma sine_correlation {N k : ℕ} (hk : k ≤ N) :
   ring
 
 /-- Beyond the degree cutoff, the damping coefficient is zero by its total definition. -/
-theorem jacksonDamping_of_lt {N k : ℕ} (hNk : N < k) : jacksonDamping N k = 0 := by
-  exact if_neg (not_le.mpr hNk)
+theorem jacksonDamping_of_lt {N k : ℕ} (hNk : N < k) : jacksonDamping N k = 0 :=
+  if_neg (not_le.mpr hNk)
 
 /-- The sine-autocorrelation definition agrees with the standard trigonometric Jackson formula
 at every index within the cutoff. [ChenTrogdonUbaru2022, Appendix C, Lemma 45]. -/
-theorem jacksonDamping_eq_closed_form {N k : ℕ} (hk : k ≤ N) :
+theorem jacksonDamping_of_le {N k : ℕ} (hk : k ≤ N) :
     jacksonDamping N k =
       (((N : ℝ) - k + 2) * Real.cos ((k : ℝ) * (Real.pi / (N + 2))) +
         Real.sin ((k : ℝ) * (Real.pi / (N + 2))) *
@@ -158,7 +158,7 @@ theorem jacksonDamping_eq_closed_form {N k : ℕ} (hk : k ≤ N) :
 
 /-- Jackson damping preserves the full constant coefficient, including degree zero. -/
 theorem jacksonDamping_zero (N : ℕ) : jacksonDamping N 0 = 1 := by
-  rw [jacksonDamping_eq_closed_form (Nat.zero_le N)]
+  rw [jacksonDamping_of_le (Nat.zero_le N)]
   simp only [Nat.cast_zero, sub_zero, zero_mul, Real.cos_zero, mul_one, Real.sin_zero,
     zero_mul, add_zero]
   exact div_self (by positivity)
@@ -188,7 +188,7 @@ theorem jacksonDamping_one (N : ℕ) :
   rcases Nat.eq_zero_or_pos N with rfl | hN
   · rw [jacksonDamping_of_lt (by omega : 0 < 1)]
     norm_num
-  · rw [jacksonDamping_eq_closed_form hN]
+  · rw [jacksonDamping_of_le hN]
     have hs : Real.sin (Real.pi / (N + 2)) ≠ 0 := (phase_sin_pos N).ne'
     push_cast
     field_simp

@@ -36,11 +36,11 @@ $\mathbf{A} + \mathbf{E}$.
   form, every unitarily invariant norm.
 * `NLAlib.SymmetricGauge.mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub`: the leading
   singular subspaces of $\mathbf{A}$ and $\mathbf{A} + \mathbf{E}$.
-* `NLAlib.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le`,
-  `NLAlib.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub`: the Frobenius forms.
-* `NLAlib.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap`: the bound with the gap of
-  the unperturbed matrix only.
--/
+* `NLAlib.HasOrthonormalCols.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le`,
+  `NLAlib.HasOrthonormalCols.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub`: the
+  Frobenius forms.
+* `NLAlib.HasOrthonormalCols.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap`: the
+  bound with the gap of the unperturbed matrix only. -/
 
 @[expose] public section
 
@@ -152,9 +152,9 @@ theorem sub_sq_mul_frobNorm_sq_add_frobNorm_sq_le {D : Matrix m n 𝕜} {T : Mat
     (hD : specNorm D ≤ β) (X : Matrix m p 𝕜) (Y : Matrix n p 𝕜) :
     (α - β) ^ 2 * (frobNorm X ^ 2 + frobNorm Y ^ 2) ≤
       frobNorm (D * Y - X * T) ^ 2 + frobNorm (Dᴴ * X - Y * Tᴴ) ^ 2 := by
-  have h₁ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2 one_le_two)
+  have h₁ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2)
     (smul_one_le_mul_conjTranspose_self_of_smul_one_le hT) hD X Y
-  have h₂ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2 one_le_two) (D := Dᴴ) (T := Tᴴ)
+  have h₂ := mul_matrixNorm_le_mul_matrixNorm_add (lpGauge 2) (D := Dᴴ) (T := Tᴴ)
     (β := β) (by rwa [Matrix.conjTranspose_conjTranspose]) (by rwa [specNorm_conjTranspose]) Y X
   simp only [lpGauge_two_matrixNorm] at h₁ h₂
   exact sub_sq_mul_add_sq_le_add_sq ((specNorm_nonneg D).trans hD) hαβ (frobNorm_nonneg X)
@@ -257,7 +257,7 @@ $\mathbf{A} - \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}
 = (\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
 (\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})$.
 Orthonormality of the columns of $\mathbf{U}$ is not needed. -/
-theorem sub_mul_diagonal_mul_conjTranspose_eq {A : Matrix m n 𝕜} {j : ℕ}
+theorem HasOrthonormalCols.sub_mul_diagonal_mul_conjTranspose_eq {A : Matrix m n 𝕜} {j : ℕ}
     {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜} (hV : HasOrthonormalCols V)
     (hAV : A * V = U * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜))
     (hAU : Aᴴ * U = V * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜)) :
@@ -274,7 +274,8 @@ compression of $\mathbf{A}$ to the complements has spectral norm $\sigma_{j+1}(\
 $\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}
 (\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\|_2 = \sigma_{j+1}(\mathbf{A})$. This holds with
 repeated singular values. -/
-theorem specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal {A : Matrix m n 𝕜} {j : ℕ}
+theorem HasOrthonormalCols.specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal
+    {A : Matrix m n 𝕜} {j : ℕ}
     {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜} (hV : HasOrthonormalCols V)
     (hAV : A * V = U * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜))
     (hAU : Aᴴ * U = V * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜)) :
@@ -286,24 +287,24 @@ theorem specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal {A : Matrix m n 
         Matrix.diagonal_mul_diagonal]
       congr 2
       ext i
-      rw [← sq_singularValues, RCLike.ofReal_pow, sq]
+      rw [← singularValues_sq, RCLike.ofReal_pow, sq]
     have hP : IsStarProjection (1 - V * Vᴴ) := hV.isStarProjection_mul_conjTranspose.one_sub
-    have h₁ := one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal
+    have h₁ := Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal
       (Matrix.isHermitian_conjTranspose_mul_self A) hV hAAV
     have h₂ : eigenvalue (Aᴴ * A) (j + 1) • (1 - V * Vᴴ) ≤
         eigenvalue (Aᴴ * A) (j + 1) • (1 : Matrix n n 𝕜) := by
       rw [Matrix.le_iff, ← smul_sub, sub_sub_cancel]
       refine (Matrix.posSemidef_self_mul_conjTranspose V).smul ?_
-      rw [← sq_singularValues]
+      rw [← singularValues_sq]
       exact sq_nonneg _
     have h₃ := h₁.trans h₂
-    rw [← sq_singularValues, ← Matrix.mul_assoc] at h₃
+    rw [← singularValues_sq, ← Matrix.mul_assoc] at h₃
     nth_rewrite 1 [← hP.isHermitian.eq] at h₃
     rw [Matrix.mul_assoc, ← Matrix.conjTranspose_mul,
       ← specNorm_sq_le_iff_conjTranspose_mul_self_le (sq_nonneg _)] at h₃
     rw [one_sub_mul_mul_one_sub_eq_mul_one_sub hV hAU]
     exact le_of_pow_le_pow_left₀ two_ne_zero (singularValues_nonneg A (j + 1)) h₃
-  · rw [← sub_mul_diagonal_mul_conjTranspose_eq hV hAV hAU]
+  · rw [← HasOrthonormalCols.sub_mul_diagonal_mul_conjTranspose_eq hV hAV hAU]
     refine singularValues_le_specNorm_sub_of_rank_le A ?_
     rw [Matrix.mul_assoc]
     exact (Matrix.rank_mul_le_left _ _).trans
@@ -348,7 +349,7 @@ theorem SymmetricGauge.sub_mul_max_matrixNorm_one_sub_mul_le_max (Φ : Symmetric
   have hPU : IsStarProjection (1 - U * Uᴴ) := hU.isStarProjection_mul_conjTranspose.one_sub
   have hPV : IsStarProjection (1 - V * Vᴴ) := hV.isStarProjection_mul_conjTranspose.one_sub
   have h := Φ.sub_mul_max_matrixNorm_le_max hS
-    (specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal hV hAV hAU).le
+    (HasOrthonormalCols.specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal hV hAV hAU).le
     ((1 - U * Uᴴ) * U') ((1 - V * Vᴴ) * V')
   rw [one_sub_mul_mul_one_sub_mul_sub hU hV hAV hAU,
     conjTranspose_one_sub_mul_mul_one_sub_mul_sub hU hV hAV hAU] at h
@@ -369,7 +370,7 @@ $$\begin{aligned}
 \end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
 Result: wedin -/
-theorem sub_sq_mul_frobNorm_one_sub_mul_sq_add_le {A : Matrix m n 𝕜} {j : ℕ}
+theorem HasOrthonormalCols.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le {A : Matrix m n 𝕜} {j : ℕ}
     {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
     (hAV : A * V = U * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜))
@@ -382,7 +383,7 @@ theorem sub_sq_mul_frobNorm_one_sub_mul_sq_add_le {A : Matrix m n 𝕜} {j : ℕ
   have hPU : IsStarProjection (1 - U * Uᴴ) := hU.isStarProjection_mul_conjTranspose.one_sub
   have hPV : IsStarProjection (1 - V * Vᴴ) := hV.isStarProjection_mul_conjTranspose.one_sub
   have h := sub_sq_mul_frobNorm_sq_add_frobNorm_sq_le hα hS
-    (specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal hV hAV hAU).le
+    (HasOrthonormalCols.specNorm_one_sub_mul_mul_one_sub_of_mul_eq_mul_diagonal hV hAV hAU).le
     ((1 - U * Uᴴ) * U') ((1 - V * Vᴴ) * V')
   rw [one_sub_mul_mul_one_sub_mul_sub hU hV hAV hAU,
     conjTranspose_one_sub_mul_mul_one_sub_mul_sub hU hV hAV hAU] at h
@@ -438,7 +439,8 @@ $$\begin{aligned}
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
 Port of `NLAlib.sqrt_add_sq_frobNorm_sinePrincipalAngles_le_sqrt_add_sq_perturbation_frame_div`.
 Result: wedin -/
-theorem sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub {A E : Matrix m n 𝕜}
+theorem HasOrthonormalCols.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub
+    {A E : Matrix m n 𝕜}
     {j : ℕ} {U U' : Matrix m (Fin (j + 1)) 𝕜} {V V' : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
     (hAV : A * V = U * Matrix.diagonal fun i : Fin (j + 1) => ((singularValues A i : ℝ) : 𝕜))
@@ -453,7 +455,8 @@ theorem sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub {A E : Matri
   have hS := sq_smul_one_le_conjTranspose_diagonal_mul_self (𝕜 := 𝕜)
     (σ := fun i : Fin (j + 1) => singularValues (A + E) i) (singularValues_nonneg (A + E) j)
     fun i => singularValues_antitone (A + E) (Nat.lt_succ_iff.mp i.2)
-  have h := sub_sq_mul_frobNorm_one_sub_mul_sq_add_le hU hV hAV hAU (by linarith) hS U' V'
+  have h := HasOrthonormalCols.sub_sq_mul_frobNorm_one_sub_mul_sq_add_le hU hV hAV hAU (by linarith)
+    hS U' V'
   rw [Matrix.conjTranspose_diagonal_ofReal, sub_eq_neg_mul_of_add_mul_eq hAV',
     sub_eq_neg_mul_of_add_mul_eq (by rwa [Matrix.conjTranspose_add] at hAU'), frobNorm_neg,
     frobNorm_neg] at h
@@ -470,7 +473,8 @@ $$\max\bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_2,
   \le \frac{2 \|\mathbf{E}\|_2}{\sigma_j(\mathbf{A}) - \sigma_{j+1}(\mathbf{A})}.$$
 Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_two_mul_specNorm_div_population_gap`.
 Result: wedin -/
-theorem max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap {A E : Matrix m n 𝕜}
+theorem HasOrthonormalCols.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap
+    {A E : Matrix m n 𝕜}
     {j : ℕ} {U U' : Matrix m (Fin (j + 1)) 𝕜} {V V' : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V) (hU' : HasOrthonormalCols U')
     (hV' : HasOrthonormalCols V')
@@ -492,7 +496,7 @@ theorem max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap {A E : Matr
     ((hV.isStarProjection_mul_conjTranspose.one_sub.specNorm_mul_le V').trans hV'.specNorm_le_one)
   have hweyl := abs_singularValues_sub_le_specNorm (A + E) A j
   rw [add_sub_cancel_left] at hweyl
-  have h := (lpGauge ⊤ le_top).mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub hU hV hAV
+  have h := (lpGauge ⊤).mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub hU hV hAV
     hAU hAV' hAU' le_rfl
   simp only [lpGauge_top_matrixNorm] at h
   have hE : max (specNorm (E * V')) (specNorm (Eᴴ * U')) ≤ specNorm E := max_le

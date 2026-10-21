@@ -238,9 +238,12 @@ theorem hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant [DecidableEq
   refine h.congr (ae_of_all _ fun ω => ?_)
   simp only [← Matrix.mul_assoc, h1, h2]
 
-/-- **The coupled conjugation average**: for $\mathbf{X}$ with a left unitarily invariant law,
-frames as in `NLAlib.hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant` and measurable
-$F$, if $\mathbf{Z} = \mathbf{V}_2^{\mathsf{H}}\mathbf{X}\,F(\mathbf{V}_1^{\mathsf{H}}\mathbf{X})\,
+/-- **The coupled conjugation average**: for a random $\mathbf{X} \in \Bbbk^{n \times k}$ whose
+law $\nu$ is left unitarily invariant (`IsLeftUnitarilyInvariant ν`), any
+$\mathbf{V}_1 \in \Bbbk^{n \times s}$, any $\mathbf{V}_2 \in \Bbbk^{n \times t}$ with orthonormal
+columns and $\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, and measurable
+$F : \Bbbk^{s \times k} \to \Bbbk^{k \times k}$, if
+$\mathbf{Z} = \mathbf{V}_2^{\mathsf{H}}\mathbf{X}\,F(\mathbf{V}_1^{\mathsf{H}}\mathbf{X})\,
 (\mathbf{V}_2^{\mathsf{H}}\mathbf{X})^{\mathsf{H}}$ is integrable then
 $$\mathbb{E}\mathbf{Z} =
 \frac{\mathbb{E}\operatorname{tr}\mathbf{Z}}{\lvert t\rvert}\,\mathbf{I}\,,$$

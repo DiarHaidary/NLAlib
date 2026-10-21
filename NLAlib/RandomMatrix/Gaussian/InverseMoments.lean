@@ -83,6 +83,32 @@ private theorem otherRows_apply (G : Matrix r k ℝ) (i : r) (l : k) (j : {j // 
     otherRows G i l j = G j l := by
   simp only [otherRows, Matrix.conjTranspose_apply, Matrix.submatrix_apply, id_eq, star_trivial]
 
+/-- The invertible case of `inv_mul_conjTranspose_mulVec_single`: if the other rows are
+independent and $\mathbf{G}\mathbf{w} = s\,\mathbf{e}_i$ with $s \ne 0$, then
+$\mathbf{G}^{\mathsf{H}}$ is injective. -/
+private theorem injective_conjTranspose_mulVec_of_otherRows {G : Matrix r k ℝ} {i : r}
+    (hH : Function.Injective (otherRows G i).mulVec) {w : k → ℝ} {s : ℝ}
+    (hGw : G *ᵥ w = Pi.single i s) (hs0 : s ≠ 0) : Function.Injective Gᴴ.mulVec := by
+  refine (injective_iff_map_eq_zero Gᴴ.mulVecLin).2 fun y hy => ?_
+  rw [Matrix.mulVecLin_apply] at hy
+  have hyi : y i = 0 := by
+    have h := congrArg (w ⬝ᵥ ·) hy
+    simp only [dotProduct_zero] at h
+    rw [Matrix.dotProduct_mulVec, Matrix.conjTranspose_eq_transpose_of_trivial,
+      Matrix.vecMul_transpose, hGw, single_dotProduct] at h
+    exact (mul_eq_zero.1 h).resolve_left hs0
+  have hBy : otherRows G i *ᵥ (fun j : {j // j ≠ i} => y j) = 0 := by
+    rw [← hy]
+    funext l
+    simp only [Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply, star_trivial,
+      otherRows_apply]
+    rw [Fintype.sum_eq_add_sum_subtype_ne _ i, hyi, mul_zero, zero_add]
+  have hy' : (fun j : {j // j ≠ i} => y j) = 0 := hH (by rw [hBy, Matrix.mulVec_zero])
+  funext j
+  by_cases hj : j = i
+  · rw [hj, hyi, Pi.zero_apply]
+  · exact congrFun hy' ⟨j, hj⟩
+
 /-- **The Schur complement of one row.** If the rows of $\mathbf{G}$ other than row $i$ are
 linearly independent, the $i$-th column of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ is
 $s^{-1} \mathbf{x}$, with $s$ the squared distance from row $i$ to the span of the others and
@@ -152,26 +178,7 @@ private theorem inv_mul_conjTranspose_mulVec_single [DecidableEq k] (G : Matrix 
       exact one_ne_zero this
     rw [Matrix.nonsing_inv_apply_not_isUnit _ (mt (Matrix.isUnit_iff_isUnit_det _).2 hnot),
       Matrix.zero_mulVec, hs0, inv_zero, zero_smul]
-  · have hinj : Function.Injective Gᴴ.mulVec := by
-      refine (injective_iff_map_eq_zero Gᴴ.mulVecLin).2 fun y hy => ?_
-      rw [Matrix.mulVecLin_apply] at hy
-      have hyi : y i = 0 := by
-        have h := congrArg (w ⬝ᵥ ·) hy
-        simp only [dotProduct_zero] at h
-        rw [Matrix.dotProduct_mulVec, Matrix.conjTranspose_eq_transpose_of_trivial,
-          Matrix.vecMul_transpose, hGw, single_dotProduct] at h
-        exact (mul_eq_zero.1 h).resolve_left hs0
-      have hBy : B *ᵥ (fun j : {j // j ≠ i} => y j) = 0 := by
-        rw [← hy]
-        funext l
-        simp only [Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply, star_trivial, hB,
-          otherRows_apply]
-        rw [Fintype.sum_eq_add_sum_subtype_ne _ i, hyi, mul_zero, zero_add]
-      have hy' : (fun j : {j // j ≠ i} => y j) = 0 := hH (by rw [hBy, Matrix.mulVec_zero])
-      funext j
-      by_cases hj : j = i
-      · rw [hj, hyi, Pi.zero_apply]
-      · exact congrFun hy' ⟨j, hj⟩
+  · have hinj := injective_conjTranspose_mulVec_of_otherRows hH hGw hs0
     have hU := (Matrix.isUnit_iff_isUnit_det _).1 (hunit.2 hinj)
     have h := congrArg ((G * Gᴴ)⁻¹ *ᵥ ·) hWx
     simp only [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ hU, Matrix.one_mulVec] at h
@@ -266,7 +273,7 @@ private theorem lintegral_comp_inv_mul_conjTranspose_apply_self
         ∂(gaussianVector (Fin (Fintype.card k - Fintype.card r + 1))) := by
   classical
   have := hX.isProbabilityMeasure
-  set d := Fintype.card k - Fintype.card r + 1 with hd
+  set d := Fintype.card k - Fintype.card r + 1
   set t := {j // j ≠ i}
   have hcard : Fintype.card t + d = Fintype.card k := card_subtype_ne_add hrk
   set ψ : (k → ℝ) × Matrix t k ℝ → ℝ≥0∞ := fun p =>
@@ -653,6 +660,41 @@ private theorem lintegral_inv_norm_sq_sq {d : ℕ} (hd : 5 ≤ d) :
   rw [← ofReal_integral_eq_lintegral_ofReal hint (Filter.Eventually.of_forall fun η =>
     sq_nonneg _), integral_sq_of_hasLaw_invChiSq hlaw hd]
 
+omit [DecidableEq r] in
+/-- The fibre step of `lintegral_inv_mul_conjTranspose_apply_sq`: at an $\mathbf{H}$ with
+independent rows, integrating out the row $\mathbf{g}$ gives
+$((\mathbf{H}\mathbf{H}^{\mathsf{H}})^{-1})_{j,j}\,\mathbb{E}[(1/\chi^2_d)^2]$. -/
+private theorem lintegral_pinv_mulVec_apply_sq_mul_inv_sq [DecidableEq k] {t : Type*} [Fintype t]
+    [DecidableEq t] (H : Matrix t k ℝ) (hinj : Function.Injective Hᴴ.mulVec) {d : ℕ}
+    (hcard : Fintype.card t + d = Fintype.card k) (hd : 5 ≤ d) (j' : t) :
+    ∫⁻ g, ENNReal.ofReal ((pinv Hᴴ *ᵥ g) j' ^ 2 *
+        ((‖WithLp.toLp 2 ((1 - rangeProjector Hᴴ) *ᵥ g)‖ ^ 2)⁻¹) ^ 2) ∂(gaussianVector k) =
+      ENNReal.ofReal ((H * Hᴴ)⁻¹ j' j') *
+        ENNReal.ofReal (1 / (((d : ℝ) - 2) * ((d : ℝ) - 4))) := by
+  obtain ⟨V₁, V₂, hV, h₁, h₂⟩ := exists_frame_rangeProjector Hᴴ hinj hcard
+  have hV₂ := (hasOrthonormalCols_fromCols_iff.1 hV).2.1
+  set M := pinv Hᴴ * V₁ with hM
+  have hPinv : pinv Hᴴ * rangeProjector Hᴴ = pinv Hᴴ := by
+    rw [← mul_pinv, ← Matrix.mul_assoc, pinv_mul_mul_pinv]
+  have hc (g : k → ℝ) : (pinv Hᴴ *ᵥ g) j' = (fun l => M j' l) ⬝ᵥ (V₁ᴴ *ᵥ g) := by
+    rw [← hPinv, ← h₁, ← Matrix.mul_assoc, ← hM, ← Matrix.mulVec_mulVec]
+    rfl
+  have hs (g : k → ℝ) : ‖WithLp.toLp 2 ((1 - rangeProjector Hᴴ) *ᵥ g)‖ =
+      ‖WithLp.toLp 2 (V₂ᴴ *ᵥ g)‖ := by
+    rw [← h₂, ← Matrix.mulVec_mulVec, hV₂.norm_toLp_mulVec]
+  have hb : ‖WithLp.toLp 2 (fun l => M j' l)‖ ^ 2 = (H * Hᴴ)⁻¹ j' j' := by
+    have hunit : IsUnit (H * Hᴴ) := by
+      simpa only [Matrix.conjTranspose_conjTranspose] using
+        (isUnit_conjTranspose_mul_self_iff (A := Hᴴ)).2 hinj
+    have hMM : M * Mᴴ = (H * Hᴴ)⁻¹ := by
+      rw [hM, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc V₁, h₁,
+        ← Matrix.mul_assoc, hPinv, ← pinv_conjTranspose_mul_self,
+        Matrix.conjTranspose_conjTranspose, pinv_of_isUnit hunit]
+    rw [← hMM, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, Matrix.mul_apply]
+    simp only [dotProduct, Matrix.conjTranspose_apply, star_trivial]
+  simp only [hc, hs]
+  rw [lintegral_sq_dotProduct_mul_inv_sq hV, hb, lintegral_inv_norm_sq_sq (by omega)]
+
 /-- **The off-diagonal second moment**: for $j \ne i$ and $\lvert r \rvert + 4 \le \lvert k \rvert$,
 $$\mathbb{E}\bigl[((\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1})_{j,i}^2\bigr]
 = \frac{1}{(\lvert k \rvert - \lvert r \rvert)(\lvert k \rvert - \lvert r \rvert - 1)
@@ -671,10 +713,10 @@ private theorem lintegral_inv_mul_conjTranspose_apply_sq (hX : HasLaw X (gaussia
   set t := {j // j ≠ i}
   have hcard : Fintype.card t + d = Fintype.card k := card_subtype_ne_add (by omega)
   set j' : t := ⟨j, hji⟩
-  set m₂ : ℝ := 1 / (((d : ℝ) - 2) * ((d : ℝ) - 4)) with hm₂
+  set m₂ : ℝ := 1 / (((d : ℝ) - 2) * ((d : ℝ) - 4))
   set ψ : (k → ℝ) × Matrix t k ℝ → ℝ≥0∞ := fun p =>
     ENNReal.ofReal ((pinv p.2ᴴ *ᵥ p.1) j' ^ 2 *
-      ((‖WithLp.toLp 2 ((1 - rangeProjector p.2ᴴ) *ᵥ p.1)‖ ^ 2)⁻¹) ^ 2) with hψ
+      ((‖WithLp.toLp 2 ((1 - rangeProjector p.2ᴴ) *ᵥ p.1)‖ ^ 2)⁻¹) ^ 2)
   have hψm : Measurable ψ := by
     have hc : Measurable fun p : (k → ℝ) × Matrix t k ℝ => (pinv p.2ᴴ *ᵥ p.1) j' :=
       (measurable_pi_apply j').comp ((measurable_pinv.comp
@@ -711,29 +753,7 @@ private theorem lintegral_inv_mul_conjTranspose_apply_sq (hX : HasLaw X (gaussia
         refine lintegral_congr_ae ?_
         filter_upwards [ae_injective_conjTranspose_mulVec
           (HasLaw.id (μ := gaussianMatrix t k)) htk] with H hinj
-        obtain ⟨V₁, V₂, hV, h₁, h₂⟩ := exists_frame_rangeProjector Hᴴ hinj hcard
-        have hV₂ := (hasOrthonormalCols_fromCols_iff.1 hV).2.1
-        set M := pinv Hᴴ * V₁ with hM
-        have hPinv : pinv Hᴴ * rangeProjector Hᴴ = pinv Hᴴ := by
-          rw [← mul_pinv, ← Matrix.mul_assoc, pinv_mul_mul_pinv]
-        have hc (g : k → ℝ) : (pinv Hᴴ *ᵥ g) j' = (fun l => M j' l) ⬝ᵥ (V₁ᴴ *ᵥ g) := by
-          rw [← hPinv, ← h₁, ← Matrix.mul_assoc, ← hM, ← Matrix.mulVec_mulVec]
-          rfl
-        have hs (g : k → ℝ) : ‖WithLp.toLp 2 ((1 - rangeProjector Hᴴ) *ᵥ g)‖ =
-            ‖WithLp.toLp 2 (V₂ᴴ *ᵥ g)‖ := by
-          rw [← h₂, ← Matrix.mulVec_mulVec, hV₂.norm_toLp_mulVec]
-        have hb : ‖WithLp.toLp 2 (fun l => M j' l)‖ ^ 2 = (H * Hᴴ)⁻¹ j' j' := by
-          have hunit : IsUnit (H * Hᴴ) := by
-            simpa only [Matrix.conjTranspose_conjTranspose] using
-              (isUnit_conjTranspose_mul_self_iff (A := Hᴴ)).2 hinj
-          have hMM : M * Mᴴ = (H * Hᴴ)⁻¹ := by
-            rw [hM, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc V₁, h₁,
-              ← Matrix.mul_assoc, hPinv, ← pinv_conjTranspose_mul_self,
-              Matrix.conjTranspose_conjTranspose, pinv_of_isUnit hunit]
-          rw [← hMM, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, Matrix.mul_apply]
-          simp only [dotProduct, Matrix.conjTranspose_apply, star_trivial]
-        simp only [hψ, hc, hs]
-        rw [lintegral_sq_dotProduct_mul_inv_sq hV, hb, lintegral_inv_norm_sq_sq (by omega)]
+        exact lintegral_pinv_mulVec_apply_sq_mul_inv_sq H hinj hcard (by omega) j'
     _ = _ := by
         have hint : Integrable (fun H : Matrix t k ℝ => (H * Hᴴ)⁻¹ j' j') (gaussianMatrix t k) :=
           integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
@@ -831,7 +851,7 @@ private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (ga
   have := hX.isProbabilityMeasure
   have hd : 5 ≤ Fintype.card k - Fintype.card r + 1 := by omega
   set a := 1 / ((((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) - 2) *
-    (((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) - 4)) with ha
+    (((Fintype.card k - Fintype.card r + 1 : ℕ) : ℝ) - 4))
   have hsq (l : r) : ∫ ω, (X ω * (X ω)ᴴ)⁻¹ l l ^ 2 ∂μ = a :=
     integral_sq_of_hasLaw_invChiSq (hasLaw_inv_mul_conjTranspose_apply_self hX (by omega) l) hd
   by_cases hij : i = j

@@ -21,7 +21,8 @@ invariant norm.
 
 ## Main results
 
-* `NLAlib.sum_eigenvalue_add_sub_le_sum_range`, `NLAlib.majorized_eigenvalue_add_sub`: Lidskii.
+* `Matrix.IsHermitian.sum_eigenvalue_add_sub_le_sum_range`,
+  `Matrix.IsHermitian.majorized_eigenvalue_add_sub`: Lidskii.
 * `NLAlib.sum_abs_singularValues_add_sub_le_kyFanNorm`,
   `NLAlib.weaklyMajorized_abs_singularValues_add_sub`: the singular value form.
 -/
@@ -83,7 +84,8 @@ $$\sum_{j \in J} \bigl(\lambda_j(\mathbf{A} + \mathbf{B}) - \lambda_j(\mathbf{A}
 Port of `NLAlib.sum_eigenvalues₀_add_le_sum_add_eigenvaluePrefix`, there over $\mathbb{R}$; the
 proof here is new.
 Result: lidskii-inequality -/
-theorem sum_eigenvalue_add_sub_le_sum_range {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.sum_eigenvalue_add_sub_le_sum_range {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) {J : Finset ℕ} (hJ : ∀ j ∈ J, j < Fintype.card n) :
     ∑ j ∈ J, (eigenvalue (A + B) j - eigenvalue A j) ≤
       ∑ i ∈ Finset.range J.card, eigenvalue B i := by
@@ -101,7 +103,7 @@ theorem sum_eigenvalue_add_sub_le_sum_range {A B : Matrix n n 𝕜} (hA : A.IsHe
     rw [← hAP.eigenvalue_add_smul_one c hj, add_assoc]
     exact eigenvalue_le_eigenvalue_of_le (add_le_add_right hBP A) (hA.add hB) j
   have h2 : ∀ j, 0 ≤ eigenvalue (A + P) j - eigenvalue A j := fun j =>
-    sub_nonneg.mpr (eigenvalue_le_eigenvalue_add_of_posSemidef hA hP j)
+    sub_nonneg.mpr (Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_posSemidef hA hP j)
   have h3 : ∑ i ∈ Finset.range (Fintype.card n), max (eigenvalue B i - c) 0 =
       ∑ i ∈ Finset.range J.card, eigenvalue B i - J.card * c := by
     rw [← Finset.sum_range_add_sum_Ico _ hkN, Finset.sum_eq_zero (s := Finset.Ico _ _), add_zero]
@@ -134,13 +136,15 @@ are majorized by the eigenvalues $(\lambda_i(\mathbf{B}))_{i < \lvert n \rvert}$
 [Bhatia1997, Corollary III.4.2].
 Port of `NLAlib.majorized_eigenvalues₀_add_sub`, there over $\mathbb{R}$.
 Result: lidskii-inequality -/
-theorem majorized_eigenvalue_add_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.majorized_eigenvalue_add_sub {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
     Majorized (fun i : Fin (Fintype.card n) => eigenvalue (A + B) i - eigenvalue A i)
       (fun i : Fin (Fintype.card n) => eigenvalue B i) := by
   refine ⟨weaklyMajorized_fin_of_forall_sum_le (f := eigenvalue B)
     (fun i _ j hj hij => hB.eigenvalue_le_eigenvalue hij hj) fun S => ?_, ?_⟩
-  · have h := sum_eigenvalue_add_sub_le_sum_range hA hB (J := S.map Fin.valEmbedding)
+  · have h := Matrix.IsHermitian.sum_eigenvalue_add_sub_le_sum_range hA hB
+      (J := S.map Fin.valEmbedding)
       fun j hj => by
         obtain ⟨i, -, rfl⟩ := Finset.mem_map.mp hj
         exact i.isLt
@@ -187,7 +191,7 @@ private theorem sum_abs_singularValues_add_sub_le_kyFanNorm_of_lt (A E : Matrix 
     rw [Fintype.card_sum]
     simp only [f]
     split_ifs <;> omega
-  have key := sum_eigenvalue_add_sub_le_sum_range (isHermitian_dilation A)
+  have key := Matrix.IsHermitian.sum_eigenvalue_add_sub_le_sum_range (isHermitian_dilation A)
     (isHermitian_dilation E) hJ
   rw [Finset.sum_image hf, Finset.card_image_of_injOn hf, ← dilation_add] at key
   have hcard : T.card ≤ min (Fintype.card m) (Fintype.card n) := by
@@ -229,8 +233,9 @@ theorem sum_abs_singularValues_add_sub_le_kyFanNorm (A E : Matrix m n 𝕜) (S :
     (Finset.mem_filter.mp hi).2).trans
       (kyFanNorm_mono_left E (Finset.card_le_card (Finset.filter_subset _ S)))
 
-/-- The absolute differences of the first $N$ singular values are weakly majorized by the first
-$N$ singular values of the perturbation, for every $N$:
+/-- **Lidskii's inequality for singular values**, weak majorization form. The absolute
+differences of the first $N$ singular values are weakly majorized by the first $N$ singular values
+of the perturbation, for every $N$:
 $(\lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert)_{i < N}$ is weakly
 majorized by $(\sigma_i(\mathbf{E}))_{i < N}$.
 [Bhatia1997, Theorem IV.3.4].

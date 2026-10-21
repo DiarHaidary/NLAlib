@@ -18,8 +18,8 @@ products, with their Frobenius bounds.
 ## Main results
 
 * `NLAlib.integral_frobNorm_mul_mul_pow_four_of_hasLaw_gaussianMatrix`.
-* `NLAlib.integral_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix`.
-* `NLAlib.integral_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix`.
+* `NLAlib.integral_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix`.
+* `NLAlib.integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix`.
 -/
 
 @[expose] public section
@@ -202,7 +202,7 @@ private theorem gram_error_apply (A : Matrix a n ℝ) (B : Matrix n b ℝ)
     (Finset.sum_congr rfl fun l _ => mul_comm _ _)
 
 /-- The squared Frobenius error of a centered Gaussian Gram product is integrable. -/
-theorem integrable_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix
+theorem integrable_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix
     {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
     (A : Matrix a n ℝ) (B : Matrix n b ℝ) :
     Integrable (fun ω => frobNorm (A * (G ω * (G ω)ᴴ) * B -
@@ -217,7 +217,7 @@ $$\mathbb{E}\|\mathbf{A}\mathbf{G}\mathbf{G}^{\mathsf{H}}\mathbf{B}
 =\lvert k\rvert(\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{B}\|_{\mathsf{F}}^2
 +\|\mathbf{A}\mathbf{B}\|_{\mathsf{F}}^2)\,.$$
 [Isserlis1918, fourth-order formula]; its centered Gram contraction, including zero columns. -/
-theorem integral_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix
+theorem integral_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix
     {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
     (A : Matrix a n ℝ) (B : Matrix n b ℝ) :
     ∫ ω, frobNorm (A * (G ω * (G ω)ᴴ) * B -
@@ -246,7 +246,7 @@ private theorem normalized_gram_error [Nonempty k] (A : Matrix a n ℝ)
 
 /-- The squared Frobenius error of normalized Gaussian AMM is integrable, even when the
 sketch dimension is zero (when the error is the constant negative product). -/
-theorem integrable_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix
+theorem integrable_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix
     {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
     (A : Matrix a n ℝ) (B : Matrix n b ℝ) :
     Integrable (fun ω => frobNorm (A * ((Fintype.card k : ℝ)⁻¹ •
@@ -260,7 +260,8 @@ theorem integrable_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix
     exact integrable_const _
   | inr hk =>
     simp_rw [normalized_gram_error, frobNorm_real_smul, mul_pow, sq_abs]
-    exact (integrable_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix hG A B).const_mul _
+    exact (integrable_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix hG A
+      B).const_mul _
 
 /-- **Gaussian approximate matrix multiplication, exact error.** For a nonempty sketch,
 $$\mathbb{E}\|\mathbf{A}(\mathbf{G}\mathbf{G}^{\mathsf{H}}/\lvert k\rvert)
@@ -270,7 +271,8 @@ $$\mathbb{E}\|\mathbf{A}(\mathbf{G}\mathbf{G}^{\mathsf{H}}/\lvert k\rvert)
 [Isserlis1918, fourth-order formula]; the normalized centered Gram contraction.
 Ported from `NLAlib.integral_frobSq_mul_gram_mul_transpose_sub`.
 Result: gaussian-amm -/
-theorem integral_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix [Nonempty k]
+theorem integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix
+    [Nonempty k]
     {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
     (A : Matrix a n ℝ) (B : Matrix n b ℝ) :
     ∫ ω, frobNorm (A * ((Fintype.card k : ℝ)⁻¹ •
@@ -278,7 +280,8 @@ theorem integral_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix [Non
       (frobNorm A ^ 2 * frobNorm B ^ 2 + frobNorm (A * B) ^ 2) / Fintype.card k := by
   have hc : (Fintype.card k : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
   simp_rw [normalized_gram_error, frobNorm_real_smul, mul_pow, sq_abs]
-  rw [integral_const_mul, integral_frobNorm_mul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix hG]
+  rw [integral_const_mul,
+    integral_frobNorm_mul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix hG]
   field_simp
 
 /-- The Gaussian AMM mean squared error is at most
@@ -286,13 +289,14 @@ $$\frac{2\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{B}\|_{\mathsf{F}}^2}
 {\lvert k\rvert}\,.$$
 [Isserlis1918, fourth-order formula]; consequence of the exact error and Frobenius
 submultiplicativity. -/
-theorem integral_frobNorm_mul_smul_gram_mul_sub_sq_le_of_hasLaw_gaussianMatrix [Nonempty k]
+theorem integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_le_of_hasLaw_gaussianMatrix
+    [Nonempty k]
     {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
     (A : Matrix a n ℝ) (B : Matrix n b ℝ) :
     ∫ ω, frobNorm (A * ((Fintype.card k : ℝ)⁻¹ •
       (G ω * (G ω)ᴴ)) * B - A * B) ^ 2 ∂μ ≤
       2 * frobNorm A ^ 2 * frobNorm B ^ 2 / Fintype.card k := by
-  rw [integral_frobNorm_mul_smul_gram_mul_sub_sq_of_hasLaw_gaussianMatrix hG]
+  rw [integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix hG]
   apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg _)
   have h := frobNorm_mul_le A B
   nlinarith [frobNorm_nonneg (A * B)]

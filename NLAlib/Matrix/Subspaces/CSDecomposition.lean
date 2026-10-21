@@ -24,10 +24,11 @@ directly.
 
 ## Main results
 
-* `NLAlib.exists_cs_decomposition`: the CS decomposition of a partitioned unitary matrix.
+* `NLAlib.HasOrthonormalCols.exists_cs_decomposition`: the CS decomposition of a partitioned unitary
+  matrix.
 * `NLAlib.HasOrthonormalCols.rank_toBlocks₁₂`, `NLAlib.HasOrthonormalCols.rank_toBlocks₂₂_add`:
   the ranks of the blocks.
-* `NLAlib.HasOrthonormalCols.sq_singularValues_toBlocks₂₁`,
+* `NLAlib.HasOrthonormalCols.singularValues_toBlocks₂₁_sq`,
   `NLAlib.HasOrthonormalCols.singularValues_toBlocks₂₂`,
   `NLAlib.HasOrthonormalCols.singularValues_toBlocks₁₂`: the singular values of the blocks.
 -/
@@ -170,7 +171,7 @@ private theorem exists_fromBlocks_one_mul_mul_eq_csMatrix {M : Matrix (p ⊕ q) 
     exact add_left_cancel (h₁.trans (toBlocks_gram hM).1.symm)
   obtain ⟨O, hO, hOM⟩ := (conjTranspose_mul_self_eq_iff_exists_mul le_rfl).mp hG
   have hN : HasOrthonormalCols (Matrix.fromBlocks 1 0 0 O * M) :=
-    (hasOrthonormalCols_one.fromBlocks_diagonal hO).mul hM
+    (hasOrthonormalCols_one.fromBlocks_zero₁₂_zero₂₁ hO).mul hM
   have hN_eq : Matrix.fromBlocks 1 0 0 O * M =
       Matrix.fromBlocks M.toBlocks₁₁ M.toBlocks₁₂ (O * M.toBlocks₂₁) (O * M.toBlocks₂₂) := by
     nth_rw 1 [← Matrix.fromBlocks_toBlocks M]
@@ -192,11 +193,13 @@ with $\mathbf{K}$ the canonical matrix `NLAlib.csMatrix` of $\mathbf{c}$, $\math
 unitary $\mathbf{V}_1$, $\mathbf{W}_1$, $\mathbf{V}_2$, $\mathbf{W}_2$, and
 $\mathbf{c}_i, \mathbf{s}_i \ge 0$, $\mathbf{c}_i^2 + \mathbf{s}_i^2 = 1$; the cosines
 $\mathbf{c}$ are the singular values of the leading block, in some order.
-[HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3]; [PaigeWei1994].
+[HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3]; [PaigeWei1994, Theorem 8.1];
+Paige and Wei allow any $2 \times 2$ partitioning, here the diagonal blocks are square.
 Port of `NLAlib.exists_cs_decomposition_of_embedding` and
 `NLAlib.exists_complex_cs_decomposition_of_embedding`.
 Result: cs-decomposition -/
-theorem exists_cs_decomposition {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜} (hU : HasOrthonormalCols U)
+theorem HasOrthonormalCols.exists_cs_decomposition {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜}
+    (hU : HasOrthonormalCols U)
     (e : p ↪ q) :
     ∃ (V₁ W₁ : Matrix p p 𝕜) (V₂ W₂ : Matrix q q 𝕜) (c s : p → ℝ),
       HasOrthonormalCols V₁ ∧ HasOrthonormalCols W₁ ∧ HasOrthonormalCols V₂ ∧
@@ -220,8 +223,9 @@ theorem exists_cs_decomposition {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜} (hU : HasO
     rw [Real.sq_sqrt (by nlinarith [hc0 i, hc1 i]), add_sub_cancel]
   have hV := hSVD.hasOrthonormalCols_left
   have hW := hSVD.hasOrthonormalCols_right
-  have hM := ((hV.fromBlocks_diagonal (hasOrthonormalCols_one (n := q))).conjTranspose.mul hU).mul
-    (hW.fromBlocks_diagonal (hasOrthonormalCols_one (n := q)))
+  have hM :=
+    ((hV.fromBlocks_zero₁₂_zero₂₁ (hasOrthonormalCols_one (n := q))).conjTranspose.mul hU).mul
+    (hW.fromBlocks_zero₁₂_zero₂₁ (hasOrthonormalCols_one (n := q)))
   have hM₁₁ : ((Matrix.fromBlocks V 0 0 (1 : Matrix q q 𝕜))ᴴ * U *
       Matrix.fromBlocks W 0 0 (1 : Matrix q q 𝕜)).toBlocks₁₁ =
       Matrix.diagonal fun i => ((c i : ℝ) : 𝕜) := by
@@ -229,8 +233,8 @@ theorem exists_cs_decomposition {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜} (hU : HasO
       toBlocks₁₁_fromBlocks_mul_mul, hcdef]
     exact hSVD.conjTranspose_mul_mul_eq
   obtain ⟨O, Z, hO, hZ, hOZ⟩ := exists_fromBlocks_one_mul_mul_eq_csMatrix hM hcs hM₁₁ e
-  have hP := hV.fromBlocks_diagonal hO.conjTranspose
-  have hR := hW.fromBlocks_diagonal hZ
+  have hP := hV.fromBlocks_zero₁₂_zero₂₁ hO.conjTranspose
+  have hR := hW.fromBlocks_zero₁₂_zero₂₁ hZ
   refine ⟨V, W, Oᴴ, Z, c, fun i => √(1 - c i ^ 2), hV, hW, hO.conjTranspose, hZ, hc0,
     fun i => Real.sqrt_nonneg _, hcs, ⟨Fintype.equivFin p, fun i => by rw [hcdef]⟩, ?_⟩
   have hL : Matrix.fromBlocks 1 0 0 O * (Matrix.fromBlocks V 0 0 (1 : Matrix q q 𝕜))ᴴ =
@@ -256,10 +260,10 @@ matrix $\mathbf{U}$, with $\mathbf{U}_{11}$, $\mathbf{U}_{21}$ its blocks (`Matr
 `Matrix.toBlocks₂₁`): $\sigma_i(\mathbf{U}_{21})^2 = 1 - \sigma_j(\mathbf{U}_{11})^2$ for
 $i + j + 1 = \lvert p \rvert$.
 [GolubVanLoan2013, Theorem 2.5.2]. -/
-theorem HasOrthonormalCols.sq_singularValues_toBlocks₂₁ {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜}
+theorem HasOrthonormalCols.singularValues_toBlocks₂₁_sq {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜}
     (hU : HasOrthonormalCols U) {i j : ℕ} (hij : i + j + 1 = Fintype.card p) :
     singularValues U.toBlocks₂₁ i ^ 2 = 1 - singularValues U.toBlocks₁₁ j ^ 2 :=
-  sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one (toBlocks_gram hU).1 hij
+  singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one (toBlocks_gram hU).1 hij
 
 /-- The diagonal blocks of a partitioned unitary matrix have the same singular values up to a
 shift of index: $\sigma_i(\mathbf{U}_{22}) = \sigma_j(\mathbf{U}_{11})$ whenever
@@ -271,10 +275,10 @@ theorem HasOrthonormalCols.singularValues_toBlocks₂₂ {U : Matrix (p ⊕ q) (
   rcases le_or_gt (Fintype.card q) i with hi | hi
   · rw [singularValues_of_card_cols_le _ hi, singularValues_of_card_cols_le _ (by omega)]
   · obtain ⟨k, hk⟩ : ∃ k, i + k + 1 = Fintype.card q := ⟨Fintype.card q - 1 - i, by omega⟩
-    have h₁ := sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one
+    have h₁ := singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one
       (toBlocks_conjTranspose_gram hU).2 hk
     rw [singularValues_conjTranspose, singularValues_conjTranspose,
-      hU.sq_singularValues_toBlocks₂₁ (by omega : k + j + 1 = Fintype.card p),
+      hU.singularValues_toBlocks₂₁_sq (by omega : k + j + 1 = Fintype.card p),
       sub_sub_cancel] at h₁
     exact (sq_eq_sq₀ (singularValues_nonneg _ _) (singularValues_nonneg _ _)).mp h₁
 
@@ -287,10 +291,10 @@ theorem HasOrthonormalCols.singularValues_toBlocks₁₂ {U : Matrix (p ⊕ q) (
   rcases le_or_gt (Fintype.card p) k with hk | hk
   · rw [singularValues_of_card_rows_le _ hk, singularValues_of_card_cols_le _ hk]
   · obtain ⟨j, hj⟩ : ∃ j, k + j + 1 = Fintype.card p := ⟨Fintype.card p - 1 - k, by omega⟩
-    have h₁ := sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one
+    have h₁ := singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one
       (toBlocks_conjTranspose_gram hU).1 hj
     rw [singularValues_conjTranspose, singularValues_conjTranspose,
-      ← hU.sq_singularValues_toBlocks₂₁ hj] at h₁
+      ← hU.singularValues_toBlocks₂₁_sq hj] at h₁
     exact (sq_eq_sq₀ (singularValues_nonneg _ _) (singularValues_nonneg _ _)).mp h₁
 
 /-- The off-diagonal blocks of a partitioned unitary matrix have the same rank:
@@ -313,7 +317,7 @@ theorem HasOrthonormalCols.rank_toBlocks₂₂_add {U : Matrix (p ⊕ q) (p ⊕ 
     by_contra hlt
     obtain ⟨k, hk⟩ : ∃ k, U.toBlocks₂₂.rank + k + 1 = Fintype.card q :=
       ⟨Fintype.card q - 1 - U.toBlocks₂₂.rank, by omega⟩
-    have h := sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one
+    have h := singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one
       (toBlocks_conjTranspose_gram hU).2 hk
     rw [singularValues_conjTranspose, singularValues_conjTranspose,
       (singularValues_eq_zero_iff _).mpr le_rfl,
@@ -323,7 +327,7 @@ theorem HasOrthonormalCols.rank_toBlocks₂₂_add {U : Matrix (p ⊕ q) (p ⊕ 
     by_contra hlt
     obtain ⟨k, hk⟩ : ∃ k, k + U.toBlocks₁₁.rank + 1 = Fintype.card p :=
       ⟨Fintype.card p - 1 - U.toBlocks₁₁.rank, by omega⟩
-    have h := hU.sq_singularValues_toBlocks₂₁ hk
+    have h := hU.singularValues_toBlocks₂₁_sq hk
     rw [(singularValues_eq_zero_iff U.toBlocks₁₁).mpr le_rfl,
       singularValues_of_card_rows_le _ (by omega : Fintype.card q ≤ k)] at h
     norm_num at h

@@ -60,7 +60,7 @@ with the nested frames of
 $\mathbf{M} = (\mathbf{B}\mathbf{V})(\mathbf{V}^{\mathsf{H}}\mathbf{X})
 (\mathbf{Z}^{\mathsf{H}}\mathbf{X})^{+}$,
 $\mathbf{B} = \mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})$, has
-$\mathbb{E}\|\mathbf{M}\|_{\mathsf{F}}^2 \le a^2 \frac{t}{\ell - t - 1}
+$\mathbb{E}\|\mathbf{M}\|_{\mathsf{F}}^2 \le a^2 (t/(\ell - t - 1))
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_t\|_{\mathsf{F}}^2$ and bounds, almost surely, the
 Gram-form error and the head capture of the deterministic filtered range finder. -/
 private theorem exists_filter_residual [DecidableEq m] (A : Matrix m n ℝ)
@@ -89,7 +89,7 @@ private theorem exists_filter_residual [DecidableEq m] (A : Matrix m n ℝ)
       ← Matrix.submatrix_mul Zᴴ Z (Fin.castLE hrt) id (Fin.castLE hrt) Function.bijective_id,
       hZ.conjTranspose_mul_self, Matrix.submatrix_one _ (Fin.castLE_injective hrt)]
   have hWZ : LinearMap.range W.mulVecLin ≤ LinearMap.range Z.mulVecLin :=
-    range_mulVecLin_le_iff_exists_mul.mpr
+    range_le_iff_exists_mul.mpr
       ⟨(1 : Matrix (Fin t) (Fin t) ℝ).submatrix (Equiv.refl _) (Fin.castLE hrt), by
         rw [Matrix.mul_submatrix_one]; rfl⟩
   have hAW : Aᴴ * A * W =
@@ -149,7 +149,7 @@ private theorem exists_filter_residual [DecidableEq m] (A : Matrix m n ℝ)
       refine h.trans (add_le_add le_rfl (mul_le_mul_of_nonneg_left ?_ (sq_nonneg _)))
       rw [← nuclearNorm_conjTranspose_mul_self]
       exact Φ.matrixNorm_le_apply_single_mul_nuclearNorm _
-    · have h := hW.matrixNorm_one_sub_rangeProjector_mul_mul_le (lpGauge 2 one_le_two)
+    · have h := hW.matrixNorm_one_sub_rangeProjector_mul_mul_le (lpGauge 2)
         (fun x => f.eval x) hAW hZ hω hWZ hc hg
       rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, hG, hM, hAWW] at h
       exact h
@@ -294,9 +294,9 @@ theorem integral_specNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix (A : Mat
           frobNorm (A - truncatedSVD A t) ^ 2 := by
   have h :=
     integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_gaussianMatrix
-      (lpGauge ⊤ le_top) A hX f hrt ht hc hhead htail
+      (lpGauge ⊤) A hX f hrt ht hc hhead htail
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 open SymmetricGauge in
@@ -324,7 +324,7 @@ theorem integral_frobNorm_sub_rsvd_aeval_sq_le_of_hasLaw_gaussianMatrix (A : Mat
           frobNorm (A - truncatedSVD A t) ^ 2 := by
   have h :=
     integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_aeval_le_of_hasLaw_gaussianMatrix
-      (lpGauge 1 le_rfl) A hX f hrt ht hc hhead htail
+      (lpGauge 1) A hX f hrt ht hc hhead htail
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   exact h

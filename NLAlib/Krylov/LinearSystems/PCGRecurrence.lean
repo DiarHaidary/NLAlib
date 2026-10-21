@@ -283,6 +283,11 @@ theorem _root_.Matrix.PosDef.star_pcgState_z_dotProduct_eq_zero (hA : A.PosDef) 
 omit [DecidableEq n] in
 /-- **The search directions are $\mathbf{A}$-conjugate**, for positive definite $\mathbf{A}$ and
 $\mathbf{M}$: $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_k = 0$ for $j < k$.
+[Saad2003, §9.2.1]; [HestenesStiefel1952, Theorem 5:1]. Saad shows that the PCG directions are
+$\mathbf{L}^{-\mathsf{H}}$ times the CG directions of the split system
+$\mathbf{L}^{-1}\mathbf{A}\mathbf{L}^{-\mathsf{H}}$,
+$\mathbf{M}^{-1} = \mathbf{L}\mathbf{L}^{\mathsf{H}}$, with the same $\mathbf{A}$-inner products,
+and those are conjugate by Hestenes and Stiefel; both work over $\mathbb{R}$.
 Result: pcg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_pcgState_p_dotProduct_mulVec_eq_zero (hA : A.PosDef)
     (hM : M.PosDef) {b x₀ : n → 𝕜} {j k : ℕ} (hjk : j < k) :

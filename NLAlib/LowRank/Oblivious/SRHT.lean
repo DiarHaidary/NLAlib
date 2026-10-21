@@ -19,7 +19,8 @@ orthonormal $\mathbf{F}$ with bound $\beta$ (`NLAlib.IsBoundedOrthonormal`), wit
 at a constant factor: the injection route, factor $1 + 2t$ at failure probability
 $\delta + 1/t$, in both models; and, without replacement only, the bounded-sketch route, factor
 $1 + 2n/\ell$ at failure probability $\delta$ in every quadratic unitarily invariant norm, since
-there $\|\mathbf{\Omega}\|_2 = \sqrt{n/\ell}$ almost surely (`NLAlib.ae_specNorm_eq_of_hasLaw_srht`;
+there $\|\mathbf{\Omega}\|_2 = \sqrt{n/\ell}$ almost surely
+(`NLAlib.HasOrthonormalCols.ae_specNorm_eq_of_hasLaw_srht`;
 with replacement, repeated rows break it). Both use the family's injection at constant $1/2$. Any
 `RCLike` field.
 
@@ -32,8 +33,8 @@ their size is the family's injection size,
 **Statements with no per-family form.** Nyström, generalized Nyström and the truncations apply
 through the family's OSI:
 ```
-isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le hF hX hln k hε hδ hl
-isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le hF hX k
+isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hX hln k hε hδ hl
+isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le hF hX k
   hε hδ hl
 ```
 with `hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ` (respectively `srhtWithReplacement`). Design:
@@ -61,13 +62,13 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 /-- **The randomized SVD with an SRHT test matrix**: if the sketch $\mathbf{\Omega}^{\mathsf{H}}$
 is the SRHT without replacement of a bounded orthonormal $\mathbf{F}$ with bound $\beta$,
 $\ell \le n$, $\delta, t > 0$ and $\ell$ is at
-least <!-- value samplingInjectionSize k L (1/2) (\delta/2) -->
+least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
 $$\frac{2 L \log(k/(\delta/2))}{(1/2)^2}\,,$$
 where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/2) -->
 $$L = \beta\,\bigl(k + 2\sqrt{k \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
 is $\beta$ times `srhtRowBound (Fintype.card n) k (δ / 2)` and the size is
-`samplingInjectionSize k L (1 / 2) (δ / 2)`, then
+`samplingInjectionDim k L (1 / 2) (δ / 2)`, then
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + 2t)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. Its bounded-sketch neighbour, failure probability
@@ -83,25 +84,25 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht [Nonempty l] {F : 
     {β : ℝ} (hF : IsBoundedOrthonormal F β) (A : Matrix m n 𝕜)
     (hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ) (hln : Fintype.card l ≤ Fintype.card n) {k : ℕ}
     {δ t : ℝ} (hδ : 0 < δ) (ht : 0 < t)
-    (hl : samplingInjectionSize k (β * srhtRowBound (Fintype.card n) k (δ / 2)) (1 / 2) (δ / 2) ≤
+    (hl : samplingInjectionDim k (β * srhtRowBound (Fintype.card n) k (δ / 2)) (1 / 2) (δ / 2) ≤
       Fintype.card l) :
     μ.real {ω | (1 + 2 * t) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + 1 / t := by
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srht F hln)
-  have h := (isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le hF hX hln k
-    (by norm_num) hδ hl).measure_frobNorm_sub_rsvd_sq_gt_le (A := A) (by norm_num) ht
+  have h := (isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hX hln k
+    (by norm_num) hδ hl).measureReal_frobNorm_sub_rsvd_sq_gt_le (A := A) (by norm_num) ht
   rwa [show (1 : ℝ) + t / (1 - 1 / 2) = 1 + 2 * t by ring] at h
 
 /-- **The randomized SVD with an SRHT test matrix, with replacement**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT with i.i.d. uniform row indices of a bounded
 orthonormal $\mathbf{F}$ with bound $\beta$, $\delta, t > 0$ and $\ell$ is at
-least <!-- value samplingInjectionSize k L (1/2) (\delta/2) -->
+least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
 $$\frac{2 L \log(k/(\delta/2))}{(1/2)^2}\,,$$
 where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/2) -->
 $$L = \beta\,\bigl(k + 2\sqrt{k \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
 is $\beta$ times `srhtRowBound (Fintype.card n) k (δ / 2)` and the size is
-`samplingInjectionSize k L (1 / 2) (δ / 2)`, then
+`samplingInjectionDim k L (1 / 2) (δ / 2)`, then
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + 2t)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. No $\ell \le n$, and no bounded-sketch twin: with
@@ -116,26 +117,26 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srhtWithReplacement [No
     [Nonempty n] {F : Matrix n n 𝕜} {β : ℝ} (hF : IsBoundedOrthonormal F β) (A : Matrix m n 𝕜)
     (hX : HasLaw (fun ω => (X ω)ᴴ) (srhtWithReplacement l F) μ) {k : ℕ} {δ t : ℝ} (hδ : 0 < δ)
     (ht : 0 < t)
-    (hl : samplingInjectionSize k (β * srhtRowBound (Fintype.card n) k (δ / 2)) (1 / 2) (δ / 2) ≤
+    (hl : samplingInjectionDim k (β * srhtRowBound (Fintype.card n) k (δ / 2)) (1 / 2) (δ / 2) ≤
       Fintype.card l) :
     μ.real {ω | (1 + 2 * t) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + 1 / t := by
   have : IsProbabilityMeasure μ :=
     hX.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
-  have h := (isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionSize_le
-    hF hX k (by norm_num) hδ hl).measure_frobNorm_sub_rsvd_sq_gt_le (A := A) (by norm_num) ht
+  have h := (isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le
+    hF hX k (by norm_num) hδ hl).measureReal_frobNorm_sub_rsvd_sq_gt_le (A := A) (by norm_num) ht
   rwa [show (1 : ℝ) + t / (1 - 1 / 2) = 1 + 2 * t by ring] at h
 
 /-- **The randomized SVD with an SRHT test matrix, bounded-sketch form** (HMT's SRFT theorem): if
 the sketch $\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT without replacement of a bounded
 orthonormal $\mathbf{F}$ with bound $\beta$, $\ell \le n$, $\delta > 0$ and $\ell$ is at
-least <!-- value samplingInjectionSize k L (1/2) (\delta/2) -->
+least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
 $$\frac{2 L \log(k/(\delta/2))}{(1/2)^2}\,,$$
 where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/2) -->
 $$L = \beta\,\bigl(k + 2\sqrt{k \log(\lvert n \rvert/(\delta/2))} +
 2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
 is $\beta$ times `srhtRowBound (Fintype.card n) k (δ / 2)` and the size is
-`samplingInjectionSize k L (1 / 2) (δ / 2)`, then for every unitarily invariant norm
+`samplingInjectionDim k L (1 / 2) (δ / 2)`, then for every unitarily invariant norm
 $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))^{\mathsf{H}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}))\bigr\|_{\Phi} \le
 \Bigl(1 + \frac{2n}{\ell}\Bigr)\bigl\|(\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k)^{\mathsf{H}}
@@ -157,19 +158,20 @@ theorem SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt
     [Nonempty l] (Φ : SymmetricGauge) {F : Matrix n n 𝕜} {β : ℝ} (hF : IsBoundedOrthonormal F β)
     (A : Matrix m n 𝕜) (hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ)
     (hln : Fintype.card l ≤ Fintype.card n) {k : ℕ} {δ : ℝ} (hδ : 0 < δ)
-    (hl : samplingInjectionSize k (β * srhtRowBound (Fintype.card n) k (δ / 2)) (1 / 2) (δ / 2) ≤
+    (hl : samplingInjectionDim k (β * srhtRowBound (Fintype.card n) k (δ / 2)) (1 / 2) (δ / 2) ≤
       Fintype.card l) :
     μ.real {ω | (1 + 2 * Fintype.card n / Fintype.card l) *
         Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) <
       Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤ δ := by
   have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srht F hln)
-  have hinj := (isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionSize_le hF hX hln k
+  have hinj := (isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hX hln k
     (by norm_num) hδ hl).hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
     (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
   have hL : ∀ᵐ ω ∂μ, specNorm (X ω) ≤ √(Fintype.card n / Fintype.card l : ℝ) := by
-    filter_upwards [ae_specNorm_eq_of_hasLaw_srht hF.hasOrthonormalCols hX] with ω hω
+    filter_upwards [HasOrthonormalCols.ae_specNorm_eq_of_hasLaw_srht hF.hasOrthonormalCols hX] with
+      ω hω
     rw [← specNorm_conjTranspose, hω]
-  have h := hinj.measure_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le
+  have h := hinj.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_specNorm_le
     (by norm_num) hL Φ
   rwa [Real.sq_sqrt (by positivity),
     show (1 : ℝ) + Fintype.card n / Fintype.card l / (1 - 1 / 2) =

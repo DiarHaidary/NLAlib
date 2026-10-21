@@ -77,7 +77,8 @@ $\exp(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
 = \mathbf{U}\exp(\mathbf{A})\mathbf{U}^{\mathsf{H}}$
 for $\mathbf{U}$ with orthonormal columns and as many columns as rows.
 Port of `NLAlib.matrixExp_unitary_conj`, there over $\mathbb{C}$. -/
-theorem exp_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r] {U : Matrix n r 𝕜}
+theorem HasOrthonormalCols.exp_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+    {U : Matrix n r 𝕜}
     (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n) (A : Matrix r r 𝕜) :
     exp (U * A * Uᴴ) = U * exp A * Uᴴ := by
   have hUU : U * Uᴴ = 1 := hU.mul_conjTranspose_self_of_card_eq hr.symm
@@ -98,12 +99,13 @@ $\exp(\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}})
 = \mathbf{U}\exp(\mathbf{D})\mathbf{U}^{\mathsf{H}}$
 for a real diagonal $\mathbf{D}$ and $\mathbf{U}$ with orthonormal columns and as many columns as
 rows; $\exp(\mathbf{D})$ is diagonal with entries $e^{\mathbf{D}_{i,i}}$. -/
-theorem exp_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+theorem HasOrthonormalCols.exp_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
+    [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n)
     (d : r → ℝ) :
     exp (U * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Uᴴ) =
       U * Matrix.diagonal (fun i => ((Real.exp (d i) : ℝ) : 𝕜)) * Uᴴ := by
-  rw [exp_mul_mul_conjTranspose hU hr, exp_diagonal_ofReal]
+  rw [HasOrthonormalCols.exp_mul_mul_conjTranspose hU hr, exp_diagonal_ofReal]
 
 /-- **The exponential of a Hermitian matrix through the functional calculus.**
 Port of `NLAlib.matrixExp_smul_eq_cfc`, at $s = 1$. -/
@@ -111,9 +113,9 @@ theorem _root_.Matrix.IsHermitian.exp_eq_cfc {A : Matrix n n 𝕜} (hA : A.IsHer
     exp A = cfc Real.exp A := by
   obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
   have hr := Fintype.card_fin (Fintype.card n)
-  rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU Real.exp]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU Real.exp]
   conv_lhs => rw [hAU]
-  exact exp_mul_diagonal_mul_conjTranspose hU hr _
+  exact HasOrthonormalCols.exp_mul_diagonal_mul_conjTranspose hU hr _
 
 /-- The exponential of a function of a Hermitian matrix is the function composed with the real
 exponential: $\exp(f(\mathbf{B})) = (e^{f})(\mathbf{B})$, in terms of `cfc`. -/
@@ -138,7 +140,7 @@ theorem exp_add_real_smul_one (A : Matrix n n 𝕜) (t : ℝ) :
 /-- The exponential of a block diagonal matrix:
 $\exp \begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}
 = \begin{bmatrix} \exp(\mathbf{A}) & \mathbf{0} \\ \mathbf{0} & \exp(\mathbf{B}) \end{bmatrix}$. -/
-theorem exp_fromBlocks_diagonal (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
+theorem exp_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
     exp (Matrix.fromBlocks A 0 0 B) = Matrix.fromBlocks (exp A) 0 0 (exp B) := by
   let f : Matrix m m 𝕜 × Matrix n n 𝕜 →+* Matrix (m ⊕ n) (m ⊕ n) 𝕜 :=
     { toFun := fun p => Matrix.fromBlocks p.1 0 0 p.2
@@ -370,10 +372,12 @@ $\operatorname{Re} \operatorname{tr} \exp(\mathbf{U}\mathbf{A}\mathbf{U}^{\maths
 = \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$ for $\mathbf{U}$ with orthonormal columns
 and as many columns as rows.
 Port of `NLAlib.traceExp_unitary_conj`. -/
-theorem re_trace_exp_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
+theorem HasOrthonormalCols.re_trace_exp_mul_mul_conjTranspose {r : Type*} [Fintype r]
+    [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n)
     (A : Matrix r r 𝕜) : RCLike.re (exp (U * A * Uᴴ)).trace = RCLike.re (exp A).trace := by
-  rw [exp_mul_mul_conjTranspose hU hr, Matrix.trace_mul_cycle, hU.conjTranspose_mul_self,
+  rw [HasOrthonormalCols.exp_mul_mul_conjTranspose hU hr, Matrix.trace_mul_cycle,
+    hU.conjTranspose_mul_self,
     Matrix.one_mul]
 
 /-- A scalar shift factors out of the trace exponential:
@@ -387,10 +391,10 @@ theorem re_trace_exp_add_real_smul_one (A : Matrix n n 𝕜) (t : ℝ) :
 /-- The trace exponential of a block diagonal matrix with diagonal blocks $\mathbf{A}$,
 $\mathbf{B}$ is the sum of the two trace exponentials.
 Port of the block case used in `NLAlib.intrinsicDimension_fromBlocks`. -/
-theorem re_trace_exp_fromBlocks_diagonal (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
+theorem re_trace_exp_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
     RCLike.re (exp (Matrix.fromBlocks A 0 0 B)).trace =
       RCLike.re (exp A).trace + RCLike.re (exp B).trace := by
-  rw [exp_fromBlocks_diagonal, Matrix.trace_fromBlocks, map_add]
+  rw [exp_fromBlocks_zero₁₂_zero₂₁, Matrix.trace_fromBlocks, map_add]
 
 /-- The trace exponential $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$
 is continuous. Port of `NLAlib.continuous_traceExp`. -/

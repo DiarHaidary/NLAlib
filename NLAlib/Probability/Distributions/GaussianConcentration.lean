@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 public import NLAlib.Probability.Distributions.GaussianLogSobolev
 public import NLAlib.Probability.SubGaussian.Basic
 
@@ -16,14 +17,13 @@ $L^2$, where $L$ is its Lipschitz constant for the Euclidean norm (Tsirelson, Ib
 Sudakov); the constant is sharp. The general statement is for Mathlib's `stdGaussian E` on a
 Euclidean space; for `f : (n → ℝ) → ℝ` and $\mathbf{g}$ with law `gaussianVector n`, the Lipschitz
 hypothesis is stated on `EuclideanSpace ℝ n`, since `n → ℝ` carries the sup metric, and
-`NLAlib.lipschitzWith_ofLp_iff` turns it into the explicit inequality.
+`EuclideanSpace.lipschitzWith_ofLp_iff` turns it into the explicit inequality.
 
 ## Main results
 
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian`.
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector`.
-* `NLAlib.measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector`: the upper tail.
-* `NLAlib.lipschitzWith_ofLp_iff`.
+* `NLAlib.measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector`: the upper tail.
 
 ## References
 
@@ -40,20 +40,6 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- Lipschitz for the Euclidean norm, as an inequality on `n → ℝ`: $f$ is $L$-Lipschitz on
-`EuclideanSpace ℝ n` if and only if
-$\lvert f(\mathbf{x}) - f(\mathbf{y})\rvert \le L \|\mathbf{x} - \mathbf{y}\|$ for all
-$\mathbf{x}, \mathbf{y}$. -/
-theorem lipschitzWith_ofLp_iff {n : Type*} [Fintype n] {f : (n → ℝ) → ℝ} {L : ℝ≥0} :
-    LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x)) ↔
-      ∀ x y, |f x - f y| ≤ L * ‖WithLp.toLp 2 (x - y)‖ := by
-  simp only [lipschitzWith_iff_dist_le_mul, dist_eq_norm, Real.norm_eq_abs]
-  constructor
-  · intro h x y
-    simpa only [WithLp.toLp_sub] using h (WithLp.toLp 2 x) (WithLp.toLp 2 y)
-  · intro h x y
-    simpa only [WithLp.toLp_sub, WithLp.toLp_ofLp] using h (WithLp.ofLp x) (WithLp.ofLp y)
-
 section Euclidean
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
@@ -65,8 +51,8 @@ theorem integrable_comp_of_lipschitzWith_of_hasLaw_stdGaussian (hg : HasLaw g (s
   exact (hg.integrable_comp_iff hf.continuous.aestronglyMeasurable).2
     (hasLogSobolev_stdGaussian.integrable_of_lipschitzWith hf)
 
-/-- **Gaussian concentration of Lipschitz functions** ([BoucheronLugosiMassart2013],
-Theorem 5.6): for $\mathbf{g}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
+/-- **Gaussian concentration of Lipschitz functions** ([BoucheronLugosiMassart2013,
+Theorem 5.6]): for $\mathbf{g}$ with law `stdGaussian E` and $f$ $L$-Lipschitz,
 $f(\mathbf{g}) - \mathbb{E} f(\mathbf{g})$ is sub-Gaussian with proxy $L^2$.
 Result: gaussian-lipschitz-concentration -/
 theorem hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian
@@ -110,10 +96,10 @@ theorem integrable_comp_of_lipschitzWith_of_hasLaw_gaussianVector
 
 /-- The upper tail of a Lipschitz function of a standard Gaussian vector: for $f$ $L$-Lipschitz
 for the Euclidean norm and $t \ge 0$,
-$$\mathbb{P}\bigl(\mathbb{E} f(\mathbf{g}) + t \le f(\mathbf{g})\bigr)
+$$\mathbb{P}\bigl[\mathbb{E} f(\mathbf{g}) + t \le f(\mathbf{g})\bigr]
 \le \exp\Bigl(-\frac{t^2}{2L^2}\Bigr),$$
 with the event in the form the random-matrix consumers use. -/
-theorem measureReal_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
+theorem measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ)
     (hf : LipschitzWith L (fun x : EuclideanSpace ℝ n => f (WithLp.ofLp x))) {t : ℝ}
     (ht : 0 ≤ t) :

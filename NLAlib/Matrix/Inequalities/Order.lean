@@ -155,7 +155,7 @@ private theorem inv_le_of_posSemidef_fromBlocks_one {M C : Matrix n n 𝕜} (hM 
     have h' := h.isHermitian
     rw [Matrix.IsHermitian, Matrix.fromBlocks_conjTranspose] at h'
     exact (Matrix.fromBlocks_inj.mp h').1
-  have h' := posSemidef_sub_conjTranspose_mul_mul_of_posSemidef_fromBlocks h hMM
+  have h' := Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_mul_of_fromBlocks h hMM
   rw [hMh.inv.eq, Matrix.mul_assoc, hMM, Matrix.mul_one] at h'
   exact Matrix.le_iff.mpr h'
 

@@ -204,7 +204,7 @@ entries: $\lambda_i(\operatorname{diag}(\mathbf{d})) = \mathbf{d}_i$ for $\mathb
 non-increasing and $i < q$. -/
 theorem eigenvalue_diagonal {q : ℕ} {d : Fin q → ℝ} (hd : Antitone d) (i : Fin q) :
     eigenvalue (Matrix.diagonal fun j => ((d j : ℝ) : 𝕜)) i = d i := by
-  refine eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose
+  refine HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose
     (U := (1 : Matrix (Fin q) (Fin q) 𝕜)) hasOrthonormalCols_one (Fintype.card_fin q) hd ?_ i
   rw [Matrix.one_mul, Matrix.conjTranspose_one, Matrix.mul_one]
 
@@ -241,7 +241,8 @@ theorem eigenvalue_neg (A : Matrix n n 𝕜) {k j : ℕ} (h : k + j + 1 = Fintyp
     rw [hd, Matrix.conjTranspose_submatrix, Matrix.submatrix_mul_equiv,
       Matrix.submatrix_mul_equiv, Matrix.submatrix_id_id, Matrix.mul_neg, Matrix.neg_mul, ← hAU]
   have hk : k < Fintype.card n := by omega
-  have h1 := eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU' rfl hμ hA' ⟨k, hk⟩
+  have h1 := HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU' rfl hμ hA'
+    ⟨k, hk⟩
   have h2 : ((Fin.rev ⟨k, hk⟩ : Fin (Fintype.card n)) : ℕ) = j := by
     rw [Fin.val_rev]
     change Fintype.card n - (k + 1) = j
@@ -274,7 +275,8 @@ theorem eigenvalue_real_smul (A : Matrix n n 𝕜) {c : ℝ} (hc : 0 ≤ c) (k :
       congr 1
       funext i
       rw [Pi.smul_apply, RCLike.real_smul_eq_coe_mul, RCLike.ofReal_mul]
-    refine eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hμ ?_ ⟨k, hk⟩
+    refine HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hμ ?_
+      ⟨k, hk⟩
     rw [hd, Matrix.mul_smul, Matrix.smul_mul, ← hAU]
   · rw [eigenvalue_of_card_le _ (not_lt.mp hk), eigenvalue_of_card_le _ (not_lt.mp hk), mul_zero]
 
@@ -295,7 +297,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_add_smul_one [DecidableEq n] {A : M
     congr 1
     funext i
     rw [Pi.smul_apply, RCLike.real_smul_eq_coe_mul, mul_one, RCLike.ofReal_add]
-  refine eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hμ ?_ ⟨k, hk⟩
+  refine HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hμ ?_ ⟨k, hk⟩
   rw [hd, Matrix.mul_add, Matrix.add_mul, ← hAU, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
     hU.mul_conjTranspose_self_of_card_eq (Fintype.card_fin _).symm]
 
@@ -318,7 +320,7 @@ theorem eigenvalue_conjTranspose_mul_mul_of_card_eq [DecidableEq p] (A : Matrix 
   by_cases hA : A.IsHermitian
   · by_cases hk : k < Fintype.card n
     · obtain ⟨V, hV, hAV⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
-      refine eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose
+      refine HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose
         ((hU.conjTranspose_of_card_eq h).mul hV) h.symm hA.antitone_eigenvalue_coe ?_ ⟨k, hk⟩
       rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
       conv_lhs => rw [hAV]

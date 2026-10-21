@@ -23,14 +23,14 @@ Design: `docs/design/LowRank-S7.md` §3.3, §8.
 
 ## Main results
 
-* `NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le`:
+* `NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le`:
   the completion step, any law of $\mathbf{\Omega}$.
-* `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_le`: CEMT
+* `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le`: CEMT
   Corollary 2.8.
-* `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le`:
+* `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le`:
   the late-truncated output.
-* `NLAlib.HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le`,
-  `NLAlib.HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_le`: through approximate
+* `NLAlib.HasJLMoment.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le`,
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le`: through approximate
   multiplication, Woodruff Theorem 47's first part.
 -/
 
@@ -74,7 +74,7 @@ except with probability $\delta + 1/t$. Any range-finder tail composes with it.
 for dimension $\ell$ and probability $9/10$; here dimension
 $\min(\operatorname{rank}\mathbf{A}, \ell)$ and over any `RCLike` field.
 Result: generalized-nystrom-tail -/
-theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le
+theorem IsObliviousSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le
     [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {d : ℕ} {a δ t : ℝ}
     (h : IsObliviousSubspaceInjection (fun ω => (Ψ ω)ᴴ) d a δ μ)
     (hd : min A.rank (Fintype.card l) ≤ d) (hind : IndepFun X Ψ μ) (hX : AEMeasurable X μ)
@@ -83,7 +83,7 @@ theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_
       frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2} ≤ δ + 1 / t := by
   classical
   simp only [sub_rsvd, sub_generalizedNystrom_eq]
-  exact h.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun ha ht
+  exact h.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun ha ht
     (hind.symm.comp continuous_id.matrix_conjTranspose.measurable
       ((measurable_const.matrix_mul measurable_id).prodMk measurable_const))
     (continuous_id.matrix_conjTranspose.measurable.comp_aemeasurable hΨ)
@@ -103,7 +103,7 @@ except with probability $\delta + 1/t + \delta' + 1/t'$. One pass over $\mathbf{
 $\mathbb{R}$, $\mathbf{\Psi}^{\mathsf{H}}$ an OSI for dimension $\ell$; here over any `RCLike`
 field, dimension $\min(\operatorname{rank}\mathbf{A}, \ell)$, explicit in $t$ and $t'$.
 Result: generalized-nystrom-tail -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_le
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le
     [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {k d : ℕ} {a δ t a' δ' t' : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ)
@@ -116,8 +116,8 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_le
       frobNorm (A - rsvd A (X ω)) ^ 2} ∪ {ω | (1 + t' / a') * frobNorm (A - rsvd A (X ω)) ^ 2 <
       frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2}) fun ω hω => ?_).trans
     ((measureReal_union_le _ _).trans (add_le_add
-      (h.measure_frobNorm_sub_rsvd_sq_gt_le hiso ha ht)
-      (hΨ.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le hd hind hX hΨm ha' ht')))
+      (h.measureReal_frobNorm_sub_rsvd_sq_gt_le hiso ha ht)
+      (hΨ.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le hd hind hX hΨm ha' ht')))
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_lt] at hc
   have hω' : (1 + t' / a') * (1 + t / a) * frobNorm (A - truncatedSVD A k) ^ 2 <
@@ -139,17 +139,28 @@ private theorem sq_add_add_mul_sq_le {u v c : ℝ} (hu : 0 ≤ u) (hc : 0 ≤ c)
   rw [← hs]
   nlinarith [mul_le_mul_of_nonneg_left huv hc, mul_le_mul_of_nonneg_left huu (mul_nonneg hc hc)]
 
-/-- **Late-truncated generalized Nyström with oblivious subspace injections**: with the hypotheses
-of `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_le`, for
-$t, t' > 0$
-$$\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
-\|_{\mathsf{F}}^2 \le \Bigl(1 + 2\sqrt{t'/a'}\Bigr)^2\Bigl(1 + \frac{t}{a}\Bigr)
-\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta + 1/t + \delta' + 1/t'$: a rank-$k$ single-pass output with a
-constant factor. Proved without a literature source; [CamanoEpperlyMeyerTropp2025, Remark 2.9]
-discusses a different, core-truncated estimator.
+/-- **Late-truncated generalized Nyström with oblivious subspace injections**: let
+$\mathbf{A} \in \Bbbk^{m \times n}$, $k$ a target rank and $\mathbb{P}$ a probability measure,
+and let $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and $\mathbf{\Psi} \in \Bbbk^{m \times p}$ be
+independent, almost everywhere measurable random test matrices such that
+$\mathbf{\Omega}^{\mathsf{H}}$ is isotropic
+($\mathbb{E}[\mathbf{\Omega}\mathbf{\Omega}^{\mathsf{H}}] = \mathbf{I}$, square-integrable
+entries) and injects $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ with
+constant $a > 0$ except with probability $\delta$ (`HasSubspaceInjection`), and
+$\mathbf{\Psi}^{\mathsf{H}}$ is an oblivious subspace injection for dimension
+$d \ge \min(\operatorname{rank}\mathbf{A}, \ell)$ with constant $a' > 0$ and failure
+probability $\delta'$ (`IsObliviousSubspaceInjection`). Then for $t, t' > 0$
+$$\mathbb{P}\Bigl[
+\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
+\|_{\mathsf{F}}^2 > \Bigl(1 + 2\sqrt{t'/a'}\Bigr)^2\Bigl(1 + \frac{t}{a}\Bigr)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\Bigr]
+\le \delta + \frac{1}{t} + \delta' + \frac{1}{t'}\,:$$
+a rank-$k$ single-pass output with a constant factor. The truncated form of
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le`. Proved without
+a literature source; [CamanoEpperlyMeyerTropp2025, Remark 2.9] discusses a different,
+core-truncated estimator.
 Result: generalized-nystrom-tail -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_gt_le
     [IsProbabilityMeasure μ] {A : Matrix m n 𝕜} {k d : ℕ} {a δ t a' δ' t' : ℝ}
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ)
@@ -166,7 +177,7 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_truncatedSVD_generalizedNystro
     ((measurable_const.matrix_mul measurable_id).comp_aemeasurable hX) aemeasurable_const
     (ae_of_all _ fun ω => rank_mul_le_of_min_le A (X ω) hd) (a := a') (B := fun _ => A)
   refine (measureReal_mono fun ω hω => ?_).trans ((measureReal_union_le _ _).trans
-    (add_le_add (h.measure_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le hiso ha ht) hU))
+    (add_le_add (h.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le hiso ha ht) hU))
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_lt, not_not] at hc
   obtain ⟨h4, hinj, hM⟩ := hc
@@ -225,10 +236,10 @@ $$\|\mathbf{A} - \mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mat
 \Bigl(1 + \frac{d\,\varepsilon^2}{a^2}\Bigr)
 \|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta'$. Its constant-factor neighbour is
-`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le`.
+`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le`.
 [Woodruff2014, proof of Theorem 47]; there the multiplication step implicit.
 Result: generalized-nystrom-tail -/
-theorem HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le
+theorem HasJLMoment.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le
     [IsProbabilityMeasure μ] {A : Matrix m n ℝ} {d : ℕ} {a δ ε δ' q : ℝ}
     (hJL : HasJLMoment (fun ω => (Ψ ω)ᴴ) ε δ' q μ)
     (h : IsObliviousSubspaceInjection (fun ω => (Ψ ω)ᴴ) d a δ μ)
@@ -238,7 +249,7 @@ theorem HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le
       frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2} ≤ δ + δ' := by
   classical
   simp only [sub_rsvd, sub_generalizedNystrom_eq]
-  exact hJL.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun h ha hε hq hδ'
+  exact hJL.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun h ha hε hq hδ'
     (hind.symm.comp continuous_id.matrix_conjTranspose.measurable
       ((measurable_const.matrix_mul measurable_id).prodMk measurable_const))
     (continuous_id.matrix_conjTranspose.measurable.comp_aemeasurable hΨ)
@@ -258,11 +269,11 @@ $$\|\mathbf{A} - \mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\|_{\mat
 \Bigl(1 + \frac{d\,\varepsilon'^2}{a'^2}\Bigr)\Bigl(1 + \frac{k\varepsilon^2}{a^2}\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta_1 + \delta' + \delta_2$. Its constant-factor neighbour is
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_generalizedNystrom_sq_gt_le`.
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le`.
 [Woodruff2014, Theorem 47, first part]; there $\mathbf{R}$ a $(1 + O(\varepsilon))$ embedding of
 the row space of $\mathbf{S}\mathbf{A}$ and the multiplication step implicit; here explicit.
 Result: generalized-nystrom-tail -/
-theorem HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_le [IsProbabilityMeasure μ]
+theorem HasJLMoment.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_le [IsProbabilityMeasure μ]
     {A : Matrix m n ℝ} {k d : ℕ} {a δ ε δ₁ q a' δ' ε' δ₂ q' : ℝ}
     (hJL : HasJLMoment (fun ω => (X ω)ᴴ) ε δ₁ q μ)
     (h : HasSubspaceInjection (fun ω => (X ω)ᴴ) (truncatedSVD A k)ᴴ a δ μ)
@@ -280,8 +291,8 @@ theorem HasJLMoment.measure_frobNorm_sub_generalizedNystrom_sq_gt_le [IsProbabil
       {ω | (1 + (d : ℝ) * ε' ^ 2 / a' ^ 2) * frobNorm (A - rsvd A (X ω)) ^ 2 <
         frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2}) fun ω hω => ?_).trans
     ((measureReal_union_le _ _).trans (add_le_add
-      (hJL.measure_frobNorm_sub_rsvd_sq_gt_le h hX ha hε hq hδ₁)
-      (hJLΨ.measure_frobNorm_sub_generalizedNystrom_sq_gt_mul_le hΨ hd hind hX hΨm ha' hε' hq'
+      (hJL.measureReal_frobNorm_sub_rsvd_sq_gt_le h hX ha hε hq hδ₁)
+      (hJLΨ.measureReal_frobNorm_sub_generalizedNystrom_sq_gt_mul_le hΨ hd hind hX hΨm ha' hε' hq'
         hδ₂)))
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_lt] at hc

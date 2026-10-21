@@ -61,7 +61,8 @@ $\mathbf{r}_{k+1} = \mathbf{r}_k - \alpha_k\mathbf{A}\mathbf{p}_k$,
 $\beta_k = \|\mathbf{r}_{k+1}\|^2/\|\mathbf{r}_k\|^2$,
 $\mathbf{p}_{k+1} = \mathbf{r}_{k+1} + \beta_k\mathbf{p}_k$. With $0^{-1} = 0$ a zero residual
 gives $\alpha_k = \beta_k = 0$ and the state stays put.
-[HestenesStiefel1952]; [TrefethenBau1997, Algorithm 38.1]. -/
+[HestenesStiefel1952, (3:1)]; [TrefethenBau1997, Algorithm 38.1]. Hestenes and Stiefel write
+$(\mathbf{p}_k, \mathbf{A}\mathbf{p}_k)$ for real symmetric $\mathbf{A}$, here its real part. -/
 noncomputable def cgStep (A : Matrix n n 𝕜) (s : CGState 𝕜 n) : CGState 𝕜 n :=
   let α : ℝ := ‖WithLp.toLp 2 s.r‖ ^ 2 / RCLike.re (quadForm A s.p)
   let r' := s.r - (α : 𝕜) • (A *ᵥ s.p)
@@ -70,7 +71,8 @@ noncomputable def cgStep (A : Matrix n n 𝕜) (s : CGState 𝕜 n) : CGState �
 
 /-- The **Hestenes–Stiefel recurrence** (the conjugate gradient algorithm) from the start
 $\mathbf{x}_0$: the state after $k$ steps, from $(\mathbf{x}_0, \mathbf{r}_0, \mathbf{r}_0)$,
-$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$. [HestenesStiefel1952]. -/
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$. [HestenesStiefel1952, (3:1)]; the start
+$\mathbf{p}_0 = \mathbf{r}_0$ is (3:1a) there. -/
 noncomputable def cgState (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : ℕ → CGState 𝕜 n
   | 0 => ⟨x₀, b - A *ᵥ x₀, b - A *ᵥ x₀⟩
   | k + 1 => cgStep A (cgState A b x₀ k)
@@ -287,7 +289,9 @@ private lemma orth (hA : A.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
 
 /-- **The residual is orthogonal to the Krylov space**, for positive definite $\mathbf{A}$:
 $\mathbf{K}_k(\mathbf{A}, \mathbf{r}_0)^{\mathsf{H}}\mathbf{r}_k = \mathbf{0}$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1]. -/
+[HestenesStiefel1952, Theorem 5:1]; [TrefethenBau1997, Theorem 38.1]. Hestenes and Stiefel
+state $(\mathbf{p}_i, \mathbf{r}_j) = 0$ for $i < j$ ((5:3c)), with the directions spanning the
+Krylov space (`Matrix.PosDef.span_cgState_p`). -/
 theorem _root_.Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_cgState_r_eq_zero (hA : A.PosDef)
     (b x₀ : n → 𝕜) (k : ℕ) : (krylovMatrix A (b - A *ᵥ x₀) k)ᴴ *ᵥ (cgState A b x₀ k).r = 0 :=
   forall_mem_range_star_dotProduct_eq_zero_iff.1 (orth hA b x₀ k).1
@@ -307,7 +311,9 @@ private lemma range_fin_succ {α : Type*} (f : ℕ → α) (k : ℕ) :
     · exact ⟨i.castSucc, rfl⟩
 
 /-- The search directions span the Krylov spaces, for positive definite $\mathbf{A}$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1]. -/
+[HestenesStiefel1952, Theorem 5:4]; [TrefethenBau1997, Theorem 38.1]. Hestenes and Stiefel give
+the three-term relations (5:7) for the directions, from which $\mathbf{p}_j$ lies in
+$\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{r}_0)$. -/
 theorem _root_.Matrix.PosDef.span_cgState_p (hA : A.PosDef) (k : ℕ) :
     Submodule.span 𝕜 (Set.range fun j : Fin k => (cgState A b x₀ j).p) =
       krylovSpace A (b - A *ᵥ x₀) k := by
@@ -320,7 +326,8 @@ theorem _root_.Matrix.PosDef.span_cgState_p (hA : A.PosDef) (k : ℕ) :
 omit [DecidableEq n] in
 /-- **The residuals are orthogonal**, for positive definite $\mathbf{A}$:
 $\mathbf{r}_j^{\mathsf{H}}\mathbf{r}_k = 0$ for $j < k$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1].
+[HestenesStiefel1952, Theorem 5:1]; [TrefethenBau1997, Theorem 38.1]. It is (5:3a) there, for
+real symmetric $\mathbf{A}$.
 Result: cg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_cgState_r_dotProduct_eq_zero (hA : A.PosDef) {j k : ℕ}
     (hjk : j < k) : star (cgState A b x₀ j).r ⬝ᵥ (cgState A b x₀ k).r = 0 := by
@@ -330,7 +337,8 @@ theorem _root_.Matrix.PosDef.star_cgState_r_dotProduct_eq_zero (hA : A.PosDef) {
 omit [DecidableEq n] in
 /-- **The search directions are $\mathbf{A}$-conjugate**, for positive definite $\mathbf{A}$:
 $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_k = 0$ for $j < k$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1].
+[HestenesStiefel1952, Theorem 5:1]; [TrefethenBau1997, Theorem 38.1]. It is (5:3b) there, for
+real symmetric $\mathbf{A}$.
 Result: cg-orthogonality -/
 theorem _root_.Matrix.PosDef.star_cgState_p_dotProduct_mulVec_eq_zero (hA : A.PosDef) {j k : ℕ}
     (hjk : j < k) : star (cgState A b x₀ j).p ⬝ᵥ (A *ᵥ (cgState A b x₀ k).p) = 0 := by
@@ -340,7 +348,11 @@ theorem _root_.Matrix.PosDef.star_cgState_p_dotProduct_mulVec_eq_zero (hA : A.Po
 /-- **The Hestenes–Stiefel iterates are the CG iterates**: for positive definite $\mathbf{A}$ and
 every $k$, with no breakdown hypothesis,
 $\mathbf{x}_k = \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, k)$.
-[HestenesStiefel1952]; [TrefethenBau1997, Theorem 38.1].
+[HestenesStiefel1952, Theorem 6:1]; [TrefethenBau1997, Theorem 38.1]. Hestenes and Stiefel show
+that $\mathbf{x}_k$ minimises the $\mathbf{A}$-norm error on the plane through
+$\mathbf{x}_0, \dots, \mathbf{x}_k$, which is $\mathbf{x}_0 + \mathcal{K}_k(\mathbf{A},
+\mathbf{r}_0)$ (`Matrix.PosDef.span_cgState_p`), for real symmetric $\mathbf{A}$ and up to
+termination; here every $k$.
 Result: cg-recurrence -/
 theorem _root_.Matrix.PosDef.cgState_x_eq (hA : A.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
     (cgState A b x₀ k).x = cgIterate A b x₀ k := by

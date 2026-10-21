@@ -16,7 +16,7 @@ public import NLAlib.Probability.SubGaussian.Basic
 
 For fixed Hermitian $d \times d$ matrices $\mathbf{B}_k$ and independent real coefficients
 $\gamma_k$ with `HasSubgaussianMGF (γ k) (c k)`, the series $\sum_k \gamma_k \mathbf{B}_k$
-satisfies $\mathbb{P}(\lambda_{\max} \ge t) \le d\, e^{-t^2 / (2v)}$ with
+satisfies $\mathbb{P}[\lambda_{\max} \ge t] \le d\, e^{-t^2 / (2v)}$ with
 $v = \|\sum_k c_k \mathbf{B}_k^2\|_2$, and $\mathbb{E} \lambda_{\max} \le \sqrt{2 v \log d}$.
 Rectangular coefficients go through the dilation. Gaussian and Rademacher series are the case
 $c_k = 1$ (Tropp 2015, Theorem 4.1.1, which states the Gaussian and Rademacher cases; the
@@ -95,7 +95,7 @@ private theorem isHermitian_sum_smul_sq [Fintype ι] (c : ι → ℝ≥0) {B : �
 
 /-- **The matrix series tail**, Hermitian coefficients: for independent real $\gamma_k$, each
 sub-Gaussian with proxy $c_k$, fixed Hermitian $\mathbf{B}_k$ and $t \ge 0$,
-$$\mathbb{P}\Bigl(\lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr) \ge t\Bigr)
+$$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr) \ge t\Bigr]
 \le \lvert n\rvert \exp\Bigl(-\frac{t^2}{2 \|\sum_k c_k \mathbf{B}_k^2\|_2}\Bigr)\,.$$
 [Tropp2015, Theorem 4.1.1]. -/
 theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ)
@@ -116,7 +116,7 @@ theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFu
   rcases (show 0 ≤ v from specNorm_nonneg _).eq_or_lt with hv0 | hv0
   · rw [← hv0, mul_zero, div_zero, Real.exp_zero, mul_one]
     exact hP.trans hd
-  refine (HasMatrixMGFBound.measure_eigenvalue_zero_sum_ge_le_card_mul_exp
+  refine (HasMatrixMGFBound.measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp
     hX (fun k => hasMatrixMGFBound_smul_of_hasSubgaussianMGF (hγ k) (hB k))
     (Set.mem_univ (t / v)) (div_pos ht' hv0) (div_nonneg (sq_nonneg _) two_pos.le) t).trans ?_
   have hlam : eigenvalue (∑ k, (c k : ℝ) • B k ^ 2) 0 ≤ v :=
@@ -129,7 +129,10 @@ theorem measureReal_eigenvalue_zero_sum_smul_ge_le [Nonempty n] (hind : iIndepFu
         field_simp
         ring
 
-/-- The matrix series mean, Hermitian coefficients: under the hypotheses of the tail,
+/-- The matrix series mean, Hermitian coefficients: for finitely many independent real
+$\gamma_k$, each sub-Gaussian with variance proxy $c_k$
+($\mathbb{E}\, e^{s \gamma_k} \le e^{c_k s^2 / 2}$ for every real $s$), and fixed Hermitian
+$n \times n$ matrices $\mathbf{B}_k$ over $\Bbbk$, $n$ nonempty, the largest eigenvalue satisfies
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr)
 \le \sqrt{2 \Bigl\|\sum_k c_k \mathbf{B}_k^2\Bigr\|_2 \log \lvert n\rvert}\,.$$
 [Tropp2015, Theorem 4.1.1]. -/
@@ -198,7 +201,7 @@ variable {B : ι → Matrix m n 𝕜}
 /-- **The matrix series tail**, rectangular coefficients: for independent real $\gamma_k$, each
 sub-Gaussian with proxy $c_k$, fixed $\mathbf{B}_k$ with row index $m$ and column index $n$, and
 $t \ge 0$,
-$$\mathbb{P}\Bigl(\Bigl\|\sum_k \gamma_k \mathbf{B}_k\Bigr\|_2 \ge t\Bigr)
+$$\mathbb{P}\Bigl[\Bigl\|\sum_k \gamma_k \mathbf{B}_k\Bigr\|_2 \ge t\Bigr]
 \le (\lvert m\rvert + \lvert n\rvert)\, e^{-t^2 / (2v)}\,,$$
 with $v = \max\bigl(\|\sum_k c_k \mathbf{B}_k \mathbf{B}_k^{\mathsf{H}}\|_2,
 \|\sum_k c_k \mathbf{B}_k^{\mathsf{H}} \mathbf{B}_k\|_2\bigr)$.
@@ -216,8 +219,12 @@ theorem measureReal_specNorm_sum_smul_ge_le [Nonempty n] (hind : iIndepFun γ μ
     specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
   exact h
 
-/-- The matrix series mean, rectangular coefficients: under the hypotheses of the tail, with the
-same $v$,
+/-- The matrix series mean, rectangular coefficients: for finitely many independent real
+$\gamma_k$, each sub-Gaussian with variance proxy $c_k$
+($\mathbb{E}\, e^{s \gamma_k} \le e^{c_k s^2 / 2}$ for every real $s$), and fixed $m \times n$
+matrices $\mathbf{B}_k$ over $\Bbbk$, $n$ nonempty, with
+$v = \max\bigl(\|\sum_k c_k \mathbf{B}_k \mathbf{B}_k^{\mathsf{H}}\|_2,
+\|\sum_k c_k \mathbf{B}_k^{\mathsf{H}} \mathbf{B}_k\|_2\bigr)$,
 $\mathbb{E} \|\sum_k \gamma_k \mathbf{B}_k\|_2
 \le \sqrt{2 v \log(\lvert m\rvert + \lvert n\rvert)}$.
 [Tropp2015, Theorem 4.1.1]. -/

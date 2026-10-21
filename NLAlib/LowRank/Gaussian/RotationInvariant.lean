@@ -50,14 +50,13 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   $\operatorname{rank}\mathbf{A} \le \ell$.
 * the Gram form, in the `NLAlib.SymmetricGauge` namespace:
   `integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitarilyInvariant`.
-* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`,
-  `NLAlib.integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant`: HMT Theorem 10.5 and
-  Epperly and Webber's Theorem 3.1, squared and as printed.
+* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`: HMT Theorem 10.5 and
+  Epperly and Webber's Theorem 3.1, squared (the printed first-moment form follows by Jensen).
 * `NLAlib.integral_specNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant`: HMT Theorem 10.6.
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_isLeftUnitarilyInvariant`: the
   truncated output.
 * the Gram-form tail (TW Theorem 8.1 (RSVD1)), in the `NLAlib.SymmetricGauge` namespace:
-  `measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant`.
+  `measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant`.
 * Epperly and Webber's sharp bounds, with a rank parameter $r \ge \operatorname{rank}$ and the
   factor <!-- value rotationInvariantFactor r \ell q -->
   $(r - \ell)/(r - q) \cdot (1 + q/(\ell - q - 1))$:
@@ -80,7 +79,7 @@ directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_trun
   `ae_nystrom_eq_self_of_isLeftUnitarilyInvariant`; in the
   `NLAlib.SymmetricGauge` namespace,
   `integral_matrixNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant` and
-  `measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant`.
+  `measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant`.
 * the asymptotic forms, $O(k/\varepsilon)$ samples for relative error $1 + \varepsilon$, of
   `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant` and of the two Nyström
   trace bounds: `NLAlib.exists_forall_` followed by their names (without `Matrix.PosSemidef`).
@@ -151,25 +150,6 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_isLeftUnitaril
 
 end SymmetricGauge
 
-/-- **The expected error of the randomized SVD, Frobenius norm, as printed, rotation-invariant
-test matrices**: for a test matrix $\mathbf{X}$ with a left unitarily invariant law and full
-column rank almost surely and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}\,.$$
-[EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) with a
-minimum over the number $q$ of directions, here at $q = k$.
-Result: randomized-svd-expected-error -/
-theorem integral_frobNorm_sub_rsvd_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
-    (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}
-    (hk : k + 2 ≤ Fintype.card l) :
-    ∫ ω, frobNorm (A - rsvd A (X ω)) ∂μ ≤
-      √(gaussianProjectionFactor k (Fintype.card l)) * frobNorm (A - truncatedSVD A k) := by
-  refine (integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
-    (f := fun Ω => frobNorm (A - rsvd A Ω)) (measurable_frobNorm.comp (measurable_sub_mul A))
-    fun _ => rfl).trans_le ?_
-  exact integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix A HasLaw.id hk
-
 /-- **The average spectral error of the randomized SVD, rotation-invariant test matrices**: for a
 test matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely
 and $k + 2 \le \ell$, <!-- value gaussianPinvSpecNormBound k \ell -->
@@ -227,34 +207,37 @@ namespace SymmetricGauge
 
 /-- **The tail of the randomized SVD, Gram form, rotation-invariant test matrices**: for a test
 matrix $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
-$d = \ell - k + 1$, every unitarily invariant norm, any $u$ and $t > 0$,
+$d = \ell - k + 1$, every unitarily invariant norm, $s \ge 0$ and $t > 0$,
 $$\bigl\|(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))^{\mathsf{H}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X}))\bigr\|_{\Phi} \le
-\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
-\|\mathbf{E}\|_{\mathsf{F}}^2\,,\qquad
+\|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{tk}{d}\,
+\bigl(\|\mathbf{E}\|_{\mathsf{F}} + s\,\sigma_k(\mathbf{A})\bigr)^2\,,\qquad
 \mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\,,$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
 matrix (in this namespace,
-`measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix`).
+`measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Theorem 8.1 (RSVD1)]; there for Gaussian test matrices and Schatten norms
-$p \ge 2$, with second failure term $\sqrt{\pi k}\,(t/e)^{-d/2}$, which the library's is below.
+$p \ge 2$, with the noise term $(utk/d)\|\mathbf{E}\|_{\mathsf{F}}^2$ and the failure probability
+$e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at $s = \sqrt{u} - 1$; the
+library's second failure term is smaller.
 Result: randomized-svd-tail -/
-theorem measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant
+theorem measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant
     (Φ : SymmetricGauge) (A : Matrix m n ℝ) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω))) ≤
-        Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
-          Φ (Finsupp.single 0 1) * (u * t * k / d) * frobNorm (A - truncatedSVD A k) ^ 2} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
+        Φ (Finsupp.single 0 1) * (t * k / d) *
+          (frobNorm (A - truncatedSVD A k) + s * singularValues A k) ^ 2 <
+        Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
   have hg : Measurable fun P : Matrix m m ℝ => Φ.matrixNorm ((A - P * A)ᴴ * (A - P * A)) :=
     Φ.measurable_matrixNorm.comp ((Measurable.matrix_conjTranspose continuous_star.measurable
       (measurable_sub_mul A)).matrix_mul (measurable_sub_mul A))
-  refine (measureReal_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
+  refine (measureReal_gt_eq_measureReal_gaussianMatrix_of_isLeftUnitarilyInvariant A hX hXr
     (f := fun Ω => Φ.matrixNorm ((A - rsvd A Ω)ᴴ * (A - rsvd A Ω))) hg (fun _ => rfl) _).trans_le ?_
-  exact measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_hasLaw_gaussianMatrix Φ
-    A HasLaw.id hd u ht
+  exact measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_gaussianMatrix Φ
+    A HasLaw.id hd hs ht
 
 end SymmetricGauge
 
@@ -427,7 +410,8 @@ set_option linter.style.longLine false in
 $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely and
 $k + 2 \le \ell$,
 $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rrbracket_k\|_2 \le
-\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
+\lambda_k(\mathbf{H}) + \frac{k}{\ell - k - 1}
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 eigenvalues indexed from $0$. The direct form of
 `Matrix.PosSemidef.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant`,
 which covers any other measurable choice of the truncation.
@@ -443,39 +427,44 @@ _root_.Matrix.PosSemidef.integral_specNorm_sub_truncatedSVD_nystrom_le_of_isLeft
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * nuclearNorm (H - truncatedSVD H k) :=
   hH.integral_specNorm_sub_le_of_isBestRankApprox_nystrom_of_isLeftUnitarilyInvariant hX hXr hk
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_nystrom H).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_nystrom H).comp_aemeasurable hX.aemeasurable)).aestronglyMeasurable
 
 namespace SymmetricGauge
 
 /-- **The tail of randomized Nyström, every unitarily invariant norm, rotation-invariant test
 matrices**: for positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left
-unitarily invariant law and full column rank almost surely, $d = \ell - k + 1$, any $u$ and
+unitarily invariant law and full column rank almost surely, $d = \ell - k + 1$, $s \ge 0$ and
 $t > 0$,
 $$\|\mathbf{H} - \mathsf{nystrom}(\mathbf{H}, \mathbf{X})\|_{\Phi} \le
-\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{utk}{d}\,
-\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$$
+\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_{\Phi} + \Phi(\mathbf{e}_0)\,\frac{tk}{d}\,
+\bigl(\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*^{1/2} +
+s\,\sigma_k(\mathbf{H})^{1/2}\bigr)^2$$
 outside probability <!-- value gaussianPinvFrobTail k d t -->
-$e^{-(u-2)/4} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
+$e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, the tail of the Gaussian test
 matrix (in this namespace,
-`measureReal_not_matrixNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`).
+`measureReal_matrixNorm_sub_nystrom_gt_le_of_hasLaw_gaussianMatrix`).
 [TroppWebber2023, Corollary 8.2 (NysSVD1)]; there for Gaussian test matrices and Schatten norms,
-with a larger second failure term.
+with the noise term $(utk/d)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$ and the failure
+probability $e^{-(u-2)/4} + \sqrt{\pi k}\,(t/e)^{-d/2}$, which follow from this bound at
+$s = \sqrt{u} - 1$.
 Result: randomized-nystrom-tail -/
-theorem measureReal_not_matrixNorm_sub_nystrom_le_le_of_isLeftUnitarilyInvariant
+theorem measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant
     (Φ : SymmetricGauge) {H : Matrix n n ℝ} (hH : H.PosSemidef) (hX : HasLaw X ν μ)
     (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k d : ℕ}
-    (hd : k + d = Fintype.card l + 1) (u : ℝ) {t : ℝ} (ht : 0 < t) :
-    μ.real {ω | ¬ Φ.matrixNorm (H - nystrom H (X ω)) ≤
-        Φ.matrixNorm (H - truncatedSVD H k) +
-          Φ (Finsupp.single 0 1) * (u * t * k / d) * nuclearNorm (H - truncatedSVD H k)} ≤
-      Real.exp (-(u - 2) / 4) + gaussianPinvFrobTail k d t := by
+    (hd : k + d = Fintype.card l + 1) {s t : ℝ} (hs : 0 ≤ s) (ht : 0 < t) :
+    μ.real {ω | Φ.matrixNorm (H - truncatedSVD H k) + Φ (Finsupp.single 0 1) * (t * k / d) *
+        (√(nuclearNorm (H - truncatedSVD H k)) + s * √(singularValues H k)) ^ 2 <
+        Φ.matrixNorm (H - nystrom H (X ω))} ≤
+      Real.exp (-s ^ 2 / 2) + gaussianPinvFrobTail k d t := by
   obtain ⟨F, rfl⟩ := CStarAlgebra.nonneg_iff_eq_star_mul_self.mp hH.nonneg
   simp only [Matrix.star_eq_conjTranspose, conjTranspose_mul_self_sub_nystrom,
     Φ.matrixNorm_conjTranspose_mul_self_sub_truncatedSVD,
-    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+    nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD, singularValues_conjTranspose_mul_self]
+  rw [Real.sqrt_sq (frobNorm_nonneg _), Real.sqrt_sq (singularValues_nonneg _ _)]
   exact
-    Φ.measureReal_not_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_le_of_isLeftUnitarilyInvariant
-      F hX hXr hd u ht
+    Φ.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_isLeftUnitarilyInvariant
+      F hX hXr hd hs ht
 
 end SymmetricGauge
 
@@ -523,6 +512,44 @@ private theorem diagonal_sumElim_const {s t : Type*} [DecidableEq s] [DecidableE
       Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0 (b • (1 : Matrix t t ℝ)) := by
   rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
 
+/-- The average of the cyclic shifts of the tail block in
+`integral_nuclearNorm_diagonal_sub_nystrom_le`:
+the mean over $k$ of $\operatorname{diag}(a, \boldsymbol{\sigma}_2)$ shifted by $k$ is
+$\operatorname{diag}(a\mathbf{I}, \bar\sigma_2\mathbf{I})$, $\bar\sigma_2$ the mean of
+$\boldsymbol{\sigma}_2$. -/
+private theorem sum_smul_submatrix_sumCongr_addRight {s : Type*} [DecidableEq s] {d : ℕ}
+    [NeZero d] (a : ℝ) (σ₂ : Fin d → ℝ) :
+    ∑ k : Fin d, (1 / d : ℝ) • (Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂)).submatrix
+        (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k))
+        (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)) =
+      Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
+        (((∑ j, σ₂ j) / d) • (1 : Matrix (Fin d) (Fin d) ℝ)) := by
+  have hd0 : (0 : ℝ) < d := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne d)
+  set e : Fin d → (s ⊕ Fin d) ≃ (s ⊕ Fin d) := fun k =>
+    Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)
+  rw [← diagonal_sumElim_const]
+  have e1 : ∀ k, (Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂)).submatrix
+      (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)) (Equiv.sumCongr (Equiv.refl s)
+        (Equiv.addRight k)) = Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂ ∘ e k) := fun k =>
+    Matrix.submatrix_diagonal_equiv _ _
+  simp only [e1]
+  ext i j
+  simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.diagonal_apply, smul_eq_mul]
+  split_ifs with hij
+  · subst hij
+    cases i with
+    | inl i =>
+      simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
+        Sum.elim_inl, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+      field_simp
+    | inr j =>
+      simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inr, Equiv.coe_addRight,
+        Sum.elim_inr, ← Finset.mul_sum]
+      rw [show (∑ k : Fin d, σ₂ (j + k)) = ∑ k, σ₂ k from
+        Equiv.sum_comp (Equiv.addLeft j) σ₂]
+      ring
+  · simp
+
 /-- **The diagonal case of the sharp Nyström bound** (Epperly and Webber's §6.3 at a fixed
 eigenbasis): for a standard Gaussian test matrix on $(s \oplus \mathrm{Fin}\,d) \times l$, the
 expected trace error of Nyström for
@@ -566,32 +593,12 @@ private theorem integral_nuclearNorm_diagonal_sub_nystrom_le {Ω' : Type*} {mΩ'
       (hG.integral_comp hf.aestronglyMeasurable).symm
   -- the average of the shifts
   have hd0 : (0 : ℝ) < d := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne d)
-  set w : ℝ := 1 / d with hwdef
+  set w : ℝ := 1 / d
   have hw : 0 ≤ w := by positivity
   set b₀ : ℝ := (∑ j, σ₂ j) / d
   have hb₀ : 0 ≤ b₀ := div_nonneg (Finset.sum_nonneg fun j _ => h₂ j) hd0.le
   have hbar : ∑ k, w • Dk k = Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
-      (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ)) := by
-    rw [← diagonal_sumElim_const]
-    have e1 : ∀ k, Dk k = Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂ ∘ e k) := fun k =>
-      Matrix.submatrix_diagonal_equiv _ _
-    simp only [e1]
-    ext i j
-    simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.diagonal_apply, smul_eq_mul]
-    split_ifs with hij
-    · subst hij
-      cases i with
-      | inl i =>
-        simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
-          Sum.elim_inl, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, w]
-        field_simp
-      | inr j =>
-        simp only [Function.comp, e, Equiv.sumCongr_apply, Sum.map_inr, Equiv.coe_addRight,
-          Sum.elim_inr, b₀, w, ← Finset.mul_sum]
-        rw [show (∑ k : Fin d, σ₂ (j + k)) = ∑ k, σ₂ k from
-          Equiv.sum_comp (Equiv.addLeft j) σ₂]
-        ring
-    · simp
+      (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ)) := sum_smul_submatrix_sumCongr_addRight a σ₂
   have hDbar : (Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0
       (b₀ • (1 : Matrix (Fin d) (Fin d) ℝ))).PosSemidef := by
     rw [← hbar]
@@ -648,7 +655,7 @@ private theorem integral_nuclearNorm_sub_nystrom_le_of_rank_le_of_le_card {Ω' :
       rotationInvariantFactor r (Fintype.card l) q * nuclearNorm (H - truncatedSVD H q) := by
   classical
   obtain ⟨U, hU, hHU⟩ := hH.isHermitian.exists_eq_mul_diagonal_mul_conjTranspose
-  set d := r - q with hd'
+  set d := r - q
   have hd : q + d = r := by omega
   have : NeZero d := ⟨by omega⟩
   set ι : Fin q ⊕ Fin d → Fin (Fintype.card n) :=
@@ -755,7 +762,8 @@ theorem
     ⟨_, hH.nystrom_eq⟩
   have hg : Measurable fun P : Matrix n n ℝ => nuclearNorm (H - S * P * S) :=
     continuous_nuclearNorm.measurable.comp
-      (measurable_const.sub ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
+      (measurable_const.sub
+        ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
   rw [integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant S hX hXr
     (f := fun Y => nuclearNorm (H - nystrom H Y)) hg fun Y => by rw [hS]]
   by_cases hrn : r ≤ Fintype.card n
@@ -765,8 +773,6 @@ theorem
     exact mul_le_mul_of_nonneg_right
       (rotationInvariantFactor_le_rotationInvariantFactor hq hln (by omega)) (nuclearNorm_nonneg _)
 
--- A proof line names the rank-parameter Nyström bound, whose name exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The sharp expected error of the randomized SVD, rotation-invariant test matrices**: for
 $\mathbf{A}$ of rank at most $r$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
 and full column rank almost surely, $\ell \le r$ and
@@ -786,13 +792,13 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le
     {r q : ℕ} (hr : A.rank ≤ r) (hlr : Fintype.card l ≤ r) (hq : q + 2 ≤ Fintype.card l) :
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
-  have h := (Matrix.posSemidef_conjTranspose_mul_self A).integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le
-    hX hXr (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
+  have h :=
+    Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_isLeftUnitarilyInvariant_of_rank_le
+      (Matrix.posSemidef_conjTranspose_mul_self A) hX hXr
+      (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
   simpa only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD] using h
 
--- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
-set_option linter.style.longLine false in
 omit [DecidableEq n] in
 /-- **The sharp expected trace error of randomized Nyström, Gaussian test matrices**: for positive
 semidefinite $\mathbf{H}$ of rank at most $r$, a standard Gaussian $n \times \ell$ test matrix
@@ -828,8 +834,6 @@ theorem
     simp only [nuclearNorm_zero, integral_zero]
     exact mul_nonneg (rotationInvariantFactor_nonneg hq hlr) (nuclearNorm_nonneg _)
 
--- A proof line names the rank-parameter Nyström bound, whose name exceeds 100 characters.
-set_option linter.style.longLine false in
 omit [DecidableEq n] in
 /-- **The sharp expected error of the randomized SVD, Gaussian test matrices**: for $\mathbf{A}$
 of rank at most $r$, a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $\ell \le r$
@@ -849,8 +853,10 @@ theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       rotationInvariantFactor r (Fintype.card l) q * frobNorm (A - truncatedSVD A q) ^ 2 := by
   classical
-  have h := (Matrix.posSemidef_conjTranspose_mul_self A).integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le
-    hX (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
+  have h :=
+    Matrix.PosSemidef.integral_nuclearNorm_sub_nystrom_le_of_hasLaw_gaussianMatrix_of_rank_le
+      (Matrix.posSemidef_conjTranspose_mul_self A) hX
+      (by rwa [Matrix.rank_conjTranspose_mul_self]) hlr hq
   simpa only [nuclearNorm_conjTranspose_mul_self_sub_nystrom,
     nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD] using h
 
@@ -866,7 +872,7 @@ $$\mathbb{E}\|\mathbf{H} - \llbracket\mathsf{nystrom}(\mathbf{H}, \mathbf{X})\rr
 \Bigl(1 + \frac{q}{\ell - q - 1}\Bigr)\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_q\|_*\,.$$
 Better than
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_add_of_hasLaw_gaussianMatrix`'s
-$1 + \frac{q}{\ell-q-1}$ by the factor $\frac{r-\ell}{r-q}$. Incomparable with
+$1 + q/(\ell-q-1)$ by the factor $(r-\ell)/(r-q)$. Incomparable with
 `Matrix.PosSemidef.integral_nuclearNorm_sub_truncatedSVD_nystrom_le_of_isLeftUnitarilyInvariant` at
 $q = k$ as well: better iff $(r-\ell)(\ell-1) < k(r-k)$, that is for rank close to $\ell$ (at
 $r = \ell$ it gives the best rank-$k$ error with constant one); for $q > k$ better when the tail
@@ -888,7 +894,7 @@ theorem
   have hpt : ∀ ω, nuclearNorm (H - truncatedSVD (nystrom H (X ω)) k) ≤
       nuclearNorm (H - truncatedSVD H k) + nuclearNorm (H - nystrom H (X ω)) := fun ω => by
     simpa only [lpGauge_one_matrixNorm] using
-      (lpGauge 1 le_rfl).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
+      (lpGauge 1).matrixNorm_sub_truncatedSVD_nystrom_le hH (X ω) k
   have hN := hH.integrable_nuclearNorm_sub_nystrom hX.aemeasurable
   have hI : Integrable (fun ω => nuclearNorm (H - truncatedSVD H k) +
       nuclearNorm (H - nystrom H (X ω))) μ := (integrable_const _).add hN
@@ -910,7 +916,13 @@ Webber's factor bounded by HMT's; kept for the form consumers cite. Asymptotic f
 `NLAlib.exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant`.
 [EpperlyWebber2026, Theorem 3.1]; [HalkoMartinssonTropp2011, Theorem 10.5]; there (EW) over
 $\mathbb{R}$ and $\mathbb{C}$ with a minimum over the number $q$ of directions, here over
-$\mathbb{R}$ at $q = k$.
+$\mathbb{R}$ at $q = k$. [EpperlyWebber2026, Theorem 3.1] and [HalkoMartinssonTropp2011,
+Theorem 10.5] print the first-moment form <!-- value gaussianProjectionFactor k \ell -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}\,,$$
+which follows from this bound by Jensen's inequality
+(`ProbabilityTheory.integral_le_sqrt_integral_sq`).
 Result: randomized-svd-expected-error -/
 theorem integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant (A : Matrix m n ℝ)
     (hX : HasLaw X ν μ) (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {k : ℕ}
@@ -948,8 +960,6 @@ theorem exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvaria
   exact (integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant A hX hXr hkl).trans
     (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
 
--- The declaration name alone, with its `_root_.Matrix.PosSemidef` prefix, exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- **The expected trace error of randomized Nyström, rotation-invariant test matrices**: for
 positive semidefinite $\mathbf{H}$, a test matrix $\mathbf{X}$ with a left unitarily invariant law
 and full column rank almost surely and

@@ -1,0 +1,227 @@
+{
+ "date": "2026-10-20",
+ "note": "Rules enforcement, stage 2 (CONTRIBUTING §2, §9.1; docs/rules/stage2-worklist.md). Before v0.1: no deprecated aliases. Rule P8 renames a declaration outside NLAlib into NLAlib; rule P9 moves a general fact to the ForMathlib file of its Mathlib subject, in Mathlib's namespace. Entries with \"removed\": true delete a declaration whose content Mathlib or another declaration already carries (\"new\"); the explorer redirects the old link there. statementChanged lists the declarations (new names) whose statements changed: rule T9 replaces a proof term in a signature by a hypothesis or an existing definition; rule T2 writes an ℝ≥0 quantity with ‖·‖₊ instead of Real.toNNReal; rule T13 drops an unused hypothesis (a rename when the namespace came from that hypothesis). Stage 3 (2026-10-20, maintainer decisions 1-4): lpGauge takes [Fact (1 ≤ q)] and HasCondMatrixMGFBound drops its unused hm (rule T9, statementChanged); the renames with rule P11 are the Polynomial layer's upstreaming audit (Mathlib naming; docs/design/Polynomial-Chebyshev.md, \"Upstreaming to Mathlib\").",
+ "renames": [
+  {
+   "old": "Commute.complexify",
+   "new": "NLAlib.commute_complexify",
+   "rule": "P8"
+  },
+  {
+   "old": "NLAlib.sq_div_add_sq_div_one_add_sq",
+   "new": "one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_perm_forall_le_apply_self",
+   "new": "Fin.exists_perm_forall_le_apply_self",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.givensHessenbergStep_plane_ne",
+   "new": "NLAlib.hasOrthonormalCols_givensHessenbergStep",
+   "rule": "P9",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.sum_le_sum_range_card_of_antitone",
+   "new": "Finset.sum_le_sum_range_card_of_antitone",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_equiv_antitone_comp",
+   "new": "Fintype.exists_equiv_antitone_comp",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.finrank_real_fun",
+   "new": "Module.finrank_fun",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_finite_isCover_sphere",
+   "new": "Metric.exists_finset_isCover_sphere_card_le",
+   "rule": "P9",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_forall_le_apply_eq_zero",
+   "new": "Finsupp.exists_forall_le_apply_eq_zero",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.rpow_mul_add_le",
+   "new": "Real.rpow_mul_add_le",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.nodalWeight_map",
+   "new": "Lagrange.nodalWeight_map",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_eq_mul_nodalWeight",
+   "new": "Lagrange.exists_eq_mul_nodalWeight",
+   "rule": "P9"
+  },
+  {
+   "old": "Matrix.integral_quadForm",
+   "new": "NLAlib.integral_quadForm",
+   "rule": "P8"
+  },
+  {
+   "old": "Matrix.ae_posDef_condExp",
+   "new": "NLAlib.ae_posDef_condExp",
+   "rule": "P8"
+  },
+  {
+   "old": "Matrix.condExp_dilation",
+   "new": "NLAlib.condExp_dilation",
+   "rule": "P8"
+  },
+  {
+   "old": "Matrix.condExp_dilation_sq",
+   "new": "NLAlib.condExp_dilation_sq",
+   "rule": "P8"
+  },
+  {
+   "old": "ConvexOn.integral_uniformOn_injective_le_integral_pi",
+   "new": "NLAlib.integral_uniformOn_injective_le_integral_pi",
+   "rule": "P8"
+  },
+  {
+   "old": "Measurable.truncatedSVD",
+   "new": "NLAlib.measurable_truncatedSVD",
+   "rule": "P8",
+   "removed": true
+  },
+  {
+   "old": "AEMeasurable.truncatedSVD",
+   "new": "NLAlib.measurable_truncatedSVD",
+   "rule": "P8",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.lipschitzWith_ofLp_iff",
+   "new": "EuclideanSpace.lipschitzWith_ofLp_iff",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exp_mul_le_bernstein",
+   "new": "Real.exp_mul_le_bernstein",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.mul_lt_three_of_mem_Ioo",
+   "new": "mul_lt_three_of_mem_Ioo",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.sq_div_two_div_nonneg_of_mem_Ioo",
+   "new": "sq_div_two_div_nonneg_of_mem_Ioo",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exists_bernstein_exponent",
+   "new": "exists_bernstein_exponent",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.exp_div_rpow_rpow_eq_exp",
+   "new": "Real.exp_div_rpow_rpow_eq_exp",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.one_half_le_log_div",
+   "new": "Real.one_half_le_log_div",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.le_add_mul_of_le_add_mul_exp",
+   "new": "Real.le_add_mul_of_le_add_mul_exp",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.one_le_and_log_div_le_sub_one_mul",
+   "new": "Real.one_le_and_log_div_le_sub_one_mul",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.two_le_and_exp_log_four_mul_sq_div_le_one_add",
+   "new": "Real.two_le_and_exp_log_four_mul_sq_div_le_one_add",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.rpow_one_div_two_mul_add_one_le_one_add",
+   "new": "Real.rpow_one_div_two_mul_add_one_le_one_add",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.natCast_div_sub_sub_one_nonneg",
+   "new": "natCast_div_sub_sub_one_nonneg",
+   "rule": "P9"
+  },
+  {
+   "old": "NLAlib.HasOrthonormalCols.hutchpp_eq",
+   "new": "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
+   "rule": "T13"
+  },
+  {
+   "old": "NLAlib.norm_chebyshevCoeff_le_of_open_ellipse",
+   "new": "NLAlib.norm_chebyshevCoeff_le_of_differentiableOn",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.isUniformApproxOn_chebyshevTrunc_of_open_ellipse",
+   "new": "NLAlib.isUniformApproxOn_chebyshevTrunc_of_differentiableOn",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.exists_degree_le_isUniformApproxOn_of_open_ellipse_interval",
+   "new": "NLAlib.exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.jacksonDamping_eq_closed_form",
+   "new": "NLAlib.jacksonDamping_of_le",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.chebyshevTrunc_eval_eq",
+   "new": "NLAlib.chebyshevTrunc_eval",
+   "rule": "P11"
+  },
+  {
+   "old": "NLAlib.HasStieltjesMeasure.monotoneOn_mul_self",
+   "new": "NLAlib.HasStieltjesMeasure.monotoneOn_id_mul",
+   "rule": "P11"
+  }
+ ],
+ "statementChanged": [
+  "NLAlib.givensHessenbergStep_of_lt",
+  "NLAlib.pinv_submatrix_mulVec_single_eq_backSubst",
+  "NLAlib.norm_sub_mulVec_pinv_submatrix_mulVec_single_eq",
+  "NLAlib.SymmetricGauge.map_abs",
+  "NLAlib.hasSubexponentialMGF_quadForm_sub_diagonal",
+  "NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix",
+  "NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame",
+  "NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector",
+  "NLAlib.lpGauge",
+  "NLAlib.lpGauge_apply_of_ne_top",
+  "NLAlib.lpGauge_top_apply",
+  "NLAlib.lpGauge_one_apply",
+  "NLAlib.lpGauge_apply_eq_norm_toLp",
+  "NLAlib.lpGauge_apply_single_zero",
+  "NLAlib.lpGauge_matrixNorm",
+  "NLAlib.lpGauge_top_matrixNorm",
+  "NLAlib.lpGauge_two_matrixNorm",
+  "NLAlib.lpGauge_one_matrixNorm",
+  "NLAlib.HasCondMatrixMGFBound",
+  "NLAlib.HasCondMatrixMGFBound.congr",
+  "NLAlib.HasCondMatrixMGFBound.mono_set",
+  "NLAlib.hasCondMatrixMGFBound_of_condExp_eq_zero_of_le",
+  "NLAlib.hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF",
+  "NLAlib.HasCondMatrixMGFBound.supermartingale_re_trace_exp",
+  "NLAlib.HasCondMatrixMGFBound.measureReal_exists_eigenvalue_zero_sum_ge_le"
+ ]
+}

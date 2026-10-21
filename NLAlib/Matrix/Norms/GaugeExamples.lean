@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Normed.Lp.PiLp
+public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.Matrix.Norms.SymmetricGauge
 
 /-!
@@ -83,7 +84,7 @@ private theorem lpFun_zero {q : ℝ≥0∞} (hq : 1 ≤ q) : lpFun q 0 = 0 := by
 private theorem lpFun_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (x y : ℕ →₀ ℝ) :
     lpFun q (x + y) ≤ lpFun q x + lpFun q y := by
   have := Fact.mk hq
-  obtain ⟨N, hx, hy⟩ := exists_forall_le_apply_eq_zero x y
+  obtain ⟨N, hx, hy⟩ := Finsupp.exists_forall_le_apply_eq_zero x y
   have hxy : ∀ i, N ≤ i → (x + y) i = 0 := fun i hi => by
     rw [Finsupp.add_apply, hx i hi, hy i hi, add_zero]
   rw [lpFun_eq_norm_toLp hq hx, lpFun_eq_norm_toLp hq hy, lpFun_eq_norm_toLp hq hxy]
@@ -92,7 +93,7 @@ private theorem lpFun_add_le {q : ℝ≥0∞} (hq : 1 ≤ q) (x y : ℕ →₀ �
 private theorem lpFun_smul {q : ℝ≥0∞} (hq : 1 ≤ q) (c : ℝ) (x : ℕ →₀ ℝ) :
     lpFun q (c • x) = ‖c‖ * lpFun q x := by
   have := Fact.mk hq
-  obtain ⟨N, hx, -⟩ := exists_forall_le_apply_eq_zero x x
+  obtain ⟨N, hx, -⟩ := Finsupp.exists_forall_le_apply_eq_zero x x
   have hcx : ∀ i, N ≤ i → (c • x) i = 0 := fun i hi => by
     rw [Finsupp.smul_apply, hx i hi, smul_zero]
   rw [lpFun_eq_norm_toLp hq hx, lpFun_eq_norm_toLp hq hcx]
@@ -105,7 +106,7 @@ private theorem lpFun_neg {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →₀ ℝ) :
 private theorem eq_zero_of_lpFun_eq_zero {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →₀ ℝ)
     (h : lpFun q x = 0) : x = 0 := by
   have := Fact.mk hq
-  obtain ⟨N, hx, -⟩ := exists_forall_le_apply_eq_zero x x
+  obtain ⟨N, hx, -⟩ := Finsupp.exists_forall_le_apply_eq_zero x x
   rw [lpFun_eq_norm_toLp hq hx, norm_eq_zero] at h
   ext i
   obtain hi | hi := lt_or_ge i N
@@ -131,47 +132,50 @@ private theorem lpFun_mapRange_abs {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →�
 
 /-- The **$\ell^q$ gauge**, $1 \le q \le \infty$:
 $\bigl(\sum_i \lvert \mathbf{x}_i \rvert^q\bigr)^{1/q}$, and $\sup_i \lvert \mathbf{x}_i \rvert$
-for $q = \infty$. Its matrix norm is the Schatten $q$-norm. -/
-noncomputable def lpGauge (q : ℝ≥0∞) (hq : 1 ≤ q) : SymmetricGauge where
+for $q = \infty$. Its matrix norm is the Schatten $q$-norm. The hypothesis $1 \le q$ is an
+instance, `[Fact (1 ≤ q)]`, as for Mathlib's `PiLp` norms, so that `lpGauge 1`, `lpGauge 2` and
+`lpGauge ⊤` take no proof argument (Mathlib's `fact_one_le_one_ennreal`, `fact_one_le_two_ennreal`,
+`fact_one_le_top_ennreal`); for a variable exponent, `have := Fact.mk hq`. -/
+noncomputable def lpGauge (q : ℝ≥0∞) [hq : Fact (1 ≤ q)] : SymmetricGauge where
   toFun x := if q = ⊤ then ⨆ i, |x i| else (x.sum fun _ a => |a| ^ q.toReal) ^ q.toReal⁻¹
-  map_zero' := by exact lpFun_zero hq
-  add_le' := by exact lpFun_add_le hq
-  neg' := by exact lpFun_neg hq
-  smul' := by exact lpFun_smul hq
-  eq_zero_of_map_eq_zero' := by exact eq_zero_of_lpFun_eq_zero hq
+  map_zero' := by exact lpFun_zero hq.out
+  add_le' := by exact lpFun_add_le hq.out
+  neg' := by exact lpFun_neg hq.out
+  smul' := by exact lpFun_smul hq.out
+  eq_zero_of_map_eq_zero' := by exact eq_zero_of_lpFun_eq_zero hq.out
   map_equivMapDomain' := by exact lpFun_equivMapDomain q
-  map_abs' := by exact lpFun_mapRange_abs hq
+  map_abs' := by exact lpFun_mapRange_abs hq.out
 
-private theorem lpGauge_apply {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →₀ ℝ) :
-    lpGauge q hq x = lpFun q x :=
+private theorem lpGauge_apply {q : ℝ≥0∞} [Fact (1 ≤ q)] (x : ℕ →₀ ℝ) :
+    lpGauge q x = lpFun q x :=
   rfl
 
 /-- The $\ell^q$ gauge for finite $q$:
 $\bigl(\sum_i \lvert \mathbf{x}_i \rvert^q\bigr)^{1/q}$, the sum over the support. -/
-theorem lpGauge_apply_of_ne_top {q : ℝ≥0∞} (hq : 1 ≤ q) (hq' : q ≠ ⊤) (x : ℕ →₀ ℝ) :
-    lpGauge q hq x = (∑ i ∈ x.support, |x i| ^ q.toReal) ^ q.toReal⁻¹ := by
+theorem lpGauge_apply_of_ne_top {q : ℝ≥0∞} [Fact (1 ≤ q)] (hq' : q ≠ ⊤) (x : ℕ →₀ ℝ) :
+    lpGauge q x = (∑ i ∈ x.support, |x i| ^ q.toReal) ^ q.toReal⁻¹ := by
   rw [lpGauge_apply, lpFun, if_neg hq', Finsupp.sum]
 
 /-- The $\ell^\infty$ gauge is the largest absolute value, $\sup_i \lvert \mathbf{x}_i \rvert$. -/
-theorem lpGauge_top_apply (x : ℕ →₀ ℝ) : lpGauge ⊤ le_top x = ⨆ i, |x i| := by
+theorem lpGauge_top_apply (x : ℕ →₀ ℝ) : lpGauge ⊤ x = ⨆ i, |x i| := by
   rw [lpGauge_apply, lpFun, if_pos rfl]
 
 /-- The $\ell^1$ gauge is the sum of the absolute values, $\sum_i \lvert \mathbf{x}_i \rvert$. -/
-theorem lpGauge_one_apply (x : ℕ →₀ ℝ) : lpGauge 1 le_rfl x = ∑ i ∈ x.support, |x i| := by
-  rw [lpGauge_apply_of_ne_top le_rfl ENNReal.one_ne_top]
+theorem lpGauge_one_apply (x : ℕ →₀ ℝ) : lpGauge 1 x = ∑ i ∈ x.support, |x i| := by
+  rw [lpGauge_apply_of_ne_top ENNReal.one_ne_top]
   simp only [ENNReal.toReal_one, Real.rpow_one, inv_one]
 
 /-- The $\ell^q$ gauge of a sequence supported in the first $N$ indices is the `PiLp` norm of its
 first $N$ entries. This is the bridge to Mathlib's $\ell^q$ norms on `Fin N → ℝ`. -/
-theorem lpGauge_apply_eq_norm_toLp {q : ℝ≥0∞} (hq : 1 ≤ q) {x : ℕ →₀ ℝ} {N : ℕ}
+theorem lpGauge_apply_eq_norm_toLp {q : ℝ≥0∞} [hq : Fact (1 ≤ q)] {x : ℕ →₀ ℝ} {N : ℕ}
     (hx : ∀ i, N ≤ i → x i = 0) :
-    lpGauge q hq x = ‖(WithLp.toLp q fun i : Fin N => x i : PiLp q fun _ : Fin N => ℝ)‖ := by
-  exact lpFun_eq_norm_toLp hq hx
+    lpGauge q x = ‖(WithLp.toLp q fun i : Fin N => x i : PiLp q fun _ : Fin N => ℝ)‖ := by
+  exact lpFun_eq_norm_toLp hq.out hx
 
 /-- The $\ell^q$ gauge takes the value $1$ at the first unit coordinate sequence,
 $\Phi_{\ell^q}(\mathbf{e}_0) = 1$, so the matrix norm of `lpGauge q` needs no normalisation. -/
-theorem lpGauge_apply_single_zero {q : ℝ≥0∞} (hq : 1 ≤ q) :
-    lpGauge q hq (Finsupp.single 0 1) = 1 := by
+theorem lpGauge_apply_single_zero {q : ℝ≥0∞} [Fact (1 ≤ q)] :
+    lpGauge q (Finsupp.single 0 1) = 1 := by
   rcases eq_or_ne q ⊤ with rfl | hqt
   · have h : ∀ i, |(Finsupp.single 0 (1 : ℝ)) i| ≤ 1 := fun i => by
       rcases eq_or_ne i 0 with rfl | hi
@@ -180,7 +184,7 @@ theorem lpGauge_apply_single_zero {q : ℝ≥0∞} (hq : 1 ≤ q) :
     rw [lpGauge_top_apply]
     refine le_antisymm (Real.iSup_le h zero_le_one) ?_
     exact le_ciSup_of_le ⟨1, by rintro _ ⟨i, rfl⟩; exact h i⟩ 0 (by simp)
-  · rw [lpGauge_apply_of_ne_top hq hqt]
+  · rw [lpGauge_apply_of_ne_top hqt]
     simp
 
 /-! ### The Ky Fan gauges -/
@@ -279,7 +283,7 @@ theorem sum_abs_le_kyFanGauge {k : ℕ} (hk : k ≠ 0) (x : ℕ →₀ ℝ) {s :
 
 /-- A non-increasing finitely supported sequence is nonnegative. -/
 private theorem nonneg_of_antitone {x : ℕ →₀ ℝ} (hx : Antitone x) (i : ℕ) : 0 ≤ x i := by
-  obtain ⟨N, hN, -⟩ := exists_forall_le_apply_eq_zero x x
+  obtain ⟨N, hN, -⟩ := Finsupp.exists_forall_le_apply_eq_zero x x
   exact (hN (max i N) (le_max_right i N)).symm.trans_le (hx (le_max_left i N))
 
 /-- The Ky Fan $k$-gauge of a non-increasing sequence is the sum of its first $k$ entries. A
@@ -291,7 +295,7 @@ theorem kyFanGauge_apply_of_antitone {k : ℕ} (hk : k ≠ 0) {x : ℕ →₀ �
     Finset.sum_congr rfl fun i _ => abs_of_nonneg (hx0 i)
   refine le_antisymm (kyFanFun_le fun s hs => ?_) ?_
   · calc ∑ i ∈ s, |x i| = ∑ i ∈ s, x i := habs s
-      _ ≤ ∑ i ∈ Finset.range s.card, x i := sum_le_sum_range_card_of_antitone hx s
+      _ ≤ ∑ i ∈ Finset.range s.card, x i := Finset.sum_le_sum_range_card_of_antitone hx s
       _ ≤ ∑ i ∈ Finset.range k, x i :=
         Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono hs) fun i _ _ => hx0 i
   · rw [← habs]

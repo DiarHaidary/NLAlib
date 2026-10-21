@@ -98,12 +98,13 @@ $\mathbf{W}$ having orthonormal columns, then the tangent matrix and
 $\mathbf{W}^{\mathsf{H}}\mathbf{Y}(\mathbf{U}^{\mathsf{H}}\mathbf{Y})^{-1}$ have the same singular
 values.
 Port of `NLAlib.overlapTangentNorm_eq_specNorm_transpose_mul_mul`. -/
-theorem singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one [DecidableEq q]
+theorem HasOrthonormalCols.singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one
+    [DecidableEq q]
     {U : Matrix n p 𝕜} {W : Matrix n q 𝕜} (hW : HasOrthonormalCols W)
     (h : U * Uᴴ + W * Wᴴ = 1) (Y : Matrix n p 𝕜) :
     singularValues (tangentMatrix U Y) = singularValues (Wᴴ * Y * (Uᴴ * Y)⁻¹) := by
   rw [tangentMatrix, Matrix.mul_assoc, Matrix.mul_assoc Wᴴ,
-    singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one hW h]
+    HasOrthonormalCols.singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one hW h]
 
 omit [DecidableEq n] in
 /-- **The acute case for a frame and a basis with the same number of columns**:
@@ -161,7 +162,7 @@ theorem HasOrthonormalCols.singularValues_tangentMatrix {U : Matrix n p 𝕜}
       hU.conjTranspose_mul_self, one_smul]
     abel
   have hsq : singularValues Z i ^ 2 = singularValues (tangentMatrix U Y) i ^ 2 + 1 := by
-    rw [sq_singularValues, sq_singularValues, hgram,
+    rw [singularValues_sq, singularValues_sq, hgram,
       (Matrix.isHermitian_conjTranspose_mul_self _).eigenvalue_add_smul_one 1 (by omega)]
   have hZinj : Function.Injective Z.mulVec := fun x y hxy => by
     have h := congrArg (Uᴴ *ᵥ ·) hxy

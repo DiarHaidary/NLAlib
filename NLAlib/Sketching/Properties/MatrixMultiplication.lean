@@ -38,7 +38,7 @@ A form over $\Bbbk$ with $\sqrt{2}\,\varepsilon$ is added when a complex consume
 
 * `NLAlib.HasJLMoment.integral_frobNorm_conjTranspose_mul_sub_rpow_le`: approximate matrix
   multiplication in $L^p$.
-* `NLAlib.HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le`: its tail.
+* `NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`: its tail.
 * `NLAlib.HasJLMoment.hasSubspaceEmbedding`, `NLAlib.HasJLMoment.isObliviousSubspaceEmbedding`.
 -/
 
@@ -311,11 +311,11 @@ theorem HasJLMoment.integral_frobNorm_conjTranspose_mul_sub_rpow_le (h : HasJLMo
 
 /-- **Approximate matrix multiplication, tail form**: for $\varepsilon > 0$, $p \ge 2$ and nonzero
 $\mathbf{A}$, $\mathbf{B}$,
-$$\mathbb{P}\bigl(\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
+$$\mathbb{P}\bigl[\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}
 \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
-\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr) \le \delta\,.$$
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr] \le \delta\,.$$
 [Woodruff2014, Theorem 13]; there $3 \varepsilon$. -/
-theorem HasJLMoment.measure_frobNorm_conjTranspose_mul_sub_ge_le (h : HasJLMoment S ε δ p μ)
+theorem HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le (h : HasJLMoment S ε δ p μ)
     (hε : 0 < ε) (hp : 2 ≤ p) (hS : AEMeasurable S μ) {A : Matrix n q ℝ} {B : Matrix n r ℝ}
     (hA : A ≠ 0) (hB : B ≠ 0) :
     μ.real {ω | ε * frobNorm A * frobNorm B ≤ frobNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B)} ≤
@@ -369,7 +369,7 @@ private theorem hasSubspaceEmbedding_of_range_le [DecidableEq q] (h : HasJLMomen
   have hFU : frobNorm U * frobNorm U = Fintype.card q := by
     rw [← sq, frobNorm_sq_eq_re_trace, hU.conjTranspose_mul_self, Matrix.trace_one]
     rfl
-  have htail := h.measure_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hU0 hU0
+  have htail := h.measureReal_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hU0 hU0
   rw [mul_assoc, hFU, ← hc] at htail
   have hsub2 : {ω | ¬ IsSubspaceEmbedding (S ω) U (1 - c) (1 + c)} ⊆
       {ω | c ≤ frobNorm (Uᴴ * (S ω)ᴴ * S ω * U - Uᴴ * U)} :=

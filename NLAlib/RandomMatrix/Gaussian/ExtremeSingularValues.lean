@@ -20,9 +20,9 @@ $\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} \le \mathbb{E} \, \sigma_{\min}
 upper bound $\mathbb{E} \|\mathbf{G}\|_2 \le \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert}$ is in
 `NLAlib/RandomMatrix/Gaussian/SpectralNorm.lean`), Gaussian concentration of every singular value
 with proxy $1$, the deviation tails
-$\mathbb{P}(\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)
+$\mathbb{P}[\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t]
 \le e^{-t^2/2}$ and
-$\mathbb{P}(\sigma_{\min}(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)
+$\mathbb{P}[\sigma_{\min}(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t]
 \le e^{-t^2/2}$, and the same conclusions as Loewner bounds on $\mathbf{G}^{\mathsf{H}}\mathbf{G}$,
 the shape of the subspace-embedding predicate.
 
@@ -255,8 +255,10 @@ private theorem le_integral_singularValues_add (hX : HasLaw X (gaussianMatrix m 
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have : Nonempty n := Fintype.card_pos_iff.1 (by omega)
   have : Nonempty m := Fintype.card_pos_iff.1 (by omega)
-  obtain ⟨Nn, hNn1, hNn, -⟩ := exists_finite_isCover_sphere ℝ n (ε := ⟨ε, hε0.le⟩) hε0
-  obtain ⟨Nm, hNm1, hNm, -⟩ := exists_finite_isCover_sphere ℝ m (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Nn, hNn1, hNn, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ n) (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Nm, hNm1, hNm, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ m) (ε := ⟨ε, hε0.le⟩) hε0
   let u : Nn → n → ℝ := fun i => WithLp.ofLp i.1
   let t : Nm → m → ℝ := fun j => WithLp.ofLp j.1
   have hu1 (i : Nn) : ‖WithLp.toLp 2 (u i)‖ = 1 := by
@@ -330,7 +332,7 @@ theorem hasSubgaussianMGF_singularValues_sub_integral_of_hasLaw_gaussianMatrix
   rwa [one_pow] at h
 
 /-- The upper deviation tail of the spectral norm: for $t \ge 0$,
-$\mathbb{P}(\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t)
+$\mathbb{P}[\|\mathbf{G}\|_2 \ge \sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t]
 \le e^{-t^2/2}$. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor $2$ of the
 source's two-sided form. -/
 theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m n) μ)
@@ -339,7 +341,7 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaus
       Real.exp (-t ^ 2 / 2) := by
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hc := integral_specNorm_le_of_hasLaw_gaussianMatrix hX
-  have h := measureReal_integral_add_le_of_hasLaw_gaussianMatrix hX (f := specNorm) (L := 1)
+  have h := measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX (f := specNorm) (L := 1)
     (fun A B => by
       rw [NNReal.coe_one, one_mul]
       exact (abs_specNorm_sub_specNorm_le A B).trans (specNorm_le_frobNorm _)) ht
@@ -350,7 +352,7 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaus
 
 /-- The lower deviation tail of the smallest singular value: for $t \ge 0$ and
 $k + 1 = \lvert n \rvert$,
-$\mathbb{P}(\sigma_k(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)
+$\mathbb{P}[\sigma_k(\mathbf{G}) \le \sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t]
 \le e^{-t^2/2}$. [Vershynin2018, Corollary 7.3.3]; one-sided, hence without the factor $2$ of the
 source's two-sided form. -/
 theorem measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix
@@ -360,7 +362,7 @@ theorem measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix
       Real.exp (-t ^ 2 / 2) := by
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hc := le_integral_singularValues_of_hasLaw_gaussianMatrix hX hk
-  have h := measureReal_integral_add_le_of_hasLaw_gaussianMatrix hX
+  have h := measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX
     (f := fun A => -singularValues A k) (L := 1)
     (fun A B => by
       rw [neg_sub_neg, abs_sub_comm]
@@ -416,7 +418,7 @@ theorem measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussian
     by_contra hlt
     rw [not_le] at hlt
     exact hω ((smul_one_le_smul_one (pow_le_pow_left₀ hc hlt.le 2)).trans
-      (sq_singularValues_last_smul_one_le (X ω) hk))
+      (singularValues_last_sq_smul_one_le (X ω) hk))
 
 /-- **The Gaussian Gram sandwich**:
 $$(\sqrt{\lvert m \rvert} - \sqrt{\lvert n \rvert} - t)^2 \mathbf{I}

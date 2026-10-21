@@ -90,7 +90,8 @@ private theorem measurable_haarProjectionFactor_rank_truncatedSVD (A : Matrix m 
     (k d c : ℕ) :
     Measurable fun x : Matrix n l ℝ => haarProjectionFactor d c (truncatedSVD (A * x) k).rank :=
   (measurable_from_nat (f := fun q => haarProjectionFactor d c q)).comp
-    (measurable_rank.comp ((measurable_const.matrix_mul measurable_id).truncatedSVD k))
+    (measurable_rank.comp ((measurable_truncatedSVD k).comp
+      (measurable_const.matrix_mul measurable_id)))
 
 /-- The Haar completion factor at the rank of the truncated sketch lies in $[1, 1 + p]$. -/
 private theorem haarProjectionFactor_rank_truncatedSVD_mem (A : Matrix m n ℝ)

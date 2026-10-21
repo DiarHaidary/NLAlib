@@ -23,7 +23,7 @@ form with Mathlib's `Matrix.IsHermitian.eigenvalues` and the partial-sum form wi
 ## Main results
 
 * `NLAlib.HasOrthonormalCols.norm_sq_mem_doublyStochastic`: orthostochastic matrices.
-* `NLAlib.majorized_re_diag_of_mul_eq_mul_diagonal`: Schur's theorem.
+* `NLAlib.HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal`: Schur's theorem.
 * `Matrix.IsHermitian.sumLargest_re_diag_le_sum_eigenvalue`: the same as partial sums.
 -/
 
@@ -76,7 +76,7 @@ matrix is majorized by its eigenvalues, in any enumeration.
 [HornJohnson2013, Theorem 4.3.45].
 Port of `NLAlib.majorized_diagonal_eigenvalues`.
 Result: schur-majorization -/
-theorem majorized_re_diag_of_mul_eq_mul_diagonal {A U : Matrix n n 𝕜} {d : n → ℝ}
+theorem HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal {A U : Matrix n n 𝕜} {d : n → ℝ}
     (hU : HasOrthonormalCols U) (h : A * U = U * Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) :
     Majorized (fun i => RCLike.re (A i i)) d := by
   have hx : (fun i => RCLike.re (A i i)) = (Matrix.of fun i j => ‖U i j‖ ^ 2) *ᵥ d :=
@@ -92,7 +92,8 @@ sorted.
 Result: schur-majorization -/
 theorem _root_.Matrix.IsHermitian.majorized_re_diag_eigenvalues {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : Majorized (fun i => RCLike.re (A i i)) hA.eigenvalues := by
-  refine majorized_re_diag_of_mul_eq_mul_diagonal hA.hasOrthonormalCols_eigenvectorUnitary ?_
+  refine HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal
+    hA.hasOrthonormalCols_eigenvectorUnitary ?_
   have h := hA.spectral_theorem
   rw [Unitary.conjStarAlgAut_apply] at h
   refine (congrArg (· * (hA.eigenvectorUnitary : Matrix n n 𝕜)) h).trans ?_
@@ -100,8 +101,8 @@ theorem _root_.Matrix.IsHermitian.majorized_re_diag_eigenvalues {A : Matrix n n 
   rfl
 
 omit [DecidableEq n] in
-/-- Schur's theorem as partial sums: for every $k$, the sum of the $k$ largest diagonal entries
-$\operatorname{Re} \mathbf{A}_{i,i}$ of a Hermitian matrix (`NLAlib.sumLargest`) is at most
+/-- **Schur's theorem**, partial-sum form: for every $k$, the sum of the $k$ largest diagonal
+entries $\operatorname{Re} \mathbf{A}_{i,i}$ of a Hermitian matrix (`NLAlib.sumLargest`) is at most
 $\sum_{i < k} \lambda_i(\mathbf{A})$, the sum of its $k$ largest eigenvalues.
 [HornJohnson2013, Theorem 4.3.45].
 Result: schur-majorization -/

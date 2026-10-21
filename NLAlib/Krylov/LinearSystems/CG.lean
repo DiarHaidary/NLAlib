@@ -76,7 +76,11 @@ $\mathbf{A}$ is positive definite (`Matrix.PosDef.cgIterate_eq`). The zero start
 $\mathbf{x}_0 = \mathbf{0}$. Basis-free, total, not an algorithm; the Hestenes–Stiefel recurrence
 computes it (`Matrix.PosDef.cgState_x_eq`). Junk value: when the compression of $\mathbf{A}$ to
 the Krylov space is singular, the pseudoinverse formula of `galerkinInverse`.
-[HestenesStiefel1952]; [Saad2003, §6.7]. -/
+[HestenesStiefel1952, Theorem 6:1]; [Saad2003, §6.7]. Hestenes and Stiefel define the iterate by
+the recurrence (3:1) and show in Theorem 6:1 that it minimises the error function
+$(\mathbf{x}_\star - \mathbf{x})^{\mathsf{H}}\mathbf{A}(\mathbf{x}_\star - \mathbf{x})$ on the
+plane through $\mathbf{x}_0, \dots, \mathbf{x}_q$; Saad defines it as the orthogonal projection
+onto the Krylov space, which is this definition. -/
 noncomputable def cgIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + galerkinInverse A (krylovMatrix A (b - A *ᵥ x₀) q) *ᵥ (b - A *ᵥ x₀)
 
@@ -104,7 +108,10 @@ theorem HasOrthonormalCols.cgIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonorm
 
 /-- **CG is $\mathbf{x}_0 +
 \mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})^{-1}\mathbf{Q}^{\mathsf{H}}\mathbf{r}_0$
-for any orthonormal basis $\mathbf{Q}$ of the Krylov space**, for positive definite $\mathbf{A}$.
+for any orthonormal basis $\mathbf{Q}$ of the Krylov space**, for positive definite $\mathbf{A}$:
+$\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
+\mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})^{-1}\mathbf{Q}^{\mathsf{H}}\mathbf{r}_0$,
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$.
 [Saad2003, §6.7].
 Result: cg-galerkin-formula -/
 theorem _root_.Matrix.PosDef.cgIterate_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
@@ -116,7 +123,13 @@ theorem _root_.Matrix.PosDef.cgIterate_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The Galerkin condition**: for positive definite $\mathbf{A}$ the residual of the CG iterate
-is orthogonal to $\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$.
+is orthogonal to $\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$,
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$:
+$\mathbf{K}_q(\mathbf{A}, \mathbf{r}_0)^{\mathsf{H}}(\mathbf{b} -
+\mathbf{A}\,\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)) = \mathbf{0}$.
+[Saad2003, §6.7]; there CG is the orthogonal projection method onto
+$\mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$, whose defining condition is this one ([Saad2003, (5.3)]
+with $\mathcal{L} = \mathcal{K}$), stated for real symmetric $\mathbf{A}$.
 Result: cg-galerkin-condition -/
 theorem _root_.Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIterate_eq_zero
     {A : Matrix n n 𝕜} (hA : A.PosDef) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -132,7 +145,11 @@ theorem _root_.Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIter
 omit [Fintype r] [DecidableEq r] in
 /-- **The Galerkin condition characterises CG**: for positive definite $\mathbf{A}$, a vector of
 $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{A}, \mathbf{r}_0)$ whose residual is orthogonal to the Krylov
-space is $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$.
+space is $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$, where
+$\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$.
+[Saad2003, §6.7]; there CG is defined by this condition ([Saad2003, (5.3)] with
+$\mathcal{L} = \mathcal{K}$), whose solution is unique since the projected matrix is nonsingular
+for positive definite $\mathbf{A}$ ([Saad2003, Proposition 5.1]).
 Result: cg-galerkin-condition -/
 theorem _root_.Matrix.PosDef.eq_cgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b x₀ y : n → 𝕜} {q : ℕ}
@@ -243,8 +260,13 @@ $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 
 \le 4\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2q}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
 the square of the classical
-$\|\mathbf{e}_q\|_{\mathbf{A}} \le 2\bigl(\frac{\sqrt\kappa - 1}{\sqrt\kappa + 1}\bigr)^q
-\|\mathbf{e}_0\|_{\mathbf{A}}$. A Loewner sandwich gives the hypotheses by
+$\|\mathbf{e}_q\|_{\mathbf{A}} \le 2\bigl((\sqrt\kappa - 1)/(\sqrt\kappa + 1)\bigr)^q
+\|\mathbf{e}_0\|_{\mathbf{A}}$. The proof's polynomial is the shifted Chebyshev residual
+(`NLAlib.chebyshevResidual`), whose factor is
+$T_q((a' + a)/(a' - a))^{-2} = \operatorname{sech}^2(q \log(1/\rho)) = 4\rho^{2q}/(1 + \rho^{2q})^2$
+with $\rho = (\sqrt{a'/a} - 1)/(\sqrt{a'/a} + 1)$ (`NLAlib.inv_eval_T_real_eq_two_mul_pow_div`);
+the statement drops the factor $(1 + \rho^{2q})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+rule 7). A Loewner sandwich gives the hypotheses by
 `isHermitian_of_le_smul_one` and `spectrum_subset_Icc_of_le`.
 [Saad2003, Theorem 6.29]; [TrefethenBau1997, Theorem 38.5]; stated there for the extreme
 eigenvalues and the unsquared $\mathbf{A}$-norm, here for any interval containing the spectrum.
@@ -401,16 +423,21 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_iSup_sq_mul {A : Matri
   exact hM ⟨y, hy, rfl⟩
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The spectrum-optimal bound for CG**: for positive definite $\mathbf{A}$,
+/-- **The spectrum-optimal bound for CG**: for positive definite $\mathbf{A}$ and
+$\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
-\le \Bigl(\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)^2
+\le \mathsf{residualMinimax}(\sigma(\mathbf{A}), q)^2
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,,$$
-the minimum over real $p$ with $\deg p \le q$, $p(0) = 1$ (`residualMinimax`). Every other bound
+where $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q) =
+\min_{p}\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert$, the minimum over real $p$
+with $\deg p \le q$, $p(0) = 1$. Every other bound
 of this file follows from it by bounding the minimax value. For each $\mathbf{A}$ some
 $\mathbf{b}$ attains it (Greenbaum):
 `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul` and
 `Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div` in
 `NLAlib.Krylov.LinearSystems.WorstCase`. [Greenbaum1997, §3.1]; locator to verify.
+[Saad2003, Theorem 6.29]; its proof gives this bound, with the maximum over the eigenvalues,
+before passing to an interval, for real symmetric $\mathbf{A}$.
 Result: cg-spectrum-minimax-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul
     {A : Matrix n n 𝕜} (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜)
@@ -463,8 +490,10 @@ theorem re_quadForm_sub_cgIterate_conjTranspose_mul_le_four_mul_pow {m : Type*} 
     Real.sqrt_sq (pseudoConditionNumber_nonneg A)] at h
 
 omit [Fintype r] [DecidableEq r] in
-/-- **Finite termination**: for positive definite $\mathbf{A}$, CG reaches the solution once $q$
-is at least the grade of $\mathbf{r}_0$, in particular at $q = \lvert n \rvert$.
+/-- **Finite termination**: for positive definite $\mathbf{A}$ and
+$\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, CG reaches the solution once $q$ is at least the grade
+of $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$, in particular at $q = \lvert n \rvert$:
+$\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_\star$.
 [Saad2003, §6.2].
 Result: cg-finite-termination -/
 theorem _root_.Matrix.PosDef.cgIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : A.PosDef)

@@ -107,8 +107,8 @@ theorem HasSubspaceInjection.hasSubspaceEmbedding (h : HasSubspaceInjection S U 
   exact (measureReal_union_le _ _).trans (add_le_add h hb)
 
 /-- **From a Gram-error tail**: for $\mathbf{U}$ with orthonormal columns, a tail
-$\mathbb{P}(\varepsilon \le \|(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} -
-\mathbf{I}\|_2) \le \delta$ gives a random $\varepsilon$-embedding with failure probability
+$\mathbb{P}[\varepsilon \le \|(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} -
+\mathbf{I}\|_2] \le \delta$ gives a random $\varepsilon$-embedding with failure probability
 $\delta$. The form matrix Chernoff and matrix Bernstein bounds produce. -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le [IsFiniteMeasure μ]
     [Fintype p] [DecidableEq p] (hU : HasOrthonormalCols U)
@@ -121,7 +121,7 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le [IsFiniteMeasu
     ((specNorm_nonneg _).trans hlt.le)).2 hlt.le)
 
 /-- **From a smallest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail
-$\mathbb{P}(\sigma_{\min}(\mathbf{S}\mathbf{U})^2 \le a) \le \delta$ gives a random subspace
+$\mathbb{P}[\sigma_{\min}(\mathbf{S}\mathbf{U})^2 \le a] \le \delta$ gives a random subspace
 injection with constant $a$; the smallest singular value is index $j$ with
 $j + 1 = \lvert p \rvert$. -/
 theorem HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le [IsFiniteMeasure μ]
@@ -129,11 +129,11 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le [IsFiniteMeasu
     (h : μ.real {ω | singularValues (S ω * U) j ^ 2 ≤ a} ≤ δ) :
     HasSubspaceInjection S U a δ μ := by
   refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω => ?_)).trans h
-  rw [hU.isSubspaceInjection_iff_le_sq_singularValues hj, not_le] at hω
+  rw [hU.isSubspaceInjection_iff_le_singularValues_sq hj, not_le] at hω
   exact hω.le
 
 /-- **From a largest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail
-$\mathbb{P}(b \le \sigma_0(\mathbf{S}\mathbf{U})^2) \le \delta$ gives the upper half
+$\mathbb{P}[b \le \sigma_0(\mathbf{S}\mathbf{U})^2] \le \delta$ gives the upper half
 $(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U}
 \preceq b\,\mathbf{U}^{\mathsf{H}}\mathbf{U}$ with failure probability $\delta$, the lower
 constant $0$ holding surely. The form matrix Chernoff's upper tail produces. No nonemptiness of

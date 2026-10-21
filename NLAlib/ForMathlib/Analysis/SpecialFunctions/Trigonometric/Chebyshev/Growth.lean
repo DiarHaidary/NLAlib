@@ -52,7 +52,7 @@ namespace Polynomial.Chebyshev
 
 open Real
 
-/-- For $x\ge1$, the radical closed form is
+/-- **Radical closed form of Chebyshev polynomials.** For $x\ge1$,
 $$T_q(x)=\frac{(x+\sqrt{x^2-1})^q+(x-\sqrt{x^2-1})^q}{2}.$$
 [Saad2003, §6.11.1, Eq. (6.111)], with the reciprocal term rewritten algebraically.
 
@@ -108,8 +108,6 @@ theorem sqrt_add_div_sqrt_sub_pow_div_two_le_eval_T_real {a b : ℝ}
   rw [← h]
   exact pow_div_two_le_eval_T_real (by rw [le_div_iff₀ (by linarith)]; linarith) q
 
--- Stage B2a
-
 /-- **Chebyshev composition with $T_2$**: $T_{2j}(x) = T_j(2x^2 - 1)$, for every integer $j$ and
 every commutative ring. [TroppWebber2023, Lemma 9.3], part 1 in the form used there. -/
 theorem eval_T_two_mul {R : Type*} [CommRing R] (j : ℤ) (x : R) :
@@ -147,8 +145,6 @@ theorem exp_mul_sqrt_div_two_le_eval_T_real (q : ℕ) {r : ℝ} (h₀ : 0 ≤ r)
   rw [show 2 * (q : ℝ) * √r = q * (2 * √r) by ring, Real.exp_nat_mul]
   gcongr
   exact exp_two_mul_le_one_add_div_one_sub (Real.sqrt_nonneg r) hs₁
-
--- Stage B2b
 
 /-- **Inverting Chebyshev growth**: for $q > 0$ and $x \ge 1$, if $T_q(x) \le y$ then
 $$x \le \exp\Bigl(\frac{1}{2}\Bigl(\frac{\log(2y)}{q}\Bigr)^2\Bigr)\,.$$

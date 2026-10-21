@@ -31,7 +31,7 @@ $(k + 1) \times k$ Hessenberg matrices.
 * `Matrix.IsHermitian.exists_isTridiagonal_conjTranspose_mul_mul`: reduction to tridiagonal form.
 * `NLAlib.IsUpperHessenberg.exists_isQR`: a Hessenberg matrix has a QR factorization with
   Hessenberg $\mathbf{Q}$, so $\mathbf{R}\mathbf{Q}$ is again Hessenberg.
-* `NLAlib.exists_eq_mul_diagonal_of_isUpperHessenberg`: the implicit Q theorem.
+* `NLAlib.HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg`: the implicit Q theorem.
 -/
 
 @[expose] public section
@@ -402,7 +402,8 @@ entries have unit modulus, the first one being $1$.
 [GolubVanLoan2013, Theorem 7.4.2].
 Port of `NLAlib.IsHessenbergForm.exists_sign`, which the prototype leaves unproved.
 Result: implicit-q -/
-theorem exists_eq_mul_diagonal_of_isUpperHessenberg {A Q₁ Q₂ : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}
+theorem HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg
+    {A Q₁ Q₂ : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}
     (hQ₁ : HasOrthonormalCols Q₁) (hQ₂ : HasOrthonormalCols Q₂)
     (hH₁ : IsUpperHessenberg (Q₁ᴴ * A * Q₁)) (hH₂ : IsUpperHessenberg (Q₂ᴴ * A * Q₂))
     (hcol : Q₁.col 0 = Q₂.col 0)

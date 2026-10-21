@@ -87,7 +87,7 @@ $$\|\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) -
 [HalkoMartinssonTropp2011, Theorem 9.3 (proof)]; [Woodruff2014, Lemma 44]. -/
 theorem frobNorm_rsvd_sub_truncatedSVD_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) ≤ frobNorm (A - truncatedSVD A k) := by
-  have h := (lpGauge 2 one_le_two).matrixNorm_sub_truncatedSVD_le_of_singularValues_le
+  have h := (lpGauge 2).matrixNorm_sub_truncatedSVD_le_of_singularValues_le
     (A := A) (Â := rsvd A Ω)
     (fun i => (isStarProjection_rangeProjector (A * Ω)).singularValues_mul_le A i) k
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h
@@ -320,7 +320,7 @@ _root_.Matrix.PosSemidef.nuclearNorm_sub_le_nuclearNorm_sub_truncatedSVD_nystrom
     Matrix.le_iff.mp ((hH.nystrom Ω).truncatedSVD_le k)
   have hY' : nuclearNorm (nystrom H Ω - Y) =
       nuclearNorm (nystrom H Ω - truncatedSVD (nystrom H Ω) k) := by
-    simpa only [lpGauge_one_matrixNorm] using hY.matrixNorm_sub (lpGauge 1 le_rfl)
+    simpa only [lpGauge_one_matrixNorm] using hY.matrixNorm_sub (lpGauge 1)
   calc nuclearNorm (H - Y) = nuclearNorm ((H - nystrom H Ω) + (nystrom H Ω - Y)) := by
         rw [sub_add_sub_cancel]
     _ ≤ nuclearNorm (H - nystrom H Ω) + nuclearNorm (nystrom H Ω - Y) := nuclearNorm_add_le _ _
@@ -372,15 +372,19 @@ private theorem exists_core_generalizedNystrom {A : Matrix m n 𝕜} {Ω : Matri
   · rw [sub_rsvd, hP, ← obliqueProjector_eq_of_range_eq hΨQ hQY, ← mul_sketchAndSolve,
       hQ.singularValues_mul_left, hN₀]
 
-/-- **The truncated generalized Nyström error, deterministic form.** When
+/-- **The truncated generalized Nyström error, deterministic form.** For
+$\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
+$\mathbf{\Psi} \in \Bbbk^{m \times p}$ such that
 $\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}$ has the rank of $\mathbf{A}\mathbf{\Omega}$,
-with $\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}$ and the core noise
+and any $k$, with $\mathbf{R} = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ and the core noise
 $$\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
-(\mathbf{A} - \mathbf{P}\mathbf{A})\,,$$
+(\mathbf{A} - \mathbf{R})\,,$$
+$\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}$ the oblique projector
+`obliqueProjector (A * Ω) Ψᴴ`,
 $$\|\mathbf{A} -
 \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2
-\le \|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 + \bigl(\|\mathbf{P}\mathbf{A} -
-\llbracket\mathbf{P}\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
+\le \|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2 + \bigl(\|\mathbf{R} -
+\llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}} +
 2\,\|\llbracket\mathbf{N}\rrbracket_{2k}\|_{\mathsf{F}}\bigr)^2\,,$$
 for every choice of the truncations. The rank hypothesis is necessary.
 Proved without a literature source; the input is von Neumann's trace inequality
@@ -405,15 +409,23 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncate
   have := pow_le_pow_left₀ (frobNorm_nonneg _) hb 2
   linarith
 
-/-- **The truncated generalized Nyström error, spectral form**: under the rank hypothesis, with
-the core noise $\mathbf{N}$ as in
-`NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`,
+/-- **The truncated generalized Nyström error, spectral form.** For
+$\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
+$\mathbf{\Psi} \in \Bbbk^{m \times p}$ such that
+$\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}$ has the rank of $\mathbf{A}\mathbf{\Omega}$,
+and any $k$, with $\mathbf{R} = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ and the core noise
+$$\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
+(\mathbf{A} - \mathbf{R})\,,$$
+$\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}$ the oblique projector
+`obliqueProjector (A * Ω) Ψᴴ`,
 $$\|\mathbf{A} -
 \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2
-\le \|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 + \bigl(\|\mathbf{P}\mathbf{A} -
-\llbracket\mathbf{P}\mathbf{A}\rrbracket_k\|_{\mathsf{F}} +
-2\sqrt{2k}\,\|\mathbf{N}\|_2\bigr)^2\,.$$
-The shape truncated generalized Nyström in expectation consumes: the spectral core noise.
+\le \|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2 + \bigl(\|\mathbf{R} -
+\llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}} +
+2\sqrt{2k}\,\|\mathbf{N}\|_2\bigr)^2\,,$$
+the form of `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`
+with the spectral norm of the core noise, the shape truncated generalized Nyström in expectation
+consumes.
 Proved without a literature source. Related: [TroppYurtseverUdellCevher2017, Proposition 6.1].
 Result: perturbed-truncation -/
 theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm
@@ -446,7 +458,7 @@ theorem truncatedSVD_rsvd_eq_rangeProjector_mul (A : Matrix m n 𝕜) (Ω : Matr
     truncatedSVD (rsvd A Ω) k = rangeProjector (truncatedSVD (rsvd A Ω) k) * A := by
   have hle : LinearMap.range (truncatedSVD (rsvd A Ω) k).mulVecLin ≤
       LinearMap.range (A * Ω).mulVecLin :=
-    (range_mulVecLin_truncatedSVD_le _ k).trans (range_rsvd_le A Ω)
+    (range_truncatedSVD_le _ k).trans (range_rsvd_le A Ω)
   calc truncatedSVD (rsvd A Ω) k
       = rangeProjector (truncatedSVD (rsvd A Ω) k) * rsvd A Ω :=
         (rangeProjector_truncatedSVD_mul _ k).symm
@@ -471,6 +483,6 @@ theorem singularValues_sub_truncatedSVD_rsvd_le_of_le (A : Matrix m n 𝕜) (Ω 
     rw [Matrix.sub_mul, Matrix.one_mul]
   rw [hsub k', hsub k]
   exact singularValues_one_sub_rangeProjector_mul_le_of_range_le
-    (range_mulVecLin_truncatedSVD_mono _ h) A i
+    (range_truncatedSVD_mono _ h) A i
 
 end NLAlib

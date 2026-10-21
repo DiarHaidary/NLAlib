@@ -30,7 +30,7 @@ so that `omega` and `linarith` can use them.
 * `Matrix.rank_fromCols_replicateCol_eq_iff`: the Rouché–Capelli solvability criterion.
 * `Matrix.finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not`: complementary nullities.
 * `Matrix.rank_mul_eq_iff_injOn`: $\mathbf{S}$ keeps the rank of $\mathbf{X}$ iff it is injective
-  on $\operatorname{range}\mathbf{X}$; `Matrix.range_mulVecLin_conjTranspose_mul_eq_of_rank_eq`:
+  on $\operatorname{range}\mathbf{X}$; `Matrix.range_conjTranspose_mul_eq_of_rank_eq`:
   it then keeps the row space.
 * `Submodule.finrank_map_add_finrank_inf_ker`: rank–nullity for a linear map restricted to a
   submodule.
@@ -83,7 +83,7 @@ variable {K : Type*} [Field K] {l m n p : Type*} [Fintype n]
 $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ plus the rank of $\mathbf{A}$ is the number of columns
 $\lvert n \rvert$. The matrix may be rectangular. This is
 `LinearMap.finrank_range_add_finrank_ker` for `A.mulVecLin`, in terms of `Matrix.rank`. -/
-theorem finrank_ker_mulVecLin_add_rank (A : Matrix m n K) :
+theorem finrank_ker_add_rank (A : Matrix m n K) :
     Module.finrank K (LinearMap.ker A.mulVecLin) + A.rank = Fintype.card n := by
   have h := A.mulVecLin.finrank_range_add_finrank_ker
   rwa [Module.finrank_fintype_fun_eq_card, add_comm] at h
@@ -255,7 +255,7 @@ theorem finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not [DecidableEq n] (A : 
     exact disjoint_compl_right
   · rw [add_comm, ← toBlock_mul_eq_add, hAB, toBlock_one_self]
 
-/-- The rank form of complementary nullities, stated additively: the rank of the block of
+/-- **Law of complementary nullities.** The rank form, stated additively: the rank of the block of
 $\mathbf{A}$ on rows $r$ and columns $c$, plus the number of indices outside $r$, equals the rank
 of the complementary block of $\mathbf{A}^{-1}$ (rows outside $c$, columns outside $r$) plus the
 number of indices in $c$.
@@ -316,7 +316,7 @@ omit [Fintype n] in
 $\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$, keeps its row space:
 $$\operatorname{range}(\mathbf{S}\mathbf{X})^{\mathsf{H}} =
 \operatorname{range}\mathbf{X}^{\mathsf{H}}\,.$$ -/
-theorem range_mulVecLin_conjTranspose_mul_eq_of_rank_eq {S : Matrix k m 𝕜} {X : Matrix m r 𝕜}
+theorem range_conjTranspose_mul_eq_of_rank_eq {S : Matrix k m 𝕜} {X : Matrix m r 𝕜}
     (h : (S * X).rank = X.rank) :
     LinearMap.range (S * X)ᴴ.mulVecLin = LinearMap.range Xᴴ.mulVecLin := by
   refine Submodule.eq_of_le_of_finrank_eq ?_ ?_

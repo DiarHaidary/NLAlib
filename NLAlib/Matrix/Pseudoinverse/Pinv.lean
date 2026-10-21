@@ -39,6 +39,9 @@ the orthogonal projector onto the range of $\mathbf{A}$ (`rangeProjector`).
   `NLAlib.HasOrthonormalCols.pinv_mul_left`: transformations.
 * `NLAlib.pinv_eq_inv_mul_conjTranspose`, `NLAlib.pinv_mul_self_of_injective`: full column rank.
 * `NLAlib.pinv_mul_rev`: the reverse-order law.
+* `NLAlib.HasOrthonormalCols.pinv_conjTranspose_mul_self_eq_mul_conjTranspose`: the Gram
+  pseudoinverse from any orthogonal factorization.
+* `NLAlib.pinv_replicateRow`: the pseudoinverse of a row.
 -/
 
 @[expose] public section
@@ -147,9 +150,9 @@ theorem conjTranspose_mul_mul_pinv (A : Matrix m n 𝕜) : Aᴴ * (A * pinv A) =
   rw [mul_pinv, conjTranspose_mul_rangeProjector]
 
 /-- The column space of $\mathbf{A}^{+}$ is the column space of $\mathbf{A}^{\mathsf{H}}$. -/
-theorem range_mulVecLin_pinv (A : Matrix m n 𝕜) :
+theorem range_pinv (A : Matrix m n 𝕜) :
     LinearMap.range (pinv A).mulVecLin = LinearMap.range Aᴴ.mulVecLin := by
-  exact (isPinv_pinv A).range_mulVecLin_eq
+  exact (isPinv_pinv A).range_eq
 
 /-- The pseudoinverse has the rank of the matrix:
 $\operatorname{rank} \mathbf{A}^{+} = \operatorname{rank} \mathbf{A}$. -/
@@ -335,6 +338,50 @@ theorem pinv_eq_conjTranspose_mul_pinv_mul_conjTranspose_self (A : Matrix m n �
     pinv A = Aᴴ * pinv (A * Aᴴ) := by
   rw [pinv_mul_conjTranspose_self, ← Matrix.mul_assoc, ← Matrix.conjTranspose_mul,
     (isPinv_pinv A).isHermitian_right.eq, pinv_mul_mul_pinv]
+
+/-- **Every orthogonal factorization gives the same Gram pseudoinverse**: if
+$\mathbf{B}\mathbf{M}$ has orthonormal columns for a square $\mathbf{M}$, then
+$$(\mathbf{B}^{\mathsf{H}}\mathbf{B})^{+} = \mathbf{M}\mathbf{M}^{\mathsf{H}}\,.$$
+Both $\mathbf{M}$ and $\mathbf{B}^{\mathsf{H}}\mathbf{B}$ are then invertible. For
+$\mathbf{B} = \mathbf{S}\mathbf{A}$ it covers QR's $\mathbf{R}^{-1}$ and SVD's
+$\mathbf{V}\mathbf{\Sigma}^{-1}$, the preconditioners of sketch-and-precondition.
+[EpperlyMeierNakatsukasa2024, Fact 2.2]; there the consequence for
+$\mathbf{A}\mathbf{R}^{-1}$, here the Gram matrix itself. -/
+theorem HasOrthonormalCols.pinv_conjTranspose_mul_self_eq_mul_conjTranspose [DecidableEq n]
+    {B : Matrix l n 𝕜} {M : Matrix n n 𝕜} (hBM : HasOrthonormalCols (B * M)) :
+    pinv (Bᴴ * B) = M * Mᴴ := by
+  have h1 : Mᴴ * (Bᴴ * B) * M = 1 := by
+    rw [← hBM.conjTranspose_mul_self, Matrix.conjTranspose_mul]
+    simp only [Matrix.mul_assoc]
+  have h2 : M * (Mᴴ * (Bᴴ * B)) = 1 := mul_eq_one_comm.mp h1
+  have h3 : Bᴴ * B * (M * Mᴴ) = 1 := by
+    refine mul_eq_one_comm.mp ?_
+    rw [Matrix.mul_assoc]
+    exact h2
+  have hu : IsUnit (Bᴴ * B) :=
+    (Matrix.isUnit_iff_isUnit_det _).mpr (Matrix.isUnit_det_of_right_inverse h3)
+  rw [pinv_of_isUnit hu, Matrix.inv_eq_right_inv h3]
+
+/-- **The pseudoinverse of a row**:
+$(\mathbf{a}^{\mathsf{T}})^{+} = \|\mathbf{a}\|^{-2}\,\overline{\mathbf{a}}$ for the one-row matrix
+$\mathbf{a}^{\mathsf{T}}$ of a vector $\mathbf{a}$, and $\mathbf{0}$ when
+$\mathbf{a} = \mathbf{0}$ (where $\|\mathbf{a}\|^{-2} = 0$). A Kaczmarz step projects through
+it. -/
+theorem pinv_replicateRow (a : n → 𝕜) :
+    pinv (Matrix.replicateRow Unit a) =
+      (‖WithLp.toLp 2 a‖ ^ 2)⁻¹ • Matrix.replicateCol Unit (star a) := by
+  have hR : Matrix.replicateRow Unit a * (Matrix.replicateRow Unit a)ᴴ =
+      ((‖WithLp.toLp 2 a‖ ^ 2 : ℝ) : 𝕜) • (1 : Matrix Unit Unit 𝕜) := by
+    ext i j
+    simp only [Matrix.conjTranspose_replicateRow, Matrix.mul_apply, Matrix.replicateRow_apply,
+      Matrix.replicateCol_apply, Pi.star_apply, Matrix.smul_apply, Matrix.one_apply,
+      Subsingleton.elim i j, if_true, smul_eq_mul, mul_one, EuclideanSpace.norm_sq_eq]
+    push_cast
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [RCLike.star_def, RCLike.mul_conj]
+  rw [pinv_eq_conjTranspose_mul_pinv_mul_conjTranspose_self, hR, pinv_smul,
+    pinv_of_isUnit isUnit_one, inv_one, Matrix.mul_smul, Matrix.mul_one,
+    Matrix.conjTranspose_replicateRow, ← RCLike.ofReal_inv, ← RCLike.real_smul_eq_coe_smul]
 
 /-! ### From a singular value decomposition -/
 

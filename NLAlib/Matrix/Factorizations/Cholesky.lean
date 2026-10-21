@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
 public import NLAlib.Matrix.Factorizations.GaussState
 
 /-!
@@ -323,7 +324,7 @@ private theorem exists_perm_choleskyLower {A : Matrix (Fin n) (Fin n) 𝕜} (hA 
     have hsub : A.submatrix (τ.trans σ) (τ.trans σ) = (A.submatrix σ σ).submatrix τ τ := rfl
     rw [hsub, gaussState_submatrix _ τ j fun l hl => hτ l (Fin.lt_def.mpr hl)]
     rfl
-  obtain ⟨σ, hσ⟩ := exists_perm_forall_le_apply_self
+  obtain ⟨σ, hσ⟩ := Fin.exists_perm_forall_le_apply_self
     (fun σ j i => RCLike.re (gaussState (A.submatrix σ σ) j i i)) hs n
   refine ⟨σ, ?_⟩
   have hrank : (A.submatrix σ σ).rank = A.rank := Matrix.rank_submatrix A σ σ

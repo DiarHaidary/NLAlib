@@ -66,8 +66,8 @@ this design, and what Mathlib does, are in `docs/design/Mathlib-deviations.md`, 
   in order.
 * `Matrix.IsHermitian.exists_hasOrthonormalCols_eq_mul_diagonal_mul_conjTranspose`: a unitary
   diagonalisation indexed by the index type of the matrix.
-* `NLAlib.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose`: the eigenvalues are determined by
-  any sorted unitary diagonalisation.
+* `NLAlib.HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose`: the eigenvalues
+  are determined by any sorted unitary diagonalisation.
 * `Matrix.IsHermitian.exists_norm_eq_one_and_mulVec_eq`: a unit eigenvector for each eigenvalue.
 -/
 
@@ -124,7 +124,8 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue {A : Matrix n n 𝕜}
 
 /-- The eigenvalue sequence of a Hermitian matrix, restricted to the valid range
 `Fin (Fintype.card n)`, is non-increasing. This is `Matrix.IsHermitian.eigenvalue_le_eigenvalue`
-as an `Antitone` statement, the form `NLAlib.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose`
+as an `Antitone` statement, the form
+`NLAlib.HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose`
 and `NLAlib.eigenvalue_diagonal` take as a hypothesis. -/
 theorem _root_.Matrix.IsHermitian.antitone_eigenvalue_coe {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : Antitone fun i : Fin (Fintype.card n) => eigenvalue A i :=
@@ -270,7 +271,8 @@ $\mathbf{U}$ having orthonormal columns indexed by `Fin q`, $q$ the size of $\ma
 $\boldsymbol{\mu}$ non-increasing, then $\lambda_i(\mathbf{A}) = \boldsymbol{\mu}_i$ for every
 $i < q$.
 Port of `NLAlib.eigenvalues₀_eq_of_eq_mul_diagonal_mul`. -/
-theorem eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q : ℕ} {A : Matrix n n 𝕜}
+theorem HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q : ℕ}
+    {A : Matrix n n 𝕜}
     {U : Matrix n (Fin q) 𝕜} {μ : Fin q → ℝ} (hU : HasOrthonormalCols U)
     (hq : Fintype.card n = q) (hμ : Antitone μ)
     (hA : A = U * (Matrix.diagonal fun i => ((μ i : ℝ) : 𝕜)) * Uᴴ) (i : Fin q) :
@@ -304,7 +306,8 @@ theorem eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q : ℕ} {A : Matrix
 $\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ with $\mathbf{U}$
 having orthonormal columns indexed by a type $r$ with as many elements as $\mathbf{A}$ has rows,
 then the entries of $\mathbf{d}$ are the eigenvalues of $\mathbf{A}$ in some order. -/
-theorem exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose [DecidableEq r]
+theorem HasOrthonormalCols.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose
+    [DecidableEq r]
     {A : Matrix n n 𝕜} {U : Matrix n r 𝕜} {d : r → ℝ} (hU : HasOrthonormalCols U)
     (hr : Fintype.card n = Fintype.card r)
     (hA : A = U * (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) * Uᴴ) :
@@ -324,7 +327,8 @@ theorem exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose [Decidab
     rw [hA, Matrix.conjTranspose_submatrix, hd, Matrix.submatrix_mul_equiv,
       Matrix.submatrix_mul_equiv, Matrix.submatrix_id_id]
   refine ⟨g.symm, fun i => ?_⟩
-  rw [eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU' rfl hμ hA' (g.symm i),
+  rw [HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU' rfl hμ hA' (g.symm
+    i),
     Equiv.apply_symm_apply]
 
 /-! ### Spectrum -/

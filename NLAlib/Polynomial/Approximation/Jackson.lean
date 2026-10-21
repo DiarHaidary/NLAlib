@@ -326,8 +326,9 @@ its current value <!-- value jacksonApproximationConstant --> $\pi$. -/
 theorem jacksonApproximationConstant_le : jacksonApproximationConstant ≤ Real.pi := by
   rw [jacksonApproximationConstant_def]
 
-/-- Jackson damping gives a degree-$N$ approximation for any $L$-Lipschitz function on
-$[-1,1]$ with uniform error at most <!-- value jacksonApproximationConstant -->
+/-- **Jackson's theorem for Lipschitz functions.** Jackson damping gives a degree-$N$
+approximation for any $L$-Lipschitz function on $[-1,1]$ with uniform error
+at most <!-- value jacksonApproximationConstant -->
 $$\frac{\pi L}{N+2}.$$
 [ChenTrogdonUbaru2022, Appendix C, Theorem 38] proves the source bound
 $\pi^2L/(2(N+2))$. The chord/Young estimate here proves the smaller displayed bound for the

@@ -194,8 +194,10 @@ private theorem integral_specNorm_mul_mul_mul_one_sub_le (hX : HasLaw X (gaussia
       specNorm S * frobNorm T + frobNorm S * specNorm T := by
   classical
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
-  obtain ⟨Nb, hNb1, hNb, -⟩ := exists_finite_isCover_sphere ℝ b (ε := ⟨ε, hε0.le⟩) hε0
-  obtain ⟨Na, hNa1, hNa, -⟩ := exists_finite_isCover_sphere ℝ a (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Nb, hNb1, hNb, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ b) (ε := ⟨ε, hε0.le⟩) hε0
+  obtain ⟨Na, hNa1, hNa, -⟩ :=
+    Metric.exists_finset_isCover_sphere_card_le (EuclideanSpace ℝ a) (ε := ⟨ε, hε0.le⟩) hε0
   let I := Bool × Na × Nb
   let u : I → a → ℝ := fun i => cond i.1 (WithLp.ofLp i.2.1.1) (-WithLp.ofLp i.2.1.1)
   let v : I → b → ℝ := fun i => WithLp.ofLp i.2.2.1
@@ -277,11 +279,11 @@ theorem integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix
   le_of_forall_mul_one_sub_le fun _ hε0 hε => integral_specNorm_mul_mul_mul_one_sub_le hX S T hε0 hε
 
 /-- The tail of $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ above Chevet's bound: for $t \ge 0$,
-$$\mathbb{P}\bigl(\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
+$$\mathbb{P}\bigl[\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
   \ge \|\mathbf{S}\|_2 \|\mathbf{T}\|_{\mathsf{F}} + \|\mathbf{S}\|_{\mathsf{F}} \|\mathbf{T}\|_2 +
-  t\bigr)
+  t\bigr]
 \le \exp\Bigl(-\frac{t^2}{2 \|\mathbf{S}\|_2^2 \|\mathbf{T}\|_2^2}\Bigr) \,,$$
-by Gaussian concentration (`NLAlib.measureReal_integral_add_le_of_hasLaw_gaussianMatrix`) with
+by Gaussian concentration (`NLAlib.measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix`) with
 Lipschitz constant $\|\mathbf{S}\|_2 \|\mathbf{T}\|_2$ and Chevet's inequality.
 [HalkoMartinssonTropp2011, proof of Theorem 10.8], the deviation step of the range finder's
 spectral tail. If $\mathbf{S} = \mathbf{0}$ or $\mathbf{T} = \mathbf{0}$ the right side is
@@ -294,7 +296,8 @@ theorem measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix
   have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hc := integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix hX S T
   refine (measureReal_mono fun ω hω => ?_).trans
-    (measureReal_integral_add_le_of_hasLaw_gaussianMatrix hX (abs_specNorm_mul_mul_sub_le S T) ht)
+    (measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX (abs_specNorm_mul_mul_sub_le S T)
+        ht)
   simp only [Set.mem_ofPred_eq] at hω ⊢
   linarith
 

@@ -26,7 +26,7 @@ step from one summand to a sum in every matrix concentration inequality.
 
 ## Main results
 
-* `NLAlib.integral_re_trace_exp_add_le`: Lieb's theorem in expectation.
+* `Matrix.IsHermitian.integral_re_trace_exp_add_le`: Lieb's theorem in expectation.
 * `NLAlib.integral_re_trace_exp_sum_le`: subadditivity of matrix cumulant generating functions.
 * `NLAlib.aemeasurable_of_integrable_exp`: an almost surely Hermitian random matrix with an
   integrable exponential is almost everywhere measurable.
@@ -83,7 +83,8 @@ private theorem specNorm_exp_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
 /-- $\operatorname{tr} e^{\mathbf{H} + \mathbf{X}}$ is integrable, for Hermitian $\mathbf{H}$ and
 an almost surely Hermitian, almost everywhere measurable $\mathbf{X}$, when
 $\|e^{\mathbf{X}}\|_2$ is dominated by an integrable function. -/
-theorem integrable_re_trace_exp_add_of_le {H : Matrix n n 𝕜} (hH : H.IsHermitian)
+theorem _root_.Matrix.IsHermitian.integrable_re_trace_exp_add_of_le {H : Matrix n n 𝕜}
+    (hH : H.IsHermitian)
     {X : Ω → Matrix n n 𝕜} (hXm : AEMeasurable X μ) (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian)
     {g : Ω → ℝ} (hg : Integrable g μ) (hle : ∀ᵐ ω ∂μ, specNorm (exp (X ω)) ≤ g ω) :
     Integrable (fun ω => RCLike.re (exp (H + X ω)).trace) μ := by
@@ -105,7 +106,8 @@ Hermitian random matrix $\mathbf{X}$ with $e^{\mathbf{X}}$ integrable, under a p
 $$\mathbb{E} \operatorname{tr} e^{\mathbf{H} + \mathbf{X}}
 \le \operatorname{tr} e^{\mathbf{H} + \log \mathbb{E} e^{\mathbf{X}}}\,.$$
 [Tropp2015, Corollary 3.4.2]. -/
-theorem integral_re_trace_exp_add_le [IsProbabilityMeasure μ] {H : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.integral_re_trace_exp_add_le [IsProbabilityMeasure μ]
+    {H : Matrix n n 𝕜}
     (hH : H.IsHermitian) {X : Ω → Matrix n n 𝕜} (hX : ∀ᵐ ω ∂μ, (X ω).IsHermitian)
     (hint : Integrable (fun ω => exp (X ω)) μ) :
     ∫ ω, RCLike.re (exp (H + X ω)).trace ∂μ ≤
@@ -116,10 +118,11 @@ theorem integral_re_trace_exp_add_le [IsProbabilityMeasure μ] {H : Matrix n n �
       fun ω => RCLike.re (exp (H + X ω)).trace :=
     hX.mono fun ω hω => by simp only [hω.cfc_log_exp]
   have hi : Integrable (fun ω => RCLike.re (exp (H + X ω)).trace) μ :=
-    integrable_re_trace_exp_add_of_le hH (aemeasurable_of_integrable_exp hX hint) hX hint.norm
+    Matrix.IsHermitian.integrable_re_trace_exp_add_of_le hH (aemeasurable_of_integrable_exp hX hint)
+      hX hint.norm
       (ae_of_all _ fun ω => (specNorm_eq_norm _).le)
   rw [← integral_congr_ae heq]
-  exact (concaveOn_re_trace_exp_add_cfc_log hH).le_map_integral_of_integral_mem
+  exact (Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log hH).le_map_integral_of_integral_mem
     (continuousOn_re_trace_exp_add_cfc_log H) hpd hint (hi.congr heq.symm) hm
 
 /-- Replacing a random Hermitian $\mathbf{Z}$ independent of a random Hermitian $\mathbf{R}$ by
@@ -163,7 +166,7 @@ private theorem integral_re_trace_exp_add_le_of_indepFun [IsProbabilityMeasure �
     _ ≤ ∫ A, RCLike.re (exp (A + L)).trace ∂μ.map R := by
         refine integral_mono_ae hp.integral_prod_left hr ?_
         filter_upwards [hmr] with A hA
-        have h := integral_re_trace_exp_add_le hA hmz he
+        have h := Matrix.IsHermitian.integral_re_trace_exp_add_le hA hmz he
         rwa [integral_map hZm hexp.aestronglyMeasurable] at h
     _ = ∫ ω, RCLike.re (exp (R ω + L)).trace ∂μ := integral_map hRm hG.aestronglyMeasurable
 
@@ -199,7 +202,8 @@ private theorem integrable_re_trace_exp_add_sum (hind : iIndepFun X μ)
     {H : Matrix n n 𝕜} (hH : H.IsHermitian) (s : Finset ι) :
     Integrable (fun ω => RCLike.re (exp (H + ∑ k ∈ s, X k ω)).trace) μ := by
   have hXm : ∀ k, AEMeasurable (X k) μ := fun k => aemeasurable_of_integrable_exp (hX k) (hint k)
-  refine integrable_re_trace_exp_add_of_le hH (Finset.aemeasurable_fun_sum s fun k _ => hXm k) ?_
+  refine Matrix.IsHermitian.integrable_re_trace_exp_add_of_le hH
+    (Finset.aemeasurable_fun_sum s fun k _ => hXm k) ?_
     (integrable_prod_specNorm_exp hind hint s) ?_
   · filter_upwards [(Filter.eventually_all_finset s).2 fun k _ => hX k] with ω hω
     exact isSelfAdjoint_sum s hω

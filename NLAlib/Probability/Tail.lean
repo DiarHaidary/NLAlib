@@ -53,6 +53,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 /-- **Markov's inequality** as a failure probability: $\mu\{t \le f\} \le (\int f \, d\mu) / t$ for
 $f$ integrable and nonnegative almost everywhere, and $t > 0$. Integrability is needed: otherwise
 the Bochner integral $\int f \, d\mu$ is $0$.
+[Vershynin2018, Proposition 1.2.4]; there for a probability measure, here any measure.
 Result: markov-inequality -/
 theorem measureReal_ge_le_integral_div {f : Ω → ℝ} (hf0 : 0 ≤ᵐ[μ] f) (hf : Integrable f μ)
     {t : ℝ} (ht : 0 < t) : μ.real {ω | t ≤ f ω} ≤ (∫ ω, f ω ∂μ) / t := by
@@ -77,6 +78,7 @@ theorem measureReal_abs_ge_le_integral_rpow_div {X : Ω → ℝ} {p : ℝ} (hp :
 /-- **Chebyshev's inequality** as a failure probability: for a finite measure $\mu$, $X \in L^2$
 and $t > 0$, $\mu\{t \le \lvert X - \mathbb{E} X\rvert\} \le \operatorname{Var} X / t^2$, with
 $\mathbb{E} X = \int X \, d\mu$.
+[Vershynin2018, Corollary 1.2.5]; there for a probability measure, here any finite measure.
 Result: chebyshev-inequality -/
 theorem measureReal_ge_le_variance_div_sq [IsFiniteMeasure μ] {X : Ω → ℝ} (hX : MemLp X 2 μ)
     {t : ℝ} (ht : 0 < t) :
@@ -178,7 +180,7 @@ theorem integrable_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ} (h
     ⟨ENNReal.mul_lt_top (measure_lt_top μ _) ENNReal.ofReal_lt_top, ENNReal.ofReal_lt_top⟩)
 
 /-- **The layer-cake bound**: under a probability measure, if $f \ge 0$ almost everywhere and
-$\mathbb{P}\{t \le f\} \le F(t)$ for all $t > a$, with $F$ integrable on $(a, \infty)$, then
+$\mathbb{P}[t \le f] \le F(t)$ for all $t > a$, with $F$ integrable on $(a, \infty)$, then
 $$\mathbb{E} f \le a + \int_a^\infty F(t) \, dt\,.$$
 Applied to $f^p$, whose tail at $t$ is the tail of $f$ at $t^{1/p}$, it bounds the moments of $f$.
 Integrability of $f$ is `integrable_of_measureReal_ge_le`. -/
@@ -216,7 +218,7 @@ $-t$. No finiteness assumption on $\mu$: integrability at $\theta = 0$ gives it.
 at $v = b = 0$ the constant $0$ satisfies the hypothesis and the event is everything. The exact
 constant, which the $\min(t^2/v, t/b)$ forms of `NLAlib.Probability.SubExponential.Tail` lose; the
 step behind every exact-constant Bernstein-type tail (the Hsu–Kakade–Zhang tail
-`NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`). [BoucheronLugosiMassart2013] (the
+`NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le`). [BoucheronLugosiMassart2013] (the
 sub-gamma tail of their Chapter 2; locator not checked against the book). -/
 theorem measureReal_ge_le_exp_neg_of_mgf_le {X : Ω → ℝ} {v b : ℝ} (hv : 0 < v) (hb : 0 ≤ b)
     (hint : ∀ θ : ℝ, 0 ≤ θ → b * θ < 1 → Integrable (fun ω => Real.exp (θ * X ω)) μ)

@@ -29,18 +29,20 @@ that is not Hermitian.
 
 ## Main results
 
-* `NLAlib.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap`: the spectral norm bound.
-* `NLAlib.eigengap_mul_frobNorm_one_sub_mul_sq_le`: the variational form, distance to the leading
-  eigenspace from the loss of trace.
-* `NLAlib.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le`: the variational form
-  for a perturbation.
-* `NLAlib.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le`,
-  `NLAlib.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le`: the
-  Frobenius norm bounds for a frame whose Rayleigh trace is at least that of the leading
+* `Matrix.IsHermitian.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap`: the spectral norm
+  bound.
+* `Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le`: the variational form, distance to
+  the leading eigenspace from the loss of trace.
+* `Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le`: the
+  variational form for a perturbation.
+* `Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le`
+  and
+  `Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le`
+  are the Frobenius norm bounds for a frame whose Rayleigh trace is at least that of the leading
   eigenframe.
-* `NLAlib.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap`,
-  `NLAlib.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap`: the same for a frame
-  attaining the largest Rayleigh trace of $\mathbf{A} + \mathbf{E}$.
+* `Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap`,
+  `Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap`: the same for
+  a frame attaining the largest Rayleigh trace of $\mathbf{A} + \mathbf{E}$.
 -/
 
 @[expose] public section
@@ -64,7 +66,8 @@ The two frames have the same number of columns, so the distance is symmetric in 
 [YuWangSamworth2015, Theorem 2 context].
 Port of `NLAlib.specNorm_sinePrincipalAngles_le_two_mul_specNorm_div_population_gap`.
 Result: davis-kahan -/
-theorem specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap [DecidableEq n] {A E : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap
+    [DecidableEq n] {A E : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hE : E.IsHermitian) {j : ℕ} {U U' : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hU' : HasOrthonormalCols U')
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
@@ -84,7 +87,7 @@ theorem specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap [DecidableEq n] {A
     have := hU.card_le
     rw [Fintype.card_fin] at this
     omega
-  have hw := (abs_le.mp (abs_eigenvalue_sub_le hA (hA.add hE) j)).2
+  have hw := (abs_le.mp (Matrix.IsHermitian.abs_eigenvalue_sub_le hA (hA.add hE) j)).2
   rw [sub_add_cancel_left, specNorm_neg] at hw
   have hL : (eigenvalue A (j + 1) + (eigenvalue A j - eigenvalue A (j + 1) - specNorm E)) •
       (1 : Matrix (Fin (j + 1)) (Fin (j + 1)) 𝕜) ≤
@@ -92,7 +95,7 @@ theorem specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap [DecidableEq n] {A
     smul_one_le_diagonal_iff.mpr fun i => by
       have := (hA.add hE).eigenvalue_le_eigenvalue (Nat.lt_succ_iff.mp i.2) hj
       linarith
-  have h' := (lpGauge ⊤ le_top).mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le hA hU hAU hL
+  have h' := (lpGauge ⊤).mul_matrixNorm_one_sub_mul_le_of_add_smul_one_le hA hU hAU hL
     (U := U')
   rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, ← hAU', Matrix.add_mul,
     sub_add_cancel_left, specNorm_neg] at h'
@@ -170,7 +173,8 @@ $$\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
   \operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}).$$
 This turns a near-optimal value of the Rayleigh trace into closeness of subspaces.
 Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_trace_deficit`, there over $\mathbb{R}$. -/
-theorem eigengap_mul_frobNorm_one_sub_mul_sq_le [DecidableEq n] {A : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le [DecidableEq n]
+    {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U)
     (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜)) :
@@ -184,7 +188,7 @@ theorem eigengap_mul_frobNorm_one_sub_mul_sq_le [DecidableEq n] {A : Matrix n n 
   have h₁ := mul_card_sub_frobNorm_sq_le hU hQ (d := fun i : Fin (j + 1) => eigenvalue A i)
     (c := eigenvalue A j) fun i => hA.eigenvalue_le_eigenvalue (Nat.lt_succ_iff.mp i.2) hj
   have h₂ := re_trace_conjTranspose_mul_mul_le_mul_frobNorm_sq hR
-    (one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal hA hU hAU) Q
+    (Matrix.IsHermitian.one_sub_mul_mul_one_sub_le_of_mul_eq_mul_diagonal hA hU hAU) Q
   have hs := hU.frobNorm_one_sub_mul_sq hQ
   have hN : (1 - U * Uᴴ) * A * (1 - U * Uᴴ) = A -
       U * (Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜)) * Uᴴ := by
@@ -226,13 +230,14 @@ Nothing is assumed of $\mathbf{E}$, and $\mathbf{Q}$ need not be an eigenframe o
 $\mathbf{A} + \mathbf{E}$.
 Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over $\mathbb{R}$
 for a frame attaining the largest Rayleigh trace. -/
-theorem eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le [DecidableEq n]
+theorem _root_.Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le
+    [DecidableEq n]
     {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
     (hUQ : RCLike.re (Uᴴ * (A + E) * U).trace ≤ RCLike.re (Qᴴ * (A + E) * Q).trace) :
     eigengap A (j + 1) * frobNorm ((1 - U * Uᴴ) * Q) ^ 2 ≤ frobInner (Q * Qᴴ - U * Uᴴ) E := by
-  have h := eigengap_mul_frobNorm_one_sub_mul_sq_le hA hU hQ hAU
+  have h := Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le hA hU hQ hAU
   rw [Matrix.mul_add, Matrix.add_mul, Matrix.mul_add, Matrix.add_mul, Matrix.trace_add,
     Matrix.trace_add, map_add, map_add] at hUQ
   have hUA : RCLike.re (Uᴴ * A * U).trace = ∑ i ∈ Finset.range (j + 1), eigenvalue A i := by
@@ -260,14 +265,15 @@ $\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
 \rangle_{\mathsf{F}}$.
 Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over $\mathbb{R}$.
 -/
-theorem eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner [DecidableEq n] {A E : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner [DecidableEq n]
+    {A E : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hE : E.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜}
     (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
     (hQtop : RCLike.re (Qᴴ * (A + E) * Q).trace =
       ∑ i ∈ Finset.range (j + 1), eigenvalue (A + E) i) :
     eigengap A (j + 1) * frobNorm ((1 - U * Uᴴ) * Q) ^ 2 ≤ frobInner (Q * Qᴴ - U * Uᴴ) E :=
-  eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA hU hQ hAU
+  Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA hU hQ hAU
     (re_trace_le_re_trace_of_eq_sum (hA.add hE) hU hQtop)
 
 /-- From $g s^2 \le C s$ to $s \le C / g$, for $g > 0$ and $s, C \ge 0$. -/
@@ -315,6 +321,8 @@ private theorem frobInner_mul_conjTranspose_sub_le [DecidableEq n] [DecidableEq 
   rw [e, frobInner_sub_left]
   linarith
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 /-- **Davis–Kahan with the gap of the unperturbed matrix**, Frobenius norm, for a frame $\mathbf{Q}$
 whose Rayleigh trace for $\mathbf{A} + \mathbf{E}$ is at least that of the leading eigenframe
 $\mathbf{U}$ of $\mathbf{A}$, both with $j + 1$ columns, $\mathbf{A}$ Hermitian and
@@ -325,14 +333,16 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
 [YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian
 $\mathbf{A} + \mathbf{E}$.
 Result: davis-kahan -/
-theorem frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le
+theorem
+    _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le
     [DecidableEq n] {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
     (hUQ : RCLike.re (Uᴴ * (A + E) * U).trace ≤ RCLike.re (Qᴴ * (A + E) * Q).trace)
     (hgap : 0 < eigengap A (j + 1)) :
     frobNorm ((1 - U * Uᴴ) * Q) ≤ √2 * frobNorm E / eigengap A (j + 1) := by
-  have h := eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA hU hQ hAU hUQ
+  have h := Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA
+    hU hQ hAU hUQ
   have hcs := frobInner_le (Q * Qᴴ - U * Uᴴ) E
   rw [hU.frobNorm_mul_conjTranspose_sub_mul_conjTranspose hQ] at hcs
   refine le_div_of_mul_sq_le_mul hgap (frobNorm_nonneg _)
@@ -349,7 +359,8 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
 [YuWangSamworth2015, Theorem 2].
 Port of `NLAlib.frobNorm_sinePrincipalAngles_le_two_mul_min_div_population_gap`.
 Result: davis-kahan -/
-theorem frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap [DecidableEq n]
+theorem _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap
+    [DecidableEq n]
     {A E : Matrix n n 𝕜} (hA : A.IsHermitian) (hE : E.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
@@ -357,9 +368,12 @@ theorem frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap [DecidableEq 
       ∑ i ∈ Finset.range (j + 1), eigenvalue (A + E) i)
     (hgap : 0 < eigengap A (j + 1)) :
     frobNorm ((1 - U * Uᴴ) * Q) ≤ √2 * frobNorm E / eigengap A (j + 1) :=
-  frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le hA hU hQ hAU
+  Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap_of_re_trace_le hA hU
+    hQ hAU
     (re_trace_le_re_trace_of_eq_sum (hA.add hE) hU hQtop) hgap
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 /-- Davis–Kahan with the gap of the unperturbed matrix, Frobenius norm of the angles against the
 spectral norm of the perturbation, for a frame $\mathbf{Q}$ whose Rayleigh trace for
 $\mathbf{A} + \mathbf{E}$ is at least that of the leading eigenframe $\mathbf{U}$ of $\mathbf{A}$,
@@ -370,14 +384,16 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
   {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
 [YuWangSamworth2015, Theorem 2], there for a leading eigenframe of a Hermitian
 $\mathbf{A} + \mathbf{E}$. -/
-theorem frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le
+theorem
+    _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le
     [DecidableEq n] {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
     (hUQ : RCLike.re (Uᴴ * (A + E) * U).trace ≤ RCLike.re (Qᴴ * (A + E) * Q).trace)
     (hgap : 0 < eigengap A (j + 1)) :
     frobNorm ((1 - U * Uᴴ) * Q) ≤ 2 * √((j : ℝ) + 1) * specNorm E / eigengap A (j + 1) := by
-  have h := eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA hU hQ hAU hUQ
+  have h := Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le hA
+    hU hQ hAU hUQ
   have hb := frobInner_mul_conjTranspose_sub_le hU hQ E
   rw [Fintype.card_fin] at hb
   push_cast at hb
@@ -394,7 +410,8 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
   \le \frac{2 \sqrt{j + 1} \, \|\mathbf{E}\|_2}
   {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
 [YuWangSamworth2015, Theorem 2]. -/
-theorem frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap [DecidableEq n]
+theorem _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap
+    [DecidableEq n]
     {A E : Matrix n n 𝕜} (hA : A.IsHermitian) (hE : E.IsHermitian) {j : ℕ}
     {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q)
     (hAU : A * U = U * Matrix.diagonal fun i : Fin (j + 1) => ((eigenvalue A i : ℝ) : 𝕜))
@@ -402,7 +419,8 @@ theorem frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap [Decidabl
       ∑ i ∈ Finset.range (j + 1), eigenvalue (A + E) i)
     (hgap : 0 < eigengap A (j + 1)) :
     frobNorm ((1 - U * Uᴴ) * Q) ≤ 2 * √((j : ℝ) + 1) * specNorm E / eigengap A (j + 1) :=
-  frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le hA hU hQ hAU
+  Matrix.IsHermitian.frobNorm_one_sub_mul_le_two_mul_sqrt_mul_specNorm_div_eigengap_of_re_trace_le
+    hA hU hQ hAU
     (re_trace_le_re_trace_of_eq_sum (hA.add hE) hU hQtop) hgap
 
 end NLAlib

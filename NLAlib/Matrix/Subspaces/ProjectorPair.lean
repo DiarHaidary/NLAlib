@@ -21,11 +21,11 @@ to the product $\mathbf{Q}\mathbf{P}$, and to the same quantity with the roles e
 
 ## Main results
 
-* `NLAlib.sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one`: if
+* `NLAlib.singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one`: if
   $\mathbf{A}^{\mathsf{H}}\mathbf{A} + \mathbf{B}^{\mathsf{H}}\mathbf{B} = \mathbf{I}$, the singular
   values of $\mathbf{B}$ are $\sqrt{1 - \sigma^2}$ for those $\sigma$ of $\mathbf{A}$, in reverse
   order (the value part of the thin CS decomposition).
-* `IsStarProjection.sq_singularValues_one_sub_mul`: the singular values of
+* `IsStarProjection.singularValues_one_sub_mul_sq`: the singular values of
   $(\mathbf{I} - \mathbf{Q})\mathbf{P}$ from those of $\mathbf{Q}\mathbf{P}$.
 * `IsStarProjection.singularValues_of_lt_rank`: the nonzero singular values of an orthogonal
   projector are $1$.
@@ -60,14 +60,14 @@ singular values of $\mathbf{B}$ are one minus those of $\mathbf{A}$, in reverse 
 $\sigma_i(\mathbf{B})^2 = 1 - \sigma_j(\mathbf{A})^2$ for $i + j + 1 = \lvert p \rvert$, the
 number of columns.
 [GolubVanLoan2013, Theorem 2.5.2]. -/
-theorem sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one [DecidableEq p]
+theorem singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one [DecidableEq p]
     {A : Matrix m p 𝕜} {B : Matrix n p 𝕜} (h : Aᴴ * A + Bᴴ * B = 1) {i j : ℕ}
     (hij : i + j + 1 = Fintype.card p) :
     singularValues B i ^ 2 = 1 - singularValues A j ^ 2 := by
   have hB : Bᴴ * B = -(Aᴴ * A) + (1 : ℝ) • (1 : Matrix p p 𝕜) := by
     rw [one_smul, ← h]
     abel
-  rw [sq_singularValues, sq_singularValues, hB,
+  rw [singularValues_sq, singularValues_sq, hB,
     (Matrix.isHermitian_conjTranspose_mul_self A).neg.eigenvalue_add_smul_one 1 (by omega),
     eigenvalue_neg _ hij]
   ring
@@ -80,7 +80,7 @@ theorem singularValues_le_one_of_conjTranspose_mul_self_add_eq_one [DecidableEq 
   rcases le_or_gt (Fintype.card p) i with hi | hi
   · rw [singularValues_of_card_cols_le A hi]
     exact zero_le_one
-  · have hsq := sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one h
+  · have hsq := singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one h
       (i := Fintype.card p - 1 - i) (j := i) (by omega)
     have h1 : singularValues A i ^ 2 ≤ 1 := by
       have := sq_nonneg (singularValues B (Fintype.card p - 1 - i))
@@ -92,7 +92,8 @@ $\mathbf{W}$ has orthonormal columns, then $\mathbf{W}^{\mathsf{H}}\mathbf{A}$ a
 $(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}$ have the same singular values: the
 complement of a subspace can be given by a frame or by a projector. Port of
 `NLAlib.residual_eq_complement_mul_overlap`. -/
-theorem singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one [DecidableEq n]
+theorem HasOrthonormalCols.singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one
+    [DecidableEq n]
     [DecidableEq q] {U : Matrix n p 𝕜} {W : Matrix n q 𝕜} (hW : HasOrthonormalCols W)
     (h : U * Uᴴ + W * Wᴴ = 1) (A : Matrix n m 𝕜) :
     singularValues (Wᴴ * A) = singularValues ((1 - U * Uᴴ) * A) := by
@@ -215,12 +216,12 @@ $\mathbf{Q}\mathbf{P}$, for orthogonal projectors: $\sigma_i((\mathbf{I} - \math
 = 1 - \sigma_j(\mathbf{Q}\mathbf{P})^2$ for $i + j + 1 = \operatorname{rank}
 \mathbf{P}$. These are the squared sines and cosines of the principal angles between the ranges.
 [GolubVanLoan2013, §2.5.3]. -/
-theorem _root_.IsStarProjection.sq_singularValues_one_sub_mul {P Q : Matrix n n 𝕜}
+theorem _root_.IsStarProjection.singularValues_one_sub_mul_sq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) {i j : ℕ} (hij : i + j + 1 = P.rank) :
     singularValues ((1 - Q) * P) i ^ 2 = 1 - singularValues (Q * P) j ^ 2 := by
   obtain ⟨A, B, hAB, hA, hB⟩ := exists_complementary_pair hP hQ
   rw [hA, hB]
-  exact sq_singularValues_eq_one_sub_of_conjTranspose_mul_self_add_eq_one hAB
+  exact singularValues_sq_eq_one_sub_of_conjTranspose_mul_self_add_eq_one hAB
     (by rw [Fintype.card_fin, hij])
 
 omit [DecidableEq n] in
@@ -230,7 +231,7 @@ as for every matrix (`NLAlib.singularValues_eq_zero_iff`). -/
 theorem _root_.IsStarProjection.singularValues_of_lt_rank {P : Matrix n n 𝕜}
     (hP : IsStarProjection P) {k : ℕ} (hk : k < P.rank) : singularValues P k = 1 := by
   classical
-  have h := hP.sq_singularValues_one_sub_mul hP (i := P.rank - 1 - k) (j := k) (by omega)
+  have h := hP.singularValues_one_sub_mul_sq hP (i := P.rank - 1 - k) (j := k) (by omega)
   rw [hP.one_sub_mul_self, singularValues_zero, hP.mul_self, Pi.zero_apply] at h
   refine (sq_eq_sq₀ (singularValues_nonneg P k) zero_le_one).mp ?_
   linarith
@@ -243,7 +244,7 @@ theorem _root_.IsStarProjection.specNorm_one_sub_mul_sq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) {k : ℕ} (hk : k + 1 = P.rank) :
     specNorm ((1 - Q) * P) ^ 2 = 1 - singularValues (Q * P) k ^ 2 := by
   rw [← singularValues_zero_eq_specNorm]
-  exact hP.sq_singularValues_one_sub_mul hQ (by omega)
+  exact hP.singularValues_one_sub_mul_sq hQ (by omega)
 
 /-- The Frobenius norm of $(\mathbf{I} - \mathbf{Q})\mathbf{P}$:
 $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_{\mathsf{F}}^2 = \operatorname{rank} \mathbf{P} -
@@ -331,7 +332,7 @@ $\|(\mathbf{I} - \mathbf{P})\mathbf{R}\|_2 \le \|(\mathbf{I} - \mathbf{P})\mathb
 theorem _root_.IsStarProjection.specNorm_one_sub_mul_le_add {P R : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hR : IsStarProjection R) (Q : Matrix n n 𝕜) :
     specNorm ((1 - P) * R) ≤ specNorm ((1 - P) * Q) + specNorm ((1 - Q) * R) := by
-  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge ⊤ le_top) hR Q
+  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge ⊤) hR Q
   rwa [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, lpGauge_top_matrixNorm] at h
 
 /-- The triangle inequality for directed gaps in the Frobenius norm:
@@ -340,7 +341,7 @@ $\|(\mathbf{I} - \mathbf{P})\mathbf{R}\|_{\mathsf{F}} \le \|(\mathbf{I} -
 theorem _root_.IsStarProjection.frobNorm_one_sub_mul_le_add {P R : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hR : IsStarProjection R) (Q : Matrix n n 𝕜) :
     frobNorm ((1 - P) * R) ≤ frobNorm ((1 - P) * Q) + frobNorm ((1 - Q) * R) := by
-  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge 2 one_le_two) hR Q
+  have h := hP.matrixNorm_one_sub_mul_le_add (lpGauge 2) hR Q
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h
 
 /-! ### Projectors of equal rank -/
@@ -358,8 +359,8 @@ theorem _root_.IsStarProjection.singularValues_one_sub_mul_eq_of_rank_eq {P Q : 
   · have hPQ : singularValues (Q * P) = singularValues (P * Q) := by
       rw [← singularValues_conjTranspose (P * Q), Matrix.conjTranspose_mul, hP.conjTranspose_eq,
         hQ.conjTranspose_eq]
-    have h1 := hP.sq_singularValues_one_sub_mul hQ (i := i) (j := P.rank - 1 - i) (by omega)
-    have h2 := hQ.sq_singularValues_one_sub_mul hP (i := i) (j := P.rank - 1 - i) (by omega)
+    have h1 := hP.singularValues_one_sub_mul_sq hQ (i := i) (j := P.rank - 1 - i) (by omega)
+    have h2 := hQ.singularValues_one_sub_mul_sq hP (i := i) (j := P.rank - 1 - i) (by omega)
     rw [hPQ, ← h2] at h1
     exact (sq_eq_sq₀ (singularValues_nonneg _ _) (singularValues_nonneg _ _)).mp h1
   · rw [(singularValues_eq_zero_iff _).mpr ((Matrix.rank_mul_le_right _ P).trans hi),
@@ -388,7 +389,7 @@ Port of `NLAlib.frobSq_complement_mul_projector_eq_of_rank_eq`. -/
 theorem _root_.IsStarProjection.frobNorm_one_sub_mul_eq_of_rank_eq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) (h : P.rank = Q.rank) :
     frobNorm ((1 - Q) * P) = frobNorm ((1 - P) * Q) := by
-  have h2 := hP.matrixNorm_one_sub_mul_eq_of_rank_eq (lpGauge 2 one_le_two) hQ h
+  have h2 := hP.matrixNorm_one_sub_mul_eq_of_rank_eq (lpGauge 2) hQ h
   rwa [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h2
 
 /-! ### The difference of two projectors -/
@@ -478,8 +479,8 @@ theorem _root_.IsStarProjection.rank_eq_of_specNorm_sub_lt_one {P Q : Matrix n n
   have h2 := (hQ.specNorm_one_sub_mul_lt_one_iff hP).mp h.2
   exact le_antisymm (h1 ▸ Matrix.rank_mul_le_left Q P) (h2 ▸ Matrix.rank_mul_le_left P Q)
 
-/-- For orthogonal projectors of equal rank,
-$\|\mathbf{P} - \mathbf{Q}\|_2 = \|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2$.
+/-- **The gap between orthogonal projectors of equal rank.** For orthogonal projectors of equal
+rank, $\|\mathbf{P} - \mathbf{Q}\|_2 = \|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2$.
 Port of `NLAlib.specNorm_sub_projector_eq_complement_mul_of_rank_eq`.
 Result: projector-gap -/
 theorem _root_.IsStarProjection.specNorm_sub_eq_of_rank_eq {P Q : Matrix n n 𝕜}

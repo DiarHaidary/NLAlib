@@ -309,7 +309,7 @@ sketches need no new law: `HasLaw G (gaussianMatrix k n) μ` and a scale in the 
   the moment route `B / ε ^ (2 q)`), concluding `HasSubspaceEmbedding` or the oblivious form with
   `δ` equal to that tail. The `δ` form with a size hypothesis is a corollary.
 - Sample sizes are real-valued named definitions (`gaussianEmbeddingDim d ε δ : ℝ`,
-  `samplingSize d L ε δ`, `srhtRowBound n d δ`, `countSketchRows d ε δ`), entering as
+  `samplingEmbeddingDim d L ε δ`, `srhtRowBound n d δ`, `countSketchEmbeddingDim d ε δ`), entering as
   `gaussianEmbeddingDim d ε δ ≤ Fintype.card k`; no ceilings or rounding in statements (the
   prototype's rounded sparse parameters are why its theorems cannot be applied to a sketch of a
   given size). By `CONTRIBUTING.md` §5.2 each is an `irreducible_def` with positivity,

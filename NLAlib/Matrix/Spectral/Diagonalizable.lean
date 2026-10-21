@@ -207,7 +207,7 @@ private theorem IsDiagonalizable.of_surjective {A : Matrix m m K} {B : Matrix n 
 $\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$ is
 diagonalisable exactly when its blocks $\mathbf{A}$ and $\mathbf{B}$ are.
 Port of `NLAlib.isDiagonalizable_fromBlocks_zero_zero_iff`. -/
-theorem isDiagonalizable_fromBlocks_diagonal_iff {A : Matrix m m K} {B : Matrix n n K} :
+theorem isDiagonalizable_fromBlocks_zero₁₂_zero₂₁_iff {A : Matrix m m K} {B : Matrix n n K} :
     IsDiagonalizable (Matrix.fromBlocks A 0 0 B) ↔ IsDiagonalizable A ∧ IsDiagonalizable B := by
   constructor
   · intro h

@@ -66,7 +66,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-! ### The abstract step -/
 
 /-- The scalar fact behind the abstract step: on $[c, Rc]$, $R \ge 1$, the constant
-$\hat g = 2Rc/(R + 1)$ satisfies $\lvert g - \hat g\rvert \le \frac{R - 1}{R + 1}\,g$. -/
+$\hat g = 2Rc/(R + 1)$ satisfies $\lvert g - \hat g\rvert \le ((R - 1)/(R + 1))\,g$. -/
 private theorem abs_sub_two_mul_div_le {R c g : ℝ} (hR : 1 ≤ R) (hc : c ≤ g) (hg : g ≤ R * c) :
     |g - 2 * R * c / (R + 1)| ≤ (R - 1) / (R + 1) * g := by
   have hR1 : 0 < R + 1 := by linarith
@@ -77,7 +77,7 @@ private theorem abs_sub_two_mul_div_le {R c g : ℝ} (hR : 1 ≤ R) (hc : c ≤ 
 
 /-- The completed square behind the abstract step: if
 $X \le \tau D E$ with $\tau = (R - 1)/(R + 1)$, $R \ge 1$, then
-$E^2 \le \frac{(R + 1)^2}{4R}(E^2 - 2X + D^2)$, since
+$E^2 \le ((R + 1)^2/(4R))(E^2 - 2X + D^2)$, since
 $E^2 - 2X + D^2 \ge (D - \tau E)^2 + (1 - \tau^2)E^2$ and $1/(1 - \tau^2) = (R + 1)^2/(4R)$. -/
 private theorem sq_le_mul_sq_sub_two_mul_add_sq {R D E X : ℝ} (hR : 1 ≤ R)
     (hX : X ≤ (R - 1) / (R + 1) * D * E) :
@@ -91,10 +91,22 @@ private theorem sq_le_mul_sq_sub_two_mul_add_sq {R D E X : ℝ} (hR : 1 ≤ R)
     rw [hτdef]
     field_simp
     ring
-  have hR' : 0 < R := by linarith
   calc E ^ 2 = (R + 1) ^ 2 / (4 * R) * ((1 - τ ^ 2) * E ^ 2) := by
         rw [← mul_assoc, h2, one_mul]
     _ ≤ _ := mul_le_mul_of_nonneg_left h1 (by positivity)
+
+/-- The constant of the abstract step: if $g(x) \le R\,g(y)$ on the spectrum, then some $c$ has
+$c \le g \le Rc$ there ($c = \min g$, or anything for an empty spectrum). -/
+private theorem exists_forall_mem_spectrum_le_and_le_mul (A : Matrix n n 𝕜) {g : ℝ → ℝ} {R : ℝ}
+    (hR : ∀ x ∈ spectrum ℝ A, ∀ y ∈ spectrum ℝ A, g x ≤ R * g y) :
+    ∃ c, ∀ x ∈ spectrum ℝ A, c ≤ g x ∧ g x ≤ R * c := by
+  rcases (spectrum ℝ A).eq_empty_or_nonempty with hemp | hne
+  · exact ⟨0, fun x hx => by simp [hemp] at hx⟩
+  · obtain ⟨x₀, hx₀, hmin⟩ :=
+      A.finite_real_spectrum.toFinset.exists_min_image g (by simpa using hne)
+    rw [Set.Finite.mem_toFinset] at hx₀
+    exact ⟨g x₀, fun x hx =>
+      ⟨hmin x ((Set.Finite.mem_toFinset _).mpr hx), hR x hx x₀ hx₀⟩⟩
 
 /-- **Near-optimality from a factored error**: let $\mathbf{A}$ be Hermitian, $\nu > 0$ and
 $\varsigma \ge 0$ on its spectrum with $\nu(x)\varsigma(x) \le R\,\nu(y)\varsigma(y)$ for all
@@ -124,21 +136,14 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_cfc_sub_le_of_sub_eq_aeval_mulVec
       (R + 1) ^ 2 / (4 * R) * RCLike.re (quadForm (cfc ν A) (w - y)) := by
   have hc : ∀ φ : ℝ → ℝ, ContinuousOn φ (spectrum ℝ A) := fun φ =>
     A.finite_real_spectrum.continuousOn φ
-  set g : ℝ → ℝ := fun x => ν x * ς x with hg
+  set g : ℝ → ℝ := fun x => ν x * ς x
   -- a constant `c` with `c ≤ g ≤ R c` on the spectrum
-  obtain ⟨c, hcg⟩ : ∃ c, ∀ x ∈ spectrum ℝ A, c ≤ g x ∧ g x ≤ R * c := by
-    rcases (spectrum ℝ A).eq_empty_or_nonempty with hemp | hne
-    · exact ⟨0, fun x hx => by simp [hemp] at hx⟩
-    · obtain ⟨x₀, hx₀, hmin⟩ :=
-        A.finite_real_spectrum.toFinset.exists_min_image g (by simpa using hne)
-      rw [Set.Finite.mem_toFinset] at hx₀
-      exact ⟨g x₀, fun x hx =>
-        ⟨hmin x ((Set.Finite.mem_toFinset _).mpr hx), hR x hx x₀ hx₀⟩⟩
+  obtain ⟨c, hcg⟩ := exists_forall_mem_spectrum_le_and_le_mul A (g := g) hR
   set ĝ := 2 * R * c / (R + 1)
   set τ := (R - 1) / (R + 1)
   have hτ : 0 ≤ τ := div_nonneg (by linarith) (by linarith)
   have hNH : (cfc ν A).IsHermitian := cfc_predicate ν A
-  set e := w - y₀ with he_def
+  set e := w - y₀
   set d := y - y₀
   have hd : d ∈ krylovSpace A b q := Submodule.sub_mem _ hy hy₀
   have hwy : w - y = e - d := (sub_sub_sub_cancel_right w y y₀).symm
@@ -384,7 +389,6 @@ theorem _root_.Matrix.PosDef.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le {A : Ma
 $\bigl(\tfrac12(\kappa^{E/2} + \kappa^{-E/2})\bigr)^2$. -/
 private theorem add_one_sq_div_rpow_eq {K : ℝ} (hK : 0 < K) (E : ℝ) :
     (K ^ E + 1) ^ 2 / (4 * K ^ E) = ((K ^ (E / 2) + K ^ (-(E / 2))) / 2) ^ 2 := by
-  have hu0 : 0 < K ^ (E / 2) := Real.rpow_pos_of_pos hK _
   have h1 : K ^ E = (K ^ (E / 2)) ^ 2 := by
     rw [← Real.rpow_natCast, ← Real.rpow_mul hK.le]
     norm_num
@@ -399,7 +403,7 @@ $$\|f(\mathbf{A})\mathbf{b} -
 \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)\|_{\mathbf{A}^\alpha}^2
 \le \Bigl(\frac{(a'/a)^{E/2} + (a'/a)^{-E/2}}{2}\Bigr)^2
 \|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \,.$$
-The kernel ratio of $\nu(x) = x^\alpha$ is `rpow_mul_add_le`. The factor is optimal
+The kernel ratio of $\nu(x) = x^\alpha$ is `Real.rpow_mul_add_le`. The factor is optimal
 [ChenPersson2026, Theorem 2]:
 `Matrix.PosDef.exists_inv_add_le_re_quadForm_rpow_cfc_mulVec_sub_lanczosFA`.
 [ChenPersson2026, Theorem 1]; there with $\kappa(\mathbf{A})$ and the unsquared norms, here
@@ -424,7 +428,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_rpow_cfc_mulVec_sub_lanczosFA_le
   rw [CFC.rpow_eq_cfc_real hpd.posSemidef.nonneg, ← add_one_sq_div_rpow_eq hK]
   exact hpd.re_quadForm_cfc_cfc_mulVec_sub_lanczosFA_le hf (ν := fun x => x ^ α)
     (fun x hx => Real.rpow_pos_of_pos (hpd.spectrum_subset_Ioi hx) α)
-    (fun x hx y hy t ht => rpow_mul_add_le ha (hs hx) (hs hy) ht α) b hy
+    (fun x hx y hy t ht => Real.rpow_mul_add_le ha (hs hx) (hs hy) ht α) b hy
 
 /-- **The same in the condition number**: for positive definite $\mathbf{A}$ with
 $\kappa = \kappa(\mathbf{A})$, $f$ or $f(z)/z$ Stieltjes, real $\alpha$,
@@ -470,7 +474,6 @@ private theorem norm_toLp_le_of_re_quadForm_one_le {u v : n → 𝕜} {K : ℝ}
   rcases isEmpty_or_nonempty n with hn | hn
   · rw [Subsingleton.elim u 0, Subsingleton.elim v 0, WithLp.toLp_zero, norm_zero, mul_zero]
   have hK0 := hK hn
-  have hc : 0 ≤ (Real.sqrt K + (Real.sqrt K)⁻¹) / 2 := by positivity
   rw [quadForm_one, quadForm_one, RCLike.ofReal_re, RCLike.ofReal_re,
     show max (0 : ℝ) (1 - 0) / 2 = 1 / 2 by norm_num, ← Real.sqrt_eq_rpow,
     Real.rpow_neg hK0, ← Real.sqrt_eq_rpow, ← mul_pow] at h

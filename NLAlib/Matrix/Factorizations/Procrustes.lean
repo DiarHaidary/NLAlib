@@ -21,7 +21,7 @@ the squared distance between the non-increasing sequences of singular values.
 
 * `NLAlib.HasOrthonormalCols.frobInner_eq_nuclearNorm_of_mul_sqrt_eq`,
   `NLAlib.frobInner_polarFactor`: a polar factor attains the nuclear dual pairing.
-* `NLAlib.frobNorm_sub_mul_sq_of_mul_sqrt_eq`: the objective at a polar factor of
+* `NLAlib.HasOrthonormalCols.frobNorm_sub_mul_sq_of_mul_sqrt_eq`: the objective at a polar factor of
   $\mathbf{A}\mathbf{B}^{\mathsf{H}}$.
 * `NLAlib.isLeast_frobNorm_sub_mul_sq`: the orthogonal Procrustes problem.
 * `NLAlib.isLeast_frobNorm_sub_mul_mul_sq`: the two-sided Procrustes problem.
@@ -86,7 +86,8 @@ $\mathbf{U}\bigl((\mathbf{A}\mathbf{B}^{\mathsf{H}})^{\mathsf{H}}
 $$\|\mathbf{A} - \mathbf{U}\mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
   \|\mathbf{B}\|_{\mathsf{F}}^2 - 2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*\,.$$
 Port of `NLAlib.frobSq_sub_mul_eq_of_cross_polar`. -/
-theorem frobNorm_sub_mul_sq_of_mul_sqrt_eq {A B : Matrix m n 𝕜} {U : Matrix m m 𝕜}
+theorem HasOrthonormalCols.frobNorm_sub_mul_sq_of_mul_sqrt_eq {A B : Matrix m n 𝕜}
+    {U : Matrix m m 𝕜}
     (hU : HasOrthonormalCols U)
     (h : U * CFC.sqrt ((A * Bᴴ)ᴴ * (A * Bᴴ)) = A * Bᴴ) :
     frobNorm (A - U * B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 - 2 * nuclearNorm (A * Bᴴ) := by
@@ -105,7 +106,7 @@ theorem isLeast_frobNorm_sub_mul_sq (A B : Matrix m n 𝕜) :
       (frobNorm A ^ 2 + frobNorm B ^ 2 - 2 * nuclearNorm (A * Bᴴ)) := by
   constructor
   · obtain ⟨U, hU, h⟩ := exists_hasOrthonormalCols_mul_sqrt_eq (A * Bᴴ) le_rfl
-    exact ⟨U, hU, frobNorm_sub_mul_sq_of_mul_sqrt_eq hU h⟩
+    exact ⟨U, hU, HasOrthonormalCols.frobNorm_sub_mul_sq_of_mul_sqrt_eq hU h⟩
   · rintro _ ⟨U, hU, rfl⟩
     have hU' : HasOrthonormalCols U := hU
     have h1 : frobInner (A * Bᴴ) U ≤ nuclearNorm (A * Bᴴ) :=
@@ -169,7 +170,7 @@ theorem isLeast_frobNorm_sub_mul_mul_sq [DecidableEq n] (A B : Matrix m n 𝕜) 
       rw [Matrix.mul_assoc, hP'.singularValues_mul_left]
       have h := hW'.conjTranspose.singularValues_mul_conjTranspose_right B
       rwa [Matrix.conjTranspose_conjTranspose] at h
-    have h := sum_sq_singularValues_sub_le_frobNorm_sub_sq A (P * B * W) (Finset.range k)
+    have h := sum_singularValues_sub_sq_le_frobNorm_sub_sq A (P * B * W) (Finset.range k)
     rwa [hsv] at h
 
 end NLAlib

@@ -32,7 +32,7 @@ are padding, so an index quantified by `∃`, or by `∀` in a hypothesis, needs
 
 ## Main results
 
-* `NLAlib.sq_singularValues`:
+* `NLAlib.singularValues_sq`:
   $\sigma_k(\mathbf{A})^2 = \lambda_k(\mathbf{A}^{\mathsf{H}}\mathbf{A})$, for every $k$.
 * `NLAlib.singularValues_pos_iff`: positivity exactly below the rank.
 * `NLAlib.singularValues_zero_eq_specNorm`, `NLAlib.frobNorm_sq_eq_sum_singularValues_sq`: the two
@@ -95,7 +95,7 @@ private theorem eigenvalues_congr {E : Type*} [NormedAddCommGroup E] [InnerProdu
 $\sigma_k(\mathbf{A})^2 = \lambda_k(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ for every index $k$, both
 sequences being zero-padded. [HornJohnson2013, §2.6].
 Port of `NLAlib.sq_singularValues_eq_eigenvalues₀`. -/
-theorem sq_singularValues (A : Matrix m n 𝕜) (k : ℕ) :
+theorem singularValues_sq (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues A k ^ 2 = eigenvalue (Aᴴ * A) k := by
   classical
   by_cases hk : k < Fintype.card n
@@ -170,21 +170,21 @@ private theorem eigenvalue_eq_of_X_pow_mul_charpoly_eq [DecidableEq m] [Decidabl
 
 /-- The same with the other Gram matrix:
 $\sigma_k(\mathbf{A})^2 = \lambda_k(\mathbf{A}\mathbf{A}^{\mathsf{H}})$ for every $k$. -/
-theorem sq_singularValues_eq_eigenvalue_mul_conjTranspose_self (A : Matrix m n 𝕜) (k : ℕ) :
+theorem singularValues_sq_eq_eigenvalue_mul_conjTranspose_self (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues A k ^ 2 = eigenvalue (A * Aᴴ) k := by
   classical
-  rw [sq_singularValues]
+  rw [singularValues_sq]
   exact eigenvalue_eq_of_X_pow_mul_charpoly_eq (Matrix.posSemidef_conjTranspose_mul_self A)
     (Matrix.posSemidef_self_mul_conjTranspose A) (Matrix.charpoly_mul_comm' A Aᴴ).symm k
 
 /-- The Gram determinant is the product of the squared singular values, as many as the matrix
 has columns: $\det(\mathbf{A}^{\mathsf{H}}\mathbf{A}) = \prod_{i < \lvert n \rvert}
 \sigma_i(\mathbf{A})^2$. [HornJohnson2013, Section 7.3]. -/
-theorem det_conjTranspose_mul_self_eq_prod_sq_singularValues [DecidableEq n] (A : Matrix m n 𝕜) :
+theorem det_conjTranspose_mul_self_eq_prod_singularValues_sq [DecidableEq n] (A : Matrix m n 𝕜) :
     (Aᴴ * A).det =
       ((∏ i ∈ Finset.range (Fintype.card n), singularValues A i ^ 2 : ℝ) : 𝕜) := by
   rw [(Matrix.isHermitian_conjTranspose_mul_self A).det_eq_prod_range_eigenvalue]
-  simp only [sq_singularValues]
+  simp only [singularValues_sq]
 
 /-- A singular value is positive exactly when its index is below the rank:
 $0 < \sigma_k(\mathbf{A}) \iff k < \operatorname{rank} \mathbf{A}$.
@@ -232,7 +232,7 @@ theorem singularValues_eq_zero {A : Matrix m n 𝕜} : singularValues A = 0 ↔ 
 Port of `NLAlib.singularValues_zero_eq_specNorm`. -/
 theorem singularValues_zero_eq_specNorm (A : Matrix m n 𝕜) : singularValues A 0 = specNorm A := by
   refine (sq_eq_sq₀ (singularValues_nonneg A 0) (specNorm_nonneg A)).mp ?_
-  rw [sq_singularValues, ← specNorm_conjTranspose_mul_self,
+  rw [singularValues_sq, ← specNorm_conjTranspose_mul_self,
     (Matrix.posSemidef_conjTranspose_mul_self A).specNorm_eq_eigenvalue_zero]
 
 /-- Every singular value is at most the spectral norm: $\sigma_k(\mathbf{A}) \le \|\mathbf{A}\|_2$.
@@ -249,7 +249,7 @@ theorem frobNorm_sq_eq_sum_singularValues_sq (A : Matrix m n 𝕜) :
     frobNorm A ^ 2 = ∑ k ∈ Finset.range (Fintype.card n), singularValues A k ^ 2 := by
   rw [frobNorm_sq_eq_re_trace,
     (Matrix.isHermitian_conjTranspose_mul_self A).re_trace_eq_sum_range_eigenvalue]
-  exact Finset.sum_congr rfl fun k _ => (sq_singularValues A k).symm
+  exact Finset.sum_congr rfl fun k _ => (singularValues_sq A k).symm
 
 /-- A sum of squared singular values over a range that reaches the rank is the sum up to the
 rank. -/
@@ -299,8 +299,8 @@ theorem singularValues_conjTranspose (A : Matrix m n 𝕜) :
     singularValues Aᴴ = singularValues A := by
   funext k
   refine (sq_eq_sq₀ (singularValues_nonneg _ k) (singularValues_nonneg A k)).mp ?_
-  rw [sq_singularValues, Matrix.conjTranspose_conjTranspose,
-    sq_singularValues_eq_eigenvalue_mul_conjTranspose_self]
+  rw [singularValues_sq, Matrix.conjTranspose_conjTranspose,
+    singularValues_sq_eq_eigenvalue_mul_conjTranspose_self]
 
 /-- The transpose has the same singular values:
 $\sigma_k(\mathbf{A}^{\mathsf{T}}) = \sigma_k(\mathbf{A})$. -/
@@ -312,7 +312,7 @@ theorem singularValues_transpose (A : Matrix m n 𝕜) : singularValues Aᵀ = s
   have hT : Aᵀᴴ * Aᵀ = (A * Aᴴ)ᵀ := by
     rw [Matrix.transpose_mul]
     rfl
-  rw [sq_singularValues, sq_singularValues_eq_eigenvalue_mul_conjTranspose_self, hT]
+  rw [singularValues_sq, singularValues_sq_eq_eigenvalue_mul_conjTranspose_self, hT]
   exact eigenvalue_eq_of_X_pow_mul_charpoly_eq
     (Matrix.posSemidef_self_mul_conjTranspose A).transpose
     (Matrix.posSemidef_self_mul_conjTranspose A) (by rw [Matrix.charpoly_transpose]) k
@@ -326,9 +326,9 @@ theorem singularValues_smul (c : 𝕜) (A : Matrix m n 𝕜) (k : ℕ) :
   have hG : (c • A)ᴴ * (c • A) = (‖c‖ ^ 2) • (Aᴴ * A) := by
     rw [Matrix.conjTranspose_smul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, RCLike.star_def,
       RCLike.conj_mul, RCLike.real_smul_eq_coe_smul (K := 𝕜), RCLike.ofReal_pow]
-  rw [sq_singularValues, hG,
+  rw [singularValues_sq, hG,
     eigenvalue_real_smul _ (sq_nonneg _), mul_pow,
-    sq_singularValues]
+    singularValues_sq]
 
 /-- Scaling a matrix by a real number scales its singular values by the absolute value:
 $\sigma_k(c\mathbf{A}) = \lvert c \rvert \, \sigma_k(\mathbf{A})$ for $c \in \mathbb{R}$.
@@ -350,7 +350,7 @@ theorem singularValues_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e
     singularValues (A.submatrix e₁ e₂) = singularValues A := by
   funext k
   refine (sq_eq_sq₀ (singularValues_nonneg _ k) (singularValues_nonneg A k)).mp ?_
-  rw [sq_singularValues, sq_singularValues, Matrix.conjTranspose_submatrix,
+  rw [singularValues_sq, singularValues_sq, Matrix.conjTranspose_submatrix,
     Matrix.submatrix_mul_equiv, eigenvalue_submatrix_equiv]
 
 /-- Matrices with the same Gram matrix have the same singular values, whatever their numbers of
@@ -361,7 +361,7 @@ theorem singularValues_eq_of_conjTranspose_mul_self_eq {A : Matrix m n 𝕜} {B 
     (h : Aᴴ * A = Bᴴ * B) : singularValues A = singularValues B := by
   funext k
   refine (sq_eq_sq₀ (singularValues_nonneg A k) (singularValues_nonneg B k)).mp ?_
-  rw [sq_singularValues, sq_singularValues, h]
+  rw [singularValues_sq, singularValues_sq, h]
 
 /-- Left multiplication by a matrix with orthonormal columns preserves the singular values:
 $\sigma_k(\mathbf{Q}\mathbf{A}) = \sigma_k(\mathbf{A})$ when
@@ -408,7 +408,7 @@ theorem le_singularValues_of_forall_mem (A : Matrix m n 𝕜) {k : ℕ} (S : Sub
         fun x hx => by
           rw [re_quadForm_conjTranspose_mul_self, ← mul_pow]
           exact pow_le_pow_left₀ (mul_nonneg hc.le (norm_nonneg _)) (h x hx) 2
-    rw [← sq_singularValues] at h2
+    rw [← singularValues_sq] at h2
     exact (pow_le_pow_iff_left₀ hc.le (singularValues_nonneg A k) two_ne_zero).mp h2
 
 /-- **Courant–Fischer for singular values, upper bound.** If
@@ -426,7 +426,7 @@ theorem singularValues_le_of_forall_mem (A : Matrix m n 𝕜) {k : ℕ} (W : Sub
         fun x hx => by
           rw [re_quadForm_conjTranspose_mul_self, ← mul_pow]
           exact pow_le_pow_left₀ (norm_nonneg _) (h x hx) 2
-    rw [← sq_singularValues] at h2
+    rw [← singularValues_sq] at h2
     exact (pow_le_pow_iff_left₀ (singularValues_nonneg A k) hc two_ne_zero).mp h2
   · rw [singularValues_of_card_cols_le A (not_lt.mp hk)]
     exact hc
@@ -445,7 +445,7 @@ theorem exists_submodule_norm_mulVec_le (A : Matrix m n 𝕜) (k : ℕ) :
       (Matrix.isHermitian_conjTranspose_mul_self A).exists_submodule_le_eigenvalue_mul hk
     refine ⟨W, hW.ge, fun x hx => ?_⟩
     have h2 := h x hx
-    rw [re_quadForm_conjTranspose_mul_self, ← sq_singularValues, ← mul_pow] at h2
+    rw [re_quadForm_conjTranspose_mul_self, ← singularValues_sq, ← mul_pow] at h2
     exact (pow_le_pow_iff_left₀ (norm_nonneg _)
       (mul_nonneg (singularValues_nonneg A k) (norm_nonneg _)) two_ne_zero).mp h2
   · refine ⟨⊥, by rw [finrank_bot]; omega, fun x hx => ?_⟩
@@ -466,7 +466,7 @@ theorem exists_submodule_singularValues_mul_norm_le (A : Matrix m n 𝕜) {k : �
     (Matrix.isHermitian_conjTranspose_mul_self A).exists_submodule_eigenvalue_mul_le hk
   refine ⟨S, hS, fun x hx => ?_⟩
   have h2 := h x hx
-  rw [← sq_singularValues, re_quadForm_conjTranspose_mul_self, ← mul_pow] at h2
+  rw [← singularValues_sq, re_quadForm_conjTranspose_mul_self, ← mul_pow] at h2
   exact (pow_le_pow_iff_left₀ (mul_nonneg (singularValues_nonneg A k) (norm_nonneg _))
     (norm_nonneg _) two_ne_zero).mp h2
 
@@ -479,7 +479,7 @@ Port of `NLAlib.singularValues_last_mul_norm_le`. -/
 theorem singularValues_last_mul_norm_le (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = Fintype.card n)
     (x : n → 𝕜) : singularValues A k * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
   have h2 := (Matrix.isHermitian_conjTranspose_mul_self A).eigenvalue_last_mul_le_re_quadForm hk x
-  rw [← sq_singularValues, re_quadForm_conjTranspose_mul_self, ← mul_pow] at h2
+  rw [← singularValues_sq, re_quadForm_conjTranspose_mul_self, ← mul_pow] at h2
   exact (pow_le_pow_iff_left₀ (mul_nonneg (singularValues_nonneg A k) (norm_nonneg _))
     (norm_nonneg _) two_ne_zero).mp h2
 
@@ -494,19 +494,19 @@ theorem le_singularValues_last (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = Fin
 /-- The smallest singular value in the Loewner order:
 $\sigma_k(\mathbf{A})^2 \mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ for
 $k + 1 = \lvert n \rvert$. -/
-theorem sq_singularValues_last_smul_one_le [DecidableEq n] (A : Matrix m n 𝕜) {k : ℕ}
+theorem singularValues_last_sq_smul_one_le [DecidableEq n] (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) :
     (singularValues A k ^ 2) • (1 : Matrix n n 𝕜) ≤ Aᴴ * A := by
-  rw [sq_singularValues]
+  rw [singularValues_sq]
   exact (Matrix.isHermitian_conjTranspose_mul_self A).eigenvalue_last_smul_one_le hk
 
 /-- A lower Loewner bound on the Gram matrix is a lower bound on the smallest singular value: if
 $a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ then $a \le \sigma_k(\mathbf{A})^2$ for
 $k + 1 = \lvert n \rvert$. This is how a subspace embedding bounds $\sigma_{\min}$. -/
-theorem le_sq_singularValues_last_of_smul_one_le [DecidableEq n] {A : Matrix m n 𝕜} {k : ℕ}
+theorem le_singularValues_last_sq_of_smul_one_le [DecidableEq n] {A : Matrix m n 𝕜} {k : ℕ}
     (hk : k + 1 = Fintype.card n) {a : ℝ} (h : a • (1 : Matrix n n 𝕜) ≤ Aᴴ * A) :
     a ≤ singularValues A k ^ 2 := by
-  rw [sq_singularValues]
+  rw [singularValues_sq]
   exact ((Matrix.isHermitian_conjTranspose_mul_self A).smul_one_le_iff hk).mp h
 
 /-- The smallest singular value $\sigma_k(\mathbf{A})$, $k + 1 = \lvert n \rvert$, is positive
@@ -528,12 +528,13 @@ theorem _root_.Matrix.PosSemidef.singularValues_eq_eigenvalue {A : Matrix n n �
   classical
   funext k
   refine (sq_eq_sq₀ (singularValues_nonneg A k) (hA.eigenvalue_nonneg k)).mp ?_
-  rw [sq_singularValues, hA.isHermitian.eq]
+  rw [singularValues_sq, hA.isHermitian.eq]
   by_cases hk : k < Fintype.card n
   · obtain ⟨U, hU, hAU⟩ := hA.isHermitian.exists_eq_mul_diagonal_mul_conjTranspose
     have hμ : Antitone fun i : Fin (Fintype.card n) => eigenvalue A i ^ 2 := fun a b hab =>
       pow_le_pow_left₀ (hA.eigenvalue_nonneg b) (hA.eigenvalue_antitone hab) 2
-    refine eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hμ ?_ ⟨k, hk⟩
+    refine HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose hU rfl hμ ?_
+      ⟨k, hk⟩
     conv_lhs => rw [hAU]
     simp only [Matrix.mul_assoc, hU.conjTranspose_mul_cancel_left]
     rw [← Matrix.mul_assoc (Matrix.diagonal _), Matrix.diagonal_mul_diagonal]
@@ -547,13 +548,13 @@ the zero padding included. Mathlib's `LinearMap.singularValues` has no such stat
 theorem singularValues_conjTranspose_mul_self (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues (Aᴴ * A) k = singularValues A k ^ 2 := by
   rw [(Matrix.posSemidef_conjTranspose_mul_self A).singularValues_eq_eigenvalue,
-    sq_singularValues]
+    singularValues_sq]
 
 /-- The same for the other Gram matrix:
 $\sigma_k(\mathbf{A}\mathbf{A}^{\mathsf{H}}) = \sigma_k(\mathbf{A})^2$ for every index $k$. -/
 theorem singularValues_mul_conjTranspose_self (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues (A * Aᴴ) k = singularValues A k ^ 2 := by
   rw [(Matrix.posSemidef_self_mul_conjTranspose A).singularValues_eq_eigenvalue,
-    sq_singularValues_eq_eigenvalue_mul_conjTranspose_self]
+    singularValues_sq_eq_eigenvalue_mul_conjTranspose_self]
 
 end NLAlib

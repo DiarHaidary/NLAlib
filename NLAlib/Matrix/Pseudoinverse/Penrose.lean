@@ -177,8 +177,8 @@ $\mathbf{A}\mathbf{B} = \mathbf{P}_{\mathbf{A}}$.
 Port of `NLAlib.IsMoorePenroseInverse.range_mul_eq`. -/
 theorem mul_eq_rangeProjector (h : IsPinv A B) : A * B = rangeProjector A := by
   refine h.isStarProjection_left.eq_rangeProjector (le_antisymm ?_ ?_)
-  · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨B, rfl⟩
-  · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨A, h.mul_mul_left.symm⟩
+  · exact range_le_iff_exists_mul.mpr ⟨B, rfl⟩
+  · exact range_le_iff_exists_mul.mpr ⟨A, h.mul_mul_left.symm⟩
 
 /-- $\mathbf{B}\mathbf{A}$ is the orthogonal projector onto the column space of
 $\mathbf{A}^{\mathsf{H}}$, the row space of $\mathbf{A}$:
@@ -189,18 +189,18 @@ theorem mul_eq_rangeProjector_conjTranspose (h : IsPinv A B) : B * A = rangeProj
 
 /-- The column space of a pseudoinverse of $\mathbf{A}$ is the column space of
 $\mathbf{A}^{\mathsf{H}}$. -/
-theorem range_mulVecLin_eq (h : IsPinv A B) :
+theorem range_eq (h : IsPinv A B) :
     LinearMap.range B.mulVecLin = LinearMap.range Aᴴ.mulVecLin := by
-  rw [← range_mulVecLin_rangeProjector Aᴴ, ← h.mul_eq_rangeProjector_conjTranspose]
+  rw [← range_rangeProjector Aᴴ, ← h.mul_eq_rangeProjector_conjTranspose]
   refine le_antisymm ?_ ?_
-  · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨B, h.mul_mul_right.symm⟩
-  · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨A, rfl⟩
+  · exact range_le_iff_exists_mul.mpr ⟨B, h.mul_mul_right.symm⟩
+  · exact range_le_iff_exists_mul.mpr ⟨A, rfl⟩
 
 open scoped ComplexOrder in
 /-- A pseudoinverse of $\mathbf{A}$ has the rank of $\mathbf{A}$.
 Port of the argument of `NLAlib.IsMoorePenroseInverse.range_mul_eq`. -/
 theorem rank_eq (h : IsPinv A B) : B.rank = A.rank := by
-  rw [Matrix.rank, h.range_mulVecLin_eq, ← Matrix.rank_conjTranspose A, Matrix.rank]
+  rw [Matrix.rank, h.range_eq, ← Matrix.rank_conjTranspose A, Matrix.rank]
 
 /-- The Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ has pseudoinverse
 $\mathbf{B}\mathbf{B}^{\mathsf{H}}$, for $\mathbf{B}$ a pseudoinverse of $\mathbf{A}$.

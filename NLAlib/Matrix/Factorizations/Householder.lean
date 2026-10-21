@@ -370,7 +370,7 @@ Port of `NLAlib.isQR_householderQR`. -/
 theorem isQR_householder (A : Matrix (Fin m) (Fin n) 𝕜) (h : n ≤ m) :
     IsQR A ((householderQ A).submatrix id (Fin.castLE h))
       ((householderR A).submatrix (Fin.castLE h) id) := by
-  exact isQR_submatrix_castLE (hasOrthonormalCols_householderQ A)
+  exact HasOrthonormalCols.isQR_submatrix_castLE (hasOrthonormalCols_householderQ A)
     (isUpperTrapezoidal_householderR A) (householderQ_mul_householderR A).symm h
 
 end QR

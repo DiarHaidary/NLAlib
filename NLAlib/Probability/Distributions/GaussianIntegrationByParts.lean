@@ -361,11 +361,7 @@ $$\mathbb{E}[(\mathbf{g}_i - \mathbb{E}\mathbf{g}_i) f(\mathbf{g})]
 [Vershynin2018, Lemma 7.2.5]; stated there for a standard Gaussian, here any mean and any
 covariance, possibly singular. $\|\mathbf{x}\|$ is the sup norm of `ι → ℝ`; any norm gives the
 same class. Both integrands are integrable (Gaussian moments of every order), so the identity is
-never between junk values. Proof: the regression $\mathbf{g} = \mathbf{g}_i \mathbf{a} + \mathbf{r}$
-with $\mathbf{r}$ independent of $\mathbf{g}_i$
-(`indepFun_residual_of_hasGaussianLaw`) reduces the identity to the one-dimensional Stein identity
-`integral_mul_eq_integral_deriv_gaussianReal_one` along each line, which takes only integrability;
-polynomial growth supplies it through `memLp_id_gaussianReal` and `HasGaussianLaw.memLp`.
+never between junk values.
 Result: gaussian-integration-by-parts -/
 theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGaussianLaw_of_le_pow
     {g : Ω → ι → ℝ} (hg : HasGaussianLaw g μ) {f : (ι → ℝ) → ℝ} (hf : ContDiff ℝ 1 f)

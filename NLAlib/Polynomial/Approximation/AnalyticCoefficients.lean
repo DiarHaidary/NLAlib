@@ -19,7 +19,7 @@ on the outer boundary. All contour expressions are private proof machinery.
 
 ## Main results
 
-* `NLAlib.norm_chebyshevCoeff_le_of_open_ellipse`: positive coefficients obey $2M/\rho^k$.
+* `NLAlib.norm_chebyshevCoeff_le_of_differentiableOn`: positive coefficients obey $2M/\rho^k$.
 -/
 
 @[expose] public section
@@ -157,7 +157,8 @@ private lemma complex_coeff_radius {F : ℂ → ℂ} {ρ r M : ℝ} (hρ : 1 < �
   rw [mul_div_assoc]
   linarith
 
-/-- A compatible extension holomorphic and bounded by $M$ on the OPEN Bernstein ellipse gives
+/-- **Chebyshev coefficient decay for analytic functions.** A compatible extension holomorphic
+and bounded by $M$ on the OPEN Bernstein ellipse gives
 $$\|a_k\|\le\frac{2M}{\rho^k}\quad(k>0).$$
 [Trefethen2019, Theorem 8.1], generalized to RCLike values via the compatible complex extension.
 The proof takes smaller radii up to $\rho$; no outer-boundary continuity is assumed. The zero
@@ -165,7 +166,7 @@ coefficient has the more general bound `norm_chebyshevCoeff_zero_le`.
 
 Result: chebyshev-coeff-analytic-decay
 -/
-theorem norm_chebyshevCoeff_le_of_open_ellipse
+theorem norm_chebyshevCoeff_le_of_differentiableOn
     {𝕜 : Type*} [RCLike 𝕜] {f : ℝ → 𝕜} {F : ℂ → ℂ} {ρ M : ℝ} (hρ : 1 < ρ)
     (hFd : DifferentiableOn ℂ F (openBernsteinEllipse ρ))
     (hM : Metric.IsUniformApproxOn F (fun _ => 0) (openBernsteinEllipse ρ) M)

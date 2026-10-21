@@ -66,8 +66,7 @@ projector onto the column space of $\mathbf{A}$, for every shape and rank ($0$ o
 $\mathbf{A} = \mathbf{0}$). [Woodruff2014, Definition 16 and the paragraph after it] (there
 $\ell_i^2$, the squared row norm of a basis of the range); [MartinssonTropp2020, §9.6.1] (there
 $\lVert \mathbf{P}_L \boldsymbol{\delta}_i \rVert^2$, with $\mathbf{P}_L$ the projector onto the
-column space).
-Result: leverage-scores -/
+column space). -/
 noncomputable def leverageScore (A : Matrix m n 𝕜) (i : m) : ℝ :=
   RCLike.re (rangeProjector A i i)
 

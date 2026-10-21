@@ -36,18 +36,19 @@ trace bounds.
 
 ## Main results
 
-* `NLAlib.re_trace_cfc_le_re_trace_cfc_of_le`: monotone $f$ gives a monotone trace function.
+* `Matrix.IsHermitian.re_trace_cfc_le_re_trace_cfc_of_le`: monotone $f$ gives a monotone trace
+  function.
 * `NLAlib.convexOn_re_trace_cfc`: convex $f$ gives a convex trace function.
 * `NLAlib.re_trace_mul_cfc_le_re_trace_cfc_sub`: Klein's inequality.
 * `NLAlib.apply_re_quadForm_le_re_quadForm_cfc`: Jensen for quadratic forms.
-* `NLAlib.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn`,
+* `Matrix.IsHermitian.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn`,
   `NLAlib.apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn`: Jensen for a function
   with a supporting line, for quadratic forms and for the norm of a projected matrix.
 * `NLAlib.re_quadForm_mem_of_spectrum_subset`: the quadratic form at a unit vector lies in every
   convex set containing the spectrum.
 * `NLAlib.sum_apply_re_quadForm_le_re_trace_cfc`: Peierls' inequality.
 * `NLAlib.re_trace_cfc_conjTranspose_mul_mul_le`: trace Jensen for compressions.
-* `NLAlib.re_trace_exp_le_re_trace_exp_of_le`, `NLAlib.convexOn_re_trace_exp`.
+* `Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le`, `NLAlib.convexOn_re_trace_exp`.
 * `Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul`: the intrinsic dimension lemma.
 -/
 
@@ -77,7 +78,7 @@ private theorem exists_weights_re_quadForm_cfc {A : Matrix n n 𝕜} (hA : A.IsH
   · have h := EuclideanSpace.norm_sq_eq (WithLp.toLp 2 (Uᴴ *ᵥ x))
     rw [(hU.conjTranspose_of_card_eq hr.symm).norm_toLp_mulVec x, hx, one_pow] at h
     exact h.symm
-  · rw [re_quadForm_cfc_eq_sum hU hr hAU f x]
+  · rw [HasOrthonormalCols.re_quadForm_cfc_eq_sum hU hr hAU f x]
     exact Finset.sum_congr rfl fun i _ => by rw [smul_eq_mul, mul_comm]
 
 /-- **Jensen's inequality for a quadratic form.** For $\varphi$ convex on a set containing the
@@ -249,7 +250,8 @@ f(\mathbf{B})$.
 [Tropp2015, §2.1 and §8.3]; [Carlen2010, Theorem 2.10].
 Port of `NLAlib.traceExp_le_traceExp`, there for the exponential over $\mathbb{C}$.
 Result: trace-monotonicity -/
-theorem re_trace_cfc_le_re_trace_cfc_of_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian) (h : A ≤ B)
+theorem _root_.Matrix.IsHermitian.re_trace_cfc_le_re_trace_cfc_of_le {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (h : A ≤ B)
     {f : ℝ → ℝ} {s : Set ℝ} (hf : MonotoneOn f s) (hAs : spectrum ℝ A ⊆ s)
     (hBs : spectrum ℝ B ⊆ s) : RCLike.re (cfc f A).trace ≤ RCLike.re (cfc f B).trace := by
   have hB : B.IsHermitian := by
@@ -291,8 +293,8 @@ theorem sum_re_trace_cfc_mul_cfc_nonneg {ι : Type*} [Fintype ι] {f g : ι → 
   have heq : ∀ i, RCLike.re (cfc (f i) A * cfc (g i) H).trace =
       ∑ j : Fin (Fintype.card n), ∑ k : Fin (Fintype.card n),
         f i (eigenvalue A j) * g i (eigenvalue H k) * ‖(Uᴴ * V) j k‖ ^ 2 := fun i => by
-    rw [cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU,
-      cfc_eq_mul_diagonal_mul_conjTranspose hV hr hHV]
+    rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU,
+      HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hV hr hHV]
     exact re_trace_mul_diagonal_mul U V _ _
   simp only [heq]
   rw [Finset.sum_comm]
@@ -350,7 +352,8 @@ orthonormal columns,
 $\|\mathbf{Q}^{\mathsf{H}}\mathbf{B}\mathbf{Q}\|_2^{q+1}
 \le \|\mathbf{Q}^{\mathsf{H}}\mathbf{B}^{q+1}\mathbf{Q}\|_2$. This is why power iteration improves
 the randomized range finder. [HalkoMartinssonTropp2011, Proposition 8.6]. -/
-theorem specNorm_conjTranspose_mul_mul_pow_le {B : Matrix n n 𝕜} (hB : B.PosSemidef)
+theorem _root_.Matrix.PosSemidef.specNorm_conjTranspose_mul_mul_pow_le {B : Matrix n n 𝕜}
+    (hB : B.PosSemidef)
     {Q : Matrix n p 𝕜} (hQ : HasOrthonormalCols Q) (q : ℕ) :
     specNorm (Qᴴ * B * Q) ^ (q + 1) ≤ specNorm (Qᴴ * B ^ (q + 1) * Q) := by
   rcases isEmpty_or_nonempty p with hp | hp
@@ -397,13 +400,15 @@ $\mathbf{A} \preceq \mathbf{B}$,
 $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A}) \le \operatorname{Re} \operatorname{tr}
 \exp(\mathbf{B})$.
 [Tropp2015, §2.1]. Port of `NLAlib.traceExp_le_traceExp`, there over $\mathbb{C}$. -/
-theorem re_trace_exp_le_re_trace_exp_of_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (h : A ≤ B) : RCLike.re (exp A).trace ≤ RCLike.re (exp B).trace := by
   have hB : B.IsHermitian := by
     have h' := hA.add (Matrix.le_iff.mp h).isHermitian
     rwa [add_sub_cancel] at h'
   rw [hA.exp_eq_cfc, hB.exp_eq_cfc]
-  exact re_trace_cfc_le_re_trace_cfc_of_le hA h (Real.exp_monotone.monotoneOn Set.univ)
+  exact Matrix.IsHermitian.re_trace_cfc_le_re_trace_cfc_of_le hA h
+    (Real.exp_monotone.monotoneOn Set.univ)
     (Set.subset_univ _) (Set.subset_univ _)
 
 /-- **The trace exponential is convex** on the Hermitian matrices:
@@ -426,13 +431,14 @@ $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A})
 \le e^{\|\mathbf{A} - \mathbf{B}\|_2} \operatorname{Re} \operatorname{tr} \exp(\mathbf{B})$ for
 Hermitian $\mathbf{A}$, $\mathbf{B}$.
 Port of `NLAlib.traceExp_le_exp_mul_traceExp_of_norm_sub_le`. -/
-theorem re_trace_exp_le_exp_specNorm_sub_mul {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
+theorem _root_.Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul {A B : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
     RCLike.re (exp A).trace ≤ Real.exp (specNorm (A - B)) * RCLike.re (exp B).trace := by
   have h1 : A ≤ B + specNorm (A - B) • (1 : Matrix n n 𝕜) :=
     sub_le_iff_le_add'.mp (hA.sub hB).le_specNorm_smul_one
   rw [← re_trace_exp_add_real_smul_one]
-  exact re_trace_exp_le_re_trace_exp_of_le hA h1
+  exact Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le hA h1
 
 /-! ### Intrinsic dimension -/
 
@@ -489,7 +495,8 @@ omit [DecidableEq m] [DecidableEq n] in
 /-- The intrinsic dimension of a block diagonal positive semidefinite matrix is at most the sum
 of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$.
 [Tropp2015, §7.3]. Port of `NLAlib.intrinsicDimension_fromBlocks`. -/
-theorem intrinsicDimension_fromBlocks_le {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
+theorem _root_.Matrix.PosSemidef.intrinsicDimension_fromBlocks_le {A : Matrix m m 𝕜}
+    {B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
     intrinsicDimension (Matrix.fromBlocks A 0 0 B) ≤
       intrinsicDimension A + intrinsicDimension B := by
@@ -502,7 +509,8 @@ omit [DecidableEq m] [DecidableEq n] in
 /-- The intrinsic dimension of a block diagonal positive semidefinite matrix is at least the
 smaller of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$.
 Port of `NLAlib.intrinsicDimension_fromBlocks`. -/
-theorem min_intrinsicDimension_le_intrinsicDimension_fromBlocks {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.min_intrinsicDimension_le_intrinsicDimension_fromBlocks
+    {A : Matrix m m 𝕜}
     {B : Matrix n n 𝕜} (hA : A.PosSemidef) (hB : B.PosSemidef) :
     min (intrinsicDimension A) (intrinsicDimension B) ≤
       intrinsicDimension (Matrix.fromBlocks A 0 0 B) := by
@@ -560,7 +568,8 @@ $$\varphi(\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})) \le
 with no convexity assumed. Generalises `NLAlib.apply_re_quadForm_le_re_quadForm_cfc` (a convex
 $\varphi$ differentiable at the point has a supporting line there, `ConvexOn.hasSupportingLineOn`).
 [TroppWebber2023, Lemma 9.4 (proof)]. -/
-theorem apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn {φ : ℝ → ℝ} {s : Set ℝ}
+theorem _root_.Matrix.IsHermitian.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn
+    {φ : ℝ → ℝ} {s : Set ℝ}
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (hAs : spectrum ℝ A ⊆ s) {x : n → 𝕜}
     (hx : ‖WithLp.toLp 2 x‖ = 1) (hφ : HasSupportingLineOn φ s (RCLike.re (quadForm A x))) :
     φ (RCLike.re (quadForm A x)) ≤ RCLike.re (quadForm (cfc φ A) x) := by
@@ -597,7 +606,8 @@ theorem apply_specNorm_mul_sq_le_specNorm_mul_sq_of_hasSupportingLineOn {φ : �
   obtain ⟨u, hu, hPu, hq⟩ :=
     hP.exists_mulVec_eq_self_and_re_quadForm_eq_specNorm_mul_sq h₀
   have hH : (A * Aᴴ).PosSemidef := Matrix.posSemidef_self_mul_conjTranspose A
-  have h1 := apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn hH.isHermitian
+  have h1 := Matrix.IsHermitian.apply_re_quadForm_le_re_quadForm_cfc_of_hasSupportingLineOn
+    hH.isHermitian
     hH.spectrum_subset_Ici hu (hq ▸ hφ)
   rw [hq, ← hB] at h1
   have hBe : quadForm (B * Bᴴ) u = quadForm (P * B * (P * B)ᴴ) u := by

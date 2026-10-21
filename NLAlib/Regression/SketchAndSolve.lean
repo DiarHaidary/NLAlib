@@ -19,7 +19,7 @@ public import NLAlib.RandomMatrix.Haar.Blocks
 For a standard Gaussian $p \times m$ sketch $\mathbf{S}$, a fixed basis $\mathbf{X}$ of rank $q$
 with $q + 2 \le p$ and every $\mathbf{B}$, the oblique projection
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ (`NLAlib.obliqueProjector`) inflates the error of the
-orthogonal projection by exactly the factor $1 + \frac{q}{p - q - 1}$, in expectation:
+orthogonal projection by exactly the factor $1 + q/(p - q - 1)$, in expectation:
 $$\mathbb{E}\|(\mathbf{I}-\mathbf{\Pi}_{\mathbf{X},\mathbf{S}})\mathbf{B}\|_{\mathsf{F}}^2 =
 \Bigl(1 + \frac{q}{p-q-1}\Bigr)
 \|(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2\,.$$
@@ -96,7 +96,7 @@ private theorem exists_frames (X : Matrix m s ℝ) (B : Matrix m r ℝ) :
   obtain ⟨Q₂, hQ₂, hR₂⟩ := exists_hasOrthonormalCols_range_eq
     (p := Fin (1 - rangeProjector X).rank) (1 - rangeProjector X) (Fintype.card_fin _)
   refine ⟨_, Q₁, Q₂, hQ₁, hQ₂, ?_, hR₁, ?_⟩
-  · obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp hR₂.le
+  · obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp hR₂.le
     have hP : rangeProjector X = Q₁ * Q₁ᴴ := by
       rw [← rangeProjector_inj.mpr hR₁, hQ₁.rangeProjector_eq]
     have h0 : Q₁ᴴ * (1 - rangeProjector X) = 0 := by
@@ -264,7 +264,7 @@ $$\mathbb{E}\|\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{E}\|_2^2 \le
 \frac{e}{p - q}\sqrt{(p + q - 1)/2}\Bigr)^2 +
 \|\mathbf{E}\|_2^2\Bigl(\frac{e}{p - q}\sqrt{(p + q - 1)/2}\Bigr)^2\,,$$
 the constant being `gaussianPinvSpecNormBound q p`. For $4q \le p$ this is at most
-$\frac{25}{p}\|\mathbf{E}\|_{\mathsf{F}}^2 + \frac{4q}{p}\|\mathbf{E}\|_2^2$ (the theorem of
+$(25/p)\|\mathbf{E}\|_{\mathsf{F}}^2 + (4q/p)\|\mathbf{E}\|_2^2$ (the theorem of
 the same name with `_le_div_card` in place of `_le`): the excess is spectrally flat. It is the
 core noise of generalized Nyström in projector form.
 Proved without a literature source; inputs [TroppWebber2023, Lemmas B.1, B.3] (in the forms of
@@ -387,8 +387,8 @@ private theorem pinv_mul_mul_sketchAndSolve (A : Matrix m n ℝ) (S₀ : Matrix 
     (E : Matrix m r ℝ) : pinv A * (A * sketchAndSolve A S₀ E) = sketchAndSolve A S₀ E := by
   have h : rangeProjector Aᴴ * pinv (S₀ * A) = pinv (S₀ * A) := by
     refine rangeProjector_mul_eq_self_iff.mpr ?_
-    rw [range_mulVecLin_pinv]
-    exact range_mulVecLin_le_iff_exists_mul.mpr ⟨S₀ᴴ, Matrix.conjTranspose_mul _ _⟩
+    rw [range_pinv]
+    exact range_le_iff_exists_mul.mpr ⟨S₀ᴴ, Matrix.conjTranspose_mul _ _⟩
   rw [← Matrix.mul_assoc, pinv_mul, sketchAndSolve, ← Matrix.mul_assoc, h]
 
 omit [DecidableEq m] in
@@ -528,7 +528,7 @@ variable {Q : Ω → Matrix m p ℝ}
 /-- **Orthogonality helps, but only a bit**: the Haar projection factor is at most the Gaussian
 one, <!-- value haarProjectionFactor d p q --> <!-- value gaussianProjectionFactor q p -->
 $1 + (d - p)/(d - q) \cdot (q/(p - q - 1)) \le 1 + q/(p - q - 1)$ for $q + 2 \le p \le d$; the
-excesses over $1$ are in the ratio $\frac{d-p}{d-q}$.
+excesses over $1$ are in the ratio $(d-p)/(d-q)$.
 [EpperlyWebber2026, §2.1]. -/
 theorem haarProjectionFactor_le_gaussianProjectionFactor {d p q : ℕ} (hqp : q + 2 ≤ p)
     (hpd : p ≤ d) : haarProjectionFactor d p q ≤ gaussianProjectionFactor q p := by
@@ -803,7 +803,8 @@ theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame [Decid
 
 /-- **Gaussian sketch-and-solve, expected relative residual**: for a standard Gaussian
 $p\times m$ sketch $\mathbf{S}$, $r=\operatorname{rank}\mathbf{A}$,
-$r+2\le p$, $\varepsilon>0$ and $p\ge r+1+r/\varepsilon$,
+$r+2\le p$ and a real $\varepsilon$ with $r\le\varepsilon(p-r-1)$ (for $\varepsilon>0$:
+$p\ge r+1+r/\varepsilon$),
 $$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},\mathbf{B})
 \|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
 \|_{\mathsf{F}}^2\,.$$
@@ -816,7 +817,7 @@ Asymptotic form:
 Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
     (hS : HasLaw S (gaussianMatrix p m) μ) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
-    {ε : ℝ} (_hε : 0 < ε) (hA : A.rank + 2 ≤ Fintype.card p)
+    {ε : ℝ} (hA : A.rank + 2 ≤ Fintype.card p)
     (hp : (A.rank : ℝ) ≤ ε * ((Fintype.card p : ℝ) - A.rank - 1)) :
     ∫ ω, frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2 ∂μ ≤
       (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
@@ -828,7 +829,8 @@ theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gau
 
 /-- **Haar sketch-and-solve, expected relative residual**: for an $m\times p$ Haar frame
 $\mathbf{Q}$, the sketch $\mathbf{Q}^{\mathsf{H}}$, $r=\operatorname{rank}\mathbf{A}$,
-$r+2\le p\le m$, $\varepsilon>0$ and $p\ge r+1+r/\varepsilon$,
+$r+2\le p\le m$ and a real $\varepsilon$ with $r\le\varepsilon(p-r-1)$ (for $\varepsilon>0$:
+$p\ge r+1+r/\varepsilon$),
 $$\mathbb{E}\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{Q}^{\mathsf{H}},
 \mathbf{B})\|_{\mathsf{F}}^2\le(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
 \|_{\mathsf{F}}^2\,.$$
@@ -842,7 +844,7 @@ Result: sketch-and-solve-expected-error -/
 theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
     [DecidableEq p] {Q : Ω → Matrix m p ℝ} (hQ : HasLaw Q (haarFrame m p) μ)
     (hpm : Fintype.card p ≤ Fintype.card m) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
-    {ε : ℝ} (_hε : 0 < ε) (hA : A.rank + 2 ≤ Fintype.card p)
+    {ε : ℝ} (hA : A.rank + 2 ≤ Fintype.card p)
     (hp : (A.rank : ℝ) ≤ ε * ((Fintype.card p : ℝ) - A.rank - 1)) :
     ∫ ω, frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2 ∂μ ≤
       (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 := by
@@ -888,7 +890,7 @@ theorem exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_g
   have hfac' := (gaussianProjectionFactor_le_gaussianProjectionFactor (Nat.le_succ _) hA).trans hfac
   rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)] at hfac'
   exact integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
-    hS A B hε (by omega) hfac'
+    hS A B (by omega) hfac'
 
 /-- **Haar sketch-and-solve, asymptotic expected relative residual**:
 $O((r+1)/\varepsilon)$ orthonormal sketch rows suffice, where $r=\operatorname{rank}\mathbf{A}$:
@@ -925,6 +927,6 @@ theorem exists_forall_integral_frobNorm_sub_mul_sketchAndSolve_sq_le_of_hasLaw_h
   have hfac' := (gaussianProjectionFactor_le_gaussianProjectionFactor (Nat.le_succ _) hA).trans hfac
   rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)] at hfac'
   exact integral_frobNorm_sub_mul_sketchAndSolve_sq_le_one_add_mul_of_hasLaw_haarFrame
-    hQ hpm A B hε (by omega) hfac'
+    hQ hpm A B (by omega) hfac'
 
 end NLAlib

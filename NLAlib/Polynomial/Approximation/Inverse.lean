@@ -25,8 +25,9 @@ open Polynomial Real
 
 namespace NLAlib
 
-/-- For $0<a<b$, there is a polynomial of degree less than $q$ such that
-$$\left|p(x)-x^{-1}\right|\le\frac2a
+/-- **Polynomial approximation of the inverse.** For $0<a<b$, there is a polynomial of degree
+less than $q$ such that
+$$\left\lvert p(x)-x^{-1}\right\rvert\le\frac2a
 \left(\frac{\sqrt b-\sqrt a}{\sqrt b+\sqrt a}\right)^q\quad(x\in[a,b]).$$
 This is a scalar inverse-approximation corollary of [Saad2003, Theorem 6.25 and proof of
 Theorem 6.29], obtained by factoring $1-r_q=Xp$. The `WithBot` degree includes $q=0$:

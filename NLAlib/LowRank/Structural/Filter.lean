@@ -64,10 +64,6 @@ c^{-1}\,\sigma_i\bigl((\mathbf{B} - \mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}})
 \mathbf{B} = \mathbf{A}g(\mathbf{A}^{\mathsf{H}}\mathbf{A})\,.$$
 The norm form is `NLAlib.HasOrthonormalCols.matrixNorm_one_sub_rangeProjector_mul_mul_le`.
 The pointwise form survives squaring, which the Gram form of the filtered structural bound needs.
-Proof: $\mathbf{A}\mathbf{W} = \mathbf{B}\mathbf{W}g(\mathbf{D})^{-1}$ and
-$\mathbf{W} = \mathbf{Z}\mathbf{Z}^{\mathsf{H}}\mathbf{W}$, and the competitor identity gives
-$(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{\Omega}})\mathbf{B}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} =
--(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{\Omega}})\mathbf{M}\mathbf{Z}^{\mathsf{H}}$.
 [TroppWebber2023, Lemma 9.5 (proof, (9.6))]. -/
 theorem HasOrthonormalCols.singularValues_one_sub_rangeProjector_mul_mul_le {A : Matrix m n 𝕜}
     {Ω : Matrix n l 𝕜} (g : ℝ → ℝ) {W : Matrix n r 𝕜} (hW : HasOrthonormalCols W) {d : r → ℝ}
@@ -273,7 +269,7 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_cfc_sq_le {A : Matrix m n 𝕜} {Ω
       specNorm (A - A * W * Wᴴ) ^ 2 +
         c⁻¹ ^ 2 * specNorm
           ((A * cfc g (Aᴴ * A) - A * cfc g (Aᴴ * A) * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  have h := (lpGauge ⊤ le_top).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
+  have h := (lpGauge ⊤).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
     hWZ hc hg
   simpa only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self] using h
 
@@ -304,7 +300,7 @@ theorem HasOrthonormalCols.frobNorm_sub_rsvd_cfc_sq_le {A : Matrix m n 𝕜} {Ω
       frobNorm (A - A * W * Wᴴ) ^ 2 +
         c⁻¹ ^ 2 * frobNorm
           ((A * cfc g (Aᴴ * A) - A * cfc g (Aᴴ * A) * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  have h := (lpGauge 1 le_rfl).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
+  have h := (lpGauge 1).matrixNorm_conjTranspose_mul_self_sub_rsvd_cfc_le g hW hAW hZ hΩ
     hWZ hc hg
   simpa only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self] using h
 

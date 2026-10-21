@@ -18,7 +18,7 @@ supermartingales. Upstream candidate for `Mathlib/Probability/Martingale/Optiona
 
 ## Main results
 
-* `MeasureTheory.Supermartingale.measure_exists_ge_le`: Ville's inequality.
+* `MeasureTheory.Supermartingale.measureReal_exists_ge_le`: Ville's inequality.
 -/
 
 @[expose] public section
@@ -36,14 +36,8 @@ $\mu$, $\mu\{\omega : \exists k,\ f_k(\omega) \ge c\} \le \int f_0 \, d\mu / c$.
 Due to Ville (1939); the time-uniform form of
 Markov's inequality used for martingale tail bounds (the matrix Freedman inequality,
 `NLAlib/Probability/MatrixConcentration/Freedman.lean`).
-Proof: finite horizon $n$ first, from Mathlib's `Submartingale.expected_stoppedValue_mono`
-applied to `hf.neg` with $\sigma = 0$ and $\tau$ = `hittingBtwn f (Set.Ici c) 0 n`, at most $n$
-(on the event $\{\exists k \le n,\ f_k \ge c\}$ the stopped value is at least $c$, elsewhere it is
-nonnegative), giving $c \, \mu\{\exists k \le n,\ f_k \ge c\} \le \mathbb{E}[f_0]$; then
-$n \to \infty$ by continuity of the measure from below
-(`MeasureTheory.measure_iUnion_eq_iSup` on the increasing events). Medium.
 Result: ville-inequality -/
-theorem Supermartingale.measure_exists_ge_le [IsFiniteMeasure μ] {ℱ : Filtration ℕ mΩ}
+theorem Supermartingale.measureReal_exists_ge_le [IsFiniteMeasure μ] {ℱ : Filtration ℕ mΩ}
     {f : ℕ → Ω → ℝ} (hf : Supermartingale f ℱ μ) (hf0 : ∀ k, 0 ≤ᵐ[μ] f k) {c : ℝ} (hc : 0 < c) :
     μ.real {ω | ∃ k, c ≤ f k ω} ≤ (∫ ω, f 0 ω ∂μ) / c := by
   let A : ℕ → Set Ω := fun n => {ω | ∃ k ≤ n, c ≤ f k ω}

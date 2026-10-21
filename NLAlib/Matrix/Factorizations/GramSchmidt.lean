@@ -306,7 +306,8 @@ theorem gramSchmidtR_apply_self_pos {A : Matrix m n 𝕜} (hA : Function.Injecti
 /-- Gram–Schmidt commutes with a factor $\mathbf{W}$ with orthonormal columns on the left: the
 Gram–Schmidt factor of $\mathbf{W}\mathbf{A}$ is $\mathbf{W}\mathbf{Q}$.
 Port of `NLAlib.qrNormalizedArray_orthogonal_mul`. -/
-theorem gramSchmidtQ_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matrix l m 𝕜}
+theorem HasOrthonormalCols.gramSchmidtQ_mul_left {l : Type*} [Fintype l] [DecidableEq m]
+    {W : Matrix l m 𝕜}
     (hW : HasOrthonormalCols W) (A : Matrix m n 𝕜) :
     gramSchmidtQ (W * A) = W * gramSchmidtQ A := by
   let T : EuclideanSpace 𝕜 m →ₗᵢ[𝕜] EuclideanSpace 𝕜 l :=
@@ -320,10 +321,12 @@ theorem gramSchmidtQ_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matri
 /-- The triangular factor is unchanged by a factor $\mathbf{W}$ with orthonormal columns on the
 left: $\mathbf{W}\mathbf{A}$ and $\mathbf{A}$ have the same triangular factor $\mathbf{R}$.
 Port of `NLAlib.canonicalQRUpper_orthogonal_mul`. -/
-theorem gramSchmidtR_mul_left {l : Type*} [Fintype l] [DecidableEq m] {W : Matrix l m 𝕜}
+theorem HasOrthonormalCols.gramSchmidtR_mul_left {l : Type*} [Fintype l] [DecidableEq m]
+    {W : Matrix l m 𝕜}
     (hW : HasOrthonormalCols W) (A : Matrix m n 𝕜) :
     gramSchmidtR (W * A) = gramSchmidtR A := by
-  rw [gramSchmidtR, gramSchmidtQ_mul_left hW, hW.conjTranspose_mul_mul, gramSchmidtR]
+  rw [gramSchmidtR, HasOrthonormalCols.gramSchmidtQ_mul_left hW, hW.conjTranspose_mul_mul,
+    gramSchmidtR]
 
 /-- **The Gram–Schmidt vectors span the column space**: $\operatorname{range}\mathbf{Q} =
 \operatorname{range}\mathbf{A}$ for $\mathbf{Q}$ = `gramSchmidtQ A`, with no rank assumption (the

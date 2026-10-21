@@ -94,6 +94,7 @@ theorem integrable_quadForm (hx : IsIsotropic x μ) (A : Matrix n n 𝕜) :
 $\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}$ is an unbiased estimator of
 $\operatorname{tr}\mathbf{A}$: $\mathbb{E}[\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}]
 = \operatorname{tr}\mathbf{A}$.
+[Epperly2023, Unbiasedness]; there for the averaged Girard–Hutchinson estimator, here one probe.
 Result: hutchinson-trace-estimator -/
 theorem integral_quadForm (hx : IsIsotropic x μ) (A : Matrix n n 𝕜) :
     ∫ ω, quadForm A (x ω) ∂μ = A.trace := by

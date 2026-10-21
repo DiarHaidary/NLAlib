@@ -30,8 +30,6 @@ Lemma 9.4). Mathlib has no subgradient of a real function (searched `Subgradient
 
 @[expose] public section
 
--- Stage B1b
-
 /-- $f$ has a **supporting line on $s$ at $x$**: there is a slope $c$ with
 $$f(x) + c\,(y - x) \le f(y) \quad \text{for all } y \in s\,.$$
 Nothing is assumed about $x \in s$; the consumers take $x \in s$ from elsewhere.

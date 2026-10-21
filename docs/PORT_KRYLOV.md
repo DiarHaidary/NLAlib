@@ -181,7 +181,7 @@ mathematics and the interface; the spelling always moves to `𝕜`, `ᴴ` and th
 | structure `ArnoldiDecomp A b q` (fields `Q`, `graded`), `D.H`, `D.restrict`, `D.Hbar`, `LanczosDecomp := ArnoldiDecomp`, witness `arnoldiDecomp A b q h` | `Fin.castLE` and `restrict` in every relation; the alias breaks dot notation; existence needs a grade hypothesis | the prototype's predicate `IsGradedKrylovBasis A b Q`, kept with its name and the wrapper dropped; canonical `arnoldiMatrix`; compression written `Qᴴ * A * Q` | D5 (reverses a prototype decision of the maintainer) |
 | Hessenberg in three spellings, tridiagonal in two | parallel; none concludes a predicate | `hQ.isUpperHessenberg : IsUpperHessenberg (Qᴴ * A * Q)`; `IsTridiagonal` for Hermitian $\mathbf{A}$ | the Matrix layer has both |
 | relation $\mathbf{A}\mathbf{Q}_q = \mathbf{Q}_{q+1}\underline{\mathbf{H}}_q$ only up to the grade | needs a decomposition of size $q+1$ | for every $q$: `A * arnoldiMatrix A b q = arnoldiMatrix A b (q + 1) * ((arnoldiMatrix A b (q + 1))ᴴ * A * arnoldiMatrix A b q)` | $\operatorname{range}(\mathbf{A}\mathbf{Q}_q) \subseteq \mathcal{K}_{q+1}$, and $\mathbf{Q}_{q+1}\mathbf{Q}_{q+1}^{\mathsf{H}}$ is the projector onto $\mathcal{K}_{q+1}$ (its nonzero columns are orthonormal); at and past the grade $\mathcal{K}_{q+1} = \mathcal{K}_q$ is $\mathbf{A}$-invariant, so nothing is lost |
-| `exists_sign`, `Q_eq_of_pos` | real signs | unimodular scalars, `exists_eq_mul_diagonal_of_isUpperHessenberg`; positive normalisation through `IsQR.unique` | exists in the Matrix layer |
+| `exists_sign`, `Q_eq_of_pos` | real signs | unimodular scalars, `HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg`; positive normalisation through `IsQR.unique` | exists in the Matrix layer |
 | coefficients twice (`LanczosDecomp.alpha/beta`, `lanczosAlpha/lanczosBeta`), bridged by a scaffold | two vocabularies | entries of `Qᴴ * A * Q`; for the canonical matrix $\alpha_j$ real, $\beta_j > 0$ below the grade | one vocabulary |
 | `LanczosState`, `lanczosStep`, `lanczosRecurrence`; realisation a scaffold | unproved | recurrences with proved realisation theorems: Lanczos in stage K0, Arnoldi in K3 | D4 |
 
@@ -492,6 +492,12 @@ the form of `specNorm_aeval_le_of_forall_mem_Icc`. $\kappa$ forms are corollarie
   | i.i.d. iterates on `Measure.infinitePi` | `Probability/` | a probability fact |
 
 - Not this round: the QR algorithm, `jacobiMatrix`, the spectral measure (D6). Rework: import paths.
+- Amendment (2026-10-20, sketch-and-precondition skeleton): Richardson's iteration lives in
+  `Krylov/LinearSystems/Richardson.lean`, not `PolynomialIteration.lean`: the file holds one
+  recursion (`NLAlib.richardsonIterate`, rectangular), not polynomial methods
+  (`docs/design/Regression-SketchPrecondition.md` §6). The i.i.d.-iterate lemma went to
+  `ForMathlib/Probability/Independence/InfinitePi.lean` and `Probability/Law.lean`
+  (`docs/design/Regression-Kaczmarz.md` §7).
 
 ## 3. Decisions the orchestrator takes
 
@@ -560,7 +566,7 @@ Kaczmarz and sketch-and-project).
   values re-sorted, a small re-sorting lemma to add then. Diverging, not abstracted: the polynomial
   (power, Chebyshev, amplifier) and the probability. Citations: the four gapped lines (RSI, RBKI,
   NysSI, NysBKI) of `TroppWebber2023` Theorem 9.2, through its Lemma 9.5 and Proposition 8.6 (in
-  the library as `measureReal_not_frobNorm_mul_mul_pinv_sq_le_le_of_hasLaw_gaussianMatrix`,
+  the library as `measureReal_frobNorm_mul_mul_pinv_sq_gt_le_of_hasLaw_gaussianMatrix`,
   `RandomMatrix/Gaussian/BlockTail.lean`); its Theorem 9.1 is the gapless theorem (Lemma 9.4). MT
   Theorem 11.11 is stated in MT without proof ("adapted from Tropp"); the proof must be
   reconstructed, citing Musco and Musco 2015 Theorem 1 as its source, with the constant an
@@ -605,7 +611,7 @@ As in `PORT_LOWRANK.md` §1, with these points:
   `HasOrthonormalCols.pinv_mul_conjTranspose_right`, `measurable_rank`; `IsQR`, `IsQR.unique`,
   `gramSchmidtQ`, `isQR_gramSchmidt`, `hasOrthonormalCols_gramSchmidtQ`,
   `span_gramSchmidtQ_col_image_Iic`, `gramSchmidtR_apply_self_smul_col`; `IsUpperHessenberg`,
-  `IsTridiagonal`, `exists_eq_mul_diagonal_of_isUpperHessenberg`; `quadForm`,
+  `IsTridiagonal`, `HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg`; `quadForm`,
   `isLeastSquaresSolution_iff_isMinOn`; `Matrix.IsHermitian.re_quadForm_aeval_aeval_mulVec_le` and
   `re_quadForm_aeval_mulVec_le` (the spectral step, CG at weight $g = X$);
   `exists_degree_lt_one_sub_eq_X_mul_of_eval_zero_eq_one` (residual algebra); `chebyshevResidual`

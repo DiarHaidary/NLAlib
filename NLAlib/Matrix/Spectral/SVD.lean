@@ -39,8 +39,8 @@ lexicographically least one in fixed real coordinates; `NLAlib.truncatedSVD` is 
 
 * `NLAlib.exists_isSVD`: every matrix has an SVD with $k$ columns, for every $k$ between its rank
   and its smaller dimension, with $\boldsymbol{\sigma}$ the singular values.
-* `NLAlib.isSVD_svdU_svdV`, `NLAlib.toLex_equivFun_svdU_svdV_le`: the chosen SVD is an SVD, and
-  the lexicographically least one.
+* `NLAlib.isSVD_svdU_svdV`, `NLAlib.IsSVD.toLex_equivFun_svdU_svdV_le`: the chosen SVD is an SVD,
+  and the lexicographically least one.
 * `NLAlib.IsSVD.singularValues_eq`, `NLAlib.IsSVD.exists_equiv_singularValues_eq`: the entries of
   $\boldsymbol{\sigma}$ are the singular values.
 * `NLAlib.IsSVD.rank_eq`, `NLAlib.IsSVD.specNorm_eq`, `NLAlib.IsSVD.frobNorm_sq_eq`: rank and norms
@@ -241,9 +241,10 @@ private theorem singularValues_eq_singularValues_diagonal (h : IsSVD A U σ V) :
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.singularValues_mul_left,
     h.hasOrthonormalCols_right.singularValues_mul_conjTranspose_right]
 
-/-- In an SVD with columns indexed by `Fin k` and $\boldsymbol{\sigma}$ non-increasing,
-$\boldsymbol{\sigma}$ is the sequence of singular values: $\sigma_i(\mathbf{A}) =
-\boldsymbol{\sigma}_i$ for $i < k$. Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
+/-- **Uniqueness of the singular values.** In an SVD with columns indexed by `Fin k` and
+$\boldsymbol{\sigma}$ non-increasing, $\boldsymbol{\sigma}$ is the sequence of singular values:
+$\sigma_i(\mathbf{A}) = \boldsymbol{\sigma}_i$ for $i < k$.
+Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
 Result: svd-uniqueness -/
 theorem singularValues_eq {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → ℝ}
     {V : Matrix n (Fin k) 𝕜} (h : IsSVD A U σ V) (hσ : Antitone σ) (i : Fin k) :
@@ -404,7 +405,7 @@ theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : 
   classical
   obtain ⟨W, hW, hGW⟩ :=
     (Matrix.isHermitian_conjTranspose_mul_self A).exists_eq_mul_diagonal_mul_conjTranspose
-  simp only [← sq_singularValues] at hGW
+  simp only [← singularValues_sq] at hGW
   have hAW : (A * W)ᴴ * (A * W) =
       Matrix.diagonal fun i : Fin (Fintype.card n) => ((singularValues A i ^ 2 : ℝ) : 𝕜) := by
     rw [Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Aᴴ, hGW,
@@ -530,7 +531,7 @@ $$\mathbf{A} = \mathsf{svdU}(\mathbf{A})\,\operatorname{diag}\bigl(\sigma_0(\mat
 \sigma_{r-1}(\mathbf{A})\bigr)\,\mathsf{svdV}(\mathbf{A})^{\mathsf{H}}$$
 (`NLAlib.isSVD_svdU_svdV`). Among all such thin SVDs it is the one whose real coordinates, in the
 basis `Module.finBasis ℝ _` of the pairs of factors, are lexicographically least
-(`NLAlib.toLex_equivFun_svdU_svdV_le`), so it is a fixed function of $\mathbf{A}$; it is Borel
+(`NLAlib.IsSVD.toLex_equivFun_svdU_svdV_le`), so it is a fixed function of $\mathbf{A}$; it is Borel
 measurable (`NLAlib.measurable_svdU`). `NLAlib.truncatedSVD` is built from it. -/
 noncomputable def svdU (A : Matrix m n 𝕜) :
     Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜 :=
@@ -576,7 +577,7 @@ theorem isSVD_svdU_svdV (A : Matrix m n 𝕜) :
 $(\mathsf{svdU}(\mathbf{A}), \mathsf{svdV}(\mathbf{A}))$ has the lexicographically least
 coordinates in the basis `Module.finBasis ℝ _` among the thin SVDs of $\mathbf{A}$ with
 $\mathbf{\Sigma} = \operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}$. -/
-theorem toLex_equivFun_svdU_svdV_le {A : Matrix m n 𝕜}
+theorem IsSVD.toLex_equivFun_svdU_svdV_le {A : Matrix m n 𝕜}
     {U : Matrix m (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜}
     {V : Matrix n (Fin (min (Fintype.card m) (Fintype.card n))) 𝕜}
     (h : IsSVD A U (fun i => singularValues A i) V) :

@@ -42,7 +42,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
 \|\mathbf{r}_0\|\,\mathbf{Q}_q\underline{\mathbf{T}}_q^{+}\mathbf{e}_0$ with $\mathbf{Q}_q$ and
 $\underline{\mathbf{T}}_q$ computed by the Lanczos recurrence from $\mathbf{r}_0$, with no grade
-hypothesis. [PaigeSaunders1975]; [Greenbaum1997, §2.5]; locators to verify.
+hypothesis. [PaigeSaunders1975, §6]; [Greenbaum1997, §2.5]; the second locator to verify. Paige
+and Saunders put the Lanczos vectors into the minimum residual problem (2.7) through (6.1) and
+(6.2), for real symmetric $\mathbf{A}$ and up to termination.
 Result: minres-lanczos -/
 theorem _root_.Matrix.IsHermitian.gmresIterate_eq_lanczosMatrix {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -51,7 +53,7 @@ theorem _root_.Matrix.IsHermitian.gmresIterate_eq_lanczosMatrix {A : Matrix n n 
         (pinv ((lanczosTridiagonal A (b - A *ᵥ x₀) (q + 1)).submatrix id Fin.castSucc) *ᵥ
           Pi.single 0 1)) := by
   rw [hA.lanczosMatrix_eq_arnoldiMatrix, hA.lanczosTridiagonal_eq,
-    conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc,
+    submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc,
     gmresIterate_eq_arnoldiMatrix]
 
 /-- **The preconditioned Lanczos recurrence yields preconditioned MINRES**: for invertible

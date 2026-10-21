@@ -559,8 +559,7 @@ private theorem backSubstState_castLE_of_apply_eq_zero {r : ℕ} (h : r ≤ n)
 /-- **Back substitution past a zero block, the leading entries**: if $\mathbf{U}_{i,j} = 0$
 whenever $i \ge r$ or $j \ge r$, the first $r$ entries of $\mathsf{backSubst}(\mathbf{U},
 \mathbf{b})$
-are back substitution on the leading $r \times r$ block. Proof: the entries from $r$ on are zero
-(`backSubst_apply_eq_zero_of_le`), so the sums for $i < r$ see the leading block only. -/
+are back substitution on the leading $r \times r$ block. -/
 theorem backSubst_castLE_of_apply_eq_zero {r : ℕ} (h : r ≤ n) {U : Matrix (Fin n) (Fin n) K}
     (hU : ∀ i j : Fin n, r ≤ (i : ℕ) ∨ r ≤ (j : ℕ) → U i j = 0) (b : Fin n → K) (i : Fin r) :
     backSubst U b (Fin.castLE h i) =

@@ -11,16 +11,17 @@ public import NLAlib.Probability.SubExponential.Basic
 # Tails of sub-exponential random variables
 
 The tail of a sub-exponential variable,
-$\mathbb{P}(X \ge t) \le \exp(-\min(t^2 / (2v), t / (2b)))$, its two regimes, the lower and
+$\mathbb{P}[X \ge t] \le \exp(-\min(t^2 / (2v), t / (2b)))$, its two regimes, the lower and
 two-sided tails, and Bernstein's inequality for sums of independent sub-exponential variables.
 
 ## Main results
 
-* `NLAlib.HasSubexponentialMGF.measure_ge_le` and its regimes
-  `NLAlib.HasSubexponentialMGF.measure_ge_le_of_mul_le`,
-  `NLAlib.HasSubexponentialMGF.measure_ge_le_of_le_mul`.
-* `NLAlib.HasSubexponentialMGF.measure_le_le`, `NLAlib.HasSubexponentialMGF.measure_abs_ge_le`.
-* `NLAlib.HasSubexponentialMGF.measure_sum_ge_le_of_iIndepFun`: Bernstein's inequality.
+* `NLAlib.HasSubexponentialMGF.measureReal_ge_le` and its regimes
+  `NLAlib.HasSubexponentialMGF.measureReal_ge_le_of_mul_le`,
+  `NLAlib.HasSubexponentialMGF.measureReal_ge_le_of_le_mul`.
+* `NLAlib.HasSubexponentialMGF.measureReal_le_le`,
+  `NLAlib.HasSubexponentialMGF.measureReal_abs_ge_le`.
+* `NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun`: Bernstein's inequality.
 
 ## References
 
@@ -77,7 +78,7 @@ private lemma measureReal_le_one (h : HasSubexponentialMGF X v b μ) (s : Set Ω
 
 /-- The sub-Gaussian regime of the sub-exponential tail: for $t \ge 0$ with $b t \le v$,
 $\mu(X \ge t) \le e^{-t^2 / (2v)}$. With $b = 0$ this is the sub-Gaussian tail. -/
-theorem measure_ge_le_of_mul_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t)
+theorem measureReal_ge_le_of_mul_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t)
     (hbt : b * t ≤ v) : μ.real {ω | t ≤ X ω} ≤ rexp (-t ^ 2 / (2 * v)) := by
   by_cases hv : (v : ℝ) = 0
   · rw [hv, mul_zero, div_zero, exp_zero]
@@ -96,7 +97,7 @@ theorem measure_ge_le_of_mul_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (h
 /-- The exponential regime of the sub-exponential tail: for $v \le b t$,
 $\mu(X \ge t) \le e^{-t / (2b)}$. No sign condition on $t$ is needed: $v \le b t$ forces
 $t \ge 0$ when $b > 0$, and the bound is $1$ when $b = 0$. -/
-theorem measure_ge_le_of_le_mul (h : HasSubexponentialMGF X v b μ) {t : ℝ}
+theorem measureReal_ge_le_of_le_mul (h : HasSubexponentialMGF X v b μ) {t : ℝ}
     (hbt : v ≤ b * t) : μ.real {ω | t ≤ X ω} ≤ rexp (-t / (2 * b)) := by
   by_cases hb : (b : ℝ) = 0
   · rw [hb, mul_zero, div_zero, exp_zero]
@@ -117,27 +118,27 @@ theorem measure_ge_le_of_le_mul (h : HasSubexponentialMGF X v b μ) {t : ℝ}
 $$\mu(X \ge t) \le \exp\Bigl(-\min\Bigl(\frac{t^2}{2v}, \frac{t}{2b}\Bigr)\Bigr)\,.$$
 [Wainwright2019, Proposition 2.9]. If $b = 0$ or $v = 0$, Lean's division by zero makes the
 exponent $0$ and the bound $1$; the regime forms are the usable statements then (for a
-sub-Gaussian variable, $b = 0$, use `measure_ge_le_of_mul_le`).
+sub-Gaussian variable, $b = 0$, use `measureReal_ge_le_of_mul_le`).
 Result: subexponential-tail -/
-theorem measure_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
+theorem measureReal_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ X ω} ≤ rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
   rcases le_total ((b : ℝ) * t) v with hbt | hbt
-  · refine (h.measure_ge_le_of_mul_le ht hbt).trans ?_
+  · refine (h.measureReal_ge_le_of_mul_le ht hbt).trans ?_
     rw [neg_div]
     exact exp_le_exp.mpr (neg_le_neg (min_le_left _ _))
-  · refine (h.measure_ge_le_of_le_mul hbt).trans ?_
+  · refine (h.measureReal_ge_le_of_le_mul hbt).trans ?_
     rw [neg_div]
     exact exp_le_exp.mpr (neg_le_neg (min_le_right _ _))
 
 /-- The lower tail of a sub-exponential variable: for $t \ge 0$,
 $\mu(X \le -t) \le \exp(-\min(t^2 / (2v), t / (2b)))$. -/
-theorem measure_le_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
+theorem measureReal_le_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | X ω ≤ -t} ≤ rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
-  simpa only [le_neg] using h.neg.measure_ge_le ht
+  simpa only [le_neg] using h.neg.measureReal_ge_le ht
 
 /-- The two-sided tail of a sub-exponential variable: for $t \ge 0$,
 $\mu(\lvert X\rvert \ge t) \le 2 \exp(-\min(t^2 / (2v), t / (2b)))$. -/
-theorem measure_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
+theorem measureReal_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ |X ω|} ≤ 2 * rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
   have := h.isFiniteMeasure
   calc μ.real {ω | t ≤ |X ω|}
@@ -149,22 +150,21 @@ theorem measure_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht : 0 
   _ ≤ μ.real {ω | t ≤ X ω} + μ.real {ω | X ω ≤ -t} := measureReal_union_le _ _
   _ ≤ 2 * rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
     rw [two_mul]
-    exact add_le_add (h.measure_ge_le ht) (h.measure_le_le ht)
+    exact add_le_add (h.measureReal_ge_le ht) (h.measureReal_le_le ht)
 
 /-- **Bernstein's inequality** for independent sub-exponential variables: if the $X_i$ are
 independent and, for $i \in s$, $X_i$ is sub-exponential with parameters $(v_i, b_i)$
 (`HasSubexponentialMGF`), then for $t \ge 0$
 $$\mu\Bigl(\sum_{i \in s} X_i \ge t\Bigr) \le \exp\Bigl(-\min\Bigl(\frac{t^2}{2 \sum_{i \in s} v_i},
 \frac{t}{2 \max_{i \in s} b_i}\Bigr)\Bigr),$$
-with the convention of `measure_ge_le` when a denominator is $0$.
-[Wainwright2019, §2.1.3].
+with the convention of `measureReal_ge_le` when a denominator is $0$. [Wainwright2019, §2.1.3].
 Result: bernstein-inequality -/
-theorem measure_sum_ge_le_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ)
+theorem measureReal_sum_ge_le_of_iIndepFun {ι : Type*} {X : ι → Ω → ℝ} (h_indep : iIndepFun X μ)
     {v b : ι → ℝ≥0} {s : Finset ι} (h : ∀ i ∈ s, HasSubexponentialMGF (X i) (v i) (b i) μ)
     {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | t ≤ ∑ i ∈ s, X i ω} ≤
       rexp (-min (t ^ 2 / (2 * ∑ i ∈ s, v i)) (t / (2 * s.sup b))) := by
-  simpa only [NNReal.coe_sum] using (sum_of_iIndepFun h_indep h).measure_ge_le ht
+  simpa only [NNReal.coe_sum] using (sum_of_iIndepFun h_indep h).measureReal_ge_le ht
 
 end HasSubexponentialMGF
 

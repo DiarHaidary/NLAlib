@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
 public import NLAlib.Probability.MatrixConcentration.MGFBound
 
 /-!
@@ -116,15 +117,6 @@ private theorem sub_mul_log_one_add_le {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ �
     positivity
   nlinarith [mul_le_mul_of_nonneg_left hlow (show 0 ≤ 1 + δ by linarith)]
 
-/-- The Chernoff tail base in exponential form: for $s > -1$ and real $a$,
-$\bigl(e^s / (1 + s)^{1+s}\bigr)^a = e^{(s - (1 + s) \log(1 + s)) a}$. It turns the source form
-of the Chernoff tails into an exponent to optimise. -/
-theorem exp_div_rpow_rpow_eq_exp {s : ℝ} (hs : 0 < 1 + s) (a : ℝ) :
-    (Real.exp s / (1 + s) ^ (1 + s)) ^ a = Real.exp ((s - (1 + s) * Real.log (1 + s)) * a) := by
-  rw [Real.rpow_def_of_pos (div_pos (Real.exp_pos _) (Real.rpow_pos_of_pos hs _)),
-    Real.log_div (Real.exp_pos _).ne' (Real.rpow_pos_of_pos hs _).ne', Real.log_exp,
-    Real.log_rpow hs]
-
 /-! ### The matrix moment generating function -/
 
 /-- The chord bound for a matrix with $\mathbf{0} \preceq \mathbf{A} \preceq L\mathbf{I}$, $L > 0$:
@@ -217,7 +209,7 @@ Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
 $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$, then for
 $\delta \ge 0$
-$$\mathbb{P}\bigl(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr)
+$$\mathbb{P}\bigl[\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})\bigr]
 \le \lvert n\rvert \Bigl(\frac{e^\delta}{(1 + \delta)^{1+\delta}}\Bigr)^{\lambda_0(\mathbf{V}) / L}
 \,.$$
 [Tropp2015, Theorem 5.1.1]. -/
@@ -251,7 +243,7 @@ theorem measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le [Nonempty n]
           (Fintype.card n * Real.exp ((Real.exp (θ * L) - 1) / L * eigenvalue V 0)) :=
         mul_le_mul_of_nonneg_left ((htr θ hθ).trans htrd) (Real.exp_pos _).le
     _ = Fintype.card n * (Real.exp δ / (1 + δ) ^ (1 + δ)) ^ (eigenvalue V 0 / L) := by
-        rw [exp_div_rpow_rpow_eq_exp h1δ, hθL, mul_left_comm, ← Real.exp_add, hθdef]
+        rw [Real.exp_div_rpow_rpow_eq_exp h1δ, hθL, mul_left_comm, ← Real.exp_add, hθdef]
         congr 2
         field_simp
         ring
@@ -261,7 +253,7 @@ Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
 $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta < 0$, then for
 $0 \le \delta < 1$ and the smallest eigenvalue, index $k + 1 = \lvert n\rvert$,
-$$\mathbb{P}\bigl(\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})\bigr)
+$$\mathbb{P}\bigl[\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})\bigr]
 \le \lvert n\rvert
 \Bigl(\frac{e^{-\delta}}{(1 - \delta)^{1-\delta}}\Bigr)^{\lambda_k(\mathbf{V}) / L}\,.$$
 [Tropp2015, Theorem 5.1.1]. -/
@@ -293,7 +285,7 @@ theorem measureReal_eigenvalue_le_le_chernoff_of_integral_le (hY : ∀ᵐ ω ∂
       eigenvalue_neg _ (show 0 + k + 1 = Fintype.card n by omega),
       eigenvalue_real_smul _ (neg_nonneg.mpr hc), neg_mul, neg_neg]
   rw [heig] at htrd
-  have hbase := exp_div_rpow_rpow_eq_exp (s := -δ) (by linarith) (eigenvalue V k / L)
+  have hbase := Real.exp_div_rpow_rpow_eq_exp (s := -δ) (by linarith) (eigenvalue V k / L)
   rw [← sub_eq_add_neg] at hbase
   calc μ.real {ω | eigenvalue (Y ω) k ≤ (1 - δ) * eigenvalue V k}
       ≤ Real.exp (-θ * ((1 - δ) * eigenvalue V k)) *
@@ -308,11 +300,16 @@ theorem measureReal_eigenvalue_le_le_chernoff_of_integral_le (hY : ∀ᵐ ω ∂
         field_simp
         ring
 
-/-- The simplified Chernoff upper tail from a trace bound: under the hypotheses of
-`measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le`, for $0 \le \delta \le 1$,
-$\mathbb{P}(\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V}))
-\le \lvert n\rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)}$; weaker than the source form in
-every regime and proved from it. -/
+/-- The simplified Chernoff upper tail from a trace bound: if, on a probability space, the random
+$n \times n$ matrix $\mathbf{Y}$ over $\Bbbk$ ($n$ nonempty) is almost surely Hermitian,
+$\mathbf{V}$ is positive semidefinite, $L > 0$, and for every $\theta > 0$ the trace exponential
+$\operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}$ is integrable with
+$\mathbb{E} \operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{Re} \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$, then for
+$0 \le \delta \le 1$ and the largest eigenvalue $\lambda_0$,
+$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge (1 + \delta) \lambda_0(\mathbf{V})]
+\le \lvert n\rvert\, e^{-\delta^2 \lambda_0(\mathbf{V}) / (3L)}$. Weaker than the source form
+`measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le` in every regime and proved from it. -/
 theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty n]
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L)
     (hint : ∀ θ : ℝ, 0 < θ → Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
@@ -324,19 +321,23 @@ theorem measureReal_eigenvalue_zero_ge_le_card_mul_exp_of_integral_le [Nonempty 
   have hm : 0 ≤ eigenvalue V 0 := hV.eigenvalue_nonneg 0
   refine (measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le hY hV hL hint htr
     hδ0).trans ?_
-  rw [exp_div_rpow_rpow_eq_exp (by linarith)]
+  rw [Real.exp_div_rpow_rpow_eq_exp (by linarith)]
   gcongr
   calc (δ - (1 + δ) * Real.log (1 + δ)) * (eigenvalue V 0 / L)
       ≤ -(δ ^ 2 / 3) * (eigenvalue V 0 / L) :=
         mul_le_mul_of_nonneg_right (sub_mul_log_one_add_le hδ0 hδ1) (div_nonneg hm hL.le)
     _ = -δ ^ 2 * eigenvalue V 0 / (3 * L) := by ring
 
-/-- The simplified Chernoff lower tail from a trace bound: under the hypotheses of
-`measureReal_eigenvalue_le_le_chernoff_of_integral_le`, for $0 \le \delta < 1$ and
-$k + 1 = \lvert n\rvert$,
-$\mathbb{P}(\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V}))
-\le \lvert n\rvert\, e^{-\delta^2 \lambda_k(\mathbf{V}) / (2L)}$; weaker than the source form in
-every regime and proved from it. -/
+/-- The simplified Chernoff lower tail from a trace bound: if, on a probability space, the random
+$n \times n$ matrix $\mathbf{Y}$ over $\Bbbk$ is almost surely Hermitian, $\mathbf{V}$ is
+positive semidefinite, $L > 0$, and for every $\theta < 0$ the trace exponential
+$\operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}$ is integrable with
+$\mathbb{E} \operatorname{Re} \operatorname{tr} e^{\theta \mathbf{Y}}
+\le \operatorname{Re} \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$, then for
+$0 \le \delta < 1$ and the smallest eigenvalue, index $k + 1 = \lvert n\rvert$,
+$\mathbb{P}[\lambda_k(\mathbf{Y}) \le (1 - \delta) \lambda_k(\mathbf{V})]
+\le \lvert n\rvert\, e^{-\delta^2 \lambda_k(\mathbf{V}) / (2L)}$. Weaker than the source form
+`measureReal_eigenvalue_le_le_chernoff_of_integral_le` in every regime and proved from it. -/
 theorem measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le
     (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hV : V.PosSemidef) (hL : 0 < L) {k : ℕ}
     (hk : k + 1 = Fintype.card n)
@@ -349,7 +350,7 @@ theorem measureReal_eigenvalue_le_le_card_mul_exp_of_integral_le
   have hm : 0 ≤ eigenvalue V k := hV.eigenvalue_nonneg k
   refine (measureReal_eigenvalue_le_le_chernoff_of_integral_le hY hV hL hk hint htr hδ0
     hδ1).trans ?_
-  have hbase := exp_div_rpow_rpow_eq_exp (s := -δ) (by linarith) (eigenvalue V k / L)
+  have hbase := Real.exp_div_rpow_rpow_eq_exp (s := -δ) (by linarith) (eigenvalue V k / L)
   rw [← sub_eq_add_neg] at hbase
   rw [hbase]
   gcongr

@@ -28,7 +28,8 @@ incoherent (**flattening**). Row $i$ of $\mathbf{F}\mathbf{D}\mathbf{Q}$, for an
 $\mathbf{Q}$ of $\operatorname{range}\mathbf{U}$, is the image of the sign vector under a matrix
 $\mathbf{M}_i$ with $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le \beta d / \lvert n \rvert$ and
 $\|\mathbf{M}_i\|_2^2 \le \beta / \lvert n \rvert$, so the Hsu–Kakade–Zhang tail
-(`NLAlib.IsSubgaussianVector.measure_norm_mulVec_sq_ge_le`) bounds it, over any `RCLike` field with
+(`NLAlib.IsSubgaussianVector.measureReal_norm_mulVec_sq_ge_le`) bounds it, over any `RCLike` field
+with
 the real constant. At $t = \log(\lvert n \rvert/\delta)$, outside probability $\delta$ the leverage
 scores are at most <!-- value srhtRowBound {\lvert n \rvert} d \delta -->
 $$\frac{\beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/\delta)} +
@@ -57,11 +58,11 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 
 ## Main results
 
-* `NLAlib.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector`: $\mathbf{F}\mathbf{D}$ is
-  unitary almost surely.
-* `NLAlib.measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector`:
+* `NLAlib.HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector`:
+  $\mathbf{F}\mathbf{D}$ is unitary almost surely.
+* `NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`:
   flattening; its $\delta$ form, in namespace `NLAlib`,
-  `measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_hasLaw_rademacherVector`.
+  `measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector`.
 * `NLAlib.srhtRowBound_nonneg`, `NLAlib.srhtRowBound_mono`, `NLAlib.srhtRowBound_le`: the API of
   the threshold.
 * `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`,
@@ -80,10 +81,11 @@ namespace NLAlib
 /-- The **SRHT row bound** <!-- value srhtRowBound n d \delta -->
 $d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$: flattening with
 failure probability $\delta$ makes every leverage score at most $\beta$ times this over $n$
-(`measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_hasLaw_rademacherVector`).
+(`measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector`).
 The value the proof reaches, at $t = \log(n/\delta)$ in the Hsu–Kakade–Zhang tail. Tropp 2011a has
-$(\sqrt{d} + \sqrt{8 \log(n/\delta)})^2$ ([Tropp2011a], cited by name, paper not in hand; the $8$
-is as in [HalkoMartinssonTropp2011, Theorem 11.1], $[\sqrt{k} + \sqrt{8 \log(kn)}]^2$), which is
+$(\sqrt{d} + \sqrt{8 \log(n/\delta)})^2$ ([Tropp2011a, Lemma 3.3], Walsh–Hadamard, failure
+probability $\delta$; the $8$ is as in [HalkoMartinssonTropp2011, Theorem 11.1],
+$[\sqrt{k} + \sqrt{8 \log(kn)}]^2$), which is
 larger (`NLAlib.srhtRowBound_le`). Consumers use the API. Junk values: for $\delta > n$ the
 logarithm is negative, the square root is $0$, and the value may be below $d$; the flattening tail
 is then trivial. -/
@@ -141,7 +143,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 /-- A unitary times a diagonal of random signs is unitary almost surely:
 $(\mathbf{F}\mathbf{D})^{\mathsf{H}}\mathbf{F}\mathbf{D} = \mathbf{D}^2 = \mathbf{I}$ on the event
 that every sign squares to $1$. -/
-theorem ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector (hF : HasOrthonormalCols F)
+theorem HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
+    (hF : HasOrthonormalCols F)
     (hξ : HasLaw ξ (rademacherVector n) μ) :
     ∀ᵐ ω ∂μ, HasOrthonormalCols (F * Matrix.diagonal fun i => (ξ ω i : 𝕜)) := by
   filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hξ] with ω hω
@@ -243,7 +246,7 @@ private theorem measureReal_not_norm_row_sq_le (hF : IsBoundedOrthonormal F β)
     calc specNorm M * frobNorm M ≤ √K * (√K * √d) :=
           mul_le_mul hS hFr' (frobNorm_nonneg _) (Real.sqrt_nonneg _)
       _ = K * √d := by rw [← mul_assoc, Real.mul_self_sqrt hK]
-  have key := (isSubgaussianVector_of_hasLaw_rademacherVector hξ).measure_norm_mulVec_sq_ge_le
+  have key := (isSubgaussianVector_of_hasLaw_rademacherVector hξ).measureReal_norm_mulVec_sq_ge_le
     one_ne_zero hM ht (𝕜 := 𝕜)
   refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top _ _)) key
   simp only [Set.mem_ofPred_eq, not_le, NNReal.coe_one, one_mul] at hω ⊢
@@ -261,8 +264,9 @@ $$\ell_i(\mathbf{F}\mathbf{D}\mathbf{U}) \le \frac{\beta\,(d + 2\sqrt{d t} + 2t)
 \,.$$
 [CamanoEpperlyMeyerTropp2025, Imported Theorem 4.3] (there $O((d + \log(n/\delta))/n)$ for a
 unitary Walsh–Hadamard, cosine or Fourier transform with entries $O(n^{-1/2})$; they note the
-argument needs only these two features); [Tropp2011a] (real signs, Walsh;
-$(\sqrt{d} + \sqrt{8 \log(\beta n)})^2 / n$, through CEMT, paper not in hand). Here any
+argument needs only these two features); [Tropp2011a, Lemma 3.3] (real signs, Walsh–Hadamard,
+orthonormal $\mathbf{U}$; $(\sqrt{d} + \sqrt{8 \log(n/\delta)})^2 / n$ outside probability
+$\delta$). Here any
 $\mathbf{F}$ with $n \lvert \mathbf{F}_{i,j} \rvert^2 \le \beta$, any field, any $\mathbf{U}$, the
 Hsu–Kakade–Zhang constant.
 The proof passes to an orthonormal basis $\mathbf{Q}$ of $\operatorname{range}\mathbf{U}$
@@ -274,30 +278,29 @@ $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le \beta d / \lvert n \rvert$ and
 $\|\mathbf{M}_i\|_2^2 \le \beta / \lvert n \rvert$; the Hsu–Kakade–Zhang tail at proxy $1$ per
 row, then a union over the rows.
 Result: srht-flattening -/
-theorem measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector
+theorem measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector
     (hF : IsBoundedOrthonormal F β) (hξ : HasLaw ξ (rademacherVector n) μ) (U : Matrix n r 𝕜)
     (ht : 0 ≤ t) :
-    μ.real {ω | ¬ ∀ i, leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i ≤
-        β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} ≤
+    μ.real {ω | ∃ i, β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹ <
+        leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i} ≤
       Fintype.card n * Real.exp (-t) := by
   have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.2 inferInstance
   obtain ⟨Q, hQ, hQU⟩ := exists_hasOrthonormalCols_range_eq (p := Fin U.rank) U
     (Fintype.card_fin _)
-  have hae := ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
+  have hae := HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
     hF.hasOrthonormalCols hξ
   have hrow := fun i => measureReal_not_norm_row_sq_le hF hξ hQ ht i
   simp only [Fintype.card_fin] at hrow
-  have hsub : {ω | ¬ ∀ i, leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i ≤
-        β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} ≤ᵐ[μ]
+  have hsub : {ω | ∃ i, β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹ <
+        leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i} ≤ᵐ[μ]
       ⋃ i, {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * Q) i)‖ ^ 2 ≤
         β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹} := by
-    filter_upwards [hae] with ω hω hnot
-    simp only [not_forall] at hnot
-    obtain ⟨i, hi⟩ := hnot
+    filter_upwards [hae] with ω hω hex
+    obtain ⟨i, hi⟩ := hex
     refine Set.mem_iUnion.2 ⟨i, ?_⟩
     rw [leverageScore_eq_of_range_eq (range_mul_eq_of_range_eq _ hQU).symm,
       (hω.mul hQ).leverageScore_eq i] at hi
-    exact hi
+    exact not_le.2 hi
   calc _ ≤ μ.real (⋃ i, {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * Q)
           i)‖ ^ 2 ≤ β * (U.rank + 2 * √(U.rank * t) + 2 * t) * (Fintype.card n : ℝ)⁻¹}) :=
         ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae hsub)
@@ -316,22 +319,22 @@ $$\frac{\beta\,\bigl(r + 2\sqrt{r \log(\lvert n \rvert/\delta)} +
 with $r = \operatorname{rank}\mathbf{U}$; the numerator is `NLAlib.srhtRowBound`.
 The flattening tail at $t = \log(n/\delta)$ for $\delta \le n$, where $n e^{-t} = \delta$; for
 $\delta > n \ge 1$ the bound exceeds $1$, and empty `n` has an empty event. -/
-theorem measureReal_not_forall_leverageScore_mul_diagonal_le_srhtRowBound_of_hasLaw_rademacherVector
+theorem measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector
     (hF : IsBoundedOrthonormal F β) (hξ : HasLaw ξ (rademacherVector n) μ) (U : Matrix n r 𝕜)
     (hδ : 0 < δ) :
-    μ.real {ω | ¬ ∀ i, leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i ≤
-        β * srhtRowBound (Fintype.card n) U.rank δ * (Fintype.card n : ℝ)⁻¹} ≤ δ := by
+    μ.real {ω | ∃ i, β * srhtRowBound (Fintype.card n) U.rank δ * (Fintype.card n : ℝ)⁻¹ <
+        leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i} ≤ δ := by
   have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.2 inferInstance
   rcases isEmpty_or_nonempty n with hn | hn
-  · have h : {ω | ¬ ∀ i, leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i ≤
-        β * srhtRowBound (Fintype.card n) U.rank δ * (Fintype.card n : ℝ)⁻¹} = ∅ :=
-      Set.eq_empty_of_forall_notMem fun ω hω => hω fun i => isEmptyElim i
+  · have h : {ω | ∃ i, β * srhtRowBound (Fintype.card n) U.rank δ * (Fintype.card n : ℝ)⁻¹ <
+        leverageScore (F * (Matrix.diagonal fun l => (ξ ω l : 𝕜)) * U) i} = ∅ :=
+      Set.eq_empty_of_forall_notMem fun ω ⟨i, _⟩ => isEmptyElim i
     rw [h, measureReal_empty]
     exact hδ.le
   have hn0 : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
   rcases le_or_gt δ (Fintype.card n) with hδn | hδn
   · have ht : 0 ≤ Real.log (Fintype.card n / δ) := Real.log_nonneg ((one_le_div hδ).2 hδn)
-    have h := measureReal_not_forall_leverageScore_mul_diagonal_le_of_hasLaw_rademacherVector
+    have h := measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector
       hF hξ U ht
     rw [← srhtRowBound_def, Real.exp_neg, Real.exp_log (div_pos hn0 hδ), inv_div,
       mul_div_cancel₀ _ hn0.ne'] at h
@@ -370,7 +373,7 @@ private theorem measureReal_not_mul_le_add [Finite k] [IsProbabilityMeasure μ]
     (hδ₁ : 0 ≤ δ₁)
     (hsample : ∀ V : Matrix n r 𝕜, V.rank ≤ U.rank →
       (∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) → μ.real {ω | ¬ R (P ω) V} ≤ δ₁)
-    (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
+    (hflat : μ.real {ω | ∃ i, L * (Fintype.card n : ℝ)⁻¹ < leverageScore (T ω * U) i} ≤ δ₂) :
     μ.real {ω | ¬ R (P ω * T ω) U} ≤ δ₁ + δ₂ := by
   have hE : MeasurableSet {x : Matrix k n 𝕜 × Matrix n n 𝕜 | ¬ R (x.1 * x.2) U} :=
     (hR.preimage ((continuous_fst.matrix_mul continuous_snd).prodMk continuous_const)
@@ -384,7 +387,8 @@ private theorem measureReal_not_mul_le_add [Finite k] [IsProbabilityMeasure μ]
     exact not_congr (hRB (P ω) B hB)
   · refine le_trans (ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)) hflat
     filter_upwards [hTU] with ω hω hnot
-    exact fun h => hnot ⟨hω, h⟩
+    by_contra h
+    exact hnot ⟨hω, fun i => not_lt.1 fun hi => h ⟨i, hi⟩⟩
 
 /-- **Flatten, then sample** (injection). A random sketch $\mathbf{P}$ that is a subspace injection
 with constant $a$ and failure probability $\delta_1$ for every fixed subspace of rank at most
@@ -392,16 +396,16 @@ $\operatorname{rank}\mathbf{U}$ whose leverage scores are at most $L / \lvert n 
 with an independent random unitary $\mathbf{T}$ that makes $\mathbf{T}\mathbf{U}$ so incoherent
 outside probability $\delta_2$, is a subspace injection for $\operatorname{range}\mathbf{U}$ with
 constant $a$ outside probability $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed: for $L < 0$
-and nonempty `n` the sampling hypothesis is vacuous. [Tropp2011a] (the structure of the SRHT
-proof, through CEMT); [CamanoEpperlyMeyerTropp2025, §4.5] (the same two steps for SparseRTT, where
-their Theorem 4.4 is the sampling hypothesis). -/
+and nonempty `n` the sampling hypothesis is vacuous. [Tropp2011a, §3.1] (the structure of the
+SRHT proof: Lemma 3.3 flattens, Lemma 3.4 samples); [CamanoEpperlyMeyerTropp2025, §4.5] (the
+same two steps for SparseRTT, where their Theorem 4.4 is the sampling hypothesis). -/
 theorem hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
     (hP : AEMeasurable P μ) (hT : AEMeasurable T μ) (hTU : ∀ᵐ ω ∂μ, HasOrthonormalCols (T ω))
     {U : Matrix n r 𝕜} (hδ₁ : 0 ≤ δ₁)
     (hsample : ∀ V : Matrix n r 𝕜, V.rank ≤ U.rank →
       (∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) → HasSubspaceInjection P V a δ₁ μ)
-    (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
+    (hflat : μ.real {ω | ∃ i, L * (Fintype.card n : ℝ)⁻¹ < leverageScore (T ω * U) i} ≤ δ₂) :
     HasSubspaceInjection (fun ω => P ω * T ω) U a (δ₁ + δ₂) μ :=
   measureReal_not_mul_le_add (R := fun A V => IsSubspaceInjection A V a)
     (isClosed_setOf_isSubspaceInjection a) (fun _ _ hB => hB.isSubspaceInjection_mul_iff U)
@@ -414,7 +418,7 @@ $L / \lvert n \rvert$, composed with an independent random unitary $\mathbf{T}$ 
 $\mathbf{T}\mathbf{U}$ so incoherent outside probability $\delta_2$, is a subspace embedding for
 $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ outside probability
 $\delta_1 + \delta_2$. $0 \le \delta_1$ is needed, as in
-`NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`. [Tropp2011a];
+`NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`. [Tropp2011a, §3.1];
 [CamanoEpperlyMeyerTropp2025, §4.5]. -/
 theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityMeasure μ]
     {P : Ω → Matrix k n 𝕜} {T : Ω → Matrix n n 𝕜} (hind : IndepFun P T μ)
@@ -422,7 +426,7 @@ theorem hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le [IsProbabilityM
     {U : Matrix n r 𝕜} (hδ₁ : 0 ≤ δ₁)
     (hsample : ∀ V : Matrix n r 𝕜, V.rank ≤ U.rank →
       (∀ i, leverageScore V i ≤ L * (Fintype.card n : ℝ)⁻¹) → HasSubspaceEmbedding P V a b δ₁ μ)
-    (hflat : μ.real {ω | ¬ ∀ i, leverageScore (T ω * U) i ≤ L * (Fintype.card n : ℝ)⁻¹} ≤ δ₂) :
+    (hflat : μ.real {ω | ∃ i, L * (Fintype.card n : ℝ)⁻¹ < leverageScore (T ω * U) i} ≤ δ₂) :
     HasSubspaceEmbedding (fun ω => P ω * T ω) U a b (δ₁ + δ₂) μ :=
   measureReal_not_mul_le_add (R := fun A V => IsSubspaceEmbedding A V a b)
     (isClosed_setOf_isSubspaceEmbedding a b) (fun _ _ hB => hB.isSubspaceEmbedding_mul_iff U)

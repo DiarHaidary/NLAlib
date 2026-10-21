@@ -273,7 +273,7 @@ As in the Sketching round (`docs/PORT_SKETCHING.md` §1), with these amendments:
   split.
 - **Duplicate search** against Mathlib and `NLAlib/`, and against `Sketching/Properties/`, which
   already has CEMT Lemmas 2.1 and 2.6 (§2). Known starting points:
-  - `isLeast_re_quadForm_fromBlocks` for the Schur-complement variational form;
+  - `Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks` for the Schur-complement variational form;
   - `Factorizations/PolarFrames.lean` for polar factors and
     `eq_smul_one_of_forall_mul_mul_conjTranspose_eq`;
   - `norm_trace_conjTranspose_mul_le_sum_singularValues_mul` (von Neumann).
@@ -316,7 +316,7 @@ As in the Sketching round (`docs/PORT_SKETCHING.md` §1), with these amendments:
   - `singularValues_one_sub_rangeProjector_mul_le`, `IsStarProjection.singularValues_mul_le`.
 - `pinv` in every shape and rank, with `mul_pinv`, `pinv_eq_pinv_conjTranspose_mul_self_mul` and
   the generalized Schur complement (`Pseudoinverse/GeneralizedSchur.lean`, including the
-  variational form `isLeast_re_quadForm_fromBlocks`).
+  variational form `Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks`).
 - `Subspaces/Oblique.lean`: idempotents and the oblique projector
   $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$ in the invertible
   case.
@@ -563,7 +563,7 @@ reverse).**
 - **OSI and OSE: tails in the Sketching round's form.**
   - The failure probability is $\delta + 1/t$ and the factor $(1 + t/a)$ is explicit, where CEMT
     write "$C/\alpha$ with probability 9/10".
-  - This is Sketching S1's `HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le` composed
+  - This is Sketching S1's `HasSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le` composed
     with the structural bound.
   - There is no universal constant. CEMT's $C$ becomes $t$, chosen by the user.
 - **Which norms per algorithm.**
@@ -890,7 +890,7 @@ library indexes from $0$, so $\sigma_{k+1}$ is `singularValues A k`.
      $\langle\mathbf{x},(\mathbf{H}/\mathbf{\Omega})\mathbf{x}\rangle =
      \min_{\mathbf{y}}\langle\mathbf{x}-\mathbf{\Omega}\mathbf{y},
      \mathbf{H}(\mathbf{x}-\mathbf{\Omega}\mathbf{y})\rangle$, a minimum of affine functions of
-     $\mathbf{H}$. `isLeast_re_quadForm_fromBlocks` looks like this form already; the S0 note's
+     $\mathbf{H}$. `Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks` looks like this form already; the S0 note's
      duplicate search starts there (review A13e).
    - MT Corollary 11.2 is the monotonicity, and EW §6.3 uses both.
    - Loewner antitonicity of the inverse, $(\mathbf{X}+c\mathbf{Y})^{-1}\preceq\mathbf{X}^{-1}$ for

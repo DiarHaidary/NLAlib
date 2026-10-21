@@ -43,8 +43,10 @@ $\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous. Design:
 * `NLAlib.isSubspaceInjection_iff_forall_mem_range`,
   `NLAlib.isSubspaceEmbedding_iff_forall_mem_range`: the vector forms.
 * `NLAlib.HasOrthonormalCols.isSubspaceEmbedding_iff_specNorm_le`: the Gram-error form.
-* `NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_sq_singularValues`: the
+* `NLAlib.HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq`: the
   $\sigma_{\min}$ form.
+* `NLAlib.IsSubspaceEmbedding.pos_right_of_injective`: a positive lower constant on a nonzero
+  range forces a positive upper constant.
 * `NLAlib.IsSubspaceEmbedding.of_range_le`, `NLAlib.IsSubspaceEmbedding.mul_right`,
   `NLAlib.IsSubspaceEmbedding.smul`, `NLAlib.IsSubspaceEmbedding.mul`: subspaces, scaling and
   composition.
@@ -70,8 +72,7 @@ $a\,\mathbf{U}^{\mathsf{H}}\mathbf{U} \preceq
 $a \|\mathbf{U}\mathbf{x}\|^2 \le \|\mathbf{S}\mathbf{U}\mathbf{x}\|^2$ for every $\mathbf{x}$
 (`NLAlib.isSubspaceInjection_iff_forall_mem_range`). Vacuous for $a \le 0$.
 [CamanoEpperlyMeyerTropp2025, Definition 1.2 (1.3)]; there $\alpha \in (0, 1]$ and $\mathbf{U}$
-with orthonormal columns, here any real $a$ and any $\mathbf{U}$.
-Result: subspace-injection -/
+with orthonormal columns, here any real $a$ and any $\mathbf{U}$. -/
 def IsSubspaceInjection (S : Matrix k n 𝕜) (U : Matrix n p 𝕜) (a : ℝ) : Prop :=
   a • (Uᴴ * U) ≤ (S * U)ᴴ * (S * U)
 
@@ -80,8 +81,7 @@ constant $b$: $a \|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b \|\mathbf
 $\mathbf{y} \in \operatorname{range}\mathbf{U}$, in Loewner form on Gram matrices.
 [Woodruff2014, Definition 1], there $1 \mp \varepsilon$ and squared norms;
 [CamanoEpperlyMeyerTropp2025, Definition 1.1], there $\alpha$, $\beta$;
-[MartinssonTropp2020, §8.1], there unsquared norms.
-Result: ose-def -/
+[MartinssonTropp2020, §8.1], there unsquared norms. -/
 structure IsSubspaceEmbedding (S : Matrix k n 𝕜) (U : Matrix n p 𝕜) (a b : ℝ) : Prop where
   /-- The lower half: $\mathbf{S}$ is a subspace injection with constant $a$. -/
   lower : IsSubspaceInjection S U a
@@ -239,12 +239,12 @@ theorem HasOrthonormalCols.isSubspaceEmbedding_iff_specNorm_le [Fintype p] [Deci
 $a \le \sigma_{\min}(\mathbf{S}\mathbf{U})^2$, the smallest singular value being index $j$ with
 $j + 1 = \lvert p \rvert$. The upper half is `NLAlib.specNorm_sq_le_iff_conjTranspose_mul_self_le`
 after `hU`. -/
-theorem HasOrthonormalCols.isSubspaceInjection_iff_le_sq_singularValues [Fintype p] [DecidableEq p]
+theorem HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq [Fintype p] [DecidableEq p]
     (hU : HasOrthonormalCols U) {j : ℕ} (hj : j + 1 = Fintype.card p) :
     IsSubspaceInjection S U a ↔ a ≤ singularValues (S * U) j ^ 2 := by
   rw [hU.isSubspaceInjection_iff]
-  exact ⟨le_sq_singularValues_last_of_smul_one_le hj, fun h =>
-    (smul_one_le_smul_one h).trans (sq_singularValues_last_smul_one_le _ hj)⟩
+  exact ⟨le_singularValues_last_sq_of_smul_one_le hj, fun h =>
+    (smul_one_le_smul_one h).trans (singularValues_last_sq_smul_one_le _ hj)⟩
 
 /-- An approximate-matrix-multiplication bound at $\mathbf{A} = \mathbf{B} = \mathbf{U}$,
 $\|\mathbf{U}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{U} -
@@ -272,12 +272,31 @@ theorem IsSubspaceEmbedding.mono (h : IsSubspaceEmbedding S U a b) (ha : a' ≤ 
     IsSubspaceEmbedding S U a' b' := by
   exact ⟨h.lower.mono ha, h.upper.trans (smul_gram_le_smul_gram U hb)⟩
 
+/-- **The upper constant of an embedding is positive**: if $\mathbf{S}$ is a subspace embedding
+of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
+$a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range),
+$\mathbf{A}$ has full column rank and at least one column, then $0 < b$. -/
+theorem IsSubspaceEmbedding.pos_right_of_injective [Fintype q] [Nonempty q] {A : Matrix n q 𝕜}
+    (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hA : Function.Injective A.mulVec) : 0 < b := by
+  classical
+  obtain ⟨i⟩ := ‹Nonempty q›
+  have hv : A *ᵥ Pi.single i (1 : 𝕜) ≠ 0 := by
+    intro h0
+    have h1 : Pi.single i (1 : 𝕜) = 0 := hA (by rw [h0, Matrix.mulVec_zero])
+    simpa using congrFun h1 i
+  have hpos : 0 < ‖WithLp.toLp 2 (A *ᵥ Pi.single i (1 : 𝕜))‖ ^ 2 :=
+    pow_pos (norm_pos_iff.mpr (by simpa using hv)) 2
+  obtain ⟨h1, h2⟩ :=
+    isSubspaceEmbedding_iff_forall_mem_range.mp h _ ⟨Pi.single i (1 : 𝕜), rfl⟩
+  simp only [Matrix.mulVecLin_apply] at h1 h2
+  nlinarith
+
 /-- A subspace injection for $\operatorname{range}\mathbf{U}$ is one for every subspace
 $\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
 theorem IsSubspaceInjection.of_range_le [Fintype p] [Fintype q] (h : IsSubspaceInjection S U a)
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
     IsSubspaceInjection S V a := by
-  obtain ⟨C, rfl⟩ := range_mulVecLin_le_iff_exists_mul.mp hVU
+  obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hVU
   exact isSubspaceInjection_mul_right h C
 
 /-- A subspace embedding for $\operatorname{range}\mathbf{U}$ is one for every subspace
@@ -285,7 +304,7 @@ $\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
 theorem IsSubspaceEmbedding.of_range_le [Fintype p] [Fintype q] (h : IsSubspaceEmbedding S U a b)
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
     IsSubspaceEmbedding S V a b := by
-  obtain ⟨C, rfl⟩ := range_mulVecLin_le_iff_exists_mul.mp hVU
+  obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hVU
   exact ⟨isSubspaceInjection_mul_right h.lower C, upper_mul_right h.upper C⟩
 
 /-- A subspace injection for $\operatorname{range}\mathbf{U}$ is one for

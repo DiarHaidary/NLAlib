@@ -40,11 +40,7 @@ concave and continuous on a convex set $s$ that need not be closed, provided $f$
 $\varphi \circ f$ are integrable, and $f$ and its conditional mean lie in $s$ almost everywhere.
 Mathlib's `ConcaveOn.condExp_map_le` needs $s$ closed.
 Port of the prototype lemma of the same name
-(`NLAlib/ForMathlib/MeasureTheory/ConditionalJensen.lean`).
-Proof: the closed hypograph argument of `ConcaveOn.le_map_integral_of_integral_mem`, with
-Mathlib's `Convex.condExp_mem` for the pair $(f, \varphi \circ f)$ in the closure of the hypograph
-and `ContinuousLinearMap.comp_condExp_comm` for its two coordinates; easy (the prototype proof is
-about 20 lines). -/
+(`NLAlib/ForMathlib/MeasureTheory/ConditionalJensen.lean`). -/
 theorem ConcaveOn.condExp_map_le_of_condExp_mem (hm : m ≤ mΩ) [SigmaFinite (μ.trim hm)]
     {s : Set E} {φ : E → ℝ} {f : Ω → E} (hφ : ConcaveOn ℝ s φ) (hφc : ContinuousOn φ s)
     (hfs : ∀ᵐ ω ∂μ, f ω ∈ s) (hf : Integrable f μ) (hφf : Integrable (fun ω => φ (f ω)) μ)

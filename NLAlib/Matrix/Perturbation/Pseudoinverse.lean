@@ -247,9 +247,9 @@ theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_max (A B : Matrix m n 𝕜) :
   have ha := le_max_left (specNorm (pinv A) ^ 2) (specNorm (pinv B) ^ 2)
   have hb := le_max_right (specNorm (pinv A) ^ 2) (specNorm (pinv B) ^ 2)
   have he := specNorm_nonneg (B - A)
-  have h1 := matrixNorm_pinv_mul_sub_mul_pinv_le (lpGauge ⊤ le_top) A B
-  have h2 := matrixNorm_pinv_mul_one_sub_rangeProjector_le (lpGauge ⊤ le_top) A B
-  have h3 := matrixNorm_one_sub_rangeProjector_mul_pinv_le (lpGauge ⊤ le_top) A B
+  have h1 := matrixNorm_pinv_mul_sub_mul_pinv_le (lpGauge ⊤) A B
+  have h2 := matrixNorm_pinv_mul_one_sub_rangeProjector_le (lpGauge ⊤) A B
+  have h3 := matrixNorm_one_sub_rangeProjector_mul_pinv_le (lpGauge ⊤) A B
   rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm] at h1 h2 h3
   rw [mul_assoc]
   refine specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero
@@ -296,7 +296,7 @@ theorem specNorm_rangeProjector_sub_rangeProjector_le {A B : Matrix m n 𝕜} (h
     have hr : (rangeProjector A).rank = (rangeProjector B).rank := by
       rw [rank_rangeProjector, rank_rangeProjector, h]
     have h1 := SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_rangeProjector_le
-      (lpGauge ⊤ le_top) A B
+      (lpGauge ⊤) A B
     rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm] at h1
     rw [(isStarProjection_rangeProjector A).specNorm_sub_eq_of_rank_eq
       (isStarProjection_rangeProjector B) hr, specNorm_sub_comm B A]
@@ -383,7 +383,7 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_of_rank_eq (Φ : Sy
   linarith
 
 /-- For matrices of equal rank, $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_2
-\le \frac{1 + \sqrt{5}}{2} \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2$.
+\le ((1 + \sqrt{5})/2) \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2$.
 [Wedin1973]; [StewartSun1990, Theorem III.3.9].
 Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_mul_of_rank_eq`. -/
 theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq {A B : Matrix m n 𝕜}
@@ -393,9 +393,9 @@ theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq {A B : Matrix m n �
   classical
   have hab : 0 ≤ specNorm (pinv A) * specNorm (pinv B) :=
     mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
-  have h1 := matrixNorm_pinv_mul_sub_mul_pinv_le (lpGauge ⊤ le_top) A B
-  have h2 := matrixNorm_pinv_mul_one_sub_rangeProjector_le_of_rank_eq (lpGauge ⊤ le_top) h
-  have h3 := matrixNorm_one_sub_rangeProjector_mul_pinv_le_of_rank_eq (lpGauge ⊤ le_top) h
+  have h1 := matrixNorm_pinv_mul_sub_mul_pinv_le (lpGauge ⊤) A B
+  have h2 := matrixNorm_pinv_mul_one_sub_rangeProjector_le_of_rank_eq (lpGauge ⊤) h
+  have h3 := matrixNorm_one_sub_rangeProjector_mul_pinv_le_of_rank_eq (lpGauge ⊤) h
   rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm] at h1 h2 h3
   rw [mul_assoc, mul_assoc, ← mul_assoc (specNorm (pinv A))]
   refine specNorm_le_goldenRatio_mul_of_one_sub_mul_mul_one_sub_eq_zero
@@ -452,12 +452,12 @@ theorem frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq {A B : Matrix m n 𝕜
       rw [Matrix.mul_assoc (rangeProjector B), ← Matrix.mul_assoc (pinv B),
         pinv_mul_rangeProjector, Matrix.mul_assoc (pinv B), Matrix.mul_assoc (B - A),
         rangeProjector_conjTranspose_mul_pinv, ← Matrix.mul_assoc]
-    have h0 := matrixNorm_mul_mul_le (lpGauge 2 one_le_two) (pinv B)
+    have h0 := matrixNorm_mul_mul_le (lpGauge 2) (pinv B)
       (rangeProjector B * (B - A) * rangeProjector Aᴴ) (pinv A)
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm, e] at h0
     exact h0.trans_eq (by ring)
-  have h2 := matrixNorm_pinv_mul_one_sub_rangeProjector_le_of_rank_eq (lpGauge 2 one_le_two) h
-  have h3 := matrixNorm_one_sub_rangeProjector_mul_pinv_le_of_rank_eq (lpGauge 2 one_le_two) h
+  have h2 := matrixNorm_pinv_mul_one_sub_rangeProjector_le_of_rank_eq (lpGauge 2) h
+  have h3 := matrixNorm_one_sub_rangeProjector_mul_pinv_le_of_rank_eq (lpGauge 2) h
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h2 h3
   have hsum := frobNorm_sq_add_add_le_two_mul (isStarProjection_rangeProjector B)
     (isStarProjection_rangeProjector Aᴴ) (B - A)

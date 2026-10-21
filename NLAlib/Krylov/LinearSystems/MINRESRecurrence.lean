@@ -91,8 +91,11 @@ $\mathbf{d}_k = \gamma_k^{-1}(\mathbf{z}_k - \varepsilon_k\mathbf{d}_{k-2} -
 \delta_k\mathbf{d}_{k-1})$
 and $\mathbf{x}_{k+1} = \mathbf{x}_k + \tau_k\mathbf{d}_k$. The signs follow `NLAlib.givens`
 ($\begin{bmatrix} c & s \\ -\bar{s} & \bar{c} \end{bmatrix}$), not the paper's reflections.
-[PaigeSaunders1975]; [Greenbaum1997, §2.5]; [ElmanSilvesterWathen2014, Algorithm 4.1];
-locators to verify. -/
+[PaigeSaunders1975, §6]; [Greenbaum1997, §2.5]; [ElmanSilvesterWathen2014, Algorithm 4.1];
+the last two locators to verify. Paige and Saunders, over $\mathbb{R}$ and without a
+preconditioner, form the iterate as $\mathbf{x}_k = \mathbf{V}_k\mathbf{L}_k^{-\mathsf{T}}
+\mathbf{t}_k$ ((6.8)–(6.9)): the columns of $\mathbf{V}_k\mathbf{L}_k^{-\mathsf{T}}$ are the
+directions $\mathbf{d}_k$ here and the entries of $\mathbf{t}_k$ the $\tau_k$. -/
 noncomputable def minresStep (A M : Matrix n n 𝕜) (s : MINRESState 𝕜 n) : MINRESState 𝕜 n :=
   let α : 𝕜 := (preconditionedLanczosAlpha A s.lanczos : 𝕜)
   let L' := preconditionedLanczosStep A M s.lanczos
@@ -302,13 +305,14 @@ private theorem givensHessenbergState_eq_minresRot
   | succ j ih =>
     obtain ⟨ih1, ih2⟩ := ih (by omega)
     have hjk : j < k := by omega
-    have hne := givensHessenbergStep_plane_ne (m := k + 1) (k := j) (by omega)
+    have hne : (⟨j, by omega⟩ : Fin (k + 1)) ≠ ⟨j + 1, by omega⟩ :=
+      Fin.ne_of_val_ne (Nat.succ_ne_self j).symm
     have e1 : minresRot A S j j j = minresGammaBar A (S j) := by simp [minresRot]
     have e2 : minresRot A S j (j + 1) j = minresBeta (S (j + 1)) := by
       simp (disch := omega) only [minresRot, if_pos, if_neg, ite_true]
     have hG : givensHessenbergStep (givensHessenbergState H j).2 j =
         givens ⟨j, by omega⟩ ⟨j + 1, by omega⟩ (S (j + 1)).c₁ (S (j + 1)).s₁ := by
-      rw [givensHessenbergStep_of_lt _ (by omega) hjk, ih1, ih1]
+      rw [givensHessenbergStep_of_lt _ (by omega) (by omega) hjk, ih1, ih1]
       dsimp only
       rw [e1, e2, hS j]
       rfl
@@ -432,7 +436,7 @@ private theorem preconditionedLanczosTridiagonal_submatrix_eq (hA : A.IsHermitia
       mgsArnoldiHessenberg (Cᴴ * A * C) (Cᴴ *ᵥ r) k := by
   classical
   rw [mgsArnoldiHessenberg_eq,
-    ← conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_submatrix_castSucc,
+    ← submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc,
     ← hA.preconditionedLanczosTridiagonal_eq hMC]
 
 omit [DecidableEq n] in
@@ -541,7 +545,9 @@ private theorem minresState_x_eq_of_le {C : Matrix n n 𝕜} (hA : A.IsHermitian
 /-- **The Paige–Saunders iterates are the preconditioned MINRES iterates**: for invertible
 Hermitian $\mathbf{A}$, positive definite $\mathbf{M}$ and every $k$, with no breakdown
 hypothesis, $\mathbf{x}_k = \mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b},
-\mathbf{x}_0, k)$. [PaigeSaunders1975]; locator to verify.
+\mathbf{x}_0, k)$. [PaigeSaunders1975, §6]; there without a preconditioner ($\mathbf{M} =
+\mathbf{I}$), over $\mathbb{R}$ and up to termination: the iterate (6.9) of the recurrence solves
+the minimum residual problem (2.7) in the Lanczos basis.
 Result: minres-recurrence -/
 theorem _root_.Matrix.IsHermitian.minresState_x_eq (hA : A.IsHermitian) (hAu : IsUnit A)
     (hM : M.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
@@ -579,16 +585,23 @@ theorem _root_.Matrix.IsHermitian.minresState_x_eq (hA : A.IsHermitian) (hAu : I
     pminresIterate_eq_of_krylovGrade_le hAu hM hxs x₀ (hg.trans_le hk.le),
     pminresIterate_eq_of_krylovGrade_le hAu hM hxs x₀ hg.le]
 
-/-- **MINRES without a preconditioner**: for invertible Hermitian $\mathbf{A}$ the recurrence
-with $\mathbf{M} = \mathbf{I}$ computes `gmresIterate`.
+/-- **MINRES without a preconditioner**: for invertible Hermitian $\mathbf{A}$ and every $k$ the
+recurrence with $\mathbf{M} = \mathbf{I}$ computes `gmresIterate`:
+$\mathbf{x}_k = \mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, k)$.
+[PaigeSaunders1975, §6]; there over $\mathbb{R}$ and up to termination, the iterate (6.9) of the
+recurrence solving the minimum residual problem (2.7).
 Result: minres-recurrence -/
 theorem _root_.Matrix.IsHermitian.minresState_x_eq_gmresIterate (hA : A.IsHermitian)
     (hAu : IsUnit A) (b x₀ : n → 𝕜) (k : ℕ) :
     (minresState A 1 b x₀ k).x = gmresIterate A b x₀ k := by
   rw [hA.minresState_x_eq hAu Matrix.PosDef.one, pminresIterate_one]
 
-/-- **The residual estimate**: $\lvert\bar\varphi_k\rvert^2 =
-\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\|_{\mathbf{M}}^2$, available without forming the residual.
+/-- **The residual estimate**: for invertible Hermitian $\mathbf{A}$, positive definite
+$\mathbf{M}$ and every $k$, the recurrence's $\bar\varphi_k$ and iterate $\mathbf{x}_k$ satisfy
+$\lvert\bar\varphi_k\rvert^2 = \|\mathbf{b} - \mathbf{A}\mathbf{x}_k\|_{\mathbf{M}}^2$, available
+without forming the residual. [PaigeSaunders1975, (7.4)]; there without a preconditioner, as
+$\|\mathbf{r}_k\| = \beta_1\lvert s_1 \cdots s_k \rvert$, the product of the rotation sines
+that $\lvert\bar\varphi_k\rvert$ is here (the paper indexes from $1$).
 Result: minres-residual-estimate -/
 theorem _root_.Matrix.IsHermitian.norm_minresState_phi_sq (hA : A.IsHermitian) (hAu : IsUnit A)
     (hM : M.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :

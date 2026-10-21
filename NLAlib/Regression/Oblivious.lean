@@ -35,17 +35,17 @@ Design: `docs/design/Sketching-S1.md` §3.4.
 
 ## Main results
 
-* `NLAlib.HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le`,
-  `NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le`: CEMT Lemma 2.1.
-* `NLAlib.HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le`: sketch-and-solve, CEMT
+* `NLAlib.HasSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le`,
+  `NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le`: CEMT Lemma 2.1.
+* `NLAlib.HasSubspaceInjection.measureReal_norm_sub_mulVec_sq_gt_le`: sketch-and-solve, CEMT
   Theorem 2.7.
-* `NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le`: its matrix form.
+* `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le`: its matrix form.
 * `NLAlib.IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_union_gt_le_of_indepFun`:
   the two events of these tails for a random design independent of an OSI.
-* `NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`
+* `IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`
   is sketch-and-solve with a random design.
-* `NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`,
-  `NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`:
+* `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`,
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`:
   sketch-and-solve to relative error through approximate multiplication.
 -/
 
@@ -72,7 +72,7 @@ $$\bigl\|\mathbf{B}(\mathbf{S}\mathbf{Z})^{\mathsf{H}}
 except with probability $\delta + 1 / t$.
 [CamanoEpperlyMeyerTropp2025, Lemma 2.1]; there $\mathbf{Q}^{\mathsf{H}}\mathbf{Z} = \mathbf{0}$
 (unused here), $\mathbf{Z}$ with orthonormal columns and $t = 20$. -/
-theorem HasSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure μ]
     [DecidableEq p] (h : HasSubspaceInjection S Q a δ μ) (hiso : IsIsotropicSketch S μ)
     (hQ : HasOrthonormalCols Q) (ha : 0 < a) (ht : 0 < t) (B : Matrix l r 𝕜)
     (Z : Matrix n r 𝕜) :
@@ -107,13 +107,13 @@ $$\bigl\|\mathbf{B}(\mathbf{S}\mathbf{Z})^{\mathsf{H}}
 \le \frac{t \|\mathbf{B}\|_{\mathsf{F}}^2}{a}$$
 except with probability $\delta + 1 / t$. [CamanoEpperlyMeyerTropp2025, Lemma 2.1]; there
 $\mathbf{Q}^{\mathsf{H}}\mathbf{Z} = \mathbf{0}$ (unused here) and $t = 20$. -/
-theorem IsObliviousSubspaceInjection.measure_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure μ]
+theorem IsObliviousSubspaceInjection.measureReal_frobNorm_mul_pinv_sq_gt_le [IsFiniteMeasure μ]
     [DecidableEq p] [DecidableEq r] (h : IsObliviousSubspaceInjection S d a δ μ)
     (hQ : HasOrthonormalCols Q) (hpd : Fintype.card p ≤ d) {Z : Matrix n r 𝕜}
     (hZ : HasOrthonormalCols Z) (ha : 0 < a) (ht : 0 < t) (B : Matrix l r 𝕜) :
     μ.real {ω | t * frobNorm B ^ 2 / a <
       frobNorm (B * (S ω * Z)ᴴ * pinv ((S ω * Q)ᴴ)) ^ 2} ≤ δ + 1 / t := by
-  have h' := (h.hasSubspaceInjection (hQ.rank_eq ▸ hpd)).measure_frobNorm_mul_pinv_sq_gt_le
+  have h' := (h.hasSubspaceInjection (hQ.rank_eq ▸ hpd)).measureReal_frobNorm_mul_pinv_sq_gt_le
     h.isotropic hQ ha ht B Z
   rwa [hZ.frobNorm_mul_conjTranspose_right] at h'
 
@@ -128,7 +128,7 @@ $$\|\mathbf{y} - \mathbf{A}\mathbf{x}\|^2
 except with probability $\delta + 1 / t$. [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there for an
 OSI, the minimum-norm solution and a fixed $t$, here a tail in $t$ for every minimizer.
 Result: sketch-and-solve-ls -/
-theorem HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure μ]
     (h : HasSubspaceInjection S A a δ μ) (hiso : IsIsotropicSketch S μ) (ha : 0 < a)
     (ht : 0 < t) (y : n → 𝕜) {x : Ω → q → 𝕜}
     (hx : ∀ᵐ ω ∂μ, IsLeastSquaresSolution (S ω * A) (S ω *ᵥ y) (x ω)) :
@@ -158,7 +158,7 @@ $$\|\mathbf{Y} - \mathbf{A}(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{Y}\|_{\ma
 \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{Y}\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1 / t$. [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there a
 vector right-hand side. -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le [IsFiniteMeasure μ]
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le [IsFiniteMeasure μ]
     (h : HasSubspaceInjection S A a δ μ) (hiso : IsIsotropicSketch S μ) (ha : 0 < a)
     (ht : 0 < t) (Y : Matrix n r 𝕜) :
     μ.real {ω | (1 + t / a) * frobNorm ((1 - rangeProjector A) * Y) ^ 2 <
@@ -177,30 +177,32 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le [IsFinit
     linarith
 
 /-- **Sketch-and-solve with an OSI** for dimension $d \ge \operatorname{rank}\mathbf{A}$: the
-bound of `NLAlib.HasSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le`.
+bound of `NLAlib.HasSubspaceInjection.measureReal_norm_sub_mulVec_sq_gt_le`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.7]. -/
-theorem IsObliviousSubspaceInjection.measure_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure μ]
+theorem IsObliviousSubspaceInjection.measureReal_norm_sub_mulVec_sq_gt_le [IsFiniteMeasure μ]
     (h : IsObliviousSubspaceInjection S d a δ μ) (hA : A.rank ≤ d) (ha : 0 < a) (ht : 0 < t)
     (y : n → 𝕜) {x : Ω → q → 𝕜}
     (hx : ∀ᵐ ω ∂μ, IsLeastSquaresSolution (S ω * A) (S ω *ᵥ y) (x ω)) :
     μ.real {ω | (1 + t / a) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
       ‖WithLp.toLp 2 (y - A *ᵥ x ω)‖ ^ 2} ≤ δ + 1 / t := by
-  exact (h.hasSubspaceInjection hA).measure_norm_sub_mulVec_sq_gt_le h.isotropic ha ht y hx
+  exact (h.hasSubspaceInjection hA).measureReal_norm_sub_mulVec_sq_gt_le h.isotropic ha ht y hx
 
 /-- **Sketch-and-solve with an OSI, matrix right-hand side**, for dimension
 $d \ge \operatorname{rank}\mathbf{A}$: the bound of
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le`.
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le`.
 [CamanoEpperlyMeyerTropp2025, Theorem 2.7]; there a vector right-hand side. -/
-theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le
+theorem IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le
     [IsFiniteMeasure μ] (h : IsObliviousSubspaceInjection S d a δ μ) (hA : A.rank ≤ d)
     (ha : 0 < a) (ht : 0 < t) (Y : Matrix n r 𝕜) :
     μ.real {ω | (1 + t / a) * frobNorm ((1 - rangeProjector A) * Y) ^ 2 <
       frobNorm (Y - A * (pinv (S ω * A) * (S ω * Y))) ^ 2} ≤ δ + 1 / t := by
-  exact (h.hasSubspaceInjection hA).measure_frobNorm_sub_mul_pinv_mul_sq_gt_le h.isotropic ha ht
+  exact (h.hasSubspaceInjection hA).measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le h.isotropic ha ht
     Y
 
 /-! ### Sketch-and-solve with a random design -/
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 /-- **The two events of an OSI tail on a random design**: if $\mathbf{S}$ is an OSI for
 dimension $d$ with constant $a$ and failure probability $\delta$, independent of a random design
 $\mathbf{Y}$ of rank at most $d$ and a right-hand side $\mathbf{B}$, then for $t > 0$ the event
@@ -210,7 +212,7 @@ t\,\|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{B}\|_{\mathsf{F}}^2$$
 has probability at most $\delta + 1/t$. On its complement every deterministic bound of the
 oblique projector under an injection applies, with the rank identity
 `NLAlib.IsSubspaceInjection.rank_mul_eq`; sketch-and-solve with a random design
-(`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`)
+(`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`)
 and late-truncated generalized Nyström use it so. The random-design form of the two events of
 [CamanoEpperlyMeyerTropp2025, Lemma 2.1 and Theorem 2.7]. -/
 theorem IsObliviousSubspaceInjection.measure_not_isSubspaceInjection_union_gt_le_of_indepFun
@@ -260,12 +262,13 @@ $$\|\mathbf{B} - \mathbf{Y}\,\mathsf{sketchAndSolve}(\mathbf{Y}, \mathbf{S}, \ma
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{t}{a}\Bigr)
 \|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{B}\|_{\mathsf{F}}^2$$
 except with probability $\delta + 1/t$. The fixed-design form is
-`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le`. It is the
+`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le`. It is the
 completion step of generalized Nyström and of its early-truncated form with a structured co-range
 sketch. [CamanoEpperlyMeyerTropp2025, Theorem 2.7 and proof of Corollary 2.8]; there a fixed
 design, a vector right-hand side and probability $9/10$.
 Result: sketch-and-solve-ls -/
-theorem IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
+theorem
+    IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
     [IsProbabilityMeasure μ] (h : IsObliviousSubspaceInjection S d a δ μ) (ha : 0 < a)
     (ht : 0 < t) {Y : Ω → Matrix n q 𝕜} {B : Ω → Matrix n r 𝕜}
     (hind : IndepFun S (fun ω => (Y ω, B ω)) μ) (hS : AEMeasurable S μ) (hY : AEMeasurable Y μ)
@@ -298,11 +301,11 @@ $$\mathbb{P}\bigl[(1+\varepsilon)\|\mathbf{C}\|_{\mathsf{F}}^2<
 \|_{\mathsf{F}}^2\bigr]\le\delta+\delta'\,.$$
 Over any `RCLike` field, with a matrix right-hand side. The family-specific multiplication tail
 is an input; the real JL-moment instance is
-`NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`.
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`.
 [Woodruff2014, proof of Theorem 23]; there real vector regression and a constant embedding,
 here any injection constant and a supplied multiplication tail.
 Result: sketch-and-solve-ls -/
-theorem HasSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
     [IsFiniteMeasure μ] {δ' ε : ℝ} (h : HasSubspaceInjection S A a δ μ) (ha : 0 < a)
     (hε : 0 ≤ ε) (B : Matrix n r 𝕜)
     (hAMM : μ.real {ω | a * √ε * frobNorm ((1 - rangeProjector A) * B) <
@@ -317,7 +320,7 @@ theorem HasSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_a
   by_contra hc
   simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_not, not_lt] at hc
   obtain ⟨hinj, hmul⟩ := hc
-  have hbound := hinj.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2 one_le_two) C
+  have hbound := hinj.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2) C
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hbound
   have hsmall : frobNorm (obliqueProjector A (S ω) * C) ≤ √ε * frobNorm C := by
     refine hbound.trans ((div_le_iff₀ ha).2 ?_)
@@ -348,13 +351,13 @@ $$\|\mathbf{B} - \mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \ma
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{\operatorname{rank}(\mathbf{A})\,\varepsilon^2}{a^2}\Bigr)
 \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{B}\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta'$. Its neighbour without the moment property,
-`NLAlib.HasSubspaceInjection.measure_frobNorm_sub_mul_pinv_mul_sq_gt_le`, has the constant factor
-$1 + t/a$ at failure probability $\delta + 1/t$; this one reaches $1 + \varepsilon$ when the
+`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_pinv_mul_sq_gt_le`, has the constant
+factor $1 + t/a$ at failure probability $\delta + 1/t$; this one reaches $1 + \varepsilon$ when the
 moment's $\delta'$ decays with the sketch size. [Woodruff2014, Theorem 23]; there sparse
 embeddings, a vector right-hand side and the unsquared objective; here any injection and JL
 moment, a matrix right-hand side.
 Result: sketch-and-solve-ls -/
-theorem HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFiniteMeasure μ]
+theorem HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFiniteMeasure μ]
     {A : Matrix n q ℝ} {ε δ' p : ℝ} (hJL : HasJLMoment S ε δ' p μ)
     (h : HasSubspaceInjection S A a δ μ) (hS : AEMeasurable S μ) (ha : 0 < a) (hε : 0 < ε)
     (hp : 2 ≤ p) (hδ' : 0 ≤ δ') (B : Matrix n r ℝ) :
@@ -371,7 +374,7 @@ theorem HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFiniteMe
     intro ω hω
     have e1 : B - A * sketchAndSolve A (S ω) B = (1 - obliqueProjector A (S ω)) * B := by
       rw [mul_sketchAndSolve, Matrix.sub_mul, Matrix.one_mul]
-    have hL1 := hω.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2 one_le_two) C
+    have hL1 := hω.matrixNorm_obliqueProjector_mul_le ha (lpGauge 2) C
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hL1
     have e2 : Pᴴ * (S ω)ᴴ * S ω * C - Pᴴ * C = rangeProjector A * (S ω)ᴴ * S ω * C := by
       rw [hPdef, conjTranspose_rangeProjector, ← hPdef, hPC0, sub_zero]
@@ -392,7 +395,7 @@ theorem HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFiniteMe
       le_mul_of_one_le_left (sq_nonneg _) (le_add_of_nonneg_right (by positivity))
     linarith
   · rw [not_or] at hPC
-    have hF := hJL.measure_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hPC.1 hPC.2
+    have hF := hJL.measureReal_frobNorm_conjTranspose_mul_sub_ge_le hε hp hS hPC.1 hPC.2
     refine (measureReal_mono (s₂ := {ω | ¬ IsSubspaceInjection (S ω) A a} ∪
       {ω | ε * frobNorm P * frobNorm C ≤ frobNorm (Pᴴ * (S ω)ᴴ * S ω * C - Pᴴ * C)})
       fun ω hω => ?_).trans ((measureReal_union_le _ _).trans (add_le_add h hF))
@@ -413,6 +416,8 @@ theorem HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFiniteMe
       ring
     nlinarith
 
+-- A declaration name below is too long for a 100-character line.
+set_option linter.style.longLine false in
 /-- **Sketch-and-solve to relative error with a random design**: for a real OSI $\mathbf{S}$ for
 dimension $d$ (constant $a > 0$, failure probability $\delta$) with the $(\varepsilon, \delta', p)$
 JL moment property, $\varepsilon > 0$, $p \ge 2$, $\delta' \ge 0$, independent of a random design
@@ -421,12 +426,12 @@ $$\|\mathbf{B} - \mathbf{Y}\,\mathsf{sketchAndSolve}(\mathbf{Y}, \mathbf{S}, \ma
 \|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{d\,\varepsilon^2}{a^2}\Bigr)
 \|(\mathbf{I} - \mathbf{P}_{\mathbf{Y}})\mathbf{B}\|_{\mathsf{F}}^2$$
 except with probability $\delta + \delta'$. The random-design form of
-`NLAlib.HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`; its constant-factor
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`; its constant-factor
 neighbour is
-`NLAlib.IsObliviousSubspaceInjection.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`.
+`NLAlib.IsObliviousSubspaceInjection.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`.
 [Woodruff2014, Theorem 23, and proof of Theorem 47]; there a fixed design.
 Result: sketch-and-solve-ls -/
-theorem HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
+theorem HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
     [IsProbabilityMeasure μ] {ε δ' p : ℝ} (hJL : HasJLMoment S ε δ' p μ)
     (h : IsObliviousSubspaceInjection S d a δ μ) (ha : 0 < a) (hε : 0 < ε) (hp : 2 ≤ p)
     (hδ' : 0 ≤ δ') {Y : Ω → Matrix n q ℝ} {B : Ω → Matrix n r ℝ}
@@ -458,7 +463,7 @@ theorem HasJLMoment.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun
   · rw [add_zero] at h'
     exact h'
   · refine (measureReal_mono fun ω hω => ?_).trans
-      (hJL.measure_frobNorm_sub_mul_sketchAndSolve_sq_gt_le (h.hasSubspaceInjection hy) hS ha
+      (hJL.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le (h.hasSubspaceInjection hy) hS ha
         hε hp hδ' y.2)
     refine lt_of_le_of_lt ?_ (show (1 + (d : ℝ) * ε ^ 2 / a ^ 2) *
       frobNorm ((1 - rangeProjector y.1) * y.2) ^ 2 <

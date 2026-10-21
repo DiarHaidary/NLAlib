@@ -26,7 +26,7 @@ candidates for `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 * `Real.log_one_add_le_cubic`, `Real.log_one_add_le_cubic_of_nonpos`.
 * `Real.log_one_sub_le_quadratic`.
 * `Real.neg_log_one_sub_le`.
-* `Real.log_nine_le_nine_div_four`.
+* `Real.log_nine_le_nine_div_four`, `Real.log_twentyOne_le_sixtyOne_div_twenty`.
 * `Real.exp_two_mul_le_one_add_div_one_sub`: $e^{2r} \le (1 + r)/(1 - r)$ on $[0, 1)$, the first
   term of the series of $\log(1 + r) - \log(1 - r)$.
 -/
@@ -36,11 +36,7 @@ candidates for `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 namespace Real
 
 /-- For $-1 < u \le 0$,
-$$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$
-Proof: with $x = -u \in [0, 1)$ the series $-\log(1 - x) = \sum_{k \ge 1} x^k / k$
-(`Real.hasSum_pow_div_log_of_abs_lt_one`) has nonnegative terms, so it is at least the sum of its
-first three terms, $x + x^2/2 + x^3/3$. Substituting $x = -u$ gives the claim. The bound for every
-$u > -1$ is `Real.log_one_add_le_cubic`. -/
+$$\log(1 + u) \le u - \frac{u^2}{2} + \frac{u^3}{3} \,.$$ -/
 theorem log_one_add_le_cubic_of_nonpos {u : ℝ} (h1 : -1 < u) (h0 : u ≤ 0) :
     log (1 + u) ≤ u - u ^ 2 / 2 + u ^ 3 / 3 := by
   have hu : 0 ≤ -u := by linarith
@@ -98,7 +94,7 @@ theorem log_one_sub_le_quadratic {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
 
 /-- **Laurent and Massart's log bound**: for $0 \le u < 1$,
 $$-\log(1 - u) \le u + \frac{u^2}{2 (1 - u)} \,,$$
-by comparing the series $\sum_{k \ge 1} u^k / k$ term by term with $u + \frac{u}{2} \sum_{k \ge 1}
+by comparing the series $\sum_{k \ge 1} u^k / k$ term by term with $u + (u/2) \sum_{k \ge 1}
 u^k$. It turns the Laplace transform $(1 - 2\theta)^{-1/2}$ of $\chi^2_1$ into a sub-gamma
 bound (Laurent and Massart 2000, proof of Lemma 1). -/
 theorem neg_log_one_sub_le {u : ℝ} (hu0 : 0 ≤ u) (hu1 : u < 1) :
@@ -128,7 +124,17 @@ theorem log_nine_le_nine_div_four : log 9 ≤ 9 / 4 := by
   calc (9 : ℝ) ≤ (1 + 9 / 32 + (9 / 32) ^ 2 / 2) ^ 8 := by norm_num
     _ ≤ exp (9 / 32) ^ 8 := by gcongr
 
-/-- $e^{2r} \le \frac{1 + r}{1 - r}$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
+/-- $\log 21 \le 61/20$, that is $21 \le e^{61/20}$: from $e^{61/640} \ge 1 + 61/640 +
+(61/640)^2/2$ raised to the $32$nd power. The margin that turns the $21^d$ points of a
+$1/10$-net of a $d$-dimensional sphere into a factor $e^{61d/20}$. -/
+theorem log_twentyOne_le_sixtyOne_div_twenty : log 21 ≤ 61 / 20 := by
+  rw [log_le_iff_le_exp (by norm_num)]
+  have h := quadratic_le_exp_of_nonneg (show (0 : ℝ) ≤ 61 / 640 by norm_num)
+  rw [show (61 / 20 : ℝ) = ((32 : ℕ) : ℝ) * (61 / 640) by norm_num, exp_nat_mul]
+  calc (21 : ℝ) ≤ (1 + 61 / 640 + (61 / 640) ^ 2 / 2) ^ 32 := by norm_num
+    _ ≤ exp (61 / 640) ^ 32 := by gcongr
+
+/-- $e^{2r} \le (1 + r)/(1 - r)$ for $0 \le r < 1$, that is $r \le \operatorname{artanh} r$.
 [TroppWebber2023, (C.1)]. -/
 theorem exp_two_mul_le_one_add_div_one_sub {r : ℝ} (h₀ : 0 ≤ r) (h₁ : r < 1) :
     exp (2 * r) ≤ (1 + r) / (1 - r) := by

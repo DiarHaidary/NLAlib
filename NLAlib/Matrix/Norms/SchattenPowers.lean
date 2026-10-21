@@ -55,7 +55,7 @@ theorem schattenNorm_two_mul_natCast_pow [DecidableEq n] {p : ℕ} (hp : p ≠ 0
     A.rank_le_card_width
   rw [Nat.cast_mul, Nat.cast_ofNat] at h
   rw [h, (Matrix.isHermitian_conjTranspose_mul_self A).re_trace_pow_eq_sum_range_eigenvalue_pow]
-  exact Finset.sum_congr rfl fun i _ => by rw [pow_mul, sq_singularValues]
+  exact Finset.sum_congr rfl fun i _ => by rw [pow_mul, singularValues_sq]
 
 /-- For a Hermitian matrix and a natural number $p \ne 0$,
 $\|\mathbf{A}\|_{S_{2p}}^{2p} = \operatorname{Re} \operatorname{tr}(\mathbf{A}^{2p})$. -/

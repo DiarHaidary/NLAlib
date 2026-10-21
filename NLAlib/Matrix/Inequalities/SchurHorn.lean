@@ -203,7 +203,7 @@ $\mathbf{x}_p$ on the diagonal, keeping $\mathbf{x}$ majorized. -/
 private theorem exists_majorized_transfer {ι : Type*} [Fintype ι] [DecidableEq ι] {x y : ι → ℝ}
     (h : Majorized x y) {s : Finset ι} (hs : ∀ k ∉ s, x k = y k) {p : ι} (hp : p ∈ s) :
     ∃ i ∈ s, ∃ j ∈ s, y j ≤ x p ∧ x p ≤ y i ∧ Majorized x (transfer y i j (y i - x p)) := by
-  obtain ⟨e, he⟩ := exists_equiv_antitone_comp fun k : s => y k
+  obtain ⟨e, he⟩ := Fintype.exists_equiv_antitone_comp fun k : s => y k
   have h' := (majorized_comp_equiv_iff e).mpr ((majorized_subtype_iff hs).mpr h)
   obtain ⟨i, j, hj, hi, hmaj⟩ := exists_majorized_transfer_of_antitone he h' (e.symm ⟨p, hp⟩)
   simp only [Function.comp_apply, Equiv.apply_symm_apply] at hj hi hmaj
@@ -383,7 +383,7 @@ theorem majorized_iff_exists_hasOrthonormalCols_diag_eq {d lam : n → ℝ} :
       ∃ Q : Matrix n n ℝ, HasOrthonormalCols Q ∧ (Q * Matrix.diagonal lam * Qᴴ).diag = d := by
   refine ⟨exists_hasOrthonormalCols_diag_eq_of_majorized, ?_⟩
   rintro ⟨Q, hQ, rfl⟩
-  have h := majorized_re_diag_of_mul_eq_mul_diagonal (𝕜 := ℝ)
+  have h := HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal (𝕜 := ℝ)
     (A := Q * Matrix.diagonal lam * Qᴴ) (d := lam) hQ (by
       rw [Matrix.mul_assoc, hQ.conjTranspose_mul_self, Matrix.mul_one]
       rfl)
@@ -434,7 +434,7 @@ theorem _root_.Matrix.IsHermitian.majorized_iff_exists_diag_conj_eq {A : Matrix 
   · rintro ⟨U, hU, hUd⟩
     have hW : HasOrthonormalCols (Uᴴ * (hA.eigenvectorUnitary : Matrix n n 𝕜)) :=
       hU.conjTranspose.mul hV
-    have h := majorized_re_diag_of_mul_eq_mul_diagonal (A := Uᴴ * A * U) hW (by
+    have h := HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal (A := Uᴴ * A * U) hW (by
       rw [Matrix.mul_assoc, ← Matrix.mul_assoc U, hU.mul_conjTranspose_self, Matrix.one_mul,
         Matrix.mul_assoc, hAV, Matrix.mul_assoc])
     simpa only [hUd, RCLike.ofReal_re] using h

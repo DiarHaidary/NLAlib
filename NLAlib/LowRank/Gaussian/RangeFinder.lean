@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
 public import NLAlib.LowRank.Random.RangeFinder
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.Matrix.Norms.GaugeExamples
@@ -50,14 +51,13 @@ companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
 * the Gram form, every quadratic unitarily invariant norm, in the `NLAlib.SymmetricGauge`
   namespace:
   `integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix`.
-* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`,
-  `NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.5, squared and
-  as printed.
+* `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.5, squared
+  (the printed first-moment form follows by Jensen).
 * `NLAlib.integral_schattenNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`,
   `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`: TW Theorem 8.1 (RSVD2).
 * `NLAlib.rangeFinderTailRatio`: the spectral bound of TW Theorem 8.1 (RSVD2) divided by
   $\sigma_k(\mathbf{A})^2$, with `NLAlib.one_le_rangeFinderTailRatio` and
-  `NLAlib.sq_singularValues_mul_rangeFinderTailRatio`. <!-- mention rangeFinderTailRatio -->
+  `NLAlib.singularValues_sq_mul_rangeFinderTailRatio`. <!-- mention rangeFinderTailRatio -->
 * `NLAlib.rangeFinderTailRatio_le_one_add_card_sq` and the two tail-weight bounds before it:
   dimension bounds for the asymptotic forms of the block Krylov and subspace iteration bounds.
 * `NLAlib.integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`: HMT Theorem 10.6;
@@ -176,7 +176,7 @@ theorem integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussia
       hX.aemeasurable) hI hpt).trans_eq ?_
     rw [integral_add (integrable_const _) (hMi.const_mul _), integral_const, probReal_univ,
       one_smul, integral_const_mul, hM, Fintype.card_fin]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
     rw [hF]
     ring
@@ -200,17 +200,21 @@ The Frobenius instance of the Gram-form bound above;
 Epperly and Webber's sharper factor, with a rank parameter, is
 `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_of_rank_le`.
 Asymptotic form: `NLAlib.exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
-[HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; HMT state the
-bound for $\mathbb{E}\|\cdot\|_{\mathsf{F}}$ (it follows by Jensen,
-`NLAlib.integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix`) and assume $k \ge 2$ and
-$k + p \le \min\{m, n\}$, neither needed here.
+[HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; HMT assume $k \ge 2$
+and $k + p \le \min\{m, n\}$, neither needed here. [HalkoMartinssonTropp2011, Theorem 10.5]
+prints the first-moment form <!-- value gaussianProjectionFactor k \ell -->
+$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
+\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
+\|_{\mathsf{F}}\,,$$
+which follows from this bound by Jensen's inequality
+(`ProbabilityTheory.integral_le_sqrt_integral_sq`).
 Result: randomized-svd-expected-error -/
 theorem integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
     (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
     ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
       gaussianProjectionFactor k (Fintype.card l) * frobNorm (A - truncatedSVD A k) ^ 2 := by
   have h := integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix
-    (lpGauge 1 le_rfl) A hX hk
+    (lpGauge 1) A hX hk
   simp only [lpGauge_one_matrixNorm, nuclearNorm_conjTranspose_mul_self,
     lpGauge_apply_single_zero, one_mul] at h
   rw [gaussianProjectionFactor_def]
@@ -238,32 +242,6 @@ theorem exists_forall_integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix 
   exact (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hkl).trans
     (mul_le_mul_of_nonneg_right hg (sq_nonneg _))
 
-/-- **The expected error of the randomized SVD, Frobenius norm, as printed** (HMT Theorem 10.5):
-for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$ and $k + 2 \le \ell$,
-$$\mathbb{E}\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{X})\|_{\mathsf{F}} \le
-\Bigl(1 + \frac{k}{\ell - k - 1}\Bigr)^{1/2}\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k
-\|_{\mathsf{F}}\,,$$
-by Jensen from the squared form `NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`.
-[HalkoMartinssonTropp2011, Theorem 10.5]; [TroppWebber2023, Theorem 8.7]; there (HMT) with
-$k \ge 2$ and $k + p \le \min\{m, n\}$, neither needed here.
-Result: randomized-svd-expected-error -/
-theorem integral_frobNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
-    (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} (hk : k + 2 ≤ Fintype.card l) :
-    ∫ ω, frobNorm (A - rsvd A (X ω)) ∂μ ≤
-      √(gaussianProjectionFactor k (Fintype.card l)) * frobNorm (A - truncatedSVD A k) := by
-  have := hX.isProbabilityMeasure
-  have hm : AEStronglyMeasurable (fun ω => frobNorm (A - rsvd A (X ω))) μ :=
-    (integrable_frobNorm_sub_rsvd A hX.aemeasurable).aestronglyMeasurable
-  have hL2 : MemLp (fun ω => frobNorm (A - rsvd A (X ω))) 2 μ :=
-    (memLp_two_iff_integrable_sq hm).2 (integrable_frobNorm_sub_rsvd_sq A hX.aemeasurable)
-  have hvar := variance_nonneg (fun ω => frobNorm (A - rsvd A (X ω))) μ
-  rw [variance_eq_sub hL2] at hvar
-  simp only [Pi.pow_apply] at hvar
-  have h2 := integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hk
-  rw [← Real.sqrt_sq (frobNorm_nonneg (A - truncatedSVD A k)), ← Real.sqrt_mul
-    (zero_le_one.trans (one_le_gaussianProjectionFactor hk))]
-  exact (le_abs_self _).trans (Real.abs_le_sqrt (by linarith))
-
 open SymmetricGauge in
 /-- **The expected error of the randomized SVD, Schatten norms** (TW Theorem 8.1 (RSVD2)): for a
 standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$, $k + 2 \le \ell$ and
@@ -285,10 +263,11 @@ theorem integral_schattenNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matri
     exact hp
   have hq0 : p / 2 ≠ 0 := (zero_lt_one.trans_le hq).ne'
   have h2 : 2 * (p / 2) = p := ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top
+  have := Fact.mk hq
   have h := integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix
-    (lpGauge (p / 2) hq) A hX hk
-  simp only [lpGauge_matrixNorm hq, schattenNorm_conjTranspose_mul_self hq0, h2,
-    lpGauge_apply_single_zero hq, one_mul] at h
+    (lpGauge (p / 2)) A hX hk
+  simp only [lpGauge_matrixNorm, schattenNorm_conjTranspose_mul_self hq0, h2,
+    lpGauge_apply_single_zero, one_mul] at h
   exact h
 
 open SymmetricGauge in
@@ -308,9 +287,9 @@ theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix (A : Matrix m 
       singularValues A k ^ 2 +
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * frobNorm (A - truncatedSVD A k) ^ 2 := by
   have h := integral_matrixNorm_conjTranspose_mul_self_sub_rsvd_le_of_hasLaw_gaussianMatrix
-    (lpGauge ⊤ le_top) A hX hk
+    (lpGauge ⊤) A hX hk
   simp only [lpGauge_top_matrixNorm, specNorm_conjTranspose_mul_self,
-    lpGauge_apply_single_zero le_top, one_mul, specNorm_sub_truncatedSVD] at h
+    lpGauge_apply_single_zero, one_mul, specNorm_sub_truncatedSVD] at h
   exact h
 
 /-! ### The first spectral moment -/
@@ -360,9 +339,9 @@ theorem integral_specNorm_sub_rsvd_le_of_hasLaw_gaussianMatrix (A : Matrix m n �
       (integrable_const _).add hMi
     refine (integral_mono_ae (integrable_specNorm_sub_rsvd A hX.aemeasurable) hI hpt).trans ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
-    have hS := (lpGauge ⊤ le_top).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hS := (lpGauge ⊤).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] at hS
     rw [hF, hS, Fintype.card_fin, ← gaussianPinvSpecNormBound_def] at hM
     linarith
@@ -380,7 +359,7 @@ $$\mathbb{E}\|\mathbf{A}-\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le \s
 \sigma_k^2\Bigl(\frac{e}{\ell - k}\sqrt{(\ell + k - 1)/2}\Bigr)^2\,,$$
 singular values of $\mathbf{A}$ from $0$; the bound is written in HMT's pseudoinverse
 constant, whence the name's suffix. The last factor being $O(1/\ell)$,
-the Frobenius tail enters with weight $O(1/\ell)$, against $\frac{k}{\ell-k-1}$ in
+the Frobenius tail enters with weight $O(1/\ell)$, against $k/(\ell-k-1)$ in
 `NLAlib.integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix`; the two are incomparable
 (this one is better when the tail is heavy and $\ell \gg k$). Applied at a comparison rank near
 $\ell/2$ with the tail flattening
@@ -422,9 +401,9 @@ theorem integral_specNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix_pinvSpecNormBo
       (integrable_const _).add hMi
     refine (integral_mono_ae (integrable_specNorm_sub_rsvd_sq A hX.aemeasurable) hI hpt).trans ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
-    have hS := (lpGauge ⊤ le_top).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hS := (lpGauge ⊤).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_top_matrixNorm, lpGauge_top_matrixNorm, specNorm_sub_truncatedSVD] at hS
     rw [hF, hS, Fintype.card_fin] at hM
     linarith
@@ -480,7 +459,7 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix (
       hI hpt).trans_eq ?_
     rw [integral_add (integrable_const _) hMi, integral_const, probReal_univ, one_smul, hM,
       Fintype.card_fin, gaussianProjectionFactor_def]
-    have hF := (lpGauge 2 one_le_two).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
+    have hF := (lpGauge 2).matrixNorm_mul_of_mul_mul_conjTranspose_eq hV hEV
     rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at hF
     rw [hF]
     ring
@@ -570,18 +549,12 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
         (k : ℝ) / ((Fintype.card l : ℝ) - k - 1) * frobNorm (A - truncatedSVD A k) ^ 2 :=
   integral_specNorm_sub_sq_le_of_isBestRankApprox_of_hasLaw_gaussianMatrix A hX hk
     (fun _ => isBestRankApprox_truncatedSVD _ k)
-    (((measurable_rsvd A).comp_aemeasurable hX.aemeasurable).truncatedSVD k).aestronglyMeasurable
+    ((measurable_truncatedSVD k).comp_aemeasurable
+      ((measurable_rsvd A).comp_aemeasurable hX.aemeasurable)).aestronglyMeasurable
 
 /-! ### The normalised spectral bound -/
 
 -- Stage B6b
-
-/-- The tail weight $r/(\ell - r - 1)$ of the Gaussian range-finder bounds is nonnegative for
-$r + 2 \le \ell$ (casts to $\mathbb{R}$). -/
-theorem natCast_div_sub_sub_one_nonneg {r l : ℕ} (hl : r + 2 ≤ l) :
-    0 ≤ (r : ℝ) / ((l : ℝ) - r - 1) := by
-  have hl' : (r : ℝ) + 2 ≤ l := by exact_mod_cast hl
-  exact div_nonneg (Nat.cast_nonneg _) (by linarith)
 
 /-- The **range-finder tail ratio** (casts to $\mathbb{R}$),
 the number <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->
@@ -605,7 +578,7 @@ $$1 \le 1 + \frac{r}{\ell - r - 1}\,
 -/
 theorem one_le_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) {r l : ℕ}
     (hl : r + 2 ≤ l) : 1 ≤ rangeFinderTailRatio A r l := by
-  have hk := natCast_div_sub_sub_one_nonneg hl
+  have hk := natCast_div_sub_sub_one_nonneg (K := ℝ) hl
   have h := div_nonneg (mul_nonneg hk (sq_nonneg (frobNorm (A - truncatedSVD A r))))
     (sq_nonneg (singularValues A r))
   rw [rangeFinderTailRatio]
@@ -618,15 +591,13 @@ $$\sigma_r(\mathbf{A})^2\Bigl(1 + \frac{r}{\ell - r - 1}\,
 \frac{\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2}{\sigma_r(\mathbf{A})^2}
 \Bigr) = \sigma_r(\mathbf{A})^2 + \frac{r}{\ell - r - 1}
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_r\|_{\mathsf{F}}^2\,.$$ -/
-theorem sq_singularValues_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜)
+theorem singularValues_sq_mul_rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜)
     {r : ℕ} (l : ℕ) (hσ : 0 < singularValues A r) :
     singularValues A r ^ 2 * rangeFinderTailRatio A r l =
       singularValues A r ^ 2 +
         (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 := by
   rw [rangeFinderTailRatio, mul_add, mul_one, mul_div_cancel₀ _ (pow_ne_zero 2 hσ.ne')]
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- The tail term of the Gaussian range-finder bounds is at most $\lvert n \rvert^2$ times the best
 squared spectral error at a smaller rank: for $r \le t$ and $t + 2 \le \ell$ (casts to
 $\mathbb{R}$), with $\lvert n \rvert$ the number of columns,
@@ -669,8 +640,6 @@ natCast_div_sub_sub_one_mul_frobNorm_sub_truncatedSVD_sq_le_card_sq_mul_singular
         rw [← mul_assoc]
         exact mul_le_mul_of_nonneg_right htNR (sq_nonneg _)
 
--- The declaration name alone exceeds 100 characters.
-set_option linter.style.longLine false in
 /-- The tail term of the Gaussian range-finder bounds is at most $\lvert n \rvert$ times the best
 squared Frobenius error at a smaller rank: for $r \le t$ and $t + 2 \le \ell$ (casts to
 $\mathbb{R}$), with $\lvert n \rvert$ the number of columns,

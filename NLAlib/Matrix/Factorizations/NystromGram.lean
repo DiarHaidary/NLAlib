@@ -280,12 +280,12 @@ theorem _root_.Matrix.PosSemidef.nystrom_eq_of_range_eq [Fintype q] (hA : A.PosS
     nystrom A Ω = nystrom A Ω' := by
   classical
   rw [hA.nystrom_eq, hA.nystrom_eq]
-  obtain ⟨C, hC⟩ := range_mulVecLin_le_iff_exists_mul.mp h.ge
-  obtain ⟨D, hD⟩ := range_mulVecLin_le_iff_exists_mul.mp h.le
+  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp h.ge
+  obtain ⟨D, hD⟩ := range_le_iff_exists_mul.mp h.le
   have hP : rangeProjector (CFC.sqrt A * Ω) = rangeProjector (CFC.sqrt A * Ω') := by
     refine rangeProjector_inj.mpr (le_antisymm ?_ ?_)
-    · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨D, by rw [Matrix.mul_assoc, ← hD]⟩
-    · exact range_mulVecLin_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, ← hC]⟩
+    · exact range_le_iff_exists_mul.mpr ⟨D, by rw [Matrix.mul_assoc, ← hD]⟩
+    · exact range_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, ← hC]⟩
   rw [hP]
 
 end PosSemidef

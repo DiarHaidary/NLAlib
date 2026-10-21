@@ -1,0 +1,29 @@
+# Allowlist of scripts/check_names.py (CONTRIBUTING §4.5). One entry per (declaration, rule) the
+# checker misreads, with a one-line reason saying why the grammar has no readable form for the
+# statement or why the checker's reading is wrong. Reviewed like code; never the fix for a real
+# violation. The checker fails on a stale entry.
+
+[[allow]]
+name = "Metric.IsUniformApproxOn.apply"
+rule = "N2"
+reason = "structure-field style API (`h.apply hx` : dist (g x) (f x) ≤ ε), as Mathlib's `…Apply` lemmas; the head is the predicate"
+
+[[allow]]
+name = "Metric.IsUniformApproxOn.apply"
+rule = "N3"
+reason = "structure-field style API: the relation is the predicate's own, named by the namespace"
+
+[[allow]]
+name = "exists_bernstein_exponent"
+rule = "N3"
+reason = "names the optimised exponent θ of Bernstein's argument; the inequality has no token form shorter than the statement"
+
+[[allow]]
+name = "Matrix.IsHermitian.ext_quadForm"
+rule = "N4"
+reason = "an ext lemma is named for the hypothesis it compares (`quadForm A z = quadForm B z`), as Mathlib's `ext_…`"
+
+[[allow]]
+name = "NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le"
+rule = "N17"
+reason = "the derived name drops the right-side `mul_add` and collides with the consistent form `exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_mul_log_le`; the right side tells the two apart (N8)"
