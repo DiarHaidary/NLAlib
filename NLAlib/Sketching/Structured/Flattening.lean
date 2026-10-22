@@ -156,13 +156,6 @@ theorem HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademach
   rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hω i,
     RCLike.ofReal_one]
 
-omit [DecidableEq n] in
-private theorem range_mul_eq_of_range_eq {p q : Type*} [Fintype p] [Fintype q] (B : Matrix n n 𝕜)
-    {U : Matrix n p 𝕜} {Q : Matrix n q 𝕜}
-    (h : LinearMap.range Q.mulVecLin = LinearMap.range U.mulVecLin) :
-    LinearMap.range (B * Q).mulVecLin = LinearMap.range (B * U).mulVecLin := by
-  rw [Matrix.mulVecLin_mul, Matrix.mulVecLin_mul, LinearMap.range_comp, LinearMap.range_comp, h]
-
 /-- Row $i$ of $\mathbf{F}\operatorname{diag}(\boldsymbol{\xi})\mathbf{Q}$ is the image of the
 sign vector under
 $\mathbf{M}_i = \mathbf{Q}^{\mathsf{T}} \operatorname{diag}(\mathbf{F}_{i,\cdot})$. -/

@@ -276,6 +276,14 @@ theorem range_le_iff_exists_mul [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     rw [Matrix.mulVecLin_mul]
     exact LinearMap.range_comp_le_range _ _
 
+/-- Equal column spaces stay equal under a left factor: if $\mathbf{X}$ and $\mathbf{Y}$ have the
+same column space, so do $\mathbf{A}\mathbf{X}$ and $\mathbf{A}\mathbf{Y}$. -/
+theorem range_mul_eq_of_range_eq {q : Type*} [Fintype n] [Fintype p] [Fintype q]
+    (A : Matrix m n 𝕜) {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜}
+    (h : LinearMap.range X.mulVecLin = LinearMap.range Y.mulVecLin) :
+    LinearMap.range (A * X).mulVecLin = LinearMap.range (A * Y).mulVecLin := by
+  rw [Matrix.mulVecLin_mul, Matrix.mulVecLin_mul, LinearMap.range_comp, LinearMap.range_comp, h]
+
 private theorem exists_rangeProjector_eq_mul [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     ∃ C : Matrix n m 𝕜, rangeProjector A = A * C :=
   range_le_iff_exists_mul.mp (range_rangeProjector A).le

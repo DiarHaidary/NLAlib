@@ -400,6 +400,8 @@ theorem star_mulVec_dotProduct [Fintype m] (C : Matrix n m 𝕜) (u : m → 𝕜
 theorem _root_.Matrix.PosDef.exists_isUnit_eq_mul_conjTranspose {A : Matrix n n 𝕜}
     (hA : A.PosDef) : ∃ S : Matrix n n 𝕜, IsUnit S ∧ A = S * Sᴴ
 
+-- Amendment 2026-10-22 (A5): named `range_mul_eq_of_range_eq`; `range_mulVecLin` is the §4.3
+-- synonym that check_names (N5) rejects. It shadows, and replaces, Flattening's private of that name.
 theorem range_mulVecLin_mul_eq_of_range_eq {q : Type*} [Fintype n] [Fintype p] [Fintype q]
     (A : Matrix m n 𝕜) {X : Matrix n p 𝕜} {Y : Matrix n q 𝕜}
     (h : LinearMap.range X.mulVecLin = LinearMap.range Y.mulVecLin) :
