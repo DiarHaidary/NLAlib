@@ -68,6 +68,18 @@ section Hermitian
 
 variable {X : n → Matrix m m 𝕜}
 
+omit [Fintype k] [DecidableEq m] [MeasurableSingletonClass n] in
+/-- The integral of a function of one coordinate of a uniform draw with replacement is the
+population mean. -/
+private theorem integral_comp_eval_pi_uniformOn [Nonempty n] {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] [CompleteSpace E] [Fintype k] [DiscreteMeasurableSpace n] (f : n → E)
+    (j : k) :
+    ∫ J, f (J j) ∂(Measure.pi fun _ : k => uniformOn (Set.univ : Set n)) =
+      (Fintype.card n : ℝ)⁻¹ • ∑ i, f i := by
+  rw [integral_comp_eval (μ := fun _ : k => uniformOn (Set.univ : Set n)) (i := j) (f := f)
+    .of_discrete, ← samplingMeasure_const_inv_card, integral_samplingMeasure, Finset.smul_sum]
+  simp only [NNReal.coe_inv, NNReal.coe_natCast]
+
 /-- **The matrix Bernstein trace bound without replacement**: for Hermitian $\mathbf{X}_i$ with
 $\sum_i \mathbf{X}_i = \mathbf{0}$ and $\mathbf{X}_i \preceq L\mathbf{I}$, $L > 0$, a uniformly
 random injection $\iota : k \to n$ and $0 < \theta < 3/L$,
@@ -87,7 +99,68 @@ theorem integral_re_trace_exp_sum_le_bernstein_of_hasLaw_uniformOn_injective
     ∫ ω, RCLike.re (exp (θ • ∑ j, X (ι ω j))).trace ∂μ ≤
       RCLike.re (exp ((θ ^ 2 / 2 / (1 - L * θ / 3)) •
         (((Fintype.card k : ℝ) / Fintype.card n) • ∑ i, X i ^ 2))).trace := by
-  sorry
+  set V := ((Fintype.card k : ℝ) / Fintype.card n) • ∑ i, X i ^ 2 with hVdef
+  have hV : V.IsHermitian :=
+    (IsSelfAdjoint.all _).smul (isSelfAdjoint_sum _ fun i _ => (hX i).pow 2)
+  have hR : 0 ≤ RCLike.re (exp ((θ ^ 2 / 2 / (1 - L * θ / 3)) • V)).trace := by
+    rcases isEmpty_or_nonempty m with hm | hm
+    · simp [Matrix.trace]
+    · exact Matrix.IsHermitian.re_trace_exp_pos ((IsSelfAdjoint.all _).smul hV) |>.le
+  rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
+  · rw [(Measure.map_eq_zero_iff hι.aemeasurable).1
+      (by rw [hι.map_eq, uniformOn_injective_of_card_lt hk]), integral_zero_measure]
+    exact hR
+  have : IsProbabilityMeasure μ :=
+    hι.isProbabilityMeasure_iff.2 (isProbabilityMeasure_uniformOn_injective hk)
+  rcases isEmpty_or_nonempty k with hk0 | ⟨⟨j₀⟩⟩
+  · simp [hVdef, Fintype.card_eq_zero]
+  have : Nonempty n := ⟨(Function.Embedding.nonempty_of_card_le hk).some j₀⟩
+  have h1 : ∫ ω, RCLike.re (exp (θ • ∑ j, X (ι ω j))).trace ∂μ =
+      ∫ J, RCLike.re (exp (θ • ∑ j, X (J j))).trace
+        ∂uniformOn {f : k → n | Function.Injective f} :=
+    hι.integral_comp (f := fun J : k → n => RCLike.re (exp (θ • ∑ j, X (J j))).trace)
+      .of_discrete
+  -- Hoeffding's comparison with `re tr exp (θ •)` on the Hermitian matrices
+  have hf : ConvexOn ℝ {A : Matrix m m 𝕜 | A.IsHermitian}
+      fun A => RCLike.re (exp (θ • A)).trace := by
+    have h0 := (convexOn_re_trace_exp (𝕜 := 𝕜) (n := m)).comp_linearMap
+      (θ • LinearMap.id : Matrix m m 𝕜 →ₗ[ℝ] Matrix m m 𝕜)
+    have hfun : (fun A : Matrix m m 𝕜 => RCLike.re (exp A).trace) ∘
+        ⇑(θ • LinearMap.id : Matrix m m 𝕜 →ₗ[ℝ] Matrix m m 𝕜) =
+        fun A => RCLike.re (exp (θ • A)).trace := by
+      funext A
+      simp only [Function.comp_apply, LinearMap.smul_apply, LinearMap.id_apply]
+    rw [hfun] at h0
+    refine h0.subset (fun A hA => ?_) ?_
+    · simp only [Set.mem_preimage, LinearMap.smul_apply, LinearMap.id_apply, Set.mem_ofPred_eq]
+      exact (IsSelfAdjoint.all θ).smul hA
+    · intro A hA B hB a b ha hb hab
+      exact ((IsSelfAdjoint.all a).smul hA).add ((IsSelfAdjoint.all b).smul hB)
+  have hexp : Continuous (exp : Matrix m m 𝕜 → Matrix m m 𝕜) := by
+    open scoped Matrix.Norms.Operator in exact NormedSpace.exp_continuous
+  have hfc : ContinuousOn (fun A : Matrix m m 𝕜 => RCLike.re (exp (θ • A)).trace)
+      {A | A.IsHermitian} :=
+    (RCLike.continuous_re.comp (hexp.comp (continuous_const_smul θ)).matrix_trace).continuousOn
+  have hcl : IsClosed {A : Matrix m m 𝕜 | A.IsHermitian} :=
+    isClosed_eq continuous_id.matrix_conjTranspose continuous_id
+  have h2 := integral_uniformOn_injective_le_integral_pi hf hfc hcl hk X
+    fun J => isSelfAdjoint_sum _ fun j _ => hX (J j)
+  -- the i.i.d. bound
+  have hind : iIndepFun (fun j (J : k → n) => X (J j))
+      (Measure.pi fun _ : k => uniformOn (Set.univ : Set n)) :=
+    iIndepFun_pi (X := fun (_ : k) (i : n) => X i) fun _ => (measurable_of_countable _).aemeasurable
+  have hmgf (j : k) := hasMatrixMGFBound_of_integral_eq_zero_of_le
+    (μ := Measure.pi fun _ : k => uniformOn (Set.univ : Set n)) (X := fun J : k → n => X (J j))
+    hL .of_discrete (by rw [integral_comp_eval_pi_uniformOn X j, hsum, smul_zero])
+    (ae_of_all _ fun J => hle (J j))
+  have h3 := HasMatrixMGFBound.integral_re_trace_exp_sum_le hind hmgf hθ
+  have hvar : ∑ j : k, ∫ J, X (J j) ^ 2 ∂(Measure.pi fun _ : k => uniformOn (Set.univ : Set n)) =
+      V := by
+    simp only [integral_comp_eval_pi_uniformOn (fun i => X i ^ 2), Finset.sum_const,
+      Finset.card_univ]
+    rw [← Nat.cast_smul_eq_nsmul ℝ, smul_smul, ← div_eq_mul_inv]
+  rw [hvar] at h3
+  exact h1.trans_le (h2.trans h3)
 
 /-- **Matrix Bernstein without replacement**, Hermitian population: for Hermitian
 $\mathbf{X}_i$, $i \in n$, with $\sum_i \mathbf{X}_i = \mathbf{0}$ and
@@ -108,7 +181,18 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein_of_hasLaw_uniformOn_inje
     μ.real {ω | t ≤ eigenvalue (∑ j, X (ι ω j)) 0} ≤
       Fintype.card m * Real.exp (-(t ^ 2 / 2) /
         ((Fintype.card k : ℝ) / Fintype.card n * specNorm (∑ i, X i ^ 2) + L * t / 3)) := by
-  sorry
+  rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
+  · rw [(Measure.map_eq_zero_iff hι.aemeasurable).1
+      (by rw [hι.map_eq, uniformOn_injective_of_card_lt hk]), measureReal_zero_apply]
+    positivity
+  have := hι.isProbabilityMeasure_iff.2 (isProbabilityMeasure_uniformOn_injective hk)
+  have h := measureReal_eigenvalue_zero_ge_le_bernstein_of_integral_le
+    (ae_of_all _ fun ω => isSelfAdjoint_sum _ fun j _ => hX (ι ω j))
+    ((IsSelfAdjoint.all _).smul (isSelfAdjoint_sum _ fun i _ => (hX i).pow 2)) hL
+    (fun θ _ => integrable_re_trace_exp_sum_of_hasLaw_uniformOn_injective hι θ)
+    (fun θ hθ => integral_re_trace_exp_sum_le_bernstein_of_hasLaw_uniformOn_injective hι hL hX
+      hsum hle hθ) ht
+  rwa [specNorm_real_smul, abs_of_nonneg (by positivity)] at h
 
 /-- **Matrix Bernstein without replacement for the mean**, Hermitian population: for Hermitian
 $\mathbf{X}_i$, $i \in n$, with $\sum_i \mathbf{X}_i = \mathbf{0}$ and
@@ -127,7 +211,21 @@ theorem integral_eigenvalue_zero_sum_le_bernstein_of_hasLaw_uniformOn_injective 
     ∫ ω, eigenvalue (∑ j, X (ι ω j)) 0 ∂μ ≤
       √(2 * ((Fintype.card k : ℝ) / Fintype.card n * specNorm (∑ i, X i ^ 2)) *
         Real.log (Fintype.card m)) + L * Real.log (Fintype.card m) / 3 := by
-  sorry
+  have hd : (1 : ℝ) ≤ Fintype.card m := by exact_mod_cast Fintype.card_pos
+  rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
+  · rw [(Measure.map_eq_zero_iff hι.aemeasurable).1
+      (by rw [hι.map_eq, uniformOn_injective_of_card_lt hk]), integral_zero_measure]
+    have := Real.log_nonneg hd
+    positivity
+  have := hι.isProbabilityMeasure_iff.2 (isProbabilityMeasure_uniformOn_injective hk)
+  have h := integral_eigenvalue_zero_le_bernstein_of_integral_le
+    (ae_of_all _ fun ω => isSelfAdjoint_sum _ fun j _ => hX (ι ω j))
+    ((hι.integrable_comp_iff (f := fun J : k → n => ∑ j, X (J j)) .of_discrete).2 .of_finite)
+    ((IsSelfAdjoint.all _).smul (isSelfAdjoint_sum _ fun i _ => (hX i).pow 2)) hL
+    (fun θ _ => integrable_re_trace_exp_sum_of_hasLaw_uniformOn_injective hι θ)
+    (fun θ hθ => integral_re_trace_exp_sum_le_bernstein_of_hasLaw_uniformOn_injective hι hL hX
+      hsum hle hθ)
+  rwa [specNorm_real_smul, abs_of_nonneg (by positivity)] at h
 
 end Hermitian
 
@@ -153,7 +251,17 @@ theorem measureReal_specNorm_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective [
       (Fintype.card q + Fintype.card r) * Real.exp (-(t ^ 2 / 2) /
         ((Fintype.card k : ℝ) / Fintype.card n *
           max (specNorm (∑ i, S i * (S i)ᴴ)) (specNorm (∑ i, (S i)ᴴ * S i)) + L * t / 3)) := by
-  sorry
+  classical
+  have h := measureReal_eigenvalue_zero_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective
+    (X := fun i => dilation (S i)) hι hL (fun i => isHermitian_dilation _)
+    (by rw [← dilation_sum, hsum, dilation_zero])
+    (fun i => (isHermitian_dilation _).le_smul_one_of_specNorm_le
+      (by rw [specNorm_dilation]; exact hle i)) ht
+  have hsq (A : Matrix q r 𝕜) : dilation A ^ 2 = Matrix.fromBlocks (A * Aᴴ) 0 0 (Aᴴ * A) := by
+    rw [sq, dilation_mul_dilation]
+  simp only [← dilation_sum, eigenvalue_zero_dilation, hsq, Matrix.sum_fromBlocks,
+    Finset.sum_const_zero, specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
+  exact h
 
 /-- **Matrix Bernstein without replacement for the mean**, rectangular population: for
 $\mathbf{S}_i \in \Bbbk^{q \times r}$, $i \in n$, with $\sum_i \mathbf{S}_i = \mathbf{0}$ and
@@ -174,7 +282,17 @@ theorem integral_specNorm_sum_le_bernstein_of_hasLaw_uniformOn_injective [Nonemp
           max (specNorm (∑ i, S i * (S i)ᴴ)) (specNorm (∑ i, (S i)ᴴ * S i))) *
         Real.log (Fintype.card q + Fintype.card r)) +
       L * Real.log (Fintype.card q + Fintype.card r) / 3 := by
-  sorry
+  classical
+  have h := integral_eigenvalue_zero_sum_le_bernstein_of_hasLaw_uniformOn_injective
+    (X := fun i => dilation (S i)) hι hL (fun i => isHermitian_dilation _)
+    (by rw [← dilation_sum, hsum, dilation_zero])
+    (fun i => (isHermitian_dilation _).le_smul_one_of_specNorm_le
+      (by rw [specNorm_dilation]; exact hle i))
+  have hsq (A : Matrix q r 𝕜) : dilation A ^ 2 = Matrix.fromBlocks (A * Aᴴ) 0 0 (Aᴴ * A) := by
+    rw [sq, dilation_mul_dilation]
+  simp only [← dilation_sum, eigenvalue_zero_dilation, hsq, Matrix.sum_fromBlocks,
+    Finset.sum_const_zero, specNorm_fromBlocks_zero₁₂_zero₂₁, Fintype.card_sum, Nat.cast_add] at h
+  exact h
 
 end Rectangular
 
@@ -192,6 +310,21 @@ theorem measureReal_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective {a : n →
     μ.real {ω | t ≤ ∑ j, a (ι ω j)} ≤
       Real.exp (-(t ^ 2 / 2) /
         ((Fintype.card k : ℝ) / Fintype.card n * ∑ i, a i ^ 2 + L * t / 3)) := by
-  sorry
+  have hk1 : 0 < Fintype.card Unit := Fintype.card_pos
+  have h := measureReal_eigenvalue_zero_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective
+    (𝕜 := ℝ) (m := Unit) (X := fun i => a i • (1 : Matrix Unit Unit ℝ)) hι hL
+    (fun i => (IsSelfAdjoint.all (a i)).smul Matrix.isHermitian_one)
+    (by rw [← Finset.sum_smul, hsum, zero_smul])
+    (fun i => Matrix.le_iff.2 (by
+      rw [← sub_smul]
+      exact Matrix.PosSemidef.one.smul (sub_nonneg.2 (hle i)))) ht
+  have hs : 0 ≤ ∑ i, a i ^ 2 := Finset.sum_nonneg fun i _ => sq_nonneg _
+  have hspec : specNorm (∑ i, (a i • (1 : Matrix Unit Unit ℝ)) ^ 2) = ∑ i, a i ^ 2 := by
+    simp only [smul_pow, one_pow, ← Finset.sum_smul]
+    rw [(Matrix.PosSemidef.one.smul hs).specNorm_eq_eigenvalue_zero,
+      eigenvalue_real_smul_one _ hk1]
+  simp only [← Finset.sum_smul, eigenvalue_real_smul_one _ hk1, Fintype.card_unit,
+    Nat.cast_one, one_mul] at h
+  rwa [hspec] at h
 
 end NLAlib
