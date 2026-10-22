@@ -2,6 +2,43 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Sketching moments round: proofs (2026-10-22)
+
+Branch `sketching/moments` (worktree `nlalib-block`), from `46f78ab`. Every statement of the
+skeleton is proved; no `sorry` remains, and all of the round's files count as proved modules:
+`Probability/MatrixConcentration/BernsteinWithoutReplacement.lean` (matrix Bernstein and the
+rectangular form without replacement), `Sketching/Gaussian/ProjectionCost.lean` (the Gaussian,
+sub-Gaussian and Haar PCPs with their $\log(1/\delta)$ twins and asymptotic forms),
+`Sketching/Sampling/MatrixMultiplication.lean` (spectral AMM by row sampling, with and without
+replacement), `Sketching/Structured/SRHTMultiplication.lean` (the SRHT JL tails, sizes, JL moment
+at $p = 2$, spectral AMM and PCP, both sampling models), `Regression/{Gaussian, SubGaussian, Haar,
+SRHT}.lean` (sketch-and-solve with high probability, Haar sketch-and-precondition) and
+`LowRank/Oblivious/{Gaussian, SubGaussian, Haar, SRHT}.lean` (randomized SVD and early truncation
+to $1 + \varepsilon$). Public additions, all dated in the note's "Changes during the proofs":
+`measureReal_le_one_of_hasLaw_srht` made public, `samplingEmbeddingDim_srhtRowBound_le` and
+`samplingInjectionDim_srhtRowBound_le` (`Sketching/Structured/SRHT.lean`), and at the close the two
+shared $(1 + \varepsilon)$ forms `HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le`
+(`LowRank/Oblivious/EarlyTruncation.lean`) and
+`HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le`
+(`Regression/Oblivious.lean`), which now carry the bodies the family twins repeated (net 65 Lean
+lines fewer). `SRHTMultiplication.lean` also imports `Probability/QuadraticForm/Moments.lean`. One
+statement changed: the sub-Gaussian PCP twin loses an unused `[Nonempty k]` (linter). Two private
+helper docstrings of `ProjectionCost.lean` got their value markers.
+
+Checks: `mk_all --check` clean; `scripts/stage_check.sh`: 396 proved modules, 0 not yet; build
+3993 jobs, `--wfail`, 0 warnings; audit 9950 declarations, 0 violations; lint 6387 declarations, 0
+errors; references 88 keys, 86 asymptotic forms, 0 problems; constants 34, 424 value markers, 0
+problems; rules 0 errors, 73 in the baseline, 880 warnings (849 at `46f78ab`: B5 +7, C9 +5,
+D3 +15, D13 +2, T11 +2); duplicates 5841 theorems, 0 classes; script tests 46, OK.
+
+Open items for the maintainer:
+* `KaneNelson2014` in `docs/references.bib` has surnames, title, journal and year only; given
+  names, issue, article number and DOI are to complete, and the declaration docstrings say
+  "locator to check".
+* The SRHT asymptotic threshold shapes (JL, PCP, sketch-and-solve, randomized SVD, early
+  truncation) were chosen during the skeleton, since the note gave none (note, "Changes during the
+  skeleton", "Asymptotic thresholds"); they await the maintainer's look.
+
 ## Sketching moments round: skeleton (2026-10-22)
 
 Branch `sketching/moments` (worktree `nlalib-block`), from `46f78ab` (rebased from `1e5334f`
