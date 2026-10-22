@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Probability.QuadraticForm.Moments
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
 public import NLAlib.Sketching.Properties.ProjectionCost
 public import NLAlib.Sketching.Sampling.MatrixMultiplication
@@ -66,6 +67,18 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {k n : Type*} [Fintype k] [Fintype n] [DecidableEq n] {β ε t δ : ℝ}
+
+omit [Fintype k] in
+/-- A unitary times a diagonal of signs is unitary. -/
+private theorem hasOrthonormalCols_mul_diagonal {F : Matrix n n 𝕜} (hF : HasOrthonormalCols F)
+    {y : n → ℝ} (hy : ∀ i, y i ^ 2 = 1) : HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
+  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
+    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
+    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1
+  funext i
+  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hy i,
+    RCLike.ofReal_one]
 
 /-! ### Distributional JL -/
 
@@ -337,6 +350,279 @@ section Moment
 
 variable {S : Ω → Matrix k n ℝ} {F : Matrix n n ℝ}
 
+omit [Fintype k] [DecidableEq n] in
+/-- **The fourth moment of a Rademacher sum**:
+$\mathbb{E}(\sum_j a_j\xi_j)^4 \le 3(\sum_j a_j^2)^2$, through the variance of the quadratic form
+of $\mathbf{a}\mathbf{a}^{\mathsf{T}}$. -/
+private theorem integral_sum_mul_pow_four_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
+    {ν : Measure Ω'} {ξ : Ω' → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) ν) (a : n → ℝ) :
+    ∫ ω, (∑ j, a j * ξ ω j) ^ 4 ∂ν ≤ 3 * (∑ j, a j ^ 2) ^ 2 := by
+  classical
+  have := hξ.isProbabilityMeasure_iff.2 inferInstance
+  set A : Matrix n n ℝ := Matrix.vecMulVec a a with hAdef
+  have hA : A.IsHermitian := by
+    rw [Matrix.IsHermitian, hAdef, Matrix.conjTranspose_vecMulVec, star_trivial]
+  have hq (x : n → ℝ) : quadForm A x = (∑ j, a j * x j) ^ 2 := by
+    simp only [quadForm, hAdef, star_trivial, dotProduct, Matrix.mulVec, Matrix.vecMulVec_apply,
+      sq, Finset.mul_sum, Finset.sum_mul]
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
+  have hvar := variance_quadForm_of_hasLaw_rademacherVector hξ hA
+  have hmean := (isIsotropic_of_hasLaw_rademacherVector hξ).integral_quadForm A
+  have htr : A.trace = ∑ j, a j ^ 2 := by
+    simp only [Matrix.trace, Matrix.diag, hAdef, Matrix.vecMulVec_apply, sq]
+  have hF : frobNorm A ^ 2 = (∑ j, a j ^ 2) ^ 2 := by
+    rw [hAdef, frobNorm_vecMulVec, ← sq, ← pow_mul, show 2 * 2 = 2 * 2 from rfl, pow_mul,
+      EuclideanSpace.norm_sq_eq]
+    simp only [Real.norm_eq_abs, sq_abs]
+  have hL2 : MemLp (fun ω => quadForm A (ξ ω)) 2 ν :=
+    memLp_quadForm (memLp_of_hasLaw_rademacherVector hξ 4) A
+  rw [variance_eq_sub hL2, hmean, htr, hF] at hvar
+  have h4 : ∫ ω, (∑ j, a j * ξ ω j) ^ 4 ∂ν = ∫ ω, ((fun ω => quadForm A (ξ ω)) ^ 2) ω ∂ν := by
+    refine integral_congr_ae (ae_of_all _ fun ω => ?_)
+    simp only [Pi.pow_apply, hq]
+    ring
+  have hd : 0 ≤ ∑ i, A i i ^ 2 := Finset.sum_nonneg fun i _ => sq_nonneg _
+  rw [h4]
+  nlinarith
+
+omit [DecidableEq n] in
+/-- **The second moment of an i.i.d. uniform sample sum**: for a centred population
+$a : n \to \mathbb{R}$ and $\lvert k\rvert$ i.i.d. uniform indices,
+$\mathbb{E}(\sum_j a_{J_j})^2 = (\lvert k\rvert/\lvert n\rvert)\sum_i a_i^2$. -/
+private theorem integral_sum_sq_pi_samplingMeasure [Nonempty n] [MeasurableSpace n]
+    [MeasurableSingletonClass n] (a : n → ℝ) (ha : ∑ i, a i = 0) :
+    ∫ J, (∑ j, a (J j)) ^ 2
+        ∂(Measure.pi fun _ : k => samplingMeasure fun _ : n => (Fintype.card n : NNReal)⁻¹) =
+      Fintype.card k / Fintype.card n * ∑ i, a i ^ 2 := by
+  set P := Measure.pi fun _ : k => samplingMeasure fun _ : n => (Fintype.card n : NNReal)⁻¹
+  have := isProbabilityMeasure_samplingMeasure _ (NNReal.sum_const_inv_card (ι := n))
+  have hind : iIndepFun (fun j (J : k → n) => a (J j)) P :=
+    iIndepFun_pi (X := fun (_ : k) (i : n) => a i) fun _ => (measurable_of_finite _).aemeasurable
+  have hmem (j : k) : MemLp (fun J : k → n => a (J j)) 2 P := .of_discrete
+  have hc : (((Fintype.card n : NNReal)⁻¹ : NNReal) : ℝ) = (Fintype.card n : ℝ)⁻¹ := by
+    rw [NNReal.coe_inv, NNReal.coe_natCast]
+  have hev (f : n → ℝ) (j : k) : ∫ J, f (J j) ∂P = (Fintype.card n : ℝ)⁻¹ * ∑ i, f i := by
+    have h := (HasLaw.id (μ := P)).eval j
+    rw [show ∫ J, f (J j) ∂P = ∫ i, f i ∂(samplingMeasure fun _ : n =>
+      (Fintype.card n : NNReal)⁻¹) from
+      h.integral_comp (StronglyMeasurable.of_discrete).aestronglyMeasurable,
+      integral_samplingMeasure, Finset.mul_sum]
+    simp only [hc, smul_eq_mul]
+  have hvar := IndepFun.variance_sum (s := Finset.univ) (X := fun j (J : k → n) => a (J j))
+    (fun j _ => hmem j) (fun i _ j _ hij => hind.indepFun hij)
+  have hsum : MemLp (∑ j ∈ Finset.univ, fun J : k → n => a (J j)) 2 P :=
+    memLp_finsetSum' _ fun j _ => hmem j
+  rw [variance_eq_sub hsum] at hvar
+  simp only [fun j => variance_eq_sub (hmem j)] at hvar
+  have hm : ∫ J, (∑ j ∈ Finset.univ, fun J : k → n => a (J j)) J ∂P = 0 := by
+    simp only [Finset.sum_apply]
+    rw [integral_finsetSum _ fun j _ => (hmem j).integrable one_le_two]
+    simp only [hev a, ha, mul_zero, Finset.sum_const_zero]
+  rw [hm] at hvar
+  simp only [Pi.pow_apply, Finset.sum_apply, hev (fun i => a i ^ 2), hev a, ha, mul_zero, ne_eq,
+    OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, sub_zero] at hvar
+  rw [hvar, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  ring
+
+/-- The squared norm of a sampled unit vector at uniform weights, minus one, as a sum over the
+samples of the centred population $(\lvert n\rvert z_i^2 - 1)/\lvert k\rvert$. -/
+private theorem norm_samplingSketchMatrix_mulVec_sq_sub_one [Nonempty k] (ι : k → n)
+    {z : n → ℝ} :
+    ‖WithLp.toLp 2 ((samplingSketchMatrix (fun _ : n => (Fintype.card n : NNReal)⁻¹) ι :
+        Matrix k n ℝ) *ᵥ z)‖ ^ 2 - 1 =
+      ∑ j, (Fintype.card n * z (ι j) ^ 2 - 1) / Fintype.card k := by
+  have hK : (Fintype.card k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+  have hrow (j : k) : ((samplingSketchMatrix (fun _ : n => (Fintype.card n : NNReal)⁻¹) ι :
+      Matrix k n ℝ) *ᵥ z) j =
+      (√((Fintype.card k : ℝ) * (Fintype.card n : ℝ)⁻¹))⁻¹ * z (ι j) := by
+    simp only [samplingSketchMatrix, Matrix.mulVec, dotProduct, Matrix.of_apply, ite_mul,
+      zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true, NNReal.coe_inv, NNReal.coe_natCast]
+    rfl
+  rw [EuclideanSpace.norm_sq_eq]
+  simp only [Real.norm_eq_abs, sq_abs, hrow, mul_pow, inv_pow,
+    Real.sq_sqrt (by positivity : (0 : ℝ) ≤ (Fintype.card k : ℝ) * (Fintype.card n : ℝ)⁻¹),
+    sub_div, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  rw [mul_one_div_cancel hK]
+  congr 1
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [mul_inv, inv_inv]
+  ring
+
+omit [DecidableEq n] in
+/-- The centred population of the squared norm sums to zero at a unit vector, and its squares
+give the variance $(\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$ after the factor
+$\lvert k\rvert/\lvert n\rvert$. -/
+private theorem sum_sq_sub_one_div_card [Nonempty k] [Nonempty n] {z : n → ℝ}
+    (hz : ‖WithLp.toLp 2 z‖ = 1) :
+    ∑ i, (Fintype.card n * z i ^ 2 - 1) / (Fintype.card k : ℝ) = 0 ∧
+      Fintype.card k / Fintype.card n *
+        ∑ i, ((Fintype.card n * z i ^ 2 - 1) / (Fintype.card k : ℝ)) ^ 2 =
+      (Fintype.card n * ∑ i, z i ^ 4 - 1) / Fintype.card k := by
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hN : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
+  have hz2 : ∑ i, z i ^ 2 = 1 := by
+    have h := congrArg (· ^ 2) hz
+    simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs, one_pow] at h
+    exact h
+  have e1 (i : n) : ((Fintype.card n * z i ^ 2 - 1) / (Fintype.card k : ℝ)) ^ 2 =
+      ((Fintype.card n : ℝ) ^ 2 * z i ^ 4 - 2 * Fintype.card n * z i ^ 2 + 1) /
+        (Fintype.card k : ℝ) ^ 2 := by
+    field_simp
+    ring
+  refine ⟨?_, ?_⟩
+  · rw [← Finset.sum_div, Finset.sum_sub_distrib, ← Finset.mul_sum, hz2, Finset.sum_const,
+      Finset.card_univ, nsmul_eq_mul, mul_one, sub_self, zero_div]
+  · simp only [e1, ← Finset.sum_div, Finset.sum_add_distrib, Finset.sum_sub_distrib,
+      ← Finset.mul_sum, hz2, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one]
+    field_simp
+    ring
+
+/-- **The JL second moment of row sampling without replacement** at a unit vector:
+$\mathbb{E}(\|\mathbf{P}\mathbf{z}\|^2 - 1)^2 \le (\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$,
+the i.i.d. value through Hoeffding's comparison. -/
+private theorem integral_sq_le_of_samplingSketchWithoutReplacement [Nonempty k]
+    (hk : Fintype.card k ≤ Fintype.card n) {z : n → ℝ} (hz : ‖WithLp.toLp 2 z‖ = 1) :
+    ∫ P, (‖WithLp.toLp 2 (P *ᵥ z)‖ ^ 2 - 1) ^ 2 ∂(samplingSketchWithoutReplacement (𝕜 := ℝ) k n) ≤
+      (Fintype.card n * ∑ i, z i ^ 4 - 1) / Fintype.card k := by
+  let _ : MeasurableSpace n := ⊤
+  obtain ⟨j₀⟩ := ‹Nonempty k›
+  have : Nonempty n := ⟨(Function.Embedding.nonempty_of_card_le hk).some j₀⟩
+  obtain ⟨ha, hv⟩ := sum_sq_sub_one_div_card (k := k) hz
+  rw [samplingSketchWithoutReplacement_eq_map, integral_map (measurable_of_countable _).aemeasurable
+    (Continuous.aestronglyMeasurable (by fun_prop))]
+  simp only [norm_samplingSketchMatrix_mulVec_sq_sub_one]
+  have h2 := integral_uniformOn_injective_le_integral_pi (Even.convexOn_pow (𝕜 := ℝ) even_two)
+    (continuous_pow 2).continuousOn isClosed_univ hk
+    (fun i => (Fintype.card n * z i ^ 2 - 1) / (Fintype.card k : ℝ)) fun _ => Set.mem_univ _
+  rw [← samplingMeasure_const_inv_card, integral_sum_sq_pi_samplingMeasure _ ha, hv] at h2
+  exact h2
+
+/-- **The JL second moment of row sampling with replacement** at a unit vector, uniform weights:
+$\mathbb{E}(\|\mathbf{P}\mathbf{z}\|^2 - 1)^2 = (\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$. -/
+private theorem integral_sq_le_of_samplingSketch [Nonempty k] [Nonempty n] {z : n → ℝ}
+    (hz : ‖WithLp.toLp 2 z‖ = 1) :
+    ∫ P, (‖WithLp.toLp 2 (P *ᵥ z)‖ ^ 2 - 1) ^ 2
+        ∂(samplingSketch (𝕜 := ℝ) k fun _ : n => (Fintype.card n : NNReal)⁻¹) ≤
+      (Fintype.card n * ∑ i, z i ^ 4 - 1) / Fintype.card k := by
+  let _ : MeasurableSpace n := ⊤
+  obtain ⟨ha, hv⟩ := sum_sq_sub_one_div_card (k := k) hz
+  rw [samplingSketch_eq_map, integral_map (measurable_of_finite _).aemeasurable
+    (Continuous.aestronglyMeasurable (by fun_prop))]
+  simp only [norm_samplingSketchMatrix_mulVec_sq_sub_one]
+  rw [integral_sum_sq_pi_samplingMeasure _ ha, hv]
+
+omit [Fintype k] in
+/-- The mean of the fourth-power bound of the conditioned JL moment over the signs: for a unit
+$\mathbf{v}$, $\lvert n\rvert\,\mathbb{E}\sum_i (\mathbf{F}\mathbf{D}\mathbf{v})_i^4 \le 3\beta^2$,
+and the fourth powers are integrable. -/
+private theorem integral_sum_mulVec_pow_four_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
+    {ν : Measure Ω'} {ξ : Ω' → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) ν)
+    (hF : IsBoundedOrthonormal F β) {v : n → ℝ} (hv : ‖WithLp.toLp 2 v‖ = 1) :
+    (∀ i, Integrable (fun ω => ((F * Matrix.diagonal (ξ ω)) *ᵥ v) i ^ 4) ν) ∧
+      Fintype.card n * ∑ i, ∫ ω, ((F * Matrix.diagonal (ξ ω)) *ᵥ v) i ^ 4 ∂ν ≤ 3 * β ^ 2 := by
+  have hz (ω : Ω') (i : n) : ((F * Matrix.diagonal (ξ ω)) *ᵥ v) i =
+      ∑ j, (F i j * v j) * ξ ω j := by
+    simp only [Matrix.mulVec, dotProduct, Matrix.mul_diagonal]
+    exact Finset.sum_congr rfl fun j _ => by ring
+  have hv2 : ∑ j, v j ^ 2 = 1 := by
+    have h := congrArg (· ^ 2) hv
+    simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs, one_pow] at h
+    exact h
+  refine ⟨fun i => ?_, ?_⟩
+  · have hm : MemLp (fun ω => ∑ j, (F i j * v j) * ξ ω j) 4 ν :=
+      memLp_finsetSum _ fun j _ => (memLp_of_hasLaw_rademacherVector hξ 4 j).const_mul _
+    have h := hm.integrable_norm_pow (by norm_num)
+    simp only [Real.norm_eq_abs, Even.pow_abs ⟨2, rfl⟩] at h
+    simpa only [hz] using h
+  rcases isEmpty_or_nonempty n with hn | hn
+  · simp only [Finset.univ_eq_empty, Finset.sum_empty, mul_zero]
+    positivity
+  have hN : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
+  have hrow (i : n) : ∑ j, (F i j * v j) ^ 2 ≤ β / Fintype.card n := by
+    calc ∑ j, (F i j * v j) ^ 2 ≤ ∑ j, β / Fintype.card n * v j ^ 2 := by
+          refine Finset.sum_le_sum fun j _ => ?_
+          rw [mul_pow]
+          refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+          rw [le_div_iff₀ hN, mul_comm]
+          simpa only [Real.norm_eq_abs, sq_abs] using hF.card_mul_norm_sq_le i j
+      _ = β / Fintype.card n := by rw [← Finset.mul_sum, hv2, mul_one]
+  have hi (i : n) : ∫ ω, ((F * Matrix.diagonal (ξ ω)) *ᵥ v) i ^ 4 ∂ν ≤
+      3 * (β / Fintype.card n) ^ 2 := by
+    simp only [hz]
+    exact (integral_sum_mul_pow_four_le hξ _).trans (mul_le_mul_of_nonneg_left
+      (pow_le_pow_left₀ (Finset.sum_nonneg fun j _ => sq_nonneg _) (hrow i) 2) (by norm_num))
+  calc Fintype.card n * ∑ i, ∫ ω, ((F * Matrix.diagonal (ξ ω)) *ᵥ v) i ^ 4 ∂ν
+      ≤ Fintype.card n * ∑ _i : n, 3 * (β / Fintype.card n) ^ 2 :=
+        mul_le_mul_of_nonneg_left (Finset.sum_le_sum fun i _ => hi i) hN.le
+    _ = 3 * β ^ 2 := by
+        rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+        field_simp
+
+/-- **Condition on the signs** for the JL moment: on the product of the signs and an independent
+sampling law `ρ` whose JL second moment at every unit vector $\mathbf{z}$ is at most
+$(\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$, the pushforward
+$\mathbf{P}\mathbf{F}\mathbf{D}$ has the JL moment at exponent $2$ with failure
+$(3\beta^2 - 1)/(\lvert k\rvert\varepsilon^2)$. -/
+private theorem hasJLMoment_map_prod {ρ : Measure (Matrix k n ℝ)} [IsProbabilityMeasure ρ]
+    (hF : IsBoundedOrthonormal F β) (hε : 0 < ε)
+    (hint : ∀ z : n → ℝ,
+      Integrable (fun P : Matrix k n ℝ => (‖WithLp.toLp 2 (P *ᵥ z)‖ ^ 2 - 1) ^ 2) ρ)
+    (hρ : ∀ z : n → ℝ, ‖WithLp.toLp 2 z‖ = 1 →
+      ∫ P, (‖WithLp.toLp 2 (P *ᵥ z)‖ ^ 2 - 1) ^ 2 ∂ρ ≤
+        (Fintype.card n * ∑ i, z i ^ 4 - 1) / Fintype.card k) :
+    HasJLMoment (fun x : (n → ℝ) × Matrix k n ℝ => x.2 * F * Matrix.diagonal x.1) ε
+      ((3 * β ^ 2 - 1) / (Fintype.card k * ε ^ 2)) 2 ((rademacherVector n).prod ρ) := by
+  have hfst := (measurePreserving_fst (μ := rademacherVector n) (ν := ρ)).hasLaw
+  have hsnd := (measurePreserving_snd (μ := rademacherVector n) (ν := ρ)).hasLaw
+  have hind : IndepFun (fun x : (n → ℝ) × Matrix k n ℝ => x.1) (fun x => x.2)
+      ((rademacherVector n).prod ρ) :=
+    indepFun_prod (μ := rademacherVector n) (ν := ρ) (X := id) (Y := id) measurable_id
+      measurable_id
+  have key (v : n → ℝ) (hv : ‖WithLp.toLp 2 v‖ = 1) :
+      Integrable (fun x : (n → ℝ) × Matrix k n ℝ =>
+        (‖WithLp.toLp 2 (x.2 *ᵥ ((F * Matrix.diagonal x.1) *ᵥ v))‖ ^ 2 - 1) ^ 2)
+          ((rademacherVector n).prod ρ) ∧
+      ∫ x, (‖WithLp.toLp 2 (x.2 *ᵥ ((F * Matrix.diagonal x.1) *ᵥ v))‖ ^ 2 - 1) ^ 2
+          ∂((rademacherVector n).prod ρ) ≤ (3 * β ^ 2 - 1) / Fintype.card k := by
+    obtain ⟨h4, h4le⟩ := integral_sum_mulVec_pow_four_le hfst hF hv
+    set G : (n → ℝ) × Matrix k n ℝ → ℝ := fun p =>
+      (‖WithLp.toLp 2 (p.2 *ᵥ ((F * Matrix.diagonal p.1) *ᵥ v))‖ ^ 2 - 1) ^ 2 with hGdef
+    set H : (n → ℝ) × Matrix k n ℝ → ℝ := fun x =>
+      (Fintype.card n * ∑ i, ((F * Matrix.diagonal x.1) *ᵥ v) i ^ 4 - 1) / Fintype.card k
+      with hHdef
+    have hG : Measurable G := (by fun_prop : Continuous _).measurable
+    have hG0 : ∀ p, 0 ≤ G p := fun _ => sq_nonneg _
+    have hH : Integrable H ((rademacherVector n).prod ρ) :=
+      (((integrable_finsetSum _ fun i _ => h4 i).const_mul _).sub (integrable_const _)).div_const _
+    have hint' : ∀ᵐ x ∂((rademacherVector n).prod ρ), Integrable (fun P => G (x.1, P)) ρ :=
+      ae_of_all _ fun x => hint ((F * Matrix.diagonal x.1) *ᵥ v)
+    have hle : ∀ᵐ x ∂((rademacherVector n).prod ρ), ∫ P, G (x.1, P) ∂ρ ≤ H x := by
+      filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hfst] with x hx
+      have hT : HasOrthonormalCols (F * Matrix.diagonal x.1) :=
+        hasOrthonormalCols_mul_diagonal (𝕜 := ℝ) hF.hasOrthonormalCols hx
+      exact hρ ((F * Matrix.diagonal x.1) *ᵥ v) (by rw [hT.norm_toLp_mulVec, hv])
+    have hI := hind.integrable_comp_of_integral_le (F := G) (H := H) hfst.aemeasurable hsnd hG hG0
+      hint' hle hH
+    have hL := hind.integral_comp_le_of_integral_le (F := G) (H := H) hfst.aemeasurable hsnd hG
+      hG0 hint' hle hH
+    refine ⟨hI, hL.trans ?_⟩
+    rw [hHdef, integral_div, integral_sub ((integrable_finsetSum _ fun i _ => h4 i).const_mul _)
+      (integrable_const _), integral_const_mul, integral_finsetSum _ fun i _ => h4 i,
+      integral_const, probReal_univ, one_smul]
+    exact div_le_div_of_nonneg_right (by linarith) (Nat.cast_nonneg _)
+  have hrw (v : n → ℝ) (x : (n → ℝ) × Matrix k n ℝ) :
+      |‖WithLp.toLp 2 ((x.2 * F * Matrix.diagonal x.1) *ᵥ v)‖ ^ 2 - 1| ^ (2 : ℝ) =
+        (‖WithLp.toLp 2 (x.2 *ᵥ ((F * Matrix.diagonal x.1) *ᵥ v))‖ ^ 2 - 1) ^ 2 := by
+    rw [Real.rpow_two, sq_abs, Matrix.mul_assoc, Matrix.mulVec_mulVec]
+  refine ⟨fun v hv => ?_, fun v hv => ?_⟩
+  · simp only [hrw]
+    exact (key v hv).1
+  · simp only [hrw]
+    refine (key v hv).2.trans_eq ?_
+    rw [Real.rpow_two]
+    field_simp
+
 /-- **The JL moment of the SRHT** at $p = 2$: for a real bounded orthonormal $\mathbf{F}$ with
 constant $\beta$, the SRHT $\mathbf{S}$ built from it (independent random signs and an independent
 uniform choice of $\lvert k\rvert$ distinct rows), $k$ nonempty and $\varepsilon > 0$, the JL
@@ -348,7 +634,25 @@ the bound is this proof's (no printed source in hand). -/
 theorem hasJLMoment_of_hasLaw_srht [Nonempty k] (hF : IsBoundedOrthonormal F β)
     (hS : HasLaw S (srht k F) μ) (hε : 0 < ε) :
     HasJLMoment S ε ((3 * β ^ 2 - 1) / (Fintype.card k * ε ^ 2)) 2 μ := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · refine ⟨fun x hx => ?_, fun x hx => ?_⟩ <;> simp [Subsingleton.elim x 0] at hx
+  let _ : MeasurableSpace n := ⊤
+  rw [hS.hasJLMoment_iff, srht_eq_map_prod]
+  simp only [RCLike.ofReal_real_eq_id, id]
+  rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
+  · rw [samplingSketchWithoutReplacement_eq_map, uniformOn_injective_of_card_lt hk,
+      Measure.map_zero, Measure.prod_zero, Measure.map_zero]
+    have hβ : 0 ≤ 3 * β ^ 2 - 1 := by nlinarith [hF.one_le]
+    refine ⟨fun _ _ => integrable_zero_measure, fun _ _ => ?_⟩
+    rw [integral_zero_measure]
+    positivity
+  have := isProbabilityMeasure_samplingSketchWithoutReplacement (𝕜 := ℝ) hk
+  refine (HasLaw.hasJLMoment_iff ⟨(by fun_prop : Continuous _).measurable.aemeasurable, rfl⟩).1
+    (hasJLMoment_map_prod hF hε (fun z => ?_)
+      fun z hz => integral_sq_le_of_samplingSketchWithoutReplacement hk hz)
+  rw [samplingSketchWithoutReplacement_eq_map, integrable_map_measure
+    (Continuous.aestronglyMeasurable (by fun_prop)) (measurable_of_countable _).aemeasurable]
+  exact .of_finite
 
 /-- **The JL moment of the SRHT with replacement** at $p = 2$: for a real bounded orthonormal
 $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ built from it with $\lvert k\rvert$
@@ -360,7 +664,16 @@ variance step. [Woodruff2014, Definition 12] for the property; the bound is this
 theorem hasJLMoment_of_hasLaw_srhtWithReplacement [Nonempty k] [Nonempty n]
     (hF : IsBoundedOrthonormal F β) (hS : HasLaw S (srhtWithReplacement k F) μ) (hε : 0 < ε) :
     HasJLMoment S ε ((3 * β ^ 2 - 1) / (Fintype.card k * ε ^ 2)) 2 μ := by
-  sorry
+  let _ : MeasurableSpace n := ⊤
+  rw [hS.hasJLMoment_iff, srhtWithReplacement_eq_map_prod]
+  simp only [RCLike.ofReal_real_eq_id, id]
+  have := isProbabilityMeasure_samplingSketch (𝕜 := ℝ) (k := k)
+    (NNReal.sum_const_inv_card (ι := n))
+  refine (HasLaw.hasJLMoment_iff ⟨(by fun_prop : Continuous _).measurable.aemeasurable, rfl⟩).1
+    (hasJLMoment_map_prod hF hε (fun z => ?_) fun z hz => integral_sq_le_of_samplingSketch hz)
+  rw [samplingSketch_eq_map, integrable_map_measure
+    (Continuous.aestronglyMeasurable (by fun_prop)) (measurable_of_finite _).aemeasurable]
+  exact .of_finite
 
 /-- **The SRHT is a projection-cost-preserving sketch**, size form: for a real bounded orthonormal
 $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ built from it (independent random signs
@@ -419,17 +732,6 @@ end Moment
 section Spectral
 
 variable {q r : Type*} [Fintype q] [Fintype r] {S : Ω → Matrix k n 𝕜} {F : Matrix n n 𝕜}
-
-/-- A unitary times a diagonal of signs is unitary. -/
-private theorem hasOrthonormalCols_mul_diagonal (hF : HasOrthonormalCols F) {y : n → ℝ}
-    (hy : ∀ i, y i ^ 2 = 1) : HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
-  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
-    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
-    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
-  congr 1
-  funext i
-  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hy i,
-    RCLike.ofReal_one]
 
 omit [Fintype q] [Fintype r] in
 /-- The sampled product through a unitary $\mathbf{T}$:
