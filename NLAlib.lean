@@ -1,5 +1,6 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import NLAlib.Estimation.Spectral.RandomStart
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.HutchPlusPlus
 public import NLAlib.Estimation.Trace.HutchPlusPlusTail
@@ -70,9 +71,12 @@ public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Basic.Space
+public import NLAlib.Krylov.Eigenvalues.PowerIteration
+public import NLAlib.Krylov.Eigenvalues.Ritz
 public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Krylov.Functions.NearOptimality
 public import NLAlib.Krylov.Functions.Optimality
+public import NLAlib.Krylov.Functions.Quadrature
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
@@ -244,6 +248,7 @@ public import NLAlib.Matrix.Spectral.Schur
 public import NLAlib.Matrix.Spectral.Simultaneous
 public import NLAlib.Matrix.Spectral.SingularValueInequalities
 public import NLAlib.Matrix.Spectral.SingularValues
+public import NLAlib.Matrix.Spectral.SpectralMeasure
 public import NLAlib.Matrix.Spectral.SpectralRadius
 public import NLAlib.Matrix.Spectral.SylvesterCriterion
 public import NLAlib.Matrix.Spectral.SylvesterEquation
@@ -272,10 +277,14 @@ public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.Stieltjes
+public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import NLAlib.Polynomial.Interpolation.DividedDifference
 public import NLAlib.Polynomial.Interpolation.Stieltjes
+public import NLAlib.Polynomial.Orthogonal.Basic
+public import NLAlib.Polynomial.Orthogonal.Gauss
+public import NLAlib.Polynomial.Orthogonal.Moments
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare

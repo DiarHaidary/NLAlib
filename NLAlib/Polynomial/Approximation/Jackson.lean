@@ -29,6 +29,7 @@ identifies this construction as the Rivlin/KPM kernel and analyzes sharper asymp
 * `chebyshevCoeff_jacksonApprox`: its canonical coefficients.
 * `norm_chebyshevCoeff_jacksonApprox_le`: damping contracts each coefficient.
 * `isUniformApproxOn_jacksonApprox_of_lipschitz`: constructive uniform approximation.
+* `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith`: the same on an interval $[a, b]$.
 -/
 
 @[expose] public section
@@ -350,5 +351,68 @@ theorem isUniformApproxOn_jacksonApprox_of_lipschitz
   rw [jacksonApproximationConstant_def]
   convert h using 1
   ring
+
+/-- **Jackson's theorem on an interval**: an $L$-Lipschitz $f$ on $[a, b]$, $a < b$, is
+within <!-- value jacksonApproximationConstant -->
+$$\frac{\pi L(b - a)}{2(N + 2)}$$
+of a polynomial of degree at most $N$ on $[a, b]$ (the constant is
+`jacksonApproximationConstant`). The affine image of
+`isUniformApproxOn_jacksonApprox_of_lipschitz`. [ChenTrogdonUbaru2022, Appendix C, Theorem 38];
+there on $[-1, 1]$ with the factor $\pi^2/2$.
+Result: jackson-lipschitz -/
+theorem exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith
+    {f : ℝ → 𝕜} {L : ℝ≥0} {a b : ℝ} (hab : a < b) (hf : LipschitzOnWith L f (Set.Icc a b))
+    (N : ℕ) :
+    ∃ p : 𝕜[X], p.degree ≤ (N : WithBot ℕ) ∧
+      Metric.IsUniformApproxOn (fun x : ℝ => p.eval (x : 𝕜)) f (Set.Icc a b)
+        (jacksonApproximationConstant * L * (b - a) / (2 * (N + 2))) := by
+  have hba : 0 < b - a := sub_pos.mpr hab
+  let φ : ℝ → ℝ := fun t => ((b - a) * t + b + a) / 2
+  let K : ℝ≥0 := ⟨(b - a) / 2, by positivity⟩
+  have hφ : LipschitzOnWith K φ (Set.Icc (-1 : ℝ) 1) := by
+    refine LipschitzOnWith.of_dist_le_mul fun x _ y _ => ?_
+    have h : φ x - φ y = (b - a) / 2 * (x - y) := by simp only [φ]; ring
+    rw [Real.dist_eq, Real.dist_eq, h, abs_mul, abs_of_pos (by positivity : 0 < (b - a) / 2)]
+    rfl
+  have hmaps : Set.MapsTo φ (Set.Icc (-1 : ℝ) 1) (Set.Icc a b) := fun t ht => by
+    simp only [φ, Set.mem_Icc] at ht ⊢
+    constructor <;> nlinarith [ht.1, ht.2]
+  let g : ℝ → 𝕜 := fun t => f (φ t)
+  have hg : LipschitzOnWith (L * K) g (Set.Icc (-1 : ℝ) 1) := hf.comp hφ hmaps
+  let q := jacksonApprox g N
+  let s : 𝕜[X] := C ((2 / (b - a) : ℝ) : 𝕜) * X - C (((b + a) / (b - a) : ℝ) : 𝕜)
+  refine ⟨q.comp s, ?_, ?_⟩
+  · refine degree_le_natDegree.trans ?_
+    have hq := natDegree_le_of_degree_le (degree_jacksonApprox_le g N)
+    have hs : s.natDegree ≤ 1 :=
+      (natDegree_sub_le _ _).trans
+        (max_le ((natDegree_C_mul_le _ _).trans natDegree_X_le)
+          (by simp only [natDegree_C, zero_le]))
+    have h : (q.comp s).natDegree ≤ N :=
+      natDegree_comp_le.trans ((Nat.mul_le_mul hq hs).trans_eq (mul_one N))
+    exact_mod_cast h
+  · intro x hx
+    let t := (2 * x - b - a) / (b - a)
+    have ht : t ∈ Set.Icc (-1 : ℝ) 1 := by
+      simp only [t, Set.mem_Icc, le_div_iff₀ hba, div_le_iff₀ hba]
+      constructor <;> linarith [hx.1, hx.2]
+    have hi : φ t = x := by
+      simp only [φ, t]
+      field_simp
+      ring
+    have he : s.eval (x : 𝕜) = (t : 𝕜) := by
+      simp only [s, eval_sub, eval_mul, eval_C, eval_X, t]
+      push_cast
+      field_simp
+      ring
+    have h := (isUniformApproxOn_jacksonApprox_of_lipschitz hg N).apply ht
+    change dist ((q.comp s).eval (x : 𝕜)) (f x) ≤ _
+    rw [eval_comp, he]
+    have hfx : g t = f x := by simp only [g, hi]
+    rw [← hfx]
+    refine h.trans_eq ?_
+    have hK : (K : ℝ) = (b - a) / 2 := rfl
+    rw [NNReal.coe_mul, hK]
+    field_simp
 
 end NLAlib

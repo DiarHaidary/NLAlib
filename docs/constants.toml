@@ -304,3 +304,23 @@ latex = '1 + #2/(#3 - #2 - 1)\cdot\|#1 - \llbracket#1\rrbracket_#2\|_{\mathsf{F}
 display = '1 + \frac{#2}{#3 - #2 - 1}\,\frac{\|#1 - \llbracket#1\rrbracket_#2\|_{\mathsf{F}}^2}{\sigma_#2(#1)^2}'
 lean_body = 'rangeFinderTailRatio {𝕜 : Type*} [RCLike 𝕜] (A : Matrix m n 𝕜) (r l : ℕ) : ℝ := 1 + (r : ℝ) / ((l : ℝ) - r - 1) * frobNorm (A - truncatedSVD A r) ^ 2 / singularValues A r ^ 2'
 body_hash = "63d9712c9f7196d8"
+
+[[constant]]
+name = "NLAlib.randomStartPowerBound"
+kind = "bound"
+file = "NLAlib/Estimation/Spectral/RandomStart.lean"
+args = ["N", "q"]
+latex = '(\log(2#1) + 2)/(2#2 + 1)'
+display = '\frac{\log(2#1) + 2}{2#2 + 1}'
+lean_body = 'randomStartPowerBound (N q : ℕ) : ℝ := (Real.log (2 * N) + 2) / (2 * q + 1)'
+body_hash = "5be7bc18acc6a506"
+
+[[constant]]
+name = "NLAlib.randomStartLanczosBound"
+kind = "bound"
+file = "NLAlib/Estimation/Spectral/RandomStart.lean"
+args = ["N", "q"]
+latex = '4((\log(2#1) + 2 + \log 2)^2 + 4)/((\log 2)^2 #2^2)'
+display = '\frac{4((\log(2#1) + 2 + \log 2)^2 + 4)}{(\log 2)^2 #2^2}'
+lean_body = 'randomStartLanczosBound (N q : ℕ) : ℝ := 4 * ((Real.log (2 * N) + 2 + Real.log 2) ^ 2 + 4) / (Real.log 2 ^ 2 * q ^ 2)'
+body_hash = "f6a7b1855a6c4d00"

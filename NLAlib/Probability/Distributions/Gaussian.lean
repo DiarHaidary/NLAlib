@@ -37,6 +37,8 @@ law will be a separate definition (`docs/design/Probability-P2.md` §7).
   $v$.
 * `NLAlib.integral_pow_four_of_hasLaw_gaussianReal`: $\mathbb{E}[X^4] = 3 v^2$.
 * `NLAlib.isIsotropic_of_hasLaw_gaussianVector`.
+* `NLAlib.ae_dotProduct_ne_zero_of_hasLaw_gaussianVector`: a unit linear form is almost surely
+  nonzero.
 * `NLAlib.hasLaw_dotProduct_of_hasLaw_gaussianVector`: $\langle \mathbf{u}, \mathbf{g} \rangle$
   has law $\mathcal{N}(0, \|\mathbf{u}\|^2)$.
 * `NLAlib.hasGaussianLaw_dotProduct_of_hasLaw_gaussianVector`,
@@ -186,6 +188,23 @@ theorem hasLaw_dotProduct_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
     (hg : HasLaw g (gaussianVector n) μ) (u : n → ℝ) :
     HasLaw (fun ω => u ⬝ᵥ g ω) (gaussianReal 0 (‖WithLp.toLp 2 u‖₊ ^ 2)) μ := by
   exact (hasLaw_dotProduct_gaussianVector u).comp hg
+
+/-- A linear form $\langle \mathbf{u}, \mathbf{g} \rangle$ of a standard Gaussian vector
+$\mathbf{g}$ along a unit vector $\mathbf{u}$ is almost surely nonzero: it is a standard
+Gaussian, which has no atoms. -/
+theorem ae_dotProduct_ne_zero_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
+    (hg : HasLaw g (gaussianVector n) μ) {u : n → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1) :
+    ∀ᵐ ω ∂μ, u ⬝ᵥ g ω ≠ 0 := by
+  have h := hasLaw_dotProduct_of_hasLaw_gaussianVector hg u
+  have hv : ‖WithLp.toLp 2 u‖₊ ^ 2 ≠ 0 := by
+    rw [← NNReal.coe_ne_zero, NNReal.coe_pow, coe_nnnorm, hu]
+    norm_num
+  have := nullSingletonClass_gaussianReal (μ := 0) hv
+  have hs : {x : ℝ | ¬x ≠ 0} = {0} := by
+    ext x
+    simp only [ne_eq, not_not, Set.mem_ofPred_eq, Set.mem_singleton_iff]
+  rw [ae_iff, h.measure_eq (p := fun x : ℝ => ¬x ≠ 0) (hs ▸ measurableSet_singleton 0), hs]
+  exact measure_singleton 0
 
 /-- A finite family of linear forms $\langle \mathbf{w}_i, \mathbf{g} \rangle$ of a standard
 Gaussian vector $\mathbf{g}$ is jointly Gaussian: the random vector

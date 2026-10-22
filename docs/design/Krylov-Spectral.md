@@ -1374,3 +1374,91 @@ near-duplicates (R2).
   bound; the proof body was not read.
 - The `MuscoMusco2015` single-vector locator, and CTU's locator for Lanczos-quadrature exactness.
 - Nothing here has been elaborated.
+
+## Changes during the skeleton (2026-10-22)
+
+The skeleton is on `krylov/spectral` (worktree `nlalib-block`, from `375e005`). Every declaration
+of §§2–4 for KS1 to KS6 is stated with its final docstring and elaborates; definitions are written
+out in full; theorems not listed under "Proved now" are `sorry`. Changes against the note:
+
+* **Files.** As §6, except that `HasOrthonormalCols.eigenvalue_mul_mul_conjTranspose` is in
+  `Matrix/Spectral/SingularValues.lean`, not `Matrix/Spectral/Eigenvalues.lean`. Its proof is two
+  lines from the private `eigenvalue_eq_of_X_pow_mul_charpoly_eq` there (with Mathlib's
+  `Matrix.charpoly_mul_comm'`), which `Eigenvalues.lean` cannot see, and `Eigenvalues.lean` is
+  below the positive semidefinite eigenvalue API it needs. **Flag** (P10): intended home
+  `Eigenvalues.lean`, once the charpoly helper is public in a file both can import. The theorem
+  takes `[DecidableEq m]` for its frame (`HasOrthonormalCols` needs it) and is proved, so
+  `SingularValues.lean` stays sorry-free. KS5c (subspace iteration) is not included (Q1, as
+  recommended); inverse iteration is.
+* **T13, `ae_mem_Icc_spectralMeasure`.** The note's
+  `Matrix.IsHermitian.ae_mem_Icc_spectralMeasure` does not use the Hermitian hypothesis (the
+  measure is $0$ off Hermitian), so it is the root-namespace
+  `ae_mem_Icc_spectralMeasure (A) (hs) (b)`. §3's producer of the SD3 hypothesis is this name.
+  `Matrix.IsHermitian.ae_mem_Icc_lanczosQuadrature` keeps its hypothesis: for a non-Hermitian
+  $\mathbf{A}$ the compression can still be Hermitian, with Ritz values outside $[a, a']$.
+* **Names (N2, N6, T9).** Statements of the form `(μ).real S` are named by Mathlib's dot reading
+  of the measure, as `scripts/check_names.py` requires: `Matrix.IsHermitian.spectralMeasure_real_univ`
+  (note: `measureReal_univ_spectralMeasure`), `Matrix.IsHermitian.lanczosQuadrature_real_univ`
+  (`measureReal_univ_lanczosQuadrature`), `HasOrthonormalCols.lanczosQuadrature_real_singleton_pos`
+  (`measureReal_lanczosQuadrature_singleton_pos`) and, for the same token,
+  `Matrix.IsHermitian.norm_star_dotProduct_sq_le_spectralMeasure_real`
+  (`…_le_measureReal_spectralMeasure`). The moment form is
+  `Matrix.IsHermitian.integral_spectralMeasure_pow` (`integral_pow_spectralMeasure`, N6). KS3c
+  wrote the Ritz-value set as `(Qᴴ * A * Q).finite_real_spectrum.toFinset`, a proof term in the
+  statement (T9): `HasOrthonormalCols.card_spectrum_conjTranspose_mul_mul_eq` concludes
+  `Nat.card (spectrum ℝ (Qᴴ * A * Q)) = q`, and `isOrthogonalPolynomial_nodal` and
+  `lanczosQuadrature_eq_interpolatoryQuadrature` take the node set as `{s : Finset ℝ}` with
+  `hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)`.
+* **Review warnings left.** P10 on the three `PowerIteration.lean` statements (Matrix vocabulary
+  only; placed in `Krylov/Eigenvalues` per D12 and §6) and V7 on `evenChebyshevFilter` (no §5.3
+  row was proposed for it); both for the maintainer.
+* **No `open Classical in`** on `spectralMeasure`: the indicator `if t = x` uses Mathlib's
+  decidable equality of ℝ, which avoids an instance mismatch in proofs.
+* **API added.** `eval_evenChebyshevFilter` (for $x \ge 0$, $b_k(x) = U_{2k}(\sqrt{x})/(2k + 1)$),
+  the characterising evaluation of the definition (quarry form). The definition is
+  `C ((2 * k + 1 : ℝ)⁻¹) * contract 2 (Chebyshev.U ℝ (2 * k))`.
+  `one_sub_mul_eval_evenChebyshevFilter_sq_le` keeps the note's right side
+  $1/(2k + 1)^2$ (the quarry writes $((2k + 1)^2)^{-1}$, the same value).
+* **Order inside `Quadrature.lean`.** Definition and measure-form bridges first, then exactness
+  (C6, moment matching), then the error bound and the KS4 rates, then KS3c (file template:
+  definitions, API, main theorems, corollaries). No statement changed.
+* **Citations.** C2 forbids a bare key in a declaration docstring, so the note's
+  "[ChenTrogdonUbaru2022], locator to check" on `matchesMoments_lanczosQuadrature` is a sentence
+  in prose with "locator to check". No new locator was invented: the Lipschitz rates cite only
+  the Jackson step ([ChenTrogdonUbaru2022, Appendix C, Theorem 38]); the Gauss weight lemma has no
+  citation (the note gives Gautschi's Theorems 1.45 and 1.46 for exactness only); the even filter
+  step cites [KuczynskiWozniakowski1992, Theorem 4.2] (to check), its helper nothing. The
+  `Gautschi2004` entry (title, series, Oxford University Press, 2004, ISBN 978-0-19-850672-0) is
+  from memory and is to confirm. Kuczyński and Woźniakowski's printed constants are not written in
+  the named bounds' docstrings: they say the printed constant is to be compared, since I could not
+  check it.
+* **Result ids.** `ritz-value-gap-free` is on both gap-free Ritz bounds, `power-iteration` on the
+  gapped power method; the KW power step and inverse iteration carry none. The interval Jackson
+  theorem shares `jackson-lipschitz` with the $[-1, 1]$ one; the KS4 rates carry
+  `lanczos-fa-uniform-bound` (Lanczos-FA) and `lanczos-gauss-quadrature` (quadrature).
+* **The KW power constant** $\log(1 + \tan^2)/(2q + 1)$ was checked numerically on two-atom
+  measures only (the worst ratio found to the bound was $0.995$, at $q = 0$); it remains to be
+  proved.
+* **Long names.** Five declaration names exceed 100 characters with their keyword; they are on
+  their own line under `theorem`. `set_option linter.style.longLine false in`, with a comment,
+  remains on three declarations whose lines are still longer (one name, two backticked names in
+  docstrings).
+* **Proved now.** Lower layers, all sorry-free:
+  `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith` (Jackson on $[a, b]$), the two KS4
+  Lanczos-FA rates (`LanczosFA.lean`), `HasOrthonormalCols.eigenvalue_mul_mul_conjTranspose`,
+  `ae_dotProduct_ne_zero_of_hasLaw_gaussianVector`, `measurable_quadForm`,
+  `measurable_rayleighQuotient`, `measurable_krylovMatrix`. In the new files: the two
+  `IsFiniteMeasure` instances (spectral measure, interpolatory rule),
+  `isFiniteMeasure_lanczosQuadrature`,
+  `isProbabilityMeasure_empiricalSpectralMeasure`, `integrable_spectralMeasure`, the
+  polynomial, moment and mass forms of `integral_spectralMeasure` (from it),
+  `spectralMeasure_compl_spectrum_eq_zero`, `ae_mem_Icc_spectralMeasure`,
+  `rayleighQuotient_eq_integral_div`, `spectralTangentSq_nonneg`, `one_add_spectralTangentSq`,
+  both empirical integral forms and its support lemma, the `MatchesMoments` API (`refl`, `symm`,
+  `trans`, `mono`, `matchesMoments_zero`, the `degreeLT` bridge, `measureReal_univ_eq`),
+  `IsOrthogonalPolynomial.mono`, the two KS4 quadrature rates (from the C6 error bound), and the
+  three API lemmas of the named bounds (`randomStartPowerBound_nonneg`,
+  `randomStartLanczosBound_nonneg`, `randomStartPowerBound_le`). Fifty statements are `sorry`.
+* **Vocabulary.** CONTRIBUTING §5.3 has the seven rows of §2 (spectral measure, empirical
+  spectral measure, angle, moment matching with the SD3 support hypothesis, orthogonality, Gauss
+  rule, Lanczos rule); `docs/constants.toml` has the two named bounds.

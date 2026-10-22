@@ -2,6 +2,21 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Krylov spectral round: skeleton (2026-10-22)
+
+Branch `krylov/spectral` (worktree `nlalib-block`), from `375e005`. Statement skeleton of
+`docs/design/Krylov-Spectral.md` (approved 2026-10-22, SD1–SD7 as recommended, SD4's rule named
+`interpolatoryQuadrature`; the note's last section lists the changes during the skeleton). New
+files with `sorry` statements: `Matrix/Spectral/SpectralMeasure.lean`,
+`Polynomial/Orthogonal/{Moments, Basic, Gauss}.lean`, `Polynomial/Chebyshev/EvenFilter.lean`,
+`Krylov/Functions/Quadrature.lean`, `Krylov/Eigenvalues/{Ritz, PowerIteration}.lean`,
+`Estimation/Spectral/RandomStart.lean` (50 `sorry` in all). Proved and sorry-free: the additions to
+`Polynomial/Approximation/Jackson.lean` (Jackson on $[a, b]$), `Krylov/Functions/LanczosFA.lean`
+(the two KS4 rates), `Matrix/Spectral/SingularValues.lean` (the frame-conjugation eigenvalue
+lemma, flagged: intended home `Eigenvalues.lean`), `Probability/Distributions/Gaussian.lean`,
+`Probability/Measurability/{Matrix, Krylov}.lean`. Next: proofs, one file at a time, in the
+order of the note's §6 adjusted by the skeleton report.
+
 ## Consolidation round complete (2026-10-22)
 
 Branch `cleanup/consolidation` (worktree `nlalib-block`), from `dd2eaf7`. Design note

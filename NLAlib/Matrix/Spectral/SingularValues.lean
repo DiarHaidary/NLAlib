@@ -46,6 +46,8 @@ are padding, so an index quantified by `∃`, or by `∀` in a hypothesis, needs
   $\|\mathbf{A}\mathbf{x}\|$ below.
 * `NLAlib.singularValues_conjTranspose_mul_self`, `NLAlib.singularValues_mul_conjTranspose_self`:
   the singular values of a Gram matrix are the squared singular values.
+* `NLAlib.HasOrthonormalCols.eigenvalue_mul_mul_conjTranspose`: a frame conjugation of a positive
+  semidefinite matrix keeps its eigenvalue sequence.
 -/
 
 @[expose] public section
@@ -176,6 +178,21 @@ theorem singularValues_sq_eq_eigenvalue_mul_conjTranspose_self (A : Matrix m n �
   rw [singularValues_sq]
   exact eigenvalue_eq_of_X_pow_mul_charpoly_eq (Matrix.posSemidef_conjTranspose_mul_self A)
     (Matrix.posSemidef_self_mul_conjTranspose A) (Matrix.charpoly_mul_comm' A Aᴴ).symm k
+
+/-- Eigenvalues under a frame conjugation: for $\mathbf{U}$ with orthonormal columns and a
+positive semidefinite $\mathbf{T}$ on its column index,
+$\lambda_k(\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}) = \lambda_k(\mathbf{T})$ for every
+$k$: the conjugation only adds zero eigenvalues, which sort below those of $\mathbf{T}$. It links
+the projector form $\mathbf{P}\mathbf{A}\mathbf{P}$ of Ritz values to the frame form
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, with
+$\mathbf{P} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$. -/
+theorem HasOrthonormalCols.eigenvalue_mul_mul_conjTranspose [DecidableEq m] {U : Matrix n m 𝕜}
+    (hU : HasOrthonormalCols U) {T : Matrix m m 𝕜} (hT : T.PosSemidef) (k : ℕ) :
+    eigenvalue (U * T * Uᴴ) k = eigenvalue T k := by
+  classical
+  refine eigenvalue_eq_of_X_pow_mul_charpoly_eq (hT.mul_mul_conjTranspose_same U) hT ?_ k
+  have h := Matrix.charpoly_mul_comm' U (T * Uᴴ)
+  rwa [← Matrix.mul_assoc, Matrix.mul_assoc T, hU.conjTranspose_mul_self, Matrix.mul_one] at h
 
 /-- The Gram determinant is the product of the squared singular values, as many as the matrix
 has columns: $\det(\mathbf{A}^{\mathsf{H}}\mathbf{A}) = \prod_{i < \lvert n \rvert}

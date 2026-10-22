@@ -40,6 +40,7 @@ recorded here.
 
 * `NLAlib.measurable_specNorm`, `NLAlib.measurable_frobNorm`, `NLAlib.measurable_matrixNorm`.
 * `NLAlib.measurable_singularValues`, `NLAlib.measurable_eigenvalue`.
+* `NLAlib.measurable_quadForm`, `NLAlib.measurable_rayleighQuotient`: functions of the vector.
 * `NLAlib.measurableSet_setOf_posDef`: the positive definite matrices form a measurable set.
 * `NLAlib.measurable_rank`, `NLAlib.measurable_pinv`, `NLAlib.measurable_rangeProjector`,
   `NLAlib.measurable_pseudoConditionNumber`.
@@ -122,6 +123,25 @@ theorem measurable_eigenvalue (k : ℕ) :
       exact eigenvalue_of_not_isHermitian A.2 k
     rw [h]
     exact measurable_const
+
+omit [Fintype m] in
+/-- The quadratic form $\mathbf{x} \mapsto \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}$ of a
+fixed square matrix is a measurable function of the vector (it is continuous). -/
+theorem measurable_quadForm (A : Matrix n n 𝕜) : Measurable fun x : n → 𝕜 => quadForm A x := by
+  have h : Continuous fun x : n → 𝕜 => quadForm A x := by
+    unfold quadForm
+    fun_prop
+  exact h.measurable
+
+omit [Fintype m] in
+/-- The Rayleigh quotient
+$\mathbf{x} \mapsto \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) /
+\|\mathbf{x}\|^2$ of a fixed square matrix is a measurable function of the vector. -/
+theorem measurable_rayleighQuotient (A : Matrix n n 𝕜) :
+    Measurable fun x : n → 𝕜 => rayleighQuotient A x := by
+  have hn : Continuous fun x : n → 𝕜 => ‖WithLp.toLp 2 x‖ ^ 2 :=
+    ((PiLp.continuous_toLp 2 _).norm).pow 2
+  exact (RCLike.continuous_re.measurable.comp (measurable_quadForm A)).div hn.measurable
 
 omit [Fintype m] [Fintype n] in
 open scoped ComplexOrder in
