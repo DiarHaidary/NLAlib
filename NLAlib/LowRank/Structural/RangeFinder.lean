@@ -110,12 +110,6 @@ theorem HasOrthonormalCols.mul_pinv_self_of_rank_eq (hZ : HasOrthonormalCols Z)
     hΩ, hZ.rank_eq]
 
 omit [Fintype m] in
-/-- The frame annihilates the error of its projection: $\mathbf{E}\mathbf{Z} = \mathbf{0}$. -/
-private theorem sub_mul_mul_conjTranspose_mul_self (hZ : HasOrthonormalCols Z)
-    (A : Matrix m n 𝕜) : (A - A * Z * Zᴴ) * Z = 0 := by
-  rw [Matrix.sub_mul, hZ.mul_conjTranspose_mul_cancel_right, sub_self]
-
-omit [Fintype m] in
 /-- **The range-finder competitor.** For $\mathbf{Z}$ with orthonormal columns and
 $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, the matrix
 $$\mathbf{C} = \mathbf{A}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}
@@ -152,7 +146,7 @@ theorem HasOrthonormalCols.sub_mul_mul_pinv_mul_conjTranspose_mul_conjTranspose_
     (A - A * Ω * pinv (Zᴴ * Ω) * Zᴴ) * (A - A * Ω * pinv (Zᴴ * Ω) * Zᴴ)ᴴ =
       (A - A * Z * Zᴴ) * (A - A * Z * Zᴴ)ᴴ +
         (A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) * ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω))ᴴ := by
-  have hEZ := sub_mul_mul_conjTranspose_mul_self hZ A
+  have hEZ := hZ.sub_mul_mul_conjTranspose_mul_eq_zero A
   rw [hZ.sub_mul_mul_pinv_mul_conjTranspose_eq hΩ A]
   set E := A - A * Z * Zᴴ
   set M := E * Ω * pinv (Zᴴ * Ω)
@@ -177,7 +171,7 @@ theorem HasOrthonormalCols.frobNorm_sub_mul_mul_pinv_mul_conjTranspose_sq
     (hZ : HasOrthonormalCols Z) (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
     frobNorm (A - A * Ω * pinv (Zᴴ * Ω) * Zᴴ) ^ 2 =
       frobNorm (A - A * Z * Zᴴ) ^ 2 + frobNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω)) ^ 2 := by
-  have hEZ := sub_mul_mul_conjTranspose_mul_self hZ A
+  have hEZ := hZ.sub_mul_mul_conjTranspose_mul_eq_zero A
   rw [hZ.sub_mul_mul_pinv_mul_conjTranspose_eq hΩ A, frobNorm_sub_sq_of_frobInner_eq_zero,
     frobNorm_mul_conjTranspose_right hZ]
   rw [frobInner_eq_re_trace_mul_conjTranspose, Matrix.conjTranspose_mul,
@@ -396,7 +390,7 @@ theorem HasOrthonormalCols.sub_mul_mul_pinv_eq (hZ : HasOrthonormalCols Z) (A : 
     (Ω : Matrix n l 𝕜) :
     (A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) =
       ((A - A * Z * Zᴴ) * Ω * Ωᴴ * Z - (A - A * Z * Zᴴ) * Z) * pinv ((Ωᴴ * Z)ᴴ * (Ωᴴ * Z)) := by
-  rw [sub_mul_mul_conjTranspose_mul_self hZ A, sub_zero,
+  rw [hZ.sub_mul_mul_conjTranspose_mul_eq_zero A, sub_zero,
     pinv_eq_conjTranspose_mul_pinv_mul_conjTranspose_self (Zᴴ * Ω), Matrix.conjTranspose_mul Zᴴ Ω,
     Matrix.conjTranspose_mul Ωᴴ Z, Matrix.conjTranspose_conjTranspose,
     Matrix.conjTranspose_conjTranspose]
