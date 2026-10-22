@@ -71,7 +71,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 omit [Fintype k] in
 /-- A unitary times a diagonal of signs is unitary. -/
 private theorem hasOrthonormalCols_mul_diagonal {F : Matrix n n 𝕜} (hF : HasOrthonormalCols F)
-    {y : n → ℝ} (hy : ∀ i, y i ^ 2 = 1) : HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
+    {y : n → ℝ} (hy : ∀ i, y i ^ 2 = 1) :
+    HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
   rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
     hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
     Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
@@ -87,19 +88,7 @@ section JL
 variable {S : Ω → Matrix k n 𝕜} {F : Matrix n n 𝕜}
 
 omit [DecidableEq n] in
-/-- The JL property at $\varepsilon > 0$ from the JL property at $\varepsilon$ with every failure
-bound $g(e)$, $0 < e < \varepsilon$, when $g$ is continuous at $\varepsilon$. -/
-private theorem hasJLProperty_of_forall_mem_Ioo {g : ℝ → ℝ} (hg : ContinuousAt g ε)
-    (hε : 0 < ε) (h : ∀ e ∈ Set.Ioo 0 ε, HasJLProperty S ε (g e) μ) :
-    HasJLProperty S ε (g ε) μ := by
-  intro x hx
-  refine ge_of_tendsto (hg.tendsto.mono_left (nhdsWithin_le_nhds (s := Set.Iio ε))) ?_
-  filter_upwards [Ioo_mem_nhdsLT hε] with e he
-  exact h e he x hx
-
-omit [DecidableEq n] in
-/-- The OSE tail at $d = 1$ gives the JL tail: through
-`NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty` at every $e < \varepsilon$ and continuity. -/
+/-- The JL tail from the OSE tail at $d = 1$, by continuity of the bound. -/
 private theorem hasJLProperty_of_forall_isObliviousSubspaceEmbedding [IsFiniteMeasure μ]
     (hε : 0 ≤ ε) (hε1 : ε ≤ 1) (h1 : ∀ s : Set Ω, μ.real s ≤ 1) {c : ℝ}
     (hose : ∀ e, 0 ≤ e → e ≤ 1 → IsObliviousSubspaceEmbedding S 1 (1 - e) (1 + e)
@@ -107,21 +96,21 @@ private theorem hasJLProperty_of_forall_isObliviousSubspaceEmbedding [IsFiniteMe
     HasJLProperty S ε
       (2 * Real.exp (-ε ^ 2 * Fintype.card k / (3 * c)) + Fintype.card n * Real.exp (-t)) μ := by
   rcases hε.eq_or_lt with rfl | hε0
-  · intro x _
-    refine (h1 _).trans ?_
-    have : (0 : ℝ) ≤ Fintype.card n * Real.exp (-t) := by positivity
+  · refine fun x _ => (h1 _).trans ?_
     simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, neg_zero, zero_mul,
       zero_div, Real.exp_zero, mul_one]
-    linarith
-  refine hasJLProperty_of_forall_mem_Ioo (g := fun e =>
-    2 * Real.exp (-e ^ 2 * Fintype.card k / (3 * c)) + Fintype.card n * Real.exp (-t))
-    (by fun_prop) hε0 fun e he => ?_
+    linarith [show (0 : ℝ) ≤ Fintype.card n * Real.exp (-t) by positivity]
+  intro x hx
+  have hg : ContinuousAt (fun e =>
+      2 * Real.exp (-e ^ 2 * Fintype.card k / (3 * c)) + Fintype.card n * Real.exp (-t)) ε := by
+    fun_prop
+  refine ge_of_tendsto (hg.tendsto.mono_left (nhdsWithin_le_nhds (s := Set.Iio ε))) ?_
+  filter_upwards [Ioo_mem_nhdsLT hε0] with e he
   have h := hose e he.1.le (he.2.le.trans hε1)
   rw [mul_one] at h
-  exact h.hasJLProperty (by linarith [he.2]) (by linarith [he.2])
+  exact h.hasJLProperty (by linarith [he.2]) (by linarith [he.2]) x hx
 
-/-- The sample-size step of the two JL size forms: the JL tail at
-$t = \log(\lvert n\rvert/(\delta/2))$ and the size `samplingEmbeddingDim 1 L ε (δ / 2)`. -/
+/-- The sample-size step of the two JL size forms. -/
 private theorem hasJLProperty_of_samplingEmbeddingDim_le [IsFiniteMeasure μ] [Nonempty n]
     (hF : IsBoundedOrthonormal F β) (hε : 0 < ε) (hδ : 0 < δ) (hδ1 : δ < 1)
     (hk : samplingEmbeddingDim 1 (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) ε (δ / 2) ≤
@@ -139,54 +128,13 @@ private theorem hasJLProperty_of_samplingEmbeddingDim_le [IsFiniteMeasure μ] [N
   have hL : β * (1 + 2 * √(Real.log (Fintype.card n / (δ / 2))) +
       2 * Real.log (Fintype.card n / (δ / 2))) = β * srhtRowBound (Fintype.card n) 1 (δ / 2) := by
     rw [srhtRowBound_def, Nat.cast_one, one_mul]
-  have hLpos : 0 < β * srhtRowBound (Fintype.card n) 1 (δ / 2) := by
-    rw [← hL]
-    exact mul_pos (one_pos.trans_le hF.one_le) (by positivity)
+  have hLpos : 0 < β * srhtRowBound (Fintype.card n) 1 (δ / 2) :=
+    hL ▸ mul_pos (one_pos.trans_le hF.one_le) (by positivity)
   refine (htail _ hlog.le).mono le_rfl ?_
   rw [hL, hexp]
   have h := two_mul_mul_exp_le_of_samplingEmbeddingDim_le hLpos hε (half_pos hδ) hk
   rw [Nat.cast_one, mul_one] at h
   linarith
-
-omit [DecidableEq n] in
-/-- The arithmetic of the two JL asymptotic forms: for $\beta \ge 1$, nonempty `n` and
-$0 < \delta \le 1/2$, the size `samplingEmbeddingDim 1 L ε (δ / 2)` at the flattened coherence is
-at most $72\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2$. -/
-private theorem samplingEmbeddingDim_one_le [Nonempty n] (hβ : 1 ≤ β) (hδ : 0 < δ)
-    (hδ2 : δ ≤ 1 / 2) :
-    samplingEmbeddingDim 1 (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) ε (δ / 2) ≤
-      72 * (β * (1 + Real.log (Fintype.card n / δ)) * Real.log (1 / δ) / ε ^ 2) := by
-  refine (samplingEmbeddingDim_le _ _ ε _).trans ?_
-  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
-  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
-  have h2d : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
-  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
-  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
-    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
-      Real.log_mul (by norm_num) (by positivity)]
-  have hR : srhtRowBound (Fintype.card n) 1 (δ / 2) ≤
-      8 * (1 + Real.log (Fintype.card n / δ)) := by
-    have h := srhtRowBound_le (Fintype.card n) 1 (δ / 2)
-    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
-    rw [Nat.cast_one, Real.sqrt_one] at h
-    nlinarith [sq_nonneg (1 - √(2 * Real.log (Fintype.card n / (δ / 2))))]
-  have hl : Real.log (2 * ((1 : ℕ) : ℝ) / (δ / 2)) = 2 * Real.log 2 + Real.log (1 / δ) := by
-    rw [Nat.cast_one, show 2 * (1 : ℝ) / (δ / 2) = 2 * 2 * (1 / δ) by field_simp,
-      Real.log_mul (by norm_num) (by positivity), Real.log_mul (by norm_num) (by norm_num)]
-    ring
-  rw [mul_div_assoc']
-  refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
-  calc 3 * (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) * Real.log (2 * ((1 : ℕ) : ℝ) / (δ / 2))
-      ≤ 3 * (β * (8 * (1 + Real.log (Fintype.card n / δ)))) *
-          Real.log (2 * ((1 : ℕ) : ℝ) / (δ / 2)) :=
-        mul_le_mul_of_nonneg_right
-          (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)])
-          (by rw [hl]; linarith)
-    _ ≤ 3 * (β * (8 * (1 + Real.log (Fintype.card n / δ)))) * (3 * Real.log (1 / δ)) :=
-        mul_le_mul_of_nonneg_left (by rw [hl]; linarith) (by nlinarith)
-    _ = 72 * (β * (1 + Real.log (Fintype.card n / δ)) * Real.log (1 / δ)) := by ring
 
 /-- **Distributional JL for the SRHT**: for a bounded orthonormal $\mathbf{F}$ with constant
 $\beta$, the SRHT $\mathbf{S}$ built from it (independent random signs and an independent uniform
@@ -229,8 +177,7 @@ theorem hasJLProperty_of_hasLaw_srht_of_samplingEmbeddingDim_le (hF : IsBoundedO
       Fintype.card k) :
     HasJLProperty S ε δ μ := by
   rcases isEmpty_or_nonempty n with hn | hn
-  · intro x hx
-    simp [Subsingleton.elim x 0] at hx
+  · exact fun x hx => by simp [Subsingleton.elim x 0] at hx
   have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
   rcases le_or_gt 1 δ with hδ1 | hδ1
   · exact fun x _ => (measureReal_le_one_of_hasLaw_srht hS _).trans hδ1
@@ -258,10 +205,9 @@ theorem exists_forall_hasJLProperty_of_hasLaw_srht :
   refine ⟨72, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ μ S F β ε δ hF hS hε hε1 hδ hδ2 hk
   rcases isEmpty_or_nonempty n with hn | hn
-  · intro x hx
-    simp [Subsingleton.elim x 0] at hx
+  · exact fun x hx => by simp [Subsingleton.elim x 0] at hx
   exact hasJLProperty_of_hasLaw_srht_of_samplingEmbeddingDim_le hF hS hε hε1 hδ
-    ((samplingEmbeddingDim_one_le hF.one_le hδ hδ2).trans hk)
+    ((samplingEmbeddingDim_srhtRowBound_le hF.one_le 1 hδ hδ2 ε).trans (by simpa using hk))
 
 /-- **Distributional JL for the SRHT with replacement**: for a bounded orthonormal $\mathbf{F}$
 with constant $\beta$, the SRHT $\mathbf{S}$ built from it with $\lvert k\rvert$ i.i.d. uniform
@@ -278,8 +224,7 @@ theorem hasJLProperty_of_hasLaw_srhtWithReplacement (hF : IsBoundedOrthonormal F
       (2 * Real.exp (-ε ^ 2 * Fintype.card k / (3 * (β * (1 + 2 * √t + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
   rcases isEmpty_or_nonempty n with hn | hn
-  · intro x hx
-    simp [Subsingleton.elim x 0] at hx
+  · exact fun x hx => by simp [Subsingleton.elim x 0] at hx
   have := hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
   refine hasJLProperty_of_forall_isObliviousSubspaceEmbedding hε hε1
     (fun _ => measureReal_le_one) fun e he he1 => ?_
@@ -307,8 +252,7 @@ theorem hasJLProperty_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le
       Fintype.card k) :
     HasJLProperty S ε δ μ := by
   rcases isEmpty_or_nonempty n with hn | hn
-  · intro x hx
-    simp [Subsingleton.elim x 0] at hx
+  · exact fun x hx => by simp [Subsingleton.elim x 0] at hx
   have := hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
   rcases le_or_gt 1 δ with hδ1 | hδ1
   · exact fun x _ => measureReal_le_one.trans hδ1
@@ -337,10 +281,9 @@ theorem exists_forall_hasJLProperty_of_hasLaw_srhtWithReplacement :
   refine ⟨72, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ μ S F β ε δ hF hS hε hε1 hδ hδ2 hk
   rcases isEmpty_or_nonempty n with hn | hn
-  · intro x hx
-    simp [Subsingleton.elim x 0] at hx
+  · exact fun x hx => by simp [Subsingleton.elim x 0] at hx
   exact hasJLProperty_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le hF hS hε hε1 hδ
-    ((samplingEmbeddingDim_one_le hF.one_le hδ hδ2).trans hk)
+    ((samplingEmbeddingDim_srhtRowBound_le hF.one_le 1 hδ hδ2 ε).trans (by simpa using hk))
 
 end JL
 
@@ -351,9 +294,7 @@ section Moment
 variable {S : Ω → Matrix k n ℝ} {F : Matrix n n ℝ}
 
 omit [Fintype k] [DecidableEq n] in
-/-- **The fourth moment of a Rademacher sum**:
-$\mathbb{E}(\sum_j a_j\xi_j)^4 \le 3(\sum_j a_j^2)^2$, through the variance of the quadratic form
-of $\mathbf{a}\mathbf{a}^{\mathsf{T}}$. -/
+/-- The fourth moment of a Rademacher sum: $\mathbb{E}(\sum_j a_j\xi_j)^4 \le 3(\sum_j a_j^2)^2$. -/
 private theorem integral_sum_mul_pow_four_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
     {ν : Measure Ω'} {ξ : Ω' → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) ν) (a : n → ℝ) :
     ∫ ω, (∑ j, a j * ξ ω j) ^ 4 ∂ν ≤ 3 * (∑ j, a j ^ 2) ^ 2 := by
@@ -387,9 +328,7 @@ private theorem integral_sum_mul_pow_four_le {Ω' : Type*} {mΩ' : MeasurableSpa
   nlinarith
 
 omit [DecidableEq n] in
-/-- **The second moment of an i.i.d. uniform sample sum**: for a centred population
-$a : n \to \mathbb{R}$ and $\lvert k\rvert$ i.i.d. uniform indices,
-$\mathbb{E}(\sum_j a_{J_j})^2 = (\lvert k\rvert/\lvert n\rvert)\sum_i a_i^2$. -/
+/-- The second moment of an i.i.d. uniform sample sum of a centred population. -/
 private theorem integral_sum_sq_pi_samplingMeasure [Nonempty n] [MeasurableSpace n]
     [MeasurableSingletonClass n] (a : n → ℝ) (ha : ∑ i, a i = 0) :
     ∫ J, (∑ j, a (J j)) ^ 2
@@ -425,8 +364,7 @@ private theorem integral_sum_sq_pi_samplingMeasure [Nonempty n] [MeasurableSpace
   rw [hvar, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   ring
 
-/-- The squared norm of a sampled unit vector at uniform weights, minus one, as a sum over the
-samples of the centred population $(\lvert n\rvert z_i^2 - 1)/\lvert k\rvert$. -/
+/-- The squared norm of a sampled vector, minus one, as a sum over the samples. -/
 private theorem norm_samplingSketchMatrix_mulVec_sq_sub_one [Nonempty k] (ι : k → n)
     {z : n → ℝ} :
     ‖WithLp.toLp 2 ((samplingSketchMatrix (fun _ : n => (Fintype.card n : NNReal)⁻¹) ι :
@@ -450,9 +388,7 @@ private theorem norm_samplingSketchMatrix_mulVec_sq_sub_one [Nonempty k] (ι : k
   ring
 
 omit [DecidableEq n] in
-/-- The centred population of the squared norm sums to zero at a unit vector, and its squares
-give the variance $(\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$ after the factor
-$\lvert k\rvert/\lvert n\rvert$. -/
+/-- The centred population of the squared norm: its sum and its variance. -/
 private theorem sum_sq_sub_one_div_card [Nonempty k] [Nonempty n] {z : n → ℝ}
     (hz : ‖WithLp.toLp 2 z‖ = 1) :
     ∑ i, (Fintype.card n * z i ^ 2 - 1) / (Fintype.card k : ℝ) = 0 ∧
@@ -478,9 +414,7 @@ private theorem sum_sq_sub_one_div_card [Nonempty k] [Nonempty n] {z : n → ℝ
     field_simp
     ring
 
-/-- **The JL second moment of row sampling without replacement** at a unit vector:
-$\mathbb{E}(\|\mathbf{P}\mathbf{z}\|^2 - 1)^2 \le (\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$,
-the i.i.d. value through Hoeffding's comparison. -/
+/-- The JL second moment of row sampling without replacement at a unit vector. -/
 private theorem integral_sq_le_of_samplingSketchWithoutReplacement [Nonempty k]
     (hk : Fintype.card k ≤ Fintype.card n) {z : n → ℝ} (hz : ‖WithLp.toLp 2 z‖ = 1) :
     ∫ P, (‖WithLp.toLp 2 (P *ᵥ z)‖ ^ 2 - 1) ^ 2 ∂(samplingSketchWithoutReplacement (𝕜 := ℝ) k n) ≤
@@ -495,11 +429,9 @@ private theorem integral_sq_le_of_samplingSketchWithoutReplacement [Nonempty k]
   have h2 := integral_uniformOn_injective_le_integral_pi (Even.convexOn_pow (𝕜 := ℝ) even_two)
     (continuous_pow 2).continuousOn isClosed_univ hk
     (fun i => (Fintype.card n * z i ^ 2 - 1) / (Fintype.card k : ℝ)) fun _ => Set.mem_univ _
-  rw [← samplingMeasure_const_inv_card, integral_sum_sq_pi_samplingMeasure _ ha, hv] at h2
-  exact h2
+  rwa [← samplingMeasure_const_inv_card, integral_sum_sq_pi_samplingMeasure _ ha, hv] at h2
 
-/-- **The JL second moment of row sampling with replacement** at a unit vector, uniform weights:
-$\mathbb{E}(\|\mathbf{P}\mathbf{z}\|^2 - 1)^2 = (\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$. -/
+/-- The JL second moment of row sampling with replacement at a unit vector. -/
 private theorem integral_sq_le_of_samplingSketch [Nonempty k] [Nonempty n] {z : n → ℝ}
     (hz : ‖WithLp.toLp 2 z‖ = 1) :
     ∫ P, (‖WithLp.toLp 2 (P *ᵥ z)‖ ^ 2 - 1) ^ 2
@@ -513,9 +445,7 @@ private theorem integral_sq_le_of_samplingSketch [Nonempty k] [Nonempty n] {z : 
   rw [integral_sum_sq_pi_samplingMeasure _ ha, hv]
 
 omit [Fintype k] in
-/-- The mean of the fourth-power bound of the conditioned JL moment over the signs: for a unit
-$\mathbf{v}$, $\lvert n\rvert\,\mathbb{E}\sum_i (\mathbf{F}\mathbf{D}\mathbf{v})_i^4 \le 3\beta^2$,
-and the fourth powers are integrable. -/
+/-- The mean fourth-power bound of the conditioned JL moment over the signs. -/
 private theorem integral_sum_mulVec_pow_four_le {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
     {ν : Measure Ω'} {ξ : Ω' → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) ν)
     (hF : IsBoundedOrthonormal F β) {v : n → ℝ} (hv : ‖WithLp.toLp 2 v‖ = 1) :
@@ -559,11 +489,7 @@ private theorem integral_sum_mulVec_pow_four_le {Ω' : Type*} {mΩ' : Measurable
         rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
         field_simp
 
-/-- **Condition on the signs** for the JL moment: on the product of the signs and an independent
-sampling law `ρ` whose JL second moment at every unit vector $\mathbf{z}$ is at most
-$(\lvert n\rvert\sum_i z_i^4 - 1)/\lvert k\rvert$, the pushforward
-$\mathbf{P}\mathbf{F}\mathbf{D}$ has the JL moment at exponent $2$ with failure
-$(3\beta^2 - 1)/(\lvert k\rvert\varepsilon^2)$. -/
+/-- Condition on the signs for the JL moment of the product law. -/
 private theorem hasJLMoment_map_prod {ρ : Measure (Matrix k n ℝ)} [IsProbabilityMeasure ρ]
     (hF : IsBoundedOrthonormal F β) (hε : 0 < ε)
     (hint : ∀ z : n → ℝ,
@@ -643,9 +569,8 @@ theorem hasJLMoment_of_hasLaw_srht [Nonempty k] (hF : IsBoundedOrthonormal F β)
   · rw [samplingSketchWithoutReplacement_eq_map, uniformOn_injective_of_card_lt hk,
       Measure.map_zero, Measure.prod_zero, Measure.map_zero]
     have hβ : 0 ≤ 3 * β ^ 2 - 1 := by nlinarith [hF.one_le]
-    refine ⟨fun _ _ => integrable_zero_measure, fun _ _ => ?_⟩
-    rw [integral_zero_measure]
-    positivity
+    exact ⟨fun _ _ => integrable_zero_measure,
+      fun _ _ => by rw [integral_zero_measure]; positivity⟩
   have := isProbabilityMeasure_samplingSketchWithoutReplacement (𝕜 := ℝ) hk
   refine (HasLaw.hasJLMoment_iff ⟨(by fun_prop : Continuous _).measurable.aemeasurable, rfl⟩).1
     (hasJLMoment_map_prod hF hε (fun z => ?_)
@@ -702,7 +627,51 @@ theorem hasProjectionCostPreserving_of_hasLaw_srht_of_le_card (hF : IsBoundedOrt
       Fintype.card k)
     (hk₂ : projectionCostTailDim (3 * β ^ 2 - 1) d ε δ ≤ Fintype.card k) :
     HasProjectionCostPreserving S A d (1 - ε) (1 + ε) δ μ := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact hasProjectionCostPreserving_of_isEmpty _ A d _ _ hδ.le
+  have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
+  have hβ := hF.one_le
+  have hv : 0 < 3 * β ^ 2 - 1 := by nlinarith
+  have hK : (0 : ℝ) < Fintype.card k :=
+    lt_of_lt_of_le (by rw [projectionCostTailDim_def]; positivity) hk₂
+  have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK)
+  have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
+  have hbud : 1 - ε ≤ 1 - ε / 2 - 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ∧
+      1 + ε / 2 + 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) + ε / (8 * √((d : ℝ) + 1)) ≤
+        1 + ε ∧
+      δ / 2 + 3 * ((3 * β ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2)) ≤
+        δ := by
+    have hs1 : 1 ≤ √((d : ℝ) + 1) :=
+      Real.one_le_sqrt.2 (by linarith [Nat.cast_nonneg (α := ℝ) d])
+    have hds : √(d : ℝ) ≤ √((d : ℝ) + 1) := Real.sqrt_le_sqrt (by linarith)
+    have hss : √((d : ℝ) + 1) ^ 2 = (d : ℝ) + 1 := Real.sq_sqrt (by positivity)
+    have hJ : ε / (8 * √((d : ℝ) + 1)) * √((d : ℝ) + 1) = ε / 8 := by field_simp
+    have hJ1 : ε / (8 * √((d : ℝ) + 1)) ≤ ε / 8 := by
+      rw [div_le_div_iff₀ (by positivity) (by norm_num)]
+      nlinarith
+    have h3 : 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ≤ 3 * (ε / 8) := by
+      rw [← hJ, mul_assoc]
+      exact mul_le_mul_of_nonneg_left
+        (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
+    refine ⟨by linarith, by linarith, ?_⟩
+    have hk := hk₂
+    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
+    have e : (3 * β ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
+        64 * (3 * β ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
+      rw [div_pow, mul_pow, hss]
+      field_simp
+      ring
+    have h4 : 3 * (64 * (3 * β ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2)) ≤
+        δ / 2 := by
+      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+      nlinarith
+    linarith
+  obtain ⟨h₁, h₂, h₃⟩ := hbud
+  have hose := isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le hF hS d
+    (half_pos hε) (by linarith) (half_pos hδ) (by rw [show δ / 2 / 2 = δ / 4 by ring]; exact hk₁)
+  exact (hose.hasProjectionCostPreserving_of_hasJLMoment (hasJLMoment_of_hasLaw_srht hF hS hJ0)
+    hS.aemeasurable (by linarith) (by linarith) hJ0 le_rfl (div_nonneg hv.le (by positivity))
+    A).mono le_rfl h₁ h₂ h₃
 
 /-- **$O(\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2 +
 \beta^2(d+1)/(\varepsilon^2\delta))$ SRHT rows suffice for a rank-$d$ projection-cost-preserving
@@ -723,7 +692,55 @@ theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_srht :
       C * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ) / ε ^ 2 +
         β ^ 2 * ((d : ℝ) + 1) / (ε ^ 2 * δ)) ≤ Fintype.card k →
       HasProjectionCostPreserving S A d (1 - ε) (1 + ε) δ μ := by
-  sorry
+  refine ⟨1152, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k m n _ _ _ _ _ μ S F β A d ε δ hF hS hε hε1 hδ hδ2 hk
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact hasProjectionCostPreserving_of_isEmpty _ A d _ _ hδ.le
+  have hβ : 1 ≤ β := hF.one_le
+  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hT2 : 0 ≤ β ^ 2 * ((d : ℝ) + 1) / (ε ^ 2 * δ) := by positivity
+  have hT1 : 0 ≤ β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ) / ε ^ 2 := by
+    rcases Nat.eq_zero_or_pos d with rfl | hd
+    · simp
+    have hd1 : (1 : ℝ) ≤ d := Nat.one_le_cast.2 hd
+    have : 0 ≤ Real.log (d / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; nlinarith)
+    have : 0 ≤ (d : ℝ) + Real.log (Fintype.card n / δ) := by linarith
+    positivity
+  refine hasProjectionCostPreserving_of_hasLaw_srht_of_le_card hF hS A d hε (by linarith) hδ
+    (le_trans ?_ hk) (le_trans ?_ hk)
+  · have h := samplingEmbeddingDim_srhtRowBound_le (n := n) hβ d (half_pos hδ) (by linarith)
+      (ε / 2)
+    rw [show δ / 2 / 2 = δ / 4 by ring] at h
+    rcases Nat.eq_zero_or_pos d with rfl | hd
+    · simp only [CharP.cast_eq_zero, zero_div, Real.log_zero, mul_zero, zero_add] at h ⊢
+      linarith
+    have hd1 : (1 : ℝ) ≤ d := Nat.one_le_cast.2 hd
+    have h2d : Real.log 2 ≤ Real.log (d / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+    have e (x : ℝ) (hx : 0 < x) : Real.log (x / (δ / 2)) = Real.log 2 + Real.log (x / δ) := by
+      rw [show x / (δ / 2) = 2 * (x / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    rw [e _ (by positivity), e _ (by positivity), div_pow] at h
+    have hA : (d : ℝ) + (Real.log 2 + Real.log (Fintype.card n / δ)) ≤
+        2 * (d + Real.log (Fintype.card n / δ)) := by linarith
+    have hB : Real.log 2 + Real.log (d / δ) ≤ 2 * Real.log (d / δ) := by linarith
+    have hAB := mul_le_mul hA hB (by linarith) (by linarith)
+    have : 72 * (β * (d + (Real.log 2 + Real.log (Fintype.card n / δ))) *
+        (Real.log 2 + Real.log (d / δ)) / (ε ^ 2 / 2 ^ 2)) ≤
+        1152 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ) / ε ^ 2) := by
+      rw [div_div_eq_mul_div, mul_div_assoc', mul_div_assoc']
+      refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
+      nlinarith [mul_le_mul_of_nonneg_left hAB (by linarith : (0 : ℝ) ≤ β)]
+    linarith
+  · rw [projectionCostTailDim_def]
+    have h : 384 * (3 * β ^ 2 - 1) * ((d : ℝ) + 1) / (ε ^ 2 * δ) ≤
+        1152 * (β ^ 2 * ((d : ℝ) + 1) / (ε ^ 2 * δ)) := by
+      rw [mul_div_assoc']
+      exact div_le_div_of_nonneg_right (by nlinarith [Nat.cast_nonneg (α := ℝ) d])
+        (by positivity)
+    linarith
 
 end Moment
 
@@ -734,10 +751,7 @@ section Spectral
 variable {q r : Type*} [Fintype q] [Fintype r] {S : Ω → Matrix k n 𝕜} {F : Matrix n n 𝕜}
 
 omit [Fintype q] [Fintype r] in
-/-- The sampled product through a unitary $\mathbf{T}$:
-$\mathbf{A}^{\mathsf{H}}(\mathbf{P}\mathbf{T})^{\mathsf{H}}\mathbf{P}\mathbf{T}\mathbf{B} -
-\mathbf{A}^{\mathsf{H}}\mathbf{B}$ is the sampled product of $\mathbf{T}\mathbf{A}$ and
-$\mathbf{T}\mathbf{B}$. -/
+/-- The sampled product through a unitary is the sampled product of the rotated factors. -/
 private theorem conjTranspose_mul_mul_sub_of_hasOrthonormalCols {T : Matrix n n 𝕜}
     (hT : HasOrthonormalCols T) (P : Matrix k n 𝕜) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
     Aᴴ * (P * T)ᴴ * (P * T) * B - Aᴴ * B =
@@ -749,8 +763,7 @@ private theorem conjTranspose_mul_mul_sub_of_hasOrthonormalCols {T : Matrix n n 
   simp only [Matrix.mul_assoc]
 
 omit [Fintype k] in
-/-- The flattening event of both factors fails with probability at most
-$2\lvert n\rvert e^{-s}$. -/
+/-- The flattening event of both factors fails with probability at most $2|n|e^{-s}$. -/
 private theorem measureReal_not_mem_flat_le {ν : Measure ((n → ℝ) × Matrix k n 𝕜)}
     {ξ : (n → ℝ) × Matrix k n 𝕜 → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) ν)
     (hF : IsBoundedOrthonormal F β) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) {s : ℝ} (hs : 0 ≤ s) :
@@ -783,22 +796,26 @@ private theorem measureReal_not_mem_flat_le {ν : Measure ((n → ℝ) × Matrix
         rw [h1]
         linarith
 
-/-- **Flatten, then sample** for approximate multiplication, on the product of the signs and an
-independent sampling law `ρ`: if `ρ` multiplies every pair of fixed factors with the norms of
-$\mathbf{A}$, $\mathbf{B}$ and flattened rows to within $t$ outside probability $\delta_1$, the
-pushforward does outside probability $\delta_1 + 2\lvert n\rvert e^{-s}$. -/
+/-- Flatten, then sample, for approximate multiplication on the product law. -/
 private theorem measureReal_specNorm_map_prod_le {ρ : Measure (Matrix k n 𝕜)}
-    [IsProbabilityMeasure ρ] (hF : IsBoundedOrthonormal F β) (A : Matrix n q 𝕜)
-    (B : Matrix n r 𝕜) {s t δ₁ : ℝ} (hs : 0 ≤ s) (hδ₁ : 0 ≤ δ₁)
-    (hsample : ∀ (A' : Matrix n q 𝕜) (B' : Matrix n r 𝕜), specNorm A' = specNorm A →
-      specNorm B' = specNorm B →
+    [IsProbabilityMeasure ρ] [Nonempty n] [Nonempty r] (hF : IsBoundedOrthonormal F β)
+    (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) {s t : ℝ} (hs : 0 ≤ s)
+    (hsample : ∀ (A' : Matrix n q 𝕜) (B' : Matrix n r 𝕜),
       (∀ i, ‖WithLp.toLp 2 (A' i)‖ ^ 2 ≤ β * srhtRowNormBound A s * (Fintype.card n : ℝ)⁻¹) →
       (∀ i, ‖WithLp.toLp 2 (B' i)‖ ^ 2 ≤ β * srhtRowNormBound B s * (Fintype.card n : ℝ)⁻¹) →
-      ρ.real {P | t ≤ specNorm (A'ᴴ * Pᴴ * P * B' - A'ᴴ * B')} ≤ δ₁) :
+      ρ.real {P | t ≤ specNorm (A'ᴴ * Pᴴ * P * B' - A'ᴴ * B')} ≤
+        (Fintype.card q + Fintype.card r) * Real.exp (-(Fintype.card k * t ^ 2 / 2) /
+          (max (β * srhtRowNormBound B s * specNorm A' ^ 2)
+              (β * srhtRowNormBound A s * specNorm B' ^ 2) +
+            2 * √(β * srhtRowNormBound A s * (β * srhtRowNormBound B s)) * t / 3))) :
     (((rademacherVector n).prod ρ).map
         fun x => x.2 * F * Matrix.diagonal fun i => (x.1 i : 𝕜)).real
       {M | t ≤ specNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B)} ≤
-      δ₁ + 2 * Fintype.card n * Real.exp (-s) := by
+      (Fintype.card q + Fintype.card r) * Real.exp (-(Fintype.card k * t ^ 2 / 2) /
+        (max (β * srhtRowNormBound B s * specNorm A ^ 2)
+            (β * srhtRowNormBound A s * specNorm B ^ 2) +
+          2 * β * √(srhtRowNormBound A s * srhtRowNormBound B s) * t / 3)) +
+      2 * Fintype.card n * Real.exp (-s) := by
   have hmap : Measurable fun x : (n → ℝ) × Matrix k n 𝕜 =>
       x.2 * F * Matrix.diagonal fun i => (x.1 i : 𝕜) := (by fun_prop : Continuous _).measurable
   have hE : MeasurableSet {M : Matrix k n 𝕜 | t ≤ specNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B)} :=
@@ -826,7 +843,7 @@ private theorem measureReal_specNorm_map_prod_le {ρ : Measure (Matrix k n 𝕜)
         (p.1 * F * Matrix.diagonal fun i => (p.2 i : 𝕜)) * B - Aᴴ * B)})
     measurable_snd.aemeasurable measurable_fst.aemeasurable
     (measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable)
-    hG hδ₁ (fun y hy => ?_) (measureReal_not_mem_flat_le hfst hF A B hs)
+    hG (by positivity) (fun y hy => ?_) (measureReal_not_mem_flat_le hfst hF A B hs)
   obtain ⟨hy1, hyA, hyB⟩ := hy
   have hT := hasOrthonormalCols_mul_diagonal (𝕜 := 𝕜) hF.hasOrthonormalCols hy1
   set T := F * Matrix.diagonal fun i => (y i : 𝕜) with hTdef
@@ -840,7 +857,11 @@ private theorem measureReal_specNorm_map_prod_le {ρ : Measure (Matrix k n 𝕜)
   rw [hset, hsnd.measureReal_eq (p := fun P : Matrix k n 𝕜 =>
     t ≤ specNorm ((T * A)ᴴ * Pᴴ * P * (T * B) - (T * A)ᴴ * (T * B)))
     (measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable)]
-  exact hsample _ _ (hT.specNorm_mul_left A) (hT.specNorm_mul_left B) hyA hyB
+  have h := hsample _ _ hyA hyB
+  rw [hT.specNorm_mul_left A, hT.specNorm_mul_left B, show β * srhtRowNormBound A s *
+    (β * srhtRowNormBound B s) = β ^ 2 * (srhtRowNormBound A s * srhtRowNormBound B s) by ring,
+    Real.sqrt_mul (sq_nonneg β), Real.sqrt_sq (zero_le_one.trans hF.one_le), ← mul_assoc] at h
+  exact h
 
 omit [DecidableEq n] in
 /-- The degenerate case of the SRHT spectral tails, empty `n`: both factors vanish. -/
@@ -851,8 +872,7 @@ private theorem measureReal_specNorm_ge_le_of_isEmpty [IsEmpty n] [Nonempty r]
       (Fintype.card q + Fintype.card r) * Real.exp (-(Fintype.card k * t ^ 2 / 2) / x) + y := by
   have hA : A = 0 := Matrix.ext fun i => isEmptyElim i
   have hr : (1 : ℝ) ≤ Fintype.card q + Fintype.card r := by
-    have : (1 : ℝ) ≤ Fintype.card r := by exact_mod_cast Fintype.card_pos
-    linarith [(Nat.cast_nonneg (α := ℝ) (Fintype.card q))]
+    norm_cast; have := Fintype.card_pos (α := r); omega
   rcases ht.eq_or_lt with rfl | ht'
   · simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, zero_div,
       neg_zero, Real.exp_zero, mul_one]
@@ -906,24 +926,17 @@ theorem measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_srht [Nonempt
     positivity
   have := isProbabilityMeasure_samplingSketchWithoutReplacement (𝕜 := 𝕜) hk
   have hβ : 0 ≤ β := zero_le_one.trans hF.one_le
-  have hRA := srhtRowNormBound_nonneg A hs
-  have hRB := srhtRowNormBound_nonneg B hs
-  refine measureReal_specNorm_map_prod_le hF A B hs (by positivity)
-    fun A' B' hA' hB' hrA hrB => ?_
+  have hRA := mul_nonneg hβ (srhtRowNormBound_nonneg A hs)
+  have hRB := mul_nonneg hβ (srhtRowNormBound_nonneg B hs)
+  refine measureReal_specNorm_map_prod_le hF A B hs fun A' B' hrA hrB => ?_
   rcases isEmpty_or_nonempty k with hk0 | hk0
   · refine measureReal_le_one.trans ?_
     have : (1 : ℝ) ≤ Fintype.card r := by exact_mod_cast Fintype.card_pos
     rw [Fintype.card_eq_zero (α := k), Nat.cast_zero, zero_mul, zero_div, neg_zero, zero_div,
       Real.exp_zero, mul_one]
     linarith [(Nat.cast_nonneg (α := ℝ) (Fintype.card q))]
-  have h :=
-    measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketchWithoutReplacement
-      (HasLaw.id (μ := samplingSketchWithoutReplacement k n)) A' B' (mul_nonneg hβ hRA)
-      (mul_nonneg hβ hRB) hrA hrB ht
-  rw [hA', hB', show β * srhtRowNormBound A s * (β * srhtRowNormBound B s) =
-    β ^ 2 * (srhtRowNormBound A s * srhtRowNormBound B s) by ring,
-    Real.sqrt_mul (sq_nonneg β), Real.sqrt_sq hβ, ← mul_assoc] at h
-  exact h
+  exact measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketchWithoutReplacement
+    (HasLaw.id (μ := samplingSketchWithoutReplacement k n)) A' B' hRA hRB hrA hrB ht
 
 /-- **Approximate matrix multiplication in the spectral norm by the SRHT with replacement**: for a
 bounded orthonormal $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ built from it with
@@ -971,20 +984,15 @@ theorem measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_srhtWithRepla
   have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k)
     (NNReal.sum_const_inv_card (ι := n))
   have hβ : 0 ≤ β := zero_le_one.trans hF.one_le
-  have hRA := srhtRowNormBound_nonneg A hs
-  have hRB := srhtRowNormBound_nonneg B hs
+  have hRA := mul_nonneg hβ (srhtRowNormBound_nonneg A hs)
+  have hRB := mul_nonneg hβ (srhtRowNormBound_nonneg B hs)
   have hc : ((((Fintype.card n : NNReal)⁻¹ : NNReal)) : ℝ) = (Fintype.card n : ℝ)⁻¹ := by
     rw [NNReal.coe_inv, NNReal.coe_natCast]
-  refine measureReal_specNorm_map_prod_le hF A B hs (by positivity)
-    fun A' B' hA' hB' hrA hrB => ?_
-  have h := measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch
+  refine measureReal_specNorm_map_prod_le hF A B hs fun A' B' hrA hrB => ?_
+  exact measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch
     (HasLaw.id (μ := samplingSketch k fun _ : n => (Fintype.card n : NNReal)⁻¹))
-    NNReal.sum_const_inv_card A' B' (mul_nonneg hβ hRA) (mul_nonneg hβ hRB)
-    (fun i => by rw [hc]; exact hrA i) (fun i => by rw [hc]; exact hrB i) ht
-  rw [hA', hB', show β * srhtRowNormBound A s * (β * srhtRowNormBound B s) =
-    β ^ 2 * (srhtRowNormBound A s * srhtRowNormBound B s) by ring,
-    Real.sqrt_mul (sq_nonneg β), Real.sqrt_sq hβ, ← mul_assoc] at h
-  exact h
+    NNReal.sum_const_inv_card A' B' hRA hRB (fun i => by rw [hc]; exact hrA i)
+    (fun i => by rw [hc]; exact hrB i) ht
 
 end Spectral
 
