@@ -93,12 +93,6 @@ theorem norm_chebyshevCoeff_jacksonApprox_le (f : ℝ → 𝕜) (N k : ℕ) :
     abs_of_nonneg (jacksonDamping_nonneg N k)]
   exact mul_le_of_le_one_left (norm_nonneg _) (jacksonDamping_le_one N k)
 
-private lemma continuous_pullback {f : ℝ → 𝕜}
-    (hf : ContinuousOn f (Set.Icc (-1 : ℝ) 1)) :
-    Continuous (fun t : ℝ => f (Real.cos t)) :=
-  hf.comp_continuous Real.continuous_cos
-    (fun t => ⟨Real.neg_one_le_cos t, Real.cos_le_one t⟩)
-
 private lemma integral_even (g : ℝ → 𝕜) (hg : Continuous g)
     (he : ∀ t, g (-t) = g t) :
     (∫ t in -Real.pi..Real.pi, g t) = 2 * ∫ t in 0..Real.pi, g t := by
@@ -126,7 +120,8 @@ private lemma integral_sine_pullback {f : ℝ → 𝕜}
       (Real.sin ((k : ℝ) * t) : 𝕜) * f (Real.cos t)) = 0 := by
   apply integral_odd (fun t => (Real.sin ((k : ℝ) * t) : 𝕜) * f (Real.cos t))
     ((by fun_prop : Continuous
-    (fun t : ℝ => (Real.sin ((k : ℝ) * t) : 𝕜))).mul (continuous_pullback hf))
+    (fun t : ℝ => (Real.sin ((k : ℝ) * t) : 𝕜))).mul
+      (hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc))
   intro t
   simp only [mul_neg, Real.sin_neg, Real.cos_neg, RCLike.ofReal_neg, neg_mul]
 
@@ -137,7 +132,8 @@ private lemma integral_cosine_pullback {f : ℝ → 𝕜}
       (2 * Real.pi / (if k = 0 then 1 else 2) : ℝ) * chebyshevCoeff f k := by
   rw [integral_even (fun t => (Real.cos ((k : ℝ) * t) : 𝕜) * f (Real.cos t))
     ((by fun_prop : Continuous
-    (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜))).mul (continuous_pullback hf))
+    (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜))).mul
+      (hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc))
     (by intro t; simp only [mul_neg, Real.cos_neg])]
   simp only [chebyshevCoeff]
   simp_rw [mul_comm (f (Real.cos _))]
@@ -149,7 +145,8 @@ private lemma integral_shifted_cosine {f : ℝ → 𝕜}
       (Real.cos ((k : ℝ) * (θ - t)) : 𝕜) * f (Real.cos t)) =
       (Real.cos ((k : ℝ) * θ) : 𝕜) *
         ((2 * Real.pi / (if k = 0 then 1 else 2) : ℝ) * chebyshevCoeff f k) := by
-  have hfc := continuous_pullback hf
+  have hfc : Continuous (fun t : ℝ => f (Real.cos t)) :=
+    hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hc : Continuous (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜) * f (Real.cos t)) :=
     (by fun_prop : Continuous (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜))).mul hfc
   have hs : Continuous (fun t : ℝ => (Real.sin ((k : ℝ) * t) : 𝕜) * f (Real.cos t)) :=
@@ -168,7 +165,8 @@ private lemma integral_kernel_pullback {f : ℝ → 𝕜}
     (hf : ContinuousOn f (Set.Icc (-1 : ℝ) 1)) (N : ℕ) (θ : ℝ) :
     (∫ t in -Real.pi..Real.pi, (jacksonKernel N (θ - t) : 𝕜) * f (Real.cos t)) =
       ((2 * Real.pi : ℝ) : 𝕜) * (jacksonApprox f N).eval (Real.cos θ : 𝕜) := by
-  have hfc := continuous_pullback hf
+  have hfc : Continuous (fun t : ℝ => f (Real.cos t)) :=
+    hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hterm (k : ℕ) : Continuous (fun t : ℝ => (jacksonDamping N (k + 1) : 𝕜) *
       ((Real.cos (((k + 1 : ℕ) : ℝ) * (θ - t)) : 𝕜) * f (Real.cos t))) :=
     (((by fun_prop : Continuous (fun t : ℝ =>
@@ -267,7 +265,8 @@ private lemma norm_error_cos {f : ℝ → 𝕜} {L : ℝ≥0}
     ((1 - Real.cos (θ - t)) / β + β / 2)
   have hβ : 0 < β := by dsimp [β]; positivity
   have hc := hf.continuousOn
-  have hfc := continuous_pullback hc
+  have hfc : Continuous (fun t : ℝ => f (Real.cos t)) :=
+    hc.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hk : Continuous (fun t => jacksonKernel N (θ - t)) :=
     (continuous_kernel N).comp (by fun_prop)
   have hw : Continuous w := by dsimp [w]; fun_prop
