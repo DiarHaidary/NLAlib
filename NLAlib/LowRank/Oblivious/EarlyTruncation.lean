@@ -110,17 +110,11 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeas
     μ.real {ω | (frobNorm (A - truncatedSVD A k) ^ 2 + √(k : ℝ) * ηw) / ((1 - θ) * a) +
         ηχ ^ 2 / (θ * (1 - θ) * a ^ 2) < frobNorm (A - P ω * A) ^ 2} ≤ δ + δw + δχ := by
   classical
-  obtain ⟨Z, hZ, hR⟩ :=
-    exists_hasOrthonormalCols_range_eq (truncatedSVD A k)ᴴ (Fintype.card_fin _)
-  have hPZ : Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ := by
-    rw [← hZ.rangeProjector_eq, rangeProjector_inj, hR]
-  have hAZ : A * Z * Zᴴ = truncatedSVD A k := by
-    rw [Matrix.mul_assoc, hPZ, mul_rangeProjector_conjTranspose_truncatedSVD]
+  obtain ⟨Z, hZ, hR, hPZ, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   have hEZ : (A - truncatedSVD A k) * Z = 0 := by
-    have h0 : (A - A * Z * Zᴴ) * Z = 0 := by
-      rw [Matrix.sub_mul, Matrix.mul_assoc (A * Z), show Zᴴ * Z = 1 from hZ, Matrix.mul_one,
-        sub_self]
-    rwa [hAZ] at h0
+    simpa only [hAZ] using hZ.sub_mul_mul_conjTranspose_mul_eq_zero A
   unfold HasSubspaceInjection at h
   refine (measureReal_mono (s₂ := ({ω | ¬ IsSubspaceInjection (X ω)ᴴ (truncatedSVD A k)ᴴ a} ∪
     {ω | ηw < frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ * (A - truncatedSVD A k)ᴴ -
