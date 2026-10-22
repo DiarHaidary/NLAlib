@@ -91,14 +91,6 @@ private lemma pcgState_succ (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (k : �
   rfl
 
 omit [DecidableEq n] in
-/-- Moving a matrix across the inner product:
-$\langle \mathbf{C}\mathbf{u}, \mathbf{v} \rangle =
-\langle \mathbf{u}, \mathbf{C}^{\mathsf{H}}\mathbf{v} \rangle$. -/
-private lemma star_mulVec_dotProduct (C : Matrix n n 𝕜) (u v : n → 𝕜) :
-    star (C *ᵥ u) ⬝ᵥ v = star u ⬝ᵥ (Cᴴ *ᵥ v) := by
-  rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec]
-
-omit [DecidableEq n] in
 /-- The same move in the other direction:
 $\langle \mathbf{u}, \mathbf{C}\mathbf{v} \rangle =
 \langle \mathbf{C}^{\mathsf{H}}\mathbf{u}, \mathbf{v} \rangle$. -/
