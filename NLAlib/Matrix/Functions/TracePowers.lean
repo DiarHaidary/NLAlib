@@ -331,12 +331,6 @@ private theorem sub_mul_sub_le_half_mul {g h h' : ℝ → ℝ} {s : Set ℝ} (hg
     have h2 : 0 ≤ g a - g b := sub_nonneg.mpr (hg hb ha hab.le)
     nlinarith [mul_le_mul_of_nonneg_left h1 h2]
 
-/-- Functions of one matrix multiply pointwise: $(fg)(\mathbf{A}) = f(\mathbf{A}) g(\mathbf{A})$;
-every function is continuous on the spectrum. -/
-private theorem cfc_mul_cfc (A : Matrix n n 𝕜) (f g : ℝ → ℝ) :
-    cfc (fun x => f x * g x) A = cfc f A * cfc g A :=
-  cfc_mul f g A (A.finite_real_spectrum.continuousOn _) (A.finite_real_spectrum.continuousOn _)
-
 /-- The trace of $(g(\mathbf{A}) - g(\mathbf{B}))(h(\mathbf{A}) - h(\mathbf{B}))$ as a combination
 of traces $\operatorname{tr}(\varphi(\mathbf{A}) \psi(\mathbf{B}))$. -/
 private theorem trace_cfc_sub_mul_cfc_sub {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -347,8 +341,11 @@ private theorem trace_cfc_sub_mul_cfc_sub {A B : Matrix n n 𝕜} (hA : A.IsHerm
         (cfc (fun _ : ℝ => (1 : ℝ)) A * cfc (fun x => g x * h x) B).trace := by
   have hsA : IsSelfAdjoint A := hA
   have hsB : IsSelfAdjoint B := hB
+  have cA : ∀ f : ℝ → ℝ, ContinuousOn f (spectrum ℝ A) := A.finite_real_spectrum.continuousOn
+  have cB : ∀ f : ℝ → ℝ, ContinuousOn f (spectrum ℝ B) := B.finite_real_spectrum.continuousOn
   rw [cfc_const_one ℝ A hsA, cfc_const_one ℝ B hsB, Matrix.mul_one, Matrix.one_mul,
-    cfc_mul_cfc A g h, cfc_mul_cfc B g h, Matrix.trace_mul_comm (cfc h A) (cfc g B)]
+    cfc_mul g h A (cA _) (cA _), cfc_mul g h B (cB _) (cB _),
+    Matrix.trace_mul_comm (cfc h A) (cfc g B)]
   simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.trace_sub]
   ring
 
@@ -368,10 +365,13 @@ private theorem trace_cfc_sub_mul_sub_mul_cfc_add {A B : Matrix n n 𝕜} (hA : 
         (cfc (fun _ : ℝ => (1 : ℝ)) A * cfc (fun x => g x * x * p x) B).trace := by
   have hsA : IsSelfAdjoint A := hA
   have hsB : IsSelfAdjoint B := hB
+  have cA : ∀ f : ℝ → ℝ, ContinuousOn f (spectrum ℝ A) := A.finite_real_spectrum.continuousOn
+  have cB : ∀ f : ℝ → ℝ, ContinuousOn f (spectrum ℝ B) := B.finite_real_spectrum.continuousOn
   rw [cfc_const_one ℝ A hsA, cfc_const_one ℝ B hsB, Matrix.mul_one, Matrix.one_mul,
-    cfc_mul_cfc A (fun x => g x * x) p, cfc_mul_cfc B (fun x => g x * x) p,
-    cfc_mul_cfc A g (fun x => x), cfc_mul_cfc B g (fun x => x), cfc_mul_cfc A p g,
-    cfc_mul_cfc B p g, cfc_mul_cfc A (fun x => x) p, cfc_mul_cfc B (fun x => x) p,
+    cfc_mul (fun x => g x * x) p A (cA _) (cA _), cfc_mul (fun x => g x * x) p B (cB _) (cB _),
+    cfc_mul g (fun x => x) A (cA _) (cA _), cfc_mul g (fun x => x) B (cB _) (cB _),
+    cfc_mul p g A (cA _) (cA _), cfc_mul p g B (cB _) (cB _),
+    cfc_mul (fun x => x) p A (cA _) (cA _), cfc_mul (fun x => x) p B (cB _) (cB _),
     cfc_id' ℝ A hsA, cfc_id' ℝ B hsB]
   generalize cfc g A = GA
   generalize cfc g B = GB
