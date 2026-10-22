@@ -131,37 +131,6 @@ private lemma re_quadForm_chebyshevErrorVector {a a' : ℝ} (ha : 0 < a) (haa : 
     abs_of_nonneg (Real.sqrt_nonneg _), Real.sq_sqrt (div_nonneg hω hξ.le)]
   field_simp
 
-/-- Cauchy–Schwarz against the signed dual weights: every $p \in \Bbbk[X]$ with $\deg p \le q$
-and $p(0) = 1$ has $\sum_k\omega_k\lvert p(\xi_k)\rvert^2 \ge
-T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$. -/
-private lemma inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq {a a' : ℝ} (ha : 0 < a)
-    (haa : a < a') {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
-    ((T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)))⁻¹ ≤
-      ∑ k : Fin (q + 1),
-        chebyshevWeight a a' q k * ‖p.eval (chebyshevExtremum a a' q k : 𝕜)‖ ^ 2 := by
-  set τ := (T ℝ (q : ℤ)).eval ((a' + a) / (a' - a))
-  have hτ : 0 < τ := zero_lt_one.trans_le (one_le_eval_T_real (q : ℤ) (by
-    rw [le_div_iff₀ (by linarith)]
-    linarith))
-  set ω := chebyshevWeight a a' q
-  set u := fun k : Fin (q + 1) => ‖p.eval (chebyshevExtremum a a' q k : 𝕜)‖
-  have hω : ∀ k, 0 < ω k := chebyshevWeight_pos ha haa q
-  have hS : 1 ≤ ∑ k, ω k * u k := by
-    have h := congrArg norm (sum_neg_one_pow_mul_chebyshevWeight_mul_eval ha haa hp)
-    rw [hp₀, norm_one] at h
-    rw [← h]
-    refine (norm_sum_le _ _).trans_eq (Finset.sum_congr rfl fun k _ => ?_)
-    rw [norm_mul, RCLike.norm_ofReal, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul,
-      abs_of_pos (hω k)]
-  have hCS := Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul Finset.univ
-    (r := fun k => ω k * u k) (f := ω) (g := fun k => ω k * u k ^ 2)
-    (fun k _ => (hω k).le) (fun k _ => mul_nonneg (hω k).le (sq_nonneg _))
-    (fun k _ => by ring_nf; rfl)
-  have hW : ∑ k, ω k = τ := sum_chebyshevWeight ha haa q
-  rw [hW] at hCS
-  rw [inv_le_iff_one_le_mul₀ hτ]
-  nlinarith
-
 /-- **CG attains the Chebyshev value**: for $0 < a < a'$, on the Chebyshev extrema matrix
 $\mathbf{A}$ with solution $\mathbf{x}_\star$ = `chebyshevErrorVector` and the zero start,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{A}\mathbf{x}_\star, \mathbf{0},
@@ -210,7 +179,7 @@ theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix {a a' : ℝ} (ha : 0 < 
       ext k
       rw [Matrix.mulVec_diagonal]
     rw [hv, re_quadForm_chebyshevErrorVector ha haa q]
-    exact inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq ha haa hp hp₀
+    exact inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq ha haa hp hp₀
 
 /-- **The CG bound is tight up to $(1 + \rho^{2q})^2$**: for $0 < a < a'$, on the Chebyshev
 extrema matrix $\mathbf{A}$ (`chebyshevExtremaMatrix`) with solution $\mathbf{x}_\star$ =
@@ -237,15 +206,6 @@ private lemma norm_toLp_sq {ι : Type*} [Fintype ι] (v : ι → 𝕜) :
     ‖WithLp.toLp 2 v‖ ^ 2 = ∑ i, ‖v i‖ ^ 2 :=
   EuclideanSpace.norm_sq_eq _
 
-/-- The even part has degree at most $\lfloor q/2 \rfloor$ and value $p(0)$ at $0$. -/
-private lemma degree_contract_two_le_and_eval_zero {p : 𝕜[X]} {q : ℕ} (hp : p.degree ≤ q) :
-    (contract 2 p).degree ≤ (q / 2 : ℕ) ∧ (contract 2 p).eval 0 = p.eval 0 := by
-  refine ⟨(degree_le_iff_coeff_zero _ _).mpr fun m hm => ?_, ?_⟩
-  · rw [coeff_contract two_ne_zero]
-    have hkm : q / 2 < m := by exact_mod_cast hm
-    exact coeff_eq_zero_of_degree_lt (hp.trans_lt (by exact_mod_cast (by omega : q < m * 2)))
-  · rw [← coeff_zero_eq_eval_zero, coeff_contract two_ne_zero, zero_mul, coeff_zero_eq_eval_zero]
-
 /-- **The even part does at least as well**: with $u = p(x)$, $v = p(-x)$ and $\omega \ge 0$,
 $\omega\lvert(\operatorname{contract}_2 p)(x^2)\rvert^2 = \omega\lvert(u + v)/2\rvert^2 \le
 \tfrac{\omega}{2}(\lvert u \rvert^2 + \lvert v \rvert^2)$. -/
@@ -260,17 +220,6 @@ private lemma mul_norm_eval_contract_two_sq_le (p : 𝕜[X]) (x : 𝕜) {ω : �
   have h4 : ((‖p.eval x‖ + ‖p.eval (-x)‖) / 2) ^ 2 ≤ (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) / 2 := by
     nlinarith [sq_nonneg (‖p.eval x‖ - ‖p.eval (-x)‖)]
   nlinarith
-
-/-- Squares of $[-a', -a] \cup [a, a']$ lie in $[a^2, a'^2]$, for $0 < a$. -/
-private lemma sq_mem_Icc_of_mem_union {a a' x : ℝ} (ha : 0 < a)
-    (hx : x ∈ Set.Icc (-a') (-a) ∪ Set.Icc a a') : x ^ 2 ∈ Set.Icc (a ^ 2) (a' ^ 2) := by
-  rcases hx with ⟨h1, h2⟩ | ⟨h1, h2⟩
-  · have e1 := mul_nonneg (by linarith : (0 : ℝ) ≤ -a - x) (by linarith : (0 : ℝ) ≤ a - x)
-    have e2 := mul_nonneg (by linarith : (0 : ℝ) ≤ x + a') (by linarith : (0 : ℝ) ≤ a' - x)
-    constructor <;> nlinarith
-  · have e1 := mul_nonneg (by linarith : (0 : ℝ) ≤ x - a) (by linarith : (0 : ℝ) ≤ x + a)
-    have e2 := mul_nonneg (by linarith : (0 : ℝ) ≤ a' - x) (by linarith : (0 : ℝ) ≤ a' + x)
-    constructor <;> nlinarith
 
 /-- **MINRES attains the Chebyshev value**: for $0 < a < a'$, on the Chebyshev extrema matrix
 with right-hand side $\mathbf{w}$ = `chebyshevWeightVector` and the zero start,
@@ -325,7 +274,7 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevExtremaMatrix {a a' : ℝ} (ha : 0
         ‖WithLp.toLp 2 (fun k : Fin (q + 1) =>
           p.eval (chebyshevExtremum a a' q k : 𝕜) * w k)‖ ^ 2 := by
       rw [hnorm, mul_pow, hw, sq, mul_assoc, inv_mul_cancel₀ hτ.ne', mul_one]
-      exact inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq ha haa hp hp₀
+      exact inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq ha haa hp hp₀
     exact (pow_le_pow_iff_left₀ (mul_nonneg (inv_nonneg.mpr hτ.le) (norm_nonneg _))
       (norm_nonneg _) two_ne_zero).mp hsq
 
@@ -407,20 +356,11 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix {a a' : ℝ} (ha
     ring
   refine le_antisymm ?_ ?_
   · -- the even Chebyshev residual attains the value
-    have hRn : (chebyshevResidual (a ^ 2) (a' ^ 2) k).natDegree ≤ k :=
-      natDegree_le_iff_degree_le.mpr (degree_chebyshevResidual_le _ _ k)
-    have hP : ((chebyshevResidual (a ^ 2) (a' ^ 2) k).comp (X ^ 2)).degree ≤ q := by
-      refine degree_le_of_natDegree_le (natDegree_comp_le.trans ?_)
-      rw [natDegree_X_pow]
-      omega
-    have hP₀ : ((chebyshevResidual (a ^ 2) (a' ^ 2) k).comp (X ^ 2)).eval 0 = 1 := by
-      rw [eval_comp, eval_pow, eval_X, zero_pow two_ne_zero]
-      exact eval_chebyshevResidual_zero k ha2 haa2
+    have hP : ((chebyshevResidual (a ^ 2) (a' ^ 2) k).comp (X ^ 2)).degree ≤ q :=
+      (degree_chebyshevResidual_comp_X_sq_le _ _ k).trans (by exact_mod_cast (by omega : 2 * k ≤ q))
     have h := hH.norm_sub_mulVec_gmresIterate_le (spectrum_chebyshevTwoIntervalMatrix_subset ha
-      haa.le k) w 0 hP hP₀ (η := τ⁻¹) fun x hx => by
-        have h := isUniformApproxOn_chebyshevResidual k ha2 haa2 _ (sq_mem_Icc_of_mem_union ha hx)
-        rw [Real.dist_eq, sub_zero] at h
-        rwa [eval_comp, eval_pow, eval_X]
+      haa.le k) w 0 hP (eval_chebyshevResidual_comp_X_sq_zero k ha2 haa2) (η := τ⁻¹)
+      (abs_eval_chebyshevResidual_comp_X_sq_le k ha haa)
     rwa [Matrix.mulVec_zero, sub_zero] at h
   · -- every residual polynomial does at least as badly, through its even part
     obtain ⟨p, hp, hp₀, hpe⟩ := exists_sub_mulVec_gmresIterate_eq_aeval A w 0 q
@@ -429,8 +369,8 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix {a a' : ℝ} (ha
         (fun j : Fin (k + 1) => ((Real.sqrt (ξ j) : ℝ) : 𝕜))
         (fun j : Fin (k + 1) => -((Real.sqrt (ξ j) : ℝ) : 𝕜)) i)) :=
       aeval_diagonal_self _ p
-    obtain ⟨hPd, hP₀⟩ := degree_contract_two_le_and_eval_zero hp
-    rw [hp₀] at hP₀
+    have hPd := degree_contract_le_of_degree_le two_ne_zero hp
+    have hP₀ : (contract 2 p).eval 0 = 1 := by rw [eval_zero_contract two_ne_zero, hp₀]
     have hterm : ∀ j, ω j * ‖(contract 2 p).eval (ξ j : 𝕜)‖ ^ 2 ≤
         ‖(aeval A p *ᵥ w) (Sum.inl j)‖ ^ 2 + ‖(aeval A p *ᵥ w) (Sum.inr j)‖ ^ 2 := fun j => by
       have hx2 : ((Real.sqrt (ξ j) : ℝ) : 𝕜) ^ 2 = (ξ j : 𝕜) := by
@@ -442,7 +382,7 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix {a a' : ℝ} (ha
       linarith
     have hres : τ⁻¹ ≤ ‖WithLp.toLp 2 (aeval A p *ᵥ w)‖ ^ 2 := by
       rw [hnormS]
-      exact (inv_eval_T_le_sum_chebyshevWeight_mul_norm_sq ha2 haa2 hPd hP₀).trans
+      exact (inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq ha2 haa2 hPd hP₀).trans
         (Finset.sum_le_sum fun j _ => hterm j)
     rw [hpe]
     have hsq : (τ⁻¹ * ‖WithLp.toLp 2 w‖) ^ 2 ≤ ‖WithLp.toLp 2 (aeval A p *ᵥ w)‖ ^ 2 := by
