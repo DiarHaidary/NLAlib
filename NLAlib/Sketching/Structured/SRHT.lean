@@ -663,7 +663,7 @@ private theorem log_div_half_spec [Nonempty n] (hF : IsBoundedOrthonormal F β) 
       (add_pos_of_nonneg_of_pos (by positivity) (by linarith))
 
 omit [DecidableEq n] in
-/-- **The SRHT embedding size, bounded**: for $\beta \ge 1$, nonempty `n`,
+/-- The SRHT embedding size, bounded: for $\beta \ge 1$, nonempty `n`,
 $0 < \delta \le 1/2$ and every $\varepsilon$, the row-sampling
 size <!-- value samplingEmbeddingDim d L \varepsilon (\delta/2) -->
 $$\frac{3 L \log(2d/(\delta/2))}{\varepsilon^2}$$
@@ -776,6 +776,55 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht :
   exact isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le hF hS d hε hε1 hδ
     ((samplingEmbeddingDim_srhtRowBound_le hF.one_le d hδ hδ2 ε).trans hk)
 
+omit [DecidableEq n] in
+/-- The SRHT injection size, bounded: for $\beta \ge 1$, nonempty `n`,
+$0 < \delta \le 1/2$ and every $\varepsilon$, the row-sampling injection
+size <!-- value samplingInjectionDim d L \varepsilon (\delta/2) -->
+$$\frac{2 L \log(d/(\delta/2))}{\varepsilon^2}$$
+(`NLAlib.samplingInjectionDim d L ε (δ/2)`) at the flattened
+coherence <!-- value srhtRowBound {\lvert n \rvert} d (\delta/2) -->
+$$L = \beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/(\delta/2))} +
+2 \log(\lvert n \rvert/(\delta/2))\bigr)$$
+($\beta$ times `NLAlib.srhtRowBound (Fintype.card n) d (δ / 2)`) is at most
+$32\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2$: the step from the SRHT
+injection sizes to their asymptotic forms. -/
+theorem samplingInjectionDim_srhtRowBound_le [Nonempty n] (hβ : 1 ≤ β) (d : ℕ) (hδ : 0 < δ)
+    (hδ2 : δ ≤ 1 / 2) (ε : ℝ) :
+    samplingInjectionDim d (β * srhtRowBound (Fintype.card n) d (δ / 2)) ε (δ / 2) ≤
+      32 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ) / ε ^ 2) := by
+  refine (samplingInjectionDim_le _ _ ε _).trans ?_
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp
+  have hd1 : (1 : ℝ) ≤ d := Nat.one_le_cast.2 hd
+  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have h2d : Real.log 2 ≤ Real.log (d / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
+    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
+      Real.log_mul (by norm_num) (by positivity)]
+  have hR : srhtRowBound (Fintype.card n) d (δ / 2) ≤
+      8 * (d + Real.log (Fintype.card n / δ)) := by
+    have h := srhtRowBound_le (Fintype.card n) d (δ / 2)
+    have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
+    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
+    nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (Fintype.card n / (δ / 2))))]
+  have hB : 0 ≤ β * (8 * (d + Real.log (Fintype.card n / δ))) :=
+    mul_nonneg (by linarith) (by linarith)
+  have hl : Real.log (d / (δ / 2)) = Real.log 2 + Real.log (d / δ) := by
+    rw [show (d : ℝ) / (δ / 2) = 2 * (d / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+  rw [mul_div_assoc']
+  refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
+  calc 2 * (β * srhtRowBound (Fintype.card n) d (δ / 2)) * Real.log (d / (δ / 2))
+      ≤ 2 * (β * (8 * (d + Real.log (Fintype.card n / δ)))) * Real.log (d / (δ / 2)) :=
+        mul_le_mul_of_nonneg_right
+          (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)]) (by linarith)
+    _ ≤ 2 * (β * (8 * (d + Real.log (Fintype.card n / δ)))) * (2 * Real.log (d / δ)) :=
+        mul_le_mul_of_nonneg_left (by linarith) (by linarith)
+    _ = 32 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ)) := by ring
+
 /-- **The SRHT OSI, sample-size form**: for $\varepsilon > 0$, $\delta > 0$, nonempty `k` and
 $\lvert k \rvert \le \lvert n \rvert$, the SRHT is an oblivious subspace injection for dimension
 $d$ with constant $1 - \varepsilon$ and failure probability $\delta$ once it
@@ -828,40 +877,8 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht :
   refine ⟨32, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ _ μ S F β d ε δ hF hS hkn hε hε1 hδ hδ2 hk
   have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hkn)
-  refine isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hS hkn d hε hδ
-    ((samplingInjectionDim_le _ _ ε _).trans (le_trans ?_ hk))
-  rcases Nat.eq_zero_or_pos d with rfl | hd
-  · simp
-  have hβ : 1 ≤ β := hF.one_le
-  have hd1 : (1 : ℝ) ≤ d := Nat.one_le_cast.2 hd
-  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
-  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
-  have h2d : Real.log 2 ≤ Real.log (d / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
-  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
-  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
-    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
-      Real.log_mul (by norm_num) (by positivity)]
-  have hR : srhtRowBound (Fintype.card n) d (δ / 2) ≤
-      8 * (d + Real.log (Fintype.card n / δ)) := by
-    have h := srhtRowBound_le (Fintype.card n) d (δ / 2)
-    have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
-    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
-    nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (Fintype.card n / (δ / 2))))]
-  have hB : 0 ≤ β * (8 * (d + Real.log (Fintype.card n / δ))) :=
-    mul_nonneg (by linarith) (by linarith)
-  have hl : Real.log (d / (δ / 2)) = Real.log 2 + Real.log (d / δ) := by
-    rw [show (d : ℝ) / (δ / 2) = 2 * (d / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-  rw [mul_div_assoc']
-  refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
-  calc 2 * (β * srhtRowBound (Fintype.card n) d (δ / 2)) * Real.log (d / (δ / 2))
-      ≤ 2 * (β * (8 * (d + Real.log (Fintype.card n / δ)))) * Real.log (d / (δ / 2)) :=
-        mul_le_mul_of_nonneg_right
-          (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)]) (by linarith)
-    _ ≤ 2 * (β * (8 * (d + Real.log (Fintype.card n / δ)))) * (2 * Real.log (d / δ)) :=
-        mul_le_mul_of_nonneg_left (by linarith) (by linarith)
-    _ = 32 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ)) := by ring
+  exact isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hS hkn d hε hδ
+    ((samplingInjectionDim_srhtRowBound_le hF.one_le d hδ hδ2 ε).trans hk)
 
 /-- **The SRHT OSE with replacement, sample-size form**: for a bounded orthonormal transform
 $\mathbf{F}$ with bound $\beta$ (`NLAlib.IsBoundedOrthonormal`),
@@ -985,39 +1002,7 @@ theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement
       IsObliviousSubspaceInjection S d (1 - ε) δ μ := by
   refine ⟨32, 1, by norm_num, one_pos, ?_⟩
   intro Ω 𝕜 k n _ _ _ _ _ _ _ μ S F β d ε δ hF hS hε hε1 hδ hδ2 hk
-  refine isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le hF
-    hS d hε hδ ((samplingInjectionDim_le _ _ ε _).trans (le_trans ?_ hk))
-  rcases Nat.eq_zero_or_pos d with rfl | hd
-  · simp
-  have hβ : 1 ≤ β := hF.one_le
-  have hd1 : (1 : ℝ) ≤ d := Nat.one_le_cast.2 hd
-  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
-  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
-  have h2d : Real.log 2 ≤ Real.log (d / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
-  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
-  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
-    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
-      Real.log_mul (by norm_num) (by positivity)]
-  have hR : srhtRowBound (Fintype.card n) d (δ / 2) ≤
-      8 * (d + Real.log (Fintype.card n / δ)) := by
-    have h := srhtRowBound_le (Fintype.card n) d (δ / 2)
-    have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
-    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
-    nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (Fintype.card n / (δ / 2))))]
-  have hB : 0 ≤ β * (8 * (d + Real.log (Fintype.card n / δ))) :=
-    mul_nonneg (by linarith) (by linarith)
-  have hl : Real.log (d / (δ / 2)) = Real.log 2 + Real.log (d / δ) := by
-    rw [show (d : ℝ) / (δ / 2) = 2 * (d / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-  rw [mul_div_assoc']
-  refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
-  calc 2 * (β * srhtRowBound (Fintype.card n) d (δ / 2)) * Real.log (d / (δ / 2))
-      ≤ 2 * (β * (8 * (d + Real.log (Fintype.card n / δ)))) * Real.log (d / (δ / 2)) :=
-        mul_le_mul_of_nonneg_right
-          (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)]) (by linarith)
-    _ ≤ 2 * (β * (8 * (d + Real.log (Fintype.card n / δ)))) * (2 * Real.log (d / δ)) :=
-        mul_le_mul_of_nonneg_left (by linarith) (by linarith)
-    _ = 32 * (β * (d + Real.log (Fintype.card n / δ)) * Real.log (d / δ)) := by ring
+  exact isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le hF
+    hS d hε hδ ((samplingInjectionDim_srhtRowBound_le hF.one_le d hδ hδ2 ε).trans hk)
 
 end NLAlib

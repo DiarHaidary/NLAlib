@@ -1129,3 +1129,8 @@ the note:
   `Probability/QuadraticForm/Moments.lean` (the Rademacher fourth moment of the JL moment proof).
   The product-law helpers of `SRHT.lean` stay private: the proofs restate the two one-line facts
   they need.
+* **SRHT injection-size arithmetic made public** (proof agent B):
+  `NLAlib.samplingInjectionDim_srhtRowBound_le` (`Sketching/Structured/SRHT.lean`), the bound
+  $32\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2$ on the flattened
+  row-sampling injection size, extracted from the two SRHT OSI asymptotic proofs (which now cite
+  it) and used by the SRHT sketch-and-solve, randomized SVD and early-truncation asymptotic forms.

@@ -248,7 +248,41 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht [Non
     (hk' : 8 * (3 * β ^ 2 - 1) * ((A.rank : ℝ) + 1) ≤ ε * δ * Fintype.card k) :
     μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
       frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ := by
-  sorry
+  have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
+  rcases isEmpty_or_nonempty m with hm | hm
+  · have h0 : ∀ M : Matrix m r ℝ, M = 0 := fun M => Matrix.ext fun i => isEmptyElim i
+    refine (measureReal_mono (s₂ := ∅) (fun ω hω => ?_) (by simp)).trans
+      (by rw [measureReal_empty]; exact hδ.le)
+    rw [Set.mem_ofPred_eq, h0 ((1 - rangeProjector A) * B),
+      h0 (B - A * sketchAndSolve A (S ω) B), frobNorm_zero] at hω
+    simp at hω
+  have hβ := hF.one_le
+  have hv : 0 < 3 * β ^ 2 - 1 := by nlinarith
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
+  have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hS hkm
+    A.rank (ε := 1 / 2) (by norm_num) (half_pos hδ)
+    (by rw [show δ / 2 / 2 = δ / 4 by ring]; exact hk)
+  have hJL := hasJLMoment_of_hasLaw_srht hF hS hη
+  have h := hJL.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
+    (hOSI.hasSubspaceInjection (U := A) le_rfl) hS.aemeasurable (by norm_num) hη le_rfl
+    (div_nonneg hv.le (by positivity)) B
+  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
+    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
+      div_le_iff₀ (by positivity)]
+    nlinarith
+  have htail : (3 * β ^ 2 - 1) / (Fintype.card k * η ^ 2) ≤ δ / 2 := by
+    rw [hsq, div_le_iff₀ (by positivity)]
+    have : δ / 2 * ((Fintype.card k : ℝ) * (ε / (4 * ((A.rank : ℝ) + 1)))) =
+        ε * δ * Fintype.card k / (8 * ((A.rank : ℝ) + 1)) := by
+      field_simp
+      ring
+    rw [this, le_div_iff₀ (by positivity)]
+    linarith
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
 
 /-- **SRHT sketch-and-solve, asymptotic relative residual with high probability**:
 $O(\beta(r + \log(\lvert m\rvert/\delta))\log(r/\delta) + \beta^2(r+1)/(\varepsilon\delta))$ rows
@@ -275,6 +309,59 @@ theorem exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_ha
           β ^ 2 * ((A.rank : ℝ) + 1) / (ε * δ)) ≤ Fintype.card k →
         μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
           frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨1152, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k m n r _ _ _ _ _ _ _ μ S F β A B ε δ hF hS hkm hε hε1 hδ hδ2 hk
+  have : Nonempty m := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hkm)
+  have hβ : 1 ≤ β := hF.one_le
+  have hT2 : 0 ≤ β ^ 2 * ((A.rank : ℝ) + 1) / (ε * δ) := by positivity
+  have hN : (1 : ℝ) ≤ Fintype.card m := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card m / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  refine measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht hF hS hkm A B hε hδ
+    ?_ ?_
+  · have h := samplingInjectionDim_srhtRowBound_le (n := m) hβ A.rank (half_pos hδ)
+      (by linarith) (1 / 2)
+    rw [show δ / 2 / 2 = δ / 4 by ring] at h
+    refine h.trans ?_
+    rcases Nat.eq_zero_or_pos A.rank with hr | hr
+    · rw [hr] at hk ⊢
+      simp only [CharP.cast_eq_zero, zero_div, Real.log_zero, mul_zero, zero_add] at hk ⊢
+      linarith
+    have hd1 : (1 : ℝ) ≤ A.rank := Nat.one_le_cast.2 hr
+    have h2d : Real.log 2 ≤ Real.log (A.rank / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+    have e (x : ℝ) (hx : 0 < x) : Real.log (x / (δ / 2)) = Real.log 2 + Real.log (x / δ) := by
+      rw [show x / (δ / 2) = 2 * (x / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    rw [e _ (by positivity), e _ (by positivity)]
+    have hA : (A.rank : ℝ) + (Real.log 2 + Real.log (Fintype.card m / δ)) ≤
+        2 * (A.rank + Real.log (Fintype.card m / δ)) := by linarith
+    have hB : Real.log 2 + Real.log (A.rank / δ) ≤ 2 * Real.log (A.rank / δ) := by linarith
+    have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+    have hAB := mul_le_mul hA hB (by linarith) (by linarith)
+    have : 32 * (β * (A.rank + (Real.log 2 + Real.log (Fintype.card m / δ))) *
+        (Real.log 2 + Real.log (A.rank / δ)) / (1 / 2) ^ 2) ≤
+        1152 * (β * (A.rank + Real.log (Fintype.card m / δ)) * Real.log (A.rank / δ)) := by
+      rw [show ∀ x : ℝ, x / (1 / 2) ^ 2 = 4 * x from fun x => by ring]
+      nlinarith [mul_le_mul_of_nonneg_left hAB (by linarith : (0 : ℝ) ≤ β),
+        mul_nonneg (by linarith : (0 : ℝ) ≤ β) (by linarith : 0 ≤ (A.rank : ℝ) +
+          Real.log (Fintype.card m / δ)), Real.log_nonneg (show (1 : ℝ) ≤ 2 by norm_num)]
+    linarith
+  · have h : 8 * (3 * β ^ 2 - 1) * ((A.rank : ℝ) + 1) ≤
+        1152 * (β ^ 2 * ((A.rank : ℝ) + 1) / (ε * δ)) * (ε * δ) := by
+      rw [mul_assoc 1152, div_mul_cancel₀ _ (by positivity)]
+      nlinarith [Nat.cast_nonneg (α := ℝ) A.rank]
+    have hT1 : 0 ≤ β * (A.rank + Real.log (Fintype.card m / δ)) * Real.log (A.rank / δ) := by
+      rcases Nat.eq_zero_or_pos A.rank with hr | hr
+      · simp [hr]
+      have hd1 : (1 : ℝ) ≤ A.rank := Nat.one_le_cast.2 hr
+      have : 0 ≤ Real.log (A.rank / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; nlinarith)
+      have : 0 ≤ (A.rank : ℝ) + Real.log (Fintype.card m / δ) := by
+        linarith [Real.log_nonneg (show (1 : ℝ) ≤ 2 by norm_num)]
+      positivity
+    have hk' : 1152 * (β ^ 2 * ((A.rank : ℝ) + 1) / (ε * δ)) ≤ Fintype.card k := by nlinarith
+    calc 8 * (3 * β ^ 2 - 1) * ((A.rank : ℝ) + 1)
+        ≤ 1152 * (β ^ 2 * ((A.rank : ℝ) + 1) / (ε * δ)) * (ε * δ) := h
+      _ ≤ Fintype.card k * (ε * δ) := mul_le_mul_of_nonneg_right hk' (by positivity)
+      _ = ε * δ * Fintype.card k := by ring
 
 end NLAlib
