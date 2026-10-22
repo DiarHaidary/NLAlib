@@ -187,6 +187,27 @@ theorem SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt
 
 /-! ### The $(1 + \varepsilon)$ forms -/
 
+omit [Fintype n] [Fintype l] [DecidableEq n] in
+/-- The test matrix is measurable when its sketch is. -/
+private theorem aemeasurable_of_conjTranspose [Finite n] [Finite l] {X : Ω → Matrix n l ℝ}
+    (hX : AEMeasurable (fun ω => (X ω)ᴴ) μ) : AEMeasurable X μ := by
+  have := Fintype.ofFinite n
+  have := Fintype.ofFinite l
+  exact (continuous_id.matrix_conjTranspose.measurable.comp_aemeasurable hX).congr
+    (ae_of_all _ fun ω => Matrix.conjTranspose_conjTranspose (X ω))
+
+omit [DecidableEq n] in
+/-- The events of the $(1 + \varepsilon)$ forms are empty without columns, or null at $k = 0$. -/
+private theorem measureReal_one_add_mul_frobNorm_lt_le [IsFiniteMeasure μ] {Y : Ω → Matrix m n ℝ}
+    (A B : Matrix m n ℝ) {ε δ : ℝ} (hε : 0 ≤ ε) (hδ : 0 ≤ δ)
+    (h : ∀ ω, frobNorm (A - Y ω) ≤ frobNorm (A - B)) :
+    μ.real {ω | (1 + ε) * frobNorm (A - B) ^ 2 < frobNorm (A - Y ω) ^ 2} ≤ δ := by
+  refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ
+  refine measure_mono_null (fun ω hω => ?_) measure_empty
+  have hω' : (1 + ε) * frobNorm (A - B) ^ 2 < frobNorm (A - Y ω) ^ 2 := hω
+  have := pow_le_pow_left₀ (frobNorm_nonneg _) (h ω) 2
+  nlinarith [sq_nonneg (frobNorm (A - B))]
+
 /-- **The randomized SVD with an SRHT test matrix, relative error**: for a real bounded
 orthonormal $\mathbf{F}$ with constant $\beta$, a test matrix $\mathbf{\Omega}$ whose sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT of $\mathbf{F}$ without replacement, $\ell$ nonempty,
@@ -218,7 +239,40 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht_of_le_card [Nonemp
     (hl' : 8 * (3 * β ^ 2 - 1) * k ≤ ε * δ * Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
-  sorry
+  classical
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srht F hln)
+  have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hln)
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine measureReal_one_add_mul_frobNorm_lt_le _ _ hε.le hδ.le fun ω => ?_
+    rw [truncatedSVD_zero, sub_zero, sub_rsvd]
+    exact frobNorm_one_sub_rangeProjector_mul_le _ A
+  have hβ := hF.one_le
+  have hv : 0 < 3 * β ^ 2 - 1 := by nlinarith
+  have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 Fintype.card_pos
+  have hεJ : 0 < √(ε / (4 * k)) := Real.sqrt_pos.2 (by positivity)
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hX hln k
+    (ε := 1 / 2) (by norm_num) (half_pos hδ) (by rw [show δ / 2 / 2 = δ / 4 by ring]; exact hl)
+  have h := (hasJLMoment_of_hasLaw_srht hF hX hεJ).measureReal_frobNorm_sub_rsvd_sq_gt_le (A := A)
+    (hOSI.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
+    (aemeasurable_of_conjTranspose hX.aemeasurable) (by norm_num) hεJ le_rfl
+    (div_nonneg hv.le (by positivity))
+  have hsq : √(ε / (4 * k)) ^ 2 = ε / (4 * k) := Real.sq_sqrt (by positivity)
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
+  · have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 < frobNorm (A - rsvd A (X ω)) ^ 2 :=
+      hω
+    rw [Set.mem_ofPred_eq, hsq]
+    refine lt_of_eq_of_lt ?_ hω'
+    field_simp
+    ring
+  · rw [hsq]
+    have e : (3 * β ^ 2 - 1) / (Fintype.card l * (ε / (4 * k))) =
+        4 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε) := by
+      field_simp
+    have h2 : 4 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε) ≤ δ / 2 := by
+      rw [div_le_iff₀ (by positivity)]
+      nlinarith
+    rw [e]
+    linarith
 
 /-- **$O(\beta(k + \log(n/\delta))\log(k/\delta) + \beta^2 k/(\varepsilon\delta))$ SRHT columns
 suffice for the randomized SVD**: there are absolute constants $C, \varepsilon_0 > 0$ such that
@@ -243,7 +297,53 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht :
         β ^ 2 * (k : ℝ) / (ε * δ)) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨1152, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ _ _ μ A X F β k ε δ hF hX hln hε hε1 hδ hδ2 hk
+  have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hln)
+  have hβ : 1 ≤ β := hF.one_le
+  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hT2 : 0 ≤ β ^ 2 * (k : ℝ) / (ε * δ) := by positivity
+  have hT1 : 0 ≤ β * (k + Real.log (Fintype.card n / δ)) * Real.log (k / δ) := by
+    rcases Nat.eq_zero_or_pos k with rfl | hk0
+    · simp
+    have hd1 : (1 : ℝ) ≤ k := Nat.one_le_cast.2 hk0
+    have : 0 ≤ Real.log (k / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; nlinarith)
+    have : 0 ≤ (k : ℝ) + Real.log (Fintype.card n / δ) := by linarith
+    positivity
+  refine measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht_of_le_card hF A hX hln hε hδ ?_ ?_
+  · have h := samplingInjectionDim_srhtRowBound_le (n := n) hβ k (half_pos hδ) (by linarith)
+      (1 / 2)
+    rw [show δ / 2 / 2 = δ / 4 by ring] at h
+    refine h.trans ?_
+    rcases Nat.eq_zero_or_pos k with rfl | hk0
+    · simp only [CharP.cast_eq_zero, zero_div, Real.log_zero, mul_zero, zero_add] at hk ⊢
+      linarith
+    have hd1 : (1 : ℝ) ≤ k := Nat.one_le_cast.2 hk0
+    have h2d : Real.log 2 ≤ Real.log (k / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+    have e (x : ℝ) (hx : 0 < x) : Real.log (x / (δ / 2)) = Real.log 2 + Real.log (x / δ) := by
+      rw [show x / (δ / 2) = 2 * (x / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    rw [e _ (by positivity), e _ (by positivity)]
+    have hA : (k : ℝ) + (Real.log 2 + Real.log (Fintype.card n / δ)) ≤
+        2 * (k + Real.log (Fintype.card n / δ)) := by linarith
+    have hB : Real.log 2 + Real.log (k / δ) ≤ 2 * Real.log (k / δ) := by linarith
+    have hAB := mul_le_mul hA hB (by linarith) (by linarith)
+    have : 32 * (β * (k + (Real.log 2 + Real.log (Fintype.card n / δ))) *
+        (Real.log 2 + Real.log (k / δ)) / (1 / 2) ^ 2) ≤
+        1152 * (β * (k + Real.log (Fintype.card n / δ)) * Real.log (k / δ)) := by
+      rw [show ∀ x : ℝ, x / (1 / 2) ^ 2 = 4 * x from fun x => by ring]
+      nlinarith [mul_le_mul_of_nonneg_left hAB (by linarith : (0 : ℝ) ≤ β)]
+    linarith
+  · have h : 8 * (3 * β ^ 2 - 1) * k ≤ 1152 * (β ^ 2 * (k : ℝ) / (ε * δ)) * (ε * δ) := by
+      rw [mul_assoc 1152, div_mul_cancel₀ _ (by positivity)]
+      nlinarith [Nat.cast_nonneg (α := ℝ) k]
+    have hk' : 1152 * (β ^ 2 * (k : ℝ) / (ε * δ)) ≤ Fintype.card l := by nlinarith
+    calc 8 * (3 * β ^ 2 - 1) * k ≤ 1152 * (β ^ 2 * (k : ℝ) / (ε * δ)) * (ε * δ) := h
+      _ ≤ Fintype.card l * (ε * δ) := mul_le_mul_of_nonneg_right hk' (by positivity)
+      _ = ε * δ * Fintype.card l := by ring
 
 /-- **Early-truncated randomized SVD with an SRHT test matrix, tail**: for a real bounded
 orthonormal $\mathbf{F}$ with constant $\beta$, a test matrix $\mathbf{\Omega}$ whose sketch
@@ -277,7 +377,56 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht [Non
     (hl' : 108 * (3 * β ^ 2 - 1) * k ≤ ε ^ 2 * δ * Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  sorry
+  classical
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srht F hln)
+  have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hln)
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine measureReal_one_add_mul_frobNorm_lt_le _ _ hε.le hδ.le fun ω => ?_
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul]
+  have hβ := hF.one_le
+  have hv : 0 < 3 * β ^ 2 - 1 := by nlinarith
+  have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 Fintype.card_pos
+  have hXm := aemeasurable_of_conjTranspose hX.aemeasurable
+  have hk0 : (0 : ℝ) < √(k : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hk)
+  have hεJ : 0 < ε / (6 * √(k : ℝ)) := by positivity
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hX hln k
+    (ε := ε / 6) (by positivity) (by positivity : (0 : ℝ) < δ / 3)
+    (by rw [show δ / 3 / 2 = δ / 6 by ring]; exact hl)
+  have hJL := hasJLMoment_of_hasLaw_srht hF hX hεJ
+  have hδJ : (0 : ℝ) ≤ (3 * β ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) :=
+    div_nonneg hv.le (by positivity)
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+    (A := A) (k := k) hXm hεJ le_rfl hδJ
+  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
+  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
+    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
+    (fun ω => isStarProjection_rangeProjector _)
+    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
+    (fun ω => by
+      rw [rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
+      exact frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
+        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k)))
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hXm
+      hεJ le_rfl hδJ) hχ
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
+  · have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
+    exact hω'
+  · have e : (3 * β ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) =
+        36 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) := by
+      rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
+      field_simp
+      ring
+    have h3 : 36 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
+      rw [div_le_iff₀ (by positivity)]
+      nlinarith
+    rw [e]
+    linarith
 
 /-- **$O(\beta(k + \log(n/\delta))\log(k/\delta)/\varepsilon^2 + \beta^2k/(\varepsilon^2\delta))$
 SRHT columns suffice for early truncation**: there are absolute constants
@@ -302,6 +451,60 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_ha
         β ^ 2 * (k : ℝ) / (ε ^ 2 * δ)) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨10368, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ _ _ μ A X F β k ε δ hF hX hln hε hε1 hδ hδ2 hk
+  have : Nonempty n := Fintype.card_pos_iff.1 (Fintype.card_pos.trans_le hln)
+  have hβ : 1 ≤ β := hF.one_le
+  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hl3 : Real.log 3 ≤ 2 * Real.log 2 := by
+    rw [← Real.log_rpow (by norm_num)]
+    exact Real.log_le_log (by norm_num) (by norm_num)
+  have hl30 : 0 ≤ Real.log 3 := Real.log_nonneg (by norm_num)
+  have hT2 : 0 ≤ β ^ 2 * (k : ℝ) / (ε ^ 2 * δ) := by positivity
+  have hT1 : 0 ≤ β * (k + Real.log (Fintype.card n / δ)) * Real.log (k / δ) / ε ^ 2 := by
+    rcases Nat.eq_zero_or_pos k with rfl | hk0
+    · simp
+    have hd1 : (1 : ℝ) ≤ k := Nat.one_le_cast.2 hk0
+    have : 0 ≤ Real.log (k / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; nlinarith)
+    have : 0 ≤ (k : ℝ) + Real.log (Fintype.card n / δ) := by linarith
+    positivity
+  refine measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht hF A hX hln hε hε1 hδ
+    ?_ ?_
+  · have h := samplingInjectionDim_srhtRowBound_le (n := n) hβ k (by positivity : 0 < δ / 3)
+      (by linarith) (ε / 6)
+    rw [show δ / 3 / 2 = δ / 6 by ring] at h
+    refine h.trans ?_
+    rcases Nat.eq_zero_or_pos k with rfl | hk0
+    · simp only [CharP.cast_eq_zero, zero_div, Real.log_zero, mul_zero, zero_add] at hk ⊢
+      linarith
+    have hd1 : (1 : ℝ) ≤ k := Nat.one_le_cast.2 hk0
+    have h2d : Real.log 2 ≤ Real.log (k / δ) :=
+      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+    have e (x : ℝ) (hx : 0 < x) : Real.log (x / (δ / 3)) = Real.log 3 + Real.log (x / δ) := by
+      rw [show x / (δ / 3) = 3 * (x / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+    rw [e _ (by positivity), e _ (by positivity)]
+    have hA : (k : ℝ) + (Real.log 3 + Real.log (Fintype.card n / δ)) ≤
+        3 * (k + Real.log (Fintype.card n / δ)) := by linarith
+    have hB : Real.log 3 + Real.log (k / δ) ≤ 3 * Real.log (k / δ) := by linarith
+    have hAB := mul_le_mul hA hB (by linarith) (by linarith)
+    have : 32 * (β * (k + (Real.log 3 + Real.log (Fintype.card n / δ))) *
+        (Real.log 3 + Real.log (k / δ)) / (ε / 6) ^ 2) ≤
+        10368 * (β * (k + Real.log (Fintype.card n / δ)) * Real.log (k / δ) / ε ^ 2) := by
+      rw [div_pow, div_div_eq_mul_div, mul_div_assoc', mul_div_assoc']
+      refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
+      nlinarith [mul_le_mul_of_nonneg_left hAB (by linarith : (0 : ℝ) ≤ β)]
+    linarith
+  · have hε2 : 0 < ε ^ 2 := by positivity
+    have h : 108 * (3 * β ^ 2 - 1) * k ≤
+        10368 * (β ^ 2 * (k : ℝ) / (ε ^ 2 * δ)) * (ε ^ 2 * δ) := by
+      rw [mul_assoc 10368, div_mul_cancel₀ _ (by positivity)]
+      nlinarith [Nat.cast_nonneg (α := ℝ) k]
+    have hk' : 10368 * (β ^ 2 * (k : ℝ) / (ε ^ 2 * δ)) ≤ Fintype.card l := by nlinarith
+    calc 108 * (3 * β ^ 2 - 1) * k ≤ 10368 * (β ^ 2 * (k : ℝ) / (ε ^ 2 * δ)) * (ε ^ 2 * δ) := h
+      _ ≤ Fintype.card l * (ε ^ 2 * δ) := mul_le_mul_of_nonneg_right hk' (by positivity)
+      _ = ε ^ 2 * δ * Fintype.card l := by ring
 
 end NLAlib
