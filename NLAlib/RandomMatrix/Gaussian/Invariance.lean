@@ -95,29 +95,19 @@ end Vector
 variable {m n p q : Type*} [Fintype m] [Fintype n] [Fintype p] [Fintype q]
   {X : Ω → Matrix m n ℝ}
 
-omit [Fintype p] [Fintype q] in
-private theorem hasOrthonormalCols_conjTranspose_kronecker [DecidableEq p] [DecidableEq q]
-    {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ) {V : Matrix n q ℝ}
-    (hV : HasOrthonormalCols V) : HasOrthonormalCols (U ⊗ₖ Vᵀ)ᴴ := by
-  have h₁ : U * Uᴴ = 1 := by
-    simpa only [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose] using hU
-  have h₂ : Vᵀ * (Vᵀ)ᴴ = 1 := by
-    rw [Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_transpose,
-      ← Matrix.conjTranspose_eq_transpose_of_trivial]
-    exact hV
-  rw [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_kronecker,
-    ← Matrix.mul_kronecker_mul, h₁, h₂, Matrix.one_kronecker_one]
-
 /-- **Orthogonal invariance**: for $\mathbf{U}$ with orthonormal rows and $\mathbf{V}$ with
 orthonormal columns, $\mathbf{U}\mathbf{G}\mathbf{V}$ is a standard Gaussian matrix. -/
 theorem hasLaw_mul_mul_of_hasLaw_gaussianMatrix [DecidableEq p] [DecidableEq q]
     (hX : HasLaw X (gaussianMatrix m n) μ) {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ)
     {V : Matrix n q ℝ} (hV : HasOrthonormalCols V) :
     HasLaw (fun ω => U * X ω * V) (gaussianMatrix p q) μ := by
+  have hUV : HasOrthonormalCols (U ⊗ₖ Vᵀ)ᴴ := by
+    rw [Matrix.conjTranspose_kronecker, Matrix.conjTranspose_eq_transpose_of_trivial Vᵀ,
+      Matrix.transpose_transpose]
+    exact hU.kronecker hV
   refine hasLaw_gaussianMatrix_of_hasLaw_uncurry ?_
   simp only [uncurry_mul_mul]
-  exact hasLaw_mulVec_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
-    (hasOrthonormalCols_conjTranspose_kronecker hU hV)
+  exact hasLaw_mulVec_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) hUV
 
 /-- $\mathbf{U}\mathbf{G}$ is a standard Gaussian matrix when $\mathbf{U}$ has orthonormal rows. -/
 theorem hasLaw_const_mul_of_hasLaw_gaussianMatrix [DecidableEq p]
