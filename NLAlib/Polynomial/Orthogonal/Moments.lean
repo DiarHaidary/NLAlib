@@ -10,6 +10,9 @@ public import Mathlib.MeasureTheory.Integral.Bochner.Basic
 public import Mathlib.MeasureTheory.Measure.Dirac
 public import Mathlib.RingTheory.Polynomial.Basic
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
+public import Mathlib.MeasureTheory.Integral.IntegrableOn
+public import Mathlib.Topology.Algebra.Polynomial
+import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.ChebyshevGauss
 
 /-!
 # Moment matching
@@ -90,6 +93,14 @@ theorem matchesMoments_iff_forall_mem_degreeLT : MatchesMoments μ ν N ↔
     ∀ p ∈ Polynomial.degreeLT ℝ N, ∫ x, p.eval x ∂μ = ∫ x, p.eval x ∂ν := by
   simp only [MatchesMoments, Polynomial.mem_degreeLT]
 
+/-- A real polynomial is integrable against a finite measure supported in $[a, b]$. -/
+theorem integrable_eval_of_ae_mem_Icc [IsFiniteMeasure μ] {a b : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (p : ℝ[X]) : Integrable (fun x => p.eval x) μ := by
+  obtain ⟨C, hC⟩ :=
+    isCompact_Icc.exists_bound_of_continuousOn (f := fun x => p.eval x) p.continuous.continuousOn
+  exact Integrable.of_bound p.continuous.aestronglyMeasurable C (by
+    filter_upwards [hμ] with x hx using hC x hx)
+
 /-- Moment matching is matching of the monomial moments: for finite $\mu$ and $\nu$
 supported in $[a, b]$, they match $N$ moments exactly when
 $\int x^k\,d\mu = \int x^k\,d\nu$ for every $k < N$; these are Mathlib's
@@ -97,7 +108,24 @@ $\int x^k\,d\mu = \int x^k\,d\nu$ for every $k < N$; these are Mathlib's
 theorem matchesMoments_iff_forall_integral_pow [IsFiniteMeasure μ] [IsFiniteMeasure ν]
     {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hν : ∀ᵐ x ∂ν, x ∈ Set.Icc a b) :
     MatchesMoments μ ν N ↔ ∀ k < N, ∫ x, x ^ k ∂μ = ∫ x, x ^ k ∂ν := by
-  sorry
+  constructor
+  · intro h k hk
+    have := h (X ^ k) (by rw [degree_X_pow]; exact_mod_cast hk)
+    simpa only [eval_X_pow] using this
+  · intro h p hp
+    by_cases hp0 : p = 0
+    · simp only [hp0, eval_zero, integral_zero]
+    have hnat : p.natDegree < N := by
+      rw [degree_eq_natDegree hp0] at hp
+      exact_mod_cast hp
+    have hint : ∀ (ρ : Measure ℝ) [IsFiniteMeasure ρ], (∀ᵐ x ∂ρ, x ∈ Set.Icc a b) →
+        ∀ i, Integrable (fun x => p.coeff i * x ^ i) ρ := fun ρ _ hρ i => by
+      simpa only [eval_X_pow] using (integrable_eval_of_ae_mem_Icc hρ (X ^ i)).const_mul (p.coeff i)
+    simp_rw [eval_eq_sum_range]
+    rw [integral_finsetSum _ fun i _ => hint μ hμ i, integral_finsetSum _ fun i _ => hint ν hν i]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    rw [integral_const_mul, integral_const_mul,
+      h i ((Finset.mem_range.mp hi).trans_le (Nat.succ_le_of_lt hnat))]
 
 /-- Measures that match at least one moment have the same mass. -/
 theorem MatchesMoments.measureReal_univ_eq (h : MatchesMoments μ ν N) (hN : 0 < N) :
@@ -119,7 +147,24 @@ theorem MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn
     (hfμ : Integrable f μ) (hfν : Integrable f ν) {p : ℝ[X]} (hp : p.degree < N) {ε : ℝ}
     (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b) ε) :
     |∫ x, f x ∂μ - ∫ x, f x ∂ν| ≤ (μ.real Set.univ + ν.real Set.univ) * ε := by
-  sorry
+  have hpμ := integrable_eval_of_ae_mem_Icc hμ p
+  have hpν := integrable_eval_of_ae_mem_Icc hν p
+  have hbound : ∀ (ρ : Measure ℝ) [IsFiniteMeasure ρ], (∀ᵐ x ∂ρ, x ∈ Set.Icc a b) →
+      |∫ x, (f x - p.eval x) ∂ρ| ≤ ε * ρ.real Set.univ := fun ρ _ hρ => by
+    rw [← Real.norm_eq_abs]
+    refine norm_integral_le_of_norm_le_const ?_
+    filter_upwards [hρ] with x hx
+    rw [← dist_eq_norm, dist_comm]
+    exact hε x hx
+  have heq : ∫ x, f x ∂μ - ∫ x, f x ∂ν =
+      ∫ x, (f x - p.eval x) ∂μ - ∫ x, (f x - p.eval x) ∂ν := by
+    rw [integral_sub hfμ hpμ, integral_sub hfν hpν, h p hp]
+    ring
+  rw [heq]
+  calc |∫ x, (f x - p.eval x) ∂μ - ∫ x, (f x - p.eval x) ∂ν|
+      ≤ |∫ x, (f x - p.eval x) ∂μ| + |∫ x, (f x - p.eval x) ∂ν| := abs_sub _ _
+    _ ≤ ε * μ.real Set.univ + ε * ν.real Set.univ := add_le_add (hbound μ hμ) (hbound ν hν)
+    _ = (μ.real Set.univ + ν.real Set.univ) * ε := by ring
 
 /-- Chebyshev–Gauss quadrature as moment matching: for $k \ne 0$, the Chebyshev measure
 $(1 - x^2)^{-1/2}\,dx$ on $[-1, 1]$ (Mathlib's `Polynomial.Chebyshev.measureT`) and the rule
@@ -130,6 +175,10 @@ theorem matchesMoments_measureT {k : ℕ} (hk : k ≠ 0) :
     MatchesMoments Polynomial.Chebyshev.measureT
       (ENNReal.ofReal (Real.pi / k) • ∑ i ∈ Finset.range k,
         Measure.dirac (Real.cos ((2 * i + 1) / (2 * k) * Real.pi))) (2 * k) := by
-  sorry
+  intro p hp
+  rw [Chebyshev.integral_eq_sumZeroes hk (by exact_mod_cast hp), integral_smul_measure,
+    integral_finsetSum_measure fun i _ => integrable_dirac enorm_lt_top,
+    ENNReal.toReal_ofReal (by positivity)]
+  simp only [integral_dirac, smul_eq_mul, Chebyshev.sumZeroes_def]
 
 end NLAlib
