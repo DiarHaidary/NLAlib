@@ -78,12 +78,12 @@ omit [Fintype n] in
 /-- **Congruence preserves the Loewner order**, for a factor of any shape: if
 $\mathbf{G} \preceq \mathbf{H}$ then
 $\mathbf{X}^{\mathsf{H}}\mathbf{G}\mathbf{X} \preceq \mathbf{X}^{\mathsf{H}}\mathbf{H}\mathbf{X}$.
-This is Mathlib's `Matrix.PosSemidef.conjTranspose_mul_mul_same` applied to
-$\mathbf{H} - \mathbf{G}$. [HornJohnson2013, §7.7]. -/
-theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul [Finite n] {G H : Matrix m m 𝕜}
+This is `Matrix.PosSemidef.conjTranspose_mul_mul_same'` applied to $\mathbf{H} - \mathbf{G}$,
+so the column index type of $\mathbf{X}$ need not be finite. [HornJohnson2013, §7.7]. -/
+theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul {G H : Matrix m m 𝕜}
     (h : G ≤ H) (X : Matrix m n 𝕜) : Xᴴ * G * X ≤ Xᴴ * H * X := by
   rw [Matrix.le_iff] at h ⊢
-  have h' := h.conjTranspose_mul_mul_same X
+  have h' := h.conjTranspose_mul_mul_same' X
   rwa [Matrix.mul_sub, Matrix.sub_mul] at h'
 
 /-! ### Multiples of the identity -/
@@ -369,6 +369,30 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_iff [DecidableEq n] {A : Matrix n 
 
 /-! ### Gram matrices close to the identity -/
 
+/-- If the Gram matrix of $\mathbf{T}$ is within $\varepsilon$ of $N\mathbf{I}$ in spectral norm,
+$\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - N\mathbf{I}\|_2 \le \varepsilon$, then
+$\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq (N + \varepsilon)\mathbf{I}$. With $N$ the number of
+rows of a sketch it is the upper Loewner bound of an unnormalised sketch. -/
+theorem conjTranspose_mul_self_le_add_smul_one_of_specNorm_sub_smul_one_le [DecidableEq n]
+    {T : Matrix m n 𝕜} {N ε : ℝ} (h : specNorm (Tᴴ * T - N • (1 : Matrix n n 𝕜)) ≤ ε) :
+    Tᴴ * T ≤ (N + ε) • (1 : Matrix n n 𝕜) := by
+  have hH : (Tᴴ * T - N • (1 : Matrix n n 𝕜)).IsHermitian :=
+    (Matrix.isHermitian_conjTranspose_mul_self T).sub (isHermitian_real_smul_one N)
+  rw [add_smul]
+  exact sub_le_iff_le_add'.mp (hH.le_smul_one_of_specNorm_le h)
+
+/-- If the Gram matrix of $\mathbf{T}$ is within $\varepsilon$ of $N\mathbf{I}$ in spectral norm,
+$\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - N\mathbf{I}\|_2 \le \varepsilon$, then
+$(N - \varepsilon)\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$. With $N$ the number of
+rows of a sketch it is the lower Loewner bound of an unnormalised sketch. -/
+theorem sub_smul_one_le_conjTranspose_mul_self_of_specNorm_sub_smul_one_le [DecidableEq n]
+    {T : Matrix m n 𝕜} {N ε : ℝ} (h : specNorm (Tᴴ * T - N • (1 : Matrix n n 𝕜)) ≤ ε) :
+    (N - ε) • (1 : Matrix n n 𝕜) ≤ Tᴴ * T := by
+  have hH : (Tᴴ * T - N • (1 : Matrix n n 𝕜)).IsHermitian :=
+    (Matrix.isHermitian_conjTranspose_mul_self T).sub (isHermitian_real_smul_one N)
+  rw [sub_smul, sub_le_iff_le_add]
+  exact neg_le_sub_iff_le_add.mp (hH.neg_smul_one_le_of_specNorm_le h)
+
 /-- If the Gram matrix of $\mathbf{T}$ is within $\varepsilon$ of the identity in spectral norm,
 then $(1 - \varepsilon)\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$. This turns the
 Gram-error form of a subspace embedding, $\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - \mathbf{I}\|_2 \le
@@ -376,11 +400,8 @@ Gram-error form of a subspace embedding, $\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - 
 `NLAlib.mul_specNorm_sq_le_of_smul_one_le` consumes. -/
 theorem one_sub_smul_one_le_conjTranspose_mul_self_of_specNorm_le [DecidableEq n]
     {T : Matrix m n 𝕜} {ε : ℝ} (h : specNorm (Tᴴ * T - 1) ≤ ε) :
-    (1 - ε) • (1 : Matrix n n 𝕜) ≤ Tᴴ * T := by
-  have hH : (Tᴴ * T - 1).IsHermitian :=
-    (Matrix.isHermitian_conjTranspose_mul_self T).sub Matrix.isHermitian_one
-  rw [sub_smul, one_smul, sub_le_iff_le_add]
-  exact neg_le_sub_iff_le_add.mp (hH.neg_smul_one_le_of_specNorm_le h)
+    (1 - ε) • (1 : Matrix n n 𝕜) ≤ Tᴴ * T :=
+  sub_smul_one_le_conjTranspose_mul_self_of_specNorm_sub_smul_one_le (N := 1) (by rwa [one_smul])
 
 /-- If the Gram matrix of $\mathbf{T}$ is within $\varepsilon$ of the identity in spectral norm,
 then $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq (1 + \varepsilon)\mathbf{I}$. This turns the
@@ -389,11 +410,8 @@ Gram-error form of a subspace embedding, $\|\mathbf{T}^{\mathsf{H}}\mathbf{T} - 
 `NLAlib.specNorm_mul_sq_le_of_conjTranspose_mul_self_le` consumes. -/
 theorem conjTranspose_mul_self_le_one_add_smul_one_of_specNorm_le [DecidableEq n]
     {T : Matrix m n 𝕜} {ε : ℝ} (h : specNorm (Tᴴ * T - 1) ≤ ε) :
-    Tᴴ * T ≤ (1 + ε) • (1 : Matrix n n 𝕜) := by
-  have hH : (Tᴴ * T - 1).IsHermitian :=
-    (Matrix.isHermitian_conjTranspose_mul_self T).sub Matrix.isHermitian_one
-  rw [add_smul, one_smul]
-  exact sub_le_iff_le_add'.mp (hH.le_smul_one_of_specNorm_le h)
+    Tᴴ * T ≤ (1 + ε) • (1 : Matrix n n 𝕜) :=
+  conjTranspose_mul_self_le_add_smul_one_of_specNorm_sub_smul_one_le (N := 1) (by rwa [one_smul])
 
 /-! ### Positive semidefinite matrices -/
 
