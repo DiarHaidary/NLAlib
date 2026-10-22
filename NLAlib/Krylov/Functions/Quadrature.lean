@@ -53,8 +53,8 @@ tridiagonal theory: the compression lemmas of `NLAlib.Krylov.Basic.Compression` 
   the $2\varepsilon\|\mathbf{b}\|^2$ bound, with its analytic and Lipschitz rates.
 * `NLAlib.HasOrthonormalCols.lanczosQuadrature_eq_interpolatoryQuadrature`: the Lanczos rule is
   the Gauss rule of the spectral measure.
-* `NLAlib.HasOrthonormalCols.lanczosQuadrature_real_singleton_pos`: positive weights below
-  the grade.
+* `NLAlib.HasOrthonormalCols.lanczosQuadrature_real_singleton_pos`: positive weights at the
+  Ritz values.
 -/
 
 @[expose] public section
@@ -96,14 +96,15 @@ theorem integral_lanczosQuadrature (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : 
     ∫ x, f x ∂lanczosQuadrature A b q = RCLike.re (star b ⬝ᵥ lanczosFA A f b q) := by
   sorry
 
-/-- The Lanczos rule in any orthonormal basis of the Krylov space: for Hermitian
+/-- The Lanczos rule in any orthonormal basis of the Krylov space: for every square
 $\mathbf{A}$ and $\mathbf{Q}$ with orthonormal columns spanning
 $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$,
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q) =
 \mu_{\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q},\,\mathbf{Q}^{\mathsf{H}}\mathbf{b}}$; its atoms
-are the Ritz values. -/
+are the Ritz values. Both sides are $0$ when $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is not
+Hermitian. -/
 theorem HasOrthonormalCols.lanczosQuadrature_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
-    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) :
     lanczosQuadrature A b q = spectralMeasure (Qᴴ * A * Q) (Qᴴ *ᵥ b) := by
   sorry
@@ -125,7 +126,7 @@ $f : \mathbb{R} \to \mathbb{R}$ and every $q$,
 $$\int f\,d\,\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q + 1) =
 \|\mathbf{b}\|^2\operatorname{Re}\,\mathbf{e}_0^{\mathsf{H}}f(\mathbf{T})\mathbf{e}_0\,,$$
 with $\mathbf{T}$ the tridiagonal matrix of $q + 1$ steps of the Lanczos recurrence.
-[GolubMeurant2010, Theorem 6.6] (locator from the quarry). -/
+[GolubMeurant2010, Ch. 6] (locator from the quarry). -/
 theorem _root_.Matrix.IsHermitian.integral_lanczosQuadrature_succ {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     ∫ x, f x ∂lanczosQuadrature A b (q + 1) =
@@ -269,7 +270,7 @@ _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_li
 
 /-! ### The orthogonal-polynomial reading -/
 
-/-- **Distinct Ritz values below the grade**: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
+/-- Distinct Ritz values below the grade: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
 orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$ and $q$ at most the grade
 of $\mathbf{b}$, the compression $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ has exactly $q$
 distinct eigenvalues: a nodal polynomial of fewer Ritz values would make $\pi(\mathbf{A})\mathbf{b}$
@@ -285,7 +286,7 @@ $\mathbf{Q}$ with orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathb
 nodal polynomial $\pi(z) = \prod_{\theta\in s}(z - \theta)$ of the set $s$ of distinct Ritz values
 (the eigenvalues of $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$) is orthogonal in
 $L^2(\mu_{\mathbf{A},\mathbf{b}})$ to every real polynomial of degree less than $q$.
-[GolubMeurant2010, §4]; there through the Lanczos polynomials. -/
+[GolubMeurant2010, Ch. 4]; there through the Lanczos polynomials. -/
 theorem HasOrthonormalCols.isOrthogonalPolynomial_nodal {Q : Matrix n r 𝕜}
     (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) {s : Finset ℝ}
@@ -295,31 +296,32 @@ theorem HasOrthonormalCols.isOrthogonalPolynomial_nodal {Q : Matrix n r 𝕜}
 
 /-- **Lanczos quadrature is the Gauss rule of the spectral measure**: for Hermitian
 $\mathbf{A}$, $\mathbf{Q}$ with orthonormal columns spanning
-$\mathcal{K}_q(\mathbf{A}, \mathbf{b})$ and $q$ at most the grade of $\mathbf{b}$,
+$\mathcal{K}_q(\mathbf{A}, \mathbf{b})$ and every $q$,
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)$ is the interpolatory rule of
-$\mu_{\mathbf{A},\mathbf{b}}$ at the set $s$ of the $q$ distinct Ritz values (the eigenvalues of
-$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$).
+$\mu_{\mathbf{A},\mathbf{b}}$ at the set $s$ of the distinct Ritz values (the eigenvalues of
+$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$), $q$ of them when $q$ is at most the grade of
+$\mathbf{b}$. Past the grade both sides are $\mu_{\mathbf{A},\mathbf{b}}$ itself.
 [GolubMeurant2010, Theorem 6.6] (locator from the quarry).
 Result: lanczos-gauss-quadrature -/
 theorem HasOrthonormalCols.lanczosQuadrature_eq_interpolatoryQuadrature {Q : Matrix n r 𝕜}
     (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
-    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b)
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q)
     {s : Finset ℝ} (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
     lanczosQuadrature A b q = interpolatoryQuadrature (spectralMeasure A b) s := by
   sorry
 
-/-- **Every Ritz value below the grade carries positive weight**: for Hermitian $\mathbf{A}$,
-$\mathbf{Q}$ with orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at
-most the grade of $\mathbf{b}$ and a Ritz value $x$ (an eigenvalue of
-$\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$),
+/-- Every Ritz value carries positive weight: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
+orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, every $q$ and a Ritz
+value $x$ (an eigenvalue of $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$),
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)(\{x\}) > 0$; so the support of the
 Lanczos rule is exactly the set of Ritz values. The weight is
 $\int\ell_x\,d\mu_{\mathbf{A},\mathbf{b}} = \|\ell_x(\mathbf{A})\mathbf{b}\|^2$, $\ell_x$ the
 Lagrange basis polynomial of $x$ at the Ritz values, and $\ell_x(\mathbf{A})\mathbf{b} \ne
-\mathbf{0}$ because $\ell_x$ is a nonzero polynomial of degree less than the grade. -/
+\mathbf{0}$ because $\ell_x$ is a nonzero polynomial of degree less than
+$\dim\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, which is at most the grade. -/
 theorem HasOrthonormalCols.lanczosQuadrature_real_singleton_pos {Q : Matrix n r 𝕜}
     (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
-    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b)
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q)
     {x : ℝ} (hx : x ∈ spectrum ℝ (Qᴴ * A * Q)) :
     0 < (lanczosQuadrature A b q).real {x} := by
   sorry

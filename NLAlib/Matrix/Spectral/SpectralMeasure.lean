@@ -152,7 +152,7 @@ theorem _root_.Matrix.IsHermitian.integral_eval_spectralMeasure {A : Matrix n n 
 /-- The moments of the spectral measure of a Hermitian $\mathbf{A}$:
 $\int x^k\,d\mu_{\mathbf{A},\mathbf{b}} =
 \operatorname{Re}\,\mathbf{b}^{\mathsf{H}}\mathbf{A}^k\mathbf{b}$. -/
-theorem _root_.Matrix.IsHermitian.integral_spectralMeasure_pow {A : Matrix n n 𝕜}
+theorem _root_.Matrix.IsHermitian.integral_pow_spectralMeasure {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (k : ℕ) :
     ∫ x, x ^ k ∂spectralMeasure A b = RCLike.re (quadForm (A ^ k) b) := by
   have h := hA.integral_eval_spectralMeasure b (X ^ k)
@@ -212,14 +212,16 @@ theorem HasOrthonormalCols.spectralMeasure_eq_sum {U : Matrix n r 𝕜} (hU : Ha
       ∑ i, ENNReal.ofReal (‖(Uᴴ *ᵥ b) i‖ ^ 2) • Measure.dirac (d i) := by
   sorry
 
-/-- Isometric invariance: for $\mathbf{U}$ with orthonormal columns and a Hermitian
+/-- Isometric invariance: for $\mathbf{U}$ with orthonormal columns and every square
 $\mathbf{T}$ on its column index,
 $\mu_{\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}},\,\mathbf{U}\mathbf{c}} =
 \mu_{\mathbf{T},\mathbf{c}}$. The padding eigenvalue $0$ of
 $\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}$ carries no weight from $\mathbf{U}\mathbf{c}$; for
-a square $\mathbf{U}$ this is unitary invariance. -/
+a square $\mathbf{U}$ this is unitary invariance. For a non-Hermitian $\mathbf{T}$ both sides are
+$0$, since $\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}$ is Hermitian exactly when $\mathbf{T}$
+is. -/
 theorem HasOrthonormalCols.spectralMeasure_mul_mul_conjTranspose {U : Matrix n r 𝕜}
-    (hU : HasOrthonormalCols U) {T : Matrix r r 𝕜} (hT : T.IsHermitian) (c : r → 𝕜) :
+    (hU : HasOrthonormalCols U) (T : Matrix r r 𝕜) (c : r → 𝕜) :
     spectralMeasure (U * T * Uᴴ) (U *ᵥ c) = spectralMeasure T c := by
   sorry
 
@@ -245,7 +247,7 @@ theorem _root_.Matrix.IsHermitian.rayleighQuotient_eq_integral_div {A : Matrix n
     (hA : A.IsHermitian) (b : n → 𝕜) :
     rayleighQuotient A b =
       (∫ x, x ∂spectralMeasure A b) / (spectralMeasure A b).real Set.univ := by
-  have h := hA.integral_spectralMeasure_pow b 1
+  have h := hA.integral_pow_spectralMeasure b 1
   simp only [pow_one] at h
   rw [rayleighQuotient, h, hA.spectralMeasure_real_univ]
 

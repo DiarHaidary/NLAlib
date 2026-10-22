@@ -1402,8 +1402,8 @@ out in full; theorems not listed under "Proved now" are `sorry`. Changes against
   (`measureReal_univ_lanczosQuadrature`), `HasOrthonormalCols.lanczosQuadrature_real_singleton_pos`
   (`measureReal_lanczosQuadrature_singleton_pos`) and, for the same token,
   `Matrix.IsHermitian.norm_star_dotProduct_sq_le_spectralMeasure_real`
-  (`…_le_measureReal_spectralMeasure`). The moment form is
-  `Matrix.IsHermitian.integral_spectralMeasure_pow` (`integral_pow_spectralMeasure`, N6). KS3c
+  (`…_le_measureReal_spectralMeasure`). The moment form keeps the note's
+  `Matrix.IsHermitian.integral_pow_spectralMeasure` (review entry below). KS3c
   wrote the Ritz-value set as `(Qᴴ * A * Q).finite_real_spectrum.toFinset`, a proof term in the
   statement (T9): `HasOrthonormalCols.card_spectrum_conjTranspose_mul_mul_eq` concludes
   `Nat.card (spectrum ℝ (Qᴴ * A * Q)) = q`, and `isOrthogonalPolynomial_nodal` and
@@ -1411,7 +1411,7 @@ out in full; theorems not listed under "Proved now" are `sorry`. Changes against
   `hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)`.
 * **Review warnings left.** P10 on the three `PowerIteration.lean` statements (Matrix vocabulary
   only; placed in `Krylov/Eigenvalues` per D12 and §6) and V7 on `evenChebyshevFilter` (no §5.3
-  row was proposed for it); both for the maintainer.
+  row was proposed for it); both for the maintainer. V7 is cleared on review by a §5.3 row.
 * **No `open Classical in`** on `spectralMeasure`: the indicator `if t = x` uses Mathlib's
   decidable equality of ℝ, which avoids an instance mismatch in proofs.
 * **API added.** `eval_evenChebyshevFilter` (for $x \ge 0$, $b_k(x) = U_{2k}(\sqrt{x})/(2k + 1)$),
@@ -1462,3 +1462,21 @@ out in full; theorems not listed under "Proved now" are `sorry`. Changes against
 * **Vocabulary.** CONTRIBUTING §5.3 has the seven rows of §2 (spectral measure, empirical
   spectral measure, angle, moment matching with the SD3 support hypothesis, orthogonality, Gauss
   rule, Lanczos rule); `docs/constants.toml` has the two named bounds.
+* **Review, 2026-10-22: minimal hypotheses (T13, CONTRIBUTING §5.2).** Dropped as unneeded:
+  `hT : T.IsHermitian` from `HasOrthonormalCols.spectralMeasure_mul_mul_conjTranspose`
+  ($\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}$ is Hermitian exactly when $\mathbf{T}$ is, and
+  both sides are $0$ otherwise; `T` is now explicit); `hA : A.IsHermitian` from
+  `HasOrthonormalCols.lanczosQuadrature_eq` (the definition and the frame form are both spectral
+  measures of the same compression, by the isometric invariance above); `hq : q ≤ krylovGrade A b`
+  from `HasOrthonormalCols.lanczosQuadrature_eq_interpolatoryQuadrature` and
+  `HasOrthonormalCols.lanczosQuadrature_real_singleton_pos` (past the grade the Krylov space is
+  invariant and the rule is $\mu_{\mathbf{A},\mathbf{b}}$ itself, the interpolatory rule at its
+  own support; $\deg\ell_x < \dim\mathcal{K}_q \le$ grade still gives
+  $\ell_x(\mathbf{A})\mathbf{b} \ne \mathbf{0}$). `hq` stays on
+  `HasOrthonormalCols.card_spectrum_conjTranspose_mul_mul_eq`, whose count $q$ is false past the
+  grade. Docstrings say what holds past the grade.
+* **Review, 2026-10-22: `integral_pow_spectralMeasure` (N6).** The moment form is renamed back to
+  the note's `Matrix.IsHermitian.integral_pow_spectralMeasure`, Mathlib's `integral_pow` idiom:
+  the power follows its argument `x`. The checker's N6 report on this name, which led to the
+  skeleton's `integral_spectralMeasure_pow`, is a false positive (it reads `spectralMeasure` as the
+  argument of `pow`); it is allowlisted in `scripts/names_allow.toml`.

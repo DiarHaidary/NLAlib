@@ -27,3 +27,8 @@ reason = "an ext lemma is named for the hypothesis it compares (`quadForm A z = 
 name = "NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le"
 rule = "N17"
 reason = "the derived name drops the right-side `mul_add` and collides with the consistent form `exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_mul_log_le`; the right side tells the two apart (N8)"
+
+[[allow]]
+name = "Matrix.IsHermitian.integral_pow_spectralMeasure"
+rule = "N6"
+reason = "Mathlib's `integral_pow` idiom (the integrand `x ^ k` is the argument of `integral_`, the measure follows); `pow` comes after its argument `x`, the checker reads `spectralMeasure` as its argument"

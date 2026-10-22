@@ -107,7 +107,7 @@ theorem MatchesMoments.measureReal_univ_eq (h : MatchesMoments μ ν N) (hN : 0 
     exact_mod_cast hN)
   simpa only [eval_C, integral_const, smul_eq_mul, mul_one] using h1
 
-/-- **Moment matching transfers uniform approximation**: let $\mu$ and $\nu$ be finite
+/-- Moment matching transfers uniform approximation: let $\mu$ and $\nu$ be finite
 measures supported in $[a, b]$ that match their first $N$ moments, $f$ integrable against both,
 and $p$ a real polynomial of degree less than $N$ within $\varepsilon$ of $f$ on $[a, b]$. Then
 $$\Bigl\lvert\int f\,d\mu - \int f\,d\nu\Bigr\rvert \le

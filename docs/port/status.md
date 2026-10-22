@@ -17,6 +17,17 @@ lemma, flagged: intended home `Eigenvalues.lean`), `Probability/Distributions/Ga
 `Probability/Measurability/{Matrix, Krylov}.lean`. Next: proofs, one file at a time, in the
 order of the note's §6 adjusted by the skeleton report.
 
+Open item, before the round closes: the printed constants of Kuczyński and Woźniakowski
+(`KuczynskiWozniakowski1992`) are not yet checked. The docstrings of `randomStartPowerBound` and
+`randomStartLanczosBound` (`Estimation/Spectral/RandomStart.lean`),
+`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`
+(`Krylov/Eigenvalues/PowerIteration.lean`) and
+`Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq`
+(`Krylov/Eigenvalues/Ritz.lean`) cite the paper with locators from the quarry and say only that
+the printed constant is to be compared. Each must be checked against the paper, and the
+docstring must state the source's value, the value proved and the gap (CONTRIBUTING §5.2, rule
+2).
+
 ## Consolidation round complete (2026-10-22)
 
 Branch `cleanup/consolidation` (worktree `nlalib-block`), from `dd2eaf7`. Design note

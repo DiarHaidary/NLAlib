@@ -92,8 +92,11 @@ $\tan^2\angle(\mathbf{b}, E_{\lambda_0})$ the ratio
 $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{\lambda_0\})/
 \mu_{\mathbf{A},\mathbf{b}}(\{\lambda_0\})$ of the spectral measure.
 Sharp form: $1/T_q((1 + \varepsilon)/(1 - \varepsilon))^2$ in place of $4e^{-4q\sqrt\varepsilon}$
-(`exp_mul_sqrt_div_two_le_eval_T_real`; the factor lost tends to 1). Incomparable with
-`Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq`: this bound is
+(`exp_mul_sqrt_div_two_le_eval_T_real`); the factor lost is
+$e^{4q(\operatorname{artanh}\sqrt\varepsilon - \sqrt\varepsilon)}(1 + \rho^{2q})^2$ with
+$\rho = (1 - \sqrt\varepsilon)/(1 + \sqrt\varepsilon)$, which is unbounded in $q$ at fixed
+$\varepsilon$ (its exponent is about $4q\varepsilon^{3/2}/3$ for small $\varepsilon$). Incomparable
+with `Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq`: this bound is
 better for a fixed target accuracy with a good start, that one needs no $\varepsilon$ and degrades
 only logarithmically with a poor start. [MuscoMusco2015, Theorem 1] (single-vector case; locator
 to check; the library cites this paper as Theorem 10 (proof), Lemmas 2, 5, 9 and Algorithm 2, all
