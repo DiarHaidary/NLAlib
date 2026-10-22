@@ -10,6 +10,7 @@ public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpo
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Metric
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
 public import Mathlib.MeasureTheory.Function.SpecialFunctions.Inner
+public import Mathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableSelection
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.Matrix.Perturbation.Continuity
@@ -31,7 +32,9 @@ measurable. The chosen SVD (`NLAlib.svdU`, `NLAlib.svdV`) is measurable by the m
 selection theorem `IsClosed.measurable_of_forall_toLex_equivFun_le`: it is the lexicographically
 least point of the closed set of SVDs.
 
-Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
+Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`. A bounded measurable function
+of a random matrix is integrable on a finite measure space; the squared projection residuals are
+recorded here.
 
 ## Main results
 
@@ -40,6 +43,9 @@ Matrices carry the product σ-algebra `Matrix.instMeasurableSpace`.
 * `NLAlib.measurableSet_setOf_posDef`: the positive definite matrices form a measurable set.
 * `NLAlib.measurable_rank`, `NLAlib.measurable_pinv`, `NLAlib.measurable_rangeProjector`,
   `NLAlib.measurable_pseudoConditionNumber`.
+* `NLAlib.integrable_frobNorm_one_sub_rangeProjector_mul_sq`,
+  `NLAlib.integrable_specNorm_one_sub_rangeProjector_mul_sq`: a squared projection residual of a
+  random sketch is integrable, being bounded.
 * `NLAlib.measurable_mul_conjTranspose_inv`: the inverse Gram matrix
   $(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$; `NLAlib.measurable_rsvd`,
   `NLAlib.measurable_generalizedNystrom`, `NLAlib.measurable_nystrom`: the randomized SVD and
@@ -165,6 +171,46 @@ theorem measurable_rangeProjector :
     funext fun A => (mul_pinv A).symm
   rw [h]
   exact measurable_id.matrix_mul measurable_pinv
+
+section Integrable
+
+open MeasureTheory
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
+
+/-- The squared Frobenius norm of a projection residual,
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{Y}})\mathbf{M}\|_{\mathsf{F}}^2$, is integrable for
+an almost everywhere measurable random $\mathbf{Y}$ on a finite measure space: it is measurable
+and at most $\|\mathbf{M}\|_{\mathsf{F}}^2$. -/
+theorem integrable_frobNorm_one_sub_rangeProjector_mul_sq [IsFiniteMeasure μ] [DecidableEq m]
+    {k p : Type*} [Fintype k] [Fintype p] (B : Matrix m n 𝕜) (M : Matrix m p 𝕜)
+    {Y : Ω → Matrix n k 𝕜} (hY : AEMeasurable Y μ) :
+    Integrable (fun ω => frobNorm ((1 - rangeProjector (B * Y ω)) * M) ^ 2) μ := by
+  have hm : Measurable fun Z : Matrix n k 𝕜 => frobNorm ((1 - rangeProjector (B * Z)) * M) ^ 2 :=
+    (measurable_frobNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
+      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
+  exact Integrable.of_bound (hm.comp_aemeasurable hY).aestronglyMeasurable (frobNorm M ^ 2)
+    (Filter.Eventually.of_forall fun ω => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+      exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_one_sub_rangeProjector_mul_le _ _) 2)
+
+/-- The squared spectral norm of a projection residual,
+$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{Y}})\mathbf{M}\|_2^2$, is integrable for an almost
+everywhere measurable random $\mathbf{Y}$ on a finite measure space: it is measurable and at most
+$\|\mathbf{M}\|_2^2$. -/
+theorem integrable_specNorm_one_sub_rangeProjector_mul_sq [IsFiniteMeasure μ] [DecidableEq m]
+    {k p : Type*} [Fintype k] [Fintype p] (B : Matrix m n 𝕜) (M : Matrix m p 𝕜)
+    {Y : Ω → Matrix n k 𝕜} (hY : AEMeasurable Y μ) :
+    Integrable (fun ω => specNorm ((1 - rangeProjector (B * Y ω)) * M) ^ 2) μ := by
+  have hm : Measurable fun Z : Matrix n k 𝕜 => specNorm ((1 - rangeProjector (B * Z)) * M) ^ 2 :=
+    (measurable_specNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
+      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
+  exact Integrable.of_bound (hm.comp_aemeasurable hY).aestronglyMeasurable (specNorm M ^ 2)
+    (Filter.Eventually.of_forall fun ω => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+      exact pow_le_pow_left₀ (specNorm_nonneg _) (specNorm_one_sub_rangeProjector_mul_le _ _) 2)
+
+end Integrable
 
 /-- The pseudo-condition number $\mathbf{A} \mapsto \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$ is
 measurable. -/
