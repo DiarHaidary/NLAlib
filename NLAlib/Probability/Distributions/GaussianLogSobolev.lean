@@ -45,50 +45,6 @@ private lemma norm_fderiv_sq_eq (g : ℝ → ℝ) (x : ℝ) : ‖fderiv ℝ g x�
 
 /-! ### From compact support to the integrable case on the line -/
 
-/-- Smooth cutoffs $c_n = \chi(\cdot / (n + 1))$: $C^1$, compactly supported, with values in
-$[0, 1]$ and derivatives bounded uniformly in $n$, and eventually equal to $1$ near every point. -/
-private lemma exists_cutoff : ∃ (c : ℕ → ℝ → ℝ) (K : ℝ), (∀ n, ContDiff ℝ 1 (c n)) ∧
-    (∀ n, HasCompactSupport (c n)) ∧ (∀ n x, 0 ≤ c n x ∧ c n x ≤ 1) ∧
-    (∀ n x, |deriv (c n) x| ≤ K) ∧ (∀ x, ∀ᶠ n in atTop, c n =ᶠ[𝓝 x] fun _ => 1) := by
-  -- a fixed smooth cutoff `χ`, equal to `1` on `[-1,1]` and supported in `[-2,2]`
-  let χ : ContDiffBump (0 : ℝ) := ⟨1, 2, by norm_num, by norm_num⟩
-  have hχc : ContDiff ℝ 1 (fun x => χ x) := χ.contDiff
-  obtain ⟨K, hK⟩ := (hχc.continuous_deriv le_rfl).bounded_above_of_compact_support
-    χ.hasCompactSupport.deriv
-  have hnpos : ∀ n : ℕ, (0 : ℝ) < (n : ℝ) + 1 := fun n => by positivity
-  have hc_one : ∀ (n : ℕ) (x : ℝ), |x| < (n : ℝ) + 1 → χ (x / ((n : ℝ) + 1)) = 1 := by
-    intro n x hx
-    apply χ.one_of_mem_closedBall
-    rw [Metric.mem_closedBall, dist_zero_right, Real.norm_eq_abs, abs_div,
-      abs_of_pos (hnpos n), div_le_one (hnpos n)]
-    exact hx.le
-  refine ⟨fun n x => χ (x / ((n : ℝ) + 1)), K, fun n => hχc.comp (contDiff_id.div_const _),
-    fun n => ?_, fun n x => ⟨χ.nonneg, χ.le_one⟩, fun n x => ?_, fun x => ?_⟩
-  · apply HasCompactSupport.intro (isCompact_closedBall (0 : ℝ) (2 * ((n : ℝ) + 1)))
-    intro x hx
-    rw [Metric.mem_closedBall, dist_zero_right, Real.norm_eq_abs, not_le] at hx
-    apply χ.zero_of_le_dist
-    rw [dist_zero_right, Real.norm_eq_abs, abs_div, abs_of_pos (hnpos n), le_div_iff₀ (hnpos n)]
-    exact hx.le
-  · have h1 : HasDerivAt (fun x : ℝ => x / ((n : ℝ) + 1)) (1 / ((n : ℝ) + 1)) x :=
-      (hasDerivAt_id x).div_const _
-    have h2 := ((hχc.differentiable one_ne_zero) (x / ((n : ℝ) + 1))).hasDerivAt.comp x h1
-    have h2' : deriv (fun x => χ (x / ((n : ℝ) + 1))) x =
-        deriv (fun x => χ x) (x / ((n : ℝ) + 1)) * (1 / ((n : ℝ) + 1)) := h2.deriv
-    rw [h2', abs_mul, abs_of_pos (by positivity : (0 : ℝ) < 1 / ((n : ℝ) + 1))]
-    have := hK (x / ((n : ℝ) + 1))
-    rw [Real.norm_eq_abs] at this
-    have h3 : 1 / ((n : ℝ) + 1) ≤ 1 := by
-      rw [div_le_one (hnpos n)]; linarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
-    nlinarith [abs_nonneg (deriv (fun x => χ x) (x / ((n : ℝ) + 1)))]
-  · refine eventually_atTop.2 ⟨⌈|x|⌉₊, fun n hn => ?_⟩
-    have hx : |x| < (n : ℝ) + 1 := by
-      have := Nat.le_ceil |x|
-      have : (⌈|x|⌉₊ : ℝ) ≤ n := by exact_mod_cast hn
-      linarith
-    filter_upwards [(isOpen_lt continuous_abs continuous_const).mem_nhds hx] with y hy
-    exact hc_one n y hy
-
 /-- Gross's inequality on $\mathbb{R}$ for $g$ with $g^2$, $g^2 \log g^2$ and $g'^2$ integrable,
 from the compactly supported case by a smooth cutoff $g\, \chi(\cdot / (n + 1))$ and dominated
 convergence. -/
@@ -97,7 +53,11 @@ private lemma entropy_sq_le_gaussianReal_of_integrable {g : ℝ → ℝ} (hg : C
     (hglog : Integrable (fun x => g x ^ 2 * Real.log (g x ^ 2)) (gaussianReal 0 1))
     (hdg : Integrable (fun x => deriv g x ^ 2) (gaussianReal 0 1)) :
     entropy (gaussianReal 0 1) (fun x => g x ^ 2) ≤ 2 * ∫ x, deriv g x ^ 2 ∂gaussianReal 0 1 := by
-  obtain ⟨c, K, hc_contDiff, hc_supp, hc01, hc_deriv_bound, hc_one⟩ := exists_cutoff
+  obtain ⟨c, K, hc_contDiff, hc_supp, hc01, hc_deriv_bound, hc_one⟩ :=
+    exists_seq_contDiff_hasCompactSupport_eventuallyEq_one (E := ℝ)
+  replace hc_deriv_bound (n : ℕ) (x : ℝ) : |deriv (c n) x| ≤ K := by
+    rw [← Real.norm_eq_abs, norm_deriv_eq_norm_fderiv]
+    exact hc_deriv_bound n x
   have hgd : Differentiable ℝ g := hg.differentiable one_ne_zero
   let gn : ℕ → ℝ → ℝ := fun n x => g x * c n x
   have hgn_contDiff : ∀ n, ContDiff ℝ 1 (gn n) := fun n => hg.mul (hc_contDiff n)
