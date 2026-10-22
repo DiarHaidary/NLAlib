@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Probability.Martingale.Basic
+public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.Probability.MatrixConcentration.ConditionalMGFBound
 
@@ -59,11 +60,6 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsProbabilityMeasure μ]
   {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n] {ℱ : Filtration ℕ mΩ}
-
-/-- Monotonicity of `μ.real` along an almost-everywhere inclusion: $\mu(s) \le \mu(t)$ when
-$s \subseteq t$ almost everywhere. -/
-private theorem measureReal_mono_ae' {s t : Set Ω} (h : s ≤ᵐ[μ] t) : μ.real s ≤ μ.real t :=
-  ENNReal.toReal_mono (measure_ne_top μ t) (measure_mono_ae h)
 
 namespace HasCondMatrixMGFBound
 
@@ -191,7 +187,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le [Nonempty n]
           (re_trace_exp_add_real_smul_one _ _).symm
       _ ≤ _ := Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le
           (hθY.add ((IsSelfAdjoint.all _).smul (Matrix.isHermitian_one))) hle
-  refine (measureReal_mono_ae' hsub).trans (hV.trans_eq ?_)
+  refine (measureReal_mono_ae hsub).trans (hV.trans_eq ?_)
   rw [h0, div_eq_mul_inv, ← Real.exp_neg]
   ring_nf
 
@@ -278,7 +274,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
     rintro ⟨k, hk1, hk2⟩
     exact ⟨k, hk1, Matrix.IsHermitian.le_smul_one_of_specNorm_le
       (isSelfAdjoint_sum _ fun j _ => hω j) hk2⟩
-  refine (measureReal_mono_ae' hsub).trans (hM.trans ?_)
+  refine (measureReal_mono_ae hsub).trans (hM.trans ?_)
   exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr hθb) (Nat.cast_nonneg _)
 
 /-- **The martingale matrix Bernstein inequality**: Freedman's inequality with an almost sure
@@ -303,7 +299,7 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman_of_ae_le [Nonempty
     filter_upwards [ae_all_iff.mpr hv] with ω hω
     rintro ⟨k, hk⟩
     exact ⟨k, hk, hω k⟩
-  exact (measureReal_mono_ae' hsub).trans
+  exact (measureReal_mono_ae hsub).trans
     (measureReal_exists_eigenvalue_zero_sum_ge_le_freedman hX hX2 hmean hL hle ht)
 
 /-- **Freedman's inequality for rectangular matrix martingales.** For rectangular increments
@@ -356,7 +352,7 @@ theorem measureReal_exists_specNorm_sum_ge_le_freedman [Nonempty n] {r : Type*} 
     · rwa [← dilation_sum, eigenvalue_zero_dilation]
     · rwa [Finset.sum_congr rfl fun j _ => hω j, Matrix.sum_fromBlocks, Finset.sum_const_zero,
         Finset.sum_const_zero, specNorm_fromBlocks_zero₁₂_zero₂₁]
-  refine (measureReal_mono_ae' hsub).trans (hF.trans_eq ?_)
+  refine (measureReal_mono_ae hsub).trans (hF.trans_eq ?_)
   rw [Fintype.card_sum, Nat.cast_add]
 
 end NLAlib
