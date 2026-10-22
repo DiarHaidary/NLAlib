@@ -84,27 +84,23 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n p r s : 
 /-! ### The basis step -/
 
 omit [Fintype r] in
-/-- Orthonormal bases of $\operatorname{range}\mathbf{X}$ and of its orthogonal complement; the
-second reproduces every residual $(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$. -/
-private theorem exists_frames (X : Matrix m s ℝ) (B : Matrix m r ℝ) :
-    ∃ (t : ℕ) (Q₁ : Matrix m (Fin X.rank) ℝ) (Q₂ : Matrix m (Fin t) ℝ),
+/-- Complementary orthonormal frames $\mathbf{Q}_1$ of $\operatorname{range}\mathbf{X}$ and
+$\mathbf{Q}_2$ of its orthogonal complement; the second reproduces every residual
+$(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$. -/
+private theorem exists_compl_frames (X : Matrix m s ℝ) (B : Matrix m r ℝ) :
+    ∃ (Q₁ : Matrix m (Fin X.rank) ℝ) (Q₂ : Matrix m (Fin (Fintype.card m - X.rank)) ℝ),
       HasOrthonormalCols Q₁ ∧ HasOrthonormalCols Q₂ ∧ Q₁ᴴ * Q₂ = 0 ∧
         LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin ∧
           Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B := by
-  obtain ⟨Q₁, hQ₁, hR₁⟩ := exists_hasOrthonormalCols_range_eq (p := Fin X.rank) X
-    (Fintype.card_fin _)
-  obtain ⟨Q₂, hQ₂, hR₂⟩ := exists_hasOrthonormalCols_range_eq
-    (p := Fin (1 - rangeProjector X).rank) (1 - rangeProjector X) (Fintype.card_fin _)
-  refine ⟨_, Q₁, Q₂, hQ₁, hQ₂, ?_, hR₁, ?_⟩
-  · obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp hR₂.le
-    have hP : rangeProjector X = Q₁ * Q₁ᴴ := by
-      rw [← rangeProjector_inj.mpr hR₁, hQ₁.rangeProjector_eq]
-    have h0 : Q₁ᴴ * (1 - rangeProjector X) = 0 := by
-      rw [hP, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, hQ₁.conjTranspose_mul_self,
-        Matrix.one_mul, sub_self]
-    rw [hC, ← Matrix.mul_assoc, h0, Matrix.zero_mul]
-  · rw [← Matrix.mul_assoc, ← hQ₂.rangeProjector_eq, rangeProjector_inj.mpr hR₂,
-      ← Matrix.mul_assoc, rangeProjector_mul_self]
+  obtain ⟨Q₁, Q₂, hQ, h₁, h₂⟩ :=
+    (isStarProjection_rangeProjector X).exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
+      (p := Fin X.rank) (q := Fin (Fintype.card m - X.rank))
+      (by rw [rank_rangeProjector, Fintype.card_fin])
+      (by have := Matrix.rank_le_card_height X; simp only [Fintype.card_fin]; omega)
+  obtain ⟨hQ₁, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
+  refine ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, rangeProjector_inj.mp (hQ₁.rangeProjector_eq.trans h₁), ?_⟩
+  rw [← Matrix.mul_assoc, h₂, ← Matrix.mul_assoc,
+    (isStarProjection_one_sub_rangeProjector X).mul_self]
 
 omit [Fintype r] in
 /-- On the rank event the excess is a Gaussian block in the two bases:
@@ -157,7 +153,7 @@ theorem integrable_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMa
     Integrable (fun ω => frobNorm ((1 - obliqueProjector X (S ω)) * B) ^ 2) μ := by
   have := hS.isProbabilityMeasure
   have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
-  obtain ⟨t, Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_frames X B
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames X B
   have hrk : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
   have hint := integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
     (Q₂ᴴ * ((1 - rangeProjector X) * B))
@@ -187,7 +183,7 @@ theorem integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatr
         frobNorm ((1 - rangeProjector X) * B) ^ 2 := by
   have := hS.isProbabilityMeasure
   have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
-  obtain ⟨t, Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_frames X B
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames X B
   have hrk : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
   have hint := integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
     (Q₂ᴴ * ((1 - rangeProjector X) * B))
@@ -248,7 +244,7 @@ theorem
     Integrable
       (fun ω => specNorm (obliqueProjector X (S ω) * ((1 - rangeProjector X) * B)) ^ 2) μ := by
   have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
-  obtain ⟨t, Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_frames X B
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames X B
   have hrk : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
   have hint := integrable_specNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
     (Q₂ᴴ * ((1 - rangeProjector X) * B))
@@ -282,7 +278,7 @@ theorem
         (specNorm ((1 - rangeProjector X) * B) *
           gaussianPinvSpecNormBound X.rank (Fintype.card p)) ^ 2 := by
   have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
-  obtain ⟨t, Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_frames X B
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames X B
   have hrk : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
   have hval := integral_specNorm_pinv_mul_mul_sq_le_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
     (Q₂ᴴ * ((1 - rangeProjector X) * B))
@@ -402,7 +398,7 @@ theorem integrable_sketchAndSolve_of_hasLaw_gaussianMatrix [DecidableEq r]
   classical
   have := hS.isProbabilityMeasure
   have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
-  obtain ⟨t, Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_frames A B
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames A B
   set E := (1 - rangeProjector A) * B
   have hm : Measurable fun S₀ : Matrix p m ℝ => sketchAndSolve A S₀ B :=
     (measurable_pinv.comp (measurable_id.matrix_mul measurable_const)).matrix_mul
@@ -415,7 +411,8 @@ theorem integrable_sketchAndSolve_of_hasLaw_gaussianMatrix [DecidableEq r]
           linarith)
     simpa only [Real.rpow_one] using this
   have hW : Integrable (fun ω => frobNorm (Q₂ᴴ * (S ω)ᴴ)) μ := by
-    have := integrable_frobNorm_mul_mul_of_hasLaw_gaussianMatrix hY₂ (1 : Matrix (Fin t) (Fin t) ℝ)
+    have := integrable_frobNorm_mul_mul_of_hasLaw_gaussianMatrix hY₂
+      (1 : Matrix (Fin (Fintype.card m - A.rank)) (Fin (Fintype.card m - A.rank)) ℝ)
       (1 : Matrix p p ℝ)
     simpa only [Matrix.one_mul, Matrix.mul_one] using this
   have hind : IndepFun (fun ω => specNorm (pinv (Q₁ᴴ * (S ω)ᴴ)))
@@ -519,8 +516,8 @@ theorem integral_sketchAndSolve_of_hasLaw_gaussianMatrix [DecidableEq r]
 /-! ### Haar sketches
 
 For an $m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$ the sketch is
-$\mathbf{Q}^{\mathsf{H}}$; the proofs are those above with complementary frames and the random
-orthonormal sketching identity `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame` in
+$\mathbf{Q}^{\mathsf{H}}$; the proofs are those above with the random orthonormal sketching
+identity `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame` in
 place of the Gaussian block moment. -/
 
 variable {Q : Ω → Matrix m p ℝ}
@@ -537,34 +534,6 @@ theorem haarProjectionFactor_le_gaussianProjectionFactor {d p q : ℕ} (hqp : q 
   rw [haarProjectionFactor_def, gaussianProjectionFactor_def, add_le_add_iff_left]
   refine mul_le_of_le_one_left (div_nonneg (Nat.cast_nonneg q) (by linarith)) ?_
   exact div_le_one_of_le₀ (by linarith) (by linarith)
-
-/-! ### Haar sketches: complementary frames -/
-
-omit [Fintype r] in
-/-- Complementary orthonormal frames $\mathbf{Q}_1$ of $\operatorname{range}\mathbf{X}$ and
-$\mathbf{Q}_2$ of its orthogonal complement; the second reproduces every residual
-$(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$. -/
-private theorem exists_compl_frames (X : Matrix m s ℝ) (B : Matrix m r ℝ) :
-    ∃ (Q₁ : Matrix m (Fin X.rank) ℝ) (Q₂ : Matrix m (Fin (Fintype.card m - X.rank)) ℝ),
-      HasOrthonormalCols Q₁ ∧ HasOrthonormalCols Q₂ ∧ Q₁ᴴ * Q₂ = 0 ∧
-        LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin ∧
-          Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B := by
-  obtain ⟨Q₁, hQ₁, hR₁⟩ := exists_hasOrthonormalCols_range_eq (p := Fin X.rank) X
-    (Fintype.card_fin _)
-  have hc : Fintype.card (Fin X.rank) + Fintype.card (Fin (Fintype.card m - X.rank)) =
-      Fintype.card m := by
-    simp only [Fintype.card_fin]; have := Matrix.rank_le_card_height X; omega
-  obtain ⟨Q₂, hQ⟩ := hQ₁.exists_fromCols hc
-  obtain ⟨-, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
-  have hVV := hQ.mul_conjTranspose_add_mul_conjTranspose hc
-  have hP : rangeProjector X = Q₁ * Q₁ᴴ := by
-    rw [← rangeProjector_inj.mpr hR₁, hQ₁.rangeProjector_eq]
-  have h22 : Q₂ * Q₂ᴴ = 1 - rangeProjector X := by rw [hP, ← hVV]; abel
-  refine ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, ?_⟩
-  have hI : (1 - rangeProjector X) * (1 - rangeProjector X) = 1 - rangeProjector X := by
-    rw [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_sub, Matrix.mul_one,
-      rangeProjector_mul_rangeProjector, sub_self, sub_zero]
-  rw [← Matrix.mul_assoc, h22, ← Matrix.mul_assoc, hI]
 
 omit [DecidableEq m] in
 /-- The rank event holds almost surely for a Haar sketch:
