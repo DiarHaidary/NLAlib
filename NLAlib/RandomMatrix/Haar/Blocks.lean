@@ -363,6 +363,22 @@ theorem one_le_haarProjectionFactor {d p q : ℕ} (hqp : q + 2 ≤ p) (hpd : p �
   exact mul_nonneg (div_nonneg (by linarith) (by linarith))
     (div_nonneg (Nat.cast_nonneg q) (by linarith))
 
+/-- The Haar projection factor is bounded: <!-- value haarProjectionFactor d c q -->
+$1 + (d - c)/(d - q) \cdot (q/(c - q - 1)) \le 1 + c$ for $q + 2 \le c \le d$, the bound that
+makes the factor at a random rank integrable. -/
+theorem haarProjectionFactor_le_one_add {d q c : ℕ} (h : q + 2 ≤ c) (hcd : c ≤ d) :
+    haarProjectionFactor d c q ≤ 1 + c := by
+  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
+  have hcd' : (c : ℝ) ≤ d := by exact_mod_cast hcd
+  rw [haarProjectionFactor_def, add_le_add_iff_left]
+  have h1 : ((d : ℝ) - c) / ((d : ℝ) - q) ≤ 1 := div_le_one_of_le₀ (by linarith) (by linarith)
+  have h2 : (q : ℝ) / ((c : ℝ) - q - 1) ≤ c := by
+    rw [div_le_iff₀ (by linarith)]
+    nlinarith
+  have h3 : 0 ≤ ((d : ℝ) - c) / ((d : ℝ) - q) := div_nonneg (by linarith) (by linarith)
+  have h4 : 0 ≤ (q : ℝ) / ((c : ℝ) - q - 1) := div_nonneg (Nat.cast_nonneg q) (by linarith)
+  nlinarith
+
 /-- The Haar projection factor is monotone in the rank: the factor at the actual rank is at most
 the factor at any larger rank $q'$ with $q' + 2 \le p \le d$. -/
 theorem haarProjectionFactor_le_haarProjectionFactor {d p q q' : ℕ} (hq : q ≤ q')

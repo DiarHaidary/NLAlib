@@ -385,14 +385,6 @@ private theorem measurable_haarProjectionFactor_rank [Finite m] (A : Matrix m n 
   (measurable_from_nat (f := fun q => haarProjectionFactor d c q)).comp
     (measurable_rank.comp (measurable_const.matrix_mul measurable_id))
 
-/-- The Haar completion factor at a rank $q$ with $q + 2 \le p \le d$ lies in $[1, 1 + p]$. -/
-private theorem haarProjectionFactor_le_one_add {d q c : ℕ} (h : q + 2 ≤ c) (hcd : c ≤ d) :
-    haarProjectionFactor d c q ≤ 1 + c := by
-  refine (haarProjectionFactor_le_gaussianProjectionFactor h hcd).trans ?_
-  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
-  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
-  nlinarith
-
 /-- The right side of the identity at the random rank is integrable. -/
 private theorem integrable_haarProjectionFactor_mul [IsFiniteMeasure μ] (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hpm : Fintype.card p ≤ Fintype.card m)
