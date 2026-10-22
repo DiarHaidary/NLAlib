@@ -107,6 +107,15 @@ theorem _root_.Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul
           rw [hd, Matrix.conjTranspose_mul]
           simp only [Matrix.mul_assoc]
 
+/-- A positive definite matrix has an invertible factor:
+$\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ with $\mathbf{S}$ invertible. It splits a
+positive definite preconditioner. -/
+theorem _root_.Matrix.PosDef.exists_isUnit_eq_mul_conjTranspose {A : Matrix n n 𝕜}
+    (hA : A.PosDef) : ∃ S : Matrix n n 𝕜, IsUnit S ∧ A = S * Sᴴ := by
+  obtain ⟨S, -, hSu, hAS, -⟩ :=
+    hA.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hA.isHermitian
+  exact ⟨S, (Matrix.isUnit_iff_isUnit_det S).mpr hSu, hAS⟩
+
 /-- **The generalized eigenvalues of a definite pair** are the eigenvalues of
 $\mathbf{A}^{-1}\mathbf{B}$: if $\mathbf{S}$ is invertible,
 $\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
