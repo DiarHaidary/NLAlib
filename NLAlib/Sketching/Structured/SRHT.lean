@@ -437,7 +437,7 @@ private theorem eq_zero_of_hasLaw_srht (hS : HasLaw S (srht k F) μ)
 
 /-- Every event has probability at most one under a sketch with the SRHT law: the space is a
 probability space, or zero when $\lvert n \rvert < \lvert k \rvert$. -/
-private theorem measureReal_le_one_of_hasLaw_srht (hS : HasLaw S (srht k F) μ) (s : Set Ω) :
+theorem measureReal_le_one_of_hasLaw_srht (hS : HasLaw S (srht k F) μ) (s : Set Ω) :
     μ.real s ≤ 1 := by
   rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
   · rw [eq_zero_of_hasLaw_srht hS hk, measureReal_zero_apply]

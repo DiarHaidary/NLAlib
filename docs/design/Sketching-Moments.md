@@ -1115,3 +1115,9 @@ the note:
   `check_refs.py`, `check_constants.py`, `gen_rules_md.py --check`, `mk_all --check` clean;
   `proved_modules.py`: 383 proved, 13 not yet (the 12 files with `sorry` and
   `Estimation/Trace/HutchPlusPlusTail.lean`, which imports `LowRank/Oblivious/SubGaussian.lean`).
+
+## Changes during the proofs (2026-10-22)
+
+* **SRHT helper made public** (proof agent B): `NLAlib.measureReal_le_one_of_hasLaw_srht`
+  (`Sketching/Structured/SRHT.lean`), every event has probability at most one under the SRHT law;
+  `SRHTMultiplication.lean` needs it for the JL tail at $\varepsilon = 0$ and the size forms.

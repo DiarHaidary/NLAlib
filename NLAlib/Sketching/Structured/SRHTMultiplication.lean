@@ -73,6 +73,107 @@ section JL
 
 variable {S : Ω → Matrix k n 𝕜} {F : Matrix n n 𝕜}
 
+omit [DecidableEq n] in
+/-- The JL property at $\varepsilon > 0$ from the JL property at $\varepsilon$ with every failure
+bound $g(e)$, $0 < e < \varepsilon$, when $g$ is continuous at $\varepsilon$. -/
+private theorem hasJLProperty_of_forall_mem_Ioo {g : ℝ → ℝ} (hg : ContinuousAt g ε)
+    (hε : 0 < ε) (h : ∀ e ∈ Set.Ioo 0 ε, HasJLProperty S ε (g e) μ) :
+    HasJLProperty S ε (g ε) μ := by
+  intro x hx
+  refine ge_of_tendsto (hg.tendsto.mono_left (nhdsWithin_le_nhds (s := Set.Iio ε))) ?_
+  filter_upwards [Ioo_mem_nhdsLT hε] with e he
+  exact h e he x hx
+
+/-- The OSE tail at $d = 1$ gives the JL tail: through
+`NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty` at every $e < \varepsilon$ and continuity. -/
+private theorem hasJLProperty_of_forall_isObliviousSubspaceEmbedding [IsFiniteMeasure μ]
+    (hε : 0 ≤ ε) (hε1 : ε ≤ 1) (h1 : ∀ s : Set Ω, μ.real s ≤ 1) {c : ℝ}
+    (hose : ∀ e, 0 ≤ e → e ≤ 1 → IsObliviousSubspaceEmbedding S 1 (1 - e) (1 + e)
+      (2 * 1 * Real.exp (-e ^ 2 * Fintype.card k / (3 * c)) + Fintype.card n * Real.exp (-t)) μ) :
+    HasJLProperty S ε
+      (2 * Real.exp (-ε ^ 2 * Fintype.card k / (3 * c)) + Fintype.card n * Real.exp (-t)) μ := by
+  rcases hε.eq_or_lt with rfl | hε0
+  · intro x _
+    refine (h1 _).trans ?_
+    have : (0 : ℝ) ≤ Fintype.card n * Real.exp (-t) := by positivity
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, neg_zero, zero_mul,
+      zero_div, Real.exp_zero, mul_one]
+    linarith
+  refine hasJLProperty_of_forall_mem_Ioo (g := fun e =>
+    2 * Real.exp (-e ^ 2 * Fintype.card k / (3 * c)) + Fintype.card n * Real.exp (-t))
+    (by fun_prop) hε0 fun e he => ?_
+  have h := hose e he.1.le (he.2.le.trans hε1)
+  rw [mul_one] at h
+  exact h.hasJLProperty (by linarith [he.2]) (by linarith [he.2])
+
+/-- The sample-size step of the two JL size forms: the JL tail at
+$t = \log(\lvert n\rvert/(\delta/2))$ and the size `samplingEmbeddingDim 1 L ε (δ / 2)`. -/
+private theorem hasJLProperty_of_samplingEmbeddingDim_le [IsFiniteMeasure μ] [Nonempty n]
+    (hF : IsBoundedOrthonormal F β) (hε : 0 < ε) (hδ : 0 < δ) (hδ1 : δ < 1)
+    (hk : samplingEmbeddingDim 1 (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) ε (δ / 2) ≤
+      Fintype.card k)
+    (htail : ∀ t : ℝ, 0 ≤ t → HasJLProperty S ε
+      (2 * Real.exp (-ε ^ 2 * Fintype.card k / (3 * (β * (1 + 2 * √t + 2 * t)))) +
+        Fintype.card n * Real.exp (-t)) μ) :
+    HasJLProperty S ε δ μ := by
+  have hn : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
+  have hpos : 0 < (Fintype.card n : ℝ) / (δ / 2) := by positivity
+  have hlog : 0 < Real.log (Fintype.card n / (δ / 2)) :=
+    Real.log_pos ((one_lt_div (by positivity)).2 (by linarith))
+  have hexp : Fintype.card n * Real.exp (-Real.log (Fintype.card n / (δ / 2))) = δ / 2 := by
+    rw [Real.exp_neg, Real.exp_log hpos, inv_div, mul_div_cancel₀ _ (by positivity)]
+  have hL : β * (1 + 2 * √(Real.log (Fintype.card n / (δ / 2))) +
+      2 * Real.log (Fintype.card n / (δ / 2))) = β * srhtRowBound (Fintype.card n) 1 (δ / 2) := by
+    rw [srhtRowBound_def, Nat.cast_one, one_mul]
+  have hLpos : 0 < β * srhtRowBound (Fintype.card n) 1 (δ / 2) := by
+    rw [← hL]
+    exact mul_pos (one_pos.trans_le hF.one_le) (by positivity)
+  refine (htail _ hlog.le).mono le_rfl ?_
+  rw [hL, hexp]
+  have h := two_mul_mul_exp_le_of_samplingEmbeddingDim_le hLpos hε (half_pos hδ) hk
+  rw [Nat.cast_one, mul_one] at h
+  linarith
+
+omit [DecidableEq n] in
+/-- The arithmetic of the two JL asymptotic forms: for $\beta \ge 1$, nonempty `n` and
+$0 < \delta \le 1/2$, the size `samplingEmbeddingDim 1 L ε (δ / 2)` at the flattened coherence is
+at most $72\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2$. -/
+private theorem samplingEmbeddingDim_one_le [Nonempty n] (hβ : 1 ≤ β) (hδ : 0 < δ)
+    (hδ2 : δ ≤ 1 / 2) :
+    samplingEmbeddingDim 1 (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) ε (δ / 2) ≤
+      72 * (β * (1 + Real.log (Fintype.card n / δ)) * Real.log (1 / δ) / ε ^ 2) := by
+  refine (samplingEmbeddingDim_le _ _ ε _).trans ?_
+  have hN : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.2 Fintype.card_pos
+  have h2N : Real.log 2 ≤ Real.log (Fintype.card n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have h2d : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
+    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
+      Real.log_mul (by norm_num) (by positivity)]
+  have hR : srhtRowBound (Fintype.card n) 1 (δ / 2) ≤
+      8 * (1 + Real.log (Fintype.card n / δ)) := by
+    have h := srhtRowBound_le (Fintype.card n) 1 (δ / 2)
+    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
+    rw [Nat.cast_one, Real.sqrt_one] at h
+    nlinarith [sq_nonneg (1 - √(2 * Real.log (Fintype.card n / (δ / 2))))]
+  have hl : Real.log (2 * ((1 : ℕ) : ℝ) / (δ / 2)) = 2 * Real.log 2 + Real.log (1 / δ) := by
+    rw [Nat.cast_one, show 2 * (1 : ℝ) / (δ / 2) = 2 * 2 * (1 / δ) by field_simp,
+      Real.log_mul (by norm_num) (by positivity), Real.log_mul (by norm_num) (by norm_num)]
+    ring
+  rw [mul_div_assoc']
+  refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
+  calc 3 * (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) * Real.log (2 * ((1 : ℕ) : ℝ) / (δ / 2))
+      ≤ 3 * (β * (8 * (1 + Real.log (Fintype.card n / δ)))) *
+          Real.log (2 * ((1 : ℕ) : ℝ) / (δ / 2)) :=
+        mul_le_mul_of_nonneg_right
+          (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)])
+          (by rw [hl]; linarith)
+    _ ≤ 3 * (β * (8 * (1 + Real.log (Fintype.card n / δ)))) * (3 * Real.log (1 / δ)) :=
+        mul_le_mul_of_nonneg_left (by rw [hl]; linarith) (by nlinarith)
+    _ = 72 * (β * (1 + Real.log (Fintype.card n / δ)) * Real.log (1 / δ)) := by ring
+
 /-- **Distributional JL for the SRHT**: for a bounded orthonormal $\mathbf{F}$ with constant
 $\beta$, the SRHT $\mathbf{S}$ built from it (independent random signs and an independent uniform
 choice of $\lvert k\rvert$ distinct rows), $0 \le \varepsilon \le 1$ and $t \ge 0$, $\mathbf{S}$
@@ -89,7 +190,12 @@ theorem hasJLProperty_of_hasLaw_srht (hF : IsBoundedOrthonormal F β)
     HasJLProperty S ε
       (2 * Real.exp (-ε ^ 2 * Fintype.card k / (3 * (β * (1 + 2 * √t + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
-  sorry
+  have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
+  refine hasJLProperty_of_forall_isObliviousSubspaceEmbedding hε hε1
+    (measureReal_le_one_of_hasLaw_srht hS) fun e he he1 => ?_
+  have h := isObliviousSubspaceEmbedding_of_hasLaw_srht hF hS 1 he he1 ht
+  simp only [Nat.cast_one, one_mul] at h
+  exact h
 
 /-- **Distributional JL for the SRHT, sample-size form**: for $0 < \varepsilon \le 1$,
 $\delta > 0$ and at least <!-- value samplingEmbeddingDim {\cdot 1} L \varepsilon (\delta/2) -->
@@ -108,7 +214,14 @@ theorem hasJLProperty_of_hasLaw_srht_of_samplingEmbeddingDim_le (hF : IsBoundedO
     (hk : samplingEmbeddingDim 1 (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) ε (δ / 2) ≤
       Fintype.card k) :
     HasJLProperty S ε δ μ := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro x hx
+    simp [Subsingleton.elim x 0] at hx
+  have : IsFiniteMeasure μ := hS.isFiniteMeasure_iff.2 inferInstance
+  rcases le_or_gt 1 δ with hδ1 | hδ1
+  · exact fun x _ => (measureReal_le_one_of_hasLaw_srht hS _).trans hδ1
+  exact hasJLProperty_of_samplingEmbeddingDim_le hF hε hδ hδ1 hk fun t ht =>
+    hasJLProperty_of_hasLaw_srht hF hS hε.le hε1 ht
 
 /-- **Distributional JL for the SRHT, asymptotic form**:
 $O(\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2)$ rows suffice for the SRHT
@@ -128,7 +241,13 @@ theorem exists_forall_hasJLProperty_of_hasLaw_srht :
       C * (β * (1 + Real.log (Fintype.card n / δ)) * Real.log (1 / δ) / ε ^ 2) ≤
         Fintype.card k →
       HasJLProperty S ε δ μ := by
-  sorry
+  refine ⟨72, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n _ _ _ _ _ μ S F β ε δ hF hS hε hε1 hδ hδ2 hk
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro x hx
+    simp [Subsingleton.elim x 0] at hx
+  exact hasJLProperty_of_hasLaw_srht_of_samplingEmbeddingDim_le hF hS hε hε1 hδ
+    ((samplingEmbeddingDim_one_le hF.one_le hδ hδ2).trans hk)
 
 /-- **Distributional JL for the SRHT with replacement**: for a bounded orthonormal $\mathbf{F}$
 with constant $\beta$, the SRHT $\mathbf{S}$ built from it with $\lvert k\rvert$ i.i.d. uniform
@@ -144,7 +263,15 @@ theorem hasJLProperty_of_hasLaw_srhtWithReplacement (hF : IsBoundedOrthonormal F
     HasJLProperty S ε
       (2 * Real.exp (-ε ^ 2 * Fintype.card k / (3 * (β * (1 + 2 * √t + 2 * t)))) +
         Fintype.card n * Real.exp (-t)) μ := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro x hx
+    simp [Subsingleton.elim x 0] at hx
+  have := hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
+  refine hasJLProperty_of_forall_isObliviousSubspaceEmbedding hε hε1
+    (fun _ => measureReal_le_one) fun e he he1 => ?_
+  have h := isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement hF hS 1 he he1 ht
+  simp only [Nat.cast_one, one_mul] at h
+  exact h
 
 /-- **Distributional JL for the SRHT with replacement, sample-size form**: for
 $0 < \varepsilon \le 1$, $\delta > 0$ and at
@@ -165,7 +292,14 @@ theorem hasJLProperty_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le
     (hk : samplingEmbeddingDim 1 (β * srhtRowBound (Fintype.card n) 1 (δ / 2)) ε (δ / 2) ≤
       Fintype.card k) :
     HasJLProperty S ε δ μ := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro x hx
+    simp [Subsingleton.elim x 0] at hx
+  have := hS.isProbabilityMeasure_iff.2 (isProbabilityMeasure_srhtWithReplacement F)
+  rcases le_or_gt 1 δ with hδ1 | hδ1
+  · exact fun x _ => measureReal_le_one.trans hδ1
+  exact hasJLProperty_of_samplingEmbeddingDim_le hF hε hδ hδ1 hk fun t ht =>
+    hasJLProperty_of_hasLaw_srhtWithReplacement hF hS hε.le hε1 ht
 
 /-- **Distributional JL for the SRHT with replacement, asymptotic form**:
 $O(\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2)$ rows suffice for the SRHT
@@ -186,7 +320,13 @@ theorem exists_forall_hasJLProperty_of_hasLaw_srhtWithReplacement :
       C * (β * (1 + Real.log (Fintype.card n / δ)) * Real.log (1 / δ) / ε ^ 2) ≤
         Fintype.card k →
       HasJLProperty S ε δ μ := by
-  sorry
+  refine ⟨72, 1, by norm_num, one_pos, ?_⟩
+  intro Ω 𝕜 k n _ _ _ _ _ μ S F β ε δ hF hS hε hε1 hδ hδ2 hk
+  rcases isEmpty_or_nonempty n with hn | hn
+  · intro x hx
+    simp [Subsingleton.elim x 0] at hx
+  exact hasJLProperty_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le hF hS hε hε1 hδ
+    ((samplingEmbeddingDim_one_le hF.one_le hδ hδ2).trans hk)
 
 end JL
 
