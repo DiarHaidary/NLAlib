@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Convex.Integral
+public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.Matrix.Functions.Exponential
 public import NLAlib.Probability.MatrixIntegral
 public import NLAlib.Probability.Measurability.Matrix
@@ -83,12 +84,6 @@ theorem _root_.Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp {A : Matrix
   exact Finset.single_le_sum (f := fun i => Real.exp (θ • eigenvalue A i))
     (fun i _ => (Real.exp_pos _).le) (Finset.mem_range.mpr hj)
 
-/-- $\operatorname{tr} e^{\theta \mathbf{A}}$ is nonnegative for a Hermitian $\mathbf{A}$ with an
-eigenvalue index $j < \lvert n\rvert$. -/
-private theorem re_trace_exp_smul_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian) (θ : ℝ)
-    {j : ℕ} (hj : j < Fintype.card n) : 0 ≤ RCLike.re (exp (θ • A)).trace :=
-  (Real.exp_pos _).le.trans (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hA θ hj)
-
 /-- **The generalised matrix Laplace transform bound**: for $\mathbf{Y}$ almost surely Hermitian,
 $\psi \ge 0$ nondecreasing on $[0, \infty)$, $t \ge 0$ and $\psi(t) > 0$,
 $$\mu(\lambda_0(\mathbf{Y}) \ge t) \le
@@ -116,7 +111,7 @@ theorem measureReal_eigenvalue_zero_ge_le_integral_re_trace_cfc_div [Nonempty n]
       (hint.measure_norm_ge_lt_top hψt)).ne
     exact h.trans (Real.le_norm_self _)
   have hsub : μ.real {ω | t ≤ eigenvalue (Y ω) 0} ≤ μ.real {ω | ψ t ≤ f ω} := by
-    refine ENNReal.toReal_mono hfin (measure_mono_ae ?_)
+    refine measureReal_mono_ae ?_ hfin
     filter_upwards [hY] with ω hω (h : t ≤ eigenvalue (Y ω) 0)
     exact (hψ ht (ht.trans h) h).trans
       (hω.apply_eigenvalue_zero_le_re_trace_cfc fun x _ => hψ0 x)
@@ -132,8 +127,7 @@ private theorem measureReal_le_exp_neg_mul_integral {f : Ω → ℝ} {s : Set Ω
     (hf : Integrable f μ) {c : ℝ} (hs : ∀ᵐ ω ∂μ, ω ∈ s → Real.exp c ≤ f ω) :
     μ.real s ≤ Real.exp (-c) * ∫ ω, f ω ∂μ := by
   have hM := mul_meas_ge_le_integral_of_nonneg hnn hf (Real.exp c)
-  have hmono : μ.real s ≤ μ.real {ω | Real.exp c ≤ f ω} :=
-    ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae hs)
+  have hmono : μ.real s ≤ μ.real {ω | Real.exp c ≤ f ω} := measureReal_mono_ae hs
   calc μ.real s ≤ μ.real {ω | Real.exp c ≤ f ω} := hmono
     _ = Real.exp (-c) * (Real.exp c * μ.real {ω | Real.exp c ≤ f ω}) := by
       rw [← mul_assoc, ← Real.exp_add, neg_add_cancel, Real.exp_zero, one_mul]
@@ -165,7 +159,8 @@ theorem measureReal_eigenvalue_zero_ge_le [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y
       Real.exp (-θ * t) * ∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ := by
   rw [neg_mul]
   refine measureReal_le_exp_neg_mul_integral
-    (hY.mono fun ω hω => re_trace_exp_smul_nonneg hω θ Fintype.card_pos) hint ?_
+    (hY.mono fun ω hω =>
+      Matrix.IsHermitian.re_trace_exp_nonneg ((IsSelfAdjoint.all θ).smul hω)) hint ?_
   filter_upwards [hY] with ω hω ht
   exact (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left ht hθ.le)).trans
     (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hω θ Fintype.card_pos)
@@ -182,7 +177,8 @@ theorem measureReal_eigenvalue_le_le (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) 
   have hkn : k < Fintype.card n := by omega
   rw [neg_mul]
   refine measureReal_le_exp_neg_mul_integral
-    (hY.mono fun ω hω => re_trace_exp_smul_nonneg hω θ hkn) hint ?_
+    (hY.mono fun ω hω =>
+      Matrix.IsHermitian.re_trace_exp_nonneg ((IsSelfAdjoint.all θ).smul hω)) hint ?_
   filter_upwards [hY] with ω hω ht
   exact (Real.exp_le_exp.mpr (mul_le_mul_of_nonpos_left ht hθ.le)).trans
     (Matrix.IsHermitian.exp_mul_eigenvalue_le_re_trace_exp hω θ hkn)
