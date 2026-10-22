@@ -165,7 +165,8 @@ FIX = {
             decl('NLAlib.cfc_diagonal', '(f : ℝ → ℝ) (d : n → ℝ) : cfc f (diagonal d) = diagonal (f ∘ d)')]),
     'P11': ({'NLAlib/Polynomial/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.A\n\n')},
             {'NLAlib/Polynomial/A.lean': lean(header=HDR + 'public import NLAlib.ForMathlib.Data.Real.Basic\n'
-                                              'public import NLAlib.Polynomial.B\n\n')}),
+                                              'public import NLAlib.Polynomial.B\n'
+                                              'import all Mathlib.Data.Real.Basic\n\n')}),
     'P10': ([decl('NLAlib.specNorm', '(A : Matrix m n 𝕜) : ℝ', kind='def'),
              decl('NLAlib.foo', '(A : Matrix m n 𝕜) : 0 ≤ specNorm A', module='NLAlib.LowRank.B',
                   deps=['NLAlib.specNorm'])],
@@ -324,6 +325,14 @@ class RuleTests(unittest.TestCase):
             with self.subTest(rule=rid):
                 self.assertTrue(violations(rid, bad), f'{rid}: the bad fixture passes')
                 self.assertEqual([v.text() for v in violations(rid, good)], [], f'{rid}: the good fixture fails')
+
+    def test_import_all_names_the_module(self):
+        # `import all X` imports X with its private bodies, not a module named `all`
+        import leansrc
+        text = HDR + 'import all Mathlib.Data.Real.Sqrt\npublic meta import all NLAlib.Foo\n'
+        self.assertEqual(leansrc.parse(text)['imports'],
+                         [(8, True, 'Mathlib.Data.Real.Basic'), (10, False, 'Mathlib.Data.Real.Sqrt'),
+                          (11, True, 'NLAlib.Foo')])
 
     def test_every_rule_is_cited_where_it_is_stated(self):
         # CONTRIBUTING §9.2: each rule's prose cites its id, as its messages do; and every id
