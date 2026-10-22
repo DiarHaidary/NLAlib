@@ -1480,3 +1480,37 @@ out in full; theorems not listed under "Proved now" are `sorry`. Changes against
   the power follows its argument `x`. The checker's N6 report on this name, which led to the
   skeleton's `integral_spectralMeasure_pow`, is a false positive (it reads `spectralMeasure` as the
   argument of `pow`); it is allowlisted in `scripts/names_allow.toml`.
+
+## Changes during the proofs (2026-10-22)
+
+No statement, definition or docstring mathematics changed. Public helpers and imports added by the
+proofs:
+
+* **2026-10-22, `NLAlib.integrable_eval_of_ae_mem_Icc`** (`Polynomial/Orthogonal/Moments.lean`):
+  every real polynomial is integrable against a finite measure carried by $[a, b]$ (the SD3
+  support hypothesis). Public because `Moments.lean` and `Gauss.lean` both use it.
+* **2026-10-22, `Polynomial.Chebyshev.sumZeroes_def`**, in the new file
+  `NLAlib/ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/ChebyshevGauss.lean`: the
+  value $(\pi/n)\sum_{i<n}P(\cos((2i + 1)\pi/(2n)))$ of Mathlib's `sumZeroes`, whose body Mathlib
+  does not expose; the file reaches it by `import all` of Mathlib's `ChebyshevGauss`. Used by
+  `matchesMoments_measureT`. An upstream candidate in Mathlib's namespace and file, so its home is
+  ForMathlib.
+* **2026-10-22, `Matrix.IsHermitian.rayleighQuotient_cfc_mulVec_eq_integral_div`**
+  (`Matrix/Spectral/SpectralMeasure.lean`): the Rayleigh quotient of $g(\mathbf{A})\mathbf{b}$ as
+  $\int x g^2\,d\mu_{\mathbf{A},\mathbf{b}} / \int g^2\,d\mu_{\mathbf{A},\mathbf{b}}$. Public
+  because the filter theorem (`abs_sub_rayleighQuotient_cfc_mulVec_le`, same file) and two Ritz
+  bounds (`Krylov/Eigenvalues/Ritz.lean`) use it.
+* **2026-10-22, Mathlib import `Mathlib.MeasureTheory.Integral.Bochner.Set`** added to
+  `Matrix/Spectral/SpectralMeasure.lean` and `Krylov/Eigenvalues/PowerIteration.lean` (for
+  `integral_indicator` and `integral_indicator_const`).
+* **2026-10-22, the Kuczyński–Woźniakowski power constant.** The deterministic power step
+  `Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`
+  (`Krylov/Eigenvalues/PowerIteration.lean`) is proved with the constant
+  $\lambda_0\log(1 + \tan^2\angle(\mathbf{b}, E_{\lambda_0}))/(2q + 1)$ as stated. The comparison
+  with the paper's printed constants remains the open item recorded in `docs/port/status.md`.
+* **2026-10-22, KS3c** (`Krylov/Functions/Quadrature.lean`) is proved without the Gauss theorem:
+  the Lanczos rule sees a function only at the Ritz values, so it is a sum over them with weights
+  $\int\ell_x\,d\,\mathsf{lanczosQuadrature} = \int\ell_x\,d\mu_{\mathbf{A},\mathbf{b}}$ (moment
+  matching, $\deg\ell_x < q$), nonnegative as $\int\ell_x^2$; the positive weight is
+  $\|\ell_x(\mathbf{A})\mathbf{b}\|^2$, nonzero by `krylovMatrix_mulVec_injective_iff`. Helpers
+  private.
