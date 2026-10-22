@@ -9,6 +9,7 @@ public import NLAlib.Matrix.Norms.Block
 public import NLAlib.Probability.QuadraticForm.HansonWright
 public import NLAlib.Probability.QuadraticForm.Moments
 public import NLAlib.RandomMatrix.Haar.Moments
+public import NLAlib.RandomMatrix.Rademacher.Basic
 
 /-!
 # The Girard–Hutchinson trace estimator
@@ -36,6 +37,9 @@ of a Haar frame, which are not independent, the variance is computed exactly her
 * `NLAlib.integral_norm_trace_sub_girardHutchinson_sq`, `NLAlib.variance_girardHutchinson`: the
   variance with $m$ independent probes is the single-probe variance divided by $m$.
 * `NLAlib.variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame`: orthonormal (Haar) probes.
+* `NLAlib.integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_gaussianMatrix`,
+  `NLAlib.integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_rademacherMatrix`: the
+  mean-square error with Gaussian and with sign probes, for any real matrix.
 * `NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le`: the tail with independent
   sub-Gaussian entries, from Hanson–Wright.
 -/
@@ -225,6 +229,72 @@ theorem variance_girardHutchinson_sqrt_smul_of_hasLaw_haarFrame {k : Type*} [Fin
   have hN1 : (Fintype.card n : ℝ) - 1 ≠ 0 := by linarith
   have hN2 : (Fintype.card n : ℝ) + 2 ≠ 0 := by linarith
   field_simp
+
+/-- **The mean-square error of Girard–Hutchinson with Gaussian probes**: for an $n \times t$
+standard Gaussian test matrix $\mathbf{G}$ (`gaussianMatrix`), whose $t$ columns are independent
+standard Gaussian probes, $t$ nonempty, and any real $\mathbf{B}$ with symmetric part
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{B} + \mathbf{B}^{\mathsf{T}})$,
+$$\mathbb{E}\lvert\operatorname{tr}\mathbf{B} - \mathsf{girardHutchinson}(\mathbf{B},
+\mathbf{G})\rvert^2 = \frac{2}{\lvert t \rvert}\|\mathbf{H}\|_{\mathsf{F}}^2\,.$$
+[Epperly2023, Real-Valued Test Vectors]. -/
+theorem integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_gaussianMatrix {t : Type*}
+    [Fintype t] [Nonempty t] {G : Ω → Matrix n t ℝ} (hG : HasLaw G (gaussianMatrix n t) μ)
+    (B : Matrix n n ℝ) :
+    ∫ ω, ‖B.trace - girardHutchinson B (G ω)‖ ^ 2 ∂μ =
+      2 / Fintype.card t * frobNorm (hermitianPart B) ^ 2 := by
+  classical
+  have hcol := hasLaw_col_of_hasLaw_gaussianMatrix hG
+  have hX (j : t) := isIsotropic_of_hasLaw_gaussianVector (hcol j)
+  have hL4 (j : t) (i : n) : MemLp (fun ω => G ω i j) 4 μ :=
+    (((hcol j).eval i).memLp_comp_iff (f := id) aestronglyMeasurable_id).2
+      (memLp_id_gaussianReal' 4 (by simp))
+  have h := integral_norm_trace_sub_girardHutchinson_sq (iIndepFun_col_of_hasLaw_gaussianMatrix hG)
+    hX (A := B) (fun j => memLp_quadForm (hL4 j) _)
+    (v := 2 * frobNorm (hermitianPart B) ^ 2) fun j => by
+      rw [← variance_quadForm_of_hasLaw_gaussianVector_hermitianPart (hcol j) B,
+        variance_eq_integral (memLp_quadForm (hL4 j) _).aestronglyMeasurable.aemeasurable,
+        (hX j).integral_quadForm]
+      simp only [Real.norm_eq_abs, sq_abs]
+  rw [h]
+  ring
+
+/-- **The mean-square error of Girard–Hutchinson with sign probes**: for an $n \times t$ test
+matrix $\mathbf{G}$ such that $\mathbf{G}^{\mathsf{H}}$ has independent random signs
+(`rademacherMatrix`), so that the $t$ columns of $\mathbf{G}$ are independent vectors of random
+signs, $t$ nonempty, and any real $\mathbf{B}$ with symmetric part
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{B} + \mathbf{B}^{\mathsf{T}})$,
+$$\mathbb{E}\lvert\operatorname{tr}\mathbf{B} - \mathsf{girardHutchinson}(\mathbf{B},
+\mathbf{G})\rvert^2 = \frac{2}{\lvert t \rvert}\Bigl(\|\mathbf{H}\|_{\mathsf{F}}^2 -
+\sum_i \mathbf{H}_{i,i}^2\Bigr)\,.$$
+[Epperly2023, Real-Valued Test Vectors]. -/
+theorem integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_rademacherMatrix {t : Type*}
+    [Fintype t] [Nonempty t] {G : Ω → Matrix n t ℝ}
+    (hG : HasLaw (fun ω => (G ω)ᴴ) (rademacherMatrix t n) μ) (B : Matrix n n ℝ) :
+    ∫ ω, ‖B.trace - girardHutchinson B (G ω)‖ ^ 2 ∂μ =
+      2 / Fintype.card t * (frobNorm (hermitianPart B) ^ 2 - ∑ i, hermitianPart B i i ^ 2) := by
+  classical
+  have hG' : HasLaw G (rademacherMatrix n t) μ := by
+    simpa only [Matrix.conjTranspose_conjTranspose] using
+      hasLaw_conjTranspose_of_hasLaw_rademacherMatrix hG
+  have hcol := hasLaw_col_of_hasLaw_rademacherMatrix hG'
+  have hX (j : t) := isIsotropic_of_hasLaw_rademacherVector (hcol j)
+  have hL4 (j : t) (i : n) : MemLp (fun ω => G ω i j) 4 μ :=
+    memLp_of_hasLaw_rademacherVector (hcol j) 4 i
+  have hd : ∑ i, hermitianPart B i i ^ 2 = ∑ i, B i i ^ 2 := by
+    refine Finset.sum_congr rfl fun i _ => ?_
+    simp only [hermitianPart, Matrix.smul_apply, Matrix.add_apply, Matrix.conjTranspose_apply,
+      star_trivial, smul_eq_mul]
+    ring
+  have h := integral_norm_trace_sub_girardHutchinson_sq
+    (iIndepFun_col_of_hasLaw_rademacherMatrix hG') hX (A := B)
+    (fun j => memLp_quadForm (hL4 j) _)
+    (v := 2 * (frobNorm (hermitianPart B) ^ 2 - ∑ i, hermitianPart B i i ^ 2)) fun j => by
+      rw [hd, ← variance_quadForm_of_hasLaw_rademacherVector_hermitianPart (hcol j) B,
+        variance_eq_integral (memLp_quadForm (hL4 j) _).aestronglyMeasurable.aemeasurable,
+        (hX j).integral_quadForm]
+      simp only [Real.norm_eq_abs, sq_abs]
+  rw [h]
+  ring
 
 -- Stage TE-1
 
