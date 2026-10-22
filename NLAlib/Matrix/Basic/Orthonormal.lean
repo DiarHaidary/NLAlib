@@ -186,6 +186,14 @@ theorem mul_conjTranspose_mul_self {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCol
     Q * Qᴴ * Q = Q :=
   hQ.mul_conjTranspose_mul_cancel_right Q
 
+/-- The residual of the projection onto the columns of $\mathbf{Q}$ is annihilated by
+$\mathbf{Q}$:
+$(\mathbf{A} - \mathbf{A}\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{Q} = \mathbf{0}$. -/
+theorem sub_mul_mul_conjTranspose_mul_eq_zero {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
+    (A : Matrix p m 𝕜) : (A - A * Q * Qᴴ) * Q = 0 := by
+  rw [Matrix.sub_mul, Matrix.mul_assoc (A * Q), hQ.conjTranspose_mul_self, Matrix.mul_one,
+    sub_self]
+
 /-- Multiplication by $\mathbf{Q}$ on the left preserves Gram products:
 $(\mathbf{Q}\mathbf{A})^{\mathsf{H}}(\mathbf{Q}\mathbf{B}) = \mathbf{A}^{\mathsf{H}}\mathbf{B}$.
 In particular $(\mathbf{Q}\mathbf{A})^{\mathsf{H}}(\mathbf{Q}\mathbf{A})
