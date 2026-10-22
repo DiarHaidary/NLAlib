@@ -277,19 +277,11 @@ section Frobenius
 
 variable {q : Type*} [Fintype q]
 
-omit [Fintype k] [Fintype q] in
-/-- The columns of a product are the images of the columns. -/
-private theorem col_mul_eq_mulVec (A : Matrix k n 𝕜) (X : Matrix n q 𝕜) (j : q) :
-    (A * X).col j = A *ᵥ X.col j := by
-  ext i
-  simp only [Matrix.mulVec, Matrix.col_apply, Matrix.mul_apply, dotProduct]
-
 /-- The Frobenius distortion is at most the sum of the column distortions. -/
 private theorem abs_frobNorm_mul_sq_sub_le_sum (A : Matrix k n 𝕜) (X : Matrix n q 𝕜) :
     |frobNorm (A * X) ^ 2 - frobNorm X ^ 2| ≤
       ∑ j, |‖WithLp.toLp 2 (A *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2| := by
   rw [frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, ← Finset.sum_sub_distrib]
-  simp only [col_mul_eq_mulVec]
   exact Finset.abs_sum_le_sum_abs _ _
 
 /-- The $p$-th power of the Frobenius distortion
