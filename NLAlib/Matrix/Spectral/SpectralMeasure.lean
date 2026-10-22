@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
 public import Mathlib.MeasureTheory.Measure.Dirac
 public import Mathlib.MeasureTheory.Measure.WithDensity
 public import NLAlib.Matrix.Basic.QuadForm
@@ -110,6 +111,38 @@ noncomputable def spectralTangentSq (A : Matrix n n 𝕜) (b : n → 𝕜) (c : 
 
 /-! ### Integrals -/
 
+/-- The weight of the atom at $x$ is nonnegative: it is the quadratic form of the positive
+semidefinite $\mathbf{1}_{\{x\}}(\mathbf{A})$ ($0$ off Hermitian). -/
+private theorem re_quadForm_cfc_ite_nonneg (A : Matrix n n 𝕜) (b : n → 𝕜) (x : ℝ) :
+    0 ≤ RCLike.re (quadForm (cfc (fun t : ℝ => if t = x then (1 : ℝ) else 0) A) b) :=
+  (Matrix.nonneg_iff_posSemidef.1
+    (cfc_nonneg fun t _ => by split_ifs <;> norm_num)).re_quadForm_nonneg b
+
+/-- The quadratic form of the spectral projector $\mathbf{1}_S(\mathbf{A})$ is nonnegative. -/
+private theorem re_quadForm_cfc_indicator_nonneg (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
+    0 ≤ RCLike.re (quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) b) :=
+  (Matrix.nonneg_iff_posSemidef.1 (cfc_nonneg fun t _ =>
+    Set.indicator_nonneg (fun _ _ => zero_le_one) t)).re_quadForm_nonneg b
+
+/-- The integral against a spectral measure as a sum over the spectrum. -/
+private theorem integral_spectralMeasure_eq_sum (A : Matrix n n 𝕜) (b : n → 𝕜) (f : ℝ → ℝ) :
+    ∫ x, f x ∂spectralMeasure A b = ∑ x ∈ A.finite_real_spectrum.toFinset,
+      RCLike.re (quadForm (cfc (fun t : ℝ => if t = x then (1 : ℝ) else 0) A) b) * f x := by
+  rw [spectralMeasure, integral_finsetSum_measure fun x _ =>
+    (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [integral_smul_measure, integral_dirac, ENNReal.toReal_ofReal
+    (re_quadForm_cfc_ite_nonneg A b x), smul_eq_mul]
+
+/-- The measure of a set under a spectral measure as a sum over the spectrum. -/
+private theorem spectralMeasure_apply_eq_sum (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
+    spectralMeasure A b S = ∑ x ∈ A.finite_real_spectrum.toFinset,
+      ENNReal.ofReal (RCLike.re (quadForm (cfc (fun t : ℝ => if t = x then (1 : ℝ) else 0) A) b))
+        * S.indicator 1 x := by
+  rw [spectralMeasure, Measure.coe_finsetSum, Finset.sum_apply]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [Measure.smul_apply, Measure.dirac_apply, smul_eq_mul]
+
 /-- The spectral measure is finite: a finite sum of finite multiples of Dirac masses. -/
 instance isFiniteMeasure_spectralMeasure (A : Matrix n n 𝕜) (b : n → 𝕜) :
     IsFiniteMeasure (spectralMeasure A b) := by
@@ -138,7 +171,23 @@ here over any `RCLike` field.
 Result: spectral-measure -/
 theorem integral_spectralMeasure (A : Matrix n n 𝕜) (b : n → 𝕜) (f : ℝ → ℝ) :
     ∫ x, f x ∂spectralMeasure A b = RCLike.re (quadForm (cfc f A) b) := by
-  sorry
+  set F := A.finite_real_spectrum.toFinset
+  set e : ℝ → ℝ → ℝ := fun x t => if t = x then (1 : ℝ) else 0
+  have hcfc : cfc f A = ∑ x ∈ F, f x • cfc (e x) A := by
+    have hsum : (fun t => ∑ x ∈ F, f x * e x t) = ∑ x ∈ F, fun t => f x * e x t := by
+      ext t
+      rw [Finset.sum_apply]
+    have hc : ∀ g : ℝ → ℝ, ContinuousOn g (spectrum ℝ A) := fun g =>
+      A.finite_real_spectrum.continuousOn g
+    rw [cfc_congr (g := fun t => ∑ x ∈ F, f x * e x t), hsum, cfc_sum _ _ _ fun x _ => hc _]
+    · exact Finset.sum_congr rfl fun x _ => cfc_const_mul _ _ _ (hc _)
+    · intro t ht
+      simp only [e, mul_ite, mul_one, mul_zero]
+      rw [Finset.sum_ite_eq, if_pos ((Set.Finite.mem_toFinset _).2 ht)]
+  rw [integral_spectralMeasure_eq_sum, hcfc, quadForm_def, Matrix.sum_mulVec, dotProduct_sum,
+    map_sum]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [Matrix.smul_mulVec, dotProduct_smul, RCLike.smul_re, quadForm_def, mul_comm]
 
 /-- The integral of a real polynomial against the spectral measure of a Hermitian
 $\mathbf{A}$: $\int p\,d\mu_{\mathbf{A},\mathbf{b}} =
@@ -176,7 +225,12 @@ the sum of the eigenspaces of the eigenvalues in $S$. -/
 theorem spectralMeasure_apply (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
     spectralMeasure A b S =
       ENNReal.ofReal (RCLike.re (quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) b)) := by
-  sorry
+  rw [← integral_spectralMeasure, integral_spectralMeasure_eq_sum, spectralMeasure_apply_eq_sum,
+    ENNReal.ofReal_sum_of_nonneg fun x _ => mul_nonneg (re_quadForm_cfc_ite_nonneg A b x)
+      (Set.indicator_nonneg (fun _ _ => zero_le_one) x)]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [ENNReal.ofReal_mul (re_quadForm_cfc_ite_nonneg A b x)]
+  by_cases hx : x ∈ S <;> simp [hx]
 
 /-- The spectral measure lives on the spectrum: for every square $\mathbf{A}$,
 $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R} \setminus \operatorname{spec}\mathbf{A}) = 0$. -/
@@ -198,6 +252,21 @@ theorem ae_mem_Icc_spectralMeasure (A : Matrix n n 𝕜) {a a' : ℝ}
   exact measure_mono_null (fun x hx => fun hxs => hx (hs hxs))
     (spectralMeasure_compl_spectrum_eq_zero A b)
 
+/-- The spectral measure of a set as a real number. -/
+private theorem spectralMeasure_real_eq (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
+    (spectralMeasure A b).real S =
+      RCLike.re (quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) b) := by
+  rw [measureReal_def, spectralMeasure_apply, ENNReal.toReal_ofReal
+    (re_quadForm_cfc_indicator_nonneg A b S)]
+
+/-- Off Hermitian the spectral measure is $0$. -/
+private theorem spectralMeasure_of_not_isHermitian {A : Matrix n n 𝕜} (hA : ¬ A.IsHermitian)
+    (b : n → 𝕜) : spectralMeasure A b = 0 := by
+  have hA' : ¬ IsSelfAdjoint A := hA
+  ext S hS
+  rw [spectralMeasure_apply, cfc_apply_of_not_predicate A hA', quadForm_zero_left, map_zero,
+    ENNReal.ofReal_zero, Measure.coe_zero, Pi.zero_apply]
+
 /-- **The spectral measure in an eigenbasis**: if
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}$ with
 $\mathbf{U}$ having orthonormal columns, as many as rows, and $\mathbf{d}$ real, then
@@ -210,7 +279,16 @@ theorem HasOrthonormalCols.spectralMeasure_eq_sum {U : Matrix n r 𝕜} (hU : Ha
     (hA : A = U * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Uᴴ) (b : n → 𝕜) :
     spectralMeasure A b =
       ∑ i, ENNReal.ofReal (‖(Uᴴ *ᵥ b) i‖ ^ 2) • Measure.dirac (d i) := by
-  sorry
+  ext S hS
+  have hind : ∀ x, 0 ≤ S.indicator (fun _ => (1 : ℝ)) x :=
+    Set.indicator_nonneg fun _ _ => zero_le_one
+  rw [spectralMeasure_apply, HasOrthonormalCols.re_quadForm_cfc_eq_sum hU hr hA,
+    Measure.coe_finsetSum, Finset.sum_apply,
+    ENNReal.ofReal_sum_of_nonneg fun i _ => mul_nonneg (hind _) (sq_nonneg _)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Measure.smul_apply, Measure.dirac_apply, smul_eq_mul, ENNReal.ofReal_mul (hind _),
+    mul_comm]
+  by_cases hx : d i ∈ S <;> simp [hx]
 
 /-- Isometric invariance: for $\mathbf{U}$ with orthonormal columns and every square
 $\mathbf{T}$ on its column index,
@@ -223,13 +301,28 @@ is. -/
 theorem HasOrthonormalCols.spectralMeasure_mul_mul_conjTranspose {U : Matrix n r 𝕜}
     (hU : HasOrthonormalCols U) (T : Matrix r r 𝕜) (c : r → 𝕜) :
     spectralMeasure (U * T * Uᴴ) (U *ᵥ c) = spectralMeasure T c := by
-  sorry
+  by_cases hT : T.IsHermitian
+  · ext S hS
+    rw [spectralMeasure_apply, spectralMeasure_apply, hU.cfc_mul_mul_conjTranspose hT,
+      ← quadForm_conjTranspose_mul_mul]
+    congr 3
+    simp only [Matrix.mul_add, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one,
+      ← Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.one_mul, sub_self, smul_zero, add_zero]
+    rw [Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
+  · have hT' : ¬ (U * T * Uᴴ).IsHermitian := fun h => hT (by
+      have h' := Matrix.isHermitian_conjTranspose_mul_mul U h
+      rwa [← Matrix.mul_assoc, ← Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.one_mul,
+        Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one] at h')
+    rw [spectralMeasure_of_not_isHermitian hT, spectralMeasure_of_not_isHermitian hT']
 
 /-- The spectral measure is quadratic in the vector: for every square $\mathbf{A}$ and scalar
 $c$, $\mu_{\mathbf{A},c\mathbf{b}} = \lvert c\rvert^2\mu_{\mathbf{A},\mathbf{b}}$. -/
 theorem spectralMeasure_smul (A : Matrix n n 𝕜) (c : 𝕜) (b : n → 𝕜) :
     spectralMeasure A (c • b) = ENNReal.ofReal (‖c‖ ^ 2) • spectralMeasure A b := by
-  sorry
+  ext S hS
+  rw [spectralMeasure_apply, Measure.smul_apply, spectralMeasure_apply, quadForm_smul_right,
+    RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow, RCLike.re_ofReal_mul,
+    ENNReal.ofReal_mul (sq_nonneg _), smul_eq_mul]
 
 /-- Filtering multiplies the measure by $g^2$: for every square $\mathbf{A}$ and every
 $g : \mathbb{R} \to \mathbb{R}$, $\mu_{\mathbf{A},\,g(\mathbf{A})\mathbf{b}}$ has density $g^2$
@@ -237,7 +330,28 @@ with respect to $\mu_{\mathbf{A},\mathbf{b}}$. -/
 theorem spectralMeasure_cfc_mulVec (A : Matrix n n 𝕜) (g : ℝ → ℝ) (b : n → 𝕜) :
     spectralMeasure A (cfc g A *ᵥ b) =
       (spectralMeasure A b).withDensity (fun x => ENNReal.ofReal (g x ^ 2)) := by
-  sorry
+  ext S hS
+  have hind : S.indicator (fun x => ENNReal.ofReal (g x ^ 2)) =
+      fun x => ENNReal.ofReal (S.indicator (fun x => g x ^ 2) x) := by
+    ext x
+    by_cases hx : x ∈ S <;> simp [hx]
+  rw [withDensity_apply _ hS, spectralMeasure_apply, ← lintegral_indicator hS, hind,
+    ← ofReal_integral_eq_lintegral_ofReal (integrable_spectralMeasure A b _)
+      (Filter.Eventually.of_forall fun x => Set.indicator_nonneg (fun _ _ => sq_nonneg _) x),
+    integral_spectralMeasure]
+  congr 2
+  by_cases hA : A.IsHermitian
+  · have hc : ∀ f : ℝ → ℝ, ContinuousOn f (spectrum ℝ A) := fun f =>
+      A.finite_real_spectrum.continuousOn f
+    have hH : (cfc g A).IsHermitian := cfc_predicate g A
+    rw [← quadForm_conjTranspose_mul_mul, hH.eq, ← cfc_mul _ _ A (hc _) (hc _),
+      ← cfc_mul _ _ A (hc _) (hc _)]
+    congr 1
+    refine cfc_congr fun x _ => ?_
+    by_cases hx : x ∈ S <;> simp [hx, sq]
+  · have hA' : ¬ IsSelfAdjoint A := hA
+    simp only [cfc_apply_of_not_predicate A hA', Matrix.zero_mulVec, quadForm_zero_right,
+      quadForm_zero_left]
 
 /-- The Rayleigh quotient as a ratio of spectral integrals: for Hermitian $\mathbf{A}$,
 $$\frac{\operatorname{Re}\,\mathbf{b}^{\mathsf{H}}\mathbf{A}\mathbf{b}}{\|\mathbf{b}\|^2} =
@@ -259,7 +373,27 @@ theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_sq_le_spectralMeasure_rea
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {u : n → 𝕜} {c : ℝ}
     (hu : A *ᵥ u = (c : 𝕜) • u) (hu1 : ‖WithLp.toLp 2 u‖ = 1) (b : n → 𝕜) :
     ‖star u ⬝ᵥ b‖ ^ 2 ≤ (spectralMeasure A b).real {c} := by
-  sorry
+  set ψ : ℝ → ℝ := ({c} : Set ℝ).indicator fun _ => (1 : ℝ)
+  have hH : (cfc ψ A).IsHermitian := cfc_predicate ψ A
+  have hPu : cfc ψ A *ᵥ u = u := by
+    have hu' : A *ᵥ u = c • u := hu.trans (RCLike.real_smul_eq_coe_smul (K := 𝕜) c u).symm
+    rw [hA.cfc_mulVec_of_mulVec_eq_smul ψ hu']
+    simp [ψ]
+  have hψ : (fun t => ψ t ^ 2) = ψ := by
+    ext t
+    by_cases ht : t = c <;> simp [ψ, ht]
+  have hub : star u ⬝ᵥ b = star u ⬝ᵥ (cfc ψ A *ᵥ b) := by
+    conv_lhs => rw [← hPu]
+    rw [star_mulVec_dotProduct, hH.eq]
+  have hnorm := hA.norm_toLp_cfc_mulVec_sq ψ b
+  rw [hψ, ← spectralMeasure_real_eq] at hnorm
+  rw [← hnorm, hub]
+  have hin : star u ⬝ᵥ (cfc ψ A *ᵥ b) =
+      inner 𝕜 (WithLp.toLp 2 u) (WithLp.toLp 2 (cfc ψ A *ᵥ b)) := by
+    rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
+  rw [hin]
+  refine (pow_le_pow_left₀ (norm_nonneg _) (norm_inner_le_norm _ _) 2).trans_eq ?_
+  rw [hu1, one_mul]
 
 /-! ### The angle between a vector and an eigenspace -/
 
@@ -296,9 +430,33 @@ theorem _root_.Matrix.IsHermitian.spectralTangentSq_le {A : Matrix n n 𝕜} (hA
     {b : n → 𝕜} (hub : star u ⬝ᵥ b ≠ 0) :
     spectralTangentSq A b c ≤
       (‖WithLp.toLp 2 b‖ ^ 2 - ‖star u ⬝ᵥ b‖ ^ 2) / ‖star u ⬝ᵥ b‖ ^ 2 := by
-  sorry
+  have ht : 0 < ‖star u ⬝ᵥ b‖ ^ 2 := by positivity
+  have hm := hA.norm_star_dotProduct_sq_le_spectralMeasure_real hu hu1 b
+  have hm0 : 0 < (spectralMeasure A b).real {c} := ht.trans_le hm
+  rw [spectralTangentSq, measureReal_compl (measurableSet_singleton c),
+    hA.spectralMeasure_real_univ, sub_div, sub_div, div_self hm0.ne', div_self ht.ne']
+  gcongr
 
 /-! ### The filter theorem -/
+
+/-- The Rayleigh quotient of a filtered vector as a ratio of spectral integrals:
+$\rho_{\mathbf{A}}(g(\mathbf{A})\mathbf{b}) = \int x g(x)^2\,d\mu / \int g^2\,d\mu$. -/
+private theorem rayleighQuotient_cfc_mulVec_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (g : ℝ → ℝ) (b : n → 𝕜) :
+    rayleighQuotient A (cfc g A *ᵥ b) =
+      (∫ x, x * g x ^ 2 ∂spectralMeasure A b) / ∫ x, g x ^ 2 ∂spectralMeasure A b := by
+  have hc : ∀ f : ℝ → ℝ, ContinuousOn f (spectrum ℝ A) := fun f =>
+    A.finite_real_spectrum.continuousOn f
+  have hH : (cfc g A).IsHermitian := cfc_predicate g A
+  have hA' : IsSelfAdjoint A := hA
+  have hnum : RCLike.re (quadForm A (cfc g A *ᵥ b)) = ∫ x, x * g x ^ 2 ∂spectralMeasure A b := by
+    rw [integral_spectralMeasure, ← quadForm_conjTranspose_mul_mul, hH.eq,
+      show cfc g A * A * cfc g A = cfc g A * cfc (fun x => x) A * cfc g A by rw [cfc_id' ℝ A]]
+    rw [← cfc_mul _ _ A (hc _) (hc _), ← cfc_mul _ _ A (hc _) (hc _)]
+    congr 3
+    ext x
+    ring
+  rw [rayleighQuotient, hnum, hA.norm_toLp_cfc_mulVec_sq, ← integral_spectralMeasure]
 
 /-- **Rayleigh quotient of a filtered vector**: let $\mathbf{A}$ be Hermitian with spectrum in
 $s \cup \{c\}$, $\lvert x - c\rvert \le D$ and $\lvert g(x)\rvert \le \delta\lvert g(c)\rvert$ for
@@ -315,7 +473,50 @@ theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_cfc_mulVec_le {A : Ma
     (hD : ∀ x ∈ s, |x - c| ≤ D) {g : ℝ → ℝ} (hgc : g c ≠ 0)
     (hg : ∀ x ∈ s, |g x| ≤ δ * |g c|) (b : n → 𝕜) (hb : 0 < (spectralMeasure A b).real {c}) :
     |c - rayleighQuotient A (cfc g A *ᵥ b)| ≤ D * δ ^ 2 * spectralTangentSq A b c := by
-  sorry
+  set μ := spectralMeasure A b with hμ
+  have hi : ∀ f : ℝ → ℝ, Integrable f μ := integrable_spectralMeasure A b
+  have hae : ∀ᵐ x ∂μ, x ∈ spectrum ℝ A := ae_iff.2 (spectralMeasure_compl_spectrum_eq_zero A b)
+  set K := D * δ ^ 2 * g c ^ 2
+  -- the numerator: $\lvert\int (c - x) g^2\,d\mu\rvert \le K\mu(\mathbb{R}\setminus\{c\})$
+  have hnum : |∫ x, (c - x) * g x ^ 2 ∂μ| ≤ K * μ.real {c}ᶜ := by
+    rw [mul_comm, ← smul_eq_mul, ← integral_indicator_const _ (measurableSet_singleton c).compl]
+    refine (abs_integral_le_integral_abs).trans (integral_mono_ae (hi _) (hi _) ?_)
+    filter_upwards [hae] with x hx
+    by_cases hxc : x = c
+    · simp [hxc]
+    · have hxs : x ∈ s := (hs hx).resolve_right hxc
+      rw [Set.indicator_of_mem (Set.mem_compl_singleton_iff.2 hxc), abs_mul, abs_sub_comm,
+        abs_of_nonneg (sq_nonneg (g x))]
+      have hg2 : g x ^ 2 ≤ δ ^ 2 * g c ^ 2 := by
+        rw [← sq_abs (g x), ← sq_abs (g c), ← mul_pow]
+        exact pow_le_pow_left₀ (abs_nonneg _) (hg x hxs) 2
+      calc |x - c| * g x ^ 2 ≤ D * (δ ^ 2 * g c ^ 2) :=
+            mul_le_mul (hD x hxs) hg2 (sq_nonneg _) ((abs_nonneg _).trans (hD x hxs))
+        _ = K := by ring
+  -- the denominator: $\int g^2\,d\mu \ge g(c)^2\mu(\{c\})$
+  have hden : g c ^ 2 * μ.real {c} ≤ ∫ x, g x ^ 2 ∂μ := by
+    rw [mul_comm, ← smul_eq_mul, ← integral_indicator_const _ (measurableSet_singleton c)]
+    refine integral_mono (hi _) (hi _) fun x => ?_
+    by_cases hxc : x = c
+    · simp [hxc]
+    · simp [hxc, sq_nonneg]
+  have hpos : 0 < g c ^ 2 * μ.real {c} := mul_pos (by positivity) hb
+  have hsub : c - rayleighQuotient A (cfc g A *ᵥ b) =
+      (∫ x, (c - x) * g x ^ 2 ∂μ) / ∫ x, g x ^ 2 ∂μ := by
+    have hI : ∫ x, (c - x) * g x ^ 2 ∂μ = c * ∫ x, g x ^ 2 ∂μ - ∫ x, x * g x ^ 2 ∂μ := by
+      simp only [sub_mul]
+      rw [integral_sub (hi _) (hi _), integral_const_mul]
+    have h0 := (hpos.trans_le hden).ne'
+    rw [rayleighQuotient_cfc_mulVec_eq hA, ← hμ, hI]
+    field_simp
+  rw [hsub, abs_div, abs_of_pos (hpos.trans_le hden)]
+  calc |∫ x, (c - x) * g x ^ 2 ∂μ| / ∫ x, g x ^ 2 ∂μ ≤ K * μ.real {c}ᶜ / (g c ^ 2 * μ.real {c}) :=
+        div_le_div₀ ((abs_nonneg _).trans hnum) hnum hpos hden
+    _ = D * δ ^ 2 * spectralTangentSq A b c := by
+        have := hb.ne'
+        rw [spectralTangentSq, ← hμ]
+        simp only [K]
+        field_simp
 
 /-! ### The empirical spectral measure -/
 
@@ -358,7 +559,30 @@ theorem _root_.Matrix.IsHermitian.sum_spectralMeasure_single {A : Matrix n n �
     (hA : A.IsHermitian) :
     ∑ i, spectralMeasure A (Pi.single i 1) =
       (Fintype.card n : ℝ≥0∞) • empiricalSpectralMeasure A := by
-  sorry
+  ext S hS
+  have hind : ∀ x, 0 ≤ S.indicator (fun _ => (1 : ℝ)) x :=
+    Set.indicator_nonneg fun _ _ => zero_le_one
+  have hdiag : ∀ i, RCLike.re (quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) (Pi.single i 1)) =
+      RCLike.re (cfc (S.indicator fun _ => (1 : ℝ)) A i i) := fun i => by
+    simp [quadForm_def]
+  rw [Measure.coe_finsetSum, Finset.sum_apply]
+  simp only [spectralMeasure_apply, hdiag]
+  rw [← ENNReal.ofReal_sum_of_nonneg fun i _ => by
+      rw [← hdiag]; exact re_quadForm_cfc_indicator_nonneg A _ S,
+    ← map_sum, show (∑ i, cfc (S.indicator fun _ => (1 : ℝ)) A i i) =
+      (cfc (S.indicator fun _ => (1 : ℝ)) A).trace from rfl, hA.re_trace_cfc,
+    ENNReal.ofReal_sum_of_nonneg fun k _ => hind _, Measure.smul_apply, empiricalSpectralMeasure,
+    Measure.smul_apply, Measure.coe_finsetSum, Finset.sum_apply, smul_eq_mul, smul_eq_mul]
+  have hk : ∀ k ∈ Finset.range (Fintype.card n), ENNReal.ofReal
+      (S.indicator (fun _ => (1 : ℝ)) (eigenvalue A k)) = Measure.dirac (eigenvalue A k) S :=
+    fun k _ => by
+      rw [Measure.dirac_apply]
+      by_cases hx : eigenvalue A k ∈ S <;> simp [hx]
+  rw [Finset.sum_congr rfl hk]
+  rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | h0
+  · simp [h0]
+  · rw [← mul_assoc, ENNReal.mul_inv_cancel (by exact_mod_cast h0.ne') (ENNReal.natCast_ne_top _),
+      one_mul]
 
 /-- The empirical spectral measure of a Hermitian $\mathbf{A}$ lives on the spectrum. -/
 theorem _root_.Matrix.IsHermitian.ae_mem_spectrum_empiricalSpectralMeasure {A : Matrix n n 𝕜}
