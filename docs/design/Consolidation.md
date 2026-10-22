@@ -476,6 +476,9 @@ Notes on the Matrix rows:
   shape an upstream PR would take. The name follows the §4.3 spelling `fromBlocks_zero₁₂_zero₂₁`
   (`Naming.md`, D9 synonyms, line 76). The smul-one special case is not a separate lemma.
   Mathlib's `Matrix.fromBlocks_diagonal` makes the two diagonal privates unnecessary.
+  *Amendment 2026-10-22 (A4):* the block index types take `[Finite s] [Finite t]`, not
+  `[Fintype _]`: the statement does not mention them, and Mathlib's `unusedFintypeInType` linter
+  fails the `--wfail` build.
 
 ### 3.3 The three Regression `IsQR` theorems: `hR` stays
 
