@@ -40,6 +40,8 @@ Orthonormal rows are `HasOrthonormalCols Qᴴ`; a unitary matrix is a square $\m
   $\mathbf{S}\mathbf{B}$ has orthonormal columns.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_self`: for square $\mathbf{Q}$, also
   $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{I}$.
+* `NLAlib.HasOrthonormalCols.hasOrthonormalCols_mul_diagonal`: a unitary times a diagonal of
+  signs is unitary.
 -/
 
 @[expose] public section
@@ -344,6 +346,22 @@ theorem isUnit {Q : Matrix n n 𝕜} (hQ : HasOrthonormalCols Q) : IsUnit Q :=
 $\mathbf{Q}^{-1} = \mathbf{Q}^{\mathsf{H}}$. -/
 theorem inv_eq {Q : Matrix n n 𝕜} (hQ : HasOrthonormalCols Q) : Q⁻¹ = Qᴴ :=
   Matrix.inv_eq_left_inv hQ
+
+/-- A unitary times a diagonal of signs is unitary: if
+$\mathbf{F}^{\mathsf{H}}\mathbf{F} = \mathbf{I}$ and $y_i^2 = 1$ for every $i$, then
+$\mathbf{D} = \operatorname{diag}(\mathbf{y})$ has $\mathbf{D}^{\mathsf{H}}\mathbf{D} = \mathbf{I}$
+and $(\mathbf{F}\mathbf{D})^{\mathsf{H}}\mathbf{F}\mathbf{D} = \mathbf{D}^{\mathsf{H}}\mathbf{D}
+= \mathbf{I}$. -/
+theorem hasOrthonormalCols_mul_diagonal {F : Matrix n n 𝕜}
+    (hF : HasOrthonormalCols F) {y : n → ℝ} (hy : ∀ i, y i ^ 2 = 1) :
+    HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
+  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
+    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
+    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1
+  funext i
+  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hy i,
+    RCLike.ofReal_one]
 
 end HasOrthonormalCols
 

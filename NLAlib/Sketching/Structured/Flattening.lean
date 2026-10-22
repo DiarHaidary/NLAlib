@@ -71,8 +71,6 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 
 ## Main results
 
-* `NLAlib.HasOrthonormalCols.hasOrthonormalCols_mul_diagonal`: a unitary times a diagonal of
-  signs is unitary.
 * `NLAlib.HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector`:
   $\mathbf{F}\mathbf{D}$ is unitary almost surely.
 * `NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`:
@@ -175,22 +173,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
   {F : Matrix n n 𝕜} {ξ : Ω → n → ℝ} {β L a b t δ δ₁ δ₂ : ℝ}
 
 /-! ### Flattening -/
-
-/-- A unitary times a diagonal of signs is unitary: if
-$\mathbf{F}^{\mathsf{H}}\mathbf{F} = \mathbf{I}$ and $y_i^2 = 1$ for every $i$, then
-$\mathbf{D} = \operatorname{diag}(\mathbf{y})$ has $\mathbf{D}^{\mathsf{H}}\mathbf{D} = \mathbf{I}$
-and $(\mathbf{F}\mathbf{D})^{\mathsf{H}}\mathbf{F}\mathbf{D} = \mathbf{D}^{\mathsf{H}}\mathbf{D}
-= \mathbf{I}$. -/
-theorem HasOrthonormalCols.hasOrthonormalCols_mul_diagonal (hF : HasOrthonormalCols F)
-    {y : n → ℝ} (hy : ∀ i, y i ^ 2 = 1) :
-    HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
-  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
-    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
-    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
-  congr 1
-  funext i
-  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hy i,
-    RCLike.ofReal_one]
 
 /-- A unitary times a diagonal of random signs is unitary almost surely:
 $(\mathbf{F}\mathbf{D})^{\mathsf{H}}\mathbf{F}\mathbf{D} = \mathbf{D}^2 = \mathbf{I}$ on the event

@@ -1156,7 +1156,7 @@ the note:
   `NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le` is a few lines.
 * **Duplicated helpers made public** (final review, 2026-10-22; rule S5). Each replaces private
   copies in two or more files; no public statement changed.
-  `NLAlib.HasOrthonormalCols.hasOrthonormalCols_mul_diagonal` (`Sketching/Structured/Flattening.lean`):
+  `NLAlib.HasOrthonormalCols.hasOrthonormalCols_mul_diagonal` (`Matrix/Basic/Orthonormal.lean`):
   a unitary times a diagonal of signs is unitary, the deterministic step of the a.e. form, which
   now derives from it; the private copy of `SRHTMultiplication.lean` goes.
   `NLAlib.row_eq_zero_of_norm_sq_le` (`Sketching/Sampling/RowSampling.lean`): a row of zero
