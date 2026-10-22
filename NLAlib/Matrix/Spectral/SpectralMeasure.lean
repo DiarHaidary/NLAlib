@@ -439,9 +439,14 @@ theorem _root_.Matrix.IsHermitian.spectralTangentSq_le {A : Matrix n n 𝕜} (hA
 
 /-! ### The filter theorem -/
 
-/-- The Rayleigh quotient of a filtered vector as a ratio of spectral integrals:
-$\rho_{\mathbf{A}}(g(\mathbf{A})\mathbf{b}) = \int x g(x)^2\,d\mu / \int g^2\,d\mu$. -/
-private theorem rayleighQuotient_cfc_mulVec_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+/-- The Rayleigh quotient of a filtered vector as a ratio of spectral integrals: for Hermitian
+$\mathbf{A}$ and every $g : \mathbb{R} \to \mathbb{R}$,
+$$\rho_{\mathbf{A}}(g(\mathbf{A})\mathbf{b}) =
+\frac{\int x g(x)^2\,d\mu_{\mathbf{A},\mathbf{b}}}{\int g^2\,d\mu_{\mathbf{A},\mathbf{b}}}\,,$$
+$\rho_{\mathbf{A}}$ the Rayleigh quotient; both sides are $0$ when
+$g(\mathbf{A})\mathbf{b} = \mathbf{0}$. -/
+theorem _root_.Matrix.IsHermitian.rayleighQuotient_cfc_mulVec_eq_integral_div {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian)
     (g : ℝ → ℝ) (b : n → 𝕜) :
     rayleighQuotient A (cfc g A *ᵥ b) =
       (∫ x, x * g x ^ 2 ∂spectralMeasure A b) / ∫ x, g x ^ 2 ∂spectralMeasure A b := by
@@ -507,7 +512,7 @@ theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_cfc_mulVec_le {A : Ma
       simp only [sub_mul]
       rw [integral_sub (hi _) (hi _), integral_const_mul]
     have h0 := (hpos.trans_le hden).ne'
-    rw [rayleighQuotient_cfc_mulVec_eq hA, ← hμ, hI]
+    rw [hA.rayleighQuotient_cfc_mulVec_eq_integral_div, ← hμ, hI]
     field_simp
   rw [hsub, abs_div, abs_of_pos (hpos.trans_le hden)]
   calc |∫ x, (c - x) * g x ^ 2 ∂μ| / ∫ x, g x ^ 2 ∂μ ≤ K * μ.real {c}ᶜ / (g c ^ 2 * μ.real {c}) :=
