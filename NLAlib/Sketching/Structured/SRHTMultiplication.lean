@@ -84,6 +84,7 @@ private theorem hasJLProperty_of_forall_mem_Ioo {g : ℝ → ℝ} (hg : Continuo
   filter_upwards [Ioo_mem_nhdsLT hε] with e he
   exact h e he x hx
 
+omit [DecidableEq n] in
 /-- The OSE tail at $d = 1$ gives the JL tail: through
 `NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty` at every $e < \varepsilon$ and continuity. -/
 private theorem hasJLProperty_of_forall_isObliviousSubspaceEmbedding [IsFiniteMeasure μ]
@@ -419,6 +420,147 @@ section Spectral
 
 variable {q r : Type*} [Fintype q] [Fintype r] {S : Ω → Matrix k n 𝕜} {F : Matrix n n 𝕜}
 
+/-- A unitary times a diagonal of signs is unitary. -/
+private theorem hasOrthonormalCols_mul_diagonal (hF : HasOrthonormalCols F) {y : n → ℝ}
+    (hy : ∀ i, y i ^ 2 = 1) : HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
+  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
+    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
+    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1
+  funext i
+  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hy i,
+    RCLike.ofReal_one]
+
+omit [Fintype q] [Fintype r] in
+/-- The sampled product through a unitary $\mathbf{T}$:
+$\mathbf{A}^{\mathsf{H}}(\mathbf{P}\mathbf{T})^{\mathsf{H}}\mathbf{P}\mathbf{T}\mathbf{B} -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}$ is the sampled product of $\mathbf{T}\mathbf{A}$ and
+$\mathbf{T}\mathbf{B}$. -/
+private theorem conjTranspose_mul_mul_sub_of_hasOrthonormalCols {T : Matrix n n 𝕜}
+    (hT : HasOrthonormalCols T) (P : Matrix k n 𝕜) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) :
+    Aᴴ * (P * T)ᴴ * (P * T) * B - Aᴴ * B =
+      (T * A)ᴴ * Pᴴ * P * (T * B) - (T * A)ᴴ * (T * B) := by
+  have h : (T * A)ᴴ * (T * B) = Aᴴ * B := by
+    rw [Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Tᴴ,
+      hT.conjTranspose_mul_self, Matrix.one_mul]
+  rw [h, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul]
+  simp only [Matrix.mul_assoc]
+
+omit [Fintype k] in
+/-- The flattening event of both factors fails with probability at most
+$2\lvert n\rvert e^{-s}$. -/
+private theorem measureReal_not_mem_flat_le {ν : Measure ((n → ℝ) × Matrix k n 𝕜)}
+    {ξ : (n → ℝ) × Matrix k n 𝕜 → n → ℝ} (hξ : HasLaw ξ (rademacherVector n) ν)
+    (hF : IsBoundedOrthonormal F β) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) {s : ℝ} (hs : 0 ≤ s) :
+    ν.real {x | ¬ ((∀ i, ξ x i ^ 2 = 1) ∧
+      (∀ i, ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ x l : 𝕜)) * A) i)‖ ^ 2 ≤
+        β * srhtRowNormBound A s * (Fintype.card n : ℝ)⁻¹) ∧
+      ∀ i, ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ x l : 𝕜)) * B) i)‖ ^ 2 ≤
+        β * srhtRowNormBound B s * (Fintype.card n : ℝ)⁻¹)} ≤
+      2 * Fintype.card n * Real.exp (-s) := by
+  have : IsProbabilityMeasure ν := hξ.isProbabilityMeasure_iff.2 inferInstance
+  have h1 : ν.real {x | ¬ ∀ i, ξ x i ^ 2 = 1} = 0 :=
+    (measureReal_eq_zero_iff (measure_ne_top _ _)).2
+      (ae_iff.1 (ae_sq_eq_one_of_hasLaw_rademacherVector hξ))
+  have h2 := measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector
+    hF hξ A hs
+  have h3 := measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector
+    hF hξ B hs
+  set EA := {x | ∃ i, β * srhtRowNormBound A s * (Fintype.card n : ℝ)⁻¹ <
+    ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ x l : 𝕜)) * A) i)‖ ^ 2}
+  set EB := {x | ∃ i, β * srhtRowNormBound B s * (Fintype.card n : ℝ)⁻¹ <
+    ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ x l : 𝕜)) * B) i)‖ ^ 2}
+  calc _ ≤ ν.real ({x | ¬ ∀ i, ξ x i ^ 2 = 1} ∪ (EA ∪ EB)) := by
+        refine measureReal_mono (fun x hx => ?_) (measure_ne_top _ _)
+        simp only [Set.mem_ofPred_eq, not_and_or, not_forall, not_le] at hx
+        simp only [EA, EB, Set.mem_union, Set.mem_ofPred_eq, not_forall]
+        exact hx
+    _ ≤ ν.real {x | ¬ ∀ i, ξ x i ^ 2 = 1} + (ν.real EA + ν.real EB) :=
+        (measureReal_union_le _ _).trans (add_le_add le_rfl (measureReal_union_le _ _))
+    _ ≤ 2 * Fintype.card n * Real.exp (-s) := by
+        rw [h1]
+        linarith
+
+/-- **Flatten, then sample** for approximate multiplication, on the product of the signs and an
+independent sampling law `ρ`: if `ρ` multiplies every pair of fixed factors with the norms of
+$\mathbf{A}$, $\mathbf{B}$ and flattened rows to within $t$ outside probability $\delta_1$, the
+pushforward does outside probability $\delta_1 + 2\lvert n\rvert e^{-s}$. -/
+private theorem measureReal_specNorm_map_prod_le {ρ : Measure (Matrix k n 𝕜)}
+    [IsProbabilityMeasure ρ] (hF : IsBoundedOrthonormal F β) (A : Matrix n q 𝕜)
+    (B : Matrix n r 𝕜) {s t δ₁ : ℝ} (hs : 0 ≤ s) (hδ₁ : 0 ≤ δ₁)
+    (hsample : ∀ (A' : Matrix n q 𝕜) (B' : Matrix n r 𝕜), specNorm A' = specNorm A →
+      specNorm B' = specNorm B →
+      (∀ i, ‖WithLp.toLp 2 (A' i)‖ ^ 2 ≤ β * srhtRowNormBound A s * (Fintype.card n : ℝ)⁻¹) →
+      (∀ i, ‖WithLp.toLp 2 (B' i)‖ ^ 2 ≤ β * srhtRowNormBound B s * (Fintype.card n : ℝ)⁻¹) →
+      ρ.real {P | t ≤ specNorm (A'ᴴ * Pᴴ * P * B' - A'ᴴ * B')} ≤ δ₁) :
+    (((rademacherVector n).prod ρ).map
+        fun x => x.2 * F * Matrix.diagonal fun i => (x.1 i : 𝕜)).real
+      {M | t ≤ specNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B)} ≤
+      δ₁ + 2 * Fintype.card n * Real.exp (-s) := by
+  have hmap : Measurable fun x : (n → ℝ) × Matrix k n 𝕜 =>
+      x.2 * F * Matrix.diagonal fun i => (x.1 i : 𝕜) := (by fun_prop : Continuous _).measurable
+  have hE : MeasurableSet {M : Matrix k n 𝕜 | t ≤ specNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B)} :=
+    measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable
+  rw [map_measureReal_apply hmap hE]
+  have hfst := (measurePreserving_fst (μ := rademacherVector n) (ν := ρ)).hasLaw
+  have hsnd := (measurePreserving_snd (μ := rademacherVector n) (ν := ρ)).hasLaw
+  have hind : IndepFun (fun x : (n → ℝ) × Matrix k n 𝕜 => x.2) (fun x => x.1)
+      ((rademacherVector n).prod ρ) :=
+    (indepFun_prod (μ := rademacherVector n) (ν := ρ) (X := id) (Y := id) measurable_id
+      measurable_id).symm
+  have hG : MeasurableSet {y : n → ℝ | (∀ i, y i ^ 2 = 1) ∧
+      (∀ i, ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (y l : 𝕜)) * A) i)‖ ^ 2 ≤
+        β * srhtRowNormBound A s * (Fintype.card n : ℝ)⁻¹) ∧
+      ∀ i, ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (y l : 𝕜)) * B) i)‖ ^ 2 ≤
+        β * srhtRowNormBound B s * (Fintype.card n : ℝ)⁻¹} := by
+    simp only [Set.ofPred_and, Set.ofPred_forall]
+    refine (MeasurableSet.iInter fun i => ?_).inter
+      ((MeasurableSet.iInter fun i => ?_).inter (MeasurableSet.iInter fun i => ?_))
+    · exact measurableSet_eq_fun (by fun_prop) measurable_const
+    · exact measurableSet_le (Continuous.measurable (by fun_prop)) measurable_const
+    · exact measurableSet_le (Continuous.measurable (by fun_prop)) measurable_const
+  refine hind.measureReal_mem_le_add (E := {p : Matrix k n 𝕜 × (n → ℝ) |
+      t ≤ specNorm (Aᴴ * (p.1 * F * Matrix.diagonal fun i => (p.2 i : 𝕜))ᴴ *
+        (p.1 * F * Matrix.diagonal fun i => (p.2 i : 𝕜)) * B - Aᴴ * B)})
+    measurable_snd.aemeasurable measurable_fst.aemeasurable
+    (measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable)
+    hG hδ₁ (fun y hy => ?_) (measureReal_not_mem_flat_le hfst hF A B hs)
+  obtain ⟨hy1, hyA, hyB⟩ := hy
+  have hT := hasOrthonormalCols_mul_diagonal (𝕜 := 𝕜) hF.hasOrthonormalCols hy1
+  set T := F * Matrix.diagonal fun i => (y i : 𝕜) with hTdef
+  have hset : {x : (n → ℝ) × Matrix k n 𝕜 | (x.2, y) ∈ {p : Matrix k n 𝕜 × (n → ℝ) |
+      t ≤ specNorm (Aᴴ * (p.1 * F * Matrix.diagonal fun i => (p.2 i : 𝕜))ᴴ *
+        (p.1 * F * Matrix.diagonal fun i => (p.2 i : 𝕜)) * B - Aᴴ * B)}} =
+      {x | t ≤ specNorm ((T * A)ᴴ * x.2ᴴ * x.2 * (T * B) - (T * A)ᴴ * (T * B))} := by
+    ext x
+    simp only [Set.mem_ofPred_eq]
+    rw [Matrix.mul_assoc x.2 F, ← hTdef, conjTranspose_mul_mul_sub_of_hasOrthonormalCols hT]
+  rw [hset, hsnd.measureReal_eq (p := fun P : Matrix k n 𝕜 =>
+    t ≤ specNorm ((T * A)ᴴ * Pᴴ * P * (T * B) - (T * A)ᴴ * (T * B)))
+    (measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable)]
+  exact hsample _ _ (hT.specNorm_mul_left A) (hT.specNorm_mul_left B) hyA hyB
+
+omit [DecidableEq n] in
+/-- The degenerate case of the SRHT spectral tails, empty `n`: both factors vanish. -/
+private theorem measureReal_specNorm_ge_le_of_isEmpty [IsEmpty n] [Nonempty r]
+    (h1 : ∀ s : Set Ω, μ.real s ≤ 1) (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) {t : ℝ} (ht : 0 ≤ t)
+    (x : ℝ) {y : ℝ} (hy : 0 ≤ y) :
+    μ.real {ω | t ≤ specNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B)} ≤
+      (Fintype.card q + Fintype.card r) * Real.exp (-(Fintype.card k * t ^ 2 / 2) / x) + y := by
+  have hA : A = 0 := Matrix.ext fun i => isEmptyElim i
+  have hr : (1 : ℝ) ≤ Fintype.card q + Fintype.card r := by
+    have : (1 : ℝ) ≤ Fintype.card r := by exact_mod_cast Fintype.card_pos
+    linarith [(Nat.cast_nonneg (α := ℝ) (Fintype.card q))]
+  rcases ht.eq_or_lt with rfl | ht'
+  · simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, zero_div,
+      neg_zero, Real.exp_zero, mul_one]
+    linarith [h1 {ω | 0 ≤ specNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B)}]
+  have hE : {ω | t ≤ specNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B)} = ∅ := by
+    ext ω
+    simp [hA, specNorm_zero, not_le.2 ht']
+  rw [hE, measureReal_empty]
+  positivity
+
 /-- **Approximate matrix multiplication in the spectral norm by the SRHT**: for a bounded
 orthonormal $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ built from it (independent
 random signs and an independent uniform choice of $\lvert k\rvert$ distinct rows), $r$ nonempty,
@@ -449,7 +591,37 @@ theorem measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_srht [Nonempt
             (β * srhtRowNormBound A s * specNorm B ^ 2) +
           2 * β * √(srhtRowNormBound A s * srhtRowNormBound B s) * t / 3)) +
       2 * Fintype.card n * Real.exp (-s) := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact measureReal_specNorm_ge_le_of_isEmpty (S := S) (measureReal_le_one_of_hasLaw_srht hS)
+      A B ht _ (by positivity)
+  let _ : MeasurableSpace n := ⊤
+  have hE : MeasurableSet {M : Matrix k n 𝕜 | t ≤ specNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B)} :=
+    measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable
+  rw [hS.measureReal_eq hE, srht_eq_map_prod]
+  rcases lt_or_ge (Fintype.card n) (Fintype.card k) with hk | hk
+  · rw [samplingSketchWithoutReplacement_eq_map, uniformOn_injective_of_card_lt hk,
+      Measure.map_zero, Measure.prod_zero, Measure.map_zero, measureReal_zero_apply]
+    positivity
+  have := isProbabilityMeasure_samplingSketchWithoutReplacement (𝕜 := 𝕜) hk
+  have hβ : 0 ≤ β := zero_le_one.trans hF.one_le
+  have hRA := srhtRowNormBound_nonneg A hs
+  have hRB := srhtRowNormBound_nonneg B hs
+  refine measureReal_specNorm_map_prod_le hF A B hs (by positivity)
+    fun A' B' hA' hB' hrA hrB => ?_
+  rcases isEmpty_or_nonempty k with hk0 | hk0
+  · refine measureReal_le_one.trans ?_
+    have : (1 : ℝ) ≤ Fintype.card r := by exact_mod_cast Fintype.card_pos
+    rw [Fintype.card_eq_zero (α := k), Nat.cast_zero, zero_mul, zero_div, neg_zero, zero_div,
+      Real.exp_zero, mul_one]
+    linarith [(Nat.cast_nonneg (α := ℝ) (Fintype.card q))]
+  have h :=
+    measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketchWithoutReplacement
+      (HasLaw.id (μ := samplingSketchWithoutReplacement k n)) A' B' (mul_nonneg hβ hRA)
+      (mul_nonneg hβ hRB) hrA hrB ht
+  rw [hA', hB', show β * srhtRowNormBound A s * (β * srhtRowNormBound B s) =
+    β ^ 2 * (srhtRowNormBound A s * srhtRowNormBound B s) by ring,
+    Real.sqrt_mul (sq_nonneg β), Real.sqrt_sq hβ, ← mul_assoc] at h
+  exact h
 
 /-- **Approximate matrix multiplication in the spectral norm by the SRHT with replacement**: for a
 bounded orthonormal $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ built from it with
@@ -477,7 +649,40 @@ theorem measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_srhtWithRepla
             (β * srhtRowNormBound A s * specNorm B ^ 2) +
           2 * β * √(srhtRowNormBound A s * srhtRowNormBound B s) * t / 3)) +
       2 * Fintype.card n * Real.exp (-s) := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have h0 : srhtWithReplacement k F = 0 := by
+      let _ : MeasurableSpace n := ⊤
+      have hpi : (Measure.pi fun _ : k =>
+          samplingMeasure fun _ : n => (Fintype.card n : NNReal)⁻¹) = 0 := by
+        rw [← Measure.measure_univ_eq_zero, Measure.pi_univ]
+        exact Finset.prod_eq_zero (Finset.mem_univ (Classical.arbitrary k))
+          (by simp [samplingMeasure])
+      rw [srhtWithReplacement_eq_map_prod, samplingSketch_eq_map, hpi, Measure.map_zero,
+        Measure.prod_zero, Measure.map_zero]
+    have hμ : μ = 0 := (Measure.map_eq_zero_iff hS.aemeasurable).1 (hS.map_eq.trans h0)
+    exact measureReal_specNorm_ge_le_of_isEmpty (S := S)
+      (fun s => by rw [hμ, measureReal_zero_apply]; exact zero_le_one) A B ht _ (by positivity)
+  let _ : MeasurableSpace n := ⊤
+  have hE : MeasurableSet {M : Matrix k n 𝕜 | t ≤ specNorm (Aᴴ * Mᴴ * M * B - Aᴴ * B)} :=
+    measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable
+  rw [hS.measureReal_eq hE, srhtWithReplacement_eq_map_prod]
+  have := isProbabilityMeasure_samplingSketch (𝕜 := 𝕜) (k := k)
+    (NNReal.sum_const_inv_card (ι := n))
+  have hβ : 0 ≤ β := zero_le_one.trans hF.one_le
+  have hRA := srhtRowNormBound_nonneg A hs
+  have hRB := srhtRowNormBound_nonneg B hs
+  have hc : ((((Fintype.card n : NNReal)⁻¹ : NNReal)) : ℝ) = (Fintype.card n : ℝ)⁻¹ := by
+    rw [NNReal.coe_inv, NNReal.coe_natCast]
+  refine measureReal_specNorm_map_prod_le hF A B hs (by positivity)
+    fun A' B' hA' hB' hrA hrB => ?_
+  have h := measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch
+    (HasLaw.id (μ := samplingSketch k fun _ : n => (Fintype.card n : NNReal)⁻¹))
+    NNReal.sum_const_inv_card A' B' (mul_nonneg hβ hRA) (mul_nonneg hβ hRB)
+    (fun i => by rw [hc]; exact hrA i) (fun i => by rw [hc]; exact hrB i) ht
+  rw [hA', hB', show β * srhtRowNormBound A s * (β * srhtRowNormBound B s) =
+    β ^ 2 * (srhtRowNormBound A s * srhtRowNormBound B s) by ring,
+    Real.sqrt_mul (sq_nonneg β), Real.sqrt_sq hβ, ← mul_assoc] at h
+  exact h
 
 end Spectral
 
