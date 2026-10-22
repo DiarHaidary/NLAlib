@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.QuadraticForm.Moments
+public import NLAlib.RandomMatrix.Rademacher.Basic
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.SubGaussian
 
@@ -15,8 +16,9 @@ public import NLAlib.Sketching.Gaussian.SubGaussian
 
 The sign sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ for a random
 `X : Matrix k n ℝ` with independent random signs, `HasLaw X (rademacherMatrix k n) μ`, where
-`rademacherMatrix k n` is the law of independent rows, each a `rademacherVector n`. It is written
-out in each statement, `fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`, as for the Gaussian sketch.
+`rademacherMatrix k n` (in `NLAlib.RandomMatrix.Rademacher.Basic`) is the law of independent
+rows, each a `rademacherVector n`. It is written out in each statement,
+`fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`, as for the Gaussian sketch.
 
 It is an isotropic sketch, has the distributional Johnson–Lindenstrauss property with the
 Gaussian sketch's exponent $\varepsilon^2/4 - \varepsilon^3/6$ (Dasgupta and Gupta's; Achlioptas's
@@ -44,10 +46,6 @@ JL event $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$ has positive probability ($2^{-
 at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it. Design:
 `docs/design/Sketching-S3.md` §3.3, §8.
 
-## Main definitions
-
-* `NLAlib.rademacherMatrix k n`.
-
 ## Main results
 
 * `NLAlib.isIsotropicSketch_of_hasLaw_rademacherMatrix`.
@@ -69,17 +67,8 @@ open scoped Matrix MatrixOrder
 
 namespace NLAlib
 
-/-- The law of a matrix with independent random signs: independent rows, each a
-`rademacherVector n`. -/
-noncomputable abbrev rademacherMatrix (k n : Type*) [Fintype k] [Fintype n] :
-    Measure (Matrix k n ℝ) :=
-  Measure.pi fun _ : k => rademacherVector n
-
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n : Type*} [Fintype k]
   [Fintype n] {X : Ω → Matrix k n ℝ} {ε δ : ℝ} {d : ℕ}
-
-instance isProbabilityMeasure_rademacherMatrix : IsProbabilityMeasure (rademacherMatrix k n) :=
-  inferInstanceAs (IsProbabilityMeasure (Measure.pi fun _ : k => rademacherVector n))
 
 /-! ### Proof-local facts -/
 

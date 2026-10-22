@@ -346,6 +346,7 @@ public import NLAlib.RandomMatrix.Haar.Moments
 public import NLAlib.RandomMatrix.Haar.Sphere
 public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
+public import NLAlib.RandomMatrix.Rademacher.Basic
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Regression.CountSketch
