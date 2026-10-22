@@ -92,9 +92,10 @@ private theorem hasProjectionCostPreserving_of_half [IsFiniteMeasure μ] {S : Ω
   exact (h.hasProjectionCostPreserving_of_hasJLMoment hJL hS (by linarith) (by linarith)
     (by positivity) hp hδ' A).mono le_rfl h₁ h₂ hδδ'
 
-/-- At least `projectionCostTailDim v d ε δ` rows make the three tail failures
-$v/(\lvert k\rvert\varepsilon_J^2)$ at $\varepsilon_J = \varepsilon/(8\sqrt{d+1})$ total at most
-$\delta/2$. -/
+/-- At least <!-- value projectionCostTailDim v d \varepsilon \delta -->
+$384 \cdot v (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailDim v d ε δ`) make the three
+tail failures $v/(\lvert k\rvert\varepsilon_J^2)$ at $\varepsilon_J = \varepsilon/(8\sqrt{d+1})$
+total at most $\delta/2$. -/
 private theorem three_mul_div_le_of_projectionCostTailDim_le {v K : ℝ} {d : ℕ} (hε : 0 < ε)
     (hδ : 0 < δ) (hK : 0 < K) (hk : projectionCostTailDim v d ε δ ≤ K) :
     3 * (v / (K * (ε / (8 * √((d : ℝ) + 1))) ^ 2)) ≤ δ / 2 := by
@@ -140,8 +141,10 @@ private theorem log_one_div_sixth_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
   linarith
 
 /-- The tail rows of the $\log(1/\delta)$ forms against the asymptotic threshold:
-`jlMomentDim (ε / (8 * √(d + 1))) (δ / 6)` is at most $98304(d+1)\log(1/\delta)/\varepsilon^2$
-for $0 < \delta \le 1/2$. -/
+`jlMomentDim (ε / (8 * √(d + 1))) (δ / 6)`, which
+is <!-- value jlMomentDim (\varepsilon/(8\sqrt{d+1})) (\delta/6) -->
+$128\max(2, \log(1/(\delta/6)))/(\varepsilon/(8\sqrt{d+1}))^2$, is at most
+$98304(d+1)\log(1/\delta)/\varepsilon^2$ for $0 < \delta \le 1/2$. -/
 private theorem jlMomentDim_le_of_mul_le {d : ℕ} {K : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
     (hδ2 : δ ≤ 1 / 2) (hK : 98304 * (((d : ℝ) + 1) * Real.log (1 / δ) / ε ^ 2) ≤ K) :
     jlMomentDim (ε / (8 * √((d : ℝ) + 1))) (δ / 6) ≤ K := by
