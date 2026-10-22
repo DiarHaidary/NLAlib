@@ -67,16 +67,6 @@ column space. No junk value: the minimiser always exists. [Saad2003, §5.3.2]. -
 noncomputable def minResidualInverse (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) : Matrix n m 𝕜 :=
   pinv (A * rangeProjector X)
 
-omit [Fintype m] [DecidableEq r] in
-/-- The column space of $\mathbf{A}\mathbf{P}_{\mathbf{X}}$ is that of $\mathbf{A}\mathbf{X}$. -/
-private lemma range_mulVecLin_mul_rangeProjector (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) :
-    LinearMap.range (A * rangeProjector X).mulVecLin = LinearMap.range (A * X).mulVecLin := by
-  obtain ⟨C, hC⟩ := range_le_iff_exists_mul.mp (range_rangeProjector X).le
-  refine le_antisymm (range_le_iff_exists_mul.mpr ⟨C, ?_⟩)
-    (range_le_iff_exists_mul.mpr ⟨X, ?_⟩)
-  · rw [hC, Matrix.mul_assoc]
-  · rw [Matrix.mul_assoc, rangeProjector_mul_self]
-
 omit [DecidableEq r] in
 /-- The range of the minimal residual inverse lies in the column space of $\mathbf{X}$. -/
 private lemma range_mulVecLin_minResidualInverse_le (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) :
@@ -138,7 +128,7 @@ theorem mul_minResidualInverse (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) :
     A * minResidualInverse A X = rangeProjector (A * X) := by
   rw [← rangeProjector_mul_minResidualInverse, ← Matrix.mul_assoc, minResidualInverse, mul_pinv,
     rangeProjector_inj]
-  exact range_mulVecLin_mul_rangeProjector A X
+  exact range_mul_eq_of_range_eq A (range_rangeProjector X)
 
 omit [DecidableEq r] in
 /-- **Minimal residual approximations minimise the residual**: for every $\mathbf{A}$,
