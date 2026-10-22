@@ -205,23 +205,6 @@ private theorem inv_mul_conjTranspose_apply_of_ne [DecidableEq k] (G : Matrix r 
   rwa [Matrix.mulVec_single_one, Matrix.col_apply, Pi.smul_apply, dif_neg hji, smul_eq_mul,
     mul_comm] at h
 
-/-- For $\mathbf{B}$ with independent columns, $\lvert t \rvert$ of them in dimension
-$\lvert k \rvert = \lvert t \rvert + d$, the column space of $\mathbf{B}$ has a complement of
-dimension $d$ with an orthonormal basis $\mathbf{V}$, and
-$\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{g}\| = \|\mathbf{V}^{\mathsf{H}}\mathbf{g}\|$. -/
-private theorem exists_norm_one_sub_rangeProjector_mulVec_eq [DecidableEq k] {t : Type*} [Fintype t]
-    (B : Matrix k t ℝ) (hB : Function.Injective B.mulVec) {d : ℕ}
-    (hd : Fintype.card t + d = Fintype.card k) :
-    ∃ V : Matrix k (Fin d) ℝ, HasOrthonormalCols V ∧ ∀ g : k → ℝ,
-      ‖WithLp.toLp 2 ((1 - rangeProjector B) *ᵥ g)‖ = ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ := by
-  have hrank := rank_one_sub_rangeProjector_add_rank B
-  rw [mulVec_injective_iff_rank_eq.1 hB] at hrank
-  obtain ⟨V, hV, hVV⟩ :=
-    (isStarProjection_one_sub_rangeProjector B).exists_hasOrthonormalCols_mul_conjTranspose_eq
-      (p := Fin d) (by rw [Fintype.card_fin]; omega)
-  refine ⟨V, hV, fun g => ?_⟩
-  rw [← hVV, ← Matrix.mulVec_mulVec, hV.norm_toLp_mulVec]
-
 private theorem card_subtype_ne_add {i : r} (hrk : Fintype.card r ≤ Fintype.card k) :
     Fintype.card {j // j ≠ i} + (Fintype.card k - Fintype.card r + 1) = Fintype.card k := by
   have h1 : Fintype.card {j // j ≠ i} = Fintype.card r - 1 := by
@@ -300,7 +283,14 @@ private theorem lintegral_comp_inv_mul_conjTranspose_apply_self
         filter_upwards [ae_injective_conjTranspose_mulVec
           (HasLaw.id (μ := gaussianMatrix t k))
           (by have := card_subtype_ne_add (k := k) (i := i) hrk; omega)] with H hinj
-        obtain ⟨V, hV, hVg⟩ := exists_norm_one_sub_rangeProjector_mulVec_eq Hᴴ hinj hcard
+        have hrank := rank_one_sub_rangeProjector_add_rank Hᴴ
+        rw [(mulVec_injective_iff_rank_eq (A := Hᴴ)).1 hinj] at hrank
+        have hP := isStarProjection_one_sub_rangeProjector Hᴴ
+        obtain ⟨V, hV, hVV⟩ := hP.exists_hasOrthonormalCols_mul_conjTranspose_eq (p := Fin d)
+          (by rw [Fintype.card_fin]; omega)
+        have hVg (g : k → ℝ) : ‖WithLp.toLp 2 ((1 - rangeProjector Hᴴ) *ᵥ g)‖ =
+            ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ := by
+          rw [← hVV, ← Matrix.mulVec_mulVec, hV.norm_toLp_mulVec]
         have hVlaw : HasLaw (fun g : k → ℝ => Vᴴ *ᵥ g) (gaussianVector (Fin d))
             (gaussianVector k) :=
           hasLaw_mulVec_of_hasLaw_gaussianVector HasLaw.id
@@ -578,30 +568,6 @@ theorem integral_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
 /-! ### The off-diagonal second moment -/
 
 omit [DecidableEq r] in
-/-- An orthonormal frame adapted to the column space of $\mathbf{B}$ and its complement. -/
-private theorem exists_frame_rangeProjector [DecidableEq k] {t : Type*} [Fintype t] [DecidableEq t]
-    (B : Matrix k t ℝ) (hB : Function.Injective B.mulVec) {d : ℕ}
-    (hd : Fintype.card t + d = Fintype.card k) :
-    ∃ V₁ : Matrix k t ℝ, ∃ V₂ : Matrix k (Fin d) ℝ, HasOrthonormalCols (Matrix.fromCols V₁ V₂) ∧
-      V₁ * V₁ᴴ = rangeProjector B ∧ V₂ * V₂ᴴ = 1 - rangeProjector B := by
-  have hrankB := mulVec_injective_iff_rank_eq.1 hB
-  have hrank := rank_one_sub_rangeProjector_add_rank B
-  rw [hrankB] at hrank
-  obtain ⟨V₁, hV₁, h₁⟩ :=
-    (isStarProjection_rangeProjector B).exists_hasOrthonormalCols_mul_conjTranspose_eq
-      (p := t) (by rw [rank_rangeProjector, hrankB])
-  obtain ⟨V₂, hV₂, h₂⟩ :=
-    (isStarProjection_one_sub_rangeProjector B).exists_hasOrthonormalCols_mul_conjTranspose_eq
-      (p := Fin d) (by rw [Fintype.card_fin]; omega)
-  refine ⟨V₁, V₂, hasOrthonormalCols_fromCols_iff.2 ⟨hV₁, hV₂, ?_⟩, h₁, h₂⟩
-  have e₁ : V₁ᴴ = V₁ᴴ * rangeProjector B := by
-    rw [← h₁, ← Matrix.mul_assoc, hV₁.conjTranspose_mul_self, Matrix.one_mul]
-  have e₂ : V₂ = (1 - rangeProjector B) * V₂ := by
-    rw [← h₂, Matrix.mul_assoc, hV₂.conjTranspose_mul_self, Matrix.mul_one]
-  rw [e₁, e₂, Matrix.mul_assoc, ← Matrix.mul_assoc (rangeProjector B), Matrix.mul_sub,
-    Matrix.mul_one, rangeProjector_mul_rangeProjector, sub_self, Matrix.zero_mul, Matrix.mul_zero]
-
-omit [DecidableEq r] in
 /-- For an orthonormal frame $\begin{bmatrix} \mathbf{V}_1 & \mathbf{V}_2 \end{bmatrix}$,
 $\mathbf{V}_1^{\mathsf{H}}\mathbf{g}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{g}$ are independent
 standard Gaussian vectors, so
@@ -671,7 +637,10 @@ private theorem lintegral_pinv_mulVec_apply_sq_mul_inv_sq [DecidableEq k] {t : T
         ((‖WithLp.toLp 2 ((1 - rangeProjector Hᴴ) *ᵥ g)‖ ^ 2)⁻¹) ^ 2) ∂(gaussianVector k) =
       ENNReal.ofReal ((H * Hᴴ)⁻¹ j' j') *
         ENNReal.ofReal (1 / (((d : ℝ) - 2) * ((d : ℝ) - 4))) := by
-  obtain ⟨V₁, V₂, hV, h₁, h₂⟩ := exists_frame_rangeProjector Hᴴ hinj hcard
+  obtain ⟨V₁, V₂, hV, h₁, h₂⟩ :=
+    (isStarProjection_rangeProjector Hᴴ).exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
+      (p := t) (q := Fin d) (by rw [rank_rangeProjector, mulVec_injective_iff_rank_eq.1 hinj])
+      (by rwa [Fintype.card_fin])
   have hV₂ := (hasOrthonormalCols_fromCols_iff.1 hV).2.1
   set M := pinv Hᴴ * V₁ with hM
   have hPinv : pinv Hᴴ * rangeProjector Hᴴ = pinv Hᴴ := by
