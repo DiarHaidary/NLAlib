@@ -23,11 +23,19 @@ errors; references 87 keys, 70 asymptotic forms, 0 problems; constants 30, 336 v
 problems; rules 0 errors, 73 in the baseline; duplicates 5706 theorems, 0 classes.
 
 Open items:
-* The printed constants of Kuczyński and Woźniakowski (`KuczynskiWozniakowski1992`), as in the
-  skeleton entry below: the power constant $\lambda_0\log(1 + \tan^2)/(2q + 1)$ is now proved
-  (`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`), but the docstrings of the
-  four declarations listed there still say only that the printed constant is to be compared; each
-  must be checked against the paper and the source's value, the value proved and the gap stated.
+* The printed constants of Kuczyński and Woźniakowski (`KuczynskiWozniakowski1992`) are not yet
+  checked. The power constant $\lambda_0\log(1 + \tan^2)/(2q + 1)$ is proved
+  (`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`). Only the docstrings of the
+  named bounds `randomStartPowerBound` and `randomStartLanczosBound`
+  (`Estimation/Spectral/RandomStart.lean`) say that the printed constant is to be compared. The
+  theorem docstrings in `Krylov/Eigenvalues/PowerIteration.lean`
+  (`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`) and
+  `Krylov/Eigenvalues/Ritz.lean`
+  (`Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq`) never mention
+  the paper's constant: they cite it with a locator from the quarry, "to check", and the
+  skeleton entry below overstates them. Each of the four must be checked against the paper, and
+  its docstring must state the source's value, the value proved and the gap (CONTRIBUTING §5.2,
+  rule 2).
 * KS7 (orthogonal-polynomial structure theory: existence and real-rootedness, three-term
   recurrence, Christoffel–Darboux, `jacobiMatrix`, interlacing of zeros) stays deferred, note §8;
   no consumer this round.

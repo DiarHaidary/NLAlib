@@ -1514,6 +1514,19 @@ proofs:
   `Matrix.PosSemidef.spectrum_subset_Icc_eigenvalue_zero` in
   `Matrix/Functions/HermitianCalculus.lean`, next to `Matrix.PosSemidef.spectrum_subset_Ici`
   (placement by topic).
+* **2026-10-22, imports of `Polynomial/Chebyshev/EvenFilter.lean`**: the proofs added the private
+  imports `Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Basic`,
+  `Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema`,
+  `Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse`,
+  `Mathlib.MeasureTheory.Integral.Bochner.Set` and `Mathlib.Topology.Algebra.Polynomial` (the
+  trigonometric form of $U_{2k}$ through $\arccos$, continuity of the filter, and the integral
+  over the atom $\{1\}$ in the filter step for a measure). The public imports are unchanged; P11
+  holds.
+* **2026-10-22, imports of `Polynomial/Orthogonal/Moments.lean`**: the proofs added the public
+  imports `Mathlib.MeasureTheory.Integral.IntegrableOn` and `Mathlib.Topology.Algebra.Polynomial`
+  (for `integrable_eval_of_ae_mem_Icc`) and the private import of the new ForMathlib file
+  `NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.ChebyshevGauss` (for
+  `matchesMoments_measureT`). P11 allows both: Mathlib and `NLAlib.ForMathlib` only.
 * **2026-10-22, the Kuczyński–Woźniakowski power constant.** The deterministic power step
   `Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`
   (`Krylov/Eigenvalues/PowerIteration.lean`) is proved with the constant
