@@ -69,7 +69,61 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_haarFrame
     (hl₂ : jlMomentDim (ε / (6 * √(k : ℝ))) (δ / 3) ≤ Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - earlyTruncatedRSVD A (Q ω) k) ^ 2} ≤ δ := by
-  sorry
+  classical
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (Q ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have hk1 : (1 : ℝ) ≤ √(k : ℝ) := Real.one_le_sqrt.2 (by exact_mod_cast hk)
+  have hεJ : 0 < ε / (6 * √(k : ℝ)) := by positivity
+  have hεJ1 : ε / (6 * √(k : ℝ)) ≤ 1 := by
+    rw [div_le_one (by positivity)]
+    linarith
+  have hl0 : (0 : ℝ) < Fintype.card l := by
+    refine lt_of_lt_of_le ?_ hl₂
+    rw [jlMomentDim_def]
+    have : (0 : ℝ) < max 2 (Real.log (1 / (δ / 3))) := lt_max_of_lt_left two_pos
+    positivity
+  have : Nonempty l := Fintype.card_pos_iff.1 (by exact_mod_cast hl0)
+  have hS : (fun ω => √(Fintype.card n / Fintype.card l : ℝ) • (Q ω)ᴴ) =
+      fun ω => (√(Fintype.card n / Fintype.card l : ℝ) • Q ω)ᴴ := by
+    funext ω
+    rw [Matrix.conjTranspose_smul, star_trivial]
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le (d := k) hQ hl
+    (by positivity : 0 < ε / 6) (by linarith) (by positivity : 0 < δ / 3)
+    (by rwa [show 4 * (ε / 6) / 5 = 2 * ε / 15 by ring])
+  have hJL := hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le hQ hl hεJ hεJ1 (by positivity) hl₂
+  rw [hS] at hOSI hJL
+  have hX' : AEMeasurable (fun ω => √(Fintype.card n / Fintype.card l : ℝ) • Q ω) μ :=
+    (continuous_const_smul _).measurable.comp_aemeasurable hQ.aemeasurable
+  have hδJ : (0 : ℝ) ≤ δ / 3 := by positivity
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+    (A := A) (k := k) hX' hεJ (le_max_left _ _) hδJ
+  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
+  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
+    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    (P := fun ω => rangeProjector (truncatedSVD (A * Q ω) k))
+    (fun ω => isStarProjection_rangeProjector _)
+    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
+    (fun ω => by
+      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
+        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
+      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * Q ω)
+        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
+      hεJ (le_max_left _ _) hδJ) hχ
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (Q ω) k) ^ 2 := hω
+  rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
+  exact hω'
 
 /-- **$O(k\log(1/\delta)/\varepsilon^2)$ Haar columns suffice for early truncation**: there are
 absolute constants $C, \varepsilon_0 > 0$ such that for an $n \times \ell$ Haar frame
@@ -93,6 +147,52 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_ha
       C * ((k : ℝ) * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (Q ω) k) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨41472, 1, by norm_num, one_pos, fun μ A Q k ε δ hQ hln hε hε1 hδ hδ2 hl => ?_⟩
+  classical
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (Q ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hL : 0 ≤ Real.log (1 / δ) := by linarith
+  have h4 : Real.log 4 = 2 * Real.log 2 := by
+    rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    norm_num
+  have h34 : Real.log 3 ≤ Real.log 4 := Real.log_le_log (by norm_num) (by norm_num)
+  have h3 : Real.log (1 / (δ / 3)) ≤ 3 * Real.log (1 / δ) := by
+    rw [show 1 / (δ / 3) = 3 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hkL : Real.log (1 / δ) ≤ k * Real.log (1 / δ) := le_mul_of_one_le_left hL hk1
+  have hkL2 : (k : ℝ) ≤ 2 * (k * Real.log (1 / δ)) := by nlinarith
+  have h21 : (1 : ℝ) ≤ 21 ^ k := one_le_pow₀ (by norm_num)
+  have hlj : Real.log (2 / (δ / 3 / 21 ^ k)) =
+      Real.log 2 + Real.log 3 + k * Real.log 21 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 3 / 21 ^ k) = 2 * 3 * 21 ^ k * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by positivity) (by positivity),
+      Real.log_mul (by positivity) (by positivity), Real.log_pow]
+  have hd21 : (k : ℝ) * Real.log 21 ≤ k * (61 / 20) :=
+    mul_le_mul_of_nonneg_left Real.log_twentyOne_le_sixtyOne_div_twenty (Nat.cast_nonneg k)
+  refine measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_haarFrame A hQ hln hε hε1
+    hδ ?_ ?_
+  · refine (jlDim_le (by linarith) (by positivity)
+      ((div_le_self (by positivity) h21).trans (by linarith))).trans (le_trans ?_ hl)
+    rw [hlj, show 12 * (Real.log 2 + Real.log 3 + k * Real.log 21 + Real.log (1 / δ)) /
+        (2 * ε / 15) ^ 2 = 675 * (Real.log 2 + Real.log 3 + k * Real.log 21 + Real.log (1 / δ)) /
+          ε ^ 2 by field_simp; ring, mul_div_assoc']
+    exact div_le_div_of_nonneg_right (by nlinarith) (sq_nonneg ε)
+  · refine (jlMomentDim_le (by positivity) (by linarith)).trans (le_trans ?_ hl)
+    generalize Real.log (1 / (δ / 3)) = t at h3 ⊢
+    rw [show 384 * t / (ε / (6 * √(k : ℝ))) ^ 2 = 13824 * ((k : ℝ) * t) / ε ^ 2 by
+      rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]; field_simp; ring, mul_div_assoc']
+    exact div_le_div_of_nonneg_right
+      (by nlinarith [mul_le_mul_of_nonneg_left h3 (Nat.cast_nonneg (α := ℝ) k)]) (sq_nonneg ε)
 
 end NLAlib
