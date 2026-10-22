@@ -383,6 +383,114 @@ _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_li
 
 /-! ### The orthogonal-polynomial reading -/
 
+/-- A nonzero real polynomial of degree below the grade does not annihilate $\mathbf{b}$: the
+Krylov vectors $\mathbf{b}, \dots, \mathbf{A}^{\nu - 1}\mathbf{b}$ are linearly independent. -/
+private theorem aeval_mulVec_ne_zero_of_degree_lt_krylovGrade {A : Matrix n n 𝕜} {b : n → 𝕜}
+    {p : ℝ[X]} (hp0 : p ≠ 0) (hp : p.degree < krylovGrade A b) : aeval A p *ᵥ b ≠ 0 := by
+  have hm : p.natDegree + 1 ≤ krylovGrade A b := by
+    have := (natDegree_lt_iff_degree_lt hp0).2 hp
+    omega
+  have hli : LinearIndependent 𝕜 (fun i : Fin (p.natDegree + 1) => A ^ (i : ℕ) *ᵥ b) := by
+    have h := krylovMatrix_mulVec_injective_iff.mpr hm
+    rw [Matrix.mulVec_injective_iff] at h
+    exact h
+  intro h0
+  have hsum : ∑ i : Fin (p.natDegree + 1),
+      (algebraMap ℝ 𝕜 (p.coeff i)) • (A ^ (i : ℕ) *ᵥ b) = 0 := by
+    rw [← h0, aeval_eq_sum_range, Matrix.sum_mulVec,
+      ← Fin.sum_univ_eq_sum_range (fun i => (p.coeff i • A ^ i) *ᵥ b)]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [algebraMap_smul, Matrix.smul_mulVec]
+  have h := Fintype.linearIndependent_iff.mp hli _ hsum ⟨p.natDegree, by omega⟩
+  rw [map_eq_zero_iff _ (algebraMap ℝ 𝕜).injective, coeff_natDegree, leadingCoeff_eq_zero] at h
+  exact hp0 h
+
+/-- At most $\min(q, \nu)$ Ritz values: the compression is $\dim\mathcal{K}_q$ square. -/
+private theorem card_spectrum_le_of_range_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) :
+    Nat.card (spectrum ℝ (Qᴴ * A * Q)) ≤ min q (krylovGrade A b) := by
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  have hr : Fintype.card r = min q (krylovGrade A b) := by
+    rw [← hQ.rank_eq, ← finrank_krylovSpace, ← hK]
+    rfl
+  rw [hT.spectrum_real_eq_range_eigenvalues, ← hr, ← Nat.card_eq_fintype_card]
+  exact Finite.card_range_le _
+
+/-- The number of distinct Ritz values as the cardinality of a finset listing them. -/
+private theorem card_eq_natCard_spectrum {B : Matrix r r 𝕜} {s : Finset ℝ}
+    (hs : (s : Set ℝ) = spectrum ℝ B) : s.card = Nat.card (spectrum ℝ B) := by
+  rw [← hs, Nat.card_coe_set_eq, Set.ncard_coe_finset]
+
+/-- Every real function is integrable against the Lanczos rule, a spectral measure. -/
+private theorem integrable_lanczosQuadrature (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ)
+    (f : ℝ → ℝ) : Integrable f (lanczosQuadrature A b q) :=
+  integrable_spectralMeasure _ _ f
+
+/-- The Lanczos rule sees a function only through its values at the Ritz values. -/
+private theorem integral_lanczosQuadrature_congr {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
+    {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) {f g : ℝ → ℝ}
+    (hfg : Set.EqOn f g (spectrum ℝ (Qᴴ * A * Q))) :
+    ∫ x, f x ∂lanczosQuadrature A b q = ∫ x, g x ∂lanczosQuadrature A b q := by
+  rw [hQ.lanczosQuadrature_eq hK, integral_spectralMeasure, integral_spectralMeasure,
+    cfc_congr hfg]
+
+/-- The Lanczos rule as a sum over the Ritz values with the interpolatory weights of
+$\mu_{\mathbf{A},\mathbf{b}}$: $\int f\,d\,\mathsf{lanczosQuadrature} =
+\sum_{x\in s}\bigl(\int\ell_x\,d\mu_{\mathbf{A},\mathbf{b}}\bigr)f(x)$. -/
+private theorem integral_lanczosQuadrature_eq_sum {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) {s : Finset ℝ}
+    (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) (f : ℝ → ℝ) :
+    ∫ t, f t ∂lanczosQuadrature A b q =
+      ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂spectralMeasure A b) * f x := by
+  have hcard : s.card ≤ q := by
+    rw [card_eq_natCard_spectrum hs]
+    exact (card_spectrum_le_of_range_eq hQ hA hK).trans (min_le_left _ _)
+  rw [integral_lanczosQuadrature_congr hQ hK (g := fun t => (Lagrange.interpolate s id f).eval t)
+    fun t ht => by
+      rw [← hs] at ht
+      exact (Lagrange.eval_interpolate_at_node (v := id) (r := f) (Set.injOn_id _) ht).symm]
+  simp only [Lagrange.interpolate_apply, eval_finsetSum, eval_mul, eval_C]
+  rw [integral_finsetSum s fun x _ => integrable_lanczosQuadrature A b q _]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  have hpos : 0 < s.card := Finset.card_pos.mpr ⟨x, hx⟩
+  have hdeg : (Lagrange.basis s id x).degree < (2 * q : ℕ) := by
+    rw [Lagrange.degree_basis (Set.injOn_id _) hx]
+    exact_mod_cast (by omega : s.card - 1 < 2 * q)
+  rw [integral_const_mul, mul_comm,
+    hA.matchesMoments_lanczosQuadrature b q _ hdeg]
+
+/-- The interpolatory weights of $\mu_{\mathbf{A},\mathbf{b}}$ at the Ritz values are
+nonnegative: $\int\ell_x\,d\mu_{\mathbf{A},\mathbf{b}} =
+\int\ell_x^2\,d\,\mathsf{lanczosQuadrature}$. -/
+private theorem integral_basis_nonneg {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) {s : Finset ℝ}
+    (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) {x : ℝ} (hx : x ∈ s) :
+    0 ≤ ∫ t, (Lagrange.basis s id x).eval t ∂spectralMeasure A b := by
+  have hcard : s.card ≤ q := by
+    rw [card_eq_natCard_spectrum hs]
+    exact (card_spectrum_le_of_range_eq hQ hA hK).trans (min_le_left _ _)
+  have hpos : 0 < s.card := Finset.card_pos.mpr ⟨x, hx⟩
+  have hdeg : (Lagrange.basis s id x).degree < (2 * q : ℕ) := by
+    rw [Lagrange.degree_basis (Set.injOn_id _) hx]
+    exact_mod_cast (by omega : s.card - 1 < 2 * q)
+  rw [hA.matchesMoments_lanczosQuadrature b q _ hdeg,
+    integral_lanczosQuadrature_congr hQ hK (g := fun t => (Lagrange.basis s id x).eval t ^ 2)]
+  · exact integral_nonneg fun t => sq_nonneg _
+  · intro t ht
+    rw [← hs] at ht
+    by_cases htx : t = x
+    · have h1 : (Lagrange.basis s id x).eval x = 1 :=
+        Lagrange.eval_basis_self (v := id) (Set.injOn_id _) hx
+      simp only [htx, h1, one_pow]
+    · have h0 : (Lagrange.basis s id x).eval t = 0 :=
+        Lagrange.eval_basis_of_ne (v := id) (Ne.symm htx) ht
+      simp only [h0]
+      ring
+
 /-- Distinct Ritz values below the grade: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
 orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$ and $q$ at most the grade
 of $\mathbf{b}$, the compression $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ has exactly $q$
@@ -392,7 +500,21 @@ theorem HasOrthonormalCols.card_spectrum_conjTranspose_mul_mul_eq {Q : Matrix n 
     (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b) :
     Nat.card (spectrum ℝ (Qᴴ * A * Q)) = q := by
-  sorry
+  refine le_antisymm ((card_spectrum_le_of_range_eq hQ hA hK).trans (min_le_left _ _)) ?_
+  by_contra hlt
+  push Not at hlt
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  set s := (Qᴴ * A * Q).finite_real_spectrum.toFinset
+  have hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q) := Set.Finite.coe_toFinset _
+  have hsc : s.card < q := by rwa [card_eq_natCard_spectrum hs]
+  have hdeg : (Lagrange.nodal s id).degree < q := by
+    rw [Lagrange.degree_nodal]
+    exact_mod_cast hsc
+  have h0 : aeval A (Lagrange.nodal s id) *ᵥ b = 0 := by
+    rw [← hQ.mulVec_aeval_conjTranspose_mul_mul_mulVec_eq hK hdeg, hT.aeval_nodal_eq_zero hs.ge,
+      Matrix.zero_mulVec, Matrix.mulVec_zero]
+  exact aeval_mulVec_ne_zero_of_degree_lt_krylovGrade Lagrange.nodal_monic.ne_zero
+    (hdeg.trans_le (by exact_mod_cast hq)) h0
 
 /-- **The Ritz polynomial is the orthogonal polynomial**: for Hermitian $\mathbf{A}$ and
 $\mathbf{Q}$ with orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, the
@@ -405,7 +527,20 @@ theorem HasOrthonormalCols.isOrthogonalPolynomial_nodal {Q : Matrix n r 𝕜}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) {s : Finset ℝ}
     (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
     IsOrthogonalPolynomial (spectralMeasure A b) q (Lagrange.nodal s id) := by
-  sorry
+  intro p hp
+  have hcard : s.card ≤ q := by
+    rw [card_eq_natCard_spectrum hs]
+    exact (card_spectrum_le_of_range_eq hQ hA hK).trans (min_le_left _ _)
+  have h0 := hQ.conjTranspose_mulVec_aeval_nodal_mulVec_eq_zero hA hK hs.ge hcard
+  have heval : ∀ t, (Lagrange.nodal s id).eval t * p.eval t =
+      (p * Lagrange.nodal s id).eval t := fun t => by
+    rw [eval_mul, mul_comm]
+  simp_rw [heval]
+  rw [hA.integral_eval_spectralMeasure, map_mul, quadForm_def, ← Matrix.mulVec_mulVec,
+    ← (hA.aeval p).eq, ← star_mulVec_dotProduct]
+  obtain ⟨y, hy⟩ : aeval A p *ᵥ b ∈ LinearMap.range Q.mulVecLin :=
+    hK ▸ aeval_mulVec_mem_krylovSpace A b hp
+  rw [← hy, Matrix.mulVecLin_apply, star_mulVec_dotProduct, h0, dotProduct_zero, map_zero]
 
 /-- **Lanczos quadrature is the Gauss rule of the spectral measure**: for Hermitian
 $\mathbf{A}$, $\mathbf{Q}$ with orthonormal columns spanning
@@ -421,7 +556,17 @@ theorem HasOrthonormalCols.lanczosQuadrature_eq_interpolatoryQuadrature {Q : Mat
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q)
     {s : Finset ℝ} (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
     lanczosQuadrature A b q = interpolatoryQuadrature (spectralMeasure A b) s := by
-  sorry
+  ext S hS
+  rw [← ofReal_measureReal (measure_ne_top _ S), ← ofReal_measureReal (measure_ne_top _ S),
+    ← integral_indicator_one hS, ← integral_indicator_one hS,
+    integral_lanczosQuadrature_eq_sum hQ hA hK hs]
+  congr 1
+  unfold interpolatoryQuadrature
+  rw [integral_finsetSum_measure fun x _ =>
+    (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  rw [integral_smul_measure, integral_dirac, smul_eq_mul,
+    ENNReal.toReal_ofReal (integral_basis_nonneg hQ hA hK hs hx)]
 
 /-- Every Ritz value carries positive weight: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
 orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, every $q$ and a Ritz
@@ -437,6 +582,44 @@ theorem HasOrthonormalCols.lanczosQuadrature_real_singleton_pos {Q : Matrix n r 
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q)
     {x : ℝ} (hx : x ∈ spectrum ℝ (Qᴴ * A * Q)) :
     0 < (lanczosQuadrature A b q).real {x} := by
-  sorry
+  set s := (Qᴴ * A * Q).finite_real_spectrum.toFinset
+  have hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q) := Set.Finite.coe_toFinset _
+  have hxs : x ∈ s := by
+    rw [← Finset.mem_coe, hs]
+    exact hx
+  set ℓ := Lagrange.basis s id x
+  have hcard : s.card ≤ min q (krylovGrade A b) := by
+    rw [card_eq_natCard_spectrum hs]
+    exact card_spectrum_le_of_range_eq hQ hA hK
+  have hpos : 0 < s.card := Finset.card_pos.mpr ⟨x, hxs⟩
+  have hℓ : ℓ.degree < (s.card : WithBot ℕ) := by
+    rw [Lagrange.degree_basis (Set.injOn_id _) hxs]
+    exact_mod_cast (by omega : s.card - 1 < s.card)
+  have hℓ2 : (ℓ ^ 2).degree < (2 * q : ℕ) := by
+    have h1 : (ℓ ^ 2).natDegree < 2 * q := by
+      have := natDegree_pow_le (p := ℓ) (n := 2)
+      rw [Lagrange.natDegree_basis (Set.injOn_id _) hxs] at this
+      have : min q (krylovGrade A b) ≤ q := min_le_left _ _
+      omega
+    exact degree_le_natDegree.trans_lt (by exact_mod_cast h1)
+  have hw : aeval A ℓ *ᵥ b ≠ 0 := aeval_mulVec_ne_zero_of_degree_lt_krylovGrade
+    (Lagrange.basis_ne_zero (Set.injOn_id _) hxs)
+    (hℓ.trans_le (by exact_mod_cast hcard.trans (min_le_right _ _)))
+  have hq : star b ⬝ᵥ (aeval A ℓ *ᵥ (aeval A ℓ *ᵥ b)) =
+      star (aeval A ℓ *ᵥ b) ⬝ᵥ (aeval A ℓ *ᵥ b) := by
+    rw [star_mulVec_dotProduct, (hA.aeval ℓ).eq]
+  rw [← integral_indicator_one (measurableSet_singleton x),
+    integral_lanczosQuadrature_congr hQ hK (g := fun t => (ℓ ^ 2).eval t),
+    ← hA.matchesMoments_lanczosQuadrature b q _ hℓ2, hA.integral_eval_spectralMeasure,
+    quadForm_def, map_pow, sq, ← Matrix.mulVec_mulVec, hq]
+  · exact (RCLike.pos_iff.mp (Matrix.dotProduct_star_self_pos_iff.mpr hw)).1
+  · intro t ht
+    rw [← hs] at ht
+    by_cases htx : t = x
+    · have h1 : ℓ.eval x = 1 := Lagrange.eval_basis_self (v := id) (Set.injOn_id _) hxs
+      simp only [htx, Set.indicator_of_mem (Set.mem_singleton x), Pi.one_apply, eval_pow, h1,
+        one_pow]
+    · have h0 : ℓ.eval t = 0 := Lagrange.eval_basis_of_ne (v := id) (Ne.symm htx) ht
+      simp [Set.indicator_of_notMem (show t ∉ ({x} : Set ℝ) by simpa using htx), h0]
 
 end NLAlib
