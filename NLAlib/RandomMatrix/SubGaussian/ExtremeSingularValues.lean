@@ -147,35 +147,14 @@ theorem IsSubgaussianVector.one_le_of_isIsotropic [Nonempty n] [IsProbabilityMea
   simp only [Real.norm_eq_abs, sq_abs, hu, one_pow] at h2
   linarith
 
-omit [Fintype n] in
-/-- The Gram matrix minus $N \mathbf{I}$ is Hermitian:
-$\mathbf{A}^{\mathsf{H}}\mathbf{A} - N \mathbf{I}$. -/
-private lemma isHermitian_gram_sub (A : Matrix m n ℝ) (N : ℝ) :
-    (Aᴴ * A - N • (1 : Matrix n n ℝ)).IsHermitian :=
-  (Matrix.isHermitian_conjTranspose_mul_self A).sub (isHermitian_real_smul_one N)
-
-/-- From the Gram error $s = \|\mathbf{A}^{\mathsf{H}}\mathbf{A} - N \mathbf{I}\|_2$ to the upper
-Loewner bound $\mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq (N + s) \mathbf{I}$. -/
-private lemma conjTranspose_mul_self_le_add_smul_one (A : Matrix m n ℝ) (N : ℝ) :
-    Aᴴ * A ≤ (N + specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ))) • (1 : Matrix n n ℝ) := by
-  rw [add_smul, add_comm]
-  exact sub_le_iff_le_add.mp ((isHermitian_gram_sub A N).le_smul_one_of_specNorm_le le_rfl)
-
-/-- From the Gram error $s = \|\mathbf{A}^{\mathsf{H}}\mathbf{A} - N \mathbf{I}\|_2$ to the lower
-Loewner bound $(N - s) \mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$. -/
-private lemma sub_smul_one_le_conjTranspose_mul_self (A : Matrix m n ℝ) (N : ℝ) :
-    (N - specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ))) • (1 : Matrix n n ℝ) ≤ Aᴴ * A := by
-  rw [sub_smul, sub_le_iff_le_add]
-  exact neg_le_sub_iff_le_add.mp
-    ((isHermitian_gram_sub A N).neg_smul_one_le_of_specNorm_le le_rfl)
-
 /-- The upper Gram bound
 $\mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq (\sqrt{N} + w)^2 \mathbf{I}$ from a Gram error at most
 $\max(\sqrt{N} w, w^2)$. -/
 private lemma conjTranspose_mul_self_le_of_specNorm_le {A : Matrix m n ℝ} {N w : ℝ} (hN : 0 ≤ N)
     (hw : 0 ≤ w) (h : specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ)) ≤ max (√N * w) (w ^ 2)) :
     Aᴴ * A ≤ (√N + w) ^ 2 • (1 : Matrix n n ℝ) := by
-  refine (conjTranspose_mul_self_le_add_smul_one A N).trans (smul_one_le_smul_one ?_)
+  refine (conjTranspose_mul_self_le_add_smul_one_of_specNorm_sub_smul_one_le (T := A) (N := N)
+    le_rfl).trans (smul_one_le_smul_one ?_)
   have hsw := mul_nonneg (Real.sqrt_nonneg N) hw
   have hm : max (√N * w) (w ^ 2) ≤ √N * w + w ^ 2 :=
     max_le (by nlinarith [sq_nonneg w]) (by linarith)
@@ -189,7 +168,8 @@ private lemma le_conjTranspose_mul_self_of_specNorm_le {A : Matrix m n ℝ} {N w
     (hw : 0 ≤ w) (hwN : w ≤ √N)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n ℝ)) ≤ max (√N * w) (w ^ 2)) :
     (√N - w) ^ 2 • (1 : Matrix n n ℝ) ≤ Aᴴ * A := by
-  refine (smul_one_le_smul_one ?_).trans (sub_smul_one_le_conjTranspose_mul_self A N)
+  refine (smul_one_le_smul_one ?_).trans
+    (sub_smul_one_le_conjTranspose_mul_self_of_specNorm_sub_smul_one_le (T := A) (N := N) le_rfl)
   have hm : max (√N * w) (w ^ 2) = √N * w := max_eq_left (by nlinarith)
   have e : (√N - w) ^ 2 = N - 2 * (√N * w) + w ^ 2 := by rw [sub_sq, Real.sq_sqrt hN]; ring
   rw [hm] at h
@@ -202,7 +182,7 @@ private lemma specNorm_lt_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} (hN : 
     specNorm A < √N + w := by
   have hs := specNorm_nonneg (Aᴴ * A - N • (1 : Matrix n n ℝ))
   have h2 := (specNorm_sq_le_iff_conjTranspose_mul_self_le (by positivity)).mpr
-    (conjTranspose_mul_self_le_add_smul_one A N)
+    (conjTranspose_mul_self_le_add_smul_one_of_specNorm_sub_smul_one_le (T := A) (N := N) le_rfl)
   have hsw := mul_nonneg (Real.sqrt_nonneg N) hw
   have hm : max (√N * w) (w ^ 2) ≤ √N * w + w ^ 2 :=
     max_le (by nlinarith [sq_nonneg w]) (by linarith)
@@ -218,7 +198,7 @@ private lemma lt_singularValues_of_specNorm_lt {A : Matrix m n ℝ} {N w : ℝ} 
   rcases lt_or_ge (√N) w with hwN | hwN
   · exact (sub_neg.mpr hwN).trans_le (singularValues_nonneg A k)
   have h2 := le_singularValues_last_sq_of_smul_one_le hk
-    (sub_smul_one_le_conjTranspose_mul_self A N)
+    (sub_smul_one_le_conjTranspose_mul_self_of_specNorm_sub_smul_one_le (T := A) (N := N) le_rfl)
   have hm : max (√N * w) (w ^ 2) = √N * w := max_eq_left (by nlinarith)
   have e : (√N - w) ^ 2 = N - 2 * (√N * w) + w ^ 2 := by rw [sub_sq, Real.sq_sqrt hN]; ring
   rw [hm] at h
@@ -310,7 +290,8 @@ private lemma measureReal_not_specNorm_lt [Nonempty m] [Nonempty n]
     simp only [Set.mem_iUnion, Set.mem_ofPred_eq, not_exists, not_le] at hnot
     obtain ⟨M, hM0, hMr, hM⟩ := Finset.exists_le_lt_of_forall_lt net
       (fun x => |‖WithLp.toLp 2 (X ω *ᵥ x)‖ ^ 2 - N|) (half_pos hr0) hnot
-    have h := hnet _ (isHermitian_gram_sub (X ω) N) hM0 fun x hx => by
+    have hH := (Matrix.isHermitian_conjTranspose_mul_self (X ω)).sub (isHermitian_real_smul_one N)
+    have h := hnet _ hH hM0 fun x hx => by
       rw [quadForm_sub_left, map_sub, quadForm_conjTranspose_mul_self, RCLike.ofReal_re,
         re_quadForm_real_smul_one, hunit x hx, one_pow, mul_one]
       exact hM x hx
