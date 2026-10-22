@@ -108,22 +108,6 @@ theorem hasLaw_const_mul_of_hasLaw_haarFrame_of_hasOrthonormalCols [DecidableEq 
   funext x
   simp only [Function.comp, Matrix.mul_assoc]
 
-
-/-- A frame $\mathbf{V}$ ($n \times k$, $k \le n$) with an orthogonal complement $\mathbf{V}'$. -/
-private theorem exists_hasOrthonormalCols_compl [DecidableEq n] [DecidableEq k]
-    (hkn : Fintype.card k ≤ Fintype.card n) :
-    ∃ (V : Matrix n k ℝ) (V' : Matrix n (Fin (Fintype.card n - Fintype.card k)) ℝ),
-      HasOrthonormalCols V ∧ HasOrthonormalCols V' ∧ Vᴴ * V' = 0 ∧ V * Vᴴ + V' * V'ᴴ = 1 := by
-  obtain ⟨e⟩ := Function.Embedding.nonempty_of_card_le hkn
-  have hV : HasOrthonormalCols (selectionMatrix e : Matrix n k ℝ) :=
-    hasOrthonormalCols_selectionMatrix e.injective
-  have hc : Fintype.card k + Fintype.card (Fin (Fintype.card n - Fintype.card k)) =
-      Fintype.card n := by
-    rw [Fintype.card_fin]; omega
-  obtain ⟨V', hV'⟩ := hV.exists_fromCols hc
-  obtain ⟨-, h2, h3⟩ := hasOrthonormalCols_fromCols_iff.mp hV'
-  exact ⟨_, V', hV, h2, h3, hV'.mul_conjTranspose_add_mul_conjTranspose hc⟩
-
 /-- The squared Frobenius norm of the pseudoinverse of $\operatorname{polar}(\mathbf{G})\mathbf{V}$
 through the blocks $\mathbf{K} = \mathbf{G}\mathbf{V}$, $\mathbf{L} = \mathbf{G}\mathbf{V}'$, when
 $\mathbf{K}$ has full row rank. -/
@@ -223,7 +207,12 @@ theorem integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame [DecidableEq k
     (hpk : Fintype.card p + 2 ≤ Fintype.card k) :
     Integrable (fun ω => frobNorm (pinv (W * X ω)) ^ 2) μ := by
   classical
-  obtain ⟨V, V', hV, hV', h₁₂, hVV⟩ := exists_hasOrthonormalCols_compl hkn
+  have hc : Fintype.card k + Fintype.card (Fin (Fintype.card n - Fintype.card k)) =
+      Fintype.card n := by
+    rw [Fintype.card_fin]; omega
+  obtain ⟨V, V', hF⟩ := exists_hasOrthonormalCols_fromCols ℝ hc
+  obtain ⟨hV, hV', h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hF
+  have hVV := hF.mul_conjTranspose_add_mul_conjTranspose hc
   have hf : Measurable fun Y : Matrix p k ℝ => frobNorm (pinv Y) ^ 2 :=
     (measurable_frobNorm.comp measurable_pinv).pow_const 2
   have hZ : HasLaw (fun G : Matrix p n ℝ => polarFactor G * V) ((haarFrame p n).map (· * V))
@@ -282,7 +271,12 @@ theorem integral_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame [DecidableEq k] 
       Fintype.card p * (1 + ((Fintype.card n : ℝ) - Fintype.card k) /
         ((Fintype.card k : ℝ) - Fintype.card p - 1)) := by
   classical
-  obtain ⟨V, V', hV, hV', h₁₂, hVV⟩ := exists_hasOrthonormalCols_compl hkn
+  have hc : Fintype.card k + Fintype.card (Fin (Fintype.card n - Fintype.card k)) =
+      Fintype.card n := by
+    rw [Fintype.card_fin]; omega
+  obtain ⟨V, V', hF⟩ := exists_hasOrthonormalCols_fromCols ℝ hc
+  obtain ⟨hV, hV', h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hF
+  have hVV := hF.mul_conjTranspose_add_mul_conjTranspose hc
   have hf : Measurable fun Y : Matrix p k ℝ => frobNorm (pinv Y) ^ 2 :=
     (measurable_frobNorm.comp measurable_pinv).pow_const 2
   have hZ : HasLaw (fun G : Matrix p n ℝ => polarFactor G * V) ((haarFrame p n).map (· * V))
