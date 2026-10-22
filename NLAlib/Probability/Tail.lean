@@ -10,6 +10,7 @@ public import Mathlib.Analysis.MeanInequalitiesPow
 public import Mathlib.MeasureTheory.Integral.Layercake
 public import Mathlib.Probability.Moments.Basic
 public import Mathlib.Probability.Moments.Variance
+public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 
 /-!
 # Tail probabilities and moments
@@ -127,8 +128,7 @@ theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {δ t : ℝ} {G E : Set 
         _ = 1 / t := by
             rw [hm]
             field_simp
-  calc μ.real E ≤ μ.real (Gᶜ ∪ {ω | t * m < M ω}) :=
-        ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae hae)
+  calc μ.real E ≤ μ.real (Gᶜ ∪ {ω | t * m < M ω}) := measureReal_mono_ae hae
     _ ≤ μ.real Gᶜ + μ.real {ω | t * m < M ω} := measureReal_union_le _ _
     _ ≤ δ + 1 / t := add_le_add hG hF
 
