@@ -2,6 +2,28 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Consolidation round complete (2026-10-22)
+
+Branch `cleanup/consolidation` (worktree `nlalib-block`), from `dd2eaf7`. Design note
+`docs/design/Consolidation.md` (approved 2026-10-22, D1 option (a); its dated amendments record the
+few unforeseen imports and statement spellings). No new mathematics: re-proved private helpers became
+the 49 public lemmas of §3 in the file of their topic (Phase A, 27 commits), and every consumer
+dropped its copies (Phase B, one file per commit). Private declarations 1731 → 1646. One public
+declaration removed (`NLAlib.integral_comp_eq_integral_integral_of_indepFun`, in favour of
+`ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`) and one statement change
+(`conjTranspose_mul_mul_le_conjTranspose_mul_mul` drops `[Finite n]`), both in the rename map
+`docs/renames/2026-10-consolidation.json`; `rademacherMatrix` moved to
+`RandomMatrix/Rademacher/Basic.lean` under the same name. The CONTRIBUTING §5.3 row "independent
+test matrices" names the F1 conditioning lemmas as the preferred route (bridge column only, D1).
+
+Checks: `lake build --wfail NLAlib` 3979 jobs, 0 warnings; `check_rules.py --only S5 --warnings`
+0 (was 17 same-name pairs); `scripts/stage_check.sh`: 381 proved modules, build 3977 jobs, 0
+warnings; audit 9363 declarations, 0 violations; lint 6106 declarations, 0 errors; references 86
+keys, 68 asymptotic forms, 0 problems; constants 28, 324 value markers, 0 problems; rules 0 errors,
+73 in the baseline; duplicates 5582 theorems, 0 classes (was 4). `scripts/Reuse.lean` on the 181
+public theorems whose proofs changed: each consumer calls the new public lemma. Copies kept as
+recorded in the note: the single-use privates of §6 and the Hanson–Wright MGF.
+
 ## Sketch-and-precondition and randomized Kaczmarz: proofs (2026-10-20)
 
 Every statement of the skeleton is proved; no `sorry` remains in the round's files, and all of
