@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
+public import NLAlib.Matrix.Structured.Kronecker
 public import NLAlib.Probability.SubGaussianVector.Norm
 public import NLAlib.Sketching.Gaussian.SubGaussian
 
@@ -415,26 +416,6 @@ private theorem norm_one_kronecker_mulVec_sq [DecidableEq l] (B : Matrix m n ℝ
   simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type, e]
 
 omit [DecidableEq n] in
-/-- $\|\mathbf{I}_\ell \otimes \mathbf{B}\|_{\mathsf{F}}^2 =
-\ell\,\|\mathbf{B}\|_{\mathsf{F}}^2$. -/
-private theorem frobNorm_one_kronecker_sq [DecidableEq l] (B : Matrix m n ℝ) :
-    frobNorm ((1 : Matrix l l ℝ) ⊗ₖ B) ^ 2 = Fintype.card l * frobNorm B ^ 2 := by
-  simp [frobNorm_sq_eq_sum_sq, Fintype.sum_prod_type, Matrix.one_apply, ite_pow]
-
-omit [DecidableEq n] in
-/-- $\|\mathbf{I}_\ell \otimes \mathbf{B}\|_2 \le \|\mathbf{B}\|_2$. -/
-private theorem specNorm_one_kronecker_le [DecidableEq l] (B : Matrix m n ℝ) :
-    specNorm ((1 : Matrix l l ℝ) ⊗ₖ B) ≤ specNorm B := by
-  refine (specNorm_le_iff (specNorm_nonneg B)).2 fun v => ?_
-  refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
-  rw [norm_one_kronecker_mulVec_sq, mul_pow, EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type,
-    Finset.mul_sum]
-  refine Finset.sum_le_sum fun i _ => ?_
-  have h := pow_le_pow_left₀ (norm_nonneg _) (norm_toLp_mulVec_le B fun j => v (i, j)) 2
-  rw [mul_pow, EuclideanSpace.norm_sq_eq (WithLp.toLp 2 fun j => v (i, j))] at h
-  simpa only [PiLp.toLp_apply] using h
-
-omit [DecidableEq n] in
 /-- The injection step of `measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`: on
 the subspace injection event of the normalised sketch, the error of the randomized SVD is at most
 $\|\mathbf{E}\|_{\mathsf{F}}^2 + 2\|\mathbf{E}\mathbf{\Omega}\|_{\mathsf{F}}^2/\ell$,
@@ -492,7 +473,8 @@ private theorem mul_frobNorm_one_kronecker_add_le [DecidableEq l] (E : Matrix m 
   set L : ℝ := (Fintype.card l : ℝ)
   have hL0 : 0 ≤ L := Nat.cast_nonneg _
   set M : Matrix (l × m) (l × n) ℝ := (1 : Matrix l l ℝ) ⊗ₖ E with hM
-  have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := frobNorm_one_kronecker_sq E
+  have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := by
+    rw [hM, frobNorm_kronecker, mul_pow, frobNorm_one_sq]
   have hEF : frobNorm (Eᴴ * E) ≤ frobNorm E ^ 2 := by
     have := frobNorm_mul_le Eᴴ E
     rwa [frobNorm_conjTranspose, ← sq] at this
@@ -501,8 +483,8 @@ private theorem mul_frobNorm_one_kronecker_add_le [DecidableEq l] (E : Matrix m 
       rw [hM, Matrix.conjTranspose_kronecker, Matrix.conjTranspose_one,
         ← Matrix.mul_kronecker_mul, Matrix.one_mul]
     have hF2 : frobNorm (Mᴴ * M) = √L * frobNorm (Eᴴ * E) := by
-      rw [e, ← Real.sqrt_sq (frobNorm_nonneg _), frobNorm_one_kronecker_sq, Real.sqrt_mul hL0,
-        Real.sqrt_sq (frobNorm_nonneg _)]
+      rw [e, frobNorm_kronecker, ← Real.sqrt_sq (frobNorm_nonneg (1 : Matrix l l ℝ)),
+        frobNorm_one_sq]
     have hst : 15 * √t ≤ √L := by
       rw [Real.le_sqrt (by positivity) hL0, mul_pow, Real.sq_sqrt ht0]
       linarith
@@ -513,8 +495,10 @@ private theorem mul_frobNorm_one_kronecker_add_le [DecidableEq l] (E : Matrix m 
       _ = L * frobNorm E ^ 2 := by
           rw [mul_comm, ← mul_assoc, Real.mul_self_sqrt hL0]
   have hS : 225 * (specNorm M ^ 2 * t) ≤ L * frobNorm E ^ 2 := by
-    have h1 : specNorm M ≤ frobNorm E :=
-      (specNorm_one_kronecker_le E).trans (specNorm_le_frobNorm E)
+    have h1 : specNorm M ≤ frobNorm E := by
+      rw [hM, specNorm_kronecker]
+      exact (mul_le_of_le_one_left (specNorm_nonneg E) specNorm_one_le).trans
+        (specNorm_le_frobNorm E)
     have h2 : specNorm M ^ 2 ≤ frobNorm E ^ 2 := pow_le_pow_left₀ (specNorm_nonneg _) h1 2
     calc 225 * (specNorm M ^ 2 * t) = specNorm M ^ 2 * (225 * t) := by ring
       _ ≤ frobNorm E ^ 2 * L := by
@@ -580,14 +564,11 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
   set L : ℝ := (Fintype.card l : ℝ)
   have hL : (0 : ℝ) < L := Nat.cast_pos.2 Fintype.card_pos
   -- The injection event, for a frame of the head.
-  obtain ⟨Z, hZ, hR⟩ :=
-    exists_hasOrthonormalCols_range_eq (truncatedSVD A k)ᴴ (Fintype.card_fin _)
-  have hP : Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ := by
-    rw [← hZ.rangeProjector_eq, rangeProjector_inj, hR]
-  have hAZ : A * Z * Zᴴ = truncatedSVD A k := by
-    rw [Matrix.mul_assoc, hP, mul_rangeProjector_conjTranspose_truncatedSVD]
+  obtain ⟨Z, hZ, -, -, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   have hZk : Z.rank ≤ k := by
-    rw [hZ.rank_eq, Fintype.card_fin, Matrix.rank_conjTranspose]
+    rw [hZ.rank_eq, Fintype.card_fin]
     exact rank_truncatedSVD_le A k
   have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (d := k) hind hsub hiso (by norm_num : (0 : ℝ) < 1 / 2) (by linarith) (half_pos hδ) hl
@@ -610,7 +591,8 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector [Nonem
   have ht0 : 0 ≤ t := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
   have htL : 225 * t ≤ L := mul_log_two_div_le_of_subgaussianEmbeddingDim_le hc1 hδ hδ1 hl
   set M : Matrix (l × m) (l × n) ℝ := (1 : Matrix l l ℝ) ⊗ₖ E with hM
-  have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := frobNorm_one_kronecker_sq E
+  have hFM : frobNorm M ^ 2 = L * frobNorm E ^ 2 := by
+    rw [hM, frobNorm_kronecker, mul_pow, frobNorm_one_sq]
   have hM0 : M ≠ 0 := by
     intro h
     apply hE0
