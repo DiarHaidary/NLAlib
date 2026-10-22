@@ -8,6 +8,7 @@ public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
 public import NLAlib.ForMathlib.Analysis.CStarAlgebra.Matrix
+public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Basic
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
