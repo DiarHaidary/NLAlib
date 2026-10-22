@@ -799,6 +799,8 @@ imports:
 * `Sketching/Gaussian/Rademacher.lean` (a `public import`) and
   `Estimation/Trace/GirardHutchinson.lean` import `RandomMatrix/Rademacher/Basic`.
 * `Probability/Measurability/Matrix.lean` imports `Mathlib.MeasureTheory.Integral.IntegrableOn`.
+* *Amendment 2026-10-22 (B):* `RandomMatrix/Gaussian/Moments.lean` imports
+  `ForMathlib/Probability/Independence/Basic` (F1; not in its closure).
 
 **Flags (placement not by topic):**
 * None new.
