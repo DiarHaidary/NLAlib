@@ -118,13 +118,6 @@ private theorem measurable_gaussianProjectionFactor_rank [Finite m] (A : Matrix 
   (measurable_from_nat (f := fun q => gaussianProjectionFactor q c)).comp
     (measurable_rank.comp (measurable_const.matrix_mul measurable_id))
 
-/-- The completion factor at a rank $q$ with $q + 2 \le p$ lies in $[1, 1 + p]$. -/
-private theorem gaussianProjectionFactor_le_one_add {q c : ℕ} (h : q + 2 ≤ c) :
-    gaussianProjectionFactor q c ≤ 1 + c := by
-  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
-  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
-  nlinarith
-
 /-- The right side of the identity, $(1 + q/(p-q-1))\|\mathbf{A} - \mathsf{rsvd}\|^2$ at the
 random rank, is integrable. -/
 private theorem integrable_gaussianProjectionFactor_mul [IsFiniteMeasure μ] (A : Matrix m n ℝ)

@@ -89,6 +89,15 @@ theorem one_le_gaussianProjectionFactor {k l : ℕ} (h : k + 2 ≤ l) :
   rw [gaussianProjectionFactor_def, le_add_iff_nonneg_right]
   exact div_nonneg (Nat.cast_nonneg k) (by linarith)
 
+/-- The Gaussian projection factor is bounded: for $q + 2 \le c$, the factor
+satisfies <!-- value gaussianProjectionFactor q c --> $1 + q/(c - q - 1) \le 1 + c$, the bound
+that makes the factor at a random rank integrable. -/
+theorem gaussianProjectionFactor_le_one_add {q c : ℕ} (h : q + 2 ≤ c) :
+    gaussianProjectionFactor q c ≤ 1 + c := by
+  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
+  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
+  nlinarith
+
 /-- The Gaussian projection factor is monotone in the target rank $k$ while $k + 2 \le l$. -/
 theorem gaussianProjectionFactor_le_gaussianProjectionFactor {k k' l : ℕ} (hk : k ≤ k')
     (h : k' + 2 ≤ l) : gaussianProjectionFactor k l ≤ gaussianProjectionFactor k' l := by
