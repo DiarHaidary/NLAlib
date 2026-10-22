@@ -143,11 +143,10 @@ theorem singularValues_sub_rbki_le_of_degree_lt {R : Type*} [CommSemiring R] [Al
     (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) {q : ℕ} {f : R[X]} (hf : f.degree < q) (i : ℕ) :
     singularValues (A - rbki A Ω q) i ≤ singularValues (A - rsvd A (aeval (Aᴴ * A) f * Ω)) i := by
   classical
-  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Ω hf
   rw [rbki, sub_rsvd, sub_rsvd]
-  refine singularValues_one_sub_rangeProjector_mul_le_of_range_le
-    (range_le_iff_exists_mul.mpr ⟨C, ?_⟩) A i
-  rw [hC, Matrix.mul_assoc]
+  refine singularValues_one_sub_rangeProjector_mul_le_of_range_le ?_ A i
+  rw [← Matrix.mul_assoc]
+  exact range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (Aᴴ * A) Ω hf
 
 /-- **RBKI beats RSI with one block fewer**: with $p$ power steps,
 $$\sigma_i(\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, p + 1)) \le
