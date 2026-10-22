@@ -57,32 +57,32 @@ structure SymmetricGauge extends Seminorm ℝ (ℕ →₀ ℝ) where
   map_abs' : ∀ x, toFun (x.mapRange abs abs_zero) = toFun x
 
 /-- Extension by zero of a vector on `Fin N` to a finitely supported sequence. -/
-private noncomputable def extendFin (N : ℕ) : (Fin N → ℝ) →ₗ[ℝ] (ℕ →₀ ℝ) :=
+private noncomputable def extendFinLinear (N : ℕ) : (Fin N → ℝ) →ₗ[ℝ] (ℕ →₀ ℝ) :=
   Finsupp.lmapDomain ℝ ℝ Fin.val ∘ₗ (Finsupp.linearEquivFunOnFinite ℝ ℝ (Fin N)).symm.toLinearMap
 
-private theorem extendFin_apply_of_lt {N : ℕ} (z : Fin N → ℝ) {i : ℕ} (hi : i < N) :
-    extendFin N z i = z ⟨i, hi⟩ := by
+private theorem extendFinLinear_apply_of_lt {N : ℕ} (z : Fin N → ℝ) {i : ℕ} (hi : i < N) :
+    extendFinLinear N z i = z ⟨i, hi⟩ := by
   exact Finsupp.mapDomain_apply Fin.val_injective
     ((Finsupp.linearEquivFunOnFinite ℝ ℝ (Fin N)).symm z) ⟨i, hi⟩
 
-private theorem extendFin_apply_of_le {N : ℕ} (z : Fin N → ℝ) {i : ℕ} (hi : N ≤ i) :
-    extendFin N z i = 0 := by
+private theorem extendFinLinear_apply_of_le {N : ℕ} (z : Fin N → ℝ) {i : ℕ} (hi : N ≤ i) :
+    extendFinLinear N z i = 0 := by
   refine Finsupp.mapDomain_of_notMem_range _ _ ?_
   rintro ⟨j, rfl⟩
   exact j.isLt.not_ge hi
 
-private theorem extendFin_comp_perm {N : ℕ} (z : Fin N → ℝ) (σ : Equiv.Perm (Fin N)) :
-    extendFin N (z ∘ σ) =
-      (extendFin N z).equivMapDomain (σ.extendDomain Fin.equivSubtype).symm := by
+private theorem extendFinLinear_comp_perm {N : ℕ} (z : Fin N → ℝ) (σ : Equiv.Perm (Fin N)) :
+    extendFinLinear N (z ∘ σ) =
+      (extendFinLinear N z).equivMapDomain (σ.extendDomain Fin.equivSubtype).symm := by
   ext i
   rw [Finsupp.equivMapDomain_apply, Equiv.symm_symm]
   obtain hi | hi := lt_or_ge i N
   · have h := σ.extendDomain_apply_image Fin.equivSubtype ⟨i, hi⟩
     have h' : σ.extendDomain Fin.equivSubtype i = (σ ⟨i, hi⟩ : ℕ) := h
-    rw [h', extendFin_apply_of_lt _ hi, extendFin_apply_of_lt _ (σ ⟨i, hi⟩).isLt]
+    rw [h', extendFinLinear_apply_of_lt _ hi, extendFinLinear_apply_of_lt _ (σ ⟨i, hi⟩).isLt]
     rfl
   · rw [σ.extendDomain_apply_not_subtype Fin.equivSubtype (b := i) (not_lt.mpr hi),
-      extendFin_apply_of_le _ hi, extendFin_apply_of_le _ hi]
+      extendFinLinear_apply_of_le _ hi, extendFinLinear_apply_of_le _ hi]
 
 namespace SymmetricGauge
 
@@ -241,25 +241,25 @@ theorem le_of_forall_sum_le {x y : ℕ →₀ ℝ} (hy : Antitone y)
     have hS := h (S.map Fin.valEmbedding)
     rwa [Finset.sum_map, Finset.card_map] at hS
   obtain ⟨z, hxz, hzy⟩ := hmaj.exists_le_majorized
-  have h1 : Φ x = Φ (extendFin N fun i : Fin N => |x i|) := Φ.eq_of_abs_eq fun i => by
+  have h1 : Φ x = Φ (extendFinLinear N fun i : Fin N => |x i|) := Φ.eq_of_abs_eq fun i => by
     obtain hi | hi := lt_or_ge i N
-    · rw [extendFin_apply_of_lt _ hi, abs_abs]
-    · rw [hx0 i hi, extendFin_apply_of_le _ hi]
-  have h2 : Φ (extendFin N fun i : Fin N => |x i|) ≤ Φ (extendFin N z) :=
+    · rw [extendFinLinear_apply_of_lt _ hi, abs_abs]
+    · rw [hx0 i hi, extendFinLinear_apply_of_le _ hi]
+  have h2 : Φ (extendFinLinear N fun i : Fin N => |x i|) ≤ Φ (extendFinLinear N z) :=
     Φ.le_of_abs_le fun i => by
       obtain hi | hi := lt_or_ge i N
-      · rw [extendFin_apply_of_lt _ hi, extendFin_apply_of_lt _ hi, abs_abs]
+      · rw [extendFinLinear_apply_of_lt _ hi, extendFinLinear_apply_of_lt _ hi, abs_abs]
         exact (hxz ⟨i, hi⟩).trans (le_abs_self _)
-      · rw [extendFin_apply_of_le _ hi, extendFin_apply_of_le _ hi]
-  have h3 : Φ (extendFin N z) ≤ Φ (extendFin N fun i : Fin N => y i) :=
-    hzy.le_of_convexOn_of_comp_perm (Φ := fun z => Φ (extendFin N z))
-      (Φ.convexOn.comp_linearMap (extendFin N)) fun z σ => by
-        rw [extendFin_comp_perm, map_equivMapDomain]
-  have h4 : extendFin N (fun i : Fin N => y i) = y := by
+      · rw [extendFinLinear_apply_of_le _ hi, extendFinLinear_apply_of_le _ hi]
+  have h3 : Φ (extendFinLinear N z) ≤ Φ (extendFinLinear N fun i : Fin N => y i) :=
+    hzy.le_of_convexOn_of_comp_perm (Φ := fun z => Φ (extendFinLinear N z))
+      (Φ.convexOn.comp_linearMap (extendFinLinear N)) fun z σ => by
+        rw [extendFinLinear_comp_perm, map_equivMapDomain]
+  have h4 : extendFinLinear N (fun i : Fin N => y i) = y := by
     ext i
     obtain hi | hi := lt_or_ge i N
-    · rw [extendFin_apply_of_lt _ hi]
-    · rw [hy0 i hi, extendFin_apply_of_le _ hi]
+    · rw [extendFinLinear_apply_of_lt _ hi]
+    · rw [hy0 i hi, extendFinLinear_apply_of_le _ hi]
   rw [h1]
   exact h2.trans (h3.trans_eq (by rw [h4]))
 
