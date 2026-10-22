@@ -91,28 +91,17 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianM
   have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
   have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     (d := A.rank) hG (by norm_num) (by norm_num) (half_pos hδ) (by linarith) hp
-  have h := (hasJLMoment_of_hasLaw_gaussianMatrix hG hη
-    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
-    (hOSI.hasSubspaceInjection (U := A) le_rfl)
-    (hG.aemeasurable.const_smul ((√(Fintype.card p : ℝ))⁻¹)) (by norm_num) hη
-    (by norm_num) (by positivity) B
-  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
-    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
-      div_le_iff₀ (by positivity)]
-    nlinarith
   have hfail : 2 / (Fintype.card p * η ^ 2) ≤ δ / 2 := by
     rw [hsq]
     have e : 2 / (Fintype.card p * (ε / (4 * ((A.rank : ℝ) + 1)))) =
         8 * ((A.rank : ℝ) + 1) / (Fintype.card p * ε) := by field_simp; ring
     rw [e, div_le_iff₀ (by positivity)]
     nlinarith
-  have hnorm : (√(Fintype.card p : ℝ))⁻¹ ≠ 0 := inv_ne_zero (ne_of_gt (Real.sqrt_pos.2 hp0))
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
-  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
-    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
-      frobNorm (B - A * sketchAndSolve A ((√(Fintype.card p : ℝ))⁻¹ • G ω) B) ^ 2
-  rw [sketchAndSolve_smul_sketch A (G ω) B hnorm]
-  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
+  exact ((hasJLMoment_of_hasLaw_gaussianMatrix hG hη
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection le_rfl) hG.aemeasurable
+    (inv_ne_zero (Real.sqrt_pos.2 hp0).ne') (by norm_num) hε (by norm_num) (by positivity)
+    B).trans (by linarith)
 
 /-- **Gaussian sketch-and-solve, relative residual with high probability**, $\log(1/\delta)$ size
 form: for a standard Gaussian $p\times m$ sketch $\mathbf{G}$, $r=\operatorname{rank}\mathbf{A}$,
@@ -151,28 +140,16 @@ theorem
     (gaussianInjectionDim_pos A.rank (by norm_num) (half_pos hδ) (by linarith)).trans_le hp
   let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
   have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
-  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
   have hη1 : η ≤ 1 := by
     refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
     linarith [Nat.cast_nonneg (α := ℝ) A.rank]
   have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     (d := A.rank) hG (by norm_num) (by norm_num) (half_pos hδ) (by linarith) hp
-  have h := (hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hη hη1 (half_pos hδ) hp'
-    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
-    (hOSI.hasSubspaceInjection (U := A) le_rfl)
-    (hG.aemeasurable.const_smul ((√(Fintype.card p : ℝ))⁻¹)) (by norm_num) hη
-    (le_max_left _ _) (by positivity) B
-  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
-    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
-      div_le_iff₀ (by positivity)]
-    nlinarith
-  have hnorm : (√(Fintype.card p : ℝ))⁻¹ ≠ 0 := inv_ne_zero (ne_of_gt (Real.sqrt_pos.2 hp0))
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
-  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
-    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
-      frobNorm (B - A * sketchAndSolve A ((√(Fintype.card p : ℝ))⁻¹ • G ω) B) ^ 2
-  rw [sketchAndSolve_smul_sketch A (G ω) B hnorm]
-  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
+  exact ((hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hη hη1 (half_pos hδ) hp'
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection le_rfl) hG.aemeasurable
+    (inv_ne_zero (Real.sqrt_pos.2 hp0).ne') (by norm_num) hε (le_max_left _ _) (by positivity)
+    B).trans (by linarith)
 
 -- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
 set_option linter.style.longLine false in

@@ -236,29 +236,17 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVec
   have hp0 : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
   let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
   have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
-  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
   have hη1 : η ≤ 1 := by
     refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
     linarith [Nat.cast_nonneg (α := ℝ) A.rank]
   have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
     (d := A.rank) hind hsub hiso (by norm_num) (by linarith) (half_pos hδ) hk
   have hX : AEMeasurable X μ := aemeasurable_pi_lambda X fun i => (hsub i).aemeasurable
-  have h := (hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind hsub hiso hη
-    (hη1.trans hc) (half_pos hδ) hk').measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
-    (hOSI.hasSubspaceInjection (U := A) le_rfl)
-    (hX.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by norm_num) hη (le_max_left _ _)
-    (by positivity) B
-  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
-    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
-      div_le_iff₀ (by positivity)]
-    nlinarith
-  have hnorm : (√(Fintype.card k : ℝ))⁻¹ ≠ 0 := inv_ne_zero (ne_of_gt (Real.sqrt_pos.2 hp0))
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
-  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
-    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
-      frobNorm (B - A * sketchAndSolve A ((√(Fintype.card k : ℝ))⁻¹ • X ω) B) ^ 2
-  rw [sketchAndSolve_smul_sketch A (X ω) B hnorm]
-  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
+  have hJL := hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind hsub hiso hη
+    (hη1.trans hc) (half_pos hδ) hk'
+  exact (hJL.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection le_rfl) hX (inv_ne_zero (Real.sqrt_pos.2 hp0).ne') (by norm_num) hε
+    (le_max_left _ _) (by positivity) B).trans (by linarith)
 
 /-- **Sub-Gaussian sketch-and-solve, asymptotic relative residual with high probability**:
 $O(c^2(r+1)\log(1/\delta)/\varepsilon)$ rows suffice, with $r=\operatorname{rank}\mathbf{A}$:

@@ -1134,3 +1134,18 @@ the note:
   $32\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2$ on the flattened
   row-sampling injection size, extracted from the two SRHT OSI asymptotic proofs (which now cite
   it) and used by the SRHT sketch-and-solve, randomized SVD and early-truncation asymptotic forms.
+* **Shared $(1 + \varepsilon)$ forms made public** (round close, 2026-10-22): the early-truncation
+  and sketch-and-solve family proofs repeated one body each, with only the JL size form or the
+  sketch family swapped. Two generic theorems now carry it, each at a rescaled sketch
+  $c\,\mathbf{\Omega}$ so that a family's normalisation stays inside:
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le`
+  (`LowRank/Oblivious/EarlyTruncation.lean`; injection at $1 - \varepsilon/6$, JL moment at
+  $\varepsilon/(6\sqrt{k})$, failure $\delta + 2\delta'$), used by the Gaussian (both forms), Haar,
+  sub-Gaussian (both forms) and SRHT early truncation; and
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le`
+  (`Regression/Oblivious.lean`; injection constant $a \ge 1/2$, JL moment at
+  $\sqrt{\varepsilon/(4(r+1))}$, failure $\delta + \delta'$), used by the Gaussian (both forms),
+  Haar and sub-Gaussian sketch-and-solve. No public statement changed. The SRHT sketch-and-solve
+  and the sub-Gaussian randomized SVD pair keep their proofs: what they would share beyond the
+  existing generic `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le` and
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le` is a few lines.

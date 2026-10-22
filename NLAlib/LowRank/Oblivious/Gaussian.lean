@@ -117,42 +117,21 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianM
     (d := k) hG (by positivity) (by linarith) (by positivity) (by linarith) hl
   have hJL := hasJLMoment_of_hasLaw_gaussianMatrix hG hεJ
   rw [hS] at hOSI hJL
-  have hX' : AEMeasurable (fun ω => (√(Fintype.card l : ℝ))⁻¹ • X ω) μ :=
-    (continuous_const_smul _).measurable.comp_aemeasurable hX.aemeasurable
-  have hδJ : (0 : ℝ) ≤ 2 / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) := by positivity
-  have hχ :=
-    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
-    (A := A) (k := k) hX' hεJ le_rfl hδJ
-  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
-  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
-    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
-    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
-    (fun ω => isStarProjection_rangeProjector _)
-    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
-    (fun ω => by
-      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
-        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
-      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
-        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
-    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
-      hεJ le_rfl hδJ) hχ
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
-  · have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
-        frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
-    rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
-    exact hω'
-  · have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 hl0
-    have e : 2 / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) =
-        72 * k / (Fintype.card l * ε ^ 2) := by
-      rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
-      field_simp
-      ring
-    have h3 : 72 * (k : ℝ) / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
-      rw [div_le_iff₀ (by positivity)]
-      nlinarith
-    rw [e]
-    linarith
+  refine (hJL.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
+    ((continuous_const_smul _).measurable.comp_aemeasurable hX.aemeasurable)
+    hε hε1 le_rfl (by positivity)).trans ?_
+  have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 hl0
+  have e : 2 / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) =
+      72 * k / (Fintype.card l * ε ^ 2) := by
+    rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
+    field_simp
+    ring
+  have h3 : 72 * (k : ℝ) / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith
+  rw [e]
+  linarith
 
 /-- **Early-truncated randomized SVD with a Gaussian test matrix, tail**, $\log(1/\delta)$ size
 form: for a standard Gaussian $n \times \ell$ test matrix $\mathbf{\Omega}$,
@@ -212,31 +191,10 @@ theorem
     (d := k) hG (by positivity) (by linarith) (by positivity) (by linarith) hl
   have hJL := hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hεJ hεJ1 (by positivity) hl'
   rw [hS] at hOSI hJL
-  have hX' : AEMeasurable (fun ω => (√(Fintype.card l : ℝ))⁻¹ • X ω) μ :=
-    (continuous_const_smul _).measurable.comp_aemeasurable hX.aemeasurable
-  have hδJ : (0 : ℝ) ≤ δ / 3 := by positivity
-  have hχ :=
-    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
-    (A := A) (k := k) hX' hεJ (le_max_left _ _) hδJ
-  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
-  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
-    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
-    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
-    (fun ω => isStarProjection_rangeProjector _)
-    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
-    (fun ω => by
-      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
-        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
-      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
-        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
-    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
-      hεJ (le_max_left _ _) hδJ) hχ
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
-  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
-      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
-  rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
-  exact hω'
+  exact (hJL.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
+    ((continuous_const_smul _).measurable.comp_aemeasurable hX.aemeasurable)
+    hε hε1 (le_max_left _ _) (by positivity)).trans (by linarith)
 
 -- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
 set_option linter.style.longLine false in

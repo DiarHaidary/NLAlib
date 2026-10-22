@@ -57,7 +57,8 @@ except with probability $\delta$; the sizes are `jlDim (2 * ε / 15) (δ / 3 / 2
 constant $1 - \varepsilon/6$ and failure $\delta/3$) and `jlMomentDim (ε / (6 * √k)) (δ / 3)`
 (the JL moment for each multiplication tail, failure $\delta/3$). The route of
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, through
-`NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le`. Asymptotic form:
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le`.
+Asymptotic form:
 `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_haarFrame`.
 [CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
 with unspecified constants; the Haar instance is not stated there.
@@ -99,31 +100,10 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_haarFrame
     (by rwa [show 4 * (ε / 6) / 5 = 2 * ε / 15 by ring])
   have hJL := hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le hQ hl hεJ hεJ1 (by positivity) hl₂
   rw [hS] at hOSI hJL
-  have hX' : AEMeasurable (fun ω => √(Fintype.card n / Fintype.card l : ℝ) • Q ω) μ :=
-    (continuous_const_smul _).measurable.comp_aemeasurable hQ.aemeasurable
-  have hδJ : (0 : ℝ) ≤ δ / 3 := by positivity
-  have hχ :=
-    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
-    (A := A) (k := k) hX' hεJ (le_max_left _ _) hδJ
-  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
-  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
-    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
-    (P := fun ω => rangeProjector (truncatedSVD (A * Q ω) k))
-    (fun ω => isStarProjection_rangeProjector _)
-    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
-    (fun ω => by
-      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
-        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
-      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * Q ω)
-        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
-    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
-      hεJ (le_max_left _ _) hδJ) hχ
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
-  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
-      frobNorm (A - earlyTruncatedRSVD A (Q ω) k) ^ 2 := hω
-  rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
-  exact hω'
+  exact (hJL.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
+    ((continuous_const_smul _).measurable.comp_aemeasurable hQ.aemeasurable)
+    hε hε1 (le_max_left _ _) (by positivity)).trans (by linarith)
 
 /-- **$O(k\log(1/\delta)/\varepsilon^2)$ Haar columns suffice for early truncation**: there are
 absolute constants $C, \varepsilon_0 > 0$ such that for an $n \times \ell$ Haar frame

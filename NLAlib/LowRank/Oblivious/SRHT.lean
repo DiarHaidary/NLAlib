@@ -394,39 +394,22 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht [Non
     (ε := ε / 6) (by positivity) (by positivity : (0 : ℝ) < δ / 3)
     (by rw [show δ / 3 / 2 = δ / 6 by ring]; exact hl)
   have hJL := hasJLMoment_of_hasLaw_srht hF hX hεJ
-  have hδJ : (0 : ℝ) ≤ (3 * β ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) :=
-    div_nonneg hv.le (by positivity)
-  have hχ :=
-    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
-    (A := A) (k := k) hXm hεJ le_rfl hδJ
-  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
-  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
-    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
-    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
-    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
-    (fun ω => isStarProjection_rangeProjector _)
-    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
-    (fun ω => by
-      rw [rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
-      exact frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
-        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k)))
-    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hXm
-      hεJ le_rfl hδJ) hχ
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans ?_)
-  · have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
-        frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
-    rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
-    exact hω'
-  · have e : (3 * β ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) =
-        36 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) := by
-      rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
-      field_simp
-      ring
-    have h3 : 36 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
-      rw [div_le_iff₀ (by positivity)]
-      nlinarith
-    rw [e]
-    linarith
+  have h1 : (fun ω => ((1 : ℝ) • X ω)ᴴ) = fun ω => (X ω)ᴴ := by simp only [one_smul]
+  rw [← h1] at hOSI hJL
+  refine (hJL.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
+    ((continuous_const_smul _).measurable.comp_aemeasurable hXm)
+    hε hε1 le_rfl (div_nonneg hv.le (by positivity))).trans ?_
+  have e : (3 * β ^ 2 - 1) / (Fintype.card l * (ε / (6 * √(k : ℝ))) ^ 2) =
+      36 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) := by
+    rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
+    field_simp
+    ring
+  have h3 : 36 * (3 * β ^ 2 - 1) * k / (Fintype.card l * ε ^ 2) ≤ δ / 3 := by
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith
+  rw [e]
+  linarith
 
 /-- **$O(\beta(k + \log(n/\delta))\log(k/\delta)/\varepsilon^2 + \beta^2k/(\varepsilon^2\delta))$
 SRHT columns suffice for early truncation**: there are absolute constants
