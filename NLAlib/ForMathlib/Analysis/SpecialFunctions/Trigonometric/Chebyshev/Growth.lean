@@ -34,6 +34,8 @@ These are upstream candidates in `Polynomial.Chebyshev`.
   the square-root condition-ratio lower bound.
 * `Polynomial.Chebyshev.eval_T_two_mul`: $T_{2j}(x) = T_j(2x^2 - 1)$.
 * `Polynomial.Chebyshev.monotoneOn_eval_T_real`: $T_q$ is monotone on $[1, \infty)$.
+* `Polynomial.Chebyshev.abs_eval_T_comp_C_mul_X_sub_one_le`: the shifted filter $T_n(2x/s - 1)$
+  is bounded by one on $[0, s]$.
 * `Polynomial.Chebyshev.exp_mul_sqrt_div_two_le_eval_T_real`: the gap form of Chebyshev growth,
   $\tfrac12 e^{2q\sqrt{r}} \le T_q((1 + r)/(1 - r))$.
 * `Polynomial.Chebyshev.le_exp_of_eval_T_real_le`: an inverse of Chebyshev growth,
@@ -128,6 +130,20 @@ theorem monotoneOn_eval_T_real (q : ℕ) :
     abs_of_nonneg (by have := arcosh_nonneg hy'; positivity)]
   exact mul_le_mul_of_nonneg_left
     ((arcosh_le_arcosh (by linarith) (by linarith)).2 hxy) (Nat.cast_nonneg q)
+
+/-- The shifted Chebyshev filter is bounded by one on $[0, s]$: for $s > 0$ and
+$0 \le x \le s$, $\lvert T_n(2x/s - 1) \rvert \le 1$. The constant is `Polynomial.C`, written
+out because `Polynomial.Chebyshev.C` shadows it here. Upstream candidate. -/
+theorem abs_eval_T_comp_C_mul_X_sub_one_le (n : ℤ) {s x : ℝ} (hs : 0 < s)
+    (hx : x ∈ Set.Icc 0 s) : |((T ℝ n).comp (Polynomial.C (2 / s) * X - 1)).eval x| ≤ 1 := by
+  simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
+  refine abs_eval_T_real_le_one n (abs_le.mpr ⟨?_, ?_⟩)
+  · have : 0 ≤ 2 / s * x := mul_nonneg (by positivity) hx.1
+    linarith
+  · have : 2 / s * x ≤ 2 := by
+      rw [div_mul_eq_mul_div, div_le_iff₀ hs]
+      linarith [hx.2]
+    linarith
 
 /-- **Chebyshev growth in terms of a relative gap**: for $0 \le r < 1$,
 $$\frac12 e^{2q\sqrt{r}} \le T_q\Bigl(\frac{1 + r}{1 - r}\Bigr)\,.$$

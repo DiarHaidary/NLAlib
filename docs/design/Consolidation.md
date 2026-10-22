@@ -284,6 +284,10 @@ theorem natDegree_T_comp_le {R : Type*} [CommRing R] [IsDomain R] [NeZero (2 : R
 theorem abs_eval_T_comp_C_mul_X_sub_one_le (n : ℤ) {s x : ℝ} (hs : 0 < s)
     (hx : x ∈ Set.Icc 0 s) : |((T ℝ n).comp (C (2 / s) * X - 1)).eval x| ≤ 1
 ```
+*Amendment 2026-10-22 (A3):* inside `namespace Polynomial.Chebyshev` the bare `C` is Mathlib's
+`Polynomial.Chebyshev.C`, so the second statement writes `Polynomial.C (2 / s)`; the statement is
+the one above.
+
 They replace three copies of the degree argument and two copies of the bound:
 * `LowRank/Gaussian/BlockKrylovGapless.lean:623` `degree_T_comp_C_mul_X_sub_one_lt` and `:637`
   `abs_eval_T_comp_C_mul_X_sub_one_le` (private);

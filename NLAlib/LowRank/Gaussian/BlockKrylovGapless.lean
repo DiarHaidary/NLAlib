@@ -632,17 +632,6 @@ private theorem degree_T_comp_C_mul_X_sub_one_lt {j q : ℕ} {s : ℝ} (hjq : j 
     exact (Nat.mul_le_mul_left _ h1).trans_eq (mul_one _)
   exact Polynomial.degree_le_natDegree.trans_lt (by exact_mod_cast h2.trans_lt hjq)
 
-/-- The rescaled Chebyshev filter $T_j(2x/s - 1)$ is at most $1$ in absolute value on
-$[0, s]$. -/
-private theorem abs_eval_T_comp_C_mul_X_sub_one_le (j : ℕ) {s x : ℝ} (hs : 0 < s)
-    (hx : x ∈ Set.Icc 0 s) :
-    |((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
-      (Polynomial.C (2 / s) * Polynomial.X - 1)).eval x| ≤ 1 := by
-  rw [eval_T_comp_C_mul_X_sub_one]
-  refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)
-  · linarith [div_nonneg hx.1 hs.le]
-  · linarith [(div_le_one hs).2 hx.2]
-
 /-- The Gram matrix of $\mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ is
 $\varphi(\mathbf{A}\mathbf{A}^{\mathsf{H}})$ with $\varphi(y) = f(y)\,y\,f(y)$. -/
 private theorem mul_aeval_mul_conjTranspose_eq_cfc [DecidableEq m] (A : Matrix m n ℝ)
@@ -747,7 +736,7 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
     eval_T_comp_C_mul_X_sub_one j (σ ^ 2) y
   have hfdeg : f.degree < q := degree_T_comp_C_mul_X_sub_one_lt (by omega)
   have htail : ∀ x ∈ Set.Icc 0 (σ ^ 2), |f.eval x| ≤ 1 := fun x hx =>
-    abs_eval_T_comp_C_mul_X_sub_one_le j hσ2 hx
+    Polynomial.Chebyshev.abs_eval_T_comp_C_mul_X_sub_one_le j hσ2 hx
   obtain ⟨W, hW⟩ := exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le A hX f
     (le_card_of_singularValues_pos A hσ) hr htail
   rw [one_pow, one_mul, ← singularValues_sq_mul_rangeFinderTailRatio A _ hσ] at hW
