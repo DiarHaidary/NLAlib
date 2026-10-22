@@ -307,25 +307,9 @@ section TwoLevel
 variable {s t : Type*} [Fintype s] [Fintype t] [DecidableEq s] [DecidableEq t]
 
 omit [Fintype s] [Fintype t] in
-/-- The two-level block matrix is diagonal. -/
-private theorem fromBlocks_smul_one_eq_diagonal (a b : ℝ) :
-    Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • (1 : Matrix t t 𝕜)) =
-      Matrix.diagonal (Sum.elim (fun _ => (a : 𝕜)) fun _ => (b : 𝕜)) := by
-  rw [← Matrix.fromBlocks_diagonal, RCLike.real_smul_eq_coe_smul (K := 𝕜),
-    RCLike.real_smul_eq_coe_smul (K := 𝕜), Matrix.smul_one_eq_diagonal,
-    Matrix.smul_one_eq_diagonal]
-
-omit [Fintype s] [Fintype t] in
-/-- The two-level block matrix is positive semidefinite for $a, b \ge 0$. -/
-private theorem posSemidef_fromBlocks_smul_one {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
-    (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • (1 : Matrix t t 𝕜))).PosSemidef := by
-  rw [fromBlocks_smul_one_eq_diagonal]
-  refine Matrix.PosSemidef.diagonal fun i => ?_
-  cases i <;> simpa using (RCLike.ofReal_nonneg (K := 𝕜)).mpr ‹_›
-
-omit [Fintype s] [Fintype t] in
 /-- The two-level block matrix is monotone in both levels. -/
-private theorem fromBlocks_smul_one_le {a b a' b' : ℝ} (ha : a ≤ a') (hb : b ≤ b') :
+private theorem fromBlocks_smul_one_le [Finite s] [Finite t] {a b a' b' : ℝ} (ha : a ≤ a')
+    (hb : b ≤ b') :
     Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • (1 : Matrix t t 𝕜)) ≤
       Matrix.fromBlocks (a' • (1 : Matrix s s 𝕜)) 0 0 (b' • (1 : Matrix t t 𝕜)) := by
   have e : Matrix.fromBlocks (a' • (1 : Matrix s s 𝕜)) 0 0 (b' • (1 : Matrix t t 𝕜)) -
@@ -334,7 +318,8 @@ private theorem fromBlocks_smul_one_le {a b a' b' : ℝ} (ha : a ≤ a') (hb : b
     rw [sub_eq_add_neg, Matrix.fromBlocks_neg, Matrix.fromBlocks_add]
     simp only [sub_eq_add_neg, add_smul, neg_smul, neg_zero, add_zero]
   rw [Matrix.le_iff, e]
-  exact posSemidef_fromBlocks_smul_one (sub_nonneg.2 ha) (sub_nonneg.2 hb)
+  exact (Matrix.PosSemidef.one.smul (sub_nonneg.2 ha)).fromBlocks_zero₁₂_zero₂₁
+    (Matrix.PosSemidef.one.smul (sub_nonneg.2 hb))
 
 omit [Fintype l] in
 /-- The compression of the two-level block matrix by $\mathbf{\Psi}$, through the row blocks
@@ -495,8 +480,9 @@ theorem HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom [DecidableEq l]
     push_cast
     ring
   have h12 := trace_inv_smul_one_add_smul_sub K a b hMu hNu
-  have hE : (D - nystrom D Ψ).PosSemidef :=
-    Matrix.le_iff.mp ((posSemidef_fromBlocks_smul_one ha.le hb.le).nystrom_le Ψ)
+  have hD0 : D.PosSemidef :=
+    (Matrix.PosSemidef.one.smul ha.le).fromBlocks_zero₁₂_zero₂₁ (Matrix.PosSemidef.one.smul hb.le)
+  have hE : (D - nystrom D Ψ).PosSemidef := Matrix.le_iff.mp (hD0.nystrom_le Ψ)
   have key : D.trace - (nystrom D Ψ).trace =
       (((b * ((Fintype.card t : ℝ) - Fintype.card l)) : ℝ) : 𝕜) +
         ((a * b : ℝ) : 𝕜) * (N⁻¹).trace := by
@@ -513,9 +499,12 @@ private theorem nuclearNorm_fromBlocks_sub_nystrom_le_of_le {Ψ : Matrix (s ⊕ 
         nystrom (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • 1)) Ψ) ≤
       nuclearNorm (Matrix.fromBlocks (a' • (1 : Matrix s s 𝕜)) 0 0 (b' • 1) -
         nystrom (Matrix.fromBlocks (a' • (1 : Matrix s s 𝕜)) 0 0 (b' • 1)) Ψ) := by
-  have hD := posSemidef_fromBlocks_smul_one (𝕜 := 𝕜) (s := s) (t := t) ha hb
-  have hD' := posSemidef_fromBlocks_smul_one (𝕜 := 𝕜) (s := s) (t := t) (ha.trans haa)
-    (hb.trans hbb)
+  have hD : (Matrix.fromBlocks (a • (1 : Matrix s s 𝕜)) 0 0 (b • (1 : Matrix t t 𝕜))).PosSemidef :=
+    (Matrix.PosSemidef.one.smul ha).fromBlocks_zero₁₂_zero₂₁ (Matrix.PosSemidef.one.smul hb)
+  have hD' :
+      (Matrix.fromBlocks (a' • (1 : Matrix s s 𝕜)) 0 0 (b' • (1 : Matrix t t 𝕜))).PosSemidef :=
+    (Matrix.PosSemidef.one.smul (ha.trans haa)).fromBlocks_zero₁₂_zero₂₁
+      (Matrix.PosSemidef.one.smul (hb.trans hbb))
   rw [(Matrix.le_iff.mp (hD.nystrom_le Ψ)).nuclearNorm_eq_re_trace,
     (Matrix.le_iff.mp (hD'.nystrom_le Ψ)).nuclearNorm_eq_re_trace]
   exact re_trace_le_re_trace_of_le
