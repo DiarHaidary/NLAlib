@@ -801,6 +801,9 @@ imports:
 * `Probability/Measurability/Matrix.lean` imports `Mathlib.MeasureTheory.Integral.IntegrableOn`.
 * *Amendment 2026-10-22 (B):* `RandomMatrix/Gaussian/Moments.lean` imports
   `ForMathlib/Probability/Independence/Basic` (F1; not in its closure).
+* *Amendment 2026-10-22 (B):* `Solvers/SketchAndProject.lean` imports
+  `ForMathlib/Analysis/SpecialFunctions/Log/Basic` (F4; not in its closure). Kaczmarz gets it
+  through SketchAndProject.
 
 **Flags (placement not by topic):**
 * None new.
