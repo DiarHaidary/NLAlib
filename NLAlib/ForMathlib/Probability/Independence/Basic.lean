@@ -8,6 +8,7 @@ module
 public import Mathlib.MeasureTheory.Integral.Prod
 public import Mathlib.MeasureTheory.Measure.Prod
 public import Mathlib.MeasureTheory.Measure.Real
+public import Mathlib.Probability.HasLaw
 public import Mathlib.Probability.Independence.Basic
 public import Mathlib.Logic.Function.DependsOn
 
@@ -16,7 +17,7 @@ public import Mathlib.Logic.Function.DependsOn
 
 If $X$ and $Y$ are independent, their joint law is the product $\mu_X \otimes \mu_Y$
 (`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`), so integrals and probabilities of
-the pair are iterated ones against the two laws. This file records three consequences, and one
+the pair are iterated ones against the two laws. This file records four consequences, and one
 fact about independent families.
 
 * The lower integral of a measurable $f \ge 0$ of the pair is the iterated integral against the
@@ -30,6 +31,9 @@ fact about independent families.
 * The Bochner integral of a function of the pair, integrable for the product of the two laws, is
   the iterated integral (Fubini, `MeasureTheory.integral_prod`), the conditioning step of a mean
   or a variance of a function of two independent random matrices.
+* When one factor $W$ has a named law $\nu$, it is integrated out against $\nu$:
+  $\int f(U, W)\,d\mu = \int\!\int f(U(\omega), w)\,d\nu(w)\,d\mu(\omega)$, and a bound $H$ on
+  the inner integral gives integrability and $\int f(U, W)\,d\mu \le \int H\,d\mu$.
 * A measurable function of the coordinates in a finite set $s$ of an independent family is
   independent of every coordinate outside $s$: the step that conditions an iterated random
   method on its past.
@@ -47,6 +51,14 @@ randomized Kaczmarz (`docs/design/Regression-Kaczmarz.md` §4).
   pair.
 * `ProbabilityTheory.IndepFun.measureReal_mem_le_add`: the sections bound.
 * `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`: Fubini for an independent pair.
+* `ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral_of_hasLaw`,
+  `ProbabilityTheory.IndepFun.lintegral_ofReal_comp_eq_lintegral_ofReal_integral`: integrating
+  out an independent factor of known law.
+* `ProbabilityTheory.IndepFun.integrable_comp_of_integral_le`,
+  `ProbabilityTheory.IndepFun.integral_comp_le_of_integral_le`: integrability and a bound from a
+  bound on the inner integral.
+* `ProbabilityTheory.IndepFun.integrable_comp_iff`: integrability against $\mu$ is integrability
+  against the product of the two laws.
 * `ProbabilityTheory.iIndepFun.indepFun_comp_of_dependsOn`: a function of some coordinates of an
   independent family is independent of another coordinate.
 -/
@@ -133,6 +145,91 @@ theorem IndepFun.integral_comp_eq_integral_integral [IsFiniteMeasure μ] {α β 
   have hmap := (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW
   rw [← integral_prod _ hf, ← hmap,
     integral_map (hU.prodMk hW) (hmap ▸ hf.aestronglyMeasurable)]
+
+/-- Integrating out an independent factor, in $[0, \infty]$: if $W$ has law $\nu$ and is
+independent of $U$, and $f \ge 0$ is measurable, then
+$$\int^- f(U, W)\,d\mu = \int^- \int^- f(U(\omega), w)\,d\nu(w)\,d\mu(\omega)\,.$$
+The conditioning step of a two-sketch proof, with the inner integral against the named law.
+Upstream candidate. -/
+theorem IndepFun.lintegral_comp_eq_lintegral_lintegral_of_hasLaw [IsFiniteMeasure μ]
+    {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] {U : Ω → α} {W : Ω → β}
+    {ν : Measure β} (hUW : IndepFun U W μ) (hU : AEMeasurable U μ) (hW : HasLaw W ν μ)
+    {f : α × β → ℝ≥0∞} (hf : Measurable f) :
+    ∫⁻ ω, f (U ω, W ω) ∂μ = ∫⁻ ω, ∫⁻ w, f (U ω, w) ∂ν ∂μ := by
+  rw [hUW.lintegral_comp_eq_lintegral_lintegral hU hW.aemeasurable hf]
+  obtain ⟨-, rfl⟩ := hW
+  exact lintegral_map' hf.lintegral_prod_right'.aemeasurable hU
+
+/-- Integrating out an independent factor, real form: if $W$ has law $\nu$ and is
+independent of $U$, and $F \ge 0$ is measurable with $F(U(\omega), \cdot)$ integrable against
+$\nu$ for almost every $\omega$, then
+$$\int^- F(U, W)\,d\mu = \int^- \Bigl(\int F(U(\omega), w)\,d\nu(w)\Bigr)\,d\mu(\omega)\,.$$
+The real form of `ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral_of_hasLaw`.
+Upstream candidate. -/
+theorem IndepFun.lintegral_ofReal_comp_eq_lintegral_ofReal_integral [IsFiniteMeasure μ]
+    {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] {U : Ω → α} {W : Ω → β}
+    {ν : Measure β} (hUW : IndepFun U W μ) (hU : AEMeasurable U μ) (hW : HasLaw W ν μ)
+    {F : α × β → ℝ} (hF : Measurable F) (hF0 : ∀ q, 0 ≤ F q)
+    (hint : ∀ᵐ ω ∂μ, Integrable (fun w => F (U ω, w)) ν) :
+    ∫⁻ ω, ENNReal.ofReal (F (U ω, W ω)) ∂μ = ∫⁻ ω, ENNReal.ofReal (∫ w, F (U ω, w) ∂ν) ∂μ := by
+  rw [hUW.lintegral_comp_eq_lintegral_lintegral_of_hasLaw hU hW
+    (f := fun q => ENNReal.ofReal (F q)) (ENNReal.measurable_ofReal.comp hF)]
+  refine lintegral_congr_ae ?_
+  filter_upwards [hint] with ω hω
+  exact (ofReal_integral_eq_lintegral_ofReal hω (ae_of_all _ fun w => hF0 _)).symm
+
+/-- Integrability from a bound on the inner integral: if $W$ has law $\nu$ and is independent
+of $U$, $F \ge 0$ is measurable, $F(U(\omega), \cdot)$ is integrable against $\nu$ and
+$\int F(U(\omega), w)\,d\nu(w) \le H(\omega)$ for almost every $\omega$, with $H$ integrable,
+then $F(U, W)$ is integrable. Upstream candidate. -/
+theorem IndepFun.integrable_comp_of_integral_le [IsFiniteMeasure μ] {α β : Type*}
+    [MeasurableSpace α] [MeasurableSpace β] {U : Ω → α} {W : Ω → β} {ν : Measure β}
+    (hUW : IndepFun U W μ) (hU : AEMeasurable U μ) (hW : HasLaw W ν μ) {F : α × β → ℝ}
+    (hF : Measurable F) (hF0 : ∀ q, 0 ≤ F q) {H : Ω → ℝ}
+    (hint : ∀ᵐ ω ∂μ, Integrable (fun w => F (U ω, w)) ν)
+    (hle : ∀ᵐ ω ∂μ, ∫ w, F (U ω, w) ∂ν ≤ H ω) (hH : Integrable H μ) :
+    Integrable (fun ω => F (U ω, W ω)) μ := by
+  refine ⟨(hF.comp_aemeasurable (hU.prodMk hW.aemeasurable)).aestronglyMeasurable, ?_⟩
+  rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun ω => hF0 _),
+    hUW.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hU hW hF hF0 hint]
+  exact (lintegral_mono_ae (hle.mono fun ω h => ENNReal.ofReal_le_ofReal h)).trans_lt
+    hH.lintegral_lt_top
+
+/-- Integrating out an independent factor under a bound: if $W$ has law $\nu$ and is
+independent of $U$, $F \ge 0$ is measurable, $F(U(\omega), \cdot)$ is integrable against $\nu$
+and $\int F(U(\omega), w)\,d\nu(w) \le H(\omega)$ for almost every $\omega$, with $H$
+integrable, then
+$$\int F(U, W)\,d\mu \le \int H\,d\mu\,.$$
+Upstream candidate. -/
+theorem IndepFun.integral_comp_le_of_integral_le [IsFiniteMeasure μ] {α β : Type*}
+    [MeasurableSpace α] [MeasurableSpace β] {U : Ω → α} {W : Ω → β} {ν : Measure β}
+    (hUW : IndepFun U W μ) (hU : AEMeasurable U μ) (hW : HasLaw W ν μ) {F : α × β → ℝ}
+    (hF : Measurable F) (hF0 : ∀ q, 0 ≤ F q) {H : Ω → ℝ}
+    (hint : ∀ᵐ ω ∂μ, Integrable (fun w => F (U ω, w)) ν)
+    (hle : ∀ᵐ ω ∂μ, ∫ w, F (U ω, w) ∂ν ≤ H ω) (hH : Integrable H μ) :
+    ∫ ω, F (U ω, W ω) ∂μ ≤ ∫ ω, H ω ∂μ := by
+  have hFi := hUW.integrable_comp_of_integral_le hU hW hF hF0 hint hle hH
+  have hH0 : 0 ≤ᵐ[μ] H := by
+    filter_upwards [hle] with ω h
+    exact (integral_nonneg fun w => hF0 _).trans h
+  rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hF0 _) hFi.aestronglyMeasurable,
+    integral_eq_lintegral_of_nonneg_ae hH0 hH.aestronglyMeasurable,
+    hUW.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hU hW hF hF0 hint]
+  exact ENNReal.toReal_mono hH.lintegral_lt_top.ne
+    (lintegral_mono_ae (hle.mono fun ω h => ENNReal.ofReal_le_ofReal h))
+
+/-- Integrability of a function of an independent pair: for independent, almost everywhere
+measurable $U$, $W$ on a finite measure space and $f$ almost everywhere strongly measurable for
+the product $\mu_U \otimes \mu_W$ of their laws, $f(U, W)$ is integrable against $\mu$ if and
+only if $f$ is integrable against $\mu_U \otimes \mu_W$. The integrability side condition of
+`ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`. Upstream candidate. -/
+theorem IndepFun.integrable_comp_iff [IsFiniteMeasure μ] {α β E : Type*} [MeasurableSpace α]
+    [MeasurableSpace β] [NormedAddCommGroup E] {U : Ω → α} {W : Ω → β}
+    (hUW : IndepFun U W μ) (hU : AEMeasurable U μ) (hW : AEMeasurable W μ) {f : α × β → E}
+    (hf : AEStronglyMeasurable f ((μ.map U).prod (μ.map W))) :
+    Integrable (fun ω => f (U ω, W ω)) μ ↔ Integrable f ((μ.map U).prod (μ.map W)) := by
+  rw [← (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW] at hf ⊢
+  exact (integrable_map_measure hf (hU.prodMk hW)).symm
 
 /-- **A function of some coordinates is independent of another coordinate**: for an independent
 family $(X_i)_i$ of almost everywhere measurable random variables, a measurable $F$ of the whole
