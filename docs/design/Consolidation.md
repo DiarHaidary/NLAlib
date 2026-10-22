@@ -322,6 +322,8 @@ theorem eval_zero_contract {R : Type*} [Semiring R] {n : ℕ} (hn : n ≠ 0) (f 
     (contract n f).eval 0 = f.eval 0
 ```
 * These replace `WorstCase.lean:251` and `:266`, the latter split into two.
+* *Amendment 2026-10-22 (A4):* the last two take `[CommSemiring R]`, which `Polynomial.contract`
+  requires, in place of `[Semiring R]`.
 * `sum_range_two_mul` (`:241`) and the RCLike inequality `mul_norm_eval_contract_two_sq_le`
   (`:277`) stay private.
 

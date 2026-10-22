@@ -7,6 +7,7 @@ public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
+public import NLAlib.ForMathlib.Algebra.Polynomial.Expand
 public import NLAlib.ForMathlib.Analysis.CStarAlgebra.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Basic
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution

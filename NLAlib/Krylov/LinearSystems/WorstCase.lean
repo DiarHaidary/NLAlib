@@ -8,7 +8,7 @@ module
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.MINRES
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
-public import Mathlib.Algebra.Polynomial.Expand
+public import NLAlib.ForMathlib.Algebra.Polynomial.Expand
 
 /-!
 # Spectra on which the Chebyshev bounds are attained
@@ -236,31 +236,6 @@ theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix_eq_four_mul_pow_div {a 
 private lemma norm_toLp_sq {ι : Type*} [Fintype ι] (v : ι → 𝕜) :
     ‖WithLp.toLp 2 v‖ ^ 2 = ∑ i, ‖v i‖ ^ 2 :=
   EuclideanSpace.norm_sq_eq _
-
-/-- A sum over $n < 2m$ in consecutive pairs. -/
-private lemma sum_range_two_mul {M : Type*} [AddCommMonoid M] (f : ℕ → M) (m : ℕ) :
-    ∑ i ∈ Finset.range (2 * m), f i = ∑ i ∈ Finset.range m, (f (2 * i) + f (2 * i + 1)) := by
-  induction m with
-  | zero => simp
-  | succ m ih =>
-    rw [show 2 * (m + 1) = 2 * m + 1 + 1 by ring, Finset.sum_range_succ, Finset.sum_range_succ, ih,
-      Finset.sum_range_succ, add_assoc]
-
-/-- The even part of a polynomial through `Polynomial.contract`:
-$2\,(\operatorname{contract}_2 p)(x^2) = p(x) + p(-x)$. -/
-private lemma two_mul_eval_contract_two_sq (p : 𝕜[X]) (x : 𝕜) :
-    2 * (contract 2 p).eval (x ^ 2) = p.eval x + p.eval (-x) := by
-  have hp1 : p.natDegree < 2 * (p.natDegree + 1) := by omega
-  have hc : (contract 2 p).natDegree < p.natDegree + 1 := by
-    refine Nat.lt_succ_of_le (natDegree_le_iff_coeff_eq_zero.mpr fun m hm => ?_)
-    rw [coeff_contract two_ne_zero]
-    exact coeff_eq_zero_of_natDegree_lt (by omega)
-  rw [eval_eq_sum_range' hc, eval_eq_sum_range' hp1, eval_eq_sum_range' hp1,
-    ← Finset.sum_add_distrib, sum_range_two_mul, Finset.mul_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [coeff_contract two_ne_zero, Nat.mul_comm i 2, pow_succ x (2 * i), pow_succ (-x) (2 * i),
-    pow_mul x 2 i, pow_mul (-x) 2 i, neg_sq]
-  ring
 
 /-- The even part has degree at most $\lfloor q/2 \rfloor$ and value $p(0)$ at $0$. -/
 private lemma degree_contract_two_le_and_eval_zero {p : 𝕜[X]} {q : ℕ} (hp : p.degree ≤ q) :
