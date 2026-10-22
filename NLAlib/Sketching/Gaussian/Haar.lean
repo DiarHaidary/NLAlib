@@ -78,14 +78,6 @@ private theorem norm_smul_conjTranspose_mulVec_sq (M : Matrix n k ℝ) (x : n �
   rw [Matrix.smul_mulVec, WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs,
     Real.sq_sqrt (by positivity)]
 
-omit [Fintype k] [DecidableEq k] [Fintype p] in
-/-- Congruence preserves the Loewner order, for a factor with any column type. -/
-private theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul' {G H : Matrix n n ℝ}
-    (h : G ≤ H) (X : Matrix n p ℝ) : Xᴴ * G * X ≤ Xᴴ * H * X := by
-  rw [Matrix.le_iff] at h ⊢
-  rw [← Matrix.sub_mul, ← Matrix.mul_sub]
-  exact h.conjTranspose_mul_mul_same' X
-
 /-! ### Isotropy, norm and the Gaussian transfer -/
 
 open scoped Matrix.Norms.L2Operator in
@@ -174,7 +166,7 @@ theorem ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame
       (by rw [specNorm_conjTranspose]; nlinarith [specNorm_nonneg (Q ω)])
     rwa [Matrix.conjTranspose_conjTranspose] at this
   rw [one_smul] at h1
-  have h2 := conjTranspose_mul_mul_le_conjTranspose_mul_mul' h1 U
+  have h2 := conjTranspose_mul_mul_le_conjTranspose_mul_mul h1 U
   rw [Matrix.mul_one] at h2
   rw [Matrix.le_iff] at h2 ⊢
   rw [← smul_sub]
