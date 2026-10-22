@@ -91,28 +91,10 @@ private lemma pcgState_succ (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (k : �
   rfl
 
 omit [DecidableEq n] in
-/-- The same move in the other direction:
-$\langle \mathbf{u}, \mathbf{C}\mathbf{v} \rangle =
-\langle \mathbf{C}^{\mathsf{H}}\mathbf{u}, \mathbf{v} \rangle$. -/
-private lemma star_dotProduct_mulVec_eq (C : Matrix n n 𝕜) (u v : n → 𝕜) :
-    star u ⬝ᵥ (C *ᵥ v) = star (Cᴴ *ᵥ u) ⬝ᵥ v := by
-  rw [star_mulVec_dotProduct, Matrix.conjTranspose_conjTranspose]
-
-omit [DecidableEq n] in
 /-- The split matrix applied: $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}\mathbf{v}$. -/
 private lemma conjTranspose_mulVec_mulVec_mulVec (A C : Matrix n n 𝕜) (v : n → 𝕜) :
     Cᴴ *ᵥ (A *ᵥ (C *ᵥ v)) = (Cᴴ * A * C) *ᵥ v := by
   rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec]
-
-/-- An invertible factor $\mathbf{M} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ of a positive definite
-preconditioner, with $\mathbf{S}\mathbf{S}^{-1}\mathbf{v} = \mathbf{v}$. -/
-private lemma exists_factor (hM : M.PosDef) :
-    ∃ S : Matrix n n 𝕜, IsUnit S ∧ (∀ v, S *ᵥ (S⁻¹ *ᵥ v) = v) ∧ M = S * Sᴴ := by
-  obtain ⟨S, -, hSu, hMS, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  refine ⟨S, (Matrix.isUnit_iff_isUnit_det S).mpr hSu, fun v => ?_, hMS⟩
-  rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv S hSu, Matrix.one_mulVec]
-
 
 omit [DecidableEq n] in
 /-- The updated residual is the true residual, for every $\mathbf{A}$ and $\mathbf{M}$. -/
@@ -177,8 +159,7 @@ private lemma pcgStep_corr {C : Matrix n n 𝕜} (hM : M = C * Cᴴ) {s : PCGSta
       (pcgStep A M s).z = C *ᵥ (cgStep (Cᴴ * A * C) t).r ∧
       (pcgStep A M s).p = C *ᵥ (cgStep (Cᴴ * A * C) t).p := by
   have hnorm : ∀ u, RCLike.re (star u ⬝ᵥ (M *ᵥ u)) = ‖WithLp.toLp 2 (Cᴴ *ᵥ u)‖ ^ 2 := fun u => by
-    rw [hM, ← Matrix.mulVec_mulVec, star_dotProduct_mulVec_eq,
-      EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, RCLike.ofReal_re]
+    rw [hM, ← quadForm_def, quadForm_mul_conjTranspose_self, RCLike.ofReal_re]
   have hρ : RCLike.re (star s.r ⬝ᵥ s.z) = ‖WithLp.toLp 2 t.r‖ ^ 2 := by
     rw [hz, ← hr, Matrix.mulVec_mulVec, ← hM]
     exact hnorm s.r
@@ -253,10 +234,11 @@ $\mathbf{x}_k = \mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{
 Result: pcg-recurrence -/
 theorem _root_.Matrix.PosDef.pcgState_x_eq (hA : A.PosDef) (hM : M.PosDef) (b x₀ : n → 𝕜)
     (k : ℕ) : (pcgState A M b x₀ k).x = pcgIterate A M b x₀ k := by
-  obtain ⟨S, hS, hSv, hMS⟩ := exists_factor hM
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  obtain ⟨y₀, hy₀⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr hS x₀
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
-  rw [pcgState_x_eq_mulVec_cgState_x hMS (hSv x₀) k, hA'.cgState_x_eq,
-    ← hA.pcgIterate_eq_mulVec_cgIterate hS hMS (hSv x₀) k]
+  rw [pcgState_x_eq_mulVec_cgState_x hMS hy₀ k, hA'.cgState_x_eq,
+    ← hA.pcgIterate_eq_mulVec_cgIterate hS hMS hy₀ k]
 
 omit [DecidableEq n] in
 /-- **The residuals are $\mathbf{M}$-orthogonal**: for positive definite $\mathbf{A}$ and
@@ -266,9 +248,10 @@ theorem _root_.Matrix.PosDef.star_pcgState_z_dotProduct_eq_zero (hA : A.PosDef) 
     {b x₀ : n → 𝕜} {j k : ℕ} (hjk : j < k) :
     star (pcgState A M b x₀ j).z ⬝ᵥ (pcgState A M b x₀ k).r = 0 := by
   classical
-  obtain ⟨S, hS, hSv, hMS⟩ := exists_factor hM
-  rw [(pcgState_corr hMS (hSv x₀) j).2.2.1, star_mulVec_dotProduct,
-    (pcgState_corr hMS (hSv x₀) k).2.1]
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  obtain ⟨y₀, hy₀⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr hS x₀
+  rw [(pcgState_corr hMS hy₀ j).2.2.1, star_mulVec_dotProduct,
+    (pcgState_corr hMS hy₀ k).2.1]
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   exact hA'.star_cgState_r_dotProduct_eq_zero hjk
 
@@ -285,8 +268,9 @@ theorem _root_.Matrix.PosDef.star_pcgState_p_dotProduct_mulVec_eq_zero (hA : A.P
     (hM : M.PosDef) {b x₀ : n → 𝕜} {j k : ℕ} (hjk : j < k) :
     star (pcgState A M b x₀ j).p ⬝ᵥ (A *ᵥ (pcgState A M b x₀ k).p) = 0 := by
   classical
-  obtain ⟨S, hS, hSv, hMS⟩ := exists_factor hM
-  rw [(pcgState_corr hMS (hSv x₀) j).2.2.2, (pcgState_corr hMS (hSv x₀) k).2.2.2,
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  obtain ⟨y₀, hy₀⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr hS x₀
+  rw [(pcgState_corr hMS hy₀ j).2.2.2, (pcgState_corr hMS hy₀ k).2.2.2,
     star_mulVec_dotProduct, conjTranspose_mulVec_mulVec_mulVec]
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   exact hA'.star_cgState_p_dotProduct_mulVec_eq_zero hjk
@@ -297,17 +281,18 @@ $\mathbf{M}\mathbf{A}$, which is the grade of the split system. -/
 theorem _root_.Matrix.PosDef.pcgState_r_eq_zero_iff (hA : A.PosDef) (hM : M.PosDef)
     (b x₀ : n → 𝕜) (k : ℕ) :
     (pcgState A M b x₀ k).r = 0 ↔ krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) ≤ k := by
-  obtain ⟨S, hS, hSv, hMS⟩ := exists_factor hM
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  obtain ⟨y₀, hy₀⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr hS x₀
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   have hinj : Function.Injective Sᴴ.mulVec := Matrix.mulVec_injective_of_isUnit (A := Sᴴ) hS.star
-  have hr := Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A S b (S⁻¹ *ᵥ x₀)
-  rw [hSv] at hr
+  have hr := Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A S b y₀
+  rw [hy₀] at hr
   have hg : krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) =
-      krylovGrade (Sᴴ * A * S) (Sᴴ *ᵥ b - (Sᴴ * A * S) *ᵥ (S⁻¹ *ᵥ x₀)) := by
+      krylovGrade (Sᴴ * A * S) (Sᴴ *ᵥ b - (Sᴴ * A * S) *ᵥ y₀) := by
     rw [← hr, ← krylovGrade_mul_mulVec hS (Sᴴ * A), Matrix.mulVec_mulVec, ← Matrix.mul_assoc,
       ← hMS]
   rw [hg, ← hA'.cgState_r_eq_zero_iff,
-    ← (pcgState_corr hMS (hSv x₀) k).2.1]
+    ← (pcgState_corr hMS hy₀ k).2.1]
   exact ⟨fun h => by rw [h, Matrix.mulVec_zero],
     fun h => hinj (by rw [h, Matrix.mulVec_zero])⟩
 
