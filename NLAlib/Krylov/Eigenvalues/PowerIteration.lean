@@ -6,7 +6,6 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
-public import Mathlib.MeasureTheory.Integral.Bochner.Set
 public import NLAlib.Matrix.Spectral.SpectralMeasure
 
 /-!
@@ -164,28 +163,18 @@ theorem _root_.Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le {
       eigenvalue A 0 * Real.log (1 + spectralTangentSq A b (eigenvalue A 0)) / (2 * q + 1) := by
   set μ := spectralMeasure A b with hμ
   set lam := eigenvalue A 0
-  have hi : ∀ f : ℝ → ℝ, Integrable f μ := integrable_spectralMeasure A b
   have hae : ∀ᵐ x ∂μ, 0 ≤ x := by
     filter_upwards [ae_iff.2 (spectralMeasure_compl_spectrum_eq_zero A b)] with x hx
     exact hA.spectrum_subset_Ici hx
-  have hlam : lam ∈ spectrum ℝ A := by
-    by_contra h
-    have h0 : μ {lam} = 0 := measure_mono_null (Set.singleton_subset_iff.2 h)
-      (spectralMeasure_compl_spectrum_eq_zero A b)
-    rw [measureReal_def, h0, ENNReal.toReal_zero] at hb
-    exact lt_irrefl _ hb
+  have hlam : lam ∈ spectrum ℝ A := mem_spectrum_of_spectralMeasure_real_pos hb
   have hlam0 : 0 ≤ lam := hA.spectrum_subset_Ici hlam
   rcases hlam0.eq_or_lt with hl | hlpos
   · rw [← hl, zero_mul, zero_div, zero_sub, neg_nonpos]
     exact div_nonneg (hA.re_quadForm_nonneg _) (sq_nonneg _)
   -- the moments $a_j \ge \lambda_0^j\mu(\{\lambda_0\})$ are positive
-  have hlow : ∀ j : ℕ, lam ^ j * μ.real {lam} ≤ ∫ x, x ^ j ∂μ := fun j => by
-    rw [mul_comm, ← smul_eq_mul, ← integral_indicator_const _ (measurableSet_singleton lam)]
-    refine integral_mono_ae (hi _) (hi _) ?_
-    filter_upwards [hae] with x hx
-    by_cases hxl : x = lam
-    · simp [hxl]
-    · simp [hxl, pow_nonneg hx]
+  have hlow : ∀ j : ℕ, lam ^ j * μ.real {lam} ≤ ∫ x, x ^ j ∂μ := fun j =>
+    mul_spectralMeasure_real_le_integral A b (f := fun x => x ^ j)
+      (hae.mono fun x hx => pow_nonneg hx j) lam
   have hpos : ∀ j : ℕ, 0 < ∫ x, x ^ j ∂μ := fun j =>
     (mul_pos (pow_pos hlpos j) hb).trans_le (hlow j)
   set k := 2 * q

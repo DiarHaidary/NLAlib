@@ -1501,8 +1501,19 @@ proofs:
   because the filter theorem (`abs_sub_rayleighQuotient_cfc_mulVec_le`, same file) and two Ritz
   bounds (`Krylov/Eigenvalues/Ritz.lean`) use it.
 * **2026-10-22, Mathlib import `Mathlib.MeasureTheory.Integral.Bochner.Set`** added to
-  `Matrix/Spectral/SpectralMeasure.lean` and `Krylov/Eigenvalues/PowerIteration.lean` (for
-  `integral_indicator` and `integral_indicator_const`).
+  `Matrix/Spectral/SpectralMeasure.lean` (for `integral_indicator` and
+  `integral_indicator_const`). `Krylov/Eigenvalues/PowerIteration.lean` imported it too until the
+  review follow-up below moved its use into `SpectralMeasure.lean`.
+* **2026-10-22, review follow-up: atom lemmas public in the Matrix layer.** Ritz's private
+  `mem_spectrum_of_spectralMeasure_real_pos` and `mul_spectralMeasure_real_le_integral_sq` are
+  public in `Matrix/Spectral/SpectralMeasure.lean`, the second as a corollary of the new
+  `NLAlib.mul_spectralMeasure_real_le_integral` (any $f \ge 0$ almost everywhere:
+  $f(c)\mu_{\mathbf{A},\mathbf{b}}(\{c\}) \le \int f\,d\mu_{\mathbf{A},\mathbf{b}}$). The
+  inline re-proofs they replace: `hlam` and `hlow` in the power step (PowerIteration) and `hden`
+  in the filter theorem. Ritz's private `spectrum_subset_Icc_eigenvalue_zero` is public as
+  `Matrix.PosSemidef.spectrum_subset_Icc_eigenvalue_zero` in
+  `Matrix/Functions/HermitianCalculus.lean`, next to `Matrix.PosSemidef.spectrum_subset_Ici`
+  (placement by topic).
 * **2026-10-22, the Kuczyński–Woźniakowski power constant.** The deterministic power step
   `Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`
   (`Krylov/Eigenvalues/PowerIteration.lean`) is proved with the constant

@@ -252,6 +252,39 @@ theorem ae_mem_Icc_spectralMeasure (A : Matrix n n 𝕜) {a a' : ℝ}
   exact measure_mono_null (fun x hx => fun hxs => hx (hs hxs))
     (spectralMeasure_compl_spectrum_eq_zero A b)
 
+/-- A point carrying positive spectral weight is in the spectrum: for every square
+$\mathbf{A}$, every $\mathbf{b}$ and every $c \in \mathbb{R}$ with
+$0 < \mu_{\mathbf{A},\mathbf{b}}(\{c\})$, $c \in \operatorname{spec}\mathbf{A}$. -/
+theorem mem_spectrum_of_spectralMeasure_real_pos {A : Matrix n n 𝕜} {b : n → 𝕜} {c : ℝ}
+    (hb : 0 < (spectralMeasure A b).real {c}) : c ∈ spectrum ℝ A := by
+  by_contra h
+  have h0 : spectralMeasure A b {c} = 0 := measure_mono_null (Set.singleton_subset_iff.2 h)
+    (spectralMeasure_compl_spectrum_eq_zero A b)
+  rw [measureReal_def, h0, ENNReal.toReal_zero] at hb
+  exact lt_irrefl _ hb
+
+/-- An atom is dominated by the integral of a nonnegative function: for every square
+$\mathbf{A}$, every $\mathbf{b}$, every $c \in \mathbb{R}$ and every
+$f : \mathbb{R} \to \mathbb{R}$ with $f \ge 0$ $\mu_{\mathbf{A},\mathbf{b}}$-almost everywhere,
+$$f(c)\,\mu_{\mathbf{A},\mathbf{b}}(\{c\}) \le \int f\,d\mu_{\mathbf{A},\mathbf{b}}\,.$$ -/
+theorem mul_spectralMeasure_real_le_integral (A : Matrix n n 𝕜) (b : n → 𝕜) {f : ℝ → ℝ}
+    (hf : 0 ≤ᵐ[spectralMeasure A b] f) (c : ℝ) :
+    f c * (spectralMeasure A b).real {c} ≤ ∫ x, f x ∂spectralMeasure A b := by
+  rw [mul_comm, ← smul_eq_mul, ← integral_indicator_const _ (measurableSet_singleton c)]
+  refine integral_mono_ae (integrable_spectralMeasure A b _) (integrable_spectralMeasure A b _) ?_
+  filter_upwards [hf] with x hx
+  by_cases hxc : x = c
+  · simp [hxc]
+  · simpa [hxc] using hx
+
+/-- The filtered mass dominates the weight of an atom: for every square $\mathbf{A}$, every
+$\mathbf{b}$, every $g : \mathbb{R} \to \mathbb{R}$ and every $c \in \mathbb{R}$,
+$$g(c)^2\mu_{\mathbf{A},\mathbf{b}}(\{c\}) \le \int g^2\,d\mu_{\mathbf{A},\mathbf{b}}\,.$$ -/
+theorem mul_spectralMeasure_real_le_integral_sq (A : Matrix n n 𝕜) (b : n → 𝕜) (g : ℝ → ℝ)
+    (c : ℝ) : g c ^ 2 * (spectralMeasure A b).real {c} ≤ ∫ x, g x ^ 2 ∂spectralMeasure A b :=
+  mul_spectralMeasure_real_le_integral A b (f := fun x => g x ^ 2)
+    (Filter.Eventually.of_forall fun x => sq_nonneg (g x)) c
+
 /-- The spectral measure of a set as a real number. -/
 private theorem spectralMeasure_real_eq (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
     (spectralMeasure A b).real S =
@@ -499,12 +532,8 @@ theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_cfc_mulVec_le {A : Ma
             mul_le_mul (hD x hxs) hg2 (sq_nonneg _) ((abs_nonneg _).trans (hD x hxs))
         _ = K := by ring
   -- the denominator: $\int g^2\,d\mu \ge g(c)^2\mu(\{c\})$
-  have hden : g c ^ 2 * μ.real {c} ≤ ∫ x, g x ^ 2 ∂μ := by
-    rw [mul_comm, ← smul_eq_mul, ← integral_indicator_const _ (measurableSet_singleton c)]
-    refine integral_mono (hi _) (hi _) fun x => ?_
-    by_cases hxc : x = c
-    · simp [hxc]
-    · simp [hxc, sq_nonneg]
+  have hden : g c ^ 2 * μ.real {c} ≤ ∫ x, g x ^ 2 ∂μ :=
+    mul_spectralMeasure_real_le_integral_sq A b g c
   have hpos : 0 < g c ^ 2 * μ.real {c} := mul_pos (by positivity) hb
   have hsub : c - rayleighQuotient A (cfc g A *ᵥ b) =
       (∫ x, (c - x) * g x ^ 2 ∂μ) / ∫ x, g x ^ 2 ∂μ := by

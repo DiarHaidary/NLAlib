@@ -53,33 +53,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n r : Type*} [Fintype n] [DecidableEq n] 
 
 /-! ### Private steps -/
 
-/-- A point carrying positive spectral weight is in the spectrum. -/
-private theorem mem_spectrum_of_spectralMeasure_real_pos {A : Matrix n n 𝕜} {b : n → 𝕜}
-    {c : ℝ} (hb : 0 < (spectralMeasure A b).real {c}) : c ∈ spectrum ℝ A := by
-  by_contra h
-  have h0 : spectralMeasure A b {c} = 0 := measure_mono_null (Set.singleton_subset_iff.2 h)
-    (spectralMeasure_compl_spectrum_eq_zero A b)
-  rw [measureReal_def, h0, ENNReal.toReal_zero] at hb
-  exact lt_irrefl _ hb
-
-/-- The spectrum of a positive semidefinite matrix lies in $[0, \lambda_0]$. -/
-private theorem spectrum_subset_Icc_eigenvalue_zero {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
-    spectrum ℝ A ⊆ Set.Icc 0 (eigenvalue A 0) :=
-  hA.isHermitian.spectrum_subset_iff.2 fun i hi =>
-    ⟨hA.eigenvalue_nonneg i, hA.isHermitian.eigenvalue_le_eigenvalue (Nat.zero_le i) hi⟩
-
-/-- The filtered mass dominates the weight of an atom:
-$g(c)^2\mu_{\mathbf{A},\mathbf{b}}(\{c\}) \le \int g^2\,d\mu_{\mathbf{A},\mathbf{b}}$. -/
-private theorem mul_spectralMeasure_real_le_integral_sq (A : Matrix n n 𝕜) (b : n → 𝕜)
-    (g : ℝ → ℝ) (c : ℝ) :
-    g c ^ 2 * (spectralMeasure A b).real {c} ≤ ∫ x, g x ^ 2 ∂spectralMeasure A b := by
-  rw [mul_comm, ← smul_eq_mul, ← integral_indicator_const _ (measurableSet_singleton c)]
-  refine integral_mono (integrable_spectralMeasure A b _) (integrable_spectralMeasure A b _)
-    fun x => ?_
-  by_cases hxc : x = c
-  · simp [hxc]
-  · simp [hxc, sq_nonneg]
-
 /-- A polynomial that does not vanish at an atom does not annihilate $\mathbf{b}$. -/
 private theorem aeval_mulVec_ne_zero {A : Matrix n n 𝕜} (hA : A.IsHermitian) {p : ℝ[X]}
     {c : ℝ} (hpc : p.eval c ≠ 0) {b : n → 𝕜} (hb : 0 < (spectralMeasure A b).real {c}) :
@@ -278,7 +251,7 @@ theorem _root_.Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul
       ε * eigenvalue A 0 +
         4 * Real.exp (-4 * q * √ε) * eigenvalue A 0 * spectralTangentSq A b (eigenvalue A 0) := by
   set lam := eigenvalue A 0
-  have hspec := spectrum_subset_Icc_eigenvalue_zero hA
+  have hspec := hA.spectrum_subset_Icc_eigenvalue_zero
   have hlam0 : 0 ≤ lam := (hspec (mem_spectrum_of_spectralMeasure_real_pos hb)).1
   rcases hlam0.eq_or_lt with hl | hlpos
   · have hT := (hA.conjTranspose_mul_mul_same Q).eigenvalue_nonneg 0
@@ -364,7 +337,7 @@ theorem _root_.Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul
         (1 + Real.log (1 + spectralTangentSq A b (eigenvalue A 0)) / Real.log 2) ^ 2 / q ^ 2 := by
   set lam := eigenvalue A 0
   set μ := spectralMeasure A b with hμ
-  have hspec := spectrum_subset_Icc_eigenvalue_zero hA
+  have hspec := hA.spectrum_subset_Icc_eigenvalue_zero
   have hlam0 : 0 ≤ lam := (hspec (mem_spectrum_of_spectralMeasure_real_pos hb)).1
   rcases hlam0.eq_or_lt with hl | hlpos
   · have hT := (hA.conjTranspose_mul_mul_same Q).eigenvalue_nonneg 0
