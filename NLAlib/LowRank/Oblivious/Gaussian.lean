@@ -16,7 +16,9 @@ The Gaussian instance of `NLAlib.LowRank.Oblivious.EarlyTruncation`, for the fam
 $\mathbf{\Omega}$, the early-truncated randomized SVD
 $\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$ reaches error
 $(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ with
-probability $1 - \delta$ at $\ell = O((k/\delta + \log(1/\delta))/\varepsilon^2)$. The family's
+probability $1 - \delta$ at $\ell = O((k/\delta + \log(1/\delta))/\varepsilon^2)$ through the
+second JL moment, and at $\ell = O(k\log(1/\delta)/\varepsilon^2)$ through the JL moment at
+$p = \log(1/\delta)$. The family's
 predicates are about the normalised sketch $\ell^{-1/2}\mathbf{\Omega}^{\mathsf{H}}$ (the
 transpose of a Gaussian matrix is Gaussian, `NLAlib.hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`);
 the generic theorem runs there with the projector of
@@ -43,7 +45,9 @@ projector form takes the projector of the raw output). Design: `docs/design/LowR
 ## Main results
 
 * `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`: the
-  explicit tail, and its asymptotic form
+  explicit tail;
+  `measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`,
+  its $\log(1/\delta)$ twin, and the asymptotic form
   `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`.
 -/
 
@@ -71,8 +75,12 @@ at $\varepsilon/(6\sqrt{k})$ for the two multiplication tails, and
 twin, at $\ell \ge 900k/\varepsilon^2$, is
 `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`; a
 tail from that by Markov's inequality needs $\ell$ of order $k/(\varepsilon\delta)^2$.
-Asymptotic form:
-`exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`.
+Incomparable with its $\log(1/\delta)$ twin
+`measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`
+(rule 4): this one needs fewer columns at constant $\delta$, the twin for small $\delta$; the
+asymptotic form
+`exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix` is
+proved from the twin.
 [CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
 with unspecified constants.
 Result: etrsvd -/
@@ -146,44 +154,59 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianM
     rw [e]
     linarith
 
-/-- **$O((k/\delta + \log(1/\delta))/\varepsilon^2)$ Gaussian columns suffice for early
-truncation**: there are absolute constants $C, \varepsilon_0 > 0$ such that for a standard Gaussian
-$n \times \ell$ test matrix $\mathbf{\Omega}$, $0 < \varepsilon \le \varepsilon_0$,
-$0 < \delta \le 1/2$ and $\ell \ge C(k/\delta + \log(1/\delta))/\varepsilon^2$,
+/-- **Early-truncated randomized SVD with a Gaussian test matrix, tail**, $\log(1/\delta)$ size
+form: for a standard Gaussian $n \times \ell$ test matrix $\mathbf{\Omega}$,
+$0 < \varepsilon \le 1$, $\delta > 0$, at
+least <!-- value gaussianInjectionDim k (\varepsilon/6) (\delta/3) -->
+$\ell \ge 4 (\sqrt{k} + \sqrt{2 \log(1/(\delta/3))})^2/(\varepsilon/6)^2$ and at
+least <!-- value jlMomentDim (\varepsilon/(6\sqrt{k})) (\delta/3) -->
+$\ell \ge 128\max(2, \log(1/(\delta/3)))/(\varepsilon/(6\sqrt{k}))^2$,
 $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta$. The asymptotic form of
-`NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, proved
-from it with $C = 1728$ and $\varepsilon_0 = 1$.
-Asymptotic: NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix
+except with probability $\delta$; the sizes are `gaussianInjectionDim k (ε / 6) (δ / 3)` and
+`jlMomentDim (ε / (6 * √k)) (δ / 3)`, the second $4608k\max(2, \log(3/\delta))/\varepsilon^2$.
+The route of
+`NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, with the
+JL moment at $p = \max(2, \log(3/\delta))$
+(`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`) in place of the second moment,
+each multiplication tail failing with probability $\delta/3$; incomparable with it (rule 4).
+Asymptotic form:
+`exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
+with unspecified constants.
+Result: etrsvd -/
+theorem
+    measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+    (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε)
+    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hl : gaussianInjectionDim k (ε / 6) (δ / 3) ≤ Fintype.card l)
+    (hl' : jlMomentDim (ε / (6 * √(k : ℝ))) (δ / 3) ≤ Fintype.card l) :
+    μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
+  sorry
+
+-- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(k\log(1/\delta)/\varepsilon^2)$ Gaussian columns suffice for early truncation**: there
+are absolute constants $C, \varepsilon_0 > 0$ such that for a standard Gaussian $n \times \ell$
+test matrix $\mathbf{\Omega}$, $0 < \varepsilon \le \varepsilon_0$, $0 < \delta \le 1/2$ and
+$\ell \ge Ck\log(1/\delta)/\varepsilon^2$,
+$$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$ ($k = 0$ is trivial). The asymptotic form of
+`measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`,
+proved from it with $\varepsilon_0 = 1$; the injection size
+$O((k + \log(1/\delta))/\varepsilon^2)$ is dominated by the multiplication size for $k \ge 1$.
+Asymptotic:
+NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
 Result: etrsvd -/
 theorem
     exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
       [Fintype l] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ) (k : ℕ) (ε δ : ℝ),
       HasLaw X (gaussianMatrix n l) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
-      C * (((k : ℝ) / δ + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card l →
+      C * ((k : ℝ) * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  refine ⟨1728, 1, by norm_num, one_pos, ?_⟩
-  intro Ω m n l _ _ _ _ μ A X k ε δ hX hε hε1 hδ hδ2 hl
-  have hL1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hkδ : (k : ℝ) ≤ k / δ := le_div_self (Nat.cast_nonneg k) hδ (by linarith)
-  have hl' := hl
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)] at hl'
-  refine measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix A hX hε hε1
-    hδ ((gaussianInjectionDim_le k (ε / 6) (by positivity) (by linarith)).trans ?_) ?_
-  · have hlog : Real.log (1 / (δ / 3)) ≤ 3 * Real.log (1 / δ) := by
-      rw [show (3 : ℝ) * Real.log (1 / δ) = Real.log ((1 / δ) ^ 3) by
-        rw [Real.log_pow]; norm_num]
-      refine Real.log_le_log (by positivity) ?_
-      rw [div_pow, one_pow, div_le_div_iff₀ (by positivity) (by positivity)]
-      nlinarith [pow_pos hδ 2, pow_pos hδ 3]
-    rw [div_le_iff₀ (by positivity)]
-    have e : (Fintype.card l : ℝ) * (ε / 6) ^ 2 = Fintype.card l * ε ^ 2 / 36 := by ring
-    rw [e]
-    nlinarith
-  · have e : (k : ℝ) / δ * δ = k := div_mul_cancel₀ _ hδ.ne'
-    nlinarith [mul_le_mul_of_nonneg_left hl' hδ.le, mul_nonneg hδ.le hL1]
+  sorry
 
 end NLAlib

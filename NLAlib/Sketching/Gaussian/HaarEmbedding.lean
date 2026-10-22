@@ -39,6 +39,15 @@ which tends to $1$ as $c / \lvert n \rvert \to 0$. The upper half
 $(\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ holds almost surely
 (`NLAlib.ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`).
 
+Gordon's route cannot reach constants $1 \mp \varepsilon$: its lower constant has the
+denominator $(1 + \sqrt{\lvert k\rvert/\lvert n\rvert})^2$. The JL route does, at every
+$\lvert k\rvert \le \lvert n\rvert$: the Haar JL tail
+(`NLAlib.hasJLProperty_of_hasLaw_haarFrame`) through JL plus a net at $4\varepsilon/5$
+(`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`) gives the failure probability
+$2 \cdot 21^d e^{-\lvert k\rvert(4\varepsilon^2/25 - 32\varepsilon^3/375)}$, as for sign
+sketches, and $O((d + \log(1/\delta))/\varepsilon^2)$ rows; no spectral input on Haar blocks is
+needed.
+
 Degenerate cases: for empty $p$ every event is null; for empty $k$ the sketch is $\mathbf{0}$,
 hence `[Nonempty k]` on the OSI. Split from `NLAlib/Sketching/Gaussian/Haar.lean` at the
 Sketching wrap-up (2026-10-15). Design: `docs/design/Sketching-S2.md` §3.4, §8.
@@ -54,6 +63,12 @@ Sketching wrap-up (2026-10-15). Design: `docs/design/Sketching-S2.md` §3.4, §8
 * `NLAlib.isObliviousSubspaceInjection_of_hasLaw_haarFrame`,
   `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame`,
   `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt`.
+* `NLAlib.isObliviousSubspaceEmbedding_one_sub_one_add_of_hasLaw_haarFrame`: the OSE with
+  constants $1 \mp \varepsilon$ by JL and a net; its size forms
+  `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le`,
+  `NLAlib.isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le` and asymptotic forms
+  `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_haarFrame`,
+  `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_haarFrame`.
 -/
 
 @[expose] public section
@@ -657,5 +672,143 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt
   refine fun V hV => (h V (le_min hV V.rank_le_card_width)).mono ?_ ?_ le_rfl
   · exact div_le_div_of_nonneg_right (one_sub_div_sq_le hdd htd) (sq_nonneg _)
   · exact div_le_div_of_nonneg_right (one_add_div_sq_le hdd ht) (sq_nonneg _)
+
+/-! ### Constants $1 \mp \varepsilon$ by JL and a net -/
+
+/-- **The Haar OSE by JL and a net**: for $\varepsilon \ge 0$ and
+$\lvert k \rvert \le \lvert n \rvert$, the Haar sketch
+$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$, $\mathbf{Q}$ an
+$n \times k$ Haar frame, is an oblivious subspace embedding for dimension $d$ with constants
+$1 \mp \varepsilon$ and failure probability
+$2\cdot 21^d e^{-\lvert k\rvert(4\varepsilon^2/25 - 32\varepsilon^3/375)}$: the Haar JL tail
+through `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at $4\varepsilon/5$. Incomparable with
+Gordon's `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame` (rule 4): this one reaches
+$1 \mp \varepsilon$ at every $\lvert k\rvert \le \lvert n\rvert$, that one is sharper in its
+constants for $\lvert k\rvert \ll \lvert n\rvert$. [Vershynin2018, Lemma 5.3.2] for the Haar JL
+fact, unspecified constant (2020 draft).
+Result: haar-sketch-ose -/
+theorem isObliviousSubspaceEmbedding_one_sub_one_add_of_hasLaw_haarFrame
+    (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (d : ℕ)
+    (hε : 0 ≤ ε) :
+    IsObliviousSubspaceEmbedding (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) d
+      (1 - ε) (1 + ε)
+      (2 * 21 ^ d * Real.exp (-(Fintype.card k * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375)))) μ := by
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  have h := (hasJLProperty_of_hasLaw_haarFrame hQ hk (ε := 4 * ε / 5) (by linarith))
+    |>.isObliviousSubspaceEmbedding (by positivity) d
+  rw [Module.finrank_self, mul_one] at h
+  refine h.mono le_rfl (by linarith) (by linarith) (le_of_eq ?_)
+  rw [show (4 * ε / 5) ^ 2 / 4 - (4 * ε / 5) ^ 3 / 6 = 4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375 by ring]
+  ring
+
+/-- **The Haar OSE by JL and a net, sample-size form**: for $\lvert k\rvert \le \lvert n\rvert$,
+$0 < \varepsilon < 15/8$, $\delta > 0$ and at
+least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
+(`jlDim (4ε/5) (δ/21^d)`), the Haar sketch
+$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$ is an oblivious
+subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
+$\delta$, the sign sketch's size. [Woodruff2014, Theorem 6] (Gaussian entries,
+$\Theta((d + \log(1/\delta))\varepsilon^{-2})$ rows, unspecified constants); [Vershynin2018,
+Lemma 5.3.2] for the Haar JL fact. Asymptotic form:
+`NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_haarFrame`.
+Result: haar-sketch-ose -/
+theorem isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le
+    (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) {d : ℕ} (hε : 0 < ε)
+    (hε3 : ε < 15 / 8) (hδ : 0 < δ) (hk' : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
+    IsObliviousSubspaceEmbedding (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) d
+      (1 - ε) (1 + ε) δ μ := by
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  exact (isObliviousSubspaceEmbedding_one_sub_one_add_of_hasLaw_haarFrame hQ hk d hε.le).mono
+    le_rfl le_rfl le_rfl (two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk')
+
+/-- **The Haar OSI by JL and a net, sample-size form**: for $k$ nonempty,
+$\lvert k\rvert \le \lvert n\rvert$, $0 < \varepsilon < 15/8$, $\delta > 0$ and at
+least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
+(`jlDim (4ε/5) (δ/21^d)`), the Haar sketch
+$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$ is an oblivious
+subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
+$\delta$: the embedding `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le`
+with the sketch's isotropy. [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion.
+Asymptotic form: `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_haarFrame`.
+Result: haar-sketch-osi -/
+theorem isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le [DecidableEq n] [Nonempty k]
+    (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) {d : ℕ} (hε : 0 < ε)
+    (hε3 : ε < 15 / 8) (hδ : 0 < δ) (hk' : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
+    IsObliviousSubspaceInjection (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) d
+      (1 - ε) δ μ := by
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  exact (isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le hQ hk hε hε3 hδ hk')
+    |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_haarFrame hQ hk)
+
+/-- The size step of the two asymptotic forms: for $0 < \varepsilon \le 1$, $0 < \delta \le 1/2$
+and $58(d + \log(1/\delta))/\varepsilon^2 \le K$,
+then <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6) \le K$ (the left side is
+`jlDim (4ε/5) (δ/21^d)`). -/
+private theorem jlDim_le_of_mul_le {d : ℕ} {K : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
+    (hδ2 : δ ≤ 1 / 2) (hK : 58 * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ K) :
+    jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ K := by
+  have h21 : (1 : ℝ) ≤ 21 ^ d := one_le_pow₀ (by norm_num)
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl : Real.log (2 / (δ / 21 ^ d)) = Real.log 2 + d * Real.log 21 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 21 ^ d) = 2 * 21 ^ d * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by positivity),
+      Real.log_pow]
+  have hd21 : (d : ℝ) * Real.log 21 ≤ d * (61 / 20) :=
+    mul_le_mul_of_nonneg_left Real.log_twentyOne_le_sixtyOne_div_twenty (Nat.cast_nonneg d)
+  refine (jlDim_le (by linarith) (by positivity)
+    ((div_le_self hδ.le h21).trans (by linarith))).trans (le_trans ?_ hK)
+  have e : 12 * Real.log (2 / (δ / 21 ^ d)) / (4 * ε / 5) ^ 2 =
+      75 / 4 * Real.log (2 / (δ / 21 ^ d)) / ε ^ 2 := by
+    field_simp
+    ring
+  rw [e, hl, mul_div_assoc']
+  exact div_le_div_of_nonneg_right
+    (by nlinarith [Nat.cast_nonneg (α := ℝ) d, Real.log_nonneg (by norm_num : (1 : ℝ) ≤ 2)])
+    (sq_nonneg ε)
+
+/-- **The Haar OSE, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+the Haar sketch $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$,
+$\lvert k\rvert \le \lvert n\rvert$, to be an oblivious subspace embedding for dimension $d$ with
+constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$
+below absolute constants; the constants come before every dimension. Proved from
+`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le` with $C = 58$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$, as for sign sketches.
+Asymptotic: NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le -/
+theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_haarFrame :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq k] (μ : Measure Ω) (Q : Ω → Matrix n k ℝ) (d : ℕ) (ε δ : ℝ),
+      HasLaw Q (haarFrame n k) μ → Fintype.card k ≤ Fintype.card n →
+      0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
+      IsObliviousSubspaceEmbedding (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) d
+        (1 - ε) (1 + ε) δ μ := by
+  refine ⟨58, 1, by norm_num, one_pos, fun μ Q d ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
+  exact isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le hQ hkn hε (by linarith) hδ
+    (jlDim_le_of_mul_le hε hε1 hδ hδ2 hk)
+
+/-- **The Haar OSI, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+the Haar sketch $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$, $k$
+nonempty, $\lvert k\rvert \le \lvert n\rvert$, to be an oblivious subspace injection for
+dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$, for
+$\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension.
+Proved from `NLAlib.isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le` with $C = 58$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$.
+Asymptotic: NLAlib.isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le -/
+theorem exists_forall_isObliviousSubspaceInjection_of_hasLaw_haarFrame :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq k] [DecidableEq n] [Nonempty k] (μ : Measure Ω) (Q : Ω → Matrix n k ℝ) (d : ℕ)
+      (ε δ : ℝ),
+      HasLaw Q (haarFrame n k) μ → Fintype.card k ≤ Fintype.card n →
+      0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card k →
+      IsObliviousSubspaceInjection (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) d
+        (1 - ε) δ μ := by
+  refine ⟨58, 1, by norm_num, one_pos, fun μ Q d ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
+  exact isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le hQ hkn hε (by linarith) hδ
+    (jlDim_le_of_mul_le hε hε1 hδ hδ2 hk)
 
 end NLAlib

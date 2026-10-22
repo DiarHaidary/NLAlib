@@ -115,6 +115,7 @@ public import NLAlib.LowRank.Oblivious.CountSketch
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.Gaussian
 public import NLAlib.LowRank.Oblivious.GeneralizedNystrom
+public import NLAlib.LowRank.Oblivious.Haar
 public import NLAlib.LowRank.Oblivious.RangeFinder
 public import NLAlib.LowRank.Oblivious.RowSampling
 public import NLAlib.LowRank.Oblivious.SRHT
@@ -307,6 +308,7 @@ public import NLAlib.Probability.Isotropic
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.LogSobolev
 public import NLAlib.Probability.MatrixConcentration.Bernstein
+public import NLAlib.Probability.MatrixConcentration.BernsteinWithoutReplacement
 public import NLAlib.Probability.MatrixConcentration.Chernoff
 public import NLAlib.Probability.MatrixConcentration.ChernoffSum
 public import NLAlib.Probability.MatrixConcentration.ChernoffWithoutReplacement
@@ -362,6 +364,7 @@ public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Regression.CountSketch
 public import NLAlib.Regression.Embedding
 public import NLAlib.Regression.Gaussian
+public import NLAlib.Regression.Haar
 public import NLAlib.Regression.IterativeSketching
 public import NLAlib.Regression.Oblique
 public import NLAlib.Regression.Oblivious
@@ -372,6 +375,7 @@ public import NLAlib.Regression.SubGaussian
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.Haar
 public import NLAlib.Sketching.Gaussian.HaarEmbedding
+public import NLAlib.Sketching.Gaussian.ProjectionCost
 public import NLAlib.Sketching.Gaussian.Rademacher
 public import NLAlib.Sketching.Gaussian.SubGaussian
 public import NLAlib.Sketching.Properties.FixedSubspace
@@ -389,5 +393,6 @@ public import NLAlib.Sketching.Sparse.CountSketch
 public import NLAlib.Sketching.Sparse.CountSketchEmbedding
 public import NLAlib.Sketching.Structured.Flattening
 public import NLAlib.Sketching.Structured.SRHT
+public import NLAlib.Sketching.Structured.SRHTMultiplication
 public import NLAlib.Solvers.Kaczmarz
 public import NLAlib.Solvers.SketchAndProject

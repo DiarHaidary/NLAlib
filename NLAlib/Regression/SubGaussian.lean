@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
+public import NLAlib.Regression.Oblivious
 public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Sketching.Gaussian.SubGaussian
 
@@ -21,6 +22,13 @@ dimension at most $\lvert n\rvert + 1$
 (`NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le`).
 Design: `docs/design/Regression-SketchPrecondition.md` §5.
 
+Sketch-and-solve with the same sketch reaches relative squared Frobenius residual error with
+failure probability $\delta$ at $O(c^2(r + 1)\log(1/\delta)/\varepsilon)$ rows,
+$r = \operatorname{rank}\mathbf{A}$: a constant subspace injection and the family's JL moment at
+$p = \log(1/\delta)$ through
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`. Design:
+`docs/design/Sketching-Moments.md` §2.6.
+
 ## Main results
 
 * `NLAlib.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector`:
@@ -29,6 +37,9 @@ Design: `docs/design/Regression-SketchPrecondition.md` §5.
   the same from $(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{y}$.
 * [Asymptotic form](https://nla-lib.org/explore/#d/NLAlib.exists_forall_measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector):
   the asymptotic form.
+* `NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector`:
+  sub-Gaussian sketch-and-solve to relative error, and its asymptotic form
+  `exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector`.
 -/
 
 @[expose] public section
@@ -177,5 +188,69 @@ theorem
   nlinarith [mul_le_mul_of_nonneg_left hl2 (sq_nonneg (c : ℝ)),
     mul_nonneg (sq_nonneg (c : ℝ)) (Nat.cast_nonneg (α := ℝ) (Fintype.card n)),
     mul_nonneg (sq_nonneg (c : ℝ)) hl1, sq_nonneg (c : ℝ)]
+
+/-! ### Sketch-and-solve -/
+
+omit [DecidableEq n] in
+/-- **Sub-Gaussian sketch-and-solve, relative residual with high probability**: for a random
+$\mathbf{X} \in \mathbb{R}^{k \times m}$ with independent rows, each isotropic and sub-Gaussian
+with proxy $c$, $k$ nonempty, $r = \operatorname{rank}\mathbf{A}$, $0 < \varepsilon \le 4$ and
+$\delta > 0$, if <!-- value subgaussianEmbeddingDim c r (1/2) (\delta/2) -->
+$$k \ge 25 c^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$$
+and <!-- value subgaussianJLMomentDim c {\sqrt{\varepsilon/(4(r + 1))}} (\delta/2) -->
+$$k \ge 16c^2\max(2, \log(1/(\delta/2)))/(C\sqrt{\varepsilon/(4(r + 1))}^2)\,,$$
+with <!-- value subgaussianJLConstant -->$C = 1/36$ the constant `subgaussianJLConstant`, then
+$$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{X},
+\mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,.$$
+The sizes are `subgaussianEmbeddingDim c A.rank (1 / 2) (δ / 2)` and
+`subgaussianJLMomentDim c (√(ε / (4 * (A.rank + 1)))) (δ / 2)`; the sketch is unnormalized, the
+scaling cancels in `NLAlib.sketchAndSolve`. The route: the OSI at constant $1/2$ and failure
+$\delta/2$, the JL moment `NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`
+at $\sqrt{\varepsilon/(4(r+1))} \le 1 \le c$ with failure $\delta/2$, and
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`. No $1/\delta$ form is
+stated: it would be dominated. [Woodruff2014, proof of Theorem 23]; the
+injection-plus-multiplication route there, here with sub-Gaussian rows. Sign sketches are the case
+$c = 1$. Asymptotic form:
+`NLAlib.exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector`.
+Result: sketch-and-solve-ls -/
+theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector [Nonempty k]
+    (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
+    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (A : Matrix m n ℝ) {r : Type*} [Fintype r]
+    (B : Matrix m r ℝ) {ε δ : ℝ} (hε : 0 < ε) (hε4 : ε ≤ 4) (hδ : 0 < δ)
+    (hk : subgaussianEmbeddingDim c A.rank (1 / 2) (δ / 2) ≤ Fintype.card k)
+    (hk' : subgaussianJLMomentDim c (√(ε / (4 * ((A.rank : ℝ) + 1)))) (δ / 2) ≤
+      Fintype.card k) :
+    μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A (X ω) B) ^ 2} ≤ δ := by
+  sorry
+
+/-- **Sub-Gaussian sketch-and-solve, asymptotic relative residual with high probability**:
+$O(c^2(r+1)\log(1/\delta)/\varepsilon)$ rows suffice, with $r=\operatorname{rank}\mathbf{A}$:
+there are absolute $C,\varepsilon_0>0$ such that for a random
+$\mathbf{X} \in \mathbb{R}^{k \times m}$ with independent rows, each isotropic and sub-Gaussian
+with proxy $c$, $k \ge Cc^2(r+1)\log(1/\delta)/\varepsilon$, $0<\varepsilon\le\varepsilon_0$ and
+$0<\delta\le1/2$,
+$$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{X},
+\mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,;$$
+the proxy stays in the threshold. Proved from
+`NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector` with
+$\varepsilon_0 = 1$; isotropy forces $c \ge 1$ once there is a column. [Woodruff2014, proof of
+Theorem 23].
+Asymptotic: NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector
+Result: sketch-and-solve-ls -/
+theorem
+    exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧
+      ∀ {Ω k m n r : Type} [MeasurableSpace Ω] [Fintype k] [Fintype m] [Fintype n]
+        [Fintype r] [DecidableEq m] [Nonempty k] (μ : Measure Ω) (X : Ω → Matrix k m ℝ)
+        (c : ℝ≥0) (A : Matrix m n ℝ) (B : Matrix m r ℝ) (ε δ : ℝ),
+        iIndepFun (fun i ω => X ω i) μ → (∀ i, IsSubgaussianVector (fun ω => X ω i) c μ) →
+        (∀ i, IsIsotropic (fun ω => X ω i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+        C * ((c : ℝ) ^ 2 * ((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε) ≤ Fintype.card k →
+        μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+          frobNorm (B - A * sketchAndSolve A (X ω) B) ^ 2} ≤ δ := by
+  sorry
 
 end NLAlib

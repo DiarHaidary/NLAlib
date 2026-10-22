@@ -5,8 +5,9 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.RangeFinder
-public import NLAlib.Sketching.Structured.SRHT
+public import NLAlib.Sketching.Structured.SRHTMultiplication
 
 /-!
 # The randomized SVD with an SRHT test matrix
@@ -24,11 +25,13 @@ there $\|\mathbf{\Omega}\|_2 = \sqrt{n/\ell}$ almost surely
 with replacement, repeated rows break it). Both use the family's injection at constant $1/2$. Any
 `RCLike` field.
 
-There is no approximate-multiplication route and so no $(1 + \varepsilon)$ form: the SRHT has no
-approximate-multiplication tail in the library yet (`docs/design/LowRank-S7.md` §0.2, D6). The
-constant-factor statements have no accuracy parameter and no asymptotic form; in $O(\cdot)$ form
-their size is the family's injection size,
+The constant-factor statements have no accuracy parameter and no asymptotic form; in $O(\cdot)$
+form their size is the family's injection size,
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht` and its with-replacement twin.
+The $(1 + \varepsilon)$ forms, randomized SVD and early truncation, go through the JL moment of a
+real SRHT at $p = 2$ (`NLAlib.hasJLMoment_of_hasLaw_srht`), hence $1/\delta$ in their second size
+(`docs/design/LowRank-S7.md` D6, `docs/design/Sketching-Moments.md` §3.4); a $\log(1/\delta)$ form
+through spectral approximate multiplication is quadratic in $k$ and is not stated (§5.5 there).
 
 **Statements with no per-family form.** Nyström, generalized Nyström and the truncations apply
 through the family's OSI:
@@ -47,6 +50,11 @@ with `hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ` (respectively `srhtWithRe
   route.
 * `SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt_le_of_hasLaw_srht`:
   the bounded-sketch route, HMT's SRFT theorem.
+* `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht_of_le_card`,
+  `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht`: the
+  $(1 + \varepsilon)$ forms, real, with their asymptotic forms
+  `exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht` and
+  `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht`.
 -/
 
 @[expose] public section
@@ -176,5 +184,124 @@ theorem SymmetricGauge.measureReal_matrixNorm_conjTranspose_mul_self_sub_rsvd_gt
   rwa [Real.sq_sqrt (by positivity),
     show (1 : ℝ) + Fintype.card n / Fintype.card l / (1 - 1 / 2) =
       1 + 2 * Fintype.card n / Fintype.card l by ring] at h
+
+/-! ### The $(1 + \varepsilon)$ forms -/
+
+/-- **The randomized SVD with an SRHT test matrix, relative error**: for a real bounded
+orthonormal $\mathbf{F}$ with constant $\beta$, a test matrix $\mathbf{\Omega}$ whose sketch
+$\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT of $\mathbf{F}$ without replacement, $\ell$ nonempty,
+$\ell \le n$, $\varepsilon, \delta > 0$, at
+least <!-- value samplingInjectionDim k L (1/2) (\delta/4) -->
+$$\ell \ge \frac{2 L \log(k/(\delta/4))}{(1/2)^2}\,,$$
+where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/4) -->
+$$L = \beta\,\bigl(k + 2\sqrt{k \log(\lvert n \rvert/(\delta/4))} +
+2 \log(\lvert n \rvert/(\delta/4))\bigr)$$
+is $\beta$ times `srhtRowBound (Fintype.card n) k (δ / 4)` (the size is
+`samplingInjectionDim k L (1 / 2) (δ / 4)`, the injection at constant $1/2$ and failure
+$\delta/2$), and $\ell \ge 8(3\beta^2 - 1)k/(\varepsilon\delta)$,
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$. The route of
+`NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`, with the SRHT JL moment
+`NLAlib.hasJLMoment_of_hasLaw_srht` at $\sqrt{\varepsilon/(4k)}$; the name carries `_of_le_card`
+to tell it apart from the constant-factor
+`NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht`.
+Asymptotic form: `NLAlib.exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht`.
+[Woodruff2014, Lemma 45 and Remark 46]; there for dense sketches, constants unspecified.
+Result: randomized-svd-tail -/
+theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht_of_le_card [Nonempty l]
+    {X : Ω → Matrix n l ℝ} {F : Matrix n n ℝ} {β : ℝ} (hF : IsBoundedOrthonormal F β)
+    (A : Matrix m n ℝ) (hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ)
+    (hln : Fintype.card l ≤ Fintype.card n) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+    (hl : samplingInjectionDim k (β * srhtRowBound (Fintype.card n) k (δ / 4)) (1 / 2) (δ / 4) ≤
+      Fintype.card l)
+    (hl' : 8 * (3 * β ^ 2 - 1) * k ≤ ε * δ * Fintype.card l) :
+    μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
+  sorry
+
+/-- **$O(\beta(k + \log(n/\delta))\log(k/\delta) + \beta^2 k/(\varepsilon\delta))$ SRHT columns
+suffice for the randomized SVD**: there are absolute constants $C, \varepsilon_0 > 0$ such that
+for a real bounded orthonormal $\mathbf{F}$ with constant $\beta$ and a test matrix
+$\mathbf{\Omega}$ whose sketch $\mathbf{\Omega}^{\mathsf{H}}$ is its SRHT without replacement,
+$\ell$ nonempty, $\ell \le n$, $0 < \varepsilon \le \varepsilon_0$, $0 < \delta \le 1/2$ and $\ell$
+at least $C$ times that threshold,
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$; the constants come before every dimension and before $\beta$.
+Proved from `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht_of_le_card` with
+$\varepsilon_0 = 1$. [Woodruff2014, Lemma 45 and Remark 46].
+Asymptotic: NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht_of_le_card
+Result: randomized-svd-tail -/
+theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] [DecidableEq n] [Nonempty l] (μ : Measure Ω) (A : Matrix m n ℝ)
+      (X : Ω → Matrix n l ℝ) (F : Matrix n n ℝ) (β : ℝ) (k : ℕ) (ε δ : ℝ),
+      IsBoundedOrthonormal F β → HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ →
+      Fintype.card l ≤ Fintype.card n → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (β * (k + Real.log (Fintype.card n / δ)) * Real.log (k / δ) +
+        β ^ 2 * (k : ℝ) / (ε * δ)) ≤ Fintype.card l →
+      μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+        frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
+  sorry
+
+/-- **Early-truncated randomized SVD with an SRHT test matrix, tail**: for a real bounded
+orthonormal $\mathbf{F}$ with constant $\beta$, a test matrix $\mathbf{\Omega}$ whose sketch
+$\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT of $\mathbf{F}$ without replacement, $\ell$ nonempty,
+$\ell \le n$, $0 < \varepsilon \le 1$, $\delta > 0$, at
+least <!-- value samplingInjectionDim k L (\varepsilon/6) (\delta/6) -->
+$$\ell \ge \frac{2 L \log(k/(\delta/6))}{(\varepsilon/6)^2}\,,$$
+where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/6) -->
+$$L = \beta\,\bigl(k + 2\sqrt{k \log(\lvert n \rvert/(\delta/6))} +
+2 \log(\lvert n \rvert/(\delta/6))\bigr)$$
+is $\beta$ times `srhtRowBound (Fintype.card n) k (δ / 6)` (the size is
+`samplingInjectionDim k L (ε / 6) (δ / 6)`, the injection at constant $1 - \varepsilon/6$ and
+failure $\delta/3$), and $\ell \ge 108(3\beta^2 - 1)k/(\varepsilon^2\delta)$,
+$$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$. The route of
+`NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, with the
+SRHT JL moment `NLAlib.hasJLMoment_of_hasLaw_srht` at $\varepsilon/(6\sqrt{k})$ for the two
+multiplication tails. Asymptotic form:
+`NLAlib.exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht`.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
+with unspecified constants.
+Result: etrsvd -/
+theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht [Nonempty l]
+    {X : Ω → Matrix n l ℝ} {F : Matrix n n ℝ} {β : ℝ} (hF : IsBoundedOrthonormal F β)
+    (A : Matrix m n ℝ) (hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ)
+    (hln : Fintype.card l ≤ Fintype.card n) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
+    (hδ : 0 < δ)
+    (hl : samplingInjectionDim k (β * srhtRowBound (Fintype.card n) k (δ / 6)) (ε / 6) (δ / 6) ≤
+      Fintype.card l)
+    (hl' : 108 * (3 * β ^ 2 - 1) * k ≤ ε ^ 2 * δ * Fintype.card l) :
+    μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
+  sorry
+
+/-- **$O(\beta(k + \log(n/\delta))\log(k/\delta)/\varepsilon^2 + \beta^2k/(\varepsilon^2\delta))$
+SRHT columns suffice for early truncation**: there are absolute constants
+$C, \varepsilon_0 > 0$ such that for a real bounded orthonormal $\mathbf{F}$ with constant $\beta$
+and a test matrix $\mathbf{\Omega}$ whose sketch $\mathbf{\Omega}^{\mathsf{H}}$ is its SRHT
+without replacement, $\ell$ nonempty, $\ell \le n$, $0 < \varepsilon \le \varepsilon_0$,
+$0 < \delta \le 1/2$ and $\ell$ at least $C$ times that threshold,
+$$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$; the constants come before every dimension and before $\beta$.
+Proved from `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht` with
+$\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3].
+Asymptotic: NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht
+Result: etrsvd -/
+theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_srht :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] [DecidableEq n] [Nonempty l] (μ : Measure Ω) (A : Matrix m n ℝ)
+      (X : Ω → Matrix n l ℝ) (F : Matrix n n ℝ) (β : ℝ) (k : ℕ) (ε δ : ℝ),
+      IsBoundedOrthonormal F β → HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ →
+      Fintype.card l ≤ Fintype.card n → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (β * (k + Real.log (Fintype.card n / δ)) * Real.log (k / δ) / ε ^ 2 +
+        β ^ 2 * (k : ℝ) / (ε ^ 2 * δ)) ≤ Fintype.card l →
+      μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
+  sorry
 
 end NLAlib

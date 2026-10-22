@@ -991,3 +991,127 @@ module docstrings show the two lines. Recommendation as stated.
 
 **Q10. Mathlib deviations.** None: the new objects are named bounds and theorems; no Mathlib notion
 is re-spelled. `docs/design/Mathlib-deviations.md` gets no entry.
+
+## Changes during the skeleton (2026-10-22)
+
+The skeleton is on `sketching/moments` (worktree `nlalib-block`, from `1e5334f`). Every declaration
+of §§2–5 and §6 is stated with its final docstring and elaborates; definitions are written out in
+full; the statements listed under "Proved now" are proved, the others are `sorry`. Changes against
+the note:
+
+* **Measure hypotheses.** The three §2.3 Probability lemmas and
+  `hasJLMoment_of_forall_hasJLProperty` take `[IsFiniteMeasure μ]` in place of
+  `[IsProbabilityMeasure μ]` (weaker; finiteness is what the `μ.real` tails need).
+  `IsObliviousSubspaceEmbedding.hasJLProperty` takes `[IsFiniteMeasure μ]`, against §3.1's "no
+  finite-measure hypothesis": with `μ.real`, an infinite-measure failure event has real measure
+  $0$, so without finiteness the implication fails. Every consumer has a probability measure.
+  The Bernstein trace forms (§5.2) take `[IsProbabilityMeasure μ]` and write their bound variable
+  `∀ θ : ℝ, θ ∈ Set.Ioo 0 (3 / L) → …` (T10).
+* **`Real.Gamma_le_rpow_sub_one`** needs Mathlib's `Real.convexOn_Gamma`, so
+  `ForMathlib/Analysis/SpecialFunctions/Gamma/Basic.lean` now also imports
+  `Mathlib.Analysis.SpecialFunctions.Gamma.BohrMollerup`; its module docstring names that file as
+  the upstream home of the new bound. `Probability/Tail.lean` imports the ForMathlib Gamma and log
+  files and `Mathlib.Analysis.Complex.ExponentialBounds` (for $\log 2 > 0.693$), as do
+  `Gaussian.lean` and `SubGaussian.lean` (the latter two for `jlMomentDim_le` and
+  `subgaussianJLMomentDim_le`).
+* **Named-bound API.** `subexponentialMomentBound_nonneg` ($v, b, p \ge 0$),
+  `subexponentialMomentBound_mono` (in $v$ and $b$, $p \ge 0$), `subexponentialMomentBound_le` as
+  in MD2, and one more lemma, **`subexponentialMomentBound_le_mul_exp_neg`**: for $p \ge 2$,
+  $32vp \le \varepsilon^2$ and $32bp \le \varepsilon$ the bound is at most $\varepsilon^p e^{-p}$.
+  It is the inversion step the three family size forms share (S5: one public lemma, not three
+  copies); it goes through `subexponentialMomentBound_le`, so a sharper body leaves it true.
+  `jlMomentDim_nonneg` (no hypothesis), `jlMomentDim_mono` (antitone in $\varepsilon > 0$ and
+  $\delta > 0$; no $\varepsilon \le 1$ needed), `jlMomentDim_le`
+  ($\le 384\log(1/\delta)/\varepsilon^2$ for $0 < \delta \le 1/2$); `subgaussianJLMomentDim_nonneg`,
+  `_mono` (monotone in $c \ge 0$), `_le` ($\le 1728c^2\log(1/\delta)/\varepsilon^2$). The registry
+  template of `subexponentialMomentBound` writes the second power as `(2#2)^{#3}`, so docstrings
+  show $(2b)^{p}$ with braces.
+* **Files.** As §6. The PCP section of `Gaussian.lean` and `SubGaussian.lean` (with the private
+  empty-column helper) moved to the new `Sketching/Gaussian/ProjectionCost.lean` (Q6 (a)); the two
+  family files no longer import `Sketching/Properties/ProjectionCost.lean`. `srhtRowNormBound`
+  and the general flattening sit in a new section of `Flattening.lean` after the variables
+  (the definition takes the file's `{n r 𝕜}`); its value is displayed (`$$…$$`) wherever it
+  appears, since the filled template does not fit an inline span of 100 characters. The private
+  product-law helpers of `SRHT.lean` stay private: the note's `hasLaw_fst_prod`,
+  `hasLaw_snd_prod` do not exist under those names (the helpers are `indepFun_snd_mul_diagonal`,
+  `measurable_mul_diagonal_fst`, `hasLaw_map_prod`, `mul_diagonal_eq`), and §6 makes them public
+  only when `SRHTMultiplication.lean` needs them, which is a proof-time step.
+* **Asymptotic thresholds.** The PCP forms state the single product term
+  $C(d+1)\log(1/\delta)/\varepsilon^2$ (sub-Gaussian $Cc^2(d+1)\log(1/\delta)/\varepsilon^2$): §2.6's
+  first summand $C(d + \log(1/\delta))/\varepsilon^2$ is dominated by it for $\delta \le 1/2$. The
+  LowRank forms use $Ck\log(1/\delta)/\varepsilon^2$ (Gaussian, Haar early truncation),
+  $Cc^2k\log(1/\delta)/\varepsilon$ and $Cc^2k\log(1/\delta)/\varepsilon^2$ (sub-Gaussian), with
+  $k = 0$ trivial; sketch-and-solve $C(r+1)\log(1/\delta)/\varepsilon$ (Gaussian, Haar) and
+  $Cc^2(r+1)\log(1/\delta)/\varepsilon$ (sub-Gaussian). The note gave no threshold for the SRHT
+  forms; they are the OSE/OSI size plus the JL-moment size,
+  $C(\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2 + \beta^2(d+1)/(\varepsilon^2\delta))$
+  (PCP), $C(\beta(r + \log(\lvert m\rvert/\delta))\log(r/\delta) + \beta^2(r+1)/(\varepsilon\delta))$
+  (sketch-and-solve), and the corresponding $k$ forms for the randomized SVD and early truncation;
+  the SRHT JL form is $C\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2$.
+  Constants are left to the proofs (not stated in the asymptotic docstrings).
+* **Statement details.** The SRHT JL moment, PCP, sketch-and-solve, randomized SVD and early
+  truncation are over ℝ (Q4 default); the SRHT JL tails and spectral AMM over `𝕜`. The SRHT size
+  hypotheses are the family's own named sizes with the failure split the proofs use:
+  `samplingEmbeddingDim 1 (β * srhtRowBound (card n) 1 (δ / 2)) ε (δ / 2)` (JL),
+  `samplingEmbeddingDim d (β * srhtRowBound (card n) d (δ / 4)) (ε / 2) (δ / 4)` (PCP),
+  `samplingInjectionDim r (β * srhtRowBound (card m) r (δ / 4)) (1 / 2) (δ / 4)` with
+  `8 * (3 * β ^ 2 - 1) * (r + 1) ≤ ε * δ * card k` (sketch-and-solve; the randomized SVD has the
+  same with $k$), and `samplingInjectionDim k (β * srhtRowBound (card n) k (δ / 6)) (ε / 6) (δ / 6)`
+  with `108 * (3 * β ^ 2 - 1) * k ≤ ε ^ 2 * δ * card l` (early truncation). The sampling spectral
+  AMM without replacement takes `‖A i‖² ≤ a * (card n)⁻¹`, the without-replacement file's form of
+  uniform weights; both sampling models and both SRHT models take `[Nonempty r]`, the
+  with-replacement ones also `[Nonempty k]`. The rectangular Bernstein without replacement needs
+  no `DecidableEq` on the factor index types. The Haar early truncation states its injection size
+  as `jlDim (2 * ε / 15) (δ / 3 / 21 ^ k)`, the size form of the Haar OSI at $\varepsilon/6$ (since
+  $4(\varepsilon/6)/5 = 2\varepsilon/15$). Haar sketch-and-solve with high probability uses the
+  unnormalized $\mathbf{Q}^{\mathsf{H}}$ (as the expectation forms do), sizes
+  `jlDim (2 / 5) (δ / 2 / 21 ^ A.rank)` and `jlMomentDim (√(ε / (4 * (A.rank + 1)))) (δ / 2)`, and
+  `ε ≤ 4`. Sub-Gaussian sketch-and-solve is stated once, in the $\log(1/\delta)$ form, under the
+  plain name `measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector` (no
+  coexisting form to tell apart), with `[Nonempty k]` and `ε ≤ 4`.
+* **Docstrings of the old explicit forms.** The six $1/\delta$ explicit theorems no longer say
+  "Asymptotic form: …" (`scripts/check_refs.py` requires the named form's tag to point back); each
+  names its $\log(1/\delta)$ twin as incomparable (rule 4) and says that the asymptotic form is
+  proved from the twin. The JL-moment asymptotic forms and the SRHT JL asymptotic forms carry a
+  citation for C1 ([Woodruff2014, Definition 12 and Theorem 13]; [Woodruff2014, Theorem 7];
+  [MartinssonTropp2020, §9.3]).
+* **Citations.** `KaneNelson2014` is added to `docs/references.bib` from the metadata of
+  `docs/PORT_SKETCHING.md` §7.2 only (surnames, title, J. ACM 61, 2014), with a `note` that the
+  given names, issue, article number and DOI are to confirm; it is cited bare in the module
+  docstring of `JohnsonLindenstrauss.lean`, and declaration docstrings say "Kane and Nelson's
+  (2014; locator to check)". The SRHT spectral AMM has no printed source in the note: its
+  docstrings cite [Tropp2011a, Lemma 3.3] for flattening and say the bound is the proof's. The
+  scalar Bernstein without replacement cites [Hoeffding1963, Theorem 4], the locator the library
+  already uses (`ConvexOrder.lean`). No new locator was invented.
+* **Result ids.** New: `jl-moment-gaussian`, `jl-moment-haar`, `jl-moment-subgaussian`, `jl-srht`,
+  `haar-pcp`, `srht-pcp`, `matrix-bernstein-without-replacement`, `amm-sampling-spectral`,
+  `amm-srht-spectral`. Reused: `haar-sketch-ose`, `haar-sketch-osi`, `gaussian-pcp`,
+  `subgaussian-pcp`, `sketch-and-solve-ls`, `sketch-and-precondition-ls`, `etrsvd`,
+  `randomized-svd-tail`.
+* **Signs.** No statement (§2.4): the module docstring of `Rademacher.lean` shows the discharge of
+  `hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le` at $c = 1$.
+* **Proved now.** ForMathlib: `Real.Gamma_le_rpow_sub_one`, `Real.log_one_add_le_sub_sq_div`.
+  Probability: everything of §2.3 (the four bound lemmas, the layer cake, the sub-exponential
+  moments, the Dasgupta–Gupta conversion, `HasSubexponentialMGF.integral_abs_rpow_le`), the two
+  Bernstein trace forms and the two Chernoff means without replacement. Sketching: both
+  `JohnsonLindenstrauss.lean` bridges; the Gaussian, Haar and sub-Gaussian JL moments at every
+  order, their size forms and asymptotic forms, the `jlMomentDim` and `subgaussianJLMomentDim`
+  API, the public `two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le`; the five Haar
+  $1 \mp \varepsilon$ embedding statements of §4.2; `srhtRowNormBound_nonneg` and the general
+  flattening (two private row lemmas for a general matrix; the leverage-score form is not yet
+  rederived from it, both are proved). Regression: Haar sketch-and-precondition and its
+  sketch-and-solve start. The moved PCP proofs are unchanged. So `Probability/Tail.lean`,
+  `JohnsonLindenstrauss.lean`, the four dense family files, `Flattening.lean`, `Bernstein.lean`
+  and `ChernoffWithoutReplacement.lean` stay sorry-free.
+* **Asymptotic forms left `sorry`.** All six upgraded in place (MD4): the Gaussian and
+  sub-Gaussian PCP, Gaussian sketch-and-solve, Gaussian early truncation, sub-Gaussian randomized
+  SVD and early truncation; their old proofs were for the $1/\delta$ thresholds and are replaced by
+  `sorry` until the twins are proved.
+* **Review warnings left.** B5 now flags the three $1/\delta$ PCP forms and the two sub-Gaussian
+  LowRank $1/\delta$ forms (their asymptotic forms are tagged to the $\log(1/\delta)$ twins, MD4)
+  and `isObliviousSubspaceEmbedding_one_sub_one_add_of_hasLaw_haarFrame` (a tail form; its size
+  form has the asymptotic form). Checks at the skeleton: `lake build NLAlib` 3995 jobs, 48 `sorry`
+  warnings and no other; `check_rules.py` on the extraction 0 errors (names included);
+  `check_refs.py`, `check_constants.py`, `gen_rules_md.py --check`, `mk_all --check` clean;
+  `proved_modules.py`: 383 proved, 13 not yet (the 12 files with `sorry` and
+  `Estimation/Trace/HutchPlusPlusTail.lean`, which imports `LowRank/Oblivious/SubGaussian.lean`).

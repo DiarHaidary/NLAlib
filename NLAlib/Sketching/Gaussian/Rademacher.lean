@@ -39,6 +39,20 @@ $\varepsilon \gtrsim 1.43$ the sub-Gaussian rows theorem at $c = 1$
 (`NLAlib.hasJLProperty_of_isSubgaussianVector` with
 `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`) is better; it is not restated here.
 
+**JL moments beyond $p = 2$.** The sub-Gaussian family's JL moment at $p = \max(2,
+\log(1/\delta))$ applies at proxy $1$, with no separate statement: for
+`hX : HasLaw X (rademacherMatrix k n) μ`,
+```
+hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hX.iIndepFun_eval
+  (fun i => isSubgaussianVector_of_hasLaw_rademacherVector (hX.eval i))
+  (fun i => isIsotropic_of_hasLaw_rademacherVector (hX.eval i)) hε hε1 hδ hk
+```
+at least <!-- value subgaussianJLMomentDim {\cdot 1} \varepsilon \delta -->
+$16\cdot 1^2\max(2, \log(1/\delta))/(C\varepsilon^2)$ rows,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, for $0 < \varepsilon \le 1$;
+approximate matrix multiplication with failure probability $\delta$ follows by
+`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`.
+
 Degenerate cases: for empty $k$, $\mathbf{S} = \mathbf{0}$, which is not isotropic, hence
 `[Nonempty k]` on isotropy, the OSI and the moments; the JL bound is $2$ for
 $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. For $\varepsilon = 1$ the lower
@@ -268,19 +282,6 @@ theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] 
   have := hX.isProbabilityMeasure
   exact (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε)
     |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_rademacherMatrix hX)
-
-/-- The failure probability of the sign-sketch OSE is at most $\delta$
-once <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
-$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6) \le \lvert k \rvert$ (the
-left side is `jlDim (4ε/5) (δ/21^d)`), for $0 < \varepsilon < 15/8$ and $\delta > 0$. -/
-private theorem two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 15 / 8)
-    (hδ : 0 < δ) (hk : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
-    2 * 21 ^ d * Real.exp (-(Fintype.card k * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375))) ≤ δ := by
-  have h21 : (0 : ℝ) < 21 ^ d := by positivity
-  have h := two_mul_exp_le_of_jlDim_le (by linarith) (by linarith) (by positivity) hk
-  rw [show (4 * ε / 5) ^ 2 / 4 - (4 * ε / 5) ^ 3 / 6 = 4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375 by ring,
-    le_div_iff₀ h21] at h
-  linarith
 
 /-- **Sign-sketch JL, sample-size form**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$

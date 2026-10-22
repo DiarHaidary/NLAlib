@@ -5,9 +5,11 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Probability.MatrixConcentration.BernsteinWithoutReplacement
 public import NLAlib.Probability.MatrixConcentration.Variance
 public import NLAlib.Probability.Tail
 public import NLAlib.Sketching.Sampling.RowSampling
+public import NLAlib.Sketching.Sampling.WithoutReplacement
 
 /-!
 # Approximate matrix multiplication by row sampling
@@ -33,6 +35,18 @@ neither it nor $\sum_i p_i = 1$. A zero weight with $\mathbf{A}_i \ne \mathbf{0}
 $\mathbf{B}_i \ne \mathbf{0}$ biases the estimator, which the support hypothesis excludes and the
 domination hypothesis implies. Design: `docs/design/Sketching-S4.md` §3.3, §8.
 
+In the spectral norm, matrix Bernstein for the rectangular atoms
+(`NLAlib.Probability.MatrixConcentration.Bernstein`) needs a uniform atom bound and the two
+one-sided variances, hence two separate dominations $\|\mathbf{A}_i\|^2 \le a\,p_i$ and
+$\|\mathbf{B}_i\|^2 \le b\,p_i$: they bound the variances by
+$b\|\mathbf{A}\|_2^2/\lvert k\rvert$ and $a\|\mathbf{B}\|_2^2/\lvert k\rvert$ and the atoms by
+$2\sqrt{ab}/\lvert k\rvert$, and imply the product domination with $L = \sqrt{ab}$; the product
+domination alone does not bound the variances (a row with $\|\mathbf{A}_i\|$ large and
+$\|\mathbf{B}_i\|$ small). At $p_i \propto \|\mathbf{A}_i\|^2 + \|\mathbf{B}_i\|^2$ this is the
+stable-rank form. Without replacement the weights are uniform and matrix Bernstein without
+replacement (`NLAlib.Probability.MatrixConcentration.BernsteinWithoutReplacement`) gives the same
+bound. Design: `docs/design/Sketching-Moments.md` §5.3.
+
 Proofs. Every expectation is transported to $\lvert k \rvert$ i.i.d. indices
 (`NLAlib.samplingSketch_eq_map`), where the sampled product is a sum of i.i.d. atoms whose weighted
 mean is $\mathbf{A}^{\mathsf{H}} \mathbf{B} / \lvert k \rvert$; unbiasedness is linearity, the
@@ -51,6 +65,9 @@ Cauchy–Schwarz, and the tails are Markov's inequality on the square.
 * `NLAlib.measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch`,
   `NLAlib.measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch_of_ne_zero`:
   tails.
+* `NLAlib.measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch` and
+  `measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketchWithoutReplacement`:
+  approximate multiplication in the spectral norm, both sampling models.
 -/
 
 @[expose] public section
@@ -383,5 +400,57 @@ theorem measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketc
   refine (measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch hS hp hdom
     (t := ε * frobNorm A * frobNorm B) (by positivity)).trans (le_of_eq ?_)
   field_simp
+
+/-! ### The spectral norm -/
+
+/-- **Approximate matrix multiplication in the spectral norm by row sampling**: for $k$ and $r$
+nonempty, weights $p$ summing to $1$ with $\|\mathbf{A}_i\|^2 \le a p_i$ and
+$\|\mathbf{B}_i\|^2 \le b p_i$ for every row $i$, $a, b \ge 0$, the row-sampling sketch
+$\mathbf{S}$ with $\lvert k\rvert$ i.i.d. rows drawn with probabilities $p$, and $t \ge 0$,
+$$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
+- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
+\exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(b\|\mathbf{A}\|_2^2, a\|\mathbf{B}\|_2^2)
++ 2\sqrt{ab}\,t/3}\Bigr)\,.$$
+Rectangular matrix Bernstein (`NLAlib.measureReal_specNorm_sum_ge_le_bernstein`) for the
+centred atoms. At $p_i \propto \|\mathbf{A}_i\|^2 + \|\mathbf{B}_i\|^2$ this is the stable-rank
+form. [MartinssonTropp2020, §7.3, Theorem 7.2]; [Tropp2015, §6.4] (locator of the corollary to
+check).
+Result: amm-sampling-spectral -/
+theorem measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch [Nonempty k]
+    [Nonempty r] (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1)
+    (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
+    (hA : ∀ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 ≤ a * p i)
+    (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ b * p i) {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | t ≤ specNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B)} ≤
+      (Fintype.card q + Fintype.card r) * Real.exp (-(Fintype.card k * t ^ 2 / 2) /
+        (max (b * specNorm A ^ 2) (a * specNorm B ^ 2) + 2 * √(a * b) * t / 3)) := by
+  sorry
+
+/-- **Approximate matrix multiplication in the spectral norm by row sampling without
+replacement**: for $k$ and $r$ nonempty, $\|\mathbf{A}_i\|^2 \le a/\lvert n\rvert$ and
+$\|\mathbf{B}_i\|^2 \le b/\lvert n\rvert$ for every row $i$, $a, b \ge 0$, the row-sampling sketch
+$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{P}^{\mathsf{H}}$ of $\lvert k\rvert$
+distinct uniformly sampled rows, and $t \ge 0$,
+$$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
+- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
+\exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(b\|\mathbf{A}\|_2^2, a\|\mathbf{B}\|_2^2)
++ 2\sqrt{ab}\,t/3}\Bigr)\,,$$
+the bound with replacement at uniform weights: matrix Bernstein without replacement
+(`NLAlib.measureReal_specNorm_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective`) for the centred
+population $(\lvert n\rvert/\lvert k\rvert)\mathbf{A}_i^{\mathsf{H}}\mathbf{B}_i -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}/\lvert k\rvert$. For $\lvert n\rvert < \lvert k\rvert$ the law is
+$0$. [MartinssonTropp2020, §7.3, Theorem 7.2] (with replacement); [GrossNesme2010, Section D] for
+the comparison.
+Result: amm-sampling-spectral -/
+theorem
+    measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketchWithoutReplacement
+    [Nonempty k] [Nonempty r] (hS : HasLaw S (samplingSketchWithoutReplacement k n) μ)
+    (A : Matrix n q 𝕜) (B : Matrix n r 𝕜) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
+    (hA : ∀ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 ≤ a * (Fintype.card n : ℝ)⁻¹)
+    (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ b * (Fintype.card n : ℝ)⁻¹) {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | t ≤ specNorm (Aᴴ * (S ω)ᴴ * S ω * B - Aᴴ * B)} ≤
+      (Fintype.card q + Fintype.card r) * Real.exp (-(Fintype.card k * t ^ 2 / 2) /
+        (max (b * specNorm A ^ 2) (a * specNorm B ^ 2) + 2 * √(a * b) * t / 3)) := by
+  sorry
 
 end NLAlib

@@ -31,6 +31,9 @@ Bernstein's inequality for bounded centred real variables.
 ## Main results
 
 * `NLAlib.hasMatrixMGFBound_of_integral_eq_zero_of_le`: the Bernstein matrix MGF bound.
+* `NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_of_integral_le`,
+  `NLAlib.integral_eigenvalue_zero_le_bernstein_of_integral_le`: the tail and the mean from a
+  trace bound, for sums that are not independent (sampling without replacement).
 * `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein`,
   `NLAlib.integral_eigenvalue_zero_sum_le_bernstein`: Hermitian summands.
 * `NLAlib.measureReal_specNorm_sum_ge_le_bernstein`, `NLAlib.integral_specNorm_sum_le_bernstein`:
@@ -221,6 +224,97 @@ theorem hasMatrixMGFBound_of_integral_eq_zero_of_le [IsProbabilityMeasure μ]
   have hcS : ((θ ^ 2 / 2 / (1 - L * θ / 3)) • ∫ ω, X ω ^ 2 ∂μ).IsHermitian :=
     (IsSelfAdjoint.all _).smul hS
   exact h1.trans hcS.one_add_le_exp
+
+/-! ### From a trace bound -/
+
+section TraceBound
+
+variable {Y : Ω → Matrix n n 𝕜} {W : Matrix n n 𝕜}
+
+/-- **Matrix Bernstein from a trace bound**: under a probability measure, if $\mathbf{Y}$ is
+almost surely Hermitian, $\mathbf{W}$ Hermitian, $L > 0$, and for every $0 < \theta < 3/L$ the
+trace exponential is integrable with
+$$\mathbb{E}\operatorname{tr}e^{\theta\mathbf{Y}} \le
+\operatorname{tr}\exp\Bigl(\frac{\theta^2/2}{1 - L\theta/3}\,\mathbf{W}\Bigr)\,,$$
+then for $t \ge 0$, $n$ nonempty,
+$$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t] \le \lvert n\rvert
+\exp\Bigl(\frac{-t^2/2}{\|\mathbf{W}\|_2 + Lt/3}\Bigr)\,.$$
+The trace-form layer of `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein`, as
+`NLAlib.measureReal_eigenvalue_zero_ge_le_chernoff_of_integral_le` is for the Chernoff bound; a
+sum sampled without replacement satisfies the trace bound
+(`NLAlib.integral_re_trace_exp_sum_le_bernstein_of_hasLaw_uniformOn_injective`).
+[Tropp2015, Theorem 6.6.1], whose proof goes through this trace bound. -/
+theorem measureReal_eigenvalue_zero_ge_le_bernstein_of_integral_le [IsProbabilityMeasure μ]
+    [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hW : W.IsHermitian) (hL : 0 < L)
+    (hint : ∀ θ : ℝ, θ ∈ Set.Ioo 0 (3 / L) →
+      Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
+    (htr : ∀ θ : ℝ, θ ∈ Set.Ioo 0 (3 / L) → ∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ ≤
+      RCLike.re (exp ((θ ^ 2 / 2 / (1 - L * θ / 3)) • W)).trace) {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | t ≤ eigenvalue (Y ω) 0} ≤
+      Fintype.card n * Real.exp (-(t ^ 2 / 2) / (specNorm W + L * t / 3)) := by
+  have hd : (1 : ℝ) ≤ Fintype.card n := by exact_mod_cast Fintype.card_pos
+  rcases ht.eq_or_lt with rfl | ht'
+  · rw [show -((0 : ℝ) ^ 2 / 2) / (specNorm W + L * 0 / 3) = 0 by ring, Real.exp_zero, mul_one]
+    exact measureReal_le_one.trans hd
+  obtain ⟨θ, hθ, hexp⟩ := exists_bernstein_exponent hL (specNorm_nonneg W) ht'
+  have hg := sq_div_two_div_nonneg_of_mem_Ioo hL hθ
+  have hM : ((θ ^ 2 / 2 / (1 - L * θ / 3)) • W).IsHermitian := (IsSelfAdjoint.all _).smul hW
+  have htrW := hM.re_trace_exp_le_card_mul_exp
+  rw [eigenvalue_real_smul _ hg] at htrW
+  have hlam : eigenvalue W 0 ≤ specNorm W :=
+    (le_abs_self _).trans (hW.abs_eigenvalue_le_specNorm 0)
+  refine (measureReal_eigenvalue_zero_ge_le hY hθ.1 (hint θ hθ) t).trans ?_
+  calc Real.exp (-θ * t) * ∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ
+      ≤ Real.exp (-θ * t) * (Fintype.card n *
+          Real.exp (θ ^ 2 / 2 / (1 - L * θ / 3) * eigenvalue W 0)) :=
+        mul_le_mul_of_nonneg_left ((htr θ hθ).trans htrW) (Real.exp_pos _).le
+    _ = Fintype.card n * Real.exp (-θ * t + θ ^ 2 / 2 / (1 - L * θ / 3) * eigenvalue W 0) := by
+        rw [Real.exp_add]
+        ring
+    _ ≤ Fintype.card n * Real.exp (-(t ^ 2 / 2) / (specNorm W + L * t / 3)) := by
+        refine mul_le_mul_of_nonneg_left (Real.exp_le_exp.2 ?_) (Nat.cast_nonneg _)
+        exact (add_le_add_right (mul_le_mul_of_nonneg_left hlam hg) _).trans hexp
+
+/-- **Matrix Bernstein for the mean, from a trace bound**: under a probability measure, if
+$\mathbf{Y}$ is integrable and almost surely Hermitian, $\mathbf{W}$ Hermitian, $L > 0$, and for
+every $0 < \theta < 3/L$ the trace exponential is integrable with
+$$\mathbb{E}\operatorname{tr}e^{\theta\mathbf{Y}} \le
+\operatorname{tr}\exp\Bigl(\frac{\theta^2/2}{1 - L\theta/3}\,\mathbf{W}\Bigr)\,,$$
+then, $n$ nonempty,
+$$\mathbb{E}\,\lambda_0(\mathbf{Y}) \le \sqrt{2\|\mathbf{W}\|_2\log\lvert n\rvert}
++ \frac{L\log\lvert n\rvert}{3}\,.$$
+The mean form of `NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_of_integral_le`.
+[Tropp2015, Theorem 6.6.1]. -/
+theorem integral_eigenvalue_zero_le_bernstein_of_integral_le [IsProbabilityMeasure μ]
+    [Nonempty n] (hY : ∀ᵐ ω ∂μ, (Y ω).IsHermitian) (hYi : Integrable Y μ) (hW : W.IsHermitian)
+    (hL : 0 < L)
+    (hint : ∀ θ : ℝ, θ ∈ Set.Ioo 0 (3 / L) →
+      Integrable (fun ω => RCLike.re (exp (θ • Y ω)).trace) μ)
+    (htr : ∀ θ : ℝ, θ ∈ Set.Ioo 0 (3 / L) → ∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ ≤
+      RCLike.re (exp ((θ ^ 2 / 2 / (1 - L * θ / 3)) • W)).trace) :
+    ∫ ω, eigenvalue (Y ω) 0 ∂μ ≤
+      √(2 * specNorm W * Real.log (Fintype.card n)) + L * Real.log (Fintype.card n) / 3 := by
+  have hd : (1 : ℝ) ≤ Fintype.card n := by exact_mod_cast Fintype.card_pos
+  have hlam : eigenvalue W 0 ≤ specNorm W :=
+    (le_abs_self _).trans (hW.abs_eigenvalue_le_specNorm 0)
+  refine le_of_forall_bernstein_mean hL (Real.log_nonneg hd) (specNorm_nonneg _) fun θ hθ => ?_
+  have hg := sq_div_two_div_nonneg_of_mem_Ioo hL hθ
+  have hM : ((θ ^ 2 / 2 / (1 - L * θ / 3)) • W).IsHermitian := (IsSelfAdjoint.all _).smul hW
+  have htrW := hM.re_trace_exp_le_card_mul_exp
+  rw [eigenvalue_real_smul _ hg] at htrW
+  have hpos : 0 < ∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ :=
+    integral_pos_of_ae_pos (hint θ hθ) (hY.mono fun ω hω =>
+      Matrix.IsHermitian.re_trace_exp_pos ((IsSelfAdjoint.all θ).smul hω))
+  have hle' : ∫ ω, RCLike.re (exp (θ • Y ω)).trace ∂μ ≤
+      Fintype.card n * Real.exp (θ ^ 2 / 2 / (1 - L * θ / 3) * specNorm W) :=
+    (htr θ hθ).trans (htrW.trans (mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.2 (mul_le_mul_of_nonneg_left hlam hg)) (Nat.cast_nonneg _)))
+  refine (integral_eigenvalue_zero_le hY hYi hθ.1 (hint θ hθ)).trans ?_
+  refine (mul_le_mul_of_nonneg_left (Real.log_le_log hpos hle')
+    (inv_nonneg.2 hθ.1.le)).trans_eq ?_
+  rw [Real.log_mul (by positivity) (Real.exp_pos _).ne', Real.log_exp]
+
+end TraceBound
 
 variable {ι : Type*} [Fintype ι]
 

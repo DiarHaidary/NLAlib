@@ -5,12 +5,12 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.Complex.ExponentialBounds
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.Sketching.Properties.Isotropic
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
-public import NLAlib.Sketching.Properties.ProjectionCost
 
 /-!
 # Sub-Gaussian sketches
@@ -32,7 +32,11 @@ $\langle \mathbf{X}_i, \mathbf{x} \rangle^2 - 1$), and, for rows with proxy $1$ 
 directional moments at most $3$, the tail
 $2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$ of Dasgupta and Gupta (Achlioptas's
 argument; incomparable, CONTRIBUTING §5.2 rule 4). It has the
-JL moment property at $p = 2$, and is an oblivious subspace embedding and injection through JL
+JL moment property at $p = 2$ and, from the sub-exponential tail, at every $p > 0$, so
+$O(c^2\log(1/\delta)/\varepsilon^2)$ rows give it at $p = \max(2, \log(1/\delta))$; sign
+sketches are the case $c = 1$ (`NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`,
+`NLAlib.isIsotropic_of_hasLaw_rademacherVector`, `ProbabilityTheory.HasLaw.iIndepFun_eval`),
+with no separate statement. It is an oblivious subspace embedding and injection through JL
 plus a net (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at $4\varepsilon/5$); that route
 dominates the rows theorem's Gram sandwich in every regime (`docs/design/Sketching-S3.md` §7 Q1).
 Matrices with independent sub-Gaussian entries of unit variance reach the rows hypotheses through
@@ -53,10 +57,13 @@ $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0
 
 * `NLAlib.subgaussianJLConstant`: the constant of the sub-Gaussian JL
   tail, <!-- value subgaussianJLConstant -->$C = 1/36$.
-* `NLAlib.subgaussianJLDim`, `NLAlib.subgaussianEmbeddingDim`: the sample
-  sizes <!-- value subgaussianJLDim c \varepsilon \delta -->$c^2 \log(2/\delta)/(C \varepsilon^2)$
-  and <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
-  $25 c^2 (d \log 21 + \log(2/\delta))/(16 C \varepsilon^2)$.
+* `NLAlib.subgaussianJLDim`, `NLAlib.subgaussianEmbeddingDim`, `NLAlib.subgaussianJLMomentDim`:
+  the sample sizes for
+  JL <!-- value subgaussianJLDim c \varepsilon \delta -->$c^2 \log(2/\delta)/(C \varepsilon^2)$,
+  for the OSE <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
+  $25 c^2 (d \log 21 + \log(2/\delta))/(16 C \varepsilon^2)$
+  and for the JL moment <!-- value subgaussianJLMomentDim c \varepsilon \delta -->
+  $16c^2\max(2, \log(1/\delta))/(C\varepsilon^2)$.
 
 ## Main results
 
@@ -64,16 +71,16 @@ $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0
 * `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le`: the Dasgupta–Gupta
   tail for proxy $1$ and Gaussian fourth moments.
 * `NLAlib.hasJLMoment_of_isSubgaussianVector`: the JL moment property at $p = 2$.
+* `NLAlib.hasJLMoment_subexponentialMomentBound_of_isSubgaussianVector`: at every $p > 0$, and
+  its size form `NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`.
 * `NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector`,
   `NLAlib.isObliviousSubspaceInjection_of_isSubgaussianVector`.
 * `NLAlib.hasJLProperty_of_iIndepFun_entry`: JL for independent sub-Gaussian entries.
-* `NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card`: the sub-Gaussian (and
-  Rademacher) sketch is a projection-cost-preserving sketch.
 * `NLAlib.exists_forall_hasJLProperty_of_isSubgaussianVector`,
-  `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`: the asymptotic
+  `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector`,
+  `NLAlib.exists_forall_hasJLMoment_of_isSubgaussianVector`: the asymptotic
   forms, $O(c^2 \log(1/\delta)/\varepsilon^2)$ and $O(c^2 (d + \log(1/\delta))/\varepsilon^2)$
-  rows; `NLAlib.exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector`,
-  $O(c^2 (d + 1)/(\varepsilon^2\delta))$ rows for a projection-cost-preserving sketch.
+  rows. The projection-cost-preserving forms are in `NLAlib.Sketching.Gaussian.ProjectionCost`.
 -/
 
 @[expose] public section
@@ -142,6 +149,20 @@ JL size at distortion $4\varepsilon/5$ for the $21^d$ points of a $1/10$-net.
 Junk: the value is $0$ at $\varepsilon = 0$, and negative for $\delta > 2 \cdot 21^d$. -/
 noncomputable irreducible_def subgaussianEmbeddingDim (c : ℝ) (d : ℕ) (ε δ : ℝ) : ℝ :=
   25 * c ^ 2 * (d * Real.log 21 + Real.log (2 / δ)) / (16 * subgaussianJLConstant * ε ^ 2)
+
+/-- The **sub-Gaussian JL moment
+dimension** <!-- value subgaussianJLMomentDim c \varepsilon \delta -->
+$16c^2\max(2, \log(1/\delta))/(C\varepsilon^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$ (`subgaussianJLConstant`): for
+$0 < \varepsilon \le c$ and $\delta > 0$, at least this many rows give the JL moment property
+with distortion $\varepsilon$, failure probability $\delta$ and exponent $\max(2, \log(1/\delta))$
+(`NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`). The value the proof
+reaches, inverting the readable form of the sub-exponential moment bound
+(`NLAlib.subexponentialMomentBound_le`) at $v = c^2/(2C\lvert k\rvert)$,
+$b = c/(2C\lvert k\rvert)$; a Stirling-sharp inversion would lower the $16$ without a statement
+change. Junk: $0$ at $\varepsilon = 0$. -/
+noncomputable irreducible_def subgaussianJLMomentDim (c ε δ : ℝ) : ℝ :=
+  16 * c ^ 2 * max 2 (Real.log (1 / δ)) / (subgaussianJLConstant * ε ^ 2)
 
 section Sizes
 
@@ -243,6 +264,47 @@ theorem subgaussianEmbeddingDim_le (c : ℝ) (d : ℕ) (ε : ℝ) (hδ : 0 < δ)
   refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
   have hc := sq_nonneg c
   nlinarith [mul_le_mul_of_nonneg_left h21 hc, mul_nonneg hc hL]
+
+/-- The sub-Gaussian JL moment dimension is nonnegative. -/
+theorem subgaussianJLMomentDim_nonneg (c ε δ : ℝ) : 0 ≤ subgaussianJLMomentDim c ε δ := by
+  rw [subgaussianJLMomentDim_def]
+  have : (0 : ℝ) ≤ max 2 (Real.log (1 / δ)) := le_max_of_le_left zero_le_two
+  have := subgaussianJLConstant_pos
+  positivity
+
+/-- The sub-Gaussian JL moment dimension is monotone in $c \ge 0$ and antitone in
+$\varepsilon > 0$ and $\delta > 0$. -/
+theorem subgaussianJLMomentDim_mono (hc : 0 ≤ c) (hcc' : c ≤ c') (hε : 0 < ε) (hεε' : ε ≤ ε')
+    (hδ : 0 < δ) (hδδ' : δ ≤ δ') :
+    subgaussianJLMomentDim c ε' δ' ≤ subgaussianJLMomentDim c' ε δ := by
+  rw [subgaussianJLMomentDim_def, subgaussianJLMomentDim_def]
+  have hC := subgaussianJLConstant_pos
+  have hδ' : 0 < δ' := hδ.trans_le hδδ'
+  have hM : (0 : ℝ) ≤ max 2 (Real.log (1 / δ')) := le_max_of_le_left zero_le_two
+  have hL : Real.log (1 / δ') ≤ Real.log (1 / δ) := by gcongr
+  calc 16 * c ^ 2 * max 2 (Real.log (1 / δ')) / (subgaussianJLConstant * ε' ^ 2)
+      ≤ 16 * c ^ 2 * max 2 (Real.log (1 / δ')) / (subgaussianJLConstant * ε ^ 2) := by gcongr
+    _ ≤ 16 * c' ^ 2 * max 2 (Real.log (1 / δ)) / (subgaussianJLConstant * ε ^ 2) := by gcongr
+
+/-- An explicit upper bound on the sub-Gaussian JL moment dimension: it is at most
+$1728 c^2 \log(1/\delta)/\varepsilon^2$ for $0 < \delta \le 1/2$, where
+$\max(2, \log(1/\delta)) \le 3\log(1/\delta)$. -/
+theorem subgaussianJLMomentDim_le (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
+    subgaussianJLMomentDim c ε δ ≤ 1728 * c ^ 2 * Real.log (1 / δ) / ε ^ 2 := by
+  rw [subgaussianJLMomentDim_def]
+  rcases eq_or_ne ε 0 with rfl | hε
+  · simp
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hmax : max 2 (Real.log (1 / δ)) ≤ 3 * Real.log (1 / δ) :=
+    max_le (by linarith) (by linarith)
+  have hL : 0 ≤ Real.log (1 / δ) := by linarith
+  calc 16 * c ^ 2 * max 2 (Real.log (1 / δ)) / (subgaussianJLConstant * ε ^ 2)
+      ≤ 16 * c ^ 2 * (3 * Real.log (1 / δ)) / (1 / 36 * ε ^ 2) := by
+        gcongr
+        exact le_subgaussianJLConstant
+    _ = 1728 * c ^ 2 * Real.log (1 / δ) / ε ^ 2 := by field_simp; ring
 
 end Sizes
 
@@ -607,6 +669,131 @@ theorem exists_forall_hasJLProperty_of_isSubgaussianVector :
   exact div_le_div_of_nonneg_right
     (by nlinarith [mul_le_mul_of_nonneg_left hl2 (sq_nonneg (c : ℝ))]) (sq_nonneg ε)
 
+/-- **Sub-Gaussian JL moments at every order**: for a random $\mathbf{X}$ with $k$ independent,
+isotropic, sub-Gaussian rows with proxy $c$, $k$ nonempty, the sketch
+$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$, $\varepsilon > 0$ and $p > 0$, the JL moment
+property holds with exponent $p$ and failure probability $\delta = \beta/\varepsilon^p$,
+with <!-- value subexponentialMomentBound (c^2/(2C\lvert{k}\rvert)) (c/(2C\lvert{k}\rvert)) p -->
+$$\beta = p(2(c^2/(2C\lvert{k}\rvert)))^{p/2}\Gamma(p/2)
++ 2p(2(c/(2C\lvert{k}\rvert)))^{p}\Gamma(p)\,,$$
+with <!-- value subgaussianJLConstant -->$C = 1/36$ (`subgaussianJLConstant`), $\beta$ being
+`NLAlib.subexponentialMomentBound` at the parameters of the sub-Gaussian JL tail
+$2e^{-C\lvert k\rvert\min(t^2/c^2, t/c)}$ (`NLAlib.hasJLProperty_of_isSubgaussianVector`), which
+`NLAlib.hasJLMoment_of_forall_hasJLProperty` integrates. Incomparable with
+`NLAlib.hasJLMoment_of_isSubgaussianVector` (the fourth moment, better at $p = 2$). Sign sketches
+are the case $c = 1$. [Woodruff2014, Definition 12] for the property; that dense sketches have it
+at $p = \log(1/\delta)$ is Kane and Nelson's (2014; locator to check). -/
+theorem hasJLMoment_subexponentialMomentBound_of_isSubgaussianVector [Nonempty k]
+    (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
+    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) {p : ℝ} (hp : 0 < p) :
+    HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε
+      (subexponentialMomentBound ((c : ℝ) ^ 2 / (2 * subgaussianJLConstant * Fintype.card k))
+        ((c : ℝ) / (2 * subgaussianJLConstant * Fintype.card k)) p / ε ^ p) p μ := by
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · refine ⟨fun x hx => ?_, fun x hx => ?_⟩ <;>
+    · rw [Subsingleton.elim x 0] at hx
+      simp at hx
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hC := subgaussianJLConstant_pos
+  have hX : AEMeasurable X μ := aemeasurable_pi_lambda X fun i => (hsub i).aemeasurable
+  refine hasJLMoment_of_forall_hasJLProperty (S := fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω)
+    (hX.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by positivity) (by positivity)
+    (fun t ht => ?_) hε hp
+  refine (hasJLProperty_of_isSubgaussianVector (ε := t) hind hsub hiso).mono le_rfl
+    (le_of_eq ?_)
+  have hc0 : (0 : ℝ) < c := by linarith
+  have e1 : t ^ 2 / (2 * ((c : ℝ) ^ 2 / (2 * subgaussianJLConstant * Fintype.card k))) =
+      subgaussianJLConstant * Fintype.card k * (t ^ 2 / (c : ℝ) ^ 2) := by
+    field_simp
+  have e2 : t / (2 * ((c : ℝ) / (2 * subgaussianJLConstant * Fintype.card k))) =
+      subgaussianJLConstant * Fintype.card k * (t / c) := by
+    field_simp
+  rw [e1, e2, ← mul_min_of_nonneg _ _ (by positivity)]
+
+/-- **Sub-Gaussian JL moments, sample-size form**: for a random $\mathbf{X}$ with independent,
+isotropic, sub-Gaussian rows with proxy $c$, $0 < \varepsilon \le c$, $\delta > 0$ and at
+least <!-- value subgaussianJLMomentDim c \varepsilon \delta -->
+$16c^2\max(2, \log(1/\delta))/(C\varepsilon^2)$ rows (`subgaussianJLMomentDim c ε δ`,
+with <!-- value subgaussianJLConstant -->$C = 1/36$ the constant `subgaussianJLConstant`), the
+sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the JL moment property with
+distortion $\varepsilon$, failure probability $\delta$ and exponent $\max(2, \log(1/\delta))$;
+approximate matrix multiplication with failure probability $\delta$ follows
+(`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`). Sign sketches are the
+case $c = 1$. [Woodruff2014, Definition 12 and Theorem 13], the property and AMM from it; the
+size $O(\log(1/\delta)/\varepsilon^2)$ is Kane and Nelson's (2014; locator to check), the
+constants are this proof's. Asymptotic form:
+`NLAlib.exists_forall_hasJLMoment_of_isSubgaussianVector`.
+Result: jl-moment-subgaussian -/
+theorem hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
+    (hind : iIndepFun (fun i ω => X ω i) μ) (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
+    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) (hε : 0 < ε) (hεc : ε ≤ c) (hδ : 0 < δ)
+    (hk : subgaussianJLMomentDim c ε δ ≤ Fintype.card k) :
+    HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ (max 2 (Real.log (1 / δ))) μ := by
+  set p := max 2 (Real.log (1 / δ)) with hpdef
+  have hp2 : 2 ≤ p := le_max_left _ _
+  have hp0 : 0 < p := by linarith
+  have hc0 : (0 : ℝ) < c := hε.trans_le hεc
+  have hC := subgaussianJLConstant_pos
+  have hD : 0 < subgaussianJLConstant * ε ^ 2 := by positivity
+  have hK : 16 * (c : ℝ) ^ 2 * p ≤ subgaussianJLConstant * ε ^ 2 * Fintype.card k := by
+    rw [subgaussianJLMomentDim_def, div_le_iff₀ hD] at hk
+    linarith
+  have hK0 : (0 : ℝ) < Fintype.card k := by
+    by_contra h
+    push Not at h
+    nlinarith [mul_nonpos_of_nonneg_of_nonpos hD.le h, mul_pos (pow_pos hc0 2) hp0]
+  have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK0)
+  have hεp : 0 < ε ^ p := Real.rpow_pos_of_pos hε p
+  have hCK : 0 < 2 * subgaussianJLConstant * Fintype.card k := by positivity
+  have hb := subexponentialMomentBound_le_mul_exp_neg
+    (v := (c : ℝ) ^ 2 / (2 * subgaussianJLConstant * Fintype.card k))
+    (b := (c : ℝ) / (2 * subgaussianJLConstant * Fintype.card k)) (by positivity) (by positivity)
+    hp2 hε (by rw [div_mul_eq_mul_div, mul_div_assoc', div_le_iff₀ hCK]; nlinarith)
+    (by
+      rw [div_mul_eq_mul_div, mul_div_assoc', div_le_iff₀ hCK]
+      nlinarith [mul_le_mul_of_nonneg_left hεc (mul_nonneg hε.le (mul_nonneg hC.le hK0.le))])
+  refine (hasJLMoment_subexponentialMomentBound_of_isSubgaussianVector hind hsub hiso hε
+    hp0).mono le_rfl ?_ hε.le hp0.le (div_nonneg (subexponentialMomentBound_nonneg (by positivity)
+      (by positivity) hp0.le) hεp.le)
+  rw [div_le_iff₀ hεp, mul_comm δ]
+  refine hb.trans (mul_le_mul_of_nonneg_left ?_ hεp.le)
+  calc Real.exp (-p) ≤ Real.exp (-Real.log (1 / δ)) :=
+        Real.exp_le_exp.2 (neg_le_neg (le_max_right _ _))
+    _ = δ := by rw [Real.exp_neg, Real.exp_log (by positivity), one_div, inv_inv]
+
+/-- **Sub-Gaussian JL moments, asymptotic form**: $O(c^2\log(1/\delta)/\varepsilon^2)$ rows
+suffice for the sketch with independent isotropic rows, sub-Gaussian with proxy $c$, to have the
+JL moment property with distortion $\varepsilon$, failure probability $\delta$ and exponent
+$\max(2, \log(1/\delta))$, for $\varepsilon$ and $\delta$ below absolute constants; the constants
+come before every dimension and the proxy. Proved from
+`NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le` with $C = 1728$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a column.
+[Woodruff2014, Definition 12 and Theorem 13].
+Asymptotic: NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
+Result: jl-moment-subgaussian -/
+theorem exists_forall_hasJLMoment_of_isSubgaussianVector :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq n] [Nonempty k] (μ : Measure Ω) (X : Ω → Matrix k n ℝ) (c : ℝ≥0) (ε δ : ℝ),
+      iIndepFun (fun i ω => X ω i) μ → (∀ i, IsSubgaussianVector (fun ω => X ω i) c μ) →
+      (∀ i, IsIsotropic (fun ω => X ω i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * ((c : ℝ) ^ 2 * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ (max 2 (Real.log (1 / δ))) μ := by
+  refine ⟨1728, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k n _ _ _ _ _ μ X c ε δ hind hsub hiso hε hε1 hδ hδ2 hk
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · refine ⟨fun x hx => ?_, fun x hx => ?_⟩ <;>
+    · rw [Subsingleton.elim x 0] at hx
+      simp at hx
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  refine hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind hsub hiso hε
+    (by linarith) hδ ((subgaussianJLMomentDim_le c ε hδ hδ2).trans (le_of_eq_of_le ?_ hk))
+  ring
+
 omit [DecidableEq n] in
 /-- The failure probability of the sub-Gaussian OSE is at most $\delta$ for
 $0 < \varepsilon \le 5c/4$, $\delta > 0$ and at
@@ -717,144 +904,6 @@ theorem isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbedd
   have := hind.isProbabilityMeasure
   exact (isObliviousSubspaceInjection_of_isSubgaussianVector hind hsub hiso d).mono le_rfl le_rfl
     (failure_le_of_subgaussianEmbeddingDim_le hε hεc hδ hk)
-
-omit [DecidableEq n] in
-/-- With no columns every sketch is a projection-cost-preserving sketch. -/
-private theorem hasProjectionCostPreserving_of_isEmpty [IsEmpty n] {l m : Type*} [Fintype l]
-    [Fintype m] (S : Ω → Matrix l n ℝ) (A : Matrix m n ℝ) (d : ℕ) (a b : ℝ) {δ : ℝ}
-    (hδ : 0 ≤ δ) : HasProjectionCostPreserving S A d a b δ μ := by
-  have hA : A = 0 := Matrix.ext fun _ j => isEmptyElim j
-  have e : {ω | ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) d a b} = ∅ := by
-    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨0, le_rfl, fun P _ _ => ?_⟩
-    simp only [hA, Matrix.zero_mul, Matrix.mul_zero, sub_self, frobNorm_zero, ne_eq,
-      OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, add_zero, le_refl, and_self]
-  unfold HasProjectionCostPreserving
-  rw [e, measureReal_empty]
-  exact hδ
-
-/-- **A sub-Gaussian sketch is a projection-cost-preserving sketch**, size form: for a sketch
-$\mathbf{X}$ with independent isotropic rows, sub-Gaussian with proxy $c$, for
-$0 < \varepsilon \le 5c/2$, $\delta > 0$, at
-least <!-- value subgaussianEmbeddingDim c d (\varepsilon/2) (\delta/2) -->
-$25 c^2 (d \log 21 + \log(2/(\delta/2)))/(16 C (\varepsilon/2)^2)$ rows
-(`subgaussianEmbeddingDim c d (ε / 2) (δ / 2)`,
-with <!-- value subgaussianJLConstant -->$C = 1/36$ the constant `subgaussianJLConstant`) and at
-least <!-- value projectionCostTailDim {(16c^2 - 1)} d \varepsilon \delta -->
-$384 \cdot (16c^2 - 1) (d + 1)/(\varepsilon^2 \delta)$ rows
-(`projectionCostTailDim (16 * c ^ 2 - 1) d ε δ`), $\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{X}$
-makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$ projection-cost-preserving sketch of
-$\mathbf{A}$ with constants $1 \mp \varepsilon$, for every $\mathbf{A}$, except with probability
-$\delta$. A Rademacher sketch is the case $c = 1$
-(`NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`,
-`NLAlib.isIsotropic_of_hasLaw_rademacherVector`, `ProbabilityTheory.HasLaw.iIndepFun_eval`),
-CEMMP's family 1; its constants are looser than a Rademacher-specific route would give, which
-the asymptotic forms do not see. The route of [CohenElderMuscoMuscoPersu2015, proof of
-Theorem 12]; the sub-Gaussian instance is not stated there. Asymptotic form:
-`NLAlib.exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector`.
-Result: subgaussian-pcp -/
-theorem hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card [Nonempty k]
-    (hind : iIndepFun (fun i ω => X ω i) μ)
-    (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
-    (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ)
-    (d : ℕ) (hε : 0 < ε) (hεc : ε ≤ 5 / 2 * c) (hδ : 0 < δ)
-    (hk₁ : subgaussianEmbeddingDim c d (ε / 2) (δ / 2) ≤ Fintype.card k)
-    (hk₂ : projectionCostTailDim (16 * (c : ℝ) ^ 2 - 1) d ε δ ≤ Fintype.card k) :
-    HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) A d (1 - ε) (1 + ε)
-      δ μ := by
-  have := hind.isProbabilityMeasure
-  rcases isEmpty_or_nonempty n with hn | hn
-  · exact hasProjectionCostPreserving_of_isEmpty _ A d _ _ hδ.le
-  have hc : 1 ≤ (c : ℝ) :=
-    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
-  have hv : 0 ≤ 16 * (c : ℝ) ^ 2 - 1 := by nlinarith
-  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
-  have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
-  have hbud : 1 - ε ≤ 1 - ε / 2 - 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ∧
-      1 + ε / 2 + 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) + ε / (8 * √((d : ℝ) + 1)) ≤
-        1 + ε ∧
-      δ / 2 + 3 * ((16 * (c : ℝ) ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2)) ≤
-        δ := by
-    have hs1 : 1 ≤ √((d : ℝ) + 1) :=
-      Real.one_le_sqrt.2 (by linarith [Nat.cast_nonneg (α := ℝ) d])
-    have hds : √(d : ℝ) ≤ √((d : ℝ) + 1) := Real.sqrt_le_sqrt (by linarith)
-    have hss : √((d : ℝ) + 1) ^ 2 = (d : ℝ) + 1 := Real.sq_sqrt (by positivity)
-    have hJ : ε / (8 * √((d : ℝ) + 1)) * √((d : ℝ) + 1) = ε / 8 := by field_simp
-    have hJ1 : ε / (8 * √((d : ℝ) + 1)) ≤ ε / 8 := by
-      rw [div_le_div_iff₀ (by positivity) (by norm_num)]
-      nlinarith
-    have h3 : 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ≤ 3 * (ε / 8) := by
-      rw [← hJ, mul_assoc]
-      exact mul_le_mul_of_nonneg_left
-        (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
-    refine ⟨by linarith, by linarith, ?_⟩
-    have hk := hk₂
-    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
-    have e : (16 * (c : ℝ) ^ 2 - 1) / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
-        64 * (16 * (c : ℝ) ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
-      rw [div_pow, mul_pow, hss]
-      field_simp
-      ring
-    have h4 : 3 * (64 * (16 * (c : ℝ) ^ 2 - 1) * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2)) ≤
-        δ / 2 := by
-      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-      nlinarith
-    linarith
-  obtain ⟨h₁, h₂, h₃⟩ := hbud
-  have hose := isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
-    hind hsub hiso (half_pos hε) (by linarith) (half_pos hδ) hk₁
-  have hX : AEMeasurable X μ := aemeasurable_pi_lambda X fun i => (hsub i).aemeasurable
-  exact (hose.hasProjectionCostPreserving_of_hasJLMoment
-    (hasJLMoment_of_isSubgaussianVector hind hsub hiso hJ0)
-    (hX.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by linarith) (by linarith) hJ0 le_rfl
-    (div_nonneg hv (by positivity)) A).mono le_rfl h₁ h₂ h₃
-
-/-- **$O(c^2 (d+1)/(\varepsilon^2\delta))$ rows suffice for a sub-Gaussian sketch** with
-independent isotropic rows, sub-Gaussian with proxy $c$, to be a rank-$d$ projection-cost-preserving
-sketch with constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and
-$\delta$ below absolute constants; the constants come before every dimension and the proxy. At
-$c = 1$ this covers Rademacher sketches. Proved from
-`NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card` with $C = 6144$,
-$\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a column.
-[CohenElderMuscoMuscoPersu2015, proof of Theorem 12].
-Asymptotic: NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card
-Result: subgaussian-pcp -/
-theorem exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector :
-    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k m n : Type} [MeasurableSpace Ω] [Fintype k]
-      [Fintype m] [Fintype n] [DecidableEq n] [Nonempty k] (μ : Measure Ω)
-      (X : Ω → Matrix k n ℝ) (c : ℝ≥0) (A : Matrix m n ℝ) (d : ℕ) (ε δ : ℝ),
-      iIndepFun (fun i ω => X ω i) μ → (∀ i, IsSubgaussianVector (fun ω => X ω i) c μ) →
-      (∀ i, IsIsotropic (fun ω => X ω i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
-      C * ((c : ℝ) ^ 2 * ((d : ℝ) + 1) / (ε ^ 2 * δ)) ≤ Fintype.card k →
-      HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) A d (1 - ε)
-        (1 + ε) δ μ := by
-  refine ⟨6144, 1, by norm_num, one_pos, ?_⟩
-  intro Ω k m n _ _ _ _ _ _ μ X c A d ε δ hind hsub hiso hε hε1 hδ hδ2 hk
-  have := hind.isProbabilityMeasure
-  rcases isEmpty_or_nonempty n with hn | hn
-  · exact hasProjectionCostPreserving_of_isEmpty _ A d _ _ hδ.le
-  have hc : 1 ≤ (c : ℝ) :=
-    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
-  have hD : 0 < ε ^ 2 * δ := by positivity
-  have hc2 : 1 ≤ (c : ℝ) ^ 2 := by nlinarith
-  refine hasProjectionCostPreserving_of_isSubgaussianVector_of_le_card hind hsub hiso A d hε
-    (by linarith) hδ ?_ ?_
-  · refine (subgaussianEmbeddingDim_le c d (ε / 2) (half_pos hδ) (by linarith)).trans
-      (le_trans ?_ hk)
-    have hl := Real.log_le_sub_one_of_pos (show 0 < 2 / (δ / 2) by positivity)
-    have hδL : δ * Real.log (2 / (δ / 2)) ≤ 4 - δ := by
-      have e : δ * (2 / (δ / 2) - 1) = 4 - δ := by field_simp; ring
-      nlinarith
-    have hL0 : 0 ≤ Real.log (2 / (δ / 2)) :=
-      Real.log_nonneg (by rw [le_div_iff₀ (by positivity)]; linarith)
-    have h1 : 172 * ((d : ℝ) * δ + δ * Real.log (2 / (δ / 2))) ≤ 1536 * ((d : ℝ) + 1) := by
-      nlinarith [Nat.cast_nonneg (α := ℝ) d]
-    rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
-    have hcc := sq_nonneg (c : ℝ)
-    nlinarith [mul_le_mul_of_nonneg_right h1 (mul_nonneg hcc (sq_nonneg ε))]
-  · refine (projectionCostTailDim_le _ d ε δ).trans (le_trans ?_ hk)
-    rw [mul_div_assoc']
-    refine div_le_div_of_nonneg_right ?_ hD.le
-    nlinarith [Nat.cast_nonneg (α := ℝ) d]
 
 end Rows
 

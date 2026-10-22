@@ -6,8 +6,9 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
+public import NLAlib.Regression.Oblivious
 public import NLAlib.Regression.SketchAndPrecondition
-public import NLAlib.Sketching.Structured.SRHT
+public import NLAlib.Sketching.Structured.SRHTMultiplication
 
 /-!
 # Regression with a subsampled randomized trigonometric transform
@@ -22,6 +23,13 @@ $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$, of dimension at most $\lvert n\r
 (`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le`).
 Design: `docs/design/Regression-SketchPrecondition.md` §5.
 
+Sketch-and-solve with a real SRHT reaches relative squared Frobenius residual error with failure
+probability $\delta$ at $O(\beta(r + \log(\lvert m\rvert/\delta))\log(r/\delta) +
+\beta^2(r + 1)/(\varepsilon\delta))$ rows, $r = \operatorname{rank}\mathbf{A}$: the SRHT OSI at
+constant $1/2$ and its JL moment at $p = 2$ (`NLAlib.hasJLMoment_of_hasLaw_srht`) through
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`. Design:
+`docs/design/Sketching-Moments.md` §3.4.
+
 ## Main results
 
 * `NLAlib.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_srht`: explicit
@@ -30,6 +38,9 @@ Design: `docs/design/Regression-SketchPrecondition.md` §5.
   the same from $(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{y}$.
 * [Asymptotic form](https://nla-lib.org/explore/#d/NLAlib.exists_forall_measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_srht):
   the asymptotic form.
+* `NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht`: SRHT
+  sketch-and-solve to relative error, and its asymptotic form
+  `NLAlib.exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht`.
 -/
 
 @[expose] public section
@@ -202,5 +213,68 @@ theorem exists_forall_measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le
         exact mul_le_mul (by nlinarith [mul_le_mul_of_nonneg_left hR (by linarith : (0 : ℝ) ≤ β)])
           (by linarith) (by linarith) (by positivity)
     _ = _ := by ring
+
+/-! ### Sketch-and-solve -/
+
+omit [DecidableEq n] in
+/-- **SRHT sketch-and-solve, relative residual with high probability**: for a real bounded
+orthonormal $\mathbf{F} \in \mathbb{R}^{m \times m}$ with constant $\beta$, the SRHT $\mathbf{S}$
+built from it (independent random signs and an independent uniform choice of $\lvert k\rvert$
+distinct rows), $k$ nonempty, $\lvert k\rvert \le \lvert m\rvert$,
+$r = \operatorname{rank}\mathbf{A}$, $\varepsilon, \delta > 0$, at
+least <!-- value samplingInjectionDim r L (1/2) (\delta/4) -->
+$$\lvert k\rvert \ge \frac{2L\log(r/(\delta/4))}{(1/2)^2}$$
+rows, where the flattened coherence <!-- value srhtRowBound {\lvert m \rvert} r (\delta/4) -->
+$$L = \beta\,\bigl(r + 2\sqrt{r \log(\lvert m \rvert/(\delta/4))} +
+2 \log(\lvert m \rvert/(\delta/4))\bigr)$$
+is $\beta$ times `NLAlib.srhtRowBound (card m) A.rank (δ / 4)` (the size is
+`NLAlib.samplingInjectionDim A.rank L (1 / 2) (δ / 4)`, the OSI at constant $1/2$ and failure
+$\delta/2$), and $\lvert k\rvert \ge 8(3\beta^2 - 1)(r + 1)/(\varepsilon\delta)$,
+$$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},
+\mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,.$$
+The JL moment `NLAlib.hasJLMoment_of_hasLaw_srht` at $\sqrt{\varepsilon/(4(r+1))}$ with failure
+$\delta/2$ and `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`.
+[Woodruff2014, Theorem 23], there for sparse embeddings; the injection-plus-multiplication route.
+Asymptotic form:
+`NLAlib.exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht`.
+Result: sketch-and-solve-ls -/
+theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht [Nonempty k]
+    {S : Ω → Matrix k m ℝ} {F : Matrix m m ℝ} (hF : IsBoundedOrthonormal F β)
+    (hS : HasLaw S (srht k F) μ) (hkm : Fintype.card k ≤ Fintype.card m) (A : Matrix m n ℝ)
+    {r : Type*} [Fintype r] (B : Matrix m r ℝ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+    (hk : samplingInjectionDim A.rank (β * srhtRowBound (Fintype.card m) A.rank (δ / 4)) (1 / 2)
+      (δ / 4) ≤ Fintype.card k)
+    (hk' : 8 * (3 * β ^ 2 - 1) * ((A.rank : ℝ) + 1) ≤ ε * δ * Fintype.card k) :
+    μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ := by
+  sorry
+
+/-- **SRHT sketch-and-solve, asymptotic relative residual with high probability**:
+$O(\beta(r + \log(\lvert m\rvert/\delta))\log(r/\delta) + \beta^2(r+1)/(\varepsilon\delta))$ rows
+suffice, with $r = \operatorname{rank}\mathbf{A}$: there are absolute $C, \varepsilon_0 > 0$ such
+that for a real bounded orthonormal $\mathbf{F}$ with constant $\beta$, its SRHT $\mathbf{S}$ with
+$k$ nonempty and $\lvert k\rvert \le \lvert m\rvert$ rows above that threshold times $C$,
+$0 < \varepsilon \le \varepsilon_0$ and $0 < \delta \le 1/2$,
+$$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{S},
+\mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,.$$
+The constants come before every dimension and before $\beta$. Proved from
+`NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht` with
+$\varepsilon_0 = 1$. [Woodruff2014, Theorem 23].
+Asymptotic: NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht
+Result: sketch-and-solve-ls -/
+theorem exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_srht :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧
+      ∀ {Ω k m n r : Type} [MeasurableSpace Ω] [Fintype k] [Fintype m] [Fintype n]
+        [Fintype r] [DecidableEq m] [Nonempty k] (μ : Measure Ω) (S : Ω → Matrix k m ℝ)
+        (F : Matrix m m ℝ) (β : ℝ) (A : Matrix m n ℝ) (B : Matrix m r ℝ) (ε δ : ℝ),
+        IsBoundedOrthonormal F β → HasLaw S (srht k F) μ → Fintype.card k ≤ Fintype.card m →
+        0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+        C * (β * (A.rank + Real.log (Fintype.card m / δ)) * Real.log (A.rank / δ) +
+          β ^ 2 * ((A.rank : ℝ) + 1) / (ε * δ)) ≤ Fintype.card k →
+        μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+          frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ := by
+  sorry
 
 end NLAlib

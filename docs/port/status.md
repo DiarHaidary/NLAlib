@@ -2,6 +2,26 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Sketching moments round: skeleton (2026-10-22)
+
+Branch `sketching/moments` (worktree `nlalib-block`), from `46f78ab` (rebased from `1e5334f`
+after the Krylov-spectral review follow-ups). Statement skeleton of
+`docs/design/Sketching-Moments.md` (approved 2026-10-22, MD2–MD4 as recommended, full scope; the
+note's last section lists the changes during the skeleton). Statements with `sorry` (48 in all):
+`Sketching/Structured/SRHTMultiplication.lean` (new, 12), `Sketching/Gaussian/ProjectionCost.lean`
+(new, 7: the twins, the Haar PCPs and the three asymptotic forms),
+`Probability/MatrixConcentration/BernsteinWithoutReplacement.lean` (new, 6),
+`LowRank/Oblivious/{SubGaussian, SRHT, Gaussian, Haar}.lean` (4, 4, 2, 2; `Haar` new),
+`Regression/{Haar, Gaussian, SubGaussian, SRHT}.lean` (3, 2, 2, 2; `Haar` new),
+`Sketching/Sampling/MatrixMultiplication.lean` (2). Proved and sorry-free: the ForMathlib Gamma
+and log bounds, everything added to `Probability/Tail.lean`, `SubExponential/Tail.lean`,
+`MatrixConcentration/{Bernstein, ChernoffWithoutReplacement}.lean`, `JohnsonLindenstrauss.lean`,
+`Sketching/Gaussian/{Gaussian, Haar, HaarEmbedding, SubGaussian, Rademacher}.lean` (the JL moments
+at every order with sizes and asymptotic forms, the Haar $1 \mp \varepsilon$ OSE/OSI) and
+`Flattening.lean`. Six asymptotic forms change statement (MD4), listed in
+`docs/renames/2026-10-sketching-moments.json`. Next: proofs, two agents on disjoint files (the
+report of the skeleton gives the order).
+
 ## Krylov spectral round: proofs (2026-10-22)
 
 Every statement of the skeleton is proved; no `sorry` remains in the round's files, and all of

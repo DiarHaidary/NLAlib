@@ -5,11 +5,17 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Analysis.MeanInequalities
 public import Mathlib.Analysis.MeanInequalitiesPow
+public import Mathlib.Analysis.SpecialFunctions.Gaussian.GaussianIntegral
+public import Mathlib.Analysis.SpecialFunctions.Pow.Integral
+public import Mathlib.MeasureTheory.Integral.Gamma
 public import Mathlib.MeasureTheory.Integral.Layercake
 public import Mathlib.Probability.Moments.Basic
 public import Mathlib.Probability.Moments.Variance
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 
 /-!
@@ -22,9 +28,13 @@ Tail bounds in NLAlib are failure probabilities in $\mathbb{R}$, with non-strict
 complement are `MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_biUnion_finset_le`
 and `MeasureTheory.probReal_compl_eq_one_sub`. This file adds Markov's inequality in quotient
 form, Chebyshev's inequality in $\mathbb{R}$, the two-sided tail, Markov's inequality off a
-failure event, the passage from a tail bound to integrability and to a bound on the mean,
-Chernoff's bound inverted for a sub-gamma moment generating function, and Jensen's inequality for
-a power of a sum of random variables.
+failure event, the passage from a tail bound to integrability and to a bound on the mean and on
+the $p$-th moment, the moments of a variable with a sub-exponential tail (the named bound
+`NLAlib.subexponentialMomentBound`, <!-- value subexponentialMomentBound v b p -->
+$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)$, the layer-cake integral of the tail
+$2e^{-\min(t^2/(2v),\, t/(2b))}$), the two-sided sub-exponential tail of a variable with
+Dasgupta and Gupta's one-sided tails, Chernoff's bound inverted for a sub-gamma moment generating
+function, and Jensen's inequality for a power of a sum of random variables.
 
 ## Main results
 
@@ -37,6 +47,12 @@ a power of a sum of random variables.
 * `NLAlib.integrable_of_measureReal_ge_le`, `NLAlib.integral_le_of_measureReal_ge_le`: a
   nonnegative random variable with an integrable tail bound is integrable, and its mean is at most
   the integral of the bound.
+* `NLAlib.integral_rpow_le_of_measureReal_ge_le`: the layer-cake bound for $p$-th moments.
+* `NLAlib.integral_rpow_le_of_measureReal_ge_le_two_mul_exp`: the $p$-th moment of a variable
+  with a sub-exponential tail, for every $p > 0$; `NLAlib.subexponentialMomentBound_le` is its
+  readable form for $p \ge 2$.
+* `NLAlib.measureReal_abs_div_sub_one_ge_le_two_mul_exp`: Dasgupta–Gupta tails on both sides
+  give a two-sided sub-exponential tail, the input of the Gaussian and Haar JL moments.
 * `NLAlib.measureReal_ge_le_exp_neg_of_mgf_le`: Chernoff's bound for a sub-gamma upper tail, with
   the exact constant.
 * `NLAlib.integrable_rpow_sum`, `NLAlib.integral_rpow_sum_le`: a power $r \ge 1$ of a finite sum of
@@ -204,6 +220,272 @@ theorem integral_le_of_measureReal_ge_le [IsProbabilityMeasure μ] {f : Ω → �
   rw [← Set.Ioc_union_Ioi_eq_Ioi ha.le, setIntegral_union Set.Ioc_disjoint_Ioi_same
     measurableSet_Ioi (hF.mono_set Set.Ioc_subset_Ioi_self) hF0]
   linarith
+
+/-! ### Moments from tails -/
+
+/-- The **sub-exponential moment bound** <!-- value subexponentialMomentBound v b p -->
+$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)$: for $p > 0$, the bound on the $p$-th moment of a
+nonnegative variable whose tail is at most $2\exp(-\min(t^2/(2v), t/(2b)))$
+(`NLAlib.integral_rpow_le_of_measureReal_ge_le_two_mul_exp`), the layer-cake integral of
+$2e^{-t^2/(2v)} + 2e^{-t/(2b)}$ exactly. For $p \ge 2$ it is at most $2(vp)^{p/2} + 2(2bp)^{p}$
+(`subexponentialMomentBound_le`, by $\Gamma(x) \le x^{x-1}$), a comparison that loses a factor
+exponential in $p$, about $e^{p/2}/\sqrt{\pi p}$ and $e^{p}/\sqrt{2\pi p}$ on the two terms by
+Stirling's formula; the literature's shape is $\|\cdot\|_{L^p} \lesssim \sqrt{vp} + bp$, with
+unspecified constants. Consumers use
+`subexponentialMomentBound_nonneg`, `subexponentialMomentBound_mono` and
+`subexponentialMomentBound_le`. Junk: for $v < 0$ or $b < 0$ the real powers of negative numbers
+are Lean's. -/
+noncomputable irreducible_def subexponentialMomentBound (v b p : ℝ) : ℝ :=
+  p * (2 * v) ^ (p / 2) * Real.Gamma (p / 2) + 2 * p * (2 * b) ^ p * Real.Gamma p
+
+/-- The sub-exponential moment bound <!-- value subexponentialMomentBound v b p -->
+$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)$ is nonnegative for $v, b, p \ge 0$. -/
+theorem subexponentialMomentBound_nonneg {v b p : ℝ} (hv : 0 ≤ v) (hb : 0 ≤ b) (hp : 0 ≤ p) :
+    0 ≤ subexponentialMomentBound v b p := by
+  rw [subexponentialMomentBound_def]
+  have h1 : 0 ≤ Real.Gamma (p / 2) := Real.Gamma_nonneg_of_nonneg (by positivity)
+  have h2 : 0 ≤ Real.Gamma p := Real.Gamma_nonneg_of_nonneg hp
+  positivity
+
+/-- The sub-exponential moment bound <!-- value subexponentialMomentBound v b p -->
+$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)$ is monotone in $v \ge 0$ and $b \ge 0$, for
+$p \ge 0$. -/
+theorem subexponentialMomentBound_mono {v v' b b' p : ℝ} (hv : 0 ≤ v) (hvv' : v ≤ v')
+    (hb : 0 ≤ b) (hbb' : b ≤ b') (hp : 0 ≤ p) :
+    subexponentialMomentBound v b p ≤ subexponentialMomentBound v' b' p := by
+  rw [subexponentialMomentBound_def, subexponentialMomentBound_def]
+  have h1 : 0 ≤ Real.Gamma (p / 2) := Real.Gamma_nonneg_of_nonneg (by positivity)
+  have h2 : 0 ≤ Real.Gamma p := Real.Gamma_nonneg_of_nonneg hp
+  gcongr
+
+/-- The readable comparison: for $p \ge 2$ and
+$v, b \ge 0$, <!-- value subexponentialMomentBound v b p -->
+$$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p) \le 2(vp)^{p/2} + 2(2bp)^{p}\,,$$
+by $\Gamma(x) \le x^{x-1}$ for $x \ge 1$ (`Real.Gamma_le_rpow_sub_one`). It loses a factor
+exponential in $p$; every size form inverts through it, so a Stirling-sharp comparison would
+lower their constants without a statement change. -/
+theorem subexponentialMomentBound_le {v b p : ℝ} (hv : 0 ≤ v) (hb : 0 ≤ b) (hp : 2 ≤ p) :
+    subexponentialMomentBound v b p ≤ 2 * (v * p) ^ (p / 2) + 2 * (2 * b * p) ^ p := by
+  rw [subexponentialMomentBound_def]
+  have hp0 : 0 < p := by linarith
+  have hp2 : 0 < p / 2 := by positivity
+  have hG1 : Real.Gamma (p / 2) ≤ (p / 2) ^ (p / 2 - 1) :=
+    Real.Gamma_le_rpow_sub_one (by linarith)
+  have hG2 : Real.Gamma p ≤ p ^ (p - 1) := Real.Gamma_le_rpow_sub_one (by linarith)
+  have e1 : p * (2 * v) ^ (p / 2) * (p / 2) ^ (p / 2 - 1) = 2 * (v * p) ^ (p / 2) := by
+    rw [Real.rpow_sub_one hp2.ne', show v * p = 2 * v * (p / 2) by ring,
+      Real.mul_rpow (by positivity) hp2.le]
+    field_simp
+  have e2 : 2 * p * (2 * b) ^ p * p ^ (p - 1) = 2 * (2 * b * p) ^ p := by
+    rw [Real.rpow_sub_one hp0.ne', Real.mul_rpow (by positivity) hp0.le]
+    field_simp
+  calc p * (2 * v) ^ (p / 2) * Real.Gamma (p / 2) + 2 * p * (2 * b) ^ p * Real.Gamma p
+      ≤ p * (2 * v) ^ (p / 2) * (p / 2) ^ (p / 2 - 1) + 2 * p * (2 * b) ^ p * p ^ (p - 1) := by
+        gcongr
+    _ = 2 * (v * p) ^ (p / 2) + 2 * (2 * b * p) ^ p := by rw [e1, e2]
+
+/-- The inversion step of every JL-moment size form: for $p \ge 2$, $v, b \ge 0$,
+$\varepsilon > 0$, $32vp \le \varepsilon^2$ and
+$32bp \le \varepsilon$, <!-- value subexponentialMomentBound v b p -->
+$$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p) \le \varepsilon^p e^{-p}\,,$$
+through the readable comparison `NLAlib.subexponentialMomentBound_le`: each of its two terms is
+at most $\varepsilon^p e^{-p}/4$, since $32^{p/2}$ and $16^p$ exceed $4e^p$ for $p \ge 2$. At
+$p = \max(2, \log(1/\delta))$ the right side divided by $\varepsilon^p$ is at most $\delta$. -/
+theorem subexponentialMomentBound_le_mul_exp_neg {v b p ε : ℝ} (hv : 0 ≤ v) (hb : 0 ≤ b)
+    (hp : 2 ≤ p) (hε : 0 < ε) (hvp : 32 * (v * p) ≤ ε ^ 2) (hbp : 32 * (b * p) ≤ ε) :
+    subexponentialMomentBound v b p ≤ ε ^ p * Real.exp (-p) := by
+  have hp0 : 0 < p := by linarith
+  have hl2 := Real.log_two_gt_d9
+  have hl32 : Real.log 32 = 5 * Real.log 2 := by
+    rw [show (32 : ℝ) = 2 ^ 5 by norm_num, Real.log_pow]
+    norm_num
+  have hl16 : Real.log 16 = 4 * Real.log 2 := by
+    rw [show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow]
+    norm_num
+  have hl4 : Real.log 4 = 2 * Real.log 2 := by
+    rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    norm_num
+  have hq : Real.exp (-p) / 4 = Real.exp (-p - Real.log 4) := by
+    rw [Real.exp_sub, Real.exp_log (by norm_num)]
+  have hA : (v * p) ^ (p / 2) ≤ ε ^ p * (Real.exp (-p) / 4) := by
+    have h1 : (v * p) ^ (p / 2) ≤ (ε ^ 2 / 32) ^ (p / 2) :=
+      Real.rpow_le_rpow (by positivity) (by linarith) (by positivity)
+    have h2 : (ε ^ 2 / 32) ^ (p / 2) = ε ^ p * Real.exp (-(p / 2 * Real.log 32)) := by
+      rw [Real.div_rpow (by positivity) (by norm_num), ← Real.rpow_natCast, ← Real.rpow_mul hε.le,
+        Real.rpow_def_of_pos (by norm_num : (0 : ℝ) < 32), Real.exp_neg, div_eq_mul_inv,
+        mul_comm (Real.log 32)]
+      congr 2
+      push_cast
+      ring
+    refine h1.trans (h2.le.trans (mul_le_mul_of_nonneg_left ?_ (by positivity)))
+    rw [hq]
+    exact Real.exp_le_exp.2 (by rw [hl32, hl4]; nlinarith)
+  have hB : (2 * b * p) ^ p ≤ ε ^ p * (Real.exp (-p) / 4) := by
+    have h1 : (2 * b * p) ^ p ≤ (ε / 16) ^ p :=
+      Real.rpow_le_rpow (by positivity) (by linarith) hp0.le
+    have h2 : (ε / 16) ^ p = ε ^ p * Real.exp (-(p * Real.log 16)) := by
+      rw [Real.div_rpow hε.le (by norm_num), Real.rpow_def_of_pos (by norm_num : (0 : ℝ) < 16),
+        Real.exp_neg, div_eq_mul_inv, mul_comm p]
+    refine h1.trans (h2.le.trans (mul_le_mul_of_nonneg_left ?_ (by positivity)))
+    rw [hq]
+    exact Real.exp_le_exp.2 (by rw [hl16, hl4]; nlinarith)
+  calc subexponentialMomentBound v b p ≤ 2 * (v * p) ^ (p / 2) + 2 * (2 * b * p) ^ p :=
+        subexponentialMomentBound_le hv hb hp
+    _ ≤ ε ^ p * Real.exp (-p) := by linarith
+
+/-- **The layer-cake bound for $p$-th moments**: under a finite measure, for $f \ge 0$ almost
+everywhere, $p > 0$ and $\mathbb{P}[t \le f] \le F(t)$ for every $t > 0$, with $t^{p-1}F(t)$
+integrable on $(0, \infty)$, $f^p$ is integrable and
+$$\mathbb{E} f^p \le p\int_0^\infty t^{p-1}F(t)\,dt\,.$$
+From Mathlib's `MeasureTheory.lintegral_rpow_eq_lintegral_meas_le_mul`. -/
+theorem integral_rpow_le_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ}
+    (hf : AEMeasurable f μ) (hf0 : 0 ≤ᵐ[μ] f) {p : ℝ} (hp : 0 < p) {F : ℝ → ℝ}
+    (hF : IntegrableOn (fun t => t ^ (p - 1) * F t) (Set.Ioi 0))
+    (htail : ∀ t, 0 < t → μ.real {ω | t ≤ f ω} ≤ F t) :
+    Integrable (fun ω => f ω ^ p) μ ∧
+      ∫ ω, f ω ^ p ∂μ ≤ p * ∫ t in Set.Ioi 0, t ^ (p - 1) * F t := by
+  have hF0 : ∀ t, 0 < t → 0 ≤ F t := fun t ht => measureReal_nonneg.trans (htail t ht)
+  have hI0 : 0 ≤ᵐ[volume.restrict (Set.Ioi 0)] fun t => t ^ (p - 1) * F t :=
+    ae_restrict_of_forall_mem measurableSet_Ioi fun t (ht : 0 < t) =>
+      mul_nonneg (Real.rpow_nonneg ht.le _) (hF0 t ht)
+  have hlin : ∫⁻ ω, ENNReal.ofReal (f ω ^ p) ∂μ ≤
+      ENNReal.ofReal (p * ∫ t in Set.Ioi 0, t ^ (p - 1) * F t) := by
+    rw [lintegral_rpow_eq_lintegral_meas_le_mul μ hf0 hf hp, ENNReal.ofReal_mul hp.le,
+      ofReal_integral_eq_lintegral_ofReal hF hI0]
+    gcongr 1
+    refine setLIntegral_mono' measurableSet_Ioi fun t (ht : 0 < t) => ?_
+    rw [mul_comm, ENNReal.ofReal_mul (Real.rpow_nonneg ht.le _), ← ofReal_measureReal]
+    gcongr
+    exact htail t ht
+  have hm : AEStronglyMeasurable (fun ω => f ω ^ p) μ := (hf.pow_const p).aestronglyMeasurable
+  have hnn : 0 ≤ᵐ[μ] fun ω => f ω ^ p := hf0.mono fun ω h => Real.rpow_nonneg h p
+  refine ⟨⟨hm, (hasFiniteIntegral_iff_ofReal hnn).2 (hlin.trans_lt ENNReal.ofReal_lt_top)⟩, ?_⟩
+  rw [integral_eq_lintegral_of_nonneg_ae hnn hm]
+  exact ENNReal.toReal_le_of_le_ofReal (mul_nonneg hp.le (integral_nonneg_of_ae hI0)) hlin
+
+/-- The Gamma integral $\int_0^\infty t^{q}e^{-c t^{r}}\,dt$ with its integrability, for
+$q > -1$, $r > 0$, $c > 0$: $c^{-(q+1)/r}\,r^{-1}\,\Gamma((q+1)/r)$. -/
+private theorem integrableOn_and_integral_rpow_mul_exp {q r c : ℝ} (hq : -1 < q) (hr : 0 < r)
+    (hc : 0 < c) :
+    IntegrableOn (fun t : ℝ => t ^ q * Real.exp (-c * t ^ r)) (Set.Ioi 0) ∧
+      ∫ t in Set.Ioi 0, t ^ q * Real.exp (-c * t ^ r) =
+        c ^ (-(q + 1) / r) * (1 / r) * Real.Gamma ((q + 1) / r) :=
+  ⟨integrableOn_rpow_mul_exp_neg_mul_rpow hq hr hc, integral_rpow_mul_exp_neg_mul_rpow hr hq hc⟩
+
+/-- **Moments from a sub-exponential tail**: under a finite measure, for $f \ge 0$ almost
+everywhere with $\mathbb{P}[t \le f] \le 2\exp(-\min(t^2/(2v), t/(2b)))$ for every $t > 0$,
+$v, b > 0$ and $p > 0$, $f^p$ is integrable and <!-- value subexponentialMomentBound v b p -->
+$$\mathbb{E} f^p \le p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)\,,$$
+the bound being `subexponentialMomentBound v b p`, the layer-cake integral of
+$2e^{-t^2/(2v)} + 2e^{-t/(2b)}$; for $p \ge 2$ it is at most $2(vp)^{p/2} + 2(2bp)^{p}$
+(`NLAlib.subexponentialMomentBound_le`). [Vershynin2018, Proposition 2.7.1] for the equivalence
+of tails and moments, with unspecified constants (2020 draft; locator to check). -/
+theorem integral_rpow_le_of_measureReal_ge_le_two_mul_exp [IsFiniteMeasure μ]
+    {f : Ω → ℝ} (hf : AEMeasurable f μ) (hf0 : 0 ≤ᵐ[μ] f) {v b p : ℝ} (hv : 0 < v)
+    (hb : 0 < b) (hp : 0 < p)
+    (htail : ∀ t, 0 < t → μ.real {ω | t ≤ f ω} ≤
+      2 * Real.exp (-min (t ^ 2 / (2 * v)) (t / (2 * b)))) :
+    Integrable (fun ω => f ω ^ p) μ ∧ ∫ ω, f ω ^ p ∂μ ≤ subexponentialMomentBound v b p := by
+  set F : ℝ → ℝ := fun t => 2 * Real.exp (-(1 / (2 * v)) * t ^ (2 : ℝ)) +
+    2 * Real.exp (-(1 / (2 * b)) * t ^ (1 : ℝ)) with hFdef
+  have hq : -1 < p - 1 := by linarith
+  obtain ⟨hA, eA⟩ := integrableOn_and_integral_rpow_mul_exp hq two_pos
+    (show 0 < 1 / (2 * v) by positivity)
+  obtain ⟨hB, eB⟩ := integrableOn_and_integral_rpow_mul_exp hq one_pos
+    (show 0 < 1 / (2 * b) by positivity)
+  have hfun : (fun t => t ^ (p - 1) * F t) = fun t =>
+      2 * (t ^ (p - 1) * Real.exp (-(1 / (2 * v)) * t ^ (2 : ℝ))) +
+        2 * (t ^ (p - 1) * Real.exp (-(1 / (2 * b)) * t ^ (1 : ℝ))) := by
+    funext t
+    simp only [hFdef]
+    ring
+  have hFi : IntegrableOn (fun t => t ^ (p - 1) * F t) (Set.Ioi 0) := by
+    rw [hfun]
+    exact (hA.const_mul 2).add (hB.const_mul 2)
+  have htail' : ∀ t, 0 < t → μ.real {ω | t ≤ f ω} ≤ F t := by
+    intro t ht
+    refine (htail t ht).trans ?_
+    simp only [hFdef, Real.rpow_two, Real.rpow_one]
+    have e1 : -(1 / (2 * v)) * t ^ 2 = -(t ^ 2 / (2 * v)) := by ring
+    have e2 : -(1 / (2 * b)) * t = -(t / (2 * b)) := by ring
+    rw [e1, e2]
+    rcases min_choice (t ^ 2 / (2 * v)) (t / (2 * b)) with h | h <;> rw [h] <;>
+      nlinarith [Real.exp_pos (-(t ^ 2 / (2 * v))), Real.exp_pos (-(t / (2 * b)))]
+  obtain ⟨hint, hle⟩ := integral_rpow_le_of_measureReal_ge_le hf hf0 hp hFi htail'
+  refine ⟨hint, hle.trans_eq ?_⟩
+  rw [hfun, integral_add (hA.const_mul 2) (hB.const_mul 2), integral_const_mul,
+    integral_const_mul, eA, eB, subexponentialMomentBound_def]
+  have h1 : (p - 1 + 1) / 2 = p / 2 := by ring
+  have h2 : -(p - 1 + 1) / 2 = -(p / 2) := by ring
+  have h3 : (p - 1 + 1) / 1 = p := by ring
+  have h4 : -(p - 1 + 1) / 1 = -p := by ring
+  rw [h1, h2, h3, h4, one_div (2 * v), Real.inv_rpow (by positivity), Real.rpow_neg (by positivity),
+    inv_inv, one_div (2 * b), Real.inv_rpow (by positivity), Real.rpow_neg (by positivity),
+    inv_inv]
+  ring
+
+/-- **Two-sided sub-exponential tail from Dasgupta–Gupta tails**: under a finite measure, if
+$\mathbb{P}[\beta a \le Y] \le e^{(K/2)(1 - \beta + \log\beta)}$ for every $\beta \ge 1$ and
+$\mathbb{P}[Y \le \beta a] \le e^{(K/2)(1 - \beta + \log\beta)}$ for every $0 < \beta \le 1$, with
+$a > 0$ and $K \ge 0$, then for $t \ge 0$
+$$\mathbb{P}\bigl[t \le \lvert Y/a - 1\rvert\bigr] \le 2e^{-(K/8)\min(t^2, t)}\,.$$
+The upper side by $\log(1 + s) \le s - s^2/(2(1 + s))$ (`Real.log_one_add_le_sub_sq_div`) and
+$s^2/(2(1 + s)) \ge \min(s^2, s)/4$, the lower by $\log(1 - u) \le -u - u^2/2$
+(`Real.log_one_sub_le_quadratic`); no hypothesis $\mathbb{P}[Y \le 0] = 0$ is needed, since for
+$K > 0$ it is the limit $\beta \to 0$ of the lower tail and for $K = 0$ the bound is $2$. The
+input of the Gaussian and Haar JL moments ($K$ the number of rows, $a$ the mean). -/
+theorem measureReal_abs_div_sub_one_ge_le_two_mul_exp [IsFiniteMeasure μ] {Y : Ω → ℝ}
+    {a K : ℝ} (ha : 0 < a) (hK : 0 ≤ K)
+    (hup : ∀ β : ℝ, 1 ≤ β → μ.real {ω | β * a ≤ Y ω} ≤ Real.exp (K / 2 * (1 - β + Real.log β)))
+    (hlow : ∀ β : ℝ, 0 < β → β ≤ 1 →
+      μ.real {ω | Y ω ≤ β * a} ≤ Real.exp (K / 2 * (1 - β + Real.log β)))
+    {t : ℝ} (ht : 0 ≤ t) :
+    μ.real {ω | t ≤ |Y ω / a - 1|} ≤ 2 * Real.exp (-(K / 8 * min (t ^ 2) t)) := by
+  set e := Real.exp (-(K / 8 * min (t ^ 2) t)) with he
+  have hsub : {ω | t ≤ |Y ω / a - 1|} ⊆ {ω | (1 + t) * a ≤ Y ω} ∪ {ω | Y ω ≤ (1 - t) * a} := by
+    intro ω hω
+    have hω' : t ≤ |Y ω / a - 1| := hω
+    rcases le_abs.1 hω' with h | h
+    · left
+      have : (1 + t) ≤ Y ω / a := by linarith
+      exact (le_div_iff₀ ha).1 this
+    · right
+      have : Y ω / a ≤ 1 - t := by linarith
+      exact (div_le_iff₀ ha).1 this
+  have hup' : μ.real {ω | (1 + t) * a ≤ Y ω} ≤ e := by
+    refine (hup (1 + t) (by linarith)).trans (Real.exp_le_exp.2 ?_)
+    have hlog := Real.log_one_add_le_sub_sq_div ht
+    have hmin : min (t ^ 2) t / 4 ≤ t ^ 2 / (2 * (1 + t)) := by
+      rw [div_le_div_iff₀ (by norm_num) (by positivity)]
+      rcases le_total t 1 with h1 | h1
+      · rw [min_eq_left (by nlinarith)]
+        nlinarith
+      · rw [min_eq_right (by nlinarith)]
+        nlinarith
+    have : 1 - (1 + t) + Real.log (1 + t) ≤ -(min (t ^ 2) t / 4) := by linarith
+    nlinarith
+  have hlow' : μ.real {ω | Y ω ≤ (1 - t) * a} ≤ e := by
+    rcases lt_or_ge t 1 with h1 | h1
+    · refine (hlow (1 - t) (by linarith) (by linarith)).trans (Real.exp_le_exp.2 ?_)
+      have hlog := Real.log_one_sub_le_quadratic ht h1
+      rw [min_eq_left (by nlinarith)]
+      have : 1 - (1 - t) + Real.log (1 - t) ≤ -(t ^ 2 / 2) := by linarith
+      nlinarith [sq_nonneg t]
+    · set β := Real.exp (-(t / 4) - 1) with hβ
+      have hβ0 : 0 < β := Real.exp_pos _
+      have hβ1 : β ≤ 1 := Real.exp_le_one_iff.2 (by linarith)
+      have hmono : {ω | Y ω ≤ (1 - t) * a} ⊆ {ω | Y ω ≤ β * a} := fun ω hω => by
+        have hω' : Y ω ≤ (1 - t) * a := hω
+        change Y ω ≤ β * a
+        nlinarith
+      refine (measureReal_mono hmono).trans ((hlow β hβ0 hβ1).trans (Real.exp_le_exp.2 ?_))
+      rw [min_eq_right (by nlinarith), hβ, Real.log_exp]
+      nlinarith [Real.exp_pos (-(t / 4) - 1)]
+  calc μ.real {ω | t ≤ |Y ω / a - 1|}
+      ≤ μ.real ({ω | (1 + t) * a ≤ Y ω} ∪ {ω | Y ω ≤ (1 - t) * a}) := measureReal_mono hsub
+    _ ≤ μ.real {ω | (1 + t) * a ≤ Y ω} + μ.real {ω | Y ω ≤ (1 - t) * a} :=
+        measureReal_union_le _ _
+    _ ≤ 2 * e := by linarith
 
 /-! ### Sub-gamma tails -/
 

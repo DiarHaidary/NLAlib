@@ -5,13 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.Complex.ExponentialBounds
 public import NLAlib.Probability.Distributions.ChiSquareMoments
 public import NLAlib.Probability.Distributions.ChiSquare
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.Sketching.Properties.JohnsonLindenstrauss
 public import NLAlib.Sketching.Properties.Oblivious
-public import NLAlib.Sketching.Properties.ProjectionCost
 
 /-!
 # Gaussian sketches
@@ -24,10 +24,19 @@ there is no named sketch law (`docs/design/Sketching-S2.md` §7 Q1).
 It is an isotropic sketch, a random subspace injection and embedding for a fixed $\mathbf{U}$ with
 orthonormal columns (Gordon's extreme singular values, one tail $e^{-t^2/2}$ per side), an
 oblivious subspace injection and embedding, and has the distributional Johnson–Lindenstrauss
-property with Dasgupta and Gupta's exponent $\varepsilon^2/4 - \varepsilon^3/6$, and the exact JL
-second moment $2 / \lvert k \rvert$. The sample sizes are named quantities (CONTRIBUTING §5.2,
-rule 2), each with its nonnegativity, monotonicity and an explicit comparison; the
-"$\lvert k \rvert \ge \ldots$ suffices" forms are corollaries of the tails.
+property with Dasgupta and Gupta's exponent $\varepsilon^2/4 - \varepsilon^3/6$, the exact JL
+second moment $2 / \lvert k \rvert$, and the JL moment property at every exponent $p$ from its
+sub-exponential JL tail, so that $O(\log(1/\delta)/\varepsilon^2)$ rows give it at
+$p = \max(2, \log(1/\delta))$ and hence approximate matrix multiplication with failure
+probability $\delta$: for `hG` and that size,
+```
+(hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hε hε1 hδ hk
+  ).measureReal_frobNorm_conjTranspose_mul_sub_ge_le …
+```
+with `le_max_left` for the side condition $2 \le p$. Its projection-cost-preserving forms are
+in `NLAlib.Sketching.Gaussian.ProjectionCost`. The sample sizes are named quantities
+(CONTRIBUTING §5.2, rule 2), each with its nonnegativity, monotonicity and an explicit
+comparison; the "$\lvert k \rvert \ge \ldots$ suffices" forms are corollaries of the tails.
 
 Degenerate cases: for empty $k$, $(\sqrt{0})^{-1} = 0$ and $\mathbf{S} = \mathbf{0}$, which is not
 isotropic, hence `[Nonempty k]` on isotropy, the OSI and the moments; the hypothesis
@@ -37,13 +46,17 @@ for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 
 ## Main definitions
 
-* `NLAlib.gaussianEmbeddingDim`, `NLAlib.gaussianInjectionDim`, `NLAlib.jlDim`: the sample
+* `NLAlib.gaussianEmbeddingDim`, `NLAlib.gaussianInjectionDim`, `NLAlib.jlDim`,
+  `NLAlib.jlMomentDim`: the sample
   sizes, for the OSE <!-- value gaussianEmbeddingDim d \varepsilon \delta -->
   $9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2/\varepsilon^2$,
   for the OSI <!-- value gaussianInjectionDim d \varepsilon \delta -->
-  $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$ and for
-  JL <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$;
-  `NLAlib.two_mul_exp_le_of_jlDim_le` inverts the JL tail at `jlDim`.
+  $4 (\sqrt{d} + \sqrt{2 \log(1/\delta)})^2/\varepsilon^2$, for
+  JL <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
+  and for the JL moment
+  property <!-- value jlMomentDim \varepsilon \delta -->$128\max(2, \log(1/\delta))/\varepsilon^2$;
+  `NLAlib.two_mul_exp_le_of_jlDim_le` inverts the JL tail at `jlDim`, and
+  `NLAlib.two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le` the JL-plus-a-net tail.
 
 ## Main results
 
@@ -54,16 +67,17 @@ for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
 * `NLAlib.isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`,
   `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`.
 * `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`: distributional JL.
-* `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`: the JL moment property at $p = 2$.
+* `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix`: the JL moment property at $p = 2$, from the
+  exact variance.
+* `NLAlib.hasJLMoment_subexponentialMomentBound_of_hasLaw_gaussianMatrix`: the JL moment property
+  at every $p > 0$, and its size form
+  `NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le` at $p = \max(2, \log(1/\delta))$.
 * `NLAlib.exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le`: the Johnson–Lindenstrauss lemma.
-* `NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card`: the Gaussian sketch
-  is a projection-cost-preserving sketch.
 * `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`,
   `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix`,
-  `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`: the asymptotic forms,
-  $O((d + \log(1/\delta))/\varepsilon^2)$ and $O(\log(1/\delta)/\varepsilon^2)$ rows;
-  `NLAlib.exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix`,
-  $O((d + 1)/(\varepsilon^2\delta))$ rows for a projection-cost-preserving sketch.
+  `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`,
+  `NLAlib.exists_forall_hasJLMoment_of_hasLaw_gaussianMatrix`: the asymptotic forms,
+  $O((d + \log(1/\delta))/\varepsilon^2)$ and $O(\log(1/\delta)/\varepsilon^2)$ rows.
 -/
 
 @[expose] public section
@@ -338,6 +352,72 @@ theorem two_mul_exp_le_of_jlDim_le {K : ℝ} (hε : 0 < ε) (hε1 : ε < 3 / 2) 
     _ = δ := by
       rw [Real.exp_neg, Real.exp_log (by positivity)]
       field_simp
+
+/-- **Inverting the JL-plus-a-net tail at `jlDim`**: for $0 < \varepsilon < 15/8$, $\delta > 0$
+and <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
+$K \ge \log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ (the left side is
+`jlDim (4ε/5) (δ/21^d)`), $2 \cdot 21^d e^{-K(4\varepsilon^2/25 - 32\varepsilon^3/375)} \le \delta$:
+the step from the OSE tail of every sketch with Dasgupta and Gupta's exponent, through JL plus a
+net at $4\varepsilon/5$ (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`; signs, Haar), to its
+sample-size form. -/
+theorem two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le {K : ℝ} (hε : 0 < ε) (hε3 : ε < 15 / 8)
+    (hδ : 0 < δ) (hk : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ K) :
+    2 * 21 ^ d * Real.exp (-(K * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375))) ≤ δ := by
+  have h21 : (0 : ℝ) < 21 ^ d := by positivity
+  have h := two_mul_exp_le_of_jlDim_le (by linarith) (by linarith) (by positivity) hk
+  rw [show (4 * ε / 5) ^ 2 / 4 - (4 * ε / 5) ^ 3 / 6 = 4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375 by ring,
+    le_div_iff₀ h21] at h
+  linarith
+
+/-- The **JL moment dimension** <!-- value jlMomentDim \varepsilon \delta -->
+$128\max(2, \log(1/\delta))/\varepsilon^2$: a Gaussian or Haar sketch with at least this many rows
+has the JL moment property with distortion $0 < \varepsilon \le 1$, failure probability $\delta$
+and exponent $\max(2, \log(1/\delta))$
+(`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`). The value the proof reaches,
+inverting the readable form $2(vp)^{p/2} + 2(2bp)^{p}$ of the sub-exponential moment bound
+(`NLAlib.subexponentialMomentBound_le`) at $v = b = 4/\lvert k\rvert$; that comparison loses a
+factor exponential in $p$, so a Stirling-sharp inversion would lower the $128$ by a factor of
+about $e$ without a statement change. Consumers use `jlMomentDim_nonneg`, `jlMomentDim_mono` and
+`jlMomentDim_le`, $384\log(1/\delta)/\varepsilon^2$ for $\delta \le 1/2$. Junk: $0$ at
+$\varepsilon = 0$. -/
+noncomputable irreducible_def jlMomentDim (ε δ : ℝ) : ℝ :=
+  128 * max 2 (Real.log (1 / δ)) / ε ^ 2
+
+/-- The JL moment dimension <!-- value jlMomentDim \varepsilon \delta -->
+$128\max(2, \log(1/\delta))/\varepsilon^2$ is nonnegative. -/
+theorem jlMomentDim_nonneg (ε δ : ℝ) : 0 ≤ jlMomentDim ε δ := by
+  rw [jlMomentDim_def]
+  have : (0 : ℝ) ≤ max 2 (Real.log (1 / δ)) := le_max_of_le_left zero_le_two
+  positivity
+
+/-- The JL moment dimension <!-- value jlMomentDim \varepsilon \delta -->
+$128\max(2, \log(1/\delta))/\varepsilon^2$ is antitone in the distortion $\varepsilon > 0$ and
+in the failure probability $\delta > 0$. -/
+theorem jlMomentDim_mono (hε : 0 < ε) (hεε' : ε ≤ ε') (hδ : 0 < δ) (hδδ' : δ ≤ δ') :
+    jlMomentDim ε' δ' ≤ jlMomentDim ε δ := by
+  rw [jlMomentDim_def, jlMomentDim_def]
+  have hδ' : 0 < δ' := hδ.trans_le hδδ'
+  have hM : (0 : ℝ) ≤ max 2 (Real.log (1 / δ')) := le_max_of_le_left zero_le_two
+  have hL : Real.log (1 / δ') ≤ Real.log (1 / δ) := by gcongr
+  calc 128 * max 2 (Real.log (1 / δ')) / ε' ^ 2 ≤ 128 * max 2 (Real.log (1 / δ')) / ε ^ 2 := by
+        gcongr
+    _ ≤ 128 * max 2 (Real.log (1 / δ)) / ε ^ 2 := by gcongr
+
+/-- The explicit comparison for $0 < \delta \le 1/2$, <!-- value jlMomentDim \varepsilon \delta -->
+$$128\max(2, \log(1/\delta))/\varepsilon^2 \le \frac{384\log(1/\delta)}{\varepsilon^2}$$
+(`jlMomentDim ε δ` on the left), since $\log(1/\delta) \ge \log 2 > 2/3$ there; the step of every
+asymptotic form through `jlMomentDim`. -/
+theorem jlMomentDim_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
+    jlMomentDim ε δ ≤ 384 * Real.log (1 / δ) / ε ^ 2 := by
+  rw [jlMomentDim_def]
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hmax : max 2 (Real.log (1 / δ)) ≤ 3 * Real.log (1 / δ) :=
+    max_le (by linarith) (by linarith)
+  calc 128 * max 2 (Real.log (1 / δ)) / ε ^ 2 ≤ 128 * (3 * Real.log (1 / δ)) / ε ^ 2 := by
+        gcongr
+    _ = 384 * Real.log (1 / δ) / ε ^ 2 := by ring
 
 /-! ### Isotropy -/
 
@@ -629,6 +709,45 @@ theorem hasJLMoment_of_hasLaw_gaussianMatrix [Nonempty k] (hG : HasLaw G (gaussi
     apply le_of_eq
     field_simp
 
+/-- **The JL moment property of a Gaussian sketch at every order**: for $k$ nonempty,
+$\varepsilon > 0$, $p > 0$ and $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ with $\mathbf{G}$
+standard Gaussian, the JL moment property holds with exponent $p$ and failure
+probability <!-- value subexponentialMomentBound {(4/\lvert k \rvert)} {(4/\lvert k \rvert)} p -->
+$$\delta = \frac{p(2(4/\lvert k \rvert))^{p/2}\Gamma(p/2)
++ 2p(2(4/\lvert k \rvert))^{p}\Gamma(p)}{\varepsilon^p}\,,$$
+the numerator being `NLAlib.subexponentialMomentBound` at $v = b = 4/\lvert k\rvert$: the
+Dasgupta–Gupta $\chi^2$ tails on both sides give the sub-exponential JL tail
+$2e^{-(\lvert k\rvert/8)\min(t^2, t)}$ at every $t > 0$
+(`NLAlib.measureReal_abs_div_sub_one_ge_le_two_mul_exp`), and
+`NLAlib.hasJLMoment_of_forall_hasJLProperty` integrates it. Incomparable with
+`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix` (the exact variance, better at $p = 2$).
+[Woodruff2014, Definition 12] for the property; that dense sketches have it at
+$p = \log(1/\delta)$ is Kane and Nelson's (2014; locator to check). -/
+theorem hasJLMoment_subexponentialMomentBound_of_hasLaw_gaussianMatrix [Nonempty k]
+    (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) {p : ℝ} (hp : 0 < p) :
+    HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε
+      (subexponentialMomentBound (4 / Fintype.card k) (4 / Fintype.card k) p / ε ^ p) p μ := by
+  have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  refine hasJLMoment_of_forall_hasJLProperty
+    (hG.aemeasurable.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by positivity) (by positivity)
+    (fun t ht => ?_) hε hp
+  intro x hx
+  have hg := hasLaw_mulVec_of_hasLaw_gaussianMatrix hG hx
+  have h := measureReal_abs_div_sub_one_ge_le_two_mul_exp
+    (Y := fun ω => ‖WithLp.toLp 2 (G ω *ᵥ x)‖ ^ 2) hK hK.le
+    (fun β hβ => measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector hg hβ)
+    (fun β hβ0 hβ => measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector hg hβ0 hβ) ht.le
+  simp only [Pi.smul_apply, Matrix.smul_mulVec, EuclideanSpace.norm_toLp_inv_sqrt_card_smul_sq]
+  refine h.trans (le_of_eq ?_)
+  have e1 : t ^ 2 / (2 * (4 / (Fintype.card k : ℝ))) = Fintype.card k / 8 * t ^ 2 := by
+    field_simp
+    ring
+  have e2 : t / (2 * (4 / (Fintype.card k : ℝ))) = Fintype.card k / 8 * t := by
+    field_simp
+    ring
+  rw [e1, e2, ← mul_min_of_nonneg _ _ (by positivity)]
+
 /-! ### Sample-size corollaries -/
 
 /-- **Gaussian OSE, sample-size form**: at
@@ -687,106 +806,6 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix :
     hδ ((gaussianEmbeddingDim_le d ε hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
   exact div_le_div_of_nonneg_right (by linarith [Nat.cast_nonneg (α := ℝ) d]) (sq_nonneg ε)
-
-/-- **A Gaussian sketch is a projection-cost-preserving sketch**, size form: for
-$0 < \varepsilon \le 2$, $\delta > 0$, at
-least <!-- value gaussianEmbeddingDim d (\varepsilon/2) (\delta/2) -->
-$9 (\sqrt{d} + \sqrt{2 \log(2/(\delta/2))})^2/(\varepsilon/2)^2$ rows
-(`gaussianEmbeddingDim d (ε / 2) (δ / 2)`) and at
-least <!-- value projectionCostTailDim 2 d \varepsilon \delta -->
-$384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailDim 2 d ε δ`),
-$\mathbf{S} = \lvert k \rvert^{-1/2}\mathbf{G}$ makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$
-projection-cost-preserving sketch of $\mathbf{A}$ with constants $1 \mp \varepsilon$, for every
-$\mathbf{A}$, except with probability $\delta$. The head is the OSE size form at
-$(\varepsilon/2, \delta/2)$, the tail the JL moment at $\varepsilon/(8\sqrt{d+1})$, through
-`NLAlib.IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`.
-[CohenElderMuscoMuscoPersu2015, Theorem 12, Lemma 11 family 1]; there sign matrices and
-$O((k + \log(1/\delta))/\varepsilon^2)$ rows through stable-rank spectral approximate
-multiplication, error $O(\varepsilon)$; here the Gaussian, explicit constants, and $1/\delta$ from
-second moments. Asymptotic form:
-`NLAlib.exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix`.
-Result: gaussian-pcp -/
-theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
-    (hG : HasLaw G (gaussianMatrix k n) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ) (d : ℕ)
-    (hε : 0 < ε) (hε2 : ε ≤ 2) (hδ : 0 < δ)
-    (hk₁ : gaussianEmbeddingDim d (ε / 2) (δ / 2) ≤ Fintype.card k)
-    (hk₂ : projectionCostTailDim 2 d ε δ ≤ Fintype.card k) :
-    HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) A d (1 - ε) (1 + ε) δ
-      μ := by
-  have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
-  have hpos : 0 < projectionCostTailDim 2 d ε δ := by
-    rw [projectionCostTailDim_def]; positivity
-  have hK : (0 : ℝ) < Fintype.card k := hpos.trans_le hk₂
-  have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK)
-  have hJ0 : 0 < ε / (8 * √((d : ℝ) + 1)) := by positivity
-  have hbud : 1 - ε ≤ 1 - ε / 2 - 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ∧
-      1 + ε / 2 + 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) + ε / (8 * √((d : ℝ) + 1)) ≤
-        1 + ε ∧
-      δ / 2 + 3 * (2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2)) ≤ δ := by
-    have hs1 : 1 ≤ √((d : ℝ) + 1) :=
-      Real.one_le_sqrt.2 (by linarith [Nat.cast_nonneg (α := ℝ) d])
-    have hds : √(d : ℝ) ≤ √((d : ℝ) + 1) := Real.sqrt_le_sqrt (by linarith)
-    have hss : √((d : ℝ) + 1) ^ 2 = (d : ℝ) + 1 := Real.sq_sqrt (by positivity)
-    have hJ : ε / (8 * √((d : ℝ) + 1)) * √((d : ℝ) + 1) = ε / 8 := by field_simp
-    have hJ1 : ε / (8 * √((d : ℝ) + 1)) ≤ ε / 8 := by
-      rw [div_le_div_iff₀ (by positivity) (by norm_num)]
-      nlinarith
-    have h3 : 3 * √(d : ℝ) * (ε / (8 * √((d : ℝ) + 1))) ≤ 3 * (ε / 8) := by
-      rw [← hJ, mul_assoc]
-      exact mul_le_mul_of_nonneg_left
-        (by rw [mul_comm]; exact mul_le_mul_of_nonneg_left hds hJ0.le) (by norm_num)
-    refine ⟨by linarith, by linarith, ?_⟩
-    have hk := hk₂
-    rw [projectionCostTailDim_def, div_le_iff₀ (by positivity)] at hk
-    have e : 2 / (Fintype.card k * (ε / (8 * √((d : ℝ) + 1))) ^ 2) =
-        64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2) := by
-      rw [div_pow, mul_pow, hss]
-      field_simp
-      ring
-    have h4 : 3 * (64 * 2 * ((d : ℝ) + 1) / (Fintype.card k * ε ^ 2)) ≤ δ / 2 := by
-      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-      nlinarith
-    linarith
-  obtain ⟨h₁, h₂, h₃⟩ := hbud
-  have hose := isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
-    hG (half_pos hε) (by linarith) (half_pos hδ) hk₁
-  exact (hose.hasProjectionCostPreserving_of_hasJLMoment
-    (hasJLMoment_of_hasLaw_gaussianMatrix hG hJ0)
-    (hG.aemeasurable.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by linarith) (by linarith) hJ0
-    le_rfl (by positivity) A).mono le_rfl h₁ h₂ h₃
-
-/-- **$O((d+1)/(\varepsilon^2\delta))$ Gaussian rows suffice for a rank-$d$
-projection-cost-preserving sketch** with constants $1 \mp \varepsilon$ and failure probability
-$\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
-dimension. Proved from `NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card`
-with $C = 768$, $\varepsilon_0 = 1$ and $\delta \le 1/2$. At constant $\delta$ this is
-$O(d/\varepsilon^2)$; the literature's $(d + \log(1/\delta))/\varepsilon^2$ needs more than second
-moments. [CohenElderMuscoMuscoPersu2015, Theorem 12].
-Asymptotic: NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card
-Result: gaussian-pcp -/
-theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix :
-    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k m n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype m]
-      [Fintype n] (μ : Measure Ω) (G : Ω → Matrix k n ℝ) (A : Matrix m n ℝ) (d : ℕ) (ε δ : ℝ),
-      HasLaw G (gaussianMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
-      C * (((d : ℝ) + 1) / (ε ^ 2 * δ)) ≤ Fintype.card k →
-      HasProjectionCostPreserving (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) A d (1 - ε) (1 + ε)
-        δ μ := by
-  refine ⟨768, 1, by norm_num, one_pos, ?_⟩
-  intro Ω k m n _ _ _ _ μ G A d ε δ hG hε hε1 hδ hδ2 hk
-  have hD : 0 < ε ^ 2 * δ := by positivity
-  refine hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_le_card hG A d hε (by linarith)
-    hδ ?_ ?_
-  · refine (gaussianEmbeddingDim_le d (ε / 2) (half_pos hδ) (by linarith)).trans (le_trans ?_ hk)
-    have hl := Real.log_le_sub_one_of_pos (show 0 < 2 / (δ / 2) by positivity)
-    have hδL : δ * Real.log (2 / (δ / 2)) ≤ 4 - δ := by
-      have e : δ * (2 / (δ / 2) - 1) = 4 - δ := by field_simp; ring
-      nlinarith
-    have h1 : 18 * (d : ℝ) * δ + 36 * (δ * Real.log (2 / (δ / 2))) ≤ 192 * ((d : ℝ) + 1) := by
-      nlinarith [Nat.cast_nonneg (α := ℝ) d]
-    rw [mul_div_assoc', div_le_div_iff₀ (by positivity) hD]
-    nlinarith [mul_le_mul_of_nonneg_right h1 (sq_nonneg ε)]
-  · refine (projectionCostTailDim_le 2 d ε δ).trans (le_trans (le_of_eq ?_) hk)
-    ring
 
 /-- **Gaussian OSI, sample-size form**: at
 least <!-- value gaussianInjectionDim d \varepsilon \delta -->
@@ -878,6 +897,71 @@ theorem exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix :
     ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
   exact div_le_div_of_nonneg_right (by linarith) (sq_nonneg ε)
+
+/-- **Gaussian JL moments, sample-size form**: for $0 < \varepsilon \le 1$, $\delta > 0$ and at
+least <!-- value jlMomentDim \varepsilon \delta -->$128\max(2, \log(1/\delta))/\varepsilon^2$ rows
+(`jlMomentDim ε δ`), $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ with $\mathbf{G}$ standard
+Gaussian has the JL moment property with distortion $\varepsilon$, failure probability $\delta$
+and exponent $\max(2, \log(1/\delta))$: the moment bound
+`NLAlib.hasJLMoment_subexponentialMomentBound_of_hasLaw_gaussianMatrix` is at most
+$\varepsilon^p e^{-p} \le \varepsilon^p \delta$ there. Approximate matrix multiplication with
+failure probability $\delta$ follows
+(`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`, whose side condition
+$2 \le p$ is `le_max_left`). [Woodruff2014, Definition 12 and Theorem 13],
+the property and AMM from it; the size $O(\log(1/\delta)/\varepsilon^2)$ is Kane and Nelson's
+(2014; locator to check), the constants are this proof's. Asymptotic form:
+`NLAlib.exists_forall_hasJLMoment_of_hasLaw_gaussianMatrix`.
+Result: jl-moment-gaussian -/
+theorem hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+    (hG : HasLaw G (gaussianMatrix k n) μ) (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
+    (hk : jlMomentDim ε δ ≤ Fintype.card k) :
+    HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ (max 2 (Real.log (1 / δ))) μ := by
+  set p := max 2 (Real.log (1 / δ)) with hpdef
+  have hp2 : 2 ≤ p := le_max_left _ _
+  have hp0 : 0 < p := by linarith
+  have hε2 : 0 < ε ^ 2 := by positivity
+  have hK : 128 * p ≤ ε ^ 2 * Fintype.card k := by
+    rw [jlMomentDim_def, div_le_iff₀ hε2] at hk
+    linarith
+  have hK0 : (0 : ℝ) < Fintype.card k := by
+    by_contra h
+    push Not at h
+    nlinarith [mul_nonpos_of_nonneg_of_nonpos hε2.le h]
+  have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK0)
+  have hεp : 0 < ε ^ p := Real.rpow_pos_of_pos hε p
+  have hb := subexponentialMomentBound_le_mul_exp_neg (v := 4 / (Fintype.card k : ℝ))
+    (b := 4 / (Fintype.card k : ℝ)) (by positivity) (by positivity) hp2 hε
+    (by rw [div_mul_eq_mul_div, mul_div_assoc', div_le_iff₀ hK0]; linarith)
+    (by rw [div_mul_eq_mul_div, mul_div_assoc', div_le_iff₀ hK0]; nlinarith)
+  refine (hasJLMoment_subexponentialMomentBound_of_hasLaw_gaussianMatrix hG hε hp0).mono le_rfl
+    ?_ hε.le hp0.le (div_nonneg (subexponentialMomentBound_nonneg (by positivity)
+      (by positivity) hp0.le) hεp.le)
+  rw [div_le_iff₀ hεp, mul_comm δ]
+  refine hb.trans (mul_le_mul_of_nonneg_left ?_ hεp.le)
+  calc Real.exp (-p) ≤ Real.exp (-Real.log (1 / δ)) :=
+        Real.exp_le_exp.2 (neg_le_neg (le_max_right _ _))
+    _ = δ := by rw [Real.exp_neg, Real.exp_log (by positivity), one_div, inv_inv]
+
+/-- **Gaussian JL moments, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for
+the Gaussian sketch $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ to have the JL moment property
+with distortion $\varepsilon$, failure probability $\delta$ and exponent
+$\max(2, \log(1/\delta))$, for $\varepsilon$ and $\delta$ below absolute constants; the constants
+come before every dimension. Proved from
+`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le` with $C = 384$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$, where $\max(2, \log(1/\delta)) \le 3\log(1/\delta)$.
+[Woodruff2014, Definition 12 and Theorem 13].
+Asymptotic: NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+Result: jl-moment-gaussian -/
+theorem exists_forall_hasJLMoment_of_hasLaw_gaussianMatrix :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      (μ : Measure Ω) (G : Ω → Matrix k n ℝ) (ε δ : ℝ),
+      HasLaw G (gaussianMatrix k n) μ → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLMoment (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ (max 2 (Real.log (1 / δ))) μ := by
+  refine ⟨384, 1, by norm_num, one_pos, fun μ G ε δ hG hε hε1 hδ hδ2 hk => ?_⟩
+  refine hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hε hε1 hδ
+    ((jlMomentDim_le hδ hδ2).trans (le_of_eq_of_le ?_ hk))
+  ring
 
 /-- **The Johnson–Lindenstrauss lemma**, existence form: for points $\mathbf{x}_i$ in
 $\mathbb{R}^n$, $N = \lvert \iota \rvert$, $\delta = 1/(\binom{N}{2} + 1)$

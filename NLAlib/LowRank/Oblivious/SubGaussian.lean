@@ -21,9 +21,12 @@ sub-Gaussian rows with proxy $c$ (the columns of $\mathbf{\Omega}$; hypotheses `
 `hiso` on `fun ω => (X ω)ᴴ`, in that order). The randomized SVD
 $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ reaches error
 $(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$ with probability
-$1 - \delta$ at $\ell = O(c^2(k/(\varepsilon\delta) + \log(1/\delta)))$, and the early-truncated
+$1 - \delta$ at $\ell = O(c^2(k/(\varepsilon\delta) + \log(1/\delta)))$ through the second JL
+moment and at $\ell = O(c^2k\log(1/\delta)/\varepsilon)$ through the JL moment at
+$p = \log(1/\delta)$, and the early-truncated
 randomized SVD $\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$ at
-$\ell = O(c^2(k/\delta + \log(1/\delta))/\varepsilon^2)$. To a constant
+$\ell = O(c^2(k/\delta + \log(1/\delta))/\varepsilon^2)$, respectively
+$O(c^2k\log(1/\delta)/\varepsilon^2)$. To a constant
 factor, <!-- value subgaussianRangeFinderFactor c -->$1 + 5c/2$, the randomized SVD needs
 only $\ell = O(c^2(k + \log(1/\delta)))$, the range-finder step of Hutch++. The family's
 predicates are about the normalised sketch $\ell^{-1/2}\mathbf{\Omega}^{\mathsf{H}}$; the
@@ -63,7 +66,9 @@ both about `fun ω => (√(Fintype.card l : ℝ))⁻¹ • (X ω)ᴴ`, which is
 ## Main results
 
 * `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`: the randomized SVD,
-  and its asymptotic form
+  its $\log(1/\delta)$ twin
+  `measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`
+  and the asymptotic form
   `exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`.
 * `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`: the randomized SVD
   to that constant factor at $\ell = O(c^2(k + \log(1/\delta)))$, with $\log(1/\delta)$ in
@@ -71,7 +76,7 @@ both about `fun ω => (√(Fintype.card l : ℝ))⁻¹ • (X ω)ᴴ`, which is
   asymptotic form
   `exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_mul_of_isSubgaussianVector`.
 * `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`: early
-  truncation, and its asymptotic form
+  truncation, its $\log(1/\delta)$ twin (`…_of_subgaussianJLMomentDim_le`) and the asymptotic form
   `exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`.
 -/
 
@@ -127,8 +132,12 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 except with probability $\delta$; the first size is `subgaussianEmbeddingDim c k (1 / 2) (δ / 2)`
 and $C$ is `subgaussianJLConstant`. The route: the OSI at constant $1/2$ and failure $\delta/2$,
 the JL moment property at $\sqrt{\varepsilon/(4k)}$ and
-`NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le`. Asymptotic form:
-`NLAlib.exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`.
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le`. Incomparable with its
+$\log(1/\delta)$ twin
+`measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`
+(rule 4): this one needs fewer columns at constant $\delta$, the twin for small $\delta$; the
+asymptotic form `exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector` is
+proved from the twin.
 [Woodruff2014, Lemma 45 and Remark 46]; there for dense sign and Gaussian sketches, constants
 unspecified.
 Result: randomized-svd-tail -/
@@ -186,18 +195,52 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector [Nonempty 
     rw [e]
     linarith
 
-/-- **$O(c^2(k/(\varepsilon\delta) + \log(1/\delta)))$ sub-Gaussian columns suffice for the
-randomized SVD**: there are absolute constants $C, \varepsilon_0 > 0$ such that if the sketch
-$\mathbf{\Omega}^{\mathsf{H}}$ of an $n \times \ell$ test matrix $\mathbf{\Omega}$ has independent,
-isotropic, sub-Gaussian rows with proxy $c$, $0 < \varepsilon \le \varepsilon_0$,
-$0 < \delta \le 1/2$ and $\ell \ge Cc^2(k/(\varepsilon\delta) + \log(1/\delta))$, then
+/-- **The randomized SVD with a sub-Gaussian test matrix, relative error**, $\log(1/\delta)$
+size form: for $0 < \varepsilon \le 4$, $\delta > 0$ and a sketch
+$\mathbf{\Omega}^{\mathsf{H}}$ with independent, isotropic, sub-Gaussian rows with proxy $c$,
+if <!-- value subgaussianEmbeddingDim c k (1/2) (\delta/2) -->
+$\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$
+and <!-- value subgaussianJLMomentDim c {\sqrt{\varepsilon/(4k)}} (\delta/2) -->
+$\ell \ge 16c^2\max(2, \log(1/(\delta/2)))/(C\sqrt{\varepsilon/(4k)}^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, then
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta$; the proxy stays in the threshold. The asymptotic form of
-`NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`, proved from it with
-$C = 2064$ and $\varepsilon_0 = 1$. [Woodruff2014, Lemma 45 and Remark 46]; there $O(k/\varepsilon)$
+except with probability $\delta$; the sizes are `subgaussianEmbeddingDim c k (1 / 2) (δ / 2)` and
+`subgaussianJLMomentDim c (√(ε / (4 * k))) (δ / 2)`, and $C$ is `subgaussianJLConstant`. The route
+of `NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`, with the JL moment at
+$p = \max(2, \log(2/\delta))$
+(`NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`, whose budget
+$\sqrt{\varepsilon/(4k)} \le 1 \le c$ needs $\varepsilon \le 4$); incomparable with it (rule 4).
+Asymptotic form:
+`NLAlib.exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector`.
+[Woodruff2014, Lemma 45 and Remark 46]; there for dense sign and Gaussian sketches, constants
+unspecified.
+Result: randomized-svd-tail -/
+theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
+    [Nonempty l] (A : Matrix m n ℝ) {c : ℝ≥0} (hind : iIndepFun (fun i ω => (X ω)ᴴ i) μ)
+    (hsub : ∀ i, IsSubgaussianVector (fun ω => (X ω)ᴴ i) c μ)
+    (hiso : ∀ i, IsIsotropic (fun ω => (X ω)ᴴ i) μ) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε)
+    (hε4 : ε ≤ 4) (hδ : 0 < δ) (hl : subgaussianEmbeddingDim c k (1 / 2) (δ / 2) ≤ Fintype.card l)
+    (hl' : subgaussianJLMomentDim c (√(ε / (4 * k))) (δ / 2) ≤ Fintype.card l) :
+    μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
+  sorry
+
+/-- **$O(c^2k\log(1/\delta)/\varepsilon)$ sub-Gaussian columns suffice for the randomized SVD**:
+there are absolute constants $C, \varepsilon_0 > 0$ such that if the sketch
+$\mathbf{\Omega}^{\mathsf{H}}$ of an $n \times \ell$ test matrix $\mathbf{\Omega}$ has independent,
+isotropic, sub-Gaussian rows with proxy $c$, $0 < \varepsilon \le \varepsilon_0$,
+$0 < \delta \le 1/2$ and $\ell \ge Cc^2k\log(1/\delta)/\varepsilon$, then
+$$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$ ($k = 0$ is trivial); the proxy stays in the threshold. The
+asymptotic form of
+`measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`,
+proved from it with $\varepsilon_0 = 1$; the injection size $O(c^2(k + \log(1/\delta)))$ is
+dominated there for $k \ge 1$. [Woodruff2014, Lemma 45 and Remark 46]; there $O(k/\varepsilon)$
 i.i.d. normal rows at constant failure probability; here any isotropic sub-Gaussian rows.
-Asymptotic: NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector
+Asymptotic:
+NLAlib.measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
 Result: randomized-svd-tail -/
 theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
@@ -205,33 +248,13 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVec
       (X : Ω → Matrix n l ℝ) (c : ℝ≥0) (k : ℕ) (ε δ : ℝ),
       iIndepFun (fun i ω => (X ω)ᴴ i) μ → (∀ i, IsSubgaussianVector (fun ω => (X ω)ᴴ i) c μ) →
       (∀ i, IsIsotropic (fun ω => (X ω)ᴴ i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
-      C * ((c : ℝ) ^ 2 * ((k : ℝ) / (ε * δ) + Real.log (1 / δ))) ≤ Fintype.card l →
+      C * ((c : ℝ) ^ 2 * (k : ℝ) * Real.log (1 / δ) / ε) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
-  refine ⟨2064, 1, by norm_num, one_pos, ?_⟩
-  intro Ω m n l _ _ _ _ _ _ μ A X c k ε δ hind hsub hiso hε hε1 hδ hδ2 hl
-  have hL1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hεδ : 0 < ε * δ := mul_pos hε hδ
-  have hkεδ : (k : ℝ) ≤ k / (ε * δ) :=
-    le_div_self (Nat.cast_nonneg k) hεδ (by nlinarith)
-  have hc2 := sq_nonneg (c : ℝ)
-  have hk : (k : ℝ) / (ε * δ) * (ε * δ) = k := div_mul_cancel₀ _ hεδ.ne'
-  refine measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector A hind hsub hiso hε hδ
-    ((subgaussianEmbeddingDim_le c k (1 / 2) (half_pos hδ) (by linarith)).trans ?_) ?_
-  · have hlog : Real.log (2 / (δ / 2)) ≤ 3 * Real.log (1 / δ) := by
-      rw [show (3 : ℝ) * Real.log (1 / δ) = Real.log ((1 / δ) ^ 3) by
-        rw [Real.log_pow]; norm_num]
-      refine Real.log_le_log (by positivity) ?_
-      rw [div_pow, one_pow, div_div_eq_mul_div, div_le_div_iff₀ (by positivity) (by positivity)]
-      nlinarith [pow_pos hδ 2, pow_pos hδ 3]
-    rw [show 172 * (c : ℝ) ^ 2 * (k + Real.log (2 / (δ / 2))) / (1 / 2) ^ 2 =
-      688 * ((c : ℝ) ^ 2 * (k + Real.log (2 / (δ / 2)))) by ring]
-    refine le_trans ?_ hl
-    nlinarith [mul_le_mul_of_nonneg_left hlog hc2, mul_le_mul_of_nonneg_left hkεδ hc2,
-      mul_nonneg hc2 hL1]
-  · nlinarith [mul_le_mul_of_nonneg_left hl hεδ.le, mul_nonneg hc2 hL1,
-      mul_nonneg (mul_nonneg hc2 hL1) hεδ.le, mul_nonneg hc2 (Nat.cast_nonneg (α := ℝ) k)]
+  sorry
 
+-- A backticked declaration name in the docstring exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **Early-truncated randomized SVD with a sub-Gaussian test matrix, tail**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian rows with proxy $c$,
 $0 < \varepsilon \le 1$, $\delta > 0$, at
@@ -245,8 +268,11 @@ except with probability $\delta$; the first size is
 `subgaussianEmbeddingDim c k (ε / 6) (δ / 3)` and $C$ is `subgaussianJLConstant`. The route of
 the Gaussian statement
 `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix`, with the
-family's OSI and JL moment property. Asymptotic form:
-`exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`.
+family's OSI and JL moment property. Incomparable with its $\log(1/\delta)$ twin
+`measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`
+(rule 4); the asymptotic form
+`exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector` is
+proved from the twin.
 [CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
 with unspecified constants.
 Result: etrsvd -/
@@ -315,22 +341,57 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
     rw [e]
     linarith
 
-/-- **$O(c^2(k/\delta + \log(1/\delta))/\varepsilon^2)$ sub-Gaussian columns suffice for early
+-- A backticked declaration name in the docstring exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Early-truncated randomized SVD with a sub-Gaussian test matrix, tail**, $\log(1/\delta)$
+size form: if the sketch $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian
+rows with proxy $c$, $0 < \varepsilon \le 1$, $\delta > 0$, at
+least <!-- value subgaussianEmbeddingDim c k (\varepsilon/6) (\delta/3) -->
+$\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/3)))/(16C (\varepsilon/6)^2)$ and at
+least <!-- value subgaussianJLMomentDim c (\varepsilon/(6\sqrt{k})) (\delta/3) -->
+$\ell \ge 16c^2\max(2, \log(1/(\delta/3)))/(C(\varepsilon/(6\sqrt{k}))^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, then
+$$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta$; the sizes are `subgaussianEmbeddingDim c k (ε / 6) (δ / 3)` and
+`subgaussianJLMomentDim c (ε / (6 * √k)) (δ / 3)`, and $C$ is `subgaussianJLConstant`. The route
+of `NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`, with the
+JL moment at $p = \max(2, \log(3/\delta))$
+(`NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`, budget
+$\varepsilon/(6\sqrt{k}) \le 1 \le c$); incomparable with it (rule 4). Asymptotic form:
+`exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
+with unspecified constants.
+Result: etrsvd -/
+theorem
+    measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
+    [Nonempty l] (A : Matrix m n ℝ) {c : ℝ≥0} (hind : iIndepFun (fun i ω => (X ω)ᴴ i) μ)
+    (hsub : ∀ i, IsSubgaussianVector (fun ω => (X ω)ᴴ i) c μ)
+    (hiso : ∀ i, IsIsotropic (fun ω => (X ω)ᴴ i) μ) {k : ℕ} {ε δ : ℝ} (hε : 0 < ε)
+    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hl : subgaussianEmbeddingDim c k (ε / 6) (δ / 3) ≤ Fintype.card l)
+    (hl' : subgaussianJLMomentDim c (ε / (6 * √(k : ℝ))) (δ / 3) ≤ Fintype.card l) :
+    μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
+  sorry
+
+-- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(c^2k\log(1/\delta)/\varepsilon^2)$ sub-Gaussian columns suffice for early
 truncation**: there are absolute constants $C, \varepsilon_0 > 0$ such that if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ of an $n \times \ell$ test matrix $\mathbf{\Omega}$ has independent,
 isotropic, sub-Gaussian rows with proxy $c$, $0 < \varepsilon \le \varepsilon_0$,
-$0 < \delta \le 1/2$ and $\ell \ge Cc^2(k/\delta + \log(1/\delta))/\varepsilon^2$, then
+$0 < \delta \le 1/2$ and $\ell \ge Cc^2k\log(1/\delta)/\varepsilon^2$, then
 $$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
 (1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
-except with probability $\delta$. The asymptotic form of
-`NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector`, proved
-from it with $C = 24768$ and $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and
+except with probability $\delta$ ($k = 0$ is trivial). The asymptotic form of
+`measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le`,
+proved from it with $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12 and
 Lemma 3]; there $\mathbf{A}\mathbf{\Omega}$ is a projection-cost-preserving sketch with error
 $O(\varepsilon)$ for the dense sign matrices of Lemma 11 (family 1) with
-$O((k + \log(1/\delta))/\varepsilon^2)$ rows, and Lemma 3 carries the sketch's best rank-$k$
-projection over to $\mathbf{A}$; here any isotropic sub-Gaussian rows, with $k/\delta$ in place of
-$k$ from the route through the JL moment.
-Asymptotic: NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector
+$O((k + \log(1/\delta))/\varepsilon^2)$ rows; here any isotropic sub-Gaussian rows, with the
+product $k\log(1/\delta)$ from the route through JL moments.
+Asymptotic:
+NLAlib.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
 Result: etrsvd -/
 theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector :
     ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
@@ -338,33 +399,10 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_is
       (X : Ω → Matrix n l ℝ) (c : ℝ≥0) (k : ℕ) (ε δ : ℝ),
       iIndepFun (fun i ω => (X ω)ᴴ i) μ → (∀ i, IsSubgaussianVector (fun ω => (X ω)ᴴ i) c μ) →
       (∀ i, IsIsotropic (fun ω => (X ω)ᴴ i) μ) → 0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
-      C * ((c : ℝ) ^ 2 * ((k : ℝ) / δ + Real.log (1 / δ)) / ε ^ 2) ≤ Fintype.card l →
+      C * ((c : ℝ) ^ 2 * (k : ℝ) * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  refine ⟨24768, 1, by norm_num, one_pos, ?_⟩
-  intro Ω m n l _ _ _ _ _ _ μ A X c k ε δ hind hsub hiso hε hε1 hδ hδ2 hl
-  have hL1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hkδ : (k : ℝ) ≤ k / δ := le_div_self (Nat.cast_nonneg k) hδ (by linarith)
-  have hc2 := sq_nonneg (c : ℝ)
-  have hk : (k : ℝ) / δ * δ = k := div_mul_cancel₀ _ hδ.ne'
-  have hl' := hl
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)] at hl'
-  refine measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector A hind hsub
-    hiso hε hε1 hδ ((subgaussianEmbeddingDim_le c k (ε / 6) (by positivity) (by linarith)).trans
-      ?_) ?_
-  · have hlog : Real.log (2 / (δ / 3)) ≤ 4 * Real.log (1 / δ) := by
-      rw [show (4 : ℝ) * Real.log (1 / δ) = Real.log ((1 / δ) ^ 4) by
-        rw [Real.log_pow]; norm_num]
-      refine Real.log_le_log (by positivity) ?_
-      rw [div_pow, one_pow, div_div_eq_mul_div, div_le_div_iff₀ (by positivity) (by positivity)]
-      nlinarith [pow_pos hδ 2, pow_pos hδ 3, pow_pos hδ 4]
-    rw [div_le_iff₀ (by positivity)]
-    have e : (Fintype.card l : ℝ) * (ε / 6) ^ 2 = Fintype.card l * ε ^ 2 / 36 := by ring
-    rw [e]
-    nlinarith [mul_le_mul_of_nonneg_left hlog hc2, mul_le_mul_of_nonneg_left hkδ hc2,
-      mul_nonneg hc2 hL1]
-  · nlinarith [mul_le_mul_of_nonneg_left hl' hδ.le, mul_nonneg hc2 hL1,
-      mul_nonneg (mul_nonneg hc2 hL1) hδ.le, mul_nonneg hc2 (Nat.cast_nonneg (α := ℝ) k)]
+  sorry
 
 /-! ### The constant-factor range finder -/
 
