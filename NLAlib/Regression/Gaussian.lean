@@ -144,7 +144,35 @@ theorem
     (hp' : jlMomentDim (√(ε / (4 * ((A.rank : ℝ) + 1)))) (δ / 2) ≤ Fintype.card p) :
     μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
       frobNorm (B - A * sketchAndSolve A (G ω) B) ^ 2} ≤ δ := by
-  sorry
+  have : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  rcases le_or_gt 1 δ with hδ1 | hδ1
+  · exact measureReal_le_one.trans hδ1
+  have hp0 : (0 : ℝ) < Fintype.card p :=
+    (gaussianInjectionDim_pos A.rank (by norm_num) (half_pos hδ) (by linarith)).trans_le hp
+  let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
+  have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
+  have hη1 : η ≤ 1 := by
+    refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
+    linarith [Nat.cast_nonneg (α := ℝ) A.rank]
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
+    (d := A.rank) hG (by norm_num) (by norm_num) (half_pos hδ) (by linarith) hp
+  have h := (hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hη hη1 (half_pos hδ) hp'
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
+    (hOSI.hasSubspaceInjection (U := A) le_rfl)
+    (hG.aemeasurable.const_smul ((√(Fintype.card p : ℝ))⁻¹)) (by norm_num) hη
+    (le_max_left _ _) (by positivity) B
+  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
+    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
+      div_le_iff₀ (by positivity)]
+    nlinarith
+  have hnorm : (√(Fintype.card p : ℝ))⁻¹ ≠ 0 := inv_ne_zero (ne_of_gt (Real.sqrt_pos.2 hp0))
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
+    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A ((√(Fintype.card p : ℝ))⁻¹ • G ω) B) ^ 2
+  rw [sketchAndSolve_smul_sketch A (G ω) B hnorm]
+  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
 
 -- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -175,7 +203,32 @@ theorem
         C * (((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε) ≤ Fintype.card p →
         μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
           frobNorm (B - A * sketchAndSolve A (G ω) B) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨3072, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n r p _ _ _ _ _ _ μ G A B ε δ hG hε hε1 hδ hδ2 hp
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
+    rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+  have hr : (0 : ℝ) ≤ A.rank := Nat.cast_nonneg _
+  have hrL : (0 : ℝ) ≤ ((A.rank : ℝ) + 1) * Real.log (1 / δ) := by
+    have : 0 ≤ Real.log (1 / δ) := by linarith
+    positivity
+  have hε' : ((A.rank : ℝ) + 1) * Real.log (1 / δ) ≤
+      ((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε := le_div_self hrL hε hε1
+  refine
+    measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+    hG A B hε (by linarith) hδ ?_ ?_
+  · refine (gaussianInjectionDim_le _ _ (half_pos hδ) (by linarith)).trans (le_trans ?_ hp)
+    rw [hlh, div_le_iff₀ (by norm_num)]
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
+  · refine (jlMomentDim_le (half_pos hδ) (by linarith)).trans (le_trans ?_ hp)
+    rw [Real.sq_sqrt (by positivity), hlh]
+    rw [show 384 * (Real.log 2 + Real.log (1 / δ)) / (ε / (4 * ((A.rank : ℝ) + 1))) =
+      1536 * (((A.rank : ℝ) + 1) * (Real.log 2 + Real.log (1 / δ))) / ε by field_simp; ring,
+      mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ hε.le
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
 
 /-! ### Gaussian sketch-and-precondition -/
 
