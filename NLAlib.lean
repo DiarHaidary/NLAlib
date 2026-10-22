@@ -24,6 +24,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.ChebyshevGauss
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
