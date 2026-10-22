@@ -188,9 +188,8 @@ private lemma exists_split {A M : Matrix n n 𝕜} (hA : A.PosDef) (hM : M.PosDe
       RCLike.re (quadForm A (xs - x₀)) = RCLike.re (quadForm (Sᴴ * A * S) (ys - y₀)) ∧
       ∀ q, RCLike.re (quadForm A (xs - pcgIterate A M b x₀ q)) =
         RCLike.re (quadForm (Sᴴ * A * S) (ys - cgIterate (Sᴴ * A * S) (Sᴴ *ᵥ b) y₀ q)) := by
-  obtain ⟨S, -, hSu, hMS, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hS : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hSu
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  have hSu := (Matrix.isUnit_iff_isUnit_det S).mp hS
   have hSv : ∀ v, S *ᵥ (S⁻¹ *ᵥ v) = v := fun v => by
     rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv S hSu, Matrix.one_mulVec]
   refine ⟨S, S⁻¹ *ᵥ xs, S⁻¹ *ᵥ x₀, (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA,
@@ -236,9 +235,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_pcgIterate_le_four_mul_pow
       4 * ((Real.sqrt (a' / a) - 1) / (Real.sqrt (a' / a) + 1)) ^ (2 * q) *
         RCLike.re (quadForm A (xs - x₀)) := by
   have hpd : A.PosDef := by
-    obtain ⟨S, -, hSu, hMS, -⟩ :=
-      hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-    have hS : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hSu
+    obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
     have hH : (Sᴴ * A * S).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul S hA
     have hs' : spectrum ℝ (Sᴴ * A * S) ⊆ Set.Icc a a' := by
       rwa [← spectrum_mul_conjTranspose_mul hS, ← hMS]
@@ -310,9 +307,8 @@ Result: pcg-finite-termination -/
 theorem _root_.Matrix.PosDef.pcgIterate_eq_of_krylovGrade_le {A M : Matrix n n 𝕜}
     (hA : A.PosDef) (hM : M.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ}
     (h : krylovGrade (M * A) (M *ᵥ (b - A *ᵥ x₀)) ≤ q) : pcgIterate A M b x₀ q = xs := by
-  obtain ⟨S, -, hSu, hMS, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hS : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hSu
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  have hSu := (Matrix.isUnit_iff_isUnit_det S).mp hS
   have hSv : ∀ v, S *ᵥ (S⁻¹ *ᵥ v) = v := fun v => by
     rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv S hSu, Matrix.one_mulVec]
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
