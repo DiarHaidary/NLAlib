@@ -61,6 +61,26 @@ instance isFiniteMeasure_interpolatoryQuadrature (μ : Measure ℝ) (s : Finset 
       Measure.dirac x) := fun x => Measure.smul_finite _ ENNReal.ofReal_ne_top
   infer_instance
 
+/-- Interpolatory quadrature is exact below degree $\lvert s\rvert$. -/
+private theorem integral_eval_eq_sum_of_degree_lt {μ : Measure ℝ} {s : Finset ℝ}
+    [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {r : ℝ[X]}
+    (hr : r.degree < s.card) :
+    ∫ x, r.eval x ∂μ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * r.eval x := by
+  have hint : ∀ x ∈ s, Integrable (fun t => r.eval x * (Lagrange.basis s id x).eval t) μ :=
+    fun x _ => (integrable_eval_of_ae_mem_Icc hμ _).const_mul _
+  have hr' := Lagrange.eq_interpolate (v := id) (Set.injOn_id _) hr
+  rw [Lagrange.interpolate_apply] at hr'
+  calc ∫ x, r.eval x ∂μ
+      = ∫ t, ∑ x ∈ s, r.eval x * (Lagrange.basis s id x).eval t ∂μ := by
+        refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+        dsimp only
+        conv_lhs => rw [hr']
+        simp only [eval_finsetSum, eval_mul, eval_C, id]
+    _ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * r.eval x := by
+        rw [integral_finsetSum _ hint]
+        refine Finset.sum_congr rfl fun x _ => ?_
+        rw [integral_const_mul, mul_comm]
+
 /-- **Gauss quadrature**: if the nodal polynomial $\pi_s$ of distinct real nodes $s$ is
 orthogonal in $L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite
 measure $\mu$ supported in $[a, b]$, then
@@ -74,7 +94,40 @@ theorem IsOrthogonalPolynomial.integral_eval_eq_sum {μ : Measure ℝ} {s : Fins
     (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id)) [IsFiniteMeasure μ] {a b : ℝ}
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : p.degree < 2 * s.card) :
     ∫ x, p.eval x ∂μ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * p.eval x := by
-  sorry
+  set w := Lagrange.nodal s id
+  have hw : w.Monic := Lagrange.nodal_monic
+  have hsplit := modByMonic_add_div p w
+  have hmod : (p %ₘ w).degree < s.card := by
+    have := degree_modByMonic_lt p hw
+    rwa [Lagrange.degree_nodal] at this
+  have hdiv : (p /ₘ w).degree < s.card := by
+    by_cases hq : p /ₘ w = 0
+    · rw [hq, degree_zero]
+      exact WithBot.bot_lt_coe _
+    have hp0 : p ≠ 0 := by
+      rintro rfl
+      exact hq (zero_divByMonic w)
+    rw [degree_eq_natDegree hq, Nat.cast_lt, natDegree_divByMonic p hw, Lagrange.natDegree_nodal]
+    rw [degree_eq_natDegree hp0] at hp
+    have : p.natDegree < 2 * s.card := by exact_mod_cast hp
+    omega
+  have hint1 := integrable_eval_of_ae_mem_Icc hμ (p %ₘ w)
+  have hint2 := integrable_eval_of_ae_mem_Icc hμ (w * (p /ₘ w))
+  calc ∫ x, p.eval x ∂μ = ∫ x, ((p %ₘ w).eval x + (w * (p /ₘ w)).eval x) ∂μ := by
+        conv_lhs => rw [← hsplit]
+        simp only [eval_add]
+    _ = ∫ x, (p %ₘ w).eval x ∂μ := by
+        rw [integral_add hint1 hint2]
+        simp only [eval_mul]
+        rw [hs _ hdiv, add_zero]
+    _ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * (p %ₘ w).eval x :=
+        integral_eval_eq_sum_of_degree_lt hμ hmod
+    _ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * p.eval x := by
+        refine Finset.sum_congr rfl fun x hx => ?_
+        congr 1
+        conv_rhs => rw [← hsplit]
+        have h0 : w.eval x = 0 := Lagrange.eval_nodal_at_node (v := id) hx
+        rw [eval_add, eval_mul, h0, zero_mul, add_zero]
 
 /-- The Gauss weights are nonnegative: if the nodal polynomial of $s$ is orthogonal in
 $L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite measure $\mu$
@@ -85,7 +138,41 @@ theorem IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq {μ : Measure 
     {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x : ℝ} (hx : x ∈ s) :
     ∫ t, (Lagrange.basis s id x).eval t ∂μ = ∫ t, (Lagrange.basis s id x).eval t ^ 2 ∂μ := by
-  sorry
+  set ℓ := Lagrange.basis s id x
+  have hcard : 0 < s.card := Finset.card_pos.mpr ⟨x, hx⟩
+  have hdeg : (ℓ ^ 2).degree < 2 * s.card := by
+    have h1 : (ℓ ^ 2).natDegree < 2 * s.card := by
+      have := natDegree_pow_le (p := ℓ) (n := 2)
+      rw [Lagrange.natDegree_basis (Set.injOn_id _) hx] at this
+      omega
+    have h2 : (ℓ ^ 2).degree < ((2 * s.card : ℕ) : WithBot ℕ) :=
+      degree_le_natDegree.trans_lt (by exact_mod_cast h1)
+    simpa only [Nat.cast_mul, Nat.cast_ofNat] using h2
+  have h := hs.integral_eval_eq_sum hμ hdeg
+  simp only [eval_pow] at h
+  rw [h, Finset.sum_eq_single x]
+  · have : ℓ.eval x = 1 := Lagrange.eval_basis_self (v := id) (Set.injOn_id _) hx
+    rw [this, one_pow, mul_one]
+  · intro y hy hyx
+    have : ℓ.eval y = 0 := Lagrange.eval_basis_of_ne (v := id) (Ne.symm hyx) hy
+    rw [this]
+    ring
+  · intro hx'
+    exact absurd hx hx'
+
+/-- The integral against the Gauss rule (stated as `integral_interpolatoryQuadrature` below). -/
+private theorem integral_interpolatoryQuadrature_of_isOrthogonalPolynomial {μ : Measure ℝ}
+    {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
+    [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (f : ℝ → ℝ) :
+    ∫ x, f x ∂interpolatoryQuadrature μ s =
+      ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * f x := by
+  unfold interpolatoryQuadrature
+  rw [integral_finsetSum_measure fun x _ =>
+    (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  rw [integral_smul_measure, integral_dirac, smul_eq_mul, ENNReal.toReal_ofReal]
+  rw [hs.integral_eval_basis_eq_integral_sq hμ hx]
+  exact integral_nonneg fun t => sq_nonneg _
 
 /-- **The Gauss rule matches $2\lvert s\rvert$ moments**: if the nodal polynomial of $s$ is
 orthogonal in $L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite
@@ -97,7 +184,9 @@ theorem IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature {μ : Meas
     {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     MatchesMoments μ (interpolatoryQuadrature μ s) (2 * s.card) := by
-  sorry
+  intro p hp
+  rw [integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ,
+    hs.integral_eval_eq_sum hμ (by exact_mod_cast hp)]
 
 /-- The integral against the Gauss rule: if the nodal polynomial of $s$ is orthogonal in
 $L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite measure $\mu$
@@ -108,7 +197,7 @@ theorem IsOrthogonalPolynomial.integral_interpolatoryQuadrature {μ : Measure �
     {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (f : ℝ → ℝ) :
     ∫ x, f x ∂interpolatoryQuadrature μ s =
-      ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * f x := by
-  sorry
+      ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * f x :=
+  integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ f
 
 end NLAlib
