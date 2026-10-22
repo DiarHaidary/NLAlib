@@ -9,6 +9,7 @@ public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
 public import NLAlib.LowRank.Gaussian.BlockKrylov
 public import NLAlib.Matrix.Functions.TraceFunctions
+import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 
 /-!
 # Gapless bounds for randomized block Krylov and subspace iteration
@@ -619,19 +620,6 @@ private theorem eval_T_comp_C_mul_X_sub_one (j : ℕ) (s y : ℝ) :
     Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_one]
   ring_nf
 
-/-- The rescaled Chebyshev filter $T_j(2x/s - 1)$ has degree below $q$ for $j < q$. -/
-private theorem degree_T_comp_C_mul_X_sub_one_lt {j q : ℕ} {s : ℝ} (hjq : j < q) :
-    ((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
-      (Polynomial.C (2 / s) * Polynomial.X - 1)).degree < q := by
-  have h1 : (Polynomial.C (2 / s) * Polynomial.X - 1 : Polynomial ℝ).natDegree ≤ 1 := by
-    compute_degree
-  have h2 : ((Polynomial.Chebyshev.T ℝ (j : ℤ)).comp
-      (Polynomial.C (2 / s) * Polynomial.X - 1)).natDegree ≤ j := by
-    refine Polynomial.natDegree_comp_le.trans ?_
-    rw [Polynomial.Chebyshev.natDegree_T, Int.natAbs_natCast]
-    exact (Nat.mul_le_mul_left _ h1).trans_eq (mul_one _)
-  exact Polynomial.degree_le_natDegree.trans_lt (by exact_mod_cast h2.trans_lt hjq)
-
 /-- The Gram matrix of $\mathbf{A}f(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ is
 $\varphi(\mathbf{A}\mathbf{A}^{\mathsf{H}})$ with $\varphi(y) = f(y)\,y\,f(y)$. -/
 private theorem mul_aeval_mul_conjTranspose_eq_cfc [DecidableEq m] (A : Matrix m n ℝ)
@@ -659,32 +647,13 @@ private theorem specNorm_sub_rbki_sq_le_of_degree_lt [DecidableEq m] {k : Type*}
     (P : Matrix l k ℝ) :
     specNorm (A - rbki A Y q) ^ 2 ≤
       specNorm ((1 - rangeProjector (A * Polynomial.aeval (Aᴴ * A) f * (Y * P))) * A) ^ 2 := by
-  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
   have hrange : LinearMap.range (A * Polynomial.aeval (Aᴴ * A) f * (Y * P)).mulVecLin ≤
-      LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
-    refine range_le_iff_exists_mul.mpr ⟨C * P, ?_⟩
-    simp only [Matrix.mul_assoc]
-    rw [← Matrix.mul_assoc (Polynomial.aeval (Aᴴ * A) f) Y, hC, Matrix.mul_assoc]
+      LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin :=
+    (range_le_iff_exists_mul.mpr ⟨P, (Matrix.mul_assoc _ Y P).symm⟩).trans
+      (range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (Aᴴ * A) Y hf)
   rw [rbki, sub_rsvd]
   exact pow_le_pow_left₀ (specNorm_nonneg _)
     (specNorm_one_sub_rangeProjector_mul_le_of_range_le hrange A) 2
-
-omit [DecidableEq n] in
-/-- The projector error $\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}\mathbf{Y}})\mathbf{A}\|_2^2$ is
-integrable for an almost everywhere measurable $\mathbf{Y}$: it is at most $\|\mathbf{A}\|_2^2$. -/
-private theorem integrable_specNorm_one_sub_rangeProjector_mul_sq_of_aemeasurable
-    [IsFiniteMeasure μ] [DecidableEq m] {k : Type*} [Fintype k] (A B : Matrix m n ℝ)
-    {Y : Ω → Matrix n k ℝ} (hY : AEMeasurable Y μ) :
-    Integrable (fun ω => specNorm ((1 - rangeProjector (B * Y ω)) * A) ^ 2) μ := by
-  have hxm : Measurable fun Y : Matrix n k ℝ =>
-      specNorm ((1 - rangeProjector (B * Y)) * A) ^ 2 :=
-    (measurable_specNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
-      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
-  exact Integrable.of_bound (hxm.comp_aemeasurable hY).aestronglyMeasurable (specNorm A ^ 2)
-    (Filter.Eventually.of_forall fun ω => by
-      rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
-      exact pow_le_pow_left₀ (specNorm_nonneg _)
-        (specNorm_one_sub_rangeProjector_mul_le _ _) 2)
 
 omit [DecidableEq n] in
 /-- A target rank with $\sigma_r(\mathbf{A}) > 0$ is below the number of columns. -/
@@ -734,7 +703,9 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
   have hfe (y : ℝ) :
       f.eval y = (Polynomial.Chebyshev.T ℝ (j : ℤ)).eval (2 * (y / σ ^ 2) - 1) :=
     eval_T_comp_C_mul_X_sub_one j (σ ^ 2) y
-  have hfdeg : f.degree < q := degree_T_comp_C_mul_X_sub_one_lt (by omega)
+  have hfdeg : f.degree < q := (Polynomial.degree_le_of_natDegree_le
+    (Polynomial.Chebyshev.natDegree_T_comp_le (j : ℤ) (by compute_degree))).trans_lt
+      (by rw [Int.natAbs_natCast]; exact_mod_cast (by omega : j < q))
   have htail : ∀ x ∈ Set.Icc 0 (σ ^ 2), |f.eval x| ≤ 1 := fun x hx =>
     Polynomial.Chebyshev.abs_eval_T_comp_C_mul_X_sub_one_le j hσ2 hx
   obtain ⟨W, hW⟩ := exists_integral_specNorm_sub_rsvd_mul_pinv_sq_le A hX f
@@ -775,8 +746,7 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
   have hΩ'm : AEMeasurable Ω' μ :=
     (measurable_id.matrix_mul (measurable_pinv.comp
       (measurable_const.matrix_mul measurable_id))).comp_aemeasurable hX.aemeasurable
-  have hxi : Integrable x μ :=
-    integrable_specNorm_one_sub_rangeProjector_mul_sq_of_aemeasurable A B hΩ'm
+  have hxi : Integrable x μ := integrable_specNorm_one_sub_rangeProjector_mul_sq B A hΩ'm
   have hBi := integrable_specNorm_sub_rsvd_sq B hΩ'm
   have hφc : Continuous φ :=
     continuous_id.mul (((Polynomial.Chebyshev.T ℝ (j : ℤ)).continuous.comp
@@ -793,8 +763,7 @@ theorem integral_specNorm_sub_rbki_sq_le_mul_exp_of_hasLaw_gaussianMatrix (A : M
     rwa [integral_const, probReal_univ, one_smul] at h
   have hJ := (hasSupportingLineOn_mul_eval_T_div_sq j hσ2 hx0).le_integral_comp
     (Filter.Eventually.of_forall fun ω => Set.mem_Ici.mpr (sq_nonneg _)) hxi hφi
-  have hchain : φ (∫ ω, x ω ∂μ) ≤ σ ^ 2 * R :=
-    hJ.trans ((integral_mono hφi hBi hjen).trans hW)
+  have hchain : φ (∫ ω, x ω ∂μ) ≤ σ ^ 2 * R := hJ.trans ((integral_mono hφi hBi hjen).trans hW)
   rw [hjq]
   refine (integral_mono_of_nonneg (Filter.Eventually.of_forall fun ω => sq_nonneg _) hxi
     (Filter.Eventually.of_forall hup)).trans ?_
