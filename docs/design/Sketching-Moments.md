@@ -1134,6 +1134,11 @@ the note:
   $32\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2$ on the flattened
   row-sampling injection size, extracted from the two SRHT OSI asymptotic proofs (which now cite
   it) and used by the SRHT sketch-and-solve, randomized SVD and early-truncation asymptotic forms.
+* **Empty-column PCP made public** (round close, 2026-10-22):
+  `NLAlib.hasProjectionCostPreserving_of_isEmpty`, every sketch is a projection-cost-preserving
+  sketch when $n$ is empty, was a private helper of `Sketching/Gaussian/ProjectionCost.lean`. It
+  moves to `Sketching/Properties/ProjectionCost.lean`, next to the definition, and is stated over
+  any `RCLike` field instead of $\mathbb{R}$.
 * **Shared $(1 + \varepsilon)$ forms made public** (round close, 2026-10-22): the early-truncation
   and sketch-and-solve family proofs repeated one body each, with only the JL size form or the
   sketch family swapped. Two generic theorems now carry it, each at a rescaled sketch

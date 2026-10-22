@@ -21,8 +21,10 @@ shared $(1 + \varepsilon)$ forms `HasJLMoment.measureReal_frobNorm_sub_earlyTrun
 (`LowRank/Oblivious/EarlyTruncation.lean`) and
 `HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le`
 (`Regression/Oblivious.lean`), which now carry the bodies the family twins repeated (net 65 Lean
-lines fewer). `SRHTMultiplication.lean` also imports `Probability/QuadraticForm/Moments.lean`. One
-statement changed: the sub-Gaussian PCP twin loses an unused `[Nonempty k]` (linter). Two private
+lines fewer). `hasProjectionCostPreserving_of_isEmpty` was made public and moved to
+`Sketching/Properties/ProjectionCost.lean`, over any `RCLike` field. `SRHTMultiplication.lean`
+also imports `Probability/QuadraticForm/Moments.lean`. One statement changed: the sub-Gaussian PCP
+twin loses an unused `[Nonempty k]` (linter; in the rename map's `statementChanged`). Two private
 helper docstrings of `ProjectionCost.lean` got their value markers.
 
 Checks: `mk_all --check` clean; `scripts/stage_check.sh`: 396 proved modules, 0 not yet; build
