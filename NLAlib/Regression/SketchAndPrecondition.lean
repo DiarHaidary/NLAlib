@@ -140,9 +140,7 @@ theorem IsQR.sketchAndPrecondition_eq_mulVec_cgIterate [LinearOrder n] {Q : Matr
     sketchAndPrecondition A S y x₀ q =
       R⁻¹ *ᵥ cgIterate ((A * R⁻¹)ᴴ * (A * R⁻¹)) ((A * R⁻¹)ᴴ *ᵥ y) (R *ᵥ x₀) q := by
   have hRu : IsUnit R.det := (Matrix.isUnit_iff_isUnit_det R).mp hR
-  have hQ : HasOrthonormalCols (S * A * R⁻¹) := by
-    rw [hQR.eq_mul, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hRu, Matrix.mul_one]
-    exact hQR.hasOrthonormalCols
+  have hQ : HasOrthonormalCols (S * A * R⁻¹) := hQR.mul_inv_eq hR ▸ hQR.hasOrthonormalCols
   exact hQ.sketchAndPrecondition_eq_mulVec_cgIterate y
     (by rw [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ hRu, Matrix.one_mulVec]) q
 
