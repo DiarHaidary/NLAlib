@@ -224,7 +224,45 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaus
     (hl' : subgaussianJLMomentDim c (√(ε / (4 * k))) (δ / 2) ≤ Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
-  sorry
+  classical
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · rw [setOf_one_add_mul_frobNorm_sub_lt_eq_empty_of_isEmpty _ _ _ hε.le, measureReal_empty]
+    exact hδ.le
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - rsvd A (X ω)) ^ 2 := hω
+    rw [truncatedSVD_zero, sub_zero, sub_rsvd] at hω'
+    have h := frobNorm_one_sub_rangeProjector_mul_le (A * X ω) A
+    nlinarith [sq_nonneg (frobNorm A), frobNorm_nonneg ((1 - rangeProjector (A * X ω)) * A)]
+  have hc1 : (1 : ℝ) ≤ c := (hsub (Classical.arbitrary l)).one_le_of_isIsotropic
+    (hiso (Classical.arbitrary l))
+  have hεJ : 0 < √(ε / (4 * k)) := Real.sqrt_pos.2 (by positivity)
+  have hεJ1 : √(ε / (4 * k)) ≤ 1 := by
+    refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
+    have : (1 : ℝ) ≤ k := by exact_mod_cast hk
+    linarith
+  have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
+    (d := k) hind hsub hiso (by norm_num : (0 : ℝ) < 1 / 2) (by linarith) (half_pos hδ) hl
+  have hJL := hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind hsub hiso hεJ
+    (hεJ1.trans hc1) (half_pos hδ) hl'
+  rw [inv_sqrt_card_smul_conjTranspose] at hOSI hJL
+  have hL : (0 : ℝ) < Fintype.card l := Nat.cast_pos.2 Fintype.card_pos
+  have h := hJL.measureReal_frobNorm_sub_rsvd_sq_gt_le (A := A) (hOSI.hasSubspaceInjection
+    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k))
+    (aemeasurable_inv_sqrt_card_smul_of_isSubgaussianVector hsub) (by norm_num) hεJ
+    (le_max_left _ _) (by positivity)
+  have hsq : √(ε / (4 * k)) ^ 2 = ε / (4 * k) := Real.sq_sqrt (by positivity)
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 < frobNorm (A - rsvd A (X ω)) ^ 2 :=
+    hω
+  change _ < frobNorm (A - rsvd A ((√(Fintype.card l : ℝ))⁻¹ • X ω)) ^ 2
+  rw [rsvd_smul_right _ _ (inv_ne_zero (Real.sqrt_pos.2 hL).ne'), hsq]
+  refine lt_of_eq_of_lt ?_ hω'
+  field_simp
+  ring
 
 /-- **$O(c^2k\log(1/\delta)/\varepsilon)$ sub-Gaussian columns suffice for the randomized SVD**:
 there are absolute constants $C, \varepsilon_0 > 0$ such that if the sketch
@@ -251,7 +289,49 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVec
       C * ((c : ℝ) ^ 2 * (k : ℝ) * Real.log (1 / δ) / ε) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨13824, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ _ _ μ A X c k ε δ hind hsub hiso hε hε1 hδ hδ2 hl
+  classical
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · rw [setOf_one_add_mul_frobNorm_sub_lt_eq_empty_of_isEmpty _ _ _ hε.le, measureReal_empty]
+    exact hδ.le
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - rsvd A (X ω)) ^ 2 := hω
+    rw [truncatedSVD_zero, sub_zero, sub_rsvd] at hω'
+    have h := frobNorm_one_sub_rangeProjector_mul_le (A * X ω) A
+    nlinarith [sq_nonneg (frobNorm A), frobNorm_nonneg ((1 - rangeProjector (A * X ω)) * A)]
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hL : 0 ≤ Real.log (1 / δ) := by linarith
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hkL : Real.log (1 / δ) ≤ k * Real.log (1 / δ) := le_mul_of_one_le_left hL hk1
+  have hkL2 : (k : ℝ) ≤ 2 * (k * Real.log (1 / δ)) := by nlinarith
+  have hc2 : 0 ≤ (c : ℝ) ^ 2 := sq_nonneg _
+  have hcε : (c : ℝ) ^ 2 * k * Real.log (1 / δ) ≤ (c : ℝ) ^ 2 * k * Real.log (1 / δ) / ε :=
+    le_div_self (by positivity) hε hε1
+  have hl4 : Real.log (2 / (δ / 2)) = Real.log 2 + Real.log 2 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 2) = 2 * 2 * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by norm_num)]
+  have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
+    rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+  refine measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
+    A hind hsub hiso hε (by linarith) hδ ?_ ?_
+  · refine (subgaussianEmbeddingDim_le _ _ _ (half_pos hδ) (by linarith)).trans (le_trans ?_ hl)
+    rw [hl4, div_le_iff₀ (by norm_num)]
+    nlinarith [mul_le_mul_of_nonneg_left hkL2 hc2, mul_le_mul_of_nonneg_left h2 hc2,
+      mul_le_mul_of_nonneg_left hkL hc2, mul_nonneg hc2 hL]
+  · refine (subgaussianJLMomentDim_le _ _ (half_pos hδ) (by linarith)).trans (le_trans ?_ hl)
+    rw [Real.sq_sqrt (by positivity), hlh]
+    rw [show 1728 * (c : ℝ) ^ 2 * (Real.log 2 + Real.log (1 / δ)) / (ε / (4 * k)) =
+      6912 * ((c : ℝ) ^ 2 * k * (Real.log 2 + Real.log (1 / δ))) / ε by field_simp; ring,
+      mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ hε.le
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (c : ℝ) ^ 2 * k)]
 
 -- A backticked declaration name in the docstring exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -372,7 +452,55 @@ theorem
     (hl' : subgaussianJLMomentDim c (ε / (6 * √(k : ℝ))) (δ / 3) ≤ Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  sorry
+  classical
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · rw [setOf_one_add_mul_frobNorm_sub_lt_eq_empty_of_isEmpty _ _ _ hε.le, measureReal_empty]
+    exact hδ.le
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have hc1 : (1 : ℝ) ≤ c := (hsub (Classical.arbitrary l)).one_le_of_isIsotropic
+    (hiso (Classical.arbitrary l))
+  have hk1 : (1 : ℝ) ≤ √(k : ℝ) := Real.one_le_sqrt.2 (by exact_mod_cast hk)
+  have hεJ : 0 < ε / (6 * √(k : ℝ)) := by positivity
+  have hεJ1 : ε / (6 * √(k : ℝ)) ≤ 1 := by
+    rw [div_le_one (by positivity)]
+    linarith
+  have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
+    (d := k) hind hsub hiso (by positivity) (by linarith) (by positivity) hl
+  have hJL := hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind hsub hiso hεJ
+    (hεJ1.trans hc1) (by positivity) hl'
+  rw [inv_sqrt_card_smul_conjTranspose] at hOSI hJL
+  have hX' := aemeasurable_inv_sqrt_card_smul_of_isSubgaussianVector hsub
+  have hδJ : (0 : ℝ) ≤ δ / 3 := by positivity
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+    (A := A) (k := k) hX' hεJ (le_max_left _ _) hδJ
+  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
+  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
+    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
+    (fun ω => isStarProjection_rangeProjector _)
+    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
+    (fun ω => by
+      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
+        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
+      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
+        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
+      hεJ (le_max_left _ _) hδJ) hχ
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
+  rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
+  exact hω'
 
 -- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -402,7 +530,59 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_is
       C * ((c : ℝ) ^ 2 * (k : ℝ) * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨186624, 1, by norm_num, one_pos, ?_⟩
+  intro Ω m n l _ _ _ _ _ _ μ A X c k ε δ hind hsub hiso hε hε1 hδ hδ2 hl
+  classical
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty n with hn | hn
+  · rw [setOf_one_add_mul_frobNorm_sub_lt_eq_empty_of_isEmpty _ _ _ hε.le, measureReal_empty]
+    exact hδ.le
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hL : 0 ≤ Real.log (1 / δ) := by linarith
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hkL : Real.log (1 / δ) ≤ k * Real.log (1 / δ) := le_mul_of_one_le_left hL hk1
+  have hkL2 : (k : ℝ) ≤ 2 * (k * Real.log (1 / δ)) := by nlinarith
+  have hc2 : 0 ≤ (c : ℝ) ^ 2 := sq_nonneg _
+  have h4 : Real.log 4 = 2 * Real.log 2 := by
+    rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    norm_num
+  have h34 : Real.log 3 ≤ Real.log 4 := Real.log_le_log (by norm_num) (by norm_num)
+  have h3 : Real.log (1 / (δ / 3)) ≤ 3 * Real.log (1 / δ) := by
+    rw [show 1 / (δ / 3) = 3 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  have h6 : Real.log (2 / (δ / 3)) ≤ 4 * Real.log (1 / δ) := by
+    rw [show 2 / (δ / 3) = 2 * 3 * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by norm_num)]
+    linarith
+  refine
+    measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
+    A hind hsub hiso hε hε1 hδ ?_ ?_
+  · refine (subgaussianEmbeddingDim_le _ _ _ (by positivity) (by linarith)).trans
+      (le_trans ?_ hl)
+    generalize Real.log (2 / (δ / 3)) = t at h6 ⊢
+    rw [show 172 * (c : ℝ) ^ 2 * ((k : ℝ) + t) / (ε / 6) ^ 2 =
+      6192 * ((c : ℝ) ^ 2 * ((k : ℝ) + t)) / ε ^ 2 by field_simp; ring, mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
+    nlinarith [mul_le_mul_of_nonneg_left hkL2 hc2, mul_le_mul_of_nonneg_left h6 hc2,
+      mul_le_mul_of_nonneg_left hkL hc2]
+  · refine (subgaussianJLMomentDim_le _ _ (by positivity) (by linarith)).trans (le_trans ?_ hl)
+    generalize Real.log (1 / (δ / 3)) = t at h3 ⊢
+    rw [show 1728 * (c : ℝ) ^ 2 * t / (ε / (6 * √(k : ℝ))) ^ 2 =
+      62208 * ((c : ℝ) ^ 2 * k * t) / ε ^ 2 by
+        rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]; field_simp; ring,
+      mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ (sq_nonneg ε)
+    nlinarith [mul_le_mul_of_nonneg_left h3 (by positivity : (0 : ℝ) ≤ (c : ℝ) ^ 2 * k)]
 
 /-! ### The constant-factor range finder -/
 
