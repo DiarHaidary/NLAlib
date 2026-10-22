@@ -50,6 +50,21 @@ in $L^2(\mu)$ exactly when it is in $L^2(\nu)$. -/
 theorem MatchesMoments.isOrthogonalPolynomial_iff {μ ν : Measure ℝ} {N k : ℕ} {p : ℝ[X]}
     (h : MatchesMoments μ ν N) (hN : p.natDegree + k ≤ N) :
     IsOrthogonalPolynomial μ k p ↔ IsOrthogonalPolynomial ν k p := by
-  sorry
+  have key : ∀ r : ℝ[X], r.degree < k →
+      ∫ x, p.eval x * r.eval x ∂μ = ∫ x, p.eval x * r.eval x ∂ν := by
+    intro r hr
+    simp_rw [← eval_mul]
+    apply h
+    by_cases hpr : p * r = 0
+    · rw [hpr, degree_zero]
+      exact WithBot.bot_lt_coe _
+    have hr0 : r ≠ 0 := by
+      rintro rfl
+      exact hpr (mul_zero p)
+    rw [degree_eq_natDegree hpr, Nat.cast_lt]
+    have h1 := (natDegree_lt_iff_degree_lt hr0).mpr hr
+    have h2 := natDegree_mul_le (p := p) (q := r)
+    omega
+  exact forall₂_congr fun r hr => by rw [key r hr]
 
 end NLAlib
