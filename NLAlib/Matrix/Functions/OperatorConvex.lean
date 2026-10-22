@@ -366,18 +366,14 @@ $\mathbf{X} \mapsto \mathbf{X}^{1/2} f(\mathbf{X}^{-1}) \mathbf{X}^{1/2}$ is con
 operator convex, by the operator Jensen inequality with
 $\mathbf{K}_i = \sqrt{a_i}\, \mathbf{X}_i^{1/2} \mathbf{X}^{-1/2}$. -/
 
-/-- Products of functions of one matrix:
-$\varphi(\mathbf{X}) \psi(\mathbf{X}) = (\varphi\psi)(\mathbf{X})$. -/
-private theorem cfc_mul_cfc (X : Matrix n n 𝕜) (φ ψ : ℝ → ℝ) :
-    cfc φ X * cfc ψ X = cfc (fun x => φ x * ψ x) X :=
-  (cfc_mul φ ψ X (X.finite_real_spectrum.continuousOn _)
-    (X.finite_real_spectrum.continuousOn _)).symm
-
 /-- $\mathbf{X}^{1/2} \varphi(\mathbf{X}) \mathbf{X}^{1/2} = g(\mathbf{X})$ with
 $g(t) = t \varphi(t)$, for positive definite $\mathbf{X}$. -/
 private theorem cfc_sqrt_mul_cfc_mul_cfc_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) (φ : ℝ → ℝ) :
     cfc Real.sqrt X * cfc φ X * cfc Real.sqrt X = cfc (fun x => x * φ x) X := by
-  rw [cfc_mul_cfc, cfc_mul_cfc]
+  rw [← cfc_mul _ _ X (X.finite_real_spectrum.continuousOn _)
+      (X.finite_real_spectrum.continuousOn _),
+    ← cfc_mul _ _ X (X.finite_real_spectrum.continuousOn _)
+      (X.finite_real_spectrum.continuousOn _)]
   refine cfc_congr fun x hx => ?_
   rw [mul_right_comm, Real.mul_self_sqrt (le_of_lt (hX.spectrum_subset_Ioi hx))]
 
@@ -401,7 +397,8 @@ private theorem cfc_neg_log_cfc_inv {X : Matrix n n 𝕜} (hX : X.IsHermitian) :
 of `cfc`. -/
 private theorem cfc_sqrt_mul_cfc_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) :
     cfc Real.sqrt X * cfc Real.sqrt X = X := by
-  rw [cfc_mul_cfc]
+  rw [← cfc_mul _ _ X (X.finite_real_spectrum.continuousOn _)
+      (X.finite_real_spectrum.continuousOn _)]
   refine (cfc_congr fun x hx => ?_).trans (cfc_id' ℝ X hX.isHermitian.isSelfAdjoint)
   exact Real.mul_self_sqrt (le_of_lt (hX.spectrum_subset_Ioi hx))
 
@@ -411,14 +408,17 @@ private theorem exists_inv_sqrt {X : Matrix n n 𝕜} (hX : X.PosDef) :
     ∃ r : Matrix n n 𝕜, rᴴ = r ∧ cfc Real.sqrt X * r = 1 ∧ r * cfc Real.sqrt X = 1 ∧
       r * X * r = 1 ∧ cfc (fun x : ℝ => -Real.log x) (r * r) = cfc Real.log X := by
   have hsr : cfc Real.sqrt X * cfc (fun x : ℝ => (√x)⁻¹) X = 1 := by
-    rw [cfc_mul_cfc]
+    rw [← cfc_mul _ _ X (X.finite_real_spectrum.continuousOn _)
+        (X.finite_real_spectrum.continuousOn _)]
     exact cfc_eq_one_of_forall_pos hX fun x hx => mul_inv_cancel₀ (Real.sqrt_pos.mpr hx).ne'
   have hrs : cfc (fun x : ℝ => (√x)⁻¹) X * cfc Real.sqrt X = 1 := by
-    rw [cfc_mul_cfc]
+    rw [← cfc_mul _ _ X (X.finite_real_spectrum.continuousOn _)
+        (X.finite_real_spectrum.continuousOn _)]
     exact cfc_eq_one_of_forall_pos hX fun x hx => inv_mul_cancel₀ (Real.sqrt_pos.mpr hx).ne'
   have hrr : cfc (fun x : ℝ => (√x)⁻¹) X * cfc (fun x : ℝ => (√x)⁻¹) X =
       cfc (fun x : ℝ => x⁻¹) X := by
-    rw [cfc_mul_cfc]
+    rw [← cfc_mul _ _ X (X.finite_real_spectrum.continuousOn _)
+        (X.finite_real_spectrum.continuousOn _)]
     refine cfc_congr fun x hx => ?_
     rw [← mul_inv, Real.mul_self_sqrt (le_of_lt (hX.spectrum_subset_Ioi hx))]
   refine ⟨cfc (fun x : ℝ => (√x)⁻¹) X, (cfc_predicate _ X : IsSelfAdjoint _), hsr, hrs, ?_, ?_⟩
