@@ -1154,6 +1154,24 @@ the note:
   and the sub-Gaussian randomized SVD pair keep their proofs: what they would share beyond the
   existing generic `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le` and
   `NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le` is a few lines.
+* **Duplicated helpers made public** (final review, 2026-10-22; rule S5). Each replaces private
+  copies in two or more files; no public statement changed.
+  `NLAlib.HasOrthonormalCols.hasOrthonormalCols_mul_diagonal` (`Sketching/Structured/Flattening.lean`):
+  a unitary times a diagonal of signs is unitary, the deterministic step of the a.e. form, which
+  now derives from it; the private copy of `SRHTMultiplication.lean` goes.
+  `NLAlib.row_eq_zero_of_norm_sq_le` (`Sketching/Sampling/RowSampling.lean`): a row of zero
+  weight vanishes under $\|\mathbf{b}_i\|_2^2 \le L p_i$; the private copy of
+  `MatrixMultiplication.lean` goes. `Real.log_two_le_log_one_div` and
+  `Real.log_two_div_le_two_mul_log_one_div` (`ForMathlib/Analysis/SpecialFunctions/Log/Basic.lean`):
+  $\log 2 \le \log(1/\delta)$ and $\log(2/\delta) \le 2\log(1/\delta)$ for
+  $0 < \delta \le 1/2$, which the asymptotic forms of the sketching, regression and low-rank files
+  inlined some twenty times; the private `log_two_le_log_one_div` of
+  `Sketching/Gaussian/ProjectionCost.lean` goes, and `Sketching/Gaussian/SubGaussian.lean` imports
+  the Log file. `NLAlib.srhtRowBound_div_two_le` (`Sketching/Structured/Flattening.lean`, with the
+  rest of the row bound's API): $\mathrm{srhtRowBound}(n, d, \delta/2) \le
+  8(d + \log(n/\delta))$ for $n \ge 1$ and $0 < \delta \le 1/2$, the step
+  `NLAlib.samplingEmbeddingDim_srhtRowBound_le` and `NLAlib.samplingInjectionDim_srhtRowBound_le`
+  repeated.
 * **Unused hypothesis dropped** (round close, 2026-10-22): the skeleton gave
   `NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_subgaussianJLMomentDim_le` an
   instance `[Nonempty k]` that the proof does not use (the environment linter's

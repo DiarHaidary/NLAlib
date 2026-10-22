@@ -688,15 +688,7 @@ theorem samplingEmbeddingDim_srhtRowBound_le [Nonempty n] (hβ : 1 ≤ β) (d : 
   have h2d : Real.log 2 ≤ Real.log (d / δ) :=
     Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
   have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
-  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
-    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
-      Real.log_mul (by norm_num) (by positivity)]
-  have hR : srhtRowBound (Fintype.card n) d (δ / 2) ≤
-      8 * (d + Real.log (Fintype.card n / δ)) := by
-    have h := srhtRowBound_le (Fintype.card n) d (δ / 2)
-    have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
-    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
-    nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (Fintype.card n / (δ / 2))))]
+  have hR := srhtRowBound_div_two_le (Fintype.card_pos (α := n)) d hδ hδ2
   have hB : 0 ≤ β * (8 * (d + Real.log (Fintype.card n / δ))) :=
     mul_nonneg (by linarith) (by linarith)
   have hl : Real.log (2 * d / (δ / 2)) = 2 * Real.log 2 + Real.log (d / δ) := by
@@ -802,15 +794,7 @@ theorem samplingInjectionDim_srhtRowBound_le [Nonempty n] (hβ : 1 ≤ β) (d : 
   have h2d : Real.log 2 ≤ Real.log (d / δ) :=
     Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
   have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
-  have hlN : Real.log (Fintype.card n / (δ / 2)) = Real.log 2 + Real.log (Fintype.card n / δ) := by
-    rw [show (Fintype.card n : ℝ) / (δ / 2) = 2 * (Fintype.card n / δ) by ring,
-      Real.log_mul (by norm_num) (by positivity)]
-  have hR : srhtRowBound (Fintype.card n) d (δ / 2) ≤
-      8 * (d + Real.log (Fintype.card n / δ)) := by
-    have h := srhtRowBound_le (Fintype.card n) d (δ / 2)
-    have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
-    have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (Fintype.card n / (δ / 2)))
-    nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (Fintype.card n / (δ / 2))))]
+  have hR := srhtRowBound_div_two_le (Fintype.card_pos (α := n)) d hδ hδ2
   have hB : 0 ≤ β * (8 * (d + Real.log (Fintype.card n / δ))) :=
     mul_nonneg (by linarith) (by linarith)
   have hl : Real.log (d / (δ / 2)) = Real.log 2 + Real.log (d / δ) := by

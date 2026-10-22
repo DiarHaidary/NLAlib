@@ -78,8 +78,8 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 * `NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`:
   flattening; its $\delta$ form, in namespace `NLAlib`,
   `measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector`.
-* `NLAlib.srhtRowBound_nonneg`, `NLAlib.srhtRowBound_mono`, `NLAlib.srhtRowBound_le`: the API of
-  the threshold.
+* `NLAlib.srhtRowBound_nonneg`, `NLAlib.srhtRowBound_mono`, `NLAlib.srhtRowBound_le`,
+  `NLAlib.srhtRowBound_div_two_le`: the API of the threshold.
 * `NLAlib.measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector`:
   flattening of the rows of a general matrix.
 * `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`,
@@ -150,6 +150,25 @@ theorem srhtRowBound_le (n d : ℕ) (δ : ℝ) :
       exact Real.sqrt_le_sqrt (by nlinarith [Nat.cast_nonneg (α := ℝ) d])
     have h2 := Real.sq_sqrt (by linarith : (0 : ℝ) ≤ 2 * Real.log (n / δ))
     nlinarith
+
+/-- The row bound at half the failure probability, against the size of its logarithm: for
+$n \ge 1$ and $0 < \delta \le 1/2$, <!-- value srhtRowBound n d (\delta/2) -->
+$$d + 2\sqrt{d \log(n/(\delta/2))} + 2 \log(n/(\delta/2)) \le
+8\bigl(d + \log(n/\delta)\bigr).$$
+The step from the SRHT sample sizes, which flatten with probability $\delta/2$, to their
+asymptotic forms. -/
+theorem srhtRowBound_div_two_le {n : ℕ} (hn : 0 < n) (d : ℕ) {δ : ℝ} (hδ : 0 < δ)
+    (hδ2 : δ ≤ 1 / 2) : srhtRowBound n d (δ / 2) ≤ 8 * (d + Real.log (n / δ)) := by
+  have hN : (1 : ℝ) ≤ n := Nat.one_le_cast.2 hn
+  have h2N : Real.log 2 ≤ Real.log (n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hlN : Real.log (n / (δ / 2)) = Real.log 2 + Real.log (n / δ) := by
+    rw [show (n : ℝ) / (δ / 2) = 2 * (n / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+  have h := srhtRowBound_le n d (δ / 2)
+  have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
+  have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (n / (δ / 2)))
+  nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (n / (δ / 2))))]
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {k n r : Type*} [Fintype k] [Fintype n] [Fintype r] [DecidableEq n]
