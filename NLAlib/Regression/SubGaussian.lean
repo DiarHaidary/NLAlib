@@ -223,7 +223,42 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVec
       Fintype.card k) :
     μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
       frobNorm (B - A * sketchAndSolve A (X ω) B) ^ 2} ≤ δ := by
-  sorry
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty m with hm | hm
+  · have h0 : ∀ M : Matrix m r ℝ, M = 0 := fun M => Matrix.ext fun i => isEmptyElim i
+    refine (measureReal_mono (s₂ := ∅) (fun ω hω => ?_) (by simp)).trans
+      (by rw [measureReal_empty]; exact hδ.le)
+    rw [Set.mem_ofPred_eq, h0 ((1 - rangeProjector A) * B),
+      h0 (B - A * sketchAndSolve A (X ω) B), frobNorm_zero] at hω
+    simp at hω
+  have hc : 1 ≤ (c : ℝ) :=
+    (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
+  have hp0 : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
+  have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
+  have hη1 : η ≤ 1 := by
+    refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
+    linarith [Nat.cast_nonneg (α := ℝ) A.rank]
+  have hOSI := isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le
+    (d := A.rank) hind hsub hiso (by norm_num) (by linarith) (half_pos hδ) hk
+  have hX : AEMeasurable X μ := aemeasurable_pi_lambda X fun i => (hsub i).aemeasurable
+  have h := (hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind hsub hiso hη
+    (hη1.trans hc) (half_pos hδ) hk').measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
+    (hOSI.hasSubspaceInjection (U := A) le_rfl)
+    (hX.const_smul ((√(Fintype.card k : ℝ))⁻¹)) (by norm_num) hη (le_max_left _ _)
+    (by positivity) B
+  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
+    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
+      div_le_iff₀ (by positivity)]
+    nlinarith
+  have hnorm : (√(Fintype.card k : ℝ))⁻¹ ≠ 0 := inv_ne_zero (ne_of_gt (Real.sqrt_pos.2 hp0))
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
+    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A ((√(Fintype.card k : ℝ))⁻¹ • X ω) B) ^ 2
+  rw [sketchAndSolve_smul_sketch A (X ω) B hnorm]
+  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
 
 /-- **Sub-Gaussian sketch-and-solve, asymptotic relative residual with high probability**:
 $O(c^2(r+1)\log(1/\delta)/\varepsilon)$ rows suffice, with $r=\operatorname{rank}\mathbf{A}$:
@@ -251,6 +286,38 @@ theorem
         C * ((c : ℝ) ^ 2 * ((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε) ≤ Fintype.card k →
         μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
           frobNorm (B - A * sketchAndSolve A (X ω) B) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨13824, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k m n r _ _ _ _ _ _ _ μ X c A B ε δ hind hsub hiso hε hε1 hδ hδ2 hk
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hL : 0 ≤ Real.log (1 / δ) := by linarith
+  have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
+    rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+  have hl4 : Real.log (2 / (δ / 2)) = Real.log 2 + Real.log 2 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 2) = 2 * 2 * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by norm_num)]
+  have hc2 : 0 ≤ (c : ℝ) ^ 2 := sq_nonneg _
+  have hr : (0 : ℝ) ≤ A.rank := Nat.cast_nonneg _
+  have hcrL : 0 ≤ (c : ℝ) ^ 2 * ((A.rank : ℝ) + 1) * Real.log (1 / δ) := by positivity
+  have hε' : (c : ℝ) ^ 2 * ((A.rank : ℝ) + 1) * Real.log (1 / δ) ≤
+      (c : ℝ) ^ 2 * ((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε := le_div_self hcrL hε hε1
+  have hrL : (A.rank : ℝ) ≤ 2 * (((A.rank : ℝ) + 1) * Real.log (1 / δ)) := by
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
+  refine measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_isSubgaussianVector hind hsub
+    hiso A B hε (by linarith) hδ ?_ ?_
+  · refine (subgaussianEmbeddingDim_le _ _ _ (half_pos hδ) (by linarith)).trans (le_trans ?_ hk)
+    rw [hl4, div_le_iff₀ (by norm_num)]
+    nlinarith [mul_le_mul_of_nonneg_left hrL hc2, mul_le_mul_of_nonneg_left h2 hc2,
+      mul_nonneg hc2 hL, mul_nonneg (mul_nonneg hc2 hr) hL]
+  · refine (subgaussianJLMomentDim_le _ _ (half_pos hδ) (by linarith)).trans (le_trans ?_ hk)
+    rw [Real.sq_sqrt (by positivity), hlh]
+    rw [show 1728 * (c : ℝ) ^ 2 * (Real.log 2 + Real.log (1 / δ)) /
+        (ε / (4 * ((A.rank : ℝ) + 1))) =
+      6912 * ((c : ℝ) ^ 2 * ((A.rank : ℝ) + 1) * (Real.log 2 + Real.log (1 / δ))) / ε by
+        field_simp; ring, mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ hε.le
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤
+      (c : ℝ) ^ 2 * ((A.rank : ℝ) + 1))]
 
 end NLAlib
