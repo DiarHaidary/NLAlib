@@ -83,11 +83,8 @@ private theorem exists_filter_residual [DecidableEq m] (A : Matrix m n ℝ)
   obtain ⟨Z, V, hZ, hV, hZV, hZZ, hAZ, hAV, hpre⟩ :=
     exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal A htn
   set G := aeval (Aᴴ * A) f
-  set W := Z.submatrix id (Fin.castLE hrt) with hWdef
-  have hW : HasOrthonormalCols W := by
-    rw [hasOrthonormalCols_iff, hWdef, Matrix.conjTranspose_submatrix,
-      ← Matrix.submatrix_mul Zᴴ Z (Fin.castLE hrt) id (Fin.castLE hrt) Function.bijective_id,
-      hZ.conjTranspose_mul_self, Matrix.submatrix_one _ (Fin.castLE_injective hrt)]
+  set W := Z.submatrix id (Fin.castLE hrt)
+  have hW : HasOrthonormalCols W := hZ.submatrix (Equiv.refl _) (Fin.castLE_injective hrt)
   have hWZ : LinearMap.range W.mulVecLin ≤ LinearMap.range Z.mulVecLin :=
     range_le_iff_exists_mul.mpr
       ⟨(1 : Matrix (Fin t) (Fin t) ℝ).submatrix (Equiv.refl _) (Fin.castLE hrt), by
@@ -211,16 +208,8 @@ private theorem integral_frobNorm_head_filter_le_of_le_card [DecidableEq m] (A :
         frobNorm (A - truncatedSVD A t) ^ 2 := by
   have := hX.isProbabilityMeasure
   obtain ⟨M, hMi, hMint, hae⟩ := exists_filter_residual A hX f hrt htn ht hc hhead htail
-  have hm : Measurable fun Y : Matrix n l ℝ =>
-      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * Y)) * truncatedSVD A r) ^ 2 :=
-    (measurable_frobNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
-      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
-  have hint : Integrable (fun ω =>
-      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * X ω)) * truncatedSVD A r) ^ 2) μ :=
-    Integrable.of_bound (hm.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable
-      (frobNorm (truncatedSVD A r) ^ 2) (Filter.Eventually.of_forall fun ω => by
-        rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
-        exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_one_sub_rangeProjector_mul_le _ _) 2)
+  have hint := integrable_frobNorm_one_sub_rangeProjector_mul_sq (A * aeval (Aᴴ * A) f)
+    (truncatedSVD A r) hX.aemeasurable
   refine (integral_mono_ae hint (hMi.const_mul (c⁻¹ ^ 2)) (hae.mono fun ω h => ?_)).trans ?_
   · simp only [← mul_pow]
     exact pow_le_pow_left₀ (frobNorm_nonneg _) h.2 2
