@@ -332,8 +332,10 @@ private theorem sum_integral_samplingAtom [Nonempty k] [DecidableEq r] (hp : ∑
     mul_inv_cancel₀ hk, one_smul]
 
 omit [Fintype n] [DecidableEq n] [MeasurableSpace n] [MeasurableSingletonClass n] in
-/-- A row of zero weight vanishes under the domination $\|\mathbf{b}_i\|^2 \le L p_i$. -/
-private theorem eq_zero_of_norm_sq_le {B : Matrix n r 𝕜}
+/-- A row of zero weight vanishes under a domination by the weights: if the rows
+$\mathbf{b}_i$ of $\mathbf{B}$ satisfy $\|\mathbf{b}_i\|_2^2 \le L p_i$ for every $i$ and
+$p_i = 0$, then $\mathbf{b}_i = \mathbf{0}$. -/
+theorem row_eq_zero_of_norm_sq_le {B : Matrix n r 𝕜}
     (hB : ∀ i, ‖WithLp.toLp 2 (B i)‖ ^ 2 ≤ L * p i) (i : n) (h0 : p i = 0) : B i = 0 := by
   have h := hB i
   rw [h0, NNReal.coe_zero, mul_zero] at h
@@ -364,7 +366,7 @@ private theorem hasSubspaceInjection_samplingSketchMatrix [Nonempty k] [Nonempty
     (fun j => ae_of_all _ (posSemidef_samplingAtom p Q j))
     (fun j => ae_of_all _ fun ι =>
       inv_mul_smul_vecMulVec_star_self_le (Nat.cast_nonneg _) hL.le (hdom (ι j))) hj₀ hε h1
-  rw [sum_integral_samplingAtom hp (eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
+  rw [sum_integral_samplingAtom hp (row_eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
     eigenvalue_one (by omega)] at hC
   refine (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_)
   · have hG : ((samplingSketchMatrix p ι : Matrix k n 𝕜) * Q)ᴴ *
@@ -393,7 +395,7 @@ private theorem hasSubspaceEmbedding_zero_samplingSketchMatrix [Nonempty k] [Non
     (fun j => ae_of_all _ (posSemidef_samplingAtom p Q j))
     (fun j => ae_of_all _ fun ι =>
       inv_mul_smul_vecMulVec_star_self_le (Nat.cast_nonneg _) hL.le (hdom (ι j))) hε hε1
-  rw [sum_integral_samplingAtom hp (eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
+  rw [sum_integral_samplingAtom hp (row_eq_zero_of_norm_sq_le hdom), hQ.conjTranspose_mul_self,
     eigenvalue_one Fintype.card_pos] at hC
   refine hQ.hasSubspaceEmbedding_zero_of_measureReal_le
     ((measureReal_mono (Set.ofPred_subset_ofPred.2 fun ι hι => ?_)).trans (hC.trans_eq ?_))

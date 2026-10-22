@@ -484,16 +484,6 @@ private theorem specNorm_ammAtom_sub_le {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b
   rw [mul_div_assoc, two_mul]
   exact add_le_add h1 h2
 
-omit [Fintype n] [DecidableEq n] in
-/-- A row of zero weight vanishes under $\|\mathbf{A}_i\|^2 \le a p_i$. -/
-private theorem row_eq_zero_of_norm_sq_le {a : ℝ}
-    (hA : ∀ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 ≤ a * p i) (i : n) (h0 : p i = 0) : A i = 0 := by
-  have h := hA i
-  rw [h0, NNReal.coe_zero, mul_zero] at h
-  have h' : ‖WithLp.toLp 2 (A i)‖ = 0 :=
-    pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm h (sq_nonneg _))
-  rwa [norm_eq_zero, WithLp.toLp_eq_zero] at h'
-
 omit [DecidableEq n] in
 open scoped ComplexOrder in
 /-- **The one-sided variance of the centred atoms**: under the two dominations,
@@ -619,14 +609,10 @@ private theorem mul_exp_le_of_le_max_div {K v x y s c : ℝ} (hK : 0 < K) (ht : 
 
 omit [Fintype n] [DecidableEq n] in
 /-- A positive domination constant, unless the matrix is zero. -/
-private theorem pos_of_norm_sq_le {w : n → ℝ} {a : ℝ} (ha : 0 ≤ a)
-    (hA : ∀ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 ≤ a * w i) (hA0 : A ≠ 0) : 0 < a := by
-  refine ha.lt_of_ne fun h => hA0 (funext fun i => ?_)
-  have hi := hA i
-  rw [← h, zero_mul] at hi
-  have h' : ‖WithLp.toLp 2 (A i)‖ = 0 :=
-    pow_eq_zero_iff two_ne_zero |>.1 (le_antisymm hi (sq_nonneg _))
-  rwa [norm_eq_zero, WithLp.toLp_eq_zero] at h'
+private theorem pos_of_norm_sq_le {a : ℝ} (ha : 0 ≤ a)
+    (hA : ∀ i, ‖WithLp.toLp 2 (A i)‖ ^ 2 ≤ a * p i) (hA0 : A ≠ 0) : 0 < a :=
+  ha.lt_of_ne fun h => hA0 <| funext fun i =>
+    row_eq_zero_of_norm_sq_le (L := 0) (p := 0) (fun j => by simpa [← h] using hA j) i rfl
 
 omit [Fintype q] [Fintype r] in
 /-- The sampled product error as a sum of centred atoms. -/
