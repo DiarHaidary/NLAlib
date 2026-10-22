@@ -7,6 +7,7 @@ module
 
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
+public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 public import Mathlib.Topology.Algebra.Polynomial
@@ -35,6 +36,12 @@ Degree and error remain separate, so the same metric approximation interface ser
   $\rho = (\sqrt{a'/a} - 1)/(\sqrt{a'/a} + 1)$.
 * `NLAlib.exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow`: a residual polynomial that
   kills finitely many outliers and decays at the Chebyshev rate on an interval.
+* `NLAlib.degree_chebyshevResidual_comp_X_sq_le`, `NLAlib.eval_chebyshevResidual_comp_X_sq_zero`,
+  `NLAlib.abs_eval_chebyshevResidual_comp_X_sq_le`: the even residual $r_q(x^2)$ on two
+  symmetric intervals, and `NLAlib.exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_pow_div_two`
+  its geometric form.
+* `NLAlib.inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq`: the dual certificate of the
+  Chebyshev bound on the extrema.
 * `NLAlib.chebyshevExtremum`, `NLAlib.chebyshevWeight`: the $q + 1$ points where the normalised
   Chebyshev residual alternates (`NLAlib.eval_chebyshevResidual_chebyshevExtremum`) and their dual
   weights $\lvert\ell_k(0)\rvert$ for the Lagrange basis, with
@@ -79,11 +86,8 @@ theorem degree_chebyshevResidual_le (a b : ℝ) (q : ℕ) :
   have hd : (C ((b + a) / (b - a)) - C (2 / (b - a)) * X : ℝ[X]).natDegree ≤ 1 := by
     refine (natDegree_sub_le _ _).trans (max_le (by simp only [natDegree_C, zero_le]) ?_)
     exact (natDegree_C_mul_le _ _).trans (by simp only [natDegree_X, le_refl])
-  have h : ((T ℝ (q : ℤ)).comp
-      (C ((b + a) / (b - a)) - C (2 / (b - a)) * X)).natDegree ≤ q := by
-    refine natDegree_comp_le.trans ?_
-    rw [natDegree_T, Int.natAbs_natCast]
-    exact (Nat.mul_le_mul_left q hd).trans_eq (mul_one q)
+  have h := natDegree_T_comp_le (q : ℤ) hd
+  rw [Int.natAbs_natCast] at h
   exact_mod_cast h
 
 /-- For $0<a<b$, the residual equals one at zero.
@@ -120,6 +124,48 @@ theorem isUniformApproxOn_chebyshevResidual {a b : ℝ} (q : ℕ)
     abs_of_pos (show 0 < (T ℝ (q : ℤ)).eval ((b + a) / (b - a)) by linarith),
     ← one_div]
   exact div_le_div_of_nonneg_right (abs_eval_T_real_le_one _ hy) (by linarith)
+
+/-- The even Chebyshev residual $r_q(x^2)$ has degree at most $2q$, including degenerate
+parameters. -/
+theorem degree_chebyshevResidual_comp_X_sq_le (a b : ℝ) (q : ℕ) :
+    ((chebyshevResidual a b q).comp (X ^ 2)).degree ≤ (2 * q : ℕ) := by
+  have hRn : (chebyshevResidual a b q).natDegree ≤ q :=
+    natDegree_le_iff_degree_le.mpr (degree_chebyshevResidual_le a b q)
+  refine degree_le_of_natDegree_le (natDegree_comp_le.trans ?_)
+  rw [natDegree_X_pow]
+  omega
+
+/-- For $0 < a < b$, the even Chebyshev residual $r_q(x^2)$ equals one at zero. -/
+theorem eval_chebyshevResidual_comp_X_sq_zero {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a < b) :
+    ((chebyshevResidual a b q).comp (X ^ 2)).eval 0 = 1 := by
+  rw [eval_comp, eval_pow, eval_X, zero_pow two_ne_zero]
+  exact eval_chebyshevResidual_zero q ha hab
+
+/-- Squares of $[-b, -a] \cup [a, b]$ lie in $[a^2, b^2]$, for $0 < a$. -/
+private lemma sq_mem_Icc_of_mem_union {a b x : ℝ} (ha : 0 < a)
+    (hx : x ∈ Set.Icc (-b) (-a) ∪ Set.Icc a b) : x ^ 2 ∈ Set.Icc (a ^ 2) (b ^ 2) := by
+  rcases hx with ⟨h1, h2⟩ | ⟨h1, h2⟩
+  · have e1 := mul_nonneg (by linarith : (0 : ℝ) ≤ -a - x) (by linarith : (0 : ℝ) ≤ a - x)
+    have e2 := mul_nonneg (by linarith : (0 : ℝ) ≤ x + b) (by linarith : (0 : ℝ) ≤ b - x)
+    constructor <;> nlinarith
+  · have e1 := mul_nonneg (by linarith : (0 : ℝ) ≤ x - a) (by linarith : (0 : ℝ) ≤ x + a)
+    have e2 := mul_nonneg (by linarith : (0 : ℝ) ≤ b - x) (by linarith : (0 : ℝ) ≤ b + x)
+    constructor <;> nlinarith
+
+/-- The even Chebyshev residual on two symmetric intervals: for $0 < a < b$, the residual
+$r_q$ of $[a^2, b^2]$ composed with $x^2$ satisfies, on $[-b, -a] \cup [a, b]$,
+$$\lvert r_q(x^2) \rvert \le T_q\Bigl(\frac{b^2 + a^2}{b^2 - a^2}\Bigr)^{-1}\,.$$
+It is the residual polynomial of MINRES on an indefinite spectrum. -/
+theorem abs_eval_chebyshevResidual_comp_X_sq_le {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a < b) :
+    ∀ x ∈ Set.Icc (-b) (-a) ∪ Set.Icc a b,
+      |((chebyshevResidual (a ^ 2) (b ^ 2) q).comp (X ^ 2)).eval x| ≤
+        ((T ℝ (q : ℤ)).eval ((b ^ 2 + a ^ 2) / (b ^ 2 - a ^ 2)))⁻¹ := by
+  intro x hx
+  have ha2 : 0 < a ^ 2 := by positivity
+  have hab2 : a ^ 2 < b ^ 2 := pow_lt_pow_left₀ hab ha.le two_ne_zero
+  have h := isUniformApproxOn_chebyshevResidual q ha2 hab2 _ (sq_mem_Icc_of_mem_union ha hx)
+  rw [Real.dist_eq, sub_zero] at h
+  rwa [eval_comp, eval_pow, eval_X]
 
 /-- **Chebyshev residual bound (geometric form).** For $0<a<b$, the uniform residual bound has
 geometric form
@@ -377,6 +423,37 @@ theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow {a a' : ℝ} (
 
 /-! ### Chebyshev extrema and the dual weights -/
 
+
+/-- **A residual polynomial for two symmetric intervals**: for $0 < a$ there is a real $p$ with
+$\deg p \le q$, $p(0) = 1$ and
+$$\lvert p(x) \rvert \le 2\Bigl(\frac{b/a - 1}{b/a + 1}\Bigr)^{\lfloor q/2 \rfloor}
+\quad (x \in [-b, -a] \cup [a, b]) \,.$$
+It is a Chebyshev residual of degree $\lfloor q/2 \rfloor$ on $[a^2, b^2]$ composed with $x^2$; for
+$b < a$ the set is empty. [Greenbaum1997, §3.1]; locator to verify. -/
+theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_pow_div_two {a b : ℝ} (ha : 0 < a)
+    (q : ℕ) : ∃ p : ℝ[X], p.degree ≤ q ∧ p.eval 0 = 1 ∧
+      ∀ x ∈ Set.Icc (-b) (-a) ∪ Set.Icc a b,
+        |p.eval x| ≤ 2 * ((b / a - 1) / (b / a + 1)) ^ (q / 2) := by
+  obtain ⟨R, hR, hR₀, -, hRI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
+    (a' := b ^ 2) (pow_pos ha 2) ∅ (q / 2) (C := 1)
+    fun x _ => by rw [Finset.prod_empty, abs_one]
+  rw [Finset.card_empty, zero_add] at hR
+  have hRn : R.natDegree ≤ q / 2 := natDegree_le_iff_degree_le.mpr hR
+  refine ⟨R.comp (X ^ 2), degree_le_of_natDegree_le (natDegree_comp_le.trans ?_), ?_,
+    fun x hx => ?_⟩
+  · rw [natDegree_X_pow]
+    omega
+  · rw [eval_comp, eval_pow, eval_X, zero_pow two_ne_zero, hR₀]
+  have key : a ≤ b ∧ x ^ 2 ∈ Set.Icc (a ^ 2) (b ^ 2) := by
+    rcases hx with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · exact ⟨by linarith, by nlinarith, by nlinarith⟩
+    · exact ⟨h1.trans h2, by nlinarith, by nlinarith⟩
+  have h := hRI _ key.2
+  have hsq : Real.sqrt (b ^ 2 / a ^ 2) = b / a := by
+    rw [← div_pow, Real.sqrt_sq (div_nonneg (ha.le.trans key.1) ha.le)]
+  rw [eval_comp, eval_pow, eval_X]
+  rwa [hsq, mul_one] at h
+
 /-- The $k$-th **Chebyshev extremum** on $[a, a']$ at degree $q$:
 $\xi_k = (a' + a)/2 - ((a' - a)/2)\cos(k\pi/q)$, increasing in $k = 0, \dots, q$,
 where the normalised Chebyshev residual takes the values $\pm T_q((a' + a)/(a' - a))^{-1}$
@@ -533,5 +610,38 @@ theorem chebyshevWeight_pos {a a' : ℝ} (ha : 0 < a) (haa : a < a') (q : ℕ) (
   refine Finset.prod_ne_zero_iff.mpr fun j hj => mul_ne_zero (inv_ne_zero (sub_ne_zero.mpr ?_)) ?_
   · exact fun h => Finset.ne_of_mem_erase hj ((strictMono_chebyshevExtremum haa q).injective h).symm
   · linarith [ha.trans_le (chebyshevExtremum_mem_Icc haa.le q j).1]
+
+/-- The dual certificate of the Chebyshev bound (Cauchy–Schwarz against the signed dual
+weights): for $0 < a < a'$, every $p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ has
+$$T_q\Bigl(\frac{a' + a}{a' - a}\Bigr)^{-1} \le \sum_k \omega_k \lvert p(\xi_k) \rvert^2\,,$$
+with $\xi_k$ the Chebyshev extrema of $[a, a']$ and $\omega_k$ their weights
+(`chebyshevExtremum`, `chebyshevWeight`). -/
+theorem inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq {𝕜 : Type*} [RCLike 𝕜] {a a' : ℝ}
+    (ha : 0 < a) (haa : a < a') {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1) :
+    ((T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)))⁻¹ ≤
+      ∑ k : Fin (q + 1),
+        chebyshevWeight a a' q k * ‖p.eval (chebyshevExtremum a a' q k : 𝕜)‖ ^ 2 := by
+  set τ := (T ℝ (q : ℤ)).eval ((a' + a) / (a' - a))
+  have hτ : 0 < τ := zero_lt_one.trans_le (one_le_eval_T_real (q : ℤ) (by
+    rw [le_div_iff₀ (by linarith)]
+    linarith))
+  set ω := chebyshevWeight a a' q
+  set u := fun k : Fin (q + 1) => ‖p.eval (chebyshevExtremum a a' q k : 𝕜)‖
+  have hω : ∀ k, 0 < ω k := chebyshevWeight_pos ha haa q
+  have hS : 1 ≤ ∑ k, ω k * u k := by
+    have h := congrArg norm (sum_neg_one_pow_mul_chebyshevWeight_mul_eval ha haa hp)
+    rw [hp₀, norm_one] at h
+    rw [← h]
+    refine (norm_sum_le _ _).trans_eq (Finset.sum_congr rfl fun k _ => ?_)
+    rw [norm_mul, RCLike.norm_ofReal, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul,
+      abs_of_pos (hω k)]
+  have hCS := Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul Finset.univ
+    (r := fun k => ω k * u k) (f := ω) (g := fun k => ω k * u k ^ 2)
+    (fun k _ => (hω k).le) (fun k _ => mul_nonneg (hω k).le (sq_nonneg _))
+    (fun k _ => by ring_nf; rfl)
+  have hW : ∑ k, ω k = τ := sum_chebyshevWeight ha haa q
+  rw [hW] at hCS
+  rw [inv_le_iff_one_le_mul₀ hτ]
+  nlinarith
 
 end NLAlib
