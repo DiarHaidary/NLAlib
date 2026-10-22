@@ -333,7 +333,7 @@ theorem subexponentialMomentBound_le_mul_exp_neg {v b p ε : ℝ} (hv : 0 ≤ v)
         subexponentialMomentBound_le hv hb hp
     _ ≤ ε ^ p * Real.exp (-p) := by linarith
 
-/-- **The layer-cake bound for $p$-th moments**: under a finite measure, for $f \ge 0$ almost
+/-- The layer-cake bound for $p$-th moments: under a finite measure, for $f \ge 0$ almost
 everywhere, $p > 0$ and $\mathbb{P}[t \le f] \le F(t)$ for every $t > 0$, with $t^{p-1}F(t)$
 integrable on $(0, \infty)$, $f^p$ is integrable and
 $$\mathbb{E} f^p \le p\int_0^\infty t^{p-1}F(t)\,dt\,.$$
@@ -424,7 +424,7 @@ theorem integral_rpow_le_of_measureReal_ge_le_two_mul_exp [IsFiniteMeasure μ]
     inv_inv]
   ring
 
-/-- **Two-sided sub-exponential tail from Dasgupta–Gupta tails**: under a finite measure, if
+/-- Two-sided sub-exponential tail from Dasgupta–Gupta tails: under a finite measure, if
 $\mathbb{P}[\beta a \le Y] \le e^{(K/2)(1 - \beta + \log\beta)}$ for every $\beta \ge 1$ and
 $\mathbb{P}[Y \le \beta a] \le e^{(K/2)(1 - \beta + \log\beta)}$ for every $0 < \beta \le 1$, with
 $a > 0$ and $K \ge 0$, then for $t \ge 0$

@@ -318,11 +318,15 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame (hU : HasOrt
   exact smul_le_smul_of_nonneg_left hle (by positivity)
 
 /-- **Haar subspace embedding, deterministic upper half**: for $\mathbf{U}$ with orthonormal
-columns, the lower constant $a_{\mathrm{H}}$ of
-`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame` and the upper constant
-$\lvert n \rvert / \lvert k \rvert$, outside probability $e^{-t^2/2} + e^{-s^2/2}$, for
+columns and $\lvert k \rvert \le \lvert n \rvert$, the Haar sketch is a subspace embedding for
+$\operatorname{range} \mathbf{U}$ with constants
+$$a_{\mathrm{H}} = \frac{(1 - (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2}
+{(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}, \qquad
+b = \frac{\lvert n \rvert}{\lvert k \rvert}$$
+outside probability $e^{-t^2/2} + e^{-s^2/2}$, for
 $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ and $s \ge 0$; no condition on $s$ and
-$\lvert k \rvert < \lvert n \rvert$ not needed. The upper half is
+$\lvert k \rvert < \lvert n \rvert$ not needed. The lower constant is that of
+`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame`. The upper half is
 `NLAlib.ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame`. Its upper constant is exact at
 $\lvert k \rvert = \lvert n \rvert$ and incomparable with the $b_{\mathrm{H}}$ of
 `NLAlib.HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_sub_sqrt`, which is
@@ -526,11 +530,17 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_
   convert hle using 1
   abel
 
-/-- **Haar subspace embedding near $\lvert k \rvert = \lvert n \rvert$**: the lower constant of
-`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq` and the
-deterministic upper constant $\lvert n \rvert / \lvert k \rvert$, outside probability
-$e^{-t^2/2} + e^{-s^2/2}$, for $t \ge 0$ and $0 \le s < \sqrt{\lvert n \rvert} - \sqrt{c}$, $c$ the
-codimension. Both constants tend to $1$ as $c / \lvert n \rvert \to 0$.
+/-- **Haar subspace embedding near $\lvert k \rvert = \lvert n \rvert$**: with $c$ the codimension,
+$\lvert k \rvert + c = \lvert n \rvert$, and $\mathbf{U}$ with orthonormal columns, the Haar sketch
+is a subspace embedding for $\operatorname{range} \mathbf{U}$ with constants
+$$a = \frac{\lvert n \rvert}{\lvert k \rvert}
+\Bigl(1 - \frac{(\sqrt{c} + \sqrt{\lvert p \rvert} + t)^2}
+{(\sqrt{\lvert n \rvert} - \sqrt{c} - s)^2}\Bigr), \qquad
+b = \frac{\lvert n \rvert}{\lvert k \rvert}$$
+outside probability $e^{-t^2/2} + e^{-s^2/2}$, for $t \ge 0$ and
+$0 \le s < \sqrt{\lvert n \rvert} - \sqrt{c}$. The lower constant is that of
+`NLAlib.HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_haarFrame_of_card_add_eq`, the upper one
+is deterministic, and both tend to $1$ as $c / \lvert n \rvert \to 0$.
 Result: haar-sketch-ose -/
 theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_add_eq
     (hU : HasOrthonormalCols U) (hQ : HasLaw Q (haarFrame n k) μ) {c : ℕ}
@@ -680,8 +690,10 @@ $\lvert k \rvert \le \lvert n \rvert$, the Haar sketch
 $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$, $\mathbf{Q}$ an
 $n \times k$ Haar frame, is an oblivious subspace embedding for dimension $d$ with constants
 $1 \mp \varepsilon$ and failure probability
-$2\cdot 21^d e^{-\lvert k\rvert(4\varepsilon^2/25 - 32\varepsilon^3/375)}$: the Haar JL tail
-through `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at $4\varepsilon/5$. Incomparable with
+$$2\cdot 21^d \exp\Bigl(-\lvert k\rvert\Bigl(\frac{4\varepsilon^2}{25} -
+\frac{32\varepsilon^3}{375}\Bigr)\Bigr)\,.$$
+It is the Haar JL tail through `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at
+$4\varepsilon/5$. Incomparable with
 Gordon's `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame` (rule 4): this one reaches
 $1 \mp \varepsilon$ at every $\lvert k\rvert \le \lvert n\rvert$, that one is sharper in its
 constants for $\lvert k\rvert \ll \lvert n\rvert$. [Vershynin2018, Lemma 5.3.2] for the Haar JL

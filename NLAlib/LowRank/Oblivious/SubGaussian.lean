@@ -196,7 +196,7 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVector [Nonempty 
     linarith
 
 /-- **The randomized SVD with a sub-Gaussian test matrix, relative error**, $\log(1/\delta)$
-size form: for $0 < \varepsilon \le 4$, $\delta > 0$ and a sketch
+size form: for $0 < \varepsilon \le 4$, $\delta > 0$, $\ell \ge 1$ and a sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ with independent, isotropic, sub-Gaussian rows with proxy $c$,
 if <!-- value subgaussianEmbeddingDim c k (1/2) (\delta/2) -->
 $\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$
@@ -403,7 +403,7 @@ theorem measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_isSubgaussianVec
 set_option linter.style.longLine false in
 /-- **Early-truncated randomized SVD with a sub-Gaussian test matrix, tail**, $\log(1/\delta)$
 size form: if the sketch $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian
-rows with proxy $c$, $0 < \varepsilon \le 1$, $\delta > 0$, at
+rows with proxy $c$, $\ell \ge 1$, $0 < \varepsilon \le 1$, $\delta > 0$, at
 least <!-- value subgaussianEmbeddingDim c k (\varepsilon/6) (\delta/3) -->
 $\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/3)))/(16C (\varepsilon/6)^2)$ and at
 least <!-- value subgaussianJLMomentDim c (\varepsilon/(6\sqrt{k})) (\delta/3) -->

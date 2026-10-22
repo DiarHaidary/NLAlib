@@ -137,8 +137,8 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srhtWithReplacement [No
 
 /-- **The randomized SVD with an SRHT test matrix, bounded-sketch form** (HMT's SRFT theorem): if
 the sketch $\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT without replacement of a bounded
-orthonormal $\mathbf{F}$ with bound $\beta$, $\ell \le n$, $\delta > 0$ and $\ell$ is at
-least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
+orthonormal $\mathbf{F}$ with bound $\beta$, $\ell \ge 1$, $\ell \le n$, $\delta > 0$ and $\ell$
+is at least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
 $$\frac{2 L \log(k/(\delta/2))}{(1/2)^2}\,,$$
 where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/2) -->
 $$L = \beta\,\bigl(k + 2\sqrt{k \log(\lvert n \rvert/(\delta/2))} +

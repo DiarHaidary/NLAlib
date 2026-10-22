@@ -663,7 +663,7 @@ private theorem log_div_half_spec [Nonempty n] (hF : IsBoundedOrthonormal F β) 
       (add_pos_of_nonneg_of_pos (by positivity) (by linarith))
 
 omit [DecidableEq n] in
-/-- The SRHT embedding size, bounded: for $\beta \ge 1$, nonempty `n`,
+/-- The SRHT embedding size, bounded: for $\beta \ge 1$, $n$ nonempty,
 $0 < \delta \le 1/2$ and every $\varepsilon$, the row-sampling
 size <!-- value samplingEmbeddingDim d L \varepsilon (\delta/2) -->
 $$\frac{3 L \log(2d/(\delta/2))}{\varepsilon^2}$$
@@ -769,7 +769,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_srht :
     ((samplingEmbeddingDim_srhtRowBound_le hF.one_le d hδ hδ2 ε).trans hk)
 
 omit [DecidableEq n] in
-/-- The SRHT injection size, bounded: for $\beta \ge 1$, nonempty `n`,
+/-- The SRHT injection size, bounded: for $\beta \ge 1$, $n$ nonempty,
 $0 < \delta \le 1/2$ and every $\varepsilon$, the row-sampling injection
 size <!-- value samplingInjectionDim d L \varepsilon (\delta/2) -->
 $$\frac{2 L \log(d/(\delta/2))}{\varepsilon^2}$$
