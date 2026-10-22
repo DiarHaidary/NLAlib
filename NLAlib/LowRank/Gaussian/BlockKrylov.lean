@@ -113,14 +113,6 @@ private theorem integral_gram_sub_rbki_le_sub_rsvd_aeval (Φ : SymmetricGauge) (
   exact pow_le_pow_left₀ (singularValues_nonneg _ _)
     (singularValues_sub_rbki_le_of_degree_lt A (X ω) hf i) 2
 
-/-- The range of the filtered sketch lies in that of the block Krylov sketch. -/
-private theorem range_mul_aeval_mul_le_range_mul_blockKrylovMatrix (A : Matrix m n ℝ)
-    (Y : Matrix n l ℝ) {q : ℕ} {f : ℝ[X]} (hf : f.degree < q) :
-    LinearMap.range (A * aeval (Aᴴ * A) f * Y).mulVecLin ≤
-      LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
-  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
-  exact range_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
-
 /-- The late-truncated randomized SVD at any test matrix $\mathbf{Y}$ whose sketch range contains
 that of the filtered sketch, in expectation, Frobenius norm: Gu's projected form and head capture
 in expectation. -/
@@ -607,8 +599,8 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
   obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
   exact integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f
     ((measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX.aemeasurable)
-    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
-    htail hK
+    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (Aᴴ * A) (X ω) hf) rfl hrt ht
+    hc hhead htail hK
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -638,8 +630,8 @@ theorem integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
   obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
   exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f
     ((measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX.aemeasurable)
-    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
-    htail hK
+    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (Aᴴ * A) (X ω) hf) rfl hrt ht
+    hc hhead htail hK
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
