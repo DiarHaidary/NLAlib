@@ -804,6 +804,8 @@ imports:
 * *Amendment 2026-10-22 (B):* `Solvers/SketchAndProject.lean` imports
   `ForMathlib/Analysis/SpecialFunctions/Log/Basic` (F4; not in its closure). Kaczmarz gets it
   through SketchAndProject.
+* *Amendment 2026-10-22 (B):* `LowRank/Gaussian/BlockKrylov.lean` imports (privately)
+  `ForMathlib/RingTheory/Polynomial/Chebyshev` (F5's `natDegree_T_comp_le`; not in its closure).
 
 **Flags (placement not by topic):**
 * None new.
