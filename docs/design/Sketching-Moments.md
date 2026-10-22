@@ -1149,3 +1149,8 @@ the note:
   and the sub-Gaussian randomized SVD pair keep their proofs: what they would share beyond the
   existing generic `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le` and
   `NLAlib.HasJLMoment.measureReal_frobNorm_sub_rsvd_sq_gt_le` is a few lines.
+* **Unused hypothesis dropped** (round close, 2026-10-22): the skeleton gave
+  `NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_subgaussianJLMomentDim_le` an
+  instance `[Nonempty k]` that the proof does not use (the environment linter's
+  `unusedArguments`, once the file counted as proved). It is removed; the statement is otherwise
+  unchanged and its callers, the asymptotic form included, are unaffected.

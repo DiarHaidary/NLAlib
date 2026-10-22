@@ -415,7 +415,7 @@ at $\varepsilon/(8\sqrt{d+1}) \le c$, failure $\delta/6$. Incomparable with
 there. Asymptotic form: `NLAlib.exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector`.
 Result: subgaussian-pcp -/
 theorem hasProjectionCostPreserving_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
-    [Nonempty k] (hind : iIndepFun (fun i ω => X ω i) μ)
+    (hind : iIndepFun (fun i ω => X ω i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
     (hiso : ∀ i, IsIsotropic (fun ω => X ω i) μ) {m : Type*} [Fintype m] (A : Matrix m n ℝ)
     (d : ℕ) (hε : 0 < ε) (hεc : ε ≤ 5 / 2 * c) (hδ : 0 < δ)
