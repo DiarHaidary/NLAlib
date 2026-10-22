@@ -68,19 +68,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {k n : Type*} [Fintype k] [Fintype n] [DecidableEq n] {β ε t δ : ℝ}
 
-omit [Fintype k] in
-/-- A unitary times a diagonal of signs is unitary. -/
-private theorem hasOrthonormalCols_mul_diagonal {F : Matrix n n 𝕜} (hF : HasOrthonormalCols F)
-    {y : n → ℝ} (hy : ∀ i, y i ^ 2 = 1) :
-    HasOrthonormalCols (F * Matrix.diagonal fun i => (y i : 𝕜)) := by
-  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
-    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
-    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
-  congr 1
-  funext i
-  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hy i,
-    RCLike.ofReal_one]
-
 /-! ### Distributional JL -/
 
 section JL
@@ -526,7 +513,7 @@ private theorem hasJLMoment_map_prod {ρ : Measure (Matrix k n ℝ)} [IsProbabil
     have hle : ∀ᵐ x ∂((rademacherVector n).prod ρ), ∫ P, G (x.1, P) ∂ρ ≤ H x := by
       filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hfst] with x hx
       have hT : HasOrthonormalCols (F * Matrix.diagonal x.1) :=
-        hasOrthonormalCols_mul_diagonal (𝕜 := ℝ) hF.hasOrthonormalCols hx
+        hF.hasOrthonormalCols.hasOrthonormalCols_mul_diagonal (𝕜 := ℝ) hx
       exact hρ ((F * Matrix.diagonal x.1) *ᵥ v) (by rw [hT.norm_toLp_mulVec, hv])
     have hI := hind.integrable_comp_of_integral_le (F := G) (H := H) hfst.aemeasurable hsnd hG hG0
       hint' hle hH
@@ -845,7 +832,7 @@ private theorem measureReal_specNorm_map_prod_le {ρ : Measure (Matrix k n 𝕜)
     (measurableSet_le measurable_const (continuous_specNorm.comp (by fun_prop)).measurable)
     hG (by positivity) (fun y hy => ?_) (measureReal_not_mem_flat_le hfst hF A B hs)
   obtain ⟨hy1, hyA, hyB⟩ := hy
-  have hT := hasOrthonormalCols_mul_diagonal (𝕜 := 𝕜) hF.hasOrthonormalCols hy1
+  have hT := hF.hasOrthonormalCols.hasOrthonormalCols_mul_diagonal (𝕜 := 𝕜) hy1
   set T := F * Matrix.diagonal fun i => (y i : 𝕜) with hTdef
   have hset : {x : (n → ℝ) × Matrix k n 𝕜 | (x.2, y) ∈ {p : Matrix k n 𝕜 × (n → ℝ) |
       t ≤ specNorm (Aᴴ * (p.1 * F * Matrix.diagonal fun i => (p.2 i : 𝕜))ᴴ *
