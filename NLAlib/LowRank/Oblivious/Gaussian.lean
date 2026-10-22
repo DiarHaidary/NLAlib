@@ -182,7 +182,61 @@ theorem
     (hl' : jlMomentDim (ε / (6 * √(k : ℝ))) (δ / 3) ≤ Fintype.card l) :
     μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  sorry
+  classical
+  have := hX.isProbabilityMeasure
+  rcases le_or_gt 1 δ with hδ1 | hδ1
+  · exact measureReal_le_one.trans hδ1
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hX
+  have hl0 : 0 < Fintype.card l := by
+    exact_mod_cast (gaussianInjectionDim_pos k (by positivity : ε / 6 ≠ 0) (by positivity)
+      (by linarith : δ / 3 < 1)).trans_le hl
+  have : Nonempty l := Fintype.card_pos_iff.1 hl0
+  have hS : (fun ω => (√(Fintype.card l : ℝ))⁻¹ • (X ω)ᴴ) =
+      fun ω => ((√(Fintype.card l : ℝ))⁻¹ • X ω)ᴴ := by
+    funext ω
+    rw [Matrix.conjTranspose_smul, star_trivial]
+  have hk1 : (1 : ℝ) ≤ √(k : ℝ) := Real.one_le_sqrt.2 (by exact_mod_cast hk)
+  have hεJ : 0 < ε / (6 * √(k : ℝ)) := by positivity
+  have hεJ1 : ε / (6 * √(k : ℝ)) ≤ 1 := by
+    rw [div_le_one (by positivity)]
+    linarith
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
+    (d := k) hG (by positivity) (by linarith) (by positivity) (by linarith) hl
+  have hJL := hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hεJ hεJ1 (by positivity) hl'
+  rw [hS] at hOSI hJL
+  have hX' : AEMeasurable (fun ω => (√(Fintype.card l : ℝ))⁻¹ • X ω) μ :=
+    (continuous_const_smul _).measurable.comp_aemeasurable hX.aemeasurable
+  have hδJ : (0 : ℝ) ≤ δ / 3 := by positivity
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+    (A := A) (k := k) hX' hεJ (le_max_left _ _) hδJ
+  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
+  have h := (hOSI.hasSubspaceInjection (U := (truncatedSVD A k)ᴴ)
+    (by rw [Matrix.rank_conjTranspose]; exact rank_truncatedSVD_le A k)
+    ).measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
+    (fun ω => isStarProjection_rangeProjector _)
+    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
+    (fun ω => by
+      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
+        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
+      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
+        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX'
+      hεJ (le_max_left _ _) hδJ) hχ
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
+  rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
+  exact hω'
 
 -- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -207,6 +261,44 @@ theorem
       C * ((k : ℝ) * Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card l →
       μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
         frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨41472, 1, by norm_num, one_pos, fun μ A X k ε δ hX hε hε1 hδ hδ2 hl => ?_⟩
+  classical
+  have := hX.isProbabilityMeasure
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_) hδ.le
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hL : 0 ≤ Real.log (1 / δ) := by linarith
+  have h3 : Real.log (1 / (δ / 3)) ≤ 3 * Real.log (1 / δ) := by
+    have h4 : Real.log 4 = 2 * Real.log 2 := by
+      rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+      norm_num
+    have h34 : Real.log 3 ≤ Real.log 4 := Real.log_le_log (by norm_num) (by norm_num)
+    rw [show 1 / (δ / 3) = 3 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+    linarith
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hkL : Real.log (1 / δ) ≤ k * Real.log (1 / δ) := le_mul_of_one_le_left hL hk1
+  have hkL2 : (k : ℝ) ≤ 2 * (k * Real.log (1 / δ)) := by nlinarith
+  refine
+    measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+    A hX hε hε1 hδ ?_ ?_
+  · refine (gaussianInjectionDim_le k _ (by positivity) (by linarith)).trans (le_trans ?_ hl)
+    generalize Real.log (1 / (δ / 3)) = t at h3 ⊢
+    rw [show 8 * ((k : ℝ) + 2 * t) / (ε / 6) ^ 2 = 288 * ((k : ℝ) + 2 * t) / ε ^ 2 by
+      field_simp; ring, mul_div_assoc']
+    exact div_le_div_of_nonneg_right (by nlinarith) (sq_nonneg ε)
+  · refine (jlMomentDim_le (by positivity) (by linarith)).trans (le_trans ?_ hl)
+    generalize Real.log (1 / (δ / 3)) = t at h3 ⊢
+    rw [show 384 * t / (ε / (6 * √(k : ℝ))) ^ 2 = 13824 * ((k : ℝ) * t) / ε ^ 2 by
+      rw [div_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]; field_simp; ring, mul_div_assoc']
+    exact div_le_div_of_nonneg_right
+      (by nlinarith [mul_le_mul_of_nonneg_left h3 (Nat.cast_nonneg (α := ℝ) k)]) (sq_nonneg ε)
 
 end NLAlib
