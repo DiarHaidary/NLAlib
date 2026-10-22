@@ -452,6 +452,9 @@ Notes on the Matrix rows:
 * **M5a** is a convenience twin of `quadForm_conjTranspose_mul_self` at `Aᴴ` (plus
   `conjTranspose_conjTranspose`), not a duplicate. Five call sites currently do that rewrite by
   hand, which is why it is worth a name.
+* *Amendment 2026-10-22 (B, M5b):* CGRecurrence's Hermitian `star_dotProduct_mulVec_eq` goes in
+  favour of the existing `Matrix.IsHermitian.star_dotProduct_mulVec_comm` and Mathlib's
+  `Matrix.star_dotProduct`; M5b's `Aᴴ` is out of reach of a rewrite there.
 * **M8.** Rule T5 (a warning) prefers `ᴴ`, but the identity is a transpose over any commutative
   semiring; the docstring says so.
   * Mathlib's `Matrix.kronecker_mulVec_vec` is column-major (`vec X = uncurry Xᵀ`). The proof is
