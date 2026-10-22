@@ -751,8 +751,7 @@ private theorem jlDim_le_of_mul_le {d : ℕ} {K : ℝ} (hε : 0 < ε) (hε1 : ε
     (hδ2 : δ ≤ 1 / 2) (hK : 58 * ((d + Real.log (1 / δ)) / ε ^ 2) ≤ K) :
     jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ K := by
   have h21 : (1 : ℝ) ≤ 21 ^ d := one_le_pow₀ (by norm_num)
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl : Real.log (2 / (δ / 21 ^ d)) = Real.log 2 + d * Real.log 21 + Real.log (1 / δ) := by
     rw [show 2 / (δ / 21 ^ d) = 2 * 21 ^ d * (1 / δ) by field_simp,
       Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by positivity),

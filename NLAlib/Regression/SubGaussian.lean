@@ -173,11 +173,7 @@ theorem
   have hc : 1 ≤ (c : ℝ) :=
     (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
   have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
   refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_isSubgaussianVector hind hsub
     hiso hA y hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl (by linarith) hδ ?_
@@ -276,8 +272,7 @@ theorem
           frobNorm (B - A * sketchAndSolve A (X ω) B) ^ 2} ≤ δ := by
   refine ⟨13824, 1, by norm_num, one_pos, ?_⟩
   intro Ω k m n r _ _ _ _ _ _ _ μ X c A B ε δ hind hsub hiso hε hε1 hδ hδ2 hk
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hL : 0 ≤ Real.log (1 / δ) := by linarith
   have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by

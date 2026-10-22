@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Complex.ExponentialBounds
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
@@ -294,8 +295,7 @@ theorem subgaussianJLMomentDim_le (c ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 1 /
   rw [subgaussianJLMomentDim_def]
   rcases eq_or_ne ε 0 with rfl | hε
   · simp
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hmax : max 2 (Real.log (1 / δ)) ≤ 3 * Real.log (1 / δ) :=
     max_le (by linarith) (by linarith)
@@ -658,11 +658,7 @@ theorem exists_forall_hasJLProperty_of_isSubgaussianVector :
   have hc : 1 ≤ (c : ℝ) :=
     (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
   have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le hind hsub hiso hε
     (by linarith) hδ ((subgaussianJLDim_le c ε hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
@@ -871,11 +867,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector :
   have hc : 1 ≤ (c : ℝ) :=
     (hsub (Classical.arbitrary k)).one_le_of_isIsotropic (hiso (Classical.arbitrary k))
   have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le hind
     hsub hiso hε (by linarith) hδ
     ((subgaussianEmbeddingDim_le c d ε hδ (by linarith)).trans (le_trans ?_ hk))

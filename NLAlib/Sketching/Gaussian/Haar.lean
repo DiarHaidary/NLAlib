@@ -553,11 +553,7 @@ theorem exists_forall_hasJLProperty_of_hasLaw_haarFrame :
       C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
       HasJLProperty (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε δ μ := by
   refine ⟨24, 1, by norm_num, one_pos, fun μ Q ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le hQ hkn hε (by linarith) hδ
     ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']

@@ -153,8 +153,7 @@ theorem
           (√(Fintype.card m / Fintype.card k : ℝ) • (Q ω)ᴴ) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
   refine ⟨288, 1 / 2, by norm_num, by norm_num, ?_⟩
   intro Ω k m n _ _ _ _ _ _ _ μ Q A y x₀ τ δ q hQ hkm hA hx₀ hτ hτ1 hδ hδ2 hk hq
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
   have h21 : (1 : ℝ) ≤ 21 ^ (Fintype.card n + 1) := one_le_pow₀ (by norm_num)
@@ -256,8 +255,7 @@ theorem
           frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2} ≤ δ := by
   refine ⟨3072, 1, by norm_num, one_pos, ?_⟩
   intro Ω k m n r _ _ _ _ _ _ _ _ μ Q A B ε δ hQ hkm hε hε1 hδ hδ2 hk
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
     rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]

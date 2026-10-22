@@ -138,8 +138,7 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_ha
     rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
       sub_zero, sub_zero, Matrix.one_mul] at hω'
     nlinarith [sq_nonneg (frobNorm A)]
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hL : 0 ≤ Real.log (1 / δ) := by linarith
   have h4 : Real.log 4 = 2 * Real.log 2 := by

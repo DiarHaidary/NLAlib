@@ -312,11 +312,7 @@ theorem exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix :
       C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
       HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ μ := by
   refine ⟨24, 1, by norm_num, one_pos, fun μ X ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le hX hε (by linarith) hδ
     ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
@@ -358,8 +354,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix :
         μ := by
   refine ⟨58, 1, by norm_num, one_pos, fun μ X d ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
   have h21 : (1 : ℝ) ≤ 21 ^ d := one_le_pow₀ (by norm_num)
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl : Real.log (2 / (δ / 21 ^ d)) = Real.log 2 + d * Real.log 21 + Real.log (1 / δ) := by
     rw [show 2 / (δ / 21 ^ d) = 2 * 21 ^ d * (1 / δ) by field_simp,
       Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by positivity),

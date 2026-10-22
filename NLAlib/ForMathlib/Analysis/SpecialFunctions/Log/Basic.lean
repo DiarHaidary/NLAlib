@@ -14,10 +14,11 @@ $\lvert s \log s \rvert \le s^2 + 1$ for $s \ge 0$: the domination that makes $g
 integrable once $g^4$ is, used for entropies of squares.
 $\lvert G s \log(G s) \rvert \le \lvert G \log G \rvert + G$ for $G \ge 0$ and $s \in [0, 1]$:
 the domination of $x \log x$ along a shrinking of $x$, used to pass to the limit in an entropy
-under a truncation or a cutoff. $\varepsilon/2 \le \log(1 + \varepsilon)$ on $(0, 1]$, and the
+under a truncation or a cutoff. $\varepsilon/2 \le \log(1 + \varepsilon)$ on $(0, 1]$; the
 threshold arithmetic of depth bounds of the form $q \ge C\log(N/\varepsilon)/s$ (the asymptotic
-forms of the block Krylov bounds). Upstream candidates for
-`Mathlib.Analysis.SpecialFunctions.Log.Basic`.
+forms of the block Krylov bounds); and the comparisons of $\log 2$ and $\log(2/\delta)$ with
+$\log(1/\delta)$ for $\delta \le 1/2$ (the asymptotic forms of the sketching sample sizes).
+Upstream candidates for `Mathlib.Analysis.SpecialFunctions.Log.Basic`.
 
 ## Main results
 
@@ -25,6 +26,8 @@ forms of the block Krylov bounds). Upstream candidates for
 * `Real.abs_mul_mul_log_mul_le`.
 * `Real.div_two_le_log_one_add`: $\varepsilon/2 \le \log(1 + \varepsilon)$ for
   $0 < \varepsilon \le 1$.
+* `Real.log_two_le_log_one_div`, `Real.log_two_div_le_two_mul_log_one_div`: for
+  $0 < \delta \le 1/2$, $\log 2 \le \log(1/\delta)$ and $\log(2/\delta) \le 2\log(1/\delta)$.
 * `Real.one_half_le_log_div`, `Real.le_add_mul_of_le_add_mul_exp`,
   `Real.one_le_and_log_div_le_sub_one_mul`, `Real.two_le_and_exp_log_four_mul_sq_div_le_one_add`,
   `Real.mul_pow_le_of_mul_log_le`, `Real.one_sub_pow_le_of_log_le_mul`: depth and iteration
@@ -180,6 +183,20 @@ theorem two_le_and_exp_log_four_mul_sq_div_le_one_add {N ε : ℝ} {q : ℕ} (hN
       ≤ Real.exp (Real.log (1 + ε)) := Real.exp_le_exp.2 hratio
     _ = 1 + ε := Real.exp_log (by linarith)
 
+/-- For $0 < \delta \le 1/2$, $\log 2 \le \log(1/\delta)$: the lower bound on
+$\log(1/\delta)$ that absorbs an additive constant into a failure probability's logarithm. -/
+theorem log_two_le_log_one_div {δ : ℝ} (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
+    log 2 ≤ log (1 / δ) :=
+  log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+
+/-- For $0 < \delta \le 1/2$, $\log(2/\delta) \le 2\log(1/\delta)$: a two-sided tail's
+$\log(2/\delta)$ is at most twice $\log(1/\delta)$. -/
+theorem log_two_div_le_two_mul_log_one_div {δ : ℝ} (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
+    log (2 / δ) ≤ 2 * log (1 / δ) := by
+  have h2 := log_two_le_log_one_div hδ hδ2
+  rw [show 2 / δ = 2 * (1 / δ) by ring, log_mul (by norm_num) (by positivity)]
+  linarith
+
 /-- The iteration threshold of a squared error contracting by $1/4$ per step: for
 $0 < \tau \le 1/2$ and $q \ge 4\log(1/\tau)$, $16 \cdot (1/2)^{2q+1} \le \tau$. -/
 theorem mul_pow_le_of_mul_log_le {τ : ℝ} (hτ : 0 < τ) (hτ1 : τ ≤ 1 / 2) {q : ℕ}
@@ -188,8 +205,7 @@ theorem mul_pow_le_of_mul_log_le {τ : ℝ} (hτ : 0 < τ) (hτ1 : τ ≤ 1 / 2)
     have := Real.one_sub_inv_le_log_of_pos (by norm_num : (0 : ℝ) < 2)
     norm_num at this ⊢
     linarith
-  have hL : Real.log 2 ≤ Real.log (1 / τ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hτ]; linarith)
+  have hL := log_two_le_log_one_div hτ hτ1
   rw [← Real.log_le_log_iff (by positivity) hτ, Real.log_mul (by norm_num) (by positivity),
     Real.log_pow, show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow, one_div, Real.log_inv]
   rw [one_div, Real.log_inv] at hL hq

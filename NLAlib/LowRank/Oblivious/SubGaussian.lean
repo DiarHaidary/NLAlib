@@ -304,8 +304,7 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVec
     rw [truncatedSVD_zero, sub_zero, sub_rsvd] at hω'
     have h := frobNorm_one_sub_rangeProjector_mul_le (A * X ω) A
     nlinarith [sq_nonneg (frobNorm A), frobNorm_nonneg ((1 - rangeProjector (A * X ω)) * A)]
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hL : 0 ≤ Real.log (1 / δ) := by linarith
   have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
@@ -504,8 +503,7 @@ theorem exists_forall_measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le_of_is
     rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
       sub_zero, sub_zero, Matrix.one_mul] at hω'
     nlinarith [sq_nonneg (frobNorm A)]
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hL : 0 ≤ Real.log (1 / δ) := by linarith
   have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk

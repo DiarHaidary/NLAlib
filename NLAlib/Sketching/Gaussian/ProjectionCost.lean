@@ -109,22 +109,17 @@ private theorem three_mul_div_le_of_projectionCostTailDim_le {v K : ℝ} {d : �
   rw [e, mul_div_assoc', div_le_iff₀ (by positivity)]
   nlinarith
 
-/-- For $0 < \delta \le 1/2$, $\log 2 \le \log(1/\delta)$. -/
-private theorem log_two_le_log_one_div (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
-    Real.log 2 ≤ Real.log (1 / δ) :=
-  Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-
 /-- For $0 < \delta \le 1/2$, $d \le 2(d+1)\log(1/\delta)$. -/
 private theorem natCast_le_two_mul_log (d : ℕ) (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
     (d : ℝ) ≤ 2 * (((d : ℝ) + 1) * Real.log (1 / δ)) := by
-  have h2 := log_two_le_log_one_div hδ hδ2
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (d : ℝ) + 1)]
 
 /-- For $0 < \delta \le 1/2$, $\log(2/(\delta/2)) \le 3\log(1/\delta)$. -/
 private theorem log_two_div_half_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
     Real.log (2 / (δ / 2)) ≤ 3 * Real.log (1 / δ) := by
-  have h2 := log_two_le_log_one_div hδ hδ2
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   rw [show 2 / (δ / 2) = 2 * 2 * (1 / δ) by field_simp,
     Real.log_mul (by positivity) (by positivity), Real.log_mul (by positivity) (by positivity)]
   linarith
@@ -132,7 +127,7 @@ private theorem log_two_div_half_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
 /-- For $0 < \delta \le 1/2$, $\log(1/(\delta/6)) \le 4\log(1/\delta)$. -/
 private theorem log_one_div_sixth_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
     Real.log (1 / (δ / 6)) ≤ 4 * Real.log (1 / δ) := by
-  have h2 := log_two_le_log_one_div hδ hδ2
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have h8 : Real.log 8 = 3 * Real.log 2 := by
     rw [show (8 : ℝ) = 2 ^ 3 by norm_num, Real.log_pow]
     norm_num
@@ -298,7 +293,7 @@ theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_gaussianMatrix :
   have hl := log_two_div_half_le hδ hδ2
   have hd := natCast_le_two_mul_log d hδ hδ2
   have hL : 0 ≤ Real.log (1 / δ) := (Real.log_nonneg (by norm_num)).trans
-    (log_two_le_log_one_div hδ hδ2)
+    (Real.log_two_le_log_one_div hδ hδ2)
   refine hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG A d hε
     (by linarith) hδ ((gaussianEmbeddingDim_le d _ (by positivity) (by linarith)).trans
       (le_trans ?_ hk)) (jlMomentDim_le_of_mul_le hε hδ hδ2 hk)
@@ -465,7 +460,7 @@ theorem exists_forall_hasProjectionCostPreserving_of_isSubgaussianVector :
   have hl6 := log_one_div_sixth_le hδ hδ2
   have hd := natCast_le_two_mul_log d hδ hδ2
   have hL : 0 ≤ Real.log (1 / δ) := (Real.log_nonneg (by norm_num)).trans
-    (log_two_le_log_one_div hδ hδ2)
+    (Real.log_two_le_log_one_div hδ hδ2)
   have hc2 : 0 ≤ (c : ℝ) ^ 2 := sq_nonneg _
   have hss : √((d : ℝ) + 1) ^ 2 = (d : ℝ) + 1 := Real.sq_sqrt (by positivity)
   refine hasProjectionCostPreserving_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hind
@@ -600,7 +595,7 @@ theorem exists_forall_hasProjectionCostPreserving_of_hasLaw_haarFrame :
       HasProjectionCostPreserving (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) A d
         (1 - ε) (1 + ε) δ μ := by
   refine ⟨98304, 1, by norm_num, one_pos, fun μ Q A d ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
-  have h2 := log_two_le_log_one_div hδ hδ2
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hd := natCast_le_two_mul_log d hδ hδ2
   have hL : 0 ≤ Real.log (1 / δ) := (Real.log_nonneg (by norm_num)).trans h2
   have h21 : (1 : ℝ) ≤ 21 ^ d := one_le_pow₀ (by norm_num)

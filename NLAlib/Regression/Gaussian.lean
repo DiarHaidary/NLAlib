@@ -182,8 +182,7 @@ theorem
           frobNorm (B - A * sketchAndSolve A (G ω) B) ^ 2} ≤ δ := by
   refine ⟨3072, 1, by norm_num, one_pos, ?_⟩
   intro Ω m n r p _ _ _ _ _ _ μ G A B ε δ hG hε hε1 hδ hδ2 hp
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
     rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
@@ -316,11 +315,7 @@ theorem
   refine ⟨288, 1 / 2, by norm_num, by norm_num, ?_⟩
   intro Ω p m n _ _ _ _ _ _ μ G A y x₀ τ δ q hG hA hx₀ hτ hτ1 hδ hδ2 hp hq
   have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
   refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_gaussianMatrix hG hA y
     hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl hδ ?_

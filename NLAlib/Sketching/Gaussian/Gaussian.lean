@@ -410,8 +410,7 @@ asymptotic form through `jlMomentDim`. -/
 theorem jlMomentDim_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
     jlMomentDim ε δ ≤ 384 * Real.log (1 / δ) / ε ^ 2 := by
   rw [jlMomentDim_def]
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl2 := Real.log_two_gt_d9
   have hmax : max 2 (Real.log (1 / δ)) ≤ 3 * Real.log (1 / δ) :=
     max_le (by linarith) (by linarith)
@@ -797,11 +796,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix :
         μ := by
   refine ⟨72, 1, by norm_num, one_pos, fun μ G d ε δ hG hε hε1 hδ hδ2 hk => ?_⟩
   have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le hG hε hε1
     hδ ((gaussianEmbeddingDim_le d ε hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
@@ -888,11 +883,7 @@ theorem exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix :
       C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
       HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω) ε δ μ := by
   refine ⟨24, 1, by norm_num, one_pos, fun μ G ε δ hG hε hε1 hδ hδ2 hk => ?_⟩
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le hG hε (by linarith) hδ
     ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
