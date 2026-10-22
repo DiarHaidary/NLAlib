@@ -11,6 +11,7 @@ public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 public import Mathlib.Probability.Distributions.Gaussian.HasGaussianLaw.Independence
 public import Mathlib.Probability.Moments.Covariance
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Probability.Distributions.Gaussian
 
 /-!
@@ -223,26 +224,6 @@ private theorem integral_sub_mul_eq_mul_integral_deriv_gaussianReal_of_le_pow (m
     _ = v * ∫ y, deriv h (s * y + m) ∂gaussianReal 0 1 := by
         rw [integral_const_mul, ← mul_assoc, hss]
 
-/-- Integration against the law of an independent pair, iterated: for independent $U$ and $W$
-under a probability measure, and $F$ continuous with $F(U, W)$ integrable,
-$\mathbb{E} F(U, W) = \int \int F(u, w) \, d\mu_U(u) \, d\mu_W(w)$, where $\mu_U$ and $\mu_W$ are
-the laws of $U$ and $W$. -/
-theorem integral_comp_eq_integral_integral_of_indepFun {E : Type*}
-    [NormedAddCommGroup E] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E]
-    [IsProbabilityMeasure μ] {U : Ω → ℝ} {W : Ω → E} (hU : AEMeasurable U μ)
-    (hW : AEMeasurable W μ) (hUW : IndepFun U W μ) {F : ℝ × E → ℝ} (hF : Continuous F)
-    (hFi : Integrable (fun ω => F (U ω, W ω)) μ) :
-    ∫ ω, F (U ω, W ω) ∂μ = ∫ w, ∫ u, F (u, w) ∂(μ.map U) ∂(μ.map W) := by
-  have hpm : AEMeasurable (fun ω => (U ω, W ω)) μ := hU.prodMk hW
-  have hprod := (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW
-  have h1 : ∫ ω, F (U ω, W ω) ∂μ = ∫ p, F p ∂(μ.map (fun ω => (U ω, W ω))) :=
-    (integral_map hpm hF.aestronglyMeasurable).symm
-  have hint : Integrable F (μ.map (fun ω => (U ω, W ω))) :=
-    (integrable_map_measure hF.aestronglyMeasurable hpm).2 hFi
-  rw [h1, hprod]
-  rw [hprod] at hint
-  exact integral_prod_symm F hint
-
 omit [Fintype ι] [DecidableEq ι] in
 /-- The regression residual $\mathbf{g} - \mathbf{g}_i \mathbf{a}$ of a Gaussian vector is
 independent of $\mathbf{g}_i$ when
@@ -430,11 +411,16 @@ theorem integral_sub_integral_mul_eq_sum_covariance_mul_integral_fderiv_of_hasGa
       (ae_of_all _ fun ω => hDb _ ω)
   calc ∫ ω, (g ω i - m) * f (g ω) ∂μ = ∫ ω, F1 (g ω i, r ω) ∂μ := by simp only [hF1, hgr]
     _ = ∫ w, ∫ u, F1 (u, w) ∂(μ.map fun ω => g ω i) ∂(μ.map r) :=
-      integral_comp_eq_integral_integral_of_indepFun hUae hrae hind hF1c hF1i
+      hind.symm.integral_comp_eq_integral_integral (f := fun p => F1 (p.2, p.1)) hrae hUae
+        ((hind.symm.integrable_comp_iff hrae hUae
+          (hF1c.comp continuous_swap).aestronglyMeasurable).1 hF1i)
     _ = σ2 * ∫ w, ∫ u, F2 (u, w) ∂(μ.map fun ω => g ω i) ∂(μ.map r) := by
       simp_rw [hinner]; rw [integral_const_mul]
     _ = σ2 * ∫ ω, F2 (g ω i, r ω) ∂μ := by
-      rw [integral_comp_eq_integral_integral_of_indepFun hUae hrae hind hF2c hF2i]
+      congr 1
+      exact (hind.symm.integral_comp_eq_integral_integral (f := fun p => F2 (p.2, p.1)) hrae hUae
+        ((hind.symm.integrable_comp_iff hrae hUae
+          (hF2c.comp continuous_swap).aestronglyMeasurable).1 hF2i)).symm
     _ = σ2 * ∫ ω, ∑ j, a j * fderiv ℝ f (g ω) (Pi.single j 1) ∂μ := by
       simp only [hF2, hgr, hfa]
     _ = _ := by
