@@ -151,7 +151,29 @@ theorem
       μ.real {ω | (1 + τ) * ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ y)‖ ^ 2 <
         ‖WithLp.toLp 2 (y - A *ᵥ sketchAndPrecondition A
           (√(Fintype.card m / Fintype.card k : ℝ) • (Q ω)ᴴ) y (x₀ ω) q)‖ ^ 2} ≤ δ := by
-  sorry
+  refine ⟨288, 1 / 2, by norm_num, by norm_num, ?_⟩
+  intro Ω k m n _ _ _ _ _ _ _ μ Q A y x₀ τ δ q hQ hkm hA hx₀ hτ hτ1 hδ hδ2 hk hq
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
+  have h21 : (1 : ℝ) ≤ 21 ^ (Fintype.card n + 1) := one_le_pow₀ (by norm_num)
+  have hl : Real.log (2 / (δ / 21 ^ (Fintype.card n + 1))) =
+      Real.log 2 + ((Fintype.card n : ℝ) + 1) * Real.log 21 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 21 ^ (Fintype.card n + 1)) = 2 * 21 ^ (Fintype.card n + 1) * (1 / δ) by
+        field_simp, Real.log_mul (by positivity) (by positivity),
+      Real.log_mul (by positivity) (by positivity), Real.log_pow]
+    push_cast
+    ring
+  have hd21 : ((Fintype.card n : ℝ) + 1) * Real.log 21 ≤ ((Fintype.card n : ℝ) + 1) * (61 / 20) :=
+    mul_le_mul_of_nonneg_left Real.log_twentyOne_le_sixtyOne_div_twenty (by positivity)
+  refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_haarFrame hQ hkm hA
+    y hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl hδ ?_
+    (Real.mul_pow_le_of_mul_log_le hτ hτ1 (by nlinarith))
+  refine (jlDim_le (by norm_num) (by positivity)
+    ((div_le_self hδ.le h21).trans (by linarith))).trans (le_trans ?_ hk)
+  rw [hl, show (4 * (1 / 2) / 5 : ℝ) ^ 2 = 4 / 25 by norm_num, div_le_iff₀ (by norm_num)]
+  nlinarith [Nat.cast_nonneg (α := ℝ) (Fintype.card n)]
 
 end SketchAndPrecondition
 
@@ -188,7 +210,37 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_haarFrame
     (hk' : jlMomentDim (√(ε / (4 * ((A.rank : ℝ) + 1)))) (δ / 2) ≤ Fintype.card k) :
     μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
       frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2} ≤ δ := by
-  sorry
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hM : (0 : ℝ) < Fintype.card m := hK.trans_le (Nat.cast_le.2 hkm)
+  let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
+  have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
+  have hη1 : η ≤ 1 := by
+    refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
+    linarith [Nat.cast_nonneg (α := ℝ) A.rank]
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_haarFrame_of_jlDim_le (d := A.rank) hQ hkm
+    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num) (half_pos hδ)
+    (by rwa [show (4 * (1 / 2) / 5 : ℝ) = 2 / 5 by norm_num])
+  have hS : AEMeasurable (fun ω => √(Fintype.card m / Fintype.card k : ℝ) • (Q ω)ᴴ) μ :=
+    (by fun_prop : Continuous fun M : Matrix m k ℝ =>
+      √(Fintype.card m / Fintype.card k : ℝ) • Mᴴ).measurable.comp_aemeasurable hQ.aemeasurable
+  have h := (hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le hQ hkm hη hη1 (half_pos hδ) hk'
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
+    (hOSI.hasSubspaceInjection (U := A) le_rfl) hS (by norm_num) hη (le_max_left _ _)
+    (by positivity) B
+  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
+    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
+      div_le_iff₀ (by positivity)]
+    nlinarith
+  have hnorm : √(Fintype.card m / Fintype.card k : ℝ) ≠ 0 :=
+    ne_of_gt (Real.sqrt_pos.2 (by positivity))
+  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
+  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
+    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A (√(Fintype.card m / Fintype.card k : ℝ) • (Q ω)ᴴ) B) ^ 2
+  rw [sketchAndSolve_smul_sketch A (Q ω)ᴴ B hnorm]
+  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
 
 /-- **Haar sketch-and-solve, asymptotic relative residual with high probability**:
 $O((r+1)\log(1/\delta)/\varepsilon)$ rows suffice, with $r=\operatorname{rank}\mathbf{A}$: there
@@ -216,6 +268,39 @@ theorem
         C * (((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε) ≤ Fintype.card k →
         μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
           frobNorm (B - A * sketchAndSolve A (Q ω)ᴴ B) ^ 2} ≤ δ := by
-  sorry
+  refine ⟨3072, 1, by norm_num, one_pos, ?_⟩
+  intro Ω k m n r _ _ _ _ _ _ _ _ μ Q A B ε δ hQ hkm hε hε1 hδ hδ2 hk
+  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have hl2 := Real.log_two_gt_d9
+  have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
+    rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+  have hr : (0 : ℝ) ≤ A.rank := Nat.cast_nonneg _
+  have hrL : (0 : ℝ) ≤ ((A.rank : ℝ) + 1) * Real.log (1 / δ) := by
+    have : 0 ≤ Real.log (1 / δ) := by linarith
+    positivity
+  have hε' : ((A.rank : ℝ) + 1) * Real.log (1 / δ) ≤
+      ((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε := le_div_self hrL hε hε1
+  have h21 : (1 : ℝ) ≤ 21 ^ A.rank := one_le_pow₀ (by norm_num)
+  have hl : Real.log (2 / (δ / 2 / 21 ^ A.rank)) =
+      Real.log 2 + Real.log 2 + A.rank * Real.log 21 + Real.log (1 / δ) := by
+    rw [show 2 / (δ / 2 / 21 ^ A.rank) = 2 * 2 * 21 ^ A.rank * (1 / δ) by field_simp,
+      Real.log_mul (by positivity) (by positivity), Real.log_mul (by positivity) (by positivity),
+      Real.log_mul (by positivity) (by positivity), Real.log_pow]
+  have hd21 : (A.rank : ℝ) * Real.log 21 ≤ A.rank * (61 / 20) :=
+    mul_le_mul_of_nonneg_left Real.log_twentyOne_le_sixtyOne_div_twenty hr
+  refine measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_haarFrame hQ hkm A B hε
+    (by linarith) hδ ?_ ?_
+  · refine (jlDim_le (by norm_num) (by positivity)
+      ((div_le_self (by positivity) h21).trans (by linarith))).trans (le_trans ?_ hk)
+    rw [hl, show ((2 : ℝ) / 5) ^ 2 = 4 / 25 by norm_num, div_le_iff₀ (by norm_num)]
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
+  · refine (jlMomentDim_le (half_pos hδ) (by linarith)).trans (le_trans ?_ hk)
+    rw [Real.sq_sqrt (by positivity), hlh]
+    rw [show 384 * (Real.log 2 + Real.log (1 / δ)) / (ε / (4 * ((A.rank : ℝ) + 1))) =
+      1536 * (((A.rank : ℝ) + 1) * (Real.log 2 + Real.log (1 / δ))) / ε by field_simp; ring,
+      mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ hε.le
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
 
 end NLAlib
