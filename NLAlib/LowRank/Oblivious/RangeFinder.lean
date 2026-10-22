@@ -68,36 +68,7 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {m n l : Type*} [Fintype m] [Fintype n] [Fintype l] [DecidableEq n] {X : Ω → Matrix n l 𝕜}
 
-/-! ### The head frame and the Markov step -/
-
-omit [Fintype l] [DecidableEq n] in
-/-- A frame of the head: orthonormal columns spanning
-$\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$, whose projector is
-$\mathbf{P}_{\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}}$ and with
-$\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket\mathbf{A}\rrbracket_k$. -/
-private theorem exists_frame_head (A : Matrix m n 𝕜) (k : ℕ) :
-    ∃ Z : Matrix n (Fin (truncatedSVD A k)ᴴ.rank) 𝕜, HasOrthonormalCols Z ∧
-      LinearMap.range Z.mulVecLin = LinearMap.range (truncatedSVD A k)ᴴ.mulVecLin ∧
-      Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ ∧ A * Z * Zᴴ = truncatedSVD A k := by
-  obtain ⟨Z, hZ, hR⟩ :=
-    exists_hasOrthonormalCols_range_eq (truncatedSVD A k)ᴴ (Fintype.card_fin _)
-  have hP : Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ := by
-    rw [← hZ.rangeProjector_eq, rangeProjector_inj, hR]
-  exact ⟨Z, hZ, hR, hP, by rw [Matrix.mul_assoc, hP, mul_rangeProjector_conjTranspose_truncatedSVD]⟩
-
-omit [Fintype l] [DecidableEq n] in
-private theorem card_frame_head_le (A : Matrix m n 𝕜) (k : ℕ) :
-    Fintype.card (Fin (truncatedSVD A k)ᴴ.rank) ≤ k := by
-  rw [Fintype.card_fin, Matrix.rank_conjTranspose]
-  exact rank_truncatedSVD_le A k
-
-omit [Fintype m] [DecidableEq n] in
-/-- The tail of the head is annihilated by the frame: $(\mathbf{A} - \mathbf{A}\mathbf{Z}
-\mathbf{Z}^{\mathsf{H}})\mathbf{Z} = \mathbf{0}$. -/
-private theorem sub_mul_mul_conjTranspose_mul_self {r : Type*} [Fintype r] [DecidableEq r]
-    {Z : Matrix n r 𝕜} (hZ : HasOrthonormalCols Z) (A : Matrix m n 𝕜) :
-    (A - A * Z * Zᴴ) * Z = 0 := by
-  rw [Matrix.sub_mul, Matrix.mul_assoc (A * Z), show Zᴴ * Z = 1 from hZ, Matrix.mul_one, sub_self]
+/-! ### The Markov step -/
 
 omit [DecidableEq n] in
 /-- On the injection event, the competitor's correction is at most $\|\mathbf{E}\mathbf{\Omega}
@@ -158,7 +129,9 @@ theorem HasSubspaceInjection.measureReal_matrixNorm_conjTranspose_mul_self_sub_r
     μ.real {ω | Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) +
         Φ (Finsupp.single 0 1) * (t / a) * frobNorm (A - truncatedSVD A k) ^ 2 <
       Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤ δ + 1 / t := by
-  obtain ⟨Z, hZ, hR, -, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, hR, -, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   refine measureReal_le_add_one_div_of_head h hiso ht fun ω hω hinj => ?_
   have hinjZ : IsSubspaceInjection (X ω)ᴴ Z a := hinj.of_range_le hR.le
   have hM := frobNorm_mul_pinv_sq_le_of_frame hZ hinjZ ha (A - truncatedSVD A k)
@@ -195,7 +168,9 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_rsvd_sq_gt_le [IsFiniteMea
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | (1 + t / a) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + 1 / t := by
-  obtain ⟨Z, hZ, hR, -, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, hR, -, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   refine measureReal_le_add_one_div_of_head h hiso ht fun ω hω hinj => ?_
   have h1 := (hinj.of_range_le hR.le).frobNorm_sub_rsvd_sq_le hZ ha A
   rw [hAZ] at h1
@@ -251,7 +226,9 @@ theorem HasSubspaceInjection.measureReal_specNorm_sub_rsvd_sq_gt_le [IsFiniteMea
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | singularValues A k ^ 2 + t / a * frobNorm (A - truncatedSVD A k) ^ 2 <
       specNorm (A - rsvd A (X ω)) ^ 2} ≤ δ + 1 / t := by
-  obtain ⟨Z, hZ, hR, -, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, hR, -, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   refine measureReal_le_add_one_div_of_head h hiso ht fun ω hω hinj => ?_
   have hinjZ : IsSubspaceInjection (X ω)ᴴ Z a := hinj.of_range_le hR.le
   have h1 := hZ.specNorm_sub_rsvd_sq_le (hinjZ.rank_mul_eq ha) A
@@ -293,11 +270,13 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_le
     (hiso : IsIsotropicSketch (fun ω => (X ω)ᴴ) μ) (ha : 0 < a) (ht : 0 < t) :
     μ.real {ω | (1 + t / a) * frobNorm (A - truncatedSVD A k) ^ 2 <
       frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2} ≤ δ + 1 / t := by
-  obtain ⟨Z, hZ, hR, -, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, hR, -, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   refine measureReal_le_add_one_div_of_head h hiso ht fun ω hω hinj => ?_
   have hinjZ : IsSubspaceInjection (X ω)ᴴ Z a := hinj.of_range_le hR.le
   have h1 := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le (hinjZ.rank_mul_eq ha) A
-    (card_frame_head_le A k)
+    ((Fintype.card_fin _).trans_le (rank_truncatedSVD_le A k))
   rw [hAZ] at h1
   have hM := frobNorm_mul_pinv_sq_le_of_frame hZ hinjZ ha (A - truncatedSVD A k)
   have hω' : (1 + t / a) * frobNorm (A - truncatedSVD A k) ^ 2 <
@@ -339,7 +318,9 @@ theorem
         Φ.matrixNorm ((A - truncatedSVD A k)ᴴ * (A - truncatedSVD A k)) <
       Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))} ≤ δ := by
   classical
-  obtain ⟨Z, hZ, hR, -, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, hR, -, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   unfold HasSubspaceInjection at h
   have hnull : μ.real {ω | ¬ specNorm (X ω) ≤ L} = 0 :=
     (measureReal_eq_zero_iff (measure_ne_top _ _)).2 (ae_iff.1 hL)
@@ -413,9 +394,11 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_ad
     μ.real {ω | frobNorm (A - truncatedSVD A k) ^ 2 + η ^ 2 / a ^ 2 <
       frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2} ≤ δ + δ' := by
   classical
-  obtain ⟨Z, hZ, hR, hP, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, hR, hP, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   have hEZ : (A - truncatedSVD A k) * Z = 0 := by
-    have h0 := sub_mul_mul_conjTranspose_mul_self hZ A
+    have h0 := hZ.sub_mul_mul_conjTranspose_mul_eq_zero A
     rwa [hAZ] at h0
   unfold HasSubspaceInjection at h
   refine (measureReal_mono (s₂ := {ω | ¬ IsSubspaceInjection (X ω)ᴴ (truncatedSVD A k)ᴴ a} ∪
@@ -427,7 +410,7 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_truncatedSVD_rsvd_sq_gt_ad
   obtain ⟨hinj, hηω⟩ := hc
   have hinjZ : IsSubspaceInjection (X ω)ᴴ Z a := hinj.of_range_le hR.le
   have h1 := hZ.frobNorm_sub_truncatedSVD_rsvd_sq_le (hinjZ.rank_mul_eq ha) A
-    (card_frame_head_le A k)
+    ((Fintype.card_fin _).trans_le (rank_truncatedSVD_le A k))
   have h2 := hinjZ.matrixNorm_sub_mul_mul_pinv_le hZ ha (lpGauge 2) A
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h2
   rw [hAZ] at h1 h2
@@ -468,9 +451,11 @@ theorem
       frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ * rangeProjector (truncatedSVD A k)ᴴ)} ≤
       δ' := by
   classical
-  obtain ⟨Z, hZ, -, hP, hAZ⟩ := exists_frame_head A k
+  obtain ⟨Z, hZ, -, hP, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   have hEP : (A - truncatedSVD A k) * rangeProjector (truncatedSVD A k)ᴴ = 0 := by
-    have h0 := sub_mul_mul_conjTranspose_mul_self hZ A
+    have h0 := hZ.sub_mul_mul_conjTranspose_mul_eq_zero A
     rw [hAZ] at h0
     rw [← hP, ← Matrix.mul_assoc, h0, Matrix.zero_mul]
   have hS : AEMeasurable (fun ω => (X ω)ᴴ) μ :=
