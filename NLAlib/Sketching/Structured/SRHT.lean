@@ -276,18 +276,6 @@ section Product
 
 variable {ρ : Measure (Matrix k n 𝕜)}
 
-omit [Fintype k] [DecidableEq n] in
-/-- On the product space, the signs have the Rademacher law. -/
-private theorem hasLaw_fst_prod [IsProbabilityMeasure ρ] :
-    HasLaw Prod.fst (rademacherVector n) ((rademacherVector n).prod ρ) :=
-  ⟨measurable_fst.aemeasurable, by rw [Measure.map_fst_prod, measure_univ, one_smul]⟩
-
-omit [Fintype k] [DecidableEq n] in
-/-- On the product space, the sampling matrix has law `ρ`. -/
-private theorem hasLaw_snd_prod [IsProbabilityMeasure ρ] :
-    HasLaw Prod.snd ρ ((rademacherVector n).prod ρ) :=
-  ⟨measurable_snd.aemeasurable, by rw [Measure.map_snd_prod, measure_univ, one_smul]⟩
-
 omit [Fintype k] in
 /-- On the product space, the sampling matrix and the randomized transform are independent. -/
 private theorem indepFun_snd_mul_diagonal [IsProbabilityMeasure ρ] (F : Matrix n n 𝕜) :
@@ -327,7 +315,7 @@ private theorem isIsotropicSketch_map_prod [IsProbabilityMeasure ρ] (hF : HasOr
   classical
   refine (hasLaw_map_prod (ρ := ρ) F).isIsotropicSketch_iff.1 ?_
   rw [mul_diagonal_eq]
-  have hfst := hasLaw_fst_prod (ρ := ρ)
+  have hfst := (measurePreserving_fst (μ := rademacherVector n) (ν := ρ)).hasLaw
   have hT : IsIsotropicSketch (fun x : (n → ℝ) × Matrix k n 𝕜 =>
       F * Matrix.diagonal fun i => (x.1 i : 𝕜)) ((rademacherVector n).prod ρ) := by
     refine ⟨fun i j => ?_, ?_⟩
@@ -344,7 +332,8 @@ private theorem isIsotropicSketch_map_prod [IsProbabilityMeasure ρ] (hF : HasOr
         HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector hF hfst
       rw [integral_congr_ae h1]
       simp
-  exact (hasLaw_snd_prod.isIsotropicSketch_iff.2 hρ).mul hT (indepFun_snd_mul_diagonal F)
+  have hsnd := (measurePreserving_snd (μ := rademacherVector n) (ν := ρ)).hasLaw
+  exact (hsnd.isIsotropicSketch_iff.2 hρ).mul hT (indepFun_snd_mul_diagonal F)
 
 end Product
 
@@ -501,14 +490,15 @@ private theorem hasSubspaceInjection_map_prod [IsProbabilityMeasure ρ]
     HasSubspaceInjection id U a (δ₁ + Fintype.card n * Real.exp (-t))
       (((rademacherVector n).prod ρ).map
         fun x => x.2 * F * Matrix.diagonal fun i => (x.1 i : 𝕜)) := by
-  have hfst := hasLaw_fst_prod (ρ := ρ)
+  have hfst := (measurePreserving_fst (μ := rademacherVector n) (ν := ρ)).hasLaw
+  have hsnd := (measurePreserving_snd (μ := rademacherVector n) (ν := ρ)).hasLaw
   refine (hasLaw_map_prod (ρ := ρ) F).hasSubspaceInjection_iff.1 ?_
   rw [mul_diagonal_eq]
   exact hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le (indepFun_snd_mul_diagonal F)
     measurable_snd.aemeasurable (measurable_mul_diagonal_fst F).aemeasurable
     (HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
         hF.hasOrthonormalCols hfst) hδ₁
-    (fun V hV hl => hasLaw_snd_prod.hasSubspaceInjection_iff.2 (hsample V hV hl))
+    (fun V hV hl => hsnd.hasSubspaceInjection_iff.2 (hsample V hV hl))
     (measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector hF hfst U ht)
 
 /-- **Flatten, then sample** on the product space (embedding), as
@@ -522,14 +512,15 @@ private theorem hasSubspaceEmbedding_map_prod [IsProbabilityMeasure ρ]
     HasSubspaceEmbedding id U a b (δ₁ + Fintype.card n * Real.exp (-t))
       (((rademacherVector n).prod ρ).map
         fun x => x.2 * F * Matrix.diagonal fun i => (x.1 i : 𝕜)) := by
-  have hfst := hasLaw_fst_prod (ρ := ρ)
+  have hfst := (measurePreserving_fst (μ := rademacherVector n) (ν := ρ)).hasLaw
+  have hsnd := (measurePreserving_snd (μ := rademacherVector n) (ν := ρ)).hasLaw
   refine (hasLaw_map_prod (ρ := ρ) F).hasSubspaceEmbedding_iff.1 ?_
   rw [mul_diagonal_eq]
   exact hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le (indepFun_snd_mul_diagonal F)
     measurable_snd.aemeasurable (measurable_mul_diagonal_fst F).aemeasurable
     (HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademacherVector
         hF.hasOrthonormalCols hfst) hδ₁
-    (fun V hV hl => hasLaw_snd_prod.hasSubspaceEmbedding_iff.2 (hsample V hV hl))
+    (fun V hV hl => hsnd.hasSubspaceEmbedding_iff.2 (hsample V hV hl))
     (measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector hF hfst U ht)
 
 end Product
