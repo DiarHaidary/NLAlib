@@ -263,6 +263,9 @@ namespace `Real`, after `mul_pow_le_of_mul_log_le` (:184):
 theorem one_sub_pow_le_of_log_le_mul {c ε : ℝ} (hc0 : 0 < c) (hc1 : c ≤ 1) (hε : 0 < ε) {q : ℕ}
     (hq : Real.log (1 / ε) ≤ c * q) : (1 - c) ^ q ≤ ε
 ```
+*Amendment 2026-10-22 (A3):* `hc0 : 0 < c` is dropped; the proof does not use it (the unused-variable
+linter fails the `--wfail` build), and the statement holds for every $c \le 1$.
+
 It replaces:
 * `Solvers/Kaczmarz.lean:418` `one_sub_one_div_frobPseudoConditionNumber_sq_pow_le` (private,
   21 lines; $c = 1/\kappa^2$). It becomes a 2-line corollary or is inlined.

@@ -27,7 +27,8 @@ forms of the block Krylov bounds). Upstream candidates for
   $0 < \varepsilon \le 1$.
 * `Real.one_half_le_log_div`, `Real.le_add_mul_of_le_add_mul_exp`,
   `Real.one_le_and_log_div_le_sub_one_mul`, `Real.two_le_and_exp_log_four_mul_sq_div_le_one_add`,
-  `Real.mul_pow_le_of_mul_log_le`: depth and iteration thresholds.
+  `Real.mul_pow_le_of_mul_log_le`, `Real.one_sub_pow_le_of_log_le_mul`: depth and iteration
+  thresholds.
 -/
 
 @[expose] public section
@@ -194,5 +195,20 @@ theorem mul_pow_le_of_mul_log_le {τ : ℝ} (hτ : 0 < τ) (hτ1 : τ ≤ 1 / 2)
   rw [one_div, Real.log_inv] at hL hq
   push_cast
   nlinarith
+
+/-- The iteration threshold of a contraction factor: for $c \le 1$, $\varepsilon > 0$ and
+$\log(1/\varepsilon) \le c q$, $(1 - c)^q \le \varepsilon$. With $c = 1/\kappa^2$ it is the
+iteration count $q \ge \kappa^2 \log(1/\varepsilon)$ of a method contracting by $1 - c$ per
+step. -/
+theorem one_sub_pow_le_of_log_le_mul {c ε : ℝ} (hc1 : c ≤ 1) (hε : 0 < ε) {q : ℕ}
+    (hq : Real.log (1 / ε) ≤ c * q) : (1 - c) ^ q ≤ ε := by
+  calc (1 - c) ^ q ≤ Real.exp (-c) ^ q :=
+        pow_le_pow_left₀ (by linarith) (by linarith [Real.add_one_le_exp (-c)]) q
+    _ = Real.exp (-(c * q)) := by rw [← Real.exp_nat_mul]; ring_nf
+    _ ≤ Real.exp (Real.log ε) := by
+        refine Real.exp_le_exp.mpr ?_
+        rw [one_div, Real.log_inv] at hq
+        linarith
+    _ = ε := Real.exp_log hε
 
 end Real
