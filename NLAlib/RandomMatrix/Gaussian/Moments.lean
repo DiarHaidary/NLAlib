@@ -58,16 +58,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 section Isotropic
 
-omit [Fintype a] [Fintype b] in
-private theorem uncurry_mul_mul (S : Matrix a m 𝕜) (X : Matrix m n 𝕜) (T : Matrix n b 𝕜) :
-    Function.uncurry (S * X * T) = (S ⊗ₖ Tᵀ) *ᵥ Function.uncurry X := by
-  ext ⟨i, j⟩
-  change (S * X * T) i j = ∑ x : m × n, (S ⊗ₖ Tᵀ) (i, j) x * X x.1 x.2
-  rw [Fintype.sum_prod_type]
-  simp only [Matrix.mul_apply, Matrix.kroneckerMap_apply, Matrix.transpose_apply, Finset.sum_mul]
-  rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
-
 private theorem frobNorm_mul_mul_eq (S : Matrix a m 𝕜) (X : Matrix m n 𝕜) (T : Matrix n b 𝕜) :
     frobNorm (S * X * T) = ‖WithLp.toLp 2 ((S ⊗ₖ Tᵀ) *ᵥ Function.uncurry X)‖ := by
   rw [frobNorm_eq_norm_toLp_uncurry, uncurry_mul_mul]

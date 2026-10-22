@@ -22,6 +22,7 @@ spectral, Frobenius and nuclear norms, the rank, the pseudoinverse and the pseud
 
 ## Main results
 
+* `NLAlib.uncurry_mul_mul`: row-major vectorisation of $\mathbf{S}\mathbf{X}\mathbf{T}$.
 * `NLAlib.HasOrthonormalCols.kronecker`, `NLAlib.IsSVD.kronecker`.
 * `NLAlib.specNorm_kronecker`, `NLAlib.frobNorm_kronecker`, `NLAlib.nuclearNorm_kronecker`,
   `NLAlib.rank_kronecker`, `NLAlib.IsPinv.kronecker`, `NLAlib.pinv_kronecker`,
@@ -38,6 +39,23 @@ open Polynomial
 namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p q r s : Type*}
+
+/-! ### Vectorisation -/
+
+/-- Row-major vectorisation of a two-sided product: flattening $\mathbf{S}\mathbf{X}\mathbf{T}$
+by `Function.uncurry` is $(\mathbf{S} \otimes \mathbf{T}^{\mathsf{T}})$ applied to the flattened
+$\mathbf{X}$. The identity is about the transpose over any commutative semiring, so it is
+stated with $\mathbf{T}^{\mathsf{T}}$; Mathlib's `Matrix.kronecker_mulVec_vec` is the
+column-major form. -/
+theorem uncurry_mul_mul {R : Type*} [CommSemiring R] {a b : Type*} [Fintype m] [Fintype n]
+    (S : Matrix a m R) (X : Matrix m n R) (T : Matrix n b R) :
+    Function.uncurry (S * X * T) = (S ⊗ₖ Tᵀ) *ᵥ Function.uncurry X := by
+  ext ⟨i, j⟩
+  change (S * X * T) i j = ∑ x : m × n, (S ⊗ₖ Tᵀ) (i, j) x * X x.1 x.2
+  rw [Fintype.sum_prod_type]
+  simp only [Matrix.mul_apply, Matrix.kroneckerMap_apply, Matrix.transpose_apply, Finset.sum_mul]
+  rw [Finset.sum_comm]
+  exact Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
 
 /-! ### Frames and decompositions -/
 

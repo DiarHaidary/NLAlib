@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
 public import NLAlib.Matrix.Basic.Orthonormal
 public import NLAlib.Matrix.Basic.Selection
+public import NLAlib.Matrix.Structured.Kronecker
 public import NLAlib.RandomMatrix.Gaussian.Basic
 
 /-!
@@ -93,19 +94,6 @@ end Vector
 
 variable {m n p q : Type*} [Fintype m] [Fintype n] [Fintype p] [Fintype q]
   {X : Ω → Matrix m n ℝ}
-
-omit [Fintype p] [Fintype q] in
-private theorem uncurry_mul_mul (U : Matrix p m ℝ) (A : Matrix m n ℝ) (V : Matrix n q ℝ) :
-    Function.uncurry (U * A * V) = (U ⊗ₖ Vᵀ) *ᵥ Function.uncurry A := by
-  funext k
-  rcases k with ⟨i, j⟩
-  change (U * A * V) i j = ∑ x, (U ⊗ₖ Vᵀ) (i, j) x * Function.uncurry A x
-  rw [Fintype.sum_prod_type]
-  simp only [Matrix.mul_apply, Finset.sum_mul, Matrix.kroneckerMap_apply, Matrix.transpose_apply]
-  rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by
-    change U i k * A k l * V l j = U i k * V l j * A k l
-    ring
 
 omit [Fintype p] [Fintype q] in
 private theorem hasOrthonormalCols_conjTranspose_kronecker [DecidableEq p] [DecidableEq q]
