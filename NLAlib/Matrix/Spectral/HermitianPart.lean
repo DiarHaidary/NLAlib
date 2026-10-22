@@ -97,6 +97,66 @@ theorem quadForm_hermitianPart (A : Matrix n n ℝ) (x : n → ℝ) :
     quadForm (hermitianPart A) x = quadForm A x := by
   simpa only [RCLike.re_to_real] using re_quadForm_hermitianPart A x
 
+/-- The trace of the Hermitian part is the real part of the trace:
+$\operatorname{tr} \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}}) =
+\operatorname{Re} \operatorname{tr} \mathbf{A}$. Over $\mathbb{R}$ it says that the trace sees
+only the symmetric part (`simpa using trace_hermitianPart A`). -/
+theorem trace_hermitianPart (A : Matrix n n 𝕜) :
+    (hermitianPart A).trace = ((RCLike.re A.trace : ℝ) : 𝕜) := by
+  rw [hermitianPart, Matrix.trace_smul, Matrix.trace_add, Matrix.trace_conjTranspose,
+    RCLike.real_smul_eq_coe_smul (K := 𝕜), smul_eq_mul, RCLike.star_def, RCLike.add_conj]
+  push_cast
+  ring
+
+open scoped MatrixOrder in
+/-- A contraction from a field-of-values bound: if the Hermitian part of $\mathbf{A}$
+satisfies $a\mathbf{I} \preceq \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$ with
+$a \ge 0$, and $\|\mathbf{A}\|_2 \le a'$, then with $\alpha = a/a'^2$
+$$\|\mathbf{I} - \alpha\mathbf{A}\|_2 \le \sqrt{1 - (a/a')^2}\,.$$
+The one-step bound of Elman's GMRES estimate; for $a' = 0$ the step is $\alpha = 0$. -/
+theorem specNorm_one_sub_smul_le_of_smul_one_le_hermitianPart [DecidableEq n]
+    {A : Matrix n n 𝕜} {a a' : ℝ} (ha : 0 ≤ a) (hH : a • (1 : Matrix n n 𝕜) ≤ hermitianPart A)
+    (hA : specNorm A ≤ a') : specNorm (1 - (a / a' ^ 2) • A) ≤ √(1 - (a / a') ^ 2) := by
+  rcases eq_or_ne a' 0 with rfl | ha'
+  · simpa using (specNorm_one_le (𝕜 := 𝕜) (n := n))
+  set α : ℝ := a / a' ^ 2 with hα
+  have hα0 : 0 ≤ α := by positivity
+  rw [RCLike.real_smul_eq_coe_smul (K := 𝕜) α A]
+  refine (specNorm_le_iff (Real.sqrt_nonneg _)).2 fun v => ?_
+  have hq : a * ‖WithLp.toLp 2 v‖ ^ 2 ≤ RCLike.re (quadForm A v) := by
+    have h := re_quadForm_le_re_quadForm_of_le hH v
+    rwa [re_quadForm_real_smul_one, re_quadForm_hermitianPart] at h
+  have hAv : ‖WithLp.toLp 2 (A *ᵥ v)‖ ≤ a' * ‖WithLp.toLp 2 v‖ :=
+    (norm_toLp_mulVec_le A v).trans (mul_le_mul_of_nonneg_right hA (norm_nonneg _))
+  have hexp : ‖WithLp.toLp 2 ((1 - (α : 𝕜) • A) *ᵥ v)‖ ^ 2 = ‖WithLp.toLp 2 v‖ ^ 2 -
+      2 * α * RCLike.re (quadForm A v) + α ^ 2 * ‖WithLp.toLp 2 (A *ᵥ v)‖ ^ 2 := by
+    have e : WithLp.toLp 2 ((1 - (α : 𝕜) • A) *ᵥ v) =
+        WithLp.toLp 2 v - (α : 𝕜) • WithLp.toLp 2 (A *ᵥ v) := by
+      rw [Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec, WithLp.toLp_sub,
+        WithLp.toLp_smul]
+    rw [e, @norm_sub_sq 𝕜, inner_smul_right, EuclideanSpace.inner_toLp_toLp, dotProduct_comm,
+      ← quadForm_def, RCLike.re_ofReal_mul, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hα0]
+    ring
+  have hle : ‖WithLp.toLp 2 ((1 - (α : 𝕜) • A) *ᵥ v)‖ ^ 2 ≤
+      (1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2 := by
+    have h2 : α ^ 2 * ‖WithLp.toLp 2 (A *ᵥ v)‖ ^ 2 ≤ α ^ 2 * (a' * ‖WithLp.toLp 2 v‖) ^ 2 :=
+      mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (norm_nonneg _) hAv 2) (sq_nonneg _)
+    have h3 : 2 * α * (a * ‖WithLp.toLp 2 v‖ ^ 2) ≤ 2 * α * RCLike.re (quadForm A v) :=
+      mul_le_mul_of_nonneg_left hq (by positivity)
+    have hid : ‖WithLp.toLp 2 v‖ ^ 2 - 2 * α * (a * ‖WithLp.toLp 2 v‖ ^ 2) +
+        α ^ 2 * (a' * ‖WithLp.toLp 2 v‖) ^ 2 = (1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2 := by
+      rw [hα]
+      field_simp
+      ring
+    rw [hexp]
+    linarith
+  calc ‖WithLp.toLp 2 ((1 - (α : 𝕜) • A) *ᵥ v)‖
+      = Real.sqrt (‖WithLp.toLp 2 ((1 - (α : 𝕜) • A) *ᵥ v)‖ ^ 2) :=
+        (Real.sqrt_sq (norm_nonneg _)).symm
+    _ ≤ Real.sqrt ((1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2) := Real.sqrt_le_sqrt hle
+    _ = √(1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ := by
+        rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
+
 /-- Over $\mathbb{R}$ the trace of a compression sees only the symmetric part:
 $\operatorname{tr}(\mathbf{Q}^{\mathsf{T}}\mathbf{H}\mathbf{Q})
 = \operatorname{tr}(\mathbf{Q}^{\mathsf{T}}\mathbf{A}\mathbf{Q})$ for

@@ -168,13 +168,6 @@ private theorem girardHutchinson_hermitianPart (B : Matrix n n ℝ) (g : Matrix 
     girardHutchinson (hermitianPart B) g = girardHutchinson B g := by
   rw [girardHutchinson, girardHutchinson, trace_conjTranspose_mul_hermitianPart_mul]
 
-omit [DecidableEq n] in
-/-- Over $\mathbb{R}$ the trace sees only the symmetric part. -/
-private theorem trace_hermitianPart (B : Matrix n n ℝ) : (hermitianPart B).trace = B.trace := by
-  classical
-  simpa only [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one] using
-    trace_conjTranspose_mul_hermitianPart_mul (1 : Matrix n n ℝ) B
-
 /-! #### Measurability and integrability helpers -/
 
 private theorem measurable_one_sub_rangeProjector_mul (A : Matrix n n 𝕜) :
@@ -456,7 +449,8 @@ private theorem integral_girardHutchinson_sub_trace_sq_of_hasLaw_gaussianMatrix 
       (memLp_id_gaussianReal' 4 (by simp))
   have e (ω : Ω) : girardHutchinson B (G ω) - B.trace =
       girardHutchinson (hermitianPart B) (G ω) - (hermitianPart B).trace := by
-    rw [girardHutchinson_hermitianPart, trace_hermitianPart]
+    rw [girardHutchinson_hermitianPart, show (hermitianPart B).trace = B.trace by
+      simpa using trace_hermitianPart B]
   have hH := isHermitian_hermitianPart B
   have h := integral_norm_trace_sub_girardHutchinson_sq (iIndepFun_col_of_hasLaw_gaussianMatrix hG)
     hX (A := hermitianPart B) (fun j => memLp_quadForm (hL4 j) _)
@@ -502,7 +496,8 @@ private theorem integral_girardHutchinson_sub_trace_sq_of_hasLaw_rademacherMatri
     memLp_of_hasLaw_rademacherVector (hcol j) 4 i
   have e (ω : Ω) : girardHutchinson B (G ω) - B.trace =
       girardHutchinson (hermitianPart B) (G ω) - (hermitianPart B).trace := by
-    rw [girardHutchinson_hermitianPart, trace_hermitianPart]
+    rw [girardHutchinson_hermitianPart, show (hermitianPart B).trace = B.trace by
+      simpa using trace_hermitianPart B]
   have hH := isHermitian_hermitianPart B
   have h := integral_norm_trace_sub_girardHutchinson_sq hind hX (A := hermitianPart B)
     (fun j => memLp_quadForm (hL4 j) _)
