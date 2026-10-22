@@ -188,20 +188,6 @@ section SubGaussian
 
 variable [DecidableEq n] {X : Ω → Matrix k n ℝ} {c : ℝ≥0}
 
-omit [DecidableEq n] in
-/-- With no columns every sketch is a projection-cost-preserving sketch. -/
-private theorem hasProjectionCostPreserving_of_isEmpty [IsEmpty n] {l m : Type*} [Fintype l]
-    [Fintype m] (S : Ω → Matrix l n ℝ) (A : Matrix m n ℝ) (d : ℕ) (a b : ℝ) {δ : ℝ}
-    (hδ : 0 ≤ δ) : HasProjectionCostPreserving S A d a b δ μ := by
-  have hA : A = 0 := Matrix.ext fun _ j => isEmptyElim j
-  have e : {ω | ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) d a b} = ∅ := by
-    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨0, le_rfl, fun P _ _ => ?_⟩
-    simp only [hA, Matrix.zero_mul, Matrix.mul_zero, sub_self, frobNorm_zero, ne_eq,
-      OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, add_zero, le_refl, and_self]
-  unfold HasProjectionCostPreserving
-  rw [e, measureReal_empty]
-  exact hδ
-
 /-- **A sub-Gaussian sketch is a projection-cost-preserving sketch**, size form: for a sketch
 $\mathbf{X}$ with independent isotropic rows, sub-Gaussian with proxy $c$, for
 $0 < \varepsilon \le 5c/2$, $\delta > 0$, at

@@ -365,6 +365,24 @@ theorem hasProjectionCostPreserving_conjTranspose_iff {X : Ω → Matrix n l �
       μ.real {ω | ¬ IsProjectionCostPreserving A (A * X ω) k a b} ≤ δ := by
   simp only [HasProjectionCostPreserving, Matrix.conjTranspose_conjTranspose]
 
+/-- With no columns every sketch is a projection-cost-preserving sketch. If $n$ is empty then
+$\mathbf{A} = \mathbf{0}$, so $\mathbf{A}\mathbf{S}(\omega)^{\mathsf{H}} = \mathbf{0}$ and the
+rank-$d$ property holds with offset $c = 0$ for every sketch $\mathbf{S}$, constants $a$, $b$
+and $\delta \ge 0$:
+$\mu\{\omega : \mathbf{A}\mathbf{S}(\omega)^{\mathsf{H}}\text{ fails}\} = 0 \le \delta$. It
+disposes of the degenerate case in proofs that otherwise need a column. -/
+theorem hasProjectionCostPreserving_of_isEmpty [IsEmpty n] (S : Ω → Matrix l n 𝕜)
+    (A : Matrix m n 𝕜) (d : ℕ) (a b : ℝ) {δ : ℝ} (hδ : 0 ≤ δ) :
+    HasProjectionCostPreserving S A d a b δ μ := by
+  have hA : A = 0 := Matrix.ext fun _ j => isEmptyElim j
+  have e : {ω | ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) d a b} = ∅ := by
+    refine Set.eq_empty_of_forall_notMem fun ω hω => hω ⟨0, le_rfl, fun P _ _ => ?_⟩
+    simp only [hA, Matrix.zero_mul, Matrix.mul_zero, sub_self, frobNorm_zero, ne_eq,
+      OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, mul_zero, add_zero, le_refl, and_self]
+  unfold HasProjectionCostPreserving
+  rw [e, measureReal_empty]
+  exact hδ
+
 /-- **A random subspace embedding of the row space is a projection-cost-preserving sketch** for
 every rank, with the same constants and failure probability:
 `NLAlib.IsSubspaceEmbedding.isProjectionCostPreserving` on the event. Its dimension is at least
