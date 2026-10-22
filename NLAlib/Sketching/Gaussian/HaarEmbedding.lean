@@ -82,13 +82,6 @@ private theorem conjTranspose_mul_rangeProjector_mul_eq {l : Type*} [Fintype l] 
 
 variable [DecidableEq p]
 
-omit [Fintype k] [DecidableEq k] [Fintype p] [DecidableEq p] in
-/-- $\mathbf{X}^{\mathsf{H}} (c \, \mathbf{I}) \mathbf{X} = c \, \mathbf{X}^{\mathsf{H}}\mathbf{X}$.
--/
-private theorem conjTranspose_mul_smul_one_mul {l : Type*} [Fintype l] [DecidableEq l]
-    (X : Matrix l p ℝ) (c : ℝ) : Xᴴ * (c • (1 : Matrix l l ℝ)) * X = c • (Xᴴ * X) := by
-  rw [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul]
-
 omit [Fintype k] [DecidableEq k] in
 /-- **The Gaussian lower bound on $\mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$**:
 for an $n \times l$ Gaussian $\mathbf{G}$, $\lvert l \rvert \le \lvert n \rvert$,
@@ -155,8 +148,8 @@ private theorem measureReal_not_smul_one_le_conjTranspose_mul_rangeProjector_mul
           rwa [e] at h
         rw [conjTranspose_mul_rangeProjector_mul_eq hG, div_eq_inv_mul, ← smul_smul]
         refine le_trans (smul_le_smul_of_nonneg_left h1 (inv_nonneg.2 hβ.le)) ?_
-        rw [← conjTranspose_mul_smul_one_mul]
-        exact conjTranspose_mul_mul_le_conjTranspose_mul_mul hinv _
+        refine le_of_eq_of_le ?_ (conjTranspose_mul_mul_le_conjTranspose_mul_mul hinv _)
+        simp only [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul]
     _ ≤ _ := measureReal_union_le _ _
     _ ≤ _ := by
         rw [hN, add_zero]
@@ -204,7 +197,7 @@ private theorem measureReal_not_conjTranspose_mul_rangeProjector_mul_le_smul_one
         have hinv := inv_le_inv_smul_one_of_smul_one_le hγ h2
         rw [conjTranspose_mul_rangeProjector_mul_eq hpd.isUnit, div_eq_inv_mul, ← smul_smul]
         refine le_trans (conjTranspose_mul_mul_le_conjTranspose_mul_mul hinv _) ?_
-        rw [conjTranspose_mul_smul_one_mul]
+        simp only [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul]
         exact smul_le_smul_of_nonneg_left h1 (inv_nonneg.2 hγ.le)
     _ ≤ _ := (measureReal_union_le _ _).trans (add_le_add hA hB)
 
@@ -385,29 +378,6 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_haarFrame_of_lt_sqrt_s
   ring
 
 omit [Fintype p] [DecidableEq p] in
-/-- **Complementary coordinate frames**: for $\lvert k \rvert + c = \lvert n \rvert$ there are
-frames $\mathbf{V}_1$ ($n \times k$) and $\mathbf{V}_2$ ($n \times c$) with
-$\mathbf{V}_1\mathbf{V}_1^{\mathsf{H}} + \mathbf{V}_2\mathbf{V}_2^{\mathsf{H}} = \mathbf{I}$
-(selection matrices of a split of $n$). -/
-private theorem exists_complementary_frames [DecidableEq n] {c : ℕ}
-    (hc : Fintype.card k + c = Fintype.card n) :
-    ∃ (V₁ : Matrix n k ℝ) (V₂ : Matrix n (Fin c) ℝ), HasOrthonormalCols V₁ ∧
-      HasOrthonormalCols V₂ ∧ V₁ * V₁ᴴ + V₂ * V₂ᴴ = 1 := by
-  classical
-  obtain ⟨e⟩ : Nonempty (k ⊕ Fin c ≃ n) :=
-    ⟨Fintype.equivOfCardEq (by rw [Fintype.card_sum, Fintype.card_fin, hc])⟩
-  set V₁ : Matrix n k ℝ := selectionMatrix (e ∘ Sum.inl) with hV₁def
-  set V₂ : Matrix n (Fin c) ℝ := selectionMatrix (e ∘ Sum.inr) with hV₂def
-  have hV : HasOrthonormalCols (Matrix.fromCols V₁ V₂) := by
-    have : Matrix.fromCols V₁ V₂ = selectionMatrix e := by
-      ext i (j | j) <;> simp [hV₁def, hV₂def, selectionMatrix_apply]
-    rw [this]
-    exact hasOrthonormalCols_selectionMatrix e.injective
-  exact ⟨V₁, V₂, hasOrthonormalCols_selectionMatrix (e.injective.comp Sum.inl_injective),
-    hasOrthonormalCols_selectionMatrix (e.injective.comp Sum.inr_injective),
-    hV.mul_conjTranspose_add_mul_conjTranspose (by rw [Fintype.card_fin, hc])⟩
-
-omit [Fintype p] [DecidableEq p] in
 /-- **The complement of a Haar frame**: an event on
 $\mathbf{U}^{\mathsf{H}}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{U}$ for an $n \times k$ Haar frame
 $\mathbf{Q}$ has the probability of the same event on $\mathbf{U}^{\mathsf{H}}\mathbf{U} -
@@ -422,7 +392,11 @@ private theorem measureReal_haarFrame_eq_complement [Finite p] {c : ℕ}
       (haarFrame n (Fin c)).real {M | ¬ C ≤ r • (Uᴴ * U - Uᴴ * (M * Mᴴ) * U)} := by
   classical
   have := Fintype.ofFinite p
-  obtain ⟨V₁, V₂, hV₁, hV₂, hsum⟩ := exists_complementary_frames (k := k) hc
+  have hc' : Fintype.card k + Fintype.card (Fin c) = Fintype.card n := by
+    rwa [Fintype.card_fin]
+  obtain ⟨V₁, V₂, hV⟩ := exists_hasOrthonormalCols_fromCols ℝ hc'
+  obtain ⟨hV₁, hV₂, -⟩ := hasOrthonormalCols_fromCols_iff.mp hV
+  have hsum := hV.mul_conjTranspose_add_mul_conjTranspose hc'
   have hc1 : Continuous fun M : Matrix n k ℝ => r • (Uᴴ * (M * Mᴴ) * U) := by fun_prop
   have hT1 : MeasurableSet {M : Matrix n k ℝ | ¬ C ≤ r • (Uᴴ * (M * Mᴴ) * U)} :=
     (isClosed_le continuous_const hc1).measurableSet.compl
