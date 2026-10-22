@@ -27,11 +27,21 @@ also imports `Probability/QuadraticForm/Moments.lean`. One statement changed: th
 twin loses an unused `[Nonempty k]` (linter; in the rename map's `statementChanged`). Two private
 helper docstrings of `ProjectionCost.lean` got their value markers.
 
+Final review (2026-10-22): the duplicated helpers become public lemmas (rule S5),
+`HasOrthonormalCols.hasOrthonormalCols_mul_diagonal` and `srhtRowBound_div_two_le`
+(`Sketching/Structured/Flattening.lean`), `row_eq_zero_of_norm_sq_le`
+(`Sketching/Sampling/RowSampling.lean`), `Real.log_two_le_log_one_div` and
+`Real.log_two_div_le_two_mul_log_one_div` (`ForMathlib/Analysis/SpecialFunctions/Log/Basic.lean`),
+with their private copies deleted (net 30 Lean lines fewer); the C9, D13 and Haar D3 warnings the
+review named are cleared. The new Matrix-vocabulary lemma in `Flattening.lean` adds one P10
+warning.
+
 Checks: `mk_all --check` clean; `scripts/stage_check.sh`: 396 proved modules, 0 not yet; build
-3993 jobs, `--wfail`, 0 warnings; audit 9950 declarations, 0 violations; lint 6387 declarations, 0
-errors; references 88 keys, 86 asymptotic forms, 0 problems; constants 34, 424 value markers, 0
-problems; rules 0 errors, 73 in the baseline, 880 warnings (849 at `46f78ab`: B5 +7, C9 +5,
-D3 +15, D13 +2, T11 +2); duplicates 5841 theorems, 0 classes; script tests 46, OK.
+3993 jobs, `--wfail`, 0 warnings; audit 9951 declarations, 0 violations; lint 6388 declarations, 0
+errors; references 88 keys, 86 asymptotic forms, 0 problems; constants 34, 425 value markers, 0
+problems; rules 0 errors, 73 in the baseline, 872 warnings (880 before the final review: C9 -2,
+D3 -3, D13 -3, F10 -1, P10 +1; 849 at `46f78ab`); duplicates 5842 theorems, 0 classes; script
+tests 46, OK.
 
 Open items for the maintainer:
 * `KaneNelson2014` in `docs/references.bib` has surnames, title, journal and year only; given
