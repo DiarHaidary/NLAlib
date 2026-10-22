@@ -87,6 +87,26 @@ instance isFiniteMeasure_lanczosQuadrature (A : Matrix n n 𝕜) (b : n → 𝕜
   unfold lanczosQuadrature
   infer_instance
 
+/-- The Lanczos quadrature as the quadratic form of the compression. -/
+private theorem quadForm_cfc_rangeProjector (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
+    quadForm (cfc f (rangeProjector (krylovMatrix A b q) * A * rangeProjector (krylovMatrix A b q)))
+      (rangeProjector (krylovMatrix A b q) *ᵥ b) = star b ⬝ᵥ lanczosFA A f b q := by
+  rw [quadForm_def, star_mulVec_dotProduct, conjTranspose_rangeProjector, lanczosFA, compressedCfc,
+    ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec]
+
+/-- The Lanczos quadrature from the Lanczos recurrence, as a quadratic form of $f(\mathbf{T})$. -/
+private theorem star_dotProduct_lanczosFA_succ {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
+    star b ⬝ᵥ lanczosFA A f b (q + 1) = quadForm (cfc f (lanczosTridiagonal A b (q + 1)))
+      ((‖WithLp.toLp 2 b‖ : 𝕜) • Pi.single 0 1) := by
+  have hdot : ∀ v, star b ⬝ᵥ (arnoldiMatrix A b (q + 1) *ᵥ v) =
+      star ((arnoldiMatrix A b (q + 1))ᴴ *ᵥ b) ⬝ᵥ v := fun v => by
+    rw [star_mulVec_dotProduct, Matrix.conjTranspose_conjTranspose]
+  rw [lanczosFA_eq_arnoldiMatrix, hA.lanczosTridiagonal_eq, dotProduct_smul, hdot,
+    conjTranspose_arnoldiMatrix_mulVec_self]
+  simp only [quadForm_def, Matrix.mulVec_smul, dotProduct_smul, star_smul, smul_dotProduct,
+    smul_eq_mul, RCLike.star_def, RCLike.conj_ofReal]
+
 /-- The Lanczos rule integrates to the Lanczos quadrature: for every square $\mathbf{A}$,
 every $f : \mathbb{R} \to \mathbb{R}$, $\mathbf{b}$ and $q$,
 $$\int f\,d\,\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q) =
@@ -94,7 +114,7 @@ $$\int f\,d\,\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q) =
 both sides are built from the same compression. -/
 theorem integral_lanczosQuadrature (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     ∫ x, f x ∂lanczosQuadrature A b q = RCLike.re (star b ⬝ᵥ lanczosFA A f b q) := by
-  sorry
+  rw [lanczosQuadrature, integral_spectralMeasure, quadForm_cfc_rangeProjector]
 
 /-- The Lanczos rule in any orthonormal basis of the Krylov space: for every square
 $\mathbf{A}$ and $\mathbf{Q}$ with orthonormal columns spanning
@@ -107,7 +127,12 @@ theorem HasOrthonormalCols.lanczosQuadrature_eq {Q : Matrix n r 𝕜} (hQ : HasO
     {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) :
     lanczosQuadrature A b q = spectralMeasure (Qᴴ * A * Q) (Qᴴ *ᵥ b) := by
-  sorry
+  have hP : rangeProjector (krylovMatrix A b q) = Q * Qᴴ := by
+    rw [← hQ.rangeProjector_eq]
+    exact rangeProjector_inj.mpr hK.symm
+  rw [lanczosQuadrature, hP, ← hQ.spectralMeasure_mul_mul_conjTranspose (Qᴴ * A * Q) (Qᴴ *ᵥ b),
+    Matrix.mulVec_mulVec]
+  simp only [Matrix.mul_assoc]
 
 /-- The Lanczos rule from the Lanczos recurrence: for Hermitian $\mathbf{A}$ and every $q$,
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q + 1) =
@@ -119,7 +144,9 @@ theorem _root_.Matrix.IsHermitian.lanczosQuadrature_succ_eq {A : Matrix n n 𝕜
     lanczosQuadrature A b (q + 1) =
       spectralMeasure (lanczosTridiagonal A b (q + 1))
         ((‖WithLp.toLp 2 b‖ : 𝕜) • Pi.single 0 1) := by
-  sorry
+  ext S hS
+  rw [lanczosQuadrature, spectralMeasure_apply, spectralMeasure_apply, quadForm_cfc_rangeProjector,
+    star_dotProduct_lanczosFA_succ hA]
 
 /-- **The Lanczos quadrature from the tridiagonal matrix**: for Hermitian $\mathbf{A}$, every
 $f : \mathbb{R} \to \mathbb{R}$ and every $q$,
@@ -131,7 +158,10 @@ theorem _root_.Matrix.IsHermitian.integral_lanczosQuadrature_succ {A : Matrix n 
     (hA : A.IsHermitian) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     ∫ x, f x ∂lanczosQuadrature A b (q + 1) =
       ‖WithLp.toLp 2 b‖ ^ 2 * RCLike.re (cfc f (lanczosTridiagonal A b (q + 1)) 0 0) := by
-  sorry
+  rw [hA.lanczosQuadrature_succ_eq, integral_spectralMeasure, quadForm_smul_right,
+    RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, RCLike.re_ofReal_mul, ← sq]
+  congr 2
+  simp [quadForm_def]
 
 /-- **Golub–Welsch**: for Hermitian $\mathbf{A}$, every $q$, and a unitary diagonalisation
 $\mathbf{T} = \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}$ of the
@@ -147,7 +177,11 @@ theorem _root_.Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum {A : Matrix n n 
     (hT : lanczosTridiagonal A b (q + 1) = U * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Uᴴ) :
     lanczosQuadrature A b (q + 1) =
       ∑ i, ENNReal.ofReal (‖WithLp.toLp 2 b‖ ^ 2 * ‖U 0 i‖ ^ 2) • Measure.dirac (d i) := by
-  sorry
+  rw [hA.lanczosQuadrature_succ_eq, hU.spectralMeasure_eq_sum rfl hT]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Matrix.mulVec_smul, Pi.smul_apply, smul_eq_mul, norm_mul, mul_pow, RCLike.norm_ofReal,
+    abs_norm]
+  simp
 
 /-- The Lanczos rule lives in every interval containing the spectrum: for Hermitian
 $\mathbf{A}$ with spectrum in $[a, a']$, almost every point of
@@ -155,7 +189,9 @@ $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)$ lies in $[a, a']$ (the R
 theorem _root_.Matrix.IsHermitian.ae_mem_Icc_lanczosQuadrature {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (b : n → 𝕜) (q : ℕ) :
     ∀ᵐ x ∂lanczosQuadrature A b q, x ∈ Set.Icc a a' := by
-  sorry
+  obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
+  rw [hQ.lanczosQuadrature_eq hK]
+  exact ae_mem_Icc_spectralMeasure _ (hA.spectrum_conjTranspose_mul_mul_subset_Icc hs hQ) _
 
 /-- The mass of the Lanczos rule: for Hermitian $\mathbf{A}$ and $q > 0$,
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)(\mathbb{R}) = \|\mathbf{b}\|^2$, the mass
@@ -163,7 +199,11 @@ of $\mu_{\mathbf{A},\mathbf{b}}$. -/
 theorem _root_.Matrix.IsHermitian.lanczosQuadrature_real_univ {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) {q : ℕ} (hq : 0 < q) :
     (lanczosQuadrature A b q).real Set.univ = ‖WithLp.toLp 2 b‖ ^ 2 := by
-  sorry
+  obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
+  rw [hQ.lanczosQuadrature_eq hK,
+    (Matrix.isHermitian_conjTranspose_mul_mul Q hA).spectralMeasure_real_univ]
+  obtain ⟨y, hy⟩ : b ∈ LinearMap.range Q.mulVecLin := hK ▸ self_mem_krylovSpace A b hq
+  rw [← hy, Matrix.mulVecLin_apply, hQ.conjTranspose_mulVec_mulVec, hQ.norm_toLp_mulVec]
 
 /-! ### Exactness -/
 
@@ -176,7 +216,49 @@ Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.star_dotProduct_lanczosFA_eval {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) {q : ℕ} {p : ℝ[X]} (hp : p.degree < 2 * q) :
     star b ⬝ᵥ lanczosFA A (fun x => p.eval x) b q = quadForm (aeval A p) b := by
-  sorry
+  rcases Nat.eq_zero_or_pos q with rfl | hq
+  · have hp0 : p = 0 := by
+      rw [Nat.cast_zero, mul_zero] at hp
+      exact degree_eq_bot.mp (WithBot.lt_coe_bot.mp hp)
+    rw [hp0, lanczosFA_zero, dotProduct_zero, map_zero, quadForm_zero_left]
+  obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  have hmon : (X ^ q : ℝ[X]).Monic := monic_X_pow q
+  -- $p = X^q d + r$ with $\deg d, \deg r < q$
+  set d := p /ₘ X ^ q
+  set r := p %ₘ X ^ q
+  have hpdr : p = X ^ q * d + r := by
+    rw [add_comm]
+    exact (modByMonic_add_div p (X ^ q)).symm
+  have hr : r.degree < q := by
+    have h := degree_modByMonic_lt p hmon
+    rwa [degree_X_pow] at h
+  have hd : d.degree < q := by
+    have hnat : p.natDegree < 2 * q := by
+      by_cases hp0 : p = 0
+      · rw [hp0, natDegree_zero]
+        omega
+      · exact (natDegree_lt_iff_degree_lt hp0).mpr (by exact_mod_cast hp)
+    have h := natDegree_divByMonic p hmon
+    rw [natDegree_X_pow] at h
+    exact (degree_le_natDegree).trans_lt (by rw [h]; exact_mod_cast (by omega))
+  have hdot : ∀ u v, star u ⬝ᵥ (Q *ᵥ v) = star (Qᴴ *ᵥ u) ⬝ᵥ v := fun u v => by
+    rw [star_mulVec_dotProduct, Matrix.conjTranspose_conjTranspose]
+  have hpow : (Qᴴ * A * Q) ^ q *ᵥ (Qᴴ *ᵥ b) = Qᴴ *ᵥ (A ^ q *ᵥ b) := by
+    have h := hQ.conjTranspose_mulVec_aeval_mulVec_eq hK (p := (X ^ q : ℝ[X]))
+      (by rw [degree_X_pow])
+    simpa only [map_pow, aeval_X] using h.symm
+  -- the remainder part and the quotient part
+  have hR := hQ.mulVec_aeval_conjTranspose_mul_mul_mulVec_eq hK hr
+  have hD := hQ.mulVec_aeval_conjTranspose_mul_mul_mulVec_eq hK hd
+  rw [hQ.lanczosFA_eq hK, hT.cfc_eq_aeval_of_forall_eval_eq (f := fun x => p.eval x)
+    fun _ _ => rfl, hdot, quadForm_def, hpdr]
+  simp only [map_add, map_mul, map_pow, aeval_X, Matrix.add_mulVec, dotProduct_add,
+    ← Matrix.mulVec_mulVec]
+  congr 1
+  · rw [← (hT.pow q).eq, ← star_mulVec_dotProduct, hpow, ← hdot, hD,
+      star_mulVec_dotProduct, (hA.pow q).eq]
+  · rw [← hdot, hR]
 
 /-- **Lanczos quadrature matches the first $2q$ moments of the spectral measure**: for
 Hermitian $\mathbf{A}$, every $\mathbf{b}$ and every $q$,
@@ -188,7 +270,10 @@ Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.matchesMoments_lanczosQuadrature {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
     MatchesMoments (spectralMeasure A b) (lanczosQuadrature A b q) (2 * q) := by
-  sorry
+  intro p hp
+  have hp' : p.degree < 2 * (q : WithBot ℕ) := by exact_mod_cast hp
+  rw [hA.integral_eval_spectralMeasure, integral_lanczosQuadrature,
+    hA.star_dotProduct_lanczosFA_eval b hp']
 
 /-! ### Error bounds -/
 
@@ -207,7 +292,35 @@ _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_is
     {f : ℝ → ℝ} {q : ℕ} {p : ℝ[X]} (hp : p.degree < 2 * q) {ε : ℝ}
     (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a') ε) (b : n → 𝕜) :
     ‖star b ⬝ᵥ (cfc f A *ᵥ b - lanczosFA A f b q)‖ ≤ 2 * ε * ‖WithLp.toLp 2 b‖ ^ 2 := by
-  sorry
+  set g : ℝ → ℝ := fun x => f x - p.eval x
+  -- the error is that of $g = f - p$, since the quadrature is exact on $p$
+  have heq : star b ⬝ᵥ (cfc f A *ᵥ b - lanczosFA A f b q) =
+      star b ⬝ᵥ (cfc g A *ᵥ b - lanczosFA A g b q) := by
+    rw [lanczosFA_sub A f (fun x => p.eval x) b q,
+      cfc_sub f (fun x => p.eval x) A (A.finite_real_spectrum.continuousOn _)
+        (A.finite_real_spectrum.continuousOn _),
+      hA.cfc_eq_aeval_of_forall_eval_eq (f := fun x => p.eval x) fun _ _ => rfl,
+      Matrix.sub_mulVec]
+    simp only [dotProduct_sub]
+    rw [hA.star_dotProduct_lanczosFA_eval b hp, quadForm_def]
+    ring
+  have hg : Metric.IsUniformApproxOn (fun x => (0 : ℝ[X]).eval x) g (Set.Icc a a') ε :=
+    fun x hx => by
+      have h := hε.apply hx
+      rw [Real.dist_eq, abs_sub_comm] at h
+      change dist ((0 : ℝ[X]).eval x) (g x) ≤ ε
+      rwa [eval_zero, Real.dist_eq, zero_sub, abs_neg]
+  have hvec := hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs
+    (by rw [degree_zero]; exact WithBot.bot_lt_coe q) hg b
+  have hin : star b ⬝ᵥ (cfc g A *ᵥ b - lanczosFA A g b q) =
+      inner 𝕜 (WithLp.toLp 2 b) (WithLp.toLp 2 (cfc g A *ᵥ b - lanczosFA A g b q)) := by
+    rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm]
+  rw [heq, hin]
+  calc _ ≤ ‖WithLp.toLp 2 b‖ * ‖WithLp.toLp 2 (cfc g A *ᵥ b - lanczosFA A g b q)‖ :=
+        norm_inner_le_norm _ _
+    _ ≤ ‖WithLp.toLp 2 b‖ * (2 * ε * ‖WithLp.toLp 2 b‖) :=
+        mul_le_mul_of_nonneg_left hvec (norm_nonneg _)
+    _ = 2 * ε * ‖WithLp.toLp 2 b‖ ^ 2 := by ring
 
 /-- **Lanczos quadrature for analytic functions**: let $\mathbf{A}$ be Hermitian with spectrum
 in $[a, a']$, $a < a'$, and let $f$ on $[a, a']$, pulled back to $[-1, 1]$ by
