@@ -80,35 +80,10 @@ theorem isUpperQuasiTriangular_of_le_two [Zero R] (hk : k ≤ 2)
 
 /-! ### Block triangular matrices -/
 
-/-- The matrix with blocks $\mathbf{S}$, $\mathbf{C}$, $\mathbf{D}$, $\mathbf{T}$,
-$\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{D} & \mathbf{T} \end{bmatrix}$, indexed by
-`Fin (p + q)`. -/
-private def finBlocks {p q : ℕ} (S : Matrix (Fin p) (Fin p) R) (C : Matrix (Fin p) (Fin q) R)
-    (D : Matrix (Fin q) (Fin p) R) (T : Matrix (Fin q) (Fin q) R) :
-    Matrix (Fin (p + q)) (Fin (p + q)) R :=
-  (Matrix.fromBlocks S C D T).submatrix finSumFinEquiv.symm finSumFinEquiv.symm
-
-
-section finBlocks
+section BlockTriangular
 
 variable {p q : ℕ} {S : Matrix (Fin p) (Fin p) R} {C : Matrix (Fin p) (Fin q) R}
   {D : Matrix (Fin q) (Fin p) R} {T : Matrix (Fin q) (Fin q) R}
-
-private theorem finBlocks_castAdd_castAdd (i j : Fin p) :
-    finBlocks S C D T (Fin.castAdd q i) (Fin.castAdd q j) = S i j := by
-  simp [finBlocks]
-
-private theorem finBlocks_castAdd_natAdd (i : Fin p) (j : Fin q) :
-    finBlocks S C D T (Fin.castAdd q i) (Fin.natAdd p j) = C i j := by
-  simp [finBlocks]
-
-private theorem finBlocks_natAdd_castAdd (i : Fin q) (j : Fin p) :
-    finBlocks S C D T (Fin.natAdd p i) (Fin.castAdd q j) = D i j := by
-  simp [finBlocks]
-
-private theorem finBlocks_natAdd_natAdd (i j : Fin q) :
-    finBlocks S C D T (Fin.natAdd p i) (Fin.natAdd p j) = T i j := by
-  simp [finBlocks]
 
 /-- **A block upper triangular matrix with upper quasi-triangular diagonal blocks is upper
 quasi-triangular**: for upper quasi-triangular $\mathbf{S}$ and $\mathbf{T}$,
@@ -120,25 +95,21 @@ theorem IsUpperQuasiTriangular.submatrix_fromBlocks [Zero R] (hS : IsUpperQuasiT
     (hT : IsUpperQuasiTriangular T) (C : Matrix (Fin p) (Fin q) R) :
     IsUpperQuasiTriangular
       ((Matrix.fromBlocks S C 0 T).submatrix finSumFinEquiv.symm finSumFinEquiv.symm) := by
-  change IsUpperQuasiTriangular (finBlocks S C 0 T)
   constructor
   · intro i j
     refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;>
       refine Fin.addCases (fun j => ?_) (fun j => ?_) j <;> intro h
-    · rw [finBlocks_castAdd_castAdd]
-      exact hS.1 i j (by simpa only [Fin.val_castAdd] using h)
+    · simpa using hS.1 i j (by simpa only [Fin.val_castAdd] using h)
     · have := i.isLt
       simp only [Fin.val_castAdd, Fin.val_natAdd] at h
       omega
-    · rw [finBlocks_natAdd_castAdd, Matrix.zero_apply]
-    · rw [finBlocks_natAdd_natAdd]
-      exact hT.1 i j (by simp only [Fin.val_natAdd] at h; omega)
+    · simp
+    · simpa using hT.1 i j (by simp only [Fin.val_natAdd] at h; omega)
   · intro i j l
     refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;>
       refine Fin.addCases (fun j => ?_) (fun j => ?_) j <;>
       refine Fin.addCases (fun l => ?_) (fun l => ?_) l <;> intro h₁ h₂
-    · rw [finBlocks_castAdd_castAdd, finBlocks_castAdd_castAdd]
-      exact hS.2 i j l (by simpa only [Fin.val_castAdd] using h₁)
+    · simpa using hS.2 i j l (by simpa only [Fin.val_castAdd] using h₁)
         (by simpa only [Fin.val_castAdd] using h₂)
     · have := j.isLt
       simp only [Fin.val_castAdd, Fin.val_natAdd] at h₂
@@ -149,11 +120,10 @@ theorem IsUpperQuasiTriangular.submatrix_fromBlocks [Zero R] (hS : IsUpperQuasiT
     · have := i.isLt
       simp only [Fin.val_castAdd, Fin.val_natAdd] at h₁
       omega
-    · exact Or.inl (by rw [finBlocks_natAdd_castAdd, Matrix.zero_apply])
-    · exact Or.inl (by rw [finBlocks_natAdd_castAdd, Matrix.zero_apply])
-    · exact Or.inr (by rw [finBlocks_natAdd_castAdd, Matrix.zero_apply])
-    · rw [finBlocks_natAdd_natAdd, finBlocks_natAdd_natAdd]
-      exact hT.2 i j l (by simp only [Fin.val_natAdd] at h₁; omega)
+    · exact Or.inl (by simp)
+    · exact Or.inl (by simp)
+    · exact Or.inr (by simp)
+    · simpa using hT.2 i j l (by simp only [Fin.val_natAdd] at h₁; omega)
         (by simp only [Fin.val_natAdd] at h₂; omega)
 
 /-- A block upper triangular matrix
@@ -164,22 +134,19 @@ theorem _root_.Matrix.IsUpperTriangular.submatrix_fromBlocks [Zero R] (hS : S.Is
     (hT : T.IsUpperTriangular) (C : Matrix (Fin p) (Fin q) R) :
     ((Matrix.fromBlocks S C 0 T).submatrix finSumFinEquiv.symm
       finSumFinEquiv.symm).IsUpperTriangular := by
-  change (finBlocks S C 0 T).IsUpperTriangular
   intro i j
   refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;>
     refine Fin.addCases (fun j => ?_) (fun j => ?_) j <;> intro h
-  · rw [finBlocks_castAdd_castAdd]
-    exact hS (show j < i from h)
+  · simpa using hS (show j < i from h)
   · have := i.isLt
     have h' := Fin.lt_def.mp (show Fin.natAdd p j < Fin.castAdd q i from h)
     simp only [Fin.val_castAdd, Fin.val_natAdd] at h'
     omega
-  · rw [finBlocks_natAdd_castAdd, Matrix.zero_apply]
-  · rw [finBlocks_natAdd_natAdd]
-    have h' := Fin.lt_def.mp (show Fin.natAdd p j < Fin.natAdd p i from h)
+  · simp
+  · have h' := Fin.lt_def.mp (show Fin.natAdd p j < Fin.natAdd p i from h)
     simp only [Fin.val_natAdd] at h'
-    exact hT (show j < i from Fin.lt_def.mpr (by omega))
+    simpa using hT (show j < i from Fin.lt_def.mpr (by omega))
 
-end finBlocks
+end BlockTriangular
 
 end NLAlib
