@@ -85,8 +85,8 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - G2 Every port-ledger target is declared.
 - E1 A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions).
 - E2 Programs, kernels and implementations are computable.
-- E3 A realisation's program and initial state use no data of its interpretation, and its tape none of the oracles' or read-only data (dimensions, tags and names excepted).
-- E4 Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`.
+- E3 A result about a program's runs is an instance of an access model (`MatrixFree`, `MatrixFreeProb`, `StoredEntries`).
+- E4 Every `<spec>Prog` has a result in an access model (`matrixFree_<spec>Prog`).
 - E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
 - E6 In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
 - E8 `Stmt.named` is constructed only in the BLAS and implementation files.

@@ -663,7 +663,8 @@ those layers are designed.
 | substitution | `Computation.Stmt.subst`, `Computation.Stmt.substOracle`; certificates `Computation.ImplementsInstr`, `Computation.ImplementsOracle`; `Computation.RunsWithin.subst`, `Computation.RunsWithin.substOracle`; the oracle-only cost `substKind`, the simulation `Sim`, `St.withCnt` | — |
 | oracle implementations | `Computation.denseImpl`, `Computation.denseInterp`, `Computation.denseCost`; `Computation.cooImpl`, `Computation.cooMatrix`, `Computation.cooInterp`, `Computation.cooCost` | — |
 | error contract | `Computation.IsRelErrSem u dec safe sem`, error and success clauses per operation family; the real operations `BinOp.realOp` on `BinOp.IsArith`; the failing semantics `failSem` | `Computation.isRelErrSem_exactSem` |
-| random tape | `HasLaw ξ (iidSequence ν) μ` per distribution (the i.i.d. sequence row) | `hasLaw_tapeMatrix_of_hasLaw_iidSequence`, `ProbabilityTheory.HasLaw.comp_of_injective` |
+| random tape | `HasLaw ξ (iidSequence ν) μ` per distribution (the i.i.d. sequence row); the law of the whole tape `Computation.tapeLaw`, the tapes independent, the tape of `d` i.i.d. with law `Computation.Dist.law d` (guarantees, 2026-10-23) | `hasLaw_tapeMatrix_of_hasLaw_iidSequence`, `ProbabilityTheory.HasLaw.comp_of_injective`, `Computation.hasLaw_apply_of_hasLaw_tapeLaw` |
+| access models | a program family `Computation.ProgFamily P ι r b` (sizes and declared handles in, a statement generic in both sorts out; `ProgFamily.inst`, `ProgFamily.substOracle`); results are instances of `Computation.MatrixFree`, `Computation.MatrixFreeProb` or `Computation.StoredEntries` (interpretation `Computation.storedInterp`), §5.5 (guarantees, 2026-10-23) | `Computation.MatrixFree.storedEntries_substOracle_denseImpl`, `Computation.MatrixFree.storedEntries_substOracle_cooImpl` |
 | BLAS kernels | `Computation.dot`, `Computation.axpy`, `Computation.scal`, `Computation.rscl`, `Computation.copyv`, `Computation.nrm2`, `Computation.gemv`, `Computation.ger`, `Computation.gemm`, each with its specification `Computation.exec_<kernel>` | — |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
@@ -703,22 +704,43 @@ property P" as an input.
 
 Algorithms analysed for their cost are programs over memory buffers (`NLAlib/Computation`,
 `docs/design/Computation.md`). A program `<spec>Prog` lives in its topic file next to its
-specification, and has its realisation `runsWithin_<spec>Prog`, which concludes
-`Computation.RunsWithin` against the specification [E4].
+specification. Its results are **instances of an access model** (maintainer, 2026-10-23: "this
+stuff needs to be watertight, because we will be allowing stuff to prove autonomously"): a
+definition that takes the program first, as a family of the sizes (`Computation.ProgFamily`), and
+quantifies over the data after it, as CSLib's query bounds fix the program before the oracle. So
+the program cannot depend on the matrix, the tape or the declared inputs, and the counts and the
+memory are functions of the sizes, by the statement itself; Lean's kernel checks it.
+
+- `Computation.MatrixFree`: for every size, declared input, matrix and tape, under exact
+  arithmetic with every oracle name meaning the matrix, from an initial state holding the declared
+  buffers only. `Computation.MatrixFreeProb`: its probabilistic companion; the law of the tape is
+  `Computation.tapeLaw`, fixed by the definition, never a hypothesis. `Computation.StoredEntries`:
+  the entries as read-only data (counted reads, counted constant memory) and no oracle.
+- A result about a program's runs (a statement that mentions `Computation.RunsWithin`, or a run
+  and a measure) is an instance: its conclusion is one of the three models. A lemma for one
+  interpretation is a proof step and is private [E3].
+- Every `<spec>Prog` has a result in an access model, named by the grammar after the model:
+  `matrixFree_<spec>Prog`, `matrixFreeProb_<spec>Prog`, `storedEntries_…` [E4].
+- What the models prove and what they trust is listed in `docs/design/Computation.md`,
+  "Guarantees: what is proved and what is trusted". A reader of an instance still reads its size
+  condition, its declared inputs, its postcondition and its bound: the model guarantees that the
+  program meets exactly that statement, not that the statement is the interesting one.
+
+The other rules are hygiene: the guarantees do not rest on them.
 
 - A program is generic in its handles and indices: its type ends in `Builder P ι VB VI _` or
-  `Stmt P ι VB VI` with variables `VB`, `VI` that no instance mentions, and its arguments are
-  types, tags and oracle names, distributions, handles, index expressions, cells and programs.
-  Host data (`ℕ` sizes, lists, functions) is allowed only in the implementation files
-  `NLAlib/Computation/Dense.lean` and `NLAlib/Computation/Sparse.lean` [E1].
+  `Stmt P ι VB VI` with variables `VB`, `VI` that no instance mentions, or is a `ProgFamily`, and
+  its arguments are types, tags and oracle names, distributions, handles, index expressions,
+  cells, programs and `Fin`-families of handles and index expressions. Host data (`ℕ` sizes,
+  lists, functions) is allowed only in the implementation files `NLAlib/Computation/Dense.lean`
+  and `NLAlib/Computation/Sparse.lean` [E1]. This keeps programs size-generic, so that the
+  emitted NumPy is the program the result is about.
 - Programs, kernels and implementations are computable: not `noncomputable`, `partial`,
   `opaque` or `unsafe`, and they run no code other than their definition (no implemented-by
   attribute) [E2].
-- A realisation's program and initial state use none of the data of its interpretation: the
-  program learns the matrix only through the oracle or as read-only data, never through the tape.
-  Dimensions, tags and oracle names are shared [E3].
 - An `alloc` is live for the rest of the enclosing block, so a program that another program calls
-  wraps its allocations in `scope` (a kernel is closed by its `named` node) [E9].
+  wraps its allocations in `scope` (a kernel is closed by its `named` node) [E9]. An open `alloc`
+  is still counted; the rule keeps the peak the author intends.
 - Only `NLAlib/Computation` defines a value semantics (`Computation.ScalarSem`) or an
   interpretation (`Computation.Interp`), each with its certificate [E6].
 - `Stmt.named`, which the NumPy emitter prints as a call into its prelude, is constructed only in
@@ -726,8 +748,11 @@ specification, and has its realisation `runsWithin_<spec>Prog`, which concludes
 
 E1 to E4 and E9 are checked on the built library by `scripts/Programs.lean`, whose fixtures (a
 handle forged from a number, a host function, a host size, a noncomputable program, a `partial`
-program, a program with no realisation, a matrix in the initial store, a matrix on the tape, a
-callee with an open `alloc`) must be rejected; E5, E6 and E8 by
+program, a program with no result in an access model, the old cheating realisations: a matrix in
+the initial store, a matrix on the tape, a tail about a program that does not conclude
+`RunsWithin`, a tape law that depends on the matrix, a matrix turned into literals through a type
+parameter; a callee with an open `alloc`) must be rejected or flagged. `scripts/AccessModelFixtures.lean`
+proves that the instance forms of the cheating realisations are false. E5, E6 and E8 are checked by
 `scripts/check_rules.py`. The tools library `NLAlibTools` (the `Float` interpreter, the NumPy
 emitter, the fixed-point example) is not part of the library and is not checked.
 

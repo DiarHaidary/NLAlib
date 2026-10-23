@@ -7,7 +7,8 @@
 # for files an agent is editing) with warnings fatal (`--wfail`, as in CI), then runs the axiom
 # audit and the environment linters on exactly those modules, the program checks
 # (scripts/Programs.lean, rules E1 to E4 and E9, on the whole library as in CI, after a
-# `lake build NLAlib` in which `sorry` warnings are allowed), the reference check, the named-bound
+# `lake build NLAlib` in which `sorry` warnings are allowed), the access-model fixtures
+# (scripts/AccessModelFixtures.lean), the reference check, the named-bound
 # value check (scripts/check_constants.py, on the whole library), the freshness of the generated
 # rule files (scripts/gen_rules_md.py --check), the rules check
 # (scripts/check_rules.py, by rule id, the naming rules N1–N18 included, on an extraction of those
@@ -33,6 +34,9 @@ LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" lake build NLAlib > "$tmp/build-all.lo
 LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/Programs.lean > "$tmp/programs.log" 2>&1 || \
   { grep -v 'declaration uses .sorry.' "$tmp/programs.log"; exit 1; }
 grep '^programs:' "$tmp/programs.log"
+LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/AccessModelFixtures.lean > "$tmp/fixtures.log" 2>&1 || \
+  { cat "$tmp/fixtures.log"; exit 1; }
+echo "access-model fixtures: $(grep -c '^theorem' scripts/AccessModelFixtures.lean) theorems, ok"
 python3 scripts/check_refs.py | tail -1
 python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py > "$tmp/constants.log" || { cat "$tmp/constants.log"; exit 1; }

@@ -3,46 +3,59 @@ open Lean Meta Elab Command
 
 /-! # Program checks (rules E1 to E4 and E9, docs/rules/rules.toml)
 
-The rules of `docs/design/Computation.md` §10 that need Lean's types, checked on every
-declaration reachable through `import NLAlib`:
+The guarantees of a result about a program (no dependence on the data, counts and memory as
+functions of the sizes, the law of the tape) hold by the definition of the access model it is an
+instance of (`NLAlib/Computation/Model.lean`, `NLAlib.Computation.MatrixFreeProb`), and Lean's
+kernel checks them; `docs/design/Computation.md`, "Guarantees", lists what is proved and what is
+trusted. These checks are what is left, on every declaration reachable through `import NLAlib`:
 
-* E1: a program (a definition whose type ends in `Builder` or `Stmt`, outside the Computation
-  core) is generic in its two variable sorts, no instance mentions them, and every argument is a
-  type, a tag or oracle name (a value of a type parameter), a `Dist`, a handle, an index
-  expression, a cell or a program. Host data (`ℕ` sizes, lists, functions) is rejected outside the
-  implementation files (`implFiles`).
-* E2: programs, kernels and implementations are computable: not `noncomputable`, not opaque
-  (`partial`, `opaque`), not `unsafe`, no `implemented_by` (each runs code other than its
+* E1 (hygiene): a program (a definition whose type ends in `Builder` or `Stmt`, or is a
+  `ProgFamily`, outside the Computation core) is generic in its two
+  variable sorts, no instance mentions them, and every argument is a type, a tag or oracle name (a
+  value of a type parameter), a `Dist`, a handle, an index expression, a cell, a program, or a
+  family of handles or index expressions over `Fin _`. Host data (`ℕ` sizes, lists, functions) is
+  rejected outside the implementation files (`implFiles`). The guarantees do not rest on it: it
+  keeps programs size-generic, so that the emitted code is the program the result is about.
+* E2 (hygiene): programs, kernels and implementations are computable: not `noncomputable`, not
+  opaque (`partial`, `opaque`), not `unsafe`, no `implemented_by` (each runs code other than its
   definition). An opaque or unsafe constant of program type is a program for E1, E2 and E4.
-* E3: in a realisation `RunsWithin I s st₀ c m Q`, no data variable of `I` occurs in `s` or in
-  `st₀` (dimensions in `ℕ`, tags and oracle names excepted), and no data variable of the oracle
-  or read-only fields of `I` (unfolded to `Interp.mk`) occurs in its tape field, which the
-  program reads.
-* E4: every `<spec>Prog` has `runsWithin_<spec>Prog` in its namespace.
-* E9: a `Builder` program that another program calls closes its allocations: run against a fresh
-  continuation, its statement does not reach the continuation under an `alloc` (D11: a buffer is
-  freed at the end of the enclosing block, so an open `alloc` stays live for the rest of the
-  caller's block). `scope`, `named`, loops and branches close them.
+* E3 (the lint): a public theorem outside the Computation core whose statement mentions
+  `RunsWithin`, or mentions a run (`exec`, `Stmt`, `ProgFamily.inst`) and a measure, is an
+  instance of an access model: its conclusion is `MatrixFree`, `MatrixFreeProb` or
+  `StoredEntries`. Results must be instances; private lemmas are proof steps.
+* E4: every `<spec>Prog` has a public result in an access model whose statement mentions it.
+* E9 (hygiene): a `Builder` program that another program calls closes its allocations: run
+  against a fresh continuation, its statement does not reach the continuation under an `alloc`
+  (D11: a buffer is freed at the end of the enclosing block, so an open `alloc` stays live, and
+  counted, for the rest of the caller's block). `scope`, `named`, loops and branches close them.
 
-Then the fixtures of the end of this file, which break each rule, must be rejected. Run with
-`lake env lean scripts/Programs.lean` after `lake build NLAlib`; a nonzero exit code means a
-violation. False positives go in `allowE1`/`allowE3` with a reason. -/
+Then the fixtures of the end of this file, which break each rule, must be rejected; the cheating
+realisations of the old E3 are flagged by the lint, and `scripts/AccessModelFixtures.lean` proves
+that their instance forms are false. Run with `lake env lean scripts/Programs.lean` after
+`lake build NLAlib`; a nonzero exit code means a violation. False positives go in `allowE1` with
+a reason. -/
 
 namespace ProgramChecks
 
-/-- The Computation core: syntax and semantics, whose combinators are not programs. -/
-def coreModules : List Name :=
+/-- The theory of the Computation core: syntax, semantics, budgets, substitution, exact
+arithmetic and contracts. -/
+def theoryModules : List Name :=
   [`NLAlib.Computation.Syntax, `NLAlib.Computation.Store, `NLAlib.Computation.Exec,
    `NLAlib.Computation.RunsWithin,
    `NLAlib.Computation.Subst, `NLAlib.Computation.Exact, `NLAlib.Computation.Contract]
 
+/-- The Computation core: the theory and the access models, whose combinators (`ProgFamily.inst`,
+`ProgFamily.substOracle`) are not programs. Its theorems are general facts about every program
+and interpretation, so the lint (E3) skips the theory modules only. -/
+def coreModules : List Name := theoryModules ++ [`NLAlib.Computation.Model]
+
 /-- Implementation files: an implementation may take host data (E1, D11). -/
 def implFiles : List Name := [`NLAlib.Computation.Dense, `NLAlib.Computation.Sparse]
 
-/-- E3 allowlist: (realisation, variable, reason). -/
-def allowE3 : List (Name × Name × String) :=
-  [(`NLAlib.runsWithin_substOracle_hutchppProg_cooImpl, `pattern,
-    "the COO pattern is unrolled into the implementation by design (D14); the values are the oracle's data and do not occur in the program")]
+/-- The access models: a result about a program concludes one of them (E3, E4). -/
+def models : List Name :=
+  [`NLAlib.Computation.MatrixFree, `NLAlib.Computation.MatrixFreeProb,
+   `NLAlib.Computation.StoredEntries]
 
 /-- The two variable sorts of a program type, if it is one: `Builder P ι VB VI β`,
 `Stmt P ι VB VI`, or the unfolded `ContT (Stmt P ι VB VI) Id β`. -/
@@ -59,10 +72,18 @@ def conclSorts? (t : Expr) : MetaM (Option (Expr × Expr)) := do
   | some r => return some r
   | none => return progSorts? (← whnfR t)
 
+/-- The telescope of a program type: its binders and conclusion, through a `ProgFamily`
+abbreviation (whose binders are the sorts, the sizes and the handles). -/
+def progTelescope {α : Type} (t : Expr) (k : Array Expr → Expr → MetaM α) : MetaM α :=
+  forallTelescope t fun xs concl => do
+    if concl.isAppOf ``NLAlib.Computation.ProgFamily then
+      forallTelescope (← whnfR concl) fun ys c => k (xs ++ ys) c
+    else k xs concl
+
 /-- E1: the offending binders of a program (or `notGenericInVariables`). -/
 def checkE1 (c : Name) : MetaM (List Name) := do
   let info ← getConstInfo c
-  forallTelescope info.type fun xs concl => do
+  progTelescope info.type fun xs concl => do
     let some (vb, vi) ← conclSorts? (← instantiateMVars concl) | return [`notAProgram]
     unless vb.isFVar && vi.isFVar && vb != vi do return [`notGenericInVariables]
     let vbId := vb.fvarId!
@@ -86,58 +107,33 @@ def checkE1 (c : Name) : MetaM (List Name) := do
             (t.getArg! 1).isFVarOf viId then return true
         if let some (vb', vi') ← conclSorts? t then
           if !t.isForall && vb'.isFVarOf vbId && vi'.isFVarOf viId then return true
+        -- a family of handles or index expressions over `Fin _` (the arguments of `ProgFamily`)
+        if t.isForall && t.bindingDomain!.isAppOfArity ``Fin 1 && !t.bindingBody!.hasLooseBVars then
+          let u := t.bindingBody!
+          if u.isFVarOf vbId then return true
+          if u.isAppOfArity ``NLAlib.Computation.IExp 1 && u.appArg!.isFVarOf viId then return true
         return false : MetaM Bool)
       unless ok do bad := d.userName :: bad
     return bad.reverse
 
-/-- Whether a variable of a realisation is data of its interpretation: not a proof, a type, an
-instance, a dimension (`ℕ`, shared legitimately), a tag or oracle name (a value of a type
-parameter: a name, not data) or a `Dist`. -/
-def isDataVar (fv : FVarId) : MetaM Bool := do
-  let d ← fv.getDecl
-  if (← inferType d.type).isProp || (← isType (.fvar fv)) || d.binderInfo.isInstImplicit then
-    return false
-  if (← isClass? d.type).isSome then return false
-  let t ← whnfR d.type
-  return !(t.isConstOf ``Nat || t.isFVar || t.isConstOf ``NLAlib.Computation.Dist)
+/-- Whether a theorem's statement is about a program's runs: it mentions `RunsWithin`, or a run
+(`exec`, `Stmt`, `ProgFamily.inst`) together with a measure. -/
+def isAboutRuns (t : Expr) : Bool :=
+  let has (n : Name) := (t.find? fun e => e.isConstOf n).isSome
+  has ``NLAlib.Computation.RunsWithin ||
+    ((has ``NLAlib.Computation.exec || has ``NLAlib.Computation.Stmt ||
+        has ``NLAlib.Computation.ProgFamily.inst) && has ``MeasureTheory.Measure)
 
-/-- The tape, oracle and read-only fields of an interpretation, if it unfolds to `Interp.mk`. -/
-def interpFields? (I : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
-  let I ← whnf I
-  unless I.isAppOf ``NLAlib.Computation.Interp.mk do return none
-  let fields := getStructureFields (← getEnv) ``NLAlib.Computation.Interp
-  let nParams := I.getAppNumArgs - fields.size
-  let field (n : Name) : MetaM Expr := do
-    let some i := fields.findIdx? (· == n) | throwError "Interp has no field {n}"
-    -- `whnf`: a structure update `{ exactInterp A ξ with rom := … }` keeps the other fields as
-    -- projections of `exactInterp A ξ`, which mention all of its arguments
-    Core.betaReduce (← whnf (← instantiateMVars I.getAppArgs[nParams + i]!))
-  return some (← field `tape, ← field `oracle, ← field `rom)
-
-/-- E3: the data variables of the interpretation of a realisation that occur in its program or
-its initial state, or both in its tape and in its oracles or read-only data (or
-`notARealisation`). -/
-def checkE3 (c : Name) : MetaM (List Name) := do
-  let info ← getConstInfo c
-  forallTelescope info.type fun _ concl => do
+/-- Whether a theorem's conclusion is an instance of an access model. -/
+def isInstanceType (t : Expr) : MetaM Bool :=
+  forallTelescope t fun _ concl => do
     let concl ← instantiateMVars concl
-    unless concl.isAppOf ``NLAlib.Computation.RunsWithin do return [`notARealisation]
-    let args := concl.getAppArgs
-    let I := args[args.size - 6]!
-    let s := args[args.size - 5]!
-    let st₀ := args[args.size - 4]!
-    let data ← (collectFVars {} I).fvarIds.filterM isDataVar
-    let mut bad := []
-    for fv in data do
-      if s.containsFVar fv || st₀.containsFVar fv then bad := (← fv.getDecl).userName :: bad
-    -- the program reads the tape: the oracles' matrices and the read-only data may not be on it
-    if let some (tape, oracle, rom) ← interpFields? I then
-      for fv in data do
-        let n := (← fv.getDecl).userName
-        if !bad.contains n && tape.containsFVar fv &&
-            (oracle.containsFVar fv || rom.containsFVar fv) then
-          bad := n :: bad
-    return bad
+    return models.any concl.isAppOf
+
+/-- E3: whether a theorem is about a program's runs without being an instance of an access
+model. -/
+def checkE3 (t : Expr) : MetaM Bool := do
+  return isAboutRuns t && !(← isInstanceType t)
 
 /-- E2: why a constant of program type does not run as its definition, if it does not. -/
 def checkE2 (env : Environment) (c : Name) : Option String :=
@@ -188,20 +184,16 @@ def moduleOf (env : Environment) (c : Name) : Option Name :=
 
 /-- Whether a type is a program type. -/
 def isProgType (t : Expr) : MetaM Bool :=
-  forallTelescope t fun _ concl => do return (← conclSorts? (← instantiateMVars concl)).isSome
+  progTelescope t fun _ concl => do return (← conclSorts? (← instantiateMVars concl)).isSome
 
-/-- Whether a type concludes `RunsWithin`. -/
-def isRealisationType (t : Expr) : MetaM Bool :=
-  forallTelescope t fun _ concl => do
-    return (← instantiateMVars concl).isAppOf ``NLAlib.Computation.RunsWithin
-
-/-- E4: the name of the missing realisation of a `<spec>Prog`, if any. -/
-def checkE4 (env : Environment) (c : Name) : Option Name :=
+/-- E4: whether a `<spec>Prog` has no public result in an access model whose statement mentions
+it (`instances`: the public instances). -/
+def checkE4 (env : Environment) (instances : Array Name) (c : Name) : Bool :=
   match c with
-  | .str ns s =>
-    if s.endsWith "Prog" && !env.contains (.str ns ("runsWithin_" ++ s)) then
-      some (.str ns ("runsWithin_" ++ s)) else none
-  | _ => none
+  | .str _ s =>
+    s.endsWith "Prog" && !instances.any fun r =>
+      ((env.find? r).map fun i => (i.type.find? fun e => e.isConstOf c).isSome).getD false
+  | _ => false
 
 end ProgramChecks
 
@@ -209,7 +201,8 @@ open ProgramChecks in
 run_cmd do
   let env ← getEnv
   let mut progs : Array Name := #[]
-  let mut reals : Array Name := #[]
+  let mut instances : Array Name := #[]
+  let mut flagged : Array Name := #[]
   let mut bad : Nat := 0
   for (c, info) in env.constants.map₁.toList do
     let some m := moduleOf env c | continue
@@ -220,7 +213,9 @@ run_cmd do
       if coreModules.contains m then continue
       if ← liftTermElabM (isProgType info.type) then progs := progs.push c
     | .thmInfo _ =>
-      if ← liftTermElabM (isRealisationType info.type) then reals := reals.push c
+      if isPrivateName c || theoryModules.contains m then continue
+      if ← liftTermElabM (isInstanceType info.type) then instances := instances.push c
+      else if ← liftTermElabM (checkE3 info.type) then flagged := flagged.push c
     | _ => pure ()
   for c in progs do
     let m := (moduleOf env c).get!
@@ -231,9 +226,10 @@ run_cmd do
     if let some why := checkE2 env c then
       bad := bad + 1
       logError m!"E2 {c}: a program, kernel or implementation is computable; this one is {why}"
-    if let some r := checkE4 env c then
+    if checkE4 env instances c then
       bad := bad + 1
-      logError m!"E4 {c}: a `<spec>Prog` has its realisation `{r}`"
+      logError m!"E4 {c}: a `<spec>Prog` has a result in an access model ({""
+        }`MatrixFree`, `MatrixFreeProb` or `StoredEntries`) that mentions it"
   -- E9 on the callees: the programs that occur in another program's definition
   let mut callees : NameSet := {}
   for c in progs do
@@ -249,20 +245,18 @@ run_cmd do
         }them in `scope`"
     | some false => pure ()
     | none => logWarning m!"E9 {c}: the spine of this callee cannot be followed; not checked"
-  for c in reals do
-    let e3 ← liftTermElabM (checkE3 c)
-    let e3 := e3.filter fun v => !allowE3.any fun (c', v', _) => c' == c && v' == v
-    unless e3.isEmpty do
-      bad := bad + 1
-      logError m!"E3 {c}: the program or the initial state uses the oracle's data {e3}"
+  for c in flagged do
+    bad := bad + 1
+    logError m!"E3 {c}: a result about a program's runs is an instance of an access model {""
+      }(`MatrixFree`, `MatrixFreeProb` or `StoredEntries`); make it one, or make it private"
   logInfo m!"programs: {progs.size} programs and kernels ({callees.size} called by others), {""
-    }{reals.size} realisations; {bad} violations"
+    }{instances.size} results in an access model; {bad} violations"
 
 /-! ## Fixtures: each breaks a rule and must be rejected -/
 
 namespace ProgramChecksFixtures
 
-open NLAlib.Computation
+open NLAlib.Computation MeasureTheory ProbabilityTheory
 
 /-- Not generic: a handle forged from a number. -/
 def forgeNat (n : ℕ) : Builder Unit Unit ℕ ℕ Unit := Builder.ins (.lit () ⟨n, .const 0⟩ 0)
@@ -275,15 +269,21 @@ def forgeFun {VB VI : Type} (f : VI → VB) (n : IExp VI) : Builder Unit Unit VB
 def hostSize {VB VI : Type} (b : VB) (n : ℕ) : Builder Unit Unit VB VI Unit :=
   Builder.forRange (.const n) fun i => Builder.ins (.lit () ⟨b, .var i⟩ 0)
 
+/-- A program family (accepted by E1): sizes and handles as `Fin`-families. -/
+def familyProg : ProgFamily Unit Unit 1 1 := fun _ _ _ n h =>
+  (Builder.forRange (n 0) fun i => Builder.ins (.lit () ⟨h 0, .var i⟩ 0)).run
+
 /-- A program that cannot run. -/
 noncomputable def choiceProg {VB VI : Type} (b : VB) : Builder Unit Unit VB VI Unit :=
   Builder.ins (.lit () ⟨b, .const 0⟩ (Classical.choice ⟨0⟩))
 
-/-- A `<spec>Prog` with no realisation. -/
+/-- A `<spec>Prog` with no result in an access model. -/
 def orphanProg {VB VI : Type} (b : VB) : Builder Unit Unit VB VI Unit :=
   Builder.ins (.lit () ⟨b, .const 0⟩ 0)
 
-/-- A cheating realisation: `A` is handed to the program in its initial store. -/
+/-- A cheating realisation: `A` is handed to the program in its initial store. Not an instance
+of an access model: the lint flags it, and its instance form is false
+(`scripts/AccessModelFixtures.lean`, `not_matrixFree_copyProg`). -/
 theorem runsWithin_cheat {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) (ξ : Dist → ℕ → ℝ) :
     RunsWithin (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ)
       ((NLAlib.hutchppProg () () .gaussian (.const N) (.const k) (.const ℓ)
@@ -293,13 +293,59 @@ theorem runsWithin_cheat {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) (ξ : 
   sorry
 
 /-- A cheating realisation through the tape: the program reads `A` from the tape of every
-distribution while the oracle holds it too. -/
+distribution while the oracle holds it too. Flagged by the lint; its instance form is false
+(`not_matrixFree_drawProg`). -/
 theorem runsWithin_cheatTape {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) :
     RunsWithin (exactInterp (P := Unit) (ι := Unit) (fun _ => A)
         (fun _ i => (flatten A).getD i 0))
       ((NLAlib.hutchppProg () () .gaussian (.const N) (.const k) (.const ℓ)
         ⟨0, .const 0⟩).run)
       (inputState () [Array.replicate 1 none]) 0 (fun _ => 0) (fun _ => True) := by
+  sorry
+
+/-- Gap 1 of the old E3: a tail whose conclusion is not `RunsWithin`, about a program with `A` in
+its initial store. Flagged by the lint. -/
+theorem measureReal_not_runsWithin_cheat_le {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
+    {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) (ξ : Ω → Dist → ℕ → ℝ) :
+    μ.real {ω | ¬ RunsWithin (exactInterp (P := Unit) (ι := Unit) (fun _ => A) (ξ ω))
+      ((NLAlib.hutchppProg () () .gaussian (.const N) (.const k) (.const ℓ)
+        ⟨0, .const 0⟩).run)
+      (inputState () [Array.replicate 1 none, (flatten A).map some]) 0 (fun _ => 0)
+      (fun _ => True)} ≤ 0 := by
+  sorry
+
+/-- Gap 2 of the old E3: a tape law that depends on the matrix (here a Gaussian centred at an
+entry of `A`, standing for leverage-score sampling). Flagged by the lint; in
+`MatrixFreeProb` the law is `tapeLaw`, fixed by the definition. -/
+theorem measureReal_not_runsWithin_le_of_hasLaw_iidSequence {Ω : Type} {mΩ : MeasurableSpace Ω}
+    {μ : Measure Ω} (A : Matrix (Fin 1) (Fin 1) ℝ) {ξ : Ω → Dist → ℕ → ℝ}
+    (hξ : HasLaw (fun ω => ξ ω .gaussian) (NLAlib.iidSequence (gaussianReal (A 0 0) 1)) μ) :
+    μ.real {ω | ¬ RunsWithin (exactInterp (P := Unit) (ι := Unit) (fun _ => A) (ξ ω))
+      (.instr (.draw () .gaussian ⟨0, .const 0⟩)) (inputState () [Array.replicate 1 none]) 0
+      (fun _ => 1) (fun st => st.store.read () 0 0 = some (A 0 0))} ≤ 1 := by
+  sorry
+
+/-- A class that reads an entry out of a value of a type parameter (gap 3 of the old E3). -/
+class Entries (M : Type) where
+  /-- The entry. -/
+  entry : M → ℚ
+
+instance : Entries (Matrix (Fin 1) (Fin 1) ℚ) := ⟨fun A => A 0 0⟩
+
+/-- Gap 3: a program that takes a value of a type parameter and writes its entry as a literal.
+E1 accepts it (it is generic, and E1 is hygiene); the access models make its use harmless:
+`not_matrixFree_leakProg` in `scripts/AccessModelFixtures.lean`. -/
+def leakProg {VB VI : Type} {M : Type} [Entries M] (x : M) (out : Cell VB VI) :
+    Builder Unit Unit VB VI Unit :=
+  Builder.ins (.lit () out (Entries.entry x))
+
+/-- Gap 3: the cheating realisation with `leakProg`, which the old E3 accepted. Flagged by the
+lint. -/
+theorem runsWithin_leakProg (A : Matrix (Fin 1) (Fin 1) ℚ) (ξ : Dist → ℕ → ℝ) :
+    RunsWithin (exactInterp (P := Unit) (ι := Unit) (fun _ => A.map ((↑) : ℚ → ℝ)) ξ)
+      (leakProg A ⟨0, .const 0⟩).run (inputState () [Array.replicate 1 none])
+      (Finsupp.single (.lit ()) 1) (fun _ => 1)
+      (fun st => st.store.read () 0 0 = some ((A 0 0 : ℚ) : ℝ)) := by
   sorry
 
 /-- A program that is opaque: `partial`, so its definition is not the code that runs. -/
@@ -337,6 +383,10 @@ run_cmd do
   expect "E1" ``NLAlib.Computation.cooImpl (← liftTermElabM (checkE1 ``NLAlib.Computation.cooImpl))
     [`pattern]
   expect "E1" ``NLAlib.hutchppProg (← liftTermElabM (checkE1 ``NLAlib.hutchppProg)) []
+  expect "E1" ``ProgramChecksFixtures.familyProg
+    (← liftTermElabM (checkE1 ``ProgramChecksFixtures.familyProg)) []
+  expect "E1" ``ProgramChecksFixtures.leakProg
+    (← liftTermElabM (checkE1 ``ProgramChecksFixtures.leakProg)) []
   for c in [``ProgramChecksFixtures.choiceProg, ``ProgramChecksFixtures.partialProg] do
     match checkE2 env c with
     | some why => logInfo m!"E2 rejects {c}: {why}"
@@ -346,15 +396,31 @@ run_cmd do
   else logError m!"E2 fixture {``ProgramChecksFixtures.partialProg} is not seen as a program"
   if checkE2 env ``NLAlib.hutchppProg |>.isSome then
     logError m!"E2 rejects {``NLAlib.hutchppProg}"
-  expect "E3" ``ProgramChecksFixtures.runsWithin_cheat
-    (← liftTermElabM (checkE3 ``ProgramChecksFixtures.runsWithin_cheat)) [`A]
-  expect "E3" ``ProgramChecksFixtures.runsWithin_cheatTape
-    (← liftTermElabM (checkE3 ``ProgramChecksFixtures.runsWithin_cheatTape)) [`A]
-  expect "E3" ``NLAlib.runsWithin_hutchppProg
-    (← liftTermElabM (checkE3 ``NLAlib.runsWithin_hutchppProg)) []
-  match checkE4 env ``ProgramChecksFixtures.orphanProg with
-  | some r => logInfo m!"E4 rejects {``ProgramChecksFixtures.orphanProg}: no {r}"
-  | none => logError m!"E4 fixture {``ProgramChecksFixtures.orphanProg} passes"
+  let e3 (c : Name) (want : Bool) : CommandElabM Unit := do
+    let got ← liftTermElabM (checkE3 (← getConstInfo c).type)
+    if got == want then
+      logInfo (if want then m!"E3 flags {c}" else m!"E3 accepts {c}")
+    else logError m!"E3 fixture {c}: expected {want}, got {got}"
+  e3 ``ProgramChecksFixtures.runsWithin_cheat true
+  e3 ``ProgramChecksFixtures.runsWithin_cheatTape true
+  e3 ``ProgramChecksFixtures.measureReal_not_runsWithin_cheat_le true
+  e3 ``ProgramChecksFixtures.measureReal_not_runsWithin_le_of_hasLaw_iidSequence true
+  e3 ``ProgramChecksFixtures.runsWithin_leakProg true
+  e3 ``NLAlib.matrixFree_hutchppProg false
+  e3 ``NLAlib.matrixFreeProb_hutchppProg false
+  e3 ``NLAlib.storedEntries_substOracle_hutchppProg_cooImpl false
+  e3 ``NLAlib.Computation.RunsWithin.subst true
+  let mut instances : Array Name := #[]
+  for (c, info) in env.constants.map₁.toList do
+    if let .thmInfo _ := info then
+      if (moduleOf env c).any (`NLAlib).isPrefixOf && !isPrivateName c then
+        if ← liftTermElabM (isInstanceType info.type) then instances := instances.push c
+  if checkE4 env instances ``ProgramChecksFixtures.orphanProg then
+    logInfo m!"E4 rejects {``ProgramChecksFixtures.orphanProg}: no result in an access model"
+  else logError m!"E4 fixture {``ProgramChecksFixtures.orphanProg} passes"
+  for c in [``NLAlib.hutchppProg, ``NLAlib.gramSchmidtProg] do
+    if checkE4 env instances c then logError m!"E4 rejects {c}"
+    else logInfo m!"E4 accepts {c}"
   let e9 (c : Name) (want : Bool) : CommandElabM Unit := do
     let got ← liftTermElabM (checkE9 c)
     if got == some want then

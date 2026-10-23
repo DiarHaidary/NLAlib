@@ -331,8 +331,8 @@ check = "lean"
 scope = "library"
 home = ["NLAlib/Computation"]
 section = "§5.5"
-statement = '''A realisation's program and initial state use no data of its interpretation, and its tape none of the oracles' or read-only data (dimensions, tags and names excepted)'''
-fix = '''Pass the matrix through the oracle or as read-only data, never in the program or the initial store'''
+statement = '''A result about a program's runs is an instance of an access model (`MatrixFree`, `MatrixFreeProb`, `StoredEntries`)'''
+fix = '''State it as the model's instance: the program as a family of the sizes, the data quantified by the definition; a lemma for one interpretation is a private proof step'''
 
 [[rule]]
 id = "E4"
@@ -342,8 +342,8 @@ check = "lean"
 scope = "library"
 home = ["NLAlib/Computation"]
 section = "§5.5"
-statement = '''Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`'''
-fix = '''State the realisation next to the program (with `sorry` until proved)'''
+statement = '''Every `<spec>Prog` has a result in an access model (`matrixFree_<spec>Prog`)'''
+fix = '''State the instance next to the program (with `sorry` until proved)'''
 
 [[rule]]
 id = "E5"
