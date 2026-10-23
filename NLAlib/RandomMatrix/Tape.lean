@@ -35,22 +35,12 @@ open Computation
 
 variable {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- Column-major positions are injective: `i + N * j` determines `i < N` and `j`. -/
-private theorem eq_and_eq_of_add_mul_eq {N i i' j j' : ℕ} (hi : i < N) (hi' : i' < N)
-    (h : i + N * j = i' + N * j') : i = i' ∧ j = j' := by
-  have hN : 0 < N := by omega
-  have h1 : i = i' := by
-    have := congrArg (· % N) h
-    simpa [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hi'] using this
-  subst h1
-  exact ⟨rfl, Nat.eq_of_mul_eq_mul_left hN (by omega)⟩
-
 /-- The tape positions of an $N \times k$ draw from position `off` are distinct. -/
 private theorem injective_tapePos (off N k : ℕ) :
     Function.Injective fun p : Fin N × Fin k => off + p.1.1 + N * p.2.1 := by
   rintro ⟨i, j⟩ ⟨i', j'⟩ h
   have h' : i.1 + N * j.1 = i'.1 + N * j'.1 := by simp only at h; omega
-  obtain ⟨h1, h2⟩ := eq_and_eq_of_add_mul_eq i.2 i'.2 h'
+  obtain ⟨h1, h2⟩ := (Nat.add_mul_eq_add_mul_iff_of_lt i.2 i'.2).mp h'
   exact Prod.ext (Fin.ext h1) (Fin.ext h2)
 
 /-- **A Gaussian tape draws a Gaussian matrix**: if the tape $x$ is an i.i.d. sequence of standard
