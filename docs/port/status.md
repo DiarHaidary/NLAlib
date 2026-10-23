@@ -313,6 +313,24 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: first-order programs, migration closed (2026-10-24)
+
+Branch `computation/stage1`, steps A, B and C done (`381f02d`, `f571a5f`, `e9f4fa5`, `8e3ce63`,
+`570be03`); this entry closes the migration. `HutchPlusPlusProgram.lean:1237` is rewrapped (a
+value marker began a docstring line; no change of mathematics), and the design note's "Changes
+during the migration" lists every departure of A to C. Checks: `lake build --wfail NLAlib` 4018
+jobs, 0 warnings; `mk_all --check` clean; full `scripts/stage_check.sh` (the approval read from a
+scratch copy of `docs/targets.toml`'s hash): 419 proved modules, 4016 jobs 0 warnings, audit 11760
+declarations 0 violations, lint 0 errors, `Programs.lean` 18 programs and 3 registered trees 0
+violations, `Targets.lean` 5 targets 0 violations, fixtures 9 theorems, constants 0 problems,
+LaTeX 0 problems, rules 0 errors (73 in the baseline), duplicates 0 classes; without the scratch
+approval `Targets.lean` fails on the approval item alone; script tests 48 OK; `lake build
+NLAlibTools` clean. Open for the maintainer: create `docs/targets.approved`
+(`sha256sum docs/targets.toml > docs/targets.approved`); confirm the CODEOWNERS handle
+(`@tchen01` is a guess); turn on branch protection with code-owner review on `main`; approve or
+decline respelling `hutchppCount` (no hash change); the Lanczos targets; the uniform sparse
+stage; the stage 2 note.
+
 ## Computation stage 1: first-order programs, migration step C (2026-10-24)
 
 Branch `computation/stage1`, after step B (`f571a5f`). Step C of the migration

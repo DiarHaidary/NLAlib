@@ -2077,3 +2077,17 @@ these departures:
 * **Bookkeeping**: the port ledger has no entry for the five moved ids (programs are not ported
   material), nor has the explorer metadata (it is generated from the extraction); the rename map
   `docs/renames/2026-10-computation.json` records the five id moves and step A's renames.
+
+**Step B and the closing pass** added these departures:
+* **The builders and the registered trees are in two new files**, `GramSchmidtProgramTree.lean`
+  and `HutchPlusPlusProgramTree.lean`, upstream of the target files and of the files that prove
+  them. The targets (`*Targets.lean`) must name the trees, and the proofs import the targets; with
+  the trees left in `GramSchmidtProgram.lean` and `HutchPlusPlusProgram.lean` that is an import
+  cycle. The proof files import the tree files and keep the results about the builders.
+* **The CODEOWNERS handle `@tchen01` is a guess**, from the maintainer's repository account,
+  pending his confirmation; it is a one-line change in `.github/CODEOWNERS`.
+* **Reminder of the departures above that touch statements or checks**: `ProgFamily.compile` in
+  `Model.lean`; the one-token `ProgFamily` renames in five statements; SHA-256 over a canonical
+  serialisation in place of `mixHash`; E8 exempting theorem bodies; CI on every branch.
+* **`HutchPlusPlusProgram.lean` line 1237**: a value marker began a docstring line, which
+  `scripts/check_constants.py` rejects; the line is rewrapped, with no change of mathematics.
