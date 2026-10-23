@@ -881,7 +881,7 @@ $\mathbf{A}\mathbf{S}$.
 products only.
 Result: hutchpp-program -/
 theorem matrixFree_hutchppProg (p : P) (o : ι) (d : Dist) :
-    MatrixFree (𝕜 := 𝕜) (r := 2) (b := 1) p
+    ProgFamily.MatrixFree (𝕜 := 𝕜) (r := 2) (b := 1) p
       (fun _ _ N n h => (hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run)
       (fun _ n => 0 < n 1) (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
       (fun N n => hutchppCount p o d N (n 0) (n 1))
@@ -915,7 +915,7 @@ and for the algorithm, not a program.
 Result: hutchpp-program-tail -/
 theorem matrixFreeProb_hutchppProg (p : P) (o : ι) (r : ℕ) {δ : ℝ} (hδ : 0 < δ) {τ : ℝ}
     (hτ : 0 ≤ τ) :
-    MatrixFreeProb (𝕜 := ℝ) (r := 2) (b := 1) p
+    ProgFamily.MatrixFreeProb (𝕜 := ℝ) (r := 2) (b := 1) p
       (fun _ _ N n h => (hutchppProg p o .gaussian N (n 0) (n 1) ⟨h 0, 0⟩).run)
       (fun _ n => 0 < n 0 ∧ 0 < n 1 ∧ subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ n 0)
       (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
@@ -946,10 +946,10 @@ as in `NLAlib.matrixFree_hutchppProg`, with the counts `hutchppCount` in which e
 matrix-vector product is replaced by $N^2$ multiplications, additions and reads and $N$ literals
 and each load costs nothing, and $2N(k + \ell) + 5 + N^2$ cells of memory besides its output.
 From `NLAlib.matrixFree_hutchppProg` through
-`NLAlib.Computation.MatrixFree.storedEntries_substOracle_denseImpl`. No printed source.
+`NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl`. No printed source.
 Result: hutchpp-program-dense -/
 theorem storedEntries_substOracle_hutchppProg_denseImpl (p : P) (o : ι) (d : Dist) :
-    StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
+    ProgFamily.StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
       (fun _ _ N n h =>
         ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (denseImpl N))
       (fun _ n => 0 < n 1) (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
@@ -972,11 +972,11 @@ program computes $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ from the
 product is replaced by `nnz` multiplications, additions and reads and $N$ literals and each load
 costs nothing, and $2N(k + \ell) + 5 + \mathit{nnz}$ cells of memory besides its output. From
 `NLAlib.matrixFree_hutchppProg` through
-`NLAlib.Computation.MatrixFree.storedEntries_substOracle_cooImpl`. No printed source.
+`NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl`. No printed source.
 Result: hutchpp-program-sparse -/
 theorem storedEntries_substOracle_hutchppProg_cooImpl (p : P) (o : ι) (d : Dist)
     (pattern : List (ℕ × ℕ)) :
-    StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
+    ProgFamily.StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
       (fun _ _ N n h =>
         ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (cooImpl N pattern))
       (fun N n => 0 < n 1 ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N) (fun _ _ => Unit)

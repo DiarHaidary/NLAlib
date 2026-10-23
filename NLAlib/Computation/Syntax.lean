@@ -22,8 +22,16 @@ errors. The run (`NLAlib.Computation.exec`) instantiates both sorts as `ℕ`; th
 the tools library instantiates them as `String`.
 
 Programs are written in `do` notation through `NLAlib.Computation.Builder`, which is Mathlib's
-continuation monad `ContT (Stmt P ι VB VI) Id`. Design: `docs/design/Computation.md` (D1, D11,
-D18).
+continuation monad `ContT (Stmt P ι VB VI) Id`.
+
+A result is about a **first-order program** (`NLAlib.Computation.Prog P ι r b`): one finite
+syntax tree for all sizes, a `NLAlib.Computation.FStmt P ι nb ni` with `nb` handles and `ni`
+index variables in scope, numbered by de Bruijn level, so that a handle or index out of scope is
+a type error. The sizes are its free index variables and its declared buffers its free handles;
+its literals are fixed in the tree, and it contains no Lean function. The builder is surface
+syntax, compiled once into such a tree (`NLAlib/Computation/Compile.lean`). Design:
+`docs/design/Computation.md` (D1, D11, D18, and "First-order programs and target statements",
+F2).
 
 ## Main definitions
 
@@ -31,6 +39,11 @@ D18).
 * `NLAlib.Computation.Instr`: the scalar instructions; `NLAlib.Computation.Stmt`: statements.
 * `NLAlib.Computation.Builder`: `do` notation, with `NLAlib.Computation.Builder.alloc`,
   `NLAlib.Computation.Builder.forRange`, `NLAlib.Computation.Builder.ifThenElse`.
+* `NLAlib.Computation.FStmt`, `NLAlib.Computation.Prog`: first-order statements and programs,
+  scoped by their type, with handles and index variables as de Bruijn levels.
+* `NLAlib.Computation.IExp.subst`, `NLAlib.Computation.IExp.evalIn`,
+  `NLAlib.Computation.Cell.subst`, `NLAlib.Computation.Instr.subst`,
+  `NLAlib.Computation.Arg.subst`: the structural maps the run of a first-order statement uses.
 
 ## Main results
 
@@ -74,12 +87,35 @@ instance {VI : Type} : Mul (IExp VI) := ⟨.mul⟩
 /-- `%` on index expressions. -/
 instance {VI : Type} : Mod (IExp VI) := ⟨.mod⟩
 
+/-- Substitute index expressions for the variables of an index expression. -/
+def IExp.subst {α β : Type} (σ : α → IExp β) : IExp α → IExp β
+  | .var v => σ v
+  | .const n => .const n
+  | .add a b => .add (a.subst σ) (b.subst σ)
+  | .sub a b => .sub (a.subst σ) (b.subst σ)
+  | .mul a b => .mul (a.subst σ) (b.subst σ)
+  | .mod a b => .mod (a.subst σ) (b.subst σ)
+
+/-- The value of an index expression in an environment `ρ` of its variables. -/
+def IExp.evalIn {α : Type} (ρ : α → ℕ) : IExp α → ℕ
+  | .var v => ρ v
+  | .const n => n
+  | .add a b => a.evalIn ρ + b.evalIn ρ
+  | .sub a b => a.evalIn ρ - b.evalIn ρ
+  | .mul a b => a.evalIn ρ * b.evalIn ρ
+  | .mod a b => a.evalIn ρ % b.evalIn ρ
+
 /-- A cell: a buffer handle and an index into the buffer. -/
 structure Cell (VB VI : Type) where
   /-- The buffer. -/
   buf : VB
   /-- The index in the buffer. -/
   idx : IExp VI
+
+/-- A cell under a renaming `f` of handles and a substitution `σ` of index expressions. -/
+def Cell.subst {VB VB' VI VI' : Type} (f : VB → VB') (σ : VI → IExp VI') (c : Cell VB VI) :
+    Cell VB' VI' :=
+  ⟨f c.buf, c.idx.subst σ⟩
 
 /-- Binary operations: field arithmetic, and integer and bitwise operations on words. -/
 inductive BinOp where
@@ -141,6 +177,14 @@ inductive Arg (VB VI : Type) where
   /-- A cell. -/
   | cell (c : Cell VB VI)
 
+/-- A kernel argument under a renaming `f` of handles and a substitution `σ` of index
+expressions. -/
+def Arg.subst {VB VB' VI VI' : Type} (f : VB → VB') (σ : VI → IExp VI') :
+    Arg VB VI → Arg VB' VI'
+  | .buf v => .buf (f v)
+  | .idx e => .idx (e.subst σ)
+  | .cell c => .cell (c.subst f σ)
+
 /-! ### Instructions and statements -/
 
 /-- Scalar instructions: each reads cells (or the tape) at tag `p` and writes one destination
@@ -162,6 +206,18 @@ inductive Instr (P VB VI : Type) where
   of a stored word at another tag. -/
   | convert (p q : P) (dst src : Cell VB VI)
 
+/-- An instruction under a renaming `f` of handles and a substitution `σ` of index
+expressions. -/
+def Instr.subst {P VB VB' VI VI' : Type} (f : VB → VB') (σ : VI → IExp VI') :
+    Instr P VB VI → Instr P VB' VI'
+  | .lit p d q => .lit p (d.subst f σ) q
+  | .litIdx p d e => .litIdx p (d.subst f σ) (e.subst σ)
+  | .bin p b d x y => .bin p b (d.subst f σ) (x.subst f σ) (y.subst f σ)
+  | .un p u d x => .un p u (d.subst f σ) (x.subst f σ)
+  | .copy p d s => .copy p (d.subst f σ) (s.subst f σ)
+  | .draw p dist d => .draw p dist (d.subst f σ)
+  | .convert p q d s => .convert p q (d.subst f σ) (s.subst f σ)
+
 /-- Statements over tags `P`, oracle names `ι`, handles `VB` and index variables `VI`.
 `alloc` binds a handle to a fresh scoped buffer, `loop` binds an index. -/
 inductive Stmt (P ι VB VI : Type) where
@@ -181,12 +237,57 @@ inductive Stmt (P ι VB VI : Type) where
   | alloc (p : P) (len : IExp VI) (body : VB → Stmt P ι VB VI)
   /-- Run the body for each index below `n`, in order. -/
   | loop (n : IExp VI) (body : VI → Stmt P ι VB VI)
-  /-- Run the body while the comparison holds, at most `fuel` times; failing to stop fails. -/
+  /-- Run the body while the comparison holds. The comparison is tested at most `fuel` times,
+  and the loop fails if every test it makes holds: a successful run executes the body at most
+  `fuel - 1` times, and the loop fails if the body runs `fuel` times. -/
   | whileFuel (fuel : IExp VI) (p : P) (c : CmpOp) (x y : Cell VB VI) (body : Stmt P ι VB VI)
   /-- A conditional. -/
   | ite (p : P) (c : CmpOp) (x y : Cell VB VI) (t e : Stmt P ι VB VI)
   /-- A named kernel: runs as its body; the emitter may print it as a call. -/
   | named (name : String) (args : List (Arg VB VI)) (body : Stmt P ι VB VI)
+
+/-! ### First-order statements and programs -/
+
+/-- **First-order statements** over tags `P` and oracle names `ι`, with `nb` handles and `ni`
+index variables in scope, numbered by de Bruijn level: `alloc` binds handle `nb`
+(`Fin.last nb`) in its body and `loop` binds index variable `ni`, and the variables around a
+binder keep their numbers. A handle or index variable out of scope is a type error. The
+constructors are those of `NLAlib.Computation.Stmt`, with the binders made first-order. -/
+inductive FStmt (P ι : Type) : ℕ → ℕ → Type where
+  /-- Do nothing. -/
+  | skip {nb ni : ℕ} : FStmt P ι nb ni
+  /-- Sequence. -/
+  | seq {nb ni : ℕ} (s t : FStmt P ι nb ni) : FStmt P ι nb ni
+  /-- A scalar instruction. -/
+  | instr {nb ni : ℕ} (i : Instr P (Fin nb) (Fin ni)) : FStmt P ι nb ni
+  /-- An oracle call: the block of `cols` columns at `src[sOff]`, multiplied by the matrix of
+  `o`, is written at `dst[dOff]`. -/
+  | apply {nb ni : ℕ} (o : ι) (p : P) (dst : Fin nb) (dOff : IExp (Fin ni)) (src : Fin nb)
+      (sOff cols : IExp (Fin ni)) : FStmt P ι nb ni
+  /-- Read entry `i` of the read-only data into `dst`. -/
+  | rom {nb ni : ℕ} (p : P) (dst : Cell (Fin nb) (Fin ni)) (i : IExp (Fin ni)) : FStmt P ι nb ni
+  /-- Allocate a fresh buffer of `len` cells at tag `p`, handle `nb` in the body; it is freed at
+  the end. -/
+  | alloc {nb ni : ℕ} (p : P) (len : IExp (Fin ni)) (body : FStmt P ι (nb + 1) ni) :
+      FStmt P ι nb ni
+  /-- Run the body for each index below `n`, in order, the index as variable `ni`. -/
+  | loop {nb ni : ℕ} (n : IExp (Fin ni)) (body : FStmt P ι nb (ni + 1)) : FStmt P ι nb ni
+  /-- Run the body while the comparison holds. The comparison is tested at most `fuel` times,
+  and the loop fails if every test it makes holds: a successful run executes the body at most
+  `fuel - 1` times, and the loop fails if the body runs `fuel` times. -/
+  | whileFuel {nb ni : ℕ} (fuel : IExp (Fin ni)) (p : P) (c : CmpOp)
+      (x y : Cell (Fin nb) (Fin ni)) (body : FStmt P ι nb ni) : FStmt P ι nb ni
+  /-- A conditional. -/
+  | ite {nb ni : ℕ} (p : P) (c : CmpOp) (x y : Cell (Fin nb) (Fin ni)) (t e : FStmt P ι nb ni) :
+      FStmt P ι nb ni
+  /-- A named kernel: a label for the emitter; runs as its body. -/
+  | named {nb ni : ℕ} (name : String) (args : List (Arg (Fin nb) (Fin ni)))
+      (body : FStmt P ι nb ni) : FStmt P ι nb ni
+
+/-- **A program**: a first-order statement with `b` declared buffers (handles `0`, …, `b - 1`),
+the oracle dimension `N` (index variable `0`) and `r` further sizes (index variables `1`, …,
+`r`) free. One finite tree for all sizes. -/
+abbrev Prog (P ι : Type) (r b : ℕ) : Type := FStmt P ι b (r + 1)
 
 /-! ### `do` notation -/
 

@@ -41,7 +41,7 @@ namespace ProgramChecks
 arithmetic and contracts. -/
 def theoryModules : List Name :=
   [`NLAlib.Computation.Syntax, `NLAlib.Computation.Store, `NLAlib.Computation.Exec,
-   `NLAlib.Computation.RunsWithin,
+   `NLAlib.Computation.RunsWithin, `NLAlib.Computation.Compile, `NLAlib.Computation.FirstOrder,
    `NLAlib.Computation.Subst, `NLAlib.Computation.Exact, `NLAlib.Computation.Contract]
 
 /-- The Computation core: the theory and the access models, whose combinators (`ProgFamily.inst`,
@@ -52,10 +52,13 @@ def coreModules : List Name := theoryModules ++ [`NLAlib.Computation.Model]
 /-- Implementation files: an implementation may take host data (E1, D11). -/
 def implFiles : List Name := [`NLAlib.Computation.Dense, `NLAlib.Computation.Sparse]
 
-/-- The access models: a result about a program concludes one of them (E3, E4). -/
+/-- The access models: a result about a program concludes one of them (E3, E4). The models on a
+program family (`ProgFamily.MatrixFree`, …) count until the targets of step B replace the results
+that conclude them (`docs/design/Computation.md`, F11). -/
 def models : List Name :=
   [`NLAlib.Computation.MatrixFree, `NLAlib.Computation.MatrixFreeProb,
-   `NLAlib.Computation.StoredEntries]
+   `NLAlib.Computation.StoredEntries, `NLAlib.Computation.ProgFamily.MatrixFree,
+   `NLAlib.Computation.ProgFamily.MatrixFreeProb, `NLAlib.Computation.ProgFamily.StoredEntries]
 
 /-- The two variable sorts of a program type, if it is one: `Builder P ι VB VI β`,
 `Stmt P ι VB VI`, or the unfolded `ContT (Stmt P ι VB VI) Id β`. -/
@@ -116,13 +119,15 @@ def checkE1 (c : Name) : MetaM (List Name) := do
       unless ok do bad := d.userName :: bad
     return bad.reverse
 
-/-- Whether a theorem's statement is about a program's runs: it mentions `RunsWithin`, or a run
-(`exec`, `Stmt`, `ProgFamily.inst`) together with a measure. -/
+/-- Whether a theorem's statement is about a program's runs: it mentions `RunsWithin` (or
+`Prog.RunsWithin`), or a run (`exec`, `Stmt`, `ProgFamily.inst`, `Prog.exec`, `FStmt.exec`)
+together with a measure. -/
 def isAboutRuns (t : Expr) : Bool :=
   let has (n : Name) := (t.find? fun e => e.isConstOf n).isSome
-  has ``NLAlib.Computation.RunsWithin ||
+  has ``NLAlib.Computation.RunsWithin || has ``NLAlib.Computation.Prog.RunsWithin ||
     ((has ``NLAlib.Computation.exec || has ``NLAlib.Computation.Stmt ||
-        has ``NLAlib.Computation.ProgFamily.inst) && has ``MeasureTheory.Measure)
+        has ``NLAlib.Computation.ProgFamily.inst || has ``NLAlib.Computation.Prog.exec ||
+        has ``NLAlib.Computation.FStmt.exec) && has ``MeasureTheory.Measure)
 
 /-- Whether a theorem's conclusion is an instance of an access model. -/
 def isInstanceType (t : Expr) : MetaM Bool :=

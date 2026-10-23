@@ -30,7 +30,9 @@ part of the definition, never a hypothesis of a theorem, so it cannot depend on 
 ## Main definitions
 
 * `NLAlib.Computation.Dist.law`, `NLAlib.Computation.tapeLaw`: the law of the tape.
-* `NLAlib.Computation.MatrixFreeProb`: the probabilistic matrix-free model.
+* `NLAlib.Computation.MatrixFreeProb`: the probabilistic matrix-free model, on a first-order
+  program; `NLAlib.Computation.ProgFamily.MatrixFreeProb`, the same model on a program family
+  (proof infrastructure).
 
 ## Main results
 
@@ -38,6 +40,8 @@ part of the definition, never a hypothesis of a theorem, so it cannot depend on 
 * `NLAlib.indepFun_tapeMatrix_of_hasLaw_iidSequence`: consecutive draws are independent.
 * `NLAlib.Computation.hasLaw_apply_of_hasLaw_tapeLaw`: the tape of one distribution under the
   law of the tape.
+* `NLAlib.Computation.ProgFamily.MatrixFreeProb.prog`: a result for a family is a result for a
+  program that instantiates to it.
 -/
 
 @[expose] public section
@@ -139,6 +143,32 @@ variable {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P]
 /-- **The probabilistic matrix-free model.** For all sizes $N$, $n$ satisfying `valid`, every
 declared input $x$ and every $N \times N$ matrix $\mathbf{A}$, and every tape $\xi$ on any
 probability space whose law is the law of the tape `tapeLaw` (fixed by this definition: the tapes
+independent, the tape of `d` i.i.d. with law `d.law`), the probability that the program `prog`,
+run under exact arithmetic with every oracle name meaning $\mathbf{A}$ and the tape $\xi(\omega)$
+from the initial state that holds the declared buffers `inputs N n x` at tag `p` and nothing
+else, fails to run within the counts `cost N n` and the memory `mem N n` in a state satisfying
+`good N n x A` is at most `bound N n x A`.
+
+The program, one first-order tree for all sizes, is bound before the sizes, the matrix, the
+declared inputs and the tape, and the law of the tape is part of the definition: neither the
+program nor the law can depend on the data. -/
+def MatrixFreeProb {r b : ℕ} (p : P) (prog : Prog P ι r b)
+    (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (cost : ℕ → (Fin r → ℕ) → OpCount P ι) (mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (good : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      St P 𝕜 (OpCount P ι) → Prop)
+    (bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → ℝ) : Prop :=
+  ∀ N n, valid N n → ∀ (x : X N n) (A : Matrix (Fin N) (Fin N) 𝕜) (Ω : Type)
+    (_ : MeasurableSpace Ω) (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ), HasLaw ξ tapeLaw μ →
+    μ.real {ω | ¬ prog.RunsWithin (exactInterp (fun _ => A) (ξ ω)) N n
+      (inputState p (List.ofFn (inputs N n x))) (cost N n) (mem N n) (good N n x A)} ≤
+      bound N n x A
+
+/-- **The probabilistic matrix-free model on a program family**, proof infrastructure for
+`NLAlib.Computation.MatrixFreeProb`. For all sizes $N$, $n$ satisfying `valid`, every declared
+input $x$ and every $N \times N$ matrix $\mathbf{A}$, and every tape $\xi$ on any probability
+space whose law is the law of the tape `tapeLaw` (fixed by this definition: the tapes
 independent, the tape of `d` i.i.d. with law `d.law`), the probability that the program family
 `prog`, run under exact arithmetic with every oracle name meaning $\mathbf{A}$ and the tape
 $\xi(\omega)$ from the initial state that holds the declared buffers `inputs N n x` at tag `p`
@@ -147,7 +177,7 @@ satisfying `good N n x A` is at most `bound N n x A`.
 
 The program is bound before the matrix, the declared inputs and the tape, and the law of the tape
 is part of the definition: neither the program nor the law can depend on the data. -/
-def MatrixFreeProb {r b : ℕ} (p : P) (prog : ProgFamily P ι r b)
+def ProgFamily.MatrixFreeProb {r b : ℕ} (p : P) (prog : ProgFamily P ι r b)
     (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
     (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
     (cost : ℕ → (Fin r → ℕ) → OpCount P ι) (mem : ℕ → (Fin r → ℕ) → P → ℕ)
@@ -159,6 +189,25 @@ def MatrixFreeProb {r b : ℕ} (p : P) (prog : ProgFamily P ι r b)
     μ.real {ω | ¬ RunsWithin (exactInterp (fun _ => A) (ξ ω)) (prog.inst N n)
       (inputState p (List.ofFn (inputs N n x))) (cost N n) (mem N n) (good N n x A)} ≤
       bound N n x A
+
+/-- From a family to a program, probabilistic: a result for the program family $F$ in the
+probabilistic matrix-free model is a result, with the same size condition, declared inputs,
+counts, memory, event and bound, for every first-order program $c$ that instantiates at every
+size to the statement of $F$ there. No printed source. -/
+theorem ProgFamily.MatrixFreeProb.prog {r b : ℕ} {p : P} {F : ProgFamily P ι r b}
+    {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
+    {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜)}
+    {cost : ℕ → (Fin r → ℕ) → OpCount P ι} {mem : ℕ → (Fin r → ℕ) → P → ℕ}
+    {good : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      St P 𝕜 (OpCount P ι) → Prop}
+    {bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → ℝ}
+    (h : ProgFamily.MatrixFreeProb p F valid X inputs cost mem good bound) (c : Prog P ι r b)
+    (hc : ∀ N n, c.toStmt N n = F.inst N n) :
+    Computation.MatrixFreeProb p c valid X inputs cost mem good bound := by
+  intro N n hv x A Ω _ μ ξ hξ
+  refine (le_of_eq (congrArg μ.real (Set.ext fun ω => not_congr ?_))).trans
+    (h N n hv x A Ω _ μ ξ hξ)
+  rw [Prog.runsWithin_iff, hc]
 
 end Computation
 

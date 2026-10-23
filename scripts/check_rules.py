@@ -1369,7 +1369,8 @@ COMPUTATION = 'NLAlib/Computation'
 # The files that may construct `Stmt.named`: the core that defines and eliminates it, the BLAS
 # kernels and the implementations.
 NAMED_FILES = tuple(f'{COMPUTATION}/{f}.lean' for f in
-                    ('Syntax', 'Exec', 'Subst', 'BLAS', 'Dense', 'Sparse'))
+                    ('Syntax', 'Exec', 'Subst', 'Compile', 'FirstOrder', 'BLAS', 'Dense',
+                     'Sparse'))
 NAMED_RE = re.compile(r'\b(?:Builder|Stmt|Computation)\.named\b|(?<![\w.])\.named\b|'
                       r'(?<![\w.])named\s+"')
 

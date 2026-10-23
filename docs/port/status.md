@@ -313,6 +313,23 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: first-order programs, migration step A (2026-10-23)
+
+Branch `computation/stage1`. Step A of the migration (`docs/design/Computation.md`, F11): the
+first-order syntax `FStmt`, `Prog` and the structural maps (`Syntax.lean`), the compiler and
+`toStmt` (new `Compile.lean`), the run `FStmt.exec`, `Prog.exec`, the bridge
+`FStmt.exec_eq_exec_toStmt`, `Prog.RunsWithin` and the run invariants for programs (new
+`FirstOrder.lean`), the models `MatrixFree`, `StoredEntries` (`Model.lean`) and `MatrixFreeProb`
+(`RandomMatrix/Tape.lean`) on `Prog`, the old ones renamed into namespace `ProgFamily` with
+transfer lemmas `ProgFamily.*.prog`, `ProgFamily.compile`, the composition theorems renamed into
+`ProgFamily.MatrixFree`, and Q4 (`exactSem` fails on `lt`, `le` of non-real values). Departures
+and the files of steps B and C touched: the note's "Changes during the migration". Checks:
+`lake build --wfail NLAlib` 4014 jobs, 0 warnings; `scripts/stage_check.sh` 415 proved modules,
+audit 11638 declarations 0 violations, lint 0 errors, `scripts/Programs.lean` 0 violations (10
+results in an access model), fixtures 9 theorems, rules 0 errors, 73 in the baseline;
+script tests 48 OK; `lake build NLAlibTools` clean; `mk_all --check` clean. Next: steps B and C,
+in parallel (briefs from the orchestrator).
+
 ## Computation stage 1: guarantees (2026-10-23)
 
 Branch `computation/stage1` (worktree `nlalib-block`), from `056f9ed`. The maintainer's change

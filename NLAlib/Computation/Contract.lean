@@ -134,8 +134,8 @@ theorem isRelErrSem_exactSem : IsRelErrSem (P := P) (fun _ => 0) (fun _ x => x)
     exact ⟨0, by simp, by simp [← h]⟩
   sqrt_ok p x hx := by simp [exactSem, hx]
   cmp_eq p x y := by simp only [exactSem]
-  cmp_lt p x y := by simp only [exactSem]
-  cmp_le p x y := by simp only [exactSem]
+  cmp_lt p x y := by simp only [exactSem, RCLike.im_to_real, and_self, ↓reduceIte]
+  cmp_le p x y := by simp only [exactSem, RCLike.im_to_real, and_self, ↓reduceIte]
   convert_err p q x z h := by
     simp only [exactSem, Option.some.injEq] at h
     exact ⟨0, by simp, by simp [h]⟩

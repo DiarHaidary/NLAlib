@@ -29,8 +29,8 @@ is not counted. Design: `docs/design/Computation.md` (D4, D14).
 ## Main results
 
 * `NLAlib.Computation.implementsOracle_cooImpl`: the certificate.
-* `NLAlib.Computation.MatrixFree.storedEntries_substOracle_cooImpl`: a matrix-free result gives
-  the stored-entries result of the program served by `cooImpl`.
+* `NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl`: a matrix-free
+  result gives the stored-entries result of the program served by `cooImpl`.
 -/
 
 @[expose] public section
@@ -453,14 +453,14 @@ reads and $N$ literals and each load nothing (`cooCost`), and the memory grows b
 and the `nnz` stored values. The final state has the store, tape positions and current memory of
 a final state of the matrix-free run. No printed source.
 Result: matrix-free-coo-substitution -/
-theorem MatrixFree.storedEntries_substOracle_cooImpl {r b : ℕ} {p : P}
+theorem ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl {r b : ℕ} {p : P}
     {prog : ProgFamily P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
     {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜)}
     {cost : ℕ → (Fin r → ℕ) → OpCount P ι} {mem : ℕ → (Fin r → ℕ) → P → ℕ}
     {post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
       (Dist → ℕ → ℝ) → St P 𝕜 (OpCount P ι) → Prop}
-    (h : MatrixFree p prog valid X inputs cost mem post) (pattern : List (ℕ × ℕ)) :
-    StoredEntries p (prog.substOracle fun _ _ N => cooImpl N pattern)
+    (h : ProgFamily.MatrixFree p prog valid X inputs cost mem post) (pattern : List (ℕ × ℕ)) :
+    ProgFamily.StoredEntries p (prog.substOracle fun _ _ N => cooImpl N pattern)
       (fun N n => valid N n ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N) X inputs
       (fun _ _ => pattern.length) (fun N n => substCount (cooCost N pattern.length) (cost N n))
       (fun N n q => mem N n q + 1 + if q = p then pattern.length else 0)

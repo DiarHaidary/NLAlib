@@ -74,7 +74,7 @@ theorem read_of_exec_draw {A : Matrix (Fin 1) (Fin 1) ℝ} {ξ : Dist → ℕ �
 family that writes its entry as a literal does not compute the trace of every matrix, so the
 matrix-free instance is false. -/
 theorem not_matrixFree_leakProg (A₀ : Matrix (Fin 1) (Fin 1) ℚ) :
-    ¬ MatrixFree (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 1) ()
+    ¬ ProgFamily.MatrixFree (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 1) ()
       (fun _ _ _ _ h => (leakProg A₀ ⟨h 0, 0⟩).run) (fun _ _ => True) (fun _ _ => Unit)
       (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => Finsupp.single (.lit ()) 1)
       (fun _ _ _ => 1) (fun _ _ _ A _ st => st.store.read () 0 0 = some A.trace) := by
@@ -93,7 +93,7 @@ def copyProg {VB VI : Type} (src dst : Cell VB VI) : Builder Unit Unit VB VI Uni
 the model quantifies independently of the matrix, so a program that copies its input does not
 compute the trace of every matrix. -/
 theorem not_matrixFree_copyProg :
-    ¬ MatrixFree (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 2) ()
+    ¬ ProgFamily.MatrixFree (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 2) ()
       (fun _ _ _ _ h => (copyProg ⟨h 0, 0⟩ ⟨h 1, 0⟩).run) (fun _ _ => True) (fun _ _ => ℝ)
       (fun _ _ x => ![#[some x], Array.replicate 1 none])
       (fun _ _ => Finsupp.single (.copy ()) 1) (fun _ _ _ => 2)
@@ -111,7 +111,7 @@ def drawProg {VB VI : Type} (d : Dist) (dst : Cell VB VI) : Builder Unit Unit VB
 /-- **A matrix on the tape**: the model quantifies over every tape independently of the matrix,
 so a program that draws its output does not compute the trace of every matrix. -/
 theorem not_matrixFree_drawProg :
-    ¬ MatrixFree (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 1) ()
+    ¬ ProgFamily.MatrixFree (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 1) ()
       (fun _ _ _ _ h => (drawProg .gaussian ⟨h 0, 0⟩).run) (fun _ _ => True) (fun _ _ => Unit)
       (fun _ _ _ => ![Array.replicate 1 none])
       (fun _ _ => Finsupp.single (.draw () .gaussian) 1) (fun _ _ _ => 1)
@@ -131,7 +131,7 @@ theorem matrixFreeProb_iff {r b : ℕ} (p : Unit) (prog : ProgFamily Unit Unit r
     (good : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) ℝ →
       St Unit ℝ (OpCount Unit Unit) → Prop)
     (bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) ℝ → ℝ) :
-    MatrixFreeProb p prog valid X inputs cost mem good bound ↔
+    ProgFamily.MatrixFreeProb p prog valid X inputs cost mem good bound ↔
       ∀ N n, valid N n → ∀ (x : X N n) (A : Matrix (Fin N) (Fin N) ℝ) (Ω : Type)
         (_ : MeasurableSpace Ω) (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ), HasLaw ξ tapeLaw μ →
         μ.real {ω | ¬ RunsWithin (exactInterp (fun _ => A) (ξ ω)) (prog.inst N n)
@@ -163,7 +163,7 @@ definition fixes, a program that draws its output computes the trace of the zero
 matrix with probability at most $1/2$, so the instance with failure probability $0$ is false. With
 a hypothesis making the tape equal to an entry of the matrix the old form held. -/
 theorem not_matrixFreeProb_drawProg :
-    ¬ MatrixFreeProb (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 1) ()
+    ¬ ProgFamily.MatrixFreeProb (𝕜 := ℝ) (ι := Unit) (r := 0) (b := 1) ()
       (fun _ _ _ _ h => (drawProg .rademacher ⟨h 0, 0⟩).run) (fun _ _ => True)
       (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
       (fun _ _ => Finsupp.single (.draw () .rademacher) 1) (fun _ _ _ => 1)

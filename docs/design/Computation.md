@@ -1983,3 +1983,48 @@ beyond the two changes. The maintainer decided all five the same day.
   `scripts/Targets.lean` requires both whenever a target's `inputs` is not built from
   `Array.replicate` and the declared data alone, and the explorer shows the flag next to the
   cost. None of the five targets of F8 has such an input.
+
+## Changes during the migration (2026-10-23)
+
+**Step A (the core) landed** as planned in F11, with these departures, each forced by the build
+or the checks:
+* **`ProgFamily.compile` lives in `Computation/Model.lean`**, next to `ProgFamily`, not in
+  `Computation/Compile.lean`. The import order is `Syntax`, `Compile` (the compiler of statements
+  and `toStmt`), `FirstOrder` (the run, the bridge, `Prog.RunsWithin`), then `Model`, which
+  defines `ProgFamily` and needs `FirstOrder` for the models on `Prog`; so `Compile` cannot see
+  `ProgFamily`. `Compile.lean` holds the rest of item 2.
+* **The statements of five public results changed in text, not in meaning.** The models they
+  conclude were renamed into namespace `ProgFamily` (item 4), with unchanged bodies, so
+  `matrixFree_gramSchmidtProg` and `matrixFree_hutchppProg` now conclude `ProgFamily.MatrixFree`,
+  `matrixFreeProb_hutchppProg` concludes `ProgFamily.MatrixFreeProb`, and
+  `storedEntries_substOracle_hutchppProg_denseImpl` and `…_cooImpl` conclude
+  `ProgFamily.StoredEntries` (in `GramSchmidtProgram.lean` and `HutchPlusPlusProgram.lean`, step
+  B's files, touched only for this and for two docstring references to the renamed composition
+  theorems). The composition theorems are now `ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl`
+  and `…_cooImpl` (item 5), with their result ids `matrix-free-dense-substitution` and
+  `matrix-free-coo-substitution` unchanged. Every result id stays on the declaration that carried
+  it until step B moves the five program ids to the targets.
+* **Step C's files touched so that the checks stay green**, each a few lines:
+  `scripts/Programs.lean` (the models list includes the three `ProgFamily` models until step B;
+  `Compile` and `FirstOrder` are theory modules; a statement mentioning `Prog.RunsWithin`, or
+  `Prog.exec` or `FStmt.exec` with a measure, is about runs, so E3 covers the new forms in the
+  meantime); `scripts/AccessModelFixtures.lean` (the four `not_` fixtures and `matrixFreeProb_iff`
+  are stated with the `ProgFamily` models, their meaning unchanged); `scripts/check_rules.py`
+  (E8 exempts `Compile.lean` and `FirstOrder.lean`, whose matches on `named` are the core's, as
+  in `Exec.lean` and `Subst.lean`); CONTRIBUTING §5.3, the access-model row, cites the renamed
+  composition theorems (rule V6).
+* **Q4 made**: `exactSem` fails on `lt` and `le` unless both arguments have imaginary part $0$;
+  `isRelErrSem_exactSem` keeps its statement, its two comparison clauses proved by
+  `RCLike.im_to_real`. No proof in the library depended on the old clauses.
+* The `whileFuel` docstrings (`Stmt.whileFuel`, `FStmt.whileFuel`, `FStmt.exec`) say the run
+  tests at most `fuel` times and fails if every test holds, so a successful run executes the body
+  at most `fuel - 1` times (F3).
+* The run invariants for programs (item 3) are the nine of `Exec.lean`, each through the bridge:
+  `Prog.cnt_le_of_exec_eq_some`, `Prog.cur_eq_of_exec_eq_some`, `Prog.curW_eq_of_exec_eq_some`,
+  `Prog.shape_eq_of_exec_eq_some`, `Prog.peak_le_of_exec_eq_some`,
+  `Prog.peakW_le_of_exec_eq_some`, `Prog.store_eq_of_exec_eq_some_of_cnt_le`,
+  `Prog.pos_eq_of_exec_eq_some_of_cnt_le`, `Prog.exec_eq_of_exec_eq_some_of_cnt_load_le`.
+
+Sizes: `Syntax.lean` +101, `Exec.lean` +6, `Compile.lean` 139 (new), `FirstOrder.lean` 305 (new),
+`Model.lean` +103, `Tape.lean` +49, `Exact.lean` and `Contract.lean` +5, `Dense.lean` +1,
+`Sparse.lean` unchanged in length.

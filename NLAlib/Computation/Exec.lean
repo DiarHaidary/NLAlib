@@ -140,6 +140,12 @@ theorem IExp.eval_one : (1 : IExp ℕ).eval = 1 := rfl
 /-- The value of a remainder. -/
 @[simp] theorem IExp.eval_mod (a b : IExp ℕ) : (a % b).eval = a.eval % b.eval := rfl
 
+/-- The value of a substituted index expression is its value in the environment of the values
+of the substituted expressions. -/
+theorem IExp.eval_subst {α : Type} (σ : α → IExp ℕ) (e : IExp α) :
+    (e.subst σ).eval = e.evalIn fun v => (σ v).eval := by
+  induction e <;> simp only [IExp.subst, IExp.evalIn, IExp.eval, *]
+
 /-! ### States and interpretations -/
 
 /-- The state of a run: the store, the tape position of each distribution, the counts, and the

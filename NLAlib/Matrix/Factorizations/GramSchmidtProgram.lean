@@ -890,7 +890,7 @@ the counts `gramSchmidtCount p N k` and $Nk + 3$ cells, and leaves `gramSchmidtQ
 [GolubVanLoan2013, §5.2.8]; here rank-revealing, with no rank hypothesis.
 Result: gram-schmidt-program -/
 theorem matrixFree_gramSchmidtProg (p : P) :
-    MatrixFree (𝕜 := 𝕜) (ι := ι) (r := 1) (b := 1) p
+    ProgFamily.MatrixFree (𝕜 := 𝕜) (ι := ι) (r := 1) (b := 1) p
       (fun _ _ N n h => (gramSchmidtProg p N (n 0) (h 0)).run)
       (fun _ _ => True) (fun N n => Matrix (Fin N) (Fin (n 0)) 𝕜)
       (fun _ _ Y => ![(flatten Y).map some]) (fun N n => gramSchmidtCount p N (n 0))

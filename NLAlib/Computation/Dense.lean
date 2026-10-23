@@ -28,8 +28,8 @@ sizes: it takes no host data. Design: `docs/design/Computation.md` (D4, D14).
 ## Main results
 
 * `NLAlib.Computation.implementsOracle_denseImpl`: the certificate.
-* `NLAlib.Computation.MatrixFree.storedEntries_substOracle_denseImpl`: a matrix-free result gives
-  the stored-entries result of the program served by `denseImpl`.
+* `NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl`: a matrix-free
+  result gives the stored-entries result of the program served by `denseImpl`.
 -/
 
 @[expose] public section
@@ -424,14 +424,15 @@ additions and reads and $N$ literals and each load nothing (`denseCost`), and th
 one scratch cell and the $N^2$ stored entries. The final state has the store, tape positions and
 current memory of a final state of the matrix-free run. No printed source.
 Result: matrix-free-dense-substitution -/
-theorem MatrixFree.storedEntries_substOracle_denseImpl {r b : ℕ} {p : P}
+theorem ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl {r b : ℕ} {p : P}
     {prog : ProgFamily P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
     {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜)}
     {cost : ℕ → (Fin r → ℕ) → OpCount P ι} {mem : ℕ → (Fin r → ℕ) → P → ℕ}
     {post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
       (Dist → ℕ → ℝ) → St P 𝕜 (OpCount P ι) → Prop}
-    (h : MatrixFree p prog valid X inputs cost mem post) :
-    StoredEntries p (prog.substOracle fun _ _ N => denseImpl N) valid X inputs (fun N _ => N * N)
+    (h : ProgFamily.MatrixFree p prog valid X inputs cost mem post) :
+    ProgFamily.StoredEntries p (prog.substOracle fun _ _ N => denseImpl N) valid X inputs
+      (fun N _ => N * N)
       (fun N n => substCount (denseCost N) (cost N n))
       (fun N n q => mem N n q + 1 + if q = p then N * N else 0)
       (fun N n x vals ξ st' => ∃ st, post N n x (Matrix.of fun i j => vals (i + N * j)) ξ st ∧

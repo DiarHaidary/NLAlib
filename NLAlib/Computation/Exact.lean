@@ -16,7 +16,8 @@ public import NLAlib.ForMathlib.Data.Nat.Init
 
 The exact interpretation of programs over an `RCLike` field $\Bbbk$: `NLAlib.Computation.exactSem`
 is exact field arithmetic (division by zero, the square root of a number that is not
-nonnegative, and the word operations fail), and `NLAlib.Computation.exactInterp A ξ` gives each
+nonnegative, an order comparison of numbers that are not both real, and the word operations
+fail), and `NLAlib.Computation.exactInterp A ξ` gives each
 oracle name `o` the matrix `A o`, reads the tape of each distribution from `ξ`, charges one per
 operation and has no read-only data. Matrices are stored column-major from an offset:
 `NLAlib.Computation.flatten`, `NLAlib.Computation.unflatten`, and
@@ -49,8 +50,10 @@ variable {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P]
 open Classical in
 /-- **Exact arithmetic** over $\Bbbk$: the field operations, with division by zero failing;
 `conj` and `re` as in $\Bbbk$; the square root of a nonnegative element (in the order of
-$\Bbbk$, so of a real number) and failing otherwise; comparisons in the order of $\Bbbk$;
-conversions the identity; integer and bitwise operations failing. -/
+$\Bbbk$, so of a real number) and failing otherwise; equality tests exact; the comparisons
+`lt` and `le` in the order of $\Bbbk$ when both arguments are real (imaginary part $0$) and
+failing otherwise, so that a branch on two incomparable complex numbers fails, as a division by
+zero does; conversions the identity; integer and bitwise operations failing. -/
 noncomputable def exactSem : ScalarSem P 𝕜 where
   lit _ q := some (q : 𝕜)
   bin _ b x y := match b with
@@ -62,7 +65,9 @@ noncomputable def exactSem : ScalarSem P 𝕜 where
     | .sqrt => if 0 ≤ x then some ((√(RCLike.re x) : ℝ) : 𝕜) else none
     | .bnot => none
   cmp _ c x y := match c with
-    | .eq => some (decide (x = y)) | .lt => some (decide (x < y)) | .le => some (decide (x ≤ y))
+    | .eq => some (decide (x = y))
+    | .lt => if RCLike.im x = 0 ∧ RCLike.im y = 0 then some (decide (x < y)) else none
+    | .le => if RCLike.im x = 0 ∧ RCLike.im y = 0 then some (decide (x ≤ y)) else none
   convert _ _ x := some x
 
 /-- An $N \times \ell$ matrix as a column-major array of length $N\ell$: entry $(i, j)$ at
