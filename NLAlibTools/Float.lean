@@ -10,8 +10,9 @@ import NLAlib.Estimation.Trace.HutchPlusPlusProgram
 
 A value semantics over `Float` (`NLAlibTools.floatSem`) and an interpretation with a dense
 oracle (`NLAlibTools.floatInterp`), so that the library's programs run in Lean with
-`NLAlib.Computation.exec`, unchanged. Counts are (flops, loads, matvecs): one flop per binary
-operation and square root. The runs below reproduce the Hutch++ rows of the table of
+`NLAlib.Computation.exec` (the builder's statement) and with `NLAlib.Computation.Prog.exec` (the
+registered tree), which agree on the rows below. Counts are (flops, loads, matvecs): one flop per
+binary operation and square root. The runs below reproduce the Hutch++ rows of the table of
 `docs/design/Computation.md` §6 on a $5 \times 5$ symmetric matrix. This is a tool for
 differential testing, not part of the library: nothing here is proved about `Float`.
 -/
@@ -94,7 +95,18 @@ def hutchppRun (k ℓ : ℕ) : Option (List Float × (ℕ × ℕ × ℕ) × ℕ)
   let st ← exec (floatInterp A₀ signTape) prog (initState [Array.replicate 1 none])
   some (showBuf st 0, st.cnt, st.peak ())
 
+/-- Run the registered tree `NLAlib.hutchppProg.compiled` on `A₀` with the sign tape, by
+`NLAlib.Computation.Prog.exec`: the output, the counts and the peak. -/
+def hutchppTreeRun (k ℓ : ℕ) : Option (List Float × (ℕ × ℕ × ℕ) × ℕ) := do
+  let st ← (hutchppProg.compiled (P := Unit) (ι := Unit) () () .rademacher).exec
+    (floatInterp A₀ signTape) 5 ![k, ℓ] (initState [Array.replicate 1 none])
+  some (showBuf st 0, st.cnt, st.peak ())
+
 #eval (hutchppRun 2 1, hutchppRun 5 1)
+
+-- The builder's run agrees with the run of the registered tree (`Prog.exec`) on the §6 rows.
+#guard hutchppRun 2 1 == hutchppTreeRun 2 1
+#guard hutchppRun 5 1 == hutchppTreeRun 5 1
 
 -- The counts and peaks of the design note's table (§6).
 #guard (hutchppRun 2 1).map (fun r => r.2) = some ((127, 2, 5), 34)

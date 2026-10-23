@@ -313,6 +313,31 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: first-order programs, migration step C (2026-10-24)
+
+Branch `computation/stage1`, after step B (`f571a5f`). Step C of the migration
+(`docs/design/Computation.md`, F11; departures in "Changes during the migration"): the target lint
+`scripts/Targets.lean` (rule E3: one proof per registered target, `Result:` theorems about runs
+prove registered targets, SHA-256 closure hashes with the registered trees as leaves, printed
+statements, toolchain and Mathlib pins, Q5, the Q3 approval; fixtures on copies of a target), the
+registry `docs/targets.toml` (five targets, three trees, filled by `TARGETS_UPDATE=1`),
+`.github/CODEOWNERS`; `scripts/Programs.lean` with E1 and the old E3 retired, E4 against the
+registry, E9 a warning, `forgeNat` a compiler fixture; `scripts/AccessModelFixtures.lean` on
+trees; the NumPy emitter of first-order trees with a differential test against the `Float` run of
+the registered tree; rules E3, E4, E8 (theorems exempt), E9 rewritten, E1 retired; CONTRIBUTING
+§5.3, §5.5, §9, §11; CI and `scripts/stage_check.sh` run the target lint; the rename map
+`docs/renames/2026-10-computation.json`. Open for the maintainer: **the registry approval**
+(`sha256sum docs/targets.toml > docs/targets.approved` in his commit; until then
+`scripts/Targets.lean` fails on that item alone), the CODEOWNERS handle `@tchen01`, and branch
+protection with code-owner review on `main`. Checks (`scripts/stage_check.sh`, the registry
+approved by a scratch copy of the approval file): 419 proved modules, build 4016 jobs 0 warnings,
+audit 11760 declarations 0 violations, lint 0 errors, `Programs.lean` 18 programs, kernels and
+trees, 0 violations, 0 E9 warnings, `Targets.lean` 5 targets and 3 trees 0 violations (about 20
+seconds), fixtures 9 theorems; `check_constants.py` fails on step B's
+`HutchPlusPlusProgram.lean:1237` (a value marker begins a docstring line), so the rest was run by
+hand: LaTeX 0 problems, rules (with the extraction, N1–N18 included) 0 errors, 73 in the
+baseline, duplicates 0 classes; script tests 48 OK; `lake build NLAlibTools` clean.
+
 ## Computation stage 1: first-order programs, migration step A (2026-10-23)
 
 Branch `computation/stage1`. Step A of the migration (`docs/design/Computation.md`, F11): the

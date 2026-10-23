@@ -2028,3 +2028,52 @@ or the checks:
 Sizes: `Syntax.lean` +101, `Exec.lean` +6, `Compile.lean` 139 (new), `FirstOrder.lean` 305 (new),
 `Model.lean` +103, `Tape.lean` +49, `Exact.lean` and `Contract.lean` +5, `Dense.lean` +1,
 `Sparse.lean` unchanged in length.
+
+**Step C (checks, tools and documents) landed** after step B (`f571a5f`), as planned in F11, with
+these departures:
+* **The closure hash is SHA-256, not `mixHash`.** `mixHash` over `Expr.hash` is a 64-bit
+  non-cryptographic combination, so a determined prover could search for a weakened statement with
+  the registry's hash. `scripts/Targets.lean` hashes a canonical serialisation instead: every
+  constant of the closure in name order, each with its kind, universe parameters, type and what
+  its kind carries (F1 item 3), each distinct subterm once (equal subterms are first made
+  pointer-equal, so a term with sharing serialises in linear size), binder names, binder
+  annotations and metadata left out. A registered tree is hashed the same way, by its type and its
+  constructor normal form; a normal form must contain no library definition outside its types and
+  proofs (the three trees contain none). The SHA-256 is computed by `sha256sum` (or
+  `shasum -a 256`), as for `docs/targets.approved`.
+* **Item 2 of the lint follows the statement's definitions.** A `Result:` theorem is flagged when
+  its statement reaches a run or a budget through the library definitions it unfolds to, not only
+  when it mentions one, so `theorem t : T` for a `Prop` `T` of the prover's that unfolds to a
+  model is flagged unless `T` is registered (fixture `fixUnregistered`). The Computation layer
+  (`NLAlib/Computation`, whose theorems are about every program) is outside item 2.
+* **Item 1 also checks the file and the conclusion**: a target is a `Prop` definition in the
+  `*Targets.lean` file its entry names, and concludes a model on `Prog`; every registered tree is
+  named by a target, and every tree a target lists occurs in its statement.
+* **`--update` is an environment variable**, `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean`
+  (a script run by `lake env lean` takes no arguments); it rewrites the hashes, the printed
+  statements and the pins, and never `docs/targets.approved`. `TARGETS_REGISTRY` and
+  `TARGETS_APPROVED` name other files, for tests. The registry entries carry `reviewed =
+  "2026-10-23"`, the date the maintainer approved the statements of F8. The maintainer's approval
+  commit adds `docs/targets.approved`; until then the lint fails on its last item, as designed.
+* **E4 is checked by `scripts/Programs.lean` against the registry**: every `<spec>Prog` is called
+  by the definition of a tree that a registered target lists. That every target is proved is item
+  1 of E3. A compiled tree is a program for E2 and not a caller for E9 (it runs its builder once,
+  at the top).
+* **E8 exempts theorems**: a theorem's statement or proof may mention `named` (step B's one-step
+  compile equation of `cooImpl` constructs `FStmt.named`); the rule is about programs, whose named
+  nodes the emitter prints as calls.
+* **CI runs on every branch** (`push` without a branch filter), so that an unapproved registry
+  change fails where it is made (Q3). `.github/CODEOWNERS` assigns the registry, the approval file,
+  the `*Targets.lean` files and itself to `@tchen01`; branch protection is the maintainer's to
+  switch on.
+* **The tree emitter** (`NLAlibTools/NumPy.lean`) prints `hutchppProg.compiled` as
+  `hutchpp(A, i0, i1, i2, b0)` (levels as names, the sizes and the declared buffers as parameters);
+  the builder emitter is gone. Its differential test runs the emitted code under NumPy, when it is
+  installed, and agrees with the Lean `Float` run of the same tree to six digits on the two §6
+  rows, in both modes. The `Float` runner keeps the builder, with `#guard`s that it agrees with
+  `Prog.exec` of the registered tree (output, counts and peak).
+* **The access-model fixtures are trees** (`litTree`, `leakTree`, `copyTree`, `drawTree`), each
+  `not_` theorem stated with the models on `Prog`.
+* **Bookkeeping**: the port ledger has no entry for the five moved ids (programs are not ported
+  material), nor has the explorer metadata (it is generated from the extraction); the rename map
+  `docs/renames/2026-10-computation.json` records the five id moves and step A's renames.
