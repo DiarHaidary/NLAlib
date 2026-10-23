@@ -23,11 +23,13 @@ $\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) +
 
 Under exact arithmetic it computes `NLAlib.hutchpp` of the matrices drawn from the tape, with 2
 loads, $2k + \ell$ matrix-vector products, the operation counts `NLAlib.hutchppCount` and
-$2N(k + \ell) + 4$ cells of memory besides its output (`NLAlib.runsWithin_hutchppProg`). With a
-Gaussian tape, the tail bound of Gaussian Hutch++ transfers to the program with no new
-probability. With the oracle implemented by a dense matrix or by a matrix in coordinate form, the
-substitution theorem gives the totals in arithmetic operations and memory. Design:
-`docs/design/Computation.md` (§5, §6).
+$2N(k + \ell) + 4$ cells of memory besides its output, for every matrix and every tape: an
+instance of the matrix-free model `NLAlib.Computation.MatrixFree`
+(`NLAlib.matrixFree_hutchppProg`). With the law of the tape, the tail bound of Gaussian Hutch++
+transfers to the program with no new probability (`NLAlib.Computation.MatrixFreeProb`). With the
+oracle implemented by a dense matrix or by a matrix in coordinate form, the substitution theorem
+gives the totals in arithmetic operations and memory, in the stored-entries model
+`NLAlib.Computation.StoredEntries`. Design: `docs/design/Computation.md` (§5, §6, "Guarantees").
 
 ## Main definitions
 
@@ -35,11 +37,12 @@ substitution theorem gives the totals in arithmetic operations and memory. Desig
 
 ## Main results
 
-* `NLAlib.runsWithin_hutchppProg`: the realisation.
-* `NLAlib.measureReal_not_runsWithin_hutchppProg_le_of_hasLaw_iidSequence`: the Gaussian tail of
-  the program that draws its own test matrices.
-* `NLAlib.runsWithin_substOracle_hutchppProg_denseImpl`,
-  `NLAlib.runsWithin_substOracle_hutchppProg_cooImpl`: dense and sparse Hutch++.
+* `NLAlib.matrixFree_hutchppProg`: the realisation, in the matrix-free model.
+* `NLAlib.matrixFreeProb_hutchppProg`: the Gaussian tail of the program that draws its own test
+  matrices, in the probabilistic matrix-free model.
+* `NLAlib.storedEntries_substOracle_hutchppProg_denseImpl`,
+  `NLAlib.storedEntries_substOracle_hutchppProg_cooImpl`: dense and sparse Hutch++, in the
+  stored-entries model.
 -/
 
 @[expose] public section
@@ -778,17 +781,8 @@ private theorem hutchpp_eq_of_mgsSweep {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin 
   rw [h]
   simp [Matrix.mulVec, dotProduct, Matrix.mul_apply, colOf]
 
-/-- **Hutch++ as a program computes Hutch++**: under exact arithmetic over $\Bbbk$, with every
-oracle name the matrix $\mathbf{A}$ and the tape $\xi$, and $\ell \ge 1$, the program run from a
-single output cell succeeds within the counts `hutchppCount p o d N k ℓ` and
-$2N(k + \ell) + 4$ cells besides the output, and its output is
-$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
-matrix drawn from the tape of `d` from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
-drawn after it, column-major. No hypothesis on the rank of $\mathbf{A}\mathbf{S}$.
-[MeyerMuscoMuscoWoodruff2021, Algorithm 1]; there with the costs stated in matrix-vector
-products only.
-Result: hutchpp-program -/
-theorem runsWithin_hutchppProg (p : P) (o : ι) (d : Dist) {N k ℓ : ℕ} (hℓ : 0 < ℓ)
+/-- The realisation of `hutchppProg` (the proof of `NLAlib.matrixFree_hutchppProg`). -/
+private theorem runsWithin_hutchppProg (p : P) (o : ι) (d : Dist) {N k ℓ : ℕ} (hℓ : 0 < ℓ)
     (A : Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ) :
     RunsWithin (exactInterp (fun _ => A) ξ)
       ((hutchppProg p o d (.const N) (.const k) (.const ℓ) ⟨0, .const 0⟩).run)
@@ -874,9 +868,32 @@ theorem runsWithin_hutchppProg (p : P) (o : ι) (d : Dist) {N k ℓ : ℕ} (hℓ
     rw [Store.read_pop_of_lt (by simp [hsz4]), Store.read_pop_of_lt (by omega), hout4]
     exact congrArg some (hutchpp_eq_of_mgsSweep A _ Gm)
 
-/-- **The deviation of Hutch++ as a program**: let the tape of the Gaussian distribution be an
-i.i.d. sequence of standard Gaussians, $k \ge 1$, $\ell \ge 1$. If $\delta > 0$
-and <!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
+/-- **Hutch++ as a program computes Hutch++**, in the matrix-free model: for all $N$, $k$ and
+$\ell \ge 1$, every $N \times N$ matrix $\mathbf{A}$ over $\Bbbk$ (every oracle name means
+$\mathbf{A}$) and every tape $\xi$, under exact arithmetic, the program run from a single
+declared output cell succeeds within the counts `hutchppCount p o d N k ℓ` and
+$2N(k + \ell) + 4$ cells besides the output, and its output is
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
+matrix drawn from the tape of `d` from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
+drawn after it, column-major. The sizes are $N$ and $n = (k, \ell)$. No hypothesis on the rank of
+$\mathbf{A}\mathbf{S}$.
+[MeyerMuscoMuscoWoodruff2021, Algorithm 1]; there with the costs stated in matrix-vector
+products only.
+Result: hutchpp-program -/
+theorem matrixFree_hutchppProg (p : P) (o : ι) (d : Dist) :
+    MatrixFree (𝕜 := 𝕜) (r := 2) (b := 1) p
+      (fun _ _ N n h => (hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run)
+      (fun _ n => 0 < n 1) (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N n => hutchppCount p o d N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun N n _ A ξ st => st.store.read p 0 0 = some
+        (hutchpp A (tapeMatrix (ξ d) 0 N (n 0)) (tapeMatrix (ξ d) (N * n 0) N (n 1)))) :=
+  fun _ _ hℓ _ A ξ => runsWithin_hutchppProg p o d hℓ A ξ
+
+/-- **The deviation of Hutch++ as a program**, in the probabilistic matrix-free model: let the
+tape have the law of the tape (`tapeLaw`: the tape of the Gaussian distribution an i.i.d.
+sequence of standard Gaussians, independent of the others), $k \ge 1$, $\ell \ge 1$. If
+$\delta > 0$ and <!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
 $k \ge 25 \cdot 1^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$, then for every real
 $N \times N$ matrix $\mathbf{A}$ and every $\tau \ge 0$, with
@@ -889,87 +906,90 @@ $$\delta + 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
 \frac{\ell\tau}{\sqrt{1 + 5\cdot 1/2}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
 the size is `subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2)`, $C$ is `subgaussianJLConstant`, the
 factor is `subgaussianRangeFinderFactor 1` and the constant in the exponent is
-`hansonWrightConstant`. From `NLAlib.runsWithin_hutchppProg`, the tape laws and the Gaussian tail
+`hansonWrightConstant`. The sizes are $N$ and $n = (k, \ell)$. From
+`NLAlib.matrixFree_hutchppProg`, the tape laws and the Gaussian tail
 `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix`, through
 `NLAlib.Computation.measureReal_not_runsWithin_le`.
 [MeyerMuscoMuscoWoodruff2021, Theorem 4 and §5, Algorithm 3]; there with unspecified constants
 and for the algorithm, not a program.
 Result: hutchpp-program-tail -/
-theorem measureReal_not_runsWithin_hutchppProg_le_of_hasLaw_iidSequence
-    {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsProbabilityMeasure μ] (p : P) (o : ι)
-    {N k ℓ : ℕ} [NeZero k] (hℓ : 0 < ℓ) (A : Matrix (Fin N) (Fin N) ℝ)
-    {ξ : Ω → Dist → ℕ → ℝ}
-    (hξ : HasLaw (fun ω => ξ ω .gaussian) (iidSequence (gaussianReal 0 1)) μ) {r : ℕ} {δ : ℝ}
-    (hδ : 0 < δ) (hs : subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ k) {τ : ℝ} (hτ : 0 ≤ τ) :
-    μ.real {ω | ¬ RunsWithin (exactInterp (fun _ => A) (ξ ω))
-      ((hutchppProg p o .gaussian (.const N) (.const k) (.const ℓ) ⟨0, .const 0⟩).run)
-      (inputState p [Array.replicate 1 none]) (hutchppCount p o .gaussian N k ℓ)
-      (fun q => if q = p then 2 * N * (k + ℓ) + 4 else 0)
-      (fun st => ∃ v, st.store.read p 0 0 = some v ∧ |A.trace - v| < τ)} ≤
-      δ + 2 * Real.exp (-(hansonWrightConstant *
-        min (ℓ * τ ^ 2 / (subgaussianRangeFinderFactor 1 * frobNorm (A - truncatedSVD A r) ^ 2))
-          (ℓ * τ / (√(subgaussianRangeFinderFactor 1) * frobNorm (A - truncatedSVD A r))))) := by
+theorem matrixFreeProb_hutchppProg (p : P) (o : ι) (r : ℕ) {δ : ℝ} (hδ : 0 < δ) {τ : ℝ}
+    (hτ : 0 ≤ τ) :
+    MatrixFreeProb (𝕜 := ℝ) (r := 2) (b := 1) p
+      (fun _ _ N n h => (hutchppProg p o .gaussian N (n 0) (n 1) ⟨h 0, 0⟩).run)
+      (fun _ n => 0 < n 0 ∧ 0 < n 1 ∧ subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ n 0)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N n => hutchppCount p o .gaussian N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun _ _ _ A st => ∃ v, st.store.read p 0 0 = some v ∧ |A.trace - v| < τ)
+      (fun _ n _ A => δ + 2 * Real.exp (-(hansonWrightConstant *
+        min (n 1 * τ ^ 2 / (subgaussianRangeFinderFactor 1 * frobNorm (A - truncatedSVD A r) ^ 2))
+          (n 1 * τ / (√(subgaussianRangeFinderFactor 1) * frobNorm (A - truncatedSVD A r)))))) := by
+  rintro N n ⟨hk, hℓ, hs⟩ - A Ω _ μ ξ hξ
+  have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.mpr inferInstance
+  have : NeZero (n 0) := ⟨Nat.pos_iff_ne_zero.mp hk⟩
+  have hg : HasLaw (fun ω => ξ ω .gaussian) (iidSequence (gaussianReal 0 1)) μ :=
+    hasLaw_apply_of_hasLaw_tapeLaw hξ .gaussian
   have h := measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix A
-    (hasLaw_tapeMatrix_of_hasLaw_iidSequence hξ 0 N k)
-    (hasLaw_tapeMatrix_of_hasLaw_iidSequence hξ (N * k) N ℓ)
-    (indepFun_tapeMatrix_of_hasLaw_iidSequence hξ N k ℓ) hδ (by simpa using hs) hτ
+    (hasLaw_tapeMatrix_of_hasLaw_iidSequence hg 0 N (n 0))
+    (hasLaw_tapeMatrix_of_hasLaw_iidSequence hg (N * n 0) N (n 1))
+    (indepFun_tapeMatrix_of_hasLaw_iidSequence hg N (n 0) (n 1)) hδ (by simpa using hs) hτ
   refine measureReal_not_runsWithin_le (G := fun v => |A.trace - v| < τ)
     (fun ω => runsWithin_hutchppProg p o .gaussian hℓ A (ξ ω)) ?_
   simpa only [not_lt, Fintype.card_fin] using h
 
-/-- **Dense Hutch++**: with the oracle served by `NLAlib.Computation.denseImpl` from the
-$N \times N$ matrix $\mathbf{A}$ held as read-only data of $N^2$ cells, under exact arithmetic
-and $\ell \ge 1$, the substituted program computes the value of
-$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ (the store of an exact run of
-`NLAlib.hutchppProg`), with the counts `hutchppCount` in which each matrix-vector product is
-replaced by $N^2$ multiplications, additions and reads and $N$ literals and each load costs
-nothing, and $2N(k + \ell) + 5 + N^2$ cells of memory besides its output. No printed source.
+/-- **Dense Hutch++**, in the stored-entries model: with the oracle calls served by
+`NLAlib.Computation.denseImpl` from $N^2$ stored entries $v$, column-major, so that the matrix is
+$\mathbf{A} = (v_{i + Nj})_{i, j}$, under exact arithmetic and $\ell \ge 1$, for every tape the
+substituted program computes $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ from the tape
+as in `NLAlib.matrixFree_hutchppProg`, with the counts `hutchppCount` in which each
+matrix-vector product is replaced by $N^2$ multiplications, additions and reads and $N$ literals
+and each load costs nothing, and $2N(k + \ell) + 5 + N^2$ cells of memory besides its output.
+From `NLAlib.matrixFree_hutchppProg` through
+`NLAlib.Computation.MatrixFree.storedEntries_substOracle_denseImpl`. No printed source.
 Result: hutchpp-program-dense -/
-theorem runsWithin_substOracle_hutchppProg_denseImpl (p : P) (o : ι) (d : Dist) {N k ℓ : ℕ}
-    (hℓ : 0 < ℓ) (A : Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ) :
-    RunsWithin (denseInterp A ξ p)
-      (((hutchppProg p o d (.const N) (.const k) (.const ℓ) ⟨0, .const 0⟩).run).substOracle
-        fun o p dst dOff src sOff cols => denseImpl (.const N) o p dst dOff src sOff cols)
-      ((inputState p [Array.replicate 1 none] : St P 𝕜 (OpCount P ι)).withCnt 0)
-      (substCount (denseCost N) (hutchppCount p o d N k ℓ))
-      (fun q => (if q = p then 2 * N * (k + ℓ) + 4 else 0) + 1 +
-        (denseInterp (ι := ι) A ξ p).romSize q)
-      (fun st' => ∃ st : St P 𝕜 (OpCount P ι), st.store.read p 0 0 =
-          some (hutchpp A (tapeMatrix (ξ d) 0 N k) (tapeMatrix (ξ d) (N * k) N ℓ)) ∧
-        st'.store = st.store ∧ st'.pos = st.pos ∧ st'.cur = st.cur) :=
-  RunsWithin.substOracle (I := exactInterp (fun _ => A) ξ) (I' := denseInterp A ξ p) rfl rfl
-    (fun _ => rfl) (fun _ => rfl) rfl (fun _ => rfl) (implementsOracle_denseImpl A ξ p) rfl
-    (fun q => by simp only [inputState]; exact le_rfl) le_rfl
-    (runsWithin_hutchppProg p o d hℓ _ ξ)
+theorem storedEntries_substOracle_hutchppProg_denseImpl (p : P) (o : ι) (d : Dist) :
+    StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
+      (fun _ _ N n h =>
+        ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (denseImpl N))
+      (fun _ n => 0 < n 1) (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N _ => N * N) (fun N n => substCount (denseCost N) (hutchppCount p o d N (n 0) (n 1)))
+      (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
+        if q = p then N * N else 0)
+      (fun N n _ vals ξ st => st.store.read p 0 0 = some
+        (hutchpp (Matrix.of fun (i j : Fin N) => vals (i + N * j)) (tapeMatrix (ξ d) 0 N (n 0))
+          (tapeMatrix (ξ d) (N * n 0) N (n 1)))) :=
+  fun N n hv x vals ξ =>
+    ((matrixFree_hutchppProg p o d).storedEntries_substOracle_denseImpl N n hv x vals ξ).mono
+      le_rfl le_rfl fun _ ⟨_, h1, h2, _⟩ => by beta_reduce; rw [h2]; exact h1
 
-/-- **Sparse Hutch++**: with $\mathbf{A}$ in coordinate form, `nnz` stored values held as
-read-only data and counted as constant memory, the pattern unrolled into the implementation
-`NLAlib.Computation.cooImpl` (its index storage not counted), under exact arithmetic and
-$\ell \ge 1$, the substituted program computes the value of
-$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ for the matrix `cooMatrix pattern vals`,
-with the counts `hutchppCount` in which each matrix-vector product is replaced by `nnz`
-multiplications, additions and reads and $N$ literals and each load costs nothing, and
-$2N(k + \ell) + 5 + \mathit{nnz}$ cells of memory besides its output. No printed source.
+/-- **Sparse Hutch++**, in the stored-entries model: with the oracle calls served by
+`NLAlib.Computation.cooImpl` for a public pattern with positions in $[0, N)^2$ (unrolled into the
+program, its index storage not counted) and `nnz` stored values $v$, so that the matrix is
+`cooMatrix pattern v`, under exact arithmetic and $\ell \ge 1$, for every tape the substituted
+program computes $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ from the tape as in
+`NLAlib.matrixFree_hutchppProg`, with the counts `hutchppCount` in which each matrix-vector
+product is replaced by `nnz` multiplications, additions and reads and $N$ literals and each load
+costs nothing, and $2N(k + \ell) + 5 + \mathit{nnz}$ cells of memory besides its output. From
+`NLAlib.matrixFree_hutchppProg` through
+`NLAlib.Computation.MatrixFree.storedEntries_substOracle_cooImpl`. No printed source.
 Result: hutchpp-program-sparse -/
-theorem runsWithin_substOracle_hutchppProg_cooImpl (p : P) (o : ι) (d : Dist) {N k ℓ : ℕ}
-    (hℓ : 0 < ℓ) (pattern : List (ℕ × ℕ)) (hpat : ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N)
-    (vals : ℕ → 𝕜) (ξ : Dist → ℕ → ℝ) :
-    RunsWithin (cooInterp (N := N) pattern vals ξ p)
-      (((hutchppProg p o d (.const N) (.const k) (.const ℓ) ⟨0, .const 0⟩).run).substOracle
-        fun o p dst dOff src sOff cols => cooImpl (.const N) pattern o p dst dOff src sOff cols)
-      ((inputState p [Array.replicate 1 none] : St P 𝕜 (OpCount P ι)).withCnt 0)
-      (substCount (cooCost N pattern.length) (hutchppCount p o d N k ℓ))
-      (fun q => (if q = p then 2 * N * (k + ℓ) + 4 else 0) + 1 +
-        (cooInterp (N := N) (ι := ι) pattern vals ξ p).romSize q)
-      (fun st' => ∃ st : St P 𝕜 (OpCount P ι), st.store.read p 0 0 =
-          some (hutchpp (cooMatrix pattern vals) (tapeMatrix (ξ d) 0 N k)
-            (tapeMatrix (ξ d) (N * k) N ℓ)) ∧
-        st'.store = st.store ∧ st'.pos = st.pos ∧ st'.cur = st.cur) :=
-  RunsWithin.substOracle (I := exactInterp (fun _ => cooMatrix (N := N) pattern vals) ξ)
-    (I' := cooInterp (N := N) pattern vals ξ p) rfl rfl (fun _ => rfl) (fun _ => rfl) rfl
-    (fun _ => rfl) (implementsOracle_cooImpl pattern hpat vals ξ p) rfl
-    (fun q => by simp only [inputState]; exact le_rfl) le_rfl
-    (runsWithin_hutchppProg p o d hℓ _ ξ)
+theorem storedEntries_substOracle_hutchppProg_cooImpl (p : P) (o : ι) (d : Dist)
+    (pattern : List (ℕ × ℕ)) :
+    StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
+      (fun _ _ N n h =>
+        ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (cooImpl N pattern))
+      (fun N n => 0 < n 1 ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => pattern.length)
+      (fun N n => substCount (cooCost N pattern.length) (hutchppCount p o d N (n 0) (n 1)))
+      (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
+        if q = p then pattern.length else 0)
+      (fun N n _ vals ξ st => st.store.read p 0 0 = some
+        (hutchpp (cooMatrix pattern vals) (tapeMatrix (ξ d) 0 N (n 0))
+          (tapeMatrix (ξ d) (N * n 0) N (n 1)))) :=
+  fun N n hv x vals ξ =>
+    ((matrixFree_hutchppProg p o d).storedEntries_substOracle_cooImpl pattern N n hv x vals
+      ξ).mono le_rfl le_rfl fun _ ⟨_, h1, h2, _⟩ => by beta_reduce; rw [h2]; exact h1
 
 end Statements
 

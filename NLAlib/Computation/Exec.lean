@@ -8,6 +8,7 @@ module
 public import Mathlib.Data.Finsupp.Order
 public import Mathlib.Data.Finsupp.Weight
 public import Mathlib.Algebra.Order.Group.Nat
+public import Mathlib.Algebra.Order.Monoid.Unbundled.Basic
 public import NLAlib.Computation.Store
 public import NLAlib.Computation.Syntax
 
@@ -25,7 +26,9 @@ size, and the width in bits of a cell of each tag. The state holds the store
 positions, the counts, and the current and peak memory in cells per tag and in bits.
 
 The run lemmas unfold `exec` one constructor at a time, and run a loop by an invariant and a
-sequence of draws from the tape. Design: `docs/design/Computation.md` (D3, D8, D11, D12, D17).
+sequence of draws from the tape. The invariants of the run are the semantic facts the guarantees
+of the access models rest on (`docs/design/Computation.md`, "Guarantees"). Design:
+`docs/design/Computation.md` (D3, D8, D11, D12, D17).
 
 ## Main definitions
 
@@ -41,6 +44,14 @@ sequence of draws from the tape. Design: `docs/design/Computation.md` (D3, D8, D
   `NLAlib.Computation.exec_alloc`: the run of a sequence, a loop (a fold) and an allocation.
 * `NLAlib.Computation.exists_exec_loop_eq_some_of_forall`: a loop run by an invariant.
 * `NLAlib.Computation.exec_forRange_draw`: a loop of draws writes consecutive tape values.
+* `NLAlib.Computation.cnt_le_of_exec_eq_some`, `NLAlib.Computation.cur_eq_of_exec_eq_some`,
+  `NLAlib.Computation.shape_eq_of_exec_eq_some`, `NLAlib.Computation.peak_le_of_exec_eq_some`:
+  the counts and peaks of a run only grow, and it frees exactly what it allocates.
+* `NLAlib.Computation.store_eq_of_exec_eq_some_of_cnt_le`,
+  `NLAlib.Computation.pos_eq_of_exec_eq_some_of_cnt_le`: a run that charges nothing writes and
+  draws nothing.
+* `NLAlib.Computation.exec_eq_of_exec_eq_some_of_cnt_load_le`: a run that makes no oracle call is
+  the same under any oracle.
 -/
 
 @[expose] public section
@@ -451,5 +462,329 @@ theorem exec_forRange_draw (p : P) (d : Dist) (X off : ℕ) (n : IExp ℕ) (idx 
     rw [hcnt, succ_nsmul, add_assoc]
 
 end Exec
+
+/-! ### Invariants of the run
+
+What every successful run keeps or raises, whatever the statement: the counts only grow, the
+current memory (in cells and in bits) and the shape of the store come back to their values at the
+start (every allocation is freed, and nothing else is), and the peaks only grow. With every charge
+nonzero, a run that charges nothing changes neither the store nor the tape positions: every write
+and every draw is charged. With the standard charge, a run that makes no oracle call is the same
+for every oracle. -/
+
+section Invariants
+
+variable {P ι K : Type} [DecidableEq P]
+
+/-- A scalar instruction keeps the shape of the store. -/
+theorem Instr.shape_of_run_eq_some {sem : ScalarSem P K} {tape : Dist → ℕ → K} {s : Store P K}
+    {pos : Dist → ℕ} {i : Instr P ℕ ℕ} {r : Store P K × (Dist → ℕ)}
+    (h : i.run sem tape s pos = some r) : r.1.shape = s.shape := by
+  cases i <;> simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  · obtain ⟨_, -, s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+  · obtain ⟨_, -, s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+  · obtain ⟨_, -, _, -, _, -, s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+  · obtain ⟨_, -, _, -, s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+  · obtain ⟨_, -, s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+  · obtain ⟨s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+  · obtain ⟨_, -, _, -, s', hw, rfl⟩ := h; exact Store.shape_of_write_eq_some hw
+
+/-- A comparison step charges one comparison and changes nothing else. -/
+theorem snd_of_cmpStep_eq_some {C : Type} [AddMonoid C] {I : Interp P ι K C} {p : P} {c : CmpOp}
+    {x y : Cell ℕ ℕ} {st : St P K C} {r : Bool × St P K C} (h : cmpStep I p c x y st = some r) :
+    r.2 = { st with cnt := st.cnt + I.charge (.cmp p) } := by
+  simp only [cmpStep, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, -, _, -, _, -, rfl⟩ := h
+  rfl
+
+variable (I : Interp P ι K (OpCount P ι))
+
+/-- What a run keeps or raises (the proof of the invariants). -/
+private structure RunInv (st st' : St P K (OpCount P ι)) : Prop where
+  cnt : st.cnt ≤ st'.cnt
+  cur : st'.cur = st.cur
+  curW : st'.curW = st.curW
+  shape : st'.store.shape = st.store.shape
+  peak : st.peak ≤ st'.peak
+  peakW : st.peakW ≤ st'.peakW
+  idle : (∀ k, I.charge k ≠ 0) → st'.cnt ≤ st.cnt → st'.store = st.store ∧ st'.pos = st.pos
+
+omit [DecidableEq P] in
+private theorem RunInv.refl (st : St P K (OpCount P ι)) : RunInv I st st :=
+  ⟨le_rfl, rfl, rfl, rfl, le_rfl, le_rfl, fun _ _ => ⟨rfl, rfl⟩⟩
+
+omit [DecidableEq P] in
+private theorem RunInv.trans {a b c : St P K (OpCount P ι)} (hab : RunInv I a b)
+    (hbc : RunInv I b c) : RunInv I a c where
+  cnt := hab.cnt.trans hbc.cnt
+  cur := hbc.cur.trans hab.cur
+  curW := hbc.curW.trans hab.curW
+  shape := hbc.shape.trans hab.shape
+  peak := hab.peak.trans hbc.peak
+  peakW := hab.peakW.trans hbc.peakW
+  idle hc h := by
+    obtain ⟨h1, h2⟩ := hab.idle hc (hbc.cnt.trans h)
+    obtain ⟨h3, h4⟩ := hbc.idle hc (h.trans hab.cnt)
+    exact ⟨h3.trans h1, h4.trans h2⟩
+
+omit [DecidableEq P] in
+/-- One charged step that writes a store of the same shape. -/
+private theorem RunInv.step {st : St P K (OpCount P ι)} {s : Store P K} {pos : Dist → ℕ}
+    {c : OpCount P ι} (hs : s.shape = st.store.shape) (hc : (∀ k, I.charge k ≠ 0) → c ≠ 0) :
+    RunInv I st { st with store := s, pos := pos, cnt := st.cnt + c } where
+  cnt := le_self_add
+  cur := rfl
+  curW := rfl
+  shape := hs
+  peak := le_rfl
+  peakW := le_rfl
+  idle h hle := absurd (le_antisymm ((add_le_iff_nonpos_right _).mp hle) zero_le) (hc h)
+
+omit [DecidableEq P] in
+/-- A fold of steps that each keep the invariant keeps it. -/
+private theorem RunInv.foldlM {σ α : Type} (π : σ → St P K (OpCount P ι))
+    {f : σ → α → Option σ} :
+    ∀ {l : List α}, (∀ x ∈ l, ∀ a b, f a x = some b → RunInv I (π a) (π b)) →
+    ∀ {a b : σ}, l.foldlM f a = some b → RunInv I (π a) (π b)
+  | [], _, a, b, h => by cases h; exact RunInv.refl I _
+  | x :: l, hf, a, b, h => by
+    rw [List.foldlM_cons] at h
+    obtain ⟨a', h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    exact (hf x List.mem_cons_self a a' h1).trans I
+      (RunInv.foldlM π (fun y hy => hf y (List.mem_cons_of_mem x hy)) h2)
+
+private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : St P K (OpCount P ι)},
+    exec I s st = some st' → RunInv I st st'
+  | .skip, st, st', h => by rw [exec_skip] at h; cases h; exact RunInv.refl I _
+  | .seq s t, st, st', h => by
+    rw [exec_seq] at h
+    obtain ⟨st₁, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    exact (runInv_of_exec_eq_some s h1).trans I (runInv_of_exec_eq_some t h2)
+  | .instr i, st, st', h => by
+    rw [exec_instr] at h
+    obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact RunInv.step I (Instr.shape_of_run_eq_some hr) fun hc => hc _
+  | .apply o p dst dOff src sOff cols, st, st', h => by
+    rw [exec] at h
+    split_ifs at h
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨_, -, _, -, s, hs, rfl⟩ := h
+    exact RunInv.step I (Store.shape_of_writeBlock_eq_some hs) fun hc h0 =>
+      hc (.load p o) (add_eq_zero.mp h0).1
+  | .rom p dst i, st, st', h => by
+    rw [exec] at h
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨_, -, s, hs, rfl⟩ := h
+    exact RunInv.step I (Store.shape_of_write_eq_some hs) fun hc => hc _
+  | .alloc p len body, st, st', h => by
+    rw [exec_alloc] at h
+    obtain ⟨st₂, h2, rfl⟩ := Option.map_eq_some_iff.mp h
+    have hi := runInv_of_exec_eq_some (body st.store.size) h2
+    have hcur := hi.cur
+    have hcurW := hi.curW
+    simp only at hcur hcurW
+    refine ⟨hi.cnt, ?_, ?_, ?_, ?_, ?_, fun hc hle => ?_⟩
+    · change Function.update st₂.cur p (st₂.cur p - len.eval) = st.cur
+      rw [hcur, Function.update_self, Nat.add_sub_cancel, Function.update_idem,
+        Function.update_eq_self]
+    · change st₂.curW - len.eval * I.width p = st.curW
+      rw [hcurW, Nat.add_sub_cancel]
+    · change Store.shape (Array.pop st₂.store) = st.store.shape
+      rw [Store.shape_pop, hi.shape]
+      simp [Store.shape]
+    · refine le_trans (fun q => ?_) hi.peak
+      by_cases hq : q = p
+      · subst hq; simp
+      · simp [Function.update_of_ne hq]
+    · exact le_trans (le_max_left _ _) hi.peakW
+    · obtain ⟨hs, hp⟩ := hi.idle hc hle
+      refine ⟨?_, hp⟩
+      change Array.pop st₂.store = st.store
+      rw [hs]
+      exact Array.pop_push
+  | .loop n body, st, st', h => by
+    rw [exec_loop] at h
+    exact RunInv.foldlM I id (fun i _ a b hb => runInv_of_exec_eq_some (body i) hb) h
+  | .whileFuel fuel p c x y body, st, st', h => by
+    rw [exec] at h
+    obtain ⟨r, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    split_ifs at h2
+    cases h2
+    refine RunInv.foldlM I Prod.fst (fun _ _ a b hb => ?_) h1
+    split_ifs at hb
+    · obtain ⟨r', hr', hb⟩ := Option.bind_eq_some_iff.mp hb
+      have hstep : RunInv I a.1 r'.2 := by
+        rw [snd_of_cmpStep_eq_some hr']
+        exact RunInv.step I (pos := a.1.pos) rfl fun hc => hc _
+      split_ifs at hb
+      · obtain ⟨st₁, h3, rfl⟩ := Option.map_eq_some_iff.mp hb
+        exact hstep.trans I (runInv_of_exec_eq_some body h3)
+      · cases hb; exact hstep
+    · cases hb; exact RunInv.refl I _
+  | .ite p c x y t e, st, st', h => by
+    rw [exec_ite] at h
+    obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
+    have hstep : RunInv I st r.2 := by
+      rw [snd_of_cmpStep_eq_some hr]
+      exact RunInv.step I (pos := st.pos) rfl fun hc => hc _
+    split_ifs at h2
+    · exact hstep.trans I (runInv_of_exec_eq_some t h2)
+    · exact hstep.trans I (runInv_of_exec_eq_some e h2)
+  | .named _ _ body, st, st', h => by
+    rw [exec_named] at h
+    exact runInv_of_exec_eq_some body h
+
+variable {I} {s : Stmt P ι ℕ ℕ} {st st' : St P K (OpCount P ι)}
+
+/-- The counts of a run only grow. -/
+theorem cnt_le_of_exec_eq_some (h : exec I s st = some st') : st.cnt ≤ st'.cnt :=
+  (runInv_of_exec_eq_some I s h).cnt
+
+/-- Every allocation is freed: a run ends with the current memory in cells, at every tag, of
+its start. -/
+theorem cur_eq_of_exec_eq_some (h : exec I s st = some st') : st'.cur = st.cur :=
+  (runInv_of_exec_eq_some I s h).cur
+
+/-- A run ends with the current memory in bits of its start. -/
+theorem curW_eq_of_exec_eq_some (h : exec I s st = some st') : st'.curW = st.curW :=
+  (runInv_of_exec_eq_some I s h).curW
+
+/-- A run frees exactly what it allocates: it ends with the shape of the store (the tag and
+length of every buffer) of its start. -/
+theorem shape_eq_of_exec_eq_some (h : exec I s st = some st') :
+    st'.store.shape = st.store.shape :=
+  (runInv_of_exec_eq_some I s h).shape
+
+/-- The peak memory in cells of a run only grows. -/
+theorem peak_le_of_exec_eq_some (h : exec I s st = some st') : st.peak ≤ st'.peak :=
+  (runInv_of_exec_eq_some I s h).peak
+
+/-- The peak memory in bits of a run only grows. -/
+theorem peakW_le_of_exec_eq_some (h : exec I s st = some st') : st.peakW ≤ st'.peakW :=
+  (runInv_of_exec_eq_some I s h).peakW
+
+/-- Every write is charged: if no operation kind is free, a run whose counts do not grow
+leaves the store unchanged. -/
+theorem store_eq_of_exec_eq_some_of_cnt_le (hc : ∀ k, I.charge k ≠ 0)
+    (h : exec I s st = some st') (hcnt : st'.cnt ≤ st.cnt) : st'.store = st.store :=
+  ((runInv_of_exec_eq_some I s h).idle hc hcnt).1
+
+/-- Every draw is charged: if no operation kind is free, a run whose counts do not grow
+leaves the tape positions unchanged. -/
+theorem pos_eq_of_exec_eq_some_of_cnt_le (hc : ∀ k, I.charge k ≠ 0)
+    (h : exec I s st = some st') (hcnt : st'.cnt ≤ st.cnt) : st'.pos = st.pos :=
+  ((runInv_of_exec_eq_some I s h).idle hc hcnt).2
+
+omit [DecidableEq P] in
+/-- A fold of steps whose counts grow has growing counts. -/
+private theorem foldlM_cnt_le {σ α : Type} (μ : σ → OpCount P ι) {f : σ → α → Option σ}
+    (hmono : ∀ x a b, f a x = some b → μ a ≤ μ b) :
+    ∀ {l : List α} {a b : σ}, l.foldlM f a = some b → μ a ≤ μ b
+  | [], a, b, h => by cases h; exact le_rfl
+  | x :: l, a, b, h => by
+    rw [List.foldlM_cons] at h
+    obtain ⟨a', h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    exact (hmono x a a' h1).trans (foldlM_cnt_le μ hmono h2)
+
+omit [DecidableEq P] in
+/-- Two folds agree when each step of the first, making no oracle call, is a step of the
+second. -/
+private theorem foldlM_eq_of_cnt_load_le {σ α : Type} (μ : σ → OpCount P ι)
+    {f g : σ → α → Option σ} (hmono : ∀ x a b, f a x = some b → μ a ≤ μ b)
+    (hfg : ∀ x a b, f a x = some b → (∀ p o, μ b (.load p o) ≤ μ a (.load p o)) →
+      g a x = some b) :
+    ∀ {l : List α} {a b : σ}, l.foldlM f a = some b →
+      (∀ p o, μ b (.load p o) ≤ μ a (.load p o)) → l.foldlM g a = some b
+  | [], a, b, h, _ => h
+  | x :: l, a, b, h, hl => by
+    rw [List.foldlM_cons] at h ⊢
+    obtain ⟨a', h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    have hab := Finsupp.le_def.mp (hmono x a a' h1)
+    have hb := Finsupp.le_def.mp (foldlM_cnt_le μ hmono h2)
+    rw [hfg x a a' h1 (fun p o => (hb _).trans (hl p o))]
+    exact foldlM_eq_of_cnt_load_le μ hmono hfg h2 fun p o => (hl p o).trans (hab _)
+
+/-- The oracle is used only by oracle calls: under the standard charge, a run that makes no
+oracle call (its load counts do not grow) is the same run under any other oracle. -/
+theorem exec_eq_of_exec_eq_some_of_cnt_load_le (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (O : ι → ℕ → Array K → Option (Array K)) :
+    ∀ (s : Stmt P ι ℕ ℕ) {st st' : St P K (OpCount P ι)}, exec I s st = some st' →
+      (∀ p o, st'.cnt (.load p o) ≤ st.cnt (.load p o)) →
+      exec { I with oracle := O } s st = some st'
+  | .skip, st, st', h, _ => h
+  | .seq s t, st, st', h, hl => by
+    rw [exec_seq] at h ⊢
+    obtain ⟨st₁, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    have m1 := Finsupp.le_def.mp (cnt_le_of_exec_eq_some h1)
+    have m2 := Finsupp.le_def.mp (cnt_le_of_exec_eq_some h2)
+    rw [exec_eq_of_exec_eq_some_of_cnt_load_le hc O s h1 fun p o => (m2 _).trans (hl p o),
+      Option.bind_some]
+    exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O t h2 fun p o => (hl p o).trans (m1 _)
+  | .instr i, st, st', h, _ => h
+  | .apply o p dst dOff src sOff cols, st, st', h, hl => by
+    rw [exec] at h
+    split_ifs at h
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨_, -, _, -, s, -, rfl⟩ := h
+    have := hl p o
+    simp [hc] at this
+  | .rom p dst i, st, st', h, _ => h
+  | .alloc p len body, st, st', h, hl => by
+    rw [exec_alloc] at h ⊢
+    obtain ⟨st₂, h2, rfl⟩ := Option.map_eq_some_iff.mp h
+    rw [exec_eq_of_exec_eq_some_of_cnt_load_le hc O (body _) h2 hl, Option.map_some]
+  | .loop n body, st, st', h, hl => by
+    rw [exec_loop] at h ⊢
+    exact foldlM_eq_of_cnt_load_le St.cnt (fun i a b hb => cnt_le_of_exec_eq_some hb)
+      (fun i a b hb hl' => exec_eq_of_exec_eq_some_of_cnt_load_le hc O (body i) hb hl') h hl
+  | .whileFuel fuel p c x y body, st, st', h, hl => by
+    rw [exec] at h ⊢
+    obtain ⟨r, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+    have hcmp : ∀ {a : St P K (OpCount P ι)} {r' : Bool × St P K (OpCount P ι)},
+        cmpStep I p c x y a = some r' → a.cnt ≤ r'.2.cnt := fun hr' => by
+      rw [snd_of_cmpStep_eq_some hr']; exact le_self_add
+    have hmono : ∀ (_ : ℕ) (a b : St P K (OpCount P ι) × Bool),
+        (if a.2 then (cmpStep I p c x y a.1).bind fun r =>
+          if r.1 then (exec I body r.2).map fun st' => (st', true) else some (r.2, false)
+        else some a) = some b → a.1.cnt ≤ b.1.cnt := fun _ a b hb => by
+      split_ifs at hb
+      · obtain ⟨r', hr', hb⟩ := Option.bind_eq_some_iff.mp hb
+        split_ifs at hb
+        · obtain ⟨st₁, h3, rfl⟩ := Option.map_eq_some_iff.mp hb
+          exact (hcmp hr').trans (cnt_le_of_exec_eq_some h3)
+        · cases hb; exact hcmp hr'
+      · cases hb; exact le_rfl
+    rw [foldlM_eq_of_cnt_load_le (fun a => a.1.cnt) hmono (fun _ a b hb hl' => ?_) h1 ?_,
+      Option.bind_some]
+    · exact h2
+    · split_ifs at h2
+      cases h2
+      exact hl
+    · split_ifs at hb ⊢
+      · obtain ⟨r', hr', hb⟩ := Option.bind_eq_some_iff.mp hb
+        change (cmpStep I p c x y a.1).bind _ = _
+        rw [hr', Option.bind_some]
+        split_ifs at hb ⊢
+        · obtain ⟨st₁, h3, rfl⟩ := Option.map_eq_some_iff.mp hb
+          rw [exec_eq_of_exec_eq_some_of_cnt_load_le hc O body h3
+            fun p o => (hl' p o).trans (Finsupp.le_def.mp (hcmp hr') _), Option.map_some]
+        · exact hb
+      · exact hb
+  | .ite p c x y t e, st, st', h, hl => by
+    rw [exec_ite] at h ⊢
+    obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
+    have hm : st.cnt ≤ r.2.cnt := by rw [snd_of_cmpStep_eq_some hr]; exact le_self_add
+    change (cmpStep I p c x y st).bind _ = _
+    rw [hr, Option.bind_some]
+    split_ifs at h2 ⊢
+    · exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O t h2
+        fun p o => (hl p o).trans (Finsupp.le_def.mp hm _)
+    · exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O e h2
+        fun p o => (hl p o).trans (Finsupp.le_def.mp hm _)
+  | .named _ _ body, st, st', h, hl => by
+    rw [exec_named] at h ⊢
+    exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O body h hl
+
+end Invariants
 
 end NLAlib.Computation

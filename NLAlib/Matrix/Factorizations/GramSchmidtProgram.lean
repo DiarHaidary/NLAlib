@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.BLAS
+public import NLAlib.Computation.Model
 public import NLAlib.ForMathlib.Order.Basic
 public import NLAlib.Matrix.Factorizations.GramSchmidt
 
@@ -32,7 +33,7 @@ divisions, and the realisation is an upper bound. Design: `docs/design/Computati
 * `NLAlib.exec_forRange_orthAgainst`: a loop of sweeps against the same columns.
 * `NLAlib.exec_gramSchmidtProg`: the program computes `NLAlib.gramSchmidtQ` from any
   state.
-* `NLAlib.runsWithin_gramSchmidtProg`: the realisation from its input.
+* `NLAlib.matrixFree_gramSchmidtProg`: the realisation from its input, in the matrix-free model.
 -/
 
 @[expose] public section
@@ -846,14 +847,11 @@ theorem exec_gramSchmidtProg (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem =
     exact ⟨pop_eq_of_gramSchmidt hM h₁ hQ hfr hsh, hpos, by rw [hcur]; simp, by rw [hcurW]; simp,
       hcnt, hpeak, hpeakW⟩
 
-/-- **Gram–Schmidt as a program**: from the input buffer holding the $N \times k$ matrix
-$\mathbf{Y}$ column-major, under exact arithmetic, the program runs within the counts
-`gramSchmidtCount p N k` and $Nk + 3$ cells, and leaves `gramSchmidtQ Y` in the buffer.
-[GolubVanLoan2013, §5.2.8]; here rank-revealing, with no rank hypothesis.
-Result: gram-schmidt-program -/
-theorem runsWithin_gramSchmidtProg (p : P) {N k : ℕ} (Y : Matrix (Fin N) (Fin k) 𝕜) :
-    RunsWithin (exactInterp (P := P) (ι := ι) (fun _ => (0 : Matrix (Fin N) (Fin N) 𝕜))
-        fun _ _ => 0)
+/-- The realisation of `gramSchmidtProg` from its input, under the exact interpretation of any
+oracle and tape (the proof of `NLAlib.matrixFree_gramSchmidtProg`). -/
+private theorem runsWithin_gramSchmidtProg (p : P) {N k : ℕ} (Y : Matrix (Fin N) (Fin k) 𝕜)
+    (A : ι → Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ) :
+    RunsWithin (exactInterp (P := P) A ξ)
       ((gramSchmidtProg p (.const N) (.const k) 0).run)
       (inputState p [(flatten Y).map some]) (gramSchmidtCount p N k)
       (fun q => if q = p then N * k + 3 else 0)
@@ -869,8 +867,7 @@ theorem runsWithin_gramSchmidtProg (p : P) {N k : ℕ} (Y : Matrix (Fin N) (Fin 
       rw [zero_add, hread i hi, Array.getElem?_eq_getElem (by rw [size_flatten]; exact hi)]
       exact ⟨_, rfl⟩
   obtain ⟨st', h, hst, -, -, -, hcnt, hpeak, -⟩ :=
-    exec_gramSchmidtProg (exactInterp (P := P) (ι := ι) (fun _ => (0 : Matrix (Fin N) (Fin N) 𝕜))
-      fun _ _ => 0) rfl (fun _ => rfl) p st0 0 Y hY s₁ hs₁
+    exec_gramSchmidtProg (exactInterp (P := P) A ξ) rfl (fun _ => rfl) p st0 0 Y hY s₁ hs₁
   refine ⟨st', h, hcnt, fun q => ?_, ?_⟩
   · have hq := hpeak q
     change st'.peak q + 0 ≤ _
@@ -885,6 +882,21 @@ theorem runsWithin_gramSchmidtProg (p : P) {N k : ℕ} (Y : Matrix (Fin N) (Fin 
     rw [hst, zero_add, show (i : ℕ) + N * j = 0 + ((i : ℕ) + N * j) from (zero_add _).symm,
       Store.read_of_writeBlock_eq_some_of_lt hs₁
         (by rw [size_flatten]; exact Nat.add_mul_lt_mul_of_lt_of_lt i.2 j.2), getElem?_flatten]
+
+/-- **Gram–Schmidt as a program**, in the matrix-free model: for every $N$ and $k$ and every
+$N \times k$ matrix $\mathbf{Y}$, held column-major in the one declared buffer, under exact
+arithmetic (for every oracle and tape, which the program does not use), the program runs within
+the counts `gramSchmidtCount p N k` and $Nk + 3$ cells, and leaves `gramSchmidtQ Y` in the buffer.
+[GolubVanLoan2013, §5.2.8]; here rank-revealing, with no rank hypothesis.
+Result: gram-schmidt-program -/
+theorem matrixFree_gramSchmidtProg (p : P) :
+    MatrixFree (𝕜 := 𝕜) (ι := ι) (r := 1) (b := 1) p
+      (fun _ _ N n h => (gramSchmidtProg p N (n 0) (h 0)).run)
+      (fun _ _ => True) (fun N n => Matrix (Fin N) (Fin (n 0)) 𝕜)
+      (fun _ _ Y => ![(flatten Y).map some]) (fun N n => gramSchmidtCount p N (n 0))
+      (fun N n q => if q = p then N * n 0 + 3 else 0)
+      (fun _ _ Y _ _ st => Holds st.store p 0 0 (gramSchmidtQ Y)) :=
+  fun _ _ _ Y A ξ => runsWithin_gramSchmidtProg p Y (fun _ => A) ξ
 
 end Specs
 

@@ -5,8 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Computation.Subst
-public import NLAlib.Computation.Exact
+public import NLAlib.Computation.Model
 
 /-!
 # The coordinate (COO) implementation of an oracle
@@ -30,6 +29,8 @@ is not counted. Design: `docs/design/Computation.md` (D4, D14).
 ## Main results
 
 * `NLAlib.Computation.implementsOracle_cooImpl`: the certificate.
+* `NLAlib.Computation.MatrixFree.storedEntries_substOracle_cooImpl`: a matrix-free result gives
+  the stored-entries result of the program served by `cooImpl`.
 -/
 
 @[expose] public section
@@ -61,13 +62,11 @@ def cooMatrix {N : ℕ} (pattern : List (ℕ × ℕ)) (vals : ℕ → 𝕜) : Ma
   Matrix.of fun i j => ∑ e ∈ Finset.range pattern.length,
     if pattern[e]? = some (i.1, j.1) then vals e else 0
 
-/-- The interpretation with the COO values as read-only data of size `nnz` at tag `p₀`, the
-oracle the exact one of `NLAlib.Computation.cooMatrix`. -/
-noncomputable def cooInterp {N : ℕ} (pattern : List (ℕ × ℕ)) (vals : ℕ → 𝕜)
-    (ξ : Dist → ℕ → ℝ) (p₀ : P) : Interp P ι 𝕜 (OpCount P ι) :=
-  { exactInterp (fun _ => cooMatrix (N := N) pattern vals) ξ with
-    rom := fun e => if e < pattern.length then some (vals e) else none
-    romSize := fun q => if q = p₀ then pattern.length else 0 }
+/-- The interpretation with the COO values as read-only data of size `nnz` at tag `p₀`, and no
+oracle: the stored-entries interpretation `storedInterp` of the first `nnz` values. -/
+noncomputable def cooInterp (pattern : List (ℕ × ℕ)) (vals : ℕ → 𝕜) (ξ : Dist → ℕ → ℝ) (p₀ : P) :
+    Interp P ι 𝕜 (OpCount P ι) :=
+  storedInterp pattern.length vals ξ p₀
 
 /-- The cost of the COO implementation: a matrix-vector product at tag $p$ is `nnz`
 multiplications, additions and read-only reads and $N$ literals at $p$; a load costs nothing. -/
@@ -364,7 +363,7 @@ Result: coo-oracle-certificate -/
 theorem implementsOracle_cooImpl {N : ℕ} (pattern : List (ℕ × ℕ))
     (hpat : ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N) (vals : ℕ → 𝕜) (ξ : Dist → ℕ → ℝ) (p₀ : P) :
     ImplementsOracle (exactInterp (P := P) (ι := ι) (fun _ => cooMatrix (N := N) pattern vals) ξ)
-      (cooInterp (N := N) pattern vals ξ p₀)
+      (cooInterp pattern vals ξ p₀)
       (fun o p dst dOff src sOff cols => cooImpl (.const N) pattern o p dst dOff src sOff cols)
       (substKind (cooCost N pattern.length)) (fun _ => 1) 0 := by
   intro o p dst dOff src sOff cols st X Y s₁ hdisj hX hY hs₁
@@ -385,7 +384,7 @@ theorem implementsOracle_cooImpl {N : ℕ} (pattern : List (ℕ × ℕ))
   have hdst : ∀ m < N * cols.eval, ∃ n, s₀.shape[dst]? = some (p, n) ∧ dOff.eval + m < n :=
     fun m hm => (Store.exists_getElem?_shape_of_writeBlock_eq_some hs₁ (hYs ▸ hm)).imp fun n h =>
       ⟨by rw [hs₀, Store.getElem?_shape_push_of_lt _ (hdstlt (by omega))]; exact h.1, h.2⟩
-  have hC : Sparse.CooCtx (cooInterp (ι := ι) (N := N) pattern vals ξ p₀) s₀ p st.store.size
+  have hC : Sparse.CooCtx (cooInterp (ι := ι) pattern vals ξ p₀) s₀ p st.store.size
       dst src N cols.eval dOff sOff pattern vals (fun c j => X[j + N * c]?.getD 0) :=
     { sem := rfl
       charge := fun _ => rfl
@@ -422,9 +421,9 @@ theorem implementsOracle_cooImpl {N : ℕ} (pattern : List (ℕ × ℕ))
       cur := Function.update st.cur p (st.cur p + (IExp.const 1).eval)
       peak := Function.update st.peak p (max (st.peak p) (st.cur p + (IExp.const 1).eval))
       curW := st.curW + (IExp.const 1).eval *
-        (cooInterp (ι := ι) (N := N) pattern vals ξ p₀).width p
+        (cooInterp (ι := ι) pattern vals ξ p₀).width p
       peakW := max st.peakW (st.curW + (IExp.const 1).eval *
-        (cooInterp (ι := ι) (N := N) pattern vals ξ p₀).width p) })
+        (cooInterp (ι := ι) pattern vals ξ p₀).width p) })
     ⟨rfl, fun _ _ _ _ _ => rfl, fun _ _ => rfl⟩ hYc
   rw [hF, Option.map_some]
   refine ⟨_, rfl, hIF.pop_eq hs₁ hYs hgF, rfl, ?_, ?_, ?_, ?_, ?_⟩
@@ -433,7 +432,7 @@ theorem implementsOracle_cooImpl {N : ℕ} (pattern : List (ℕ × ℕ))
     · subst hq
       simp
     · simp [hq]
-  · simp [cooInterp, exactInterp]
+  · simp [cooInterp, storedInterp]
   · refine le_of_eq (congrArg (st.cnt + ·) ?_)
     simp only [substKind, cooCost, zero_add, smul_add, Finsupp.smul_single, smul_eq_mul,
       mul_one]
@@ -443,6 +442,34 @@ theorem implementsOracle_cooImpl {N : ℕ} (pattern : List (ℕ × ℕ))
     · subst hq
       simp
     · simp [hq]
-  · simp [cooInterp, exactInterp]
+  · simp [cooInterp, storedInterp]
+
+/-- **Matrix-free to sparse**: a matrix-free result gives the stored-entries result for the
+program with its oracle calls served by `cooImpl` for a pattern with positions in $[0, N)^2$: the
+`nnz` stored values are read-only data, the pattern is public (unrolled into the program, so the
+program may depend on it, and its index storage is not counted), the matrix is
+`cooMatrix pattern vals`, each matrix-vector product costs `nnz` multiplications, additions and
+reads and $N$ literals and each load nothing (`cooCost`), and the memory grows by one scratch cell
+and the `nnz` stored values. The final state has the store, tape positions and current memory of
+a final state of the matrix-free run. No printed source.
+Result: matrix-free-coo-substitution -/
+theorem MatrixFree.storedEntries_substOracle_cooImpl {r b : ℕ} {p : P}
+    {prog : ProgFamily P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
+    {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜)}
+    {cost : ℕ → (Fin r → ℕ) → OpCount P ι} {mem : ℕ → (Fin r → ℕ) → P → ℕ}
+    {post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      (Dist → ℕ → ℝ) → St P 𝕜 (OpCount P ι) → Prop}
+    (h : MatrixFree p prog valid X inputs cost mem post) (pattern : List (ℕ × ℕ)) :
+    StoredEntries p (prog.substOracle fun _ _ N => cooImpl N pattern)
+      (fun N n => valid N n ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N) X inputs
+      (fun _ _ => pattern.length) (fun N n => substCount (cooCost N pattern.length) (cost N n))
+      (fun N n q => mem N n q + 1 + if q = p then pattern.length else 0)
+      (fun N n x vals ξ st' => ∃ st, post N n x (cooMatrix pattern vals) ξ st ∧
+        st'.store = st.store ∧ st'.pos = st.pos ∧ st'.cur = st.cur) := by
+  rintro N n ⟨hv, hpat⟩ x vals ξ
+  exact RunsWithin.substOracle (I := exactInterp (fun _ => cooMatrix (N := N) pattern vals) ξ)
+    (I' := cooInterp pattern vals ξ p) rfl rfl (fun _ => rfl) (fun _ => rfl) rfl (fun _ => rfl)
+    (implementsOracle_cooImpl pattern hpat vals ξ p) rfl (fun _ => le_rfl) le_rfl
+    (h N n hv x _ ξ)
 
 end NLAlib.Computation

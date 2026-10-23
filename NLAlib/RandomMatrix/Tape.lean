@@ -5,7 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Computation.Exact
+public import NLAlib.Computation.Model
+public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.RandomMatrix.Gaussian.Basic
 
 /-!
@@ -19,10 +20,24 @@ matrix, and two matrices drawn from disjoint stretches of the tape are independe
 laws the probabilistic theorems about programs need, so that a program that draws its own test
 matrices inherits the tail bounds of its specification with no new probability.
 
+The law of the tape is fixed once, here: `NLAlib.Computation.tapeLaw` makes the tapes of the
+distributions independent, the tape of `d` an i.i.d. sequence with law `d.law` (a standard
+Gaussian, a Rademacher sign). The probabilistic companion of the matrix-free model,
+`NLAlib.Computation.MatrixFreeProb`, bounds the probability that a program fails to run within
+its counts and memory and to satisfy its postcondition, when the tape has this law; the law is
+part of the definition, never a hypothesis of a theorem, so it cannot depend on the matrix.
+
+## Main definitions
+
+* `NLAlib.Computation.Dist.law`, `NLAlib.Computation.tapeLaw`: the law of the tape.
+* `NLAlib.Computation.MatrixFreeProb`: the probabilistic matrix-free model.
+
 ## Main results
 
 * `NLAlib.hasLaw_tapeMatrix_of_hasLaw_iidSequence`: a Gaussian tape draws a Gaussian matrix.
 * `NLAlib.indepFun_tapeMatrix_of_hasLaw_iidSequence`: consecutive draws are independent.
+* `NLAlib.Computation.hasLaw_apply_of_hasLaw_tapeLaw`: the tape of one distribution under the
+  law of the tape.
 -/
 
 @[expose] public section
@@ -90,5 +105,61 @@ theorem indepFun_tapeMatrix_of_hasLaw_iidSequence {ν : Measure ℝ} [IsProbabil
       (Matrix.of fun (i : Fin N) (j : Fin ℓ) => v ⟨_, hT i j⟩ : Matrix (Fin N) (Fin ℓ) ℝ))
     (by fun_prop) (by fun_prop)
   convert this using 1 <;> funext ω <;> ext i j <;> simp [tapeMatrix]
+
+namespace Computation
+
+/-- The law of one draw from each distribution: the standard Gaussian, and the Rademacher law
+(a random sign). -/
+noncomputable def Dist.law : Dist → Measure ℝ
+  | .gaussian => gaussianReal 0 1
+  | .rademacher => rademacherMeasure
+
+/-- The law of a draw is a probability measure. -/
+instance isProbabilityMeasure_law (d : Dist) : IsProbabilityMeasure d.law := by
+  cases d
+  · exact inferInstanceAs (IsProbabilityMeasure (gaussianReal 0 1))
+  · exact inferInstanceAs (IsProbabilityMeasure rademacherMeasure)
+
+/-- **The law of the tape**: the tapes of the distributions are independent, and the tape of `d`
+is an i.i.d. sequence with law `d.law`. -/
+noncomputable def tapeLaw : Measure (Dist → ℕ → ℝ) :=
+  Measure.infinitePi fun d : Dist => iidSequence d.law
+
+/-- The law of the tape is a probability measure. -/
+instance isProbabilityMeasure_tapeLaw : IsProbabilityMeasure tapeLaw :=
+  inferInstanceAs (IsProbabilityMeasure (Measure.infinitePi fun d : Dist => iidSequence d.law))
+
+/-- Under the law of the tape, the tape of one distribution is an i.i.d. sequence with its law. -/
+theorem hasLaw_apply_of_hasLaw_tapeLaw {ξ : Ω → Dist → ℕ → ℝ} (hξ : HasLaw ξ tapeLaw μ)
+    (d : Dist) : HasLaw (fun ω => ξ ω d) (iidSequence d.law) μ :=
+  (measurePreserving_eval_infinitePi (fun d : Dist => iidSequence d.law) d).fun_comp_hasLaw hξ
+
+variable {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P]
+
+/-- **The probabilistic matrix-free model.** For all sizes $N$, $n$ satisfying `valid`, every
+declared input $x$ and every $N \times N$ matrix $\mathbf{A}$, and every tape $\xi$ on any
+probability space whose law is the law of the tape `tapeLaw` (fixed by this definition: the tapes
+independent, the tape of `d` i.i.d. with law `d.law`), the probability that the program family
+`prog`, run under exact arithmetic with every oracle name meaning $\mathbf{A}$ and the tape
+$\xi(\omega)$ from the initial state that holds the declared buffers `inputs N n x` at tag `p`
+and nothing else, fails to run within the counts `cost N n` and the memory `mem N n` in a state
+satisfying `good N n x A` is at most `bound N n x A`.
+
+The program is bound before the matrix, the declared inputs and the tape, and the law of the tape
+is part of the definition: neither the program nor the law can depend on the data. -/
+def MatrixFreeProb {r b : ℕ} (p : P) (prog : ProgFamily P ι r b)
+    (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (cost : ℕ → (Fin r → ℕ) → OpCount P ι) (mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (good : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      St P 𝕜 (OpCount P ι) → Prop)
+    (bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → ℝ) : Prop :=
+  ∀ N n, valid N n → ∀ (x : X N n) (A : Matrix (Fin N) (Fin N) 𝕜) (Ω : Type)
+    (_ : MeasurableSpace Ω) (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ), HasLaw ξ tapeLaw μ →
+    μ.real {ω | ¬ RunsWithin (exactInterp (fun _ => A) (ξ ω)) (prog.inst N n)
+      (inputState p (List.ofFn (inputs N n x))) (cost N n) (mem N n) (good N n x A)} ≤
+      bound N n x A
+
+end Computation
 
 end NLAlib

@@ -5,8 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Computation.Subst
-public import NLAlib.Computation.Exact
+public import NLAlib.Computation.Model
 
 /-!
 # The dense implementation of an oracle
@@ -29,6 +28,8 @@ sizes: it takes no host data. Design: `docs/design/Computation.md` (D4, D14).
 ## Main results
 
 * `NLAlib.Computation.implementsOracle_denseImpl`: the certificate.
+* `NLAlib.Computation.MatrixFree.storedEntries_substOracle_denseImpl`: a matrix-free result gives
+  the stored-entries result of the program served by `denseImpl`.
 -/
 
 @[expose] public section
@@ -54,12 +55,11 @@ def denseImpl {VB VI : Type} (N : IExp VI) (_o : ι) (p : P) (dst : VB) (dOff : 
           ⟨dst, dOff + .var i + N * .var c⟩ ⟨t, 0⟩)
 
 /-- The interpretation with $\mathbf{A}$ as read-only data of size $N^2$ at tag `p₀`,
-column-major, the oracle the exact one of $\mathbf{A}$. -/
+column-major, and no oracle: the stored-entries interpretation `storedInterp` of the entries of
+`flatten A`. -/
 noncomputable def denseInterp {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ)
     (p₀ : P) : Interp P ι 𝕜 (OpCount P ι) :=
-  { exactInterp (fun _ => A) ξ with
-    rom := fun e => (flatten A)[e]?
-    romSize := fun q => if q = p₀ then N * N else 0 }
+  storedInterp (N * N) (fun e => (flatten A).getD e 0) ξ p₀
 
 /-- The cost of the dense implementation: a matrix-vector product at tag $p$ is $N^2$
 multiplications, additions and read-only reads and $N$ literals at $p$; a load costs nothing. -/
@@ -308,6 +308,15 @@ private theorem getElem?_flatten_mul {N cols : ℕ} (A : Matrix (Fin N) (Fin N) 
 
 end Dense
 
+/-- Entry $i + Nj$ of the read-only data of `denseInterp A` is $\mathbf{A}_{i,j}$. -/
+private theorem rom_denseInterp {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ)
+    (p₀ : P) {i j : ℕ} (hi : i < N) (hj : j < N) :
+    (denseInterp (ι := ι) A ξ p₀).rom (i + N * j) = some (A ⟨i, hi⟩ ⟨j, hj⟩) := by
+  change (if i + N * j < N * N then some ((flatten A).getD (i + N * j) 0) else none) = _
+  rw [if_pos (Nat.add_mul_lt_mul_of_lt_of_lt hi hj), Array.getD_eq_getD_getElem?,
+    getElem?_flatten A ⟨i, hi⟩ ⟨j, hj⟩]
+  rfl
+
 /-- **The dense certificate**: `denseImpl` implements the exact oracle of $\mathbf{A}$ under
 `denseInterp`, at the cost `denseCost` of each matrix-vector product, every other kind kept, with
 one scratch cell and no bit scratch. No printed source.
@@ -346,8 +355,7 @@ theorem implementsOracle_denseImpl {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (
       src_ne := fun h => Nat.ne_of_lt (hsrc h)
       dst_shape := hdst
       rom_eq := fun i hi j hj => by
-        change (flatten A)[i + N * j]? = _
-        rw [getElem?_flatten A ⟨i, hi⟩ ⟨j, hj⟩]
+        rw [rom_denseInterp A ξ p₀ hi hj]
         simp [hi, hj]
       src_read := fun c hc j hj => by
         have hm : j + N * c < N * cols.eval := Nat.add_mul_lt_mul_of_lt_of_lt hj hc
@@ -386,7 +394,7 @@ theorem implementsOracle_denseImpl {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (
     · subst hq
       simp
     · simp [hq]
-  · simp [denseInterp, exactInterp]
+  · simp [denseInterp, storedInterp]
   · refine le_of_eq (congrArg (st.cnt + ·) ?_)
     simp only [substKind, denseCost, zero_add, smul_add, Finsupp.smul_single, smul_eq_mul,
       mul_one]
@@ -396,6 +404,50 @@ theorem implementsOracle_denseImpl {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (
     · subst hq
       simp
     · simp [hq]
-  · simp [denseInterp, exactInterp]
+  · simp [denseInterp, storedInterp]
+
+omit [DecidableEq P] in
+/-- Entry $e < N^2$ of the flattened matrix with entries $v_{i + Nj}$ is $v_e$. -/
+private theorem getD_flatten_of_lt {N : ℕ} (vals : ℕ → 𝕜) {e : ℕ} (he : e < N * N) :
+    (flatten (Matrix.of fun (i j : Fin N) => vals (i + N * j))).getD e 0 = vals e := by
+  have hN : 0 < N := Nat.pos_of_ne_zero (by rintro rfl; simp at he)
+  have h := getElem?_flatten (Matrix.of fun (i j : Fin N) => vals (i + N * j))
+    ⟨e % N, Nat.mod_lt _ hN⟩ ⟨e / N, Nat.div_lt_of_lt_mul he⟩
+  simp only [Nat.mod_add_div, Matrix.of_apply] at h
+  rw [Array.getD_eq_getD_getElem?, h]
+  rfl
+
+/-- **Matrix-free to dense**: a matrix-free result gives the stored-entries result for the
+program with its oracle calls served by `denseImpl` from $N^2$ stored entries $v$, column-major:
+the matrix is $(v_{i + Nj})_{i, j}$, each matrix-vector product costs $N^2$ multiplications,
+additions and reads and $N$ literals and each load nothing (`denseCost`), and the memory grows by
+one scratch cell and the $N^2$ stored entries. The final state has the store, tape positions and
+current memory of a final state of the matrix-free run. No printed source.
+Result: matrix-free-dense-substitution -/
+theorem MatrixFree.storedEntries_substOracle_denseImpl {r b : ℕ} {p : P}
+    {prog : ProgFamily P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
+    {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜)}
+    {cost : ℕ → (Fin r → ℕ) → OpCount P ι} {mem : ℕ → (Fin r → ℕ) → P → ℕ}
+    {post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      (Dist → ℕ → ℝ) → St P 𝕜 (OpCount P ι) → Prop}
+    (h : MatrixFree p prog valid X inputs cost mem post) :
+    StoredEntries p (prog.substOracle fun _ _ N => denseImpl N) valid X inputs (fun N _ => N * N)
+      (fun N n => substCount (denseCost N) (cost N n))
+      (fun N n q => mem N n q + 1 + if q = p then N * N else 0)
+      (fun N n x vals ξ st' => ∃ st, post N n x (Matrix.of fun i j => vals (i + N * j)) ξ st ∧
+        st'.store = st.store ∧ st'.pos = st.pos ∧ st'.cur = st.cur) := by
+  intro N n hv x vals ξ
+  have hI : denseInterp (ι := ι) (Matrix.of fun (i j : Fin N) => vals (i + N * j)) ξ p =
+      storedInterp (N * N) vals ξ p := by
+    simp only [denseInterp, storedInterp, Interp.mk.injEq, true_and, and_true]
+    funext e
+    split_ifs with he
+    · rw [getD_flatten_of_lt vals he]
+    · rfl
+  rw [← hI]
+  exact RunsWithin.substOracle
+    (I := exactInterp (fun _ => Matrix.of fun (i j : Fin N) => vals (i + N * j)) ξ)
+    (I' := denseInterp _ ξ p) rfl rfl (fun _ => rfl) (fun _ => rfl) rfl (fun _ => rfl)
+    (implementsOracle_denseImpl _ ξ p) rfl (fun _ => le_rfl) le_rfl (h N n hv x _ ξ)
 
 end NLAlib.Computation

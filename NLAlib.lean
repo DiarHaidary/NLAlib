@@ -6,6 +6,7 @@ public import NLAlib.Computation.Contract
 public import NLAlib.Computation.Dense
 public import NLAlib.Computation.Exact
 public import NLAlib.Computation.Exec
+public import NLAlib.Computation.Model
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.Sparse
 public import NLAlib.Computation.Store

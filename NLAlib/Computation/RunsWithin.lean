@@ -31,6 +31,7 @@ budget is at most the probability that `F ω` fails `G`. Design: `docs/design/Co
 ## Main results
 
 * `NLAlib.Computation.measureReal_not_runsWithin_le`: the transfer of a tail bound.
+* `NLAlib.Computation.RunsWithin.mono`: a larger budget, a weaker postcondition.
 -/
 
 @[expose] public section
@@ -48,6 +49,14 @@ def RunsWithin {C : Type} [AddMonoid C] [Preorder C] (I : Interp P ι K C) (s : 
     (st₀ : St P K C) (c : C) (m : P → ℕ) (Q : St P K C → Prop) : Prop :=
   ∃ st, exec I s st₀ = some st ∧ st.cnt ≤ st₀.cnt + c ∧ (∀ p, st.peak p + I.romSize p ≤ m p) ∧
     Q st
+
+/-- A run within a budget runs within any larger budget and any weaker postcondition. -/
+theorem RunsWithin.mono {C : Type} [AddMonoid C] [Preorder C] [AddLeftMono C]
+    {I : Interp P ι K C} {s : Stmt P ι ℕ ℕ} {st₀ : St P K C} {c c' : C} {m m' : P → ℕ}
+    {Q Q' : St P K C → Prop} (h : RunsWithin I s st₀ c m Q) (hc : c ≤ c') (hm : m ≤ m')
+    (hQ : ∀ st, Q st → Q' st) : RunsWithin I s st₀ c' m' Q' := by
+  obtain ⟨st, hrun, hcnt, hmem, hq⟩ := h
+  exact ⟨st, hrun, hcnt.trans (add_le_add_right hc _), fun p => (hmem p).trans (hm p), hQ st hq⟩
 
 /-- **Transfer of a tail from a specification to a program.** If for every $\omega$ the program
 $s$ runs within the budget and its output, read by `out`, is $F(\omega)$, then
