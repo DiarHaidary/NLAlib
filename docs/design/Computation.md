@@ -1783,7 +1783,7 @@ the basis, except that the run is `FStmt.exec` and the basis reaches it through 
 | G28–G30, G33 | P | P | same (G29 through the bridge) |
 | G31 | P | P | the tree's arguments are names only (tags, oracle names, distributions, the sparse pattern), reviewed in the target; the tree depends on them, harmlessly |
 | G32 | D | D | same |
-| G34 | D | **P** | uniformity: one finite tree for all sizes; literals fixed in it; no host computation on sizes (the witness is a tree, and the compiler calls the builder once, on variables). Left as D: index arithmetic uncounted (G11); the sparse target is non-uniform in its public pattern (Q1) |
+| G34 | D | **P**, D | uniformity: one finite tree for all sizes; literals fixed in it; no host computation that chooses the program from the sizes (the witness is a tree, and the compiler calls the builder once, on variables). Left as D: index arithmetic uncounted (G11), which is host arithmetic on sizes during the run: `IExp.evalIn` (offsets, loop bounds, `%` with `a % 0 = a`) and the index literal `litIdx`, charged as one literal whatever its value (G4); the sparse target is non-uniform in its public pattern (Q1). (Corrected by the final audits, 2026-10-24: the first version said "no host computation on sizes", which overstated it) |
 | G35 | T (parametricity) | **removed** | the witness contains no Lean function; parametricity is used nowhere, not even as hygiene |
 | G36–G38, G40, G41 | P | P | same |
 | G39 | T | T | same (`Dist.law`) |
@@ -1794,16 +1794,19 @@ the basis, except that the run is `FStmt.exec` and the basis reaches it through 
 | G48 | T | T | same (the specifications) |
 | G50, G51 | T | T | the emitter and the `Float` runner read the builder; an emitter of `Prog` trees is a later, small tool |
 | G52 | T (E3, coverage) | T (the target lint) | what is published is what the registry lists; no coverage claim is left |
-| G53, G54 | T | T | same (audit; E4 as in F9) |
+| G53, G54 | T | T | same (audit; E4 as in F9); G53 rests on the kernel replay since the final audits (G61) |
 | G55 | D | D | hygiene: E2, E5, E6, E8, E9 (a warning); E1 retired |
 | **G56** (new) | | T | a published cost result is a theorem whose type is literally a registered target: no hypothesis, parameter or postcondition of the prover's. Script: one comparison of expressions |
 | **G57** (new) | | T | the target and every library constant it reaches are frozen: the closure hash in the registry, with the toolchain and Mathlib pinned. Script, and the maintainer's review of the registry (Q3). (T) only with the closure walk of F1 item 3 (every constant kind, library membership by module); the walk of `59c5e27` skipped opaques and would not have frozen an `irreducible_def` |
 | **G58** (new) | | P | the program of a result is first-order and scoped by its type (`Prog P ι r b`), checked by Lean's kernel; under a named target it is the registered tree, frozen by its normal-form hash |
 | **G59** (new) | | D | the compiler and the builder are untrusted: theorems are about the compiled tree, and a non-parametric builder only yields a tree the proof must handle. A consequence of the design, not a theorem |
 | **G60** (new) | | P | the run on first-order syntax agrees with the current run of the instantiated statement (`FStmt.exec_eq_exec_toStmt`), so the existing lemmas and invariants apply |
+| **G61** (final audits) | | T | every constant of the library's `.olean` files is accepted by the kernel: `scripts/Replay.lean` replays them all through Lean core's `Environment.replay` (as `lean4checker`), so no proof elaborated under `debug.skipKernelTC` or added without checking survives; `scripts/Audit.lean` fails on an `unsafe` or `partial` constant. Script: about 120 lines over Lean core's replay |
+| **G62** (final audits) | | D | rule S9: no `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the sources or `lakefile.toml`. Hygiene: G61 is the guarantee |
 
 **Count.** 60 items, one removed (G35): 40 (P) (G4, G7, G19 partly (D)), 9 (T) (G39, G48,
-G50–G54, G56, G57), 10 (D) (G11, G12, G17, G18, G32, G42, G46, G49, G55, G59). Non-uniformity, advice
+G50–G54, G56, G57), 10 (D) (G11, G12, G17, G18, G32, G42, G46, G49, G55, G59). The final audits
+add G61 (T) and G62 (D), and make G34 partly (D). Non-uniformity, advice
 and parametricity are no longer issues; G34 is (P) and G35 is gone.
 
 **The trusted base, exactly.** Base item 1 (kernel and axioms) is unchanged. Base item 3 (the
@@ -1836,6 +1839,26 @@ matchers, recursors and structural-recursion helpers of the inductive types. Gro
   (the program the result is about, printed by the emitter), not trusted for soundness: whatever
   it is, the theorem proves that it meets the statement. With the trees as leaves the builders,
   kernels and compiler are outside the closure, except for the sparse target until Q1 (F1).
+
+**Additions of the final audits (2026-10-24)**, which the paragraph above left out. Besides the
+kernel, the axioms and the closures, a target's meaning rests on:
+* the kernel having checked every constant (G61): before the audits only the elaborator's call of
+  the kernel did, which `set_option debug.skipKernelTC true` switches off; now `scripts/Replay.lean`;
+* the link between a registered tree and its normal form: `Meta.reduce` in the script until the
+  final audits, now the kernel (`theorem _ : tree = nf := Eq.refl _`, checked at every run of the
+  lint);
+* the emitter (`NLAlibTools/NumPy.lean`), the only remaining trusted link between a registered
+  tree and the code a reader runs (G50);
+* the target lint's own tools: `sha256sum` (or `shasum -a 256`) and the parser of the TOML subset
+  the registry is written in (`parseRegistry`);
+* the pins: until the final audits the registry pinned the toolchain and the Mathlib revision but
+  not the rest of `lake-manifest.json` (Batteries, Aesop, Qq, …) or `lakefile.toml` (the options
+  every file is built with); now their SHA-256;
+* G17's audit item: the declared buffers are not counted in bit memory (`inputState` sets `curW`
+  and `peakW` to $0$), harmless while every interpretation has width $0$;
+* G57's maintainer layer (Q3), which is a plan until `docs/targets.approved` exists and branch
+  protection with code-owner review is on: until then the approval item of the lint fails on
+  every branch, and nothing but review stops a merge.
 
 Out of the base, where they were before: the PHOAS `Stmt`, `Builder` and `exec` (no target
 reaches them); `ProgFamily` and `ProgFamily.inst`; program substitution (`Stmt.subst`,
@@ -2091,3 +2114,94 @@ these departures:
   serialisation in place of `mixHash`; E8 exempting theorem bodies; CI on every branch.
 * **`HutchPlusPlusProgram.lean` line 1237**: a value marker began a docstring line, which
   `scripts/check_constants.py` rejects; the line is rewrapped, with no change of mathematics.
+
+## Final audits, 2026-10-24
+
+Two independent audits of the closed migration (branch `computation/stage1` at `0bd2567`), each
+looking for a way to publish a false cost result that every check accepts. Their findings, merged,
+and what was done.
+
+**Blocking, the whole library.** In a `module` file built with `--wfail`,
+`unsafe def anything.{u} (α : Sort u) : α := anything α` followed by
+`set_option debug.skipKernelTC true in theorem matrixFreeHutchppForged : MatrixFreeHutchpp :=
+anything _` elaborates with no warning: the elaborator does not send the theorem to the kernel,
+which would reject a safe theorem using an unsafe constant. The target lint accepted it (a
+theorem of the target's type) and `scripts/Audit.lean` reported only the three standard axioms,
+since an unsafe definition is not an axiom. The same two lines forge any theorem of the library,
+not only a target. Fixed three ways:
+* **Kernel replay** (G61), `scripts/Replay.lean`: it reads the `.olean` files of every `NLAlib`
+  module, all three parts of each (`.olean`, `.olean.server`, `.olean.private`, so private
+  declarations and proofs are included), imports as the base the modules they import outside the
+  library, and replays every constant into the base through the kernel with Lean core's
+  `Environment.replay` (`lean4checker` is built on it; no new dependency). `replay` skips `unsafe`
+  and `partial` constants, so the script fails on any, except the compiler's `f._unsafe_rec`, the
+  `partial` copy of a safe recursive definition `f` that Lean adds for code generation (13 in the
+  library), which no safe constant can use: a use fails the replay as an unknown constant. On the
+  library: 11760 constants of 420 modules onto 279 base imports, 0 violations, 2 min 20 s, 5.6 GB;
+  with `NLAlibTools`, 11871 constants of 424 modules, 0 violations. On the forged module (built
+  outside the library): rejected, "unknown constant `anything`", and `anything` flagged; a variant
+  naming the unsafe helper `helper._unsafe_rec` beside a safe `helper` is rejected the same way.
+  So no earlier round contains such a forgery. CI runs it (with `NLAlibTools`), and so does
+  `scripts/stage_check.sh`.
+* **Rule S9** (G62): no `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, a
+  kernel option or `skipKernelTC` in the code of `NLAlib/` and `NLAlibScaffold/`, and no `debug.`,
+  kernel or trust option or `moreLeanArgs` in `lakefile.toml`; with fixtures. The library has none.
+* **`scripts/Audit.lean`** fails on an `unsafe` or `partial` constant of an `NLAlib` module (the
+  `_unsafe_rec` auxiliaries excepted, as above).
+
+**Non-blocking.**
+1. *Item 2 of the target lint did not follow constructors*: a `Result:` theorem stated through a
+   structure (`structure Wrapped : Prop where h : MatrixFreeHutchpp`), `Nonempty` of one, an
+   inductive `Prop` or a class instance was not flagged. `reachesRun` now walks the mutual block
+   and the constructors of inductive types, as the closure walk does, and item 2 reads every
+   constant of a proposition with a result id (instances included) and every definition of type
+   `Prop` with a result id. Fixtures for each.
+2. *Pins*: the registry pinned the toolchain and the Mathlib revision only. It now records the
+   SHA-256 of `lake-manifest.json` (every dependency's revision) and of `lakefile.toml` (the options
+   every file is built with) and checks them.
+3. *CODEOWNERS* covered only the registry, the approval file, the `*Targets.lean` files and
+   itself. It now also covers `scripts/Targets.lean`, `scripts/Audit.lean`,
+   `scripts/Programs.lean`, `scripts/Replay.lean`, `scripts/stage_check.sh`, `.github/workflows/`,
+   `lakefile.toml`, `lake-manifest.json` and `lean-toolchain`. The handle `@tchen01` is still
+   unconfirmed, and says so.
+4. *The link between a registered tree and its normal form was `Meta.reduce`*, in the script. The
+   lint now sends `theorem _ : tree = nf := Eq.refl _` to the kernel for each registered tree at
+   every run (`kernelTreeEq`; fixture: a different normal form is rejected). The emitter is the
+   one trusted link left between a tree and the code a reader runs.
+5. *Hash brittleness*: tree normal forms kept the proofs of `Fin` bounds and of `ℚ` literals, and
+   closures hashed the numbered `_proof_` auxiliaries and hygienic names
+   (`NLAlib.definition._@.<module>.<hash>._hygCtx._hyg.2` of each `irreducible_def`), so unrelated
+   edits changed hashes and invited rubber-stamped re-approvals. Every proof is now one token
+   (`proofToken`) in the walk and in the serialisation: two terms that differ only in proofs are
+   definitionally equal, and what a proof proves is fixed by the rest of the term, so the frozen
+   meaning is the same; a constant used only inside proofs leaves the closure (the closures shrank
+   from 172, 182, 214, 187, 241 constants to 161, 164, 184, 171, 228). Hygienic names are written
+   without their macro scopes and numbered in the walk's order, which depends on the terms only: a
+   bijection of the closure, so no two constants are identified. Each tree's printed normal form,
+   the tree hash's input, is in the registry beside the printed statements (fixture: an edit of a
+   proof keeps the hash). The registry was regenerated by the script's update mode; every hash
+   changed and no printed statement did:
+
+   | entry | before | after |
+   |---|---|---|
+   | tree `gramSchmidtProg.compiled` | `4d22e7f3…` | `4fed8241…` |
+   | tree `hutchppProg.compiled` | `e18325ae…` | `c1d476df…` |
+   | tree `hutchppProg.compiledDense` | `fc064ae8…` | `57ebf1ea…` |
+   | `MatrixFreeGramSchmidt` | `9fdbc85f…` | `f4bfd4a9…` |
+   | `MatrixFreeHutchpp` | `4f2a455e…` | `8389c47d…` |
+   | `MatrixFreeProbHutchpp` | `64a762d1…` | `86d55a87…` |
+   | `StoredEntriesDenseHutchpp` | `de87b161…` | `5405ea52…` |
+   | `StoredEntriesCooHutchpp` | `36c3c747…` | `b30850f8…` |
+
+   The new registry is not approved: `docs/targets.approved` is the maintainer's.
+6. *Documents*. The docstrings of `MatrixFreeHutchpp` ("$2N(k + \ell) + 4$ cells at tag $p$
+   besides the output") and `MatrixFreeGramSchmidt` say or suggest that the memory bound leaves out
+   the declared buffer, but the proved bound counts it (G15, G16: the declared buffers count from
+   the start). They are target files, so the rewording is a pending maintainer item
+   (`docs/port/status.md`); the statements are right. `IExp.mod` by zero returns the dividend, now
+   documented at the constructor. G34 overstated "no host computation on sizes": `IExp.evalIn` and
+   `litIdx` are uncounted host arithmetic on sizes (D), corrected in F10. The trusted base of F10
+   gains the additions listed there: the kernel replay, `Meta.reduce` until item 4 (now the
+   kernel), the emitter, `sha256sum` and the TOML subset parser, the manifest until item 2 (now
+   pinned), G17, and G57's maintainer layer, a plan until `docs/targets.approved` and branch
+   protection exist. New items G61 (the replay, T) and G62 (rule S9, D).

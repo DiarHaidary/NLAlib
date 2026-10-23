@@ -73,7 +73,8 @@ inductive IExp (VI : Type) where
   | sub (a b : IExp VI)
   /-- Multiplication. -/
   | mul (a b : IExp VI)
-  /-- Remainder. -/
+  /-- Remainder, `Nat.mod`: a remainder by zero is the dividend (`a % 0 = a`), and the run does
+  not fail on it, unlike a division of values by zero (G21 of `docs/design/Computation.md`). -/
   | mod (a b : IExp VI)
 
 /-- Numerals are constants. -/
