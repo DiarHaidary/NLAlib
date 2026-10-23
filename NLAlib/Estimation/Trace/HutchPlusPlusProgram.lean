@@ -5,44 +5,44 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Computation.Dense
-public import NLAlib.Computation.Sparse
-public import NLAlib.Estimation.Trace.HutchPlusPlusTail
+public import NLAlib.Estimation.Trace.HutchPlusPlusTargets
 public import NLAlib.Matrix.Factorizations.GramSchmidtProgram
-public import NLAlib.RandomMatrix.Tape
 
 /-!
 # Hutch++ as a program
 
-`NLAlib.hutchppProg` is Hutch++ as a program over memory buffers: it draws an $N \times k$ sketch
-and $N \times \ell$ probes from the tape, forms $\mathbf{Y} = \mathbf{A}\mathbf{S}$ with one oracle
-call, orthonormalises $\mathbf{Y}$ in place by rank-revealing modified Gram–Schmidt, projects the
-probes in place, forms $\mathbf{A}[\mathbf{Q}\ \mathbf{G}']$ with a second call, and writes
+`NLAlib.hutchppProg` (in `NLAlib/Estimation/Trace/HutchPlusPlusProgramTree.lean`) is Hutch++ as a
+program over memory buffers: it draws an $N \times k$ sketch and $N \times \ell$ probes from the
+tape, forms $\mathbf{Y} = \mathbf{A}\mathbf{S}$ with one oracle call, orthonormalises
+$\mathbf{Y}$ in place by rank-revealing modified Gram–Schmidt, projects the probes in place, forms
+$\mathbf{A}[\mathbf{Q}\ \mathbf{G}']$ with a second call, and writes
 $\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) +
 \operatorname{tr}(\mathbf{G}'^{\mathsf{H}}\mathbf{A}\mathbf{G}')/\ell$ into its output cell.
 
 Under exact arithmetic it computes `NLAlib.hutchpp` of the matrices drawn from the tape, with 2
 loads, $2k + \ell$ matrix-vector products, the operation counts `NLAlib.hutchppCount` and
-$2N(k + \ell) + 4$ cells of memory besides its output, for every matrix and every tape: an
-instance of the matrix-free model `NLAlib.Computation.MatrixFree`
-(`NLAlib.matrixFree_hutchppProg`). With the law of the tape, the tail bound of Gaussian Hutch++
-transfers to the program with no new probability (`NLAlib.Computation.MatrixFreeProb`). With the
-oracle implemented by a dense matrix or by a matrix in coordinate form, the substitution theorem
-gives the totals in arithmetic operations and memory, in the stored-entries model
-`NLAlib.Computation.StoredEntries`. Design: `docs/design/Computation.md` (§5, §6, "Guarantees").
-
-## Main definitions
-
-* `NLAlib.hutchppProg`, `NLAlib.hutchppCount`.
+$2N(k + \ell) + 4$ cells of memory besides its output, for every matrix and every tape. With the
+law of the tape, the tail bound of Gaussian Hutch++ transfers to the program with no new
+probability. With the oracle implemented by a dense matrix or by a matrix in coordinate form, the
+substitution theorem gives the totals in arithmetic operations and memory, in the stored-entries
+model. Each is first proved for the program family, then for the tree the target is about,
+through the tree's instantiation equation: the targets of
+`NLAlib/Estimation/Trace/HutchPlusPlusTargets.lean` are proved here. The sparse tree is compiled
+from a pattern of any length, by an induction through the entries of
+`NLAlib.Computation.cooImpl`. Design: `docs/design/Computation.md` (§5, §6, "Guarantees", F8).
 
 ## Main results
 
-* `NLAlib.matrixFree_hutchppProg`: the realisation, in the matrix-free model.
-* `NLAlib.matrixFreeProb_hutchppProg`: the Gaussian tail of the program that draws its own test
-  matrices, in the probabilistic matrix-free model.
-* `NLAlib.storedEntries_substOracle_hutchppProg_denseImpl`,
-  `NLAlib.storedEntries_substOracle_hutchppProg_cooImpl`: dense and sparse Hutch++, in the
-  stored-entries model.
+* `NLAlib.matrixFree_hutchppProg`, `NLAlib.matrixFreeProb_hutchppProg`,
+  `NLAlib.storedEntries_substOracle_hutchppProg_denseImpl`,
+  `NLAlib.storedEntries_substOracle_hutchppProg_cooImpl`: the results for the program families.
+* `NLAlib.hutchppProg.toStmt_compiled`, `NLAlib.hutchppProg.toStmt_compiledDense`,
+  `NLAlib.hutchppProg.toStmt_compiledCoo`: the trees instantiate to the families.
+* `NLAlib.hutchppProg.exists_compile_coo`: the sparse family compiles for every pattern.
+* `NLAlib.matrixFreeHutchpp`, `NLAlib.matrixFreeProbHutchpp`, `NLAlib.storedEntriesDenseHutchpp`,
+  `NLAlib.storedEntriesCooHutchpp`: the targets `NLAlib.MatrixFreeHutchpp`,
+  `NLAlib.MatrixFreeProbHutchpp`, `NLAlib.StoredEntriesDenseHutchpp`,
+  `NLAlib.StoredEntriesCooHutchpp`.
 -/
 
 @[expose] public section
@@ -54,65 +54,9 @@ namespace NLAlib
 
 open Computation Computation.Builder
 
-section Program
-
-variable {P ι VB VI : Type}
-
-/-- **Hutch++ as a program.** It draws an $N \times k$ sketch $\mathbf{S}$ and $N \times \ell$
-probes $\mathbf{G}$ from the tape of `d`, forms $\mathbf{Y} = \mathbf{A}\mathbf{S}$ (load 1),
-orthonormalises $\mathbf{Y}$ in place by rank-revealing modified Gram–Schmidt into
-$\mathbf{Q}$, projects the probes in place,
-$\mathbf{G}' = (\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{G}$, forms
-$\mathbf{A}[\mathbf{Q}\ \mathbf{G}']$ (load 2, batched), and writes
-$\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) +
-\operatorname{tr}(\mathbf{G}'^{\mathsf{H}}\mathbf{A}\mathbf{G}')/\ell$ into `out`.
-[MeyerMuscoMuscoWoodruff2021, Algorithm 1]. -/
-def hutchppProg (p : P) (o : ι) (d : Dist) (N k ℓ : IExp VI) (out : Cell VB VI) :
-    Builder P ι VB VI Unit := do
-  let B ← alloc p (N * (k + ℓ))
-  scope do
-    let S ← alloc p (N * k)
-    forRange (N * k) fun i => ins (.draw p d ⟨S, .var i⟩)
-    stmt (.apply o p B 0 S 0 k)
-  forRange (N * ℓ) fun i => ins (.draw p d ⟨B, N * k + .var i⟩)
-  gramSchmidtProg p N k B
-  let t ← alloc p 2
-  forRange ℓ fun j => orthAgainst p N B k B (N * (k + .var j)) ⟨t, 0⟩
-  let C ← alloc p (N * (k + ℓ))
-  stmt (.apply o p C 0 B 0 (k + ℓ))
-  ins (.lit p out 0)
-  forRange k fun j => do
-    dot p ⟨t, 0⟩ B (N * .var j) C (N * .var j) N
-    ins (.bin p .add out out ⟨t, 0⟩)
-  ins (.lit p ⟨t, 1⟩ 0)
-  forRange ℓ fun j => do
-    dot p ⟨t, 0⟩ B (N * (k + .var j)) C (N * (k + .var j)) N
-    ins (.bin p .add ⟨t, 1⟩ ⟨t, 1⟩ ⟨t, 0⟩)
-  ins (.litIdx p ⟨t, 0⟩ ℓ)
-  ins (.bin p .div ⟨t, 1⟩ ⟨t, 1⟩ ⟨t, 0⟩)
-  ins (.bin p .add out out ⟨t, 1⟩)
-
-end Program
-
 section Statements
 
 variable {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P]
-
-/-- The counts of `NLAlib.hutchppProg` when $\mathbf{A}\mathbf{S}$ has full column rank, with
-$J = k(k-1)/2$: 2 loads, $2k + \ell$ matrix-vector products, $N(k + \ell)$ draws,
-$2NJ + 2Nk + 2Nk\ell + N\ell$ multiplications, $2NJ + 2Nk + 2Nk\ell + N\ell + k + \ell + 1$
-additions, $Nk + 1$ divisions, $k$ square roots, $NJ + 2Nk + Nk\ell + N\ell$ conjugations,
-$J + k\ell$ negations, $J + 3k + k\ell + \ell + 3$ literals and $k$ comparisons. -/
-noncomputable def hutchppCount (p : P) (o : ι) (d : Dist) (N k ℓ : ℕ) : OpCount P ι :=
-  Finsupp.single (.load p o) 2 + Finsupp.single (.matvec p o) (2 * k + ℓ) +
-  Finsupp.single (.draw p d) (N * (k + ℓ)) +
-  Finsupp.single (.bin p .mul) (2 * N * k.choose 2 + 2 * N * k + 2 * N * k * ℓ + N * ℓ) +
-  Finsupp.single (.bin p .add)
-    (2 * N * k.choose 2 + 2 * N * k + 2 * N * k * ℓ + N * ℓ + k + ℓ + 1) +
-  Finsupp.single (.bin p .div) (N * k + 1) + Finsupp.single (.un p .sqrt) k +
-  Finsupp.single (.un p .conj) (N * k.choose 2 + 2 * N * k + N * k * ℓ + N * ℓ) +
-  Finsupp.single (.un p .neg) (k.choose 2 + k * ℓ) +
-  Finsupp.single (.lit p) (k.choose 2 + 3 * k + k * ℓ + ℓ + 3) + Finsupp.single (.cmp p) k
 
 /-- Column `c` of a matrix as a vector, zero past the last column. -/
 private def colOf {N m : ℕ} (M : Matrix (Fin N) (Fin m) 𝕜) (c : ℕ) : Fin N → 𝕜 :=
@@ -868,18 +812,15 @@ private theorem runsWithin_hutchppProg (p : P) (o : ι) (d : Dist) {N k ℓ : �
     rw [Store.read_pop_of_lt (by simp [hsz4]), Store.read_pop_of_lt (by omega), hout4]
     exact congrArg some (hutchpp_eq_of_mgsSweep A _ Gm)
 
-/-- **Hutch++ as a program computes Hutch++**, in the matrix-free model: for all $N$, $k$ and
-$\ell \ge 1$, every $N \times N$ matrix $\mathbf{A}$ over $\Bbbk$ (every oracle name means
-$\mathbf{A}$) and every tape $\xi$, under exact arithmetic, the program run from a single
-declared output cell succeeds within the counts `hutchppCount p o d N k ℓ` and
-$2N(k + \ell) + 4$ cells besides the output, and its output is
+/-- Hutch++ as a program computes Hutch++, for the program family, in the matrix-free model on
+families: for all $N$, $k$ and $\ell \ge 1$, every $N \times N$ matrix $\mathbf{A}$ over
+$\Bbbk$ (every oracle name means $\mathbf{A}$) and every tape $\xi$, under exact arithmetic, the
+program run from a single declared output cell succeeds within the counts
+`hutchppCount p o d N k ℓ` and $2N(k + \ell) + 4$ cells besides the output, and its output is
 $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
 matrix drawn from the tape of `d` from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
 drawn after it, column-major. The sizes are $N$ and $n = (k, \ell)$. No hypothesis on the rank of
-$\mathbf{A}\mathbf{S}$.
-[MeyerMuscoMuscoWoodruff2021, Algorithm 1]; there with the costs stated in matrix-vector
-products only.
-Result: hutchpp-program -/
+$\mathbf{A}\mathbf{S}$. The proof of `NLAlib.matrixFreeHutchpp`. -/
 theorem matrixFree_hutchppProg (p : P) (o : ι) (d : Dist) :
     ProgFamily.MatrixFree (𝕜 := 𝕜) (r := 2) (b := 1) p
       (fun _ _ N n h => (hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run)
@@ -890,9 +831,10 @@ theorem matrixFree_hutchppProg (p : P) (o : ι) (d : Dist) :
         (hutchpp A (tapeMatrix (ξ d) 0 N (n 0)) (tapeMatrix (ξ d) (N * n 0) N (n 1)))) :=
   fun _ _ hℓ _ A ξ => runsWithin_hutchppProg p o d hℓ A ξ
 
-/-- **The deviation of Hutch++ as a program**, in the probabilistic matrix-free model: let the
-tape have the law of the tape (`tapeLaw`: the tape of the Gaussian distribution an i.i.d.
-sequence of standard Gaussians, independent of the others), $k \ge 1$, $\ell \ge 1$. If
+/-- The deviation of Hutch++ as a program, for the program family, in the probabilistic
+matrix-free model on families: let the tape have the law of the tape (`tapeLaw`: the tape of the
+Gaussian distribution an i.i.d. sequence of standard Gaussians, independent of the others),
+$k \ge 1$, $\ell \ge 1$. If
 $\delta > 0$ and <!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
 $k \ge 25 \cdot 1^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$, then for every real
@@ -909,10 +851,8 @@ factor is `subgaussianRangeFinderFactor 1` and the constant in the exponent is
 `hansonWrightConstant`. The sizes are $N$ and $n = (k, \ell)$. From
 `NLAlib.matrixFree_hutchppProg`, the tape laws and the Gaussian tail
 `NLAlib.measureReal_abs_trace_sub_hutchpp_ge_le_of_hasLaw_gaussianMatrix`, through
-`NLAlib.Computation.measureReal_not_runsWithin_le`.
-[MeyerMuscoMuscoWoodruff2021, Theorem 4 and §5, Algorithm 3]; there with unspecified constants
-and for the algorithm, not a program.
-Result: hutchpp-program-tail -/
+`NLAlib.Computation.measureReal_not_runsWithin_le`. The proof of
+`NLAlib.matrixFreeProbHutchpp`. -/
 theorem matrixFreeProb_hutchppProg (p : P) (o : ι) (r : ℕ) {δ : ℝ} (hδ : 0 < δ) {τ : ℝ}
     (hτ : 0 ≤ τ) :
     ProgFamily.MatrixFreeProb (𝕜 := ℝ) (r := 2) (b := 1) p
@@ -938,16 +878,18 @@ theorem matrixFreeProb_hutchppProg (p : P) (o : ι) (r : ℕ) {δ : ℝ} (hδ : 
     (fun ω => runsWithin_hutchppProg p o .gaussian hℓ A (ξ ω)) ?_
   simpa only [not_lt, Fintype.card_fin] using h
 
-/-- **Dense Hutch++**, in the stored-entries model: with the oracle calls served by
-`NLAlib.Computation.denseImpl` from $N^2$ stored entries $v$, column-major, so that the matrix is
-$\mathbf{A} = (v_{i + Nj})_{i, j}$, under exact arithmetic and $\ell \ge 1$, for every tape the
-substituted program computes $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ from the tape
-as in `NLAlib.matrixFree_hutchppProg`, with the counts `hutchppCount` in which each
-matrix-vector product is replaced by $N^2$ multiplications, additions and reads and $N$ literals
-and each load costs nothing, and $2N(k + \ell) + 5 + N^2$ cells of memory besides its output.
-From `NLAlib.matrixFree_hutchppProg` through
-`NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl`. No printed source.
-Result: hutchpp-program-dense -/
+/-- Dense Hutch++, for the program family, in the stored-entries model on families: with the
+oracle calls served by `NLAlib.Computation.denseImpl` from $N^2$ stored entries $v$,
+column-major, so that the matrix is $\mathbf{A} = (v_{i + Nj})_{i, j}$, under exact arithmetic
+and $\ell \ge 1$, for every tape the substituted program computes
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
+matrix drawn from the tape of `d` from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
+drawn after it, with the counts `hutchppCount` in which each matrix-vector product is replaced by
+$N^2$ multiplications, additions and reads and $N$ literals and each load costs nothing, and
+$2N(k + \ell) + 5 + N^2$ cells of memory besides its output. From
+`NLAlib.matrixFree_hutchppProg` through
+`NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl`. The proof of
+`NLAlib.storedEntriesDenseHutchpp`. -/
 theorem storedEntries_substOracle_hutchppProg_denseImpl (p : P) (o : ι) (d : Dist) :
     ProgFamily.StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
       (fun _ _ N n h =>
@@ -963,17 +905,17 @@ theorem storedEntries_substOracle_hutchppProg_denseImpl (p : P) (o : ι) (d : Di
     ((matrixFree_hutchppProg p o d).storedEntries_substOracle_denseImpl N n hv x vals ξ).mono
       le_rfl le_rfl fun _ ⟨_, h1, h2, _⟩ => by beta_reduce; rw [h2]; exact h1
 
-/-- **Sparse Hutch++**, in the stored-entries model: with the oracle calls served by
-`NLAlib.Computation.cooImpl` for a public pattern with positions in $[0, N)^2$ (unrolled into the
-program, its index storage not counted) and `nnz` stored values $v$, so that the matrix is
-`cooMatrix pattern v`, under exact arithmetic and $\ell \ge 1$, for every tape the substituted
-program computes $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ from the tape as in
-`NLAlib.matrixFree_hutchppProg`, with the counts `hutchppCount` in which each matrix-vector
-product is replaced by `nnz` multiplications, additions and reads and $N$ literals and each load
-costs nothing, and $2N(k + \ell) + 5 + \mathit{nnz}$ cells of memory besides its output. From
-`NLAlib.matrixFree_hutchppProg` through
-`NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl`. No printed source.
-Result: hutchpp-program-sparse -/
+/-- Sparse Hutch++, for the program family, in the stored-entries model on families: with the
+oracle calls served by `NLAlib.Computation.cooImpl` for a public pattern with positions in
+$[0, N)^2$ (unrolled into the program, its index storage not counted) and `nnz` stored values
+$v$, so that the matrix is `cooMatrix pattern v`, under exact arithmetic and $\ell \ge 1$, for
+every tape the substituted program computes $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$,
+where $\mathbf{S}$ is the $N \times k$ matrix drawn from the tape of `d` from position $0$ and
+$\mathbf{G}$ the $N \times \ell$ matrix drawn after it, with the counts `hutchppCount` in which
+each matrix-vector product is replaced by `nnz` multiplications, additions and reads and $N$
+literals and each load costs nothing, and $2N(k + \ell) + 5 + \mathit{nnz}$ cells of memory
+besides its output. From `NLAlib.matrixFree_hutchppProg` through
+`NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl`. -/
 theorem storedEntries_substOracle_hutchppProg_cooImpl (p : P) (o : ι) (d : Dist)
     (pattern : List (ℕ × ℕ)) :
     ProgFamily.StoredEntries (𝕜 := 𝕜) (r := 2) (b := 1) p
@@ -992,5 +934,362 @@ theorem storedEntries_substOracle_hutchppProg_cooImpl (p : P) (o : ι) (d : Dist
       ξ).mono le_rfl le_rfl fun _ ⟨_, h1, h2, _⟩ => by beta_reduce; rw [h2]; exact h1
 
 end Statements
+
+/-! ### The registered trees and the targets -/
+
+section Targets
+
+variable {P ι : Type}
+
+/-- The registered tree of Hutch++ instantiates, at every size, to the statement of the program
+family. -/
+theorem hutchppProg.toStmt_compiled (p : P) (o : ι) (d : Dist) (N : ℕ)
+    (n : Fin 2 → ℕ) :
+    (hutchppProg.compiled p o d).toStmt N n = ProgFamily.inst (r := 2) (b := 1)
+      (fun _ _ N n h => (hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run) N n :=
+  rfl
+
+/-- The registered tree of dense Hutch++ instantiates, at every size, to the statement of the
+program family with its oracle calls served by `NLAlib.Computation.denseImpl`. -/
+theorem hutchppProg.toStmt_compiledDense (p : P) (o : ι) (d : Dist) (N : ℕ)
+    (n : Fin 2 → ℕ) :
+    (hutchppProg.compiledDense p o d).toStmt N n = ProgFamily.inst (r := 2) (b := 1)
+      (fun _ _ N n h =>
+        ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (denseImpl N)) N n :=
+  rfl
+
+/-! The sparse tree: an induction on the statement, with an induction on the pattern through the
+entries of `cooImpl`, shows that the COO family compiles for every pattern and instantiates to
+the family. -/
+
+/-- One entry of the COO kernel (`NLAlib.Computation.cooImpl`): read value $e$, multiply it by
+source entry $j$, add it into destination entry $i$. -/
+private def cooEntry {VB VI : Type} (p : P) (t dst src : VB) (a b m : IExp VI) :
+    (ℕ × ℕ) × ℕ → Builder P ι VB VI Unit := fun ((i, j), e) => do
+  Builder.stmt (.rom p ⟨t, 0⟩ (.const e))
+  Builder.ins (.bin p .mul ⟨t, 0⟩ ⟨t, 0⟩ ⟨src, b + .const j + m⟩)
+  Builder.ins (.bin p .add ⟨dst, a + .const i + m⟩ ⟨dst, a + .const i + m⟩ ⟨t, 0⟩)
+
+/-- The compilation of `cooImpl`, one step: its named node and the final `skip`. -/
+private theorem compile_cooImpl_eq {nb ni : ℕ} (N : IExp ℕ) (pattern : List (ℕ × ℕ)) (o : ι) (p : P)
+    (dst : ℕ) (dOff : IExp ℕ) (src : ℕ) (sOff cols : IExp ℕ) :
+    (cooImpl N pattern o p dst dOff src sOff cols).compile nb ni =
+      (do
+        let x ← (do
+          let a ← [Arg.idx N, .buf dst, .idx dOff, .buf src, .idx sOff, .idx cols].mapM
+            (Arg.scope? nb ni)
+          let b ← Stmt.compile (.alloc p 1 fun t => .seq (.loop cols fun c =>
+            .seq (.loop N fun i => .seq (.instr (.lit p ⟨dst, dOff + .var i + N * .var c⟩ 0)) .skip)
+              (ContT.run (pattern.zipIdx.forM
+                (cooEntry (ι := ι) p t dst src dOff sOff (N * .var c))) fun _ => .skip))
+            .skip) nb ni
+          pure (FStmt.named "coo_apply" a b))
+        let y ← some FStmt.skip
+        pure (FStmt.seq x y)) := rfl
+
+private theorem scope?_succ : ∀ {ni : ℕ} {e : IExp ℕ} {e' : IExp (Fin ni)}, e.scope? ni = some e' →
+    e.scope? (ni + 1) = some (e'.subst fun v => .var v.castSucc) := by
+  intro ni e
+  induction e with
+  | var v =>
+    intro e' h
+    unfold IExp.scope? at h ⊢
+    by_cases hv : v < ni
+    · rw [dif_pos hv] at h; cases h; rw [dif_pos (by omega)]; rfl
+    · rw [dif_neg hv] at h; cases h
+  | const n => intro e' h; cases h; rfl
+  | add a b iha ihb | sub a b iha ihb | mul a b iha ihb | mod a b iha ihb =>
+    intro e' h
+    simp only [IExp.scope?, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨a', ha, b', hb, rfl⟩ := h
+    simp [IExp.scope?, iha ha, ihb hb, IExp.subst]
+
+private theorem subst_castSucc_snoc {ni : ℕ} (e : IExp (Fin ni)) (σ : Fin ni → IExp ℕ)
+    (x : IExp ℕ) :
+    (e.subst fun v => .var v.castSucc).subst (Fin.snoc (α := fun _ => IExp ℕ) σ x) = e.subst σ := by
+  induction e <;> simp [IExp.subst, *]
+
+private theorem finScope?_succ {nb d : ℕ} {d' : Fin nb} (h : finScope? nb d = some d') :
+    finScope? (nb + 1) d = some d'.castSucc := by
+  unfold finScope? at h ⊢
+  by_cases hd : d < nb
+  · rw [dif_pos hd] at h; cases h; rw [dif_pos (by omega)]; rfl
+  · rw [dif_neg hd] at h; cases h
+
+private theorem scope?_zero {ni : ℕ} : (0 : IExp ℕ).scope? ni = some 0 := rfl
+
+private theorem scope?_one {ni : ℕ} : (1 : IExp ℕ).scope? ni = some 1 := rfl
+
+private theorem scope?_const {ni : ℕ} (n : ℕ) : (IExp.const n).scope? ni = some (.const n) := rfl
+
+private theorem scope?_add {ni : ℕ} {a b : IExp ℕ} {a' b' : IExp (Fin ni)}
+    (ha : a.scope? ni = some a') (hb : b.scope? ni = some b') :
+    (a + b).scope? ni = some (a' + b') := by
+  change (do let x ← a.scope? ni; let y ← b.scope? ni; pure (IExp.add x y)) = _
+  rw [ha, hb]; rfl
+
+private theorem compile_cooEntries {nb ni : ℕ} (p : P) {t dst src : ℕ} {t' d' s' : Fin nb}
+    (ht : finScope? nb t = some t') (hd : finScope? nb dst = some d')
+    (hs : finScope? nb src = some s') {a b m : IExp ℕ} {a' b' m' : IExp (Fin ni)}
+    (ha : a.scope? ni = some a') (hb : b.scope? ni = some b') (hm : m.scope? ni = some m') :
+    ∀ l : List ((ℕ × ℕ) × ℕ), ∃ c : FStmt P ι nb ni,
+      Stmt.compile (ContT.run (l.forM (cooEntry (ι := ι) p t dst src a b m)) fun _ => .skip)
+        nb ni = some c ∧
+      ∀ ρB σ, c.toStmt ρB σ = ContT.run (l.forM (cooEntry p (ρB t') (ρB d') (ρB s') (a'.subst σ)
+        (b'.subst σ) (m'.subst σ))) fun _ => .skip
+  | [] => ⟨.skip, rfl, fun _ _ => rfl⟩
+  | ((i, j), e) :: l => by
+    obtain ⟨c, hc, hc'⟩ := compile_cooEntries p ht hd hs ha hb hm l
+    refine ⟨.seq (.rom p ⟨t', 0⟩ (.const e)) (.seq (.instr (.bin p .mul ⟨t', 0⟩ ⟨t', 0⟩
+      ⟨s', b' + .const j + m'⟩)) (.seq (.instr (.bin p .add ⟨d', a' + .const i + m'⟩
+        ⟨d', a' + .const i + m'⟩ ⟨t', 0⟩)) c)), ?_, fun ρB σ => ?_⟩
+    · change Stmt.compile (.seq (.rom p ⟨t, 0⟩ (.const e)) (.seq (.instr (.bin p .mul ⟨t, 0⟩
+        ⟨t, 0⟩ ⟨src, b + .const j + m⟩)) (.seq (.instr (.bin p .add ⟨dst, a + .const i + m⟩
+        ⟨dst, a + .const i + m⟩ ⟨t, 0⟩)) (ContT.run (l.forM (cooEntry (ι := ι) p t dst src a b m))
+          fun _ => .skip)))) nb ni = _
+      simp only [Stmt.compile, Instr.scope?, Cell.scope?, hc, ht, hd, hs, scope?_zero,
+        scope?_const, scope?_add (scope?_add ha (scope?_const _)) hm,
+        scope?_add (scope?_add hb (scope?_const _)) hm, Option.bind_eq_bind, Option.pure_def]
+      rfl
+    · simp only [FStmt.toStmt, hc']
+      rfl
+
+private theorem scope?_mul {ni : ℕ} {a b : IExp ℕ} {a' b' : IExp (Fin ni)}
+    (ha : a.scope? ni = some a') (hb : b.scope? ni = some b') :
+    (a * b).scope? ni = some (a' * b') := by
+  change (do let x ← a.scope? ni; let y ← b.scope? ni; pure (IExp.mul x y)) = _
+  rw [ha, hb]; rfl
+
+private theorem scope?_var {ni v : ℕ} (h : v < ni) :
+    (IExp.var v).scope? ni = some (.var ⟨v, h⟩) := by
+  simp [IExp.scope?, h]
+
+private theorem finScope?_eq {nb v : ℕ} (h : v < nb) : finScope? nb v = some ⟨v, h⟩ := by
+  simp [finScope?, h]
+
+private theorem scope?_var_last {n : ℕ} :
+    (IExp.var n).scope? (n + 1) = some (.var (Fin.last n)) := by
+  simp [IExp.scope?, Fin.last]
+
+private theorem finScope?_last {n : ℕ} : finScope? (n + 1) n = some (Fin.last n) := by
+  simp [finScope?, Fin.last]
+
+private theorem compile_cooImpl {nb ni : ℕ} (hni : 0 < ni) (pattern : List (ℕ × ℕ)) (o : ι) (p : P)
+    {d s : ℕ} {d' s' : Fin nb} (hd : finScope? nb d = some d') (hs : finScope? nb s = some s')
+    {dOff sOff cols : IExp ℕ} {dOff' sOff' cols' : IExp (Fin ni)}
+    (h₁ : dOff.scope? ni = some dOff') (h₂ : sOff.scope? ni = some sOff')
+    (h₃ : cols.scope? ni = some cols') :
+    ∃ c : FStmt P ι nb ni,
+      (cooImpl (.var 0) pattern o p d dOff s sOff cols).compile nb ni = some c ∧
+      ∀ ρB σ M, σ ⟨0, hni⟩ = .const M → c.toStmt ρB σ =
+        cooImpl (.const M) pattern o p (ρB d') (dOff'.subst σ) (ρB s') (sOff'.subst σ)
+          (cols'.subst σ) := by
+  have v0 : (IExp.var 0).scope? ni = some (.var ⟨0, hni⟩) := scope?_var hni
+  have v1 := scope?_succ v0
+  have v2 := scope?_succ v1
+  have vn := scope?_succ (scope?_var_last (n := ni))
+  obtain ⟨cE, hcE, hcE'⟩ := compile_cooEntries (ι := ι) p finScope?_last
+    (finScope?_succ hd) (finScope?_succ hs) (scope?_succ h₁) (scope?_succ h₂)
+    (scope?_mul v1 scope?_var_last) pattern.zipIdx
+  rw [compile_cooImpl_eq]
+  simp only [Stmt.compile, List.mapM_cons, List.mapM_nil, Arg.scope?, Instr.scope?, Cell.scope?,
+    hcE, hd, hs, h₁, h₂, h₃, finScope?_succ hd, scope?_one, v0, v1,
+    scope?_add (scope?_add (scope?_succ (scope?_succ h₁)) scope?_var_last) (scope?_mul v2 vn),
+    Option.bind_eq_bind, Option.pure_def, Option.bind_some, Option.some.injEq, exists_eq_left']
+  intro ρB σ M hM
+  simp only [FStmt.toStmt, hcE', List.map_cons, List.map_nil, Arg.subst, Instr.subst, Cell.subst,
+    IExp.subst, subst_castSucc_snoc, Fin.snoc_castSucc, Fin.snoc_last, hM]
+  rfl
+
+private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : Stmt P ι ℕ ℕ) :
+    ∀ {nb ni : ℕ} (hni : 0 < ni) (c : FStmt P ι nb ni), s.compile nb ni = some c →
+      ∃ c' : FStmt P ι nb ni,
+        (s.substOracle (cooImpl (.var 0) pattern)).compile nb ni = some c' ∧
+        ∀ ρB σ M, σ ⟨0, hni⟩ = .const M →
+          c'.toStmt ρB σ = (c.toStmt ρB σ).substOracle (cooImpl (.const M) pattern) := by
+  simp only [Stmt.substOracle]
+  induction s with
+  | skip => intro nb ni hni c h; cases h; exact ⟨.skip, rfl, fun _ _ _ _ => rfl⟩
+  | seq s t ihs iht =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨s', hs, t', ht, rfl⟩ := h
+    obtain ⟨cs, hcs, hcs'⟩ := ihs hni s' hs
+    obtain ⟨ct, hct, hct'⟩ := iht hni t' ht
+    refine ⟨.seq cs ct, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, hcs, hct]
+    · simp [Stmt.subst, FStmt.toStmt, hcs' ρB σ M hM, hct' ρB σ M hM]
+  | instr i =>
+    intro nb ni hni c h
+    exact ⟨c, h, fun _ _ _ _ => by
+      simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+        Option.some.injEq] at h
+      obtain ⟨i', -, rfl⟩ := h
+      rfl⟩
+  | apply o p d dOff s sOff cols =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨d', hd, dOff', h₁, s', hs, sOff', h₂, cols', h₃, rfl⟩ := h
+    exact compile_cooImpl hni pattern o p hd hs h₁ h₂ h₃
+  | rom p d i =>
+    intro nb ni hni c h
+    exact ⟨c, h, fun _ _ _ _ => by
+      simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+        Option.some.injEq] at h
+      obtain ⟨d', -, i', -, rfl⟩ := h
+      rfl⟩
+  | alloc p len body ih =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨len', hlen, b', hb, rfl⟩ := h
+    obtain ⟨cb, hcb, hcb'⟩ := ih nb hni b' hb
+    refine ⟨.alloc p len' cb, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, hlen, hcb]
+    · simp [Stmt.subst, FStmt.toStmt, hcb' _ σ M hM]
+  | loop n body ih =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨n', hn, b', hb, rfl⟩ := h
+    obtain ⟨cb, hcb, hcb'⟩ := ih ni (Nat.succ_pos ni) b' hb
+    refine ⟨.loop n' cb, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, hn, hcb]
+    · simp [Stmt.subst, FStmt.toStmt, hcb' _ _ M ((Fin.snoc_castSucc (i := ⟨0, hni⟩) ..).trans hM)]
+  | whileFuel fuel p cmp x y body ih =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨f', hf, x', hx, y', hy, b', hb, rfl⟩ := h
+    obtain ⟨cb, hcb, hcb'⟩ := ih hni b' hb
+    refine ⟨.whileFuel f' p cmp x' y' cb, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, hf, hx, hy, hcb]
+    · simp [Stmt.subst, FStmt.toStmt, hcb' ρB σ M hM]
+  | ite p cmp x y t e iht ihe =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨x', hx, y', hy, t', ht, e', he, rfl⟩ := h
+    obtain ⟨ct, hct, hct'⟩ := iht hni t' ht
+    obtain ⟨ce, hce, hce'⟩ := ihe hni e' he
+    refine ⟨.ite p cmp x' y' ct ce, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, hx, hy, hct, hce]
+    · simp [Stmt.subst, FStmt.toStmt, hct' ρB σ M hM, hce' ρB σ M hM]
+  | named name args body ih =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨args', ha, b', hb, rfl⟩ := h
+    obtain ⟨cb, hcb, hcb'⟩ := ih hni b' hb
+    refine ⟨FStmt.named name args' cb, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, ha, hcb]
+    · simp [Stmt.subst, FStmt.toStmt, hcb' ρB σ M hM]
+
+/-- The sparse family compiles, for every pattern: Hutch++ with its oracle calls served by
+`NLAlib.Computation.cooImpl`, compiled at symbolic sizes, is some first-order program, and that
+program instantiates at every size $N$, $n$ to the statement of the family there. By induction
+on the statement, with an induction on the pattern through the entries of `cooImpl`. -/
+theorem hutchppProg.exists_compile_coo (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ)) :
+    ∃ c, ProgFamily.compile (r := 2) (b := 1) (fun _ _ N n h =>
+        ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (cooImpl N pattern)) =
+      some c ∧ ∀ N n, c.toStmt N n = ProgFamily.inst (r := 2) (b := 1) (fun _ _ N n h =>
+        ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (cooImpl N pattern)) N n := by
+  obtain ⟨c, hc, hc'⟩ := compile_substOracle_cooImpl pattern _ (by norm_num : 0 < 3)
+    (hutchppProg.compiled p o d) (Option.some_get _).symm
+  exact ⟨c, hc, fun N n => (hc' _ _ N rfl).trans (congrArg
+    (Stmt.substOracle (cooImpl (.const N) pattern)) (hutchppProg.toStmt_compiled p o d N n))⟩
+
+/-- The tree of sparse Hutch++ instantiates, at every size, to the statement of the program
+family with its oracle calls served by `NLAlib.Computation.cooImpl`. -/
+theorem hutchppProg.toStmt_compiledCoo (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ))
+    (N : ℕ) (n : Fin 2 → ℕ) :
+    (hutchppProg.compiledCoo p o d pattern).toStmt N n = ProgFamily.inst (r := 2) (b := 1)
+      (fun _ _ N n h =>
+        ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (cooImpl N pattern)) N n := by
+  obtain ⟨c, hc, hc'⟩ := hutchppProg.exists_compile_coo p o d pattern
+  rw [hutchppProg.compiledCoo, hc, Option.getD_some, hc']
+
+
+/-- **Hutch++ as a program computes Hutch++**, in the matrix-free model: for every type of tags
+with decidable equality, every type of oracle names, every tag $p$, oracle name $o$ and
+distribution $d$ and every `RCLike` field $\Bbbk$, for all $N$, $k$ and $\ell \ge 1$, every
+$N \times N$ matrix $\mathbf{A}$ over $\Bbbk$ (every oracle name means $\mathbf{A}$) and every
+tape $\xi$, under exact arithmetic, the registered tree `hutchppProg.compiled p o d` run from a
+single declared output cell succeeds within the counts `hutchppCount p o d N k ℓ` and
+$2N(k + \ell) + 4$ cells besides the output, and its output is
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
+matrix drawn from the tape of $d$ from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
+drawn after it, column-major. No hypothesis on the rank of $\mathbf{A}\mathbf{S}$.
+[MeyerMuscoMuscoWoodruff2021, Algorithm 1]; there with the costs stated in matrix-vector
+products only.
+Result: hutchpp-program -/
+theorem matrixFreeHutchpp : MatrixFreeHutchpp := fun _ _ _ p o d _ _ =>
+  (matrixFree_hutchppProg p o d).prog _ (hutchppProg.toStmt_compiled p o d)
+
+/-- **The deviation of Hutch++ as a program**, in the probabilistic matrix-free model: for every
+type of tags with decidable equality, every type of oracle names, every tag $p$ and oracle name
+$o$ and every rank $r$, let the tape have the law of the tape (`tapeLaw`: the tape of the
+Gaussian distribution an i.i.d. sequence of standard Gaussians, independent of the others),
+$k \ge 1$, $\ell \ge 1$. If $\delta > 0$ and
+<!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
+$k \ge 25 \cdot 1^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, then for every real
+$N \times N$ matrix $\mathbf{A}$ and every $\tau \ge 0$, with
+$\mathbf{E}_r = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_r$, the probability that the
+registered tree `hutchppProg.compiled p o .gaussian` fails to compute, within the counts
+`hutchppCount` and $2N(k + \ell) + 4$ cells, a value $v$ with
+$\lvert \operatorname{tr}\mathbf{A} - v \rvert < \tau$ is
+at most <!-- value subgaussianRangeFinderFactor {\cdot 1} --> <!-- value hansonWrightConstant -->
+$$\delta + 2\exp\Bigl(-\frac{1}{196}\min\Bigl(
+\frac{\ell\tau^2}{(1 + 5\cdot 1/2)\|\mathbf{E}_r\|_{\mathsf{F}}^2},
+\frac{\ell\tau}{\sqrt{1 + 5\cdot 1/2}\,\|\mathbf{E}_r\|_{\mathsf{F}}}\Bigr)\Bigr)\,;$$
+the size is `subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2)`, $C$ is `subgaussianJLConstant`, the
+factor is `subgaussianRangeFinderFactor 1` and the constant in the exponent is
+`hansonWrightConstant`. The sizes are $N$ and $n = (k, \ell)$. The output is
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ of the Gaussian matrices it draws.
+[MeyerMuscoMuscoWoodruff2021, Theorem 4 and §5, Algorithm 3]; there with unspecified constants
+and for the algorithm, not a program.
+Result: hutchpp-program-tail -/
+theorem matrixFreeProbHutchpp : MatrixFreeProbHutchpp := fun _ _ _ p o r _ hδ _ hτ =>
+  (matrixFreeProb_hutchppProg p o r hδ hτ).prog _ (hutchppProg.toStmt_compiled p o .gaussian)
+
+/-- **Dense Hutch++**, in the stored-entries model: for every type of tags with decidable
+equality, every type of oracle names, every tag $p$, oracle name $o$ and distribution $d$ and
+every `RCLike` field $\Bbbk$, with the oracle calls served by `NLAlib.Computation.denseImpl` from
+$N^2$ stored entries $v$, column-major, so that the matrix is
+$\mathbf{A} = (v_{i + Nj})_{i, j}$, under exact arithmetic and $\ell \ge 1$, for every tape the
+registered tree `hutchppProg.compiledDense p o d` computes
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
+matrix drawn from the tape of $d$ from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
+drawn after it, column-major, with the counts `hutchppCount` in which each matrix-vector product
+is replaced by $N^2$ multiplications, additions and reads and $N$ literals and each load costs
+nothing, and $2N(k + \ell) + 5 + N^2$ cells of memory besides its output. No printed source.
+Result: hutchpp-program-dense -/
+theorem storedEntriesDenseHutchpp : StoredEntriesDenseHutchpp := fun _ _ _ p o d _ _ =>
+  (storedEntries_substOracle_hutchppProg_denseImpl p o d).prog _
+    (hutchppProg.toStmt_compiledDense p o d)
+
+/-- **Sparse Hutch++**, in the stored-entries model: for every type of tags with decidable
+equality, every type of oracle names, every tag $p$, oracle name $o$ and distribution $d$, every
+public pattern and every `RCLike` field $\Bbbk$, with the oracle calls served by
+`NLAlib.Computation.cooImpl` for the pattern, its positions in $[0, N)^2$ (unrolled into the
+program, its index storage not counted), and `nnz` stored values $v$, so that the matrix is
+`cooMatrix pattern v`, under exact arithmetic and $\ell \ge 1$, for every tape the tree
+`hutchppProg.compiledCoo p o d pattern` computes
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
+matrix drawn from the tape of $d$ from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
+drawn after it, column-major, with the counts `hutchppCount` in which each matrix-vector product
+is replaced by `nnz` multiplications, additions and reads and $N$ literals and each load costs
+nothing, and $2N(k + \ell) + 5 + \mathit{nnz}$ cells of memory besides its output. No printed
+source.
+Result: hutchpp-program-sparse -/
+theorem storedEntriesCooHutchpp : StoredEntriesCooHutchpp := fun _ _ _ p o d pattern _ _ =>
+  (storedEntries_substOracle_hutchppProg_cooImpl p o d pattern).prog _
+    (hutchppProg.toStmt_compiledCoo p o d pattern)
+
+end Targets
 
 end NLAlib

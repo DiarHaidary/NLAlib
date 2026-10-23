@@ -21,7 +21,9 @@ public import NLAlib.Estimation.Spectral.SpectralDensitySubgaussian
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.HutchPlusPlus
 public import NLAlib.Estimation.Trace.HutchPlusPlusProgram
+public import NLAlib.Estimation.Trace.HutchPlusPlusProgramTree
 public import NLAlib.Estimation.Trace.HutchPlusPlusTail
+public import NLAlib.Estimation.Trace.HutchPlusPlusTargets
 public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
@@ -208,6 +210,8 @@ public import NLAlib.Matrix.Factorizations.Givens
 public import NLAlib.Matrix.Factorizations.GivensHessenberg
 public import NLAlib.Matrix.Factorizations.GramSchmidt
 public import NLAlib.Matrix.Factorizations.GramSchmidtProgram
+public import NLAlib.Matrix.Factorizations.GramSchmidtProgramTree
+public import NLAlib.Matrix.Factorizations.GramSchmidtTargets
 public import NLAlib.Matrix.Factorizations.Hessenberg
 public import NLAlib.Matrix.Factorizations.Householder
 public import NLAlib.Matrix.Factorizations.LU

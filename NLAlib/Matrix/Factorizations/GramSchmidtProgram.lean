@@ -5,27 +5,24 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Computation.BLAS
-public import NLAlib.Computation.Model
 public import NLAlib.ForMathlib.Order.Basic
-public import NLAlib.Matrix.Factorizations.GramSchmidt
+public import NLAlib.Matrix.Factorizations.GramSchmidtTargets
 
 /-!
 # Gram–Schmidt as a program
 
-In-place rank-revealing modified Gram–Schmidt on the $k$ columns of an $N \times k$ buffer:
+In-place rank-revealing modified Gram–Schmidt on the $k$ columns of an $N \times k$ buffer
+(`NLAlib.gramSchmidtProg`, in `NLAlib/Matrix/Factorizations/GramSchmidtProgramTree.lean`):
 column $j$ is reduced against the earlier columns one at a time (`NLAlib.orthAgainst`,
 the sweep `NLAlib.mgsSweep`), then normalised, or left zero when its squared norm is exactly zero.
 In exact arithmetic the program computes `NLAlib.gramSchmidtQ` with no rank hypothesis (D6):
 modified and classical Gram–Schmidt agree (`NLAlib.mgsSweep_eq_sub_sum`), and a column that
 depends on the earlier ones is reduced to zero. The counts `NLAlib.gramSchmidtCount`
 are those of a matrix of full column rank; each zero column saves one square root and $N$
-divisions, and the realisation is an upper bound. Design: `docs/design/Computation.md` (D6, §5).
-
-## Main definitions
-
-* `NLAlib.orthAgainst`: one modified Gram–Schmidt sweep of a vector.
-* `NLAlib.gramSchmidtProg`, `NLAlib.gramSchmidtCount`.
+divisions, and the realisation is an upper bound. This file proves the target
+`NLAlib.MatrixFreeGramSchmidt` (in `NLAlib/Matrix/Factorizations/GramSchmidtTargets.lean`) about
+the registered tree `NLAlib.gramSchmidtProg.compiled`. Design: `docs/design/Computation.md`
+(D6, §5, F8).
 
 ## Main results
 
@@ -33,9 +30,10 @@ divisions, and the realisation is an upper bound. Design: `docs/design/Computati
 * `NLAlib.exec_forRange_orthAgainst`: a loop of sweeps against the same columns.
 * `NLAlib.exec_gramSchmidtProg`: the program computes `NLAlib.gramSchmidtQ` from any
   state.
-* `NLAlib.matrixFree_gramSchmidtProg`: the realisation from its input, in the matrix-free model.
+* `NLAlib.matrixFree_gramSchmidtProg`: the realisation from its input, for the program family.
+* `NLAlib.gramSchmidtProg.toStmt_compiled`: the registered tree instantiates to the family.
+* `NLAlib.matrixFreeGramSchmidt`: the target `NLAlib.MatrixFreeGramSchmidt`.
 -/
-
 @[expose] public section
 
 open scoped Matrix ComplexOrder
@@ -43,48 +41,6 @@ open scoped Matrix ComplexOrder
 namespace NLAlib
 
 open Computation Computation.Builder
-
-section Programs
-
-variable {P ι VB VI : Type}
-
-/-- One modified Gram–Schmidt sweep, $\mathbf{v} \leftarrow \mathbf{v} -
-(\mathbf{q}_i^{\mathsf{H}}\mathbf{v})\mathbf{q}_i$ for the columns $\mathbf{q}_0, \dots,
-\mathbf{q}_{k-1}$ of the $N$-row buffer $Q$ in turn, each coefficient computed from the partially
-reduced vector; the cell $r$ holds the coefficients. -/
-def orthAgainst (p : P) (N : IExp VI) (Q : VB) (k : IExp VI) (v : VB) (vo : IExp VI)
-    (r : Cell VB VI) : Builder P ι VB VI Unit :=
-  forRange k fun i => do
-    dot p r Q (N * .var i) v vo N
-    ins (.un p .neg r r)
-    axpy p r Q (N * .var i) v vo N
-
-/-- **Gram–Schmidt as a program**: in-place rank-revealing modified Gram–Schmidt on the $k$
-columns of the $N$-row buffer $Y$. Column $j$ is swept against the earlier columns, its squared
-norm is computed, and it is divided by its norm unless the squared norm is exactly zero. Two
-scratch cells, freed at the end (`scope`). -/
-def gramSchmidtProg (p : P) (N k : IExp VI) (Y : VB) : Builder P ι VB VI Unit := scope do
-  let t ← alloc p 2
-  forRange k fun j => do
-    orthAgainst p N Y (.var j) Y (N * .var j) ⟨t, 0⟩
-    dot p ⟨t, 1⟩ Y (N * .var j) Y (N * .var j) N
-    ins (.lit p ⟨t, 0⟩ 0)
-    ifThenElse p .eq ⟨t, 1⟩ ⟨t, 0⟩ (pure ()) do
-      ins (.un p .sqrt ⟨t, 1⟩ ⟨t, 1⟩)
-      rscl p ⟨t, 1⟩ Y (N * .var j) N
-
-end Programs
-
-/-- The counts of `NLAlib.gramSchmidtProg` on an $N \times k$ matrix of full column
-rank, with $J = k(k-1)/2$: $2NJ + Nk$ multiplications and additions, $NJ + Nk$ conjugations,
-$J$ negations, $J + 2k$ literals, $k$ comparisons and square roots, and $Nk$ divisions. -/
-noncomputable def gramSchmidtCount {P ι : Type} (p : P) (N k : ℕ) : OpCount P ι :=
-  Finsupp.single (.bin p .mul) (2 * N * k.choose 2 + N * k) +
-  Finsupp.single (.bin p .add) (2 * N * k.choose 2 + N * k) +
-  Finsupp.single (.un p .conj) (N * k.choose 2 + N * k) +
-  Finsupp.single (.un p .neg) (k.choose 2) + Finsupp.single (.lit p) (k.choose 2 + 2 * k) +
-  Finsupp.single (.cmp p) k + Finsupp.single (.un p .sqrt) k +
-  Finsupp.single (.bin p .div) (N * k)
 
 section Specs
 
@@ -883,12 +839,12 @@ private theorem runsWithin_gramSchmidtProg (p : P) {N k : ℕ} (Y : Matrix (Fin 
       Store.read_of_writeBlock_eq_some_of_lt hs₁
         (by rw [size_flatten]; exact Nat.add_mul_lt_mul_of_lt_of_lt i.2 j.2), getElem?_flatten]
 
-/-- **Gram–Schmidt as a program**, in the matrix-free model: for every $N$ and $k$ and every
-$N \times k$ matrix $\mathbf{Y}$, held column-major in the one declared buffer, under exact
-arithmetic (for every oracle and tape, which the program does not use), the program runs within
-the counts `gramSchmidtCount p N k` and $Nk + 3$ cells, and leaves `gramSchmidtQ Y` in the buffer.
-[GolubVanLoan2013, §5.2.8]; here rank-revealing, with no rank hypothesis.
-Result: gram-schmidt-program -/
+/-- The realisation of `NLAlib.gramSchmidtProg` for the program family, in the matrix-free
+model on families: for every $N$ and $k$ and every $N \times k$ matrix $\mathbf{Y}$, held
+column-major in the one declared buffer, under exact arithmetic (for every oracle and tape, which
+the program does not use), the program runs within the counts `gramSchmidtCount p N k` and
+$Nk + 3$ cells, and leaves `gramSchmidtQ Y` in the buffer. The proof of
+`NLAlib.matrixFreeGramSchmidt`. -/
 theorem matrixFree_gramSchmidtProg (p : P) :
     ProgFamily.MatrixFree (𝕜 := 𝕜) (ι := ι) (r := 1) (b := 1) p
       (fun _ _ N n h => (gramSchmidtProg p N (n 0) (h 0)).run)
@@ -899,5 +855,25 @@ theorem matrixFree_gramSchmidtProg (p : P) :
   fun _ _ _ Y A ξ => runsWithin_gramSchmidtProg p Y (fun _ => A) ξ
 
 end Specs
+
+/-- The registered tree of Gram–Schmidt instantiates, at every size, to the statement of the
+program family. -/
+theorem gramSchmidtProg.toStmt_compiled {P ι : Type} (p : P) (N : ℕ) (n : Fin 1 → ℕ) :
+    (gramSchmidtProg.compiled (ι := ι) p).toStmt N n =
+      ProgFamily.inst (r := 1) (b := 1) (fun _ _ N n h => (gramSchmidtProg p N (n 0) (h 0)).run)
+        N n :=
+  rfl
+
+/-- **Gram–Schmidt as a program**, in the matrix-free model: for every type of tags with
+decidable equality, every type of oracle names, every tag $p$ and every `RCLike` field $\Bbbk$,
+for every $N$ and $k$ and every $N \times k$ matrix $\mathbf{Y}$ over $\Bbbk$, held column-major
+in the one declared buffer, under exact arithmetic (for every oracle and tape, which the program
+does not use), the registered tree `gramSchmidtProg.compiled p` runs within the counts
+`gramSchmidtCount p N k` and $Nk + 3$ cells, and leaves
+$\mathsf{gramSchmidtQ}(\mathbf{Y})$ in the buffer.
+[GolubVanLoan2013, §5.2.8]; here rank-revealing, with no rank hypothesis.
+Result: gram-schmidt-program -/
+theorem matrixFreeGramSchmidt : MatrixFreeGramSchmidt := fun _ _ _ p _ _ =>
+  (matrixFree_gramSchmidtProg p).prog _ (gramSchmidtProg.toStmt_compiled p)
 
 end NLAlib
