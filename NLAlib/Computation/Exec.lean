@@ -102,6 +102,34 @@ def IExp.eval : IExp ℕ → ℕ
   | .mul a b => a.eval * b.eval
   | .mod a b => a.eval % b.eval
 
+/-- The value of a variable. -/
+@[simp] theorem IExp.eval_var (v : ℕ) : (IExp.var v).eval = v := rfl
+
+/-- The value of a constant. -/
+@[simp] theorem IExp.eval_const (n : ℕ) : (IExp.const n).eval = n := rfl
+
+/-- The value of the numeral `0`. -/
+@[simp] theorem IExp.eval_zero : (0 : IExp ℕ).eval = 0 := rfl
+
+/-- The value of the numeral `1`. -/
+@[simp] theorem IExp.eval_one : (1 : IExp ℕ).eval = 1 := rfl
+
+/-- The value of a numeral. -/
+@[simp] theorem IExp.eval_ofNat (n : ℕ) [n.AtLeastTwo] :
+    (no_index (OfNat.ofNat n : IExp ℕ)).eval = OfNat.ofNat n := rfl
+
+/-- The value of a sum. -/
+@[simp] theorem IExp.eval_add (a b : IExp ℕ) : (a + b).eval = a.eval + b.eval := rfl
+
+/-- The value of a truncated difference. -/
+@[simp] theorem IExp.eval_sub (a b : IExp ℕ) : (a - b).eval = a.eval - b.eval := rfl
+
+/-- The value of a product. -/
+@[simp] theorem IExp.eval_mul (a b : IExp ℕ) : (a * b).eval = a.eval * b.eval := rfl
+
+/-- The value of a remainder. -/
+@[simp] theorem IExp.eval_mod (a b : IExp ℕ) : (a % b).eval = a.eval % b.eval := rfl
+
 /-! ### The store -/
 
 /-- The store: a stack of tagged buffers of possibly uninitialised cells. -/
@@ -278,6 +306,123 @@ theorem Store.read_of_writeBlock_eq_some_of_ne {s s' : Store P K} {p q : P} {b o
   · exact Or.inr (by omega)
   · exact Or.inr (by omega)
 
+/-- A read that succeeds is in a buffer of the store. -/
+theorem Store.lt_size_of_read_eq_some {s : Store P K} {p : P} {b i : ℕ} {v : K}
+    (h : s.read p b i = some v) : b < s.size := by
+  unfold Store.read at h
+  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
+  · exact absurd h (by simp)
+  · exact (Array.getElem?_eq_some_iff.mp hb).1
+
+/-- A write that succeeds is in a buffer of the store. -/
+theorem Store.lt_size_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
+    (h : s.write p b i v = some s') : b < s.size := by
+  unfold Store.write at h
+  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
+  · exact absurd h (by simp)
+  · exact (Array.getElem?_eq_some_iff.mp hb).1
+
+/-- A write succeeds where a write of another value into the same cell succeeds. -/
+theorem Store.exists_write_eq_some_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ}
+    {v : K} (h : s.write p b i v = some s') (w : K) : ∃ s'', s.write p b i w = some s'' := by
+  unfold Store.write at h ⊢
+  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
+  · exact absurd h (by simp)
+  · dsimp only at h ⊢
+    split_ifs at h with hq
+    exact ⟨_, if_pos hq⟩
+
+/-- Two writes into one cell: the second overwrites the first. -/
+theorem Store.write_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
+    (h : s.write p b i v = some s') (w : K) : s'.write p b i w = s.write p b i w := by
+  unfold Store.write at h ⊢
+  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
+  · exact absurd h (by simp)
+  · dsimp only at h ⊢
+    split_ifs at h with hq
+    obtain ⟨rfl, hi⟩ := hq
+    cases h
+    have hb' : b < s.size := (Array.getElem?_eq_some_iff.mp hb).1
+    simp [Array.set!, hb', hi]
+
+/-- A write below the top of a pushed store is a write in the store under it. -/
+theorem Store.write_push_of_lt {s : Store P K} {x : P × Array (Option K)} {p : P} {b i : ℕ}
+    {v : K} (hb : b < s.size) :
+    Store.write (s.push x) p b i v = (s.write p b i v).map fun s' => s'.push x := by
+  unfold Store.write
+  rw [Array.getElem?_push, if_neg (Nat.ne_of_lt hb)]
+  rcases hb' : s[b]? with _ | ⟨q, arr⟩
+  · rfl
+  · dsimp only
+    split_ifs
+    · simp only [Array.set!_eq_setIfInBounds, Array.setIfInBounds_def, Array.size_push,
+        Option.map_some, Array.set_push, hb, Nat.lt_succ_of_lt hb,
+        dite_true]
+    · rfl
+
+/-- A write into the top buffer of a pushed store. -/
+theorem Store.write_push_size {s : Store P K} {p : P} {arr : Array (Option K)} {i : ℕ} {v : K}
+    (hi : i < arr.size) :
+    Store.write (s.push (p, arr)) p s.size i v = some (s.push (p, arr.set! i (some v))) := by
+  simp [Store.write, hi, Array.setIfInBounds_def, Array.set_push]
+
+/-- A read of the top buffer of a pushed store. -/
+theorem Store.read_push_size {s : Store P K} {p q : P} {arr : Array (Option K)} {i : ℕ} :
+    Store.read (s.push (q, arr)) p s.size i = if q = p then (arr[i]?).join else none := by
+  simp [Store.read]
+
+/-- A write keeps the number of buffers: the writes of a fold. -/
+theorem Store.size_of_foldlM_write_eq_some {s s' : Store P K} {p : P} {b : ℕ} (l : List ℕ)
+    (idx : ℕ → ℕ) (f : ℕ → K) (h : l.foldlM (fun s j => s.write p b (idx j) (f j)) s = some s') :
+    s'.size = s.size := by
+  induction l generalizing s with
+  | nil =>
+    simp only [List.foldlM_nil, pure, Option.some.injEq] at h
+    rw [h]
+  | cons i l ih =>
+    rw [List.foldlM_cons] at h
+    obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
+    rw [ih h₃, Store.size_of_write_eq_some h₂]
+
+/-- The writes of a fold keep every cell they do not write. -/
+theorem Store.read_of_foldlM_write_eq_some_of_forall_ne {s s' : Store P K} {p q : P}
+    {b b' i' : ℕ} (l : List ℕ) (idx : ℕ → ℕ) (f : ℕ → K)
+    (h : l.foldlM (fun s j => s.write p b (idx j) (f j)) s = some s')
+    (hne : ∀ j ∈ l, b' ≠ b ∨ i' ≠ idx j) : s'.read q b' i' = s.read q b' i' := by
+  induction l generalizing s with
+  | nil =>
+    simp only [List.foldlM_nil, pure, Option.some.injEq] at h
+    rw [h]
+  | cons i l ih =>
+    rw [List.foldlM_cons] at h
+    obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
+    rw [ih h₃ (fun j hj => hne j (List.mem_cons_of_mem _ hj))]
+    exact Store.read_of_write_eq_some_of_ne h₂ (hne i List.mem_cons_self)
+
+/-- A block write of the values $f(0), \dots, f(n-1)$ is the fold of their writes. -/
+theorem Store.writeBlock_map_range (s : Store P K) (p : P) (b off n : ℕ) (f : ℕ → K) :
+    s.writeBlock p b off ((List.range n).toArray.map f) =
+      (List.range n).foldlM (fun s j => s.write p b (off + j) (f j)) s := by
+  unfold Store.writeBlock
+  have hsize : ((List.range n).toArray.map f).size = n := by simp
+  rw [hsize]
+  have key : ∀ (l : List ℕ), (∀ j ∈ l, j < n) → ∀ s : Store P K,
+      l.foldlM (fun s i => do s.write p b (off + i) (← ((List.range n).toArray.map f)[i]?)) s =
+        l.foldlM (fun s j => s.write p b (off + j) (f j)) s := by
+    intro l hl
+    induction l with
+    | nil => intro s; rfl
+    | cons i l ih =>
+      intro s
+      have hi : i < n := hl i List.mem_cons_self
+      have hxs : ((List.range n).toArray.map f)[i]? = some (f i) := by simp [hi]
+      have ih' := ih (fun j hj => hl j (List.mem_cons_of_mem _ hj))
+      rw [List.foldlM_cons, List.foldlM_cons]
+      change Option.bind (Option.bind _ fun v => s.write p b (off + i) v) _ = _
+      rw [hxs, Option.bind_some]
+      exact congrArg _ (funext ih')
+  exact key _ (fun j hj => List.mem_range.mp hj) s
+
 end Store
 
 /-! ### States and interpretations -/
@@ -451,6 +596,99 @@ theorem exec_instr (i : Instr P ℕ ℕ) (st : St P K C) :
     exec I (.instr i) st = (i.run I.sem I.tape st.store st.pos).map fun r =>
       { st with store := r.1, pos := r.2, cnt := st.cnt + I.charge i.kind } := by
   rw [exec]
+
+/-- The run of a statement followed by `skip` is the run of the statement. -/
+theorem exec_seq_skip (s : Stmt P ι ℕ ℕ) (st : St P K C) :
+    exec I (.seq s .skip) st = exec I s st := by
+  rw [exec_seq]
+  rcases exec I s st with _ | st'
+  · rfl
+  · change exec I .skip st' = some st'
+    rw [exec]
+
+/-- The run of a builder that emits one statement before its continuation (a kernel, a loop, a
+conditional, a block), followed by `f`: the run of the first, then the run of `f`. -/
+theorem exec_run_bind {b : Builder P ι ℕ ℕ Unit} {X : Stmt P ι ℕ ℕ}
+    (hb : ∀ k, ContT.run b k = .seq X (k ())) (f : Unit → Builder P ι ℕ ℕ Unit)
+    (st : St P K C) : exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run) := by
+  have h1 : (b >>= f).run = .seq X (f ()).run := hb _
+  have h2 : b.run = .seq X .skip := hb _
+  rw [h1, h2, exec_seq, exec_seq_skip]
+
+/-- A loop invariant: if `R 0` holds at the start and, for each index `i` below the bound,
+the body run from a state satisfying `R i` succeeds in a state satisfying `R (i + 1)`, the loop
+succeeds in a state satisfying `R n`. -/
+theorem exists_exec_loop_eq_some_of_forall {n : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
+    {st : St P K C} (R : ℕ → St P K C → Prop) (h0 : R 0 st)
+    (hstep : ∀ i < n.eval, ∀ st, R i st → ∃ st', exec I (body i) st = some st' ∧ R (i + 1) st') :
+    ∃ st', exec I (.loop n body) st = some st' ∧ R n.eval st' := by
+  rw [exec_loop]
+  generalize n.eval = m at hstep ⊢
+  induction m with
+  | zero => exact ⟨st, rfl, h0⟩
+  | succ m ih =>
+    obtain ⟨st₁, h₁, hR₁⟩ := ih (fun i hi => hstep i (Nat.lt_succ_of_lt hi))
+    obtain ⟨st₂, h₂, hR₂⟩ := hstep m (Nat.lt_succ_self m) st₁ hR₁
+    refine ⟨st₂, ?_, hR₂⟩
+    rw [List.range_succ, List.foldlM_append, h₁]
+    simpa using h₂
+
+/-- The run of `skip`. -/
+theorem exec_skip (st : St P K C) : exec I .skip st = some st := by
+  rw [exec]
+
+/-- The run of a literal, then the rest. -/
+theorem exec_seq_instr_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ} {st : St P K C}
+    {v : K} {s : Store P K} (hv : I.sem.lit p q = some v)
+    (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
+    exec I (.seq (.instr (.lit p dst q)) t) st =
+      exec I t { st with store := s, cnt := st.cnt + I.charge (.lit p) } := by
+  simp [exec_seq, exec_instr, Instr.run, hv, hw, Instr.kind]
+
+/-- The run of an index literal, then the rest. -/
+theorem exec_seq_instr_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ} {t : Stmt P ι ℕ ℕ}
+    {st : St P K C} {v : K} {s : Store P K} (hv : I.sem.lit p (e.eval : ℚ) = some v)
+    (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
+    exec I (.seq (.instr (.litIdx p dst e)) t) st =
+      exec I t { st with store := s, cnt := st.cnt + I.charge (.lit p) } := by
+  simp [exec_seq, exec_instr, Instr.run, hv, hw, Instr.kind]
+
+/-- The run of a binary operation, then the rest. -/
+theorem exec_seq_instr_bin {p : P} {b : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+    {st : St P K C} {a c v : K} {s : Store P K}
+    (hx : st.store.read p x.buf x.idx.eval = some a)
+    (hy : st.store.read p y.buf y.idx.eval = some c) (hv : I.sem.bin p b a c = some v)
+    (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
+    exec I (.seq (.instr (.bin p b dst x y)) t) st =
+      exec I t { st with store := s, cnt := st.cnt + I.charge (.bin p b) } := by
+  simp [exec_seq, exec_instr, Instr.run, hx, hy, hv, hw, Instr.kind]
+
+/-- The run of a unary operation, then the rest. -/
+theorem exec_seq_instr_un {p : P} {u : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+    {st : St P K C} {a v : K} {s : Store P K} (hx : st.store.read p x.buf x.idx.eval = some a)
+    (hv : I.sem.un p u a = some v) (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
+    exec I (.seq (.instr (.un p u dst x)) t) st =
+      exec I t { st with store := s, cnt := st.cnt + I.charge (.un p u) } := by
+  simp [exec_seq, exec_instr, Instr.run, hx, hv, hw, Instr.kind]
+
+/-- The run of a copy, then the rest. -/
+theorem exec_seq_instr_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ} {st : St P K C}
+    {v : K} {s : Store P K} (hx : st.store.read p src.buf src.idx.eval = some v)
+    (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
+    exec I (.seq (.instr (.copy p dst src)) t) st =
+      exec I t { st with store := s, cnt := st.cnt + I.charge (.copy p) } := by
+  simp [exec_seq, exec_instr, Instr.run, hx, hw, Instr.kind]
+
+/-- The run of a draw, then the rest: the next tape value, and the tape position advances. -/
+theorem exec_seq_instr_draw {p : P} {d : Dist} {dst : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+    {st : St P K C} {s : Store P K}
+    (hw : st.store.write p dst.buf dst.idx.eval (I.tape d (st.pos d)) = some s) :
+    exec I (.seq (.instr (.draw p d dst)) t) st =
+      exec I t { st with
+        store := s
+        pos := Function.update st.pos d (st.pos d + 1)
+        cnt := st.cnt + I.charge (.draw p d) } := by
+  simp [exec_seq, exec_instr, Instr.run, hw, Instr.kind]
 
 end Exec
 
