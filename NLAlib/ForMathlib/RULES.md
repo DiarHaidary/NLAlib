@@ -35,6 +35,7 @@ and `docs/rules/DIGEST.md`.
 - **P1** A module imports only its own layer and lower (§2 table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation. [§2]
 - **P2** No file with imports only (no per-directory aggregator). [§2]
 - **P3** An `NLAlib` file never imports `NLAlibScaffold`. [§7]
+- **P12** An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml. [§7]
 
 ### Source and proof style
 
@@ -46,7 +47,7 @@ and `docs/rules/DIGEST.md`.
 - **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [§7]
 - **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§10], proof-agent brief
 - **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [§10]
-- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the library or lakefile.toml. [§7]
+- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml. [§7]
 
 ### Types and statement shape
 

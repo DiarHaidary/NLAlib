@@ -1801,7 +1801,7 @@ the basis, except that the run is `FStmt.exec` and the basis reaches it through 
 | **G58** (new) | | P | the program of a result is first-order and scoped by its type (`Prog P ι r b`), checked by Lean's kernel; under a named target it is the registered tree, frozen by its normal-form hash |
 | **G59** (new) | | D | the compiler and the builder are untrusted: theorems are about the compiled tree, and a non-parametric builder only yields a tree the proof must handle. A consequence of the design, not a theorem |
 | **G60** (new) | | P | the run on first-order syntax agrees with the current run of the instantiated statement (`FStmt.exec_eq_exec_toStmt`), so the existing lemmas and invariants apply |
-| **G61** (final audits) | | T | every constant of the library's `.olean` files is accepted by the kernel: `scripts/Replay.lean` replays them all through Lean core's `Environment.replay` (as `lean4checker`), so no proof elaborated under `debug.skipKernelTC` or added without checking survives; `scripts/Audit.lean` fails on an `unsafe` or `partial` constant. Script: about 120 lines over Lean core's replay |
+| **G61** (final audits) | | T | every constant of the package's `.olean` files (every `lean_lib`) is accepted by the kernel: `scripts/Replay.lean` replays them all through Lean core's `Environment.replay` (as `lean4checker`) onto a base read only from `.lake/packages/` and the toolchain, so no proof elaborated under `debug.skipKernelTC` or added without checking survives, in the library or in a module it could import; in `NLAlib` an `unsafe` or `partial` constant, an axiom or a use of `sorryAx`, `ofReduceBool`, `ofReduceNat` or `trustCompiler` fails it; the `.olean` files are those of the current sources (`lake build --no-build --rehash`); `scripts/Audit.lean` fails on an `unsafe` or `partial` constant. Script: about 200 lines over Lean core's replay, with fixtures (`scripts/replay_fixtures.sh`) |
 | **G62** (final audits) | | D | rule S9: no `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the sources or `lakefile.toml`. Hygiene: G61 is the guarantee |
 
 **Count.** 60 items, one removed (G35): 40 (P) (G4, G7, G19 partly (D)), 9 (T) (G39, G48,
@@ -2205,3 +2205,64 @@ not only a target. Fixed three ways:
    kernel), the emitter, `sha256sum` and the TOML subset parser, the manifest until item 2 (now
    pinned), G17, and G57's maintainer layer, a plan until `docs/targets.approved` and branch
    protection exist. New items G61 (the replay, T) and G62 (rule S9, D).
+
+**Replay audit, 2026-10-24** (on `328eb35`). An audit of `scripts/Replay.lean` itself. The replay
+trusted as its base every import outside its roots, modules built by this package included:
+`NLAlibScaffold` in CI and `NLAlibTools` locally (the stage check ran with the default root
+`NLAlib`). Fixture FxA, an honest module importing FxBase, whose theorem `1 = 2` was added with
+`env.addDeclCore … (doCheck := false)` (no `set_option`, no `unsafe`, no axiom), replayed with 0
+violations. In the library, a lemma forged that way in `NLAlibScaffold` and reached by `NLAlib`
+through an `NLAlibTools` import passed every check: P3 reads direct `NLAlibScaffold` imports only,
+nothing forbade importing `NLAlibTools`, S9's pattern missed the `doCheck := false` form, and
+`scripts/Audit.lean` sees no axiom. Blocking; fixed four ways:
+1. *The base is trusted by location.* After computing the base, the replay resolves every module
+   of its import closure through the search path (`findOLean`, as `importModules` does) and fails
+   unless the `.olean` lies under `.lake/packages/` of the working directory (the dependencies) or
+   under the running toolchain's `lib/lean`; the package's own `.lake/build` is never trusted.
+   FxA now fails ("1 base modules are read from outside the dependencies … and the toolchain …:
+   FxBase (read from …)"); a replay rooted at `NLAlibTools` alone fails on the 215 `NLAlib`
+   modules it would read from `.lake/build`.
+2. *Every library is replayed.* The roots are every `lean_lib` of `lakefile.toml`, read by the
+   script (a library setting `roots` or `globs` is refused); `REPLAY_ROOTS` only serves fixtures.
+   Strict are `NLAlib` and, recursively, every library one of its modules imports: there an
+   `unsafe` or `partial` constant is an error (the `_unsafe_rec` auxiliaries excepted).
+3. *The stage check replays as CI does*: both run the script with no environment variables, after
+   building `NLAlib`, `NLAlibScaffold` and `NLAlibTools`.
+4. *Rule P12*: an `NLAlib` file, the root `NLAlib.lean` included, imports no other `lean_lib` of
+   `lakefile.toml` (`NLAlibTools`, `NLAlibScaffold`, or one added later), with fixtures; P3 stays
+   as the scaffold rule. S9 also matches `addDeclCore`, `addDeclWithoutChecking` and `doCheck`.
+
+Non-blocking, all done:
+* (a) *Axioms in strict libraries.* In a strict module the replay also fails on an axiom and on a
+  constant whose type or value uses `sorryAx`, `Lean.ofReduceBool`, `Lean.ofReduceNat` or
+  `Lean.trustCompiler`, as defence in depth beside `scripts/Audit.lean` (which follows axioms
+  through every dependency). At this toolchain `native_decide` adds an auxiliary axiom
+  (`….nd._native.native_decide.ax_1_1`), which is caught as an axiom; elsewhere these are counted
+  (2 in `NLAlibTools`, which uses `sorry`).
+* (b) *Freshness.* The script read whatever `.olean` files it found. Lake at this toolchain has
+  `lake build --no-build` (exit code 3 when a target is out of date) and `--rehash` (hash every
+  file instead of trusting Lake's `.hash` files); CI and the stage check run
+  `lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools` just before the replay.
+  Tested: a byte appended to `NLAlibTools/Float.olean` is caught through its dependents (plain
+  `--no-build` misses it); a change of a module nothing depends on, such as the root
+  `NLAlib.olean`, is not, since Lake does not compare an output with the hash its trace records,
+  but the replay still kernel-checks what that file contains. In CI, lean-action runs with
+  `use-github-cache: false`: no `.lake` is restored from the GitHub cache, so the package is built
+  from its sources at every run (Mathlib's `.olean` files still come from `lake exe cache get`,
+  under `.lake/packages`, in the trusted base). Chosen over rebuilding unconditionally after the
+  restore: the same build without downloading the cache first, and sound, since a restored
+  `.lake` could hold outputs whose traces match the sources while their contents do not.
+* (c) `scripts/stage_check.sh` runs `lake exe mk_all --lib NLAlib --check`, so no `NLAlib` module
+  is unreachable from `NLAlib.lean`, hence unreplayed and unaudited (CI already did).
+* (d) The docstrings say that a hand-named `partial` `f._unsafe_rec` beside a safe `f` is counted
+  as an auxiliary, and is harmless: any use of it fails the replay as an unknown constant (FxD).
+
+The auditor's fixtures are now `scripts/replay_fixtures/` (seven modules) with
+`scripts/replay_fixtures.sh`, run by CI and the stage check and covered by CODEOWNERS; each is compiled into a temporary
+directory and replayed alone, and must fail for its own reason: FxA (base read from outside the
+dependencies), FxBase and FxB (the kernel: declaration type mismatch), FxC (an `unsafe` constant;
+the kernel: unknown constant), FxD (the kernel: unknown constant `helper._unsafe_rec`), FxE and
+FxF (an axiom); FxF, not strict, passes with 0 violations. On the package: 11871 constants of 425
+modules under `NLAlib`, `NLAlibScaffold` and `NLAlibTools` (strict: `NLAlib`) onto 280 base
+imports (5118 modules, all from the dependencies or the toolchain), 15 auxiliaries `_unsafe_rec`,
+0 violations.

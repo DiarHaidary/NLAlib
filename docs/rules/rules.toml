@@ -1003,6 +1003,16 @@ statement = '''A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `
 fix = '''Keep the Polynomial layer upstreamable: move what it needs to ForMathlib, or the declaration out of Polynomial'''
 
 [[rule]]
+id = "P12"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml'''
+fix = '''The library imports only itself, Mathlib and its dependencies: move what it needs into `NLAlib/` (scripts/Replay.lean trusts no module built by this package unchecked)'''
+
+[[rule]]
 id = "R1"
 area = "result ids"
 severity = "error"
@@ -1119,7 +1129,7 @@ severity = "error"
 check = "source"
 scope = "library"
 section = "§7"
-statement = '''No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the library or lakefile.toml'''
+statement = '''No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml'''
 fix = '''Write a total, safe definition; never switch off or bypass the kernel check (scripts/Replay.lean re-checks every constant)'''
 
 [[rule]]

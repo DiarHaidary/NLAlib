@@ -19,6 +19,10 @@ jobs:
           build-args: "--wfail NLAlib NLAlibScaffold"
           lint: false
           test: false
+          # no build outputs from the GitHub cache: the library is built from its sources at every
+          # run, so the kernel replay checks the current sources' .olean files (final audits,
+          # 2026-10-24); Mathlib's .olean files still come from `lake exe cache get`
+          use-github-cache: false
       - name: Root modules are current
         run: |
           lake exe mk_all --lib NLAlib --check
@@ -37,8 +41,12 @@ jobs:
         run: |
           lake build NLAlibTools
           lake exe mk_all --lib NLAlibTools --check
-      - name: Kernel replay (every constant of NLAlib and NLAlibTools re-checked by the kernel)
-        run: REPLAY_ROOTS="NLAlib NLAlibTools" REPLAY_STRICT=NLAlib lake env lean scripts/Replay.lean
+      - name: Build outputs are current (every hash recomputed)
+        run: lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
+      - name: Kernel replay (every constant of every lean_lib re-checked by the kernel)
+        run: lake env lean scripts/Replay.lean
+      - name: Kernel replay fixtures (each forgery of the final audits is rejected)
+        run: bash scripts/replay_fixtures.sh
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
       - name: Generated rule files are current (docs/rules/rules.toml)

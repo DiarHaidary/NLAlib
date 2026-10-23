@@ -426,6 +426,32 @@ MATRIX_VOCAB = re.compile(r'\bMatrix\b|\b(?:circulant|diagonal|vecMulVec|fromBlo
                           r'\.(?:PosDef|PosSemidef|IsHermitian|charpoly|det|trace|rank)\b')
 
 
+# Final audits, 2026-10-24: a forged lemma in `NLAlibScaffold`, reached by `NLAlib` through an
+# `NLAlibTools` import, was trusted as base by the replay. The library imports no other library of
+# the package (read from lakefile.toml; the two named ones always), in any file or the root.
+PACKAGE_LIBS = ('NLAlibScaffold', 'NLAlibTools')
+
+
+def other_package_libs(root):
+    lake = root / 'lakefile.toml'
+    names = set(PACKAGE_LIBS)
+    if lake.exists():
+        names |= {l['name'] for l in tomllib.loads(lake.read_text()).get('lean_lib', [])}
+    return names - {'NLAlib'}
+
+
+@rule('P12')
+def p_package_libs(c):
+    others = other_package_libs(c.root)
+    files = dict(c.lib_files)
+    top = c.root / 'NLAlib.lean'
+    if top.exists():
+        text = top.read_text()
+        files['NLAlib.lean'] = (text, leansrc.parse(text))
+    return [V('P12', p, ln, '(file)', mod) for p, (t, x) in files.items()
+            for ln, pub, mod in x['imports'] if mod.split('.')[0] in others]
+
+
 @rule('P11')
 def p_poly_imports(c):
     return [V('P11', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
@@ -568,7 +594,9 @@ def s_longline_option(c):
 # no axiom. The keywords and options that switch off or bypass the kernel, in code (comments and
 # docstrings stripped); in lakefile.toml, the options and arguments passed to every file.
 UNSAFE_RE = re.compile(r"(?<![\w.'])(?:unsafe|partial|implemented_by|extern)(?![\w'])|skipKernelTC|"
-                       r"\bset_option\s+(?:debug\.|\S*(?:[Kk]ernel|trust))")
+                       r"\bset_option\s+(?:debug\.|\S*(?:[Kk]ernel|trust))|"
+                       # meta code adding a declaration without the kernel (replay audit)
+                       r"\b(?:addDeclCore|addDeclWithoutChecking|doCheck)\b")
 LAKE_UNSAFE_RE = re.compile(r'debug\.|[Kk]ernel|trust|^\s*(?:more|weak)LeanArgs\b')
 
 

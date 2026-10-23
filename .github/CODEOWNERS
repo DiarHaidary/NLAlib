@@ -11,12 +11,14 @@
 /NLAlib/**/*Targets.lean @tchen01
 /.github/CODEOWNERS @tchen01
 # The checks the guarantees rest on (final audits, 2026-10-24): the target lint, the axiom audit,
-# the program checks, the kernel replay, the stage check and CI, and the build's pins (toolchain,
-# Lake configuration and manifest), whose SHA-256 the registry records.
+# the program checks, the kernel replay and its fixtures, the stage check and CI, and the build's
+# pins (toolchain, Lake configuration and manifest), whose SHA-256 the registry records.
 /scripts/Targets.lean @tchen01
 /scripts/Audit.lean @tchen01
 /scripts/Programs.lean @tchen01
 /scripts/Replay.lean @tchen01
+/scripts/replay_fixtures.sh @tchen01
+/scripts/replay_fixtures/ @tchen01
 /scripts/stage_check.sh @tchen01
 /.github/workflows/ @tchen01
 /lakefile.toml @tchen01

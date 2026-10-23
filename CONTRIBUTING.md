@@ -918,9 +918,15 @@ combine extracted declarations with a different checkout.
   `unsafe`, `partial`, `implemented_by` or `extern`, or sets a `debug.` option or a kernel option
   (`set_option debug.skipKernelTC true in` makes the elaborator skip the kernel, and an `unsafe`
   definition then inhabits any type with no axiom) [S9] (final audit, 2026-10-24). The checks
-  behind it: `scripts/Replay.lean` sends every constant of the library's `.olean` files to the
-  kernel again (Lean core's `Environment.replay`, as `lean4checker` does), and
-  `scripts/Audit.lean` fails on an `unsafe` or `partial` constant.
+  behind it: `scripts/Replay.lean` sends every constant of the package's `.olean` files (every
+  library of `lakefile.toml`) to the kernel again (Lean core's `Environment.replay`, as
+  `lean4checker` does), trusts as its base only modules read from `.lake/packages/` and the
+  toolchain, and in `NLAlib` (and any library it imports) fails on an `unsafe` or `partial`
+  constant, an axiom or a use of `sorryAx`, `Lean.ofReduceBool`, `Lean.ofReduceNat` or
+  `Lean.trustCompiler`; `scripts/Audit.lean` fails on an `unsafe` or `partial` constant.
+- `NLAlib`, every file and the root `NLAlib.lean`, imports no other library of the package:
+  neither `NLAlibTools` nor `NLAlibScaffold`, nor any library added to `lakefile.toml` [P12]
+  (final audits, 2026-10-24). It imports itself, Mathlib and Mathlib's dependencies only.
 - Instances: no global instance on a Mathlib type unless it is the one Mathlib would add
   (`Matrix.instMeasurableSpace` is the one exception, in `ForMathlib`; the others are allowlisted
   with their reason) [S6]. No `attribute [instance]` at file level [F9].
@@ -991,7 +997,8 @@ ports material [G2]. Before opening it, run:
 LEAN_NUM_THREADS=4 lake build --wfail NLAlib NLAlibScaffold
 lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --check
 lake env lean scripts/Audit.lean
-lake env lean scripts/Replay.lean
+lake build NLAlibTools && lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
+lake env lean scripts/Replay.lean && bash scripts/replay_fixtures.sh
 lake env lean scripts/Lint.lean
 lake env lean scripts/Programs.lean
 lake env lean scripts/Targets.lean

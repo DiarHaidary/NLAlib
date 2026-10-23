@@ -313,6 +313,35 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: replay audit fixed (2026-10-24)
+
+Branch `computation/stage1`, after `328eb35`. An audit of `scripts/Replay.lean`; findings and fixes
+in `docs/design/Computation.md`, "Final audits, 2026-10-24", "Replay audit". Blocking: the replay
+trusted every import outside its roots as base, modules this package builds included, so a lemma
+added in `NLAlibScaffold` with `addDeclCore … (doCheck := false)` and reached by `NLAlib` through
+`NLAlibTools` passed every check. Fixed: every base module must be read from `.lake/packages/` or
+the toolchain's `lib/lean`; the roots are every `lean_lib` of `lakefile.toml`, strict for
+`NLAlib` and any library it imports; the stage check replays as CI does; rule P12 (`NLAlib`
+imports no other library of the package); S9 also matches `addDeclCore` and `doCheck`.
+Non-blocking, done: strict modules fail on an axiom or a use of `sorryAx`, `ofReduceBool`,
+`ofReduceNat` or `trustCompiler`; freshness by `lake build --no-build --rehash` before the replay,
+and CI no longer restores `.lake` from the GitHub cache (`use-github-cache: false`); the stage
+check runs `mk_all --lib NLAlib --check`; the `_unsafe_rec` docstrings. The auditor's fixtures are
+`scripts/replay_fixtures/` with `scripts/replay_fixtures.sh` (CI and stage check): FxA, FxBase,
+FxB, FxC, FxD, FxE and FxF each fail for their own reason; FxF passes when not strict.
+
+Checks (logs in the session scratchpad, `comp-build/replay-fix/`): `lake build --wfail NLAlib` 4018
+jobs, 0 warnings; replay of the package 11871 constants of 425 modules, 0 violations (15
+auxiliaries `_unsafe_rec`); replay rooted at `NLAlibTools` alone fails on 215 `NLAlib` modules read
+from `.lake/build`; full `scripts/stage_check.sh` (the approval read from a scratch hash file): 419
+proved modules, 4016 jobs 0 warnings, audit 11760 declarations 0 violations, lint 0 errors, `mk_all
+--lib NLAlib --check` clean, freshness 4031 jobs up to date, replay 0 violations, replay fixtures 8
+verdicts as expected, `Programs.lean` 18 programs 0 violations, `Targets.lean` 5 targets 0
+violations, access-model fixtures 9 theorems, constants and LaTeX 0 problems, rules 0 errors (73 in
+the baseline), duplicates 0 classes (the rules step first failed on V6, a backquoted `lean_lib` in
+the new CONTRIBUTING text, reworded; it and the duplicates step were rerun on the same extraction);
+script tests 50 OK.
+
 ## Computation stage 1: final audits fixed (2026-10-24)
 
 Branch `computation/stage1`, after `0bd2567`. Two independent final audits; findings and fixes in

@@ -24,13 +24,14 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - P8 Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure.
 - P9 A general fact (no NLAlib, matrix or measure vocabulary) lives in ForMathlib.
 - P11 A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial` [Polynomial only].
+- P12 An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml.
 - S1 No `simp_all`.
 - S2 No search tactic left in (`exact?`, `apply?`, `rw?`, `simp?`, `aesop?`).
 - S4 A proof has at most 80 lines.
 - S6 No global instance on a Mathlib type, unless it is the one Mathlib would add.
 - S7 A line has at most 100 characters, unless one identifier or a URL makes it long.
 - S8 `set_option linter.style.longLine false in` only on a declaration with a long line.
-- S9 No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the library or lakefile.toml.
+- S9 No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml.
 - T1 The Euclidean norm is `‖WithLp.toLp 2 x‖`, never `√(x ⬝ᵥ x)`.
 - T2 An `ℝ≥0` quantity in a statement is written with `‖·‖₊`, never `Real.toNNReal`.
 - T3 Only `Matrix.Norms.L2Operator` is opened, never `…Frobenius` or `…Elementwise`.

@@ -142,6 +142,7 @@ FIX = {
     'P1': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlib.Sketching.B\n\n')}, {}),
     'P2': ({'NLAlib/Matrix/B.lean': lean('')}, {}),
     'P3': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibScaffold.Matrix.B\n\n')}, {}),
+    'P12': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibTools.Float\n\n')}, {}),
     'P4': ([decl('Real.foo', ': specNorm 0 = 0', module='NLAlib.ForMathlib.Data.Real.Basic',
                  deps=['NLAlib.specNorm'])],
            [decl('Real.foo', ': (0 : ℝ) = 0', module='NLAlib.ForMathlib.Data.Real.Basic')]),
@@ -437,7 +438,8 @@ class RuleTests(unittest.TestCase):
                      '/-- Doc. -/\n@[extern "f"] def f (n : ℕ) : ℕ := n',
                      '/-- Doc. -/\ntheorem t : True := by\n  set_option debug.byAsSorry true in trivial',
                      '-- why\nset_option debug.skipKernelTC true in\n' + FOO,
-                     '/-- Doc. -/\nunsafe inductive U : Type where\n  | mk : (U → U) → U']:
+                     '/-- Doc. -/\nunsafe inductive U : Type where\n  | mk : (U → U) → U',
+                     'run_cmd do\n  match (← getEnv).addDeclCore 0 0 d none (doCheck := false) with\n  | _ => pure ()']:
             with self.subTest(body=body):
                 self.assertTrue(violations('S9', body), body)
         for lake in ['[leanOptions]\ndebug.skipKernelTC = true\n',
@@ -445,6 +447,19 @@ class RuleTests(unittest.TestCase):
             with self.subTest(lake=lake):
                 self.assertTrue(violations('S9', {'lakefile.toml': lake}), lake)
         self.assertEqual(violations('S9', '/-- Doc. -/\ntheorem partialSum_le : True := trivial'), [])
+
+    def test_package_libraries_not_imported(self):
+        # P12 (final audits, 2026-10-24): neither tools nor scaffold, in a file or in the root,
+        # nor a library that lakefile.toml adds; a Mathlib or NLAlib import passes
+        for files in [{'NLAlib/Matrix/A.lean': lean(header=HDR + 'import NLAlibScaffold\n\n')},
+                      {'NLAlib.lean': 'module\n\npublic import NLAlib.Matrix.A\npublic import NLAlibTools\n'},
+                      {'lakefile.toml': '[[lean_lib]]\nname = "NLAlib"\n\n[[lean_lib]]\nname = "NLAlibExtra"\n',
+                       'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibExtra.B\n\n')}]:
+            with self.subTest(files=files):
+                self.assertTrue(violations('P12', files), files)
+        self.assertEqual(violations('P12', {
+            'NLAlib.lean': 'module\n\npublic import NLAlib.Matrix.A\n',
+            'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.B\nimport NLAlibToolsLike\n\n')}), [])
 
     def test_long_line_exemption(self):
         self.assertTrue(check_rules.long_line_exempt('  `' + 'x' * 120 + '`.'))
