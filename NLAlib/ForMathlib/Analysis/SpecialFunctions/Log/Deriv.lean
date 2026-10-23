@@ -24,6 +24,8 @@ candidates for `Mathlib.Analysis.SpecialFunctions.Log.Deriv`.
 ## Main results
 
 * `Real.log_one_add_le_cubic`, `Real.log_one_add_le_cubic_of_nonpos`.
+* `Real.log_one_add_le_sub_sq_div`: $\log(1 + s) \le s - s^2/(2(1 + s))$ for $s \ge 0$, the
+  upper Dasgupta–Gupta exponent at every $s$.
 * `Real.log_one_sub_le_quadratic`.
 * `Real.neg_log_one_sub_le`.
 * `Real.log_nine_le_nine_div_four`, `Real.log_twentyOne_le_sixtyOne_div_twenty`.
@@ -77,6 +79,42 @@ theorem log_one_add_le_cubic {u : ℝ} (h1 : -1 < u) :
       have : 1 - t + t ^ 2 - 1 / (1 + t) = t ^ 3 / (1 + t) := by field_simp; ring
       rw [this]; positivity
   have := hmono (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 h0.le) h0.le
+  simp only [f, add_zero, log_one] at this
+  norm_num at this
+  linarith
+
+/-- For $s \ge 0$,
+$$\log(1 + s) \le s - \frac{s^2}{2(1 + s)} \,,$$
+valid at every $s \ge 0$, unlike the cubic `Real.log_one_add_le_cubic`, whose bound is useless
+for large $s$. The difference has derivative $s^2/(2(1 + s)^2) \ge 0$. It gives the upper tail
+exponent $s - \log(1 + s) \ge s^2/(2(1 + s)) \ge \min(s^2, s)/4$ of a $\chi^2$ variable. -/
+theorem log_one_add_le_sub_sq_div {s : ℝ} (hs : 0 ≤ s) :
+    log (1 + s) ≤ s - s ^ 2 / (2 * (1 + s)) := by
+  let f : ℝ → ℝ := fun t => t - t ^ 2 / (2 * (1 + t)) - log (1 + t)
+  have hderiv : ∀ t, 0 ≤ t → HasDerivAt f (t ^ 2 / (2 * (1 + t) ^ 2)) t := by
+    intro t ht
+    have h1 : 0 < 1 + t := by linarith
+    have hlog : HasDerivAt (fun x : ℝ => log (1 + x)) (1 / (1 + t)) t :=
+      ((hasDerivAt_id' t).const_add 1).log h1.ne'
+    have hd : HasDerivAt (fun x : ℝ => 2 * (1 + x)) (2 * 1) t :=
+      ((hasDerivAt_id' t).const_add 1).const_mul 2
+    have hq := (hasDerivAt_pow 2 t).div hd (by positivity)
+    have h1' : 1 + t ≠ 0 := h1.ne'
+    refine (((hasDerivAt_id' t).sub hq).sub hlog).congr_deriv ?_
+    simp only [Nat.cast_ofNat, Nat.add_one_sub_one, pow_one, mul_one]
+    field_simp
+    ring
+  have hmono : MonotoneOn f (Set.Ici 0) := by
+    refine monotoneOn_of_deriv_nonneg (convex_Ici 0) ?_ ?_ ?_
+    · exact fun t ht => (hderiv t ht).continuousAt.continuousWithinAt
+    · intro t ht
+      rw [interior_Ici] at ht
+      exact (hderiv t (le_of_lt ht)).differentiableAt.differentiableWithinAt
+    · intro t ht
+      rw [interior_Ici] at ht
+      rw [(hderiv t (le_of_lt ht)).deriv]
+      positivity
+  have := hmono (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 hs) hs
   simp only [f, add_zero, log_one] at this
   norm_num at this
   linarith

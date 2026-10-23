@@ -67,20 +67,16 @@ private theorem abs_sub_le_sum_of_abs_update_sub_le
   simpa using key Finset.univ
 
 omit [Fintype ι] [DecidableEq ι] in
-/-- A bounded measurable $F$ makes $e^{sF}$ and $e^{sF} \log e^{sF}$ integrable under a finite
-measure. -/
-private theorem integrable_exp_mul_of_abs_le {α : Type*} {mα : MeasurableSpace α}
+/-- A bounded measurable $F$ makes $e^{sF} \log e^{sF}$ integrable under a finite measure. -/
+private theorem integrable_exp_mul_mul_log_of_abs_le {α : Type*} {mα : MeasurableSpace α}
     {ρ : Measure α} [IsFiniteMeasure ρ] {F : α → ℝ} (hF : Measurable F) {B : ℝ}
     (hB : ∀ a, |F a| ≤ B) (s : ℝ) :
-    Integrable (fun a => rexp (s * F a)) ρ ∧
-      Integrable (fun a => rexp (s * F a) * Real.log (rexp (s * F a))) ρ := by
+    Integrable (fun a => rexp (s * F a) * Real.log (rexp (s * F a))) ρ := by
   have hsB : ∀ a, |s * F a| ≤ |s| * B := fun a => by
     rw [abs_mul]; gcongr; exact hB a
   have hb : ∀ a, |rexp (s * F a)| ≤ rexp (|s| * B) := fun a => by
     rw [abs_of_pos (Real.exp_pos _), Real.exp_le_exp]
     exact (le_abs_self _).trans (hsB a)
-  refine ⟨Integrable.of_bound (by fun_prop) _ (ae_of_all _ fun a => by
-    rw [Real.norm_eq_abs]; exact hb a), ?_⟩
   simp only [Real.log_exp]
   refine Integrable.of_bound (by fun_prop) (rexp (|s| * B) * (|s| * B))
     (ae_of_all _ fun a => ?_)
@@ -104,10 +100,11 @@ private theorem hasSubgaussianMGF_pi_sub_integral_of_abs_update_sub_le
     linarith
   have hfib : ∀ i x, Measurable (fun y => f (Function.update x i y)) := fun i x =>
     hf.comp (measurable_update x)
-  have hint := fun s => (integrable_exp_mul_of_abs_le (ρ := Measure.pi ν) hf hbd s).1
+  have hint (s : ℝ) : Integrable (fun x => rexp (s * f x)) (Measure.pi ν) :=
+    integrable_exp_mul_of_mem_Icc hf.aemeasurable (ae_of_all _ fun x => abs_le.mp (hbd x))
   refine hasSubgaussianMGF_sub_integral_of_entropy_le hint (fun s => ?_)
   have hT := entropy_pi_le_sum ν (by fun_prop) (fun x => (Real.exp_pos (s * f x)).le) (hint s)
-    (integrable_exp_mul_of_abs_le (ρ := Measure.pi ν) hf hbd s).2
+    (integrable_exp_mul_mul_log_of_abs_le (ρ := Measure.pi ν) hf hbd s)
   refine hT.trans ?_
   have hent : ∀ i x, entropy (ν i) (fun y => rexp (s * f (Function.update x i y))) ≤
       s ^ 2 * (c i : ℝ) ^ 2 / 8 * ∫ y, rexp (s * f (Function.update x i y)) ∂ν i :=
@@ -116,8 +113,9 @@ private theorem hasSubgaussianMGF_pi_sub_integral_of_abs_update_sub_le
       rwa [Function.update_idem] at h) s
   have hnn : ∀ i x, 0 ≤ entropy (ν i) (fun y => rexp (s * f (Function.update x i y))) :=
     fun i x => entropy_nonneg (ae_of_all _ fun _ => (Real.exp_pos _).le)
-      (integrable_exp_mul_of_abs_le (hfib i x) (fun y => hbd _) s).1
-      (integrable_exp_mul_of_abs_le (hfib i x) (fun y => hbd _) s).2
+      (integrable_exp_mul_of_mem_Icc (hfib i x).aemeasurable
+        (ae_of_all _ fun y => abs_le.mp (hbd _)))
+      (integrable_exp_mul_mul_log_of_abs_le (hfib i x) (fun y => hbd _) s)
   set E := ∫ x, rexp (s * f x) ∂Measure.pi ν with hE
   calc ∑ i, ∫ x, entropy (ν i) (fun y => rexp (s * f (Function.update x i y))) ∂Measure.pi ν
       ≤ ∑ i, ∫ x, s ^ 2 * (c i : ℝ) ^ 2 / 8 *

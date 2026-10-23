@@ -229,11 +229,6 @@ theorem gmresIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) 
   rw [gmresIterate, minResidualInverse_mulVec_eq_of_mem (Matrix.mulVec_injective_iff_isUnit.mpr hA)
     hxs' (mem_krylovSpace_of_krylovGrade_le hA hxs' h), add_sub_cancel]
 
-omit [DecidableEq n] [Fintype r] [DecidableEq r] in
-/-- On an empty index type every Euclidean norm vanishes. -/
-private lemma norm_toLp_eq_zero_of_isEmpty [IsEmpty n] (v : n → 𝕜) : ‖WithLp.toLp 2 v‖ = 0 := by
-  rw [Subsingleton.elim v 0, WithLp.toLp_zero, norm_zero]
-
 omit [Fintype r] [DecidableEq r] in
 /-- **The GMRES bound for diagonalisable $\mathbf{A}$**: if
 $\mathbf{A}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and
@@ -251,25 +246,9 @@ theorem norm_sub_mulVec_gmresIterate_le_pseudoConditionNumber_mul {A V : Matrix 
     (hη : ∀ i, ‖p.eval (d i)‖ ≤ η) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
       pseudoConditionNumber V * η * ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
-  rcases isEmpty_or_nonempty n with hn | ⟨⟨i⟩⟩
-  · rw [norm_toLp_eq_zero_of_isEmpty, norm_toLp_eq_zero_of_isEmpty, mul_zero]
-  have hη0 : 0 ≤ η := (norm_nonneg _).trans (hη i)
-  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  have hpA : aeval A p = V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹ := by
-    rw [← aeval_diagonal_self, ← aeval_mul_eq_mul_aeval_of_mul_eq_mul hAV, Matrix.mul_assoc,
-      Matrix.mul_nonsing_inv _ hdet, Matrix.mul_one]
-  have hnorm : specNorm (aeval A p) ≤ pseudoConditionNumber V * η := by
-    rw [hpA, pseudoConditionNumber_of_isUnit hV]
-    calc specNorm (V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹)
-        ≤ specNorm V * specNorm (Matrix.diagonal fun i => p.eval (d i)) * specNorm V⁻¹ :=
-          (specNorm_mul_le _ _).trans
-            (mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) (specNorm_nonneg _))
-      _ ≤ specNorm V * η * specNorm V⁻¹ := by
-          gcongr
-          exact specNorm_diagonal_le hη0 hη
-      _ = specNorm V * specNorm V⁻¹ * η := by ring
   refine (norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec A b x₀ hp hp₀).trans ?_
-  exact (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_right hnorm (norm_nonneg _))
+  exact (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_right
+    (specNorm_aeval_le_pseudoConditionNumber_mul hV hAV p hη) (norm_nonneg _))
 
 omit [Fintype r] [DecidableEq r] in
 /-- **The field-of-values bound** (Elman): if the Hermitian part of $\mathbf{A}$ has spectrum in
@@ -284,61 +263,12 @@ theorem norm_sub_mulVec_gmresIterate_le_sqrt_one_sub_sq_pow {A : Matrix n n 𝕜
     (b x₀ : n → 𝕜) (q : ℕ) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
       Real.sqrt (1 - (a / a') ^ 2) ^ q * ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
-  set c := Real.sqrt (1 - (a / a') ^ 2)
-  have h1 : ((1 : 𝕜[X])).degree ≤ q := degree_one_le.trans (by exact_mod_cast Nat.zero_le q)
-  rcases eq_or_ne a' 0 with rfl | ha'
-  · have hc : c = 1 := by simp only [c, div_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
-      zero_pow, sub_zero, Real.sqrt_one]
-    rw [hc, one_pow, one_mul]
-    have h := norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec A b x₀ h1 eval_one
-    rwa [map_one, Matrix.one_mulVec] at h
-  have ha'0 : 0 < a' := lt_of_le_of_ne ((specNorm_nonneg A).trans hA) (Ne.symm ha')
-  set α : ℝ := a / a' ^ 2 with hα
-  have hα0 : 0 ≤ α := by positivity
-  set B : Matrix n n 𝕜 := 1 - (α : 𝕜) • A
   have hH : a • (1 : Matrix n n 𝕜) ≤ hermitianPart A :=
     ((isHermitian_hermitianPart A).smul_one_le_iff_spectrum_subset_Ici a).mpr hs
-  have hB : ∀ v, ‖WithLp.toLp 2 (B *ᵥ v)‖ ≤ c * ‖WithLp.toLp 2 v‖ := by
-    intro v
-    have hq : a * ‖WithLp.toLp 2 v‖ ^ 2 ≤ RCLike.re (quadForm A v) := by
-      have h := re_quadForm_le_re_quadForm_of_le hH v
-      rwa [re_quadForm_real_smul_one, re_quadForm_hermitianPart] at h
-    have hAv : ‖WithLp.toLp 2 (A *ᵥ v)‖ ≤ a' * ‖WithLp.toLp 2 v‖ :=
-      (norm_toLp_mulVec_le A v).trans (mul_le_mul_of_nonneg_right hA (norm_nonneg _))
-    have hexp : ‖WithLp.toLp 2 (B *ᵥ v)‖ ^ 2 = ‖WithLp.toLp 2 v‖ ^ 2 -
-        2 * α * RCLike.re (quadForm A v) + α ^ 2 * ‖WithLp.toLp 2 (A *ᵥ v)‖ ^ 2 := by
-      have e : WithLp.toLp 2 (B *ᵥ v) =
-          WithLp.toLp 2 v - (α : 𝕜) • WithLp.toLp 2 (A *ᵥ v) := by
-        rw [Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec, WithLp.toLp_sub,
-          WithLp.toLp_smul]
-      rw [e, @norm_sub_sq 𝕜, inner_smul_right, EuclideanSpace.inner_toLp_toLp, dotProduct_comm,
-        ← quadForm_def, RCLike.re_ofReal_mul, norm_smul, RCLike.norm_ofReal, abs_of_nonneg hα0]
-      ring
-    have hle : ‖WithLp.toLp 2 (B *ᵥ v)‖ ^ 2 ≤ (1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2 := by
-      have h2 : α ^ 2 * ‖WithLp.toLp 2 (A *ᵥ v)‖ ^ 2 ≤ α ^ 2 * (a' * ‖WithLp.toLp 2 v‖) ^ 2 :=
-        mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (norm_nonneg _) hAv 2) (sq_nonneg _)
-      have h3 : 2 * α * (a * ‖WithLp.toLp 2 v‖ ^ 2) ≤ 2 * α * RCLike.re (quadForm A v) :=
-        mul_le_mul_of_nonneg_left hq (by positivity)
-      have hid : ‖WithLp.toLp 2 v‖ ^ 2 - 2 * α * (a * ‖WithLp.toLp 2 v‖ ^ 2) +
-          α ^ 2 * (a' * ‖WithLp.toLp 2 v‖) ^ 2 = (1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2 := by
-        rw [hα]
-        field_simp
-        ring
-      rw [hexp]
-      linarith
-    calc ‖WithLp.toLp 2 (B *ᵥ v)‖ = Real.sqrt (‖WithLp.toLp 2 (B *ᵥ v)‖ ^ 2) :=
-          (Real.sqrt_sq (norm_nonneg _)).symm
-      _ ≤ Real.sqrt ((1 - (a / a') ^ 2) * ‖WithLp.toLp 2 v‖ ^ 2) := Real.sqrt_le_sqrt hle
-      _ = c * ‖WithLp.toLp 2 v‖ := by
-          rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
-  have hpow : ∀ k v, ‖WithLp.toLp 2 ((B ^ k) *ᵥ v)‖ ≤ c ^ k * ‖WithLp.toLp 2 v‖ := by
-    intro k
-    induction k with
-    | zero => intro v; rw [pow_zero, pow_zero, Matrix.one_mulVec, one_mul]
-    | succ k ih =>
-      intro v
-      rw [pow_succ', ← Matrix.mulVec_mulVec, pow_succ, mul_comm (c ^ k) c, mul_assoc]
-      exact (hB _).trans (mul_le_mul_of_nonneg_left (ih v) (Real.sqrt_nonneg _))
+  set α : ℝ := a / a' ^ 2
+  have hB : specNorm (1 - (α : 𝕜) • A) ≤ Real.sqrt (1 - (a / a') ^ 2) := by
+    rw [← RCLike.real_smul_eq_coe_smul]
+    exact specNorm_one_sub_smul_le_of_smul_one_le_hermitianPart ha.le hH hA
   have hd1 : (1 - C (α : 𝕜) * X : 𝕜[X]).natDegree ≤ 1 :=
     (natDegree_sub_le _ _).trans (max_le (by rw [natDegree_one]; exact zero_le_one)
       ((natDegree_C_mul_le _ _).trans (by rw [natDegree_X])))
@@ -347,11 +277,12 @@ theorem norm_sub_mulVec_gmresIterate_le_sqrt_one_sub_sq_pow {A : Matrix n n 𝕜
       ((Nat.mul_le_mul_left q hd1).trans_eq (mul_one q)))
   have hp₀ : ((1 - C (α : 𝕜) * X) ^ q).eval 0 = 1 := by
     simp only [eval_pow, eval_sub, eval_one, eval_mul, eval_C, eval_X, mul_zero, sub_zero, one_pow]
-  have haeval : aeval A ((1 - C (α : 𝕜) * X) ^ q) = B ^ q := by
+  have haeval : aeval A ((1 - C (α : 𝕜) * X) ^ q) = (1 - (α : 𝕜) • A) ^ q := by
     rw [map_pow, map_sub, map_one, map_mul, aeval_C, aeval_X, Algebra.algebraMap_eq_smul_one,
       Matrix.smul_mul, Matrix.one_mul]
   refine (norm_sub_mulVec_gmresIterate_le_norm_aeval_mulVec A b x₀ hp hp₀).trans ?_
   rw [haeval]
-  exact hpow q _
+  refine (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
+  exact (specNorm_pow_le _ q).trans (pow_le_pow_left₀ (specNorm_nonneg _) hB q)
 
 end NLAlib

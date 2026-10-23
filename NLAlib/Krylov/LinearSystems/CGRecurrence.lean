@@ -159,11 +159,6 @@ private lemma star_dotProduct_eq_zero_of_mem_sup {M : Submodule 𝕜 (n → 𝕜
   obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.1 hz
   rw [star_add, add_dotProduct, star_smul, smul_dotProduct, hM u hu, hp, smul_zero, add_zero]
 
-omit [DecidableEq n] in
-private lemma star_dotProduct_mulVec_eq (hA : A.IsHermitian) (u v : n → 𝕜) :
-    star u ⬝ᵥ (A *ᵥ v) = star (A *ᵥ u) ⬝ᵥ v := by
-  rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec, hA.eq]
-
 /-- $\mathbf{p}_k^{\mathsf{H}}\mathbf{r}_k = \|\mathbf{r}_k\|^2$ once
 $\mathbf{r}_k \perp \mathcal{K}_k$. -/
 private lemma star_p_dotProduct_r {k : ℕ}
@@ -260,7 +255,7 @@ private lemma orth_succ (hA : A.PosDef) {k : ℕ}
   rw [hsup] at hy
   refine star_dotProduct_eq_zero_of_mem_sup (fun u hu => ?_) ?_ hy
   · rw [hp', Matrix.mulVec_add, Matrix.mulVec_smul, dotProduct_add, dotProduct_smul, hp u hu,
-      smul_zero, add_zero, star_dotProduct_mulVec_eq hA.isHermitian]
+      smul_zero, add_zero, hA.isHermitian.star_dotProduct_mulVec_comm, ← Matrix.star_dotProduct]
     exact horth _ (mulVec_mem_krylovSpace_succ hu)
   · set ρ' := ‖WithLp.toLp 2 (cgState A b x₀ (k + 1)).r‖ ^ 2 with hρ'def
     have hrr : star s.r ⬝ᵥ (cgState A b x₀ (k + 1)).r = 0 := horth _ (cgState_r_mem A b x₀ k)
@@ -269,8 +264,8 @@ private lemma orth_succ (hA : A.PosDef) {k : ℕ}
     have hX : (α : 𝕜) * (star s.p ⬝ᵥ (A *ᵥ (cgState A b x₀ (k + 1)).r)) = -(ρ' : 𝕜) := by
       have h : (α : 𝕜) • star (A *ᵥ s.p) = star (s.r - (cgState A b x₀ (k + 1)).r) := by
         rw [hr', sub_sub_cancel, star_smul, RCLike.star_def, RCLike.conj_ofReal]
-      rw [star_dotProduct_mulVec_eq hA.isHermitian, ← smul_eq_mul, ← smul_dotProduct, h,
-        star_sub, sub_dotProduct, hrr, hr'r', zero_sub]
+      rw [hA.isHermitian.star_dotProduct_mulVec_comm, ← Matrix.star_dotProduct, ← smul_eq_mul,
+        ← smul_dotProduct, h, star_sub, sub_dotProduct, hrr, hr'r', zero_sub]
     have hα : (α : 𝕜) ≠ 0 := by exact_mod_cast (div_pos hρ hQ).ne'
     rw [hp', Matrix.mulVec_add, Matrix.mulVec_smul, dotProduct_add, dotProduct_smul, hquad,
       smul_eq_mul]

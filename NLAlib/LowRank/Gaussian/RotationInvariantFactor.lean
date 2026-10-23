@@ -105,21 +105,6 @@ theorem rotationInvariantFactor_le_rotationInvariantFactor {r r' l q : ℕ} (hq 
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {l : Type*} [Fintype l]
 
-/-- The two-level block matrix is positive semidefinite for $a, b \ge 0$. -/
-private theorem posSemidef_fromBlocks_smul_one' {s t : Type*} [DecidableEq s] [DecidableEq t]
-    {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
-    (Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0 (b • (1 : Matrix t t ℝ))).PosSemidef := by
-  rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
-  refine Matrix.PosSemidef.diagonal fun i => ?_
-  cases i <;> assumption
-
-/-- The polar factor has the range of the matrix. -/
-private theorem range_polarFactor {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
-    (A : Matrix m n ℝ) :
-    LinearMap.range A.mulVecLin = LinearMap.range (polarFactor A).mulVecLin := by
-  refine le_antisymm (range_le_iff_exists_mul.mpr ⟨_, (polarFactor_mul_sqrt A).symm⟩)
-    (range_le_iff_exists_mul.mpr ⟨_, rfl⟩)
-
 /-- **Nyström for a matrix with two eigenvalues** (the hard instance): for $\mathbf{Y}$ on
 $(s \oplus t) \times l$ with a left unitarily invariant law and full column rank almost surely,
 $q = \lvert s\rvert$, $r = \lvert s\rvert + \lvert t\rvert$, $q + 2 \le \ell$ and
@@ -145,7 +130,8 @@ theorem integral_nuclearNorm_fromBlocks_sub_nystrom_le_of_isLeftUnitarilyInvaria
   classical
   have := hY.isProbabilityMeasure_iff.2 inferInstance
   set D := Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0 (b • (1 : Matrix t t ℝ))
-  have hD : D.PosSemidef := posSemidef_fromBlocks_smul_one' ha hb
+  have hD : D.PosSemidef :=
+    (Matrix.PosSemidef.one.smul ha).fromBlocks_zero₁₂_zero₂₁ (Matrix.PosSemidef.one.smul hb)
   have hΨ := hasLaw_polarFactor_of_isLeftUnitarilyInvariant hY hYr
   have hl : Fintype.card l ≤ Fintype.card (s ⊕ t) := by
     obtain ⟨ω, hω⟩ := hYr.exists
@@ -165,7 +151,8 @@ theorem integral_nuclearNorm_fromBlocks_sub_nystrom_le_of_isLeftUnitarilyInvaria
         b * ((Fintype.card t : ℝ) - Fintype.card l) := by
     filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame hΨ hl,
       ae_rank_mul_eq_min_of_hasLaw_haarFrame W hΨ] with ω hω hr
-    rw [hD.nystrom_eq_of_range_eq (range_polarFactor (Y ω)), hWΨ]
+    rw [hD.nystrom_eq_of_range_eq (rangeProjector_inj.mp (rangeProjector_polarFactor (Y ω))).symm,
+      hWΨ]
     refine hω.nuclearNorm_fromBlocks_sub_nystrom_le ?_ ha hb
     rw [mulVec_injective_iff_rank_eq, Matrix.rank_conjTranspose, ← hWΨ, hr, hWrank,
       min_eq_left (by omega)]

@@ -506,12 +506,6 @@ private theorem nuclearNorm_submatrix_sub_nystrom {ι : Type*} [Fintype ι] [Dec
   rw [h]
   exact nuclearNorm_submatrix_equiv (D - nystrom D (selectionMatrix e * G)) e e
 
-/-- The two-level diagonal matrix as a block matrix. -/
-private theorem diagonal_sumElim_const {s t : Type*} [DecidableEq s] [DecidableEq t] (a b : ℝ) :
-    Matrix.diagonal (Sum.elim (fun _ : s => a) fun _ : t => b) =
-      Matrix.fromBlocks (a • (1 : Matrix s s ℝ)) 0 0 (b • (1 : Matrix t t ℝ)) := by
-  rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
-
 /-- The average of the cyclic shifts of the tail block in
 `integral_nuclearNorm_diagonal_sub_nystrom_le`:
 the mean over $k$ of $\operatorname{diag}(a, \boldsymbol{\sigma}_2)$ shifted by $k$ is
@@ -527,7 +521,7 @@ private theorem sum_smul_submatrix_sumCongr_addRight {s : Type*} [DecidableEq s]
   have hd0 : (0 : ℝ) < d := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne d)
   set e : Fin d → (s ⊕ Fin d) ≃ (s ⊕ Fin d) := fun k =>
     Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)
-  rw [← diagonal_sumElim_const]
+  rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
   have e1 : ∀ k, (Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂)).submatrix
       (Equiv.sumCongr (Equiv.refl s) (Equiv.addRight k)) (Equiv.sumCongr (Equiv.refl s)
         (Equiv.addRight k)) = Matrix.diagonal (Sum.elim (fun _ : s => a) σ₂ ∘ e k) := fun k =>

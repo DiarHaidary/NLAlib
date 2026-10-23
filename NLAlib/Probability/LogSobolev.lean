@@ -14,6 +14,7 @@ public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 public import Mathlib.MeasureTheory.Integral.DominatedConvergence
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
+public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Basic
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.Probability.Entropy
 
@@ -74,15 +75,6 @@ private theorem integrable_of_abs_le [TopologicalSpace Ω] [OpensMeasurableSpace
     {M : ℝ} (hM : ∀ x, |F x| ≤ M) : Integrable F μ :=
   (integrable_const M).mono' hF.aestronglyMeasurable
     (ae_of_all _ fun x => by simpa only [Real.norm_eq_abs] using hM x)
-
-private theorem integrable_exp_mul_of_abs_le [TopologicalSpace Ω] [OpensMeasurableSpace Ω]
-    [IsFiniteMeasure μ] {F : Ω → ℝ} (hF : Continuous F) {M : ℝ} (hM : ∀ x, |F x| ≤ M) (s : ℝ) :
-    Integrable (fun x => rexp (s * F x)) μ := by
-  refine integrable_of_abs_le (by fun_prop) (M := rexp (|s| * M)) fun x => ?_
-  rw [abs_of_pos (exp_pos _), exp_le_exp]
-  calc s * F x ≤ |s * F x| := le_abs_self _
-    _ = |s| * |F x| := abs_mul _ _
-    _ ≤ |s| * M := mul_le_mul_of_nonneg_left (hM x) (abs_nonneg s)
 
 private theorem exp_mul_sub (s m u : ℝ) : rexp (s * (u - m)) = rexp (s * u) * rexp (-(s * m)) := by
   rw [← exp_add]; ring_nf
@@ -193,7 +185,9 @@ private theorem HasLogSobolev.hasSubgaussianMGF_of_bounded [IsProbabilityMeasure
     (h : HasLogSobolev ν c) {f : E → ℝ} {L : ℝ≥0} (hf : LipschitzWith L f)
     (hfc : ContDiff ℝ 1 f) {M : ℝ} (hM : ∀ x, |f x| ≤ M) :
     HasSubgaussianMGF (fun x => f x - ∫ y, f y ∂ν) (c * L ^ 2) ν := by
-  have hint := integrable_exp_mul_of_abs_le (μ := ν) hfc.continuous hM
+  have hint (s : ℝ) : Integrable (fun x => rexp (s * f x)) ν :=
+    integrable_exp_mul_of_mem_Icc hfc.continuous.aemeasurable
+      (ae_of_all _ fun x => abs_le.mp (hM x))
   refine hasSubgaussianMGF_sub_integral_of_entropy_le hint fun s => ?_
   set g : E → ℝ := fun x => rexp (s / 2 * f x) with hgdef
   have hgc : ContDiff ℝ 1 g := contDiff_exp.comp (contDiff_const.mul hfc)
@@ -288,7 +282,9 @@ theorem HasLogSobolev.integrable_of_lipschitzWith [IsProbabilityMeasure ν]
     Integrable f ν := by
   obtain ⟨F, hFc, hFL, hFb, hDom, hConv⟩ := exists_bounded_contDiff_lipschitzWith_tendsto hf
   have hInt n : Integrable (F n) ν := integrable_of_abs_le (hFc n).continuous (hFb n)
-  have hExp n := integrable_exp_mul_of_abs_le (μ := ν) (hFc n).continuous (hFb n)
+  have hExp n (s : ℝ) : Integrable (fun x => rexp (s * F n x)) ν :=
+    integrable_exp_mul_of_mem_Icc (hFc n).continuous.aemeasurable
+      (ae_of_all _ fun x => abs_le.mp (hFb n x))
   have hRaw n := integral_exp_le_of_hasSubgaussianMGF
     (h.hasSubgaussianMGF_of_bounded (hFL n) (hFc n) (hFb n))
   set q : ℝ := ((c * L ^ 2 : ℝ≥0) : ℝ)
@@ -333,7 +329,8 @@ theorem HasLogSobolev.hasSubgaussianMGF_sub_integral [IsProbabilityMeasure ν]
       (ae_of_all _ hConv)
   refine hasSubgaussianMGF_of_integral_exp_le fun s => ?_
   refine integrable_and_integral_le_of_tendsto (by fun_prop)
-    (fun n => integrable_exp_mul_of_abs_le (hFc n).continuous (hFb n) s)
+    (fun n => integrable_exp_mul_of_mem_Icc (hFc n).continuous.aemeasurable
+      (ae_of_all _ fun x => abs_le.mp (hFb n x)))
     (fun n x => (exp_pos _).le)
     (fun x => (continuous_exp.tendsto _).comp ((hConv x).const_mul s))
     (fun n => integral_exp_le_of_hasSubgaussianMGF
@@ -344,63 +341,14 @@ theorem HasLogSobolev.hasSubgaussianMGF_sub_integral [IsProbabilityMeasure ν]
 
 section FiniteEnergy
 
-omit [MeasurableSpace E] [BorelSpace E] in
-/-- Smooth cutoffs $\chi_n = \varphi(\cdot / (n + 1))$: $C^1$, compactly supported, with values in
-$[0, 1]$ and derivatives bounded uniformly in $n$, and eventually equal to $1$ near every point. -/
-private theorem exists_cutoff : ∃ (χ : ℕ → E → ℝ) (K : ℝ), (∀ n, ContDiff ℝ 1 (χ n)) ∧
-    (∀ n, HasCompactSupport (χ n)) ∧ (∀ n x, 0 ≤ χ n x ∧ χ n x ≤ 1) ∧
-    (∀ n x, ‖fderiv ℝ (χ n) x‖ ≤ K) ∧ (∀ x, ∀ᶠ n in atTop, χ n =ᶠ[𝓝 x] fun _ => 1) := by
-  let φ : ContDiffBump (0 : E) := ⟨1, 2, by norm_num, by norm_num⟩
-  have hφc : ContDiff ℝ 1 (fun x => φ x) := φ.contDiff
-  obtain ⟨K, hK⟩ := (hφc.continuous_fderiv one_ne_zero).bounded_above_of_compact_support
-    (φ.hasCompactSupport.fderiv (𝕜 := ℝ))
-  have hK0 : 0 ≤ K := (norm_nonneg _).trans (hK 0)
-  have ha (n : ℕ) : (0 : ℝ) < ((n : ℝ) + 1)⁻¹ := by positivity
-  have ha1 (n : ℕ) : ((n : ℝ) + 1)⁻¹ ≤ 1 :=
-    inv_le_one_of_one_le₀ (by linarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n)])
-  have hnorm (n : ℕ) (x : E) : ‖((n : ℝ) + 1)⁻¹ • x‖ = ((n : ℝ) + 1)⁻¹ * ‖x‖ := by
-    rw [norm_smul, Real.norm_of_nonneg (ha n).le]
-  refine ⟨fun n x => φ (((n : ℝ) + 1)⁻¹ • x), K,
-    fun n => hφc.comp (contDiff_const_smul _), fun n => ?_, fun n x => ⟨φ.nonneg, φ.le_one⟩,
-    fun n x => ?_, fun x => ?_⟩
-  · refine HasCompactSupport.intro (isCompact_closedBall (0 : E) (2 * ((n : ℝ) + 1)))
-      fun x hx => φ.zero_of_le_dist ?_
-    rw [Metric.mem_closedBall, dist_zero_right, not_le] at hx
-    rw [dist_zero_right, hnorm, ← div_eq_inv_mul, le_div_iff₀ (by positivity)]
-    exact hx.le
-  · have h := ((hφc.differentiable one_ne_zero) (((n : ℝ) + 1)⁻¹ • x)).hasFDerivAt.comp x
-      ((hasFDerivAt_id x).const_smul ((n : ℝ) + 1)⁻¹)
-    change ‖fderiv ℝ ((fun x => φ x) ∘ HSMul.hSMul ((n : ℝ) + 1)⁻¹) x‖ ≤ K
-    rw [h.fderiv]
-    calc ‖(fderiv ℝ (fun x => φ x) (((n : ℝ) + 1)⁻¹ • x)).comp
-          (((n : ℝ) + 1)⁻¹ • ContinuousLinearMap.id ℝ E)‖
-        ≤ ‖fderiv ℝ (fun x => φ x) (((n : ℝ) + 1)⁻¹ • x)‖ *
-          ‖((n : ℝ) + 1)⁻¹ • ContinuousLinearMap.id ℝ E‖ := ContinuousLinearMap.opNorm_comp_le _ _
-      _ ≤ K * 1 := by
-          gcongr
-          · exact hK _
-          · rw [norm_smul, Real.norm_of_nonneg (ha n).le]
-            exact (mul_le_mul (ha1 n) (ContinuousLinearMap.norm_id_le) (norm_nonneg _)
-              zero_le_one).trans_eq (one_mul 1)
-      _ = K := mul_one K
-  · obtain ⟨N, hN⟩ := exists_nat_gt ‖x‖
-    refine eventually_atTop.2 ⟨N, fun n hn => ?_⟩
-    have hx : ‖x‖ < (n : ℝ) + 1 := by
-      have : (N : ℝ) ≤ n := by exact_mod_cast hn
-      linarith
-    filter_upwards [(isOpen_lt continuous_norm continuous_const).mem_nhds hx] with y hy
-    refine φ.one_of_mem_closedBall ?_
-    rw [Metric.mem_closedBall, dist_zero_right, hnorm, ← div_eq_inv_mul,
-      div_le_one (by positivity)]
-    exact (show ‖y‖ < (n : ℝ) + 1 from hy).le
-
 /-- The inequality for a bounded $C^1$ function of finite energy, from the defining class by the
 cutoffs $g \chi_n$ and dominated convergence. -/
 private theorem HasLogSobolev.entropy_sq_le_of_abs_le [IsProbabilityMeasure ν]
     (h : HasLogSobolev ν c) {g : E → ℝ} (hg : ContDiff ℝ 1 g) {M : ℝ} (hM : ∀ x, |g x| ≤ M)
     (hdg : Integrable (fun x => ‖fderiv ℝ g x‖ ^ 2) ν) :
     entropy ν (fun x => g x ^ 2) ≤ 2 * c * ∫ x, ‖fderiv ℝ g x‖ ^ 2 ∂ν := by
-  obtain ⟨χ, K, hχc, hχs, hχ01, hχd, hχ1⟩ := exists_cutoff (E := E)
+  obtain ⟨χ, K, hχc, hχs, hχ01, hχd, hχ1⟩ :=
+    exists_seq_contDiff_hasCompactSupport_eventuallyEq_one (E := E)
   have hgd : Differentiable ℝ g := hg.differentiable one_ne_zero
   let gn : ℕ → E → ℝ := fun n x => g x * χ n x
   have hgnc (n : ℕ) : ContDiff ℝ 1 (gn n) := hg.mul (hχc n)

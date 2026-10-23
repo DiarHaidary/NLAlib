@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.QuadraticForm.Moments
+public import NLAlib.RandomMatrix.Rademacher.Basic
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.SubGaussian
 
@@ -15,8 +16,9 @@ public import NLAlib.Sketching.Gaussian.SubGaussian
 
 The sign sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ for a random
 `X : Matrix k n ℝ` with independent random signs, `HasLaw X (rademacherMatrix k n) μ`, where
-`rademacherMatrix k n` is the law of independent rows, each a `rademacherVector n`. It is written
-out in each statement, `fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`, as for the Gaussian sketch.
+`rademacherMatrix k n` (in `NLAlib.RandomMatrix.Rademacher.Basic`) is the law of independent
+rows, each a `rademacherVector n`. It is written out in each statement,
+`fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω`, as for the Gaussian sketch.
 
 It is an isotropic sketch, has the distributional Johnson–Lindenstrauss property with the
 Gaussian sketch's exponent $\varepsilon^2/4 - \varepsilon^3/6$ (Dasgupta and Gupta's; Achlioptas's
@@ -37,16 +39,26 @@ $\varepsilon \gtrsim 1.43$ the sub-Gaussian rows theorem at $c = 1$
 (`NLAlib.hasJLProperty_of_isSubgaussianVector` with
 `NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`) is better; it is not restated here.
 
+**JL moments beyond $p = 2$.** The sub-Gaussian family's JL moment at $p = \max(2,
+\log(1/\delta))$ applies at proxy $1$, with no separate statement: for
+`hX : HasLaw X (rademacherMatrix k n) μ`,
+```
+hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le hX.iIndepFun_eval
+  (fun i => isSubgaussianVector_of_hasLaw_rademacherVector (hX.eval i))
+  (fun i => isIsotropic_of_hasLaw_rademacherVector (hX.eval i)) hε hε1 hδ hk
+```
+at least <!-- value subgaussianJLMomentDim {\cdot 1} \varepsilon \delta -->
+$16\cdot 1^2\max(2, \log(1/\delta))/(C\varepsilon^2)$ rows,
+with <!-- value subgaussianJLConstant -->$C = 1/36$, for $0 < \varepsilon \le 1$;
+approximate matrix multiplication with failure probability $\delta$ follows by
+`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`.
+
 Degenerate cases: for empty $k$, $\mathbf{S} = \mathbf{0}$, which is not isotropic, hence
 `[Nonempty k]` on isotropy, the OSI and the moments; the JL bound is $2$ for
 $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. For $\varepsilon = 1$ the lower
 JL event $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$ has positive probability ($2^{-\lvert k \rvert}$
 at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it. Design:
 `docs/design/Sketching-S3.md` §3.3, §8.
-
-## Main definitions
-
-* `NLAlib.rademacherMatrix k n`.
 
 ## Main results
 
@@ -69,17 +81,8 @@ open scoped Matrix MatrixOrder
 
 namespace NLAlib
 
-/-- The law of a matrix with independent random signs: independent rows, each a
-`rademacherVector n`. -/
-noncomputable abbrev rademacherMatrix (k n : Type*) [Fintype k] [Fintype n] :
-    Measure (Matrix k n ℝ) :=
-  Measure.pi fun _ : k => rademacherVector n
-
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {k n : Type*} [Fintype k]
   [Fintype n] {X : Ω → Matrix k n ℝ} {ε δ : ℝ} {d : ℕ}
-
-instance isProbabilityMeasure_rademacherMatrix : IsProbabilityMeasure (rademacherMatrix k n) :=
-  inferInstanceAs (IsProbabilityMeasure (Measure.pi fun _ : k => rademacherVector n))
 
 /-! ### Proof-local facts -/
 
@@ -280,19 +283,6 @@ theorem isObliviousSubspaceInjection_of_hasLaw_rademacherMatrix [DecidableEq n] 
   exact (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε)
     |>.isObliviousSubspaceInjection (isIsotropicSketch_of_hasLaw_rademacherMatrix hX)
 
-/-- The failure probability of the sign-sketch OSE is at most $\delta$
-once <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
-$\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6) \le \lvert k \rvert$ (the
-left side is `jlDim (4ε/5) (δ/21^d)`), for $0 < \varepsilon < 15/8$ and $\delta > 0$. -/
-private theorem two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le (hε : 0 < ε) (hε3 : ε < 15 / 8)
-    (hδ : 0 < δ) (hk : jlDim (4 * ε / 5) (δ / 21 ^ d) ≤ Fintype.card k) :
-    2 * 21 ^ d * Real.exp (-(Fintype.card k * (4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375))) ≤ δ := by
-  have h21 : (0 : ℝ) < 21 ^ d := by positivity
-  have h := two_mul_exp_le_of_jlDim_le (by linarith) (by linarith) (by positivity) hk
-  rw [show (4 * ε / 5) ^ 2 / 4 - (4 * ε / 5) ^ 3 / 6 = 4 * ε ^ 2 / 25 - 32 * ε ^ 3 / 375 by ring,
-    le_div_iff₀ h21] at h
-  linarith
-
 /-- **Sign-sketch JL, sample-size form**: for $0 < \varepsilon < 3/2$, $\delta > 0$ and at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`), the JL property holds with distortion $\varepsilon$ and failure probability
@@ -322,11 +312,7 @@ theorem exists_forall_hasJLProperty_of_hasLaw_rademacherMatrix :
       C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
       HasJLProperty (fun ω => (√(Fintype.card k : ℝ))⁻¹ • X ω) ε δ μ := by
   refine ⟨24, 1, by norm_num, one_pos, fun μ X ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le hX hε (by linarith) hδ
     ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']
@@ -368,8 +354,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix :
         μ := by
   refine ⟨58, 1, by norm_num, one_pos, fun μ X d ε δ hX hε hε1 hδ hδ2 hk => ?_⟩
   have h21 : (1 : ℝ) ≤ 21 ^ d := one_le_pow₀ (by norm_num)
-  have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
   have hl : Real.log (2 / (δ / 21 ^ d)) = Real.log 2 + d * Real.log 21 + Real.log (1 / δ) := by
     rw [show 2 / (δ / 21 ^ d) = 2 * 21 ^ d * (1 / δ) by field_simp,
       Real.log_mul (by positivity) (by positivity), Real.log_mul (by norm_num) (by positivity),

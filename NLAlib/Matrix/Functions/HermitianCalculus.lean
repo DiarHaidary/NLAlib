@@ -435,6 +435,13 @@ theorem _root_.Matrix.PosSemidef.spectrum_subset_Ici {A : Matrix n n 𝕜} (hA :
   rw [hA.isHermitian.spectrum_subset_iff]
   exact fun i _ => hA.eigenvalue_nonneg i
 
+/-- The spectrum of a positive semidefinite matrix lies in $[0, \lambda_0(\mathbf{A})]$,
+$\lambda_0(\mathbf{A})$ its largest eigenvalue. -/
+theorem _root_.Matrix.PosSemidef.spectrum_subset_Icc_eigenvalue_zero {A : Matrix n n 𝕜}
+    (hA : A.PosSemidef) : spectrum ℝ A ⊆ Set.Icc 0 (eigenvalue A 0) :=
+  hA.isHermitian.spectrum_subset_iff.2 fun i hi =>
+    ⟨hA.eigenvalue_nonneg i, hA.isHermitian.eigenvalue_le_eigenvalue (Nat.zero_le i) hi⟩
+
 /-- The spectrum of a positive definite matrix is positive. -/
 theorem _root_.Matrix.PosDef.spectrum_subset_Ioi {A : Matrix n n 𝕜} (hA : A.PosDef) :
     spectrum ℝ A ⊆ Set.Ioi 0 := by

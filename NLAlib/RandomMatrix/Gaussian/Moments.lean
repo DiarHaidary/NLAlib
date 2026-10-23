@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Matrix.Structured.Kronecker
 public import NLAlib.Probability.Distributions.ChiSquareMoments
 public import NLAlib.Probability.Isotropic
@@ -58,16 +59,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 section Isotropic
 
-omit [Fintype a] [Fintype b] in
-private theorem uncurry_mul_mul (S : Matrix a m 𝕜) (X : Matrix m n 𝕜) (T : Matrix n b 𝕜) :
-    Function.uncurry (S * X * T) = (S ⊗ₖ Tᵀ) *ᵥ Function.uncurry X := by
-  ext ⟨i, j⟩
-  change (S * X * T) i j = ∑ x : m × n, (S ⊗ₖ Tᵀ) (i, j) x * X x.1 x.2
-  rw [Fintype.sum_prod_type]
-  simp only [Matrix.mul_apply, Matrix.kroneckerMap_apply, Matrix.transpose_apply, Finset.sum_mul]
-  rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
-
 private theorem frobNorm_mul_mul_eq (S : Matrix a m 𝕜) (X : Matrix m n 𝕜) (T : Matrix n b 𝕜) :
     frobNorm (S * X * T) = ‖WithLp.toLp 2 ((S ⊗ₖ Tᵀ) *ᵥ Function.uncurry X)‖ := by
   rw [frobNorm_eq_norm_toLp_uncurry, uncurry_mul_mul]
@@ -112,29 +103,12 @@ private theorem lintegral_frobNorm_mul_mul_sq_of_isIsotropic_of_indepFun (hX : H
     (hXY : IndepFun Y X μ) (hS : Measurable S) (hT : Measurable T) :
     ∫⁻ ω, ENNReal.ofReal (frobNorm (S (Y ω) * X ω * T (Y ω)) ^ 2) ∂μ =
       ∫⁻ ω, ENNReal.ofReal (frobNorm (S (Y ω)) ^ 2 * frobNorm (T (Y ω)) ^ 2) ∂μ := by
-  have : IsProbabilityMeasure ν := hX.isProbabilityMeasure_iff.1 inferInstance
-  have hF := ENNReal.measurable_ofReal.comp (measurable_frobNorm_mul_mul_sq hS hT)
-  have hG := ENNReal.measurable_ofReal.comp (measurable_frobNorm_sq_mul_frobNorm_sq hS hT)
-  have hmap : μ.map (fun ω => (Y ω, X ω)) = (μ.map Y).prod ν := by
-    rw [← hX.map_eq]
-    exact (indepFun_iff_map_prod_eq_prod_map_map hY hX.aemeasurable).1 hXY
-  have hinner (y : α) : ∫⁻ x, ENNReal.ofReal (frobNorm (S y * x * T y) ^ 2) ∂ν =
-      ENNReal.ofReal (frobNorm (S y) ^ 2 * frobNorm (T y) ^ 2) := by
-    rw [← ofReal_integral_eq_lintegral_ofReal
-      (integrable_frobNorm_mul_mul_sq_of_isIsotropic (X := fun x => x) hν (S y) (T y))
-      (ae_of_all _ fun _ => sq_nonneg _),
-      integral_frobNorm_mul_mul_sq_of_isIsotropic (X := fun x => x) hν]
-  calc ∫⁻ ω, ENNReal.ofReal (frobNorm (S (Y ω) * X ω * T (Y ω)) ^ 2) ∂μ
-      = ∫⁻ q, ENNReal.ofReal (frobNorm (S q.1 * q.2 * T q.1) ^ 2) ∂(μ.map fun ω => (Y ω, X ω)) :=
-        (lintegral_map' hF.aemeasurable (hY.prodMk hX.aemeasurable)).symm
-    _ = ∫⁻ y, ∫⁻ x, ENNReal.ofReal (frobNorm (S y * x * T y) ^ 2) ∂ν ∂(μ.map Y) := by
-        rw [hmap, lintegral_prod
-          (fun q : α × Matrix m n 𝕜 => ENNReal.ofReal (frobNorm (S q.1 * q.2 * T q.1) ^ 2))
-          hF.aemeasurable]
-    _ = ∫⁻ y, ENNReal.ofReal (frobNorm (S y) ^ 2 * frobNorm (T y) ^ 2) ∂(μ.map Y) := by
-        simp only [hinner]
-    _ = ∫⁻ ω, ENNReal.ofReal (frobNorm (S (Y ω)) ^ 2 * frobNorm (T (Y ω)) ^ 2) ∂μ :=
-        lintegral_map' hG.aemeasurable hY
+  refine (hXY.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hY hX
+    (F := fun q : α × Matrix m n 𝕜 => frobNorm (S q.1 * q.2 * T q.1) ^ 2)
+    (measurable_frobNorm_mul_mul_sq hS hT) (fun _ => sq_nonneg _)
+    (ae_of_all _ fun ω => integrable_frobNorm_mul_mul_sq_of_isIsotropic (X := fun x => x) hν
+      (S (Y ω)) (T (Y ω)))).trans (lintegral_congr fun ω => ?_)
+  simp only [integral_frobNorm_mul_mul_sq_of_isIsotropic (X := fun x => x) hν]
 
 /-- **The second moment with independent random factors**: if $\mathbf{X}$ has an isotropic law
 and is independent of $Y$, and $\mathbf{S}$, $\mathbf{T}$ are measurable, then

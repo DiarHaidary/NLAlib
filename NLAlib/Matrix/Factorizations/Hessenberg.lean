@@ -338,10 +338,7 @@ Port of `NLAlib.isUpperHessenberg_mul_of_isQR`. -/
 theorem IsQR.isUpperHessenberg_of_isUpperHessenberg {H Q R : Matrix (Fin n) (Fin n) 𝕜}
     (h : IsQR H Q R) (hH : IsUpperHessenberg H) (hR : ∀ i, R i i ≠ 0) :
     IsUpperHessenberg Q := by
-  have hu : IsUnit R.det := h.isUpperTriangular.isUnit_det_iff.mpr fun i => (hR i).isUnit
-  have hQ : Q = H * R⁻¹ := by
-    rw [h.eq_mul, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hu, Matrix.mul_one]
-  rw [hQ]
+  rw [← h.mul_inv_eq (h.isUnit hR)]
   exact hH.mul_isUpperTriangular h.isUpperTriangular.inv
 
 /-- **The QR iteration preserves tridiagonal Hermitian matrices**: if

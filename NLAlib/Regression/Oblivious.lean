@@ -46,7 +46,9 @@ Design: `docs/design/Sketching-S1.md` §3.4.
   is sketch-and-solve with a random design.
 * `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`,
   `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_indepFun`:
-  sketch-and-solve to relative error through approximate multiplication.
+  sketch-and-solve to relative error through approximate multiplication;
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le`, the
+  $(1 + \varepsilon)$ form at a rescaled sketch.
 -/
 
 @[expose] public section
@@ -415,6 +417,46 @@ theorem HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le [IsFini
       rw [div_pow, mul_pow, mul_pow, hP2]
       ring
     nlinarith
+
+/-- **Sketch-and-solve to relative error $1 + \varepsilon$ through approximate multiplication**:
+for a real sketch $\mathbf{S}$ and a scale $c \ne 0$, if $c\,\mathbf{S}$ injects
+$\operatorname{range}\mathbf{A}$ with constant $a \ge 1/2$ except with probability $\delta$ and
+has the $(\sqrt{\varepsilon/(4(r + 1))}, \delta', p)$ JL moment property,
+$r = \operatorname{rank}\mathbf{A}$, $\varepsilon > 0$, $p \ge 2$, $\delta' \ge 0$, then
+$$\|\mathbf{B} - \mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})
+\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{B}\|_{\mathsf{F}}^2$$
+except with probability $\delta + \delta'$. The solution at $c\,\mathbf{S}$ is the solution at
+$\mathbf{S}$, so the analysis runs at a family's normalised sketch and the conclusion is about the
+sketch the user applies; the factor
+$1 + r\varepsilon/(r + 1) \le 1 + \varepsilon$ comes from
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`. The dense family
+statements of sketch-and-solve instantiate it. [Woodruff2014, Theorem 23]; there sparse
+embeddings, a vector right-hand side and the unsquared objective.
+Result: sketch-and-solve-ls -/
+theorem HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    [IsFiniteMeasure μ] {A : Matrix n q ℝ} {c ε δ' p : ℝ}
+    (hJL : HasJLMoment (fun ω => c • S ω) (√(ε / (4 * ((A.rank : ℝ) + 1)))) δ' p μ)
+    (h : HasSubspaceInjection (fun ω => c • S ω) A a δ μ) (hS : AEMeasurable S μ) (hc : c ≠ 0)
+    (ha : 1 / 2 ≤ a) (hε : 0 < ε) (hp : 2 ≤ p) (hδ' : 0 ≤ δ') (B : Matrix n r ℝ) :
+    μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A (S ω) B) ^ 2} ≤ δ + δ' := by
+  set η := √(ε / (4 * ((A.rank : ℝ) + 1)))
+  have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
+  have h1 := hJL.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le h
+    ((continuous_const_smul c).measurable.comp_aemeasurable hS) (by linarith) hη hp hδ' B
+  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / a ^ 2 ≤ 1 + ε := by
+    have ha2 : 1 / 4 ≤ a ^ 2 := by nlinarith
+    rw [add_le_add_iff_left, div_le_iff₀ (by positivity), hsq, ← mul_div_assoc,
+      div_le_iff₀ (by positivity)]
+    nlinarith [Nat.cast_nonneg (α := ℝ) A.rank, mul_le_mul_of_nonneg_left ha2
+      (by positivity : (0 : ℝ) ≤ ε * (4 * ((A.rank : ℝ) + 1)))]
+  refine (measureReal_mono fun ω hω => ?_).trans h1
+  change (1 + (A.rank : ℝ) * η ^ 2 / a ^ 2) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+    frobNorm (B - A * sketchAndSolve A (c • S ω) B) ^ 2
+  rw [sketchAndSolve_smul_sketch A (S ω) B hc]
+  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
 
 -- A declaration name below is too long for a 100-character line.
 set_option linter.style.longLine false in

@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
 public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 public import NLAlib.Probability.Law
@@ -599,15 +600,7 @@ theorem integral_norm_sub_sketchAndProjectIterate_sq_le_mul_of_hasLaw_iidSequenc
   · simp [h0]
   have hlam1 := le_one_of_smul_rangeProjector_le hlam hx₀ h0
   refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
-  calc (1 - lam) ^ q ≤ Real.exp (-lam) ^ q :=
-        pow_le_pow_left₀ (by linarith) (by linarith [Real.add_one_le_exp (-lam)]) q
-    _ = Real.exp (-(lam * q)) := by rw [← Real.exp_nat_mul]; ring_nf
-    _ ≤ Real.exp (Real.log ε) := by
-        refine Real.exp_le_exp.mpr ?_
-        have h1 : Real.log (1 / ε) ≤ lam * q := by rwa [div_le_iff₀ hlam0, mul_comm] at hq
-        rw [one_div, Real.log_inv] at h1
-        linarith
-    _ = ε := Real.exp_log hε
+  exact Real.one_sub_pow_le_of_log_le_mul hlam1 hε (by rwa [div_le_iff₀ hlam0, mul_comm] at hq)
 
 end Random
 

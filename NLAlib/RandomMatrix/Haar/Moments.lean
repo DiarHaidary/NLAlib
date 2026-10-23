@@ -619,9 +619,7 @@ theorem variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame_hermitianPart [
           ((Fintype.card n - 1) * Fintype.card n * (Fintype.card n + 2)) *
         (frobNorm (hermitianPart A) ^ 2 - A.trace ^ 2 / Fintype.card n) := by
   classical
-  have htr : (hermitianPart A).trace = A.trace := by
-    simpa only [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one] using
-      trace_conjTranspose_mul_hermitianPart_mul (1 : Matrix n n ℝ) A
+  have htr : (hermitianPart A).trace = A.trace := by simpa using trace_hermitianPart A
   rw [← htr, ← variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame hX hk hn
     (isHermitian_hermitianPart A)]
   simp only [trace_conjTranspose_mul_hermitianPart_mul]
@@ -697,9 +695,7 @@ theorem variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector_hermitianPart 
       2 * Fintype.card n / (Fintype.card n + 2) *
         (frobNorm (hermitianPart A) ^ 2 - A.trace ^ 2 / Fintype.card n) := by
   classical
-  have htr : (hermitianPart A).trace = A.trace := by
-    simpa only [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one] using
-      trace_conjTranspose_mul_hermitianPart_mul (1 : Matrix n n ℝ) A
+  have htr : (hermitianPart A).trace = A.trace := by simpa using trace_hermitianPart A
   rw [← htr, ← variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector hu
     (isHermitian_hermitianPart A)]
   simp only [quadForm_hermitianPart]

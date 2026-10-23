@@ -38,11 +38,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-! ### Spectral against Frobenius -/
 
-omit [Fintype l] [Fintype n] in
-private theorem col_mul (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) (j : n) :
-    (A * B).col j = A *ᵥ B.col j :=
-  rfl
-
 /-- The spectral norm is at most the Frobenius norm:
 $\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{\mathsf{F}}$.
 [GolubVanLoan2013, (2.3.7)]. Port of `NLAlib.specNorm_le_frobNorm`. -/
@@ -85,7 +80,7 @@ theorem frobNorm_mul_le_specNorm_mul_frobNorm (A : Matrix l m 𝕜) (B : Matrix 
   refine (sq_le_sq₀ (by positivity) (by positivity)).1 ?_
   rw [mul_pow, frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, Finset.mul_sum]
   refine Finset.sum_le_sum fun j _ => ?_
-  rw [col_mul, ← mul_pow]
+  rw [show (A * B).col j = A *ᵥ B.col j from rfl, ← mul_pow]
   gcongr
   exact norm_toLp_mulVec_le A (B.col j)
 
@@ -208,7 +203,7 @@ theorem frobNorm_conjTranspose_mul_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormal
   refine (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 ?_
   rw [frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col]
   refine Finset.sum_le_sum fun j _ => ?_
-  rw [col_mul]
+  rw [show (Qᴴ * A).col j = Qᴴ *ᵥ A.col j from rfl]
   gcongr
   exact hQ.norm_toLp_conjTranspose_mulVec_le (A.col j)
 

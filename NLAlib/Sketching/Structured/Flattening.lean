@@ -7,6 +7,8 @@ module
 
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Matrix.Norms.Compare
+public import NLAlib.Matrix.Norms.Frobenius
+public import NLAlib.Matrix.Norms.Spectral
 public import NLAlib.Matrix.Structured.BoundedOrthonormal
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.Probability.Measurability.Matrix
@@ -34,7 +36,14 @@ the real constant. At $t = \log(\lvert n \rvert/\delta)$, outside probability $\
 scores are at most <!-- value srhtRowBound {\lvert n \rvert} d \delta -->
 $$\frac{\beta\,\bigl(d + 2\sqrt{d \log(\lvert n \rvert/\delta)} +
 2 \log(\lvert n \rvert/\delta)\bigr)}{\lvert n \rvert}\,,$$
-whose numerator is the threshold `NLAlib.srhtRowBound`.
+whose numerator is the threshold `NLAlib.srhtRowBound`. The same argument bounds the rows of
+$\mathbf{F}\mathbf{D}\mathbf{A}$ for a general $\mathbf{A}$: outside probability
+$\lvert n\rvert e^{-t}$ every squared row norm is at most $\beta$ times the flattened row-norm
+bound <!-- value srhtRowNormBound \mathbf{A} t -->
+$$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
++ 2\|\mathbf{A}\|_2^2 t$$
+over $\lvert n\rvert$ (`NLAlib.srhtRowNormBound`), the input of the SRHT's spectral approximate
+multiplication.
 
 The second half is generic: a sampler that injects (or embeds) every fixed subspace whose
 leverage scores are at most $L / \lvert n \rvert$, composed with an independent random unitary
@@ -55,6 +64,10 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 * `NLAlib.srhtRowBound`: the flattening threshold at failure probability $\delta$,
   the value <!-- value srhtRowBound n d \delta -->
   $d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$ for dimension $d$ and $n$ rows.
+* `NLAlib.srhtRowNormBound`: the flattened row-norm bound of a general matrix,
+  the value <!-- value srhtRowNormBound \mathbf{A} t -->
+  $$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
+  + 2\|\mathbf{A}\|_2^2 t\,.$$
 
 ## Main results
 
@@ -63,8 +76,10 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 * `NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`:
   flattening; its $\delta$ form, in namespace `NLAlib`,
   `measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasLaw_rademacherVector`.
-* `NLAlib.srhtRowBound_nonneg`, `NLAlib.srhtRowBound_mono`, `NLAlib.srhtRowBound_le`: the API of
-  the threshold.
+* `NLAlib.srhtRowBound_nonneg`, `NLAlib.srhtRowBound_mono`, `NLAlib.srhtRowBound_le`,
+  `NLAlib.srhtRowBound_div_two_le`: the API of the threshold.
+* `NLAlib.measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector`:
+  flattening of the rows of a general matrix.
 * `NLAlib.hasSubspaceInjection_mul_of_indepFun_of_leverageScore_le`,
   `NLAlib.hasSubspaceEmbedding_mul_of_indepFun_of_leverageScore_le`: flatten, then sample.
 -/
@@ -134,6 +149,25 @@ theorem srhtRowBound_le (n d : ℕ) (δ : ℝ) :
     have h2 := Real.sq_sqrt (by linarith : (0 : ℝ) ≤ 2 * Real.log (n / δ))
     nlinarith
 
+/-- The row bound at half the failure probability, against the size of its logarithm: for
+$n \ge 1$ and $0 < \delta \le 1/2$, <!-- value srhtRowBound n d (\delta/2) -->
+$$d + 2\sqrt{d \log(n/(\delta/2))} + 2 \log(n/(\delta/2)) \le
+8\bigl(d + \log(n/\delta)\bigr).$$
+The step from the SRHT sample sizes, which flatten with probability $\delta/2$, to their
+asymptotic forms. -/
+theorem srhtRowBound_div_two_le {n : ℕ} (hn : 0 < n) (d : ℕ) {δ : ℝ} (hδ : 0 < δ)
+    (hδ2 : δ ≤ 1 / 2) : srhtRowBound n d (δ / 2) ≤ 8 * (d + Real.log (n / δ)) := by
+  have hN : (1 : ℝ) ≤ n := Nat.one_le_cast.2 hn
+  have h2N : Real.log 2 ≤ Real.log (n / δ) :=
+    Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; nlinarith)
+  have hl2 : 0 ≤ Real.log 2 := Real.log_nonneg (by norm_num)
+  have hlN : Real.log (n / (δ / 2)) = Real.log 2 + Real.log (n / δ) := by
+    rw [show (n : ℝ) / (δ / 2) = 2 * (n / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
+  have h := srhtRowBound_le n d (δ / 2)
+  have ha := Real.sq_sqrt (Nat.cast_nonneg (α := ℝ) d)
+  have hb := Real.sq_sqrt (by linarith : 0 ≤ 2 * Real.log (n / (δ / 2)))
+  nlinarith [sq_nonneg (√(d : ℝ) - √(2 * Real.log (n / (δ / 2))))]
+
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {k n r : Type*} [Fintype k] [Fintype n] [Fintype r] [DecidableEq n]
   {F : Matrix n n 𝕜} {ξ : Ω → n → ℝ} {β L a b t δ δ₁ δ₂ : ℝ}
@@ -148,20 +182,7 @@ theorem HasOrthonormalCols.ae_hasOrthonormalCols_mul_diagonal_of_hasLaw_rademach
     (hξ : HasLaw ξ (rademacherVector n) μ) :
     ∀ᵐ ω ∂μ, HasOrthonormalCols (F * Matrix.diagonal fun i => (ξ ω i : 𝕜)) := by
   filter_upwards [ae_sq_eq_one_of_hasLaw_rademacherVector hξ] with ω hω
-  rw [HasOrthonormalCols, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Fᴴ,
-    hF.conjTranspose_mul_self, Matrix.one_mul, Matrix.diagonal_conjTranspose,
-    Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
-  congr 1
-  funext i
-  rw [Pi.star_apply, RCLike.star_def, RCLike.conj_ofReal, ← RCLike.ofReal_mul, ← sq, hω i,
-    RCLike.ofReal_one]
-
-omit [DecidableEq n] in
-private theorem range_mul_eq_of_range_eq {p q : Type*} [Fintype p] [Fintype q] (B : Matrix n n 𝕜)
-    {U : Matrix n p 𝕜} {Q : Matrix n q 𝕜}
-    (h : LinearMap.range Q.mulVecLin = LinearMap.range U.mulVecLin) :
-    LinearMap.range (B * Q).mulVecLin = LinearMap.range (B * U).mulVecLin := by
-  rw [Matrix.mulVecLin_mul, Matrix.mulVecLin_mul, LinearMap.range_comp, LinearMap.range_comp, h]
+  exact hF.hasOrthonormalCols_mul_diagonal hω
 
 /-- Row $i$ of $\mathbf{F}\operatorname{diag}(\boldsymbol{\xi})\mathbf{Q}$ is the image of the
 sign vector under
@@ -341,6 +362,161 @@ theorem measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasL
     exact h
   · exact measureReal_le_one.trans (le_of_lt (lt_of_le_of_lt (Nat.one_le_cast.2 Fintype.card_pos)
       hδn))
+
+/-! ### Flattening a general matrix -/
+
+/-- The **flattened row-norm bound** <!-- value srhtRowNormBound \mathbf{A} t -->
+$$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
++ 2\|\mathbf{A}\|_2^2 t:$$
+flattening makes every squared row norm of $\mathbf{F}\mathbf{D}\mathbf{A}$ at most $\beta$ times
+this over $\lvert n\rvert$, outside probability $\lvert n\rvert e^{-t}$
+(`NLAlib.measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector`).
+At a matrix with $d$ orthonormal columns it is $d + 2\sqrt{dt} + 2t$, at $t = \log(n/\delta)$
+the bracket of `NLAlib.srhtRowBound`, <!-- value srhtRowBound n d \delta -->
+$d + 2\sqrt{d \log(n/\delta)} + 2 \log(n/\delta)$. The value the proof reaches, the Hsu–Kakade–Zhang
+threshold. Junk: for $t < 0$ the square root is $0$. -/
+noncomputable irreducible_def srhtRowNormBound (A : Matrix n r 𝕜) (t : ℝ) : ℝ :=
+  frobNorm A ^ 2 + 2 * frobNorm A * specNorm A * √t + 2 * specNorm A ^ 2 * t
+
+omit [DecidableEq n] in
+/-- The flattened row-norm bound <!-- value srhtRowNormBound \mathbf{A} t -->
+$$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
++ 2\|\mathbf{A}\|_2^2 t$$
+is nonnegative for $t \ge 0$. -/
+theorem srhtRowNormBound_nonneg (A : Matrix n r 𝕜) (ht : 0 ≤ t) : 0 ≤ srhtRowNormBound A t := by
+  rw [srhtRowNormBound_def]
+  have := frobNorm_nonneg A
+  have := specNorm_nonneg A
+  positivity
+
+/-- The row matrix $\mathbf{M}_i = \mathbf{A}^{\mathsf{T}}\operatorname{diag}(\mathbf{F}_{i,\cdot})$
+of a general $\mathbf{A}$ has $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le
+\beta\|\mathbf{A}\|_{\mathsf{F}}^2/\lvert n\rvert$ and
+$\|\mathbf{M}_i\|_2^2 \le \beta\|\mathbf{A}\|_2^2/\lvert n\rvert$. -/
+private theorem frobNorm_sq_le_and_specNorm_sq_le_of_matrix (hF : IsBoundedOrthonormal F β)
+    [Nonempty n] (A : Matrix n r 𝕜) (i : n) :
+    frobNorm (Aᵀ * Matrix.diagonal (F i)) ^ 2 ≤ β * (Fintype.card n : ℝ)⁻¹ * frobNorm A ^ 2 ∧
+      specNorm (Aᵀ * Matrix.diagonal (F i)) ^ 2 ≤
+        β * (Fintype.card n : ℝ)⁻¹ * specNorm A ^ 2 := by
+  have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
+  have hFi : ∀ l, ‖F i l‖ ^ 2 ≤ β * (Fintype.card n : ℝ)⁻¹ := fun l => by
+    rw [← div_eq_mul_inv, le_div_iff₀ hn, mul_comm]
+    exact hF.card_mul_norm_sq_le i l
+  have hK : 0 ≤ β * (Fintype.card n : ℝ)⁻¹ :=
+    (sq_nonneg _).trans (hFi (Classical.arbitrary n))
+  refine ⟨?_, ?_⟩
+  · rw [← frobNorm_transpose, Matrix.transpose_mul, Matrix.diagonal_transpose,
+      Matrix.transpose_transpose, frobNorm_sq_eq_sum, frobNorm_sq_eq_sum, Finset.mul_sum]
+    refine Finset.sum_le_sum fun l _ => ?_
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun j _ => ?_
+    rw [Matrix.diagonal_mul, norm_mul, mul_pow]
+    exact mul_le_mul_of_nonneg_right (hFi l) (sq_nonneg _)
+  · have h1 : specNorm (Matrix.diagonal (F i)) ≤ √(β * (Fintype.card n : ℝ)⁻¹) :=
+      specNorm_diagonal_le (Real.sqrt_nonneg _) fun l => Real.le_sqrt_of_sq_le (hFi l)
+    have h2 : specNorm (Aᵀ * Matrix.diagonal (F i)) ≤
+        specNorm A * √(β * (Fintype.card n : ℝ)⁻¹) := by
+      refine (specNorm_mul_le _ _).trans ?_
+      rw [specNorm_transpose]
+      exact mul_le_mul_of_nonneg_left h1 (specNorm_nonneg _)
+    calc specNorm (Aᵀ * Matrix.diagonal (F i)) ^ 2
+        ≤ (specNorm A * √(β * (Fintype.card n : ℝ)⁻¹)) ^ 2 :=
+          pow_le_pow_left₀ (specNorm_nonneg _) h2 2
+      _ = β * (Fintype.card n : ℝ)⁻¹ * specNorm A ^ 2 := by
+          rw [mul_pow, Real.sq_sqrt hK, mul_comm]
+
+/-- The tail of one row of $\mathbf{F}\mathbf{D}\mathbf{A}$: the Hsu–Kakade–Zhang tail at
+$\mathbf{M}_i$, proxy $1$, with threshold $\beta$ times `srhtRowNormBound A t` over
+$\lvert n\rvert$ (<!-- mention srhtRowNormBound -->the flattened row-norm bound). -/
+private theorem measureReal_not_norm_row_sq_le_srhtRowNormBound (hF : IsBoundedOrthonormal F β)
+    (hξ : HasLaw ξ (rademacherVector n) μ) (A : Matrix n r 𝕜) (ht : 0 ≤ t) (i : n) :
+    μ.real {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A) i)‖ ^ 2 ≤
+      β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹} ≤ Real.exp (-t) := by
+  have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.2 inferInstance
+  have : Nonempty n := ⟨i⟩
+  obtain ⟨hFr, hSp⟩ := frobNorm_sq_le_and_specNorm_sq_le_of_matrix hF A i
+  set M := Aᵀ * Matrix.diagonal (F i) with hM_def
+  set K := β * (Fintype.card n : ℝ)⁻¹ with hK_def
+  have hb : (1 : ℝ) ≤ β := hF.one_le
+  have hK : 0 ≤ K := mul_nonneg (by linarith) (by positivity)
+  have hR := srhtRowNormBound_nonneg A ht
+  have hthr : β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹ = K * srhtRowNormBound A t := by
+    rw [hK_def]
+    ring
+  simp only [mul_diagonal_mul_apply A, hthr]
+  by_cases hM : M = 0
+  · have hset : {ω | ¬ ‖WithLp.toLp 2 (M *ᵥ fun l => (ξ ω l : 𝕜))‖ ^ 2 ≤
+        K * srhtRowNormBound A t} = ∅ := by
+      refine Set.eq_empty_of_forall_notMem fun ω hω => hω ?_
+      rw [hM, Matrix.zero_mulVec, WithLp.toLp_zero, norm_zero, zero_pow two_ne_zero]
+      positivity
+    rw [hset, measureReal_empty]
+    positivity
+  have hFr' : frobNorm M ≤ √K * frobNorm A := by
+    rw [← Real.sqrt_sq (frobNorm_nonneg A), ← Real.sqrt_mul hK]
+    exact Real.le_sqrt_of_sq_le hFr
+  have hS : specNorm M ≤ √K * specNorm A := by
+    rw [← Real.sqrt_sq (specNorm_nonneg A), ← Real.sqrt_mul hK]
+    exact Real.le_sqrt_of_sq_le hSp
+  have hG : frobNorm (Mᴴ * M) ≤ K * (specNorm A * frobNorm A) := by
+    refine (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans ?_
+    rw [specNorm_conjTranspose]
+    calc specNorm M * frobNorm M ≤ (√K * specNorm A) * (√K * frobNorm A) :=
+          mul_le_mul hS hFr' (frobNorm_nonneg _) (by positivity)
+      _ = K * (specNorm A * frobNorm A) := by rw [mul_mul_mul_comm, Real.mul_self_sqrt hK]
+  have key := (isSubgaussianVector_of_hasLaw_rademacherVector hξ).measureReal_norm_mulVec_sq_ge_le
+    one_ne_zero hM ht (𝕜 := 𝕜)
+  refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top _ _)) key
+  simp only [Set.mem_ofPred_eq, not_le, NNReal.coe_one, one_mul] at hω ⊢
+  refine le_trans ?_ hω.le
+  rw [srhtRowNormBound_def]
+  have h1 := mul_le_mul_of_nonneg_right hG (Real.sqrt_nonneg t)
+  have h2 := mul_le_mul_of_nonneg_right hSp ht
+  nlinarith
+
+/-- **Flattening of a general matrix**: for a bounded orthonormal $\mathbf{F}$ with constant
+$\beta$, a diagonal $\mathbf{D} = \operatorname{diag}(\boldsymbol{\xi})$ of independent random
+signs, any $\mathbf{A} \in \Bbbk^{n \times r}$ and $t \ge 0$, outside probability
+$\lvert n\rvert e^{-t}$ every row of $\mathbf{F}\mathbf{D}\mathbf{A}$
+satisfies <!-- value srhtRowNormBound \mathbf{A} t -->
+$$\|(\mathbf{F}\mathbf{D}\mathbf{A})_i\|^2 \le \frac{\beta\bigl(\|\mathbf{A}\|_{\mathsf{F}}^2 +
+2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t} + 2\|\mathbf{A}\|_2^2 t\bigr)}{\lvert n\rvert}
+\,,$$
+the numerator being $\beta$ times `NLAlib.srhtRowNormBound A t`. Row $i$ is
+$\mathbf{M}_i\boldsymbol{\xi}$ with $\|\mathbf{M}_i\|_{\mathsf{F}}^2 \le
+\beta\|\mathbf{A}\|_{\mathsf{F}}^2/\lvert n\rvert$ and
+$\|\mathbf{M}_i\|_2^2 \le \beta\|\mathbf{A}\|_2^2/\lvert n\rvert$, then the Hsu–Kakade–Zhang tail
+and a union over the rows, as in
+`NLAlib.measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacherVector`, which is
+the case of an orthonormal basis. [Tropp2011a, Lemma 3.3] for orthonormal columns. -/
+theorem measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector
+    (hF : IsBoundedOrthonormal F β) (hξ : HasLaw ξ (rademacherVector n) μ) (A : Matrix n r 𝕜)
+    (ht : 0 ≤ t) :
+    μ.real {ω | ∃ i, β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹ <
+      ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A) i)‖ ^ 2} ≤
+      Fintype.card n * Real.exp (-t) := by
+  have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.2 inferInstance
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have h : {ω | ∃ i, β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹ <
+        ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A) i)‖ ^ 2} = ∅ :=
+      Set.eq_empty_of_forall_notMem fun ω ⟨i, _⟩ => isEmptyElim i
+    rw [h, measureReal_empty]
+    positivity
+  have hrow := fun i => measureReal_not_norm_row_sq_le_srhtRowNormBound hF hξ A ht i
+  have hsub : {ω | ∃ i, β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹ <
+        ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A) i)‖ ^ 2} ⊆
+      ⋃ i, {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A) i)‖ ^ 2 ≤
+        β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹} := by
+    intro ω ⟨i, hi⟩
+    exact Set.mem_iUnion.2 ⟨i, not_le.2 hi⟩
+  calc _ ≤ μ.real (⋃ i, {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A)
+          i)‖ ^ 2 ≤ β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹}) := measureReal_mono hsub
+    _ ≤ ∑ i, μ.real {ω | ¬ ‖WithLp.toLp 2 ((F * Matrix.diagonal (fun l => (ξ ω l : 𝕜)) * A)
+          i)‖ ^ 2 ≤ β * srhtRowNormBound A t * (Fintype.card n : ℝ)⁻¹} :=
+        measureReal_iUnion_fintype_le _
+    _ ≤ ∑ _i : n, Real.exp (-t) := Finset.sum_le_sum fun i _ => hrow i
+    _ = Fintype.card n * Real.exp (-t) := by
+        rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
 /-! ### Flatten, then sample -/
 

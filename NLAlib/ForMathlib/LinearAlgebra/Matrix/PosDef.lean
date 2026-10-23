@@ -25,6 +25,8 @@ candidates for `Mathlib.Analysis.Matrix.PosDef` and `Mathlib.Analysis.Matrix.Ord
 * `Matrix.PosSemidef.conjTranspose_mul_mul_same'`: congruence
   $\mathbf{B}^{\mathsf{H}}\mathbf{A}\mathbf{B}$ preserves positive semidefiniteness, for a factor
   with any column index type.
+* `Matrix.PosSemidef.fromBlocks_zero₁₂_zero₂₁`: a block-diagonal matrix with positive
+  semidefinite blocks is positive semidefinite.
 * `Matrix.PosSemidef.trace_mul_nonneg`, `Matrix.PosSemidef.trace_mul_eq_zero_iff`,
   `Matrix.IsHermitian.posSemidef_iff_trace_mul_nonneg`: the positive semidefinite cone is
   self-dual under the trace pairing.
@@ -132,6 +134,26 @@ theorem PosSemidef.conjTranspose_mul_mul_same' {p : Type*} {A : Matrix n n 𝕜}
     ring
   rw [key]
   exact hA.dotProduct_mulVec_nonneg _
+
+/-- A block-diagonal matrix with positive semidefinite diagonal blocks is positive semidefinite:
+$\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{D} \end{bmatrix} \succeq
+\mathbf{0}$ when $\mathbf{A} \succeq \mathbf{0}$ and $\mathbf{D} \succeq \mathbf{0}$. Upstream
+candidate. -/
+theorem PosSemidef.fromBlocks_zero₁₂_zero₂₁ {s t : Type*} [Finite s] [Finite t]
+    {A : Matrix s s 𝕜} {D : Matrix t t 𝕜} (hA : A.PosSemidef) (hD : D.PosSemidef) :
+    (fromBlocks A 0 0 D).PosSemidef := by
+  have := Fintype.ofFinite s
+  have := Fintype.ofFinite t
+  refine .of_dotProduct_mulVec_nonneg
+    (hA.isHermitian.fromBlocks (conjTranspose_zero) hD.isHermitian) fun x => ?_
+  have hx : x = Sum.elim (x ∘ Sum.inl) (x ∘ Sum.inr) := (Sum.elim_comp_inl_inr x).symm
+  have hstar : star (Sum.elim (x ∘ Sum.inl) (x ∘ Sum.inr)) =
+      Sum.elim (star (x ∘ Sum.inl)) (star (x ∘ Sum.inr)) := by
+    ext (i | i) <;> rfl
+  rw [hx, fromBlocks_mulVec, hstar]
+  simp only [zero_mulVec, add_zero, zero_add, Sum.elim_comp_inl, Sum.elim_comp_inr,
+    sumElim_dotProduct_sumElim]
+  exact add_nonneg (hA.dotProduct_mulVec_nonneg _) (hD.dotProduct_mulVec_nonneg _)
 
 /-! ### Trace -/
 

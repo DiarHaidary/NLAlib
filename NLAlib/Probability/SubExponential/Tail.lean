@@ -6,13 +6,15 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Probability.SubExponential.Basic
+public import NLAlib.Probability.Tail
 
 /-!
 # Tails of sub-exponential random variables
 
 The tail of a sub-exponential variable,
 $\mathbb{P}[X \ge t] \le \exp(-\min(t^2 / (2v), t / (2b)))$, its two regimes, the lower and
-two-sided tails, and Bernstein's inequality for sums of independent sub-exponential variables.
+two-sided tails, the absolute moments that the two-sided tail gives, and Bernstein's inequality
+for sums of independent sub-exponential variables.
 
 ## Main results
 
@@ -21,6 +23,7 @@ two-sided tails, and Bernstein's inequality for sums of independent sub-exponent
   `NLAlib.HasSubexponentialMGF.measureReal_ge_le_of_le_mul`.
 * `NLAlib.HasSubexponentialMGF.measureReal_le_le`,
   `NLAlib.HasSubexponentialMGF.measureReal_abs_ge_le`.
+* `NLAlib.HasSubexponentialMGF.integral_abs_rpow_le`: the absolute moments, for every $p > 0$.
 * `NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun`: Bernstein's inequality.
 
 ## References
@@ -151,6 +154,20 @@ theorem measureReal_abs_ge_le (h : HasSubexponentialMGF X v b μ) {t : ℝ} (ht 
   _ ≤ 2 * rexp (-min (t ^ 2 / (2 * v)) (t / (2 * b))) := by
     rw [two_mul]
     exact add_le_add (h.measureReal_ge_le ht) (h.measureReal_le_le ht)
+
+/-- The absolute moments of a sub-exponential variable with parameters $(v, b)$, $v, b > 0$:
+for $p > 0$, <!-- value subexponentialMomentBound v b p -->
+$$\int \lvert X\rvert^p \, d\mu \le p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)\,,$$
+the bound being `NLAlib.subexponentialMomentBound v b p`, the layer-cake integral of the
+two-sided tail `measureReal_abs_ge_le` (`NLAlib.integral_rpow_le_of_measureReal_ge_le_two_mul_exp`).
+For $p \ge 2$ it is at most $2(vp)^{p/2} + 2(2bp)^{p}$ (`NLAlib.subexponentialMomentBound_le`). -/
+theorem integral_abs_rpow_le (h : HasSubexponentialMGF X v b μ) (hv : 0 < v) (hb : 0 < b)
+    {p : ℝ} (hp : 0 < p) :
+    ∫ ω, |X ω| ^ p ∂μ ≤ subexponentialMomentBound (v : ℝ) (b : ℝ) p := by
+  have := h.isFiniteMeasure
+  exact (integral_rpow_le_of_measureReal_ge_le_two_mul_exp h.aemeasurable.abs
+    (ae_of_all _ fun ω => abs_nonneg (X ω)) (NNReal.coe_pos.2 hv) (NNReal.coe_pos.2 hb) hp
+    fun t ht => h.measureReal_abs_ge_le ht.le).2
 
 /-- **Bernstein's inequality** for independent sub-exponential variables: if the $X_i$ are
 independent and, for $i \in s$, $X_i$ is sub-exponential with parameters $(v_i, b_i)$

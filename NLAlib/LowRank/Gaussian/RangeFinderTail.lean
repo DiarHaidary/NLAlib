@@ -87,12 +87,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type
 
 /-! ### The common step -/
 
-/-- A set that lies, outside a null set, inside a set of probability at most $\delta$ has
-`μ.real` at most $\delta$; no measurability is needed. -/
-private theorem measureReal_le_of_ae_imp [IsFiniteMeasure μ] {s t : Set Ω} {δ : ℝ}
-    (hst : ∀ᵐ ω ∂μ, ω ∈ s → ω ∈ t) (ht : μ.real t ≤ δ) : μ.real s ≤ δ :=
-  (ENNReal.toReal_mono (measure_ne_top μ t) (measure_mono_ae hst)).trans ht
-
 /-- The common reduction of every tail of this file to a block tail. If $\lvert n \rvert < k$, the
 error vanishes almost surely and $\llbracket\mathbf{A}\rrbracket_k = \mathbf{A}$, and `h₀` says
 that the failure event is then empty. Otherwise `h₁` receives the frame, its complement and the
@@ -129,12 +123,12 @@ private theorem measureReal_le_of_frame (A : Matrix m n ℝ) (hX : HasLaw X (gau
       conv_lhs => rw [← hEV]
       simp only [Matrix.mul_assoc]
     obtain ⟨s', hs', hss'⟩ := h₁ Z V₂ hZ hV₂ hZV hZA hF hS hM
-    refine measureReal_le_of_ae_imp ?_ hs'
+    refine (measureReal_mono_ae ?_).trans hs'
     filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix Z hX
       (by rwa [hZ.rank_eq, Fintype.card_fin])] with ω hω
     exact hss' ω hω
   · have hA : truncatedSVD A k = A := truncatedSVD_of_rank_le A (A.rank_le_card_width.trans hkn.le)
-    refine measureReal_le_of_ae_imp (t := ∅) ?_ (by rwa [measureReal_empty])
+    refine (measureReal_mono_ae (t := ∅) ?_).trans (by rwa [measureReal_empty])
     filter_upwards [ae_rsvd_eq_self_of_hasLaw_gaussianMatrix A hX
       (A.rank_le_card_width.trans (hkn.le.trans hkl))] with ω hω hs
     exact h₀ ω (by rw [hω, sub_self]) hA hs

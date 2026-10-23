@@ -236,13 +236,6 @@ private theorem ae_norm_ofReal_eq_one :
     ∀ᵐ σ ∂rademacherVector n, ∀ i, ‖((σ i : ℝ) : 𝕜)‖ = 1 ∧ ((σ i : ℝ) : 𝕜) ^ 2 = 1 :=
   ae_norm_ofReal_eq_one_of_hasLaw_rademacherVector HasLaw.id
 
-/-- The integral of a function of the signs equal to $c$ almost surely is $c$. -/
-private theorem integral_eq_of_ae_rademacherVector {E : Type*} [NormedAddCommGroup E]
-    [NormedSpace ℝ E] [CompleteSpace E] {f : (n → ℝ) → E} {c : E}
-    (hf : ∀ᵐ σ ∂rademacherVector n, f σ = c) :
-    ∫ σ, f σ ∂rademacherVector n = c := by
-  rw [integral_congr_ae hf, integral_const, probReal_univ, one_smul]
-
 omit [Fintype k] [Fintype n] [DecidableEq k] in
 /-- The set of matrices with entries of modulus at most $1$ is compact. -/
 private theorem isCompact_setOf_norm_apply_le_one :
@@ -405,11 +398,11 @@ private theorem integral_norm_trace_mul_countSketchMatrix_sq [DecidableEq n] (h 
   rw [integral_congr_ae e, integral_norm_quadForm_sub_trace_sq hind
     (fun i => memLp_ofReal_of_hasLaw_rademacherVector hσ 4 i)
     (integral_ofReal_of_hasLaw_rademacherVector hσ)
-    (fun i => integral_eq_of_ae_rademacherVector
+    (fun i => integral_eq_const
       (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow]))
-    (s := 1) (fun i => integral_eq_of_ae_rademacherVector
+    (s := 1) (fun i => integral_eq_const
       (ae_norm_ofReal_eq_one.mono fun σ h => (h i).2))
-    (m₄ := 1) (fun i => integral_eq_of_ae_rademacherVector
+    (m₄ := 1) (fun i => integral_eq_const
       (ae_norm_ofReal_eq_one.mono fun σ h => by rw [(h i).1, one_pow])) A]
   simp only [hdiag, norm_zero, norm_one, one_pow, one_mul, ne_eq, OfNat.ofNat_ne_zero,
     not_false_eq_true, zero_pow, Finset.sum_const_zero, mul_zero, add_zero, frobNorm_sq_eq_sum,

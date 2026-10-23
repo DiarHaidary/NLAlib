@@ -72,19 +72,16 @@ theorem _root_.Matrix.IsHermitian.pminresIterate_eq_preconditionedLanczosMatrix
       (preconditionedLanczosMatrix A M (b - A *ᵥ x₀) q *ᵥ
         (pinv ((preconditionedLanczosTridiagonal A M (b - A *ᵥ x₀) (q + 1)).submatrix id
           Fin.castSucc) *ᵥ Pi.single 0 1)) := by
-  obtain ⟨C, -, hCu, hMC, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hC : IsUnit C := (Matrix.isUnit_iff_isUnit_det C).mpr hCu
+  obtain ⟨C, hC, hMC⟩ := hM.exists_isUnit_eq_mul_conjTranspose
   obtain ⟨y₀, hy₀⟩ : ∃ y₀, C *ᵥ y₀ = x₀ :=
-    ⟨C⁻¹ *ᵥ x₀, by rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv C hCu, Matrix.one_mulVec]⟩
+    ⟨C⁻¹ *ᵥ x₀, by rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv C
+      ((Matrix.isUnit_iff_isUnit_det C).mp hC), Matrix.one_mulVec]⟩
   have hr : Cᴴ *ᵥ (b - A *ᵥ x₀) = Cᴴ *ᵥ b - (Cᴴ * A * C) *ᵥ y₀ := by
     rw [← hy₀]
     exact Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀
   have hn : Real.sqrt (RCLike.re (quadForm M (b - A *ᵥ x₀))) =
       ‖WithLp.toLp 2 (Cᴴ *ᵥ (b - A *ᵥ x₀))‖ := by
-    have h := quadForm_conjTranspose_mul_self Cᴴ (b - A *ᵥ x₀)
-    rw [Matrix.conjTranspose_conjTranspose] at h
-    rw [hMC, h, RCLike.ofReal_re, Real.sqrt_sq (norm_nonneg _)]
+    rw [hMC, quadForm_mul_conjTranspose_self, RCLike.ofReal_re, Real.sqrt_sq (norm_nonneg _)]
   have hH := Matrix.isHermitian_conjTranspose_mul_mul C hA
   rw [pminresIterate_eq_mulVec_gmresIterate hAu hC hMC hy₀, hH.gmresIterate_eq_lanczosMatrix,
     hA.preconditionedLanczosMatrix_eq hMC, hA.preconditionedLanczosTridiagonal_eq hMC,

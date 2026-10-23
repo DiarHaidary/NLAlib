@@ -1,5 +1,6 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import NLAlib.Estimation.Spectral.RandomStart
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.HutchPlusPlus
 public import NLAlib.Estimation.Trace.HutchPlusPlusTail
@@ -7,7 +8,9 @@ public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
+public import NLAlib.ForMathlib.Algebra.Polynomial.Expand
 public import NLAlib.ForMathlib.Analysis.CStarAlgebra.Matrix
+public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Basic
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
@@ -21,6 +24,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.ChebyshevGauss
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
@@ -52,12 +56,14 @@ public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Ma
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
+public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Probability.Moments.Variance
+public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
@@ -66,9 +72,12 @@ public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Basic.Space
+public import NLAlib.Krylov.Eigenvalues.PowerIteration
+public import NLAlib.Krylov.Eigenvalues.Ritz
 public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Krylov.Functions.NearOptimality
 public import NLAlib.Krylov.Functions.Optimality
+public import NLAlib.Krylov.Functions.Quadrature
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
@@ -106,6 +115,7 @@ public import NLAlib.LowRank.Oblivious.CountSketch
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.Gaussian
 public import NLAlib.LowRank.Oblivious.GeneralizedNystrom
+public import NLAlib.LowRank.Oblivious.Haar
 public import NLAlib.LowRank.Oblivious.RangeFinder
 public import NLAlib.LowRank.Oblivious.RowSampling
 public import NLAlib.LowRank.Oblivious.SRHT
@@ -240,6 +250,7 @@ public import NLAlib.Matrix.Spectral.Schur
 public import NLAlib.Matrix.Spectral.Simultaneous
 public import NLAlib.Matrix.Spectral.SingularValueInequalities
 public import NLAlib.Matrix.Spectral.SingularValues
+public import NLAlib.Matrix.Spectral.SpectralMeasure
 public import NLAlib.Matrix.Spectral.SpectralRadius
 public import NLAlib.Matrix.Spectral.SylvesterCriterion
 public import NLAlib.Matrix.Spectral.SylvesterEquation
@@ -268,10 +279,14 @@ public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.Stieltjes
+public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import NLAlib.Polynomial.Interpolation.DividedDifference
 public import NLAlib.Polynomial.Interpolation.Stieltjes
+public import NLAlib.Polynomial.Orthogonal.Basic
+public import NLAlib.Polynomial.Orthogonal.Gauss
+public import NLAlib.Polynomial.Orthogonal.Moments
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare
@@ -293,6 +308,7 @@ public import NLAlib.Probability.Isotropic
 public import NLAlib.Probability.Law
 public import NLAlib.Probability.LogSobolev
 public import NLAlib.Probability.MatrixConcentration.Bernstein
+public import NLAlib.Probability.MatrixConcentration.BernsteinWithoutReplacement
 public import NLAlib.Probability.MatrixConcentration.Chernoff
 public import NLAlib.Probability.MatrixConcentration.ChernoffSum
 public import NLAlib.Probability.MatrixConcentration.ChernoffWithoutReplacement
@@ -342,11 +358,13 @@ public import NLAlib.RandomMatrix.Haar.Moments
 public import NLAlib.RandomMatrix.Haar.Sphere
 public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
+public import NLAlib.RandomMatrix.Rademacher.Basic
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Regression.CountSketch
 public import NLAlib.Regression.Embedding
 public import NLAlib.Regression.Gaussian
+public import NLAlib.Regression.Haar
 public import NLAlib.Regression.IterativeSketching
 public import NLAlib.Regression.Oblique
 public import NLAlib.Regression.Oblivious
@@ -357,6 +375,7 @@ public import NLAlib.Regression.SubGaussian
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.Haar
 public import NLAlib.Sketching.Gaussian.HaarEmbedding
+public import NLAlib.Sketching.Gaussian.ProjectionCost
 public import NLAlib.Sketching.Gaussian.Rademacher
 public import NLAlib.Sketching.Gaussian.SubGaussian
 public import NLAlib.Sketching.Properties.FixedSubspace
@@ -374,5 +393,6 @@ public import NLAlib.Sketching.Sparse.CountSketch
 public import NLAlib.Sketching.Sparse.CountSketchEmbedding
 public import NLAlib.Sketching.Structured.Flattening
 public import NLAlib.Sketching.Structured.SRHT
+public import NLAlib.Sketching.Structured.SRHTMultiplication
 public import NLAlib.Solvers.Kaczmarz
 public import NLAlib.Solvers.SketchAndProject

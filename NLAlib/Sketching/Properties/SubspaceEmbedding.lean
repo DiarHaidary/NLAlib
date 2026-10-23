@@ -95,12 +95,6 @@ section Aux
 
 open scoped ComplexOrder
 
-/-- Congruence preserves the Loewner order, for a factor with any column index type. -/
-private theorem conjTranspose_mul_mul_le {G H : Matrix n n 𝕜} (h : G ≤ H) (C : Matrix n p 𝕜) :
-    Cᴴ * G * C ≤ Cᴴ * H * C := by
-  rw [Matrix.le_iff, ← Matrix.sub_mul, ← Matrix.mul_sub]
-  exact (Matrix.le_iff.mp h).conjTranspose_mul_mul_same' C
-
 /-- A Gram matrix is positive semidefinite, for any column index type. -/
 private theorem posSemidef_conjTranspose_mul_self (U : Matrix n p 𝕜) : (Uᴴ * U).PosSemidef := by
   classical
@@ -157,7 +151,7 @@ private theorem forall_mem_range_iff [Fintype p] {U : Matrix n p 𝕜} {P : (n �
 /-- Right multiplication of the subspace basis, lower half. -/
 private theorem isSubspaceInjection_mul_right [Fintype p] (h : IsSubspaceInjection S U a)
     (C : Matrix p q 𝕜) : IsSubspaceInjection S (U * C) a := by
-  have h' := conjTranspose_mul_mul_le h C
+  have h' := conjTranspose_mul_mul_le_conjTranspose_mul_mul h C
   have e₁ : (U * C)ᴴ * (U * C) = Cᴴ * (Uᴴ * U) * C := by
     simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
   have e₂ : (S * (U * C))ᴴ * (S * (U * C)) = Cᴴ * ((S * U)ᴴ * (S * U)) * C := by
@@ -170,7 +164,7 @@ private theorem isSubspaceInjection_mul_right [Fintype p] (h : IsSubspaceInjecti
 private theorem upper_mul_right [Fintype p]
     (h : (S * U)ᴴ * (S * U) ≤ b • (Uᴴ * U)) (C : Matrix p q 𝕜) :
     (S * (U * C))ᴴ * (S * (U * C)) ≤ b • ((U * C)ᴴ * (U * C)) := by
-  have h' := conjTranspose_mul_mul_le h C
+  have h' := conjTranspose_mul_mul_le_conjTranspose_mul_mul h C
   have e₁ : (U * C)ᴴ * (U * C) = Cᴴ * (Uᴴ * U) * C := by
     simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
   have e₂ : (S * (U * C))ᴴ * (S * (U * C)) = Cᴴ * ((S * U)ᴴ * (S * U)) * C := by

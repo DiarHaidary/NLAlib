@@ -14,7 +14,8 @@ public import NLAlib.Sketching.Gaussian.Gaussian
 # Regression with a Gaussian sketch
 
 A standard Gaussian sketch gives relative squared Frobenius residual error with failure
-probability $\delta$ at $O((r+1)/(\varepsilon\delta))$ rows, where
+probability $\delta$ at $O((r+1)/(\varepsilon\delta))$ rows through the second JL moment, and at
+$O((r+1)\log(1/\delta)/\varepsilon)$ rows through the JL moment at $p = \log(1/\delta)$, where
 $r=\operatorname{rank}\mathbf{A}$. The sketch is unnormalized: scaling cancels in
 `NLAlib.sketchAndSolve`. The proof combines a constant subspace injection with the Gaussian's
 second JL moment through `NLAlib.Regression.Oblivious`; it makes no optimal logarithmic-in-failure
@@ -29,7 +30,8 @@ and $O(\log(1/\tau))$ iterations, from the sketch-and-solve start. Design:
 ## Main results
 
 * `NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix`:
-  explicit sufficient sizes for relative residual error.
+  explicit sufficient sizes for relative residual error, and its $\log(1/\delta)$ twin
+  [`…_of_jlMomentDim_le`](https://nla-lib.org/explore/#d/NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le).
 * [Asymptotic form](https://nla-lib.org/explore/#d/NLAlib.exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix):
   the asymptotic form, including rank zero.
 * `NLAlib.measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_gaussianMatrix`:
@@ -63,9 +65,13 @@ No full-rank assumption on $\mathbf{A}$ is needed; $\mathbf{B}$ may have several
 The first size is `NLAlib.gaussianInjectionDim A.rank (1 / 2) (δ / 2)`.
 [Woodruff2014, proof of Theorem 23]; the injection-plus-multiplication route there, here with a
 Gaussian sketch's second JL moment and a squared matrix residual. This is a sufficient
-second-moment rate, rather than an optimal Gaussian failure dependence.
-Asymptotic form:
-`exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix`.
+second-moment rate, rather than an optimal Gaussian failure dependence. Incomparable with its
+$\log(1/\delta)$ twin
+`measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`
+(rule 4): this one needs fewer rows at constant $\delta$, the twin for small $\delta$; the
+asymptotic form
+`exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix` is
+proved from the twin.
 Result: sketch-and-solve-ls -/
 theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix
     (hG : HasLaw G (gaussianMatrix p m) μ) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
@@ -85,43 +91,83 @@ theorem measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianM
   have hsq : η ^ 2 = ε / (4 * ((A.rank : ℝ) + 1)) := Real.sq_sqrt (by positivity)
   have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
     (d := A.rank) hG (by norm_num) (by norm_num) (half_pos hδ) (by linarith) hp
-  have h := (hasJLMoment_of_hasLaw_gaussianMatrix hG hη
-    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le
-    (hOSI.hasSubspaceInjection (U := A) le_rfl)
-    (hG.aemeasurable.const_smul ((√(Fintype.card p : ℝ))⁻¹)) (by norm_num) hη
-    (by norm_num) (by positivity) B
-  have hcoef : 1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2 ≤ 1 + ε := by
-    rw [add_le_add_iff_left, div_le_iff₀ (by norm_num), hsq, ← mul_div_assoc,
-      div_le_iff₀ (by positivity)]
-    nlinarith
   have hfail : 2 / (Fintype.card p * η ^ 2) ≤ δ / 2 := by
     rw [hsq]
     have e : 2 / (Fintype.card p * (ε / (4 * ((A.rank : ℝ) + 1)))) =
         8 * ((A.rank : ℝ) + 1) / (Fintype.card p * ε) := by field_simp; ring
     rw [e, div_le_iff₀ (by positivity)]
     nlinarith
-  have hnorm : (√(Fintype.card p : ℝ))⁻¹ ≠ 0 := inv_ne_zero (ne_of_gt (Real.sqrt_pos.2 hp0))
-  refine (measureReal_mono fun ω hω => ?_).trans (h.trans (by linarith))
-  change (1 + (A.rank : ℝ) * η ^ 2 / (1 - 1 / 2) ^ 2) *
-    frobNorm ((1 - rangeProjector A) * B) ^ 2 <
-      frobNorm (B - A * sketchAndSolve A ((√(Fintype.card p : ℝ))⁻¹ • G ω) B) ^ 2
-  rw [sketchAndSolve_smul_sketch A (G ω) B hnorm]
-  exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)) hω
+  exact ((hasJLMoment_of_hasLaw_gaussianMatrix hG hη
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection le_rfl) hG.aemeasurable
+    (inv_ne_zero (Real.sqrt_pos.2 hp0).ne') (by norm_num) hε (by norm_num) (by positivity)
+    B).trans (by linarith)
 
+/-- **Gaussian sketch-and-solve, relative residual with high probability**, $\log(1/\delta)$ size
+form: for a standard Gaussian $p\times m$ sketch $\mathbf{G}$, $r=\operatorname{rank}\mathbf{A}$,
+$0 < \varepsilon \le 4$, $\delta > 0$,
+if <!-- value gaussianInjectionDim r (1/2) (\delta/2) -->
+$$p\ge\frac{4(\sqrt{r}+\sqrt{2\log(1/(\delta/2))})^2}{(1/2)^2}$$
+and <!-- value jlMomentDim {\sqrt{\varepsilon/(4(r + 1))}} (\delta/2) -->
+$$p \ge 128\max(2, \log(1/(\delta/2)))/\sqrt{\varepsilon/(4(r + 1))}^2\,,$$
+that is $p \ge 512(r + 1)\max(2, \log(2/\delta))/\varepsilon$, then
+$$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
+\|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{G},
+\mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,.$$
+The sizes are `NLAlib.gaussianInjectionDim A.rank (1 / 2) (δ / 2)` and
+`NLAlib.jlMomentDim (√(ε / (4 * (A.rank + 1)))) (δ / 2)`: the JL moment at
+$p = \max(2, \log(2/\delta))$ (`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`)
+in place of the second moment, for which the JL budget $\sqrt{\varepsilon/(4(r+1))}$ must be at
+most $1$, hence $\varepsilon \le 4$. Incomparable with
+`NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix` (rule 4).
+[Woodruff2014, proof of Theorem 23]; the injection-plus-multiplication route there, here with the
+Gaussian JL moment at $p = \log(1/\delta)$. The product $(r + 1)\log(1/\delta)$ is what this route
+gives; the optimal Gaussian rate needs more than JL moments. Asymptotic form:
+`exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix`.
+Result: sketch-and-solve-ls -/
+theorem
+    measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+    (hG : HasLaw G (gaussianMatrix p m) μ) (A : Matrix m n ℝ) (B : Matrix m r ℝ)
+    {ε δ : ℝ} (hε : 0 < ε) (hε4 : ε ≤ 4) (hδ : 0 < δ)
+    (hp : gaussianInjectionDim A.rank (1 / 2) (δ / 2) ≤ Fintype.card p)
+    (hp' : jlMomentDim (√(ε / (4 * ((A.rank : ℝ) + 1)))) (δ / 2) ≤ Fintype.card p) :
+    μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
+      frobNorm (B - A * sketchAndSolve A (G ω) B) ^ 2} ≤ δ := by
+  have : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  rcases le_or_gt 1 δ with hδ1 | hδ1
+  · exact measureReal_le_one.trans hδ1
+  have hp0 : (0 : ℝ) < Fintype.card p :=
+    (gaussianInjectionDim_pos A.rank (by norm_num) (half_pos hδ) (by linarith)).trans_le hp
+  let η := √(ε / (4 * ((A.rank : ℝ) + 1)))
+  have hη : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hη1 : η ≤ 1 := by
+    refine Real.sqrt_le_one.2 ((div_le_one (by positivity)).2 ?_)
+    linarith [Nat.cast_nonneg (α := ℝ) A.rank]
+  have hOSI := isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjectionDim_le
+    (d := A.rank) hG (by norm_num) (by norm_num) (half_pos hδ) (by linarith) hp
+  exact ((hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le hG hη hη1 (half_pos hδ) hp'
+    ).measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le
+    (hOSI.hasSubspaceInjection le_rfl) hG.aemeasurable
+    (inv_ne_zero (Real.sqrt_pos.2 hp0).ne') (by norm_num) hε (le_max_left _ _) (by positivity)
+    B).trans (by linarith)
+
+-- The explicit theorem's full name in the `Asymptotic:` tag exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **Gaussian sketch-and-solve, asymptotic relative residual with high probability**:
-$O((r+1)/(\varepsilon\delta))$ rows suffice, with $r=\operatorname{rank}\mathbf{A}$:
+$O((r+1)\log(1/\delta)/\varepsilon)$ rows suffice, with $r=\operatorname{rank}\mathbf{A}$:
 there are absolute $C,\varepsilon_0>0$ such that a standard Gaussian $p\times m$ sketch with
-$p\ge C(r+1)/(\varepsilon\delta)$, $0<\varepsilon\le\varepsilon_0$ and
+$p\ge C(r+1)\log(1/\delta)/\varepsilon$, $0<\varepsilon\le\varepsilon_0$ and
 $0<\delta\le1/2$ satisfies
 $$\mathbb{P}\bigl[(1+\varepsilon)\|(\mathbf{I}-\mathbf{P}_{\mathbf{A}})\mathbf{B}
 \|_{\mathsf{F}}^2<\|\mathbf{B}-\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{A},\mathbf{G},
 \mathbf{B})\|_{\mathsf{F}}^2\bigr]\le\delta\,.$$
 Rank zero and matrix right-hand sides are included; all constants precede dimensions and data.
-Proved from `NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix`
-with $C=128$, $\varepsilon_0=1$. [Woodruff2014, proof of Theorem 23]; here the Gaussian
-second-moment route, without a claim of optimal failure dependence.
+Proved from
+`measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`
+with $\varepsilon_0 = 1$. [Woodruff2014, proof of Theorem 23]; here the Gaussian JL-moment route,
+without a claim of optimal failure dependence.
 Asymptotic:
-NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix
+NLAlib.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
 Result: sketch-and-solve-ls -/
 theorem
     exists_forall_measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix :
@@ -131,35 +177,34 @@ theorem
         (A : Matrix m n ℝ) (B : Matrix m r ℝ) (ε δ : ℝ),
         HasLaw G (gaussianMatrix p m) μ → 0 < ε → ε ≤ ε₀ →
         0 < δ → δ ≤ 1 / 2 →
-        C * (((A.rank : ℝ) + 1) / (ε * δ)) ≤ Fintype.card p →
+        C * (((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε) ≤ Fintype.card p →
         μ.real {ω | (1 + ε) * frobNorm ((1 - rangeProjector A) * B) ^ 2 <
           frobNorm (B - A * sketchAndSolve A (G ω) B) ^ 2} ≤ δ := by
-  refine ⟨128, 1, by norm_num, one_pos, ?_⟩
+  refine ⟨3072, 1, by norm_num, one_pos, ?_⟩
   intro Ω m n r p _ _ _ _ _ _ μ G A B ε δ hG hε hε1 hδ hδ2 hp
-  have hsize : 128 * ((A.rank : ℝ) + 1) ≤ (Fintype.card p : ℝ) * (ε * δ) := by
-    rwa [← mul_div_assoc, div_le_iff₀ (mul_pos hε hδ)] at hp
-  refine measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix
-    hG A B hε hδ ?_ ?_
-  · refine (gaussianInjectionDim_le A.rank (1 / 2) (half_pos hδ) (by linarith)
-      ).trans ?_
-    have hlog := Real.log_le_sub_one_of_pos (show 0 < 1 / (δ / 2) by positivity)
-    have hδlog : δ * Real.log (1 / (δ / 2)) ≤ 2 - δ := by
-      have e : δ * (1 / (δ / 2) - 1) = 2 - δ := by field_simp
-      nlinarith
-    have hbound : (32 * (A.rank : ℝ) + 64 * Real.log (1 / (δ / 2))) * δ ≤
-        128 * ((A.rank : ℝ) + 1) := by
-      nlinarith [Nat.cast_nonneg (α := ℝ) A.rank]
-    have hεbound := mul_le_mul_of_nonneg_right hε1
-      (show 0 ≤ 128 * ((A.rank : ℝ) + 1) by positivity)
-    have hL : 0 ≤ 32 * (A.rank : ℝ) + 64 * Real.log (1 / (δ / 2)) := by
-      have : 0 ≤ Real.log (1 / (δ / 2)) :=
-        Real.log_nonneg (by rw [one_le_div (half_pos hδ)]; linarith)
-      positivity
-    have hεδ := mul_le_mul_of_nonneg_left hε1 (mul_nonneg hL hδ.le)
-    norm_num only [one_div, inv_pow, inv_div, one_pow] at *
-    nlinarith
-  · have hnonneg : (0 : ℝ) ≤ A.rank := Nat.cast_nonneg _
-    nlinarith
+  have h2 := Real.log_two_le_log_one_div hδ hδ2
+  have hl2 := Real.log_two_gt_d9
+  have hlh : Real.log (1 / (δ / 2)) = Real.log 2 + Real.log (1 / δ) := by
+    rw [show 1 / (δ / 2) = 2 * (1 / δ) by field_simp, Real.log_mul (by norm_num) (by positivity)]
+  have hr : (0 : ℝ) ≤ A.rank := Nat.cast_nonneg _
+  have hrL : (0 : ℝ) ≤ ((A.rank : ℝ) + 1) * Real.log (1 / δ) := by
+    have : 0 ≤ Real.log (1 / δ) := by linarith
+    positivity
+  have hε' : ((A.rank : ℝ) + 1) * Real.log (1 / δ) ≤
+      ((A.rank : ℝ) + 1) * Real.log (1 / δ) / ε := le_div_self hrL hε hε1
+  refine
+    measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
+    hG A B hε (by linarith) hδ ?_ ?_
+  · refine (gaussianInjectionDim_le _ _ (half_pos hδ) (by linarith)).trans (le_trans ?_ hp)
+    rw [hlh, div_le_iff₀ (by norm_num)]
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
+  · refine (jlMomentDim_le (half_pos hδ) (by linarith)).trans (le_trans ?_ hp)
+    rw [Real.sq_sqrt (by positivity), hlh]
+    rw [show 384 * (Real.log 2 + Real.log (1 / δ)) / (ε / (4 * ((A.rank : ℝ) + 1))) =
+      1536 * (((A.rank : ℝ) + 1) * (Real.log 2 + Real.log (1 / δ))) / ε by field_simp; ring,
+      mul_div_assoc']
+    refine div_le_div_of_nonneg_right ?_ hε.le
+    nlinarith [mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ (A.rank : ℝ) + 1)]
 
 /-! ### Gaussian sketch-and-precondition -/
 
@@ -270,11 +315,7 @@ theorem
   refine ⟨288, 1 / 2, by norm_num, by norm_num, ?_⟩
   intro Ω p m n _ _ _ _ _ _ μ G A y x₀ τ δ q hG hA hx₀ hτ hτ1 hδ hδ2 hp hq
   have hl1 : 0 ≤ Real.log (1 / δ) := Real.log_nonneg (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   have hτl : 0 ≤ Real.log (1 / τ) := Real.log_nonneg (by rw [le_div_iff₀ hτ]; linarith)
   refine measureReal_norm_sub_mulVec_sketchAndPrecondition_sq_gt_le_of_hasLaw_gaussianMatrix hG hA y
     hx₀ (by norm_num : (0 : ℝ) < 1 / 2) le_rfl hδ ?_

@@ -209,13 +209,6 @@ private theorem conjTranspose_mul_mul_mul (T : Matrix l m 𝕜) (X : Matrix m n 
     (T * X)ᴴ * (T * X) = Xᴴ * (Tᴴ * T) * X := by
   simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
 
-omit [Fintype n] in
-/-- Conjugating a real multiple of the identity gives that multiple of the Gram matrix:
-$\mathbf{X}^{\mathsf{H}}(a\mathbf{I})\mathbf{X} = a\mathbf{X}^{\mathsf{H}}\mathbf{X}$. -/
-private theorem conjTranspose_mul_smul_one_mul [DecidableEq m] (a : ℝ) (X : Matrix m n 𝕜) :
-    Xᴴ * a • (1 : Matrix m m 𝕜) * X = a • (Xᴴ * X) := by
-  rw [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul]
-
 /-- A left factor $\mathbf{T}$ with $\mathbf{T}^{\mathsf{H}}\mathbf{T} \preceq a\mathbf{I}$
 enlarges squared singular values by at most $a$:
 $\sigma_k(\mathbf{T}\mathbf{X})^2 \le a \, \sigma_k(\mathbf{X})^2$. -/
@@ -230,7 +223,7 @@ theorem singularValues_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m]
       rw [PiLp.toLp_single, PiLp.norm_single, norm_one, one_pow, mul_one] at hi
       exact (sq_nonneg _).trans hi
     have hle := conjTranspose_mul_mul_le_conjTranspose_mul_mul h X
-    rw [conjTranspose_mul_smul_one_mul, ← conjTranspose_mul_mul_mul] at hle
+    rw [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, ← conjTranspose_mul_mul_mul] at hle
     have hk := eigenvalue_le_eigenvalue_of_le hle (Matrix.isHermitian_conjTranspose_mul_self _) k
     rwa [eigenvalue_real_smul _ ha,
       ← singularValues_sq, ← singularValues_sq] at hk
@@ -244,7 +237,7 @@ theorem mul_singularValues_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 
     a * singularValues X k ^ 2 ≤ singularValues (T * X) k ^ 2 := by
   rcases le_or_gt 0 a with ha | ha
   · have hle := conjTranspose_mul_mul_le_conjTranspose_mul_mul h X
-    rw [conjTranspose_mul_smul_one_mul, ← conjTranspose_mul_mul_mul] at hle
+    rw [Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, ← conjTranspose_mul_mul_mul] at hle
     have hk := eigenvalue_le_eigenvalue_of_le hle
       ((Matrix.isHermitian_conjTranspose_mul_self X).smul (IsSelfAdjoint.all a)) k
     rwa [eigenvalue_real_smul _ ha,
@@ -408,11 +401,7 @@ theorem specNorm_le_sqrt_mul_one_add_of_specNorm_sub_smul_one_le [DecidableEq n]
     {A : Matrix m n 𝕜} {N α : ℝ} (hα : 0 ≤ α)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n 𝕜)) ≤ N * max α (α ^ 2)) :
     specNorm A ≤ √N * (1 + α) := by
-  have hH : (Aᴴ * A - N • (1 : Matrix n n 𝕜)).IsHermitian :=
-    (Matrix.isHermitian_conjTranspose_mul_self A).sub (isHermitian_real_smul_one N)
-  have hle : Aᴴ * A ≤ (N + N * max α (α ^ 2)) • (1 : Matrix n n 𝕜) := by
-    rw [add_smul, add_comm]
-    exact sub_le_iff_le_add.mp (hH.le_smul_one_of_specNorm_le h)
+  have hle := conjTranspose_mul_self_le_add_smul_one_of_specNorm_sub_smul_one_le h
   have hmax : max α (α ^ 2) ≤ 2 * α + α ^ 2 := max_le (by nlinarith) (by nlinarith)
   rw [conjTranspose_mul_self_le_smul_one_iff] at hle
   rw [specNorm_le_iff (by positivity)]
@@ -443,11 +432,7 @@ theorem sqrt_mul_one_sub_le_singularValues_of_specNorm_sub_smul_one_le [Decidabl
   rcases le_total N 0 with hN | hN
   · rw [Real.sqrt_eq_zero_of_nonpos hN, zero_mul]
     exact singularValues_nonneg A k
-  have hH : (Aᴴ * A - N • (1 : Matrix n n 𝕜)).IsHermitian :=
-    (Matrix.isHermitian_conjTranspose_mul_self A).sub (isHermitian_real_smul_one N)
-  have hle : (N - N * max α (α ^ 2)) • (1 : Matrix n n 𝕜) ≤ Aᴴ * A := by
-    rw [sub_smul, sub_le_iff_le_add]
-    exact neg_le_sub_iff_le_add.mp (hH.neg_smul_one_le_of_specNorm_le h)
+  have hle := sub_smul_one_le_conjTranspose_mul_self_of_specNorm_sub_smul_one_le h
   have h2 := le_singularValues_last_sq_of_smul_one_le hk hle
   rw [max_eq_left (by nlinarith)] at h2
   refine (sq_le_sq₀ (by have := Real.sqrt_nonneg N; nlinarith) (singularValues_nonneg A k)).mp

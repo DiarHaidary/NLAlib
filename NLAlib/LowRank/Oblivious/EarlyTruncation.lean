@@ -46,7 +46,9 @@ Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18; `docs/design/LowR
 * `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le`: the early-truncated
   randomized SVD from an injection and the JL moment property, with its tail–tail input, in
   `HasJLMoment`,
-  `measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le`.
+  `measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le`, and
+  its $(1 + \varepsilon)$ form at a rescaled sketch,
+  `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le`.
 * in `IsObliviousSubspaceInjection`,
   `measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`, and
   `NLAlib.HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_gt_mul_le`: the
@@ -110,17 +112,11 @@ theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeas
     μ.real {ω | (frobNorm (A - truncatedSVD A k) ^ 2 + √(k : ℝ) * ηw) / ((1 - θ) * a) +
         ηχ ^ 2 / (θ * (1 - θ) * a ^ 2) < frobNorm (A - P ω * A) ^ 2} ≤ δ + δw + δχ := by
   classical
-  obtain ⟨Z, hZ, hR⟩ :=
-    exists_hasOrthonormalCols_range_eq (truncatedSVD A k)ᴴ (Fintype.card_fin _)
-  have hPZ : Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ := by
-    rw [← hZ.rangeProjector_eq, rangeProjector_inj, hR]
-  have hAZ : A * Z * Zᴴ = truncatedSVD A k := by
-    rw [Matrix.mul_assoc, hPZ, mul_rangeProjector_conjTranspose_truncatedSVD]
+  obtain ⟨Z, hZ, hR, hPZ, hAZ⟩ :=
+    exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD (p := Fin _) A k
+      (Fintype.card_fin _)
   have hEZ : (A - truncatedSVD A k) * Z = 0 := by
-    have h0 : (A - A * Z * Zᴴ) * Z = 0 := by
-      rw [Matrix.sub_mul, Matrix.mul_assoc (A * Z), show Zᴴ * Z = 1 from hZ, Matrix.mul_one,
-        sub_self]
-    rwa [hAZ] at h0
+    simpa only [hAZ] using hZ.sub_mul_mul_conjTranspose_mul_eq_zero A
   unfold HasSubspaceInjection at h
   refine (measureReal_mono (s₂ := ({ω | ¬ IsSubspaceInjection (X ω)ᴴ (truncatedSVD A k)ᴴ a} ∪
     {ω | ηw < frobNorm ((A - truncatedSVD A k) * X ω * (X ω)ᴴ * (A - truncatedSVD A k)ᴴ -
@@ -328,6 +324,66 @@ theorem HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_le [IsFini
   refine lt_of_eq_of_lt ?_ hω'
   rw [mul_pow, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
   field_simp
+
+omit [Fintype p] [DecidableEq m] [DecidableEq n] in
+/-- **The early-truncated randomized SVD to relative error from an injection and the JL moment
+property**: for a real test matrix $\mathbf{\Omega}$ and a scale $c \in \mathbb{R}$, if the sketch
+$(c\,\mathbf{\Omega})^{\mathsf{H}}$ injects
+$\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ with constant
+$1 - \varepsilon/6$ except with probability $\delta$ and has the
+$(\varepsilon/(6\sqrt{k}), \delta', q)$ JL moment property, $0 < \varepsilon \le 1$, $q \ge 2$,
+$\delta' \ge 0$, then
+$$\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)\|_{\mathsf{F}}^2 \le
+(1 + \varepsilon)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$$
+except with probability $\delta + 2\delta'$ ($k = 0$ is trivial). The output is computed at the
+raw $\mathbf{\Omega}$, the analysis runs at the rescaled sketch (the families' normalisation
+$c$). It is `NLAlib.HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le` with
+the two multiplication tails from the JL moment, each failing with probability $\delta'$; every
+dense and SRHT family statement of early truncation instantiates it.
+[CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; there for dense random sign matrices,
+with unspecified constants.
+Result: etrsvd -/
+theorem HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le
+    [IsFiniteMeasure μ] {A : Matrix m n ℝ} {k : ℕ} {c ε δ δ' q : ℝ}
+    (hJL : HasJLMoment (fun ω => (c • X ω)ᴴ) (ε / (6 * √(k : ℝ))) δ' q μ)
+    (h : HasSubspaceInjection (fun ω => (c • X ω)ᴴ) (truncatedSVD A k)ᴴ (1 - ε / 6) δ μ)
+    (hX : AEMeasurable (fun ω => c • X ω) μ) (hε : 0 < ε) (hε1 : ε ≤ 1) (hq : 2 ≤ q)
+    (hδ' : 0 ≤ δ') :
+    μ.real {ω | (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2} ≤ δ + 2 * δ' := by
+  classical
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine le_of_eq_of_le ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 ?_)
+      (add_nonneg (measureReal_nonneg.trans h) (by positivity))
+    refine measure_mono_null (fun ω hω => ?_) measure_empty
+    have hω' : (1 + ε) * frobNorm (A - truncatedSVD A 0) ^ 2 <
+        frobNorm (A - earlyTruncatedRSVD A (X ω) 0) ^ 2 := hω
+    rw [sub_earlyTruncatedRSVD, truncatedSVD_zero, truncatedSVD_zero, rangeProjector_zero,
+      sub_zero, sub_zero, Matrix.one_mul] at hω'
+    nlinarith [sq_nonneg (frobNorm A)]
+  have hεJ : 0 < ε / (6 * √(k : ℝ)) := by
+    have : (0 : ℝ) < √(k : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hk)
+    positivity
+  have hχ :=
+    hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_rangeProjector_gt_le
+    (A := A) (k := k) hX hεJ hq hδ'
+  rw [show ε / (6 * √(k : ℝ)) * √(k : ℝ) = ε / 6 by field_simp] at hχ
+  have h1 := h.measureReal_frobNorm_sub_mul_sq_gt_one_add_mul_le hε hε1
+    (P := fun ω => rangeProjector (truncatedSVD (A * X ω) k))
+    (fun ω => isStarProjection_rangeProjector _)
+    (fun ω => (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ k))
+    (fun ω => by
+      rw [Matrix.mul_smul, Matrix.mul_smul, Matrix.mul_smul, ← smul_sub, frobNorm_smul,
+        frobNorm_smul, rangeProjector_truncatedSVD_mul, Matrix.sub_mul]
+      exact mul_le_mul_of_nonneg_left (frobNorm_sub_truncatedSVD_le_of_rank_le (A * X ω)
+        ((Matrix.rank_mul_le_left _ _).trans (rank_truncatedSVD_le A k))) (norm_nonneg _))
+    (hJL.measureReal_frobNorm_sub_truncatedSVD_mul_mul_conjTranspose_mul_conjTranspose_sub_gt_le hX
+      hεJ hq hδ') hχ
+  refine (measureReal_mono fun ω hω => ?_).trans (h1.trans_eq (by ring))
+  have hω' : (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 <
+      frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := hω
+  rw [sub_earlyTruncatedRSVD, Matrix.sub_mul, Matrix.one_mul] at hω'
+  exact hω'
 
 end Real
 

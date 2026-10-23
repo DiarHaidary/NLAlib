@@ -179,46 +179,10 @@ private theorem truncatedGNFactor_le_one_add_of_mul_le {k l p : ℕ} {ε : ℝ} 
   have h8 : 8 * k * c ≤ 0.16 * ε := by nlinarith
   linarith
 
-/-! ### Helpers: conditioning, Jensen, the joint rank event -/
+/-! ### Helpers: the joint rank event -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Type*} [Fintype m]
   [Fintype n] [Fintype l] [Fintype p] {X : Ω → Matrix n l ℝ} {Ψ : Ω → Matrix m p ℝ}
-
-/-- Conditioning, as lower integrals: if for every $x$ the $W$-integral of $F(x, \cdot)$ is at
-most $H(x)$, then $\mathbb{E}F(U, W) \le \mathbb{E}H(U)$ for independent $U$, $W$. -/
-private theorem lintegral_comp_le_of_indepFun {α β : Type*} [MeasurableSpace α]
-    [MeasurableSpace β] [IsFiniteMeasure μ] {U : Ω → α} {W : Ω → β} {ν : Measure β}
-    (hU : AEMeasurable U μ) (hW : HasLaw W ν μ) (hUW : IndepFun U W μ) {F : α × β → ℝ}
-    (hF : Measurable F) {H : α → ℝ} (hH : Measurable H)
-    (hint : ∀ x, Integrable (fun w => F (x, w)) ν) (hF0 : ∀ q, 0 ≤ F q)
-    (hle : ∀ x, ∫ w, F (x, w) ∂ν ≤ H x) :
-    ∫⁻ ω, ENNReal.ofReal (F (U ω, W ω)) ∂μ ≤ ∫⁻ ω, ENNReal.ofReal (H (U ω)) ∂μ := by
-  rw [hUW.lintegral_comp_eq_lintegral_lintegral (f := fun q => ENNReal.ofReal (F q)) hU
-      hW.aemeasurable (ENNReal.measurable_ofReal.comp hF), hW.map_eq,
-    ← lintegral_map' (f := fun x => ENNReal.ofReal (H x))
-      (ENNReal.measurable_ofReal.comp hH).aemeasurable hU]
-  refine lintegral_mono fun x => ?_
-  rw [← ofReal_integral_eq_lintegral_ofReal (hint x) (ae_of_all _ fun w => hF0 (x, w))]
-  exact ENNReal.ofReal_le_ofReal (hle x)
-
-/-- Conditioning: integrability and the bound $\mathbb{E}F(U, W) \le \mathbb{E}H(U)$. -/
-private theorem integrable_and_integral_comp_le_of_indepFun {α β : Type*} [MeasurableSpace α]
-    [MeasurableSpace β] [IsFiniteMeasure μ] {U : Ω → α} {W : Ω → β} {ν : Measure β}
-    (hU : AEMeasurable U μ) (hW : HasLaw W ν μ) (hUW : IndepFun U W μ) {F : α × β → ℝ}
-    (hF : Measurable F) {H : α → ℝ} (hH : Measurable H)
-    (hint : ∀ x, Integrable (fun w => F (x, w)) ν) (hF0 : ∀ q, 0 ≤ F q)
-    (hle : ∀ x, ∫ w, F (x, w) ∂ν ≤ H x) (hHi : Integrable (fun ω => H (U ω)) μ) :
-    Integrable (fun ω => F (U ω, W ω)) μ ∧ ∫ ω, F (U ω, W ω) ∂μ ≤ ∫ ω, H (U ω) ∂μ := by
-  have hL := lintegral_comp_le_of_indepFun hU hW hUW hF hH hint hF0 hle
-  have hm : AEStronglyMeasurable (fun ω => F (U ω, W ω)) μ :=
-    (hF.comp_aemeasurable (hU.prodMk hW.aemeasurable)).aestronglyMeasurable
-  have hH0 (x : α) : 0 ≤ H x := (integral_nonneg fun w => hF0 (x, w)).trans (hle x)
-  refine ⟨⟨hm, ?_⟩, ?_⟩
-  · rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun ω => hF0 _)]
-    exact hL.trans_lt hHi.lintegral_lt_top
-  · rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hF0 _) hm,
-      integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun ω => hH0 _) hHi.aestronglyMeasurable]
-    exact ENNReal.toReal_mono hHi.lintegral_lt_top.ne hL
 
 /-- The joint rank event of the two test matrices: almost surely
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) =
@@ -412,10 +376,6 @@ private theorem integral_specNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
     exact_mod_cast this
   set H : Matrix n l ℝ → ℝ := fun x => 25 / (P : ℝ) * frobNorm (A - rsvd A x) ^ 2 +
     4 * (L : ℝ) / P * specNorm (A - rsvd A x) ^ 2 with hHdef
-  have hH : Measurable H :=
-    (((continuous_frobNorm.measurable.comp (measurable_const.sub (measurable_rsvd A))).pow_const
-      2).const_mul _).add (((continuous_specNorm.measurable.comp
-        (measurable_const.sub (measurable_rsvd A))).pow_const 2).const_mul _)
   have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (gaussianMatrix m p) (gaussianMatrix m p) :=
     HasLaw.id
   have hS := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hid
@@ -440,9 +400,11 @@ private theorem integral_specNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
   have hHi : Integrable (fun ω => H (X ω)) μ :=
     ((integrable_frobNorm_sub_rsvd_sq A hX.aemeasurable).const_mul _).add
       ((integrable_specNorm_sub_rsvd_sq A hX.aemeasurable).const_mul _)
-  obtain ⟨hI, hE⟩ := integrable_and_integral_comp_le_of_indepFun hX.aemeasurable hΨ hXΨ
-    (measurable_specNorm_obliqueProjector_sub_rsvd_sq A) hH hint (fun _ => sq_nonneg _) hle hHi
-  refine ⟨hI, hE.trans ?_⟩
+  have hF := measurable_specNorm_obliqueProjector_sub_rsvd_sq (l := l) (p := p) A
+  refine ⟨hXΨ.integrable_comp_of_integral_le hX.aemeasurable hΨ hF (fun _ => sq_nonneg _)
+      (ae_of_all _ fun ω => hint (X ω)) (ae_of_all _ fun ω => hle (X ω)) hHi,
+    (hXΨ.integral_comp_le_of_integral_le hX.aemeasurable hΨ hF (fun _ => sq_nonneg _)
+      (ae_of_all _ fun ω => hint (X ω)) (ae_of_all _ fun ω => hle (X ω)) hHi).trans ?_⟩
   have hG2 := integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX
     (k := k) (by omega)
   have hR := integral_specNorm_sub_rsvd_sq_le_div A hX hk hkl
@@ -514,13 +476,14 @@ private theorem integral_frobNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
     rw [gaussianProjectionFactor_def, gaussianProjectionFactor_def] at hq
     rw [gaussianProjectionFactor_def]
     nlinarith [sq_nonneg (frobNorm (A - rsvd A x))]
-  have hH : Measurable fun x : Matrix n l ℝ => h * frobNorm (A - rsvd A x) ^ 2 :=
-    ((continuous_frobNorm.measurable.comp (measurable_const.sub (measurable_rsvd A))).pow_const
-      2).const_mul _
-  obtain ⟨hI, hE⟩ := integrable_and_integral_comp_le_of_indepFun hX hΨ hXΨ
-    ((continuous_frobNorm.measurable.comp (measurable_obliqueProjector_sub_rsvd A)).pow_const 2)
-    hH hint (fun _ => sq_nonneg _) hle ((integrable_frobNorm_sub_rsvd_sq A hX).const_mul _)
-  exact ⟨hI, hE.trans_eq (integral_const_mul _ _)⟩
+  have hF := (continuous_frobNorm.measurable.comp
+    (measurable_obliqueProjector_sub_rsvd (l := l) (p := p) A)).pow_const 2
+  have hHi := (integrable_frobNorm_sub_rsvd_sq A hX).const_mul h
+  exact ⟨hXΨ.integrable_comp_of_integral_le hX hΨ hF (fun _ => sq_nonneg _)
+      (ae_of_all _ fun ω => hint (X ω)) (ae_of_all _ fun ω => hle (X ω)) hHi,
+    (hXΨ.integral_comp_le_of_integral_le hX hΨ hF (fun _ => sq_nonneg _)
+      (ae_of_all _ fun ω => hint (X ω)) (ae_of_all _ fun ω => hle (X ω)) hHi).trans_eq
+      (integral_const_mul _ _)⟩
 
 /-! ### Truncated generalized Nyström -/
 

@@ -542,6 +542,25 @@ theorem exists_hasOrthonormalCols_mul_mul_conjTranspose_eq_truncatedSVD {p : Typ
     rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector,
       Matrix.conjTranspose_conjTranspose] at h
 
+open scoped ComplexOrder in
+/-- A frame of the row space of the truncated SVD: for an index type $p$ with
+$\lvert p \rvert = \operatorname{rank} \llbracket \mathbf{A} \rrbracket_k$ there is
+$\mathbf{Z}$ with orthonormal columns indexed by $p$ whose column space is that of
+$\llbracket \mathbf{A} \rrbracket_k^{\mathsf{H}}$, so that
+$\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \mathbf{P}_{\llbracket \mathbf{A} \rrbracket_k^{\mathsf{H}}}$
+and $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$. -/
+theorem exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD {p : Type*}
+    [Fintype p] [DecidableEq p] (A : Matrix m n 𝕜) (k : ℕ)
+    (hp : Fintype.card p = (truncatedSVD A k).rank) :
+    ∃ Z : Matrix n p 𝕜, HasOrthonormalCols Z ∧
+      LinearMap.range Z.mulVecLin = LinearMap.range (truncatedSVD A k)ᴴ.mulVecLin ∧
+      Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ ∧ A * Z * Zᴴ = truncatedSVD A k := by
+  obtain ⟨Z, hZ, hR⟩ := exists_hasOrthonormalCols_range_eq (truncatedSVD A k)ᴴ
+    (by rw [Matrix.rank_conjTranspose, hp])
+  have hP : Z * Zᴴ = rangeProjector (truncatedSVD A k)ᴴ := by
+    rw [← hZ.rangeProjector_eq, rangeProjector_inj, hR]
+  exact ⟨Z, hZ, hR, hP, by rw [Matrix.mul_assoc, hP, mul_rangeProjector_conjTranspose_truncatedSVD]⟩
+
 /-- **A top-$k$ frame and its orthonormal completion**: for $\lvert p \rvert = k$ and
 $\lvert p \rvert + \lvert q \rvert = \lvert n \rvert$ there are $\mathbf{Z}$ and $\mathbf{V}$
 with orthonormal columns indexed by $p$ and $q$, $\mathbf{Z}^{\mathsf{H}}\mathbf{V} = \mathbf{0}$

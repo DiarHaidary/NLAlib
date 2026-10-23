@@ -183,9 +183,8 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_richardsonIterate_le {A M : Matrix 
     RCLike.re (quadForm A (xs - richardsonIterate A M b x₀ q)) ≤
       (max |1 - a| |1 - a'|) ^ (2 * q) * RCLike.re (quadForm A (xs - x₀)) := by
   have hfix : M *ᵥ (b - A *ᵥ xs) = 0 := by rw [hxs, sub_self, Matrix.mulVec_zero]
-  obtain ⟨S, -, hSu, hMS, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hS : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hSu
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
+  have hSu := (Matrix.isUnit_iff_isUnit_det S).mp hS
   have hB : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   have hspec : spectrum ℝ (Sᴴ * A * S) = spectrum ℝ (M * A) := by
     rw [hMS, spectrum_mul_conjTranspose_mul hS]

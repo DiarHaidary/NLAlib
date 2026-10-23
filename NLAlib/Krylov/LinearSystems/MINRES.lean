@@ -117,27 +117,9 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow_di
     (hs : spectrum ℝ A ⊆ Set.Icc (-a') (-a) ∪ Set.Icc a a') (b x₀ : n → 𝕜) (q : ℕ) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
       2 * ((a' / a - 1) / (a' / a + 1)) ^ (q / 2) * ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
-  obtain ⟨R, hR, hR₀, -, hRI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
-    (a' := a' ^ 2) (pow_pos ha 2) ∅ (q / 2) (C := 1)
-    fun x _ => by rw [Finset.prod_empty, abs_one]
-  rw [Finset.card_empty, zero_add] at hR
-  have hRn : R.natDegree ≤ q / 2 := natDegree_le_iff_degree_le.mpr hR
-  have hP : (R.comp (X ^ 2)).degree ≤ q := by
-    refine degree_le_of_natDegree_le (natDegree_comp_le.trans ?_)
-    rw [natDegree_X_pow]
-    omega
-  have hP₀ : (R.comp (X ^ 2)).eval 0 = 1 := by
-    rw [eval_comp, eval_pow, eval_X, zero_pow two_ne_zero, hR₀]
-  refine hA.norm_sub_mulVec_gmresIterate_le hs b x₀ hP hP₀ fun x hx => ?_
-  have key : a ≤ a' ∧ x ^ 2 ∈ Set.Icc (a ^ 2) (a' ^ 2) := by
-    rcases hx with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · exact ⟨by linarith, by nlinarith, by nlinarith⟩
-    · exact ⟨h1.trans h2, by nlinarith, by nlinarith⟩
-  have h := hRI _ key.2
-  have hsq : Real.sqrt (a' ^ 2 / a ^ 2) = a' / a := by
-    rw [← div_pow, Real.sqrt_sq (div_nonneg (ha.le.trans key.1) ha.le)]
-  rw [eval_comp, eval_pow, eval_X]
-  rwa [hsq, mul_one] at h
+  obtain ⟨p, hp, hp₀, hpI⟩ :=
+    exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_pow_div_two (b := a') ha q
+  exact hA.norm_sub_mulVec_gmresIterate_le hs b x₀ hp hp₀ hpI
 
 /-- **MINRES kills outlying eigenvalues**: for Hermitian $\mathbf{A}$ with spectrum in
 $[a, a'] \cup T$, $0 < a$, $0 \notin T$, and $\lvert\prod_{t \in T}(1 - x/t)\rvert \le C$ on
@@ -385,13 +367,9 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_mulVec_pminresIterate_le {A M 
       η ^ 2 * RCLike.re (quadForm M (b - A *ᵥ x₀)) := by
   rcases isEmpty_or_nonempty n with hn | hn
   · simp [quadForm_eq_sum]
-  obtain ⟨S, -, hSu, hMS, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hS : IsUnit S := (Matrix.isUnit_iff_isUnit_det S).mpr hSu
+  obtain ⟨S, hS, hMS⟩ := hM.exists_isUnit_eq_mul_conjTranspose
   have hq : ∀ v, RCLike.re (quadForm M v) = ‖WithLp.toLp 2 (Sᴴ *ᵥ v)‖ ^ 2 := fun v => by
-    have h := quadForm_conjTranspose_mul_self Sᴴ v
-    rw [Matrix.conjTranspose_conjTranspose] at h
-    rw [hMS, h, RCLike.ofReal_re]
+    rw [hMS, quadForm_mul_conjTranspose_self, RCLike.ofReal_re]
   have hH : (Sᴴ * A * S).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul S hA
   have hspec : spectrum ℝ (Sᴴ * A * S) ⊆ s := by
     rw [← spectrum_mul_conjTranspose_mul hS, ← hMS]

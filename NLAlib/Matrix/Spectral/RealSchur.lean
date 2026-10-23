@@ -52,57 +52,26 @@ def IsRealSchurForm (T : Matrix (Fin k) (Fin k) ℝ) : Prop :=
 
 /-! ### Blocks indexed by `Fin (p + q)` -/
 
-/-- The matrix with blocks $\mathbf{S}$, $\mathbf{C}$, $\mathbf{D}$, $\mathbf{T}$,
-$\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{D} & \mathbf{T} \end{bmatrix}$, indexed by
-`Fin (p + q)`. -/
-private def finBlocks {p q : ℕ} (S : Matrix (Fin p) (Fin p) R) (C : Matrix (Fin p) (Fin q) R)
-    (D : Matrix (Fin q) (Fin p) R) (T : Matrix (Fin q) (Fin q) R) :
-    Matrix (Fin (p + q)) (Fin (p + q)) R :=
-  (Matrix.fromBlocks S C D T).submatrix finSumFinEquiv.symm finSumFinEquiv.symm
-
 /-- The matrix with columns those of $\mathbf{Q}_1$ followed by those of $\mathbf{Q}_2$,
 $[\mathbf{Q}_1 \; \mathbf{Q}_2]$, indexed by `Fin (p + q)`. -/
 private def finCols {m : Type*} {p q : ℕ} (Q₁ : Matrix m (Fin p) R) (Q₂ : Matrix m (Fin q) R) :
     Matrix m (Fin (p + q)) R :=
   (Matrix.fromCols Q₁ Q₂).submatrix id finSumFinEquiv.symm
 
-section finBlocks
-
-variable {p q : ℕ} {S : Matrix (Fin p) (Fin p) R} {C : Matrix (Fin p) (Fin q) R}
-  {D : Matrix (Fin q) (Fin p) R} {T : Matrix (Fin q) (Fin q) R}
-
-private theorem finBlocks_castAdd_castAdd (i j : Fin p) :
-    finBlocks S C D T (Fin.castAdd q i) (Fin.castAdd q j) = S i j := by
-  simp [finBlocks]
-
-private theorem finBlocks_castAdd_natAdd (i : Fin p) (j : Fin q) :
-    finBlocks S C D T (Fin.castAdd q i) (Fin.natAdd p j) = C i j := by
-  simp [finBlocks]
-
-private theorem finBlocks_natAdd_castAdd (i : Fin q) (j : Fin p) :
-    finBlocks S C D T (Fin.natAdd p i) (Fin.castAdd q j) = D i j := by
-  simp [finBlocks]
-
-private theorem finBlocks_natAdd_natAdd (i j : Fin q) :
-    finBlocks S C D T (Fin.natAdd p i) (Fin.natAdd p j) = T i j := by
-  simp [finBlocks]
-
-end finBlocks
-
-private theorem isRealSchurForm_finBlocks {p q : ℕ} {S : Matrix (Fin p) (Fin p) ℝ}
+private theorem isRealSchurForm_submatrix_fromBlocks {p q : ℕ} {S : Matrix (Fin p) (Fin p) ℝ}
     {T : Matrix (Fin q) (Fin q) ℝ} (C : Matrix (Fin p) (Fin q) ℝ) (hS : IsRealSchurForm S)
-    (hT : IsRealSchurForm T) : IsRealSchurForm (finBlocks S C 0 T) := by
+    (hT : IsRealSchurForm T) :
+    IsRealSchurForm ((Matrix.fromBlocks S C 0 T).submatrix finSumFinEquiv.symm
+      finSumFinEquiv.symm) := by
   refine ⟨hS.1.submatrix_fromBlocks hT.1 C, fun i j => ?_⟩
   refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;>
     refine Fin.addCases (fun j => ?_) (fun j => ?_) j <;> intro h hne
-  · simp only [finBlocks_castAdd_castAdd] at hne ⊢
-    exact hS.2 i j (by simpa only [Fin.val_castAdd] using h) hne
+  · simpa using hS.2 i j (by simpa only [Fin.val_castAdd] using h) (by simpa using hne)
   · have := i.isLt
     simp only [Fin.val_castAdd, Fin.val_natAdd] at h
     omega
-  · exact absurd (by rw [finBlocks_natAdd_castAdd, Matrix.zero_apply]) hne
-  · simp only [finBlocks_natAdd_natAdd] at hne ⊢
-    exact hT.2 i j (by simp only [Fin.val_natAdd] at h; omega) hne
+  · exact absurd (by simp) hne
+  · simpa using hT.2 i j (by simp only [Fin.val_natAdd] at h; omega) (by simpa using hne)
 
 /-! ### Deflation -/
 
@@ -127,7 +96,8 @@ private theorem conjTranspose_finCols_mul_mul_finCols {Q₁ Z₁ : Matrix m (Fin
     {M : Matrix m m ℝ} {S : Matrix (Fin p) (Fin p) ℝ} (h : M * Z₁ = Q₁ * S)
     (Z₂ : Matrix m (Fin q) ℝ) (Q' Z' : Matrix (Fin q) (Fin q) ℝ) :
     (finCols Q₁ (Q₂ * Q'))ᴴ * M * finCols Z₁ (Z₂ * Z') =
-      finBlocks S (Q₁ᴴ * M * (Z₂ * Z')) 0 (Q'ᴴ * (Q₂ᴴ * M * Z₂) * Z') := by
+      (Matrix.fromBlocks S (Q₁ᴴ * M * (Z₂ * Z')) 0 (Q'ᴴ * (Q₂ᴴ * M * Z₂) * Z')).submatrix
+        finSumFinEquiv.symm finSumFinEquiv.symm := by
   obtain ⟨h₁, -, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
   have h₂₁ : Q₂ᴴ * Q₁ = 0 := by
     rw [← Matrix.conjTranspose_conjTranspose Q₁, ← Matrix.conjTranspose_mul, h₁₂,
@@ -141,7 +111,7 @@ private theorem conjTranspose_finCols_mul_mul_finCols {Q₁ Z₁ : Matrix m (Fin
     · rw [Matrix.conjTranspose_mul, Matrix.mul_assoc, h, Matrix.mul_assoc Q'ᴴ,
         ← Matrix.mul_assoc Q₂ᴴ, h₂₁, Matrix.zero_mul, Matrix.mul_zero]
     · simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
-  rw [finBlocks, ← hblocks]
+  rw [← hblocks]
   rfl
 
 end finCols
@@ -304,11 +274,12 @@ private theorem exists_mul_eq_mul_isRealSchurForm (hk : 0 < k) (A : Matrix (Fin 
 
 /-! ### Real Schur and real normal forms -/
 
-private theorem isStarNormal_of_finBlocks {p q : ℕ} {S : Matrix (Fin p) (Fin p) ℝ}
+private theorem isStarNormal_fromBlocks_of_submatrix {p q : ℕ} {S : Matrix (Fin p) (Fin p) ℝ}
     {C : Matrix (Fin p) (Fin q) ℝ} {D : Matrix (Fin q) (Fin p) ℝ} {T : Matrix (Fin q) (Fin q) ℝ}
-    (h : IsStarNormal (finBlocks S C D T)) : IsStarNormal (Matrix.fromBlocks S C D T) := by
+    (h : IsStarNormal ((Matrix.fromBlocks S C D T).submatrix finSumFinEquiv.symm
+      finSumFinEquiv.symm)) : IsStarNormal (Matrix.fromBlocks S C D T) := by
   have h1 := h.star_comm_self.eq
-  rw [Matrix.star_eq_conjTranspose, finBlocks, Matrix.conjTranspose_submatrix,
+  rw [Matrix.star_eq_conjTranspose, Matrix.conjTranspose_submatrix,
     Matrix.submatrix_mul_equiv, Matrix.submatrix_mul_equiv] at h1
   exact ⟨(Matrix.reindex finSumFinEquiv finSumFinEquiv).injective h1⟩
 
@@ -374,13 +345,14 @@ private theorem exists_isRealSchurForm_conjTranspose_mul_mul (k : ℕ) :
     have hblock := conjTranspose_finCols_mul_mul_finCols hW hAV V₂ Q' Q'
     refine ⟨finCols V (V₂ * Q'), hQ, ?_, fun hA => ?_⟩
     · rw [hblock]
-      exact isRealSchurForm_finBlocks _ hB hT'
+      exact isRealSchurForm_submatrix_fromBlocks _ hB hT'
     · have hN := hA.conjTranspose_mul_mul hQ
       rw [hblock] at hN ⊢
       have hC : Vᴴ * A * (V₂ * Q') = 0 :=
-        eq_zero_of_isStarNormal_fromBlocks (isStarNormal_of_finBlocks hN)
+        eq_zero_of_isStarNormal_fromBlocks (isStarNormal_fromBlocks_of_submatrix hN)
       rw [hC] at hN ⊢
-      obtain ⟨hBn, hTn⟩ := isStarNormal_of_fromBlocks_zero (isStarNormal_of_finBlocks hN)
+      obtain ⟨hBn, hTn⟩ :=
+        isStarNormal_of_fromBlocks_zero (isStarNormal_fromBlocks_of_submatrix hN)
       have hA' : IsStarNormal (V₂ᴴ * A * V₂) := by
         have h := hTn.conjTranspose_mul_mul hQ'.conjTranspose
         rwa [Matrix.conjTranspose_conjTranspose, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
@@ -391,14 +363,10 @@ private theorem exists_isRealSchurForm_conjTranspose_mul_mul (k : ℕ) :
       intro i j
       refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;>
         refine Fin.addCases (fun j => ?_) (fun j => ?_) j <;> intro hij
-      · rw [finBlocks_castAdd_castAdd, finBlocks_castAdd_castAdd]
-        exact h1 i j fun h => hij (by rw [h])
-      · rw [finBlocks_castAdd_natAdd, finBlocks_natAdd_castAdd, Matrix.zero_apply,
-          Matrix.zero_apply, neg_zero]
-      · rw [finBlocks_castAdd_natAdd, finBlocks_natAdd_castAdd, Matrix.zero_apply,
-          Matrix.zero_apply, neg_zero]
-      · rw [finBlocks_natAdd_natAdd, finBlocks_natAdd_natAdd]
-        exact h2 i j fun h => hij (by rw [h])
+      · simpa using h1 i j fun h => hij (by rw [h])
+      · simp
+      · simp
+      · simpa using h2 i j fun h => hij (by rw [h])
 
 /-- **The real Schur form.** Every real square matrix is orthogonally similar to a matrix in real
 Schur form: $\mathbf{A} = \mathbf{Q}\mathbf{T}\mathbf{Q}^{\mathsf{T}}$ with $\mathbf{Q}$

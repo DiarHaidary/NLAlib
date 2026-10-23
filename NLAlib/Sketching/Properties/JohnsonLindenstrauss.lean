@@ -25,9 +25,13 @@ when, for every unit vector $\mathbf{x}$,
 $\mathbb{P}[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert] \le \delta$; it has the
 *JL moment property* with exponent $p$ when
 $\mathbb{E}\lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert^p \le \varepsilon^p \delta$ for unit
-$\mathbf{x}$. The moment property implies the tail property (Markov), and both scale to every
-nonzero vector; the tail property gives the Johnson–Lindenstrauss lemma for finitely many points
-by a union bound over pairs. The moment property also gives approximate matrix multiplication
+$\mathbf{x}$. The moment property implies the tail property (Markov); conversely a
+sub-exponential JL tail at every distortion gives the moment property at every exponent, through
+the named bound `NLAlib.subexponentialMomentBound` (<!-- value subexponentialMomentBound v b p -->
+$p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)$); the moment property at $p = \log(1/\delta)$ is
+Kane and Nelson's [KaneNelson2014]. Both scale to every nonzero vector; the tail
+property gives the Johnson–Lindenstrauss lemma for finitely many points by a union bound over
+pairs. The moment property also gives approximate matrix multiplication
 (`NLAlib.Sketching.Properties.MatrixMultiplication`).
 
 Both are stated with the non-strict threshold event $\{\varepsilon \le X\}$. Design:
@@ -45,6 +49,9 @@ $\lvert \operatorname{Re} \mathbf{x}^{\mathsf{H}} \mathbf{E} \mathbf{x} \rvert
 events, hence $\|\mathbf{E}\|_2 < (5/4)\varepsilon$. The real dimension is $\lvert p \rvert$ over
 $\mathbb{R}$ and $2 \lvert p \rvert$ over $\mathbb{C}$, so the factor is $21^{\lvert p \rvert}$
 and $441^{\lvert p \rvert}$. Any family with a JL tail and no Gram-level tail gets its OSE here.
+Conversely an OSE for dimension $1$ with constants strictly inside $1 \mp \varepsilon$ has the
+JL property at $\varepsilon$ (`NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty`), the route of
+the SRHT.
 Degenerate cases: for empty $p$ every sketch is an embedding (`docs/design/Sketching-S3.md` §8,
 item 6); for $\varepsilon \le 0$ and nonempty $p$ the JL hypothesis bounds the whole space. No
 hypothesis on $\varepsilon$; $\delta \ge 0$ is needed for the union bound over an empty net and
@@ -58,6 +65,8 @@ for `mono`. Design: `docs/design/Sketching-S3.md` §3.1.
 
 * `NLAlib.HasJLProperty.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le`: the JL lemma.
 * `NLAlib.HasJLMoment.hasJLProperty`: moments give tails.
+* `NLAlib.hasJLMoment_of_forall_hasJLProperty`: sub-exponential tails at every distortion give
+  moments at every exponent.
 * `NLAlib.HasJLMoment.integral_abs_norm_mulVec_sq_sub_rpow_le`: the moment bound for every
   $\mathbf{x}$.
 * `NLAlib.HasJLMoment.integrable_abs_frobNorm_mul_sq_sub_rpow`,
@@ -66,6 +75,8 @@ for `mono`. Design: `docs/design/Sketching-S3.md` §3.1.
   moment bound summed over the columns of a matrix, any field.
 * `NLAlib.HasJLProperty.hasSubspaceEmbedding`: JL plus a net, for a fixed $\mathbf{U}$.
 * `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`: the oblivious form.
+* `NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty`: an OSE for dimension one has the JL
+  property.
 -/
 
 @[expose] public section
@@ -243,6 +254,31 @@ theorem HasJLMoment.hasJLProperty (h : HasJLMoment S ε δ p μ) (hε : 0 < ε) 
   rw [div_le_iff₀ (Real.rpow_pos_of_pos hε p), mul_comm]
   exact h.integral_le x hx
 
+/-- **Moments from tails**: under a finite measure, if $\mathbf{S}$ is almost everywhere
+measurable and has the JL property at every distortion $t > 0$ with failure probability
+$2\exp(-\min(t^2/(2v), t/(2b)))$, $v, b > 0$, then for $\varepsilon > 0$ and $p > 0$ it has the
+JL moment property with exponent $p$ and failure
+probability <!-- value subexponentialMomentBound v b p -->
+$$\delta = \frac{p(2v)^{p/2}\Gamma(p/2) + 2p(2b)^{p}\Gamma(p)}{\varepsilon^p}\,,$$
+the numerator being `NLAlib.subexponentialMomentBound v b p`, the layer-cake integral of the
+tail (`NLAlib.integral_rpow_le_of_measureReal_ge_le_two_mul_exp`). The converse direction of
+`NLAlib.HasJLMoment.hasJLProperty`. [Woodruff2014, Definition 12] for the property; that dense
+sketches have it at $p = \log(1/\delta)$ is Kane and Nelson's (2014; locator to check). -/
+theorem hasJLMoment_of_forall_hasJLProperty [IsFiniteMeasure μ] (hS : AEMeasurable S μ)
+    {v b : ℝ} (hv : 0 < v) (hb : 0 < b)
+    (h : ∀ t : ℝ, 0 < t →
+      HasJLProperty S t (2 * Real.exp (-min (t ^ 2 / (2 * v)) (t / (2 * b)))) μ)
+    (hε : 0 < ε) (hp : 0 < p) :
+    HasJLMoment S ε (subexponentialMomentBound v b p / ε ^ p) p μ := by
+  have hεp : 0 < ε ^ p := Real.rpow_pos_of_pos hε p
+  have key (x : n → 𝕜) (hx : ‖WithLp.toLp 2 x‖ = 1) :=
+    integral_rpow_le_of_measureReal_ge_le_two_mul_exp (μ := μ)
+      (f := fun ω => |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - 1|)
+      (by fun_prop) (ae_of_all _ fun ω => abs_nonneg _) hv hb hp fun t ht => h t ht x hx
+  refine ⟨fun x hx => (key x hx).1, fun x hx => ?_⟩
+  rw [mul_div_cancel₀ _ hεp.ne']
+  exact (key x hx).2
+
 /-- The $p$-th moment of the distortion at any vector is integrable. -/
 theorem HasJLMoment.integrable_abs_norm_mulVec_sq_sub_rpow (h : HasJLMoment S ε δ p μ)
     (hp : 0 < p) (x : n → 𝕜) :
@@ -277,19 +313,11 @@ section Frobenius
 
 variable {q : Type*} [Fintype q]
 
-omit [Fintype k] [Fintype q] in
-/-- The columns of a product are the images of the columns. -/
-private theorem col_mul_eq_mulVec (A : Matrix k n 𝕜) (X : Matrix n q 𝕜) (j : q) :
-    (A * X).col j = A *ᵥ X.col j := by
-  ext i
-  simp only [Matrix.mulVec, Matrix.col_apply, Matrix.mul_apply, dotProduct]
-
 /-- The Frobenius distortion is at most the sum of the column distortions. -/
 private theorem abs_frobNorm_mul_sq_sub_le_sum (A : Matrix k n 𝕜) (X : Matrix n q 𝕜) :
     |frobNorm (A * X) ^ 2 - frobNorm X ^ 2| ≤
       ∑ j, |‖WithLp.toLp 2 (A *ᵥ X.col j)‖ ^ 2 - ‖WithLp.toLp 2 (X.col j)‖ ^ 2| := by
   rw [frobNorm_sq_eq_sum_col, frobNorm_sq_eq_sum_col, ← Finset.sum_sub_distrib]
-  simp only [col_mul_eq_mulVec]
   exact Finset.abs_sum_le_sum_abs _ _
 
 /-- The $p$-th power of the Frobenius distortion
@@ -491,5 +519,34 @@ theorem HasJLProperty.isObliviousSubspaceEmbedding [IsFiniteMeasure μ]
   gcongr
   · norm_num
   · exact min_le_left _ _
+
+/-! ### From subspace embeddings to the JL property -/
+
+/-- **An OSE for dimension one has the JL property**: under a finite measure, if $\mathbf{S}$ is
+an oblivious subspace embedding for dimension $1$ with constants $a, b$ and failure probability
+$\delta$, and $1 - \varepsilon < a$, $b < 1 + \varepsilon$, then it has the JL property with
+distortion $\varepsilon$ and failure probability $\delta$: at the column $\mathbf{x}$, of rank at
+most $1$, the embedding gives $a \le \|\mathbf{S}\mathbf{x}\|^2 \le b$. The strict inequalities
+are needed, since the JL event $\{\varepsilon \le \lvert\cdot\rvert\}$ is non-strict and a discrete
+law may charge its boundary. The converse of `NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`
+at $d = 1$, without its net factor. [Woodruff2014, Definitions 2 and 3], there for
+$1 \mp \varepsilon$. -/
+theorem IsObliviousSubspaceEmbedding.hasJLProperty [IsFiniteMeasure μ] {a b : ℝ}
+    (h : IsObliviousSubspaceEmbedding S 1 a b δ μ) (ha : 1 - ε < a) (hb : b < 1 + ε) :
+    HasJLProperty S ε δ μ := by
+  intro x hx
+  have hU : (Matrix.replicateCol Unit x).rank ≤ 1 :=
+    (Matrix.rank_le_card_width _).trans_eq Fintype.card_unit
+  refine (measureReal_mono fun ω hω => ?_).trans (h.hasSubspaceEmbedding hU)
+  intro hemb
+  have hy : x ∈ LinearMap.range (Matrix.replicateCol Unit x).mulVecLin :=
+    ⟨fun _ => 1, by
+      ext i
+      simp [Matrix.mulVec, dotProduct, Matrix.replicateCol_apply]⟩
+  obtain ⟨h1, h2⟩ := isSubspaceEmbedding_iff_forall_mem_range.mp hemb x hy
+  rw [hx, one_pow, mul_one] at h1 h2
+  have hω' : ε ≤ |‖WithLp.toLp 2 (S ω *ᵥ x)‖ ^ 2 - 1| := hω
+  rw [le_abs] at hω'
+  rcases hω' with h3 | h3 <;> linarith
 
 end NLAlib

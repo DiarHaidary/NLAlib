@@ -32,7 +32,9 @@ subspace embeddings built on it are in `NLAlib/Sketching/Gaussian/HaarEmbedding.
 The JL tails are the projection tails of a uniform unit vector
 (`NLAlib/RandomMatrix/Haar/Sphere.lean`), with the Gaussian's constants; the JL variance is
 $2 (\lvert n \rvert - \lvert k \rvert) / (\lvert k \rvert (\lvert n \rvert + 2))$, below the
-Gaussian's $2 / \lvert k \rvert$ and $0$ at $\lvert k \rvert = \lvert n \rvert$.
+Gaussian's $2 / \lvert k \rvert$ and $0$ at $\lvert k \rvert = \lvert n \rvert$. The one-sided
+projection tails give the JL moment property at every exponent, with the Gaussian's parameters,
+and $O(\log(1/\delta)/\varepsilon^2)$ rows give it at $p = \max(2, \log(1/\delta))$.
 
 Degenerate cases: for empty $k$, $\sqrt{\lvert n \rvert / 0} = 0$ and $\mathbf{S} = \mathbf{0}$,
 hence `[Nonempty k]` on isotropy and the moments. Design: `docs/design/Sketching-S2.md` §3.4, §8.
@@ -47,6 +49,9 @@ hence `[Nonempty k]` on isotropy and the moments. Design: `docs/design/Sketching
 * `NLAlib.hasJLProperty_of_hasLaw_haarFrame`, `NLAlib.hasJLMoment_of_hasLaw_haarFrame`.
 * `NLAlib.hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le` and its asymptotic form
   `NLAlib.exists_forall_hasJLProperty_of_hasLaw_haarFrame`.
+* `NLAlib.hasJLMoment_subexponentialMomentBound_of_hasLaw_haarFrame`: the JL moment property at
+  every $p > 0$; its size form `NLAlib.hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le` and
+  asymptotic form `NLAlib.exists_forall_hasJLMoment_of_hasLaw_haarFrame`.
 -/
 
 @[expose] public section
@@ -77,14 +82,6 @@ private theorem norm_smul_conjTranspose_mulVec_sq (M : Matrix n k ℝ) (x : n �
       (Fintype.card n / Fintype.card k : ℝ) * ‖WithLp.toLp 2 (Mᴴ *ᵥ x)‖ ^ 2 := by
   rw [Matrix.smul_mulVec, WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs,
     Real.sq_sqrt (by positivity)]
-
-omit [Fintype k] [DecidableEq k] [Fintype p] in
-/-- Congruence preserves the Loewner order, for a factor with any column type. -/
-private theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul' {G H : Matrix n n ℝ}
-    (h : G ≤ H) (X : Matrix n p ℝ) : Xᴴ * G * X ≤ Xᴴ * H * X := by
-  rw [Matrix.le_iff] at h ⊢
-  rw [← Matrix.sub_mul, ← Matrix.mul_sub]
-  exact h.conjTranspose_mul_mul_same' X
 
 /-! ### Isotropy, norm and the Gaussian transfer -/
 
@@ -174,7 +171,7 @@ theorem ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame
       (by rw [specNorm_conjTranspose]; nlinarith [specNorm_nonneg (Q ω)])
     rwa [Matrix.conjTranspose_conjTranspose] at this
   rw [one_smul] at h1
-  have h2 := conjTranspose_mul_mul_le_conjTranspose_mul_mul' h1 U
+  have h2 := conjTranspose_mul_mul_le_conjTranspose_mul_mul h1 U
   rw [Matrix.mul_one] at h2
   rw [Matrix.le_iff] at h2 ⊢
   rw [← smul_sub]
@@ -382,6 +379,147 @@ theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n
     apply le_of_eq
     field_simp
 
+/-- **The JL moment property of a Haar sketch at every order**: for $k$ nonempty,
+$\lvert k\rvert \le \lvert n\rvert$, $\varepsilon > 0$, $p > 0$ and
+$\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$ with $\mathbf{Q}$
+an $n \times k$ Haar frame, the JL moment property holds with exponent $p$ and failure
+probability <!-- value subexponentialMomentBound {(4/\lvert k \rvert)} {(4/\lvert k \rvert)} p -->
+$$\delta = \frac{p(2(4/\lvert k \rvert))^{p/2}\Gamma(p/2)
++ 2p(2(4/\lvert k \rvert))^{p}\Gamma(p)}{\varepsilon^p}\,,$$
+the numerator being `NLAlib.subexponentialMomentBound` at $v = b = 4/\lvert k\rvert$, the
+Gaussian's: the one-sided projection tails of a uniform unit vector
+(`NLAlib.measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector`,
+`NLAlib.measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector`)
+at $a = \lvert k\rvert/\lvert n\rvert$ give the sub-exponential JL tail
+(`NLAlib.measureReal_abs_div_sub_one_ge_le_two_mul_exp`), which
+`NLAlib.hasJLMoment_of_forall_hasJLProperty` integrates. Incomparable with
+`NLAlib.hasJLMoment_of_hasLaw_haarFrame` (the exact variance, better at $p = 2$).
+[Woodruff2014, Definition 12] for the property; [Vershynin2018, Lemma 5.3.2] for the Haar JL
+tail, unspecified constant. -/
+theorem hasJLMoment_subexponentialMomentBound_of_hasLaw_haarFrame [Nonempty k]
+    (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε)
+    {p : ℝ} (hp : 0 < p) :
+    HasJLMoment (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε
+      (subexponentialMomentBound (4 / Fintype.card k) (4 / Fintype.card k) p / ε ^ p) p μ := by
+  classical
+  have := hQ.isProbabilityMeasure_iff.2 inferInstance
+  have hK : (0 : ℝ) < Fintype.card k := Nat.cast_pos.2 Fintype.card_pos
+  have hN : (0 : ℝ) < Fintype.card n := hK.trans_le (Nat.cast_le.2 hk)
+  have hc : Continuous fun M : Matrix n k ℝ => √(Fintype.card n / Fintype.card k : ℝ) • Mᴴ := by
+    fun_prop
+  refine hasJLMoment_of_forall_hasJLProperty
+    (S := fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ)
+    (hc.measurable.comp_aemeasurable hQ.aemeasurable) (by positivity) (by positivity)
+    (fun t ht => ?_) hε hp
+  intro x hx
+  obtain ⟨e⟩ : Nonempty (k ↪ n) := Function.Embedding.nonempty_of_card_le hk
+  have hV := hasOrthonormalCols_selectionMatrix (𝕜 := ℝ) e.injective
+  have hlaw := hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame hQ hV hx
+  have hmv : Measurable fun v : n → ℝ => (selectionMatrix e : Matrix n k ℝ)ᴴ *ᵥ v :=
+    (continuous_const.matrix_mulVec continuous_id).measurable
+  set a : ℝ := Fintype.card k / Fintype.card n with ha_def
+  have ha : 0 < a := by positivity
+  have hup : ∀ β : ℝ, 1 ≤ β → μ.real {ω | β * a ≤ ‖WithLp.toLp 2 ((Q ω)ᴴ *ᵥ x)‖ ^ 2} ≤
+      Real.exp (Fintype.card k / 2 * (1 - β + Real.log β)) := by
+    intro β hβ
+    have hT : MeasurableSet {w : k → ℝ | β * a ≤ ‖WithLp.toLp 2 w‖ ^ 2} :=
+      measurableSet_le measurable_const (by fun_prop)
+    rw [hlaw.measureReal_eq (p := fun w => β * a ≤ ‖WithLp.toLp 2 w‖ ^ 2) hT,
+      map_measureReal_apply hmv hT]
+    exact measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector
+      HasLaw.id hV hβ
+  have hlow : ∀ β : ℝ, 0 < β → β ≤ 1 → μ.real {ω | ‖WithLp.toLp 2 ((Q ω)ᴴ *ᵥ x)‖ ^ 2 ≤ β * a} ≤
+      Real.exp (Fintype.card k / 2 * (1 - β + Real.log β)) := by
+    intro β hβ0 hβ
+    have hT : MeasurableSet {w : k → ℝ | ‖WithLp.toLp 2 w‖ ^ 2 ≤ β * a} :=
+      measurableSet_le (by fun_prop) measurable_const
+    rw [hlaw.measureReal_eq (p := fun w => ‖WithLp.toLp 2 w‖ ^ 2 ≤ β * a) hT,
+      map_measureReal_apply hmv hT]
+    exact measureReal_norm_conjTranspose_mulVec_sq_le_mul_div_le_of_hasLaw_uniformSphereVector
+      HasLaw.id hV hβ0 hβ
+  have h := measureReal_abs_div_sub_one_ge_le_two_mul_exp
+    (Y := fun ω => ‖WithLp.toLp 2 ((Q ω)ᴴ *ᵥ x)‖ ^ 2) ha hK.le hup hlow ht.le
+  have eY : ∀ y : ℝ, y / a = (Fintype.card n / Fintype.card k : ℝ) * y := by
+    intro y
+    rw [ha_def]
+    field_simp
+  simp only [eY] at h
+  simp only [norm_smul_conjTranspose_mulVec_sq]
+  refine h.trans (le_of_eq ?_)
+  have e1 : t ^ 2 / (2 * (4 / (Fintype.card k : ℝ))) = Fintype.card k / 8 * t ^ 2 := by
+    field_simp
+    ring
+  have e2 : t / (2 * (4 / (Fintype.card k : ℝ))) = Fintype.card k / 8 * t := by
+    field_simp
+    ring
+  rw [e1, e2, ← mul_min_of_nonneg _ _ (by positivity)]
+
+/-- **Haar JL moments, sample-size form**: for $\lvert k\rvert \le \lvert n\rvert$,
+$0 < \varepsilon \le 1$, $\delta > 0$ and at
+least <!-- value jlMomentDim \varepsilon \delta -->$128\max(2, \log(1/\delta))/\varepsilon^2$
+rows (`jlMomentDim ε δ`), the Haar sketch
+$\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$ has the JL moment
+property with distortion $\varepsilon$, failure probability $\delta$ and exponent
+$\max(2, \log(1/\delta))$, with the Gaussian sketch's size
+(`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`); approximate matrix
+multiplication with failure probability $\delta$ follows
+(`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`). [Woodruff2014,
+Definition 12 and Theorem 13], the property and AMM from it; the constants are this proof's.
+Asymptotic form: `NLAlib.exists_forall_hasJLMoment_of_hasLaw_haarFrame`.
+Result: jl-moment-haar -/
+theorem hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le (hQ : HasLaw Q (haarFrame n k) μ)
+    (hk : Fintype.card k ≤ Fintype.card n) (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
+    (hk' : jlMomentDim ε δ ≤ Fintype.card k) :
+    HasJLMoment (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε δ
+      (max 2 (Real.log (1 / δ))) μ := by
+  set p := max 2 (Real.log (1 / δ)) with hpdef
+  have hp2 : 2 ≤ p := le_max_left _ _
+  have hp0 : 0 < p := by linarith
+  have hε2 : 0 < ε ^ 2 := by positivity
+  have hK : 128 * p ≤ ε ^ 2 * Fintype.card k := by
+    rw [jlMomentDim_def, div_le_iff₀ hε2] at hk'
+    linarith
+  have hK0 : (0 : ℝ) < Fintype.card k := by
+    by_contra h
+    push Not at h
+    nlinarith [mul_nonpos_of_nonneg_of_nonpos hε2.le h]
+  have : Nonempty k := Fintype.card_pos_iff.1 (by exact_mod_cast hK0)
+  have hεp : 0 < ε ^ p := Real.rpow_pos_of_pos hε p
+  have hb := subexponentialMomentBound_le_mul_exp_neg (v := 4 / (Fintype.card k : ℝ))
+    (b := 4 / (Fintype.card k : ℝ)) (by positivity) (by positivity) hp2 hε
+    (by rw [div_mul_eq_mul_div, mul_div_assoc', div_le_iff₀ hK0]; linarith)
+    (by rw [div_mul_eq_mul_div, mul_div_assoc', div_le_iff₀ hK0]; nlinarith)
+  refine (hasJLMoment_subexponentialMomentBound_of_hasLaw_haarFrame hQ hk hε hp0).mono le_rfl
+    ?_ hε.le hp0.le (div_nonneg (subexponentialMomentBound_nonneg (by positivity)
+      (by positivity) hp0.le) hεp.le)
+  rw [div_le_iff₀ hεp, mul_comm δ]
+  refine hb.trans (mul_le_mul_of_nonneg_left ?_ hεp.le)
+  calc Real.exp (-p) ≤ Real.exp (-Real.log (1 / δ)) :=
+        Real.exp_le_exp.2 (neg_le_neg (le_max_right _ _))
+    _ = δ := by rw [Real.exp_neg, Real.exp_log (by positivity), one_div, inv_inv]
+
+/-- **Haar JL moments, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for the
+Haar sketch $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$,
+$\lvert k\rvert \le \lvert n\rvert$, to have the JL moment property with distortion
+$\varepsilon$, failure probability $\delta$ and exponent $\max(2, \log(1/\delta))$, for
+$\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension.
+Proved from `NLAlib.hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le` with $C = 384$,
+$\varepsilon_0 = 1$ and $\delta \le 1/2$. [Woodruff2014, Definition 12 and Theorem 13].
+Asymptotic: NLAlib.hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le
+Result: jl-moment-haar -/
+theorem exists_forall_hasJLMoment_of_hasLaw_haarFrame :
+    ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω k n : Type} [MeasurableSpace Ω] [Fintype k] [Fintype n]
+      [DecidableEq k] (μ : Measure Ω) (Q : Ω → Matrix n k ℝ) (ε δ : ℝ),
+      HasLaw Q (haarFrame n k) μ → Fintype.card k ≤ Fintype.card n →
+      0 < ε → ε ≤ ε₀ → 0 < δ → δ ≤ 1 / 2 →
+      C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
+      HasJLMoment (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε δ
+        (max 2 (Real.log (1 / δ))) μ := by
+  refine ⟨384, 1, by norm_num, one_pos, fun μ Q ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
+  refine hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le hQ hkn hε hε1 hδ
+    ((jlMomentDim_le hδ hδ2).trans (le_of_eq_of_le ?_ hk))
+  ring
+
 /-- **Haar distributional JL, sample-size form**: at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
 rows (`jlDim ε δ`) give the JL property
@@ -415,11 +553,7 @@ theorem exists_forall_hasJLProperty_of_hasLaw_haarFrame :
       C * (Real.log (1 / δ) / ε ^ 2) ≤ Fintype.card k →
       HasJLProperty (fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ) ε δ μ := by
   refine ⟨24, 1, by norm_num, one_pos, fun μ Q ε δ hQ hkn hε hε1 hδ hδ2 hk => ?_⟩
-  have hl2 : Real.log (2 / δ) ≤ 2 * Real.log (1 / δ) := by
-    have h2 : Real.log 2 ≤ Real.log (1 / δ) :=
-      Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-    rw [show 2 / δ = 2 * (1 / δ) by ring, Real.log_mul (by norm_num) (by positivity)]
-    linarith
+  have hl2 := Real.log_two_div_le_two_mul_log_one_div hδ hδ2
   refine hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le hQ hkn hε (by linarith) hδ
     ((jlDim_le hε1 hδ (by linarith)).trans (le_trans ?_ hk))
   rw [mul_div_assoc']

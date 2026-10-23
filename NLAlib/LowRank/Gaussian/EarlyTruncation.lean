@@ -128,12 +128,10 @@ private theorem gaussianProjectionFactor_rank_truncatedSVD_mem (A : Matrix m n �
     (x : Matrix n l ℝ) {k c : ℕ} (h : k + 2 ≤ c) :
     1 ≤ gaussianProjectionFactor (truncatedSVD (A * x) k).rank c ∧
       gaussianProjectionFactor (truncatedSVD (A * x) k).rank c ≤ 1 + c := by
-  have hr := rank_truncatedSVD_le (A * x) k
-  have hq : (truncatedSVD (A * x) k).rank + 2 ≤ c := by omega
-  refine ⟨one_le_gaussianProjectionFactor hq, ?_⟩
-  have h' : ((truncatedSVD (A * x) k).rank : ℝ) + 2 ≤ c := by exact_mod_cast hq
-  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
-  nlinarith
+  have hq : (truncatedSVD (A * x) k).rank + 2 ≤ c := by
+    have := rank_truncatedSVD_le (A * x) k
+    omega
+  exact ⟨one_le_gaussianProjectionFactor hq, gaussianProjectionFactor_le_one_add hq⟩
 
 /-- The right side of the conditional identity, integrated over $\mathbf{\Omega}$, is
 integrable. -/
@@ -159,27 +157,18 @@ private theorem lintegral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq (A : 
         (gaussianProjectionFactor (truncatedSVD (A * X ω) k).rank (Fintype.card p) *
           frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2) ∂μ := by
   have := hΨ.isProbabilityMeasure
-  have hF : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
-      ENNReal.ofReal (frobNorm (A - earlyTruncatedGeneralizedNystrom A q.1 q.2 k) ^ 2) :=
-    ENNReal.measurable_ofReal.comp ((continuous_frobNorm.measurable.comp
-      (measurable_const.sub (measurable_earlyTruncatedGeneralizedNystrom A k))).pow_const 2)
-  have hG : Measurable fun x : Matrix n l ℝ =>
-      ENNReal.ofReal (gaussianProjectionFactor (truncatedSVD (A * x) k).rank (Fintype.card p) *
-        frobNorm (A - earlyTruncatedRSVD A x k) ^ 2) :=
-    ENNReal.measurable_ofReal.comp
-      ((measurable_gaussianProjectionFactor_rank_truncatedSVD A k _).mul
-        ((continuous_frobNorm.measurable.comp
-          (measurable_const.sub (measurable_earlyTruncatedRSVD A k))).pow_const 2))
   have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (gaussianMatrix m p) (gaussianMatrix m p) :=
     HasLaw.id
-  rw [hXΨ.lintegral_comp_eq_lintegral_lintegral hX hΨ.aemeasurable hF, hΨ.map_eq,
-    ← lintegral_map' hG.aemeasurable hX]
-  refine lintegral_congr fun x => ?_
-  dsimp only
-  rw [← ofReal_integral_eq_lintegral_ofReal
-      (integrable_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_fixed A x hid hkp)
-      (ae_of_all _ fun _ => sq_nonneg _),
-    integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_hasLaw_gaussianMatrix A x hid hkp]
+  refine (hXΨ.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hX hΨ
+    (F := fun q : Matrix n l ℝ × Matrix m p ℝ =>
+      frobNorm (A - earlyTruncatedGeneralizedNystrom A q.1 q.2 k) ^ 2)
+    ((continuous_frobNorm.measurable.comp
+      (measurable_const.sub (measurable_earlyTruncatedGeneralizedNystrom A k))).pow_const 2)
+    (fun _ => sq_nonneg _) (ae_of_all _ fun ω =>
+      integrable_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_fixed A (X ω) hid hkp)).trans
+    (lintegral_congr fun ω => congrArg ENNReal.ofReal
+      (integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_hasLaw_gaussianMatrix A (X ω)
+        hid hkp))
 
 set_option linter.style.longLine false in
 -- The theorem's name alone exceeds 100 characters.

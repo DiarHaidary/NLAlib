@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Probability.QuadraticForm.HansonWright.LinearImage
 public import NLAlib.Probability.SubExponential.Basic
 
@@ -189,23 +190,6 @@ private lemma continuous_quadForm [Fintype n] (M : Matrix n n ℝ) :
   simp only [quadForm, star_trivial]
   exact continuous_id.dotProduct (continuous_const.matrix_mulVec continuous_id)
 
-/-- For independent $U$ and $W$ under a finite measure,
-$\mathbb{E} f(U, W) = \mathbb{E}_\omega \mathbb{E}_{\omega'} f(U(\omega), W(\omega'))$, as lower
-integrals. -/
-private lemma lintegral_comp_eq_lintegral_lintegral {α β : Type*} [MeasurableSpace α]
-    [MeasurableSpace β] [IsFiniteMeasure μ] {U : Ω → α} {W : Ω → β} (hUW : IndepFun U W μ)
-    (hU : AEMeasurable U μ) (hW : AEMeasurable W μ) {f : α × β → ℝ≥0∞} (hf : Measurable f) :
-    ∫⁻ ω, f (U ω, W ω) ∂μ = ∫⁻ ω, ∫⁻ ω', f (U ω, W ω') ∂μ ∂μ := by
-  have hmap := (indepFun_iff_map_prod_eq_prod_map_map hU hW).mp hUW
-  calc ∫⁻ ω, f (U ω, W ω) ∂μ = ∫⁻ p, f p ∂(μ.map fun ω => (U ω, W ω)) :=
-        (lintegral_map' hf.aemeasurable (hU.prodMk hW)).symm
-    _ = ∫⁻ p, f p ∂((μ.map U).prod (μ.map W)) := by rw [hmap]
-    _ = ∫⁻ u, ∫⁻ w, f (u, w) ∂(μ.map W) ∂(μ.map U) := lintegral_prod _ hf.aemeasurable
-    _ = ∫⁻ ω, ∫⁻ w, f (U ω, w) ∂(μ.map W) ∂μ :=
-        lintegral_map' hf.lintegral_prod_right'.aemeasurable hU
-    _ = ∫⁻ ω, ∫⁻ ω', f (U ω, W ω') ∂μ ∂μ :=
-        lintegral_congr fun ω => lintegral_map' (hf.comp measurable_prodMk_left).aemeasurable hW
-
 /-- A cut form only sees the coordinates in $\delta$ on the left and those outside it on the
 right. -/
 private lemma dotProduct_mulVec_cut (A : Matrix n n ℝ) (δ : n → Bool) (x y : n → ℝ) :
@@ -272,7 +256,10 @@ private lemma lintegral_exp_quadForm_cut_eq (hind : iIndepFun (fun i ω => x ω 
   have hf : Measurable fun p : (n → ℝ) × (n → ℝ) =>
       ENNReal.ofReal (rexp (lam * (p.1 ⬝ᵥ cut A δ *ᵥ p.2))) :=
     ENNReal.measurable_ofReal.comp hc.measurable
-  have key := lintegral_comp_eq_lintegral_lintegral huw hum hwm hf
+  have key : ∫⁻ ω, ENNReal.ofReal (rexp (lam * (u ω ⬝ᵥ cut A δ *ᵥ w ω))) ∂μ =
+      ∫⁻ ω, ∫⁻ ω', ENNReal.ofReal (rexp (lam * (u ω ⬝ᵥ cut A δ *ᵥ w ω'))) ∂μ ∂μ :=
+    (huw.lintegral_comp_eq_lintegral_lintegral_of_hasLaw hum ⟨hwm, rfl⟩ hf).trans
+      (lintegral_congr fun ω => lintegral_map' (hf.comp measurable_prodMk_left).aemeasurable hwm)
   calc ∫⁻ ω, ENNReal.ofReal (rexp (lam * quadForm (cut A δ) (x ω))) ∂μ
       = ∫⁻ ω, ENNReal.ofReal (rexp (lam * (u ω ⬝ᵥ cut A δ *ᵥ w ω))) ∂μ := by
         refine lintegral_congr fun ω => ?_

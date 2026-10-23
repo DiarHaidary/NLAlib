@@ -127,16 +127,6 @@ $\mathbf{z}_j = \mathbf{C}\hat{\mathbf{q}}_j$, equal $\alpha_j$ and $\beta_j$. P
 induction (private); no invertibility and no Hermitian hypothesis. -/
 
 omit [DecidableEq n] in
-/-- $\sqrt{\operatorname{Re}\langle\mathbf{w}, \mathbf{C}\mathbf{C}^{\mathsf{H}}\mathbf{w}\rangle}
-= \|\mathbf{C}^{\mathsf{H}}\mathbf{w}\|$. -/
-private theorem sqrt_re_quadForm_mul_conjTranspose (C : Matrix n n 𝕜) (w : n → 𝕜) :
-    Real.sqrt (RCLike.re (star w ⬝ᵥ ((C * Cᴴ) *ᵥ w))) = ‖WithLp.toLp 2 (Cᴴ *ᵥ w)‖ := by
-  have h := quadForm_conjTranspose_mul_self Cᴴ w
-  rw [Matrix.conjTranspose_conjTranspose] at h
-  change Real.sqrt (RCLike.re (quadForm (C * Cᴴ) w)) = _
-  rw [h, RCLike.ofReal_re, Real.sqrt_sq (norm_nonneg _)]
-
-omit [DecidableEq n] in
 /-- The diagonal coefficients agree on corresponding states. -/
 private theorem preconditionedLanczosAlpha_eq_of {C : Matrix n n 𝕜}
     {s : PreconditionedLanczosState 𝕜 n} {t : LanczosState 𝕜 n} (hz : s.z = C *ᵥ t.cur)
@@ -164,7 +154,8 @@ private theorem preconditionedLanczosStep_corr {C : Matrix n n 𝕜} (hM : M = C
       hc, hp, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec]
   subst hM
   dsimp only [preconditionedLanczosStep, lanczosStep]
-  rw [sqrt_re_quadForm_mul_conjTranspose, hw]
+  rw [← quadForm_def, quadForm_mul_conjTranspose_self, RCLike.ofReal_re,
+    Real.sqrt_sq (norm_nonneg _), hw]
   refine ⟨?_, ?_, hc, rfl⟩
   · rw [Matrix.mulVec_smul, hw, RCLike.ofReal_inv]
   · rw [← Matrix.mulVec_mulVec _ C Cᴴ, hw, Matrix.mulVec_smul, RCLike.ofReal_inv]
@@ -185,7 +176,8 @@ private theorem preconditionedLanczosState_corr {C : Matrix n n 𝕜} (hM : M = 
   | zero =>
     subst hM
     dsimp only [preconditionedLanczosState, lanczosState]
-    rw [sqrt_re_quadForm_mul_conjTranspose]
+    rw [← quadForm_def, quadForm_mul_conjTranspose_self, RCLike.ofReal_re,
+      Real.sqrt_sq (norm_nonneg _)]
     refine ⟨?_, ?_, Matrix.mulVec_zero _, rfl⟩
     · rw [Matrix.mulVec_smul, RCLike.ofReal_inv]
     · rw [← Matrix.mulVec_mulVec _ C Cᴴ, Matrix.mulVec_smul, RCLike.ofReal_inv]
@@ -283,8 +275,7 @@ theorem _root_.Matrix.IsHermitian.range_preconditionedLanczosMatrix (hA : A.IsHe
     (hM : M.PosDef) (b : n → 𝕜) (q : ℕ) :
     LinearMap.range (preconditionedLanczosMatrix A M b q).mulVecLin =
       krylovSpace (M * A) (M *ᵥ b) q := by
-  obtain ⟨C, -, -, hMC, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
+  obtain ⟨C, -, hMC⟩ := hM.exists_isUnit_eq_mul_conjTranspose
   rw [hA.preconditionedLanczosMatrix_eq hMC, Matrix.mulVecLin_mul, LinearMap.range_comp,
     range_arnoldiMatrix, hMC, show C * Cᴴ * A = C * (Cᴴ * A) from Matrix.mul_assoc _ _ _,
     ← Matrix.mulVec_mulVec b C Cᴴ, krylovSpace_mul_mulVec]

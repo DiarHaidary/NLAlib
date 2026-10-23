@@ -53,13 +53,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {k l n p q r : Type*} [Fintype k] [Fintype
   [Fintype p] [Fintype q] {S : Matrix k n 𝕜} {U : Matrix n p 𝕜}
   {A : Matrix n q 𝕜} {y : n → 𝕜} {x : q → 𝕜} {a b : ℝ}
 
-/-! ### Proof-local helpers -/
-
-/-- From $a u \le v$ with $0 < a$, $u \le v / a$. -/
-private theorem le_div_of_mul_le' {a u v : ℝ} (ha : 0 < a) (h : a * u ≤ v) : u ≤ v / a := by
-  rw [le_div_iff₀ ha, mul_comm]
-  exact h
-
 /-! ### Sketch-and-solve -/
 
 section LeastSquares
@@ -96,7 +89,7 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sq_le (h : IsSubspaceEmbedding S U a
     exact pow_le_pow_left₀ (norm_nonneg _) this 2
   rw [hx₀.sub_mulVec_eq] at h₂ h₃
   rw [div_mul_eq_mul_div]
-  exact le_div_of_mul_le' ha (h₁.trans (h₃.trans h₂))
+  exact (le_div_iff₀' ha).2 (h₁.trans (h₃.trans h₂))
 
 /-- **Sketch-and-solve**, unsquared:
 $\|\mathbf{y} - \mathbf{A}\mathbf{x}\|
@@ -197,11 +190,8 @@ theorem IsSubspaceEmbedding.pseudoConditionNumber_mul_inv_sq_le_of_isQR [LinearO
     [DecidableEq q] {Q : Matrix k q 𝕜} {R : Matrix q q 𝕜} (h : IsSubspaceEmbedding S A a b)
     (ha : 0 < a) (hb : 0 ≤ b) (hQR : IsQR (S * A) Q R) (hR : IsUnit R) :
     pseudoConditionNumber (A * R⁻¹) ^ 2 ≤ b / a := by
-  have hQ : S * A * R⁻¹ = Q := by
-    rw [hQR.eq_mul, Matrix.mul_assoc,
-      Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det R).mp hR), Matrix.mul_one]
   refine h.pseudoConditionNumber_mul_sq_le ha hb ?_
-  rw [hQ]
+  rw [hQR.mul_inv_eq hR]
   exact hQR.hasOrthonormalCols
 
 /-- **Sketch-and-precondition, spectral form**: if $\mathbf{S}$ is a subspace embedding of
@@ -260,7 +250,7 @@ theorem IsSubspaceInjection.norm_mulVec_sub_rangeProjector_mulVec_sq_le
     rw [hw, Matrix.mulVec_mulVec]
   rw [e₁, e₂] at hpy
   have hinj := isSubspaceInjection_iff_forall_mem_range.mp h _ ⟨x - x₀, hw.symm⟩
-  refine le_div_of_mul_le' ha (hinj.trans ?_)
+  refine (le_div_iff₀' ha).2 (hinj.trans ?_)
   rw [hpy]
   exact le_add_of_nonneg_left (sq_nonneg _)
 

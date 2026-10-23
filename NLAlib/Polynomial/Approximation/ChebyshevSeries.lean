@@ -70,7 +70,7 @@ private lemma cosine_full_period {f : ℝ → ℂ}
       2 * ∫ θ in 0..Real.pi, f (Real.cos θ) * (Real.cos ((k : ℝ) * θ) : ℂ) := by
   let g : ℝ → ℂ := fun θ => f (Real.cos θ) * (Real.cos ((k : ℝ) * θ) : ℂ)
   have hfc : Continuous (fun θ => f (Real.cos θ)) :=
-    hf.comp_continuous Real.continuous_cos (fun θ => ⟨Real.neg_one_le_cos θ, Real.cos_le_one θ⟩)
+    hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hg : Continuous g := hfc.mul (by fun_prop)
   have hreflect := intervalIntegral.integral_comp_sub_left (f := g)
     (a := Real.pi) (b := 2 * Real.pi) (2 * Real.pi)

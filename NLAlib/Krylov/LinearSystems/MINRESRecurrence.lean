@@ -439,15 +439,6 @@ private theorem preconditionedLanczosTridiagonal_submatrix_eq (hA : A.IsHermitia
     ← submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc,
     ← hA.preconditionedLanczosTridiagonal_eq hMC]
 
-omit [DecidableEq n] in
-/-- $\sqrt{\operatorname{Re}\langle\mathbf{r}, \mathbf{M}\mathbf{r}\rangle} =
-\|\mathbf{C}^{\mathsf{H}}\mathbf{r}\|$ for $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$. -/
-private theorem sqrt_re_quadForm_eq_norm (hMC : M = C * Cᴴ) (r : n → 𝕜) :
-    Real.sqrt (RCLike.re (quadForm M r)) = ‖WithLp.toLp 2 (Cᴴ *ᵥ r)‖ := by
-  have h := quadForm_conjTranspose_mul_self Cᴴ r
-  rw [Matrix.conjTranspose_conjTranspose] at h
-  rw [hMC, h, RCLike.ofReal_re, Real.sqrt_sq (norm_nonneg _)]
-
 /-- **Preconditioned MINRES by Givens QR of the computed tridiagonal matrix**, for every $k$. -/
 private theorem pminresIterate_eq_backSubst (hA : A.IsHermitian) (hAu : IsUnit A)
     (hC : IsUnit C) (hMC : M = C * Cᴴ) (b x₀ : n → 𝕜) (k : ℕ) :
@@ -465,9 +456,12 @@ private theorem pminresIterate_eq_backSubst (hA : A.IsHermitian) (hAu : IsUnit A
     rw [← hy₀]
     exact (Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀).symm
   have hÂ : IsUnit (Cᴴ * A * C) := ((isUnit_star.mpr hC : IsUnit Cᴴ).mul hAu).mul hC
+  have hn : Real.sqrt (RCLike.re (quadForm M (b - A *ᵥ x₀))) =
+      ‖WithLp.toLp 2 (Cᴴ *ᵥ (b - A *ᵥ x₀))‖ := by
+    rw [hMC, quadForm_mul_conjTranspose_self, RCLike.ofReal_re, Real.sqrt_sq (norm_nonneg _)]
   rw [pminresIterate_eq_mulVec_gmresIterate hAu hC hMC hy₀,
     gmresIterate_eq_backSubst_givensHessenberg hÂ, hr,
-    preconditionedLanczosTridiagonal_submatrix_eq hA hMC, sqrt_re_quadForm_eq_norm hMC,
+    preconditionedLanczosTridiagonal_submatrix_eq hA hMC, hn,
     hA.preconditionedLanczosMatrix_eq hMC, ← mgsArnoldiMatrix_eq_arnoldiMatrix,
     Matrix.mulVec_add, hy₀, Matrix.mulVec_smul, Matrix.mulVec_mulVec]
 
@@ -486,13 +480,11 @@ private theorem re_quadForm_sub_mulVec_pminresIterate (hA : A.IsHermitian) (hAu 
     exact (Matrix.conjTranspose_mulVec_sub_mulVec_mulVec A C b y₀).symm
   have hÂ : IsUnit (Cᴴ * A * C) := ((isUnit_star.mpr hC : IsUnit Cᴴ).mul hAu).mul hC
   have hq : ∀ v, RCLike.re (quadForm M v) = ‖WithLp.toLp 2 (Cᴴ *ᵥ v)‖ ^ 2 := fun v => by
-    have h := quadForm_conjTranspose_mul_self Cᴴ v
-    rw [Matrix.conjTranspose_conjTranspose] at h
-    rw [hMC, h, RCLike.ofReal_re]
+    rw [hMC, quadForm_mul_conjTranspose_self, RCLike.ofReal_re]
   rw [pminresIterate_eq_mulVec_gmresIterate hAu hC hMC hy₀, hq,
     Matrix.conjTranspose_mulVec_sub_mulVec_mulVec,
     norm_sub_mulVec_gmresIterate_eq_norm_givensHessenbergQ hÂ,
-    hr, preconditionedLanczosTridiagonal_submatrix_eq hA hMC, sqrt_re_quadForm_eq_norm hMC]
+    hr, preconditionedLanczosTridiagonal_submatrix_eq hA hMC, hq, Real.sqrt_sq (norm_nonneg _)]
 
 end Realisation
 
@@ -552,9 +544,7 @@ Result: minres-recurrence -/
 theorem _root_.Matrix.IsHermitian.minresState_x_eq (hA : A.IsHermitian) (hAu : IsUnit A)
     (hM : M.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
     (minresState A M b x₀ k).x = pminresIterate A M b x₀ k := by
-  obtain ⟨C, -, hCu, hMC, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hC : IsUnit C := (Matrix.isUnit_iff_isUnit_det C).mpr hCu
+  obtain ⟨C, hC, hMC⟩ := hM.exists_isUnit_eq_mul_conjTranspose
   set ν := krylovGrade (Cᴴ * A * C) (Cᴴ *ᵥ (b - A *ᵥ x₀)) with hν
   rcases le_or_gt k ν with hk | hk
   · exact minresState_x_eq_of_le hA hAu hC hMC b x₀ hk
@@ -607,9 +597,7 @@ theorem _root_.Matrix.IsHermitian.norm_minresState_phi_sq (hA : A.IsHermitian) (
     (hM : M.PosDef) (b x₀ : n → 𝕜) (k : ℕ) :
     ‖(minresState A M b x₀ k).phi‖ ^ 2 =
       RCLike.re (quadForm M (b - A *ᵥ (minresState A M b x₀ k).x)) := by
-  obtain ⟨C, -, hCu, hMC, -⟩ :=
-    hM.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hM.isHermitian
-  have hC : IsUnit C := (Matrix.isUnit_iff_isUnit_det C).mpr hCu
+  obtain ⟨C, hC, hMC⟩ := hM.exists_isUnit_eq_mul_conjTranspose
   obtain ⟨-, inv2⟩ := givensHessenbergState_eq_minresRot (S := minresState A M b x₀)
     ⟨rfl, rfl, rfl⟩ (fun l => rfl) (preconditionedLanczosTridiagonal_submatrix_apply b x₀ k)
     (le_refl k)

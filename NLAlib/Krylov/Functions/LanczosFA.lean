@@ -8,6 +8,8 @@ module
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.LinearSystems.CGLanczos
+public import NLAlib.Polynomial.Approximation.AnalyticApproximation
+public import NLAlib.Polynomial.Approximation.Jackson
 
 /-!
 # The Lanczos method for matrix functions
@@ -48,6 +50,9 @@ returns $\mathbf{0}$ (Mathlib's `cfc` of a non-self-adjoint element); Arnoldi-FA
 * `Matrix.IsHermitian.lanczosFA_eval`: exactness for degree less than $q$.
 * `Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn`: the
   $2\varepsilon\|\mathbf{b}\|$ bound.
+* `Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_differentiableOn`,
+  `Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_lipschitzOnWith`: explicit rates for
+  analytic and for Lipschitz functions.
 * `Matrix.IsHermitian.lanczosFA_inv_eq_cgIterate`,
   `Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate`: CG and shifted CG.
 * `Matrix.IsHermitian.lanczosFA_eq_cfc_mulVec_of_krylovGrade_le`: exact past the grade.
@@ -56,7 +61,7 @@ returns $\mathbf{0}$ (Mathlib's `cfc` of a non-self-adjoint element); Arnoldi-FA
 
 @[expose] public section
 
-open scoped Matrix ComplexOrder MatrixOrder
+open scoped Matrix ComplexOrder MatrixOrder NNReal
 open Polynomial
 
 namespace NLAlib
@@ -405,5 +410,60 @@ theorem _root_.Matrix.IsHermitian.lanczosFA_eq_lanczosMatrix {A : Matrix n n �
     lanczosFA A f b (q + 1) = (‖WithLp.toLp 2 b‖ : 𝕜) • (lanczosMatrix A b (q + 1) *ᵥ
       (cfc f (lanczosTridiagonal A b (q + 1)) *ᵥ Pi.single 0 1)) := by
   rw [hA.lanczosMatrix_eq_arnoldiMatrix, hA.lanczosTridiagonal_eq, lanczosFA_eq_arnoldiMatrix]
+
+/-! ### Explicit rates -/
+
+/-- **Lanczos-FA for analytic functions**: let $\mathbf{A}$ be Hermitian with spectrum in
+$[a, a']$, $a < a'$, and let $f$ on $[a, a']$, pulled back to $[-1, 1]$ by
+$t \mapsto ((a' - a)t + a' + a)/2$, extend to a function holomorphic and bounded by $M$ on the
+open Bernstein ellipse $E_\rho$, $\rho > 1$. Then $q + 1$ steps give
+$$\|f(\mathbf{A})\mathbf{b} - \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\| \le
+\frac{4M}{\rho^q(\rho - 1)}\|\mathbf{b}\|\,,$$
+from the uniform bound and the Chebyshev truncation of degree $q$.
+[Saad1992, Theorem 3.4] (locator from the quarry); [Trefethen2019, Theorem 8.2] (locator from
+the quarry), the approximation rate; constants composed here.
+Result: lanczos-fa-uniform-bound -/
+theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_differentiableOn
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (haa : a < a')
+    (hs : spectrum ℝ A ⊆ Set.Icc a a') {f : ℝ → ℝ} {F : ℂ → ℂ} {ρ M : ℝ} (hρ : 1 < ρ)
+    (hFd : DifferentiableOn ℂ F (openBernsteinEllipse ρ))
+    (hM : Metric.IsUniformApproxOn F (fun _ => 0) (openBernsteinEllipse ρ) M)
+    (hExt : Set.EqOn (fun t : ℝ => ((f (((a' - a) * t + a' + a) / 2) : ℝ) : ℂ))
+      (fun t : ℝ => F t) (Set.Icc (-1 : ℝ) 1))
+    (b : n → 𝕜) (q : ℕ) :
+    ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
+      4 * M / (ρ ^ q * (ρ - 1)) * ‖WithLp.toLp 2 b‖ := by
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn (𝕜 := ℝ)
+    (f := f) haa hρ hFd hM (fun t ht => by
+      rw [← hExt ht]
+      exact RCLike.toComplex_ofReal (𝕜 := ℝ) _) q
+  have hp' : p.degree < ((q + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast Nat.lt_succ_self q)
+  have h := hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs hp' hε b
+  refine h.trans_eq ?_
+  ring
+
+/-- **Lanczos-FA for Lipschitz functions**: for Hermitian $\mathbf{A}$ with spectrum in
+$[a, a']$, $a < a'$, and $f$ $L$-Lipschitz on $[a, a']$, $q + 1$ steps
+give <!-- value jacksonApproximationConstant -->
+$$\|f(\mathbf{A})\mathbf{b} - \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\| \le
+\frac{\pi L(a' - a)}{q + 2}\|\mathbf{b}\|\,,$$
+from the uniform bound and Jackson's theorem on $[a, a']$ in degree $q$ (the constant is
+`jacksonApproximationConstant`). No printed source for this composition; the approximation step
+is [ChenTrogdonUbaru2022, Appendix C, Theorem 38].
+Result: lanczos-fa-uniform-bound -/
+theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_lipschitzOnWith
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (haa : a < a')
+    (hs : spectrum ℝ A ⊆ Set.Icc a a') {f : ℝ → ℝ} {L : ℝ≥0}
+    (hf : LipschitzOnWith L f (Set.Icc a a')) (b : n → 𝕜) (q : ℕ) :
+    ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
+      jacksonApproximationConstant * L * (a' - a) / (q + 2) * ‖WithLp.toLp 2 b‖ := by
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) haa hf q
+  have hp' : p.degree < ((q + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast Nat.lt_succ_self q)
+  have h := hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs hp' hε b
+  refine h.trans_eq ?_
+  field_simp
 
 end NLAlib

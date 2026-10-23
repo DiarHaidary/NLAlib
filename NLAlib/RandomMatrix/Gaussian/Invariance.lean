@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
 public import NLAlib.Matrix.Basic.Orthonormal
 public import NLAlib.Matrix.Basic.Selection
+public import NLAlib.Matrix.Structured.Kronecker
 public import NLAlib.RandomMatrix.Gaussian.Basic
 
 /-!
@@ -94,42 +95,19 @@ end Vector
 variable {m n p q : Type*} [Fintype m] [Fintype n] [Fintype p] [Fintype q]
   {X : Ω → Matrix m n ℝ}
 
-omit [Fintype p] [Fintype q] in
-private theorem uncurry_mul_mul (U : Matrix p m ℝ) (A : Matrix m n ℝ) (V : Matrix n q ℝ) :
-    Function.uncurry (U * A * V) = (U ⊗ₖ Vᵀ) *ᵥ Function.uncurry A := by
-  funext k
-  rcases k with ⟨i, j⟩
-  change (U * A * V) i j = ∑ x, (U ⊗ₖ Vᵀ) (i, j) x * Function.uncurry A x
-  rw [Fintype.sum_prod_type]
-  simp only [Matrix.mul_apply, Finset.sum_mul, Matrix.kroneckerMap_apply, Matrix.transpose_apply]
-  rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by
-    change U i k * A k l * V l j = U i k * V l j * A k l
-    ring
-
-omit [Fintype p] [Fintype q] in
-private theorem hasOrthonormalCols_conjTranspose_kronecker [DecidableEq p] [DecidableEq q]
-    {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ) {V : Matrix n q ℝ}
-    (hV : HasOrthonormalCols V) : HasOrthonormalCols (U ⊗ₖ Vᵀ)ᴴ := by
-  have h₁ : U * Uᴴ = 1 := by
-    simpa only [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose] using hU
-  have h₂ : Vᵀ * (Vᵀ)ᴴ = 1 := by
-    rw [Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_transpose,
-      ← Matrix.conjTranspose_eq_transpose_of_trivial]
-    exact hV
-  rw [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_kronecker,
-    ← Matrix.mul_kronecker_mul, h₁, h₂, Matrix.one_kronecker_one]
-
 /-- **Orthogonal invariance**: for $\mathbf{U}$ with orthonormal rows and $\mathbf{V}$ with
 orthonormal columns, $\mathbf{U}\mathbf{G}\mathbf{V}$ is a standard Gaussian matrix. -/
 theorem hasLaw_mul_mul_of_hasLaw_gaussianMatrix [DecidableEq p] [DecidableEq q]
     (hX : HasLaw X (gaussianMatrix m n) μ) {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ)
     {V : Matrix n q ℝ} (hV : HasOrthonormalCols V) :
     HasLaw (fun ω => U * X ω * V) (gaussianMatrix p q) μ := by
+  have hUV : HasOrthonormalCols (U ⊗ₖ Vᵀ)ᴴ := by
+    rw [Matrix.conjTranspose_kronecker, Matrix.conjTranspose_eq_transpose_of_trivial Vᵀ,
+      Matrix.transpose_transpose]
+    exact hU.kronecker hV
   refine hasLaw_gaussianMatrix_of_hasLaw_uncurry ?_
   simp only [uncurry_mul_mul]
-  exact hasLaw_mulVec_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
-    (hasOrthonormalCols_conjTranspose_kronecker hU hV)
+  exact hasLaw_mulVec_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) hUV
 
 /-- $\mathbf{U}\mathbf{G}$ is a standard Gaussian matrix when $\mathbf{U}$ has orthonormal rows. -/
 theorem hasLaw_const_mul_of_hasLaw_gaussianMatrix [DecidableEq p]

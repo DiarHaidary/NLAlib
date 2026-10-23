@@ -401,47 +401,6 @@ private theorem measurable_specNorm_mul_mul (hS : Measurable S) (hT : Measurable
   continuous_specNorm.measurable.comp
     (((hS.comp measurable_fst).matrix_mul measurable_snd).matrix_mul (hT.comp measurable_fst))
 
-private theorem measurable_chevet (hS : Measurable S) (hT : Measurable T) :
-    Measurable fun y => specNorm (S y) * frobNorm (T y) + frobNorm (S y) * specNorm (T y) :=
-  ((continuous_specNorm.measurable.comp hS).mul (continuous_frobNorm.measurable.comp hT)).add
-    ((continuous_frobNorm.measurable.comp hS).mul (continuous_specNorm.measurable.comp hT))
-
-/-- Chevet's inequality under the joint law, as lower integrals. -/
-private theorem lintegral_specNorm_mul_mul_le (hY : AEMeasurable Y μ)
-    (hX : HasLaw X (gaussianMatrix m n) μ) (hXY : IndepFun Y X μ) (hS : Measurable S)
-    (hT : Measurable T) :
-    ∫⁻ ω, ENNReal.ofReal (specNorm (S (Y ω) * X ω * T (Y ω))) ∂μ ≤
-      ∫⁻ ω, ENNReal.ofReal (specNorm (S (Y ω)) * frobNorm (T (Y ω)) +
-        frobNorm (S (Y ω)) * specNorm (T (Y ω))) ∂μ := by
-  have hP : IsProbabilityMeasure μ := hX.isProbabilityMeasure
-  have hF := ENNReal.measurable_ofReal.comp (measurable_specNorm_mul_mul hS hT)
-  have hG := ENNReal.measurable_ofReal.comp (measurable_chevet hS hT)
-  have hmap : μ.map (fun ω => (Y ω, X ω)) = (μ.map Y).prod (gaussianMatrix m n) := by
-    rw [← hX.map_eq]
-    exact (indepFun_iff_map_prod_eq_prod_map_map hY hX.aemeasurable).1 hXY
-  have hid : HasLaw (fun x : Matrix m n ℝ => x) (gaussianMatrix m n) (gaussianMatrix m n) :=
-    HasLaw.id
-  have hinner (y : α) : ∫⁻ x, ENNReal.ofReal (specNorm (S y * x * T y)) ∂(gaussianMatrix m n) ≤
-      ENNReal.ofReal (specNorm (S y) * frobNorm (T y) + frobNorm (S y) * specNorm (T y)) := by
-    rw [← ofReal_integral_eq_lintegral_ofReal
-      (integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix hid (S y) (T y))
-      (ae_of_all _ fun _ => specNorm_nonneg _)]
-    exact ENNReal.ofReal_le_ofReal
-      (integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix hid (S y) (T y))
-  calc ∫⁻ ω, ENNReal.ofReal (specNorm (S (Y ω) * X ω * T (Y ω))) ∂μ
-      = ∫⁻ q, ENNReal.ofReal (specNorm (S q.1 * q.2 * T q.1)) ∂(μ.map fun ω => (Y ω, X ω)) :=
-        (lintegral_map' hF.aemeasurable (hY.prodMk hX.aemeasurable)).symm
-    _ = ∫⁻ y, ∫⁻ x, ENNReal.ofReal (specNorm (S y * x * T y)) ∂(gaussianMatrix m n)
-          ∂(μ.map Y) := by
-        rw [hmap, lintegral_prod
-          (fun q : α × Matrix m n ℝ => ENNReal.ofReal (specNorm (S q.1 * q.2 * T q.1)))
-          hF.aemeasurable]
-    _ ≤ ∫⁻ y, ENNReal.ofReal (specNorm (S y) * frobNorm (T y) +
-          frobNorm (S y) * specNorm (T y)) ∂(μ.map Y) := lintegral_mono hinner
-    _ = ∫⁻ ω, ENNReal.ofReal (specNorm (S (Y ω)) * frobNorm (T (Y ω)) +
-          frobNorm (S (Y ω)) * specNorm (T (Y ω))) ∂μ :=
-        lintegral_map' hG.aemeasurable hY
-
 /-- $\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2$ is integrable when the random factors $\mathbf{S}$,
 $\mathbf{T}$ are measurable functions of a variable $Y$ independent of the Gaussian matrix
 $\mathbf{G}$ and Chevet's bound for them is integrable. -/
@@ -451,10 +410,16 @@ theorem integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix_of_indepFun (hY : A
     (hST : Integrable (fun ω => specNorm (S (Y ω)) * frobNorm (T (Y ω)) +
       frobNorm (S (Y ω)) * specNorm (T (Y ω))) μ) :
     Integrable (fun ω => specNorm (S (Y ω) * X ω * T (Y ω))) μ := by
-  refine ⟨((measurable_specNorm_mul_mul hS hT).comp_aemeasurable
-    (hY.prodMk hX.aemeasurable)).aestronglyMeasurable, ?_⟩
-  rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun _ => specNorm_nonneg _)]
-  exact (lintegral_specNorm_mul_mul_le hY hX hXY hS hT).trans_lt hST.lintegral_lt_top
+  have := hX.isProbabilityMeasure
+  have hid : HasLaw (fun x : Matrix m n ℝ => x) (gaussianMatrix m n) (gaussianMatrix m n) :=
+    HasLaw.id
+  exact hXY.integrable_comp_of_integral_le hY hX
+    (F := fun q : α × Matrix m n ℝ => specNorm (S q.1 * q.2 * T q.1))
+    (measurable_specNorm_mul_mul hS hT) (fun _ => specNorm_nonneg _)
+    (ae_of_all _ fun ω => integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix hid
+      (S (Y ω)) (T (Y ω)))
+    (ae_of_all _ fun ω => integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix hid
+      (S (Y ω)) (T (Y ω))) hST
 
 /-- **Chevet's inequality with random factors** independent of the Gaussian matrix:
 $$\mathbb{E} \|\mathbf{S}\mathbf{G}\mathbf{T}\|_2
@@ -472,59 +437,22 @@ theorem integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun (hY : 
     ∫ ω, specNorm (S (Y ω) * X ω * T (Y ω)) ∂μ ≤
       ∫ ω, (specNorm (S (Y ω)) * frobNorm (T (Y ω)) +
         frobNorm (S (Y ω)) * specNorm (T (Y ω))) ∂μ := by
-  rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => specNorm_nonneg _)
-      ((measurable_specNorm_mul_mul hS hT).comp_aemeasurable
-        (hY.prodMk hX.aemeasurable)).aestronglyMeasurable,
-    integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => by positivity)
-      hST.aestronglyMeasurable]
-  exact ENNReal.toReal_mono hST.lintegral_lt_top.ne (lintegral_specNorm_mul_mul_le hY hX hXY hS hT)
+  have := hX.isProbabilityMeasure
+  have hid : HasLaw (fun x : Matrix m n ℝ => x) (gaussianMatrix m n) (gaussianMatrix m n) :=
+    HasLaw.id
+  exact hXY.integral_comp_le_of_integral_le hY hX
+    (F := fun q : α × Matrix m n ℝ => specNorm (S q.1 * q.2 * T q.1))
+    (measurable_specNorm_mul_mul hS hT) (fun _ => specNorm_nonneg _)
+    (ae_of_all _ fun ω => integrable_specNorm_mul_mul_of_hasLaw_gaussianMatrix hid
+      (S (Y ω)) (T (Y ω)))
+    (ae_of_all _ fun ω => integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix hid
+      (S (Y ω)) (T (Y ω))) hST
 
 private theorem measurable_specNorm_mul_mul_sq (hS : Measurable S) (hT : Measurable T) :
     Measurable fun q : α × Matrix m n ℝ => specNorm (S q.1 * q.2 * T q.1) ^ 2 :=
   (continuous_specNorm.measurable.comp
     (((hS.comp measurable_fst).matrix_mul measurable_snd).matrix_mul
       (hT.comp measurable_fst))).pow_const 2
-
-private theorem measurable_chevet_sq (hS : Measurable S) (hT : Measurable T) :
-    Measurable fun y => (specNorm (S y) * frobNorm (T y) + frobNorm (S y) * specNorm (T y)) ^ 2 +
-      (specNorm (S y) * specNorm (T y)) ^ 2 := by
-  have h1 := continuous_specNorm.measurable.comp hS
-  have h2 := continuous_frobNorm.measurable.comp hT
-  have h3 := continuous_frobNorm.measurable.comp hS
-  have h4 := continuous_specNorm.measurable.comp hT
-  exact (((h1.mul h2).add (h3.mul h4)).pow_const 2).add ((h1.mul h4).pow_const 2)
-
-/-- The second-moment bound under the joint law, as lower integrals. -/
-private theorem lintegral_specNorm_mul_mul_sq_le (hY : AEMeasurable Y μ)
-    (hX : HasLaw X (gaussianMatrix m n) μ) (hXY : IndepFun Y X μ) (hS : Measurable S)
-    (hT : Measurable T) :
-    ∫⁻ ω, ENNReal.ofReal (specNorm (S (Y ω) * X ω * T (Y ω)) ^ 2) ∂μ ≤
-      ∫⁻ ω, ENNReal.ofReal ((specNorm (S (Y ω)) * frobNorm (T (Y ω)) +
-        frobNorm (S (Y ω)) * specNorm (T (Y ω))) ^ 2 +
-          (specNorm (S (Y ω)) * specNorm (T (Y ω))) ^ 2) ∂μ := by
-  have := hX.isProbabilityMeasure
-  have hF := ENNReal.measurable_ofReal.comp (measurable_specNorm_mul_mul_sq hS hT)
-  have hG := ENNReal.measurable_ofReal.comp (measurable_chevet_sq hS hT)
-  have hid : HasLaw (fun x : Matrix m n ℝ => x) (gaussianMatrix m n) (gaussianMatrix m n) :=
-    HasLaw.id
-  have hinner (y : α) :
-      ∫⁻ x, ENNReal.ofReal (specNorm (S y * x * T y) ^ 2) ∂(gaussianMatrix m n) ≤
-        ENNReal.ofReal ((specNorm (S y) * frobNorm (T y) + frobNorm (S y) * specNorm (T y)) ^ 2 +
-          (specNorm (S y) * specNorm (T y)) ^ 2) := by
-    rw [← ofReal_integral_eq_lintegral_ofReal
-      (integrable_specNorm_mul_mul_sq_of_hasLaw_gaussianMatrix hid (S y) (T y))
-      (ae_of_all _ fun _ => sq_nonneg _)]
-    exact ENNReal.ofReal_le_ofReal
-      (integral_specNorm_mul_mul_sq_le_of_hasLaw_gaussianMatrix hid (S y) (T y))
-  calc ∫⁻ ω, ENNReal.ofReal (specNorm (S (Y ω) * X ω * T (Y ω)) ^ 2) ∂μ
-      = ∫⁻ y, ∫⁻ x, ENNReal.ofReal (specNorm (S y * x * T y) ^ 2) ∂(μ.map X) ∂(μ.map Y) :=
-        hXY.lintegral_comp_eq_lintegral_lintegral hY hX.aemeasurable hF
-    _ ≤ ∫⁻ y, ENNReal.ofReal ((specNorm (S y) * frobNorm (T y) +
-          frobNorm (S y) * specNorm (T y)) ^ 2 + (specNorm (S y) * specNorm (T y)) ^ 2)
-          ∂(μ.map Y) := by
-        rw [hX.map_eq]
-        exact lintegral_mono hinner
-    _ = _ := lintegral_map' hG.aemeasurable hY
 
 /-- **The second spectral moment with random factors** independent of the Gaussian matrix:
 $$\mathbb{E}\|\mathbf{S}\mathbf{G}\mathbf{T}\|_2^2 \le
@@ -546,13 +474,16 @@ theorem integral_specNorm_mul_mul_sq_le_of_hasLaw_gaussianMatrix_of_indepFun
       ∫ ω, ((specNorm (S (Y ω)) * frobNorm (T (Y ω)) +
         frobNorm (S (Y ω)) * specNorm (T (Y ω))) ^ 2 +
           (specNorm (S (Y ω)) * specNorm (T (Y ω))) ^ 2) ∂μ := by
-  rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => sq_nonneg _)
-      ((measurable_specNorm_mul_mul_sq hS hT).comp_aemeasurable
-        (hY.prodMk hX.aemeasurable)).aestronglyMeasurable,
-    integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => by positivity)
-      hST.aestronglyMeasurable]
-  exact ENNReal.toReal_mono hST.lintegral_lt_top.ne
-    (lintegral_specNorm_mul_mul_sq_le hY hX hXY hS hT)
+  have := hX.isProbabilityMeasure
+  have hid : HasLaw (fun x : Matrix m n ℝ => x) (gaussianMatrix m n) (gaussianMatrix m n) :=
+    HasLaw.id
+  exact hXY.integral_comp_le_of_integral_le hY hX
+    (F := fun q : α × Matrix m n ℝ => specNorm (S q.1 * q.2 * T q.1) ^ 2)
+    (measurable_specNorm_mul_mul_sq hS hT) (fun _ => sq_nonneg _)
+    (ae_of_all _ fun ω => integrable_specNorm_mul_mul_sq_of_hasLaw_gaussianMatrix hid
+      (S (Y ω)) (T (Y ω)))
+    (ae_of_all _ fun ω => integral_specNorm_mul_mul_sq_le_of_hasLaw_gaussianMatrix hid
+      (S (Y ω)) (T (Y ω))) hST
 
 end Independent
 

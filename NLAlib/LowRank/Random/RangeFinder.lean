@@ -83,13 +83,6 @@ private theorem measurable_sub_rsvd (A : Matrix m n 𝕜) :
     Measurable fun Ω : Matrix n l 𝕜 => A - rsvd A Ω :=
   measurable_const.matrix_sub (measurable_rsvd A)
 
-/-- A bounded measurable function of a measurable random matrix is integrable. -/
-private theorem integrable_comp_of_abs_le {p q : Type*} [IsFiniteMeasure μ]
-    {Z : Ω → Matrix p q 𝕜} (hZ : AEMeasurable Z μ) {g : Matrix p q 𝕜 → ℝ} (hg : Measurable g)
-    (C : ℝ) (hC : ∀ M, |g M| ≤ C) : Integrable (fun ω => g (Z ω)) μ :=
-  Integrable.of_bound (hg.comp_aemeasurable hZ).aestronglyMeasurable C
-    (Filter.Eventually.of_forall fun ω => by rw [Real.norm_eq_abs]; exact hC (Z ω))
-
 /-- Every unitarily invariant norm of the error of the randomized SVD is at most that of
 $\mathbf{A}$. -/
 private theorem matrixNorm_sub_rsvd_le (Φ : SymmetricGauge) (A : Matrix m n 𝕜)
@@ -106,16 +99,14 @@ $\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\Phi}$. The companion of the Gram-form e
 theorem SymmetricGauge.integrable_matrixNorm_conjTranspose_mul_self_sub_rsvd (Φ : SymmetricGauge)
     [IsFiniteMeasure μ] (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) :
     Integrable (fun ω => Φ.matrixNorm ((A - rsvd A (X ω))ᴴ * (A - rsvd A (X ω)))) μ := by
-  refine integrable_comp_of_abs_le hX
-    (g := fun Ω => Φ.matrixNorm ((A - rsvd A Ω)ᴴ * (A - rsvd A Ω)))
-    (Φ.measurable_matrixNorm.comp
-      ((Measurable.matrix_conjTranspose continuous_star.measurable
-        (measurable_sub_rsvd A)).matrix_mul (measurable_sub_rsvd A)))
-    (Φ.matrixNorm (Aᴴ * A)) fun Ω => ?_
-  rw [abs_of_nonneg (Φ.matrixNorm_nonneg _)]
+  refine Integrable.of_bound ((Φ.measurable_matrixNorm.comp
+    ((Measurable.matrix_conjTranspose continuous_star.measurable
+      (measurable_sub_rsvd A)).matrix_mul (measurable_sub_rsvd A))).comp_aemeasurable
+        hX).aestronglyMeasurable (Φ.matrixNorm (Aᴴ * A)) (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_of_nonneg (Φ.matrixNorm_nonneg _)]
   refine Φ.matrixNorm_le_of_singularValues_le fun i => ?_
   rw [singularValues_conjTranspose_mul_self, singularValues_conjTranspose_mul_self]
-  exact pow_le_pow_left₀ (singularValues_nonneg _ _) (singularValues_sub_rsvd_le A Ω i) 2
+  exact pow_le_pow_left₀ (singularValues_nonneg _ _) (singularValues_sub_rsvd_le A (X ω) i) 2
 
 /-- The error of the randomized SVD is integrable in every unitarily invariant norm, for every
 measurable test matrix $\mathbf{X}$ and finite measure: $\omega \mapsto \|\mathbf{A} -
@@ -124,10 +115,10 @@ $\|\mathbf{A}\|_{\Phi}$. -/
 theorem SymmetricGauge.integrable_matrixNorm_sub_rsvd (Φ : SymmetricGauge) [IsFiniteMeasure μ]
     (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) :
     Integrable (fun ω => Φ.matrixNorm (A - rsvd A (X ω))) μ :=
-  integrable_comp_of_abs_le hX (g := fun Ω => Φ.matrixNorm (A - rsvd A Ω))
-    (Φ.measurable_matrixNorm.comp (measurable_sub_rsvd A)) (Φ.matrixNorm A) fun Ω => by
-      rw [abs_of_nonneg (Φ.matrixNorm_nonneg _)]
-      exact matrixNorm_sub_rsvd_le Φ A Ω
+  Integrable.of_bound ((Φ.measurable_matrixNorm.comp (measurable_sub_rsvd A)).comp_aemeasurable
+    hX).aestronglyMeasurable (Φ.matrixNorm A) (ae_of_all _ fun ω => by
+      rw [Real.norm_of_nonneg (Φ.matrixNorm_nonneg _)]
+      exact matrixNorm_sub_rsvd_le Φ A (X ω))
 
 /-- The squared Schatten $q$-norm of the error of the randomized SVD, $q \ge 1$, is integrable for
 every measurable test matrix $\mathbf{X}$ and finite measure: $\omega \mapsto \|\mathbf{A} -
@@ -141,10 +132,10 @@ theorem integrable_schattenNorm_sub_rsvd_sq [IsFiniteMeasure μ] {q : ℝ≥0∞
     rw [show (fun M : Matrix m n 𝕜 => schattenNorm q M) = (lpGauge q).matrixNorm from
       funext fun M => (lpGauge_matrixNorm M).symm]
     exact (lpGauge q).measurable_matrixNorm
-  refine integrable_comp_of_abs_le hX (g := fun Ω => schattenNorm q (A - rsvd A Ω) ^ 2)
-    ((hg.comp (measurable_sub_rsvd A)).pow_const 2) (schattenNorm q A ^ 2) fun Ω => ?_
-  rw [abs_of_nonneg (sq_nonneg _)]
-  have h := matrixNorm_sub_rsvd_le (lpGauge q) A Ω
+  refine Integrable.of_bound (((hg.comp (measurable_sub_rsvd A)).pow_const 2).comp_aemeasurable
+    hX).aestronglyMeasurable (schattenNorm q A ^ 2) (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_of_nonneg (sq_nonneg _)]
+  have h := matrixNorm_sub_rsvd_le (lpGauge q) A (X ω)
   rw [lpGauge_matrixNorm, lpGauge_matrixNorm] at h
   exact pow_le_pow_left₀ (schattenNorm_nonneg _ _) h 2
 
@@ -189,11 +180,10 @@ theorem integrable_frobNorm_sub_earlyTruncatedRSVD_sq [IsFiniteMeasure μ] (A : 
     (hX : AEMeasurable X μ) (k : ℕ) :
     Integrable (fun ω => frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2) μ := by
   classical
-  refine integrable_comp_of_abs_le hX (g := fun Ω => frobNorm (A - earlyTruncatedRSVD A Ω k) ^ 2)
-    ((measurable_frobNorm.comp
-      (measurable_const.matrix_sub (measurable_earlyTruncatedRSVD A k))).pow_const 2)
-    (frobNorm A ^ 2) fun Ω => ?_
-  rw [abs_of_nonneg (sq_nonneg _), sub_earlyTruncatedRSVD]
+  refine Integrable.of_bound (((measurable_frobNorm.comp (measurable_const.matrix_sub
+    (measurable_earlyTruncatedRSVD A k))).pow_const 2).comp_aemeasurable hX).aestronglyMeasurable
+    (frobNorm A ^ 2) (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_of_nonneg (sq_nonneg _), sub_earlyTruncatedRSVD]
   exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_one_sub_rangeProjector_mul_le _ A) 2
 
 /-- The squared Frobenius error of early-truncated generalized Nyström,
@@ -232,12 +222,12 @@ theorem integrable_frobNorm_sub_truncatedSVD_rsvd_sq [IsFiniteMeasure μ] (A : M
     rw [he]
     exact ((measurable_frobNorm.comp (measurable_sub_rsvd A)).pow_const 2).add
       (Finset.measurable_sum _ fun i _ => ((measurable_singularValues i).comp hr).pow_const 2)
-  refine integrable_comp_of_abs_le hX hg
-    (frobNorm A ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2) fun Ω => ?_
-  rw [abs_of_nonneg (sq_nonneg _), frobNorm_sub_truncatedSVD_rsvd_sq]
-  have h1 := matrixNorm_sub_rsvd_le (lpGauge 2) A Ω
+  refine Integrable.of_bound (hg.comp_aemeasurable hX).aestronglyMeasurable
+    (frobNorm A ^ 2 + frobNorm (A - truncatedSVD A k) ^ 2) (ae_of_all _ fun ω => ?_)
+  rw [Real.norm_of_nonneg (sq_nonneg _), frobNorm_sub_truncatedSVD_rsvd_sq]
+  have h1 := matrixNorm_sub_rsvd_le (lpGauge 2) A (X ω)
   rw [lpGauge_two_matrixNorm, lpGauge_two_matrixNorm] at h1
-  have h2 := frobNorm_rsvd_sub_truncatedSVD_le A Ω k
+  have h2 := frobNorm_rsvd_sub_truncatedSVD_le A (X ω) k
   have h3 := pow_le_pow_left₀ (frobNorm_nonneg _) h1 2
   have h4 := pow_le_pow_left₀ (frobNorm_nonneg _) h2 2
   linarith

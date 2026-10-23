@@ -101,7 +101,7 @@ def parse(text):
         starts.append(i)
         if line.strip() == "module":
             res["has_module"] = True
-        elif m := re.match(r"^(public\s+)?(?:meta\s+)?import\s+(\S+)", line):
+        elif m := re.match(r"^(public\s+)?(?:meta\s+)?import\s+(?:all\s+)?(\S+)", line):
             res["imports"].append((i + 1, bool(m.group(1)), m.group(2)))
         elif m := re.match(r"^namespace\s+(\S+)", line):
             namespaces.append(m.group(1))

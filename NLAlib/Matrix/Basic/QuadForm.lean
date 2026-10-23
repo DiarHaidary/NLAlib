@@ -140,6 +140,13 @@ theorem quadForm_conjTranspose_mul_self [Fintype m] (A : Matrix m n 𝕜) (z : n
   rw [← EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, Matrix.star_mulVec, quadForm,
     ← Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec]
 
+/-- The quadratic form of $\mathbf{A}\mathbf{A}^{\mathsf{H}}$ at $\mathbf{z}$ is
+$\|\mathbf{A}^{\mathsf{H}}\mathbf{z}\|^2$: `NLAlib.quadForm_conjTranspose_mul_self` at
+$\mathbf{A}^{\mathsf{H}}$. -/
+theorem quadForm_mul_conjTranspose_self [Fintype m] (A : Matrix n m 𝕜) (z : n → 𝕜) :
+    quadForm (A * Aᴴ) z = ((‖WithLp.toLp 2 (Aᴴ *ᵥ z)‖ ^ 2 : ℝ) : 𝕜) := by
+  simpa only [Matrix.conjTranspose_conjTranspose] using quadForm_conjTranspose_mul_self Aᴴ z
+
 /-- Conjugating the quadratic form is the quadratic form of the conjugate transpose:
 $\overline{\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}} =
 \mathbf{z}^{\mathsf{H}}\mathbf{A}^{\mathsf{H}}\mathbf{z}$. -/
@@ -212,6 +219,13 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_comm {A : Matrix n n �
     star y ⬝ᵥ (A *ᵥ x) = star (star x ⬝ᵥ (A *ᵥ y)) := by
   rw [← Matrix.star_dotProduct_star, Matrix.star_mulVec, star_star, ← Matrix.dotProduct_mulVec,
     hA.eq]
+
+/-- Moving a matrix across the inner product:
+$\langle \mathbf{C}\mathbf{u}, \mathbf{v} \rangle =
+\langle \mathbf{u}, \mathbf{C}^{\mathsf{H}}\mathbf{v} \rangle$. -/
+theorem star_mulVec_dotProduct [Fintype m] (C : Matrix n m 𝕜) (u : m → 𝕜) (v : n → 𝕜) :
+    star (C *ᵥ u) ⬝ᵥ v = star u ⬝ᵥ (Cᴴ *ᵥ v) := by
+  rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec]
 
 /-- The real polar expansion for a Hermitian matrix:
 $$\operatorname{Re}\bigl((\mathbf{x} + \mathbf{y})^{\mathsf{H}}\mathbf{A}(\mathbf{x} +

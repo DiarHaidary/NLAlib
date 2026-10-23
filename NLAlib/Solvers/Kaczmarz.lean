@@ -419,23 +419,11 @@ private lemma one_sub_one_div_frobPseudoConditionNumber_sq_pow_le {A : Matrix m 
     (hA : A ≠ 0) {ε : ℝ} (hε : 0 < ε) {q : ℕ}
     (hq : frobPseudoConditionNumber A ^ 2 * Real.log (1 / ε) ≤ q) :
     (1 - 1 / frobPseudoConditionNumber A ^ 2) ^ q ≤ ε := by
-  have hκ := one_le_frobPseudoConditionNumber hA
-  have hκ2 : 0 < frobPseudoConditionNumber A ^ 2 := by nlinarith
-  calc _ ≤ Real.exp (-(1 / frobPseudoConditionNumber A ^ 2)) ^ q :=
-        pow_le_pow_left₀ (zero_le_one_sub_one_div_frobPseudoConditionNumber_sq hA)
-          (by linarith [Real.add_one_le_exp (-(1 / frobPseudoConditionNumber A ^ 2))]) q
-    _ = Real.exp (-(q / frobPseudoConditionNumber A ^ 2)) := by
-        rw [← Real.exp_nat_mul]
-        congr 1
-        ring
-    _ ≤ Real.exp (Real.log ε) := by
-        refine Real.exp_le_exp.mpr ?_
-        have h1 : Real.log (1 / ε) ≤ q / frobPseudoConditionNumber A ^ 2 := by
-          rw [le_div_iff₀ hκ2]
-          linarith
-        rw [one_div, Real.log_inv] at h1
-        linarith
-    _ = ε := Real.exp_log hε
+  have hκ2 : 1 ≤ frobPseudoConditionNumber A ^ 2 := by
+    nlinarith [one_le_frobPseudoConditionNumber hA]
+  refine Real.one_sub_pow_le_of_log_le_mul (div_le_one_of_le₀ hκ2 (by positivity)) hε ?_
+  rw [one_div_mul_eq_div, le_div_iff₀ (by linarith)]
+  linarith
 
 /-- **The one-step bound in expectation**, for any right-hand side and reference point: with rows
 drawn independently from the squared-row-norm law, row $i$ with probability

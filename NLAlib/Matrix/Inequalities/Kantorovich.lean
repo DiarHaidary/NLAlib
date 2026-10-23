@@ -134,8 +134,8 @@ theorem _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_pseudoConditionN
 
 omit [DecidableEq n] in
 /-- The quadratic form of a Hermitian matrix at a real combination of two vectors. -/
-private theorem re_quadForm_smul_add_smul {H : Matrix n n 𝕜} (hH : H.IsHermitian) (x y : n → 𝕜)
-    (α β : ℝ) :
+private theorem re_quadForm_smul_add_smul_right {H : Matrix n n 𝕜} (hH : H.IsHermitian)
+    (x y : n → 𝕜) (α β : ℝ) :
     RCLike.re (quadForm H ((α : 𝕜) • x + (β : 𝕜) • y)) =
       α ^ 2 * RCLike.re (quadForm H x) + 2 * (α * β * RCLike.re (star x ⬝ᵥ H *ᵥ y)) +
         β ^ 2 * RCLike.re (quadForm H y) := by
@@ -171,12 +171,12 @@ private theorem sq_re_star_dotProduct_mulVec_le {A : Matrix n n 𝕜} {a b : ℝ
     intro α β
     have hN : ‖WithLp.toLp 2 ((α : 𝕜) • x + (β : 𝕜) • y)‖ ^ 2 =
         α ^ 2 * ‖WithLp.toLp 2 x‖ ^ 2 + β ^ 2 * ‖WithLp.toLp 2 y‖ ^ 2 := by
-      have h := re_quadForm_smul_add_smul (Matrix.isHermitian_one (n := n) (α := 𝕜)) x y α β
+      have h := re_quadForm_smul_add_smul_right (Matrix.isHermitian_one (n := n) (α := 𝕜)) x y α β
       rwa [quadForm_one, quadForm_one, quadForm_one, Matrix.one_mulVec, hxy, RCLike.ofReal_re,
         RCLike.ofReal_re, RCLike.ofReal_re, map_zero, mul_zero, mul_zero, add_zero] at h
     have hlo := re_quadForm_le_re_quadForm_of_le h₁ ((α : 𝕜) • x + (β : 𝕜) • y)
     have hhi := re_quadForm_le_re_quadForm_of_le h₂ ((α : 𝕜) • x + (β : 𝕜) • y)
-    rw [re_quadForm_real_smul_one, hN, re_quadForm_smul_add_smul hA.isHermitian] at hlo hhi
+    rw [re_quadForm_real_smul_one, hN, re_quadForm_smul_add_smul_right hA.isHermitian] at hlo hhi
     exact ⟨hlo, hhi⟩
   have hNx : 0 < ‖WithLp.toLp 2 x‖ ^ 2 := by
     refine lt_of_le_of_ne (sq_nonneg _) fun h0 => ?_

@@ -290,4 +290,16 @@ theorem range_aeval_mul_le_blockKrylovSpace {R : Type*} [CommSemiring R] [Algebr
   rw [hC, Matrix.mulVecLin_mul, LinearMap.range_comp]
   exact LinearMap.map_le_range
 
+/-- The range of a filtered sketch lies in that of the block Krylov sketch: for $\deg f < q$ and
+any left factor $\mathbf{C}$,
+$\operatorname{range}(\mathbf{C}f(\mathbf{A})\mathbf{B}) \subseteq
+\operatorname{range}(\mathbf{C}\mathbf{K}_q(\mathbf{A}, \mathbf{B}))$. -/
+theorem range_mul_aeval_mul_le_range_mul_blockKrylovMatrix {R : Type*} [CommSemiring R]
+    [Algebra R 𝕜] {l : Type*} (C : Matrix l n 𝕜) (A : Matrix n n 𝕜) (B : Matrix n p 𝕜) {q : ℕ}
+    {f : R[X]} (hf : f.degree < q) :
+    LinearMap.range (C * aeval A f * B).mulVecLin ≤
+      LinearMap.range (C * blockKrylovMatrix A B q).mulVecLin := by
+  obtain ⟨D, hD⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul A B hf
+  exact range_le_iff_exists_mul.mpr ⟨D, by rw [Matrix.mul_assoc, hD, Matrix.mul_assoc]⟩
+
 end NLAlib

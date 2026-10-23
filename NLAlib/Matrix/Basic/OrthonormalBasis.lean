@@ -27,6 +27,8 @@ an arbitrary type, constrained by a cardinality hypothesis.
   $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ for a $\mathbf{Q}$ with orthonormal columns.
 * `NLAlib.HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose`: the two blocks of a
   completed matrix give complementary projectors.
+* `IsStarProjection.exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq`: frames of a star
+  projection and of its complement that together have orthonormal columns.
 -/
 
 @[expose] public section
@@ -36,11 +38,6 @@ open scoped Matrix
 namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*}
-
-/-- The column space of $\mathbf{A}$ as a subspace of `EuclideanSpace 𝕜 m`. -/
-private noncomputable abbrev euclideanRange [Fintype n] (A : Matrix m n 𝕜) :
-    Submodule 𝕜 (EuclideanSpace 𝕜 m) :=
-  (LinearMap.range A.mulVecLin).map (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap
 
 /-- **Orthonormal basis of a column space.** For any column index type $p$ with
 $\lvert p \rvert = \operatorname{rank} \mathbf{A}$, there is a $\mathbf{Q}$ with orthonormal
@@ -52,17 +49,19 @@ theorem exists_hasOrthonormalCols_range_eq [Fintype m] [Fintype n] [Fintype p] [
     ∃ Q : Matrix m p 𝕜, HasOrthonormalCols Q ∧
       LinearMap.range Q.mulVecLin = LinearMap.range A.mulVecLin := by
   classical
-  have hS : Module.finrank 𝕜 (euclideanRange A) = Fintype.card p := by
+  set S : Submodule 𝕜 (EuclideanSpace 𝕜 m) :=
+    (LinearMap.range A.mulVecLin).map (WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap
+  have hS : Module.finrank 𝕜 S = Fintype.card p := by
     rw [h]
     exact LinearEquiv.finrank_map_eq _ _
-  let b : OrthonormalBasis p 𝕜 (euclideanRange A) :=
-    (stdOrthonormalBasis 𝕜 (euclideanRange A)).reindex
+  let b : OrthonormalBasis p 𝕜 S :=
+    (stdOrthonormalBasis 𝕜 S).reindex
       (Fintype.equivOfCardEq (by rw [Fintype.card_fin, hS]))
   refine ⟨Matrix.of fun i j => (b j : EuclideanSpace 𝕜 m).ofLp i, ?_, ?_⟩
   · rw [hasOrthonormalCols_iff_orthonormal]
-    exact b.orthonormal.comp_linearIsometry (euclideanRange A).subtypeₗᵢ
+    exact b.orthonormal.comp_linearIsometry S.subtypeₗᵢ
   · have hcols : Set.range (Matrix.of fun i j => (b j : EuclideanSpace 𝕜 m).ofLp i).col =
-        ⇑((WithLp.linearEquiv 2 𝕜 (m → 𝕜)).toLinearMap ∘ₗ (euclideanRange A).subtype) ''
+        ⇑((WithLp.linearEquiv 2 𝕜 (m → 𝕜)).toLinearMap ∘ₗ S.subtype) ''
           Set.range b := by
       rw [← Set.range_comp]
       rfl
@@ -159,5 +158,22 @@ theorem HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose [Fintype m] [
   have h1 := hQ.mul_conjTranspose_self_of_card_eq (by rw [Fintype.card_sum, h])
   rwa [Matrix.conjTranspose_fromCols_eq_fromRows_conjTranspose, Matrix.fromCols_mul_fromRows]
     at h1
+
+/-- Frames adapted to a star projection: a star projection $\mathbf{P}$ with
+$\operatorname{rank} \mathbf{P} = \lvert p \rvert$ and $\lvert p \rvert + \lvert q \rvert =
+\lvert m \rvert$ splits as $\mathbf{P} = \mathbf{Q}_1\mathbf{Q}_1^{\mathsf{H}}$ and
+$\mathbf{I} - \mathbf{P} = \mathbf{Q}_2\mathbf{Q}_2^{\mathsf{H}}$, where
+$\begin{bmatrix} \mathbf{Q}_1 & \mathbf{Q}_2 \end{bmatrix}$ (`Matrix.fromCols`) has orthonormal
+columns, indexed by $p$ and $q$. -/
+theorem _root_.IsStarProjection.exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
+    {q : Type*} [Fintype m] [Fintype p] [Fintype q] [DecidableEq m] [DecidableEq p]
+    [DecidableEq q] {P : Matrix m m 𝕜} (hP : IsStarProjection P) (hp : Fintype.card p = P.rank)
+    (hpq : Fintype.card p + Fintype.card q = Fintype.card m) :
+    ∃ (Q₁ : Matrix m p 𝕜) (Q₂ : Matrix m q 𝕜), HasOrthonormalCols (Matrix.fromCols Q₁ Q₂) ∧
+      Q₁ * Q₁ᴴ = P ∧ Q₂ * Q₂ᴴ = 1 - P := by
+  obtain ⟨Q₁, hQ₁, hP₁⟩ := hP.exists_hasOrthonormalCols_mul_conjTranspose_eq hp
+  obtain ⟨Q₂, hQ₂⟩ := hQ₁.exists_fromCols hpq
+  refine ⟨Q₁, Q₂, hQ₂, hP₁, ?_⟩
+  rw [← hP₁, ← hQ₂.mul_conjTranspose_add_mul_conjTranspose hpq, add_sub_cancel_left]
 
 end NLAlib

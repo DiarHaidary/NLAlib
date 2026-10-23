@@ -29,6 +29,7 @@ identifies this construction as the Rivlin/KPM kernel and analyzes sharper asymp
 * `chebyshevCoeff_jacksonApprox`: its canonical coefficients.
 * `norm_chebyshevCoeff_jacksonApprox_le`: damping contracts each coefficient.
 * `isUniformApproxOn_jacksonApprox_of_lipschitz`: constructive uniform approximation.
+* `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith`: the same on an interval $[a, b]$.
 -/
 
 @[expose] public section
@@ -93,12 +94,6 @@ theorem norm_chebyshevCoeff_jacksonApprox_le (f : ℝ → 𝕜) (N k : ℕ) :
     abs_of_nonneg (jacksonDamping_nonneg N k)]
   exact mul_le_of_le_one_left (norm_nonneg _) (jacksonDamping_le_one N k)
 
-private lemma continuous_pullback {f : ℝ → 𝕜}
-    (hf : ContinuousOn f (Set.Icc (-1 : ℝ) 1)) :
-    Continuous (fun t : ℝ => f (Real.cos t)) :=
-  hf.comp_continuous Real.continuous_cos
-    (fun t => ⟨Real.neg_one_le_cos t, Real.cos_le_one t⟩)
-
 private lemma integral_even (g : ℝ → 𝕜) (hg : Continuous g)
     (he : ∀ t, g (-t) = g t) :
     (∫ t in -Real.pi..Real.pi, g t) = 2 * ∫ t in 0..Real.pi, g t := by
@@ -126,7 +121,8 @@ private lemma integral_sine_pullback {f : ℝ → 𝕜}
       (Real.sin ((k : ℝ) * t) : 𝕜) * f (Real.cos t)) = 0 := by
   apply integral_odd (fun t => (Real.sin ((k : ℝ) * t) : 𝕜) * f (Real.cos t))
     ((by fun_prop : Continuous
-    (fun t : ℝ => (Real.sin ((k : ℝ) * t) : 𝕜))).mul (continuous_pullback hf))
+    (fun t : ℝ => (Real.sin ((k : ℝ) * t) : 𝕜))).mul
+      (hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc))
   intro t
   simp only [mul_neg, Real.sin_neg, Real.cos_neg, RCLike.ofReal_neg, neg_mul]
 
@@ -137,7 +133,8 @@ private lemma integral_cosine_pullback {f : ℝ → 𝕜}
       (2 * Real.pi / (if k = 0 then 1 else 2) : ℝ) * chebyshevCoeff f k := by
   rw [integral_even (fun t => (Real.cos ((k : ℝ) * t) : 𝕜) * f (Real.cos t))
     ((by fun_prop : Continuous
-    (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜))).mul (continuous_pullback hf))
+    (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜))).mul
+      (hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc))
     (by intro t; simp only [mul_neg, Real.cos_neg])]
   simp only [chebyshevCoeff]
   simp_rw [mul_comm (f (Real.cos _))]
@@ -149,7 +146,8 @@ private lemma integral_shifted_cosine {f : ℝ → 𝕜}
       (Real.cos ((k : ℝ) * (θ - t)) : 𝕜) * f (Real.cos t)) =
       (Real.cos ((k : ℝ) * θ) : 𝕜) *
         ((2 * Real.pi / (if k = 0 then 1 else 2) : ℝ) * chebyshevCoeff f k) := by
-  have hfc := continuous_pullback hf
+  have hfc : Continuous (fun t : ℝ => f (Real.cos t)) :=
+    hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hc : Continuous (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜) * f (Real.cos t)) :=
     (by fun_prop : Continuous (fun t : ℝ => (Real.cos ((k : ℝ) * t) : 𝕜))).mul hfc
   have hs : Continuous (fun t : ℝ => (Real.sin ((k : ℝ) * t) : 𝕜) * f (Real.cos t)) :=
@@ -168,7 +166,8 @@ private lemma integral_kernel_pullback {f : ℝ → 𝕜}
     (hf : ContinuousOn f (Set.Icc (-1 : ℝ) 1)) (N : ℕ) (θ : ℝ) :
     (∫ t in -Real.pi..Real.pi, (jacksonKernel N (θ - t) : 𝕜) * f (Real.cos t)) =
       ((2 * Real.pi : ℝ) : 𝕜) * (jacksonApprox f N).eval (Real.cos θ : 𝕜) := by
-  have hfc := continuous_pullback hf
+  have hfc : Continuous (fun t : ℝ => f (Real.cos t)) :=
+    hf.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hterm (k : ℕ) : Continuous (fun t : ℝ => (jacksonDamping N (k + 1) : 𝕜) *
       ((Real.cos (((k + 1 : ℕ) : ℝ) * (θ - t)) : 𝕜) * f (Real.cos t))) :=
     (((by fun_prop : Continuous (fun t : ℝ =>
@@ -267,7 +266,8 @@ private lemma norm_error_cos {f : ℝ → 𝕜} {L : ℝ≥0}
     ((1 - Real.cos (θ - t)) / β + β / 2)
   have hβ : 0 < β := by dsimp [β]; positivity
   have hc := hf.continuousOn
-  have hfc := continuous_pullback hc
+  have hfc : Continuous (fun t : ℝ => f (Real.cos t)) :=
+    hc.comp_continuous Real.continuous_cos Real.cos_mem_Icc
   have hk : Continuous (fun t => jacksonKernel N (θ - t)) :=
     (continuous_kernel N).comp (by fun_prop)
   have hw : Continuous w := by dsimp [w]; fun_prop
@@ -351,5 +351,68 @@ theorem isUniformApproxOn_jacksonApprox_of_lipschitz
   rw [jacksonApproximationConstant_def]
   convert h using 1
   ring
+
+/-- **Jackson's theorem on an interval**: an $L$-Lipschitz $f$ on $[a, b]$, $a < b$, is
+within <!-- value jacksonApproximationConstant -->
+$$\frac{\pi L(b - a)}{2(N + 2)}$$
+of a polynomial of degree at most $N$ on $[a, b]$ (the constant is
+`jacksonApproximationConstant`). The affine image of
+`isUniformApproxOn_jacksonApprox_of_lipschitz`. [ChenTrogdonUbaru2022, Appendix C, Theorem 38];
+there on $[-1, 1]$ with the factor $\pi^2/2$.
+Result: jackson-lipschitz -/
+theorem exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith
+    {f : ℝ → 𝕜} {L : ℝ≥0} {a b : ℝ} (hab : a < b) (hf : LipschitzOnWith L f (Set.Icc a b))
+    (N : ℕ) :
+    ∃ p : 𝕜[X], p.degree ≤ (N : WithBot ℕ) ∧
+      Metric.IsUniformApproxOn (fun x : ℝ => p.eval (x : 𝕜)) f (Set.Icc a b)
+        (jacksonApproximationConstant * L * (b - a) / (2 * (N + 2))) := by
+  have hba : 0 < b - a := sub_pos.mpr hab
+  let φ : ℝ → ℝ := fun t => ((b - a) * t + b + a) / 2
+  let K : ℝ≥0 := ⟨(b - a) / 2, by positivity⟩
+  have hφ : LipschitzOnWith K φ (Set.Icc (-1 : ℝ) 1) := by
+    refine LipschitzOnWith.of_dist_le_mul fun x _ y _ => ?_
+    have h : φ x - φ y = (b - a) / 2 * (x - y) := by simp only [φ]; ring
+    rw [Real.dist_eq, Real.dist_eq, h, abs_mul, abs_of_pos (by positivity : 0 < (b - a) / 2)]
+    rfl
+  have hmaps : Set.MapsTo φ (Set.Icc (-1 : ℝ) 1) (Set.Icc a b) := fun t ht => by
+    simp only [φ, Set.mem_Icc] at ht ⊢
+    constructor <;> nlinarith [ht.1, ht.2]
+  let g : ℝ → 𝕜 := fun t => f (φ t)
+  have hg : LipschitzOnWith (L * K) g (Set.Icc (-1 : ℝ) 1) := hf.comp hφ hmaps
+  let q := jacksonApprox g N
+  let s : 𝕜[X] := C ((2 / (b - a) : ℝ) : 𝕜) * X - C (((b + a) / (b - a) : ℝ) : 𝕜)
+  refine ⟨q.comp s, ?_, ?_⟩
+  · refine degree_le_natDegree.trans ?_
+    have hq := natDegree_le_of_degree_le (degree_jacksonApprox_le g N)
+    have hs : s.natDegree ≤ 1 :=
+      (natDegree_sub_le _ _).trans
+        (max_le ((natDegree_C_mul_le _ _).trans natDegree_X_le)
+          (by simp only [natDegree_C, zero_le]))
+    have h : (q.comp s).natDegree ≤ N :=
+      natDegree_comp_le.trans ((Nat.mul_le_mul hq hs).trans_eq (mul_one N))
+    exact_mod_cast h
+  · intro x hx
+    let t := (2 * x - b - a) / (b - a)
+    have ht : t ∈ Set.Icc (-1 : ℝ) 1 := by
+      simp only [t, Set.mem_Icc, le_div_iff₀ hba, div_le_iff₀ hba]
+      constructor <;> linarith [hx.1, hx.2]
+    have hi : φ t = x := by
+      simp only [φ, t]
+      field_simp
+      ring
+    have he : s.eval (x : 𝕜) = (t : 𝕜) := by
+      simp only [s, eval_sub, eval_mul, eval_C, eval_X, t]
+      push_cast
+      field_simp
+      ring
+    have h := (isUniformApproxOn_jacksonApprox_of_lipschitz hg N).apply ht
+    change dist ((q.comp s).eval (x : 𝕜)) (f x) ≤ _
+    rw [eval_comp, he]
+    have hfx : g t = f x := by simp only [g, hi]
+    rw [← hfx]
+    refine h.trans_eq ?_
+    have hK : (K : ℝ) = (b - a) / 2 := rfl
+    rw [NNReal.coe_mul, hK]
+    field_simp
 
 end NLAlib

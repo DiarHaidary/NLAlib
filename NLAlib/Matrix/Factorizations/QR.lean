@@ -36,6 +36,8 @@ matrices indexed by `Fin`. Existence is read off Mathlib's
 * `NLAlib.IsQR.conjTranspose_mul_self`, `NLAlib.IsQR.singularValues_eq`,
   `NLAlib.IsQR.pseudoConditionNumber_eq`.
 * `NLAlib.IsQR.pinv_eq`, `NLAlib.IsQR.mul_conjTranspose_eq_rangeProjector`.
+* `NLAlib.IsQR.isUnit_iff`, `NLAlib.IsQR.isUnit_iff_injective_mulVec`, `NLAlib.IsQR.mul_inv_eq`:
+  an invertible triangular factor and $\mathbf{Q} = \mathbf{A}\mathbf{R}^{-1}$.
 * `NLAlib.IsQR.isLeastSquaresSolution_backSubst`: the triangular solve.
 * `NLAlib.IsQR.isLeastSquaresSolution_iff`: least squares through QR.
 * `NLAlib.IsQR.isCholesky`: $\mathbf{R}^{\mathsf{H}}$ is the Cholesky factor of the Gram matrix.
@@ -73,10 +75,20 @@ variable {A Q : Matrix m n 𝕜} {R : Matrix n n 𝕜}
 
 /-! ### What $\mathbf{R}$ knows about $\mathbf{A}$ -/
 
-/-- A triangular factor with no zero on its diagonal is invertible. -/
-private theorem IsQR.isUnit (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) : IsUnit R :=
+/-- The triangular factor is invertible when its diagonal has no zero. -/
+theorem IsQR.isUnit (h : IsQR A Q R) (hR : ∀ i, R i i ≠ 0) : IsUnit R :=
   (Matrix.isUnit_iff_isUnit_det R).mpr
     (h.isUpperTriangular.isUnit_det_iff.mpr fun i => (hR i).isUnit)
+
+/-- The triangular factor is invertible exactly when its diagonal has no zero. -/
+theorem IsQR.isUnit_iff (h : IsQR A Q R) : IsUnit R ↔ ∀ i, R i i ≠ 0 := by
+  rw [Matrix.isUnit_iff_isUnit_det, h.isUpperTriangular.isUnit_det_iff]
+  simp only [isUnit_iff_ne_zero]
+
+/-- With $\mathbf{R}$ invertible, the orthonormal factor is
+$\mathbf{Q} = \mathbf{A}\mathbf{R}^{-1}$. -/
+theorem IsQR.mul_inv_eq (h : IsQR A Q R) (hR : IsUnit R) : A * R⁻¹ = Q := by
+  rw [h.eq_mul, Matrix.mul_nonsing_inv_cancel_right _ _ ((Matrix.isUnit_iff_isUnit_det R).mp hR)]
 
 /-- A column of $\mathbf{A}$ is the combination of the columns of $\mathbf{Q}$ with the entries
 of $\mathbf{R}$: $\mathbf{A}_{:,k} = \sum_i \mathbf{R}_{i,k} \mathbf{Q}_{:,i}$. -/
@@ -126,6 +138,12 @@ theorem IsQR.injective_mulVec_iff (h : IsQR A Q R) :
     Matrix.mulVec_injective_iff_isUnit, Matrix.isUnit_iff_isUnit_det,
     h.isUpperTriangular.isUnit_det_iff]
   simp only [isUnit_iff_ne_zero]
+
+/-- The triangular factor is invertible exactly when $\mathbf{A}$ has full column rank
+($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective). -/
+theorem IsQR.isUnit_iff_injective_mulVec (h : IsQR A Q R) :
+    IsUnit R ↔ Function.Injective A.mulVec := by
+  rw [h.isUnit_iff, h.injective_mulVec_iff]
 
 /-- For $\mathbf{A}$ of full column rank, a nonnegative diagonal of $\mathbf{R}$ is positive.
 Port of `NLAlib.diag_pos_of_qr_of_rank_eq_card`. -/
@@ -266,10 +284,8 @@ theorem IsQR.unique {Q' : Matrix m n 𝕜} {R' : Matrix n n 𝕜} (h : IsQR A Q 
   have hRR : R = R' :=
     Matrix.conjTranspose_injective ((h.isCholesky hR).unique (h'.isCholesky hR'))
   subst hRR
-  have hdet : IsUnit R.det := (Matrix.isUnit_iff_isUnit_det R).mp (h.isUnit fun i => (hR i).ne')
-  refine ⟨?_, rfl⟩
-  rw [← Matrix.mul_nonsing_inv_cancel_right R Q hdet, ← h.eq_mul, h'.eq_mul,
-    Matrix.mul_nonsing_inv_cancel_right R Q' hdet]
+  have hu : IsUnit R := h.isUnit fun i => (hR i).ne'
+  exact ⟨by rw [← h.mul_inv_eq hu, h'.mul_inv_eq hu], rfl⟩
 
 end
 

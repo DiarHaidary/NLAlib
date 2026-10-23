@@ -118,13 +118,6 @@ private theorem measurable_gaussianProjectionFactor_rank [Finite m] (A : Matrix 
   (measurable_from_nat (f := fun q => gaussianProjectionFactor q c)).comp
     (measurable_rank.comp (measurable_const.matrix_mul measurable_id))
 
-/-- The completion factor at a rank $q$ with $q + 2 \le p$ lies in $[1, 1 + p]$. -/
-private theorem gaussianProjectionFactor_le_one_add {q c : ℕ} (h : q + 2 ≤ c) :
-    gaussianProjectionFactor q c ≤ 1 + c := by
-  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
-  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
-  nlinarith
-
 /-- The right side of the identity, $(1 + q/(p-q-1))\|\mathbf{A} - \mathsf{rsvd}\|^2$ at the
 random rank, is integrable. -/
 private theorem integrable_gaussianProjectionFactor_mul [IsFiniteMeasure μ] (A : Matrix m n ℝ)
@@ -146,31 +139,17 @@ private theorem lintegral_frobNorm_sub_generalizedNystrom_sq (A : Matrix m n ℝ
       ∫⁻ ω, ENNReal.ofReal (gaussianProjectionFactor (A * X ω).rank (Fintype.card p) *
         frobNorm (A - rsvd A (X ω)) ^ 2) ∂μ := by
   have := hΨ.isProbabilityMeasure
-  have hF : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
-      ENNReal.ofReal (frobNorm (A - generalizedNystrom A q.1 q.2) ^ 2) :=
-    ENNReal.measurable_ofReal.comp ((continuous_frobNorm.measurable.comp
-      (measurable_const.sub (measurable_generalizedNystrom A))).pow_const 2)
-  have hrank : Measurable fun x : Matrix n l ℝ => (A * x).rank :=
-    measurable_rank.comp (measurable_const.matrix_mul measurable_id)
-  have hG : Measurable fun x : Matrix n l ℝ =>
-      ENNReal.ofReal (gaussianProjectionFactor (A * x).rank (Fintype.card p) *
-        frobNorm (A - rsvd A x) ^ 2) :=
-    ENNReal.measurable_ofReal.comp ((measurable_gaussianProjectionFactor_rank A _).mul
-      ((continuous_frobNorm.measurable.comp
-        (measurable_const.sub (measurable_rsvd A))).pow_const 2))
-  have hr' : ∀ᵐ x ∂(μ.map X), (A * x).rank + 2 ≤ Fintype.card p :=
-    (ae_map_iff hX (hrank (MeasurableSet.of_discrete
-      (s := {q : ℕ | q + 2 ≤ Fintype.card p})))).mpr hr
   have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (gaussianMatrix m p) (gaussianMatrix m p) :=
     HasLaw.id
-  rw [hXΨ.lintegral_comp_eq_lintegral_lintegral hX hΨ.aemeasurable hF, hΨ.map_eq,
-    ← lintegral_map' hG.aemeasurable hX]
-  refine lintegral_congr_ae (hr'.mono fun x hx => ?_)
-  dsimp only
-  rw [← ofReal_integral_eq_lintegral_ofReal
-      (integrable_frobNorm_sub_generalizedNystrom_sq_of_fixed A x hid hx)
-      (ae_of_all _ fun _ => sq_nonneg _),
-    integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix A x hid hx]
+  refine (hXΨ.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hX hΨ
+    (F := fun q : Matrix n l ℝ × Matrix m p ℝ => frobNorm (A - generalizedNystrom A q.1 q.2) ^ 2)
+    ((continuous_frobNorm.measurable.comp
+      (measurable_const.sub (measurable_generalizedNystrom A))).pow_const 2)
+    (fun _ => sq_nonneg _) (hr.mono fun ω hω =>
+      integrable_frobNorm_sub_generalizedNystrom_sq_of_fixed A (X ω) hid hω)).trans ?_
+  refine lintegral_congr_ae (hr.mono fun ω hω => ?_)
+  exact congrArg ENNReal.ofReal
+    (integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix A (X ω) hid hω)
 
 /-- The squared error of generalized Nyström is almost everywhere strongly measurable. -/
 private theorem aestronglyMeasurable_frobNorm_sub_generalizedNystrom_sq (A : Matrix m n ℝ)
@@ -392,14 +371,6 @@ private theorem measurable_haarProjectionFactor_rank [Finite m] (A : Matrix m n 
   (measurable_from_nat (f := fun q => haarProjectionFactor d c q)).comp
     (measurable_rank.comp (measurable_const.matrix_mul measurable_id))
 
-/-- The Haar completion factor at a rank $q$ with $q + 2 \le p \le d$ lies in $[1, 1 + p]$. -/
-private theorem haarProjectionFactor_le_one_add {d q c : ℕ} (h : q + 2 ≤ c) (hcd : c ≤ d) :
-    haarProjectionFactor d c q ≤ 1 + c := by
-  refine (haarProjectionFactor_le_gaussianProjectionFactor h hcd).trans ?_
-  have h' : (q : ℝ) + 2 ≤ c := by exact_mod_cast h
-  rw [gaussianProjectionFactor_def, add_le_add_iff_left, div_le_iff₀ (by linarith)]
-  nlinarith
-
 /-- The right side of the identity at the random rank is integrable. -/
 private theorem integrable_haarProjectionFactor_mul [IsFiniteMeasure μ] (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hpm : Fintype.card p ≤ Fintype.card m)
@@ -422,30 +393,16 @@ private theorem lintegral_frobNorm_sub_generalizedNystrom_sq_haar [DecidableEq p
       ∫⁻ ω, ENNReal.ofReal (haarProjectionFactor (Fintype.card m) (Fintype.card p)
         (A * X ω).rank * frobNorm (A - rsvd A (X ω)) ^ 2) ∂μ := by
   have := hΨ.isProbabilityMeasure
-  have hF : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
-      ENNReal.ofReal (frobNorm (A - generalizedNystrom A q.1 q.2) ^ 2) :=
-    ENNReal.measurable_ofReal.comp ((continuous_frobNorm.measurable.comp
-      (measurable_const.sub (measurable_generalizedNystrom A))).pow_const 2)
-  have hrank : Measurable fun x : Matrix n l ℝ => (A * x).rank :=
-    measurable_rank.comp (measurable_const.matrix_mul measurable_id)
-  have hG : Measurable fun x : Matrix n l ℝ =>
-      ENNReal.ofReal (haarProjectionFactor (Fintype.card m) (Fintype.card p) (A * x).rank *
-        frobNorm (A - rsvd A x) ^ 2) :=
-    ENNReal.measurable_ofReal.comp ((measurable_haarProjectionFactor_rank A _ _).mul
-      ((continuous_frobNorm.measurable.comp
-        (measurable_const.sub (measurable_rsvd A))).pow_const 2))
-  have hr' : ∀ᵐ x ∂(μ.map X), (A * x).rank + 2 ≤ Fintype.card p :=
-    (ae_map_iff hX (hrank (MeasurableSet.of_discrete
-      (s := {q : ℕ | q + 2 ≤ Fintype.card p})))).mpr hr
   have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (haarFrame m p) (haarFrame m p) := HasLaw.id
-  rw [hXΨ.lintegral_comp_eq_lintegral_lintegral hX hΨ.aemeasurable hF, hΨ.map_eq,
-    ← lintegral_map' hG.aemeasurable hX]
-  refine lintegral_congr_ae (hr'.mono fun x hx => ?_)
-  dsimp only
-  rw [← ofReal_integral_eq_lintegral_ofReal
-      (integrable_frobNorm_sub_generalizedNystrom_sq_of_fixed_haar A x hid hpm hx)
-      (ae_of_all _ fun _ => sq_nonneg _),
-    integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame A x hid hpm hx]
+  refine (hXΨ.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hX hΨ
+    (F := fun q : Matrix n l ℝ × Matrix m p ℝ => frobNorm (A - generalizedNystrom A q.1 q.2) ^ 2)
+    ((continuous_frobNorm.measurable.comp
+      (measurable_const.sub (measurable_generalizedNystrom A))).pow_const 2)
+    (fun _ => sq_nonneg _) (hr.mono fun ω hω =>
+      integrable_frobNorm_sub_generalizedNystrom_sq_of_fixed_haar A (X ω) hid hpm hω)).trans ?_
+  refine lintegral_congr_ae (hr.mono fun ω hω => ?_)
+  exact congrArg ENNReal.ofReal
+    (integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame A (X ω) hid hpm hω)
 
 /-- The identity with the rank inside the expectation, Haar co-range. -/
 private theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_haar [DecidableEq p]

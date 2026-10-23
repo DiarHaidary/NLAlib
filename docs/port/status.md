@@ -2,6 +2,161 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Sketching moments round: proofs (2026-10-22)
+
+Branch `sketching/moments` (worktree `nlalib-block`), from `46f78ab`. Every statement of the
+skeleton is proved; no `sorry` remains, and all of the round's files count as proved modules:
+`Probability/MatrixConcentration/BernsteinWithoutReplacement.lean` (matrix Bernstein and the
+rectangular form without replacement), `Sketching/Gaussian/ProjectionCost.lean` (the Gaussian,
+sub-Gaussian and Haar PCPs with their $\log(1/\delta)$ twins and asymptotic forms),
+`Sketching/Sampling/MatrixMultiplication.lean` (spectral AMM by row sampling, with and without
+replacement), `Sketching/Structured/SRHTMultiplication.lean` (the SRHT JL tails, sizes, JL moment
+at $p = 2$, spectral AMM and PCP, both sampling models), `Regression/{Gaussian, SubGaussian, Haar,
+SRHT}.lean` (sketch-and-solve with high probability, Haar sketch-and-precondition) and
+`LowRank/Oblivious/{Gaussian, SubGaussian, Haar, SRHT}.lean` (randomized SVD and early truncation
+to $1 + \varepsilon$). Public additions, all dated in the note's "Changes during the proofs":
+`measureReal_le_one_of_hasLaw_srht` made public, `samplingEmbeddingDim_srhtRowBound_le` and
+`samplingInjectionDim_srhtRowBound_le` (`Sketching/Structured/SRHT.lean`), and at the close the two
+shared $(1 + \varepsilon)$ forms `HasJLMoment.measureReal_frobNorm_sub_earlyTruncatedRSVD_sq_gt_one_add_mul_le`
+(`LowRank/Oblivious/EarlyTruncation.lean`) and
+`HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_one_add_mul_le`
+(`Regression/Oblivious.lean`), which now carry the bodies the family twins repeated (net 65 Lean
+lines fewer). `hasProjectionCostPreserving_of_isEmpty` was made public and moved to
+`Sketching/Properties/ProjectionCost.lean`, over any `RCLike` field. `SRHTMultiplication.lean`
+also imports `Probability/QuadraticForm/Moments.lean`. One statement changed: the sub-Gaussian PCP
+twin loses an unused `[Nonempty k]` (linter; in the rename map's `statementChanged`). Two private
+helper docstrings of `ProjectionCost.lean` got their value markers.
+
+Final review (2026-10-22): the duplicated helpers become public lemmas (rule S5),
+`HasOrthonormalCols.hasOrthonormalCols_mul_diagonal` and `srhtRowBound_div_two_le`
+(`Sketching/Structured/Flattening.lean`), `row_eq_zero_of_norm_sq_le`
+(`Sketching/Sampling/RowSampling.lean`), `Real.log_two_le_log_one_div` and
+`Real.log_two_div_le_two_mul_log_one_div` (`ForMathlib/Analysis/SpecialFunctions/Log/Basic.lean`),
+with their private copies deleted (net 30 Lean lines fewer); the C9, D13 and Haar D3 warnings the
+review named are cleared. The new Matrix-vocabulary lemma in `Flattening.lean` adds one P10
+warning.
+
+Checks: `mk_all --check` clean; `scripts/stage_check.sh`: 396 proved modules, 0 not yet; build
+3993 jobs, `--wfail`, 0 warnings; audit 9951 declarations, 0 violations; lint 6388 declarations, 0
+errors; references 88 keys, 86 asymptotic forms, 0 problems; constants 34, 425 value markers, 0
+problems; rules 0 errors, 73 in the baseline, 871 warnings (880 before the final review: C9 -2,
+D3 -3, D13 -3, F10 -1, P10 +1; 849 at `46f78ab`); duplicates 5842 theorems, 0 classes; script
+tests 46, OK.
+
+Open items for the maintainer:
+* `KaneNelson2014` in `docs/references.bib` has surnames, title, journal and year only; given
+  names, issue, article number and DOI are to complete, and the declaration docstrings say
+  "locator to check".
+* The SRHT asymptotic threshold shapes (JL, PCP, sketch-and-solve, randomized SVD, early
+  truncation) were chosen during the skeleton, since the note gave none (note, "Changes during the
+  skeleton", "Asymptotic thresholds"); they await the maintainer's look.
+
+## Sketching moments round: skeleton (2026-10-22)
+
+Branch `sketching/moments` (worktree `nlalib-block`), from `46f78ab` (rebased from `1e5334f`
+after the Krylov-spectral review follow-ups). Statement skeleton of
+`docs/design/Sketching-Moments.md` (approved 2026-10-22, MD2–MD4 as recommended, full scope; the
+note's last section lists the changes during the skeleton). Statements with `sorry` (48 in all):
+`Sketching/Structured/SRHTMultiplication.lean` (new, 12), `Sketching/Gaussian/ProjectionCost.lean`
+(new, 7: the twins, the Haar PCPs and the three asymptotic forms),
+`Probability/MatrixConcentration/BernsteinWithoutReplacement.lean` (new, 6),
+`LowRank/Oblivious/{SubGaussian, SRHT, Gaussian, Haar}.lean` (4, 4, 2, 2; `Haar` new),
+`Regression/{Haar, Gaussian, SubGaussian, SRHT}.lean` (3, 2, 2, 2; `Haar` new),
+`Sketching/Sampling/MatrixMultiplication.lean` (2). Proved and sorry-free: the ForMathlib Gamma
+and log bounds, everything added to `Probability/Tail.lean`, `SubExponential/Tail.lean`,
+`MatrixConcentration/{Bernstein, ChernoffWithoutReplacement}.lean`, `JohnsonLindenstrauss.lean`,
+`Sketching/Gaussian/{Gaussian, Haar, HaarEmbedding, SubGaussian, Rademacher}.lean` (the JL moments
+at every order with sizes and asymptotic forms, the Haar $1 \mp \varepsilon$ OSE/OSI) and
+`Flattening.lean`. Six asymptotic forms change statement (MD4), listed in
+`docs/renames/2026-10-sketching-moments.json`. Next: proofs, two agents on disjoint files (the
+report of the skeleton gives the order).
+
+## Krylov spectral round: proofs (2026-10-22)
+
+Every statement of the skeleton is proved; no `sorry` remains in the round's files, and all of
+them count as proved modules (`scripts/proved_modules.py`): `Matrix/Spectral/SpectralMeasure.lean`,
+`Polynomial/Orthogonal/{Moments, Basic, Gauss}.lean`, `Polynomial/Chebyshev/EvenFilter.lean`,
+`Krylov/Functions/Quadrature.lean`, `Krylov/Eigenvalues/{Ritz, PowerIteration}.lean`,
+`Estimation/Spectral/RandomStart.lean`, and the new
+`ForMathlib/Analysis/SpecialFunctions/Trigonometric/Chebyshev/ChebyshevGauss.lean`. No statement
+changed. The public helpers the proofs added (`integrable_eval_of_ae_mem_Icc`,
+`Polynomial.Chebyshev.sumZeroes_def`, `rayleighQuotient_cfc_mulVec_eq_integral_div`) and the
+`Bochner.Set` imports are recorded with dates in the note's "Changes during the proofs". KS3c
+(the Ritz values as Gauss nodes, positive weights) is proved from the compression alone, without
+tridiagonal theory. `scripts/leansrc.py` now reads `import all X` as an import of `X` (it took
+`all` for a module, a false P11 error); test added.
+
+Checks: `lake build --wfail NLAlib` 3990 jobs, 0 warnings; `scripts/stage_check.sh`: 391 proved
+modules, 0 not yet; build 3988 jobs, 0 warnings; audit 9615 declarations, 0 violations; lint 6245 declarations, 0
+errors; references 87 keys, 70 asymptotic forms, 0 problems; constants 30, 336 value markers, 0
+problems; rules 0 errors, 73 in the baseline; duplicates 5706 theorems, 0 classes.
+
+Open items:
+* The printed constants of Kuczyński and Woźniakowski (`KuczynskiWozniakowski1992`) are not yet
+  checked. The power constant $\lambda_0\log(1 + \tan^2)/(2q + 1)$ is proved
+  (`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`). Only the docstrings of the
+  named bounds `randomStartPowerBound` and `randomStartLanczosBound`
+  (`Estimation/Spectral/RandomStart.lean`) say that the printed constant is to be compared. The
+  theorem docstrings in `Krylov/Eigenvalues/PowerIteration.lean`
+  (`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`) and
+  `Krylov/Eigenvalues/Ritz.lean`
+  (`Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq`) never mention
+  the paper's constant: they cite it with a locator from the quarry, "to check", and the
+  skeleton entry below overstates them. Each of the four must be checked against the paper, and
+  its docstring must state the source's value, the value proved and the gap (CONTRIBUTING §5.2,
+  rule 2).
+* KS7 (orthogonal-polynomial structure theory: existence and real-rootedness, three-term
+  recurrence, Christoffel–Darboux, `jacobiMatrix`, interlacing of zeros) stays deferred, note §8;
+  no consumer this round.
+
+## Krylov spectral round: skeleton (2026-10-22)
+
+Branch `krylov/spectral` (worktree `nlalib-block`), from `375e005`. Statement skeleton of
+`docs/design/Krylov-Spectral.md` (approved 2026-10-22, SD1–SD7 as recommended, SD4's rule named
+`interpolatoryQuadrature`; the note's last section lists the changes during the skeleton). New
+files with `sorry` statements: `Matrix/Spectral/SpectralMeasure.lean`,
+`Polynomial/Orthogonal/{Moments, Basic, Gauss}.lean`, `Polynomial/Chebyshev/EvenFilter.lean`,
+`Krylov/Functions/Quadrature.lean`, `Krylov/Eigenvalues/{Ritz, PowerIteration}.lean`,
+`Estimation/Spectral/RandomStart.lean` (50 `sorry` in all). Proved and sorry-free: the additions to
+`Polynomial/Approximation/Jackson.lean` (Jackson on $[a, b]$), `Krylov/Functions/LanczosFA.lean`
+(the two KS4 rates), `Matrix/Spectral/SingularValues.lean` (the frame-conjugation eigenvalue
+lemma, flagged: intended home `Eigenvalues.lean`), `Probability/Distributions/Gaussian.lean`,
+`Probability/Measurability/{Matrix, Krylov}.lean`. Next: proofs, one file at a time, in the
+order of the note's §6 adjusted by the skeleton report.
+
+Open item, before the round closes: the printed constants of Kuczyński and Woźniakowski
+(`KuczynskiWozniakowski1992`) are not yet checked. The docstrings of `randomStartPowerBound` and
+`randomStartLanczosBound` (`Estimation/Spectral/RandomStart.lean`),
+`Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le`
+(`Krylov/Eigenvalues/PowerIteration.lean`) and
+`Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq`
+(`Krylov/Eigenvalues/Ritz.lean`) cite the paper with locators from the quarry and say only that
+the printed constant is to be compared. Each must be checked against the paper, and the
+docstring must state the source's value, the value proved and the gap (CONTRIBUTING §5.2, rule
+2).
+
+## Consolidation round complete (2026-10-22)
+
+Branch `cleanup/consolidation` (worktree `nlalib-block`), from `dd2eaf7`. Design note
+`docs/design/Consolidation.md` (approved 2026-10-22, D1 option (a); its dated amendments record the
+few unforeseen imports and statement spellings). No new mathematics: re-proved private helpers became
+the 49 public lemmas of §3 in the file of their topic (Phase A, 27 commits), and every consumer
+dropped its copies (Phase B, one file per commit). Private declarations 1731 → 1646. One public
+declaration removed (`NLAlib.integral_comp_eq_integral_integral_of_indepFun`, in favour of
+`ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral`) and one statement change
+(`conjTranspose_mul_mul_le_conjTranspose_mul_mul` drops `[Finite n]`), both in the rename map
+`docs/renames/2026-10-consolidation.json`; `rademacherMatrix` moved to
+`RandomMatrix/Rademacher/Basic.lean` under the same name. The CONTRIBUTING §5.3 row "independent
+test matrices" names the F1 conditioning lemmas as the preferred route (bridge column only, D1).
+
+Checks: `lake build --wfail NLAlib` 3979 jobs, 0 warnings; `check_rules.py --only S5 --warnings`
+0 (was 17 same-name pairs); `scripts/stage_check.sh`: 381 proved modules, build 3977 jobs, 0
+warnings; audit 9363 declarations, 0 violations; lint 6106 declarations, 0 errors; references 86
+keys, 68 asymptotic forms, 0 problems; constants 28, 324 value markers, 0 problems; rules 0 errors,
+73 in the baseline; duplicates 5582 theorems, 0 classes (was 4). `scripts/Reuse.lean` on the 181
+public theorems whose proofs changed: each consumer calls the new public lemma. Copies kept as
+recorded in the note: the single-use privates of §6 and the Hanson–Wright MGF.
+
 ## Sketch-and-precondition and randomized Kaczmarz: proofs (2026-10-20)
 
 Every statement of the skeleton is proved; no `sorry` remains in the round's files, and all of

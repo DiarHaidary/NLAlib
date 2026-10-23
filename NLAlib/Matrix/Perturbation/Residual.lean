@@ -41,7 +41,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
 /-- Coordinates in an orthonormal eigenbasis of a Hermitian matrix: a map $T$ that preserves the
 Euclidean norm and turns the squared norm of a shifted residual into a weighted sum. -/
-private theorem exists_eigencoordinates {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+private theorem exists_eigencoordinates_residual {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ T : (n → 𝕜) → Fin (Fintype.card n) → 𝕜,
       (∀ x, ‖WithLp.toLp 2 x‖ ^ 2 = ∑ j, ‖T x j‖ ^ 2) ∧
       ∀ (x : n → 𝕜) (μ : ℝ), ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ ^ 2 =
@@ -77,7 +77,7 @@ theorem _root_.Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le [Nonempt
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
     ∃ i, i < Fintype.card n ∧
       |eigenvalue A i - μ| * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
-  obtain ⟨T, hT₁, hT₂⟩ := exists_eigencoordinates hA
+  obtain ⟨T, hT₁, hT₂⟩ := exists_eigencoordinates_residual hA
   have : Nonempty (Fin (Fintype.card n)) := ⟨⟨0, Fintype.card_pos⟩⟩
   obtain ⟨i, hi⟩ := Finite.exists_min fun j : Fin (Fintype.card n) => |eigenvalue A j - μ|
   refine ⟨i, i.isLt, ?_⟩
@@ -139,7 +139,7 @@ private theorem sub_mul_sub_le_norm_sq {A : Matrix n n 𝕜} (hA : A.IsHermitian
     (hp : ∀ i, i < Fintype.card n → 0 ≤ (eigenvalue A i - ℓ) * (eigenvalue A i - a)) :
     (ℓ - rayleighQuotient A x) * (rayleighQuotient A x - a) ≤
       ‖WithLp.toLp 2 (A *ᵥ x - rayleighQuotient A x • x)‖ ^ 2 := by
-  obtain ⟨T, hT₁, hT₂⟩ := exists_eigencoordinates hA
+  obtain ⟨T, hT₁, hT₂⟩ := exists_eigencoordinates_residual hA
   have h1 : ((ℓ - a) / 2) ^ 2 * ‖WithLp.toLp 2 x‖ ^ 2 ≤
       ‖WithLp.toLp 2 (A *ᵥ x - ((ℓ + a) / 2) • x)‖ ^ 2 := by
     rw [hT₁, hT₂, Finset.mul_sum]

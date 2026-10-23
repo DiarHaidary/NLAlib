@@ -105,10 +105,7 @@ theorem IsQR.iterativeSketching_succ [DecidableEq n] [LinearOrder n] {Q : Matrix
     (x₀ : n → 𝕜) (q : ℕ) :
     iterativeSketching A S ω y x₀ (q + 1) = iterativeSketching A S ω y x₀ q +
       ω • (R⁻¹ *ᵥ ((R⁻¹)ᴴ *ᵥ (Aᴴ *ᵥ (y - A *ᵥ iterativeSketching A S ω y x₀ q)))) := by
-  have hRu : IsUnit R.det := (Matrix.isUnit_iff_isUnit_det R).mp hR
-  have hQ : HasOrthonormalCols (S * A * R⁻¹) := by
-    rw [hQR.eq_mul, Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hRu, Matrix.mul_one]
-    exact hQR.hasOrthonormalCols
+  have hQ : HasOrthonormalCols (S * A * R⁻¹) := hQR.mul_inv_eq hR ▸ hQR.hasOrthonormalCols
   rw [iterativeSketching, iterativeSketching, richardsonIterate_succ]
   congr 1
   rw [hQ.pinv_conjTranspose_mul_self_eq_mul_conjTranspose, Matrix.smul_mulVec,

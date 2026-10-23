@@ -9,6 +9,7 @@ public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.Algebra.Polynomial.AlgebraMap
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Matrix.Functions.HermitianCalculus
+public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Matrix.Spectral.SVD
 
 /-!
@@ -292,6 +293,32 @@ theorem aeval_mul_eq_mul_aeval_of_mul_eq_mul {S : Type*} [CommSemiring S] [Algeb
   | monomial j a =>
     simp only [aeval_monomial, Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, Matrix.mul_smul,
       Matrix.one_mul, pow_mul_eq_mul_pow_of_mul_eq_mul h]
+
+/-- A polynomial of a diagonalisable matrix is bounded through its eigenvalues: if
+$\mathbf{A}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and
+$\lvert p(d_i) \rvert \le \eta$ for every $i$, then
+$\|p(\mathbf{A})\|_2 \le \kappa(\mathbf{V})\,\eta$, with
+$\kappa(\mathbf{V}) = \|\mathbf{V}\|_2 \|\mathbf{V}^{-1}\|_2$. -/
+theorem specNorm_aeval_le_pseudoConditionNumber_mul {A V : Matrix n n 𝕜}
+    {d : n → 𝕜} (hV : IsUnit V) (hAV : A * V = V * Matrix.diagonal d) (p : 𝕜[X]) {η : ℝ}
+    (hη : ∀ i, ‖p.eval (d i)‖ ≤ η) : specNorm (aeval A p) ≤ pseudoConditionNumber V * η := by
+  rcases isEmpty_or_nonempty n with hn | ⟨⟨i⟩⟩
+  · rw [Subsingleton.elim (aeval A p) 0, Subsingleton.elim V 0, specNorm_zero,
+      pseudoConditionNumber_zero, zero_mul]
+  have hη0 : 0 ≤ η := (norm_nonneg _).trans (hη i)
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hpA : aeval A p = V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹ := by
+    rw [← aeval_diagonal_self, ← aeval_mul_eq_mul_aeval_of_mul_eq_mul hAV, Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv _ hdet, Matrix.mul_one]
+  rw [hpA, pseudoConditionNumber_of_isUnit hV]
+  calc specNorm (V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹)
+      ≤ specNorm V * specNorm (Matrix.diagonal fun i => p.eval (d i)) * specNorm V⁻¹ :=
+        (specNorm_mul_le _ _).trans
+          (mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) (specNorm_nonneg _))
+    _ ≤ specNorm V * η * specNorm V⁻¹ := by
+        gcongr
+        exact specNorm_diagonal_le hη0 hη
+    _ = specNorm V * specNorm V⁻¹ * η := by ring
 
 /-- **Polynomials in the two Gram matrices intertwine**:
 $p(\mathbf{A}\mathbf{A}^{\mathsf{H}})\mathbf{A} = \mathbf{A}\,p(\mathbf{A}^{\mathsf{H}}\mathbf{A})$.

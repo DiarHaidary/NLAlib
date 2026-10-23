@@ -11,6 +11,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshe
 public import NLAlib.LowRank.Gaussian.Filter
 public import NLAlib.LowRank.Structural.BlockKrylov
 import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
+import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 
 /-!
 # Gapped bounds for randomized block Krylov and subspace iteration
@@ -113,14 +114,6 @@ private theorem integral_gram_sub_rbki_le_sub_rsvd_aeval (Φ : SymmetricGauge) (
   exact pow_le_pow_left₀ (singularValues_nonneg _ _)
     (singularValues_sub_rbki_le_of_degree_lt A (X ω) hf i) 2
 
-/-- The range of the filtered sketch lies in that of the block Krylov sketch. -/
-private theorem range_mul_aeval_mul_le_range_mul_blockKrylovMatrix (A : Matrix m n ℝ)
-    (Y : Matrix n l ℝ) {q : ℕ} {f : ℝ[X]} (hf : f.degree < q) :
-    LinearMap.range (A * aeval (Aᴴ * A) f * Y).mulVecLin ≤
-      LinearMap.range (A * blockKrylovMatrix (Aᴴ * A) Y q).mulVecLin := by
-  obtain ⟨C, hC⟩ := exists_aeval_mul_eq_blockKrylovMatrix_mul (Aᴴ * A) Y hf
-  exact range_le_iff_exists_mul.mpr ⟨C, by rw [Matrix.mul_assoc, hC, Matrix.mul_assoc]⟩
-
 /-- The late-truncated randomized SVD at any test matrix $\mathbf{Y}$ whose sketch range contains
 that of the filtered sketch, in expectation, Frobenius norm: Gu's projected form and head capture
 in expectation. -/
@@ -143,16 +136,8 @@ private theorem integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le {k : T
     integral_frobNorm_one_sub_rangeProjector_mul_truncatedSVD_sq_le_of_hasLaw_gaussianMatrix A hX f
       hrt ht hc hhead htail
   rw [hr'] at hH
-  have hm : Measurable fun Z : Matrix n l ℝ =>
-      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * Z)) * truncatedSVD A r) ^ 2 :=
-    (measurable_frobNorm.comp ((measurable_const.sub (measurable_rangeProjector.comp
-      (measurable_const.matrix_mul measurable_id))).matrix_mul measurable_const)).pow_const 2
-  have hint : Integrable (fun ω =>
-      frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * X ω)) * truncatedSVD A r) ^ 2) μ :=
-    Integrable.of_bound (hm.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable
-      (frobNorm (truncatedSVD A r) ^ 2) (Filter.Eventually.of_forall fun ω => by
-        rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
-        exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_one_sub_rangeProjector_mul_le _ _) 2)
+  have hint := integrable_frobNorm_one_sub_rangeProjector_mul_sq (A * aeval (Aᴴ * A) f)
+    (truncatedSVD A r) hX.aemeasurable
   have hpt : ∀ ω, frobNorm (A - truncatedSVD (rsvd A (Y ω)) r) ^ 2 ≤
       frobNorm (A - truncatedSVD A r) ^ 2 +
         frobNorm ((1 - rangeProjector (A * aeval (Aᴴ * A) f * X ω)) * truncatedSVD A r) ^ 2 := by
@@ -281,26 +266,13 @@ private theorem exists_rbki_filter (A : Matrix m n ℝ) {h r t q : ℕ} (hr : h 
   refine ⟨(Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp (C (2 / σt ^ 2) * Polynomial.X - 1), ?_,
     Real.exp (4 * ((q : ℝ) - 1) * Real.sqrt γ) / 2, 1, by positivity, ?_, ?_, ?_⟩
   · refine degree_le_natDegree.trans_lt ?_
-    have h1 : (C (2 / σt ^ 2) * Polynomial.X - 1 : ℝ[X]).natDegree ≤ 1 := by compute_degree
-    have h2 := natDegree_comp_le (p := Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ))
-      (q := C (2 / σt ^ 2) * Polynomial.X - 1)
-    rw [Polynomial.Chebyshev.natDegree_T, Int.natAbs_natCast] at h2
-    have h3 : ((Polynomial.Chebyshev.T ℝ ((q - 1 : ℕ) : ℤ)).comp
-        (C (2 / σt ^ 2) * Polynomial.X - 1)).natDegree < q := by
-      have := Nat.mul_le_mul_left (q - 1) h1
-      omega
-    exact_mod_cast h3
+    have h := Polynomial.Chebyshev.natDegree_T_comp_le ((q - 1 : ℕ) : ℤ)
+      (p := C (2 / σt ^ 2) * Polynomial.X - 1) (by compute_degree)
+    rw [Int.natAbs_natCast] at h
+    exact_mod_cast h.trans_lt (by omega)
   · intro i hi
     exact exp_div_two_le_abs_eval_T_comp A hq hσ hht (by omega)
-  · intro x hx
-    simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, eval_one]
-    refine Polynomial.Chebyshev.abs_eval_T_real_le_one _ (abs_le.mpr ⟨?_, ?_⟩)
-    · have : 0 ≤ 2 / σt ^ 2 * x := mul_nonneg (by positivity) hx.1
-      linarith
-    · have : 2 / σt ^ 2 * x ≤ 2 := by
-        rw [div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
-        linarith [hx.2]
-      linarith
+  · exact fun x hx => Polynomial.Chebyshev.abs_eval_T_comp_C_mul_X_sub_one_le _ (by positivity) hx
   · refine le_of_eq (congrArg (· * _) ?_)
     rw [div_div_eq_mul_div, one_mul, div_pow, show -8 * ((q : ℝ) - 1) * Real.sqrt γ =
       -(4 * ((q : ℝ) - 1) * Real.sqrt γ) + -(4 * ((q : ℝ) - 1) * Real.sqrt γ) by ring,
@@ -607,8 +579,8 @@ theorem integral_specNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
   obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
   exact integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f
     ((measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX.aemeasurable)
-    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
-    htail hK
+    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (Aᴴ * A) (X ω) hf) rfl hrt ht
+    hc hhead htail hK
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
@@ -638,8 +610,8 @@ theorem integral_frobNorm_sub_truncatedSVD_rbki_sq_le_singularGapRatio_of_hasLaw
   obtain ⟨f, hf, c, a, hc, hhead, htail, hK⟩ := exists_rbki_filter A hr hrt hq
   exact integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_range_le A hX f
     ((measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX.aemeasurable)
-    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (X ω) hf) rfl hrt ht hc hhead
-    htail hK
+    (fun ω => range_mul_aeval_mul_le_range_mul_blockKrylovMatrix A (Aᴴ * A) (X ω) hf) rfl hrt ht
+    hc hhead htail hK
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in

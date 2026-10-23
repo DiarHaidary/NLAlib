@@ -73,6 +73,17 @@ theorem exists_hasOrthonormalCols_of_card_le [DecidableEq p] (𝕜 : Type*) [RCL
   exact ⟨(1 : Matrix n n 𝕜).submatrix (Equiv.refl n) e,
     hasOrthonormalCols_one.submatrix (Equiv.refl n) e.injective⟩
 
+/-- There are complementary orthonormal frames: for $\lvert p \rvert + \lvert q \rvert =
+\lvert n \rvert$ there are $\mathbf{Q}_1$, $\mathbf{Q}_2$ with columns indexed by $p$ and $q$ such
+that $\begin{bmatrix} \mathbf{Q}_1 & \mathbf{Q}_2 \end{bmatrix}$ (`Matrix.fromCols`) has
+orthonormal columns, a unitary matrix up to relabelling. -/
+theorem exists_hasOrthonormalCols_fromCols [DecidableEq p] [DecidableEq q] (𝕜 : Type*)
+    [RCLike 𝕜] (h : Fintype.card p + Fintype.card q = Fintype.card n) :
+    ∃ (Q₁ : Matrix n p 𝕜) (Q₂ : Matrix n q 𝕜), HasOrthonormalCols (Matrix.fromCols Q₁ Q₂) := by
+  obtain ⟨Q₁, hQ₁⟩ := exists_hasOrthonormalCols_of_card_le (n := n) (p := p) 𝕜 (by omega)
+  obtain ⟨Q₂, hQ₂⟩ := hQ₁.exists_fromCols h
+  exact ⟨Q₁, Q₂, hQ₂⟩
+
 /-! ### Equal Gram matrices -/
 
 /-- Matrices with the same Gram matrix have the same action on norms: if
