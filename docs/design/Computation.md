@@ -731,17 +731,22 @@ Not checked, and harmless for the information restriction: host-computed `ℚ` l
 
 Amended 2026-10-23 at the skeleton (the files as they now are; the Hutch++ totals are in
 `HutchPlusPlusProgram.lean`, since Computation is layer 0 and cannot import Estimation; see
-"Changes during the skeleton").
+"Changes during the skeleton"). Amended 2026-10-23 at the close of the proofs: the store moved
+out of `Exec.lean` into its own file `Computation/Store.lean` (with the frame invariant), and the
+level-2 and level-3 specifications of `BLAS.lean` into `Computation/BLAS/MatrixKernels.lean`, to
+keep each file under about 1000 lines; the proved lengths are in "Changes during the proofs".
 
 | file | contents | skeleton lines | estimate |
 |---|---|---|---|
 | `Computation/Syntax.lean` | `IExp`, `Cell`, `Instr` (integer and bit operations, `convert`), `Stmt`, `Builder` as `ContT` | 240 | 270 |
-| `Computation/Exec.lean` | `OpKind`, `ScalarSem`, `Store` (read, write, blocks, shape), `St`, `Interp`, `exec`, run and store lemmas (proved) | 460 | 650 |
+| `Computation/Store.lean` (split from `Exec.lean` at the close) | `Store` (read, write, blocks, shape), store lemmas, the frame invariant `Store.BlockFrame` | | |
+| `Computation/Exec.lean` | `OpKind`, `ScalarSem`, `St`, `Interp`, `exec`, run lemmas (proved) | 460 | 650 |
 | `Computation/RunsWithin.lean` | interface, transfer lemma | 70 | 150 |
 | `Computation/Subst.lean` | substitution theorem, oracle corollary (proved) | 590 | 590 |
 | `Computation/Exact.lean` | `exactSem`, `exactInterp`, layout, `Holds`, frame | 160 | 450 |
 | `Computation/Contract.lean` | `IsRelErrSem`, exact instance, failing semantics (proved) | 160 | 200 |
-| `Computation/BLAS.lean` | nine kernels and their six-part specifications | 320 | 1,050 |
+| `Computation/BLAS.lean` | nine kernels, the level-1 specifications | 320 | 1,050 |
+| `Computation/BLAS/MatrixKernels.lean` (split from `BLAS.lean` at the close) | the specifications of `gemv`, `ger`, `gemm` | | |
 | `Computation/Dense.lean`, `Computation/Sparse.lean` | `denseImpl`, `cooImpl`, interpretations, costs, certificates | 170 | 400 |
 | `ForMathlib/Data/Nat/Init.lean` | injectivity of flat indices (proved) | 45 | 45 |
 | `Probability/Law.lean` (one lemma) | `HasLaw.comp_of_injective` (proved) | 10 | 10 |
@@ -903,4 +908,61 @@ the note:
   the run lemmas `exec_skip`, `exec_seq_skip`, `exec_run_bind`,
   `exists_exec_loop_eq_some_of_forall` and `exec_seq_instr_lit`, `_litIdx`, `_bin`, `_un`,
   `_copy`, `_draw`. The private copies of `read_pop_of_lt` and `read_eq_none_of_size_le` in
-  `Dense.lean`, `Sparse.lean` and `BLAS.lean` duplicate the public ones (S5).
+  `Dense.lean`, `Sparse.lean` and `BLAS.lean` duplicate the public ones (S5); they are deleted at
+  the close (below).
+* 2026-10-23 (closing step): the shared helpers are one public copy each (rule S5), and the
+  generic run lemmas of the Hutch++ proof are public in their homes. Every addition is in
+  `NLAlib/Computation` or a stage file; each home is the file of its subject.
+  * **New file `Computation/Store.lean`.** `Store` and every store lemma above moved there from
+    `Exec.lean`, names unchanged (`Exec.lean` would otherwise have passed 1000 lines); `Exec.lean`
+    imports it. New public store lemmas, replacing the private copies of `Dense.lean`,
+    `Sparse.lean`, `BLAS.lean` and `GramSchmidtProgram.lean`: `Store.getElem?_shape`,
+    `Store.size_shape`, `Store.shape_pop`, `Store.getElem?_shape_push_of_lt`,
+    `Store.getElem?_shape_push_size`, `Store.exists_write_eq_some_of_getElem?_shape`,
+    `Store.exists_getElem?_shape_of_read_eq_some`, `Store.read_eq_none_of_getElem?_shape_of_ne`,
+    `Store.size_of_readBlock_eq_some`, `Store.read_of_readBlock_eq_some_of_lt`,
+    `Store.lt_size_of_readBlock_eq_some`, `Store.exists_getElem?_shape_of_writeBlock_eq_some`,
+    `Store.lt_size_of_writeBlock_eq_some`, `Store.exists_writeBlock_eq_some_of_getElem?_shape`,
+    and `Store.readBlock_eq_some_map_range` (from `HutchPlusPlusProgram.lean`).
+  * **The frame invariant** of `Dense.lean`, `Sparse.lean` and `BLAS.lean` (three private copies
+    of `DInv`) is the public `Store.BlockFrame s₀ p T dst dOff L s g` in `Store.lean`: a run that
+    writes one block through a scratch buffer keeps it along its loops. Its API:
+    `Store.BlockFrame.write_of_lt`, `.write_scratch` (any scratch cell, the `BLAS.lean` form),
+    `.exists_write_eq_some`, `.read_of_ne`, `.writeBlock`, `.push` and `.pop_eq` (popping the
+    scratch buffer gives the block write).
+  * **Run lemmas.** `Exec.lean`: `exec_seq_of_exec_eq_some` (the private `exec_seq_of_eq_some` of
+    `Dense.lean` and `Sparse.lean`) and `exec_forRange_draw` (the private `exec_draws` of
+    `HutchPlusPlusProgram.lean`; it now asks that each cell can be written with some value, not
+    with $0$, so it holds over any carrier). `Exact.lean`: `exec_apply_exactInterp` (an oracle call
+    under exact arithmetic, from the same file). `BLAS.lean`: `exec_forRange_dot_add` (its
+    `exec_trace_loop`, a loop of `dot` calls accumulated into one cell) and `run_gemv`, `run_ger`,
+    `run_gemm` (the private `gemv_run`, `ger_run`, `gemm_run`, public because the split below
+    needs them). `GramSchmidtProgram.lean`: `exec_forRange_orthAgainst` (its `exec_proj_loop`, a
+    loop of `orthAgainst` sweeps against the same columns).
+  * **Deleted private copies**, used through the public lemmas: the store lemmas and `DInv` of
+    `Dense.lean`, `Sparse.lean` and `BLAS.lean` (`shape_getElem?`, `read_of_write_of_ne_tag`,
+    `exists_write_of_shape`, `shape_of_read_eq_some`, `read_eq_none_of_shape`,
+    `Store.ext_of_shape`, `shape_of_foldlM_write`, `shape_of_writeBlock`, `read_of_readBlock`,
+    `read_eq_none_of_size_le`, `read_pop_of_lt`, `shape_pop`, `size_shape`, `shape_push_size`,
+    `shape_push_of_lt`, `lt_size_of_read`, `exists_writeBlock_of_shape`, `callFacts`,
+    `mapM_eq_some`, `pop_eq_of_DInv` and the `DInv` lemmas); `exec_seq_skip` of `Dense.lean` and
+    `Sparse.lean` (the public `exec_seq_skip`); `foldlM_range_inv` of the same two files (its uses
+    are `exists_exec_loop_eq_some_of_forall`); `read_eq_none_of_ne_tag` and
+    `exists_shape_getElem?_of_read_eq_some` of `GramSchmidtProgram.lean`. Private helpers left,
+    each in one file: `blockFacts` (`BLAS/MatrixKernels.lean`), two `List.mapM` facts
+    (`Store.lean`) and `update_max_le_of_le` (`BLAS.lean`), general facts used once.
+  * **Split.** The level-2 and level-3 specifications `exec_gemv`, `exec_ger`, `exec_gemm`, with
+    their private steps, moved to the new `Computation/BLAS/MatrixKernels.lean` (names
+    unchanged), which imports `BLAS.lean`; the kernels themselves and their unfoldings stay in
+    `BLAS.lean`, so the new file constructs no `named` node (E8).
+  * **Checks.** `IExp.eval_ofNat` loses its unused `[n.AtLeastTwo]` (the environment linter;
+    every numeral of `IExp` is a constant), and `IExp.eval_zero`, `IExp.eval_one` are no longer
+    `simp` (they are cases of it). `Store.getElem?_shape` is allowlisted for N2 in
+    `scripts/names_allow.toml`: its left side `s.shape[b]?` is an index into the shape, as in
+    `getElem?_flatten`, and the checker reads the projection `s.shape` as the head.
+    `Store.BlockFrame` has no §5.3 row (one V7 warning): it is API of the store, not vocabulary of
+    statements, and a row is the maintainer's call.
+  * **Lengths after the close** (before it in brackets): `Store.lean` 775 (new), `Exec.lean` 455
+    (820), `Exact.lean` 194 (158), `BLAS.lean` 743 (1492), `BLAS/MatrixKernels.lean` 653 (new),
+    `Dense.lean` 404 (695), `Sparse.lean` 451 (744), `GramSchmidtProgram.lean` 917 (839),
+    `HutchPlusPlusProgram.lean` 976 (1270). Net, the library loses about 450 lines.

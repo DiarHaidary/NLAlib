@@ -313,6 +313,48 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: proofs (2026-10-23)
+
+Branch `computation/stage1` (worktree `nlalib-block`), base `88016e3` rebased onto `c31f6c0`
+(note `0f8d8a9`, skeleton `9c57c62`, review follow-ups `1dd6409`). Every statement of the
+skeleton is proved; `NLAlib` has no `sorry` (the tools' `FixedPoint.lean` keeps its 2). Proved:
+the two tape laws (`RandomMatrix/Tape.lean`), the nine kernel specifications (`BLAS.lean`, the
+level-2 and level-3 ones now in `BLAS/MatrixKernels.lean`), the dense and COO certificates
+(`Dense.lean`, `Sparse.lean`), `exec_orthAgainst`, `exec_gramSchmidtProg` and
+`runsWithin_gramSchmidtProg` (`Matrix/Factorizations/GramSchmidtProgram.lean`), and
+`runsWithin_hutchppProg`, with the Gaussian tail and the dense and sparse totals over it
+(`Estimation/Trace/HutchPlusPlusProgram.lean`). Public additions, all dated in the note's
+"Changes during the proofs": the store and run lemmas of proof agent A in `Exec.lean`; at the
+close, the new `Computation/Store.lean` (the store moved out of `Exec.lean`, 15 new store lemmas
+and the frame invariant `Store.BlockFrame` with 7 lemmas, replacing the private copies
+in `Dense.lean`, `Sparse.lean` and `BLAS.lean`), `exec_seq_of_exec_eq_some` and
+`exec_forRange_draw` (`Exec.lean`), `exec_apply_exactInterp` (`Exact.lean`),
+`exec_forRange_dot_add` and `run_gemv`, `run_ger`, `run_gemm` (`BLAS.lean`) and
+`exec_forRange_orthAgainst` (`GramSchmidtProgram.lean`), the last four groups the generic run
+lemmas of the Hutch++ proof. The close deletes every private copy (net about 450 Lean lines
+fewer): `BLAS.lean` 743 lines (1492), `BLAS/MatrixKernels.lean` 653, `HutchPlusPlusProgram.lean`
+976 (1270), `Store.lean` 775, `Exec.lean` 455. `IExp.eval_ofNat` drops an unused
+`[n.AtLeastTwo]` (linter); `Store.getElem?_shape` is allowlisted for N2 (the checker misreads
+`s.shape[b]?`).
+
+Checks: `mk_all --check` clean for `NLAlib` and `NLAlibScaffold`; `lake build NLAlibTools` (2
+`sorry` in `FixedPoint.lean`, expected); `scripts/stage_check.sh`: 411 proved modules, 0 not yet;
+build 4008 jobs, `--wfail`, 0 warnings; audit 11347 declarations, 0 violations; lint 6847
+declarations, 0 errors; `scripts/Programs.lean`: 14 programs and kernels (6 called by others), 5
+realisations, 0 violations, every fixture rejected; references 88 keys, 86 asymptotic forms, 0
+problems; constants 34, 429 value markers, 0 problems; LaTeX 27469 math spans, 0 problems; rules 0
+errors, 73 in the baseline, 878 warnings (876 at `1dd6409`, when 6 modules were not yet checked;
+S5 0, the round's F10 warnings gone; new: V7 for `Store.BlockFrame` and a T11 false positive on
+`Store.BlockFrame.writeBlock`); duplicates 6046 theorems, 0 classes; script tests 47, OK; ledger
+0 targets missing.
+
+Open items for the maintainer:
+* Rule E9 (scope discipline): the maintainer is deciding whether it stays an error or becomes a
+  warning; unchanged here. `hutchppProg`, which no program calls, is reported and not counted.
+* `Store.BlockFrame` has no §5.3 row (V7): store API, not statement vocabulary; a row if wanted.
+* Lanczos is stage 1b (`Krylov/Processes/LanczosProgram.lean`, `lanczosState_reindex`).
+* Stateful oracles and integer index memory are deferred to a later stage.
+
 ## Computation stage 1: skeleton (2026-10-23)
 
 Branch `computation/stage1` (worktree `nlalib-block`), from `d5c207b` (the approved note
