@@ -886,3 +886,20 @@ the note:
   and states `implementsInstr_fxImpl` and `fxSem_mul_abs_sub_le` with `sorry`.
 * **Lanczos** is stage 1b: no Lanczos file yet, and the tools run Hutch++ only.
 * **Mathlib deviations**: none.
+
+## Changes during the proofs
+
+* 2026-10-23 (proof agent A): public helpers in `Computation/Exec.lean`, used by `BLAS.lean` and
+  `GramSchmidtProgram.lean`: the `IExp.eval_*` simp lemmas; the store lemmas
+  `Store.lt_size_of_read_eq_some`, `Store.lt_size_of_write_eq_some`,
+  `Store.exists_write_eq_some_of_write_eq_some`, `Store.write_of_write_eq_some`,
+  `Store.write_push_of_lt`, `Store.write_push_size`, `Store.read_push_size`,
+  `Store.read_push_of_ne`, `Store.read_pop_of_lt`, `Store.read_eq_none_of_size_le`,
+  `Store.size_of_foldlM_write_eq_some`, `Store.read_of_foldlM_write_eq_some_of_forall_ne`,
+  `Store.writeBlock_map_range`, `Store.exists_write_eq_some_of_shape_eq`,
+  `Store.shape_of_writeBlock_eq_some`, `Store.exists_writeBlock_eq_some`,
+  `Store.read_of_write_eq_some_of_ne_tag`, `Store.size_eq_of_shape_eq`, `Store.ext_of_shape_eq`;
+  the run lemmas `exec_skip`, `exec_seq_skip`, `exec_run_bind`,
+  `exists_exec_loop_eq_some_of_forall` and `exec_seq_instr_lit`, `_litIdx`, `_bin`, `_un`,
+  `_copy`, `_draw`. The private copies of `read_pop_of_lt` and `read_eq_none_of_size_le` in
+  `Dense.lean`, `Sparse.lean` and `BLAS.lean` duplicate the public ones (S5).
