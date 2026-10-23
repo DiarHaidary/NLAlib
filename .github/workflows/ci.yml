@@ -27,7 +27,7 @@ jobs:
         run: lake env lean scripts/Audit.lean
       - name: Environment linters
         run: lake env lean scripts/Lint.lean
-      - name: Program checks (rules E1-E4, docs/design/Computation.md)
+      - name: Program checks (rules E1-E4 and E9, docs/design/Computation.md)
         run: lake env lean scripts/Programs.lean
       - name: Tools library builds (NLAlibTools; not part of the library, may contain sorry)
         run: |

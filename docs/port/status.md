@@ -338,6 +338,12 @@ lint 0 errors, references 0 problems, constants 0 problems, rules 0 errors (876 
 duplicates 0; full extraction `check_rules.py`: 0 errors; script tests 47, OK. The emitted NumPy
 Hutch++ reproduces the `Float` values (19.326978, 15.0).
 
+Rebased 2026-10-23 onto `sketching/moments` at `c31f6c0` (note `0f8d8a9`, skeleton `9c57c62`).
+Skeleton review follow-ups: E3 checks the tape, E2 rejects opaque, `unsafe` and implemented-by
+programs, new rule E9 (a callee closes its allocations in `scope`), each with a fixture; E6 says
+"in the library"; `stage_check.sh` runs `Programs.lean`; two count docstrings spelled out; the
+note's "Changes during the skeleton" states the D2, D4 and D11 changes plainly.
+
 Proof plan: two agents on disjoint files. Agent A: `BLAS` (level 1, then `gemv`, `ger`,
 `gemm`), then `GramSchmidtProgram`, then `HutchPlusPlusProgram`. Agent B: `RandomMatrix/Tape.lean`,
 then `Dense` and `Sparse` (they need only `Exec` and `Exact`; a store lemma either needs goes to

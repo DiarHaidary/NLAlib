@@ -233,8 +233,8 @@ theorem exec_copyv (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) (xs : �
 /-- **`nrm2` computes $\|\mathbf{x}\|$**: if the $x_i$ ($i < n$) are stored and $\mathit{dst}$ is
 not in $\mathbf{x}$, the run writes $\bigl(\sum_{i<n} \bar{x}_i x_i\bigr)^{1/2}$ into
 $\mathit{dst}$ and nothing else, keeps the tape and the current memory, raises the peak by one
-cell, and counts the operations of `dot` and one square root. The operation is in
-[GolubVanLoan2013, §1.1]. -/
+cell, and counts $n$ conjugations, multiplications and additions, one literal and one square
+root. The operation is in [GolubVanLoan2013, §1.1]. -/
 theorem exec_nrm2 (dst : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) (xs : ℕ → 𝕜)
     (hx : ∀ i < n.eval, st.store.read p x (xo.eval + i) = some (xs i))
     (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i) (s₁ : Store P 𝕜)

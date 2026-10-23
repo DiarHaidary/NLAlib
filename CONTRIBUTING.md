@@ -711,18 +711,23 @@ specification, and has its realisation `runsWithin_<spec>Prog`, which concludes
   types, tags and oracle names, distributions, handles, index expressions, cells and programs.
   Host data (`ℕ` sizes, lists, functions) is allowed only in the implementation files
   `NLAlib/Computation/Dense.lean` and `NLAlib/Computation/Sparse.lean` [E1].
-- Programs, kernels and implementations are computable [E2].
+- Programs, kernels and implementations are computable: not `noncomputable`, `partial`,
+  `opaque` or `unsafe`, and they run no code other than their definition (no implemented-by
+  attribute) [E2].
 - A realisation's program and initial state use none of the data of its interpretation: the
-  program learns the matrix only through the oracle or as read-only data. Dimensions, tags and
-  oracle names are shared [E3].
+  program learns the matrix only through the oracle or as read-only data, never through the tape.
+  Dimensions, tags and oracle names are shared [E3].
+- An `alloc` is live for the rest of the enclosing block, so a program that another program calls
+  wraps its allocations in `scope` (a kernel is closed by its `named` node) [E9].
 - Only `NLAlib/Computation` defines a value semantics (`Computation.ScalarSem`) or an
   interpretation (`Computation.Interp`), each with its certificate [E6].
 - `Stmt.named`, which the NumPy emitter prints as a call into its prelude, is constructed only in
   the BLAS and implementation files [E8].
 
-E1 to E4 are checked on the built library by `scripts/Programs.lean`, whose fixtures (a handle
-forged from a number, a host function, a host size, a noncomputable program, a program with no
-realisation, a matrix in the initial store) must be rejected; E5, E6 and E8 by
+E1 to E4 and E9 are checked on the built library by `scripts/Programs.lean`, whose fixtures (a
+handle forged from a number, a host function, a host size, a noncomputable program, a `partial`
+program, a program with no realisation, a matrix in the initial store, a matrix on the tape, a
+callee with an open `alloc`) must be rejected; E5, E6 and E8 by
 `scripts/check_rules.py`. The tools library `NLAlibTools` (the `Float` interpreter, the NumPy
 emitter, the fixed-point example) is not part of the library and is not checked.
 

@@ -331,7 +331,7 @@ check = "lean"
 scope = "library"
 home = ["NLAlib/Computation"]
 section = "§5.5"
-statement = '''A realisation's program and initial state use no data of its interpretation (dimensions, tags and names excepted)'''
+statement = '''A realisation's program and initial state use no data of its interpretation, and its tape none of the oracles' or read-only data (dimensions, tags and names excepted)'''
 fix = '''Pass the matrix through the oracle or as read-only data, never in the program or the initial store'''
 
 [[rule]]
@@ -364,7 +364,7 @@ scope = "library"
 exclude = ["NLAlib/Computation"]
 home = ["NLAlib/Computation"]
 section = "§5.5"
-statement = '''Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`'''
+statement = '''In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`'''
 fix = '''Define the semantics or interpretation in `NLAlib/Computation`, with its certificate'''
 
 [[rule]]
@@ -377,6 +377,17 @@ home = ["NLAlib/Computation"]
 section = "§5.5"
 statement = '''`Stmt.named` is constructed only in the BLAS and implementation files'''
 fix = '''Write the program without `named`, or make it a kernel in `NLAlib/Computation/BLAS.lean`'''
+
+[[rule]]
+id = "E9"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''A program that another program calls frees its allocations (`scope`)'''
+fix = '''Wrap the callee's body in `scope`: an `alloc` is live for the rest of the enclosing block, so an open one stays allocated in the caller'''
 
 [[rule]]
 id = "F1"

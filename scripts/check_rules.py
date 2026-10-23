@@ -10,7 +10,7 @@ Every rule has a stable id: a letter for its area and a number, as the naming ru
 (§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
 vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
 notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9), E programs (§5.5; E1–E4 are checked on the built library by
+records (§8, §9), E programs (§5.5; E1–E4 and E9 are checked on the built library by
 `scripts/Programs.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
 `docs/rules/rules.toml`, the single source this script, `check_names.py` and
 `scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
@@ -1362,7 +1362,7 @@ def g_ledger(c):
 
 
 # ================================================================== E: programs (§5.5)
-# E1–E4 need Lean's types and are checked by scripts/Programs.lean (`check = "lean"`).
+# E1–E4 and E9 need Lean's types and are checked by scripts/Programs.lean (`check = "lean"`).
 COMPUTATION = 'NLAlib/Computation'
 # The files that may construct `Stmt.named`: the core that defines and eliminates it, the BLAS
 # kernels and the implementations.

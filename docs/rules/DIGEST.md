@@ -85,11 +85,12 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - G2 Every port-ledger target is declared.
 - E1 A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions).
 - E2 Programs, kernels and implementations are computable.
-- E3 A realisation's program and initial state use no data of its interpretation (dimensions, tags and names excepted).
+- E3 A realisation's program and initial state use no data of its interpretation, and its tape none of the oracles' or read-only data (dimensions, tags and names excepted).
 - E4 Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`.
 - E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
-- E6 Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
+- E6 In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
 - E8 `Stmt.named` is constructed only in the BLAS and implementation files.
+- E9 A program that another program calls frees its allocations (`scope`).
 - N1 Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase.
 - N2 The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`).
 - N3 The conclusion part ends at the first `_of_` and names the main relation.

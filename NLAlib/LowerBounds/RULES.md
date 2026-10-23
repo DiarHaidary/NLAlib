@@ -142,10 +142,11 @@ and `docs/rules/DIGEST.md`.
 
 - **E1** A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions). [§5.5]
 - **E2** Programs, kernels and implementations are computable. [§5.5]
-- **E3** A realisation's program and initial state use no data of its interpretation (dimensions, tags and names excepted). [§5.5]
+- **E3** A realisation's program and initial state use no data of its interpretation, and its tape none of the oracles' or read-only data (dimensions, tags and names excepted). [§5.5]
 - **E4** Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`. [§5.5]
-- **E6** Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
+- **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
 - **E8** `Stmt.named` is constructed only in the BLAS and implementation files. [§5.5]
+- **E9** A program that another program calls frees its allocations (`scope`). [§5.5]
 
 ### Names
 

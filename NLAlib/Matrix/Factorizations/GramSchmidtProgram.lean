@@ -92,7 +92,8 @@ $i < k$ of the buffer $Q$ hold $\mathbf{v}_i$, the cells of $\mathbf{v}$ hold $\
 after those columns when in the same buffer, and the cell $r$ is writable and in neither, the run
 leaves `mgsSweep V w k` in the cells of $\mathbf{v}$, changes no other cell but $r$ and no buffer's
 tag or length, keeps the tape and the current memory, raises the peak by at most one cell, and
-counts $k$ times the operations of `dot`, one negation and those of `axpy`.
+counts, $k$ times over, $N$ conjugations, $2N$ multiplications, $2N$ additions, one literal and
+one negation.
 [GolubVanLoan2013, §5.2.8]. -/
 theorem exec_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) (st : St P 𝕜 (OpCount P ι)) {N : ℕ}

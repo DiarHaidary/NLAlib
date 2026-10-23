@@ -784,6 +784,20 @@ declaration of §§2–5 for stage 1 is stated with its final docstring and elab
 files in `NLAlib/` (as in the other rounds' skeletons, not in `NLAlibScaffold`). Changes against
 the note:
 
+* **Three changes to approved vocabulary** (the maintainer has been told of each; the reasons
+  are in the bullets below):
+  * **D2.** `exec` also fails on an aliased oracle call, one whose source and destination blocks
+    overlap. D2's list of failing operations gains this item.
+  * **D4.** The kinds of an oracle call carry the tag of the call: `OpKind.load p o` and
+    `OpKind.matvec p o`, where D4 said `load o` and `matvec o`.
+  * **D11.** An `alloc` in a `Builder` is freed at the end of the enclosing block, not at the end
+    of the program that allocates. A program called inside another program's `do` block must
+    wrap its allocations in `scope` (a kernel is closed by its `named` node); otherwise its
+    buffers stay live for the rest of the caller's block. This is checked: rule E9
+    (`scripts/Programs.lean`, added at the skeleton review) runs each program that another
+    program calls against a fresh continuation and rejects it when the continuation is reached
+    under an `alloc`. `gramSchmidtProg` passes; `hutchppProg`, which no program calls, would be
+    rejected if one did.
 * **Two forced changes to the certificates.** As approved, `implementsOracle_cooImpl` is false in
   two cases, and each needed a change of the model:
   * *Aliased calls.* `ImplementsOracle` quantified over calls whose source and destination blocks
@@ -817,8 +831,7 @@ the note:
   written), and `runsWithin_gramSchmidtProg` under `exactInterp (fun _ => 0) (fun _ _ => 0)` with
   memory $Nk + 3$.
 * **Kernel specifications.** All nine have the six parts of D17: `exec_dot` and `exec_axpy` gain
-  `st'.curW = st.curW` and the bit peak. `ger` is added. `exec_rscl` assumes $a 
-e 0$ (exact
+  `st'.curW = st.curW` and the bit peak. `ger` is added. `exec_rscl` assumes $a \ne 0$ (exact
   division by zero fails). The level-2 and level-3 kernels take their operands as matrices with
   `Holds` and write `Array.ofFn (M *ᵥ x)` or `flatten`, with disjointness as intervals. `exec_gemm`
   bounds the peaks (no allocation when $l = 0$); the others state them exactly. `exec_nrm2`
@@ -851,14 +864,20 @@ e 0$ (exact
   `computation-failing-semantics`, `coo-oracle-certificate`, `dense-oracle-certificate`,
   `tape-gaussian-matrix`, `tape-independent-draws`, `gram-schmidt-program`, `hutchpp-program`,
   `hutchpp-program-tail`, `hutchpp-program-dense`, `hutchpp-program-sparse`.
-* **Checks.** E1 to E4 are `scripts/Programs.lean` (MetaM, `check = "lean"` in
+* **Checks.** E1 to E4 and E9 are `scripts/Programs.lean` (MetaM, `check = "lean"` in
   `docs/rules/rules.toml`), run on the built library with fixtures that must be rejected; E5, E6
   and E8 are in `scripts/check_rules.py` with fixtures in `scripts/test_check_rules.py`. E7 has no
   entry (merged into E1). The new area is "programs", letter E; CONTRIBUTING gains §5.5, the
   `Computation/` row of §2 and the §5.3 rows of §3. E3 ignores variables whose type is a type
   parameter (tags, oracle names) or `Dist`, as E1 allows them; its allowlist has one entry, the
   COO pattern in the sparse total (unrolled into the implementation by D14). E1's implementation
-  files are `Computation/Dense.lean` and `Computation/Sparse.lean`.
+  files are `Computation/Dense.lean` and `Computation/Sparse.lean`. At the skeleton review: E3
+  also rejects a data variable of the oracle or read-only fields in the tape field (fixture
+  `runsWithin_cheatTape`, $\mathbf{A}$ read from the tape); E2 also rejects opaque (`partial`,
+  `opaque`), `unsafe` and `implemented_by` constants of program type, which now count as programs
+  for E1, E2 and E4 (fixture `partialProg`); E9 is new (fixtures `leakyCallee`, `closedCallee`);
+  E6 says "in the library (NLAlib)", since the tools define `floatSem`, `fxSem` and
+  `floatInterp`; `scripts/stage_check.sh` runs `scripts/Programs.lean`.
 * **Tools.** `NLAlibTools` is a separate `lean_lib` of plain (non-`module`) files: the module
   system withholds the compiled code `#eval` needs from a module that does not `meta import` it.
   `Float.lean` runs Hutch++ and checks the §6 rows with `#guard`; `NumPy.lean` prints Hutch++,
