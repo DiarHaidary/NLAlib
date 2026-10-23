@@ -1210,6 +1210,22 @@ in his words: "yeah go for both". The two changes:
    a computable function; the theorems are about the compiled tree, so the compiler is not
    trusted.
 
+**The maintainer's decisions on the questions of this section, 2026-10-23** (F12 records each):
+* Q2: library algorithms get **named-program targets**, stated about the registered compiled tree,
+  so that the claim and the emitted code are about the same tree; existential targets are not
+  used for library results for now. In his words: "named for stuff in our library for now. we
+  will just keep this in mind when we are setting goals for the community."
+* Q1: the uniform sparse model comes later, as a small stage of its own.
+* Q3: changes to target definitions and to `docs/targets.toml` need the maintainer's approval;
+  agents never edit `*Targets.lean` files or the registry.
+* Q4: the complex comparisons `lt` and `le` fail on incomparable values.
+* Q5: a target with declared inputs computed from the sizes carries a registry flag and a
+  docstring marker.
+
+So change 1 is implemented in its named form: a target is "Model (registered tree) cost mem
+spec"; the existential form "∃ prog : Prog, Model prog cost mem spec" of the approval is kept
+as the future form for community goals (F1).
+
 This section is the design. Until its migration (F11) lands, sections "Guarantees" and §§1–11
 describe the code as it is; F10 is the classification after the migration.
 
@@ -1223,47 +1239,117 @@ directory, not in the repository), under the scratch names noted in F7. Proved t
   oracle calls replaced by `denseImpl`), each with `rfl` (69, 173 and 221 nodes);
 * their instantiation equations (`c.toStmt N n = F.inst N n`), each by `rfl`;
 * four of the five targets of F8 (`MatrixFreeGramSchmidt`, `MatrixFreeHutchpp`,
-  `MatrixFreeProbHutchpp`, `StoredEntriesDenseHutchpp`), from the existing public results with
-  no change to any existing proof; the sparse target is stated, and its proof needs one
-  induction lemma (F5);
-* the lint (the theorem's type is the target constant) and the closure hash of F1, with two of
-  the audit's cheats as rejected fixtures.
+  `MatrixFreeProbHutchpp`, `StoredEntriesDenseHutchpp`), in the named form, from the existing
+  public results with no change to any existing proof; the sparse target is stated, and its proof
+  needs one induction lemma (F5);
+* the constructor normal forms of the three registered trees (by `Meta.reduce`; neither the
+  builder nor the compiler occurs in them), their hashes, and the closures of the named targets
+  with the trees as leaves (the builder is then outside the closure);
+* the lint (the result is a theorem whose type is the target constant) and the closure hash of
+  F1, with three rejected fixtures (an axiom, and two of the audit's cheats) and two hash
+  fixtures (an edit under an `irreducible_def`, an edit of a ForMathlib definition in a Mathlib
+  namespace, each changing the hash).
 
 The whole scratch file elaborates in about 12 seconds.
 
+*Revised the same day after a bounded review of the first version (`59c5e27`)*: the closure walk
+of F1 item 3 followed definitions, inductive types and constructors only, so the value under an
+`irreducible_def` (an opaque whose type names the definition) was neither reached nor hashed, and
+`hansonWrightConstant`, `subgaussianRangeFinderFactor` and `subgaussianEmbeddingDim` in the tail
+target could have been weakened with no change of hash; and it told library constants by name
+prefix, so ForMathlib definitions in Mathlib namespaces were not hashed. Both are fixed (F1), with
+the lint's further points (a) and (b), the trusted base (F10), the emitter and the bookkeeping
+(F11), and Q1, Q2 and the new Q5. The maintainer then decided Q1 to Q5 (above), and the targets
+are restated in the named form.
+
 ### F1. Targets
 
-**Form.** A target is a closed `Prop` in the library:
+**Form (named, approved 2026-10-23).** A target is a closed `Prop` in the library about a
+**registered tree**, a library constant of type `Prog P ι r b` (a compiled program, F5):
 ```lean
 def MatrixFreeHutchpp : Prop :=
-  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist), ∃ prog : Prog P ι 2 1,
-    ∀ (𝕜 : Type) [RCLike 𝕜], MatrixFree (𝕜 := 𝕜) p prog valid X inputs cost mem post
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist) (𝕜 : Type) [RCLike 𝕜],
+    MatrixFree (𝕜 := 𝕜) p (hutchppProg.compiled p o d) valid X inputs cost mem post
 ```
-with `valid`, `X`, `inputs`, `cost`, `mem` and `post` written out in the target (F8). The
-binder order is part of the review:
-* **before `∃ prog`, names only**: the tag type and the oracle-name type, tags, oracle names,
-  distributions, and (for the sparse target only, F8) the public pattern. The program may depend
-  on these, harmlessly: they carry no size and no data;
-* **after `∃ prog`**: the field `𝕜`, the sizes, the declared inputs, the matrix or the entries,
-  the tape, and the parameters of the guarantee (`r`, `δ`, `τ` of the tail, with their
-  hypotheses `0 < δ`, `0 ≤ τ`, written by the library).
+with `valid`, `X`, `inputs`, `cost`, `mem` and `post` written out in the target (F8). The prover
+chooses nothing: not the program, which is the library's registered tree, and not the statement.
+The quantifiers are part of the review:
+* **the tree's arguments are names only**: the tag type and the oracle-name type, tags, oracle
+  names, distributions, and (for the sparse target only, F8) the public pattern. They carry no
+  size and no data;
+* **the sizes, the declared inputs, the matrix or the entries, and the tape** are quantified
+  inside the model, after the tree is fixed. The field `𝕜` and the parameters of the guarantee
+  (`r`, `δ`, `τ` of the tail, with their hypotheses `0 < δ`, `0 ≤ τ`, written by the library)
+  are quantified outside, but the tree does not take them as arguments, so one tree serves them
+  all.
+
+**The registered tree.** The registry records, per tree, the hash of its **constructor normal
+form**: the `FStmt` term after full evaluation (`Meta.reduce`, types and proofs kept), a term
+built from the constructors of `FStmt`, `Instr`, `IExp`, `Cell`, `Arg`, `BinOp`, `UnOp`, `CmpOp`,
+`Dist`, literals and the tree's name arguments. It does not depend on the builder that produced
+it. The closure walk of item 3 below treats a registered tree as a leaf hashed by its normal form,
+so an edit of a kernel or of the builder that leaves the tree unchanged changes no hash, and any
+change of the tree needs a registry diff. The emitter prints the registered tree (F11, step C),
+so the claim and the emitted code are about the same tree. In the scratch the three trees
+(Gram–Schmidt, Hutch++, dense Hutch++) reduce in about a second together, and with them as leaves
+the closure of `MatrixFreeHutchpp` no longer contains `hutchppProg` (181 constants, against 230
+when the walk follows the tree's definition).
+
+The sparse tree is the exception until Q1: `cooImpl` folds over the pattern, so for a symbolic
+pattern the tree has no closed normal form. Its target is about `hutchppProg.compiledCoo p o d
+pattern` with the ordinary closure walk, which then takes in the builder, `cooImpl` and the
+compiler (241 constants), so it is frozen as code rather than as a tree. The uniform sparse
+stage (Q1) makes it a registered tree like the others.
+
+**The future form, for community goals** (not implemented now). For a result open to any
+algorithm (a complexity claim the library sets as a goal) the target is existential,
+`∀ names, ∃ prog : Prog P ι r b, ∀ 𝕜, Model p prog …`, with only names before `∃ prog`. All of
+this section applies to it except the registered tree, and a named target implies it in one
+line (`⟨_, h⟩`). The library defines none until it sets such goals.
 
 **The verification criterion.** A published cost result is a theorem whose type is the target
 constant itself: `info.type == .const T us`, syntactically, with no binder. The lint
 (`scripts/Targets.lean`, rule E3 rewritten, F9):
-1. every target listed in the registry `docs/targets.toml` has exactly one theorem of type
-   `.const T us`;
-2. every theorem outside the Computation core with a `Result:` id whose statement mentions a
-   model, `Prog.exec`, `FStmt.exec` or `RunsWithin` is one of these;
-3. the **closure hash** of each target matches the registry: the hash of the types and values of
-   every `NLAlib` definition, inductive type and constructor that the target's statement reaches
-   by unfolding (Mathlib is pinned by the manifest and not hashed).
+1. every target listed in the registry `docs/targets.toml` has exactly one proof: a **theorem**
+   (`ConstantInfo.thmInfo`, so neither an `axiom` nor an `opaque`) whose type is `.const T us`
+   (fixture `axHutchpp : MatrixFreeHutchpp`, an axiom, is rejected);
+2. every theorem outside the Computation core with a `Result:` id whose statement mentions a run
+   or a budget is one of these. The constants that count as a run or a budget: the models on
+   `Prog`, `Prog.exec`, `FStmt.exec`, `Prog.RunsWithin`, and equally the current ones,
+   `RunsWithin`, `Computation.exec`, `Stmt`, `ProgFamily.inst` and the `ProgFamily` models. So a
+   theorem of the old form, or of audit 2's form (a bare `exec`), cannot reach the explorer
+   without the lint;
+3. the **closure hash** of each target matches the registry. The closure is every library
+   constant the target's statement reaches, of **every kind**: definitions and opaques (type and
+   value), theorems, axioms and quotients (type), inductive types (type, numbers of parameters and
+   indices, the mutual block, the constructors), constructors and recursors (type). The walk
+   follows the constants of every type, the values of definitions and opaques, the mutual blocks
+   and the constructors. An `irreducible_def c := v` is `def c := wrapped.1` with
+   `opaque wrapped : {x // x = definition}` and `def definition := v`: the opaque's type leads to
+   `definition`, whose value is hashed. A constant is a **library constant by its module**, as in
+   `scripts/Audit.lean` (its module is an `NLAlib` module), not by its name, so ForMathlib
+   definitions in Mathlib namespaces (`Matrix.compound`, `RCLike.toComplex`, `IsUniformApproxOn`)
+   are hashed. Mathlib itself is not hashed but pinned: the registry records the Lean toolchain
+   (`leanprover/lean4:v4.33.1` today) and the Mathlib revision of `lake-manifest.json`
+   (`0df444a…` today), and the lint fails if either differs from the build's.
 
 Item 3 is what makes the trivial check sufficient. Without it a prover could keep the type
 `MatrixFreeHutchpp` and weaken the target by editing a definition it unfolds to, such as
-`hutchppCount`. The closure of the five targets of F8 has 92 named library constants besides the
-targets (computed in the scratch, listed in F10); the hash is `mixHash` over the elaborated expressions, recomputed with
-`--update` after a toolchain bump. Targets live in files of their own,
+`hutchppCount`, or the value `1/196` under `hansonWrightConstant`. The closure of the five
+targets of F8 has 94 named library constants besides the targets (computed in the scratch,
+listed in F10). The hash is `mixHash` over the names and elaborated expressions. Scratch
+fixtures, both passing: setting the definition under `hansonWrightConstant` to `1/197` changes the
+hash of `MatrixFreeProbHutchpp`, and an edit of `Matrix.compound` (ForMathlib, namespace `Matrix`)
+changes the hash of a definition that uses it. In the library the same two fixtures run as
+`scripts/Targets.lean` tests, on copies of a target.
+
+**The registry entry** of a target: its name, its file, the closure hash, the registered trees
+it names with their normal-form hashes, the flag `precomputed` (Q5), the pretty-printed
+statement (the target unfolded one level, so that a diff of the registry shows what a statement
+says, not only that a hash changed), the review date, and once for the file the toolchain and the
+Mathlib revision. A toolchain or Mathlib bump changes every hash with no change of statement; it
+is one registry diff, which the printed statements make reviewable, and it needs the maintainer's
+re-approval like any other (Q3). Targets live in files of their own,
 `<Topic>/<Spec>Targets.lean` (for example `Estimation/Trace/HutchPlusPlusTargets.lean`, which also
 receives `hutchppCount`), so that a proof file can be owned by an agent while the statements it
 proves cannot change without a registry diff (Q3).
@@ -1283,8 +1369,10 @@ the second and third are fixtures of the scratch lint):
   `vacuousHutchpp`). Every hypothesis inside a target is the library's.
 * *An outer parameter unrolled into a literal* (`matrixFree_literalTraceProg`, `A₀` before the
   program). The type `∀ A₀, MatrixFreeHutchpp` is rejected (fixture `outerHutchpp`). Inside the
-  target the program is chosen before the matrix, so the only literals it has are fixed before
-  the matrix is.
+  target the program is the registered tree, whose literals are fixed in the registry before any
+  matrix is quantified (and, in the future existential form, chosen before the matrix).
+* *A program of the prover's.* Under a named target there is none: the tree is the library's,
+  and replacing it changes its normal-form hash.
 * *A claim phrased through `exec`* (audit 2, `exec_copyTrace`). It proves no registered target,
   so it is not a published result whatever it says. Publication is opt-in through the registry,
   so E3 has nothing left to cover (G52).
@@ -1567,21 +1655,25 @@ theorem ProgFamily.MatrixFree.prog (h : F.MatrixFree p valid X inputs cost mem p
 
 ### F8. The targets of the existing results
 
-Written out exactly as elaborated (the sparse one stated, not yet proved):
+Written out as elaborated, in the named form (the scratch names `gramSchmidtProgram`,
+`hutchppProgram`, `denseHutchppProgram`, `cooHutchppProgram` are the library's
+`gramSchmidtProg.compiled`, `hutchppProg.compiled`, `hutchppProg.compiledDense`,
+`hutchppProg.compiledCoo`; the sparse one stated, not yet proved):
 ```lean
-/-- Rank-revealing modified Gram–Schmidt in place, matrix-free. -/
+
+/-- Rank-revealing modified Gram–Schmidt in place. -/
 def MatrixFreeGramSchmidt : Prop :=
-  ∀ (P ι : Type) [DecidableEq P] (p : P), ∃ prog : Prog P ι 1 1, ∀ (𝕜 : Type) [RCLike 𝕜],
-    MatrixFree (𝕜 := 𝕜) p prog (fun _ _ => True) (fun N n => Matrix (Fin N) (Fin (n 0)) 𝕜)
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (𝕜 : Type) [RCLike 𝕜],
+    MatrixFree (𝕜 := 𝕜) p (gramSchmidtProg.compiled (ι := ι) p) (fun _ _ => True)
+      (fun N n => Matrix (Fin N) (Fin (n 0)) 𝕜)
       (fun _ _ Y => ![(flatten Y).map some]) (fun N n => gramSchmidtCount p N (n 0))
       (fun N n q => if q = p then N * n 0 + 3 else 0)
       (fun _ _ Y _ _ st => Holds st.store p 0 0 (gramSchmidtQ Y))
 
 /-- Hutch++, matrix-free. -/
 def MatrixFreeHutchpp : Prop :=
-  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist), ∃ prog : Prog P ι 2 1,
-    ∀ (𝕜 : Type) [RCLike 𝕜],
-    MatrixFree (𝕜 := 𝕜) p prog (fun _ n => 0 < n 1) (fun _ _ => Unit)
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist) (𝕜 : Type) [RCLike 𝕜],
+    MatrixFree (𝕜 := 𝕜) p (hutchppProg.compiled p o d) (fun _ n => 0 < n 1) (fun _ _ => Unit)
       (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => hutchppCount p o d N (n 0) (n 1))
       (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
       (fun N n _ A ξ st => st.store.read p 0 0 = some
@@ -1589,9 +1681,8 @@ def MatrixFreeHutchpp : Prop :=
 
 /-- The Gaussian tail of Hutch++ that draws its own test matrices. -/
 def MatrixFreeProbHutchpp : Prop :=
-  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι), ∃ prog : Prog P ι 2 1,
-    ∀ (r : ℕ) (δ : ℝ), 0 < δ → ∀ τ : ℝ, 0 ≤ τ →
-    MatrixFreeProb (𝕜 := ℝ) p prog
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (r : ℕ) (δ : ℝ), 0 < δ → ∀ τ : ℝ, 0 ≤ τ →
+    MatrixFreeProb (𝕜 := ℝ) p (hutchppProg.compiled p o .gaussian)
       (fun _ n => 0 < n 0 ∧ 0 < n 1 ∧ subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ n 0)
       (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
       (fun N n => hutchppCount p o .gaussian N (n 0) (n 1))
@@ -1603,10 +1694,9 @@ def MatrixFreeProbHutchpp : Prop :=
 
 /-- Dense Hutch++, from `N²` stored entries. -/
 def StoredEntriesDenseHutchpp : Prop :=
-  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist), ∃ prog : Prog P ι 2 1,
-    ∀ (𝕜 : Type) [RCLike 𝕜],
-    StoredEntries (𝕜 := 𝕜) p prog (fun _ n => 0 < n 1) (fun _ _ => Unit)
-      (fun _ _ _ => ![Array.replicate 1 none]) (fun N _ => N * N)
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist) (𝕜 : Type) [RCLike 𝕜],
+    StoredEntries (𝕜 := 𝕜) p (hutchppProg.compiledDense p o d) (fun _ n => 0 < n 1)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun N _ => N * N)
       (fun N n => substCount (denseCost N) (hutchppCount p o d N (n 0) (n 1)))
       (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
         if q = p then N * N else 0)
@@ -1614,11 +1704,12 @@ def StoredEntriesDenseHutchpp : Prop :=
         (hutchpp (Matrix.of fun (i j : Fin N) => vals (i + N * j)) (tapeMatrix (ξ d) 0 N (n 0))
           (tapeMatrix (ξ d) (N * n 0) N (n 1))))
 
-/-- Sparse Hutch++ for a public COO pattern; the program may depend on the pattern (Q1). -/
+/-- Sparse Hutch++ for a public COO pattern; the tree is a function of the pattern (Q1). -/
 def StoredEntriesCooHutchpp : Prop :=
-  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ)),
-    ∃ prog : Prog P ι 2 1, ∀ (𝕜 : Type) [RCLike 𝕜],
-    StoredEntries (𝕜 := 𝕜) p prog (fun N n => 0 < n 1 ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N)
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ))
+    (𝕜 : Type) [RCLike 𝕜],
+    StoredEntries (𝕜 := 𝕜) p (hutchppProg.compiledCoo p o d pattern)
+      (fun N n => 0 < n 1 ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N)
       (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => pattern.length)
       (fun N n => substCount (cooCost N pattern.length) (hutchppCount p o d N (n 0) (n 1)))
       (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
@@ -1627,21 +1718,33 @@ def StoredEntriesCooHutchpp : Prop :=
         (hutchpp (cooMatrix pattern vals) (tapeMatrix (ξ d) 0 N (n 0))
           (tapeMatrix (ξ d) (N * n 0) N (n 1))))
 ```
-A proof, as in the scratch file:
+The registered trees, compiled once (F5):
+```lean
+def gramSchmidtProg.compiled (p : P) : Prog P ι 1 1 :=
+  (ProgFamily.compile fun _ _ N n h => (gramSchmidtProg p N (n 0) (h 0)).run).get rfl
+def hutchppProg.compiled (p : P) (o : ι) (d : Dist) : Prog P ι 2 1 :=
+  (ProgFamily.compile fun _ _ N n h => (hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).get rfl
+def hutchppProg.compiledDense (p : P) (o : ι) (d : Dist) : Prog P ι 2 1 :=
+  (ProgFamily.compile fun _ _ N n h =>
+    ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (denseImpl N)).get rfl
+def hutchppProg.compiledCoo (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ)) : Prog P ι 2 1 :=
+  (ProgFamily.compile fun _ _ N n h =>
+    ((hutchppProg p o d N (n 0) (n 1) ⟨h 0, 0⟩).run).substOracle (cooImpl N pattern)).getD .skip
+```
+(`getD .skip` for the sparse tree, whose compilation succeeds for every pattern by the induction
+of F5, not by `rfl`.) A proof, as in the scratch file:
 ```lean
 theorem matrixFreeHutchpp : MatrixFreeHutchpp := by
-  intro P ι _ p o d
-  refine ⟨hutchppProg.compiled p o d, fun 𝕜 _ N n hv x A ξ => ?_⟩
+  intro P ι _ p o d 𝕜 _ N n hv x A ξ
   rw [Prog.runsWithin_iff, hutchppProg.toStmt_compiled]
   exact matrixFree_hutchppProg (𝕜 := 𝕜) p o d N n hv x A ξ   -- the ProgFamily-level lemma
 ```
-The tail target uses the same witness at `d := .gaussian`, with `simp only` through the event of
-the measure. The dense target uses `(hutchppProg … ).run.substOracle (denseImpl N)` compiled. The
-existing results become the `ProgFamily`-level lemmas these proofs call.
+The tail target is about the same tree at `d := .gaussian`, with `simp only` through the event of
+the measure; the dense target is about `hutchppProg.compiledDense`. The existing results become
+the `ProgFamily`-level lemmas these proofs call.
 
-The program is chosen before the field: one tree serves every `RCLike 𝕜`. Tags, oracle names,
-the distribution and (sparse only) the pattern come before it. `r`, `δ` and `τ` come after it, so
-one program meets the tail for every target rank and every accuracy.
+One tree serves every `RCLike 𝕜`, every target rank and every accuracy: the tree's arguments are
+the tags, the oracle name, the distribution and (sparse only) the pattern.
 
 ### F9. Rules and checks
 
@@ -1649,12 +1752,12 @@ one program meets the tail for every target rank and every accuracy.
 |---|---|---|
 | E1 (programs generic in `VB`, `VI`, no host data) | error, hygiene since the Guarantees change | **retired**. The witness is a `Prog`, first-order and scoped by its type; a builder that is not generic still compiles to one tree, which is what the theorem is about. Its fixtures move: `forgeNat` becomes a compiler fixture (`compile` returns `none`), the others are dropped |
 | E3 (results are instances of an access model) | the lint of G52 | **the target lint** (F1): each registered target has one proof whose type is the constant; every `Result:` theorem about runs is one; the closure hashes match `docs/targets.toml`. Fixtures: the three cheats of audit 1 stated against a target, audit 2's `exec_copyTrace`, and an edit to `hutchppCount` (the hash changes) |
-| E4 (every `<spec>Prog` has a result in a model) | completeness | every registered target is proved; every `<spec>Prog` is the witness of a registered target. Completeness, not soundness |
+| E4 (every `<spec>Prog` has a result in a model) | completeness | every registered target is proved; every `<spec>Prog` has a registered tree named by a registered target. Completeness, not soundness |
 | E9 (a callee closes its allocations) | error, hygiene | **warning**. Memory is the target's `mem`, so a leaking callee makes a proof fail or a target larger, never a claim false |
 | E2, E5, E6, E8 | hygiene | unchanged; E2 matters for the emitter and the `Float` runner only |
 
 CONTRIBUTING §5.5 is rewritten accordingly, and §11 gains one rule: an agent does not edit a
-`*Targets.lean` file or `docs/targets.toml`; CI enforces it through the closure hash (Q3).
+`*Targets.lean` file or `docs/targets.toml`. Enforcement is in F12, Q3.
 
 ### F10. Guarantees, re-classified
 
@@ -1673,12 +1776,12 @@ the basis, except that the run is `FStmt.exec` and the basis reaches it through 
 | G18 | D | D | same; the COO index storage, pending Q1 |
 | G19 | P, D | P, D | scoping is now by type (P); a builder callee's open `alloc` scopes over the caller's block, faithfully compiled; E9 a warning (D) |
 | G20 | P | P | strengthened: no handle out of scope exists in a `Prog`. Audit item: an oracle call whose block is empty (`cols = 0`, or `N = 0`) reads and writes nothing, succeeds and is charged one load; in the current syntax it did so even on a handle with no buffer, which a `Prog` cannot name (D) |
-| G21 | P | P, D | audit item: under `ComplexOrder` the comparisons `lt` and `le` of two complex numbers with different imaginary parts are `false`, not failures, so a branch on them is taken silently (D, Q4); `eq` is exact |
+| G21 | P | P | audit item, decided (Q4): under `ComplexOrder` the comparisons `lt` and `le` of two complex numbers with different imaginary parts were `false`, so a branch on them was taken silently; after step A they fail, as division by zero does; `eq` is exact |
 | G22–G24, G26 | P | P | same |
 | G25 | P | P | the docstring corrected (F3): a successful `whileFuel` runs its body at most `fuel − 1` times |
 | G27 | P | P | strengthened: the program is bound before the sizes as well; one tree for every size and datum |
 | G28–G30, G33 | P | P | same (G29 through the bridge) |
-| G31 | P | P | the names before `∃ prog` are reviewed in the target; the program may depend on them, harmlessly |
+| G31 | P | P | the tree's arguments are names only (tags, oracle names, distributions, the sparse pattern), reviewed in the target; the tree depends on them, harmlessly |
 | G32 | D | D | same |
 | G34 | D | **P** | uniformity: one finite tree for all sizes; literals fixed in it; no host computation on sizes (the witness is a tree, and the compiler calls the builder once, on variables). Left as D: index arithmetic uncounted (G11); the sparse target is non-uniform in its public pattern (Q1) |
 | G35 | T (parametricity) | **removed** | the witness contains no Lean function; parametricity is used nowhere, not even as hygiene |
@@ -1694,22 +1797,24 @@ the basis, except that the run is `FStmt.exec` and the basis reaches it through 
 | G53, G54 | T | T | same (audit; E4 as in F9) |
 | G55 | D | D | hygiene: E2, E5, E6, E8, E9 (a warning); E1 retired |
 | **G56** (new) | | T | a published cost result is a theorem whose type is literally a registered target: no hypothesis, parameter or postcondition of the prover's. Script: one comparison of expressions |
-| **G57** (new) | | T | the target and every library definition it unfolds to are frozen: the closure hash in the registry. Script, and the maintainer's review of the registry (Q3) |
-| **G58** (new) | | P | the witness is first-order and scoped by its type (`Prog P ι r b`), checked by Lean's kernel |
-| **G59** (new) | | P | the compiler and the builder are untrusted: theorems are about the compiled tree, and a non-parametric builder only yields a tree the proof must handle |
+| **G57** (new) | | T | the target and every library constant it reaches are frozen: the closure hash in the registry, with the toolchain and Mathlib pinned. Script, and the maintainer's review of the registry (Q3). (T) only with the closure walk of F1 item 3 (every constant kind, library membership by module); the walk of `59c5e27` skipped opaques and would not have frozen an `irreducible_def` |
+| **G58** (new) | | P | the program of a result is first-order and scoped by its type (`Prog P ι r b`), checked by Lean's kernel; under a named target it is the registered tree, frozen by its normal-form hash |
+| **G59** (new) | | D | the compiler and the builder are untrusted: theorems are about the compiled tree, and a non-parametric builder only yields a tree the proof must handle. A consequence of the design, not a theorem |
 | **G60** (new) | | P | the run on first-order syntax agrees with the current run of the instantiated statement (`FStmt.exec_eq_exec_toStmt`), so the existing lemmas and invariants apply |
 
-**Count.** 60 items, one removed (G35): 41 (P) (G4, G7, G19, G21 partly (D)), 9 (T) (G39, G48,
-G50–G54, G56, G57), 9 (D) (G11, G12, G17, G18, G32, G42, G46, G49, G55). Non-uniformity, advice
+**Count.** 60 items, one removed (G35): 40 (P) (G4, G7, G19 partly (D)), 9 (T) (G39, G48,
+G50–G54, G56, G57), 10 (D) (G11, G12, G17, G18, G32, G42, G46, G49, G55, G59). Non-uniformity, advice
 and parametricity are no longer issues; G34 is (P) and G35 is gone.
 
 **The trusted base, exactly.** Base item 1 (kernel and axioms) is unchanged. Base item 3 (the
 statement of each result) shrinks to the review of each target, done once per target, in the
 registry. Base item 2 becomes the closure of the targets: the library definitions their statements
-unfold to. For the five targets of F8 the scratch computation lists 92 named constants besides
-the targets (plus matchers, recursors and derived instances), grouped:
-* **Syntax**: `IExp`, `Cell` (`buf`, `idx`), `Instr`, `BinOp`, `UnOp`, `CmpOp`, `Dist`, `Arg`
-  (labels only), `FStmt`, `Prog`;
+unfold to. For the five targets of F8 the scratch computation (with the walk of F1 item 3) lists
+94 named constants besides the targets: 90 below and the four models. Besides these come the
+hygienic `definition` constants holding the values of the three `irreducible_def`s, and the
+matchers, recursors and structural-recursion helpers of the inductive types. Grouped:
+* **Syntax**: `IExp`, `Cell` (`buf`, `idx`), `Instr`, `BinOp`, `UnOp`, `CmpOp`, `Dist` (with its
+  derived `instDecidableEqDist`, used by the tape positions), `Arg` (labels only), `FStmt`, `Prog`;
 * **Substitution and evaluation used by the run**: `IExp.subst`, `IExp.evalIn`, `IExp.eval`,
   `Cell.subst`, `Instr.subst`, and Mathlib's `Fin.snoc`, `Fin.cons`;
 * **The run**: `FStmt.exec`, `Prog.exec`, `Instr.run`, `Instr.kind`, `cmpStep`, `Store`,
@@ -1724,8 +1829,13 @@ the targets (plus matchers, recursors and derived instances), grouped:
 * **Specifications**: `gramSchmidtQ`, `hutchpp` (with `rangeProjector`, `girardHutchinson`,
   `rsvd`), `cooMatrix`; for the tail, `frobNorm`, `truncatedSVD` (with `IsSVD`, `svdU`, `svdV`,
   `singularValues`, `HasOrthonormalCols`), `subgaussianEmbeddingDim`,
-  `subgaussianRangeFinderFactor`, `hansonWrightConstant`, `iidSequence`, `rademacherMeasure`;
-* **the targets themselves**.
+  `subgaussianRangeFinderFactor`, `hansonWrightConstant`, `subgaussianJLConstant` (reached through
+  `subgaussianEmbeddingDim`), `iidSequence`, `rademacherMeasure`, and the values of the three
+  `irreducible_def`s;
+* **the targets themselves**, and the registered trees they name. A tree is read for what it is
+  (the program the result is about, printed by the emitter), not trusted for soundness: whatever
+  it is, the theorem proves that it meets the statement. With the trees as leaves the builders,
+  kernels and compiler are outside the closure, except for the sparse target until Q1 (F1).
 
 Out of the base, where they were before: the PHOAS `Stmt`, `Builder` and `exec` (no target
 reaches them); `ProgFamily` and `ProgFamily.inst`; program substitution (`Stmt.subst`,
@@ -1761,8 +1871,12 @@ and C run in parallel after A.
    `ProgFamily.MatrixFree`. Mechanical.
 6. `RandomMatrix/Tape.lean` (+40): `MatrixFreeProb` on `Prog`, `ProgFamily.MatrixFreeProb`, its
    transfer lemma.
+7. `Computation/Exact.lean`, `Computation/Contract.lean` (about 20, Q4): `exactSem` fails on
+   `lt` and `le` unless both arguments are real (`im = 0`); the comparison clauses of
+   `isRelErrSem_exactSem` (for $\Bbbk = \mathbb{R}$) get a one-line proof that every real is
+   real.
 
-**Step B: the targets and their proofs** (topic files; about 450 lines):
+**Step B: the targets and their proofs** (topic files; 450 to 530 lines):
 1. `Matrix/Factorizations/GramSchmidtTargets.lean` (new, about 50): `gramSchmidtCount` (moved),
    `MatrixFreeGramSchmidt`.
 2. `Matrix/Factorizations/GramSchmidtProgram.lean` (+30): `gramSchmidtProg.compiled`, its `rfl`
@@ -1773,57 +1887,99 @@ and C run in parallel after A.
 4. `Estimation/Trace/HutchPlusPlusProgram.lean` (+250): `hutchppProg.compiled`, the compiled dense
    program, the per-pattern sparse program, their equations, the four proofs. The three `rfl`
    equations and four proofs are mechanical (80 lines). **Rework**: the sparse compilation, an
-   induction on the pattern through `List.forM` in `cooImpl` (about 120 lines). It moves to
+   induction on the pattern through `List.forM` in `cooImpl` (150 to 200 lines). It moves to
    `Sparse.lean`, as a lemma about `cooImpl`, if Q1 is declined.
 
-**Step C: checks and documents** (scripts and docs; about 450 written, 200 deleted):
-1. `scripts/Targets.lean` (new, about 180): the lint and the closure hash of F1, reading
-   `docs/targets.toml`; `--update` rewrites the hashes for review. Fixtures: the three cheats of
-   audit 1 against a target, audit 2's `exec_copyTrace`, a target with an edited count.
-2. `docs/targets.toml` (new): the five targets, with hash, file and review date. The hashes are
-   filled in after step B lands.
+**Step C: checks, tools and documents** (scripts, tools and docs; about 700 written, 200
+deleted):
+1. `scripts/Targets.lean` (new, about 260): the lint, the normal forms of the registered trees,
+   and the closure walk and hash of F1, reading `docs/targets.toml`; `--update` rewrites the
+   hashes and printed statements for review. Also the Q5 check (a target whose `inputs` are not
+   built from `Array.replicate` and the declared data carries the flag and the marker) and the
+   approval check of Q3.
+   Fixtures: an axiom of a target's type; the three cheats of audit 1 against a target; audit 2's
+   `exec_copyTrace` (flagged by item 2); a target whose count is edited, one whose
+   `irreducible_def` value is edited, one whose ForMathlib dependency is edited (each a hash
+   change); a toolchain mismatch.
+2. `docs/targets.toml` (new): the five entries of F1, the three registered trees with their
+   normal-form hashes, and the pinned toolchain and Mathlib revision; `docs/targets.approved`
+   (Q3); `.github/CODEOWNERS` (Q3). The hashes and printed statements are filled in after step B lands.
 3. `scripts/Programs.lean` (−150, +40): E1 and the old E3 removed, E9 a warning, E4 re-pointed.
 4. `scripts/AccessModelFixtures.lean` (about 60 changed): the `not_` theorems restated for the
    models on `Prog`, the fixture programs written as trees.
-5. `docs/rules/rules.toml` (E1 retired, E3 and E4 rewritten, E9 a warning), the generated
+5. `NLAlibTools/NumPy.lean` (about 120 changed): **an emitter of `FStmt` trees** (levels printed
+   as `b0, b1, …` and `i0, i1, …`, sizes as the function's parameters), so that the code emitted
+   for a result is printed from the very tree the result is about. With E1 retired nothing keeps a
+   builder parametric, and the current emitter instantiates the builder at `String`, a third
+   instantiation that could differ from the compiled tree. The builder path is retired; the
+   differential tests of §8 run on the tree emitter. The `Float` runner may keep running the
+   builder for convenience, with a `#guard` that it agrees with `Prog.exec` under a `Float`
+   interpretation on the §6 rows.
+6. `docs/rules/rules.toml` (E1 retired, E3 and E4 rewritten, E9 a warning), the generated
    DIGEST and RULES files, CONTRIBUTING §5.5 and §11, `scripts/stage_check.sh` (runs
    `scripts/Targets.lean`), and this note's changes sections.
+7. Bookkeeping for the five moved result ids (`gram-schmidt-program`, `hutchpp-program`,
+   `hutchpp-program-tail`, `hutchpp-program-dense`, `hutchpp-program-sparse`):
+   `docs/port/ledger.json` (the declarations that carry them), the explorer metadata (each id's
+   declaration, statement and file), and a rename map `docs/renames/2026-10-computation.json`
+   (N12: the old instances to the target theorems).
 
-Total about 1,500 lines written and 200 deleted. Not needed: a change to any proof of a
-realisation or a kernel, and to `NLAlibTools` (the `Float` runner and the emitter keep reading the
-builder). Lanczos (stage 1b) starts from its targets: the library writes `MatrixFreeLanczos` and
+Total about 1,750 to 1,850 lines written and 200 deleted. Not needed: a change to any proof of a
+realisation or a kernel. Lanczos (stage 1b) starts from its targets: the library writes `MatrixFreeLanczos` and
 `MatrixFreeLanczosBasis` first, and the proof agent receives them as fixed statements.
 
-### F12. Questions for the maintainer
+### F12. Decisions of the maintainer (approved 2026-10-23)
 
-Each would change an approved decision beyond the two changes; none is decided here.
+The first version of this section asked five questions, each a change of an approved decision
+beyond the two changes. The maintainer decided all five the same day.
 
-* **Q1. A uniform sparse model** (changes D14 and G34). With the pattern unrolled into the
-  program, the sparse target must quantify the pattern before `∃ prog`, so the program is
-  non-uniform in the pattern, as D14 approved ("public, unrolled"). Making it uniform needs an
+* **Q1. A uniform sparse model** (changes D14 and G34). **Decided: yes, later, as a small stage
+  of its own.** With the pattern unrolled into the program, the sparse tree is a function of
+  the pattern, which the target quantifies outside the model, so the program is non-uniform in
+  the pattern, as D14 approved ("public, unrolled"), and has no closed normal form (F1). Making it uniform needs an
   index read: a binder `romIdx i body` that binds a new index variable to entry `i` of
   read-only index data, counted (`.romIdx p`) and counted in memory. The pattern then becomes
   data bound after the program, its storage is counted ($2\,\mathit{nnz}$ cells for COO), and
   `cooImpl` takes no host data. It is the first construct that addresses memory by a data value
   (G34's "no construct turns a cell into an index" would no longer hold), and out-of-range
-  indices fail, as every access does. Recommendation: yes, as a small stage of its own after this
-  migration (about 300 lines). It also removes step B's only non-mechanical proof. Until then, the
-  interim target `StoredEntriesCooHutchpp` of F8.
-* **Q2. Existential targets, or targets about named programs** (affects E1's stated purpose in
-  G55, "the emitted NumPy is the program the result is about"). Both forms are watertight.
-  `∃ prog` keeps the closure small and lets agents improve programs without re-review. A named
-  target (`MatrixFree p (hutchppProg.compiled p o d) …`) puts the program, the builder, the kernels
-  and the compiler in the closure, so any kernel edit changes the hash. Recommendation:
-  existential targets, with the witness recorded as checked metadata: the lint also verifies that
-  the proof's witness is the registered `<spec>Prog.compiled`, and the emitter prints that
-  program. The link to the emitted code is then checked, though it is not part of the statement.
-* **Q3. Who may change the registry.** A new target, or a changed closure hash (after an edit to
-  a count, a specification or the semantics), takes effect only through a diff of
-  `docs/targets.toml`. Recommendation: such diffs need the maintainer's approval, and agents do
-  not edit `*Targets.lean` files or the registry (CONTRIBUTING §11). A toolchain bump that changes
-  every hash is reviewed as one diff with no change of statement.
-* **Q4. Complex comparisons** (changes `exactSem`, D2). Under `ComplexOrder`, `lt` and `le` of
-  incomparable values are `false` (G21). Recommendation: make them fail unless both arguments
-  are real, so that a branch on an incomparable pair is a failure the proof must exclude, as
-  division by zero is. About 20 lines; no current program uses `lt` or `le`, and
-  `isRelErrSem_exactSem` (for $\Bbbk = \mathbb{R}$) is unaffected.
+  indices fail, as every access does. Two consequences to record. The `StoredEntries` model
+  gains its first library-written validity predicate on data: the index data in range (entries
+  below `N`). And the index data are kept apart from the values: their own `Interp` field (`romIdx`
+  next to `rom`), their own count kind, and their own memory (`romIdxSize`), so that a count of
+  value reads and a count of index reads stay distinguishable and both are bounded. Size about
+  300 lines; it also removes step B's only non-mechanical proof and makes the sparse tree a
+  registered tree. Until then, the interim target `StoredEntriesCooHutchpp` of F8.
+* **Q2. Named-program targets for library results** (affects E1's stated purpose in G55, "the
+  emitted NumPy is the program the result is about"). **Decided: named targets about the
+  registered compiled tree**, in his words: "named for stuff in our library for now. we will just
+  keep this in mind when we are setting goals for the community." So the claim and the emitted
+  code are about the same tree (F1, "The registered tree"; the tree emitter of F11, step C).
+  Existential targets are not used for library results; they are the future form for community
+  goals (F1). The first version's alternative, existential targets with the witness checked by
+  inspecting the proof term, was rejected by the review as fragile (`theorem t : T := other`, or a
+  witness passed through `Exists.elim`, defeats it).
+* **Q3. Who may change targets and the registry.** **Decided: changes to target definitions and to
+  `docs/targets.toml` need the maintainer's approval; agents never edit `*Targets.lean` files or
+  the registry.** Enforcement, in three layers, as fits this repository (GitHub, `ci.yml`):
+  * `.github/CODEOWNERS` assigns `docs/targets.toml`, `docs/targets.approved` and
+    `NLAlib/**/*Targets.lean` to the maintainer, and branch protection on `main` requires a
+    code-owner review: no change to them merges without his approval. This is the binding layer
+    (a repository setting the maintainer turns on);
+  * `docs/targets.approved` holds the SHA-256 of `docs/targets.toml`, and the maintainer updates
+    it in the commit that approves a registry change. `scripts/Targets.lean`, in CI on every
+    branch and in `scripts/stage_check.sh`, fails if the registry's hash differs from it, and the
+    closure hashes already fail on any edit of a target or of what it unfolds to. So an
+    unapproved edit fails the checks on the branch where an agent made it, before any review;
+  * CONTRIBUTING §11 states the rule for agents, and agent briefs list the protected paths.
+  A toolchain or Mathlib bump that changes every hash is one registry diff, approved the same way,
+  with the printed statements showing that no statement changed.
+* **Q4. Complex comparisons** (changes `exactSem`, D2). **Decided: `lt` and `le` fail on
+  incomparable values.** `exactSem` fails on `lt` and `le` unless both arguments are real, so a
+  branch on an incomparable pair is a failure the proof must exclude, as division by zero is
+  (step A, item 7; G21). No current program uses `lt` or `le`.
+* **Q5. Declared inputs computed from the sizes** (F6, option 2). **Decided: such a target carries
+  a registry flag and a docstring marker.** The flag is `precomputed = ["nodes"]` in its registry
+  entry; the marker is a docstring sentence `Precomputed: the $q$ Chebyshev nodes.`;
+  `scripts/Targets.lean` requires both whenever a target's `inputs` is not built from
+  `Array.replicate` and the declared data alone, and the explorer shows the flag next to the
+  cost. None of the five targets of F8 has such an input.
