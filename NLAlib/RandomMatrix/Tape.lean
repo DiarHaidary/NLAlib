@@ -35,6 +35,24 @@ open Computation
 
 variable {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
+/-- Column-major positions are injective: `i + N * j` determines `i < N` and `j`. -/
+private theorem eq_and_eq_of_add_mul_eq {N i i' j j' : ℕ} (hi : i < N) (hi' : i' < N)
+    (h : i + N * j = i' + N * j') : i = i' ∧ j = j' := by
+  have hN : 0 < N := by omega
+  have h1 : i = i' := by
+    have := congrArg (· % N) h
+    simpa [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hi'] using this
+  subst h1
+  exact ⟨rfl, Nat.eq_of_mul_eq_mul_left hN (by omega)⟩
+
+/-- The tape positions of an $N \times k$ draw from position `off` are distinct. -/
+private theorem injective_tapePos (off N k : ℕ) :
+    Function.Injective fun p : Fin N × Fin k => off + p.1.1 + N * p.2.1 := by
+  rintro ⟨i, j⟩ ⟨i', j'⟩ h
+  have h' : i.1 + N * j.1 = i'.1 + N * j'.1 := by simp only at h; omega
+  obtain ⟨h1, h2⟩ := eq_and_eq_of_add_mul_eq i.2 i'.2 h'
+  exact Prod.ext (Fin.ext h1) (Fin.ext h2)
+
 /-- **A Gaussian tape draws a Gaussian matrix**: if the tape $x$ is an i.i.d. sequence of standard
 Gaussians, the $N \times k$ matrix drawn from it from position $\mathit{off}$, column-major, is a
 standard Gaussian matrix. No printed source.
@@ -42,7 +60,12 @@ Result: tape-gaussian-matrix -/
 theorem hasLaw_tapeMatrix_of_hasLaw_iidSequence {x : Ω → ℕ → ℝ}
     (hx : HasLaw x (iidSequence (gaussianReal 0 1)) μ) (off N k : ℕ) :
     HasLaw (fun ω => tapeMatrix (𝕜 := ℝ) (x ω) off N k) (gaussianMatrix (Fin N) (Fin k)) μ := by
-  sorry
+  refine hasLaw_gaussianMatrix_of_hasLaw_uncurry ?_
+  have h := hx.comp_of_injective (injective_tapePos off N k)
+  convert h using 2 with ω
+  funext ⟨i, j⟩
+  simp only [tapeMatrix]
+  rfl
 
 /-- **Consecutive draws are independent**: if the tape $x$ is an i.i.d. sequence with a
 probability law $\nu$, the $N \times k$ matrix drawn from position $0$ and the $N \times \ell$
@@ -52,6 +75,30 @@ theorem indepFun_tapeMatrix_of_hasLaw_iidSequence {ν : Measure ℝ} [IsProbabil
     {x : Ω → ℕ → ℝ} (hx : HasLaw x (iidSequence ν) μ) (N k ℓ : ℕ) :
     IndepFun (fun ω => tapeMatrix (𝕜 := ℝ) (x ω) 0 N k)
       (fun ω => tapeMatrix (𝕜 := ℝ) (x ω) (N * k) N ℓ) μ := by
-  sorry
+  have : IsProbabilityMeasure μ := hx.isProbabilityMeasure_iff.mpr inferInstance
+  have hind := ((hasLaw_infinitePi_iff (ν := fun _ : ℕ => ν)).mp hx).1
+  have hST : Disjoint (Finset.range (N * k)) (Finset.Ico (N * k) (N * k + N * ℓ)) := by
+    rw [Finset.disjoint_left]
+    intro a ha hb
+    simp only [Finset.mem_range, Finset.mem_Ico] at ha hb
+    omega
+  have h := hind.indepFun_finset₀ _ _ hST fun n => (hx.aemeasurable.eval n)
+  have hS : ∀ (i : Fin N) (j : Fin k), i.1 + N * j.1 ∈ Finset.range (N * k) := by
+    intro i j
+    simp only [Finset.mem_range]
+    nlinarith [i.2, j.2]
+  have hT : ∀ (i : Fin N) (j : Fin ℓ), N * k + i.1 + N * j.1 ∈
+      Finset.Ico (N * k) (N * k + N * ℓ) := by
+    intro i j
+    simp only [Finset.mem_Ico]
+    constructor
+    · omega
+    · nlinarith [i.2, j.2]
+  have := h.comp (φ := fun v : Finset.range (N * k) → ℝ =>
+      (Matrix.of fun (i : Fin N) (j : Fin k) => v ⟨_, hS i j⟩ : Matrix (Fin N) (Fin k) ℝ))
+    (ψ := fun v : Finset.Ico (N * k) (N * k + N * ℓ) → ℝ =>
+      (Matrix.of fun (i : Fin N) (j : Fin ℓ) => v ⟨_, hT i j⟩ : Matrix (Fin N) (Fin ℓ) ℝ))
+    (by fun_prop) (by fun_prop)
+  convert this using 1 <;> funext ω <;> ext i j <;> simp [tapeMatrix]
 
 end NLAlib
