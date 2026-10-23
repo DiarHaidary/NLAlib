@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.Exact
+public import NLAlib.ForMathlib.Order.Basic
 
 /-!
 # BLAS kernels as programs
@@ -619,20 +620,6 @@ section Loops
 
 variable {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P]
 
-omit [RCLike 𝕜] in
-/-- A peak raised to at most $a \le c$ stays below a bound that allows $c$. -/
-private theorem update_max_le_of_le {f g : P → ℕ} {p : P} {a c : ℕ}
-    (h : f ≤ Function.update g p (max (g p) c)) (ha : a ≤ c) :
-    Function.update f p (max (f p) a) ≤ Function.update g p (max (g p) c) := by
-  intro q
-  have hq' := h q
-  by_cases hq : q = p
-  · subst hq
-    simp only [Function.update_self] at hq' ⊢
-    omega
-  · simp only [Function.update_of_ne hq] at hq' ⊢
-    exact hq'
-
 /-- A loop of `dot` calls accumulated into one cell: for $j < n$, the program computes the dot
 product of column $c_0 + j$ of the $N$-row buffers `B` and `C` (the cells from $N(c_0 + j)$)
 into the scratch cell `t[0]` and adds it into `acc`. If these columns hold $\mathbf{u}_j$ and
@@ -733,7 +720,7 @@ theorem exec_forRange_dot_add (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem 
     simp only [hcnt1, hcnt, hc, IExp.eval_const, succ_nsmul, add_assoc]
   · change st1.peak ≤ _
     rw [hpeak1, hcur]
-    exact update_max_le_of_le hpeak le_rfl
+    exact Function.update_max_le_update_max hpeak
   · change st1.peakW ≤ _
     rw [hpeakW1, hcurW]
     exact max_le hpeakW (le_max_right _ _)

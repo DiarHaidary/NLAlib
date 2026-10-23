@@ -894,7 +894,8 @@ the note:
 
 ## Changes during the proofs
 
-* 2026-10-23 (proof agent A): public helpers in `Computation/Exec.lean`, used by `BLAS.lean` and
+* 2026-10-23 (added during the proofs, in the commits proving BLAS, GramSchmidtProgram and
+  HutchPlusPlusProgram): public helpers in `Computation/Exec.lean`, used by `BLAS.lean` and
   `GramSchmidtProgram.lean`: the `IExp.eval_*` simp lemmas; the store lemmas
   `Store.lt_size_of_read_eq_some`, `Store.lt_size_of_write_eq_some`,
   `Store.exists_write_eq_some_of_write_eq_some`, `Store.write_of_write_eq_some`,
@@ -957,12 +958,9 @@ the note:
     `BLAS.lean`, so the new file constructs no `named` node (E8).
   * **Checks.** `IExp.eval_ofNat` loses its unused `[n.AtLeastTwo]` (the environment linter;
     every numeral of `IExp` is a constant), and `IExp.eval_zero`, `IExp.eval_one` are no longer
-    `simp` (they are cases of it). `Store.getElem?_shape` is allowlisted for N2 in
-    `scripts/names_allow.toml`: its left side `s.shape[b]?` is an index into the shape, as in
-    `getElem?_flatten`, and the checker reads the projection `s.shape` as the head.
-    `Store.BlockFrame` has no §5.3 row (one V7 warning): it is API of the store, not vocabulary of
+    `simp` (they are cases of it). `Store.getElem?_shape` needed an N2 allowlist entry until the checker learned to read `x[i]?` as `getElem?`; the entry is gone. `Store.BlockFrame` has no §5.3 row (one V7 warning): it is API of the store, not vocabulary of
     statements, and a row is the maintainer's call.
   * **Lengths after the close** (before it in brackets): `Store.lean` 775 (new), `Exec.lean` 455
-    (820), `Exact.lean` 194 (158), `BLAS.lean` 743 (1492), `BLAS/MatrixKernels.lean` 653 (new),
-    `Dense.lean` 404 (695), `Sparse.lean` 451 (744), `GramSchmidtProgram.lean` 917 (839),
+    (820), `Exact.lean` 194 (158), `BLAS.lean` 730 (1492), `BLAS/MatrixKernels.lean` 653 (new),
+    `Dense.lean` 401 (695), `Sparse.lean` 448 (744), `GramSchmidtProgram.lean` 891 (839),
     `HutchPlusPlusProgram.lean` 976 (1270). Net, the library loses about 450 lines.

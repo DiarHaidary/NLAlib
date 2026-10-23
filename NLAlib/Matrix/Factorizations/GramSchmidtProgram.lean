@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.BLAS
+public import NLAlib.ForMathlib.Order.Basic
 public import NLAlib.Matrix.Factorizations.GramSchmidt
 
 /-!
@@ -103,28 +104,10 @@ private theorem sum_range_star_mul_dite {N : ℕ} (f g : Fin N → 𝕜) :
     (if h : a < N then g ⟨a, h⟩ else 0))]
   simp [dotProduct]
 
-omit [DecidableEq P] in
-private theorem update_max_le [DecidableEq P] {f g : P → ℕ} {p : P} {c : ℕ}
-    (h : f ≤ Function.update g p (max (g p) c)) :
-    Function.update f p (max (f p) c) ≤ Function.update g p (max (g p) c) := by
-  intro q
-  by_cases hq : q = p
-  · subst hq
-    have := h q
-    simp only [Function.update_self] at this ⊢
-    omega
-  · have := h q
-    simp only [Function.update_of_ne hq] at this ⊢
-    exact this
-
-omit [DecidableEq P] in
-private theorem le_update_max [DecidableEq P] {f : P → ℕ} {p : P} {c : ℕ} :
-    f ≤ Function.update f p (max (f p) c) := by
-  intro q
-  by_cases hq : q = p
-  · subst hq
-    simp
-  · simp [Function.update_of_ne hq]
+private theorem col_lt {N c j a : ℕ} (hc : c < j) (ha : a < N) : N * c + a < N * j := by
+  have := Nat.mul_le_mul_left N (Nat.succ_le_of_lt hc)
+  rw [Nat.mul_succ] at this
+  omega
 
 /-- One sweep step of `orthAgainst`, against column `i`. -/
 private theorem exec_orthAgainst_step (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
@@ -228,7 +211,7 @@ private theorem exec_orthAgainst_step (I : Interp P ι 𝕜 (OpCount P ι)) (hI 
   · rw [hpeak3]
     dsimp only
     rw [hpeak1, hcur1]
-    exact update_max_le le_rfl
+    exact Function.update_max_le_update_max le_rfl
   · rw [hpeakW3]
     dsimp only
     rw [hpeakW1, hcurW1]
@@ -268,13 +251,13 @@ private theorem exec_orthAgainst_of_imp (I : Interp P ι 𝕜 (OpCount P ι)) (h
       st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
       st'.peakW ≤ max st.peakW (st.curW + I.width p))
     ⟨hv, fun _ _ _ _ _ => rfl, rfl, rfl, rfl, rfl, by simp,
-      le_update_max, le_max_left _ _⟩ ?_
+      le_update_self_iff.2 (le_max_left _ _), le_max_left _ _⟩ ?_
   intro i hi st' ⟨hv', hfr, hsh, hpos, hcur, hcurW, hcnt, hpeak, hpeakW⟩
   obtain ⟨st'', h, hv'', hfr'', hsh'', hpos'', hcur'', hcurW'', hcnt'', hpeak'', hpeakW''⟩ :=
     exec_orthAgainst_step I hI hc p st Q k v vo r V w hQ hvQ hrv hrQ hr i hi st' hv' hfr hsh
   refine ⟨st'', h, hv'', hfr'', hsh'', hpos''.trans hpos, hcur''.trans hcur,
     hcurW''.trans hcurW, by rw [hcnt'', hcnt, succ_nsmul, add_assoc],
-    hpeak''.trans (by rw [hcur]; exact update_max_le hpeak), hpeakW''.trans ?_⟩
+    hpeak''.trans (by rw [hcur]; exact Function.update_max_le_update_max hpeak), hpeakW''.trans ?_⟩
   rw [hcurW]
   exact max_le hpeakW (le_max_right _ _)
 
@@ -335,10 +318,6 @@ theorem exec_forRange_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.
         N • (Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1))) ∧
       st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
       st'.peakW ≤ max st.peakW (st.curW + I.width p) := by
-  have colA : ∀ {c c' a : ℕ}, c < c' → a < N → N * c + a < N * c' := fun hc ha => by
-    have := Nat.mul_le_mul_left N (Nat.succ_le_of_lt hc)
-    rw [Nat.mul_succ] at this
-    omega
   rw [show (forRange (ι := ι) ℓE fun j => orthAgainst p (.const N) B (.const k) B
       (.const N * (.const k + .var j)) ⟨t, 0⟩).run = .seq (.loop ℓE fun j =>
         (orthAgainst p (.const N) B (.const k) B (.const N * (.const k + .var j))
@@ -368,7 +347,7 @@ theorem exec_forRange_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.
   obtain ⟨st'', h, hv'', hfr'', hsh'', hpos'', hcur'', hcurW'', hcnt'', hpeak'', hpeakW''⟩ :=
     exec_orthAgainst I hI hc p st' B (.const k) B (.const N * (.const k + .var j)) ⟨t, 0⟩ Q (G j)
       (fun i hi a => by
-        rw [hfr p B _ (fun _ => Or.inl (colA hi a.2)) (Ne.symm htB), hQ i hi a])
+        rw [hfr p B _ (fun _ => Or.inl (col_lt (N := N) hi a.2)) (Ne.symm htB), hQ i hi a])
       (fun a => by
         change st'.store.read p B (N * (k + j) + a) = _
         rw [hfr p B _ (fun _ => Or.inr (by omega)) (Ne.symm htB), hG j hj a])
@@ -380,7 +359,7 @@ theorem exec_forRange_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.
     hpos''.trans hpos, hcur''.trans hcur, hcurW''.trans hcurW,
     by simp only [hcnt'', hcnt, succ_nsmul, add_assoc, IExp.eval_const], ?_, ?_⟩
   · rcases Nat.lt_succ_iff_lt_or_eq.mp hj' with h' | rfl
-    · rw [hfr'' p B _ (fun _ => Or.inl (colA (c' := k + j) (by omega) a.2))
+    · rw [hfr'' p B _ (fun _ => Or.inl (col_lt (N := N) (j := k + j) (by omega) a.2))
         (fun h => absurd h.symm htB),
         hsw j' h' a]
     · exact hv'' a
@@ -472,11 +451,6 @@ private theorem gramSchmidtCount_succ (p : P) (N j : ℕ) :
     simp only [gramSchmidtCount, Finsupp.smul_single_one]
   rw [h, h, Nat.choose_succ_succ', Nat.choose_one_right]
   module
-
-private theorem col_lt {N c j a : ℕ} (hc : c < j) (ha : a < N) : N * c + a < N * j := by
-  have := Nat.mul_le_mul_left N (Nat.succ_le_of_lt hc)
-  rw [Nat.mul_succ] at this
-  omega
 
 private theorem col_ge {N c j a : ℕ} (hc : j + 1 ≤ c) : N * j + N ≤ N * c + a := by
   have := Nat.mul_le_mul_left N hc
@@ -661,7 +635,7 @@ private theorem exec_gramSchmidt_reduce (I : Interp P ι 𝕜 (OpCount P ι))
     simp only [hcnt2, hcnt1, hc, IExp.eval_const, IExp.eval_var, add_assoc]
   · change st2.peak ≤ _
     rw [hpeak2, hcur1]
-    exact update_max_le hpeak1
+    exact Function.update_max_le_update_max hpeak1
   · change st2.peakW ≤ _
     rw [hpeakW2, hcurW1]
     exact max_le (hpeakW1.trans (le_refl _)) (le_max_right _ _)
@@ -864,7 +838,7 @@ theorem exec_gramSchmidtProg (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem =
     · rw [gramSchmidtCount_succ, ← add_assoc]
       exact hcnt''.trans (add_le_add hcnt le_rfl)
     · rw [hc1] at hpeak''
-      exact hpeak''.trans (update_max_le hpeak)
+      exact hpeak''.trans (Function.update_max_le_update_max hpeak)
     · refine hpeakW''.trans (max_le hpeakW ?_)
       rw [hcurW]
       exact le_max_of_le_right (by ring_nf; exact le_rfl)

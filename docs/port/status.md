@@ -338,14 +338,14 @@ fewer): `BLAS.lean` 743 lines (1492), `BLAS/MatrixKernels.lean` 653, `HutchPlusP
 `s.shape[b]?`).
 
 Checks: `mk_all --check` clean for `NLAlib` and `NLAlibScaffold`; `lake build NLAlibTools` (2
-`sorry` in `FixedPoint.lean`, expected); `scripts/stage_check.sh`: 411 proved modules, 0 not yet;
-build 4008 jobs, `--wfail`, 0 warnings; audit 11347 declarations, 0 violations; lint 6847
+`sorry` in `FixedPoint.lean`, expected); `scripts/stage_check.sh`: 412 proved modules, 0 not yet;
+build 4009 jobs, `--wfail`, 0 warnings; audit 11342 declarations, 0 violations; lint 6845
 declarations, 0 errors; `scripts/Programs.lean`: 14 programs and kernels (6 called by others), 5
 realisations, 0 violations, every fixture rejected; references 88 keys, 86 asymptotic forms, 0
-problems; constants 34, 429 value markers, 0 problems; LaTeX 27469 math spans, 0 problems; rules 0
-errors, 73 in the baseline, 878 warnings (876 at `1dd6409`, when 6 modules were not yet checked;
-S5 0, the round's F10 warnings gone; new: V7 for `Store.BlockFrame` and a T11 false positive on
-`Store.BlockFrame.writeBlock`); duplicates 6046 theorems, 0 classes; script tests 47, OK; ledger
+problems; constants 34, 429 value markers, 0 problems; LaTeX 27467 math spans, 0 problems; rules 0
+errors, 73 in the baseline, 876 warnings (876 at `1dd6409`, when 6 modules were not yet checked;
+S5 0, the round's F10 warnings gone; new: V7 for `Store.BlockFrame`, awaiting the maintainer; the
+T11 false positive and the N2 allowlist entry are gone with two checker fixes); duplicates 6044 theorems, 0 classes; script tests 48, OK; ledger
 0 targets missing.
 
 Open items for the maintainer:
