@@ -309,7 +309,9 @@ FIX = {
     'E8': ('/-- Doc. -/\ndef k : Builder P ι VB VI Unit :=\n  named "k" [] (pure ())',
            {'NLAlib/Computation/BLAS.lean': lean('/-- Doc. -/\ndef k : Builder P ι VB VI Unit :=\n'
                                                  '  named "k" [] (pure ())'),
-            'NLAlib/Matrix/A.lean': lean('/-- The `named` kernels. -/\ndef k : ℕ := 0')}),
+            'NLAlib/Matrix/A.lean': lean('/-- The `named` kernels. -/\ndef k : ℕ := 0\n\n'
+                                         '/-- A compile equation. -/\ntheorem t : Stmt.named "k" [] .skip = '
+                                         'Stmt.named "k" [] .skip :=\n  rfl')}),
 }
 
 
@@ -395,13 +397,19 @@ class RuleTests(unittest.TestCase):
                     self.assertTrue(all(s.startswith('NLAlib/') for s in sp['scope']))
 
     def test_lean_rules_are_checked_by_programs(self):
-        # rules with `check = "lean"` are checked by scripts/Programs.lean, whose messages cite them
-        text = (Path(__file__).resolve().parent / 'Programs.lean').read_text()
+        # rules with `check = "lean"` are checked by scripts/Programs.lean or scripts/Targets.lean,
+        # whose messages cite them: an error rule by `logError`, a warning by `logWarning`
+        here = Path(__file__).resolve().parent
+        text = (here / 'Programs.lean').read_text() + (here / 'Targets.lean').read_text()
         for rid, sp in check_rules.SPECS.items():
             if sp['check'] == 'lean':
                 with self.subTest(rule=rid):
-                    self.assertIn(f'logError m!"{rid} ', text)
-                    self.assertEqual(sp['severity'], 'error')
+                    self.assertIn(sp['severity'], ('error', 'warning'))
+                    if sp['severity'] == 'warning':
+                        self.assertIn(f'logWarning m!"{rid} ', text)
+                    else:  # Targets.lean collects its messages as `s!"E3 …"`, then logs them
+                        self.assertTrue(f'logError m!"{rid} ' in text or f's!"{rid} ' in text)
+        self.assertNotIn('E1', check_rules.SPECS)  # retired, never reused
 
     def test_scope(self):
         # a rule scoped to the Matrix layer (T7) ignores the same declaration in LowRank

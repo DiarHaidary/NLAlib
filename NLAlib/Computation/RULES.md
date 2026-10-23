@@ -10,13 +10,12 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
-- **E1** A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions). Fix: Take sizes as index expressions and data as buffers; an implementation that needs host data lives in an implementation file. [§5.5]
 - **E2** Programs, kernels and implementations are computable. Fix: Remove the noncomputable part; a program is data that runs. [§5.5]
-- **E3** A result about a program's runs is an instance of an access model (`MatrixFree`, `MatrixFreeProb`, `StoredEntries`). Fix: State it as the model's instance: the program as a family of the sizes, the data quantified by the definition; a lemma for one interpretation is a private proof step. [§5.5]
-- **E4** Every `<spec>Prog` has a result in an access model (`matrixFree_<spec>Prog`). Fix: State the instance next to the program (with `sorry` until proved). [§5.5]
+- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. Fix: Prove the registered target itself; a `Result:` theorem about runs that proves no registered target loses its id, and a new or changed target needs the maintainer's approval (agents never edit `*Targets.lean` or the registry). [§5.5]
+- **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. Fix: Compile the program (`<spec>Prog.compiled`) and ask the maintainer for its target. [§5.5]
 - **E5** A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`. Fix: Keep the Computation layer at layer 0: a program that needs library vocabulary lives in its topic file. [§2]
-- **E8** `Stmt.named` is constructed only in the BLAS and implementation files. Fix: Write the program without `named`, or make it a kernel in `NLAlib/Computation/BLAS.lean`. [§5.5]
-- **E9** A program that another program calls frees its allocations (`scope`). Fix: Wrap the callee's body in `scope`: an `alloc` is live for the rest of the enclosing block, so an open one stays allocated in the caller. [§5.5]
+- **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). Fix: Write the program without `named`, or make it a kernel in `NLAlib/Computation/BLAS.lean`. [§5.5]
+- **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. Fix: Wrap the callee's body in `scope`: an `alloc` is live for the rest of the enclosing block, so an open one stays allocated in the caller. [§5.5]
 
 ## Every topic
 

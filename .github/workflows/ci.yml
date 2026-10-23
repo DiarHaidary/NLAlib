@@ -1,7 +1,7 @@
 name: CI
 on:
+  # every branch, so that an unapproved registry change fails where it is made (F12, Q3)
   push:
-    branches: [main]
   pull_request:
 concurrency:
   group: ci-${{ github.ref }}
@@ -27,8 +27,10 @@ jobs:
         run: lake env lean scripts/Audit.lean
       - name: Environment linters
         run: lake env lean scripts/Lint.lean
-      - name: Program checks (rules E1-E4 and E9, docs/design/Computation.md)
+      - name: Program checks (rules E2, E4 and E9, docs/design/Computation.md)
         run: lake env lean scripts/Programs.lean
+      - name: Target lint (rule E3; docs/targets.toml, closure hashes, approval)
+        run: lake env lean scripts/Targets.lean
       - name: Access-model fixtures (cheating realisations are false as instances)
         run: lake env lean scripts/AccessModelFixtures.lean
       - name: Tools library builds (NLAlibTools; not part of the library, may contain sorry)

@@ -10,8 +10,8 @@ Every rule has a stable id: a letter for its area and a number, as the naming ru
 (§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
 vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
 notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9), E programs (§5.5; E1–E4 and E9 are checked on the built library by
-`scripts/Programs.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
+records (§8, §9), E programs (§5.5; E2–E4 and E9 are checked on the built library by
+`scripts/Programs.lean` and `scripts/Targets.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
 `docs/rules/rules.toml`, the single source this script, `check_names.py` and
 `scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
 
@@ -1364,7 +1364,8 @@ def g_ledger(c):
 
 
 # ================================================================== E: programs (§5.5)
-# E1–E4 and E9 need Lean's types and are checked by scripts/Programs.lean (`check = "lean"`).
+# E2–E4 and E9 need Lean's types and are checked by scripts/Programs.lean and scripts/Targets.lean
+# (`check = "lean"`); E1 is retired (docs/design/Computation.md, F9).
 COMPUTATION = 'NLAlib/Computation'
 # The files that may construct `Stmt.named`: the core that defines and eliminates it, the BLAS
 # kernels and the implementations.
@@ -1415,12 +1416,16 @@ def e_semantics_home(c):
 
 @rule('E8')
 def e_named(c):
+    # A theorem may mention `named` in its statement or proof (a compile equation, say): the
+    # rule is about programs, whose `named` nodes the emitter prints as calls.
     out = []
-    for p in c.lib_files:
+    for p, (t, x) in c.lib_files.items():
         if p in NAMED_FILES:
             continue
+        proofs = {i for d in x['decls'] if d['kind'] in ('theorem', 'lemma')
+                  for i in range(d['line'], d['end'] + 1)}
         for i, line in enumerate(c.code(p), 1):
-            if NAMED_RE.search(line):
+            if i not in proofs and NAMED_RE.search(line):
                 out.append(V('E8', p, i, '(file)', line.strip()[:80]))
     return out
 

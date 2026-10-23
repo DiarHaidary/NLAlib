@@ -1,0 +1,9 @@
+# Target statements and their registry change only with the maintainer's approval
+# (docs/design/Computation.md, F12, Q3). With branch protection on `main` requiring a code-owner
+# review (a repository setting the maintainer turns on), no change to these paths merges without
+# him. scripts/Targets.lean also fails on any branch where docs/targets.toml differs from the
+# SHA-256 in docs/targets.approved.
+/docs/targets.toml @tchen01
+/docs/targets.approved @tchen01
+/NLAlib/**/*Targets.lean @tchen01
+/.github/CODEOWNERS @tchen01

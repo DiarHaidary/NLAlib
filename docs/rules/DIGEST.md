@@ -83,14 +83,12 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - R3 Every id or declaration the explorer names exists.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
 - G2 Every port-ledger target is declared.
-- E1 A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions).
 - E2 Programs, kernels and implementations are computable.
-- E3 A result about a program's runs is an instance of an access model (`MatrixFree`, `MatrixFreeProb`, `StoredEntries`).
-- E4 Every `<spec>Prog` has a result in an access model (`matrixFree_<spec>Prog`).
+- E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry.
+- E4 Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it.
 - E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
 - E6 In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
-- E8 `Stmt.named` is constructed only in the BLAS and implementation files.
-- E9 A program that another program calls frees its allocations (`scope`).
+- E8 `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it).
 - N1 Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase.
 - N2 The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`).
 - N3 The conclusion part ends at the first `_of_` and names the main relation.

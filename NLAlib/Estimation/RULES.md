@@ -145,13 +145,12 @@ and `docs/rules/DIGEST.md`.
 
 ### Programs
 
-- **E1** A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions). [§5.5]
 - **E2** Programs, kernels and implementations are computable. [§5.5]
-- **E3** A result about a program's runs is an instance of an access model (`MatrixFree`, `MatrixFreeProb`, `StoredEntries`). [§5.5]
-- **E4** Every `<spec>Prog` has a result in an access model (`matrixFree_<spec>Prog`). [§5.5]
+- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. [§5.5]
+- **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. [§5.5]
 - **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
-- **E8** `Stmt.named` is constructed only in the BLAS and implementation files. [§5.5]
-- **E9** A program that another program calls frees its allocations (`scope`). [§5.5]
+- **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). [§5.5]
+- **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. [§5.5]
 
 ### Names
 
