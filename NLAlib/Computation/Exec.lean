@@ -462,9 +462,9 @@ theorem Store.shape_of_writeBlock_eq_some {s s' : Store P K} {p : P} {b off : �
       rw [ih s₂ h₃, Store.shape_of_write_eq_some hw]
   exact key _ s h
 
-/-- A block write succeeds where every cell of the block can be read. -/
-theorem Store.exists_writeBlock_eq_some {s : Store P K} {p : P} {b off : ℕ} {xs : Array K}
-    (h : ∀ j < xs.size, ∃ w, s.read p b (off + j) = some w) :
+/-- A block write succeeds where every cell of the block can be written. -/
+theorem Store.exists_writeBlock_eq_some_of_write {s : Store P K} {p : P} {b off : ℕ}
+    {xs : Array K} (h : ∀ j < xs.size, ∃ v s', s.write p b (off + j) v = some s') :
     ∃ s', s.writeBlock p b off xs = some s' := by
   unfold Store.writeBlock
   have key : ∀ l : List ℕ, (∀ j ∈ l, j < xs.size) → ∀ s' : Store P K, s'.shape = s.shape →
@@ -475,8 +475,7 @@ theorem Store.exists_writeBlock_eq_some {s : Store P K} {p : P} {b off : ℕ} {x
     | cons i l ih =>
       intro hl s' hsh
       have hi := hl i List.mem_cons_self
-      obtain ⟨w, hw⟩ := h i hi
-      obtain ⟨s₀, hs₀⟩ := Store.exists_write_eq_some_of_read_eq_some (v := xs[i]) hw
+      obtain ⟨v, s₀, hs₀⟩ := h i hi
       obtain ⟨s₂, hs₂⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs₀ xs[i]
       obtain ⟨s₃, hs₃⟩ := ih (fun j hj => hl j (List.mem_cons_of_mem _ hj)) s₂
         ((Store.shape_of_write_eq_some hs₂).trans hsh)
@@ -485,6 +484,14 @@ theorem Store.exists_writeBlock_eq_some {s : Store P K} {p : P} {b off : ℕ} {x
       change Option.bind (Option.bind xs[i]? fun v => s'.write p b (off + i) v) _ = _
       rw [Array.getElem?_eq_getElem hi, Option.bind_some, hs₂, Option.bind_some, hs₃]
   exact key _ (fun j hj => List.mem_range.mp hj) s rfl
+
+/-- A block write succeeds where every cell of the block can be read. -/
+theorem Store.exists_writeBlock_eq_some {s : Store P K} {p : P} {b off : ℕ} {xs : Array K}
+    (h : ∀ j < xs.size, ∃ w, s.read p b (off + j) = some w) :
+    ∃ s', s.writeBlock p b off xs = some s' :=
+  Store.exists_writeBlock_eq_some_of_write fun j hj =>
+    let ⟨w, hw⟩ := h j hj
+    ⟨w, Store.exists_write_eq_some_of_read_eq_some hw⟩
 
 /-- A write changes no read of another tag. -/
 theorem Store.read_of_write_eq_some_of_ne_tag {s s' : Store P K} {p q : P} {b i b' i' : ℕ}
@@ -535,6 +542,7 @@ theorem Store.read_pop_of_lt {s : Store P K} {q : P} {b i : ℕ} (hb : b < s.siz
   unfold Store.read
   rw [Array.getElem?_pop, if_pos hb]
 
+omit [DecidableEq P] in
 /-- Two stores of the same shape have the same number of buffers. -/
 theorem Store.size_eq_of_shape_eq {s s' : Store P K} (h : s.shape = s'.shape) :
     s.size = s'.size := by

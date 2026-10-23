@@ -898,6 +898,7 @@ the note:
   `Store.size_of_foldlM_write_eq_some`, `Store.read_of_foldlM_write_eq_some_of_forall_ne`,
   `Store.writeBlock_map_range`, `Store.exists_write_eq_some_of_shape_eq`,
   `Store.shape_of_writeBlock_eq_some`, `Store.exists_writeBlock_eq_some`,
+  `Store.exists_writeBlock_eq_some_of_write` (also used by `HutchPlusPlusProgram.lean`),
   `Store.read_of_write_eq_some_of_ne_tag`, `Store.size_eq_of_shape_eq`, `Store.ext_of_shape_eq`;
   the run lemmas `exec_skip`, `exec_seq_skip`, `exec_run_bind`,
   `exists_exec_loop_eq_some_of_forall` and `exec_seq_instr_lit`, `_litIdx`, `_bin`, `_un`,
