@@ -10,29 +10,40 @@ target statements", F1 and F12). This script checks, on the library built by `la
 1. every registered target is a `Prop` definition in its registered `*Targets.lean` file, and has
    exactly one proof: a theorem (not an axiom, not an opaque) whose type is the target constant
    itself, syntactically, with no binder;
-2. every theorem outside `NLAlib/Computation` with a `Result:` id whose statement reaches a run or
-   a budget (the models, `Prog.exec`, `FStmt.exec`, `Prog.RunsWithin`, `RunsWithin`, `exec`,
-   `Stmt`, `ProgFamily.inst`), through the library definitions it unfolds to, is the proof of a
-   registered target;
+2. every constant outside `NLAlib/Computation` with a `Result:` id that claims something about a
+   run or a budget (the models, `Prog.exec`, `FStmt.exec`, `Prog.RunsWithin`, `RunsWithin`,
+   `exec`, `Stmt`, `ProgFamily.inst`), through the library constants it unfolds to (the values of
+   definitions and opaques, the constructors of structures, classes and inductive types), is a
+   registered target or its proof: a theorem, an instance of a `Prop` class, any constant whose
+   type is a proposition, or a definition of type `Prop`;
 3. the **closure hash** of each target matches the registry: SHA-256 of a canonical serialisation
    of every library constant the target's statement reaches (a constant is a library constant if
    its module is an `NLAlib` module), of every kind: definitions and opaques (type and value),
    theorems, axioms and quotients (type), inductive types (type, parameters, indices, mutual
-   block, constructors), constructors and recursors (type). A registered tree is a leaf, hashed by
-   its constructor normal form (`Meta.reduce`), which must contain no library definition; the
-   printed statement (the target unfolded one level) matches the registry too;
-4. the Lean toolchain and the Mathlib revision of `lake-manifest.json` are the registry's;
+   block, constructors), constructors and recursors (type). Every proof is erased (serialised as
+   one token, sound by proof irrelevance), and hygienic names are numbered in the order of the
+   walk (final audit, 2026-10-24). A registered tree is a leaf, hashed by its constructor normal
+   form (`Meta.reduce`), which must contain no library definition, and the kernel checks that the
+   tree is its normal form (`theorem _ : tree = nf := Eq.refl _`); the printed statement (the
+   target unfolded one level) and the printed normal form of each tree (the tree hash's input)
+   match the registry too;
+4. the pins: the Lean toolchain, the Mathlib revision of `lake-manifest.json`, and the SHA-256 of
+   `lake-manifest.json` and of `lakefile.toml`, are the registry's;
 5. (Q5) a target whose declared inputs are not `Array.replicate _ none` or built from the declared
    data carries the registry flag `precomputed` and the docstring marker `Precomputed:`;
 6. (Q3) `docs/targets.approved` holds the SHA-256 of `docs/targets.toml`
    (`sha256sum docs/targets.toml > docs/targets.approved`, by the maintainer only).
 
+What is left trusted between a target and the code it is about: the emitter of the tree
+(`NLAlibTools/NumPy.lean`), which the guarantees do not cover (`docs/design/Computation.md`,
+"Final audits").
+
 Then the fixtures at the end of this file, on copies of a target, must be rejected or detected.
 
 Run with `lake env lean scripts/Targets.lean` after `lake build NLAlib`; a nonzero exit code
 means a violation. `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean` (the `--update` mode)
-rewrites the hashes, the printed statements and the pins of the registry for review; it never
-writes `docs/targets.approved`. Agents never edit the registry or a `*Targets.lean` file
+rewrites the hashes, the printed statements and normal forms, the pins and the leading comment
+of the registry for review; it never writes `docs/targets.approved`. Agents never edit the registry or a `*Targets.lean` file
 (CONTRIBUTING §11). `TARGETS_REGISTRY` and `TARGETS_APPROVED` name other files (for tests). -/
 
 namespace TargetChecks
@@ -58,16 +69,37 @@ def sha256 (s : String) : IO String := do
   IO.FS.removeFile path
   return r
 
+/-- **The token that stands for every proof** in the closure walk and the serialisation (final
+audit, 2026-10-24). Two terms that differ only in proofs are definitionally equal (proof
+irrelevance), and the proposition a proof proves is fixed by its position in the rest of the term,
+so a hash that reads the token in place of each proof freezes the same meaning, and an edit of a
+proof (a `Fin` bound, the proof inside a `ℚ` literal, a renumbered `_proof_` auxiliary) leaves it
+unchanged. A constant used only inside proofs is outside the closure. Never used in a proof. -/
+axiom proofToken {p : Prop} : p
+
+/-- A term with every proof replaced by `proofToken` (a subterm whose type cannot be inferred is
+kept, and visited). -/
+def eraseProofs (e : Expr) : MetaM Expr :=
+  Meta.transform e (pre := fun s => do
+    let pf ← try isProof s catch _ => pure false
+    return if pf then .done (mkConst ``proofToken) else .continue)
+
 /-- The state of a canonical serialisation: each distinct subterm once, as a line naming its
 children by number, so that a term with sharing is serialised in linear size. Binder names and
-binder annotations are left out (alpha-equivalent terms serialise alike), as is metadata. -/
+binder annotations are left out (alpha-equivalent terms serialise alike), as is metadata. A
+constant is written by its name, or by its canonical name in `canon` (the hygienic names of a
+closure). -/
 structure Ser where
   ids : Std.HashMap Expr Nat := {}
   lines : Array String := #[]
+  canon : Std.HashMap Name String := {}
 
 /-- Append a line; its number. -/
 def emit (line : String) : StateM Ser Nat :=
   modifyGet fun s => (s.lines.size, { s with lines := s.lines.push line })
+
+/-- A constant's name as serialised. -/
+def nameStr (n : Name) : StateM Ser String := return ((← get).canon[n]?).getD n.toString
 
 /-- Serialise an expression whose equal subterms are shared; the number of its line. -/
 partial def serShared (e : Expr) : StateM Ser Nat := do
@@ -77,7 +109,7 @@ partial def serShared (e : Expr) : StateM Ser Nat := do
     | .fvar f => emit s!"f {f.name}"
     | .mvar m => emit s!"m {m.name}"
     | .sort u => emit s!"s {u}"
-    | .const n us => emit s!"c {n} {us}"
+    | .const n us => do emit s!"c {← nameStr n} {us}"
     | .app f a => do let f ← serShared f; let a ← serShared a; emit s!"a {f} {a}"
     | .lam _ t b _ => do let t ← serShared t; let b ← serShared b; emit s!"l {t} {b}"
     | .forallE _ t b _ => do let t ← serShared t; let b ← serShared b; emit s!"p {t} {b}"
@@ -86,7 +118,7 @@ partial def serShared (e : Expr) : StateM Ser Nat := do
     | .lit (.natVal n) => emit s!"n {n}"
     | .lit (.strVal s) => emit s!"t {s.quote}"
     | .mdata _ b => serShared b
-    | .proj s k b => do let b ← serShared b; emit s!"j {s} {k} {b}"
+    | .proj s k b => do let b ← serShared b; emit s!"j {← nameStr s} {k} {b}"
   modify fun s => { s with ids := s.ids.insert e i }
   return i
 
@@ -94,23 +126,34 @@ partial def serShared (e : Expr) : StateM Ser Nat := do
 first, so that the table's comparisons stop at the pointer. -/
 def serExpr (e : Expr) : StateM Ser Nat := serShared (ShareCommon.shareCommon' e)
 
+/-- A constant of a closure as it is hashed: its information, its type and the term its kind
+carries (a definition's or an opaque's value; a registered tree's normal form), proofs erased. -/
+structure Entry where
+  info : ConstantInfo
+  type : Expr
+  body : Option Expr := none
+  tree : Bool := false
+
 /-- Serialise one constant of a closure: its kind, name, universe parameters, type, and what
 else its kind carries (a registered tree: its normal form instead of its value). -/
-def serConst (c : Name) (info : ConstantInfo) (tree : Option Expr) : StateM Ser Unit := do
-  let ty ← serExpr info.type
-  let head := s!"{c} {info.levelParams} {ty} {info.isUnsafe} {info.isPartial}"
-  let line ← match tree, info with
-    | some nf, _ => do pure s!"# tree {head} {← serExpr nf}"
-    | none, .defnInfo d => do pure s!"# def {head} {← serExpr d.value}"
-    | none, .opaqueInfo d => do pure s!"# opaque {head} {← serExpr d.value}"
-    | none, .thmInfo _ => pure s!"# theorem {head}"
-    | none, .axiomInfo _ => pure s!"# axiom {head}"
-    | none, .quotInfo _ => pure s!"# quot {head}"
-    | none, .inductInfo d =>
-      pure s!"# inductive {head} {d.numParams} {d.numIndices} {d.all} {d.ctors} {d.isRec}"
-    | none, .ctorInfo d =>
-      pure s!"# ctor {head} {d.induct} {d.cidx} {d.numParams} {d.numFields}"
-    | none, .recInfo _ => pure s!"# rec {head}"
+def serEntry (c : Name) (x : Entry) : StateM Ser Unit := do
+  let ty ← serExpr x.type
+  let names (ns : List Name) : StateM Ser String := return s!"{← ns.mapM nameStr}"
+  let head := s!"{← nameStr c} {x.info.levelParams} {ty} {x.info.isUnsafe} {x.info.isPartial}"
+  let line ← match x.tree, x.info, x.body with
+    | true, _, some nf => do pure s!"# tree {head} {← serExpr nf}"
+    | _, .defnInfo _, some v => do pure s!"# def {head} {← serExpr v}"
+    | _, .opaqueInfo _, some v => do pure s!"# opaque {head} {← serExpr v}"
+    | _, .thmInfo _, _ => pure s!"# theorem {head}"
+    | _, .axiomInfo _, _ => pure s!"# axiom {head}"
+    | _, .quotInfo _, _ => pure s!"# quot {head}"
+    | _, .inductInfo d, _ => do
+      pure s!"# inductive {head} {d.numParams} {d.numIndices} {← names d.all} {""
+        }{← names d.ctors} {d.isRec}"
+    | _, .ctorInfo d, _ => do
+      pure s!"# ctor {head} {← nameStr d.induct} {d.cidx} {d.numParams} {d.numFields}"
+    | _, .recInfo _, _ => pure s!"# rec {head}"
+    | _, _, _ => pure s!"# other {head}"
   discard <| emit line
 
 /-! ## Library constants and the closure walk -/
@@ -124,48 +167,72 @@ namespace), or it is declared in the current file (the fixtures). -/
 def isLibConst (env : Environment) (c : Name) : Bool :=
   match moduleOf env c with
   | some m => (`NLAlib).isPrefixOf m
-  | none => (env.find? c).isSome
+  | none => (env.find? c).isSome && c != ``proofToken
 
-/-- The closure of a target: every library constant its statement reaches, sorted by name, and
-the names reached that the environment does not know (an error). The walk follows the type of
-every constant, the value of definitions and opaques (an `irreducible_def` is an opaque whose
-type names the definition holding the value), the mutual block and the constructors of inductive
-types. A registered tree (`trees`) is a leaf: the walk follows its type and its normal form, not
-its definition. `override` replaces a constant's information, for the fixtures. -/
-def closure (env : Environment) (override : Name → Option ConstantInfo)
-    (trees : Name → Option Expr) (root : Name) : Array Name × Array Name := Id.run do
+/-- The closure of a target: every library constant its statement reaches, in the hash's order,
+the names reached that the environment does not know (an error), each constant as it is hashed,
+and the canonical names of the hygienic ones. -/
+structure Closure where
+  names : Array Name := #[]
+  missing : Array Name := #[]
+  entries : Std.HashMap Name Entry := {}
+  canon : Std.HashMap Name String := {}
+
+/-- **The closure walk.** It follows the type of every constant, the value of definitions and
+opaques (an `irreducible_def` is an opaque whose type names the definition holding the value), the
+mutual block and the constructors of inductive types, each with its proofs erased
+(`eraseProofs`), so that a constant used only in proofs is not reached. A registered tree
+(`trees`) is a leaf: the walk follows its type and its normal form, not its definition.
+`override` replaces a constant's information, for the fixtures.
+
+A hygienic name (with macro scopes, `NLAlib.definition._@.<module>.<hash>._hygCtx._hyg.2` of an
+`irreducible_def`) is written as its name without macro scopes and its number among the hygienic
+names in the order the walk meets them (final audit, 2026-10-24). The walk's order depends on the
+terms only, so the renaming is a bijection of the closure determined by its structure: the hash is
+that of the closure up to a renaming of its hygienic constants, which changes no meaning, and an
+unrelated edit of a file no longer changes it. The constants are hashed in the order of their
+serialised names. -/
+def closure (override : Name → Option ConstantInfo) (trees : Name → Option Expr) (root : Name) :
+    MetaM Closure := do
+  let env ← getEnv
   let mut seen : NameSet := {}
   let mut out : Array Name := #[]
   let mut missing : Array Name := #[]
+  let mut entries : Std.HashMap Name Entry := {}
   let mut todo : List Name := [root]
   while !todo.isEmpty do
     let c := todo.head!
     todo := todo.tail!
-    if seen.contains c then continue
+    if seen.contains c || c == ``proofToken then continue
     seen := seen.insert c
     let some info := (override c).orElse fun _ => env.find? c
       | missing := missing.push c; continue
     unless isLibConst env c do continue
     out := out.push c
-    let mut next := info.type.getUsedConstants.toList
-    if let some nf := trees c then
-      next := next ++ nf.getUsedConstants.toList
-    else match info with
-      | .defnInfo d => next := next ++ d.value.getUsedConstants.toList
-      | .opaqueInfo d => next := next ++ d.value.getUsedConstants.toList
-      | .inductInfo d => next := next ++ d.all ++ d.ctors
-      | _ => pure ()
+    let type ← eraseProofs info.type
+    let x : Entry ← match trees c, info with
+      | some nf, _ => pure { info, type, body := some (← eraseProofs nf), tree := true }
+      | none, .defnInfo d => pure { info, type, body := some (← eraseProofs d.value) }
+      | none, .opaqueInfo d => pure { info, type, body := some (← eraseProofs d.value) }
+      | none, _ => pure { info, type }
+    entries := entries.insert c x
+    let mut next := type.getUsedConstants.toList ++
+      ((x.body.map (·.getUsedConstants.toList)).getD [])
+    if let (.inductInfo d, false) := (info, x.tree) then next := next ++ d.all ++ d.ctors
     todo := next ++ todo
-  return (out.qsort (toString · < toString ·), missing)
+  let mut canon : Std.HashMap Name String := {}
+  for c in out do
+    if c.hasMacroScopes then canon := canon.insert c s!"{c.eraseMacroScopes}._hyg#{canon.size}"
+  let key (c : Name) : String := (canon[c]?).getD c.toString
+  return { names := out.qsort (key · < key ·), missing, entries, canon }
 
-/-- The closure hash: SHA-256 of the serialisation of the closure's constants, in name order. -/
-def closureHash (env : Environment) (override : Name → Option ConstantInfo)
-    (trees : Name → Option Expr) (names : Array Name) : IO String := do
-  let ser : StateM Ser Unit := names.forM fun c =>
-    match (override c).orElse fun _ => env.find? c with
-    | some info => serConst c info (trees c)
+/-- The closure hash: SHA-256 of the serialisation of the closure's constants, in order. -/
+def closureHash (cl : Closure) : IO String := do
+  let ser : StateM Ser Unit := cl.names.forM fun c =>
+    match cl.entries[c]? with
+    | some x => serEntry c x
     | none => pure ()
-  sha256 ("\n".intercalate (ser.run {}).2.lines.toList)
+  sha256 ("\n".intercalate (ser.run { canon := cl.canon }).2.lines.toList)
 
 /-- The library definitions and opaques a term contains outside its types and proofs. -/
 partial def valueDefs (e : Expr) : MetaM (Array Name) := do
@@ -188,7 +255,8 @@ partial def valueDefs (e : Expr) : MetaM (Array Name) := do
 
 /-- **The constructor normal form of a registered tree**: its value fully reduced (types and
 proofs kept as they are), and the library definitions it still contains outside types and proofs
-(none, for a tree built from constructors). -/
+(none, for a tree built from constructors). The kernel checks that the tree is its normal form
+(`kernelTreeEq`). -/
 def treeNF (c : Name) : MetaM (Expr × Array Name) := do
   let some (.defnInfo d) := (← getEnv).find? c | throwError "{c} is not a definition"
   let v ← Meta.reduce d.value (explicitOnly := false) (skipTypes := true) (skipProofs := true)
@@ -196,10 +264,45 @@ def treeNF (c : Name) : MetaM (Expr × Array Name) := do
   let defs ← lambdaTelescope v fun _ body => valueDefs body
   return (v, defs)
 
-/-- The hash of a registered tree: its type and its normal form. -/
+/-- **The kernel's check of a tree's normal form** (final audit, 2026-10-24): the declaration
+`theorem _ : c = nf := Eq.refl _`, sent to the kernel (`Environment.addDeclCore`, not added to
+the environment). So the link between the definition a target names and the normal form the hash
+and the printed form read is the kernel's, not `Meta.reduce`'s. `none` if the kernel accepts it,
+else its error. -/
+def kernelTreeEq (c : Name) (nf : Expr) : MetaM (Option String) := do
+  let env ← getEnv
+  let some info := env.find? c | return some s!"{c} is unknown"
+  let lhs := mkConst c (info.levelParams.map mkLevelParam)
+  let u ← getLevel info.type
+  let decl := Declaration.thmDecl {
+    name := `TargetChecks.kernelTreeEq ++ c, levelParams := info.levelParams
+    type := mkApp3 (mkConst ``Eq [u]) info.type lhs nf
+    value := mkApp2 (mkConst ``Eq.refl [u]) info.type lhs }
+  match env.addDeclCore 0 0 decl none with
+  | .ok _ => return none
+  | .error ex => return some (← (ex.toMessageData {}).toString)
+
+/-- The hash of a registered tree: its type and its normal form, proofs erased. -/
 def treeHash (c : Name) (nf : Expr) : MetaM String := do
   let some info := (← getEnv).find? c | throwError "{c} is unknown"
-  sha256 ("\n".intercalate ((serConst c info (some nf)).run {}).2.lines.toList)
+  let type ← eraseProofs info.type
+  let body ← eraseProofs nf
+  let x : Entry := { info, type, body := some body, tree := true }
+  sha256 ("\n".intercalate ((serEntry c x).run {}).2.lines.toList)
+
+/-- The inputs of a tree's hash, printed for review: its type and its normal form, each proof
+printed as `proofToken`, with `NLAlib`, `NLAlib.Computation` and `TargetChecks` open. -/
+def printTree (c : Name) (nf : Expr) : MetaM String := do
+  let some info := (← getEnv).find? c | throwError "{c} is unknown"
+  let opens := [`NLAlib, `NLAlib.Computation, `TargetChecks].map (OpenDecl.simple · [])
+  let pp (e : Expr) : MetaM Std.Format := do
+    let e ← eraseProofs e
+    withTheReader Core.Context (fun ctx => { ctx with openDecls := opens ++ ctx.openDecls }) do
+      ppExpr e
+  let t ← pp info.type
+  let v ← pp nf
+  let f := f!"{c} :{Std.Format.nest 2 (Std.Format.line ++ t)} :={Std.Format.line}{v}"
+  return "\n".intercalate ((f.pretty 100).splitOn "\n" |>.map fun l => l.trimAsciiEnd.toString)
 
 /-! ## The lint -/
 
@@ -228,8 +331,11 @@ def runConsts : List Name :=
    ``NLAlib.Computation.ProgFamily.inst, ``NLAlib.Computation.ProgFamily.MatrixFree,
    ``NLAlib.Computation.ProgFamily.StoredEntries, ``NLAlib.Computation.ProgFamily.MatrixFreeProb]
 
-/-- Whether a constant reaches a run or a budget through the library constants it unfolds to
-(memoised; Mathlib constants reach none). -/
+/-- Whether a constant reaches a run or a budget through the library constants it unfolds to:
+the type of every constant, the value of definitions and opaques, and the mutual block and the
+constructors of inductive types, so that a statement wrapped in a structure, a class or an
+inductive `Prop` is followed into its fields (final audit, 2026-10-24). Memoised; Mathlib
+constants reach none. -/
 partial def reachesRun (env : Environment) (c : Name) : StateM (Std.HashMap Name Bool) Bool := do
   if runConsts.contains c then return true
   if let some b := (← get)[c]? then return b
@@ -240,6 +346,7 @@ partial def reachesRun (env : Environment) (c : Name) : StateM (Std.HashMap Name
   match info with
   | .defnInfo d => next := next ++ d.value.getUsedConstants
   | .opaqueInfo d => next := next ++ d.value.getUsedConstants
+  | .inductInfo d => next := next ++ d.all.toArray ++ d.ctors.toArray
   | _ => pure ()
   let mut r := false
   for d in next do
@@ -247,19 +354,26 @@ partial def reachesRun (env : Environment) (c : Name) : StateM (Std.HashMap Name
   modify (·.insert c r)
   return r
 
-/-- Lint item 2: the theorems in `scope` outside `NLAlib/Computation` with a `Result:` id whose
-statement reaches a run or a budget and that prove no registered target. -/
+/-- Lint item 2: the constants in `scope` outside `NLAlib/Computation` with a `Result:` id that
+make a claim about a program's runs or budget and are neither a registered target nor its proof
+(`exempt`). A claim is a constant whose type is a proposition (a theorem, an instance of a `Prop`
+class, a definition or an axiom of a proposition), when its type reaches a run or a budget, or a
+definition of type `Prop` (a target of the prover's), when its value does (final audit,
+2026-10-24). -/
 def unregisteredResults (env : Environment) (scope : Array (Name × ConstantInfo))
-    (proofs : NameSet) : IO (Array Name) := do
+    (exempt : NameSet) : MetaM (Array Name) := do
   let mut memo : Std.HashMap Name Bool := {}
   let mut out := #[]
   for (c, info) in scope do
-    let .thmInfo _ := info | continue
-    if proofs.contains c then continue
+    if exempt.contains c then continue
     if (moduleOf env c).any (`NLAlib.Computation).isPrefixOf then continue
     let some doc ← findDocString? env c | continue
     unless (doc.splitOn "Result:").length > 1 do continue
-    let (r, m) := (info.type.getUsedConstants.anyM (reachesRun env)).run memo
+    let claim ← try isProp info.type catch _ => pure false
+    let propDef := info matches .defnInfo _ && info.type == .sort 0
+    unless claim || propDef do continue
+    let consts := if propDef then #[c] else info.type.getUsedConstants
+    let (r, m) := (consts.anyM (reachesRun env)).run memo
     memo := m
     if r then out := out.push c
   return out
@@ -410,8 +524,18 @@ def Registry.render (reg : Registry) : String :=
 
 /-! ## Checking the registry -/
 
-/-- The toolchain and the Mathlib revision of the build. -/
-def buildPins : IO (String × String) := do
+/-- The pins of the build (item 4): the toolchain, the Mathlib revision of `lake-manifest.json`,
+and the SHA-256 of `lake-manifest.json` and of `lakefile.toml` (final audit, 2026-10-24), so that
+a change of any dependency, of the Lake configuration or of the options every file is built with
+needs the maintainer's approval. -/
+structure Pins where
+  toolchain : String
+  mathlib : String
+  manifest : String
+  lakefile : String
+
+/-- The pins of the build. -/
+def buildPins : IO Pins := do
   let toolchain := "leanprover/lean4:v" ++ Lean.versionString
   let file := (← IO.FS.readFile "lean-toolchain").trimAscii.toString
   if file != toolchain then
@@ -420,25 +544,58 @@ def buildPins : IO (String × String) := do
   let pkgs ← IO.ofExcept <| manifest.getObjValAs? (Array Json) "packages"
   let some m := pkgs.find? fun p => (p.getObjValAs? String "name").toOption == some "mathlib"
     | throw <| IO.userError "lake-manifest.json has no mathlib"
-  return (toolchain, ← IO.ofExcept (m.getObjValAs? String "rev"))
+  return { toolchain, mathlib := ← IO.ofExcept (m.getObjValAs? String "rev"),
+           manifest := ← sha256File "lake-manifest.json", lakefile := ← sha256File "lakefile.toml" }
+
+/-- The registry keys of the pins, with their values in `p`. -/
+def Pins.fields (p : Pins) : List (String × String × String) :=
+  [("toolchain", "toolchain", p.toolchain), ("mathlib", "Mathlib", p.mathlib),
+   ("lake_manifest_sha256", "lake-manifest.json (SHA-256)", p.manifest),
+   ("lakefile_sha256", "lakefile.toml (SHA-256)", p.lakefile)]
 
 /-- Item 4: the registry's pins against the build's. -/
-def pinErrors (reg : Registry) (toolchain mathlib : String) : Array String :=
-  (if getStr reg.top "toolchain" == toolchain then #[] else
-    #[s!"the registry pins toolchain {getStr reg.top "toolchain"}, the build is {toolchain}"]) ++
-  (if getStr reg.top "mathlib" == mathlib then #[] else
-    #[s!"the registry pins Mathlib {getStr reg.top "mathlib"}, lake-manifest.json has {mathlib}"])
+def pinErrors (reg : Registry) (p : Pins) : Array String :=
+  p.fields.toArray.filterMap fun (k, what, v) =>
+    if getStr reg.top k == v then none
+    else some s!"the registry pins {what} {getStr reg.top k}, the build has {v}"
+
+/-- The leading comment of the registry, written by `--update`. -/
+def registryHeader : Array String := #[
+  "# The registry of target statements (docs/design/Computation.md, \"First-order programs and target",
+  "# statements\", F1 and F12, and \"Final audits\"). A published cost result is a theorem whose type is",
+  "# one of these targets; scripts/Targets.lean (rule E3) checks that each has exactly one proof, that",
+  "# the closure hash of each (every library constant its statement reaches, proofs erased, hygienic",
+  "# names numbered, the registered trees as leaves hashed by their constructor normal forms) and its",
+  "# printed statement match this file, that each tree is its normal form (checked by the kernel) and",
+  "# its printed normal form matches this file, that the pins (the toolchain, the Mathlib revision,",
+  "# the SHA-256 of lake-manifest.json and of lakefile.toml) are the build's, and that",
+  "# docs/targets.approved holds the SHA-256 of this file.",
+  "#",
+  "# Changes need the maintainer's approval (Q3): agents never edit this file or a *Targets.lean",
+  "# file. After an approved change of a target, `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean`",
+  "# rewrites the hashes, the printed statements and normal forms, the pins and this comment; the",
+  "# maintainer reviews the diff and approves it with `sha256sum docs/targets.toml >",
+  "# docs/targets.approved`.",
+  "#",
+  "# [[tree]]    a registered tree: name, hash (of its type and constructor normal form, proofs",
+  "#             erased), normal_form (the hash's input, printed: proofs as TargetChecks.proofToken)",
+  "# [[target]]  name, file (its *Targets.lean file), trees (the registered trees it names),",
+  "#             precomputed (declared inputs computed from the sizes, Q5), reviewed (the date of",
+  "#             the maintainer's review), hash (the closure hash), statement (the target unfolded",
+  "#             one level, printed)"]
 
 /-- Check the registry against the environment. `proofScope`: the constants that may prove a
 target; `resultScope`: the theorems lint item 2 reads. Returns the violations and the registry
 with its hashes, printed statements and pins recomputed (written by `--update`). -/
 def checkRegistry (reg : Registry) (proofScope resultScope : Array (Name × ConstantInfo))
-    (pins : String × String) (override : Name → Option ConstantInfo := fun _ => none) :
+    (pins : Pins) (override : Name → Option ConstantInfo := fun _ => none) :
     MetaM (Array String × Registry) := do
   let env ← getEnv
-  let mut errs : Array String := (pinErrors reg pins.1 pins.2).map ("E3 " ++ ·)
+  let mut errs : Array String := (pinErrors reg pins).map ("E3 " ++ ·)
   let mut out := { reg with
-    top := setField (setField reg.top "toolchain" (.str pins.1)) "mathlib" (.str pins.2) }
+    header := registryHeader
+    top := pins.fields.foldl (fun fs (x : String × String × String) =>
+      setField fs x.1 (.str x.2.2)) reg.top }
   -- the registered trees, by their normal forms
   let mut nfs : Std.HashMap Name Expr := {}
   let mut tables : Array Table := #[]
@@ -452,12 +609,20 @@ def checkRegistry (reg : Registry) (proofScope resultScope : Array (Name × Cons
       unless defs.isEmpty do
         errs := errs.push s!"E3 registered tree {name}: its normal form still contains the {""
           }library definitions {defs}; a registered tree is built from constructors"
+      if let some e ← kernelTreeEq name nf then
+        errs := errs.push s!"E3 registered tree {name}: the kernel does not accept that it is {""
+          }its normal form: {e}"
       nfs := nfs.insert name nf
       let h ← treeHash name nf
       if h != getStr tb.fields "hash" then
         errs := errs.push s!"E3 registered tree {name}: normal-form hash {h}, the registry has {""
           }{getStr tb.fields "hash"}; a change of a tree needs the maintainer's approval"
-      tables := tables.push { tb with fields := setField tb.fields "hash" (.str h) }
+      let pnf ← printTree name nf
+      if pnf != getStr tb.fields "normal_form" then
+        errs := errs.push s!"E3 registered tree {name}: its printed normal form differs from {""
+          }the registry's"
+      let fs := setField (setField tb.fields "hash" (.str h)) "normal_form" (.multi pnf)
+      tables := tables.push { tb with fields := fs }
     else tables := tables.push tb
   let mut proofs : NameSet := {}
   let mut used : NameSet := {}
@@ -492,12 +657,12 @@ def checkRegistry (reg : Registry) (proofScope resultScope : Array (Name × Cons
       unless (info.value?.map (·.getUsedConstants.contains t.toName)).getD false do
         errs := errs.push s!"E3 target {tgt} lists the tree {t}, which its statement does not name"
     -- item 3: the closure hash and the printed statement
-    let (names, missing) := closure env override (nfs.get? ·) tgt
-    unless missing.isEmpty do
-      errs := errs.push s!"E3 target {tgt}: its closure reaches the unknown constants {missing}"
-    let h ← closureHash env override (nfs.get? ·) names
+    let cl ← closure override (nfs.get? ·) tgt
+    unless cl.missing.isEmpty do
+      errs := errs.push s!"E3 target {tgt}: its closure reaches the unknown constants {cl.missing}"
+    let h ← closureHash cl
     if h != getStr tb.fields "hash" then
-      errs := errs.push s!"E3 target {tgt}: closure hash {h} ({names.size} constants), the {""
+      errs := errs.push s!"E3 target {tgt}: closure hash {h} ({cl.names.size} constants), the {""
         }registry has {getStr tb.fields "hash"}; the target or a definition it unfolds to changed"
     let stmt ← printStatement tgt
     if stmt != getStr tb.fields "statement" then
@@ -523,7 +688,9 @@ def checkRegistry (reg : Registry) (proofScope resultScope : Array (Name × Cons
     unless tb.kind == "tree" || tb.kind == "target" do
       errs := errs.push s!"E3 the registry has a table [[{tb.kind}]]"
   -- item 2: results about runs prove registered targets
-  for c in ← unregisteredResults env resultScope proofs do
+  let targets := tables'.filterMap fun tb =>
+    if tb.kind == "target" then some (getStr tb.fields "name").toName else none
+  for c in ← unregisteredResults env resultScope (targets.foldl NameSet.insert proofs) do
     errs := errs.push s!"E3 {c}: a `Result:` theorem about a program's runs or budget is the {""
       }proof of a registered target (`theorem t : T`, T in docs/targets.toml); remove its id or {""
       }state it as a target, with the maintainer's approval"
@@ -557,7 +724,7 @@ run_cmd do
     logInfo m!"{path} rewritten; the maintainer reviews the diff and approves with {""
       }`sha256sum {path} > {approved}`"
   let errs := if update then errs.filter fun e =>
-      !(e.splitOn "hash").length > 1 && !(e.splitOn "printed statement").length > 1 &&
+      !(e.splitOn "hash").length > 1 && !(e.splitOn "its printed").length > 1 &&
         !(e.splitOn "the registry pins").length > 1
     else errs
   for e in errs do logError e
@@ -673,6 +840,52 @@ theorem fixUnregistered : FixUnregistered := fixHutchpp
 /-- A ForMathlib definition (in a Mathlib namespace) under a fixture. -/
 noncomputable def usesCompound (A : Matrix (Fin 2) (Fin 2) ℝ) := Matrix.compound 1 A
 
+/-- Final audit, 2026-10-24: a result about runs hidden in a structure. -/
+structure Wrapped : Prop where
+  h : FixHutchpp
+
+/-- Through a structure.
+
+Result: fixture-wrapped -/
+theorem wrapped : Wrapped := ⟨fixHutchpp⟩
+
+/-- Through `Nonempty` of a structure.
+
+Result: fixture-nonempty -/
+theorem viaNonempty : Nonempty Wrapped := ⟨wrapped⟩
+
+/-- An inductive `Prop` whose constructor carries a run. -/
+inductive IndRun : Prop where
+  | mk : FixHutchpp → IndRun
+
+/-- Through an inductive `Prop`.
+
+Result: fixture-inductive -/
+theorem indRun : IndRun := ⟨fixHutchpp⟩
+
+/-- A result about runs hidden in a class. -/
+class RunsFast (prog : Prog Unit Unit 1 1) : Prop where
+  h : MatrixFree (𝕜 := ℝ) () prog (fun _ _ => True) (fun _ _ => Unit)
+    (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => 0) (fun _ _ _ => 1)
+    (fun _ _ _ _ _ _ => True)
+
+/-- Through a class instance.
+
+Result: fixture-instance -/
+instance runsFastSkip : RunsFast (.skip : Prog Unit Unit 1 1) := ⟨by
+  intro N n _ x A ξ
+  refine ⟨_, rfl, le_rfl, fun _ => ?_, trivial⟩
+  simp [inputState, exactInterp]⟩
+
+/-- A target of the prover's with a result id: a definition of type `Prop` that unfolds to a
+model.
+
+Result: fixture-prop-def -/
+def FixPropDef : Prop := FixHutchpp
+
+/-- A definition with a proof inside (item 3: an edit of the proof leaves the hash). -/
+def finOne : Fin 2 := ⟨1, by decide⟩
+
 end TargetFixtures
 
 open TargetChecks in
@@ -688,30 +901,41 @@ run_cmd do
   logInfo "item 1: axHutchpp (an axiom), vacuousHutchpp, outerHutchpp rejected"
   -- item 2
   let here := env.constants.map₂.toArray
-  let flagged ← unregisteredResults env here (NameSet.empty.insert ``TargetFixtures.fixHutchpp)
-  for c in [``TargetFixtures.matrixFree_sizeTraceProg, ``TargetFixtures.exec_copyTrace,
-      ``TargetFixtures.fixUnregistered] do
+  let flagged ← liftTermElabM <|
+    unregisteredResults env here (NameSet.empty.insert ``TargetFixtures.fixHutchpp)
+  let expected := [``TargetFixtures.matrixFree_sizeTraceProg, ``TargetFixtures.exec_copyTrace,
+      ``TargetFixtures.fixUnregistered, ``TargetFixtures.wrapped, ``TargetFixtures.viaNonempty,
+      ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef]
+  for c in expected do
     unless flagged.contains c do fail m!"{c} is not flagged"
-  if flagged.size != 3 then fail m!"item 2 flags {flagged}"
+  if flagged.size != expected.length then fail m!"item 2 flags {flagged}"
   logInfo m!"item 2: {flagged} flagged"
-  -- item 3: the registered tree is a leaf; edits under the closure change the hash
+  -- item 3: the registered tree is a leaf, and the kernel checks that it is its normal form
   let (nf, defs) ← liftTermElabM <| treeNF ``TargetFixtures.hppC
   unless defs.isEmpty do fail m!"the tree's normal form contains {defs}"
+  if let some e ← liftTermElabM (kernelTreeEq ``TargetFixtures.hppC nf) then
+    fail m!"the kernel rejects the tree's normal form: {e}"
+  let wrong ← liftTermElabM <| lambdaTelescope nf fun xs body => do
+    let ty ← whnf (← inferType body)
+    let skip ← mkAppOptM ``NLAlib.Computation.FStmt.skip (ty.getAppArgs.map some)
+    mkLambdaFVars xs (← mkAppM ``NLAlib.Computation.FStmt.seq #[skip, body])
+  if (← liftTermElabM (kernelTreeEq ``TargetFixtures.hppC wrong)).isNone then
+    fail m!"the kernel accepts a term that is not the tree's normal form"
   let trees := fun n => if n == ``TargetFixtures.hppC then some nf else none
-  let (cl, _) := closure env (fun _ => none) trees F
-  if cl.contains ``NLAlib.hutchppProg || cl.contains ``NLAlib.Computation.Stmt.compile then
-    fail m!"the builder or the compiler is in the closure of a target with its tree as a leaf"
-  let h₀ ← closureHash env (fun _ => none) trees cl
-  unless h₀ == (← closureHash env (fun _ => none) trees cl) do fail m!"the hash is not stable"
+  let cl ← liftTermElabM <| closure (fun _ => none) trees F
+  if cl.names.contains ``NLAlib.hutchppProg || cl.names.contains ``NLAlib.Computation.Stmt.compile
+  then fail m!"the builder or the compiler is in the closure of a target with its tree as a leaf"
+  let h₀ ← closureHash cl
+  unless h₀ == (← closureHash (← liftTermElabM <| closure (fun _ => none) trees F)) do
+    fail m!"the hash is not stable"
   let edit (root c : Name) (f : Expr → Expr) : CommandElabM (Bool × String) := do
     let some (.defnInfo d) := env.find? c | throwError "{c} is not a definition"
     let o := fun n => if n == c then some (ConstantInfo.defnInfo { d with value := f d.value })
       else none
-    let (cl', _) := closure env (fun _ => none) trees root
-    let (cl₁, _) := closure env o trees root
-    return (cl'.contains c,
-      if (← closureHash env (fun _ => none) trees cl') == (← closureHash env o trees cl₁) then
-        "unchanged" else "changed")
+    let cl' ← liftTermElabM <| closure (fun _ => none) trees root
+    let cl₁ ← liftTermElabM <| closure o trees root
+    return (cl'.names.contains c,
+      if (← closureHash cl') == (← closureHash cl₁) then "unchanged" else "changed")
   -- the count
   let r ← edit F ``NLAlib.hutchppCount fun v => .lam `x (.const ``Nat []) v .default
   unless r == (true, "changed") do fail m!"an edit of hutchppCount: {r}"
@@ -729,14 +953,33 @@ run_cmd do
   let r ← edit ``TargetFixtures.usesCompound ``Matrix.compound
     fun v => .lam `k (.const ``Nat []) v .default
   unless r == (true, "changed") do fail m!"an edit of Matrix.compound: {r}"
-  logInfo m!"item 3: {cl.size} constants, builder outside; edits of hutchppCount, of {u} {""
-    }(under hansonWrightConstant) and of Matrix.compound (ForMathlib) change the hash"
-  -- item 4: a toolchain mismatch
-  let reg : Registry := { top := #[("toolchain", .str "leanprover/lean4:v4.0.0"),
-    ("mathlib", .str "0df444a")] }
-  if (pinErrors reg ("leanprover/lean4:v" ++ Lean.versionString) "0df444a").size != 1 then
+  -- an edit of a proof leaves the hash (proofs are erased)
+  let some (.defnInfo dOne) := env.find? ``TargetFixtures.finOne | throwError "no finOne"
+  let v₂ ← liftTermElabM do instantiateMVars (← Term.elabTerm (← `(⟨1, Nat.one_lt_two⟩)) dOne.type)
+  if v₂ == dOne.value then fail m!"the proof edit of finOne is not an edit"
+  let r ← edit ``TargetFixtures.finOne ``TargetFixtures.finOne fun _ => v₂
+  unless r == (true, "unchanged") do fail m!"an edit of the proof in finOne: {r}"
+  -- the hygienic names of a closure are numbered, one canonical name each
+  let clTail ← liftTermElabM <| closure (fun _ => none) trees ``TargetFixtures.FixHutchppTail
+  let hyg := clTail.names.filter (·.hasMacroScopes)
+  let canon := hyg.filterMap (clTail.canon[·]?)
+  if hyg.isEmpty || canon.size != hyg.size || (canon.toList.eraseDups.length != canon.size) ||
+      canon.any fun c => (c.splitOn "_hygCtx").length > 1 then
+    fail m!"the hygienic names of the tail's closure are not renamed one to one: {hyg}"
+  logInfo m!"item 3: {cl.names.size} constants, builder outside; the kernel checks the tree's {""
+    }normal form and rejects another; edits of hutchppCount, of {u} (under {""
+    }hansonWrightConstant) and of Matrix.compound (ForMathlib) change the hash, an edit of a {""
+    }proof does not; {hyg.size} hygienic names renamed one to one"
+  -- item 4: a toolchain mismatch, a manifest mismatch
+  let pins ← buildPins
+  let reg : Registry := { top := (pins.fields.map fun (k, _, v) => (k, Val.str v)).toArray }
+  unless (pinErrors reg pins).isEmpty do fail m!"the build's own pins are rejected"
+  if (pinErrors reg { pins with toolchain := "leanprover/lean4:v4.0.0" }).size != 1 then
     fail m!"a toolchain mismatch is not detected"
-  logInfo "item 4: a toolchain mismatch detected"
+  if (pinErrors reg { pins with manifest := "0" }).size != 1 ||
+      (pinErrors reg { pins with lakefile := "0" }).size != 1 then
+    fail m!"a lake-manifest.json or lakefile.toml mismatch is not detected"
+  logInfo "item 4: a toolchain, a lake-manifest.json and a lakefile.toml mismatch detected"
   -- item 5 (Q5)
   unless (← liftTermElabM (precomputedInputs ``TargetFixtures.FixPrecomputed)) == some true do
     fail m!"FixPrecomputed: precomputed input not detected"
@@ -749,7 +992,6 @@ run_cmd do
     file = \"\"\ntrees = [\"TargetFixtures.hppC\"]\nprecomputed = []\nreviewed = \"2026-10-23\"\n\
     hash = \"\"\nstatement = '''\n'''\n"
   let .ok reg := parseRegistry text | throwError "the fixture registry does not parse"
-  let pins ← buildPins
   let (_, reg₁) ← liftTermElabM <| checkRegistry reg here here pins
   let .ok reg₂ := parseRegistry reg₁.render | throwError "the written registry does not parse"
   let (errs, _) ← liftTermElabM <| checkRegistry reg₂ here here pins

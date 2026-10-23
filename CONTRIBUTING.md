@@ -724,8 +724,10 @@ we will be allowing stuff to prove autonomously"; first-order programs and targe
   registered target; a lemma about a program family is proof infrastructure and has no result id
   [E3].
 - The registry records each target's closure hash (every library constant its statement reaches,
-  the registered trees as leaves hashed by their constructor normal forms), its printed statement,
-  the toolchain and the Mathlib revision; `docs/targets.approved` holds the registry's SHA-256. A
+  proofs erased and hygienic names numbered, the registered trees as leaves hashed by their
+  constructor normal forms, which the kernel checks are the trees), its printed statement, each
+  tree's printed normal form, the toolchain, the Mathlib revision and the SHA-256 of
+  `lake-manifest.json` and `lakefile.toml`; `docs/targets.approved` holds the registry's SHA-256. A
   change of a target, of a definition it unfolds to, or of a tree changes a hash and needs the
   maintainer's approval (Q3): he reviews the diff that `TARGETS_UPDATE=1 lake env lean
   scripts/Targets.lean` writes and approves it with `sha256sum docs/targets.toml >
@@ -757,9 +759,12 @@ A builder need not be generic in its variable sorts (the old E1, retired 2026-10
 is about the compiled tree, and a handle forged from a number does not compile. E3 is checked by
 `scripts/Targets.lean`, whose fixtures (an axiom of a target's type, a vacuous outer hypothesis,
 an outer parameter, a postcondition of the prover's, a claim phrased through `exec`, a target of
-the prover's; edits of a count, of the value under an `irreducible_def` and of a ForMathlib
-definition, each changing the hash; a toolchain mismatch; a declared input computed from the
-sizes) must be rejected or detected. E2, E4 and E9 are checked by `scripts/Programs.lean`, with
+the prover's, a claim wrapped in a structure, in `Nonempty` of one, in an inductive `Prop` or in a
+class instance, a definition of type `Prop` with a result id; a term that is not a tree's normal
+form, which the kernel rejects; edits of a count, of the value under an `irreducible_def` and of a
+ForMathlib definition, each changing the hash, and of a proof, which does not; a toolchain, a
+manifest and a Lake configuration mismatch; a declared input computed from the sizes) must be
+rejected or detected. E2, E4 and E9 are checked by `scripts/Programs.lean`, with
 fixtures (a forged handle that does not compile, a noncomputable and a `partial` program, a
 program with no registered tree, a callee with an open `alloc`).
 `scripts/AccessModelFixtures.lean` proves that the model forms of the audit's cheating programs
