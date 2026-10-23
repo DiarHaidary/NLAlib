@@ -1233,8 +1233,8 @@ theorem matrixFreeHutchpp : MatrixFreeHutchpp := fun _ _ _ p o d _ _ =>
 type of tags with decidable equality, every type of oracle names, every tag $p$ and oracle name
 $o$ and every rank $r$, let the tape have the law of the tape (`tapeLaw`: the tape of the
 Gaussian distribution an i.i.d. sequence of standard Gaussians, independent of the others),
-$k \ge 1$, $\ell \ge 1$. If $\delta > 0$ and
-<!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
+$k \ge 1$, $\ell \ge 1$. If $\delta > 0$
+and <!-- value subgaussianEmbeddingDim {\cdot 1} r (1/2) (\delta/2) -->
 $k \ge 25 \cdot 1^2 (r \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$, then for every real
 $N \times N$ matrix $\mathbf{A}$ and every $\tau \ge 0$, with
