@@ -1,11 +1,21 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import NLAlib.Computation.BLAS
+public import NLAlib.Computation.Contract
+public import NLAlib.Computation.Dense
+public import NLAlib.Computation.Exact
+public import NLAlib.Computation.Exec
+public import NLAlib.Computation.RunsWithin
+public import NLAlib.Computation.Sparse
+public import NLAlib.Computation.Subst
+public import NLAlib.Computation.Syntax
 public import NLAlib.Estimation.Spectral.RandomStart
 public import NLAlib.Estimation.Spectral.SpectralDensity
 public import NLAlib.Estimation.Spectral.SpectralDensitySphere
 public import NLAlib.Estimation.Spectral.SpectralDensitySubgaussian
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.HutchPlusPlus
+public import NLAlib.Estimation.Trace.HutchPlusPlusProgram
 public import NLAlib.Estimation.Trace.HutchPlusPlusTail
 public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
@@ -45,6 +55,7 @@ public import NLAlib.ForMathlib.Data.Matrix.Block
 public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.ForMathlib.Data.NNReal.Basic
+public import NLAlib.ForMathlib.Data.Nat.Init
 public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
 public import NLAlib.ForMathlib.InformationTheory.TotalVariation
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
@@ -190,6 +201,7 @@ public import NLAlib.Matrix.Factorizations.GaussState
 public import NLAlib.Matrix.Factorizations.Givens
 public import NLAlib.Matrix.Factorizations.GivensHessenberg
 public import NLAlib.Matrix.Factorizations.GramSchmidt
+public import NLAlib.Matrix.Factorizations.GramSchmidtProgram
 public import NLAlib.Matrix.Factorizations.Hessenberg
 public import NLAlib.Matrix.Factorizations.Householder
 public import NLAlib.Matrix.Factorizations.LU
@@ -416,6 +428,7 @@ public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
 public import NLAlib.RandomMatrix.Rademacher.Basic
 public import NLAlib.RandomMatrix.SubGaussian.ExtremeSingularValues
+public import NLAlib.RandomMatrix.Tape
 public import NLAlib.RandomMatrix.UnitaryInvariance
 public import NLAlib.Regression.CountSketch
 public import NLAlib.Regression.Embedding

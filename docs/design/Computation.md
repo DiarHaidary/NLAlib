@@ -729,25 +729,31 @@ Not checked, and harmless for the information restriction: host-computed `ℚ` l
 
 ## 11. Files and size
 
-| file | lines |
-|---|---|
-| `Computation/Syntax.lean` (`IExp`, `Cell`, `Instr` with integer and bit operations and `convert`, `Stmt`, `Builder`) | 270 |
-| `Computation/Exec.lean` (`Store`, `St` with bit memory, `Interp` with widths, `exec`, read, write and frame lemmas) | 650 |
-| `Computation/RunsWithin.lean` (interface, counts, transfer lemma) | 150 |
-| `Computation/Subst.lean` (substitution theorem with general read-only data, oracle corollary; proved during the design, about 420 lines) | 440 |
-| `Computation/Contract.lean` (`IsRelErrSem` with success clauses, exact instance, failing-semantics counterexample; the variants in stage 2) | 200 |
-| `Computation/Exact.lean` (`exactSem`, `exactInterp`, layout, `Holds`, frame, column-arithmetic lemma set) | 450 |
-| `Computation/BLAS.lean` (kernels and the specification family, six parts) | 1,050 |
-| `Computation/Dense.lean`, `Computation/Sparse.lean` | 400 |
-| `RandomMatrix/Tape.lean` | 200 |
-| `hutchpp_reindex` | 80 |
-| `Matrix/Factorizations/GramSchmidtProgram.lean` | 450 |
-| `Estimation/Trace/HutchPlusPlusProgram.lean` | 600 |
-| **stage 1** | **about 4,950** |
-| stage 1b: Lanczos | 770 |
-| tools and the fixed-point example as a test | 400 |
-| checks E1 to E8 | 300 |
-| stage 2 (word formats and their contract proofs, `int64`-style semantics, comparison substitution, floating kernel bounds, word-level implementations; with D16 (ii) or (iii) also a data-refinement simulation, about 500) | estimate 3,000 to 3,500, its own note |
+Amended 2026-10-23 at the skeleton (the files as they now are; the Hutch++ totals are in
+`HutchPlusPlusProgram.lean`, since Computation is layer 0 and cannot import Estimation; see
+"Changes during the skeleton").
+
+| file | contents | skeleton lines | estimate |
+|---|---|---|---|
+| `Computation/Syntax.lean` | `IExp`, `Cell`, `Instr` (integer and bit operations, `convert`), `Stmt`, `Builder` as `ContT` | 240 | 270 |
+| `Computation/Exec.lean` | `OpKind`, `ScalarSem`, `Store` (read, write, blocks, shape), `St`, `Interp`, `exec`, run and store lemmas (proved) | 460 | 650 |
+| `Computation/RunsWithin.lean` | interface, transfer lemma | 70 | 150 |
+| `Computation/Subst.lean` | substitution theorem, oracle corollary (proved) | 590 | 590 |
+| `Computation/Exact.lean` | `exactSem`, `exactInterp`, layout, `Holds`, frame | 160 | 450 |
+| `Computation/Contract.lean` | `IsRelErrSem`, exact instance, failing semantics (proved) | 160 | 200 |
+| `Computation/BLAS.lean` | nine kernels and their six-part specifications | 320 | 1,050 |
+| `Computation/Dense.lean`, `Computation/Sparse.lean` | `denseImpl`, `cooImpl`, interpretations, costs, certificates | 170 | 400 |
+| `ForMathlib/Data/Nat/Init.lean` | injectivity of flat indices (proved) | 45 | 45 |
+| `Probability/Law.lean` (one lemma) | `HasLaw.comp_of_injective` (proved) | 10 | 10 |
+| `RandomMatrix/Tape.lean` | the two tape laws | 60 | 200 |
+| `Estimation/Trace/HutchPlusPlus.lean` (one lemma) | `hutchpp_reindex` (proved) | 25 | 80 |
+| `Matrix/Factorizations/GramSchmidtProgram.lean` | `orthAgainst`, `gramSchmidtProg`, `gramSchmidtCount`, three specifications | 150 | 450 |
+| `Estimation/Trace/HutchPlusPlusProgram.lean` | `hutchppProg`, `hutchppCount`, realisation, Gaussian tail, dense and sparse totals | 235 | 600 |
+| **stage 1** | | **about 2,600** | **about 5,100** |
+| stage 1b: Lanczos (`Krylov/Processes/LanczosProgram.lean`, `lanczosState_reindex`) | | not started | 770 |
+| `NLAlibTools/` (`Float.lean`, `NumPy.lean`, `FixedPoint.lean`) | the `Float` runner, the emitter, the fixed-point example | 415 | 400 |
+| checks: `scripts/Programs.lean` (E1 to E4), `scripts/check_rules.py` (E5, E6, E8), tests | | 330 | 300 |
+| stage 2 (word formats and their contract proofs, `int64`-style semantics, comparison substitution, floating kernel bounds, word-level implementations; with D16 (ii) or (iii) also a data-refinement simulation, about 500) | | | estimate 3,000 to 3,500, its own note |
 
 ## 12. Material
 
@@ -768,3 +774,96 @@ Not checked, and harmless for the information restriction: host-computed `ℚ` l
   with stage 2.
 * Mathlib deviations: none. `Builder` is Mathlib's `ContT`, and no other object duplicates a
   Mathlib notion; `docs/design/Mathlib-deviations.md` is unchanged.
+
+
+## Changes during the skeleton (2026-10-23)
+
+The skeleton is on `computation/stage1` (worktree `nlalib-block`, from `d5c207b`). Every
+declaration of §§2–5 for stage 1 is stated with its final docstring and elaborates; the core
+(syntax, run, substitution, contracts) is proved, and the `sorry` statements sit in their final
+files in `NLAlib/` (as in the other rounds' skeletons, not in `NLAlibScaffold`). Changes against
+the note:
+
+* **Two forced changes to the certificates.** As approved, `implementsOracle_cooImpl` is false in
+  two cases, and each needed a change of the model:
+  * *Aliased calls.* `ImplementsOracle` quantified over calls whose source and destination blocks
+    overlap; the abstract oracle reads the whole block before writing, while an implementation with
+    bounded scratch (`cooImpl`, `denseImpl`) overwrites its source. Now `exec` fails on an aliased
+    oracle call (D2's list of failures gains it), and `ImplementsOracle` assumes the blocks are
+    disjoint (`dst ≠ src` or the two intervals of `height · cols` cells are disjoint).
+    `exec_subst_sim` passes the fact on from the abstract run; the substitution theorems keep
+    their statements. Every program of the note calls with disjoint blocks.
+  * *Tags of oracle calls.* The cost of a matrix-vector product was a count at the data tag `p₀`,
+    but the implementation computes at the tag of the call, so the certificate failed for a call
+    at another tag. The kinds `load` and `matvec` now carry the tag of the call
+    (`.load p o`, `.matvec p o`, as `draw p d` does); `cooCost N nnz` and `denseCost N` charge
+    each product at its own tag, and `cooCost` loses its `p₀`. `hutchppCount` counts
+    `.load p o` and `.matvec p o`.
+* **`Builder` is Mathlib's `ContT (Stmt P ι VB VI) Id`** (an `abbrev`), with the combinators
+  built by `ContT.mk` and `ContT.run`; the `do` blocks of every program elaborate unchanged. One
+  consequence, found by the `Float` run: an `alloc` scopes over the rest of the enclosing block,
+  so a program that allocates and is called inside another program's `do` block must close its
+  scope. `gramSchmidtProg` is wrapped in `scope` (the run's peak went from 36 back to the table's
+  34); kernels are closed by their `named` node.
+* **Gram–Schmidt extracted.** `gramSchmidtProg p N k Y` (in place, two scratch cells of its own)
+  is the loop of the note's `hutchppProg`; `hutchppProg` calls it and allocates its own two cells
+  after it. `orthAgainst` lost its `named` node (E8 allows `named` only in the BLAS and
+  implementation files), so the emitter inlines it as a loop of `dot` and `axpy` calls and the
+  prelude has no `orth`. The counts and peaks are unchanged: the `Float` run gives 127 flops, 2
+  loads, 5 matvecs, peak 34 at $k = 2$, and 448, 2, 11, 64 at $k = 5$, as in §6. Added for the
+  Hutch++ proof: `gramSchmidtCount` (the full-rank counts, an upper bound), `exec_orthAgainst`
+  (the sweep computes `mgsSweep`; a frame-style specification, since the coefficient cell is
+  overwritten), `exec_gramSchmidtProg` (from any state, the store with `flatten (gramSchmidtQ M)`
+  written), and `runsWithin_gramSchmidtProg` under `exactInterp (fun _ => 0) (fun _ _ => 0)` with
+  memory $Nk + 3$.
+* **Kernel specifications.** All nine have the six parts of D17: `exec_dot` and `exec_axpy` gain
+  `st'.curW = st.curW` and the bit peak. `ger` is added. `exec_rscl` assumes $a 
+e 0$ (exact
+  division by zero fails). The level-2 and level-3 kernels take their operands as matrices with
+  `Holds` and write `Array.ofFn (M *ᵥ x)` or `flatten`, with disjointness as intervals. `exec_gemm`
+  bounds the peaks (no allocation when $l = 0$); the others state them exactly. `exec_nrm2`
+  writes `((√(re ∑ conj xᵢ xᵢ) : ℝ) : 𝕜)`.
+* **Dense implementation**: `denseImpl` (generic in its sizes, no host data), `denseInterp`
+  ($\mathbf{A}$ as read-only data, $N^2$ cells), `denseCost`, `implementsOracle_denseImpl`, and
+  the dense total `runsWithin_substOracle_hutchppProg_denseImpl` next to the sparse one, both in
+  `HutchPlusPlusProgram.lean`.
+* **Store, run and layout lemmas** added: `Store.shape`, `Store.read_of_write_eq_some`,
+  `Store.read_of_write_eq_some_of_ne`, `Store.size_of_write_eq_some`, `Store.shape_of_write_eq_some`,
+  `Store.exists_write_eq_some_of_read_eq_some`, `Store.read_push_of_lt`,
+  `Store.read_of_writeBlock_eq_some_of_lt`, `Store.read_of_writeBlock_eq_some_of_ne`; `exec_seq`, `exec_loop`,
+  `exec_named`, `exec_alloc`, `exec_ite`, `exec_instr`; `size_flatten`, `getElem?_flatten`,
+  `unflatten_flatten`, all proved, as is `Holds.write`.
+* **Column arithmetic.** Batteries' `Nat.add_mul_lt_mul_of_lt_of_lt` is the block bound;
+  injectivity of $i + Nj$ for $i < N$ is the new `Nat.add_mul_eq_add_mul_iff_of_lt`
+  (`ForMathlib/Data/Nat/Init.lean`, proved); disjoint columns follow from it.
+* **The reindexing lemma for `iidSequence`** is `ProbabilityTheory.HasLaw.comp_of_injective` in
+  `Probability/Law.lean` (proved, from `hasLaw_infinitePi_iff` and `iIndepFun.precomp`).
+  `hutchpp_reindex` is proved (from `mul_pinv` and `pinv_submatrix_equiv`).
+* **Names.** `BinOp.real` is `BinOp.realOp`: a definition named `real` makes `real` a library
+  token for the naming check (N4) and breaks 21 existing names such as `specNorm_real_smul`. The
+  store lemmas follow the grammar (`Store.read_of_write_eq_some`, not `read_write_self`).
+  `IExp.eval` keeps its name; the one existing name it trips, `map_eval_uniformOn_injective`
+  (Mathlib's `eval` for `fun f => f j`), is allowlisted for N4 with that reason.
+* **Namespaces.** The Computation layer is `NLAlib.Computation`; programs and their theorems in
+  topic files are in `NLAlib` (`NLAlib.hutchppProg`, `NLAlib.runsWithin_gramSchmidtProg`).
+* **Result ids** (new): `computation-substitution`, `computation-oracle-substitution`,
+  `computation-tail-transfer`, `computation-exact-meets-contract`,
+  `computation-failing-semantics`, `coo-oracle-certificate`, `dense-oracle-certificate`,
+  `tape-gaussian-matrix`, `tape-independent-draws`, `gram-schmidt-program`, `hutchpp-program`,
+  `hutchpp-program-tail`, `hutchpp-program-dense`, `hutchpp-program-sparse`.
+* **Checks.** E1 to E4 are `scripts/Programs.lean` (MetaM, `check = "lean"` in
+  `docs/rules/rules.toml`), run on the built library with fixtures that must be rejected; E5, E6
+  and E8 are in `scripts/check_rules.py` with fixtures in `scripts/test_check_rules.py`. E7 has no
+  entry (merged into E1). The new area is "programs", letter E; CONTRIBUTING gains §5.5, the
+  `Computation/` row of §2 and the §5.3 rows of §3. E3 ignores variables whose type is a type
+  parameter (tags, oracle names) or `Dist`, as E1 allows them; its allowlist has one entry, the
+  COO pattern in the sparse total (unrolled into the implementation by D14). E1's implementation
+  files are `Computation/Dense.lean` and `Computation/Sparse.lean`.
+* **Tools.** `NLAlibTools` is a separate `lean_lib` of plain (non-`module`) files: the module
+  system withholds the compiled code `#eval` needs from a module that does not `meta import` it.
+  `Float.lean` runs Hutch++ and checks the §6 rows with `#guard`; `NumPy.lean` prints Hutch++,
+  and the emitted code reproduces 19.326978 and 15.000000 under NumPy; `FixedPoint.lean` runs the
+  §7.4 example (`#guard`: the same word, 9 against 0 + 9 + 18 operations, 64 against 320 bits)
+  and states `implementsInstr_fxImpl` and `fxSem_mul_abs_sub_le` with `sorry`.
+* **Lanczos** is stage 1b: no Lanczos file yet, and the tools run Hutch++ only.
+* **Mathlib deviations**: none.

@@ -27,6 +27,12 @@ jobs:
         run: lake env lean scripts/Audit.lean
       - name: Environment linters
         run: lake env lean scripts/Lint.lean
+      - name: Program checks (rules E1-E4, docs/design/Computation.md)
+        run: lake env lean scripts/Programs.lean
+      - name: Tools library builds (NLAlibTools; not part of the library, may contain sorry)
+        run: |
+          lake build NLAlibTools
+          lake exe mk_all --lib NLAlibTools --check
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
       - name: Generated rule files are current (docs/rules/rules.toml)

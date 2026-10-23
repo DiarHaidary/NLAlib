@@ -298,6 +298,17 @@ FIX = {
     'G2': ({'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.gone", "stage": "M1"}}'},
            {'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.foo", "stage": "M1"}}'}),
     'G1': ({'docs/design/Mathlib-deviations.md': DEVIATIONS + '\n## 2. Bad\n\n- **Mathlib.** a\n'}, {}),
+    'E5': ({'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.A\n\n')},
+           {'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.ForMathlib.Data.Nat.Init\n'
+                                              'public import NLAlib.Computation.Exec\n\n')}),
+    'E6': ('/-- Doc. -/\nnoncomputable def mySem : ScalarSem P ℝ := exactSem',
+           {'NLAlib/Computation/A.lean': lean('/-- Doc. -/\nnoncomputable def mySem : ScalarSem P ℝ := '
+                                              'exactSem\n\n/-- Doc. -/\ntheorem t (I : Interp P ι K C) : True := trivial'),
+            'NLAlib/Matrix/A.lean': lean('/-- Doc. -/\ntheorem t (I : Interp P ι K C) : I = I := rfl')}),
+    'E8': ('/-- Doc. -/\ndef k : Builder P ι VB VI Unit :=\n  named "k" [] (pure ())',
+           {'NLAlib/Computation/BLAS.lean': lean('/-- Doc. -/\ndef k : Builder P ι VB VI Unit :=\n'
+                                                 '  named "k" [] (pure ())'),
+            'NLAlib/Matrix/A.lean': lean('/-- The `named` kernels. -/\ndef k : ℕ := 0')}),
 }
 
 
@@ -375,12 +386,21 @@ class RuleTests(unittest.TestCase):
                 self.assertEqual(set(sp) - {'id', 'area', 'severity', 'check', 'scope', 'exclude', 'home',
                                             'exempt', 'exempt_while', 'section', 'statement', 'fix'}, set())
                 self.assertIn(sp['severity'], ('error', 'warning', 'review'))
-                self.assertIn(sp['check'], ('source', 'extraction', 'none'))
+                self.assertIn(sp['check'], ('source', 'extraction', 'lean', 'none'))
                 self.assertEqual(sp['check'] == 'none', sp['severity'] == 'review')
                 self.assertTrue(sp['statement'] and sp['fix'] and '\n' not in sp['statement'])
                 self.assertFalse(sp['statement'].endswith('.'))
                 if sp['scope'] != 'library':
                     self.assertTrue(all(s.startswith('NLAlib/') for s in sp['scope']))
+
+    def test_lean_rules_are_checked_by_programs(self):
+        # rules with `check = "lean"` are checked by scripts/Programs.lean, whose messages cite them
+        text = (Path(__file__).resolve().parent / 'Programs.lean').read_text()
+        for rid, sp in check_rules.SPECS.items():
+            if sp['check'] == 'lean':
+                with self.subTest(rule=rid):
+                    self.assertIn(f'logError m!"{rid} ', text)
+                    self.assertEqual(sp['severity'], 'error')
 
     def test_scope(self):
         # a rule scoped to the Matrix layer (T7) ignores the same declaration in LowRank

@@ -83,6 +83,13 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - R3 Every id or declaration the explorer names exists.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
 - G2 Every port-ledger target is declared.
+- E1 A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions).
+- E2 Programs, kernels and implementations are computable.
+- E3 A realisation's program and initial state use no data of its interpretation (dimensions, tags and names excepted).
+- E4 Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`.
+- E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
+- E6 Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
+- E8 `Stmt.named` is constructed only in the BLAS and implementation files.
 - N1 Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase.
 - N2 The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`).
 - N3 The conclusion part ends at the first `_of_` and names the main relation.

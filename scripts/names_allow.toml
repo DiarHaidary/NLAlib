@@ -72,3 +72,8 @@ reason = "TGN-Upper M1: the derived name `exists_forall_integral_frobNorm_sub_tr
 name = "NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix"
 rule = "N17"
 reason = "TGN-Upper M2: the derived name `exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix` is held by the older asymptotic form of the p ≥ 8000ℓ/ε theorem, which M2 dominates (decision card TGN-DOMINATED)"
+
+[[allow]]
+name = "NLAlib.map_eval_uniformOn_injective"
+rule = "N4"
+reason = "`eval` is Mathlib's reading of `fun f => f j` (`Function.eval`); the token became a library function with `NLAlib.Computation.IExp.eval`, a different object"

@@ -10,7 +10,8 @@ Every rule has a stable id: a letter for its area and a number, as the naming ru
 (§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
 vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
 notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9). The rule data, severity, statement, fix, scope and section, is in
+records (§8, §9), E programs (§5.5; E1–E4 are checked on the built library by
+`scripts/Programs.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
 `docs/rules/rules.toml`, the single source this script, `check_names.py` and
 `scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
 
@@ -61,7 +62,7 @@ DEVIATIONS = 'docs/design/Mathlib-deviations.md'
 # Krylov, Regression imports Sketching, Estimation imports LowRank; LowerBounds (2026-10-25) is the
 # top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
 # it gets files.
-LAYER = {'ForMathlib': -1, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
+LAYER = {'ForMathlib': -1, 'Computation': 0, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
          'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
          'LowerBounds': 5}
 
@@ -1360,6 +1361,67 @@ def g_ledger(c):
             for old, new, stage in ledger_check.missing(c.root)[1]]
 
 
+# ================================================================== E: programs (§5.5)
+# E1–E4 need Lean's types and are checked by scripts/Programs.lean (`check = "lean"`).
+COMPUTATION = 'NLAlib/Computation'
+# The files that may construct `Stmt.named`: the core that defines and eliminates it, the BLAS
+# kernels and the implementations.
+NAMED_FILES = tuple(f'{COMPUTATION}/{f}.lean' for f in
+                    ('Syntax', 'Exec', 'Subst', 'BLAS', 'Dense', 'Sparse'))
+NAMED_RE = re.compile(r'\b(?:Builder|Stmt|Computation)\.named\b|(?<![\w.])\.named\b|'
+                      r'(?<![\w.])named\s+"')
+
+
+@rule('E5')
+def e_computation_imports(c):
+    return [V('E5', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
+            if topic_of_path(p) == 'Computation' for ln, pub, mod in x['imports']
+            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
+                                                        'NLAlib.Computation.')))]
+
+
+def declared_type(stmt):
+    """The text after the top-level `:` of a declaration's statement, before `:=` or `where`."""
+    depth, i = 0, 0
+    while i < len(stmt):
+        ch = stmt[i]
+        if ch in '([{⦃⟨':
+            depth += 1
+        elif ch in ')]}⦄⟩':
+            depth -= 1
+        elif ch == ':' and depth == 0 and stmt[i:i + 2] != ':=':
+            rest = stmt[i + 1:]
+            return re.split(r':=|\bwhere\b', rest)[0]
+        i += 1
+    return ''
+
+
+@rule('E6')
+def e_semantics_home(c):
+    out = []
+    for p, (t, x) in c.lib_files.items():
+        if p.startswith(COMPUTATION + '/'):
+            continue
+        for d in x['decls']:
+            if d['kind'] in ('def', 'abbrev', 'instance', 'opaque', 'irreducible_def') and \
+                    re.match(r'\s*(?:NLAlib\.)?(?:Computation\.)?(?:ScalarSem|Interp)\b',
+                             declared_type(leansrc.strip_comments(d['stmt']))):
+                out.append(V('E6', p, d['line'], d['full'] or '(instance)'))
+    return out
+
+
+@rule('E8')
+def e_named(c):
+    out = []
+    for p in c.lib_files:
+        if p in NAMED_FILES:
+            continue
+        for i, line in enumerate(c.code(p), 1):
+            if NAMED_RE.search(line):
+                out.append(V('E8', p, i, '(file)', line.strip()[:80]))
+    return out
+
+
 # ================================================================== allowlist, baseline, main
 def load_allow(path):
     if not path.exists():
@@ -1423,8 +1485,8 @@ def names_violations(c, partial):
 def check_registry():
     """Every checked rule of rules.toml outside N1–N18 (scripts/check_names.py) has a check here,
     and every check has its entry."""
-    missing = [r for r, sp in SPECS.items() if sp['check'] != 'none' and not r.startswith('N')
-               and r not in RULES]
+    missing = [r for r, sp in SPECS.items() if sp['check'] not in ('none', 'lean')
+               and not r.startswith('N') and r not in RULES]
     if missing:
         raise SystemExit(f'check_rules: no check for {", ".join(missing)} ({RULES_TOML})')
 

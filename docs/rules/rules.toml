@@ -8,7 +8,8 @@
 # id        area letter and number, never reused
 # area      the area of the letter
 # severity  error (fails CI, ratcheted), warning (a heuristic, a review list) or review (no check)
-# check     source (the sources and documents), extraction (needs scripts/explore_data.sh), none
+# check     source (the sources and documents), extraction (needs scripts/explore_data.sh), lean
+#           (the built library, by scripts/Programs.lean), none
 # scope     "library", or the topic directories the rule applies to; exclude removes directories
 # exempt    directories exempt while the rule `exempt_while` has no violation (optional)
 # home      topics that list a library-wide rule first in their RULES.md (optional)
@@ -299,6 +300,83 @@ scope = "library"
 section = "§6 item 1"
 statement = '''A headline theorem says in its docstring when it assumes `[Nonempty n]`'''
 fix = '''Say "$n$ nonempty" (or $\lvert n \rvert \ge 1$)'''
+
+[[rule]]
+id = "E1"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions)'''
+fix = '''Take sizes as index expressions and data as buffers; an implementation that needs host data lives in an implementation file'''
+
+[[rule]]
+id = "E2"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''Programs, kernels and implementations are computable'''
+fix = '''Remove the noncomputable part; a program is data that runs'''
+
+[[rule]]
+id = "E3"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''A realisation's program and initial state use no data of its interpretation (dimensions, tags and names excepted)'''
+fix = '''Pass the matrix through the oracle or as read-only data, never in the program or the initial store'''
+
+[[rule]]
+id = "E4"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`'''
+fix = '''State the realisation next to the program (with `sorry` until proved)'''
+
+[[rule]]
+id = "E5"
+area = "programs"
+severity = "error"
+check = "source"
+scope = ["NLAlib/Computation"]
+section = "§2"
+statement = '''A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`'''
+fix = '''Keep the Computation layer at layer 0: a program that needs library vocabulary lives in its topic file'''
+
+[[rule]]
+id = "E6"
+area = "programs"
+severity = "error"
+check = "source"
+scope = "library"
+exclude = ["NLAlib/Computation"]
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`'''
+fix = '''Define the semantics or interpretation in `NLAlib/Computation`, with its certificate'''
+
+[[rule]]
+id = "E8"
+area = "programs"
+severity = "error"
+check = "source"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''`Stmt.named` is constructed only in the BLAS and implementation files'''
+fix = '''Write the program without `named`, or make it a kernel in `NLAlib/Computation/BLAS.lean`'''
 
 [[rule]]
 id = "F1"

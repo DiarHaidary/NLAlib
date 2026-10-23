@@ -18,7 +18,8 @@ Every rule a script checks carries its id in brackets where it is stated, [F1], 
 messages cite the same id. The ids are a letter for the area and a number: N names (§4,
 `scripts/check_names.py`); F file template, P placement and layers, S source and proof style,
 T types and statement shape, V vocabulary, B bounds, D docstrings, M notation, C citations,
-R result ids, G design records (`scripts/check_rules.py`, §9.1). `python3 scripts/check_rules.py
+R result ids, G design records (`scripts/check_rules.py`, §9.1), E programs (§5.5;
+`scripts/Programs.lean` and `scripts/check_rules.py`). `python3 scripts/check_rules.py
 --list` prints every id with its level; a rule with no id is judged by review.
 
 Sections: 1 Ground rules · 2 Layout · 3 File template · 4 Names · 5 Statements · 6 Docstrings
@@ -65,6 +66,9 @@ checks · 10 Building without running out of memory · 11 Rules for agents.
 NLAlib/
   ForMathlib/      general facts not about NLAlib's objects, headed upstream;
                    files named after the Mathlib file they would join            (layer −1)
+  Computation/     programs over memory buffers: syntax, runs, counts, memory,
+                   substitution, exact arithmetic, BLAS kernels, oracle
+                   implementations (amended 2026-10-23)                           (layer 0)
   Matrix/          deterministic matrix analysis                                  (layer 0)
   Polynomial/      scalar approximation theory and the function classes it
                    approximates (amended 2026-10-17)                             (layer 0)
@@ -86,6 +90,9 @@ scripts/           Audit.lean, Lint.lean, check_refs.py, stage_check.sh, ledger 
 ```
 
 The subdirectories of each layer are decided in that layer's design note (§8), not in advance.
+A file in `NLAlib/Computation` imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`
+[E5], so that programs over the library's objects live in their topic files
+(`docs/design/Computation.md`, D7).
 A module imports only its own layer and lower [P1]; `scripts/check_rules.py` (`LAYER`) holds
 the same numbers, and a top-level folder missing from it is a P1 error. The half layers follow
 the imports, not the topics (maintainer decision 2026-10-25): Probability may import Krylov, and
@@ -644,6 +651,20 @@ those layers are designed.
 | passes | `alg.IsPassStructured pass` for `pass : ℕ → ℕ` monotone: query `i` depends only on the responses of rounds in earlier passes; a `p`-pass algorithm adds `∀ i < q, pass i < p`; one pass is `IsNonAdaptive`, one query per pass is every algorithm; a weaker oracle `alg.comapResponse f`, a post-processed output `alg.mapOutput g` (LB-C note §2.1, 2026-10-26) | `QueryAlgorithm.isPassStructured_zero_iff_isNonAdaptive` (one pass), `QueryAlgorithm.isPassStructured_id`; Mathlib has none |
 | hidden rotation, Krylov coupling | the oracle `hiddenRotationOracle U D`, $\mathbf{x} \mapsto (\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}}\mathbf{x}, \mathbf{U}^{\mathsf{H}}\mathbf{x})$, simulated on `twoSidedMulVec U` by `alg.hiddenRotationSimulation D`; the conclusion of the coupling theorem is the predicate `IsKrylovCoupling μ D s G₀ V G` (Gaussian `G` independent of `G₀`, a.s. `range V ≤ blockKrylovSpace D (fromCols G₀ G) s`), which lower bounds take as hypothesis (LB-C note §2.2) | `QueryAlgorithm.gramSimulation` is the case $\mathbf{D} = \mathbf{I}$ of the simulation; `QueryAlgorithm.run_hiddenRotationSimulation`; the coupling theorem is in the LB-C scaffold; Mathlib has none |
 | hard spectra of the hidden-rotation lower bounds | `IsChebyshevTwoIntervalSpectrum κ s M d` (values on the points $\pm\sqrt{\xi_j}$ of $[1, \kappa^2]$, multiplicities dominating the dual weights; linear systems); `equispacedLevelSpectrum k m p` (head $p + 2$, tail levels $1, \dots, p + 1$; few-pass low-rank approximation) (LB-C note §2.3) | built from `chebyshevExtremum`, `chebyshevWeight`; existence `exists_isChebyshevTwoIntervalSpectrum`; Mathlib has none |
+| program | `Computation.Stmt P ι VB VI` (tags `P`, oracle names `ι`, handles `VB`, indices `VI`), scalar instructions `Computation.Instr P VB VI`; a program `<spec>Prog` lives in its topic file with its counts `<spec>Count` (`hutchppProg`, `hutchppCount`, `gramSchmidtProg`, `gramSchmidtCount`, the sweep `orthAgainst`; §5.5; computation note, 2026-10-23) | Mathlib has no syntax for imperative programs (searched) |
+| `do` notation for programs | `Computation.Builder P ι VB VI β`, an abbreviation of Mathlib's `ContT (Stmt P ι VB VI) Id β`, with `Builder.run`, `Builder.stmt`, `Builder.ins`, `Builder.alloc` (scoped to the rest of the block), `Builder.forRange`, `Builder.ifThenElse`, `Builder.named`, `Builder.scope` | Mathlib's `ContT`, `ContT.run` |
+| index expression, cell | `Computation.IExp VI`, `Computation.Cell VB VI` | — |
+| store, state, interpretation, run | `Computation.Store P K`, `Computation.St P K C` (with bit memory), `Computation.Interp P ι K C` (with read-only data and widths), `Computation.exec`; block access `Store.readBlock`, `Store.writeBlock`, `Store.shape`; one comparison `cmpStep`; the initial state of a realisation `Computation.inputState` | — |
+| value semantics | `Computation.ScalarSem P K`; exact arithmetic `Computation.exactSem` | — |
+| running within a budget | `Computation.RunsWithin I s st₀ c m Q`: success, counts at most `c` more, peak plus read-only data at most `m`, postcondition `Q`; an upper bound | `Computation.measureReal_not_runsWithin_le` (tails transfer) |
+| operation counts | `Computation.OpCount P ι := OpKind P ι →₀ ℕ`; a weighted total is `Finsupp.weight`; substituted counts `Computation.substCountG`, `Computation.substCount` | Mathlib's `Finsupp` |
+| matrix layout | column-major from an offset: `Computation.flatten`, `Computation.unflatten`, `Computation.Holds s p b off M`; a test matrix drawn from the tape `Computation.tapeMatrix x off N k` | `Matrix.of`; `Computation.unflatten_flatten` |
+| oracle semantics | `Computation.matOracle A`, `Computation.exactInterp (A : ι → Matrix (Fin N) (Fin N) 𝕜) ξ`; realisations at `Fin N`, reindexing lemmas for the specification (`hutchpp_reindex`) | Mathlib's matrix product |
+| substitution | `Computation.Stmt.subst`, `Computation.Stmt.substOracle`; certificates `Computation.ImplementsInstr`, `Computation.ImplementsOracle`; `Computation.RunsWithin.subst`, `Computation.RunsWithin.substOracle`; the oracle-only cost `substKind`, the simulation `Sim`, `St.withCnt` | — |
+| oracle implementations | `Computation.denseImpl`, `Computation.denseInterp`, `Computation.denseCost`; `Computation.cooImpl`, `Computation.cooMatrix`, `Computation.cooInterp`, `Computation.cooCost` | — |
+| error contract | `Computation.IsRelErrSem u dec safe sem`, error and success clauses per operation family; the real operations `BinOp.realOp` on `BinOp.IsArith`; the failing semantics `failSem` | `Computation.isRelErrSem_exactSem` |
+| random tape | `HasLaw ξ (iidSequence ν) μ` per distribution (the i.i.d. sequence row) | `hasLaw_tapeMatrix_of_hasLaw_iidSequence`, `ProbabilityTheory.HasLaw.comp_of_injective` |
+| BLAS kernels | `Computation.dot`, `Computation.axpy`, `Computation.scal`, `Computation.rscl`, `Computation.copyv`, `Computation.nrm2`, `Computation.gemv`, `Computation.ger`, `Computation.gemm`, each with its specification `Computation.exec_<kernel>` | — |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
 and unitarily invariant norms, the principal-angle / subspace-distance interface. Rows from the
@@ -677,6 +698,33 @@ property P" as an input.
 - **Fewer, broader interfaces.** Before adding a new one, check whether an existing one with one
   more field, or one fewer, covers the case. The test is the downstream user: can they state their
   theorem with the interfaces that exist?
+
+### 5.5 Programs
+
+Algorithms analysed for their cost are programs over memory buffers (`NLAlib/Computation`,
+`docs/design/Computation.md`). A program `<spec>Prog` lives in its topic file next to its
+specification, and has its realisation `runsWithin_<spec>Prog`, which concludes
+`Computation.RunsWithin` against the specification [E4].
+
+- A program is generic in its handles and indices: its type ends in `Builder P ι VB VI _` or
+  `Stmt P ι VB VI` with variables `VB`, `VI` that no instance mentions, and its arguments are
+  types, tags and oracle names, distributions, handles, index expressions, cells and programs.
+  Host data (`ℕ` sizes, lists, functions) is allowed only in the implementation files
+  `NLAlib/Computation/Dense.lean` and `NLAlib/Computation/Sparse.lean` [E1].
+- Programs, kernels and implementations are computable [E2].
+- A realisation's program and initial state use none of the data of its interpretation: the
+  program learns the matrix only through the oracle or as read-only data. Dimensions, tags and
+  oracle names are shared [E3].
+- Only `NLAlib/Computation` defines a value semantics (`Computation.ScalarSem`) or an
+  interpretation (`Computation.Interp`), each with its certificate [E6].
+- `Stmt.named`, which the NumPy emitter prints as a call into its prelude, is constructed only in
+  the BLAS and implementation files [E8].
+
+E1 to E4 are checked on the built library by `scripts/Programs.lean`, whose fixtures (a handle
+forged from a number, a host function, a host size, a noncomputable program, a program with no
+realisation, a matrix in the initial store) must be rejected; E5, E6 and E8 by
+`scripts/check_rules.py`. The tools library `NLAlibTools` (the `Float` interpreter, the NumPy
+emitter, the fixed-point example) is not part of the library and is not checked.
 
 ## 6. Docstrings and citations
 
@@ -891,6 +939,7 @@ LEAN_NUM_THREADS=4 lake build --wfail NLAlib NLAlibScaffold
 lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --check
 lake env lean scripts/Audit.lean
 lake env lean scripts/Lint.lean
+lake env lean scripts/Programs.lean
 python3 scripts/check_refs.py
 python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py

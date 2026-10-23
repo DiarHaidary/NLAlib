@@ -313,6 +313,35 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: skeleton (2026-10-23)
+
+Branch `computation/stage1` (worktree `nlalib-block`), from `d5c207b` (the approved note
+`docs/design/Computation.md`; its last section lists the changes during the skeleton). New layer
+`NLAlib/Computation/` (layer 0): `Syntax`, `Exec` (with the store and run lemmas), `RunsWithin`,
+`Subst`, `Exact`, `Contract`, all proved (the substitution theorem, the tail transfer and the
+contract results included); `BLAS` (9 kernel specifications, `sorry`), `Dense`, `Sparse` (1
+certificate each). Topic files: `Matrix/Factorizations/GramSchmidtProgram.lean` (3), `RandomMatrix/Tape.lean`
+(2), `Estimation/Trace/HutchPlusPlusProgram.lean` (1, the realisation; the Gaussian tail and the
+dense and sparse totals are proof terms over it). Proved additions to existing files:
+`hutchpp_reindex`, `ProbabilityTheory.HasLaw.comp_of_injective`,
+`Nat.add_mul_eq_add_mul_iff_of_lt` (new `ForMathlib/Data/Nat/Init.lean`). 17 `sorry` in all.
+Tools library `NLAlibTools` (new `lean_lib`, plain files): `Float.lean`, `NumPy.lean`,
+`FixedPoint.lean` (2 `sorry`). Checks E1 to E4 in `scripts/Programs.lean` (CI step), E5, E6, E8 in
+`scripts/check_rules.py`; CONTRIBUTING §2 row, §5.3 rows, §5.5.
+
+Checks: `lake build NLAlib` with 17 `declaration uses sorry` warnings and no other;
+`lake build NLAlibTools` (its `#guard`s reproduce the §6 Hutch++ rows and the §7.4 words; 2 more
+`sorry`); `mk_all --check` clean for the three libraries; `scripts/Programs.lean`: 14 programs
+and kernels, 5 realisations, 0 violations, every fixture rejected; `scripts/stage_check.sh`: 403
+proved modules, 6 not yet, `--wfail` build 0 warnings, audit 10680 declarations 0 violations,
+lint 0 errors, references 0 problems, constants 0 problems, rules 0 errors (876 warnings),
+duplicates 0; full extraction `check_rules.py`: 0 errors; script tests 47, OK. The emitted NumPy
+Hutch++ reproduces the `Float` values (19.326978, 15.0).
+
+Proof plan: two agents on disjoint files. Agent A: `BLAS` (level 1, then `gemv`, `ger`,
+`gemm`), then `GramSchmidtProgram`, then `HutchPlusPlusProgram`. Agent B: `RandomMatrix/Tape.lean`,
+then `Dense` and `Sparse` (they need only `Exec` and `Exact`; a store lemma either needs goes to
+`Exec`, coordinated with A). Lanczos is stage 1b.
 
 ## Sketching moments round: proofs (2026-10-22)
 

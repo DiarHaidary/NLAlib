@@ -144,6 +144,15 @@ and `docs/rules/DIGEST.md`.
 - **G2** Every port-ledger target is declared. [§9], AGENTS.md
 - **G3** (review) A scaffold file imports the scaffold files whose declarations its `Proof:` lines name. [§8] item 5
 
+### Programs
+
+- **E1** A program is generic in its handles and indices and takes no host data (`ℕ` sizes, lists, functions). [§5.5]
+- **E2** Programs, kernels and implementations are computable. [§5.5]
+- **E3** A realisation's program and initial state use no data of its interpretation (dimensions, tags and names excepted). [§5.5]
+- **E4** Every `<spec>Prog` has its realisation `runsWithin_<spec>Prog`. [§5.5]
+- **E6** Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
+- **E8** `Stmt.named` is constructed only in the BLAS and implementation files. [§5.5]
+
 ### Names
 
 - **N1** Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase. [§4.2]
@@ -171,6 +180,7 @@ and `docs/rules/DIGEST.md`.
 [§5.1]: ../../CONTRIBUTING.md#51-types
 [§5.2]: ../../CONTRIBUTING.md#52-shape
 [§5.3]: ../../CONTRIBUTING.md#53-vocabulary
+[§5.5]: ../../CONTRIBUTING.md#55-programs
 [§6]: ../../CONTRIBUTING.md#6-docstrings-and-citations
 [§7]: ../../CONTRIBUTING.md#7-proofs-sorry-and-the-scaffold-library
 [§8]: ../../CONTRIBUTING.md#8-designing-a-stage
