@@ -1,6 +1,6 @@
 # Design note: computation, stage 1 (exact arithmetic, counts, memory, oracles, draws)
 
-**Approved by the maintainer, 2026-10-23:** D1 option C (deep embedding); all other decisions as recommended; D16 to D19 (added after the first approval) as recommended; the same day, the change of section "Guarantees" (results are instances of access models, the scripts demoted).
+**Approved by the maintainer, 2026-10-23:** D1 option C (deep embedding); all other decisions as recommended; D16 to D19 (added after the first approval) as recommended; the same day, the change of section "Guarantees" (results are instances of access models, the scripts demoted); the same day, the two changes of section "First-order programs and target statements" (targets are library definitions; witnesses are first-order programs), whose design is that section.
 
 **History.** Drafts 1 to 6, 2026-10-22 and 23, each after a bounded review. The fourth draft's
 decisions (D1 to D15) were approved on 2026-10-23. D16 to D19, added for the maintainer's
@@ -784,6 +784,9 @@ keep each file under about 1000 lines; the proved lengths are in "Changes during
 
 ## Guarantees: what is proved and what is trusted (2026-10-23)
 
+*Superseded after the migration of section "First-order programs and target statements" (F11),
+whose F10 re-classifies every item below; until then this section describes the code.*
+
 **A change approved by the maintainer on 2026-10-23**, in his words: "this stuff needs to be
 watertight, because we will be allowing stuff to prove autonomously. The same general question for
 stuff beyond oracles. Are we relying on checks or are we provably guaranteed about the costs. Make
@@ -1190,3 +1193,637 @@ The change of section "Guarantees", approved by the maintainer the same day, on
   `scripts/AccessModelFixtures.lean`, which proves the instance forms of the cheating realisations
   false (run by `scripts/stage_check.sh` and CI).
 
+
+
+## First-order programs and target statements (2026-10-23)
+
+**Approved by the maintainer on 2026-10-23**, after two independent audits of the access models,
+in his words: "yeah go for both". The two changes:
+
+1. **Target statements are library definitions.** Each result the library wants is a
+   `def … : Prop`, written and reviewed by the library, of the form
+   "∃ prog : Prog, Model prog cost mem spec". A result is `theorem foo : Target`. The prover
+   supplies a program and a proof, and nothing else: no hypothesis, parameter or postcondition.
+2. **The witness is a finite first-order program**: one syntax tree for all sizes, the sizes
+   variables of the program, the literals fixed in the tree, no Lean function inside the term.
+   The run is defined on this syntax. The PHOAS builder stays as surface syntax, compiled once by
+   a computable function; the theorems are about the compiled tree, so the compiler is not
+   trusted.
+
+This section is the design. Until its migration (F11) lands, sections "Guarantees" and §§1–11
+describe the code as it is; F10 is the classification after the migration.
+
+**What was elaborated.** Every Lean definition and statement of F2 to F8 was elaborated against
+the library at `4a095ad` in a scratch file (`fo/FirstOrder.lean` in the design's scratch
+directory, not in the repository), under the scratch names noted in F7. Proved there, with only
+`propext`, `Classical.choice` and `Quot.sound`:
+* the bridge `FStmt.exec_eq_exec_toStmt` and `Prog.exec_eq_exec_toStmt` (the run on first-order
+  syntax is the current run of the instantiated statement), about 70 lines;
+* the compilation of `gramSchmidtProg`, `hutchppProg` and dense Hutch++ (`hutchppProg` with its
+  oracle calls replaced by `denseImpl`), each with `rfl` (69, 173 and 221 nodes);
+* their instantiation equations (`c.toStmt N n = F.inst N n`), each by `rfl`;
+* four of the five targets of F8 (`MatrixFreeGramSchmidt`, `MatrixFreeHutchpp`,
+  `MatrixFreeProbHutchpp`, `StoredEntriesDenseHutchpp`), from the existing public results with
+  no change to any existing proof; the sparse target is stated, and its proof needs one
+  induction lemma (F5);
+* the lint (the theorem's type is the target constant) and the closure hash of F1, with two of
+  the audit's cheats as rejected fixtures.
+
+The whole scratch file elaborates in about 12 seconds.
+
+### F1. Targets
+
+**Form.** A target is a closed `Prop` in the library:
+```lean
+def MatrixFreeHutchpp : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist), ∃ prog : Prog P ι 2 1,
+    ∀ (𝕜 : Type) [RCLike 𝕜], MatrixFree (𝕜 := 𝕜) p prog valid X inputs cost mem post
+```
+with `valid`, `X`, `inputs`, `cost`, `mem` and `post` written out in the target (F8). The
+binder order is part of the review:
+* **before `∃ prog`, names only**: the tag type and the oracle-name type, tags, oracle names,
+  distributions, and (for the sparse target only, F8) the public pattern. The program may depend
+  on these, harmlessly: they carry no size and no data;
+* **after `∃ prog`**: the field `𝕜`, the sizes, the declared inputs, the matrix or the entries,
+  the tape, and the parameters of the guarantee (`r`, `δ`, `τ` of the tail, with their
+  hypotheses `0 < δ`, `0 ≤ τ`, written by the library).
+
+**The verification criterion.** A published cost result is a theorem whose type is the target
+constant itself: `info.type == .const T us`, syntactically, with no binder. The lint
+(`scripts/Targets.lean`, rule E3 rewritten, F9):
+1. every target listed in the registry `docs/targets.toml` has exactly one theorem of type
+   `.const T us`;
+2. every theorem outside the Computation core with a `Result:` id whose statement mentions a
+   model, `Prog.exec`, `FStmt.exec` or `RunsWithin` is one of these;
+3. the **closure hash** of each target matches the registry: the hash of the types and values of
+   every `NLAlib` definition, inductive type and constructor that the target's statement reaches
+   by unfolding (Mathlib is pinned by the manifest and not hashed).
+
+Item 3 is what makes the trivial check sufficient. Without it a prover could keep the type
+`MatrixFreeHutchpp` and weaken the target by editing a definition it unfolds to, such as
+`hutchppCount`. The closure of the five targets of F8 has 92 named library constants besides the
+targets (computed in the scratch, listed in F10); the hash is `mixHash` over the elaborated expressions, recomputed with
+`--update` after a toolchain bump. Targets live in files of their own,
+`<Topic>/<Spec>Targets.lean` (for example `Estimation/Trace/HutchPlusPlusTargets.lean`, which also
+receives `hutchppCount`), so that a proof file can be owned by an agent while the statements it
+proves cannot change without a registry diff (Q3).
+
+**Why the audit's reading-level cheats cannot prove a target** (scratch file `audit1/cheat1.lean`;
+the second and third are fixtures of the scratch lint):
+* *A size that encodes the datum, with a postcondition of the prover's*
+  (`matrixFree_sizeTraceProg`: `n 0` carries $\mathbf{A}$, `litIdx` writes it, and the
+  postcondition `ComputesTrace` is an implication `A = decode (n 0) → …`). Under a target the
+  prover chooses neither the sizes (`r` and their meaning are in the target), nor the size
+  condition, nor the postcondition: `MatrixFreeHutchpp` demands
+  `st.store.read p 0 0 = some (hutchpp A S G)` for every $\mathbf{A}$, which a program that reads
+  only sizes cannot meet. Its type `MatrixFree … ComputesTrace` is not a registered constant, so
+  the lint rejects it as a result.
+* *A vacuous outer hypothesis* (`matrixFree_vacuous`, `hall : ∀ N A, A.trace = 0`). The type
+  `(∀ N A, A.trace = 0) → MatrixFreeHutchpp` is a `∀`, not the constant: rejected (fixture
+  `vacuousHutchpp`). Every hypothesis inside a target is the library's.
+* *An outer parameter unrolled into a literal* (`matrixFree_literalTraceProg`, `A₀` before the
+  program). The type `∀ A₀, MatrixFreeHutchpp` is rejected (fixture `outerHutchpp`). Inside the
+  target the program is chosen before the matrix, so the only literals it has are fixed before
+  the matrix is.
+* *A claim phrased through `exec`* (audit 2, `exec_copyTrace`). It proves no registered target,
+  so it is not a published result whatever it says. Publication is opt-in through the registry,
+  so E3 has nothing left to cover (G52).
+
+**Names.** A target is an UpperCamelCase `Prop` named model first, then the specification:
+`MatrixFreeGramSchmidt`, `MatrixFreeHutchpp`, `MatrixFreeProbHutchpp`,
+`StoredEntriesDenseHutchpp`, `StoredEntriesCooHutchpp`. Its proof is the lowerCamelCase of the
+same name (`theorem matrixFreeHutchpp : MatrixFreeHutchpp`), which is the head of its
+conclusion (N2). The result ids `gram-schmidt-program`, `hutchpp-program`,
+`hutchpp-program-tail`, `hutchpp-program-dense` and `hutchpp-program-sparse` move to these
+theorems.
+
+### F2. The first-order syntax
+
+**Choice: intrinsically scoped syntax with de Bruijn levels**, a type-level guarantee rather than
+a well-formedness predicate. `FStmt P ι nb ni` is a statement with `nb` handles and `ni` index
+variables in scope. It reuses `IExp`, `Cell`, `Instr` and `Arg` of `Syntax.lean` at
+`VB := Fin nb`, `VI := Fin ni`, so the two sorts stay separate, as D11 requires. A handle or index
+out of scope is a type error, so no scoping predicate appears in any statement. Levels rather
+than indices: a binder adds variable `nb` (`Fin.last nb`), and the variables around it keep
+their numbers, so a term moves under a binder with no shifting, and the handle of a buffer is its
+position in the store.
+```lean
+inductive FStmt (P ι : Type) : ℕ → ℕ → Type where
+  | skip {nb ni : ℕ} : FStmt P ι nb ni
+  | seq {nb ni : ℕ} (s t : FStmt P ι nb ni) : FStmt P ι nb ni
+  | instr {nb ni : ℕ} (i : Instr P (Fin nb) (Fin ni)) : FStmt P ι nb ni
+  | apply {nb ni : ℕ} (o : ι) (p : P) (dst : Fin nb) (dOff : IExp (Fin ni)) (src : Fin nb)
+      (sOff cols : IExp (Fin ni)) : FStmt P ι nb ni
+  | rom {nb ni : ℕ} (p : P) (dst : Cell (Fin nb) (Fin ni)) (i : IExp (Fin ni)) : FStmt P ι nb ni
+  | alloc {nb ni : ℕ} (p : P) (len : IExp (Fin ni)) (body : FStmt P ι (nb + 1) ni) :
+      FStmt P ι nb ni
+  | loop {nb ni : ℕ} (n : IExp (Fin ni)) (body : FStmt P ι nb (ni + 1)) : FStmt P ι nb ni
+  | whileFuel {nb ni : ℕ} (fuel : IExp (Fin ni)) (p : P) (c : CmpOp)
+      (x y : Cell (Fin nb) (Fin ni)) (body : FStmt P ι nb ni) : FStmt P ι nb ni
+  | ite {nb ni : ℕ} (p : P) (c : CmpOp) (x y : Cell (Fin nb) (Fin ni)) (t e : FStmt P ι nb ni) :
+      FStmt P ι nb ni
+  | named {nb ni : ℕ} (name : String) (args : List (Arg (Fin nb) (Fin ni)))
+      (body : FStmt P ι nb ni) : FStmt P ι nb ni
+
+/-- **A program**: `b` declared buffers (handles `0, …, b-1`), the oracle dimension `N` (index
+`0`) and `r` further sizes (indices `1, …, r`). One finite tree for all sizes. -/
+abbrev Prog (P ι : Type) (r b : ℕ) : Type := FStmt P ι b (r + 1)
+```
+How each construct binds and refers:
+
+| construct | binds | refers to |
+|---|---|---|
+| sizes | `N` is index `0`, size `i` is index `i + 1`: the free index variables of a `Prog` | |
+| declared buffers | handles `0, …, b-1`: the free handles of a `Prog` | |
+| `alloc p len body` | handle `nb` in `body` (its stack position at run time) | `len : IExp (Fin ni)` |
+| `loop n body` | index `ni` in `body`, the iteration index | `n` |
+| `whileFuel fuel p c x y body` | nothing | `fuel`, the cells `x`, `y` |
+| `ite p c x y t e` | nothing | the cells `x`, `y` |
+| `named name args body` | nothing; a label for the emitter, runs as `body` | `args` |
+| `apply o p dst dOff src sOff cols` | nothing | two handles, three index expressions |
+| `rom`, and the instructions (`lit`, `litIdx`, `bin`, `un`, `copy`, `draw`, `convert`) | nothing | cells and index expressions in scope |
+
+* **Literals** are closed: `Instr.lit p dst (q : ℚ)` holds a rational fixed in the tree and
+  interpreted per tag by `sem.lit p q` (a format semantics rounds it or fails). `litIdx` writes the
+  value of an index expression over the sizes and loop indices, charged as one literal (G4).
+  `IExp.const n` is a closed natural number. No literal can depend on a size: the tree is fixed
+  before the sizes.
+* **Draws and conversions** bind nothing: `draw p d dst` reads the tape of `d` at its current
+  position; `convert p q dst src` reads at tag `p` and writes at tag `q`.
+* **`scope`** of the builder is not a node: it closes the continuation, so its allocations are
+  nested in the compiled tree exactly as they are in the builder's statement.
+
+The structural maps used by the run (the substitution of index expressions for variables, and
+the value of an index expression in an environment):
+```lean
+def IExp.subst {α β : Type} (σ : α → IExp β) : IExp α → IExp β
+def IExp.evalIn {α : Type} (ρ : α → ℕ) : IExp α → ℕ
+theorem IExp.eval_subst (σ : α → IExp ℕ) (e : IExp α) :
+    (e.subst σ).eval = e.evalIn fun v => (σ v).eval
+def Cell.subst (f : VB → VB') (σ : VI → IExp VI') (c : Cell VB VI) : Cell VB' VI'
+def Instr.subst (f : VB → VB') (σ : VI → IExp VI') : Instr P VB VI → Instr P VB' VI'
+def Arg.subst (f : VB → VB') (σ : VI → IExp VI') : Arg VB VI → Arg VB' VI'
+```
+
+### F3. The run on first-order syntax
+
+The run takes an environment of handles `ρB : Fin nb → ℕ` and of index values
+`ρI : Fin ni → ℕ`. Its leaves are the clauses of `exec` with each index expression evaluated in
+the environment; `alloc` binds `st.store.size`, `loop` binds the iteration index. Every charge,
+memory and failure rule is the one of `exec`, clause for clause:
+```lean
+def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fin ni → ℕ) →
+    St P K C → Option (St P K C)
+  | _, _, .skip, _, _, st => some st
+  | _, _, .seq s t, ρB, ρI, st => (s.exec ρB ρI st).bind (t.exec ρB ρI)
+  | _, _, .instr i, ρB, ρI, st =>
+      let i' := i.subst ρB fun v => .const (ρI v)
+      (i'.run I.sem I.tape st.store st.pos).map fun r =>
+        { st with store := r.1, pos := r.2, cnt := st.cnt + I.charge i'.kind }
+  | _, _, .apply o p d dOff s sOff cols, ρB, ρI, st =>
+      let L := I.height o * cols.evalIn ρI
+      if ρB d ≠ ρB s ∨ dOff.evalIn ρI + L ≤ sOff.evalIn ρI ∨ sOff.evalIn ρI + L ≤ dOff.evalIn ρI then
+        (st.store.readBlock p (ρB s) (sOff.evalIn ρI) L).bind fun X =>
+          (I.oracle o (cols.evalIn ρI) X).bind fun Y =>
+            (st.store.writeBlock p (ρB d) (dOff.evalIn ρI) Y).map fun s' => { st with
+              store := s'
+              cnt := st.cnt + (I.charge (.load p o) + cols.evalIn ρI • I.charge (.matvec p o)) }
+      else none
+  | _, _, .rom p d i, ρB, ρI, st => (I.rom (i.evalIn ρI)).bind fun v =>
+      (st.store.write p (ρB d.buf) (d.idx.evalIn ρI) v).map fun s' =>
+        { st with store := s', cnt := st.cnt + I.charge (.rom p) }
+  | nb, _, .alloc p len body, ρB, ρI, st =>
+      let n := len.evalIn ρI
+      (body.exec (Fin.snoc (α := fun _ => ℕ) ρB st.store.size) ρI { st with
+          store := st.store.push (p, Array.replicate n none),
+          cur := Function.update st.cur p (st.cur p + n),
+          peak := Function.update st.peak p (max (st.peak p) (st.cur p + n)),
+          curW := st.curW + n * I.width p,
+          peakW := max st.peakW (st.curW + n * I.width p) }).map
+        fun st₂ => { st₂ with
+          store := Array.pop st₂.store
+          cur := Function.update st₂.cur p (st₂.cur p - n)
+          curW := st₂.curW - n * I.width p }
+  | _, _, .loop n body, ρB, ρI, st =>
+      (List.range (n.evalIn ρI)).foldlM
+        (fun st i => body.exec ρB (Fin.snoc (α := fun _ => ℕ) ρI i) st) st
+  | _, _, .whileFuel fuel p c x y body, ρB, ρI, st =>
+      ((List.range (fuel.evalIn ρI)).foldlM (fun (s : St P K C × Bool) _ =>
+        if s.2 then (cmpStep I p c (x.subst ρB fun v => .const (ρI v))
+            (y.subst ρB fun v => .const (ρI v)) s.1).bind fun r =>
+          if r.1 then (body.exec ρB ρI r.2).map fun st' => (st', true) else some (r.2, false)
+        else some s) (st, true)).bind fun r => if r.2 then none else some r.1
+  | _, _, .ite p c x y t e, ρB, ρI, st =>
+      (cmpStep I p c (x.subst ρB fun v => .const (ρI v)) (y.subst ρB fun v => .const (ρI v))
+        st).bind fun r => if r.1 then t.exec ρB ρI r.2 else e.exec ρB ρI r.2
+  | _, _, .named _ _ body, ρB, ρI, st => body.exec ρB ρI st
+
+def Prog.exec (prog : Prog P ι r b) (N : ℕ) (n : Fin r → ℕ) (st : St P K C) : Option (St P K C) :=
+  FStmt.exec I prog (fun j => (j : ℕ)) (Fin.cons N n) st
+```
+(`I : Interp P ι K C` is an explicit section variable, as for `exec`.)
+The leaves are written out, not delegated to `exec`, so that neither `exec` nor the PHOAS `Stmt`
+is in the closure of a target (F10). The copies cannot drift apart from `exec`: the bridge below is
+a theorem, and a difference between them makes its proof fail.
+
+**The bridge.** `FStmt.toStmt` instantiates a first-order statement as a statement of the current
+syntax at `VB := ℕ`, `VI := ℕ`: handles renamed by `ρB`, index variables replaced by index
+expressions `σ`, a loop variable by `.var i`. `Prog.toStmt` instantiates the sizes as constants,
+so that `Prog.toStmt prog N n` has the shape that `ProgFamily.inst` builds today.
+```lean
+def FStmt.toStmt : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fin ni → IExp ℕ) →
+    Stmt P ι ℕ ℕ
+def Prog.toStmt (prog : Prog P ι r b) (N : ℕ) (n : Fin r → ℕ) : Stmt P ι ℕ ℕ :=
+  FStmt.toStmt prog (fun j => (j : ℕ)) (Fin.cons (.const N) fun i => .const (n i))
+
+theorem FStmt.exec_eq_exec_toStmt {nb ni : ℕ} (s : FStmt P ι nb ni) (ρB : Fin nb → ℕ)
+    (σ : Fin ni → IExp ℕ) (st : St P K C) :
+    s.exec I ρB (fun v => (σ v).eval) st = exec I (s.toStmt ρB σ) st
+theorem Prog.exec_eq_exec_toStmt (prog : Prog P ι r b) (N : ℕ) (n : Fin r → ℕ) (st : St P K C) :
+    prog.exec I N n st = exec I (prog.toStmt N n) st
+```
+Both are proved (with `Instr.run_subst_congr`, `Instr.kind_subst`, `cmpStep_subst_congr`: a leaf
+depends on its index expressions only through their values). Every lemma and every invariant of
+`exec` (G9, G10, G13, G14, G29) therefore holds for `Prog.exec` by one rewrite. `toStmt` is proof
+infrastructure: no target mentions it.
+
+**`whileFuel`, stated exactly.** The loop tests at most `fuel` times and fails if every test it
+makes holds. So a successful run executes the body at most `fuel − 1` times, and the loop fails if
+the body runs `fuel` times. The docstring of `Stmt.whileFuel` ("at most `fuel` times") is off by
+one; it is corrected in step A, and `FStmt.whileFuel` is documented with this text.
+
+### F4. Subprograms: macro expansion, specifications proved once
+
+**Choice: macro expansion at build time.** A kernel (`dot`, `axpy`, …, `gramSchmidtProg`) stays a
+builder function. Each call is expanded into the caller's tree when the caller is compiled, and
+the `named` node keeps the label for the emitter. The first-order syntax has no call construct,
+and its run has no argument passing, so the trusted base gains nothing.
+
+**Reuse of specifications.** A kernel specification is proved once, about the current run of the
+builder's statement at `VB := ℕ`, `VI := ℕ` (as `exec_dot`, `exec_gramSchmidtProg` are today).
+A target's proof goes through the bridge: `Prog.exec c = exec (c.toStmt N n)`, and
+`c.toStmt N n = F.inst N n` by `rfl` (F5). In `F.inst N n` a kernel call is the Lean application
+whose specification is already proved. Measured cost, on the existing programs: no new lemma,
+one `rfl` instantiation equation per compiled program, and term growth by the expanded kernels
+(Hutch++ is 173 nodes, dense Hutch++ 221).
+
+**What is not needed.** No substitution lemma on first-order syntax: proofs never reason about an
+expanded copy directly. Such a lemma (`(k.subst σ).exec ρ = k.exec (eval ∘ σ)`, about 150 lines)
+would be needed only for proofs written natively on first-order syntax.
+
+**Alternative, recorded.** A `call` construct with a table of closed first-order subprograms. A
+specification would then be proved once on the callee's tree, with a call lemma, and trees would
+be smaller. It would add argument passing (handles, index expressions, cells) to the trusted run,
+about 60 lines, and the proofs would move off the builder. Worth it only if expanded trees become
+too large (none is, Lanczos included) or proofs move to first-order syntax.
+
+### F5. The compiler
+
+```lean
+def IExp.scope? (ni : ℕ) : IExp ℕ → Option (IExp (Fin ni))
+def Cell.scope? (nb ni : ℕ) (c : Cell ℕ ℕ) : Option (Cell (Fin nb) (Fin ni))
+def Instr.scope? (nb ni : ℕ) : Instr P ℕ ℕ → Option (Instr P (Fin nb) (Fin ni))
+def Arg.scope? (nb ni : ℕ) : Arg ℕ ℕ → Option (Arg (Fin nb) (Fin ni))
+/-- A statement at `VB := ℕ`, `VI := ℕ`, read with handles and indices as de Bruijn levels; a
+binder is applied to the next level, once; `none` if a variable is out of scope. -/
+def Stmt.compile : Stmt P ι ℕ ℕ → (nb ni : ℕ) → Option (FStmt P ι nb ni)
+/-- A family compiled once, at symbolic sizes: `N` is `.var 0`, size `i` is `.var (i + 1)`,
+declared buffer `j` is handle `j`. -/
+def ProgFamily.compile (F : ProgFamily P ι r b) : Option (Prog P ι r b) :=
+  (F ℕ ℕ (.var 0) (fun i => .var (i + 1)) fun j => j).compile b (r + 1)
+```
+A library program is `(ProgFamily.compile F).get h`, with `h` by `rfl` (checked for the three
+programs). Named `<spec>Prog.compiled`, for example `hutchppProg.compiled p o d : Prog P ι 2 1`;
+its instantiation equation `hutchppProg.toStmt_compiled` is `rfl`.
+
+**Size-dependent host computation is excluded by construction.** The compiler calls the family
+once, on the variables `.var 0, .var 1, …` and the handles `0, …, b-1`, never on a value of a
+size. Whatever Lean code the builder runs, it runs once, on syntax, and yields one tree. Even a
+builder that inspects the syntax it is given (matches on `.var 0`, or type-cases at `VI := ℕ`
+with `Classical`) produces one fixed tree, and the theorem is about that tree. The compiler can
+also reject: a forged handle (`forgeNat`) is out of scope, and compilation returns `none`.
+
+**The compiler is not trusted, and a general correctness lemma is neither provable nor needed.**
+"`(F.compile).get h` instantiates to `F.inst N n`" for every family `F` is parametricity in
+`VB`, `VI`, and it is false for a family that type-cases on its sorts. What the reuse of existing
+proofs needs is the equation for each library program, and it is `rfl`. A builder that recurses
+on host data is the exception: `cooImpl` folds over the pattern, so compiling sparse Hutch++ for
+a symbolic pattern needs an induction on the pattern, proving that compilation succeeds and
+instantiates to `cooImpl` (about 100 to 150 lines, step B). That proof is the only one in the
+migration that is not mechanical.
+
+### F6. Size-dependent constants
+
+The tree is fixed before the sizes, so a constant that depends on a size is never a literal. Two
+ways, in order of preference:
+1. **Computed by the program, and counted.** Every constant built from rational literals, index
+   values (`litIdx`), the field operations, square roots and comparisons: $1/\ell$ in Hutch++
+   (`litIdx ℓ`, one division), $\sqrt{N}$, $\log_2 N$ by a loop of comparisons, a bisection to any
+   precision. These are counted like any other operation.
+2. **A declared input of the target.** A constant the semantics cannot compute exactly (cosines
+   of Chebyshev nodes, tabulated quadrature weights) is a declared buffer whose contents the target
+   gives as a function of the sizes, for example `inputs N n _ := ![nodes (n 0)]`. It is visible in
+   the target, reviewed with it and hashed in its closure, and counted as memory from the start
+   (G15), but its computation is uncounted host work. The target's docstring says so ("given the
+   $q$ Chebyshev nodes").
+
+A third way, new operations (`cos`, `log`) in `UnOp` with a semantics and a contract, is a later
+change of the semantics, not a design point here.
+
+### F7. Models on programs
+
+The models keep their shape. `ProgFamily` becomes `Prog`, and `RunsWithin` gets its first-order
+form. In the scratch file these are `Scratch.ProgRunsWithin`, `Scratch.MatrixFree`,
+`Scratch.StoredEntries` and `Scratch.MatrixFreeProb`; the names below are the final ones.
+```lean
+def Prog.RunsWithin (I : Interp P ι K C) (prog : Prog P ι r b) (N : ℕ) (n : Fin r → ℕ)
+    (st₀ : St P K C) (c : C) (m : P → ℕ) (Q : St P K C → Prop) : Prop :=
+  ∃ st, prog.exec I N n st₀ = some st ∧ st.cnt ≤ st₀.cnt + c ∧
+    (∀ q, st.peak q + I.romSize q ≤ m q) ∧ Q st
+theorem Prog.runsWithin_iff : prog.RunsWithin I N n st₀ c m Q ↔
+    RunsWithin I (prog.toStmt N n) st₀ c m Q
+
+def MatrixFree (p : P) (prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop)
+    (X : ℕ → (Fin r → ℕ) → Type)
+    (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (cost : ℕ → (Fin r → ℕ) → OpCount P ι) (mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → (Dist → ℕ → ℝ) →
+      St P 𝕜 (OpCount P ι) → Prop) : Prop :=
+  ∀ N n, valid N n → ∀ (x : X N n) (A : Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ),
+    prog.RunsWithin (exactInterp (fun _ => A) ξ) N n
+      (inputState p (List.ofFn (inputs N n x))) (cost N n) (mem N n) (post N n x A ξ)
+```
+`StoredEntries` and `MatrixFreeProb` (in `RandomMatrix/Tape.lean`) change the same way:
+`(prog.inst N n)` becomes `prog.RunsWithin … N n`. The `ProgFamily` models are kept as proof
+infrastructure, renamed `ProgFamily.MatrixFree`, `ProgFamily.StoredEntries` and
+`ProgFamily.MatrixFreeProb` (with the composition theorems
+`ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl` and `…_cooImpl`). Each gets one
+transfer lemma, which generalises the scratch proofs:
+```lean
+theorem ProgFamily.MatrixFree.prog (h : F.MatrixFree p valid X inputs cost mem post)
+    (c : Prog P ι r b) (hc : ∀ N n, c.toStmt N n = F.inst N n) :
+    MatrixFree p c valid X inputs cost mem post
+```
+
+### F8. The targets of the existing results
+
+Written out exactly as elaborated (the sparse one stated, not yet proved):
+```lean
+/-- Rank-revealing modified Gram–Schmidt in place, matrix-free. -/
+def MatrixFreeGramSchmidt : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P), ∃ prog : Prog P ι 1 1, ∀ (𝕜 : Type) [RCLike 𝕜],
+    MatrixFree (𝕜 := 𝕜) p prog (fun _ _ => True) (fun N n => Matrix (Fin N) (Fin (n 0)) 𝕜)
+      (fun _ _ Y => ![(flatten Y).map some]) (fun N n => gramSchmidtCount p N (n 0))
+      (fun N n q => if q = p then N * n 0 + 3 else 0)
+      (fun _ _ Y _ _ st => Holds st.store p 0 0 (gramSchmidtQ Y))
+
+/-- Hutch++, matrix-free. -/
+def MatrixFreeHutchpp : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist), ∃ prog : Prog P ι 2 1,
+    ∀ (𝕜 : Type) [RCLike 𝕜],
+    MatrixFree (𝕜 := 𝕜) p prog (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => hutchppCount p o d N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun N n _ A ξ st => st.store.read p 0 0 = some
+        (hutchpp A (tapeMatrix (ξ d) 0 N (n 0)) (tapeMatrix (ξ d) (N * n 0) N (n 1))))
+
+/-- The Gaussian tail of Hutch++ that draws its own test matrices. -/
+def MatrixFreeProbHutchpp : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι), ∃ prog : Prog P ι 2 1,
+    ∀ (r : ℕ) (δ : ℝ), 0 < δ → ∀ τ : ℝ, 0 ≤ τ →
+    MatrixFreeProb (𝕜 := ℝ) p prog
+      (fun _ n => 0 < n 0 ∧ 0 < n 1 ∧ subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ n 0)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N n => hutchppCount p o .gaussian N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun _ _ _ A st => ∃ v, st.store.read p 0 0 = some v ∧ |A.trace - v| < τ)
+      (fun _ n _ A => δ + 2 * Real.exp (-(hansonWrightConstant *
+        min (n 1 * τ ^ 2 / (subgaussianRangeFinderFactor 1 * frobNorm (A - truncatedSVD A r) ^ 2))
+          (n 1 * τ / (√(subgaussianRangeFinderFactor 1) * frobNorm (A - truncatedSVD A r))))))
+
+/-- Dense Hutch++, from `N²` stored entries. -/
+def StoredEntriesDenseHutchpp : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist), ∃ prog : Prog P ι 2 1,
+    ∀ (𝕜 : Type) [RCLike 𝕜],
+    StoredEntries (𝕜 := 𝕜) p prog (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun N _ => N * N)
+      (fun N n => substCount (denseCost N) (hutchppCount p o d N (n 0) (n 1)))
+      (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
+        if q = p then N * N else 0)
+      (fun N n _ vals ξ st => st.store.read p 0 0 = some
+        (hutchpp (Matrix.of fun (i j : Fin N) => vals (i + N * j)) (tapeMatrix (ξ d) 0 N (n 0))
+          (tapeMatrix (ξ d) (N * n 0) N (n 1))))
+
+/-- Sparse Hutch++ for a public COO pattern; the program may depend on the pattern (Q1). -/
+def StoredEntriesCooHutchpp : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ)),
+    ∃ prog : Prog P ι 2 1, ∀ (𝕜 : Type) [RCLike 𝕜],
+    StoredEntries (𝕜 := 𝕜) p prog (fun N n => 0 < n 1 ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => pattern.length)
+      (fun N n => substCount (cooCost N pattern.length) (hutchppCount p o d N (n 0) (n 1)))
+      (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
+        if q = p then pattern.length else 0)
+      (fun N n _ vals ξ st => st.store.read p 0 0 = some
+        (hutchpp (cooMatrix pattern vals) (tapeMatrix (ξ d) 0 N (n 0))
+          (tapeMatrix (ξ d) (N * n 0) N (n 1))))
+```
+A proof, as in the scratch file:
+```lean
+theorem matrixFreeHutchpp : MatrixFreeHutchpp := by
+  intro P ι _ p o d
+  refine ⟨hutchppProg.compiled p o d, fun 𝕜 _ N n hv x A ξ => ?_⟩
+  rw [Prog.runsWithin_iff, hutchppProg.toStmt_compiled]
+  exact matrixFree_hutchppProg (𝕜 := 𝕜) p o d N n hv x A ξ   -- the ProgFamily-level lemma
+```
+The tail target uses the same witness at `d := .gaussian`, with `simp only` through the event of
+the measure. The dense target uses `(hutchppProg … ).run.substOracle (denseImpl N)` compiled. The
+existing results become the `ProgFamily`-level lemmas these proofs call.
+
+The program is chosen before the field: one tree serves every `RCLike 𝕜`. Tags, oracle names,
+the distribution and (sparse only) the pattern come before it. `r`, `δ` and `τ` come after it, so
+one program meets the tail for every target rank and every accuracy.
+
+### F9. Rules and checks
+
+| rule | before | after |
+|---|---|---|
+| E1 (programs generic in `VB`, `VI`, no host data) | error, hygiene since the Guarantees change | **retired**. The witness is a `Prog`, first-order and scoped by its type; a builder that is not generic still compiles to one tree, which is what the theorem is about. Its fixtures move: `forgeNat` becomes a compiler fixture (`compile` returns `none`), the others are dropped |
+| E3 (results are instances of an access model) | the lint of G52 | **the target lint** (F1): each registered target has one proof whose type is the constant; every `Result:` theorem about runs is one; the closure hashes match `docs/targets.toml`. Fixtures: the three cheats of audit 1 stated against a target, audit 2's `exec_copyTrace`, and an edit to `hutchppCount` (the hash changes) |
+| E4 (every `<spec>Prog` has a result in a model) | completeness | every registered target is proved; every `<spec>Prog` is the witness of a registered target. Completeness, not soundness |
+| E9 (a callee closes its allocations) | error, hygiene | **warning**. Memory is the target's `mem`, so a leaking callee makes a proof fail or a target larger, never a claim false |
+| E2, E5, E6, E8 | hygiene | unchanged; E2 matters for the emitter and the `Float` runner only |
+
+CONTRIBUTING §5.5 is rewritten accordingly, and §11 gains one rule: an agent does not edit a
+`*Targets.lean` file or `docs/targets.toml`; CI enforces it through the closure hash (Q3).
+
+### F10. Guarantees, re-classified
+
+The table of section "Guarantees", item by item, after the migration. "Same" keeps the class and
+the basis, except that the run is `FStmt.exec` and the basis reaches it through the bridge
+(`Prog.exec_eq_exec_toStmt`, P).
+
+| # | class before | class after | what changes |
+|---|---|---|---|
+| G1–G3, G5, G6, G8 | P | P | same |
+| G4, G7 | P, D | P, D | same |
+| G9, G10 | P | P | the invariants of `exec`, through the bridge |
+| G11, G12 | D | D | same: index arithmetic, loop iterations and control are not counted |
+| G13–G16 | P | P | through the bridge |
+| G17 | D | D | plus an audit item: the declared buffers are not counted in bit memory (`inputState` sets `curW` and `peakW` to $0$). Harmless while every interpretation has width $0$; fixed with `RunsWithinBits` (D17), whose initial state counts them |
+| G18 | D | D | same; the COO index storage, pending Q1 |
+| G19 | P, D | P, D | scoping is now by type (P); a builder callee's open `alloc` scopes over the caller's block, faithfully compiled; E9 a warning (D) |
+| G20 | P | P | strengthened: no handle out of scope exists in a `Prog`. Audit item: an oracle call whose block is empty (`cols = 0`, or `N = 0`) reads and writes nothing, succeeds and is charged one load; in the current syntax it did so even on a handle with no buffer, which a `Prog` cannot name (D) |
+| G21 | P | P, D | audit item: under `ComplexOrder` the comparisons `lt` and `le` of two complex numbers with different imaginary parts are `false`, not failures, so a branch on them is taken silently (D, Q4); `eq` is exact |
+| G22–G24, G26 | P | P | same |
+| G25 | P | P | the docstring corrected (F3): a successful `whileFuel` runs its body at most `fuel − 1` times |
+| G27 | P | P | strengthened: the program is bound before the sizes as well; one tree for every size and datum |
+| G28–G30, G33 | P | P | same (G29 through the bridge) |
+| G31 | P | P | the names before `∃ prog` are reviewed in the target; the program may depend on them, harmlessly |
+| G32 | D | D | same |
+| G34 | D | **P** | uniformity: one finite tree for all sizes; literals fixed in it; no host computation on sizes (the witness is a tree, and the compiler calls the builder once, on variables). Left as D: index arithmetic uncounted (G11); the sparse target is non-uniform in its public pattern (Q1) |
+| G35 | T (parametricity) | **removed** | the witness contains no Lean function; parametricity is used nowhere, not even as hygiene |
+| G36–G38, G40, G41 | P | P | same |
+| G39 | T | T | same (`Dist.law`) |
+| G42, G46, G49 | D | D | same |
+| G43 | P | P | `FStmt.exec` is structural |
+| G44, G45 | P | P | program substitution is proof infrastructure; no target mentions it |
+| G47 | P | P | the targets of F8 |
+| G48 | T | T | same (the specifications) |
+| G50, G51 | T | T | the emitter and the `Float` runner read the builder; an emitter of `Prog` trees is a later, small tool |
+| G52 | T (E3, coverage) | T (the target lint) | what is published is what the registry lists; no coverage claim is left |
+| G53, G54 | T | T | same (audit; E4 as in F9) |
+| G55 | D | D | hygiene: E2, E5, E6, E8, E9 (a warning); E1 retired |
+| **G56** (new) | | T | a published cost result is a theorem whose type is literally a registered target: no hypothesis, parameter or postcondition of the prover's. Script: one comparison of expressions |
+| **G57** (new) | | T | the target and every library definition it unfolds to are frozen: the closure hash in the registry. Script, and the maintainer's review of the registry (Q3) |
+| **G58** (new) | | P | the witness is first-order and scoped by its type (`Prog P ι r b`), checked by Lean's kernel |
+| **G59** (new) | | P | the compiler and the builder are untrusted: theorems are about the compiled tree, and a non-parametric builder only yields a tree the proof must handle |
+| **G60** (new) | | P | the run on first-order syntax agrees with the current run of the instantiated statement (`FStmt.exec_eq_exec_toStmt`), so the existing lemmas and invariants apply |
+
+**Count.** 60 items, one removed (G35): 41 (P) (G4, G7, G19, G21 partly (D)), 9 (T) (G39, G48,
+G50–G54, G56, G57), 9 (D) (G11, G12, G17, G18, G32, G42, G46, G49, G55). Non-uniformity, advice
+and parametricity are no longer issues; G34 is (P) and G35 is gone.
+
+**The trusted base, exactly.** Base item 1 (kernel and axioms) is unchanged. Base item 3 (the
+statement of each result) shrinks to the review of each target, done once per target, in the
+registry. Base item 2 becomes the closure of the targets: the library definitions their statements
+unfold to. For the five targets of F8 the scratch computation lists 92 named constants besides
+the targets (plus matchers, recursors and derived instances), grouped:
+* **Syntax**: `IExp`, `Cell` (`buf`, `idx`), `Instr`, `BinOp`, `UnOp`, `CmpOp`, `Dist`, `Arg`
+  (labels only), `FStmt`, `Prog`;
+* **Substitution and evaluation used by the run**: `IExp.subst`, `IExp.evalIn`, `IExp.eval`,
+  `Cell.subst`, `Instr.subst`, and Mathlib's `Fin.snoc`, `Fin.cons`;
+* **The run**: `FStmt.exec`, `Prog.exec`, `Instr.run`, `Instr.kind`, `cmpStep`, `Store`,
+  `Store.read`, `Store.write`, `Store.readBlock`, `Store.writeBlock`, `St` and its fields,
+  `Interp` and its fields, `ScalarSem` and its fields, `OpKind`, `OpCount`;
+* **Budget and models**: `Prog.RunsWithin`, `MatrixFree`, `MatrixFreeProb`, `StoredEntries`,
+  `inputState`;
+* **Interpretations and layout**: `exactSem`, `exactInterp`, `storedInterp`, `matOracle`,
+  `flatten`, `unflatten`, `tapeMatrix`, `Holds`, `Dist.law`, `tapeLaw`;
+* **Count and memory formulas**: `gramSchmidtCount`, `hutchppCount`, `denseCost`, `cooCost`, and
+  the count substitutions `substCount`, `substKind`, `substCountG`;
+* **Specifications**: `gramSchmidtQ`, `hutchpp` (with `rangeProjector`, `girardHutchinson`,
+  `rsvd`), `cooMatrix`; for the tail, `frobNorm`, `truncatedSVD` (with `IsSVD`, `svdU`, `svdV`,
+  `singularValues`, `HasOrthonormalCols`), `subgaussianEmbeddingDim`,
+  `subgaussianRangeFinderFactor`, `hansonWrightConstant`, `iidSequence`, `rademacherMeasure`;
+* **the targets themselves**.
+
+Out of the base, where they were before: the PHOAS `Stmt`, `Builder` and `exec` (no target
+reaches them); `ProgFamily` and `ProgFamily.inst`; program substitution (`Stmt.subst`,
+`Stmt.substOracle`); the compiler and `toStmt`; certificates, kernel specifications and every
+proof. Mathlib's notions (`Matrix`, `Finsupp`, `Measure.infinitePi`, `HasLaw`, `gaussianReal`,
+`Measure.real`) are read as Mathlib's. The audit's smaller items are each recorded above (G17,
+G20, G21, G25).
+
+### F11. Migration
+
+Every existing proof carries over unchanged. The realisations, the kernel specifications, the
+certificates and the substitution theorem stay statements about `exec` on the builder's
+statement, reached through the bridge and the `rfl` instantiation equations. Rework is limited to
+the sparse instantiation (F5), the fixtures and the scripts. Three steps, with disjoint files; B
+and C run in parallel after A.
+
+**Step A: the core** (one agent; about 600 lines, all elaborated in the scratch file):
+1. `Computation/Syntax.lean` (+110): `IExp.subst`, `IExp.evalIn`, `Cell.subst`, `Instr.subst`,
+   `Arg.subst`, `FStmt`, `Prog`; the `whileFuel` docstring corrected. `IExp.eval_subst` goes to
+   `Exec.lean`, next to `IExp.eval`. Mechanical.
+2. `Computation/Compile.lean` (new, about 110): `IExp.scope?`, `Cell.scope?`, `Instr.scope?`,
+   `Arg.scope?`, `Stmt.compile`, `ProgFamily.compile`, `FStmt.toStmt`, `Prog.toStmt`.
+   Mechanical.
+3. `Computation/FirstOrder.lean` (new, about 250): `FStmt.exec`, `Prog.exec`, the bridge with its
+   three congruence lemmas (proved), `Prog.RunsWithin`, `Prog.runsWithin_iff`, and the run
+   invariants for `Prog.exec` (one line each through the bridge: counts grow, memory freed, shape
+   kept, peaks grow, a run that charges nothing writes nothing, the oracle the only access).
+   Mechanical from the scratch.
+4. `Computation/Model.lean` (+80): `MatrixFree` and `StoredEntries` on `Prog`; the `ProgFamily`
+   models renamed into namespace `ProgFamily`; the transfer lemmas `ProgFamily.MatrixFree.prog`,
+   `ProgFamily.StoredEntries.prog`. Renames mechanical, transfer lemmas about 10 lines each.
+5. `Computation/Dense.lean`, `Computation/Sparse.lean`: the composition theorems renamed into
+   `ProgFamily.MatrixFree`. Mechanical.
+6. `RandomMatrix/Tape.lean` (+40): `MatrixFreeProb` on `Prog`, `ProgFamily.MatrixFreeProb`, its
+   transfer lemma.
+
+**Step B: the targets and their proofs** (topic files; about 450 lines):
+1. `Matrix/Factorizations/GramSchmidtTargets.lean` (new, about 50): `gramSchmidtCount` (moved),
+   `MatrixFreeGramSchmidt`.
+2. `Matrix/Factorizations/GramSchmidtProgram.lean` (+30): `gramSchmidtProg.compiled`, its `rfl`
+   equation, `matrixFreeGramSchmidt`; `matrixFree_gramSchmidtProg` becomes the
+   `ProgFamily`-level lemma (name kept, no result id). Mechanical.
+3. `Estimation/Trace/HutchPlusPlusTargets.lean` (new, about 130): `hutchppCount` (moved), the four
+   Hutch++ targets.
+4. `Estimation/Trace/HutchPlusPlusProgram.lean` (+250): `hutchppProg.compiled`, the compiled dense
+   program, the per-pattern sparse program, their equations, the four proofs. The three `rfl`
+   equations and four proofs are mechanical (80 lines). **Rework**: the sparse compilation, an
+   induction on the pattern through `List.forM` in `cooImpl` (about 120 lines). It moves to
+   `Sparse.lean`, as a lemma about `cooImpl`, if Q1 is declined.
+
+**Step C: checks and documents** (scripts and docs; about 450 written, 200 deleted):
+1. `scripts/Targets.lean` (new, about 180): the lint and the closure hash of F1, reading
+   `docs/targets.toml`; `--update` rewrites the hashes for review. Fixtures: the three cheats of
+   audit 1 against a target, audit 2's `exec_copyTrace`, a target with an edited count.
+2. `docs/targets.toml` (new): the five targets, with hash, file and review date. The hashes are
+   filled in after step B lands.
+3. `scripts/Programs.lean` (−150, +40): E1 and the old E3 removed, E9 a warning, E4 re-pointed.
+4. `scripts/AccessModelFixtures.lean` (about 60 changed): the `not_` theorems restated for the
+   models on `Prog`, the fixture programs written as trees.
+5. `docs/rules/rules.toml` (E1 retired, E3 and E4 rewritten, E9 a warning), the generated
+   DIGEST and RULES files, CONTRIBUTING §5.5 and §11, `scripts/stage_check.sh` (runs
+   `scripts/Targets.lean`), and this note's changes sections.
+
+Total about 1,500 lines written and 200 deleted. Not needed: a change to any proof of a
+realisation or a kernel, and to `NLAlibTools` (the `Float` runner and the emitter keep reading the
+builder). Lanczos (stage 1b) starts from its targets: the library writes `MatrixFreeLanczos` and
+`MatrixFreeLanczosBasis` first, and the proof agent receives them as fixed statements.
+
+### F12. Questions for the maintainer
+
+Each would change an approved decision beyond the two changes; none is decided here.
+
+* **Q1. A uniform sparse model** (changes D14 and G34). With the pattern unrolled into the
+  program, the sparse target must quantify the pattern before `∃ prog`, so the program is
+  non-uniform in the pattern, as D14 approved ("public, unrolled"). Making it uniform needs an
+  index read: a binder `romIdx i body` that binds a new index variable to entry `i` of
+  read-only index data, counted (`.romIdx p`) and counted in memory. The pattern then becomes
+  data bound after the program, its storage is counted ($2\,\mathit{nnz}$ cells for COO), and
+  `cooImpl` takes no host data. It is the first construct that addresses memory by a data value
+  (G34's "no construct turns a cell into an index" would no longer hold), and out-of-range
+  indices fail, as every access does. Recommendation: yes, as a small stage of its own after this
+  migration (about 300 lines). It also removes step B's only non-mechanical proof. Until then, the
+  interim target `StoredEntriesCooHutchpp` of F8.
+* **Q2. Existential targets, or targets about named programs** (affects E1's stated purpose in
+  G55, "the emitted NumPy is the program the result is about"). Both forms are watertight.
+  `∃ prog` keeps the closure small and lets agents improve programs without re-review. A named
+  target (`MatrixFree p (hutchppProg.compiled p o d) …`) puts the program, the builder, the kernels
+  and the compiler in the closure, so any kernel edit changes the hash. Recommendation:
+  existential targets, with the witness recorded as checked metadata: the lint also verifies that
+  the proof's witness is the registered `<spec>Prog.compiled`, and the emitter prints that
+  program. The link to the emitted code is then checked, though it is not part of the statement.
+* **Q3. Who may change the registry.** A new target, or a changed closure hash (after an edit to
+  a count, a specification or the semantics), takes effect only through a diff of
+  `docs/targets.toml`. Recommendation: such diffs need the maintainer's approval, and agents do
+  not edit `*Targets.lean` files or the registry (CONTRIBUTING §11). A toolchain bump that changes
+  every hash is reviewed as one diff with no change of statement.
+* **Q4. Complex comparisons** (changes `exactSem`, D2). Under `ComplexOrder`, `lt` and `le` of
+  incomparable values are `false` (G21). Recommendation: make them fail unless both arguments
+  are real, so that a branch on an incomparable pair is a failure the proof must exclude, as
+  division by zero is. About 20 lines; no current program uses `lt` or `le`, and
+  `isRelErrSem_exactSem` (for $\Bbbk = \mathbb{R}$) is unaffected.
