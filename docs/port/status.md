@@ -313,6 +313,36 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: guarantees (2026-10-23)
+
+Branch `computation/stage1` (worktree `nlalib-block`), from `056f9ed`. The maintainer's change
+("this stuff needs to be watertight … Are we relying on checks or are we provably guaranteed about
+the costs. Make this change"): results about programs are instances of access models, so that the
+program cannot depend on the data and the counts and memory are functions of the sizes by
+definition, checked by the kernel. New `Computation/Model.lean` (`ProgFamily`, `MatrixFree`,
+`StoredEntries`, `storedInterp`); `MatrixFreeProb`, `tapeLaw`, `Dist.law` in
+`RandomMatrix/Tape.lean`; the invariants of the run in `Exec.lean` (counts grow, every allocation
+freed, peaks grow, no uncharged write or draw, a run with no oracle call is the same for every
+oracle); the composition at the level of the models in `Dense.lean`, `Sparse.lean`. Results:
+`matrixFree_gramSchmidtProg`, `matrixFree_hutchppProg`, `matrixFreeProb_hutchppProg`,
+`storedEntries_substOracle_hutchppProg_denseImpl`, `storedEntries_substOracle_hutchppProg_cooImpl`;
+the old realisations are private. E3 is now the lint "results about runs are instances", E4 asks
+for a result in a model, E1, E2, E9 are hygiene; `scripts/AccessModelFixtures.lean` proves the
+cheating realisations false as instances. Classification of every claimed property, and what is
+trusted: `docs/design/Computation.md`, "Guarantees" (55 properties: 37 proved, 8 trusted, 10
+modelling choices); the changes: its last section. Checks: `lake build --wfail NLAlib` 4012 jobs,
+0 warnings; `scripts/stage_check.sh`: 413 proved modules, 0 not yet, audit 11418 declarations 0
+violations, lint 0 errors, `scripts/Programs.lean` 14 programs and kernels (6 called by others), 7
+results in an access model, 0 violations, every fixture rejected or flagged;
+`scripts/AccessModelFixtures.lean` 9 theorems; references, constants, LaTeX 0 problems; rules 0
+errors, 73 in the baseline, 876 warnings (unchanged); duplicates 0 classes; script tests 48 OK;
+`lake build NLAlibTools` (2 `sorry` in `FixedPoint.lean`, expected); `mk_all --check` clean.
+
+Open items for the maintainer:
+* An adjoint oracle (a second matrix derived from $\mathbf{A}$) needs a model of its own (G32).
+* The analogue of the oracle-independence theorem for the tape and the read-only data is cheap
+  and not yet stated (G30).
+
 ## Computation stage 1: proofs (2026-10-23)
 
 Branch `computation/stage1` (worktree `nlalib-block`), base `88016e3` rebased onto `c31f6c0`

@@ -1,6 +1,6 @@
 # Design note: computation, stage 1 (exact arithmetic, counts, memory, oracles, draws)
 
-**Approved by the maintainer, 2026-10-23:** D1 option C (deep embedding); all other decisions as recommended; D16 to D19 (added after the first approval) as recommended.
+**Approved by the maintainer, 2026-10-23:** D1 option C (deep embedding); all other decisions as recommended; D16 to D19 (added after the first approval) as recommended; the same day, the change of section "Guarantees" (results are instances of access models, the scripts demoted).
 
 **History.** Drafts 1 to 6, 2026-10-22 and 23, each after a bounded review. The fourth draft's
 decisions (D1 to D15) were approved on 2026-10-23. D16 to D19, added for the maintainer's
@@ -537,7 +537,7 @@ def lanczosBasisProg (p : P) (o : ι) (N q : IExp VI) (b alpha beta Q : VB) :
       (N * ((.var j + 1) % 3)) s ⟨alpha, .var j⟩ ⟨beta, .var j⟩
 ```
 
-**Realisations** (statements; the proofs are the skeleton's work):
+**Realisations** (statements; the proofs are the skeleton's work). Superseded on 2026-10-23: results are now instances of the access models of section "Guarantees", and the statements below are private proof steps of the instances.
 
 ```lean
 theorem runsWithin_hutchppProg (p : P) (o : ι) (d : Dist) {N k ℓ : ℕ} (hℓ : 0 < ℓ)
@@ -716,8 +716,8 @@ See D15 (stage 1b).
 |---|---|---|
 | E1 | A program (type ending in `Builder` or `Stmt`) is generic in its two variable sorts. No instance or hypothesis mentions them. Every argument is a type parameter, a tag or oracle name, a `Dist`, a handle, an index expression, a cell or a program; host data (`ℕ` sizes, `List`, functions) is rejected outside implementation files. | accepts `dot`, `axpy`, `orthAgainst`, `hutchppProg`, `lanczosStepProg`, `lanczosProg`, `lanczosBasisProg`; rejects `cooImpl` at `pattern` (an implementation, allowlisted by file), `forgeNat` (not generic), `forgeFun` at `f : VI → VB`, `hostSize` at `n : ℕ` |
 | E2 | Programs, kernels and implementations are computable. | not re-run |
-| E3 | In `RunsWithin I s st₀ c m Q`, no data variable of `I` (dimensions in `ℕ` excepted) occurs in `s` or in `st₀`. | accepts `runsWithin_hutchppProg`, `runsWithin_lanczosProg`; rejects `runsWithin_cheat` (which puts `flatten A` in the initial store) at `A` |
-| E4 | Every `<spec>Prog` has `runsWithin_<spec>Prog`. | not re-run |
+| E3 | In `RunsWithin I s st₀ c m Q`, no data variable of `I` (dimensions in `ℕ` excepted) occurs in `s` or in `st₀`. Replaced on 2026-10-23 by a lint: a public result about a program's runs is an instance of an access model (section "Guarantees"). | accepts `runsWithin_hutchppProg`, `runsWithin_lanczosProg`; rejects `runsWithin_cheat` (which puts `flatten A` in the initial store) at `A` |
+| E4 | Every `<spec>Prog` has `runsWithin_<spec>Prog`; from 2026-10-23, a result in an access model. | not re-run |
 | E5 | `NLAlib/Computation` imports only Mathlib and ForMathlib. | not re-run |
 | E6 | Only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. | not re-run |
 | E7 | Merged into E1 (host sizes). | |
@@ -745,6 +745,7 @@ keep each file under about 1000 lines; the proved lengths are in "Changes during
 | `Computation/Subst.lean` | substitution theorem, oracle corollary (proved) | 590 | 590 |
 | `Computation/Exact.lean` | `exactSem`, `exactInterp`, layout, `Holds`, frame | 160 | 450 |
 | `Computation/Contract.lean` | `IsRelErrSem`, exact instance, failing semantics (proved) | 160 | 200 |
+| `Computation/Model.lean` (added for the guarantees) | `ProgFamily`, `storedInterp`, `MatrixFree`, `StoredEntries` | | |
 | `Computation/BLAS.lean` | nine kernels, the level-1 specifications | 320 | 1,050 |
 | `Computation/BLAS/MatrixKernels.lean` (split from `BLAS.lean` at the close) | the specifications of `gemv`, `ger`, `gemm` | | |
 | `Computation/Dense.lean`, `Computation/Sparse.lean` | `denseImpl`, `cooImpl`, interpretations, costs, certificates | 170 | 400 |
@@ -779,6 +780,188 @@ keep each file under about 1000 lines; the proved lengths are in "Changes during
   with stage 2.
 * Mathlib deviations: none. `Builder` is Mathlib's `ContT`, and no other object duplicates a
   Mathlib notion; `docs/design/Mathlib-deviations.md` is unchanged.
+
+
+## Guarantees: what is proved and what is trusted (2026-10-23)
+
+**A change approved by the maintainer on 2026-10-23**, in his words: "this stuff needs to be
+watertight, because we will be allowing stuff to prove autonomously. The same general question for
+stuff beyond oracles. Are we relying on checks or are we provably guaranteed about the costs. Make
+this change."
+
+**What was wrong.** Until this change, the information restriction (a realisation's program does
+not see the matrix) was a script, the old E3 of `scripts/Programs.lean`, which inspected the
+variables of each theorem concluding `RunsWithin`. It was a syntactic proxy with gaps: a tail
+`μ.real {ω | ¬ RunsWithin (exactInterp (fun _ => A) (ξ ω)) prog …} ≤ δ` does not conclude
+`RunsWithin` and was not examined; a tape law hypothesis could depend on $\mathbf{A}$
+(`HasLaw ξ (iidSequence (leverageDist A)) μ`) and was not examined; a variable whose type is a type
+parameter counted as non-data, and E1 admitted arguments of such types and instances not
+mentioning the variable sorts, so a program taking `(M : Type) [Entries M] (x : M)` could turn
+$\mathbf{A}$ into literals. Each gap is a fixture now (below).
+
+**What replaces it.** Results are instances of access models (`NLAlib/Computation/Model.lean`,
+`NLAlib/RandomMatrix/Tape.lean`), in the style of CSLib's query bounds
+(`Cslib.Query.UpperBound prog size bound := ∀ oracle n x, size x ≤ n → … ≤ bound n`, where the
+binder order makes the program independent of the oracle):
+
+* `ProgFamily P ι r b := (VB VI : Type) → IExp VI → (Fin r → IExp VI) → (Fin b → VB) → Stmt P ι VB VI`:
+  a program built from the oracle dimension, $r$ further sizes and the handles of $b$ declared
+  buffers. It receives no data. `ProgFamily.inst prog N n` is the statement that runs.
+* `MatrixFree p prog valid X inputs cost mem post`:
+  `∀ N n, valid N n → ∀ (x : X N n) (A : Matrix (Fin N) (Fin N) 𝕜) (ξ : Dist → ℕ → ℝ),
+  RunsWithin (exactInterp (fun _ => A) ξ) (prog.inst N n) (inputState p (List.ofFn (inputs N n x)))
+  (cost N n) (mem N n) (post N n x A ξ)`.
+* `MatrixFreeProb p prog valid X inputs cost mem good bound`: for the same data and every tape
+  `ξ : Ω → Dist → ℕ → ℝ` with `HasLaw ξ tapeLaw μ`, the probability that the run fails to satisfy
+  `RunsWithin … (good N n x A)` is at most `bound N n x A`. The law `tapeLaw` is fixed by the
+  definition: the tapes of the distributions independent, the tape of `d` i.i.d. with law
+  `Dist.law d` (`gaussianReal 0 1`, `rademacherMeasure`).
+* `StoredEntries p prog valid X inputs len cost mem post`: the same with the data the entries
+  `vals : ℕ → 𝕜` held as read-only data (`storedInterp (len N n) vals ξ p`: counted reads, `len`
+  cells of counted constant memory, no oracle).
+
+Instances (all proved): `matrixFree_gramSchmidtProg`, `matrixFree_hutchppProg`,
+`matrixFreeProb_hutchppProg`, `storedEntries_substOracle_hutchppProg_denseImpl`,
+`storedEntries_substOracle_hutchppProg_cooImpl`, and the model-level composition theorems
+`MatrixFree.storedEntries_substOracle_denseImpl` and `MatrixFree.storedEntries_substOracle_cooImpl`.
+The earlier realisations are private proof steps.
+
+**The trusted base, once.** Every (P) below is proved by Lean relative to this base, and every (T)
+names the part of it, or the script, that it rests on.
+
+1. Lean's kernel, and the axioms `propext`, `Classical.choice`, `Quot.sound` (`scripts/Audit.lean`
+   checks that nothing else, `sorryAx` included, is used; with `--wfail` a `sorry` fails the
+   build).
+2. The meaning of the definitions a result's statement unfolds to, read as written: the syntax
+   (`Syntax.lean`), the store (`Store.read`, `Store.write`), the run `exec` with `Instr.run`,
+   `Instr.kind` and `cmpStep`, the interpretations `exactSem`, `exactInterp`, `storedInterp`,
+   `inputState`, `RunsWithin`, the three models, `Dist.law` and `tapeLaw`, and the Mathlib notions
+   they use (`Matrix`, `Finsupp`, `Measure.infinitePi`, `HasLaw`, `gaussianReal`). These are about
+   900 lines; a statement about a program means what they say.
+3. The statement of each instance, read as written: its size condition `valid`, its declared
+   inputs (`X`, `inputs`), its counts, memory and postcondition (or event and bound), and its
+   other hypotheses. The model guarantees that the program meets exactly that statement for every
+   datum, not that the statement is the interesting one (a false size condition or an empty type
+   of declared inputs makes it vacuous, a weak postcondition gives an honest but weak result, and
+   a postcondition may relate the declared inputs to the matrix; each is visible in it).
+
+Certificates (`ImplementsInstr`, `ImplementsOracle`), kernel specifications and the proofs are not
+in the base: a result's statement does not mention them, and the kernel checks the proofs.
+
+**Key**: (P) proved by Lean, by definition, by the semantics or by a named theorem; (T) trusted,
+naming what; (D) a documented modelling choice. For a (T): whether it can become (P) now, later or
+never.
+
+### Counts
+
+| # | property | class | basis |
+|---|---|---|---|
+| G1 | Arithmetic (`bin`: add, sub, mul, div, and the word operations) is charged once per executed operation, at its kind `.bin p b` | P | `exec_instr` (an instruction adds `I.charge i.kind`), `Instr.kind`, the charge `Finsupp.single k 1` of `exactInterp` and `storedInterp`; trusting base item 2 (the 7-line `Instr.kind`) |
+| G2 | Unary operations (`neg`, `conj`, `re`, `sqrt`, `bnot`), at `.un p u` | P | as G1 |
+| G3 | Comparisons, at `.cmp p`, once per `ite` and once per test of `whileFuel` (the final failing test included) | P | `cmpStep`, `exec`; `snd_of_cmpStep_eq_some` |
+| G4 | Literals, at `.lit p`; an index literal `litIdx` is charged as a literal | P, D | `Instr.kind`; charging `litIdx` as a literal is the modelling choice |
+| G5 | Conversions, at `.convert p q`; copies at `.copy p` | P | as G1 |
+| G6 | Read-only reads, at `.rom p`, one per read | P | `exec` |
+| G7 | Oracle calls: one `.load p o` and `cols` counts of `.matvec p o` per call, whatever the dimension | P, D | `exec`, `exec_apply_exactInterp`; the oracle's own cost is abstract (D4) |
+| G8 | Draws, at `.draw p d`, one per drawn value | P | `exec_seq_instr_draw`, `exec_forRange_draw` |
+| G9 | Every write and every draw is charged: with every charge nonzero, a run whose counts do not grow leaves the store and the tape positions unchanged | P (new) | `store_eq_of_exec_eq_some_of_cnt_le`, `pos_eq_of_exec_eq_some_of_cnt_le` |
+| G10 | Counts only grow, and the counts of a sequence are those of its parts in turn | P (new) | `cnt_le_of_exec_eq_some`, `exec_seq`; `RunsWithin` bounds the growth from the initial counts, which are $0$ (`inputState`) |
+| G11 | Not counted: index arithmetic (`IExp`), loop iterations, `skip`, `seq`, `named`, the allocation itself (its memory is counted, G13). A loop with an empty body runs uncounted | D | §7.5 (control cost is a later stage, with a control kind) |
+| G12 | A result is an upper bound per kind (`OpCount` ordered pointwise); weighted totals are `Finsupp.weight` | D | D5 |
+
+### Memory
+
+| # | property | class | basis |
+|---|---|---|---|
+| G13 | Current memory is the live allocations: an allocation raises the current memory of its tag by its length and frees it at the end of its body, and a run ends with the current memory (cells and bits) and the shape of the store (tag and length of every buffer) of its start, so it frees exactly what it allocates | P (new) | `exec_alloc`; `cur_eq_of_exec_eq_some`, `curW_eq_of_exec_eq_some`, `shape_eq_of_exec_eq_some` |
+| G14 | The peak is raised at each allocation to cover the current memory plus the new buffer, and only grows | P (new) | `exec_alloc`; `peak_le_of_exec_eq_some`, `peakW_le_of_exec_eq_some` |
+| G15 | The declared buffers count from the start, and the initial state is built by the model, not chosen by the theorem: current and peak memory are their total length, counts $0$, tape positions $0$ | P | `inputState`; the models build `inputState p (List.ofFn (inputs N n x))` |
+| G16 | The memory bound is per tag on peak plus read-only data (`peak p + romSize p ≤ m p`); `storedInterp` counts its `len` entries | P | `RunsWithin`, `storedInterp` |
+| G17 | Units: cells per tag; bits are tracked (`curW`, `peakW`) but `RunsWithin` bounds cells only, and the exact and stored interpretations have width $0$ | D | D17 |
+| G18 | Not counted: the oracle's matrix (an oracle), and the index storage of a COO pattern (public, unrolled into the program) | D | D14 |
+| G19 | Scoping: an `alloc` is live for its body, so an open `alloc` in a callee stays live, and counted, for the rest of the caller's block (E9 keeps it intended, not correct) | P, D | `exec_alloc`; D11 |
+| G20 | No use after free and no unaccounted buffer: every access goes through `Store.read`/`Store.write`, which fail past the stack; a handle forged at `VB := ℕ` reaches only live, counted buffers | P | `Store.read`, `Store.write`, `Store.read_eq_none_of_size_le` |
+
+### Success and failure
+
+| # | property | class | basis |
+|---|---|---|---|
+| G21 | Division by zero, the square root of a number not nonnegative, the word operations and `bnot` fail at the exact level | P | `exactSem` |
+| G22 | An invalid oracle query (wrong block length) fails; under `storedInterp` every oracle call fails | P | `matOracle`, `storedInterp` |
+| G23 | An aliased oracle call (overlapping source and destination blocks) fails | P | `exec` |
+| G24 | Reading an uninitialised cell fails (fresh buffers are `none`), and so do out-of-bounds access and a tag mismatch | P | `Store.read`, `Store.write`, `exec_alloc` |
+| G25 | Running out of fuel in `whileFuel` fails | P | `exec` |
+| G26 | A result proves success: `RunsWithin` asserts the run is `some`, so every instance proves that none of G21 to G25 happens | P | `RunsWithin` |
+
+### Information restriction and host computation
+
+| # | property | class | basis |
+|---|---|---|---|
+| G27 | The program does not depend on the matrix, the tape or the declared inputs: the models bind the program before them, and the family receives only sizes and handles | P (new) | `MatrixFree`, `MatrixFreeProb`, `StoredEntries` (binder order), checked by the kernel; the old gaps are false as instances (`not_matrixFree_leakProg`, `not_matrixFree_copyProg`, `not_matrixFree_drawProg`) |
+| G28 | The counts and the memory are functions of the sizes only | P (new) | the models apply `cost` and `mem` to `N n` |
+| G29 | During the run the matrix reaches the program only through oracle calls: a run that makes no oracle call is the same for every matrix | P (new) | `exactInterp` (only its oracle field depends on $\mathbf{A}$); `exec_eq_of_exec_eq_some_of_cnt_load_le`, `exec_exactInterp_eq_of_exec_eq_some_of_cnt_load_le` |
+| G30 | The stored entries reach the program only through counted read-only reads | P | `storedInterp`, `exec` (only `.rom` reads `I.rom`); a theorem as for G29 is cheap, later |
+| G31 | Type parameters (tags `P`, oracle names `ι`, the field, the input types `X`) cannot carry the data: they are fixed before it. The gap-3 program (`leakProg`, a value of a type parameter read by a class) is accepted by E1 and harmless | P | binder order; `not_matrixFree_leakProg` |
+| G32 | Every oracle name means the one matrix $\mathbf{A}$; an adjoint oracle needs a model with a second matrix derived from $\mathbf{A}$ | D | later |
+| G33 | No host computation on data: no Lean term in the program can mention the data, which are bound after it; the run `exec` is the only computation on data, and it is counted (G1 to G10) | P | G27, G9 |
+| G34 | Host computation on sizes and literals is uncounted. It can: compute any rational literal and any index expression from the sizes, unroll loops, choose a different program for each size (the model is non-uniform, like a circuit family), and inspect the size expressions. It cannot: depend on the data (G27); write an irrational or data-dependent literal (literals are `ℚ` constants of the syntax); address memory by a data value (no construct turns a cell into an index: `IExp` has variables, constants and arithmetic only); or avoid the charge of any executed instruction (G9). The cost of building the program is not bounded | D | `Instr.lit`, `IExp`; E1 keeps programs uniform (hygiene) |
+| G35 | Uniformity in the variable sorts (a program cannot forge a handle or compute one from an index) holds by parametricity, a meta-argument that Lean's logic does not prove (with `Classical.choice` a term can case on a type). The guarantees do not use it (G20) | T: parametricity, with E1 and E2 as its checks | never in Lean; not needed |
+
+### Randomness
+
+| # | property | class | basis |
+|---|---|---|---|
+| G36 | The program reads the tape only by draws, each at the current position of its distribution, which then advances | P | `Instr.run`, `exec_seq_instr_draw`; G9 |
+| G37 | Deterministic results hold for every tape | P | `MatrixFree`, `StoredEntries` |
+| G38 | Probabilistic results have the law `tapeLaw`, fixed by the definition, never a hypothesis supplied per theorem; it cannot depend on the matrix | P (new) | `MatrixFreeProb` (`matrixFreeProb_iff`); `not_matrixFreeProb_drawProg` |
+| G39 | `Dist.law` is the intended law of each distribution: `gaussianReal 0 1` and `rademacherMeasure` | T: these two definitions | never (they are the meaning) |
+| G40 | A tail bound for the specification transfers to the program, with no new probability; the Hutch++ tail is proved from the tape laws | P | `measureReal_not_runsWithin_le`, `hasLaw_tapeMatrix_of_hasLaw_iidSequence`, `indepFun_tapeMatrix_of_hasLaw_iidSequence`, `hasLaw_apply_of_hasLaw_tapeLaw`, `matrixFreeProb_hutchppProg` |
+| G41 | A tail is on `μ.real` of a set that need not be measurable, that is on its outer measure, which bounds every measurable subset | P | Mathlib's `Measure.real` |
+| G42 | Draws of other laws from bits (draw substitution) are not available; the tape is real-valued and cast into the field | D | §7.3 |
+
+### Termination, composition, realisations
+
+| # | property | class | basis |
+|---|---|---|---|
+| G43 | Every run terminates: `exec` is a total function by structural recursion, `whileFuel` is bounded by its fuel | P | `exec` (accepted by the kernel) |
+| G44 | Substitution of instructions and oracle calls by certified implementations | P | `RunsWithin.subst`, `RunsWithin.substOracle` |
+| G45 | Composition at the level of the models: a matrix-free result gives the dense and the sparse stored-entries results | P (new) | `MatrixFree.storedEntries_substOracle_denseImpl`, `MatrixFree.storedEntries_substOracle_cooImpl`, from `implementsOracle_denseImpl`, `implementsOracle_cooImpl` |
+| G46 | Comparisons and draws are kept by substitution, read-only reads cost themselves | D | D18, §7.3 |
+| G47 | The realisations meet their specifications: Gram–Schmidt computes `gramSchmidtQ`, Hutch++ computes `hutchpp`, with their counts, memory and tail | P | the instances listed above |
+| G48 | The specifications mean the algorithms of the citations: `gramSchmidtQ`, `hutchpp` and their library theorems | T: those definitions, as every library statement | never; read with their theorems |
+| G49 | The counts of Gram–Schmidt and Hutch++ are upper bounds, exact for full column rank | D | D5, D6 |
+
+### Tools and scripts
+
+| # | property | class | basis |
+|---|---|---|---|
+| G50 | NumPy emission (`NLAlibTools/NumPy.lean`) is an unverified translation, outside the guarantee | T: the emitter and NumPy | never (Python is not modelled); differential tests only |
+| G51 | `Float` runs (`NLAlibTools/Float.lean`) are outside the guarantee | T: the interpreter and `Float` | later, relative to a format semantics (stage 2) |
+| G52 | Every public result about a program's runs is an instance of a model, so a reader need not check binder order or laws: the lint E3 | T: script code (`isAboutRuns`, `isInstanceType` in `scripts/Programs.lean`) | never (a statement about the set of theorems); its failure is visible, a non-instance statement |
+| G53 | No `sorry` and no extra axiom | T: `scripts/Audit.lean` and `--wfail` | never (meta); standard |
+| G54 | Every `<spec>Prog` has a result in a model (E4) | T: script | never; completeness, not soundness |
+| G55 | Hygiene with no guarantee resting on it: E1 (size-generic programs, so the emitted code is the program the result is about), E2 (programs run in the tools), E5 (layering), E6 (one home for interpretations; no longer load-bearing, since the models fix theirs), E8 (`named` matters only to the emitter), E9 (scope discipline: G19) | D | rules.toml |
+
+**Count.** 55 properties: 37 (P) (of which G4, G7 and G19 are partly (D)), 8 (T) (G35, G39, G48,
+G50 to G54), 10 (D) (G11, G12, G17, G18, G32, G34, G42, G46, G49, G55). The (T) items and their
+future:
+
+* G35, parametricity: never provable in Lean, and no longer needed.
+* G39, `Dist.law`, and G48, the specifications: the meaning of definitions; never.
+* G50, NumPy: never. G51, `Float`: later, against a stage-2 format semantics.
+* G52, the lint, G53, the audit, G54, E4: meta-level scripts; never, and each fails visibly.
+
+And base item 2, the semantics, is (T) by nature. This change made the following (P) where they
+had rested on reading `exec` alone: G9, G10, G13, G14 (the invariants of the run,
+`Exec.lean`), G29 (the oracle is the only access), and G27, G28, G38 (by definition). Cheap, later:
+the analogue of G29 for the tape and the read-only data; a second, small-step semantics with an
+equivalence theorem, as an independent cross-check of `exec`.
+
+**What each script still contributes.** The guarantees G1 to G47 rest on no script. E3 is the
+one check left that a reader relies on, for coverage: that every public result about runs is an
+instance (G52). E4 (G54) is completeness. E1, E2, E5, E6, E8 and E9 are hygiene (G55). E1 was kept
+as an error and not demoted to a warning: it keeps programs size-generic, which the emitter needs,
+and it no longer guards information (`leakProg` passes it, harmlessly).
 
 
 ## Changes during the skeleton (2026-10-23)
@@ -964,3 +1147,46 @@ the note:
     (820), `Exact.lean` 194 (158), `BLAS.lean` 730 (1492), `BLAS/MatrixKernels.lean` 653 (new),
     `Dense.lean` 401 (695), `Sparse.lean` 448 (744), `GramSchmidtProgram.lean` 891 (839),
     `HutchPlusPlusProgram.lean` 976 (1270). Net, the library loses about 450 lines.
+
+## Changes for the guarantees (2026-10-23)
+
+The change of section "Guarantees", approved by the maintainer the same day, on
+`computation/stage1`:
+
+* **New file `Computation/Model.lean`** (layer 0): `ProgFamily`, `ProgFamily.inst`,
+  `ProgFamily.substOracle`, `storedInterp`, `MatrixFree`, `StoredEntries`, and
+  `exec_exactInterp_eq_of_exec_eq_some_of_cnt_load_le`.
+* **`RandomMatrix/Tape.lean`**: `Computation.Dist.law`, `Computation.tapeLaw` (with its probability
+  instance), `Computation.hasLaw_apply_of_hasLaw_tapeLaw` and `Computation.MatrixFreeProb`. It
+  lives with the tape laws, since `Dist.law` needs the Rademacher law of the Probability layer.
+* **The invariants of the run** (`Exec.lean`, section "Invariants of the run"):
+  `Instr.shape_of_run_eq_some`, `snd_of_cmpStep_eq_some`, `cnt_le_of_exec_eq_some`,
+  `cur_eq_of_exec_eq_some`, `curW_eq_of_exec_eq_some`, `shape_eq_of_exec_eq_some`,
+  `peak_le_of_exec_eq_some`, `peakW_le_of_exec_eq_some`, `store_eq_of_exec_eq_some_of_cnt_le`,
+  `pos_eq_of_exec_eq_some_of_cnt_le`, `exec_eq_of_exec_eq_some_of_cnt_load_le`.
+  `RunsWithin.mono` (`RunsWithin.lean`).
+* **Interpretations of the implementations.** `denseInterp A ξ p₀` is now
+  `storedInterp (N * N) (fun e => (flatten A).getD e 0) ξ p₀`, and `cooInterp pattern vals ξ p₀`
+  is `storedInterp pattern.length vals ξ p₀` (its unused `N` argument is gone): both have no
+  oracle, where they had the exact oracle of the matrix, which the substituted program never
+  calls. The certificates keep their statements. New: `MatrixFree.storedEntries_substOracle_denseImpl`
+  and `MatrixFree.storedEntries_substOracle_cooImpl`, the composition at the level of the models.
+* **Instances and renames.** `runsWithin_gramSchmidtProg` (now for every oracle and tape) and
+  `runsWithin_hutchppProg` are private; the results are `matrixFree_gramSchmidtProg` and
+  `matrixFree_hutchppProg`. `measureReal_not_runsWithin_hutchppProg_le_of_hasLaw_iidSequence` is
+  private; the result is `matrixFreeProb_hutchppProg`, whose tape has the law `tapeLaw` (the old
+  statement assumed a law on the Gaussian tape only). `runsWithin_substOracle_hutchppProg_denseImpl`
+  and `runsWithin_substOracle_hutchppProg_cooImpl` are replaced by
+  `storedEntries_substOracle_hutchppProg_denseImpl` and
+  `storedEntries_substOracle_hutchppProg_cooImpl`, proved from the composition theorems; the
+  sparse pattern is a parameter of the result (public). Result ids move with the results
+  (`gram-schmidt-program`, `hutchpp-program`, `hutchpp-program-tail`, `hutchpp-program-dense`,
+  `hutchpp-program-sparse`); new: `matrix-free-dense-substitution`, `matrix-free-coo-substitution`.
+  The old names were never released (no `v0.1` tag), so there are no aliases.
+* **Checks.** E3 is the lint of G52 and E4 asks for a result in a model (`docs/rules/rules.toml`,
+  CONTRIBUTING §5.5); E1 accepts `ProgFamily` definitions and `Fin`-families of handles and index
+  expressions; the E3 allowlist (the COO pattern) is gone, since the pattern is a parameter of the
+  instance. New fixtures in `scripts/Programs.lean` for the three gaps, and the new
+  `scripts/AccessModelFixtures.lean`, which proves the instance forms of the cheating realisations
+  false (run by `scripts/stage_check.sh` and CI).
+
