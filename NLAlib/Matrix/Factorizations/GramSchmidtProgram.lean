@@ -28,6 +28,7 @@ divisions, and the realisation is an upper bound. Design: `docs/design/Computati
 ## Main results
 
 * `NLAlib.exec_orthAgainst`: the sweep computes `NLAlib.mgsSweep`.
+* `NLAlib.exec_forRange_orthAgainst`: a loop of sweeps against the same columns.
 * `NLAlib.exec_gramSchmidtProg`: the program computes `NLAlib.gramSchmidtQ` from any
   state.
 * `NLAlib.runsWithin_gramSchmidtProg`: the realisation from its input.
@@ -307,6 +308,105 @@ theorem exec_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exa
   exec_orthAgainst_of_imp I hI hc p st Q k v vo r V w hQ hv hvQ (fun h => absurd h hrv)
     (fun h => absurd h hrQ) hr
 
+/-- A loop of sweeps: for $j < \ell$, `orthAgainst` sweeps column $k + j$ of the $N$-row
+buffer `B` against its first $k$ columns, with the coefficient in the scratch cell `t[0]`. If
+these columns hold $\mathbf{q}_0, \dots, \mathbf{q}_{k-1}$ and column $k + j$ holds
+$\mathbf{g}_j$, the run leaves in column $k + j$ the sweep of $\mathbf{g}_j$ against them
+(`NLAlib.mgsSweep`; the projection $(\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{g}_j$
+when they are orthonormal), changes no cell of the first $k$ columns or outside `B` and the
+scratch buffer, keeps the shape, the tape and the current memory, raises the peaks by at most
+one cell at tag $p$, and counts $\ell$ sweeps. -/
+theorem exec_forRange_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
+    (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) {N k : ℕ} (B t : ℕ) (ℓE : IExp ℕ)
+    (Q G : ℕ → Fin N → 𝕜) (st : St P 𝕜 (OpCount P ι))
+    (hQ : ∀ i < k, ∀ a : Fin N, st.store.read p B (N * i + a) = some (Q i a))
+    (hG : ∀ j < ℓE.eval, ∀ a : Fin N, st.store.read p B (N * (k + j) + a) = some (G j a))
+    (htB : t ≠ B) (ht : ∃ s, st.store.write p t 0 0 = some s) :
+    ∃ st', exec I (forRange ℓE fun j => orthAgainst p (.const N) B (.const k) B
+        (.const N * (.const k + .var j)) ⟨t, 0⟩).run st = some st' ∧
+      (∀ j < ℓE.eval, ∀ a : Fin N,
+        st'.store.read p B (N * (k + j) + a) = some (mgsSweep Q (G j) k a)) ∧
+      (∀ q b i, (b = B → i < N * k) → b ≠ t → st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧ st'.cur = st.cur ∧
+      st'.curW = st.curW ∧
+      st'.cnt = st.cnt + ℓE.eval • (k • (N • (Finsupp.single (OpKind.un p .conj) 1 +
+        Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1) +
+        Finsupp.single (OpKind.lit p) 1 + Finsupp.single (OpKind.un p .neg) 1 +
+        N • (Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1))) ∧
+      st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
+      st'.peakW ≤ max st.peakW (st.curW + I.width p) := by
+  have colA : ∀ {c c' a : ℕ}, c < c' → a < N → N * c + a < N * c' := fun hc ha => by
+    have := Nat.mul_le_mul_left N (Nat.succ_le_of_lt hc)
+    rw [Nat.mul_succ] at this
+    omega
+  rw [show (forRange (ι := ι) ℓE fun j => orthAgainst p (.const N) B (.const k) B
+      (.const N * (.const k + .var j)) ⟨t, 0⟩).run = .seq (.loop ℓE fun j =>
+        (orthAgainst p (.const N) B (.const k) B (.const N * (.const k + .var j))
+          ⟨t, 0⟩).run) .skip from rfl, exec_seq_skip]
+  obtain ⟨s₀, hs₀⟩ := ht
+  refine exists_exec_loop_eq_some_of_forall I (fun j st' =>
+      (∀ j' < j, ∀ a : Fin N,
+        st'.store.read p B (N * (k + j') + a) = some (mgsSweep Q (G j') k a)) ∧
+      (∀ q b i, (b = B → i < N * k ∨ N * (k + j) ≤ i) → b ≠ t →
+        st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧ st'.cur = st.cur ∧
+      st'.curW = st.curW ∧
+      st'.cnt = st.cnt + j • (k • (N • (Finsupp.single (OpKind.un p .conj) 1 +
+        Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1) +
+        Finsupp.single (OpKind.lit p) 1 + Finsupp.single (OpKind.un p .neg) 1 +
+        N • (Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1))) ∧
+      st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
+      st'.peakW ≤ max st.peakW (st.curW + I.width p))
+    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ _ => rfl, rfl, rfl, rfl, rfl,
+      by simp, fun q => by
+        by_cases hq : q = p
+        · subst hq; simp
+        · simp [Function.update_of_ne hq], le_max_left _ _⟩ ?_
+    |>.imp fun st' h => ⟨h.1, h.2.1, fun q b i hb hbt => h.2.2.1 q b i (fun h' => Or.inl (hb h'))
+      hbt, h.2.2.2⟩
+  intro j hj st' ⟨hsw, hfr, hsh, hpos, hcur, hcurW, hcnt, hpeak, hpeakW⟩
+  obtain ⟨st'', h, hv'', hfr'', hsh'', hpos'', hcur'', hcurW'', hcnt'', hpeak'', hpeakW''⟩ :=
+    exec_orthAgainst I hI hc p st' B (.const k) B (.const N * (.const k + .var j)) ⟨t, 0⟩ Q (G j)
+      (fun i hi a => by
+        rw [hfr p B _ (fun _ => Or.inl (colA hi a.2)) (Ne.symm htB), hQ i hi a])
+      (fun a => by
+        change st'.store.read p B (N * (k + j) + a) = _
+        rw [hfr p B _ (fun _ => Or.inr (by omega)) (Ne.symm htB), hG j hj a])
+      (fun _ => by
+        simp only [IExp.eval_mul, IExp.eval_add, IExp.eval_const, IExp.eval_var]
+        exact Nat.mul_le_mul_left N (Nat.le_add_right k j)) htB htB
+      (Store.exists_write_eq_some_of_shape_eq hsh hs₀ 0)
+  refine ⟨st'', h, fun j' hj' a => ?_, fun q b i hb hbt => ?_, hsh''.trans hsh,
+    hpos''.trans hpos, hcur''.trans hcur, hcurW''.trans hcurW,
+    by simp only [hcnt'', hcnt, succ_nsmul, add_assoc, IExp.eval_const], ?_, ?_⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hj' with h' | rfl
+    · rw [hfr'' p B _ (fun _ => Or.inl (colA (c' := k + j) (by omega) a.2))
+        (fun h => absurd h.symm htB),
+        hsw j' h' a]
+    · exact hv'' a
+  · have hmono := Nat.mul_le_mul_left N (Nat.le_add_right k j)
+    have hsucc : N * (k + j) + N = N * (k + (j + 1)) := by rw [← Nat.add_assoc, Nat.mul_succ]
+    rw [hfr'' q b i (fun h => ?_) (fun h => absurd h hbt), hfr q b i (fun h => ?_) hbt]
+    · rcases hb h with h' | h'
+      · exact Or.inl h'
+      · exact Or.inr (by omega)
+    · change i < N * (k + j) ∨ N * (k + j) + N ≤ i
+      rcases hb h with h' | h'
+      · exact Or.inl (by omega)
+      · exact Or.inr (by omega)
+  · rw [hcur] at hpeak''
+    refine hpeak''.trans fun q => ?_
+    by_cases hq : q = p
+    · subst hq
+      have := hpeak q
+      simp only [Function.update_self] at this ⊢
+      omega
+    · have := hpeak q
+      simp only [Function.update_of_ne hq] at this ⊢
+      exact this
+  · rw [hcurW] at hpeakW''
+    exact hpeakW''.trans (max_le hpeakW (le_max_right _ _))
+
 omit [DecidableEq P] in
 private theorem dotProduct_gramSchmidtQ_col {N k : ℕ} (M : Matrix (Fin N) (Fin k) 𝕜)
     (c c' : Fin k) : star ((gramSchmidtQ M).col c) ⬝ᵥ (gramSchmidtQ M).col c' =
@@ -372,17 +472,6 @@ private theorem gramSchmidtCount_succ (p : P) (N j : ℕ) :
     simp only [gramSchmidtCount, Finsupp.smul_single_one]
   rw [h, h, Nat.choose_succ_succ', Nat.choose_one_right]
   module
-
-omit [RCLike 𝕜] in
-private theorem read_eq_none_of_ne_tag {s : Store P 𝕜} {p q : P} {b i : ℕ} {len : ℕ}
-    (hs : s.shape[b]? = some (p, len)) (hq : q ≠ p) : s.read q b i = none := by
-  unfold Store.read
-  simp only [Store.shape, Array.getElem?_map] at hs
-  rcases hb : s[b]? with _ | ⟨p', arr⟩
-  · rfl
-  · rw [hb] at hs
-    simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at hs
-    exact if_neg (by rw [hs.1]; exact Ne.symm hq)
 
 private theorem col_lt {N c j a : ℕ} (hc : c < j) (ha : a < N) : N * c + a < N * j := by
   have := Nat.mul_le_mul_left N (Nat.succ_le_of_lt hc)
@@ -641,17 +730,6 @@ private theorem exec_gramSchmidt_col (I : Interp P ι 𝕜 (OpCount P ι)) (hI :
     have := hb h
     omega
 
-omit [RCLike 𝕜] in
-private theorem exists_shape_getElem?_of_read_eq_some {s : Store P 𝕜} {p : P} {b i : ℕ} {v : 𝕜}
-    (h : s.read p b i = some v) : ∃ len, s.shape[b]? = some (p, len) := by
-  unfold Store.read at h
-  simp only [Store.shape, Array.getElem?_map]
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h
-    split_ifs at h with hq
-    exact ⟨arr.size, by rw [hq]; rfl⟩
-
 /-- The final store of `gramSchmidtProg`, once its scratch buffer is popped. -/
 private theorem pop_eq_of_gramSchmidt {N k : ℕ} {M : Matrix (Fin N) (Fin k) 𝕜} {p : P} {Y : ℕ}
     {s s' s₁ : Store P 𝕜} {arr : Array (Option 𝕜)} (hM : Holds s p Y 0 M)
@@ -693,12 +771,12 @@ private theorem pop_eq_of_gramSchmidt {N k : ℕ} {M : Matrix (Fin N) (Fin k) �
               simp only [a, c]
               omega
             _ = s₁.read p b i := hblk.symm
-      · obtain ⟨len, hlen⟩ := exists_shape_getElem?_of_read_eq_some
+      · obtain ⟨len, hlen, -⟩ := Store.exists_getElem?_shape_of_read_eq_some
           (hM ⟨i % N, Nat.mod_lt _ hN⟩ ⟨i / N, hck⟩)
-        rw [read_eq_none_of_ne_tag (len := len) (by
+        rw [Store.read_eq_none_of_getElem?_shape_of_ne (n := len) (by
             rw [hsh]; simp only [Store.shape, Array.map_push, Array.getElem?_push]
             rw [if_neg (by rw [Array.size_map]; omega)]; exact hlen) hq,
-          read_eq_none_of_ne_tag (len := len)
+          Store.read_eq_none_of_getElem?_shape_of_ne (n := len)
             (by rw [Store.shape_of_writeBlock_eq_some h₁]; exact hlen) hq]
     · rw [hfr q b i (fun h => by_contra fun h' => hY ⟨h, by omega⟩) (by omega),
         Store.read_of_writeBlock_eq_some_of_ne h₁ (by

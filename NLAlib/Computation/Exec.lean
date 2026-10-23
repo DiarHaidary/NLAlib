@@ -8,6 +8,7 @@ module
 public import Mathlib.Data.Finsupp.Order
 public import Mathlib.Data.Finsupp.Weight
 public import Mathlib.Algebra.Order.Group.Nat
+public import NLAlib.Computation.Store
 public import NLAlib.Computation.Syntax
 
 /-!
@@ -19,29 +20,27 @@ failure (an operation outside its domain, an uninitialised read, an index out of
 mismatch, an invalid or aliased oracle call, running out of fuel). The interpretation holds the
 value semantics of the scalar operations (`NLAlib.Computation.ScalarSem`), the charge of each
 operation kind, the random tape of each distribution, the oracles, the read-only data and its
-size, and the width in bits of a cell of each tag. The state holds the store, a stack of tagged
-buffers of possibly uninitialised cells, the tape positions, the counts, and the current and peak
-memory in cells per tag and in bits.
+size, and the width in bits of a cell of each tag. The state holds the store
+(`NLAlib.Computation.Store`, a stack of tagged buffers of possibly uninitialised cells), the tape
+positions, the counts, and the current and peak memory in cells per tag and in bits.
 
-The run lemmas unfold `exec` one constructor at a time; the store lemmas say what a read sees after
-a write, an allocation or a block write. Design: `docs/design/Computation.md` (D3, D8, D11, D17).
+The run lemmas unfold `exec` one constructor at a time, and run a loop by an invariant and a
+sequence of draws from the tape. Design: `docs/design/Computation.md` (D3, D8, D11, D12, D17).
 
 ## Main definitions
 
 * `NLAlib.Computation.OpKind`, `NLAlib.Computation.OpCount`: operation kinds and counts.
 * `NLAlib.Computation.ScalarSem`: a value semantics; `NLAlib.Computation.Interp`: an
   interpretation.
-* `NLAlib.Computation.Store`, `NLAlib.Computation.St`: the store and the state.
+* `NLAlib.Computation.St`: the state.
 * `NLAlib.Computation.exec`: the run.
 
 ## Main results
 
 * `NLAlib.Computation.exec_seq`, `NLAlib.Computation.exec_loop`,
   `NLAlib.Computation.exec_alloc`: the run of a sequence, a loop (a fold) and an allocation.
-* `NLAlib.Computation.Store.read_of_write_eq_some`,
-  `NLAlib.Computation.Store.read_of_write_eq_some_of_ne`: a read after a write.
-* `NLAlib.Computation.Store.read_of_writeBlock_eq_some_of_lt`,
-  `NLAlib.Computation.Store.read_of_writeBlock_eq_some_of_ne`: a read after a block write.
+* `NLAlib.Computation.exists_exec_loop_eq_some_of_forall`: a loop run by an invariant.
+* `NLAlib.Computation.exec_forRange_draw`: a loop of draws writes consecutive tape values.
 -/
 
 @[expose] public section
@@ -108,14 +107,14 @@ def IExp.eval : IExp ℕ → ℕ
 /-- The value of a constant. -/
 @[simp] theorem IExp.eval_const (n : ℕ) : (IExp.const n).eval = n := rfl
 
-/-- The value of the numeral `0`. -/
-@[simp] theorem IExp.eval_zero : (0 : IExp ℕ).eval = 0 := rfl
+/-- The value of the numeral `0` (a case of `NLAlib.Computation.IExp.eval_ofNat`). -/
+theorem IExp.eval_zero : (0 : IExp ℕ).eval = 0 := rfl
 
-/-- The value of the numeral `1`. -/
-@[simp] theorem IExp.eval_one : (1 : IExp ℕ).eval = 1 := rfl
+/-- The value of the numeral `1` (a case of `NLAlib.Computation.IExp.eval_ofNat`). -/
+theorem IExp.eval_one : (1 : IExp ℕ).eval = 1 := rfl
 
-/-- The value of a numeral. -/
-@[simp] theorem IExp.eval_ofNat (n : ℕ) [n.AtLeastTwo] :
+/-- The value of a numeral; every numeral, $0$ and $1$ included, is a constant. -/
+@[simp] theorem IExp.eval_ofNat (n : ℕ) :
     (no_index (OfNat.ofNat n : IExp ℕ)).eval = OfNat.ofNat n := rfl
 
 /-- The value of a sum. -/
@@ -129,426 +128,6 @@ def IExp.eval : IExp ℕ → ℕ
 
 /-- The value of a remainder. -/
 @[simp] theorem IExp.eval_mod (a b : IExp ℕ) : (a % b).eval = a.eval % b.eval := rfl
-
-/-! ### The store -/
-
-/-- The store: a stack of tagged buffers of possibly uninitialised cells. -/
-abbrev Store (P K : Type) := Array (P × Array (Option K))
-
-section Store
-
-variable {P K : Type} [DecidableEq P]
-
-/-- Cell `i` of buffer `b` at tag `p`; `none` if the buffer does not exist, has another tag, the
-index is out of bounds or the cell is uninitialised. -/
-def Store.read (s : Store P K) (p : P) (b i : ℕ) : Option K :=
-  match s[b]? with
-  | some (q, arr) => if q = p then (arr[i]?).join else none
-  | none => none
-
-/-- Write `v` into cell `i` of buffer `b` at tag `p`; `none` if the buffer does not exist, has
-another tag or the index is out of bounds. -/
-def Store.write (s : Store P K) (p : P) (b i : ℕ) (v : K) : Option (Store P K) :=
-  match s[b]? with
-  | some (q, arr) => if q = p ∧ i < arr.size then some (s.set! b (q, arr.set! i (some v)))
-      else none
-  | none => none
-
-/-- The `len` cells of buffer `b` from offset `off`. -/
-def Store.readBlock (s : Store P K) (p : P) (b off len : ℕ) : Option (Array K) :=
-  (List.range len).toArray.mapM fun i => s.read p b (off + i)
-
-/-- Write `xs` into buffer `b` from offset `off`, one cell at a time. -/
-def Store.writeBlock (s : Store P K) (p : P) (b off : ℕ) (xs : Array K) : Option (Store P K) :=
-  (List.range xs.size).foldlM (fun s i => do s.write p b (off + i) (← xs[i]?)) s
-
-/-- The shape of a store: the tag and the length of each buffer. Two stores of the same shape
-accept the same writes. -/
-def Store.shape (s : Store P K) : Array (P × ℕ) := s.map fun x => (x.1, x.2.size)
-
-/-- Read after write, at the written cell. -/
-theorem Store.read_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
-    (h : s.write p b i v = some s') : s'.read p b i = some v := by
-  unfold Store.write at h
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h ⊢
-    split_ifs at h with hq
-    obtain ⟨rfl, hi⟩ := hq
-    cases h
-    have hb' : b < s.size := (Array.getElem?_eq_some_iff.mp hb).1
-    simp [Store.read, Array.set!, hb', hi]
-
-/-- Read after write, at another cell. -/
-theorem Store.read_of_write_eq_some_of_ne {s s' : Store P K} {p q : P} {b i b' i' : ℕ} {v : K}
-    (h : s.write p b i v = some s') (hne : b' ≠ b ∨ i' ≠ i) : s'.read q b' i' = s.read q b' i' := by
-  unfold Store.write at h
-  rcases hb : s[b]? with _ | ⟨q', arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h ⊢
-    split_ifs at h with hq
-    obtain ⟨rfl, hi⟩ := hq
-    cases h
-    have hb' : b < s.size := (Array.getElem?_eq_some_iff.mp hb).1
-    unfold Store.read
-    by_cases hbb : b' = b
-    · subst hbb
-      have hii : i' ≠ i := hne.resolve_left (fun h => h rfl)
-      have heq : s[b'] = (q', arr) := (Array.getElem?_eq_some_iff.mp hb).2
-      simp [Array.set!, hb', heq, Ne.symm hii]
-    · simp [Array.set!, Ne.symm hbb]
-
-/-- A write keeps the number of buffers. -/
-theorem Store.size_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
-    (h : s.write p b i v = some s') : s'.size = s.size := by
-  unfold Store.write at h
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h ⊢
-    split_ifs at h with hq
-    cases h
-    simp [Array.set!]
-
-/-- A write keeps the shape of the store. -/
-theorem Store.shape_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
-    (h : s.write p b i v = some s') : s'.shape = s.shape := by
-  unfold Store.write at h
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h
-    split_ifs at h with hq
-    cases h
-    obtain ⟨hlt, heq⟩ := Array.getElem?_eq_some_iff.mp hb
-    apply Array.ext
-    · simp [Store.shape, Array.set!]
-    · intro k hk₁ hk₂
-      by_cases hkb : k = b
-      · subst hkb
-        simp [Store.shape, Array.set!, heq]
-      · simp only [Store.shape, Array.set!, Array.getElem_map]
-        rw [Array.getElem_setIfInBounds_ne (by simpa [Store.shape] using hk₂) (Ne.symm hkb)]
-
-/-- A write succeeds where a read of the same cell succeeds. -/
-theorem Store.exists_write_eq_some_of_read_eq_some {s : Store P K} {p : P} {b i : ℕ} {v w : K}
-    (h : s.read p b i = some w) : ∃ s', s.write p b i v = some s' := by
-  unfold Store.read at h
-  unfold Store.write
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h ⊢
-    split_ifs at h with hq
-    have hi : i < arr.size := by
-      rcases hi : arr[i]? with _ | x
-      · simp [hi] at h
-      · exact (Array.getElem?_eq_some_iff.mp hi).1
-    exact ⟨_, if_pos ⟨hq, hi⟩⟩
-
-/-- A read of a pushed buffer: the old buffers are unchanged. -/
-theorem Store.read_push_of_lt {s : Store P K} {p q : P} {arr : Array (Option K)} {b i : ℕ}
-    (hb : b < s.size) : Store.read (s.push (q, arr)) p b i = s.read p b i := by
-  simp [Store.read, Array.getElem?_push, Nat.ne_of_lt hb]
-
-/-- The writes of a block write, at indices of a list, keep every other cell. -/
-private theorem Store.read_of_foldlM_write_eq_some_of_ne {s s' : Store P K} {p q : P}
-    {b off b' i' : ℕ} {xs : Array K} (l : List ℕ)
-    (h : l.foldlM (fun s i => do s.write p b (off + i) (← xs[i]?)) s = some s')
-    (hne : ∀ i ∈ l, b' ≠ b ∨ i' ≠ off + i) : s'.read q b' i' = s.read q b' i' := by
-  induction l generalizing s with
-  | nil =>
-    simp only [List.foldlM_nil, pure, Option.some.injEq] at h
-    rw [h]
-  | cons i l ih =>
-    rw [List.foldlM_cons] at h
-    change (Option.bind _ fun s => List.foldlM _ s l) = some s' at h
-    obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
-    change Option.bind xs[i]? (fun v => s.write p b (off + i) v) = some s₂ at h₂
-    obtain ⟨v, -, hw⟩ := Option.bind_eq_some_iff.mp h₂
-    rw [ih h₃ (fun j hj => hne j (List.mem_cons_of_mem _ hj))]
-    exact Store.read_of_write_eq_some_of_ne hw (hne i List.mem_cons_self)
-
-/-- The writes of a block write, at the indices of a list without repetition, leave entry `j` of
-the block in cell `off + j`. -/
-private theorem Store.read_of_foldlM_write_eq_some_of_mem {s s' : Store P K} {p : P} {b off j : ℕ}
-    {xs : Array K} (l : List ℕ) (hl : l.Nodup)
-    (h : l.foldlM (fun s i => do s.write p b (off + i) (← xs[i]?)) s = some s') (hj : j ∈ l) :
-    s'.read p b (off + j) = xs[j]? := by
-  induction l generalizing s with
-  | nil => simp at hj
-  | cons i l ih =>
-    rw [List.foldlM_cons] at h
-    change (Option.bind _ fun s => List.foldlM _ s l) = some s' at h
-    obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
-    change Option.bind xs[i]? (fun v => s.write p b (off + i) v) = some s₂ at h₂
-    obtain ⟨v, hv, hw⟩ := Option.bind_eq_some_iff.mp h₂
-    rcases List.mem_cons.mp hj with rfl | hj'
-    · have hnot : j ∉ l := (List.nodup_cons.mp hl).1
-      rw [Store.read_of_foldlM_write_eq_some_of_ne l h₃ (fun i hi => Or.inr (fun he => hnot (by
-        have : j = i := by omega
-        exact this ▸ hi))), Store.read_of_write_eq_some hw, hv]
-    · exact ih (List.nodup_cons.mp hl).2 h₃ hj'
-
-/-- Read after a block write, inside the block. -/
-theorem Store.read_of_writeBlock_eq_some_of_lt {s s' : Store P K} {p : P} {b off j : ℕ}
-    {xs : Array K}
-    (h : s.writeBlock p b off xs = some s') (hj : j < xs.size) :
-    s'.read p b (off + j) = xs[j]? := by
-  exact Store.read_of_foldlM_write_eq_some_of_mem _ List.nodup_range h (List.mem_range.mpr hj)
-
-/-- Read after a block write, outside the block. -/
-theorem Store.read_of_writeBlock_eq_some_of_ne {s s' : Store P K} {p q : P} {b off b' i' : ℕ}
-    {xs : Array K}
-    (h : s.writeBlock p b off xs = some s') (hne : b' ≠ b ∨ i' < off ∨ off + xs.size ≤ i') :
-    s'.read q b' i' = s.read q b' i' := by
-  refine Store.read_of_foldlM_write_eq_some_of_ne _ h fun i hi => ?_
-  have hi' := List.mem_range.mp hi
-  rcases hne with hb | hlt | hge
-  · exact Or.inl hb
-  · exact Or.inr (by omega)
-  · exact Or.inr (by omega)
-
-/-- A read that succeeds is in a buffer of the store. -/
-theorem Store.lt_size_of_read_eq_some {s : Store P K} {p : P} {b i : ℕ} {v : K}
-    (h : s.read p b i = some v) : b < s.size := by
-  unfold Store.read at h
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · exact (Array.getElem?_eq_some_iff.mp hb).1
-
-/-- A write that succeeds is in a buffer of the store. -/
-theorem Store.lt_size_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
-    (h : s.write p b i v = some s') : b < s.size := by
-  unfold Store.write at h
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · exact (Array.getElem?_eq_some_iff.mp hb).1
-
-/-- A write succeeds where a write of another value into the same cell succeeds. -/
-theorem Store.exists_write_eq_some_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ}
-    {v : K} (h : s.write p b i v = some s') (w : K) : ∃ s'', s.write p b i w = some s'' := by
-  unfold Store.write at h ⊢
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h ⊢
-    split_ifs at h with hq
-    exact ⟨_, if_pos hq⟩
-
-/-- Two writes into one cell: the second overwrites the first. -/
-theorem Store.write_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
-    (h : s.write p b i v = some s') (w : K) : s'.write p b i w = s.write p b i w := by
-  unfold Store.write at h ⊢
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h ⊢
-    split_ifs at h with hq
-    obtain ⟨rfl, hi⟩ := hq
-    cases h
-    have hb' : b < s.size := (Array.getElem?_eq_some_iff.mp hb).1
-    simp [Array.set!, hb', hi]
-
-/-- A write below the top of a pushed store is a write in the store under it. -/
-theorem Store.write_push_of_lt {s : Store P K} {x : P × Array (Option K)} {p : P} {b i : ℕ}
-    {v : K} (hb : b < s.size) :
-    Store.write (s.push x) p b i v = (s.write p b i v).map fun s' => s'.push x := by
-  unfold Store.write
-  rw [Array.getElem?_push, if_neg (Nat.ne_of_lt hb)]
-  rcases hb' : s[b]? with _ | ⟨q, arr⟩
-  · rfl
-  · dsimp only
-    split_ifs
-    · simp only [Array.set!_eq_setIfInBounds, Array.setIfInBounds_def, Array.size_push,
-        Option.map_some, Array.set_push, hb, Nat.lt_succ_of_lt hb,
-        dite_true]
-    · rfl
-
-/-- A write into the top buffer of a pushed store. -/
-theorem Store.write_push_size {s : Store P K} {p : P} {arr : Array (Option K)} {i : ℕ} {v : K}
-    (hi : i < arr.size) :
-    Store.write (s.push (p, arr)) p s.size i v = some (s.push (p, arr.set! i (some v))) := by
-  simp [Store.write, hi, Array.setIfInBounds_def, Array.set_push]
-
-/-- A read of the top buffer of a pushed store. -/
-theorem Store.read_push_size {s : Store P K} {p q : P} {arr : Array (Option K)} {i : ℕ} :
-    Store.read (s.push (q, arr)) p s.size i = if q = p then (arr[i]?).join else none := by
-  simp [Store.read]
-
-/-- A write keeps the number of buffers: the writes of a fold. -/
-theorem Store.size_of_foldlM_write_eq_some {s s' : Store P K} {p : P} {b : ℕ} (l : List ℕ)
-    (idx : ℕ → ℕ) (f : ℕ → K) (h : l.foldlM (fun s j => s.write p b (idx j) (f j)) s = some s') :
-    s'.size = s.size := by
-  induction l generalizing s with
-  | nil =>
-    simp only [List.foldlM_nil, pure, Option.some.injEq] at h
-    rw [h]
-  | cons i l ih =>
-    rw [List.foldlM_cons] at h
-    obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
-    rw [ih h₃, Store.size_of_write_eq_some h₂]
-
-/-- The writes of a fold keep every cell they do not write. -/
-theorem Store.read_of_foldlM_write_eq_some_of_forall_ne {s s' : Store P K} {p q : P}
-    {b b' i' : ℕ} (l : List ℕ) (idx : ℕ → ℕ) (f : ℕ → K)
-    (h : l.foldlM (fun s j => s.write p b (idx j) (f j)) s = some s')
-    (hne : ∀ j ∈ l, b' ≠ b ∨ i' ≠ idx j) : s'.read q b' i' = s.read q b' i' := by
-  induction l generalizing s with
-  | nil =>
-    simp only [List.foldlM_nil, pure, Option.some.injEq] at h
-    rw [h]
-  | cons i l ih =>
-    rw [List.foldlM_cons] at h
-    obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
-    rw [ih h₃ (fun j hj => hne j (List.mem_cons_of_mem _ hj))]
-    exact Store.read_of_write_eq_some_of_ne h₂ (hne i List.mem_cons_self)
-
-/-- A block write of the values $f(0), \dots, f(n-1)$ is the fold of their writes. -/
-theorem Store.writeBlock_map_range (s : Store P K) (p : P) (b off n : ℕ) (f : ℕ → K) :
-    s.writeBlock p b off ((List.range n).toArray.map f) =
-      (List.range n).foldlM (fun s j => s.write p b (off + j) (f j)) s := by
-  unfold Store.writeBlock
-  have hsize : ((List.range n).toArray.map f).size = n := by simp
-  rw [hsize]
-  have key : ∀ (l : List ℕ), (∀ j ∈ l, j < n) → ∀ s : Store P K,
-      l.foldlM (fun s i => do s.write p b (off + i) (← ((List.range n).toArray.map f)[i]?)) s =
-        l.foldlM (fun s j => s.write p b (off + j) (f j)) s := by
-    intro l hl
-    induction l with
-    | nil => intro s; rfl
-    | cons i l ih =>
-      intro s
-      have hi : i < n := hl i List.mem_cons_self
-      have hxs : ((List.range n).toArray.map f)[i]? = some (f i) := by simp [hi]
-      have ih' := ih (fun j hj => hl j (List.mem_cons_of_mem _ hj))
-      rw [List.foldlM_cons, List.foldlM_cons]
-      change Option.bind (Option.bind _ fun v => s.write p b (off + i) v) _ = _
-      rw [hxs, Option.bind_some]
-      exact congrArg _ (funext ih')
-  exact key _ (fun j hj => List.mem_range.mp hj) s
-
-/-- Two stores of the same shape accept the same writes. -/
-theorem Store.exists_write_eq_some_of_shape_eq {s s' s₁ : Store P K} {p : P} {b i : ℕ} {v : K}
-    (hsh : s'.shape = s.shape) (h : s.write p b i v = some s₁) (w : K) :
-    ∃ s₂, s'.write p b i w = some s₂ := by
-  unfold Store.write at h ⊢
-  rcases hb : s[b]? with _ | ⟨q, arr⟩ <;> rw [hb] at h
-  · exact absurd h (by simp)
-  · dsimp only at h
-    split_ifs at h with hq
-    have hsh' : s'.shape[b]? = s.shape[b]? := by rw [hsh]
-    simp only [Store.shape, Array.getElem?_map, hb, Option.map_some] at hsh'
-    rcases hb' : s'[b]? with _ | ⟨q', arr'⟩ <;> rw [hb'] at hsh'
-    · exact absurd hsh' (by simp)
-    · simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at hsh'
-      obtain ⟨rfl, hsz⟩ := hsh'
-      exact ⟨_, if_pos ⟨hq.1, hsz ▸ hq.2⟩⟩
-
-/-- A block write keeps the shape of the store. -/
-theorem Store.shape_of_writeBlock_eq_some {s s' : Store P K} {p : P} {b off : ℕ}
-    {xs : Array K} (h : s.writeBlock p b off xs = some s') : s'.shape = s.shape := by
-  unfold Store.writeBlock at h
-  have key : ∀ (l : List ℕ) (s : Store P K),
-      l.foldlM (fun s i => do s.write p b (off + i) (← xs[i]?)) s = some s' →
-        s'.shape = s.shape := by
-    intro l
-    induction l with
-    | nil =>
-      intro s h
-      simp only [List.foldlM_nil, pure, Option.some.injEq] at h
-      rw [h]
-    | cons i l ih =>
-      intro s h
-      rw [List.foldlM_cons] at h
-      obtain ⟨s₂, h₂, h₃⟩ := Option.bind_eq_some_iff.mp h
-      change Option.bind xs[i]? (fun v => s.write p b (off + i) v) = some s₂ at h₂
-      obtain ⟨v, -, hw⟩ := Option.bind_eq_some_iff.mp h₂
-      rw [ih s₂ h₃, Store.shape_of_write_eq_some hw]
-  exact key _ s h
-
-/-- A block write succeeds where every cell of the block can be written. -/
-theorem Store.exists_writeBlock_eq_some_of_write {s : Store P K} {p : P} {b off : ℕ}
-    {xs : Array K} (h : ∀ j < xs.size, ∃ v s', s.write p b (off + j) v = some s') :
-    ∃ s', s.writeBlock p b off xs = some s' := by
-  unfold Store.writeBlock
-  have key : ∀ l : List ℕ, (∀ j ∈ l, j < xs.size) → ∀ s' : Store P K, s'.shape = s.shape →
-      ∃ s'', l.foldlM (fun s i => do s.write p b (off + i) (← xs[i]?)) s' = some s'' := by
-    intro l
-    induction l with
-    | nil => intro _ s' _; exact ⟨s', rfl⟩
-    | cons i l ih =>
-      intro hl s' hsh
-      have hi := hl i List.mem_cons_self
-      obtain ⟨v, s₀, hs₀⟩ := h i hi
-      obtain ⟨s₂, hs₂⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs₀ xs[i]
-      obtain ⟨s₃, hs₃⟩ := ih (fun j hj => hl j (List.mem_cons_of_mem _ hj)) s₂
-        ((Store.shape_of_write_eq_some hs₂).trans hsh)
-      refine ⟨s₃, ?_⟩
-      rw [List.foldlM_cons]
-      change Option.bind (Option.bind xs[i]? fun v => s'.write p b (off + i) v) _ = _
-      rw [Array.getElem?_eq_getElem hi, Option.bind_some, hs₂, Option.bind_some, hs₃]
-  exact key _ (fun j hj => List.mem_range.mp hj) s rfl
-
-/-- A block write succeeds where every cell of the block can be read. -/
-theorem Store.exists_writeBlock_eq_some {s : Store P K} {p : P} {b off : ℕ} {xs : Array K}
-    (h : ∀ j < xs.size, ∃ w, s.read p b (off + j) = some w) :
-    ∃ s', s.writeBlock p b off xs = some s' :=
-  Store.exists_writeBlock_eq_some_of_write fun j hj =>
-    let ⟨w, hw⟩ := h j hj
-    ⟨w, Store.exists_write_eq_some_of_read_eq_some hw⟩
-
-/-- A write changes no read of another tag. -/
-theorem Store.read_of_write_eq_some_of_ne_tag {s s' : Store P K} {p q : P} {b i b' i' : ℕ}
-    {v : K} (h : s.write p b i v = some s') (hq : q ≠ p) : s'.read q b' i' = s.read q b' i' := by
-  by_cases hbi : b' = b ∧ i' = i
-  · obtain ⟨rfl, rfl⟩ := hbi
-    unfold Store.write at h
-    rcases hb : s[b']? with _ | ⟨q', arr⟩ <;> rw [hb] at h
-    · exact absurd h (by simp)
-    · dsimp only at h
-      split_ifs at h with hq'
-      obtain ⟨rfl, hi⟩ := hq'
-      cases h
-      obtain ⟨hb', heq⟩ := Array.getElem?_eq_some_iff.mp hb
-      simp [Store.read, Array.set!, hb', heq, Ne.symm hq]
-  · exact Store.read_of_write_eq_some_of_ne h (by tauto)
-
-/-- Extensionality of stores: two stores of the same shape with the same reads are equal. -/
-theorem Store.ext_of_shape_eq {s s' : Store P K} (hsh : s.shape = s'.shape)
-    (h : ∀ q b i, s.read q b i = s'.read q b i) : s = s' := by
-  have hsize : s.size = s'.size := by
-    simpa [Store.shape] using congrArg Array.size hsh
-  apply Array.ext hsize
-  intro b hb hb'
-  have hshb : s.shape[b]? = s'.shape[b]? := by rw [hsh]
-  simp only [Store.shape, Array.getElem?_map, Array.getElem?_eq_getElem hb,
-    Array.getElem?_eq_getElem hb', Option.map_some, Option.some.injEq, Prod.mk.injEq] at hshb
-  obtain ⟨htag, hlen⟩ := hshb
-  refine Prod.ext htag (Array.ext hlen fun i hi hi' => ?_)
-  have hr := h s[b].1 b i
-  simp only [Store.read, Array.getElem?_eq_getElem hb, Array.getElem?_eq_getElem hb', ← htag,
-    if_true, Array.getElem?_eq_getElem hi, Array.getElem?_eq_getElem hi', Option.join_some] at hr
-  exact hr
-
-/-- A read of a pushed store, below or above its top: the store under it. -/
-theorem Store.read_push_of_ne {s : Store P K} {x : P × Array (Option K)} {q : P} {b i : ℕ}
-    (hb : b ≠ s.size) : Store.read (s.push x) q b i = s.read q b i := by
-  simp [Store.read, Array.getElem?_push, hb]
-
-/-- A read past the last buffer fails. -/
-theorem Store.read_eq_none_of_size_le {s : Store P K} {q : P} {b i : ℕ} (hb : s.size ≤ b) :
-    s.read q b i = none := by
-  simp [Store.read, Array.getElem?_eq_none hb]
-
-/-- A read of a popped store, below its new top. -/
-theorem Store.read_pop_of_lt {s : Store P K} {q : P} {b i : ℕ} (hb : b < s.size - 1) :
-    Store.read s.pop q b i = s.read q b i := by
-  unfold Store.read
-  rw [Array.getElem?_pop, if_pos hb]
-
-omit [DecidableEq P] in
-/-- Two stores of the same shape have the same number of buffers. -/
-theorem Store.size_eq_of_shape_eq {s s' : Store P K} (h : s.shape = s'.shape) :
-    s.size = s'.size := by
-  simpa [Store.shape] using congrArg Array.size h
-
-end Store
 
 /-! ### States and interpretations -/
 
@@ -731,6 +310,11 @@ theorem exec_seq_skip (s : Stmt P ι ℕ ℕ) (st : St P K C) :
   · change exec I .skip st' = some st'
     rw [exec]
 
+/-- The run of a sequence whose first part succeeds: the run of the second part from there. -/
+theorem exec_seq_of_exec_eq_some {s t : Stmt P ι ℕ ℕ} {st st₁ : St P K C}
+    (h : exec I s st = some st₁) : exec I (.seq s t) st = exec I t st₁ := by
+  rw [exec_seq, h, Option.bind_some]
+
 /-- The run of a builder that emits one statement before its continuation (a kernel, a loop, a
 conditional, a block), followed by `f`: the run of the first, then the run of `f`. -/
 theorem exec_run_bind {b : Builder P ι ℕ ℕ Unit} {X : Stmt P ι ℕ ℕ}
@@ -814,6 +398,57 @@ theorem exec_seq_instr_draw {p : P} {d : Dist} {dst : Cell ℕ ℕ} {t : Stmt P 
         pos := Function.update st.pos d (st.pos d + 1)
         cnt := st.cnt + I.charge (.draw p d) } := by
   simp [exec_seq, exec_instr, Instr.run, hw, Instr.kind]
+
+/-- A loop of draws writes consecutive tape values: the loop that draws cell `idx i` of
+buffer `X` from the tape of `d`, where `idx i` evaluates to $\mathit{off} + i$, for $i < n$,
+succeeds from a state in which each of these cells can be written; cell $\mathit{off} + i$ then
+holds the tape value at position $\mathit{pos}(d) + i$, every other cell, the shape and the
+memory are kept, the tape position of `d` advances by $n$, and the run counts $n$ draws. -/
+theorem exec_forRange_draw (p : P) (d : Dist) (X off : ℕ) (n : IExp ℕ) (idx : ℕ → IExp ℕ)
+    (hidx : ∀ i, (idx i).eval = off + i) (st : St P K C)
+    (hw : ∀ i < n.eval, ∃ v s, st.store.write p X (off + i) v = some s) :
+    ∃ st', exec I (Builder.forRange n fun i => Builder.ins (.draw p d ⟨X, idx i⟩)).run st =
+        some st' ∧
+      (∀ i < n.eval, st'.store.read p X (off + i) = some (I.tape d (st.pos d + i))) ∧
+      (∀ q b j, (b = X → j < off ∨ off + n.eval ≤ j) →
+        st'.store.read q b j = st.store.read q b j) ∧
+      st'.store.shape = st.store.shape ∧
+      st'.pos = Function.update st.pos d (st.pos d + n.eval) ∧
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW ∧
+      st'.cnt = st.cnt + n.eval • I.charge (.draw p d) := by
+  rw [show (Builder.forRange (ι := ι) n fun i => Builder.ins (.draw p d ⟨X, idx i⟩)).run =
+    .seq (.loop n fun i => (Builder.ins (.draw p d ⟨X, idx i⟩)).run) .skip from rfl,
+    exec_seq_skip]
+  refine exists_exec_loop_eq_some_of_forall I (fun i st' =>
+      (∀ i' < i, st'.store.read p X (off + i') = some (I.tape d (st.pos d + i'))) ∧
+      (∀ q b j, (b = X → j < off ∨ off + i ≤ j) → st'.store.read q b j = st.store.read q b j) ∧
+      st'.store.shape = st.store.shape ∧
+      st'.pos = Function.update st.pos d (st.pos d + i) ∧
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW ∧
+      st'.cnt = st.cnt + i • I.charge (.draw p d))
+    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl, rfl, by simp, rfl, rfl, rfl,
+      rfl, by simp⟩ ?_
+  intro i hi st' ⟨hrd, hfr, hsh, hpos, hcur, hpeak, hcurW, hpeakW, hcnt⟩
+  obtain ⟨v₀, s₀, hs₀⟩ := hw i hi
+  obtain ⟨s, hs⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs₀ (I.tape d (st'.pos d))
+  have hpd : st'.pos d = st.pos d + i := by rw [hpos]; simp
+  refine ⟨_, (exec_seq_instr_draw I (by rw [hidx]; exact hs)).trans (exec_skip I _),
+    fun i' hi' => ?_, fun q b j hb => ?_, ?_, ?_, hcur, hpeak, hcurW, hpeakW, ?_⟩
+  · change s.read p X (off + i') = _
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi' with h | rfl
+    · rw [Store.read_of_write_eq_some_of_ne hs (Or.inr (by omega)), hrd i' h]
+    · rw [Store.read_of_write_eq_some hs, hpd]
+  · change s.read q b j = _
+    rw [Store.read_of_write_eq_some_of_ne hs ?_, hfr q b j ?_]
+    · intro h; rcases hb h with h' | h' <;> omega
+    · by_cases h : b = X
+      · exact Or.inr (by rcases hb h with h' | h' <;> omega)
+      · exact Or.inl h
+  · exact (Store.shape_of_write_eq_some hs).trans hsh
+  · change Function.update st'.pos d (st'.pos d + 1) = _
+    rw [hpd, hpos, Function.update_idem, Nat.add_assoc]
+  · change st'.cnt + I.charge (.draw p d) = _
+    rw [hcnt, succ_nsmul, add_assoc]
 
 end Exec
 

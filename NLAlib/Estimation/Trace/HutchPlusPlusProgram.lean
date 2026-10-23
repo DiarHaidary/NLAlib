@@ -111,307 +111,9 @@ noncomputable def hutchppCount (p : P) (o : ι) (d : Dist) (N k ℓ : ℕ) : OpC
   Finsupp.single (.un p .neg) (k.choose 2 + k * ℓ) +
   Finsupp.single (.lit p) (k.choose 2 + 3 * k + k * ℓ + ℓ + 3) + Finsupp.single (.cmp p) k
 
-private theorem list_mapM_eq_some {α β : Type} {f : α → Option β} {g : α → β} :
-    ∀ l : List α, (∀ x ∈ l, f x = some (g x)) → l.mapM f = some (l.map g)
-  | [], _ => rfl
-  | x :: l, h => by
-    rw [List.mapM_cons, h x List.mem_cons_self,
-      list_mapM_eq_some l fun y hy => h y (List.mem_cons_of_mem _ hy)]
-    rfl
-
-omit [RCLike 𝕜] in
-private theorem readBlock_eq_some {s : Store P 𝕜} {p : P} {b off len : ℕ} (g : ℕ → 𝕜)
-    (h : ∀ i < len, s.read p b (off + i) = some (g i)) :
-    s.readBlock p b off len = some ((List.range len).toArray.map g) := by
-  unfold Store.readBlock
-  rw [Array.mapM_eq_mapM_toList, List.toList_toArray,
-    list_mapM_eq_some _ fun i hi => h i (List.mem_range.mp hi)]
-  change some _ = some _
-  congr 1
-  apply Array.ext (by simp)
-  intro i h1 h2
-  simp
-
-private theorem exec_apply_exactInterp {N m : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜)
-    (ξ : Dist → ℕ → ℝ) (o : ι) (p : P) (dst src : ℕ) (cols : IExp ℕ) (hm : cols.eval = m)
-    (st : St P 𝕜 (OpCount P ι)) (W : Matrix (Fin N) (Fin m) 𝕜) (hne : dst ≠ src)
-    (hsrc : ∀ (a : Fin N) (c : Fin m), st.store.read p src (N * c + a) = some (W a c))
-    {s' : Store P 𝕜} (hw : st.store.writeBlock p dst 0 (flatten (A * W)) = some s') :
-    exec (exactInterp (fun _ => A) ξ) (.apply o p dst 0 src 0 cols) st =
-      some { st with
-        store := s'
-        cnt := st.cnt + (Finsupp.single (OpKind.load p o) 1 +
-          m • Finsupp.single (OpKind.matvec p o) 1) } := by
-  subst hm
-  rw [exec, if_pos (Or.inl hne)]
-  have hrb : st.store.readBlock p src (IExp.eval 0)
-      ((exactInterp (P := P) (fun _ => A) ξ).height o * cols.eval) = some (flatten W) :=
-    readBlock_eq_some _ fun i hi => by
-      change i < N * cols.eval at hi
-      have hN : 0 < N := Nat.pos_of_ne_zero (by rintro rfl; simp at hi)
-      have hc : i / N < cols.eval := Nat.div_lt_of_lt_mul hi
-      rw [IExp.eval_zero, zero_add, ← Nat.div_add_mod i N,
-        hsrc ⟨i % N, Nat.mod_lt _ hN⟩ ⟨i / N, hc⟩, Nat.div_add_mod i N]
-      simp [Nat.mod_lt _ hN, hc]
-  rw [hrb]
-  simp only [Option.bind_some]
-  have hor : (exactInterp (P := P) (fun _ => A) ξ).oracle o cols.eval (flatten W) =
-      some (flatten (A * W)) := by
-    change matOracle A cols.eval (flatten W) = _
-    rw [matOracle, if_pos (size_flatten W), unflatten_flatten]
-  rw [hor, Option.bind_some, IExp.eval_zero, hw]
-  rfl
-
 /-- Column `c` of a matrix as a vector, zero past the last column. -/
 private def colOf {N m : ℕ} (M : Matrix (Fin N) (Fin m) 𝕜) (c : ℕ) : Fin N → 𝕜 :=
   fun a => if h : c < m then M a ⟨c, h⟩ else 0
-
-private theorem exec_draws (I : Interp P ι 𝕜 (OpCount P ι)) (p : P) (d : Dist) (X off : ℕ)
-    (n : IExp ℕ) (idx : ℕ → IExp ℕ) (hidx : ∀ i, (idx i).eval = off + i)
-    (st : St P 𝕜 (OpCount P ι)) (hw : ∀ i < n.eval, ∃ s, st.store.write p X (off + i) 0 = some s) :
-    ∃ st', exec I (forRange n fun i => ins (.draw p d ⟨X, idx i⟩)).run st = some st' ∧
-      (∀ i < n.eval, st'.store.read p X (off + i) = some (I.tape d (st.pos d + i))) ∧
-      (∀ q b j, (b = X → j < off ∨ off + n.eval ≤ j) →
-        st'.store.read q b j = st.store.read q b j) ∧
-      st'.store.shape = st.store.shape ∧
-      st'.pos = Function.update st.pos d (st.pos d + n.eval) ∧
-      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW ∧
-      st'.cnt = st.cnt + n.eval • I.charge (.draw p d) := by
-  rw [show (forRange (ι := ι) n fun i => ins (.draw p d ⟨X, idx i⟩)).run =
-    .seq (.loop n fun i => (ins (.draw p d ⟨X, idx i⟩)).run) .skip from rfl, exec_seq_skip]
-  refine exists_exec_loop_eq_some_of_forall I (fun i st' =>
-      (∀ i' < i, st'.store.read p X (off + i') = some (I.tape d (st.pos d + i'))) ∧
-      (∀ q b j, (b = X → j < off ∨ off + i ≤ j) → st'.store.read q b j = st.store.read q b j) ∧
-      st'.store.shape = st.store.shape ∧
-      st'.pos = Function.update st.pos d (st.pos d + i) ∧
-      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW ∧
-      st'.cnt = st.cnt + i • I.charge (.draw p d))
-    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl, rfl, by simp, rfl, rfl, rfl,
-      rfl, by simp⟩ ?_
-  intro i hi st' ⟨hrd, hfr, hsh, hpos, hcur, hpeak, hcurW, hpeakW, hcnt⟩
-  obtain ⟨s₀, hs₀⟩ := hw i hi
-  obtain ⟨s, hs⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs₀ (I.tape d (st'.pos d))
-  have hpd : st'.pos d = st.pos d + i := by rw [hpos]; simp
-  refine ⟨_, (exec_seq_instr_draw I (by rw [hidx]; exact hs)).trans (exec_skip I _),
-    fun i' hi' => ?_, fun q b j hb => ?_, ?_, ?_, hcur, hpeak, hcurW, hpeakW, ?_⟩
-  · change s.read p X (off + i') = _
-    rcases Nat.lt_succ_iff_lt_or_eq.mp hi' with h | rfl
-    · rw [Store.read_of_write_eq_some_of_ne hs (Or.inr (by omega)), hrd i' h]
-    · rw [Store.read_of_write_eq_some hs, hpd]
-  · change s.read q b j = _
-    rw [Store.read_of_write_eq_some_of_ne hs ?_, hfr q b j ?_]
-    · intro h; rcases hb h with h' | h' <;> omega
-    · by_cases h : b = X
-      · exact Or.inr (by rcases hb h with h' | h' <;> omega)
-      · exact Or.inl h
-  · exact (Store.shape_of_write_eq_some hs).trans hsh
-  · change Function.update st'.pos d (st'.pos d + 1) = _
-    rw [hpd, hpos, Function.update_idem, Nat.add_assoc]
-  · change st'.cnt + I.charge (.draw p d) = _
-    rw [hcnt, succ_nsmul, add_assoc]
-
-omit [RCLike 𝕜] in
-private theorem update_max_le_of_le {f g : P → ℕ} {p : P} {a c : ℕ}
-    (h : f ≤ Function.update g p (max (g p) c)) (ha : a ≤ c) :
-    Function.update f p (max (f p) a) ≤ Function.update g p (max (g p) c) := by
-  intro q
-  have hq' := h q
-  by_cases hq : q = p
-  · subst hq
-    simp only [Function.update_self] at hq' ⊢
-    omega
-  · simp only [Function.update_of_ne hq] at hq' ⊢
-    exact hq'
-
-/-- A loop accumulating `uⱼᴴ vⱼ` into `acc`, through the scratch cell `t[0]`. -/
-private theorem exec_trace_loop (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) {N : ℕ} (B C t : ℕ) (acc : Cell ℕ ℕ)
-    (n : IExp ℕ) (colE : ℕ → IExp ℕ) (c0 : ℕ) (hcol : ∀ j, (colE j).eval = N * (c0 + j))
-    (u v : ℕ → Fin N → 𝕜) (st : St P 𝕜 (OpCount P ι)) (a0 : 𝕜)
-    (hB : ∀ j < n.eval, ∀ a : Fin N, st.store.read p B (N * (c0 + j) + a) = some (u j a))
-    (hC : ∀ j < n.eval, ∀ a : Fin N, st.store.read p C (N * (c0 + j) + a) = some (v j a))
-    (hacc : st.store.read p acc.buf acc.idx.eval = some a0) (htB : t ≠ B) (htC : t ≠ C)
-    (haB : acc.buf ≠ B) (haC : acc.buf ≠ C) (hat : acc.buf = t → acc.idx.eval ≠ 0)
-    (ht : ∃ s, st.store.write p t 0 0 = some s) :
-    ∃ st', exec I (forRange n fun j => dot p ⟨t, 0⟩ B (colE j) C (colE j) (.const N) >>=
-        fun _ => ins (.bin p .add acc acc ⟨t, 0⟩)).run st = some st' ∧
-      st'.store.read p acc.buf acc.idx.eval =
-        some (a0 + ∑ j ∈ Finset.range n.eval, star (u j) ⬝ᵥ v j) ∧
-      (∀ q b i, b ≠ t → (b = acc.buf → i ≠ acc.idx.eval) →
-        st'.store.read q b i = st.store.read q b i) ∧
-      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧ st'.cur = st.cur ∧
-      st'.curW = st.curW ∧
-      st'.cnt = st.cnt + n.eval • (N • (Finsupp.single (OpKind.un p .conj) 1 +
-        Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1) +
-        Finsupp.single (OpKind.lit p) 1 + Finsupp.single (OpKind.bin p .add) 1) ∧
-      st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
-      st'.peakW ≤ max st.peakW (st.curW + I.width p) := by
-  rw [show (forRange (ι := ι) n fun j => dot p ⟨t, 0⟩ B (colE j) C (colE j) (.const N) >>=
-      fun _ => ins (.bin p .add acc acc ⟨t, 0⟩)).run = .seq (.loop n fun j =>
-        (dot p ⟨t, 0⟩ B (colE j) C (colE j) (.const N) >>=
-          fun _ => ins (.bin p .add acc acc ⟨t, 0⟩)).run) .skip from rfl, exec_seq_skip]
-  obtain ⟨s₀, hs₀⟩ := ht
-  refine exists_exec_loop_eq_some_of_forall I (fun j st' =>
-      st'.store.read p acc.buf acc.idx.eval =
-        some (a0 + ∑ j' ∈ Finset.range j, star (u j') ⬝ᵥ v j') ∧
-      (∀ q b i, b ≠ t → (b = acc.buf → i ≠ acc.idx.eval) →
-        st'.store.read q b i = st.store.read q b i) ∧
-      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧ st'.cur = st.cur ∧
-      st'.curW = st.curW ∧
-      st'.cnt = st.cnt + j • (N • (Finsupp.single (OpKind.un p .conj) 1 +
-        Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1) +
-        Finsupp.single (OpKind.lit p) 1 + Finsupp.single (OpKind.bin p .add) 1) ∧
-      st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
-      st'.peakW ≤ max st.peakW (st.curW + I.width p))
-    ⟨by simpa using hacc, fun _ _ _ _ _ => rfl, rfl, rfl, rfl, rfl, by simp, fun q => by
-      by_cases hq : q = p
-      · subst hq; simp
-      · simp [Function.update_of_ne hq], le_max_left _ _⟩ ?_
-  intro j hj st' ⟨hacc', hfr, hsh, hpos, hcur, hcurW, hcnt, hpeak, hpeakW⟩
-  set xs : ℕ → 𝕜 := fun a => if h : a < N then u j ⟨a, h⟩ else 0
-  set ys : ℕ → 𝕜 := fun a => if h : a < N then v j ⟨a, h⟩ else 0
-  have hsum : ∑ a ∈ Finset.range N, star (xs a) * ys a = star (u j) ⬝ᵥ v j := by
-    rw [← Fin.sum_univ_eq_sum_range (fun a => star (xs a) * ys a)]
-    simp [xs, ys, dotProduct]
-  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs₀
-    (∑ a ∈ Finset.range N, star (xs a) * ys a)
-  obtain ⟨st1, h1, hst1, hpos1, hcur1, hcurW1, hcnt1, hpeak1, hpeakW1⟩ :=
-    exec_dot I hI hc p st' ⟨t, 0⟩ B (colE j) C (colE j) (.const N) xs ys
-      (fun a (ha : a < N) => by
-        rw [hcol, hfr p B _ (Ne.symm htB) (fun h => absurd h.symm haB), hB j hj ⟨a, ha⟩]
-        simp [xs, ha])
-      (fun a (ha : a < N) => by
-        rw [hcol, hfr p C _ (Ne.symm htC) (fun h => absurd h.symm haC), hC j hj ⟨a, ha⟩]
-        simp [ys, ha])
-      (fun h => absurd h htB) (fun h => absurd h htC) s1 hs1
-  have hacc1 : s1.read p acc.buf acc.idx.eval =
-      some (a0 + ∑ j' ∈ Finset.range j, star (u j') ⬝ᵥ v j') := by
-    rw [Store.read_of_write_eq_some_of_ne hs1 (by
-      by_cases h : acc.buf = t
-      · exact Or.inr (hat h)
-      · exact Or.inl h), hacc']
-  obtain ⟨s2, hs2⟩ := Store.exists_write_eq_some_of_read_eq_some
-    (v := a0 + ∑ j' ∈ Finset.range (j + 1), star (u j') ⬝ᵥ v j') hacc1
-  have hv : I.sem.bin p .add (a0 + ∑ j' ∈ Finset.range j, star (u j') ⬝ᵥ v j')
-      (∑ a ∈ Finset.range N, star (xs a) * ys a) =
-      some (a0 + ∑ j' ∈ Finset.range (j + 1), star (u j') ⬝ᵥ v j') := by
-    rw [hI, Finset.sum_range_succ, ← add_assoc, hsum]; rfl
-  rw [exec_run_bind I (b := dot p ⟨t, 0⟩ B (colE j) C (colE j) (.const N)) (fun _ => rfl), h1,
-    Option.bind_some]
-  refine ⟨_, (exec_seq_instr_bin I (by rw [hst1]; exact hacc1)
-    (by rw [hst1]; exact Store.read_of_write_eq_some hs1) hv
-    (by rw [hst1]; exact hs2)).trans (exec_skip I _), Store.read_of_write_eq_some hs2,
-    fun q b i hbt hba => ?_, ?_, hpos1.trans hpos, hcur1.trans hcur, hcurW1.trans hcurW, ?_,
-    ?_, ?_⟩
-  · change s2.read q b i = _
-    rw [Store.read_of_write_eq_some_of_ne hs2 (by
-        by_cases h : b = acc.buf
-        · exact Or.inr (hba h)
-        · exact Or.inl h),
-      Store.read_of_write_eq_some_of_ne hs1 (Or.inl hbt), hfr q b i hbt hba]
-  · change s2.shape = _
-    rw [Store.shape_of_write_eq_some hs2, Store.shape_of_write_eq_some hs1, hsh]
-  · change st1.cnt + I.charge (.bin p .add) = _
-    simp only [hcnt1, hcnt, hc, IExp.eval_const, succ_nsmul, add_assoc]
-  · change st1.peak ≤ _
-    rw [hpeak1, hcur]
-    exact update_max_le_of_le hpeak le_rfl
-  · change st1.peakW ≤ _
-    rw [hpeakW1, hcurW]
-    exact max_le hpeakW (le_max_right _ _)
-
-/-- The projection of the probe columns `k, …, k + ℓ - 1` of `B` against its first `k`
-columns. -/
-private theorem exec_proj_loop (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) {N k : ℕ} (B t : ℕ) (ℓE : IExp ℕ)
-    (Q G : ℕ → Fin N → 𝕜) (st : St P 𝕜 (OpCount P ι))
-    (hQ : ∀ i < k, ∀ a : Fin N, st.store.read p B (N * i + a) = some (Q i a))
-    (hG : ∀ j < ℓE.eval, ∀ a : Fin N, st.store.read p B (N * (k + j) + a) = some (G j a))
-    (htB : t ≠ B) (ht : ∃ s, st.store.write p t 0 0 = some s) :
-    ∃ st', exec I (forRange ℓE fun j => orthAgainst p (.const N) B (.const k) B
-        (.const N * (.const k + .var j)) ⟨t, 0⟩).run st = some st' ∧
-      (∀ j < ℓE.eval, ∀ a : Fin N,
-        st'.store.read p B (N * (k + j) + a) = some (mgsSweep Q (G j) k a)) ∧
-      (∀ q b i, (b = B → i < N * k) → b ≠ t → st'.store.read q b i = st.store.read q b i) ∧
-      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧ st'.cur = st.cur ∧
-      st'.curW = st.curW ∧
-      st'.cnt = st.cnt + ℓE.eval • (k • (N • (Finsupp.single (OpKind.un p .conj) 1 +
-        Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1) +
-        Finsupp.single (OpKind.lit p) 1 + Finsupp.single (OpKind.un p .neg) 1 +
-        N • (Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1))) ∧
-      st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
-      st'.peakW ≤ max st.peakW (st.curW + I.width p) := by
-  have colA : ∀ {c c' a : ℕ}, c < c' → a < N → N * c + a < N * c' := fun hc ha => by
-    have := Nat.mul_le_mul_left N (Nat.succ_le_of_lt hc)
-    rw [Nat.mul_succ] at this
-    omega
-  rw [show (forRange (ι := ι) ℓE fun j => orthAgainst p (.const N) B (.const k) B
-      (.const N * (.const k + .var j)) ⟨t, 0⟩).run = .seq (.loop ℓE fun j =>
-        (orthAgainst p (.const N) B (.const k) B (.const N * (.const k + .var j))
-          ⟨t, 0⟩).run) .skip from rfl, exec_seq_skip]
-  obtain ⟨s₀, hs₀⟩ := ht
-  refine exists_exec_loop_eq_some_of_forall I (fun j st' =>
-      (∀ j' < j, ∀ a : Fin N,
-        st'.store.read p B (N * (k + j') + a) = some (mgsSweep Q (G j') k a)) ∧
-      (∀ q b i, (b = B → i < N * k ∨ N * (k + j) ≤ i) → b ≠ t →
-        st'.store.read q b i = st.store.read q b i) ∧
-      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧ st'.cur = st.cur ∧
-      st'.curW = st.curW ∧
-      st'.cnt = st.cnt + j • (k • (N • (Finsupp.single (OpKind.un p .conj) 1 +
-        Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1) +
-        Finsupp.single (OpKind.lit p) 1 + Finsupp.single (OpKind.un p .neg) 1 +
-        N • (Finsupp.single (OpKind.bin p .mul) 1 + Finsupp.single (OpKind.bin p .add) 1))) ∧
-      st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
-      st'.peakW ≤ max st.peakW (st.curW + I.width p))
-    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ _ => rfl, rfl, rfl, rfl, rfl,
-      by simp, fun q => by
-        by_cases hq : q = p
-        · subst hq; simp
-        · simp [Function.update_of_ne hq], le_max_left _ _⟩ ?_
-    |>.imp fun st' h => ⟨h.1, h.2.1, fun q b i hb hbt => h.2.2.1 q b i (fun h' => Or.inl (hb h'))
-      hbt, h.2.2.2⟩
-  intro j hj st' ⟨hsw, hfr, hsh, hpos, hcur, hcurW, hcnt, hpeak, hpeakW⟩
-  obtain ⟨st'', h, hv'', hfr'', hsh'', hpos'', hcur'', hcurW'', hcnt'', hpeak'', hpeakW''⟩ :=
-    exec_orthAgainst I hI hc p st' B (.const k) B (.const N * (.const k + .var j)) ⟨t, 0⟩ Q (G j)
-      (fun i hi a => by
-        rw [hfr p B _ (fun _ => Or.inl (colA hi a.2)) (Ne.symm htB), hQ i hi a])
-      (fun a => by
-        change st'.store.read p B (N * (k + j) + a) = _
-        rw [hfr p B _ (fun _ => Or.inr (by omega)) (Ne.symm htB), hG j hj a])
-      (fun _ => by
-        simp only [IExp.eval_mul, IExp.eval_add, IExp.eval_const, IExp.eval_var]
-        exact Nat.mul_le_mul_left N (Nat.le_add_right k j)) htB htB
-      (Store.exists_write_eq_some_of_shape_eq hsh hs₀ 0)
-  refine ⟨st'', h, fun j' hj' a => ?_, fun q b i hb hbt => ?_, hsh''.trans hsh,
-    hpos''.trans hpos, hcur''.trans hcur, hcurW''.trans hcurW,
-    by simp only [hcnt'', hcnt, succ_nsmul, add_assoc, IExp.eval_const], ?_, ?_⟩
-  · rcases Nat.lt_succ_iff_lt_or_eq.mp hj' with h' | rfl
-    · rw [hfr'' p B _ (fun _ => Or.inl (colA (c' := k + j) (by omega) a.2))
-        (fun h => absurd h.symm htB),
-        hsw j' h' a]
-    · exact hv'' a
-  · have hmono := Nat.mul_le_mul_left N (Nat.le_add_right k j)
-    have hsucc : N * (k + j) + N = N * (k + (j + 1)) := by rw [← Nat.add_assoc, Nat.mul_succ]
-    rw [hfr'' q b i (fun h => ?_) (fun h => absurd h hbt), hfr q b i (fun h => ?_) hbt]
-    · rcases hb h with h' | h'
-      · exact Or.inl h'
-      · exact Or.inr (by omega)
-    · change i < N * (k + j) ∨ N * (k + j) + N ≤ i
-      rcases hb h with h' | h'
-      · exact Or.inl (by omega)
-      · exact Or.inr (by omega)
-  · rw [hcur] at hpeak''
-    refine hpeak''.trans fun q => ?_
-    by_cases hq : q = p
-    · subst hq
-      have := hpeak q
-      simp only [Function.update_self] at this ⊢
-      omega
-    · have := hpeak q
-      simp only [Function.update_of_ne hq] at this ⊢
-      exact this
-  · rw [hcurW] at hpeakW''
-    exact hpeakW''.trans (max_le hpeakW (le_max_right _ _))
 
 /-- The end of `hutchppProg`: `out ← out + t[1] / ℓ`. -/
 private theorem exec_hutchpp_finish (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
@@ -501,7 +203,8 @@ private theorem exec_hutchpp_traces (I : Interp P ι 𝕜 (OpCount P ι)) (hI : 
       st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) := by
   obtain ⟨u₀, hu₀⟩ := ht0
   obtain ⟨st3, h3, hacc3, hfr3, hsh3, hpos3, hcur3, -, hcnt3, hpeak3, -⟩ :=
-    exec_trace_loop I hI hc p B C t ⟨0, .const 0⟩ (.const k) (fun j => .const N * .var j) 0
+    exec_forRange_dot_add I hI hc p B C t ⟨0, .const 0⟩ (.const k) (fun j => .const N * .var j)
+      0
       (fun j => by simp) (fun j => colOf W j) (fun j => colOf (A * W) j) st 0
       (fun j hj a => by
         simp only [IExp.eval_const] at hj
@@ -522,7 +225,8 @@ private theorem exec_hutchpp_traces (I : Interp P ι 𝕜 (OpCount P ι)) (hI : 
       rw [Store.read_of_write_eq_some_of_ne hs4 (Or.inl hbt), hfr3 q b i hbt hb0]
   have hsh4 : st4.store.shape = st.store.shape := (Store.shape_of_write_eq_some hs4).trans hsh3
   obtain ⟨st5, h5, hacc5, hfr5, hsh5, hpos5, hcur5, -, hcnt5, hpeak5, -⟩ :=
-    exec_trace_loop I hI hc p B C t ⟨t, 1⟩ (.const ℓ) (fun j => .const N * (.const k + .var j)) k
+    exec_forRange_dot_add I hI hc p B C t ⟨t, 1⟩ (.const ℓ)
+      (fun j => .const N * (.const k + .var j)) k
       (fun j => by simp) (fun j => colOf W (k + j)) (fun j => colOf (A * W) (k + j)) st4
       ((0 : ℚ) : 𝕜)
       (fun j hj a => by
@@ -719,7 +423,8 @@ private theorem exec_hutchpp_sketch {N k : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜
   rw [show ∀ X : Builder P ι ℕ ℕ Unit, (scope X).run = .seq X.run .skip from fun _ => rfl,
     exec_seq_skip, run_alloc_bind, exec_alloc]
   obtain ⟨st1, h1, hrd1, hfr1, hsh1, hpos1, hcur1, hpeak1, -, -, hcnt1⟩ :=
-    exec_draws I p d st.store.size 0 (.const N * .const k) (fun i => .var i) (fun i => by simp)
+    exec_forRange_draw I p d st.store.size 0 (.const N * .const k) (fun i => .var i)
+      (fun i => by simp)
       { st with
         store := st.store.push (p, Array.replicate (IExp.const N * IExp.const k).eval none)
         cur := Function.update st.cur p (st.cur p + (IExp.const N * IExp.const k).eval)
@@ -727,7 +432,7 @@ private theorem exec_hutchpp_sketch {N k : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜
           (max (st.peak p) (st.cur p + (IExp.const N * IExp.const k).eval))
         curW := st.curW + (IExp.const N * IExp.const k).eval * I.width p
         peakW := max st.peakW (st.curW + (IExp.const N * IExp.const k).eval * I.width p) }
-      (fun i hi => ⟨_, Store.write_push_size (by simpa using hi)⟩)
+      (fun i hi => ⟨0, _, Store.write_push_size (by simpa using hi)⟩)
   have hBw1 : ∀ i < N * k, ∃ v s, st1.store.write p B (0 + i) v = some s := fun i hi => by
     obtain ⟨v, s, hs⟩ := hBw i hi
     obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_shape_eq hsh1
@@ -837,7 +542,7 @@ private theorem exec_hutchpp_mid {N k ℓ : ℕ} (hℓ : 0 < ℓ) (A : Matrix (F
   set W : Matrix (Fin N) (Fin (k + ℓ)) 𝕜 := Matrix.of fun a c =>
     if h : (c : ℕ) < k then Q a ⟨c, h⟩ else mgsSweep (colOf Q) (colOf G (c - k)) k a with hWdef
   obtain ⟨st1, h1, hsw1, hfr1, hsh1, hpos1, hcur1, -, hcnt1, hpeak1, -⟩ :=
-    exec_proj_loop I hI hc p B t (.const ℓ) (colOf Q) (fun j => colOf G j) st
+    exec_forRange_orthAgainst I hI hc p B t (.const ℓ) (colOf Q) (fun j => colOf G j) st
       (fun i hi a => by rw [hQ a ⟨i, hi⟩]; simp [colOf, hi])
       (fun j hj a => by
         simp only [IExp.eval_const] at hj
@@ -1010,11 +715,12 @@ private theorem exec_hutchpp_front {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) �
       obtain ⟨v', s, hs⟩ := hBw i hi
       exact Store.exists_write_eq_some_of_shape_eq hsh1 hs v
   obtain ⟨st2, h2, hrd2, hfr2, hsh2, hpos2, hcur2, hpeak2, -, -, hcnt2⟩ :=
-    exec_draws I p d B (N * k) (.const N * .const ℓ) (fun i => .const N * .const k + .var i)
-      (fun i => rfl) st1 fun i hi => by
+    exec_forRange_draw I p d B (N * k) (.const N * .const ℓ)
+      (fun i => .const N * .const k + .var i)
+      (fun i => rfl) st1 fun i hi => ⟨0, by
         change i < N * ℓ at hi
         have := hw1 (i := N * k + i) (v := 0) (by rw [Nat.mul_add]; omega)
-        rwa [zero_add] at this
+        rwa [zero_add] at this⟩
   have hp1 : st1.pos d = N * k := by rw [hpos1]; simp [hpos]
   have hM : Holds st2.store p B 0 (A * tapeMatrix (ξ d) 0 N k) := fun a c => by
     rw [hfr2 p B _ (fun _ => Or.inl (by

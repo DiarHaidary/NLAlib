@@ -1,12 +1,14 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Computation.BLAS
+public import NLAlib.Computation.BLAS.MatrixKernels
 public import NLAlib.Computation.Contract
 public import NLAlib.Computation.Dense
 public import NLAlib.Computation.Exact
 public import NLAlib.Computation.Exec
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.Sparse
+public import NLAlib.Computation.Store
 public import NLAlib.Computation.Subst
 public import NLAlib.Computation.Syntax
 public import NLAlib.Estimation.Spectral.RandomStart

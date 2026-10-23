@@ -32,7 +32,8 @@ namespace ProgramChecks
 
 /-- The Computation core: syntax and semantics, whose combinators are not programs. -/
 def coreModules : List Name :=
-  [`NLAlib.Computation.Syntax, `NLAlib.Computation.Exec, `NLAlib.Computation.RunsWithin,
+  [`NLAlib.Computation.Syntax, `NLAlib.Computation.Store, `NLAlib.Computation.Exec,
+   `NLAlib.Computation.RunsWithin,
    `NLAlib.Computation.Subst, `NLAlib.Computation.Exact, `NLAlib.Computation.Contract]
 
 /-- Implementation files: an implementation may take host data (E1, D11). -/
