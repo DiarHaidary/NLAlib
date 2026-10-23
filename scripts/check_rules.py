@@ -660,7 +660,9 @@ def conclusion_top_and(concl):
     s = concl.strip()
     if s.startswith(('∃', '∀', '¬')):
         return False
-    for ch in s:
+    for i, ch in enumerate(s):
+        if depth == 0 and (s.startswith(('fun ', 'λ', '↦', ' if '), i)):
+            return False
         if ch in '([{⦃⟨':
             depth += 1
         elif ch in ')]}⦄⟩':

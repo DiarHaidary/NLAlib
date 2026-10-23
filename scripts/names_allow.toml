@@ -78,7 +78,3 @@ name = "NLAlib.map_eval_uniformOn_injective"
 rule = "N4"
 reason = "`eval` is Mathlib's reading of `fun f => f j` (`Function.eval`); the token became a library function with `NLAlib.Computation.IExp.eval`, a different object"
 
-[[allow]]
-name = "NLAlib.Computation.Store.getElem?_shape"
-rule = "N2"
-reason = "the left side `s.shape[b]?` is `getElem? s.shape b`, an index into the shape, as in `getElem?_flatten` and Mathlib's `getElem?_map`; the checker reads the dot projection `s.shape` as the head"

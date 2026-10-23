@@ -240,6 +240,9 @@ def head_candidates(e, depth=0):
         return {'covariance'}
     if re.match(r"^[μν]\[", e):
         return {'condExp', 'integral'}
+    mi = re.match(r'^(.+)\[[^\[\]]+\](\?|!)?$', e)
+    if mi:
+        return {'getElem', 'getElem?'} | head_candidates(mi.group(1), depth + 1)
     if re.match(r"^\(Measure\.\w+ .*\)\.real \{", e):
         return {'measureReal'}
     if c == '(':
