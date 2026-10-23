@@ -1113,6 +1113,16 @@ statement = '''`set_option linter.style.longLine false in` only on a declaration
 fix = '''Remove the option'''
 
 [[rule]]
+id = "S9"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the library or lakefile.toml'''
+fix = '''Write a total, safe definition; never switch off or bypass the kernel check (scripts/Replay.lean re-checks every constant)'''
+
+[[rule]]
 id = "T1"
 area = "types and statement shape"
 severity = "error"

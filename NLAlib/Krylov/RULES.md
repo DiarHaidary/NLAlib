@@ -52,6 +52,7 @@ and `docs/rules/DIGEST.md`.
 - **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [§7]
 - **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§10], proof-agent brief
 - **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [§10]
+- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the library or lakefile.toml. [§7]
 
 ### Types and statement shape
 

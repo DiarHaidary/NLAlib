@@ -30,6 +30,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - S6 No global instance on a Mathlib type, unless it is the one Mathlib would add.
 - S7 A line has at most 100 characters, unless one identifier or a URL makes it long.
 - S8 `set_option linter.style.longLine false in` only on a declaration with a long line.
+- S9 No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…` or kernel option in the library or lakefile.toml.
 - T1 The Euclidean norm is `‖WithLp.toLp 2 x‖`, never `√(x ⬝ᵥ x)`.
 - T2 An `ℝ≥0` quantity in a statement is written with `‖·‖₊`, never `Real.toNNReal`.
 - T3 Only `Matrix.Norms.L2Operator` is opened, never `…Frobenius` or `…Elementwise`.

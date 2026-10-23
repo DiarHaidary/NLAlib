@@ -5,7 +5,9 @@
 # Usage: scripts/stage_check.sh [EXCLUDE_REGEX]
 # Builds every module that `scripts/proved_modules.py` lists (minus those matching EXCLUDE_REGEX,
 # for files an agent is editing) with warnings fatal (`--wfail`, as in CI), then runs the axiom
-# audit and the environment linters on exactly those modules, the program checks
+# audit and the environment linters on exactly those modules, the kernel replay (scripts/Replay.lean:
+# every constant of the library's .olean files re-checked by Lean's kernel, on the whole library
+# after a `lake build NLAlib`), the program checks
 # (scripts/Programs.lean, rules E2, E4 and E9, on the whole library as in CI, after a
 # `lake build NLAlib` in which `sorry` warnings are allowed), the target lint
 # (scripts/Targets.lean, rule E3: the registry docs/targets.toml, its closure hashes and its
@@ -32,6 +34,9 @@ for check in Audit Lint; do
 done
 LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" lake build NLAlib > "$tmp/build-all.log" 2>&1 || \
   { tail -30 "$tmp/build-all.log"; exit 1; }
+LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/Replay.lean > "$tmp/replay.log" 2>&1 || \
+  { cat "$tmp/replay.log"; exit 1; }
+grep '^replay:' "$tmp/replay.log"
 LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/Programs.lean > "$tmp/programs.log" 2>&1 || \
   { grep -v 'declaration uses .sorry.' "$tmp/programs.log"; exit 1; }
 grep '^programs:' "$tmp/programs.log"

@@ -183,6 +183,11 @@ FIX = {
            [decl('NLAlib.instFoo', ': Foo (specNorm A)', kind='instance', deps=['NLAlib.specNorm'])]),
     'S7': (CITED.replace('A result.', 'A result ' + 'x ' * 50 + '.'),
            CITED.replace('[Def2001, §2].', '[Def2001, §2],\n`' + 'x' * 110 + '`.')),
+    'S9': ('/-- Doc. -/\nunsafe def anything.{u} (α : Sort u) : α := anything α\n\n'
+           '-- why\nset_option debug.skipKernelTC true in\n/-- Doc. -/\ntheorem t : False := anything _',
+           {'NLAlib/Matrix/A.lean': lean('/-- A partial isometry; `unsafe`, `partial` in prose. -/\n'
+                                         'theorem partialSum_unsafe : True := trivial'),
+            'lakefile.toml': '# no debug. options here\n[leanOptions]\nautoImplicit = false\n'}),
     'S8': ('-- why\nset_option linter.style.longLine false in\n' + CITED,
            '-- why\nset_option linter.style.longLine false in\n' + CITED.replace('A result.', '`' + 'x' * 110 + '`.')),
     'T1': ([decl('NLAlib.t', '(x : n → ℝ) : √(x ⬝ᵥ x) = 0')], [decl('NLAlib.t', '(x : n → ℝ) : ‖x‖ = 0')]),
@@ -424,6 +429,22 @@ class RuleTests(unittest.TestCase):
     def test_message_shape(self):
         v = violations('S1', FIX['S1'][0])[0].text()
         self.assertRegex(v, r'^S1 NLAlib/Matrix/A\.lean:\d+ \S+: No `simp_all`')
+
+    def test_unsafe_and_kernel_options(self):
+        # S9 (final audit, 2026-10-24): each keyword and option that bypasses the kernel, in code
+        for body in ['/-- Doc. -/\npartial def f (n : ℕ) : ℕ := f n',
+                     '/-- Doc. -/\n@[implemented_by g] def f (n : ℕ) : ℕ := n',
+                     '/-- Doc. -/\n@[extern "f"] def f (n : ℕ) : ℕ := n',
+                     '/-- Doc. -/\ntheorem t : True := by\n  set_option debug.byAsSorry true in trivial',
+                     '-- why\nset_option debug.skipKernelTC true in\n' + FOO,
+                     '/-- Doc. -/\nunsafe inductive U : Type where\n  | mk : (U → U) → U']:
+            with self.subTest(body=body):
+                self.assertTrue(violations('S9', body), body)
+        for lake in ['[leanOptions]\ndebug.skipKernelTC = true\n',
+                     '[[lean_lib]]\nname = "NLAlib"\nmoreLeanArgs = ["-DautoImplicit=false"]\n']:
+            with self.subTest(lake=lake):
+                self.assertTrue(violations('S9', {'lakefile.toml': lake}), lake)
+        self.assertEqual(violations('S9', '/-- Doc. -/\ntheorem partialSum_le : True := trivial'), [])
 
     def test_long_line_exemption(self):
         self.assertTrue(check_rules.long_line_exempt('  `' + 'x' * 120 + '`.'))

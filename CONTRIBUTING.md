@@ -86,7 +86,7 @@ NLAlib/
                    other folder, and only LowerBounds imports it                  (layer 5)
 NLAlibScaffold/    same tree; statements with deferred proofs (§7)
 docs/              references.bib, design notes (docs/design/), port ledger (docs/port/)
-scripts/           Audit.lean, Lint.lean, check_refs.py, stage_check.sh, ledger and prototype tools
+scripts/           Audit.lean, Replay.lean, Lint.lean, check_refs.py, stage_check.sh, ledger and prototype tools
 ```
 
 The subdirectories of each layer are decided in that layer's design note (§8), not in advance.
@@ -909,6 +909,13 @@ combine extracted declarations with a different checkout.
   goals, no `simp_all` [S1], no `decide` on anything but tiny finite goals (review list: [S3]),
   `nlinarith`/`positivity`/`gcongr` welcome. A proof over 80 lines is split into named lemmas
   [S4]. Terminal `exact?` and `apply?` do not appear in committed code [S2].
+- Nothing in `NLAlib/` (or `NLAlibScaffold/`, or the `leanOptions` of `lakefile.toml`) is
+  `unsafe`, `partial`, `implemented_by` or `extern`, or sets a `debug.` option or a kernel option
+  (`set_option debug.skipKernelTC true in` makes the elaborator skip the kernel, and an `unsafe`
+  definition then inhabits any type with no axiom) [S9] (final audit, 2026-10-24). The checks
+  behind it: `scripts/Replay.lean` sends every constant of the library's `.olean` files to the
+  kernel again (Lean core's `Environment.replay`, as `lean4checker` does), and
+  `scripts/Audit.lean` fails on an `unsafe` or `partial` constant.
 - Instances: no global instance on a Mathlib type unless it is the one Mathlib would add
   (`Matrix.instMeasurableSpace` is the one exception, in `ForMathlib`; the others are allowlisted
   with their reason) [S6]. No `attribute [instance]` at file level [F9].
@@ -979,6 +986,7 @@ ports material [G2]. Before opening it, run:
 LEAN_NUM_THREADS=4 lake build --wfail NLAlib NLAlibScaffold
 lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --check
 lake env lean scripts/Audit.lean
+lake env lean scripts/Replay.lean
 lake env lean scripts/Lint.lean
 lake env lean scripts/Programs.lean
 lake env lean scripts/Targets.lean

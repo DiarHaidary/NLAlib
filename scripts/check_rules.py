@@ -563,6 +563,27 @@ def s_longline_option(c):
     return out
 
 
+# Final audit, 2026-10-24: `unsafe def anything (α : Sort u) : α := anything α` and
+# `set_option debug.skipKernelTC true in theorem t : T := anything _` elaborate with no warning and
+# no axiom. The keywords and options that switch off or bypass the kernel, in code (comments and
+# docstrings stripped); in lakefile.toml, the options and arguments passed to every file.
+UNSAFE_RE = re.compile(r"(?<![\w.'])(?:unsafe|partial|implemented_by|extern)(?![\w'])|skipKernelTC|"
+                       r"\bset_option\s+(?:debug\.|\S*(?:[Kk]ernel|trust))")
+LAKE_UNSAFE_RE = re.compile(r'debug\.|[Kk]ernel|trust|^\s*(?:more|weak)LeanArgs\b')
+
+
+@rule('S9')
+def s_unsafe(c):
+    out = [V('S9', p, i + 1, '(code)', l.strip()[:80]) for p in c.files
+           for i, l in enumerate(c.code(p)) if UNSAFE_RE.search(l)]
+    lake = c.root / 'lakefile.toml'
+    if lake.exists():
+        for i, l in enumerate(lake.read_text().split('\n'), 1):
+            if LAKE_UNSAFE_RE.search(l.split('#')[0]):
+                out.append(V('S9', 'lakefile.toml', i, '(option)', l.strip()[:80]))
+    return out
+
+
 # ================================================================== T: types and shapes
 def public_thms(c):
     return [d for d in c.decls if d['kind'] == 'theorem']
@@ -771,7 +792,8 @@ def v_forbidden(c):
 
 KEYWORDS = {'native_decide', 'mk_all', 'set_option', 'snake_case', 'irreducible_def', 'previous_latex',
             'previous_display', 'lean_body', 'exists_forall_', 'explorer_role', 'simp_all',
-            'with_reducible_and_instances', 'eigenvalues₀_congr', 'body_hash', 'x_k', 'x_0'}
+            'with_reducible_and_instances', 'eigenvalues₀_congr', 'body_hash', 'x_k', 'x_0',
+            'implemented_by'}
 
 
 def mathlib_names(c):
