@@ -58,7 +58,9 @@ with the `Filter.EventuallyEq` from `mul_eq_zero` (`zero_mul`). -/
 theorem integral_eval_mul_eq_zero_of_integral_sq_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : ∫ x, p.eval x ^ 2 ∂μ = 0) (r : ℝ[X]) :
     ∫ x, p.eval x * r.eval x ∂μ = 0 := by
-  sorry
+  have hae : ∀ᵐ x ∂μ, p.eval x = 0 :=
+    ae_eval_eq_zero_of_integral_sq_eq_zero hμ hp
+  exact integral_eq_zero_of_ae (hae.mono fun x hx => by simp [hx])
 
 /-- **Moment determinacy on a finite set**: two finite measures $\mu$, $\nu$ carried by a finite
 set $s \subseteq \mathbb{R}$ that match their first $\lvert s\rvert$ moments are equal. No printed
