@@ -502,7 +502,12 @@ Proof: S, about 15 lines. Induction on `k`; $k = 0$: $\int 1\,d\mu = \mu(\mathbb
 `Finset.prod_range_succ`. -/
 theorem integral_orthogonalPolynomial_sq_eq_prod (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = ∏ i ∈ Finset.range (k + 1), jacobiBeta μ i := by
-  sorry
+  induction k with
+  | zero =>
+    simp only [orthogonalPolynomial_zero, eval_one, one_pow, integral_const, jacobiBeta_zero,
+      Finset.prod_range_succ, Finset.range_zero, Finset.prod_empty, one_mul, smul_eq_mul, mul_one]
+  | succ k ih =>
+    rw [integral_orthogonalPolynomial_succ_sq hμ k, Finset.prod_range_succ, ih, mul_comm]
 
 /-- The off-diagonal entry as an integral: for a finite measure $\mu$ supported in $[a, b]$ and
 every $k$, $\int x\,\pi_k(x)\pi_{k+1}(x)\,d\mu = \|\pi_{k+1}\|^2$, since
