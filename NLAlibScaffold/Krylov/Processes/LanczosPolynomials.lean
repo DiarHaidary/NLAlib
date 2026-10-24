@@ -69,7 +69,15 @@ coefficients), `map_sub`, `aeval_X_pow`, `Matrix.sub_mulVec`. -/
 theorem aeval_orthogonalPolynomial_mulVec_sub_pow_mulVec_mem_krylovSpace (μ : Measure ℝ)
     (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) :
     aeval A (orthogonalPolynomial μ j) *ᵥ b - A ^ j *ᵥ b ∈ krylovSpace A b j := by
-  sorry
+  have h : aeval A (orthogonalPolynomial μ j - (X : ℝ[X]) ^ j) *ᵥ b ∈ krylovSpace A b j := by
+    refine aeval_mulVec_mem_krylovSpace A b ?_
+    have hdeg : (orthogonalPolynomial μ j - (X : ℝ[X]) ^ j).degree <
+        (orthogonalPolynomial μ j).degree :=
+      degree_sub_lt_left (by rw [degree_orthogonalPolynomial, degree_X_pow])
+        (monic_orthogonalPolynomial μ j).ne_zero
+        (by rw [(monic_orthogonalPolynomial μ j).leadingCoeff, Polynomial.leadingCoeff_X_pow])
+    rwa [degree_orthogonalPolynomial] at hdeg
+  rwa [map_sub, Matrix.sub_mulVec, aeval_X_pow] at h
 
 /-- $\pi_j(\mathbf{A})\mathbf{b}$ is orthogonal to the Krylov space: for Hermitian $\mathbf{A}$,
 every $\mathbf{b}$, $j$ and $\mathbf{x} \in \mathcal{K}_j(\mathbf{A}, \mathbf{b})$,
