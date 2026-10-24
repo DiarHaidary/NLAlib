@@ -418,7 +418,32 @@ private theorem integral_orthogonalPolynomial_add_two_mul_succ
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1))) :
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ (k + 1)).eval x ∂μ =
       0 := by
-  sorry
+  have key : ∀ x : ℝ,
+      (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ (k + 1)).eval x =
+      (x - jacobiAlpha μ (k + 1)) * (orthogonalPolynomial μ (k + 1)).eval x ^ 2 -
+        jacobiBeta μ (k + 1) *
+          ((orthogonalPolynomial μ (k + 1)).eval x * (orthogonalPolynomial μ k).eval x) := by
+    intro x
+    rw [orthogonalPolynomial_add_two]
+    simp only [eval_sub, eval_mul, eval_X, eval_C]
+    ring
+  have hint1 : Integrable (fun x => (x - jacobiAlpha μ (k + 1)) *
+      (orthogonalPolynomial μ (k + 1)).eval x ^ 2) μ :=
+    (integrable_eval_of_ae_mem_Icc hμ ((X - C (jacobiAlpha μ (k + 1))) *
+      (orthogonalPolynomial μ (k + 1)) ^ 2)).congr (ae_of_all μ fun x => by
+        simp only [eval_sub, eval_mul, eval_X, eval_C, eval_pow])
+  have hint2 : Integrable (fun x => jacobiBeta μ (k + 1) *
+      ((orthogonalPolynomial μ (k + 1)).eval x * (orthogonalPolynomial μ k).eval x)) μ := by
+    simpa only [eval_mul] using
+      (integrable_eval_of_ae_mem_Icc hμ
+        (orthogonalPolynomial μ (k + 1) * orthogonalPolynomial μ k)).const_mul
+        (jacobiBeta μ (k + 1))
+  rw [integral_congr_ae (ae_of_all μ key), integral_sub hint1 hint2, integral_const_mul,
+    integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero hμ (k + 1), zero_sub,
+    h1 (orthogonalPolynomial μ k) (by
+      rw [degree_orthogonalPolynomial]
+      exact_mod_cast Nat.lt_succ_self k),
+    mul_zero, neg_zero]
 
 /-- Step (c) of the orthogonality induction: if $\pi_{k+1}$ is orthogonal to the lower degrees,
 then $\int\pi_{k+2}\pi_k\,d\mu = 0$.
