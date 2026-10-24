@@ -71,7 +71,9 @@ Proof: S, about 8 lines. Unfold `gaussQuadrature`, `interpolatoryQuadrature`;
 `IsOrthogonalPolynomial.integral_interpolatoryQuadrature`. -/
 theorem integrable_gaussQuadrature (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
     Integrable f (gaussQuadrature μ k) := by
-  sorry
+  unfold gaussQuadrature interpolatoryQuadrature
+  exact integrable_finsetSum_measure.mpr fun x _ =>
+    (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top
 
 /-! ### Finite measures with compact support -/
 
