@@ -61,7 +61,10 @@ with $r = p$ (`sq`, `RCLike.ofReal_re`). -/
 theorem _root_.Matrix.IsHermitian.norm_aeval_mulVec_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (p : ℝ[X]) :
     ‖WithLp.toLp 2 (aeval A p *ᵥ b)‖ ^ 2 = ∫ x, p.eval x ^ 2 ∂spectralMeasure A b := by
-  sorry
+  have h := hA.star_aeval_mulVec_dotProduct_aeval_mulVec b p p
+  rw [EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, RCLike.ofReal_inj] at h
+  rw [h]
+  simp only [sq]
 
 /-- The spectral measure of a diagonal matrix: for real $\mathbf{d}$ and every $\mathbf{w}$,
 $$\mu_{\operatorname{diag}(\mathbf{d}),\,\mathbf{w}} = \sum_i\lvert\mathbf{w}_i\rvert^2\,
