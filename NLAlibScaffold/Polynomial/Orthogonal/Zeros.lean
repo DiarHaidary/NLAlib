@@ -62,7 +62,12 @@ private theorem IsMomentPosDef.false_of_ae_nonneg_mul {k : ℕ} (h : IsMomentPos
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : IsOrthogonalPolynomial μ k p) {r : ℝ[X]}
     (hr : r.degree < k) (hnn : ∀ᵐ x ∂μ, 0 ≤ (p * r).eval x) {s : Finset ℝ} (hs : s.card < k)
     (hz : ∀ x ∈ Set.Icc a b, (p * r).eval x = 0 → x ∈ s) : False := by
-  sorry
+  have hint : ∫ x, (p * r).eval x ∂μ = 0 := by simpa using hp r hr
+  have hzero : ∀ᵐ x ∂μ, (p * r).eval x = 0 :=
+    (integral_eq_zero_iff_of_nonneg_ae hnn (integrable_eval_of_ae_mem_Icc hμ _)).mp hint
+  have hcar : ∀ᵐ x ∂μ, x ∈ s := (hμ.and hzero).mono fun x hx => hz x hx.1 hx.2
+  exact Nat.lt_irrefl s.card
+    (Nat.lt_of_lt_of_le hs ((isMomentPosDef_iff_forall_finset hμ k).mp h s hcar))
 
 /-- **The zeros of the orthogonal polynomial are real**: if $\mu$, finite and supported in
 $[a, b]$, is positive definite up to degree $k$, then $\pi_k$ has $k$ real zeros counted with
