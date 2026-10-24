@@ -1,6 +1,6 @@
 # Design note: the structure theory of orthogonal polynomials (stage KS7)
 
-Status: draft, 2026-10-24, by an Opus agent from the orchestrator's brief; Fable review folded in 2026-10-24; awaiting the maintainer.
+Status: draft, 2026-10-24, by an Opus agent from the orchestrator's brief; Fable review folded in 2026-10-24; maintainer decisions of 2026-10-24 recorded: OQ1 (a), OQ2 (a), OQ3 (a), OQ6 (a), S1 (a), S2 (c), L1 (b), L2 (a), and the SLQ integration ("Interface for SLQ"); OQ4 and OQ5 still open.
 
 Monic orthogonal polynomials of a finite measure on ℝ with compact support, their three-term
 recurrence and Jacobi matrix, their zeros, the canonical Gauss rule, and the link to Lanczos:
@@ -82,6 +82,23 @@ the expected one. What I did with each comment:
 
 The reviewer's verdict on each open question is noted beside my recommendation below.
 
+## Maintainer decisions and the SLQ integration (2026-10-24)
+
+The maintainer decided OQ1 (a), OQ2 (a), OQ3 (a), OQ6 (a) (each marked "Decided" below), and the
+dashboard items S1 (a) (the Lanczos column formula as drafted, §4.11 item 1), S2 (c) (the weights
+form of the Gauss rule and Golub–Welsch over `𝕜`, "we are also doing SLQ"), L1 (b) (locators stay
+"to check" until verified against the books) and L2 (a) (Golub–Meurant by chapter; the two
+"Theorem 6.6" citations in §4.6 and §4.10 are now "Ch. 6"). OQ4 (names) and OQ5 (definiteness
+form; the maintainer asked whether Mathlib has it, answered in OQ5) stay open.
+
+Direction, verbatim: "I want the OP and SLQ stuff to integrate well. I.e. mathematically. we
+should think of SLQ and GQ on the individual probe densities." So SLQ is the average over probes
+$\boldsymbol{\omega}_j$ of the Gauss rules `gaussQuadrature (spectralMeasure A ω_j) q` of the probe
+spectral measures, and Lanczos enters only through
+`Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`. The new section "Interface for SLQ"
+(before §5) fixes what SLQ consumes; it adds seven theorems (#64–#70), marked **[SLQ-1]** in §10
+with the existing ones SLQ uses (#40, #42, #43, #54).
+
 ## 0. Summary and main findings
 
 1. **Scope chosen: the part with consumers, plus the classical core it rests on.** In scope:
@@ -93,10 +110,10 @@ The reviewer's verdict on each open question is noted beside my recommendation b
    for an arbitrary measure. Deferred with what each needs (§8): interlacing, strict interior
    zeros, Christoffel–Darboux and the Christoffel function, Chebyshev–Markov–Stieltjes,
    Gauss–Radau and Lobatto, the continued fraction, orthonormal polynomials, a Hankel bridge.
-   **66 declarations to prove** (59 public theorems, 1 instance, 6 private steps fixed in the
-   skeleton so that each proof stays short) **and 7 definitions**: 36 S (6 of them done in the
-   skeleton: 4 `rfl`, 1 move of an existing proof, the instance), 30 M, 0 L; 59 dispatched jobs;
-   about 2,100 lines in 3 new files and 6 existing ones (after the review, §"Changes").
+   **73 declarations to prove** (66 public theorems, 1 instance, 6 private steps fixed in the
+   skeleton so that each proof stays short) **and 7 definitions**: 42 S (6 of them done in the
+   skeleton: 4 `rfl`, 1 move of an existing proof, the instance), 31 M, 0 L; 66 dispatched jobs;
+   about 2,250 lines in 3 new files and 6 existing ones (after the review and the SLQ interface).
 2. **The definition is the Stieltjes procedure, so the recurrence is `rfl`.**
    `orthogonalPolynomial μ k` is defined by the three-term recurrence with
    $\alpha_k = \int x\pi_k^2\,d\mu/\int\pi_k^2\,d\mu$ and $\beta_k = \int\pi_k^2\,d\mu/
@@ -169,7 +186,7 @@ The reviewer's verdict on each open question is noted beside my recommendation b
 Each changes a statement or a name that provers will be given fixed. Everything else proceeds as
 recommended unless the maintainer objects.
 
-**OQ1. The scope boundary.**
+**OQ1. The scope boundary.** **Decided 2026-10-24: (a).**
 - (a) As drafted (§0 item 1): the core, the Gauss rule with uniqueness, the Lanczos link and
   general Golub–Welsch.
 - (b) (a) without general Golub–Welsch (`spectralMeasure_jacobiMatrix`,
@@ -188,7 +205,7 @@ recommended unless the maintainer objects.
   Krylov-Spectral §7).
 - Reviewer: agrees with (a).
 
-**OQ2. Junk values and hypotheses: unconditional statements where true.**
+**OQ2. Junk values and hypotheses: unconditional statements where true.** **Decided 2026-10-24: (a).**
 - (a) As drafted: theorems that hold for every $k$ under the junk conventions of §2 are stated
   without a definiteness hypothesis (§0 item 3); definiteness appears only where the statement
   is false without it.
@@ -200,7 +217,7 @@ recommended unless the maintainer objects.
   (`interpolatoryQuadrature_eq_self_of_ae_mem`), reused by four theorems.
 - Reviewer: agrees with (a); re-derived every degenerate value (comment 3).
 
-**OQ3. The convention for $\beta$.**
+**OQ3. The convention for $\beta$.** **Decided 2026-10-24: (a).**
 - (a) Gautschi's: `jacobiBeta μ k` $= \int\pi_k^2/\int\pi_{k-1}^2$, the coefficient of the
   monic recurrence, with $\beta_0 = \mu(\mathbb{R})$; the Jacobi matrix has $\sqrt{\beta_k}$ off
   the diagonal; the Lanczos coefficient is `(lanczosState A b (j + 1)).beta = √(jacobiBeta … (j + 1))`.
@@ -213,7 +230,7 @@ recommended unless the maintainer objects.
   #62 ($\|\pi_k\|^2 = \prod_{i\le k}\beta_i$) is what the $\beta_0 = \mu(\mathbb{R})$ convention buys.
 - Reviewer: agrees with (a).
 
-**OQ4. Names.**
+**OQ4. Names.** **Open.**
 - `orthogonalPolynomial μ k` (alternative `monicOrthogonalPolynomial`, if the orthonormal family
   is later added as `orthonormalPolynomial`).
 - `IsMomentPosDef μ k` for "positive definite on polynomials of degree $< k$" (alternatives:
@@ -231,7 +248,7 @@ recommended unless the maintainer objects.
   follows Chihara's "positive-definite moment functional" and cites it.
 - Reviewer: agrees, with comment 7(iii)–(iv) (adopted).
 
-**OQ5. Positive definiteness: the defining form.**
+**OQ5. Positive definiteness: the defining form.** **Open.**
 - (a) As drafted, the $L^2$ form: `∀ p : ℝ[X], p ≠ 0 → p.degree < k → 0 < ∫ x, p.eval x ^ 2 ∂μ`,
   with the two constructors a consumer has: `isMomentPosDef_succ_iff` (norms of the orthogonal
   polynomials) and `Matrix.IsHermitian.isMomentPosDef_spectralMeasure_iff` (the grade).
@@ -245,8 +262,20 @@ recommended unless the maintainer objects.
   through Mathlib's `Matrix.gram` of the monomials in $L^2(\mu)$ and
   `Matrix.posDef_gram_iff_linearIndependent`; the `Measure.support` form stays deferred (§8 item 7).
 - Reviewer: (a) plus the finset form of (c) now; (b) later through `Matrix.gram`. Adopted.
+- **The maintainer's question, "is this not in mathlib or somewhere else?"** No. The pinned
+  Mathlib has no Hankel matrix, no moment-definiteness predicate and no orthogonal-polynomial
+  theory of a measure (searched: `hankel`, `Hankel`, `moment` with `PosDef`, `orthogonal` in
+  `Polynomial/` and `MeasureTheory/`; its only orthogonal families are the Chebyshev ones for the
+  fixed measure `measureT`, §11). NLAlib has none before this stage (§1). The nearest Mathlib
+  object is the Gram matrix: the Hankel matrix $(\int x^{i+j}d\mu)_{i,j<k}$ is
+  `Matrix.gram ℝ` of the monomials $1, x, \dots, x^{k-1}$ as elements of `Lp ℝ 2 μ`, and
+  `Matrix.posDef_gram_iff_linearIndependent` (`Analysis/InnerProductSpace/GramMatrix.lean`) says
+  it is positive definite iff they are linearly independent in $L^2(\mu)$, which is
+  `IsMomentPosDef μ k` (a nonzero polynomial of degree $< k$ has positive norm). So OQ5(b) is a
+  bridge to Mathlib, not a definition to copy; the $L^2$ form stays recommended as the definition
+  because every proof uses it and it avoids the `Lp` coercions.
 
-**OQ6. Where general Golub–Welsch lives.** Its statement uses `spectralMeasure` (Matrix) and
+**OQ6. Where general Golub–Welsch lives.** **Decided 2026-10-24: (a).** Its statement uses `spectralMeasure` (Matrix) and
 `jacobiMatrix`, `gaussQuadrature` (Polynomial); its proof uses Lanczos. P11 keeps
 `spectralMeasure` out of the Polynomial layer for good, so the home by subject is the Matrix
 layer, `Matrix/Spectral/SpectralMeasure.lean` (or a new `Matrix/Spectral/JacobiMatrix.lean`),
@@ -619,7 +648,7 @@ theorem interpolatoryQuadrature_eq_self_of_ae_mem {s : Finset ℝ} (hs : ∀ᵐ 
 
 /-- **Gauss quadrature**: for a finite measure $\mu$ supported in $[a, b]$ and every $k$, the
 $k$-point Gauss rule matches the first $2k$ moments of $\mu$: it integrates every real polynomial
-of degree less than $2k$ exactly. [Gautschi2004, Theorem 1.45]; [GolubMeurant2010, Theorem 6.6];
+of degree less than $2k$ exactly. [Gautschi2004, Theorem 1.45]; [GolubMeurant2010, Ch. 6];
 there for $k$ at most the number of support points; past it the rule is $\mu$ itself.
 Result: gauss-quadrature -/
 theorem matchesMoments_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
@@ -749,7 +778,8 @@ The file's context. The file imports `LanczosPolynomials`.
 /-- **Lanczos quadrature is the Gauss rule of the spectral measure**: for Hermitian
 $\mathbf{A}$ and every $q$,
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)$ is the $q$-point Gauss rule of
-$\mu_{\mathbf{A},\mathbf{b}}$. [GolubMeurant2010, Theorem 6.6] (locator from the quarry).
+$\mu_{\mathbf{A},\mathbf{b}}$, for every `RCLike` field (complex Hermitian included).
+[GolubMeurant2010, Ch. 6].
 Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
@@ -802,16 +832,146 @@ The interval is `[a, c]` in the Krylov files because `b` is the vector there.
    A consumer that needs $\pi_j(\mathbf{A})\mathbf{b}$ from $\mathbf{q}_j$ wants
    `aeval A π_j *ᵥ b = (‖…‖ : 𝕜) • q_j`, which also holds for all $j$; the drafted form is the
    one the coefficient proofs use. Either can be the corollary of the other in two lines.
+   **Decided (S1 (a)): as drafted.**
 2. **`integral_gaussQuadrature`** gives the weights as $\int\ell_x\,d\mu$, matching
    `IsOrthogonalPolynomial.integral_interpolatoryQuadrature`. SLQ-style statements may prefer
-   `∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x`; that is
-   `integral_finset`-level and can be added if the SLQ note asks.
+   `∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x`.
+   **Decided (S2 (c)): added** as #64 `integral_gaussQuadrature_eq_sum` ("Interface for SLQ").
 3. **`IsMomentPosDef.gaussNodes_subset_Icc`** is closed-interval (see §4.5). A Gauss–Radau
    consumer would need the strict form; deferred.
 4. **`spectralMeasure_jacobiMatrix`** is over ℝ only and at order $k + 1$ (the vector
    $\mathbf{e}_0$ needs a nonempty index). T7: real by subject (the Jacobi matrix is real). A `𝕜`
-   version is `(jacobiMatrix …).map (algebraMap ℝ 𝕜)`; not added without a consumer.
+   version is `(jacobiMatrix …).map (algebraMap ℝ 𝕜)`. **Decided (S2 (c)): added** as #67
+   `spectralMeasure_map_jacobiMatrix`, since SLQ works over `𝕜`.
 5. **`lanczosState_beta`** relies on OQ3(a); under OQ3(b) it loses the `√`.
+
+## Interface for SLQ (maintainer direction, 2026-10-24)
+
+SLQ is the average over probes of per-probe Gauss rules:
+$$\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega}, q) = \frac{1}{\lvert n\rvert m}\sum_{j=1}^m
+\mathsf{gaussQuadrature}(\mu_{\mathbf{A},\boldsymbol{\omega}_j}, q),$$
+with $\mu_{\mathbf{A},\boldsymbol{\omega}_j}$ = `spectralMeasure A ω_j` (unnormalised, mass
+$\|\boldsymbol{\omega}_j\|^2$). Every per-probe fact is a theorem about `gaussQuadrature` of an
+arbitrary finite measure on $[a, b]$; Lanczos enters once, through item 4. The statements below
+are final; all elaborate (`/tmp/claude-1000/ks7-scratch/{Poly,Krylov}.lean`). Context in the
+Polynomial files: `{μ ν : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}`; in the Krylov file
+`{𝕜} [RCLike 𝕜] {n} [Fintype n] [DecidableEq n]`.
+
+**1. The weights form** (#64, Gauss.lean, S2): the rule is a finite sum of point masses at the
+Gauss nodes, for every $\mu$ (no support hypothesis needed: it is a statement about a finite Dirac
+sum). With the existing `integral_gaussQuadrature` the weight is also $\int\ell_x\,d\mu$.
+
+```lean
+theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
+    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x
+theorem integrable_gaussQuadrature (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
+    Integrable f (gaussQuadrature μ k)                                               -- #65
+```
+
+**2. The generic Gauss-rule error** (#66, Gauss.lean). M0 already gives it: with
+`ν := gaussQuadrature μ k`, `MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn`
+applied to `matchesMoments_gaussQuadrature`, `ae_mem_Icc_gaussQuadrature`,
+`integrable_gaussQuadrature` and `gaussQuadrature_real_univ` is the bound. #66 is that
+composition, stated once so that SLQ (and anyone with a Gauss rule) applies it with `exact`. The
+degree condition $\deg p \le 2k - 1$ is written `p.degree < 2 * k` (SD2's strict convention, no
+truncated subtraction, V2).
+
+```lean
+/-- **The Gauss-rule error from uniform approximation**: for a finite measure $\mu$ supported in
+$[a, b]$, $f$ integrable against $\mu$, and a real polynomial $p$ of degree less than $2k$ within
+$\varepsilon$ of $f$ on $[a, b]$,
+$$\Bigl\lvert\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k)\Bigr\rvert \le
+2\varepsilon\,\mu(\mathbb{R})\,.$$
+[GolubMeurant2010, Ch. 6]; the composition of exactness with M0. -/
+theorem abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {f : ℝ → ℝ} (hf : Integrable f μ) {k : ℕ} {p : ℝ[X]}
+    (hp : p.degree < 2 * k) {ε : ℝ}
+    (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b) ε) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ k| ≤ 2 * ε * μ.real Set.univ
+
+/-- … Lipschitz $f$: <!-- value jacksonApproximationConstant -->
+$\frac{\pi L(b - a)}{2k + 3}\mu(\mathbb{R})$ at $k + 1$ nodes … -/
+theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) {f : ℝ → ℝ} {L : ℝ≥0}
+    (hf : LipschitzOnWith L f (Set.Icc a b)) (k : ℕ) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
+      jacksonApproximationConstant * L * (b - a) / (2 * k + 3) * μ.real Set.univ    -- #68
+```
+
+The Lipschitz corollary (#68) is a one-liner from the existing
+`exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith` exactly as the KS4 Lanczos corollary
+is (integrability of $f$ follows from continuity on $[a, b]$), so it is here; `Gauss.lean` then
+imports `Polynomial/Approximation/Jackson.lean` (P11 holds). The analytic (Bernstein-ellipse)
+corollary is **left to SLQ**: its integrability hypothesis is not a one-liner from the ellipse
+data, and SLQ's own statement may as well take `Integrable f μ`.
+
+**3. Support and mass** (existing in §4.6, now part of the interface): for every $k$,
+
+```lean
+theorem ae_mem_Icc_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
+    ∀ᵐ x ∂gaussQuadrature μ k, x ∈ Set.Icc a b                                       -- #42
+theorem gaussQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ} (hk : 0 < k) :
+    (gaussQuadrature μ k).real Set.univ = μ.real Set.univ                               -- #43
+theorem matchesMoments_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
+    MatchesMoments μ (gaussQuadrature μ k) (2 * k)                                      -- #40
+```
+
+The support lies in every interval carrying $\mu$, hence in the convex hull of its support. For a
+probe, `ae_mem_Icc_spectralMeasure` gives `hμ` from `spectrum ℝ A ⊆ Set.Icc a b`.
+
+**4. The identification** (#54, Quadrature.lean), over every `RCLike` field: checked, the
+signature elaborates with `{𝕜} [RCLike 𝕜]` and the proof route (#45 with
+`matchesMoments_lanczosQuadrature`, which is over `𝕜`) has nothing real-only.
+
+```lean
+theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
+    lanczosQuadrature A b q = gaussQuadrature (spectralMeasure A b) q
+```
+
+and Golub–Welsch over `𝕜` (#67, S2 (c)), for SLQ's implementation statement on a complex
+Hermitian matrix:
+
+```lean
+theorem spectralMeasure_map_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ] {a c : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a c) (k : ℕ) :
+    spectralMeasure ((jacobiMatrix μ (k + 1)).map (algebraMap ℝ 𝕜))
+        ((√(μ.real Set.univ) : 𝕜) • Pi.single 0 1) = gaussQuadrature μ (k + 1)
+```
+
+**5. Averaging** (#69, #70, Moments.lean). Moment matching is linear in the pair of measures, so
+the average of per-probe Gauss rules matches $2q$ moments of the average of the probe spectral
+measures:
+
+```lean
+theorem MatchesMoments.smul {N : ℕ} (h : MatchesMoments μ ν N) (c : ℝ≥0∞) :
+    MatchesMoments (c • μ) (c • ν) N
+theorem MatchesMoments.finsetSum {ι : Type*} {s : Finset ι} {μs νs : ι → Measure ℝ}
+    [∀ i, IsFiniteMeasure (μs i)] [∀ i, IsFiniteMeasure (νs i)] {N : ℕ} {a b : ℝ}
+    (hμs : ∀ i ∈ s, ∀ᵐ x ∂μs i, x ∈ Set.Icc a b) (hνs : ∀ i ∈ s, ∀ᵐ x ∂νs i, x ∈ Set.Icc a b)
+    (h : ∀ i ∈ s, MatchesMoments (μs i) (νs i) N) :
+    MatchesMoments (∑ i ∈ s, μs i) (∑ i ∈ s, νs i) N
+```
+
+**Remark (why SLQ is an average of rules and not one rule).** `gaussQuadrature` is not linear in
+$\mu$: the average of Gauss rules is in general not the Gauss rule of the average. Example:
+$\mu_1 = \delta_0$, $\mu_2 = \delta_1$, $k = 1$: each rule is its measure, so the average of the
+rules is $\tfrac12(\delta_0 + \delta_1)$, while the one-point Gauss rule of
+$\tfrac12(\delta_0 + \delta_1)$ is $\delta_{1/2}$. The average of $m$ per-probe $q$-point rules has
+up to $mq$ nodes and matches only $2q$ moments of the averaged measure (items 2 and 5), not the
+$2mq$ a Gauss rule with that many nodes would. This is exactly why SLQ is stated per probe:
+each probe's rule is the Gauss rule of its own spectral measure (item 4), with that measure's
+exactness and error (items 2 and 3), and the estimator averages afterwards. A bound for SLQ is
+therefore an average of per-probe Gauss-rule bounds (item 2 applied to each
+$\mu_{\mathbf{A},\boldsymbol{\omega}_j}$) plus the probe-averaging error of the spectral measures,
+never a Gauss-rule bound for the averaged measure.
+
+**Proof order.** Items 1–5 are marked **[SLQ-1]** in §10: their statements are fixed in the KS7
+skeleton, so SLQ's first wave can use them (sorried) from the start, and they are proved first
+along their dependency chains. #64, #65, #69, #70 have no KS7 dependency to speak of (waves
+0–1); #40, #42, #43, #54, #66, #67, #68 sit at the end of the Gauss chain (waves 9–13), so SLQ
+proofs that use them close only when that chain does. Literal wave 1 is impossible for those:
+they depend on the zeros and on uniqueness.
 
 ## 5. Consumers
 
@@ -820,7 +980,7 @@ The interval is `[a, c]` in the Krylov files because `b` is the vector there.
 | `orthogonalPolynomial`, `jacobiAlpha`, `jacobiBeta` and the recurrence | the Lanczos link (§4.9); the moment invariance used by Golub–Welsch; later the maintainer's Lanczos-stability material (coefficients of $\mu_{\mathbf{A},\mathbf{b}}$ under perturbation, PORT_KRYLOV §9's LAA paper; no Lean file yet) |
 | `IsMomentPosDef` | uniqueness, zeros, weight positivity; Lanczos below the grade through `isMomentPosDef_spectralMeasure_iff` |
 | zeros (`nodal_gaussNodes`, `card_gaussNodes`, `gaussNodes_subset_Icc`) | the Gauss rule's support (`ae_mem_Icc_gaussQuadrature`, needed to apply M0 to a Gauss rule), weight positivity; later interlacing, Gauss–Radau |
-| `gaussQuadrature`, `matchesMoments_gaussQuadrature`, `ae_mem_Icc_gaussQuadrature` | SLQ (Estimation, optional): its `slqMeasure` is an average of Gauss rules of the probes' spectral measures, stated without a Krylov basis through #54 (the SLQ note proves its bounds without this); M0 applied to any Gauss rule needs exactly these two theorems; M1 (Probability/Moments) for discrete measures; KPM comparison with SLQ |
+| `gaussQuadrature`, `matchesMoments_gaussQuadrature`, `ae_mem_Icc_gaussQuadrature` | SLQ (Estimation; the maintainer's direction of 2026-10-24): `slqMeasure` is the average of the per-probe rules `gaussQuadrature (spectralMeasure A ω_j) q`, through #54; its bounds use the interface items #40, #42, #43, #64–#70 ("Interface for SLQ"); M1 (Probability/Moments) for discrete measures; KPM comparison with SLQ |
 | `MatchesMoments.eq_gaussQuadrature`, `MatchesMoments.eq_of_ae_mem` | `lanczosQuadrature_eq_gaussQuadrature`; Golub–Welsch; any later quadrature that is shown Gaussian by moment matching (block Gauss rules, Krylov-aware trace estimation) |
 | `HasOrthonormalCols.gaussNodes_spectralMeasure_eq`, `.nodal_eq_orthogonalPolynomial` | every KS3 consumer that moves between the Ritz-value statements of KS3c and the Gauss-rule vocabulary; they coexist with #54, which supersedes nothing (review comment 5) |
 | `isMomentPosDef_iff_forall_finset` | #30a (hence #30, #31, #34), #49; users with a discrete measure of at least $k$ atoms |
@@ -845,18 +1005,18 @@ notes). Nothing in either note has to change for the other. If the SLQ maintaine
 
 | File | New / addition | Content | Lines |
 |---|---|---|---|
-| `Polynomial/Orthogonal/Moments.lean` | addition | `ae_eval_eq_zero_of_integral_sq_eq_zero`, `integral_eval_mul_eq_zero_of_integral_sq_eq_zero`, `MatchesMoments.eq_of_ae_mem` | +80 |
+| `Polynomial/Orthogonal/Moments.lean` | addition | `ae_eval_eq_zero_of_integral_sq_eq_zero`, `integral_eval_mul_eq_zero_of_integral_sq_eq_zero`, `MatchesMoments.eq_of_ae_mem`, `.smul`, `.finsetSum` | +110 |
 | `Polynomial/Orthogonal/Basic.lean` | addition | `IsMomentPosDef`, `.mono`, `isMomentPosDef_iff_forall_finset` | +70 |
 | `Polynomial/Orthogonal/Recurrence.lean` | new | `orthogonalPolynomial`, `jacobiAlpha`, `jacobiBeta`, `jacobiMatrix`; recurrence, monic, degree, norms (#18, #59, #62), the private steps #17a–#17d, orthogonality, definiteness, uniqueness, moment invariance | 700 |
 | `Polynomial/Orthogonal/Zeros.lean` | new | `gaussNodes`; the helper #30a; real simple zeros, count, location, degenerate case | 330 |
-| `Polynomial/Orthogonal/Gauss.lean` | addition | `gaussQuadrature` and its instance; exactness, integral, support, mass, weights, uniqueness | +230 |
+| `Polynomial/Orthogonal/Gauss.lean` | addition | `gaussQuadrature` and its instance; exactness, integral (both weight forms), integrability, support, mass, weights, uniqueness, the error bound and its Lipschitz corollary | +310 |
 | `Matrix/Spectral/SpectralMeasure.lean` | addition | two polynomial inner-product lemmas; `spectralMeasure_diagonal`, `spectralMeasure_diagonal_sqrt_of_ae_mem` | +100 |
 | `Krylov/Basic/Grade.lean` | addition (move) | `aeval_mulVec_ne_zero_of_degree_lt_krylovGrade` | +25 |
 | `Krylov/Processes/LanczosPolynomials.lean` | new | definiteness ↔ grade, #50a–#50d, Lanczos vectors, coefficients, tridiagonal | 380 |
-| `Krylov/Functions/Quadrature.lean` | addition | `lanczosQuadrature_eq_gaussQuadrature`, the Ritz-value bridges #60, #61, Golub–Welsch (two) | +170 −25 |
+| `Krylov/Functions/Quadrature.lean` | addition | `lanczosQuadrature_eq_gaussQuadrature`, the Ritz-value bridges #60, #61, Golub–Welsch (three, one over `𝕜`) | +210 −25 |
 
-Total about 2,100 lines (the review added the instance, nine public and six private lemmas, and
-removed the 50-line ForMathlib file). Declarations in each new file in the order of §4
+Total about 2,250 lines (the review added the instance, nine public and six private lemmas, and
+removed the 50-line ForMathlib file; the SLQ interface added seven theorems). Declarations in each new file in the order of §4
 (definitions, API, main theorems, corollaries).
 
 **Placement** (CONTRIBUTING §8 item 5).
@@ -867,6 +1027,9 @@ removed the 50-line ForMathlib file). Declarations in each new file in the order
 | `MatchesMoments.eq_of_ae_mem` | Moments.lean | API of `MatchesMoments` |
 | `IsMomentPosDef` | Basic.lean | the second interface of the OP layer, beside `IsOrthogonalPolynomial` |
 | `isMomentPosDef_iff_forall_finset` | Basic.lean | a constructor of the interface, beside it |
+| SLQ interface #64–#66, #68 | Gauss.lean | theorems about `gaussQuadrature` of any measure; the Lipschitz corollary beside its general form, as KS4 did for Lanczos |
+| `MatchesMoments.smul`, `.finsetSum` | Moments.lean | API of `MatchesMoments` |
+| `spectralMeasure_map_jacobiMatrix` | Quadrature.lean | **flag**, the same as `spectralMeasure_jacobiMatrix` (intended home Matrix/Spectral), of which it is the `𝕜` form |
 | `integral_eval_mul_eq_zero_of_integral_sq_eq_zero` | Moments.lean | beside `ae_eval_eq_zero_of_integral_sq_eq_zero` |
 | `spectralMeasure_diagonal`, `spectralMeasure_diagonal_sqrt_of_ae_mem` | `Matrix/Spectral/SpectralMeasure.lean` | facts about spectral measures (diagonal matrices; every finite atomic measure is one), no Krylov vocabulary |
 | `aeval_orthogonalPolynomial_mulVec_sub_pow_mulVec_mem_krylovSpace` and #50a, #50c | LanczosPolynomials.lean | Krylov-space facts about $\pi_j(\mathbf{A})\mathbf{b}$, the file's subject |
@@ -882,7 +1045,8 @@ Open flags: the one marked.
 **Imports.** `Recurrence` imports `Basic` and Mathlib's `Mathlib.LinearAlgebra.Matrix.Hermitian`
 (for `isHermitian_jacobiMatrix`); `Basic` adds `Mathlib.LinearAlgebra.Lagrange` (for #57);
 `Zeros` imports `Recurrence` and `Mathlib.Analysis.Polynomial.Order` (for
-`zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg`); `Gauss` imports `Zeros`. P11 holds (Mathlib
+`zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg`); `Gauss` imports `Zeros` and
+`Polynomial/Approximation/Jackson` (for #68). P11 holds (Mathlib
 and Polynomial only; no ForMathlib file is needed now). `LanczosPolynomials` imports `Krylov/Processes/LanczosRecurrence`,
 `Matrix/Spectral/SpectralMeasure` and `Polynomial/Orthogonal/Recurrence`; `Quadrature` adds
 `LanczosPolynomials`.
@@ -978,6 +1142,12 @@ cited by section. Golub–Meurant
 Theorems 2.7, 2.9, 2.11, 2.13–2.14, 6.1–6.2 corroborate (Jackson note); which carries what is to
 check, so declaration docstrings cite chapters only.
 
+**Decided 2026-10-24.** L1 (b): every locator above and below stays "to check" until verified
+against the books before the skeleton. L2 (a): Golub–Meurant is cited by chapter only (Ch. 4, 6,
+12); the two "Theorem 6.6" citations this note had drafted (§4.6, §4.10) are now "Ch. 6". The
+existing KS3 docstrings that cite "Theorem 6.6 (locator from the quarry)" are not this stage's
+to change; they are listed for the skeleton author to align.
+
 New keys, added with the skeleton (before citing, CONTRIBUTING §6):
 - `Szego1975`: G. Szegő, *Orthogonal Polynomials*, 4th ed., AMS Colloquium Publications 23, 1975;
   Theorems 3.2.1 (recurrence), 3.2.2 (Christoffel–Darboux), 3.3.1 (zeros), 3.3.2 (interlacing),
@@ -1026,6 +1196,9 @@ deleted (Mathlib's `Polynomial.zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg`)
 | 39 | `interpolatoryQuadrature_eq_self_of_ae_mem` | Gauss | — | M, 35 | `Measure.ae_mem_finset_iff`; each weight $\int\ell_x\,d\mu = \mu.\mathrm{real}\{x\}$ (`setIntegral_finset`, `restrict_eq_self_of_ae_mem`, `Lagrange.eval_basis_self`/`_of_ne`); `ofReal_measureReal` | 0 |
 | 46 | `Matrix.IsHermitian.star_aeval_mulVec_dotProduct_aeval_mulVec` | SpectralMeasure | — | M, 25 | `star_mulVec_dotProduct`, `(hA.aeval p).eq`, `Matrix.mulVec_mulVec`, `← map_mul`; `integral_eval_spectralMeasure`, `eval_mul`; `Matrix.IsHermitian.coe_re_quadForm` | 0 |
 | 55a | `spectralMeasure_diagonal` | SpectralMeasure | — | S, 10 | `HasOrthonormalCols.spectralMeasure_eq_sum` with $\mathbf{U} = \mathbf{1}$ (`hasOrthonormalCols_one`-style, `conjTranspose_one`, `one_mulVec`) | 0 |
+| 65 | **[SLQ-1]** `integrable_gaussQuadrature` | Gauss | — | S, 8 | unfold; `Integrable` of a finite sum of scaled Dirac masses (`integrable_finset_sum_measure`, `(integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top`), as in the existing `integral_interpolatoryQuadrature` proof | 0 |
+| 69 | **[SLQ-1]** `MatchesMoments.smul` | Moments | — | S, 5 | `integral_smul_measure`, `congrArg` | 0 |
+| 70 | **[SLQ-1]** `MatchesMoments.finsetSum` | Moments | — | S, 20 | `integral_finsetSum_measure` with integrability `integrable_eval_of_ae_mem_Icc` on each summand; `Finset.sum_congr` | 0 |
 | 58 | `integral_eval_mul_eq_zero_of_integral_sq_eq_zero` | Moments | #1 | S, 10 | #1, `integral_eq_zero_of_ae` (`Filter.EventuallyEq` with `mul_eq_zero`) | 1 |
 | 57 | `isMomentPosDef_iff_forall_finset` | Basic | #1 | M, 35 | ⇒: $s$ carries $\mu$ and $\lvert s\rvert < k$ give the nonzero `Lagrange.nodal s id` (degree $\lvert s\rvert$, `Lagrange.degree_nodal`) of norm $0$ (`integral_eq_zero_of_ae`, `Lagrange.eval_nodal_at_node`). ⇐: $p \ne 0$ of norm $0$ vanishes a.e. (#1), so $\mu$ is carried by `p.roots.toFinset`, of card $\le \deg p < k$ (`Multiset.toFinset_card_le`, `card_roots'`, `mem_roots`) | 1 |
 | 15 | `degree_orthogonalPolynomial` | Recurrence | #13+14 | S, 3 | `degree_eq_natDegree` with `Monic.ne_zero` | 1 |
@@ -1034,6 +1207,7 @@ deleted (Mathlib's `Polynomial.zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg`)
 | 47 | `Matrix.IsHermitian.norm_aeval_mulVec_sq` | SpectralMeasure | #46 | S, 10 | norm squared as `re (star v ⬝ᵥ v)` (as in `norm_arnoldiMatrix_col_last`), #46 with $r = p$ | 1 |
 | 55b | `spectralMeasure_diagonal_sqrt_of_ae_mem` | SpectralMeasure | #55a | M, 25 | #55a; `Real.norm_eq_abs`, `sq_abs`, `Real.sq_sqrt` (`measureReal_nonneg`), `ENNReal.ofReal_toReal`; the sum over the subtype is `Finset.sum_coe_sort`; `Measure.ae_mem_finset_iff` | 1 |
 | 50b | `aeval_orthogonalPolynomial_mulVec_sub_pow_mulVec_mem_krylovSpace` | LanczosPolynomials | #13+14 | S, 15 | $\pi_j - X^j$ has degree $< j$ (monic, `degree_sub_lt_left`); `aeval_mulVec_mem_krylovSpace`, `map_sub`, `Matrix.sub_mulVec` | 1 |
+| 64 | **[SLQ-1]** `integral_gaussQuadrature_eq_sum` | Gauss | #38 | S, 15 | #38 and `Measure.ae_mem_finset_iff` (any finite measure carried by a finset), then `integral_finsetSum_measure`, `integral_smul_measure`, `integral_dirac`; or `setIntegral_finset` with `Measure.restrict_eq_self_of_ae_mem`; no support hypothesis on $\mu$ | 1 |
 | 18 | `integral_orthogonalPolynomial_succ_sq` | Recurrence | #1, #58 | M, 30 | unfold `jacobiBeta`; if $\|\pi_k\|^2 \ne 0$, `div_mul_cancel₀`; else $\beta_k = 0$, so $\pi_{k+1} = (X - \alpha_k)\pi_k$ (#10, #11) and its square integral is $\int\pi_k\cdot(X - \alpha_k)^2\pi_k = 0$ (#58); $k = 0$: $\mu(\mathbb{R}) = 0$ gives $\mu = 0$ | 2 |
 | 59 | `integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero` | Recurrence | #58 | S, 20 | unfold `jacobiAlpha`; `integral_sub`, `integral_mul_const`; if $\|\pi_k\|^2 \ne 0$, `div_mul_cancel₀`; else both integrals are $0$ (#58 with $r = X\pi_k$) | 2 |
 | 17a | private `integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt` | Recurrence | #13+14, #15 | M, 30 | expand #11; `integral_sub`, `integral_mul_const`; $\int\pi_{k+1}\,(Xr) = 0$ (`h1`, $\deg Xr < k + 1$), $\int\pi_{k+1}r = 0$ (`h1`), $\int\pi_k r = 0$ (`h0`); integrability `integrable_eval_of_ae_mem_Icc` | 2 |
@@ -1061,34 +1235,41 @@ deleted (Mathlib's `Polynomial.zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg`)
 | 50d | private `arnoldiMatrix_col_last_eq_of_lt_krylovGrade` | LanczosPolynomials | #50a, #50b, #47 | M, 45 | `exists_gramSchmidtR_smul_arnoldiMatrix_col_last`: $r_j\mathbf{q}_j - \pi_j(\mathbf{A})\mathbf{b} \in \mathcal{K}_j$ (#50b); both orthogonal to $\mathcal{K}_j$ (`star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem`, #50a), so equal; $r_j = \|\pi_j(\mathbf{A})\mathbf{b}\| \ne 0$ (`norm_arnoldiMatrix_col_last`, `gramSchmidtR_apply_self_nonneg`, `gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff`) | 7 |
 | 60 | `HasOrthonormalCols.nodal_eq_orthogonalPolynomial` | Quadrature | #21, #49 | S, 20 | #21 with #49 (`hq`), `Lagrange.nodal_monic`, `natDegree_nodal` and `card_spectrum_conjTranspose_mul_mul_eq` (degree $q$), `HasOrthonormalCols.isOrthogonalPolynomial_nodal` | 7 |
 | 36 | `isOrthogonalPolynomial_nodal_gaussNodes` | Zeros | #32, #33, #17, #35 | M, 30 | `by_cases`; definite: #32, #33, #17; else the nodal polynomial vanishes on the nodes (`Lagrange.eval_nodal_at_node`), which carry $\mu$ (#35): `integral_eq_zero_of_ae` | 8 |
-| 42 | `ae_mem_Icc_gaussQuadrature` | Gauss | #38, #34, #39, #35 | S, 20 | `by_cases`; definite: #38, #34; else #39, #35, `hμ` | 8 |
+| 42 | **[SLQ-1]** `ae_mem_Icc_gaussQuadrature` | Gauss | #38, #34, #39, #35 | S, 20 | `by_cases`; definite: #38, #34; else #39, #35, `hμ` | 8 |
 | 50 | `Matrix.IsHermitian.arnoldiMatrix_col_eq_smul_aeval_orthogonalPolynomial_mulVec` | LanczosPolynomials | #50c, #50d | S, 15 | `arnoldiMatrix_col_eq_col_last`; below the grade #50d; from the grade on `arnoldiMatrix_col_last_eq_zero_iff` and #50c (`smul_zero`) | 8 |
 | 61 | `HasOrthonormalCols.gaussNodes_spectralMeasure_eq` | Quadrature | #60 | S, 10 | rewrite #60 backwards; `Lagrange.nodal_eq`, `Polynomial.roots_prod_X_sub_C`, `Finset.val_toFinset` | 8 |
-| 40 | `matchesMoments_gaussQuadrature` | Gauss | #36, #33, #39, #35 | S, 15 | `by_cases`; definite: `IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature` with #36, #33; else #39, #35, `MatchesMoments.refl` | 9 |
+| 40 | **[SLQ-1]** `matchesMoments_gaussQuadrature` | Gauss | #36, #33, #39, #35 | S, 15 | `by_cases`; definite: `IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature` with #36, #33; else #39, #35, `MatchesMoments.refl` | 9 |
 | 41 | `integral_gaussQuadrature` | Gauss | #36 | S, 5 | `IsOrthogonalPolynomial.integral_interpolatoryQuadrature` with #36 | 9 |
 | 44 | `IsMomentPosDef.gaussQuadrature_real_singleton_pos` | Gauss | #36, #33 | M, 30 | the mass at $x$ of the Dirac sum (`Measure.coe_finsetSum`, `dirac_apply`, distinct nodes) is $\int\ell_x = \int\ell_x^2$ (`integral_eval_basis_eq_integral_sq`, #36) $> 0$ (`Lagrange.basis_ne_zero`, `degree_basis`, #33) | 9 |
 | 51 | `Matrix.IsHermitian.lanczosAlpha_lanczosState` | LanczosPolynomials | #50, #46, #47 | M, 40 | `lanczosTridiagonal_eq` at $q = j + 1$, entry $(j, j)$; `NLAlib.conjTranspose_mul_apply`; #50; #46 with $r = X\pi_j$ (`aeval_mul`, `aeval_X`); #47; `RCLike.ofReal_inj` | 9 |
 | 52 | `Matrix.IsHermitian.lanczosState_beta` | LanczosPolynomials | #50, #46, #47, #19, #18 | M, 45 | entry $(j+1, j)$ at $q = j + 2$; #50 twice; #46; #19; $\|\pi_{j+1}\|^2/(\|\pi_{j+1}\|\|\pi_j\|) = \sqrt{\beta_{j+1}}$ (`Real.sqrt_div'`, `Real.sqrt_sq`; zero cases apart) | 9 |
-| 43 | `gaussQuadrature_real_univ` | Gauss | #40 | S, 5 | `(#40).measureReal_univ_eq`, `.symm` | 10 |
+| 43 | **[SLQ-1]** `gaussQuadrature_real_univ` | Gauss | #40 | S, 5 | `(#40).measureReal_univ_eq`, `.symm` | 10 |
 | 45 | `MatchesMoments.eq_gaussQuadrature` | Gauss | #2, #29, #38, #40 | M, 25 | $T = s \cup$ `gaussNodes μ k`; both carried by $T$ (#38); `h.symm.trans` #40; $\lvert T\rvert \le 2k$ (`Finset.card_union_le`, #29); `mono`; #2 (with the instance #63) | 10 |
 | 53 | `Matrix.IsHermitian.lanczosTridiagonal_eq_jacobiMatrix` | LanczosPolynomials | #51, #52 | S, 20 | `ext i j`; unfold, `Matrix.map_apply`, `split_ifs`; #51, #52, `RCLike.algebraMap_eq_ofReal` | 10 |
-| 54 | `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature` | Quadrature | #45 | S, 25 | `exists_hasOrthonormalCols_range_eq_krylovSpace`; `HasOrthonormalCols.lanczosQuadrature_eq`; carried by the Ritz values (`spectralMeasure_compl_spectrum_eq_zero`), at most $q$ (private `card_spectrum_le_of_range_eq`); `(hA.matchesMoments_lanczosQuadrature b q).symm`; an interval containing the finite spectrum and `ae_mem_Icc_spectralMeasure`; #45 | 11 |
+| 54 | **[SLQ-1]** `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature` | Quadrature | #45 | S, 25 | `exists_hasOrthonormalCols_range_eq_krylovSpace`; `HasOrthonormalCols.lanczosQuadrature_eq`; carried by the Ritz values (`spectralMeasure_compl_spectrum_eq_zero`), at most $q$ (private `card_spectrum_le_of_range_eq`); `(hA.matchesMoments_lanczosQuadrature b q).symm`; an interval containing the finite spectrum and `ae_mem_Icc_spectralMeasure`; #45 | 11 |
+| 66 | **[SLQ-1]** `abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn` | Gauss | #40, #42, #43, #65 | S, 15 | M0 (`MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn`) with #40, `hμ`, #42, `hf`, #65; mass by #43 for $k > 0$; $k = 0$: the rule is $0$ (`gaussNodes μ 0 = ∅`) and $\varepsilon \ge 0$ unless $[a, b]$ is empty | 11 |
 | 55 | `spectralMeasure_jacobiMatrix` | Quadrature | #55b, #54, #53, #25, #29, #38, #40, #42, #43, #45 | M, 45 | $\nu$ := the Gauss rule; #55b realises it as $\mu_{\mathbf{D},\mathbf{w}}$ on the index type `gaussNodes μ (k + 1)` (with #38, #63); `lanczosQuadrature_succ_eq` for $(\mathbf{D}, \mathbf{w})$, #53, #54; #45 with `refl`, #42, #29 ($\nu$ is its own Gauss rule); #25 with #40; $\|\mathbf{w}\|^2 = \nu(\mathbb{R}) = \mu(\mathbb{R})$ (`spectralMeasure_real_univ`, #43); `Matrix.map_id` | 12 |
+| 68 | **[SLQ-1]** `abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith` | Gauss | #66 | S, 15 | `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith` in degree $2k + 1$ (𝕜 := ℝ); integrability from `LipschitzOnWith.continuousOn`, `ContinuousOn.integrableOn_Icc`, `Measure.restrict_eq_self_of_ae_mem`; #66; `field_simp`, `ring` (as the KS4 Lanczos corollary) | 12 |
+| 67 | **[SLQ-1]** `spectralMeasure_map_jacobiMatrix` | Quadrature | #55 | M, 35 | diagonalise the real $\mathbf{J}$ (`Matrix.IsHermitian.eigenvectorUnitary` over ℝ), map the factorisation to 𝕜 (`Matrix.map_mul`, `RCLike.ofReal` casts), `HasOrthonormalCols.spectralMeasure_eq_sum` on both sides; the two Dirac sums agree entrywise (`‖(r : 𝕜)‖ = |r|`); then #55 | 13 |
 | 56 | `HasOrthonormalCols.gaussQuadrature_succ_eq_sum` | Quadrature | #55 | S, 15 | rewrite #55, `HasOrthonormalCols.spectralMeasure_eq_sum` (`hr` by `rfl`, the diagonal's casts by `simp`); $(\mathbf{U}^{\mathsf{H}}\mathbf{e}_0)_i = \mathbf{U}_{0,i}$ | 13 |
 
-**Counts.** 66 declarations to prove: 59 public theorems, 1 instance, 6 private steps. S 36 (6 of
-them in the skeleton), M 30, L 0. Dispatched: 59 jobs (#13 and #14 are one job), about 1,400
-lines of proof. The longest rows are #22 (50), #50d and #52 (45 each), #55 (45).
+**Counts.** 73 declarations to prove: 66 public theorems, 1 instance, 6 private steps. S 42 (6
+of them in the skeleton), M 31, L 0. Dispatched: 66 jobs (#13 and #14 are one job), about 1,500
+lines of proof. The longest rows are #22 (50), #50d, #52 and #55 (45 each).
 
-**Waves.** 0: #1, 2, 4, 13+14, 16, 26, 38, 39, 46, 55a (10 jobs); 1: #58, 57, 15, 22, 29, 47,
-55b, 50b; 2: #18, 59, 17a, 23, 24, 30a, 49; 3: #17b, 17c, 25, 62; 4: #17d; 5: #17; 6: #19, 20,
-21, 30, 31, 34, 50a; 7: #32, 33, 35, 50c, 50d, 60; 8: #36, 42, 50, 61; 9: #40, 41, 44, 51, 52;
-10: #43, 45, 53; 11: #54; 12: #55; 13: #56. #18 now precedes #17 (wave 2 against 5). The critical
-path is #1 → #58 → #59 → #17b → #17d → #17 → #20 → #35 → #36 → #40 → #45 → #54 → #55 → #56, 14
-waves; the waves are a safety order, and with the scaffold in place several can be released
-together if the orchestrator accepts the risk of a prover meeting a false dependency (none is
-expected: each statement was checked by hand and by the reviewer, the unconditional ones also in
-exact arithmetic).
+**[SLQ-1]** marks the SLQ interface ("Interface for SLQ"): #40, #42, #43, #54, #64–#70. They are
+fixed in the skeleton for SLQ's first wave and get priority along their chains; the wave column
+still gives when each can be proved.
+
+**Waves.** 0: #1, 2, 4, 13+14, 16, 26, 38, 39, 46, 55a, 65, 69, 70 (13 jobs); 1: #58, 57, 15, 22,
+29, 47, 55b, 50b, 64; 2: #18, 59, 17a, 23, 24, 30a, 49; 3: #17b, 17c, 25, 62; 4: #17d; 5: #17;
+6: #19, 20, 21, 30, 31, 34, 50a; 7: #32, 33, 35, 50c, 50d, 60; 8: #36, 42, 50, 61; 9: #40, 41, 44,
+51, 52; 10: #43, 45, 53; 11: #54, 66; 12: #55, 68; 13: #56, 67. #18 precedes #17 (wave 2 against
+5). The critical path is #1 → #58 → #59 → #17b → #17d → #17 → #20 → #35 → #36 → #40 → #45 → #54 →
+#55 → #56/#67, 14 waves; the waves are a safety order, and with the scaffold in place several can
+be released together if the orchestrator accepts the risk of a prover meeting a false dependency
+(none is expected: each statement was checked by hand and by the reviewer, the unconditional ones
+also in exact arithmetic).
 
 **For the prover brief.** The degenerate cases ($\|\pi_k\| = 0$, $\mu = 0$, $q$ past the grade)
 are part of every unconditional statement (#17 and its steps, #18, #36, #40, #42, #50–#54); a proof
