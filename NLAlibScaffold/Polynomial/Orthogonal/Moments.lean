@@ -70,7 +70,34 @@ Proof: M, about 40 lines. `Measure.ae_mem_finset_iff` writes both as $\sum_{x\in
 `ofReal_measureReal`. -/
 theorem MatchesMoments.eq_of_ae_mem [IsFiniteMeasure μ] [IsFiniteMeasure ν] {s : Finset ℝ}
     (h : MatchesMoments μ ν s.card) (hμ : ∀ᵐ x ∂μ, x ∈ s) (hν : ∀ᵐ x ∂ν, x ∈ s) : μ = ν := by
-  sorry
+  -- integrating a polynomial against a measure carried by `s` is a weighted sum over `s`
+  have hint : ∀ (ρ : Measure ℝ) [IsFiniteMeasure ρ], (∀ᵐ x ∂ρ, x ∈ s) → ∀ p : ℝ[X],
+      ∫ x, p.eval x ∂ρ = ∑ y ∈ s, ρ.real {y} • p.eval y := fun ρ _ hρ p => by
+    rw [← setIntegral_finset s
+      (p.continuous.continuousOn.integrableOn_compact s.finite_toSet.isCompact),
+      Measure.restrict_eq_self_of_ae_mem hρ]
+  -- the Lagrange-type polynomial vanishing on `s \ {x}` picks out the weight at `x`
+  have hw : ∀ x ∈ s, μ.real {x} = ν.real {x} := fun x hx => by
+    set p : ℝ[X] := ∏ y ∈ s.erase x, (X - C y)
+    have hsum : ∀ (ρ : Measure ℝ) [IsFiniteMeasure ρ], (∀ᵐ x ∂ρ, x ∈ s) →
+        ∫ x, p.eval x ∂ρ = ρ.real {x} * p.eval x := fun ρ _ hρ => by
+      rw [hint ρ hρ, ← Finset.add_sum_erase s _ hx, smul_eq_mul, add_eq_left]
+      refine Finset.sum_eq_zero fun y hy => ?_
+      simp only [p, eval_prod, eval_sub, eval_X, eval_C]
+      rw [Finset.prod_eq_zero hy (sub_self y), smul_zero]
+    have hpx : p.eval x ≠ 0 := by
+      simp only [p, eval_prod, eval_sub, eval_X, eval_C]
+      exact Finset.prod_ne_zero_iff.mpr fun y hy => sub_ne_zero.mpr (Finset.ne_of_mem_erase hy).symm
+    have hdeg : p.degree < s.card := by
+      rw [degree_eq_natDegree (monic_prod_of_monic _ _ fun y _ => monic_X_sub_C y).ne_zero,
+        natDegree_finsetProd_X_sub_C_eq_card, Finset.card_erase_of_mem hx]
+      exact_mod_cast Nat.sub_lt (Finset.card_pos.mpr ⟨x, hx⟩) one_pos
+    have := h p hdeg
+    rw [hsum μ hμ, hsum ν hν] at this
+    exact mul_right_cancel₀ hpx this
+  rw [Measure.ae_mem_finset_iff.mp hμ, Measure.ae_mem_finset_iff.mp hν]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  rw [← ofReal_measureReal, ← ofReal_measureReal, hw x hx]
 
 /-- Moment matching is preserved by scaling: if $\mu$ and $\nu$ match their first $N$ moments,
 then so do $c\mu$ and $c\nu$ for every $c \in [0, \infty]$.
