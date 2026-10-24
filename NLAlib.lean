@@ -1,9 +1,11 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Estimation.Spectral.RandomStart
+public import NLAlib.Estimation.Spectral.SpectralDensity
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.HutchPlusPlus
 public import NLAlib.Estimation.Trace.HutchPlusPlusTail
+public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic

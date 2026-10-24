@@ -1,0 +1,82 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlibScaffold.ForMathlib.Topology.MetricSpace.Lipschitz
+
+/-!
+# Integrals against finitely supported measures
+
+Statements for `NLAlib/ForMathlib/MeasureTheory/Integral/Bochner/SumMeasure.lean` whose proofs
+are deferred (`docs/design/Estimation-SLQ.md`, §3.1, F3 to F5). A finite measure on $\mathbb{R}$
+carried by a finite set $s$ integrates every function as a finite sum over $s$, and its
+distribution function is a partial sum of its atoms. Two such measures whose distribution
+functions are uniformly close on $s$ give close integrals of every Lipschitz function: the
+one-dimensional Kantorovich–Rubinstein inequality, weakened to the sup norm, for finite support.
+Upstream candidates for `Mathlib.MeasureTheory.Integral.Bochner.SumMeasure`, beside
+`setIntegral_finset`.
+
+## Main results
+
+* `MeasureTheory.integral_eq_sum_measureReal_singleton_mul`: the integral as a finite sum.
+* `MeasureTheory.measureReal_Iic_eq_sum`: the distribution function as a partial sum.
+* `MeasureTheory.abs_integral_sub_integral_le_of_lipschitzOnWith`: distribution functions control
+  Lipschitz test functions.
+-/
+
+@[expose] public section
+
+open scoped NNReal
+
+namespace MeasureTheory
+
+/-- The integral against a finite measure carried by a finite set: if the finite measure $\mu$ on
+$\mathbb{R}$ is carried by the finite set $s$, then for every $f : \mathbb{R} \to \mathbb{R}$,
+$\int f\,d\mu = \sum_{x\in s}\mu(\{x\})f(x)$; no integrability or measurability of $f$ is needed.
+Proof: S, about 15 lines. `Measure.restrict_eq_self_of_ae_mem` turns the integral into
+`∫ x in ↑s, f x ∂μ`, then Mathlib's `setIntegral_finset` (integrability on each singleton:
+`integrableOn_singleton`, `measure_lt_top`; `integral_fintype` is the `univ` case). -/
+theorem integral_eq_sum_measureReal_singleton_mul {μ : Measure ℝ}
+    [IsFiniteMeasure μ] {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s) (f : ℝ → ℝ) :
+    ∫ x, f x ∂μ = ∑ x ∈ s, μ.real {x} * f x := by
+  sorry
+
+/-- The distribution function of a finite measure carried by a finite set: if the finite measure
+$\mu$ on $\mathbb{R}$ is carried by the finite set $s$, then for every $x \in \mathbb{R}$,
+$\mu((-\infty, x]) = \sum_{y\in s,\,y\le x}\mu(\{y\})$.
+Proof: S, about 20 lines. `measureReal_congr` with the ae-equality
+`Set.Iic x =ᵐ[μ] ↑(s.filter (· ≤ x))` (from `hμ`, `Finset.coe_filter`), then
+`measureReal_biUnion_finset` on the singletons (`MeasurableSet.singleton`, pairwise disjoint),
+`Finset.set_biUnion_coe` style rewriting. -/
+theorem measureReal_Iic_eq_sum {μ : Measure ℝ} [IsFiniteMeasure μ]
+    {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s) (x : ℝ) :
+    μ.real (Set.Iic x) = ∑ y ∈ s with y ≤ x, μ.real {y} := by
+  sorry
+
+/-- **Lipschitz test functions against finitely supported measures.** If the finite measures
+$\mu$, $\nu$ on $\mathbb{R}$ are carried by a finite set $s \subseteq [a, b]$, $a \le b$, their
+distribution functions differ by at most $K \ge 0$ at every point of $s$, and $f$ is
+$L$-Lipschitz on $[a, b]$, then
+$$\Bigl\lvert\int f\,d\mu - \int f\,d\nu\Bigr\rvert \le (\lvert f(b)\rvert + L(b - a))K\,;$$
+for equal masses the term $\lvert f(b)\rvert$ can be removed by applying the theorem to
+$f - f(b)$. This is the one-dimensional Kantorovich–Rubinstein inequality weakened to the sup
+norm, with the mass difference kept as the $\lvert f(b)\rvert$ term, for finite support.
+No printed source.
+Proof: S/M, about 30 lines. `MeasureTheory.integral_eq_sum_measureReal_singleton_mul` for $\mu$
+and $\nu$, `← Finset.sum_sub_distrib`, `mul_sub`;
+`Finset.abs_sum_mul_le_of_lipschitzOnWith` with `d y := μ.real {y} - ν.real {y}`;
+`MeasureTheory.measureReal_Iic_eq_sum` and `Finset.sum_sub_distrib` turn `hK` into the
+partial-sum hypothesis. -/
+theorem abs_integral_sub_integral_le_of_lipschitzOnWith {μ ν : Measure ℝ}
+    [IsFiniteMeasure μ] [IsFiniteMeasure ν] {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s)
+    (hν : ∀ᵐ x ∂ν, x ∈ s) {a b : ℝ} (hs : ∀ x ∈ s, x ∈ Set.Icc a b) (hab : a ≤ b)
+    {f : ℝ → ℝ} {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a b)) {K : ℝ} (hK0 : 0 ≤ K)
+    (hK : ∀ x ∈ s, |μ.real (Set.Iic x) - ν.real (Set.Iic x)| ≤ K) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂ν| ≤ (|f b| + L * (b - a)) * K := by
+  sorry
+
+end MeasureTheory

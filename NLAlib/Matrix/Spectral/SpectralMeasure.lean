@@ -54,7 +54,9 @@ hypothesis, are trivial off Hermitian matrices: the spectral measure is then $0$
 
 * `NLAlib.integral_spectralMeasure`: the characterising integral identity.
 * `NLAlib.ae_mem_Icc_spectralMeasure`: the support hypothesis of the Polynomial layer.
-* `NLAlib.spectralMeasure_apply`: the measure of every set.
+* `NLAlib.spectralMeasure_apply`, `NLAlib.spectralMeasure_real`: the measure of every set.
+* `NLAlib.isStarProjection_cfc_indicator`: spectral projectors are orthogonal
+  projectors.
 * `NLAlib.HasOrthonormalCols.spectralMeasure_eq_sum`: the eigenbasis form.
 * `NLAlib.spectralMeasure_cfc_mulVec`: filtering multiplies the measure by $g^2$.
 * `Matrix.IsHermitian.rayleighQuotient_eq_integral_div`: the Rayleigh quotient as a ratio of
@@ -63,6 +65,7 @@ hypothesis, are trivial off Hermitian matrices: the spectral measure is then $0$
 * `Matrix.IsHermitian.abs_sub_rayleighQuotient_cfc_mulVec_le`: the filter theorem.
 * `Matrix.IsHermitian.integral_empiricalSpectralMeasure`: the normalised trace of
   $f(\mathbf{A})$.
+* `Matrix.IsHermitian.empiricalSpectralMeasure_real`: the empirical measure of every set.
 -/
 
 @[expose] public section
@@ -285,12 +288,29 @@ theorem mul_spectralMeasure_real_le_integral_sq (A : Matrix n n 𝕜) (b : n →
   mul_spectralMeasure_real_le_integral A b (f := fun x => g x ^ 2)
     (Filter.Eventually.of_forall fun x => sq_nonneg (g x)) c
 
-/-- The spectral measure of a set as a real number. -/
-private theorem spectralMeasure_real_eq (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
+/-- The spectral measure of every set as a real number: for every square $\mathbf{A}$, every
+$\mathbf{b}$ and every $S \subseteq \mathbb{R}$,
+$\mu_{\mathbf{A},\mathbf{b}}(S) =
+\operatorname{Re}\,\mathbf{b}^{\mathsf{H}}\mathbf{1}_S(\mathbf{A})\mathbf{b}$, the quadratic form of
+the spectral projector $\mathbf{1}_S(\mathbf{A})$; no measurability of $S$ is needed. -/
+theorem spectralMeasure_real (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
     (spectralMeasure A b).real S =
       RCLike.re (quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) b) := by
   rw [measureReal_def, spectralMeasure_apply, ENNReal.toReal_ofReal
     (re_quadForm_cfc_indicator_nonneg A b S)]
+
+/-- The spectral projector is an orthogonal projector: for every square $\mathbf{A}$ and every
+$S \subseteq \mathbb{R}$, $\mathbf{1}_S(\mathbf{A})$ is self-adjoint and idempotent (off
+Hermitian it is $\mathbf{0}$, Mathlib's junk value of `cfc`). -/
+theorem isStarProjection_cfc_indicator (A : Matrix n n 𝕜) (S : Set ℝ) :
+    IsStarProjection (cfc (S.indicator fun _ => (1 : ℝ)) A) := by
+  have hc : ContinuousOn (S.indicator fun _ => (1 : ℝ)) (spectrum ℝ A) :=
+    A.finite_real_spectrum.continuousOn _
+  refine ⟨?_, cfc_predicate _ A⟩
+  rw [IsIdempotentElem, ← cfc_mul _ _ A hc hc]
+  congr 1
+  funext x
+  by_cases hx : x ∈ S <;> simp [hx]
 
 /-- Off Hermitian the spectral measure is $0$. -/
 private theorem spectralMeasure_of_not_isHermitian {A : Matrix n n 𝕜} (hA : ¬ A.IsHermitian)
@@ -419,7 +439,7 @@ theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_sq_le_spectralMeasure_rea
     conv_lhs => rw [← hPu]
     rw [star_mulVec_dotProduct, hH.eq]
   have hnorm := hA.norm_toLp_cfc_mulVec_sq ψ b
-  rw [hψ, ← spectralMeasure_real_eq] at hnorm
+  rw [hψ, ← spectralMeasure_real] at hnorm
   rw [← hnorm, hub]
   have hin : star u ⬝ᵥ (cfc ψ A *ᵥ b) =
       inner 𝕜 (WithLp.toLp 2 u) (WithLp.toLp 2 (cfc ψ A *ᵥ b)) := by
@@ -617,6 +637,24 @@ theorem _root_.Matrix.IsHermitian.sum_spectralMeasure_single {A : Matrix n n �
   · simp [h0]
   · rw [← mul_assoc, ENNReal.mul_inv_cancel (by exact_mod_cast h0.ne') (ENNReal.natCast_ne_top _),
       one_mul]
+
+/-- The empirical spectral measure of every set: for Hermitian $\mathbf{A}$ and every
+$S \subseteq \mathbb{R}$, $\nu_{\mathbf{A}}(S) =
+\operatorname{Re}\operatorname{tr}\mathbf{1}_S(\mathbf{A}) / \lvert n\rvert$, the fraction of the
+eigenvalues, counted with multiplicity, that lie in $S$; $\nu_{\mathbf{A}}$ is the empirical
+spectral measure. No measurability of $S$ is needed (the measure is atomic). -/
+theorem _root_.Matrix.IsHermitian.empiricalSpectralMeasure_real {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (S : Set ℝ) :
+    (empiricalSpectralMeasure A).real S =
+      RCLike.re (cfc (S.indicator fun _ => (1 : ℝ)) A).trace / Fintype.card n := by
+  rw [measureReal_def, empiricalSpectralMeasure, Measure.smul_apply, Measure.coe_finsetSum,
+    Finset.sum_apply, smul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_inv,
+    ENNReal.toReal_natCast, ENNReal.toReal_sum fun k _ => measure_ne_top _ _, hA.re_trace_cfc,
+    div_eq_inv_mul]
+  congr 1
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [Measure.dirac_apply]
+  by_cases hx : eigenvalue A k ∈ S <;> simp [hx]
 
 /-- The empirical spectral measure of a Hermitian $\mathbf{A}$ lives on the spectrum. -/
 theorem _root_.Matrix.IsHermitian.ae_mem_spectrum_empiricalSpectralMeasure {A : Matrix n n 𝕜}

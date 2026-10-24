@@ -1,7 +1,9 @@
 # Estimation: stochastic Lanczos quadrature
 
-Status: drafted 2026-10-24 by an Opus agent from the orchestrator's brief; Fable review folded in
-2026-10-24; maintainer decisions applied 2026-10-24; awaiting final approval.
+Status: approved by the maintainer 2026-10-24 (drafted 2026-10-24 by an Opus agent from the
+orchestrator's brief; Fable review folded in 2026-10-24; maintainer decisions applied 2026-10-24).
+Skeleton of phases A and B written 2026-10-24 on `design/ks7-slq` (see "Changes during the
+skeleton"); phase B-sphere (E1–E4) waits for `Probability-Beta`, phase C for its own PR.
 
 Branch `design/ks7-slq` (worktree `/home/ubuntu/nlalib-design`, head `6a845a2`). This is the SLQ
 half of roadmap stage K7 (`docs/PORT_KRYLOV.md` §8, "K7 Hutch++ and SLQ"; Hutch++ is done,
@@ -80,6 +82,49 @@ should think of SLQ and GQ on the individual probe densities." What changed:
    works, each cited only for its own results (Q7a); fields stay "to check".
 7. Signatures changed by this revision were re-elaborated with `sorry` bodies against KS7
    stand-ins (`/tmp/claude-1000/slq-scratch/Shapes6.lean`).
+
+## Changes during the skeleton (2026-10-24)
+
+The skeleton (branch `design/ks7-slq`, on the KS7 skeleton `413dabb`) covers phases A and B. Every
+statement of §3.1–§3.6 is written as signed there, except X2 (item 3). 37 declarations are sorried
+in `NLAlibScaffold/` (S 29, S/M 5, M 3; counting S/M as M, S 29 and M 8, the 42 rows of §9 less
+the five proved here); proved in the skeleton: the 3 definitions (`slq`, `probeSpectralMeasure`,
+`slqMeasure`), I1 and I2 (the instances, `unfold; infer_instance`), and X1, X2, X3. Dispatch
+targets: `nlalib-harness/pilot/slq-targets.json` (with the KS7 **[SLQ-1]** theorems each row uses,
+`ks7_deps`). Deviations from the note:
+
+1. **E1–E4 are not in the skeleton.** They need `Probability-Beta` (β3, β4, β5), which is not
+   approved; they are deferred until after that stage. Phase C (C1, C2) is a later PR (Q6).
+2. **X2 and X3 are proved in `NLAlib/Matrix/Spectral/SpectralMeasure.lean`, not sorried.** Their
+   scaffold path, `NLAlibScaffold/Matrix/Spectral/SpectralMeasure.lean`, is a KS7 file that this
+   skeleton does not touch; both are short (under 15 lines each). X1 is the rename of the private
+   `spectralMeasure_real_eq` (one use updated). The three are added to the module's main results.
+3. **X2 loses its Hermitian hypothesis**, as the minimal fix: `cfc_mul` needs no predicate (off
+   Hermitian `cfc` is $0$, a star projection), so `hA` was unused, which T13 and the
+   unused-variables linter (`--wfail`) reject. The statement is now
+   `NLAlib.isStarProjection_cfc_indicator (A : Matrix n n 𝕜) (S : Set ℝ) :
+   IsStarProjection (cfc (S.indicator fun _ => (1 : ℝ)) A)`; D12's outline uses that name.
+4. **File order in the density scaffold**: I3, I4, D1, D2, D22, D3, D4–D11, D14, D20, D21, D15,
+   D12, D13, D16, D17, D19, D18; D22 sits beside D2 (the Lanczos form of the integrals) instead of
+   after D11. Dependencies still precede their users.
+5. **Imports by file.** The NLAlib files carry only what the definitions need
+   (`Matrix/Spectral/SpectralMeasure`, `Polynomial/Orthogonal/Gauss`); the density file does not
+   import the trace file, since `slq` appears only in scaffold statements. Each scaffold file
+   imports its NLAlib counterpart and the scaffold files it depends on: trace → KS7 scaffold
+   `Krylov/Functions/Quadrature` (so #54 and the Gauss scaffold), `Polynomial/Approximation/
+   AnalyticApproximation`, `Estimation/Trace/GirardHutchinson`; density → scaffold trace, scaffold
+   `GirardHutchinson` (G1), scaffold `SumMeasure` (F3–F5, and through it F1, F2).
+6. **Docstrings.** Citations whose locator is unchecked are written `[Key, label] (locator to
+   check)`, as in KS7; the note's row labels (D20, D22, …) are not in the docstrings. In T6 the
+   Jackson value is shown in an inline span before the display: `scripts/check_constants.py`
+   misparses two argument-free value markers in a row (its `MARK` pattern lets the first marker's
+   optional arguments run to the second marker's `-->`). Two long names are not listed in the
+   density scaffold's module docstring (a module docstring cannot take S8).
+7. **Not added yet** (as in KS7): the three §5.3 rows (§1.3) and the Mathlib-deviations
+   paragraph (§8), which go in with the first proof PR (this skeleton edits only SLQ's files), and
+   no `docs/constants.toml` change (no new named bound). Bibliography: `ChenTrogdonUbaru2021`,
+   `ChenTrogdonUbaru2025`, `UbaruChenSaad2017`, `CortinovisKressner2022` added with the fields of
+   §7, each with a "to check" note (CTU 2021's pages "to check").
 
 ## 0. Summary
 
@@ -1280,14 +1325,14 @@ already been removed). The decisions and where they are folded in:
 
 Remaining questions (one line each, with a recommendation):
 
-* **Q3′.** Keep the sub-Gaussian-entry density tails (D12–D19) beside the sphere ones (E1–E4)?
-  They come almost free from the Girard–Hutchinson tail and cover Gaussian and sign probes.
-  **Recommend keep.**
-* **Q3″.** Which source should `Probability-Beta` follow for the Beta proxy $1/(4(\alpha+\beta+1))$
-  (Elder 2016, Marchal–Arbel 2017, or the argument in CTU 2021)? **Recommend you name the source.**
-  Its proof is the one research-risk item (§3.8, β4c).
-* **Q12.** Should Haar-frame probes (orthonormal, dependent columns) get tails later (negative
-  association of the per-column Beta variables)? **Recommend later, no consumer named.**
+* **Q3′, decided 2026-10-24: keep.** The sub-Gaussian-entry density tails (D12–D19) stay beside
+  the sphere ones (E1–E4). They come almost free from the Girard–Hutchinson tail and cover Gaussian
+  and sign probes.
+* **Q3″, decided 2026-10-24: Marchal–Arbel 2017.** `Probability-Beta` follows Marchal–Arbel 2017
+  ("On the sub-Gaussianity of the Beta and Dirichlet distributions") for the Beta proxy
+  $1/(4(\alpha+\beta+1))$. Its proof is the one research-risk item (§3.8, β4c).
+* **Q12, decided 2026-10-24: later.** Haar-frame probes (orthonormal, dependent columns) get tails
+  later (negative association of the per-column Beta variables); no consumer named.
 
 ## 11. Deferred, with what is missing
 
