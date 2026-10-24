@@ -43,7 +43,12 @@ then `sq_eq_zero_iff` pointwise. -/
 theorem ae_eval_eq_zero_of_integral_sq_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : ∫ x, p.eval x ^ 2 ∂μ = 0) :
     ∀ᵐ x ∂μ, p.eval x = 0 := by
-  sorry
+  have hint : Integrable (fun x => p.eval x ^ 2) μ :=
+    (integrable_eval_of_ae_mem_Icc hμ (p ^ 2)).congr (ae_of_all μ fun x => eval_pow 2)
+  refine Filter.Eventually.mono
+    ((integral_eq_zero_iff_of_nonneg_ae (ae_of_all μ fun x => sq_nonneg _) hint).mp hp) ?_
+  intro x hx
+  exact pow_eq_zero_iff two_ne_zero |>.mp hx
 
 /-- A polynomial of norm zero is orthogonal to everything: for a finite measure $\mu$ supported
 in $[a, b]$, a real polynomial $p$ with $\int p^2\,d\mu = 0$ and every real polynomial $r$,
