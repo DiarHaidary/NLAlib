@@ -112,7 +112,8 @@ Proof: S, about 3 lines. `degree_eq_natDegree` with `(monic_orthogonalPolynomial
 then `natDegree_orthogonalPolynomial`. -/
 theorem degree_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) :
     (orthogonalPolynomial μ k).degree = k := by
-  sorry
+  rw [degree_eq_natDegree (monic_orthogonalPolynomial μ k).ne_zero,
+    natDegree_orthogonalPolynomial]
 
 /-- The off-diagonal recurrence coefficients are nonnegative: $\beta_k \ge 0$ for every measure
 $\mu$ on $\mathbb{R}$ and every $k$.
