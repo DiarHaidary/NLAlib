@@ -119,7 +119,15 @@ $\mu$ on $\mathbb{R}$ and every $k$.
 Proof: S, about 8 lines. Cases on `k`: `measureReal_nonneg`; `div_nonneg` of two
 `integral_nonneg` (`sq_nonneg`). -/
 theorem jacobiBeta_nonneg (μ : Measure ℝ) (k : ℕ) : 0 ≤ jacobiBeta μ k := by
-  sorry
+  cases k with
+  | zero =>
+      change 0 ≤ μ.real Set.univ
+      exact measureReal_nonneg
+  | succ k =>
+      change 0 ≤ (∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ) /
+        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ
+      exact div_nonneg (integral_nonneg fun x => sq_nonneg _)
+        (integral_nonneg fun x => sq_nonneg _)
 
 /-- The orthogonal polynomial depends only on the moments: if two measures $\mu$, $\nu$ on
 $\mathbb{R}$ match their first $2k$ moments, then $\pi_k(\mu) = \pi_k(\nu)$. No support
