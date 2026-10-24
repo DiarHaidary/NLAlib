@@ -48,7 +48,9 @@ Dirac masses (`Measure.ae_sum_iff`-style, or `measure_compl` with `Measure.coe_f
 `ae_dirac_iff`, `Measure.ae_smul_measure`. -/
 theorem ae_mem_interpolatoryQuadrature (μ : Measure ℝ) (s : Finset ℝ) :
     ∀ᵐ x ∂interpolatoryQuadrature μ s, x ∈ s := by
-  sorry
+  unfold interpolatoryQuadrature
+  rw [ae_finsetSum_measure_iff]
+  exact fun x hx => Measure.ae_smul_measure (by simpa using hx) _
 
 /-- **The Gauss rule as a sum of point masses**: for every measure $\mu$ on $\mathbb{R}$, every
 $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
