@@ -290,7 +290,37 @@ $r = X\pi_k$). -/
 theorem integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, (x - jacobiAlpha μ k) * (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0 := by
-  sorry
+  have hα : jacobiAlpha μ k =
+      (∫ x, x * (orthogonalPolynomial μ k).eval x ^ 2 ∂μ) /
+        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := rfl
+  set hp := orthogonalPolynomial μ k
+  -- the two integrands are integrable, being evals of polynomials
+  have himul : Integrable (fun x : ℝ => x * hp.eval x ^ 2) μ := by
+    have h : (fun x : ℝ => x * hp.eval x ^ 2) = fun x => (X * hp * hp).eval x := by
+      funext x; simp only [eval_mul, eval_X, pow_two, mul_assoc]
+    rw [h]
+    exact integrable_eval_of_ae_mem_Icc hμ _
+  have hisq : Integrable (fun x : ℝ => hp.eval x ^ 2) μ := by
+    have h : (fun x : ℝ => hp.eval x ^ 2) = fun x => (hp * hp).eval x := by
+      funext x; simp only [eval_mul, pow_two]
+    rw [h]
+    exact integrable_eval_of_ae_mem_Icc hμ _
+  have hsplit : ∀ c : ℝ, ∫ x, (x - c) * hp.eval x ^ 2 ∂μ =
+      (∫ x, x * hp.eval x ^ 2 ∂μ) - c * ∫ x, hp.eval x ^ 2 ∂μ := by
+    intro c
+    simp only [sub_mul]
+    rw [integral_sub himul (hisq.const_mul c), integral_const_mul]
+  rcases eq_or_ne (∫ x, hp.eval x ^ 2 ∂μ) 0 with hD | hD
+  · -- degenerate case: the norm is $0$, so both integrals vanish
+    rw [hsplit (jacobiAlpha μ k), hD, mul_zero, sub_zero]
+    have hN : ∫ x, x * hp.eval x ^ 2 ∂μ = ∫ x, hp.eval x * (X * hp).eval x ∂μ := by
+      refine integral_congr_ae (ae_of_all μ fun x => ?_)
+      simp only [eval_mul, eval_X]
+      ring
+    rw [hN]
+    exact integral_eval_mul_eq_zero_of_integral_sq_eq_zero hμ hD (X * hp)
+  · rw [hsplit (jacobiAlpha μ k), hα, div_mul_cancel₀ _ hD]
+    ring
 
 /-- Step (a) of the orthogonality induction: if $\pi_{k+1}$ and $\pi_k$ are orthogonal to the
 lower degrees, then $\pi_{k+2}$ is orthogonal to every polynomial of degree less than $k$.
