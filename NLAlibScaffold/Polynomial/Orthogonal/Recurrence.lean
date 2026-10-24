@@ -49,14 +49,37 @@ section Algebra
 
 variable {μ ν : Measure ℝ}
 
+/-- Monicity and degree of $\pi_k$, proved together by two-step induction: the leading term
+$(x - \alpha_{k+1})\pi_{k+1}$ is monic of degree $k + 2$ and $C(\beta_{k+1})\pi_k$ has degree
+at most $k$. -/
+private theorem monic_and_natDegree_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) :
+    (orthogonalPolynomial μ k).Monic ∧ (orthogonalPolynomial μ k).natDegree = k := by
+  induction k using Nat.twoStepInduction with
+  | zero => exact ⟨monic_one, natDegree_one⟩
+  | one =>
+    rw [orthogonalPolynomial_one]
+    exact ⟨monic_X_sub_C _, natDegree_X_sub_C _⟩
+  | more k ih0 ih1 =>
+    rw [orthogonalPolynomial_add_two]
+    have hR : ((X - C (jacobiAlpha μ (k + 1))) * orthogonalPolynomial μ (k + 1)).natDegree =
+        k + 2 := by
+      rw [Monic.natDegree_mul' (monic_X_sub_C _) ih1.1.ne_zero, natDegree_X_sub_C, ih1.2]
+      omega
+    have hlt : (C (jacobiBeta μ (k + 1)) * orthogonalPolynomial μ k).natDegree <
+        ((X - C (jacobiAlpha μ (k + 1))) * orthogonalPolynomial μ (k + 1)).natDegree := by
+      rw [hR]
+      exact ((natDegree_C_mul_le _ _).trans_eq ih0.2).trans_lt (by omega)
+    exact ⟨((monic_X_sub_C _).mul ih1.1).sub_of_left (degree_lt_degree hlt),
+      (natDegree_sub_eq_left_of_natDegree_lt hlt).trans hR⟩
+
 /-- The orthogonal polynomial $\pi_k$ of every measure $\mu$ on $\mathbb{R}$ is monic.
 Proof: M, about 35 lines, one job with `natDegree_orthogonalPolynomial`: one private helper
 proving monicity and `natDegree = k` together by two-step induction (`Nat.twoStepInduction`),
 unfolding with `orthogonalPolynomial_zero`, `orthogonalPolynomial_one`,
 `orthogonalPolynomial_add_two`; `Monic.mul`, `monic_X_sub_C`, `Monic.sub_of_left`,
 `natDegree_mul'`, `natDegree_C_mul_le`. -/
-theorem monic_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) : (orthogonalPolynomial μ k).Monic := by
-  sorry
+theorem monic_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) : (orthogonalPolynomial μ k).Monic :=
+  (monic_and_natDegree_orthogonalPolynomial μ k).1
 
 /-- The orthogonal polynomial $\pi_k$ of every measure $\mu$ on $\mathbb{R}$ has degree exactly
 $k$.
