@@ -372,7 +372,40 @@ private theorem integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1)))
     (h0 : IsOrthogonalPolynomial μ k (orthogonalPolynomial μ k)) {r : ℝ[X]} (hr : r.degree < k) :
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * r.eval x ∂μ = 0 := by
-  sorry
+  have hsplit : ∀ p q : ℝ[X],
+      ∫ x, (p - q).eval x ∂μ = ∫ x, p.eval x ∂μ - ∫ x, q.eval x ∂μ := by
+    intro p q
+    simp only [eval_sub]
+    exact integral_sub (integrable_eval_of_ae_mem_Icc hμ p)
+      (integrable_eval_of_ae_mem_Icc hμ q)
+  have hXr : (X * r).degree < ((k + 1 : ℕ) : WithBot ℕ) := by
+    by_cases hr0 : r = 0
+    · subst hr0; simp
+    · have hnr : r.natDegree < k := (natDegree_lt_iff_degree_lt hr0).mpr hr
+      rw [← natDegree_lt_iff_degree_lt (mul_ne_zero X_ne_zero hr0), natDegree_X_mul hr0]
+      omega
+  have hpoly : ∀ x : ℝ, (orthogonalPolynomial μ (k + 2)).eval x * r.eval x =
+      (orthogonalPolynomial μ (k + 1) * (X * r) -
+        C (jacobiAlpha μ (k + 1)) * (orthogonalPolynomial μ (k + 1) * r) -
+        C (jacobiBeta μ (k + 1)) * (orthogonalPolynomial μ k * r)).eval x := by
+    intro x
+    rw [orthogonalPolynomial_add_two]
+    simp only [eval_mul, eval_sub, eval_X, eval_C, sub_mul]
+    ring
+  have key1 : ∫ x, (orthogonalPolynomial μ (k + 1) * (X * r)).eval x ∂μ = 0 := by
+    simpa only [eval_mul] using h1 (X * r) hXr
+  have hI2 : ∫ x, (C (jacobiAlpha μ (k + 1)) *
+      (orthogonalPolynomial μ (k + 1) * r)).eval x ∂μ = 0 := by
+    simp only [eval_mul, eval_C, integral_const_mul]
+    rw [h1 r (lt_of_lt_of_le hr (by exact_mod_cast Nat.le_succ k))]
+    ring
+  have hI3 : ∫ x, (C (jacobiBeta μ (k + 1)) *
+      (orthogonalPolynomial μ k * r)).eval x ∂μ = 0 := by
+    simp only [eval_mul, eval_C, integral_const_mul]
+    rw [h0 r hr]
+    ring
+  rw [integral_congr_ae (ae_of_all μ hpoly), hsplit, hsplit, key1, hI2, hI3]
+  ring
 
 /-- Step (b) of the orthogonality induction: if $\pi_{k+1}$ is orthogonal to the lower degrees,
 then $\int\pi_{k+2}\pi_{k+1}\,d\mu = 0$.
