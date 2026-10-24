@@ -250,7 +250,13 @@ Proof: S, about 20 lines. `ext i j`; unfold `jacobiMatrix`; `split_ifs`;
 indices are less than $k$). -/
 theorem MatchesMoments.jacobiMatrix_eq {k : ℕ} (h : MatchesMoments μ ν (2 * k)) :
     jacobiMatrix μ k = jacobiMatrix ν k := by
-  sorry
+  ext i j
+  simp only [jacobiMatrix, Matrix.of_apply]
+  split_ifs with h1 h2 h3
+  · exact MatchesMoments.jacobiAlpha_eq (h.mono (by omega))
+  · rw [MatchesMoments.jacobiBeta_eq (h.mono (by omega))]
+  · rw [MatchesMoments.jacobiBeta_eq (h.mono (by omega))]
+  · rfl
 
 /-- The Jacobi matrix $\mathbf{J}_k(\mu)$ of every measure $\mu$ on $\mathbb{R}$ is symmetric.
 Proof: S, about 15 lines. `Matrix.IsHermitian.ext`; `star` is trivial over ℝ; unfold
