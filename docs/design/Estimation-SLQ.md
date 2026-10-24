@@ -1,7 +1,7 @@
 # Estimation: stochastic Lanczos quadrature
 
 Status: drafted 2026-10-24 by an Opus agent from the orchestrator's brief; Fable review folded in
-2026-10-24; awaiting the maintainer.
+2026-10-24; maintainer decisions applied 2026-10-24; awaiting final approval.
 
 Branch `design/ks7-slq` (worktree `/home/ubuntu/nlalib-design`, head `6a845a2`). This is the SLQ
 half of roadmap stage K7 (`docs/PORT_KRYLOV.md` §8, "K7 Hutch++ and SLQ"; Hutch++ is done,
@@ -53,148 +53,186 @@ Review: `nlalib-harness/reports/Review-Estimation-SLQ.md` (11 comments: 1 blocki
 Open question 11 (dispatch rules) is removed: the maintainer approved parallel proving (branch
 `workflow/agent-hierarchy`, `586dc1a`), and dispatch follows that branch's CONTRIBUTING §11.
 
+## Maintainer decisions and the Gauss-rule restructuring (2026-10-24)
+
+Direction, verbatim: "I want the OP and SLQ stuff to integrate well. I.e. mathematically. we
+should think of SLQ and GQ on the individual probe densities." What changed:
+
+1. **SLQ is the per-probe Gauss rule, averaged.** `slq` and `slqMeasure` are now defined through
+   KS7's `gaussQuadrature (spectralMeasure A ω_j) q` (§1). Lanczos enters only through KS7's
+   `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`, in two bridges: T0
+   `slq_eq_sum_lanczosFA` (the algorithm) and D22 `slqMeasure_eq_sum_lanczosQuadrature`.
+2. **The quadrature-error analysis is KS7's generic Gauss error per probe, then averaged**: T2
+   (uniform approximation, #66), T3 and D15 (Lipschitz, #68), T4 (Bernstein ellipse, #66 with the
+   KS4 approximant; KS7 left this corollary to SLQ). D5, D8, D9, D10 now come from KS7's mass,
+   support, exactness (with `MatchesMoments.smul`/`finsetSum` for the average) and Gauss-rule
+   uniqueness. Dropped: X4 (`lanczosQuadrature_eq_spectralMeasure_of_krylovGrade_le`, replaced by
+   KS7 uniqueness) and T8 `im_slq` (immediate, `slq` is an `ofReal`).
+3. **§12 reversed**: SLQ depends on the KS7 Gauss-rule core; §12 lists each declaration used and
+   §9 makes them prerequisites (wave K). The KS7 names are final ("Interface for SLQ",
+   `Polynomial-OrthogonalStructure.md`); none is provisional.
+4. **Decisions recorded in §10** (all "decided 2026-10-24"): Q1 (a), Q2a (a), Q2b (a), Q3 (b),
+   Q4 (a + c), Q5 (a), Q6 (a), Q7a (a), Q7b (b), Q8 (a), Q9 (a), Q10 (a).
+5. **Q3 (b): sphere probes with the sharp Beta constant**: new phase B-sphere (§3.8, E1–E4 here)
+   on a prerequisite Probability stage (12 named steps; the Beta sub-Gaussian proxy is the one
+   research-risk item). The sub-Gaussian-entry tails are kept; Q3′ asks to confirm.
+6. **Citations**: `ChenTrogdonUbaru2021` (ICML) and `ChenTrogdonUbaru2025` (SISC) are distinct
+   works, each cited only for its own results (Q7a); fields stay "to check".
+7. Signatures changed by this revision were re-elaborated with `sorry` bodies against KS7
+   stand-ins (`/tmp/claude-1000/slq-scratch/Shapes6.lean`).
+
 ## 0. Summary
 
-**Scope proposed (phases A and B; phase C optional).**
+**The structure (maintainer, 2026-10-24: "we should think of SLQ and GQ on the individual probe
+densities").** Each probe $\boldsymbol\omega_j$ has its spectral measure (probe density)
+$\mu_j = \mu_{\mathbf A,\boldsymbol\omega_j}$. SLQ is, probe by probe, KS7's canonical Gauss rule
+of $\mu_j$, then averaged:
+$$\mathsf{slqMeasure}(\mathbf A,\mathbf\Omega,q) = \frac{1}{nm}\sum_j \mathsf{gaussQuadrature}(\mu_j, q),
+\qquad \mathsf{slq}(\mathbf A,f,\mathbf\Omega,q) = \frac1m\sum_j\int f\,d\,\mathsf{gaussQuadrature}(\mu_j,q).$$
+Every quadrature fact is KS7's, applied to one $\mu_j$ and averaged: exactness (2q moments), the
+generic Gauss error bound $\lvert\int f\,d\mu - \int f\,d\,\mathsf{gauss}\rvert \le
+2\varepsilon\mu(\mathbb R)$
+(`abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn` and its Lipschitz corollary),
+support and mass. The Lanczos algorithm enters only through KS7's
+identification `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`, in two bridge theorems
+that show the definition is what the algorithm computes. The average of Gauss rules is not the
+Gauss rule of the average (it has up to $mq$ nodes and matches only $2q$ moments of the probe
+measure); no statement says otherwise.
 
-* **A. Trace estimation of $\operatorname{tr} f(\mathbf{A})$.** The estimator `slq`; the
-  deterministic split of its error into the Girard–Hutchinson error plus a quadrature error
-  $2\varepsilon\|\mathbf{\Omega}\|_{\mathsf{F}}^2/m$ (the C6/KS3a consumer), with the Lipschitz
-  (Jackson) and analytic (Bernstein ellipse) rates of KS4; and the sub-Gaussian tails, by
-  composing the split with the existing Hanson–Wright tail of Girard–Hutchinson. Eight
-  declarations, all short: the library already has every analytic ingredient.
-* **B. Spectral density estimation.** Two measures, the *probe spectral measure*
-  $\frac{1}{nm}\sum_j\mu_{\mathbf{A},\boldsymbol{\omega}_j}$ (SLQ with exact quadrature) and the
-  *SLQ measure* $\frac{1}{nm}\sum_j\mathsf{lanczosQuadrature}(\mathbf{A},\boldsymbol{\omega}_j,q)$;
-  their integral identities, masses, supports, moment matching; unbiasedness of the probe measure
-  for isotropic probes (Gaussian, Rademacher, sphere and Haar-frame probes are instances, no
-  independence needed); and **the Chen–Trogdon–Ubaru-type uniform bound**: with $m$ probes with
-  independent sub-Gaussian entries, outside probability
-  $2n\exp(-\tfrac{1}{196}mn\min(\tau^2/c^2,\tau/c))$, every $L$-Lipschitz test function $f$ on
-  $[a,b] \supseteq \operatorname{spec}\mathbf{A}$ has
+**Scope (decided 2026-10-24: phases A and B now, C later).**
+
+* **A. Trace estimation of $\operatorname{tr} f(\mathbf{A})$.** `slq`; its Lanczos-FA form; the
+  split of its error into the Girard–Hutchinson error plus the averaged Gauss error
+  $2\varepsilon\|\mathbf{\Omega}\|_{\mathsf{F}}^2/m$, with the Lipschitz (Jackson) and analytic
+  (Bernstein ellipse) rates; the sub-Gaussian tails, by composing with the existing Hanson–Wright
+  tail of Girard–Hutchinson (quadrature term random in the event, Q9(a)).
+* **B. Spectral density estimation.** `probeSpectralMeasure` $=\frac{1}{nm}\sum_j\mu_j$ (decided
+  normalisation, Q1(a)) and `slqMeasure`; identities, masses, supports, moment matching, equality
+  for $q \ge n$; unbiasedness for isotropic probes; and the uniform bound over $L$-Lipschitz test
+  functions in one event (Q8(a)), in both forms decided under Q4 (a + c):
+  with $m$ probes with independent sub-Gaussian entries, outside probability
+  $2n\exp(-\tfrac{1}{196}mn\min(\tau^2/c^2,\tau/c))$,
   $$\Bigl\lvert\int f\,d\nu_{\mathbf{A}} - \int f\,d\,\mathsf{slqMeasure}(\mathbf{A},\mathbf{\Omega},q+1)\Bigr\rvert
   \le (\lvert f(b)\rvert + L(b-a))\tau + \frac{\pi L(b-a)}{2q+3}(1+\tau),$$
-  $\nu_{\mathbf{A}}$ the empirical spectral measure [ChenTrogdonUbaru2021], a normalised
-  (probability-measure) form with $2L(b-a)\tau + \pi L(b-a)/(2q+3)$; and its "$m = O(c^2\log(n/\delta)/(n\tau^2))$
-  suffices" asymptotic form. **I put the uniform bound in scope now** (the brief left it open):
-  the route below needs no Wasserstein distance, no Stieltjes integration by parts and no new
-  probability. It is a finite Abel summation on the spectrum (the CDFs of both measures jump only
-  at eigenvalues), the observation that the CDF of the probe measure at $x$ is a Girard–Hutchinson
-  estimate of the trace of the spectral projector $\mathbf{1}_{(-\infty,x]}(\mathbf{A})/n$, the
-  existing Girard–Hutchinson tail, and a union bound over at most $n$ eigenvalues. The longest
-  proof is about 70 lines.
-* **C (optional, recommend a later PR). The bias of SLQ in expectation**,
-  $\lvert\operatorname{tr}f(\mathbf{A}) - \mathbb{E}\,\mathsf{slq}\rvert \le 2\varepsilon n$. It
-  needs measurability of $\mathbf{b} \mapsto \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)$,
-  which the library does not have (§3.7, Q6).
+  and for the mass-normalised estimate $2L(b-a)\tau + \pi L(b-a)/(2q+3)$; plus the asymptotic
+  "$m = O(c^2\log(n/\delta)/(n\tau^2))$ suffices". The route: a finite Abel summation on the
+  spectrum, the CDF of the probe measure as a Girard–Hutchinson estimate of a spectral projector,
+  the Girard–Hutchinson tail, a union bound over at most $n$ eigenvalues.
+* **B-sphere (decided Q3(b), 2026-10-24): sphere probes with the sharp Beta constant.** With
+  $\boldsymbol\omega_j = \sqrt n\,\mathbf u_j$, $\mathbf u_j$ independent and uniform on the
+  sphere, outside probability $2n\exp(-m(n+2)\tau^2)$ every $L$-Lipschitz $f$ has
+  $\lvert\int f\,d\nu_{\mathbf A} - \int f\,d\,\mathsf{slqMeasure}\rvert \le L(b-a)\tau +
+  \pi L(b-a)/(2q+3)$ (both measures are probability measures here, so no $\lvert f(b)\rvert$ and
+  no $1+\tau$) [ChenTrogdonUbaru2021, to check]. It needs two Probability results the library
+  lacks: the Beta law of $\|\mathbf V^{\mathsf H}\mathbf u\|^2$ and the sub-Gaussian bound of
+  Beta laws with proxy $1/(4(\alpha+\beta+1))$. Both go to a **prerequisite Probability stage**
+  (§3.8; two L steps there, the Gamma-ratio change of variables and the Beta proxy, the latter
+  a research-risk item). The SLQ
+  corollaries are S/M once it exists. The sub-Gaussian-entry tails stay (they come almost free
+  from the Girard–Hutchinson tail); Q3′ asks to confirm.
+* **C (later, decided Q6(a)). Bias in expectation**,
+  $\lvert\operatorname{tr}f(\mathbf{A}) - \mathbb{E}\,\mathsf{slq}\rvert \le 2\varepsilon n$; needs
+  measurability of the Gauss rule of $\mu_{\mathbf A,\mathbf b}$ in $\mathbf b$ (§3.7).
 
-**Out of scope:** KPM (needs M1 and the noisy Jackson coefficient bound J1, both unimplemented;
-`Krylov-Spectral.md` §8 item 5); sphere/Haar-probe *tails* with the sharp Beta constant (needs a
-sub-Gaussian bound for Beta laws, absent; §11); a named Wasserstein or Kolmogorov distance (Q4);
-Gauss–Radau one-sided bounds (needs the Hermite remainder, `Krylov-Spectral.md` §8 item 3); finite
-precision.
+**Out of scope:** KPM (needs M1 and J1); Haar-frame probes for the tails (dependent columns; §11);
+a named Wasserstein or Kolmogorov distance; Gauss–Radau; finite precision.
 
-**Counts** (after the review). 45 declarations in phases A and B (3 definitions, 2 instances,
-40 theorems), of which 10 are additions to existing or ForMathlib files; of the 42 dispatched
-proofs, S 33, M 9, L 0 (§9; one of the S is a rename). Phase C adds 2 (M, L). No new hypothesis interface. Three new
-§5.3 rows. No named bound.
+**Counts.** Phases A and B: 45 declarations (3 definitions, 2 instances, 40 theorems); 9 are
+additions to lower or ForMathlib files; 42 dispatched proofs, S 34, M 8, L 0; 14 KS7
+declarations (2 definitions, 1 instance, 11 theorems) are prerequisites. Phase B-sphere: 4 in this stage (S 1, M 3) after a prerequisite
+Probability stage of 12 named steps (S 4, M 6, L 2). Phase C: 2 (M, L). No new interface; three new §5.3 rows; no named bound.
 
-**Nothing from KS7 is needed** (§12): every quadrature fact SLQ uses is already proved in
-`Krylov/Functions/Quadrature.lean` (KS3) and `Polynomial/Orthogonal/Moments.lean` (M0).
+**Depends on KS7** (§12): the Gauss-rule core of `Polynomial/Orthogonal/Gauss.lean` and the
+identification in `Krylov/Functions/Quadrature.lean`. Those declarations are prerequisites of
+the proof plan (§9, wave K).
 
 ## 1. Objects
 
 All definitions over `[RCLike 𝕜]`, total, in `namespace NLAlib`, probes as the columns of a test
 matrix `Ω : Matrix n m 𝕜`, exactly as `girardHutchinson` (§5.3 row "Girard–Hutchinson estimate").
 Columns are written `fun i => Ω i j`, the spelling of `girardHutchinson_eq_sum` (Mathlib's
-`Ω.col j` unfolds to it by `Matrix.col_apply`; `frobNorm_sq_eq_sum_col` uses `.col`).
+`Ω.col j` unfolds to it by `Matrix.col_apply`; `frobNorm_sq_eq_sum_col` uses `.col`). KS7 names
+are final, from "Interface for SLQ" in `Polynomial-OrthogonalStructure.md` (§12 lists them).
 
 ### 1.1 The SLQ trace estimate
 
 ```lean
 /-- The **stochastic Lanczos quadrature** estimate of $\operatorname{tr} f(\mathbf{A})$ from the
 test matrix $\mathbf{\Omega}$, whose $m$ columns $\boldsymbol{\omega}_1, \dots,
-\boldsymbol{\omega}_m$ are the probes, with $q$ Lanczos steps per probe:
+\boldsymbol{\omega}_m$ are the probes: the average over the probes of the $q$-point Gauss rule of
+each probe's spectral measure $\mu_j = \mu_{\mathbf A,\boldsymbol\omega_j}$ applied to $f$,
 $$\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q) := \frac{1}{m}\sum_{j=1}^m
-\boldsymbol{\omega}_j^{\mathsf{H}}\,\mathsf{lanczosFA}(\mathbf{A}, f, \boldsymbol{\omega}_j, q)\,,$$
-the Girard–Hutchinson estimate with each quadratic form
-$\boldsymbol{\omega}_j^{\mathsf{H}}f(\mathbf{A})\boldsymbol{\omega}_j$ replaced by its $q$-node
-Gauss (Lanczos) quadrature
-$\|\boldsymbol{\omega}_j\|^2\mathbf{e}_1^{\mathsf{T}}f(\mathbf{T}_j)\mathbf{e}_1$
-(`Matrix.IsHermitian.integral_lanczosQuadrature_succ`). Uses $mq$ products with $\mathbf{A}$.
-Junk value: $0$ when $\mathbf{\Omega}$ has no columns or $q = 0$.
-[UbaruChenSaad2017, §3, (3.x), locator to check]; [MartinssonTropp2020, §6.6, Algorithm 6]. -/
+\int f\,d\,\mathsf{gaussQuadrature}(\mu_j, q)\,,$$
+the Girard–Hutchinson estimate with each
+$\boldsymbol{\omega}_j^{\mathsf{H}}f(\mathbf{A})\boldsymbol{\omega}_j = \int f\,d\mu_j$ replaced
+by its Gauss quadrature. For Hermitian $\mathbf A$ this is what $q$ Lanczos steps per probe
+compute, $\frac1m\sum_j\boldsymbol\omega_j^{\mathsf H}\mathsf{lanczosFA}(\mathbf A, f,
+\boldsymbol\omega_j, q) = \frac1m\sum_j\|\boldsymbol\omega_j\|^2\mathbf e_1^{\mathsf T}
+f(\mathbf T_j)\mathbf e_1$ (`Matrix.IsHermitian.slq_eq_sum_lanczosFA`), with $mq$ products with
+$\mathbf A$. A real number in `𝕜`. Junk value: $0$ when $\mathbf{\Omega}$ has no columns, when
+$q = 0$ and when $\mathbf A$ is not Hermitian.
+[UbaruChenSaad2017, §3, locator to check]; [MartinssonTropp2020, §6.6, Algorithm 6]. -/
 noncomputable def slq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) : 𝕜 :=
-  (∑ j, star (fun i => Ω i j) ⬝ᵥ lanczosFA A f (fun i => Ω i j) q) / Fintype.card m
+  ((∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q : ℝ) : 𝕜) /
+    Fintype.card m
 ```
 
-Normalisation. The brief's form $\frac1m\sum_j\|\boldsymbol\omega_j\|^2\,\mathsf{lanczosQuadrature}(\mathbf A,\boldsymbol\omega_j,q)(f)$
-is this one: `lanczosQuadrature A b q` is unnormalised, of mass $\|\mathbf b\|^2$
-(`Matrix.IsHermitian.lanczosQuadrature_real_univ`), so
-$\int f\,d\,\mathsf{lanczosQuadrature}(\mathbf A,\mathbf b,q) = \operatorname{Re}\mathbf b^{\mathsf H}\mathsf{lanczosFA}(\mathbf A,f,\mathbf b,q)$
-(`integral_lanczosQuadrature`) already carries the $\|\mathbf b\|^2$. The value is in `𝕜`, like
-`girardHutchinson`, so the error reads `(cfc f A).trace - slq A f Ω q` (N10) and its difference
-with `girardHutchinson (cfc f A) Ω` is a sum of the C6 quantities with no `RCLike.re`. For
-Hermitian $\mathbf A$ the value is real (each term is a quadratic form of the Hermitian
-compression); no theorem needs that.
-
-Argument order follows `lanczosFA A f b q` and `girardHutchinson A Ω`: matrix, function, probes,
-steps.
+Valued in `𝕜` (decided, Q2b(a)): the error reads `(cfc f A).trace - slq A f Ω q` (N10) and
+composes with `girardHutchinson`, which is in `𝕜`. The value is real by definition, so the old
+`im_slq` (review comment 7) is immediate and no longer a row. Argument order follows
+`lanczosFA A f b q` and `girardHutchinson A Ω`.
 
 ### 1.2 The two spectral-density estimates
 
 ```lean
-/-- The **probe spectral measure**: the average of the spectral measures of the probes, scaled so
-that isotropic probes give the empirical spectral measure in expectation,
+/-- The **probe spectral measure**: the average of the probes' spectral measures (probe
+densities), scaled so that isotropic probes give the empirical spectral measure in expectation,
 $$\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega}) :=
 \frac{1}{\lvert n\rvert m}\sum_{j=1}^m \mu_{\mathbf{A},\boldsymbol{\omega}_j}\,.$$
-It is stochastic Lanczos quadrature with exact quadrature
-(`Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le`), and its integral of $f$ is
-the Girard–Hutchinson estimate of $\operatorname{tr} f(\mathbf{A})/\lvert n\rvert$
-(`integral_probeSpectralMeasure`). Its mass is
-$\|\mathbf{\Omega}\|_{\mathsf{F}}^2/(\lvert n\rvert m)$, not $1$. Junk value: $0$ when $n$ or $m$
-is empty ($0^{-1} = 0$ in $\mathbb{R}_{\ge 0}$) and when $\mathbf{A}$ is not Hermitian.
-[ChenTrogdonUbaru2022, §2, the averaged weighted spectral measure, locator to check]. -/
+SLQ with exact quadrature (`Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le`);
+its integral of $f$ is the Girard–Hutchinson estimate of
+$\operatorname{tr} f(\mathbf{A})/\lvert n\rvert$ (`integral_probeSpectralMeasure`). Mass
+$\|\mathbf{\Omega}\|_{\mathsf{F}}^2/(\lvert n\rvert m)$. Junk value: $0$ when $n$ or $m$ is empty
+($0^{-1} = 0$ in $\mathbb{R}_{\ge 0}$) and when $\mathbf{A}$ is not Hermitian.
+[ChenTrogdonUbaru2021, locator to check]. -/
 noncomputable def probeSpectralMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) : Measure ℝ :=
   ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹) • ∑ j, spectralMeasure A (fun i => Ω i j)
 
-/-- The **SLQ spectral-density estimate**: the average of the $q$-step Lanczos (Gauss) rules of
-the probes, scaled as `probeSpectralMeasure`,
+/-- The **SLQ spectral-density estimate**: the average, scaled as `probeSpectralMeasure`, of the
+$q$-point Gauss rules of the probe densities,
 $$\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega}, q) := \frac{1}{\lvert n\rvert m}\sum_{j=1}^m
-\mathsf{lanczosQuadrature}(\mathbf{A}, \boldsymbol{\omega}_j, q)\,;$$
-atoms at the Ritz values of each probe's Krylov space, weights $\|\boldsymbol\omega_j\|^2$ times
-the squared first entries of the eigenvectors of $\mathbf{T}_j$
-(`Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum`). Its integral of $f$ is
-$\operatorname{Re}\,\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q)/\lvert n\rvert$
+\mathsf{gaussQuadrature}(\mu_{\mathbf A,\boldsymbol{\omega}_j}, q)\,.$$
+It is not the Gauss rule of `probeSpectralMeasure`: it has up to $mq$ nodes and matches $2q$
+moments of it. For Hermitian $\mathbf A$ it is the average of the Lanczos rules, atoms at each
+probe's Ritz values (`Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature`). Its integral of
+$f$ is $\operatorname{Re}\,\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q)/\lvert n\rvert$
 (`integral_slqMeasure`). Junk value: $0$ when $n$ or $m$ is empty or $q = 0$.
-[ChenTrogdonUbaru2022, locator to check]; [UbaruChenSaad2017, §3, locator to check]. -/
+[ChenTrogdonUbaru2021, locator to check]; [UbaruChenSaad2017, §3, locator to check]. -/
 noncomputable def slqMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) (q : ℕ) : Measure ℝ :=
-  ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹) • ∑ j, lanczosQuadrature A (fun i => Ω i j) q
+  ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹) •
+    ∑ j, gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q
 ```
 
-The scalar is an `ℝ≥0`, not the `ℝ≥0∞` of `empiricalSpectralMeasure`: with `ℝ≥0∞` the scalar is
-$\top$ for an empty type, and the `IsFiniteMeasure` instances would need a case split; with `ℝ≥0`
-they are `infer_instance` and `integral_smul_nnreal_measure` rewrites integrals (checked). The
-normalisation $1/(nm)$ is Q1; the consumer table of `Krylov-Spectral.md` §5 wrote
-$m^{-1}\sum_j\mathsf{lanczosQuadrature}$, which has mean $n\,\nu_{\mathbf A}$ for isotropic probes.
-
-Relation to `empiricalSpectralMeasure`: for isotropic probes
+The scalar is an `ℝ≥0` (with `ℝ≥0∞` it is $\top$ for an empty type and the instances need a case
+split). Normalisation $1/(nm)$ (decided, Q1(a)). For isotropic probes
 $\mathbb E\int f\,d\,\mathsf{probeSpectralMeasure} = \int f\,d\nu_{\mathbf A}$ (D11); for
-$q \ge n$, `slqMeasure A Ω q = probeSpectralMeasure A Ω` (D10); with the coordinate vectors as
-probes ($\mathbf\Omega = \mathbf I$) the probe measure is $\nu_{\mathbf A}$ exactly, by the existing
-`Matrix.IsHermitian.sum_spectralMeasure_single` (no new theorem; noted in the docstring).
+$q \ge n$, `slqMeasure A Ω q = probeSpectralMeasure A Ω` (D10, from KS7's uniqueness of the Gauss
+rule: a measure on at most $q$ points matching its own moments is its own Gauss rule); with
+$\mathbf\Omega = \mathbf I$ the probe measure is $\nu_{\mathbf A}$
+(`Matrix.IsHermitian.sum_spectralMeasure_single`).
 
 ### 1.3 §5.3 rows (added in the implementing PRs)
 
 | Concept | Spelling | Mathlib bridge |
 |---|---|---|
-| stochastic Lanczos quadrature | `slq A f Ω q : 𝕜 := (∑ j, star ωⱼ ⬝ᵥ lanczosFA A f ωⱼ q) / card m`, probes the columns of `Ω`; error `(cfc f A).trace - slq A f Ω q` | `integral_slqMeasure`; the split `Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn`; Mathlib has none |
+| stochastic Lanczos quadrature | `slq A f Ω q : 𝕜`, the average over the probes (columns of `Ω`) of `∫ f ∂gaussQuadrature (spectralMeasure A ωⱼ) q`; error `(cfc f A).trace - slq A f Ω q` | `Matrix.IsHermitian.slq_eq_sum_lanczosFA` (the algorithm), `integral_slqMeasure`; Mathlib has none |
 | probe spectral measure | `probeSpectralMeasure A Ω := (card n * card m : ℝ≥0)⁻¹ • ∑ j, spectralMeasure A ωⱼ`; mass $\|\mathbf\Omega\|_{\mathsf F}^2/(nm)$; its CDF is `girardHutchinson` of a spectral projector | `integral_probeSpectralMeasure`, `probeSpectralMeasure_real`; Mathlib has none |
-| SLQ spectral density | `slqMeasure A Ω q`, the same average of `lanczosQuadrature A ωⱼ q` | `integral_slqMeasure`, `Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le` |
+| SLQ spectral density | `slqMeasure A Ω q`, the same average of `gaussQuadrature (spectralMeasure A ωⱼ) q` | `integral_slqMeasure`, `Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature`, `Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le` |
 
-and `slq` joins the row "an algorithm's output" of §4.3 (tokens list). The CDF of a finite measure
-on $\mathbb R$ is written `μ.real (Set.Iic x)`, not Mathlib's `ProbabilityTheory.cdf`, which is
-defined for probability measures only (both estimates have random mass); no row, no deviation.
+and `slq` joins the row "an algorithm's output" of §4.3 (`probeSpectralMeasure` does not: it is
+the exact-quadrature reference, so D15's `probeSpectralMeasure_sub_…` is exact − computed). The
+CDF of a finite measure on $\mathbb R$ is written `μ.real (Set.Iic x)`, not
+`ProbabilityTheory.cdf` (probability measures only); no row, no deviation.
 
 ## 2. Interfaces
 
@@ -219,8 +257,10 @@ Why no interface "probe law $P$": the expectation results need isotropy only and
 need exactly the Girard–Hutchinson triple, so a bundle would wrap one existing interface.
 The isotropic sub-Gaussian *vector* interface (`IsSubgaussianVector` + `IsIsotropic`, used by
 Hutch++'s sketch) does not give the tails: Hanson–Wright in the library needs independent
-coordinates (`Probability/QuadraticForm/HansonWright.lean`), so sphere and Haar probes are not
-covered by the tails (Q3).
+coordinates (`Probability/QuadraticForm/HansonWright.lean`), so sphere probes get their own
+tails (B-sphere, §3.8), with hypotheses `hind : iIndepFun (fun j ω i => U ω i j) μ` and
+`hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ` on the unit columns, the test
+matrix being `√(card n) • U ω`; Haar-frame probes (dependent columns) are not covered.
 
 Why no distance: the Jackson note's W1 decision (`Polynomial-Jackson-Moments.md` §4, "W1
 decision") recommends "universal Lipschitz test bounds first … do not invent a new Wasserstein
@@ -262,12 +302,10 @@ theorem _root_.Matrix.IsHermitian.empiricalSpectralMeasure_real {A : Matrix n n 
 -- G1, Estimation/Trace/GirardHutchinson.lean: linearity in the matrix (needed by D12)
 theorem girardHutchinson_smul (c : 𝕜) (B : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) :
     girardHutchinson (c • B) Ω = c * girardHutchinson B Ω
-
--- X4, Krylov/Functions/Quadrature.lean: past the grade the Lanczos rule is the spectral measure
-theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_spectralMeasure_of_krylovGrade_le
-    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ} (h : krylovGrade A b ≤ q) :
-    lanczosQuadrature A b q = spectralMeasure A b
 ```
+
+(The former X4, `lanczosQuadrature_eq_spectralMeasure_of_krylovGrade_le`, is dropped: D10 now
+follows from KS7's `MatchesMoments.eq_gaussQuadrature` on each probe density.)
 
 ForMathlib (no NLAlib vocabulary; upstream candidates; Mathlib namespaces):
 
@@ -332,9 +370,10 @@ $\mathbf{\Omega}$ with $m$ columns
 $$\bigl\lvert\operatorname{tr} f(\mathbf{A}) - \mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q)\bigr\rvert
 \le \bigl\lvert\operatorname{tr} f(\mathbf{A}) - \mathsf{girardHutchinson}(f(\mathbf{A}),
 \mathbf{\Omega})\bigr\rvert + \frac{2\varepsilon\|\mathbf{\Omega}\|_{\mathsf{F}}^2}{m}\,.$$
-Each probe's quadratic form is replaced by its Lanczos quadrature, whose error is at most
-$2\varepsilon\|\boldsymbol\omega_j\|^2$
-(`Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn`).
+Probe by probe, $\boldsymbol\omega_j^{\mathsf H}f(\mathbf A)\boldsymbol\omega_j =
+\int f\,d\mu_j$ is replaced by its Gauss rule, whose error is at most
+$2\varepsilon\mu_j(\mathbb R) = 2\varepsilon\|\boldsymbol\omega_j\|^2$ (KS7's generic Gauss error
+bound); the errors are averaged.
 [UbaruChenSaad2017, §4, locator to check]; [MartinssonTropp2020, §6.6]; there with the
 quadrature error bounded through analytic $f$ and Chebyshev approximation.
 Result: stochastic-lanczos-quadrature-error -/
@@ -377,10 +416,15 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_differentiableOn
 ```
 
 ```lean
-/-- For Hermitian $\mathbf A$ the SLQ estimate is real: each term is a quadratic form of the
-Hermitian compression. -/
-theorem _root_.Matrix.IsHermitian.im_slq {A : Matrix n n 𝕜} (hA : A.IsHermitian) (f : ℝ → ℝ)
-    (Ω : Matrix n m 𝕜) (q : ℕ) : RCLike.im (slq A f Ω q) = 0
+/-- T0. **SLQ is what the Lanczos algorithm computes**: for Hermitian $\mathbf A$,
+$\mathsf{slq}(\mathbf A, f, \mathbf\Omega, q) = \frac1m\sum_j\boldsymbol\omega_j^{\mathsf H}
+\mathsf{lanczosFA}(\mathbf A, f, \boldsymbol\omega_j, q)$: each probe's Gauss rule is its Lanczos
+rule (`Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`, KS7) and the Lanczos rule
+integrates to the Lanczos-FA quadratic form (`integral_lanczosQuadrature`), which is real. -/
+theorem _root_.Matrix.IsHermitian.slq_eq_sum_lanczosFA {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
+    slq A f Ω q =
+      (∑ j, star (fun i => Ω i j) ⬝ᵥ lanczosFA A f (fun i => Ω i j) q) / Fintype.card m
 ```
 
 The trace tails keep the quadrature term **random**, inside the event (Q9(a)). Unlike the density
@@ -488,6 +532,14 @@ theorem integral_probeSpectralMeasure (A : Matrix n n 𝕜) (f : ℝ → ℝ) (�
 theorem integral_slqMeasure (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
     ∫ x, f x ∂slqMeasure A Ω q = RCLike.re (slq A f Ω q) / Fintype.card n
 
+/-- D22. **The SLQ measure is the average of the probes' Lanczos rules** (KS7's identification,
+probe by probe); atoms at the Ritz values, weights from the tridiagonal matrices
+(`Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum`). -/
+theorem _root_.Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) (q : ℕ) :
+    slqMeasure A Ω q = ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹) •
+      ∑ j, lanczosQuadrature A (fun i => Ω i j) q
+
 /-- The distribution function of the probe spectral measure is a Girard–Hutchinson estimate:
 $\mathsf{probeSpectralMeasure}(\mathbf A,\mathbf\Omega)(S) =
 \operatorname{Re}\mathsf{girardHutchinson}(\mathbf 1_S(\mathbf A),\mathbf\Omega)/\lvert n\rvert$
@@ -520,13 +572,17 @@ theorem _root_.Matrix.IsHermitian.ae_mem_Icc_slqMeasure {A : Matrix n n 𝕜}
 
 /-- **SLQ matches $2q$ moments of the probe spectral measure**: for Hermitian $\mathbf A$, every
 $\mathbf\Omega$ and $q$, the two measures give every real polynomial of degree less than $2q$ the
-same integral. [GolubMeurant2010, Theorem 6.6], probe by probe.
-Result: lanczos-gauss-quadrature -/
+same integral: each probe density matches $2q$ moments of its Gauss rule
+(`matchesMoments_gaussQuadrature`, KS7), and the averages match. [Gautschi2004, Theorem 1.45];
+[GolubMeurant2010, Theorem 6.6], probe by probe.
+Result: gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) (q : ℕ) :
     MatchesMoments (probeSpectralMeasure A Ω) (slqMeasure A Ω q) (2 * q)
 
-/-- With at least $\lvert n\rvert$ steps, SLQ is exact: every probe's Krylov space is invariant. -/
+/-- With at least $\lvert n\rvert$ nodes, SLQ is exact: each probe density lives on at most
+$\lvert n\rvert \le q$ points, so it is its own $q$-point Gauss rule
+(`MatchesMoments.eq_gaussQuadrature`, KS7). -/
 theorem _root_.Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) {q : ℕ}
     (hq : Fintype.card n ≤ q) : slqMeasure A Ω q = probeSpectralMeasure A Ω
@@ -575,8 +631,11 @@ $L$-Lipschitz on $[a,b]$, <!-- value jacksonApproximationConstant -->
 $$\Bigl\lvert\int f\,d\,\mathsf{probeSpectralMeasure}(\mathbf A,\mathbf\Omega) -
 \int f\,d\,\mathsf{slqMeasure}(\mathbf A,\mathbf\Omega,q+1)\Bigr\rvert \le
 \frac{\pi L(b-a)}{2q+3}\cdot\frac{\|\mathbf\Omega\|_{\mathsf F}^2}{\lvert n\rvert m}\,;$$
-M0 (`MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn`) with Jackson's theorem in
-degree $2q + 1$. [ChenTrogdonUbaru2022, Appendix C, Theorem 38], the approximation step. -/
+per probe, KS7's generic Gauss error bound with Jackson's polynomial of degree $2q + 1$ gives
+$2\varepsilon\mu_j(\mathbb R)$, $\varepsilon = \pi L(b-a)/(2(2q+3))$; averaging gives the bound.
+[ChenTrogdonUbaru2025, the uniform quadrature bound, locator to check];
+[ChenTrogdonUbaru2022, Appendix C, Theorem 38], the approximation step (arXiv v1 of the same
+work). -/
 theorem
 _root_.Matrix.IsHermitian.abs_integral_probeSpectralMeasure_sub_integral_slqMeasure_le_of_lipschitzOnWith
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a b : ℝ} (hab : a < b)
@@ -596,7 +655,7 @@ $\mathbb E\int f\,d\,\mathsf{probeSpectralMeasure}(\mathbf A,\mathbf\Omega) = \i
 $\nu_{\mathbf A}$ the empirical spectral measure. No independence is needed: Gaussian, sign,
 and $\sqrt{\lvert n\rvert}$ times uniform-sphere or Haar-frame probes are instances. With
 $f = \mathbf 1_S$, the expected measure of every Borel set is $\nu_{\mathbf A}(S)$.
-[ChenTrogdonUbaru2022, locator to check]. Result: probe-spectral-measure-unbiased -/
+[ChenTrogdonUbaru2021, locator to check]. Result: probe-spectral-measure-unbiased -/
 theorem integral_integral_probeSpectralMeasure [Nonempty m] {X : Ω → Matrix n m 𝕜}
     (hX : ∀ j, IsIsotropic (fun ω i => X ω i j) μ) {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (f : ℝ → ℝ) :
@@ -830,6 +889,103 @@ $\mathsf{girardHutchinson} - \mathsf{slq}$ from measurability and the bound of T
 $\mathbb E\|\mathbf\Omega\|_{\mathsf F}^2 = nm$ (`IsIsotropic.integral_norm_sq`). Recommend
 phase C as its own PR after A and B (Q6).
 
+### 3.8 Phase B-sphere: sphere probes with the sharp Beta constant (decided Q3(b))
+
+Probes $\boldsymbol\omega_j = \sqrt{\lvert n\rvert}\,\mathbf u_j$ with $\mathbf u_j$ independent and
+uniform on the unit sphere (CTU 2021's setting). Then $\|\boldsymbol\omega_j\|^2 = n$ surely, so
+both the probe measure and the SLQ measure are probability measures (no $\lvert f(b)\rvert$ term,
+no $1+\tau$), and at a threshold $x$ with spectral projector $\mathbf P$ of rank $r$,
+$\mathsf{probe}(\le x) - \nu_{\mathbf A}(\le x) = \frac1m\sum_j(\mathbf u_j^{\mathsf T}\mathbf P
+\mathbf u_j - r/n)$, a centred average of $m$ independent $\mathrm{Beta}(r/2,(n-r)/2)$ variables.
+With the Beta sub-Gaussian proxy $1/(4(\alpha+\beta+1)) = 1/(2(n+2))$ and Hoeffding, each
+threshold fails with probability at most $2\exp(-m(n+2)\tau^2)$; ranks $0$ and $n$ are
+deterministic.
+
+**In this stage** (`Estimation/Spectral/SpectralDensity.lean`, gated on the prerequisite stage):
+
+```lean
+/-- E1. **Sphere probes, one threshold** … $\mathbb P[\tau \le \lvert\nu_{\mathbf A}(S) -
+\mathsf{probeSpectralMeasure}(\mathbf A, \sqrt{\lvert n\rvert}\,\mathbf U)(S)\rvert] \le
+2\exp(-m(\lvert n\rvert + 2)\tau^2)$, the columns of $\mathbf U$ independent and uniform on the
+unit sphere. [ChenTrogdonUbaru2021, locator to check]. -/
+theorem
+measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le_of_hasLaw_uniformSphereVector
+    {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
+    (hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) (S : Set ℝ) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | τ ≤ |(empiricalSpectralMeasure A).real S -
+        (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real S|} ≤
+      2 * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2))
+
+/-- E3. **SLQ with sphere probes, uniformly in Lipschitz test functions**: outside probability
+$2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)$, every $L$-Lipschitz $f$ on
+$[a, b] \supseteq \operatorname{spec}\mathbf A$ has <!-- value jacksonApproximationConstant -->
+$\lvert\int f\,d\nu_{\mathbf A} - \int f\,d\,\mathsf{slqMeasure}(\mathbf A,
+\sqrt{\lvert n\rvert}\,\mathbf U, q + 1)\rvert \le L(b-a)\tau + \frac{\pi L(b-a)}{2q+3}$.
+[ChenTrogdonUbaru2021, the Wasserstein bound for SLQ, locator to check].
+Result: spectral-density-lipschitz-tail -/
+theorem
+measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector
+    {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
+    (hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) {a b : ℝ} (hab : a < b) (hs : spectrum ℝ A ⊆ Set.Icc a b) (L : ℝ≥0)
+    (q : ℕ) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | ∃ f : ℝ → ℝ, LipschitzOnWith L f (Set.Icc a b) ∧
+        L * (b - a) * τ + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
+        |∫ x, f x ∂empiricalSpectralMeasure A -
+          ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤
+      2 * Fintype.card n * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2))
+```
+
+plus E2 (the Kolmogorov union bound, as D13, with $2n\exp(-m(n+2)\tau^2)$) and E4, the explicit
+sample size "$m \ge \log(2n/\delta)/((n+2)\tau^2)$ suffices" (no unknown constant: the sharp
+route has none) with its `exists_forall_` form. Names over 100 characters take S8. Both signatures
+elaborate (`Shapes6.lean`, with KS7 stand-ins).
+
+**Missing Probability results** — a **prerequisite stage**, `Probability-Beta` (its own design
+note; layer 1 or 2, placement there), because they are Probability facts with consumers beyond SLQ
+(JL with sphere sketches, Haar-frame tails) and the core step is research-grade in Lean:
+
+```lean
+-- β3: the projection of a uniform unit vector is Beta (RandomMatrix/Haar/Sphere.lean)
+theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
+    {u : Ω → n → ℝ} (hu : HasLaw u (uniformSphereVector n) μ) {V : Matrix n k ℝ}
+    (hV : HasOrthonormalCols V) (hk : 0 < Fintype.card k) (hkn : Fintype.card k < Fintype.card n) :
+    HasLaw (fun ω => ‖WithLp.toLp 2 (Vᴴ *ᵥ u ω)‖ ^ 2)
+      (betaMeasure (Fintype.card k / 2) ((Fintype.card n - Fintype.card k : ℕ) / 2)) μ
+
+-- β4: Beta laws are sub-Gaussian with proxy 1/(4(α+β+1)) (Probability/Distributions)
+theorem hasSubgaussianMGF_sub_div_of_hasLaw_betaMeasure {X : Ω → ℝ} {α β : ℝ}
+    (hα : 0 < α) (hβ : 0 < β) (hX : HasLaw X (betaMeasure α β) μ) :
+    HasSubgaussianMGF (fun ω => X ω - α / (α + β)) ‖1 / (4 * (α + β + 1))‖₊ μ
+```
+
+Mathlib has `betaMeasure`, `gammaMeasure` (`Probability/Distributions/{Beta,Gamma}.lean`) and
+Hoeffding (`HasSubgaussianMGF.sum_of_iIndepFun`, `measure_sum_ge_le_of_iIndepFun`); it has no
+chi-square law, no ratio-of-Gammas theorem and no Beta MGF bound. NLAlib has the Gaussian
+representation of the sphere (`uniformSphereVector`, `hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`)
+and rotation invariance (`HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq`).
+Named steps, each a ≤ 80-line proof (sizes are estimates):
+
+| Step | Statement | Diff. |
+|---|---|---|
+| β1a | $g^2$ has law `gammaMeasure (1/2) (1/2)` for $g \sim N(0,1)$ (density pushforward by $x \mapsto x^2$) | M (50–70) |
+| β1b-i | independent `gammaMeasure a θ`, `gammaMeasure b θ`: the sum's density is the convolution (`MeasureTheory` convolution of densities) | M (50–70) |
+| β1b-ii | that convolution is the `gammaMeasure (a+b) θ` density (Beta-integral identity, Mathlib `Complex.betaIntegral` / `Real.Gamma` relations) | M (40–60) |
+| β1 | $\sum_{i<k} g_i^2$ has law `gammaMeasure (k/2) (1/2)` (induction on $k$ from β1a, β1b) | S (20–30) |
+| β2a | joint law of independent Gammas as a product density | S (15–25) |
+| β2b | change of variables $(x,y) \mapsto (x/(x+y), x+y)$ on $(0,\infty)^2$ (`integral_image_eq_integral_abs_det_fderiv_smul`) | L (split in two: the diffeomorphism and its Jacobian; the integral transport) |
+| β2c | $X/(X+Y)$ has law `betaMeasure a b` (marginalise β2b; Gamma integral) | M (40–60) |
+| β3 | the statement above: $\mathbf u = \mathbf g/\|\mathbf g\|$, rotate $\mathbf V$ to the first $k$ coordinates, $\|\mathbf V^{\mathsf H}\mathbf g\|^2$ and the rest independent, β1, β2c | M (50–70) |
+| β4a | Beta moments $\mathbb E X^k = \prod_{i<k}(\alpha+i)/(\alpha+\beta+i)$ | S (20–30) |
+| β4b | the centred MGF of a $[0,1]$-valued variable as its moment series (Mathlib `mgf`, `iteratedDeriv` of `mgf`; or dominated summation) | M (50–70) |
+| β4c | **the proxy $1/(4(\alpha+\beta+1))$** (Elder 2016 / Marchal–Arbel 2017, to check): comparison of the Kummer series with $e^{\sigma^2 t^2/2}$; at least two L steps (the recurrence inequality; its induction) | L × 2, research risk |
+| β5 | average of $m$ independent centred sub-Gaussians: two-sided Hoeffding (Mathlib) | S (10–15) |
+
+Totals: 12 steps, S 4, M 6, L 2 (β2b, β4c, each to be split further by that stage's note into
+≤ 80-line pieces). β4c is the only item I would not hand to open-weight workers without a
+written proof sketch; its source should be fixed first (Q3′). Then E1–E4 here are M, S, M, M.
+
 ## 4. Consumers
 
 | Item | Consumers, and the form they use |
@@ -840,7 +996,6 @@ phase C as its own PR after A and B (Q6).
 | `slqMeasure`, D2, D9, D10, D15 | The SLQ density tail; any future quadrature-type density bound (Gauss–Radau, analytic test functions); KPM vs SLQ comparison (CTU 2025) |
 | F1–F5 | D14 here; M1's "universal Lipschitz test bounds" for discrete measures (`Polynomial-Jackson-Moments.md` §4); any Krylov-Sharpness statement about spectral distributions |
 | X2 | D12; any spectral-projector argument (eigenvalue counts, `spectralTangentSq` style) |
-| X4 | D10; Lanczos-FA/quadrature exactness users past the grade |
 | D12, D13 | Spectrum-counting / eigenvalue-histogram estimation (the CDF itself is the number of eigenvalues below $x$ over $n$); stopping rules |
 | D16–D19 | Spectral density estimation (D19 is the form CTU print and sphere-probe users compare against); the explorer's Rates page; KPM comparison later |
 | Phase C | Mean-square error of SLQ (later), users who average SLQ |
@@ -855,10 +1010,9 @@ first theorem and the deterministic-plus-random split users need for other quadr
 | `NLAlib/ForMathlib/Topology/MetricSpace/Lipschitz.lean` | new | F1, F2 | 110 |
 | `NLAlib/ForMathlib/MeasureTheory/Integral/Bochner/SumMeasure.lean` | new | F3, F4, F5 | 120 |
 | `NLAlib/Matrix/Spectral/SpectralMeasure.lean` | addition | X1 (private → public), X2, X3 | +45 |
-| `NLAlib/Krylov/Functions/Quadrature.lean` | addition | X4 | +25 |
 | `NLAlib/Estimation/Trace/GirardHutchinson.lean` | addition | G1 `girardHutchinson_smul` | +10 |
-| `NLAlib/Estimation/Trace/StochasticLanczosQuadrature.lean` | new | `slq`, T2, T3, T4, T8, T5, T6, T7 (phase C: C2) | 320 (+70) |
-| `NLAlib/Estimation/Spectral/SpectralDensity.lean` | new | `probeSpectralMeasure`, `slqMeasure`, I1–I4, D1–D11, D14, D20, D21, D15, D12, D13, D16, D17, D19, D18 | 760 |
+| `NLAlib/Estimation/Trace/StochasticLanczosQuadrature.lean` | new | `slq`, T0, T2, T3, T4, T5, T6, T7 (phase C: C2) | 320 (+70) |
+| `NLAlib/Estimation/Spectral/SpectralDensity.lean` | new | `probeSpectralMeasure`, `slqMeasure`, I1–I4, D1–D11, D22, D14, D20, D21, D15, D12, D13, D16, D17, D19, D18; phase B-sphere E1–E4 | 760 (+180) |
 | `NLAlib/Probability/Measurability/Krylov.lean` | addition, phase C | C1 `Matrix.IsHermitian.measurable_lanczosFA` | +70 |
 
 Placement of each addition outside the new Estimation files:
@@ -868,13 +1022,15 @@ Placement of each addition outside the new Estimation files:
 | F1, F2 (Abel summation against a Lipschitz function) | `ForMathlib/Topology/MetricSpace/Lipschitz.lean` | scalar real-analysis fact, no NLAlib vocabulary (P9); Mathlib's `LipschitzOnWith` file |
 | F3–F5 (finite-support integrals; the CDF bound) | `ForMathlib/MeasureTheory/Integral/Bochner/SumMeasure.lean` | measure theory with no NLAlib vocabulary (P4, P8); beside Mathlib's `setIntegral_finset`. Alternative home `Polynomial/Orthogonal/Moments.lean` next to M0, Q10 |
 | X1, X2, X3 | `Matrix/Spectral/SpectralMeasure.lean` | about the spectral measure, the spectral projector $\mathbf 1_S(\mathbf A)$ (whose quadratic form *is* the measure) and the empirical measure |
-| X4 | `Krylov/Functions/Quadrature.lean` | a fact about `lanczosQuadrature`; uses that file's private `quadForm_cfc_rangeProjector` |
 | G1 | `Estimation/Trace/GirardHutchinson.lean` | linearity of the estimator it is about |
 | C1 | `Probability/Measurability/Krylov.lean` | beside `measurable_krylovMatrix` (D12 of PORT_KRYLOV) |
 
 Density file in `Estimation/Spectral/` (beside `RandomStart.lean`: spectral quantities estimated
 from random probes), trace file in `Estimation/Trace/` (beside `GirardHutchinson.lean`,
-`HutchPlusPlus.lean`). The density file imports the trace file (D2 uses `slq`). Imports are
+`HutchPlusPlus.lean`). The density file imports the trace file (D2 uses `slq`). Both import
+KS7's `Polynomial/Orthogonal/Gauss.lean` and `Krylov/Functions/Quadrature.lean`; phase B-sphere
+also imports the `Probability-Beta` files (β3 in `RandomMatrix/Haar/Sphere.lean`, β4 in
+`Probability/Distributions/`; homes to be fixed by that stage's note). Imports are
 layer-correct (Estimation 4 → Krylov 1, Probability 1, Polynomial 0, ForMathlib −1). No
 placement flags.
 
@@ -936,7 +1092,10 @@ No exact overlap: nothing ships as an alias (F3 is a composition of two Mathlib 
     step (D15, T3).
   * The SIAM J. Sci. Comput. version, 2025, DOI 10.1137/23M1600414 ("Randomized matrix-free
     quadrature: unified and uniform bounds for stochastic Lanczos quadrature and the kernel
-    polynomial method"). Not cited until PORT_KRYLOV question 3 is answered; Q7 proposes the key.
+    polynomial method"); new key `ChenTrogdonUbaru2025` (decided, Q7a). A different work from the
+ICML 2021 paper: cited only for its own results, here the deterministic uniform quadrature
+bound (D15) and the SLQ/KPM unification; `ChenTrogdonUbaru2022` is its arXiv v1, kept only for the
+existing Appendix C citation.
   * Martinsson, Tropp 2020, §6.6 and Algorithm 6 (verified against a local PDF in an earlier
     round, `docs/PORT_KRYLOV.md` §9).
   * Golub, Meurant 2010 (already cited for the quadrature): Ch. 6–7; their chapter on trace
@@ -1008,6 +1167,21 @@ pattern): {I1, I2}, {I3, I4}, {D4, D5}, {D6, D7, D8}, {T6, T7}, {D1, D2}, {D20, 
 disjoint `sorry`s. Memory (CONTRIBUTING §10): a worker's Lean server holds the imports of
 `SpectralDensity.lean`, several GB.
 
+**Wave K (prerequisites, KS7).** SLQ uses the KS7 declarations listed in §12: the definitions
+`gaussQuadrature`, `gaussNodes` and the instance #63; #64, #65, #66, #68 (weights form,
+integrability, generic Gauss error and its Lipschitz corollary); #40, #42, #43 (exactness,
+support, mass); #45 (uniqueness); #54 (the Lanczos identification); #69, #70 (averaging). These
+are the items KS7 tags **[SLQ-1]**. Only #65, #69, #70 (KS7 wave 0) and #64 (KS7 wave 1) are
+proved early; #40, #42, #43, #45, #54, #66, #68 come in KS7 waves 8–12, after its zeros and
+Gauss-rule uniqueness. Their statements are fixed in the KS7 skeleton, so the SLQ proofs use
+them, sorried, from SLQ wave 1. "K" in the Deps column marks such a row; its acceptance is final
+when the KS7 items it uses are proved (the harness re-runs `#print axioms`). Per row: T0 #54;
+T2 #66; T3, D15 #68; D2, I4 #65 (and #64 for finite sums); D5 #43; D8 #42; D9 #40, #69, #70;
+D10 #45; D22 #54.
+
+**Wave S (phase B-sphere).** E1–E4 wait for the `Probability-Beta` stage (§3.8: β1–β5, its own
+note and proof plan; S1–S4 are its waves plus one).
+
 **Skeleton (orchestrator, wave 0):** the three definitions with docstrings, every statement with a
 `sorry`, module docstrings, constants-registry markers. Definitions are not dispatched.
 
@@ -1019,32 +1193,32 @@ disjoint `sorry`s. Memory (CONTRIBUTING §10): a worker's Lean server holds the 
 | X1 | `spectralMeasure_real` | Matrix SpectralMeasure | — | S (0: rename the private `spectralMeasure_real_eq`, update its 3 uses) | — | 1 |
 | X2 | `Matrix.IsHermitian.isStarProjection_cfc_indicator` | Matrix SpectralMeasure | — | S (10–20) | either `isStarProjection_iff`, idempotent by `← cfc_mul` (continuity from `A.finite_real_spectrum.continuousOn`) and `Set.indicator` idempotence, self-adjoint by `cfc_predicate`; or `isStarProjection_iff_spectrum_subset_and_isSelfAdjoint` with `cfc_map_spectrum` (spectrum $\subseteq \{0,1\}$) | 1 |
 | X3 | `Matrix.IsHermitian.empiricalSpectralMeasure_real` | Matrix SpectralMeasure | — | S (15–25) | `Measure.smul_apply`, `Measure.coe_finsetSum`, `Measure.dirac_apply` (all sets, `MeasurableSingletonClass`), `NLAlib.integral_empiricalSpectralMeasure` with `f := indicator`, `hA.re_trace_cfc` | 1 |
-| X4 | `Matrix.IsHermitian.lanczosQuadrature_eq_spectralMeasure_of_krylovGrade_le` | Krylov Quadrature | — | S (15–25) | `Measure.ext`; `lanczosQuadrature`, `spectralMeasure_apply` on both sides, private `quadForm_cfc_rangeProjector`, `Matrix.IsHermitian.lanczosFA_eq_cfc_mulVec_of_krylovGrade_le`, `quadForm_def` | 1 |
 | I1, I2 | `isFiniteMeasure_probeSpectralMeasure`, `isFiniteMeasure_slqMeasure` | SpectralDensity | — | S (2 each) | `unfold; infer_instance` (checked) | 1 |
-| I3, I4 | `integrable_probeSpectralMeasure`, `integrable_slqMeasure` | SpectralDensity | — | S (5–10 each) | `Integrable.smul_measure_nnreal`, `integrable_finset_sum_measure`, `integrable_spectralMeasure`; for I4 unfold `lanczosQuadrature` to a spectral measure | 1 |
+| I3, I4 | `integrable_probeSpectralMeasure`, `integrable_slqMeasure` | SpectralDensity | K (I4) | S (5–10 each) | `Integrable.smul_measure_nnreal`, `integrable_finset_sum_measure`, `integrable_spectralMeasure`; for I4 KS7 #65 `integrable_gaussQuadrature` | 1 |
 | G1 | `girardHutchinson_smul` | GirardHutchinson | — | S (5) | `girardHutchinson`, `Matrix.mul_smul`, `Matrix.smul_mul`, `Matrix.trace_smul`, `smul_eq_mul`, `mul_div_assoc` | 1 |
-| T8 | `Matrix.IsHermitian.im_slq` | Trace SLQ | — | S (15–25) | per probe `HasOrthonormalCols.lanczosFA_eq` with a frame `exists_hasOrthonormalCols_range_eq_krylovSpace`, `star b ⬝ᵥ (Q *ᵥ M *ᵥ Qᴴ *ᵥ b) = quadForm M (Qᴴ *ᵥ b)`, `cfc` of a real function is Hermitian (`cfc_predicate`), imaginary part of a Hermitian quadratic form is $0$ (NLAlib `Matrix.IsHermitian` quadForm lemma, to locate), `map_sum`, `RCLike.im` of a division by a natural | 1 |
-| T2 | `Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn` | Trace SLQ | — | S/M (25–40) | `girardHutchinson_eq_sum`, `quadForm_def`, `Finset.sum_sub_distrib`, `norm_sub_le` (triangle), `norm_sum_le`, the per-probe `…norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn`, `frobNorm_sq_eq_sum_col`, `Matrix.col_apply`, `norm_div`, case `card m = 0` | 1 |
+| T2 | `Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn` | Trace SLQ | K | S/M (25–40) | `girardHutchinson_eq_sum`, `slq`; per probe `quadForm (cfc f A) ωⱼ = ∫ f ∂μⱼ` (`integral_spectralMeasure`; the quadratic form of a Hermitian matrix is real), KS7 #66 on `μⱼ` with `ae_mem_Icc_spectralMeasure`, `integrable_spectralMeasure`, mass `Matrix.IsHermitian.spectralMeasure_real_univ`; `norm_sum_le`, `frobNorm_sq_eq_sum_col`, `norm_div`; case `card m = 0` | 1 |
+| T0 | `Matrix.IsHermitian.slq_eq_sum_lanczosFA` | Trace SLQ | K | S (20–30) | per probe `← Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature` (KS7 #54), `integral_lanczosQuadrature`; `star b ⬝ᵥ lanczosFA A f b q` is real: frame form `HasOrthonormalCols.lanczosFA_eq`, a quadratic form of the Hermitian `cfc f (Qᴴ A Q)` (`cfc_predicate`); `RCLike.ofReal_re`-type rewrite | 1 |
+| D22 | `Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature` | SpectralDensity | K | S (3–5) | `slqMeasure`, `Finset.sum_congr` with KS7 #54 | 1 |
 | D1 | `integral_probeSpectralMeasure` | SpectralDensity | — | S (15–25) | `integral_smul_nnreal_measure`, `integral_finsetSum_measure` (`integrable_spectralMeasure`), `integral_spectralMeasure`, `girardHutchinson_eq_sum`, `map_sum`, `RCLike.re` of a real division (`RCLike.div_re_ofReal`/`map_div₀` route), `NNReal.coe_inv` | 1 |
-| D2 | `integral_slqMeasure` | SpectralDensity | I4 (statement) | S (15–25) | as D1 with `integral_lanczosQuadrature`; integrability from I4 | 1 |
+| D2 | `integral_slqMeasure` | SpectralDensity | I4, K | S (10–20) | `integral_smul_nnreal_measure`, `integral_finsetSum_measure` (KS7 #65), `slq`, `RCLike.ofReal_re`, `map_div₀` | 1 |
 | D4 | `Matrix.IsHermitian.probeSpectralMeasure_real_univ` | SpectralDensity | — | S (10–20) | `measureReal_def`, `Measure.smul_apply`, `Matrix.IsHermitian.spectralMeasure_real_univ`, `frobNorm_sq_eq_sum_col`, `ENNReal.toReal_sum` | 1 |
-| D5 | `Matrix.IsHermitian.slqMeasure_real_univ` | SpectralDensity | — | S (10–20) | as D4 with `Matrix.IsHermitian.lanczosQuadrature_real_univ` | 1 |
+| D5 | `Matrix.IsHermitian.slqMeasure_real_univ` | SpectralDensity | K | S (10–20) | as D4 with KS7 #43 `gaussQuadrature_real_univ` (q > 0) and `Matrix.IsHermitian.spectralMeasure_real_univ` | 1 |
 | D6 | `ae_mem_spectrum_probeSpectralMeasure` | SpectralDensity | — | S (10–15) | `ae_iff`, `Measure.smul_apply`, `Measure.coe_finsetSum`, `spectralMeasure_compl_spectrum_eq_zero` | 1 |
-| D8 | `Matrix.IsHermitian.ae_mem_Icc_slqMeasure` | SpectralDensity | — | S (10–15) | as D6 with `Matrix.IsHermitian.ae_mem_Icc_lanczosQuadrature` | 1 |
+| D8 | `Matrix.IsHermitian.ae_mem_Icc_slqMeasure` | SpectralDensity | K | S (10–15) | as D6 with KS7 #42 `ae_mem_Icc_gaussQuadrature` and `ae_mem_Icc_spectralMeasure` | 1 |
 | F2 | `Finset.abs_sum_mul_le_of_lipschitzOnWith` | ForMathlib Lipschitz | F1 | S (15–25) | F1 at `t := b`; `|∑ d| ≤ K` from `hK` at `s.max'` (`Finset.filter_true_of_mem`, `Finset.le_max'`), empty case; `abs_mul` | 2 |
 | D3 | `probeSpectralMeasure_real` | SpectralDensity | X1 | S (15–25) | `measureReal_def`, `Measure.smul_apply`, `Measure.coe_finsetSum`, X1 per probe (`ENNReal.toReal_sum` with finiteness), `girardHutchinson_eq_sum` | 2 |
 | D7 | `ae_mem_Icc_probeSpectralMeasure` | SpectralDensity | D6 | S (3–5) | `filter_upwards [D6]` with `hs` | 2 |
-| D9 | `Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure` | SpectralDensity | D1, D2 | S/M (20–30) | D1, D2 at `f := p.eval`; `slq` unfolded, `Matrix.IsHermitian.star_dotProduct_lanczosFA_eval`, `cfc` of a polynomial = `aeval` (`Matrix.IsHermitian.cfc_eval`… or `cfc_polynomial`), `girardHutchinson_eq_sum`, `quadForm_def` | 2 |
-| D10 | `Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le` | SpectralDensity | X4 | S (8–12) | `slqMeasure`, `Finset.sum_congr`, X4 with `krylovGrade_le_card` | 2 |
+| D9 | `Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure` | SpectralDensity | K | S (15–25) | an interval containing the finite spectrum; per probe KS7 #40; KS7 #70 `MatchesMoments.finsetSum` (supports: `ae_mem_Icc_spectralMeasure`, #42) and #69 `MatchesMoments.smul` | 1 |
+| D10 | `Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le` | SpectralDensity | K | S (10–15) | per probe KS7 #45 `MatchesMoments.eq_gaussQuadrature` with `MatchesMoments.refl`, `s := A.finite_real_spectrum.toFinset` (`spectralMeasure_compl_spectrum_eq_zero`), card ≤ card n ≤ q (`Matrix.IsHermitian.spectrum_real_eq_range_eigenvalues`) | 1 |
 | D11 | `integral_integral_probeSpectralMeasure` | SpectralDensity | D1 | S (15–25) | D1, `integral_div`, `integral_re` (integrability: `IsIsotropic.integrable_quadForm` summed), `integral_girardHutchinson`, `Matrix.IsHermitian.integral_empiricalSpectralMeasure` | 2 |
-| T3 | `…norm_trace_cfc_sub_slq_le_of_lipschitzOnWith` | Trace SLQ | T2 | S (12–20) | `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) haa hf (2 * q + 1)`, degree `2q+1 < 2(q+1)`, T2, `ring`/`field_simp` on $2\cdot\pi L(b-a)/(2(2q+3))$ (copy the KS4 proof shape) | 2 |
-| T4 | `…norm_trace_cfc_sub_slq_le_of_differentiableOn` | Trace SLQ | T2 | S (12–20) | `exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn` at `N := 2 * q + 1`, T2 (copy the KS4 analytic proof) | 2 |
+| T3 | `…norm_trace_cfc_sub_slq_le_of_lipschitzOnWith` | Trace SLQ | K | S (15–25) | the proof of T2 with KS7 #68 (Lipschitz Gauss error, $k + 1 = q + 1$ nodes) per probe in place of #66; `integrable_spectralMeasure`; arithmetic | 2 |
+| T4 | `…norm_trace_cfc_sub_slq_le_of_differentiableOn` | Trace SLQ | T2 | S (12–20) | `exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn` at `N := 2 * q + 1` (the Bernstein corollary KS7 leaves to SLQ), then T2 | 2 |
 | T5 | `measureReal_abs_trace_cfc_sub_slq_ge_le_of_isUniformApproxOn` | Trace SLQ | T2 | S (15–25) | `measureReal_mono` (finite measure: `hind.isProbabilityMeasure`) into the event of `measureReal_abs_trace_sub_girardHutchinson_ge_le` with `B := cfc f A`; T2 over ℝ (`Real.norm_eq_abs`); `linarith` | 2 |
 | F5 | `MeasureTheory.abs_integral_sub_integral_le_of_lipschitzOnWith` | ForMathlib SumMeasure | F2, F3, F4 | S/M (25–35) | F3 for μ and ν, `← Finset.sum_sub_distrib`, `mul_sub`; F2 with `d y := μ.real {y} - ν.real {y}`; F4 and `Finset.sum_sub_distrib` to turn `hK` into the partial-sum hypothesis | 3 |
 | T6 | `measureReal_abs_trace_cfc_sub_slq_ge_le_of_lipschitzOnWith` | Trace SLQ | T3 (or T5) | S (15–20) | as T5 with T3 in place of T2 | 3 |
 | T7 | `measureReal_abs_trace_cfc_sub_slq_ge_le_of_differentiableOn` | Trace SLQ | T4 | S (15–20) | as T5 with T4 | 3 |
 | D12 | `measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le` | SpectralDensity | D3, X2, X3, G1 | M (45–70; split off a private helper "the exponent decreases when $\|\mathbf B\|_{\mathsf F}^2 \le 1/n$, $\|\mathbf B\|_2 \le 1/n$", 20–30, if longer) | event rewrite: D3, X3 over ℝ (`RCLike.re_to_real`), `B := (1/n) • cfc 1_S A`, `girardHutchinson` linear by G1, `Matrix.trace_smul`; `measureReal_abs_trace_sub_girardHutchinson_ge_le` at `B`; X2 with `IsStarProjection.frobNorm_sq_eq_rank`, `Matrix.rank_le_card_width`, `IsStarProjection.specNorm_le_one`, `frobNorm_smul`, `specNorm_smul`; monotonicity `Real.exp_le_exp`, `min_le_min`, `div_le_div_of_nonneg_left`; cases `B = 0`, `c = 0`, `n` empty | 3 |
-| D15 | `…abs_integral_probeSpectralMeasure_sub_integral_slqMeasure_le_of_lipschitzOnWith` | SpectralDensity | D4, D5, D7, D8, D9 | S/M (20–35) | `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * q + 1)`; `(D9 …).abs_integral_sub_integral_le_of_isUniformApproxOn` with D7, D8, integrability (D1/D2's), degree `< 2 (q + 1)`; D4, D5 (`q + 1 > 0`); arithmetic | 3 |
+| D15 | `…abs_integral_probeSpectralMeasure_sub_integral_slqMeasure_le_of_lipschitzOnWith` | SpectralDensity | D4, K | S (20–30) | `integral_smul_nnreal_measure`, `integral_finsetSum_measure` (I3, I4), `← Finset.sum_sub_distrib`, `Finset.abs_sum_le_sum_abs`; per probe KS7 #68 with `ae_mem_Icc_spectralMeasure`; masses sum to `frobNorm Ω ^ 2` (D4's lemma) | 3 |
 | D13 | `measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le` | SpectralDensity | D12 | S/M (25–40) | rewrite the event as `⋃ x ∈ A.finite_real_spectrum.toFinset, {τ ≤ |…|}` (`Set.Finite.mem_toFinset`, `le_of_lt`), `measureReal_mono`, `measureReal_biUnion_finset_le`, D12 per point, `Finset.sum_le_card_nsmul`; private helper: card of the spectrum ≤ `card n` (`Matrix.IsHermitian.spectrum_real_eq_range_eigenvalues`, `Set.ncard_range_le` / `Finset.card_image_le`), 10–15 | 4 |
 | D14 | `…abs_integral_empiricalSpectralMeasure_sub_integral_probeSpectralMeasure_le` | SpectralDensity | F5, D6 | S (15–25) | F5 with `s := A.finite_real_spectrum.toFinset`; supports: `hA.ae_mem_spectrum_empiricalSpectralMeasure`, D6; `hs` | 4 |
 | D20 | `Matrix.IsHermitian.abs_one_sub_probeSpectralMeasure_real_univ_le` | SpectralDensity | D4, D6, X3 | S (15–25) | $x^\ast$ the largest eigenvalue (`hA.spectrum_real_eq_range_eigenvalues`, `Set.Finite.exists_maximal`/`Finset.max'` of the finite spectrum); `(empiricalSpectralMeasure A).real (Iic x*) = 1` (`hA.ae_mem_spectrum_empiricalSpectralMeasure`, `measureReal_univ_eq_one`); the probe CDF at $x^\ast$ is its mass (D6, `measureReal_congr`), so `hK x*` | 4 |
@@ -1053,116 +1227,67 @@ disjoint `sorry`s. Memory (CONTRIBUTING §10): a worker's Lean server holds the 
 | D17 | `measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le` | SpectralDensity | D13, D14, D15, D20 | S/M (25–35) | as D16, plus D15, D20 (mass $\le 1 + \tau$; empty $n$: both integrals $0$, `isEmpty_or_nonempty`) and `abs_sub_le` (triangle through the probe measure) | 5 |
 | D19 | `measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_smul_slqMeasure_gt_le` | SpectralDensity | D13, D20, F5, D9, D15's ingredients | S/M (30–45) | on D13's complement: D20 gives $M > 0$; `integral_smul_measure`; normalised CDF bound $2\tau$ (§3.5); F5 on $f - f(b)$ (`LipschitzOnWith.sub_const`); M0 on the normalised measures (`MatchesMoments` scales: D9 and `integral_smul_measure`); Jackson degree $2q+1$ | 5 |
 | D18 | `exists_forall_…_slqMeasure_gt_le` | SpectralDensity | D17 | M (40–60) | `C := 196`; D17; `HasSubgaussianMGF.integral_sq_le` with `hvar` at some `(i, j)` (`hind.isProbabilityMeasure`), so `1 ≤ c`; `min_eq_left` from `τ ≤ 1 ≤ c`; `le_hansonWrightConstant`; `Real.exp_log`, `Real.exp_le_exp`, `Real.log_le_log`; cases `n`, `m` empty | 6 |
+| E1 | sphere probes, one threshold (§3.8) | SpectralDensity | D3, X2, X3, β3, β4, β5 | M (50–70) | event as a centred average of $\mathbf u_j^{\mathsf T}\mathbf P\mathbf u_j$ ($\|\sqrt n\,\mathbf u\|^2 = n$ a.s., `uniformSphereVector` lives on the sphere); rank $0$ or $n$: deterministic; else β3 (frame of $\mathbf P$, `IsStarProjection` → `HasOrthonormalCols` via `rangeProjector`), β4 with $\alpha+\beta = n/2$, β5 | S1 |
+| E2 | sphere Kolmogorov union | SpectralDensity | E1 | S (20–30) | as D13 | S2 |
+| E3 | `…_slqMeasure_gt_le_of_hasLaw_uniformSphereVector` | SpectralDensity | E2, D14, D15, D20 | M (35–50) | mass exactly $1$ a.s. (D4 with $\|\sqrt n\,\mathbf u_j\|^2 = n$), so F5 on $f - f(b)$ removes $\lvert f(b)\rvert$; D15 with mass $1$; `measureReal_mono` into E2's event (an a.e. superset: `measureReal_mono_ae`) | S3 |
+| E4 | sphere sample size and its `exists_forall_` form | SpectralDensity | E3 | M (30–45) | `Real.exp_log`; $m(n+2)\tau^2 \ge \log(2n/\delta)$; empty-type cases | S4 |
 | C1 | `Matrix.IsHermitian.measurable_lanczosFA` (phase C) | Probability Measurability Krylov | — | L (80+, review comment 5; split: (a) `lanczosFA` through a continuous extension, `lanczosFA_congr` with `f ∘ Set.projIcc a a' h`; (b) measurability of $\mathbf b \mapsto \mathbf P\,g(\mathbf P\mathbf A\mathbf P)\mathbf P\mathbf b$) | `Matrix.IsHermitian.lanczosFA_congr`, `continuous_projIcc`, `lanczosFA`, `compressedCfc`, `measurable_rangeProjector`, `measurable_krylovMatrix`, `continuousOn_cfc`, `ContinuousOn.comp_measurable`-type step into the closed set of self-adjoint matrices with spectrum in a compact set; under `open scoped Matrix.Norms.L2Operator` | C |
 | C2 | `…norm_trace_cfc_sub_integral_slq_le_of_isUniformApproxOn` (phase C) | Trace SLQ | C1, T2 | M (40–60) | C1 per column, `Integrable.mono` with the bound of T2, `integral_girardHutchinson`, `integral_sub`, `norm_integral_le_integral_norm`, `integral_mono`, `IsIsotropic.integral_norm_sq`, `frobNorm_sq_eq_sum_col` | C |
 
 Difficulty count, phases A and B (42 dispatched rows counting I1–I4 separately; the 3
-definitions are in the skeleton): S 32 (including the rename X1), S/M 7 (T2, D9, F5, D15, D13,
-D17, D19), M 3 (F1, D12 with its optional helper, D18), L 0. Counting an S/M row as M when its
-upper estimate exceeds 30 lines (all but D9): S 33, M 9, the figure in §0. Phase C: M 1, L 1. No
+definitions are in the skeleton; X4 and T8 dropped, T0 and D22 added): S 33 (including the rename
+X1; D15 and D9 are now S), S/M 5 (T2, F5, D13, D17, D19), M 3 (F1, D12 with its optional
+helper, D18), L 0; counting each S/M row as M (all exceed 30 lines at the upper estimate): S 34,
+M 8, the figure in §0. Phase B-sphere: E2 S, E1, E3, E4 M; its prerequisite stage 12 steps (§3.8). Phase C: M 1, L 1. No
 phase A/B proof is expected to exceed 70 lines; S4's 80-line limit is the split trigger for D12,
 and C1 is planned as two named steps.
 
-Statements I am least sure downstream users want (flags):
-
-1. The "∃ f" event of D16–D19 (users may prefer the deterministic D14 + D13 pair, or a fixed-$f$
-   tail; Q8).
-2. The $\lvert f(b)\rvert$ term (Q4).
-3. The random quadrature term inside the tail events of T5–T7 (Q9; the density tails are now
-   deterministic).
-4. `slq` valued in `𝕜` rather than `ℝ` (Q2): a real-valued estimate would read
-   `RCLike.re (slq …)` in every density statement anyway.
-5. D15's name contains `probeSpectralMeasure_sub_…`, which N10 may read as `<alg>_sub_` once
-   `probeSpectralMeasure` is an algorithm token; it compares two estimators (as
-   `frobNorm_rsvd_sub_truncatedSVD_le` does), so it needs an allowlist entry or the exception list
-   of N10.
+Statement-shape flags: items 1–4 of the reviewed draft (the "∃ f" event, the $\lvert f(b)\rvert$
+term, the random term in T5–T7, `slq` in `𝕜`) were decided on 2026-10-24 (Q8, Q4, Q9, Q2b). Still
+open for review, not for the maintainer: the definition of `slq` through an integral against
+`gaussQuadrature` (T0 gives the algorithmic form; a user who wants the Lanczos-FA spelling rewrites
+with it), and the sphere statements' test matrix `√(card n) • U ω` (a user with unit probes and the
+$1/m$ convention rescales by `spectralMeasure_smul`).
 
 ## 10. Open questions for the maintainer
 
-**Q1. Normalisation of the density estimates.**
-(a) $\frac{1}{nm}\sum_j$ (proposed): isotropic probes give $\nu_{\mathbf A}$ in expectation, the
-CDF is $\mathsf{girardHutchinson}$ of a projector divided by $n$, and $\sqrt n$-scaled sphere probes
-(CTU's unit vectors up to the scale) give probability measures. (b) $\frac1m\sum_j$ (the
-`Krylov-Spectral.md` consumer table): unit-norm probes give probability measures directly, but
-isotropic probes give mean $n\,\nu_{\mathbf A}$ and every statement carries $n$. (c) normalise by
-the mass (a ratio estimator, always a probability measure; costs a factor about $2$ in $\tau$ on
-the Kolmogorov event, since the mass deviation is the CDF deviation at $\lambda_{\max}$).
-**Recommendation (a)**, with (c) as the inline-normalised corollary D19 of this stage (no
-named normalised measure).
+All twelve questions of the reviewed draft were decided on 2026-10-24 (Q11, dispatch rules, had
+already been removed). The decisions and where they are folded in:
 
-**Q2. Names.** `slq` (as `rsvd`, `hutchpp`; the name `Krylov-Spectral.md` §8 already uses),
-`slqMeasure`, `probeSpectralMeasure`. Alternatives for the last: `sampleSpectralMeasure`,
-`averageSpectralMeasure`, `girardHutchinsonMeasure`; a shorter name would bring D14–D16 under 100
-characters. And should `slq` be `ℝ`-valued? **Recommendation:** `slq` in `𝕜` (it composes with
-`girardHutchinson`, which is in `𝕜`), `slqMeasure`, `probeSpectralMeasure`.
+* **Q1 (a), decided 2026-10-24.** Normalisation $1/(nm)$ (§1.2).
+* **Q2a (a), decided 2026-10-24.** Name `probeSpectralMeasure` (with `slq`, `slqMeasure`).
+* **Q2b (a), decided 2026-10-24.** `slq` valued in `𝕜` (§1.1; now an `ofReal` by definition).
+* **Q3 (b), decided 2026-10-24, against the draft's recommendation.** Sphere probes with the
+  sharp Beta constant: phase B-sphere (§3.8), on a prerequisite Probability stage. The
+  sub-Gaussian-entry tails are kept as well (Q3′ below).
+* **Q4 (a + c), decided 2026-10-24.** The $\lvert f(b)\rvert$ form (D17) and the ratio estimator
+  (D19).
+* **Q5 (a), decided 2026-10-24.** Hanson–Wright's $1/196$, inline tail expressions, $n$ not the
+  per-threshold rank.
+* **Q6 (a), decided 2026-10-24.** Phases A and B now (with B-sphere when its prerequisite exists),
+  C later; the asymptotic form D18 included.
+* **Q7a (a), decided 2026-10-24.** New key `ChenTrogdonUbaru2025` for the SISC paper. "There are two
+  papers that are kind of different": `ChenTrogdonUbaru2021` (ICML) is cited for the random part
+  (the CDF/union-bound Wasserstein bound and the dimension-helps rate: D13, D16–D19, E1–E4);
+  `ChenTrogdonUbaru2025` (SISC) for its own uniform quadrature bound (D15) and the SLQ/KPM
+  unification; `ChenTrogdonUbaru2022` is the arXiv v1 of the SISC work, kept only where the
+  library already cites it (Appendix C, Theorem 38).
+* **Q7b (b), decided 2026-10-24.** Bib fields and theorem numbers stay "to check".
+* **Q8 (a), decided 2026-10-24.** One event, uniform over $L$-Lipschitz $f$, $L$ fixed.
+* **Q9 (a), decided 2026-10-24.** Random quadrature term in the trace tails T5–T7; the density
+  tails are deterministic (review comment 1).
+* **Q10 (a), decided 2026-10-24.** F1–F5 in ForMathlib.
 
-**Q3. Probe distributions for the tails.**
-(a) independent sub-Gaussian entries, unit variance (proposed; Gaussian and Rademacher at
-$c = 1$), exactly the Girard–Hutchinson tail's hypotheses; (b) also uniform-sphere / Haar probes,
-CTU's main case, with the sharp constant: needs an $m$-sample tail for quadratic forms of sphere
-vectors in projectors (sums of independent $\mathrm{Beta}(r/2,(n-r)/2)$), e.g. the optimal
-sub-Gaussian proxy $1/(4(\alpha+\beta+1))$ of Beta laws (Marchal–Arbel 2017; Elder 2016;
-to check). The library has only the single-vector Dasgupta–Gupta tails
-(`RandomMatrix/Haar/Sphere.lean`). (c) isotropic sub-Gaussian vectors with dependent coordinates:
-needs a Hanson–Wright for such vectors (false in general without further structure). (d) complex
-probes: Hanson–Wright is real. **Recommendation (a) now; (b) as its own Probability stage before a
-sphere SLQ corollary**, since the constant matters to users comparing with CTU.
+Remaining questions (one line each, with a recommendation):
 
-**Q4. Form of the uniform bound.**
-(a) for all $L$-Lipschitz $f$, bound $(\lvert f(b)\rvert + L(b-a))\tau +
-\frac{\pi L(b-a)}{2q+3}(1+\tau)$ (proposed, D17; exact for the unnormalised measures, the
-$(1+\tau)$ from D20); (b) only $f$ with $f(b) = 0$ (shorter; for equal masses it is $W_1$,
-otherwise it silently ignores the mass error); (c) the normalised (ratio) estimator, Q1(c): a true
-$W_1$-type bound $2L(b-a)\tau + \frac{\pi L(b-a)}{2q+3}$ for $\tau < 1$, now proposed as the
-cheap corollary D19 (outside the same event); (d) define a named distance
-(`kolmogorovDist μ ν`, or an anchored dual-supremum $W_1$) and state everything in it — the Jackson
-note's W1 decision recommends against until reviewed separately. **Recommendation (a) and (c)
-together** (D17 and D19), with D13, D14, D20, D21 public so a user can build (b) in a few lines.
-
-**Q5. Constants.**
-(a) Inherit Hanson–Wright's $1/196$ (proposed); (b) prove sharper Gaussian or Rademacher
-Girard–Hutchinson tails first (Cortinovis–Kressner's explicit constants; the Gaussian exact
-chi-square route), which would improve every SLQ tail through the same statements; (c) per-threshold
-rank $r_x$ instead of $n$ in D12 (the exponent is $mn^2\tau^2/(c^2 r_x)$ before $r_x \le n$), giving
-a sharper but uglier union bound. Inline tail expressions vs a named bound (`slqDensityTail`; N11
-says repeated tail expressions should be named, but `girardHutchinson`'s and Hutch++'s tails are
-inline): **Recommendation (a), inline (as the Girard–Hutchinson tail), $n$ not $r_x$**; (b) as a
-later Probability improvement that changes no statement here if it is exposed through a named
-bound, which is an argument for naming the Girard–Hutchinson tail first.
-
-**Q6. Scope.** (a) Phases A and B now, C (bias, measurability of Lanczos-FA) as a separate PR
-(proposed); (b) all three now; (c) A only, B later. Also: asymptotic form D18 (B5 review list) —
-include (proposed); a sample-size or asymptotic form for the trace tails — not proposed, as
-Girard–Hutchinson has none. KPM: later (needs M1, J1). Mean-square error of SLQ: later, after C.
-**Recommendation (a).**
-
-**Q7. Citations (PORT_KRYLOV question 3).** The uniform bound is attributed to
-`ChenTrogdonUbaru2021` (ICML 2021, review comment 2): confirm key, fields and theorem numbers. The
-SISC version of CTU: new key
-`ChenTrogdonUbaru2025` beside `ChenTrogdonUbaru2022` (PORT_KRYLOV's recommendation), or update the
-existing key? Which theorem numbers to cite for the Wasserstein bound and the dimension-helps
-rate, and is it citable now? New keys `UbaruChenSaad2017`, `CortinovisKressner2022`.
-**Recommendation:** new key; cite v1 for Appendix C (Jackson, already in use) and the SISC version
-for the SLQ/KPM bounds once you confirm locators.
-
-**Q8. The event form.** (a) `∃ f, LipschitzOnWith L f … ∧ bound f < |…|` with $L$ fixed
-(proposed; N15's form for "not for all"); (b) $\exists L$ as well (scale-free, but the bound is
-linear in $L$ so nothing is gained); (c) fixed-$f$ tails only (weaker: loses the uniformity that
-makes it a density estimate); (d) the deterministic pair (D13, D14) only, no combined headline.
-**Recommendation (a), keeping D13 and D14 public.**
-
-**Q9. Random quadrature term in the trace tails T5–T7.** (The density tails D17–D19 are
-deterministic after the review: the Kolmogorov event controls the mass for free, D20.) For the
-trace tails: (a) keep $2\varepsilon\|\mathbf\Omega\|_{\mathsf F}^2/m$ inside the event (proposed; no
-extra hypothesis, exact composition); (b) a corollary with $2\varepsilon n(1+\tau')$ on a second
-Girard–Hutchinson event for $\mathbf B = \mathbf I$ (probability
-$2\exp(-\tfrac{1}{196}\,m\min(n\tau'^2/c^2, n\tau'/c))$ added), giving the deterministic form
-sources print. **Recommendation (a) now, (b) as a corollary when a consumer asks** (it is S, from
-T5 and the Girard–Hutchinson tail).
-
-**Q10. Home of F3–F5.** ForMathlib (proposed; measure theory without NLAlib vocabulary, beside
-Mathlib's `setIntegral_finset`) or `Polynomial/Orthogonal/Moments.lean` next to M0 (where the
-Jackson note's M1 Lipschitz bounds were planned). **Recommendation: ForMathlib**; M1 then imports it.
+* **Q3′.** Keep the sub-Gaussian-entry density tails (D12–D19) beside the sphere ones (E1–E4)?
+  They come almost free from the Girard–Hutchinson tail and cover Gaussian and sign probes.
+  **Recommend keep.**
+* **Q3″.** Which source should `Probability-Beta` follow for the Beta proxy $1/(4(\alpha+\beta+1))$
+  (Elder 2016, Marchal–Arbel 2017, or the argument in CTU 2021)? **Recommend you name the source.**
+  Its proof is the one research-risk item (§3.8, β4c).
+* **Q12.** Should Haar-frame probes (orthonormal, dependent columns) get tails later (negative
+  association of the per-column Beta variables)? **Recommend later, no consumer named.**
 
 ## 11. Deferred, with what is missing
 
@@ -1181,22 +1306,34 @@ Jackson note's M1 Lipschitz bounds were planned). **Recommendation: ForMathlib**
 6. **Krylov-aware trace estimation** (Hutch++ with Lanczos; block round).
 7. **The prototype library's SLQ material**: unexamined (not on this machine).
 
-## 12. Relation to KS7 (orthogonal-polynomial structure)
+## 12. Relation to KS7: what SLQ uses
 
-The parallel note `docs/design/Polynomial-OrthogonalStructure.md` did not exist when the first
-draft was finished; it appeared before the review was folded in, and its §0 item 7 and consumer
-table agree with this section (read, not edited). SLQ needs **no KS7 result**:
+The maintainer's direction reverses the draft's "SLQ needs no KS7 result". SLQ is now built on
+KS7's Gauss-rule core (`Polynomial-OrthogonalStructure.md`, "Interface for SLQ"; the items
+marked **[SLQ-1]** there). The KS7 declarations this stage uses, with the SLQ rows that use them:
 
-* exactness through degree $2q - 1$: `Matrix.IsHermitian.matchesMoments_lanczosQuadrature` (KS3b);
-* the Gauss-rule reading below the grade:
-  `HasOrthonormalCols.lanczosQuadrature_eq_interpolatoryQuadrature` (KS3c), not used by any
-  statement here;
-* nodes and weights from $\mathbf T$: `Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum`
-  (Golub–Welsch, from the recurrence, without `jacobiMatrix`);
-* uniform error transfer: M0.
+| KS7 # | Declaration | Used by |
+|---|---|---|
+| §2, #63 | `gaussQuadrature`, `gaussNodes`, `isFiniteMeasure_gaussQuadrature` | the definitions `slq`, `slqMeasure`; I2 |
+| #65 | `integrable_gaussQuadrature` | I4, D2, T2 |
+| #64 | `integral_gaussQuadrature_eq_sum` | D2 (finite-sum integrals), E3 |
+| #66 | `abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn` | T2 (per probe), T4 (with the Bernstein approximant) |
+| #68 | `abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith` | T3, D15, E3 (per probe) |
+| #40 | `matchesMoments_gaussQuadrature` | D9 |
+| #42 | `ae_mem_Icc_gaussQuadrature` | D8 |
+| #43 | `gaussQuadrature_real_univ` | D5 |
+| #45 | `MatchesMoments.eq_gaussQuadrature` | D10 |
+| #54 | `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature` | T0, D22 (the only place Lanczos enters) |
+| #69, #70 | `MatchesMoments.smul`, `MatchesMoments.finsetSum` | D9 (averaging) |
 
-What KS7 would add for SLQ later: a canonical Gauss rule `gaussQuadrature μ q` would let the SLQ
-measure be stated as the average of the Gauss rules of the probes' spectral measures without a
-Krylov basis (a bridge, not a new result); Gauss–Radau/Lobatto rules and the sign of the Gauss
-error for $f$ with sign-definite derivatives would give one-sided SLQ bounds (needs the Hermite
-remainder too). Neither is in this stage, and no statement here would change.
+Not used: #67 `spectralMeasure_map_jacobiMatrix` (Golub–Welsch over `𝕜`; a user's implementation
+statement can compose it with D22). The remark of the KS7 interface (the average of Gauss rules is
+not the Gauss rule of the average, $G_1(\tfrac12\delta_0 + \tfrac12\delta_1) = \delta_{1/2}$) is
+the reason every SLQ bound here is a per-probe Gauss bound averaged plus a probe-averaging error,
+and it is repeated in the `slqMeasure` docstring.
+
+Scheduling: KS7 proves #65, #69, #70 in its wave 0, #64 in wave 1, and #40, #42, #43, #45, #54,
+#66, #68 only in its waves 8–12 (they need its zeros and the uniqueness of the Gauss rule). Their
+statements are fixed in the KS7 skeleton, so the SLQ proofs use them sorried from SLQ wave 1;
+acceptance of an SLQ row that depends on a sorried KS7 item is final only when that item is proved
+(the harness re-checks axioms at the end). SLQ's skeleton therefore imports the KS7 skeleton.
