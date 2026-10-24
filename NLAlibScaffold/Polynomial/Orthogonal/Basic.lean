@@ -50,6 +50,36 @@ norm $0$ vanishes a.e. (`ae_eval_eq_zero_of_integral_sq_eq_zero`), so $\mu$ is c
 theorem isMomentPosDef_iff_forall_finset {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     IsMomentPosDef μ k ↔ ∀ s : Finset ℝ, (∀ᵐ x ∂μ, x ∈ s) → k ≤ s.card := by
-  sorry
+  constructor
+  · -- the nodal polynomial of a carrying set of fewer than `k` points has norm zero
+    intro h s hs
+    rcases lt_or_ge s.card k with hlt | hge
+    · have hp0 : Lagrange.nodal s id ≠ 0 := Lagrange.nodal_ne_zero
+      have hpdeg : (Lagrange.nodal s id).degree < k := by
+        rw [Lagrange.degree_nodal]
+        exact_mod_cast hlt
+      have hz : ∫ x, (Lagrange.nodal s id).eval x ^ 2 ∂μ = 0 := by
+        refine integral_eq_zero_of_ae ?_
+        filter_upwards [hs] with x hx
+        change (Lagrange.nodal s id).eval x ^ 2 = 0
+        rw [sq_eq_zero_iff]
+        exact Lagrange.eval_nodal_at_node (v := id) hx
+      exact absurd hz (h _ hp0 hpdeg).ne'
+    · exact hge
+  · -- a polynomial of norm zero vanishes off its roots, which are fewer than `k`
+    intro h p hp0 hpdeg
+    have hnn : 0 ≤ ∫ x, p.eval x ^ 2 ∂μ := integral_nonneg fun x => sq_nonneg _
+    rcases eq_or_ne (∫ x, p.eval x ^ 2 ∂μ) 0 with h0 | h0
+    · exfalso
+      have hcarried : ∀ᵐ x ∂μ, x ∈ p.roots.toFinset := by
+        filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero hμ h0] with x hx
+        rw [Multiset.mem_toFinset, mem_roots hp0]
+        exact hx
+      have h1 : k ≤ p.roots.toFinset.card := h _ hcarried
+      have h2 : p.roots.toFinset.card ≤ p.roots.card := Multiset.toFinset_card_le _
+      have h3 : p.roots.card ≤ p.natDegree := card_roots' p
+      have h4 : p.natDegree < k := (natDegree_lt_iff_degree_lt hp0).mpr hpdeg
+      omega
+    · exact hnn.lt_of_ne h0.symm
 
 end NLAlib
