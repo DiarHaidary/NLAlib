@@ -615,7 +615,92 @@ theorem integral_mul_orthogonalPolynomial_mul_orthogonalPolynomial_succ
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, x * (orthogonalPolynomial μ k).eval x * (orthogonalPolynomial μ (k + 1)).eval x ∂μ =
       ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ := by
-  sorry
+  rcases k with _ | m
+  · -- $k = 0$: $x = (x - \alpha_0) + \alpha_0$ and $\int\pi_1 = 0$.
+    have hp : X * orthogonalPolynomial μ 0
+        = orthogonalPolynomial μ 1 + C (jacobiAlpha μ 0) := by
+      rw [orthogonalPolynomial_zero, mul_one, orthogonalPolynomial_one]; ring
+    have key : ∀ x : ℝ, x * (orthogonalPolynomial μ 0).eval x
+        * (orthogonalPolynomial μ 1).eval x
+        = (orthogonalPolynomial μ 1).eval x ^ 2
+          + jacobiAlpha μ 0 * (orthogonalPolynomial μ 1).eval x := by
+      intro x
+      have hx := congrArg (eval x) hp
+      simp only [eval_mul, eval_add, eval_X, eval_C] at hx
+      rw [hx]; ring
+    have h1 : ∫ x, (orthogonalPolynomial μ 1).eval x ∂μ = 0 := by
+      have h := isOrthogonalPolynomial_orthogonalPolynomial hμ 1 (1 : ℝ[X])
+        (by rw [degree_one]; exact_mod_cast Nat.one_pos)
+      simpa only [eval_one, mul_one] using h
+    calc ∫ x, x * (orthogonalPolynomial μ 0).eval x * (orthogonalPolynomial μ 1).eval x ∂μ
+        = ∫ x, (orthogonalPolynomial μ 1).eval x ^ 2
+            + jacobiAlpha μ 0 * (orthogonalPolynomial μ 1).eval x ∂μ :=
+          integral_congr_ae (ae_of_all μ fun x => key x)
+      _ = ∫ x, (orthogonalPolynomial μ 1).eval x ^ 2 ∂μ
+            + jacobiAlpha μ 0 * ∫ x, (orthogonalPolynomial μ 1).eval x ∂μ := by
+          have hA : Integrable (fun x => (orthogonalPolynomial μ 1).eval x ^ 2) μ :=
+            (integrable_eval_of_ae_mem_Icc hμ (orthogonalPolynomial μ 1 ^ 2)).congr
+              (ae_of_all μ fun x => eval_pow 2)
+          have hB : Integrable
+              (fun x => jacobiAlpha μ 0 * (orthogonalPolynomial μ 1).eval x) μ :=
+            (integrable_eval_of_ae_mem_Icc hμ (orthogonalPolynomial μ 1)).const_mul _
+          rw [integral_add hA hB, integral_const_mul]
+      _ = ∫ x, (orthogonalPolynomial μ 1).eval x ^ 2 ∂μ := by rw [h1, mul_zero, add_zero]
+  · -- $k = m + 1$: the three-term recurrence and the orthogonality of $\pi_{m + 2}$.
+    have hp : X * orthogonalPolynomial μ (m + 1) = orthogonalPolynomial μ (m + 2)
+        + C (jacobiAlpha μ (m + 1)) * orthogonalPolynomial μ (m + 1)
+        + C (jacobiBeta μ (m + 1)) * orthogonalPolynomial μ m := by
+      rw [orthogonalPolynomial_add_two]; ring
+    have key : ∀ x : ℝ, x * (orthogonalPolynomial μ (m + 1)).eval x
+        * (orthogonalPolynomial μ (m + 2)).eval x
+        = (orthogonalPolynomial μ (m + 2)).eval x ^ 2
+          + jacobiAlpha μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
+            * (orthogonalPolynomial μ (m + 1)).eval x)
+          + jacobiBeta μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
+            * (orthogonalPolynomial μ m).eval x) := by
+      intro x
+      have hx := congrArg (eval x) hp
+      simp only [eval_mul, eval_add, eval_X, eval_C] at hx
+      rw [hx]; ring
+    have h1 : ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
+        * (orthogonalPolynomial μ (m + 1)).eval x ∂μ = 0 :=
+      isOrthogonalPolynomial_orthogonalPolynomial hμ (m + 2) (orthogonalPolynomial μ (m + 1))
+        (by rw [degree_orthogonalPolynomial]; exact_mod_cast Nat.lt_succ_self (m + 1))
+    have h2 : ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
+        * (orthogonalPolynomial μ m).eval x ∂μ = 0 :=
+      isOrthogonalPolynomial_orthogonalPolynomial hμ (m + 2) (orthogonalPolynomial μ m)
+        (by rw [degree_orthogonalPolynomial]; exact_mod_cast show m < m + 2 by omega)
+    have hint : ∀ p q : ℝ[X], Integrable (fun x => p.eval x * q.eval x) μ := fun p q =>
+      (integrable_eval_of_ae_mem_Icc hμ (p * q)).congr (ae_of_all μ fun _ => eval_mul)
+    have hsq : ∀ p : ℝ[X], Integrable (fun x => p.eval x ^ 2) μ := fun p =>
+      (integrable_eval_of_ae_mem_Icc hμ (p ^ 2)).congr (ae_of_all μ fun x => eval_pow 2)
+    have hA : Integrable (fun x => (orthogonalPolynomial μ (m + 2)).eval x ^ 2) μ :=
+      hsq (orthogonalPolynomial μ (m + 2))
+    have hB : Integrable (fun x => jacobiAlpha μ (m + 1)
+        * ((orthogonalPolynomial μ (m + 2)).eval x
+          * (orthogonalPolynomial μ (m + 1)).eval x)) μ :=
+      (hint (orthogonalPolynomial μ (m + 2)) (orthogonalPolynomial μ (m + 1))).const_mul _
+    have hC : Integrable (fun x => jacobiBeta μ (m + 1)
+        * ((orthogonalPolynomial μ (m + 2)).eval x
+          * (orthogonalPolynomial μ m).eval x)) μ :=
+      (hint (orthogonalPolynomial μ (m + 2)) (orthogonalPolynomial μ m)).const_mul _
+    calc ∫ x, x * (orthogonalPolynomial μ (m + 1)).eval x
+          * (orthogonalPolynomial μ (m + 2)).eval x ∂μ
+        = ∫ x, (orthogonalPolynomial μ (m + 2)).eval x ^ 2
+            + jacobiAlpha μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
+              * (orthogonalPolynomial μ (m + 1)).eval x)
+            + jacobiBeta μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
+              * (orthogonalPolynomial μ m).eval x) ∂μ :=
+          integral_congr_ae (ae_of_all μ fun x => key x)
+      _ = ∫ x, (orthogonalPolynomial μ (m + 2)).eval x ^ 2 ∂μ
+            + jacobiAlpha μ (m + 1) * ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
+                * (orthogonalPolynomial μ (m + 1)).eval x ∂μ
+            + jacobiBeta μ (m + 1) * ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
+                * (orthogonalPolynomial μ m).eval x ∂μ := by
+          rw [integral_add (hA.fun_add hB) hC, integral_add hA hB, integral_const_mul,
+            integral_const_mul]
+      _ = ∫ x, (orthogonalPolynomial μ (m + 2)).eval x ^ 2 ∂μ := by
+          rw [h1, h2, mul_zero, mul_zero, add_zero, add_zero]
 
 /-- Definiteness is positivity of the last norm: a finite measure $\mu$ supported in $[a, b]$ is
 positive definite on the polynomials of degree at most $k$ exactly when
