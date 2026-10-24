@@ -87,6 +87,9 @@ theorem MatchesMoments.finsetSum {ι : Type*} {s : Finset ι} {μs νs : ι → 
     (hμs : ∀ i ∈ s, ∀ᵐ x ∂μs i, x ∈ Set.Icc a b) (hνs : ∀ i ∈ s, ∀ᵐ x ∂νs i, x ∈ Set.Icc a b)
     (h : ∀ i ∈ s, MatchesMoments (μs i) (νs i) N) :
     MatchesMoments (∑ i ∈ s, μs i) (∑ i ∈ s, νs i) N := by
-  sorry
+  intro p hp
+  rw [integral_finsetSum_measure fun i hi => integrable_eval_of_ae_mem_Icc (hμs i hi) p,
+    integral_finsetSum_measure fun i hi => integrable_eval_of_ae_mem_Icc (hνs i hi) p]
+  exact Finset.sum_congr rfl fun i hi => h i hi p hp
 
 end NLAlib
