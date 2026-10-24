@@ -219,7 +219,29 @@ Proof: S, about 15 lines. Cases on `k`: $k = 0$ is `MatchesMoments.measureReal_u
 `MatchesMoments.orthogonalPolynomial_eq` at $k + 1$ and $k$ with `MatchesMoments.mono`. -/
 theorem MatchesMoments.jacobiBeta_eq {k : ℕ} (h : MatchesMoments μ ν (2 * k + 1)) :
     jacobiBeta μ k = jacobiBeta ν k := by
-  sorry
+  rcases k with _ | k
+  · simp only [jacobiBeta_zero]
+    exact h.measureReal_univ_eq (by omega)
+  · have hπ1 : orthogonalPolynomial μ (k + 1) = orthogonalPolynomial ν (k + 1) :=
+      MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega))
+    have hπ0 : orthogonalPolynomial μ k = orthogonalPolynomial ν k :=
+      MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega))
+    have hd : ∀ j ≤ k + 1, ((orthogonalPolynomial μ j) ^ 2).degree < 2 * (k + 1) + 1 := by
+      intro j hj
+      rw [degree_eq_natDegree ((monic_orthogonalPolynomial μ j).pow 2).ne_zero, natDegree_pow,
+        natDegree_orthogonalPolynomial]
+      exact_mod_cast show 2 * j < 2 * (k + 1) + 1 by omega
+    change (∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ) /
+        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ =
+      (∫ x, (orthogonalPolynomial ν (k + 1)).eval x ^ 2 ∂ν) /
+      ∫ x, (orthogonalPolynomial ν k).eval x ^ 2 ∂ν
+    have e1 : ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ =
+        ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂ν := by
+      simpa only [eval_pow] using h ((orthogonalPolynomial μ (k + 1)) ^ 2) (hd (k + 1) le_rfl)
+    have e0 : ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ =
+        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂ν := by
+      simpa only [eval_pow] using h ((orthogonalPolynomial μ k) ^ 2) (hd k (by omega))
+    rw [← hπ1, ← hπ0, e1, e0]
 
 /-- The Jacobi matrix depends only on the moments: if two measures $\mu$, $\nu$ on $\mathbb{R}$
 match their first $2k$ moments, then $\mathbf{J}_k(\mu) = \mathbf{J}_k(\nu)$.
