@@ -464,6 +464,33 @@ private theorem integral_orthogonalPolynomial_add_two_mul_self
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ k).eval x ∂μ = 0 := by
   sorry
 
+/-- Division by a monic polynomial, one degree at a time: if $p$ is monic of degree $d$ and
+$\deg r < d + 1$, then $r = c\,p + r'$ for a constant $c$ with $\deg r' < d$. -/
+private theorem exists_eq_C_mul_add_of_degree_lt {d : ℕ} {p r : ℝ[X]} (hp : p.Monic)
+    (hpd : p.degree = (d : WithBot ℕ)) (hr : r.degree < (d + 1 : WithBot ℕ)) :
+    ∃ (c : ℝ) (r' : ℝ[X]), r = C c * p + r' ∧ r'.degree < (d : WithBot ℕ) := by
+  have hmod : r %ₘ p + p * (r /ₘ p) = r := modByMonic_add_div r p
+  by_cases hq : r /ₘ p = 0
+  · rw [hq, mul_zero, add_zero] at hmod
+    refine ⟨0, r %ₘ p, ?_, ?_⟩
+    · simpa only [C_0, zero_mul, zero_add] using hmod.symm
+    · rw [← hpd]
+      exact degree_modByMonic_lt r hp
+  · have hle : p.degree ≤ r.degree := by
+      by_contra h
+      exact hq ((divByMonic_eq_zero_iff hp).2 (not_le.1 h))
+    have heq := degree_add_divByMonic hp hle
+    have hn : (r /ₘ p).natDegree = 0 := by
+      rw [hpd, degree_eq_natDegree hq, ← Nat.cast_add] at heq
+      have hlt : (d + (r /ₘ p).natDegree : ℕ) < d + 1 := by exact_mod_cast heq.trans_lt hr
+      omega
+    have hconst : r /ₘ p = C ((r /ₘ p).coeff 0) := eq_C_of_natDegree_le_zero (by omega)
+    refine ⟨(r /ₘ p).coeff 0, r %ₘ p, ?_, ?_⟩
+    · rw [hconst, mul_comm p (C _), add_comm] at hmod
+      exact hmod.symm
+    · rw [← hpd]
+      exact degree_modByMonic_lt r hp
+
 /-- Step (d) of the orthogonality induction: if $\pi_{k+1}$ and $\pi_k$ are orthogonal to the
 lower degrees, so is $\pi_{k+2}$.
 Proof: M, about 40 lines. For $\deg r < k + 2$ write $r = c\,\pi_{k+1} + c'\pi_k + r_0$ with
@@ -477,7 +504,56 @@ private theorem isOrthogonalPolynomial_orthogonalPolynomial_add_two
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1)))
     (h0 : IsOrthogonalPolynomial μ k (orthogonalPolynomial μ k)) :
     IsOrthogonalPolynomial μ (k + 2) (orthogonalPolynomial μ (k + 2)) := by
-  sorry
+  intro r hr
+  -- split off the multiples of $\pi_{k+1}$ and of $\pi_k$: $r = c_1\pi_{k+1} + c_0\pi_k + r_0$
+  obtain ⟨c₁, r₁, hr₁, hdeg₁⟩ := exists_eq_C_mul_add_of_degree_lt
+    (monic_orthogonalPolynomial μ (k + 1)) (degree_orthogonalPolynomial μ (k + 1)) hr
+  obtain ⟨c₀, r₀, hr₀, hdeg₀⟩ := exists_eq_C_mul_add_of_degree_lt
+    (monic_orthogonalPolynomial μ k) (degree_orthogonalPolynomial μ k) hdeg₁
+  have hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ := integrable_eval_of_ae_mem_Icc hμ
+  -- the three orthogonality facts of steps (a), (b) and (c), as integrals of evaluations
+  have ha : ∫ x, (orthogonalPolynomial μ (k + 2) * r₀).eval x ∂μ = 0 := by
+    simpa only [eval_mul] using
+      integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt hμ h1 h0 hdeg₀
+  have hb : ∫ x, (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)).eval x ∂μ
+      = 0 := by
+    simpa only [eval_mul] using integral_orthogonalPolynomial_add_two_mul_succ hμ h1
+  have hc : ∫ x, (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k).eval x ∂μ = 0 := by
+    simpa only [eval_mul] using integral_orthogonalPolynomial_add_two_mul_self hμ h1
+  -- the two constant multiples, by $\int c\,f = c\int f$
+  have hA : ∫ x, (C c₁ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1))).eval x
+      ∂μ = 0 := by
+    have hE : ∀ x : ℝ, (C c₁ * (orthogonalPolynomial μ (k + 2) *
+        orthogonalPolynomial μ (k + 1))).eval x
+        = c₁ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)).eval x :=
+      fun x => by rw [eval_mul, eval_C]
+    simp only [hE, integral_const_mul c₁
+      (fun x => (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)).eval x), hb,
+      mul_zero]
+  have hB : ∫ x, (C c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k)).eval x
+      ∂μ = 0 := by
+    have hE : ∀ x : ℝ, (C c₀ * (orthogonalPolynomial μ (k + 2) *
+        orthogonalPolynomial μ k)).eval x
+        = c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k).eval x :=
+      fun x => by rw [eval_mul, eval_C]
+    simp only [hE, integral_const_mul c₀
+      (fun x => (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k).eval x), hc, mul_zero]
+  -- the split of $r$ at the polynomial level, and the assembly of the three integrals
+  have hsplit : orthogonalPolynomial μ (k + 2) * r =
+      C c₁ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)) +
+      (C c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k) +
+        orthogonalPolynomial μ (k + 2) * r₀) := by
+    rw [hr₁, hr₀]
+    ring
+  have hintBC : Integrable (fun x => (C c₀ * (orthogonalPolynomial μ (k + 2) *
+      orthogonalPolynomial μ k)).eval x + (orthogonalPolynomial μ (k + 2) * r₀).eval x) μ :=
+    (hint _).add (hint _)
+  simp only [← eval_mul, hsplit, eval_add,
+    integral_add (hint (C c₁ * (orthogonalPolynomial μ (k + 2) *
+      orthogonalPolynomial μ (k + 1)))) hintBC,
+    integral_add (hint (C c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k)))
+      (hint (orthogonalPolynomial μ (k + 2) * r₀)),
+    hA, hB, ha, add_zero]
 
 /-- **Existence of the orthogonal polynomials**: for a finite measure $\mu$ supported in
 $[a, b]$ and every $k$, the monic polynomial $\pi_k$ of degree $k$ is orthogonal in $L^2(\mu)$
