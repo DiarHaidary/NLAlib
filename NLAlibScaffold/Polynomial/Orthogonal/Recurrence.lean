@@ -168,7 +168,17 @@ theorem MatchesMoments.jacobiMatrix_eq {k : ℕ} (h : MatchesMoments μ ν (2 * 
 Proof: S, about 15 lines. `Matrix.IsHermitian.ext`; `star` is trivial over ℝ; unfold
 `jacobiMatrix`, `split_ifs` with `omega` and `Fin.ext`. -/
 theorem isHermitian_jacobiMatrix (μ : Measure ℝ) (k : ℕ) : (jacobiMatrix μ k).IsHermitian := by
-  sorry
+  refine Matrix.IsHermitian.ext fun i j => ?_
+  simp only [jacobiMatrix, Matrix.of_apply, star_trivial]
+  by_cases h : i = j
+  · subst h; rfl
+  · have hj : ¬(j = i) := fun hc => h hc.symm
+    by_cases h2 : (j : ℕ) = (i : ℕ) + 1
+    · have h3 : (i : ℕ) ≠ (j : ℕ) + 1 := by omega
+      rw [if_neg hj, if_neg h, if_pos h2, if_neg h3, if_pos h2]
+    · by_cases h3 : (i : ℕ) = (j : ℕ) + 1
+      · rw [if_neg hj, if_neg h2, if_pos h3, if_neg h, if_pos h3]
+      · rw [if_neg hj, if_neg h2, if_neg h3, if_neg h, if_neg h3, if_neg h2]
 
 end Algebra
 
