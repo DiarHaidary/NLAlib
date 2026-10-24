@@ -73,7 +73,13 @@ theorem spectralMeasure_diagonal {r : Type*} [Fintype r] [DecidableEq r] (d : r 
     (w : r → 𝕜) :
     spectralMeasure (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) w =
       ∑ i, ENNReal.ofReal (‖w i‖ ^ 2) • Measure.dirac (d i) := by
-  sorry
+  have h1 : HasOrthonormalCols (1 : Matrix r r 𝕜) :=
+    hasOrthonormalCols_iff.2 (by rw [Matrix.conjTranspose_one, Matrix.one_mul])
+  have hA : (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜) : Matrix r r 𝕜) =
+      (1 : Matrix r r 𝕜) * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * (1 : Matrix r r 𝕜)ᴴ := by
+    rw [Matrix.one_mul, Matrix.conjTranspose_one, Matrix.mul_one]
+  rw [h1.spectralMeasure_eq_sum rfl hA]
+  simp only [Matrix.conjTranspose_one, Matrix.one_mulVec]
 
 /-- Every finite measure carried by a finite set is a spectral measure: if a finite measure
 $\nu$ is carried by a finite set $s \subseteq \mathbb{R}$, then $\nu$ is the spectral measure of
