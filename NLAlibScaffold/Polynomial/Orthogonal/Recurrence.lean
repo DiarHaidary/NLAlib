@@ -138,7 +138,55 @@ the polynomial $Xp^2$ (`eval_mul`, `eval_pow`, `eval_X`); degree bounds `natDegr
 `natDegree_pow_le` with `natDegree_orthogonalPolynomial`; `MatchesMoments.mono`. -/
 theorem MatchesMoments.orthogonalPolynomial_eq {k : ℕ} (h : MatchesMoments μ ν (2 * k)) :
     orthogonalPolynomial μ k = orthogonalPolynomial ν k := by
-  sorry
+  revert h
+  induction k using Nat.twoStepInduction with
+  | zero => intro _; rfl
+  | one =>
+    intro h
+    have hx0 : ∫ x, x ∂μ = ∫ x, x ∂ν := by
+      simpa only [eval_X] using h X (by rw [degree_X]; norm_num)
+    have h10 : ∫ x, (1 : ℝ) ∂μ = ∫ x, (1 : ℝ) ∂ν := by
+      simpa only [eval_C, integral_const, smul_eq_mul, mul_one] using
+        h (C 1) (by rw [degree_C one_ne_zero]; norm_num)
+    have hα : jacobiAlpha μ 0 = jacobiAlpha ν 0 := by
+      unfold jacobiAlpha
+      rw [orthogonalPolynomial_zero, orthogonalPolynomial_zero]
+      simp only [eval_one, one_pow, mul_one]
+      rw [hx0, h10]
+    rw [orthogonalPolynomial_one, orthogonalPolynomial_one, hα]
+  | more n ihn ih1 =>
+    intro h
+    have hp : orthogonalPolynomial μ n = orthogonalPolynomial ν n := ihn (h.mono (by omega))
+    have hp1 : orthogonalPolynomial μ (n + 1) = orthogonalPolynomial ν (n + 1) :=
+      ih1 (h.mono (by omega))
+    have hd2 : ∀ j : ℕ, (orthogonalPolynomial ν j ^ 2).natDegree ≤ 2 * j := fun j =>
+      natDegree_pow_le.trans_eq (by rw [natDegree_orthogonalPolynomial])
+    have hlt : ∀ q : ℝ[X], q.natDegree < 2 * (n + 2) → q.degree < (2 * (n + 2) : ℕ) :=
+      fun q hq => (degree_le_of_natDegree_le (Nat.le_refl _)).trans_lt (by exact_mod_cast hq)
+    have hsq : ∀ j ≤ n + 1, ∫ x, (orthogonalPolynomial ν j).eval x ^ 2 ∂μ =
+        ∫ x, (orthogonalPolynomial ν j).eval x ^ 2 ∂ν := by
+      intro j hj
+      have hd : (orthogonalPolynomial ν j ^ 2).natDegree < 2 * (n + 2) := by
+        have := hd2 j; omega
+      simpa only [eval_pow] using h _ (hlt _ hd)
+    have hx : ∀ j ≤ n + 1, ∫ x, x * (orthogonalPolynomial ν j).eval x ^ 2 ∂μ =
+        ∫ x, x * (orthogonalPolynomial ν j).eval x ^ 2 ∂ν := by
+      intro j hj
+      have h3 : (X * orthogonalPolynomial ν j ^ 2).natDegree ≤ 1 + 2 * j :=
+        natDegree_mul_le.trans (by rw [natDegree_X]; have := hd2 j; omega)
+      have hd : (X * orthogonalPolynomial ν j ^ 2).natDegree < 2 * (n + 2) := by
+        have := h3; omega
+      simpa only [eval_mul, eval_pow, eval_X] using h _ (hlt _ hd)
+    have hα : jacobiAlpha μ (n + 1) = jacobiAlpha ν (n + 1) := by
+      unfold jacobiAlpha
+      rw [hp1, hx (n + 1) (by omega), hsq (n + 1) (by omega)]
+    have hβ : jacobiBeta μ (n + 1) = jacobiBeta ν (n + 1) := by
+      change (∫ x, (orthogonalPolynomial μ (n + 1)).eval x ^ 2 ∂μ) /
+            ∫ x, (orthogonalPolynomial μ n).eval x ^ 2 ∂μ =
+          (∫ x, (orthogonalPolynomial ν (n + 1)).eval x ^ 2 ∂ν) /
+            ∫ x, (orthogonalPolynomial ν n).eval x ^ 2 ∂ν
+      rw [hp1, hp, hsq (n + 1) (by omega), hsq n (by omega)]
+    rw [orthogonalPolynomial_add_two μ n, orthogonalPolynomial_add_two ν n, hα, hβ, hp1, hp]
 
 /-- The diagonal coefficient depends only on the moments: if two measures $\mu$, $\nu$ on
 $\mathbb{R}$ match their first $2k + 2$ moments, then $\alpha_k(\mu) = \alpha_k(\nu)$.
