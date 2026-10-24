@@ -57,7 +57,45 @@ $\pi_s(\mathbf{A})\mathbf{b} = \mathbf{0}$, so $\mu_{\mathbf{A},\mathbf{b}}$ is 
 theorem _root_.Matrix.IsHermitian.isMomentPosDef_spectralMeasure_iff {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (k : ℕ) :
     IsMomentPosDef (spectralMeasure A b) k ↔ k ≤ krylovGrade A b := by
-  sorry
+  constructor
+  · -- past the grade the Ritz polynomial of $\mathcal{K}_\nu$ annihilates $\mathbf{b}$
+    intro h
+    by_contra hk
+    have hν : krylovGrade A b < k := by omega
+    obtain ⟨r, Q, hQ, hK⟩ :=
+      exists_hasOrthonormalCols_range_eq_krylovSpace A b (krylovGrade A b + 1)
+    have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+    have hr : Fintype.card (Fin r) = krylovGrade A b := by
+      have h1 : Fintype.card (Fin r) = min (krylovGrade A b + 1) (krylovGrade A b) := by
+        rw [← hQ.rank_eq, ← finrank_krylovSpace, ← hK]
+        rfl
+      rw [h1, Nat.min_eq_right (Nat.le_succ _)]
+    -- the Ritz values, at most $\nu$ of them
+    set s : Finset ℝ := Finset.image hT.eigenvalues Finset.univ with hsdef
+    have hcard : s.card ≤ krylovGrade A b :=
+      Finset.card_image_le.trans (by rw [Finset.card_univ, hr])
+    have hs : spectrum ℝ (Qᴴ * A * Q) ⊆ (s : Set ℝ) := by
+      rw [hT.spectrum_real_eq_range_eigenvalues]
+      exact fun x ⟨i, hi⟩ => Finset.mem_image.mpr ⟨i, Finset.mem_univ i, hi⟩
+    have hdeg : (Lagrange.nodal s id).degree < krylovGrade A b + 1 := by
+      rw [Lagrange.degree_nodal]
+      exact_mod_cast Nat.lt_succ_of_le hcard
+    have hzero : aeval A (Lagrange.nodal s id) *ᵥ b = 0 := by
+      rw [← hQ.mulVec_aeval_conjTranspose_mul_mul_mulVec_eq hK hdeg,
+        hT.aeval_nodal_eq_zero hs, Matrix.zero_mulVec, Matrix.mulVec_zero]
+    have hint : ∫ x, (Lagrange.nodal s id).eval x ^ 2 ∂spectralMeasure A b = 0 := by
+      rw [← hA.norm_aeval_mulVec_sq b (Lagrange.nodal s id), hzero]
+      simp
+    have hpos := h (Lagrange.nodal s id) Lagrange.nodal_monic.ne_zero
+      (hdeg.trans_le (by exact_mod_cast Nat.succ_le_of_lt hν))
+    rw [hint] at hpos
+    exact lt_irrefl 0 hpos
+  · -- below the grade no nonzero polynomial of small degree annihilates $\mathbf{b}$
+    intro hk p hp0 hp
+    rw [← hA.norm_aeval_mulVec_sq b p]
+    exact pow_pos (norm_pos_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr
+      (aeval_mulVec_ne_zero_of_degree_lt_krylovGrade hp0
+        (hp.trans_le (by exact_mod_cast hk))))) 2
 
 /-- $\pi_j(\mathbf{A})\mathbf{b}$ differs from $\mathbf{A}^j\mathbf{b}$ by a Krylov vector: for
 every measure $\mu$ on $\mathbb{R}$, every square $\mathbf{A}$, $\mathbf{b}$ and $j$,
