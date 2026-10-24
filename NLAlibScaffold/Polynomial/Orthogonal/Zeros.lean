@@ -41,7 +41,11 @@ namespace NLAlib
 Proof: S, about 5 lines. `Multiset.toFinset_card_le`, `card_roots'`,
 `natDegree_orthogonalPolynomial`. -/
 theorem card_gaussNodes_le (μ : Measure ℝ) (k : ℕ) : (gaussNodes μ k).card ≤ k := by
-  sorry
+  unfold gaussNodes
+  calc (orthogonalPolynomial μ k).roots.toFinset.card ≤
+      Multiset.card (orthogonalPolynomial μ k).roots := Multiset.toFinset_card_le _
+    _ ≤ (orthogonalPolynomial μ k).natDegree := card_roots' _
+    _ = k := natDegree_orthogonalPolynomial μ k
 
 section Definite
 
