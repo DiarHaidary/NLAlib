@@ -492,7 +492,26 @@ $k = 1$: $r = C\,c$ (`eq_C_of_degree_le_zero`) and $\int(x - \alpha_0)\,c = 0$ f
 Result: orthogonal-polynomial-existence -/
 theorem isOrthogonalPolynomial_orthogonalPolynomial (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     IsOrthogonalPolynomial μ k (orthogonalPolynomial μ k) := by
-  sorry
+  induction k using Nat.twoStepInduction with
+  | zero =>
+    intro r hr
+    rw [Nat.cast_zero, Nat.WithBot.lt_zero_iff, degree_eq_bot] at hr
+    simp only [hr, eval_zero, mul_zero, integral_zero]
+  | one =>
+    intro r hr
+    rcases eq_or_ne r 0 with rfl | hr0
+    · simp only [eval_zero, mul_zero, integral_zero]
+    · have hrC : r = Polynomial.C (r.coeff 0) :=
+        Polynomial.eq_C_of_natDegree_le_zero
+          (Nat.lt_one_iff.mp ((Polynomial.natDegree_lt_iff_degree_lt (n := 1) hr0).mpr hr)).le
+      rw [hrC, orthogonalPolynomial_one]
+      simp only [eval_sub, eval_X, eval_C]
+      have h := integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero hμ 0
+      rw [orthogonalPolynomial_zero] at h
+      simp only [Polynomial.eval_one, one_pow, mul_one] at h
+      rw [integral_mul_const _ _, h, zero_mul]
+  | more _ h0 h1 =>
+    exact isOrthogonalPolynomial_orthogonalPolynomial_add_two hμ h1 h0
 
 /-- The norms as products of the coefficients: for a finite measure $\mu$ supported in $[a, b]$
 and every $k$, $\|\pi_k\|^2 = \beta_0\beta_1\cdots\beta_k$ in $L^2(\mu)$, with
