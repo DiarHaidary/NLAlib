@@ -94,6 +94,15 @@ Proof: M, about 25 lines. `spectralMeasure_diagonal` (with `𝕜 := ℝ`); `Real
 theorem spectralMeasure_diagonal_sqrt_of_ae_mem {ν : Measure ℝ} [IsFiniteMeasure ν]
     {s : Finset ℝ} (hν : ∀ᵐ x ∂ν, x ∈ s) :
     spectralMeasure (Matrix.diagonal fun x : s => (x : ℝ)) (fun x => √(ν.real {(x : ℝ)})) = ν := by
-  sorry
+  have hsum : ν = ∑ a ∈ s, ν {a} • Measure.dirac a := Measure.ae_mem_finset_iff.mp hν
+  calc spectralMeasure (Matrix.diagonal fun x : s => (x : ℝ)) (fun x => √(ν.real {(x : ℝ)}))
+      = ∑ i : s, ENNReal.ofReal (‖√(ν.real {↑i})‖ ^ 2) • Measure.dirac (i : ℝ) :=
+        spectralMeasure_diagonal _ _
+    _ = ν := by
+        rw [Finset.sum_coe_sort s (fun a : ℝ => ENNReal.ofReal (‖√(ν.real {a})‖ ^ 2) •
+          Measure.dirac a)]
+        refine Eq.trans (Finset.sum_congr rfl fun a _ => ?_) hsum.symm
+        rw [Real.norm_eq_abs, abs_of_nonneg (Real.sqrt_nonneg _),
+          Real.sq_sqrt (measureReal_nonneg), ofReal_measureReal]
 
 end NLAlib
