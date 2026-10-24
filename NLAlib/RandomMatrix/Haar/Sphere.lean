@@ -46,6 +46,7 @@ $\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$. Design
   the two Chernoff tails.
 * The relative deviation (in namespace `NLAlib`):
   `measureReal_abs_div_mul_norm_conjTranspose_mulVec_sq_sub_one_ge_le_of_hasLaw_uniformSphereVector`
+* `NLAlib.ae_norm_eq_one_uniformSphereVector`: a uniform unit vector has norm $1$ almost surely.
 * `NLAlib.HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_eq`: sphere invariance.
 * `NLAlib.integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector`: the fourth
   moment.
@@ -536,8 +537,9 @@ private theorem integrable_of_continuous {F : (n → ℝ) → ℝ} (hF : Continu
     exact zero_le_one
   · rw [inv_mul_cancel₀ h.ne']
 
-/-- For nonempty $n$, a uniform unit vector has norm $1$ almost surely. -/
-private theorem ae_norm_eq_one [Nonempty n] :
+/-- A uniform unit vector has norm $1$ almost surely: for $n$ nonempty and $\mathbf{u}$ with law
+`uniformSphereVector n`, $\|\mathbf{u}\| = 1$ almost surely. -/
+theorem ae_norm_eq_one_uniformSphereVector [Nonempty n] :
     ∀ᵐ v ∂uniformSphereVector n, ‖WithLp.toLp 2 v‖ = 1 := by
   have hm : Measurable fun x : Metric.sphere (0 : EuclideanSpace ℝ n) 1 =>
       WithLp.ofLp (x : EuclideanSpace ℝ n) :=
@@ -719,7 +721,7 @@ theorem integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVecto
   simp only [conjTranspose_selectionMatrix_mulVec, h4, Function.comp_apply]
   have hone : ∫ v, (∑ a, v a ^ 2) ^ 2 ∂uniformSphereVector n = 1 := by
     rw [integral_congr_ae (g := fun _ => (1 : ℝ)), integral_const, probReal_univ, one_smul]
-    filter_upwards [ae_norm_eq_one] with v hv
+    filter_upwards [ae_norm_eq_one_uniformSphereVector] with v hv
     rw [← EuclideanSpace.norm_toLp_sq_eq_sum_sq, hv, one_pow, one_pow]
   have hN : (0 : ℝ) < Fintype.card n := Nat.cast_pos.2 Fintype.card_pos
   rcases Nat.lt_or_ge 1 (Fintype.card n) with hn | hn

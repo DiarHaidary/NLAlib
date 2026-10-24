@@ -93,8 +93,25 @@ the five proved here); proved in the skeleton: the 3 definitions (`slq`, `probeS
 targets: `nlalib-harness/pilot/slq-targets.json` (with the KS7 **[SLQ-1]** theorems each row uses,
 `ks7_deps`). Deviations from the note:
 
-1. **E1–E4 are not in the skeleton.** They need `Probability-Beta` (β3, β4, β5), which is not
-   approved; they are deferred until after that stage. Phase C (C1, C2) is a later PR (Q6).
+1. **E1–E4 are now in the skeleton** (added 2026-10-24 after `Probability-Beta` was approved and
+   its skeleton written; first deferred because that stage was not approved). They are at the
+   end of `NLAlibScaffold/Estimation/Spectral/SpectralDensity.lean`, which now imports the
+   scaffold `RandomMatrix/Haar/Sphere`, with the signatures of §3.8 (E1, E3) and in the shapes
+   §3.8 describes (E2, E4); 5 declarations sorried (S 1, M 4, counting S/M as M). Details:
+   E1 follows `Probability-Beta.md` §4's amendment: its proof is the event rewrite plus that
+   note's β6
+   (`measureReal_abs_sum_norm_conjTranspose_mulVec_sq_div_card_sub_div_card_ge_le_of_hasLaw_uniformSphereVector`),
+   deps D3, X2, X3, β6, no rank split, S/M (30–45), replacing §9's E1 row. E2 is
+   `measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le_of_hasLaw_uniformSphereVector`
+   (D13's event, bound $2n\exp(-m(n+2)\tau^2)$). E3 uses `ae_norm_eq_one_uniformSphereVector`
+   (mass $1$) and names E4's asymptotic form. E4 is two declarations: the explicit sample size
+   `…_slqMeasure_gt_le_of_hasLaw_uniformSphereVector_of_log_div_le` (hypothesis
+   $\log(2n/\delta)/((n+2)\tau^2) \le m$, with $\tau, \delta > 0$ and no $\delta \le 1$) and
+   `exists_forall_…_slqMeasure_gt_le_of_hasLaw_uniformSphereVector` (threshold
+   $C\log(2n/\delta)/(n\tau^2)$, $C = 1$ works; `Asymptotic:` E3). The names of E2 and E4 are
+   new here (§3.8 does not give them). Targets appended to `nlalib-harness/pilot/slq-targets.json`
+   (waves 7–10 for S1–S4) with their Beta dependencies in `depends_on`. Phase C (C1, C2) is a
+   later PR (Q6).
 2. **X2 and X3 are proved in `NLAlib/Matrix/Spectral/SpectralMeasure.lean`, not sorried.** Their
    scaffold path, `NLAlibScaffold/Matrix/Spectral/SpectralMeasure.lean`, is a KS7 file that this
    skeleton does not touch; both are short (under 15 lines each). X1 is the rename of the private

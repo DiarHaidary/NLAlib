@@ -6,8 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
-public import Mathlib.MeasureTheory.Constructions.HaarToSphere
 public import Mathlib.MeasureTheory.Integral.Gamma
+public import NLAlib.ForMathlib.Probability.Distributions.ChiSquared
 public import NLAlib.Probability.Distributions.Gaussian
 
 /-!
@@ -42,73 +42,6 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
   {g : Ω → n → ℝ}
-
-/-- The standard Gaussian vector has the density
-$(2\pi)^{-\lvert n \rvert/2} e^{-\|\mathbf{x}\|^2/2}$. -/
-private theorem gaussianVector_eq_withDensity :
-    gaussianVector n = volume.withDensity fun x : n → ℝ =>
-      ENNReal.ofReal ((√(2 * π))⁻¹ ^ Fintype.card n * rexp (-‖WithLp.toLp 2 x‖ ^ 2 / 2)) := by
-  have hprod (x : n → ℝ) : ∏ i, gaussianPDFReal 0 1 (x i) =
-      (√(2 * π))⁻¹ ^ Fintype.card n * rexp (-‖WithLp.toLp 2 x‖ ^ 2 / 2) := by
-    simp only [gaussianPDFReal, Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ,
-      ← Real.exp_sum, EuclideanSpace.real_norm_sq_eq, NNReal.coe_one, mul_one, sub_zero]
-    congr 2
-    rw [← Finset.sum_neg_distrib, Finset.sum_div]
-  simp only [← hprod]
-  refine Measure.pi_eq fun s hs => ?_
-  have hS : MeasurableSet (Set.univ.pi s) := MeasurableSet.univ_pi hs
-  rw [withDensity_apply _ hS, ← lintegral_indicator hS]
-  have hind (x : n → ℝ) : (Set.univ.pi s).indicator
-      (fun x => ENNReal.ofReal (∏ i, gaussianPDFReal 0 1 (x i))) x =
-        ENNReal.ofReal (∏ i, (s i).indicator (gaussianPDFReal 0 1) (x i)) := by
-    by_cases hx : x ∈ Set.univ.pi s
-    · rw [Set.indicator_of_mem hx]
-      congr 1
-      exact Finset.prod_congr rfl fun i _ => by rw [Set.indicator_of_mem (hx i (Set.mem_univ i))]
-    · rw [Set.indicator_of_notMem hx]
-      simp only [Set.mem_pi, Set.mem_univ, true_implies, not_forall] at hx
-      obtain ⟨i, hi⟩ := hx
-      rw [Finset.prod_eq_zero (Finset.mem_univ i) (Set.indicator_of_notMem hi _),
-        ENNReal.ofReal_zero]
-  simp only [hind]
-  have hint : Integrable (fun x : n → ℝ => ∏ i, (s i).indicator (gaussianPDFReal 0 1) (x i))
-      volume := by
-    rw [volume_pi]
-    exact Integrable.fintype_prod (f := fun i => (s i).indicator (gaussianPDFReal 0 1))
-      (fun i => (integrable_gaussianPDFReal 0 1).indicator (hs i))
-  rw [← ofReal_integral_eq_lintegral_ofReal hint
-    (ae_of_all _ fun x => Finset.prod_nonneg fun i _ =>
-      Set.indicator_nonneg (fun y _ => gaussianPDFReal_nonneg 0 1 y) _),
-    integral_fintype_prod_volume_eq_prod, ENNReal.ofReal_prod_of_nonneg
-    (fun i _ => integral_nonneg fun y =>
-      Set.indicator_nonneg (fun y _ => gaussianPDFReal_nonneg 0 1 y) _)]
-  refine Finset.prod_congr rfl fun i _ => ?_
-  rw [gaussianReal_apply_eq_integral 0 one_ne_zero, integral_indicator (hs i)]
-
-/-- Polar coordinates for a radial function of a standard Gaussian vector. -/
-private theorem integral_radial_gaussianVector [Nonempty n] (φ : ℝ → ℝ) :
-    ∫ x, φ ‖WithLp.toLp 2 x‖ ∂(gaussianVector n) =
-      Fintype.card n * (volume : Measure (EuclideanSpace ℝ n)).real (Metric.ball 0 1) *
-        ((√(2 * π))⁻¹ ^ Fintype.card n *
-          ∫ y in Ioi (0 : ℝ), y ^ (Fintype.card n - 1) * (rexp (-y ^ 2 / 2) * φ y)) := by
-  rw [gaussianVector_eq_withDensity, integral_withDensity_eq_integral_toReal_smul (by fun_prop)
-    (ae_of_all _ fun _ => ENNReal.ofReal_lt_top)]
-  have hpos (x : n → ℝ) :
-      0 ≤ (√(2 * π))⁻¹ ^ Fintype.card n * rexp (-‖WithLp.toLp 2 x‖ ^ 2 / 2) := by positivity
-  simp only [ENNReal.toReal_ofReal (hpos _), smul_eq_mul]
-  have hemb : MeasurableEmbedding (WithLp.toLp 2 : (n → ℝ) → EuclideanSpace ℝ n) :=
-    (MeasurableEquiv.toLp 2 (n → ℝ)).measurableEmbedding
-  rw [(PiLp.volume_preserving_toLp n).integral_comp hemb (fun y : EuclideanSpace ℝ n =>
-      (√(2 * π))⁻¹ ^ Fintype.card n * rexp (-‖y‖ ^ 2 / 2) * φ ‖y‖),
-    integral_fun_norm_addHaar volume (fun r =>
-      (√(2 * π))⁻¹ ^ Fintype.card n * rexp (-r ^ 2 / 2) * φ r),
-    finrank_euclideanSpace, nsmul_eq_mul, smul_eq_mul]
-  simp only [smul_eq_mul]
-  have e (y : ℝ) : y ^ (Fintype.card n - 1) * ((√(2 * π))⁻¹ ^ Fintype.card n *
-      rexp (-y ^ 2 / 2) * φ y) = (√(2 * π))⁻¹ ^ Fintype.card n *
-        (y ^ (Fintype.card n - 1) * (rexp (-y ^ 2 / 2) * φ y)) := by ring
-  simp only [e, integral_const_mul]
-  ring
 
 /-- $\int_0^\infty y^q e^{-y^2/2} \, dy = 2^{(q+1)/2} \Gamma((q+1)/2) / 2$ for $q > -1$. -/
 private theorem integral_rpow_mul_exp_neg_sq_div_two {q : ℝ} (hq : -1 < q) :
@@ -156,19 +89,13 @@ private theorem integral_norm_sq_rpow_gaussianVector {s : ℝ}
       rw [Subsingleton.elim (WithLp.toLp 2 x) 0, norm_zero, zero_pow two_ne_zero,
         Real.zero_rpow hs0.ne']
     simp only [h0, integral_zero]
-  have hnorm := integral_radial_gaussianVector (n := n) (fun y => (y ^ 2) ^ (0 : ℝ))
-  have hmom := integral_radial_gaussianVector (n := n) (fun y => (y ^ 2) ^ s)
+  have h := integral_comp_norm_pi_gaussianReal (ι := n) fun y => (y ^ 2) ^ s
   set d := Fintype.card n with hd_def
   have hd : 1 ≤ d := Fintype.card_pos
-  simp only [Real.rpow_zero, integral_const, probReal_univ, smul_eq_mul, mul_one] at hnorm
-  rw [show (fun y : ℝ => y ^ (d - 1) * rexp (-y ^ 2 / 2)) =
-      fun y => y ^ (d - 1) * (rexp (-y ^ 2 / 2) * (y ^ 2) ^ (0 : ℝ)) by
-    simp only [Real.rpow_zero, mul_one],
-    integral_pow_mul_exp_mul_rpow hd (neg_lt_zero.mpr (by positivity)), add_zero] at hnorm
-  rw [hmom, integral_pow_mul_exp_mul_rpow hd hs, Real.rpow_add (by norm_num)]
+  rw [h, integral_pow_mul_exp_mul_rpow hd hs, Real.rpow_add (by norm_num),
+    Real.rpow_sub (by norm_num), Real.rpow_one]
   have hG : 0 < Real.Gamma ((d : ℝ) / 2) := Real.Gamma_pos_of_pos (by positivity)
-  rw [eq_div_iff hG.ne']
-  linear_combination (-(2 ^ s * Real.Gamma ((d : ℝ) / 2 + s))) * hnorm
+  field_simp
 
 /-- **Polar coordinates for a standard Gaussian vector**, the $\chi_d$ density: for a standard
 Gaussian vector $\mathbf{g}$ of dimension $d = \lvert n \rvert \ge 1$ and measurable $\varphi$,
@@ -185,21 +112,8 @@ theorem integral_comp_norm_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVect
   have : Nonempty n := Fintype.card_pos_iff.mp hn
   have hf : Measurable fun x : n → ℝ => φ ‖WithLp.toLp 2 x‖ := hφ.comp (by fun_prop)
   rw [show (∫ ω, φ ‖WithLp.toLp 2 (g ω)‖ ∂μ) = ∫ x, φ ‖WithLp.toLp 2 x‖ ∂(gaussianVector n) from
-    hg.integral_comp hf.aestronglyMeasurable, integral_radial_gaussianVector]
-  have hnorm := integral_radial_gaussianVector (n := n) (fun y => (y ^ 2) ^ (0 : ℝ))
-  set d := Fintype.card n with hd_def
-  have hd : 1 ≤ d := hn
-  simp only [Real.rpow_zero, integral_const, probReal_univ, smul_eq_mul, mul_one] at hnorm
-  rw [show (fun y : ℝ => y ^ (d - 1) * rexp (-y ^ 2 / 2)) =
-      fun y => y ^ (d - 1) * (rexp (-y ^ 2 / 2) * (y ^ 2) ^ (0 : ℝ)) by
-    simp only [Real.rpow_zero, mul_one],
-    integral_pow_mul_exp_mul_rpow hd (neg_lt_zero.mpr (by positivity)), add_zero] at hnorm
-  have hG : 0 < Real.Gamma ((d : ℝ) / 2) := Real.Gamma_pos_of_pos (by positivity)
-  have h2 : (2 : ℝ) ^ ((d : ℝ) / 2 - 1) = 2 ^ ((d : ℝ) / 2) / 2 := by
-    rw [Real.rpow_sub (by norm_num), Real.rpow_one]
-  rw [h2, eq_div_iff (by positivity)]
-  set I := ∫ y in Ioi (0 : ℝ), y ^ (d - 1) * (rexp (-y ^ 2 / 2) * φ y)
-  linear_combination (-I) * hnorm
+    hg.integral_comp hf.aestronglyMeasurable]
+  exact integral_comp_norm_pi_gaussianReal φ
 
 /-- $(\|\mathbf{g}\|^2)^s$ is integrable for a standard Gaussian vector $\mathbf{g}$ when
 $s > -d/2$, with $d = \lvert n \rvert$ (the range is sharp; only this direction is stated). -/

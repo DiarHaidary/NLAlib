@@ -9,6 +9,7 @@ public import NLAlib.Estimation.Spectral.SpectralDensity
 public import NLAlibScaffold.Estimation.Trace.GirardHutchinson
 public import NLAlibScaffold.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlibScaffold.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlibScaffold.RandomMatrix.Haar.Sphere
 
 /-!
 # Spectral density estimation: the theorems of stage SLQ, phase B
@@ -24,7 +25,10 @@ the distribution functions of the probe spectral measure and of the empirical sp
 $\nu_{\mathbf{A}}$ are uniformly close at the eigenvalues except with probability
 $2\lvert n\rvert\exp(-\tfrac{1}{196}m\lvert n\rvert\min(\tau^2/c^2, \tau/c))$, and on that event a
 finite Abel summation bounds the error on every Lipschitz test function at once, for the probe
-measure, for SLQ (adding the Gauss error) and for the mass-normalised SLQ measure.
+measure, for SLQ (adding the Gauss error) and for the mass-normalised SLQ measure. With probes
+$\sqrt{\lvert n\rvert}\,\mathbf{u}_j$, $\mathbf{u}_j$ independent and uniform on the unit
+sphere, both measures are probability measures and the sharp Beta proxy gives the failure
+probability $2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)$, with no unknown constant.
 [ChenTrogdonUbaru2021]; [ChenTrogdonUbaru2025]; [UbaruChenSaad2017].
 
 ## Main results
@@ -46,6 +50,9 @@ measure, for SLQ (adding the Gauss error) and for the mass-normalised SLQ measur
 * `NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`:
   SLQ approximates the spectral density uniformly in Lipschitz test functions; the
   mass-normalised form and the asymptotic form follow it.
+* The same with sphere probes: the tails at one set and at every eigenvalue, the Lipschitz tail,
+  the sample size and its asymptotic form (the last section; the names are too long for this
+  list).
 -/
 
 @[expose] public section
@@ -593,6 +600,202 @@ exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integ
         (|f b| + L * (b - a)) * τ +
           jacksonApproximationConstant * L * (b - a) / (2 * q + 3) * (1 + τ) <
         |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂slqMeasure A (X ω) (q + 1)|} ≤ δ := by
+  sorry
+
+/-! ### Sphere probes: tails with the sharp Beta constant -/
+
+-- The declaration name exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The distribution of the probe spectral measure with sphere probes, at one set.** Let the
+columns $\mathbf{u}_1, \dots, \mathbf{u}_m$ of the random real $n \times m$ matrix $\mathbf{U}$
+be independent, each uniform on the unit sphere of $\mathbb{R}^n$ (law
+`uniformSphereVector n`), and take the probes $\sqrt{\lvert n\rvert}\,\mathbf{u}_j$. Then for
+real symmetric $\mathbf{A}$, every $S \subseteq \mathbb{R}$ and every $\tau \ge 0$,
+$$\mathbb{P}\bigl[\tau \le \lvert\nu_{\mathbf{A}}(S) - \mathsf{probeSpectralMeasure}(\mathbf{A},
+\sqrt{\lvert n\rvert}\,\mathbf{U})(S)\rvert\bigr] \le 2\exp(-m(\lvert n\rvert + 2)\tau^2)\,,$$
+$\nu_{\mathbf{A}}$ the empirical spectral measure. The error is a centred mean of $m$ independent
+$\mathrm{Beta}(r/2, (\lvert n\rvert - r)/2)$ variables, $r$ the rank of the spectral projector
+$\mathbf{1}_S(\mathbf{A})$, with sub-Gaussian proxy $1/(2(\lvert n\rvert + 2))$; ranks $0$ and
+$\lvert n\rvert$ are deterministic. Compared with
+`NLAlib.measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le`
+(independent sub-Gaussian entries) the exponent has no unknown constant and no minimum.
+[ChenTrogdonUbaru2021, §3] (locator to check).
+Proof: S/M, about 40 lines. Rewrite the event with `probeSpectralMeasure_real` and
+`Matrix.IsHermitian.empiricalSpectralMeasure_real` over ℝ (`RCLike.re_to_real`): with
+$\mathbf{P} = \mathbf{1}_S(\mathbf{A})$ (`isStarProjection_cfc_indicator`), write
+$\mathbf{P} = \mathbf{V}\mathbf{V}^{\mathsf{H}}$ with $\mathbf{V}$ of $r = \operatorname{rank}
+\mathbf{P}$ orthonormal columns (`IsStarProjection.exists_hasOrthonormalCols_mul_conjTranspose_eq`
+with `p := Fin r`), so $\operatorname{tr}\mathbf{P} = r$ (`IsStarProjection.trace_eq_rank`) and
+the probe estimate is $\frac1m\sum_j\|\mathbf{V}^{\mathsf{H}}\mathbf{u}_j\|^2$
+(`girardHutchinson_eq_sum`, `quadForm`, `Matrix.mulVec_smul`, $(\sqrt{n})^2 = n$); then
+`measureReal_abs_sum_norm_conjTranspose_mulVec_sq_div_card_sub_div_card_ge_le_of_hasLaw_uniformSphereVector`
+with `u j := fun ω i => U ω i j`; empty $n$: both sides of the event are $0$. -/
+theorem
+measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le_of_hasLaw_uniformSphereVector
+    {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
+    (hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) (S : Set ℝ) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | τ ≤ |(empiricalSpectralMeasure A).real S -
+        (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real S|} ≤
+      2 * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
+  sorry
+
+-- The declaration name, or a name in its docstring, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The Kolmogorov-distance tail of the probe spectral measure with sphere probes.** Let the
+columns $\mathbf{u}_1, \dots, \mathbf{u}_m$ of the random real $n \times m$ matrix $\mathbf{U}$
+be independent, each uniform on the unit sphere of $\mathbb{R}^n$ (law
+`uniformSphereVector n`). Then for real symmetric $\mathbf{A}$ and every $\tau \ge 0$, the
+distribution functions of $\nu_{\mathbf{A}}$ (the empirical spectral measure) and of
+$\mathsf{probeSpectralMeasure}(\mathbf{A}, \sqrt{\lvert n\rvert}\,\mathbf{U})$ differ by more
+than $\tau$ at some eigenvalue with probability at most
+$$2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)\,:$$
+a union bound over the at most $\lvert n\rvert$ eigenvalues; both distribution functions are
+constant between eigenvalues, and
+`Matrix.IsHermitian.abs_empiricalSpectralMeasure_real_Iic_sub_probeSpectralMeasure_real_Iic_le`
+extends the bound to every threshold. [ChenTrogdonUbaru2021, §3] (locator to check).
+Proof: S, about 25 lines. As
+`measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le`: the
+event is contained in `⋃ x ∈ A.finite_real_spectrum.toFinset, {ω | τ ≤ |…|}`
+(`Set.Finite.mem_toFinset`, `le_of_lt`); `measureReal_mono`, `measureReal_biUnion_finset_le`,
+`measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le_of_hasLaw_uniformSphereVector`
+per point, `Finset.sum_le_card_nsmul`, and the private helper of that theorem bounding the
+number of eigenvalues by `Fintype.card n`.
+Result: spectral-density-kolmogorov-tail -/
+theorem
+measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le_of_hasLaw_uniformSphereVector
+    {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
+    (hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | ∃ x ∈ spectrum ℝ A, τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
+        (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|} ≤
+      2 * Fintype.card n * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
+  sorry
+
+-- The declaration name, or a name in its docstring, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **SLQ with sphere probes, uniformly in Lipschitz test functions.** Let the columns
+$\mathbf{u}_1, \dots, \mathbf{u}_m$ of the random real $n \times m$ matrix $\mathbf{U}$ be
+independent, each uniform on the unit sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`);
+let $\mathbf{A}$ be real symmetric with spectrum in $[a, b]$, $a < b$; let $L \ge 0$,
+$q \in \mathbb{N}$ and $\tau \ge 0$. Then, except with probability at most
+$2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)$, every $f$ that is $L$-Lipschitz on
+$[a, b]$ satisfies <!-- value jacksonApproximationConstant -->
+$$\Bigl\lvert\int f\,d\nu_{\mathbf{A}} - \int f\,d\,\mathsf{slqMeasure}(\mathbf{A},
+\sqrt{\lvert n\rvert}\,\mathbf{U}, q + 1)\Bigr\rvert \le L(b - a)\tau +
+\frac{\pi L(b - a)}{2q + 3}\,,$$
+$\nu_{\mathbf{A}}$ the empirical spectral measure; the constant of the Gauss term is
+`jacksonApproximationConstant`. With sphere probes the probe and SLQ measures have mass exactly
+$1$, so there is no term in $\lvert f(b)\rvert$ and no factor $1 + \tau$: this is a
+Wasserstein-1 bound.
+Asymptotic form:
+`NLAlib.exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector`.
+[ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check); the Jackson
+step is [ChenTrogdonUbaru2022, Appendix C, Theorem 38].
+Proof: M, about 45 lines. `measureReal_mono_ae` into the event of
+`measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le_of_hasLaw_uniformSphereVector`
+(an almost-everywhere superset): almost surely every probe has $\|\sqrt{n}\,\mathbf{u}_j\|^2 = n$
+(`ae_norm_eq_one_uniformSphereVector` through `hU`, `ae_all_iff`), so the probe measure has mass
+$1$ (`Matrix.IsHermitian.probeSpectralMeasure_real_univ`, `frobNorm_sq_eq_sum_col`); on that
+event and off the Kolmogorov event, `MeasureTheory.abs_integral_sub_integral_le_of_lipschitzOnWith`
+on $f - f(b)$ (`LipschitzOnWith.sub_const`; equal masses remove $\lvert f(b)\rvert$) between
+$\nu_{\mathbf{A}}$ and the probe measure, as in
+`Matrix.IsHermitian.abs_integral_empiricalSpectralMeasure_sub_integral_probeSpectralMeasure_le`;
+`Matrix.IsHermitian.abs_integral_probeSpectralMeasure_sub_integral_slqMeasure_le_of_lipschitzOnWith`
+with mass $1$; the triangle inequality (`abs_sub_le`); empty $n$: both integrals are $0$.
+Result: spectral-density-lipschitz-tail -/
+theorem
+measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector
+    {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
+    (hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) {a b : ℝ} (hab : a < b) (hs : spectrum ℝ A ⊆ Set.Icc a b) (L : ℝ≥0)
+    (q : ℕ) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | ∃ f : ℝ → ℝ, LipschitzOnWith L f (Set.Icc a b) ∧
+        L * (b - a) * τ + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
+        |∫ x, f x ∂empiricalSpectralMeasure A -
+          ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤
+      2 * Fintype.card n * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
+  sorry
+
+-- The declaration name, or a name in its docstring, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **A sample size for SLQ with sphere probes.** Let the columns
+$\mathbf{u}_1, \dots, \mathbf{u}_m$ of the random real $n \times m$ matrix $\mathbf{U}$ be
+independent, each uniform on the unit sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`);
+let $\mathbf{A}$ be real symmetric with spectrum in $[a, b]$, $a < b$; let $L \ge 0$,
+$q \in \mathbb{N}$, $\tau > 0$ and $\delta > 0$. If
+$$m \ge \frac{\log(2\lvert n\rvert/\delta)}{(\lvert n\rvert + 2)\tau^2}\,,$$
+then except with probability at most $\delta$ every $f$ that is $L$-Lipschitz on $[a, b]$
+satisfies <!-- value jacksonApproximationConstant -->
+$$\Bigl\lvert\int f\,d\nu_{\mathbf{A}} - \int f\,d\,\mathsf{slqMeasure}(\mathbf{A},
+\sqrt{\lvert n\rvert}\,\mathbf{U}, q + 1)\Bigr\rvert \le L(b - a)\tau +
+\frac{\pi L(b - a)}{2q + 3}\,,$$
+$\nu_{\mathbf{A}}$ the empirical spectral measure; the constant of the Gauss term is
+`jacksonApproximationConstant`. The sharp Beta proxy leaves no unknown constant in the sample
+size. The tail form is
+`NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector`,
+and its asymptotic form is
+`NLAlib.exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector`.
+[ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check).
+Proof: S/M, about 25 lines. The tail form, then
+$2n e^{-m(n+2)\tau^2} \le 2n e^{-\log(2n/\delta)} = \delta$: `Real.exp_le_exp` with the size
+hypothesis times $(n+2)\tau^2 > 0$ (`div_le_iff₀`), `Real.exp_neg`, `Real.exp_log`; empty $n$:
+the bound is $0 \le \delta$. -/
+theorem
+measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector_of_log_div_le
+    {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
+    (hU : ∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) {A : Matrix n n ℝ}
+    (hA : A.IsHermitian) {a b : ℝ} (hab : a < b) (hs : spectrum ℝ A ⊆ Set.Icc a b) (L : ℝ≥0)
+    (q : ℕ) {τ δ : ℝ} (hτ : 0 < τ) (hδ : 0 < δ)
+    (hm : Real.log (2 * Fintype.card n / δ) / ((Fintype.card n + 2) * τ ^ 2) ≤ Fintype.card m) :
+    μ.real {ω | ∃ f : ℝ → ℝ, LipschitzOnWith L f (Set.Icc a b) ∧
+        L * (b - a) * τ + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
+        |∫ x, f x ∂empiricalSpectralMeasure A -
+          ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤ δ := by
+  sorry
+
+-- The declaration name, or a name in its docstring, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(\log(\lvert n\rvert/\delta)/(\lvert n\rvert\tau^2))$ sphere probes suffice for SLQ to
+approximate the spectral density, uniformly in Lipschitz test functions**: there is an absolute
+constant $C > 0$ such that the following holds. Let the columns
+$\mathbf{u}_1, \dots, \mathbf{u}_m$ of the random real $n \times m$ matrix $\mathbf{U}$ be
+independent, each uniform on the unit sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`);
+let $\mathbf{A}$ be real symmetric with spectrum in $[a, b]$, $a < b$; let $L \ge 0$,
+$q \in \mathbb{N}$, $\tau > 0$ and $\delta > 0$. If
+$m \ge C\log(2\lvert n\rvert/\delta)/(\lvert n\rvert\tau^2)$, then except with probability at
+most $\delta$ every $f$ that is $L$-Lipschitz on $[a, b]$
+satisfies <!-- value jacksonApproximationConstant -->
+$$\Bigl\lvert\int f\,d\nu_{\mathbf{A}} - \int f\,d\,\mathsf{slqMeasure}(\mathbf{A},
+\sqrt{\lvert n\rvert}\,\mathbf{U}, q + 1)\Bigr\rvert \le L(b - a)\tau +
+\frac{\pi L(b - a)}{2q + 3}\,,$$
+$\nu_{\mathbf{A}}$ the empirical spectral measure; the constant of the Gauss term is
+`jacksonApproximationConstant`. The constant $C$ comes before every dimension, matrix and
+parameter; $C = 1$ works. Proved from
+`NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector`
+through its sample-size form
+`NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector_of_log_div_le`.
+[ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check).
+Proof: S/M, about 20 lines. `C := 1`; the sample-size form, whose hypothesis follows since
+$\lvert n\rvert\tau^2 \le (\lvert n\rvert + 2)\tau^2$ when the logarithm is nonnegative
+(`div_le_div_of_nonneg_left`), and trivially ($m \ge 0$) when it is negative; empty $n$: the
+threshold is $0$.
+Asymptotic:
+NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector
+Result: spectral-density-lipschitz-tail -/
+theorem
+exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector :
+    ∃ C : ℝ, 0 < C ∧ ∀ {Ω n m : Type} [MeasurableSpace Ω] [Fintype n] [DecidableEq n]
+      [Fintype m] (μ : Measure Ω) (U : Ω → Matrix n m ℝ) (A : Matrix n n ℝ) (a b : ℝ)
+      (L : ℝ≥0) (q : ℕ) (τ δ : ℝ),
+      iIndepFun (fun j ω i => U ω i j) μ →
+      (∀ j, HasLaw (fun ω i => U ω i j) (uniformSphereVector n) μ) → A.IsHermitian → a < b →
+      spectrum ℝ A ⊆ Set.Icc a b → 0 < τ → 0 < δ →
+      C * Real.log (2 * Fintype.card n / δ) / (Fintype.card n * τ ^ 2) ≤ Fintype.card m →
+      μ.real {ω | ∃ f : ℝ → ℝ, LipschitzOnWith L f (Set.Icc a b) ∧
+        L * (b - a) * τ + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
+        |∫ x, f x ∂empiricalSpectralMeasure A -
+          ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤ δ := by
   sorry
 
 end NLAlib
