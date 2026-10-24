@@ -1,6 +1,6 @@
 # Design note: the structure theory of orthogonal polynomials (stage KS7)
 
-Status: draft, 2026-10-24, by an Opus agent from the orchestrator's brief; Fable review folded in 2026-10-24; maintainer decisions of 2026-10-24 recorded: OQ1 (a), OQ2 (a), OQ3 (a), OQ6 (a), S1 (a), S2 (c), L1 (b), L2 (a), and the SLQ integration ("Interface for SLQ"); OQ4 and OQ5 still open.
+Status: approved by the maintainer 2026-10-24; skeleton written 2026-10-24.
 
 Monic orthogonal polynomials of a finite measure on ℝ with compact support, their three-term
 recurrence and Jacobi matrix, their zeros, the canonical Gauss rule, and the link to Lanczos:
@@ -98,6 +98,49 @@ spectral measures, and Lanczos enters only through
 `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`. The new section "Interface for SLQ"
 (before §5) fixes what SLQ consumes; it adds seven theorems (#64–#70), marked **[SLQ-1]** in §10
 with the existing ones SLQ uses (#40, #42, #43, #54).
+
+## Changes during the skeleton (2026-10-24)
+
+The skeleton (branch `design/ks7-slq`) has every statement of §4 and "Interface for SLQ" exactly
+as signed there; no statement was changed. 67 declarations are sorried in `NLAlibScaffold/`
+(36 S, 31 M; the 66 jobs of §10, #13 and #14 as two declarations); proved in the skeleton: the 7
+definitions, #9–#12 (`rfl`), #48 (the move) and #63 (the instance). Deviations from the note:
+
+1. **The §5.3 rows (§2) and the Mathlib-deviations paragraph (§6) are not added yet.** V6
+   (`scripts/check_rules.py`) checks the Lean names in CONTRIBUTING and Mathlib-deviations.md
+   against `NLAlib/` only, and the rows' bridges (`isMomentPosDef_succ_iff`,
+   `isOrthogonalPolynomial_orthogonalPolynomial`, …) and the paragraph's
+   `isMomentPosDef_iff_forall_finset` are scaffold declarations. They go in with the proof PR that
+   moves the last name they cite into `NLAlib/`. Until then V7 may list the new definitions.
+2. **File order in `Recurrence`.** The algebra and moment-invariance theorems (#13–#16, #22–#26)
+   come first, in a section without `[IsFiniteMeasure μ]`, so that the variable does not add the
+   instance to statements §3 says take none; then #18, #59, #17a–#17d, #17, #62, #19–#21 under
+   `[IsFiniteMeasure μ] {a b : ℝ}`. In `Gauss`, #38, #64, #65 (explicit `μ`, no instance) come
+   before the section with the instance. Dependencies still precede their users.
+3. **Imports by file.** The NLAlib files carry only what the definitions need: `Recurrence` imports
+   `Basic` and `Mathlib.LinearAlgebra.Matrix.Hermitian`, `Zeros` imports `Recurrence`, `Gauss` adds
+   `Zeros`. The theorem-only imports of §6 (`Mathlib.LinearAlgebra.Lagrange` for #57,
+   `Mathlib.Analysis.Polynomial.Order` for #30, `Polynomial/Approximation/Jackson` for #68) sit in
+   the scaffold files and move with the proofs. Each scaffold file imports its NLAlib counterpart
+   and the scaffold files it depends on (`Basic` → `Moments`; `Recurrence` → `Basic`; `Zeros` →
+   `Recurrence`; `Gauss` → `Zeros`; `LanczosPolynomials` → scaffold `Recurrence`, scaffold
+   `SpectralMeasure`, `Krylov/Basic/Compression` (for #49); `Quadrature` → `LanczosPolynomials`,
+   scaffold `Gauss`), so every job sees every sorried dependency.
+4. **#54's route uses a private lemma.** `card_spectrum_le_of_range_eq` is private in
+   `NLAlib/Krylov/Functions/Quadrature.lean` and invisible from the scaffold file; the `Proof:`
+   line and the dispatch outline say so (prove #54 in place in the NLAlib file, or re-derive the
+   count).
+5. **L2 (a) alignment done.** The five KS3 docstrings in `Krylov/Functions/Quadrature.lean` and
+   the two in `Polynomial/Orthogonal/Gauss.lean` that cited "[GolubMeurant2010, Theorem 6.6]" now
+   cite "Ch. 6"; the "not proved here" paragraph of `Gauss.lean`'s module docstring is replaced by
+   one on `gaussQuadrature`.
+6. **Bibliography.** `Chihara1978`, `GolubWelsch1969`, `Szego1975` added (§9). `check_rules` warns
+   C8 for `GolubWelsch1969`: it is cited only in scaffold docstrings, which the checker does not
+   read.
+7. **OQ4 and OQ5** are still marked "Open" above; the skeleton follows their recommendations (the
+   names as drafted; the $L^2$ definition with the finset form #57).
+8. Docstrings: the instance's drops the job number "#63"; the private steps get docstrings with
+   `Proof:` lines like the public ones.
 
 ## 0. Summary and main findings
 

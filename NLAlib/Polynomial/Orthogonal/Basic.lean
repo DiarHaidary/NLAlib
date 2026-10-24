@@ -17,9 +17,15 @@ hypothesis of Gauss quadrature (`NLAlib.Polynomial.Orthogonal.Gauss`) and the co
 Ritz-polynomial theorem of Lanczos quadrature. It depends on $\mu$ only through finitely many
 moments.
 
+A measure $\mu$ is positive definite on the polynomials of degree less than $k$ when every
+nonzero such polynomial has positive $L^2(\mu)$ norm; this is the hypothesis of uniqueness of the
+monic orthogonal polynomial, of the reality and simplicity of its zeros and of positive Gauss
+weights.
+
 ## Main definitions
 
 * `NLAlib.IsOrthogonalPolynomial`: orthogonality to every polynomial of degree less than $k$.
+* `NLAlib.IsMomentPosDef`: positive definiteness on the polynomials of degree less than $k$.
 
 ## Main results
 
@@ -37,6 +43,15 @@ namespace NLAlib
 $\int p\,r\,d\mu = 0$ for every real polynomial $r$ with $\deg r < k$. -/
 def IsOrthogonalPolynomial (μ : Measure ℝ) (k : ℕ) (p : ℝ[X]) : Prop :=
   ∀ r : ℝ[X], r.degree < k → ∫ x, p.eval x * r.eval x ∂μ = 0
+
+/-- The measure $\mu$ is **positive definite on the polynomials of degree less than $k$**:
+$\int p^2\,d\mu > 0$ for every nonzero real polynomial $p$ with $\deg p < k$. Equivalently the
+Hankel matrix $(\int x^{i+j}\,d\mu)_{i,j<k}$ is positive definite, or $\mu$ has at least $k$
+support points (`isMomentPosDef_iff_forall_finset`). Vacuous at $k = 0$. Chihara's
+positive-definite moment functional, restricted to degree $< k$.
+[Chihara1978, Ch. I, Definition 3.1]; [Gautschi2004, §1.1] (locators to check). -/
+def IsMomentPosDef (μ : Measure ℝ) (k : ℕ) : Prop :=
+  ∀ p : ℝ[X], p ≠ 0 → p.degree < k → 0 < ∫ x, p.eval x ^ 2 ∂μ
 
 /-- Orthogonality to the polynomials of degree less than $k$ gives orthogonality to those of
 degree less than $j \le k$. -/

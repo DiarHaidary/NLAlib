@@ -7,6 +7,7 @@ module
 
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Polynomial.Orthogonal.Basic
+public import NLAlib.Polynomial.Orthogonal.Zeros
 
 /-!
 # Gauss quadrature
@@ -21,13 +22,17 @@ are nonnegative, $\int\ell_x\,d\mu = \int\ell_x^2\,d\mu$, and it integrates ever
 degree less than $2\lvert s\rvert$ exactly, so it matches the first $2\lvert s\rvert$ moments of
 $\mu$.
 
-The existence of Gauss nodes for a given measure (the orthogonal polynomial has real, distinct
-zeros inside the support) is not proved here. For spectral measures the Ritz values of the
-Lanczos method supply them (`NLAlib.HasOrthonormalCols.isOrthogonalPolynomial_nodal`).
+The canonical $k$-point Gauss rule of $\mu$, `gaussQuadrature μ k`, is the interpolatory rule at
+the Gauss nodes `gaussNodes μ k`, the distinct real zeros of the monic orthogonal polynomial
+`orthogonalPolynomial μ k` (`NLAlib.Polynomial.Orthogonal.Zeros`). It is defined for every
+measure and every $k$; past the number of support points of $\mu$ it is $\mu$ itself. For
+spectral measures the Ritz values of the Lanczos method are Gauss nodes
+(`NLAlib.HasOrthonormalCols.isOrthogonalPolynomial_nodal`).
 
 ## Main definitions
 
 * `NLAlib.interpolatoryQuadrature`: the interpolatory rule as a measure.
+* `NLAlib.gaussQuadrature`: the canonical Gauss rule of a measure.
 
 ## Main results
 
@@ -86,7 +91,7 @@ orthogonal in $L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$
 measure $\mu$ supported in $[a, b]$, then
 $$\int p\,d\mu = \sum_{x\in s}\Bigl(\int\ell_x\,d\mu\Bigr)p(x)$$
 for every real polynomial $p$ of degree less than $2\lvert s\rvert$, $\ell_x$ the Lagrange basis
-polynomial of $x$. [Gautschi2004, Theorems 1.45 and 1.46]; [GolubMeurant2010, Theorem 6.6];
+polynomial of $x$. [Gautschi2004, Theorems 1.45 and 1.46]; [GolubMeurant2010, Ch. 6];
 there at the zeros of the orthogonal polynomial of a positive measure; here at any nodes whose
 nodal polynomial is orthogonal.
 Result: gauss-quadrature -/
@@ -178,7 +183,7 @@ private theorem integral_interpolatoryQuadrature_of_isOrthogonalPolynomial {μ :
 orthogonal in $L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite
 measure $\mu$ supported in $[a, b]$, then $\mu$ and its interpolatory rule at $s$ match their
 first $2\lvert s\rvert$ moments.
-[Gautschi2004, Theorems 1.45 and 1.46]; [GolubMeurant2010, Theorem 6.6].
+[Gautschi2004, Theorems 1.45 and 1.46]; [GolubMeurant2010, Ch. 6].
 Result: gauss-quadrature -/
 theorem IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature {μ : Measure ℝ}
     {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
@@ -199,5 +204,20 @@ theorem IsOrthogonalPolynomial.integral_interpolatoryQuadrature {μ : Measure �
     ∫ x, f x ∂interpolatoryQuadrature μ s =
       ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * f x :=
   integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ f
+
+/-! ### The canonical Gauss rule -/
+
+/-- The **$k$-point Gauss rule** of $\mu$: the interpolatory rule at the Gauss nodes. It matches
+the first $2k$ moments of $\mu$ for every $k$; past the number of support points it is $\mu$
+itself. -/
+noncomputable def gaussQuadrature (μ : Measure ℝ) (k : ℕ) : Measure ℝ :=
+  interpolatoryQuadrature μ (gaussNodes μ k)
+
+/-- The Gauss rule is a finite measure (the definition is not reducible, so
+`isFiniteMeasure_interpolatoryQuadrature` is not found through it). -/
+instance isFiniteMeasure_gaussQuadrature (μ : Measure ℝ) (k : ℕ) :
+    IsFiniteMeasure (gaussQuadrature μ k) := by
+  unfold gaussQuadrature
+  infer_instance
 
 end NLAlib

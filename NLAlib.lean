@@ -287,6 +287,8 @@ public import NLAlib.Polynomial.Interpolation.Stieltjes
 public import NLAlib.Polynomial.Orthogonal.Basic
 public import NLAlib.Polynomial.Orthogonal.Gauss
 public import NLAlib.Polynomial.Orthogonal.Moments
+public import NLAlib.Polynomial.Orthogonal.Recurrence
+public import NLAlib.Polynomial.Orthogonal.Zeros
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare

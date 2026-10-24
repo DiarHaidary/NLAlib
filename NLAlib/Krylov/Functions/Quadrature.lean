@@ -75,8 +75,7 @@ $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q) := \mu_{\mathbf{P}\mathbf
 any orthonormal basis $\mathbf{Q}$ of the Krylov space it is the spectral measure of
 $(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}, \mathbf{Q}^{\mathsf{H}}\mathbf{b})$
 (`HasOrthonormalCols.lanczosQuadrature_eq`): atoms at the Ritz values. Junk: $0$ at $q = 0$ and
-when the compression is not Hermitian. [GolubMeurant2010, Theorem 6.6] (locator from the
-quarry). -/
+when the compression is not Hermitian. [GolubMeurant2010, Ch. 6]. -/
 noncomputable def lanczosQuadrature (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) : Measure ℝ :=
   spectralMeasure (rangeProjector (krylovMatrix A b q) * A * rangeProjector (krylovMatrix A b q))
     (rangeProjector (krylovMatrix A b q) *ᵥ b)
@@ -211,7 +210,7 @@ theorem _root_.Matrix.IsHermitian.lanczosQuadrature_real_univ {A : Matrix n n �
 $\mathbf{A}$ and a real polynomial $p$ with $\deg p < 2q$,
 $\mathbf{b}^{\mathsf{H}}\mathsf{lanczosFA}(\mathbf{A}, p, \mathbf{b}, q) =
 \mathbf{b}^{\mathsf{H}}p(\mathbf{A})\mathbf{b}$; Lanczos-FA itself is exact only through degree
-$q - 1$. [GolubMeurant2010, Theorem 6.6] (locator from the quarry).
+$q - 1$. [GolubMeurant2010, Ch. 6].
 Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.star_dotProduct_lanczosFA_eval {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) {q : ℕ} {p : ℝ[X]} (hp : p.degree < 2 * q) :
@@ -264,7 +263,7 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_lanczosFA_eval {A : Matrix n n
 Hermitian $\mathbf{A}$, every $\mathbf{b}$ and every $q$,
 $\int p\,d\mu_{\mathbf{A},\mathbf{b}} = \int p\,d\,\mathsf{lanczosQuadrature}(\mathbf{A},
 \mathbf{b}, q)$ for every real polynomial $p$ of degree less than $2q$.
-[GolubMeurant2010, Theorem 6.6]. Chen, Trogdon and Ubaru (2022) start their
+[GolubMeurant2010, Ch. 6]. Chen, Trogdon and Ubaru (2022) start their
 spectrum-approximation bounds from this form; locator to check.
 Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.matchesMoments_lanczosQuadrature {A : Matrix n n 𝕜}
@@ -284,8 +283,7 @@ $$\bigl\lvert\mathbf{b}^{\mathsf{H}}\bigl(f(\mathbf{A})\mathbf{b} -
 \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)\bigr)\bigr\rvert \le
 2\varepsilon\|\mathbf{b}\|^2\,:$$
 the quadrature is exact on $p$, and $f - p$ is at most $\varepsilon$ on the spectrum and on
-the Ritz values. [GolubMeurant2010, Theorem 6.6] (locator from the quarry), the exactness it
-rests on. -/
+the Ritz values. [GolubMeurant2010, Ch. 6], the exactness it rests on. -/
 theorem
 _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a')
@@ -382,28 +380,6 @@ _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_li
   ring
 
 /-! ### The orthogonal-polynomial reading -/
-
-/-- A nonzero real polynomial of degree below the grade does not annihilate $\mathbf{b}$: the
-Krylov vectors $\mathbf{b}, \dots, \mathbf{A}^{\nu - 1}\mathbf{b}$ are linearly independent. -/
-private theorem aeval_mulVec_ne_zero_of_degree_lt_krylovGrade {A : Matrix n n 𝕜} {b : n → 𝕜}
-    {p : ℝ[X]} (hp0 : p ≠ 0) (hp : p.degree < krylovGrade A b) : aeval A p *ᵥ b ≠ 0 := by
-  have hm : p.natDegree + 1 ≤ krylovGrade A b := by
-    have := (natDegree_lt_iff_degree_lt hp0).2 hp
-    omega
-  have hli : LinearIndependent 𝕜 (fun i : Fin (p.natDegree + 1) => A ^ (i : ℕ) *ᵥ b) := by
-    have h := krylovMatrix_mulVec_injective_iff.mpr hm
-    rw [Matrix.mulVec_injective_iff] at h
-    exact h
-  intro h0
-  have hsum : ∑ i : Fin (p.natDegree + 1),
-      (algebraMap ℝ 𝕜 (p.coeff i)) • (A ^ (i : ℕ) *ᵥ b) = 0 := by
-    rw [← h0, aeval_eq_sum_range, Matrix.sum_mulVec,
-      ← Fin.sum_univ_eq_sum_range (fun i => (p.coeff i • A ^ i) *ᵥ b)]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [algebraMap_smul, Matrix.smul_mulVec]
-  have h := Fintype.linearIndependent_iff.mp hli _ hsum ⟨p.natDegree, by omega⟩
-  rw [map_eq_zero_iff _ (algebraMap ℝ 𝕜).injective, coeff_natDegree, leadingCoeff_eq_zero] at h
-  exact hp0 h
 
 /-- At most $\min(q, \nu)$ Ritz values: the compression is $\dim\mathcal{K}_q$ square. -/
 private theorem card_spectrum_le_of_range_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
@@ -549,7 +525,7 @@ $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)$ is the interpolatory rul
 $\mu_{\mathbf{A},\mathbf{b}}$ at the set $s$ of the distinct Ritz values (the eigenvalues of
 $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$), $q$ of them when $q$ is at most the grade of
 $\mathbf{b}$. Past the grade both sides are $\mu_{\mathbf{A},\mathbf{b}}$ itself.
-[GolubMeurant2010, Theorem 6.6] (locator from the quarry).
+[GolubMeurant2010, Ch. 6].
 Result: lanczos-gauss-quadrature -/
 theorem HasOrthonormalCols.lanczosQuadrature_eq_interpolatoryQuadrature {Q : Matrix n r 𝕜}
     (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
