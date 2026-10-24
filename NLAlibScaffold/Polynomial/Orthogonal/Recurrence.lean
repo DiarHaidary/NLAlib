@@ -237,6 +237,19 @@ section Orthogonality
 
 variable {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
 
+/-- A polynomial multiple of a polynomial of norm zero has norm zero: for a finite measure $\mu$
+supported in $[a, b]$, a real polynomial $p$ with $\int p^2\,d\mu = 0$ and every real polynomial
+$q$, $\int (qp)^2\,d\mu = 0$. The degenerate branch of the norm recurrence. -/
+private theorem integral_eval_mul_sq_eq_zero_of_integral_sq_eq_zero
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p q : ℝ[X]}
+    (hp : ∫ x, p.eval x ^ 2 ∂μ = 0) : ∫ x, (q * p).eval x ^ 2 ∂μ = 0 := by
+  have he : ∀ x, (q * p).eval x ^ 2 = p.eval x * (q ^ 2 * p).eval x := by
+    intro x
+    simp only [eval_mul, eval_pow]
+    ring
+  simp only [he]
+  exact integral_eval_mul_eq_zero_of_integral_sq_eq_zero hμ hp (q ^ 2 * p)
+
 /-- The norm recurrence: for a finite measure $\mu$ supported in $[a, b]$ and every $k$,
 $\|\pi_{k+1}\|^2 = \beta_{k+1}\|\pi_k\|^2$ in $L^2(\mu)$, also when $\|\pi_k\| = 0$.
 [Gautschi2004, Theorem 1.27] (equation to check).
@@ -248,7 +261,25 @@ $\mu = 0$. -/
 theorem integral_orthogonalPolynomial_succ_sq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ =
       jacobiBeta μ (k + 1) * ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
-  sorry
+  rcases eq_or_ne (∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ) 0 with h0 | h0
+  · -- degenerate: $\|\pi_k\|^2 = 0$ gives $\beta_{k+1} = 0$ and $\pi_{k+1} = (X - \alpha_k)\pi_k$
+    have hb : jacobiBeta μ (k + 1) = 0 := by
+      simp only [jacobiBeta]
+      rw [h0, div_zero]
+    rw [hb, zero_mul]
+    have hp : orthogonalPolynomial μ (k + 1) =
+        (X - C (jacobiAlpha μ k)) * orthogonalPolynomial μ k := by
+      cases k with
+      | zero => rw [orthogonalPolynomial_one, orthogonalPolynomial_zero, mul_one]
+      | succ j =>
+          have hbj : jacobiBeta μ (j + 1) = 0 := by
+            simp only [jacobiBeta]
+            rw [h0, zero_div]
+          rw [orthogonalPolynomial_add_two μ j]
+          simp only [hbj, Polynomial.C_0, zero_mul, sub_zero]
+    rw [hp]
+    exact integral_eval_mul_sq_eq_zero_of_integral_sq_eq_zero hμ h0
+  · rw [jacobiBeta, div_mul_cancel₀ _ h0]
 
 /-- The defining property of $\alpha_k$: for a finite measure $\mu$ supported in $[a, b]$ and
 every $k$, $\int(x - \alpha_k)\pi_k(x)^2\,d\mu = 0$, also when $\|\pi_k\| = 0$ ($x/0 = 0$).
