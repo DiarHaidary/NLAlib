@@ -92,7 +92,24 @@ $\int\ell_x\,d\mu = \mu.\mathrm{real}\{x\}$ (`setIntegral_finset`,
 `ofReal_measureReal`. -/
 theorem interpolatoryQuadrature_eq_self_of_ae_mem {s : Finset ℝ} (hs : ∀ᵐ x ∂μ, x ∈ s) :
     interpolatoryQuadrature μ s = μ := by
-  sorry
+  have key : ∀ x ∈ s, ∫ t, (Lagrange.basis s id x).eval t ∂μ = μ.real {x} := by
+    intro x hx
+    have h : ∀ᵐ t ∂μ, (Lagrange.basis s id x).eval t = Set.indicator {x} 1 t := by
+      filter_upwards [hs] with t ht
+      by_cases htx : t = x
+      · have h1 : (Lagrange.basis s id x).eval x = 1 :=
+          Lagrange.eval_basis_self (Set.injOn_id _) hx
+        rw [htx, h1, Set.indicator_of_mem (Set.mem_singleton x)]
+        rfl
+      · have h2 : (Lagrange.basis s id x).eval t = 0 :=
+          Lagrange.eval_basis_of_ne (v := id) (fun h => htx h.symm) ht
+        rw [h2, Set.indicator_of_notMem (Set.notMem_singleton_iff.mpr htx)]
+    rw [integral_congr_ae h, integral_indicator_one (measurableSet_singleton x)]
+  rw [Measure.ae_mem_finset_iff] at hs
+  refine Eq.trans ?_ hs.symm
+  simp only [interpolatoryQuadrature]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  rw [key x hx, ofReal_measureReal]
 
 /-- **Gauss quadrature**: for a finite measure $\mu$ supported in $[a, b]$ and every $k$, the
 $k$-point Gauss rule matches the first $2k$ moments of $\mu$: it integrates every real polynomial
