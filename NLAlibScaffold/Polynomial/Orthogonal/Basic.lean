@@ -34,8 +34,8 @@ less than $j \le k$.
 Proof: S, about 5 lines. As `IsOrthogonalPolynomial.mono`: `h p hp (hdeg.trans_le …)` with
 `exact_mod_cast hjk`. -/
 theorem IsMomentPosDef.mono {μ : Measure ℝ} {j k : ℕ} (h : IsMomentPosDef μ k) (hjk : j ≤ k) :
-    IsMomentPosDef μ j := by
-  sorry
+    IsMomentPosDef μ j :=
+  fun p hp hpdeg => h p hp (hpdeg.trans_le (by exact_mod_cast hjk))
 
 /-- **Positive definiteness counts support points**: a finite measure $\mu$ supported in
 $[a, b]$ is positive definite on the polynomials of degree less than $k$ exactly when no finite
