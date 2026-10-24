@@ -48,7 +48,10 @@ theorem _root_.Matrix.IsHermitian.star_aeval_mulVec_dotProduct_aeval_mulVec {A :
     (hA : A.IsHermitian) (b : n → 𝕜) (p r : ℝ[X]) :
     star (aeval A p *ᵥ b) ⬝ᵥ (aeval A r *ᵥ b) =
       ((∫ x, p.eval x * r.eval x ∂spectralMeasure A b : ℝ) : 𝕜) := by
-  sorry
+  have hp : (aeval A p)ᴴ = aeval A p := (hA.aeval p).eq
+  rw [star_mulVec_dotProduct, hp, Matrix.mulVec_mulVec, ← map_mul, ← quadForm_def]
+  simp only [← eval_mul]
+  rw [hA.integral_eval_spectralMeasure, (hA.aeval (p * r)).coe_re_quadForm]
 
 /-- Polynomial norms are spectral integrals: for Hermitian $\mathbf{A}$, every $\mathbf{b}$ and
 every real polynomial $p$, $\|p(\mathbf{A})\mathbf{b}\|^2 = \int p^2\,d\mu_{\mathbf{A},\mathbf{b}}$.
