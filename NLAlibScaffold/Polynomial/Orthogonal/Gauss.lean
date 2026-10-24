@@ -62,7 +62,27 @@ finite measure carried by a finset), then `integral_finsetSum_measure`, `integra
 `integral_dirac`; or `setIntegral_finset` with `Measure.restrict_eq_self_of_ae_mem`. -/
 theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
     ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x := by
-  sorry
+  have hq : gaussQuadrature μ k = ∑ y ∈ gaussNodes μ k,
+      ENNReal.ofReal (∫ t, (Lagrange.basis (gaussNodes μ k) id y).eval t ∂μ) • Measure.dirac y :=
+    rfl
+  have hmass : ∀ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} =
+      (ENNReal.ofReal (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ)).toReal := by
+    intro x hx
+    rw [hq, measureReal_def, Measure.finsetSum_apply]
+    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply]
+    rw [Finset.sum_eq_single_of_mem x hx]
+    · simp
+    · intro y _ hy
+      simp [Set.indicator_of_notMem, hy]
+  have hint : ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k,
+      (ENNReal.ofReal (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ)).toReal * f x := by
+    rw [hq, integral_finsetSum_measure]
+    · refine Finset.sum_congr rfl fun y _ => ?_
+      rw [integral_smul_measure, integral_dirac, smul_eq_mul]
+    · intro y _
+      exact (integrable_dirac (by simp)).smul_measure ENNReal.ofReal_ne_top
+  rw [hint]
+  exact Finset.sum_congr rfl fun x hx => by rw [hmass x hx]
 
 /-- Every real function is integrable against the Gauss rule: for every measure $\mu$ on
 $\mathbb{R}$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$, $f$ is integrable against
