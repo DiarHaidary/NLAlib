@@ -72,7 +72,9 @@ then so do $c\mu$ and $c\nu$ for every $c \in [0, \infty]$.
 Proof: S, about 5 lines. `integral_smul_measure` on both sides, then `congrArg` with `h`. -/
 theorem MatchesMoments.smul {N : ℕ} (h : MatchesMoments μ ν N) (c : ℝ≥0∞) :
     MatchesMoments (c • μ) (c • ν) N := by
-  sorry
+  intro p hp
+  rw [integral_smul_measure, integral_smul_measure]
+  exact congrArg _ (h p hp)
 
 /-- Moment matching is preserved by finite sums: if finite measures $\mu_i$ and $\nu_i$, all
 supported in $[a, b]$, match their first $N$ moments for each $i \in s$, then
