@@ -87,7 +87,24 @@ Proof: M, about 35 lines, one job with `monic_orthogonalPolynomial` (the shared 
 induction; see there). -/
 theorem natDegree_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) :
     (orthogonalPolynomial μ k).natDegree = k := by
-  sorry
+  induction k using Nat.twoStepInduction with
+  | zero => simp [orthogonalPolynomial_zero]
+  | one => rw [orthogonalPolynomial_one, natDegree_X_sub_C]
+  | more n h0 h1 =>
+      -- `π_{n+1} ≠ 0`, since its `natDegree` is positive.
+      have hne : orthogonalPolynomial μ (n + 1) ≠ 0 := by
+        intro h
+        rw [h] at h1
+        simp at h1
+      have hA : ((X - C (jacobiAlpha μ (n + 1))) * orthogonalPolynomial μ (n + 1)).natDegree
+          = n + 2 := by
+        rw [natDegree_mul (monic_X_sub_C _).ne_zero hne, natDegree_X_sub_C, h1]
+        omega
+      have hB : (C (jacobiBeta μ (n + 1)) * orthogonalPolynomial μ n).natDegree ≤ n := by
+        have hB' := natDegree_mul_le (p := C (jacobiBeta μ (n + 1)))
+          (q := orthogonalPolynomial μ n)
+        rwa [natDegree_C, zero_add, h0] at hB'
+      rw [orthogonalPolynomial_add_two, natDegree_sub_eq_left_of_natDegree_lt (by omega), hA]
 
 /-- The orthogonal polynomial $\pi_k$ of every measure $\mu$ on $\mathbb{R}$ has degree $k$, as
 `Polynomial.degree`.
