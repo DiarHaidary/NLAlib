@@ -194,7 +194,24 @@ Proof: S, about 15 lines. Unfold `jacobiAlpha`; `MatchesMoments.orthogonalPolyno
 `MatchesMoments.mono`; the two integrals are of polynomials of degree at most $2k + 1$. -/
 theorem MatchesMoments.jacobiAlpha_eq {k : ℕ} (h : MatchesMoments μ ν (2 * k + 2)) :
     jacobiAlpha μ k = jacobiAlpha ν k := by
-  sorry
+  have hp0 : orthogonalPolynomial μ k ≠ 0 := (monic_orthogonalPolynomial μ k).ne_zero
+  have hk : (orthogonalPolynomial μ k).natDegree = k := natDegree_orthogonalPolynomial μ k
+  have hp : orthogonalPolynomial μ k = orthogonalPolynomial ν k :=
+    MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega))
+  simp only [jacobiAlpha]
+  rw [← hp]
+  congr 1
+  · have hd := h (X * orthogonalPolynomial μ k ^ 2) (by
+      rw [degree_eq_natDegree (mul_ne_zero X_ne_zero (pow_ne_zero 2 hp0)),
+        natDegree_mul X_ne_zero (pow_ne_zero 2 hp0), natDegree_X, natDegree_pow, hk]
+      exact_mod_cast by omega)
+    simp only [eval_mul, eval_X, eval_pow] at hd
+    exact hd
+  · have hd := h (orthogonalPolynomial μ k ^ 2) (by
+      rw [degree_eq_natDegree (pow_ne_zero 2 hp0), natDegree_pow, hk]
+      exact_mod_cast by omega)
+    simp only [eval_pow] at hd
+    exact hd
 
 /-- The off-diagonal coefficient depends only on the moments: if two measures $\mu$, $\nu$ on
 $\mathbb{R}$ match their first $2k + 1$ moments, then $\beta_k(\mu) = \beta_k(\nu)$.
