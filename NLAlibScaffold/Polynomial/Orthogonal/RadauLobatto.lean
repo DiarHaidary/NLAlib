@@ -75,20 +75,9 @@ $\max(\lvert a - c\rvert, \lvert b - c\rvert)$ $\mu$-a.e. (`hμ`), so
 `withDensity_apply_le`/`lintegral_mono_ae` bounds the mass by that constant times
 $\mu(\mathbb{R}) < \infty$ (`measure_lt_top`). -/
 theorem isFiniteMeasure_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (c : ℝ) :
-    IsFiniteMeasure (radauMeasure μ c) := by
-  have hbound : ∀ᵐ x ∂μ, ‖x - c‖ₑ ≤ ENNReal.ofReal (|a - c| + |b - c|) := by
-    filter_upwards [hμ] with x hx
-    rw [Real.enorm_eq_ofReal_abs]
-    apply ENNReal.ofReal_le_ofReal
-    rw [abs_le]
-    constructor <;>
-      linarith [hx.1, hx.2, le_abs_self (a - c), neg_abs_le (a - c), le_abs_self (b - c),
-        neg_abs_le (b - c), abs_nonneg (a - c), abs_nonneg (b - c)]
-  have hint : ∫⁻ x, ‖x - c‖ₑ ∂μ ≤ ENNReal.ofReal (|a - c| + |b - c|) * μ Set.univ :=
-    (lintegral_mono_ae hbound).trans_eq (lintegral_const _)
-  constructor
-  rw [radauMeasure, withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ]
-  exact lt_of_le_of_lt hint (ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top μ _))
+    IsFiniteMeasure (radauMeasure μ c) :=
+  isFiniteMeasure_withDensity ((integrable_eval_of_ae_mem_Icc hμ (X - C c)).congr
+    (ae_of_all μ fun x => by simp) : Integrable (fun x => x - c) μ).2.ne
 
 /-- The Radau modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$ and every
 $c$, almost every point of `radauMeasure μ c` lies in $[a, b]$.
@@ -100,6 +89,51 @@ theorem ae_mem_Icc_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (c : �
   exact (withDensity_absolutelyContinuous μ _).ae_le hμ
 
 /-! ### Radau exactness -/
+
+omit [IsFiniteMeasure μ] in
+/-- Membership in the Gauss nodes: $x$ is a Gauss node of order $k$ of $\mu$ iff it is a zero
+of $\pi_k$. -/
+private theorem mem_gaussNodes_iff_isRoot {k : ℕ} {x : ℝ} :
+    x ∈ gaussNodes μ k ↔ (orthogonalPolynomial μ k).IsRoot x := by
+  rw [gaussNodes, Multiset.mem_toFinset, mem_roots (monic_orthogonalPolynomial μ k).ne_zero]
+
+omit [IsFiniteMeasure μ] in
+/-- A Gauss node splits off a linear factor: if $t$ is a Gauss node of order $k$ of $\mu$, then
+$\pi_k = (X - t)g$ with $g \ne 0$ of degree less than $k$. -/
+private theorem exists_orthogonalPolynomial_eq_X_sub_C_mul {k : ℕ} {t : ℝ}
+    (ht : t ∈ gaussNodes μ k) :
+    ∃ g : ℝ[X], g ≠ 0 ∧ g.degree < k ∧ orthogonalPolynomial μ k = (X - C t) * g := by
+  have hπ := (mul_divByMonic_eq_iff_isRoot.mpr (mem_gaussNodes_iff_isRoot.mp ht)).symm
+  set g := orthogonalPolynomial μ k /ₘ (X - C t)
+  have hg : g ≠ 0 := fun h0 => (monic_orthogonalPolynomial μ k).ne_zero (by rw [hπ, h0, mul_zero])
+  have hdeg := natDegree_mul (X_sub_C_ne_zero t) hg
+  rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
+  exact ⟨g, hg, degree_le_natDegree.trans_lt (by exact_mod_cast (by omega : g.natDegree < k)), hπ⟩
+
+/-- A one-signed factor at an endpoint: for $\mu$ supported in $[a, b]$, $t \in \{a, b\}$ and a
+continuous $F \ge 0$ with $F(t) = 0$, if $\int F(x)(x - t)\,d\mu = 0$ then $F = 0$
+$\mu$-almost everywhere. -/
+private theorem ae_eq_zero_of_integral_mul_sub_eq_zero (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    {t : ℝ} (ht : t = a ∨ t = b) {F : ℝ → ℝ} (hF : Continuous F) (hF0 : ∀ x, 0 ≤ F x)
+    (hFt : F t = 0) (h : ∫ x, F x * (x - t) ∂μ = 0) :
+    ∀ᵐ x ∂μ, F x = 0 := by
+  have hint : Integrable (fun x => F x * (x - t)) μ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
+    exact (by fun_prop : Continuous fun x => F x * (x - t)).continuousOn.integrableOn_Icc
+  have hz : ∀ᵐ x ∂μ, F x * (x - t) = 0 := by
+    rcases ht with rfl | rfl
+    · refine (integral_eq_zero_iff_of_nonneg_ae ?_ hint).mp h
+      filter_upwards [hμ] with x hx using mul_nonneg (hF0 x) (sub_nonneg.2 hx.1)
+    · have hn : ∀ᵐ x ∂μ, 0 ≤ -(F x * (x - t)) := by
+        filter_upwards [hμ] with x hx
+        exact neg_nonneg.2 (mul_nonpos_of_nonneg_of_nonpos (hF0 x) (sub_nonpos.2 hx.2))
+      filter_upwards [(integral_eq_zero_iff_of_nonneg_ae hn hint.neg).mp
+        (by rw [integral_neg, h, neg_zero])] with x hx
+      exact neg_eq_zero.mp hx
+  filter_upwards [hz] with x hx
+  rcases mul_eq_zero.mp hx with hx | hx
+  · exact hx
+  · rwa [sub_eq_zero.mp hx]
 
 /-- The prescribed node is not a free node: if $\mu$, finite and supported in $[a, b]$, has a
 Radau modified measure at $c \in \{a, b\}$ that is positive definite up to degree $k$, then $c$
@@ -116,67 +150,18 @@ theorem IsMomentPosDef.notMem_gaussNodes_radauMeasure {k : ℕ}
     (h : IsMomentPosDef (radauMeasure μ c) k) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
     (hc : c = a ∨ c = b) : c ∉ gaussNodes (radauMeasure μ c) k := by
   have := isFiniteMeasure_radauMeasure hμ c
-  have hμc := ae_mem_Icc_radauMeasure hμ c
   intro hmem
-  have hroot : (orthogonalPolynomial (radauMeasure μ c) k).IsRoot c := by
-    unfold gaussNodes at hmem
-    rwa [Multiset.mem_toFinset,
-      mem_roots (monic_orthogonalPolynomial _ k).ne_zero] at hmem
-  have hπg := (mul_divByMonic_eq_iff_isRoot.mpr hroot).symm
-  set π := orthogonalPolynomial (radauMeasure μ c) k with hπdef
-  set g := π /ₘ (X - C c) with hgdef
-  have hg0 : g ≠ 0 := fun h0 =>
-    (monic_orthogonalPolynomial (radauMeasure μ c) k).ne_zero (by rw [← hπdef, hπg, h0, mul_zero])
-  have hgk : g.natDegree < k := by
-    have hdeg := natDegree_mul (X_sub_C_ne_zero c) hg0
-    rw [← hπg, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
-    omega
-  have hgdeg : g.degree < k := degree_le_natDegree.trans_lt (by exact_mod_cast hgk)
-  have hev : ∀ x, π.eval x = (x - c) * g.eval x := fun x => by rw [hπg]; simp
-  have h1 : ∫ x, |x - c| * (π.eval x * g.eval x) ∂μ = 0 :=
-    (integral_radauMeasure μ c (fun x => π.eval x * g.eval x)).symm.trans
-      (isOrthogonalPolynomial_orthogonalPolynomial hμc k g hgdeg)
-  simp only [hev, mul_assoc] at h1
-  have hG_int : Integrable (fun x => |x - c| * ((x - c) * (g.eval x * g.eval x))) μ := by
-    have hcont : Continuous fun x => |x - c| * ((x - c) * (g.eval x * g.eval x)) := by fun_prop
-    obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hcont.continuousOn
-    exact Integrable.of_bound hcont.aestronglyMeasurable C
-      (by filter_upwards [hμ] with x hx using hC x hx)
-  have hzero : ∀ᵐ x ∂μ, |x - c| * ((x - c) * (g.eval x * g.eval x)) = 0 := by
-    rcases hc with hc | hc
-    · refine (integral_eq_zero_iff_of_nonneg_ae ?_ hG_int).mp h1
-      filter_upwards [hμ] with x hx
-      have hx' : 0 ≤ x - c := by linarith [hx.1]
-      exact mul_nonneg (abs_nonneg _) (mul_nonneg hx' (mul_self_nonneg _))
-    · have hneg : ∫ x, -(|x - c| * ((x - c) * (g.eval x * g.eval x))) ∂μ = 0 := by
-        rw [integral_neg, h1, neg_zero]
-      have hnn := (integral_eq_zero_iff_of_nonneg_ae (f := fun x => -(|x - c| * ((x - c) * (g.eval x * g.eval x)))) ?_ hG_int.neg).mp hneg
-      · filter_upwards [hnn] with x hx
-        exact neg_eq_zero.mp hx
-      · filter_upwards [hμ] with x hx
-        have hx' : x - c ≤ 0 := by linarith [hx.2]
-        show (0 : ℝ) ≤ -(|x - c| * ((x - c) * (g.eval x * g.eval x)))
-        have : 0 ≤ |x - c| * ((c - x) * (g.eval x * g.eval x)) :=
-          mul_nonneg (abs_nonneg _) (mul_nonneg (by linarith) (mul_self_nonneg _))
-        have e : -(|x - c| * ((x - c) * (g.eval x * g.eval x))) =
-            |x - c| * ((c - x) * (g.eval x * g.eval x)) := by ring
-        rw [e]
-        exact this
-  have hsq : ∫ x, g.eval x ^ 2 ∂radauMeasure μ c = 0 := by
-    calc ∫ x, g.eval x ^ 2 ∂radauMeasure μ c
-        = ∫ x, |x - c| * g.eval x ^ 2 ∂μ := integral_radauMeasure μ c (fun x => g.eval x ^ 2)
-      _ = ∫ _x, (0 : ℝ) ∂μ := by
-          refine integral_congr_ae ?_
-          filter_upwards [hzero] with x hx
-          rcases mul_eq_zero.mp hx with h2 | h2
-          · rw [h2, zero_mul]
-          · rcases mul_eq_zero.mp h2 with h3 | h3
-            · rw [h3, abs_zero, zero_mul]
-            · rw [sq, h3, mul_zero]
-      _ = 0 := integral_zero _ _
-  have hpos := h g hg0 hgdeg
-  rw [hsq] at hpos
-  exact lt_irrefl _ hpos
+  obtain ⟨g, hg0, hgdeg, hπ⟩ := exists_orthogonalPolynomial_eq_X_sub_C_mul hmem
+  have hO := isOrthogonalPolynomial_orthogonalPolynomial (ae_mem_Icc_radauMeasure hμ c) k g hgdeg
+  rw [integral_radauMeasure, hπ] at hO
+  refine (h g hg0 hgdeg).ne' ?_
+  rw [integral_radauMeasure]
+  refine integral_eq_zero_of_ae (ae_eq_zero_of_integral_mul_sub_eq_zero hμ hc
+    (F := fun x => |x - c| * g.eval x ^ 2) (by fun_prop) (fun x => by positivity) (by simp) ?_)
+  rw [← hO]
+  congr 1 with x
+  simp only [eval_mul, eval_sub, eval_X, eval_C]
+  ring
 
 /-- The number of Radau nodes: if $\mu$, finite and supported in $[a, b]$, has a Radau modified
 measure at $c \in \{a, b\}$ positive definite up to degree $k$, then the Radau rule has
@@ -190,6 +175,27 @@ theorem IsMomentPosDef.card_radauNodes {k : ℕ} (h : IsMomentPosDef (radauMeasu
   unfold radauNodes
   rw [Finset.card_insert_of_notMem (h.notMem_gaussNodes_radauMeasure hμ hc),
     IsMomentPosDef.card_gaussNodes h (ae_mem_Icc_radauMeasure hμ c)]
+
+omit [IsFiniteMeasure μ] in
+/-- The sign of $x - c$: for $\mu$ supported in $[a, b]$ and $c \in \{a, b\}$ there is a constant
+$s$ ($1$ at $c = a$, $-1$ at $c = b$) with
+$\int(x - c)g(x)\,d\mu = s\int g\,d\,\mathsf{radauMeasure}(\mu, c)$ for every $g$. -/
+private theorem exists_integral_sub_mul_eq_mul_integral_radauMeasure
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) :
+    ∃ s : ℝ, ∀ g : ℝ → ℝ, ∫ x, (x - c) * g x ∂μ = s * ∫ x, g x ∂radauMeasure μ c := by
+  simp only [integral_radauMeasure]
+  rcases hc with rfl | rfl
+  · refine ⟨1, fun g => ?_⟩
+    rw [one_mul]
+    refine integral_congr_ae ?_
+    filter_upwards [hμ] with x hx
+    rw [abs_of_nonneg (sub_nonneg.2 hx.1)]
+  · refine ⟨-1, fun g => ?_⟩
+    rw [neg_one_mul, ← integral_neg]
+    refine integral_congr_ae ?_
+    filter_upwards [hμ] with x hx
+    rw [abs_of_nonpos (sub_nonpos.2 hx.2)]
+    ring
 
 /-- **The Radau nodal polynomial is orthogonal**: if $\mu$, finite and supported in $[a, b]$,
 has a Radau modified measure at $c \in \{a, b\}$ positive definite up to degree $k$, then
@@ -211,30 +217,21 @@ theorem isOrthogonalPolynomial_nodal_radauNodes (hμ : ∀ᵐ x ∂μ, x ∈ Set
     rw [radauNodes, Lagrange.nodal_insert_eq_nodal (h.notMem_gaussNodes_radauMeasure hμ hc),
       h.nodal_gaussNodes hν]
     rfl
-  have hs : ∃ s : ℝ, ∀ᵐ x ∂μ, ∀ t : ℝ, (x - c) * t = s * (|x - c| * t) := by
-    rcases hc with rfl | rfl
-    · refine ⟨1, ?_⟩
-      filter_upwards [hμ] with x hx
-      intro t
-      rw [abs_of_nonneg (by linarith [hx.1])]
-      ring
-    · refine ⟨-1, ?_⟩
-      filter_upwards [hμ] with x hx
-      intro t
-      rw [abs_of_nonpos (by linarith [hx.2])]
-      ring
-  obtain ⟨s, hs⟩ := hs
+  obtain ⟨s, hs⟩ := exists_integral_sub_mul_eq_mul_integral_radauMeasure hμ hc
   intro r hr
-  rw [hnodal]
-  simp only [eval_mul, eval_sub, eval_X, eval_C]
-  set π := orthogonalPolynomial (radauMeasure μ c) k with hπ
-  calc _ = ∫ x, s * (|x - c| * (π.eval x * r.eval x)) ∂μ := by
-        refine integral_congr_ae ?_
-        filter_upwards [hs] with x hx
-        linear_combination hx (π.eval x * r.eval x)
-    _ = s * ∫ x, π.eval x * r.eval x ∂radauMeasure μ c := by
-        rw [integral_const_mul, integral_radauMeasure]
-    _ = 0 := by rw [hπ, isOrthogonalPolynomial_orthogonalPolynomial hν k r hr, mul_zero]
+  simp only [hnodal, eval_mul, eval_sub, eval_X, eval_C, mul_assoc]
+  rw [hs, isOrthogonalPolynomial_orthogonalPolynomial hν k r hr, mul_zero]
+
+omit [IsFiniteMeasure μ] in
+/-- Where the Radau density vanishes: if `radauMeasure μ c` is carried by its Gauss nodes of
+order $k$, then $\mu$ is carried by the Radau nodes (the density vanishes only at $c$). -/
+private theorem ae_mem_radauNodes_of_ae_mem_gaussNodes {k : ℕ}
+    (hG : ∀ᵐ x ∂radauMeasure μ c, x ∈ gaussNodes (radauMeasure μ c) k) :
+    ∀ᵐ x ∂μ, x ∈ radauNodes μ c k := by
+  filter_upwards [(ae_withDensity_iff (by fun_prop)).mp hG] with x hx
+  by_cases hxc : x = c
+  · simp [radauNodes, hxc]
+  · exact Finset.mem_insert_of_mem (hx (by simpa [sub_eq_zero] using hxc))
 
 /-- The terminating case of the Radau rule: if the orthogonal polynomial $\tilde\pi_k$ of the
 Radau modified measure of $\mu$ at $c$ has norm $0$ there, for $\mu$ finite and supported in
@@ -251,23 +248,34 @@ theorem radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     (h : ∫ x, (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2 ∂radauMeasure μ c = 0) :
     radauQuadrature μ c k = μ := by
   have := isFiniteMeasure_radauMeasure hμ c
-  have hc0 : ∀ᵐ x ∂radauMeasure μ c, (orthogonalPolynomial (radauMeasure μ c) k).eval x = 0 :=
-    ae_eval_eq_zero_of_integral_sq_eq_zero (ae_mem_Icc_radauMeasure hμ c) h
-  have hπ : orthogonalPolynomial (radauMeasure μ c) k ≠ 0 :=
-    (monic_orthogonalPolynomial _ _).ne_zero
-  have hG : ∀ᵐ x ∂radauMeasure μ c, x ∈ gaussNodes (radauMeasure μ c) k :=
-    hc0.mono fun x hx => by
-      unfold gaussNodes
-      rw [Multiset.mem_toFinset, Polynomial.mem_roots hπ]
-      exact hx
-  have hdens : Measurable fun x : ℝ => ‖x - c‖ₑ := by fun_prop
-  have hμG : ∀ᵐ x ∂μ, x ∈ radauNodes μ c k := by
-    refine ((ae_withDensity_iff hdens).mp hG).mono fun x hx => ?_
-    unfold radauNodes
-    by_cases hxc : x = c
-    · simp [hxc]
-    · exact Finset.mem_insert_of_mem (hx (by simpa [sub_eq_zero] using hxc))
-  exact interpolatoryQuadrature_eq_self_of_ae_mem hμG
+  refine interpolatoryQuadrature_eq_self_of_ae_mem (ae_mem_radauNodes_of_ae_mem_gaussNodes ?_)
+  filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero (ae_mem_Icc_radauMeasure hμ c) h]
+    with x hx
+  exact mem_gaussNodes_iff_isRoot.mpr hx
+
+/-- The degenerate Radau case: if `radauMeasure μ c` is not positive definite up to degree $k$,
+then $\mu$, finite and supported in $[a, b]$, is carried by the Radau nodes. -/
+private theorem ae_mem_radauNodes_of_not_isMomentPosDef (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    {k : ℕ} (h : ¬IsMomentPosDef (radauMeasure μ c) k) : ∀ᵐ x ∂μ, x ∈ radauNodes μ c k := by
+  have := isFiniteMeasure_radauMeasure hμ c
+  exact ae_mem_radauNodes_of_ae_mem_gaussNodes
+    (ae_mem_gaussNodes_of_not_isMomentPosDef (ae_mem_Icc_radauMeasure hμ c) h)
+
+/-- Exactness at a node: if $p$ is nonnegative on $[a, b]$, vanishes at the other nodes of $s$
+and is positive at $x \in s$, and the nodal polynomial of $s$ is orthogonal of order $m$ with
+$\deg p < \lvert s\rvert + m$, then $\int\ell_x\,d\mu \ge 0$. -/
+private theorem integral_eval_basis_nonneg_of_exact (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    {s : Finset ℝ} {m : ℕ} (hs : IsOrthogonalPolynomial μ m (Lagrange.nodal s id))
+    {x : ℝ} (hx : x ∈ s) {p : ℝ[X]} (hdeg : p.natDegree < s.card + m)
+    (hp : ∀ t ∈ Set.Icc a b, 0 ≤ p.eval t) (h0 : ∀ y ∈ s, y ≠ x → p.eval y = 0)
+    (hpos : 0 < p.eval x) : 0 ≤ ∫ t, (Lagrange.basis s id x).eval t ∂μ := by
+  have hex := hs.integral_eval_eq_sum_of_degree_lt_card_add hμ
+    (degree_le_natDegree.trans_lt (by exact_mod_cast hdeg))
+  rw [Finset.sum_eq_single x (fun y hy hne => by rw [h0 y hy hne, mul_zero])
+    (fun hn => absurd hx hn)] at hex
+  have hnn : 0 ≤ ∫ t, p.eval t ∂μ := integral_nonneg_of_ae (hμ.mono fun t ht => hp t ht)
+  rw [hex] at hnn
+  exact nonneg_of_mul_nonneg_left hnn hpos
 
 /-- **The Radau weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
 $c \in \{a, b\}$ and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Radau
@@ -286,47 +294,21 @@ the nodes, and the weight is the mass $\mu\{x\} \ge 0$ (`integral_eval_basis_of_
 theorem integral_eval_basis_radauNodes_nonneg (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
     (hc : c = a ∨ c = b) (k : ℕ) {x : ℝ} (hx : x ∈ radauNodes μ c k) :
     0 ≤ ∫ t, (Lagrange.basis (radauNodes μ c k) id x).eval t ∂μ := by
-  have hρ : ∀ᵐ t ∂radauMeasure μ c, t ∈ Set.Icc a b := ae_mem_Icc_radauMeasure hμ c
-  have := isFiniteMeasure_radauMeasure hμ c
   by_cases hp : IsMomentPosDef (radauMeasure μ c) k
-  · set ℓ := Lagrange.basis (radauNodes μ c k) id x with hℓ
-    have hcard := hp.card_radauNodes hμ hc
-    have hs := isOrthogonalPolynomial_nodal_radauNodes hμ hc hp
-    have hdeg : (ℓ ^ 2).degree < ((radauNodes μ c k).card + k : ℕ) := by
-      have hnd : ℓ.natDegree = k := by
-        rw [hℓ, Lagrange.natDegree_basis (Set.injOn_id _) hx, hcard]
-        omega
-      have h1 : (ℓ ^ 2).natDegree < (radauNodes μ c k).card + k := by
-        have := natDegree_pow_le (p := ℓ) (n := 2)
-        omega
-      exact degree_le_natDegree.trans_lt (by exact_mod_cast h1)
-    have h := hs.integral_eval_eq_sum_of_degree_lt_card_add hμ hdeg
-    simp only [eval_pow] at h
-    have key : ∫ t, ℓ.eval t ∂μ = ∫ t, ℓ.eval t ^ 2 ∂μ := by
-      rw [h, Finset.sum_eq_single x]
-      · have : ℓ.eval x = 1 := Lagrange.eval_basis_self (v := id) (Set.injOn_id _) hx
-        rw [this, one_pow, mul_one]
-      · intro y hy hyx
-        have : ℓ.eval y = 0 := Lagrange.eval_basis_of_ne (v := id) (Ne.symm hyx) hy
-        rw [this]
-        ring
-      · intro hx'
-        exact absurd hx hx'
-    rw [key]
-    exact integral_nonneg fun t => sq_nonneg _
-  · have hsq :
-        ∫ t, (orthogonalPolynomial (radauMeasure μ c) k).eval t ^ 2 ∂radauMeasure μ c = 0 := by
-      rcases k with _ | j
-      · exfalso
-        exact hp fun p hp0 hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp0))
-      · rw [isMomentPosDef_succ_iff hρ j, not_lt] at hp
-        rw [integral_orthogonalPolynomial_succ_sq hρ j,
-          le_antisymm hp (integral_nonneg fun t => sq_nonneg _), mul_zero]
-    have hself := radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ hsq
-    have hae := ae_mem_interpolatoryQuadrature μ (radauNodes μ c k)
-    unfold radauQuadrature at hself
-    rw [hself] at hae
-    rw [integral_eval_basis_of_ae_mem hae hx]
+  · -- $p = \ell_x^2$, of degree $2k < \lvert R\rvert + k$
+    set ℓ := Lagrange.basis (radauNodes μ c k) id x
+    have hℓ : ℓ.natDegree = (radauNodes μ c k).card - 1 :=
+      Lagrange.natDegree_basis (Set.injOn_id _) hx
+    have hℓx : ℓ.eval x = 1 := Lagrange.eval_basis_self (v := id) (Set.injOn_id _) hx
+    refine integral_eval_basis_nonneg_of_exact hμ (isOrthogonalPolynomial_nodal_radauNodes hμ hc hp)
+      hx (p := ℓ ^ 2) ?_ (fun t _ => by rw [eval_pow]; positivity) (fun y hy hyx => ?_)
+      (by rw [eval_pow, hℓx]; norm_num)
+    · have := natDegree_pow_le (p := ℓ) (n := 2)
+      have := hp.card_radauNodes hμ hc
+      omega
+    · have hℓy : ℓ.eval y = 0 := Lagrange.eval_basis_of_ne (v := id) hyx.symm hy
+      rw [eval_pow, hℓy, zero_pow two_ne_zero]
+  · rw [integral_eval_basis_of_ae_mem (ae_mem_radauNodes_of_not_isMomentPosDef hμ hp) hx]
     exact measureReal_nonneg
 
 /-- The Radau rule with the interpolatory weights: for a finite measure $\mu$ supported in
@@ -366,23 +348,13 @@ Result: gauss-radau-quadrature -/
 theorem matchesMoments_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b)
     (k : ℕ) : MatchesMoments μ (radauQuadrature μ c k) (2 * k + 1) := by
   by_cases h : IsMomentPosDef (radauMeasure μ c) k
-  · intro p hp
-    have hdeg : p.degree < ((radauNodes μ c k).card + k : ℕ) := by
-      rw [h.card_radauNodes hμ hc]
-      have e : k + 1 + k = 2 * k + 1 := by ring
-      rw [e]
-      exact hp
+  · have hs := isOrthogonalPolynomial_nodal_radauNodes hμ hc h
+    intro p hp
     rw [integral_radauQuadrature hμ hc k (fun x => p.eval x)]
-    exact IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add
-      (isOrthogonalPolynomial_nodal_radauNodes hμ hc h) hμ hdeg
-  · have := isFiniteMeasure_radauMeasure hμ c
-    have h0 : ∫ x, (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2
-        ∂radauMeasure μ c = 0 := by
-      have hnot : ¬ IsMomentPosDef (radauMeasure μ c) (k + 1) :=
-        fun h1 => h (h1.mono (Nat.le_succ k))
-      rw [isMomentPosDef_succ_iff (ae_mem_Icc_radauMeasure hμ c)] at hnot
-      exact le_antisymm (not_lt.mp hnot) (integral_nonneg fun x => sq_nonneg _)
-    rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0]
+    exact hs.integral_eval_eq_sum_of_degree_lt_card_add hμ
+      (by rwa [h.card_radauNodes hμ hc, show k + 1 + k = 2 * k + 1 by ring])
+  · rw [radauQuadrature, interpolatoryQuadrature_eq_self_of_ae_mem
+      (ae_mem_radauNodes_of_not_isMomentPosDef hμ h)]
     exact MatchesMoments.refl _ _
 
 /-- The Radau rule lives in every interval carrying the measure: for a finite measure $\mu$
@@ -405,22 +377,15 @@ theorem ae_mem_Icc_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc
   have hab : a ≤ b := hx0.1.trans hx0.2
   have hcI : c ∈ Set.Icc a b := by
     rcases hc with h | h <;> rw [h] <;> simp [hab]
-  have := isFiniteMeasure_radauMeasure hμ c
   by_cases h : IsMomentPosDef (radauMeasure μ c) k
-  · filter_upwards [ae_mem_interpolatoryQuadrature μ (radauNodes μ c k)] with x hx
+  · have := isFiniteMeasure_radauMeasure hμ c
+    filter_upwards [ae_mem_interpolatoryQuadrature μ (radauNodes μ c k)] with x hx
     simp only [radauNodes, Finset.mem_insert] at hx
     rcases hx with rfl | hx
     · exact hcI
     · exact h.gaussNodes_subset_Icc (ae_mem_Icc_radauMeasure hμ c) (Finset.mem_coe.mpr hx)
-  · have hsq : ∫ x, (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2
-        ∂radauMeasure μ c = 0 := by
-      cases k with
-      | zero => exact (h fun p hp hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp))).elim
-      | succ j =>
-        rw [isMomentPosDef_succ_iff (ae_mem_Icc_radauMeasure hμ c) j, not_lt] at h
-        rw [integral_orthogonalPolynomial_succ_sq (ae_mem_Icc_radauMeasure hμ c) j,
-          le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
-    rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ hsq]
+  · rw [radauQuadrature, interpolatoryQuadrature_eq_self_of_ae_mem
+      (ae_mem_radauNodes_of_not_isMomentPosDef hμ h)]
     exact hμ
 
 /-- The mass of the Radau rule: for a finite measure $\mu$ supported in $[a, b]$,
@@ -463,23 +428,30 @@ theorem MatchesMoments.eq_radauQuadrature [IsFiniteMeasure ν] {k : ℕ}
 
 /-! ### The Radau remainder and bounds -/
 
-omit [IsFiniteMeasure μ] in
-/-- The degenerate Radau weight: for $\mu$ supported in $[a, b]$ and $c \in \{a, b\}$, the
-factor $x - c$ has one sign $\mu$-a.e., so $\int\lvert x - c\rvert g\,d\mu = 0$ gives
-$\int(x - c)g\,d\mu = 0$. -/
-private theorem integral_sub_mul_eq_zero_of_integral_abs_sub_mul_eq_zero
-    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) {g : ℝ → ℝ}
-    (h : ∫ x, |x - c| * g x ∂μ = 0) : ∫ x, (x - c) * g x ∂μ = 0 := by
-  rcases hc with rfl | rfl
-  · rw [← h]
-    refine integral_congr_ae ?_
-    filter_upwards [hμ] with x hx
-    rw [abs_of_nonneg (sub_nonneg.2 hx.1)]
-  · rw [← neg_eq_zero, ← integral_neg, ← h]
-    refine integral_congr_ae ?_
-    filter_upwards [hμ] with x hx
-    rw [abs_of_nonpos (sub_nonpos.2 hx.2)]
-    ring
+/-- The last step of the Radau and Lobatto remainders: for $\mu$, finite and supported in
+$[a, b]$, if $f(x) - H(x) = \frac{f^{(n)}(\xi_x)}{n!}W(x)$ for every $x \in [a, b]$ and some
+$\xi_x \in (a, b)$, with $W$ integrable and of one sign, then one $\xi$ serves the integral. -/
+private theorem exists_integral_sub_integral_eval_eq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    (hab : a < b) {n : ℕ} {f W : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a b))
+    (hf' : ContDiffOn ℝ n f (Set.Ioo a b)) (hW : Integrable W μ)
+    (hWs : (∀ᵐ x ∂μ, 0 ≤ W x) ∨ ∀ᵐ x ∂μ, W x ≤ 0) {H : ℝ[X]}
+    (hpt : ∀ x ∈ Set.Icc a b, ∃ ξ ∈ Set.Ioo a b,
+      f x - H.eval x = iteratedDeriv n f ξ / n.factorial * W x) :
+    ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, H.eval x ∂μ =
+      iteratedDeriv n f ξ / n.factorial * ∫ x, W x ∂μ := by
+  have hfint : Integrable f μ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
+    exact hf.integrableOn_Icc
+  have hD : ContinuousOn (fun ξ => iteratedDeriv n f ξ / n.factorial) (Set.Ioo a b) :=
+    ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
+      fun x hx => (iteratedDerivWithin_of_isOpen isOpen_Ioo hx).symm).div_const _
+  have hint := hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)
+  rw [← integral_sub hfint (integrable_eval_of_ae_mem_Icc hμ H)]
+  rcases hWs with hWs | hWs
+  · exact exists_integral_eq_mul_integral_of_ae_nonneg hint hW hWs (isConnected_Ioo hab) hD
+      (hμ.mono hpt)
+  · exact exists_integral_eq_mul_integral_of_ae_nonpos hint hW hWs (isConnected_Ioo hab) hD
+      (hμ.mono hpt)
 
 /-- **The Gauss–Radau remainder**: for a finite measure $\mu$ supported in $[a, b]$, $a < b$,
 $c \in \{a, b\}$, every $k$, and $f$ continuous on $[a, b]$ and $C^{2k+1}$ on $(a, b)$, there
@@ -516,17 +488,14 @@ theorem exists_integral_sub_integral_radauQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
   have := isFiniteMeasure_radauMeasure hμ c
   have hμc : ∀ᵐ x ∂μc, x ∈ Set.Icc a b := ae_mem_Icc_radauMeasure hμ c
   set π := orthogonalPolynomial μc k
-  have hfint : Integrable f μ := by
-    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
-    exact hf.integrableOn_Icc
-  have hπint : Integrable (fun x => (x - c) * π.eval x ^ 2) μ := by
-    convert integrable_eval_of_ae_mem_Icc hμ ((X - C c) * π ^ 2) using 2; simp
+  have hπint : Integrable (fun x => (x - c) * π.eval x ^ 2) μ :=
+    (integrable_eval_of_ae_mem_Icc hμ ((X - C c) * π ^ 2)).congr (ae_of_all μ fun x => by simp)
   rcases (integral_nonneg fun x => sq_nonneg (π.eval x) : 0 ≤ ∫ x, π.eval x ^ 2 ∂μc).eq_or_lt
     with h0 | hpos
-  · rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0.symm, sub_self]
+  · obtain ⟨s, hs⟩ := exists_integral_sub_mul_eq_mul_integral_radauMeasure hμ hc
     refine ⟨(a + b) / 2, ⟨by linarith, by linarith⟩, ?_⟩
-    rw [integral_sub_mul_eq_zero_of_integral_abs_sub_mul_eq_zero hμ hc
-      (by rw [← integral_radauMeasure]; exact h0.symm), mul_zero]
+    rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0.symm, sub_self,
+      hs, ← h0, mul_zero, mul_zero]
   · have hpd : IsMomentPosDef μc (k + 1) := (isMomentPosDef_succ_iff hμc k).mpr hpos
     set G := gaussNodes μc k
     have hGI : (G : Set ℝ) ⊆ Set.Ioo a b := hpd.gaussNodes_subset_Ioo hμc
@@ -540,9 +509,7 @@ theorem exists_integral_sub_integral_radauQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
       have hGk : G.card = k := (hpd.mono k.le_succ).card_gaussNodes hμc
       simp only [m, Multiset.card_cons, Multiset.card_add, Finset.card_val, hGk]
       ring
-    have hmem : ∀ y ∈ m, y = c ∨ y ∈ G := by
-      intro y hy
-      simpa [m, or_self] using hy
+    have hmem : ∀ y ∈ m, y = c ∨ y ∈ G := fun y hy => by simpa [m] using hy
     obtain ⟨H, hHdeg, hjet⟩ :=
       exists_degree_lt_forall_iterate_derivative_eval_eq m (fun y j => iteratedDeriv j f y)
     rw [hcard] at hHdeg
@@ -557,32 +524,21 @@ theorem exists_integral_sub_integral_radauQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
       rw [← hnod]
       simp only [m, Lagrange.nodal, Multiset.map_cons, Multiset.prod_cons, Multiset.map_add,
         Multiset.prod_add, Finset.prod_eq_multiset_prod, id, sq]
-    have hD : ContinuousOn (fun ξ => iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial)
-        (Set.Ioo a b) :=
-      ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
-        (iteratedDerivWithin_of_isOpen isOpen_Ioo).symm).div_const _
-    have hpt : ∀ᵐ x ∂μ, ∃ ξ ∈ Set.Ioo a b, f x - H.eval x =
-        iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial * ((x - c) * π.eval x ^ 2) := by
-      filter_upwards [hμ] with x hx
-      obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab (Multiset.cons_ne_zero)
-        (fun y hy => (hmem y hy).elim (fun h => h ▸ hcI) fun h => Set.Ioo_subset_Icc_self (hGI h))
-        (fun y hy h => by
-          rcases hmem y hy with rfl | hyG
-          · simp [Multiset.count_eq_zero.mpr (show y ∉ G.val from hcG)] at h
-          · exact hGI hyG) hf (hcard ▸ hf') (hcard ▸ hHdeg) hjet hx
-      refine ⟨ξ, hξ, ?_⟩
-      rw [h, hprod, hcard]
-      simp
-    rw [hexact, ← integral_sub hfint (integrable_eval_of_ae_mem_Icc hμ H)]
-    rcases hc with rfl | rfl
-    · refine exists_integral_eq_mul_integral_of_ae_nonneg
-        (hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)) hπint ?_ (isConnected_Ioo hab) hD hpt
-      filter_upwards [hμ] with x hx
-      exact mul_nonneg (sub_nonneg.2 hx.1) (sq_nonneg _)
-    · refine exists_integral_eq_mul_integral_of_ae_nonpos
-        (hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)) hπint ?_ (isConnected_Ioo hab) hD hpt
-      filter_upwards [hμ] with x hx
-      exact mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hx.2) (sq_nonneg _)
+    rw [hexact]
+    refine exists_integral_sub_integral_eval_eq hμ hab hf hf' hπint ?_ fun x hx => ?_
+    · rcases hc with rfl | rfl
+      · exact .inl (hμ.mono fun x hx => mul_nonneg (sub_nonneg.2 hx.1) (sq_nonneg _))
+      · exact .inr (hμ.mono fun x hx =>
+          mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hx.2) (sq_nonneg _))
+    obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab (Multiset.cons_ne_zero)
+      (fun y hy => (hmem y hy).elim (fun h => h ▸ hcI) fun h => Set.Ioo_subset_Icc_self (hGI h))
+      (fun y hy h => by
+        rcases hmem y hy with rfl | hyG
+        · simp [Multiset.count_eq_zero.mpr (show y ∉ G.val from hcG)] at h
+        · exact hGI hyG) hf (hcard ▸ hf') (hcard ▸ hHdeg) hjet hx
+    refine ⟨ξ, hξ, ?_⟩
+    rw [h, hprod, hcard]
+    simp
 
 /-- **The left Radau rule is a lower bound** for $f$ with nonnegative derivative of order
 $2k + 1$: for a finite measure $\mu$ supported in $[a, b]$, $a < b$, every $k$, and $f$
@@ -642,16 +598,13 @@ theorem integral_le_integral_radauQuadrature_of_iteratedDeriv_nonneg
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 1 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, 0 ≤ iteratedDeriv (2 * k + 1) f x) :
     ∫ x, f x ∂μ ≤ ∫ x, f x ∂radauQuadrature μ b k := by
-  obtain ⟨ξ, hξ, heq⟩ :=
+  obtain ⟨ξ, hξ, h⟩ :=
     exists_integral_sub_integral_radauQuadrature_eq hμ hab (Or.inr rfl) k hf hf'
-  have hw : ∫ x, (x - b) * (orthogonalPolynomial (radauMeasure μ b) k).eval x ^ 2 ∂μ ≤ 0 := by
-    refine integral_nonpos_of_ae ?_
-    filter_upwards [hμ] with x hx
-    exact mul_nonpos_of_nonpos_of_nonneg (by linarith [hx.2]) (sq_nonneg _)
-  have hfac : 0 ≤ iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial :=
-    div_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
-  have hprod := mul_nonpos_of_nonneg_of_nonpos hfac hw
-  linarith
+  have hW : ∫ x, (x - b) * (orthogonalPolynomial (radauMeasure μ b) k).eval x ^ 2 ∂μ ≤ 0 :=
+    integral_nonpos_of_ae (hμ.mono fun x hx =>
+      mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.mpr hx.2) (sq_nonneg _))
+  linarith [mul_nonpos_of_nonneg_of_nonpos
+    (div_nonneg (hD ξ hξ) (Nat.cast_nonneg (2 * k + 1).factorial)) hW]
 
 /-- **The right Radau rule is a lower bound** for $f$ with nonpositive derivative of order
 $2k + 1$ (such as $x \mapsto x^{-1}$ on $[a, b]$, $a > 0$): for a finite measure $\mu$
@@ -666,18 +619,13 @@ theorem integral_radauQuadrature_le_integral_of_iteratedDeriv_nonpos
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 1 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, iteratedDeriv (2 * k + 1) f x ≤ 0) :
     ∫ x, f x ∂radauQuadrature μ b k ≤ ∫ x, f x ∂μ := by
-  obtain ⟨ξ, hξ, heq⟩ := exists_integral_sub_integral_radauQuadrature_eq hμ hab (Or.inr rfl) k
-    hf hf'
-  have hW : ∫ x, (x - b) * (orthogonalPolynomial (radauMeasure μ b) k).eval x ^ 2 ∂μ ≤ 0 := by
-    refine integral_nonpos_of_ae ?_
-    filter_upwards [hμ] with x hx
-    exact mul_nonpos_of_nonpos_of_nonneg (by linarith [hx.2]) (sq_nonneg _)
-  have hD' : iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial ≤ 0 :=
-    div_nonpos_of_nonpos_of_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
-  have h0 : 0 ≤ ∫ x, f x ∂μ - ∫ x, f x ∂radauQuadrature μ b k := by
-    rw [heq]
-    exact mul_nonneg_of_nonpos_of_nonpos hD' hW
-  linarith
+  obtain ⟨ξ, hξ, h⟩ :=
+    exists_integral_sub_integral_radauQuadrature_eq hμ hab (Or.inr rfl) k hf hf'
+  have hW : ∫ x, (x - b) * (orthogonalPolynomial (radauMeasure μ b) k).eval x ^ 2 ∂μ ≤ 0 :=
+    integral_nonpos_of_ae (hμ.mono fun x hx =>
+      mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.mpr hx.2) (sq_nonneg _))
+  linarith [mul_nonneg_of_nonpos_of_nonpos
+    (div_nonpos_of_nonpos_of_nonneg (hD ξ hξ) (Nat.cast_nonneg (2 * k + 1).factorial)) hW]
 
 /-! ### The Lobatto rule -/
 
@@ -697,17 +645,9 @@ theorem integral_lobattoMeasure (μ : Measure ℝ) (a b : ℝ) (g : ℝ → ℝ)
 Proof: S, about 12 lines. As `isFiniteMeasure_radauMeasure`, with the bound
 $(b - a)^2$ on $[a, b]$. -/
 theorem isFiniteMeasure_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
-    IsFiniteMeasure (lobattoMeasure μ a b) := by
-  refine ⟨?_⟩
-  rw [lobattoMeasure, withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ]
-  refine (lintegral_mono_ae (g := fun _ => ENNReal.ofReal ((b - a) ^ 2))
-    (hμ.mono fun x hx => ?_)).trans_lt ?_
-  · rw [Real.enorm_eq_ofReal_abs]
-    refine ENNReal.ofReal_le_ofReal ?_
-    rw [abs_le]
-    constructor <;> nlinarith [hx.1, hx.2]
-  · rw [lintegral_const]
-    exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top μ _)
+    IsFiniteMeasure (lobattoMeasure μ a b) :=
+  isFiniteMeasure_withDensity ((integrable_eval_of_ae_mem_Icc hμ ((X - C a) * (X - C b))).congr
+    (ae_of_all μ fun x => by simp) : Integrable (fun x => (x - a) * (x - b)) μ).2.ne
 
 /-- The Lobatto modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$, almost
 every point of `lobattoMeasure μ a b` lies in $[a, b]$.
@@ -730,62 +670,25 @@ theorem IsMomentPosDef.notMem_gaussNodes_lobattoMeasure {k : ℕ}
     (ht : t = a ∨ t = b) : t ∉ gaussNodes (lobattoMeasure μ a b) k := by
   have := isFiniteMeasure_lobattoMeasure hμ
   intro hmem
-  have hπ0 := monic_orthogonalPolynomial (lobattoMeasure μ a b) k
-  have hroot : (orthogonalPolynomial (lobattoMeasure μ a b) k).IsRoot t := by
-    unfold gaussNodes at hmem
-    rwa [Multiset.mem_toFinset, mem_roots hπ0.ne_zero] at hmem
-  obtain ⟨r, hr⟩ : ∃ r, orthogonalPolynomial (lobattoMeasure μ a b) k = (X - C t) * r :=
-    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hroot).symm⟩
-  have hr0 : r ≠ 0 := by
-    rintro rfl
-    exact hπ0.ne_zero (by simpa using hr)
-  have hdeg : r.degree < k := by
-    have hnat := natDegree_orthogonalPolynomial (lobattoMeasure μ a b) k
-    rw [hr, natDegree_mul (X_sub_C_ne_zero t) hr0, natDegree_X_sub_C] at hnat
-    exact (natDegree_lt_iff_degree_lt hr0).mp (by omega)
-  have hO := isOrthogonalPolynomial_orthogonalPolynomial (ae_mem_Icc_lobattoMeasure hμ) k r hdeg
-  have hpos := h r hr0 hdeg
-  rw [integral_lobattoMeasure] at hO
-  simp only [hr, eval_mul, eval_sub, eval_X, eval_C] at hO
-  have hO2 : ∫ x, (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2) ∂μ = 0 := by
-    convert hO using 2
-    funext x
-    ring
-  have hint : Integrable (fun x => (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2)) μ := by
-    refine (integrable_eval_of_ae_mem_Icc hμ
-      (-((X - C t) * ((X - C a) * (X - C b))) * (r * r))).congr ?_
-    filter_upwards [hμ] with x hx
-    have hab : (x - a) * (x - b) ≤ 0 :=
-      mul_nonpos_of_nonneg_of_nonpos (by linarith [hx.1]) (by linarith [hx.2])
-    simp only [eval_mul, eval_neg, eval_sub, eval_X, eval_C]
-    rw [abs_of_nonpos hab]
-    ring
-  have hz : ∀ᵐ x ∂μ, (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2) = 0 := by
-    obtain h' | h' := ht
-    · have hnn : ∀ᵐ x ∂μ, 0 ≤ (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2) := by
-        filter_upwards [hμ] with x hx
-        exact mul_nonneg (by linarith [hx.1]) (mul_nonneg (abs_nonneg _) (sq_nonneg _))
-      exact (integral_eq_zero_iff_of_nonneg_ae hnn hint).mp hO2
-    · have hnn : ∀ᵐ x ∂μ, 0 ≤ -((x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2)) := by
-        filter_upwards [hμ] with x hx
-        have := mul_nonneg (by linarith [hx.2] : 0 ≤ t - x)
-          (mul_nonneg (abs_nonneg ((x - a) * (x - b))) (sq_nonneg (r.eval x)))
-        linarith
-      have hO3 : ∫ x, -((x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2)) ∂μ = 0 := by
-        rw [integral_neg, hO2, neg_zero]
-      have := (integral_eq_zero_iff_of_nonneg_ae hnn hint.neg).mp hO3
-      filter_upwards [this] with x hx
-      simp only [Pi.zero_apply, neg_eq_zero] at hx
-      exact hx
-  have hq : ∀ᵐ x ∂μ, |(x - a) * (x - b)| * r.eval x ^ 2 = 0 := by
-    filter_upwards [hz, hμ] with x hx hxI
-    rcases mul_eq_zero.mp hx with h1 | h1
-    · have hxt : x = t := by linarith
-      rcases ht with h' | h' <;> simp [hxt, h']
-    · exact h1
-  have hint0 := integral_eq_zero_of_ae hq
-  have hνr := integral_lobattoMeasure μ a b (fun x => r.eval x ^ 2)
-  linarith
+  obtain ⟨r, hr0, hrdeg, hπ⟩ := exists_orthogonalPolynomial_eq_X_sub_C_mul hmem
+  have hO := isOrthogonalPolynomial_orthogonalPolynomial (ae_mem_Icc_lobattoMeasure hμ) k r hrdeg
+  rw [integral_lobattoMeasure, hπ] at hO
+  refine (h r hr0 hrdeg).ne' ?_
+  rw [integral_lobattoMeasure]
+  refine integral_eq_zero_of_ae (ae_eq_zero_of_integral_mul_sub_eq_zero hμ ht
+    (F := fun x => |(x - a) * (x - b)| * r.eval x ^ 2) (by fun_prop) (fun x => by positivity)
+    (by rcases ht with rfl | rfl <;> simp) ?_)
+  rw [← hO]
+  congr 1 with x
+  simp only [eval_mul, eval_sub, eval_X, eval_C]
+  ring
+
+/-- The endpoints are not free Lobatto nodes, in the form the node count needs. -/
+private theorem IsMomentPosDef.notMem_insert_gaussNodes_lobattoMeasure {k : ℕ}
+    (h : IsMomentPosDef (lobattoMeasure μ a b) k) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) :
+    a ∉ insert b (gaussNodes (lobattoMeasure μ a b) k) ∧ b ∉ gaussNodes (lobattoMeasure μ a b) k :=
+  ⟨Finset.mem_insert.not.2 (not_or.2 ⟨hab.ne, h.notMem_gaussNodes_lobattoMeasure hμ (.inl rfl)⟩),
+    h.notMem_gaussNodes_lobattoMeasure hμ (.inr rfl)⟩
 
 /-- The number of Lobatto nodes: if $\mu$, finite and supported in $[a, b]$, $a < b$, has a
 Lobatto modified measure positive definite up to degree $k$, the Lobatto rule has $k + 2$
@@ -795,15 +698,22 @@ Proof: S, about 8 lines. `lobattoNodes`, `Finset.card_insert_of_notMem` twice
 for the modified measure. -/
 theorem IsMomentPosDef.card_lobattoNodes {k : ℕ} (h : IsMomentPosDef (lobattoMeasure μ a b) k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) : (lobattoNodes μ a b k).card = k + 2 := by
-  have hb : b ∉ gaussNodes (lobattoMeasure μ a b) k :=
-    h.notMem_gaussNodes_lobattoMeasure hμ (Or.inr rfl)
-  have ha : a ∉ insert b (gaussNodes (lobattoMeasure μ a b) k) := by
-    rw [Finset.mem_insert, not_or]
-    exact ⟨hab.ne, h.notMem_gaussNodes_lobattoMeasure hμ (Or.inl rfl)⟩
   have := isFiniteMeasure_lobattoMeasure hμ
-  unfold lobattoNodes
-  rw [Finset.card_insert_of_notMem ha, Finset.card_insert_of_notMem hb,
+  obtain ⟨ha, hb⟩ := h.notMem_insert_gaussNodes_lobattoMeasure hμ hab
+  rw [lobattoNodes, Finset.card_insert_of_notMem ha, Finset.card_insert_of_notMem hb,
     h.card_gaussNodes (ae_mem_Icc_lobattoMeasure hμ)]
+
+omit [IsFiniteMeasure μ] in
+/-- The sign of $(x - a)(x - b)$: for $\mu$ supported in $[a, b]$ and every $g$,
+$\int(x - a)(x - b)g(x)\,d\mu = -\int g\,d\,\mathsf{lobattoMeasure}(\mu, a, b)$. -/
+private theorem integral_sub_mul_sub_mul_eq_neg_integral_lobattoMeasure
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (g : ℝ → ℝ) :
+    ∫ x, (x - a) * (x - b) * g x ∂μ = -∫ x, g x ∂lobattoMeasure μ a b := by
+  rw [integral_lobattoMeasure, ← integral_neg]
+  refine integral_congr_ae ?_
+  filter_upwards [hμ] with x hx
+  rw [abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos (sub_nonneg.2 hx.1) (sub_nonpos.2 hx.2))]
+  ring
 
 /-- **The Lobatto nodal polynomial is orthogonal**: if $\mu$, finite and supported in $[a, b]$,
 $a < b$, has a Lobatto modified measure positive definite up to degree $k$, then the nodal
@@ -816,33 +726,33 @@ theorem isOrthogonalPolynomial_nodal_lobattoNodes (hμ : ∀ᵐ x ∂μ, x ∈ S
     {k : ℕ} (h : IsMomentPosDef (lobattoMeasure μ a b) k) :
     IsOrthogonalPolynomial μ k (Lagrange.nodal (lobattoNodes μ a b k) id) := by
   have := isFiniteMeasure_lobattoMeasure hμ
-  have hlob := ae_mem_Icc_lobattoMeasure hμ
-  have hb : b ∉ gaussNodes (lobattoMeasure μ a b) k :=
-    h.notMem_gaussNodes_lobattoMeasure hμ (Or.inr rfl)
-  have ha : a ∉ insert b (gaussNodes (lobattoMeasure μ a b) k) := by
-    rw [Finset.mem_insert, not_or]
-    exact ⟨hab.ne, h.notMem_gaussNodes_lobattoMeasure hμ (Or.inl rfl)⟩
+  have hν := ae_mem_Icc_lobattoMeasure hμ
+  obtain ⟨ha, hb⟩ := h.notMem_insert_gaussNodes_lobattoMeasure hμ hab
   have hnodal : Lagrange.nodal (lobattoNodes μ a b k) id =
       (X - C a) * ((X - C b) * orthogonalPolynomial (lobattoMeasure μ a b) k) := by
-    unfold lobattoNodes
-    rw [Lagrange.nodal_insert_eq_nodal ha, Lagrange.nodal_insert_eq_nodal hb,
-      h.nodal_gaussNodes hlob]
-    simp only [id]
-  rw [hnodal]
+    rw [lobattoNodes, Lagrange.nodal_insert_eq_nodal ha, Lagrange.nodal_insert_eq_nodal hb,
+      h.nodal_gaussNodes hν]
+    rfl
   intro r hr
-  have hint := isOrthogonalPolynomial_orthogonalPolynomial hlob k r hr
-  rw [integral_lobattoMeasure] at hint
-  have hae : ∀ᵐ x ∂μ,
-      ((X - C a) * ((X - C b) * orthogonalPolynomial (lobattoMeasure μ a b) k)).eval x * r.eval x =
-        -(|(x - a) * (x - b)| * ((orthogonalPolynomial (lobattoMeasure μ a b) k).eval x *
-          r.eval x)) := by
-    filter_upwards [hμ] with x hx
-    have h1 : 0 ≤ x - a := sub_nonneg.mpr hx.1
-    have h2 : x - b ≤ 0 := sub_nonpos.mpr hx.2
-    rw [abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos h1 h2)]
-    simp only [eval_mul, eval_sub, eval_X, eval_C]
-    ring
-  rw [integral_congr_ae hae, integral_neg, hint, neg_zero]
+  have hs := integral_sub_mul_sub_mul_eq_neg_integral_lobattoMeasure hμ
+    fun x => (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x * r.eval x
+  simp only [mul_assoc] at hs
+  simp only [hnodal, eval_mul, eval_sub, eval_X, eval_C, mul_assoc]
+  rw [hs, isOrthogonalPolynomial_orthogonalPolynomial hν k r hr, neg_zero]
+
+omit [IsFiniteMeasure μ] in
+/-- Where the Lobatto density vanishes: if `lobattoMeasure μ a b` is carried by its Gauss nodes
+of order $k$, then $\mu$ is carried by the Lobatto nodes (the density vanishes only at $a$
+and $b$). -/
+private theorem ae_mem_lobattoNodes_of_ae_mem_gaussNodes {k : ℕ}
+    (hG : ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ gaussNodes (lobattoMeasure μ a b) k) :
+    ∀ᵐ x ∂μ, x ∈ lobattoNodes μ a b k := by
+  filter_upwards [(ae_withDensity_iff (by fun_prop)).mp hG] with x hx
+  by_cases hxab : x = a ∨ x = b
+  · rcases hxab with rfl | rfl <;> simp [lobattoNodes]
+  · have hne : ‖(x - a) * (x - b)‖ₑ ≠ 0 := by
+      simpa [sub_eq_zero] using hxab
+    simp [lobattoNodes, hx hne]
 
 /-- The terminating case of the Lobatto rule: if the orthogonal polynomial $\hat\pi_k$ of the
 Lobatto modified measure has norm $0$ there, for $\mu$ finite and supported in $[a, b]$, then
@@ -856,108 +766,61 @@ theorem lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
       0) :
     lobattoQuadrature μ a b k = μ := by
   have := isFiniteMeasure_lobattoMeasure hμ
-  have hae : ∀ᵐ x ∂lobattoMeasure μ a b,
-      (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x = 0 :=
-    ae_eval_eq_zero_of_integral_sq_eq_zero (ae_mem_Icc_lobattoMeasure hμ) h
-  have hgauss : ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ gaussNodes (lobattoMeasure μ a b) k := by
-    filter_upwards [hae] with x hx
-    rwa [gaussNodes, Multiset.mem_toFinset,
-      mem_roots (monic_orthogonalPolynomial _ _).ne_zero]
-  have hcarry : ∀ᵐ x ∂μ, x ∈ lobattoNodes μ a b k := by
-    filter_upwards [(ae_withDensity_iff (by fun_prop)).mp hgauss] with x hx
-    by_cases hxab : x = a ∨ x = b
-    · rcases hxab with rfl | rfl <;> simp [lobattoNodes]
-    · have hne : ‖(x - a) * (x - b)‖ₑ ≠ 0 := by
-        simp only [ne_eq, enorm_eq_zero, mul_eq_zero, sub_eq_zero, not_or] at hxab ⊢
-        exact hxab
-      simp [lobattoNodes, hx hne]
-  unfold lobattoQuadrature
-  exact interpolatoryQuadrature_eq_self_of_ae_mem hcarry
-
-private theorem natDegree_prod_X_sub_C_sq_le (s : Finset ℝ) :
-    (∏ y ∈ s, (Polynomial.X - Polynomial.C y) ^ 2).natDegree ≤ 2 * s.card := by
-  refine (Polynomial.natDegree_prod_le _ _).trans ?_
-  have hy : ∀ y ∈ s, ((Polynomial.X - Polynomial.C y) ^ 2).natDegree ≤ 2 := fun y _ =>
-    (Polynomial.natDegree_pow_le).trans (by simp)
-  calc _ ≤ ∑ _y ∈ s, 2 := Finset.sum_le_sum hy
-    _ = 2 * s.card := by simp [mul_comm]
-
-/-- Exactness at a node: if $p$ is nonnegative on $[a, b]$, vanishes at the other nodes of $s$
-and is positive at $x \in s$, and $s$ is orthogonal of order $m$ with $\deg p < \lvert s\rvert + m$,
-then $\int\ell_x\,d\mu \ge 0$. -/
-private theorem lagrange_weight_nonneg_of_exact (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
-    {s : Finset ℝ} {m : ℕ} (hs : IsOrthogonalPolynomial μ m (Lagrange.nodal s id))
-    {x : ℝ} (hx : x ∈ s) {p : Polynomial ℝ} (hdeg : p.natDegree < s.card + m)
-    (hp : ∀ t ∈ Set.Icc a b, 0 ≤ p.eval t) (h0 : ∀ y ∈ s, y ≠ x → p.eval y = 0)
-    (hpos : 0 < p.eval x) : 0 ≤ ∫ t, (Lagrange.basis s id x).eval t ∂μ := by
-  have hdeg' : p.degree < ((s.card + m : ℕ) : WithBot ℕ) :=
-    lt_of_le_of_lt Polynomial.degree_le_natDegree (WithBot.coe_lt_coe.2 hdeg)
-  have hex := hs.integral_eval_eq_sum_of_degree_lt_card_add hμ hdeg'
-  rw [Finset.sum_eq_single x (fun y hy hne => by rw [h0 y hy hne, mul_zero])
-    (fun hn => absurd hx hn)] at hex
-  have hnn : 0 ≤ ∫ t, p.eval t ∂μ := integral_nonneg_of_ae (hμ.mono fun t ht => hp t ht)
-  rw [hex] at hnn
-  exact nonneg_of_mul_nonneg_left hnn hpos
-
-/-- Interior free node of the Lobatto rule: for $x$ a Gauss node of `lobattoMeasure μ a b`, the
-polynomial $(x - a)(b - X)\prod_{y\in G\setminus\{x\}}(X - y)^2$ has degree below $2k + 2$, and
-the weight of $x$ is nonnegative by `lagrange_weight_nonneg_of_exact`. -/
-private theorem lobattoWeight_nonneg_interior (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
-    (hs : IsOrthogonalPolynomial μ k (Lagrange.nodal (lobattoNodes μ a b k) id))
-    (hcard : (lobattoNodes μ a b k).card = k + 2)
-    (hmem : ∀ y, y ∈ lobattoNodes μ a b k ↔
-      y = a ∨ y = b ∨ y ∈ gaussNodes (lobattoMeasure μ a b) k)
-    (hGI : ∀ y ∈ gaussNodes (lobattoMeasure μ a b) k, a < y ∧ y < b)
-    (hcardG : (gaussNodes (lobattoMeasure μ a b) k).card = k) {x : ℝ}
-    (hx : x ∈ lobattoNodes μ a b k) (hxG : x ∈ gaussNodes (lobattoMeasure μ a b) k) :
-    0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
-  set G := gaussNodes (lobattoMeasure μ a b) k with hGdef
-  have hk : 0 < k := by rw [← hcardG]; exact Finset.card_pos.2 ⟨x, hxG⟩
-  have hcE : (G.erase x).card = k - 1 := by rw [Finset.card_erase_of_mem hxG, hcardG]
-  refine lagrange_weight_nonneg_of_exact hμ hs hx
-    (p := (X - C a) * (C b - X) * ∏ y ∈ G.erase x, (X - C y) ^ 2) ?_ ?_ ?_ ?_
-  · have h3 := natDegree_mul_le (p := (X - C a) * (C b - X))
-      (q := ∏ y ∈ G.erase x, (X - C y) ^ 2)
-    have h4 := natDegree_mul_le (p := X - C a) (q := C b - X)
-    have h1 : (X - C a : ℝ[X]).natDegree ≤ 1 := by compute_degree!
-    have h2 : (C b - X : ℝ[X]).natDegree ≤ 1 := by compute_degree!
-    have h5 := natDegree_prod_X_sub_C_sq_le (G.erase x)
-    omega
-  · intro t ht
-    simp only [eval_mul, eval_sub, eval_C, eval_X, eval_prod, eval_pow]
-    exact mul_nonneg (mul_nonneg (sub_nonneg.2 ht.1) (sub_nonneg.2 ht.2))
-      (Finset.prod_nonneg fun y _ => sq_nonneg _)
-  · intro y hy hne
-    obtain hy' | hy' | hy' := (hmem y).1 hy
-    · simp [hy', eval_mul]
-    · simp [hy', eval_mul]
-    · simp only [eval_mul, eval_prod, eval_pow, eval_sub, eval_X, eval_C]
-      rw [Finset.prod_eq_zero (Finset.mem_erase.2 ⟨hne, hy'⟩) (by simp), mul_zero]
-  · simp only [eval_mul, eval_sub, eval_C, eval_X, eval_prod, eval_pow]
-    have hI := hGI x hxG
-    refine mul_pos (mul_pos (by linarith [hI.1]) (by linarith [hI.2]))
-      (Finset.prod_pos fun y hy => lt_of_le_of_ne (sq_nonneg _)
-        (Ne.symm (pow_ne_zero 2 (sub_ne_zero.2 (fun e => (Finset.mem_erase.1 hy).1 e.symm)))))
+  refine interpolatoryQuadrature_eq_self_of_ae_mem (ae_mem_lobattoNodes_of_ae_mem_gaussNodes ?_)
+  filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero (ae_mem_Icc_lobattoMeasure hμ) h]
+    with x hx
+  exact mem_gaussNodes_iff_isRoot.mpr hx
 
 /-- The degenerate Lobatto case: if `lobattoMeasure μ a b` is not positive definite up to degree
-$k$, then $\hat\pi_k$ has norm $0$, the Lobatto rule is $\mu$ and $\mu$ is carried by its nodes,
-so the weight of a node is its mass $\mu\{x\} \ge 0$. -/
-private theorem lobattoWeight_nonneg_of_not_definite (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
-    (h : ¬IsMomentPosDef (lobattoMeasure μ a b) k) {x : ℝ} (hx : x ∈ lobattoNodes μ a b k) :
-    0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
+$k$, then $\mu$, finite and supported in $[a, b]$, is carried by the Lobatto nodes. -/
+private theorem ae_mem_lobattoNodes_of_not_isMomentPosDef (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    {k : ℕ} (h : ¬IsMomentPosDef (lobattoMeasure μ a b) k) :
+    ∀ᵐ x ∂μ, x ∈ lobattoNodes μ a b k := by
   have := isFiniteMeasure_lobattoMeasure hμ
-  have h1 : ¬IsMomentPosDef (lobattoMeasure μ a b) (k + 1) :=
-    fun h' => h (h'.mono (Nat.le_succ k))
-  have h0 : ∫ x, (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2
-      ∂lobattoMeasure μ a b = 0 := by
-    rw [isMomentPosDef_succ_iff (ae_mem_Icc_lobattoMeasure hμ) k, not_lt] at h1
-    exact le_antisymm h1 (integral_nonneg fun _ => sq_nonneg _)
-  have hQ := lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0
-  have hae : ∀ᵐ t ∂μ, t ∈ lobattoNodes μ a b k := by
-    have := ae_mem_interpolatoryQuadrature μ (lobattoNodes μ a b k)
-    rwa [show interpolatoryQuadrature μ (lobattoNodes μ a b k) = μ from hQ] at this
-  rw [integral_eval_basis_of_ae_mem hae hx]
-  exact measureReal_nonneg
+  exact ae_mem_lobattoNodes_of_ae_mem_gaussNodes
+    (ae_mem_gaussNodes_of_not_isMomentPosDef (ae_mem_Icc_lobattoMeasure hμ) h)
+
+/-- The degree of $\prod_{y\in s}(X - y)^2$ is at most $2\lvert s\rvert$. -/
+private theorem natDegree_prod_X_sub_C_sq_le (s : Finset ℝ) :
+    (∏ y ∈ s, (X - C y) ^ 2).natDegree ≤ 2 * s.card := by
+  refine (natDegree_prod_le _ _).trans ?_
+  calc _ ≤ ∑ _y ∈ s, 2 := Finset.sum_le_sum fun y _ => natDegree_pow_le.trans (by simp)
+    _ = 2 * s.card := by simp [mul_comm]
+
+/-- A Lobatto weight from a factor: if $\mu$, finite and supported in $[a, b]$, has a Lobatto
+modified measure definite up to degree $k$, $x$ is a Lobatto node, and $q \ge 0$ on $[a, b]$ is
+positive at $x$, vanishes at the endpoints other than $x$ and has
+$\deg q + 2\lvert G \setminus \{x\}\rvert < 2k + 2$ ($G$ the free nodes), then the weight of $x$
+is nonnegative: apply `integral_eval_basis_nonneg_of_exact` to
+$q\prod_{y\in G\setminus\{x\}}(X - y)^2$. -/
+private theorem integral_eval_basis_lobattoNodes_nonneg_of_factor
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) {k : ℕ}
+    (h : IsMomentPosDef (lobattoMeasure μ a b) k) {x : ℝ} (hx : x ∈ lobattoNodes μ a b k)
+    {q : ℝ[X]}
+    (hdeg : q.natDegree + 2 * ((gaussNodes (lobattoMeasure μ a b) k).erase x).card < 2 * k + 2)
+    (hq : ∀ t ∈ Set.Icc a b, 0 ≤ q.eval t) (hqx : 0 < q.eval x) (hqa : x ≠ a → q.eval a = 0)
+    (hqb : x ≠ b → q.eval b = 0) :
+    0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
+  set G := gaussNodes (lobattoMeasure μ a b) k
+  refine integral_eval_basis_nonneg_of_exact hμ (isOrthogonalPolynomial_nodal_lobattoNodes hμ hab h)
+    hx (p := q * ∏ y ∈ G.erase x, (X - C y) ^ 2) ?_ (fun t ht => ?_) (fun y hy hyx => ?_) ?_
+  · have := natDegree_mul_le (p := q) (q := ∏ y ∈ G.erase x, (X - C y) ^ 2)
+    have := natDegree_prod_X_sub_C_sq_le (G.erase x)
+    rw [h.card_lobattoNodes hμ hab]
+    omega
+  · rw [eval_mul, eval_prod]
+    exact mul_nonneg (hq t ht) (Finset.prod_nonneg fun y _ => by rw [eval_pow]; positivity)
+  · rw [eval_mul]
+    simp only [lobattoNodes, Finset.mem_insert] at hy
+    rcases hy with rfl | rfl | hy
+    · rw [hqa hyx.symm, zero_mul]
+    · rw [hqb hyx.symm, zero_mul]
+    · rw [eval_prod, Finset.prod_eq_zero (Finset.mem_erase.2 ⟨hyx, hy⟩) (by simp), mul_zero]
+  · rw [eval_mul, eval_prod]
+    refine mul_pos hqx (Finset.prod_pos fun y hy => ?_)
+    have hxy : x - y ≠ 0 := sub_ne_zero.2 (Finset.ne_of_mem_erase hy).symm
+    simp only [eval_pow, eval_sub, eval_X, eval_C]
+    positivity
 
 /-- **The Lobatto weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
 $a < b$, and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Lobatto node $x$ is
@@ -980,75 +843,38 @@ theorem integral_eval_basis_lobattoNodes_nonneg (hμ : ∀ᵐ x ∂μ, x ∈ Set
     0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
   by_cases h : IsMomentPosDef (lobattoMeasure μ a b) k
   · have := isFiniteMeasure_lobattoMeasure hμ
-    have hcard := h.card_lobattoNodes hμ hab
-    have hs := isOrthogonalPolynomial_nodal_lobattoNodes hμ hab h
-    have hGI : ∀ y ∈ gaussNodes (lobattoMeasure μ a b) k, a < y ∧ y < b := fun y hy => by
-      have hIcc := h.gaussNodes_subset_Icc (ae_mem_Icc_lobattoMeasure hμ) (Finset.mem_coe.2 hy)
-      have ha : y ≠ a := fun e => h.notMem_gaussNodes_lobattoMeasure hμ (Or.inl e) hy
-      have hb : y ≠ b := fun e => h.notMem_gaussNodes_lobattoMeasure hμ (Or.inr e) hy
-      exact ⟨lt_of_le_of_ne hIcc.1 (Ne.symm ha), lt_of_le_of_ne hIcc.2 hb⟩
-    have hmem : ∀ y, y ∈ lobattoNodes μ a b k ↔
-        y = a ∨ y = b ∨ y ∈ gaussNodes (lobattoMeasure μ a b) k := by
-      intro y; simp [lobattoNodes]
-    have hcardG := h.card_gaussNodes (ae_mem_Icc_lobattoMeasure hμ)
-    set G := gaussNodes (lobattoMeasure μ a b) k with hGdef
-    rcases (hmem x).1 hx with hxa | hxb | hxG
-    · -- the endpoint `a`: $p = (b - X)\prod_{y\in G}(X - y)^2$
-      refine lagrange_weight_nonneg_of_exact hμ hs hx
-        (p := (Polynomial.C b - Polynomial.X) * ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
-        ?_ ?_ ?_ ?_
-      · have h3 := Polynomial.natDegree_mul_le (p := Polynomial.C b - Polynomial.X)
-          (q := ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
-        have h1 : (Polynomial.C b - Polynomial.X : Polynomial ℝ).natDegree ≤ 1 := by
-          compute_degree!
-        have h5 := natDegree_prod_X_sub_C_sq_le G
-        omega
-      · intro t ht
-        simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
-          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
-        exact mul_nonneg (sub_nonneg.2 ht.2) (Finset.prod_nonneg fun y _ => sq_nonneg _)
-      · intro y hy hne
-        obtain hy' | hy' | hy' := (hmem y).1 hy
-        · exact absurd (hy'.trans hxa.symm) hne
-        · simp [hy', Polynomial.eval_mul]
-        · simp only [Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_pow,
-            Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
-          rw [Finset.prod_eq_zero hy' (by simp), mul_zero]
-      · simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
-          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
-        rw [hxa]
-        exact mul_pos (by linarith [hab]) (Finset.prod_pos fun y hy =>
-          lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (sub_ne_zero.2 (by
-            have := hGI y hy; intro e; linarith [this.1])))))
-    · -- the endpoint `b`: $p = (X - a)\prod_{y\in G}(X - y)^2$
-      refine lagrange_weight_nonneg_of_exact hμ hs hx
-        (p := (Polynomial.X - Polynomial.C a) * ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
-        ?_ ?_ ?_ ?_
-      · have h3 := Polynomial.natDegree_mul_le (p := Polynomial.X - Polynomial.C a)
-          (q := ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
-        have h1 : (Polynomial.X - Polynomial.C a : Polynomial ℝ).natDegree ≤ 1 := by
-          compute_degree!
-        have h5 := natDegree_prod_X_sub_C_sq_le G
-        omega
-      · intro t ht
-        simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
-          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
-        exact mul_nonneg (sub_nonneg.2 ht.1) (Finset.prod_nonneg fun y _ => sq_nonneg _)
-      · intro y hy hne
-        obtain hy' | hy' | hy' := (hmem y).1 hy
-        · simp [hy', Polynomial.eval_mul]
-        · exact absurd (hy'.trans hxb.symm) hne
-        · simp only [Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_pow,
-            Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
-          rw [Finset.prod_eq_zero hy' (by simp), mul_zero]
-      · simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
-          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
-        rw [hxb]
-        exact mul_pos (by linarith [hab]) (Finset.prod_pos fun y hy =>
-          lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (sub_ne_zero.2 (by
-            have := hGI y hy; intro e; linarith [this.2])))))
-    · exact lobattoWeight_nonneg_interior hμ hs hcard hmem hGI hcardG hx hxG
-  · exact lobattoWeight_nonneg_of_not_definite hμ h hx
+    set G := gaussNodes (lobattoMeasure μ a b) k with hG
+    have hGk : G.card = k := h.card_gaussNodes (ae_mem_Icc_lobattoMeasure hμ)
+    have hGa := Finset.card_erase_le (s := G) (a := x)
+    have hXa : (X - C a : ℝ[X]).natDegree ≤ 1 := by compute_degree!
+    have hbX : (C b - X : ℝ[X]).natDegree ≤ 1 := by compute_degree!
+    have hx' : x = a ∨ x = b ∨ x ∈ G := by simpa [lobattoNodes] using hx
+    rcases hx' with hxa | hxb | hxG
+    · -- the endpoint $a$: $q = b - X$
+      refine integral_eval_basis_lobattoNodes_nonneg_of_factor hμ hab h hx (q := C b - X)
+        (by rw [← hG]; omega) (fun t ht => by simpa using ht.2) (by simpa [hxa] using hab)
+        (fun h' => absurd hxa h') (fun _ => by simp)
+    · -- the endpoint $b$: $q = X - a$
+      refine integral_eval_basis_lobattoNodes_nonneg_of_factor hμ hab h hx (q := X - C a)
+        (by rw [← hG]; omega) (fun t ht => by simpa using ht.1) (by simpa [hxb] using hab)
+        (fun _ => by simp) (fun h' => absurd hxb h')
+    · -- a free node: $q = (X - a)(b - X)$
+      have hxI := h.gaussNodes_subset_Icc (ae_mem_Icc_lobattoMeasure hμ)
+        (Finset.mem_coe.2 hxG)
+      have hxa : x ≠ a := fun e => h.notMem_gaussNodes_lobattoMeasure hμ (.inl e) hxG
+      have hxb : x ≠ b := fun e => h.notMem_gaussNodes_lobattoMeasure hμ (.inr e) hxG
+      have hE : (G.erase x).card = k - 1 := by rw [Finset.card_erase_of_mem hxG, hGk]
+      have hk : 0 < k := hGk ▸ Finset.card_pos.2 ⟨x, hxG⟩
+      have hq := natDegree_mul_le (p := X - C a) (q := C b - X)
+      refine integral_eval_basis_lobattoNodes_nonneg_of_factor hμ hab h hx
+        (q := (X - C a) * (C b - X)) (by rw [← hG]; omega) (fun t ht => ?_) ?_ (fun _ => by simp)
+        (fun _ => by simp)
+      · simp only [eval_mul, eval_sub, eval_X, eval_C]
+        exact mul_nonneg (sub_nonneg.2 ht.1) (sub_nonneg.2 ht.2)
+      · simp only [eval_mul, eval_sub, eval_X, eval_C]
+        exact mul_pos (sub_pos.2 (hxI.1.lt_of_ne' hxa)) (sub_pos.2 (hxI.2.lt_of_ne hxb))
+  · rw [integral_eval_basis_of_ae_mem (ae_mem_lobattoNodes_of_not_isMomentPosDef hμ h) hx]
+    exact measureReal_nonneg
 
 /-- The Lobatto rule with the interpolatory weights: for a finite measure $\mu$ supported in
 $[a, b]$, $a < b$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
@@ -1081,25 +907,14 @@ Proof: S, about 15 lines. As `matchesMoments_radauQuadrature`, with
 Result: gauss-lobatto-quadrature -/
 theorem matchesMoments_lobattoQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) (k : ℕ) :
     MatchesMoments μ (lobattoQuadrature μ a b k) (2 * k + 2) := by
-  have := isFiniteMeasure_lobattoMeasure hμ
   by_cases h : IsMomentPosDef (lobattoMeasure μ a b) k
   · have hs := isOrthogonalPolynomial_nodal_lobattoNodes hμ hab h
-    have hcard := h.card_lobattoNodes hμ hab
     intro p hp
     rw [integral_lobattoQuadrature hμ hab k]
-    rw [hs.integral_eval_eq_sum_of_degree_lt_card_add hμ (p := p)]
-    rw [hcard]
-    convert hp using 2
-    ring
-  · have hsq : ∫ x, (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2
-        ∂lobattoMeasure μ a b = 0 := by
-      cases k with
-      | zero => exact absurd (fun p hp0 hpdeg => absurd hpdeg (by simp [hp0])) h
-      | succ j =>
-        rw [isMomentPosDef_succ_iff (ae_mem_Icc_lobattoMeasure hμ) j, not_lt] at h
-        rw [integral_orthogonalPolynomial_succ_sq (ae_mem_Icc_lobattoMeasure hμ) j,
-          le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
-    rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ hsq]
+    exact hs.integral_eval_eq_sum_of_degree_lt_card_add hμ
+      (by rwa [h.card_lobattoNodes hμ hab, show k + 2 + k = 2 * k + 2 by ring])
+  · rw [lobattoQuadrature, interpolatoryQuadrature_eq_self_of_ae_mem
+      (ae_mem_lobattoNodes_of_not_isMomentPosDef hμ h)]
     exact MatchesMoments.refl _ _
 
 /-- The Lobatto rule lives in every interval carrying the measure: for a finite measure $\mu$
@@ -1108,26 +923,17 @@ $[a, b]$.
 Proof: S, about 10 lines. As `ae_mem_Icc_radauQuadrature`. -/
 theorem ae_mem_Icc_lobattoQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) (k : ℕ) :
     ∀ᵐ x ∂lobattoQuadrature μ a b k, x ∈ Set.Icc a b := by
-  have := isFiniteMeasure_lobattoMeasure hμ
   by_cases h : IsMomentPosDef (lobattoMeasure μ a b) k
-  · unfold lobattoQuadrature
+  · have := isFiniteMeasure_lobattoMeasure hμ
     filter_upwards [ae_mem_interpolatoryQuadrature μ (lobattoNodes μ a b k)] with x hx
-    unfold lobattoNodes at hx
-    simp only [Finset.mem_insert] at hx
+    simp only [lobattoNodes, Finset.mem_insert] at hx
     rcases hx with rfl | rfl | hx
     · exact ⟨le_rfl, hab.le⟩
     · exact ⟨hab.le, le_rfl⟩
     · exact h.gaussNodes_subset_Icc (ae_mem_Icc_lobattoMeasure hμ) (Finset.mem_coe.mpr hx)
-  · rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ ?_]
-    · exact hμ
-    cases k with
-    | zero =>
-      exfalso
-      exact h fun p hp hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp))
-    | succ j =>
-      rw [isMomentPosDef_succ_iff (ae_mem_Icc_lobattoMeasure hμ) j, not_lt] at h
-      rw [integral_orthogonalPolynomial_succ_sq (ae_mem_Icc_lobattoMeasure hμ) j,
-        le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
+  · rw [lobattoQuadrature, interpolatoryQuadrature_eq_self_of_ae_mem
+      (ae_mem_lobattoNodes_of_not_isMomentPosDef hμ h)]
+    exact hμ
 
 /-- The mass of the Lobatto rule: for a finite measure $\mu$ supported in $[a, b]$, $a < b$,
 and every $k$, the Lobatto rule has mass $\mu(\mathbb{R})$.
@@ -1185,39 +991,28 @@ theorem exists_integral_sub_integral_lobattoQuadrature_eq (hμ : ∀ᵐ x ∂μ,
   have hWint : Integrable W μ :=
     (integrable_eval_of_ae_mem_Icc hμ ((X - C a) * (X - C b) * π ^ 2)).congr
       (ae_of_all μ fun x => by simp [hW])
-  have hfint : Integrable f μ := by
-    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
-    exact hf.integrableOn_Icc
-  by_cases hpd : IsMomentPosDef μ' (k + 1)
-  swap
+  rcases (integral_nonneg fun x => sq_nonneg (π.eval x) : 0 ≤ ∫ x, π.eval x ^ 2 ∂μ').eq_or_lt
+    with h0 | hpos
   · -- degenerate case: the rule is `μ` and the weight vanishes
-    have h0 : ∫ x, π.eval x ^ 2 ∂μ' = 0 := by
-      rw [isMomentPosDef_succ_iff hμ'I] at hpd
-      exact le_antisymm (not_lt.mp hpd) (integral_nonneg fun x => sq_nonneg _)
     refine ⟨(a + b) / 2, ⟨by linarith, by linarith⟩, ?_⟩
-    have hW0 : ∫ x, W x ∂μ = 0 := by
-      rw [integral_lobattoMeasure] at h0
-      rw [integral_congr_ae (g := fun x => -(|(x - a) * (x - b)| * π.eval x ^ 2)), integral_neg,
-        h0, neg_zero]
-      filter_upwards [hμ] with x hx
-      rw [abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos (by linarith [hx.1]) (by linarith [hx.2]))]
-      simp only [hW]
-      ring
-    rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0, hW0]
-    ring
+    rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0.symm, sub_self,
+      integral_sub_mul_sub_mul_eq_neg_integral_lobattoMeasure hμ, ← h0, neg_zero, mul_zero]
   -- nondegenerate case: Hermite interpolation on `m = {a, b} + G + G`
+  have hpd : IsMomentPosDef μ' (k + 1) := (isMomentPosDef_succ_iff hμ'I k).mpr hpos
   set G := gaussNodes μ' k
   have hGI : (G : Set ℝ) ⊆ Set.Ioo a b := hpd.gaussNodes_subset_Ioo hμ'I
   have hGc : G.card = k := (hpd.mono k.le_succ).card_gaussNodes hμ'I
   have hGπ : Lagrange.nodal G id = π := (hpd.mono k.le_succ).nodal_gaussNodes hμ'I
   set m : Multiset ℝ := a ::ₘ b ::ₘ (G.val + G.val) with hm
   have hmc : m.card = 2 * k + 2 := by
-    simp only [hm, Multiset.card_cons, Multiset.card_add, Finset.card_val, hGc]; ring
+    simp only [hm, Multiset.card_cons, Multiset.card_add, Finset.card_val, hGc]
+    ring
   obtain ⟨hmem, hrep⟩ := mem_Icc_and_mem_Ioo_of_one_lt_count_cons_cons hab hGI
   have hprod : ∀ x, ((m.map fun y => X - C y).prod).eval x = W x := by
     intro x
     have : (G.val.map fun y => X - C y).prod = π := by
-      rw [← hGπ, Lagrange.nodal]; rfl
+      rw [← hGπ, Lagrange.nodal]
+      rfl
     simp only [hm, Multiset.map_cons, Multiset.prod_cons, Multiset.map_add, Multiset.prod_add,
       this, hW, eval_mul, eval_sub, eval_X, eval_C]
     ring
@@ -1225,33 +1020,20 @@ theorem exists_integral_sub_integral_lobattoQuadrature_eq (hμ : ∀ᵐ x ∂μ,
     exists_degree_lt_forall_iterate_derivative_eval_eq m fun y j => iteratedDeriv j f y
   have hHf : ∀ x ∈ lobattoNodes μ a b k, H.eval x = f x := by
     intro x hx
-    have hxm : x ∈ m := by
-      simp only [lobattoNodes, Finset.mem_insert] at hx
-      simp only [hm, Multiset.mem_cons, Multiset.mem_add, Finset.mem_val, or_self]
-      exact hx
+    have hxm : x ∈ m := by simpa [hm, lobattoNodes] using hx
     simpa using hHjet x hxm 0 (Multiset.count_pos.mpr hxm)
   have hQ : ∫ x, f x ∂lobattoQuadrature μ a b k = ∫ x, H.eval x ∂μ := by
     rw [matchesMoments_lobattoQuadrature hμ hab k H (by exact_mod_cast hmc ▸ hHdeg),
       integral_lobattoQuadrature hμ hab k f, integral_lobattoQuadrature hμ hab k]
     exact Finset.sum_congr rfl fun x hx => by rw [hHf x hx]
-  have hD : ContinuousOn (fun ξ => iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial)
-      (Set.Ioo a b) :=
-    ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
-      fun x hx => (iteratedDerivWithin_of_isOpen isOpen_Ioo hx).symm).div_const _
-  obtain ⟨ξ, hξ, hint⟩ := exists_integral_eq_mul_integral_of_ae_nonpos
-    (hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)) hWint
-    (by
-      filter_upwards [hμ] with x hx
-      exact mul_nonpos_of_nonpos_of_nonneg
-        (mul_nonpos_of_nonneg_of_nonpos (by linarith [hx.1]) (by linarith [hx.2])) (sq_nonneg _))
-    (isConnected_Ioo hab) hD (by
-      filter_upwards [hμ] with x hx
-      obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab (by simp) hmem hrep hf
-        (hmc ▸ hf') (hmc ▸ hHdeg) hHjet hx
-      exact ⟨ξ, hξ, by rw [Pi.sub_apply, h, hprod, hmc]⟩)
-  refine ⟨ξ, hξ, ?_⟩
-  rw [hQ, ← integral_sub hfint (integrable_eval_of_ae_mem_Icc hμ H)]
-  exact hint
+  rw [hQ]
+  refine exists_integral_sub_integral_eval_eq hμ hab hf hf' hWint (.inr ?_) fun x hx => ?_
+  · filter_upwards [hμ] with x hx
+    exact mul_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonneg_of_nonpos (sub_nonneg.2 hx.1) (sub_nonpos.2 hx.2)) (sq_nonneg _)
+  obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab (by simp) hmem hrep hf
+    (hmc ▸ hf') (hmc ▸ hHdeg) hHjet hx
+  exact ⟨ξ, hξ, by rw [h, hprod, hmc]⟩
 
 /-- **The Lobatto rule is an upper bound** for $f$ with nonnegative derivative of order $2k + 2$:
 for a finite measure $\mu$ supported in $[a, b]$, $a < b$, every $k$, and $f$ continuous on
@@ -1265,18 +1047,13 @@ theorem integral_le_integral_lobattoQuadrature_of_iteratedDeriv_nonneg
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 2 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, 0 ≤ iteratedDeriv (2 * k + 2) f x) :
     ∫ x, f x ∂μ ≤ ∫ x, f x ∂lobattoQuadrature μ a b k := by
-  obtain ⟨ξ, hξ, heq⟩ := exists_integral_sub_integral_lobattoQuadrature_eq hμ hab k hf hf'
-  have hw : ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ
+  obtain ⟨ξ, hξ, h⟩ := exists_integral_sub_integral_lobattoQuadrature_eq hμ hab k hf hf'
+  have hW : ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ
       ≤ 0 := by
-    refine integral_nonpos_of_ae ?_
-    filter_upwards [hμ] with x hx
-    exact mul_nonpos_of_nonpos_of_nonneg
-      (mul_nonpos_of_nonneg_of_nonpos (sub_nonneg.mpr hx.1) (sub_nonpos.mpr hx.2))
-      (sq_nonneg _)
-  have hd : 0 ≤ iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial :=
-    div_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
-  have hp := mul_nonpos_of_nonneg_of_nonpos hd hw
-  linarith
+    rw [integral_sub_mul_sub_mul_eq_neg_integral_lobattoMeasure hμ, neg_nonpos]
+    exact integral_nonneg fun x => sq_nonneg _
+  linarith [mul_nonpos_of_nonneg_of_nonpos
+    (div_nonneg (hD ξ hξ) (Nat.cast_nonneg (2 * k + 2).factorial)) hW]
 
 /-- **The Lobatto rule is a lower bound** for $f$ with nonpositive derivative of order
 $2k + 2$: for a finite measure $\mu$ supported in $[a, b]$, $a < b$, every $k$, and $f$
@@ -1290,18 +1067,13 @@ theorem integral_lobattoQuadrature_le_integral_of_iteratedDeriv_nonpos
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 2 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, iteratedDeriv (2 * k + 2) f x ≤ 0) :
     ∫ x, f x ∂lobattoQuadrature μ a b k ≤ ∫ x, f x ∂μ := by
-  obtain ⟨ξ, hξ, heq⟩ := exists_integral_sub_integral_lobattoQuadrature_eq hμ hab k hf hf'
-  have hw : ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ
+  obtain ⟨ξ, hξ, h⟩ := exists_integral_sub_integral_lobattoQuadrature_eq hμ hab k hf hf'
+  have hW : ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ
       ≤ 0 := by
-    refine integral_nonpos_of_ae ?_
-    filter_upwards [hμ] with x hx
-    have h1 : 0 ≤ x - a := by linarith [hx.1]
-    have h2 : x - b ≤ 0 := by linarith [hx.2]
-    exact mul_nonpos_of_nonpos_of_nonneg (mul_nonpos_of_nonneg_of_nonpos h1 h2) (sq_nonneg _)
-  have hd : iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial ≤ 0 :=
-    div_nonpos_of_nonpos_of_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
-  have := mul_nonneg_of_nonpos_of_nonpos hd hw
-  linarith
+    rw [integral_sub_mul_sub_mul_eq_neg_integral_lobattoMeasure hμ, neg_nonpos]
+    exact integral_nonneg fun x => sq_nonneg _
+  linarith [mul_nonneg_of_nonpos_of_nonpos
+    (div_nonpos_of_nonpos_of_nonneg (hD ξ hξ) (Nat.cast_nonneg (2 * k + 2).factorial)) hW]
 
 /-! ### The Radau Jacobi matrix -/
 
@@ -1327,37 +1099,15 @@ private theorem radauJacobiMatrix_mulVec_apply {k : ℕ} (μ : Measure ℝ) (c :
   have hsub : ∑ x : Fin (k + 1), (if (x : ℕ) + 1 = i then √(jacobiBeta μ i) * w x else 0) =
       if h : 0 < i then √(jacobiBeta μ i) * w ⟨i - 1, by omega⟩ else 0 := by
     split_ifs with h0
-    · rw [Finset.sum_eq_single ⟨i - 1, by omega⟩]
-      · rw [if_pos (by dsimp only; omega)]
-      · intro x _ hx
-        rw [if_neg]
-        intro hxi
-        apply hx
-        ext
-        dsimp only
-        omega
-      · intro h; exact absurd (Finset.mem_univ _) h
-    · apply Finset.sum_eq_zero
-      intro x _
-      rw [if_neg]
-      omega
+    · rw [Finset.sum_eq_single ⟨i - 1, by omega⟩ (fun x _ hx => if_neg fun e => hx (Fin.ext
+        (by simp only; omega))) (by simp), if_pos (by simp only; omega)]
+    · exact Finset.sum_eq_zero fun x _ => if_neg (by omega)
   have hsup : ∑ x : Fin (k + 1), (if i + 1 = (x : ℕ) then √(jacobiBeta μ x) * w x else 0) =
       if h : i < k then √(jacobiBeta μ (i + 1)) * w ⟨i + 1, by omega⟩ else 0 := by
     split_ifs with h0
-    · rw [Finset.sum_eq_single ⟨i + 1, by omega⟩]
-      · rw [if_pos rfl]
-      · intro x _ hx
-        rw [if_neg]
-        intro hxi
-        apply hx
-        ext
-        dsimp only
-        omega
-      · intro h; exact absurd (Finset.mem_univ _) h
-    · apply Finset.sum_eq_zero
-      intro x _
-      rw [if_neg]
-      omega
+    · rw [Finset.sum_eq_single ⟨i + 1, by omega⟩ (fun x _ hx => if_neg fun e => hx (Fin.ext
+        (by simp only; omega))) (by simp), if_pos rfl]
+    · exact Finset.sum_eq_zero fun x _ => if_neg (by omega)
   simp only [Matrix.mulVec, dotProduct, hterm, Finset.sum_add_distrib, Finset.sum_ite_eq',
     Finset.mem_univ, if_true]
   rw [hsub, hsup]
@@ -1380,16 +1130,12 @@ theorem IsMomentPosDef.radauJacobiMatrix_mulVec_eq {k : ℕ} (h : IsMomentPosDef
         √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ)) =
       c • fun i : Fin (k + 1) => (orthogonalPolynomial μ i).eval c /
         √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ) := by
-  have hN : ∀ j ≤ k, 0 < ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ := fun j hj =>
-    (isMomentPosDef_succ_iff hμ j).mp (h.mono (by omega))
   have hs : ∀ j ≤ k, √(∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ) ≠ 0 := fun j hj =>
-    (Real.sqrt_pos.mpr (hN j hj)).ne'
+    (Real.sqrt_pos.mpr ((isMomentPosDef_succ_iff hμ j).mp (h.mono (by omega)))).ne'
   have hsqrtβ : ∀ m, m + 1 ≤ k → √(jacobiBeta μ (m + 1)) =
       √(∫ x, (orthogonalPolynomial μ (m + 1)).eval x ^ 2 ∂μ) /
-        √(∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ) := fun m _ => by
-    change √((∫ x, (orthogonalPolynomial μ (m + 1)).eval x ^ 2 ∂μ) /
-      ∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ) = _
-    exact Real.sqrt_div (integral_nonneg fun x => sq_nonneg _) _
+        √(∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ) := fun m _ =>
+    Real.sqrt_div (integral_nonneg fun x => sq_nonneg _) _
   have hβ : ∀ m, m + 1 ≤ k → jacobiBeta μ (m + 1) =
       (√(∫ x, (orthogonalPolynomial μ (m + 1)).eval x ^ 2 ∂μ)) ^ 2 /
         (√(∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ)) ^ 2 := fun m _ => by
@@ -1399,8 +1145,7 @@ theorem IsMomentPosDef.radauJacobiMatrix_mulVec_eq {k : ℕ} (h : IsMomentPosDef
   have hrec : ∀ m, (orthogonalPolynomial μ (m + 2)).eval c =
       (c - jacobiAlpha μ (m + 1)) * (orthogonalPolynomial μ (m + 1)).eval c -
         jacobiBeta μ (m + 1) * (orthogonalPolynomial μ m).eval c := fun m => by
-    rw [orthogonalPolynomial_add_two]
-    simp only [eval_sub, eval_mul, eval_X, eval_C]
+    simp [orthogonalPolynomial_add_two]
   funext i
   rw [radauJacobiMatrix_mulVec_apply]
   simp only [Pi.smul_apply, smul_eq_mul]
@@ -1409,9 +1154,9 @@ theorem IsMomentPosDef.radauJacobiMatrix_mulVec_eq {k : ℕ} (h : IsMomentPosDef
   · rw [if_neg (fun h' => by simp [Fin.ext_iff] at h'; omega), dif_pos hik]
     dsimp only
     rcases Nat.eq_zero_or_pos i with rfl | hi0
-    · have e0 : (orthogonalPolynomial μ 0).eval c = 1 := by rw [orthogonalPolynomial_zero]; simp
+    · have e0 : (orthogonalPolynomial μ 0).eval c = 1 := by simp [orthogonalPolynomial_zero]
       have e1 : (orthogonalPolynomial μ 1).eval c = c - jacobiAlpha μ 0 := by
-        rw [orthogonalPolynomial_one]; simp
+        simp [orthogonalPolynomial_one]
       have h0 := hs 0 (by omega)
       have h1 := hs 1 (by omega)
       rw [dif_neg (lt_irrefl 0), add_zero, hsqrtβ 0 hik, e0, e1]
@@ -1455,38 +1200,21 @@ theorem IsMomentPosDef.mem_spectrum_radauJacobiMatrix {k : ℕ} (h : IsMomentPos
     c ∈ spectrum ℝ (radauJacobiMatrix μ c k) := by
   have hcI : c ∉ Set.Ioo a b := by
     rcases hc with rfl | rfl <;> simp
-  have hc0 : (orthogonalPolynomial μ k).eval c ≠ 0 := by
-    intro h0
-    have hmem : c ∈ gaussNodes μ k := by
-      unfold gaussNodes
-      rw [Multiset.mem_toFinset, Polynomial.mem_roots (monic_orthogonalPolynomial μ k).ne_zero]
-      exact h0
-    exact hcI (IsMomentPosDef.gaussNodes_subset_Ioo h hμ hmem)
+  have hc0 : (orthogonalPolynomial μ k).eval c ≠ 0 := fun h0 =>
+    hcI (h.gaussNodes_subset_Ioo hμ (mem_gaussNodes_iff_isRoot.mpr h0))
   have hpos : 0 < ∫ x, (1 : ℝ[X]).eval x ^ 2 ∂μ :=
     h 1 one_ne_zero (by simp only [degree_one, Nat.cast_add, Nat.cast_one]; positivity)
   set v : Fin (k + 1) → ℝ := fun i => (orthogonalPolynomial μ i).eval c /
-    √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ) with hv_def
-  have hv0 : v ≠ 0 := by
-    intro hz
-    have h0 := congrFun hz 0
-    have h0' : (orthogonalPolynomial μ 0).eval c /
-        √(∫ x, (orthogonalPolynomial μ 0).eval x ^ 2 ∂μ) = 0 := h0
-    rw [orthogonalPolynomial_zero] at h0'
-    simp only [eval_one, one_pow] at h0' hpos
-    rcases div_eq_zero_iff.mp h0' with h1 | h1
-    · simp at h1
-    · exact (Real.sqrt_pos.mpr hpos).ne' h1
-  have hmul : radauJacobiMatrix μ c k *ᵥ v = c • v :=
-    IsMomentPosDef.radauJacobiMatrix_mulVec_eq h hμ hc0
-  rw [spectrum.mem_iff]
-  intro hu
-  have hdet : (algebraMap ℝ (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) c -
-      radauJacobiMatrix μ c k).det = 0 := by
-    rw [← Matrix.exists_mulVec_eq_zero_iff]
-    refine ⟨v, hv0, ?_⟩
-    rw [Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
-      Matrix.one_mulVec, hmul, sub_self]
-  exact isUnit_iff_ne_zero.mp ((Matrix.isUnit_iff_isUnit_det _).mp hu) hdet
+    √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ)
+  have hv0 : v ≠ 0 := fun hz => by
+    have h0 : v 0 = 0 := congrFun hz 0
+    simp only [v, Fin.val_zero, orthogonalPolynomial_zero, eval_one, one_pow] at h0 hpos
+    exact (div_ne_zero one_ne_zero (Real.sqrt_pos.mpr hpos).ne') h0
+  rw [spectrum.mem_iff, Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not,
+    ← Matrix.exists_mulVec_eq_zero_iff]
+  refine ⟨v, hv0, ?_⟩
+  rw [Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec,
+    h.radauJacobiMatrix_mulVec_eq hμ hc0, sub_self]
 
 /-- A banded matrix has zero powers off a band of width `i`. -/
 private theorem matrix_pow_apply_eq_zero_of_band {n : ℕ} (N : Matrix (Fin n) (Fin n) ℝ)
