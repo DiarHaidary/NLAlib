@@ -35,6 +35,27 @@ namespace ProbabilityTheory
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {α γ δ : Type*}
   [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace δ]
 
+/-- Auxiliary: pushing a product measure forward along `(t, z) ↦ (t, H t z)` depends only on the
+laws `σ.map (H t)`. -/
+private lemma map_prod_prodMk_eq_of_forall_map_eq (ρ : Measure α) [SFinite ρ] (σ : Measure γ)
+    [SFinite σ] {F G : α → γ → δ} (hF : Measurable (Function.uncurry F))
+    (hG : Measurable (Function.uncurry G)) (h : ∀ t, σ.map (F t) = σ.map (G t)) :
+    (ρ.prod σ).map (fun p : α × γ => (p.1, F p.1 p.2)) =
+      (ρ.prod σ).map (fun p : α × γ => (p.1, G p.1 p.2)) := by
+  have hF' : Measurable (fun p : α × γ => (p.1, F p.1 p.2)) := measurable_fst.prodMk hF
+  have hG' : Measurable (fun p : α × γ => (p.1, G p.1 p.2)) := measurable_fst.prodMk hG
+  ext E hE
+  rw [Measure.map_apply hF' hE, Measure.map_apply hG' hE, Measure.prod_apply (hF' hE),
+    Measure.prod_apply (hG' hE)]
+  refine lintegral_congr fun t => ?_
+  have key : ∀ (H : α → γ → δ), Measurable (Function.uncurry H) →
+      σ (Prod.mk t ⁻¹' ((fun p : α × γ => (p.1, H p.1 p.2)) ⁻¹' E)) =
+        (σ.map (H t)) (Prod.mk t ⁻¹' E) := by
+    intro H hH
+    rw [Measure.map_apply hH.of_uncurry_left (measurable_prodMk_left hE)]
+    rfl
+  rw [key F hF, key G hG, h t]
+
 /-- The freezing lemma: let $Z$ be independent of $T$ and $F$, $G$ jointly measurable. If for
 every fixed $t$ the variables $F(t, Z)$ and $G(t, Z)$ have the same law, then $(T, F(T, Z))$ and
 $(T, G(T, Z))$ have the same joint law.
@@ -52,7 +73,16 @@ theorem IndepFun.identDistrib_prodMk_of_forall_map_eq [IsFiniteMeasure μ] {T : 
     (hG : Measurable (Function.uncurry G))
     (h : ∀ t, (μ.map Z).map (F t) = (μ.map Z).map (G t)) :
     IdentDistrib (fun ω => (T ω, F (T ω) (Z ω))) (fun ω => (T ω, G (T ω) (Z ω))) μ μ := by
-  sorry
+  have hpair := (indepFun_iff_map_prod_eq_prod_map_map hT hZ).1 hTZ
+  have hp := hT.prodMk hZ
+  have hF' : Measurable (fun p : α × γ => (p.1, F p.1 p.2)) := measurable_fst.prodMk hF
+  have hG' : Measurable (fun p : α × γ => (p.1, G p.1 p.2)) := measurable_fst.prodMk hG
+  refine ⟨hF'.comp_aemeasurable hp, hG'.comp_aemeasurable hp, ?_⟩
+  change μ.map ((fun p : α × γ => (p.1, F p.1 p.2)) ∘ (fun ω => (T ω, Z ω))) =
+    μ.map ((fun p : α × γ => (p.1, G p.1 p.2)) ∘ (fun ω => (T ω, Z ω)))
+  rw [← AEMeasurable.map_map_of_aemeasurable hF'.aemeasurable hp,
+    ← AEMeasurable.map_map_of_aemeasurable hG'.aemeasurable hp, hpair]
+  exact map_prod_prodMk_eq_of_forall_map_eq _ _ hF hG h
 
 /-- Freezing with a fixed law: let $Z$ be independent of $T$ and $F$ jointly measurable. If
 $F(t, Z)$ has the same law $\nu$ for every fixed $t$, then $(T, F(T, Z))$ has law
