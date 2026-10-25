@@ -78,15 +78,7 @@ theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature {A : Matr
   classical
   obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
   have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
-  have hfinT : (spectrum ℝ (Qᴴ * A * Q)).Finite := by
-    rw [hT.spectrum_eq_image_eigenvalue]
-    exact (Set.finite_Iio _).image _
-  have hfinA : (spectrum ℝ A).Finite := by
-    rw [hA.spectrum_eq_image_eigenvalue]
-    exact (Set.finite_Iio _).image _
-  obtain ⟨a, ha⟩ := hfinA.bddBelow
-  obtain ⟨c, hc⟩ := hfinA.bddAbove
-  have hsub : spectrum ℝ A ⊆ Set.Icc a c := fun x hx => ⟨ha hx, hc hx⟩
+  have hfinT : (spectrum ℝ (Qᴴ * A * Q)).Finite := Matrix.finite_real_spectrum
   have hcard : hfinT.toFinset.card ≤ q := by
     rw [← Set.ncard_eq_toFinset_card _ hfinT, ← Nat.card_coe_set_eq]
     exact card_spectrum_compression_le hQ hA hK
@@ -96,8 +88,8 @@ theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature {A : Matr
       ae_iff.2 (spectralMeasure_compl_spectrum_eq_zero _ _)
     filter_upwards [hae] with x hx
     exact hfinT.mem_toFinset.2 hx
-  exact (hA.matchesMoments_lanczosQuadrature b q).eq_gaussQuadrature
-    (ae_mem_Icc_spectralMeasure A hsub b) hν hcard
+  obtain ⟨a, c, hμ⟩ := exists_ae_mem_Icc_spectralMeasure A b
+  exact (hA.matchesMoments_lanczosQuadrature b q).eq_gaussQuadrature hμ hν hcard
 
 /-- **The Ritz values are the Gauss nodes** (nodal form): for Hermitian $\mathbf{A}$,
 $\mathbf{Q}$ with orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at
@@ -118,15 +110,10 @@ theorem HasOrthonormalCols.nodal_eq_orthogonalPolynomial {Q : Matrix n r 𝕜}
     (hA.isMomentPosDef_spectralMeasure_iff b q).mpr hq
   have hcard : s.card = q := by
     have h := hQ.card_spectrum_conjTranspose_mul_mul_eq hA hK hq
-    rw [← hs] at h
-    simpa using h
-  obtain ⟨a, ha⟩ := (Matrix.finite_real_spectrum (A := A)).bddBelow
-  obtain ⟨c, hc⟩ := (Matrix.finite_real_spectrum (A := A)).bddAbove
-  have hsupp := ae_mem_Icc_spectralMeasure A (a := a) (a' := c)
-    (fun x hx => ⟨ha hx, hc hx⟩) b
-  refine hpos.eq_orthogonalPolynomial hsupp (Lagrange.nodal_monic) ?_ ?_
-  · rw [Lagrange.natDegree_nodal, hcard]
-  · exact hQ.isOrthogonalPolynomial_nodal hA hK hs
+    rwa [← hs, Nat.card_coe_set_eq, Set.ncard_coe_finset] at h
+  obtain ⟨a, c, hμ⟩ := exists_ae_mem_Icc_spectralMeasure A b
+  exact hpos.eq_orthogonalPolynomial hμ Lagrange.nodal_monic
+    (by rw [Lagrange.natDegree_nodal, hcard]) (hQ.isOrthogonalPolynomial_nodal hA hK hs)
 
 /-- **The Ritz values are the Gauss nodes**: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
 orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at most the grade and
@@ -249,8 +236,8 @@ theorem spectralMeasure_map_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ]
   have hJ : jacobiMatrix μ (k + 1) =
       (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) *
         Matrix.diagonal hJh.eigenvalues *
-        (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)ᴴ := by
-    exact hJh.spectral_theorem
+        (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)ᴴ :=
+    hJh.spectral_theorem
   have hU := hasOrthonormalCols_iff_mem_unitaryGroup.2 hJh.eigenvectorUnitary.2
   have hVU : HasOrthonormalCols
       ((hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).map (algebraMap ℝ 𝕜)) := by
@@ -267,7 +254,10 @@ theorem spectralMeasure_map_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ]
   rw [hVU.spectralMeasure_eq_sum rfl hA, HasOrthonormalCols.gaussQuadrature_succ_eq_sum hU hμ hJ]
   refine Finset.sum_congr rfl fun i _ => ?_
   congr 3
-  simp [Matrix.mulVec_smul]
+  simp only [algebraMap_smul, Matrix.mulVec_smul, Matrix.mulVec_single, MulOpposite.op_one,
+    one_smul, Pi.smul_apply, Matrix.col_apply, Matrix.conjTranspose_apply, Matrix.map_apply,
+    Matrix.IsHermitian.eigenvectorUnitary_apply, RCLike.star_def, RCLike.conj_ofReal,
+    RCLike.real_smul_ofReal, norm_mul, norm_algebraMap', Real.norm_eq_abs]
   rw [mul_pow, sq_abs, sq_abs, Real.sq_sqrt measureReal_nonneg]
 
 end NLAlib
