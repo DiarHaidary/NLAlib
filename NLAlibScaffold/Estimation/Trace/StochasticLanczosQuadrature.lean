@@ -221,7 +221,15 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_differentiableOn
     ‖(cfc f A).trace - slq A f Ω (q + 1)‖ ≤
       ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
         4 * M / (ρ ^ (2 * q + 1) * (ρ - 1)) * (frobNorm Ω ^ 2 / Fintype.card m) := by
-  sorry
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn (𝕜 := ℝ)
+    (f := f) haa hρ hFd hM (fun t ht => by
+      rw [← hExt ht]
+      exact RCLike.toComplex_ofReal (𝕜 := ℝ) _) (2 * q + 1)
+  have hp' : p.degree < 2 * ((q + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
+  have h := hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs hp' hε Ω
+  refine h.trans_eq ?_
+  ring
 
 /-! ### Tails with independent sub-Gaussian entries -/
 
