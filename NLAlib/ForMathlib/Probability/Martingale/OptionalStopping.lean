@@ -31,8 +31,10 @@ namespace MeasureTheory
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
 /-- **Ville's maximal inequality**: a nonnegative supermartingale $(f_k)_{k \ge 0}$ reaches the
-level $c > 0$ at some time with probability at most $\mathbb{E}[f_0] / c$; for a finite measure
-$\mu$, $\mu\{\omega : \exists k,\ f_k(\omega) \ge c\} \le \int f_0 \, d\mu / c$.
+level $c > 0$ at some time with probability at most
+$$\frac{\mathbb{E}[f_0]}{c}\,;$$
+for a finite measure $\mu$,
+$$\mu\{\omega : \exists k,\ f_k(\omega) \ge c\} \le \frac{\int f_0 \, d\mu}{c}\,.$$
 Due to Ville (1939); the time-uniform form of
 Markov's inequality used for martingale tail bounds (the matrix Freedman inequality,
 `NLAlib/Probability/MatrixConcentration/Freedman.lean`).

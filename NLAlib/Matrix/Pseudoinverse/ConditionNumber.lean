@@ -80,7 +80,7 @@ and for an invertible matrix it is the classical
 $\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$ (`pseudoConditionNumber_of_isUnit`);
 theorems about the classical condition number assume invertibility or full column rank.
 [GolubVanLoan2013, §2.6.2 and §5.3.7]. Port of `NLAlib.moorePenroseConditionNumber`; the
-prototype's `ℝ≥0∞`-valued `conditionNumber` of a square matrix is not reproduced. -/
+prototype's $[0,\infty]$-valued `conditionNumber` of a square matrix is not reproduced. -/
 noncomputable def pseudoConditionNumber (A : Matrix m n 𝕜) : ℝ :=
   specNorm A * specNorm (pinv A)
 

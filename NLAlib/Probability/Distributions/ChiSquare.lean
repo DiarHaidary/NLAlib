@@ -148,7 +148,8 @@ private theorem exp_mul_inv_rpow (a N : ℝ) (hβ : 0 < β) :
 
 /-- **Upper Chernoff tail of $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $\beta \ge 1$,
-$\mathbb{P}[\beta d \le \|\mathbf{g}\|^2] \le e^{(d/2)(1 - \beta + \log \beta)}$, Chernoff's bound
+$$\mathbb{P}[\beta d \le \|\mathbf{g}\|^2] \le e^{\frac{d}{2}(1 - \beta + \log \beta)}\,,$$
+Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. At every
 threshold it is at least as good as Laurent and Massart's upper tail, which stays in the library
 as the sub-Gaussian-vector bound `NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le` at proxy $1$
@@ -172,7 +173,8 @@ theorem measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector
 
 /-- **Lower Chernoff tail of $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $0 < \beta \le 1$,
-$\mathbb{P}[\|\mathbf{g}\|^2 \le \beta d] \le e^{(d/2)(1 - \beta + \log \beta)}$, Chernoff's bound
+$$\mathbb{P}[\|\mathbf{g}\|^2 \le \beta d] \le e^{\frac{d}{2}(1 - \beta + \log \beta)}\,,$$
+Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. It dominates
 (CONTRIBUTING §5.2 rule 6) Laurent and Massart's
 `NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector` (at $\beta = 1 - 2\sqrt{t/d}$, with

@@ -103,10 +103,10 @@ theorem integrable_mul_mul_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [De
     _ = specNorm B := by ring
 
 /-- **The second moment of a Haar frame**:
-$\mathbb{E}[\mathbf{Q}\mathbf{B}\mathbf{Q}^{\mathsf{H}}]
-= (\operatorname{tr} \mathbf{B} / \lvert n \rvert) \, \mathbf{I}$ for an $n \times k$ Haar frame
-$\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 2], there entrywise for the
-orthogonal group; here for frames, in matrix form.
+$$\mathbb{E}[\mathbf{Q}\mathbf{B}\mathbf{Q}^{\mathsf{H}}]
+= \frac{\operatorname{tr} \mathbf{B}}{\lvert n \rvert}\,\mathbf{I}\,,$$
+for an $n \times k$ Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$.
+[Meckes2019, Ch. 2], there entrywise for the orthogonal group; here for frames, in matrix form.
 Result: haar-frame-second-moment -/
 theorem integral_mul_mul_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (B : Matrix k k ℝ) :
@@ -154,10 +154,10 @@ theorem integrable_conjTranspose_mul_mul_of_hasLaw_haarFrame [DecidableEq k]
     _ = specNorm A := by ring
 
 /-- **The compression of a fixed matrix by a Haar frame**:
-$\mathbb{E}[\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}]
-= (\operatorname{tr} \mathbf{A} / \lvert n \rvert) \, \mathbf{I}$ for an $n \times k$ Haar frame
-$\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 2], there entrywise; here in
-matrix form.
+$$\mathbb{E}[\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}]
+= \frac{\operatorname{tr} \mathbf{A}}{\lvert n \rvert}\,\mathbf{I}\,,$$
+for an $n \times k$ Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$.
+[Meckes2019, Ch. 2], there entrywise; here in matrix form.
 Result: haar-frame-second-moment -/
 theorem integral_conjTranspose_mul_mul_of_hasLaw_haarFrame [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (A : Matrix n n ℝ) :

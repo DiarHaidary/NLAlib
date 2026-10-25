@@ -254,7 +254,8 @@ theorem hasJLMoment_of_hasLaw_rademacherMatrix [Nonempty k] (hX : HasLaw X (rade
 /-- **Sign-sketch OSE**: for $\varepsilon \ge 0$,
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ is an oblivious subspace embedding for
 dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
-$2 \cdot 21^d e^{-\lvert k \rvert (4\varepsilon^2/25 - 32\varepsilon^3/375)}$: JL plus a net of
+$$2 \cdot 21^d e^{-\lvert k \rvert (4\varepsilon^2/25 - 32\varepsilon^3/375)} \,:$$
+JL plus a net of
 radius $1/10$ at $4\varepsilon/5$ (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`).
 [Woodruff2014, §2.1, Theorem 6], there with $O(\varepsilon)$ and unspecified constants.
 Result: rademacher-ose -/

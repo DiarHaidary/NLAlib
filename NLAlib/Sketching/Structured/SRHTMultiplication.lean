@@ -172,7 +172,8 @@ theorem hasJLProperty_of_hasLaw_srht_of_samplingEmbeddingDim_le (hF : IsBoundedO
     hasJLProperty_of_hasLaw_srht hF hS hε.le hε1 ht
 
 /-- **Distributional JL for the SRHT, asymptotic form**:
-$O(\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2)$ rows suffice for the SRHT
+$$O(\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2)$$
+rows suffice for the SRHT
 of a bounded orthonormal $\mathbf{F}$ with constant $\beta$ to have the JL property with distortion
 $\varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension and before $\beta$, and the
@@ -247,7 +248,8 @@ theorem hasJLProperty_of_hasLaw_srhtWithReplacement_of_samplingEmbeddingDim_le
     hasJLProperty_of_hasLaw_srhtWithReplacement hF hS hε.le hε1 ht
 
 /-- **Distributional JL for the SRHT with replacement, asymptotic form**:
-$O(\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2)$ rows suffice for the SRHT
+$$O(\beta(1 + \log(\lvert n\rvert/\delta))\log(1/\delta)/\varepsilon^2)$$
+rows suffice for the SRHT
 with i.i.d. uniform row indices of a bounded orthonormal $\mathbf{F}$ with constant $\beta$ to
 have the JL property with distortion $\varepsilon$ and failure probability $\delta$, for
 $\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension and
@@ -660,9 +662,10 @@ theorem hasProjectionCostPreserving_of_hasLaw_srht_of_le_card (hF : IsBoundedOrt
     hS.aemeasurable (by linarith) (by linarith) hJ0 le_rfl (div_nonneg hv.le (by positivity))
     A).mono le_rfl h₁ h₂ h₃
 
-/-- **$O(\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2 +
-\beta^2(d+1)/(\varepsilon^2\delta))$ SRHT rows suffice for a rank-$d$ projection-cost-preserving
-sketch**: for a real bounded orthonormal $\mathbf{F}$ with constant $\beta$ and its SRHT
+/-- **SRHT rows suffice for a rank-$d$ projection-cost-preserving sketch**:
+$$O(\beta(d + \log(\lvert n\rvert/\delta))\log(d/\delta)/\varepsilon^2 +
+\beta^2(d+1)/(\varepsilon^2\delta))$$
+rows give one: for a real bounded orthonormal $\mathbf{F}$ with constant $\beta$ and its SRHT
 $\mathbf{S}$, $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ is a rank-$d$ projection-cost-preserving sketch
 of $\mathbf{A}$ with constants $1 \mp \varepsilon$ and failure probability $\delta$, for
 $\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension

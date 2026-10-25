@@ -409,7 +409,8 @@ end Pi
 
 /-! ### Isotropy -/
 
-/-- **Row sampling with positive weights is isotropic.** With zero weights the second moment is
+/-- **Row sampling with positive weights is isotropic.** For $k$ nonempty, with zero weights the
+second moment is
 $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \operatorname{diag}([p_i \ne 0]) \preceq
 \mathbf{I}$, which is not isotropy; mixing in uniform weights,
 $p_i = (\ell_i / d + 1 / \lvert n \rvert) / 2$ for the leverage scores $\ell_i$ of $\mathbf{U}$ and
@@ -503,8 +504,8 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketch (hS : HasLaw S (sampl
 /-- **Row sampling under leverage domination**: if $\ell_i(\mathbf{U}) \le L p_i$ for every row,
 the row-sampling sketch with $k$ samples is a subspace embedding for
 $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$ outside probability
-$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
-$0 \le \varepsilon \le 1$ and any $\mathbf{U}$. [Woodruff2014, Theorem 17], there $\mathbf{U}$
+$$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)} \,,$$
+for $0 \le \varepsilon \le 1$ and any $\mathbf{U}$. [Woodruff2014, Theorem 17], there $\mathbf{U}$
 with orthonormal columns, $p$ a $\beta$-approximation of the leverage-score distribution and
 $s > 144 d \log(2d/\delta) / (\beta \varepsilon^2)$ samples through a Bernstein bound (Fact 1);
 here matrix Chernoff, $L = d/\beta$, any shape and rank; [MartinssonTropp2020, §9.6.3];
@@ -535,7 +536,8 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketch (hS : HasLaw S (samplingSk
 
 /-- **Exact leverage-score sampling**: sampling rows by the leverage-score distribution of
 $\mathbf{U}$ gives a subspace embedding with constants $1 \mp \varepsilon$ outside probability
-$2 d \, e^{-\varepsilon^2 k / (3 d)}$, $d = \operatorname{rank}\mathbf{U}$, for
+$$2 d \, e^{-\varepsilon^2 k / (3 d)} \,,$$
+$d = \operatorname{rank}\mathbf{U}$, for
 $0 \le \varepsilon \le 1$; the domination constant is $L = d$. No normalisation hypothesis: for
 $\mathbf{U} = \mathbf{0}$ the bound is $0$ and every embedding event is full.
 [MartinssonTropp2020, §9.6.3]; [Woodruff2014, Theorem 17], there $\beta = 1$.

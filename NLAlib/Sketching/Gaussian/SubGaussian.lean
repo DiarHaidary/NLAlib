@@ -470,7 +470,8 @@ independent, isotropic rows $\mathbf{X}_i$, sub-Gaussian with proxy $1$, with
 $\mathbb{E} \langle \mathbf{x}, \mathbf{X}_i \rangle^4 \le 3 \|\mathbf{x}\|^4$ for every
 $\mathbf{x}$, and $\varepsilon \ge 0$, the sketch
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the JL property with failure probability
-$2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$, the Gaussian sketch's
+$$2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)} \,,$$
+the Gaussian sketch's
 (`NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix`). From
 `NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun` at
 $Y_i = \langle \mathbf{X}_i, \mathbf{x} \rangle$.
@@ -715,7 +716,8 @@ least <!-- value subgaussianJLMomentDim c \varepsilon \delta -->
 $16c^2\max(2, \log(1/\delta))/(C\varepsilon^2)$ rows (`subgaussianJLMomentDim c ε δ`,
 with <!-- value subgaussianJLConstant -->$C = 1/36$ the constant `subgaussianJLConstant`), the
 sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the JL moment property with
-distortion $\varepsilon$, failure probability $\delta$ and exponent $\max(2, \log(1/\delta))$;
+distortion $\varepsilon$, failure probability $\delta$ and exponent
+$$\max(2, \log(1/\delta)) \,;$$
 approximate matrix multiplication with failure probability $\delta$ follows
 (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`). Sign sketches are the
 case $c = 1$. [Woodruff2014, Definition 12 and Theorem 13], the property and AMM from it; the
@@ -763,7 +765,8 @@ theorem hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le
 /-- **Sub-Gaussian JL moments, asymptotic form**: $O(c^2\log(1/\delta)/\varepsilon^2)$ rows
 suffice for the sketch with independent isotropic rows, sub-Gaussian with proxy $c$, to have the
 JL moment property with distortion $\varepsilon$, failure probability $\delta$ and exponent
-$\max(2, \log(1/\delta))$, for $\varepsilon$ and $\delta$ below absolute constants; the constants
+$$\max(2, \log(1/\delta)) \,,$$
+for $\varepsilon$ and $\delta$ below absolute constants; the constants
 come before every dimension and the proxy. Proved from
 `NLAlib.hasJLMoment_of_isSubgaussianVector_of_subgaussianJLMomentDim_le` with $C = 1728$,
 $\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a column.
@@ -903,8 +906,9 @@ end Rows
 
 /-- **Sub-Gaussian JL for independent entries**: for a random $\mathbf{X}$ with independent
 entries $\mathbf{X}_{i,j}$, each sub-Gaussian with proxy $c$ and with
-$\mathbb{E}[\mathbf{X}_{i,j}^2] = 1$, $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$ has the
-JL property with failure probability <!-- value subgaussianJLConstant -->
+$\mathbb{E}[\mathbf{X}_{i,j}^2] = 1$,
+$$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$$
+has the JL property with failure probability <!-- value subgaussianJLConstant -->
 $2 e^{-(1/36) \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, the constant being
 `subgaussianJLConstant`. The mean is $0$ by `HasSubgaussianMGF.integral_eq_zero` (the
 prototype's `hmean` is dropped), so the second moment is the variance. The rows hypotheses

@@ -186,7 +186,7 @@ theorem HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd [DecidableEq q] {A : M
 
 /-- **Gu's projected form**: with $\mathbf{T} = \llbracket\mathbf{A}\rrbracket_k$ and
 $\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}$,
-$$\|\mathbf{A} - \llbracket\mathbf{P}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
+$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
 \le \|\mathbf{A} - \mathbf{T}\|_{\mathsf{F}}^2 +
 \|\mathbf{T} - \mathbf{P}\mathbf{T}\|_{\mathsf{F}}^2\,,$$
 for every test matrix (no rank hypothesis). Since

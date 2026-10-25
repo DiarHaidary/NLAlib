@@ -43,7 +43,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 /-- **Uniform column sampling without replacement at the rank-$k$ coherence**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ samples $\ell \le n$ distinct columns of $\mathbf{A}$ uniformly,
 the leverage scores of $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k^{\mathsf{H}}$ satisfy
-$\tau_i \le L/n$, $\delta, t > 0$ and $\ell$ is at
+$\tau_i \le L/n$, $\ell$ nonempty, $\delta, t > 0$ and $\ell$ is at
 least <!-- value samplingInjectionDim k L (1/2) \delta -->
 $2 L \log(k/\delta)/(1/2)^2$ (`samplingInjectionDim k L (1 / 2) δ`), then
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le (1 + 2t)

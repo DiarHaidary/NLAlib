@@ -590,9 +590,12 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srht (hF : IsBoundedOrthonormal F
   exact mul_le_mul_of_nonneg_left (rank_mul_exp_le three_pos (Nat.cast_nonneg _) ht hV hU hl)
     two_pos.le
 
-/-- **The SRHT OSI with replacement**: the bound of
-`NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht` for i.i.d. uniform indices, nonempty `k` and
-`n`, through `NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch` at uniform weights.
+/-- **The SRHT OSI with replacement**: with failure probability
+$$d\, e^{-\varepsilon^2 \lvert k \rvert / (2 \beta (d + 2 \sqrt{d t} + 2 t))} +
+\lvert n \rvert e^{-t} \,,$$
+the bound of `NLAlib.isObliviousSubspaceInjection_of_hasLaw_srht` for i.i.d. uniform indices,
+nonempty `k` and `n`, through
+`NLAlib.hasSubspaceInjection_of_hasLaw_samplingSketch` at uniform weights.
 [CamanoEpperlyMeyerTropp2025, §1.5.2].
 Result: srht-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement [Nonempty k] [Nonempty n]
@@ -612,8 +615,10 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement [Nonempty k] 
     (leverageScore_le_mul_const_inv_card hl) hε).mono le_rfl
     (rank_mul_exp_le two_pos (Nat.cast_nonneg _) ht hV hU hl)
 
-/-- **The SRHT OSE with replacement**: the bound of
-`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht` for i.i.d. uniform indices.
+/-- **The SRHT OSE with replacement**: with failure probability
+$$2 d\, e^{-\varepsilon^2 \lvert k \rvert / (3 \beta (d + 2 \sqrt{d t} + 2 t))} +
+\lvert n \rvert e^{-t} \,,$$
+the bound of `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht` for i.i.d. uniform indices.
 [MartinssonTropp2020, §9.3].
 Result: srht-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement

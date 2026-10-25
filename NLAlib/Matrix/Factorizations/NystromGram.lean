@@ -292,7 +292,8 @@ end PosSemidef
 
 /-! ### Selection and equivariance -/
 
-/-- **The selection case**: the Nyström approximation along `selectionMatrix e` is
+/-- **The selection case**: the Nyström approximation
+$\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})$ along $\mathbf{\Omega}$ = `selectionMatrix e` is
 $\mathbf{A}_{:,e}(\mathbf{A}_{e,e})^{+}\mathbf{A}_{e,:}$, the matrix whose residual
 `Matrix.PosSemidef.sub_submatrix_mul_pinv_mul` and its neighbours study. Repeated indices are
 allowed. -/

@@ -243,7 +243,8 @@ theorem inv_eval_T_real_le_of_isUniformApproxOn
 
 /-- **Chebyshev minimax property of the residual.** Among polynomials of degree at most $q$
 equal to one at zero, the least uniform bound on $[a,b]$, where $0<a<b$, is
-$T_q((b+a)/(b-a))^{-1}$. It is attained by
+$$T_q\Bigl(\frac{b+a}{b-a}\Bigr)^{-1}\,.$$
+It is attained by
 `chebyshevResidual`, including $q=0$ with optimum one.
 [Saad2003, Theorem 6.25 and following corollary].
 
@@ -269,7 +270,7 @@ nonempty $s$. It is meaningful for bounded $s$, in particular a finite spectrum 
 noncomputable def residualMinimax (s : Set ℝ) (q : ℕ) : ℝ :=
   ⨅ p : {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1}, ⨆ x ∈ s, |p.1.eval x|
 
-/-- The residual minimax value is nonnegative. -/
+/-- The residual minimax value $\mathsf{residualMinimax}(s, q)$ is nonnegative. -/
 theorem residualMinimax_nonneg (s : Set ℝ) (q : ℕ) : 0 ≤ residualMinimax s q :=
   Real.iInf_nonneg fun _ => Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
 

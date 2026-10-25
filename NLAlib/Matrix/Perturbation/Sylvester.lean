@@ -14,7 +14,8 @@ public import NLAlib.Matrix.Spectral.Weyl
 
 For matrices $\mathbf{L}$ and $\mathbf{M}$ whose spectra are separated, the Sylvester operator
 $\mathbf{X} \mapsto \mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}$ is bounded below:
-$\delta \|\mathbf{X}\| \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|$. These bounds are the
+$\delta \|\mathbf{X}\|_{\Phi} \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$.
+These bounds are the
 engine of the $\sin \Theta$ theorems.
 
 Two regimes are covered. When one spectrum lies in a disc and the other outside a larger concentric

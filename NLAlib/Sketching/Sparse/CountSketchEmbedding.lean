@@ -185,7 +185,8 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_countSketch (hS : HasLaw S (count
 
 /-- **CountSketch OSI**: for $\varepsilon > 0$ and nonempty `k`, a CountSketch is an oblivious
 subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
-$(d^2 + d)/(\lvert k \rvert \varepsilon^2)$: the lower half of the OSE, with isotropy.
+$$(d^2 + d)/(\lvert k \rvert \varepsilon^2) \,:$$
+the lower half of the OSE, with isotropy.
 [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion; their Table 3 lists CountSketch only
 as an OSE, with $k = O(r^2)$.
 Result: countsketch-osi -/
@@ -221,7 +222,9 @@ private theorem frobNorm_replicateCol_sq (A : Matrix k n 𝕜) (x : n → 𝕜) 
     conjTranspose_replicateCol_mul_self_apply, conjTranspose_replicateCol_mul_self_apply,
     ← RCLike.ofReal_sub, RCLike.norm_ofReal]
 
-/-- **CountSketch JL moment** at $p = 2$ with $\delta = 2/(\lvert k \rvert \varepsilon^2)$, any
+/-- **CountSketch JL moment** at $p = 2$ with
+$$\delta = 2/(\lvert k \rvert \varepsilon^2) \,,$$
+any
 field: $\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - 1)^2 \le 2/\lvert k \rvert$ for unit
 $\mathbf{x}$, the AMM bound at a one-column matrix. [Woodruff2014, Theorem 14] (after Thorup and
 Zhang, not in hand; over $\mathbb{R}$, there in size form).
@@ -499,8 +502,9 @@ theorem hasProjectionCostPreserving_of_hasLaw_countSketch_of_le_card {m : Type*}
     rw [Matrix.mul_one, Matrix.conjTranspose_one, Matrix.mul_one, sub_self, frobNorm_zero]
     exact frobNorm_nonneg _
 
-/-- **$O((d+1)^2/(\varepsilon^2\delta))$ rows suffice for a CountSketch** to be a rank-$d$
-projection-cost-preserving sketch with constants $1 \mp \varepsilon$ and failure probability
+/-- **CountSketch rows suffice for a rank-$d$ projection-cost-preserving sketch**:
+$$O((d+1)^2/(\varepsilon^2\delta))$$
+rows give one, with constants $1 \mp \varepsilon$ and failure probability
 $\delta$, over any field, for $\varepsilon$ below an absolute constant; the constants come before
 every dimension. Proved from `NLAlib.hasProjectionCostPreserving_of_hasLaw_countSketch_of_le_card`
 with $C = 768$ and $\varepsilon_0 = 1$. [CohenElderMuscoMuscoPersu2015, Theorem 12, Lemma 11

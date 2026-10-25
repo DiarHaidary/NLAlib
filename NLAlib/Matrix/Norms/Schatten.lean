@@ -12,7 +12,7 @@ public import NLAlib.Matrix.Norms.Nuclear
 # Schatten norms
 
 The Schatten $q$-norm `NLAlib.schattenNorm q A` of a matrix, written $\|\mathbf{A}\|_{S_q}$, is
-the $\ell^q$ norm of its singular values, for $q$ in `ℝ≥0∞`. The cases $q = 1$, $q = 2$ and
+the $\ell^q$ norm of its singular values, for $q \in [0,\infty]$. The cases $q = 1$, $q = 2$ and
 $q = \infty$ are the nuclear, Frobenius and spectral norms. It is defined as Mathlib's `PiLp` norm
 of the vector of the first $\min(\lvert m \rvert, \lvert n \rvert)$ singular values, so
 $q = \infty$ needs no separate definition, and the degenerate $q = 0$ gives the rank.
@@ -49,7 +49,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] [Fintype n] [Fintype p]
 
 /-- The **Schatten $q$-norm** $\|\mathbf{A}\|_{S_q}$: the $\ell^q$ norm of the singular values
-$\sigma_i(\mathbf{A})$, $i < \min(\lvert m \rvert, \lvert n \rvert)$, for $q$ in `ℝ≥0∞`.
+$\sigma_i(\mathbf{A})$, $i < \min(\lvert m \rvert, \lvert n \rvert)$, for $q \in [0,\infty]$.
 For $q = 1, 2, \infty$ it is the nuclear, Frobenius and spectral norm; it is a norm for $1 \le q$.
 For $q = 0$ it is the rank, following Mathlib's convention for $\ell^0$.
 [HornJohnson2013, §7.4.7]; [Bhatia1997, §IV.2]. Port of `NLAlib.schattenNorm`, with the arguments

@@ -304,7 +304,8 @@ theorem hutchpp_eq_trace_of_rank_eq {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
     (h : (A * S).rank = A.rank) (G : Matrix n t 𝕜) : hutchpp A S G = A.trace :=
   hutchpp_eq_trace_of_rsvd_eq (rsvd_eq_self_of_rank_eq h) G
 
-/-- Hutch++ is a Borel measurable function of the pair of test matrices
+/-- The Hutch++ estimate $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ is a Borel
+measurable function of the pair of test matrices
 $(\mathbf{S}, \mathbf{G})$, from `NLAlib.measurable_rangeProjector`. -/
 theorem measurable_hutchpp (A : Matrix n n 𝕜) :
     Measurable fun p : Matrix n s 𝕜 × Matrix n t 𝕜 => hutchpp A p.1 p.2 := by

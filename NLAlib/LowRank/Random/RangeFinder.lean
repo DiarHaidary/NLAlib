@@ -337,37 +337,45 @@ private theorem aemeasurable_blockKrylovMatrix (A : Matrix m n 𝕜) (hX : AEMea
     (q : ℕ) : AEMeasurable (fun ω => blockKrylovMatrix (Aᴴ * A) (X ω) q) μ :=
   (measurable_blockKrylovMatrix (Aᴴ * A) q).comp_aemeasurable hX
 
-/-- The squared spectral error of randomized block Krylov iteration is integrable, for any almost
-everywhere measurable test matrix and finite measure. -/
+/-- The squared spectral error $\|\mathbf{A}-\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q)\|_2^2$ of
+randomized block Krylov iteration is integrable, for any almost everywhere measurable test matrix
+and finite measure. -/
 theorem integrable_specNorm_sub_rbki_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) (q : ℕ) :
     Integrable (fun ω => specNorm (A - rbki A (X ω) q) ^ 2) μ :=
   integrable_specNorm_sub_rsvd_sq A (aemeasurable_blockKrylovMatrix A hX q)
 
-/-- The squared Frobenius error of randomized block Krylov iteration is integrable, for any almost
-everywhere measurable test matrix and finite measure. -/
+/-- The squared Frobenius error
+$\|\mathbf{A}-\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q)\|_{\mathsf{F}}^2$ of randomized block
+Krylov iteration is integrable, for any almost everywhere measurable test matrix and finite
+measure. -/
 theorem integrable_frobNorm_sub_rbki_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) (q : ℕ) :
     Integrable (fun ω => frobNorm (A - rbki A (X ω) q) ^ 2) μ :=
   integrable_frobNorm_sub_rsvd_sq A (aemeasurable_blockKrylovMatrix A hX q)
 
-/-- The Gram matrix of the error of randomized block Krylov iteration has an integrable unitarily
-invariant norm, for any almost everywhere measurable test matrix and finite measure. -/
+/-- The Gram matrix of the error $\mathbf{A}-\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q)$ has an
+integrable unitarily invariant norm, for any almost everywhere measurable test matrix and finite
+measure. -/
 theorem SymmetricGauge.integrable_matrixNorm_conjTranspose_mul_self_sub_rbki (Φ : SymmetricGauge)
     [IsFiniteMeasure μ] (A : Matrix m n 𝕜) (hX : AEMeasurable X μ) (q : ℕ) :
     Integrable (fun ω => Φ.matrixNorm ((A - rbki A (X ω) q)ᴴ * (A - rbki A (X ω) q))) μ :=
   Φ.integrable_matrixNorm_conjTranspose_mul_self_sub_rsvd A
     (aemeasurable_blockKrylovMatrix A hX q)
 
-/-- The squared spectral error of truncated randomized block Krylov iteration is integrable, for
-any almost everywhere measurable test matrix and finite measure. -/
+/-- The squared spectral error
+$\|\mathbf{A}-\llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q)\rrbracket_k\|_2^2$ of
+truncated randomized block Krylov iteration is integrable, for any almost everywhere measurable
+test matrix and finite measure. -/
 theorem integrable_specNorm_sub_truncatedSVD_rbki_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) (q k : ℕ) :
     Integrable (fun ω => specNorm (A - truncatedSVD (rbki A (X ω) q) k) ^ 2) μ :=
   integrable_specNorm_sub_truncatedSVD_rsvd_sq A (aemeasurable_blockKrylovMatrix A hX q) k
 
-/-- The squared Frobenius error of truncated randomized block Krylov iteration is integrable, for
-any almost everywhere measurable test matrix and finite measure. -/
+/-- The squared Frobenius error
+$\|\mathbf{A}-\llbracket\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q)\rrbracket_k\|_{\mathsf{F}}^2$
+of truncated randomized block Krylov iteration is integrable, for any almost everywhere
+measurable test matrix and finite measure. -/
 theorem integrable_frobNorm_sub_truncatedSVD_rbki_sq [IsFiniteMeasure μ] (A : Matrix m n 𝕜)
     (hX : AEMeasurable X μ) (q k : ℕ) :
     Integrable (fun ω => frobNorm (A - truncatedSVD (rbki A (X ω) q) k) ^ 2) μ :=

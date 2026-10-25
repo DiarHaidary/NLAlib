@@ -147,8 +147,8 @@ theorem exp_integral_le_integral {Z f : Ω → ℝ} (hZ : Integrable Z μ) (hf :
     (ae_of_all _ fun _ => Set.mem_univ _) hZ hgi).trans ?_
   exact integral_mono_ae hgi hf hle
 
-/-- **The matrix Laplace transform bound** for the largest eigenvalue: for $\mathbf{Y}$ almost
-surely Hermitian, $\theta > 0$ and every real $t$,
+/-- **The matrix Laplace transform bound** for the largest eigenvalue: for $n$ nonempty,
+$\mathbf{Y}$ almost surely Hermitian, $\theta > 0$ and every real $t$,
 $$\mathbb{P}[\lambda_0(\mathbf{Y}) \ge t]
 \le e^{-\theta t}\, \mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}\,.$$
 [Tropp2015, Proposition 3.2.1]. -/

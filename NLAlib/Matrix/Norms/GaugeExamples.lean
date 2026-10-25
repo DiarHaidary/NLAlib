@@ -132,10 +132,11 @@ private theorem lpFun_mapRange_abs {q : ℝ≥0∞} (hq : 1 ≤ q) (x : ℕ →�
 
 /-- The **$\ell^q$ gauge**, $1 \le q \le \infty$:
 $\bigl(\sum_i \lvert \mathbf{x}_i \rvert^q\bigr)^{1/q}$, and $\sup_i \lvert \mathbf{x}_i \rvert$
-for $q = \infty$. Its matrix norm is the Schatten $q$-norm. The hypothesis $1 \le q$ is an
-instance, `[Fact (1 ≤ q)]`, as for Mathlib's `PiLp` norms, so that `lpGauge 1`, `lpGauge 2` and
-`lpGauge ⊤` take no proof argument (Mathlib's `fact_one_le_one_ennreal`, `fact_one_le_two_ennreal`,
-`fact_one_le_top_ennreal`); for a variable exponent, `have := Fact.mk hq`. -/
+for $q = \infty$. Its matrix norm is the Schatten $q$-norm. The hypothesis $1 \le q$ is a
+`Fact` instance, as for Mathlib's `PiLp` norms, so that `lpGauge 1`, `lpGauge 2` and
+`lpGauge ⊤` take no proof argument (Mathlib's `fact_one_le_one_ennreal`,
+`fact_one_le_two_ennreal`, `fact_one_le_top_ennreal`); for a variable exponent,
+`have := Fact.mk hq`. -/
 noncomputable def lpGauge (q : ℝ≥0∞) [hq : Fact (1 ≤ q)] : SymmetricGauge where
   toFun x := if q = ⊤ then ⨆ i, |x i| else (x.sum fun _ a => |a| ^ q.toReal) ^ q.toReal⁻¹
   map_zero' := by exact lpFun_zero hq.out

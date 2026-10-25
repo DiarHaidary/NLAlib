@@ -429,8 +429,8 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketchWithoutReplacement
 rank) satisfy $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, the row-sampling sketch without
 replacement with $k$ samples is a subspace embedding for $\operatorname{range}\mathbf{U}$ with
 constants $1 \mp \varepsilon$ outside probability
-$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
-$0 \le \varepsilon \le 1$. Sampling without replacement is never worse than with replacement
+$$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)} \,,$$
+for $0 \le \varepsilon \le 1$. Sampling without replacement is never worse than with replacement
 (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch` at uniform weights has the same bound).
 [Tropp2011a, Lemma 3.4] (the sampling step of the SRHT, there for orthonormal columns and
 $L = \lvert n \rvert \max_i \ell_i$, with the two Chernoff tails before weakening);

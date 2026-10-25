@@ -93,8 +93,8 @@ private theorem isHermitian_sum_smul_sq [Fintype ι] (c : ι → ℝ≥0) {B : �
     (hB : ∀ k, (B k).IsHermitian) : (∑ k, (c k : ℝ) • B k ^ 2).IsHermitian :=
   isSelfAdjoint_sum _ fun k _ => (IsSelfAdjoint.all _).smul ((hB k).pow 2)
 
-/-- **The matrix series tail**, Hermitian coefficients: for independent real $\gamma_k$, each
-sub-Gaussian with proxy $c_k$, fixed Hermitian $\mathbf{B}_k$ and $t \ge 0$,
+/-- **The matrix series tail**, Hermitian coefficients: for $n$ nonempty, independent real
+$\gamma_k$, each sub-Gaussian with proxy $c_k$, fixed Hermitian $\mathbf{B}_k$ and $t \ge 0$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \gamma_k \mathbf{B}_k\Bigr) \ge t\Bigr]
 \le \lvert n\rvert \exp\Bigl(-\frac{t^2}{2 \|\sum_k c_k \mathbf{B}_k^2\|_2}\Bigr)\,.$$
 [Tropp2015, Theorem 4.1.1]. -/
@@ -198,9 +198,9 @@ private theorem sum_smul_dilation_sq [DecidableEq m] [DecidableEq n] (a : ι →
 
 variable {B : ι → Matrix m n 𝕜}
 
-/-- **The matrix series tail**, rectangular coefficients: for independent real $\gamma_k$, each
-sub-Gaussian with proxy $c_k$, fixed $\mathbf{B}_k$ with row index $m$ and column index $n$, and
-$t \ge 0$,
+/-- **The matrix series tail**, rectangular coefficients: for $n$ nonempty, independent real
+$\gamma_k$, each sub-Gaussian with proxy $c_k$, fixed $\mathbf{B}_k$ with row index $m$ and column
+index $n$, and $t \ge 0$,
 $$\mathbb{P}\Bigl[\Bigl\|\sum_k \gamma_k \mathbf{B}_k\Bigr\|_2 \ge t\Bigr]
 \le (\lvert m\rvert + \lvert n\rvert)\, e^{-t^2 / (2v)}\,,$$
 with $v = \max\bigl(\|\sum_k c_k \mathbf{B}_k \mathbf{B}_k^{\mathsf{H}}\|_2,

@@ -589,7 +589,7 @@ private theorem one_add_div_sq_le {d d' : ℕ} (hdd : d' ≤ d) (ht : 0 ≤ t) {
 constant
 $$\frac{(1 - (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2}
 {(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
-and failure probability $e^{-t^2/2} + e^{-s^2/2}$, for
+and failure probability $e^{-t^2/2} + e^{-s^2/2}$, for $k$ nonempty and
 $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$ and $s \ge 0$.
 Result: haar-sketch-osi -/
 theorem isObliviousSubspaceInjection_of_hasLaw_haarFrame [DecidableEq n] [Nonempty k]
@@ -718,8 +718,9 @@ $0 < \varepsilon < 15/8$, $\delta > 0$ and at
 least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
 $\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
 (`jlDim (4ε/5) (δ/21^d)`), the Haar sketch
-$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$ is an oblivious
-subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure probability
+$$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$$
+is an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and
+failure probability
 $\delta$, the sign sketch's size. [Woodruff2014, Theorem 6] (Gaussian entries,
 $\Theta((d + \log(1/\delta))\varepsilon^{-2})$ rows, unspecified constants); [Vershynin2018,
 Lemma 5.3.2] for the Haar JL fact. Asymptotic form:
@@ -739,8 +740,9 @@ $\lvert k\rvert \le \lvert n\rvert$, $0 < \varepsilon < 15/8$, $\delta > 0$ and 
 least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
 $\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
 (`jlDim (4ε/5) (δ/21^d)`), the Haar sketch
-$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$ is an oblivious
-subspace injection for dimension $d$ with constant $1 - \varepsilon$ and failure probability
+$$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$$
+is an oblivious subspace injection for dimension $d$ with constant $1 - \varepsilon$ and
+failure probability
 $\delta$: the embedding `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le`
 with the sketch's isotropy. [CamanoEpperlyMeyerTropp2025, Definition 1.2] for the notion.
 Asymptotic form: `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_haarFrame`.

@@ -322,7 +322,8 @@ noncomputable def earlyTruncatedRSVD (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜
     Matrix m n 𝕜 :=
   rangeProjector (truncatedSVD (A * Ω) k) * A
 
-/-- The early-truncated randomized SVD reproduces the truncated sketch:
+/-- The early-truncated randomized SVD $\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$
+reproduces the truncated sketch:
 $$\mathbf{P}_{\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k}\mathbf{A}\mathbf{\Omega} =
 \llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k\,.$$ -/
 theorem earlyTruncatedRSVD_mul (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :

@@ -343,7 +343,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_nonneg {A : Matrix n n 𝕜} (hA 
   exact Finset.sum_nonneg fun _ _ => (Real.exp_pos _).le
 
 /-- **The largest eigenvalue is controlled by the trace exponential**: for Hermitian $\mathbf{A}$
-of positive size,
+of positive size ($n$ nonempty),
 $e^{\lambda_0(\mathbf{A})} \le \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$.
 This is the first step of the matrix Laplace transform method.
 [Tropp2015, Proposition 3.2.1].

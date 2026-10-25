@@ -517,7 +517,7 @@ theorem HasOrthonormalCols.re_quadForm_cfc_eq_sum {r : Type*} [Fintype r] [Decid
   rw [← RCLike.ofReal_mul, RCLike.ofReal_re]
 
 /-- **A nonnegative trace function dominates its value at the largest eigenvalue**: if
-$\varphi \ge 0$ on the spectrum of a Hermitian $\mathbf{A}$ of positive size then
+$\varphi \ge 0$ on the spectrum of a Hermitian $\mathbf{A}$ of positive size ($n$ nonempty) then
 $\varphi(\lambda_0(\mathbf{A})) \le \operatorname{Re} \operatorname{tr} \varphi(\mathbf{A})$. With
 $\varphi = \exp$ this is the first step of the matrix Laplace transform method; with
 $\varphi(t) = \max(t - 1, 0)$ it is the first step of the intrinsic-dimension bounds.

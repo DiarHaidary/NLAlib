@@ -209,8 +209,9 @@ theorem
   exact mul_le_mul_of_nonneg_right (gaussianProjectionFactor_le_gaussianProjectionFactor
     (rank_truncatedSVD_le _ k) hkp) (sq_nonneg _)
 
-/-- The squared error of early-truncated generalized Nyström is integrable for any law of
-$\mathbf{\Omega}$ independent of a standard Gaussian $\mathbf{\Psi}$ and $k + 2 \le p$. -/
+/-- The squared error of $\mathsf{earlyTruncatedGeneralizedNystrom}(\mathbf{A}, \mathbf{\Omega},
+\mathbf{\Psi}, k)$ is integrable for any law of $\mathbf{\Omega}$ independent of a standard
+Gaussian $\mathbf{\Psi}$ and $k + 2 \le p$. -/
 theorem integrable_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ)
     (hXΨ : IndepFun X Ψ μ) {k : ℕ} (hkp : k + 2 ≤ Fintype.card p) :

@@ -128,7 +128,8 @@ theorem isUniformApproxOn_chebyshevTrunc_of_differentiableOn
 /-- **Polynomial approximation of analytic functions on an interval.** On $[a,b]$ with $a<b$,
 a compatible extension of the affine pullback of $f$, holomorphic
 and bounded by $M$ on the open Bernstein ellipse, gives a polynomial of degree at most $N$
-with uniform error $2M/(\rho^N(\rho-1))$.
+with uniform error
+$$\frac{2M}{\rho^N(\rho-1)}\,.$$
 An affine-rescaling corollary of [Trefethen2019, Theorem 8.2], generalized to RCLike values.
 The polynomial is obtained from the canonical truncation, including $N=0$.
 

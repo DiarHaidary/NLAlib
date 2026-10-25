@@ -415,8 +415,8 @@ private lemma exists_finset_spectrum_eq {A : Matrix n n 𝕜} (hA : A.IsHermitia
   rw [← hS] at h
   exact ⟨S, hS.symm, _, h⟩
 
-/-- **The spectrum-minimax bound for CG is attained** (Greenbaum): for positive definite
-$\mathbf{A}$, every start $\mathbf{x}_0$ and every $q$ there is a solution
+/-- **The spectrum-minimax bound for CG is attained** (Greenbaum): for $n$ nonempty and positive
+definite $\mathbf{A}$, every start $\mathbf{x}_0$ and every $q$ there is a solution
 $\mathbf{x}_\star \ne \mathbf{x}_0$ with, for $\mathbf{b} = \mathbf{A}\mathbf{x}_\star$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
 = \mathsf{residualMinimax}(\sigma(\mathbf{A}), q)^2
@@ -465,8 +465,8 @@ theorem _root_.Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax
   rw [hpe, add_sub_cancel_left, he1, mul_one, hnorm, hS]
   exact hmin p hp hp₀
 
-/-- **The worst case of CG is the spectrum minimax value**: for positive definite
-$\mathbf{A}$, a start $\mathbf{x}_0$ and $q$, the largest ratio
+/-- **The worst case of CG is the spectrum minimax value**: for $n$ nonempty and positive
+definite $\mathbf{A}$, a start $\mathbf{x}_0$ and $q$, the largest ratio
 $\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{A}\mathbf{x}_\star, \mathbf{x}_0,
 q)\|_{\mathbf{A}}^2 / \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2$ over
 $\mathbf{x}_\star \ne \mathbf{x}_0$ is $\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)^2$: the
@@ -489,8 +489,8 @@ theorem _root_.Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div {A : Matri
     exact (div_le_iff₀ (hD y hy)).mpr
       (hA.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul rfl x₀ q)
 
-/-- **The spectrum-minimax bound for MINRES is attained**: for Hermitian $\mathbf{A}$
-(indefinite or singular allowed), every start $\mathbf{x}_0$ and every $q$ there is a
+/-- **The spectrum-minimax bound for MINRES is attained**: for $n$ nonempty and Hermitian
+$\mathbf{A}$ (indefinite or singular allowed), every start $\mathbf{x}_0$ and every $q$ there is a
 $\mathbf{b}$ with $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0 \ne \mathbf{0}$ and
 $$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|
 = \mathsf{residualMinimax}(\sigma(\mathbf{A}), q)\,\|\mathbf{r}_0\| \,.$$
@@ -533,11 +533,12 @@ theorem _root_.Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residua
   rw [hnorm, hS]
   exact hmin p hp hp₀
 
-/-- **The worst case of MINRES is the spectrum minimax value**: for Hermitian $\mathbf{A}$, a
-start $\mathbf{x}_0$ and $q$, the largest ratio
-$\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\| /
-\|\mathbf{b} - \mathbf{A}\mathbf{x}_0\|$ over $\mathbf{b} \ne \mathbf{A}\mathbf{x}_0$ is
-$\mathsf{residualMinimax}(\sigma(\mathbf{A}), q)$: the equation of
+/-- **The worst case of MINRES is the spectrum minimax value**: for $n$ nonempty and Hermitian
+$\mathbf{A}$, a start $\mathbf{x}_0$ and $q$,
+$$\max_{\mathbf{b} \ne \mathbf{A}\mathbf{x}_0}
+\frac{\|\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|}
+{\|\mathbf{b} - \mathbf{A}\mathbf{x}_0\|} = \mathsf{residualMinimax}(\sigma(\mathbf{A}), q)\,,$$
+the maximum being attained: it combines the equation
 `Matrix.IsHermitian.exists_norm_sub_mulVec_gmresIterate_eq_residualMinimax_mul` with the bound
 `Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinimax_mul`.
 [GreenbaumGurvits1994]; locator to verify.

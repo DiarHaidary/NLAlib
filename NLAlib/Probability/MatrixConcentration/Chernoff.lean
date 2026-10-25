@@ -204,8 +204,8 @@ theorem hasMatrixMGFBound_of_posSemidef_of_le {X : Ω → Matrix n n 𝕜} (hXm 
 
 variable {Y : Ω → Matrix n n 𝕜} {V : Matrix n n 𝕜} {L : ℝ}
 
-/-- **The matrix Chernoff upper tail** from a trace bound: if $\mathbf{Y}$ is almost surely
-Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
+/-- **The matrix Chernoff upper tail** from a trace bound: for $n$ nonempty, if $\mathbf{Y}$
+is almost surely Hermitian, $\mathbf{V}$ positive semidefinite, $L > 0$ and
 $\mathbb{E} \operatorname{tr} e^{\theta \mathbf{Y}}
 \le \operatorname{tr} e^{((e^{\theta L} - 1)/L)\, \mathbf{V}}$ for every $\theta > 0$, then for
 $\delta \ge 0$

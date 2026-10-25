@@ -341,7 +341,8 @@ theorem le_smul_iff_conjTranspose_mul_mul_le_smul_one {A M C : Matrix n n 𝕜}
 $a\mathbf{M} \preceq \mathbf{A} \preceq b\mathbf{M}$ with $0 < a$, $0 \le b$, and
 $\mathbf{C}^{\mathsf{H}}\mathbf{M}\mathbf{C} = \mathbf{I}$, the symmetrically preconditioned matrix
 $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ has condition number
-$\kappa(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}) \le b / a$. This is the statement that
+$$\kappa(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}) \le \frac{b}{a}\,.$$
+This is the statement that
 conjugate gradient rates consume.
 Result: preconditioned-condition-number -/
 theorem pseudoConditionNumber_conjTranspose_mul_mul_le_div {A M C : Matrix n n 𝕜}

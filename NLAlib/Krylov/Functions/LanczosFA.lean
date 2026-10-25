@@ -86,7 +86,8 @@ noncomputable def compressedCfc (A : Matrix n n 𝕜) (f : ℝ → ℝ) (X : Mat
   rangeProjector X * cfc f (rangeProjector X * A * rangeProjector X) * rangeProjector X
 
 omit [DecidableEq r] in
-/-- The compressed function depends only on the column space. -/
+/-- The compressed function $\mathsf{compressedCfc}(\mathbf{A}, f, \mathbf{X})$ depends only on
+the column space. -/
 theorem compressedCfc_eq_of_range_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) {X : Matrix n p 𝕜}
     {Y : Matrix n r 𝕜} (h : LinearMap.range X.mulVecLin = LinearMap.range Y.mulVecLin) :
     compressedCfc A f X = compressedCfc A f Y := by
@@ -178,7 +179,8 @@ gives $\mathbf{0}$; non-Hermitian $\mathbf{A}$ gives $\mathbf{0}$ (see `compress
 noncomputable def lanczosFA (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   compressedCfc A f (krylovMatrix A b q) *ᵥ b
 
-/-- The approximation lies in the Krylov space. -/
+/-- The approximation $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)$ lies in the Krylov
+space. -/
 theorem lanczosFA_mem_krylovSpace (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     lanczosFA A f b q ∈ krylovSpace A b q := by
   rw [krylovSpace, ← range_rangeProjector]
@@ -187,7 +189,7 @@ theorem lanczosFA_mem_krylovSpace (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n
   rw [Matrix.mulVecLin_apply, Matrix.mulVec_mulVec, ← Matrix.mul_assoc]
   rfl
 
-/-- No steps, no approximation. -/
+/-- No steps, no approximation: $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, 0) = \mathbf{0}$. -/
 @[simp]
 theorem lanczosFA_zero (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) : lanczosFA A f b 0 = 0 := by
   have h := lanczosFA_mem_krylovSpace A f b 0
@@ -232,8 +234,9 @@ theorem _root_.Matrix.IsHermitian.lanczosFA_eval {A : Matrix n n 𝕜} (hA : A.I
   exact hQ.lanczosFA_eq_aeval_mulVec hA hK hp fun _ _ => rfl
 
 /-- Lanczos-FA sees $f$ only on an interval containing the spectrum: if $f = g$ on $[a, a']$
-and the spectrum of Hermitian $\mathbf{A}$ lies in $[a, a']$, the approximations agree, since
-the Ritz values lie in $[a, a']$
+and the spectrum of Hermitian $\mathbf{A}$ lies in $[a, a']$, the approximations
+$\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)$ and
+$\mathsf{lanczosFA}(\mathbf{A}, g, \mathbf{b}, q)$ agree, since the Ritz values lie in $[a, a']$
 (`Matrix.IsHermitian.spectrum_conjTranspose_mul_mul_subset_Icc`). -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_congr {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') {f g : ℝ → ℝ}
