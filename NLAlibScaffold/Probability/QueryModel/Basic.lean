@@ -173,7 +173,9 @@ Proof: S, about 6 lines. As `QueryAlgorithm.IsMeasurable.measurable_queryMatrix`
 theorem IsMeasurable.measurable_rightQueryMatrix {𝕜 m n : Type*} [MeasurableSpace 𝕜]
     {alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β} (halg : alg.IsMeasurable) :
     Measurable (alg.rightQueryMatrix : (Fin q → R) → Matrix n (Fin q) 𝕜) := by
-  sorry
+  refine measurable_pi_iff.2 fun r => measurable_pi_iff.2 fun j => ?_
+  exact (measurable_pi_apply r).comp (measurable_fst.comp
+    ((halg.measurable_query j j.isLt).comp (measurable_pi_iff.2 fun l => measurable_pi_apply _)))
 
 /-- **The left query matrix is measurable in the transcript**, for a measurable algorithm with
 pair queries $(\mathbf{x}, \mathbf{y})$.
