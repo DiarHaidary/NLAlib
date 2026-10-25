@@ -72,20 +72,10 @@ theorem history_apply (alg : QueryAlgorithm Q R q β) (f : Q → R) (i : ℕ) (j
     · rw [history, Fin.snoc_castSucc, ih]
       rfl
 
-private theorem history_castLE_eq (alg : QueryAlgorithm Q R q β) (f : Q → R) :
-    ∀ (k i : ℕ) (h : i ≤ k) (l : Fin i), alg.history f k (Fin.castLE h l) = alg.history f i l
-  | 0, i, h, l => by
-    obtain rfl : i = 0 := Nat.le_zero.mp h
-    exact l.elim0
-  | k + 1, i, h, l => by
-    by_cases hik : i ≤ k
-    · have hc : Fin.castLE h l = Fin.castSucc (Fin.castLE hik l) := Fin.ext rfl
-      rw [hc]
-      simp only [history]
-      rw [Fin.snoc_castSucc]
-      exact history_castLE_eq alg f k i hik l
-    · obtain rfl : i = k + 1 := by omega
-      rfl
+/-- Entries of a history do not depend on the length of the history. -/
+private theorem history_eq_history (alg : QueryAlgorithm Q R q β) (f : Q → R) {n m j : ℕ}
+    (hn : j < n) (hm : j < m) : alg.history f n ⟨j, hn⟩ = alg.history f m ⟨j, hm⟩ := by
+  rw [history_apply, history_apply]
 
 /-- **The queries made are the queries of the transcript**: the `j`-th query of an algorithm run
 against $f$ is `queries` evaluated at its transcript.
@@ -97,7 +87,7 @@ theorem queryAt_eq_queries_transcript (alg : QueryAlgorithm Q R q β) (f : Q →
   unfold queryAt queries transcript
   congr 1
   funext l
-  exact (history_castLE_eq alg f q j j.isLt.le l).symm
+  exact history_eq_history alg f l.isLt (l.isLt.trans j.isLt)
 
 /-- **Indistinguishability**: if a second oracle $g$ agrees with $f$ at every query the algorithm
 makes against $f$, then the algorithm makes the same queries against $g$ and gets the same
@@ -129,8 +119,8 @@ Proof: S, one line. `run`, `congrArg alg.output` of
 `QueryAlgorithm.transcript_eq_of_forall_apply_queries_eq`. -/
 theorem run_eq_of_forall_apply_queries_eq (alg : QueryAlgorithm Q R q β) {f g : Q → R}
     (h : ∀ j, g (alg.queries (alg.transcript f) j) = f (alg.queries (alg.transcript f) j)) :
-    alg.run g = alg.run f := by
-  exact congrArg alg.output (transcript_eq_of_forall_apply_queries_eq alg h)
+    alg.run g = alg.run f :=
+  congrArg alg.output (transcript_eq_of_forall_apply_queries_eq alg h)
 
 /-- **Non-adaptive queries are fixed**: a non-adaptive algorithm makes the same queries whatever
 the responses, so `queries` does not depend on the transcript.
@@ -223,30 +213,21 @@ theorem IsMeasurable.measurable_leftQueryMatrix {𝕜 m n : Type*} [MeasurableSp
 private theorem measurable_history_family {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {O : M → Q → R}
     (hO : Measurable (Function.uncurry O)) :
-    ∀ i, i ≤ q → Measurable fun p : S × M => (alg p.1).history (O p.2) i := by
+    ∀ i ≤ q, Measurable fun p : S × M => (alg p.1).history (O p.2) i := by
   intro i
   induction i with
   | zero => intro _; exact measurable_const
   | succ i ih =>
     intro hi
-    have hq : Measurable fun p : S × M => (alg p.1).query i ((alg p.1).history (O p.2) i) :=
-      (halg.measurable_query i (by omega)).comp (measurable_fst.prodMk (ih (by omega)))
-    have hv : Measurable fun p : S × M =>
-        O p.2 ((alg p.1).query i ((alg p.1).history (O p.2) i)) :=
-      hO.comp (measurable_snd.prodMk hq)
     refine measurable_pi_iff.2 fun j => ?_
     induction j using Fin.lastCases with
     | last =>
-      change Measurable fun p : S × M => Fin.snoc (α := fun _ => R)
-        ((alg p.1).history (O p.2) i) (O p.2 ((alg p.1).query i ((alg p.1).history (O p.2) i)))
-        (Fin.last i)
-      simpa only [Fin.snoc_last] using hv
-    | cast k =>
-      change Measurable fun p : S × M => Fin.snoc (α := fun _ => R)
-        ((alg p.1).history (O p.2) i) (O p.2 ((alg p.1).query i ((alg p.1).history (O p.2) i)))
-        (Fin.castSucc k)
-      simp only [Fin.snoc_castSucc]
-      exact (measurable_pi_apply k).comp (ih (by omega))
+      simp only [QueryAlgorithm.history, Fin.snoc_last]
+      exact hO.comp (measurable_snd.prodMk ((halg.measurable_query i (by omega)).comp
+        (measurable_fst.prodMk (ih (by omega)))))
+    | cast j =>
+      simp only [QueryAlgorithm.history, Fin.snoc_castSucc]
+      exact (measurable_pi_apply j).comp (ih (by omega))
 
 /-- **A randomized algorithm has a jointly measurable output**: for a measurable seeded family
 and a jointly measurable oracle, (seed, input) $\mapsto$ output is measurable.
@@ -266,18 +247,16 @@ Proof: S, two lines. Compose the joint maps with `measurable_prodMk_left` (`fun 
 `fun i hi => (halg.measurable_query i hi).comp measurable_prodMk_left`. -/
 theorem IsMeasurableFamily.isMeasurable {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) (s : S) :
-    (alg s).IsMeasurable := by
-  have hq : ∀ i < q, Measurable ((alg s).query i) := fun i hi =>
-    (halg.measurable_query i hi).comp measurable_prodMk_left
-  have ho : Measurable (alg s).output := halg.measurable_output.comp measurable_prodMk_left
-  exact ⟨hq, ho⟩
+    (alg s).IsMeasurable :=
+  ⟨fun i hi => (halg.measurable_query i hi).comp measurable_prodMk_left,
+    halg.measurable_output.comp measurable_prodMk_left⟩
 
 /-- **Truncating a measurable algorithm keeps it measurable**, for `i ≤ q`.
 Proof: S, two lines. `⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩`
 (`QueryAlgorithm.truncate`). -/
 theorem IsMeasurable.truncate {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable) {i : ℕ}
-    (hi : i ≤ q) : (alg.truncate i).IsMeasurable := by
-  exact ⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩
+    (hi : i ≤ q) : (alg.truncate i).IsMeasurable :=
+  ⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩
 
 end Measurable
 
@@ -286,37 +265,6 @@ end Measurable
 section Count
 
 variable {𝕜 m n : Type*} [Field 𝕜]
-
-/-- **The right query span is bounded by the number of right products**: the rank of the right
-query matrix is at most the number of rounds with a nonzero right part.
-Proof: S, about 10 lines. `Matrix.rank_eq_finrank_span_cols`; the span of all columns is the span
-of the nonzero ones (`Submodule.span_le`, zero columns lie in every submodule), whose finrank is
-at most their number (`finrank_span_le_card`, `Set.ncard_eq_toFinset_card'`). -/
-theorem rank_rightQueryMatrix_le_rightCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β)
-    (τ : Fin q → R) : (alg.rightQueryMatrix τ).rank ≤ alg.rightCount τ := by
-  classical
-  set J : Set (Fin q) := {j | (alg.queries τ j).1 ≠ 0} with hJ
-  set s : Set (n → 𝕜) := (fun j => (alg.queries τ j).1) '' J with hs
-  have hspan : Submodule.span 𝕜 (Set.range (alg.rightQueryMatrix τ).col) ≤
-      Submodule.span 𝕜 s := by
-    rw [Submodule.span_le]
-    rintro _ ⟨j, rfl⟩
-    by_cases h : (alg.queries τ j).1 = 0
-    · have hcol : (alg.rightQueryMatrix τ).col j = 0 := by
-        ext r
-        simp [rightQueryMatrix, h]
-      rw [hcol]
-      exact Submodule.zero_mem _
-    · exact Submodule.subset_span ⟨j, h, rfl⟩
-  have hcard : s.ncard ≤ J.ncard := Set.ncard_image_le (Set.toFinite J)
-  have : Module.Finite 𝕜 (Submodule.span 𝕜 s) :=
-    FiniteDimensional.span_of_finite 𝕜 (Set.toFinite s)
-  rw [Matrix.rank_eq_finrank_span_cols]
-  calc Module.finrank 𝕜 (Submodule.span 𝕜 (Set.range (alg.rightQueryMatrix τ).col))
-      ≤ Module.finrank 𝕜 (Submodule.span 𝕜 s) := Submodule.finrank_mono hspan
-    _ ≤ s.toFinset.card := finrank_span_le_card s
-    _ = s.ncard := (Set.ncard_eq_toFinset_card' s).symm
-    _ ≤ J.ncard := hcard
 
 /-- A matrix whose columns vanish outside `S` has rank at most `S.ncard`. -/
 private lemma rank_le_ncard_of_col_eq_zero {m : Type*} (M : Matrix m (Fin q) 𝕜)
@@ -345,6 +293,17 @@ private lemma rank_le_ncard_of_col_eq_zero {m : Type*} (M : Matrix m (Fin q) �
     _ ≤ Fintype.card S := Matrix.rank_le_card_width N
     _ = S.ncard := by rw [← Nat.card_eq_fintype_card, Nat.card_coe_set_eq]
 
+/-- **The right query span is bounded by the number of right products**: the rank of the right
+query matrix is at most the number of rounds with a nonzero right part.
+Proof: S, about 10 lines. `Matrix.rank_eq_finrank_span_cols`; the span of all columns is the span
+of the nonzero ones (`Submodule.span_le`, zero columns lie in every submodule), whose finrank is
+at most their number (`finrank_span_le_card`, `Set.ncard_eq_toFinset_card'`). -/
+theorem rank_rightQueryMatrix_le_rightCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β)
+    (τ : Fin q → R) : (alg.rightQueryMatrix τ).rank ≤ alg.rightCount τ :=
+  rank_le_ncard_of_col_eq_zero _ _ fun j hj r => by
+    simp only [Set.mem_ofPred_eq, not_not] at hj
+    simp [QueryAlgorithm.rightQueryMatrix, hj]
+
 /-- **The left query span is bounded by the number of left products**: the rank of the left query
 matrix is at most the number of rounds with a nonzero left part.
 Proof: S, about 10 lines. As `QueryAlgorithm.rank_rightQueryMatrix_le_rightCount`. -/
@@ -361,24 +320,6 @@ end Count
 section Gram
 
 variable {𝕜 d k : Type*} [RCLike 𝕜]
-
-/-- Each response of a history is the oracle at the query made for it. -/
-private theorem history_apply_of {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
-    (f : Q → R) (i : ℕ) (j : Fin i) : alg.history f i j = f (alg.queryAt f j) := by
-  induction i with
-  | zero => exact j.elim0
-  | succ i ih =>
-    refine Fin.lastCases ?_ (fun j => ?_) j
-    · rw [QueryAlgorithm.history, Fin.snoc_last]
-      rfl
-    · rw [QueryAlgorithm.history, Fin.snoc_castSucc, ih j]
-      rfl
-
-/-- Entries of a history do not depend on the length of the history. -/
-private theorem history_eq_of_lt' {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
-    (f : Q → R) {n m j : ℕ} (hn : j < n) (hm : j < m) :
-    alg.history f n ⟨j, hn⟩ = alg.history f m ⟨j, hm⟩ := by
-  rw [history_apply_of, history_apply_of]
 
 /-- Queries of an algorithm at equal indices, with the responses reindexed along the equality. -/
 private theorem query_eq_of_index {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
@@ -440,25 +381,25 @@ theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d 
         ⟨2 * l + 1, by omega⟩).1
         = X *ᵥ ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 1)
           ⟨2 * l, by omega⟩).2 := by
-      rw [history_apply_of]
+      rw [history_apply]
       simp only [queryAt, gramSimulation_query_odd, twoSidedMulVec, Matrix.mulVec_zero]
     have e2 : ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 1)
         ⟨2 * l, by omega⟩).2
         = Xᴴ *ᵥ alg.query l (fun m => ((alg.gramSimulation k).history (twoSidedMulVec X)
           (2 * l) ⟨2 * m + 1, by have := m.isLt; omega⟩).1) := by
-      rw [history_apply_of]
+      rw [history_apply]
       simp only [queryAt, gramSimulation_query_even, twoSidedMulVec, Matrix.mulVec_zero]
     have e3 : (fun m : Fin l => ((alg.gramSimulation k).history (twoSidedMulVec X)
         (2 * l) ⟨2 * m + 1, by have := m.isLt; omega⟩).1) = alg.history (X * Xᴴ).mulVec l := by
       funext m
-      rw [history_eq_of_lt' _ _ (n := 2 * l) (m := 2 * m + 2) (j := 2 * m + 1) (by omega)
+      rw [history_eq_history _ _ (n := 2 * l) (m := 2 * m + 2) (j := 2 * m + 1) (by omega)
         (by omega)]
-      rw [ih m m.isLt, history_apply_of]
+      rw [ih m m.isLt, history_apply]
     rw [e1, e2, e3, Matrix.mulVec_mulVec]
     rfl
   funext l
-  rw [history_eq_of_lt' _ _ (n := 2 * i) (m := 2 * l + 2) (by have := l.isLt; omega) (by omega),
-    key l, history_apply_of]
+  rw [history_eq_history _ _ (n := 2 * i) (m := 2 * l + 2) (by have := l.isLt; omega) (by omega),
+    key l, history_apply]
 
 /-- **The Gram simulation runs the original algorithm**: the `2q`-round algorithm
 `alg.gramSimulation k` against `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, outputs
@@ -495,6 +436,19 @@ theorem IsMeasurable.gramSimulation [MeasurableSpace 𝕜] [MeasurableSpace β]
   · refine halg.measurable_output.comp ?_
     exact measurable_pi_iff.2 fun l => measurable_fst.comp (measurable_pi_apply _)
 
+/-- A set of rounds of one parity among `2 * q` rounds has at most `q` elements. -/
+private theorem ncard_le_of_forall_mod_two_eq {J : Set (Fin (2 * q))} (r : ℕ)
+    (h : ∀ j ∈ J, (j : ℕ) % 2 = r) : J.ncard ≤ q := by
+  have key := Set.ncard_le_ncard_of_injOn (s := J) (t := (Set.univ : Set (Fin q)))
+    (fun j : Fin (2 * q) => ⟨j / 2, by omega⟩) (fun _ _ => Set.mem_univ _) ?_ (Set.toFinite _)
+  · simpa using key
+  intro a ha b hb hab
+  have := h a ha
+  have := h b hb
+  simp only [Fin.mk.injEq] at hab
+  ext
+  omega
+
 /-- **The Gram simulation makes at most `q` products with $\mathbf{X}$**: for every transcript,
 only odd-numbered rounds have a nonzero right part.
 Proof: S, about 10 lines. The set of rounds with a nonzero right part is contained in the odd
@@ -502,53 +456,23 @@ indices (`gramSimulation`, the even query is `(0, _)`), on which `fun j => (j : 
 `Fin q` is injective (`omega`); `Set.ncard_le_ncard_of_injOn` and `Set.ncard_univ`,
 `Nat.card_eq_fintype_card`, `Fintype.card_fin`. -/
 theorem rightCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
-    (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).rightCount τ ≤ q := by
-  unfold QueryAlgorithm.rightCount
-  have hsub : {j : Fin (2 * q) | ((alg.gramSimulation k).queries τ j).1 ≠ 0} ⊆
-      {j : Fin (2 * q) | j.val % 2 = 1} := by
-    intro j hj
-    simp only [Set.mem_ofPred_eq] at hj ⊢
+    (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).rightCount τ ≤ q :=
+  ncard_le_of_forall_mod_two_eq 1 fun j hj => by
     by_contra hodd
     apply hj
     simp only [QueryAlgorithm.queries, QueryAlgorithm.gramSimulation]
     rw [dif_pos (by omega)]
-  have hinj : Set.InjOn (fun j : Fin (2 * q) => (⟨j / 2, by omega⟩ : Fin q))
-      {j : Fin (2 * q) | j.val % 2 = 1} := by
-    intro a ha b hb hab
-    simp only [Set.mem_ofPred_eq] at ha hb hab
-    have h2 := congrArg Fin.val hab
-    simp only at h2
-    ext
-    omega
-  have hcard := Set.ncard_le_ncard_of_injOn (fun j : Fin (2 * q) => (⟨j / 2, by omega⟩ : Fin q))
-    (fun j _ => Set.mem_univ _) hinj Set.finite_univ
-  rw [Set.ncard_univ, Nat.card_eq_fintype_card, Fintype.card_fin] at hcard
-  exact (Set.ncard_le_ncard hsub (Set.toFinite _)).trans (by simpa using hcard)
 
 /-- **The Gram simulation makes at most `q` products with $\mathbf{X}^{\mathsf{H}}$**: for every
 transcript, only even-numbered rounds have a nonzero left part.
 Proof: S, about 10 lines. As `QueryAlgorithm.rightCount_gramSimulation_le`, with the even indices
 (the odd query is `(_, 0)`). -/
 theorem leftCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
-    (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).leftCount τ ≤ q := by
-  unfold QueryAlgorithm.leftCount
-  have heven : ∀ j : Fin (2 * q), ((alg.gramSimulation k).queries τ j).2 ≠ 0 → j.val % 2 = 0 := by
-    intro j hj
+    (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).leftCount τ ≤ q :=
+  ncard_le_of_forall_mod_two_eq 0 fun j hj => by
     by_contra h
     apply hj
     simp [QueryAlgorithm.queries, QueryAlgorithm.gramSimulation, h]
-  have key : {j : Fin (2 * q) | ((alg.gramSimulation k).queries τ j).2 ≠ 0}.ncard
-      ≤ (Set.univ : Set (Fin q)).ncard := by
-    refine Set.ncard_le_ncard_of_injOn
-      (fun j : Fin (2 * q) => (⟨j.val / 2, by omega⟩ : Fin q))
-      (fun _ _ => Set.mem_univ _) ?_ (Set.toFinite _)
-    intro a ha b hb hab
-    have ha2 := heven a ha
-    have hb2 := heven b hb
-    simp only [Fin.mk.injEq] at hab
-    apply Fin.ext
-    omega
-  simpa using key
 
 /-- **The right queries of the Gram simulation span at most `q` dimensions**: for every
 transcript, the right query matrix has rank at most `q`.
