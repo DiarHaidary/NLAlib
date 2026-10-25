@@ -45,6 +45,7 @@ open scoped Matrix
 
 namespace NLAlib
 
+/-- Adding a vector outside a finite-dimensional subspace raises its finrank by one. -/
 private lemma finrank_sup_span_singleton_of_notMem {K V : Type*} [DivisionRing K]
     [AddCommGroup V] [Module K V] {p : Submodule K V} [FiniteDimensional K p] {v : V}
     (hv : v ∉ p) : Module.finrank K ↥(p ⊔ K ∙ v) = Module.finrank K p + 1 := by
@@ -119,6 +120,7 @@ namespace QueryAlgorithm
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {d k : Type*} [Fintype d]
   [Fintype k] {q : ℕ}
 
+/-- Round `2l` of the Gram simulation is the left query $(\mathbf{0}, \mathbf{x}_l)$. -/
 private theorem queryAt_gramSimulation_two_mul {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (l : ℕ) :
     (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l) =
@@ -134,6 +136,8 @@ private theorem queryAt_gramSimulation_two_mul {β : Type*}
   refine Prod.ext rfl ((key _ (by omega) _).trans ?_)
   exact congrArg (alg.query l) h
 
+/-- Round `2l + 1` of the Gram simulation is the right query
+$(\mathbf{Y}^{\mathsf{H}}\mathbf{x}_l, \mathbf{0})$. -/
 private theorem queryAt_gramSimulation_two_mul_add_one {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (l : ℕ) :
     (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l + 1) =
@@ -149,6 +153,8 @@ private theorem queryAt_gramSimulation_two_mul_add_one {β : Type*}
   rw [h]
   rfl
 
+/-- Two families span the same space when each member of one is zero or a member of the
+other, and each member of the other is a member of the first. -/
 private theorem span_range_eq_of_forall {V ι ι' : Type*} [AddCommGroup V] [Module ℝ V]
     (f : ι → V) (a : ι' → V) (h₁ : ∀ j, f j = 0 ∨ ∃ l, f j = a l) (h₂ : ∀ l, ∃ j, f j = a l) :
     Submodule.span ℝ (Set.range f) = Submodule.span ℝ (Set.range a) := by
@@ -164,6 +170,8 @@ private theorem span_range_eq_of_forall {V ι ι' : Type*} [AddCommGroup V] [Mod
     rw [← h]
     exact Submodule.subset_span ⟨j, rfl⟩
 
+/-- Every query of the Gram simulation is a left query $(\mathbf{0}, \mathbf{x}_l)$ or a right
+query $(\mathbf{Y}^{\mathsf{H}}\mathbf{x}_l, \mathbf{0})$. -/
 private theorem queries_transcript_gramSimulation {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (j : Fin (2 * q)) :
     ∃ l : Fin q, (alg.gramSimulation k).queries
@@ -176,6 +184,7 @@ private theorem queries_transcript_gramSimulation {β : Type*}
   · exact ⟨⟨l, by omega⟩, Or.inl (by rw [hl, queryAt_gramSimulation_two_mul])⟩
   · exact ⟨⟨l, by omega⟩, Or.inr (by rw [hl, queryAt_gramSimulation_two_mul_add_one])⟩
 
+/-- The left query span of the Gram simulation is the span of the queries $\mathbf{x}_l$. -/
 private theorem range_leftQueryMatrix_gramSimulation {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
     LinearMap.range ((alg.gramSimulation k).leftQueryMatrix
@@ -190,6 +199,8 @@ private theorem range_leftQueryMatrix_gramSimulation {β : Type*}
     simp [Matrix.col, leftQueryMatrix, ← queryAt_eq_queries_transcript,
       queryAt_gramSimulation_two_mul]
 
+/-- The right query span of the Gram simulation is the span of the
+$\mathbf{Y}^{\mathsf{H}}\mathbf{x}_l$. -/
 private theorem range_rightQueryMatrix_gramSimulation {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
     LinearMap.range ((alg.gramSimulation k).rightQueryMatrix
@@ -204,6 +215,7 @@ private theorem range_rightQueryMatrix_gramSimulation {β : Type*}
     simp [Matrix.col, rightQueryMatrix, ← queryAt_eq_queries_transcript,
       queryAt_gramSimulation_two_mul_add_one]
 
+/-- The next query $\mathbf{x}_q$ as a function of the Gram simulation transcript. -/
 private theorem queryAt_eq_query_transcript_gramSimulation {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
     alg.queryAt (Y * Yᴴ).mulVec q = alg.query q fun l : Fin q =>
@@ -211,6 +223,7 @@ private theorem queryAt_eq_query_transcript_gramSimulation {β : Type*}
   rw [queryAt, ← history_gramSimulation]
   rfl
 
+/-- The bad event of one step, in terms of the complement projectors of the query spans. -/
 private theorem notMem_span_and_mem_span_iff [DecidableEq d] [DecidableEq k] {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
     (alg.queryAt (Y * Yᴴ).mulVec q ∉
@@ -228,6 +241,8 @@ private theorem notMem_span_and_mem_span_iff [DecidableEq d] [DecidableEq k] {β
     Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.one_mulVec, sub_ne_zero, sub_eq_zero, ne_comm,
     eq_comm (a := Yᴴ *ᵥ _)]
 
+/-- After resampling, the unrevealed part of $\mathbf{Y}^{\mathsf{H}}\mathbf{x}$ comes from
+$\mathbf{Y}'$ only. -/
 private theorem mulVec_conjTranspose_resample_gramSimulation [DecidableEq d] [DecidableEq k]
     {β : Type*} (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y Y' : Matrix d k ℝ) (x : d → ℝ) :
     (1 - rangeProjector ((alg.gramSimulation k).rightQueryMatrix
@@ -270,6 +285,7 @@ private theorem mulVec_conjTranspose_resample_gramSimulation [DecidableEq d] [De
     h0, zero_add, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec]
 
 omit [Fintype d] in
+/-- With `q < card k` the right query span of the Gram simulation is a proper subspace. -/
 private theorem one_sub_rangeProjector_rightQueryMatrix_gramSimulation_ne_zero [DecidableEq k]
     {β : Type*} (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (hq : q < Fintype.card k)
     (τ : Fin (2 * q) → (d → ℝ) × (k → ℝ)) :
@@ -280,6 +296,9 @@ private theorem one_sub_rangeProjector_rightQueryMatrix_gramSimulation_ne_zero [
   have := rank_rightQueryMatrix_gramSimulation_le alg τ
   omega
 
+/-- For fixed $\mathbf{v} \ne \mathbf{0}$ and $\mathbf{F} \ne \mathbf{0}$, a Gaussian
+$\mathbf{X}'$ has $\mathbf{F}\mathbf{X}'^{\mathsf{H}}\mathbf{v} = \mathbf{0}$ with probability
+zero. -/
 private theorem measure_ne_zero_and_mulVec_conjTranspose_mulVec_eq_zero {X' : Ω → Matrix d k ℝ}
     (hX' : HasLaw X' (gaussianMatrix d k) μ) {F : Matrix k k ℝ} (hF : F ≠ 0) (v : d → ℝ) :
     μ {ω | v ≠ 0 ∧ F *ᵥ ((X' ω)ᴴ *ᵥ v) = 0} = 0 := by
@@ -395,10 +414,7 @@ theorem IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero {β
     hX.comp measurePreserving_fst.hasLaw
   have hX₂ : HasLaw Prod.snd (gaussianMatrix d k) μ' := measurePreserving_snd.hasLaw
   have hind : IndepFun (fun p : Ω × Matrix d k ℝ => X p.1) Prod.snd μ' :=
-    (indepFun_prod (μ := μ) (ν := gaussianMatrix d k) measurable_id measurable_id).comp₀
-      measurable_fst.aemeasurable measurable_snd.aemeasurable
-      (by change AEMeasurable X (μ'.map Prod.fst); rw [measurePreserving_fst.map_eq]
-          exact hX.aemeasurable) measurable_id.aemeasurable
+    indepFun_prod₀ hX.aemeasurable aemeasurable_id
   have hid := hT.identDistrib_resample_of_hasLaw_gaussianMatrix hX₁ hX₂ hind
   set S := {p : Matrix d k ℝ × (Fin (2 * i) → (d → ℝ) × (k → ℝ)) |
     E p.2 *ᵥ x p.2 ≠ 0 ∧ F p.2 *ᵥ ((p.1)ᴴ *ᵥ (E p.2 *ᵥ x p.2)) = 0}
@@ -453,13 +469,6 @@ private lemma mulVec_mem_span_col_mul {k d n : Type*} [Fintype d] (B : Matrix k 
     exact Submodule.mem_comap.2 (Submodule.subset_span ⟨j, (col_mul_eq_mulVec_col B U j).symm⟩)
   exact Submodule.mem_comap.1 (hle hv)
 
-/-- Congruence of `query` in its index, along an equality of indices. -/
-private lemma query_congr_index {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β) {m n : ℕ}
-    (hmn : m = n) (F : Fin m → R) (G : Fin n → R)
-    (hFG : ∀ l : Fin m, F l = G (Fin.cast hmn l)) : alg.query m F = alg.query n G := by
-  subst hmn
-  exact congrArg (alg.query _) (funext fun l => hFG l)
-
 /-- Algebraic core of `IsMeasurable.ae_rank_conjTranspose_mul_leftQueryMatrix_gramSimulation`:
 if each query $\mathbf{x}_i$ ($i < q$) lies in the span of the earlier ones or has
 $\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ outside the span of theirs, the left query matrix of the
@@ -510,19 +519,8 @@ private lemma rank_conjTranspose_mul_leftQueryMatrix_gramSimulation_of_good {β 
     simp only at hji
     subst hji
     funext r
-    have hsnd : ∀ h : Fin (2 * i) → (d → ℝ) × (k → ℝ),
-        ((alg.gramSimulation k).query (2 * i) h).2 =
-          alg.query i (fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1) := by
-      intro h
-      have hdec : 2 * i % 2 = 0 := Nat.mul_mod_right 2 i
-      dsimp only [QueryAlgorithm.gramSimulation]
-      rw [dif_pos hdec]
-      exact query_congr_index alg (by omega) _ _ (fun l => rfl)
     change ((alg.gramSimulation k).queries _ ⟨2 * i, hj⟩).2 r = _
-    rw [← QueryAlgorithm.queryAt_eq_queries_transcript]
-    change ((alg.gramSimulation k).query (2 * i) _).2 r = _
-    rw [hsnd, QueryAlgorithm.history_gramSimulation]
-    rfl
+    rw [← QueryAlgorithm.queryAt_eq_queries_transcript, queryAt_gramSimulation_two_mul]
   have hOdd : ∀ (j : Fin (2 * q)), (j : ℕ) % 2 = 1 → L.col j = 0 := by
     rintro ⟨j, hj⟩ hodd
     funext r
@@ -742,14 +740,9 @@ theorem IsMeasurable.measure_range_le_range_run_eq_zero_of_hasLaw_gaussianMatrix
       ← run_gramSimulation]
     rfl
   rw [hset, ← Measure.map_apply_of_aemeasurable hX.aemeasurable (hτY hB), hX.map_eq]
-  have h1 : HasLaw (Prod.fst : _ → Matrix d k ℝ) γ (γ.prod γ) :=
-    ⟨measurable_fst.aemeasurable, by rw [Measure.map_fst_prod, measure_univ, one_smul]⟩
-  have h2 : HasLaw (Prod.snd : _ → Matrix d k ℝ) γ (γ.prod γ) :=
-    ⟨measurable_snd.aemeasurable, by rw [Measure.map_snd_prod, measure_univ, one_smul]⟩
-  have h12 : IndepFun (Prod.fst : _ → Matrix d k ℝ) Prod.snd (γ.prod γ) :=
-    (indepFun_iff_map_prod_eq_prod_map_map measurable_fst.aemeasurable
-      measurable_snd.aemeasurable).2 (by rw [h1.map_eq, h2.map_eq]; exact Measure.map_id)
-  have hid := hG.identDistrib_resample_of_hasLaw_gaussianMatrix h1 h2 h12
+  have h1 : HasLaw (Prod.fst : _ → Matrix d k ℝ) γ (γ.prod γ) := measurePreserving_fst.hasLaw
+  have hid := hG.identDistrib_resample_of_hasLaw_gaussianMatrix h1 measurePreserving_snd.hasLaw
+    (indepFun_prod measurable_id measurable_id)
   rw [← h1.map_eq, Measure.map_apply measurable_fst (hτY hB)]
   have := hid.measure_mem_eq hB
   simp only [Set.preimage, Set.mem_ofPred_eq] at this ⊢
@@ -773,12 +766,7 @@ theorem IsMeasurable.measure_range_le_range_run_eq_zero_of_hasLaw_gaussianMatrix
     with Y hY
   set τ := G.transcript (twoSidedMulVec Y)
   by_cases hV : (G.output τ).rank < Fintype.card d
-  · have hF : 1 - rangeProjector (G.rightQueryMatrix τ) ≠ 0 := by
-      intro h
-      have := rank_one_sub_rangeProjector_add_rank (G.rightQueryMatrix τ)
-      rw [h, Matrix.rank_zero] at this
-      have h2 : (G.rightQueryMatrix τ).rank ≤ q := rank_rightQueryMatrix_gramSimulation_le alg τ
-      omega
+  · have hF := one_sub_rangeProjector_rightQueryMatrix_gramSimulation_ne_zero alg hq τ
     have hY2 : (Yᴴ * G.leftQueryMatrix τ).rank = (G.leftQueryMatrix τ).rank := hY
     have hZ : ∀ Y', G.resample Y Y' = Y - (1 - rangeProjector (G.leftQueryMatrix τ)) * Y *
         (1 - rangeProjector (G.rightQueryMatrix τ)) + (1 - rangeProjector (G.leftQueryMatrix τ)) *
@@ -839,7 +827,7 @@ theorem IsMeasurableFamily.measure_range_le_range_run_eq_zero_of_hasLaw_gaussian
           LinearMap.range (a.run (X ω * (X ω)ᴴ).mulVec).mulVecLin ∧
           (a.run (X ω * (X ω)ᴴ).mulVec).rank < Fintype.card d} := by
         ext ω
-        simp only [hBdef, Set.mem_setOf_eq, rangeProjector_mul_eq_self_iff]
+        simp only [hBdef, Set.mem_ofPred_eq, rangeProjector_mul_eq_self_iff]
       rw [hset, measureReal_def, h0]
       simp
   rw [← measureReal_eq_zero_iff (measure_ne_top _ _)]
@@ -847,7 +835,7 @@ theorem IsMeasurableFamily.measure_range_le_range_run_eq_zero_of_hasLaw_gaussian
   convert hfam using 2
   · rfl
   · ext ω
-    simp only [hBdef, Set.mem_setOf_eq, rangeProjector_mul_eq_self_iff]
+    simp only [hBdef, Set.mem_ofPred_eq, rangeProjector_mul_eq_self_iff]
 
 end QueryAlgorithm
 
