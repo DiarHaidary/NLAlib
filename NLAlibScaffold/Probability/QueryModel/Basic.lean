@@ -264,7 +264,29 @@ of the nonzero ones (`Submodule.span_le`, zero columns lie in every submodule), 
 at most their number (`finrank_span_le_card`, `Set.ncard_eq_toFinset_card'`). -/
 theorem rank_rightQueryMatrix_le_rightCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β)
     (τ : Fin q → R) : (alg.rightQueryMatrix τ).rank ≤ alg.rightCount τ := by
-  sorry
+  classical
+  set J : Set (Fin q) := {j | (alg.queries τ j).1 ≠ 0} with hJ
+  set s : Set (n → 𝕜) := (fun j => (alg.queries τ j).1) '' J with hs
+  have hspan : Submodule.span 𝕜 (Set.range (alg.rightQueryMatrix τ).col) ≤
+      Submodule.span 𝕜 s := by
+    rw [Submodule.span_le]
+    rintro _ ⟨j, rfl⟩
+    by_cases h : (alg.queries τ j).1 = 0
+    · have hcol : (alg.rightQueryMatrix τ).col j = 0 := by
+        ext r
+        simp [rightQueryMatrix, h]
+      rw [hcol]
+      exact Submodule.zero_mem _
+    · exact Submodule.subset_span ⟨j, h, rfl⟩
+  have hcard : s.ncard ≤ J.ncard := Set.ncard_image_le (Set.toFinite J)
+  have : Module.Finite 𝕜 (Submodule.span 𝕜 s) :=
+    FiniteDimensional.span_of_finite 𝕜 (Set.toFinite s)
+  rw [Matrix.rank_eq_finrank_span_cols]
+  calc Module.finrank 𝕜 (Submodule.span 𝕜 (Set.range (alg.rightQueryMatrix τ).col))
+      ≤ Module.finrank 𝕜 (Submodule.span 𝕜 s) := Submodule.finrank_mono hspan
+    _ ≤ s.toFinset.card := finrank_span_le_card s
+    _ = s.ncard := (Set.ncard_eq_toFinset_card' s).symm
+    _ ≤ J.ncard := hcard
 
 /-- **The left query span is bounded by the number of left products**: the rank of the left query
 matrix is at most the number of rounds with a nonzero left part.
