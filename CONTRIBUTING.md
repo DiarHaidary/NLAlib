@@ -975,22 +975,34 @@ files on top of Mathlib take 3 to 6 GB each, and the terminal gets killed. Rules
   the `NLAlib/<Topic>/RULES.md` of each topic it touches, so that the rules are in its context
   (maintainer, rules decision 7); the author runs `python3 scripts/check_rules.py --files <files>`
   before reporting.
-- The library is built **sequentially**: one stage at a time, and within a stage one file at a
-  time unless the design note marks files independent. At most two proof agents run at once. A
-  proof agent normally owns one file; two or three small files that the note marks independent of
-  the rest of the stage, or that form a short import chain, may be given to one agent together
-  (amended 2026-10-14 after stage M1, where this was done and worked). Do not fan out proving agents across a
-  stage; the point of the sequence is that each file is designed against the ones before it.
+- The library is **designed** sequentially: one stage at a time, each design note and skeleton
+  written against the stages before it, and no proof starts before the maintainer approves the
+  note. **Proving** is parallel (maintainer, 2026-10-24, superseding the two-agent limit of
+  2026-10-14): once a skeleton's statements are fixed, the harness dispatches its declarations to
+  worker agents in the dependency order of the note's proof plan, as many at once as the machine
+  allows. A hard declaration may get several independent attempts, or be split into named steps
+  proved separately. A worker owns one declaration (or the small group the plan bundles) and may not
+  change any statement.
 - The orchestrating agent writes the design note (§8) before any implementation and stops for
   the maintainer's approval. It does not inherit the prototype's organisation, interfaces or
   names; it reads them as material and decides.
-- The orchestrator writes design notes, skeletons and file reviews itself; sends design notes,
-  unsettled interface questions and stage reports to `model: "fable"` agents for bounded review
-  (comments in, comments out, never proofs or long tasks); delegates proofs to `model: "opus"`
-  agents, one file at a time; and delegates mechanical passes (docstring formatting, ledger
-  updates, `mk_all`, grep checks) to `model: "sonnet"` or `model: "haiku"` agents. Every `Agent`
-  call passes `model` explicitly; an omitted model inherits the session's, with its usage limits,
-  and that has killed agents mid-work before.
+- **Levels.** (0) The maintainer and the orchestrating agent: scope, design decisions, approval,
+  commits. (1) Claude agents: design notes and skeletons (`model: "opus"`), bounded reviews of
+  notes, interface questions and stage reports (`model: "fable"`: comments in, comments out), and
+  the tier-1 review below. (2) The dispatcher, a script: jobs, checks, retries, escalation between
+  worker models. (3) Workers: proofs and mechanical passes, open-weight models first and Claude as
+  the fallback. Every `Agent` call passes `model` explicitly; an omitted model inherits the
+  session's, with its usage limits, and that has killed agents mid-work before.
+- **Checks before anything is accepted.** A worker's report is never trusted. Per job, scripts check
+  that the statement is unchanged, only the owned file changed, there is no `sorry` or `admit`, the
+  module builds, and `#print axioms` shows only the standard three. Per batch, the §9 scripts run on
+  the changed modules. Then a **tier-1 review** (a Claude agent with the design note, the diffs and
+  the script output) checks: whether a helper or key step is already in Mathlib or NLAlib (the
+  duplicate and reuse reports first); design standards (placement [P10], statement shape against
+  the note, proof style [S1]–[S6]); metadata (docstrings, citations, the ledger, `status.md`,
+  `mk_all`). Its verdict is accept, return to the worker with a fix list, or **escalate**: to the
+  orchestrator for anything that needs a decision, and through the orchestrator to the
+  maintainer for anything that changes a design note, a statement or an interface.
 - Report state on disk (`docs/port/status.md`) at every stopping point so a successor can continue
   from a cut-off.
 - Search before proving: Mathlib, then the already-built `NLAlib/`, then the prototype.
