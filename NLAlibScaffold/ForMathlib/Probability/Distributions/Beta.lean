@@ -289,7 +289,13 @@ Proof: S, about 8 lines. `ae_iff`, `betaMeasure`, `withDensity_apply`; `betaPDF_
 and `betaPDF_eq_zero_of_one_le` make the density $0$ off $(0, 1)$ (`setLIntegral_eq_zero`-type
 step). -/
 private theorem ae_mem_Icc_betaMeasure (α β : ℝ) : ∀ᵐ x ∂betaMeasure α β, x ∈ Icc (0 : ℝ) 1 := by
-  sorry
+  have hs : MeasurableSet {x : ℝ | x ∉ Icc (0 : ℝ) 1} := measurableSet_Icc.compl
+  rw [betaMeasure, ae_iff, withDensity_apply _ hs]
+  refine (setLIntegral_congr_fun (g := fun _ => 0) hs fun x hx => ?_).trans (by simp)
+  simp only [Set.mem_Icc, not_and_or, not_le] at hx
+  rcases hx with hx | hx
+  · exact betaPDF_eq_zero_of_nonpos hx.le
+  · exact betaPDF_eq_zero_of_one_le hx.le
 
 /-- The tilted moments differentiate up: for $\alpha, \beta > 0$, every $k$ and real $t$,
 $\varphi_k' (t) = \varphi_{k+1}(t)$, where $\varphi_k(s) = \mathbb{E}\,X^k e^{sX}$ for
