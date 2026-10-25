@@ -122,6 +122,30 @@ theorem gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
   rw [Multiset.mem_toFinset, mem_roots hne]
   exact hx
 
+/-- The pointwise Hermite remainder at doubled nodes: for a nonempty finite set $G \subseteq (a, b)$
+and $H$ of degree less than $2\lvert G\rvert$ matching the values and first derivatives of $f$ on
+$G$, $f(x) - H(x) = \frac{f^{(2\lvert G\rvert)}(\xi)}{(2\lvert G\rvert)!}\omega_G(x)^2$. -/
+private theorem exists_sub_eval_eq_iteratedDeriv_mul_nodal_sq {a b : ℝ} (hab : a < b)
+    {G : Finset ℝ} (hG : G.Nonempty) (hGab : (G : Set ℝ) ⊆ Set.Ioo a b) {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * G.card : ℕ) f (Set.Ioo a b))
+    {H : ℝ[X]} (hH : H.degree < (G.val + G.val).card)
+    (hjet : ∀ y ∈ G.val + G.val, ∀ k < (G.val + G.val).count y,
+      (derivative^[k] H).eval y = iteratedDeriv k f y)
+    {x : ℝ} (hx : x ∈ Set.Icc a b) :
+    ∃ ξ ∈ Set.Ioo a b, f x - H.eval x =
+      iteratedDeriv (2 * G.card) f ξ / (2 * G.card).factorial *
+        (Lagrange.nodal G id).eval x ^ 2 := by
+  have hcard : (G.val + G.val).card = 2 * G.card := by
+    rw [Multiset.card_add, Finset.card_val]; ring
+  have hmem : ∀ y ∈ G.val + G.val, y ∈ Set.Ioo a b := fun y hy => by
+    rcases Multiset.mem_add.mp hy with h | h <;> exact hGab h
+  obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab
+    (by simpa using hG.ne_empty) (fun y hy => Set.Ioo_subset_Icc_self (hmem y hy))
+    (fun y hy _ => hmem y hy) hf (hcard ▸ hf') hH hjet hx
+  refine ⟨ξ, hξ, h.trans ?_⟩
+  rw [hcard, Multiset.map_add, Multiset.prod_add, Lagrange.nodal, Finset.prod_eq_multiset_prod]
+  rw [sq, eval_mul]; rfl
+
 /-- **The Gauss quadrature remainder**: for a finite measure $\mu$ supported in $[a, b]$,
 $a < b$, $k > 0$, and $f$ continuous on $[a, b]$ and $C^{2k}$ on $(a, b)$, there is
 $\xi \in (a, b)$ with
@@ -153,7 +177,49 @@ theorem exists_integral_sub_integral_gaussQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
     ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ k =
       iteratedDeriv (2 * k) f ξ / (2 * k).factorial *
         ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
-  sorry
+  have hfi : Integrable f μ := by
+    have h := hf.integrableOn_Icc (μ := μ)
+    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
+  set π := orthogonalPolynomial μ k
+  rcases (integral_nonneg fun x => sq_nonneg (π.eval x) : 0 ≤ ∫ x, π.eval x ^ 2 ∂μ).eq_or_lt
+    with h0 | hpos
+  · refine ⟨(a + b) / 2, ⟨by linarith, by linarith⟩, ?_⟩
+    rw [← h0, gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0.symm,
+      sub_self, mul_zero]
+  have hPD := (isMomentPosDef_succ_iff hμ k).mpr hpos
+  set G := gaussNodes μ k
+  have hcard : G.card = k := (hPD.mono k.le_succ).card_gaussNodes hμ
+  have hGab : (G : Set ℝ) ⊆ Set.Ioo a b := hPD.gaussNodes_subset_Ioo hμ
+  have hnodal : Lagrange.nodal G id = π := (hPD.mono k.le_succ).nodal_gaussNodes hμ
+  have hG : G.Nonempty := Finset.card_pos.mp (hcard ▸ hk)
+  obtain ⟨H, hHdeg, hHjet⟩ :=
+    exists_degree_lt_forall_iterate_derivative_eval_eq (G.val + G.val)
+      fun y j => iteratedDeriv j f y
+  have hm : (G.val + G.val).card = 2 * k := by
+    rw [Multiset.card_add, Finset.card_val, hcard]; ring
+  -- the rule integrates `f` as it integrates `H`, exactly
+  have hquad : ∫ x, f x ∂gaussQuadrature μ k = ∫ x, H.eval x ∂μ := by
+    rw [matchesMoments_gaussQuadrature hμ k H (by rw [← hm]; exact_mod_cast hHdeg),
+      integral_gaussQuadrature_eq_sum, integral_gaussQuadrature_eq_sum]
+    refine Finset.sum_congr rfl fun y hy => ?_
+    have hy' : y ∈ G.val + G.val := Multiset.mem_add.mpr (Or.inl hy)
+    have := hHjet y hy' 0 (Multiset.count_pos.mpr hy')
+    simp only [Function.iterate_zero, id_eq, iteratedDeriv_zero] at this
+    rw [this]
+  rw [hquad, ← integral_sub hfi (integrable_eval_of_ae_mem_Icc hμ H)]
+  have hD : ContinuousOn (fun t => iteratedDeriv (2 * k) f t / (2 * k).factorial)
+      (Set.Ioo a b) :=
+    (hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
+      (fun t ht => (iteratedDerivWithin_of_isOpen isOpen_Ioo ht).symm) |>.div_const _
+  refine exists_integral_eq_mul_integral_of_ae_nonneg
+    (hfi.sub (integrable_eval_of_ae_mem_Icc hμ H))
+    ((integrable_eval_of_ae_mem_Icc hμ (π ^ 2)).congr (ae_of_all _ fun x => by simp))
+    (ae_of_all _ fun x => sq_nonneg _) (isConnected_Ioo hab) hD ?_
+  filter_upwards [hμ] with x hx
+  obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul_nodal_sq hab hG hGab hf
+    (hcard ▸ hf') hHdeg hHjet hx
+  rw [hcard, hnodal] at h
+  exact ⟨ξ, hξ, h⟩
 
 /-- **Gauss quadrature is a lower bound** for $f$ with nonnegative derivative of order $2k$: for
 a finite measure $\mu$ supported in $[a, b]$, $a < b$, $k > 0$, and $f$ continuous on $[a, b]$,
