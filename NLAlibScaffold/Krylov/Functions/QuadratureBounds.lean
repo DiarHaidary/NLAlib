@@ -115,7 +115,11 @@ theorem _root_.Matrix.IsHermitian.re_star_dotProduct_lanczosFA_le_of_iteratedDer
     (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q) f x) (b : n → 𝕜) :
     RCLike.re (star b ⬝ᵥ lanczosFA A f b q) ≤ RCLike.re (quadForm (cfc f A) b) := by
-  sorry
+  have h := integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
+    (ae_mem_Icc_spectralMeasure A hs b) haa' hq hf hf' hD
+  rw [integral_spectralMeasure] at h
+  rw [← integral_lanczosQuadrature, hA.lanczosQuadrature_eq_gaussQuadrature]
+  exact h
 
 /-- **Lanczos quadrature is an upper bound** for $f$ with nonpositive derivative of order $2q$:
 for Hermitian $\mathbf{A}$ with spectrum in $[a, a']$, $a < a'$, $q > 0$, $f$ continuous on
