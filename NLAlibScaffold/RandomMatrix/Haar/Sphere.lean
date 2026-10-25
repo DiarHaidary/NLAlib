@@ -87,7 +87,11 @@ Proof: S, about 12 lines. As `hasLaw_sum_sq_inl_of_hasLaw_gaussianVector` with
 private theorem hasLaw_sum_sq_inr_of_hasLaw_gaussianVector {p : Type*} [Fintype p] [Nonempty p]
     {h : Ω → k ⊕ p → ℝ} (hh : HasLaw h (gaussianVector (k ⊕ p)) μ) :
     HasLaw (fun ω => ∑ j, h ω (Sum.inr j) ^ 2) (gammaMeasure (Fintype.card p / 2) (1 / 2)) μ := by
-  sorry
+  have hP := (measurePreserving_sumPiEquivProdPi
+    (fun _ : k ⊕ p => gaussianReal 0 1)).fun_comp_hasLaw hh
+  have hq : HasLaw (fun ω j => h ω (Sum.inr j)) (gaussianVector p) μ :=
+    MeasurePreserving.fun_comp_hasLaw measurePreserving_snd hP
+  exact hasLaw_sum_sq_of_hasLaw_pi_gaussianReal hq
 
 /-- The projected length of a normalised vector in the rotated coordinates: if
 $\mathbf{W} = \begin{bmatrix} \mathbf{V} & \mathbf{V}' \end{bmatrix}$ has orthonormal columns
