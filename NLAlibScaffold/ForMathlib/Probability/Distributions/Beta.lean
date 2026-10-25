@@ -371,7 +371,17 @@ theorem hasLaw_div_add_of_hasLaw_gammaMeasure {X Y : Ω → ℝ} {a b r : ℝ} (
     (hb : 0 < b) (hr : 0 < r) (hX : HasLaw X (gammaMeasure a r) μ)
     (hY : HasLaw Y (gammaMeasure b r) μ) (hXY : IndepFun X Y μ) :
     HasLaw (fun ω => X ω / (X ω + Y ω)) (betaMeasure a b) μ := by
-  sorry
+  have : IsProbabilityMeasure (gammaMeasure a r) := isProbabilityMeasure_gammaMeasure ha hr
+  have : IsProbabilityMeasure (gammaMeasure b r) := isProbabilityMeasure_gammaMeasure hb hr
+  have hpair : HasLaw (fun ω => (X ω, Y ω)) ((gammaMeasure a r).prod (gammaMeasure b r)) μ :=
+    ⟨hX.aemeasurable.prodMk hY.aemeasurable, by
+      rw [← hX.map_eq, ← hY.map_eq]
+      exact (indepFun_iff_map_prod_eq_prod_map_map' hX.aemeasurable hY.aemeasurable
+        (by rw [hX.map_eq]; infer_instance) (by rw [hY.map_eq]; infer_instance)).mp hXY⟩
+  have hf : HasLaw (fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) (betaMeasure a b)
+      ((gammaMeasure a r).prod (gammaMeasure b r)) :=
+    ⟨by fun_prop, map_div_add_prod_gammaMeasure ha hb hr⟩
+  exact hf.comp hpair
 
 /-! ### The Beta sub-Gaussian proxy -/
 
