@@ -31,6 +31,23 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {l r : Type*} [Fintype l] [Fintype r] [DecidableEq l]
 
+omit [DecidableEq l] in
+private theorem pinv_mul_self_eq (A : Matrix l r 𝕜) : pinv A * A = Aᴴ * (pinv A)ᴴ := by
+  rw [pinv_mul, ← pinv_conjTranspose, mul_pinv]
+
+omit [DecidableEq l] in
+private theorem pinv_mul_self_conjTranspose (A : Matrix l r 𝕜) :
+    (pinv A * A)ᴴ = pinv A * A := by
+  rw [pinv_mul]
+  exact (isStarProjection_rangeProjector Aᴴ).conjTranspose_eq
+
+omit [DecidableEq l] in
+private theorem specNorm_le_one_of_isStarProjection {P : Matrix l l 𝕜} (hP : IsStarProjection P) :
+    specNorm P ≤ 1 := by
+  rw [specNorm_le_iff zero_le_one]
+  intro x
+  simpa using hP.norm_toLp_mulVec_le x
+
 /-- **Weighting does not shrink the pseudoinverse** (Epperly and Webber's "weighting hurts"): for
 $\mathbf{M} \in \Bbbk^{\ell \times r}$ and invertible $\mathbf{R} \in \Bbbk^{\ell \times \ell}$,
 $$\|\mathbf{M}^{+}\|_{\mathsf{F}} \le
@@ -57,6 +74,39 @@ of a weighted problem. -/
 theorem frobNorm_pinv_le_frobNorm_pinv_conjTranspose_mul_mul_conjTranspose (M : Matrix l r 𝕜)
     {R : Matrix l l 𝕜} (hR : IsUnit R) :
     frobNorm (pinv M) ≤ frobNorm (pinv (Rᴴ * M) * Rᴴ) := by
-  sorry
+  obtain ⟨S, hS⟩ := hR.exists_right_inv
+  -- `Mᴴ = (RᴴM)ᴴ S`, since `R S = 1`
+  have hMH : Mᴴ = (Rᴴ * M)ᴴ * S := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc, hS,
+      Matrix.mul_one]
+  -- the projector `(RᴴM)⁺(RᴴM)` fixes `Mᴴ`
+  have hQMH : pinv (Rᴴ * M) * (Rᴴ * M) * Mᴴ = Mᴴ := by
+    have hQ := pinv_mul_self_conjTranspose (Rᴴ * M)
+    have h1 : pinv (Rᴴ * M) * (Rᴴ * M) * (Rᴴ * M)ᴴ = (Rᴴ * M)ᴴ := by
+      calc pinv (Rᴴ * M) * (Rᴴ * M) * (Rᴴ * M)ᴴ
+          = ((Rᴴ * M) * (pinv (Rᴴ * M) * (Rᴴ * M)))ᴴ := by
+            rw [Matrix.conjTranspose_mul (Rᴴ * M) (pinv (Rᴴ * M) * (Rᴴ * M)), hQ]
+        _ = (Rᴴ * M)ᴴ := by rw [← Matrix.mul_assoc, mul_pinv_mul_self]
+    rw [hMH, ← Matrix.mul_assoc, h1]
+  -- hence `(RᴴM)⁺(RᴴM) M⁺ = M⁺`
+  have hZ : pinv M = Mᴴ * ((pinv M)ᴴ * pinv M) := by
+    calc pinv M = pinv M * M * pinv M := (pinv_mul_mul_pinv M).symm
+      _ = Mᴴ * (pinv M)ᴴ * pinv M := by rw [pinv_mul_self_eq M]
+      _ = Mᴴ * ((pinv M)ᴴ * pinv M) := Matrix.mul_assoc _ _ _
+  have hQP : pinv (Rᴴ * M) * (Rᴴ * M) * pinv M = pinv M := by
+    calc pinv (Rᴴ * M) * (Rᴴ * M) * pinv M
+        = pinv (Rᴴ * M) * (Rᴴ * M) * (Mᴴ * ((pinv M)ᴴ * pinv M)) := by rw [← hZ]
+      _ = (pinv (Rᴴ * M) * (Rᴴ * M) * Mᴴ) * ((pinv M)ᴴ * pinv M) := by
+            rw [Matrix.mul_assoc _ Mᴴ]
+      _ = Mᴴ * ((pinv M)ᴴ * pinv M) := by rw [hQMH]
+      _ = pinv M := hZ.symm
+  have key : pinv M = pinv (Rᴴ * M) * Rᴴ * (rangeProjector M) := by
+    rw [← mul_pinv M]
+    calc pinv M = pinv (Rᴴ * M) * (Rᴴ * M) * pinv M := hQP.symm
+      _ = pinv (Rᴴ * M) * Rᴴ * (M * pinv M) := by simp only [Matrix.mul_assoc]
+  rw [key]
+  exact (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
+    (mul_le_of_le_one_right (frobNorm_nonneg _)
+      (specNorm_le_one_of_isStarProjection (isStarProjection_rangeProjector M)))
 
 end NLAlib
