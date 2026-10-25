@@ -183,7 +183,22 @@ preserve degree at most $n$ (`degree_sub_le`, `degree_add_le`) and the pointwise
 (`eval_sub`, `eval_add`, `Real.dist_eq`); `congrArg sInf`. -/
 theorem minimaxError_add_eval (f : ℝ → ℝ) (s : Set ℝ) {n : ℕ} {q : ℝ[X]} (hq : q.degree ≤ n) :
     minimaxError (fun x => f x + q.eval x) s n = minimaxError f s n := by
-  sorry
+  unfold minimaxError
+  congr 1
+  ext ε
+  constructor
+  · rintro ⟨p, hp, hε⟩
+    refine ⟨p - q, (degree_sub_le _ _).trans (max_le hp hq), fun x hx => ?_⟩
+    have h := hε x hx
+    simp only [Real.dist_eq, Polynomial.eval_sub] at h ⊢
+    convert h using 2
+    ring
+  · rintro ⟨p, hp, hε⟩
+    refine ⟨p + q, (degree_add_le _ _).trans (max_le hp hq), fun x hx => ?_⟩
+    have h := hε x hx
+    simp only [Polynomial.eval_add]
+    rw [dist_add_right]
+    exact h
 
 /-- The minimax error is absolutely homogeneous: $E_n(cf; s) = \lvert c \rvert E_n(f; s)$, for
 every $c$, $f$, $s$ and $n$ (junk values included). [Rivlin1981, Ch. 1] (locator to check).
