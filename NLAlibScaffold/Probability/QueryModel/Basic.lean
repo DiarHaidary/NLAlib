@@ -348,7 +348,16 @@ one through `halg.measurable_query (j / 2) (by omega)` composed with the measura
 theorem IsMeasurable.gramSimulation [MeasurableSpace 𝕜] [MeasurableSpace β]
     {alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β} (halg : alg.IsMeasurable) :
     (alg.gramSimulation k).IsMeasurable := by
-  sorry
+  refine ⟨fun j hj => ?_, ?_⟩
+  · unfold QueryAlgorithm.gramSimulation
+    by_cases hjm : j % 2 = 0
+    · simp only [hjm, dite_true]
+      refine measurable_const.prodMk ((halg.measurable_query (j / 2) (by omega)).comp ?_)
+      exact measurable_pi_iff.2 fun l => measurable_fst.comp (measurable_pi_apply _)
+    · simp only [hjm, dite_false]
+      exact (measurable_snd.comp (measurable_pi_apply _)).prodMk measurable_const
+  · refine halg.measurable_output.comp ?_
+    exact measurable_pi_iff.2 fun l => measurable_fst.comp (measurable_pi_apply _)
 
 /-- **The Gram simulation makes at most `q` products with $\mathbf{X}$**: for every transcript,
 only odd-numbered rounds have a nonzero right part.
