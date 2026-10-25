@@ -54,15 +54,7 @@ private lemma ae_eq_zero_of_forall_lt {Ω : Type*} [MeasurableSpace Ω] {μ : Me
 integrable $F$ and $W$ with $W \ge 0$ almost everywhere, a connected $s \subseteq \mathbb{R}$
 and $D$ continuous on $s$, if for almost every $x$ there is $\xi_x \in s$ with
 $F(x) = D(\xi_x)W(x)$, then $\int F\,d\mu = D(\xi)\int W\,d\mu$ for some $\xi \in s$. No
-measurability of $x \mapsto \xi_x$ is assumed, and $\int W\,d\mu = 0$ is allowed.
-Proof: M, about 50 lines; the prototype proves it
-(`MeasureTheory.exists_integral_eq_mul_integral_of_pointwise`,
-`NLAlib/ForMathlib/MeasureTheory/IntegralMeanValue.lean`). If $\int W = 0$ then $W = 0$ and
-$F = 0$ a.e. (`integral_eq_zero_iff_of_nonneg_ae`). Otherwise let $d = \int F/\int W$; if no
-$\xi$ has $D(\xi) = d$, then $D(s)$ lies on one side of $d$ (`IsPreconnected.mapsTo_Ioi_or_Iio`
-style, or `IsPreconnected.image` and the intermediate value property), so $F \ge dW$ a.e. (or
-$\le$) with equal integrals, hence $F = dW$ a.e. (`integral_eq_iff_of_ae_le`), which forces
-$W = 0$ a.e., a contradiction. -/
+measurability of $x \mapsto \xi_x$ is assumed, and $\int W\,d\mu = 0$ is allowed. -/
 theorem exists_integral_eq_mul_integral_of_ae_nonneg {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} {F W : Ω → ℝ} (hF : Integrable F μ) (hW : Integrable W μ)
     (hW0 : ∀ᵐ x ∂μ, 0 ≤ W x) {s : Set ℝ} (hs : IsConnected s) {D : ℝ → ℝ}
@@ -102,10 +94,7 @@ theorem exists_integral_eq_mul_integral_of_ae_nonneg {Ω : Type*} [MeasurableSpa
 as `exists_integral_eq_mul_integral_of_ae_nonneg` with $W \le 0$ almost everywhere: for a
 measure $\mu$, integrable $F$ and $W$ with $W \le 0$ a.e., a connected $s \subseteq \mathbb{R}$
 and $D$ continuous on $s$, if for almost every $x$ there is $\xi_x \in s$ with
-$F(x) = D(\xi_x)W(x)$, then $\int F\,d\mu = D(\xi)\int W\,d\mu$ for some $\xi \in s$.
-Proof: S, about 10 lines. Apply `exists_integral_eq_mul_integral_of_ae_nonneg` to $-F$ and $-W$
-(`Integrable.neg`, `integral_neg`, `mul_neg`), as the prototype's
-`exists_integral_eq_mul_integral_of_pointwise_of_weight_constant_sign`. -/
+$F(x) = D(\xi_x)W(x)$, then $\int F\,d\mu = D(\xi)\int W\,d\mu$ for some $\xi \in s$. -/
 theorem exists_integral_eq_mul_integral_of_ae_nonpos {Ω : Type*} [MeasurableSpace Ω]
     {μ : Measure Ω} {F W : Ω → ℝ} (hF : Integrable F μ) (hW : Integrable W μ)
     (hW0 : ∀ᵐ x ∂μ, W x ≤ 0) {s : Set ℝ} (hs : IsConnected s) {D : ℝ → ℝ}

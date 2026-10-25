@@ -158,25 +158,7 @@ private lemma exists_iteratedDeriv_eq_zero_of_multiset_Ioo {a b : ℝ} (q : ℕ)
 $[a, b]$, every point of multiplicity at least $2$ in $(a, b)$, and let $f$ be continuous on
 $[a, b]$ and $C^{q+1}$ on $(a, b)$ with $f^{(j)}(y) = 0$ for every $y \in m$ and every $j$ below
 the multiplicity of $y$. Then $f^{(q+1)}(\xi) = 0$ for some $\xi \in (a, b)$.
-[Davis1975, Theorem 1.6.3] (locator to check); there for distinct zeros of $f$.
-Proof: L, about 180 lines; the prototype proves it
-(`exists_iteratedDeriv_eq_zero_of_multiset_multiplicities` with the private
-`exists_iteratedDeriv_eq_zero_of_monotone_with_multiplicities`,
-`NLAlib/ForMathlib/Analysis/Calculus/RolleMultiplicity.lean`). The induction is not on this
-theorem: after one Rolle step only `ContDiffOn … (Ioo a b)` is known for $f'$, not continuity on
-$[a, b]$. It is a private lemma in the prototype's hull form, for a monotone family
-$v : \mathsf{Fin}\,(q + 2) \to [a, b]$ with $v_0 < v_{q+1}$ and continuity of $f$ only on the
-hull `Icc (v 0) (v (Fin.last _))` (repeated entries interior, the jets vanishing along runs of
-equal entries), by induction on $q$ generalising $f$: apply `exists_deriv_eq_zero` between
-consecutive distinct entries and keep repeated entries, which gives $q + 1$ zeros of $f'$ with
-the multiplicities shifted down by one, all in $(a, b)$, where $f'$ is continuous, so the next
-hull hypothesis holds. The public theorem sorts $m$ (`Multiset.sort`) into such a family and
-is the only place `hf` is used (restricted to the hull). The all-equal case needs no Rolle step:
-then the single point has multiplicity $q + 2 > 1$, so it is interior and `hz` gives the
-conclusion at it (so the prototype's hypothesis that two points differ is needed only by the
-private lemma).
-`ContDiffOn` on the open interval gives `DifferentiableOn` of `iteratedDeriv j f` for $j \le q$
-(`ContDiffOn.differentiableOn_iteratedDerivWithin` with `iteratedDerivWithin_of_isOpen`). -/
+[Davis1975, Theorem 1.6.3] (locator to check); there for distinct zeros of $f$. -/
 theorem exists_iteratedDeriv_eq_zero_of_multiset {f : ℝ → ℝ} {a b : ℝ} {m : Multiset ℝ} {q : ℕ}
     (hm : m.card = q + 2) (hmem : ∀ y ∈ m, y ∈ Icc a b)
     (hrep : ∀ y ∈ m, 1 < m.count y → y ∈ Ioo a b) (hf : ContinuousOn f (Icc a b))

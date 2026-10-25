@@ -9,9 +9,9 @@ public import Mathlib.Analysis.Calculus.ContDiff.Polynomial
 public import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 public import Mathlib.LinearAlgebra.Lagrange
-public import NLAlibScaffold.ForMathlib.Algebra.Polynomial.Derivative
-public import NLAlibScaffold.ForMathlib.Analysis.Calculus.Deriv.Polynomial
-public import NLAlibScaffold.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
+public import NLAlib.ForMathlib.Algebra.Polynomial.Derivative
+public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
+public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 
 /-!
 # Hermite interpolation and the interpolation remainder
@@ -56,12 +56,7 @@ variable {F : Type*} [Field F] [CharZero F] [DecidableEq F]
 /-- **Uniqueness of Hermite interpolation**: over a field of characteristic $0$, two polynomials
 of degree less than $\lvert m\rvert$ whose derivatives of order below the multiplicity of $y$
 agree at every $y$ of the multiset $m$ are equal.
-[Davis1975, Theorem 2.7.1] (locator to check).
-Proof: M, about 30 lines. Let $d = p - q$ (`iterate_derivative_sub`). If $d \ne 0$, every
-$y \in m$ has `rootMultiplicity y d ≥ count y m`
-(`lt_rootMultiplicity_iff_isRoot_iterate_derivative`, characteristic $0$), so
-$m \le d.\mathrm{roots}$ (`Multiset.le_iff_count`, `count_roots`) and
-$\lvert m\rvert \le \deg d < \lvert m\rvert$ (`Multiset.card_le_card`, `card_roots'`). -/
+[Davis1975, Theorem 2.7.1] (locator to check). -/
 theorem eq_of_degree_lt_of_forall_iterate_derivative_eval_eq {m : Multiset F} {p q : F[X]}
     (hp : p.degree < m.card) (hq : q.degree < m.card)
     (h : ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] p).eval y = (derivative^[k] q).eval y) :
@@ -90,15 +85,7 @@ theorem eq_of_degree_lt_of_forall_iterate_derivative_eval_eq {m : Multiset F} {p
 /-- **Hermite interpolation**: over a field of characteristic $0$, for every multiset $m$ of
 nodes and all prescribed values $r(y, k)$, there is a polynomial $H$ of degree less than
 $\lvert m\rvert$ with $H^{(k)}(y) = r(y, k)$ for every $y \in m$ and every $k$ below the
-multiplicity of $y$. [Davis1975, Theorem 2.7.1] (locator to check).
-Proof: M, about 45 lines. The jet map from `degreeLT F m.card` (dimension $\lvert m\rvert$,
-`Polynomial.degreeLT` with `dim_degreeLT`) to
-$\prod_{y \in m.\mathrm{toFinset}}F^{\mathrm{count}\,y}$
-(dimension $\sum_y \mathrm{count}\,y = \lvert m\rvert$, `Multiset.toFinset_sum_count_eq`) is
-linear and injective by `eq_of_degree_lt_of_forall_iterate_derivative_eval_eq`, hence surjective
-(`LinearMap.injective_iff_surjective_of_finrank_eq_finrank`). Alternatively, the Chinese
-remainder theorem for the pairwise coprime $(X - y)^{\mathrm{count}\,y}$ and the Taylor
-polynomials of the data, reduced modulo $\omega_m$. -/
+multiplicity of $y$. [Davis1975, Theorem 2.7.1] (locator to check). -/
 theorem exists_degree_lt_forall_iterate_derivative_eval_eq (m : Multiset F) (r : F → ℕ → F) :
     ∃ H : F[X], H.degree < m.card ∧
       ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] H).eval y = r y k := by
@@ -152,21 +139,6 @@ $$f(x) - H(x) = \frac{f^{(\lvert m\rvert)}(\xi)}{\lvert m\rvert!}\prod_{y\in m}(
 [Davis1975, Theorem 3.5.1]; [Gautschi2004, §1.4.2] (locators to check); there for distinct
 nodes of multiplicity at most $2$ with $\xi$ in the hull of the nodes and $x$; here any
 multiplicities, simple nodes allowed at the endpoints.
-Proof: L, about 120 lines; the prototype proves it
-(`NLAlib.exists_sub_eval_eq_iteratedDeriv_mul_of_multiset`,
-`NLAlib/Polynomial/Quadrature/HermiteRemainder.lean`). If $\omega_m(x) = 0$ then $x \in m$ and
-both sides vanish (`hjet` at $k = 0$; take $\xi = (a + b)/2$). Otherwise set
-$K = (f(x) - H(x))/\omega_m(x)$ and $g = f - (H + K\omega_m)$: $g$ has the jets of $0$ on $m$
-and $g(x) = 0$, so the multiset $m + \{x\}$ of $\lvert m\rvert + 1$ zeros, through
-`exists_iteratedDeriv_eq_zero_of_multiset` with $q = \lvert m\rvert - 1$, gives
-$g^{(\lvert m\rvert)}(\xi) = 0$. The polynomial part is `Polynomial.iteratedDeriv` (as an
-`EqOn` on the open interval; the prototype's `iteratedDeriv_sub_eval_eqOn`), $H^{(\lvert
-m\rvert)} = 0$ (`iterate_derivative_eq_zero_of_degree_lt`) and
-$\omega_m^{(\lvert m\rvert)} = \lvert m\rvert!$ (`Polynomial.iterate_derivative_natDegree`,
-`natDegree_multiset_prod_X_sub_C_eq_card`, `monic_multiset_prod_of_monic`). The jets of
-$\omega_m$ vanish on $m$ because $(X - y)^{\mathrm{count}\,y}$ divides it
-(`isRoot_iterate_derivative_of_lt_rootMultiplicity`, `count_roots`,
-`roots_multiset_prod_X_sub_C`).
 Result: hermite-interpolation-remainder -/
 theorem exists_sub_eval_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < b) {m : Multiset ℝ}
     (hm : m ≠ 0) (hmem : ∀ y ∈ m, y ∈ Set.Icc a b)
@@ -249,11 +221,6 @@ $$f(x) - p_s(x) = \frac{f^{(\lvert s\rvert)}(\xi)}{\lvert s\rvert!}\prod_{y\in s
 $p_s$ the Lagrange interpolant of $f$ at $s$ (Mathlib's `Lagrange.interpolate s id f`).
 [Davis1975, Theorem 3.1.1]; [Trefethen2019, Ch. 11] (locators to check); there with $\xi$ in
 the hull of $s$ and $x$.
-Proof: S, about 15 lines. `exists_sub_eval_eq_iteratedDeriv_mul` with $m = s.\mathrm{val}$
-(`Finset.card_val`, every count is $1$ by `Multiset.count_eq_one_of_mem` and `s.nodup`, so
-`hrep` is vacuous and only $k = 0$ occurs in the jets): `Lagrange.degree_interpolate_lt`,
-`Lagrange.eval_interpolate_at_node`, and `Lagrange.nodal` is the multiset product
-(`Lagrange.nodal`, `Finset.prod_eq_multiset_prod`).
 Result: lagrange-interpolation-remainder -/
 theorem exists_sub_eval_interpolate_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < b) {s : Finset ℝ}
     (hs : s.Nonempty) (hsab : (s : Set ℝ) ⊆ Set.Icc a b) {f : ℝ → ℝ}

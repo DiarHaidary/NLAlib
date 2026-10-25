@@ -2,6 +2,28 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## KS8 quadrature remainders: proofs (2026-10-25)
+
+Branch `cleanup/ks8` (worktree `nlalib-cleanup-ks8`), over `integrate/ks8` with `origin/main`
+(47b95ab) merged. All 67 KS8 statements are proved (workflow harness: haiku; opus on five L targets and
+one escalation), cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into `NLAlib` with
+their `Proof:` lines removed (D8): `Polynomial/Orthogonal/{Zeros, Gauss, RadauLobatto}.lean`,
+`Krylov/Functions/Quadrature.lean`, `Estimation/Trace/StochasticLanczosQuadrature.lean`, and the
+new `Polynomial/Interpolation/Hermite.lean`, `Krylov/Functions/QuadratureBounds.lean`,
+`Krylov/LinearSystems/CGQuadrature.lean`, `ForMathlib/{Algebra/Polynomial/Derivative,
+Analysis/Calculus/Deriv/Polynomial, Analysis/Calculus/LocalExtr/Rolle,
+MeasureTheory/Integral/MeanValue}.lean`. The scaffold is empty again. No statement changed.
+API change in `NLAlib/` (design note §5): KS7's `integral_eval_eq_sum_of_degree_lt` is public;
+KS7's `IsOrthogonalPolynomial.integral_eval_eq_sum` is now the case $m = \lvert s\rvert$ of
+`IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add` (proof only). New imports:
+`NLAlib.Polynomial.Interpolation.Hermite`, `NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue`
+(Gauss), `NLAlib.Polynomial.Orthogonal.RadauLobatto` (Krylov/Functions/Quadrature),
+`Mathlib.Analysis.Calculus.{ContDiff.Polynomial, IteratedDeriv.Lemmas}`,
+`Mathlib.LinearAlgebra.FiniteDimensional.Lemmas` (Hermite). `ae_mem_Icc_radauMeasure` and
+`ae_mem_Icc_lobattoMeasure` keep an unused `[IsFiniteMeasure μ]` under a scoped
+`set_option linter.unusedSectionVars false in` (decision UNUSED-FINITE). Report:
+`reports/Review-KS8-Cleanup.md` and `reports/Stage-KS8.md` in the harness repository.
+
 ## SLQ and Probability-Beta: proofs (2026-10-25)
 
 Branch `cleanup/slq-beta` (worktree `nlalib-cleanup2`), over `fix/ks7-fable` with `integrate/slq`

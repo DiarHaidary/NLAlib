@@ -30,11 +30,7 @@ namespace Polynomial
 variable {R : Type*} [CommSemiring R]
 
 /-- The top derivative of a polynomial: for $p$ of degree $n$ with leading coefficient $c_n$,
-the $n$-th derivative of $p$ is the constant polynomial $n!\,c_n$.
-Proof: S, about 8 lines. `natDegree_iterate_derivative` bounds the degree by $0$, so
-`eq_C_of_natDegree_le_zero`; the constant is `coeff_iterate_derivative` at $0$ with
-`Nat.descFactorial_self` (prototype `eval_iterate_derivative_natDegree`,
-`NLAlib/ForMathlib/Algebra/Polynomial/Basic.lean`). -/
+the $n$-th derivative of $p$ is the constant polynomial $n!\,c_n$. -/
 theorem iterate_derivative_natDegree (p : R[X]) :
     derivative^[p.natDegree] p = C ((p.natDegree.factorial : R) * p.leadingCoeff) := by
   have hdeg : (derivative^[p.natDegree] p).natDegree ≤ 0 := by

@@ -11,6 +11,7 @@ public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
+public import NLAlib.ForMathlib.Algebra.Polynomial.Derivative
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
 public import NLAlib.ForMathlib.Algebra.Polynomial.Expand
 public import NLAlib.ForMathlib.Analysis.CStarAlgebra.Matrix
@@ -19,6 +20,8 @@ public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
+public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
+public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
@@ -60,6 +63,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Co
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
@@ -87,8 +91,10 @@ public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Krylov.Functions.NearOptimality
 public import NLAlib.Krylov.Functions.Optimality
 public import NLAlib.Krylov.Functions.Quadrature
+public import NLAlib.Krylov.Functions.QuadratureBounds
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
+public import NLAlib.Krylov.LinearSystems.CGQuadrature
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
 public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.LinearSystems.GMRESArnoldi
@@ -293,6 +299,7 @@ public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import NLAlib.Polynomial.Interpolation.DividedDifference
+public import NLAlib.Polynomial.Interpolation.Hermite
 public import NLAlib.Polynomial.Interpolation.Stieltjes
 public import NLAlib.Polynomial.Orthogonal.Basic
 public import NLAlib.Polynomial.Orthogonal.Gauss

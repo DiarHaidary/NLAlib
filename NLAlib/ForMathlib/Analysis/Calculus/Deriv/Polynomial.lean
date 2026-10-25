@@ -33,10 +33,7 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
 
 /-- The iterated derivative of a polynomial function: for every polynomial $p$ over $\Bbbk$,
 every $k$ and every $x$, the $k$-th derivative of $x \mapsto p(x)$ at $x$ is $p^{(k)}(x)$, the
-$k$-th formal derivative evaluated at $x$.
-Proof: S, about 8 lines. Induction on $k$ generalising $p$: `iteratedDeriv_succ'`
-($\frac{d^{k+1}}{dx^{k+1}}g = \frac{d^k}{dx^k}g'$), `Polynomial.deriv` as a function equality
-(`funext`), `Function.iterate_succ_apply`. -/
+$k$-th formal derivative evaluated at $x$. -/
 protected theorem iteratedDeriv (p : 𝕜[X]) (k : ℕ) (x : 𝕜) :
     iteratedDeriv k (fun x => p.eval x) x = (derivative^[k] p).eval x := by
   induction k generalizing p with
