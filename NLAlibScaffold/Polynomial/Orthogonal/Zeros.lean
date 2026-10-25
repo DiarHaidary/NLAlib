@@ -260,7 +260,22 @@ gives $\|\pi_j\|^2 = 0$, `integral_orthogonalPolynomial_succ_sq` gives $\|\pi_k\
 in `roots.toFinset` (`Multiset.mem_toFinset`, `mem_roots`). -/
 theorem ae_mem_gaussNodes_of_not_isMomentPosDef (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
     (h : ¬ IsMomentPosDef μ k) : ∀ᵐ x ∂μ, x ∈ gaussNodes μ k := by
-  sorry
+  cases k with
+  | zero =>
+    exfalso
+    exact h fun p hp hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp))
+  | succ j =>
+    rw [isMomentPosDef_succ_iff hμ j, not_lt] at h
+    have hnorm : ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ = 0 :=
+      le_antisymm h (integral_nonneg fun x => sq_nonneg _)
+    have hsq : ∫ x, (orthogonalPolynomial μ (j + 1)).eval x ^ 2 ∂μ = 0 := by
+      rw [integral_orthogonalPolynomial_succ_sq hμ j, hnorm, mul_zero]
+    have hne : orthogonalPolynomial μ (j + 1) ≠ 0 :=
+      (monic_orthogonalPolynomial μ (j + 1)).ne_zero
+    filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero hμ hsq] with x hx
+    unfold gaussNodes
+    rw [Multiset.mem_toFinset, mem_roots hne]
+    exact hx
 
 /-- The Gauss hypothesis holds for every order: for a finite measure $\mu$ supported in $[a, b]$
 and every $k$, the nodal polynomial of the Gauss nodes $G$ of order $k$ is orthogonal in
