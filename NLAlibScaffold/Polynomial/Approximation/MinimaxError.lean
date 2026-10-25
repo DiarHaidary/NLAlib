@@ -224,7 +224,8 @@ Proof: S, about 6 lines. A best approximant on $t$
 theorem minimaxError_le_minimaxError_of_subset {f : ℝ → ℝ} {s t : Set ℝ} (ht : IsCompact t)
     (hf : ContinuousOn f t) (hst : s ⊆ t) (n : ℕ) :
     minimaxError f s n ≤ minimaxError f t n := by
-  sorry
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_minimaxError ht hf n
+  exact minimaxError_le_of_isUniformApproxOn hp (minimaxError_nonneg f t n) (hε.mono_set hst)
 
 /-- Adding a polynomial of degree at most $n$ does not change the minimax error:
 $E_n(f + q; s) = E_n(f; s)$ for $\deg q \le n$, for every $f$ and $s$.
