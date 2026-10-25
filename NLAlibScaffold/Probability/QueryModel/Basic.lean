@@ -288,12 +288,41 @@ theorem rank_rightQueryMatrix_le_rightCount (alg : QueryAlgorithm ((n → 𝕜) 
     _ = s.ncard := (Set.ncard_eq_toFinset_card' s).symm
     _ ≤ J.ncard := hcard
 
+/-- A matrix whose columns vanish outside `S` has rank at most `S.ncard`. -/
+private lemma rank_le_ncard_of_col_eq_zero {m : Type*} (M : Matrix m (Fin q) 𝕜)
+    (S : Set (Fin q)) (h : ∀ j ∉ S, ∀ r, M r j = 0) : M.rank ≤ S.ncard := by
+  classical
+  have hS : S.Finite := Set.toFinite S
+  have : Fintype S := hS.fintype
+  let N : Matrix m S 𝕜 := fun r j => M r j
+  let P : Matrix S (Fin q) 𝕜 := fun j k => if (j : Fin q) = k then 1 else 0
+  have hMNP : M = N * P := by
+    ext r k
+    rw [Matrix.mul_apply]
+    by_cases hk : k ∈ S
+    · rw [Finset.sum_eq_single (⟨k, hk⟩ : S)]
+      · simp [N, P]
+      · intro b _ hb
+        have : (b : Fin q) ≠ k := fun e => hb (Subtype.ext e)
+        simp [N, P, this]
+      · simp
+    · rw [h k hk r]
+      refine Eq.symm (Finset.sum_eq_zero fun b _ => ?_)
+      have : (b : Fin q) ≠ k := fun e => hk (e ▸ b.2)
+      simp [P, this]
+  calc M.rank = (N * P).rank := by rw [← hMNP]
+    _ ≤ N.rank := Matrix.rank_mul_le_left _ _
+    _ ≤ Fintype.card S := Matrix.rank_le_card_width N
+    _ = S.ncard := by rw [← Nat.card_eq_fintype_card, Nat.card_coe_set_eq]
+
 /-- **The left query span is bounded by the number of left products**: the rank of the left query
 matrix is at most the number of rounds with a nonzero left part.
 Proof: S, about 10 lines. As `QueryAlgorithm.rank_rightQueryMatrix_le_rightCount`. -/
 theorem rank_leftQueryMatrix_le_leftCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β)
-    (τ : Fin q → R) : (alg.leftQueryMatrix τ).rank ≤ alg.leftCount τ := by
-  sorry
+    (τ : Fin q → R) : (alg.leftQueryMatrix τ).rank ≤ alg.leftCount τ :=
+  rank_le_ncard_of_col_eq_zero _ _ fun j hj r => by
+    simp only [Set.mem_ofPred_eq, not_not] at hj
+    simp [QueryAlgorithm.leftQueryMatrix, hj]
 
 end Count
 
