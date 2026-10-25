@@ -118,7 +118,49 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn
     ‖(cfc f A).trace - slq A f Ω q‖ ≤
       ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
         2 * ε * frobNorm Ω ^ 2 / Fintype.card m := by
-  sorry
+  have hH : (cfc f A).IsHermitian := cfc_predicate f A
+  have hprobe : ∀ j, ‖quadForm (cfc f A) (fun i => Ω i j) -
+      ((∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q : ℝ) : 𝕜)‖ ≤
+        2 * ε * ‖WithLp.toLp 2 (Ω.col j)‖ ^ 2 := by
+    intro j
+    have hreal : quadForm (cfc f A) (fun i => Ω i j) =
+        ((RCLike.re (quadForm (cfc f A) (fun i => Ω i j)) : ℝ) : 𝕜) := by
+      refine RCLike.ext_iff.2 ⟨by simp, ?_⟩
+      simpa [quadForm_def] using hH.im_star_dotProduct_mulVec_self (fun i => Ω i j)
+    have hint := abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn
+      (μ := spectralMeasure A (fun i => Ω i j)) (ae_mem_Icc_spectralMeasure A hs (fun i => Ω i j))
+      (integrable_spectralMeasure A (fun i => Ω i j) f) hp hε
+    rw [integral_spectralMeasure A (fun i => Ω i j) f,
+      hA.spectralMeasure_real_univ] at hint
+    rw [hreal, ← RCLike.ofReal_sub, RCLike.norm_ofReal]
+    exact hint
+  have hdiff : (cfc f A).trace - slq A f Ω q - ((cfc f A).trace - girardHutchinson (cfc f A) Ω) =
+      (∑ j, (quadForm (cfc f A) (fun i => Ω i j) -
+        ((∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q : ℝ) : 𝕜))) /
+        Fintype.card m := by
+    rw [girardHutchinson_eq_sum, slq, RCLike.ofReal_sum, Finset.sum_sub_distrib, sub_div]
+    ring
+  calc ‖(cfc f A).trace - slq A f Ω q‖
+      = ‖((cfc f A).trace - girardHutchinson (cfc f A) Ω) +
+          ((cfc f A).trace - slq A f Ω q - ((cfc f A).trace - girardHutchinson (cfc f A) Ω))‖ := by
+        congr 1; ring
+    _ ≤ ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
+          ‖(cfc f A).trace - slq A f Ω q - ((cfc f A).trace - girardHutchinson (cfc f A) Ω)‖ :=
+        norm_add_le _ _
+    _ ≤ ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
+          2 * ε * frobNorm Ω ^ 2 / Fintype.card m := by
+        gcongr
+        rw [hdiff, norm_div, RCLike.norm_natCast]
+        gcongr
+        calc ‖∑ j, (quadForm (cfc f A) (fun i => Ω i j) -
+              ((∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q : ℝ) : 𝕜))‖
+            ≤ ∑ j, ‖quadForm (cfc f A) (fun i => Ω i j) -
+              ((∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q : ℝ) : 𝕜)‖ :=
+              norm_sum_le _ _
+          _ ≤ ∑ j, 2 * ε * ‖WithLp.toLp 2 (Ω.col j)‖ ^ 2 :=
+              Finset.sum_le_sum fun j _ => hprobe j
+          _ = 2 * ε * frobNorm Ω ^ 2 := by
+              rw [frobNorm_sq_eq_sum_col, Finset.mul_sum]
 
 /-- **The error of stochastic Lanczos quadrature for Lipschitz functions**: for Hermitian
 $\mathbf{A}$ with spectrum in $[a, a']$, $a < a'$, $f$ $L$-Lipschitz on $[a, a']$, every test
