@@ -181,7 +181,7 @@ private theorem integrable_one_add_pow_mul_specNorm_pinv_pow
 
 /-! ### Integrability -/
 
-/-- **Integrability of the clipped inverse moment**: for a standard Gaussian $m \times n$ matrix
+/-- Integrability of the clipped inverse moment: for a standard Gaussian $m \times n$ matrix
 $\mathbf{G}$ and $2q + n \le m$, $\min\{1, \sigma_{\min}(\mathbf{G})^2/m\}^{-q}$ is integrable. -/
 theorem integrable_min_one_singularValues_sq_div_inv_pow_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) {k : ℕ} (hk : k + 1 = Fintype.card n) {q : ℕ}

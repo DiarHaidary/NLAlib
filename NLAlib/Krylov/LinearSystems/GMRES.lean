@@ -82,13 +82,15 @@ solution is the one of minimum length. -/
 noncomputable def gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + minResidualInverse A (krylovMatrix A (b - A *ᵥ x₀) q) *ᵥ (b - A *ᵥ x₀)
 
-/-- The correction lies in the Krylov space of the initial residual. -/
+/-- The correction $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) - \mathbf{x}_0$
+lies in the Krylov space of the initial residual. -/
 theorem gmresIterate_sub_mem_krylovSpace (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     gmresIterate A b x₀ q - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q := by
   rw [gmresIterate, add_sub_cancel_left]
   exact minResidualInverse_mulVec_mem A _ _
 
-/-- The zeroth iterate is the start. -/
+/-- The zeroth iterate $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 0)$ is the
+start. -/
 @[simp]
 theorem gmresIterate_zero (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : gmresIterate A b x₀ 0 = x₀ := by
   have h := gmresIterate_sub_mem_krylovSpace A b x₀ 0
@@ -104,7 +106,7 @@ theorem HasOrthonormalCols.gmresIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthon
   rw [gmresIterate, hQ.minResidualInverse_eq hK A, Matrix.mulVec_mulVec]
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The GMRES residual is a projection residual**:
+/-- The GMRES residual is a projection residual:
 $\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) =
 (\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{K}_q})\mathbf{r}_0$, for every $\mathbf{A}$. -/
 theorem sub_mulVec_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -159,7 +161,9 @@ theorem isMinOn_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : �
   rwa [e, e, add_sub_cancel] at h
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The residual norms do not increase**, for every $\mathbf{A}$. -/
+/-- The residual norms do not increase, for every $\mathbf{A}$: the residual of
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q + 1)$ is no larger than that of
+$\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$. -/
 theorem norm_sub_mulVec_gmresIterate_succ_le (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ (q + 1))‖ ≤
       ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ := by

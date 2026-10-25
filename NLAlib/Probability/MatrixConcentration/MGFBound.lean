@@ -165,8 +165,8 @@ private theorem ae_isHermitian_sum (h : ∀ k, HasMatrixMGFBound (X k) g (A k) s
   filter_upwards [ae_all_iff.2 fun k => (h k).ae_isHermitian] with ω hω
   exact isSelfAdjoint_sum _ fun k _ => hω k
 
-/-- **The master tail bound**: for independent summands with matrix MGF bounds, $\theta \in s$,
-$\theta > 0$ and every real $t$,
+/-- **The master tail bound**: for $n$ nonempty, independent summands with matrix MGF bounds,
+$\theta \in s$, $\theta > 0$ and every real $t$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr]
 \le e^{-\theta t} \operatorname{tr} e^{g(\theta) \sum_k \mathbf{A}_k}\,.$$
 [Tropp2015, Theorem 3.6.1]. -/
@@ -202,8 +202,8 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_card_mul_exp [Nonempty n] (hind : 
         rw [Real.exp_add]
         ring
 
-/-- **The master bound for the mean**: for independent integrable summands with matrix MGF bounds,
-$\theta \in s$ and $\theta > 0$,
+/-- **The master bound for the mean**: for $n$ nonempty, independent integrable summands with
+matrix MGF bounds, $\theta \in s$ and $\theta > 0$,
 $$\mathbb{E}\, \lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr)
 \le \theta^{-1} \log \operatorname{tr} e^{g(\theta) \sum_k \mathbf{A}_k}\,.$$
 [Tropp2015, Theorem 3.6.1]. -/

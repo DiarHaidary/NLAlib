@@ -33,7 +33,7 @@ namespace Finset
 
 variable {R : Type*} [CommRing R] [LinearOrder R] [IsStrictOrderedRing R] {a b c : ℕ → R} {N : ℕ}
 
-/-- **Abel's inequality**, with a slack term. If $(a_i)$ is non-increasing on $i < N$ and
+/-- Abel's inequality, with a slack term. If $(a_i)$ is non-increasing on $i < N$ and
 bounded below by $t$ there, and $\sum_{i < k} b_i \le \sum_{i < k} c_i$ for every $k \le N$, then
 $$\sum_{i < N} a_i b_i + t \Bigl(\sum_{i < N} c_i - \sum_{i < N} b_i\Bigr)
   \le \sum_{i < N} a_i c_i \,.$$
@@ -57,7 +57,7 @@ theorem sum_range_mul_add_le_sum_range_mul_of_antitoneOn (ha : AntitoneOn a (Set
     rw [sum_range_succ, sum_range_succ, sum_range_succ, sum_range_succ]
     nlinarith [mul_nonneg (sub_nonneg.mpr h3) (sub_nonneg.mpr h2)]
 
-/-- **Abel's inequality** for a nonnegative weight. If $(a_i)$ is non-increasing and nonnegative
+/-- Abel's inequality for a nonnegative weight. If $(a_i)$ is non-increasing and nonnegative
 on $i < N$, and $\sum_{i < k} b_i \le \sum_{i < k} c_i$ for every $k \le N$, then
 $\sum_{i < N} a_i b_i \le \sum_{i < N} a_i c_i$. -/
 theorem sum_range_mul_le_sum_range_mul_of_antitoneOn_of_nonneg (ha : AntitoneOn a (Set.Iio N))
@@ -66,7 +66,7 @@ theorem sum_range_mul_le_sum_range_mul_of_antitoneOn_of_nonneg (ha : AntitoneOn 
   have key := sum_range_mul_add_le_sum_range_mul_of_antitoneOn ha h ha0
   rwa [zero_mul, add_zero] at key
 
-/-- **Abel's inequality** for equal total sums. If $(a_i)$ is non-increasing on $i < N$,
+/-- Abel's inequality for equal total sums. If $(a_i)$ is non-increasing on $i < N$,
 $\sum_{i < k} b_i \le \sum_{i < k} c_i$ for every $k \le N$, and
 $\sum_{i < N} b_i = \sum_{i < N} c_i$, then $\sum_{i < N} a_i b_i \le \sum_{i < N} a_i c_i$, with
 no sign condition on $a$. -/

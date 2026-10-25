@@ -340,7 +340,7 @@ private theorem re_quadForm_le_eigenvalue_of_mul_eq_mul_diagonal {A : Matrix n n
     Fin.sum_univ_eq_sum_range (fun i => eigenvalue A i) (j + 1)] at h
   linarith
 
-/-- **The complement of a leading eigenframe.** If the columns of $\mathbf{W}$ are orthonormal
+/-- The complement of a leading eigenframe: if the columns of $\mathbf{W}$ are orthonormal
 eigenvectors of the Hermitian matrix $\mathbf{A}$ for its $j + 1$ largest eigenvalues,
 $\mathbf{A}\mathbf{W} = \mathbf{W} \operatorname{diag}(\lambda_0(\mathbf{A}), \dots,
 \lambda_j(\mathbf{A}))$, then on the orthogonal complement $\mathbf{A}$ is at most

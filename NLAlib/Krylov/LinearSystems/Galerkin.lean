@@ -67,7 +67,8 @@ noncomputable def galerkinInverse (A : Matrix n n 𝕜) (X : Matrix n p 𝕜) : 
   pinv (rangeProjector X * A * rangeProjector X)
 
 omit [DecidableEq r] in
-/-- The Galerkin inverse depends only on the column space. -/
+/-- The Galerkin inverse $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})$ depends only on the
+column space. -/
 theorem galerkinInverse_eq_of_range_eq (A : Matrix n n 𝕜) {X : Matrix n p 𝕜}
     {Y : Matrix n r 𝕜} (h : LinearMap.range X.mulVecLin = LinearMap.range Y.mulVecLin) :
     galerkinInverse A X = galerkinInverse A Y := by
@@ -98,7 +99,8 @@ theorem _root_.Matrix.PosDef.galerkinInverse_eq {A : Matrix n n 𝕜} (hA : A.Po
     pinv_of_isUnit (hA.conjTranspose_mul_mul_same hQ.mulVec_injective).isUnit]
 
 omit [DecidableEq r] in
-/-- The Galerkin approximation lies in the column space, for every $\mathbf{A}$. -/
+/-- The Galerkin approximation $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$ lies
+in the column space, for every $\mathbf{A}$. -/
 theorem galerkinInverse_mulVec_mem (A : Matrix n n 𝕜) (X : Matrix n p 𝕜) (b : n → 𝕜) :
     galerkinInverse A X *ᵥ b ∈ LinearMap.range X.mulVecLin := by
   have hle : LinearMap.range (galerkinInverse A X).mulVecLin ≤ LinearMap.range X.mulVecLin := by
@@ -187,8 +189,8 @@ theorem _root_.Matrix.PosDef.isMinOn_galerkinInverse_mulVec {A : Matrix n n 𝕜
   exact le_add_of_nonneg_right (hA.posSemidef.re_quadForm_nonneg _)
 
 omit [DecidableEq r] in
-/-- **Exactness**: if the solution lies in the column space, the Galerkin approximation is the
-solution. -/
+/-- Exactness: if the solution lies in the column space, the Galerkin approximation
+$\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$ is the solution. -/
 theorem _root_.Matrix.PosDef.galerkinInverse_mulVec_eq_of_mem {A : Matrix n n 𝕜} (hA : A.PosDef)
     {X : Matrix n p 𝕜} {b xs : n → 𝕜} (hxs : A *ᵥ xs = b)
     (h : xs ∈ LinearMap.range X.mulVecLin) : galerkinInverse A X *ᵥ b = xs := by

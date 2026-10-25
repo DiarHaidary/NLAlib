@@ -195,7 +195,7 @@ theorem hasLaw_polarFactor_of_isLeftUnitarilyInvariant [DecidableEq n] [Decidabl
   filter_upwards [hXr] with ω hω
   exact hasOrthonormalCols_polarFactor_iff.2 hω
 
-/-- **Sub-frames of a Haar frame**: $\mathbf{Q}\mathbf{V}$ is a Haar frame for an $n \times k$
+/-- Sub-frames of a Haar frame: $\mathbf{Q}\mathbf{V}$ is a Haar frame for an $n \times k$
 Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$, and a fixed $\mathbf{V}$ with
 orthonormal columns; with $\mathbf{V}$ = `selectionMatrix s` for an injective $s$, any set of
 columns. Square $\mathbf{V}$ is right invariance (`isRightUnitarilyInvariant_haarFrame`). -/
@@ -263,7 +263,7 @@ private theorem map_toSphere_map_val (L : EuclideanSpace ℝ n ≃ₗᵢ[ℝ] Eu
       rw [← L.symm.map_smul, hx, L.symm_apply_apply]
   rw [hset, ← L.coe_toMeasurableEquiv, L.measurePreserving.measure_preimage_equiv]
 
-/-- **The uniform law on the sphere is normalised surface measure**: `uniformSphereVector n` is
+/-- The uniform law on the sphere is normalised surface measure: `uniformSphereVector n` is
 Mathlib's `Measure.toSphere` of the volume on `EuclideanSpace ℝ n`, normalised to mass one and
 pushed forward to `n → ℝ`. The bridge of `docs/design/Mathlib-deviations.md` entry 16. Needs
 nonempty $n$: for empty $n$ the sphere is empty, while `uniformSphereVector n` is a point mass. -/

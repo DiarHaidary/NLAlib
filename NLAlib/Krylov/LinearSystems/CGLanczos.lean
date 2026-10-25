@@ -37,10 +37,11 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- **The Galerkin inverse in the canonical basis**, for every $\mathbf{A}$ and $q$:
+/-- The Galerkin inverse in the canonical basis, for every $\mathbf{A}$ and $q$:
 $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{K}_q) =
 \mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})^{+}\mathbf{Q}^{\mathsf{H}}$ with
-$\mathbf{Q}$ = `arnoldiMatrix A b q`, also past the grade, where $\mathbf{Q}$ has zero columns. -/
+$\mathbf{Q} = \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$, also past the grade, where
+$\mathbf{Q}$ has zero columns. -/
 theorem galerkinInverse_krylovMatrix_eq_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     galerkinInverse A (krylovMatrix A b q) =
       arnoldiMatrix A b q * pinv ((arnoldiMatrix A b q)ᴴ * A * arnoldiMatrix A b q) *

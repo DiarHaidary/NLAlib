@@ -347,7 +347,7 @@ theorem singularValues_one_sub_rangeProjector_mul_le [DecidableEq m] (Y : Matrix
 
 /-! ### Gram matrices close to a multiple of the identity -/
 
-/-- **The Gram error is the largest deviation of a squared singular value from one**:
+/-- The Gram error is the largest deviation of a squared singular value from one:
 $$\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - \mathbf{I}\|_2
   = \max_{k < \lvert n \rvert} \lvert \sigma_k(\mathbf{A})^2 - 1 \rvert,$$
 the maximum over the indices below the number of columns (an empty supremum, zero, when there are
@@ -376,8 +376,8 @@ theorem specNorm_conjTranspose_mul_self_sub_one_eq_iSup [DecidableEq n] (A : Mat
     · rw [← he i i.isLt]
       exact hH.abs_eigenvalue_le_specNorm i
 
-/-- **A Gram error of at most $\varepsilon$ says that every squared singular value is within
-$\varepsilon$ of one**: $\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - \mathbf{I}\|_2 \le \varepsilon$ if
+/-- A Gram error of at most $\varepsilon$ says that every squared singular value is within
+$\varepsilon$ of one: $\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - \mathbf{I}\|_2 \le \varepsilon$ if
 and only if $\lvert \sigma_k(\mathbf{A})^2 - 1 \rvert \le \varepsilon$ for every
 $k < \lvert n \rvert$. This is the equivalence between the Gram form of a subspace embedding and
 its singular value form. The hypothesis $0 \le \varepsilon$ is needed only for a matrix with no
@@ -465,7 +465,7 @@ theorem singularGap_succ (A : Matrix m n 𝕜) (k : ℕ) :
 theorem singularGap_nonneg (A : Matrix m n 𝕜) (k : ℕ) : 0 ≤ singularGap A k := by
   exact sub_nonneg.mpr (singularValues_antitone A (Nat.sub_le k 1))
 
-/-- **Stability of the singular gap.** A perturbation changes the gap by at most twice its
+/-- Stability of the singular gap: a perturbation changes the gap by at most twice its
 spectral norm: writing $\delta_k$ for the singular gap `singularGap`,
 $\lvert \delta_k(\mathbf{A}) - \delta_k(\mathbf{B}) \rvert \le 2 \|\mathbf{A} - \mathbf{B}\|_2$. -/
 theorem abs_singularGap_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :

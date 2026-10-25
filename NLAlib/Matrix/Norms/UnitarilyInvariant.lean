@@ -166,20 +166,20 @@ theorem matrixNorm_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e₂ 
     Φ.matrixNorm (A.submatrix e₁ e₂) = Φ.matrixNorm A := by
   exact Φ.matrixNorm_congr (singularValues_submatrix_equiv A e₁ e₂)
 
-/-- **Invariance**: left multiplication by a matrix with orthonormal columns preserves the norm.
+/-- Invariance: left multiplication by a matrix with orthonormal columns preserves the norm.
 The factor need not be square. -/
 theorem matrixNorm_mul_left_of_hasOrthonormalCols [DecidableEq m] {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) : Φ.matrixNorm (Q * A) = Φ.matrixNorm A := by
   exact Φ.matrixNorm_congr (hQ.singularValues_mul_left A)
 
-/-- **Invariance**: right multiplication by the conjugate transpose of a matrix with orthonormal
+/-- Invariance: right multiplication by the conjugate transpose of a matrix with orthonormal
 columns preserves the norm. -/
 theorem matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols [DecidableEq n]
     {Q : Matrix p n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
     Φ.matrixNorm (A * Qᴴ) = Φ.matrixNorm A := by
   exact Φ.matrixNorm_congr (hQ.singularValues_mul_conjTranspose_right A)
 
-/-- **Invariance on a subspace**: if $\mathbf{V}$ has orthonormal columns and
+/-- Invariance on a subspace: if $\mathbf{V}$ has orthonormal columns and
 $\mathbf{A}\mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{A}$ (the rows of $\mathbf{A}$ lie in
 the range of $\mathbf{V}$), then $\|\mathbf{A}\mathbf{V}\|_{\Phi} = \|\mathbf{A}\|_{\Phi}$. -/
 theorem matrixNorm_mul_of_mul_mul_conjTranspose_eq [DecidableEq p] {A : Matrix m n 𝕜}
@@ -187,7 +187,7 @@ theorem matrixNorm_mul_of_mul_mul_conjTranspose_eq [DecidableEq p] {A : Matrix m
     Φ.matrixNorm (A * V) = Φ.matrixNorm A := by
   rw [← Φ.matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols hV (A * V), hAV]
 
-/-- **The two Gram matrices have the same norm**:
+/-- The two Gram matrices have the same norm:
 $\|\mathbf{A}\mathbf{A}^{\mathsf{H}}\|_{\Phi} = \|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\Phi}$,
 although they have different sizes: both have singular values $\sigma_k(\mathbf{A})^2$. -/
 theorem matrixNorm_mul_conjTranspose_self (A : Matrix m n 𝕜) :

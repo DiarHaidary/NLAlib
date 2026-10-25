@@ -120,7 +120,7 @@ end LeastSquares
 
 /-! ### Sketch-and-precondition -/
 
-/-- **Sketch-and-precondition**, lower half of the spectral equivalence: if $\mathbf{S}$ embeds
+/-- Sketch-and-precondition, lower half of the spectral equivalence: if $\mathbf{S}$ embeds
 $\operatorname{range}\mathbf{A}$ with upper constant $b > 0$ and $\mathbf{S}\mathbf{A}\mathbf{M}$
 has orthonormal columns, then
 $b^{-1}\mathbf{I} \preceq (\mathbf{A}\mathbf{M})^{\mathsf{H}}\mathbf{A}\mathbf{M}$. Any such
@@ -134,7 +134,7 @@ theorem IsSubspaceEmbedding.inv_smul_one_le_conjTranspose_mul_self [DecidableEq 
   have h' := smul_le_smul_of_nonneg hup (inv_nonneg.mpr hb.le)
   rwa [smul_smul, inv_mul_cancel₀ hb.ne', one_smul] at h'
 
-/-- **Sketch-and-precondition**, upper half of the spectral equivalence: if $\mathbf{S}$ embeds
+/-- Sketch-and-precondition, upper half of the spectral equivalence: if $\mathbf{S}$ embeds
 $\operatorname{range}\mathbf{A}$ with lower constant $a > 0$ and $\mathbf{S}\mathbf{A}\mathbf{M}$
 has orthonormal columns, then
 $(\mathbf{A}\mathbf{M})^{\mathsf{H}}\mathbf{A}\mathbf{M} \preceq a^{-1}\mathbf{I}$. -/

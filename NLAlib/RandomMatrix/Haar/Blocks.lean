@@ -334,8 +334,8 @@ $1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$ (casts to $\mathbb{R}$): the factor 
 sketch of size $p$ in ambient dimension $d$ inflates the least-squares error of a basis of rank
 $q$, Epperly and Webber's random orthonormal constant, and their
 $1 + \gamma\ell/(p - \ell - 1)$ with $\gamma = (d - p)/(d - \ell)$ at $q = \ell$. Junk for
-$p \le q + 1$ or $d \le q$ (Lean's $x/0 = 0$, signs); theorems carry `q + 2 ≤ p` and `p ≤ d`. A
-plain definition, because its body is the source's formula.
+$p \le q + 1$ or $d \le q$ (Lean's $x/0 = 0$, signs); theorems carry $q + 2 \le p$ and $p \le d$.
+A plain definition, because its body is the source's formula.
 [EpperlyWebber2026, Theorem 2.1]. -/
 noncomputable def haarProjectionFactor (d p q : ℕ) : ℝ :=
   1 + ((d : ℝ) - p) / ((d : ℝ) - q) * ((q : ℝ) / ((p : ℝ) - q - 1))

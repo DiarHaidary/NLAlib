@@ -140,7 +140,7 @@ theorem of_iIndepFun {x : Ω → n → ℝ} (hind : iIndepFun (fun i ω => x ω 
   rw [hc] at hu
   simpa only [RCLike.re_to_real, dotProduct] using hu
 
-/-- **Vectorization**: independent sub-Gaussian vectors $\mathbf{x}_1, \dots, \mathbf{x}_t$ with
+/-- Vectorization: independent sub-Gaussian vectors $\mathbf{x}_1, \dots, \mathbf{x}_t$ with
 proxy $c$, stacked into one vector indexed by pairs $(i, j)$, form a sub-Gaussian vector with
 proxy $c$. For the columns of a random matrix $\mathbf{X}$ this is $\operatorname{vec}\mathbf{X}$,
 on which $\|\mathbf{E}\mathbf{X}\|_{\mathsf{F}}^2 = \|(\mathbf{I} \otimes \mathbf{E})

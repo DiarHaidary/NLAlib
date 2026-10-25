@@ -184,7 +184,9 @@ theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_of_hasLaw_gaussi
       hR.aestronglyMeasurable,
     lintegral_frobNorm_sub_generalizedNystrom_sq A hX hΨ hXΨ hr]
 
-/-- The generalized Nyström error is integrable under a Gaussian co-range test matrix independent
+/-- The squared Frobenius error
+$\|\mathbf{A}-\mathsf{generalizedNystrom}(\mathbf{A}, \mathbf{\Omega},
+\mathbf{\Psi})\|_{\mathsf{F}}^2$ is integrable under a Gaussian co-range test matrix independent
 of the range test matrix, when $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) + 2 \le p$ almost
 surely. It need not be otherwise: at $p = \operatorname{rank}(\mathbf{A}\mathbf{\Omega}) + 1$ the
 expectation is infinite unless $\mathbf{A} = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$. -/
@@ -315,7 +317,7 @@ theorem exists_forall_integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_g
         mul_le_mul hh hg (by linarith) (by linarith)
     _ ≤ 1 + ε := by nlinarith
 
-/-- **Gaussian test matrices at least as wide as the rank make generalized Nyström exact**: if
+/-- Gaussian test matrices at least as wide as the rank make generalized Nyström exact: if
 $\operatorname{rank}\mathbf{A} \le \min(\ell, p)$ then $\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi}) = \mathbf{A}$ almost surely. No independence of the two test matrices is needed. -/
 theorem ae_generalizedNystrom_eq_self_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)
@@ -421,7 +423,9 @@ private theorem integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_haar [De
       hR.aestronglyMeasurable,
     lintegral_frobNorm_sub_generalizedNystrom_sq_haar A hX hΨ hpm hXΨ hr]
 
-/-- The generalized Nyström error is integrable under a Haar co-range test matrix with $p \le m$
+/-- The squared Frobenius error
+$\|\mathbf{A}-\mathsf{generalizedNystrom}(\mathbf{A}, \mathbf{\Omega},
+\mathbf{\Psi})\|_{\mathsf{F}}^2$ is integrable under a Haar co-range test matrix with $p \le m$
 independent of the range test matrix, when $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) + 2 \le
 p$ almost surely. -/
 theorem integrable_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame [DecidableEq p]

@@ -18,7 +18,8 @@ API for Mathlib's `ProbabilityTheory.HasSubgaussianMGF X c μ` (the moment gener
 $X$ is at most $e^{c t^2 / 2}$) that the probability layers use and Mathlib does not have:
 monotonicity in the proxy, the proxy of a scalar multiple in the form $\lvert r\rvert^2 c$, mean
 zero and the second moment, lower and two-sided tails, weighted sums of independent variables,
-and the union bound for a maximum. Proxies are `ℝ≥0` throughout (`docs/PORT_PROBABILITY.md` D2).
+and the union bound for a maximum. Proxies are $\mathbb{R}_{\ge 0}$ throughout
+(`docs/PORT_PROBABILITY.md` D2).
 
 ## Main results
 

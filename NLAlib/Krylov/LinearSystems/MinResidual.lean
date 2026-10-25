@@ -99,7 +99,8 @@ private lemma galerkinInverse_mul_rangeProjector (G : Matrix n n 𝕜) (X : Matr
   rw [← mul_pinv, ← Matrix.mul_assoc, pinv_mul_mul_pinv]
 
 omit [DecidableEq r] in
-/-- The minimal residual inverse depends only on the column space. -/
+/-- The minimal residual inverse $\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{X})$ depends only
+on the column space. -/
 theorem minResidualInverse_eq_of_range_eq (A : Matrix m n 𝕜) {X : Matrix n p 𝕜}
     {Y : Matrix n r 𝕜} (h : LinearMap.range X.mulVecLin = LinearMap.range Y.mulVecLin) :
     minResidualInverse A X = minResidualInverse A Y := by
@@ -115,13 +116,15 @@ theorem HasOrthonormalCols.minResidualInverse_eq {Q : Matrix n r 𝕜} (hQ : Has
     hQ.pinv_mul_conjTranspose_right]
 
 omit [DecidableEq r] in
-/-- The minimal residual approximation lies in the column space, for every $\mathbf{A}$. -/
+/-- The minimal residual approximation
+$\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$ lies in the column space, for
+every $\mathbf{A}$. -/
 theorem minResidualInverse_mulVec_mem (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) (b : m → 𝕜) :
     minResidualInverse A X *ᵥ b ∈ LinearMap.range X.mulVecLin :=
   range_mulVecLin_minResidualInverse_le A X ⟨b, rfl⟩
 
 omit [DecidableEq r] in
-/-- **The optimal residual projector**: $\mathbf{A}\,\mathsf{minResidualInverse}(\mathbf{A},
+/-- The optimal residual projector: $\mathbf{A}\,\mathsf{minResidualInverse}(\mathbf{A},
 \mathbf{X}) = \mathbf{P}_{\mathbf{A}\mathbf{X}}$, so the residual of $\mathbf{b}$ is
 $(\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{X}})\mathbf{b}$. -/
 theorem mul_minResidualInverse (A : Matrix m n 𝕜) (X : Matrix n p 𝕜) :
@@ -149,7 +152,7 @@ theorem isMinOn_minResidualInverse_mulVec (A : Matrix m n 𝕜) (X : Matrix n p 
   exact norm_one_sub_rangeProjector_mulVec_le (A * X) b c
 
 omit [DecidableEq r] in
-/-- **The normal-equations form**: $\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{X}) =
+/-- The normal-equations form: $\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{X}) =
 \mathsf{galerkinInverse}(\mathbf{A}^{\mathsf{H}}\mathbf{A}, \mathbf{X})\,\mathbf{A}^{\mathsf{H}}$,
 for every $\mathbf{A}$: the minimal residual method is the Galerkin method for
 $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ on the same space. -/
@@ -182,9 +185,10 @@ theorem eq_minResidualInverse_mulVec_of_conjTranspose_mulVec_sub_eq_zero
   rw [Matrix.mulVec_mulVec b A (minResidualInverse A X), mul_minResidualInverse, hAX, h0]
 
 omit [DecidableEq r] in
-/-- **Exactness**: for $\mathbf{A}$ of full column rank, if the solution lies in the column space
+/-- Exactness: for $\mathbf{A}$ of full column rank, if the solution lies in the column space
 the
-minimal residual approximation is the solution. -/
+minimal residual approximation $\mathsf{minResidualInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$
+is the solution. -/
 theorem minResidualInverse_mulVec_eq_of_mem {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {X : Matrix n p 𝕜} {b : m → 𝕜} {xs : n → 𝕜}
     (hxs : A *ᵥ xs = b)

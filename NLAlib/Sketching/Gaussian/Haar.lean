@@ -88,7 +88,8 @@ private theorem norm_smul_conjTranspose_mulVec_sq (M : Matrix n k ℝ) (x : n �
 open scoped Matrix.Norms.L2Operator in
 /-- **A Haar sketch is isotropic**: $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}]
 = (\lvert n \rvert / \lvert k \rvert) \, \mathbb{E}[\mathbf{Q}\mathbf{Q}^{\mathsf{H}}] = \mathbf{I}$
-(`NLAlib.integral_mul_conjTranspose_of_hasLaw_haarFrame`), exactly, as for a Gaussian sketch.
+(`NLAlib.integral_mul_conjTranspose_of_hasLaw_haarFrame`), exactly for $k$ nonempty,
+as for a Gaussian sketch.
 [MartinssonTropp2020, §8.9]. -/
 theorem isIsotropicSketch_of_hasLaw_haarFrame [DecidableEq n] [Nonempty k]
     (hQ : HasLaw Q (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) :
@@ -123,7 +124,7 @@ theorem ae_specNorm_eq_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
   · rw [hω.specNorm_eq_one, mul_one]
 
 omit [Fintype p] in
-/-- **Gaussian transfer of the Haar Gram matrix**:
+/-- Gaussian transfer of the Haar Gram matrix:
 $(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})$ has the law of
 $(\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$,
 $\mathbf{P}_{\mathbf{G}}$ the range projector of an $n \times k$ standard Gaussian $\mathbf{G}$, for
@@ -152,7 +153,7 @@ theorem hasLaw_conjTranspose_mul_self_mul_of_hasLaw_haarFrame (hQ : HasLaw Q (ha
 /-! ### Deterministic halves -/
 
 omit [Fintype p] in
-/-- **The upper half of a Haar sketch is deterministic**: $(\mathbf{S}\mathbf{U})^{\mathsf{H}}
+/-- The upper half of a Haar sketch is deterministic: $(\mathbf{S}\mathbf{U})^{\mathsf{H}}
 (\mathbf{S}\mathbf{U}) \preceq (\lvert n \rvert / \lvert k \rvert)
 \, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ almost surely, for every $\mathbf{U}$, every shape, with no
 parameter: $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} \preceq \mathbf{I}$ because $\|\mathbf{Q}\|_2 \le 1$
@@ -178,7 +179,7 @@ theorem ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame
   exact h2.smul (by positivity)
 
 omit [Fintype p] in
-/-- **A square Haar sketch is an exact embedding**: for $\lvert k \rvert = \lvert n \rvert$,
+/-- A square Haar sketch is an exact embedding: for $\lvert k \rvert = \lvert n \rvert$,
 $\mathbf{S} = \mathbf{Q}^{\mathsf{H}}$ is orthogonal almost surely, so it is a subspace embedding
 for every $\operatorname{range} \mathbf{U}$ with constants $1$, $1$ and failure probability $0$. -/
 theorem hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq (hQ : HasLaw Q (haarFrame n k) μ)
@@ -319,11 +320,12 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame
   exact pow_le_pow_left₀ (abs_nonneg _) (abs_le.2 ⟨by nlinarith [sq_nonneg ‖WithLp.toLp 2 x‖],
     by nlinarith [sq_nonneg ‖WithLp.toLp 2 x‖]⟩) 2
 
-/-- **The JL variance of a Haar sketch**:
+/-- The JL variance of a Haar sketch:
 $$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
 = \frac{2 (\lvert n \rvert - \lvert k \rvert)}
 {\lvert k \rvert (\lvert n \rvert + 2)} \|\mathbf{x}\|^4$$
-exactly, below the Gaussian's $2 / \lvert k \rvert$ and $0$ at $\lvert k \rvert = \lvert n \rvert$;
+exactly for $k$ nonempty, below the Gaussian's $2 / \lvert k \rvert$ and $0$ at
+$\lvert k \rvert = \lvert n \rvert$;
 from $\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 = \lvert k \rvert / \lvert n \rvert$ and the
 fourth moment `NLAlib.integral_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVector`. -/
 theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame [Nonempty k]
@@ -359,7 +361,8 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame [Nonempty k]
   field_simp
   ring
 
-/-- **The JL moment property of a Haar sketch** at $p = 2$, with $\delta = 2 (\lvert n \rvert -
+/-- **The JL moment property of a Haar sketch** at $p = 2$, for $k$ nonempty, with
+$\delta = 2 (\lvert n \rvert -
 \lvert k \rvert) / (\lvert k \rvert (\lvert n \rvert + 2) \varepsilon^2)$, from the exact variance.
 [Woodruff2014, Definition 12], the property there. -/
 theorem hasJLMoment_of_hasLaw_haarFrame [Nonempty k] (hQ : HasLaw Q (haarFrame n k) μ)
@@ -460,7 +463,8 @@ least <!-- value jlMomentDim \varepsilon \delta -->$128\max(2, \log(1/\delta))/\
 rows (`jlMomentDim ε δ`), the Haar sketch
 $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$ has the JL moment
 property with distortion $\varepsilon$, failure probability $\delta$ and exponent
-$\max(2, \log(1/\delta))$, with the Gaussian sketch's size
+$$\max(2, \log(1/\delta)) \,,$$
+with the Gaussian sketch's size
 (`NLAlib.hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le`); approximate matrix
 multiplication with failure probability $\delta$ follows
 (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le`). [Woodruff2014,
@@ -501,8 +505,9 @@ theorem hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le (hQ : HasLaw Q (haarFr
 /-- **Haar JL moments, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for the
 Haar sketch $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$,
 $\lvert k\rvert \le \lvert n\rvert$, to have the JL moment property with distortion
-$\varepsilon$, failure probability $\delta$ and exponent $\max(2, \log(1/\delta))$, for
-$\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension.
+$\varepsilon$, failure probability $\delta$ and exponent
+$$\max(2, \log(1/\delta)) \,,$$
+for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension.
 Proved from `NLAlib.hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le` with $C = 384$,
 $\varepsilon_0 = 1$ and $\delta \le 1/2$. [Woodruff2014, Definition 12 and Theorem 13].
 Asymptotic: NLAlib.hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le
@@ -522,7 +527,8 @@ theorem exists_forall_hasJLMoment_of_hasLaw_haarFrame :
 
 /-- **Haar distributional JL, sample-size form**: at
 least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$
-rows (`jlDim ε δ`) give the JL property
+rows (`jlDim ε δ`) give the JL property of
+$$\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$$
 with distortion $\varepsilon$ and failure probability $\delta$, for $0 < \varepsilon < 3/2$ and
 $\delta > 0$. [Vershynin2018, Lemma 5.3.2] (the tail form: for the projection $\mathbf{P}$ onto
 a uniformly random $m$-dimensional subspace of $\mathbb{R}^n$ and a fixed $\mathbf{z}$,
@@ -539,7 +545,7 @@ theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame 
   exact (hasJLProperty_of_hasLaw_haarFrame hQ hk hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk')
 
-/-- **Haar distributional JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice
+/-- Haar distributional JL, asymptotic form: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice
 for the Haar sketch to have the JL property with distortion $\varepsilon$ and failure probability
 $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
 dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le` with $C = 24$,

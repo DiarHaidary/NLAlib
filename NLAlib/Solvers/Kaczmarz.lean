@@ -208,7 +208,7 @@ theorem norm_sub_kaczmarzIterate_succ_sq (ι : ℕ → m) (xs : n → 𝕜) (q :
         ‖(b - A *ᵥ xs) (ι q)‖ ^ 2 / ‖WithLp.toLp 2 (A (ι q))‖ ^ 2 := by
   exact norm_sub_sketchAndProject_conjTranspose_selectionMatrix_sq A (ι q) b _ xs
 
-/-- **The Kaczmarz iterate stays in the row space through the start**: for every sequence of
+/-- The Kaczmarz iterate stays in the row space through the start: for every sequence of
 rows, $\mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \mathbf{b}, \mathbf{x}_0, q) - \mathbf{x}_0
 \in \operatorname{range}\mathbf{A}^{\mathsf{H}}$. -/
 theorem kaczmarzIterate_sub_mem_range (A : Matrix m n 𝕜) (ι : ℕ → m) (b : m → 𝕜) (x₀ : n → 𝕜)

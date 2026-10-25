@@ -107,7 +107,7 @@ theorem HasOrthonormalCols.exp_mul_diagonal_mul_conjTranspose {r : Type*} [Finty
       U * Matrix.diagonal (fun i => ((Real.exp (d i) : ℝ) : 𝕜)) * Uᴴ := by
   rw [HasOrthonormalCols.exp_mul_mul_conjTranspose hU hr, exp_diagonal_ofReal]
 
-/-- **The exponential of a Hermitian matrix through the functional calculus.**
+/-- The exponential of a Hermitian matrix through the functional calculus.
 Port of `NLAlib.matrixExp_smul_eq_cfc`, at $s = 1$. -/
 theorem _root_.Matrix.IsHermitian.exp_eq_cfc {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     exp A = cfc Real.exp A := by
@@ -161,7 +161,7 @@ theorem exp_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m m 𝕜) (B : Matrix n
 
 /-! ### Positivity and the logarithm -/
 
-/-- **The exponential of a Hermitian matrix is positive definite.**
+/-- The exponential of a Hermitian matrix is positive definite.
 Port of `NLAlib.posDef_matrixExp_and_matrixLog_matrixExp`, first half. -/
 theorem _root_.Matrix.IsHermitian.posDef_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     (exp A).PosDef := by
@@ -285,14 +285,14 @@ theorem specNorm_exp_le (A : Matrix n n 𝕜) : specNorm (exp A) ≤ Real.exp (s
     exact specNorm_one_le
   | succ k => exact norm_pow_le' A k.succ_pos
 
-/-- **The spectral norm of the exponential of a Hermitian matrix** is the exponential of its
+/-- The spectral norm of the exponential of a Hermitian matrix is the exponential of its
 largest eigenvalue: $\|\exp(\mathbf{A})\|_2 = e^{\lambda_0(\mathbf{A})}$, on a nonempty index type
 (for a matrix of size zero the left side is $0$ and the right side $1$). -/
 theorem _root_.Matrix.IsHermitian.specNorm_exp [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : specNorm (exp A) = Real.exp (eigenvalue A 0) := by
   rw [hA.posDef_exp.posSemidef.specNorm_eq_eigenvalue_zero, hA.eigenvalue_exp Fintype.card_pos]
 
-/-- **The exponential of a sum of Hermitian matrices** is bounded in spectral norm by the product
+/-- The exponential of a sum of Hermitian matrices is bounded in spectral norm by the product
 of the norms of the exponentials: for a finite set $s$ of indices and Hermitian
 $\mathbf{A}_k$, $k \in s$,
 $$\Bigl\|\exp\Bigl(\sum_{k \in s} \mathbf{A}_k\Bigr)\Bigr\|_2
@@ -316,7 +316,7 @@ theorem specNorm_exp_sum_le_prod {ι : Type*} (s : Finset ι) {A : ι → Matrix
 
 /-! ### The trace exponential -/
 
-/-- **The trace of the exponential** of a Hermitian matrix is the sum of the exponentials of its
+/-- The trace of the exponential of a Hermitian matrix is the sum of the exponentials of its
 eigenvalues: $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A})
 = \sum_{i < \lvert n \rvert} e^{\lambda_i(\mathbf{A})}$.
 Port of `NLAlib.traceExp_smul_eq_sum`. -/
@@ -343,7 +343,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_nonneg {A : Matrix n n 𝕜} (hA 
   exact Finset.sum_nonneg fun _ _ => (Real.exp_pos _).le
 
 /-- **The largest eigenvalue is controlled by the trace exponential**: for Hermitian $\mathbf{A}$
-of positive size,
+of positive size ($n$ nonempty),
 $e^{\lambda_0(\mathbf{A})} \le \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$.
 This is the first step of the matrix Laplace transform method.
 [Tropp2015, Proposition 3.2.1].

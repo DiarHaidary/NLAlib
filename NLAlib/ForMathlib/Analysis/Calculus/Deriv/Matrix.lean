@@ -92,7 +92,7 @@ theorem hasDerivAt_pow_succ_apply {A : 𝔽 → Matrix n n R} {A' : Matrix n n R
     rw [hsum]
     simpa only [pow_succ _ (k + 1)] using h
 
-/-- **The derivative of the trace of a power**:
+/-- The derivative of the trace of a power:
 $(\operatorname{tr} \mathbf{A}^{k+1})' = (k + 1) \operatorname{tr}(\mathbf{A}' \mathbf{A}^k)$.
 Port of `NLAlib.hasDerivAt_matrix_trace_pow`, there over $\mathbb{R}$ in the operator norm. -/
 theorem hasDerivAt_trace_pow_succ {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
@@ -122,7 +122,8 @@ theorem sum_det_updateRow {S : Type*} [CommRing S] (A H : Matrix n n S) :
 
 /-- **Jacobi's formula**:
 $(\det \mathbf{A})' = \operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{A}')$.
-Port of `NLAlib.hasDerivAt_det`, there over $\mathbb{R}$ in the entrywise norm. -/
+Port of `NLAlib.hasDerivAt_det`, there over $\mathbb{R}$ in the entrywise norm.
+[HornJohnson2013, §0.8.10] (locator to check). -/
 theorem hasDerivAt_det {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) :
     HasDerivAt (fun s => (A s).det) ((A t).adjugate * A').trace t := by
@@ -139,7 +140,7 @@ theorem hasDerivAt_det {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽
   rw [← hval]
   exact h
 
-/-- **The derivative of the inverse**, entrywise:
+/-- The derivative of the inverse, entrywise:
 $(\mathbf{A}^{-1})' = -\mathbf{A}^{-1} \mathbf{A}' \mathbf{A}^{-1}$ where $\mathbf{A}(t)$ is
 invertible. Port of `NLAlib.hasDerivAt_matrix_inv`, there over $\mathbb{R}$ in the operator
 norm. -/
@@ -184,7 +185,7 @@ theorem hasDerivAt_inv_apply {A : 𝔽 → Matrix n n 𝔽} {A' : Matrix n n �
   rw [← hB']
   exact hB i j
 
-/-- **The derivative of the logarithm of the determinant**: for a family of real matrices,
+/-- The derivative of the logarithm of the determinant: for a family of real matrices,
 $(\log \det \mathbf{A})' = \operatorname{tr}(\mathbf{A}^{-1} \mathbf{A}')$ where
 $\det \mathbf{A}(t) \ne 0$ (the determinant may be negative: `Real.log` is the logarithm of the
 absolute value). Port of `NLAlib.hasDerivAt_log_det`. -/

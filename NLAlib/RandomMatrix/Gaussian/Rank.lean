@@ -171,7 +171,7 @@ private theorem eval_det_gram {l k : Type*} [Fintype l] [Fintype k] [DecidableEq
     rfl
   rw [hA, hE, hX]
 
-/-- **The rank of a Gaussian sketch**: for a fixed $\mathbf{A}$ and a standard Gaussian
+/-- The rank of a Gaussian sketch: for a fixed $\mathbf{A}$ and a standard Gaussian
 $m \times n$ matrix $\mathbf{G}$,
 $\operatorname{rank}(\mathbf{A}\mathbf{G}) = \min(\operatorname{rank} \mathbf{A}, \lvert n \rvert)$
 almost surely. -/
@@ -212,7 +212,7 @@ theorem ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix {l : Type*} [Finite l] (A : 
   rw [← hrank (X ω) hω]
   exact Matrix.rank_mul_le_left _ _
 
-/-- **A Gaussian sketch keeps a small rank**: for a fixed $\mathbf{Z}$ with
+/-- A Gaussian sketch keeps a small rank: for a fixed $\mathbf{Z}$ with
 $\operatorname{rank}\mathbf{Z} \le \lvert n \rvert$ and a standard Gaussian $m \times n$ matrix
 $\mathbf{G}$,
 $\operatorname{rank}(\mathbf{G}^{\mathsf{H}}\mathbf{Z}) = \operatorname{rank}\mathbf{Z}$

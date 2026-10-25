@@ -38,7 +38,7 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*}
 
-/-- **Completing the square** in a Hermitian block matrix. If $\mathbf{A}$ is Hermitian and
+/-- Completing the square in a Hermitian block matrix. If $\mathbf{A}$ is Hermitian and
 $\mathbf{A}\mathbf{X} = \mathbf{B}$, then for $\mathbf{M} = \begin{bmatrix} \mathbf{A} & \mathbf{B}
 \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
 $$\begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}^{\mathsf{H}} \mathbf{M} \begin{bmatrix}

@@ -160,7 +160,7 @@ theorem integral_conjTranspose_mul_mul [DecidableEq p] (h : IsIsotropicSketch S 
 
 end IsIsotropicSketch
 
-/-- **Isotropic rows give an isotropic sketch**: if every row of the random matrix $\mathbf{X}$ is
+/-- Isotropic rows give an isotropic sketch: if every row of the random matrix $\mathbf{X}$ is
 an isotropic random vector, $\mathbf{X} / \sqrt{\lvert k \rvert}$ is an isotropic sketch. No
 independence between the rows is assumed; `[Nonempty k]` is needed, since for empty $k$ the sketch
 is $\mathbf{0}$. -/
@@ -209,7 +209,7 @@ private theorem IsIsotropicSketch.sum_integral_star_mul (h : IsIsotropicSketch S
     (h.memLp a i).star.integrable_mul (h.memLp a j)
   rw [integral_finsetSum _ fun a _ => hg a]
 
-/-- **The product of independent isotropic sketches is isotropic**: for $\mathbf{S}_2$ and
+/-- The product of independent isotropic sketches is isotropic: for $\mathbf{S}_2$ and
 $\mathbf{S}$ independent,
 $\mathbb{E}[(\mathbf{S}_2\mathbf{S})^{\mathsf{H}}\mathbf{S}_2\mathbf{S}]
 = \mathbb{E}[\mathbf{S}^{\mathsf{H}}\, \mathbb{E}[\mathbf{S}_2^{\mathsf{H}}\mathbf{S}_2]\,

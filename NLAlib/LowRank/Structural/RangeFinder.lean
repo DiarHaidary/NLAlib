@@ -38,8 +38,8 @@ equation gives $\mathbf{E} = \mathbf{A} - \llbracket \mathbf{A} \rrbracket_k$ an
 [HalkoMartinssonTropp2011, Theorem 9.1]; at rank at most $k$ they say `A - rsvd A Ω = 0`.
 
 Degenerate cases: for empty `r` every bound is the contraction
-$\|(\mathbf{I} - \mathbf{P})\mathbf{A}\| \le \|\mathbf{A}\|$. Without the rank hypothesis the
-bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = [0]$). Design:
+$\|(\mathbf{I} - \mathbf{P})\mathbf{A}\|_{\Phi} \le \|\mathbf{A}\|_{\Phi}$. Without the rank
+hypothesis the bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = [0]$). Design:
 `docs/design/LowRank-S1.md`.
 
 ## Main results

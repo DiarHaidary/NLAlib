@@ -191,7 +191,7 @@ theorem samplingSketchWithoutReplacement_eq_map [MeasurableSpace n] [MeasurableS
   let _ : MeasurableSpace n := ⊤
   exact map_uniformOn_injective_apply _ hs
 
-/-- **From the user's own injection**: if $\iota$ is a uniformly random injection $k \to n$, the
+/-- From the user's own injection: if $\iota$ is a uniformly random injection $k \to n$, the
 sketch built from it at uniform weights has law `NLAlib.samplingSketchWithoutReplacement k n`. -/
 theorem hasLaw_samplingSketchMatrix_of_hasLaw_uniformOn_injective [MeasurableSpace n]
     [MeasurableSingletonClass n] {ι : Ω → k → n}
@@ -429,8 +429,8 @@ theorem hasSubspaceEmbedding_zero_of_hasLaw_samplingSketchWithoutReplacement
 rank) satisfy $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$, the row-sampling sketch without
 replacement with $k$ samples is a subspace embedding for $\operatorname{range}\mathbf{U}$ with
 constants $1 \mp \varepsilon$ outside probability
-$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)}$, for
-$0 \le \varepsilon \le 1$. Sampling without replacement is never worse than with replacement
+$$2 \operatorname{rank}\mathbf{U} \cdot e^{-\varepsilon^2 k / (3L)} \,,$$
+for $0 \le \varepsilon \le 1$. Sampling without replacement is never worse than with replacement
 (`NLAlib.hasSubspaceEmbedding_of_hasLaw_samplingSketch` at uniform weights has the same bound).
 [Tropp2011a, Lemma 3.4] (the sampling step of the SRHT, there for orthonormal columns and
 $L = \lvert n \rvert \max_i \ell_i$, with the two Chernoff tails before weakening);
@@ -500,7 +500,7 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
     hε
     hδ hk
 
-/-- **Row sampling without replacement, asymptotic form**: with
+/-- Row sampling without replacement, asymptotic form: with
 $d = \operatorname{rank}\mathbf{U}$, $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row
 sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ to
 be a subspace embedding for $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$
@@ -563,7 +563,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   exact mul_exp_le_of_samplingInjectionDim_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
     hδ hk
 
-/-- **The lower half without replacement, asymptotic form**: with
+/-- The lower half without replacement, asymptotic form: with
 $d = \operatorname{rank}\mathbf{U}$, $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row
 sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ to
 be a subspace injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and

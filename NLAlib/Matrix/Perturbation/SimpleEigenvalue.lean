@@ -287,7 +287,9 @@ eigenvector $\mathbf{x}$ and left eigenvector $\mathbf{y}$
 $0$, $\varphi(0) = \mu$, and $\varphi(t)$ is an eigenvalue of $\mathbf{A} + t\mathbf{E}$ for complex
 $t$ near $0$ (a root of the characteristic polynomial; see
 `Matrix.mem_spectrum_iff_isRoot_charpoly`), then $\varphi$ has derivative
-$\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x} / \mathbf{y}^{\mathsf{T}}\mathbf{x}$ at $0$. Only
+at $0$
+$$\frac{\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x}}{\mathbf{y}^{\mathsf{T}}\mathbf{x}}\,.$$
+Only
 continuity at the base point is assumed of $\varphi$, so this applies to any selection of
 eigenvalues, not only to the branch of `NLAlib.exists_eigenvalue_branch_of_rootMultiplicity_eq_one`.
 [StewartSun1990, Theorem IV.2.3]; [HornJohnson2013, Theorem 6.3.12].
@@ -413,7 +415,8 @@ private theorem eventually_continuousAt_implicitFunctionOfProdDomain {f : ℂ ×
 characteristic polynomial of the complex matrix $\mathbf{A}$, with right eigenvector $\mathbf{x}$
 and left eigenvector $\mathbf{y}$. Then there is a function $\varphi$, continuous near $0$, with
 $\varphi(0) = \mu$ and derivative
-$\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x} / \mathbf{y}^{\mathsf{T}}\mathbf{x}$ at $0$, such that
+$$\frac{\mathbf{y}^{\mathsf{T}}\mathbf{E}\mathbf{x}}{\mathbf{y}^{\mathsf{T}}\mathbf{x}}$$
+at $0$, such that
 near $(0, \mu)$ the eigenvalues of $\mathbf{A} + t\mathbf{E}$ close to $\mu$ are exactly
 $\varphi(t)$, and they remain simple. The left eigenvector enters through the bilinear product
 $\mathbf{y}^{\mathsf{T}}\mathbf{x}$, with

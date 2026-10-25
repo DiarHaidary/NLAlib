@@ -123,7 +123,7 @@ Port of `NLAlib.polarFrame`, there for real matrices of full column rank. -/
 noncomputable def polarFactor (A : Matrix m n 𝕜) : Matrix m n 𝕜 :=
   A * pinv (CFC.sqrt (Aᴴ * A))
 
-/-- **The polar factor through an SVD**: for an SVD
+/-- The polar factor through an SVD: for an SVD
 $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ (`IsSVD`), the polar factor is
 $\mathbf{U}\mathbf{E}\mathbf{V}^{\mathsf{H}}$ with $\mathbf{E}$ the diagonal matrix with entry $1$
 where the singular value is nonzero and $0$ where it is zero. -/
@@ -139,7 +139,8 @@ theorem IsSVD.polarFactor_eq [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m
 /-- **The polar decomposition**
 $\mathbf{A} = \mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$, with $\mathbf{U}$ the polar
 factor.
-Port of `NLAlib.exists_isometry_mul_sqrt_gram_eq`, for the canonical factor. -/
+Port of `NLAlib.exists_isometry_mul_sqrt_gram_eq`, for the canonical factor.
+[HornJohnson2013, Theorem 7.3.1] (locator to check). -/
 theorem polarFactor_mul_sqrt (A : Matrix m n 𝕜) :
     polarFactor A * CFC.sqrt (Aᴴ * A) = A := by
   obtain ⟨k, U, σ, V, h⟩ := exists_isSVD_rank A
@@ -148,7 +149,7 @@ theorem polarFactor_mul_sqrt (A : Matrix m n 𝕜) :
   by_cases hi : σ i = 0 <;> simp [hi]
 
 open scoped Classical in
-/-- **The left polar decomposition**
+/-- The left polar decomposition
 $\mathbf{A} = (\mathbf{A}\mathbf{A}^{\mathsf{H}})^{1/2}\mathbf{U}$, with the same polar factor
 $\mathbf{U}$.
 Port of `NLAlib.sqrt_rowGram_mul_eq_of_isometry_mul_sqrt_gram_eq`. -/
@@ -232,7 +233,7 @@ theorem _root_.Matrix.PosDef.polarFactor_eq_one {A : Matrix n n 𝕜} (hA : A.Po
     pinv_of_isUnit hA.isUnit,
     Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det A).mp hA.isUnit)]
 
-/-- **The polar factor intertwines.** If $\mathbf{A}\mathbf{T} = \mathbf{T}\mathbf{B}$ and
+/-- The polar factor intertwines: if $\mathbf{A}\mathbf{T} = \mathbf{T}\mathbf{B}$ and
 $\mathbf{A}^{\mathsf{H}}\mathbf{T} = \mathbf{T}\mathbf{B}^{\mathsf{H}}$, then
 $\mathbf{A}\mathbf{U} = \mathbf{U}\mathbf{B}$ for the polar factor $\mathbf{U}$ of $\mathbf{T}$.
 Port of `NLAlib.mul_polarFrame_eq_polarFrame_mul_of_intertwining`, there for $\mathbf{T}$ of full
@@ -274,7 +275,7 @@ theorem exists_hasOrthonormalCols_mul_sqrt_eq (A : Matrix m n 𝕜)
       hSVD.hasOrthonormalCols_right.conjTranspose_mul_cancel_left, ← Matrix.mul_assoc]
     exact hSVD.eq.symm
 
-/-- **The positive semidefinite polar factor is unique**: if $\mathbf{A} = \mathbf{U}\mathbf{P}$
+/-- The positive semidefinite polar factor is unique: if $\mathbf{A} = \mathbf{U}\mathbf{P}$
 with $\mathbf{U}$ having orthonormal columns and $\mathbf{P}$ positive semidefinite, then
 $\mathbf{P} = (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$.
 Port of `NLAlib.eq_sqrt_gram_of_isometry_mul_eq`. -/
@@ -296,7 +297,7 @@ theorem eq_polarFactor_of_mul_sqrt_eq {A U : Matrix m n 𝕜} (hA : Function.Inj
           Matrix.mul_one]
     _ = polarFactor A := by rw [← Matrix.mul_assoc, h, polarFactor]
 
-/-- **The isometric polar factor is unique exactly when the matrix has full column rank**: given
+/-- The isometric polar factor is unique exactly when the matrix has full column rank: given
 one $\mathbf{U}$ with orthonormal columns and
 $\mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2} = \mathbf{A}$, every other such factor equals
 $\mathbf{U}$ if and only if $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective.

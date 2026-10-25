@@ -64,7 +64,8 @@ the prototype's `hutchinsonEstimate`, there over $\mathbb{R}$. -/
 noncomputable def girardHutchinson (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) : 𝕜 :=
   (Ωᴴ * A * Ω).trace / Fintype.card m
 
-/-- The Girard–Hutchinson estimate is the average of the single-probe estimates
+/-- The Girard–Hutchinson estimate $\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})$
+is the average of the single-probe estimates
 $\boldsymbol{\omega}_j^{\mathsf{H}}\mathbf{A}\boldsymbol{\omega}_j$. -/
 theorem girardHutchinson_eq_sum (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) :
     girardHutchinson A Ω = (∑ j, quadForm A fun i => Ω i j) / Fintype.card m := by
@@ -75,8 +76,9 @@ theorem girardHutchinson_eq_sum (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) :
     Finset.sum_mul]
   rw [Finset.sum_comm]
 
-/-- **The Girard–Hutchinson estimator is unbiased**: if every probe is isotropic,
-$\mathbb{E}[\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})] = \operatorname{tr}\mathbf{A}$.
+/-- **The Girard–Hutchinson estimator is unbiased**: for $m$ nonempty, if every probe is
+isotropic, $\mathbb{E}[\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})]
+= \operatorname{tr}\mathbf{A}$.
 No independence is needed. [Epperly2023, Unbiasedness].
 Result: girard-hutchinson-unbiased -/
 theorem integral_girardHutchinson [DecidableEq n] [Nonempty m] {X : Ω → Matrix n m 𝕜}
@@ -111,11 +113,11 @@ private theorem integral_mul_star_eq_zero [DecidableEq n] {X : Ω → Matrix n m
     (hX j).integral_quadForm A]
   simp
 
-/-- **The variance of the Girard–Hutchinson estimator**: for $m$ independent isotropic probes
-whose single-probe estimates are square integrable with second moment $v$ about the mean,
-$\mathbb{E}\lvert \operatorname{tr}\mathbf{A} -
-\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})\rvert^2 = v /
-m$. Over $\mathbb{C}$ the left side is the variance of
+/-- **The variance of the Girard–Hutchinson estimator**: for $m$ nonempty, independent isotropic
+probes whose single-probe estimates are square integrable with second moment $v$ about the mean,
+$$\mathbb{E}\lvert \operatorname{tr}\mathbf{A} -
+\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})\rvert^2 = \frac{v}{m}\,.$$
+Over $\mathbb{C}$ the left side is the variance of
 the complex estimate; the real `variance` form is `NLAlib.variance_girardHutchinson`.
 [Epperly2023, Variance].
 Result: girard-hutchinson-variance -/
@@ -165,8 +167,8 @@ theorem integral_norm_trace_sub_girardHutchinson_sq [DecidableEq n] [Nonempty m]
         have : (Fintype.card m : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
         field_simp
 
-/-- **The variance of the real Girard–Hutchinson estimator**: for $m$ independent isotropic real
-probes whose single-probe estimates are square integrable with variance $v$,
+/-- **The variance of the real Girard–Hutchinson estimator**: for $m$ nonempty, independent
+isotropic real probes whose single-probe estimates are square integrable with variance $v$,
 $\operatorname{Var}[\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})] = v / m$. With the
 single-probe variances of `NLAlib.variance_quadForm_of_hasLaw_gaussianVector`,
 `NLAlib.variance_quadForm_of_hasLaw_rademacherVector` and
@@ -195,7 +197,8 @@ theorem variance_girardHutchinson [DecidableEq n] [Nonempty m] {X : Ω → Matri
 
 /-- **The Girard–Hutchinson estimator with orthonormal probes**: with the test matrix
 $\sqrt{\lvert n \rvert}\,\mathbf{Q}$ for an $n \times k$ Haar frame $\mathbf{Q}$,
-$1 \le \lvert k \rvert \le \lvert n \rvert$, $\lvert n \rvert \ge 2$, and real symmetric
+with $k$ nonempty, $1 \le \lvert k \rvert \le \lvert n \rvert$, $\lvert n \rvert \ge 2$, and
+real symmetric
 $\mathbf{A}$,
 $$\operatorname{Var}\bigl[\mathsf{girardHutchinson}(\mathbf{A},
 \sqrt{\lvert n \rvert}\,\mathbf{Q})\bigr]

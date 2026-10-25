@@ -107,7 +107,7 @@ theorem HasOrthonormalCols.singularValues_tangentMatrix_eq_of_mul_conjTranspose_
     HasOrthonormalCols.singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one hW h]
 
 omit [DecidableEq n] in
-/-- **The acute case for a frame and a basis with the same number of columns**:
+/-- The acute case for a frame and a basis with the same number of columns:
 $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is invertible exactly when the largest principal angle is below
 $\pi / 2$: $\theta_j(\mathbf{U}, \mathbf{Y}) < \pi / 2$ for $j + 1 = \lvert p \rvert$.
 Port of `NLAlib.isUnit_overlap_of_principalAngles_last_lt_pi_div_two`. -/
@@ -235,7 +235,7 @@ theorem HasOrthonormalCols.singularValues_eq_tan_principalAngle_add_mul [Decidab
 
 /-! ### The tangent of the angle from a vector to a subspace -/
 
-/-- **The tangent of the angle from a unit vector to a subspace, bounded by a competitor.** For
+/-- The tangent of the angle from a unit vector to a subspace, bounded by a competitor: for
 $\mathbf{Q}$ with orthonormal columns, the tangent of the angle between a unit vector $\mathbf{u}$
 and the column space of $\mathbf{Q}$ is the quotient of $\|(\mathbf{I} -
 \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{u}\|$ and $\|\mathbf{Q}^{\mathsf{H}}\mathbf{u}\|$. If
@@ -277,7 +277,7 @@ theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_le_mul {Q : Matrix n p ð
   rw [mul_pow]
   linarith
 
-/-- **The tangent of the angle from a column of a graph basis to a subspace.** If $\mathbf{U}$
+/-- The tangent of the angle from a column of a graph basis to a subspace: if $\mathbf{U}$
 and $\mathbf{W}$ have orthonormal columns with $\mathbf{U}^{\mathsf{H}}\mathbf{W} = \mathbf{0}$
 and the column space of the graph $\mathbf{U} + \mathbf{W}\mathbf{F}$ is contained in that of
 $\mathbf{Q}$, which has orthonormal columns, then the tangent of the angle between column

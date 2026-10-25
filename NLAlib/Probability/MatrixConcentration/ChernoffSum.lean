@@ -225,8 +225,8 @@ theorem le_integral_eigenvalue_sum_chernoff (hind : iIndepFun X μ)
     _ ≤ -L * Real.log (∫ ω, RCLike.re (exp (-L⁻¹ • ∑ k, X k ω)).trace ∂μ) :=
         mul_le_mul_of_nonpos_left hlog (neg_nonpos.mpr hL.le)
 
-/-- **Spectral approximation of the identity by a sum of bounded positive semidefinite
-matrices**: for finitely many independent, almost everywhere measurable random $n \times n$
+/-- Spectral approximation of the identity by a sum of bounded positive semidefinite
+matrices: for finitely many independent, almost everywhere measurable random $n \times n$
 matrices $\mathbf{X}_k$ over $\Bbbk$, $n$ nonempty, with
 $\mathbf{0} \preceq \mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$ and
 $\sum_k \mathbb{E}\mathbf{X}_k = \mathbf{I}$, for $0 \le \varepsilon < 1$

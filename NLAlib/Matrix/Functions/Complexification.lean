@@ -234,7 +234,7 @@ theorem posDef_complexify_iff [Finite n] {A : Matrix n n 𝕜} :
   · exact ⟨fun h => absurd (isHermitian_complexify_iff.mp h.isHermitian) hA,
       fun h => absurd h.isHermitian hA⟩
 
-/-- **The complexification preserves and reflects the Loewner order.** -/
+/-- The complexification preserves and reflects the Loewner order. -/
 @[simp]
 theorem complexify_le_complexify_iff [Finite n] {A B : Matrix n n 𝕜} :
     complexify A ≤ complexify B ↔ A ≤ B := by
@@ -291,7 +291,7 @@ theorem continuous_complexify :
     Continuous (complexify : Matrix m n 𝕜 → Matrix m n ℂ) :=
   continuous_id.matrix_map RCLike.continuous_toComplex
 
-/-- **The complexification commutes with the functional calculus** of a Hermitian matrix. -/
+/-- The complexification commutes with the functional calculus of a Hermitian matrix. -/
 theorem _root_.Matrix.IsHermitian.complexify_cfc [Fintype n] [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian)
     (f : ℝ → ℝ) : complexify (cfc f A) = cfc f (complexify A) := by
@@ -315,7 +315,7 @@ private theorem decomplexify_complexify (A : Matrix n n 𝕜) : decomplexify (co
   simp only [decomplexify, Matrix.map_apply, complexify_apply, RCLike.re_toComplex,
     RCLike.im_toComplex, RCLike.re_add_im]
 
-/-- **The matrix logarithm is continuous on the positive definite matrices**, over any `RCLike`
+/-- The matrix logarithm is continuous on the positive definite matrices, over any `RCLike`
 field: the transfer to $\mathbb{C}$ of Mathlib's `CFC.continuousOn_log`, which needs a
 C⋆-algebra. -/
 theorem continuousOn_cfc_log [Fintype n] [DecidableEq n] :

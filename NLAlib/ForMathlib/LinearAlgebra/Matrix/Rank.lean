@@ -41,7 +41,8 @@ so that `omega` and `linarith` can use them.
 
 /-- **Rank–nullity for the restriction of a linear map to a submodule**: the dimension of the
 image of $S$ under $f$ plus the dimension of $S \cap \ker f$ is the dimension of $S$. Upstream
-candidate for `Mathlib.LinearAlgebra.FiniteDimensional.Lemmas`. -/
+candidate for `Mathlib.LinearAlgebra.FiniteDimensional.Lemmas`.
+[HornJohnson2013, §0.2.3] (locator to check). -/
 theorem Submodule.finrank_map_add_finrank_inf_ker {K E F : Type*} [DivisionRing K]
     [AddCommGroup E] [Module K E] [AddCommGroup F] [Module K F] (f : E →ₗ[K] F)
     (S : Submodule K E) [FiniteDimensional K S] :
@@ -82,7 +83,8 @@ variable {K : Type*} [Field K] {l m n p : Type*} [Fintype n]
 /-- **Rank–nullity for a matrix**: the dimension of the kernel of
 $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ plus the rank of $\mathbf{A}$ is the number of columns
 $\lvert n \rvert$. The matrix may be rectangular. This is
-`LinearMap.finrank_range_add_finrank_ker` for `A.mulVecLin`, in terms of `Matrix.rank`. -/
+`LinearMap.finrank_range_add_finrank_ker` for `A.mulVecLin`, in terms of `Matrix.rank`.
+[HornJohnson2013, §0.2.3] (locator to check). -/
 theorem finrank_ker_add_rank (A : Matrix m n K) :
     Module.finrank K (LinearMap.ker A.mulVecLin) + A.rank = Fintype.card n := by
   have h := A.mulVecLin.finrank_range_add_finrank_ker
@@ -281,7 +283,7 @@ section KeepRank
 variable {k r : Type*} [Fintype m] [Fintype r]
 
 omit [Fintype n] in
-/-- **The rank interface**: the sketch $\mathbf{S}$ keeps the rank of $\mathbf{X}$,
+/-- The rank interface: the sketch $\mathbf{S}$ keeps the rank of $\mathbf{X}$,
 $\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$, exactly when it is
 injective on $\operatorname{range}\mathbf{X}$. This is the form `NLAlib.IsSubspaceInjection.injOn`
 concludes, and the hypothesis of the oblique projector `NLAlib.obliqueProjector X S`. -/

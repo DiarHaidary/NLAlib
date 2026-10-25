@@ -83,7 +83,8 @@ theorem norm_toLp_sq_eq_dotProduct_self (x : n → ℝ) : ‖WithLp.toLp 2 x‖ 
 
 /-- **Cauchy–Schwarz for the dot product**: over $\mathbb{R}$,
 $\lvert \mathbf{x}^{\mathsf{T}}\mathbf{y} \rvert \le \|\mathbf{x}\| \|\mathbf{y}\|$ with Euclidean
-norms. The coordinate form of `abs_real_inner_le_norm`. -/
+norms. The coordinate form of `abs_real_inner_le_norm`.
+[HornJohnson2013, Theorem 5.1.4] (locator to check). -/
 theorem abs_dotProduct_le_norm (x y : n → ℝ) :
     |x ⬝ᵥ y| ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖ := by
   have h := abs_real_inner_le_norm (WithLp.toLp 2 x) (WithLp.toLp 2 y)
@@ -127,7 +128,7 @@ theorem norm_toLp_extend_zero {p : Type*} [Fintype p] {e : p → n} (he : Functi
 concatenation of $\mathbf{x}$ and $\mathbf{y}$ (`Sum.elim x y`) is the sum of their squared
 Euclidean norms,
 $\left\|\begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}\right\|^2
-= \|\mathbf{x}\|^2 + \|\mathbf{y}\|^2$. -/
+= \|\mathbf{x}\|^2 + \|\mathbf{y}\|^2$. [HornJohnson2013, §5.1] (locator to check). -/
 theorem norm_toLp_sumElim_sq {m : Type*} [Fintype m] (x : m → 𝕜) (y : n → 𝕜) :
     ‖WithLp.toLp 2 (Sum.elim x y)‖ ^ 2 = ‖WithLp.toLp 2 x‖ ^ 2 + ‖WithLp.toLp 2 y‖ ^ 2 := by
   simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Sum.elim_inl, Sum.elim_inr]
@@ -139,7 +140,7 @@ $\|\mathbf{x}\|^2 = \sum_i \mathbf{x}_i^2$: `EuclideanSpace.real_norm_sq_eq` sta
 theorem norm_toLp_sq_eq_sum_sq (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = ∑ i, x i ^ 2 :=
   EuclideanSpace.real_norm_sq_eq _
 
-/-- **The normalisation of a sketch with $\lvert k \rvert$ rows**: scaling a vector of
+/-- The normalisation of a sketch with $\lvert k \rvert$ rows: scaling a vector of
 $\Bbbk^k$ by $\lvert k \rvert^{-1/2}$ divides its squared norm by $\lvert k \rvert$,
 $\|\lvert k \rvert^{-1/2} \mathbf{v}\|^2 = \|\mathbf{v}\|^2 / \lvert k \rvert$. -/
 theorem norm_toLp_inv_sqrt_card_smul_sq {k : Type*} [Fintype k] (v : k → 𝕜) :

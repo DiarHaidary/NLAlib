@@ -264,7 +264,7 @@ theorem _root_.IsStarProjection.specNorm_one_sub_mul_le_one {P Q : Matrix n n �
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) : specNorm ((1 - Q) * P) ≤ 1 :=
   (hQ.one_sub.specNorm_mul_le P).trans hP.specNorm_le_one
 
-/-- **The acute case.** $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2 < 1$ exactly when $\mathbf{Q}$ is
+/-- The acute case. $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2 < 1$ exactly when $\mathbf{Q}$ is
 injective on the range of $\mathbf{P}$, that is, when
 $\operatorname{rank}(\mathbf{Q}\mathbf{P}) = \operatorname{rank} \mathbf{P}$.
 Port of `NLAlib.directedSubspaceGap_lt_one_iff_isUnit`. -/
@@ -293,7 +293,7 @@ theorem _root_.IsStarProjection.specNorm_one_sub_mul_lt_one_iff {P Q : Matrix n 
       have : 0 < singularValues (Q * P) k := hpos'.mpr (by omega)
       nlinarith
 
-/-- **The triangle inequality for directed gaps**, in every unitarily invariant norm
+/-- The triangle inequality for directed gaps, in every unitarily invariant norm
 $\|\cdot\|_{\Phi}$: for orthogonal projectors $\mathbf{P}$, $\mathbf{R}$ and any square
 $\mathbf{Q}$,
 $\|(\mathbf{I} - \mathbf{P})\mathbf{R}\|_{\Phi} \le \|(\mathbf{I} - \mathbf{P})\mathbf{Q}\|_{\Phi} +
@@ -311,7 +311,7 @@ theorem _root_.IsStarProjection.matrixNorm_one_sub_mul_le_add (Φ : SymmetricGau
       (mul_le_of_le_one_right (Φ.matrixNorm_nonneg _) hR.specNorm_le_one)
   · exact Φ.matrixNorm_mul_le_of_isStarProjection hP.one_sub _
 
-/-- **Monotonicity of the residual in the subspace**, in every unitarily invariant norm
+/-- Monotonicity of the residual in the subspace, in every unitarily invariant norm
 $\|\cdot\|_{\Phi}$: a larger projector leaves a smaller residual; for orthogonal projectors
 $\mathbf{P} \preceq \mathbf{Q}$,
 $\|(\mathbf{I} - \mathbf{Q})\mathbf{A}\|_{\Phi} \le \|(\mathbf{I} -

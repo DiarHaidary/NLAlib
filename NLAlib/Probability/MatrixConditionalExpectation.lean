@@ -106,8 +106,8 @@ theorem ae_posDef_condExp (hm : m ≤ mΩ) [IsFiniteMeasure μ]
   rw [← h₂] at h₁
   exact Matrix.PosDef.posDef_of_le (Matrix.PosDef.smul Matrix.PosDef.one h₃) h₁
 
-/-- **The functional calculus of a fixed Hermitian matrix commutes with the conditional
-expectation**: for a fixed Hermitian $n \times n$ matrix $\mathbf{B}$ over $\Bbbk$, a
+/-- The functional calculus of a fixed Hermitian matrix commutes with the conditional
+expectation: for a fixed Hermitian $n \times n$ matrix $\mathbf{B}$ over $\Bbbk$, a
 $\sigma$-algebra $\mathcal{G}$ on $\Omega$ and real functions $f_\omega$, if
 $\omega \mapsto f_\omega(x)$ is integrable for every real $x$, then almost surely
 $$\mathbb{E}[f_\omega(\mathbf{B}) \mid \mathcal{G}] = g(\mathbf{B}), \qquad

@@ -91,7 +91,7 @@ private theorem integrable_and_integral_cfc {B : Matrix n n 𝕜} (hB : B.IsHerm
   funext i
   exact eval_integral (fun i => hf _) i
 
-/-- **A random function of a fixed Hermitian matrix is integrable** when its values are: for
+/-- A random function of a fixed Hermitian matrix is integrable when its values are: for
 Hermitian $\mathbf{B}$, if $\omega \mapsto f_\omega(x)$ is integrable for every $x$, so is
 $\omega \mapsto f_\omega(\mathbf{B})$ (the functional calculus `cfc (f ω) B`). Unlike Mathlib's
 `integrable_cfc`, no continuity in $\omega$ or $x$ is needed: the spectrum of a matrix is finite.
@@ -101,7 +101,7 @@ theorem _root_.Matrix.IsHermitian.integrable_cfc {B : Matrix n n 𝕜} (hB : B.I
     Integrable (fun ω => cfc (f ω) B) μ :=
   (integrable_and_integral_cfc hB hf).1
 
-/-- **The functional calculus of a fixed Hermitian matrix commutes with the integral**: for
+/-- The functional calculus of a fixed Hermitian matrix commutes with the integral: for
 Hermitian $\mathbf{B}$, if $\omega \mapsto f_\omega(x)$ is integrable for every $x$, then
 $g(\mathbf{B}) = \mathbb{E} f_\omega(\mathbf{B})$ with $g(x) = \mathbb{E} f_\omega(x)$, where
 $f(\mathbf{B})$ is `cfc f B`. Unlike Mathlib's `cfc_integral`, no continuity in $\omega$ or $x$ is

@@ -574,9 +574,9 @@ private theorem exists_mem_spectrum_lt_pseudoConditionNumber_eq {A : Matrix n n 
   omega
 
 /-- **The near-optimality factor cannot be improved**: for positive definite $\mathbf{A}$ with
-at least $q + 1 \ge 2$ distinct eigenvalues (`q + 1 ≤ (spectrum ℝ A).ncard`), real $\alpha$,
-$E = \max(\alpha, 1 - \alpha)$, $\kappa = \kappa(\mathbf{A})$ and $0 < \eta \le 1$, there are
-$\mathbf{b}$ and $s \ge 0$ such that, for $f(z) = (z + s)^{-1}$, the Lanczos-FA error is
+at least $q + 1 \ge 2$ distinct eigenvalues ($q + 1 \le \lvert\sigma(\mathbf{A})\rvert$), real
+$\alpha$, $E = \max(\alpha, 1 - \alpha)$, $\kappa = \kappa(\mathbf{A})$ and $0 < \eta \le 1$,
+there are $\mathbf{b}$ and $s \ge 0$ such that, for $f(z) = (z + s)^{-1}$, the Lanczos-FA error is
 nonzero and some $\mathbf{y} \in \mathcal{K}_q(\mathbf{A}, \mathbf{b})$ has
 $$(1 - \eta)^2\Bigl(\frac{\kappa^{E/2} + \kappa^{-E/2}}{2}\Bigr)^2
 \|f(\mathbf{A})\mathbf{b} - \mathbf{y}\|_{\mathbf{A}^\alpha}^2 \le

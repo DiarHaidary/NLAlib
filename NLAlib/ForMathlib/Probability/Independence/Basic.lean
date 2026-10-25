@@ -71,7 +71,7 @@ namespace ProbabilityTheory
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- **Iterated integral against an independent pair** (Tonelli): for independent $U$, $W$ and a
+/-- Iterated integral against an independent pair (Tonelli): for independent $U$, $W$ and a
 measurable $f \ge 0$,
 $$\int f(U, W)\,d\mu = \int\!\!\int f(u, w)\,d\mu_W(w)\,d\mu_U(u)\,,$$
 with $\mu_U$, $\mu_W$ the laws of $U$ and $W$. Upstream candidate. -/
@@ -82,7 +82,7 @@ theorem IndepFun.lintegral_comp_eq_lintegral_lintegral [IsFiniteMeasure μ] {α 
   rw [← lintegral_map' hf.aemeasurable (hU.prodMk hW),
     (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW, lintegral_prod _ hf.aemeasurable]
 
-/-- **Sections of an event of two independent variables.** If $X$ and $Y$ are independent, the
+/-- Sections of an event of two independent variables: if $X$ and $Y$ are independent, the
 section $\{\omega \mid (X(\omega), y) \in E\}$ has probability at most $\delta_1$ for every
 $y \in G$, and $Y \notin G$ has probability at most $\delta_2$, then $(X, Y) \in E$ has
 probability at most $\delta_1 + \delta_2$. Fubini on the joint law $\mu_X \otimes \mu_Y$. Upstream
@@ -231,7 +231,7 @@ theorem IndepFun.integrable_comp_iff [IsFiniteMeasure μ] {α β E : Type*} [Mea
   rw [← (indepFun_iff_map_prod_eq_prod_map_map hU hW).1 hUW] at hf ⊢
   exact (integrable_map_measure hf (hU.prodMk hW)).symm
 
-/-- **A function of some coordinates is independent of another coordinate**: for an independent
+/-- A function of some coordinates is independent of another coordinate: for an independent
 family $(X_i)_i$ of almost everywhere measurable random variables, a measurable $F$ of the whole
 family that depends only on the coordinates in a finite set $s$, and an index $t \notin s$, the
 random variables $F((X_i)_i)$ and $X_t$ are independent. With $s = \{0, \dots, q - 1\}$ and

@@ -266,7 +266,7 @@ theorem HasOrthonormalCols.sub_mul_diagonal_mul_conjTranspose_eq {A : Matrix m n
   rw [one_sub_mul_mul_one_sub_eq_mul_one_sub hV hAU, Matrix.mul_sub, Matrix.mul_one,
     ← Matrix.mul_assoc, hAV]
 
-/-- **The complement of leading singular frames.** If
+/-- The complement of leading singular frames: if
 $\mathbf{A}\mathbf{V} = \mathbf{U}\mathbf{\Sigma}$ and
 $\mathbf{A}^{\mathsf{H}}\mathbf{U} = \mathbf{V}\mathbf{\Sigma}$ for a frame $\mathbf{V}$ and
 $\mathbf{\Sigma} = \operatorname{diag}(\sigma_0(\mathbf{A}), \dots, \sigma_j(\mathbf{A}))$, the

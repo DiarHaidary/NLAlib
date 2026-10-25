@@ -47,7 +47,7 @@ theorem Measure.integral_comp {μ : Measure α} {κ : Kernel α β} {g : β → 
 
 end MeasureTheory
 
-/-- **Convex order from a conditional barycenter.** Let $\kappa$ be a Markov kernel from $\alpha$
+/-- Convex order from a conditional barycenter: let $\kappa$ be a Markov kernel from $\alpha$
 to $\beta$, $\mu$ a measure on $\alpha$, and $X : \alpha \to E$, $Y : \beta \to E$ with
 $Y$ integrable under almost every $\kappa(a)$ and with barycenter
 $\int Y \, d\kappa(a) = X(a)$. Then for every $f$ convex and continuous on a closed set $s$

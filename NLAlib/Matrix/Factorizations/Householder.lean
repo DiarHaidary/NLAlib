@@ -168,7 +168,7 @@ private theorem star_phase_mul (z : 𝕜) :
     rw [star_div₀, star_ofReal, div_mul_eq_mul_div, RCLike.star_def, RCLike.conj_mul, pow_two,
       mul_div_assoc, div_self hz, mul_one]
 
-/-- **The Householder reflector clears a vector**: for the Householder vector $\mathbf{v}$ of
+/-- The Householder reflector clears a vector: for the Householder vector $\mathbf{v}$ of
 $\mathbf{x}$ at $i_0$ and its reflector $\mathbf{H}$,
 $\mathbf{H}\mathbf{x} = \mathbf{x} - \mathbf{v}$, a multiple of $\mathbf{e}_{i_0}$.
 Port of `NLAlib.householder_mulVec_householderVector`. -/

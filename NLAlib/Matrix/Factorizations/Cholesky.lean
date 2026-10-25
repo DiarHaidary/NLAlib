@@ -134,7 +134,7 @@ theorem IsCholesky.det_eq_prod (h : IsCholesky A L) : A.det = ∏ i, L i i ^ 2 :
   refine Finset.prod_congr rfl fun i _ => ?_
   rw [(IsSelfAdjoint.of_nonneg (h.apply_self_pos i).le).star_eq, sq]
 
-/-- **Solving through a Cholesky factorization**: $\mathbf{A}\mathbf{x} = \mathbf{b}$ exactly
+/-- Solving through a Cholesky factorization: $\mathbf{A}\mathbf{x} = \mathbf{b}$ exactly
 when $\mathbf{L}^{\mathsf{H}}\mathbf{x} = \mathbf{L}^{-1}\mathbf{b}$. -/
 theorem IsCholesky.mulVec_eq_iff (h : IsCholesky A L) {x b : n → 𝕜} :
     A *ᵥ x = b ↔ Lᴴ *ᵥ x = L⁻¹ *ᵥ b := by
@@ -289,7 +289,7 @@ theorem _root_.Matrix.PosSemidef.eq_choleskyLower_mul_conjTranspose
     (fun j => (posSemidef_gaussState hA j).diag_nonneg)
     fun j i hj => congrFun ((posSemidef_gaussState hA j).col_eq_zero_of_apply_self_eq_zero hj) i
 
-/-- **Elimination computes the Cholesky factorization** of a positive definite matrix.
+/-- Elimination computes the Cholesky factorization of a positive definite matrix.
 Port of `NLAlib.isCholesky_cholesky_of_posDef`. -/
 theorem _root_.Matrix.PosDef.isCholesky_choleskyLower {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : A.PosDef) : IsCholesky A (choleskyLower A) :=
@@ -298,8 +298,8 @@ theorem _root_.Matrix.PosDef.isCholesky_choleskyLower {A : Matrix (Fin n) (Fin n
       (hA.gaussState_apply_self_pos i),
     hA.posSemidef.eq_choleskyLower_mul_conjTranspose⟩
 
-/-- **Elimination on a Hermitian matrix produces a positive diagonal exactly when the matrix is
-positive definite.** Port of `NLAlib.choleskySucceeds_iff_posDef`. -/
+/-- Elimination on a Hermitian matrix produces a positive diagonal exactly when the matrix is
+positive definite. Port of `NLAlib.choleskySucceeds_iff_posDef`. -/
 theorem _root_.Matrix.IsHermitian.forall_choleskyLower_apply_self_pos_iff
     {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
     (∀ i, 0 < choleskyLower A i i) ↔ A.PosDef := by

@@ -103,7 +103,7 @@ theorem eigenvalue_of_not_isHermitian {A : Matrix n n 𝕜} (hA : ¬ A.IsHermiti
     eigenvalue A k = 0 := by
   rw [eigenvalue, dif_neg fun h => hA h.1]
 
-/-- **Bridge to Mathlib.** On the valid range, `eigenvalue A` is Mathlib's sorted
+/-- Bridge to Mathlib: on the valid range, `eigenvalue A` is Mathlib's sorted
 `Matrix.IsHermitian.eigenvalues₀`. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_eq_eigenvalues₀ [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (i : Fin (Fintype.card n)) : eigenvalue A i = hA.eigenvalues₀ i := by
@@ -216,7 +216,8 @@ the matrix: a Hermitian matrix is
 $\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ for a unitary $\mathbf{U}$ and
 a real $\mathbf{d}$, in no particular order.
 `Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTranspose` is the form with the sorted
-eigenvalues, indexed by `Fin (Fintype.card n)`. -/
+eigenvalues, indexed by `Fin (Fintype.card n)`.
+[HornJohnson2013, Theorem 4.1.5] (locator to check). -/
 theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_eq_mul_diagonal_mul_conjTranspose
     [DecidableEq n] {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ (U : Matrix n n 𝕜) (d : n → ℝ), HasOrthonormalCols U ∧
@@ -265,7 +266,7 @@ theorem _root_.Matrix.IsHermitian.exists_eigenvalue_eq_of_mulVec_eq_smul {A : Ma
   rw [Matrix.mulVec_diagonal, Pi.smul_apply, RCLike.real_smul_eq_coe_mul] at h2
   exact (RCLike.ofReal_injective (mul_right_cancel₀ hi h2)).symm
 
-/-- **The eigenvalues are determined by a sorted unitary diagonalisation.** If
+/-- The eigenvalues are determined by a sorted unitary diagonalisation: if
 $\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\mu}) \mathbf{U}^{\mathsf{H}}$ with
 $\mathbf{U}$ having orthonormal columns indexed by `Fin q`, $q$ the size of $\mathbf{A}$, and
 $\boldsymbol{\mu}$ non-increasing, then $\lambda_i(\mathbf{A}) = \boldsymbol{\mu}_i$ for every
@@ -302,7 +303,7 @@ theorem HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q
   rw [h1]
   exact h2
 
-/-- **The eigenvalues are determined by any unitary diagonalisation**, up to order. If
+/-- The eigenvalues are determined by any unitary diagonalisation, up to order. If
 $\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ with $\mathbf{U}$
 having orthonormal columns indexed by a type $r$ with as many elements as $\mathbf{A}$ has rows,
 then the entries of $\mathbf{d}$ are the eigenvalues of $\mathbf{A}$ in some order. -/

@@ -319,7 +319,7 @@ private theorem three_mul_gaussianPinvSpecNormBound_sq_le {q p : ℕ} (hq : 1 �
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The Gaussian sketch-and-solve excess is spectrally flat**: with
+/-- The Gaussian sketch-and-solve excess is spectrally flat: with
 $\mathbf{E} = (\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$, $q = \operatorname{rank}\mathbf{X}$
 and $4q \le p$,
 $$\mathbb{E}\|\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{E}\|_2^2 \le
@@ -389,7 +389,8 @@ private theorem pinv_mul_mul_sketchAndSolve (A : Matrix m n ℝ) (S₀ : Matrix 
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.L2Operator in
-/-- The Gaussian sketch-and-solve solution is integrable for
+/-- The Gaussian sketch-and-solve solution
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$ is integrable for
 $\operatorname{rank}\mathbf{A} + 1 \le p$. -/
 theorem integrable_sketchAndSolve_of_hasLaw_gaussianMatrix [DecidableEq r]
     (hS : HasLaw S (gaussianMatrix p m) μ) {A : Matrix m n ℝ}
@@ -644,8 +645,9 @@ theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame [Decidab
 
 omit [DecidableEq m] in
 open scoped Matrix.Norms.L2Operator in
-/-- The sketch-and-solve solution with a Haar sketch is integrable for
-$\operatorname{rank}\mathbf{A} + 2 \le p \le m$. -/
+/-- The sketch-and-solve solution
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{Q}^{\mathsf{H}}, \mathbf{B})$ with a Haar sketch is
+integrable for $\operatorname{rank}\mathbf{A} + 2 \le p \le m$. -/
 theorem integrable_sketchAndSolve_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq r]
     (hQ : HasLaw Q (haarFrame m p) μ) (hpm : Fintype.card p ≤ Fintype.card m)
     {A : Matrix m n ℝ} (hA : A.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) :
@@ -746,7 +748,8 @@ theorem integral_sketchAndSolve_of_hasLaw_haarFrame [DecidableEq p] [DecidableEq
 /-! ### Expected relative residual -/
 
 omit [DecidableEq m] in
-/-- The squared Frobenius residual of Gaussian sketch-and-solve is integrable when
+/-- The squared Frobenius residual of Gaussian sketch-and-solve
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$ is integrable when
 $\operatorname{rank}\mathbf{A}+2\le p$. This rewrites the oblique-projection integrability
 result into the algorithm's residual form. -/
 theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix
@@ -758,7 +761,8 @@ theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix
     integrable_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_gaussianMatrix hS A hA B
 
 omit [DecidableEq m] in
-/-- The squared Frobenius residual of Haar sketch-and-solve is integrable when
+/-- The squared Frobenius residual of Haar sketch-and-solve
+$\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{Q}^{\mathsf{H}}, \mathbf{B})$ is integrable when
 $\operatorname{rank}\mathbf{A}+2\le p\le m$. This rewrites the oblique-projection
 integrability result into the algorithm's residual form. -/
 theorem integrable_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame [DecidableEq p]

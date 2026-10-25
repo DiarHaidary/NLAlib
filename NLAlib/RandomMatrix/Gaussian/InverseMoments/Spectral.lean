@@ -615,7 +615,7 @@ theorem integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix
   filter_upwards [ae_specNorm_pinv_rpow_eq hX hrk.le q] with ω hω
   exact hω.symm
 
-/-- **The spectral moments of $\mathbf{G}^{+}$**: for a standard Gaussian $r \times k$ matrix
+/-- The spectral moments of $\mathbf{G}^{+}$: for a standard Gaussian $r \times k$ matrix
 $\mathbf{G}$, writing $r$, $k$ also for $\lvert r \rvert$, $\lvert k \rvert$,
 $$\mathbb{E} \|\mathbf{G}^{+}\|_2^q
 \le \Bigl(\frac{e}{k - r} \sqrt{\frac{k + r - 1}{2}}\Bigr)^q \quad (0 < q \le k - r)$$

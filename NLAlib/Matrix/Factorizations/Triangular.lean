@@ -115,7 +115,7 @@ theorem _root_.Matrix.IsLowerTriangular.mul_apply_self [NonUnitalNonAssocSemirin
     · rw [hA (i := i) (j := k) h, zero_mul]
   · exact fun h => absurd (Finset.mem_univ i) h
 
-/-- **Leading blocks of a product with a lower triangular left factor.** For $\mathbf{L}$ lower
+/-- Leading blocks of a product with a lower triangular left factor: for $\mathbf{L}$ lower
 triangular, any $\mathbf{B}$, and a lower set $s$ of indices, the principal submatrix of
 $\mathbf{L}\mathbf{B}$ on $s$ is the product of the principal submatrices of $\mathbf{L}$ and
 $\mathbf{B}$ on $s$. With $\mathbf{B}$ upper triangular these are the leading blocks of an LU
@@ -134,7 +134,7 @@ theorem _root_.Matrix.IsLowerTriangular.submatrix_mul_of_isLowerSet [NonUnitalNo
     lt_of_not_ge fun hki => hk (Finset.mem_coe.mp (hs hki (Finset.mem_coe.mpr i.2)))
   rw [hL (i := (i : n)) (j := k) hik, zero_mul]
 
-/-- **Leading blocks of a product with an upper triangular right factor.** For any $\mathbf{A}$,
+/-- Leading blocks of a product with an upper triangular right factor: for any $\mathbf{A}$,
 $\mathbf{U}$ upper triangular, and a lower set $s$ of indices, the principal submatrix of
 $\mathbf{A}\mathbf{U}$ on $s$ is the product of the principal submatrices of $\mathbf{A}$ and
 $\mathbf{U}$ on $s$. -/
@@ -510,7 +510,7 @@ private theorem backSubstState_apply_of_add_lt (U : Matrix (Fin n) (Fin n) K) (b
   rw [backSubstState_eq, Function.comp_apply]
   exact forwardSubstState_apply_of_le _ _ (by rw [Fin.val_rev]; omega)
 
-/-- **Back substitution past a zero block, the trailing entries**: if $\mathbf{U}_{i,j} = 0$
+/-- Back substitution past a zero block, the trailing entries: if $\mathbf{U}_{i,j} = 0$
 whenever $i \ge r$ or $j \ge r$, the entries of $\mathsf{backSubst}(\mathbf{U}, \mathbf{b})$ from
 $r$ on are $0$, for every $\mathbf{b}$: their pivots are zero and Lean's $0^{-1} = 0$. -/
 theorem backSubst_apply_eq_zero_of_le {r : ℕ} {U : Matrix (Fin n) (Fin n) K}
@@ -556,7 +556,7 @@ private theorem backSubstState_castLE_of_apply_eq_zero {r : ℕ} (h : r ≤ n)
       hsum, ih]
     simp only [hiff, Matrix.submatrix_apply, Function.comp_apply]
 
-/-- **Back substitution past a zero block, the leading entries**: if $\mathbf{U}_{i,j} = 0$
+/-- Back substitution past a zero block, the leading entries: if $\mathbf{U}_{i,j} = 0$
 whenever $i \ge r$ or $j \ge r$, the first $r$ entries of $\mathsf{backSubst}(\mathbf{U},
 \mathbf{b})$
 are back substitution on the leading $r \times r$ block. -/

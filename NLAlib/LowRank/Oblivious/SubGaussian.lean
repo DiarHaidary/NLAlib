@@ -121,9 +121,9 @@ private theorem aemeasurable_inv_sqrt_card_smul_of_isSubgaussianVector {c : ℝ�
     |>.comp_aemeasurable h).congr (ae_of_all _ fun ω => ?_)
   simp only [Function.comp_apply, id, Matrix.conjTranspose_conjTranspose]
 
-/-- **The randomized SVD with a sub-Gaussian test matrix, relative error**: if the sketch
-$\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian rows with proxy $c$,
-$\varepsilon, \delta > 0$, <!-- value subgaussianEmbeddingDim c k (1/2) (\delta/2) -->
+/-- **The randomized SVD with a sub-Gaussian test matrix, relative error**: for $\ell$ nonempty,
+if the sketch $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian rows with
+proxy $c$, $\varepsilon, \delta > 0$, <!-- value subgaussianEmbeddingDim c k (1/2) (\delta/2) -->
 $\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/2)))/(16C (1/2)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$, and
 $\ell \ge 8(16c^2 - 1)k/(\varepsilon\delta)$, then
@@ -336,7 +336,7 @@ theorem exists_forall_measureReal_frobNorm_sub_rsvd_sq_gt_le_of_isSubgaussianVec
 set_option linter.style.longLine false in
 /-- **Early-truncated randomized SVD with a sub-Gaussian test matrix, tail**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ has independent, isotropic, sub-Gaussian rows with proxy $c$,
-$0 < \varepsilon \le 1$, $\delta > 0$, at
+$\ell$ nonempty, $0 < \varepsilon \le 1$, $\delta > 0$, at
 least <!-- value subgaussianEmbeddingDim c k (\varepsilon/6) (\delta/3) -->
 $\ell \ge 25 c^2 (k \log 21 + \log(2/(\delta/3)))/(16C (\varepsilon/6)^2)$,
 with <!-- value subgaussianJLConstant -->$C = 1/36$, and

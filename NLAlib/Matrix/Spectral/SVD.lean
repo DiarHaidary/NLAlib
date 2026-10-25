@@ -439,7 +439,7 @@ theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : 
   rw [(singularValues_eq_zero_iff A).mpr (hk.trans hki), zero_pow two_ne_zero,
     RCLike.ofReal_zero]
 
-/-- **Existence of a split singular value decomposition.** For $k + d$ between the rank of
+/-- Existence of a split singular value decomposition: for $k + d$ between the rank of
 $\mathbf{A}$ and its smaller dimension, $\mathbf{A}$ has an SVD whose first block carries the $k$
 largest singular values $\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A})$ and whose second
 block carries the next $d$, $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$.
@@ -564,7 +564,7 @@ private theorem svdU_svdV_eq_choose (A : Matrix m n 𝕜) :
   rw [svdU, svdV, dif_pos (exists_isSVD_forall_toLex_le A),
     dif_pos (exists_isSVD_forall_toLex_le A)]
 
-/-- **The chosen SVD is an SVD**: $\mathbf{A} = \mathsf{svdU}(\mathbf{A})\,\mathbf{\Sigma}\,
+/-- The chosen SVD is an SVD: $\mathbf{A} = \mathsf{svdU}(\mathbf{A})\,\mathbf{\Sigma}\,
 \mathsf{svdV}(\mathbf{A})^{\mathsf{H}}$ with orthonormal columns and $\mathbf{\Sigma} =
 \operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}$, $r = \min(\lvert m\rvert, \lvert n\rvert)$, the
 singular values in non-increasing order. -/
@@ -573,7 +573,7 @@ theorem isSVD_svdU_svdV (A : Matrix m n 𝕜) :
   have h := (exists_isSVD_forall_toLex_le A).choose_spec.1
   rwa [← svdU_svdV_eq_choose] at h
 
-/-- **Construction lemma** (consumed by `NLAlib.measurable_svdU`; not needed for using the SVD):
+/-- Construction lemma (consumed by `NLAlib.measurable_svdU`; not needed for using the SVD):
 $(\mathsf{svdU}(\mathbf{A}), \mathsf{svdV}(\mathbf{A}))$ has the lexicographically least
 coordinates in the basis `Module.finBasis ℝ _` among the thin SVDs of $\mathbf{A}$ with
 $\mathbf{\Sigma} = \operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}$. -/

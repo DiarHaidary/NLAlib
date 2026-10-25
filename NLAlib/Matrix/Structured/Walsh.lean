@@ -90,7 +90,7 @@ theorem walshHadamard_add_apply (x z y : Fin b → ZMod 2) :
   simp only [walshHadamard_apply, Pi.add_apply, add_mul, Finset.sum_add_distrib]
   exact ite_add_eq_zero _ _
 
-/-- **Character sums**: a row of the Walsh–Hadamard matrix sums to $2^b$ for the zero string
+/-- Character sums: a row of the Walsh–Hadamard matrix sums to $2^b$ for the zero string
 and to $0$ otherwise. Port of `NLAlib.sum_walshCharacter`. -/
 theorem sum_walshHadamard_apply (x : Fin b → ZMod 2) :
     ∑ y, walshHadamard R b x y = if x = 0 then (2 : R) ^ b else 0 := by
@@ -111,7 +111,7 @@ theorem sum_walshHadamard_apply (x : Fin b → ZMod 2) :
     · ext j
       simp only [Pi.add_apply, add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
-/-- **The Walsh–Hadamard matrix squares to a multiple of the identity**:
+/-- The Walsh–Hadamard matrix squares to a multiple of the identity:
 $\mathbf{H}\mathbf{H} = 2^b \mathbf{I}$. Port of `NLAlib.walshMatrix_mul_self`. -/
 theorem walshHadamard_mul_self (b : ℕ) :
     walshHadamard R b * walshHadamard R b = (2 : R) ^ b • (1 : Matrix _ _ R) := by
@@ -146,7 +146,7 @@ theorem isHadamard_walshHadamard [StarRing R] (b : ℕ) : (walshHadamard R b).Is
   · rw [hH, hcard, walshHadamard_mul_self]
   · rw [hH, hcard, walshHadamard_mul_self]
 
-/-- **The normalised Walsh–Hadamard matrix is orthogonal**: over any `RCLike` field,
+/-- The normalised Walsh–Hadamard matrix is orthogonal: over any `RCLike` field,
 $2^{-b/2} \mathbf{H}$ has orthonormal columns.
 Port of `NLAlib.walshMatrix_transpose_mul_self`. -/
 theorem hasOrthonormalCols_smul_walshHadamard {𝕜 : Type*} [RCLike 𝕜] (b : ℕ) :
@@ -171,7 +171,7 @@ theorem norm_smul_walshHadamard_apply {𝕜 : Type*} [RCLike 𝕜] (x y : Fin b 
   rw [Matrix.smul_apply, norm_smul, h1, mul_one, Real.norm_eq_abs, sq_abs, inv_pow,
     Real.sq_sqrt (by positivity)]
 
-/-- **The normalised Walsh–Hadamard matrix is a bounded orthonormal transform** with $\beta = 1$:
+/-- The normalised Walsh–Hadamard matrix is a bounded orthonormal transform with $\beta = 1$:
 it is orthogonal and $2^b \lvert (2^{-b/2} \mathbf{H})_{x,y} \rvert^2 = 1$. The hypothesis of the
 subsampled randomized Hadamard transform's theorems (`NLAlib.Sketching.Structured.SRHT`). -/
 theorem isBoundedOrthonormal_smul_walshHadamard {𝕜 : Type*} [RCLike 𝕜] (b : ℕ) :

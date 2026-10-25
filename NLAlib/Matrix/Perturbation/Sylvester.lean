@@ -14,7 +14,8 @@ public import NLAlib.Matrix.Spectral.Weyl
 
 For matrices $\mathbf{L}$ and $\mathbf{M}$ whose spectra are separated, the Sylvester operator
 $\mathbf{X} \mapsto \mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}$ is bounded below:
-$\delta \|\mathbf{X}\| \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|$. These bounds are the
+$\delta \|\mathbf{X}\|_{\Phi} \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$.
+These bounds are the
 engine of the $\sin \Theta$ theorems.
 
 Two regimes are covered. When one spectrum lies in a disc and the other outside a larger concentric
@@ -169,7 +170,8 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue [D
 $\mathbf{L} \preceq (\alpha - \delta)\mathbf{I}$ and $\alpha\mathbf{I} \preceq \mathbf{M}$, then
 $\delta \|\mathbf{X}\|_{\Phi} \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$ in every
 unitarily invariant norm $\|\cdot\|_{\Phi}$.
-Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_one_sided`. -/
+Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_one_sided`.
+[Bhatia1997, §VII.2] (locator to check). -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le [DecidableEq m]
     [DecidableEq n] (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} {α δ : ℝ}
     (hL : L ≤ (α - δ) • (1 : Matrix m m 𝕜)) (hM : α • (1 : Matrix n n 𝕜) ≤ M)

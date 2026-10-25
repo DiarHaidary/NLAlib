@@ -31,7 +31,7 @@ namespace Lagrange
 
 variable {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
 
-/-- **Nodal weights commute with ring homomorphisms**: for a ring homomorphism $f$ between
+/-- Nodal weights commute with ring homomorphisms: for a ring homomorphism $f$ between
 fields, the nodal weights of the nodes $f(v_i)$ are the images of those of $v_i$. Used with
 `algebraMap ℝ 𝕜` for real nodes viewed in $\Bbbk$. -/
 theorem nodalWeight_map {K : Type*} [Field K] (f : F →+* K) (s : Finset ι) (v : ι → F) (i : ι) :

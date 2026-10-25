@@ -80,7 +80,7 @@ and for an invertible matrix it is the classical
 $\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$ (`pseudoConditionNumber_of_isUnit`);
 theorems about the classical condition number assume invertibility or full column rank.
 [GolubVanLoan2013, §2.6.2 and §5.3.7]. Port of `NLAlib.moorePenroseConditionNumber`; the
-prototype's `ℝ≥0∞`-valued `conditionNumber` of a square matrix is not reproduced. -/
+prototype's $[0,\infty]$-valued `conditionNumber` of a square matrix is not reproduced. -/
 noncomputable def pseudoConditionNumber (A : Matrix m n 𝕜) : ℝ :=
   specNorm A * specNorm (pinv A)
 
@@ -100,7 +100,7 @@ Port of `NLAlib.moorePenroseConditionNumber_zero`. -/
 theorem pseudoConditionNumber_zero : pseudoConditionNumber (0 : Matrix m n 𝕜) = 0 := by
   rw [pseudoConditionNumber, specNorm_zero, zero_mul]
 
-/-- **The pseudo-condition number of a nonzero matrix is at least one:**
+/-- The pseudo-condition number of a nonzero matrix is at least one:
 $1 \le \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$ for $\mathbf{A} \ne \mathbf{0}$.
 Port of `NLAlib.one_le_moorePenroseConditionNumber`. -/
 theorem one_le_pseudoConditionNumber {A : Matrix m n 𝕜} (hA : A ≠ 0) :
@@ -114,7 +114,7 @@ theorem one_le_pseudoConditionNumber {A : Matrix m n 𝕜} (hA : A ≠ 0) :
         mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) (specNorm_nonneg _)
   exact le_of_mul_le_mul_right hbound hpos
 
-/-- **The pseudo-condition number as a ratio of singular values**: for
+/-- The pseudo-condition number as a ratio of singular values: for
 $k + 1 = \operatorname{rank} \mathbf{A}$,
 $\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 = \sigma_0(\mathbf{A}) / \sigma_k(\mathbf{A})$.
 Port of `NLAlib.moorePenroseConditionNumber_eq_singularValues_ratio`. -/
@@ -123,7 +123,7 @@ theorem pseudoConditionNumber_eq_singularValues_div (A : Matrix m n 𝕜) {k : �
     pseudoConditionNumber A = singularValues A 0 / singularValues A k := by
   rw [pseudoConditionNumber, specNorm_pinv A hk, singularValues_zero_eq_specNorm, div_eq_mul_inv]
 
-/-- **Agreement with the classical condition number at full column rank.** If $\mathbf{A}$ has
+/-- Agreement with the classical condition number at full column rank: if $\mathbf{A}$ has
 full column rank, its pseudo-condition number is the classical
 $\kappa(\mathbf{A}) = \sigma_0(\mathbf{A}) / \sigma_{\min}(\mathbf{A})$, written
 $\|\mathbf{A}\|_2 / \sigma_k(\mathbf{A})$ with $k + 1 = \lvert n \rvert$.
@@ -197,7 +197,7 @@ theorem HasOrthonormalCols.pseudoConditionNumber_eq_one [DecidableEq n] [Nonempt
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : pseudoConditionNumber Q = 1 := by
   rw [pseudoConditionNumber, hQ.pinv_eq, specNorm_conjTranspose, hQ.specNorm_eq_one, mul_one]
 
-/-- **Two-sided Gram bounds control the pseudo-condition number.** If
+/-- Two-sided Gram bounds control the pseudo-condition number: if
 $a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq b\mathbf{I}$ with $0 < a$ and
 $0 \le b$, then $(\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2)^2 \le b / a$. With
 $\mathbf{A} = \mathbf{S}\mathbf{U}$ this is the conditioning of a sketched orthonormal basis. -/
@@ -322,7 +322,7 @@ theorem frobPseudoConditionNumber_conjTranspose (A : Matrix m n 𝕜) :
   rw [frobPseudoConditionNumber, frobNorm_conjTranspose, pinv_conjTranspose,
     specNorm_conjTranspose, frobPseudoConditionNumber]
 
-/-- **The Frobenius pseudo-condition number as a ratio**: for
+/-- The Frobenius pseudo-condition number as a ratio: for
 $k + 1 = \operatorname{rank}\mathbf{A}$,
 $$\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2 =
 \frac{\|\mathbf{A}\|_{\mathsf{F}}}{\sigma_k(\mathbf{A})}\,,$$
@@ -339,7 +339,7 @@ theorem pseudoConditionNumber_le_frobPseudoConditionNumber (A : Matrix m n 𝕜)
     pseudoConditionNumber A ≤ frobPseudoConditionNumber A :=
   mul_le_mul_of_nonneg_right (specNorm_le_frobNorm A) (specNorm_nonneg _)
 
-/-- **The Frobenius pseudo-condition number of a nonzero matrix is at least one:**
+/-- The Frobenius pseudo-condition number of a nonzero matrix is at least one:
 $1 \le \|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$ for $\mathbf{A} \ne \mathbf{0}$, so the
 Kaczmarz rate $1 - (\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2)^{-2}$ lies in $[0, 1)$. -/
 theorem one_le_frobPseudoConditionNumber {A : Matrix m n 𝕜} (hA : A ≠ 0) :

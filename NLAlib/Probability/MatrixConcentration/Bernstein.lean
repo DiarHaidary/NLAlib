@@ -322,9 +322,9 @@ section Hermitian
 
 variable {X : ι → Ω → Matrix n n 𝕜}
 
-/-- **Matrix Bernstein**, Hermitian summands: for finitely many independent, centred,
-square-integrable random matrices with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely, $L > 0$,
-$v = \|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$ and $t \ge 0$,
+/-- **Matrix Bernstein**, Hermitian summands: for $n$ nonempty, finitely many independent,
+centred, square-integrable random matrices with $\mathbf{X}_k \preceq L\mathbf{I}$ almost surely,
+$L > 0$, $v = \|\sum_k \mathbb{E}\mathbf{X}_k^2\|_2$ and $t \ge 0$,
 $$\mathbb{P}\Bigl[\lambda_0\Bigl(\sum_k \mathbf{X}_k\Bigr) \ge t\Bigr]
 \le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
 [Tropp2015, Theorem 6.6.1]. -/
@@ -395,9 +395,9 @@ section Rectangular
 
 variable {m : Type*} [Fintype m] [DecidableEq m] {S : ι → Ω → Matrix m n 𝕜}
 
-/-- **Matrix Bernstein**, rectangular summands: for finitely many independent, centred,
-square-integrable random matrices $\mathbf{S}_k$ with $\|\mathbf{S}_k\|_2 \le L$ almost surely,
-$L > 0$ and $t \ge 0$,
+/-- **Matrix Bernstein**, rectangular summands: for $n$ nonempty, finitely many independent,
+centred, square-integrable random matrices $\mathbf{S}_k$ with $\|\mathbf{S}_k\|_2 \le L$ almost
+surely, $L > 0$ and $t \ge 0$,
 $$\mathbb{P}\Bigl[\Bigl\|\sum_k \mathbf{S}_k\Bigr\|_2 \ge t\Bigr]
 \le (\lvert m\rvert + \lvert n\rvert) \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)$$
 with variance $v = \max\bigl(\|\sum_k \mathbb{E}\mathbf{S}_k\mathbf{S}_k^{\mathsf{H}}\|_2,
@@ -459,7 +459,8 @@ end Rectangular
 Bernstein: for finitely many independent, centred, square-integrable $X_k \le L$ almost surely,
 $L > 0$ and $t \ge 0$,
 $$\mathbb{P}\Bigl[\sum_k X_k \ge t\Bigr]
-\le \exp\Bigl(\frac{-t^2/2}{\sum_k \mathbb{E}[X_k^2] + L t / 3}\Bigr)\,.$$ -/
+\le \exp\Bigl(\frac{-t^2/2}{\sum_k \mathbb{E}[X_k^2] + L t / 3}\Bigr)\,.$$
+[BoucheronLugosiMassart2013, Theorem 2.10] (locator to check). -/
 theorem measureReal_sum_ge_le_bernstein {X : ι → Ω → ℝ} (hind : iIndepFun X μ) (hL : 0 < L)
     (hX2 : ∀ k, MemLp (X k) 2 μ) (hmean : ∀ k, ∫ ω, X k ω ∂μ = 0)
     (hle : ∀ k, ∀ᵐ ω ∂μ, X k ω ≤ L) {t : ℝ} (ht : 0 ≤ t) :

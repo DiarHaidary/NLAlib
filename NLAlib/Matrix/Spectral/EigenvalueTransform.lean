@@ -308,7 +308,7 @@ theorem eigenvalue_real_smul_one [DecidableEq n] (c : ℝ) {k : ℕ} (hk : k < F
   have h := (Matrix.isHermitian_zero (α := 𝕜) (n := n)).eigenvalue_add_smul_one c hk
   rwa [zero_add, eigenvalue_zero, zero_add] at h
 
-/-- **Invariance under unitary similarity.** If $\mathbf{U}$ has orthonormal columns and as many
+/-- Invariance under unitary similarity: if $\mathbf{U}$ has orthonormal columns and as many
 columns as rows, $\lambda_k(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}) = \lambda_k(\mathbf{A})$
 for every $k$. No hypothesis on $\mathbf{A}$ is needed: both sides are zero when $\mathbf{A}$ is
 not Hermitian. -/

@@ -74,7 +74,7 @@ structure IsGradedKrylovBasis (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ}
 
 variable {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} {Q : Matrix n (Fin q) 𝕜}
 
-/-- **Constructor**: orthonormal columns with column $j$ in $\mathcal{K}_{j+1}(\mathbf{A},
+/-- Constructor: orthonormal columns with column $j$ in $\mathcal{K}_{j+1}(\mathbf{A},
 \mathbf{b})$ form a graded Krylov basis. -/
 theorem HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem (hQ : HasOrthonormalCols Q)
     (h : ∀ j : Fin q, Q.col j ∈ krylovSpace A b ((j : ℕ) + 1)) : IsGradedKrylovBasis A b Q := by
@@ -144,17 +144,21 @@ the grade on are zero, so it has orthonormal columns exactly for $q \le \nu$. -/
 noncomputable def arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) : Matrix n (Fin q) 𝕜 :=
   gramSchmidtQ (krylovMatrix A b q)
 
-/-- The canonical basis spans the Krylov space, for every $q$. -/
+/-- The canonical basis $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$ spans the Krylov space,
+for every $q$. -/
 theorem range_arnoldiMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     LinearMap.range (arnoldiMatrix A b q).mulVecLin = krylovSpace A b q :=
   range_gramSchmidtQ _
 
-/-- The first $q$ columns of a longer canonical basis form the shorter one. -/
+/-- The first $q$ columns of a longer canonical basis
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q')$ form the shorter one
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$. -/
 theorem arnoldiMatrix_submatrix_castLE (A : Matrix n n 𝕜) (b : n → 𝕜) {q q' : ℕ}
     (h : q ≤ q') : (arnoldiMatrix A b q').submatrix id (Fin.castLE h) = arnoldiMatrix A b q := by
   rw [arnoldiMatrix, arnoldiMatrix, ← gramSchmidtQ_submatrix_castLE, krylovMatrix_submatrix_castLE]
 
-/-- The canonical basis has orthonormal columns exactly up to the grade. -/
+/-- The canonical basis $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$ has orthonormal columns
+exactly up to the grade. -/
 theorem hasOrthonormalCols_arnoldiMatrix_iff :
     HasOrthonormalCols (arnoldiMatrix A b q) ↔ q ≤ krylovGrade A b := by
   refine ⟨fun h => ?_, fun h => hasOrthonormalCols_gramSchmidtQ
@@ -205,7 +209,8 @@ theorem IsGradedKrylovBasis.eq_arnoldiMatrix (hQ : IsGradedKrylovBasis A b Q)
         (fun h => (not_le.mpr hij') (Set.mem_Iic.mp h)) hj
   exact (hQR.unique (isQR_gramSchmidt hK) hpos (gramSchmidtR_apply_self_pos hK)).1
 
-/-- The canonical basis sees $\mathbf{b}$ in its first coordinate only:
+/-- The canonical basis $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q + 1)$ sees $\mathbf{b}$
+in its first coordinate only:
 $\mathbf{Q}^{\mathsf{H}}\mathbf{b} = \|\mathbf{b}\|\mathbf{e}_0$, for every $q$. -/
 theorem conjTranspose_arnoldiMatrix_mulVec_self (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     (arnoldiMatrix A b (q + 1))ᴴ *ᵥ b = (‖WithLp.toLp 2 b‖ : 𝕜) • Pi.single 0 1 := by
@@ -267,7 +272,8 @@ no separate name for the column. -/
 
 section Columns
 
-/-- Column $j$ of the canonical basis does not depend on the number of columns $q > j$. -/
+/-- Column $j$ of the canonical basis $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, q)$ does not
+depend on the number of columns $q > j$. -/
 theorem arnoldiMatrix_col_eq_col_last (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} (j : Fin q) :
     (arnoldiMatrix A b q).col j = (arnoldiMatrix A b ((j : ℕ) + 1)).col (Fin.last j) := by
   rw [← arnoldiMatrix_submatrix_castLE A b (Nat.succ_le_of_lt j.2)]
@@ -275,8 +281,9 @@ theorem arnoldiMatrix_col_eq_col_last (A : Matrix n n 𝕜) (b : n → 𝕜) {q 
   simp only [Matrix.col_apply, Matrix.submatrix_apply, id_eq]
   congr 1
 
-/-- Distinct canonical columns are orthogonal (each is a unit vector or zero):
-$\mathbf{q}_i^{\mathsf{H}}\mathbf{q}_k = 0$ for $i \ne k$. -/
+/-- Distinct canonical columns, the last columns of $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b},
+i + 1)$ and $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, k + 1)$, are orthogonal (each is a unit
+vector or zero): $\mathbf{q}_i^{\mathsf{H}}\mathbf{q}_k = 0$ for $i \ne k$. -/
 theorem star_arnoldiMatrix_col_last_dotProduct_of_ne (A : Matrix n n 𝕜) (b : n → 𝕜) {i k : ℕ}
     (hik : i ≠ k) :
     star ((arnoldiMatrix A b (i + 1)).col (Fin.last i)) ⬝ᵥ
@@ -289,7 +296,8 @@ theorem star_arnoldiMatrix_col_last_dotProduct_of_ne (A : Matrix n n 𝕜) (b : 
     Matrix.diagonal_apply_ne _ (fun h => hik (congrArg Fin.val h))] at h
   exact h
 
-/-- The Gram–Schmidt coefficients of the Krylov matrix against the canonical columns:
+/-- The Gram–Schmidt coefficients of the Krylov matrix against the canonical columns of
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, i + 1)$:
 $r_{ij} = \mathbf{q}_i^{\mathsf{H}}\mathbf{A}^j\mathbf{b}$. -/
 theorem gramSchmidtR_krylovMatrix_apply (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} (i j : Fin q) :
     gramSchmidtR (krylovMatrix A b q) i j =
@@ -297,13 +305,15 @@ theorem gramSchmidtR_krylovMatrix_apply (A : Matrix n n 𝕜) (b : n → 𝕜) {
   rw [gramSchmidtR, conjTranspose_mul_apply, ← arnoldiMatrix, arnoldiMatrix_col_eq_col_last]
   rfl
 
-/-- Column $j$ lies in $\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{b})$. -/
+/-- Column $j$ of $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 1)$ lies in
+$\mathcal{K}_{j+1}(\mathbf{A}, \mathbf{b})$. -/
 theorem arnoldiMatrix_col_last_mem_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) :
     (arnoldiMatrix A b (j + 1)).col (Fin.last j) ∈ krylovSpace A b (j + 1) := by
   rw [← range_arnoldiMatrix A b (j + 1)]
   exact ⟨Pi.single (Fin.last j) 1, by rw [Matrix.mulVecLin_apply, Matrix.mulVec_single_one]⟩
 
-/-- **The Gram–Schmidt recursion for the canonical columns**:
+/-- The Gram–Schmidt recursion for the canonical columns of
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 1)$:
 $r_j\mathbf{q}_j = \mathbf{A}^j\mathbf{b} - \mathbf{y}$ for some
 $\mathbf{y} \in \mathcal{K}_j(\mathbf{A}, \mathbf{b})$. -/
 theorem exists_gramSchmidtR_smul_arnoldiMatrix_col_last (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) :
@@ -321,7 +331,8 @@ theorem exists_gramSchmidtR_smul_arnoldiMatrix_col_last (A : Matrix n n 𝕜) (b
   rw [Fin.lt_def, Fin.val_last] at hk'
   exact krylovSpace_mono A b hk' (arnoldiMatrix_col_last_mem_krylovSpace A b k)
 
-/-- Column $i$ is orthogonal to $\mathcal{K}_j(\mathbf{A}, \mathbf{b})$ for $j \le i$. -/
+/-- Column $i$ of $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, i + 1)$ is orthogonal to
+$\mathcal{K}_j(\mathbf{A}, \mathbf{b})$ for $j \le i$. -/
 theorem star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem (A : Matrix n n 𝕜) (b : n → 𝕜)
     {i j : ℕ} (hij : j ≤ i) {x : n → 𝕜} (hx : x ∈ krylovSpace A b j) :
     star ((arnoldiMatrix A b (i + 1)).col (Fin.last i)) ⬝ᵥ x = 0 := by
@@ -334,8 +345,10 @@ theorem star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem (A : Matrix n n �
     exact star_arnoldiMatrix_col_last_dotProduct_of_ne A b (by omega)
   rw [Matrix.mulVecLin_apply, Matrix.dotProduct_mulVec, h0, zero_dotProduct]
 
-/-- **The canonical compression is Hessenberg**, entrywise:
-$\mathbf{q}_i^{\mathsf{H}}\mathbf{A}\mathbf{q}_j = 0$ for $j + 1 < i$, for every $\mathbf{A}$. -/
+/-- The canonical compression is Hessenberg, entrywise, for the last columns of
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, i + 1)$ and $\mathsf{arnoldiMatrix}(\mathbf{A},
+\mathbf{b}, j + 1)$: $\mathbf{q}_i^{\mathsf{H}}\mathbf{A}\mathbf{q}_j = 0$ for $j + 1 < i$, for
+every $\mathbf{A}$. -/
 theorem star_arnoldiMatrix_col_last_dotProduct_mulVec_of_lt (A : Matrix n n 𝕜) (b : n → 𝕜)
     {i j : ℕ} (h : j + 1 < i) :
     star ((arnoldiMatrix A b (i + 1)).col (Fin.last i)) ⬝ᵥ
@@ -343,7 +356,7 @@ theorem star_arnoldiMatrix_col_last_dotProduct_mulVec_of_lt (A : Matrix n n 𝕜
   star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem A b (by omega : j + 1 + 1 ≤ i)
     (mulVec_mem_krylovSpace_succ (arnoldiMatrix_col_last_mem_krylovSpace A b j))
 
-/-- **The Gram–Schmidt coefficient vanishes exactly from the grade on**: $r_j = 0$ iff
+/-- The Gram–Schmidt coefficient vanishes exactly from the grade on: $r_j = 0$ iff
 $\nu \le j$. -/
 theorem gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff {A : Matrix n n 𝕜} {b : n → 𝕜}
     {j : ℕ} :
@@ -357,14 +370,15 @@ theorem gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff {A : Matrix n n 𝕜} {
   · exact (gramSchmidtR_krylovMatrix_apply A b (Fin.last j) (Fin.last j)).trans
       (star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem A b le_rfl h)
 
-/-- **The canonical column vanishes exactly from the grade on**: $\mathbf{q}_j = \mathbf{0}$ iff
+/-- The canonical column vanishes exactly from the grade on: the last column of
+$\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 1)$, $\mathbf{q}_j$, is $\mathbf{0}$ iff
 $\nu \le j$. -/
 theorem arnoldiMatrix_col_last_eq_zero_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {j : ℕ} :
     (arnoldiMatrix A b (j + 1)).col (Fin.last j) = 0 ↔ krylovGrade A b ≤ j := by
   rw [arnoldiMatrix, gramSchmidtQ_col_eq_zero_iff, gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff]
 
-/-- Below the grade the canonical column is a unit vector: $\|\mathbf{q}_j\| = 1$ for
-$j < \nu$. -/
+/-- Below the grade the canonical column of $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 1)$
+is a unit vector: $\|\mathbf{q}_j\| = 1$ for $j < \nu$. -/
 theorem norm_arnoldiMatrix_col_last {A : Matrix n n 𝕜} {b : n → 𝕜} {j : ℕ}
     (h : j < krylovGrade A b) :
     ‖WithLp.toLp 2 ((arnoldiMatrix A b (j + 1)).col (Fin.last j))‖ = 1 := by
@@ -378,9 +392,10 @@ theorem norm_arnoldiMatrix_col_last {A : Matrix n n 𝕜} {b : n → 𝕜} {j : 
   exact (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).mp h1
 
 /-- **The canonical Arnoldi step**, for every $\mathbf{A}$ and $j$: with $\mathbf{q}_j$ column
-$j$ of the canonical basis and $\mathbf{w} = (\mathbf{I} - \mathbf{P}_{\mathbf{K}_{j+1}})
-\mathbf{A}\mathbf{q}_j$, column $j + 1$ is $\mathbf{w}/\|\mathbf{w}\|$ (zero when
-$\mathbf{w} = \mathbf{0}$, which happens exactly from the grade on). [Saad2003, §6.3]. -/
+$j$ of the canonical basis $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 2)$ and
+$\mathbf{w} = (\mathbf{I} - \mathbf{P}_{\mathbf{K}_{j+1}})\mathbf{A}\mathbf{q}_j$, column $j + 1$ is
+$\mathbf{w}/\|\mathbf{w}\|$ (zero when $\mathbf{w} = \mathbf{0}$, which happens exactly from the
+grade on). [Saad2003, §6.3]. -/
 theorem arnoldiMatrix_col_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) :
     (arnoldiMatrix A b (j + 2)).col (Fin.last (j + 1)) =
       (‖WithLp.toLp 2 ((1 - rangeProjector (krylovMatrix A b (j + 1))) *ᵥ
@@ -448,8 +463,9 @@ theorem arnoldiMatrix_col_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) 
     RCLike.norm_ofReal, abs_of_pos hc, smul_smul, ← RCLike.ofReal_inv, ← RCLike.ofReal_mul,
     inv_mul_cancel₀ hc.ne', RCLike.ofReal_one, one_smul]
 
-/-- **The rectangular Hessenberg matrix** $\underline{\mathbf{H}}_q =
-\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$ is the first $q$ columns of the square
+/-- The rectangular Hessenberg matrix $\underline{\mathbf{H}}_q =
+\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$, with $\mathbf{Q}_m =
+\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, m)$, is the first $q$ columns of the square
 compression $\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_{q+1}$, so the Lanczos tridiagonal
 matrix of size $q + 1$ gives it for Hermitian $\mathbf{A}$. -/
 theorem submatrix_conjTranspose_arnoldiMatrix_mul_mul_arnoldiMatrix_castSucc

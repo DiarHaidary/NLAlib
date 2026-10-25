@@ -112,7 +112,7 @@ theorem _root_.Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq {A : Matrix n n
   rw [← cfc_polynomial p A hsa]
   exact cfc_congr fun x hx => (h x hx).symm
 
-/-- **The nodal polynomial of a set containing the spectrum annihilates a Hermitian matrix**:
+/-- The nodal polynomial of a set containing the spectrum annihilates a Hermitian matrix:
 if $\sigma(\mathbf{A}) \subseteq s$ then $\pi_s(\mathbf{A}) = \mathbf{0}$ for
 $\pi_s(z) = \prod_{\theta \in s}(z - \theta)$ (`Lagrange.nodal s id`). -/
 theorem _root_.Matrix.IsHermitian.aeval_nodal_eq_zero {A : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -121,7 +121,7 @@ theorem _root_.Matrix.IsHermitian.aeval_nodal_eq_zero {A : Matrix n n 𝕜} (hA 
   rw [← cfc_polynomial (Lagrange.nodal s id) A hA', ← cfc_const_zero ℝ A]
   exact cfc_congr fun x hx => Lagrange.eval_nodal_at_node (v := id) (Finset.mem_coe.mp (hs hx))
 
-/-- **Every function of a Hermitian matrix is a polynomial in it** of degree less than the size:
+/-- Every function of a Hermitian matrix is a polynomial in it of degree less than the size:
 $f(\mathbf{A}) = p(\mathbf{A})$ for a real polynomial $p$ of degree less than $\lvert n \rvert$,
 so $f(\mathbf{A})\mathbf{b}$ lies in the Krylov space of $\mathbf{A}$ and $\mathbf{b}$.
 Port of `NLAlib.cfc_eq_aeval_interpolate`. -/
@@ -137,7 +137,7 @@ theorem _root_.Matrix.IsHermitian.exists_cfc_eq_aeval {A : Matrix n n 𝕜} (hA 
     exact Lagrange.eval_interpolate_at_node (v := id) f (Set.injOn_id _)
       (Finset.mem_image_of_mem _ (Finset.mem_univ i))
 
-/-- **One polynomial for two matrices**: for any square matrices $\mathbf{M}$, $\mathbf{N}$
+/-- One polynomial for two matrices: for any square matrices $\mathbf{M}$, $\mathbf{N}$
 (of possibly different sizes) and $f : \mathbb{R} \to \mathbb{R}$, some real polynomial $p$
 satisfies $p(x) = f(x)$ on the real spectra of both, the Lagrange interpolant on their union,
 which is finite. With `Matrix.IsHermitian.cfc_eq_aeval_of_forall_eval_eq` it writes
@@ -320,7 +320,7 @@ theorem specNorm_aeval_le_pseudoConditionNumber_mul {A V : Matrix n n 𝕜}
         exact specNorm_diagonal_le hη0 hη
     _ = specNorm V * specNorm V⁻¹ * η := by ring
 
-/-- **Polynomials in the two Gram matrices intertwine**:
+/-- Polynomials in the two Gram matrices intertwine:
 $p(\mathbf{A}\mathbf{A}^{\mathsf{H}})\mathbf{A} = \mathbf{A}\,p(\mathbf{A}^{\mathsf{H}}\mathbf{A})$.
 Port of `NLAlib.aeval_conjGram_mul_eq_mul_aeval_conjGram`. -/
 theorem aeval_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (p : ℝ[X]) :
@@ -328,7 +328,7 @@ theorem aeval_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (p : ℝ[X]) :
   exact aeval_mul_eq_mul_aeval_of_mul_eq_mul (Matrix.mul_assoc A Aᴴ A) p
 
 omit [DecidableEq m] in
-/-- **A polynomial filter on an SVD.** If
+/-- A polynomial filter on an SVD: if
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(\sigma_i)\mathbf{V}^{\mathsf{H}}$ is an SVD (in the
 sense of `NLAlib.IsSVD`), then
 $$\mathbf{A}\,p(\mathbf{A}^{\mathsf{H}}\mathbf{A})
@@ -391,7 +391,7 @@ theorem rank_pow_mul_conjTranspose_self_mul (A : Matrix m n 𝕜) (q : ℕ) :
 
 /-! ### Vectors with prescribed spectral weights -/
 
-/-- **A vector with prescribed spectral weights**: for Hermitian $\mathbf{A}$ with spectrum the
+/-- A vector with prescribed spectral weights: for Hermitian $\mathbf{A}$ with spectrum the
 finite set $s$ and weights $w \ge 0$ on $s$ there is a vector $\mathbf{v}$ whose spectral
 measure is $\sum_{x \in s} w_x\delta_x$: for every real function $g$ and all
 $p, r \in \Bbbk[X]$,

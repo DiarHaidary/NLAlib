@@ -95,7 +95,7 @@ section DecidableEq
 
 variable [DecidableEq n]
 
-/-- **The error of Richardson's iteration**: for $\mathbf{A} \in \Bbbk^{m \times n}$,
+/-- The error of Richardson's iteration: for $\mathbf{A} \in \Bbbk^{m \times n}$,
 $\mathbf{M} \in \Bbbk^{n \times m}$ and a fixed point $\mathbf{x}_\star$,
 $\mathbf{M}(\mathbf{b} - \mathbf{A}\mathbf{x}_\star) = \mathbf{0}$, the Richardson iterate
 $\mathbf{x}_q = \mathsf{richardsonIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q)$
@@ -119,7 +119,7 @@ theorem sub_richardsonIterate_eq {A : Matrix m n 𝕜} {M : Matrix n m 𝕜} {b 
       Matrix.mulVec_mulVec, ih, pow_succ', ← Matrix.mulVec_mulVec (M := 1 - M * A),
       Matrix.sub_mulVec, Matrix.one_mulVec]
 
-/-- **The Richardson correction lies in the preconditioned Krylov space**: for every
+/-- The Richardson correction lies in the preconditioned Krylov space: for every
 $\mathbf{A} \in \Bbbk^{m \times n}$ and $\mathbf{M} \in \Bbbk^{n \times m}$, the iterate
 $\mathbf{x}_q = \mathsf{richardsonIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q)$
 satisfies $\mathbf{x}_q - \mathbf{x}_0 \in \mathcal{K}_q(\mathbf{M}\mathbf{A},
@@ -144,7 +144,7 @@ theorem richardsonIterate_sub_mem_krylovSpace (A : Matrix m n 𝕜) (M : Matrix 
 
 end DecidableEq
 
-/-- **Richardson through $\mathbf{A}^{\mathsf{H}}$ is Richardson on the normal equations**: for
+/-- Richardson through $\mathbf{A}^{\mathsf{H}}$ is Richardson on the normal equations: for
 $\mathbf{A} \in \Bbbk^{m \times n}$ and $\mathbf{M} \in \Bbbk^{n \times n}$,
 $$\mathsf{richardsonIterate}(\mathbf{A}, \mathbf{M}\mathbf{A}^{\mathsf{H}}, \mathbf{y},
 \mathbf{x}_0, q) = \mathsf{richardsonIterate}(\mathbf{A}^{\mathsf{H}}\mathbf{A}, \mathbf{M},
@@ -215,7 +215,7 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_richardsonIterate_le {A M : Matrix 
   rw [quadForm_conjTranspose_mul_mul, quadForm_conjTranspose_mul_mul] at h
   rwa [sub_richardsonIterate_eq hfix, ← hSv, hpow, mul_comm 2 q, pow_mul]
 
-/-- **Preconditioned Richardson with the optimal step**: for positive definite
+/-- Preconditioned Richardson with the optimal step: for positive definite
 $\mathbf{A}, \mathbf{M} \in \Bbbk^{n \times n}$ with the real spectrum of $\mathbf{M}\mathbf{A}$ in
 $[a, a']$, $0 < a \le a'$, and $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, the iterate
 $\mathbf{x}_q = \mathsf{richardsonIterate}(\mathbf{A}, (2/(a + a'))\mathbf{M}, \mathbf{b},
@@ -249,7 +249,7 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_richardsonIterate_smul_le {A M : Ma
   have h := (hA.re_quadForm_sub_richardsonIterate_le (hM.smul hc) hs' hxs x₀ q)
   rwa [h1, h2, abs_neg, max_self, abs_of_nonneg (div_nonneg (by linarith) hpos.le)] at h
 
-/-- **Preconditioned CG is at least as good as Richardson** with the same preconditioner: for
+/-- Preconditioned CG is at least as good as Richardson with the same preconditioner: for
 positive definite $\mathbf{A} \in \Bbbk^{n \times n}$, any $\mathbf{M} \in \Bbbk^{n \times n}$ and
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
 $$\|\mathbf{x}_\star - \mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0,

@@ -27,7 +27,7 @@ for `Mathlib.Analysis.Real.Sqrt`.
 
 namespace Real
 
-/-- **Optimising $a / u + b u$**: if $x \le a / u + b u$ for every $u > 0$, with $a, b \ge 0$,
+/-- Optimising $a / u + b u$: if $x \le a / u + b u$ for every $u > 0$, with $a, b \ge 0$,
 then $x \le \sqrt{4ab}$. -/
 theorem le_sqrt_of_forall_le_div_add_mul {x a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
     (h : ∀ u, 0 < u → x ≤ a / u + b * u) : x ≤ √(4 * a * b) := by

@@ -246,7 +246,7 @@ private theorem integrable_frobNorm_compress_hermitianPart_sq [IsFiniteMeasure �
       rw [Real.norm_of_nonneg (sq_nonneg _)]
       exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_compress_le _ _ _) 2)
 
-/-- **Hutch++ with an orthonormal basis of the sketch**: if
+/-- Hutch++ with an orthonormal basis of the sketch: if
 $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}\mathbf{S}}$ (as for an orthonormal
 basis $\mathbf{Q}$ of the range of $\mathbf{A}\mathbf{S}$), then
 $$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) =
@@ -282,7 +282,7 @@ theorem trace_sub_hutchpp (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) (G : Matri
   rw [hutchpp, rsvd]
   linear_combination -h
 
-/-- **Hutch++ is exact when the randomized SVD is**: if
+/-- Hutch++ is exact when the randomized SVD is: if
 $\mathsf{rsvd}(\mathbf{A}, \mathbf{S}) = \mathbf{A}$, then
 $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) = \operatorname{tr}\mathbf{A}$ for every
 residual test matrix $\mathbf{G}$: the residual $(\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{S}})
@@ -295,7 +295,7 @@ theorem hutchpp_eq_trace_of_rsvd_eq {A : Matrix n n 𝕜} {S : Matrix n s 𝕜} 
   rw [hutchpp, h, h0, Matrix.zero_mul, girardHutchinson, Matrix.mul_zero, Matrix.zero_mul,
     Matrix.trace_zero, zero_div, add_zero]
 
-/-- **Hutch++ is exact when the sketch captures the range**: if
+/-- Hutch++ is exact when the sketch captures the range: if
 $\operatorname{rank}(\mathbf{A}\mathbf{S}) = \operatorname{rank}\mathbf{A}$, then
 $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G}) = \operatorname{tr}\mathbf{A}$ for every
 residual test matrix $\mathbf{G}$: the randomized SVD recovers $\mathbf{A}$
@@ -304,7 +304,8 @@ theorem hutchpp_eq_trace_of_rank_eq {A : Matrix n n 𝕜} {S : Matrix n s 𝕜}
     (h : (A * S).rank = A.rank) (G : Matrix n t 𝕜) : hutchpp A S G = A.trace :=
   hutchpp_eq_trace_of_rsvd_eq (rsvd_eq_self_of_rank_eq h) G
 
-/-- Hutch++ is a Borel measurable function of the pair of test matrices
+/-- The Hutch++ estimate $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ is a Borel
+measurable function of the pair of test matrices
 $(\mathbf{S}, \mathbf{G})$, from `NLAlib.measurable_rangeProjector`. -/
 theorem measurable_hutchpp (A : Matrix n n 𝕜) :
     Measurable fun p : Matrix n s 𝕜 × Matrix n t 𝕜 => hutchpp A p.1 p.2 := by
@@ -526,7 +527,7 @@ theorem _root_.Matrix.IsHermitian.variance_hutchpp_of_hasLaw_gaussianMatrix [Non
   simp only [sub_rsvd]
   linarith
 
-/-- **Hutch++ is exact at low rank with a Gaussian sketch**: if the $n \times \lvert s \rvert$
+/-- Hutch++ is exact at low rank with a Gaussian sketch: if the $n \times \lvert s \rvert$
 sketch test matrix $\mathbf{S}$ is standard Gaussian and
 $\operatorname{rank}\mathbf{A} \le \lvert s \rvert$, then for every residual test matrix
 $\mathbf{G}$ (of any law, dependent or not),

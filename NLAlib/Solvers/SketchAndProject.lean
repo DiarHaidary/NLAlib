@@ -151,7 +151,7 @@ theorem norm_sub_sketchAndProject_le_of_isLeastSquaresSolution {A : Matrix m n �
     norm_sub_rev, ← WithLp.toLp_sub]
   exact hy'.norm_pinv_mulVec_le
 
-/-- **The error after one step**: for every reference point $\mathbf{x}_\star$, with
+/-- The error after one step: for every reference point $\mathbf{x}_\star$, with
 $\mathbf{P} = \mathbf{P}_{(\mathbf{S}\mathbf{A})^{\mathsf{H}}}$ the projector onto the row space
 of $\mathbf{S}\mathbf{A}$,
 $$\mathbf{x}_\star - \mathsf{sketchAndProject}(\mathbf{A}, \mathbf{S}, \mathbf{b}, \mathbf{x}) =
@@ -202,7 +202,7 @@ theorem norm_sub_sketchAndProject_sq (A : Matrix m n 𝕜) (S : Matrix k m 𝕜)
   rw [h2, hPa, hPb, WithLp.toLp_neg, norm_neg]
   linarith
 
-/-- **A step moves within the row space**: for every $\mathbf{A}$, sketch $\mathbf{S}$,
+/-- A step moves within the row space: for every $\mathbf{A}$, sketch $\mathbf{S}$,
 $\mathbf{b}$ and $\mathbf{x}$, $\mathsf{sketchAndProject}(\mathbf{A}, \mathbf{S}, \mathbf{b},
 \mathbf{x}) - \mathbf{x} \in \operatorname{range}\mathbf{A}^{\mathsf{H}}$. -/
 theorem sketchAndProject_sub_mem_range (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (b : m → 𝕜)
@@ -213,7 +213,7 @@ theorem sketchAndProject_sub_mem_range (A : Matrix m n 𝕜) (S : Matrix k m �
 
 /-! ### The iterate -/
 
-/-- **The iterate stays in the row space through the start**: for every sequence of sketches,
+/-- The iterate stays in the row space through the start: for every sequence of sketches,
 $\mathsf{sketchAndProjectIterate}(\mathbf{A}, \mathbf{S}, \mathbf{b}, \mathbf{x}_0, q) -
 \mathbf{x}_0 \in \operatorname{range}\mathbf{A}^{\mathsf{H}}$. -/
 theorem sketchAndProjectIterate_sub_mem_range (A : Matrix m n 𝕜) (S : ℕ → Matrix k m 𝕜)
@@ -226,7 +226,7 @@ theorem sketchAndProjectIterate_sub_mem_range (A : Matrix m n 𝕜) (S : ℕ →
       ← sub_add_sub_cancel _ (sketchAndProjectIterate A S b x₀ q) x₀]
     exact Submodule.add_mem _ (sketchAndProject_sub_mem_range A (S q) b _) ih
 
-/-- **For a consistent system the error never grows**: if $\mathbf{A}\mathbf{x}_\star =
+/-- For a consistent system the error never grows: if $\mathbf{A}\mathbf{x}_\star =
 \mathbf{b}$, then for every sequence of sketches
 $$\|\mathbf{x}_\star - \mathsf{sketchAndProjectIterate}(\mathbf{A}, \mathbf{S}, \mathbf{b},
 \mathbf{x}_0, q)\| \le \|\mathbf{x}_\star - \mathbf{x}_0\|\,.$$ -/
@@ -573,7 +573,7 @@ theorem integral_norm_sub_sketchAndProjectIterate_sq_le_of_hasLaw_iidSequence
           mul_le_mul_of_nonneg_left ih (by linarith)
       _ = (1 - lam) ^ (q + 1) * ‖WithLp.toLp 2 (xs - x₀)‖ ^ 2 := by ring
 
-/-- **Sketch-and-project, iteration count**: for a consistent system
+/-- Sketch-and-project, iteration count: for a consistent system
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, a start with $\mathbf{x}_\star - \mathbf{x}_0$ in the
 row space of $\mathbf{A}$, independent sketches $\mathbf{S}_0, \mathbf{S}_1, \ldots$, each with
 the probability law $\nu$, $\lambda > 0$ with

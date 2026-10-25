@@ -40,7 +40,7 @@ namespace ProbabilityTheory
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
-/-- **Conditioning on the past of an i.i.d. sequence** (Fubini): for an i.i.d. sequence
+/-- Conditioning on the past of an i.i.d. sequence (Fubini): for an i.i.d. sequence
 $\xi = (\xi_0, \xi_1, \dots)$ with law $\nu$ (the hypothesis
 `HasLaw ξ (Measure.infinitePi fun _ : ℕ => ν) μ`), a measurable $F$ of the sequence that depends
 only on $\xi_0, \dots, \xi_{q-1}$, and $f$ integrable for the product of the law of $F(\xi)$ and

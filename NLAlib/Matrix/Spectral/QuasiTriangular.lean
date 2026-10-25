@@ -85,8 +85,8 @@ section BlockTriangular
 variable {p q : ℕ} {S : Matrix (Fin p) (Fin p) R} {C : Matrix (Fin p) (Fin q) R}
   {D : Matrix (Fin q) (Fin p) R} {T : Matrix (Fin q) (Fin q) R}
 
-/-- **A block upper triangular matrix with upper quasi-triangular diagonal blocks is upper
-quasi-triangular**: for upper quasi-triangular $\mathbf{S}$ and $\mathbf{T}$,
+/-- A block upper triangular matrix with upper quasi-triangular diagonal blocks is upper
+quasi-triangular: for upper quasi-triangular $\mathbf{S}$ and $\mathbf{T}$,
 $\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{0} & \mathbf{T} \end{bmatrix}$ is, the blocks
 being placed in order along `Fin (p + q)`.
 Port of `NLAlib.isUpperQuasiTriangular_of_small_leading_block`, there for a leading block of size

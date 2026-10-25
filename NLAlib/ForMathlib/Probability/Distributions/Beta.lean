@@ -283,7 +283,8 @@ private theorem lintegral_lintegral_comp_div_add_gammaPDF_eq_betaPDF {F : ℝ �
 
 /-- **Beta as a ratio of Gammas**: for $a, b, r > 0$, the image of
 $\mathrm{Gamma}(a, r) \otimes \mathrm{Gamma}(b, r)$ (shapes $a$, $b$, common rate $r$) under
-$(x, y) \mapsto x/(x+y)$ is $\mathrm{Beta}(a, b)$.
+$$(x, y) \mapsto \frac{x}{x+y}$$
+is $\mathrm{Beta}(a, b)$.
 No printed source.
 Result: gamma-ratio-beta -/
 theorem map_div_add_prod_gammaMeasure {a b r : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r) :
@@ -515,8 +516,8 @@ private theorem mul_sub_add_mul_sub_eq {α β : ℝ} (hα : 0 < α) (hβ : 0 < �
   linear_combination (-(betaExpMoment α β 0 t)⁻¹) * hK' +
     α * ha - hr - (t / 4) * hs
 
-/-- The positive half of `mul_le_zero_of_ode_sign`: if `t * z' t + b * z t ≤ 0` for `t > 0`,
-then `z t ≤ 0` for `t > 0` (`antitoneOn_rpow_mul_of_hasDerivAt`, compared with `t = 0`). -/
+/-- The positive half of `mul_le_zero_of_ode_sign`: if $t\,z'(t) + b\,z(t) \le 0$ for $t > 0$,
+then $z(t) \le 0$ for $t > 0$ (`antitoneOn_rpow_mul_of_hasDerivAt`, compared with $t = 0$). -/
 private theorem nonpos_of_ode_sign {z z' : ℝ → ℝ} {b : ℝ} (hb : 0 < b)
     (hd : ∀ t, HasDerivAt z (z' t) t) (hpos : ∀ t, 0 < t → t * z' t + b * z t ≤ 0) {t : ℝ}
     (ht : 0 < t) : z t ≤ 0 := by
@@ -525,8 +526,8 @@ private theorem nonpos_of_ode_sign {z z' : ℝ → ℝ} {b : ℝ} (hb : 0 < b)
   simp only [Real.zero_rpow hb.ne', zero_mul] at hle
   nlinarith [Real.rpow_pos_of_pos ht b]
 
-/-- Sign lemma for a differentiable `z`: if `t * z' t + b * z t ≤ 0` for `t > 0`
-and `0 ≤ t * z' t + b * z t` for `t < 0`, then `t * z t ≤ 0` for every `t`. -/
+/-- Sign lemma for a differentiable `z`: if $t\,z'(t) + b\,z(t) \le 0$ for $t > 0$
+and $0 \le t\,z'(t) + b\,z(t)$ for $t < 0$, then $t\,z(t) \le 0$ for every $t$. -/
 private theorem mul_le_zero_of_ode_sign {z z' : ℝ → ℝ} {b : ℝ} (hb : 0 < b)
     (hd : ∀ t, HasDerivAt z (z' t) t)
     (hpos : ∀ t, 0 < t → t * z' t + b * z t ≤ 0)

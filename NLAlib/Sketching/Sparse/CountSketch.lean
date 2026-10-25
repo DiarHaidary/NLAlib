@@ -160,7 +160,7 @@ theorem countSketch_eq_map [MeasurableSpace k] [MeasurableSingletonClass k] :
   obtain rfl := DiscreteMeasurableSpace.eq_top (α := k)
   rfl
 
-/-- **From the user's own hash and signs**: for i.i.d. uniform hash values $h$ and independent
+/-- From the user's own hash and signs: for i.i.d. uniform hash values $h$ and independent
 Rademacher signs $\sigma$, under any measurable space on `k` with measurable singletons, the
 CountSketch matrix built from them has law `NLAlib.countSketch k n`. A uniform hash function,
 `HasLaw h (uniformOn Set.univ) μ`, gives `hh` by `uniformOn_pi` and

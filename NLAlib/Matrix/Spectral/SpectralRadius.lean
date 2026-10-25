@@ -105,7 +105,7 @@ theorem norm_le_specRadius_of_mem_spectrum {A : Matrix n n 𝕜} {μ : 𝕜} (h�
   rw [← RCLike.norm_toComplex]
   exact norm_le_specRadius_of_mem_spectrum_complexify (toComplex_mem_spectrum_complexify hμ)
 
-/-- **The spectral radius through a listing of the eigenvalues**: if $\mathbf{d}$, indexed by any
+/-- The spectral radius through a listing of the eigenvalues: if $\mathbf{d}$, indexed by any
 finite type, lists the complex eigenvalues of $\mathbf{A}$, then $\rho(\mathbf{A}) \le c$ exactly
 when $\lvert \mathbf{d}_i \rvert \le c$ for every $i$, for $c \ge 0$ (the hypothesis matters only
 for a matrix of size zero). -/

@@ -321,7 +321,7 @@ private theorem hasLaw_inv_mul_conjTranspose_apply_self (hX : HasLaw X (gaussian
     measurable_mul_conjTranspose_inv).comp_aemeasurable hX.aemeasurable)
     fun _ hφ => lintegral_comp_inv_mul_conjTranspose_apply_self hX hrk i hφ
 
-/-- **The diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are $1/\chi^2_d$**: for an
+/-- The diagonal entries of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ are $1/\chi^2_d$: for an
 $r \times k$ standard Gaussian matrix $\mathbf{G}$ and $d = \lvert k \rvert - \lvert r \rvert + 1$,
 each diagonal entry $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}_{ii}$ has the law of
 $1/\|\mathbf{g}\|^2$ for a standard Gaussian vector $\mathbf{g}$ in $\mathbb{R}^d$. By the Schur
@@ -529,7 +529,7 @@ theorem integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix
   simp only [Pi.sub_apply, Pi.add_apply]
   ring
 
-/-- **The mean of an entry of the inverse Wishart matrix**: for a standard Gaussian $r \times k$
+/-- The mean of an entry of the inverse Wishart matrix: for a standard Gaussian $r \times k$
 matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$,
 $\mathbb{E}\,((\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1})_{i,j}
 = \delta_{ij} / (\lvert k \rvert - \lvert r \rvert - 1)$, the entry form of
@@ -846,7 +846,7 @@ private theorem integral_inv_mul_conjTranspose_apply_self_mul (hX : HasLaw X (ga
     hQsq 1 (by norm_num), hQsq (-1) (by norm_num), hc, hsq, hsq, Matrix.one_apply_ne hij]
   ring
 
-/-- **Products of diagonal entries of the inverse Wishart matrix**: for a standard Gaussian
+/-- Products of diagonal entries of the inverse Wishart matrix: for a standard Gaussian
 $r \times k$ matrix $\mathbf{G}$ with $\lvert r \rvert + 4 \le \lvert k \rvert$ and
 $\mathbf{W} = (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$,
 $$\mathbb{E}\,[\mathbf{W}_{i,i}\mathbf{W}_{j,j}] =
@@ -870,8 +870,8 @@ theorem integral_mul_conjTranspose_inv_apply_self_mul_of_hasLaw_gaussianMatrix
 
 /-! ### The moments of the probes -/
 
-/-- **Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ have the moments of
-$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$**: for a standard Gaussian $r \times k$ matrix
+/-- Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ have the moments of
+$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$: for a standard Gaussian $r \times k$ matrix
 $\mathbf{G}$ with $\lvert r \rvert \le \lvert k \rvert$, a unit vector $\mathbf{u}$ and
 $q < (\lvert k \rvert - \lvert r \rvert + 1)/2$,
 $(\mathbf{u}^{\mathsf{T}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{u})^q$ is integrable. -/
@@ -887,8 +887,8 @@ theorem integrable_dotProduct_mul_conjTranspose_inv_mulVec_rpow_of_hasLaw_gaussi
   exact integrable_rpow_of_hasLaw_invChiSq
     (hasLaw_dotProduct_inv_mul_conjTranspose_mulVec hX hrk hu) (by rwa [hcast])
 
-/-- **Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ have the moments of
-$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$**: for a standard Gaussian $r \times k$ matrix
+/-- Probes of $(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}$ have the moments of
+$1 / \chi^2_{\lvert k \rvert - \lvert r \rvert + 1}$: for a standard Gaussian $r \times k$ matrix
 $\mathbf{G}$ with $\lvert r \rvert \le \lvert k \rvert$, a unit vector $\mathbf{u}$ and
 $q < (\lvert k \rvert - \lvert r \rvert + 1)/2$, writing
 $\delta = \lvert k \rvert - \lvert r \rvert + 1$,
@@ -923,7 +923,7 @@ theorem integrable_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix [DecidableEq r
   exact Matrix.integrable_iff.2 fun i j =>
     integrable_mul_conjTranspose_inv_apply_of_hasLaw_gaussianMatrix hX hrk i j
 
-/-- **The mean of the inverse Wishart matrix**: for a standard Gaussian $r \times k$ matrix
+/-- The mean of the inverse Wishart matrix: for a standard Gaussian $r \times k$ matrix
 $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$,
 $\mathbb{E} (\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}
 = (\lvert k \rvert - \lvert r \rvert - 1)^{-1} \mathbf{I}$. -/

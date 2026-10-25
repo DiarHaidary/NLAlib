@@ -79,7 +79,7 @@ private theorem integral_exp_mul_sq_gaussianReal {θ : ℝ} (hθ : 2 * θ < 1) :
   have : √(2 * π) ≠ 0 := by positivity
   field_simp
 
-/-- **The weighted Laplace transform of a Gaussian vector**: for a standard Gaussian vector
+/-- The weighted Laplace transform of a Gaussian vector: for a standard Gaussian vector
 $\mathbf{g}$ and weights with $\theta_i < 1/2$,
 $\mathbb{E} \exp(\sum_i \theta_i \mathbf{g}_i^2) = \prod_i (1 - 2\theta_i)^{-1/2}$, by independence
 of the coordinates. The equal-weight case is
@@ -148,7 +148,8 @@ private theorem exp_mul_inv_rpow (a N : ℝ) (hβ : 0 < β) :
 
 /-- **Upper Chernoff tail of $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $\beta \ge 1$,
-$\mathbb{P}[\beta d \le \|\mathbf{g}\|^2] \le e^{(d/2)(1 - \beta + \log \beta)}$, Chernoff's bound
+$$\mathbb{P}[\beta d \le \|\mathbf{g}\|^2] \le e^{\frac{d}{2}(1 - \beta + \log \beta)}\,,$$
+Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. At every
 threshold it is at least as good as Laurent and Massart's upper tail, which stays in the library
 as the sub-Gaussian-vector bound `NLAlib.IsSubgaussianVector.measureReal_norm_sq_ge_le` at proxy $1$
@@ -172,7 +173,8 @@ theorem measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector
 
 /-- **Lower Chernoff tail of $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $0 < \beta \le 1$,
-$\mathbb{P}[\|\mathbf{g}\|^2 \le \beta d] \le e^{(d/2)(1 - \beta + \log \beta)}$, Chernoff's bound
+$$\mathbb{P}[\|\mathbf{g}\|^2 \le \beta d] \le e^{\frac{d}{2}(1 - \beta + \log \beta)}\,,$$
+Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. It dominates
 (CONTRIBUTING §5.2 rule 6) Laurent and Massart's
 `NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector` (at $\beta = 1 - 2\sqrt{t/d}$, with
@@ -327,7 +329,7 @@ theorem measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector
   simp only [← hd_def]
   field_simp
 
-/-- **Small-ball bound for $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
+/-- Small-ball bound for $\chi^2$: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $u \ge 0$, $\mathbb{P}[\|\mathbf{g}\|^2 \le u] \le (e u / d)^{d/2}$.
 A corollary of the exact small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector` by

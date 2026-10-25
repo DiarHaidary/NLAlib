@@ -400,7 +400,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_last_smul_one_le [DecidableEq n]
   rw [re_quadForm_real_smul_one]
   exact hA.eigenvalue_last_mul_le_re_quadForm hk x
 
-/-- **The largest eigenvalue in the Loewner order.** For a Hermitian matrix on a nonempty index
+/-- The largest eigenvalue in the Loewner order: for a Hermitian matrix on a nonempty index
 type, $\mathbf{A} \preceq c\mathbf{I}$ exactly when $\lambda_0(\mathbf{A}) \le c$. This is the
 form in which an upper bound on $\lambda_{\max}$ is used. -/
 theorem _root_.Matrix.IsHermitian.le_smul_one_iff [DecidableEq n] [Nonempty n]
@@ -414,7 +414,7 @@ theorem _root_.Matrix.IsHermitian.le_smul_one_iff [DecidableEq n] [Nonempty n]
   · exact (hA.re_quadForm_le_eigenvalue_zero_mul x).trans
       (mul_le_mul_of_nonneg_right h (sq_nonneg _))
 
-/-- **The smallest eigenvalue in the Loewner order.** For a Hermitian matrix and
+/-- The smallest eigenvalue in the Loewner order: for a Hermitian matrix and
 $k + 1 = \lvert n \rvert$, $c\mathbf{I} \preceq \mathbf{A}$ exactly when
 $c \le \lambda_k(\mathbf{A})$. This is the form in which a lower bound on $\lambda_{\min}$ is
 used. -/

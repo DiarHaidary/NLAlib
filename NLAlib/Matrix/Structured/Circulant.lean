@@ -105,7 +105,7 @@ theorem eq_circulant_of_mul_circulant_single_comm {R : Type*} [Semiring R] [NeZe
   ext i j
   rw [Matrix.circulant_apply, hall]
 
-/-- **A matrix commutes with the cyclic shift exactly when it is circulant.**
+/-- A matrix commutes with the cyclic shift exactly when it is circulant.
 Port of `NLAlib.commute_cyclicShift_iff_exists_circulant`, there over $\mathbb{R}$. -/
 theorem mul_circulant_single_comm_iff {R : Type*} [Semiring R] [NeZero n]
     (A : Matrix (Fin n) (Fin n) R) :
@@ -181,7 +181,7 @@ private theorem sum_inv_mul_pow (k l : Fin n) :
     rw [geom_sum_mul, mul_pow, inv_pow, ← pow_mul, ← pow_mul, mul_comm (k : ℕ), mul_comm (l : ℕ),
       pow_mul, pow_mul, hω.pow_eq_one, one_pow, one_pow, inv_one, one_mul, sub_self]
 
-/-- **The Fourier matrix is unitary.** -/
+/-- The Fourier matrix is unitary. -/
 theorem hasOrthonormalCols_fourierMatrix (n : ℕ) : HasOrthonormalCols (fourierMatrix n) := by
   rw [hasOrthonormalCols_iff]
   ext k l
@@ -201,7 +201,7 @@ theorem hasOrthonormalCols_fourierMatrix (n : ℕ) : HasOrthonormalCols (fourier
   · exact div_self hn0
   · exact zero_div _
 
-/-- **The Fourier matrix is a bounded orthonormal transform** with $\beta = 1$: it is unitary and
+/-- The Fourier matrix is a bounded orthonormal transform with $\beta = 1$: it is unitary and
 $n \lvert \mathbf{F}_{j,k} \rvert^2 = 1$. The hypothesis of the subsampled randomized Fourier
 transform's theorems (`NLAlib.Sketching.Structured.SRHT`), with real random signs. -/
 theorem isBoundedOrthonormal_fourierMatrix (n : ℕ) : IsBoundedOrthonormal (fourierMatrix n) 1 := by
@@ -274,7 +274,7 @@ theorem isStarNormal_circulant (v : Fin n → ℂ) : IsStarNormal (Matrix.circul
   rw [Matrix.star_eq_conjTranspose, Matrix.Fin.conjTranspose_circulant]
   exact Matrix.Fin.circulant_mul_comm _ _
 
-/-- **The spectral norm of a circulant matrix** is the largest modulus of a Fourier coefficient
+/-- The spectral norm of a circulant matrix is the largest modulus of a Fourier coefficient
 of its first column, in the form: for $c \ge 0$, $\|\mathbf{C}\|_2 \le c$ if and only if
 $\sqrt{n}\,\lvert (\mathbf{F}^{\mathsf{H}}\mathbf{v})_k \rvert \le c$ for every $k$, where
 $\mathbf{C}$ is the circulant matrix of $\mathbf{v}$ and $\mathbf{F}$ the Fourier matrix. -/
