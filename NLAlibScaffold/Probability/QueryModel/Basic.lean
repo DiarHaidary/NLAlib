@@ -367,7 +367,27 @@ indices (`gramSimulation`, the even query is `(0, _)`), on which `fun j => (j : 
 `Nat.card_eq_fintype_card`, `Fintype.card_fin`. -/
 theorem rightCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).rightCount τ ≤ q := by
-  sorry
+  unfold QueryAlgorithm.rightCount
+  have hsub : {j : Fin (2 * q) | ((alg.gramSimulation k).queries τ j).1 ≠ 0} ⊆
+      {j : Fin (2 * q) | j.val % 2 = 1} := by
+    intro j hj
+    simp only [Set.mem_ofPred_eq] at hj ⊢
+    by_contra hodd
+    apply hj
+    simp only [QueryAlgorithm.queries, QueryAlgorithm.gramSimulation]
+    rw [dif_pos (by omega)]
+  have hinj : Set.InjOn (fun j : Fin (2 * q) => (⟨j / 2, by omega⟩ : Fin q))
+      {j : Fin (2 * q) | j.val % 2 = 1} := by
+    intro a ha b hb hab
+    simp only [Set.mem_ofPred_eq] at ha hb hab
+    have h2 := congrArg Fin.val hab
+    simp only at h2
+    ext
+    omega
+  have hcard := Set.ncard_le_ncard_of_injOn (fun j : Fin (2 * q) => (⟨j / 2, by omega⟩ : Fin q))
+    (fun j _ => Set.mem_univ _) hinj Set.finite_univ
+  rw [Set.ncard_univ, Nat.card_eq_fintype_card, Fintype.card_fin] at hcard
+  exact (Set.ncard_le_ncard hsub (Set.toFinite _)).trans (by simpa using hcard)
 
 /-- **The Gram simulation makes at most `q` products with $\mathbf{X}^{\mathsf{H}}$**: for every
 transcript, only even-numbered rounds have a nonzero left part.
