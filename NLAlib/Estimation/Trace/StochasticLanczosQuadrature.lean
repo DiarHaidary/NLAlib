@@ -10,6 +10,7 @@ public import NLAlib.Polynomial.Orthogonal.Gauss
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Polynomial.Approximation.AnalyticApproximation
 public import NLAlib.Krylov.Functions.Quadrature
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # Stochastic Lanczos quadrature
@@ -33,9 +34,21 @@ Lipschitz (Jackson) and analytic (Bernstein ellipse) rates; composing with the H
 of Girard–Hutchinson gives the tails with independent sub-Gaussian entries, the quadrature term
 random inside the event. [CortinovisKressner2022]. Design: `docs/design/Estimation-SLQ.md` §3.2.
 
+For every test matrix, SLQ with $q$ Lanczos steps is below the Girard–Hutchinson estimate when
+$f^{(2q)} \ge 0$ on an interval containing the spectrum, and above it when $f^{(2q)} \le 0$: the
+Gauss error has a sign probe by probe, so the SLQ bias is one-signed. Design:
+`docs/design/Polynomial-QuadratureRemainder.md` (S1, S2).
+
 ## Main definitions
 
 * `NLAlib.slq`: the stochastic Lanczos quadrature estimate.
+
+## Main results
+
+* `Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_continuousOn`: the deterministic split.
+* `NLAlib.measureReal_abs_trace_cfc_sub_slq_ge_le_of_continuousOn`: the tail.
+* `NLAlib.re_slq_le_re_girardHutchinson_cfc_of_iteratedDeriv_nonneg`,
+  `NLAlib.re_girardHutchinson_cfc_le_re_slq_of_iteratedDeriv_nonpos`: the sign of the SLQ bias.
 -/
 
 @[expose] public section
@@ -331,5 +344,120 @@ theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_differentiableOn
           (Fintype.card m * τ / ((c : ℝ) * specNorm (cfc f A))))) := by
   exact measureReal_abs_trace_cfc_sub_slq_ge_le_of_forall hind hsub hvar
     (fun Y => hA.norm_trace_cfc_sub_slq_le_of_differentiableOn haa hs hρ hFd hM hExt Y q) hτ
+
+/-- **The error of stochastic Lanczos quadrature and the minimax error**: for Hermitian
+$\mathbf{A}$ with spectrum in $[a, a']$, $f$ continuous on $[a, a']$, every test matrix
+$\mathbf{\Omega}$ with $m$ columns and $q + 1$ Lanczos steps per probe,
+$$\bigl\lvert\operatorname{tr} f(\mathbf{A}) -
+\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q + 1)\bigr\rvert \le
+\bigl\lvert\operatorname{tr} f(\mathbf{A}) - \mathsf{girardHutchinson}(f(\mathbf{A}),
+\mathbf{\Omega})\bigr\rvert + \frac{2E_{2q + 1}(f; [a, a'])\|\mathbf{\Omega}\|_{\mathsf{F}}^2}{m}
+\,,$$
+$E_{2q + 1}$ the error of the best uniform approximation of $f$ on $[a, a']$ by polynomials of
+degree at most $2q + 1$ (`minimaxError`). [UbaruChenSaad2017, §4] (locator to check); there
+with the quadrature error bounded through analytic $f$ and Chebyshev approximation.
+Result: stochastic-lanczos-quadrature-error -/
+theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_continuousOn
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a')
+    {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a a')) (Ω : Matrix n m 𝕜) (q : ℕ) :
+    ‖(cfc f A).trace - slq A f Ω (q + 1)‖ ≤
+      ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
+        2 * minimaxError f (Set.Icc a a') (2 * q + 1) * frobNorm Ω ^ 2 / Fintype.card m := by
+  have hdeg : ∀ p : ℝ[X], p.degree ≤ ↑(2 * q + 1) → p.degree < ↑(2 * (q + 1)) := fun p hp =>
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * q + 1)
+  exact_mod_cast hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs (hdeg p hp) hε Ω
+
+/-- **The tail of stochastic Lanczos quadrature and the minimax error.** Let the entries of the
+real $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
+moment generating function bound with variance proxy $c$ (`HasSubgaussianMGF`) and having second
+moment $1$. Let $\mathbf{A}$ be real symmetric with spectrum in $[a, a']$ and $f$ continuous on
+$[a, a']$. Then for every $q$ and $\tau \ge 0$, with $q + 1$ Lanczos steps per
+probe, <!-- value hansonWrightConstant -->
+$$\mathbb{P}\Bigl[\tau + \frac{2E_{2q + 1}(f; [a, a'])\|\mathbf{\Omega}\|_{\mathsf{F}}^2}{m}
+\le \bigl\lvert\operatorname{tr} f(\mathbf{A}) -
+\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q + 1)\bigr\rvert\Bigr]
+\le 2\exp\Bigl(-\frac{1}{196}\min\Bigl(\frac{m\tau^2}{c^2\|f(\mathbf{A})\|_{\mathsf{F}}^2},
+\frac{m\tau}{c\|f(\mathbf{A})\|_2}\Bigr)\Bigr)\,;$$
+the constant is `hansonWrightConstant`; $E_{2q + 1}$ is the error of the best uniform
+approximation of $f$ on $[a, a']$ by polynomials of degree at most $2q + 1$ (`minimaxError`), and
+the quadrature term is random, inside the event. Gaussian and sign test matrices are the case
+$c = 1$. [UbaruChenSaad2017, Theorem 4.1] (locator to check), there for positive definite
+$\mathbf{A}$ with Rademacher probes and relative error; [CortinovisKressner2022, §4] (locator to
+check).
+Result: stochastic-lanczos-quadrature-tail -/
+theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_continuousOn
+    {X : Ω → Matrix n m ℝ} {c : ℝ≥0}
+    (hind : iIndepFun (fun p : n × m => fun ω => X ω p.1 p.2) μ)
+    (hsub : ∀ i j, HasSubgaussianMGF (fun ω => X ω i j) c μ)
+    (hvar : ∀ i j, ∫ ω, X ω i j ^ 2 ∂μ = 1) {A : Matrix n n ℝ} (hA : A.IsHermitian)
+    {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a a')) (q : ℕ) {τ : ℝ} (hτ : 0 ≤ τ) :
+    μ.real {ω | τ + 2 * minimaxError f (Set.Icc a a') (2 * q + 1) * frobNorm (X ω) ^ 2 /
+        Fintype.card m ≤ |(cfc f A).trace - slq A f (X ω) (q + 1)|} ≤
+      2 * Real.exp (-(hansonWrightConstant *
+        min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm (cfc f A) ^ 2))
+          (Fintype.card m * τ / ((c : ℝ) * specNorm (cfc f A))))) := by
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * q + 1)
+  have hp' : p.degree < (2 * (q + 1) : ℕ) := hp.trans_lt (Nat.cast_lt.mpr (by omega))
+  exact measureReal_abs_trace_cfc_sub_slq_ge_le_of_isUniformApproxOn hind hsub hvar hA hs
+    (by exact_mod_cast hp') hε hτ
+
+/-! ### The sign of the bias -/
+
+/-- The real part of SLQ is the average over the probes of the Gauss-rule integrals of $f$. -/
+private lemma re_slq_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
+    RCLike.re (slq A f Ω q) =
+      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) / Fintype.card m := by
+  unfold slq
+  rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal, RCLike.ofReal_re]
+
+/-- The real part of the Girard–Hutchinson estimate of $\operatorname{tr}f(\mathbf{A})$ is the
+average over the probes of the integrals of $f$ against their spectral measures. -/
+private lemma re_girardHutchinson_cfc_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) :
+    RCLike.re (girardHutchinson (cfc f A) Ω) =
+      (∑ j, ∫ x, f x ∂spectralMeasure A (fun i => Ω i j)) / Fintype.card m := by
+  rw [girardHutchinson_eq_sum, ← RCLike.ofReal_natCast, RCLike.div_re_ofReal, map_sum]
+  simp only [integral_spectralMeasure]
+
+/-- **SLQ underestimates for $f$ with nonnegative derivative of order $2q$**: for
+$\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$), $a < a'$,
+$q > 0$, $f$ continuous on $[a, a']$,
+$C^{2q}$ on $(a, a')$ with $f^{(2q)} \ge 0$ there, and every test matrix $\mathbf{\Omega}$,
+$$\operatorname{Re}\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q) \le
+\operatorname{Re}\mathsf{girardHutchinson}(f(\mathbf{A}), \mathbf{\Omega})\,.$$
+[UbaruChenSaad2017, §3]; [GolubMeurant2010, Ch. 7] (locators to check); the per-probe Gauss
+bound summed. -/
+theorem re_slq_le_re_girardHutchinson_cfc_of_iteratedDeriv_nonneg {A : Matrix n n 𝕜}
+    {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (haa' : a < a') {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a a')) {q : ℕ} (hq : 0 < q)
+    (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
+    (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q) f x) (Ω : Matrix n m 𝕜) :
+    RCLike.re (slq A f Ω q) ≤ RCLike.re (girardHutchinson (cfc f A) Ω) := by
+  rw [re_slq_eq, re_girardHutchinson_cfc_eq]
+  refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
+  exact integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
+    (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
+
+/-- **SLQ overestimates for $f$ with nonpositive derivative of order $2q$**: for
+$\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$), $a < a'$,
+$q > 0$, $f$ continuous on $[a, a']$,
+$C^{2q}$ on $(a, a')$ with $f^{(2q)} \le 0$ there (such as $\log$ on $[a, a']$, $a > 0$), and
+every test matrix $\mathbf{\Omega}$,
+$$\operatorname{Re}\mathsf{girardHutchinson}(f(\mathbf{A}), \mathbf{\Omega}) \le
+\operatorname{Re}\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q)\,.$$
+[UbaruChenSaad2017, §3]; [GolubMeurant2010, Ch. 7] (locators to check). -/
+theorem re_girardHutchinson_cfc_le_re_slq_of_iteratedDeriv_nonpos {A : Matrix n n 𝕜}
+    {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (haa' : a < a') {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a a')) {q : ℕ} (hq : 0 < q)
+    (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
+    (hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q) f x ≤ 0) (Ω : Matrix n m 𝕜) :
+    RCLike.re (girardHutchinson (cfc f A) Ω) ≤ RCLike.re (slq A f Ω q) := by
+  rw [re_slq_eq, re_girardHutchinson_cfc_eq]
+  refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
+  exact integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
+    (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
 
 end NLAlib

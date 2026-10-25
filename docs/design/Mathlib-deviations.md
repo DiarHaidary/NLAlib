@@ -543,6 +543,15 @@ optimality), `IsGradedKrylovBasis` and `arnoldiMatrix` (on Mathlib's `gramSchmid
 `gramSchmidtQ`), and the recurrences `lanczosState` and `cgState` are additions with no Mathlib
 counterpart. No numbered deviation is introduced.
 
+Poly-Best (2026-10-25, `docs/design/Polynomial-BestApproximation.md`): `minimaxError f s n`,
+the best uniform error on a raw `f : ℝ → ℝ` and `s : Set ℝ`, defined as the infimum of the
+errors of `Metric.IsUniformApproxOn` for degree-`n` polynomials (junk `0` where the true value
+is $+\infty$ and for `s = ∅`), the chosen best approximation `minimaxPoly f s n` (junk `0` when
+none exists; canonical on an interval), and the predicate `AlternatesOn`. Mathlib's nearest notion is
+`Metric.infDist` in `C(s, ℝ)` to the image of `Polynomial.degreeLE ℝ n` under
+`Polynomial.toContinuousMapOnAlgHom s`; the bridge is `minimaxError_eq_infDist`. The pointwise
+form is what the Krylov and SLQ consumers hold. No numbered deviation is introduced.
+
 ## Used as Mathlib has them
 
 `Matrix.IsHermitian`, `Matrix.PosSemidef`, `Matrix.PosDef` and the Loewner order,

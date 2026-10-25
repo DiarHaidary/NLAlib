@@ -2,6 +2,62 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Library layers follow the imports (2026-10-25)
+
+Branch `reorg/layers` (worktree `nlalib-reorg`), from `origin/main`. Maintainer decision on library
+organization, option (b): `Solvers/{Kaczmarz, SketchAndProject}.lean` moved to `Regression/`
+(modules `NLAlib.Regression.{Kaczmarz, SketchAndProject}`; no declaration renamed), `Solvers/` and
+its `RULES.md` deleted. CONTRIBUTING §2 and `check_rules.LAYER` now give Krylov 1, Probability 1.5,
+Regression 3.5 and Estimation 4.5, so each folder imports only lower layers; P1 also fails a
+top-level folder that has no layer, and a test keeps `LAYER` equal to the §2 table.
+
+## KS8 quadrature remainders: proofs (2026-10-25)
+
+Branch `cleanup/ks8` (worktree `nlalib-cleanup-ks8`), over `integrate/ks8` with `origin/main`
+(47b95ab) merged. All 67 KS8 statements are proved (workflow harness: haiku; opus on five L targets and
+one escalation), cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into `NLAlib` with
+their `Proof:` lines removed (D8): `Polynomial/Orthogonal/{Zeros, Gauss}.lean`, the new
+`Polynomial/Orthogonal/{Radau, Lobatto, RadauJacobi}.lean` (one file `RadauLobatto` at the move,
+split by decision SPLIT-RADAULOBATTO),
+`Krylov/Functions/Quadrature.lean`, `Estimation/Trace/StochasticLanczosQuadrature.lean`, and the
+new `Polynomial/Interpolation/Hermite.lean`, `Krylov/Functions/QuadratureBounds.lean`,
+`Krylov/LinearSystems/CGQuadrature.lean`, `ForMathlib/{Algebra/Polynomial/Derivative,
+Analysis/Calculus/Deriv/Polynomial, Analysis/Calculus/LocalExtr/Rolle,
+MeasureTheory/Integral/MeanValue}.lean`. The scaffold is empty again. No statement changed.
+API change in `NLAlib/` (design note §5): KS7's `integral_eval_eq_sum_of_degree_lt` is public;
+KS7's `IsOrthogonalPolynomial.integral_eval_eq_sum` is now the case $m = \lvert s\rvert$ of
+`IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add` (proof only). New imports:
+`NLAlib.Polynomial.Interpolation.Hermite`, `NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue`
+(Gauss), `NLAlib.Polynomial.Orthogonal.{Radau, RadauJacobi}` (Krylov/Functions/Quadrature),
+`NLAlib.Polynomial.Orthogonal.Lobatto` (Krylov/Functions/QuadratureBounds),
+`Mathlib.Analysis.Calculus.{ContDiff.Polynomial, IteratedDeriv.Lemmas}`,
+`Mathlib.LinearAlgebra.FiniteDimensional.Lemmas` (Hermite). `ae_mem_Icc_radauMeasure` and
+`ae_mem_Icc_lobattoMeasure` dropped their unused `[IsFiniteMeasure μ]` (decision UNUSED-FINITE).
+New public helpers (decision SHARE-HELPERS): `mem_gaussNodes`,
+`exists_orthogonalPolynomial_eq_X_sub_C_mul` (Zeros), `exists_integral_sub_integral_eval_eq`
+(Gauss), `ae_eq_zero_of_integral_mul_sub_eq_zero`, `integral_eval_basis_nonneg_of_exact` (Radau). Report:
+`reports/Review-KS8-Cleanup.md` and `reports/Stage-KS8.md` in the harness repository.
+
+## Poly-Best best polynomial approximation: proofs (2026-10-25)
+
+Branch `cleanup/polybest` (worktree `nlalib-cleanup-polybest`), over `integrate/polybest` with
+`origin/main` merged. All 43 Poly-Best targets are proved (workflow harness, mostly haiku),
+cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into `NLAlib` with their `Proof:`
+lines removed (D8): `Polynomial/Approximation/{MinimaxError, Equioscillation, Inverse, Jackson,
+AnalyticApproximation}.lean`, `Polynomial/Orthogonal/Gauss.lean`,
+`Krylov/Functions/{LanczosFA, Quadrature}.lean`,
+`Estimation/Trace/StochasticLanczosQuadrature.lean`, and the new
+`ForMathlib/{Analysis/Normed/Module/FiniteDimension, Topology/ContinuousMap/Compact,
+Topology/Order/IntermediateValue}.lean`. The scaffold is empty again. No statement changed. New
+imports: `NLAlib.Polynomial.Approximation.MinimaxError` (Inverse, Jackson, AnalyticApproximation,
+Gauss, LanczosFA, Quadrature, StochasticLanczosQuadrature), Mathlib's `Topology.ContinuousMap.
+{Polynomial, Weierstrass}`, `Topology.MetricSpace.HausdorffDistance`, `RingTheory.Polynomial.Basic`,
+`Topology.Algebra.Polynomial` and `NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension`
+(MinimaxError), Mathlib's `Analysis.SpecialFunctions.Trigonometric.Chebyshev.{Extremal,
+RootsExtrema}`, `LinearAlgebra.Lagrange`, `NLAlib.Polynomial.Approximation.MinimaxError` and the two
+new `ForMathlib/Topology` files (Equioscillation). Reports: `reports/Review-PolyBest-Cleanup.md`
+and `reports/Stage-PolyBest.md` in the harness repository.
+
 ## SLQ and Probability-Beta: proofs (2026-10-25)
 
 Branch `cleanup/slq-beta` (worktree `nlalib-cleanup2`), over `fix/ks7-fable` with `integrate/slq`

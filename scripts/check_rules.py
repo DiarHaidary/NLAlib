@@ -57,9 +57,11 @@ LIBS = ('NLAlib', 'NLAlibScaffold')
 BIB = 'docs/references.bib'
 DEVIATIONS = 'docs/design/Mathlib-deviations.md'
 
-LAYER = {'ForMathlib': -1, 'Matrix': 0, 'Polynomial': 0, 'Probability': 1, 'Krylov': 1,
-         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4,
-         'Solvers': 5}
+# CONTRIBUTING §2's layer table (amended 2026-10-25 to match the import graph): Probability imports
+# Krylov, Regression imports Sketching, Estimation imports LowRank. A top-level folder missing here
+# is a P1 error, so a new folder gets its layer before it gets files.
+LAYER = {'ForMathlib': -1, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
+         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5}
 
 # ------------------------------------------------------------------ the rule registry
 # The rule data (severity, statement, fix, scope, section) is in docs/rules/rules.toml, the single
@@ -338,7 +340,11 @@ def p_layer(c):
             if not mod.startswith('NLAlib.'):
                 continue
             th = topic_of_module(mod)
-            if th not in LAYER or me not in LAYER:
+            if me == '(root)' or th == '(root)':
+                continue
+            if me not in LAYER or th not in LAYER:
+                unknown = me if me not in LAYER else th
+                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in LAYER (§2)'))
                 continue
             if LAYER[th] > LAYER[me] or (me == 'ForMathlib' and th != 'ForMathlib'):
                 out.append(V('P1', p, ln, '(file)', f'{me} imports {mod}'))
