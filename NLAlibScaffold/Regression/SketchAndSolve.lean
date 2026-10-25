@@ -260,7 +260,38 @@ theorem exists_hasOrthonormalCols_le_frobNorm_mul_sub_mul_sketchAndSolve_sq {r' 
       haarProjectionFactor (Fintype.card m) (Fintype.card l) A.rank *
           frobNorm ((1 - rangeProjector A) * B) ^ 2 ≤
         frobNorm (U * B - U * A * sketchAndSolve (U * A) Ω₀ᴴ (U * B)) ^ 2 := by
-  sorry
+  by_contra hcon
+  push Not at hcon
+  set c := haarProjectionFactor (Fintype.card m) (Fintype.card l) A.rank *
+    frobNorm ((1 - rangeProjector A) * B) ^ 2 with hc
+  set f : Matrix m m ℝ → ℝ := fun U =>
+    frobNorm (U * B - U * A * sketchAndSolve (U * A) Ω₀ᴴ (U * B)) ^ 2 with hf
+  have hU := HasLaw.id (μ := haarFrame m m)
+  have hW : c ≤ ∫ U, f U ∂haarFrame m m :=
+    le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame hU hΩ₀ hA B
+  have hae : ∀ᵐ U ∂haarFrame m m, HasOrthonormalCols U :=
+    ae_hasOrthonormalCols_of_hasLaw_haarFrame hU le_rfl
+  have hlt : ∀ᵐ U ∂haarFrame m m, f U < c := hae.mono fun U hU' => hcon U hU'
+  have hc0 : 0 < c := by
+    have h1 := hcon 1 NLAlib.hasOrthonormalCols_one
+    have h2 : 0 ≤ f 1 := by simp only [hf]; positivity
+    linarith
+  have hint : Integrable f (haarFrame m m) := by
+    by_contra hni
+    rw [integral_undef hni] at hW
+    linarith
+  have hsub : ∫ U, (c - f U) ∂haarFrame m m = c - ∫ U, f U ∂haarFrame m m := by
+    rw [integral_sub (integrable_const c) hint, integral_const, probReal_univ, one_smul]
+  have hnn : 0 ≤ ∫ U, (c - f U) ∂haarFrame m m :=
+    integral_nonneg_of_ae (hlt.mono fun U h => sub_nonneg.2 h.le)
+  have hg0 : ∫ U, (c - f U) ∂haarFrame m m = 0 := by linarith
+  have heq := (integral_eq_zero_iff_of_nonneg_ae
+    (hlt.mono fun U h => sub_nonneg.2 h.le) (integrable_const c |>.sub hint)).1 hg0
+  have hfc : ∀ᵐ U ∂haarFrame m m, f U = c := heq.mono fun U h => by
+    simp only [Pi.zero_apply] at h
+    linarith
+  obtain ⟨U, h1, h2⟩ := (hlt.and hfc).exists
+  linarith
 
 /-- **No random sketch beats a random orthonormal one** (Epperly and Webber's minimax lower bound
 for sketch-and-solve): for a random sketch $\mathbf{\Omega} \in \mathbb{R}^{m \times \ell}$ of any
