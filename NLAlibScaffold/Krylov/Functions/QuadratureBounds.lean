@@ -137,7 +137,14 @@ _root_.Matrix.IsHermitian.re_quadForm_cfc_le_re_star_dotProduct_lanczosFA_of_ite
     (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q) f x ≤ 0) (b : n → 𝕜) :
     RCLike.re (quadForm (cfc f A) b) ≤ RCLike.re (star b ⬝ᵥ lanczosFA A f b q) := by
-  sorry
+  calc RCLike.re (quadForm (cfc f A) b)
+      = ∫ x, f x ∂spectralMeasure A b := (integral_spectralMeasure A b f).symm
+    _ ≤ ∫ x, f x ∂gaussQuadrature (spectralMeasure A b) q :=
+        integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
+          (ae_mem_Icc_spectralMeasure A hs b) haa' hq hf hf' hD
+    _ = ∫ x, f x ∂lanczosQuadrature A b q := by
+        rw [hA.lanczosQuadrature_eq_gaussQuadrature]
+    _ = RCLike.re (star b ⬝ᵥ lanczosFA A f b q) := integral_lanczosQuadrature A f b q
 
 /-! ### Gauss–Radau -/
 
