@@ -755,7 +755,63 @@ $p = c\,\pi_d + r$ with $c$ the leading coefficient and $\deg r < d$, and
 $\int p^2 = c^2\|\pi_d\|^2 + \int r^2$ by `isOrthogonalPolynomial_orthogonalPolynomial`. -/
 theorem isMomentPosDef_succ_iff (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     IsMomentPosDef μ (k + 1) ↔ 0 < ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
-  sorry
+  constructor
+  · intro h
+    refine h _ (monic_orthogonalPolynomial μ k).ne_zero ?_
+    rw [degree_orthogonalPolynomial]
+    exact_mod_cast Nat.lt_succ_self k
+  · intro hpos p hp0 hpdeg
+    have hlow : ∀ j m, j + m = k → 0 < ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ := by
+      intro j m
+      induction m generalizing j with
+      | zero => intro hj; rw [show j = k by omega]; exact hpos
+      | succ m ih =>
+        intro hj
+        have h1 := ih (j + 1) (by omega)
+        rw [integral_orthogonalPolynomial_succ_sq hμ j] at h1
+        exact pos_of_mul_pos_right h1 (jacobiBeta_nonneg μ (j + 1))
+    have hdk : p.natDegree ≤ k := by
+      have := (Polynomial.natDegree_lt_iff_degree_lt hp0).mpr hpdeg
+      omega
+    have hc : p.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hp0
+    have hdeg_eq : p.degree = (C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).degree := by
+      rw [degree_C_mul hc, degree_orthogonalPolynomial, degree_eq_natDegree hp0]
+    have hlc_eq : p.leadingCoeff =
+        (C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).leadingCoeff := by
+      rw [leadingCoeff_mul, leadingCoeff_C, (monic_orthogonalPolynomial μ _).leadingCoeff, mul_one]
+    have hrdeg := degree_sub_lt_left hdeg_eq hp0 hlc_eq
+    rw [degree_eq_natDegree hp0] at hrdeg
+    have hrdeg' : (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).degree <
+        (p.natDegree : WithBot ℕ) := by exact_mod_cast hrdeg
+    have horth := isOrthogonalPolynomial_orthogonalPolynomial hμ p.natDegree _ hrdeg'
+    have hN := hlow p.natDegree (k - p.natDegree) (by omega)
+    have hR : 0 ≤ ∫ x, (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).eval x ^ 2 ∂μ :=
+      integral_nonneg fun x => sq_nonneg _
+    have hint : ∀ q : ℝ[X], Integrable (fun x => q.eval x) μ := fun q =>
+      integrable_eval_of_ae_mem_Icc hμ q
+    have hpt : (fun x => p.eval x ^ 2) = fun x =>
+        p.leadingCoeff ^ 2 * (orthogonalPolynomial μ p.natDegree).eval x ^ 2 +
+          (2 * p.leadingCoeff * ((orthogonalPolynomial μ p.natDegree).eval x *
+            (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).eval x) +
+          (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).eval x ^ 2) := by
+      funext x
+      simp only [eval_sub, eval_mul, eval_C]
+      ring
+    set π := orthogonalPolynomial μ p.natDegree with hπ
+    set r := p - C p.leadingCoeff * π with hr
+    set c := p.leadingCoeff with hcdef
+    have i1 : Integrable (fun x => (π.eval x) ^ 2) μ := by
+      simpa only [sq, eval_mul] using hint (π * π)
+    have i2 : Integrable (fun x => π.eval x * r.eval x) μ := by
+      simpa only [eval_mul] using hint (π * r)
+    have i3 : Integrable (fun x => r.eval x ^ 2) μ := by
+      simpa only [sq, eval_mul] using hint (r * r)
+    have hA : Integrable (fun x => c ^ 2 * π.eval x ^ 2) μ := i1.const_mul _
+    have hB2 : Integrable (fun x => 2 * c * (π.eval x * r.eval x)) μ := i2.const_mul _
+    have hB : Integrable (fun x => 2 * c * (π.eval x * r.eval x) + r.eval x ^ 2) μ := hB2.add i3
+    rw [hpt, integral_add hA hB, integral_add hB2 i3, integral_const_mul, integral_const_mul,
+      horth, mul_zero, zero_add]
+    exact add_pos_of_pos_of_nonneg (mul_pos (by positivity) hN) hR
 
 /-- **Uniqueness of the monic orthogonal polynomial**: if a finite measure $\mu$ supported in
 $[a, b]$ is positive definite on the polynomials of degree less than $k$, then every monic real
