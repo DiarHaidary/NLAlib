@@ -198,7 +198,29 @@ Proof: M, about 30 lines. The mass at $x$ of the Dirac sum (`Measure.coe_finsetS
 theorem IsMomentPosDef.gaussQuadrature_real_singleton_pos {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x : ℝ} (hx : x ∈ gaussNodes μ k) :
     0 < (gaussQuadrature μ k).real {x} := by
-  sorry
+  have hG : (gaussNodes μ k).card = k := h.card_gaussNodes hμ
+  have hs := isOrthogonalPolynomial_nodal_gaussNodes hμ k
+  have hpos : 0 < ∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ := by
+    rw [hs.integral_eval_basis_eq_integral_sq hμ hx]
+    refine h _ (Lagrange.basis_ne_zero (Set.injOn_id _) hx) ?_
+    have hk : 0 < k := by
+      rw [← hG]
+      exact Finset.card_pos.mpr ⟨x, hx⟩
+    rw [Lagrange.degree_basis (Set.injOn_id _) hx, hG]
+    exact_mod_cast Nat.sub_lt hk one_pos
+  have hmass : (gaussQuadrature μ k).real {x} =
+      ∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ := by
+    unfold gaussQuadrature interpolatoryQuadrature
+    simp only [measureReal_def, Measure.coe_finsetSum, Finset.sum_apply]
+    rw [Finset.sum_eq_single x]
+    · rw [Measure.smul_apply, Measure.dirac_apply_of_mem (Set.mem_singleton x), smul_eq_mul,
+        mul_one, ENNReal.toReal_ofReal hpos.le]
+    · intro i _ hi
+      simp [Measure.smul_apply, Measure.dirac_apply', Ne.symm hi]
+    · intro hx'
+      exact absurd hx hx'
+  rw [hmass]
+  exact hpos
 
 /-- **Uniqueness of the Gauss rule**: if a finite measure $\nu$ carried by a set of at most $k$
 points matches the first $2k$ moments of a finite measure $\mu$ supported in $[a, b]$, then $\nu$
