@@ -22,7 +22,7 @@ bounded orthonormal $\mathbf{F}$ with constant $\beta$, in both sampling models.
   (`NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty`), so the SRHT OSE at $d = 1$, by
   continuity in the distortion, gives the JL tail
   $$2\exp\Bigl(-\frac{\varepsilon^2\lvert k\rvert}{3\beta(1 + 2\sqrt{t} + 2t)}\Bigr)
-  + \lvert n\rvert e^{-t}$$
+  {}+ \lvert n\rvert e^{-t}$$
   and its size form at $O(\beta\log(\lvert n\rvert/\delta)\log(1/\delta)/\varepsilon^2)$ rows;
   any field. The JL lemma for $N$ points follows by
   `NLAlib.HasJLProperty.measureReal_exists_abs_norm_mulVec_sq_sub_ge_le`.
@@ -128,7 +128,7 @@ $\beta$, the SRHT $\mathbf{S}$ built from it (independent random signs and an in
 choice of $\lvert k\rvert$ distinct rows), $0 \le \varepsilon \le 1$ and $t \ge 0$, $\mathbf{S}$
 has the JL property with distortion $\varepsilon$ and failure probability
 $$2\exp\Bigl(-\frac{\varepsilon^2\lvert k\rvert}{3\beta(1 + 2\sqrt{t} + 2t)}\Bigr)
-+ \lvert n\rvert e^{-t}\,,$$
+{}+ \lvert n\rvert e^{-t}\,,$$
 the OSE bound of `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht` at $d = 1$, through
 `NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty` at every $\varepsilon' < \varepsilon$ and
 continuity of the bound. [Woodruff2014, Theorem 7] and [Tropp2011a, Theorems 1.3 and 3.1] for the
@@ -201,7 +201,7 @@ with constant $\beta$, the SRHT $\mathbf{S}$ built from it with $\lvert k\rvert$
 row indices, $0 \le \varepsilon \le 1$ and $t \ge 0$, $\mathbf{S}$ has the JL property with
 distortion $\varepsilon$ and failure probability
 $$2\exp\Bigl(-\frac{\varepsilon^2\lvert k\rvert}{3\beta(1 + 2\sqrt{t} + 2t)}\Bigr)
-+ \lvert n\rvert e^{-t}\,,$$
+{}+ \lvert n\rvert e^{-t}\,,$$
 the OSE bound of `NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement` at $d = 1$.
 [MartinssonTropp2020, §9.3]. Any field.
 Result: jl-srht -/
@@ -875,13 +875,13 @@ orthonormal $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ built from
 random signs and an independent uniform choice of $\lvert k\rvert$ distinct rows), $r$ nonempty,
 $\mathbf{A} \in \Bbbk^{n \times q}$, $\mathbf{B} \in \Bbbk^{n \times r}$ and $s, t \ge 0$,
 $$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
-- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
+{}- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
 \exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(\beta R_{\mathbf{B}}\|\mathbf{A}\|_2^2,
 \beta R_{\mathbf{A}}\|\mathbf{B}\|_2^2) + 2\beta\sqrt{R_{\mathbf{A}}R_{\mathbf{B}}}\,t/3}\Bigr)
-+ 2\lvert n\rvert e^{-s}\,,$$
+{}+ 2\lvert n\rvert e^{-s}\,,$$
 with the flattened row-norm bounds <!-- value srhtRowNormBound \mathbf{A} s -->
 $$R_{\mathbf{A}} = \|\mathbf{A}\|_{\mathsf{F}}^2
-+ 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{s} + 2\|\mathbf{A}\|_2^2 s$$
+{}+ 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{s} + 2\|\mathbf{A}\|_2^2 s$$
 (`NLAlib.srhtRowNormBound A s`) and $R_{\mathbf{B}}$ likewise
 (<!-- mention srhtRowNormBound -->`srhtRowNormBound B s`): condition on the signs, flatten both
 factors, then sample without replacement
@@ -930,13 +930,13 @@ bounded orthonormal $\mathbf{F}$ with constant $\beta$, the SRHT $\mathbf{S}$ bu
 $\lvert k\rvert$ i.i.d. uniform row indices, $k$ and $r$ nonempty,
 $\mathbf{A} \in \Bbbk^{n \times q}$, $\mathbf{B} \in \Bbbk^{n \times r}$ and $s, t \ge 0$,
 $$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
-- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
+{}- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
 \exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(\beta R_{\mathbf{B}}\|\mathbf{A}\|_2^2,
 \beta R_{\mathbf{A}}\|\mathbf{B}\|_2^2) + 2\beta\sqrt{R_{\mathbf{A}}R_{\mathbf{B}}}\,t/3}\Bigr)
-+ 2\lvert n\rvert e^{-s}\,,$$
+{}+ 2\lvert n\rvert e^{-s}\,,$$
 with the flattened row-norm bounds <!-- value srhtRowNormBound \mathbf{A} s -->
 $$R_{\mathbf{A}} = \|\mathbf{A}\|_{\mathsf{F}}^2
-+ 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{s} + 2\|\mathbf{A}\|_2^2 s$$
+{}+ 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{s} + 2\|\mathbf{A}\|_2^2 s$$
 (`NLAlib.srhtRowNormBound A s`) and $R_{\mathbf{B}}$ likewise: flatten, then sample with
 replacement (`NLAlib.measureReal_specNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketch` at
 uniform weights). [Tropp2011a, Lemma 3.3] for flattening; the bound is this proof's. Any

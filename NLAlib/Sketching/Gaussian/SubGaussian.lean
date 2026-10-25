@@ -671,7 +671,7 @@ $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$, $\varepsilon > 0$ and $p > 
 property holds with exponent $p$ and failure probability $\delta = \beta/\varepsilon^p$,
 with <!-- value subexponentialMomentBound (c^2/(2C\lvert{k}\rvert)) (c/(2C\lvert{k}\rvert)) p -->
 $$\beta = p(2(c^2/(2C\lvert{k}\rvert)))^{p/2}\Gamma(p/2)
-+ 2p(2(c/(2C\lvert{k}\rvert)))^{p}\Gamma(p)\,,$$
+{}+ 2p(2(c/(2C\lvert{k}\rvert)))^{p}\Gamma(p)\,,$$
 with <!-- value subgaussianJLConstant -->$C = 1/36$ (`subgaussianJLConstant`), $\beta$ being
 `NLAlib.subexponentialMomentBound` at the parameters of the sub-Gaussian JL tail
 $2e^{-C\lvert k\rvert\min(t^2/c^2, t/c)}$ (`NLAlib.hasJLProperty_of_isSubgaussianVector`), which
