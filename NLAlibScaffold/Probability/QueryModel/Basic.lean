@@ -127,7 +127,22 @@ induction: `measurable_pi_iff.2`, `Fin.lastCases`; the old entries by the induct
 theorem IsMeasurable.measurable_transcript {alg : QueryAlgorithm Q R q β}
     (halg : alg.IsMeasurable) {O : M → Q → R} (hO : Measurable (Function.uncurry O)) :
     Measurable fun x => alg.transcript (O x) := by
-  sorry
+  have key : ∀ i ≤ q, Measurable fun x => alg.history (O x) i := by
+    intro i
+    induction i with
+    | zero => intro _; exact measurable_pi_iff.2 fun j => j.elim0
+    | succ i ih =>
+      intro hi
+      refine measurable_pi_iff.2 fun j => ?_
+      induction j using Fin.lastCases with
+      | last =>
+        simp only [QueryAlgorithm.history, Fin.snoc_last]
+        exact hO.comp (measurable_id.prodMk
+          ((halg.measurable_query i (by omega)).comp (ih (by omega))))
+      | cast j =>
+        simp only [QueryAlgorithm.history, Fin.snoc_castSucc]
+        exact (measurable_pi_apply j).comp (ih (by omega))
+  exact key q le_rfl
 
 /-- **The output is measurable in the input**, for a measurable algorithm and a jointly
 measurable oracle.
