@@ -25,7 +25,7 @@ of best approximants (`docs/design/Polynomial-BestApproximation.md`). An upstrea
 
 @[expose] public section
 
-/-- **Ordered zeros between sign changes.** If $v_0 < v_1 < \dots < v_k$ and $f$ is continuous on
+/-- Ordered zeros between sign changes: if $v_0 < v_1 < \dots < v_k$ and $f$ is continuous on
 $[v_0, v_k]$ with $f(v_i)f(v_{i+1}) < 0$ for every $i < k$, then $f$ has zeros
 $c_0 < c_1 < \dots < c_{k-1}$ with $v_i < c_i < v_{i+1}$. -/
 theorem exists_strictMono_eq_zero_of_mul_neg {k : ℕ} {f : ℝ → ℝ} {v : Fin (k + 1) → ℝ}

@@ -26,7 +26,7 @@ the existence step of best uniform polynomial approximation
 
 namespace Submodule
 
-/-- **Nearest points in finite-dimensional subspaces.** If $S$ is a finite-dimensional subspace
+/-- Nearest points in finite-dimensional subspaces: if $S$ is a finite-dimensional subspace
 of a normed space $E$ over a proper nontrivially normed field, every $x \in E$ has a nearest
 point in $S$: some $y \in S$ has $\operatorname{dist}(x, y) = \operatorname{dist}(x, S)$. -/
 theorem exists_infDist_eq_dist {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [ProperSpace 𝕜]

@@ -26,7 +26,7 @@ perturbation step of the necessity half of Chebyshev's equioscillation theorem
 
 namespace ContinuousMap
 
-/-- **A descent direction for the uniform norm.** Let $K$ be compact and $e, h$ continuous real
+/-- A descent direction for the uniform norm: let $K$ be compact and $e, h$ continuous real
 functions on $K$ with $\|e\| > 0$. If $e(x)h(x) > 0$ at every $x$ with
 $\lvert e(x) \rvert = \|e\|$, then $\|e - th\| < \|e\|$ for some $t > 0$. -/
 theorem exists_pos_norm_sub_smul_lt {K : Type*} [TopologicalSpace K] [CompactSpace K]
