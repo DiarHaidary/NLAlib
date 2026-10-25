@@ -327,7 +327,19 @@ Proof: S, about 6 lines. `haveI := isProbabilityMeasureBeta hα hβ`; `pow_zero`
 `integral_exp_pos` with integrability from `ae_mem_Icc_betaMeasure` (`Integrable.of_bound`). -/
 private theorem betaExpMoment_zero_pos {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
     0 < betaExpMoment α β 0 t := by
-  sorry
+  have := isProbabilityMeasureBeta hα hβ
+  have hint : Integrable (fun x => Real.exp (t * x)) (betaMeasure α β) := by
+    refine Integrable.of_bound (by fun_prop) (Real.exp |t|) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    apply Real.exp_le_exp.2
+    calc t * x ≤ |t * x| := le_abs_self _
+      _ = |t| * |x| := abs_mul _ _
+      _ ≤ |t| * 1 := by gcongr; rw [abs_of_nonneg hx.1]; exact hx.2
+      _ = |t| := mul_one _
+  have hpos : 0 < ∫ x, Real.exp (t * x) ∂betaMeasure α β :=
+    integral_exp_pos (f := fun x => t * x) hint
+  simpa [betaExpMoment, pow_zero, one_mul] using hpos
 
 /-- The Riccati identity: with $\varphi_k(t) = \mathbb{E}\,X^k e^{tX}$ for
 $X \sim \mathrm{Beta}(\alpha, \beta)$, $y = \varphi_1/\varphi_0$, $b = \alpha + \beta$,
