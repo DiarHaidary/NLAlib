@@ -229,7 +229,10 @@ Proof: S, about 10 lines. `ae_iff`, `Measure.smul_apply`, `Measure.coe_finsetSum
 `Finset.sum_apply`, `spectralMeasure_compl_spectrum_eq_zero` per probe, `smul_zero`. -/
 theorem ae_mem_spectrum_probeSpectralMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) :
     ∀ᵐ x ∂probeSpectralMeasure A Ω, x ∈ spectrum ℝ A := by
-  sorry
+  unfold probeSpectralMeasure
+  rw [ae_iff, Measure.smul_apply, Measure.coe_finsetSum, Finset.sum_apply, smul_eq_zero]
+  right
+  exact Finset.sum_eq_zero fun j _ => spectralMeasure_compl_spectrum_eq_zero A _
 
 /-- The probe spectral measure lives in every interval containing the spectrum: for every square
 $\mathbf{A}$ with spectrum in $[a, a']$ and every test matrix $\mathbf{\Omega}$, almost every
