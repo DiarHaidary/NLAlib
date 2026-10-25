@@ -886,6 +886,184 @@ theorem measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_sl
     (∫ x, f x ∂probeSpectralMeasure A (X ω)) (∫ x, f x ∂slqMeasure A (X ω) (q + 1))
   nlinarith [mul_le_mul_of_nonneg_left hmass hJ]
 
+/-- A Lipschitz function on $[a, b]$ is integrable against a finite measure carried by $[a, b]$. -/
+private theorem integrable_of_lipschitz_ae {ρ : Measure ℝ} [IsFiniteMeasure ρ] {a b : ℝ}
+    (hρ : ∀ᵐ x ∂ρ, x ∈ Set.Icc a b) {f : ℝ → ℝ} {L : ℝ≥0}
+    (hf : LipschitzOnWith L f (Set.Icc a b)) : Integrable f ρ := by
+  have h := hf.continuousOn.integrableOn_Icc (μ := ρ)
+  rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hρ] at h
+
+/-- Scaling a measure by the inverse of the mass of the probe spectral measure. -/
+private theorem measureReal_inv_mass_smul (P R : Measure ℝ) (S : Set ℝ) :
+    ((P Set.univ)⁻¹ • R).real S = (P.real Set.univ)⁻¹ * R.real S := by
+  simp only [measureReal_def, Measure.smul_apply, smul_eq_mul, ENNReal.toReal_mul,
+    ENNReal.toReal_inv]
+
+/-- On the good event, the empirical measure and the normalised probe measure are close against
+Lipschitz test functions: the distribution functions differ by at most $2\tau$. -/
+private theorem abs_integral_empirical_sub_normalised_probe_le [Nonempty n]
+    {A : Matrix n n ℝ} (hA : A.IsHermitian) {a b : ℝ} (hab : a < b)
+    (hs : spectrum ℝ A ⊆ Set.Icc a b) (Ω : Matrix n m ℝ) {τ : ℝ}
+    (hK : ∀ x ∈ spectrum ℝ A, |(empiricalSpectralMeasure A).real (Set.Iic x) -
+      (probeSpectralMeasure A Ω).real (Set.Iic x)| ≤ τ)
+    (hτ : 0 ≤ τ) (hMpos : 0 < (probeSpectralMeasure A Ω).real Set.univ) {L : ℝ≥0} {f : ℝ → ℝ}
+    (hf : LipschitzOnWith L f (Set.Icc a b)) :
+    |∫ x, f x ∂empiricalSpectralMeasure A -
+      ∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω)| ≤
+      L * (b - a) * (2 * τ) := by
+  have hfin := Matrix.finite_real_spectrum (A := A)
+  have hνs : ∀ᵐ x ∂empiricalSpectralMeasure A, x ∈ hfin.toFinset :=
+    (hA.ae_mem_spectrum_empiricalSpectralMeasure).mono fun x hx => hfin.mem_toFinset.mpr hx
+  have hPs : ∀ᵐ x ∂probeSpectralMeasure A Ω, x ∈ hfin.toFinset :=
+    (ae_mem_spectrum_probeSpectralMeasure A Ω).mono fun x hx => hfin.mem_toFinset.mpr hx
+  have hρs : ∀ᵐ x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω),
+      x ∈ hfin.toFinset :=
+    (Measure.ae_ennreal_smul_measure_iff (ENNReal.inv_ne_zero.mpr (measure_ne_top _ _))).mpr hPs
+  have hK2 : ∀ x ∈ hfin.toFinset,
+      |(empiricalSpectralMeasure A).real (Set.Iic x) -
+        ((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω).real (Set.Iic x)| ≤
+        2 * τ := by
+    intro x hx
+    have hxs : x ∈ spectrum ℝ A := hfin.mem_toFinset.mp hx
+    have hu := hK x hxs
+    rw [measureReal_inv_mass_smul]
+    have hu0 : 0 ≤ (probeSpectralMeasure A Ω).real (Set.Iic x) := measureReal_nonneg
+    have hM : |1 - (probeSpectralMeasure A Ω).real Set.univ| ≤ τ :=
+      Matrix.IsHermitian.abs_one_sub_probeSpectralMeasure_real_univ_le hA hK
+    have hM' : |(probeSpectralMeasure A Ω).real Set.univ - 1| ≤ τ := by
+      rw [abs_sub_comm]; exact hM
+    set M := (probeSpectralMeasure A Ω).real Set.univ with hMdef
+    set u := (probeSpectralMeasure A Ω).real (Set.Iic x)
+    set v := (empiricalSpectralMeasure A).real (Set.Iic x)
+    have hinv : M⁻¹ * u ≤ 1 := by
+      rw [inv_mul_le_iff₀ hMpos]
+      have huM : u ≤ M := measureReal_mono (Set.subset_univ _)
+      linarith
+    have hw : |M⁻¹ * u * (M - 1)| ≤ τ := by
+      rw [abs_mul, abs_of_nonneg (mul_nonneg (inv_nonneg.2 hMpos.le) hu0)]
+      calc M⁻¹ * u * |M - 1| ≤ 1 * τ := mul_le_mul hinv hM' (abs_nonneg _) zero_le_one
+        _ = τ := one_mul τ
+    have e : v - M⁻¹ * u = (v - u) + M⁻¹ * u * (M - 1) := by
+      field_simp
+      ring
+    rw [e]
+    calc |(v - u) + M⁻¹ * u * (M - 1)| ≤ |v - u| + |M⁻¹ * u * (M - 1)| := abs_add_le _ _
+      _ ≤ τ + τ := add_le_add hu hw
+      _ = 2 * τ := by ring
+  have hν1 : (empiricalSpectralMeasure A).real Set.univ = 1 := by simp
+  have hρ1 : ((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω).real
+      Set.univ = 1 := by
+    rw [measureReal_inv_mass_smul]
+    exact inv_mul_cancel₀ hMpos.ne'
+  have hνab : ∀ᵐ x ∂empiricalSpectralMeasure A, x ∈ Set.Icc a b :=
+    (hA.ae_mem_spectrum_empiricalSpectralMeasure).mono fun x hx => hs hx
+  have hρab : ∀ᵐ x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω),
+      x ∈ Set.Icc a b :=
+    (Measure.ae_ennreal_smul_measure_iff (ENNReal.inv_ne_zero.mpr (measure_ne_top _ _))).mpr
+      (ae_mem_Icc_probeSpectralMeasure A hs Ω)
+  have hfν := integrable_of_lipschitz_ae hνab hf
+  have hfρ := integrable_of_lipschitz_ae hρab hf
+  have hg : LipschitzOnWith L (fun x => f x - f b) (Set.Icc a b) := by
+    refine LipschitzOnWith.of_dist_le_mul fun x hx y hy => ?_
+    simpa only [dist_sub_right] using hf.dist_le_mul x hx y hy
+  have hmain := MeasureTheory.abs_integral_sub_integral_le_of_lipschitzOnWith hνs hρs
+    (fun x hx => hs (hfin.mem_toFinset.mp hx)) hab.le hg (by linarith) hK2
+  simp only [sub_self, abs_zero, zero_add] at hmain
+  rw [integral_sub hfν (integrable_const _), integral_sub hfρ (integrable_const _)] at hmain
+  simpa [integral_const, hν1, hρ1, sub_sub_sub_cancel_right] using hmain
+
+/-- The normalised probe measure and the normalised SLQ measure differ, against Lipschitz test
+functions, by the Gauss-rule term: Jackson's polynomial and moment matching. -/
+private theorem abs_integral_normalised_probe_sub_slq_le
+    {A : Matrix n n ℝ} (hA : A.IsHermitian) {a b : ℝ} (hab : a < b)
+    (hs : spectrum ℝ A ⊆ Set.Icc a b) (Ω : Matrix n m ℝ) (q : ℕ)
+    (hMpos : 0 < (probeSpectralMeasure A Ω).real Set.univ)
+    (hQM : (slqMeasure A Ω (q + 1)).real Set.univ = (probeSpectralMeasure A Ω).real Set.univ)
+    {L : ℝ≥0} {f : ℝ → ℝ} (hf : LipschitzOnWith L f (Set.Icc a b)) :
+    |∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω) -
+      ∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1))| ≤
+      jacksonApproximationConstant * L * (b - a) / (2 * q + 3) := by
+  have hmatch := hA.matchesMoments_probeSpectralMeasure_slqMeasure Ω (q + 1)
+  have hPne : probeSpectralMeasure A Ω Set.univ ≠ 0 := by
+    intro h
+    rw [measureReal_def, h] at hMpos
+    simp at hMpos
+  have : IsFiniteMeasure ((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω) :=
+    ⟨by rw [Measure.smul_apply, smul_eq_mul]
+        exact ENNReal.mul_lt_top (ENNReal.inv_lt_top.mpr (pos_iff_ne_zero.mpr hPne))
+          (measure_lt_top _ _)⟩
+  have : IsFiniteMeasure ((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1)) :=
+    ⟨by rw [Measure.smul_apply, smul_eq_mul]
+        exact ENNReal.mul_lt_top (ENNReal.inv_lt_top.mpr (pos_iff_ne_zero.mpr hPne))
+          (measure_lt_top _ _)⟩
+  have hρPab : ∀ᵐ x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω),
+      x ∈ Set.Icc a b :=
+    (Measure.ae_ennreal_smul_measure_iff (ENNReal.inv_ne_zero.mpr (measure_ne_top _ _))).mpr
+      (ae_mem_Icc_probeSpectralMeasure A hs Ω)
+  have hρQab : ∀ᵐ x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1)),
+      x ∈ Set.Icc a b :=
+    (Measure.ae_ennreal_smul_measure_iff (ENNReal.inv_ne_zero.mpr (measure_ne_top _ _))).mpr
+      (hA.ae_mem_Icc_slqMeasure hs Ω (q + 1))
+  have hfP := integrable_of_lipschitz_ae hρPab hf
+  have hfQ := integrable_of_lipschitz_ae hρQab hf
+  have hmatchN := hmatch.smul ((probeSpectralMeasure A Ω Set.univ)⁻¹)
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * q + 1)
+  have hp' : p.degree < 2 * ((q + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
+  have h := MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn hmatchN hρPab
+    hρQab hfP hfQ hp' hε
+  have hρP1 : ((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω).real
+      Set.univ = 1 := by
+    rw [measureReal_inv_mass_smul]
+    exact inv_mul_cancel₀ hMpos.ne'
+  have hρQ1 : ((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1)).real
+      Set.univ = 1 := by
+    rw [measureReal_inv_mass_smul, hQM]
+    exact inv_mul_cancel₀ hMpos.ne'
+  rw [hρP1, hρQ1] at h
+  refine h.trans (le_of_eq ?_)
+  push_cast
+  field_simp
+  ring
+
+/-- Deterministic step for the normalised SLQ measure: on the Kolmogorov-good event, every
+Lipschitz test function is within the normalised SLQ error. -/
+private theorem abs_integral_sub_integral_slq_le_of_hK
+    {A : Matrix n n ℝ} (hA : A.IsHermitian) {a b : ℝ} (hab : a < b)
+    (hs : spectrum ℝ A ⊆ Set.Icc a b) (Ω : Matrix n m ℝ) (q : ℕ) {τ : ℝ} (hτ : 0 ≤ τ)
+    (hτ1 : τ < 1)
+    (hK : ∀ x ∈ spectrum ℝ A, |(empiricalSpectralMeasure A).real (Set.Iic x) -
+      (probeSpectralMeasure A Ω).real (Set.Iic x)| ≤ τ)
+    {L : ℝ≥0} {f : ℝ → ℝ} (hf : LipschitzOnWith L f (Set.Icc a b)) :
+    |∫ x, f x ∂empiricalSpectralMeasure A -
+        ∫ x, f x ∂((slqMeasure A Ω (q + 1) Set.univ)⁻¹ • slqMeasure A Ω (q + 1))| ≤
+      L * (b - a) * (2 * τ) + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have h0 : empiricalSpectralMeasure A = 0 := by simp [empiricalSpectralMeasure]
+    have h1 : slqMeasure A Ω (q + 1) = 0 := by simp [slqMeasure]
+    simp only [h0, h1, integral_zero_measure, sub_zero, abs_zero, smul_zero]
+    have hJ := jacksonApproximationConstant_pos.le
+    have hba : 0 ≤ b - a := by linarith
+    have hq : (0 : ℝ) ≤ 2 * q + 3 := by positivity
+    exact add_nonneg (mul_nonneg (mul_nonneg L.2 hba) (by linarith))
+      (div_nonneg (mul_nonneg (mul_nonneg hJ L.2) hba) hq)
+  have hM : |1 - (probeSpectralMeasure A Ω).real Set.univ| ≤ τ :=
+    Matrix.IsHermitian.abs_one_sub_probeSpectralMeasure_real_univ_le hA hK
+  have hMpos : 0 < (probeSpectralMeasure A Ω).real Set.univ := by linarith [abs_le.mp hM]
+  have hQM : (slqMeasure A Ω (q + 1)).real Set.univ = (probeSpectralMeasure A Ω).real Set.univ :=
+    ((hA.matchesMoments_probeSpectralMeasure_slqMeasure Ω (q + 1)).measureReal_univ_eq
+      (by omega)).symm
+  have hQP : slqMeasure A Ω (q + 1) Set.univ = probeSpectralMeasure A Ω Set.univ :=
+    (ENNReal.toReal_eq_toReal_iff' (measure_ne_top _ _) (measure_ne_top _ _)).mp hQM
+  rw [hQP]
+  have h1 := abs_integral_empirical_sub_normalised_probe_le hA hab hs Ω hK hτ hMpos hf
+  have h2 := abs_integral_normalised_probe_sub_slq_le hA hab hs Ω q hMpos hQM hf
+  have h3 := abs_sub_le (∫ x, f x ∂empiricalSpectralMeasure A)
+    (∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω))
+    (∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1)))
+  linarith
+
 /-- **The mass-normalised SLQ measure approximates the spectral density, uniformly in Lipschitz
 test functions.** Let the entries of the real $n \times m$ test matrix $\mathbf{\Omega}$ be
 independent, each satisfying the sub-Gaussian moment generating function bound with variance
@@ -931,7 +1109,21 @@ measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_smul_slqMe
           ∫ x, f x ∂((slqMeasure A (X ω) (q + 1) Set.univ)⁻¹ • slqMeasure A (X ω) (q + 1))|} ≤
       2 * Fintype.card n * Real.exp (-(hansonWrightConstant * (Fintype.card m *
         Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
-  sorry
+  have hEv : {ω | ∃ f : ℝ → ℝ, LipschitzOnWith L f (Set.Icc a b) ∧
+        L * (b - a) * (2 * τ) + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
+        |∫ x, f x ∂empiricalSpectralMeasure A -
+          ∫ x, f x ∂((slqMeasure A (X ω) (q + 1) Set.univ)⁻¹ • slqMeasure A (X ω) (q + 1))|} ⊆
+      {ω | ∃ x ∈ spectrum ℝ A, τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
+        (probeSpectralMeasure A (X ω)).real (Set.Iic x)|} := by
+    rintro ω ⟨f, hf, hlt⟩
+    by_contra hcon
+    simp only [Set.mem_setOf_eq, not_exists, not_and, not_lt] at hcon
+    exact absurd hlt (not_lt.mpr (abs_integral_sub_integral_slq_le_of_hK hA hab hs (X ω) q hτ hτ1
+      hcon hf))
+  have := hind.isProbabilityMeasure
+  refine (measureReal_mono hEv).trans ?_
+  exact measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le
+    hind hsub hvar hA hτ
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
