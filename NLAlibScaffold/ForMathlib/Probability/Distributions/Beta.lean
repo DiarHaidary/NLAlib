@@ -268,7 +268,22 @@ private theorem intervalIntegral_rpow_mul_rpow_mul_exp_eq_zero {α β : ℝ} (h�
     (hβ : 0 < β) (t : ℝ) :
     ∫ x in (0 : ℝ)..1, x ^ (α - 1) * (1 - x) ^ (β - 1) *
       ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x)) = 0 := by
-  sorry
+  have hcont : ContinuousOn (fun x : ℝ => x ^ α * (1 - x) ^ β * Real.exp (t * x)) (Icc 0 1) := by
+    intro x _
+    apply ContinuousAt.continuousWithinAt
+    have h1 : ContinuousAt (fun x : ℝ => x ^ α) x :=
+      Real.continuousAt_rpow_const x α (Or.inr hα.le)
+    have h2 : ContinuousAt (fun x : ℝ => (1 - x) ^ β) x :=
+      ContinuousAt.rpow_const (continuousAt_const.sub continuousAt_id) (Or.inr hβ.le)
+    fun_prop
+  have hderiv : ∀ x ∈ Ioo (0 : ℝ) 1,
+      HasDerivAt (fun x : ℝ => x ^ α * (1 - x) ^ β * Real.exp (t * x))
+      (x ^ (α - 1) * (1 - x) ^ (β - 1) *
+        ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) x :=
+    fun x hx => hasDerivAt_rpow_mul_rpow_mul_exp hx
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le zero_le_one hcont hderiv
+    (intervalIntegrable_rpow_mul_rpow_mul_exp hα hβ t)]
+  simp [Real.zero_rpow hα.ne', Real.zero_rpow hβ.ne']
 
 /-- Kummer's equation in integral form: for $X \sim \mathrm{Beta}(\alpha, \beta)$,
 $\alpha, \beta > 0$ and real $t$,
