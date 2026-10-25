@@ -48,23 +48,23 @@ namespace NLAlib
 
 /-! ### Bounds and existence -/
 
+/-- On the empty set every error is admissible, so the minimax error is the junk value $0$. -/
+private theorem minimaxError_empty (f : ℝ → ℝ) (n : ℕ) : minimaxError f ∅ n = 0 := by
+  unfold minimaxError
+  convert Real.sInf_univ
+  exact Set.eq_univ_of_forall fun ε => ⟨0, by simp, fun x hx => absurd hx (Set.notMem_empty x)⟩
+
 /-- The minimax error is nonnegative: $0 \le E_n(f; s)$, for every $f$, $s$ and $n$ (the junk
 values are $0$).
 Proof: S, about 10 lines. If $s = \emptyset$ the set is `Set.univ` (`Metric.IsUniformApproxOn` is
 vacuous) and `Real.sInf_univ`; otherwise every element is nonnegative
 (`Metric.IsUniformApproxOn.nonneg`) and `Real.sInf_nonneg`. -/
 theorem minimaxError_nonneg (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) : 0 ≤ minimaxError f s n := by
-  unfold minimaxError
   rcases s.eq_empty_or_nonempty with rfl | hs
-  · have h : {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ n ∧
-        Metric.IsUniformApproxOn (fun x => p.eval x) f ∅ ε} = Set.univ :=
-      Set.eq_univ_of_forall fun ε => ⟨0, by simp, fun x hx => absurd hx (Set.notMem_empty x)⟩
-    rw [h, Real.sInf_univ]
-  · refine Real.sInf_nonneg fun ε hε => ?_
-    obtain ⟨p, _, hpε⟩ := hε
-    exact hpε.nonneg hs
+  · exact (minimaxError_empty f n).ge
+  · exact Real.sInf_nonneg fun ε ⟨_, _, hpε⟩ => hpε.nonneg hs
 
-/-- **Every approximant bounds the minimax error**: if $\deg p \le n$ and
+/-- Every approximant bounds the minimax error: if $\deg p \le n$ and
 $\lvert f(x) - p(x) \rvert \le \varepsilon$ on $s$ with $0 \le \varepsilon$, then
 $E_n(f; s) \le \varepsilon$. The form in which a constructive approximation theorem (Jackson,
 Bernstein ellipse, Chebyshev) bounds $E_n$.
@@ -75,17 +75,7 @@ theorem minimaxError_le_of_isUniformApproxOn {f : ℝ → ℝ} {s : Set ℝ} {n 
     (hp : p.degree ≤ n) {ε : ℝ} (hε₀ : 0 ≤ ε)
     (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f s ε) : minimaxError f s n ≤ ε := by
   rcases s.eq_empty_or_nonempty with rfl | hne
-  · have hbot : ¬ BddBelow {e : ℝ | ∃ q : ℝ[X], q.degree ≤ n ∧
-        Metric.IsUniformApproxOn (fun x => q.eval x) f ∅ e} := by
-      intro hb
-      obtain ⟨m, hm⟩ := hb
-      have hmem : m - 1 ∈ {e : ℝ | ∃ q : ℝ[X], q.degree ≤ n ∧
-          Metric.IsUniformApproxOn (fun x => q.eval x) f ∅ e} :=
-        ⟨p, hp, fun x hx => absurd hx (Set.notMem_empty x)⟩
-      linarith [hm hmem]
-    unfold minimaxError
-    rw [Real.sInf_of_not_bddBelow hbot]
-    exact hε₀
+  · exact (minimaxError_empty f n).trans_le hε₀
   · exact csInf_le ⟨0, fun _ ⟨_, _, h⟩ => h.nonneg hne⟩ ⟨p, hp, hε⟩
 
 /-- **A best approximation exists**: for $s$ compact and $f$ continuous on $s$ there is a real
@@ -113,42 +103,30 @@ theorem exists_degree_le_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {s : S
   have : FiniteDimensional ℝ (degreeLE ℝ n) := by
     rw [← degreeLT_succ_eq_degreeLE]
     exact LinearEquiv.finiteDimensional (degreeLTEquiv ℝ (n + 1)).symm
-  have : FiniteDimensional ℝ P := inferInstance
-  have hpt : ∀ (q : ℝ[X]) (z : s),
+  have hpt (q : ℝ[X]) (z : s) :
       dist (g z) (toContinuousMapOnAlgHom s q z) = dist (f z) (q.eval z) := by
-    intro q z
     simp [g, Real.dist_eq]
+  -- the pointwise error of `q` is at most the distance from `g` to its restriction
+  have hle (q : ℝ[X]) : Metric.IsUniformApproxOn (fun x => q.eval x) f s
+      (dist g (toContinuousMapOnAlgHom s q)) := fun x hx => by
+    rw [dist_comm, ← hpt q ⟨x, hx⟩]
+    exact ContinuousMap.dist_apply_le_dist (f := g) (g := toContinuousMapOnAlgHom s q) ⟨x, hx⟩
   obtain ⟨y, hyP, hy⟩ := Submodule.exists_infDist_eq_dist P g
   obtain ⟨p, hpn, rfl⟩ := Submodule.mem_map.mp hyP
+  -- the nearest point attains the infimum
   have hleast : IsLeast {ε : ℝ | ∃ q : ℝ[X], q.degree ≤ n ∧
       Metric.IsUniformApproxOn (fun x => q.eval x) f s ε}
       (dist g (toContinuousMapOnAlgHom s p)) := by
-    refine ⟨⟨p, mem_degreeLE.mp hpn, fun x hx => ?_⟩, ?_⟩
-    · have h := ContinuousMap.dist_apply_le_dist (f := g)
-        (g := toContinuousMapOnAlgHom s p) ⟨x, hx⟩
-      have h2 : dist (f x) (p.eval x) = dist (g ⟨x, hx⟩) (toContinuousMapOnAlgHom s p ⟨x, hx⟩) :=
-        (hpt p ⟨x, hx⟩).symm
-      rw [dist_comm, h2]
-      exact h
-    · rintro ε ⟨q, hqn, hq⟩
-      have hε : 0 ≤ ε := hq.nonneg hne
-      calc dist g (toContinuousMapOnAlgHom s p) = Metric.infDist g (P : Set C(s, ℝ)) := hy.symm
-        _ ≤ dist g (toContinuousMapOnAlgHom s q) :=
-          Metric.infDist_le_dist_of_mem (Submodule.mem_map_of_mem (mem_degreeLE.mpr hqn))
-        _ ≤ ε := (ContinuousMap.dist_le hε).mpr fun z => by
+    refine ⟨⟨p, mem_degreeLE.mp hpn, hle p⟩, ?_⟩
+    rintro ε ⟨q, hqn, hq⟩
+    calc dist g (toContinuousMapOnAlgHom s p) = Metric.infDist g (P : Set C(s, ℝ)) := hy.symm
+      _ ≤ dist g (toContinuousMapOnAlgHom s q) :=
+        Metric.infDist_le_dist_of_mem (Submodule.mem_map_of_mem (mem_degreeLE.mpr hqn))
+      _ ≤ ε := (ContinuousMap.dist_le (hq.nonneg hne)).mpr fun z => by
           rw [hpt q z, dist_comm]; exact hq z z.2
-  have hmin : minimaxError f s n = dist g (toContinuousMapOnAlgHom s p) := by
-    unfold minimaxError
-    exact hleast.csInf_eq
   refine ⟨p, mem_degreeLE.mp hpn, ?_⟩
-  rw [hmin]
-  intro x hx
-  have h := ContinuousMap.dist_apply_le_dist (f := g)
-    (g := toContinuousMapOnAlgHom s p) ⟨x, hx⟩
-  have h2 : dist (f x) (p.eval x) = dist (g ⟨x, hx⟩) (toContinuousMapOnAlgHom s p ⟨x, hx⟩) :=
-    (hpt p ⟨x, hx⟩).symm
-  rw [dist_comm, h2]
-  exact h
+  rw [show minimaxError f s n = _ from hleast.csInf_eq]
+  exact hle p
 
 /-- The minimax error is a minimum: for $s$ compact and nonempty and $f$ continuous on $s$,
 $E_n(f; s)$ is the least $\varepsilon$ such that some real polynomial of degree at most $n$ is
@@ -183,35 +161,20 @@ theorem minimaxError_eq_infDist {s : Set ℝ} [CompactSpace s] {f : ℝ → ℝ}
   have hPne : (((degreeLE ℝ n).map (toContinuousMapOnAlgHom s).toLinearMap :
       Submodule ℝ C(s, ℝ)) : Set C(s, ℝ)).Nonempty :=
     ⟨_, hmem 0 (by simp)⟩
-  have hf : ContinuousOn f s := by
-    refine continuousOn_iff_continuous_domRestrict.mpr ?_
-    have : s.domRestrict f = g := funext fun x => (hg x).symm
-    rw [this]
+  have hf : ContinuousOn f s := continuousOn_iff_continuous_domRestrict.mpr <| by
+    rw [show s.domRestrict f = g from funext fun x => (hg x).symm]
     exact g.continuous
   apply le_antisymm
-  · refine (Metric.le_infDist hPne).mpr ?_
-    intro y hy
+  · refine (Metric.le_infDist hPne).mpr fun y hy => ?_
     obtain ⟨q, hq, rfl⟩ := Submodule.mem_map.mp hy
-    refine minimaxError_le_of_isUniformApproxOn (mem_degreeLE.mp hq) dist_nonneg ?_
-    intro x hx
-    have h1 := ContinuousMap.norm_coe_le_norm (g - toContinuousMapOnAlgHom s q) ⟨x, hx⟩
-    rw [← dist_eq_norm] at h1
-    have h2 : ‖(g - toContinuousMapOnAlgHom s q) ⟨x, hx⟩‖ = |q.eval x - f x| := by
-      simp [hg ⟨x, hx⟩, toContinuousMapOnAlgHom_apply, Real.norm_eq_abs, abs_sub_comm]
-    rw [h2] at h1
-    rw [Real.dist_eq]
-    exact h1
-  · obtain ⟨p, hp, hpε⟩ :=
-      exists_degree_le_isUniformApproxOn_minimaxError (isCompact_iff_compactSpace.mpr inferInstance)
-        hf n
-    refine (Metric.infDist_le_dist_of_mem (hmem p hp)).trans ?_
-    rw [dist_eq_norm, ← toContinuousMapOnAlgHom_apply]
-    refine (ContinuousMap.norm_le _ (minimaxError_nonneg f s n)).mpr fun x => ?_
-    have := hpε x x.2
-    rw [Real.dist_eq] at this
-    simp only [ContinuousMap.sub_apply, hg x, Real.norm_eq_abs]
-    rw [abs_sub_comm]
-    exact this
+    refine minimaxError_le_of_isUniformApproxOn (mem_degreeLE.mp hq) dist_nonneg fun x hx => ?_
+    simpa [hg, dist_comm] using
+      ContinuousMap.dist_apply_le_dist (f := g) (g := toContinuousMapOnAlgHom s q) ⟨x, hx⟩
+  · obtain ⟨p, hp, hpε⟩ := exists_degree_le_isUniformApproxOn_minimaxError
+      (isCompact_iff_compactSpace.mpr inferInstance) hf n
+    refine (Metric.infDist_le_dist_of_mem (hmem p hp)).trans
+      ((ContinuousMap.dist_le (minimaxError_nonneg f s n)).mpr fun x => ?_)
+    simpa [hg, dist_comm] using hpε x x.2
 
 /-! ### The chosen best approximation -/
 
@@ -226,7 +189,7 @@ theorem degree_minimaxPoly_le (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) :
   · exact h.choose_spec.1
   · simp
 
-/-- **The chosen best approximation attains the minimax error**: for $s$ compact and $f$
+/-- The chosen best approximation attains the minimax error: for $s$ compact and $f$
 continuous on $s$, $\lvert f(x) - \mathrm{minimaxPoly}\ f\ s\ n\ (x) \rvert \le E_n(f; s)$ for
 all $x \in s$.
 Proof: S, about 4 lines. Unfold `minimaxPoly`; the condition holds by
@@ -279,17 +242,12 @@ theorem minimaxError_add_eval (f : ℝ → ℝ) (s : Set ℝ) {n : ℕ} {q : ℝ
   ext ε
   constructor
   · rintro ⟨p, hp, hε⟩
-    refine ⟨p - q, (degree_sub_le _ _).trans (max_le hp hq), fun x hx => ?_⟩
-    have h := hε x hx
-    simp only [Real.dist_eq, Polynomial.eval_sub] at h ⊢
-    convert h using 2
-    ring
+    refine ⟨p - q, (degree_sub_le _ _).trans (max_le hp hq), fun x hx => (hε x hx).trans_eq' ?_⟩
+    simp only [Real.dist_eq, eval_sub]
+    ring_nf
   · rintro ⟨p, hp, hε⟩
-    refine ⟨p + q, (degree_add_le _ _).trans (max_le hp hq), fun x hx => ?_⟩
-    have h := hε x hx
-    simp only [Polynomial.eval_add]
-    rw [dist_add_right]
-    exact h
+    exact ⟨p + q, (degree_add_le _ _).trans (max_le hp hq), fun x hx => by
+      simpa only [eval_add, dist_add_right] using hε x hx⟩
 
 /-- The minimax error is absolutely homogeneous: $E_n(cf; s) = \lvert c \rvert E_n(f; s)$, for
 every $c$, $f$, $s$ and $n$ (junk values included). [Rivlin1981, Ch. 1] (locator to check).
@@ -319,18 +277,16 @@ theorem minimaxError_const_mul (c : ℝ) (f : ℝ → ℝ) (s : Set ℝ) (n : �
         refine ⟨|c|⁻¹ * ε, ⟨C c⁻¹ * p, by rw [degree_C_mul (inv_ne_zero hc)]; exact hp, ?_⟩,
           mul_inv_cancel_left₀ (abs_ne_zero.mpr hc) ε⟩
         intro x hx
-        have key : c⁻¹ * p.eval x - f x = c⁻¹ * (p.eval x - c * f x) := by
-          rw [mul_sub, ← mul_assoc, inv_mul_cancel₀ hc, one_mul]
-        simp only [eval_mul, eval_C]
-        rw [key, abs_mul, abs_inv]
-        exact mul_le_mul_of_nonneg_left (hε x hx) (inv_nonneg.mpr (abs_nonneg c))
+        rw [eval_mul, eval_C, show c⁻¹ * p.eval x - f x = c⁻¹ * (p.eval x - c * f x) by
+          field_simp, abs_mul, abs_inv]
+        gcongr
+        exact hε x hx
       · rintro ⟨η, ⟨p, hp, hη⟩, rfl⟩
         refine ⟨C c * p, by rw [degree_C_mul hc]; exact hp, ?_⟩
         intro x hx
-        have key : c * p.eval x - c * f x = c * (p.eval x - f x) := by ring
-        simp only [eval_mul, eval_C]
-        rw [key, abs_mul]
-        exact mul_le_mul_of_nonneg_left (hη x hx) (abs_nonneg c)
+        rw [eval_mul, eval_C, ← mul_sub, abs_mul]
+        gcongr
+        exact hη x hx
     unfold minimaxError
     rw [hS, Real.sInf_smul_of_nonneg (abs_nonneg c), smul_eq_mul]
 
@@ -370,9 +326,8 @@ theorem minimaxError_comp_mul_add (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) {α 
       minimaxError f s n := by
   have hdeg : ∀ (p L : ℝ[X]), p.degree ≤ n → L.natDegree ≤ 1 → (p.comp L).degree ≤ n := by
     intro p L hp hL
-    refine degree_le_of_natDegree_le (natDegree_comp_le.trans ?_)
-    have := natDegree_le_of_degree_le hp
-    nlinarith [Nat.mul_le_mul this hL]
+    exact degree_le_of_natDegree_le (natDegree_comp_le.trans
+      ((Nat.mul_le_mul (natDegree_le_of_degree_le hp) hL).trans_eq (mul_one n)))
   unfold minimaxError
   congr 1
   ext ε
@@ -380,20 +335,13 @@ theorem minimaxError_comp_mul_add (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) {α 
   · rintro ⟨q, hq, hε⟩
     refine ⟨q.comp (C α⁻¹ * X - C (α⁻¹ * β)), hdeg _ _ hq ?_, fun y hy => ?_⟩
     · compute_degree!
-    · have e2 : α * (α⁻¹ * (y - β)) + β = y := by field_simp; ring
-      have ht : α * (α⁻¹ * (y - β)) + β ∈ s := by rw [e2]; exact hy
-      have := hε _ ht
-      have h3 : f (α * (α⁻¹ * (y - β)) + β) = f y := by rw [e2]
-      have e : α⁻¹ * y - α⁻¹ * β = α⁻¹ * (y - β) := by ring
-      simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X]
-      rw [e, ← h3]
-      exact this
+    · have e2 : α * (α⁻¹ * y - α⁻¹ * β) + β = y := by field_simp; ring
+      simpa only [eval_comp, eval_sub, eval_mul, eval_C, eval_X, e2] using
+        hε (α⁻¹ * y - α⁻¹ * β) (by rwa [Set.mem_preimage, e2])
   · rintro ⟨p, hp, hε⟩
     refine ⟨p.comp (C α * X + C β), hdeg _ _ hp ?_, fun t ht => ?_⟩
     · compute_degree!
-    · have := hε _ ht
-      simp only [eval_comp, eval_add, eval_mul, eval_C, eval_X]
-      exact this
+    · simpa only [eval_comp, eval_add, eval_mul, eval_C, eval_X] using hε _ ht
 
 /-- **Change of interval**: for $a < b$, pulling $f$ back from $[a, b]$ to $[-1, 1]$ by
 $t \mapsto ((b - a)t + b + a)/2$, the map used by the Chebyshev and Bernstein-ellipse
