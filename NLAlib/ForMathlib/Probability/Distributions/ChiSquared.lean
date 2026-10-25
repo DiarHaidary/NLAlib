@@ -173,10 +173,9 @@ private theorem subst_integrand_eq {S : Set ℝ} {d : ℕ} (hd : 1 ≤ d) {x : �
         (x ^ (d - 1) * (Real.exp (-x ^ 2 / 2) * S.indicator (1 : ℝ → ℝ) (x ^ 2))) := by
   by_cases h : x ^ 2 ∈ S
   · rw [Real.rpow_two, Set.indicator_of_mem h, Set.indicator_of_mem h, ← mul_rpow_sq_pow_eq hx hd]
-    simp only [gammaPDFReal, sq_nonneg, if_true, Pi.one_apply]
-    norm_num
-    rw [show -(1 / 2 * x ^ 2) = -x ^ 2 / 2 by ring]
-    ring
+    simp only [gammaPDFReal, sq_nonneg, if_true, Pi.one_apply, abs_two, smul_eq_mul,
+      show (2 : ℝ) - 1 = 1 by norm_num, Real.rpow_one, mul_one]
+    ring_nf
   · simp [Set.indicator_of_notMem h]
 
 /-- The chi-square law, set by set: for $\iota$ nonempty and measurable $S \subseteq \mathbb{R}$,

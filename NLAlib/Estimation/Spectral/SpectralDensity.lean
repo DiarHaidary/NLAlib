@@ -396,15 +396,6 @@ theorem integral_integral_probeSpectralMeasure [Nonempty m] {X : Ω → Matrix n
 
 /-! ### Deterministic bounds over Lipschitz test functions -/
 
-omit [DecidableEq n] in
-private lemma isFiniteMeasure_empiricalSpectralMeasure_aux (A : Matrix n n 𝕜) :
-    IsFiniteMeasure (empiricalSpectralMeasure A) := by
-  rcases isEmpty_or_nonempty n with hn | hn
-  · unfold empiricalSpectralMeasure
-    simp only [Fintype.card_eq_zero, Finset.range_zero, Finset.sum_empty, smul_zero]
-    infer_instance
-  · infer_instance
-
 /-- Distribution functions control Lipschitz test functions: for Hermitian $\mathbf{A}$ with
 spectrum in $[a, b]$, $a \le b$, a test matrix $\mathbf{\Omega}$ and $\tau \ge 0$: if at every
 eigenvalue $x$ the distribution functions of $\nu_{\mathbf{A}}$ (the empirical spectral measure)
@@ -422,7 +413,6 @@ _root_.Matrix.IsHermitian.abs_integral_empiricalSpectralMeasure_sub_integral_pro
     {f : ℝ → ℝ} {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a b)) :
     |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂probeSpectralMeasure A Ω| ≤
       (|f b| + L * (b - a)) * τ := by
-  have := isFiniteMeasure_empiricalSpectralMeasure_aux A
   exact MeasureTheory.abs_integral_sub_integral_le_of_lipschitzOnWith
     (by
       filter_upwards [hA.ae_mem_spectrum_empiricalSpectralMeasure] with x hx

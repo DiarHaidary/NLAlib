@@ -590,6 +590,17 @@ instance isProbabilityMeasure_empiricalSpectralMeasure [Nonempty n] (A : Matrix 
   exact ENNReal.inv_mul_cancel (by exact_mod_cast Fintype.card_ne_zero) (ENNReal.natCast_ne_top _)
 
 omit [DecidableEq n] in
+/-- The empirical spectral measure of every square matrix is a finite measure (the zero measure
+for the empty matrix). -/
+instance isFiniteMeasure_empiricalSpectralMeasure (A : Matrix n n 𝕜) :
+    IsFiniteMeasure (empiricalSpectralMeasure A) := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · unfold empiricalSpectralMeasure
+    simp only [Fintype.card_eq_zero, Finset.range_zero, Finset.sum_empty, smul_zero]
+    infer_instance
+  · infer_instance
+
+omit [DecidableEq n] in
 /-- The integral against the empirical spectral measure, for every square $\mathbf{A}$ and
 every $f : \mathbb{R} \to \mathbb{R}$, is the average of $f$ over the eigenvalues counted with
 multiplicity: $\lvert n\rvert^{-1}\sum_{k<\lvert n\rvert} f(\lambda_k(\mathbf{A}))$. -/
