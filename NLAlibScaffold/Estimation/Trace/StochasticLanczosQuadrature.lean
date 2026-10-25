@@ -48,6 +48,18 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n m : Type*} [Fintype n] [DecidableEq n] 
 
 /-! ### The algorithm -/
 
+/-- A probe's Lanczos-FA quadratic form is real, for Hermitian $\mathbf{A}$. -/
+private theorem coe_re_star_dotProduct_lanczosFA {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
+    ((RCLike.re (star b ⬝ᵥ lanczosFA A f b q) : ℝ) : 𝕜) = star b ⬝ᵥ lanczosFA A f b q := by
+  obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  have key : star b ⬝ᵥ lanczosFA A f b q = quadForm (cfc f (Qᴴ * A * Q)) (Qᴴ *ᵥ b) := by
+    rw [hQ.lanczosFA_eq hK f, quadForm_def, Matrix.dotProduct_mulVec, Matrix.star_mulVec,
+      Matrix.conjTranspose_conjTranspose]
+  have hH : (cfc f (Qᴴ * A * Q)).IsHermitian := cfc_predicate (p := IsSelfAdjoint) f _
+  rw [key, hH.coe_re_quadForm]
+
 /-- **SLQ is what the Lanczos algorithm computes**: for Hermitian $\mathbf{A}$, every
 $f : \mathbb{R} \to \mathbb{R}$, every test matrix $\mathbf{\Omega}$ with $m$ columns
 $\boldsymbol{\omega}_j$ and every $q$,
@@ -67,7 +79,12 @@ theorem _root_.Matrix.IsHermitian.slq_eq_sum_lanczosFA {A : Matrix n n 𝕜} (hA
     (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
     slq A f Ω q =
       (∑ j, star (fun i => Ω i j) ⬝ᵥ lanczosFA A f (fun i => Ω i j) q) / Fintype.card m := by
-  sorry
+  unfold slq
+  congr 1
+  rw [RCLike.ofReal_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [← hA.lanczosQuadrature_eq_gaussQuadrature, integral_lanczosQuadrature,
+    coe_re_star_dotProduct_lanczosFA hA]
 
 /-! ### The error, deterministically -/
 
