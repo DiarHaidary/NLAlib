@@ -50,7 +50,23 @@ $\lvert\mu(f^{-1}A) - \nu(f^{-1}A)\rvert$, at most `tvDist μ ν` by `le_ciSup` 
 (`measureReal_mono`, `abs_sub_le_iff`). -/
 theorem tvDist_map_le {μ ν : Measure α} [IsFiniteMeasure μ] [IsFiniteMeasure ν] {f : α → β}
     (hf : Measurable f) : tvDist (μ.map f) (ν.map f) ≤ tvDist μ ν := by
-  sorry
+  have hbdd : BddAbove (Set.range fun A : {A : Set α // MeasurableSet A} =>
+      |μ.real A - ν.real A|) := by
+    refine ⟨μ.real Set.univ + ν.real Set.univ, ?_⟩
+    rintro _ ⟨A, rfl⟩
+    have hμ : μ.real A ≤ μ.real Set.univ := measureReal_mono (Set.subset_univ _)
+    have hν : ν.real A ≤ ν.real Set.univ := measureReal_mono (Set.subset_univ _)
+    have hμ0 : 0 ≤ μ.real A := measureReal_nonneg
+    have hν0 : 0 ≤ ν.real A := measureReal_nonneg
+    rw [abs_sub_le_iff]
+    constructor <;> linarith
+  unfold tvDist
+  apply ciSup_le
+  rintro ⟨A, hA⟩
+  have hmap : ∀ m : Measure α, m.real (f ⁻¹' A) = (m.map f).real A := fun m => by
+    rw [measureReal_def, measureReal_def, Measure.map_apply hf hA]
+  rw [← hmap, ← hmap]
+  exact le_ciSup hbdd ⟨f ⁻¹' A, hf hA⟩
 
 /-- **Le Cam's two-point bound**: for probability measures $\mu$, $\nu$ and a measurable set
 $A$ (the region where a test decides $\nu$),
