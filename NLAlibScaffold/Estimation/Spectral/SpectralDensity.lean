@@ -253,7 +253,17 @@ Proof: S, about 12 lines. As `ae_mem_spectrum_probeSpectralMeasure`, with
 theorem _root_.Matrix.IsHermitian.ae_mem_Icc_slqMeasure {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (Ω : Matrix n m 𝕜)
     (q : ℕ) : ∀ᵐ x ∂slqMeasure A Ω q, x ∈ Set.Icc a a' := by
-  sorry
+  have hprobe : ∀ j, ∀ᵐ x ∂spectralMeasure A (fun i => Ω i j), x ∈ Set.Icc a a' :=
+    fun j => ae_mem_Icc_spectralMeasure A hs _
+  have hgauss : ∀ j, ∀ᵐ x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q,
+      x ∈ Set.Icc a a' := fun j => ae_mem_Icc_gaussQuadrature (hprobe j) q
+  have hsum : ∀ᵐ x ∂(∑ j, gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q),
+      x ∈ Set.Icc a a' := by
+    simp only [ae_iff, Measure.coe_finsetSum, Finset.sum_apply] at hgauss ⊢
+    exact Finset.sum_eq_zero fun j _ => hgauss j
+  unfold slqMeasure
+  rw [ae_iff] at hsum ⊢
+  rw [Measure.smul_apply, hsum, smul_zero]
 
 /-! ### Moments and exactness -/
 
