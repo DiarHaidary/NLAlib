@@ -671,6 +671,62 @@ $2^{-n}T_{n + 1}$, bounded by $2^{-n}$ (`abs_eval_T_real_le_one`) and alternatin
 Result: chebyshev-monic-minimal -/
 theorem minimaxError_pow_Icc_neg_one_one (n : ℕ) :
     minimaxError (fun x => x ^ (n + 1)) (Set.Icc (-1) 1) n = ((2 : ℝ) ^ n)⁻¹ := by
-  sorry
+  have hc0 : (0 : ℝ) < ((2 : ℝ) ^ n)⁻¹ := by positivity
+  have hTlead : (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).leadingCoeff = 2 ^ n := by
+    rw [Chebyshev.leadingCoeff_T]
+    simp; omega
+  have hTdeg : (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).natDegree = n + 1 := by
+    rw [Chebyshev.natDegree_T]
+    rfl
+  have hT0 : Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ) ≠ 0 := by
+    intro h
+    rw [h, Polynomial.leadingCoeff_zero] at hTlead
+    exact (by positivity : (2 : ℝ) ^ n ≠ 0) hTlead.symm
+  have hfun : (fun x : ℝ => x ^ (n + 1) - (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
+      Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x) =
+      fun x => ((2 : ℝ) ^ n)⁻¹ * (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x := by
+    funext x
+    simp only [eval_sub, eval_pow, eval_X, eval_mul, eval_C]
+    ring
+  have hdeg : (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
+      Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).degree ≤ (n : WithBot ℕ) := by
+    have hq : (C ((2 : ℝ) ^ n)⁻¹ * Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).degree =
+        ((n + 1 : ℕ) : WithBot ℕ) := by
+      rw [degree_C_mul hc0.ne', degree_eq_natDegree hT0, hTdeg]
+    have hlc : (X ^ (n + 1) : ℝ[X]).leadingCoeff =
+        (C ((2 : ℝ) ^ n)⁻¹ * Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).leadingCoeff := by
+      rw [leadingCoeff_X_pow, leadingCoeff_mul, leadingCoeff_C, hTlead]
+      exact (inv_mul_cancel₀ (by positivity)).symm
+    have hlt := degree_sub_lt_left (by rw [degree_X_pow, hq]) (pow_ne_zero _ X_ne_zero) hlc
+    rw [degree_X_pow] at hlt
+    exact Order.le_of_lt_succ hlt
+  have halt : AlternatesOn (fun x : ℝ => x ^ (n + 1) - (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
+      Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x) (Set.Icc (-1) 1) (n + 2) ((2 : ℝ) ^ n)⁻¹ := by
+    rw [hfun]
+    obtain ⟨x, hx, hxs, σ, hσ, h⟩ := alternatesOn_eval_T_real (n + 1)
+    refine ⟨x, hx, hxs, σ, hσ, fun i => ?_⟩
+    have := mul_le_mul_of_nonneg_left (h i) hc0.le
+    linarith
+  have hbound : Metric.IsUniformApproxOn
+      (fun x => (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ * Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x)
+      (fun x => x ^ (n + 1)) (Set.Icc (-1) 1) ((2 : ℝ) ^ n)⁻¹ := by
+    intro x hx
+    have hsub : (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ * Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x
+        - x ^ (n + 1) = -(((2 : ℝ) ^ n)⁻¹ * (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x) := by
+      simp only [eval_sub, eval_pow, eval_X, eval_mul, eval_C]
+      ring
+    rw [Real.dist_eq, hsub, abs_neg, abs_mul, abs_of_pos hc0]
+    have hsub : x ∈ Set.Icc (Real.cos Real.pi) (Real.cos 0) := by
+      rw [Real.cos_pi, Real.cos_zero]
+      exact hx
+    obtain ⟨θ, -, hθ⟩ :=
+      intermediate_value_Icc' Real.pi_pos.le Real.continuous_cos.continuousOn hsub
+    have hcos := Chebyshev.T_real_cos θ ((n + 1 : ℕ) : ℤ)
+    rw [hθ] at hcos
+    have hT1 : |(Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x| ≤ 1 := by
+      rw [hcos]
+      exact Real.abs_cos_le_one _
+    exact mul_le_of_le_one_right hc0.le hT1
+  exact halt.minimaxError_eq hdeg hbound
 
 end NLAlib
