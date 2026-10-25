@@ -56,7 +56,8 @@ then it alternates on every $t \supseteq s$ with every level $\eta \le \varepsil
 Proof: S, about 4 lines. The same points and sign; `le_trans`. -/
 theorem AlternatesOn.mono {g : ℝ → ℝ} {s t : Set ℝ} {k : ℕ} {ε η : ℝ}
     (h : AlternatesOn g s k ε) (hst : s ⊆ t) (hηε : η ≤ ε) : AlternatesOn g t k η := by
-  sorry
+  obtain ⟨x, hx, hxs, σ, hσ, h⟩ := h
+  exact ⟨x, hx, fun i => hst (hxs i), σ, hσ, fun i => hηε.trans (h i)⟩
 
 /-- An alternation at the level of the uniform bound is an equioscillation: if $g$ alternates on
 $s$ at $k$ points with level $\varepsilon$ and $\lvert g \rvert \le \varepsilon$ on $s$, then
