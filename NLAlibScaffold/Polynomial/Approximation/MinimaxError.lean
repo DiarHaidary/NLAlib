@@ -232,7 +232,32 @@ theorem minimaxError_comp_mul_add (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) {α 
     (β : ℝ) :
     minimaxError (fun t => f (α * t + β)) ((fun t => α * t + β) ⁻¹' s) n =
       minimaxError f s n := by
-  sorry
+  have hdeg : ∀ (p L : ℝ[X]), p.degree ≤ n → L.natDegree ≤ 1 → (p.comp L).degree ≤ n := by
+    intro p L hp hL
+    refine degree_le_of_natDegree_le (natDegree_comp_le.trans ?_)
+    have := natDegree_le_of_degree_le hp
+    nlinarith [Nat.mul_le_mul this hL]
+  unfold minimaxError
+  congr 1
+  ext ε
+  constructor
+  · rintro ⟨q, hq, hε⟩
+    refine ⟨q.comp (C α⁻¹ * X - C (α⁻¹ * β)), hdeg _ _ hq ?_, fun y hy => ?_⟩
+    · compute_degree!
+    · have e2 : α * (α⁻¹ * (y - β)) + β = y := by field_simp; ring
+      have ht : α * (α⁻¹ * (y - β)) + β ∈ s := by rw [e2]; exact hy
+      have := hε _ ht
+      have h3 : f (α * (α⁻¹ * (y - β)) + β) = f y := by rw [e2]
+      have e : α⁻¹ * y - α⁻¹ * β = α⁻¹ * (y - β) := by ring
+      simp only [eval_comp, eval_sub, eval_mul, eval_C, eval_X]
+      rw [e, ← h3]
+      exact this
+  · rintro ⟨p, hp, hε⟩
+    refine ⟨p.comp (C α * X + C β), hdeg _ _ hp ?_, fun t ht => ?_⟩
+    · compute_degree!
+    · have := hε _ ht
+      simp only [eval_comp, eval_add, eval_mul, eval_C, eval_X]
+      exact this
 
 /-- **Change of interval**: for $a < b$, pulling $f$ back from $[a, b]$ to $[-1, 1]$ by
 $t \mapsto ((b - a)t + b + a)/2$, the map used by the Chebyshev and Bernstein-ellipse
