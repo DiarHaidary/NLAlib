@@ -1290,7 +1290,18 @@ theorem integral_lobattoQuadrature_le_integral_of_iteratedDeriv_nonpos
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 2 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, iteratedDeriv (2 * k + 2) f x ≤ 0) :
     ∫ x, f x ∂lobattoQuadrature μ a b k ≤ ∫ x, f x ∂μ := by
-  sorry
+  obtain ⟨ξ, hξ, heq⟩ := exists_integral_sub_integral_lobattoQuadrature_eq hμ hab k hf hf'
+  have hw : ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ
+      ≤ 0 := by
+    refine integral_nonpos_of_ae ?_
+    filter_upwards [hμ] with x hx
+    have h1 : 0 ≤ x - a := by linarith [hx.1]
+    have h2 : x - b ≤ 0 := by linarith [hx.2]
+    exact mul_nonpos_of_nonpos_of_nonneg (mul_nonpos_of_nonneg_of_nonpos h1 h2) (sq_nonneg _)
+  have hd : iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial ≤ 0 :=
+    div_nonpos_of_nonpos_of_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
+  have := mul_nonneg_of_nonpos_of_nonpos hd hw
+  linarith
 
 /-! ### The Radau Jacobi matrix -/
 
