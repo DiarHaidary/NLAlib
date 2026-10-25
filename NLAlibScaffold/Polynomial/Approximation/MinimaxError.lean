@@ -54,7 +54,15 @@ Proof: S, about 10 lines. If $s = \emptyset$ the set is `Set.univ` (`Metric.IsUn
 vacuous) and `Real.sInf_univ`; otherwise every element is nonnegative
 (`Metric.IsUniformApproxOn.nonneg`) and `Real.sInf_nonneg`. -/
 theorem minimaxError_nonneg (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) : 0 ≤ minimaxError f s n := by
-  sorry
+  unfold minimaxError
+  rcases s.eq_empty_or_nonempty with rfl | hs
+  · have h : {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ n ∧
+        Metric.IsUniformApproxOn (fun x => p.eval x) f ∅ ε} = Set.univ :=
+      Set.eq_univ_of_forall fun ε => ⟨0, by simp, fun x hx => absurd hx (Set.notMem_empty x)⟩
+    rw [h, Real.sInf_univ]
+  · refine Real.sInf_nonneg fun ε hε => ?_
+    obtain ⟨p, _, hpε⟩ := hε
+    exact hpε.nonneg hs
 
 /-- **Every approximant bounds the minimax error**: if $\deg p \le n$ and
 $\lvert f(x) - p(x) \rvert \le \varepsilon$ on $s$ with $0 \le \varepsilon$, then
