@@ -29,6 +29,8 @@ degree $2k$.
 
 * `NLAlib.matchesMoments_radauQuadrature`, `NLAlib.MatchesMoments.eq_radauQuadrature`: Radau
   exactness and uniqueness.
+* `NLAlib.integral_eval_basis_radauNodes_nonneg`, `NLAlib.integral_eval_basis_lobattoNodes_nonneg`:
+  nonnegative weights.
 * `NLAlib.exists_integral_sub_integral_radauQuadrature_eq`: the Radau remainder.
 * `NLAlib.integral_radauQuadrature_le_integral_of_iteratedDeriv_nonneg` and its three siblings:
   the Radau bounds.
@@ -137,22 +139,34 @@ theorem radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     radauQuadrature μ c k = μ := by
   sorry
 
+/-- **The Radau weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
+$c \in \{a, b\}$ and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Radau
+node $x$ is nonnegative, $\ell_x$ its Lagrange basis polynomial. [Gautschi2004, Theorem 3.2]
+(locator to check); there positive, for $\mu$ with more than $k$ support points.
+Proof: M, about 30 lines. By cases on definiteness of `radauMeasure μ c` up to degree $k$.
+Definite: $\deg\ell_x^2 = 2k < 2k + 1 = \lvert R\rvert + k$, so
+`IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add` (with
+`isOrthogonalPolynomial_nodal_radauNodes`, `IsMomentPosDef.card_radauNodes`) and
+`Lagrange.eval_basis_self`, `Lagrange.eval_basis_of_ne` give
+$\int\ell_x^2\,d\mu = \int\ell_x\,d\mu$, as in
+`IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq`; the left side is $\ge 0$
+(`integral_nonneg`, `sq_nonneg`). Otherwise the rule is $\mu$
+(`radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`), $\mu$ is carried by
+the nodes, and the weight is the mass $\mu\{x\} \ge 0$ (`integral_eval_basis_of_ae_mem`). -/
+theorem integral_eval_basis_radauNodes_nonneg (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    (hc : c = a ∨ c = b) (k : ℕ) {x : ℝ} (hx : x ∈ radauNodes μ c k) :
+    0 ≤ ∫ t, (Lagrange.basis (radauNodes μ c k) id x).eval t ∂μ := by
+  sorry
+
 /-- The Radau rule with the interpolatory weights: for a finite measure $\mu$ supported in
 $[a, b]$, $c \in \{a, b\}$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
 $$\int f\,d\,\mathsf{radauQuadrature}(\mu, c, k) =
 \sum_{x\in R}\Bigl(\int\ell_x\,d\mu\Bigr)f(x)\,,$$
-$R$ the Radau nodes and $\ell_x$ their Lagrange basis polynomials; the weights are
-nonnegative.
-Proof: M, about 35 lines. The rule is a sum of Dirac masses with weights
+$R$ the Radau nodes and $\ell_x$ their Lagrange basis polynomials.
+Proof: S, about 8 lines. The rule is a sum of Dirac masses with weights
 $\max(\int\ell_x\,d\mu, 0)$ (`interpolatoryQuadrature`, `integral_finsetSum_measure`,
-`integral_smul_measure`, `integral_dirac`), so it suffices that $\int\ell_x\,d\mu \ge 0$. In the
-definite case $\deg\ell_x^2 = 2k \le 2k$ and
-`IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add` (with
-`isOrthogonalPolynomial_nodal_radauNodes`, `IsMomentPosDef.card_radauNodes`) gives
-$\int\ell_x^2\,d\mu = \int\ell_x\,d\mu$, as in
-`IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq`. Otherwise the rule is $\mu$
-(`radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`) and the weights are the
-masses $\mu\{x\}$ (`integral_eval_basis_of_ae_mem`). -/
+`integral_smul_measure`, `integral_dirac`), and the truncation is inert by
+`integral_eval_basis_radauNodes_nonneg` (`ENNReal.toReal_ofReal`). -/
 theorem integral_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) (k : ℕ)
     (f : ℝ → ℝ) :
     ∫ x, f x ∂radauQuadrature μ c k =
@@ -179,10 +193,13 @@ theorem matchesMoments_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
 /-- The Radau rule lives in every interval carrying the measure: for a finite measure $\mu$
 supported in $[a, b]$, $c \in \{a, b\}$ and every $k$, almost every point of the Radau rule lies
 in $[a, b]$.
-Proof: S, about 12 lines. Definite case: the rule lives on its nodes
-(`ae_mem_interpolatoryQuadrature`), $c \in [a, b]$ (from `hc`; if $b < a$ then $\mu = 0$ and the
-rule is $0$) and the free nodes lie in $[a, b]$ (`IsMomentPosDef.gaussNodes_subset_Icc` for the
-modified measure); otherwise the rule is $\mu$. -/
+Proof: S, about 12 lines. Definite case (`radauMeasure μ c` definite up to degree $k$): the
+rule lives on its nodes (`ae_mem_interpolatoryQuadrature`) and the free nodes lie in $[a, b]$
+(`IsMomentPosDef.gaussNodes_subset_Icc` for the modified measure). For $c$: if $k \ge 1$,
+definiteness forces `radauMeasure μ c ≠ 0`, hence $\mu \ne 0$, hence $a \le b$ (from `hμ`) and
+$c \in [a, b]$ by `hc`. Only at $k = 0$ (always definite) can $b < a$ occur; then $\mu = 0$
+and the rule is $0$ (its one weight is $\int 1\,d\mu = 0$). Not definite: the rule is $\mu$
+(`radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`). -/
 theorem ae_mem_Icc_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b)
     (k : ℕ) : ∀ᵐ x ∂radauQuadrature μ c k, x ∈ Set.Icc a b := by
   sorry
@@ -380,22 +397,34 @@ theorem lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     lobattoQuadrature μ a b k = μ := by
   sorry
 
-/-- The Lobatto rule with the interpolatory weights: for a finite measure $\mu$ supported in
-$[a, b]$, $a < b$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
-$$\int f\,d\,\mathsf{lobattoQuadrature}(\mu, a, b, k) =
-\sum_{x\in L}\Bigl(\int\ell_x\,d\mu\Bigr)f(x)\,,$$
-$L$ the Lobatto nodes and $\ell_x$ their Lagrange basis polynomials; the weights are
-nonnegative. [Gautschi2004, Theorem 3.6] (locator to check).
-Proof: M, about 50 lines; the prototype proves the positivity
+/-- **The Lobatto weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
+$a < b$, and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Lobatto node $x$ is
+nonnegative, $\ell_x$ its Lagrange basis polynomial. [Gautschi2004, Theorem 3.6] (locator to
+check); there positive, for $\mu$ with more than $k$ interior support points.
+Proof: M, about 45 lines; the prototype proves the positivity
 (`NLAlib.twoEndpoint_quadrature_weight_pos_of_exact`,
-`NLAlib/Polynomial/Quadrature/EndpointWeightPositivity.lean`). As `integral_radauQuadrature`,
-but $\ell_x^2$ has degree $2k + 2$, one too many: in the definite case apply exactness
+`NLAlib/Polynomial/Quadrature/EndpointWeightPositivity.lean`). As
+`integral_eval_basis_radauNodes_nonneg`, but $\ell_x^2$ has degree $2k + 2$, one too many: in
+the definite case apply exactness
 (`IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add`, degree less than
 $2k + 2$) to $p = (x - a)(b - x)\prod_{y\in G\setminus\{x\}}(x - y)^2$ for a free node $x$ and
 to $p = (b - x)\prod_{y\in G}(x - y)^2$ (resp. $(x - a)\prod_{y \in G}(x - y)^2$) for $x = a$
 (resp. $b$): $p \ge 0$ on $[a, b]$, vanishes at every other node and $p(x) > 0$, so
 $\int\ell_x\,d\mu = \int p\,d\mu/p(x) \ge 0$. Otherwise the rule is $\mu$
-(`lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`). -/
+(`lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`), $\mu$ is carried by
+the nodes and the weight is the mass $\mu\{x\} \ge 0$ (`integral_eval_basis_of_ae_mem`). -/
+theorem integral_eval_basis_lobattoNodes_nonneg (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b)
+    (k : ℕ) {x : ℝ} (hx : x ∈ lobattoNodes μ a b k) :
+    0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
+  sorry
+
+/-- The Lobatto rule with the interpolatory weights: for a finite measure $\mu$ supported in
+$[a, b]$, $a < b$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
+$$\int f\,d\,\mathsf{lobattoQuadrature}(\mu, a, b, k) =
+\sum_{x\in L}\Bigl(\int\ell_x\,d\mu\Bigr)f(x)\,,$$
+$L$ the Lobatto nodes and $\ell_x$ their Lagrange basis polynomials.
+Proof: S, about 8 lines. As `integral_radauQuadrature`, with
+`integral_eval_basis_lobattoNodes_nonneg`. -/
 theorem integral_lobattoQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) (k : ℕ)
     (f : ℝ → ℝ) :
     ∫ x, f x ∂lobattoQuadrature μ a b k =

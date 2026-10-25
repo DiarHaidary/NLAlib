@@ -14,8 +14,8 @@ public import NLAlibScaffold.Krylov.Functions.QuadratureBounds
 For positive definite $\mathbf{A}$, the squared $\mathbf{A}$-norm error of CG after $q$ steps is
 the Gauss quadrature error of $x \mapsto x^{-1}$ for the spectral measure of the initial
 residual:
-$$\|\mathbf{x}_\star - \mathbf{x}_q\|_{\mathbf{A}}^2 = \int x^{-1}\,d\mu_{\mathbf{A},\mathbf{r}_0}
-- \int x^{-1}\,d\,\mathsf{gaussQuadrature}(\mu_{\mathbf{A},\mathbf{r}_0}, q)\,.$$
+$$\|\mathbf{x}_\star - \mathbf{x}_q\|_{\mathbf{A}}^2 = \int x^{-1}\,d\mu_{\mathbf{A},\mathbf{r}_0} -
+\int x^{-1}\,d\,\mathsf{gaussQuadrature}(\mu_{\mathbf{A},\mathbf{r}_0}, q)\,.$$
 With the Radau rules at bounds $0 < a \le \lambda_{\min}$ and $a' \ge \lambda_{\max}$ this gives
 the computable two-sided estimates of Golub and Meurant (Golub–Strakoš): the left Radau rule
 bounds the error from above, the right Radau rule from below.
@@ -42,8 +42,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, every $\mathbf{x}_0$ and $q$, with
 $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$ and $\mathbf{x}_q =
 \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$,
-$$\|\mathbf{x}_\star - \mathbf{x}_q\|_{\mathbf{A}}^2 = \int x^{-1}\,d\mu_{\mathbf{A},\mathbf{r}_0}
-- \int x^{-1}\,d\,\mathsf{gaussQuadrature}(\mu_{\mathbf{A},\mathbf{r}_0}, q)\,.$$
+$$\|\mathbf{x}_\star - \mathbf{x}_q\|_{\mathbf{A}}^2 = \int x^{-1}\,d\mu_{\mathbf{A},\mathbf{r}_0} -
+\int x^{-1}\,d\,\mathsf{gaussQuadrature}(\mu_{\mathbf{A},\mathbf{r}_0}, q)\,.$$
 [GolubMeurant2010, Ch. 12]; [GolubStrakos1994, §3] (locators to check).
 Proof: M, about 40 lines. `cgIterate` gives $\mathbf{x}_q = \mathbf{x}_0 + \mathbf{y}$ with
 $\mathbf{y} = \mathsf{cgIterate}(\mathbf{A}, \mathbf{r}_0, \mathbf{0}, q)$ (unfold,

@@ -37,6 +37,8 @@ spectral measures the Ritz values of the Lanczos method are Gauss nodes
 
 ## Main results
 
+* `NLAlib.integral_eval_eq_sum_of_degree_lt`: interpolatory quadrature is exact below the number
+  of nodes.
 * `NLAlib.IsOrthogonalPolynomial.integral_eval_eq_sum`: Gauss quadrature is exact through degree
   $2\lvert s\rvert - 1$.
 * `NLAlib.IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq`: the weights are
@@ -77,8 +79,12 @@ instance isFiniteMeasure_interpolatoryQuadrature (μ : Measure ℝ) (s : Finset 
       Measure.dirac x) := fun x => Measure.smul_finite _ ENNReal.ofReal_ne_top
   infer_instance
 
-/-- Interpolatory quadrature is exact below degree $\lvert s\rvert$. -/
-private theorem integral_eval_eq_sum_of_degree_lt {μ : Measure ℝ} {s : Finset ℝ}
+/-- Interpolatory quadrature is exact below the number of nodes: for a finite measure $\mu$
+supported in $[a, b]$, distinct real nodes $s$ and a real polynomial $r$ of degree less than
+$\lvert s\rvert$,
+$$\int r\,d\mu = \sum_{x\in s}\Bigl(\int\ell_x\,d\mu\Bigr)r(x)\,,$$
+$\ell_x$ the Lagrange basis polynomial of $x$: $r$ is its own Lagrange interpolant. -/
+theorem integral_eval_eq_sum_of_degree_lt {μ : Measure ℝ} {s : Finset ℝ}
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {r : ℝ[X]}
     (hr : r.degree < s.card) :
     ∫ x, r.eval x ∂μ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * r.eval x := by

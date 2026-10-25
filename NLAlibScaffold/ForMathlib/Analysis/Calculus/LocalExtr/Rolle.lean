@@ -39,12 +39,19 @@ the multiplicity of $y$. Then $f^{(q+1)}(\xi) = 0$ for some $\xi \in (a, b)$.
 Proof: L, about 180 lines; the prototype proves it
 (`exists_iteratedDeriv_eq_zero_of_multiset_multiplicities` with the private
 `exists_iteratedDeriv_eq_zero_of_monotone_with_multiplicities`,
-`NLAlib/ForMathlib/Analysis/Calculus/RolleMultiplicity.lean`): sort $m$ into a monotone
-`Fin (q + 2)` family (`Multiset.sort`), apply `exists_deriv_eq_zero` between consecutive
-distinct entries and keep repeated entries, which gives $q + 1$ zeros of $f'$ with the
-multiplicities shifted down by one, and induct on $q$. The all-equal case needs no Rolle step:
+`NLAlib/ForMathlib/Analysis/Calculus/RolleMultiplicity.lean`). The induction is not on this
+theorem: after one Rolle step only `ContDiffOn … (Ioo a b)` is known for $f'$, not continuity on
+$[a, b]$. It is a private lemma in the prototype's hull form, for a monotone family
+$v : \mathsf{Fin}\,(q + 2) \to [a, b]$ with $v_0 < v_{q+1}$ and continuity of $f$ only on the
+hull `Icc (v 0) (v (Fin.last _))` (repeated entries interior, the jets vanishing along runs of
+equal entries), by induction on $q$ generalising $f$: apply `exists_deriv_eq_zero` between
+consecutive distinct entries and keep repeated entries, which gives $q + 1$ zeros of $f'$ with
+the multiplicities shifted down by one, all in $(a, b)$, where $f'$ is continuous, so the next
+hull hypothesis holds. The public theorem sorts $m$ (`Multiset.sort`) into such a family and
+is the only place `hf` is used (restricted to the hull). The all-equal case needs no Rolle step:
 then the single point has multiplicity $q + 2 > 1$, so it is interior and `hz` gives the
-conclusion at it (the prototype's extra hypothesis that two points differ is not needed).
+conclusion at it (so the prototype's hypothesis that two points differ is needed only by the
+private lemma).
 `ContDiffOn` on the open interval gives `DifferentiableOn` of `iteratedDeriv j f` for $j \le q$
 (`ContDiffOn.differentiableOn_iteratedDerivWithin` with `iteratedDerivWithin_of_isOpen`). -/
 theorem exists_iteratedDeriv_eq_zero_of_multiset {f : ℝ → ℝ} {a b : ℝ} {m : Multiset ℝ} {q : ℕ}

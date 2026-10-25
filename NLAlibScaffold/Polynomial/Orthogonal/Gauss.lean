@@ -51,9 +51,9 @@ Proof: M, about 35 lines. As `IsOrthogonalPolynomial.integral_eval_eq_sum` (the 
 $m = \lvert s\rvert$), with the degree bookkeeping generalised: $p = w(p /ₘ w) + p \% w$ for the
 monic nodal $w$ of degree $\lvert s\rvert$ (`modByMonic_add_div`), $\deg(p /ₘ w) < m$
 (`natDegree_divByMonic`), so its integral against $w$ vanishes by `hs`; the remainder has
-degree less than $\lvert s\rvert$ and is integrated exactly (the private
-`integral_eval_eq_sum_of_degree_lt`, to be made available or re-proved by
-`Lagrange.eq_interpolate`); $w$ vanishes at the nodes (`Lagrange.eval_nodal_at_node`). -/
+degree less than $\lvert s\rvert$ and is integrated exactly
+(`integral_eval_eq_sum_of_degree_lt`, KS7's helper, made public for this second consumer); $w$
+vanishes at the nodes (`Lagrange.eval_nodal_at_node`). -/
 theorem IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add {μ : Measure ℝ}
     {s : Finset ℝ} {m : ℕ} (hs : IsOrthogonalPolynomial μ m (Lagrange.nodal s id))
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]}

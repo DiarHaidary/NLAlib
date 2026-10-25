@@ -1,15 +1,23 @@
 # Design note: interpolation remainders, Gauss–Radau and Gauss–Lobatto rules, and two-sided bounds on quadratic forms (stage KS8)
 
-Status: draft for the maintainer, 2026-10-25; skeleton written the same day (branch
-`design/ks8`, from `df3f025` = `stage/ks7-slq-beta`). The decision sheet is
+Status: approved by the maintainer, 2026-10-25 (decision sheet `state/decisions/KS8.json`:
+APPROVE (a), OQ1–OQ11 (a), as recommended, §9), after the Fable review
+(`~/nlalib-harness/reports/Review-Fable-KS8-Design.md`: approve; its two should items and three
+nits are applied here). Skeleton written the same day (branch `design/ks8`, first from `df3f025`
+= `stage/ks7-slq-beta`), revised and rebased onto `3b2c0fd` (main with KS7, SLQ and Beta): the
+definition count corrected (8), the F3 outline in the prototype's hull form, KS7's
+`integral_eval_eq_sum_of_degree_lt` made public for G1 (an API change in `NLAlib/`, §5), the
+R10 outline's $b < a$ case confined to $k = 0$, and two new statements R8a, L8a (nonnegative
+Radau and Lobatto weights), which R8 and L8 now use. The decision sheet is
 `~/nlalib-harness/state/decisions/KS8.json`; the dispatch targets are
 `~/nlalib-harness/pilot/ks8-targets.json`.
 
 Every signature in §4 is in the skeleton and elaborates: `lake build NLAlibScaffold` succeeds
-with the 65 statements of this note sorried and the 7 definitions, 2 instances and 2 `rfl`
+with the 67 statements of this note sorried and the 8 definitions, 2 instances and 2 `rfl`
 lemmas of §2 proved (`NLAlib/Polynomial/Orthogonal/RadauLobatto.lean`). No proof was attempted
-otherwise. `scripts/check_refs.py` and `scripts/check_rules.py --files` pass on the new files
-(the name checker N1–N18 needs an extraction and was not run; names were checked by hand against
+otherwise. `scripts/check_refs.py`, `scripts/check_latex.mjs` and `scripts/check_rules.py --files`
+pass on the new files; `scripts/check_constants.py` reports only the problems already on `main`
+(Sketching value spans) (the name checker N1–N18 needs an extraction and was not run; names were checked by hand against
 §4 of CONTRIBUTING).
 
 ## What earlier notes deferred to this stage
@@ -47,7 +55,7 @@ the way KS7 built `gaussQuadrature`: nodes, then `interpolatoryQuadrature μ`.
    modified Jacobi matrix for the Radau rule and its Golub–Welsch theorem; and the consumers:
    two-sided bounds on $\mathbf{b}^{\mathsf{H}}f(\mathbf{A})\mathbf{b}$ (Lanczos, Radau,
    Lobatto), the CG error identity with the Golub–Meurant (Golub–Strakoš) upper and lower bounds,
-   and the sign of the SLQ bias. **65 declarations to prove** (41 S, 19 M, 5 L, no H) and **7
+   and the sign of the SLQ bias. **67 declarations to prove** (43 S, 19 M, 5 L, no H) and **8
    definitions** (proved in the skeleton with their instances); 8 new files and additions to 4
 existing ones (§5).
 2. **Hermite interpolation has no definition** (OQ1). Nodes with multiplicity are a
@@ -287,7 +295,8 @@ $\xi$ in the *open* interval fails for $\mu = \delta_a$.
 | R5 | `IsMomentPosDef.card_radauNodes` | $k + 1$ nodes |
 | R6 | `isOrthogonalPolynomial_nodal_radauNodes` | the nodal polynomial is $\mu$-orthogonal to degree $< k$ |
 | R7 | `radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero` | terminating case: the rule is $\mu$ |
-| R8 | `integral_radauQuadrature` | the rule with interpolatory weights (nonnegative), `hc` |
+| R8a | `integral_eval_basis_radauNodes_nonneg` | $\int\ell_x\,d\mu \ge 0$ for every Radau node $x$, `hc` |
+| R8 | `integral_radauQuadrature` | the rule with interpolatory weights (by R8a), `hc` |
 | R9 | `matchesMoments_radauQuadrature` | `MatchesMoments μ (radauQuadrature μ c k) (2 * k + 1)`, every $k$, `hc`; Result: gauss-radau-quadrature |
 | R10 | `ae_mem_Icc_radauQuadrature` | the rule lives in $[a, b]$ |
 | R11 | `radauQuadrature_real_univ` | mass $\mu(\mathbb{R})$ |
@@ -319,9 +328,10 @@ both endpoints, nonnegative at $c = a$ and nonpositive at $c = b$.
 
 L1–L3 as R1–R3 for `lobattoMeasure`; L4 `IsMomentPosDef.notMem_gaussNodes_lobattoMeasure`
 (`t = a ∨ t = b` is not a free node); L5 `IsMomentPosDef.card_lobattoNodes` ($k + 2$, needs
-$a < b$); L6 `isOrthogonalPolynomial_nodal_lobattoNodes`; L7 terminating case; L8
-`integral_lobattoQuadrature` (weights nonnegative); L9 `matchesMoments_lobattoQuadrature`
-(`(hab : a < b)`, `2 * k + 2`; Result: gauss-lobatto-quadrature); L10, L11 support and mass;
+$a < b$); L6 `isOrthogonalPolynomial_nodal_lobattoNodes`; L7 terminating case; L8a
+`integral_eval_basis_lobattoNodes_nonneg` ($\int\ell_x\,d\mu \ge 0$ at every Lobatto node,
+$a < b$); L8 `integral_lobattoQuadrature` (the rule with interpolatory weights, by L8a); L9
+`matchesMoments_lobattoQuadrature` (`(hab : a < b)`, `2 * k + 2`; Result: gauss-lobatto-quadrature); L10, L11 support and mass;
 L12 the remainder (Result: gauss-lobatto-remainder):
 
 ```lean
@@ -440,7 +450,7 @@ New files:
 
 | File | Contents | Lines (est.) |
 |---|---|---|
-| `NLAlib/Polynomial/Orthogonal/RadauLobatto.lean` | the 7 definitions, 2 instances, 2 `rfl` lemmas (done); later R1–R17, L1–L14, J1–J3 | 750 |
+| `NLAlib/Polynomial/Orthogonal/RadauLobatto.lean` | the 8 definitions, 2 instances, 2 `rfl` lemmas (done); later R1–R17, R8a, L1–L14, L8a, J1–J3 | 780 |
 | `NLAlib/Polynomial/Interpolation/Hermite.lean` | H1–H4 | 300 |
 | `NLAlib/Krylov/Functions/QuadratureBounds.lean` | K1–K9 | 200 |
 | `NLAlib/Krylov/LinearSystems/CGQuadrature.lean` | C1–C3 | 150 |
@@ -458,6 +468,12 @@ Additions to existing files (home by subject, P10):
 | J4, J5 | `Krylov/Functions/Quadrature.lean` (775 lines now, +90) | Golub–Welsch for Radau beside `spectralMeasure_jacobiMatrix` |
 | S1, S2 | `Estimation/Trace/StochasticLanczosQuadrature.lean` | properties of `slq` |
 
+API change in `NLAlib/` (Fable review, item 3): KS7's private helper
+`integral_eval_eq_sum_of_degree_lt` in `Polynomial/Orthogonal/Gauss.lean` (interpolatory
+quadrature is exact below the number of nodes) is now public, with a docstring and a Main-results
+entry, so that G1 uses it instead of re-proving it (CONTRIBUTING §3: second consumer). No
+statement or proof changed; nothing outside the file referred to it.
+
 `Gauss.lean` grows to about 650 lines, `Quadrature.lean` to about 870, under F10. G3 imports
 the Hermite file into `Gauss.lean`; the Hermite file imports only Mathlib and ForMathlib, so
 P11 holds. The scaffold mirrors these paths; each scaffold file imports its NLAlib counterpart
@@ -474,7 +490,7 @@ F11 rejects the name "Lemmas", so F2 joins `Deriv/Polynomial`, next to Mathlib's
 | H3, H4 | G3, R13, L12; Lebesgue-constant stage (gap survey #6: $\lVert f - p_n\rVert$ for Chebyshev interpolation); Daleckii–Krein divided differences (#8) |
 | H1, H2 | the quadrature proofs; any later Hermite–Fejér or osculatory interpolation |
 | F3, F4 | H3; the mean-value step of every remainder; later Peano-kernel forms |
-| G1 | R8, L8, every later interpolatory rule with a known exactness degree (Gauss–Kronrod, anti-Gauss) |
+| G1 | R8a, L8a, every later interpolatory rule with a known exactness degree (Gauss–Kronrod, anti-Gauss) |
 | G3–G5 | K1–K3, S1, S2, C1 (sign), SLQ density bounds |
 | R9–R17, L9–L14 | K4–K9, C2, C3 |
 | R12, J1–J5 | J5 is what an implementation computes; consumer: C2/C3 in computable form, SLQ with Radau rules (deferred) |
@@ -499,7 +515,7 @@ RadauJacobiRemainder,EndpointModifiedPolynomials,EndpointDegenerate,EndpointZero
 Reused as proof material (cited in the `Proof:` lines and outlines): the multiset Rolle argument
 (F3, minus a hypothesis), the mean value theorem without measurable selection (F4, F5), the
 remainder by auxiliary function $g = f - H - K\omega$ (H3), the Gauss/Radau/Lobatto remainder
-assemblies (G3, R13, L12), the Lobatto weight positivity by product polynomials (L8), the
+assemblies (G3, R13, L12), the Lobatto weight positivity by product polynomials (L8a), the
 exactness of endpoint rules from modified orthogonality (G1, R6, L6) and the sign corollaries.
 The prototype has every remainder and bound of this stage, for the nondegenerate case.
 
@@ -546,9 +562,11 @@ introduces no `hermite*` name.
 **Mathlib deviations: none.** No new predicate beside a Mathlib one, no new index type, no
 scoped-instance replacement; `docs/design/Mathlib-deviations.md` is unchanged.
 
-## 9. Open questions (with recommendations)
+## 9. Open questions (decided 2026-10-25)
 
-The decision sheet `state/decisions/KS8.json` has these in one line each.
+Decisions (`state/decisions/KS8.json`): APPROVE (a); OQ1–OQ11 all (a), as recommended. The Fable
+review concurred with every (a). The questions are kept below as asked; each ends with the
+decision.
 
 **OQ1. The Hermite API.** (a) Multiset nodes; the remainder for any $H$ matching the jets;
 existence (H2) and uniqueness (H1); no definition. (b) (a) plus `hermiteInterpolate m f`,
@@ -558,7 +576,7 @@ special cases). (d) Lagrange remainder only, with Gauss as a limit of coalescing
 **Recommendation (a).** Every consumer here picks some $H$ and never computes it, and the
 remainder holds for all of them; a definition can be added when a consumer wants to compute
 with it (Hermite–Fejér, osculatory error bounds). (c) hard-codes multiplicities; (d) needs a
-limit argument (continuity of divided differences in the nodes) that is longer than (a).
+limit argument (continuity of divided differences in the nodes) that is longer than (a). **Decided: (a).**
 
 **OQ2. Smoothness hypothesis.** (a) `ContinuousOn f (Icc a b)` and
 `ContDiffOn ℝ N f (Ioo a b)`. (b) `ContDiffOn ℝ N f (Icc a b)`. (c) The prototype's minimal
@@ -566,7 +584,7 @@ form: continuity on $[a, b]$, `DifferentiableOn ℝ (iteratedDeriv k f) (Ioo a b
 continuity of the $N$-th derivative on $(a, b)$ for the mean-value forms. **Recommendation
 (a).** One standard predicate, discharged by `fun_prop`/`ContDiff` lemmas, and only continuity at
 the endpoints, which a Radau node at $0$ for $\sqrt{x}$ or $x\log x$ needs; (b) excludes those;
-(c) is weaker by an amount no consumer uses and spreads over three hypotheses.
+(c) is weaker by an amount no consumer uses and spreads over three hypotheses. **Decided: (a).**
 
 **OQ3. The Radau definition.** (a) One `radauQuadrature μ c k` with modified measure
 $\lvert x - c\rvert\,d\mu$; exactness and remainder for $c \in \{a, b\}$, bounds with $c$ fixed.
@@ -574,20 +592,20 @@ $\lvert x - c\rvert\,d\mu$; exactness and remainder for $c \in \{a, b\}$, bounds
 spectral measure of Golub's modified Jacobi matrix (Golub–Meurant's construction, the
 prototype's). **Recommendation (a).** Half the definitions and theorems of (b), the same
 remainder formula at both ends; (c) makes exactness a theorem about matrix powers and puts the
-definition in the Matrix layer, while (a) keeps it beside `gaussQuadrature` and gets (c) as J4.
+definition in the Matrix layer, while (a) keeps it beside `gaussQuadrature` and gets (c) as J4. **Decided: (a).**
 
 **OQ4. What $k$ counts.** (a) The free nodes: Radau has $k + 1$ nodes, exact through degree
 $2k$; Lobatto $k + 2$, through $2k + 1$; Radau with $q$ free nodes pairs with $q$ Lanczos steps.
 (b) The total number of nodes. **Recommendation (a).** It matches Gautschi's $n$, Golub–Meurant's
 $\tilde{\mathbf{J}}_{k+1}$ after $k$ Lanczos steps, and makes the Gauss/Radau pairing in C2
-read `gaussQuadrature μ q` against `radauQuadrature μ a q`.
+read `gaussQuadrature μ q` against `radauQuadrature μ a q`. **Decided: (a).**
 
 **OQ5. Remainder form.** (a) The mean-value form with $\xi$ (Gautschi Theorem 1.48) as the
 headline, sign bounds as corollaries. (b) Sign bounds only (no mean-value lemma, about 60 fewer
 lines). (c) Also the Peano-kernel form. **Recommendation (a).** The $\xi$ form is the cited
 theorem, gives explicit error bounds ($\lvert f^{(2k)}\rvert \le M$ ⇒ error $\le
 M\|\pi_k\|^2/(2k)!$) that (b) cannot, and its extra cost is F4/F5 (one M, one S); (c) has no
-consumer.
+consumer. **Decided: (a).**
 
 **OQ6. Jacobi-matrix realisations.** (a) Golub's Radau matrix (one modified corner) with its
 Golub–Welsch theorem and the quadratic-form bridge (J1–J5); Lobatto deferred. (b) None:
@@ -596,41 +614,41 @@ declarations, one L; the prototype's Schur border). **Recommendation (a).** The 
 what Golub–Meurant compute from Lanczos and costs five declarations through moment matching and
 uniqueness; the Lobatto matrix needs a $2\times2$ solve and a Lobatto uniqueness theorem, and
 Lobatto bounds are used less (for $x^{-1}$ the Lobatto rule bounds from above, as the left Radau
-rule already does, and needs one more Lanczos step).
+rule already does, and needs one more Lanczos step). **Decided: (a).**
 
 **OQ7. Form of the matrix-level bounds.** (a) Measure form
 `∫ x, f x ∂radauQuadrature (spectralMeasure A b) a q`, no grade hypothesis, plus the one bridge
 J5 to $\|\mathbf{b}\|^2 f(\tilde{\mathbf{J}})_{0,0}$. (b) Each bound in the Jacobi-matrix form,
 with $q + 1 \le$ grade. **Recommendation (a).** The bounds then hold for every $q$ and need no
-Hermitian hypothesis; a user wanting the computable form rewrites with J5.
+Hermitian hypothesis; a user wanting the computable form rewrites with J5. **Decided: (a).**
 
 **OQ8. Sign orientations.** (a) Both orientations ($f^{(N)} \ge 0$ and $\le 0$) as separate
 theorems at both levels (G4/G5, R14–R17, L13/L14, K2–K9, S1/S2). (b) Only $\ge 0$; users apply
 it to $-f$. **Recommendation (a).** The main consumers come in both signs ($x^{-1}$ and $\log$
 have alternating derivatives, $e^{x}$ positive ones), and $-f$ costs a `cfc_neg`/`iteratedDeriv_neg`
-detour at every use; each extra theorem is S.
+detour at every use; each extra theorem is S. **Decided: (a).**
 
 **OQ9. Bundle the smoothness and sign hypotheses?** (a) No: keep `ContinuousOn`, `ContDiffOn`
 and the pointwise sign of `iteratedDeriv`. (b) A predicate such as
 `HasNonnegIteratedDerivOn f N a b`. **Recommendation (a).** They are Mathlib predicates and a
 one-line `∀`; a bundle would need its own API (constructors for $x^{-1}$, $\log$, $\exp$) for no
 gain in the proofs (CONTRIBUTING §5.4 asks for interfaces for raw conditions on NLAlib objects;
-these are conditions on a scalar function).
+these are conditions on a scalar function). **Decided: (a).**
 
 **OQ10. Consumers in this stage.** (a) Include the CG identity and Golub–Meurant bounds (C1–C3)
 and the SLQ bias sign (S1, S2). (b) Stop at K1–K9. **Recommendation (a).** They are the reason
 KS7 and Krylov-Spectral deferred the stage, C1 is the classical CG–Gauss identity not yet in the
-library, and together they cost five declarations (two M).
+library, and together they cost five declarations (two M). **Decided: (a).**
 
 **OQ11. Citation locators.** The Gautschi theorem numbers (1.45, 1.48, 3.2, 3.3, 3.6, 3.7,
 §1.4.2, §3.1.1), Davis (Theorems 1.6.3, 2.7.1, 3.1.1, 3.5.1), Golub 1973 §7 and Golub–Strakoš §3
 are from memory and the prototype's docstrings, marked "locator to check" (KS7 decision L1 (b)).
 Golub–Meurant is cited by chapter (KS7 L2 (a)). **Recommendation:** keep "to check" until
-verified against the books, as for KS7.
+verified against the books, as for KS7. **Decided: (a).**
 
 ## 10. Proof plan
 
-**Counts.** 65 declarations: 41 S, 19 M, 5 L, 0 H; about 1,600 lines of proof (the sum of the `Proof:` estimates). The five L:
+**Counts.** 67 declarations: 43 S, 19 M, 5 L, 0 H; about 1,630 lines of proof (the sum of the `Proof:` estimates). The five L:
 F3 (Rolle with multiplicities, about 180 lines, a port), H3 (Hermite remainder, 120, a port),
 G3, R13, L12 (the three quadrature remainders, 70–80 each, assemblies of H2, H3, F4/F5 and
 exactness). Every L has a complete prototype proof for the nondegenerate case; our extra work is
@@ -639,9 +657,9 @@ the terminating case (two lines given G2/R7/L7) and the `Finset` bookkeeping.
 **Waves** (from the `depends_on` lists in `ks8-targets.json`):
 0: F1, F2, F3, F4, H1, Z1, G1, G2, R1, R2, R3, L1, L2, L3, J1, J3, C1 (17 jobs);
 1: F5, H2, H3, R4, R7, L4, L7, J2; 2: H4, G3, R5, R6, R10, L5, L6, L10;
-3: G4, G5, R8, L8, K1; 4: R9, L9, K2, K3, S1, S2; 5: R11, R12, R13, L11, L12;
-6: R14–R17, L13, L14, J4; 7: J5, K4–K9; 8: C2, C3. Critical path:
-R1 → R4 → R5 → R8 → R9 → R13 → R15 → K5 → C2 (9 waves). The waves are a
+3: G4, G5, R8a, L8a, K1; 4: R8, L8, K2, K3, S1, S2; 5: R9, L9;
+6: R11, R12, R13, L11, L12; 7: R14–R17, L13, L14, J4; 8: J5, K4–K9; 9: C2, C3. Critical path:
+R1 → R4 → R5 → R8a → R8 → R9 → R13 → R15 → K5 → C2 (10 waves). The waves are a
 safety order; with the scaffold in place later waves can be released early.
 
 **For the prover brief.**
@@ -654,9 +672,12 @@ safety order; with the scaffold in place later waves can be released early.
   `integrable_eval_of_ae_mem_Icc`.
 - Derivatives on the open interval: `ContDiffOn.continuousOn_iteratedDerivWithin`,
   `ContDiffOn.differentiableOn_iteratedDerivWithin`, `iteratedDerivWithin_of_isOpen`.
-- `IsOrthogonalPolynomial.integral_eval_eq_sum`'s private helper
-  `integral_eval_eq_sum_of_degree_lt` is invisible from the scaffold: G1 re-proves it as a
-  private lemma (15 lines) or is proved in place in `NLAlib/`.
+- `integral_eval_eq_sum_of_degree_lt` (KS7's helper for `IsOrthogonalPolynomial.integral_eval_eq_sum`,
+  public since this revision) integrates polynomials of degree below $\lvert s\rvert$ exactly;
+  G1 uses it.
+- F3: do not induct on the public theorem (after one Rolle step only `ContDiffOn … (Ioo a b)`
+  is known for $f'$); prove the prototype's hull form (continuity on
+  `Icc (v 0) (v (Fin.last _))`, $v_0 < v_{q+1}$) as a private lemma by induction on $q$.
 - The modified measures are finite only with `hμ` (R2, L2): use
   `haveI := isFiniteMeasure_radauMeasure hμ c` before applying KS7 lemmas to them.
 
@@ -689,7 +710,7 @@ ids to reuse.
 
 1. **The Lobatto Jacobi matrix** (Golub 1973; two modified entries from a $2\times2$ system) with
    Golub–Welsch and Lobatto uniqueness. Needs: L9 and a uniqueness argument on $k + 2$ points.
-2. **Strictly positive Radau/Lobatto weights** under definiteness (R8/L8 give $\ge 0$). No
+2. **Strictly positive Radau/Lobatto weights** under definiteness (R8a/L8a give $\ge 0$). No
    consumer.
 3. **A `slqRadau` estimator** and SLQ two-sided bounds per probe; needs a design of the estimator
    (which bound $a$ per probe) in the SLQ layer.
