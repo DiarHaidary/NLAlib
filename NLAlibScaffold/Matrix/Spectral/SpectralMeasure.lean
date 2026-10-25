@@ -105,4 +105,14 @@ theorem spectralMeasure_diagonal_sqrt_of_ae_mem {ν : Measure ℝ} [IsFiniteMeas
         rw [Real.norm_eq_abs, abs_of_nonneg (Real.sqrt_nonneg _),
           Real.sq_sqrt (measureReal_nonneg), ofReal_measureReal]
 
+/-- Every spectral measure is carried by a compact interval: for every square $\mathbf{A}$ and
+every $\mathbf{b}$, $\mu_{\mathbf{A},\mathbf{b}}$-almost every $x$ lies in some $[a, a']$, the
+support hypothesis of the Polynomial layer (`ae_mem_Icc_spectralMeasure` with bounds of the
+finite spectrum). -/
+theorem exists_ae_mem_Icc_spectralMeasure (A : Matrix n n 𝕜) (b : n → 𝕜) :
+    ∃ a a' : ℝ, ∀ᵐ x ∂spectralMeasure A b, x ∈ Set.Icc a a' := by
+  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
+  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
+  exact ⟨a, a', ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b⟩
+
 end NLAlib
