@@ -325,17 +325,7 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_
       Matrix.mul_sub (rangeProjector _), rangeProjector_mul_self,
       ← truncatedSVD_rsvd_eq_rangeProjector_mul, sub_self, frobInner_zero_right]
   have hT := (measurable_truncatedSVD k).comp (measurable_rsvd (l := l) A)
-  have hf : Integrable (fun ω => frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2) μ := by
-    refine (integrable_const (frobNorm A ^ 2)).mono'
-      (((continuous_frobNorm.measurable.comp (measurable_const.sub hT)).pow_const 2
-        ).comp_aemeasurable hX.aemeasurable).aestronglyMeasurable (ae_of_all _ fun ω => ?_)
-    rw [Real.norm_of_nonneg (sq_nonneg _)]
-    have h : A - truncatedSVD (rsvd A (X ω)) k =
-        (1 - rangeProjector (truncatedSVD (rsvd A (X ω)) k)) * A := by
-      rw [Matrix.sub_mul, Matrix.one_mul, ← truncatedSVD_rsvd_eq_rangeProjector_mul]
-    rw [h]
-    gcongr
-    exact frobNorm_one_sub_rangeProjector_mul_le _ A
+  have hf := integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hX.aemeasurable k
   have hN : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
       obliqueProjector (A * q.1) q.2ᴴ * (A - rsvd A q.1) := by
     have hΨ' : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ => q.2ᴴ :=
