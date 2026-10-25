@@ -158,8 +158,9 @@ Proof: S, about 5 lines. `IsOrthogonalPolynomial.integral_interpolatoryQuadratur
 `isOrthogonalPolynomial_nodal_gaussNodes`. -/
 theorem integral_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) (f : ℝ → ℝ) :
     ∫ x, f x ∂gaussQuadrature μ k =
-      ∑ x ∈ gaussNodes μ k, (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ) * f x := by
-  sorry
+      ∑ x ∈ gaussNodes μ k, (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ) * f x :=
+  IsOrthogonalPolynomial.integral_interpolatoryQuadrature
+    (isOrthogonalPolynomial_nodal_gaussNodes hμ k) hμ f
 
 /-- The Gauss rule lives in every interval carrying the measure: for a finite measure $\mu$
 supported in $[a, b]$ and every $k$, almost every point of the $k$-point Gauss rule lies in
