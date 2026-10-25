@@ -310,7 +310,23 @@ Proof: S, about 12 lines. Unfold both; per probe `MatchesMoments.eq_gaussQuadrat
 theorem _root_.Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) {q : ℕ}
     (hq : Fintype.card n ≤ q) : slqMeasure A Ω q = probeSpectralMeasure A Ω := by
-  sorry
+  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
+  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
+  have hs : spectrum ℝ A ⊆ Set.Icc a a' := fun x hx => ⟨ha hx, ha' hx⟩
+  have hfin : A.finite_real_spectrum.toFinset = Finset.univ.image hA.eigenvalues := by
+    ext x
+    simp [hA.spectrum_real_eq_range_eigenvalues]
+  have hcard : A.finite_real_spectrum.toFinset.card ≤ q :=
+    (hfin ▸ Finset.card_image_le).trans ((Finset.card_univ).le.trans hq)
+  unfold slqMeasure probeSpectralMeasure
+  congr 1
+  refine Finset.sum_congr rfl fun j _ => ?_
+  symm
+  refine MatchesMoments.eq_gaussQuadrature (a := a) (b := a') (MatchesMoments.refl _ _)
+    ?_ ?_ hcard
+  · exact ae_mem_Icc_spectralMeasure A hs _
+  · have h0 := spectralMeasure_compl_spectrum_eq_zero A (fun i => Ω i j)
+    exact (ae_iff.mpr h0).mono fun x hx => by simpa using hx
 
 /-! ### Unbiasedness -/
 
