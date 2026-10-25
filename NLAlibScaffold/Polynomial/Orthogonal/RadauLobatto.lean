@@ -365,7 +365,25 @@ Definite: `integral_radauQuadrature` and
 Result: gauss-radau-quadrature -/
 theorem matchesMoments_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b)
     (k : ℕ) : MatchesMoments μ (radauQuadrature μ c k) (2 * k + 1) := by
-  sorry
+  by_cases h : IsMomentPosDef (radauMeasure μ c) k
+  · intro p hp
+    have hdeg : p.degree < ((radauNodes μ c k).card + k : ℕ) := by
+      rw [h.card_radauNodes hμ hc]
+      have e : k + 1 + k = 2 * k + 1 := by ring
+      rw [e]
+      exact hp
+    rw [integral_radauQuadrature hμ hc k (fun x => p.eval x)]
+    exact IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add
+      (isOrthogonalPolynomial_nodal_radauNodes hμ hc h) hμ hdeg
+  · have := isFiniteMeasure_radauMeasure hμ c
+    have h0 : ∫ x, (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2
+        ∂radauMeasure μ c = 0 := by
+      have hnot : ¬ IsMomentPosDef (radauMeasure μ c) (k + 1) :=
+        fun h1 => h (h1.mono (Nat.le_succ k))
+      rw [isMomentPosDef_succ_iff (ae_mem_Icc_radauMeasure hμ c)] at hnot
+      exact le_antisymm (not_lt.mp hnot) (integral_nonneg fun x => sq_nonneg _)
+    rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0]
+    exact MatchesMoments.refl _ _
 
 /-- The Radau rule lives in every interval carrying the measure: for a finite measure $\mu$
 supported in $[a, b]$, $c \in \{a, b\}$ and every $k$, almost every point of the Radau rule lies
