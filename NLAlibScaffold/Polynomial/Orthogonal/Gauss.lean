@@ -234,7 +234,13 @@ theorem integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, 0 ≤ iteratedDeriv (2 * k) f x) :
     ∫ x, f x ∂gaussQuadrature μ k ≤ ∫ x, f x ∂μ := by
-  sorry
+  obtain ⟨ξ, hξ, h⟩ := exists_integral_sub_integral_gaussQuadrature_eq hμ hab hk hf hf'
+  have h1 : 0 ≤ iteratedDeriv (2 * k) f ξ / (2 * k).factorial :=
+    div_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
+  have h2 : 0 ≤ ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ :=
+    integral_nonneg fun x => sq_nonneg _
+  have h3 := mul_nonneg h1 h2
+  linarith
 
 /-- **Gauss quadrature is an upper bound** for $f$ with nonpositive derivative of order $2k$:
 for a finite measure $\mu$ supported in $[a, b]$, $a < b$, $k > 0$, and $f$ continuous on
