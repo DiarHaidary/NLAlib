@@ -164,6 +164,30 @@ private theorem lintegral_lintegral_comp_div_add_gammaPDF {F : ℝ → ℝ≥0�
           ∫ y in Ioi (0 : ℝ), y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) := by
   sorry
 
+/-- The constant of the Gamma-ratio integral on $(0, 1)$ is the Beta density. -/
+private theorem const_mul_integral_eq_beta_density {a b r s : ℝ} (ha : 0 < a) (hb : 0 < b)
+    (hr : 0 < r) (hs : s ∈ Ioo (0 : ℝ) 1) :
+    r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+        ∫ y in Ioi (0 : ℝ), y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)) =
+      1 / beta a b * s ^ (a - 1) * (1 - s) ^ (b - 1) := by
+  obtain ⟨hs0, hs1⟩ := hs
+  have h1s : 0 < 1 - s := by linarith
+  have hc : 0 < r / (1 - s) := div_pos hr h1s
+  rw [Real.integral_rpow_mul_exp_neg_mul_Ioi (by linarith) hc]
+  have hA : (1 / (r / (1 - s))) ^ (a + b) = (1 - s) ^ (a + b) / r ^ (a + b) := by
+    rw [one_div_div, Real.div_rpow h1s.le hr.le]
+  have hB : (1 - s) ^ (b - 1) = (1 - s) ^ (-a - 1) * (1 - s) ^ (a + b) := by
+    rw [← Real.rpow_add h1s]
+    congr 1
+    ring
+  have hG1 := Real.Gamma_pos_of_pos ha
+  have hG2 := Real.Gamma_pos_of_pos hb
+  have hG3 := Real.Gamma_pos_of_pos (add_pos ha hb)
+  have hp : r ^ (a + b) ≠ 0 := (Real.rpow_pos_of_pos hr _).ne'
+  have hq : (1 - s) ^ (a + b) ≠ 0 := (Real.rpow_pos_of_pos h1s _).ne'
+  rw [hA, hB, beta]
+  field_simp
+
 /-- The Gamma-ratio integral is the Beta integral: for measurable $F \ge 0$ and $a, b, r > 0$,
 $$\iint F\Bigl(\frac{x}{x+y}\Bigr)\gamma_{a,r}(x)\gamma_{b,r}(y)\,dx\,dy = \int F(s)\,
 \beta_{a,b}(s)\,ds\,,$$
@@ -179,7 +203,19 @@ private theorem lintegral_lintegral_comp_div_add_gammaPDF_eq_betaPDF {F : ℝ �
     (hF : Measurable F) {a b r : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r) :
     ∫⁻ y, (∫⁻ x, F (x / (x + y)) * gammaPDF a r x) * gammaPDF b r y =
       ∫⁻ s, F s * betaPDF a b s := by
-  sorry
+  have hsupp : Function.support (fun s => F s * betaPDF a b s) ⊆ Ioo (0 : ℝ) 1 := by
+    intro x hx
+    rw [Function.mem_support] at hx
+    by_contra hn
+    apply hx
+    rcases le_or_gt x 0 with h | h
+    · rw [betaPDF_eq_zero_of_nonpos h, mul_zero]
+    · have h1 : 1 ≤ x := not_lt.mp fun h1 => hn ⟨h, h1⟩
+      rw [betaPDF_eq_zero_of_one_le h1, mul_zero]
+  rw [lintegral_lintegral_comp_div_add_gammaPDF hF ha hb hr,
+    ← setLIntegral_eq_of_support_subset hsupp]
+  refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+  rw [betaPDF_of_pos_lt_one hs.1 hs.2, const_mul_integral_eq_beta_density ha hb hr hs]
 
 /-- **Beta as a ratio of Gammas**: for $a, b, r > 0$, the image of
 $\mathrm{Gamma}(a, r) \otimes \mathrm{Gamma}(b, r)$ (shapes $a$, $b$, common rate $r$) under
