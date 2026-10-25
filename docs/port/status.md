@@ -24,7 +24,14 @@ become `NLAlib.ae_mem_Icc_slqMeasure` and `NLAlib.matchesMoments_probeSpectralMe
 `NLAlib.Polynomial.Approximation.AnalyticApproximation`, `NLAlib.Krylov.Functions.Quadrature`
 (StochasticLanczosQuadrature), `NLAlib.Estimation.Trace.{GirardHutchinson,
 StochasticLanczosQuadrature}`, `NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure`,
-`NLAlib.RandomMatrix.Haar.Sphere` (SpectralDensity).
+`NLAlib.RandomMatrix.Haar.Sphere` (SpectralDensity). Split (maintainer,
+SPLIT-SPECTRALDENSITY): `Estimation/Spectral/SpectralDensity.lean` keeps the definitions and the
+deterministic results; its sub-Gaussian tails are in `SpectralDensitySubgaussian.lean` and its
+sphere-probe tails, which alone import `NLAlib.RandomMatrix.Haar.Sphere`, in
+`SpectralDensitySphere.lean`. Public additions: the instance
+`isFiniteMeasure_empiricalSpectralMeasure` (Matrix/Spectral/SpectralMeasure) and
+`Matrix.IsHermitian.ncard_spectrum_le` (stated with `Set.ncard`; it was the private
+`card_toFinset_spectrum_le`), used by both halves of the split.
 
 ## KS7 orthogonal-polynomial structure: proofs (2026-10-25)
 
