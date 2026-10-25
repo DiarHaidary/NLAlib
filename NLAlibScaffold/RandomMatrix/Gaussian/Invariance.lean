@@ -34,6 +34,8 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n]
 
+-- `hE₁` is not used: `E₁ * E₂ = E₂` suffices on the left (decision UNUSED-HE1).
+set_option linter.unusedVariables false in
 /-- **Resampling a block of a Gaussian matrix**: let $\mathbf{X}$, $\mathbf{X}'$ be independent
 standard Gaussian $m \times n$ matrices, and $\mathbf{E}_1, \mathbf{E}_2$,
 $\mathbf{F}_1, \mathbf{F}_2$ orthogonal projectors with $\mathbf{E}_1\mathbf{E}_2 = \mathbf{E}_2$
@@ -59,6 +61,7 @@ $\mathbf{B}(\mathbf{X}')$ are independent because $\mathbf{X}$ and $\mathbf{X}'$
 (3) Two independent pairs with equal marginals have equal joint laws
 (`indepFun_iff_map_prod_eq_prod_map_map`), so the sums $\mathbf{D} + \mathbf{B}$ have equal
 laws (`IdentDistrib.comp` with addition). -/
+@[nolint unusedArguments]
 theorem identDistrib_mul_mul_of_hasLaw_gaussianMatrix {X X' : Ω → Matrix m n ℝ}
     (hX : HasLaw X (gaussianMatrix m n) μ) (hX' : HasLaw X' (gaussianMatrix m n) μ)
     (hXX' : IndepFun X X' μ) {E₁ E₂ : Matrix m m ℝ} {F₁ F₂ : Matrix n n ℝ}
