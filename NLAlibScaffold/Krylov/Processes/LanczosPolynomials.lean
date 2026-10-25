@@ -313,6 +313,13 @@ Result: lanczos-jacobi-matrix -/
 theorem _root_.Matrix.IsHermitian.lanczosTridiagonal_eq_jacobiMatrix {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
     lanczosTridiagonal A b q = (jacobiMatrix (spectralMeasure A b) q).map (algebraMap ℝ 𝕜) := by
-  sorry
+  ext i j
+  simp only [lanczosTridiagonal, jacobiMatrix, Matrix.map_apply, Matrix.of_apply]
+  split_ifs with h1 h2 h3
+  · subst h1
+    rw [Matrix.IsHermitian.lanczosAlpha_lanczosState hA b i, RCLike.algebraMap_eq_ofReal]
+  · rw [h2, Matrix.IsHermitian.lanczosState_beta hA b j, RCLike.algebraMap_eq_ofReal]
+  · rw [h3, Matrix.IsHermitian.lanczosState_beta hA b i, RCLike.algebraMap_eq_ofReal]
+  · simp
 
 end NLAlib
