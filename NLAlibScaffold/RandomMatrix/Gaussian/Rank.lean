@@ -47,6 +47,29 @@ theorem measure_mul_mul_eq_eq_zero_of_hasLaw_gaussianMatrix {p r : Type*}
     (hX : HasLaw X (gaussianMatrix m n) μ) {N : Matrix p m ℝ} {F : Matrix n r ℝ} (hN : N ≠ 0)
     (hF : F ≠ 0) (C : Matrix p r ℝ) :
     μ {ω | N * X ω * F = C} = 0 := by
-  sorry
+  obtain ⟨i, a, hia⟩ : ∃ i a, N i a ≠ 0 := by
+    by_contra h; push Not at h; exact hN (Matrix.ext h)
+  obtain ⟨b, j, hbj⟩ : ∃ b j, F b j ≠ 0 := by
+    by_contra h; push Not at h; exact hF (Matrix.ext h)
+  set c : m × n → ℝ := fun q => N i q.1 * F q.2 j with hc
+  have hc0 : ‖WithLp.toLp 2 c‖₊ ^ 2 ≠ 0 := by
+    refine pow_ne_zero _ (nnnorm_ne_zero_iff.mpr fun h => mul_ne_zero hia hbj ?_)
+    exact congrFun (congrArg WithLp.ofLp h) (a, b)
+  have hY := hasLaw_dotProduct_of_hasLaw_gaussianVector
+    (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX) c
+  have key : ∀ ω, (N * X ω * F) i j = c ⬝ᵥ Function.uncurry (X ω) := by
+    intro ω
+    simp only [Matrix.mul_apply, dotProduct, hc, Finset.sum_mul, Fintype.sum_prod_type]
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl fun x _ => Finset.sum_congr rfl fun y _ => by
+      rw [mul_right_comm]; rfl
+  have := nullSingletonClass_gaussianReal (μ := 0) hc0
+  refine measure_mono_null (t := (fun ω => c ⬝ᵥ Function.uncurry (X ω)) ⁻¹' {C i j})
+    (fun ω hω => ?_) ?_
+  · simp only [Set.mem_ofPred_eq] at hω
+    simp only [Set.mem_preimage, Set.mem_singleton_iff, ← key, hω]
+  · rw [← Measure.map_apply_of_aemeasurable hY.aemeasurable (measurableSet_singleton _),
+      hY.map_eq]
+    exact measure_singleton _
 
 end NLAlib
