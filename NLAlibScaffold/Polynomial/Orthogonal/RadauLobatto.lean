@@ -720,6 +720,91 @@ theorem lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
   unfold lobattoQuadrature
   exact interpolatoryQuadrature_eq_self_of_ae_mem hcarry
 
+private theorem natDegree_prod_X_sub_C_sq_le (s : Finset ℝ) :
+    (∏ y ∈ s, (Polynomial.X - Polynomial.C y) ^ 2).natDegree ≤ 2 * s.card := by
+  refine (Polynomial.natDegree_prod_le _ _).trans ?_
+  have hy : ∀ y ∈ s, ((Polynomial.X - Polynomial.C y) ^ 2).natDegree ≤ 2 := fun y _ =>
+    (Polynomial.natDegree_pow_le).trans (by simp)
+  calc _ ≤ ∑ _y ∈ s, 2 := Finset.sum_le_sum hy
+    _ = 2 * s.card := by simp [mul_comm]
+
+/-- Exactness at a node: if $p$ is nonnegative on $[a, b]$, vanishes at the other nodes of $s$
+and is positive at $x \in s$, and $s$ is orthogonal of order $m$ with $\deg p < \lvert s\rvert + m$,
+then $\int\ell_x\,d\mu \ge 0$. -/
+private theorem lagrange_weight_nonneg_of_exact (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    {s : Finset ℝ} {m : ℕ} (hs : IsOrthogonalPolynomial μ m (Lagrange.nodal s id))
+    {x : ℝ} (hx : x ∈ s) {p : Polynomial ℝ} (hdeg : p.natDegree < s.card + m)
+    (hp : ∀ t ∈ Set.Icc a b, 0 ≤ p.eval t) (h0 : ∀ y ∈ s, y ≠ x → p.eval y = 0)
+    (hpos : 0 < p.eval x) : 0 ≤ ∫ t, (Lagrange.basis s id x).eval t ∂μ := by
+  have hdeg' : p.degree < ((s.card + m : ℕ) : WithBot ℕ) :=
+    lt_of_le_of_lt Polynomial.degree_le_natDegree (WithBot.coe_lt_coe.2 hdeg)
+  have hex := hs.integral_eval_eq_sum_of_degree_lt_card_add hμ hdeg'
+  rw [Finset.sum_eq_single x (fun y hy hne => by rw [h0 y hy hne, mul_zero])
+    (fun hn => absurd hx hn)] at hex
+  have hnn : 0 ≤ ∫ t, p.eval t ∂μ := integral_nonneg_of_ae (hμ.mono fun t ht => hp t ht)
+  rw [hex] at hnn
+  exact nonneg_of_mul_nonneg_left hnn hpos
+
+/-- Interior free node of the Lobatto rule: for $x$ a Gauss node of `lobattoMeasure μ a b`, the
+polynomial $(x - a)(b - X)\prod_{y\in G\setminus\{x\}}(X - y)^2$ has degree below $2k + 2$, and
+the weight of $x$ is nonnegative by `lagrange_weight_nonneg_of_exact`. -/
+private theorem lobattoWeight_nonneg_interior (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
+    (hs : IsOrthogonalPolynomial μ k (Lagrange.nodal (lobattoNodes μ a b k) id))
+    (hcard : (lobattoNodes μ a b k).card = k + 2)
+    (hmem : ∀ y, y ∈ lobattoNodes μ a b k ↔
+      y = a ∨ y = b ∨ y ∈ gaussNodes (lobattoMeasure μ a b) k)
+    (hGI : ∀ y ∈ gaussNodes (lobattoMeasure μ a b) k, a < y ∧ y < b)
+    (hcardG : (gaussNodes (lobattoMeasure μ a b) k).card = k) {x : ℝ}
+    (hx : x ∈ lobattoNodes μ a b k) (hxG : x ∈ gaussNodes (lobattoMeasure μ a b) k) :
+    0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
+  set G := gaussNodes (lobattoMeasure μ a b) k with hGdef
+  have hk : 0 < k := by rw [← hcardG]; exact Finset.card_pos.2 ⟨x, hxG⟩
+  have hcE : (G.erase x).card = k - 1 := by rw [Finset.card_erase_of_mem hxG, hcardG]
+  refine lagrange_weight_nonneg_of_exact hμ hs hx
+    (p := (X - C a) * (C b - X) * ∏ y ∈ G.erase x, (X - C y) ^ 2) ?_ ?_ ?_ ?_
+  · have h3 := natDegree_mul_le (p := (X - C a) * (C b - X))
+      (q := ∏ y ∈ G.erase x, (X - C y) ^ 2)
+    have h4 := natDegree_mul_le (p := X - C a) (q := C b - X)
+    have h1 : (X - C a : ℝ[X]).natDegree ≤ 1 := by compute_degree!
+    have h2 : (C b - X : ℝ[X]).natDegree ≤ 1 := by compute_degree!
+    have h5 := natDegree_prod_X_sub_C_sq_le (G.erase x)
+    omega
+  · intro t ht
+    simp only [eval_mul, eval_sub, eval_C, eval_X, eval_prod, eval_pow]
+    exact mul_nonneg (mul_nonneg (sub_nonneg.2 ht.1) (sub_nonneg.2 ht.2))
+      (Finset.prod_nonneg fun y _ => sq_nonneg _)
+  · intro y hy hne
+    obtain hy' | hy' | hy' := (hmem y).1 hy
+    · simp [hy', eval_mul]
+    · simp [hy', eval_mul]
+    · simp only [eval_mul, eval_prod, eval_pow, eval_sub, eval_X, eval_C]
+      rw [Finset.prod_eq_zero (Finset.mem_erase.2 ⟨hne, hy'⟩) (by simp), mul_zero]
+  · simp only [eval_mul, eval_sub, eval_C, eval_X, eval_prod, eval_pow]
+    have hI := hGI x hxG
+    refine mul_pos (mul_pos (by linarith [hI.1]) (by linarith [hI.2]))
+      (Finset.prod_pos fun y hy => lt_of_le_of_ne (sq_nonneg _)
+        (Ne.symm (pow_ne_zero 2 (sub_ne_zero.2 (fun e => (Finset.mem_erase.1 hy).1 e.symm)))))
+
+/-- The degenerate Lobatto case: if `lobattoMeasure μ a b` is not positive definite up to degree
+$k$, then $\hat\pi_k$ has norm $0$, the Lobatto rule is $\mu$ and $\mu$ is carried by its nodes,
+so the weight of a node is its mass $\mu\{x\} \ge 0$. -/
+private theorem lobattoWeight_nonneg_of_not_definite (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
+    (h : ¬IsMomentPosDef (lobattoMeasure μ a b) k) {x : ℝ} (hx : x ∈ lobattoNodes μ a b k) :
+    0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
+  have := isFiniteMeasure_lobattoMeasure hμ
+  have h1 : ¬IsMomentPosDef (lobattoMeasure μ a b) (k + 1) :=
+    fun h' => h (h'.mono (Nat.le_succ k))
+  have h0 : ∫ x, (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2
+      ∂lobattoMeasure μ a b = 0 := by
+    rw [isMomentPosDef_succ_iff (ae_mem_Icc_lobattoMeasure hμ) k, not_lt] at h1
+    exact le_antisymm h1 (integral_nonneg fun _ => sq_nonneg _)
+  have hQ := lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0
+  have hae : ∀ᵐ t ∂μ, t ∈ lobattoNodes μ a b k := by
+    have := ae_mem_interpolatoryQuadrature μ (lobattoNodes μ a b k)
+    rwa [show interpolatoryQuadrature μ (lobattoNodes μ a b k) = μ from hQ] at this
+  rw [integral_eval_basis_of_ae_mem hae hx]
+  exact measureReal_nonneg
+
 /-- **The Lobatto weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
 $a < b$, and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Lobatto node $x$ is
 nonnegative, $\ell_x$ its Lagrange basis polynomial. [Gautschi2004, Theorem 3.6] (locator to
@@ -739,7 +824,77 @@ the nodes and the weight is the mass $\mu\{x\} \ge 0$ (`integral_eval_basis_of_a
 theorem integral_eval_basis_lobattoNodes_nonneg (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b)
     (k : ℕ) {x : ℝ} (hx : x ∈ lobattoNodes μ a b k) :
     0 ≤ ∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ := by
-  sorry
+  by_cases h : IsMomentPosDef (lobattoMeasure μ a b) k
+  · have := isFiniteMeasure_lobattoMeasure hμ
+    have hcard := h.card_lobattoNodes hμ hab
+    have hs := isOrthogonalPolynomial_nodal_lobattoNodes hμ hab h
+    have hGI : ∀ y ∈ gaussNodes (lobattoMeasure μ a b) k, a < y ∧ y < b := fun y hy => by
+      have hIcc := h.gaussNodes_subset_Icc (ae_mem_Icc_lobattoMeasure hμ) (Finset.mem_coe.2 hy)
+      have ha : y ≠ a := fun e => h.notMem_gaussNodes_lobattoMeasure hμ (Or.inl e) hy
+      have hb : y ≠ b := fun e => h.notMem_gaussNodes_lobattoMeasure hμ (Or.inr e) hy
+      exact ⟨lt_of_le_of_ne hIcc.1 (Ne.symm ha), lt_of_le_of_ne hIcc.2 hb⟩
+    have hmem : ∀ y, y ∈ lobattoNodes μ a b k ↔
+        y = a ∨ y = b ∨ y ∈ gaussNodes (lobattoMeasure μ a b) k := by
+      intro y; simp [lobattoNodes]
+    have hcardG := h.card_gaussNodes (ae_mem_Icc_lobattoMeasure hμ)
+    set G := gaussNodes (lobattoMeasure μ a b) k with hGdef
+    rcases (hmem x).1 hx with hxa | hxb | hxG
+    · -- the endpoint `a`: $p = (b - X)\prod_{y\in G}(X - y)^2$
+      refine lagrange_weight_nonneg_of_exact hμ hs hx
+        (p := (Polynomial.C b - Polynomial.X) * ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
+        ?_ ?_ ?_ ?_
+      · have h3 := Polynomial.natDegree_mul_le (p := Polynomial.C b - Polynomial.X)
+          (q := ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
+        have h1 : (Polynomial.C b - Polynomial.X : Polynomial ℝ).natDegree ≤ 1 := by
+          compute_degree!
+        have h5 := natDegree_prod_X_sub_C_sq_le G
+        omega
+      · intro t ht
+        simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
+          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
+        exact mul_nonneg (sub_nonneg.2 ht.2) (Finset.prod_nonneg fun y _ => sq_nonneg _)
+      · intro y hy hne
+        obtain hy' | hy' | hy' := (hmem y).1 hy
+        · exact absurd (hy'.trans hxa.symm) hne
+        · simp [hy', Polynomial.eval_mul]
+        · simp only [Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_pow,
+            Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+          rw [Finset.prod_eq_zero hy' (by simp), mul_zero]
+      · simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
+          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
+        rw [hxa]
+        exact mul_pos (by linarith [hab]) (Finset.prod_pos fun y hy =>
+          lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (sub_ne_zero.2 (by
+            have := hGI y hy; intro e; linarith [this.1])))))
+    · -- the endpoint `b`: $p = (X - a)\prod_{y\in G}(X - y)^2$
+      refine lagrange_weight_nonneg_of_exact hμ hs hx
+        (p := (Polynomial.X - Polynomial.C a) * ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
+        ?_ ?_ ?_ ?_
+      · have h3 := Polynomial.natDegree_mul_le (p := Polynomial.X - Polynomial.C a)
+          (q := ∏ y ∈ G, (Polynomial.X - Polynomial.C y) ^ 2)
+        have h1 : (Polynomial.X - Polynomial.C a : Polynomial ℝ).natDegree ≤ 1 := by
+          compute_degree!
+        have h5 := natDegree_prod_X_sub_C_sq_le G
+        omega
+      · intro t ht
+        simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
+          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
+        exact mul_nonneg (sub_nonneg.2 ht.1) (Finset.prod_nonneg fun y _ => sq_nonneg _)
+      · intro y hy hne
+        obtain hy' | hy' | hy' := (hmem y).1 hy
+        · simp [hy', Polynomial.eval_mul]
+        · exact absurd (hy'.trans hxb.symm) hne
+        · simp only [Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_pow,
+            Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+          rw [Finset.prod_eq_zero hy' (by simp), mul_zero]
+      · simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,
+          Polynomial.eval_X, Polynomial.eval_prod, Polynomial.eval_pow]
+        rw [hxb]
+        exact mul_pos (by linarith [hab]) (Finset.prod_pos fun y hy =>
+          lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (sub_ne_zero.2 (by
+            have := hGI y hy; intro e; linarith [this.2])))))
+    · exact lobattoWeight_nonneg_interior hμ hs hcard hmem hGI hcardG hx hxG
+  · exact lobattoWeight_nonneg_of_not_definite hμ h hx
 
 /-- The Lobatto rule with the interpolatory weights: for a finite measure $\mu$ supported in
 $[a, b]$, $a < b$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
