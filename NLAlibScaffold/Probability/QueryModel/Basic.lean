@@ -407,7 +407,8 @@ what `alg` outputs against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$. Two-sided querie
 $\mathbf{X}$ therefore simulate products with $\mathbf{X}\mathbf{X}^{\mathsf{H}}$, at `q` products
 with each of $\mathbf{X}$ and $\mathbf{X}^{\mathsf{H}}$
 (`QueryAlgorithm.rightCount_gramSimulation_le`, `QueryAlgorithm.leftCount_gramSimulation_le`).
-[ZhangEtAl2026, Section 4]; there implicit in the reduction of the Wishart oracle to its factor.
+[ZhangEtAl2026, Section 4.1]; there implicit: the analysis works with the factor $\mathbf{X}$
+while the queries are to $\mathbf{X}\mathbf{X}^{\mathsf{T}}$.
 Proof: S, about 3 lines. Unfold `run`, `transcript`, `gramSimulation`; `congrArg alg.output` of
 `QueryAlgorithm.history_gramSimulation` at `i = q`. -/
 theorem run_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)

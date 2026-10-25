@@ -207,9 +207,9 @@ $(\mathbf{0}, \mathbf{x}_i)$, which returns $\mathbf{X}^{\mathsf{H}}\mathbf{x}_i
 component; round `2i + 1` is the right query $(\mathbf{X}^{\mathsf{H}}\mathbf{x}_i, \mathbf{0})$,
 which returns $\mathbf{X}\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ in the first. So it makes at most
 `q` products with each of $\mathbf{X}$ and $\mathbf{X}^{\mathsf{H}}$. The original responses are the
-first components of the odd responses (`QueryAlgorithm.run_gramSimulation`). This is the
-reduction of [ZhangEtAl2026, Section 4] from the Wishart oracle to two-sided queries to its
-factor. -/
+first components of the odd responses (`QueryAlgorithm.run_gramSimulation`). It makes explicit
+what [ZhangEtAl2026, Section 4.1] uses implicitly: the analysis works with the factor
+$\mathbf{X}$ while the queries are to $\mathbf{X}\mathbf{X}^{\mathsf{T}}$. -/
 def gramSimulation {𝕜 d : Type*} [Zero 𝕜] (k : Type*) (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) :
     QueryAlgorithm ((k → 𝕜) × (d → 𝕜)) ((d → 𝕜) × (k → 𝕜)) (2 * q) β where
   query j h :=
