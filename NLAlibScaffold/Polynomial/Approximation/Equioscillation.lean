@@ -637,7 +637,25 @@ $\sigma = (-1)^n$ (`pow_sub`, or parity cases); `node_mem_Icc`. The case $n = 0$
 one point) is covered by the same formula. -/
 theorem alternatesOn_eval_T_real (n : ℕ) :
     AlternatesOn (fun x => (Chebyshev.T ℝ (n : ℤ)).eval x) (Set.Icc (-1) 1) (n + 1) 1 := by
-  sorry
+  rw [alternatesOn_iff]
+  refine ⟨fun i => Polynomial.Chebyshev.node n (n - (i : ℕ)), ?_, ?_, (-1) ^ n, ?_, ?_⟩
+  · intro i j hij
+    exact Polynomial.Chebyshev.node_lt (Nat.sub_le n _)
+      (by have := Fin.lt_def.mp hij; have := j.isLt; omega)
+  · intro i
+    exact Polynomial.Chebyshev.node_mem_Icc
+  · rcases neg_one_pow_eq_or ℝ n with h | h
+    · exact Or.inl h
+    · exact Or.inr h
+  · intro i
+    have hi : (i : ℕ) ≤ n := by have := i.isLt; omega
+    change 1 ≤ (-1) ^ n * (-1) ^ (i : ℕ) * eval (Polynomial.Chebyshev.node n (n - (i : ℕ)))
+      (Polynomial.Chebyshev.T ℝ (n : ℤ))
+    rw [Polynomial.Chebyshev.eval_T_real_node (Finset.mem_Iic.mpr (Nat.sub_le n _))]
+    rw [← pow_add, ← pow_add]
+    have e : n + (i : ℕ) + (n - (i : ℕ)) = 2 * n := by omega
+    rw [e, pow_mul]
+    norm_num
 
 /-- **The minimax error of $x^{n + 1}$**: on $[-1, 1]$, the best approximation of $x^{n + 1}$ by
 polynomials of degree at most $n$ has error $E_n(x^{n + 1}; [-1, 1]) = 2^{-n}$, attained by
