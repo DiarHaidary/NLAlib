@@ -33,6 +33,30 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
   {g h : Ω → n → ℝ}
 
+private lemma integral_norm_sq_moments_of_hasLaw_gaussianVector
+    (hg : HasLaw g (gaussianVector n) μ) (hd : 0 < Fintype.card n) :
+    ∫ ω, ‖WithLp.toLp 2 (g ω)‖ ^ 2 ∂μ = Fintype.card n ∧
+      ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ 2 ∂μ = Fintype.card n * (Fintype.card n + 2) := by
+  have hdpos : (0 : ℝ) < Fintype.card n := by exact_mod_cast hd
+  have hG : Real.Gamma ((Fintype.card n : ℝ) / 2) ≠ 0 :=
+    (Real.Gamma_pos_of_pos (by positivity)).ne'
+  have h1 : Real.Gamma ((Fintype.card n : ℝ) / 2 + 1) =
+      (Fintype.card n : ℝ) / 2 * Real.Gamma ((Fintype.card n : ℝ) / 2) :=
+    Real.Gamma_add_one (by positivity)
+  have h2 : Real.Gamma ((Fintype.card n : ℝ) / 2 + 2) =
+      ((Fintype.card n : ℝ) / 2 + 1) * Real.Gamma ((Fintype.card n : ℝ) / 2 + 1) := by
+    rw [show (Fintype.card n : ℝ) / 2 + 2 = ((Fintype.card n : ℝ) / 2 + 1) + 1 by ring]
+    exact Real.Gamma_add_one (by positivity)
+  constructor
+  · have := integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 1) (by linarith)
+    simp only [Real.rpow_one] at this
+    rw [this, h1]
+    field_simp
+  · have := integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 2) (by linarith)
+    simp only [Real.rpow_two] at this
+    rw [this, h2, h1]
+    field_simp
+
 /-- **The variance of a difference of two independent $\chi^2_d$ variables**: for independent
 standard Gaussian vectors $\mathbf{g}, \mathbf{h}$ of dimension $d = \lvert n \rvert$,
 $$\mathbb{E}\bigl(\|\mathbf{g}\|^2 - \|\mathbf{h}\|^2\bigr)^2 = 4d\,.$$
@@ -48,7 +72,47 @@ theorem integral_norm_sq_sub_norm_sq_sq_of_hasLaw_gaussianVector
     (hgh : IndepFun g h μ) :
     ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2 - ‖WithLp.toLp 2 (h ω)‖ ^ 2) ^ 2 ∂μ =
       4 * Fintype.card n := by
-  sorry
+  rcases Nat.eq_zero_or_pos (Fintype.card n) with hd0 | hd
+  · have : IsEmpty n := Fintype.card_eq_zero_iff.mp hd0
+    simp [Subsingleton.elim (WithLp.toLp 2 (g _)) 0, Subsingleton.elim (WithLp.toLp 2 (h _)) 0]
+  have hdpos : (0 : ℝ) < Fintype.card n := by exact_mod_cast hd
+  obtain ⟨hU1, hU2⟩ := integral_norm_sq_moments_of_hasLaw_gaussianVector hg hd
+  obtain ⟨hV1, hV2⟩ := integral_norm_sq_moments_of_hasLaw_gaussianVector hh hd
+  have hmeas : Measurable fun x : n → ℝ => ‖WithLp.toLp 2 x‖ ^ 2 := by fun_prop
+  have hind : IndepFun (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2)
+      (fun ω => ‖WithLp.toLp 2 (h ω)‖ ^ 2) μ :=
+    hgh.comp hmeas hmeas
+  have hiU : Integrable (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2) μ := by
+    have := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 1) (by linarith)
+    simpa only [Real.rpow_one] using this
+  have hiV : Integrable (fun ω => ‖WithLp.toLp 2 (h ω)‖ ^ 2) μ := by
+    have := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hh (s := 1) (by linarith)
+    simpa only [Real.rpow_one] using this
+  have hiU2 : Integrable (fun ω => (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ 2) μ := by
+    have := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := 2) (by linarith)
+    simpa only [Real.rpow_two] using this
+  have hiV2 : Integrable (fun ω => (‖WithLp.toLp 2 (h ω)‖ ^ 2) ^ 2) μ := by
+    have := integrable_norm_sq_rpow_of_hasLaw_gaussianVector hh (s := 2) (by linarith)
+    simpa only [Real.rpow_two] using this
+  have hiUV : Integrable (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2 * ‖WithLp.toLp 2 (h ω)‖ ^ 2) μ :=
+    hind.integrable_mul hiU hiV
+  have hUV : ∫ ω, ‖WithLp.toLp 2 (g ω)‖ ^ 2 * ‖WithLp.toLp 2 (h ω)‖ ^ 2 ∂μ =
+      Fintype.card n * Fintype.card n := by
+    have h := hind.integral_mul_eq_mul_integral
+      (hmeas.comp_aemeasurable hg.aemeasurable).aestronglyMeasurable
+      (hmeas.comp_aemeasurable hh.aemeasurable).aestronglyMeasurable
+    simp only [Pi.mul_apply] at h
+    rw [h, hU1, hV1]
+  have e : ∀ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2 - ‖WithLp.toLp 2 (h ω)‖ ^ 2) ^ 2 =
+      ((‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ 2 + (‖WithLp.toLp 2 (h ω)‖ ^ 2) ^ 2) -
+        2 * (‖WithLp.toLp 2 (g ω)‖ ^ 2 * ‖WithLp.toLp 2 (h ω)‖ ^ 2) := fun ω => by ring
+  have hI : Integrable (fun ω => (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ 2 +
+      (‖WithLp.toLp 2 (h ω)‖ ^ 2) ^ 2) μ := hiU2.add hiV2
+  have hJ : Integrable (fun ω => 2 * (‖WithLp.toLp 2 (g ω)‖ ^ 2 * ‖WithLp.toLp 2 (h ω)‖ ^ 2)) μ :=
+    hiUV.const_mul 2
+  simp only [e]
+  rw [integral_sub hI hJ, integral_add hiU2 hiV2, integral_const_mul, hUV, hU2, hV2]
+  ring
 
 /-- **The fourth moment of a difference of two independent $\chi^2_d$ variables**: for
 independent standard Gaussian vectors $\mathbf{g}, \mathbf{h}$ of dimension
