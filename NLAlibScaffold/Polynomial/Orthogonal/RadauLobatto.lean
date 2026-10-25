@@ -1265,7 +1265,18 @@ theorem integral_le_integral_lobattoQuadrature_of_iteratedDeriv_nonneg
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 2 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, 0 ≤ iteratedDeriv (2 * k + 2) f x) :
     ∫ x, f x ∂μ ≤ ∫ x, f x ∂lobattoQuadrature μ a b k := by
-  sorry
+  obtain ⟨ξ, hξ, heq⟩ := exists_integral_sub_integral_lobattoQuadrature_eq hμ hab k hf hf'
+  have hw : ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ
+      ≤ 0 := by
+    refine integral_nonpos_of_ae ?_
+    filter_upwards [hμ] with x hx
+    exact mul_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonneg_of_nonpos (sub_nonneg.mpr hx.1) (sub_nonpos.mpr hx.2))
+      (sq_nonneg _)
+  have hd : 0 ≤ iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial :=
+    div_nonneg (hD ξ hξ) (Nat.cast_nonneg _)
+  have hp := mul_nonpos_of_nonneg_of_nonpos hd hw
+  linarith
 
 /-- **The Lobatto rule is a lower bound** for $f$ with nonpositive derivative of order
 $2k + 2$: for a finite measure $\mu$ supported in $[a, b]$, $a < b$, every $k$, and $f$
