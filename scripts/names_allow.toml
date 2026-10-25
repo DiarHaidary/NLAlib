@@ -32,3 +32,13 @@ reason = "the derived name drops the right-side `mul_add` and collides with the 
 name = "Matrix.IsHermitian.integral_pow_spectralMeasure"
 rule = "N6"
 reason = "Mathlib's `integral_pow` idiom (the integrand `x ^ k` is the argument of `integral_`, the measure follows); `pow` comes after its argument `x`, the checker reads `spectralMeasure` as its argument"
+
+[[allow]]
+name = "NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_gaussianMatrix"
+rule = "N10"
+reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact − computed; `rsvd_sub` is inside the computed part"
+
+[[allow]]
+name = "NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_le_of_hasLaw_gaussianMatrix"
+rule = "N10"
+reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact − computed; `rsvd_sub` is inside the computed part"

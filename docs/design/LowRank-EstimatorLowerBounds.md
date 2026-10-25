@@ -349,6 +349,9 @@ TruncatedGeneralizedNystrom, RotationInvariant}.lean` (EarlyTruncation split int
 file and the general-$k$ file(s)), W6 joined `LowerBounds/LowRank/RotationInvariant.lean` (its only
 consumers are W7–W10), and W3–W5 became `NLAlib/LowerBounds/Regression/SketchAndSolve.lean`. The
 tools stay in their topic files as planned: X1, X2, T1–T3, G1–G3, W1, W2, and PZ1 in ForMathlib.
+E8 as proved takes the witnesses $c = 1/(96\cdot 10^7)$, $C = 10^4$, $K_0 = 4000$ (good event of
+probability $\ge 1/24$, $\theta = \arctan(1/40)$, $T \ge 10^{-7}k$ on it), not the
+$c = 10^{-4}/8$ estimated in §3.1; the statement is existential, so this changes nothing in it.
 The table below is the plan as approved.
 
 New files (topic: optimality of a named estimator):
