@@ -447,7 +447,19 @@ theorem MatchesMoments.eq_radauQuadrature [IsFiniteMeasure ν] {k : ℕ}
     (h : MatchesMoments μ ν (2 * k + 1)) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b)
     {s : Finset ℝ} (hν : ∀ᵐ x ∂ν, x ∈ insert c s) (hs : s.card ≤ k) :
     ν = radauQuadrature μ c k := by
-  sorry
+  have hM : MatchesMoments ν (radauQuadrature μ c k) (2 * k + 1) :=
+    h.symm.trans (matchesMoments_radauQuadrature hμ hc k)
+  have hνT : ∀ᵐ x ∂ν, x ∈ insert c (s ∪ gaussNodes (radauMeasure μ c) k) :=
+    hν.mono fun x hx => Finset.insert_subset_insert c Finset.subset_union_left hx
+  have hρT : ∀ᵐ x ∂radauQuadrature μ c k, x ∈ insert c (s ∪ gaussNodes (radauMeasure μ c) k) :=
+    (ae_mem_interpolatoryQuadrature μ (radauNodes μ c k)).mono fun x hx =>
+      Finset.insert_subset_insert c Finset.subset_union_right hx
+  have hcard : (insert c (s ∪ gaussNodes (radauMeasure μ c) k)).card ≤ 2 * k + 1 :=
+    (Finset.card_insert_le _ _).trans (by
+      have := (Finset.card_union_le s _).trans (Nat.add_le_add_left
+        (card_gaussNodes_le (radauMeasure μ c) k) s.card)
+      omega)
+  exact MatchesMoments.eq_of_ae_mem (hM.mono hcard) hνT hρT
 
 /-! ### The Radau remainder and bounds -/
 
