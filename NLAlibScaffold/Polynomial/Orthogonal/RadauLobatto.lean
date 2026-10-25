@@ -364,8 +364,8 @@ theorem isFiniteMeasure_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
 every point of `lobattoMeasure μ a b` lies in $[a, b]$.
 Proof: S, about 4 lines. As `ae_mem_Icc_radauMeasure`. -/
 theorem ae_mem_Icc_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
-    ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ Set.Icc a b := by
-  sorry
+    ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ Set.Icc a b :=
+  (withDensity_absolutelyContinuous μ _).ae_le hμ
 
 /-- The endpoints are not free Lobatto nodes: if $\mu$, finite and supported in $[a, b]$, has a
 Lobatto modified measure positive definite up to degree $k$, then neither endpoint
