@@ -217,7 +217,24 @@ theorem radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
     (h : ∫ x, (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2 ∂radauMeasure μ c = 0) :
     radauQuadrature μ c k = μ := by
-  sorry
+  have := isFiniteMeasure_radauMeasure hμ c
+  have hc0 : ∀ᵐ x ∂radauMeasure μ c, (orthogonalPolynomial (radauMeasure μ c) k).eval x = 0 :=
+    ae_eval_eq_zero_of_integral_sq_eq_zero (ae_mem_Icc_radauMeasure hμ c) h
+  have hπ : orthogonalPolynomial (radauMeasure μ c) k ≠ 0 :=
+    (monic_orthogonalPolynomial _ _).ne_zero
+  have hG : ∀ᵐ x ∂radauMeasure μ c, x ∈ gaussNodes (radauMeasure μ c) k :=
+    hc0.mono fun x hx => by
+      unfold gaussNodes
+      rw [Multiset.mem_toFinset, Polynomial.mem_roots hπ]
+      exact hx
+  have hdens : Measurable fun x : ℝ => ‖x - c‖ₑ := by fun_prop
+  have hμG : ∀ᵐ x ∂μ, x ∈ radauNodes μ c k := by
+    refine ((ae_withDensity_iff hdens).mp hG).mono fun x hx => ?_
+    unfold radauNodes
+    by_cases hxc : x = c
+    · simp [hxc]
+    · exact Finset.mem_insert_of_mem (hx (by simpa [sub_eq_zero] using hxc))
+  exact interpolatoryQuadrature_eq_self_of_ae_mem hμG
 
 /-- **The Radau weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
 $c \in \{a, b\}$ and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Radau
