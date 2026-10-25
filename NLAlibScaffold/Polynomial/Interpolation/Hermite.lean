@@ -298,6 +298,31 @@ theorem exists_sub_eval_interpolate_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < 
     (hx : x ∈ Set.Icc a b) :
     ∃ ξ ∈ Set.Ioo a b, f x - (Lagrange.interpolate s id f).eval x =
       iteratedDeriv s.card f ξ / s.card.factorial * (Lagrange.nodal s id).eval x := by
-  sorry
+  have hnodup : s.val.Nodup := s.nodup
+  have hcount : ∀ y ∈ s.val, s.val.count y = 1 := fun y hy =>
+    Multiset.count_eq_one_of_mem hnodup hy
+  have hm : s.val ≠ 0 := by
+    intro h
+    obtain ⟨y, hy⟩ := hs
+    rw [Finset.val_eq_zero] at h
+    simp_all
+  have hmem : ∀ y ∈ s.val, y ∈ Set.Icc a b := fun y hy => hsab (Finset.mem_coe.mpr hy)
+  have hrep : ∀ y ∈ s.val, 1 < s.val.count y → y ∈ Set.Ioo a b := fun y hy h => by
+    rw [hcount y hy] at h
+    exact absurd h (by norm_num)
+  have hH : (Lagrange.interpolate s id f).degree < (s.val).card :=
+    Lagrange.degree_interpolate_lt _ (Set.injOn_id _)
+  have hjet : ∀ y ∈ s.val, ∀ k < s.val.count y,
+      (derivative^[k] (Lagrange.interpolate s id f)).eval y = iteratedDeriv k f y := by
+    intro y hy k hk
+    rw [hcount y hy] at hk
+    obtain rfl : k = 0 := by omega
+    simp only [Function.iterate_zero, id_eq, iteratedDeriv_zero]
+    exact Lagrange.eval_interpolate_at_node _ (Set.injOn_id _) (Finset.mem_val.mp hy)
+  obtain ⟨ξ, hξ, heq⟩ := exists_sub_eval_eq_iteratedDeriv_mul (m := s.val) hab hm hmem hrep hf hf'
+    hH hjet hx
+  refine ⟨ξ, hξ, ?_⟩
+  rw [heq, Lagrange.nodal, Finset.prod_eq_multiset_prod]
+  simp
 
 end NLAlib
