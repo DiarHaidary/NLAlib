@@ -325,6 +325,15 @@ $\varepsilon$; for $n \ge \deg p$, `minimaxError_le_of_isUniformApproxOn` (`degr
 `Metric.tendsto_atTop` with `minimaxError_nonneg`. -/
 theorem tendsto_minimaxError_atTop {f : ℝ → ℝ} {a b : ℝ} (hf : ContinuousOn f (Set.Icc a b)) :
     Filter.Tendsto (minimaxError f (Set.Icc a b)) Filter.atTop (𝓝 0) := by
-  sorry
+  refine Metric.tendsto_atTop.mpr fun ε hε => ?_
+  obtain ⟨p, hp⟩ := exists_polynomial_near_of_continuousOn a b f hf (ε / 2) (by linarith)
+  refine ⟨p.natDegree, fun n hn => ?_⟩
+  have hdeg : p.degree ≤ n := Polynomial.degree_le_natDegree.trans (by exact_mod_cast hn)
+  have hunif : Metric.IsUniformApproxOn (fun x => eval x p) f (Set.Icc a b) (ε / 2) :=
+    fun x hx => by rw [Real.dist_eq]; exact (hp x hx).le
+  have hle := minimaxError_le_of_isUniformApproxOn hdeg (by linarith) hunif
+  have hnn := minimaxError_nonneg f (Set.Icc a b) n
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg hnn]
+  linarith
 
 end NLAlib
