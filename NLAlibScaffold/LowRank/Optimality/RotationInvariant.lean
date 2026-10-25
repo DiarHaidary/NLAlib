@@ -357,6 +357,46 @@ theorem
     ∃ A : Matrix m n ℝ, A.rank = r ∧
       c * frobNorm (A - truncatedSVD A q) ^ 2 <
         ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ := by
-  sorry
+  have := hΨ.isProbabilityMeasure
+  have hf := one_le_haarProjectionFactor hlp hpm
+  obtain ⟨A, hA, hlt⟩ := exists_lt_integral_frobNorm_sub_rsvd_sq_of_isLeftUnitarilyInvariant
+    hX hXr hq hlr hrm hrn (c := c / haarProjectionFactor (Fintype.card m) (Fintype.card p)
+      (Fintype.card l)) (by rwa [div_lt_iff₀' (by linarith)])
+  refine ⟨A, hA, ?_⟩
+  have hk : ∀ᵐ ω ∂μ, (A * X ω).rank = Fintype.card l :=
+    (ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant A hX hXr).mono fun ω hω => by
+      rw [hω, hA, min_eq_right hlr]
+  have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (haarFrame m p) (haarFrame m p) := HasLaw.id
+  -- The Haar identity, integrated over the range test matrix: the fixed-`X` form inside.
+  have hlin := hXΨ.lintegral_ofReal_comp_eq_lintegral_ofReal_integral hX.aemeasurable hΨ
+    (F := fun q : Matrix n l ℝ × Matrix m p ℝ => frobNorm (A - generalizedNystrom A q.1 q.2) ^ 2)
+    ((continuous_frobNorm.measurable.comp
+      (measurable_const.sub (measurable_generalizedNystrom A))).pow_const 2)
+    (fun _ => sq_nonneg _) (hk.mono fun ω hω =>
+      integrable_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame A aemeasurable_const hid
+        hpm (indepFun_const_left _ _) (ae_of_all _ fun _ => hω ▸ hlp))
+  have hgm : AEStronglyMeasurable
+      (fun ω => frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2) μ :=
+    (((continuous_frobNorm.measurable.comp (measurable_const.sub
+      (measurable_generalizedNystrom A))).pow_const 2).comp_aemeasurable
+        (hX.aemeasurable.prodMk hΨ.aemeasurable)).aestronglyMeasurable
+  have hR := (integrable_frobNorm_sub_rsvd_sq A hX.aemeasurable).const_mul
+    (haarProjectionFactor (Fintype.card m) (Fintype.card p) (Fintype.card l))
+  have heq : ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ =
+      haarProjectionFactor (Fintype.card m) (Fintype.card p) (Fintype.card l) *
+        ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
+    rw [← integral_const_mul,
+      integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun _ => sq_nonneg _) hgm,
+      integral_eq_lintegral_of_nonneg_ae
+        (ae_of_all _ fun _ => mul_nonneg (by linarith) (sq_nonneg _))
+        hR.aestronglyMeasurable, hlin]
+    refine congrArg ENNReal.toReal (lintegral_congr_ae (hk.mono fun ω hω => ?_))
+    refine congrArg ENNReal.ofReal ?_
+    rw [← hω]
+    exact integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_haarFrame A (X ω) hid hpm
+      (hω ▸ hlp)
+  rw [heq]
+  rw [div_mul_eq_mul_div, div_lt_iff₀' (by linarith)] at hlt
+  exact hlt
 
 end NLAlib
