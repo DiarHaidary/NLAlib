@@ -472,7 +472,50 @@ private theorem mul_sub_add_mul_sub_eq {α β : ℝ} (hα : 0 < α) (hβ : 0 < �
         t / (4 * (α + β + 1))) =
     t * (betaExpMoment α β 1 t / betaExpMoment α β 0 t *
       (1 - betaExpMoment α β 1 t / betaExpMoment α β 0 t) - 1 / 4) := by
-  sorry
+  have hK := integral_sub_mul_add_mul_exp_betaMeasure hα hβ t
+  have hpos := betaExpMoment_zero_pos hα hβ t
+  have := isProbabilityMeasureBeta hα hβ
+  have hi : ∀ k : ℕ, Integrable (fun x : ℝ => x ^ k * Real.exp (t * x)) (betaMeasure α β) := by
+    intro k
+    refine Integrable.of_bound (C := Real.exp |t|) (by fun_prop) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    obtain ⟨h0, h1⟩ := hx
+    rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (Real.exp_pos _).le, abs_pow, abs_of_nonneg h0]
+    have hp : x ^ k ≤ 1 := pow_le_one₀ h0 h1
+    have he : Real.exp (t * x) ≤ Real.exp |t| := by
+      apply Real.exp_le_exp.mpr
+      calc t * x ≤ |t * x| := le_abs_self _
+        _ = |t| * x := by rw [abs_mul, abs_of_nonneg h0]
+        _ ≤ |t| * 1 := by gcongr
+        _ = |t| := mul_one _
+    calc x ^ k * Real.exp (t * x) ≤ 1 * Real.exp |t| :=
+          mul_le_mul hp he (Real.exp_pos _).le zero_le_one
+      _ = Real.exp |t| := one_mul _
+  have hK' : α * betaExpMoment α β 0 t - (α + β) * betaExpMoment α β 1 t +
+      t * (betaExpMoment α β 1 t - betaExpMoment α β 2 t) = 0 := by
+    have hK2 := hK
+    simp only [show ∀ x : ℝ, (α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x) =
+      α * (x ^ 0 * Real.exp (t * x)) - (α + β) * (x ^ 1 * Real.exp (t * x)) +
+        t * (x ^ 1 * Real.exp (t * x) - x ^ 2 * Real.exp (t * x)) from fun x => by ring] at hK2
+    have i0 : Integrable (fun x : ℝ => α * (x ^ 0 * Real.exp (t * x))) (betaMeasure α β) :=
+      (hi 0).const_mul α
+    have i1 : Integrable (fun x : ℝ => (α + β) * (x ^ 1 * Real.exp (t * x))) (betaMeasure α β) :=
+      (hi 1).const_mul (α + β)
+    have i2 : Integrable (fun x : ℝ => t * (x ^ 1 * Real.exp (t * x) - x ^ 2 * Real.exp (t * x)))
+        (betaMeasure α β) := ((hi 1).sub (hi 2)).const_mul t
+    have i01 : Integrable (fun x : ℝ => α * (x ^ 0 * Real.exp (t * x)) -
+        (α + β) * (x ^ 1 * Real.exp (t * x))) (betaMeasure α β) := i0.sub i1
+    rw [integral_add i01 i2, integral_sub i0 i1, integral_const_mul, integral_const_mul,
+      integral_const_mul, integral_sub (hi 1) (hi 2)] at hK2
+    unfold betaExpMoment
+    linarith
+  have ha : betaExpMoment α β 0 t * (betaExpMoment α β 0 t)⁻¹ = 1 :=
+    mul_inv_cancel₀ hpos.ne'
+  have hr : α / (α + β) * (α + β) = α := div_mul_cancel₀ α (by positivity)
+  have hs : 1 / (4 * (α + β + 1)) * (4 * (α + β + 1)) = 1 :=
+    one_div_mul_cancel (by positivity)
+  linear_combination (-(betaExpMoment α β 0 t)⁻¹) * hK' +
+    α * ha - hr - (t / 4) * hs
 
 /-- The comparison step: with $\varphi_k(t) = \mathbb{E}\,X^k e^{tX}$ for
 $X \sim \mathrm{Beta}(\alpha, \beta)$, $\alpha, \beta > 0$, and
