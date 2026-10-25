@@ -119,6 +119,186 @@ namespace QueryAlgorithm
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {d k : Type*} [Fintype d]
   [Fintype k] {q : ℕ}
 
+private theorem queryAt_gramSimulation_two_mul {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (l : ℕ) :
+    (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l) =
+      (0, alg.queryAt (Y * Yᴴ).mulVec l) := by
+  have h := history_gramSimulation alg Y l
+  rw [queryAt]
+  generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l) = H at h ⊢
+  dsimp only [gramSimulation]
+  rw [dif_pos (by omega)]
+  have key : ∀ (n : ℕ) (hn : n = l) (f : Fin n → d → ℝ),
+      alg.query n f = alg.query l fun m => f (Fin.cast hn.symm m) := by
+    rintro n rfl f; rfl
+  refine Prod.ext rfl ((key _ (by omega) _).trans ?_)
+  exact congrArg (alg.query l) h
+
+private theorem queryAt_gramSimulation_two_mul_add_one {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (l : ℕ) :
+    (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l + 1) =
+      (Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l, 0) := by
+  have h := history_apply (alg.gramSimulation k) (twoSidedMulVec Y) (2 * l + 1) ⟨2 * l, by omega⟩
+  rw [queryAt_gramSimulation_two_mul] at h
+  rw [queryAt]
+  generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l + 1) = H at h ⊢
+  dsimp only [gramSimulation]
+  rw [dif_neg (by omega)]
+  refine Prod.ext ?_ rfl
+  change (H ⟨2 * l, by omega⟩).2 = _
+  rw [h]
+  rfl
+
+private theorem span_range_eq_of_forall {V ι ι' : Type*} [AddCommGroup V] [Module ℝ V]
+    (f : ι → V) (a : ι' → V) (h₁ : ∀ j, f j = 0 ∨ ∃ l, f j = a l) (h₂ : ∀ l, ∃ j, f j = a l) :
+    Submodule.span ℝ (Set.range f) = Submodule.span ℝ (Set.range a) := by
+  refine le_antisymm (Submodule.span_le.2 ?_) (Submodule.span_le.2 ?_)
+  · rintro _ ⟨j, rfl⟩
+    rcases h₁ j with h | ⟨l, h⟩
+    · rw [h]
+      exact zero_mem _
+    · rw [h]
+      exact Submodule.subset_span ⟨l, rfl⟩
+  · rintro _ ⟨l, rfl⟩
+    obtain ⟨j, h⟩ := h₂ l
+    rw [← h]
+    exact Submodule.subset_span ⟨j, rfl⟩
+
+private theorem queries_transcript_gramSimulation {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (j : Fin (2 * q)) :
+    ∃ l : Fin q, (alg.gramSimulation k).queries
+        ((alg.gramSimulation k).transcript (twoSidedMulVec Y)) j =
+      (0, alg.queryAt (Y * Yᴴ).mulVec l) ∨
+    (alg.gramSimulation k).queries ((alg.gramSimulation k).transcript (twoSidedMulVec Y)) j =
+      (Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l, 0) := by
+  rw [← queryAt_eq_queries_transcript]
+  obtain ⟨l, hl | hl⟩ := Nat.even_or_odd' (j : ℕ)
+  · exact ⟨⟨l, by omega⟩, Or.inl (by rw [hl, queryAt_gramSimulation_two_mul])⟩
+  · exact ⟨⟨l, by omega⟩, Or.inr (by rw [hl, queryAt_gramSimulation_two_mul_add_one])⟩
+
+private theorem range_leftQueryMatrix_gramSimulation {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
+    LinearMap.range ((alg.gramSimulation k).leftQueryMatrix
+        ((alg.gramSimulation k).transcript (twoSidedMulVec Y))).mulVecLin =
+      Submodule.span ℝ (Set.range fun l : Fin q => alg.queryAt (Y * Yᴴ).mulVec l) := by
+  rw [Matrix.range_mulVecLin]
+  refine span_range_eq_of_forall _ _ (fun j => ?_) (fun l => ⟨⟨2 * l, by omega⟩, ?_⟩)
+  · obtain ⟨l, h | h⟩ := queries_transcript_gramSimulation alg Y j
+    · exact Or.inr ⟨l, funext fun r => by simp [Matrix.col, leftQueryMatrix, h]⟩
+    · exact Or.inl (funext fun r => by simp [Matrix.col, leftQueryMatrix, h])
+  · funext r
+    simp [Matrix.col, leftQueryMatrix, ← queryAt_eq_queries_transcript,
+      queryAt_gramSimulation_two_mul]
+
+private theorem range_rightQueryMatrix_gramSimulation {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
+    LinearMap.range ((alg.gramSimulation k).rightQueryMatrix
+        ((alg.gramSimulation k).transcript (twoSidedMulVec Y))).mulVecLin =
+      Submodule.span ℝ (Set.range fun l : Fin q => Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l) := by
+  rw [Matrix.range_mulVecLin]
+  refine span_range_eq_of_forall _ _ (fun j => ?_) (fun l => ⟨⟨2 * l + 1, by omega⟩, ?_⟩)
+  · obtain ⟨l, h | h⟩ := queries_transcript_gramSimulation alg Y j
+    · exact Or.inl (funext fun r => by simp [Matrix.col, rightQueryMatrix, h])
+    · exact Or.inr ⟨l, funext fun r => by simp [Matrix.col, rightQueryMatrix, h]⟩
+  · funext r
+    simp [Matrix.col, rightQueryMatrix, ← queryAt_eq_queries_transcript,
+      queryAt_gramSimulation_two_mul_add_one]
+
+private theorem queryAt_eq_query_transcript_gramSimulation {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
+    alg.queryAt (Y * Yᴴ).mulVec q = alg.query q fun l : Fin q =>
+      ((alg.gramSimulation k).transcript (twoSidedMulVec Y) ⟨2 * l + 1, by omega⟩).1 := by
+  rw [queryAt, ← history_gramSimulation]
+  rfl
+
+private theorem notMem_span_and_mem_span_iff [DecidableEq d] [DecidableEq k] {β : Type*}
+    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
+    (alg.queryAt (Y * Yᴴ).mulVec q ∉
+        Submodule.span ℝ (Set.range fun l : Fin q => alg.queryAt (Y * Yᴴ).mulVec l) ∧
+      Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec q ∈
+        Submodule.span ℝ (Set.range fun l : Fin q => Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l)) ↔
+    ((1 - rangeProjector ((alg.gramSimulation k).leftQueryMatrix
+          ((alg.gramSimulation k).transcript (twoSidedMulVec Y)))) *ᵥ
+        alg.queryAt (Y * Yᴴ).mulVec q ≠ 0 ∧
+      (1 - rangeProjector ((alg.gramSimulation k).rightQueryMatrix
+          ((alg.gramSimulation k).transcript (twoSidedMulVec Y)))) *ᵥ
+        (Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec q) = 0) := by
+  rw [← range_leftQueryMatrix_gramSimulation, ← range_rightQueryMatrix_gramSimulation,
+    ← rangeProjector_mulVec_eq_self_iff, ← rangeProjector_mulVec_eq_self_iff, Matrix.sub_mulVec,
+    Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.one_mulVec, sub_ne_zero, sub_eq_zero, ne_comm,
+    eq_comm (a := Yᴴ *ᵥ _)]
+
+private theorem mulVec_conjTranspose_resample_gramSimulation [DecidableEq d] [DecidableEq k]
+    {β : Type*} (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y Y' : Matrix d k ℝ) (x : d → ℝ) :
+    (1 - rangeProjector ((alg.gramSimulation k).rightQueryMatrix
+          ((alg.gramSimulation k).transcript (twoSidedMulVec Y)))) *ᵥ
+        (((alg.gramSimulation k).resample Y Y')ᴴ *ᵥ x) =
+      (1 - rangeProjector ((alg.gramSimulation k).rightQueryMatrix
+          ((alg.gramSimulation k).transcript (twoSidedMulVec Y)))) *ᵥ (Y'ᴴ *ᵥ
+        ((1 - rangeProjector ((alg.gramSimulation k).leftQueryMatrix
+          ((alg.gramSimulation k).transcript (twoSidedMulVec Y)))) *ᵥ x)) := by
+  set U := (alg.gramSimulation k).leftQueryMatrix
+    ((alg.gramSimulation k).transcript (twoSidedMulVec Y)) with hU
+  set W := (alg.gramSimulation k).rightQueryMatrix
+    ((alg.gramSimulation k).transcript (twoSidedMulVec Y)) with hW
+  have h0 : ∀ v, (1 - rangeProjector W) *ᵥ (Yᴴ *ᵥ (rangeProjector U *ᵥ v)) = 0 := by
+    intro v
+    rw [Matrix.sub_mulVec, Matrix.one_mulVec, sub_eq_zero, eq_comm,
+      rangeProjector_mulVec_eq_self_iff, hW, range_rightQueryMatrix_gramSimulation]
+    have hv : rangeProjector U *ᵥ v ∈ LinearMap.range U.mulVecLin :=
+      (range_rangeProjector U).le ⟨v, rfl⟩
+    rw [hU, range_leftQueryMatrix_gramSimulation] at hv
+    have := Submodule.mem_map_of_mem (f := Yᴴ.mulVecLin) hv
+    rw [Submodule.map_span, ← Set.range_comp] at this
+    exact this
+  have hE : (1 - rangeProjector U)ᴴ = 1 - rangeProjector U := by
+    rw [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, conjTranspose_rangeProjector]
+  have hF : (1 - rangeProjector W)ᴴ = 1 - rangeProjector W := by
+    rw [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, conjTranspose_rangeProjector]
+  have hFF : (1 - rangeProjector W) * (1 - rangeProjector W) = 1 - rangeProjector W := by
+    simp [Matrix.sub_mul, Matrix.mul_sub]
+  have key : (1 - rangeProjector W) * ((alg.gramSimulation k).resample Y Y')ᴴ =
+      (1 - rangeProjector W) * Yᴴ * rangeProjector U +
+        (1 - rangeProjector W) * Y'ᴴ * (1 - rangeProjector U) := by
+    simp only [resample, ← hU, ← hW, Matrix.conjTranspose_add, Matrix.conjTranspose_sub,
+      Matrix.conjTranspose_mul, hE, hF]
+    rw [Matrix.mul_add, Matrix.mul_sub, ← Matrix.mul_assoc _ _ (Yᴴ * _),
+      ← Matrix.mul_assoc _ _ (Y'ᴴ * _), hFF]
+    simp only [Matrix.mul_sub, Matrix.mul_one, Matrix.mul_assoc]
+    abel
+  rw [Matrix.mulVec_mulVec, key, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec,
+    h0, zero_add, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec]
+
+omit [Fintype d] in
+private theorem one_sub_rangeProjector_rightQueryMatrix_gramSimulation_ne_zero [DecidableEq k]
+    {β : Type*} (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (hq : q < Fintype.card k)
+    (τ : Fin (2 * q) → (d → ℝ) × (k → ℝ)) :
+    1 - rangeProjector ((alg.gramSimulation k).rightQueryMatrix τ) ≠ 0 := by
+  intro h
+  have h1 := rank_rangeProjector ((alg.gramSimulation k).rightQueryMatrix τ)
+  rw [← sub_eq_zero.1 h, Matrix.rank_one] at h1
+  have := rank_rightQueryMatrix_gramSimulation_le alg τ
+  omega
+
+private theorem measure_ne_zero_and_mulVec_conjTranspose_mulVec_eq_zero {X' : Ω → Matrix d k ℝ}
+    (hX' : HasLaw X' (gaussianMatrix d k) μ) {F : Matrix k k ℝ} (hF : F ≠ 0) (v : d → ℝ) :
+    μ {ω | v ≠ 0 ∧ F *ᵥ ((X' ω)ᴴ *ᵥ v) = 0} = 0 := by
+  rcases eq_or_ne v 0 with hv | hv
+  · exact measure_mono_null (fun ω hω => absurd hv hω.1) measure_empty
+  refine measure_mono_null (fun ω hω => ?_) (measure_mul_mul_eq_eq_zero_of_hasLaw_gaussianMatrix
+    hX' (N := Matrix.replicateRow (Fin 1) v) (F := Fᵀ) ?_ (Matrix.transpose_eq_zero.not.2 hF) 0)
+  · have h : Matrix.replicateRow (Fin 1) v * X' ω * Fᵀ =
+        (Matrix.replicateCol (Fin 1) (F *ᵥ ((X' ω)ᴴ *ᵥ v)))ᵀ := by
+      rw [Matrix.replicateCol_mulVec, Matrix.replicateCol_mulVec, Matrix.transpose_mul,
+        Matrix.transpose_mul, Matrix.transpose_replicateCol,
+        Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_transpose,
+        Matrix.mul_assoc]
+    simp only [Set.mem_ofPred_eq] at hω ⊢
+    rw [h, hω.2]
+    rfl
+  · rw [← Matrix.transpose_replicateCol, Ne, Matrix.transpose_eq_zero, Matrix.replicateCol_eq_zero]
+    exact hv
+
 /-- **One step of general position**: for a measurable algorithm making adaptive queries
 $\mathbf{x}_0, \mathbf{x}_1, \dots$ to $\mathbf{X}\mathbf{X}^{\mathsf{H}}$, with $\mathbf{X}$ a
 standard Gaussian $d \times k$ matrix, and $i < q$, $i < k$: almost surely, either
@@ -167,7 +347,84 @@ theorem IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero {β
       (X ω)ᴴ *ᵥ alg.queryAt (X ω * (X ω)ᴴ).mulVec i ∈
         Submodule.span ℝ
           (Set.range fun l : Fin i => (X ω)ᴴ *ᵥ alg.queryAt (X ω * (X ω)ᴴ).mulVec l)} = 0 := by
-  sorry
+  classical
+  have := hX.isProbabilityMeasure
+  set T := (alg.truncate i).gramSimulation k
+  have hT : T.IsMeasurable := (halg.truncate hi.le).gramSimulation
+  -- the transcript, the query `x_i` and the two projectors, as functions of the transcript
+  set τ : Matrix d k ℝ → Fin (2 * i) → (d → ℝ) × (k → ℝ) :=
+    fun Y => T.transcript (twoSidedMulVec Y)
+  set x : (Fin (2 * i) → (d → ℝ) × (k → ℝ)) → d → ℝ :=
+    fun t => alg.query i fun l : Fin i => (t ⟨2 * l + 1, by omega⟩).1
+  set E := fun t : Fin (2 * i) → (d → ℝ) × (k → ℝ) => 1 - rangeProjector (T.leftQueryMatrix t)
+  set F := fun t : Fin (2 * i) → (d → ℝ) × (k → ℝ) => 1 - rangeProjector (T.rightQueryMatrix t)
+  have hτ : Measurable τ := hT.measurable_transcript
+    (Continuous.measurable (by unfold Function.uncurry twoSidedMulVec; fun_prop))
+  have hx : Measurable x := (halg.measurable_query i hi).comp
+    (measurable_pi_lambda _ fun l => measurable_fst.comp (measurable_pi_apply _))
+  have hE : Measurable E :=
+    measurable_const.sub (measurable_rangeProjector.comp hT.measurable_leftQueryMatrix)
+  have hF : Measurable F :=
+    measurable_const.sub (measurable_rangeProjector.comp hT.measurable_rightQueryMatrix)
+  set B := {p : (Fin (2 * i) → (d → ℝ) × (k → ℝ)) × Matrix d k ℝ |
+    E p.1 *ᵥ x p.1 ≠ 0 ∧ F p.1 *ᵥ ((p.2)ᴴ *ᵥ x p.1) = 0}
+  have hstar : Measurable fun Y : Matrix d k ℝ => Yᴴ :=
+    Measurable.matrix_conjTranspose continuous_star.measurable measurable_id
+  have hB : MeasurableSet B :=
+    ((hE.comp measurable_fst).matrix_mulVec (hx.comp measurable_fst)
+      (measurableSet_singleton 0).compl).inter ((hF.comp measurable_fst).matrix_mulVec
+        ((hstar.comp measurable_snd).matrix_mulVec (hx.comp measurable_fst))
+        (measurableSet_singleton 0))
+  have hB' : MeasurableSet {Y | (τ Y, Y) ∈ B} := (hτ.prodMk measurable_id) hB
+  have hev : {ω | alg.queryAt (X ω * (X ω)ᴴ).mulVec i ∉
+        Submodule.span ℝ (Set.range fun l : Fin i => alg.queryAt (X ω * (X ω)ᴴ).mulVec l) ∧
+      (X ω)ᴴ *ᵥ alg.queryAt (X ω * (X ω)ᴴ).mulVec i ∈ Submodule.span ℝ
+        (Set.range fun l : Fin i => (X ω)ᴴ *ᵥ alg.queryAt (X ω * (X ω)ᴴ).mulVec l)} =
+      X ⁻¹' {Y | (τ Y, Y) ∈ B} := by
+    ext ω
+    have h := notMem_span_and_mem_span_iff (alg.truncate i) (X ω)
+    have hxi : x (τ (X ω)) = alg.queryAt (X ω * (X ω)ᴴ).mulVec i :=
+      (queryAt_eq_query_transcript_gramSimulation (alg.truncate i) (X ω)).symm.trans (by
+        rw [queryAt, queryAt, history_truncate]; rfl)
+    simp only [queryAt, history_truncate] at h
+    change _ ↔ E (τ (X ω)) *ᵥ x (τ (X ω)) ≠ 0 ∧ F (τ (X ω)) *ᵥ ((X ω)ᴴ *ᵥ x (τ (X ω))) = 0
+    rwa [hxi]
+  -- extend by an independent Gaussian matrix
+  set μ' := μ.prod (gaussianMatrix d k)
+  have hX₁ : HasLaw (fun p : Ω × Matrix d k ℝ => X p.1) (gaussianMatrix d k) μ' :=
+    hX.comp measurePreserving_fst.hasLaw
+  have hX₂ : HasLaw Prod.snd (gaussianMatrix d k) μ' := measurePreserving_snd.hasLaw
+  have hind : IndepFun (fun p : Ω × Matrix d k ℝ => X p.1) Prod.snd μ' :=
+    (indepFun_prod (μ := μ) (ν := gaussianMatrix d k) measurable_id measurable_id).comp₀
+      measurable_fst.aemeasurable measurable_snd.aemeasurable
+      (by change AEMeasurable X (μ'.map Prod.fst); rw [measurePreserving_fst.map_eq]
+          exact hX.aemeasurable) measurable_id.aemeasurable
+  have hid := hT.identDistrib_resample_of_hasLaw_gaussianMatrix hX₁ hX₂ hind
+  set S := {p : Matrix d k ℝ × (Fin (2 * i) → (d → ℝ) × (k → ℝ)) |
+    E p.2 *ᵥ x p.2 ≠ 0 ∧ F p.2 *ᵥ ((p.1)ᴴ *ᵥ (E p.2 *ᵥ x p.2)) = 0}
+  have hEx := (hE.comp (measurable_snd (α := Matrix d k ℝ))).matrix_mulVec (hx.comp measurable_snd)
+  have hS : MeasurableSet S := (hEx (measurableSet_singleton 0).compl).inter
+    ((hF.comp measurable_snd).matrix_mulVec ((hstar.comp measurable_fst).matrix_mulVec hEx)
+      (measurableSet_singleton 0))
+  have hsec := (hind.symm.comp measurable_id hτ).measureReal_mem_le_add hX₂.aemeasurable
+    (hτ.comp_aemeasurable hX₁.aemeasurable) hS MeasurableSet.univ le_rfl
+    (fun t _ => ?_) (δ₂ := 0) (by simp)
+  · have hres : (fun p : Ω × Matrix d k ℝ => (T.transcript (twoSidedMulVec (X p.1)),
+        T.resample (X p.1) p.2)) ⁻¹' B = {p | (p.2, τ (X p.1)) ∈ S} := by
+      ext p
+      exact and_congr_right fun _ => iff_of_eq (congrArg (· = 0)
+        (mulVec_conjTranspose_resample_gramSimulation (alg.truncate i) _ _ _))
+    rw [hev, ← Measure.map_apply_of_aemeasurable hX.aemeasurable hB', hX.map_eq, ← hX₁.map_eq,
+      Measure.map_apply_of_aemeasurable hX₁.aemeasurable hB']
+    change μ' ((fun p : Ω × Matrix d k ℝ => (T.transcript (twoSidedMulVec (X p.1)), X p.1)) ⁻¹'
+      B) = 0
+    rw [hid.measure_mem_eq hB, hres]
+    exact (measureReal_eq_zero_iff (measure_ne_top _ _)).1
+      (le_antisymm (hsec.trans_eq (add_zero 0)) measureReal_nonneg)
+  · exact ((measureReal_eq_zero_iff (measure_ne_top _ _)).2
+      (measure_ne_zero_and_mulVec_conjTranspose_mulVec_eq_zero hX₂
+        (one_sub_rangeProjector_rightQueryMatrix_gramSimulation_ne_zero (alg.truncate i) hik t)
+        (E t *ᵥ x t))).le
 
 /-- **The left queries of the Gram simulation are in general position**: for a measurable
 algorithm making $q \le k$ queries to $\mathbf{X}\mathbf{X}^{\mathsf{H}}$, with $\mathbf{X}$ a
