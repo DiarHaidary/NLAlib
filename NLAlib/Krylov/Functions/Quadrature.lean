@@ -10,6 +10,7 @@ public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Matrix.Spectral.SpectralMeasure
 public import NLAlib.Polynomial.Orthogonal.Gauss
 public import NLAlib.Krylov.Processes.LanczosPolynomials
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # Lanczos quadrature
@@ -61,6 +62,8 @@ tridiagonal theory: the compression lemmas of `NLAlib.Krylov.Basic.Compression` 
   `NLAlib.HasOrthonormalCols.gaussNodes_spectralMeasure_eq`: the Ritz values are the Gauss nodes.
 * `NLAlib.spectralMeasure_jacobiMatrix`, `NLAlib.spectralMeasure_map_jacobiMatrix`,
   `NLAlib.HasOrthonormalCols.gaussQuadrature_succ_eq_sum`: Golub–Welsch.
+* `Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_continuousOn`: the bound
+  $2E_{2q + 1}(f)\|\mathbf{b}\|^2$.
 -/
 
 @[expose] public section
@@ -771,5 +774,26 @@ theorem spectralMeasure_map_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ]
     Matrix.IsHermitian.eigenvectorUnitary_apply, RCLike.star_def, RCLike.conj_ofReal,
     RCLike.real_smul_ofReal, norm_mul, norm_algebraMap', Real.norm_eq_abs]
   rw [mul_pow, sq_abs, sq_abs, Real.sq_sqrt measureReal_nonneg]
+
+/-- **Lanczos quadrature and the minimax error**: for Hermitian $\mathbf{A}$ with spectrum in
+$[a, a']$ and $f$ continuous on $[a, a']$, $q + 1$ Lanczos steps give
+$$\bigl\lvert\mathbf{b}^{\mathsf{H}}\bigl(f(\mathbf{A})\mathbf{b} -
+\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\bigr)\bigr\rvert \le
+2E_{2q + 1}(f; [a, a'])\|\mathbf{b}\|^2\,,$$
+$E_{2q + 1}$ the error of the best uniform approximation of $f$ on $[a, a']$ by polynomials of
+degree at most $2q + 1$ (`minimaxError`), the degree of exactness of the Gauss rule.
+[GolubMeurant2010, Ch. 6], the exactness it rests on.
+Result: lanczos-gauss-quadrature -/
+theorem
+_root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_continuousOn
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a')
+    {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a a')) (b : n → 𝕜) (q : ℕ) :
+    ‖star b ⬝ᵥ (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
+      2 * minimaxError f (Set.Icc a a') (2 * q + 1) * ‖WithLp.toLp 2 b‖ ^ 2 := by
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * q + 1)
+  have hp' : p.degree < 2 * ((q + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
+  exact hA.norm_star_dotProduct_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs hp' hε b
 
 end NLAlib

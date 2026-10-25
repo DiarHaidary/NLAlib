@@ -9,6 +9,7 @@ public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Polynomial.Orthogonal.Basic
 public import NLAlib.Polynomial.Orthogonal.Zeros
 public import NLAlib.Polynomial.Approximation.Jackson
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # Gauss quadrature
@@ -52,6 +53,8 @@ spectral measures the Ritz values of the Lanczos method are Gauss nodes
 * `NLAlib.MatchesMoments.eq_gaussQuadrature`: uniqueness of the Gauss rule.
 * `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn`,
   `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith`: error bounds.
+* `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_continuousOn`: the bound
+  $2E_{2k + 1}(f)\mu(\mathbb{R})$.
 -/
 
 @[expose] public section
@@ -420,6 +423,26 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
   push_cast
   field_simp
   ring
+
+/-- **The Gauss-rule error and the minimax error**: for a finite measure $\mu$ supported in
+$[a, b]$ and $f$ continuous on $[a, b]$, the $(k + 1)$-point Gauss rule satisfies
+$$\Bigl\lvert\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k + 1)\Bigr\rvert \le
+2E_{2k + 1}(f; [a, b])\,\mu(\mathbb{R})\,,$$
+$E_{2k + 1}$ the error of the best uniform approximation of $f$ on $[a, b]$ by polynomials of
+degree at most $2k + 1$ (`minimaxError`). [GolubMeurant2010, Ch. 6]; [Trefethen2019, Ch. 19]
+(locator to check). -/
+theorem abs_integral_sub_integral_gaussQuadrature_le_of_continuousOn
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a b)) (k : ℕ) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
+      2 * minimaxError f (Set.Icc a b) (2 * k + 1) * μ.real Set.univ := by
+  have hint : Integrable f μ := by
+    have h := hf.integrableOn_Icc (μ := μ)
+    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * k + 1)
+  have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * k + 1 < 2 * (k + 1)))
+  exact abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn hμ hint hp' hε
 
 end Finite
 
