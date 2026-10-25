@@ -60,8 +60,7 @@ theorem _root_.Matrix.IsHermitian.isMomentPosDef_spectralMeasure_iff {A : Matrix
   constructor
   · -- past the grade the Ritz polynomial of $\mathcal{K}_\nu$ annihilates $\mathbf{b}$
     intro h
-    by_contra hk
-    have hν : krylovGrade A b < k := by omega
+    by_contra! hν
     obtain ⟨r, Q, hQ, hK⟩ :=
       exists_hasOrthonormalCols_range_eq_krylovSpace A b (krylovGrade A b + 1)
     have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
@@ -83,13 +82,10 @@ theorem _root_.Matrix.IsHermitian.isMomentPosDef_spectralMeasure_iff {A : Matrix
     have hzero : aeval A (Lagrange.nodal s id) *ᵥ b = 0 := by
       rw [← hQ.mulVec_aeval_conjTranspose_mul_mul_mulVec_eq hK hdeg,
         hT.aeval_nodal_eq_zero hs, Matrix.zero_mulVec, Matrix.mulVec_zero]
-    have hint : ∫ x, (Lagrange.nodal s id).eval x ^ 2 ∂spectralMeasure A b = 0 := by
-      rw [← hA.norm_aeval_mulVec_sq b (Lagrange.nodal s id), hzero]
-      simp
-    have hpos := h (Lagrange.nodal s id) Lagrange.nodal_monic.ne_zero
-      (hdeg.trans_le (by exact_mod_cast Nat.succ_le_of_lt hν))
-    rw [hint] at hpos
-    exact lt_irrefl 0 hpos
+    refine (h (Lagrange.nodal s id) Lagrange.nodal_monic.ne_zero
+      (hdeg.trans_le (by exact_mod_cast Nat.succ_le_of_lt hν))).ne' ?_
+    rw [← hA.norm_aeval_mulVec_sq b (Lagrange.nodal s id), hzero, WithLp.toLp_zero, norm_zero,
+      zero_pow two_ne_zero]
   · -- below the grade no nonzero polynomial of small degree annihilates $\mathbf{b}$
     intro hk p hp0 hp
     rw [← hA.norm_aeval_mulVec_sq b p]
@@ -135,14 +131,10 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_aeval_orthogonalPolynomial_mul
     intro i hi
     have hX : A ^ i *ᵥ b = aeval A (X ^ i : ℝ[X]) *ᵥ b := by rw [map_pow, aeval_X]
     rw [hX, hA.star_aeval_mulVec_dotProduct_aeval_mulVec]
-    obtain ⟨a, ha⟩ := (A.finite_real_spectrum).bddBelow
-    obtain ⟨a', ha'⟩ := (A.finite_real_spectrum).bddAbove
-    have hs : spectrum ℝ A ⊆ Set.Icc a a' := fun x hx => ⟨ha hx, ha' hx⟩
-    have hortho := isOrthogonalPolynomial_orthogonalPolynomial
-      (ae_mem_Icc_spectralMeasure A hs b) j
-    have hdeg : (X ^ i : ℝ[X]).degree < j := by
-      rw [degree_X_pow]; exact_mod_cast hi
-    simpa [mul_comm] using hortho _ hdeg
+    obtain ⟨a, a', hμ⟩ := exists_ae_mem_Icc_spectralMeasure A b
+    have hortho := isOrthogonalPolynomial_orthogonalPolynomial hμ j (X ^ i)
+      (by rw [degree_X_pow]; exact_mod_cast hi)
+    simp only [mul_comm, hortho, RCLike.ofReal_zero]
   rw [krylovSpace_eq_span] at hx
   induction hx using Submodule.span_induction with
   | mem y hy => obtain ⟨⟨i, hi⟩, rfl⟩ := hy; exact key i hi
@@ -159,9 +151,7 @@ false, so `isMomentPosDef_succ_iff` gives $\|\pi_j\|^2 \le 0$;
 theorem _root_.Matrix.IsHermitian.aeval_orthogonalPolynomial_mulVec_eq_zero_of_krylovGrade_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {j : ℕ} (hj : krylovGrade A b ≤ j) :
     aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b = 0 := by
-  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
-  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
-  have hmem := ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b
+  obtain ⟨a, a', hmem⟩ := exists_ae_mem_Icc_spectralMeasure A b
   have hnot : ¬ IsMomentPosDef (spectralMeasure A b) (j + 1) := by
     rw [hA.isMomentPosDef_spectralMeasure_iff]
     omega
@@ -300,10 +290,7 @@ $\|\pi_{j+1}\|^2/(\|\pi_{j+1}\|\|\pi_j\|) = \sqrt{\beta_{j+1}}$ (`Real.sqrt_div'
 theorem _root_.Matrix.IsHermitian.lanczosState_beta {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
     (lanczosState A b (j + 1)).beta = √(jacobiBeta (spectralMeasure A b) (j + 1)) := by
-  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
-  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
-  have hμ : ∀ᵐ x ∂spectralMeasure A b, x ∈ Set.Icc a a' :=
-    ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b
+  obtain ⟨a, a', hμ⟩ := exists_ae_mem_Icc_spectralMeasure A b
   have hT := congrFun (congrFun (hA.lanczosTridiagonal_eq b (j + 2)) ⟨j + 1, by omega⟩)
     ⟨j, by omega⟩
   have h1 := hA.arnoldiMatrix_col_eq_smul_aeval_orthogonalPolynomial_mulVec b
