@@ -70,26 +70,6 @@ private theorem exists_hasOrthonormalCols_conjTranspose_mul_eq_zero {p : Type*}
       simpa [A, Matrix.mul_apply, ← hj] using congrFun (congrFun hT i) j
     rw [hP, ← mul_pinv, ← Matrix.mul_assoc, hTA]
 
-/-- The block rotation $\mathbf{I} + \mathbf{W}(\mathbf{o} - \mathbf{I})\mathbf{W}^{\mathsf{H}}$
-of a frame $\mathbf{W}$ by an orthogonal $\mathbf{o}$ is orthogonal. -/
-private theorem hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose {c : Type*} [Fintype c]
-    [DecidableEq c] {W : Matrix n c ℝ} (hW : HasOrthonormalCols W) {o : Matrix c c ℝ}
-    (ho : HasOrthonormalCols o) : HasOrthonormalCols (1 + W * (o - 1) * Wᴴ) := by
-  rw [hasOrthonormalCols_iff]
-  have hM : (oᴴ - 1) + (o - 1) + (oᴴ - 1) * (o - 1) = 0 := by
-    rw [sub_mul, mul_sub, mul_sub, ho.conjTranspose_mul_self, Matrix.mul_one, Matrix.one_mul,
-      Matrix.one_mul]
-    abel
-  calc (1 + W * (o - 1) * Wᴴ)ᴴ * (1 + W * (o - 1) * Wᴴ)
-      = 1 + W * ((oᴴ - 1) + (o - 1) + (oᴴ - 1) * (Wᴴ * W) * (o - 1)) * Wᴴ := by
-        simp only [Matrix.conjTranspose_add, Matrix.conjTranspose_one, Matrix.conjTranspose_mul,
-          Matrix.conjTranspose_sub, Matrix.conjTranspose_conjTranspose, Matrix.add_mul,
-          Matrix.mul_add, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
-        abel
-    _ = 1 := by
-      rw [hW.conjTranspose_mul_self, Matrix.mul_one, hM, Matrix.mul_zero, Matrix.zero_mul,
-        add_zero]
-
 /-- Block rotations of a frame compose:
 $(\mathbf{I} + \mathbf{W}(\mathbf{o} - \mathbf{I})\mathbf{W}^{\mathsf{H}})
 (\mathbf{I} + \mathbf{W}(\mathbf{s} - \mathbf{I})\mathbf{W}^{\mathsf{H}})

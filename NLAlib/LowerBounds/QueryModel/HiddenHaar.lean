@@ -74,7 +74,7 @@ private theorem stabRand_spec {c : Type*} [Fintype c] (V : Matrix n c ℝ) (G : 
   · exact ⟨hasOrthonormalCols_one, Matrix.one_mul V⟩
 
 /-- An orthogonal matrix fixing `V`, its adjoint fixes it too. -/
-private theorem conjTranspose_mul_eq_of_mul_eq {c : Type*} {V : Matrix n c ℝ}
+private theorem conjTranspose_mul_eq_self_of_mul_eq_self {c : Type*} {V : Matrix n c ℝ}
     {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) : sᴴ * V = V := by
   conv_lhs => rw [← hsV]
   rw [← Matrix.mul_assoc, hs.conjTranspose_mul_self, Matrix.one_mul]
@@ -89,7 +89,7 @@ private theorem mul_rangeProjector_of_mul_eq {c : Type*} [Fintype c] {V : Matrix
     rw [← mul_pinv, ← Matrix.mul_assoc, hsV]
   have h2 : rangeProjector V * s = rangeProjector V := by
     have h : sᴴ * rangeProjector V = rangeProjector V := by
-      rw [← mul_pinv, ← Matrix.mul_assoc, conjTranspose_mul_eq_of_mul_eq hs hsV]
+      rw [← mul_pinv, ← Matrix.mul_assoc, conjTranspose_mul_eq_self_of_mul_eq_self hs hsV]
     simpa only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
       conjTranspose_rangeProjector] using congrArg Matrix.conjTranspose h
   refine ⟨h1, h2, ?_⟩
@@ -307,7 +307,8 @@ private theorem map_left_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c 
   have hu : HasOrthonormalCols u := (hr.mul (hso b)).mul hr.conjTranspose
   have huV' : u * V' = V' := by
     refine mul_fromCols_replicateCol_eq_iff.2 ⟨?_, ?_⟩
-    · rw [Matrix.mul_assoc, conjTranspose_mul_eq_of_mul_eq hr hrV, Matrix.mul_assoc, hsV, hrV]
+    · rw [Matrix.mul_assoc, conjTranspose_mul_eq_self_of_mul_eq_self hr hrV, Matrix.mul_assoc, hsV,
+        hrV]
     · rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, hsb, Matrix.mulVec_mulVec,
         hr.mul_conjTranspose_self, Matrix.one_mulVec]
   have hfun : (fun z => (b, stabRand V' z * r * s b)) =

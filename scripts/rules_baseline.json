@@ -41,6 +41,9 @@
    "NLAlib/Probability/Distributions/GaussianComparison.lean": 2,
    "NLAlib/Probability/Distributions/GaussianLogOverlap.lean": 2,
    "NLAlib/Probability/Tail.lean": 1
+  },
+  "T9": {
+   "NLAlib/LowerBounds/QueryModel/Basic.lean": 1
   }
  }
 }

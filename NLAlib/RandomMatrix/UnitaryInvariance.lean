@@ -186,7 +186,7 @@ theorem integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant [DecidableEq 
 
 /-- The block-diagonal rotation $\mathbf{I} + \mathbf{V}_2(\mathbf{U} - \mathbf{I})
 \mathbf{V}_2^{\mathsf{H}}$ of a frame $\mathbf{V}_2$ by a unitary $\mathbf{U}$ is unitary. -/
-private theorem hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose [DecidableEq n] {t : Type*}
+theorem hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose [DecidableEq n] {t : Type*}
     [Fintype t] [DecidableEq t] {V₂ : Matrix n t 𝕜} (hV₂ : HasOrthonormalCols V₂)
     {U : Matrix t t 𝕜} (hU : HasOrthonormalCols U) :
     HasOrthonormalCols (1 + V₂ * (U - 1) * V₂ᴴ) := by
