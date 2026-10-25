@@ -608,6 +608,15 @@ those layers are designed.
 | moment matching | `MatchesMoments μ ν N`: equal integrals of every real polynomial of degree $< N$ (SD2); measures in the Polynomial layer are `[IsFiniteMeasure μ]` with `∀ᵐ x ∂μ, x ∈ Set.Icc a b` (SD3) | `matchesMoments_iff_forall_mem_degreeLT`, `matchesMoments_measureT` (Mathlib's Chebyshev–Gauss) |
 | orthogonality to lower degrees | `IsOrthogonalPolynomial μ k p`; monicity and degree stay separate hypotheses (SD4) | — |
 | Gauss rule | `interpolatoryQuadrature μ s`, weight $\int\ell_x\,d\mu$ at each node, truncated at $0$; Gauss exactness under `IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id)` (SD4) | `IsOrthogonalPolynomial.integral_interpolatoryQuadrature`; Mathlib has none beyond `Polynomial.Chebyshev.measureT` |
+| monic orthogonal polynomial | `orthogonalPolynomial μ k`, $\pi_k$ by the Stieltjes recurrence, total (junk past the support); definiteness `IsMomentPosDef μ k`: every nonzero polynomial of degree $< k$ has positive $L^2(\mu)$ norm (Orthogonal-structure note, KS7) | `monic_orthogonalPolynomial`, `isMomentPosDef_succ_iff`; Mathlib has none |
+| Jacobi matrix | `jacobiMatrix μ k`, $\alpha_i$ = `jacobiAlpha μ i` on the diagonal and $\sqrt{\beta_i}$, $\beta_i$ = `jacobiBeta μ i`, beside it, the layout of `lanczosTridiagonal` (KS7) | `isHermitian_jacobiMatrix`, `spectralMeasure_jacobiMatrix`; Mathlib has none |
+| Gauss nodes, canonical Gauss rule | `gaussNodes μ k`, the distinct real zeros of $\pi_k$; `gaussQuadrature μ k := interpolatoryQuadrature μ (gaussNodes μ k)`, for every $k$ (KS7) | `mem_gaussNodes`, `matchesMoments_gaussQuadrature`, `integral_gaussQuadrature_eq_sum` |
+| Radau modified measure $\lvert x - c\rvert\,d\mu$ | `radauMeasure μ c` (Quadrature-remainder note §2, KS8) | `integral_radauMeasure` |
+| Radau rule, prescribed node $c$, $k$ free nodes | `radauQuadrature μ c k`; nodes `radauNodes μ c k` (KS8) | `matchesMoments_radauQuadrature`, `integral_radauQuadrature` |
+| Lobatto modified measure, rule | `lobattoMeasure μ a b`, `lobattoQuadrature μ a b k`, `lobattoNodes μ a b k` (KS8) | `integral_lobattoMeasure`, `matchesMoments_lobattoQuadrature`, `integral_lobattoQuadrature` |
+| Radau Jacobi matrix (Golub) | `radauJacobiMatrix μ c k`, corner `radauJacobiAlpha μ c k` (KS8) | `spectralMeasure_radauJacobiMatrix` |
+| nodes with multiplicity, nodal polynomial | `m : Multiset ℝ`, `(m.map fun y => X - C y).prod` (KS8) | Mathlib's `Multiset` API; `Lagrange.nodal s id` for a `Finset` |
+| jets | `(derivative^[k] H).eval y` (polynomial), `iteratedDeriv k f y` (function) (KS8) | `Polynomial.iteratedDeriv` |
 | Lanczos quadrature rule | `lanczosQuadrature A b q`, the spectral measure of the projector compression; the scalar quadrature is `RCLike.re (star b ⬝ᵥ lanczosFA A f b q)` (SD5) | `integral_lanczosQuadrature`, `HasOrthonormalCols.lanczosQuadrature_eq`; Mathlib has none |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family

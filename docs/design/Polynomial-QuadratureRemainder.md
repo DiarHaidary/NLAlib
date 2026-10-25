@@ -149,7 +149,8 @@ noncomputable def radauJacobiMatrix (μ : Measure ℝ) (c : ℝ) (k : ℕ) :
 
 with `radauJacobiAlpha_zero`, `radauJacobiAlpha_succ` (`rfl`).
 
-§5.3 rows (added with the proof PR that moves the bridges into `NLAlib/`, as KS7 did):
+§5.3 rows (added to CONTRIBUTING §5.3 with the proof PR, decision V7-ROWS, together with KS7's
+rows for `orthogonalPolynomial`, `jacobiMatrix`, `gaussNodes` and `gaussQuadrature`):
 
 | Concept | Spelling | Bridge |
 |---|---|---|
