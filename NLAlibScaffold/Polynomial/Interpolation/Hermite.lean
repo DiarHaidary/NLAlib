@@ -5,6 +5,9 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.Calculus.ContDiff.Polynomial
+public import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlibScaffold.ForMathlib.Algebra.Polynomial.Derivative
 public import NLAlibScaffold.ForMathlib.Analysis.Calculus.Deriv.Polynomial
@@ -121,23 +124,13 @@ theorem exists_degree_lt_forall_iterate_derivative_eval_eq (m : Multiset F) (r :
   have hinj : Function.Injective J := by
     rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
     intro p hp
-    have hp0 : J p = 0 := hp
-    apply Subtype.ext
-    apply eq_of_degree_lt_of_forall_iterate_derivative_eval_eq
-    · exact p.2 |> Polynomial.mem_degreeLT.mp
-    · simp
-    · intro y hy k hk
-      have h1 : (derivative^[k] (p : F[X])).eval (y : F) = 0 :=
-        congrFun (congrFun hp0 ⟨y, Multiset.mem_toFinset.mpr hy⟩) ⟨k, hk⟩
-      simpa using h1
-  have hsurj : Function.Surjective J := by
-    let e : (∀ y : m.toFinset, Fin (m.count (y : F)) → F) ≃ₗ[F] degreeLT F m.card :=
-      LinearEquiv.ofFinrankEq _ _ (hdimW.trans hdimV.symm)
-    have hs := LinearMap.surjective_of_injective
-      (f := J.comp e.toLinearMap) (hinj.comp e.injective)
-    intro w
-    obtain ⟨u, hu⟩ := hs w
-    exact ⟨e u, by simpa using hu⟩
+    refine Subtype.ext (eq_of_degree_lt_of_forall_iterate_derivative_eval_eq
+      (mem_degreeLT.mp p.2) (by simp) fun y hy k hk => ?_)
+    have h1 : (derivative^[k] (p : F[X])).eval y = 0 :=
+      congrFun (congrFun hp ⟨y, Multiset.mem_toFinset.mpr hy⟩) ⟨k, hk⟩
+    simpa using h1
+  have hsurj : Function.Surjective J :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank (hdimV.trans hdimW.symm)).mp hinj
   obtain ⟨p, hp⟩ := hsurj (fun y k => r y k)
   refine ⟨p, Polynomial.mem_degreeLT.mp p.2, fun y hy k hk => ?_⟩
   exact congrFun (congrFun hp ⟨y, Multiset.mem_toFinset.mpr hy⟩) ⟨k, hk⟩
@@ -146,39 +139,9 @@ end Algebra
 
 /-! ### The remainder -/
 
-/-- On an open set where $f$ is $C^n$, the derivatives of order at most $n$ of $f - P$, $P$ a
-polynomial, are those of $f$ minus the formal derivatives of $P$. -/
-private lemma iteratedDerivWithin_sub_eval_eqOn {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOpen s) {n : ℕ}
-    (hf : ContDiffOn ℝ n f s) (P : ℝ[X]) :
-    ∀ j ≤ n, Set.EqOn (iteratedDerivWithin j (fun t => f t - P.eval t) s)
-      (fun t => iteratedDerivWithin j f s t - (derivative^[j] P).eval t) s := by
-  intro j hj
-  induction j with
-  | zero => intro t _; simp
-  | succ j ih =>
-    intro t ht
-    have hft : DifferentiableWithinAt ℝ (iteratedDerivWithin j f s) s t :=
-      hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast hj) hs.uniqueDiffOn t ht
-    have hPt : DifferentiableWithinAt ℝ (fun t => (derivative^[j] P).eval t) s t :=
-      (derivative^[j] P).differentiable.differentiableAt.differentiableWithinAt
-    simp only [iteratedDerivWithin_succ]
-    rw [derivWithin_congr (ih (by omega)) (ih (by omega) ht),
-      derivWithin_fun_sub hft hPt,
-      derivWithin_of_isOpen hs ht (f := fun t => (derivative^[j] P).eval t), Polynomial.deriv,
-      Function.iterate_succ_apply']
-
-/-- On an open set, $f - P$ is $C^n$ when $f$ is, for a polynomial $P$. -/
-private lemma contDiffOn_sub_eval {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOpen s) {n : ℕ}
-    (hf : ContDiffOn ℝ n f s) (P : ℝ[X]) : ContDiffOn ℝ n (fun t => f t - P.eval t) s := by
-  have hf' := (contDiffOn_iff_continuousOn_differentiableOn_deriv hs.uniqueDiffOn).mp hf
-  refine (contDiffOn_iff_continuousOn_differentiableOn_deriv hs.uniqueDiffOn).mpr
-    ⟨fun j hj => ?_, fun j hj => ?_⟩
-  · refine ContinuousOn.congr ?_
-      (iteratedDerivWithin_sub_eval_eqOn hs hf P j (by exact_mod_cast hj))
-    exact (hf'.1 j hj).sub (derivative^[j] P).differentiable.continuous.continuousOn
-  · refine DifferentiableOn.congr ?_
-      (iteratedDerivWithin_sub_eval_eqOn hs hf P j (by exact_mod_cast hj.le))
-    exact (hf'.2 j hj).sub (derivative^[j] P).differentiable.differentiableOn
+/-- Polynomial functions are smooth. -/
+private lemma contDiff_eval (P : ℝ[X]) (n : WithTop ℕ∞) : ContDiff ℝ n fun t => P.eval t := by
+  simpa only [aeval_X_left_apply, coe_aeval_eq_eval] using P.contDiff_aeval (𝕜 := ℝ) n
 
 /-- **The Hermite interpolation remainder**: let $a < b$, $m$ a nonempty multiset of points of
 $[a, b]$ with every point of multiplicity at least $2$ in $(a, b)$, $f$ continuous on $[a, b]$
@@ -233,9 +196,9 @@ theorem exists_sub_eval_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < b) {m : Mult
   have hgD : ∀ t ∈ Set.Ioo a b, ∀ j ≤ m.card,
       iteratedDeriv j g t = iteratedDeriv j f t - (derivative^[j] p).eval t := by
     intro t ht j hj
-    rw [← iteratedDerivWithin_of_isOpen isOpen_Ioo ht,
-      ← iteratedDerivWithin_of_isOpen isOpen_Ioo ht]
-    exact iteratedDerivWithin_sub_eval_eqOn isOpen_Ioo hf' p j hj ht
+    have hft : ContDiffAt ℝ j f t :=
+      (hf'.contDiffAt (isOpen_Ioo.mem_nhds ht)).of_le (by exact_mod_cast hj)
+    rw [iteratedDeriv_fun_sub hft (contDiff_eval p j).contDiffAt, Polynomial.iteratedDeriv]
   have hpjet : ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] p).eval y = iteratedDeriv k f y := by
     intro y hy k hk
     rw [hp, iterate_map_add, iterate_derivative_C_mul, eval_add, eval_mul,
@@ -248,7 +211,7 @@ theorem exists_sub_eval_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < b) {m : Mult
   obtain ⟨ξ, hξ, hgξ⟩ : ∃ ξ ∈ Set.Ioo a b, iteratedDeriv (m.card - 1 + 1) g ξ = 0 := by
     refine exists_iteratedDeriv_eq_zero_of_multiset (m := x ::ₘ m) (by simp; omega) ?_ ?_
       (hf.sub p.differentiable.continuous.continuousOn)
-      (by rw [hn]; exact contDiffOn_sub_eval isOpen_Ioo hf' p) ?_
+      (by rw [hn]; exact hf'.sub (contDiff_eval p _).contDiffOn) ?_
     · rintro y hy
       rcases Multiset.mem_cons.mp hy with rfl | hy
       exacts [hx, hmem y hy]
@@ -301,15 +264,10 @@ theorem exists_sub_eval_interpolate_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < 
   have hnodup : s.val.Nodup := s.nodup
   have hcount : ∀ y ∈ s.val, s.val.count y = 1 := fun y hy =>
     Multiset.count_eq_one_of_mem hnodup hy
-  have hm : s.val ≠ 0 := by
-    intro h
-    obtain ⟨y, hy⟩ := hs
-    rw [Finset.val_eq_zero] at h
-    simp_all
+  have hm : s.val ≠ 0 := fun h => hs.ne_empty (Finset.val_eq_zero.mp h)
   have hmem : ∀ y ∈ s.val, y ∈ Set.Icc a b := fun y hy => hsab (Finset.mem_coe.mpr hy)
   have hrep : ∀ y ∈ s.val, 1 < s.val.count y → y ∈ Set.Ioo a b := fun y hy h => by
-    rw [hcount y hy] at h
-    exact absurd h (by norm_num)
+    simp [hcount y hy] at h
   have hH : (Lagrange.interpolate s id f).degree < (s.val).card :=
     Lagrange.degree_interpolate_lt _ (Set.injOn_id _)
   have hjet : ∀ y ∈ s.val, ∀ k < s.val.count y,
