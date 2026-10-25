@@ -71,7 +71,14 @@ Proof: S, about 8 lines. Cross-multiply ($1 - s \ne 0$): `div_eq_div_iff`, then
 `mul_left_cancel₀ hy.ne'` and `linarith`. -/
 private theorem injOn_mul_div_one_sub (y : ℝ) (hy : 0 < y) :
     InjOn (fun s => y * s / (1 - s)) (Ioo (0 : ℝ) 1) := by
-  sorry
+  intro a ha b hb hab
+  simp only [mem_Ioo] at ha hb
+  have ha1 : (1 - a) ≠ 0 := by linarith [ha.2]
+  have hb1 : (1 - b) ≠ 0 := by linarith [hb.2]
+  simp only at hab
+  rw [div_eq_div_iff ha1 hb1] at hab
+  have h2 : y * a = y * b := by linarith [hab]
+  exact mul_left_cancel₀ hy.ne' h2
 
 /-- The derivative of the substitution: $s \mapsto ys/(1-s)$ has derivative $y/(1-s)^2$ at every
 $s \ne 1$.
