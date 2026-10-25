@@ -224,7 +224,7 @@ theorem integral_eval_basis_of_ae_mem [IsFiniteMeasure μ] {s : Finset ℝ} (hμ
     smul_eq_mul, mul_one]
   exact fun y hy hyx => smul_eq_zero_of_right _ (Lagrange.eval_basis_of_ne (v := id) hyx.symm hy)
 
-/-- **Moment determinacy on a finite set**: two finite measures $\mu$, $\nu$ carried by a finite
+/-- Moment determinacy on a finite set: two finite measures $\mu$, $\nu$ carried by a finite
 set $s \subseteq \mathbb{R}$ that match their first $\lvert s\rvert$ moments are equal. No printed
 source. -/
 theorem MatchesMoments.eq_of_ae_mem [IsFiniteMeasure μ] [IsFiniteMeasure ν] {s : Finset ℝ}

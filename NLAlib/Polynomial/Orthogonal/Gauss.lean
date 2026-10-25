@@ -250,7 +250,7 @@ theorem integrable_gaussQuadrature (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ
   exact integrable_finsetSum_measure.mpr fun x _ =>
     (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top
 
-/-- **The Gauss rule as a sum of point masses**: for every measure $\mu$ on $\mathbb{R}$, every
+/-- The Gauss rule as a sum of point masses: for every measure $\mu$ on $\mathbb{R}$, every
 $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
 $$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}w_x f(x)\,,$$
 with $G$ the Gauss nodes of order $k$ and $w_x$ the mass of the rule at $x$. No support
