@@ -8,3 +8,5 @@ public import NLAlibScaffold.Probability.QueryModel.Yao
 public import NLAlibScaffold.RandomMatrix.DeferredDecision
 public import NLAlibScaffold.RandomMatrix.Gaussian.Invariance
 public import NLAlibScaffold.RandomMatrix.Gaussian.Rank
+public import NLAlibScaffold.RandomMatrix.Haar.Stabilizer
+public import NLAlibScaffold.RandomMatrix.HiddenHaar
