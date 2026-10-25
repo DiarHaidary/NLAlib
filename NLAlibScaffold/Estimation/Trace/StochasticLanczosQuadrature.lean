@@ -34,6 +34,21 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n m : Type*} [Fintype n] [DecidableEq n] [Fintype m]
 
+/-- The real part of SLQ is the average over the probes of the Gauss-rule integrals of $f$. -/
+private lemma re_slq_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
+    RCLike.re (slq A f Ω q) =
+      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) / Fintype.card m := by
+  unfold slq
+  rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal, RCLike.ofReal_re]
+
+/-- The real part of the Girard–Hutchinson estimate of $\operatorname{tr}f(\mathbf{A})$ is the
+average over the probes of the integrals of $f$ against their spectral measures. -/
+private lemma re_girardHutchinson_cfc_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) :
+    RCLike.re (girardHutchinson (cfc f A) Ω) =
+      (∑ j, ∫ x, f x ∂spectralMeasure A (fun i => Ω i j)) / Fintype.card m := by
+  rw [girardHutchinson_eq_sum, ← RCLike.ofReal_natCast, RCLike.div_re_ofReal, map_sum]
+  simp only [integral_spectralMeasure]
+
 /-- **SLQ underestimates for $f$ with nonnegative derivative of order $2q$**: for
 $\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$), $a < a'$,
 $q > 0$, $f$ continuous on $[a, a']$,
@@ -55,21 +70,8 @@ theorem re_slq_le_re_girardHutchinson_cfc_of_iteratedDeriv_nonneg {A : Matrix n 
     (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q) f x) (Ω : Matrix n m 𝕜) :
     RCLike.re (slq A f Ω q) ≤ RCLike.re (girardHutchinson (cfc f A) Ω) := by
-  have hslq : RCLike.re (slq A f Ω q) =
-      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) /
-        Fintype.card m := by
-    unfold slq
-    rw [div_eq_mul_inv, div_eq_mul_inv, ← RCLike.ofReal_natCast, ← RCLike.ofReal_inv,
-      RCLike.re_mul_ofReal, RCLike.ofReal_re]
-  have hgh : RCLike.re (girardHutchinson (cfc f A) Ω) =
-      (∑ j, RCLike.re (quadForm (cfc f A) fun i => Ω i j)) / Fintype.card m := by
-    rw [girardHutchinson_eq_sum, div_eq_mul_inv, div_eq_mul_inv, ← RCLike.ofReal_natCast,
-      ← RCLike.ofReal_inv, RCLike.re_mul_ofReal]
-    congr 1
-    exact map_sum RCLike.reLm _ _
-  rw [hslq, hgh]
+  rw [re_slq_eq, re_girardHutchinson_cfc_eq]
   refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
-  rw [← integral_spectralMeasure A (fun i => Ω i j) f]
   exact integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
     (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
 
@@ -90,15 +92,7 @@ theorem re_girardHutchinson_cfc_le_re_slq_of_iteratedDeriv_nonpos {A : Matrix n 
     (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q) f x ≤ 0) (Ω : Matrix n m 𝕜) :
     RCLike.re (girardHutchinson (cfc f A) Ω) ≤ RCLike.re (slq A f Ω q) := by
-  have hGH : RCLike.re (girardHutchinson (cfc f A) Ω) =
-      (∑ j, ∫ x, f x ∂spectralMeasure A (fun i => Ω i j)) / Fintype.card m := by
-    rw [girardHutchinson_eq_sum, ← RCLike.ofReal_natCast, RCLike.div_re_ofReal, map_sum]
-    simp only [integral_spectralMeasure]
-  have hSLQ : RCLike.re (slq A f Ω q) =
-      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) / Fintype.card m := by
-    unfold slq
-    rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal, RCLike.ofReal_re]
-  rw [hGH, hSLQ]
+  rw [re_slq_eq, re_girardHutchinson_cfc_eq]
   refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
   exact integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
     (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
