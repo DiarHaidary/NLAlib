@@ -135,7 +135,14 @@ Proof: S, about 15 lines. `prod_multiset_X_sub_C_of_monic_of_roots_card_eq` with
 theorem IsMomentPosDef.nodal_gaussNodes {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     Lagrange.nodal (gaussNodes μ k) id = orthogonalPolynomial μ k := by
-  sorry
+  have hnd := h.nodup_roots_orthogonalPolynomial hμ
+  rw [Lagrange.nodal_eq]
+  have : (gaussNodes μ k).val = (orthogonalPolynomial μ k).roots := by
+    simp only [gaussNodes, Multiset.toFinset_val, hnd.dedup]
+  simp only [Function.comp_def, id, Finset.prod_eq_multiset_prod, this]
+  exact Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
+    (monic_orthogonalPolynomial μ k) (by rw [h.card_roots_orthogonalPolynomial hμ,
+      natDegree_orthogonalPolynomial])
 
 /-- There are exactly $k$ Gauss nodes: if $\mu$, finite and supported in $[a, b]$, is positive
 definite up to degree $k$, then $\pi_k$ has $k$ distinct real zeros.
