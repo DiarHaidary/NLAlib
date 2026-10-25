@@ -161,7 +161,9 @@ measurable_pi_apply _))`. -/
 theorem IsMeasurable.measurable_queryMatrix {𝕜 n : Type*} [MeasurableSpace 𝕜]
     {alg : QueryAlgorithm (n → 𝕜) R q β} (halg : alg.IsMeasurable) :
     Measurable (alg.queryMatrix : (Fin q → R) → Matrix n (Fin q) 𝕜) := by
-  sorry
+  refine measurable_pi_iff.2 fun r => measurable_pi_iff.2 fun j => ?_
+  exact (measurable_pi_apply r).comp ((halg.measurable_query j j.isLt).comp
+    (measurable_pi_iff.2 fun l => measurable_pi_apply _))
 
 /-- **The right query matrix is measurable in the transcript**, for a measurable algorithm with
 pair queries $(\mathbf{x}, \mathbf{y})$.
