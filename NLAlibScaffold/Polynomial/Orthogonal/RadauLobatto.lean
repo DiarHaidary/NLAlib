@@ -70,7 +70,19 @@ $\max(\lvert a - c\rvert, \lvert b - c\rvert)$ $\mu$-a.e. (`hμ`), so
 $\mu(\mathbb{R}) < \infty$ (`measure_lt_top`). -/
 theorem isFiniteMeasure_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (c : ℝ) :
     IsFiniteMeasure (radauMeasure μ c) := by
-  sorry
+  have hbound : ∀ᵐ x ∂μ, ‖x - c‖ₑ ≤ ENNReal.ofReal (|a - c| + |b - c|) := by
+    filter_upwards [hμ] with x hx
+    rw [Real.enorm_eq_ofReal_abs]
+    apply ENNReal.ofReal_le_ofReal
+    rw [abs_le]
+    constructor <;>
+      linarith [hx.1, hx.2, le_abs_self (a - c), neg_abs_le (a - c), le_abs_self (b - c),
+        neg_abs_le (b - c), abs_nonneg (a - c), abs_nonneg (b - c)]
+  have hint : ∫⁻ x, ‖x - c‖ₑ ∂μ ≤ ENNReal.ofReal (|a - c| + |b - c|) * μ Set.univ :=
+    (lintegral_mono_ae hbound).trans_eq (lintegral_const _)
+  constructor
+  rw [radauMeasure, withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ]
+  exact lt_of_le_of_lt hint (ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top μ _))
 
 /-- The Radau modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$ and every
 $c$, almost every point of `radauMeasure μ c` lies in $[a, b]$.
