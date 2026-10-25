@@ -130,7 +130,7 @@ Proof: S, one line. `run`, `congrArg alg.output` of
 theorem run_eq_of_forall_apply_queries_eq (alg : QueryAlgorithm Q R q β) {f g : Q → R}
     (h : ∀ j, g (alg.queries (alg.transcript f) j) = f (alg.queries (alg.transcript f) j)) :
     alg.run g = alg.run f := by
-  sorry
+  exact congrArg alg.output (transcript_eq_of_forall_apply_queries_eq alg h)
 
 /-- **Non-adaptive queries are fixed**: a non-adaptive algorithm makes the same queries whatever
 the responses, so `queries` does not depend on the transcript.
