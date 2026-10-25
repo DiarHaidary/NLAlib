@@ -255,7 +255,14 @@ theorem integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, iteratedDeriv (2 * k) f x ≤ 0) :
     ∫ x, f x ∂μ ≤ ∫ x, f x ∂gaussQuadrature μ k := by
-  sorry
+  have h := integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg (μ := μ) hμ hab hk
+    (f := fun x => -f x) hf.neg hf'.neg
+    (fun x hx => by
+      have h0 := hD x hx
+      rw [show (fun x => -f x) = -f from rfl, iteratedDeriv_neg]
+      simpa using h0)
+  simp only [integral_neg] at h
+  linarith
 
 end Finite
 
