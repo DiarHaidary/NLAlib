@@ -146,6 +146,40 @@ end Algebra
 
 /-! ### The remainder -/
 
+/-- On an open set where $f$ is $C^n$, the derivatives of order at most $n$ of $f - P$, $P$ a
+polynomial, are those of $f$ minus the formal derivatives of $P$. -/
+private lemma iteratedDerivWithin_sub_eval_eqOn {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOpen s) {n : ℕ}
+    (hf : ContDiffOn ℝ n f s) (P : ℝ[X]) :
+    ∀ j ≤ n, Set.EqOn (iteratedDerivWithin j (fun t => f t - P.eval t) s)
+      (fun t => iteratedDerivWithin j f s t - (derivative^[j] P).eval t) s := by
+  intro j hj
+  induction j with
+  | zero => intro t _; simp
+  | succ j ih =>
+    intro t ht
+    have hft : DifferentiableWithinAt ℝ (iteratedDerivWithin j f s) s t :=
+      hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast hj) hs.uniqueDiffOn t ht
+    have hPt : DifferentiableWithinAt ℝ (fun t => (derivative^[j] P).eval t) s t :=
+      (derivative^[j] P).differentiable.differentiableAt.differentiableWithinAt
+    simp only [iteratedDerivWithin_succ]
+    rw [derivWithin_congr (ih (by omega)) (ih (by omega) ht),
+      derivWithin_fun_sub hft hPt,
+      derivWithin_of_isOpen hs ht (f := fun t => (derivative^[j] P).eval t), Polynomial.deriv,
+      Function.iterate_succ_apply']
+
+/-- On an open set, $f - P$ is $C^n$ when $f$ is, for a polynomial $P$. -/
+private lemma contDiffOn_sub_eval {f : ℝ → ℝ} {s : Set ℝ} (hs : IsOpen s) {n : ℕ}
+    (hf : ContDiffOn ℝ n f s) (P : ℝ[X]) : ContDiffOn ℝ n (fun t => f t - P.eval t) s := by
+  have hf' := (contDiffOn_iff_continuousOn_differentiableOn_deriv hs.uniqueDiffOn).mp hf
+  refine (contDiffOn_iff_continuousOn_differentiableOn_deriv hs.uniqueDiffOn).mpr
+    ⟨fun j hj => ?_, fun j hj => ?_⟩
+  · refine ContinuousOn.congr ?_
+      (iteratedDerivWithin_sub_eval_eqOn hs hf P j (by exact_mod_cast hj))
+    exact (hf'.1 j hj).sub (derivative^[j] P).differentiable.continuous.continuousOn
+  · refine DifferentiableOn.congr ?_
+      (iteratedDerivWithin_sub_eval_eqOn hs hf P j (by exact_mod_cast hj.le))
+    exact (hf'.2 j hj).sub (derivative^[j] P).differentiable.differentiableOn
+
 /-- **The Hermite interpolation remainder**: let $a < b$, $m$ a nonempty multiset of points of
 $[a, b]$ with every point of multiplicity at least $2$ in $(a, b)$, $f$ continuous on $[a, b]$
 and $C^{\lvert m\rvert}$ on $(a, b)$, and $H$ a real polynomial of degree less than
@@ -180,7 +214,70 @@ theorem exists_sub_eval_eq_iteratedDeriv_mul {a b : ℝ} (hab : a < b) {m : Mult
     {x : ℝ} (hx : x ∈ Set.Icc a b) :
     ∃ ξ ∈ Set.Ioo a b, f x - H.eval x =
       iteratedDeriv m.card f ξ / m.card.factorial * ((m.map fun y => X - C y).prod).eval x := by
-  sorry
+  set ω : ℝ[X] := (m.map fun y => X - C y).prod with hω
+  have hωjet : ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] ω).eval y = 0 := by
+    intro y hy k hk
+    refine isRoot_iterate_derivative_of_lt_rootMultiplicity ?_
+    rwa [← count_roots, hω, roots_multiset_prod_X_sub_C]
+  by_cases hωx : ω.eval x = 0
+  · have hxm : x ∈ m := by
+      rw [hω, eval_multiset_prod, Multiset.prod_eq_zero_iff, Multiset.map_map] at hωx
+      simpa [sub_eq_zero, eq_comm] using hωx
+    refine ⟨(a + b) / 2, ⟨by linarith, by linarith⟩, ?_⟩
+    have := hjet x hxm 0 (Multiset.count_pos.mpr hxm)
+    simp only [Function.iterate_zero, id, iteratedDeriv_zero] at this
+    rw [hωx, this, sub_self, mul_zero]
+  set K := (f x - H.eval x) / ω.eval x with hK
+  set p : ℝ[X] := H + C K * ω with hp
+  set g : ℝ → ℝ := fun t => f t - p.eval t with hg
+  have hgD : ∀ t ∈ Set.Ioo a b, ∀ j ≤ m.card,
+      iteratedDeriv j g t = iteratedDeriv j f t - (derivative^[j] p).eval t := by
+    intro t ht j hj
+    rw [← iteratedDerivWithin_of_isOpen isOpen_Ioo ht,
+      ← iteratedDerivWithin_of_isOpen isOpen_Ioo ht]
+    exact iteratedDerivWithin_sub_eval_eqOn isOpen_Ioo hf' p j hj ht
+  have hpjet : ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] p).eval y = iteratedDeriv k f y := by
+    intro y hy k hk
+    rw [hp, iterate_map_add, iterate_derivative_C_mul, eval_add, eval_mul,
+      hωjet y hy k hk, mul_zero, add_zero, hjet y hy k hk]
+  have hgx : g x = 0 := by
+    simp only [hg, hp, eval_add, eval_mul, eval_C, hK, div_mul_cancel₀ _ hωx]
+    ring
+  have hxm : x ∉ m := fun hxm => hωx (by simpa using hωjet x hxm 0 (Multiset.count_pos.mpr hxm))
+  have hn : m.card - 1 + 1 = m.card := Nat.succ_pred_eq_of_pos (Multiset.card_pos.mpr hm)
+  obtain ⟨ξ, hξ, hgξ⟩ : ∃ ξ ∈ Set.Ioo a b, iteratedDeriv (m.card - 1 + 1) g ξ = 0 := by
+    refine exists_iteratedDeriv_eq_zero_of_multiset (m := x ::ₘ m) (by simp; omega) ?_ ?_
+      (hf.sub p.differentiable.continuous.continuousOn)
+      (by rw [hn]; exact contDiffOn_sub_eval isOpen_Ioo hf' p) ?_
+    · rintro y hy
+      rcases Multiset.mem_cons.mp hy with rfl | hy
+      exacts [hx, hmem y hy]
+    · rintro y hy hy1
+      rcases Multiset.mem_cons.mp hy with rfl | hy
+      · simp [Multiset.count_eq_zero.mpr hxm] at hy1
+      · have hyx : y ≠ x := fun h => hxm (h ▸ hy)
+        rw [Multiset.count_cons_of_ne hyx] at hy1
+        exact hrep y hy hy1
+    · rintro y hy j hj
+      rcases Multiset.mem_cons.mp hy with rfl | hy
+      · simp only [Multiset.count_cons_self, Multiset.count_eq_zero.mpr hxm] at hj
+        rw [Nat.lt_one_iff.mp hj, iteratedDeriv_zero, hgx]
+      have hyx : y ≠ x := fun h => hxm (h ▸ hy)
+      rw [Multiset.count_cons_of_ne hyx] at hj
+      rcases Nat.eq_zero_or_pos j with rfl | hj0
+      · simpa [hg, sub_eq_zero] using (hpjet y hy 0 hj).symm
+      rw [hgD y (hrep y hy (by omega)) j ((hj.le).trans (Multiset.count_le_card y m)),
+        hpjet y hy j hj, sub_self]
+  have hpn : (derivative^[m.card] p).eval ξ = K * m.card.factorial := by
+    have hωdeg : ω.natDegree = m.card := natDegree_multiset_prod_X_sub_C_eq_card m
+    rw [hp, iterate_map_add, iterate_derivative_eq_zero_of_degree_lt hH,
+      iterate_derivative_C_mul, ← hωdeg, iterate_derivative_natDegree,
+      (monic_multiset_prod_of_monic _ _ fun y _ => monic_X_sub_C y).leadingCoeff]
+    simp
+  refine ⟨ξ, hξ, ?_⟩
+  rw [hn, hgD ξ hξ _ le_rfl, hpn, sub_eq_zero] at hgξ
+  rw [hgξ, hK]
+  field_simp
 
 /-- **The Lagrange interpolation remainder**: for $a < b$, a nonempty finite set $s$ of nodes
 in $[a, b]$, $f$ continuous on $[a, b]$ and $C^{\lvert s\rvert}$ on $(a, b)$, and every
