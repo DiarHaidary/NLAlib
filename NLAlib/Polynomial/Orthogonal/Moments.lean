@@ -48,13 +48,14 @@ discrete measures (spectral measures, quadrature rules).
 * `NLAlib.integral_eval_mul_eq_zero_of_integral_sq_eq_zero`: and is orthogonal to everything.
 * `NLAlib.integral_eval_basis_of_ae_mem`: on a finite set, $\int\ell_x\,d\mu = \mu\{x\}$.
 * `NLAlib.MatchesMoments.eq_of_ae_mem`: moment determinacy on a finite set.
-* `NLAlib.MatchesMoments.smul`, `NLAlib.MatchesMoments.finsetSum`: linearity in the pair.
+* `NLAlib.MatchesMoments.smul`, `NLAlib.MatchesMoments.nnreal_smul`,
+  `NLAlib.MatchesMoments.finsetSum`: linearity in the pair.
 -/
 
 @[expose] public section
 
 open MeasureTheory Polynomial
-open scoped ENNReal
+open scoped ENNReal NNReal
 
 namespace NLAlib
 
@@ -243,6 +244,12 @@ theorem MatchesMoments.smul {N : ℕ} (h : MatchesMoments μ ν N) (c : ℝ≥0�
   intro p hp
   rw [integral_smul_measure, integral_smul_measure]
   exact congrArg _ (h p hp)
+
+/-- Moment matching is preserved by scaling by a finite $c \in [0, \infty)$: the form of
+`MatchesMoments.smul` for a nonnegative real scalar. -/
+theorem MatchesMoments.nnreal_smul {N : ℕ} (h : MatchesMoments μ ν N) (c : ℝ≥0) :
+    MatchesMoments (c • μ) (c • ν) N := by
+  simpa only [ENNReal.smul_def] using h.smul (c : ℝ≥0∞)
 
 /-- Moment matching is preserved by finite sums: if finite measures $\mu_i$ and $\nu_i$, all
 supported in $[a, b]$, match their first $N$ moments for each $i \in s$, then
