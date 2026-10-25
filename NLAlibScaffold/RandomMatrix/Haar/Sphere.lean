@@ -57,9 +57,9 @@ private theorem indepFun_sum_sq_inl_sum_sq_inr_of_hasLaw_gaussianVector {p : Typ
     (measurePreserving_sumPiEquivProdPi (fun _ : k ⊕ p => gaussianReal 0 1)).fun_comp_hasLaw hh
   have := hh.isProbabilityMeasure
   have hX : HasLaw (fun ω => fun i => h ω (Sum.inl i)) (gaussianVector k) μ :=
-    (measurePreserving_fst).fun_comp_hasLaw hpair
+    hasLaw_comp_inl_gaussianVector.comp hh
   have hY : HasLaw (fun ω => fun j => h ω (Sum.inr j)) (gaussianVector p) μ :=
-    (measurePreserving_snd).fun_comp_hasLaw hpair
+    hasLaw_comp_inr_gaussianVector.comp hh
   have hind : IndepFun (fun ω => fun i => h ω (Sum.inl i))
       (fun ω => fun j => h ω (Sum.inr j)) μ := by
     rw [indepFun_iff_map_prod_eq_prod_map_map hX.aemeasurable hY.aemeasurable, hX.map_eq,
@@ -86,12 +86,8 @@ Proof: S, about 12 lines. As `hasLaw_sum_sq_inl_of_hasLaw_gaussianVector` with
 `Measure.map_snd_prod`. -/
 private theorem hasLaw_sum_sq_inr_of_hasLaw_gaussianVector {p : Type*} [Fintype p] [Nonempty p]
     {h : Ω → k ⊕ p → ℝ} (hh : HasLaw h (gaussianVector (k ⊕ p)) μ) :
-    HasLaw (fun ω => ∑ j, h ω (Sum.inr j) ^ 2) (gammaMeasure (Fintype.card p / 2) (1 / 2)) μ := by
-  have hP := (measurePreserving_sumPiEquivProdPi
-    (fun _ : k ⊕ p => gaussianReal 0 1)).fun_comp_hasLaw hh
-  have hq : HasLaw (fun ω j => h ω (Sum.inr j)) (gaussianVector p) μ :=
-    MeasurePreserving.fun_comp_hasLaw measurePreserving_snd hP
-  exact hasLaw_sum_sq_of_hasLaw_pi_gaussianReal hq
+    HasLaw (fun ω => ∑ j, h ω (Sum.inr j) ^ 2) (gammaMeasure (Fintype.card p / 2) (1 / 2)) μ :=
+  hasLaw_sum_sq_of_hasLaw_pi_gaussianReal (hasLaw_comp_inr_gaussianVector.comp hh)
 
 /-- The projected length of a normalised vector in the rotated coordinates: if
 $\mathbf{W} = \begin{bmatrix} \mathbf{V} & \mathbf{V}' \end{bmatrix}$ has orthonormal columns
@@ -122,8 +118,7 @@ private theorem norm_conjTranspose_mulVec_inv_norm_smul_sq_eq_div {p : Type*} [F
       ← hWn.norm_toLp_mulVec g, EuclideanSpace.real_norm_sq_eq]
   have hV : ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ ^ 2 =
       ∑ i, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inl i) ^ 2 := by
-    rw [EuclideanSpace.real_norm_sq_eq]
-    exact Finset.sum_congr rfl fun i _ => by rw [hWl]
+    simp only [EuclideanSpace.real_norm_sq_eq, hWl]
   rw [Matrix.mulVec_smul, WithLp.toLp_smul, norm_smul, mul_pow, norm_inv, norm_norm, inv_pow,
     inv_mul_eq_div, hV, hG]
 
@@ -149,7 +144,7 @@ theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
       (betaMeasure (Fintype.card k / 2) (((Fintype.card n : ℝ) - Fintype.card k) / 2)) μ := by
   obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_lt hkn
   have hcard : Fintype.card k + Fintype.card (Fin (m + 1)) = Fintype.card n := by
-    simp only [Fintype.card_fin]; omega
+    rw [Fintype.card_fin, hm, add_assoc]
   obtain ⟨V', hW⟩ := hV.exists_fromCols hcard
   have : Nonempty k := Fintype.card_pos_iff.mp hk
   set W := Matrix.fromCols V V'
@@ -159,8 +154,10 @@ theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
     (by norm_num) (hasLaw_sum_sq_inl_of_hasLaw_gaussianVector hh)
     (hasLaw_sum_sq_inr_of_hasLaw_gaussianVector hh)
     (indepFun_sum_sq_inl_sum_sq_inr_of_hasLaw_gaussianVector hh)
-  have hb : ((Fintype.card n : ℝ) - Fintype.card k) / 2 = (Fintype.card (Fin (m + 1)) : ℝ) / 2 := by
-    rw [← hcard]; push_cast; ring
+  have hb : ((Fintype.card n : ℝ) - Fintype.card k) / 2 =
+      (Fintype.card (Fin (m + 1)) : ℝ) / 2 := by
+    rw [← hcard, Nat.cast_add]
+    ring
   rw [hb]
   refine HasLaw.comp_of_hasLaw_comp (f := fun v => ‖WithLp.toLp 2 (Vᴴ *ᵥ v)‖ ^ 2)
     (X := fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g) (P := gaussianVector n) ?_
@@ -173,17 +170,8 @@ theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
 
 /-- A variable that is almost surely $0$ is sub-Gaussian with any proxy. -/
 private lemma hasSubgaussianMGF_of_ae_eq_zero [IsProbabilityMeasure μ] {Y : Ω → ℝ} (c : ℝ≥0)
-    (hY : Y =ᵐ[μ] 0) : HasSubgaussianMGF Y c μ := by
-  refine ⟨fun t => ?_, fun t => ?_⟩
-  · refine (integrable_const (1 : ℝ)).congr ?_
-    filter_upwards [hY] with ω hω
-    simp [hω]
-  · calc mgf Y μ t = ∫ _ : Ω, (1 : ℝ) ∂μ := integral_congr_ae (by
-          filter_upwards [hY] with ω hω
-          simp [hω])
-      _ ≤ Real.exp (c * t ^ 2 / 2) := by
-          rw [integral_const, probReal_univ, smul_eq_mul, mul_one]
-          exact Real.one_le_exp (by positivity)
+    (hY : Y =ᵐ[μ] 0) : HasSubgaussianMGF Y c μ :=
+  (HasSubgaussianMGF.zero.congr hY.symm).mono zero_le
 
 /-- **Projections of a uniform unit vector are sub-Gaussian**: for $\mathbf{u}$ uniform on the
 unit sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`) and $\mathbf{V}$ with $k$
@@ -213,11 +201,8 @@ theorem hasSubgaussianMGF_norm_conjTranspose_mulVec_sq_sub_of_hasLaw_uniformSphe
   have hk : Fintype.card k ≤ Fintype.card n := hV.card_le
   rcases Nat.eq_zero_or_pos (Fintype.card k) with h0 | hpos
   · have he : IsEmpty k := Fintype.card_eq_zero_iff.mp h0
-    have hz : ∀ x : k → ℝ, ‖WithLp.toLp 2 x‖ = 0 := fun x => by
-      rw [show x = 0 from funext fun i => isEmptyElim i]
-      simp
     refine hasSubgaussianMGF_of_ae_eq_zero _ (Filter.Eventually.of_forall fun ω => ?_)
-    simp [hz]
+    simp [Subsingleton.elim (Vᵀ *ᵥ u ω) 0]
   rcases hk.eq_or_lt with heq | hlt
   · have hn : 0 < Fintype.card n := heq ▸ hpos
     have : Nonempty n := Fintype.card_pos_iff.mp hn
@@ -249,8 +234,7 @@ theorem hasSubgaussianMGF_norm_conjTranspose_mulVec_sq_sub_of_hasLaw_uniformSphe
       congr 1
       field_simp
       ring
-    rw [hratio, hprox] at key
-    exact key
+    rwa [hratio, hprox] at key
 
 -- The declaration name exceeds 100 characters.
 set_option linter.style.longLine false in
