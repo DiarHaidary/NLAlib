@@ -37,7 +37,8 @@ variable {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
 Proof: S, about 4 lines. `Real.iSup_nonneg` (or `le_ciSup_of_le` at `A = ∅`, where the term is
 `|0 - 0| = 0`, with `abs_nonneg`). -/
 theorem tvDist_nonneg (μ ν : Measure α) : 0 ≤ tvDist μ ν := by
-  sorry
+  unfold tvDist
+  exact Real.iSup_nonneg fun A => abs_nonneg _
 
 /-- **Data processing for total variation**: for finite measures and a measurable map $f$,
 $\mathrm{TV}(f_*\mu, f_*\nu) \le \mathrm{TV}(\mu, \nu)$. Applied to the transcript of a query
