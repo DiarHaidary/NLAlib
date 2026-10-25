@@ -362,7 +362,16 @@ Proof: S, about 12 lines. As `isFiniteMeasure_radauMeasure`, with the bound
 $(b - a)^2$ on $[a, b]$. -/
 theorem isFiniteMeasure_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     IsFiniteMeasure (lobattoMeasure μ a b) := by
-  sorry
+  refine ⟨?_⟩
+  rw [lobattoMeasure, withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ]
+  refine (lintegral_mono_ae (g := fun _ => ENNReal.ofReal ((b - a) ^ 2))
+    (hμ.mono fun x hx => ?_)).trans_lt ?_
+  · rw [Real.enorm_eq_ofReal_abs]
+    refine ENNReal.ofReal_le_ofReal ?_
+    rw [abs_le]
+    constructor <;> nlinarith [hx.1, hx.2]
+  · rw [lintegral_const]
+    exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top μ _)
 
 /-- The Lobatto modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$, almost
 every point of `lobattoMeasure μ a b` lies in $[a, b]$.
