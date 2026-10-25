@@ -38,6 +38,20 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
+omit [DecidableEq n] in
+/-- Expansion of the error quadratic form under the Galerkin condition (helper). -/
+private lemma quadForm_sub_eq_of_galerkin {A : Matrix n n 𝕜} (hH : A.IsHermitian) {d r y : n → 𝕜}
+    (hd : A *ᵥ d = r) (hgal : star y ⬝ᵥ (r - A *ᵥ y) = 0) :
+    quadForm A (d - y) = star d ⬝ᵥ r - star r ⬝ᵥ y := by
+  have hdy : star d ⬝ᵥ (A *ᵥ y) = star r ⬝ᵥ y := by
+    rw [← hd, Matrix.star_mulVec, hH.eq, Matrix.dotProduct_mulVec]
+  have hgal' : star y ⬝ᵥ (A *ᵥ y) = star y ⬝ᵥ r := by
+    rw [dotProduct_sub, sub_eq_zero] at hgal
+    exact hgal.symm
+  rw [quadForm_def, star_sub, Matrix.mulVec_sub, hd, sub_dotProduct, dotProduct_sub,
+    dotProduct_sub, hdy, hgal']
+  ring
+
 /-- **The CG error is a Gauss quadrature error**: for positive definite $\mathbf{A}$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, every $\mathbf{x}_0$ and $q$, with
 $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$ and $\mathbf{x}_q =
@@ -65,7 +79,34 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_eq_integral_sub {A : Matr
     RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) =
       ∫ x, x⁻¹ ∂spectralMeasure A (b - A *ᵥ x₀) -
         ∫ x, x⁻¹ ∂gaussQuadrature (spectralMeasure A (b - A *ᵥ x₀)) q := by
-  sorry
+  have hH : A.IsHermitian := hA.isHermitian
+  have hd : A *ᵥ (xs - x₀) = b - A *ᵥ x₀ := by rw [Matrix.mulVec_sub, hxs]
+  have hcg : cgIterate A b x₀ q = x₀ + cgIterate A (b - A *ᵥ x₀) 0 q := by
+    rw [cgIterate, cgIterate, Matrix.mulVec_zero, sub_zero, zero_add]
+  have hmem : cgIterate A (b - A *ᵥ x₀) 0 q ∈ krylovSpace A (b - A *ᵥ x₀) q := by
+    simpa using cgIterate_sub_mem_krylovSpace A (b - A *ᵥ x₀) 0 q
+  obtain ⟨c, hc⟩ := LinearMap.mem_range.1 hmem
+  simp only [Matrix.mulVecLin_apply] at hc
+  have hG := hA.conjTranspose_krylovMatrix_mulVec_sub_mulVec_cgIterate_eq_zero (b - A *ᵥ x₀) 0 q
+  simp only [Matrix.mulVec_zero, sub_zero] at hG
+  have hgal : star (cgIterate A (b - A *ᵥ x₀) 0 q) ⬝ᵥ
+      ((b - A *ᵥ x₀) - A *ᵥ cgIterate A (b - A *ᵥ x₀) 0 q) = 0 := by
+    nth_rw 1 [← hc]
+    rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec, hG, dotProduct_zero]
+  have hinv : A⁻¹ *ᵥ (b - A *ᵥ x₀) = xs - x₀ := by
+    rw [← hd, Matrix.mulVec_mulVec,
+      Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det A).mp hA.isUnit), Matrix.one_mulVec]
+  rw [hcg, show xs - (x₀ + cgIterate A (b - A *ᵥ x₀) 0 q) =
+      (xs - x₀) - cgIterate A (b - A *ᵥ x₀) 0 q by abel,
+    quadForm_sub_eq_of_galerkin hH hd hgal, map_sub]
+  congr 1
+  · have hsym : ∀ u v : n → 𝕜, star u ⬝ᵥ v = star (star v ⬝ᵥ u) := by
+      intro u v
+      simp [dotProduct, mul_comm]
+    rw [integral_spectralMeasure, ← hA.inv_eq_cfc, quadForm_def, hinv, hsym (xs - x₀)]
+    exact RCLike.conj_re _
+  · rw [← hA.isHermitian.lanczosQuadrature_eq_gaussQuadrature, integral_lanczosQuadrature,
+      hH.lanczosFA_inv_eq_cgIterate]
 
 /-- **The Gauss–Radau upper bound on the CG error**: for positive definite $\mathbf{A}$ with
 spectrum in $[a, a']$, $0 < a < a'$, $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, every
