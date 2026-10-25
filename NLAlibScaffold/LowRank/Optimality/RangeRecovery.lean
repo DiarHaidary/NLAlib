@@ -598,6 +598,77 @@ theorem IsMeasurable.ae_rank_conjTranspose_mul_leftQueryMatrix_gramSimulation
   filter_upwards [hbad] with ω hω
   exact rank_conjTranspose_mul_leftQueryMatrix_gramSimulation_of_good (X ω) hω
 
+/-- A left factor that preserves the rank of $\mathbf{U}$ is injective on its range:
+$\mathbf{B}\mathbf{U}\mathbf{C} = \mathbf{0}$ forces $\mathbf{U}\mathbf{C} = \mathbf{0}$. -/
+private theorem mul_eq_zero_of_rank_mul_eq {m r s : Type*} [Fintype r]
+    {B : Matrix m d ℝ} {U : Matrix d r ℝ} (hU : (B * U).rank = U.rank) {C : Matrix r s ℝ}
+    (h : B * U * C = 0) : U * C = 0 := by
+  have hker : LinearMap.ker (B * U).mulVecLin = LinearMap.ker U.mulVecLin := by
+    refine (Submodule.eq_of_le_of_finrank_eq (fun v hv => ?_) ?_).symm
+    · rw [LinearMap.mem_ker, Matrix.mulVecLin_apply] at hv ⊢
+      rw [← Matrix.mulVec_mulVec, hv, Matrix.mulVec_zero]
+    · have h1 := LinearMap.finrank_range_add_finrank_ker (B * U).mulVecLin
+      have h2 := LinearMap.finrank_range_add_finrank_ker U.mulVecLin
+      rw [Matrix.rank, Matrix.rank] at hU
+      omega
+  ext i j
+  have hc : (fun l => C l j) ∈ LinearMap.ker U.mulVecLin := by
+    rw [← hker, LinearMap.mem_ker, Matrix.mulVecLin_apply]
+    funext a
+    simpa [Matrix.mul_apply, Matrix.mulVec, dotProduct] using congrFun (congrFun h a) j
+  simpa [Matrix.mul_apply, Matrix.mulVec, dotProduct] using congrFun hc i
+
+/-- The fiber of the range event for a fixed $\mathbf{Y}$ in general position: with
+$\mathbf{E} = \mathbf{I} - \mathbf{P}_{\mathbf{U}}$, $\mathbf{F} \ne \mathbf{0}$ and
+$\mathbf{Z} = \mathbf{Y} - \mathbf{E}\mathbf{Y}\mathbf{F} + \mathbf{E}\mathbf{Y}'\mathbf{F}$,
+a Gaussian $\mathbf{Y}'$ puts the range of $\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$ inside the range
+of a fixed $\mathbf{V}$ of rank below $d$ with probability zero. -/
+private theorem measure_rangeProjector_mul_resample_eq_zero [DecidableEq d] {r : Type*}
+    [Fintype r] {p : Type*} [Fintype p] {U : Matrix d r ℝ} {V : Matrix d p ℝ}
+    {Y : Matrix d k ℝ} {F : Matrix k k ℝ} {Z : Matrix d k ℝ → Matrix d k ℝ}
+    (hV : V.rank < Fintype.card d) (hF : F ≠ 0) (hU : (Yᴴ * U).rank = U.rank)
+    (hZ : ∀ Y', Z Y' = Y - (1 - rangeProjector U) * Y * F + (1 - rangeProjector U) * Y' * F) :
+    gaussianMatrix d k {Y' | rangeProjector V * (Z Y' * (Z Y')ᴴ) = Z Y' * (Z Y')ᴴ} = 0 := by
+  set E := 1 - rangeProjector U with hE
+  set N := 1 - rangeProjector V with hN_def
+  have hN : N ≠ 0 := by
+    intro h
+    have := rank_one_sub_rangeProjector_add_rank V
+    rw [← hN_def, h, Matrix.rank_zero] at this
+    omega
+  have hsub : {Y' | rangeProjector V * (Z Y' * (Z Y')ᴴ) = Z Y' * (Z Y')ᴴ} ⊆
+      {Y' | N * E * Y' * F = -(N * (Y - E * Y * F))} := by
+    intro Y' hY'
+    have hNZZ : N * (Z Y' * (Z Y')ᴴ) = 0 := by
+      rw [hN_def, one_sub_rangeProjector_mul, hY', sub_self]
+    have h0 : N * Z Y' = 0 := Matrix.trace_mul_conjTranspose_self_eq_zero_iff.mp (by
+      rw [Matrix.conjTranspose_mul, ← Matrix.mul_assoc, Matrix.mul_assoc N, hNZZ,
+        Matrix.zero_mul, Matrix.trace_zero])
+    rw [hZ, Matrix.mul_add] at h0
+    rw [Set.mem_ofPred_eq, eq_neg_iff_add_eq_zero, add_comm, ← h0]
+    simp only [Matrix.mul_assoc]
+  by_cases hNE : N * E = 0
+  · refine measure_mono_null (fun Y' hY' => ?_) measure_empty
+    have hNY : N * Y = 0 := by
+      have h := hsub hY'
+      rw [Set.mem_ofPred_eq, hNE, Matrix.zero_mul, Matrix.zero_mul, Matrix.mul_sub,
+        ← Matrix.mul_assoc, ← Matrix.mul_assoc, hNE, Matrix.zero_mul, Matrix.zero_mul, sub_zero,
+        eq_comm, neg_eq_zero] at h
+      exact h
+    have hNP : N * rangeProjector U = N := by
+      rw [hE, Matrix.mul_sub, Matrix.mul_one, sub_eq_zero] at hNE
+      exact hNE.symm
+    have hYU : Yᴴ * U * (pinv U * Nᴴ) = 0 := by
+      rw [Matrix.mul_assoc, ← Matrix.mul_assoc U, mul_pinv, ← conjTranspose_rangeProjector,
+        ← Matrix.conjTranspose_mul, hNP, ← Matrix.conjTranspose_mul, hNY,
+        Matrix.conjTranspose_zero]
+    have hUC := mul_eq_zero_of_rank_mul_eq hU hYU
+    rw [← Matrix.mul_assoc, mul_pinv, ← conjTranspose_rangeProjector, ← Matrix.conjTranspose_mul,
+      hNP, Matrix.conjTranspose_eq_zero] at hUC
+    exact (hN hUC).elim
+  · exact measure_mono_null hsub
+      (measure_mul_mul_eq_eq_zero_of_hasLaw_gaussianMatrix HasLaw.id hNE hF _)
+
 /-- **Exact range recovery needs $k$ queries, deterministic algorithms**: let $\mathbf{X}$ be a
 standard Gaussian $d \times k$ matrix and $\mathbf{A} = \mathbf{X}\mathbf{X}^{\mathsf{H}}$. A
 measurable deterministic algorithm making $q < k$ adaptive queries $\mathbf{x} \mapsto
@@ -643,7 +714,78 @@ theorem IsMeasurable.measure_range_le_range_run_eq_zero_of_hasLaw_gaussianMatrix
     μ {ω | LinearMap.range (X ω * (X ω)ᴴ).mulVecLin ≤
         LinearMap.range (alg.run (X ω * (X ω)ᴴ).mulVec).mulVecLin ∧
       (alg.run (X ω * (X ω)ᴴ).mulVec).rank < Fintype.card d} = 0 := by
-  sorry
+  classical
+  set G := alg.gramSimulation k
+  set γ := gaussianMatrix d k
+  have hG : G.IsMeasurable := halg.gramSimulation
+  have hτ : Measurable fun Y : Matrix d k ℝ => G.transcript (twoSidedMulVec Y) :=
+    hG.measurable_transcript (by unfold twoSidedMulVec; fun_prop)
+  set B : Set ((Fin (2 * q) → (d → ℝ) × (k → ℝ)) × Matrix d k ℝ) :=
+    {t | rangeProjector (G.output t.1) * (t.2 * t.2ᴴ) = t.2 * t.2ᴴ ∧
+      (G.output t.1).rank < Fintype.card d} with hB_def
+  have hB : MeasurableSet B := by
+    have hout : Measurable fun t : (Fin (2 * q) → (d → ℝ) × (k → ℝ)) × Matrix d k ℝ =>
+        G.output t.1 := hG.measurable_output.comp measurable_fst
+    have hYY : Measurable fun t : (Fin (2 * q) → (d → ℝ) × (k → ℝ)) × Matrix d k ℝ =>
+        t.2 * t.2ᴴ :=
+      (continuous_id.matrix_mul continuous_id.matrix_conjTranspose).measurable.comp measurable_snd
+    exact (measurableSet_eq_fun ((measurable_rangeProjector.comp hout).matrix_mul hYY) hYY).inter
+      (measurableSet_lt (measurable_rank.comp hout) measurable_const)
+  have hτY : Measurable fun Y : Matrix d k ℝ => (G.transcript (twoSidedMulVec Y), Y) :=
+    hτ.prodMk measurable_id
+  have hset : {ω | LinearMap.range (X ω * (X ω)ᴴ).mulVecLin ≤
+        LinearMap.range (alg.run (X ω * (X ω)ᴴ).mulVec).mulVecLin ∧
+      (alg.run (X ω * (X ω)ᴴ).mulVec).rank < Fintype.card d} =
+      X ⁻¹' ((fun Y => (G.transcript (twoSidedMulVec Y), Y)) ⁻¹' B) := by
+    ext ω
+    simp only [Set.mem_ofPred_eq, Set.mem_preimage, hB_def, rangeProjector_mul_eq_self_iff,
+      ← run_gramSimulation]
+    rfl
+  rw [hset, ← Measure.map_apply_of_aemeasurable hX.aemeasurable (hτY hB), hX.map_eq]
+  have h1 : HasLaw (Prod.fst : _ → Matrix d k ℝ) γ (γ.prod γ) :=
+    ⟨measurable_fst.aemeasurable, by rw [Measure.map_fst_prod, measure_univ, one_smul]⟩
+  have h2 : HasLaw (Prod.snd : _ → Matrix d k ℝ) γ (γ.prod γ) :=
+    ⟨measurable_snd.aemeasurable, by rw [Measure.map_snd_prod, measure_univ, one_smul]⟩
+  have h12 : IndepFun (Prod.fst : _ → Matrix d k ℝ) Prod.snd (γ.prod γ) :=
+    (indepFun_iff_map_prod_eq_prod_map_map measurable_fst.aemeasurable
+      measurable_snd.aemeasurable).2 (by rw [h1.map_eq, h2.map_eq]; exact Measure.map_id)
+  have hid := hG.identDistrib_resample_of_hasLaw_gaussianMatrix h1 h2 h12
+  rw [← h1.map_eq, Measure.map_apply measurable_fst (hτY hB)]
+  have := hid.measure_mem_eq hB
+  simp only [Set.preimage, Set.mem_ofPred_eq] at this ⊢
+  have hτ1 : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ =>
+      G.transcript (twoSidedMulVec x.1) := hτ.comp measurable_fst
+  have hres : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ => G.resample x.1 x.2 := by
+    have hE : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ =>
+        1 - rangeProjector (G.leftQueryMatrix (G.transcript (twoSidedMulVec x.1))) :=
+      measurable_const.matrix_sub
+        (measurable_rangeProjector.comp (hG.measurable_leftQueryMatrix.comp hτ1))
+    have hF : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ =>
+        1 - rangeProjector (G.rightQueryMatrix (G.transcript (twoSidedMulVec x.1))) :=
+      measurable_const.matrix_sub
+        (measurable_rangeProjector.comp (hG.measurable_rightQueryMatrix.comp hτ1))
+    exact (measurable_fst.matrix_sub ((hE.matrix_mul measurable_fst).matrix_mul hF)).matrix_add
+      ((hE.matrix_mul measurable_snd).matrix_mul hF)
+  rw [this, Measure.prod_apply (show MeasurableSet {x : Matrix d k ℝ × Matrix d k ℝ |
+    (G.transcript (twoSidedMulVec x.1), G.resample x.1 x.2) ∈ B} from hτ1.prodMk hres hB)]
+  refine (lintegral_congr_ae ?_).trans lintegral_zero
+  filter_upwards [halg.ae_rank_conjTranspose_mul_leftQueryMatrix_gramSimulation HasLaw.id hq.le]
+    with Y hY
+  set τ := G.transcript (twoSidedMulVec Y)
+  by_cases hV : (G.output τ).rank < Fintype.card d
+  · have hF : 1 - rangeProjector (G.rightQueryMatrix τ) ≠ 0 := by
+      intro h
+      have := rank_one_sub_rangeProjector_add_rank (G.rightQueryMatrix τ)
+      rw [h, Matrix.rank_zero] at this
+      have h2 : (G.rightQueryMatrix τ).rank ≤ q := rank_rightQueryMatrix_gramSimulation_le alg τ
+      omega
+    have hY2 : (Yᴴ * G.leftQueryMatrix τ).rank = (G.leftQueryMatrix τ).rank := hY
+    have hZ : ∀ Y', G.resample Y Y' = Y - (1 - rangeProjector (G.leftQueryMatrix τ)) * Y *
+        (1 - rangeProjector (G.rightQueryMatrix τ)) + (1 - rangeProjector (G.leftQueryMatrix τ)) *
+        Y' * (1 - rangeProjector (G.rightQueryMatrix τ)) := fun _ => rfl
+    have h0 := measure_rangeProjector_mul_resample_eq_zero hV hF hY2 hZ
+    exact measure_mono_null (fun Y' hY' => hY'.1) h0
+  · exact measure_mono_null (fun Y' hY' => (hV hY'.2).elim) measure_empty
 
 /-- **Exact range recovery needs $k$ queries**: let $\mathbf{X}$ be a standard Gaussian
 $d \times k$ matrix and $\mathbf{A} = \mathbf{X}\mathbf{X}^{\mathsf{H}}$. A randomized algorithm
