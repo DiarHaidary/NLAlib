@@ -19,19 +19,17 @@ $\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}
 * truncated generalized Nyström never beats the truncated randomized SVD;
 * an upper bound in which the cross term carries
   $\|\llbracket\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\rrbracket_k\|_{\mathsf{F}}$, the energy
-of
-  the next $k$ singular values only, in place of $\|\mathbf{R} -
-\llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}$;
+  of the next $k$ singular values only, in place of
+  $\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}$;
 * a lower bound: the error is at least the truncated randomized SVD error plus the noise in the
   oracle subspace, $\|\mathbf{P}_{\llbracket\mathbf{R}\rrbracket_k}\mathbf{N}\|_{\mathsf{F}}^2$, up
-  to $\|\mathbf{N}\|_{\mathsf{F}}^4$ over the gap $\sigma_{k-1}(\mathbf{R})^2 -
-\sigma_k(\mathbf{R})^2$.
-  It feeds the lower bound on Epperly and Webber's instance
-  (`NLAlib.LowRank.Optimality.TruncatedGeneralizedNystrom`).
+  to $\|\mathbf{N}\|_{\mathsf{F}}^4$ over the gap
+  $\sigma_{k-1}(\mathbf{R})^2 - \sigma_k(\mathbf{R})^2$. It feeds the lower bound on Epperly
+  and Webber's instance (`NLAlib.LowRank.Optimality.TruncatedGeneralizedNystrom`).
 
-Both are new (research note `reports/OP2-TruncatedGN.md` of the NLAlib workflow, §2, D1–D2;
-the lower bound is this design's). Design: `docs/design/LowRank-EstimatorLowerBounds.md` §3.2.
-Proofs deferred.
+All three are new (research note `reports/OP2-TruncatedGN.md` of the NLAlib workflow, §2,
+D1–D2; the lower bound is the design note's). Design:
+`docs/design/LowRank-EstimatorLowerBounds.md` §3.2. Proofs deferred.
 
 ## Main results
 
@@ -297,25 +295,6 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm_mul_frob
   rw [hsplit, frobNorm_sub_truncatedSVD_rsvd_sq, ← hγ, ← hC, ← hEq]
   linarith
 
-/-- A best approximation is the projection of $\mathbf{C}$ onto its own column space:
-$\mathbf{P}_{\mathbf{Y}}\mathbf{C} = \mathbf{Y}$. -/
-private theorem IsBestRankApprox.rangeProjector_self_mul_t3 {C Y : Matrix m n 𝕜} {k : ℕ}
-    (h : IsBestRankApprox C k Y) : rangeProjector Y * C = Y := by
-  classical
-  have hPY : rangeProjector Y * Y = Y := rangeProjector_mul_self Y
-  have hsplit := (isStarProjection_rangeProjector Y).frobNorm_sq_eq_add (C - Y)
-  have e2 : (1 - rangeProjector Y) * (C - Y) = C - rangeProjector Y * C := by
-    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.sub_mul, Matrix.one_mul, Matrix.one_mul, hPY,
-      sub_self, sub_zero]
-  have hrank : (rangeProjector Y * C).rank ≤ k :=
-    (Matrix.rank_mul_le_left _ _).trans ((rank_rangeProjector Y).trans_le h.rank_le)
-  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _) (h.frobNorm_sub_le _ hrank) 2
-  rw [e2] at hsplit
-  have hsq : frobNorm (rangeProjector Y * (C - Y)) ^ 2 = 0 :=
-    le_antisymm (by linarith) (sq_nonneg _)
-  have h0 := frobNorm_eq_zero_iff.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq)
-  rwa [Matrix.mul_sub, hPY, sub_eq_zero] at h0
-
 /-- The error of $\mathbf{P}(\mathbf{R} + \mathbf{N})$, for an orthogonal projector
 $\mathbf{P}$, splits into three orthogonal pieces along
 $\mathbf{R} = \llbracket\mathbf{R}\rrbracket_k +
@@ -476,7 +455,7 @@ theorem le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq
   have hPZ : rangeProjector (Q * Y) * (rsvd A Ω + Q * E) = Q * Y := by
     rw [hQ.rangeProjector_mul, hR, ← Matrix.mul_add, Matrix.mul_assoc, Matrix.mul_assoc,
       ← Matrix.mul_assoc Qᴴ, hQ.conjTranspose_mul_self, Matrix.one_mul,
-      hY.rangeProjector_self_mul_t3]
+      hY.rangeProjector_self_mul]
   have hYk : (rangeProjector (Q * Y)).rank ≤ k := by
     rw [rank_rangeProjector, hQ.rank_mul]
     exact hY.rank_le
