@@ -349,7 +349,19 @@ theorem integral_integral_probeSpectralMeasure [Nonempty m] {X : Ω → Matrix n
     (hX : ∀ j, IsIsotropic (fun ω i => X ω i j) μ) {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (f : ℝ → ℝ) :
     ∫ ω, (∫ x, f x ∂probeSpectralMeasure A (X ω)) ∂μ = ∫ x, f x ∂empiricalSpectralMeasure A := by
-  sorry
+  have hint : Integrable (fun ω => girardHutchinson (cfc f A) (X ω)) μ := by
+    simp only [girardHutchinson_eq_sum]
+    exact (integrable_finsetSum _ fun j _ => (hX j).integrable_quadForm (cfc f A)).div_const _
+  calc ∫ ω, (∫ x, f x ∂probeSpectralMeasure A (X ω)) ∂μ
+      = ∫ ω, RCLike.re (girardHutchinson (cfc f A) (X ω)) / Fintype.card n ∂μ := by
+        simp only [integral_probeSpectralMeasure]
+    _ = (∫ ω, RCLike.re (girardHutchinson (cfc f A) (X ω)) ∂μ) / Fintype.card n :=
+        integral_div _ _
+    _ = RCLike.re (∫ ω, girardHutchinson (cfc f A) (X ω) ∂μ) / Fintype.card n := by
+        rw [integral_re hint]
+    _ = RCLike.re (cfc f A).trace / Fintype.card n := by
+        rw [integral_girardHutchinson hX]
+    _ = ∫ x, f x ∂empiricalSpectralMeasure A := (hA.integral_empiricalSpectralMeasure f).symm
 
 /-! ### Deterministic bounds over Lipschitz test functions -/
 
