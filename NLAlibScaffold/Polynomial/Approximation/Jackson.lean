@@ -41,6 +41,12 @@ theorem minimaxError_le_of_lipschitzOnWith {f : ℝ → ℝ} {L : ℝ≥0} {a b 
     (hf : LipschitzOnWith L f (Set.Icc a b)) (N : ℕ) :
     minimaxError f (Set.Icc a b) N ≤
       jacksonApproximationConstant * L * (b - a) / (2 * (N + 2)) := by
-  sorry
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf N
+  simp only [RCLike.ofReal_real_eq_id, id] at hε
+  unfold minimaxError
+  refine csInf_le ⟨0, ?_⟩ ⟨p, hp, hε⟩
+  rintro ε' ⟨q, -, hq⟩
+  obtain ⟨x, hx⟩ : (Set.Icc a b).Nonempty := Set.nonempty_Icc.mpr hab.le
+  exact (abs_nonneg _).trans (hq x hx)
 
 end NLAlib
