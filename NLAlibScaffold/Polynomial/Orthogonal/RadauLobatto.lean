@@ -957,7 +957,26 @@ Proof: S, about 15 lines. As `matchesMoments_radauQuadrature`, with
 Result: gauss-lobatto-quadrature -/
 theorem matchesMoments_lobattoQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) (k : ℕ) :
     MatchesMoments μ (lobattoQuadrature μ a b k) (2 * k + 2) := by
-  sorry
+  have := isFiniteMeasure_lobattoMeasure hμ
+  by_cases h : IsMomentPosDef (lobattoMeasure μ a b) k
+  · have hs := isOrthogonalPolynomial_nodal_lobattoNodes hμ hab h
+    have hcard := h.card_lobattoNodes hμ hab
+    intro p hp
+    rw [integral_lobattoQuadrature hμ hab k]
+    rw [hs.integral_eval_eq_sum_of_degree_lt_card_add hμ (p := p)]
+    rw [hcard]
+    convert hp using 2
+    ring
+  · have hsq : ∫ x, (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2
+        ∂lobattoMeasure μ a b = 0 := by
+      cases k with
+      | zero => exact absurd (fun p hp0 hpdeg => absurd hpdeg (by simp [hp0])) h
+      | succ j =>
+        rw [isMomentPosDef_succ_iff (ae_mem_Icc_lobattoMeasure hμ) j, not_lt] at h
+        rw [integral_orthogonalPolynomial_succ_sq (ae_mem_Icc_lobattoMeasure hμ) j,
+          le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
+    rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ hsq]
+    exact MatchesMoments.refl _ _
 
 /-- The Lobatto rule lives in every interval carrying the measure: for a finite measure $\mu$
 supported in $[a, b]$, $a < b$, and every $k$, almost every point of the Lobatto rule lies in
