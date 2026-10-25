@@ -5,9 +5,6 @@ Authors: NLAlib contributors
 -/
 module
 
-public import Mathlib.Algebra.Polynomial.Degree.Defs
-public import Mathlib.Algebra.Polynomial.Eval.Defs
-public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.RingTheory.Polynomial.Basic
 public import Mathlib.Topology.Algebra.Polynomial
@@ -247,7 +244,7 @@ theorem minimaxError_add_eval (f : ℝ → ℝ) (s : Set ℝ) {n : ℕ} {q : ℝ
   · rintro ⟨p, hp, hε⟩
     refine ⟨p - q, (degree_sub_le _ _).trans (max_le hp hq), fun x hx => (hε x hx).trans_eq' ?_⟩
     simp only [Real.dist_eq, eval_sub]
-    ring_nf
+    congr 1; ring
   · rintro ⟨p, hp, hε⟩
     exact ⟨p + q, (degree_add_le _ _).trans (max_le hp hq), fun x hx => by
       simpa only [eval_add, dist_add_right] using hε x hx⟩
@@ -304,7 +301,7 @@ theorem minimaxError_add_le {f g : ℝ → ℝ} {s : Set ℝ} (hs : IsCompact s)
   have h2 := hqε x hx
   simp only [Polynomial.eval_add]
   calc |p.eval x + q.eval x - (f x + g x)|
-      = |(p.eval x - f x) + (q.eval x - g x)| := by ring_nf
+      = |(p.eval x - f x) + (q.eval x - g x)| := by congr 1; ring
     _ ≤ |p.eval x - f x| + |q.eval x - g x| := abs_add_le _ _
     _ ≤ _ := add_le_add h1 h2
 

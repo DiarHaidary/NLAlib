@@ -5,9 +5,6 @@ Authors: NLAlib contributors
 -/
 module
 
-public import Mathlib.Algebra.Order.Ring.Abs
-public import Mathlib.Data.Real.Basic
-public import Mathlib.Order.Fin.Basic
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 public import Mathlib.LinearAlgebra.Lagrange
@@ -367,7 +364,7 @@ private theorem not_forall_mul_pos_of_isUniformApproxOn_minimaxError {f : ℝ �
       0 < (f x - p.eval x) * q.eval x := by
   intro hsign
   have : CompactSpace (Set.Icc a b) := isCompact_iff_compactSpace.mp isCompact_Icc
-  set E := minimaxError f (Set.Icc a b) n with hEdef
+  set E := minimaxError f (Set.Icc a b) n
   let g : C(Set.Icc a b, ℝ) :=
     ⟨fun x : Set.Icc a b => f x - p.eval (x : ℝ),
       (hf.sub (Polynomial.continuous p).continuousOn).domRestrict⟩
