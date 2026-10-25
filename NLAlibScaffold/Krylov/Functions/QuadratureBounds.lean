@@ -270,6 +270,8 @@ theorem integral_lobattoQuadrature_le_re_quadForm_cfc_of_iteratedDeriv_nonpos {A
     (hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q + 2) f x ≤ 0) (b : n → 𝕜) :
     ∫ x, f x ∂lobattoQuadrature (spectralMeasure A b) a a' q ≤
       RCLike.re (quadForm (cfc f A) b) := by
-  sorry
+  rw [← integral_spectralMeasure A b f]
+  exact integral_lobattoQuadrature_le_integral_of_iteratedDeriv_nonpos
+    (ae_mem_Icc_spectralMeasure A hs b) haa' q hf hf' hD
 
 end NLAlib
