@@ -207,7 +207,35 @@ $(j, j)$; `NLAlib.conjTranspose_mul_apply`;
 theorem _root_.Matrix.IsHermitian.lanczosAlpha_lanczosState {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
     lanczosAlpha A (lanczosState A b j) = jacobiAlpha (spectralMeasure A b) j := by
-  sorry
+  set π := orthogonalPolynomial (spectralMeasure A b) j with hπ
+  have hnorm := hA.norm_aeval_mulVec_sq b π
+  have hdot := hA.star_aeval_mulVec_dotProduct_aeval_mulVec b π (X * π)
+  have hentry := congrFun (congrFun (hA.lanczosTridiagonal_eq b (j + 1)) (Fin.last j)) (Fin.last j)
+  rw [Matrix.mul_assoc, conjTranspose_mul_apply,
+    hA.arnoldiMatrix_col_eq_smul_aeval_orthogonalPolynomial_mulVec b (Fin.last j)] at hentry
+  simp only [lanczosTridiagonal, Matrix.of_apply, if_true] at hentry
+  rw [show (A * arnoldiMatrix A b (j + 1)).col (Fin.last j)
+      = A *ᵥ (arnoldiMatrix A b (j + 1)).col (Fin.last j) from rfl,
+    hA.arnoldiMatrix_col_eq_smul_aeval_orthogonalPolynomial_mulVec b (Fin.last j)] at hentry
+  simp only [Fin.val_last, Matrix.mulVec_smul, star_smul, smul_dotProduct, dotProduct_smul,
+    smul_eq_mul] at hentry
+  rw [map_mul, aeval_X, ← Matrix.mulVec_mulVec] at hdot
+  have hx : ∫ x, π.eval x * (X * π).eval x ∂spectralMeasure A b
+      = ∫ x, x * π.eval x ^ 2 ∂spectralMeasure A b := by
+    congr 1; ext x; simp only [eval_mul, eval_X]; ring
+  rw [hx] at hdot
+  rw [← hπ] at hentry
+  rw [jacobiAlpha, ← hπ, ← hnorm]
+  generalize aeval A π *ᵥ b = v at *
+  generalize ‖WithLp.toLp 2 v‖ = N at *
+  rw [hdot] at hentry
+  apply RCLike.ofReal_inj (K := 𝕜) |>.mp
+  rw [hentry, RCLike.ofReal_div, RCLike.ofReal_pow]
+  simp only [RCLike.star_def, map_inv₀, RCLike.conj_ofReal]
+  rcases eq_or_ne N 0 with rfl | hN
+  · simp
+  · have : (N : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.mpr hN
+    field_simp
 
 /-- The off-diagonal Lanczos coefficient is the square root of the recurrence coefficient of the
 spectral measure: for Hermitian $\mathbf{A}$, every $\mathbf{b}$ and $j$, the coefficient
