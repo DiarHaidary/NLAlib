@@ -346,6 +346,8 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(violations('P1', imp('Probability', 'Krylov')), [])
         self.assertTrue(violations('P1', imp('LowRank', 'Estimation')))
         self.assertEqual(violations('P1', imp('Estimation', 'LowRank')), [])
+        self.assertEqual(violations('P1', imp('LowerBounds', 'Estimation')), [])
+        self.assertTrue(violations('P1', imp('Estimation', 'LowerBounds')))
         self.assertTrue(violations('P1', imp('Solvers', 'Matrix')))
 
     def test_import_all_names_the_module(self):
