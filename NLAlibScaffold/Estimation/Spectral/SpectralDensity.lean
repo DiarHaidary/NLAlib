@@ -74,7 +74,9 @@ Proof: S, about 8 lines. Unfold `probeSpectralMeasure`; `Integrable.smul_measure
 `integrable_finset_sum_measure`, `integrable_spectralMeasure`. -/
 theorem integrable_probeSpectralMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) (f : ℝ → ℝ) :
     Integrable f (probeSpectralMeasure A Ω) := by
-  sorry
+  unfold probeSpectralMeasure
+  exact (integrable_finsetSum_measure.2 fun j _ =>
+    integrable_spectralMeasure _ _ f).smul_measure_nnreal
 
 /-- Every function is integrable against the SLQ spectral-density estimate: for every square
 $\mathbf{A}$, every test matrix $\mathbf{\Omega}$, every $q$ and every
