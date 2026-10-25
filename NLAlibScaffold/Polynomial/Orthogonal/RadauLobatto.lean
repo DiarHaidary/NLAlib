@@ -332,7 +332,31 @@ and the rule is $0$ (its one weight is $\int 1\,d\mu = 0$). Not definite: the ru
 (`radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`). -/
 theorem ae_mem_Icc_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b)
     (k : ℕ) : ∀ᵐ x ∂radauQuadrature μ c k, x ∈ Set.Icc a b := by
-  sorry
+  by_cases h0 : μ = 0
+  · subst h0
+    simp [radauQuadrature, interpolatoryQuadrature]
+  have : (ae μ).NeBot := ae_neBot.mpr h0
+  obtain ⟨x0, hx0⟩ := hμ.exists
+  have hab : a ≤ b := hx0.1.trans hx0.2
+  have hcI : c ∈ Set.Icc a b := by
+    rcases hc with h | h <;> rw [h] <;> simp [hab]
+  have := isFiniteMeasure_radauMeasure hμ c
+  by_cases h : IsMomentPosDef (radauMeasure μ c) k
+  · filter_upwards [ae_mem_interpolatoryQuadrature μ (radauNodes μ c k)] with x hx
+    simp only [radauNodes, Finset.mem_insert] at hx
+    rcases hx with rfl | hx
+    · exact hcI
+    · exact h.gaussNodes_subset_Icc (ae_mem_Icc_radauMeasure hμ c) (Finset.mem_coe.mpr hx)
+  · have hsq : ∫ x, (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2
+        ∂radauMeasure μ c = 0 := by
+      cases k with
+      | zero => exact (h fun p hp hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp))).elim
+      | succ j =>
+        rw [isMomentPosDef_succ_iff (ae_mem_Icc_radauMeasure hμ c) j, not_lt] at h
+        rw [integral_orthogonalPolynomial_succ_sq (ae_mem_Icc_radauMeasure hμ c) j,
+          le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
+    rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ hsq]
+    exact hμ
 
 /-- The mass of the Radau rule: for a finite measure $\mu$ supported in $[a, b]$,
 $c \in \{a, b\}$ and every $k$, the Radau rule has mass $\mu(\mathbb{R})$.
