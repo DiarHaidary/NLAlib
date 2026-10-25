@@ -200,7 +200,27 @@ theorem _root_.Matrix.IsHermitian.slqMeasure_real_univ {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) {q : ℕ} (hq : 0 < q) :
     (slqMeasure A Ω q).real Set.univ =
       frobNorm Ω ^ 2 / (Fintype.card n * Fintype.card m) := by
-  sorry
+  obtain ⟨a, a', hs⟩ : ∃ a a' : ℝ, spectrum ℝ A ⊆ Set.Icc a a' := by
+    have hfin : (spectrum ℝ A).Finite := by
+      rw [hA.spectrum_eq_image_eigenvalue]
+      exact (Set.finite_Iio _).image _
+    obtain ⟨a', ha'⟩ := hfin.bddAbove
+    obtain ⟨a, ha⟩ := hfin.bddBelow
+    exact ⟨a, a', fun x hx => ⟨ha hx, ha' hx⟩⟩
+  have hg : ∀ j, (gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q).real Set.univ =
+      ‖WithLp.toLp 2 (Ω.col j)‖ ^ 2 := fun j => by
+    rw [gaussQuadrature_real_univ (ae_mem_Icc_spectralMeasure A hs _) hq,
+      hA.spectralMeasure_real_univ]
+    rfl
+  have hsum : (∑ j, gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q).real Set.univ =
+      ∑ j, (gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q).real Set.univ := by
+    simp only [measureReal_def, Measure.coe_finsetSum, Finset.sum_apply,
+      ENNReal.toReal_sum (fun j _ => measure_ne_top _ _)]
+  unfold slqMeasure
+  rw [measureReal_nnreal_smul_apply, hsum, Finset.sum_congr rfl fun j _ => hg j,
+    ← frobNorm_sq_eq_sum_col, NNReal.coe_inv, NNReal.coe_mul]
+  push_cast
+  ring
 
 /-- The probe spectral measure lives on the spectrum: for every square $\mathbf{A}$ and every
 test matrix $\mathbf{\Omega}$, almost every point of
