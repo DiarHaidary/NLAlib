@@ -41,28 +41,21 @@ theorem antitoneOn_rpow_mul_of_hasDerivAt {f f' : ℝ → ℝ} {b : ℝ} (hb : 0
     AntitoneOn (fun t => t ^ b * f t) (Ici 0) := by
   have hcont : ContinuousOn (fun t : ℝ => t ^ b * f t) (Ici 0) := by
     intro t ht
-    rcases eq_or_lt_of_le (Set.mem_Ici.mp ht) with h0 | hpos
-    · rw [← h0]
-      exact ((Real.continuousAt_rpow_const 0 b (Or.inr hb.le)).continuousWithinAt).mul hc
-    · exact ((Real.continuousAt_rpow_const t b (Or.inl hpos.ne')).continuousWithinAt).mul
+    rcases eq_or_lt_of_le (mem_Ici.mp ht) with rfl | hpos
+    · exact (Real.continuousAt_rpow_const 0 b (Or.inr hb.le)).continuousWithinAt.mul hc
+    · exact (Real.continuousAt_rpow_const t b (Or.inl hpos.ne')).continuousWithinAt.mul
         (hf t hpos).continuousAt.continuousWithinAt
-  have hderiv : ∀ t ∈ Ioi (0 : ℝ),
+  have hderiv : ∀ t ∈ interior (Ici (0 : ℝ)),
       HasDerivAt (fun t : ℝ => t ^ b * f t) (t ^ (b - 1) * (t * f' t + b * f t)) t := by
     intro t ht
-    have ht0 : t ≠ 0 := (Set.mem_Ioi.mp ht).ne'
-    have h1 := (Real.hasDerivAt_rpow_const (p := b) (Or.inl ht0)).mul (hf t ht)
-    refine HasDerivAt.congr_deriv h1 ?_
-    have hpow : t ^ b = t ^ (b - 1) * t := by
-      rw [← Real.rpow_add_one ht0]; ring_nf
-    rw [hpow]
-    ring
-  have hnonpos : ∀ t ∈ interior (Ici (0 : ℝ)),
-      deriv (fun t : ℝ => t ^ b * f t) t ≤ 0 := by
-    intro t ht
     rw [interior_Ici] at ht
-    rw [(hderiv t ht).deriv]
-    exact mul_nonpos_of_nonneg_of_nonpos (Real.rpow_nonneg (Set.mem_Ioi.mp ht).le _) (h t ht)
-  refine antitoneOn_of_deriv_nonpos (convex_Ici 0) hcont ?_ hnonpos
-  intro t ht
+    have ht0 : t ≠ 0 := ht.out.ne'
+    refine ((Real.hasDerivAt_rpow_const (Or.inl ht0)).mul (hf t ht)).congr_deriv ?_
+    rw [Real.rpow_sub_one ht0]
+    field_simp
+    ring
+  refine antitoneOn_of_deriv_nonpos (convex_Ici 0) hcont
+    (fun t ht => (hderiv t ht).differentiableAt.differentiableWithinAt) fun t ht => ?_
+  rw [(hderiv t ht).deriv]
   rw [interior_Ici] at ht
-  exact (hderiv t ht).differentiableAt.differentiableWithinAt
+  exact mul_nonpos_of_nonneg_of_nonpos (Real.rpow_nonneg ht.out.le _) (h t ht)
