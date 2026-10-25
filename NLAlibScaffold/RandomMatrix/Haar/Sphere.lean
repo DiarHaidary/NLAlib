@@ -76,8 +76,8 @@ Proof: S, about 12 lines. The first block has law `gaussianVector k`
 `hasLaw_sum_sq_of_hasLaw_pi_gaussianReal`. -/
 private theorem hasLaw_sum_sq_inl_of_hasLaw_gaussianVector {p : Type*} [Fintype p] [Nonempty k]
     {h : Ω → k ⊕ p → ℝ} (hh : HasLaw h (gaussianVector (k ⊕ p)) μ) :
-    HasLaw (fun ω => ∑ i, h ω (Sum.inl i) ^ 2) (gammaMeasure (Fintype.card k / 2) (1 / 2)) μ := by
-  sorry
+    HasLaw (fun ω => ∑ i, h ω (Sum.inl i) ^ 2) (gammaMeasure (Fintype.card k / 2) (1 / 2)) μ :=
+  hasLaw_sum_sq_of_hasLaw_pi_gaussianReal (hasLaw_comp_inl_gaussianVector.comp hh)
 
 omit [DecidableEq k] in
 /-- The second block of a standard Gaussian vector indexed by $k \oplus p$, $p$ nonempty, has a
