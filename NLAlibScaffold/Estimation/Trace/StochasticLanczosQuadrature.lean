@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
-public import NLAlib.Polynomial.Approximation.MinimaxError
+public import NLAlibScaffold.Polynomial.Approximation.MinimaxError
 
 /-!
 # Stochastic Lanczos quadrature and the minimax error: the theorems of stage Poly-Best
@@ -54,80 +54,9 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_continuousOn
         2 * minimaxError f (Set.Icc a a') (2 * q + 1) * frobNorm Ω ^ 2 / Fintype.card m := by
   have hdeg : ∀ p : ℝ[X], p.degree ≤ ↑(2 * q + 1) → p.degree < ↑(2 * (q + 1)) := fun p hp =>
     hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
-  set E := minimaxError f (Set.Icc a a') (2 * q + 1)
-  rcases (Set.Icc a a').eq_empty_or_nonempty with he | hne
-  · exact_mod_cast hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs (f := f) (p := 0)
-      (hdeg 0 (by simp)) (ε := E) (by rw [he]; intro x hx; exact hx.elim) Ω
-  -- `f` is bounded on the compact interval, so the set defining `E` is nonempty
-  obtain ⟨C, hC⟩ := (isCompact_Icc.image_of_continuousOn hf).isBounded.subset_closedBall 0
-  have hSne : C ∈ {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ ↑(2 * q + 1) ∧
-      Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a') ε} := by
-    refine ⟨0, by simp, fun x hx => ?_⟩
-    have := hC (Set.mem_image_of_mem f hx)
-    rw [Metric.mem_closedBall] at this
-    simpa [dist_comm] using this
-  -- the bound with `E + δ` for every `δ > 0`
-  have key : ∀ δ > 0, ‖(cfc f A).trace - slq A f Ω (q + 1)‖ ≤
-      ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
-        2 * (E + δ) * frobNorm Ω ^ 2 / Fintype.card m := by
-    intro δ hδ
-    obtain ⟨ε, ⟨p, hp, hpε⟩, hlt⟩ := exists_lt_of_csInf_lt ⟨C, hSne⟩ (lt_add_of_pos_right E hδ)
-    exact_mod_cast hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs (hdeg p hp)
-      (hpε.mono_error hlt.le) Ω
-  have hc : Continuous fun δ : ℝ => ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
-      2 * (E + δ) * frobNorm Ω ^ 2 / Fintype.card m := by fun_prop
-  refine ge_of_tendsto (x := nhdsWithin 0 (Set.Ioi 0)) ?_ (eventually_nhdsWithin_of_forall key)
-  simpa using (hc.tendsto 0).mono_left nhdsWithin_le_nhds
-
-/-- A near-best approximant: for $f$ continuous on $[a, a']$ and $\delta > 0$, some polynomial
-of degree at most $N$ is within $E_N(f) + \delta$ of $f$ on $[a, a']$. -/
-private lemma exists_degree_le_isUniformApproxOn_minimaxError_add {f : ℝ → ℝ} {a a' : ℝ}
-    (hf : ContinuousOn f (Set.Icc a a')) (N : ℕ) {δ : ℝ} (hδ : 0 < δ) :
-    ∃ p : ℝ[X], p.degree ≤ N ∧ Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a')
-      (minimaxError f (Set.Icc a a') N + δ) := by
-  rcases (Set.Icc a a').eq_empty_or_nonempty with he | hne
-  · exact ⟨0, by simp, fun x hx => by simp [he] at hx⟩
-  obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hf
-  have hT : (({ε : ℝ | ∃ p : ℝ[X], p.degree ≤ N ∧
-      Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a') ε}).Nonempty) :=
-    ⟨C, 0, by simp, fun x hx => by simpa [Real.dist_eq] using hC x hx⟩
-  have hB : BddBelow {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ N ∧
-      Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a') ε} :=
-    ⟨0, fun ε ⟨_, _, hε⟩ => hε.nonneg hne⟩
-  obtain ⟨ε, ⟨p, hp, hε⟩, hlt⟩ := exists_lt_of_csInf_lt hT
-    (lt_add_of_pos_right (minimaxError f (Set.Icc a a') N) hδ)
-  exact ⟨p, hp, hε.mono_error hlt.le⟩
-
-/-- A limit argument for tails: if the tail bound holds at every error $E + \delta$, $\delta > 0$,
-and every level $\tau' \ge 0$, with $g$ continuous, it holds at $E$ and $\tau > 0$. -/
-private lemma measureReal_le_of_forall_pos_add [IsFiniteMeasure μ] {F D : Ω → ℝ} {E M τ : ℝ}
-    (hτ : 0 < τ) {g : ℝ → ℝ} (hg : Continuous g) (hg0 : 0 ≤ g τ)
-    (h : ∀ δ : ℝ, 0 < δ → ∀ τ' : ℝ, 0 ≤ τ' →
-      μ.real {ω | τ' + 2 * (E + δ) * F ω / M ≤ D ω} ≤ g τ') :
-    μ.real {ω | τ + 2 * E * F ω / M ≤ D ω} ≤ g τ := by
-  set S := {ω | τ + 2 * E * F ω / M ≤ D ω}
-  -- on `{2F/M ≤ N}` the error `E` costs at most `τ - τ'` more than `E + δ`, `δ = (τ - τ')/(N+1)`
-  have hN (N : ℕ) : μ.real (S ∩ {ω | 2 * F ω / M ≤ N}) ≤ g τ := by
-    refine ge_of_tendsto ((hg.tendsto τ).mono_left (nhdsWithin_le_nhds (s := Set.Iio τ))) ?_
-    filter_upwards [Ioo_mem_nhdsLT hτ] with τ' hτ'
-    have hδ : 0 < (τ - τ') / (N + 1) := div_pos (by linarith [hτ'.2]) (by positivity)
-    refine (measureReal_mono fun ω hω => ?_).trans (h _ hδ τ' hτ'.1.le)
-    simp only [S, Set.mem_inter_iff, Set.mem_ofPred_eq] at hω ⊢
-    have h1 : (τ - τ') / (N + 1) * (N + 1) = τ - τ' := div_mul_cancel₀ _ (by positivity)
-    have h2 := mul_le_mul_of_nonneg_left hω.2 hδ.le
-    have h3 : 2 * (E + (τ - τ') / (N + 1)) * F ω / M =
-        2 * E * F ω / M + (τ - τ') / (N + 1) * (2 * F ω / M) := by ring
-    nlinarith [hω.1]
-  have hmono : Monotone fun N : ℕ => S ∩ {ω | 2 * F ω / M ≤ N} := fun N N' hNN' =>
-    Set.inter_subset_inter_right _ fun ω (hω : 2 * F ω / M ≤ N) => show 2 * F ω / M ≤ N' from
-      hω.trans (Nat.cast_le.mpr hNN')
-  have hU : S = ⋃ N : ℕ, S ∩ {ω | 2 * F ω / M ≤ N} := by
-    ext ω
-    simp only [Set.mem_iUnion, Set.mem_inter_iff, Set.mem_ofPred_eq]
-    exact ⟨fun hω => (exists_nat_ge _).imp fun _ hN => ⟨hω, hN⟩, fun ⟨_, hω, _⟩ => hω⟩
-  refine ENNReal.toReal_le_of_le_ofReal hg0 ?_
-  rw [hU, hmono.measure_iUnion]
-  exact iSup_le fun N => (ENNReal.le_ofReal_iff_toReal_le (measure_ne_top _ _) hg0).mpr (hN N)
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * q + 1)
+  exact_mod_cast hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs (hdeg p hp) hε Ω
 
 /-- **The tail of stochastic Lanczos quadrature and the minimax error.** Let the entries of the
 real $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
@@ -161,18 +90,10 @@ theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_continuousOn
       2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm (cfc f A) ^ 2))
           (Fintype.card m * τ / ((c : ℝ) * specNorm (cfc f A))))) := by
-  have := hind.isProbabilityMeasure
-  rcases hτ.eq_or_lt with rfl | hτ
-  · refine measureReal_le_one.trans ?_
-    simp
-  refine measureReal_le_of_forall_pos_add (g := fun t => 2 * Real.exp (-(hansonWrightConstant *
-      min (Fintype.card m * t ^ 2 / ((c : ℝ) ^ 2 * frobNorm (cfc f A) ^ 2))
-        (Fintype.card m * t / ((c : ℝ) * specNorm (cfc f A))))))
-    hτ (by fun_prop) (by positivity) fun δ hδ τ' hτ' => ?_
-  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_minimaxError_add hf (2 * q + 1) hδ
-  have hp' : p.degree < (2 * (q + 1) : ℕ) :=
-    hp.trans_lt (Nat.cast_lt.mpr (by omega))
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * q + 1)
+  have hp' : p.degree < (2 * (q + 1) : ℕ) := hp.trans_lt (Nat.cast_lt.mpr (by omega))
   exact measureReal_abs_trace_cfc_sub_slq_ge_le_of_isUniformApproxOn hind hsub hvar hA hs
-    (by exact_mod_cast hp') hε hτ'
+    (by exact_mod_cast hp') hε hτ
 
 end NLAlib
