@@ -183,7 +183,11 @@ Result: equioscillation -/
 theorem AlternatesOn.minimaxError_eq {f : ℝ → ℝ} {s : Set ℝ} {n : ℕ} {p : ℝ[X]} {ε : ℝ}
     (h : AlternatesOn (fun x => f x - p.eval x) s (n + 2) ε) (hp : p.degree ≤ n)
     (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f s ε) : minimaxError f s n = ε := by
-  sorry
+  have hne : s.Nonempty := by
+    obtain ⟨x, -, hxs, -⟩ := h
+    exact ⟨x 0, hxs 0⟩
+  exact le_antisymm (minimaxError_le_of_isUniformApproxOn hp (hε.nonneg hne) hε)
+    (h.le_minimaxError hp hε)
 
 /-! ### Chebyshev's equioscillation theorem -/
 
