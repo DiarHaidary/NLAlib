@@ -572,6 +572,63 @@ theorem IsMomentPosDef.mem_spectrum_radauJacobiMatrix {k : ℕ} (h : IsMomentPos
     c ∈ spectrum ℝ (radauJacobiMatrix μ c k) := by
   sorry
 
+/-- A banded matrix has zero powers off a band of width `i`. -/
+private theorem matrix_pow_apply_eq_zero_of_band {n : ℕ} (N : Matrix (Fin n) (Fin n) ℝ)
+    (hN : ∀ a b : Fin n, (a : ℕ) + 2 ≤ b ∨ (b : ℕ) + 2 ≤ a → N a b = 0) (i : ℕ) :
+    ∀ a b : Fin n, (b : ℕ) + i < a ∨ (a : ℕ) + i < b → (N ^ i) a b = 0 := by
+  induction i with
+  | zero =>
+    intro a b h
+    rw [pow_zero, Matrix.one_apply_ne]
+    rintro rfl
+    omega
+  | succ i ih =>
+    intro a b h
+    rw [pow_succ', Matrix.mul_apply]
+    refine Finset.sum_eq_zero fun c _ => ?_
+    by_cases hac : (a : ℕ) + 2 ≤ c ∨ (c : ℕ) + 2 ≤ a
+    · rw [hN a c hac, zero_mul]
+    · rw [ih c b (by omega), mul_zero]
+
+/-- The powers of the Radau Jacobi matrix agree with those of the Jacobi matrix on the entries
+$(a, b)$ with $i + a + b \le 2k$: the only changed entry is the $(k, k)$ loop, which such a walk
+never uses. -/
+private theorem radauJacobiMatrix_pow_apply_eq (μ : Measure ℝ) (c : ℝ) (k i : ℕ) :
+    ∀ a b : Fin (k + 1), (i : ℕ) + a + b ≤ 2 * k →
+      (radauJacobiMatrix μ c k ^ i) a b = (jacobiMatrix μ (k + 1) ^ i) a b := by
+  have hJ : ∀ a b : Fin (k + 1), (a : ℕ) + 2 ≤ b ∨ (b : ℕ) + 2 ≤ a →
+      jacobiMatrix μ (k + 1) a b = 0 := by
+    intro a b h
+    have h1 : a ≠ b := by rintro rfl; omega
+    simp only [jacobiMatrix, Matrix.of_apply]
+    rw [if_neg h1, if_neg (by omega), if_neg (by omega)]
+  have hM : ∀ a b : Fin (k + 1), ¬(a = Fin.last k ∧ b = Fin.last k) →
+      radauJacobiMatrix μ c k a b = jacobiMatrix μ (k + 1) a b := by
+    intro a b h
+    simp only [radauJacobiMatrix, Matrix.of_apply]
+    rw [if_neg h]
+  have hMb : ∀ a b : Fin (k + 1), (a : ℕ) + 2 ≤ b ∨ (b : ℕ) + 2 ≤ a →
+      radauJacobiMatrix μ c k a b = 0 := by
+    intro a b h
+    rw [hM a b (by rintro ⟨rfl, rfl⟩; omega), hJ a b h]
+  induction i with
+  | zero => intro a b _; simp
+  | succ i ih =>
+    intro a b hab
+    rw [pow_succ', Matrix.mul_apply, pow_succ', Matrix.mul_apply]
+    refine Finset.sum_congr rfl fun c _ => ?_
+    by_cases hac : (a : ℕ) + 2 ≤ c ∨ (c : ℕ) + 2 ≤ a
+    · rw [hMb a c hac, hJ a c hac, zero_mul, zero_mul]
+    by_cases hl : a = Fin.last k ∧ c = Fin.last k
+    · obtain ⟨rfl, rfl⟩ := hl
+      have hlast : ((Fin.last k : Fin (k + 1)) : ℕ) = k := Fin.val_last k
+      rw [matrix_pow_apply_eq_zero_of_band (radauJacobiMatrix μ c k) hMb i (Fin.last k) b
+          (Or.inl (by omega)),
+        matrix_pow_apply_eq_zero_of_band (jacobiMatrix μ (k + 1)) hJ i (Fin.last k) b
+          (Or.inl (by omega))]
+      simp
+    · rw [hM a c hl, ih c b (by omega)]
+
 /-- The Radau Jacobi matrix keeps the moments of the Jacobi matrix through degree $2k$: for every
 measure $\mu$, every $c$ and every $j \le 2k$,
 $(\tilde{\mathbf{J}}^j)_{0,0} = (\mathbf{J}_{k+1}^j)_{0,0}$, $\tilde{\mathbf{J}}$ the Radau Jacobi
@@ -584,7 +641,7 @@ correction acts only on index $k$); likewise for the rows (`Matrix.transpose`, b
 `isHermitian_jacobiMatrix`). Split $j = j_1 + j_2$ with $j_1, j_2 \le k$ (`pow_add`,
 `Matrix.mul_apply`). -/
 theorem radauJacobiMatrix_pow_apply_zero_zero (μ : Measure ℝ) (c : ℝ) {k j : ℕ}
-    (hj : j ≤ 2 * k) : (radauJacobiMatrix μ c k ^ j) 0 0 = (jacobiMatrix μ (k + 1) ^ j) 0 0 := by
-  sorry
+    (hj : j ≤ 2 * k) : (radauJacobiMatrix μ c k ^ j) 0 0 = (jacobiMatrix μ (k + 1) ^ j) 0 0 :=
+  radauJacobiMatrix_pow_apply_eq μ c k j 0 0 (by simpa using hj)
 
 end NLAlib
