@@ -46,6 +46,7 @@ discrete measures (spectral measures, quadrature rules).
 * `NLAlib.matchesMoments_measureT`: Mathlib's Chebyshev–Gauss quadrature in this vocabulary.
 * `NLAlib.ae_eval_eq_zero_of_integral_sq_eq_zero`: a polynomial of norm zero vanishes a.e.
 * `NLAlib.integral_eval_mul_eq_zero_of_integral_sq_eq_zero`: and is orthogonal to everything.
+* `NLAlib.integral_eval_basis_of_ae_mem`: on a finite set, $\int\ell_x\,d\mu = \mu\{x\}$.
 * `NLAlib.MatchesMoments.eq_of_ae_mem`: moment determinacy on a finite set.
 * `NLAlib.MatchesMoments.smul`, `NLAlib.MatchesMoments.finsetSum`: linearity in the pair.
 -/
@@ -209,28 +210,31 @@ theorem integral_eval_mul_eq_zero_of_integral_sq_eq_zero [IsFiniteMeasure μ] {a
     ae_eval_eq_zero_of_integral_sq_eq_zero hμ hp
   exact integral_eq_zero_of_ae (hae.mono fun x hx => by simp [hx])
 
+/-- The Lagrange basis polynomial integrates to the point mass: for a finite measure $\mu$ carried
+by a finite set $s \subseteq \mathbb{R}$ and $x \in s$, $\int\ell_x\,d\mu = \mu\{x\}$, $\ell_x$ the
+Lagrange basis polynomial of $x$ at $s$ (Mathlib's `Lagrange.basis s id x`). -/
+theorem integral_eval_basis_of_ae_mem [IsFiniteMeasure μ] {s : Finset ℝ} (hμ : ∀ᵐ t ∂μ, t ∈ s)
+    {x : ℝ} (hx : x ∈ s) : ∫ t, (Lagrange.basis s id x).eval t ∂μ = μ.real {x} := by
+  have := setIntegral_finset s ((Lagrange.basis s id x).continuous.continuousOn
+    |>.integrableOn_compact (μ := μ) s.finite_toSet.isCompact)
+  rw [Measure.restrict_eq_self_of_ae_mem hμ] at this
+  rw [this, Finset.sum_eq_single_of_mem x hx,
+    show (Lagrange.basis s id x).eval x = 1 from Lagrange.eval_basis_self (Set.injOn_id _) hx,
+    smul_eq_mul, mul_one]
+  exact fun y hy hyx => smul_eq_zero_of_right _ (Lagrange.eval_basis_of_ne (v := id) hyx.symm hy)
+
 /-- **Moment determinacy on a finite set**: two finite measures $\mu$, $\nu$ carried by a finite
 set $s \subseteq \mathbb{R}$ that match their first $\lvert s\rvert$ moments are equal. No printed
 source. -/
 theorem MatchesMoments.eq_of_ae_mem [IsFiniteMeasure μ] [IsFiniteMeasure ν] {s : Finset ℝ}
     (h : MatchesMoments μ ν s.card) (hμ : ∀ᵐ x ∂μ, x ∈ s) (hν : ∀ᵐ x ∂ν, x ∈ s) : μ = ν := by
-  -- the Lagrange basis polynomial `ℓ_x` integrates to the weight at `x` of a measure on `s`
-  have hweight : ∀ (ρ : Measure ℝ) [IsFiniteMeasure ρ], (∀ᵐ x ∂ρ, x ∈ s) → ∀ x ∈ s,
-      ∫ t, (Lagrange.basis s id x).eval t ∂ρ = ρ.real {x} := fun ρ _ hρ x hx => by
-    have := setIntegral_finset s ((Lagrange.basis s id x).continuous.continuousOn
-      |>.integrableOn_compact (μ := ρ) s.finite_toSet.isCompact)
-    rw [Measure.restrict_eq_self_of_ae_mem hρ] at this
-    rw [this, Finset.sum_eq_single_of_mem x hx,
-      show (Lagrange.basis s id x).eval x = 1 from Lagrange.eval_basis_self (Set.injOn_id _) hx,
-      smul_eq_mul, mul_one]
-    exact fun y hy hyx => smul_eq_zero_of_right _ (Lagrange.eval_basis_of_ne (v := id) hyx.symm hy)
   rw [Measure.ae_mem_finset_iff.mp hμ, Measure.ae_mem_finset_iff.mp hν]
   refine Finset.sum_congr rfl fun x hx => ?_
   have hdeg : (Lagrange.basis s id x).degree < s.card := by
     rw [Lagrange.degree_basis (Set.injOn_id _) hx]
     exact_mod_cast Nat.sub_lt (Finset.card_pos.mpr ⟨x, hx⟩) one_pos
-  rw [← ofReal_measureReal, ← ofReal_measureReal, ← hweight μ hμ x hx, ← hweight ν hν x hx,
-    h _ hdeg]
+  rw [← ofReal_measureReal, ← ofReal_measureReal, ← integral_eval_basis_of_ae_mem hμ hx,
+    ← integral_eval_basis_of_ae_mem hν hx, h _ hdeg]
 
 /-- Moment matching is preserved by scaling: if $\mu$ and $\nu$ match their first $N$ moments,
 then so do $c\mu$ and $c\nu$ for every $c \in [0, \infty]$. -/
