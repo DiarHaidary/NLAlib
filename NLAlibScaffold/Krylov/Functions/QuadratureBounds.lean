@@ -249,7 +249,9 @@ theorem re_quadForm_cfc_le_integral_lobattoQuadrature_of_iteratedDeriv_nonneg {A
     (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q + 2) f x) (b : n → 𝕜) :
     RCLike.re (quadForm (cfc f A) b) ≤
       ∫ x, f x ∂lobattoQuadrature (spectralMeasure A b) a a' q := by
-  sorry
+  have h := integral_le_integral_lobattoQuadrature_of_iteratedDeriv_nonneg
+    (ae_mem_Icc_spectralMeasure A hs b) haa' q hf hf' hD
+  rwa [integral_spectralMeasure A b f] at h
 
 /-- **The Lobatto rule is a lower bound** for $f$ with nonpositive derivative of order
 $2q + 2$: for $\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$),
