@@ -98,6 +98,24 @@ theorem IndepFun.hasLaw_prodMk_prod_of_forall_map_eq [IsFiniteMeasure μ] {T : �
     {F : α → γ → δ} (hF : Measurable (Function.uncurry F)) {ν : Measure δ}
     (h : ∀ t, (μ.map Z).map (F t) = ν) :
     HasLaw (fun ω => (T ω, F (T ω) (Z ω))) ((μ.map T).prod ν) μ := by
-  sorry
+  have hpair : μ.map (fun ω => (T ω, Z ω)) = (μ.map T).prod (μ.map Z) :=
+    (indepFun_iff_map_prod_eq_prod_map_map hT hZ).mp hTZ
+  have hg : Measurable fun p : α × γ => (p.1, F p.1 p.2) :=
+    measurable_fst.prodMk hF
+  have hmeas : AEMeasurable (fun ω => (T ω, F (T ω) (Z ω))) μ :=
+    (hg.comp_aemeasurable (hT.prodMk hZ))
+  refine ⟨hmeas, ?_⟩
+  have key : (fun ω => (T ω, F (T ω) (Z ω))) = (fun p : α × γ => (p.1, F p.1 p.2)) ∘
+      (fun ω => (T ω, Z ω)) := rfl
+  rw [key, ← AEMeasurable.map_map_of_aemeasurable hg.aemeasurable (hT.prodMk hZ), hpair]
+  rcases isEmpty_or_nonempty α with hα | ⟨⟨t0⟩⟩
+  · exact (Measure.eq_zero_of_isEmpty _).trans (Measure.eq_zero_of_isEmpty _).symm
+  · have : IsFiniteMeasure ν := by rw [← h t0]; infer_instance
+    ext s hs
+    rw [Measure.map_apply hg hs, Measure.prod_apply (hg hs), Measure.prod_apply hs]
+    refine lintegral_congr fun t => ?_
+    have hFt : Measurable (F t) := hF.comp measurable_prodMk_left
+    rw [← h t, Measure.map_apply hFt (measurable_prodMk_left hs)]
+    rfl
 
 end ProbabilityTheory
