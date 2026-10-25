@@ -40,18 +40,14 @@ theorem exists_strictMono_eq_zero_of_mul_neg {k : ℕ} {f : ℝ → ℝ} {v : Fi
       ∀ i, c i ∈ Set.Ioo (v i.castSucc) (v i.succ) ∧ f (c i) = 0 := by
   have key : ∀ i : Fin k, ∃ c, c ∈ Set.Ioo (v i.castSucc) (v i.succ) ∧ f c = 0 := by
     intro i
-    have hab : v i.castSucc < v i.succ := hv Fin.castSucc_lt_succ
+    have hab : v i.castSucc ≤ v i.succ := (hv Fin.castSucc_lt_succ).le
     have hcont : ContinuousOn f (Set.Icc (v i.castSucc) (v i.succ)) :=
       hf.mono (Set.Icc_subset_Icc (hv.monotone (Fin.zero_le _)) (hv.monotone (Fin.le_last _)))
     rcases mul_neg_iff.1 (hsign i) with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · obtain ⟨c, hc, hc0⟩ := intermediate_value_Ioo' hab.le hcont ⟨h2, h1⟩
-      exact ⟨c, hc, hc0⟩
-    · obtain ⟨c, hc, hc0⟩ := intermediate_value_Ioo hab.le hcont ⟨h1, h2⟩
-      exact ⟨c, hc, hc0⟩
+    · exact intermediate_value_Ioo' hab hcont ⟨h2, h1⟩
+    · exact intermediate_value_Ioo hab hcont ⟨h1, h2⟩
   choose c hc using key
-  refine ⟨c, ?_, fun i => hc i⟩
-  intro i j hij
-  have h1 : v i.succ ≤ v j.castSucc := hv.monotone (Fin.succ_le_castSucc_iff.2 hij)
+  refine ⟨c, fun i j hij => ?_, hc⟩
   calc c i < v i.succ := (hc i).1.2
-    _ ≤ v j.castSucc := h1
+    _ ≤ v j.castSucc := hv.monotone (Fin.succ_le_castSucc_iff.2 hij)
     _ < c j := (hc j).1.1
