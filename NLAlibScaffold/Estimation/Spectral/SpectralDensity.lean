@@ -86,7 +86,9 @@ Proof: S, about 8 lines. Unfold `slqMeasure`; `Integrable.smul_measure_nnreal`,
 `integrable_finset_sum_measure`, `integrable_gaussQuadrature` (KS7). -/
 theorem integrable_slqMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) (q : ℕ) (f : ℝ → ℝ) :
     Integrable f (slqMeasure A Ω q) := by
-  sorry
+  unfold slqMeasure
+  exact (integrable_finsetSum_measure.mpr fun j _ =>
+    integrable_gaussQuadrature _ _ _).smul_measure_nnreal
 
 /-- The probe spectral measure integrates every $f$ to the Girard–Hutchinson estimate of
 $\operatorname{tr} f(\mathbf{A})/\lvert n\rvert$: for every square $\mathbf{A}$, every
