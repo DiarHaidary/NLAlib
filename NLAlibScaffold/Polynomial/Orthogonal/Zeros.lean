@@ -80,7 +80,40 @@ $s$ the roots of $R$; orthogonality from `isOrthogonalPolynomial_orthogonalPolyn
 Result: orthogonal-polynomial-zeros -/
 theorem IsMomentPosDef.card_roots_orthogonalPolynomial {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : Multiset.card (orthogonalPolynomial μ k).roots = k := by
-  sorry
+  set π := orthogonalPolynomial μ k with hπ
+  have hdeg : π.natDegree = k := natDegree_orthogonalPolynomial μ k
+  have hle : Multiset.card π.roots ≤ k := hdeg ▸ card_roots' π
+  refine hle.antisymm (not_lt.mp fun hlt => ?_)
+  obtain ⟨g, hg, -, hg0⟩ := exists_prod_multiset_X_sub_C_mul π
+  set R : ℝ[X] := (π.roots.map fun a => X - C a).prod with hR
+  have hRm : R.Monic := monic_multisetProd_X_sub_C _
+  have hgm : g.Monic := Monic.of_mul_monic_left hRm (hg ▸ monic_orthogonalPolynomial μ k)
+  have hgpos : ∀ x, 0 < g.eval x := fun x =>
+    zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg
+      (fun y hy => by
+        have := (mem_roots hgm.ne_zero).mpr hy
+        simp [hg0] at this)
+      (by rw [hgm.leadingCoeff]; exact zero_le_one)
+  have hRdeg : R.degree < k := by
+    rw [hR, degree_eq_natDegree hRm.ne_zero, natDegree_multiset_prod_X_sub_C_eq_card]
+    exact_mod_cast hlt
+  refine h.false_of_ae_nonneg_mul hμ (isOrthogonalPolynomial_orthogonalPolynomial hμ k) hRdeg
+    (Filter.Eventually.of_forall fun x => ?_) (s := R.roots.toFinset) ?_ ?_
+  · rw [← hπ, ← hg]
+    have : (R * g * R).eval x = (R.eval x) ^ 2 * g.eval x := by simp only [eval_mul]; ring
+    rw [this]
+    exact mul_nonneg (sq_nonneg _) (hgpos x).le
+  · refine (Multiset.toFinset_card_le _).trans_lt ?_
+    refine (card_roots' R).trans_lt ?_
+    rw [hR, natDegree_multiset_prod_X_sub_C_eq_card]
+    exact hlt
+  · intro x _ hx
+    rw [← hπ, ← hg] at hx
+    have : (R * g * R).eval x = (R.eval x) ^ 2 * g.eval x := by simp only [eval_mul]; ring
+    rw [this] at hx
+    rcases mul_eq_zero.mp hx with h0 | h0
+    · simpa [Multiset.mem_toFinset, mem_roots hRm.ne_zero] using pow_eq_zero_iff (two_ne_zero) |>.mp h0
+    · exact absurd h0 (hgpos x).ne'
 
 /-- The zeros of the orthogonal polynomial are simple: if $\mu$, finite and supported in
 $[a, b]$, is positive definite up to degree $k$, then the real zeros of $\pi_k$ are distinct.
