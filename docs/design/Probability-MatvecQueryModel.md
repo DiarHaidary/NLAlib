@@ -449,6 +449,9 @@ C1 size: ≈35 declarations on top of this stage.
 
 ## 6. Files and placement
 
+**Superseded at the D8 move (2026-10-25, decision LOWERBOUNDS-FOLDER (a)); see §15.** The paths
+below are those of the skeleton.
+
 New in `NLAlib` (written, built under `--wfail`): `Probability/QueryModel/Basic.lean` (the
 model and `gramSimulation`), `RandomMatrix/DeferredDecision.lean` (`resample`),
 `ForMathlib/InformationTheory/TotalVariation.lean` (`tvDist`). Scaffold at the same paths, plus
@@ -550,7 +553,7 @@ Shared names, so that neither stage duplicates the other:
 
 ## 11. Open questions for the maintainer
 
-**OQ1. Where the query model lives.** (a) `NLAlib/Probability/QueryModel/` (layer 1),
+**OQ1. Where the query model lives** (superseded by LOWERBOUNDS-FOLDER (a), §15). (a) `NLAlib/Probability/QueryModel/` (layer 1),
 `RandomMatrix/DeferredDecision.lean`, lower bounds next to their upper bounds
 (`LowRank/Optimality/`, later `Krylov/LinearSystems/LowerBound.lean`,
 `Estimation/Trace/LowerBound.lean`) (recommended). (b) A new top-level `NLAlib/LowerBounds/`
@@ -713,3 +716,23 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
   `finrank_span_le_card`; R1a outline (pointwise strong induction, 50 lines); D2 cites G1's
   hypothesis order; "at most `q` products" in `gramSimulation`; H2's `∀ τ` hypotheses explained.
 * Counts: 31 → 41 statements (S 13 → 22, M 11 → 12, L 6, H 1), 13 → 20 definitions.
+* **Placement at the D8 move (2026-10-25, maintainer decision LOWERBOUNDS-FOLDER (a)).** OQ1 (a)
+  is superseded: lower bounds form the top layer `NLAlib/LowerBounds/` (CONTRIBUTING §2, layer 5)
+  with topic subfolders, and a lemma they need that is not itself a lower bound stays in its topic
+  folder. The query model is not in `Probability/` (layer 1) and nothing below `LowerBounds/` may
+  import it, so "Krylov (layer 1) may import it for algorithm bridges" (§6) no longer holds: an
+  algorithm bridge (`rsvd`, Lanczos as a `QueryAlgorithm`) lives in `LowerBounds/` too. Files:
+
+  | File | Contents |
+  |---|---|
+  | `LowerBounds/QueryModel/Basic.lean` | the definitions of §2.1–2.2, Q1–Q13, C1–C2, R1a–R3 |
+  | `LowerBounds/QueryModel/Yao.lean` | Y1, Y2 |
+  | `LowerBounds/QueryModel/DeferredDecision.lean` | `resample`, D1–D3 |
+  | `LowerBounds/QueryModel/HiddenHaar.lean` | H2 |
+  | `LowerBounds/LowRank/RangeRecovery.lean` | R4a, R4b, R4–R6 |
+  | `RandomMatrix/Haar/Stabilizer.lean` (new) | H1: a fact about invariant laws, used outside query models |
+  | `RandomMatrix/Gaussian/{Invariance,Rank}.lean`, `ForMathlib/…` | G1, Z1, F1–F2, T1–T4, as in §6 |
+
+  The scaffold file `RandomMatrix/DeferredDecision.lean` (1738 lines, over the F10 ceiling) was
+  split by topic into the Gaussian (D1–D3), non-adaptive (H1) and adaptive (H2) files. R4a stays
+  with its only consumer (decision card RANK-STEP-HOME in `Review-LBA.json`).

@@ -8,7 +8,7 @@ module
 public import Mathlib.MeasureTheory.Measure.Prod
 public import Mathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Independence.Basic
-public import NLAlibScaffold.Probability.QueryModel.Basic
+public import NLAlib.LowerBounds.QueryModel.Basic
 
 /-!
 # Yao's principle for query algorithms
@@ -51,15 +51,7 @@ randomized algorithm with seed $s$:
 $\mathbb{P}[(X, \mathcal{A}_s(X)) \in B] \le \delta$.
 [Yao1977, Section 3]; there as the minimax principle for finite problems, here the averaging
 half on a probability space, any seed and input spaces, any oracle depending measurably on the
-input.
-Proof: M, about 25 lines. The law of $(s, X)$ is the product of the two laws
-(`ProbabilityTheory.indepFun_iff_map_prod_eq_prod_map_map`). The event is
-$\{(s, x) \mid (x, (\mathcal{A}_s).\mathrm{run}(O_x)) \in B\}$, measurable by
-`QueryAlgorithm.IsMeasurableFamily.measurable_run`. Fubini (`Measure.prod_apply`) writes its
-probability as the integral over the seed law of the probability of the section at $s$, which
-is the failure probability of the deterministic algorithm `alg s` under the law of $X$, at most
-$\delta$ by `h` (with `QueryAlgorithm.IsMeasurableFamily.isMeasurable` and `Measure.map_apply`).
-`IndepFun.measureReal_mem_le_add` (with $\delta_2 = 0$, `G = univ`) does exactly this step. -/
+input. -/
 theorem IsMeasurableFamily.measureReal_run_mem_le_of_indepFun [IsProbabilityMeasure μ]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {O : M → Q → R}
     (hO : Measurable (Function.uncurry O)) {s : Ω → S} {X : Ω → M} (hs : AEMeasurable s μ)
@@ -89,14 +81,7 @@ then for the randomized algorithm some input $x$ has
 $\rho$-probability at least $\delta$ of $(x, \mathcal{A}_s(x)) \in B$. Read with $B$ the failure
 set: a lower bound against one input distribution is a lower bound for randomized algorithms in
 the worst case.
-[Yao1977, Section 3]; [ZhangEtAl2026, Section 8]; there for finite or implicit input spaces.
-Proof: M, about 25 lines. By Tonelli on `ρ.prod ν` (`Measure.prod_apply`,
-`Measure.prod_apply_symm`, the event measurable by
-`QueryAlgorithm.IsMeasurableFamily.measurable_run`),
-$\int \rho(B^x)\,d\nu(x) = \int \nu(B_s)\,d\rho(s) \ge \delta$; if every $\rho(B^x) < \delta$ the
-left side is $< \delta$ (`MeasureTheory.lintegral_mono`, `ν` a probability measure; work in
-`ℝ≥0∞` with `ENNReal.ofReal δ` and convert with `measureReal_def` at the end; the case
-$\delta \le 0$ is immediate from `measureReal_nonneg` and `Nonempty M`, which `ν` gives). -/
+[Yao1977, Section 3]; [ZhangEtAl2026, Section 8]; there for finite or implicit input spaces. -/
 theorem IsMeasurableFamily.exists_le_measureReal_run_mem {alg : S → QueryAlgorithm Q R q β}
     (halg : IsMeasurableFamily alg) {O : M → Q → R} (hO : Measurable (Function.uncurry O))
     (ρ : Measure S) [IsProbabilityMeasure ρ] (ν : Measure M) [IsProbabilityMeasure ν]

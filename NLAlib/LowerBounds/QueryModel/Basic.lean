@@ -5,21 +5,63 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Data.Fin.Tuple.Basic
+public import Mathlib.Data.Matrix.Mul
+public import Mathlib.Data.Set.Card
+public import Mathlib.LinearAlgebra.Matrix.ConjTranspose
 public import Mathlib.LinearAlgebra.Matrix.Rank
+public import Mathlib.MeasureTheory.MeasurableSpace.Pi
+public import Mathlib.MeasureTheory.MeasurableSpace.Prod
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
-public import NLAlib.Probability.QueryModel.Basic
 
 /-!
-# Adaptive query algorithms: the theorems of stage LB-A
+# Adaptive query algorithms
 
-Statements for `NLAlib/Probability/QueryModel/Basic.lean` whose proofs are deferred
-(`docs/design/Probability-MatvecQueryModel.md`, §3.1). The responses of an algorithm are the
-oracle's values at its queries; two oracles that agree at the queries made on one of them give the
-same transcript (indistinguishability); non-adaptive queries do not depend on the transcript;
-measurable algorithms have measurable transcripts and outputs; the rank of the right (left)
-query matrix of pair queries is at most the number of right (left) products; the Gram simulation
-runs an algorithm for $\mathbf{X}\mathbf{X}^{\mathsf{H}}$ on two-sided queries to $\mathbf{X}$,
-with `q` products on each side.
+A deterministic algorithm that makes `q` adaptive queries to an oracle `f : Q → R` and then
+outputs a value of type `β`: the `i`-th query is a function of the first `i` responses, and the
+output is a function of all `q` of them. Randomness is not part of the object: a randomized
+algorithm is a family `S → QueryAlgorithm Q R q β` indexed by a seed, and a random input is a
+random variable on the probability space, so a lower bound is a statement about one product
+probability space and needs no Markov kernels (design note
+`docs/design/Probability-MatvecQueryModel.md` §2, decision QUERY-MODEL-SCOPE (a)).
+
+The matrix–vector query model is the oracle `A.mulVec` of a matrix `A : Matrix m n 𝕜`: a query is
+a vector $\mathbf{x}$, its response $\mathbf{A}\mathbf{x}$. Access to both $\mathbf{A}$ and
+$\mathbf{A}^{\mathsf{H}}$ is the oracle `twoSidedMulVec A`: a query is a pair
+$(\mathbf{x}, \mathbf{y})$ and its response
+$(\mathbf{A}\mathbf{x}, \mathbf{A}^{\mathsf{H}}\mathbf{y})$. Either side may be zero, and a zero
+side costs nothing: `rightCount τ` and `leftCount τ` count the rounds whose right part
+$\mathbf{x}$, respectively left part $\mathbf{y}$, is nonzero, so separate budgets for products
+with $\mathbf{A}$ and with $\mathbf{A}^{\mathsf{H}}$ are hypotheses `rightCount τ ≤ q_R`,
+`leftCount τ ≤ q_L` (design note `docs/design/Probability-MatvecQueryModel.md` §2.1, decisions
+OQ2 (c), OQ9). The number `q` of rounds bounds both.
+
+The definitions are total. `query i` is defined for every `i : ℕ`; only `i < q` is ever used.
+
+The responses of an algorithm are the oracle's values at its queries; two oracles that agree at
+the queries made on one of them give the same transcript (indistinguishability); non-adaptive
+queries do not depend on the transcript; measurable algorithms have measurable transcripts and
+outputs; the rank of the right (left) query matrix of pair queries is at most the number of right
+(left) products; the Gram simulation runs an algorithm for $\mathbf{X}\mathbf{X}^{\mathsf{H}}$
+on two-sided queries to $\mathbf{X}$, with `q` products on each side.
+
+## Main definitions
+
+* `NLAlib.QueryAlgorithm Q R q β`: the algorithm.
+* `NLAlib.QueryAlgorithm.history`, `NLAlib.QueryAlgorithm.queryAt`,
+  `NLAlib.QueryAlgorithm.transcript`, `NLAlib.QueryAlgorithm.run`: running it against an oracle.
+* `NLAlib.QueryAlgorithm.truncate`: the first `i` queries as an algorithm of its own.
+* `NLAlib.QueryAlgorithm.queries`, `NLAlib.QueryAlgorithm.queryMatrix`: the queries recomputed
+  from a transcript, and for vector queries the matrix with the queries as columns.
+* `NLAlib.twoSidedMulVec`: the two-sided matrix–vector oracle.
+* `NLAlib.QueryAlgorithm.rightQueryMatrix`, `NLAlib.QueryAlgorithm.leftQueryMatrix`,
+  `NLAlib.QueryAlgorithm.rightCount`, `NLAlib.QueryAlgorithm.leftCount`,
+  `NLAlib.QueryAlgorithm.IsOneSided`: the two sides of pair queries and their costs.
+* `NLAlib.QueryAlgorithm.IsNonAdaptive`: the queries do not depend on the responses.
+* `NLAlib.QueryAlgorithm.IsMeasurable`, `NLAlib.QueryAlgorithm.IsMeasurableFamily`: measurability
+  of an algorithm and joint measurability of a seeded family.
+* `NLAlib.QueryAlgorithm.gramSimulation`: a `2q`-round algorithm against the two-sided oracle of
+  $\mathbf{X}$ that runs a `q`-query algorithm against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$.
 
 ## Main results
 
@@ -45,6 +87,173 @@ with `q` products on each side.
 
 @[expose] public section
 
+open scoped Matrix
+
+namespace NLAlib
+
+/-- A deterministic **adaptive query algorithm** with `q` queries to an oracle `Q → R` and output
+in `β`. The `i`-th query is `query i` applied to the first `i` responses; the output is `output`
+applied to all `q` responses. Queries with index $i \ge q$ are never made. A randomized algorithm is
+a family `S → QueryAlgorithm Q R q β` indexed by a seed (`QueryAlgorithm.IsMeasurableFamily`). -/
+structure QueryAlgorithm (Q R : Type*) (q : ℕ) (β : Type*) where
+  /-- The `i`-th query as a function of the first `i` responses. -/
+  query : (i : ℕ) → (Fin i → R) → Q
+  /-- The output as a function of the `q` responses. -/
+  output : (Fin q → R) → β
+
+/-- The **two-sided matrix–vector oracle** of $\mathbf{A} \in \Bbbk^{m \times n}$: the query
+$(\mathbf{x}, \mathbf{y})$ returns $(\mathbf{A}\mathbf{x}, \mathbf{A}^{\mathsf{H}}\mathbf{y})$,
+one product with $\mathbf{A}$ (the right part) and one with $\mathbf{A}^{\mathsf{H}}$ (the left
+part). A zero part returns zero and costs nothing (`QueryAlgorithm.rightCount`,
+`QueryAlgorithm.leftCount`). -/
+def twoSidedMulVec {𝕜 m n : Type*} [Fintype m] [Fintype n] [NonUnitalNonAssocSemiring 𝕜] [Star 𝕜]
+    (A : Matrix m n 𝕜) (v : (n → 𝕜) × (m → 𝕜)) : (m → 𝕜) × (n → 𝕜) :=
+  (A *ᵥ v.1, Aᴴ *ᵥ v.2)
+
+namespace QueryAlgorithm
+
+variable {Q R β : Type*} {q : ℕ}
+
+/-- The first `i` responses of the algorithm run against the oracle `f`, by recursion on `i`:
+the next query is computed from the responses so far and its response appended. -/
+def history (alg : QueryAlgorithm Q R q β) (f : Q → R) : (i : ℕ) → Fin i → R
+  | 0 => Fin.elim0
+  | i + 1 => Fin.snoc (α := fun _ => R) (history alg f i) (f (alg.query i (history alg f i)))
+
+/-- The `i`-th query the algorithm makes when run against the oracle `f`. -/
+def queryAt (alg : QueryAlgorithm Q R q β) (f : Q → R) (i : ℕ) : Q :=
+  alg.query i (alg.history f i)
+
+/-- The **transcript**: the `q` responses of the algorithm run against the oracle `f`. -/
+def transcript (alg : QueryAlgorithm Q R q β) (f : Q → R) : Fin q → R :=
+  alg.history f q
+
+/-- The output of the algorithm run against the oracle `f`. -/
+def run (alg : QueryAlgorithm Q R q β) (f : Q → R) : β :=
+  alg.output (alg.transcript f)
+
+/-- The queries recomputed from a list `τ` of `q` responses: the `j`-th is `query j` applied to
+the first `j` entries of `τ`. On the transcript they are the queries made
+(`QueryAlgorithm.queryAt_eq_queries_transcript`). -/
+def queries (alg : QueryAlgorithm Q R q β) (τ : Fin q → R) (j : Fin q) : Q :=
+  alg.query j fun l => τ (Fin.castLE j.isLt.le l)
+
+/-- For vector queries, the **query matrix** of a transcript `τ`: its column `j` is the `j`-th
+query `alg.queries τ j`. -/
+def queryMatrix {𝕜 n : Type*} (alg : QueryAlgorithm (n → 𝕜) R q β) (τ : Fin q → R) :
+    Matrix n (Fin q) 𝕜 :=
+  Matrix.of fun r j => alg.queries τ j r
+
+section TwoSided
+
+variable {𝕜 m n : Type*}
+
+/-- For pair queries $(\mathbf{x}, \mathbf{y})$ (`twoSidedMulVec`), the **right query matrix**
+of a transcript `τ`: its column `j` is the right part $\mathbf{x}_j$ of the `j`-th query. -/
+def rightQueryMatrix (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β) (τ : Fin q → R) :
+    Matrix n (Fin q) 𝕜 :=
+  Matrix.of fun r j => (alg.queries τ j).1 r
+
+/-- For pair queries $(\mathbf{x}, \mathbf{y})$ (`twoSidedMulVec`), the **left query matrix** of
+a transcript `τ`: its column `j` is the left part $\mathbf{y}_j$ of the `j`-th query. -/
+def leftQueryMatrix (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β) (τ : Fin q → R) :
+    Matrix m (Fin q) 𝕜 :=
+  Matrix.of fun r j => (alg.queries τ j).2 r
+
+variable [Zero 𝕜]
+
+/-- The **number of right products** of a transcript `τ`: the rounds whose right part
+$\mathbf{x}_j$ is nonzero, each one product $\mathbf{A}\mathbf{x}_j$. A budget of $q_R$ products
+with $\mathbf{A}$ is the hypothesis `∀ τ, alg.rightCount τ ≤ q_R`. -/
+noncomputable def rightCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β) (τ : Fin q → R) :
+    ℕ :=
+  {j : Fin q | (alg.queries τ j).1 ≠ 0}.ncard
+
+/-- The **number of left products** of a transcript `τ`: the rounds whose left part
+$\mathbf{y}_j$ is nonzero, each one product $\mathbf{A}^{\mathsf{H}}\mathbf{y}_j$. A budget of
+$q_L$ products with $\mathbf{A}^{\mathsf{H}}$ is the hypothesis `∀ τ, alg.leftCount τ ≤ q_L`. -/
+noncomputable def leftCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β) (τ : Fin q → R) :
+    ℕ :=
+  {j : Fin q | (alg.queries τ j).2 ≠ 0}.ncard
+
+/-- A pair-query algorithm is **one-sided** when it makes no product with
+$\mathbf{A}^{\mathsf{H}}$: every left part is zero, for every transcript. -/
+def IsOneSided (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β) : Prop :=
+  ∀ τ, alg.leftCount τ = 0
+
+end TwoSided
+
+/-- The algorithm **truncated** to its first `i` queries, with no output: its transcript is the
+history of length `i` (`QueryAlgorithm.transcript_truncate`). Inductions over the number of
+queries (deferred decision) run through it. -/
+def truncate (alg : QueryAlgorithm Q R q β) (i : ℕ) : QueryAlgorithm Q R i Unit where
+  query := alg.query
+  output _ := ()
+
+/-- The truncated algorithm has the same histories. -/
+@[simp]
+theorem history_truncate (alg : QueryAlgorithm Q R q β) (f : Q → R) (i j : ℕ) :
+    (alg.truncate i).history f j = alg.history f j := by
+  induction j with
+  | zero => rfl
+  | succ j ih => rw [history, history, ih]; rfl
+
+/-- The transcript of the truncated algorithm is the history of length `i`. -/
+@[simp]
+theorem transcript_truncate (alg : QueryAlgorithm Q R q β) (f : Q → R) (i : ℕ) :
+    (alg.truncate i).transcript f = alg.history f i :=
+  history_truncate alg f i i
+
+/-- A query algorithm is **non-adaptive** when each of its `q` queries is the same for every
+history: the queries are fixed in advance (the sketching model). For pair queries both parts are
+fixed in advance: a one-pass algorithm with $\ell$ products with $\mathbf{A}$ and $p$ with
+$\mathbf{A}^{\mathsf{H}}$ is `IsNonAdaptive` with `rightCount ≤ ℓ` and `leftCount ≤ p`. -/
+def IsNonAdaptive (alg : QueryAlgorithm Q R q β) : Prop :=
+  ∀ i < q, ∀ h h' : Fin i → R, alg.query i h = alg.query i h'
+
+/-- A query algorithm is **measurable** when each of its `q` query maps and the output map are
+measurable (for the product σ-algebras on histories); the unused maps `query i`, $i \ge q$, are
+unconstrained. Lower bounds quantify over these. -/
+structure IsMeasurable [MeasurableSpace Q] [MeasurableSpace R] [MeasurableSpace β]
+    (alg : QueryAlgorithm Q R q β) : Prop where
+  /-- Each of the `q` query maps is measurable. -/
+  measurable_query : ∀ i < q, Measurable (alg.query i)
+  /-- The output map is measurable. -/
+  measurable_output : Measurable alg.output
+
+/-- A seeded family of query algorithms, a **randomized algorithm** with seed space `S`, is
+measurable when its query and output maps are jointly measurable in the seed and the history. -/
+structure IsMeasurableFamily {S : Type*} [MeasurableSpace S] [MeasurableSpace Q]
+    [MeasurableSpace R] [MeasurableSpace β] (alg : S → QueryAlgorithm Q R q β) : Prop where
+  /-- Each of the `q` query maps is jointly measurable in the seed and the history. -/
+  measurable_query : ∀ i < q, Measurable fun p : S × (Fin i → R) => (alg p.1).query i p.2
+  /-- The output map is jointly measurable in the seed and the transcript. -/
+  measurable_output : Measurable fun p : S × (Fin q → R) => (alg p.1).output p.2
+
+/-- The **Gram simulation**: from an algorithm with `q` queries to
+$\mathbf{A} = \mathbf{X}\mathbf{X}^{\mathsf{H}}$ (`X : Matrix d k 𝕜`), an algorithm with `2q`
+rounds against `twoSidedMulVec X` with the same output. Round `2i` is the left query
+$(\mathbf{0}, \mathbf{x}_i)$, which returns $\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ in the second
+component; round `2i + 1` is the right query $(\mathbf{X}^{\mathsf{H}}\mathbf{x}_i, \mathbf{0})$,
+which returns $\mathbf{X}\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ in the first. So it makes at most
+`q` products with each of $\mathbf{X}$ and $\mathbf{X}^{\mathsf{H}}$. The original responses are the
+first components of the odd responses (`QueryAlgorithm.run_gramSimulation`). It makes explicit
+what [ZhangEtAl2026, Section 4.1] uses implicitly: the analysis works with the factor
+$\mathbf{X}$ while the queries are to $\mathbf{X}\mathbf{X}^{\mathsf{T}}$. -/
+def gramSimulation {𝕜 d : Type*} [Zero 𝕜] (k : Type*) (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) :
+    QueryAlgorithm ((k → 𝕜) × (d → 𝕜)) ((d → 𝕜) × (k → 𝕜)) (2 * q) β where
+  query j h :=
+    if hj : j % 2 = 0 then
+      (0, alg.query (j / 2) fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1)
+    else
+      ((h ⟨j - 1, by omega⟩).2, 0)
+  output h := alg.output fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1
+
+end QueryAlgorithm
+
+end NLAlib
+
+
 open MeasureTheory
 open scoped Matrix
 
@@ -57,10 +266,7 @@ variable {Q R β : Type*} {q : ℕ}
 /-! ### Running an algorithm -/
 
 /-- Responses are oracle values: the `j`-th of the first `i` responses of an algorithm run
-against the oracle $f$ is $f$ at the `j`-th query, $h_j = f(x_j)$.
-Proof: S, about 8 lines. Induction on `i`; `Fin.lastCases j`; `history` unfolds by `Fin.snoc`
-(`Fin.snoc_castSucc` for the induction hypothesis, `Fin.snoc_last` and `queryAt` by `rfl` for
-the new entry). -/
+against the oracle $f$ is $f$ at the `j`-th query, $h_j = f(x_j)$. -/
 theorem history_apply (alg : QueryAlgorithm Q R q β) (f : Q → R) (i : ℕ) (j : Fin i) :
     alg.history f i j = f (alg.queryAt f j) := by
   induction i with
@@ -78,10 +284,7 @@ private theorem history_eq_history (alg : QueryAlgorithm Q R q β) (f : Q → R)
   rw [history_apply, history_apply]
 
 /-- The queries made are the queries of the transcript: the `j`-th query of an algorithm run
-against $f$ is `queries` evaluated at its transcript.
-Proof: S, about 6 lines. Unfold `queries`, `queryAt`; `congr 1`, `funext l`; both sides are
-$f(x_l)$ by `QueryAlgorithm.history_apply` (on the left `history f j`, on the right
-`transcript f = history f q` at `Fin.castLE _ l`, whose value is `l`). -/
+against $f$ is `queries` evaluated at its transcript. -/
 theorem queryAt_eq_queries_transcript (alg : QueryAlgorithm Q R q β) (f : Q → R) (j : Fin q) :
     alg.queryAt f j = alg.queries (alg.transcript f) j := by
   unfold queryAt queries transcript
@@ -91,11 +294,7 @@ theorem queryAt_eq_queries_transcript (alg : QueryAlgorithm Q R q β) (f : Q →
 
 /-- Indistinguishability: if a second oracle $g$ agrees with $f$ at every query the algorithm
 makes against $f$, then the algorithm makes the same queries against $g$ and gets the same
-transcript. This is the deterministic half of every adversary and deferred-decision argument.
-Proof: M, about 20 lines. Show `∀ i ≤ q, alg.history g i = alg.history f i` by induction on `i`:
-the step is `Fin.snoc` congruence with `alg.query i (history g i) = alg.query i (history f i)`
-(induction hypothesis) and `h ⟨i, _⟩`, rewritten by `QueryAlgorithm.queryAt_eq_queries_transcript`
-(the `i`-th query against $f$ is `alg.queries (alg.transcript f) i`). -/
+transcript. This is the deterministic half of every adversary and deferred-decision argument. -/
 theorem transcript_eq_of_forall_apply_queries_eq (alg : QueryAlgorithm Q R q β) {f g : Q → R}
     (h : ∀ j, g (alg.queries (alg.transcript f) j) = f (alg.queries (alg.transcript f) j)) :
     alg.transcript g = alg.transcript f := by
@@ -114,17 +313,14 @@ theorem transcript_eq_of_forall_apply_queries_eq (alg : QueryAlgorithm Q R q β)
   exact key q le_rfl
 
 /-- Indistinguishability of outputs: if $g$ agrees with $f$ at every query the algorithm makes
-against $f$, the algorithm outputs the same value against both.
-Proof: S, one line. `run`, `congrArg alg.output` of
-`QueryAlgorithm.transcript_eq_of_forall_apply_queries_eq`. -/
+against $f$, the algorithm outputs the same value against both. -/
 theorem run_eq_of_forall_apply_queries_eq (alg : QueryAlgorithm Q R q β) {f g : Q → R}
     (h : ∀ j, g (alg.queries (alg.transcript f) j) = f (alg.queries (alg.transcript f) j)) :
     alg.run g = alg.run f :=
   congrArg alg.output (transcript_eq_of_forall_apply_queries_eq alg h)
 
 /-- Non-adaptive queries are fixed: a non-adaptive algorithm makes the same queries whatever
-the responses, so `queries` does not depend on the transcript.
-Proof: S, two lines. `funext j`; `h j j.isLt _ _`. -/
+the responses, so `queries` does not depend on the transcript. -/
 theorem IsNonAdaptive.queries_eq {alg : QueryAlgorithm Q R q β} (h : alg.IsNonAdaptive)
     (τ τ' : Fin q → R) : alg.queries τ = alg.queries τ' := by
   funext j
@@ -139,11 +335,7 @@ variable [MeasurableSpace Q] [MeasurableSpace R] [MeasurableSpace β] {M : Type*
 
 /-- The transcript is measurable in the input: for a measurable algorithm and an oracle
 $O_x$ depending jointly measurably on an input $x$ and the query, $x \mapsto$ transcript is
-measurable.
-Proof: M, about 15 lines. Show `Measurable fun x => alg.history (O x) i` for every `i ≤ q` by
-induction: `measurable_pi_iff.2`, `Fin.lastCases`; the old entries by the induction hypothesis
-(`Fin.snoc_castSucc`), the new one is
-`hO.comp (measurable_id.prodMk ((halg.measurable_query i hi).comp ih))` (`Fin.snoc_last`). -/
+measurable. -/
 theorem IsMeasurable.measurable_transcript {alg : QueryAlgorithm Q R q β}
     (halg : alg.IsMeasurable) {O : M → Q → R} (hO : Measurable (Function.uncurry O)) :
     Measurable fun x => alg.transcript (O x) := by
@@ -165,19 +357,14 @@ theorem IsMeasurable.measurable_transcript {alg : QueryAlgorithm Q R q β}
   exact key q le_rfl
 
 /-- The output is measurable in the input, for a measurable algorithm and a jointly
-measurable oracle.
-Proof: S, one line. `halg.measurable_output.comp (halg.measurable_transcript hO)`
-(`QueryAlgorithm.IsMeasurable.measurable_transcript`). -/
+measurable oracle. -/
 theorem IsMeasurable.measurable_run {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable)
     {O : M → Q → R} (hO : Measurable (Function.uncurry O)) :
     Measurable fun x => alg.run (O x) :=
   halg.measurable_output.comp (halg.measurable_transcript hO)
 
 /-- The query matrix is measurable in the transcript, for a measurable algorithm with vector
-queries. This is what makes the projectors onto the query spans random matrices.
-Proof: S, about 6 lines. `measurable_pi_iff` twice (entries of `Matrix.of`); entry `(r, j)` is
-`(measurable_pi_apply r).comp ((halg.measurable_query j j.isLt).comp (measurable_pi_iff.2 fun l =>
-measurable_pi_apply _))`. -/
+queries. This is what makes the projectors onto the query spans random matrices. -/
 theorem IsMeasurable.measurable_queryMatrix {𝕜 n : Type*} [MeasurableSpace 𝕜]
     {alg : QueryAlgorithm (n → 𝕜) R q β} (halg : alg.IsMeasurable) :
     Measurable (alg.queryMatrix : (Fin q → R) → Matrix n (Fin q) 𝕜) := by
@@ -186,10 +373,7 @@ theorem IsMeasurable.measurable_queryMatrix {𝕜 n : Type*} [MeasurableSpace �
     (measurable_pi_iff.2 fun l => measurable_pi_apply _))
 
 /-- The right query matrix is measurable in the transcript, for a measurable algorithm with
-pair queries $(\mathbf{x}, \mathbf{y})$.
-Proof: S, about 6 lines. As `QueryAlgorithm.IsMeasurable.measurable_queryMatrix`, with
-`measurable_fst` after the query map: entry `(r, j)` is `(measurable_pi_apply r).comp
-(measurable_fst.comp ((halg.measurable_query j j.isLt).comp _))`. -/
+pair queries $(\mathbf{x}, \mathbf{y})$. -/
 theorem IsMeasurable.measurable_rightQueryMatrix {𝕜 m n : Type*} [MeasurableSpace 𝕜]
     {alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β} (halg : alg.IsMeasurable) :
     Measurable (alg.rightQueryMatrix : (Fin q → R) → Matrix n (Fin q) 𝕜) := by
@@ -198,9 +382,7 @@ theorem IsMeasurable.measurable_rightQueryMatrix {𝕜 m n : Type*} [MeasurableS
     ((halg.measurable_query j j.isLt).comp (measurable_pi_iff.2 fun l => measurable_pi_apply _)))
 
 /-- The left query matrix is measurable in the transcript, for a measurable algorithm with
-pair queries $(\mathbf{x}, \mathbf{y})$.
-Proof: S, about 6 lines. As `QueryAlgorithm.IsMeasurable.measurable_rightQueryMatrix`, with
-`measurable_snd`. -/
+pair queries $(\mathbf{x}, \mathbf{y})$. -/
 theorem IsMeasurable.measurable_leftQueryMatrix {𝕜 m n : Type*} [MeasurableSpace 𝕜]
     {alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β} (halg : alg.IsMeasurable) :
     Measurable (alg.leftQueryMatrix : (Fin q → R) → Matrix m (Fin q) 𝕜) := by
@@ -230,10 +412,7 @@ private theorem measurable_history_family {S : Type*} [MeasurableSpace S]
       exact (measurable_pi_apply j).comp (ih (by omega))
 
 /-- A randomized algorithm has a jointly measurable output: for a measurable seeded family
-and a jointly measurable oracle, (seed, input) $\mapsto$ output is measurable.
-Proof: M, about 15 lines. As `QueryAlgorithm.IsMeasurable.measurable_transcript`, by induction
-on the history length `i ≤ q`, with `halg.measurable_query i hi` composed with
-`measurable_fst.prodMk ih`; then `halg.measurable_output.comp (measurable_fst.prodMk _)`. -/
+and a jointly measurable oracle, (seed, input) $\mapsto$ output is measurable. -/
 theorem IsMeasurableFamily.measurable_run {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {O : M → Q → R}
     (hO : Measurable (Function.uncurry O)) :
@@ -242,18 +421,14 @@ theorem IsMeasurableFamily.measurable_run {S : Type*} [MeasurableSpace S]
     (measurable_fst.prodMk (measurable_history_family halg hO q le_rfl))
 
 /-- Each member of a measurable family is measurable: fixing the seed of a measurable
-randomized algorithm gives a measurable deterministic one.
-Proof: S, two lines. Compose the joint maps with `measurable_prodMk_left` (`fun h => (s, h)`),
-`fun i hi => (halg.measurable_query i hi).comp measurable_prodMk_left`. -/
+randomized algorithm gives a measurable deterministic one. -/
 theorem IsMeasurableFamily.isMeasurable {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) (s : S) :
     (alg s).IsMeasurable :=
   ⟨fun i hi => (halg.measurable_query i hi).comp measurable_prodMk_left,
     halg.measurable_output.comp measurable_prodMk_left⟩
 
-/-- Truncating a measurable algorithm keeps it measurable, for `i ≤ q`.
-Proof: S, two lines. `⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩`
-(`QueryAlgorithm.truncate`). -/
+/-- Truncating a measurable algorithm keeps it measurable, for `i ≤ q`. -/
 theorem IsMeasurable.truncate {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable) {i : ℕ}
     (hi : i ≤ q) : (alg.truncate i).IsMeasurable :=
   ⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩
@@ -294,10 +469,7 @@ private lemma rank_le_ncard_of_col_eq_zero {m : Type*} (M : Matrix m (Fin q) �
     _ = S.ncard := by rw [← Nat.card_eq_fintype_card, Nat.card_coe_set_eq]
 
 /-- The right query span is bounded by the number of right products: the rank of the right
-query matrix is at most the number of rounds with a nonzero right part.
-Proof: S, about 10 lines. `Matrix.rank_eq_finrank_span_cols`; the span of all columns is the span
-of the nonzero ones (`Submodule.span_le`, zero columns lie in every submodule), whose finrank is
-at most their number (`finrank_span_le_card`, `Set.ncard_eq_toFinset_card'`). -/
+query matrix is at most the number of rounds with a nonzero right part. -/
 theorem rank_rightQueryMatrix_le_rightCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β)
     (τ : Fin q → R) : (alg.rightQueryMatrix τ).rank ≤ alg.rightCount τ :=
   rank_le_ncard_of_col_eq_zero _ _ fun j hj r => by
@@ -305,8 +477,7 @@ theorem rank_rightQueryMatrix_le_rightCount (alg : QueryAlgorithm ((n → 𝕜) 
     simp [QueryAlgorithm.rightQueryMatrix, hj]
 
 /-- The left query span is bounded by the number of left products: the rank of the left query
-matrix is at most the number of rounds with a nonzero left part.
-Proof: S, about 10 lines. As `QueryAlgorithm.rank_rightQueryMatrix_le_rightCount`. -/
+matrix is at most the number of rounds with a nonzero left part. -/
 theorem rank_leftQueryMatrix_le_leftCount (alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β)
     (τ : Fin q → R) : (alg.leftQueryMatrix τ).rank ≤ alg.leftCount τ :=
   rank_le_ncard_of_col_eq_zero _ _ fun j hj r => by
@@ -353,20 +524,7 @@ private theorem gramSimulation_query_odd {𝕜 d k : Type*} [Zero 𝕜]
 
 /-- The Gram simulation reproduces the history: after `2 * i` rounds of `alg.gramSimulation k`
 against `twoSidedMulVec X`, the first components of the odd responses are the first `i`
-responses of `alg` against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$. Holds for every `i`.
-Proof: M, about 50 lines. Prefer, to `Fin.snoc` rewriting under `Fin (2 * (i + 1))`, a pointwise
-strong induction on the entry `l`: by `QueryAlgorithm.history_apply` on both sides, entry `l` is
-`(f (queryAt (2 * l + 1))).1 = X *ᵥ (f (queryAt (2 * l))).2`, and that is
-`X *ᵥ (Xᴴ *ᵥ alg.query l (decoded history of length 2 * l))`, which the induction hypothesis
-at the entries below `l` identifies with `(X * Xᴴ) *ᵥ alg.queryAt _ l`. Round `2i` is
-$(\mathbf{0}, \mathbf{x}_i)$ with $\mathbf{x}_i$ = `alg.query i` of the decoded history, equal to
-`alg.history (X * Xᴴ).mulVec i` by the induction hypothesis (the decoding at `2 * i + 1` and at
-`2 * i` read the same odd entries, `Fin.snoc_castSucc`); its response has second component
-$\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$. Round `2i + 1` is
-$(\mathbf{X}^{\mathsf{H}}\mathbf{x}_i, \mathbf{0})$, whose first component response is
-$\mathbf{X}\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ (`twoSidedMulVec`, `Matrix.mulVec_mulVec`);
-`Nat.mul_mod_right`, `Nat.mul_div_cancel_left`, `Nat.add_mod` and `omega` for the parity
-bookkeeping. -/
+responses of `alg` against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$. Holds for every `i`. -/
 theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (X : Matrix d k 𝕜) (i : ℕ) :
     (fun l : Fin i => ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)
@@ -408,21 +566,14 @@ $\mathbf{X}$ therefore simulate products with $\mathbf{X}\mathbf{X}^{\mathsf{H}}
 with each of $\mathbf{X}$ and $\mathbf{X}^{\mathsf{H}}$
 (`QueryAlgorithm.rightCount_gramSimulation_le`, `QueryAlgorithm.leftCount_gramSimulation_le`).
 [ZhangEtAl2026, Section 4.1]; there implicit: the analysis works with the factor $\mathbf{X}$
-while the queries are to $\mathbf{X}\mathbf{X}^{\mathsf{T}}$.
-Proof: S, about 3 lines. Unfold `run`, `transcript`, `gramSimulation`; `congrArg alg.output` of
-`QueryAlgorithm.history_gramSimulation` at `i = q`. -/
+while the queries are to $\mathbf{X}\mathbf{X}^{\mathsf{T}}$. -/
 theorem run_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (X : Matrix d k 𝕜) :
     (alg.gramSimulation k).run (twoSidedMulVec X) = alg.run (X * Xᴴ).mulVec := by
   unfold QueryAlgorithm.run QueryAlgorithm.transcript
   exact congrArg alg.output (history_gramSimulation alg X q)
 
-/-- The Gram simulation of a measurable algorithm is measurable.
-Proof: S, about 10 lines. Each query map, for `j < 2 * q`, is a `dite` on the fixed index `j`;
-both branches are pairs of measurable maps (`Measurable.prodMk`, `measurable_const`), the even
-one through `halg.measurable_query (j / 2) (by omega)` composed with the measurable decoding
-`fun h l => (h ⟨2 * l + 1, _⟩).1` (`measurable_pi_iff`, `measurable_fst`), the odd one
-`measurable_snd.comp (measurable_pi_apply _)`; the output likewise. -/
+/-- The Gram simulation of a measurable algorithm is measurable. -/
 theorem IsMeasurable.gramSimulation [MeasurableSpace 𝕜] [MeasurableSpace β]
     {alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β} (halg : alg.IsMeasurable) :
     (alg.gramSimulation k).IsMeasurable := by
@@ -451,11 +602,7 @@ private theorem ncard_le_of_forall_mod_two_eq {J : Set (Fin (2 * q))} (r : ℕ)
   omega
 
 /-- The Gram simulation makes at most `q` products with $\mathbf{X}$: for every transcript,
-only odd-numbered rounds have a nonzero right part.
-Proof: S, about 10 lines. The set of rounds with a nonzero right part is contained in the odd
-indices (`gramSimulation`, the even query is `(0, _)`), on which `fun j => (j : ℕ) / 2` into
-`Fin q` is injective (`omega`); `Set.ncard_le_ncard_of_injOn` and `Set.ncard_univ`,
-`Nat.card_eq_fintype_card`, `Fintype.card_fin`. -/
+only odd-numbered rounds have a nonzero right part. -/
 theorem rightCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).rightCount τ ≤ q :=
   ncard_le_of_forall_mod_two_eq 1 fun j hj => by
@@ -465,9 +612,7 @@ theorem rightCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → �
     rw [dif_pos (by omega)]
 
 /-- The Gram simulation makes at most `q` products with $\mathbf{X}^{\mathsf{H}}$: for every
-transcript, only even-numbered rounds have a nonzero left part.
-Proof: S, about 10 lines. As `QueryAlgorithm.rightCount_gramSimulation_le`, with the even indices
-(the odd query is `(_, 0)`). -/
+transcript, only even-numbered rounds have a nonzero left part. -/
 theorem leftCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).leftCount τ ≤ q :=
   ncard_le_of_forall_mod_two_eq 0 fun j hj => by
@@ -476,9 +621,7 @@ theorem leftCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → �
     simp [QueryAlgorithm.queries, QueryAlgorithm.gramSimulation, h]
 
 /-- The right queries of the Gram simulation span at most `q` dimensions: for every
-transcript, the right query matrix has rank at most `q`.
-Proof: S, one line. `(QueryAlgorithm.rank_rightQueryMatrix_le_rightCount _ τ).trans
-(QueryAlgorithm.rightCount_gramSimulation_le alg τ)`. -/
+transcript, the right query matrix has rank at most `q`. -/
 theorem rank_rightQueryMatrix_gramSimulation_le
     (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) :
     ((alg.gramSimulation k).rightQueryMatrix τ).rank ≤ q :=

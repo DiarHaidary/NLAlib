@@ -6,29 +6,35 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Probability.IdentDistrib
+public import NLAlib.ForMathlib.Probability.Independence.Basic
+public import NLAlib.LowerBounds.QueryModel.Basic
+public import NLAlib.Matrix.Basic.Projector
 public import NLAlib.Probability.Measurability.Matrix
-public import NLAlib.RandomMatrix.DeferredDecision
+public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.Rank
-public import NLAlibScaffold.ForMathlib.Probability.Independence.Basic
-public import NLAlibScaffold.Probability.QueryModel.Basic
-public import NLAlibScaffold.RandomMatrix.Gaussian.Invariance
 
 /-!
-# Deferred decision for adaptive matrix–vector queries to a Gaussian matrix
+# Deferred decision for adaptive matrix–vector queries
 
-Statements for `NLAlib/RandomMatrix/DeferredDecision.lean` whose proofs are deferred
-(`docs/design/Probability-MatvecQueryModel.md`, §3.4).
+After an adaptive algorithm has queried a random matrix, the part of the matrix that the
+queries have not touched is, conditionally on the transcript, distributed as before. For a
+standard Gaussian $\mathbf{X} \in \mathbb{R}^{d \times k}$ queried through `twoSidedMulVec`
+(products $\mathbf{X}\mathbf{w}$ and $\mathbf{X}^{\mathsf{H}}\mathbf{u}$), the untouched part is
+$\mathbf{E}\mathbf{X}\mathbf{F}$, with $\mathbf{E}$ and $\mathbf{F}$ the orthogonal projectors onto
+the complements of the spans of the left queries $\mathbf{u}_i$ and of the right queries
+$\mathbf{w}_i$; it can be replaced by an independent copy without changing the joint law of the
+transcript and the matrix (design note `docs/design/Probability-MatvecQueryModel.md` §3.4).
 
-**Gaussian matrices, two-sided queries.** An algorithm queries a standard Gaussian
-$\mathbf{X} \in \mathbb{R}^{d \times k}$ through `twoSidedMulVec` (pair queries
-$(\mathbf{w}, \mathbf{u})$ answered by $(\mathbf{X}\mathbf{w}, \mathbf{X}^{\mathsf{H}}\mathbf{u})$,
-chosen adaptively). Replacing the unqueried block
-$\mathbf{E}\mathbf{X}\mathbf{F}$ by the same block of an independent copy changes neither the
-transcript (`QueryAlgorithm.transcript_resample`) nor the joint law of transcript and matrix
+The replaced matrix is `QueryAlgorithm.resample`. It gives the same transcript
+(`QueryAlgorithm.transcript_resample`) and the same joint law of transcript and matrix
 (`QueryAlgorithm.IsMeasurable.identDistrib_resample_of_hasLaw_gaussianMatrix`); in frames, the
 unqueried block is a standard Gaussian matrix independent of the transcript. The stabilizer
 form for right unitarily invariant laws is in `NLAlib/RandomMatrix/Haar/Stabilizer.lean`
-(non-adaptive) and `NLAlib/RandomMatrix/HiddenHaar.lean` (adaptive).
+(non-adaptive) and `NLAlib/LowerBounds/QueryModel/HiddenHaar.lean` (adaptive).
+
+## Main definitions
+
+* `NLAlib.QueryAlgorithm.resample`: the matrix with its unqueried block replaced.
 
 ## Main results
 
@@ -40,6 +46,36 @@ form for right unitarily invariant laws is in `NLAlib/RandomMatrix/Haar/Stabiliz
 -/
 
 @[expose] public section
+
+open scoped Matrix
+
+namespace NLAlib
+
+namespace QueryAlgorithm
+
+variable {𝕜 : Type*} [RCLike 𝕜] {d k β : Type*} [Fintype d] [Fintype k] [DecidableEq d]
+  [DecidableEq k] {q : ℕ}
+
+/-- The **resampled matrix** of an algorithm with `q` pair queries to `twoSidedMulVec X`,
+$\mathbf{X} \in \Bbbk^{d \times k}$: with $\mathbf{E} = \mathbf{I} - \mathbf{P}_{\mathbf{U}}$ and
+$\mathbf{F} = \mathbf{I} - \mathbf{P}_{\mathbf{W}}$, where the columns of $\mathbf{U}$ and
+$\mathbf{W}$ are the left parts and the right parts of the queries made on $\mathbf{X}$
+(`QueryAlgorithm.leftQueryMatrix`, `QueryAlgorithm.rightQueryMatrix`),
+$$\mathsf{resample}(\mathbf{X}, \mathbf{X}') = \mathbf{X} - \mathbf{E}\mathbf{X}\mathbf{F} +
+\mathbf{E}\mathbf{X}'\mathbf{F}\,.$$
+It agrees with $\mathbf{X}$ on every query, so the algorithm cannot tell them apart
+(`QueryAlgorithm.transcript_resample`). -/
+noncomputable def resample (alg : QueryAlgorithm ((k → 𝕜) × (d → 𝕜)) ((d → 𝕜) × (k → 𝕜)) q β)
+    (X X' : Matrix d k 𝕜) : Matrix d k 𝕜 :=
+  let τ := alg.transcript (twoSidedMulVec X)
+  let E := 1 - rangeProjector (alg.leftQueryMatrix τ)
+  let F := 1 - rangeProjector (alg.rightQueryMatrix τ)
+  X - E * X * F + E * X' * F
+
+end QueryAlgorithm
+
+end NLAlib
+
 
 open MeasureTheory ProbabilityTheory
 open scoped Matrix
@@ -66,18 +102,7 @@ private theorem twoSidedMulVec_add_mul_mul {𝕜 : Type*} [RCLike 𝕜] {E : Mat
 /-- The resampled matrix gives the same transcript: an algorithm making `q` pair queries to
 `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, gets the same responses from
 `alg.resample X X'`, which differs from $\mathbf{X}$ only in the block
-$\mathbf{E}\mathbf{X}\mathbf{F}$ orthogonal to all left queries and all right queries.
-Proof: M, about 25 lines. `QueryAlgorithm.transcript_eq_of_forall_apply_queries_eq`. For the
-`j`-th query $(\mathbf{w}, \mathbf{u})$, $\mathbf{w}$ is column `j` of `alg.rightQueryMatrix τ`
-and $\mathbf{u}$ column `j` of `alg.leftQueryMatrix τ`, so
-$\mathbf{E}\mathbf{u} = \mathbf{0}$ and $\mathbf{F}\mathbf{w} = \mathbf{0}$ (`rangeProjector`
-fixes its range: `rangeProjector_mul_self` or `Matrix.mul_apply` at a column). Then
-`twoSidedMulVec Y (w, u)` is $(\mathbf{Y}\mathbf{w}, \mathbf{Y}^{\mathsf{H}}\mathbf{u})$
-(`twoSidedMulVec`, `Prod.ext`), and the two correction terms vanish:
-$\mathbf{E}\mathbf{Z}\mathbf{F}\mathbf{w} = \mathbf{0}$ and
-$(\mathbf{E}\mathbf{Z}\mathbf{F})^{\mathsf{H}}\mathbf{u}
-= \mathbf{F}\mathbf{Z}^{\mathsf{H}}\mathbf{E}\mathbf{u} = \mathbf{0}$ (projectors are Hermitian,
-`IsStarProjection` of `rangeProjector`). -/
+$\mathbf{E}\mathbf{X}\mathbf{F}$ orthogonal to all left queries and all right queries. -/
 theorem transcript_resample [DecidableEq d] [DecidableEq k] {𝕜 : Type*} [RCLike 𝕜]
     (alg : QueryAlgorithm ((k → 𝕜) × (d → 𝕜)) ((d → 𝕜) × (k → 𝕜)) q β) (X X' : Matrix d k 𝕜) :
     alg.transcript (twoSidedMulVec (alg.resample X X')) = alg.transcript (twoSidedMulVec X) := by
@@ -537,29 +562,7 @@ conditionally on the transcript, the unqueried block is a fresh Gaussian block. 
 [ZhangEtAl2026, Lemma 4.1]; [BravermanHazanSimchowitzWoodworth2020, Lemma 3.4]; there with
 entries $\mathcal{N}(0, 1/d)$, orthonormal queries, at most $s$ of them, and a $\sigma$-field,
 conditional laws and a transcript-measurable rotation; here unit variance, basis-free (no
-orthonormality assumption on the queries) and no bound on `q`.
-Proof: L, about 70 lines. Induction on `q` for all algorithms, through the truncated algorithm
-`alg.truncate i` (`QueryAlgorithm.truncate`, measurable by
-`QueryAlgorithm.IsMeasurable.truncate`), whose transcript is `alg.history _ i`
-(`QueryAlgorithm.transcript_truncate`);
-state the invariant for `history i` with the projectors $\mathbf{E}_i$, $\mathbf{F}_i$ of the
-first `i` queries. Base `i = 0`: the projectors are `1` (`rangeProjector` of a matrix with no
-columns is `0`), $\widetilde{\mathbf{X}} = \mathbf{X}'$, and $\mathbf{X}$, $\mathbf{X}'$ have the
-same law. Step: the next query is a measurable function of the history, so (history, response,
-matrix) is a measurable image of (history, matrix); apply the invariant at `i` jointly with a
-third independent copy $\mathbf{X}''$ (extend $\Omega$ by `Measure.prod` with
-`gaussianMatrix d k`, `IdentDistrib` transfers back through the projection). Then freeze
-(`ProbabilityTheory.IndepFun.identDistrib_prodMk_of_forall_map_eq` with
-$T = (\text{history}, \mathbf{X})$, $Z = (\mathbf{X}', \mathbf{X}'')$); for fixed $T$ the needed
-identity of laws is `NLAlib.identDistrib_mul_mul_of_hasLaw_gaussianMatrix` with
-$\mathbf{E}_1 = \mathbf{E}_i \succeq \mathbf{E}_2 = \mathbf{E}_{i+1}$ (range inclusion of the
-query matrices, `rangeProjector` monotone), plus the observations that the new response does not
-see the block $\mathbf{E}_{i+1}(\cdot)\mathbf{F}_{i+1}$ and that
-$\mathbf{E}_i\mathbf{E}_{i+1} = \mathbf{E}_{i+1}$ (the hypothesis `E₁ * E₂ = E₂` of G1).
-Measurability of the projectors:
-`QueryAlgorithm.IsMeasurable.measurable_leftQueryMatrix`,
-`QueryAlgorithm.IsMeasurable.measurable_rightQueryMatrix`, `measurable_rangeProjector`. Split the
-step into a private lemma if it exceeds 80 lines. -/
+orthonormality assumption on the queries) and no bound on `q`. -/
 theorem IsMeasurable.identDistrib_resample_of_hasLaw_gaussianMatrix [DecidableEq d]
     [DecidableEq k] [MeasurableSpace β]
     {alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) ((d → ℝ) × (k → ℝ)) q β} (halg : alg.IsMeasurable)
@@ -598,22 +601,7 @@ $\mathbb{P}_\tau \otimes \mathcal{N}(0, 1)^{r \times s}$.
 orthonormal queries and at most $s$ of them, here unit variance, any queries, no bound on `q`);
 [Shamir2026, Lemma 3] (the Haar analogue, non-adaptive).
 For a non-adaptive algorithm the frames may be fixed, and this is
-`NLAlib.indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix` on both sides.
-Proof: M, about 40 lines. On the extended space `μ.prod (gaussianMatrix d k)` take
-$\mathbf{X}'$ the second coordinate (independent of $\mathbf{X}$). By
-`QueryAlgorithm.IsMeasurable.identDistrib_resample_of_hasLaw_gaussianMatrix` composed with the
-measurable map $(t, \mathbf{Y}) \mapsto (t, \mathbf{W}_L(t)^{\mathsf{H}}\mathbf{Y}\mathbf{W}_R(t))$
-(`IdentDistrib.comp`), the pair has the law of
-$(\tau, \mathbf{W}_L^{\mathsf{H}}\widetilde{\mathbf{X}}\mathbf{W}_R)$, and
-$\mathbf{W}_L^{\mathsf{H}}\widetilde{\mathbf{X}}\mathbf{W}_R
-= \mathbf{W}_L^{\mathsf{H}}\mathbf{X}'\mathbf{W}_R$ because
-$\mathbf{W}_L^{\mathsf{H}}\mathbf{E} = \mathbf{W}_L^{\mathsf{H}}$ and
-$\mathbf{F}\mathbf{W}_R = \mathbf{W}_R$ (from `hWL`, `hWR`: the frames are orthogonal to the
-ranges of the left and right query matrices, `rangeProjector`).
-Then freeze with $T = \tau$, $Z = \mathbf{X}'$
-(`ProbabilityTheory.IndepFun.hasLaw_prodMk_prod_of_forall_map_eq`): for fixed $t$ the law of
-$\mathbf{W}_L(t)^{\mathsf{H}}\mathbf{X}'\mathbf{W}_R(t)$ is `gaussianMatrix r s`
-(`hasLaw_mul_mul_of_hasLaw_gaussianMatrix`). -/
+`NLAlib.indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix` on both sides. -/
 theorem IsMeasurable.hasLaw_prodMk_conjTranspose_mul_mul_of_hasLaw_gaussianMatrix
     [MeasurableSpace β] {r s : Type*} [Fintype r] [Fintype s] [DecidableEq r] [DecidableEq s]
     {alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) ((d → ℝ) × (k → ℝ)) q β} (halg : alg.IsMeasurable)

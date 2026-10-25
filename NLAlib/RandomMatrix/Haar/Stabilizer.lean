@@ -6,20 +6,19 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Probability.IdentDistrib
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Probability.Measurability.Matrix
 public import NLAlib.RandomMatrix.Haar.Basic
 public import NLAlib.RandomMatrix.UnitaryInvariance
-public import NLAlibScaffold.ForMathlib.Probability.Independence.Basic
 
 /-!
 # The stabilizer form of right unitary invariance
 
-Statements for `NLAlib/RandomMatrix/Haar/Stabilizer.lean` whose proofs are deferred
-(`docs/design/Probability-MatvecQueryModel.md`, §3.4). For a right unitarily invariant law
-(Gaussian, Haar) of $\mathbf{X}$ and a fixed block of queries $\mathbf{V}$, the matrix may be
-rotated on the right by any orthogonal matrix that fixes $\mathbf{V}$, chosen as a function of the
-response $\mathbf{X}\mathbf{V}$, without changing the joint law of response and matrix. The
-adaptive form is
+For a right unitarily invariant law (Gaussian, Haar) of $\mathbf{X}$ and a fixed block of queries
+$\mathbf{V}$, the matrix may be rotated on the right by any orthogonal matrix that fixes
+$\mathbf{V}$, chosen as a function of the response $\mathbf{X}\mathbf{V}$, without changing the
+joint law of response and matrix (design note `docs/design/Probability-MatvecQueryModel.md` §3.4).
+The adaptive form is
 `NLAlib.QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant`.
 
 ## Main results
@@ -178,29 +177,7 @@ $\mathbf{S}(\mathbf{Y})\mathbf{V} = \mathbf{V}$. Then $(\mathbf{X}\mathbf{V}, \m
 law of $(\mathbf{X}\mathbf{V}, \mathbf{X}\mathbf{S}(\mathbf{X}\mathbf{V}))$: given what the
 queries revealed, $\mathbf{X}$ is invariant under the rotations that fix the queries.
 [Shamir2026, Lemma 3]; there for a Haar orthogonal matrix and a fixed subspace, stated with
-conditional laws.
-Proof: L, about 60 lines. Fix a frame $\mathbf{W} \in \mathbb{R}^{n \times c}$ of the orthogonal
-complement of the column span of $\mathbf{V}$
-(`c := Fin (card n - finrank (span (range Vᵀ)))` internally, so `p` need not be finite; the
-library's orthonormal completion), and on the extended space `μ.prod (haarFrame c c)` let
-$\mathbf{O}_s = \mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}} +
-\mathbf{W}\mathbf{O}\mathbf{W}^{\mathsf{H}}$,
-a random orthogonal matrix fixing $\mathbf{V}$, independent of $\mathbf{X}$. (1)
-$(\mathbf{X}\mathbf{V}, \mathbf{X})$ and $(\mathbf{X}\mathbf{V}, \mathbf{X}\mathbf{O}_s)$ have
-the same law by
-freezing `ProbabilityTheory.IndepFun.identDistrib_prodMk_of_forall_map_eq` with $T = \mathbf{O}$
-and right invariance (`hasLaw_mul_const_of_isRightUnitarilyInvariant`), since
-$\mathbf{O}_s\mathbf{V} = \mathbf{V}$. (2) Every orthogonal $\mathbf{S}$ fixing $\mathbf{V}$ is
-$\mathbf{I} - \mathbf{W}\mathbf{W}^{\mathsf{H}} + \mathbf{W}\mathbf{s}\mathbf{W}^{\mathsf{H}}$ with
-$\mathbf{s}$ orthogonal, so $\mathbf{O}_s\mathbf{S}$ has the law of $\mathbf{O}_s$
-(`isRightUnitarilyInvariant_haarFrame`). Freezing with $T = \mathbf{X}$, $Z = \mathbf{O}$ shows
-that $(\mathbf{X}\mathbf{V}, \mathbf{X}\mathbf{O}_s\mathbf{S}(\mathbf{X}\mathbf{V}))$ and
-$(\mathbf{X}\mathbf{V}, \mathbf{X}\mathbf{O}_s)$ have the same law. (3) Pushing (1) forward by
-the measurable $\Phi(\mathbf{Y}, \mathbf{Z}) = (\mathbf{Y}, \mathbf{Z}\mathbf{S}(\mathbf{Y}))$
-(`IdentDistrib.comp`) and using $\mathbf{X}\mathbf{O}_s\mathbf{V} = \mathbf{X}\mathbf{V}$, the
-pair $(\mathbf{X}\mathbf{V}, \mathbf{X}\mathbf{S}(\mathbf{X}\mathbf{V}))$ has the law of
-$(\mathbf{X}\mathbf{V}, \mathbf{X}\mathbf{O}_s\mathbf{S}(\mathbf{X}\mathbf{V}))$; chain (3), (2),
-(1). -/
+conditional laws. -/
 theorem identDistrib_prodMk_mul_of_isRightUnitarilyInvariant [IsProbabilityMeasure μ]
     {p : Type*} {ν : Measure (Matrix m n ℝ)} [IsRightUnitarilyInvariant ν]
     {X : Ω → Matrix m n ℝ} (hX : HasLaw X ν μ) (V : Matrix n p ℝ)

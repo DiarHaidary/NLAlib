@@ -2,6 +2,26 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## LB-A matvec query model: proofs (2026-10-25)
+
+Branch `cleanup/lba` (worktree `nlalib-cleanup-lba`), over `integrate/lba` with `origin/main`
+(40c9704, reorg/layers) and `cleanup/s10` (9ba7a44, the `LowerBounds/` layer) merged. All 41
+LB-A statements are proved (workflow harness: haiku; opus on the six L targets and H2, three
+haiku escalations to opus), cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into
+`NLAlib` with their `Proof:` lines removed (D8). Placement (decision LOWERBOUNDS-FOLDER (a); the
+design note's `Probability/QueryModel/` (layer 1) is superseded):
+`LowerBounds/QueryModel/{Basic, Yao, DeferredDecision, HiddenHaar}.lean` (the model and
+`gramSimulation`, formerly `NLAlib/Probability/QueryModel/Basic.lean`; Yao's principle; the
+Gaussian deferred decision with `resample`, formerly `NLAlib/RandomMatrix/DeferredDecision.lean`;
+the adaptive stabilizer form H2) and `LowerBounds/LowRank/RangeRecovery.lean` (R4a, R4b, R4–R6).
+Tools that are not lower bounds joined their topic files: the non-adaptive stabilizer form H1 in
+the new `RandomMatrix/Haar/Stabilizer.lean`, G1 in `RandomMatrix/Gaussian/Invariance`, Z1 in
+`RandomMatrix/Gaussian/Rank`, the freezing lemma F1–F2 in
+`ForMathlib/Probability/Independence/Basic`, T1–T4 in `ForMathlib/InformationTheory/TotalVariation`.
+The scaffold's `RandomMatrix/DeferredDecision` (1738 lines) was split by topic before the move.
+The scaffold is empty again. No statement changed; no public declaration added. Reports:
+`reports/Review-LBA-Cleanup.md` and `reports/Stage-LBA.md` in the harness repository.
+
 ## S10 lower bounds for specific estimators: proofs (2026-10-25)
 
 Branch `cleanup/s10` (worktree `nlalib-cleanup-s10`), over `integrate/s10` with `origin/main`

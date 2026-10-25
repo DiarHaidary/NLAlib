@@ -5,19 +5,19 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Probability.QueryModel.Basic
-public import NLAlibScaffold.RandomMatrix.Haar.Stabilizer
+public import NLAlib.LowerBounds.QueryModel.Basic
+public import NLAlib.RandomMatrix.Haar.Stabilizer
 
 /-!
 # Deferred decision for adaptive queries to a unitarily invariant matrix
 
-Statements for `NLAlib/RandomMatrix/HiddenHaar.lean` whose proofs are deferred
-(`docs/design/Probability-MatvecQueryModel.md`, §3.4). An algorithm queries a matrix
-$\mathbf{X}$ with a right unitarily invariant law (Gaussian, Haar) through `twoSidedMulVec`. Then
-$\mathbf{X}$ may be rotated on the right by any orthogonal matrix that fixes what the transcript
-has revealed, chosen as a function of the transcript: the right parts of the queries and the
-second components (products $\mathbf{X}^{\mathsf{H}}\mathbf{u}$) of the responses. The joint
-law of transcript and matrix does not change.
+An algorithm queries a matrix $\mathbf{X}$ with a right unitarily invariant law (Gaussian, Haar)
+through `twoSidedMulVec`. Then $\mathbf{X}$ may be rotated on the right by any orthogonal matrix
+that fixes what the transcript has revealed, chosen as a function of the transcript: the right parts
+of the queries and the second components (products $\mathbf{X}^{\mathsf{H}}\mathbf{u}$) of the
+responses. The joint law of transcript and matrix does not change (design note
+`docs/design/Probability-MatvecQueryModel.md` §3.4). The proof randomizes with the polar factor of a
+Gaussian matrix compressed to the complement of the revealed vectors and inducts over the rounds.
 
 ## Main results
 
@@ -230,7 +230,7 @@ private theorem map_mul_right_stabRand {c : Type*} [Fintype c] (V : Matrix n c �
 /-- Freezing the first coordinate of a product measure: if `F t` and `G t` push `γ₂` to the
 same law for every `t`, the two maps of `γ₁ ⊗ γ₂` agree. -/
 private theorem map_prod_eq_of_forall_map_eq {α γ δ : Type*} [MeasurableSpace α]
-    [MeasurableSpace γ] [MeasurableSpace δ] {γ₁ : Measure α} {γ₂ : Measure γ} [SFinite γ₁]
+    [MeasurableSpace γ] [MeasurableSpace δ] {γ₁ : Measure α} {γ₂ : Measure γ}
     [SFinite γ₂] {F G : α → γ → δ} (hF : Measurable fun p : α × γ => F p.1 p.2)
     (hG : Measurable fun p : α × γ => G p.1 p.2) (h : ∀ t, γ₂.map (F t) = γ₂.map (G t)) :
     (γ₁.prod γ₂).map (fun p => F p.1 p.2) = (γ₁.prod γ₂).map (fun p => G p.1 p.2) := by
@@ -644,69 +644,7 @@ $\mathbf{A}^{\mathsf{H}}\mathbf{x}$ and $(\mathbf{A}\mathbf{x}, \mathbf{U}^{\mat
 each a two-sided query sequence to $\mathbf{U}$; here for every right unitarily invariant law.
 The hypotheses quantify over every `τ`, also those no run produces; for a one-sided algorithm the
 second components of actual transcripts vanish, and `S` may be anything off them that is
-measurable and orthogonal.
-Proof: H, about 300 lines, in six private lemmas; no transcript-dependent frames (their column
-count would vary with the history). For a fixed $\mathbf{V} \in \mathbb{R}^{n \times c}$ let the
-*stabilizer randomizer* be $\mathbf{R}_{\mathbf{V}}(\mathbf{G}) =
-\operatorname{polar}(\mathbf{P}_{\mathbf{V}} + \mathbf{E}\mathbf{G}\mathbf{E})$,
-$\mathbf{E} = \mathbf{I} - \mathbf{P}_{\mathbf{V}}$ (`rangeProjector`, `polarFactor`), with
-$\mathbf{G}$ an independent `gaussianMatrix n n` (as `haarFrame` is the polar factor of a
-Gaussian), set to `1` on the null set where it is not orthogonal.
-(0) Almost surely $\mathbf{R}_{\mathbf{V}}(\mathbf{G})$ is orthogonal (`HasOrthonormalCols`)
-and fixes $\mathbf{V}$ (block diagonal: identity on
-the range of $\mathbf{V}$, an a.s. invertible block on its complement, through a frame of the
-*fixed* $\mathbf{V}$); for every orthogonal $\mathbf{s}$ with $\mathbf{s}\mathbf{V} = \mathbf{V}$,
-$\mathbf{R}_{\mathbf{V}}\mathbf{s} \overset{d}{=} \mathbf{R}_{\mathbf{V}} \overset{d}{=}
-\mathbf{s}\mathbf{R}_{\mathbf{V}}$ ($\mathbf{s}$ commutes with $\mathbf{P}_{\mathbf{V}}$ and
-$\mathbf{E}$; `polarFactor` equivariance; two-sided invariance of the Gaussian,
-`hasLaw_mul_const_of_isRightUnitarilyInvariant` and its transpose).
-(i′) One right query on the stabilizer: with $\mathbf{R} = \mathbf{R}_{\mathbf{V}}(\mathbf{G})$,
-$(\mathbf{R}\mathbf{w}, \mathbf{R}) \overset{d}{=} (\mathbf{R}\mathbf{w},
-\mathbf{R}\mathbf{s}(\mathbf{R}\mathbf{w}))$ for measurable $\mathbf{s}$ fixing $\mathbf{V}$ and
-$\mathbf{w}$: right-multiply by the randomizer of $[\mathbf{V}\;\mathbf{w}]$ (an independent
-copy, extend $\Omega$ by `Measure.prod`), freeze
-(`ProbabilityTheory.IndepFun.identDistrib_prodMk_of_forall_map_eq`) and use (0), as in steps
-(1)–(3) of `NLAlib.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant`.
-(i″) One left query on the stabilizer: $(\mathbf{R}^{\mathsf{H}}\mathbf{g}, \mathbf{R})
-\overset{d}{=}
-(\mathbf{R}^{\mathsf{H}}\mathbf{g}, \mathbf{R}\mathbf{s}(\mathbf{R}^{\mathsf{H}}\mathbf{g}))$
-for $\mathbf{s}$ fixing $\mathbf{V}$ and $\mathbf{h}$ at $\mathbf{h}$: left-multiply by the
-randomizer of $[\mathbf{V}\;\mathbf{g}]$ (it does not change
-$\mathbf{R}^{\mathsf{H}}\mathbf{g}$), and for fixed $\mathbf{r}$,
-$\mathbf{r}\mathbf{s}\mathbf{r}^{\mathsf{H}}$ fixes $[\mathbf{V}\;\mathbf{g}]$, so (0) applies.
-(i‴) One pair round: $(\mathbf{R}\mathbf{w}, \mathbf{R}^{\mathsf{H}}\mathbf{g}, \mathbf{R})
-\overset{d}{=} (\mathbf{R}\mathbf{w}, \mathbf{R}^{\mathsf{H}}\mathbf{g},
-\mathbf{R}\mathbf{s}(\mathbf{R}\mathbf{w}, \mathbf{R}^{\mathsf{H}}\mathbf{g}))$: (i′), then for
-frozen $\mathbf{R} = \mathbf{r}$ (i″) on the stabilizer of $[\mathbf{V}\;\mathbf{w}]$ with
-the vector $\mathbf{r}^{\mathsf{H}}\mathbf{g}$, pushed forward by
-$\mathbf{R}' \mapsto \mathbf{r}\mathbf{R}'$ (`IdentDistrib.comp`), chained.
-(ii) Haar, adaptive, two-sided ($\mathbf{O}$ with law `haarFrame n n`): induction on the rounds
-through `alg.truncate i` (`QueryAlgorithm.truncate`, `QueryAlgorithm.IsMeasurable.truncate`,
-`QueryAlgorithm.transcript_truncate`), invariant: for every measurable $\mathbf{S}$ fixing the
-vectors revealed by the length-`i` history $h_i$, $(h_i, \mathbf{O}) \overset{d}{=}
-(h_i, \mathbf{O}\mathbf{S}(h_i))$. With $\mathbf{V}(h)$ the matrix of revealed vectors (right
-query matrix and second response components side by side, `Matrix.fromCols`), the invariant and
-freezing over $\mathbf{G}$ give $(h_i, \mathbf{O}) \overset{d}{=}
-(h_i, \mathbf{O}\mathbf{R}_{\mathbf{V}(h_i)}(\mathbf{G}))$; push both sides through
-$(h, \mathbf{O}) \mapsto (h, \text{next response}, \mathbf{O})$ and
-$(h, \mathbf{O}) \mapsto (h, \text{next response}, \mathbf{O}\mathbf{S}(\cdot))$, freeze
-$(h_i, \mathbf{O}) = (h, \mathbf{o})$ and apply (i‴) with $\mathbf{V} = \mathbf{V}(h)$,
-$\mathbf{w}$ the next right part, $\mathbf{g} = \mathbf{o}^{\mathsf{H}}\mathbf{u}$,
-$\mathbf{s}(a, b) = \mathbf{S}(h, (\mathbf{o}a, b))$, pushed forward by
-$(a, b, \mathbf{R}) \mapsto (\mathbf{o}a, b, \mathbf{o}\mathbf{R})$.
-(iii) General $\nu$. With $\mathbf{O}$ Haar independent of $\mathbf{X}$, $\mathbf{X}\mathbf{O}$
-has law $\nu$ (`hasLaw_mul_const_of_isRightUnitarilyInvariant`, freezing $T = \mathbf{O}$), so
-$(\tau, \mathbf{X}) \overset{d}{=} (\tau(\mathbf{X}\mathbf{O}), \mathbf{X}\mathbf{O})$. Freeze
-$\mathbf{Y} = \mathbf{X}$: queries to $\mathbf{Y}\mathbf{O}$ are queries to $\mathbf{O}$ (right
-part $\mathbf{w}$ answered by $\mathbf{O}\mathbf{w}$ and multiplied by $\mathbf{Y}$, left part
-$\mathbf{u}$ sent as $\mathbf{Y}^{\mathsf{H}}\mathbf{u}$), with the same revealed vectors in
-$\mathbb{R}^n$; apply (ii) to that algorithm and push forward by
-$\mathbf{Z} \mapsto \mathbf{Y}\mathbf{Z}$. Throughout, the transcript of
-$\mathbf{X}\mathbf{S}$ is that of $\mathbf{X}$
-(`QueryAlgorithm.transcript_eq_of_forall_apply_queries_eq`:
-$\mathbf{X}\mathbf{S}\mathbf{w} = \mathbf{X}\mathbf{w}$,
-$\mathbf{S}^{\mathsf{H}}\mathbf{X}^{\mathsf{H}}\mathbf{u} = \mathbf{X}^{\mathsf{H}}\mathbf{u}$).
-State (0), (i′), (i″), (i‴) as private lemmas first; escalate early if (ii) does not close. -/
+measurable and orthogonal. -/
 theorem QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant
     [Fintype m] [IsProbabilityMeasure μ] {β : Type*} [MeasurableSpace β] {q : ℕ}
     {alg : QueryAlgorithm ((n → ℝ) × (m → ℝ)) ((m → ℝ) × (n → ℝ)) q β} (halg : alg.IsMeasurable)

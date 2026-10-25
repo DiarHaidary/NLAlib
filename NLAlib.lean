@@ -153,8 +153,13 @@ public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian
+public import NLAlib.LowerBounds.LowRank.RangeRecovery
 public import NLAlib.LowerBounds.LowRank.RotationInvariant
 public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
+public import NLAlib.LowerBounds.QueryModel.Basic
+public import NLAlib.LowerBounds.QueryModel.DeferredDecision
+public import NLAlib.LowerBounds.QueryModel.HiddenHaar
+public import NLAlib.LowerBounds.QueryModel.Yao
 public import NLAlib.LowerBounds.Regression.SketchAndSolve
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.Dilation
@@ -366,7 +371,6 @@ public import NLAlib.Probability.QuadraticForm.HansonWright
 public import NLAlib.Probability.QuadraticForm.HansonWright.LinearImage
 public import NLAlib.Probability.QuadraticForm.HansonWright.OffDiagonal
 public import NLAlib.Probability.QuadraticForm.Moments
-public import NLAlib.Probability.QueryModel.Basic
 public import NLAlib.Probability.SubExponential.Basic
 public import NLAlib.Probability.SubExponential.Tail
 public import NLAlib.Probability.SubGaussian.Basic
@@ -375,7 +379,6 @@ public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.Probability.SubGaussianVector.Basic
 public import NLAlib.Probability.SubGaussianVector.Norm
 public import NLAlib.Probability.Tail
-public import NLAlib.RandomMatrix.DeferredDecision
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.BlockTail
@@ -394,6 +397,7 @@ public import NLAlib.RandomMatrix.Haar.Basic
 public import NLAlib.RandomMatrix.Haar.Blocks
 public import NLAlib.RandomMatrix.Haar.Moments
 public import NLAlib.RandomMatrix.Haar.Sphere
+public import NLAlib.RandomMatrix.Haar.Stabilizer
 public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
 public import NLAlib.RandomMatrix.Rademacher.Basic
