@@ -237,7 +237,10 @@ Proof: S, two lines. Compose the joint maps with `measurable_prodMk_left` (`fun 
 theorem IsMeasurableFamily.isMeasurable {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) (s : S) :
     (alg s).IsMeasurable := by
-  sorry
+  have hq : ∀ i < q, Measurable ((alg s).query i) := fun i hi =>
+    (halg.measurable_query i hi).comp measurable_prodMk_left
+  have ho : Measurable (alg s).output := halg.measurable_output.comp measurable_prodMk_left
+  exact ⟨hq, ho⟩
 
 /-- **Truncating a measurable algorithm keeps it measurable**, for `i ≤ q`.
 Proof: S, two lines. `⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩`
