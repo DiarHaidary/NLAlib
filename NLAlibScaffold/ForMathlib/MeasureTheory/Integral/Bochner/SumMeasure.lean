@@ -61,14 +61,9 @@ theorem measureReal_Iic_eq_sum {μ : Measure ℝ} [IsFiniteMeasure μ]
     μ.real (Set.Iic x) = ∑ y ∈ s with y ≤ x, μ.real {y} := by
   have hae : Set.Iic x =ᵐ[μ] ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ) := by
     filter_upwards [hμ] with ω hω
-    apply propext
-    change ω ∈ Set.Iic x ↔ ω ∈ ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ)
-    simp only [Set.mem_Iic, Set.mem_iUnion, Finset.mem_filter, Set.mem_singleton_iff, exists_prop]
-    constructor
-    · intro h
-      exact ⟨ω, ⟨hω, h⟩, rfl⟩
-    · rintro ⟨y, ⟨_, hy⟩, rfl⟩
-      exact hy
+    change (ω ∈ Set.Iic x) = (ω ∈ ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ))
+    simp only [Set.mem_Iic, Set.mem_iUnion, Finset.mem_filter, Set.mem_singleton_iff,
+      exists_prop, exists_eq_right', hω, true_and]
   rw [measureReal_congr hae,
     measureReal_biUnion_finset (fun a _ b _ hab => Set.disjoint_singleton.2 hab)
       (fun _ _ => measurableSet_singleton _) (fun _ _ => measure_ne_top _ _)]
@@ -95,14 +90,10 @@ theorem abs_integral_sub_integral_le_of_lipschitzOnWith {μ ν : Measure ℝ}
     |∫ x, f x ∂μ - ∫ x, f x ∂ν| ≤ (|f b| + L * (b - a)) * K := by
   rw [integral_eq_sum_measureReal_singleton_mul hμ f,
     integral_eq_sum_measureReal_singleton_mul hν f, ← Finset.sum_sub_distrib]
-  have hterm : ∀ x ∈ s, μ.real {x} * f x - ν.real {x} * f x
-      = f x * (μ.real {x} - ν.real {x}) := fun x _ => by ring
-  rw [Finset.sum_congr rfl hterm]
+  simp_rw [← sub_mul, mul_comm _ (f _)]
   refine Finset.abs_sum_mul_le_of_lipschitzOnWith hs hab hf (fun y => μ.real {y} - ν.real {y})
     hK0 fun x hx => ?_
-  have h := hK x hx
-  simp only [Finset.sum_sub_distrib, ← measureReal_Iic_eq_sum hμ x,
-    ← measureReal_Iic_eq_sum hν x]
-  exact h
+  rw [Finset.sum_sub_distrib, ← measureReal_Iic_eq_sum hμ x, ← measureReal_Iic_eq_sum hν x]
+  exact hK x hx
 
 end MeasureTheory
