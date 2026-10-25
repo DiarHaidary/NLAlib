@@ -168,12 +168,9 @@ theorem isFiniteMeasure_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (
   isFiniteMeasure_withDensity ((integrable_eval_of_ae_mem_Icc hμ (X - C c)).congr
     (ae_of_all μ fun x => by simp) : Integrable (fun x => x - c) μ).2.ne
 
--- The instance is unused but is part of the stated signature (decision UNUSED-FINITE,
--- reports/Review-KS8-Cleanup.md); `omit` would change the statement.
-set_option linter.unusedSectionVars false in
+omit [IsFiniteMeasure μ] in
 /-- The Radau modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$ and every
 $c$, almost every point of `radauMeasure μ c` lies in $[a, b]$. -/
-@[nolint unusedArguments]
 theorem ae_mem_Icc_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (c : ℝ) :
     ∀ᵐ x ∂radauMeasure μ c, x ∈ Set.Icc a b := by
   unfold radauMeasure
@@ -609,12 +606,9 @@ theorem isFiniteMeasure_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
   isFiniteMeasure_withDensity ((integrable_eval_of_ae_mem_Icc hμ ((X - C a) * (X - C b))).congr
     (ae_of_all μ fun x => by simp) : Integrable (fun x => (x - a) * (x - b)) μ).2.ne
 
--- The instance is unused but is part of the stated signature (decision UNUSED-FINITE,
--- reports/Review-KS8-Cleanup.md); `omit` would change the statement.
-set_option linter.unusedSectionVars false in
+omit [IsFiniteMeasure μ] in
 /-- The Lobatto modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$, almost
 every point of `lobattoMeasure μ a b` lies in $[a, b]$. -/
-@[nolint unusedArguments]
 theorem ae_mem_Icc_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ Set.Icc a b :=
   (withDensity_absolutelyContinuous μ _).ae_le hμ
