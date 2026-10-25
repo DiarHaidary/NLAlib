@@ -515,7 +515,12 @@ theorem isUniformApproxOn_minimaxError_iff_exists_alternatesOn {f : ℝ → ℝ}
         (minimaxError f (Set.Icc a b) n) ↔
       ∃ ε : ℝ, Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b) ε ∧
         AlternatesOn (fun x => f x - p.eval x) (Set.Icc a b) (n + 2) ε := by
-  sorry
+  constructor
+  · intro h
+    exact ⟨_, h, alternatesOn_of_isUniformApproxOn_minimaxError hab hf hp h⟩
+  · rintro ⟨ε, hε, halt⟩
+    rw [halt.minimaxError_eq hp hε]
+    exact hε
 
 /-- **The best approximation is unique**: for $a < b$ and $f$ continuous on $[a, b]$, two real
 polynomials $p, q$ of degree at most $n$ that are both within $E_n(f; [a, b])$ of $f$ on
