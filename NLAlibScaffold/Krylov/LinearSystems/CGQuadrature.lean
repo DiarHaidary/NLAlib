@@ -168,6 +168,23 @@ theorem _root_.Matrix.PosDef.integral_radauQuadrature_sub_le_re_quadForm_sub_cgI
     ∫ x, x⁻¹ ∂radauQuadrature (spectralMeasure A (b - A *ᵥ x₀)) a' q -
         ∫ x, x⁻¹ ∂gaussQuadrature (spectralMeasure A (b - A *ᵥ x₀)) q ≤
       RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) := by
-  sorry
+  have hf : ContinuousOn (fun x : ℝ => x⁻¹) (Set.Icc a a') :=
+    continuousOn_inv₀.mono fun x hx => ne_of_gt (lt_of_lt_of_le ha hx.1)
+  have hf' : ContDiffOn ℝ (2 * q + 1 : ℕ) (fun x : ℝ => x⁻¹) (Set.Ioo a a') :=
+    contDiffOn_id.inv fun x hx => ne_of_gt (ha.trans hx.1)
+  have hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q + 1) (fun x : ℝ => x⁻¹) x ≤ 0 := by
+    intro x hx
+    have hx0 : 0 < x := ha.trans hx.1
+    rw [iteratedDeriv_eq_iterate, show (fun x : ℝ => x⁻¹) = Inv.inv from rfl, iter_deriv_inv]
+    have hodd : (-1 : ℝ) ^ (2 * q + 1) = -1 := by rw [pow_succ, pow_mul]; norm_num
+    rw [hodd]
+    have hpos : (0 : ℝ) < x ^ (-1 - ((2 * q + 1 : ℕ) : ℤ)) := zpow_pos hx0 _
+    have hfac : (0 : ℝ) < ((2 * q + 1).factorial : ℝ) := by positivity
+    nlinarith [mul_pos hfac hpos]
+  have h := integral_radauQuadrature_le_re_quadForm_cfc_of_iteratedDeriv_nonpos hs haa' hf q hf' hD
+    (b - A *ᵥ x₀)
+  have h2 := Matrix.PosDef.re_quadForm_sub_cgIterate_eq_integral_sub hA hxs x₀ q
+  rw [integral_spectralMeasure] at h2
+  linarith
 
 end NLAlib
