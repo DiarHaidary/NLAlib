@@ -86,25 +86,8 @@ $k$.
 Proof: M, about 35 lines, one job with `monic_orthogonalPolynomial` (the shared two-step
 induction; see there). -/
 theorem natDegree_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) :
-    (orthogonalPolynomial μ k).natDegree = k := by
-  induction k using Nat.twoStepInduction with
-  | zero => simp [orthogonalPolynomial_zero]
-  | one => rw [orthogonalPolynomial_one, natDegree_X_sub_C]
-  | more n h0 h1 =>
-      -- `π_{n+1} ≠ 0`, since its `natDegree` is positive.
-      have hne : orthogonalPolynomial μ (n + 1) ≠ 0 := by
-        intro h
-        rw [h] at h1
-        simp at h1
-      have hA : ((X - C (jacobiAlpha μ (n + 1))) * orthogonalPolynomial μ (n + 1)).natDegree
-          = n + 2 := by
-        rw [natDegree_mul (monic_X_sub_C _).ne_zero hne, natDegree_X_sub_C, h1]
-        omega
-      have hB : (C (jacobiBeta μ (n + 1)) * orthogonalPolynomial μ n).natDegree ≤ n := by
-        have hB' := natDegree_mul_le (p := C (jacobiBeta μ (n + 1)))
-          (q := orthogonalPolynomial μ n)
-        rwa [natDegree_C, zero_add, h0] at hB'
-      rw [orthogonalPolynomial_add_two, natDegree_sub_eq_left_of_natDegree_lt (by omega), hA]
+    (orthogonalPolynomial μ k).natDegree = k :=
+  (monic_and_natDegree_orthogonalPolynomial μ k).2
 
 /-- The orthogonal polynomial $\pi_k$ of every measure $\mu$ on $\mathbb{R}$ has degree $k$, as
 `Polynomial.degree`.
@@ -114,6 +97,16 @@ theorem degree_orthogonalPolynomial (μ : Measure ℝ) (k : ℕ) :
     (orthogonalPolynomial μ k).degree = k := by
   rw [degree_eq_natDegree (monic_orthogonalPolynomial μ k).ne_zero,
     natDegree_orthogonalPolynomial]
+
+/-- $X\pi_k - \pi_{k+1}$ has degree at most $k$: both are monic of degree $k + 1$. -/
+private theorem degree_X_mul_sub_orthogonalPolynomial_succ_lt (μ : Measure ℝ) (k : ℕ) :
+    (X * orthogonalPolynomial μ k - orthogonalPolynomial μ (k + 1)).degree <
+      ((k + 1 : ℕ) : WithBot ℕ) := by
+  have hXm : (X * orthogonalPolynomial μ k).Monic := monic_X.mul (monic_orthogonalPolynomial μ k)
+  have hXd : (X * orthogonalPolynomial μ k).degree = ((k + 1 : ℕ) : WithBot ℕ) := by
+    rw [degree_mul, degree_X, degree_orthogonalPolynomial]; norm_cast; omega
+  exact hXd ▸ degree_sub_lt_left (by rw [hXd, degree_orthogonalPolynomial]) hXm.ne_zero
+    (by rw [hXm.leadingCoeff, (monic_orthogonalPolynomial μ _).leadingCoeff])
 
 /-- The off-diagonal recurrence coefficients are nonnegative: $\beta_k \ge 0$ for every measure
 $\mu$ on $\mathbb{R}$ and every $k$.
@@ -130,6 +123,40 @@ theorem jacobiBeta_nonneg (μ : Measure ℝ) (k : ℕ) : 0 ≤ jacobiBeta μ k :
       exact div_nonneg (integral_nonneg fun x => sq_nonneg _)
         (integral_nonneg fun x => sq_nonneg _)
 
+/-- Matching moments transfer the squared norm of $\pi_j(\mu)$, a polynomial of degree $2j$. -/
+private theorem MatchesMoments.integral_orthogonalPolynomial_sq_eq {N j : ℕ}
+    (h : MatchesMoments μ ν N) (hj : 2 * j < N) :
+    ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ =
+      ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂ν := by
+  have hsq := h (orthogonalPolynomial μ j ^ 2) (by
+    rw [degree_eq_natDegree ((monic_orthogonalPolynomial μ j).pow 2).ne_zero, natDegree_pow,
+      natDegree_orthogonalPolynomial]
+    exact_mod_cast hj)
+  simpa only [eval_pow] using hsq
+
+/-- If $\pi_j(\mu) = \pi_j(\nu)$ and the first $2j + 2$ moments match, then
+$\alpha_j(\mu) = \alpha_j(\nu)$: both integrals are of polynomials of degree at most $2j + 1$. -/
+private theorem MatchesMoments.jacobiAlpha_eq_of_eq {N j : ℕ} (h : MatchesMoments μ ν N)
+    (hj : 2 * j + 1 < N) (hp : orthogonalPolynomial μ j = orthogonalPolynomial ν j) :
+    jacobiAlpha μ j = jacobiAlpha ν j := by
+  have hm := (monic_orthogonalPolynomial μ j).pow 2
+  have hx := h (X * orthogonalPolynomial μ j ^ 2) (by
+    rw [degree_eq_natDegree (monic_X.mul hm).ne_zero, monic_X.natDegree_mul hm, natDegree_X,
+      natDegree_pow, natDegree_orthogonalPolynomial]
+    exact_mod_cast (by omega : 1 + 2 * j < N))
+  simp only [eval_mul, eval_X, eval_pow] at hx
+  rw [jacobiAlpha, jacobiAlpha, ← hp, hx, h.integral_orthogonalPolynomial_sq_eq (by omega)]
+
+/-- If $\pi_{j+1}$ and $\pi_j$ of $\mu$ and $\nu$ agree and the first $2j + 3$ moments match,
+then $\beta_{j+1}(\mu) = \beta_{j+1}(\nu)$. -/
+private theorem MatchesMoments.jacobiBeta_succ_eq_of_eq {N j : ℕ} (h : MatchesMoments μ ν N)
+    (hj : 2 * (j + 1) < N) (hp1 : orthogonalPolynomial μ (j + 1) = orthogonalPolynomial ν (j + 1))
+    (hp : orthogonalPolynomial μ j = orthogonalPolynomial ν j) :
+    jacobiBeta μ (j + 1) = jacobiBeta ν (j + 1) := by
+  simp only [jacobiBeta]
+  rw [← hp1, ← hp, h.integral_orthogonalPolynomial_sq_eq hj,
+    h.integral_orthogonalPolynomial_sq_eq (by omega)]
+
 /-- The orthogonal polynomial depends only on the moments: if two measures $\mu$, $\nu$ on
 $\mathbb{R}$ match their first $2k$ moments, then $\pi_k(\mu) = \pi_k(\nu)$. No support
 hypothesis: $\pi_k$ is a formula in integrals of polynomials of degree less than $2k$.
@@ -143,75 +170,21 @@ theorem MatchesMoments.orthogonalPolynomial_eq {k : ℕ} (h : MatchesMoments μ 
   | zero => intro _; rfl
   | one =>
     intro h
-    have hx0 : ∫ x, x ∂μ = ∫ x, x ∂ν := by
-      simpa only [eval_X] using h X (by rw [degree_X]; norm_num)
-    have h10 : ∫ x, (1 : ℝ) ∂μ = ∫ x, (1 : ℝ) ∂ν := by
-      simpa only [eval_C, integral_const, smul_eq_mul, mul_one] using
-        h (C 1) (by rw [degree_C one_ne_zero]; norm_num)
-    have hα : jacobiAlpha μ 0 = jacobiAlpha ν 0 := by
-      unfold jacobiAlpha
-      rw [orthogonalPolynomial_zero, orthogonalPolynomial_zero]
-      simp only [eval_one, one_pow, mul_one]
-      rw [hx0, h10]
-    rw [orthogonalPolynomial_one, orthogonalPolynomial_one, hα]
+    rw [orthogonalPolynomial_one, orthogonalPolynomial_one, h.jacobiAlpha_eq_of_eq (by omega) rfl]
   | more n ihn ih1 =>
     intro h
-    have hp : orthogonalPolynomial μ n = orthogonalPolynomial ν n := ihn (h.mono (by omega))
-    have hp1 : orthogonalPolynomial μ (n + 1) = orthogonalPolynomial ν (n + 1) :=
-      ih1 (h.mono (by omega))
-    have hd2 : ∀ j : ℕ, (orthogonalPolynomial ν j ^ 2).natDegree ≤ 2 * j := fun j =>
-      natDegree_pow_le.trans_eq (by rw [natDegree_orthogonalPolynomial])
-    have hlt : ∀ q : ℝ[X], q.natDegree < 2 * (n + 2) → q.degree < (2 * (n + 2) : ℕ) :=
-      fun q hq => (degree_le_of_natDegree_le (Nat.le_refl _)).trans_lt (by exact_mod_cast hq)
-    have hsq : ∀ j ≤ n + 1, ∫ x, (orthogonalPolynomial ν j).eval x ^ 2 ∂μ =
-        ∫ x, (orthogonalPolynomial ν j).eval x ^ 2 ∂ν := by
-      intro j hj
-      have hd : (orthogonalPolynomial ν j ^ 2).natDegree < 2 * (n + 2) := by
-        have := hd2 j; omega
-      simpa only [eval_pow] using h _ (hlt _ hd)
-    have hx : ∀ j ≤ n + 1, ∫ x, x * (orthogonalPolynomial ν j).eval x ^ 2 ∂μ =
-        ∫ x, x * (orthogonalPolynomial ν j).eval x ^ 2 ∂ν := by
-      intro j hj
-      have h3 : (X * orthogonalPolynomial ν j ^ 2).natDegree ≤ 1 + 2 * j :=
-        natDegree_mul_le.trans (by rw [natDegree_X]; have := hd2 j; omega)
-      have hd : (X * orthogonalPolynomial ν j ^ 2).natDegree < 2 * (n + 2) := by
-        have := h3; omega
-      simpa only [eval_mul, eval_pow, eval_X] using h _ (hlt _ hd)
-    have hα : jacobiAlpha μ (n + 1) = jacobiAlpha ν (n + 1) := by
-      unfold jacobiAlpha
-      rw [hp1, hx (n + 1) (by omega), hsq (n + 1) (by omega)]
-    have hβ : jacobiBeta μ (n + 1) = jacobiBeta ν (n + 1) := by
-      change (∫ x, (orthogonalPolynomial μ (n + 1)).eval x ^ 2 ∂μ) /
-            ∫ x, (orthogonalPolynomial μ n).eval x ^ 2 ∂μ =
-          (∫ x, (orthogonalPolynomial ν (n + 1)).eval x ^ 2 ∂ν) /
-            ∫ x, (orthogonalPolynomial ν n).eval x ^ 2 ∂ν
-      rw [hp1, hp, hsq (n + 1) (by omega), hsq n (by omega)]
-    rw [orthogonalPolynomial_add_two μ n, orthogonalPolynomial_add_two ν n, hα, hβ, hp1, hp]
+    have hp := ihn (h.mono (by omega))
+    have hp1 := ih1 (h.mono (by omega))
+    rw [orthogonalPolynomial_add_two μ n, orthogonalPolynomial_add_two ν n,
+      h.jacobiAlpha_eq_of_eq (by omega) hp1, h.jacobiBeta_succ_eq_of_eq (by omega) hp1 hp, hp1, hp]
 
 /-- The diagonal coefficient depends only on the moments: if two measures $\mu$, $\nu$ on
 $\mathbb{R}$ match their first $2k + 2$ moments, then $\alpha_k(\mu) = \alpha_k(\nu)$.
 Proof: S, about 15 lines. Unfold `jacobiAlpha`; `MatchesMoments.orthogonalPolynomial_eq` with
 `MatchesMoments.mono`; the two integrals are of polynomials of degree at most $2k + 1$. -/
 theorem MatchesMoments.jacobiAlpha_eq {k : ℕ} (h : MatchesMoments μ ν (2 * k + 2)) :
-    jacobiAlpha μ k = jacobiAlpha ν k := by
-  have hp0 : orthogonalPolynomial μ k ≠ 0 := (monic_orthogonalPolynomial μ k).ne_zero
-  have hk : (orthogonalPolynomial μ k).natDegree = k := natDegree_orthogonalPolynomial μ k
-  have hp : orthogonalPolynomial μ k = orthogonalPolynomial ν k :=
-    MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega))
-  simp only [jacobiAlpha]
-  rw [← hp]
-  congr 1
-  · have hd := h (X * orthogonalPolynomial μ k ^ 2) (by
-      rw [degree_eq_natDegree (mul_ne_zero X_ne_zero (pow_ne_zero 2 hp0)),
-        natDegree_mul X_ne_zero (pow_ne_zero 2 hp0), natDegree_X, natDegree_pow, hk]
-      exact_mod_cast by omega)
-    simp only [eval_mul, eval_X, eval_pow] at hd
-    exact hd
-  · have hd := h (orthogonalPolynomial μ k ^ 2) (by
-      rw [degree_eq_natDegree (pow_ne_zero 2 hp0), natDegree_pow, hk]
-      exact_mod_cast by omega)
-    simp only [eval_pow] at hd
-    exact hd
+    jacobiAlpha μ k = jacobiAlpha ν k :=
+  h.jacobiAlpha_eq_of_eq (by omega) (MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega)))
 
 /-- The off-diagonal coefficient depends only on the moments: if two measures $\mu$, $\nu$ on
 $\mathbb{R}$ match their first $2k + 1$ moments, then $\beta_k(\mu) = \beta_k(\nu)$.
@@ -220,28 +193,10 @@ Proof: S, about 15 lines. Cases on `k`: $k = 0$ is `MatchesMoments.measureReal_u
 theorem MatchesMoments.jacobiBeta_eq {k : ℕ} (h : MatchesMoments μ ν (2 * k + 1)) :
     jacobiBeta μ k = jacobiBeta ν k := by
   rcases k with _ | k
-  · simp only [jacobiBeta_zero]
-    exact h.measureReal_univ_eq (by omega)
-  · have hπ1 : orthogonalPolynomial μ (k + 1) = orthogonalPolynomial ν (k + 1) :=
-      MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega))
-    have hπ0 : orthogonalPolynomial μ k = orthogonalPolynomial ν k :=
-      MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega))
-    have hd : ∀ j ≤ k + 1, ((orthogonalPolynomial μ j) ^ 2).degree < 2 * (k + 1) + 1 := by
-      intro j hj
-      rw [degree_eq_natDegree ((monic_orthogonalPolynomial μ j).pow 2).ne_zero, natDegree_pow,
-        natDegree_orthogonalPolynomial]
-      exact_mod_cast show 2 * j < 2 * (k + 1) + 1 by omega
-    change (∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ) /
-        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ =
-      (∫ x, (orthogonalPolynomial ν (k + 1)).eval x ^ 2 ∂ν) /
-      ∫ x, (orthogonalPolynomial ν k).eval x ^ 2 ∂ν
-    have e1 : ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ =
-        ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂ν := by
-      simpa only [eval_pow] using h ((orthogonalPolynomial μ (k + 1)) ^ 2) (hd (k + 1) le_rfl)
-    have e0 : ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ =
-        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂ν := by
-      simpa only [eval_pow] using h ((orthogonalPolynomial μ k) ^ 2) (hd k (by omega))
-    rw [← hπ1, ← hπ0, e1, e0]
+  · exact h.measureReal_univ_eq (by omega)
+  · exact h.jacobiBeta_succ_eq_of_eq (by omega)
+      (MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega)))
+      (MatchesMoments.orthogonalPolynomial_eq (h.mono (by omega)))
 
 /-- The Jacobi matrix depends only on the moments: if two measures $\mu$, $\nu$ on $\mathbb{R}$
 match their first $2k$ moments, then $\mathbf{J}_k(\mu) = \mathbf{J}_k(\nu)$.
@@ -335,37 +290,22 @@ $r = X\pi_k$). -/
 theorem integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, (x - jacobiAlpha μ k) * (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0 := by
-  have hα : jacobiAlpha μ k =
-      (∫ x, x * (orthogonalPolynomial μ k).eval x ^ 2 ∂μ) /
-        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := rfl
-  set hp := orthogonalPolynomial μ k
-  -- the two integrands are integrable, being evals of polynomials
-  have himul : Integrable (fun x : ℝ => x * hp.eval x ^ 2) μ := by
-    have h : (fun x : ℝ => x * hp.eval x ^ 2) = fun x => (X * hp * hp).eval x := by
-      funext x; simp only [eval_mul, eval_X, pow_two, mul_assoc]
-    rw [h]
-    exact integrable_eval_of_ae_mem_Icc hμ _
-  have hisq : Integrable (fun x : ℝ => hp.eval x ^ 2) μ := by
-    have h : (fun x : ℝ => hp.eval x ^ 2) = fun x => (hp * hp).eval x := by
-      funext x; simp only [eval_mul, pow_two]
-    rw [h]
-    exact integrable_eval_of_ae_mem_Icc hμ _
-  have hsplit : ∀ c : ℝ, ∫ x, (x - c) * hp.eval x ^ 2 ∂μ =
-      (∫ x, x * hp.eval x ^ 2 ∂μ) - c * ∫ x, hp.eval x ^ 2 ∂μ := by
-    intro c
-    simp only [sub_mul]
-    rw [integral_sub himul (hisq.const_mul c), integral_const_mul]
-  rcases eq_or_ne (∫ x, hp.eval x ^ 2 ∂μ) 0 with hD | hD
-  · -- degenerate case: the norm is $0$, so both integrals vanish
-    rw [hsplit (jacobiAlpha μ k), hD, mul_zero, sub_zero]
-    have hN : ∫ x, x * hp.eval x ^ 2 ∂μ = ∫ x, hp.eval x * (X * hp).eval x ∂μ := by
-      refine integral_congr_ae (ae_of_all μ fun x => ?_)
-      simp only [eval_mul, eval_X]
-      ring
-    rw [hN]
-    exact integral_eval_mul_eq_zero_of_integral_sq_eq_zero hμ hD (X * hp)
-  · rw [hsplit (jacobiAlpha μ k), hα, div_mul_cancel₀ _ hD]
+  set π := orthogonalPolynomial μ k
+  have hint := integrable_eval_of_ae_mem_Icc hμ
+  have hx : ∀ x, x * π.eval x ^ 2 = π.eval x * (X * π).eval x := fun x => by
+    simp only [eval_mul, eval_X]
     ring
+  have himul : Integrable (fun x => x * π.eval x ^ 2) μ :=
+    (hint (π * (X * π))).congr (ae_of_all μ fun x => by simp only [hx, eval_mul])
+  have hisq : Integrable (fun x => π.eval x ^ 2) μ :=
+    (hint (π ^ 2)).congr (ae_of_all μ fun _ => eval_pow 2)
+  simp only [sub_mul]
+  rw [integral_sub himul (hisq.const_mul _), integral_const_mul]
+  rcases eq_or_ne (∫ x, π.eval x ^ 2 ∂μ) 0 with hD | hD
+  · -- degenerate case: the norm is $0$, so both integrals vanish
+    rw [hD, mul_zero, sub_zero, integral_congr_ae (ae_of_all μ hx)]
+    exact integral_eval_mul_eq_zero_of_integral_sq_eq_zero hμ hD _
+  · rw [jacobiAlpha, div_mul_cancel₀ _ hD, sub_self]
 
 /-- Step (a) of the orthogonality induction: if $\pi_{k+1}$ and $\pi_k$ are orthogonal to the
 lower degrees, then $\pi_{k+2}$ is orthogonal to every polynomial of degree less than $k$.
@@ -378,12 +318,7 @@ private theorem integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1)))
     (h0 : IsOrthogonalPolynomial μ k (orthogonalPolynomial μ k)) {r : ℝ[X]} (hr : r.degree < k) :
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * r.eval x ∂μ = 0 := by
-  have hsplit : ∀ p q : ℝ[X],
-      ∫ x, (p - q).eval x ∂μ = ∫ x, p.eval x ∂μ - ∫ x, q.eval x ∂μ := by
-    intro p q
-    simp only [eval_sub]
-    exact integral_sub (integrable_eval_of_ae_mem_Icc hμ p)
-      (integrable_eval_of_ae_mem_Icc hμ q)
+  have hint := integrable_eval_of_ae_mem_Icc hμ
   have hXr : (X * r).degree < ((k + 1 : ℕ) : WithBot ℕ) := by
     by_cases hr0 : r = 0
     · subst hr0; simp
@@ -398,20 +333,14 @@ private theorem integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt
     rw [orthogonalPolynomial_add_two]
     simp only [eval_mul, eval_sub, eval_X, eval_C, sub_mul]
     ring
-  have key1 : ∫ x, (orthogonalPolynomial μ (k + 1) * (X * r)).eval x ∂μ = 0 := by
-    simpa only [eval_mul] using h1 (X * r) hXr
-  have hI2 : ∫ x, (C (jacobiAlpha μ (k + 1)) *
-      (orthogonalPolynomial μ (k + 1) * r)).eval x ∂μ = 0 := by
-    simp only [eval_mul, eval_C, integral_const_mul]
-    rw [h1 r (lt_of_lt_of_le hr (by exact_mod_cast Nat.le_succ k))]
+  rw [integral_congr_ae (ae_of_all μ hpoly)]
+  simp only [eval_sub]
+  rw [integral_sub, integral_sub]
+  · have hX := h1 _ hXr
+    simp only [eval_mul, eval_C, integral_const_mul] at hX ⊢
+    rw [hX, h1 r (hr.trans_le (by exact_mod_cast k.le_succ)), h0 r hr]
     ring
-  have hI3 : ∫ x, (C (jacobiBeta μ (k + 1)) *
-      (orthogonalPolynomial μ k * r)).eval x ∂μ = 0 := by
-    simp only [eval_mul, eval_C, integral_const_mul]
-    rw [h0 r hr]
-    ring
-  rw [integral_congr_ae (ae_of_all μ hpoly), hsplit, hsplit, key1, hI2, hI3]
-  ring
+  all_goals fun_prop
 
 /-- Step (b) of the orthogonality induction: if $\pi_{k+1}$ is orthogonal to the lower degrees,
 then $\int\pi_{k+2}\pi_{k+1}\,d\mu = 0$.
@@ -424,32 +353,22 @@ private theorem integral_orthogonalPolynomial_add_two_mul_succ
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1))) :
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ (k + 1)).eval x ∂μ =
       0 := by
+  have hint := integrable_eval_of_ae_mem_Icc hμ
   have key : ∀ x : ℝ,
       (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ (k + 1)).eval x =
-      (x - jacobiAlpha μ (k + 1)) * (orthogonalPolynomial μ (k + 1)).eval x ^ 2 -
-        jacobiBeta μ (k + 1) *
-          ((orthogonalPolynomial μ (k + 1)).eval x * (orthogonalPolynomial μ k).eval x) := by
+      ((X - C (jacobiAlpha μ (k + 1))) * orthogonalPolynomial μ (k + 1) ^ 2 -
+        C (jacobiBeta μ (k + 1)) *
+          (orthogonalPolynomial μ (k + 1) * orthogonalPolynomial μ k)).eval x := by
     intro x
     rw [orthogonalPolynomial_add_two]
-    simp only [eval_sub, eval_mul, eval_X, eval_C]
+    simp only [eval_sub, eval_mul, eval_pow, eval_X, eval_C]
     ring
-  have hint1 : Integrable (fun x => (x - jacobiAlpha μ (k + 1)) *
-      (orthogonalPolynomial μ (k + 1)).eval x ^ 2) μ :=
-    (integrable_eval_of_ae_mem_Icc hμ ((X - C (jacobiAlpha μ (k + 1))) *
-      (orthogonalPolynomial μ (k + 1)) ^ 2)).congr (ae_of_all μ fun x => by
-        simp only [eval_sub, eval_mul, eval_X, eval_C, eval_pow])
-  have hint2 : Integrable (fun x => jacobiBeta μ (k + 1) *
-      ((orthogonalPolynomial μ (k + 1)).eval x * (orthogonalPolynomial μ k).eval x)) μ := by
-    simpa only [eval_mul] using
-      (integrable_eval_of_ae_mem_Icc hμ
-        (orthogonalPolynomial μ (k + 1) * orthogonalPolynomial μ k)).const_mul
-        (jacobiBeta μ (k + 1))
-  rw [integral_congr_ae (ae_of_all μ key), integral_sub hint1 hint2, integral_const_mul,
-    integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero hμ (k + 1), zero_sub,
-    h1 (orthogonalPolynomial μ k) (by
-      rw [degree_orthogonalPolynomial]
-      exact_mod_cast Nat.lt_succ_self k),
-    mul_zero, neg_zero]
+  rw [integral_congr_ae (ae_of_all μ key)]
+  simp only [eval_sub]
+  rw [integral_sub (hint _) (hint _)]
+  simp only [eval_mul, eval_pow, eval_sub, eval_X, eval_C, integral_const_mul]
+  rw [integral_sub_jacobiAlpha_mul_orthogonalPolynomial_sq_eq_zero hμ (k + 1),
+    h1 _ (by rw [degree_orthogonalPolynomial]; exact_mod_cast k.lt_succ_self), mul_zero, sub_zero]
 
 /-- Step (c) of the orthogonality induction: if $\pi_{k+1}$ is orthogonal to the lower degrees,
 then $\int\pi_{k+2}\pi_k\,d\mu = 0$.
@@ -463,49 +382,24 @@ private theorem integral_orthogonalPolynomial_add_two_mul_self
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1))) :
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ k).eval x ∂μ = 0 := by
   set P := orthogonalPolynomial μ
-  have hm : ∀ n, (P n).Monic := monic_orthogonalPolynomial μ
-  have hd : ∀ n, (P n).degree = n := degree_orthogonalPolynomial μ
-  have hint := fun p : ℝ[X] => integrable_eval_of_ae_mem_Icc hμ p
-  have hXm : (X * P k).Monic := monic_X.mul (hm k)
-  have hXd : (X * P k).degree = ((k + 1 : ℕ) : WithBot ℕ) := by
-    rw [degree_mul, degree_X, hd]; norm_cast; omega
-  have hlt : (X * P k - P (k + 1)).degree < ((k + 1 : ℕ) : WithBot ℕ) := by
-    rw [← hXd]
-    exact degree_sub_lt (by rw [hXd, hd]) hXm.ne_zero (by rw [hXm.leadingCoeff, (hm _).leadingCoeff])
-  have hA := h1 _ hlt
-  have hB := h1 (P k) (by rw [hd]; exact_mod_cast Nat.lt_succ_self k)
-  have hsq : ∫ x, (P (k + 1)).eval x * (X * P k).eval x ∂μ =
-      ∫ x, (P (k + 1)).eval x ^ 2 ∂μ := by
-    have h2 : ∫ x, (P (k + 1)).eval x * (X * P k - P (k + 1)).eval x ∂μ =
-        ∫ x, (P (k + 1)).eval x * (X * P k).eval x ∂μ -
-          ∫ x, (P (k + 1)).eval x ^ 2 ∂μ := by
-      rw [← integral_sub]
-      · congr 1; ext x; simp only [eval_sub]; ring
-      · exact hint ((P (k + 1)) * (X * P k)) |>.congr (Filter.Eventually.of_forall fun x => by simp)
-      · exact hint ((P (k + 1)) * (P (k + 1))) |>.congr
-          (Filter.Eventually.of_forall fun x => by simp [sq])
-    linarith
-  have hpt : ∀ x, (P (k + 2)).eval x * (P k).eval x =
-      (P (k + 1)).eval x * (X * P k).eval x
-        - jacobiAlpha μ (k + 1) * ((P (k + 1)).eval x * (P k).eval x)
-        - jacobiBeta μ (k + 1) * (P k).eval x ^ 2 := by
+  have hint := integrable_eval_of_ae_mem_Icc hμ
+  have hpoly : ∀ x, (P (k + 2)).eval x * (P k).eval x =
+      (P (k + 1) * (X * P k - P (k + 1)) + P (k + 1) ^ 2 -
+        C (jacobiAlpha μ (k + 1)) * (P (k + 1) * P k) -
+        C (jacobiBeta μ (k + 1)) * P k ^ 2).eval x := by
     intro x
     rw [show P (k + 2) = _ from orthogonalPolynomial_add_two μ k]
-    simp only [eval_sub, eval_mul, eval_X, eval_C]; ring
-  have i1 : Integrable (fun x => (P (k + 1)).eval x * (X * P k).eval x) μ :=
-    (hint ((P (k + 1)) * (X * P k))).congr (Filter.Eventually.of_forall fun x => by simp)
-  have i2 : Integrable (fun x => (P (k + 1)).eval x * (P k).eval x) μ :=
-    (hint ((P (k + 1)) * P k)).congr (Filter.Eventually.of_forall fun x => by simp)
-  have i3 : Integrable (fun x => (P k).eval x ^ 2) μ :=
-    (hint (P k ^ 2)).congr (Filter.Eventually.of_forall fun x => by simp)
-  simp_rw [hpt]
-  have i4 : Integrable (fun x => (P (k + 1)).eval x * (X * P k).eval x
-      - jacobiAlpha μ (k + 1) * ((P (k + 1)).eval x * (P k).eval x)) μ :=
-    i1.sub (i2.const_mul _)
-  rw [integral_sub i4 (i3.const_mul _), integral_sub i1 (i2.const_mul _),
-    integral_const_mul, integral_const_mul, hsq, hB,
-    integral_orthogonalPolynomial_succ_sq hμ k]
-  ring
+    simp only [eval_add, eval_sub, eval_mul, eval_pow, eval_X, eval_C]
+    ring
+  rw [integral_congr_ae (ae_of_all μ hpoly)]
+  simp only [eval_add, eval_sub]
+  rw [integral_sub, integral_sub, integral_add]
+  · simp only [eval_mul, eval_pow, eval_C, integral_const_mul]
+    rw [h1 _ (degree_X_mul_sub_orthogonalPolynomial_succ_lt μ k),
+      h1 (P k) (by rw [degree_orthogonalPolynomial]; exact_mod_cast k.lt_succ_self),
+      integral_orthogonalPolynomial_succ_sq hμ k]
+    ring
+  all_goals fun_prop
 
 /-- Division by a monic polynomial, one degree at a time: if $p$ is monic of degree $d$ and
 $\deg r < d + 1$, then $r = c\,p + r'$ for a constant $c$ with $\deg r' < d$. -/
@@ -553,50 +447,24 @@ private theorem isOrthogonalPolynomial_orthogonalPolynomial_add_two
     (monic_orthogonalPolynomial μ (k + 1)) (degree_orthogonalPolynomial μ (k + 1)) hr
   obtain ⟨c₀, r₀, hr₀, hdeg₀⟩ := exists_eq_C_mul_add_of_degree_lt
     (monic_orthogonalPolynomial μ k) (degree_orthogonalPolynomial μ k) hdeg₁
-  have hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ := integrable_eval_of_ae_mem_Icc hμ
-  -- the three orthogonality facts of steps (a), (b) and (c), as integrals of evaluations
-  have ha : ∫ x, (orthogonalPolynomial μ (k + 2) * r₀).eval x ∂μ = 0 := by
-    simpa only [eval_mul] using
-      integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt hμ h1 h0 hdeg₀
-  have hb : ∫ x, (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)).eval x ∂μ
-      = 0 := by
-    simpa only [eval_mul] using integral_orthogonalPolynomial_add_two_mul_succ hμ h1
-  have hc : ∫ x, (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k).eval x ∂μ = 0 := by
-    simpa only [eval_mul] using integral_orthogonalPolynomial_add_two_mul_self hμ h1
-  -- the two constant multiples, by $\int c\,f = c\int f$
-  have hA : ∫ x, (C c₁ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1))).eval x
-      ∂μ = 0 := by
-    have hE : ∀ x : ℝ, (C c₁ * (orthogonalPolynomial μ (k + 2) *
-        orthogonalPolynomial μ (k + 1))).eval x
-        = c₁ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)).eval x :=
-      fun x => by rw [eval_mul, eval_C]
-    simp only [hE, integral_const_mul c₁
-      (fun x => (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)).eval x), hb,
-      mul_zero]
-  have hB : ∫ x, (C c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k)).eval x
-      ∂μ = 0 := by
-    have hE : ∀ x : ℝ, (C c₀ * (orthogonalPolynomial μ (k + 2) *
-        orthogonalPolynomial μ k)).eval x
-        = c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k).eval x :=
-      fun x => by rw [eval_mul, eval_C]
-    simp only [hE, integral_const_mul c₀
-      (fun x => (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k).eval x), hc, mul_zero]
-  -- the split of $r$ at the polynomial level, and the assembly of the three integrals
-  have hsplit : orthogonalPolynomial μ (k + 2) * r =
-      C c₁ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ (k + 1)) +
-      (C c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k) +
-        orthogonalPolynomial μ (k + 2) * r₀) := by
+  have hint := integrable_eval_of_ae_mem_Icc hμ
+  set P := orthogonalPolynomial μ
+  have hsplit : ∀ x, (P (k + 2)).eval x * r.eval x =
+      (C c₁ * (P (k + 2) * P (k + 1)) + C c₀ * (P (k + 2) * P k) + P (k + 2) * r₀).eval x := by
+    intro x
     rw [hr₁, hr₀]
+    simp only [eval_add, eval_mul, eval_C]
     ring
-  have hintBC : Integrable (fun x => (C c₀ * (orthogonalPolynomial μ (k + 2) *
-      orthogonalPolynomial μ k)).eval x + (orthogonalPolynomial μ (k + 2) * r₀).eval x) μ :=
-    (hint _).add (hint _)
-  simp only [← eval_mul, hsplit, eval_add,
-    integral_add (hint (C c₁ * (orthogonalPolynomial μ (k + 2) *
-      orthogonalPolynomial μ (k + 1)))) hintBC,
-    integral_add (hint (C c₀ * (orthogonalPolynomial μ (k + 2) * orthogonalPolynomial μ k)))
-      (hint (orthogonalPolynomial μ (k + 2) * r₀)),
-    hA, hB, ha, add_zero]
+  rw [integral_congr_ae (ae_of_all μ hsplit)]
+  simp only [eval_add]
+  rw [integral_add, integral_add]
+  · -- steps (a), (b) and (c)
+    simp only [eval_mul, eval_C, integral_const_mul]
+    rw [integral_orthogonalPolynomial_add_two_mul_succ hμ h1,
+      integral_orthogonalPolynomial_add_two_mul_self hμ h1,
+      integral_orthogonalPolynomial_add_two_mul_eq_zero_of_degree_lt hμ h1 h0 hdeg₀]
+    ring
+  all_goals fun_prop
 
 /-- **Existence of the orthogonal polynomials**: for a finite measure $\mu$ supported in
 $[a, b]$ and every $k$, the monic polynomial $\pi_k$ of degree $k$ is orthogonal in $L^2(\mu)$
@@ -658,92 +526,19 @@ theorem integral_mul_orthogonalPolynomial_mul_orthogonalPolynomial_succ
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, x * (orthogonalPolynomial μ k).eval x * (orthogonalPolynomial μ (k + 1)).eval x ∂μ =
       ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ := by
-  rcases k with _ | m
-  · -- $k = 0$: $x = (x - \alpha_0) + \alpha_0$ and $\int\pi_1 = 0$.
-    have hp : X * orthogonalPolynomial μ 0
-        = orthogonalPolynomial μ 1 + C (jacobiAlpha μ 0) := by
-      rw [orthogonalPolynomial_zero, mul_one, orthogonalPolynomial_one]; ring
-    have key : ∀ x : ℝ, x * (orthogonalPolynomial μ 0).eval x
-        * (orthogonalPolynomial μ 1).eval x
-        = (orthogonalPolynomial μ 1).eval x ^ 2
-          + jacobiAlpha μ 0 * (orthogonalPolynomial μ 1).eval x := by
-      intro x
-      have hx := congrArg (eval x) hp
-      simp only [eval_mul, eval_add, eval_X, eval_C] at hx
-      rw [hx]; ring
-    have h1 : ∫ x, (orthogonalPolynomial μ 1).eval x ∂μ = 0 := by
-      have h := isOrthogonalPolynomial_orthogonalPolynomial hμ 1 (1 : ℝ[X])
-        (by rw [degree_one]; exact_mod_cast Nat.one_pos)
-      simpa only [eval_one, mul_one] using h
-    calc ∫ x, x * (orthogonalPolynomial μ 0).eval x * (orthogonalPolynomial μ 1).eval x ∂μ
-        = ∫ x, (orthogonalPolynomial μ 1).eval x ^ 2
-            + jacobiAlpha μ 0 * (orthogonalPolynomial μ 1).eval x ∂μ :=
-          integral_congr_ae (ae_of_all μ fun x => key x)
-      _ = ∫ x, (orthogonalPolynomial μ 1).eval x ^ 2 ∂μ
-            + jacobiAlpha μ 0 * ∫ x, (orthogonalPolynomial μ 1).eval x ∂μ := by
-          have hA : Integrable (fun x => (orthogonalPolynomial μ 1).eval x ^ 2) μ :=
-            (integrable_eval_of_ae_mem_Icc hμ (orthogonalPolynomial μ 1 ^ 2)).congr
-              (ae_of_all μ fun x => eval_pow 2)
-          have hB : Integrable
-              (fun x => jacobiAlpha μ 0 * (orthogonalPolynomial μ 1).eval x) μ :=
-            (integrable_eval_of_ae_mem_Icc hμ (orthogonalPolynomial μ 1)).const_mul _
-          rw [integral_add hA hB, integral_const_mul]
-      _ = ∫ x, (orthogonalPolynomial μ 1).eval x ^ 2 ∂μ := by rw [h1, mul_zero, add_zero]
-  · -- $k = m + 1$: the three-term recurrence and the orthogonality of $\pi_{m + 2}$.
-    have hp : X * orthogonalPolynomial μ (m + 1) = orthogonalPolynomial μ (m + 2)
-        + C (jacobiAlpha μ (m + 1)) * orthogonalPolynomial μ (m + 1)
-        + C (jacobiBeta μ (m + 1)) * orthogonalPolynomial μ m := by
-      rw [orthogonalPolynomial_add_two]; ring
-    have key : ∀ x : ℝ, x * (orthogonalPolynomial μ (m + 1)).eval x
-        * (orthogonalPolynomial μ (m + 2)).eval x
-        = (orthogonalPolynomial μ (m + 2)).eval x ^ 2
-          + jacobiAlpha μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
-            * (orthogonalPolynomial μ (m + 1)).eval x)
-          + jacobiBeta μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
-            * (orthogonalPolynomial μ m).eval x) := by
-      intro x
-      have hx := congrArg (eval x) hp
-      simp only [eval_mul, eval_add, eval_X, eval_C] at hx
-      rw [hx]; ring
-    have h1 : ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
-        * (orthogonalPolynomial μ (m + 1)).eval x ∂μ = 0 :=
-      isOrthogonalPolynomial_orthogonalPolynomial hμ (m + 2) (orthogonalPolynomial μ (m + 1))
-        (by rw [degree_orthogonalPolynomial]; exact_mod_cast Nat.lt_succ_self (m + 1))
-    have h2 : ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
-        * (orthogonalPolynomial μ m).eval x ∂μ = 0 :=
-      isOrthogonalPolynomial_orthogonalPolynomial hμ (m + 2) (orthogonalPolynomial μ m)
-        (by rw [degree_orthogonalPolynomial]; exact_mod_cast show m < m + 2 by omega)
-    have hint : ∀ p q : ℝ[X], Integrable (fun x => p.eval x * q.eval x) μ := fun p q =>
-      (integrable_eval_of_ae_mem_Icc hμ (p * q)).congr (ae_of_all μ fun _ => eval_mul)
-    have hsq : ∀ p : ℝ[X], Integrable (fun x => p.eval x ^ 2) μ := fun p =>
-      (integrable_eval_of_ae_mem_Icc hμ (p ^ 2)).congr (ae_of_all μ fun x => eval_pow 2)
-    have hA : Integrable (fun x => (orthogonalPolynomial μ (m + 2)).eval x ^ 2) μ :=
-      hsq (orthogonalPolynomial μ (m + 2))
-    have hB : Integrable (fun x => jacobiAlpha μ (m + 1)
-        * ((orthogonalPolynomial μ (m + 2)).eval x
-          * (orthogonalPolynomial μ (m + 1)).eval x)) μ :=
-      (hint (orthogonalPolynomial μ (m + 2)) (orthogonalPolynomial μ (m + 1))).const_mul _
-    have hC : Integrable (fun x => jacobiBeta μ (m + 1)
-        * ((orthogonalPolynomial μ (m + 2)).eval x
-          * (orthogonalPolynomial μ m).eval x)) μ :=
-      (hint (orthogonalPolynomial μ (m + 2)) (orthogonalPolynomial μ m)).const_mul _
-    calc ∫ x, x * (orthogonalPolynomial μ (m + 1)).eval x
-          * (orthogonalPolynomial μ (m + 2)).eval x ∂μ
-        = ∫ x, (orthogonalPolynomial μ (m + 2)).eval x ^ 2
-            + jacobiAlpha μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
-              * (orthogonalPolynomial μ (m + 1)).eval x)
-            + jacobiBeta μ (m + 1) * ((orthogonalPolynomial μ (m + 2)).eval x
-              * (orthogonalPolynomial μ m).eval x) ∂μ :=
-          integral_congr_ae (ae_of_all μ fun x => key x)
-      _ = ∫ x, (orthogonalPolynomial μ (m + 2)).eval x ^ 2 ∂μ
-            + jacobiAlpha μ (m + 1) * ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
-                * (orthogonalPolynomial μ (m + 1)).eval x ∂μ
-            + jacobiBeta μ (m + 1) * ∫ x, (orthogonalPolynomial μ (m + 2)).eval x
-                * (orthogonalPolynomial μ m).eval x ∂μ := by
-          rw [integral_add (hA.fun_add hB) hC, integral_add hA hB, integral_const_mul,
-            integral_const_mul]
-      _ = ∫ x, (orthogonalPolynomial μ (m + 2)).eval x ^ 2 ∂μ := by
-          rw [h1, h2, mul_zero, mul_zero, add_zero, add_zero]
+  have hint := integrable_eval_of_ae_mem_Icc hμ
+  set P := orthogonalPolynomial μ
+  have hpoly : ∀ x, x * (P k).eval x * (P (k + 1)).eval x =
+      (P (k + 1) * (X * P k - P (k + 1)) + P (k + 1) ^ 2).eval x := by
+    intro x
+    simp only [eval_add, eval_sub, eval_mul, eval_pow, eval_X]
+    ring
+  rw [integral_congr_ae (ae_of_all μ hpoly)]
+  simp only [eval_add]
+  rw [integral_add (hint _) (hint _)]
+  simp only [eval_mul, eval_pow]
+  rw [isOrthogonalPolynomial_orthogonalPolynomial hμ (k + 1) _
+    (degree_X_mul_sub_orthogonalPolynomial_succ_lt μ k), zero_add]
 
 /-- Definiteness is positivity of the last norm: a finite measure $\mu$ supported in $[a, b]$ is
 positive definite on the polynomials of degree at most $k$ exactly when
@@ -755,63 +550,38 @@ $p = c\,\pi_d + r$ with $c$ the leading coefficient and $\deg r < d$, and
 $\int p^2 = c^2\|\pi_d\|^2 + \int r^2$ by `isOrthogonalPolynomial_orthogonalPolynomial`. -/
 theorem isMomentPosDef_succ_iff (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     IsMomentPosDef μ (k + 1) ↔ 0 < ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
-  constructor
-  · intro h
-    refine h _ (monic_orthogonalPolynomial μ k).ne_zero ?_
-    rw [degree_orthogonalPolynomial]
-    exact_mod_cast Nat.lt_succ_self k
-  · intro hpos p hp0 hpdeg
-    have hlow : ∀ j m, j + m = k → 0 < ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ := by
-      intro j m
-      induction m generalizing j with
-      | zero => intro hj; rw [show j = k by omega]; exact hpos
-      | succ m ih =>
-        intro hj
-        have h1 := ih (j + 1) (by omega)
-        rw [integral_orthogonalPolynomial_succ_sq hμ j] at h1
-        exact pos_of_mul_pos_right h1 (jacobiBeta_nonneg μ (j + 1))
-    have hdk : p.natDegree ≤ k := by
-      have := (Polynomial.natDegree_lt_iff_degree_lt hp0).mpr hpdeg
-      omega
-    have hc : p.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hp0
-    have hdeg_eq : p.degree = (C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).degree := by
-      rw [degree_C_mul hc, degree_orthogonalPolynomial, degree_eq_natDegree hp0]
-    have hlc_eq : p.leadingCoeff =
-        (C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).leadingCoeff := by
-      rw [leadingCoeff_mul, leadingCoeff_C, (monic_orthogonalPolynomial μ _).leadingCoeff, mul_one]
-    have hrdeg := degree_sub_lt_left hdeg_eq hp0 hlc_eq
-    rw [degree_eq_natDegree hp0] at hrdeg
-    have hrdeg' : (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).degree <
-        (p.natDegree : WithBot ℕ) := by exact_mod_cast hrdeg
-    have horth := isOrthogonalPolynomial_orthogonalPolynomial hμ p.natDegree _ hrdeg'
-    have hN := hlow p.natDegree (k - p.natDegree) (by omega)
-    have hR : 0 ≤ ∫ x, (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).eval x ^ 2 ∂μ :=
-      integral_nonneg fun x => sq_nonneg _
-    have hint : ∀ q : ℝ[X], Integrable (fun x => q.eval x) μ := fun q =>
-      integrable_eval_of_ae_mem_Icc hμ q
-    have hpt : (fun x => p.eval x ^ 2) = fun x =>
-        p.leadingCoeff ^ 2 * (orthogonalPolynomial μ p.natDegree).eval x ^ 2 +
-          (2 * p.leadingCoeff * ((orthogonalPolynomial μ p.natDegree).eval x *
-            (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).eval x) +
-          (p - C p.leadingCoeff * orthogonalPolynomial μ p.natDegree).eval x ^ 2) := by
-      funext x
-      simp only [eval_sub, eval_mul, eval_C]
-      ring
-    set π := orthogonalPolynomial μ p.natDegree with hπ
-    set r := p - C p.leadingCoeff * π with hr
-    set c := p.leadingCoeff with hcdef
-    have i1 : Integrable (fun x => (π.eval x) ^ 2) μ := by
-      simpa only [sq, eval_mul] using hint (π * π)
-    have i2 : Integrable (fun x => π.eval x * r.eval x) μ := by
-      simpa only [eval_mul] using hint (π * r)
-    have i3 : Integrable (fun x => r.eval x ^ 2) μ := by
-      simpa only [sq, eval_mul] using hint (r * r)
-    have hA : Integrable (fun x => c ^ 2 * π.eval x ^ 2) μ := i1.const_mul _
-    have hB2 : Integrable (fun x => 2 * c * (π.eval x * r.eval x)) μ := i2.const_mul _
-    have hB : Integrable (fun x => 2 * c * (π.eval x * r.eval x) + r.eval x ^ 2) μ := hB2.add i3
-    rw [hpt, integral_add hA hB, integral_add hB2 i3, integral_const_mul, integral_const_mul,
-      horth, mul_zero, zero_add]
-    exact add_pos_of_pos_of_nonneg (mul_pos (by positivity) hN) hR
+  refine ⟨fun h => h _ (monic_orthogonalPolynomial μ k).ne_zero ?_, fun hpos p hp0 hpdeg => ?_⟩
+  · rw [degree_orthogonalPolynomial]
+    exact_mod_cast k.lt_succ_self
+  have hint := integrable_eval_of_ae_mem_Icc hμ
+  -- the norms of $\pi_j$, $j \le k$, are positive, as $\|\pi_{j+1}\|^2 = \beta_{j+1}\|\pi_j\|^2$
+  have hlow : ∀ j ≤ k, 0 < ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ := fun j hj =>
+    Nat.decreasingInduction (motive := fun j _ => 0 < ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ)
+      (fun j _ ih => pos_of_mul_pos_right (integral_orthogonalPolynomial_succ_sq hμ j ▸ ih)
+        (jacobiBeta_nonneg μ (j + 1))) hpos hj
+  -- $p = c\,\pi_n + r$ with $n = \deg p$, $c$ the leading coefficient and $\deg r < n$
+  set π := orthogonalPolynomial μ p.natDegree
+  set c := p.leadingCoeff
+  set r := p - C c * π
+  have hc : c ≠ 0 := leadingCoeff_ne_zero.mpr hp0
+  have hrdeg : r.degree < p.natDegree := by
+    rw [← degree_eq_natDegree hp0]
+    refine degree_sub_lt_left ?_ hp0 ?_
+    · rw [degree_C_mul hc, degree_orthogonalPolynomial, degree_eq_natDegree hp0]
+    · rw [leadingCoeff_mul, leadingCoeff_C, (monic_orthogonalPolynomial μ _).leadingCoeff, mul_one]
+  have hpoly : ∀ x, p.eval x ^ 2 = (C (c ^ 2) * π ^ 2 + C (2 * c) * (π * r) + r ^ 2).eval x := by
+    intro x
+    simp only [r, eval_add, eval_sub, eval_mul, eval_pow, eval_C]
+    ring
+  rw [integral_congr_ae (ae_of_all μ hpoly)]
+  simp only [eval_add]
+  rw [integral_add, integral_add]
+  · simp only [eval_mul, eval_pow, eval_C, integral_const_mul]
+    rw [isOrthogonalPolynomial_orthogonalPolynomial hμ _ r hrdeg, mul_zero, add_zero]
+    have hdk : p.natDegree ≤ k := Nat.lt_succ_iff.mp ((natDegree_lt_iff_degree_lt hp0).mpr hpdeg)
+    exact add_pos_of_pos_of_nonneg (mul_pos (by positivity) (hlow _ hdk))
+      (integral_nonneg fun x => sq_nonneg _)
+  all_goals fun_prop
 
 /-- **Uniqueness of the monic orthogonal polynomial**: if a finite measure $\mu$ supported in
 $[a, b]$ is positive definite on the polynomials of degree less than $k$, then every monic real
@@ -823,28 +593,21 @@ degree $k$); $\int d^2 = \int d\,p - \int d\,\pi_k = 0$ by `hpo` and
 theorem IsMomentPosDef.eq_orthogonalPolynomial {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : p.Monic) (hpk : p.natDegree = k)
     (hpo : IsOrthogonalPolynomial μ k p) : p = orthogonalPolynomial μ k := by
-  have hdeg : (p - orthogonalPolynomial μ k).degree < k := by
-    have hm := monic_orthogonalPolynomial μ k
+  set π := orthogonalPolynomial μ k
+  have hint := integrable_eval_of_ae_mem_Icc hμ
+  have hdeg : (p - π).degree < k := by
     have h1 : p.degree = k := by rw [degree_eq_natDegree hp.ne_zero, hpk]
-    have h2 := degree_orthogonalPolynomial μ k
-    have := degree_sub_lt (p := p) (q := orthogonalPolynomial μ k) (by rw [h1, h2])
-      hp.ne_zero (by rw [hp.leadingCoeff, hm.leadingCoeff])
-    rwa [h1] at this
+    exact h1 ▸ degree_sub_lt_left (by rw [h1, degree_orthogonalPolynomial]) hp.ne_zero
+      (by rw [hp.leadingCoeff, (monic_orthogonalPolynomial μ k).leadingCoeff])
   by_contra hne
-  have hd : p - orthogonalPolynomial μ k ≠ 0 := sub_ne_zero.mpr hne
-  have hpos := h _ hd hdeg
-  have hint := integrable_eval_of_ae_mem_Icc hμ (p * (p - orthogonalPolynomial μ k))
-  have hint' := integrable_eval_of_ae_mem_Icc hμ
-    (orthogonalPolynomial μ k * (p - orthogonalPolynomial μ k))
-  have h0 := hpo _ hdeg
-  have h0' := isOrthogonalPolynomial_orthogonalPolynomial hμ k _ hdeg
-  simp only [eval_mul] at hint hint'
-  have : ∫ x, (p - orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0 := by
-    calc _ = ∫ x, (p.eval x * (p - orthogonalPolynomial μ k).eval x
-          - (orthogonalPolynomial μ k).eval x * (p - orthogonalPolynomial μ k).eval x) ∂μ := by
-          congr 1; ext x; simp only [eval_sub]; ring
-      _ = 0 := by rw [integral_sub hint hint', h0, h0', sub_zero]
-  linarith
+  refine (h _ (sub_ne_zero.mpr hne) hdeg).ne' ?_
+  calc ∫ x, (p - π).eval x ^ 2 ∂μ
+      = ∫ x, p.eval x * (p - π).eval x - π.eval x * (p - π).eval x ∂μ := by
+        congr 1; ext x; simp only [eval_sub]; ring
+    _ = 0 := by
+        rw [integral_sub (by simpa only [eval_mul] using hint (p * (p - π)))
+          (by simpa only [eval_mul] using hint (π * (p - π))),
+          hpo _ hdeg, isOrthogonalPolynomial_orthogonalPolynomial hμ k _ hdeg, sub_zero]
 
 end Orthogonality
 
