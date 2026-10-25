@@ -1010,8 +1010,8 @@ and every $k$, the Lobatto rule has mass $\mu(\mathbb{R})$.
 Proof: S, about 3 lines. `MatchesMoments.measureReal_univ_eq` on
 `matchesMoments_lobattoQuadrature`. -/
 theorem lobattoQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) (k : ℕ) :
-    (lobattoQuadrature μ a b k).real Set.univ = μ.real Set.univ := by
-  sorry
+    (lobattoQuadrature μ a b k).real Set.univ = μ.real Set.univ :=
+  ((matchesMoments_lobattoQuadrature hμ hab k).measureReal_univ_eq (by omega)).symm
 
 /-- **The Gauss–Lobatto remainder**: for a finite measure $\mu$ supported in $[a, b]$, $a < b$,
 every $k$, and $f$ continuous on $[a, b]$ and $C^{2k+2}$ on $(a, b)$, there is $\xi \in (a, b)$
