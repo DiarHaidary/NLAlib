@@ -290,7 +290,15 @@ Proof: M, about 30 lines. `by_cases` on `IsMomentPosDef μ k`; definite:
 so `integral_eq_zero_of_ae`. -/
 theorem isOrthogonalPolynomial_nodal_gaussNodes (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     IsOrthogonalPolynomial μ (gaussNodes μ k).card (Lagrange.nodal (gaussNodes μ k) id) := by
-  sorry
+  by_cases h : IsMomentPosDef μ k
+  · rw [h.nodal_gaussNodes hμ, h.card_gaussNodes hμ]
+    exact isOrthogonalPolynomial_orthogonalPolynomial hμ k
+  · intro r _
+    refine integral_eq_zero_of_ae ?_
+    filter_upwards [ae_mem_gaussNodes_of_not_isMomentPosDef hμ h] with x hx
+    have h0 : (Lagrange.nodal (gaussNodes μ k) id).eval x = 0 :=
+      Lagrange.eval_nodal_at_node (v := id) hx
+    simp only [Pi.zero_apply, h0, zero_mul]
 
 end Definite
 
