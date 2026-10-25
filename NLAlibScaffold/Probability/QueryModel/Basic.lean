@@ -184,7 +184,10 @@ Proof: S, about 6 lines. As `QueryAlgorithm.IsMeasurable.measurable_rightQueryMa
 theorem IsMeasurable.measurable_leftQueryMatrix {𝕜 m n : Type*} [MeasurableSpace 𝕜]
     {alg : QueryAlgorithm ((n → 𝕜) × (m → 𝕜)) R q β} (halg : alg.IsMeasurable) :
     Measurable (alg.leftQueryMatrix : (Fin q → R) → Matrix m (Fin q) 𝕜) := by
-  sorry
+  refine measurable_pi_iff.2 fun r => measurable_pi_iff.2 fun j => ?_
+  exact (measurable_pi_apply r).comp
+    (measurable_snd.comp ((halg.measurable_query j j.isLt).comp
+      (measurable_pi_iff.2 fun l => measurable_pi_apply _)))
 
 /-- **A randomized algorithm has a jointly measurable output**: for a measurable seeded family
 and a jointly measurable oracle, (seed, input) $\mapsto$ output is measurable.
