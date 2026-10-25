@@ -537,7 +537,51 @@ theorem
         earlyTruncatedRSVD (Matrix.diagonal ![1, 1 - 1 / (4 * √(Fintype.card l : ℝ))]) (X ω)
           1) ^ 2}
       := by
-  sorry
+  have := hX.isProbabilityMeasure
+  have h100 : (100 : ℝ) ≤ (Fintype.card l : ℝ) := by exact_mod_cast hl
+  have hr2 : √(Fintype.card l : ℝ) ^ 2 = (Fintype.card l : ℝ) := Real.sq_sqrt (by positivity)
+  have hr0 : 0 ≤ √(Fintype.card l : ℝ) := Real.sqrt_nonneg _
+  have hr10 : 10 ≤ √(Fintype.card l : ℝ) := by nlinarith
+  have hE := le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix hX hl
+  set r := √(Fintype.card l : ℝ) with hr
+  set δ : ℝ := 1 / (4 * r) with hδ
+  have hδpos : 0 < δ := by positivity
+  have hδ40 : δ ≤ 1 / 40 := by
+    rw [hδ, div_le_div_iff₀ (by positivity) (by norm_num)]
+    nlinarith
+  have hεδ : |ε| < δ := by
+    have h4 : (4 * |ε| * r) ^ 2 < 1 := by
+      have : (4 * |ε| * r) ^ 2 = 16 * ε ^ 2 * (Fintype.card l : ℝ) := by
+        rw [mul_pow, mul_pow, sq_abs, ← hr2]; ring
+      linarith
+    have h5 : 4 * |ε| * r < 1 := by nlinarith [abs_nonneg ε, mul_nonneg (abs_nonneg ε) hr0]
+    rw [hδ, lt_div_iff₀ (by positivity)]
+    linarith
+  have hs0 : 0 ≤ 1 - δ := by linarith
+  have hs1 : 1 - δ ≤ 1 := by linarith
+  have hsq : 0 < (1 - δ) ^ 2 := by nlinarith
+  have hOPT : frobNorm (Matrix.diagonal ![1, 1 - δ] -
+      truncatedSVD (Matrix.diagonal ![1, 1 - δ]) 1) ^ 2 ≤ (1 - δ) ^ 2 := by
+    have hrank : (Matrix.diagonal (![1, 0] : Fin 2 → ℝ)).rank ≤ 1 := by
+      rw [Matrix.rank_diagonal, Fintype.card_subtype, Finset.card_le_one]
+      intro a ha b hb
+      fin_cases a <;> fin_cases b <;> simp_all
+    have h := frobNorm_sub_truncatedSVD_le_of_rank_le (Matrix.diagonal ![1, 1 - δ]) hrank
+    have h2 := pow_le_pow_left₀ (frobNorm_nonneg _) h 2
+    rw [Matrix.diagonal_sub, frobNorm_diagonal_sq] at h2
+    simpa [Fin.sum_univ_two] using h2
+  refine hE.trans (measureReal_mono fun ω hω => ?_)
+  have hA := add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq (Ω' := X ω) (l := l)
+    hs0 hs1 hω
+  simp only [Set.mem_ofPred_eq] at hω ⊢
+  have h1 : (1 + ε) * frobNorm (Matrix.diagonal ![1, 1 - δ] -
+      truncatedSVD (Matrix.diagonal ![1, 1 - δ]) 1) ^ 2 ≤ (1 + ε) * (1 - δ) ^ 2 :=
+    mul_le_mul_of_nonneg_left hOPT (by linarith [neg_abs_le ε])
+  have h2 : ε * (1 - δ) ^ 2 < δ * (1 - δ) ^ 2 :=
+    mul_lt_mul_of_pos_right (lt_of_le_of_lt (le_abs_self ε) hεδ) hsq
+  have h3 : δ * (1 - δ) ^ 2 ≤ (1 - (1 - δ) ^ 2) / 2 := by
+    nlinarith [mul_nonneg (sq_nonneg δ) (by linarith : (0:ℝ) ≤ 3 / 2 - δ)]
+  nlinarith
 
 /-- **Relative error $1 + \varepsilon$ in expectation needs $\ell \ge 10^{-4}/\varepsilon^2$
 samples**: if a standard Gaussian test matrix $\mathbf{\Omega}$ with $\ell \ge 100$ columns gives
