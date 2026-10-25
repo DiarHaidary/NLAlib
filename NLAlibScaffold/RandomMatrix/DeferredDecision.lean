@@ -633,7 +633,76 @@ theorem IsMeasurable.hasLaw_prodMk_conjTranspose_mul_mul_of_hasLaw_gaussianMatri
         (WL (alg.transcript (twoSidedMulVec (X ω))))ᴴ * X ω *
           WR (alg.transcript (twoSidedMulVec (X ω)))))
       ((μ.map fun ω => alg.transcript (twoSidedMulVec (X ω))).prod (gaussianMatrix r s)) μ := by
-  sorry
+  classical
+  have := hX.isProbabilityMeasure
+  have hO : Measurable (Function.uncurry
+      (twoSidedMulVec : Matrix d k ℝ → (k → ℝ) × (d → ℝ) → (d → ℝ) × (k → ℝ))) := by
+    unfold twoSidedMulVec Function.uncurry; fun_prop
+  set τ : Matrix d k ℝ → Fin q → (d → ℝ) × (k → ℝ) :=
+    fun A => alg.transcript (twoSidedMulVec A)
+  have hτ : Measurable τ := halg.measurable_transcript hO
+  -- the frame block, as a function of the transcript and a matrix
+  set F : (Fin q → (d → ℝ) × (k → ℝ)) → Matrix d k ℝ → Matrix r s ℝ :=
+    fun t Y => (WL t)ᴴ * Y * WR t
+  have hF : Measurable (Function.uncurry F) :=
+    ((continuous_star.measurable.matrix_conjTranspose (hWLm.comp measurable_fst)).matrix_mul
+      measurable_snd).matrix_mul (hWRm.comp measurable_fst)
+  set μ' := μ.prod (gaussianMatrix d k)
+  have hfst : μ'.map Prod.fst = μ := (measurePreserving_fst (μ := μ)).map_eq
+  have hX₁ : HasLaw (fun p : Ω × Matrix d k ℝ => X p.1) (gaussianMatrix d k) μ' :=
+    hX.fun_comp ⟨measurable_fst.aemeasurable, hfst⟩
+  have hX₂ : HasLaw (fun p : Ω × Matrix d k ℝ => p.2) (gaussianMatrix d k) μ' :=
+    measurePreserving_snd.hasLaw
+  have hind : IndepFun (fun p : Ω × Matrix d k ℝ => X p.1) (fun p => p.2) μ' :=
+    indepFun_prod₀ hX.aemeasurable aemeasurable_id
+  have hres := (halg.identDistrib_resample_of_hasLaw_gaussianMatrix hX₁ hX₂ hind).comp
+    (measurable_fst.prodMk hF)
+  have hfrz : HasLaw (fun p : Ω × Matrix d k ℝ => (τ (X p.1), F (τ (X p.1)) p.2))
+      ((μ.map fun ω => τ (X ω)).prod (gaussianMatrix r s)) μ' := by
+    have hT := hτ.comp_aemeasurable hX.aemeasurable
+    have hmap : μ'.map (fun p => τ (X p.1)) = μ.map fun ω => τ (X ω) := by
+      conv_rhs => rw [← hfst]
+      exact (AEMeasurable.map_map_of_aemeasurable (hfst ▸ hT) measurable_fst.aemeasurable).symm
+    rw [← hmap]
+    refine (indepFun_prod₀ hT aemeasurable_id).hasLaw_prodMk_prod_of_forall_map_eq
+      (hτ.comp_aemeasurable hX₁.aemeasurable) measurable_snd.aemeasurable hF fun t => ?_
+    change (μ'.map fun p => p.2).map (F t) = _
+    rw [hX₂.map_eq]
+    exact (hasLaw_mul_mul_of_hasLaw_gaussianMatrix HasLaw.id
+      (by simpa using hWLo t) (hWRo t)).map_eq
+  -- the frames see neither correction term: `WLᴴ * Pₗ = 0` and `Pᵣ * WR = 0`
+  have hblock : ∀ A Y, F (τ A) (alg.resample A Y) = F (τ A) Y := by
+    intro A Y
+    have hL0 : (WL (τ A))ᴴ * rangeProjector (alg.leftQueryMatrix (τ A)) = 0 := by
+      have h := congrArg Matrix.conjTranspose (rangeProjector_mul_eq_zero_iff.2 (by
+        simpa [Matrix.conjTranspose_mul] using congrArg Matrix.conjTranspose (hWL (τ A))) :
+        rangeProjector (alg.leftQueryMatrix (τ A)) * WL (τ A) = 0)
+      rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector, Matrix.conjTranspose_zero] at h
+    have hL : ∀ M : Matrix d s ℝ,
+        (WL (τ A))ᴴ * (rangeProjector (alg.leftQueryMatrix (τ A)) * M) = 0 := fun M => by
+      rw [← Matrix.mul_assoc, hL0, Matrix.zero_mul]
+    have hR0 : rangeProjector (alg.rightQueryMatrix (τ A)) * WR (τ A) = 0 :=
+      rangeProjector_mul_eq_zero_iff.2 (by
+        simpa [Matrix.conjTranspose_mul] using congrArg Matrix.conjTranspose (hWR (τ A)))
+    change (WL (τ A))ᴴ * (A - (1 - rangeProjector (alg.leftQueryMatrix (τ A))) * A *
+        (1 - rangeProjector (alg.rightQueryMatrix (τ A))) +
+        (1 - rangeProjector (alg.leftQueryMatrix (τ A))) * Y *
+        (1 - rangeProjector (alg.rightQueryMatrix (τ A)))) * WR (τ A) =
+      (WL (τ A))ᴴ * Y * WR (τ A)
+    simp only [Matrix.mul_add, Matrix.mul_sub, Matrix.add_mul, Matrix.sub_mul, Matrix.mul_assoc,
+      Matrix.one_mul, hR0, hL, Matrix.mul_zero]
+    abel
+  have hG : Measurable fun A => (τ A, F (τ A) A) :=
+    hτ.prodMk (hF.comp (hτ.prodMk measurable_id) : Measurable fun A => Function.uncurry F (τ A, A))
+  have hGX := hG.comp_aemeasurable hX.aemeasurable
+  change HasLaw ((fun A => (τ A, F (τ A) A)) ∘ X) _ μ
+  refine ⟨hGX, ?_⟩
+  conv_lhs => rw [← hfst]
+  rw [AEMeasurable.map_map_of_aemeasurable (hfst ▸ hGX) measurable_fst.aemeasurable]
+  refine hres.map_eq.trans (Eq.trans ?_ hfrz.map_eq)
+  congr 1
+  funext p
+  exact Prod.ext rfl (hblock _ _)
 
 end QueryAlgorithm
 
