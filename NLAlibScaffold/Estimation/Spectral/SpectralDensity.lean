@@ -1208,7 +1208,58 @@ measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_l
     μ.real {ω | τ ≤ |(empiricalSpectralMeasure A).real S -
         (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real S|} ≤
       2 * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
-  sorry
+  classical
+  have hP := isStarProjection_cfc_indicator A S
+  obtain ⟨V, hV, hVV⟩ := hP.exists_hasOrthonormalCols_mul_conjTranspose_eq
+    (p := Fin (cfc (S.indicator fun _ => (1 : ℝ)) A).rank) (by simp)
+  have hquad : ∀ z : n → ℝ, quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) z =
+      ‖WithLp.toLp 2 (Vᴴ *ᵥ z)‖ ^ 2 := by
+    intro z
+    have h := quadForm_mul_conjTranspose_self V z
+    rw [hVV] at h
+    simpa using h
+  have hemp : (empiricalSpectralMeasure A).real S =
+      (Fintype.card (Fin (cfc (S.indicator fun _ => (1 : ℝ)) A).rank) : ℝ) / Fintype.card n := by
+    rw [hA.empiricalSpectralMeasure_real S, RCLike.re_to_real, hP.trace_eq_rank, Fintype.card_fin]
+  have hprobe : ∀ ω, (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real S =
+      (∑ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ fun i => U ω i j)‖ ^ 2) / Fintype.card m := by
+    intro ω
+    rw [probeSpectralMeasure_real, girardHutchinson_eq_sum, RCLike.re_to_real]
+    rcases eq_or_ne (Fintype.card n) 0 with h0 | h0
+    · have : IsEmpty n := Fintype.card_eq_zero_iff.mp h0
+      have hz : ∀ z : n → ℝ, Vᴴ *ᵥ z = 0 := fun z => by
+        rw [Subsingleton.elim z 0, Matrix.mulVec_zero]
+      have hs : ∀ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ fun i => U ω i j)‖ ^ 2 = 0 := fun j => by
+        rw [hz]; simp
+      rw [Finset.sum_congr rfl fun j _ => hs j]
+      simp
+    · have hn : (Fintype.card n : ℝ) ≠ 0 := by exact_mod_cast h0
+      have hcol : ∀ j, quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A)
+          (√(Fintype.card n : ℝ) • fun i => U ω i j) =
+          (Fintype.card n : ℝ) * ‖WithLp.toLp 2 (Vᴴ *ᵥ fun i => U ω i j)‖ ^ 2 := by
+        intro j
+        rw [quadForm_smul_right, hquad, star_trivial, Real.mul_self_sqrt (Nat.cast_nonneg _)]
+      have hcol' : ∀ j, (fun i => (√(Fintype.card n : ℝ) • U ω) i j) =
+          √(Fintype.card n : ℝ) • fun i => U ω i j := fun j => by ext i; simp
+      simp only [hcol', hcol]
+      rw [← Finset.mul_sum]
+      field_simp
+  have key : ∀ ω, (empiricalSpectralMeasure A).real S -
+      (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real S =
+      -((∑ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ fun i => U ω i j)‖ ^ 2) / Fintype.card m -
+        (Fintype.card (Fin (cfc (S.indicator fun _ => (1 : ℝ)) A).rank) : ℝ) / Fintype.card n) := by
+    intro ω
+    rw [hemp, hprobe ω]
+    ring
+  have hset : {ω | τ ≤ |(empiricalSpectralMeasure A).real S -
+        (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real S|} =
+      {ω | τ ≤ |(∑ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ fun i => U ω i j)‖ ^ 2) / Fintype.card m -
+        (Fintype.card (Fin (cfc (S.indicator fun _ => (1 : ℝ)) A).rank) : ℝ) / Fintype.card n|} := by
+    ext ω
+    simp only [Set.mem_ofPred_eq, key ω, abs_neg]
+  rw [hset]
+  exact measureReal_abs_sum_norm_conjTranspose_mulVec_sq_div_card_sub_div_card_ge_le_of_hasLaw_uniformSphereVector
+    (u := fun j ω i => U ω i j) hind hU hV hτ
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
