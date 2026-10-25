@@ -53,6 +53,9 @@ range of $\mathbf{X}$. Design: `docs/design/LowRank-S0.md` §3.1, §8.
   `NLAlib.obliqueProjector_of_isUnit`: the orthogonal and the invertible cases.
 * `NLAlib.HasOrthonormalCols.obliqueProjector_mul_mul_conjTranspose`,
   `NLAlib.HasOrthonormalCols.obliqueProjector_mul_left`: equivariance and sketch invariance.
+* `NLAlib.exists_hasOrthonormalCols_frames_range_compl`,
+  `NLAlib.obliqueProjector_mul_one_sub_rangeProjector_mul_eq`: a sketched residual in complementary
+  frames of the column space.
 * `NLAlib.one_sub_obliqueProjector_mul`,
   `NLAlib.conjTranspose_mul_self_one_sub_obliqueProjector_mul`,
   `NLAlib.frobNorm_one_sub_obliqueProjector_mul_sq`,
@@ -358,6 +361,49 @@ theorem SymmetricGauge.matrixNorm_conjTranspose_mul_self_one_sub_obliqueProjecto
           (obliqueProjector X S * ((1 - rangeProjector X) * B))) := by
   rw [conjTranspose_mul_self_one_sub_obliqueProjector_mul h B]
   exact Φ.matrixNorm_add_le _ _
+
+/-! ### Complementary frames -/
+
+omit [Fintype k] in
+/-- Complementary frames of a column space: for $\mathbf{X} \in \Bbbk^{m \times r}$ of rank
+$q$ there are $\mathbf{Q}_1 \in \Bbbk^{m \times q}$ and $\mathbf{Q}_2 \in \Bbbk^{m \times (m - q)}$
+with orthonormal columns, $\mathbf{Q}_1^{\mathsf{H}}\mathbf{Q}_2 = \mathbf{0}$,
+$\operatorname{range}\mathbf{Q}_1 = \operatorname{range}\mathbf{X}$, and
+$\mathbf{Q}_2\mathbf{Q}_2^{\mathsf{H}}$ fixes every residual
+$(\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{B}$. The two bases in which a sketched residual is a
+Gaussian or Haar block (`obliqueProjector_mul_one_sub_rangeProjector_mul_eq`). -/
+theorem exists_hasOrthonormalCols_frames_range_compl [DecidableEq m] {c : Type*}
+    (X : Matrix m r 𝕜) (B : Matrix m c 𝕜) :
+    ∃ (Q₁ : Matrix m (Fin X.rank) 𝕜) (Q₂ : Matrix m (Fin (Fintype.card m - X.rank)) 𝕜),
+      HasOrthonormalCols Q₁ ∧ HasOrthonormalCols Q₂ ∧ Q₁ᴴ * Q₂ = 0 ∧
+        LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin ∧
+          Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B := by
+  obtain ⟨Q₁, Q₂, hQ, h₁, h₂⟩ :=
+    (isStarProjection_rangeProjector X).exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
+      (p := Fin X.rank) (q := Fin (Fintype.card m - X.rank))
+      (by rw [rank_rangeProjector, Fintype.card_fin])
+      (by have := Matrix.rank_le_card_height X; simp only [Fintype.card_fin]; omega)
+  obtain ⟨hQ₁, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
+  refine ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, rangeProjector_inj.mp (hQ₁.rangeProjector_eq.trans h₁), ?_⟩
+  rw [← Matrix.mul_assoc, h₂, ← Matrix.mul_assoc,
+    (isStarProjection_one_sub_rangeProjector X).mul_self]
+
+/-- The sketched part of a residual in complementary frames: with $\mathbf{Q}_1$, $\mathbf{Q}_2$
+as in `exists_hasOrthonormalCols_frames_range_compl` and
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$,
+$$\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{E} =
+\mathbf{Q}_1(\mathbf{S}\mathbf{Q}_1)^{+}(\mathbf{S}\mathbf{Q}_2)\mathbf{Q}_2^{\mathsf{H}}\mathbf{E}
+\,,\qquad \mathbf{E} = (\mathbf{I} - \mathbf{P}_{\mathbf{X}})\mathbf{B}\,.$$ -/
+theorem obliqueProjector_mul_one_sub_rangeProjector_mul_eq [DecidableEq m] {c : Type*}
+    {X : Matrix m r 𝕜} {B : Matrix m c 𝕜} {t : ℕ} {Q₁ : Matrix m (Fin X.rank) 𝕜}
+    {Q₂ : Matrix m (Fin t) 𝕜} (hR₁ : LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin)
+    (hE : Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B)
+    {S : Matrix k m 𝕜} (h : (S * X).rank = X.rank) :
+    obliqueProjector X S * ((1 - rangeProjector X) * B) =
+      Q₁ * (pinv (S * Q₁) * (S * Q₂) * (Q₂ᴴ * ((1 - rangeProjector X) * B))) := by
+  rw [obliqueProjector_eq_of_range_eq h hR₁.symm, obliqueProjector]
+  conv_lhs => rw [← hE]
+  simp only [Matrix.mul_assoc]
 
 /-! ### Deprecated aliases -/
 

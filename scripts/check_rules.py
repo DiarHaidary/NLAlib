@@ -58,10 +58,12 @@ BIB = 'docs/references.bib'
 DEVIATIONS = 'docs/design/Mathlib-deviations.md'
 
 # CONTRIBUTING §2's layer table (amended 2026-10-25 to match the import graph): Probability imports
-# Krylov, Regression imports Sketching, Estimation imports LowRank. A top-level folder missing here
-# is a P1 error, so a new folder gets its layer before it gets files.
+# Krylov, Regression imports Sketching, Estimation imports LowRank; LowerBounds (2026-10-25) is the
+# top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
+# it gets files.
 LAYER = {'ForMathlib': -1, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
-         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5}
+         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
+         'LowerBounds': 5}
 
 # ------------------------------------------------------------------ the rule registry
 # The rule data (severity, statement, fix, scope, section) is in docs/rules/rules.toml, the single

@@ -2,6 +2,33 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## S10 lower bounds for specific estimators: proofs (2026-10-25)
+
+Branch `cleanup/s10` (worktree `nlalib-cleanup-s10`), over `integrate/s10` with `origin/main`
+(40c9704, reorg/layers) merged. All 29 S10 statements are proved (workflow harness: haiku; opus on
+five L/H targets, E8 and L1 finished by Opus continuations; seven haiku escalations to opus),
+cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into `NLAlib` with their `Proof:`
+lines removed (D8). New top layer `LowerBounds/` (decision LOWERBOUNDS-FOLDER (a); CONTRIBUTING §2,
+`check_rules.LAYER` 5, `NLAlib/LowerBounds/RULES.md`): `LowerBounds/LowRank/{EarlyTruncation,
+EarlyTruncationBlock, EarlyTruncationBlockGaussian, TruncatedGeneralizedNystrom,
+RotationInvariant}.lean` (EarlyTruncation, 1731 lines, split into $k = 1$, the deterministic block
+step and the Gaussian block bound) and
+`LowerBounds/Regression/SketchAndSolve.lean`. The tools joined their topic files:
+`Probability/Distributions/ChiSquareMoments`, `LowRank/Structural/Truncation`,
+`LowRank/Gaussian/TruncatedGeneralizedNystrom`, `Matrix/Pseudoinverse/NormBounds`,
+`RandomMatrix/Haar/Blocks`, and the new `ForMathlib/Probability/Moments/PaleyZygmund.lean`. W6
+(Epperly–Webber Lemma 6.2) went to `LowerBounds/LowRank/RotationInvariant` rather than
+`LowRank/Gaussian/RotationInvariantFactor`, and W3–W5 to `LowerBounds/Regression` rather than
+`Regression/SketchAndSolve` (lower bounds live in `LowerBounds/`). The scaffold is empty again. No
+statement changed. New public helpers: `exists_hasOrthonormalCols_frames_range_compl` and
+`obliqueProjector_mul_one_sub_rangeProjector_mul_eq` (`Matrix/Subspaces/ObliqueProjector`; they
+replace the private `exists_compl_frames`/`obliqueProjector_mul_eq_frames` of
+`Regression/SketchAndSolve` and three S10 copies), `measurable_obliqueProjector_mul_sub_rsvd`
+(formerly private in `LowRank/Gaussian/TruncatedGeneralizedNystrom`) and
+`integrable_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame` (Blocks). New import:
+`NLAlib.Matrix.Norms.Projector` (NormBounds). Reports: `reports/Review-S10-Cleanup.md` and
+`reports/Stage-S10.md` in the harness repository.
+
 ## Library layers follow the imports (2026-10-25)
 
 Branch `reorg/layers` (worktree `nlalib-reorg`), from `origin/main`. Maintainer decision on library

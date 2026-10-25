@@ -77,6 +77,7 @@ public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
+public import NLAlib.ForMathlib.Probability.Moments.PaleyZygmund
 public import NLAlib.ForMathlib.Probability.Moments.Variance
 public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
@@ -149,6 +150,12 @@ public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.LowRank.Structural.Filter
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
+public import NLAlib.LowerBounds.LowRank.EarlyTruncation
+public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
+public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian
+public import NLAlib.LowerBounds.LowRank.RotationInvariant
+public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
+public import NLAlib.LowerBounds.Regression.SketchAndSolve
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.Dilation
 public import NLAlib.Matrix.Basic.FromCols
