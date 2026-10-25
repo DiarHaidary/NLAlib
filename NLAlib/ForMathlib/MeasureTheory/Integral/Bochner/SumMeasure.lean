@@ -61,7 +61,7 @@ theorem measureReal_Iic_eq_sum {μ : Measure ℝ} [IsFiniteMeasure μ]
     measureReal_biUnion_finset (fun a _ b _ hab => Set.disjoint_singleton.2 hab)
       (fun _ _ => measurableSet_singleton _) (fun _ _ => measure_ne_top _ _)]
 
-/-- **Lipschitz test functions against finitely supported measures.** If the finite measures
+/-- Lipschitz test functions against finitely supported measures: if the finite measures
 $\mu$, $\nu$ on $\mathbb{R}$ are carried by a finite set $s \subseteq [a, b]$, $a \le b$, their
 distribution functions differ by at most $K \ge 0$ at every point of $s$, and $f$ is
 $L$-Lipschitz on $[a, b]$, then

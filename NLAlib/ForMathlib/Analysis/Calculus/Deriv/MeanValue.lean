@@ -27,7 +27,7 @@ Design: stage Probability-Beta (`docs/design/Probability-Beta.md` §3.3, β4e).
 
 open Set
 
-/-- **Integrating factor**: if $f$ is differentiable on $(0, \infty)$ with derivative $f'$,
+/-- Integrating factor: if $f$ is differentiable on $(0, \infty)$ with derivative $f'$,
 continuous from the right at $0$, $b > 0$, and $t f'(t) + b f(t) \le 0$ for every $t > 0$, then
 $t \mapsto t^b f(t)$ is antitone on $[0, \infty)$. -/
 theorem antitoneOn_rpow_mul_of_hasDerivAt {f f' : ℝ → ℝ} {b : ℝ} (hb : 0 < b)

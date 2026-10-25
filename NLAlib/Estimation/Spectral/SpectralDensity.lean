@@ -196,7 +196,8 @@ every test matrix $\mathbf{\Omega}$ with columns $\boldsymbol{\omega}_j$ and eve
 $$\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega}, q) = \frac{1}{\lvert n\rvert m}\sum_{j=1}^m
 \mathsf{lanczosQuadrature}(\mathbf{A}, \boldsymbol{\omega}_j, q)\,,$$
 the identification of each probe's Gauss rule with its Lanczos rule; atoms at the Ritz values,
-weights from the tridiagonal matrices (`Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum`). -/
+weights from the tridiagonal matrices (`Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum`).
+[MartinssonTropp2020, §6.6]; there for the trace estimate. -/
 theorem _root_.Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) (q : ℕ) :
     slqMeasure A Ω q = ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹) •
@@ -404,7 +405,7 @@ private lemma isFiniteMeasure_empiricalSpectralMeasure_aux (A : Matrix n n 𝕜)
     infer_instance
   · infer_instance
 
-/-- **Distribution functions control Lipschitz test functions.** For Hermitian $\mathbf{A}$ with
+/-- Distribution functions control Lipschitz test functions: for Hermitian $\mathbf{A}$ with
 spectrum in $[a, b]$, $a \le b$, a test matrix $\mathbf{\Omega}$ and $\tau \ge 0$: if at every
 eigenvalue $x$ the distribution functions of $\nu_{\mathbf{A}}$ (the empirical spectral measure)
 and of $\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega})$ differ by at most $\tau$,
@@ -432,7 +433,7 @@ _root_.Matrix.IsHermitian.abs_integral_empiricalSpectralMeasure_sub_integral_pro
     (fun x hx => hs (A.finite_real_spectrum.mem_toFinset.1 hx)) hab hf hτ
     (fun x hx => hK x (A.finite_real_spectrum.mem_toFinset.1 hx))
 
-/-- **The Kolmogorov event controls the mass**: for Hermitian $\mathbf{A}$, $n$ nonempty, and a
+/-- The Kolmogorov event controls the mass: for Hermitian $\mathbf{A}$, $n$ nonempty, and a
 test matrix $\mathbf{\Omega}$: if at every eigenvalue the distribution functions of
 $\nu_{\mathbf{A}}$ (the empirical spectral measure) and of
 $\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega})$ differ by at most $\tau$, then
@@ -598,7 +599,7 @@ private lemma card_mul_min_le_min_girardHutchinson {M N τ c F S : ℝ} (hM : 0 
       _ ≤ M * τ * 1 := by gcongr
       _ = M * τ := mul_one _
 
-/-- **The distribution of the probe spectral measure, at one set.** Let the entries of the real
+/-- The distribution of the probe spectral measure, at one set: let the entries of the real
 $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
 moment generating function bound with variance proxy $c$ (`HasSubgaussianMGF`) and having second
 moment $1$. Then for real symmetric $\mathbf{A}$, every $S \subseteq \mathbb{R}$ and every

@@ -379,7 +379,7 @@ theorem measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector
 
 /-! ### The chi-square law -/
 
-/-- **The squared norm of a standard Gaussian vector is chi-square**: for $\mathbf{g}$ with law
+/-- The squared norm of a standard Gaussian vector is chi-square: for $\mathbf{g}$ with law
 `gaussianVector n` (independent standard normal coordinates) and $n$ nonempty,
 $\|\mathbf{g}\|^2$ has law $\mathrm{Gamma}(d/2, 1/2)$ with $d = \lvert n \rvert$ (shape $d/2$,
 rate $1/2$), the chi-square law with $d$ degrees of freedom. -/
