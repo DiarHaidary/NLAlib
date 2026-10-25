@@ -130,7 +130,25 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_aeval_orthogonalPolynomial_mul
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b x : n → 𝕜} {j : ℕ}
     (hx : x ∈ krylovSpace A b j) :
     star x ⬝ᵥ (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) = 0 := by
-  sorry
+  have key : ∀ i : ℕ, i < j →
+      star (A ^ i *ᵥ b) ⬝ᵥ (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) = 0 := by
+    intro i hi
+    have hX : A ^ i *ᵥ b = aeval A (X ^ i : ℝ[X]) *ᵥ b := by rw [map_pow, aeval_X]
+    rw [hX, hA.star_aeval_mulVec_dotProduct_aeval_mulVec]
+    obtain ⟨a, ha⟩ := (A.finite_real_spectrum).bddBelow
+    obtain ⟨a', ha'⟩ := (A.finite_real_spectrum).bddAbove
+    have hs : spectrum ℝ A ⊆ Set.Icc a a' := fun x hx => ⟨ha hx, ha' hx⟩
+    have hortho := isOrthogonalPolynomial_orthogonalPolynomial
+      (ae_mem_Icc_spectralMeasure A hs b) j
+    have hdeg : (X ^ i : ℝ[X]).degree < j := by
+      rw [degree_X_pow]; exact_mod_cast hi
+    simpa [mul_comm] using hortho _ hdeg
+  rw [krylovSpace_eq_span] at hx
+  induction hx using Submodule.span_induction with
+  | mem y hy => obtain ⟨⟨i, hi⟩, rfl⟩ := hy; exact key i hi
+  | zero => simp
+  | add y z _ _ hy hz => rw [star_add, add_dotProduct, hy, hz, add_zero]
+  | smul c y _ hy => rw [star_smul, smul_dotProduct, hy, smul_zero]
 
 /-- From the grade on, $\pi_j(\mathbf{A})\mathbf{b}$ vanishes: for Hermitian $\mathbf{A}$, every
 $\mathbf{b}$ and $j \ge \nu$, $\nu$ the grade of $\mathbf{b}$, $\pi_j(\mathbf{A})\mathbf{b} =
