@@ -463,6 +463,24 @@ theorem MatchesMoments.eq_radauQuadrature [IsFiniteMeasure ν] {k : ℕ}
 
 /-! ### The Radau remainder and bounds -/
 
+omit [IsFiniteMeasure μ] in
+/-- The degenerate Radau weight: for $\mu$ supported in $[a, b]$ and $c \in \{a, b\}$, the
+factor $x - c$ has one sign $\mu$-a.e., so $\int\lvert x - c\rvert g\,d\mu = 0$ gives
+$\int(x - c)g\,d\mu = 0$. -/
+private theorem integral_sub_mul_eq_zero_of_integral_abs_sub_mul_eq_zero
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) {g : ℝ → ℝ}
+    (h : ∫ x, |x - c| * g x ∂μ = 0) : ∫ x, (x - c) * g x ∂μ = 0 := by
+  rcases hc with rfl | rfl
+  · rw [← h]
+    refine integral_congr_ae ?_
+    filter_upwards [hμ] with x hx
+    rw [abs_of_nonneg (sub_nonneg.2 hx.1)]
+  · rw [← neg_eq_zero, ← integral_neg, ← h]
+    refine integral_congr_ae ?_
+    filter_upwards [hμ] with x hx
+    rw [abs_of_nonpos (sub_nonpos.2 hx.2)]
+    ring
+
 /-- **The Gauss–Radau remainder**: for a finite measure $\mu$ supported in $[a, b]$, $a < b$,
 $c \in \{a, b\}$, every $k$, and $f$ continuous on $[a, b]$ and $C^{2k+1}$ on $(a, b)$, there
 is $\xi \in (a, b)$ with
@@ -494,7 +512,77 @@ theorem exists_integral_sub_integral_radauQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
     ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, f x ∂radauQuadrature μ c k =
       iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial *
         ∫ x, (x - c) * (orthogonalPolynomial (radauMeasure μ c) k).eval x ^ 2 ∂μ := by
-  sorry
+  set μc := radauMeasure μ c
+  have := isFiniteMeasure_radauMeasure hμ c
+  have hμc : ∀ᵐ x ∂μc, x ∈ Set.Icc a b := ae_mem_Icc_radauMeasure hμ c
+  set π := orthogonalPolynomial μc k
+  have hfint : Integrable f μ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
+    exact hf.integrableOn_Icc
+  have hπint : Integrable (fun x => (x - c) * π.eval x ^ 2) μ := by
+    convert integrable_eval_of_ae_mem_Icc hμ ((X - C c) * π ^ 2) using 2; simp
+  rcases (integral_nonneg fun x => sq_nonneg (π.eval x) : 0 ≤ ∫ x, π.eval x ^ 2 ∂μc).eq_or_lt
+    with h0 | hpos
+  · rw [radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0.symm, sub_self]
+    refine ⟨(a + b) / 2, ⟨by linarith, by linarith⟩, ?_⟩
+    rw [integral_sub_mul_eq_zero_of_integral_abs_sub_mul_eq_zero hμ hc
+      (by rw [← integral_radauMeasure]; exact h0.symm), mul_zero]
+  · have hpd : IsMomentPosDef μc (k + 1) := (isMomentPosDef_succ_iff hμc k).mpr hpos
+    set G := gaussNodes μc k
+    have hGI : (G : Set ℝ) ⊆ Set.Ioo a b := hpd.gaussNodes_subset_Ioo hμc
+    have hcI : c ∈ Set.Icc a b := by rcases hc with rfl | rfl <;> constructor <;> linarith
+    have hcG : c ∉ G := fun h => by
+      rcases hc with rfl | rfl
+      · exact lt_irrefl _ (hGI h).1
+      · exact lt_irrefl _ (hGI h).2
+    set m : Multiset ℝ := c ::ₘ (G.val + G.val)
+    have hcard : m.card = 2 * k + 1 := by
+      have hGk : G.card = k := (hpd.mono k.le_succ).card_gaussNodes hμc
+      simp only [m, Multiset.card_cons, Multiset.card_add, Finset.card_val, hGk]
+      ring
+    have hmem : ∀ y ∈ m, y = c ∨ y ∈ G := by
+      intro y hy
+      simpa [m, or_self] using hy
+    obtain ⟨H, hHdeg, hjet⟩ :=
+      exists_degree_lt_forall_iterate_derivative_eval_eq m (fun y j => iteratedDeriv j f y)
+    rw [hcard] at hHdeg
+    have hexact : ∫ x, f x ∂radauQuadrature μ c k = ∫ x, H.eval x ∂μ := by
+      rw [matchesMoments_radauQuadrature hμ hc k H hHdeg, integral_radauQuadrature hμ hc,
+        integral_radauQuadrature hμ hc]
+      refine Finset.sum_congr rfl fun y hy => ?_
+      have hy' : y ∈ m := by simpa [m, radauNodes] using hy
+      rw [show f y = H.eval y by simpa using (hjet y hy' 0 (Multiset.count_pos.2 hy')).symm]
+    have hprod : (m.map fun y => X - C y).prod = (X - C c) * π ^ 2 := by
+      have hnod : Lagrange.nodal G id = π := (hpd.mono k.le_succ).nodal_gaussNodes hμc
+      rw [← hnod]
+      simp only [m, Lagrange.nodal, Multiset.map_cons, Multiset.prod_cons, Multiset.map_add,
+        Multiset.prod_add, Finset.prod_eq_multiset_prod, id, sq]
+    have hD : ContinuousOn (fun ξ => iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial)
+        (Set.Ioo a b) :=
+      ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
+        (iteratedDerivWithin_of_isOpen isOpen_Ioo).symm).div_const _
+    have hpt : ∀ᵐ x ∂μ, ∃ ξ ∈ Set.Ioo a b, f x - H.eval x =
+        iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial * ((x - c) * π.eval x ^ 2) := by
+      filter_upwards [hμ] with x hx
+      obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab (Multiset.cons_ne_zero)
+        (fun y hy => (hmem y hy).elim (fun h => h ▸ hcI) fun h => Set.Ioo_subset_Icc_self (hGI h))
+        (fun y hy h => by
+          rcases hmem y hy with rfl | hyG
+          · simp [Multiset.count_eq_zero.mpr (show y ∉ G.val from hcG)] at h
+          · exact hGI hyG) hf (hcard ▸ hf') (hcard ▸ hHdeg) hjet hx
+      refine ⟨ξ, hξ, ?_⟩
+      rw [h, hprod, hcard]
+      simp
+    rw [hexact, ← integral_sub hfint (integrable_eval_of_ae_mem_Icc hμ H)]
+    rcases hc with rfl | rfl
+    · refine exists_integral_eq_mul_integral_of_ae_nonneg
+        (hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)) hπint ?_ (isConnected_Ioo hab) hD hpt
+      filter_upwards [hμ] with x hx
+      exact mul_nonneg (sub_nonneg.2 hx.1) (sq_nonneg _)
+    · refine exists_integral_eq_mul_integral_of_ae_nonpos
+        (hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)) hπint ?_ (isConnected_Ioo hab) hD hpt
+      filter_upwards [hμ] with x hx
+      exact mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hx.2) (sq_nonneg _)
 
 /-- **The left Radau rule is a lower bound** for $f$ with nonnegative derivative of order
 $2k + 1$: for a finite measure $\mu$ supported in $[a, b]$, $a < b$, every $k$, and $f$
