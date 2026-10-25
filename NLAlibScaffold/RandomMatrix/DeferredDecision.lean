@@ -54,6 +54,15 @@ variable {d k β : Type*} [Fintype d] [Fintype k] {q : ℕ}
 
 /-! ### Gaussian matrices -/
 
+/-- A block $\mathbf{E}\mathbf{Z}\mathbf{F}$ with $\mathbf{F}\mathbf{w} = \mathbf{0}$ and
+$\mathbf{E}\mathbf{u} = \mathbf{0}$ is invisible to the pair query $(\mathbf{w}, \mathbf{u})$. -/
+private theorem twoSidedMulVec_add_mul_mul {𝕜 : Type*} [RCLike 𝕜] {E : Matrix d d 𝕜}
+    {F : Matrix k k 𝕜} (hE : IsStarProjection E) {v : (k → 𝕜) × (d → 𝕜)} (hw : F *ᵥ v.1 = 0)
+    (hu : E *ᵥ v.2 = 0) (Y Z : Matrix d k 𝕜) :
+    twoSidedMulVec (Y + E * Z * F) v = twoSidedMulVec Y v := by
+  simp only [twoSidedMulVec, Matrix.add_mulVec, Matrix.conjTranspose_add, Matrix.conjTranspose_mul,
+    hE.conjTranspose_eq, ← Matrix.mulVec_mulVec, hw, hu, Matrix.mulVec_zero, add_zero]
+
 /-- **The resampled matrix gives the same transcript**: an algorithm making `q` pair queries to
 `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, gets the same responses from
 `alg.resample X X'`, which differs from $\mathbf{X}$ only in the block
@@ -85,28 +94,22 @@ theorem transcript_resample [DecidableEq d] [DecidableEq k] {𝕜 : Type*} [RCLi
   have hEu : ∀ j, (1 - Q) *ᵥ (alg.queries τ j).2 = 0 := by
     intro j
     rw [hu j, Matrix.sub_mulVec, Matrix.one_mulVec, hQ, rangeProjector_mulVec_mulVec, sub_self]
-  have hEh : (1 - Q)ᴴ = 1 - Q := by
-    rw [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hQ, conjTranspose_rangeProjector]
-  have hFh : (1 - P)ᴴ = 1 - P := by
-    rw [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hP, conjTranspose_rangeProjector]
   apply alg.transcript_eq_of_forall_apply_queries_eq
   intro j
-  have h1 := hFw j
-  have h2 := hEu j
-  simp only [twoSidedMulVec, QueryAlgorithm.resample, ← hτ, ← hP, ← hQ, Prod.mk.injEq]
-  constructor
-  · simp only [Matrix.sub_mulVec, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, h1, Matrix.mulVec_zero,
-      add_zero, sub_zero]
-  · simp only [Matrix.conjTranspose_sub, Matrix.conjTranspose_add, Matrix.conjTranspose_mul,
-      Matrix.sub_mulVec, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, hEh, hFh, h2, Matrix.mulVec_zero,
-      add_zero, sub_zero]
+  have hres : alg.resample X X' = X + (1 - Q) * (X' - X) * (1 - P) := by
+    simp only [QueryAlgorithm.resample, ← hτ, ← hP, ← hQ, Matrix.mul_sub, Matrix.sub_mul]
+    abel
+  rw [hres, twoSidedMulVec_add_mul_mul (isStarProjection_one_sub_rangeProjector _) (hFw j)
+    (hEu j)]
 
+/-- The transcript of `i + 1` truncated rounds appends the next response. -/
 private theorem transcript_truncate_succ {Q R : Type*} (alg : QueryAlgorithm Q R q β) (f : Q → R)
     (i : ℕ) :
     (alg.truncate (i + 1)).transcript f = Fin.snoc (α := fun _ => R)
       ((alg.truncate i).transcript f) (f (alg.query i ((alg.truncate i).transcript f))) := by
   simp only [transcript_truncate]; rfl
 
+/-- Appending a response does not change the earlier queries. -/
 private theorem queries_truncate_succ_castSucc {Q R : Type*} (alg : QueryAlgorithm Q R q β)
     {i : ℕ}
     (h : Fin i → R) (r : R) (j : Fin i) :
@@ -119,6 +122,7 @@ private theorem queries_truncate_succ_castSucc {Q R : Type*} (alg : QueryAlgorit
     Fin.ext rfl
   rw [this, Fin.snoc_castSucc]
 
+/-- The last query after appending a response is the query of the shorter history. -/
 private theorem queries_truncate_succ_last {Q R : Type*} (alg : QueryAlgorithm Q R q β)
     {i : ℕ}
     (h : Fin i → R) (r : R) :
@@ -133,6 +137,8 @@ private theorem queries_truncate_succ_last {Q R : Type*} (alg : QueryAlgorithm Q
   rw [this, Fin.snoc_castSucc]
   rfl
 
+/-- Appending a column: the complement projectors are nested, and the new one kills the new
+column. -/
 private theorem projector_facts {𝕜 m : Type*} [RCLike 𝕜] [Fintype m] [DecidableEq m] {i : ℕ}
     {U : Matrix m (Fin i) 𝕜} {U' : Matrix m (Fin (i + 1)) 𝕜}
     (hcol : ∀ a j, U' a j.castSucc = U a j) :
@@ -156,6 +162,7 @@ private theorem projector_facts {𝕜 m : Type*} [RCLike 𝕜] [Fintype m] [Deci
 
 
 omit [Fintype d] [Fintype k] in
+/-- The left query matrix after appending a response: old columns, then the new left part. -/
 private theorem leftQueryMatrix_truncate_succ_snoc {R : Type*}
     (alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) R q β) {i : ℕ} (h : Fin i → R) (r : R) :
     (∀ a j, (alg.truncate (i + 1)).leftQueryMatrix (Fin.snoc (α := fun _ => R) h r) a j.castSucc =
@@ -167,6 +174,7 @@ private theorem leftQueryMatrix_truncate_succ_snoc {R : Type*}
       queries_truncate_succ_last]
 
 omit [Fintype d] [Fintype k] in
+/-- The right query matrix after appending a response: old columns, then the new right part. -/
 private theorem rightQueryMatrix_truncate_succ_snoc {R : Type*}
     (alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) R q β) {i : ℕ} (h : Fin i → R) (r : R) :
     (∀ a j, (alg.truncate (i + 1)).rightQueryMatrix (Fin.snoc (α := fun _ => R) h r) a j.castSucc =
@@ -178,42 +186,34 @@ private theorem rightQueryMatrix_truncate_succ_snoc {R : Type*}
       queries_truncate_succ_last]
 
 omit [Fintype d] [Fintype k] in
+/-- The query matrices after appending a response do not depend on that response. -/
 private theorem queryMatrices_truncate_succ_snoc {R : Type*}
     (alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) R q β) {i : ℕ} (h : Fin i → R) (r r' : R) :
     (alg.truncate (i + 1)).leftQueryMatrix (Fin.snoc (α := fun _ => R) h r) =
       (alg.truncate (i + 1)).leftQueryMatrix (Fin.snoc (α := fun _ => R) h r') ∧
     (alg.truncate (i + 1)).rightQueryMatrix (Fin.snoc (α := fun _ => R) h r) =
       (alg.truncate (i + 1)).rightQueryMatrix (Fin.snoc (α := fun _ => R) h r') := by
-  obtain ⟨hl, hl'⟩ := leftQueryMatrix_truncate_succ_snoc alg h r
-  obtain ⟨hm, hm'⟩ := leftQueryMatrix_truncate_succ_snoc alg h r'
-  obtain ⟨hr, hr'⟩ := rightQueryMatrix_truncate_succ_snoc alg h r
-  obtain ⟨hs, hs'⟩ := rightQueryMatrix_truncate_succ_snoc alg h r'
-  refine ⟨Matrix.ext fun a j => ?_, Matrix.ext fun a j => ?_⟩ <;>
-  induction j using Fin.lastCases with
-  | last => first | exact (congrFun hl' a).trans (congrFun hm' a).symm
-                  | exact (congrFun hr' a).trans (congrFun hs' a).symm
-  | cast j => first | exact (hl a j).trans (hm a j).symm | exact (hr a j).trans (hs a j).symm
+  have hq : (alg.truncate (i + 1)).queries (Fin.snoc (α := fun _ => R) h r) =
+      (alg.truncate (i + 1)).queries (Fin.snoc (α := fun _ => R) h r') := by
+    funext j
+    induction j using Fin.lastCases with
+    | last => rw [queries_truncate_succ_last, queries_truncate_succ_last]
+    | cast j => rw [queries_truncate_succ_castSucc, queries_truncate_succ_castSucc]
+  exact ⟨by rw [leftQueryMatrix, hq, ← leftQueryMatrix], by
+    rw [rightQueryMatrix, hq, ← rightQueryMatrix]⟩
 
-private theorem twoSidedMulVec_add_mul_mul {E : Matrix d d ℝ} {F : Matrix k k ℝ}
-    (hE : IsStarProjection E) {w : k → ℝ} {u : d → ℝ} (hw : F *ᵥ w = 0) (hu : E *ᵥ u = 0)
-    (Y Z : Matrix d k ℝ) :
-    twoSidedMulVec (Y + E * Z * F) (w, u) = twoSidedMulVec Y (w, u) := by
-  simp only [twoSidedMulVec, Matrix.add_mulVec, Matrix.conjTranspose_add, Matrix.conjTranspose_mul,
-    hE.conjTranspose_eq, ← Matrix.mulVec_mulVec, hw, hu, Matrix.mulVec_zero, add_zero]
-
+/-- The two-sided oracle is jointly measurable in the matrix and the query. -/
 private theorem measurable_twoSidedMulVec {α : Type*} [MeasurableSpace α]
     {f : α → Matrix d k ℝ} {v : α → (k → ℝ) × (d → ℝ)} (hf : Measurable f) (hv : Measurable v) :
     Measurable fun a => twoSidedMulVec (f a) (v a) :=
   (hf.matrix_mulVec hv.fst).prodMk
     ((Measurable.matrix_conjTranspose continuous_star.measurable hf).matrix_mulVec hv.snd)
 
+/-- The coordinates of a product of probability measures are independent. -/
 private theorem indepFun_fst_snd' {α γ : Type*} [MeasurableSpace α] [MeasurableSpace γ]
     (μ : Measure α) (ν : Measure γ) [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] :
-    IndepFun Prod.fst Prod.snd (μ.prod ν) := by
-  rw [indepFun_iff_map_prod_eq_prod_map_map measurable_fst.aemeasurable
-    measurable_snd.aemeasurable, (measurePreserving_fst (μ := μ) (ν := ν)).map_eq,
-    (measurePreserving_snd (μ := μ) (ν := ν)).map_eq]
-  exact Measure.map_id
+    IndepFun Prod.fst Prod.snd (μ.prod ν) :=
+  indepFun_prod measurable_id measurable_id
 
 /-- The frozen step: for fixed matrices the new response does not see the resampled block. -/
 private theorem map_resample_step_eq {E E' : Matrix d d ℝ} {F F' : Matrix k k ℝ}
@@ -244,10 +244,11 @@ private theorem map_resample_step_eq {E E' : Matrix d d ℝ} {F F' : Matrix k k 
     have h2 : E' * (E * z.1 * F) * F' = E' * z.1 * F' := by
       rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hEE', Matrix.mul_assoc _ F, hFF]
     simp only [Matrix.mul_add, Matrix.mul_sub, Matrix.add_mul, Matrix.sub_mul, h1, h2]; abel
-  simp only [Function.comp_apply, hY, twoSidedMulVec_add_mul_mul hE' hw hu, hY']
+  simp only [Function.comp_apply, hY, twoSidedMulVec_add_mul_mul (v := (w, u)) hE' hw hu, hY']
   congr 1
   simp only [Matrix.mul_sub, Matrix.sub_mul]; abel
 
+/-- Appending an entry to a tuple is measurable. -/
 private theorem measurable_snoc {R : Type*} [MeasurableSpace R] {i : ℕ} :
     Measurable fun p : (Fin i → R) × R => Fin.snoc (α := fun _ => R) p.1 p.2 := by
   refine measurable_pi_iff.2 fun j => ?_
@@ -257,6 +258,7 @@ private theorem measurable_snoc {R : Type*} [MeasurableSpace R] {i : ℕ} :
     simp only [Fin.snoc_castSucc]
     exact (measurable_pi_apply j).comp measurable_fst
 
+/-- `IdentDistrib` transfers along a map that pushes one measure to the other. -/
 private theorem identDistrib_comp_iff {α γ δ : Type*} [MeasurableSpace α] [MeasurableSpace γ]
     [MeasurableSpace δ] {μ : Measure α} {ν : Measure γ} {f g : α → δ} (hf : Measurable f)
     (hg : Measurable g) {e : γ → α} (he : AEMeasurable e ν) (hμ : ν.map e = μ) :
@@ -269,6 +271,7 @@ private theorem identDistrib_comp_iff {α γ δ : Type*} [MeasurableSpace α] [M
   · rw [hf', hg']; exact h.map_eq
   · rw [← hf', ← hg']; exact h.map_eq
 
+/-- The transcript against `twoSidedMulVec (f a)` is measurable in `a`. -/
 private theorem IsMeasurable.measurable_transcript_twoSidedMulVec {α : Type*}
     [MeasurableSpace α] [MeasurableSpace β]
     {alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) ((d → ℝ) × (k → ℝ)) q β} (halg : alg.IsMeasurable)
@@ -277,6 +280,7 @@ private theorem IsMeasurable.measurable_transcript_twoSidedMulVec {α : Type*}
   halg.measurable_transcript (O := fun a => twoSidedMulVec (f a))
     (measurable_twoSidedMulVec (hf.comp measurable_fst) measurable_snd)
 
+/-- The resampled matrix is jointly measurable in the two matrices. -/
 private theorem IsMeasurable.measurable_resample [DecidableEq d] [DecidableEq k]
     [MeasurableSpace β]
     {alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) ((d → ℝ) × (k → ℝ)) q β} (halg : alg.IsMeasurable) :
@@ -625,12 +629,9 @@ theorem IsMeasurable.hasLaw_prodMk_conjTranspose_mul_mul_of_hasLaw_gaussianMatri
       ((μ.map fun ω => alg.transcript (twoSidedMulVec (X ω))).prod (gaussianMatrix r s)) μ := by
   classical
   have := hX.isProbabilityMeasure
-  have hO : Measurable (Function.uncurry
-      (twoSidedMulVec : Matrix d k ℝ → (k → ℝ) × (d → ℝ) → (d → ℝ) × (k → ℝ))) := by
-    unfold twoSidedMulVec Function.uncurry; fun_prop
   set τ : Matrix d k ℝ → Fin q → (d → ℝ) × (k → ℝ) :=
     fun A => alg.transcript (twoSidedMulVec A)
-  have hτ : Measurable τ := halg.measurable_transcript hO
+  have hτ : Measurable τ := halg.measurable_transcript_twoSidedMulVec measurable_id
   -- the frame block, as a function of the transcript and a matrix
   set F : (Fin q → (d → ℝ) × (k → ℝ)) → Matrix d k ℝ → Matrix r s ℝ :=
     fun t Y => (WL t)ᴴ * Y * WR t
