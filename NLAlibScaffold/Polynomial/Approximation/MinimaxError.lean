@@ -140,7 +140,10 @@ Proof: S, about 4 lines. Unfold `minimaxPoly`; `split_ifs`: the chosen polynomia
 `h.choose_spec.1`, and `degree_zero` with `bot_le` for the junk value. -/
 theorem degree_minimaxPoly_le (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) :
     (minimaxPoly f s n).degree ≤ n := by
-  sorry
+  unfold minimaxPoly
+  split_ifs with h
+  · exact h.choose_spec.1
+  · simp
 
 /-- **The chosen best approximation attains the minimax error**: for $s$ compact and $f$
 continuous on $s$, $\lvert f(x) - \mathrm{minimaxPoly}\ f\ s\ n\ (x) \rvert \le E_n(f; s)$ for
