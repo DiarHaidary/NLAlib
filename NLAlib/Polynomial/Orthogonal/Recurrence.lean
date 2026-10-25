@@ -18,9 +18,9 @@ with $\alpha_k = \int x\pi_k^2\,d\mu/\int\pi_k^2\,d\mu$ and
 $\beta_k = \int\pi_k^2\,d\mu/\int\pi_{k-1}^2\,d\mu$, $\beta_0 = \mu(\mathbb{R})$ (Gautschi's
 convention). The recurrence is the definition, so it holds by `rfl`; orthogonality, uniqueness
 and moment invariance are theorems. The definitions are total: a zero norm gives a zero
-coefficient (Lean's $x/0 = 0$), $\pi_k$ is monic of degree $k$ for every measure, and for a measure
-with $N$ support points $\pi_N$ is the nodal polynomial of the support and every later $\pi_k$ a
-multiple of it.
+coefficient (Lean's $x/0 = 0$), and $\pi_k$ is monic of degree $k$ for every measure. For a
+measure with $N$ support points, $\pi_N$ is then the nodal polynomial of the support and every
+later $\pi_k$ a multiple of it (not proved here).
 
 The Jacobi matrix of order $k$ carries $\alpha_0, \dots, \alpha_{k-1}$ on its diagonal and
 $\sqrt{\beta_1}, \dots, \sqrt{\beta_{k-1}}$ beside it, in the layout of the Lanczos tridiagonal
@@ -65,8 +65,9 @@ it is orthogonal to every polynomial of degree less than $k$
 (`isOrthogonalPolynomial_orthogonalPolynomial`), and it is the only monic such polynomial of
 degree $k$ when $\mu$ is positive definite up to degree $k$
 (`IsMomentPosDef.eq_orthogonalPolynomial`). Junk: a zero norm gives a zero coefficient
-($x/0 = 0$); for a measure with $N$ support points, $\pi_N$ is the nodal polynomial of the support
-and every later $\pi_k$ is a multiple of it. [Gautschi2004, Theorem 1.27]. -/
+($x/0 = 0$); for a measure with $N$ support points, $\pi_N$ is then the nodal polynomial of the
+support and every later $\pi_k$ a multiple of it (not proved here).
+[Gautschi2004, Theorem 1.27]. -/
 noncomputable def orthogonalPolynomial (μ : Measure ℝ) : ℕ → ℝ[X]
   | 0 => 1
   | 1 => X - C ((∫ x, x * (1 : ℝ[X]).eval x ^ 2 ∂μ) / ∫ x, (1 : ℝ[X]).eval x ^ 2 ∂μ)
