@@ -428,8 +428,8 @@ $c \in \{a, b\}$ and every $k$, the Radau rule has mass $\mu(\mathbb{R})$.
 Proof: S, about 3 lines. `MatchesMoments.measureReal_univ_eq` on
 `matchesMoments_radauQuadrature` ($2k + 1 > 0$). -/
 theorem radauQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b)
-    (k : ℕ) : (radauQuadrature μ c k).real Set.univ = μ.real Set.univ := by
-  sorry
+    (k : ℕ) : (radauQuadrature μ c k).real Set.univ = μ.real Set.univ :=
+  ((matchesMoments_radauQuadrature hμ hc k).measureReal_univ_eq (by omega)).symm
 
 /-- **Uniqueness of the Radau rule**: if a finite measure $\nu$ carried by $c$ and at most $k$
 further points matches the first $2k + 1$ moments of a finite measure $\mu$ supported in
