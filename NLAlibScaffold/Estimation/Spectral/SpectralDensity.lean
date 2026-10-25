@@ -841,7 +841,50 @@ theorem measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_sl
         |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂slqMeasure A (X ω) (q + 1)|} ≤
       2 * Fintype.card n * Real.exp (-(hansonWrightConstant * (Fintype.card m *
         Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
-  sorry
+  set T := {ω | ∃ x ∈ spectrum ℝ A, τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
+    (probeSpectralMeasure A (X ω)).real (Set.Iic x)|}
+  have hT := measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le
+    hind hsub hvar hA hτ
+  rcases eq_or_ne (μ T) ∞ with hTtop | hTtop
+  · -- `μ` is not finite, so `n` or `m` is empty and the event does not depend on `ω`.
+    have hμ : μ Set.univ = ∞ := top_le_iff.mp (hTtop ▸ measure_mono (Set.subset_univ T))
+    have hsing : Subsingleton (Matrix n m ℝ) := by
+      rcases isEmpty_or_nonempty n with hn | ⟨⟨i⟩⟩
+      · infer_instance
+      rcases isEmpty_or_nonempty m with hm | ⟨⟨j⟩⟩
+      · infer_instance
+      have hint := (hsub i j).integrable_exp_mul 0
+      simp only [zero_mul, Real.exp_zero] at hint
+      have := (integrable_const_iff.mp hint).resolve_left one_ne_zero
+      exact absurd hμ (measure_ne_top μ _)
+    have key : ∀ S : Set Ω, (∀ ω ∈ S, ∀ ω', ω' ∈ S) → μ.real S = 0 := fun S hS => by
+      rcases S.eq_empty_or_nonempty with rfl | ⟨ω₀, h₀⟩
+      · exact measureReal_empty
+      · rw [Set.eq_univ_of_forall (hS ω₀ h₀), measureReal_def, hμ, ENNReal.toReal_top]
+    refine le_trans (le_of_eq (key _ fun ω hω ω' => ?_)) (hT.trans' measureReal_nonneg)
+    obtain ⟨f, hf, hlt⟩ := hω
+    exact ⟨f, hf, Subsingleton.elim (X ω) (X ω') ▸ hlt⟩
+  refine le_trans (measureReal_mono (fun ω hω => ?_) hTtop) hT
+  obtain ⟨f, hf, hlt⟩ := hω
+  by_contra hK
+  simp only [T, Set.mem_ofPred_eq, not_exists, not_and, not_lt] at hK
+  have hmass : frobNorm (X ω) ^ 2 / (Fintype.card n * Fintype.card m) ≤ 1 + τ := by
+    rcases isEmpty_or_nonempty n with hn | hn
+    · simp only [Fintype.card_eq_zero, Nat.cast_zero, zero_mul, div_zero]
+      linarith
+    · rw [← hA.probeSpectralMeasure_real_univ (X ω)]
+      linarith [abs_le.mp (hA.abs_one_sub_probeSpectralMeasure_real_univ_le hK)]
+  have h1 := hA.abs_integral_empiricalSpectralMeasure_sub_integral_probeSpectralMeasure_le
+    hab.le hs hτ hK hf
+  have h2 := hA.abs_integral_probeSpectralMeasure_sub_integral_slqMeasure_le_of_lipschitzOnWith
+    hab hs (X ω) q hf
+  have hJ : 0 ≤ jacksonApproximationConstant * L * (b - a) / (2 * q + 3) := by
+    have := jacksonApproximationConstant_pos
+    have : 0 ≤ b - a := by linarith
+    positivity
+  have h3 := abs_sub_le (∫ x, f x ∂empiricalSpectralMeasure A)
+    (∫ x, f x ∂probeSpectralMeasure A (X ω)) (∫ x, f x ∂slqMeasure A (X ω) (q + 1))
+  nlinarith [mul_le_mul_of_nonneg_left hmass hJ]
 
 /-- **The mass-normalised SLQ measure approximates the spectral density, uniformly in Lipschitz
 test functions.** Let the entries of the real $n \times m$ test matrix $\mathbf{\Omega}$ be
