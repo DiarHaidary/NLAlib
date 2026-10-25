@@ -90,6 +90,17 @@ theorem re_girardHutchinson_cfc_le_re_slq_of_iteratedDeriv_nonpos {A : Matrix n 
     (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q) f x ≤ 0) (Ω : Matrix n m 𝕜) :
     RCLike.re (girardHutchinson (cfc f A) Ω) ≤ RCLike.re (slq A f Ω q) := by
-  sorry
+  have hGH : RCLike.re (girardHutchinson (cfc f A) Ω) =
+      (∑ j, ∫ x, f x ∂spectralMeasure A (fun i => Ω i j)) / Fintype.card m := by
+    rw [girardHutchinson_eq_sum, ← RCLike.ofReal_natCast, RCLike.div_re_ofReal, map_sum]
+    simp only [integral_spectralMeasure]
+  have hSLQ : RCLike.re (slq A f Ω q) =
+      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) / Fintype.card m := by
+    unfold slq
+    rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal, RCLike.ofReal_re]
+  rw [hGH, hSLQ]
+  refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
+  exact integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
+    (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
 
 end NLAlib
