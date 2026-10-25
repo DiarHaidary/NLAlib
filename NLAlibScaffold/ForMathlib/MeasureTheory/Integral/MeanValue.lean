@@ -50,7 +50,77 @@ theorem exists_integral_eq_mul_integral_of_ae_nonneg {Ω : Type*} [MeasurableSpa
     (hW0 : ∀ᵐ x ∂μ, 0 ≤ W x) {s : Set ℝ} (hs : IsConnected s) {D : ℝ → ℝ}
     (hD : ContinuousOn D s) (h : ∀ᵐ x ∂μ, ∃ ξ ∈ s, F x = D ξ * W x) :
     ∃ ξ ∈ s, ∫ x, F x ∂μ = D ξ * ∫ x, W x ∂μ := by
-  sorry
+  obtain ⟨ξ0, hξ0⟩ := hs.nonempty
+  by_cases hW0' : ∫ x, W x ∂μ = 0
+  · -- degenerate case: `W = 0` a.e., hence `F = 0` a.e.
+    have hWz : W =ᵐ[μ] 0 := (integral_eq_zero_iff_of_nonneg_ae hW0 hW).mp hW0'
+    have hFz : ∫ x, F x ∂μ = 0 := by
+      refine integral_eq_zero_of_ae ?_
+      filter_upwards [h, hWz] with x hx hwx
+      obtain ⟨ξ, -, hFx⟩ := hx
+      simp [hFx, hwx]
+    exact ⟨ξ0, hξ0, by rw [hFz, hW0', mul_zero]⟩
+  set d := (∫ x, F x ∂μ) / ∫ x, W x ∂μ with hd
+  have hFd : ∫ x, F x ∂μ = d * ∫ x, W x ∂μ := (div_mul_cancel₀ _ hW0').symm
+  by_contra hcon
+  push_neg at hcon
+  have hmiss : ∀ ξ ∈ s, D ξ ≠ d := fun ξ hξ heq => hcon ξ hξ (by rw [hFd, heq])
+  have hsD : IsPreconnected (D '' s) := hs.isPreconnected.image D hD
+  rcases lt_or_gt_of_ne (hmiss ξ0 hξ0) with hlt | hgt
+  · -- all values of `D` on `s` lie below `d`
+    have hall : ∀ ξ ∈ s, D ξ < d := by
+      intro ξ hξ
+      rcases lt_or_gt_of_ne (hmiss ξ hξ) with h1 | h1
+      · exact h1
+      · exfalso
+        have hmem : d ∈ D '' s := hsD.Icc_subset ⟨ξ0, hξ0, rfl⟩ ⟨ξ, hξ, rfl⟩ ⟨hlt.le, h1.le⟩
+        obtain ⟨η, hη, hηd⟩ := hmem
+        exact hmiss η hη hηd
+    have hle : ∀ᵐ x ∂μ, F x ≤ d * W x := by
+      filter_upwards [h, hW0] with x hx hwx
+      obtain ⟨ξ, hξ, hFx⟩ := hx
+      rw [hFx]
+      exact mul_le_mul_of_nonneg_right (hall ξ hξ).le hwx
+    have hint : ∫ x, (d * W x - F x) ∂μ = 0 := by
+      rw [integral_sub (hW.const_mul d) hF, integral_const_mul, hFd, sub_self]
+    have hz : (fun x => d * W x - F x) =ᵐ[μ] 0 :=
+      (integral_eq_zero_iff_of_nonneg_ae (by filter_upwards [hle] with x hx; simpa using hx)
+        ((hW.const_mul d).sub hF)).mp hint
+    have hWz : W =ᵐ[μ] 0 := by
+      filter_upwards [h, hz, hW0] with x hx hzx hwx
+      obtain ⟨ξ, hξ, hFx⟩ := hx
+      simp only [Pi.zero_apply] at hzx ⊢
+      have hpos : 0 < d - D ξ := by linarith [hall ξ hξ]
+      have : (d - D ξ) * W x = 0 := by linarith [hFx, hzx]
+      exact (mul_eq_zero.mp this).resolve_left hpos.ne'
+    exact hW0' (integral_eq_zero_of_ae hWz)
+  · -- all values of `D` on `s` lie above `d`
+    have hall : ∀ ξ ∈ s, d < D ξ := by
+      intro ξ hξ
+      rcases lt_or_gt_of_ne (hmiss ξ hξ) with h1 | h1
+      · exfalso
+        have hmem : d ∈ D '' s := hsD.Icc_subset ⟨ξ, hξ, rfl⟩ ⟨ξ0, hξ0, rfl⟩ ⟨h1.le, hgt.le⟩
+        obtain ⟨η, hη, hηd⟩ := hmem
+        exact hmiss η hη hηd
+      · exact h1
+    have hle : ∀ᵐ x ∂μ, d * W x ≤ F x := by
+      filter_upwards [h, hW0] with x hx hwx
+      obtain ⟨ξ, hξ, hFx⟩ := hx
+      rw [hFx]
+      exact mul_le_mul_of_nonneg_right (hall ξ hξ).le hwx
+    have hint : ∫ x, (F x - d * W x) ∂μ = 0 := by
+      rw [integral_sub hF (hW.const_mul d), integral_const_mul, hFd, sub_self]
+    have hz : (fun x => F x - d * W x) =ᵐ[μ] 0 :=
+      (integral_eq_zero_iff_of_nonneg_ae (by filter_upwards [hle] with x hx; simpa using hx)
+        (hF.sub (hW.const_mul d))).mp hint
+    have hWz : W =ᵐ[μ] 0 := by
+      filter_upwards [h, hz, hW0] with x hx hzx hwx
+      obtain ⟨ξ, hξ, hFx⟩ := hx
+      simp only [Pi.zero_apply] at hzx ⊢
+      have hpos : 0 < D ξ - d := by linarith [hall ξ hξ]
+      have : (D ξ - d) * W x = 0 := by linarith [hFx, hzx]
+      exact (mul_eq_zero.mp this).resolve_left hpos.ne'
+    exact hW0' (integral_eq_zero_of_ae hWz)
 
 /-- **The integral mean value theorem for pointwise intermediate values, nonpositive weight**:
 as `exists_integral_eq_mul_integral_of_ae_nonneg` with $W \le 0$ almost everywhere: for a
