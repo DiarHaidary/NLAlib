@@ -2,6 +2,31 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## SLQ and Probability-Beta: proofs (2026-10-25)
+
+Branch `cleanup/slq-beta` (worktree `nlalib-cleanup2`), over `fix/ks7-fable` with `integrate/slq`
+and `integrate/beta` merged. Every statement of the two stages but one is proved, cleaned up and
+moved from `NLAlibScaffold` into `NLAlib` with its `Proof:` line removed (D8):
+`RandomMatrix/Haar/Sphere.lean`, `Probability/Distributions/ChiSquare.lean`,
+`Estimation/Spectral/SpectralDensity.lean`, `Estimation/Trace/{StochasticLanczosQuadrature,
+GirardHutchinson}.lean`, `ForMathlib/Probability/Distributions/ChiSquared.lean`, and the new
+`ForMathlib/{Topology/MetricSpace/Lipschitz, Probability/Distributions/Beta,
+Analysis/Calculus/Deriv/MeanValue, MeasureTheory/Integral/Bochner/SumMeasure}.lean`. Stays in the
+scaffold, with its `sorry`: the asymptotic form
+`exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`
+(D18; false as stated, maintainer decision pending), in
+`NLAlibScaffold/Estimation/Spectral/SpectralDensity.lean`; nothing depends on it.
+`scripts/check_refs.py` now accepts an asymptotic form in a scaffold file whose explicit theorem is
+in the `NLAlib` file of the same path. The unused `hA` of `ae_mem_Icc_slqMeasure` and
+`matchesMoments_probeSpectralMeasure_slqMeasure` is kept and its linters silenced locally
+(decision UNUSED-HA pending). New imports: `NLAlib.ForMathlib.Probability.Distributions.Beta`
+(Sphere), `NLAlib.ForMathlib.Probability.Distributions.ChiSquared` (ChiSquare),
+`Mathlib.Probability.HasLaw` (ChiSquared), `NLAlib.Estimation.Trace.GirardHutchinson`,
+`NLAlib.Polynomial.Approximation.AnalyticApproximation`, `NLAlib.Krylov.Functions.Quadrature`
+(StochasticLanczosQuadrature), `NLAlib.Estimation.Trace.{GirardHutchinson,
+StochasticLanczosQuadrature}`, `NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure`,
+`NLAlib.RandomMatrix.Haar.Sphere` (SpectralDensity).
+
 ## KS7 orthogonal-polynomial structure: proofs (2026-10-25)
 
 Branch `cleanup/ks7` (worktree `nlalib-cleanup`), over `integrate/ks7`. All 67 KS7 statements are

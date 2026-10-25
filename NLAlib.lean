@@ -16,6 +16,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Basic
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
+public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
@@ -56,10 +57,12 @@ public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
+public import NLAlib.ForMathlib.Probability.Distributions.Beta
 public import NLAlib.ForMathlib.Probability.Distributions.ChiSquared
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
@@ -70,6 +73,7 @@ public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.ForMathlib.Topology.MetricSpace.Lipschitz
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Compression

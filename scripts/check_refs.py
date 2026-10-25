@@ -7,7 +7,9 @@ Asymptotic forms. A docstring line `Asymptotic: NAME` (or `Asymptotic:` alone wi
 next line, when the two do not fit in 100 characters) marks its declaration as the asymptotic form
 of the explicit theorem `NAME`. The check, textual like `scripts/ledger_check.py`, requires that the
 tagged declaration is an `exists_forall_` theorem, that the tag is the docstring's last line before
-any `Result:` line, that `NAME` (a full name) is declared in the same file, and that the two are
+any `Result:` line, that `NAME` (a full name) is declared in the same file (for a scaffold
+statement, the `NLAlib` file of the same path also counts: its explicit theorem may already be
+proved and moved, CONTRIBUTING §7), and that the two are
 related both ways (the explorer's "Related"): the asymptotic form's docstring names `NAME` in
 backticks in a sentence besides the tag, and `NAME`'s docstring names the asymptotic form in
 backticks (full name or `NLAlib`-relative). A docstring
@@ -101,6 +103,12 @@ def declarations(path):
     return out
 
 
+def same_module_path(a, b):
+    """One file, or a scaffold file and the `NLAlib` file of the same path."""
+    rel = lambda p: Path(*p.relative_to(ROOT).parts[1:])
+    return a == b or rel(a) == rel(b)
+
+
 def pair_has_result(asymptotic_doc, explicit_doc):
     """A pair needs a literature-map id on at least one of its declarations."""
     return any(result.search(doc or "") for doc in (asymptotic_doc, explicit_doc))
@@ -140,7 +148,7 @@ def asymptotic_problems(paths):
             if not pair_has_result(doc, tdoc):
                 bad.append(f"{where}: neither asymptotic nor explicit docstring has a `Result:` "
                            "tag; the pair cannot appear as an explorer result")
-            if tpath != path:
+            if not same_module_path(tpath, path):
                 bad.append(f"{where}: its explicit theorem {target} is in another file")
             rel = full[7:] if full.startswith("NLAlib.") else full
             if not tdoc or not re.search(rf"`(?:NLAlib\.)?{re.escape(rel)}`", tdoc):
