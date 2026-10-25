@@ -342,7 +342,13 @@ theorem integral_radauQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc :
     (f : ℝ → ℝ) :
     ∫ x, f x ∂radauQuadrature μ c k =
       ∑ x ∈ radauNodes μ c k, (∫ t, (Lagrange.basis (radauNodes μ c k) id x).eval t ∂μ) * f x := by
-  sorry
+  unfold radauQuadrature interpolatoryQuadrature
+  rw [integral_finsetSum_measure]
+  · refine Finset.sum_congr rfl fun x hx => ?_
+    rw [integral_smul_measure, integral_dirac, smul_eq_mul,
+      ENNReal.toReal_ofReal (integral_eval_basis_radauNodes_nonneg hμ hc k hx)]
+  · intro x _
+    exact (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top
 
 /-- **Gauss–Radau quadrature**: for a finite measure $\mu$ supported in $[a, b]$,
 $c \in \{a, b\}$ and every $k$, the Radau rule with prescribed node $c$ and $k$ free nodes
