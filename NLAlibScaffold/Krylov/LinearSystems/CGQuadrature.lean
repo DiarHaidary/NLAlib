@@ -132,7 +132,22 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_integral_radauQuadratu
     RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) ≤
       ∫ x, x⁻¹ ∂radauQuadrature (spectralMeasure A (b - A *ᵥ x₀)) a q -
         ∫ x, x⁻¹ ∂gaussQuadrature (spectralMeasure A (b - A *ᵥ x₀)) q := by
-  sorry
+  have hf : ContinuousOn (fun x : ℝ => x⁻¹) (Set.Icc a a') :=
+    continuousOn_inv₀.mono fun x hx => (ha.trans_le hx.1).ne'
+  have hf' : ContDiffOn ℝ (2 * q + 1 : ℕ) (fun x : ℝ => x⁻¹) (Set.Ioo a a') :=
+    (contDiffOn_inv (𝕜 := ℝ)).mono fun x hx => (ha.trans hx.1).ne'
+  have hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q + 1) (fun x : ℝ => x⁻¹) x ≤ 0 := by
+    intro x hx
+    have hx0 : (0 : ℝ) < x := ha.trans hx.1
+    have h1 : (0 : ℝ) < x ^ (-1 - ((2 * q + 1 : ℕ) : ℤ)) := zpow_pos hx0 _
+    have h2 : (0 : ℝ) < ((2 * q + 1).factorial : ℝ) := by positivity
+    rw [iteratedDeriv_eq_iterate, iter_deriv_inv', Odd.neg_one_pow ⟨q, rfl⟩]
+    nlinarith [mul_pos h2 h1]
+  have h := re_quadForm_cfc_le_integral_radauQuadrature_of_iteratedDeriv_nonpos hs haa' hf q hf' hD
+    (b - A *ᵥ x₀)
+  rw [Matrix.PosDef.re_quadForm_sub_cgIterate_eq_integral_sub hA hxs x₀ q]
+  refine sub_le_sub_right ?_ _
+  exact (integral_spectralMeasure A (b - A *ᵥ x₀) (fun x : ℝ => x⁻¹)).symm ▸ h
 
 /-- **The Gauss–Radau lower bound on the CG error**: for positive definite $\mathbf{A}$ with
 spectrum in $[a, a']$, $0 < a < a'$, $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, every
