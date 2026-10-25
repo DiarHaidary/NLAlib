@@ -217,7 +217,44 @@ private theorem intervalIntegrable_rpow_mul_rpow_mul_exp {α β : ℝ} (hα : 0 
     (t : ℝ) :
     IntervalIntegrable (fun x => x ^ (α - 1) * (1 - x) ^ (β - 1) *
       ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) volume 0 1 := by
-  sorry
+  have hnn : ∀ x, 0 ≤ betaPDFReal α β x := by
+    intro x
+    unfold betaPDFReal
+    split_ifs with h
+    · have : 0 < beta α β := beta_pos hα hβ
+      have h1 : 0 ≤ x ^ (α - 1) := Real.rpow_nonneg h.1.le _
+      have h2 : 0 ≤ (1 - x) ^ (β - 1) := Real.rpow_nonneg (by linarith [h.2]) _
+      positivity
+    · exact le_rfl
+  have hint : Integrable (betaPDFReal α β) := by
+    refine ⟨(measurable_betaPDFReal α β).aestronglyMeasurable, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ hnn)]
+    have := lintegral_betaPDF_eq_one hα hβ
+    unfold betaPDF at this
+    rw [this]
+    exact ENNReal.one_lt_top
+  obtain ⟨C, hC⟩ : ∃ C, ∀ x ∈ Icc (0 : ℝ) 1,
+      ‖(α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x)‖ ≤ C :=
+    IsCompact.exists_bound_of_continuousOn isCompact_Icc (by fun_prop)
+  rw [intervalIntegrable_iff_integrableOn_Ioo_of_le zero_le_one]
+  refine Integrable.mono' (hint.const_mul (beta α β * C)).integrableOn ?_ ?_
+  · fun_prop
+  · filter_upwards [ae_restrict_mem measurableSet_Ioo] with x hx
+    have hx' : (0 < x ∧ x < 1) := hx
+    have hB : 0 < beta α β := beta_pos hα hβ
+    have hB' : beta α β ≠ 0 := hB.ne'
+    have hCx : ‖(α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x)‖ ≤ C :=
+      hC x (Ioo_subset_Icc_self hx)
+    have hP : 0 ≤ x ^ (α - 1) * (1 - x) ^ (β - 1) :=
+      mul_nonneg (Real.rpow_nonneg hx'.1.le _) (Real.rpow_nonneg (by linarith [hx'.2]) _)
+    have hpdf : betaPDFReal α β x = 1 / beta α β * (x ^ (α - 1) * (1 - x) ^ (β - 1)) := by
+      unfold betaPDFReal
+      rw [if_pos hx']
+      ring
+    rw [hpdf, norm_mul, Real.norm_of_nonneg hP,
+      show beta α β * C * (1 / beta α β * (x ^ (α - 1) * (1 - x) ^ (β - 1)))
+        = C * (x ^ (α - 1) * (1 - x) ^ (β - 1)) by field_simp, mul_comm C]
+    exact mul_le_mul_of_nonneg_left hCx hP
 
 /-- Integration by parts on $[0, 1]$: for $\alpha, \beta > 0$ and real $t$,
 $$\int_0^1 x^{\alpha-1}(1-x)^{\beta-1}(\alpha - (\alpha+\beta)x + tx(1-x))e^{tx}\,dx = 0\,,$$
