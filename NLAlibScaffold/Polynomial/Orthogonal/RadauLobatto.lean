@@ -61,7 +61,13 @@ Proof: S, about 8 lines. `radauMeasure`; `‖x - c‖ₑ` is the coercion of the
 `Real.coe_nnnorm`, `Real.norm_eq_abs`. -/
 theorem integral_radauMeasure (μ : Measure ℝ) (c : ℝ) (g : ℝ → ℝ) :
     ∫ x, g x ∂radauMeasure μ c = ∫ x, |x - c| * g x ∂μ := by
-  sorry
+  unfold radauMeasure
+  have hd : (fun x : ℝ => ‖x - c‖ₑ) = fun x => ((‖x - c‖₊ : NNReal) : ENNReal) :=
+    funext fun x => enorm_eq_nnnorm _
+  rw [hd, integral_withDensity_eq_integral_smul
+    (f := fun x : ℝ => ‖x - c‖₊) (measurable_nnnorm.comp (measurable_id.sub_const c))]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+  simp only [NNReal.smul_def, smul_eq_mul, coe_nnnorm, Real.norm_eq_abs, mul_comm]
 
 /-- The Radau modified measure of a finite measure supported in $[a, b]$ is finite.
 Proof: S, about 12 lines. `isFiniteMeasure_withDensity_ofReal`-style: the density is at most
