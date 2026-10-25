@@ -189,6 +189,35 @@ theorem IsMeasurable.measurable_leftQueryMatrix {𝕜 m n : Type*} [MeasurableSp
     (measurable_snd.comp ((halg.measurable_query j j.isLt).comp
       (measurable_pi_iff.2 fun l => measurable_pi_apply _)))
 
+/-- The histories of a measurable seeded family, jointly measurable in the seed and the input. -/
+private theorem measurable_history_family {S : Type*} [MeasurableSpace S]
+    {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {O : M → Q → R}
+    (hO : Measurable (Function.uncurry O)) :
+    ∀ i, i ≤ q → Measurable fun p : S × M => (alg p.1).history (O p.2) i := by
+  intro i
+  induction i with
+  | zero => intro _; exact measurable_const
+  | succ i ih =>
+    intro hi
+    have hq : Measurable fun p : S × M => (alg p.1).query i ((alg p.1).history (O p.2) i) :=
+      (halg.measurable_query i (by omega)).comp (measurable_fst.prodMk (ih (by omega)))
+    have hv : Measurable fun p : S × M =>
+        O p.2 ((alg p.1).query i ((alg p.1).history (O p.2) i)) :=
+      hO.comp (measurable_snd.prodMk hq)
+    refine measurable_pi_iff.2 fun j => ?_
+    induction j using Fin.lastCases with
+    | last =>
+      change Measurable fun p : S × M => Fin.snoc (α := fun _ => R)
+        ((alg p.1).history (O p.2) i) (O p.2 ((alg p.1).query i ((alg p.1).history (O p.2) i)))
+        (Fin.last i)
+      simpa only [Fin.snoc_last] using hv
+    | cast k =>
+      change Measurable fun p : S × M => Fin.snoc (α := fun _ => R)
+        ((alg p.1).history (O p.2) i) (O p.2 ((alg p.1).query i ((alg p.1).history (O p.2) i)))
+        (Fin.castSucc k)
+      simp only [Fin.snoc_castSucc]
+      exact (measurable_pi_apply k).comp (ih (by omega))
+
 /-- **A randomized algorithm has a jointly measurable output**: for a measurable seeded family
 and a jointly measurable oracle, (seed, input) $\mapsto$ output is measurable.
 Proof: M, about 15 lines. As `QueryAlgorithm.IsMeasurable.measurable_transcript`, by induction
@@ -197,8 +226,9 @@ on the history length `i ≤ q`, with `halg.measurable_query i hi` composed with
 theorem IsMeasurableFamily.measurable_run {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {O : M → Q → R}
     (hO : Measurable (Function.uncurry O)) :
-    Measurable fun p : S × M => (alg p.1).run (O p.2) := by
-  sorry
+    Measurable fun p : S × M => (alg p.1).run (O p.2) :=
+  halg.measurable_output.comp
+    (measurable_fst.prodMk (measurable_history_family halg hO q le_rfl))
 
 /-- **Each member of a measurable family is measurable**: fixing the seed of a measurable
 randomized algorithm gives a measurable deterministic one.
