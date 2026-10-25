@@ -597,7 +597,74 @@ theorem exists_eval_eq_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b 
     (hbest : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b)
       (minimaxError f (Set.Icc a b) n)) :
     ∃ t : Finset ℝ, t.card = n + 1 ∧ (t : Set ℝ) ⊆ Set.Ioo a b ∧ ∀ x ∈ t, p.eval x = f x := by
-  sorry
+  have key : ∃ c : Fin (n + 1) → ℝ, StrictMono c ∧ (∀ i, c i ∈ Set.Ioo a b) ∧
+      ∀ i, p.eval (c i) = f (c i) := by
+    rcases (minimaxError_nonneg f (Set.Icc a b) n).eq_or_lt with hE | hE
+    · have hba : 0 < b - a := sub_pos.mpr hab
+      have hmem : ∀ i : Fin (n + 1), a + (b - a) * ((i : ℝ) + 1) / (n + 2) ∈ Set.Ioo a b := by
+        intro i
+        have hi : ((i : ℕ) : ℝ) ≤ n := by
+          have := Nat.lt_succ_iff.mp i.isLt
+          exact_mod_cast this
+        have hq0 : 0 < (b - a) * ((i : ℝ) + 1) / (n + 2) :=
+          div_pos (mul_pos hba (by positivity)) (by positivity)
+        have hq1 : (b - a) * ((i : ℝ) + 1) / (n + 2) < b - a := by
+          rw [div_lt_iff₀ (by positivity)]
+          nlinarith
+        constructor <;> linarith
+      refine ⟨fun i => a + (b - a) * ((i : ℝ) + 1) / (n + 2), ?_, hmem, ?_⟩
+      · intro i j hij
+        have h1 : ((i : ℕ) : ℝ) < ((j : ℕ) : ℝ) := by exact_mod_cast Fin.lt_def.mp hij
+        have h2 : (b - a) * ((i : ℝ) + 1) < (b - a) * ((j : ℝ) + 1) :=
+          mul_lt_mul_of_pos_left (by linarith) hba
+        have h3 : (b - a) * ((i : ℝ) + 1) / (n + 2) < (b - a) * ((j : ℝ) + 1) / (n + 2) :=
+          div_lt_div_of_pos_right h2 (by positivity)
+        change a + _ < a + _
+        linarith
+      · intro i
+        have h := hbest _ (Set.Ioo_subset_Icc_self (hmem i))
+        rw [← hE] at h
+        exact dist_le_zero.mp h
+    · obtain ⟨x, hxmono, hxmem, σ, hσ, hx⟩ := alternatesOn_iff.mp
+        (alternatesOn_of_isUniformApproxOn_minimaxError hab hf hp hbest)
+      have hsign : ∀ i : Fin (n + 1),
+          (f (x i.castSucc) - p.eval (x i.castSucc)) * (f (x i.succ) - p.eval (x i.succ)) < 0 := by
+        intro i
+        have hs := hx i.castSucc
+        have ht := hx i.succ
+        simp only [Fin.val_castSucc, Fin.val_succ, pow_succ] at hs ht
+        have hσ2 : σ * σ = 1 := by rcases hσ with rfl | rfl <;> norm_num
+        have hs2 : (-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ) = 1 := by
+          rw [← mul_pow]; norm_num
+        have hprod := mul_pos (lt_of_lt_of_le hE hs) (lt_of_lt_of_le hE ht)
+        have hid : (σ * (-1) ^ (i : ℕ) * (f (x i.castSucc) - p.eval (x i.castSucc))) *
+            (σ * ((-1) ^ (i : ℕ) * -1) * (f (x i.succ) - p.eval (x i.succ))) =
+            -((f (x i.castSucc) - p.eval (x i.castSucc)) * (f (x i.succ) - p.eval (x i.succ))) := by
+          linear_combination (-((f (x i.castSucc) - p.eval (x i.castSucc)) *
+            (f (x i.succ) - p.eval (x i.succ)) * ((-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ)))) * hσ2 +
+            (-((f (x i.castSucc) - p.eval (x i.castSucc)) *
+            (f (x i.succ) - p.eval (x i.succ)))) * hs2
+        linarith
+      have hf' : ContinuousOn (fun x => f x - p.eval x) (Set.Icc (x 0) (x (Fin.last (n + 1)))) :=
+        (hf.sub p.continuousOn).mono (Set.Icc_subset_Icc (hxmem 0).1 (hxmem _).2)
+      obtain ⟨c, hcmono, hcspec⟩ := exists_strictMono_eq_zero_of_mul_neg hxmono hf' hsign
+      refine ⟨c, hcmono, fun i => ?_, fun i => ?_⟩
+      · obtain ⟨h1, h2⟩ := hcspec i
+        exact ⟨lt_of_le_of_lt (hxmem _).1 h1.1, lt_of_lt_of_le h1.2 (hxmem _).2⟩
+      · have h : f (c i) - p.eval (c i) = 0 := (hcspec i).2
+        linarith
+  obtain ⟨c, hcm, hcin, hceq⟩ := key
+  refine ⟨Finset.univ.image c, ?_, ?_, ?_⟩
+  · rw [Finset.card_image_of_injective _ hcm.injective]
+    simp
+  · intro y hy
+    rw [Finset.mem_coe, Finset.mem_image] at hy
+    obtain ⟨i, -, rfl⟩ := hy
+    exact hcin i
+  · intro y hy
+    rw [Finset.mem_image] at hy
+    obtain ⟨i, -, rfl⟩ := hy
+    exact hceq i
 
 /-! ### The chosen best approximation on an interval -/
 
