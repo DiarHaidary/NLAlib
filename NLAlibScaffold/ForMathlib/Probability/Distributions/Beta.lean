@@ -646,6 +646,60 @@ private theorem mul_sub_add_mul_sub_eq {α β : ℝ} (hα : 0 < α) (hβ : 0 < �
   linear_combination (-(betaExpMoment α β 0 t)⁻¹) * hK' +
     α * ha - hr - (t / 4) * hs
 
+/-- Sign lemma for a differentiable `z` with `z 0 = 0`: if `t * z' t + b * z t ≤ 0` for `t > 0`
+and `0 ≤ t * z' t + b * z t` for `t < 0`, then `t * z t ≤ 0` for every `t`. -/
+private theorem mul_le_zero_of_ode_sign {z z' : ℝ → ℝ} {b : ℝ} (hb : 0 < b)
+    (hd : ∀ t, HasDerivAt z (z' t) t)
+    (hpos : ∀ t, 0 < t → t * z' t + b * z t ≤ 0)
+    (hneg : ∀ t, t < 0 → 0 ≤ t * z' t + b * z t) (t : ℝ) : t * z t ≤ 0 := by
+  have hcont : Continuous z := continuous_iff_continuousAt.2 fun t => (hd t).continuousAt
+  rcases lt_trichotomy t 0 with ht | rfl | ht
+  · have hanti := antitoneOn_rpow_mul_of_hasDerivAt (f := fun s => -z (-s))
+      (f' := fun s => z' (-s)) hb ((hcont.comp continuous_neg).neg.continuousWithinAt)
+      (fun s _ => by
+        have h := ((hd (-s)).comp s (hasDerivAt_neg s)).neg
+        exact h.congr_deriv (by ring))
+      (fun s hs => by
+        have h := hneg (-s) (by simp only [mem_Ioi] at hs; linarith)
+        simp only [mem_Ioi] at hs
+        nlinarith [h])
+    have hle := hanti (a := 0) (b := -t) (by simp) (by simp; linarith) (by linarith)
+    simp only [neg_zero, neg_neg, Real.zero_rpow hb.ne', zero_mul] at hle
+    have hp : 0 < (-t) ^ b := Real.rpow_pos_of_pos (by linarith) b
+    have h3 : 0 ≤ z t := by
+      by_contra hneg'
+      push_neg at hneg'
+      nlinarith [mul_pos hp (neg_pos.2 hneg')]
+    nlinarith
+  · simp
+  · have hanti := antitoneOn_rpow_mul_of_hasDerivAt (f := z) (f' := z') hb
+      hcont.continuousWithinAt (fun s _ => hd s) (fun s hs => hpos s hs)
+    have hle := hanti (a := 0) (b := t) (by simp) (by simp; linarith) (by linarith)
+    simp only [Real.zero_rpow hb.ne', zero_mul] at hle
+    have hp : 0 < t ^ b := Real.rpow_pos_of_pos ht b
+    have h3 : z t ≤ 0 := by
+      by_contra hneg'
+      push_neg at hneg'
+      nlinarith [mul_pos hp hneg']
+    nlinarith
+
+/-- Derivative of the comparison function $z(t) = \varphi_1/\varphi_0 - \alpha/(\alpha+\beta)
+- t/(4(\alpha+\beta+1))$ (the Riccati quotient of `mul_sub_div_sub_div_nonpos`). -/
+private theorem hasDerivAt_comparison {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
+    HasDerivAt (fun s => betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) -
+        s / (4 * (α + β + 1)))
+      (betaExpMoment α β 2 t / betaExpMoment α β 0 t -
+        (betaExpMoment α β 1 t / betaExpMoment α β 0 t) ^ 2 - 1 / (4 * (α + β + 1))) t := by
+  have h0 : HasDerivAt (betaExpMoment α β 0) (betaExpMoment α β 1 t) t :=
+    hasDerivAt_betaExpMoment hα hβ 0 t
+  have h1 : HasDerivAt (betaExpMoment α β 1) (betaExpMoment α β 2 t) t :=
+    hasDerivAt_betaExpMoment hα hβ 1 t
+  have hM0 := (betaExpMoment_zero_pos hα hβ t).ne'
+  have hd := h1.div h0 hM0
+  have hs := ((hd.sub_const (α / (α + β))).sub ((hasDerivAt_id t).div_const (4 * (α + β + 1))))
+  refine hs.congr_deriv ?_
+  field_simp
+
 /-- The comparison step: with $\varphi_k(t) = \mathbb{E}\,X^k e^{tX}$ for
 $X \sim \mathrm{Beta}(\alpha, \beta)$, $\alpha, \beta > 0$, and
 $z(t) = \varphi_1(t)/\varphi_0(t) - \alpha/(\alpha+\beta) - t/(4(\alpha+\beta+1))$, every real
@@ -662,7 +716,20 @@ betaMeasure β α`. -/
 private theorem mul_sub_div_sub_div_nonpos {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
     t * (betaExpMoment α β 1 t / betaExpMoment α β 0 t - α / (α + β) -
       t / (4 * (α + β + 1))) ≤ 0 := by
-  sorry
+  have aux : ∀ y : ℝ, y * (1 - y) - 1 / 4 ≤ 0 := fun y => by nlinarith [sq_nonneg (y - 1 / 2)]
+  have hb : 0 < α + β := by linarith
+  exact mul_le_zero_of_ode_sign hb
+    (z := fun s => betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) -
+      s / (4 * (α + β + 1)))
+    (z' := fun s => betaExpMoment α β 2 s / betaExpMoment α β 0 s -
+      (betaExpMoment α β 1 s / betaExpMoment α β 0 s) ^ 2 - 1 / (4 * (α + β + 1)))
+    (hasDerivAt_comparison hα hβ)
+    (fun s hs => by
+      rw [mul_sub_add_mul_sub_eq hα hβ s]
+      exact mul_nonpos_of_nonneg_of_nonpos hs.le (aux _))
+    (fun s hs => by
+      rw [mul_sub_add_mul_sub_eq hα hβ s]
+      exact mul_nonneg_of_nonpos_of_nonpos hs.le (aux _)) t
 
 /-- The cumulant bound: for $X \sim \mathrm{Beta}(\alpha, \beta)$, $\alpha, \beta > 0$ and real
 $t$, $\log\mathbb{E}\,e^{tX} - \alpha t/(\alpha+\beta) \le t^2/(8(\alpha+\beta+1))$.
