@@ -79,7 +79,26 @@ $1 - (\mu(A) + \nu(A^c)) = \nu(A) - \mu(A) \le \lvert\mu(A) - \nu(A)\rvert \le \
 theorem one_sub_tvDist_le_measureReal_add_measureReal_compl {μ ν : Measure α}
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] {A : Set α} (hA : MeasurableSet A) :
     1 - tvDist μ ν ≤ μ.real A + ν.real Aᶜ := by
-  sorry
+  unfold tvDist
+  have hbdd : BddAbove (Set.range fun B : {B : Set α // MeasurableSet B} =>
+      |μ.real B - ν.real B|) := by
+    refine ⟨2, ?_⟩
+    rintro _ ⟨B, rfl⟩
+    have h1 := measureReal_le_one (μ := μ) (s := B.1)
+    have h2 := measureReal_le_one (μ := ν) (s := B.1)
+    have h3 := measureReal_nonneg (μ := μ) (s := B.1)
+    have h4 := measureReal_nonneg (μ := ν) (s := B.1)
+    rw [abs_le]
+    constructor <;> linarith
+  have hle : |μ.real A - ν.real A| ≤ ⨆ B : {B : Set α // MeasurableSet B},
+      |μ.real B - ν.real B| :=
+    le_ciSup hbdd ⟨A, hA⟩
+  have hc : ν.real Aᶜ = 1 - ν.real A := by
+    rw [measureReal_compl hA, probReal_univ]
+  rw [hc]
+  have h5 := le_abs_self (ν.real A - μ.real A)
+  rw [abs_sub_comm] at hle
+  linarith
 
 /-- **Pinsker's inequality**: for probability measures,
 $2\,\mathrm{TV}(\mu, \nu)^2 \le \mathrm{KL}(\mu \,\|\, \nu)$, stated in `ℝ≥0∞` so that it holds
