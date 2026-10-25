@@ -99,7 +99,48 @@ polynomials of the data, reduced modulo $\omega_m$. -/
 theorem exists_degree_lt_forall_iterate_derivative_eval_eq (m : Multiset F) (r : F → ℕ → F) :
     ∃ H : F[X], H.degree < m.card ∧
       ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] H).eval y = r y k := by
-  sorry
+  let J : degreeLT F m.card →ₗ[F] (∀ y : m.toFinset, Fin (m.count (y : F)) → F) :=
+    { toFun := fun p y k => (derivative^[(k : ℕ)] (p : F[X])).eval (y : F)
+      map_add' := by
+        intro p q
+        funext y k
+        simp only [Pi.add_apply, Submodule.coe_add, iterate_map_add, eval_add]
+      map_smul' := by
+        intro c p
+        funext y k
+        simp only [Pi.smul_apply, Submodule.coe_smul, iterate_derivative_smul, eval_smul,
+          smul_eq_mul, RingHom.id_apply] }
+  have hdimV : Module.finrank F (degreeLT F m.card) = m.card :=
+    (Polynomial.degreeLTEquiv F m.card).finrank_eq.trans (Module.finrank_fin_fun F)
+  have : Module.Finite F (degreeLT F m.card) :=
+    Module.Finite.equiv (Polynomial.degreeLTEquiv F m.card).symm
+  have hdimW : Module.finrank F (∀ y : m.toFinset, Fin (m.count (y : F)) → F) = m.card := by
+    rw [Module.finrank_pi_fintype]
+    simp only [Module.finrank_fin_fun]
+    exact (Finset.sum_coe_sort _ _).trans (Multiset.toFinset_sum_count_eq m)
+  have hinj : Function.Injective J := by
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro p hp
+    have hp0 : J p = 0 := hp
+    apply Subtype.ext
+    apply eq_of_degree_lt_of_forall_iterate_derivative_eval_eq
+    · exact p.2 |> Polynomial.mem_degreeLT.mp
+    · simp
+    · intro y hy k hk
+      have h1 : (derivative^[k] (p : F[X])).eval (y : F) = 0 :=
+        congrFun (congrFun hp0 ⟨y, Multiset.mem_toFinset.mpr hy⟩) ⟨k, hk⟩
+      simpa using h1
+  have hsurj : Function.Surjective J := by
+    let e : (∀ y : m.toFinset, Fin (m.count (y : F)) → F) ≃ₗ[F] degreeLT F m.card :=
+      LinearEquiv.ofFinrankEq _ _ (hdimW.trans hdimV.symm)
+    have hs := LinearMap.surjective_of_injective
+      (f := J.comp e.toLinearMap) (hinj.comp e.injective)
+    intro w
+    obtain ⟨u, hu⟩ := hs w
+    exact ⟨e u, by simpa using hu⟩
+  obtain ⟨p, hp⟩ := hsurj (fun y k => r y k)
+  refine ⟨p, Polynomial.mem_degreeLT.mp p.2, fun y hy k hk => ?_⟩
+  exact congrFun (congrFun hp ⟨y, Multiset.mem_toFinset.mpr hy⟩) ⟨k, hk⟩
 
 end Algebra
 
