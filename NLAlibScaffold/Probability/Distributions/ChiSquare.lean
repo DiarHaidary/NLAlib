@@ -39,7 +39,8 @@ Proof: S, about 3 lines. `(hasLaw_sum_sq_of_hasLaw_pi_gaussianReal hg).congr
 statements; `gaussianVector` is an `abbrev` of the product law). -/
 theorem hasLaw_norm_sq_of_hasLaw_gaussianVector {g : Ω → n → ℝ} [Nonempty n]
     (hg : HasLaw g (gaussianVector n) μ) :
-    HasLaw (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2) (gammaMeasure (Fintype.card n / 2) (1 / 2)) μ := by
-  sorry
+    HasLaw (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2) (gammaMeasure (Fintype.card n / 2) (1 / 2)) μ :=
+  (hasLaw_sum_sq_of_hasLaw_pi_gaussianReal hg).congr
+    (ae_of_all _ fun ω => by simp [EuclideanSpace.real_norm_sq_eq])
 
 end NLAlib

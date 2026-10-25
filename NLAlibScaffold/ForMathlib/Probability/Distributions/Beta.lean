@@ -52,14 +52,33 @@ Proof: S, about 10 lines. `Set.ext`; the inverse is $x \mapsto x/(x+y)$; `field_
 `div_lt_one`. -/
 private theorem image_mul_div_one_sub_Ioo {y : ℝ} (hy : 0 < y) :
     (fun s => y * s / (1 - s)) '' Ioo (0 : ℝ) 1 = Ioi 0 := by
-  sorry
+  ext x
+  constructor
+  · rintro ⟨s, ⟨hs0, hs1⟩, rfl⟩
+    exact div_pos (mul_pos hy hs0) (sub_pos.2 hs1)
+  · intro hx
+    have hxy : 0 < x + y := add_pos hx hy
+    refine ⟨x / (x + y), ⟨div_pos hx hxy, (div_lt_one hxy).2 (by linarith)⟩, ?_⟩
+    have h1 : 1 - x / (x + y) = y / (x + y) := by
+      field_simp
+      ring
+    simp only
+    rw [h1]
+    field_simp
 
 /-- For $y > 0$ the substitution $s \mapsto ys/(1-s)$ is injective on $(0, 1)$.
 Proof: S, about 8 lines. Cross-multiply ($1 - s \ne 0$): `div_eq_div_iff`, then
 `mul_left_cancel₀ hy.ne'` and `linarith`. -/
 private theorem injOn_mul_div_one_sub (y : ℝ) (hy : 0 < y) :
     InjOn (fun s => y * s / (1 - s)) (Ioo (0 : ℝ) 1) := by
-  sorry
+  intro a ha b hb hab
+  simp only [mem_Ioo] at ha hb
+  have ha1 : (1 - a) ≠ 0 := by linarith [ha.2]
+  have hb1 : (1 - b) ≠ 0 := by linarith [hb.2]
+  simp only at hab
+  rw [div_eq_div_iff ha1 hb1] at hab
+  have h2 : y * a = y * b := by linarith [hab]
+  exact mul_left_cancel₀ hy.ne' h2
 
 /-- The derivative of the substitution: $s \mapsto ys/(1-s)$ has derivative $y/(1-s)^2$ at every
 $s \ne 1$.
@@ -67,7 +86,12 @@ Proof: S, about 8 lines. `HasDerivAt.div` of `(hasDerivAt_id s).const_mul y` by
 `(hasDerivAt_id s).const_sub 1` with `sub_ne_zero.2 hs.symm`; `field_simp`, `ring`. -/
 private theorem hasDerivAt_mul_div_one_sub (y : ℝ) {s : ℝ} (hs : s ≠ 1) :
     HasDerivAt (fun s => y * s / (1 - s)) (y / (1 - s) ^ 2) s := by
-  sorry
+  have h1 : (1 - s) ≠ 0 := sub_ne_zero.2 hs.symm
+  have hd := HasDerivAt.div (c := fun x => y * x) (d := fun x => 1 - x)
+    ((hasDerivAt_id s).const_mul y) ((hasDerivAt_id s).const_sub 1) h1
+  refine hd.congr_deriv ?_
+  congr 1
+  ring
 
 /-- The inner substitution of the Gamma ratio: for measurable $F \ge 0$ and $y > 0$, putting
 $x = ys/(1-s)$,
@@ -83,7 +107,86 @@ private theorem lintegral_Ioi_comp_div_add {F : ℝ → ℝ≥0∞} (hF : Measur
     ∫⁻ x in Ioi (0 : ℝ), F (x / (x + y)) * ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x))) =
       ∫⁻ s in Ioo (0 : ℝ) 1, F s * ENNReal.ofReal
         (y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s)))) := by
-  sorry
+  have hderiv : ∀ s ∈ Ioo (0 : ℝ) 1,
+      HasDerivWithinAt (fun s => y * s / (1 - s)) (y / (1 - s) ^ 2) (Ioo (0 : ℝ) 1) s :=
+    fun s hs => (hasDerivAt_mul_div_one_sub y (ne_of_lt hs.2)).hasDerivWithinAt
+  calc
+    _ = ∫⁻ x in (fun s => y * s / (1 - s)) '' Ioo (0 : ℝ) 1,
+          F (x / (x + y)) * ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x))) := by
+          rw [image_mul_div_one_sub_Ioo hy]
+    _ = ∫⁻ s in Ioo (0 : ℝ) 1, ENNReal.ofReal |y / (1 - s) ^ 2| *
+          (F ((y * s / (1 - s)) / ((y * s / (1 - s)) + y)) *
+            ENNReal.ofReal ((y * s / (1 - s)) ^ (a - 1) * Real.exp (-(r * (y * s / (1 - s)))))) :=
+          lintegral_image_eq_lintegral_abs_deriv_mul measurableSet_Ioo hderiv
+            (injOn_mul_div_one_sub y hy) _
+    _ = _ := by
+          refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+          have hs0 : 0 < s := hs.1
+          have hs1 : 0 < 1 - s := by linarith [hs.2]
+          have h1 : y * s / (1 - s) / (y * s / (1 - s) + y) = s := by
+            field_simp
+            ring
+          have hreal : y / (1 - s) ^ 2 * ((y * s / (1 - s)) ^ (a - 1) *
+              Real.exp (-(r * (y * s / (1 - s))))) =
+              y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s))) := by
+            have hw : (1 - s) ^ (a - 1) ≠ 0 := (Real.rpow_pos_of_pos hs1 _).ne'
+            have e : (1 - s) ^ (-a - 1) * (1 - s) ^ (a - 1) * (1 - s) ^ 2 = 1 := by
+              rw [← Real.rpow_add hs1, show -a - 1 + (a - 1) = -((2 : ℕ) : ℝ) by push_cast; ring,
+                Real.rpow_neg hs1.le, Real.rpow_natCast]
+              field_simp
+            rw [show -(r * (y * s / (1 - s))) = -(r * y * s / (1 - s)) by ring,
+              Real.div_rpow (by positivity) hs1.le, Real.mul_rpow hy.le hs0.le,
+              Real.rpow_sub_one hy.ne' a]
+            have hv' : (1 - s) ^ (-a - 1) * ((1 - s) ^ 2 * (1 - s) ^ (a - 1)) = 1 := by
+              linear_combination e
+            have hv : (1 - s) ^ (-a - 1) = ((1 - s) ^ 2 * (1 - s) ^ (a - 1))⁻¹ :=
+              eq_inv_of_mul_eq_one_left hv'
+            rw [hv]
+            field_simp
+          rw [h1, abs_of_pos (div_pos hy (pow_pos hs1 2)), ← mul_assoc,
+            mul_comm _ (F s), mul_assoc, ← ENNReal.ofReal_mul (div_pos hy (pow_pos hs1 2)).le,
+            hreal]
+
+private lemma gammaPDF_eq_mul_ofReal_of_pos {a r x : ℝ} (ha : 0 < a) (hr : 0 < r) (hx : 0 < x) :
+    gammaPDF a r x =
+      ENNReal.ofReal (r ^ a / Real.Gamma a) *
+        ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x))) := by
+  have hK : 0 ≤ r ^ a / Real.Gamma a :=
+    div_nonneg (Real.rpow_nonneg hr.le _) (Real.Gamma_pos_of_pos ha).le
+  unfold gammaPDF gammaPDFReal
+  rw [if_pos hx.le, mul_assoc, ENNReal.ofReal_mul hK]
+
+private lemma lintegral_eq_lintegral_Ioi_of_eq_zero {g : ℝ → ℝ≥0∞} (hg : ∀ y, y < 0 → g y = 0) :
+    ∫⁻ y, g y = ∫⁻ y in Ioi 0, g y := by
+  rw [Measure.restrict_congr_set Ioi_ae_eq_Ici, setLIntegral_eq_of_support_subset]
+  intro y hy
+  by_contra h
+  exact hy (hg y (lt_of_not_ge h))
+
+private lemma lintegral_gamma_comp_div_add {F : ℝ → ℝ≥0∞} (hF : Measurable F) {a r y : ℝ}
+    (ha : 0 < a) (hr : 0 < r) (hy : 0 < y) :
+    ∫⁻ x, F (x / (x + y)) * gammaPDF a r x =
+      ENNReal.ofReal (r ^ a / Real.Gamma a) * ∫⁻ s in Ioo (0 : ℝ) 1,
+        F s * ENNReal.ofReal
+          (y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s)))) := by
+  have hz : ∀ x : ℝ, x < 0 → F (x / (x + y)) * gammaPDF a r x = 0 := fun x hx => by
+    rw [gammaPDF_of_neg hx, mul_zero]
+  have key : ∀ x ∈ Ioi (0 : ℝ), F (x / (x + y)) * gammaPDF a r x =
+      ENNReal.ofReal (r ^ a / Real.Gamma a) *
+        (F (x / (x + y)) * ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x)))) := by
+    intro x hx
+    rw [gammaPDF_eq_mul_ofReal_of_pos ha hr hx]
+    ring
+  rw [lintegral_eq_lintegral_Ioi_of_eq_zero hz, setLIntegral_congr_fun measurableSet_Ioi key,
+    lintegral_const_mul' _ _ ENNReal.ofReal_ne_top, lintegral_Ioi_comp_div_add hF hy]
+
+private lemma integrableOn_rpow_mul_exp_div {a b r s : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r)
+    (hs : s ∈ Ioo (0 : ℝ) 1) :
+    IntegrableOn (fun y : ℝ => y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) (Ioi 0) := by
+  have h1s : 0 < 1 - s := by linarith [hs.2]
+  have := integrableOn_rpow_mul_exp_neg_mul_rpow (p := 1) (s := a + b - 1) (b := r / (1 - s))
+    (by linarith) one_pos (div_pos hr h1s)
+  simpa only [Real.rpow_one, neg_mul] using this
 
 /-- The Gamma-ratio integral after Tonelli: for measurable $F \ge 0$ and $a, b, r > 0$,
 $$\iint F\Bigl(\frac{x}{x+y}\Bigr)\gamma_{a,r}(x)\gamma_{b,r}(y)\,dx\,dy = \int_0^1 F(s)
@@ -100,7 +203,94 @@ private theorem lintegral_lintegral_comp_div_add_gammaPDF {F : ℝ → ℝ≥0�
       ∫⁻ s in Ioo (0 : ℝ) 1, F s * ENNReal.ofReal
         (r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
           ∫ y in Ioi (0 : ℝ), y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) := by
-  sorry
+  have hKc : 0 ≤ r ^ a / Real.Gamma a :=
+    div_nonneg (Real.rpow_nonneg hr.le _) (Real.Gamma_pos_of_pos ha).le
+  have hKd : 0 ≤ r ^ b / Real.Gamma b :=
+    div_nonneg (Real.rpow_nonneg hr.le _) (Real.Gamma_pos_of_pos hb).le
+  have hz : ∀ y : ℝ, y < 0 →
+      (∫⁻ x, F (x / (x + y)) * gammaPDF a r x) * gammaPDF b r y = 0 := fun y hy => by
+    rw [gammaPDF_of_neg hy, mul_zero]
+  have key1 : ∀ y ∈ Ioi (0 : ℝ), (∫⁻ x, F (x / (x + y)) * gammaPDF a r x) * gammaPDF b r y =
+      ∫⁻ s in Ioo (0 : ℝ) 1, F s * ENNReal.ofReal (r ^ (a + b) / (Real.Gamma a * Real.Gamma b) *
+        s ^ (a - 1) * (1 - s) ^ (-a - 1) * (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))) := by
+    intro y hy
+    have hy0 : 0 < y := hy
+    rw [gammaPDF_eq_mul_ofReal_of_pos hb hr hy0, lintegral_gamma_comp_div_add hF ha hr hy0,
+      ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top,
+      ← lintegral_mul_const' _ _ (ENNReal.mul_ne_top ENNReal.ofReal_ne_top ENNReal.ofReal_ne_top)]
+    refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+    obtain ⟨hs0, hs1⟩ := hs
+    have h1s : 0 < 1 - s := by linarith
+    have h1s': 1 - s ≠ 0 := h1s.ne'
+    have hA : 0 ≤ y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s))) :=
+      mul_nonneg (mul_nonneg (mul_nonneg (Real.rpow_nonneg hy0.le _) (Real.rpow_nonneg hs0.le _))
+        (Real.rpow_nonneg h1s.le _)) (Real.exp_nonneg _)
+    have h2 : y ^ a * y ^ (b - 1) = y ^ (a + b - 1) := by
+      rw [← Real.rpow_add hy0]; congr 1; ring
+    have h3 : Real.exp (-(r * y * s / (1 - s))) * Real.exp (-(r * y)) =
+        Real.exp (-(r / (1 - s) * y)) := by
+      rw [← Real.exp_add]; congr 1; field_simp; ring
+    have h4 : r ^ a * r ^ b = r ^ (a + b) := (Real.rpow_add hr a b).symm
+    have e : r ^ a / Real.Gamma a * (y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+        Real.exp (-(r * y * s / (1 - s)))) *
+        (r ^ b / Real.Gamma b * (y ^ (b - 1) * Real.exp (-(r * y)))) =
+        r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+          (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) := by
+      rw [← h2, ← h3, ← h4]
+      ring
+    have hB : 0 ≤ y ^ (b - 1) * Real.exp (-(r * y)) :=
+      mul_nonneg (Real.rpow_nonneg hy0.le _) (Real.exp_nonneg _)
+    rw [← e, ENNReal.ofReal_mul (mul_nonneg hKc hA), ENNReal.ofReal_mul hKc,
+      ENNReal.ofReal_mul hKd]
+    ring
+  have hmeas : AEMeasurable (Function.uncurry fun (y s : ℝ) => F s * ENNReal.ofReal
+      (r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+        (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))))
+      ((volume.restrict (Ioi (0 : ℝ))).prod (volume.restrict (Ioo (0 : ℝ) 1))) :=
+    (Measurable.mul (hF.comp measurable_snd) (Measurable.ennreal_ofReal (by fun_prop))).aemeasurable
+  rw [lintegral_eq_lintegral_Ioi_of_eq_zero hz, setLIntegral_congr_fun measurableSet_Ioi key1,
+    lintegral_lintegral_swap hmeas]
+  refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+  obtain ⟨hs0, hs1⟩ := hs
+  have h1s : 0 < 1 - s := by linarith
+  have hC : 0 ≤ r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) :=
+    mul_nonneg (mul_nonneg (div_nonneg (Real.rpow_nonneg hr.le _)
+      (mul_pos (Real.Gamma_pos_of_pos ha) (Real.Gamma_pos_of_pos hb)).le)
+      (Real.rpow_nonneg hs0.le _)) (Real.rpow_nonneg h1s.le _)
+  have hint : IntegrableOn (fun y : ℝ => r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) *
+      (1 - s) ^ (-a - 1) * (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))) (Ioi 0) :=
+    (integrableOn_rpow_mul_exp_div ha hb hr ⟨hs0, hs1⟩).const_mul _
+  have hnn : 0 ≤ᵐ[volume.restrict (Ioi (0 : ℝ))] (fun y : ℝ => r ^ (a + b) /
+      (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+      (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))) :=
+    ae_restrict_of_forall_mem measurableSet_Ioi fun y hy =>
+      mul_nonneg hC (mul_nonneg (Real.rpow_nonneg (Set.mem_Ioi.mp hy).le _) (Real.exp_nonneg _))
+  rw [lintegral_const_mul, ← ofReal_integral_eq_lintegral_ofReal hint hnn, integral_const_mul]
+  fun_prop
+
+/-- The constant of the Gamma-ratio integral on $(0, 1)$ is the Beta density. -/
+private theorem const_mul_integral_eq_beta_density {a b r s : ℝ} (ha : 0 < a) (hb : 0 < b)
+    (hr : 0 < r) (hs : s ∈ Ioo (0 : ℝ) 1) :
+    r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+        ∫ y in Ioi (0 : ℝ), y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)) =
+      1 / beta a b * s ^ (a - 1) * (1 - s) ^ (b - 1) := by
+  obtain ⟨hs0, hs1⟩ := hs
+  have h1s : 0 < 1 - s := by linarith
+  have hc : 0 < r / (1 - s) := div_pos hr h1s
+  rw [Real.integral_rpow_mul_exp_neg_mul_Ioi (by linarith) hc]
+  have hA : (1 / (r / (1 - s))) ^ (a + b) = (1 - s) ^ (a + b) / r ^ (a + b) := by
+    rw [one_div_div, Real.div_rpow h1s.le hr.le]
+  have hB : (1 - s) ^ (b - 1) = (1 - s) ^ (-a - 1) * (1 - s) ^ (a + b) := by
+    rw [← Real.rpow_add h1s]
+    congr 1
+    ring
+  have hG1 := Real.Gamma_pos_of_pos ha
+  have hG2 := Real.Gamma_pos_of_pos hb
+  have hG3 := Real.Gamma_pos_of_pos (add_pos ha hb)
+  have hp : r ^ (a + b) ≠ 0 := (Real.rpow_pos_of_pos hr _).ne'
+  have hq : (1 - s) ^ (a + b) ≠ 0 := (Real.rpow_pos_of_pos h1s _).ne'
+  rw [hA, hB, beta]
+  field_simp
 
 /-- The Gamma-ratio integral is the Beta integral: for measurable $F \ge 0$ and $a, b, r > 0$,
 $$\iint F\Bigl(\frac{x}{x+y}\Bigr)\gamma_{a,r}(x)\gamma_{b,r}(y)\,dx\,dy = \int F(s)\,
@@ -117,7 +307,19 @@ private theorem lintegral_lintegral_comp_div_add_gammaPDF_eq_betaPDF {F : ℝ �
     (hF : Measurable F) {a b r : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r) :
     ∫⁻ y, (∫⁻ x, F (x / (x + y)) * gammaPDF a r x) * gammaPDF b r y =
       ∫⁻ s, F s * betaPDF a b s := by
-  sorry
+  have hsupp : Function.support (fun s => F s * betaPDF a b s) ⊆ Ioo (0 : ℝ) 1 := by
+    intro x hx
+    rw [Function.mem_support] at hx
+    by_contra hn
+    apply hx
+    rcases le_or_gt x 0 with h | h
+    · rw [betaPDF_eq_zero_of_nonpos h, mul_zero]
+    · have h1 : 1 ≤ x := not_lt.mp fun h1 => hn ⟨h, h1⟩
+      rw [betaPDF_eq_zero_of_one_le h1, mul_zero]
+  rw [lintegral_lintegral_comp_div_add_gammaPDF hF ha hb hr,
+    ← setLIntegral_eq_of_support_subset hsupp]
+  refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+  rw [betaPDF_of_pos_lt_one hs.1 hs.2, const_mul_integral_eq_beta_density ha hb hr hs]
 
 /-- **Beta as a ratio of Gammas**: for $a, b, r > 0$, the image of
 $\mathrm{Gamma}(a, r) \otimes \mathrm{Gamma}(b, r)$ (shapes $a$, $b$, common rate $r$) under
@@ -132,7 +334,32 @@ Result: gamma-ratio-beta -/
 theorem map_div_add_prod_gammaMeasure {a b r : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r) :
     ((gammaMeasure a r).prod (gammaMeasure b r)).map (fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) =
       betaMeasure a b := by
-  sorry
+  ext S hS
+  have hf : Measurable (fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) :=
+    measurable_fst.div (measurable_fst.add measurable_snd)
+  have hT : MeasurableSet ((fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) ⁻¹' S) := hS.preimage hf
+  have hF : Measurable (S.indicator (fun _ : ℝ => (1 : ℝ≥0∞))) := measurable_const.indicator hS
+  have key := lintegral_lintegral_comp_div_add_gammaPDF_eq_betaPDF hF ha hb hr
+  have hga : Measurable (gammaPDF a r) :=
+    (measurable_gammaPDFReal a r).ennreal_ofReal
+  have hgb : Measurable (gammaPDF b r) :=
+    (measurable_gammaPDFReal b r).ennreal_ofReal
+  rw [Measure.map_apply hf hS, gammaMeasure, gammaMeasure, prod_withDensity hga hgb,
+    betaMeasure, withDensity_apply _ hS, withDensity_apply _ hT, ← lintegral_indicator hT,
+    lintegral_prod_symm]
+  swap
+  · exact (((hga.comp measurable_fst).mul (hgb.comp measurable_snd)).indicator hT).aemeasurable
+  calc _ = ∫⁻ y, (∫⁻ x, S.indicator (fun _ => (1 : ℝ≥0∞)) (x / (x + y)) * gammaPDF a r x) *
+        gammaPDF b r y := by
+        refine lintegral_congr fun y => ?_
+        rw [← lintegral_mul_const' (gammaPDF b r y) _ (by simp [gammaPDF])]
+        refine lintegral_congr fun x => ?_
+        by_cases hx : x / (x + y) ∈ S <;> simp [Set.indicator, hx]
+    _ = ∫⁻ s, S.indicator (fun _ => (1 : ℝ≥0∞)) s * betaPDF a b s := key
+    _ = _ := by
+        rw [← lintegral_indicator hS]
+        refine lintegral_congr fun s => ?_
+        by_cases hs : s ∈ S <;> simp [Set.indicator, hs]
 
 /-- Beta as a ratio of Gammas, `HasLaw` form: for $a, b, r > 0$ and independent
 $X \sim \mathrm{Gamma}(a, r)$ and $Y \sim \mathrm{Gamma}(b, r)$ (shapes $a$, $b$, common rate
@@ -144,7 +371,17 @@ theorem hasLaw_div_add_of_hasLaw_gammaMeasure {X Y : Ω → ℝ} {a b r : ℝ} (
     (hb : 0 < b) (hr : 0 < r) (hX : HasLaw X (gammaMeasure a r) μ)
     (hY : HasLaw Y (gammaMeasure b r) μ) (hXY : IndepFun X Y μ) :
     HasLaw (fun ω => X ω / (X ω + Y ω)) (betaMeasure a b) μ := by
-  sorry
+  have : IsProbabilityMeasure (gammaMeasure a r) := isProbabilityMeasure_gammaMeasure ha hr
+  have : IsProbabilityMeasure (gammaMeasure b r) := isProbabilityMeasure_gammaMeasure hb hr
+  have hpair : HasLaw (fun ω => (X ω, Y ω)) ((gammaMeasure a r).prod (gammaMeasure b r)) μ :=
+    ⟨hX.aemeasurable.prodMk hY.aemeasurable, by
+      rw [← hX.map_eq, ← hY.map_eq]
+      exact (indepFun_iff_map_prod_eq_prod_map_map' hX.aemeasurable hY.aemeasurable
+        (by rw [hX.map_eq]; infer_instance) (by rw [hY.map_eq]; infer_instance)).mp hXY⟩
+  have hf : HasLaw (fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) (betaMeasure a b)
+      ((gammaMeasure a r).prod (gammaMeasure b r)) :=
+    ⟨by fun_prop, map_div_add_prod_gammaMeasure ha hb hr⟩
+  exact hf.comp hpair
 
 /-! ### The Beta sub-Gaussian proxy -/
 
@@ -163,7 +400,24 @@ private theorem hasDerivAt_rpow_mul_rpow_mul_exp {α β t x : ℝ} (hx : x ∈ I
     HasDerivAt (fun x => x ^ α * (1 - x) ^ β * Real.exp (t * x))
       (x ^ (α - 1) * (1 - x) ^ (β - 1) *
         ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) x := by
-  sorry
+  obtain ⟨hx0, hx1⟩ := hx
+  have hxne : x ≠ 0 := hx0.ne'
+  have hx1ne : (1 - x) ≠ 0 := by linarith
+  have hxpos : 0 < x := hx0
+  have hx1pos : 0 < 1 - x := by linarith
+  have h1 : HasDerivAt (fun x : ℝ => x ^ α) (α * x ^ (α - 1)) x :=
+    Real.hasDerivAt_rpow_const (Or.inl hxne)
+  have h2 := ((hasDerivAt_id' x).const_sub 1).rpow_const (p := β) (Or.inl hx1ne)
+  have h3 := ((hasDerivAt_id' x).const_mul t).exp
+  have h4 := (h1.mul h2).mul h3
+  refine h4.congr_deriv ?_
+  have e1 : x ^ α = x ^ (α - 1) * x := by
+    rw [← Real.rpow_add_one hxne]; ring_nf
+  have e2 : (1 - x) ^ β = (1 - x) ^ (β - 1) * (1 - x) := by
+    rw [← Real.rpow_add_one hx1ne]; ring_nf
+  simp only [Pi.mul_apply]
+  rw [e1, e2]
+  ring
 
 /-- For $\alpha, \beta > 0$ and real $t$, the derivative
 $x^{\alpha-1}(1-x)^{\beta-1}(\alpha - (\alpha+\beta)x + tx(1-x))e^{tx}$ is interval integrable
@@ -176,7 +430,44 @@ private theorem intervalIntegrable_rpow_mul_rpow_mul_exp {α β : ℝ} (hα : 0 
     (t : ℝ) :
     IntervalIntegrable (fun x => x ^ (α - 1) * (1 - x) ^ (β - 1) *
       ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) volume 0 1 := by
-  sorry
+  have hnn : ∀ x, 0 ≤ betaPDFReal α β x := by
+    intro x
+    unfold betaPDFReal
+    split_ifs with h
+    · have : 0 < beta α β := beta_pos hα hβ
+      have h1 : 0 ≤ x ^ (α - 1) := Real.rpow_nonneg h.1.le _
+      have h2 : 0 ≤ (1 - x) ^ (β - 1) := Real.rpow_nonneg (by linarith [h.2]) _
+      positivity
+    · exact le_rfl
+  have hint : Integrable (betaPDFReal α β) := by
+    refine ⟨(measurable_betaPDFReal α β).aestronglyMeasurable, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ hnn)]
+    have := lintegral_betaPDF_eq_one hα hβ
+    unfold betaPDF at this
+    rw [this]
+    exact ENNReal.one_lt_top
+  obtain ⟨C, hC⟩ : ∃ C, ∀ x ∈ Icc (0 : ℝ) 1,
+      ‖(α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x)‖ ≤ C :=
+    IsCompact.exists_bound_of_continuousOn isCompact_Icc (by fun_prop)
+  rw [intervalIntegrable_iff_integrableOn_Ioo_of_le zero_le_one]
+  refine Integrable.mono' (hint.const_mul (beta α β * C)).integrableOn ?_ ?_
+  · fun_prop
+  · filter_upwards [ae_restrict_mem measurableSet_Ioo] with x hx
+    have hx' : (0 < x ∧ x < 1) := hx
+    have hB : 0 < beta α β := beta_pos hα hβ
+    have hB' : beta α β ≠ 0 := hB.ne'
+    have hCx : ‖(α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x)‖ ≤ C :=
+      hC x (Ioo_subset_Icc_self hx)
+    have hP : 0 ≤ x ^ (α - 1) * (1 - x) ^ (β - 1) :=
+      mul_nonneg (Real.rpow_nonneg hx'.1.le _) (Real.rpow_nonneg (by linarith [hx'.2]) _)
+    have hpdf : betaPDFReal α β x = 1 / beta α β * (x ^ (α - 1) * (1 - x) ^ (β - 1)) := by
+      unfold betaPDFReal
+      rw [if_pos hx']
+      ring
+    rw [hpdf, norm_mul, Real.norm_of_nonneg hP,
+      show beta α β * C * (1 / beta α β * (x ^ (α - 1) * (1 - x) ^ (β - 1)))
+        = C * (x ^ (α - 1) * (1 - x) ^ (β - 1)) by field_simp, mul_comm C]
+    exact mul_le_mul_of_nonneg_left hCx hP
 
 /-- Integration by parts on $[0, 1]$: for $\alpha, \beta > 0$ and real $t$,
 $$\int_0^1 x^{\alpha-1}(1-x)^{\beta-1}(\alpha - (\alpha+\beta)x + tx(1-x))e^{tx}\,dx = 0\,,$$
@@ -190,7 +481,22 @@ private theorem intervalIntegral_rpow_mul_rpow_mul_exp_eq_zero {α β : ℝ} (h�
     (hβ : 0 < β) (t : ℝ) :
     ∫ x in (0 : ℝ)..1, x ^ (α - 1) * (1 - x) ^ (β - 1) *
       ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x)) = 0 := by
-  sorry
+  have hcont : ContinuousOn (fun x : ℝ => x ^ α * (1 - x) ^ β * Real.exp (t * x)) (Icc 0 1) := by
+    intro x _
+    apply ContinuousAt.continuousWithinAt
+    have h1 : ContinuousAt (fun x : ℝ => x ^ α) x :=
+      Real.continuousAt_rpow_const x α (Or.inr hα.le)
+    have h2 : ContinuousAt (fun x : ℝ => (1 - x) ^ β) x :=
+      ContinuousAt.rpow_const (continuousAt_const.sub continuousAt_id) (Or.inr hβ.le)
+    fun_prop
+  have hderiv : ∀ x ∈ Ioo (0 : ℝ) 1,
+      HasDerivAt (fun x : ℝ => x ^ α * (1 - x) ^ β * Real.exp (t * x))
+      (x ^ (α - 1) * (1 - x) ^ (β - 1) *
+        ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) x :=
+    fun x hx => hasDerivAt_rpow_mul_rpow_mul_exp hx
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le zero_le_one hcont hderiv
+    (intervalIntegrable_rpow_mul_rpow_mul_exp hα hβ t)]
+  simp [Real.zero_rpow hα.ne', Real.zero_rpow hβ.ne']
 
 /-- Kummer's equation in integral form: for $X \sim \mathrm{Beta}(\alpha, \beta)$,
 $\alpha, \beta > 0$ and real $t$,
@@ -203,7 +509,34 @@ the Beta constant, then `intervalIntegral_rpow_mul_rpow_mul_exp_eq_zero`. -/
 private theorem integral_sub_mul_add_mul_exp_betaMeasure {α β : ℝ} (hα : 0 < α) (hβ : 0 < β)
     (t : ℝ) :
     ∫ x, (α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x) ∂betaMeasure α β = 0 := by
-  sorry
+  have hnn : ∀ x, 0 ≤ betaPDFReal α β x := by
+    intro x
+    unfold betaPDFReal
+    split_ifs with hx
+    · have hb := beta_pos hα hβ
+      have hx0 : 0 ≤ x ^ (α - 1) := Real.rpow_nonneg hx.1.le _
+      have h1x : 0 ≤ (1 - x) ^ (β - 1) := Real.rpow_nonneg (by linarith [hx.2]) _
+      positivity
+    · exact le_refl 0
+  have hto : ∀ x, (betaPDF α β x).toReal = betaPDFReal α β x := fun x =>
+    ENNReal.toReal_ofReal (hnn x)
+  unfold betaMeasure
+  have hmeas : Measurable (betaPDF α β) := (measurable_betaPDFReal α β).ennreal_ofReal
+  rw [integral_withDensity_eq_integral_toReal_smul hmeas
+    (ae_of_all _ fun x => ENNReal.ofReal_lt_top)]
+  simp only [hto, smul_eq_mul]
+  rw [← setIntegral_eq_integral_of_forall_compl_eq_zero (s := Ioo (0 : ℝ) 1) ?_]
+  · have h2 : ∀ x ∈ Ioo (0 : ℝ) 1, betaPDFReal α β x * ((α - (α + β) * x + t * x * (1 - x)) *
+        Real.exp (t * x)) = (1 / beta α β) * (x ^ (α - 1) * (1 - x) ^ (β - 1) *
+          ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) := by
+      intro x hx
+      rw [betaPDFReal, if_pos (show 0 < x ∧ x < 1 from hx)]
+      ring
+    rw [setIntegral_congr_fun measurableSet_Ioo h2, integral_const_mul,
+      ← integral_Ioc_eq_integral_Ioo, ← intervalIntegral.integral_of_le zero_le_one,
+      intervalIntegral_rpow_mul_rpow_mul_exp_eq_zero hα hβ t, mul_zero]
+  · intro x hx
+    rw [betaPDFReal, if_neg (show ¬(0 < x ∧ x < 1) from hx), zero_mul]
 
 /-- A Beta law lives on $[0, 1]$: for all $\alpha, \beta$, almost every point of
 `betaMeasure α β` lies in $[0, 1]$.
@@ -211,7 +544,13 @@ Proof: S, about 8 lines. `ae_iff`, `betaMeasure`, `withDensity_apply`; `betaPDF_
 and `betaPDF_eq_zero_of_one_le` make the density $0$ off $(0, 1)$ (`setLIntegral_eq_zero`-type
 step). -/
 private theorem ae_mem_Icc_betaMeasure (α β : ℝ) : ∀ᵐ x ∂betaMeasure α β, x ∈ Icc (0 : ℝ) 1 := by
-  sorry
+  have hs : MeasurableSet {x : ℝ | x ∉ Icc (0 : ℝ) 1} := measurableSet_Icc.compl
+  rw [betaMeasure, ae_iff, withDensity_apply _ hs]
+  refine (setLIntegral_congr_fun (g := fun _ => 0) hs fun x hx => ?_).trans (by simp)
+  simp only [Set.mem_Icc, not_and_or, not_le] at hx
+  rcases hx with hx | hx
+  · exact betaPDF_eq_zero_of_nonpos hx.le
+  · exact betaPDF_eq_zero_of_one_le hx.le
 
 /-- The tilted moments differentiate up: for $\alpha, \beta > 0$, every $k$ and real $t$,
 $\varphi_k' (t) = \varphi_{k+1}(t)$, where $\varphi_k(s) = \mathbb{E}\,X^k e^{sX}$ for
@@ -222,7 +561,20 @@ exponential integrability for every $s$ from boundedness on the support
 then `hasDerivAt_integral_pow_mul_exp_real`. -/
 private theorem hasDerivAt_betaExpMoment {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (k : ℕ) (t : ℝ) :
     HasDerivAt (betaExpMoment α β k) (betaExpMoment α β (k + 1) t) t := by
-  sorry
+  have := isProbabilityMeasureBeta hα hβ
+  have hint : ∀ s : ℝ, Integrable (fun x : ℝ => Real.exp (s * x)) (betaMeasure α β) := by
+    intro s
+    refine Integrable.of_bound (Continuous.aestronglyMeasurable (by fun_prop)) (Real.exp |s|) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    rw [Real.norm_of_nonneg (Real.exp_pos _).le, Real.exp_le_exp]
+    nlinarith [abs_nonneg s, le_abs_self s, hx.1, hx.2, neg_abs_le s]
+  have huniv : interior (integrableExpSet id (betaMeasure α β)) = univ := by
+    have hall : integrableExpSet id (betaMeasure α β) = univ :=
+      Set.eq_univ_of_forall fun s => hint s
+    rw [hall, interior_univ]
+  have hmem : t ∈ interior (integrableExpSet id (betaMeasure α β)) := by
+    rw [huniv]; exact mem_univ t
+  exact hasDerivAt_integral_pow_mul_exp_real hmem k
 
 /-- The tilted mass is positive: for $\alpha, \beta > 0$ and real $t$,
 $\mathbb{E}\,e^{tX} > 0$ for $X \sim \mathrm{Beta}(\alpha, \beta)$.
@@ -230,7 +582,19 @@ Proof: S, about 6 lines. `haveI := isProbabilityMeasureBeta hα hβ`; `pow_zero`
 `integral_exp_pos` with integrability from `ae_mem_Icc_betaMeasure` (`Integrable.of_bound`). -/
 private theorem betaExpMoment_zero_pos {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
     0 < betaExpMoment α β 0 t := by
-  sorry
+  have := isProbabilityMeasureBeta hα hβ
+  have hint : Integrable (fun x => Real.exp (t * x)) (betaMeasure α β) := by
+    refine Integrable.of_bound (by fun_prop) (Real.exp |t|) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    apply Real.exp_le_exp.2
+    calc t * x ≤ |t * x| := le_abs_self _
+      _ = |t| * |x| := abs_mul _ _
+      _ ≤ |t| * 1 := by gcongr; rw [abs_of_nonneg hx.1]; exact hx.2
+      _ = |t| := mul_one _
+  have hpos : 0 < ∫ x, Real.exp (t * x) ∂betaMeasure α β :=
+    integral_exp_pos (f := fun x => t * x) hint
+  simpa [betaExpMoment, pow_zero, one_mul] using hpos
 
 /-- The Riccati identity: with $\varphi_k(t) = \mathbb{E}\,X^k e^{tX}$ for
 $X \sim \mathrm{Beta}(\alpha, \beta)$, $y = \varphi_1/\varphi_0$, $b = \alpha + \beta$,
@@ -247,7 +611,104 @@ private theorem mul_sub_add_mul_sub_eq {α β : ℝ} (hα : 0 < α) (hβ : 0 < �
         t / (4 * (α + β + 1))) =
     t * (betaExpMoment α β 1 t / betaExpMoment α β 0 t *
       (1 - betaExpMoment α β 1 t / betaExpMoment α β 0 t) - 1 / 4) := by
-  sorry
+  have hK := integral_sub_mul_add_mul_exp_betaMeasure hα hβ t
+  have hpos := betaExpMoment_zero_pos hα hβ t
+  have := isProbabilityMeasureBeta hα hβ
+  have hi : ∀ k : ℕ, Integrable (fun x : ℝ => x ^ k * Real.exp (t * x)) (betaMeasure α β) := by
+    intro k
+    refine Integrable.of_bound (C := Real.exp |t|) (by fun_prop) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    obtain ⟨h0, h1⟩ := hx
+    rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (Real.exp_pos _).le, abs_pow, abs_of_nonneg h0]
+    have hp : x ^ k ≤ 1 := pow_le_one₀ h0 h1
+    have he : Real.exp (t * x) ≤ Real.exp |t| := by
+      apply Real.exp_le_exp.mpr
+      calc t * x ≤ |t * x| := le_abs_self _
+        _ = |t| * x := by rw [abs_mul, abs_of_nonneg h0]
+        _ ≤ |t| * 1 := by gcongr
+        _ = |t| := mul_one _
+    calc x ^ k * Real.exp (t * x) ≤ 1 * Real.exp |t| :=
+          mul_le_mul hp he (Real.exp_pos _).le zero_le_one
+      _ = Real.exp |t| := one_mul _
+  have hK' : α * betaExpMoment α β 0 t - (α + β) * betaExpMoment α β 1 t +
+      t * (betaExpMoment α β 1 t - betaExpMoment α β 2 t) = 0 := by
+    have hK2 := hK
+    simp only [show ∀ x : ℝ, (α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x) =
+      α * (x ^ 0 * Real.exp (t * x)) - (α + β) * (x ^ 1 * Real.exp (t * x)) +
+        t * (x ^ 1 * Real.exp (t * x) - x ^ 2 * Real.exp (t * x)) from fun x => by ring] at hK2
+    have i0 : Integrable (fun x : ℝ => α * (x ^ 0 * Real.exp (t * x))) (betaMeasure α β) :=
+      (hi 0).const_mul α
+    have i1 : Integrable (fun x : ℝ => (α + β) * (x ^ 1 * Real.exp (t * x))) (betaMeasure α β) :=
+      (hi 1).const_mul (α + β)
+    have i2 : Integrable (fun x : ℝ => t * (x ^ 1 * Real.exp (t * x) - x ^ 2 * Real.exp (t * x)))
+        (betaMeasure α β) := ((hi 1).sub (hi 2)).const_mul t
+    have i01 : Integrable (fun x : ℝ => α * (x ^ 0 * Real.exp (t * x)) -
+        (α + β) * (x ^ 1 * Real.exp (t * x))) (betaMeasure α β) := i0.sub i1
+    rw [integral_add i01 i2, integral_sub i0 i1, integral_const_mul, integral_const_mul,
+      integral_const_mul, integral_sub (hi 1) (hi 2)] at hK2
+    unfold betaExpMoment
+    linarith
+  have ha : betaExpMoment α β 0 t * (betaExpMoment α β 0 t)⁻¹ = 1 :=
+    mul_inv_cancel₀ hpos.ne'
+  have hr : α / (α + β) * (α + β) = α := div_mul_cancel₀ α (by positivity)
+  have hs : 1 / (4 * (α + β + 1)) * (4 * (α + β + 1)) = 1 :=
+    one_div_mul_cancel (by positivity)
+  linear_combination (-(betaExpMoment α β 0 t)⁻¹) * hK' +
+    α * ha - hr - (t / 4) * hs
+
+/-- Sign lemma for a differentiable `z` with `z 0 = 0`: if `t * z' t + b * z t ≤ 0` for `t > 0`
+and `0 ≤ t * z' t + b * z t` for `t < 0`, then `t * z t ≤ 0` for every `t`. -/
+private theorem mul_le_zero_of_ode_sign {z z' : ℝ → ℝ} {b : ℝ} (hb : 0 < b)
+    (hd : ∀ t, HasDerivAt z (z' t) t)
+    (hpos : ∀ t, 0 < t → t * z' t + b * z t ≤ 0)
+    (hneg : ∀ t, t < 0 → 0 ≤ t * z' t + b * z t) (t : ℝ) : t * z t ≤ 0 := by
+  have hcont : Continuous z := continuous_iff_continuousAt.2 fun t => (hd t).continuousAt
+  rcases lt_trichotomy t 0 with ht | rfl | ht
+  · have hanti := antitoneOn_rpow_mul_of_hasDerivAt (f := fun s => -z (-s))
+      (f' := fun s => z' (-s)) hb ((hcont.comp continuous_neg).neg.continuousWithinAt)
+      (fun s _ => by
+        have h := ((hd (-s)).comp s (hasDerivAt_neg s)).neg
+        exact h.congr_deriv (by ring))
+      (fun s hs => by
+        have h := hneg (-s) (by simp only [mem_Ioi] at hs; linarith)
+        simp only [mem_Ioi] at hs
+        nlinarith [h])
+    have hle := hanti (a := 0) (b := -t) (by simp) (by simp; linarith) (by linarith)
+    simp only [neg_zero, neg_neg, Real.zero_rpow hb.ne', zero_mul] at hle
+    have hp : 0 < (-t) ^ b := Real.rpow_pos_of_pos (by linarith) b
+    have h3 : 0 ≤ z t := by
+      by_contra hneg'
+      push_neg at hneg'
+      nlinarith [mul_pos hp (neg_pos.2 hneg')]
+    nlinarith
+  · simp
+  · have hanti := antitoneOn_rpow_mul_of_hasDerivAt (f := z) (f' := z') hb
+      hcont.continuousWithinAt (fun s _ => hd s) (fun s hs => hpos s hs)
+    have hle := hanti (a := 0) (b := t) (by simp) (by simp; linarith) (by linarith)
+    simp only [Real.zero_rpow hb.ne', zero_mul] at hle
+    have hp : 0 < t ^ b := Real.rpow_pos_of_pos ht b
+    have h3 : z t ≤ 0 := by
+      by_contra hneg'
+      push_neg at hneg'
+      nlinarith [mul_pos hp hneg']
+    nlinarith
+
+/-- Derivative of the comparison function $z(t) = \varphi_1/\varphi_0 - \alpha/(\alpha+\beta)
+- t/(4(\alpha+\beta+1))$ (the Riccati quotient of `mul_sub_div_sub_div_nonpos`). -/
+private theorem hasDerivAt_comparison {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
+    HasDerivAt (fun s => betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) -
+        s / (4 * (α + β + 1)))
+      (betaExpMoment α β 2 t / betaExpMoment α β 0 t -
+        (betaExpMoment α β 1 t / betaExpMoment α β 0 t) ^ 2 - 1 / (4 * (α + β + 1))) t := by
+  have h0 : HasDerivAt (betaExpMoment α β 0) (betaExpMoment α β 1 t) t :=
+    hasDerivAt_betaExpMoment hα hβ 0 t
+  have h1 : HasDerivAt (betaExpMoment α β 1) (betaExpMoment α β 2 t) t :=
+    hasDerivAt_betaExpMoment hα hβ 1 t
+  have hM0 := (betaExpMoment_zero_pos hα hβ t).ne'
+  have hd := h1.div h0 hM0
+  have hs := ((hd.sub_const (α / (α + β))).sub ((hasDerivAt_id t).div_const (4 * (α + β + 1))))
+  refine hs.congr_deriv ?_
+  field_simp
 
 /-- The comparison step: with $\varphi_k(t) = \mathbb{E}\,X^k e^{tX}$ for
 $X \sim \mathrm{Beta}(\alpha, \beta)$, $\alpha, \beta > 0$, and
@@ -265,7 +726,20 @@ betaMeasure β α`. -/
 private theorem mul_sub_div_sub_div_nonpos {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
     t * (betaExpMoment α β 1 t / betaExpMoment α β 0 t - α / (α + β) -
       t / (4 * (α + β + 1))) ≤ 0 := by
-  sorry
+  have aux : ∀ y : ℝ, y * (1 - y) - 1 / 4 ≤ 0 := fun y => by nlinarith [sq_nonneg (y - 1 / 2)]
+  have hb : 0 < α + β := by linarith
+  exact mul_le_zero_of_ode_sign hb
+    (z := fun s => betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) -
+      s / (4 * (α + β + 1)))
+    (z' := fun s => betaExpMoment α β 2 s / betaExpMoment α β 0 s -
+      (betaExpMoment α β 1 s / betaExpMoment α β 0 s) ^ 2 - 1 / (4 * (α + β + 1)))
+    (hasDerivAt_comparison hα hβ)
+    (fun s hs => by
+      rw [mul_sub_add_mul_sub_eq hα hβ s]
+      exact mul_nonpos_of_nonneg_of_nonpos hs.le (aux _))
+    (fun s hs => by
+      rw [mul_sub_add_mul_sub_eq hα hβ s]
+      exact mul_nonneg_of_nonpos_of_nonpos hs.le (aux _)) t
 
 /-- The cumulant bound: for $X \sim \mathrm{Beta}(\alpha, \beta)$, $\alpha, \beta > 0$ and real
 $t$, $\log\mathbb{E}\,e^{tX} - \alpha t/(\alpha+\beta) \le t^2/(8(\alpha+\beta+1))$.
@@ -276,7 +750,57 @@ t^2/(8(\alpha+\beta+1))$ has derivative $z$ (`HasDerivAt.log`, `hasDerivAt_betaE
 from `mul_sub_div_sub_div_nonpos`. -/
 private theorem log_betaExpMoment_sub_le {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
     Real.log (betaExpMoment α β 0 t) - α / (α + β) * t ≤ t ^ 2 / (8 * (α + β + 1)) := by
-  sorry
+  have hpos := betaExpMoment_zero_pos hα hβ
+  have hzero : betaExpMoment α β 0 0 = 1 := by
+    have := isProbabilityMeasureBeta hα hβ
+    simp [betaExpMoment]
+  set g : ℝ → ℝ := fun s => Real.log (betaExpMoment α β 0 s) - α / (α + β) * s -
+    s ^ 2 / (8 * (α + β + 1)) with hg
+  have hg0 : g 0 = 0 := by simp [hg, hzero]
+  have hderiv : ∀ s, HasDerivAt g
+      (betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) - s / (4 * (α + β + 1))) s := by
+    intro s
+    have h1 := (hasDerivAt_betaExpMoment hα hβ 0 s).log (hpos s).ne'
+    have h2 := (hasDerivAt_id s).const_mul (α / (α + β))
+    have h3 := (hasDerivAt_pow 2 s).div_const (8 * (α + β + 1))
+    have key := (h1.sub h2).sub h3
+    have e : betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) -
+        s / (4 * (α + β + 1)) = betaExpMoment α β (0 + 1) s / betaExpMoment α β 0 s -
+        α / (α + β) * 1 - ↑2 * s ^ (2 - 1) / (8 * (α + β + 1)) := by
+      have hb : α + β ≠ 0 := ne_of_gt (by linarith)
+      have hb1 : α + β + 1 ≠ 0 := ne_of_gt (by linarith)
+      norm_num
+      field_simp
+      ring
+    rw [e]
+    exact key
+  have hcont : Continuous g := continuous_iff_continuousAt.2 fun s => (hderiv s).continuousAt
+  have hdiff : Differentiable ℝ g := fun s => (hderiv s).differentiableAt
+  rcases le_total 0 t with ht | ht
+  · have hanti : AntitoneOn g (Ici 0) := by
+      refine antitoneOn_of_deriv_nonpos (convex_Ici 0) hcont.continuousOn
+        hdiff.differentiableOn ?_
+      rw [interior_Ici]
+      intro s hs
+      rw [(hderiv s).deriv]
+      have := mul_sub_div_sub_div_nonpos hα hβ s
+      have hs' : 0 < s := hs
+      nlinarith
+    have := hanti (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 ht) ht
+    simp only [hg0] at this
+    linarith [this]
+  · have hmono : MonotoneOn g (Iic 0) := by
+      refine monotoneOn_of_deriv_nonneg (convex_Iic 0) hcont.continuousOn
+        hdiff.differentiableOn ?_
+      rw [interior_Iic]
+      intro s hs
+      rw [(hderiv s).deriv]
+      have := mul_sub_div_sub_div_nonpos hα hβ s
+      have hs' : s < 0 := hs
+      nlinarith
+    have := hmono (Set.mem_Iic.2 ht) (Set.mem_Iic.2 le_rfl) ht
+    simp only [hg0] at this
+    linarith [this]
 
 /-- **Beta laws are sub-Gaussian with proxy $1/(4(\alpha+\beta+1))$**: for
 $X \sim \mathrm{Beta}(\alpha, \beta)$ with $\alpha, \beta > 0$, the centred variable
@@ -297,7 +821,45 @@ Proof: M, about 30 lines. Exponential integrability from boundedness on the supp
 Result: beta-subgaussian -/
 theorem hasSubgaussianMGF_sub_div_betaMeasure {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) :
     HasSubgaussianMGF (fun x => x - α / (α + β)) ‖1 / (4 * (α + β + 1))‖₊ (betaMeasure α β) := by
-  sorry
+  have : IsProbabilityMeasure (betaMeasure α β) := isProbabilityMeasureBeta hα hβ
+  have hint : ∀ t : ℝ, Integrable (fun x : ℝ => Real.exp (t * x)) (betaMeasure α β) := by
+    intro t
+    refine Integrable.of_bound (by fun_prop) (Real.exp |t|) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    rw [Real.norm_of_nonneg (Real.exp_pos _).le]
+    apply Real.exp_le_exp.mpr
+    nlinarith [mul_nonneg (abs_nonneg t) (sub_nonneg.2 hx.2),
+      mul_nonneg hx.1 (sub_nonneg.2 (le_abs_self t))]
+  have hcoe : ((‖1 / (4 * (α + β + 1))‖₊ : ℝ≥0) : ℝ) = 1 / (4 * (α + β + 1)) := by
+    rw [coe_nnnorm, Real.norm_eq_abs, abs_of_pos (by positivity)]
+  refine { integrable_exp_mul := fun t => ?_, mgf_le := fun t => ?_ }
+  · convert (hint t).const_mul (Real.exp (-(α / (α + β) * t))) using 1
+    funext x
+    change Real.exp (t * (x - α / (α + β))) = Real.exp (-(α / (α + β) * t)) * Real.exp (t * x)
+    rw [← Real.exp_add]
+    congr 1
+    ring
+  · have hmgf : mgf (fun x => x - α / (α + β)) (betaMeasure α β) t
+        = Real.exp (-(α / (α + β) * t)) * betaExpMoment α β 0 t := by
+      rw [mgf, betaExpMoment, ← integral_const_mul]
+      congr 1
+      funext x
+      change Real.exp (t * (x - α / (α + β))) =
+        Real.exp (-(α / (α + β) * t)) * (x ^ 0 * Real.exp (t * x))
+      rw [pow_zero, one_mul, ← Real.exp_add]
+      congr 1
+      ring
+    rw [hmgf, hcoe]
+    calc Real.exp (-(α / (α + β) * t)) * betaExpMoment α β 0 t
+        = Real.exp (Real.log (betaExpMoment α β 0 t) + -(α / (α + β) * t)) := by
+          rw [Real.exp_add, Real.exp_log (betaExpMoment_zero_pos hα hβ t)]
+          ring
+      _ ≤ Real.exp (1 / (4 * (α + β + 1)) * t ^ 2 / 2) := by
+          apply Real.exp_le_exp.mpr
+          have h8 : 1 / (4 * (α + β + 1)) * t ^ 2 / 2 = t ^ 2 / (8 * (α + β + 1)) := by
+            field_simp
+            ring
+          linarith [log_betaExpMoment_sub_le hα hβ t]
 
 /-- Beta laws are sub-Gaussian, `HasLaw` form: for $X \sim \mathrm{Beta}(\alpha, \beta)$ with
 $\alpha, \beta > 0$, $X - \alpha/(\alpha+\beta)$ satisfies the sub-Gaussian moment generating
@@ -308,6 +870,14 @@ Proof: S, about 8 lines. `HasSubgaussianMGF.id_map_iff` on both sides, `Measure.
 theorem hasSubgaussianMGF_sub_div_of_hasLaw_betaMeasure {X : Ω → ℝ} {α β : ℝ}
     (hα : 0 < α) (hβ : 0 < β) (hX : HasLaw X (betaMeasure α β) μ) :
     HasSubgaussianMGF (fun ω => X ω - α / (α + β)) ‖1 / (4 * (α + β + 1))‖₊ μ := by
-  sorry
+  have hmeas : Measurable (fun x : ℝ => x - α / (α + β)) := measurable_id.sub_const _
+  have h := hasSubgaussianMGF_sub_div_betaMeasure hα hβ
+  rw [← HasSubgaussianMGF.id_map_iff hmeas.aemeasurable] at h
+  rw [← HasSubgaussianMGF.id_map_iff (hX.aemeasurable.sub_const _)]
+  have hmap : μ.map (fun ω => X ω - α / (α + β)) =
+      (μ.map X).map (fun x : ℝ => x - α / (α + β)) :=
+    (AEMeasurable.map_map_of_aemeasurable (hmeas.aemeasurable (μ := μ.map X)) hX.aemeasurable).symm
+  rw [hmap, hX.map_eq]
+  exact h
 
 end ProbabilityTheory
