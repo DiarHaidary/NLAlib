@@ -334,7 +334,34 @@ the Beta constant, then `intervalIntegral_rpow_mul_rpow_mul_exp_eq_zero`. -/
 private theorem integral_sub_mul_add_mul_exp_betaMeasure {α β : ℝ} (hα : 0 < α) (hβ : 0 < β)
     (t : ℝ) :
     ∫ x, (α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x) ∂betaMeasure α β = 0 := by
-  sorry
+  have hnn : ∀ x, 0 ≤ betaPDFReal α β x := by
+    intro x
+    unfold betaPDFReal
+    split_ifs with hx
+    · have hb := beta_pos hα hβ
+      have hx0 : 0 ≤ x ^ (α - 1) := Real.rpow_nonneg hx.1.le _
+      have h1x : 0 ≤ (1 - x) ^ (β - 1) := Real.rpow_nonneg (by linarith [hx.2]) _
+      positivity
+    · exact le_refl 0
+  have hto : ∀ x, (betaPDF α β x).toReal = betaPDFReal α β x := fun x =>
+    ENNReal.toReal_ofReal (hnn x)
+  unfold betaMeasure
+  have hmeas : Measurable (betaPDF α β) := (measurable_betaPDFReal α β).ennreal_ofReal
+  rw [integral_withDensity_eq_integral_toReal_smul hmeas
+    (ae_of_all _ fun x => ENNReal.ofReal_lt_top)]
+  simp only [hto, smul_eq_mul]
+  rw [← setIntegral_eq_integral_of_forall_compl_eq_zero (s := Ioo (0 : ℝ) 1) ?_]
+  · have h2 : ∀ x ∈ Ioo (0 : ℝ) 1, betaPDFReal α β x * ((α - (α + β) * x + t * x * (1 - x)) *
+        Real.exp (t * x)) = (1 / beta α β) * (x ^ (α - 1) * (1 - x) ^ (β - 1) *
+          ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) := by
+      intro x hx
+      rw [betaPDFReal, if_pos (show 0 < x ∧ x < 1 from hx)]
+      ring
+    rw [setIntegral_congr_fun measurableSet_Ioo h2, integral_const_mul,
+      ← integral_Ioc_eq_integral_Ioo, ← intervalIntegral.integral_of_le zero_le_one,
+      intervalIntegral_rpow_mul_rpow_mul_exp_eq_zero hα hβ t, mul_zero]
+  · intro x hx
+    rw [betaPDFReal, if_neg (show ¬(0 < x ∧ x < 1) from hx), zero_mul]
 
 /-- A Beta law lives on $[0, 1]$: for all $\alpha, \beta$, almost every point of
 `betaMeasure α β` lies in $[0, 1]$.
