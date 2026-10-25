@@ -462,7 +462,50 @@ private theorem integral_orthogonalPolynomial_add_two_mul_self
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
     (h1 : IsOrthogonalPolynomial μ (k + 1) (orthogonalPolynomial μ (k + 1))) :
     ∫ x, (orthogonalPolynomial μ (k + 2)).eval x * (orthogonalPolynomial μ k).eval x ∂μ = 0 := by
-  sorry
+  set P := orthogonalPolynomial μ
+  have hm : ∀ n, (P n).Monic := monic_orthogonalPolynomial μ
+  have hd : ∀ n, (P n).degree = n := degree_orthogonalPolynomial μ
+  have hint := fun p : ℝ[X] => integrable_eval_of_ae_mem_Icc hμ p
+  have hXm : (X * P k).Monic := monic_X.mul (hm k)
+  have hXd : (X * P k).degree = ((k + 1 : ℕ) : WithBot ℕ) := by
+    rw [degree_mul, degree_X, hd]; norm_cast; omega
+  have hlt : (X * P k - P (k + 1)).degree < ((k + 1 : ℕ) : WithBot ℕ) := by
+    rw [← hXd]
+    exact degree_sub_lt (by rw [hXd, hd]) hXm.ne_zero (by rw [hXm.leadingCoeff, (hm _).leadingCoeff])
+  have hA := h1 _ hlt
+  have hB := h1 (P k) (by rw [hd]; exact_mod_cast Nat.lt_succ_self k)
+  have hsq : ∫ x, (P (k + 1)).eval x * (X * P k).eval x ∂μ =
+      ∫ x, (P (k + 1)).eval x ^ 2 ∂μ := by
+    have h2 : ∫ x, (P (k + 1)).eval x * (X * P k - P (k + 1)).eval x ∂μ =
+        ∫ x, (P (k + 1)).eval x * (X * P k).eval x ∂μ -
+          ∫ x, (P (k + 1)).eval x ^ 2 ∂μ := by
+      rw [← integral_sub]
+      · congr 1; ext x; simp only [eval_sub]; ring
+      · exact hint ((P (k + 1)) * (X * P k)) |>.congr (Filter.Eventually.of_forall fun x => by simp)
+      · exact hint ((P (k + 1)) * (P (k + 1))) |>.congr
+          (Filter.Eventually.of_forall fun x => by simp [sq])
+    linarith
+  have hpt : ∀ x, (P (k + 2)).eval x * (P k).eval x =
+      (P (k + 1)).eval x * (X * P k).eval x
+        - jacobiAlpha μ (k + 1) * ((P (k + 1)).eval x * (P k).eval x)
+        - jacobiBeta μ (k + 1) * (P k).eval x ^ 2 := by
+    intro x
+    rw [show P (k + 2) = _ from orthogonalPolynomial_add_two μ k]
+    simp only [eval_sub, eval_mul, eval_X, eval_C]; ring
+  have i1 : Integrable (fun x => (P (k + 1)).eval x * (X * P k).eval x) μ :=
+    (hint ((P (k + 1)) * (X * P k))).congr (Filter.Eventually.of_forall fun x => by simp)
+  have i2 : Integrable (fun x => (P (k + 1)).eval x * (P k).eval x) μ :=
+    (hint ((P (k + 1)) * P k)).congr (Filter.Eventually.of_forall fun x => by simp)
+  have i3 : Integrable (fun x => (P k).eval x ^ 2) μ :=
+    (hint (P k ^ 2)).congr (Filter.Eventually.of_forall fun x => by simp)
+  simp_rw [hpt]
+  have i4 : Integrable (fun x => (P (k + 1)).eval x * (X * P k).eval x
+      - jacobiAlpha μ (k + 1) * ((P (k + 1)).eval x * (P k).eval x)) μ :=
+    i1.sub (i2.const_mul _)
+  rw [integral_sub i4 (i3.const_mul _), integral_sub i1 (i2.const_mul _),
+    integral_const_mul, integral_const_mul, hsq, hB,
+    integral_orthogonalPolynomial_succ_sq hμ k]
+  ring
 
 /-- Division by a monic polynomial, one degree at a time: if $p$ is monic of degree $d$ and
 $\deg r < d + 1$, then $r = c\,p + r'$ for a constant $c$ with $\deg r' < d$. -/
