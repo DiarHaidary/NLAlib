@@ -19,7 +19,11 @@ the new `RandomMatrix/Haar/Stabilizer.lean`, G1 in `RandomMatrix/Gaussian/Invari
 `RandomMatrix/Gaussian/Rank`, the freezing lemma F1–F2 in
 `ForMathlib/Probability/Independence/Basic`, T1–T4 in `ForMathlib/InformationTheory/TotalVariation`.
 The scaffold's `RandomMatrix/DeferredDecision` (1738 lines) was split by topic before the move.
-The scaffold is empty again. No statement changed; no public declaration added. Reports:
+The scaffold is empty again. No statement changed. One private helper became public (rule S5):
+`HasOrthonormalCols.hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose`
+(`RandomMatrix/UnitaryInvariance`, formerly private there and copied in the H1 file). Ratchet: T9
+for `history_gramSimulation` (proof term in its statement; decision T9-GRAM); allowlist: N9 for
+R4b (decision NAME-R4B). Reports:
 `reports/Review-LBA-Cleanup.md` and `reports/Stage-LBA.md` in the harness repository.
 
 ## S10 lower bounds for specific estimators: proofs (2026-10-25)
