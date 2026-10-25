@@ -823,7 +823,28 @@ degree $k$); $\int d^2 = \int d\,p - \int d\,\pi_k = 0$ by `hpo` and
 theorem IsMomentPosDef.eq_orthogonalPolynomial {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : p.Monic) (hpk : p.natDegree = k)
     (hpo : IsOrthogonalPolynomial μ k p) : p = orthogonalPolynomial μ k := by
-  sorry
+  have hdeg : (p - orthogonalPolynomial μ k).degree < k := by
+    have hm := monic_orthogonalPolynomial μ k
+    have h1 : p.degree = k := by rw [degree_eq_natDegree hp.ne_zero, hpk]
+    have h2 := degree_orthogonalPolynomial μ k
+    have := degree_sub_lt (p := p) (q := orthogonalPolynomial μ k) (by rw [h1, h2])
+      hp.ne_zero (by rw [hp.leadingCoeff, hm.leadingCoeff])
+    rwa [h1] at this
+  by_contra hne
+  have hd : p - orthogonalPolynomial μ k ≠ 0 := sub_ne_zero.mpr hne
+  have hpos := h _ hd hdeg
+  have hint := integrable_eval_of_ae_mem_Icc hμ (p * (p - orthogonalPolynomial μ k))
+  have hint' := integrable_eval_of_ae_mem_Icc hμ
+    (orthogonalPolynomial μ k * (p - orthogonalPolynomial μ k))
+  have h0 := hpo _ hdeg
+  have h0' := isOrthogonalPolynomial_orthogonalPolynomial hμ k _ hdeg
+  simp only [eval_mul] at hint hint'
+  have : ∫ x, (p - orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0 := by
+    calc _ = ∫ x, (p.eval x * (p - orthogonalPolynomial μ k).eval x
+          - (orthogonalPolynomial μ k).eval x * (p - orthogonalPolynomial μ k).eval x) ∂μ := by
+          congr 1; ext x; simp only [eval_sub]; ring
+      _ = 0 := by rw [integral_sub hint hint', h0, h0', sub_zero]
+  linarith
 
 end Orthogonality
 
