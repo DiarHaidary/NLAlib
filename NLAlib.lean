@@ -285,9 +285,11 @@ public import NLAlib.Polynomial.Approximation.BernsteinEllipse
 public import NLAlib.Polynomial.Approximation.ChebyshevCoefficients
 public import NLAlib.Polynomial.Approximation.ChebyshevSeries
 public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
+public import NLAlib.Polynomial.Approximation.Equioscillation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
+public import NLAlib.Polynomial.Approximation.MinimaxError
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.Residual
