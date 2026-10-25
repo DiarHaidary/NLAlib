@@ -33,6 +33,8 @@ adaptive form is
 open MeasureTheory ProbabilityTheory
 open scoped Matrix
 
+attribute [local fun_prop] Measurable.matrix_mul
+
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
@@ -58,25 +60,15 @@ private theorem exists_hasOrthonormalCols_conjTranspose_mul_eq_zero {p : Type*}
   · have hPV : rangeProjector A * V = V := by
       ext i j
       have hv : (fun l => V l j) ∈ LinearMap.range A.mulVecLin := by
-        rw [Matrix.range_mulVecLin]
-        have : Set.range A.col = Set.range f := rfl
-        rw [this, hspan]
+        rw [Matrix.range_mulVecLin, show Set.range A.col = Set.range f from rfl, hspan]
         exact Submodule.subset_span ⟨j, rfl⟩
-      obtain ⟨w, hw⟩ := hv
-      have := congrFun (congrArg (· *ᵥ w) (rangeProjector_mul_self A)) i
-      simp only [← Matrix.mulVec_mulVec] at this
-      change (rangeProjector A *ᵥ A.mulVecLin w) i = _ at this
-      rw [hw] at this
-      rw [show (A *ᵥ w) i = V i j from congrFun hw i] at this
-      exact this
+      exact congrFun (rangeProjector_mulVec_eq_self_iff.2 hv) i
     rw [← hW.conjTranspose_mul_cancel_left (Wᴴ * V), ← Matrix.mul_assoc W, hWW,
       Matrix.sub_mul, Matrix.one_mul, hPV, sub_self, Matrix.mul_zero]
   · have hTA : T * A = A := by
       ext i k
       obtain ⟨j, hj⟩ := hf k
-      have := congrFun (congrFun hT i) j
-      simp only [Matrix.mul_apply] at this ⊢
-      simpa [A, ← hj] using this
+      simpa [A, Matrix.mul_apply, ← hj] using congrFun (congrFun hT i) j
     rw [hP, ← mul_pinv, ← Matrix.mul_assoc, hTA]
 
 /-- The block rotation $\mathbf{I} + \mathbf{W}(\mathbf{o} - \mathbf{I})\mathbf{W}^{\mathsf{H}}$
@@ -156,34 +148,27 @@ private theorem exists_measurable_stabilizer {p : Type*} (V : Matrix n p ℝ) :
   classical
   set R : Matrix c c ℝ → Matrix n n ℝ :=
     fun o => if HasOrthonormalCols o then 1 + W * (o - 1) * Wᴴ else 1 with hR
-  have hRo : ∀ o, HasOrthonormalCols (R o) := fun o => by
-    simp only [hR]
-    split_ifs with ho
-    exacts [hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hW ho, hasOrthonormalCols_one]
-  have hRV : ∀ o, R o * V = V := fun o => by
-    simp only [hR]
-    split_ifs
-    exacts [by rw [Matrix.add_mul, Matrix.one_mul, Matrix.mul_assoc, hWV, Matrix.mul_zero,
-      add_zero], Matrix.one_mul V]
   have hRm : Measurable R := Measurable.ite isClosed_setOf_hasOrthonormalCols.measurableSet
     (by fun_prop : Continuous fun o : Matrix c c ℝ => 1 + W * (o - 1) * Wᴴ).measurable
     measurable_const
-  have hmr : ∀ T : Matrix c c ℝ, Measurable fun o : Matrix c c ℝ => o * T := fun T =>
-    measurable_id.matrix_mul measurable_const
-  have hRS : ∀ T, HasOrthonormalCols T → T * V = V →
-      (haarFrame c c).map (fun o => R o * T) = (haarFrame c c).map R := by
-    intro T hT hTV
-    obtain ⟨hs, hTeq⟩ :=
-      hT.eq_one_add_mul_sub_one_mul_conjTranspose hW (hfix T hTV)
-    rw [Measure.map_congr (g := R ∘ (· * (Wᴴ * T * W))), ← Measure.map_map hRm (hmr _),
-      IsRightUnitarilyInvariant.map_mul_right_eq_self _ hs]
-    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame HasLaw.id le_rfl] with o ho
-    replace ho : HasOrthonormalCols o := ho
-    simp only [Function.comp_apply, hR]
-    rw [if_pos ho, if_pos (ho.mul hs)]
-    conv_lhs => rw [hTeq]
-    exact one_add_mul_sub_one_mul_conjTranspose_mul hW _ _
-  exact ⟨c, inferInstance, inferInstance, R, hRm, hRo, hRV, hRS⟩
+  refine ⟨c, inferInstance, inferInstance, R, hRm, fun o => ?_, fun o => ?_, fun T hT hTV => ?_⟩
+  · simp only [hR]
+    split_ifs with ho
+    exacts [hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hW ho, hasOrthonormalCols_one]
+  · simp only [hR]
+    split_ifs
+    · rw [Matrix.add_mul, Matrix.one_mul, Matrix.mul_assoc, hWV, Matrix.mul_zero, add_zero]
+    · exact Matrix.one_mul V
+  obtain ⟨hs, hTeq⟩ := hT.eq_one_add_mul_sub_one_mul_conjTranspose hW (hfix T hTV)
+  rw [Measure.map_congr (g := R ∘ (· * (Wᴴ * T * W))),
+    ← Measure.map_map hRm (measurable_id'.matrix_mul measurable_const),
+    IsRightUnitarilyInvariant.map_mul_right_eq_self _ hs]
+  filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame HasLaw.id le_rfl] with o ho
+  replace ho : HasOrthonormalCols o := ho
+  simp only [Function.comp_apply, hR]
+  rw [if_pos ho, if_pos (ho.mul hs)]
+  conv_lhs => rw [hTeq]
+  exact one_add_mul_sub_one_mul_conjTranspose_mul hW _ _
 
 /-- **Deferred decision for a unitarily invariant law, non-adaptive stabilizer form**: let the law
 $\nu$ of $\mathbf{X} \in \mathbb{R}^{m \times n}$ be right unitarily invariant (Gaussian, Haar),
@@ -224,48 +209,31 @@ theorem identDistrib_prodMk_mul_of_isRightUnitarilyInvariant [IsProbabilityMeasu
     IdentDistrib (fun ω => (X ω * V, X ω)) (fun ω => (X ω * V, X ω * S (X ω * V))) μ μ := by
   obtain ⟨c, _, _, R, hRm, hRo, hRV, hRS⟩ := exists_measurable_stabilizer V
   set μ' := μ.prod (haarFrame c c)
-  have hXae : AEMeasurable (fun z : Ω × Matrix c c ℝ => X z.1) μ' :=
-    hX.aemeasurable.comp_quasiMeasurePreserving Measure.quasiMeasurePreserving_fst
-  have hfst : μ'.map Prod.fst = μ := by rw [Measure.map_fst_prod, measure_univ, one_smul]
-  have hXlaw : μ'.map (fun z => X z.1) = ν := by
-    rw [← hX.map_eq, ← hfst, AEMeasurable.map_map_of_aemeasurable (hfst ▸ hX.aemeasurable)
-      measurable_fst.aemeasurable]
-    rfl
-  have hOlaw : μ'.map (fun z => id z.2) = haarFrame c c := by
-    rw [show (fun z : Ω × Matrix c c ℝ => id z.2) = Prod.snd from rfl, Measure.map_snd_prod,
-      measure_univ, one_smul]
-  have hmV : Measurable fun x : Matrix m n ℝ => x * V := measurable_id.matrix_mul measurable_const
-  have hφ : Measurable fun x : Matrix m n ℝ => (x * V, x) := hmV.prodMk measurable_id
-  have hψ : Measurable fun x : Matrix m n ℝ => (x * V, x * S (x * V)) :=
-    hmV.prodMk (measurable_id.matrix_mul (hSm.comp hmV))
+  have hXz : HasLaw (fun z : Ω × Matrix c c ℝ => X z.1) ν μ' :=
+    hX.comp measurePreserving_fst.hasLaw
+  have hOlaw : μ'.map (fun z => id z.2) = haarFrame c c := measurePreserving_snd.map_eq
+  have hφ : Measurable fun x : Matrix m n ℝ => (x * V, x) := by fun_prop
+  have hψ : Measurable fun x : Matrix m n ℝ => (x * V, x * S (x * V)) := by fun_prop
   -- (1) rotating by the random stabilizer element keeps the joint law
   have h1 : IdentDistrib (fun z : Ω × Matrix c c ℝ => (X z.1 * V, X z.1))
       (fun z => (X z.1 * V, X z.1 * R z.2)) μ' μ' := by
     refine ((indepFun_prod₀ hX.aemeasurable aemeasurable_id).symm
       |>.identDistrib_prodMk_of_forall_map_eq
       (F := fun (_ : Matrix c c ℝ) (x : Matrix m n ℝ) => (x * V, x))
-      (G := fun o x => (x * V, x * R o)) measurable_snd.aemeasurable hXae
-      (hφ.comp measurable_snd)
-      ((hmV.comp measurable_snd).prodMk (measurable_snd.matrix_mul (hRm.comp measurable_fst)))
-      fun o => ?_).comp measurable_snd
+      (G := fun o x => (x * V, x * R o)) measurable_snd.aemeasurable hXz.aemeasurable
+      (by fun_prop) (by fun_prop) fun o => ?_).comp measurable_snd
     have h : (fun x : Matrix m n ℝ => (x * V, x * R o)) = (fun x => (x * V, x)) ∘ (· * R o) :=
       funext fun x => by simp only [Function.comp_apply, Matrix.mul_assoc, hRV]
-    rw [hXlaw, h, ← Measure.map_map hφ (show Measurable fun x : Matrix m n ℝ => x * R o from
-      measurable_id.matrix_mul measurable_const),
+    rw [hXz.map_eq, h, ← Measure.map_map hφ (measurable_id'.matrix_mul measurable_const),
       IsRightUnitarilyInvariant.map_mul_right_eq_self _ (hRo o)]
   -- (2) the stabilizer element absorbs `S`
   have h2 : IdentDistrib (fun z : Ω × Matrix c c ℝ => (X z.1 * V, X z.1 * R z.2 * S (X z.1 * V)))
       (fun z => (X z.1 * V, X z.1 * R z.2)) μ' μ' := by
     refine ((indepFun_prod₀ hX.aemeasurable aemeasurable_id).identDistrib_prodMk_of_forall_map_eq
       (F := fun (x : Matrix m n ℝ) (o : Matrix c c ℝ) => (x * V, x * R o * S (x * V)))
-      (G := fun x o => (x * V, x * R o)) hXae measurable_snd.aemeasurable
-      ((hmV.comp measurable_fst).prodMk
-        ((measurable_fst.matrix_mul (hRm.comp measurable_snd)).matrix_mul
-          (hSm.comp (hmV.comp measurable_fst))))
-      ((hmV.comp measurable_fst).prodMk (measurable_fst.matrix_mul (hRm.comp measurable_snd)))
-      fun x => ?_).comp measurable_snd
-    have hx : Measurable fun r : Matrix n n ℝ => (x * V, x * r) :=
-      measurable_const.prodMk (measurable_const.matrix_mul measurable_id)
+      (G := fun x o => (x * V, x * R o)) hXz.aemeasurable measurable_snd.aemeasurable
+      (by fun_prop) (by fun_prop) fun x => ?_).comp measurable_snd
+    have hx : Measurable fun r : Matrix n n ℝ => (x * V, x * r) := by fun_prop
     have h : (fun o => (x * V, x * R o * S (x * V))) =
         (fun r => (x * V, x * r)) ∘ (fun o => R o * S (x * V)) :=
       funext fun o => by simp only [Function.comp_apply, Matrix.mul_assoc]
@@ -274,16 +242,9 @@ theorem identDistrib_prodMk_mul_of_isRightUnitarilyInvariant [IsProbabilityMeasu
     rfl
   -- (3) push (1) forward by `(y, z) ↦ (y, z S(y))`
   have h3 := h1.comp (u := fun yz : Matrix m p ℝ × Matrix m n ℝ => (yz.1, yz.2 * S yz.1))
-    (measurable_fst.prodMk (measurable_snd.matrix_mul (hSm.comp measurable_fst)))
-  have hmain := (h1.trans (h3.trans h2).symm).map_eq
+    (by fun_prop)
   -- back from the extended space
-  refine ⟨hφ.comp_aemeasurable hX.aemeasurable, hψ.comp_aemeasurable hX.aemeasurable, ?_⟩
-  change μ.map ((fun x => (x * V, x)) ∘ X) = μ.map ((fun x => (x * V, x * S (x * V))) ∘ X)
-  rw [← AEMeasurable.map_map_of_aemeasurable hφ.aemeasurable hX.aemeasurable,
-    ← AEMeasurable.map_map_of_aemeasurable hψ.aemeasurable hX.aemeasurable, hX.map_eq, ← hXlaw,
-    AEMeasurable.map_map_of_aemeasurable hφ.aemeasurable hXae,
-    AEMeasurable.map_map_of_aemeasurable hψ.aemeasurable hXae]
-  exact hmain
-
+  have hXX := hX.identDistrib hXz
+  exact (hXX.comp hφ).trans ((h1.trans (h3.trans h2).symm).trans (hXX.comp hψ).symm)
 
 end NLAlib

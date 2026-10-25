@@ -36,6 +36,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
 variable {m n : Type*} [Fintype n] [DecidableEq n]
 
+attribute [local fun_prop] Measurable.matrix_mul Measurable.matrix_mulVec
+
 /-- The raw stabilizer randomizer of `V`: `P + polar(E G E)` with `P` the projector onto the range
 of `V` and `E = 1 - P`. -/
 private noncomputable def stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ)
@@ -49,68 +51,68 @@ private noncomputable def stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     (G : Matrix n n ℝ) : Matrix n n ℝ :=
   if HasOrthonormalCols (stabRaw V G) then stabRaw V G else 1
 
-private theorem measurable_stabRand {c : Type*} [Fintype c] :
-    Measurable fun p : Matrix n c ℝ × Matrix n n ℝ => stabRand p.1 p.2 := by
-  have hP : Measurable fun p : Matrix n c ℝ × Matrix n n ℝ => rangeProjector p.1 :=
-    measurable_rangeProjector.comp measurable_fst
-  have hE : Measurable fun p : Matrix n c ℝ × Matrix n n ℝ => 1 - rangeProjector p.1 :=
-    measurable_const.matrix_sub hP
-  have hF : Measurable fun p : Matrix n c ℝ × Matrix n n ℝ => stabRaw p.1 p.2 :=
-    hP.matrix_add (measurable_polarFactor.comp ((hE.matrix_mul measurable_snd).matrix_mul hE))
-  exact Measurable.ite (hF isClosed_setOf_hasOrthonormalCols.measurableSet) hF measurable_const
-
+/-- The stabilizer randomizer is jointly measurable in `V` and `G`. -/
 private theorem Measurable.stabRand_comp {α : Type*} [MeasurableSpace α] {c : Type*} [Fintype c]
     {f : α → Matrix n c ℝ} {g : α → Matrix n n ℝ} (hf : Measurable f) (hg : Measurable g) :
-    Measurable fun a => stabRand (f a) (g a) :=
-  (measurable_stabRand (c := c)).comp (f := fun a => (f a, g a)) (hf.prodMk hg)
+    Measurable fun a => stabRand (f a) (g a) := by
+  have hP : Measurable fun a => rangeProjector (f a) := measurable_rangeProjector.comp hf
+  have hE : Measurable fun a => 1 - rangeProjector (f a) := measurable_const.matrix_sub hP
+  have hF : Measurable fun a => stabRaw (f a) (g a) :=
+    hP.matrix_add (measurable_polarFactor.comp ((hE.matrix_mul hg).matrix_mul hE))
+  exact Measurable.ite (hF isClosed_setOf_hasOrthonormalCols.measurableSet) hF measurable_const
 
+attribute [local fun_prop] Measurable.stabRand_comp
+
+/-- The stabilizer randomizer of `V` is orthogonal and fixes `V`. -/
 private theorem stabRand_spec {c : Type*} [Fintype c] (V : Matrix n c ℝ) (G : Matrix n n ℝ) :
     HasOrthonormalCols (stabRand V G) ∧ stabRand V G * V = V := by
   unfold stabRand
   split_ifs with h
   · refine ⟨h, ?_⟩
-    have hEV : (1 - rangeProjector V) * V = 0 := by
-      rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_mul_self, sub_self]
     rw [stabRaw, Matrix.add_mul, rangeProjector_mul_self, polarFactor_eq_pinv_sqrt_mul (_ * _)]
-    simp only [Matrix.mul_assoc, hEV, Matrix.mul_zero, add_zero]
+    simp only [Matrix.mul_assoc, one_sub_rangeProjector_mul_self, Matrix.mul_zero, add_zero]
   · exact ⟨hasOrthonormalCols_one, Matrix.one_mul V⟩
 
-/-- An orthogonal matrix fixing `V` commutes with the projector onto its range. -/
+/-- An orthogonal matrix fixing `V`, its adjoint fixes it too. -/
+private theorem conjTranspose_mul_eq_of_mul_eq {c : Type*} {V : Matrix n c ℝ}
+    {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) : sᴴ * V = V := by
+  conv_lhs => rw [← hsV]
+  rw [← Matrix.mul_assoc, hs.conjTranspose_mul_self, Matrix.one_mul]
+
+/-- An orthogonal matrix fixing `V` commutes with the projector onto its range and with its
+complement. -/
 private theorem mul_rangeProjector_of_mul_eq {c : Type*} [Fintype c] {V : Matrix n c ℝ}
     {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) :
-    s * rangeProjector V = rangeProjector V ∧ rangeProjector V * s = rangeProjector V := by
-  have hsV' : sᴴ * V = V := by
-    conv_lhs => rw [← hsV]
-    rw [← Matrix.mul_assoc, hs.conjTranspose_mul_self, Matrix.one_mul]
-  refine ⟨by rw [← mul_pinv, ← Matrix.mul_assoc, hsV], ?_⟩
-  have h2 : sᴴ * rangeProjector V = rangeProjector V := by
-    rw [← mul_pinv, ← Matrix.mul_assoc, hsV']
-  have := congrArg Matrix.conjTranspose h2
-  rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
-    conjTranspose_rangeProjector] at this
+    s * rangeProjector V = rangeProjector V ∧ rangeProjector V * s = rangeProjector V ∧
+      s * (1 - rangeProjector V) = (1 - rangeProjector V) * s := by
+  have h1 : s * rangeProjector V = rangeProjector V := by
+    rw [← mul_pinv, ← Matrix.mul_assoc, hsV]
+  have h2 : rangeProjector V * s = rangeProjector V := by
+    have h : sᴴ * rangeProjector V = rangeProjector V := by
+      rw [← mul_pinv, ← Matrix.mul_assoc, conjTranspose_mul_eq_of_mul_eq hs hsV]
+    simpa only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      conjTranspose_rangeProjector] using congrArg Matrix.conjTranspose h
+  refine ⟨h1, h2, ?_⟩
+  rw [Matrix.mul_sub, Matrix.sub_mul, h1, h2, Matrix.mul_one, Matrix.one_mul]
 
+/-- Left multiplication by an orthogonal `s` fixing `V` moves inside the raw randomizer. -/
 private theorem mul_stabRaw {c : Type*} [Fintype c] {V : Matrix n c ℝ} {s : Matrix n n ℝ}
     (hs : HasOrthonormalCols s) (hsV : s * V = V) (G : Matrix n n ℝ) :
     s * stabRaw V G = stabRaw V (s * G) := by
-  obtain ⟨h1, h2⟩ := mul_rangeProjector_of_mul_eq hs hsV
-  have hE : s * (1 - rangeProjector V) = (1 - rangeProjector V) * s := by
-    rw [Matrix.mul_sub, Matrix.sub_mul, h1, h2, Matrix.mul_one, Matrix.one_mul]
+  obtain ⟨h1, -, hE⟩ := mul_rangeProjector_of_mul_eq hs hsV
   rw [stabRaw, stabRaw, Matrix.mul_add, h1, ← hs.polarFactor_mul_left, ← Matrix.mul_assoc,
     ← Matrix.mul_assoc, hE, Matrix.mul_assoc _ s G]
 
+/-- Right multiplication by an orthogonal `s` fixing `V` moves inside the raw randomizer. -/
 private theorem stabRaw_mul {c : Type*} [Fintype c] {V : Matrix n c ℝ} {s : Matrix n n ℝ}
     (hs : HasOrthonormalCols s) (hsV : s * V = V) (G : Matrix n n ℝ) :
     stabRaw V G * s = stabRaw V (G * s) := by
-  obtain ⟨h1, h2⟩ := mul_rangeProjector_of_mul_eq hs hsV
-  have hE : s * (1 - rangeProjector V) = (1 - rangeProjector V) * s := by
-    rw [Matrix.mul_sub, Matrix.sub_mul, h1, h2, Matrix.mul_one, Matrix.one_mul]
-  have hpol : ∀ A : Matrix n n ℝ, polarFactor A * s = polarFactor (A * s) := fun A => by
-    apply Matrix.conjTranspose_inj.mp
-    rw [Matrix.conjTranspose_mul, ← polarFactor_conjTranspose, ← polarFactor_conjTranspose,
-      Matrix.conjTranspose_mul, hs.conjTranspose.polarFactor_mul_left]
-  rw [stabRaw, stabRaw, Matrix.add_mul, h2, hpol, Matrix.mul_assoc _ (1 - rangeProjector V),
-    ← hE, ← Matrix.mul_assoc, ← Matrix.mul_assoc, Matrix.mul_assoc _ G s]
+  obtain ⟨-, h2, hE⟩ := mul_rangeProjector_of_mul_eq hs hsV
+  rw [stabRaw, stabRaw, Matrix.add_mul, h2, ← hs.conjTranspose.polarFactor_mul_right,
+    Matrix.mul_assoc _ (1 - rangeProjector V), ← hE, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+    Matrix.mul_assoc _ G s]
 
+/-- The raw randomizer is orthogonal when `P + E G E` is invertible. -/
 private theorem hasOrthonormalCols_stabRaw_of_isUnit {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     (G : Matrix n n ℝ)
     (hG : IsUnit (rangeProjector V + (1 - rangeProjector V) * G * (1 - rangeProjector V))) :
@@ -118,18 +120,18 @@ private theorem hasOrthonormalCols_stabRaw_of_isUnit {c : Type*} [Fintype c] (V 
   set P := rangeProjector V with hPdef
   set E : Matrix n n ℝ := 1 - P with hEdef
   set A := E * G * E with hAdef
-  have hPh : Pᴴ = P := conjTranspose_rangeProjector V
-  have hEh : Eᴴ = E := by rw [hEdef, Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hPh]
-  have hPP : P * P = P := rangeProjector_mul_rangeProjector V
-  have hPE : P * E = 0 := by rw [hEdef, Matrix.mul_sub, Matrix.mul_one, hPP, sub_self]
-  have hEP : E * P = 0 := by rw [hEdef, Matrix.sub_mul, Matrix.one_mul, hPP, sub_self]
-  have hEE : E * E = E := by rw [hEdef, Matrix.mul_sub, Matrix.mul_one, ← hEdef, hEP, sub_zero]
+  have hP : IsStarProjection P := isStarProjection_rangeProjector V
+  have hE : IsStarProjection E := hP.one_sub
+  have hPh : Pᴴ = P := hP.isSelfAdjoint.star_eq
+  have hEh : Eᴴ = E := hE.isSelfAdjoint.star_eq
+  have hPE : P * E = 0 := hP.isIdempotentElem.mul_one_sub_self
+  have hEP : E * P = 0 := hP.isIdempotentElem.one_sub_mul_self
   have hAh : Aᴴ = E * Gᴴ * E := by
     rw [hAdef, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, hEh, Matrix.mul_assoc]
-  have hEA : E * Aᴴ = Aᴴ := by rw [hAh, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hEE]
+  have hEA : E * Aᴴ = Aᴴ := by
+    rw [hAh, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hE.isIdempotentElem.eq]
   have hPU : P * polarFactor A = 0 := by
-    rw [polarFactor, hAdef, ← Matrix.mul_assoc, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hPE,
-      Matrix.zero_mul, Matrix.zero_mul, Matrix.zero_mul]
+    simp only [polarFactor, hAdef, ← Matrix.mul_assoc, hPE, Matrix.zero_mul]
   have hUP : (polarFactor A)ᴴ * P = 0 := by
     rw [← hPh, ← Matrix.conjTranspose_mul, hPU, Matrix.conjTranspose_zero]
   -- the range projector of `Aᴴ` is `E`
@@ -149,13 +151,14 @@ private theorem hasOrthonormalCols_stabRaw_of_isUnit {c : Type*} [Fintype c] (V 
     calc Q = (E * Q)ᴴ := by rw [hEQ, hQh]
       _ = E := by rw [Matrix.conjTranspose_mul, hQh, hEh, hQE]
   rw [hasOrthonormalCols_iff, stabRaw, ← hPdef, ← hEdef, Matrix.conjTranspose_add, hPh,
-    Matrix.add_mul, Matrix.mul_add, Matrix.mul_add, hPP, hPU, hUP,
+    Matrix.add_mul, Matrix.mul_add, Matrix.mul_add, hP.isIdempotentElem.eq, hPU, hUP,
     conjTranspose_polarFactor_mul_self, ← hQdef, hQ, hEdef]
   abel
 
-private theorem ae_isUnit_stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
-    ∀ᵐ G ∂gaussianMatrix n n,
-      IsUnit (rangeProjector V + (1 - rangeProjector V) * G * (1 - rangeProjector V)) := by
+/-- For a Gaussian `G`, the raw randomizer is almost surely orthogonal: `P + E G E` is almost
+surely invertible, its determinant being a nonzero polynomial in the entries of `G`. -/
+private theorem ae_hasOrthonormalCols_stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
+    ∀ᵐ G ∂gaussianMatrix n n, HasOrthonormalCols (stabRaw V G) := by
   set P := rangeProjector V with hPdef
   set E : Matrix n n ℝ := 1 - P with hEdef
   -- `det (P + E G E)` is a polynomial in the entries of `G`, equal to `1` at `G = 1`
@@ -175,9 +178,7 @@ private theorem ae_isUnit_stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
     simp only [Y, map_add, map_mul, RingHom.mapMatrix_apply, hC, hX]
   have hp : Y.det ≠ 0 := by
     intro h0
-    have hEE : E * E = E := by
-      rw [hEdef, Matrix.mul_sub, Matrix.mul_one, Matrix.sub_mul, Matrix.one_mul, hPdef,
-        rangeProjector_mul_rangeProjector, sub_self, sub_zero]
+    have hEE : E * E = E := (isStarProjection_one_sub_rangeProjector V).isIdempotentElem.eq
     have h := heval 1
     rw [h0, map_zero, Matrix.mul_one, hEE, hEdef, add_sub_cancel, Matrix.det_one] at h
     exact zero_ne_one h
@@ -188,40 +189,41 @@ private theorem ae_isUnit_stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
   rw [← hU.map_eq] at hae
   filter_upwards [ae_of_ae_map hU.aemeasurable hae] with G hG
   rw [id, heval] at hG
-  exact (Matrix.isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 hG)
+  exact hasOrthonormalCols_stabRaw_of_isUnit V G
+    ((Matrix.isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 hG))
 
+/-- The stabilizer randomizer of a fixed `V` is measurable in `G`. -/
 private theorem measurable_stabRand_right {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
     Measurable (stabRand V) :=
-  (measurable_stabRand (c := c)).comp (f := fun G : Matrix n n ℝ => (V, G))
-    (measurable_const.prodMk measurable_id)
+  Measurable.stabRand_comp measurable_const measurable_id
 
+/-- Left multiplication by an orthogonal `s` fixing `V` keeps the law of the randomizer. -/
 private theorem map_mul_left_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) :
     ((gaussianMatrix n n).map (stabRand V)).map (s * ·) =
       (gaussianMatrix n n).map (stabRand V) := by
   have hm := measurable_stabRand_right V
-  have hl : Measurable fun x : Matrix n n ℝ => s * x := measurable_const.matrix_mul measurable_id
+  have hl : Measurable fun x : Matrix n n ℝ => s * x := by fun_prop
   rw [Measure.map_map hl hm]
   conv_rhs => rw [← IsLeftUnitarilyInvariant.map_mul_left_eq_self (ν := gaussianMatrix n n) s hs,
     Measure.map_map hm hl]
   refine Measure.map_congr ?_
-  filter_upwards [ae_isUnit_stabRaw V] with G hG
-  have hG' := hasOrthonormalCols_stabRaw_of_isUnit V G hG
+  filter_upwards [ae_hasOrthonormalCols_stabRaw V] with G hG'
   have hsG : HasOrthonormalCols (stabRaw V (s * G)) := mul_stabRaw hs hsV G ▸ hs.mul hG'
   simp only [Function.comp_apply, stabRand, if_pos hG', if_pos hsG, mul_stabRaw hs hsV]
 
+/-- Right multiplication by an orthogonal `s` fixing `V` keeps the law of the randomizer. -/
 private theorem map_mul_right_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) :
     ((gaussianMatrix n n).map (stabRand V)).map (· * s) =
       (gaussianMatrix n n).map (stabRand V) := by
   have hm := measurable_stabRand_right V
-  have hl : Measurable fun x : Matrix n n ℝ => x * s := measurable_id.matrix_mul measurable_const
+  have hl : Measurable fun x : Matrix n n ℝ => x * s := by fun_prop
   rw [Measure.map_map hl hm]
   conv_rhs => rw [← IsRightUnitarilyInvariant.map_mul_right_eq_self (ν := gaussianMatrix n n) s hs,
     Measure.map_map hm hl]
   refine Measure.map_congr ?_
-  filter_upwards [ae_isUnit_stabRaw V] with G hG
-  have hG' := hasOrthonormalCols_stabRaw_of_isUnit V G hG
+  filter_upwards [ae_hasOrthonormalCols_stabRaw V] with G hG'
   have hsG : HasOrthonormalCols (stabRaw V (G * s)) := stabRaw_mul hs hsV G ▸ hG'.mul hs
   simp only [Function.comp_apply, stabRand, if_pos hG', if_pos hsG, stabRaw_mul hs hsV]
 
@@ -239,8 +241,7 @@ private theorem map_prod_eq_of_forall_map_eq {α γ δ : Type*} [MeasurableSpace
   have hFt : Measurable (F t) := hF.comp measurable_prodMk_left
   have hGt : Measurable (G t) := hG.comp measurable_prodMk_left
   have := congrArg (· E) (h t)
-  rw [Measure.map_apply hFt hE, Measure.map_apply hGt hE] at this
-  exact this
+  rwa [Measure.map_apply hFt hE, Measure.map_apply hGt hE] at this
 
 omit [DecidableEq n] in
 /-- A matrix fixes `[V g]` exactly when it fixes `V` and `g`. -/
@@ -259,13 +260,8 @@ private theorem conjTranspose_mulVec_eq_of_mulVec_eq {L : Matrix n n ℝ}
   conv_lhs => rw [← h]
   rw [Matrix.mulVec_mulVec, hL.conjTranspose_mul_self, Matrix.one_mulVec]
 
-/-- An orthogonal matrix fixing `V`, its adjoint fixes it too. -/
-private theorem conjTranspose_mul_eq_of_mul_eq {c : Type*} {V : Matrix n c ℝ}
-    {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) : sᴴ * V = V := by
-  conv_lhs => rw [← hsV]
-  rw [← Matrix.mul_assoc, hs.conjTranspose_mul_self, Matrix.one_mul]
-
-/-- One left query on the stabilizer. -/
+/-- One left query on the stabilizer: for `R` the randomizer of `V` and `s` measurable,
+orthogonal, fixing `V` and its argument, `(Rᴴ g, R)` has the law of `(Rᴴ g, R s(Rᴴ g))`. -/
 private theorem map_left_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ) (g : n → ℝ)
     {s : (n → ℝ) → Matrix n n ℝ} (hsm : Measurable s) (hso : ∀ b, HasOrthonormalCols (s b))
     (hsV : ∀ b, s b * V = V) (hsb : ∀ b, s b *ᵥ b = b) :
@@ -275,44 +271,35 @@ private theorem map_left_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c 
   set V' := Matrix.fromCols V (Matrix.replicateCol Unit g)
   have hR := measurable_stabRand_right V
   have hL := measurable_stabRand_right V'
-  have hcg : Continuous fun M : Matrix n n ℝ => Mᴴ *ᵥ g := by fun_prop
   -- left multiplication by the randomizer `L` of `[V g]` keeps the law of `R`
   have h1 : (γ.prod γ).map (fun p => stabRand V' p.1 * stabRand V p.2) = γ.map (stabRand V) := by
     conv_rhs => rw [← (by simp : (γ.prod γ).map Prod.snd = γ), Measure.map_map hR measurable_snd]
     refine map_prod_eq_of_forall_map_eq (F := fun t z => stabRand V' t * stabRand V z)
-      (G := fun _ z => stabRand V z) ((hL.comp measurable_fst).matrix_mul (hR.comp measurable_snd))
-      (hR.comp measurable_snd) fun t => ?_
+      (G := fun _ z => stabRand V z) (by fun_prop) (by fun_prop) fun t => ?_
     obtain ⟨ho, hV'⟩ := stabRand_spec V' t
-    have hl : Measurable fun x : Matrix n n ℝ => stabRand V' t * x :=
-      measurable_const.matrix_mul measurable_id
+    have hl : Measurable fun x : Matrix n n ℝ => stabRand V' t * x := by fun_prop
     rw [← map_mul_left_stabRand V ho (mul_fromCols_replicateCol_eq_iff.1 hV').1,
       Measure.map_map hl hR]
     rfl
   have hLg : ∀ t, (stabRand V' t)ᴴ *ᵥ g = g := fun t =>
     conjTranspose_mulVec_eq_of_mulVec_eq (stabRand_spec V' t).1
       (mul_fromCols_replicateCol_eq_iff.1 (stabRand_spec V' t).2).2
-  have hφ₁ : Measurable fun M : Matrix n n ℝ => (Mᴴ *ᵥ g, M) := hcg.measurable.prodMk measurable_id
-  have hφ₂ : Measurable fun M : Matrix n n ℝ => (Mᴴ *ᵥ g, M * s (Mᴴ *ᵥ g)) :=
-    hcg.measurable.prodMk (measurable_id.matrix_mul (hsm.comp hcg.measurable))
+  have hφ₁ : Measurable fun M : Matrix n n ℝ => (Mᴴ *ᵥ g, M) := by fun_prop
+  have hφ₂ : Measurable fun M : Matrix n n ℝ => (Mᴴ *ᵥ g, M * s (Mᴴ *ᵥ g)) := by fun_prop
   have hLR : Measurable fun p : Matrix n n ℝ × Matrix n n ℝ => stabRand V' p.1 * stabRand V p.2 :=
-    (hL.comp measurable_fst).matrix_mul (hR.comp measurable_snd)
+    by fun_prop
   rw [← h1, Measure.map_map hφ₁ hLR, Measure.map_map hφ₂ hLR]
   simp only [Function.comp_def, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec, hLg]
   -- freeze `R = r`; then `L r s = L u r` with `u = r s rᴴ` fixing `[V g]`
   rw [← Measure.prod_swap, Measure.map_map _ measurable_swap, Measure.map_map _ measurable_swap]
   rotate_left
-  · exact (hcg.measurable.comp (hR.comp measurable_snd)).prodMk
-      (hLR.matrix_mul (hsm.comp (hcg.measurable.comp (hR.comp measurable_snd))))
-  · exact (hcg.measurable.comp (hR.comp measurable_snd)).prodMk hLR
+  · fun_prop
+  · fun_prop
   refine map_prod_eq_of_forall_map_eq
     (F := fun t z => ((stabRand V t)ᴴ *ᵥ g, stabRand V' z * stabRand V t))
     (G := fun t z => ((stabRand V t)ᴴ *ᵥ g,
-      stabRand V' z * stabRand V t * s ((stabRand V t)ᴴ *ᵥ g))) ?_ ?_ fun t => ?_
-  · exact (hcg.measurable.comp (hR.comp measurable_fst)).prodMk
-      ((hL.comp measurable_snd).matrix_mul (hR.comp measurable_fst))
-  · exact (hcg.measurable.comp (hR.comp measurable_fst)).prodMk
-      (((hL.comp measurable_snd).matrix_mul (hR.comp measurable_fst)).matrix_mul
-        (hsm.comp (hcg.measurable.comp (hR.comp measurable_fst))))
+      stabRand V' z * stabRand V t * s ((stabRand V t)ᴴ *ᵥ g))) (by fun_prop) (by fun_prop)
+    fun t => ?_
   obtain ⟨hr, hrV⟩ := stabRand_spec V t
   set r := stabRand V t
   set b := rᴴ *ᵥ g
@@ -327,9 +314,8 @@ private theorem map_left_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c 
       (fun M => (b, M * r)) ∘ (· * u) ∘ stabRand V' := by
     funext z
     simp only [Function.comp_apply, u, Matrix.mul_assoc, hr.conjTranspose_mul_self, Matrix.mul_one]
-  have hmr : Measurable fun M : Matrix n n ℝ => (b, M * r) :=
-    measurable_const.prodMk (measurable_id.matrix_mul measurable_const)
-  have hmu : Measurable fun M : Matrix n n ℝ => M * u := measurable_id.matrix_mul measurable_const
+  have hmr : Measurable fun M : Matrix n n ℝ => (b, M * r) := by fun_prop
+  have hmu : Measurable fun M : Matrix n n ℝ => M * u := by fun_prop
   rw [hfun]
   calc γ.map (fun z => (b, stabRand V' z * r))
       = (γ.map (stabRand V')).map (fun M => (b, M * r)) := by rw [Measure.map_map hmr hL]; rfl
@@ -337,7 +323,9 @@ private theorem map_left_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c 
       rw [map_mul_right_stabRand V' hu huV']
     _ = _ := by rw [Measure.map_map hmr hmu, Measure.map_map (hmr.comp hmu) hL]; rfl
 
-/-- One pair query on the stabilizer. -/
+/-- One pair query on the stabilizer: for `R` the randomizer of `V` and `s` measurable,
+orthogonal, fixing `V`, `w` and the second component of its argument, `((R w, Rᴴ g), R)` has the
+law of `((R w, Rᴴ g), R s(R w, Rᴴ g))`. -/
 private theorem map_pair_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     (w g : n → ℝ) {s : (n → ℝ) × (n → ℝ) → Matrix n n ℝ} (hsm : Measurable s)
     (hso : ∀ p, HasOrthonormalCols (s p)) (hsV : ∀ p, s p * V = V) (hsw : ∀ p, s p *ᵥ w = w)
@@ -349,77 +337,47 @@ private theorem map_pair_query_stabRand {c : Type*} [Fintype c] (V : Matrix n c 
   set V' := Matrix.fromCols V (Matrix.replicateCol Unit w)
   have hR := measurable_stabRand_right V
   have hL := measurable_stabRand_right V'
-  have hcg : Continuous fun M : Matrix n n ℝ => Mᴴ *ᵥ g := by fun_prop
-  have hcw : Continuous fun M : Matrix n n ℝ => M *ᵥ w := by fun_prop
   -- right multiplication by the randomizer `L` of `[V w]` keeps the law of `R`
   have h1 : (γ.prod γ).map (fun p => stabRand V p.2 * stabRand V' p.1) = γ.map (stabRand V) := by
     conv_rhs => rw [← (by simp : (γ.prod γ).map Prod.snd = γ), Measure.map_map hR measurable_snd]
     refine map_prod_eq_of_forall_map_eq (F := fun t z => stabRand V z * stabRand V' t)
-      (G := fun _ z => stabRand V z) ((hR.comp measurable_snd).matrix_mul (hL.comp measurable_fst))
-      (hR.comp measurable_snd) fun t => ?_
+      (G := fun _ z => stabRand V z) (by fun_prop) (by fun_prop) fun t => ?_
     obtain ⟨ho, hV'⟩ := stabRand_spec V' t
-    have hl : Measurable fun x : Matrix n n ℝ => x * stabRand V' t :=
-      measurable_id.matrix_mul measurable_const
+    have hl : Measurable fun x : Matrix n n ℝ => x * stabRand V' t := by fun_prop
     rw [← map_mul_right_stabRand V ho (mul_fromCols_replicateCol_eq_iff.1 hV').1,
       Measure.map_map hl hR]
     rfl
   have hLw : ∀ t, stabRand V' t *ᵥ w = w := fun t =>
     (mul_fromCols_replicateCol_eq_iff.1 (stabRand_spec V' t).2).2
-  have hwg : Measurable fun M : Matrix n n ℝ => (M *ᵥ w, Mᴴ *ᵥ g) :=
-    hcw.measurable.prodMk hcg.measurable
   have hRL : Measurable fun p : Matrix n n ℝ × Matrix n n ℝ => stabRand V p.2 * stabRand V' p.1 :=
-    (hR.comp measurable_snd).matrix_mul (hL.comp measurable_fst)
-  have hψ₁ : Measurable fun M : Matrix n n ℝ => ((M *ᵥ w, Mᴴ *ᵥ g), M) :=
-    hwg.prodMk measurable_id
+    by fun_prop
+  have hψ₁ : Measurable fun M : Matrix n n ℝ => ((M *ᵥ w, Mᴴ *ᵥ g), M) := by fun_prop
   have hψ₂ : Measurable fun M : Matrix n n ℝ => ((M *ᵥ w, Mᴴ *ᵥ g), M * s (M *ᵥ w, Mᴴ *ᵥ g)) :=
-    hwg.prodMk (measurable_id.matrix_mul (hsm.comp hwg))
+    by fun_prop
   rw [← h1, Measure.map_map hψ₁ hRL, Measure.map_map hψ₂ hRL]
   simp only [Function.comp_def, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec, hLw]
   -- freeze `R = r` and apply the left query lemma to `L` with the vector `rᴴ g`
-  have hc2 : Continuous fun q : Matrix n n ℝ × Matrix n n ℝ => q.2ᴴ *ᵥ (q.1ᴴ *ᵥ g) := by fun_prop
-  have hA : ∀ e : Matrix n n ℝ × Matrix n n ℝ → Matrix n n ℝ, Measurable e →
-      Measurable fun p => stabRand V (e p) *ᵥ w := fun e he => hcw.measurable.comp (hR.comp he)
-  have hB : ∀ e₁ e₂ : Matrix n n ℝ × Matrix n n ℝ → Matrix n n ℝ, Measurable e₁ → Measurable e₂ →
-      Measurable fun p => (stabRand V' (e₂ p))ᴴ *ᵥ ((stabRand V (e₁ p))ᴴ *ᵥ g) :=
-    fun e₁ e₂ h₁ h₂ => hc2.measurable.comp ((hR.comp h₁).prodMk (hL.comp h₂))
-  have hM : ∀ e₁ e₂ : Matrix n n ℝ × Matrix n n ℝ → Matrix n n ℝ, Measurable e₁ → Measurable e₂ →
-      Measurable fun p => stabRand V (e₁ p) * stabRand V' (e₂ p) :=
-    fun e₁ e₂ h₁ h₂ => (hR.comp h₁).matrix_mul (hL.comp h₂)
   rw [← Measure.prod_swap, Measure.map_map _ measurable_swap, Measure.map_map _ measurable_swap]
   rotate_left
-  · exact ((hA _ measurable_snd).prodMk (hB _ _ measurable_snd measurable_fst)).prodMk
-      ((hM _ _ measurable_snd measurable_fst).matrix_mul
-        (hsm.comp ((hA _ measurable_snd).prodMk (hB _ _ measurable_snd measurable_fst))))
-  · exact ((hA _ measurable_snd).prodMk (hB _ _ measurable_snd measurable_fst)).prodMk
-      (hM _ _ measurable_snd measurable_fst)
+  · fun_prop
+  · fun_prop
   refine map_prod_eq_of_forall_map_eq
     (F := fun t z => ((stabRand V t *ᵥ w, (stabRand V' z)ᴴ *ᵥ ((stabRand V t)ᴴ *ᵥ g)),
       stabRand V t * stabRand V' z))
     (G := fun t z => ((stabRand V t *ᵥ w, (stabRand V' z)ᴴ *ᵥ ((stabRand V t)ᴴ *ᵥ g)),
       stabRand V t * stabRand V' z *
         s (stabRand V t *ᵥ w, (stabRand V' z)ᴴ *ᵥ ((stabRand V t)ᴴ *ᵥ g))))
-    (((hA _ measurable_fst).prodMk (hB _ _ measurable_fst measurable_snd)).prodMk
-      (hM _ _ measurable_fst measurable_snd))
-    (((hA _ measurable_fst).prodMk (hB _ _ measurable_fst measurable_snd)).prodMk
-      ((hM _ _ measurable_fst measurable_snd).matrix_mul
-        (hsm.comp ((hA _ measurable_fst).prodMk (hB _ _ measurable_fst measurable_snd)))))
-    fun t => ?_
-  obtain ⟨hr, hrV⟩ := stabRand_spec V t
+    (by fun_prop) (by fun_prop) fun t => ?_
   set r := stabRand V t
   set a := r *ᵥ w
-  have hleft := map_left_query_stabRand V' (rᴴ *ᵥ g) (s := fun b => s (a, b))
-    (hsm.comp (measurable_const.prodMk measurable_id)) (fun b => hso _)
-    (fun b => mul_fromCols_replicateCol_eq_iff.2 ⟨hsV _, hsw _⟩) (fun b => hsb (a, b))
-  have hκ : Measurable fun q : (n → ℝ) × Matrix n n ℝ => ((a, q.1), r * q.2) :=
-    (measurable_const.prodMk measurable_fst).prodMk (measurable_const.matrix_mul measurable_snd)
+  have hleft := map_left_query_stabRand V' (rᴴ *ᵥ g) (s := fun b => s (a, b)) (by fun_prop)
+    (fun b => hso _) (fun b => mul_fromCols_replicateCol_eq_iff.2 ⟨hsV _, hsw _⟩)
+    (fun b => hsb (a, b))
+  have hκ : Measurable fun q : (n → ℝ) × Matrix n n ℝ => ((a, q.1), r * q.2) := by fun_prop
   have h2 := congrArg (Measure.map fun q : (n → ℝ) × Matrix n n ℝ => ((a, q.1), r * q.2)) hleft
-  have hcg' : Continuous fun M : Matrix n n ℝ => Mᴴ *ᵥ (rᴴ *ᵥ g) := by fun_prop
-  have hφ₁ : Measurable fun M : Matrix n n ℝ => (Mᴴ *ᵥ (rᴴ *ᵥ g), M) :=
-    hcg'.measurable.prodMk measurable_id
+  have hφ₁ : Measurable fun M : Matrix n n ℝ => (Mᴴ *ᵥ (rᴴ *ᵥ g), M) := by fun_prop
   have hφ₂ : Measurable fun M : Matrix n n ℝ =>
-      (Mᴴ *ᵥ (rᴴ *ᵥ g), M * s (a, Mᴴ *ᵥ (rᴴ *ᵥ g))) :=
-    hcg'.measurable.prodMk
-      (measurable_id.matrix_mul (hsm.comp (measurable_const.prodMk hcg'.measurable)))
+      (Mᴴ *ᵥ (rᴴ *ᵥ g), M * s (a, Mᴴ *ᵥ (rᴴ *ᵥ g))) := by fun_prop
   rw [Measure.map_map hκ hφ₁, Measure.map_map hκ hφ₂, Measure.map_map (hκ.comp hφ₁) hL,
     Measure.map_map (hκ.comp hφ₂) hL] at h2
   simpa only [Function.comp_def, Matrix.mul_assoc] using h2
@@ -440,14 +398,14 @@ private def StabInvariant {m : Type*} [Fintype m] {β : Type*} {q : ℕ}
     ν.map (fun x => (alg.history (twoSidedMulVec x) i, x)) =
       ν.map (fun x => (alg.history (twoSidedMulVec x) i, x * S (alg.history (twoSidedMulVec x) i)))
 
+/-- The invariant holds for the empty history, by right unitary invariance of `ν`. -/
 private theorem stabInvariant_zero [Fintype m] {β : Type*} {q : ℕ}
     (alg : QueryAlgorithm ((n → ℝ) × (m → ℝ)) ((m → ℝ) × (n → ℝ)) q β)
     (ν : Measure (Matrix m n ℝ)) [IsRightUnitarilyInvariant ν] : StabInvariant alg ν 0 := by
   intro S _ hSo _
   have hc : Measurable fun x : Matrix m n ℝ => ((Fin.elim0 : Fin 0 → (m → ℝ) × (n → ℝ)), x) :=
-    measurable_const.prodMk measurable_id
-  have hr : Measurable fun x : Matrix m n ℝ => x * S Fin.elim0 :=
-    measurable_id.matrix_mul measurable_const
+    by fun_prop
+  have hr : Measurable fun x : Matrix m n ℝ => x * S Fin.elim0 := by fun_prop
   calc ν.map (fun x => (alg.history (twoSidedMulVec x) 0, x))
       = (ν.map (fun x => x * S Fin.elim0)).map
           (fun x => ((Fin.elim0 : Fin 0 → (m → ℝ) × (n → ℝ)), x)) := by
@@ -458,21 +416,26 @@ private theorem stabInvariant_zero [Fintype m] {β : Type*} {q : ℕ}
         rfl
 
 omit [DecidableEq n] in
-private theorem measurable_uncurry_twoSidedMulVec {m : Type*} [Fintype m] :
-    Measurable (Function.uncurry fun (x : Matrix m n ℝ) (v : (n → ℝ) × (m → ℝ)) =>
-      twoSidedMulVec x v) := by
-  unfold twoSidedMulVec
-  exact (Continuous.measurable (by fun_prop))
+/-- `twoSidedMulVec` is jointly measurable in the matrix and the query. -/
+private theorem Measurable.twoSidedMulVec_comp {α : Type*} [MeasurableSpace α] {m : Type*}
+    [Fintype m] {f : α → Matrix m n ℝ} {v : α → (n → ℝ) × (m → ℝ)} (hf : Measurable f)
+    (hv : Measurable v) : Measurable fun a => twoSidedMulVec (f a) (v a) :=
+  (hf.matrix_mulVec hv.fst).prodMk
+    ((Measurable.matrix_conjTranspose continuous_star.measurable hf).matrix_mulVec hv.snd)
+
+attribute [local fun_prop] Measurable.twoSidedMulVec_comp
 
 omit [DecidableEq n] in
+/-- The history of length `i ≤ q` is measurable in the matrix. -/
 private theorem measurable_history {m : Type*} [Fintype m] {β : Type*} [MeasurableSpace β]
     {q : ℕ} {alg : QueryAlgorithm ((n → ℝ) × (m → ℝ)) ((m → ℝ) × (n → ℝ)) q β}
     (halg : alg.IsMeasurable) {i : ℕ} (hi : i ≤ q) :
     Measurable fun x : Matrix m n ℝ => alg.history (twoSidedMulVec x) i := by
-  have hO := measurable_uncurry_twoSidedMulVec (m := m) (n := n)
-  simpa only [QueryAlgorithm.transcript_truncate] using (halg.truncate hi).measurable_transcript hO
+  simpa only [QueryAlgorithm.transcript_truncate] using (halg.truncate hi).measurable_transcript
+    (O := twoSidedMulVec) (Measurable.twoSidedMulVec_comp measurable_fst measurable_snd)
 
 omit [Fintype n] [DecidableEq n] in
+/-- The revealed vectors are measurable in the history. -/
 private theorem measurable_revealed {m : Type*} {β : Type*} [MeasurableSpace β] {q : ℕ}
     {alg : QueryAlgorithm ((n → ℝ) × (m → ℝ)) ((m → ℝ) × (n → ℝ)) q β}
     (halg : alg.IsMeasurable) {i : ℕ} (hi : i ≤ q) : Measurable (revealed alg i) := by
@@ -484,14 +447,18 @@ private theorem measurable_revealed {m : Type*} {β : Type*} [MeasurableSpace β
   · simp only [revealed, Matrix.fromCols_apply_inr, Matrix.of_apply]
     exact (measurable_pi_apply r).comp (measurable_snd.comp (measurable_pi_apply j))
 
-private theorem measurable_snoc {R : Type*} [MeasurableSpace R] {i : ℕ} :
-    Measurable fun p : (Fin i → R) × R => (Fin.snoc p.1 p.2 : Fin (i + 1) → R) := by
+/-- `Fin.snoc` of measurable functions is measurable. -/
+private theorem Measurable.fin_snoc {α R : Type*} [MeasurableSpace α] [MeasurableSpace R] {i : ℕ}
+    {f : α → Fin i → R} {g : α → R} (hf : Measurable f) (hg : Measurable g) :
+    Measurable fun a => (Fin.snoc (f a) (g a) : Fin (i + 1) → R) := by
   refine measurable_pi_lambda _ fun j => ?_
   induction j using Fin.lastCases with
-  | last => simpa only [Fin.snoc_last] using measurable_snd
+  | last => simpa only [Fin.snoc_last] using hg
   | cast j =>
     simp only [Fin.snoc_castSucc]
-    exact (measurable_pi_apply j).comp measurable_fst
+    exact (measurable_pi_apply j).comp hf
+
+attribute [local fun_prop] Measurable.fin_snoc
 
 omit [DecidableEq n] in
 /-- A matrix fixing what a history of length `i + 1` reveals fixes what its first `i` entries
@@ -505,16 +472,15 @@ private theorem mul_revealed_eq_of_mul_revealed_snoc_eq {m : Type*} {β : Type*}
   set A' := revealed alg (i + 1) (Fin.snoc h r)
   have hcol : ∀ k, M *ᵥ (fun x => A' x k) = fun x => A' x k := fun k => funext fun x => by
     simpa only [Matrix.mul_apply, Matrix.mulVec, dotProduct] using congrFun (congrFun hM x) k
-  have hsnoc : ∀ j : Fin i, (fun l : Fin j => (Fin.snoc h r : Fin (i + 1) → _)
-      (Fin.castLE (Fin.castSucc j).isLt.le l)) = fun l => h (Fin.castLE j.isLt.le l) :=
-    fun j => funext fun l => by
-      rw [show Fin.castLE (Fin.castSucc j).isLt.le l = Fin.castSucc (Fin.castLE j.isLt.le l) from
-        Fin.ext rfl, Fin.snoc_castSucc]
+  have hsnoc : ∀ {k} (hk : k ≤ i + 1) (hk' : k ≤ i),
+      (fun l : Fin k => (Fin.snoc h r : Fin (i + 1) → _) (Fin.castLE hk l)) =
+        fun l => h (Fin.castLE hk' l) := fun hk hk' => funext fun l => by
+    rw [show Fin.castLE hk l = Fin.castSucc (Fin.castLE hk' l) from Fin.ext rfl, Fin.snoc_castSucc]
   have hA : ∀ x k, revealed alg i h x k = A' x (Sum.map Fin.castSucc Fin.castSucc k) := by
     rintro x (j | j)
     · simp only [A', revealed, Matrix.fromCols_apply_inl, Sum.map_inl]
       simp only [QueryAlgorithm.rightQueryMatrix, QueryAlgorithm.queries, Matrix.of_apply]
-      rw [← hsnoc j]
+      rw [← hsnoc _ j.isLt.le]
       rfl
     · simp only [A', revealed, Matrix.fromCols_apply_inr, Sum.map_inr, Matrix.of_apply,
         Fin.snoc_castSucc]
@@ -528,36 +494,13 @@ private theorem mul_revealed_eq_of_mul_revealed_snoc_eq {m : Type*} {β : Type*}
       funext x
       simp only [A', revealed, Matrix.fromCols_apply_inl, QueryAlgorithm.rightQueryMatrix,
         QueryAlgorithm.queries, Matrix.of_apply]
-      have hl : (fun l : Fin i => (Fin.snoc h r : Fin (i + 1) → _)
-          (Fin.castLE (Fin.last i).isLt.le l)) = h := funext fun l => by
-        rw [show Fin.castLE (Fin.last i).isLt.le l = Fin.castSucc l from Fin.ext rfl,
-          Fin.snoc_castSucc]
-      exact congrArg (fun z => (alg.query i z).1 x) hl
+      exact congrArg (fun z => (alg.query i z).1 x) (hsnoc _ le_rfl)
     rwa [hq] at this
   · have := hcol (Sum.inr (Fin.last i))
     have hq : (fun x => A' x (Sum.inr (Fin.last i))) = r.2 := by
       funext x
       simp only [A', revealed, Matrix.fromCols_apply_inr, Matrix.of_apply, Fin.snoc_last]
     rwa [hq] at this
-
-private theorem measurable_history_mul_stabRand {m : Type*} [Fintype m] {β : Type*}
-    [MeasurableSpace β] {q : ℕ}
-    {alg : QueryAlgorithm ((n → ℝ) × (m → ℝ)) ((m → ℝ) × (n → ℝ)) q β} (halg : alg.IsMeasurable)
-    {i : ℕ} (hi : i ≤ q) :
-    Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
-      (alg.history (twoSidedMulVec p.2) i,
-        p.2 * stabRand (revealed alg i (alg.history (twoSidedMulVec p.2) i)) p.1) := by
-  have hH := measurable_history halg hi
-  have hVr := measurable_revealed halg hi
-  have hHs : Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
-      alg.history (twoSidedMulVec p.2) i := hH.comp measurable_snd
-  have hRs : Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
-      stabRand (revealed alg i (alg.history (twoSidedMulVec p.2) i)) p.1 :=
-    have hVc : Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
-        revealed alg i (alg.history (twoSidedMulVec p.2) i) :=
-      (hVr.comp hH).comp measurable_snd
-    Measurable.stabRand_comp hVc measurable_fst
-  exact hHs.prodMk (measurable_snd.matrix_mul hRs)
 
 /-- The invariant at `i`, randomized over the stabilizer of what the history reveals. -/
 private theorem map_history_eq_map_mul_stabRand {m : Type*} [Fintype m] {β : Type*}
@@ -571,16 +514,16 @@ private theorem map_history_eq_map_mul_stabRand {m : Type*} [Fintype m] {β : Ty
   set γ := gaussianMatrix n n
   have hH := measurable_history halg hi
   have hVr := measurable_revealed halg hi
-  have hRand := measurable_history_mul_stabRand halg hi
-  have hφ : Measurable fun x : Matrix m n ℝ => (alg.history (twoSidedMulVec x) i, x) :=
-    hH.prodMk measurable_id
+  have hφ : Measurable fun x : Matrix m n ℝ => (alg.history (twoSidedMulVec x) i, x) := by
+    fun_prop
+  have hH₂ : Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
+      alg.history (twoSidedMulVec p.2) i := hH.comp measurable_snd
   conv_lhs => rw [← (by simp : (γ.prod ν).map Prod.snd = ν), Measure.map_map hφ measurable_snd]
   refine map_prod_eq_of_forall_map_eq (F := fun _ x => (alg.history (twoSidedMulVec x) i, x))
     (G := fun g x => (alg.history (twoSidedMulVec x) i,
       x * stabRand (revealed alg i (alg.history (twoSidedMulVec x) i)) g))
-    ((hH.comp measurable_snd).prodMk measurable_snd) hRand fun g => ?_
-  exact ih (fun h => stabRand (revealed alg i h) g)
-    (Measurable.stabRand_comp (f := revealed alg i) (g := fun _ => g) hVr measurable_const)
+    (by fun_prop) (by fun_prop) fun g => ?_
+  exact ih (fun h => stabRand (revealed alg i h) g) (by fun_prop)
     (fun h => (stabRand_spec _ g).1) (fun h => (stabRand_spec _ g).2)
 
 /-- The step of the induction for a frozen history `h` and matrix `x`: the pair query lemma on
@@ -602,26 +545,18 @@ private theorem map_snoc_mul_stabRand {m : Type*} [Fintype m] {β : Type*} {q : 
   set V := revealed alg i h
   set w := (alg.query i h).1
   set u := (alg.query i h).2
-  have hcx : Continuous fun a : n → ℝ => x *ᵥ a := by fun_prop
   have hsm : Measurable fun p : (n → ℝ) × (n → ℝ) =>
-      S (Fin.snoc h (x *ᵥ p.1, p.2) : Fin (i + 1) → (m → ℝ) × (n → ℝ)) :=
-    hSm.comp (measurable_snoc.comp (measurable_const.prodMk
-      ((hcx.measurable.comp measurable_fst).prodMk measurable_snd)))
+      S (Fin.snoc h (x *ᵥ p.1, p.2) : Fin (i + 1) → (m → ℝ) × (n → ℝ)) := by fun_prop
   have hfix := fun p : (n → ℝ) × (n → ℝ) =>
     mul_revealed_eq_of_mul_revealed_snoc_eq alg h (x *ᵥ p.1, p.2) (hSV _)
   have hpair := map_pair_query_stabRand V w (xᴴ *ᵥ u) hsm (fun p => hSo _)
     (fun p => (hfix p).1) (fun p => (hfix p).2.1) (fun p => (hfix p).2.2)
   have hκ : Measurable fun q : ((n → ℝ) × (n → ℝ)) × Matrix n n ℝ =>
-      ((Fin.snoc h (x *ᵥ q.1.1, q.1.2) : Fin (i + 1) → (m → ℝ) × (n → ℝ)), x * q.2) :=
-    (measurable_snoc.comp (measurable_const.prodMk
-      ((hcx.measurable.comp (measurable_fst.comp measurable_fst)).prodMk
-        (measurable_snd.comp measurable_fst)))).prodMk (measurable_const.matrix_mul measurable_snd)
-  have hcw : Continuous fun M : Matrix n n ℝ => (M *ᵥ w, Mᴴ *ᵥ (xᴴ *ᵥ u)) := by fun_prop
-  have hφ₁ : Measurable fun M : Matrix n n ℝ => ((M *ᵥ w, Mᴴ *ᵥ (xᴴ *ᵥ u)), M) :=
-    hcw.measurable.prodMk measurable_id
+      ((Fin.snoc h (x *ᵥ q.1.1, q.1.2) : Fin (i + 1) → (m → ℝ) × (n → ℝ)), x * q.2) := by
+    fun_prop
+  have hφ₁ : Measurable fun M : Matrix n n ℝ => ((M *ᵥ w, Mᴴ *ᵥ (xᴴ *ᵥ u)), M) := by fun_prop
   have hφ₂ : Measurable fun M : Matrix n n ℝ => ((M *ᵥ w, Mᴴ *ᵥ (xᴴ *ᵥ u)),
-      M * S (Fin.snoc h (x *ᵥ (M *ᵥ w), Mᴴ *ᵥ (xᴴ *ᵥ u)))) :=
-    hcw.measurable.prodMk (measurable_id.matrix_mul (hsm.comp hcw.measurable))
+      M * S (Fin.snoc h (x *ᵥ (M *ᵥ w), Mᴴ *ᵥ (xᴴ *ᵥ u)))) := by fun_prop
   have hR := measurable_stabRand_right V
   have h2 := congrArg (Measure.map fun q : ((n → ℝ) × (n → ℝ)) × Matrix n n ℝ =>
     ((Fin.snoc h (x *ᵥ q.1.1, q.1.2) : Fin (i + 1) → (m → ℝ) × (n → ℝ)), x * q.2)) hpair
@@ -633,31 +568,36 @@ private theorem map_snoc_mul_stabRand {m : Type*} [Fintype m] {β : Type*} {q : 
   simp only [htw]
   simpa only [Function.comp_def, Matrix.mul_assoc] using h2
 
+/-- The induction step: the invariant for histories of length `i` gives it for `i + 1`. -/
 private theorem stabInvariant_succ [Fintype m] {β : Type*} [MeasurableSpace β] {q : ℕ}
     {alg : QueryAlgorithm ((n → ℝ) × (m → ℝ)) ((m → ℝ) × (n → ℝ)) q β} (halg : alg.IsMeasurable)
     (ν : Measure (Matrix m n ℝ)) [IsProbabilityMeasure ν] {i : ℕ} (hi : i < q)
     (ih : StabInvariant alg ν i) : StabInvariant alg ν (i + 1) := by
   intro S hSm hSo hSV
-  set γ := gaussianMatrix n n
   have hH := measurable_history halg hi.le
   have hVr := measurable_revealed halg hi.le
   have hQ := halg.measurable_query i hi
-  have hO := measurable_uncurry_twoSidedMulVec (m := m) (n := n)
   -- the next history, from the history and the matrix
   set nx : (Fin i → (m → ℝ) × (n → ℝ)) → Matrix m n ℝ → (Fin (i + 1) → (m → ℝ) × (n → ℝ)) :=
-    fun h x => Fin.snoc h (twoSidedMulVec x (alg.query i h)) with hnxdef
+    fun h x => Fin.snoc h (twoSidedMulVec x (alg.query i h))
   have hnx : Measurable fun p : (Fin i → (m → ℝ) × (n → ℝ)) × Matrix m n ℝ => nx p.1 p.2 :=
-    measurable_snoc.comp (measurable_fst.prodMk
-      (hO.comp (measurable_snd.prodMk (hQ.comp measurable_fst))))
+    Measurable.fin_snoc measurable_fst (Measurable.twoSidedMulVec_comp measurable_snd
+      (hQ.comp measurable_fst))
   have hΨ₁ : Measurable fun p : (Fin i → (m → ℝ) × (n → ℝ)) × Matrix m n ℝ =>
-      (nx p.1 p.2, p.2) := hnx.prodMk measurable_snd
+      (nx p.1 p.2, p.2) := by fun_prop
   have hΨ₂ : Measurable fun p : (Fin i → (m → ℝ) × (n → ℝ)) × Matrix m n ℝ =>
-      (nx p.1 p.2, p.2 * S (nx p.1 p.2)) :=
-    hnx.prodMk (measurable_snd.matrix_mul (hSm.comp hnx))
-  have hRand := measurable_history_mul_stabRand halg hi.le
-  have hφ : Measurable fun x : Matrix m n ℝ => (alg.history (twoSidedMulVec x) i, x) :=
-    hH.prodMk measurable_id
-  have h1 := map_history_eq_map_mul_stabRand halg ν hi.le ih
+      (nx p.1 p.2, p.2 * S (nx p.1 p.2)) := by fun_prop
+  have hφ : Measurable fun x : Matrix m n ℝ => (alg.history (twoSidedMulVec x) i, x) := by
+    fun_prop
+  have hH₁ : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ =>
+      alg.history (twoSidedMulVec p.1) i := hH.comp measurable_fst
+  have hH₂ : Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
+      alg.history (twoSidedMulVec p.2) i := hH.comp measurable_snd
+  have hRand : Measurable fun p : Matrix n n ℝ × Matrix m n ℝ =>
+      (alg.history (twoSidedMulVec p.2) i,
+        p.2 * stabRand (revealed alg i (alg.history (twoSidedMulVec p.2) i)) p.1) := by fun_prop
+  have hY : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ => (alg.history (twoSidedMulVec p.1) i,
+      p.1 * stabRand (revealed alg i (alg.history (twoSidedMulVec p.1) i)) p.2) := by fun_prop
   have hhist : ∀ x : Matrix m n ℝ, alg.history (twoSidedMulVec x) (i + 1) =
       nx (alg.history (twoSidedMulVec x) i) x := fun x => rfl
   simp only [hhist]
@@ -671,23 +611,11 @@ private theorem stabInvariant_succ [Fintype m] {β : Type*} [MeasurableSpace β]
         fun p => (nx p.1 p.2, p.2 * S (nx p.1 p.2)) := by
     rw [Measure.map_map hΨ₂ hφ]
     rfl
-  rw [e₁, e₂, h1, Measure.map_map hΨ₁ hRand, Measure.map_map hΨ₂ hRand]
+  rw [e₁, e₂, map_history_eq_map_mul_stabRand halg ν hi.le ih, Measure.map_map hΨ₁ hRand,
+    Measure.map_map hΨ₂ hRand]
   -- freeze the matrix `x` and apply the pair query lemma on the stabilizer of `V(h)`
   rw [← Measure.prod_swap, Measure.map_map (hΨ₁.comp hRand) measurable_swap,
     Measure.map_map (hΨ₂.comp hRand) measurable_swap]
-  have hH₁ : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ =>
-      alg.history (twoSidedMulVec p.1) i := hH.comp measurable_fst
-  have hV₁ : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ =>
-      revealed alg i (alg.history (twoSidedMulVec p.1) i) := (hVr.comp hH).comp measurable_fst
-  have hRm : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ =>
-      stabRand (revealed alg i (alg.history (twoSidedMulVec p.1) i)) p.2 :=
-    Measurable.stabRand_comp hV₁ measurable_snd
-  have hXR : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ =>
-      p.1 * stabRand (revealed alg i (alg.history (twoSidedMulVec p.1) i)) p.2 :=
-    measurable_fst.matrix_mul hRm
-  have hY : Measurable fun p : Matrix m n ℝ × Matrix n n ℝ => (alg.history (twoSidedMulVec p.1) i,
-      p.1 * stabRand (revealed alg i (alg.history (twoSidedMulVec p.1) i)) p.2) :=
-    hH₁.prodMk hXR
   refine map_prod_eq_of_forall_map_eq
     (F := fun x g => (nx (alg.history (twoSidedMulVec x) i)
       (x * stabRand (revealed alg i (alg.history (twoSidedMulVec x) i)) g),
@@ -800,11 +728,10 @@ theorem QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyI
     rw [revealed, Matrix.mul_fromCols]
     exact congrArg₂ Matrix.fromCols (hSq τ) (hSr τ)
   have hH := measurable_history halg (le_refl q)
-  have hφ₁ : Measurable fun x : Matrix m n ℝ => (alg.history (twoSidedMulVec x) q, x) :=
-    hH.prodMk measurable_id
+  have hφ₁ : Measurable fun x : Matrix m n ℝ => (alg.history (twoSidedMulVec x) q, x) := by
+    fun_prop
   have hφ₂ : Measurable fun x : Matrix m n ℝ =>
-      (alg.history (twoSidedMulVec x) q, x * S (alg.history (twoSidedMulVec x) q)) :=
-    hH.prodMk (measurable_id.matrix_mul (hSm.comp hH))
+      (alg.history (twoSidedMulVec x) q, x * S (alg.history (twoSidedMulVec x) q)) := by fun_prop
   refine ⟨hφ₁.comp_aemeasurable hX.aemeasurable, hφ₂.comp_aemeasurable hX.aemeasurable, ?_⟩
   calc μ.map (fun ω => (alg.transcript (twoSidedMulVec (X ω)), X ω))
       = (μ.map X).map fun x => (alg.history (twoSidedMulVec x) q, x) :=
