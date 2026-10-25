@@ -4,6 +4,8 @@ public import NLAlibScaffold.ForMathlib.Probability.Moments.PaleyZygmund
 public import NLAlibScaffold.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlibScaffold.LowRank.Gaussian.TruncatedGeneralizedNystrom
 public import NLAlibScaffold.LowRank.Optimality.EarlyTruncation
+public import NLAlibScaffold.LowRank.Optimality.EarlyTruncationBlock
+public import NLAlibScaffold.LowRank.Optimality.EarlyTruncationBlockGaussian
 public import NLAlibScaffold.LowRank.Optimality.RotationInvariant
 public import NLAlibScaffold.LowRank.Optimality.TruncatedGeneralizedNystrom
 public import NLAlibScaffold.LowRank.Structural.Truncation
