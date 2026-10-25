@@ -56,6 +56,15 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### Gauss (Lanczos) quadrature -/
 
+/-- The weight identity: `Re b^H (p(A))^2 b = ‖p(A) b‖²` for Hermitian `A`. -/
+private lemma re_quadForm_aeval_sq_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian) (b : n → 𝕜)
+    (p : ℝ[X]) :
+    RCLike.re (quadForm (aeval A (p ^ 2)) b) =
+      ‖WithLp.toLp 2 (aeval A p *ᵥ b)‖ ^ 2 := by
+  have hP := (hA.aeval p).eq
+  rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, map_pow, sq, quadForm_def,
+    ← Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec, Matrix.star_mulVec, hP]
+
 /-- **The Lanczos quadrature error**: for Hermitian $\mathbf{A}$ with spectrum in $[a, a']$,
 $a < a'$, $q > 0$, $f$ continuous on $[a, a']$ and $C^{2q}$ on $(a, a')$, and every
 $\mathbf{b}$, there is $\xi \in (a, a')$ with
@@ -81,7 +90,14 @@ theorem _root_.Matrix.IsHermitian.exists_re_quadForm_cfc_sub_re_star_dotProduct_
         RCLike.re (star b ⬝ᵥ lanczosFA A f b q) =
       iteratedDeriv (2 * q) f ξ / (2 * q).factorial *
         ‖WithLp.toLp 2 (aeval A (orthogonalPolynomial (spectralMeasure A b) q) *ᵥ b)‖ ^ 2 := by
-  sorry
+  obtain ⟨ξ, hξ, h⟩ := exists_integral_sub_integral_gaussQuadrature_eq
+    (μ := spectralMeasure A b) (ae_mem_Icc_spectralMeasure A hs b) haa' hq hf hf'
+  have hPoly := hA.integral_eval_spectralMeasure b
+    (orthogonalPolynomial (spectralMeasure A b) q ^ 2)
+  simp only [eval_pow] at hPoly
+  rw [integral_spectralMeasure, ← hA.lanczosQuadrature_eq_gaussQuadrature b q,
+    integral_lanczosQuadrature, hPoly, re_quadForm_aeval_sq_eq hA] at h
+  exact ⟨ξ, hξ, h⟩
 
 /-- **Lanczos quadrature is a lower bound** for $f$ with nonnegative derivative of order $2q$
 (Golub–Meurant): for Hermitian $\mathbf{A}$ with spectrum in $[a, a']$, $a < a'$, $q > 0$, $f$
