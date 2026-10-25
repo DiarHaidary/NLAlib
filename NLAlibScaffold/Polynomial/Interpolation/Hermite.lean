@@ -63,7 +63,26 @@ theorem eq_of_degree_lt_of_forall_iterate_derivative_eval_eq {m : Multiset F} {p
     (hp : p.degree < m.card) (hq : q.degree < m.card)
     (h : ∀ y ∈ m, ∀ k < m.count y, (derivative^[k] p).eval y = (derivative^[k] q).eval y) :
     p = q := by
-  sorry
+  by_contra hne
+  have hd : p - q ≠ 0 := sub_ne_zero.mpr hne
+  have hle : m ≤ (p - q).roots := by
+    rw [Multiset.le_iff_count]
+    intro y
+    by_cases hy : y ∈ m
+    · rw [count_roots]
+      have hpos : 0 < m.count y := Multiset.count_pos.mpr hy
+      have hroot : ∀ j ≤ m.count y - 1, (derivative^[j] (p - q)).IsRoot y := by
+        intro j hj
+        rw [iterate_derivative_sub, IsRoot, eval_sub, sub_eq_zero]
+        exact h y hy j (by omega)
+      have := (lt_rootMultiplicity_iff_isRoot_iterate_derivative hd).mpr hroot
+      omega
+    · simp [Multiset.count_eq_zero.mpr hy]
+  have hdeg : (p - q).degree < m.card := (degree_sub_le p q).trans_lt (max_lt hp hq)
+  have hcard := Multiset.card_le_card hle
+  have hcard' := card_roots' (p - q)
+  have hnat : (p - q).natDegree < m.card := (natDegree_lt_iff_degree_lt hd).mpr hdeg
+  omega
 
 /-- **Hermite interpolation**: over a field of characteristic $0$, for every multiset $m$ of
 nodes and all prescribed values $r(y, k)$, there is a polynomial $H$ of degree less than
