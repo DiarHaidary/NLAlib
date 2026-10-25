@@ -32,7 +32,25 @@ Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F4, F5).
 
 open MeasureTheory
 
-/-- **The integral mean value theorem for pointwise intermediate values**: for a measure $\mu$,
+/-- If $F(x) = D(\xi_x)W(x)$ a.e. with $W \ge 0$, $D < d$ on the points $\xi_x$ and
+$\int F = d\int W$, then $W = 0$ a.e. -/
+private lemma ae_eq_zero_of_forall_lt {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
+    {F W : Ω → ℝ} (hF : Integrable F μ) (hW : Integrable W μ) (hW0 : ∀ᵐ x ∂μ, 0 ≤ W x)
+    {s : Set ℝ} {D : ℝ → ℝ} {d : ℝ} (h : ∀ᵐ x ∂μ, ∃ ξ ∈ s, F x = D ξ * W x)
+    (hall : ∀ ξ ∈ s, D ξ < d) (hFd : ∫ x, F x ∂μ = d * ∫ x, W x ∂μ) : W =ᵐ[μ] 0 := by
+  have hle : 0 ≤ᵐ[μ] fun x => d * W x - F x := by
+    filter_upwards [h, hW0] with x ⟨ξ, hξ, hFx⟩ hWx
+    rw [Pi.zero_apply, hFx, ← sub_mul]
+    exact mul_nonneg (sub_nonneg.2 (hall ξ hξ).le) hWx
+  have hz := (integral_eq_zero_iff_of_nonneg_ae hle ((hW.const_mul d).sub hF)).mp
+    (by rw [integral_sub (hW.const_mul d) hF, integral_const_mul, hFd, sub_self])
+  filter_upwards [h, hz] with x ⟨ξ, hξ, hFx⟩ hzx
+  have : (d - D ξ) * W x = 0 := by
+    simp only [Pi.zero_apply] at hzx
+    linear_combination hzx + hFx
+  exact (mul_eq_zero.mp this).resolve_left (sub_pos.2 (hall ξ hξ)).ne'
+
+/-- The integral mean value theorem for pointwise intermediate values: for a measure $\mu$,
 integrable $F$ and $W$ with $W \ge 0$ almost everywhere, a connected $s \subseteq \mathbb{R}$
 and $D$ continuous on $s$, if for almost every $x$ there is $\xi_x \in s$ with
 $F(x) = D(\xi_x)W(x)$, then $\int F\,d\mu = D(\xi)\int W\,d\mu$ for some $\xi \in s$. No
@@ -60,69 +78,27 @@ theorem exists_integral_eq_mul_integral_of_ae_nonneg {Ω : Type*} [MeasurableSpa
       obtain ⟨ξ, -, hFx⟩ := hx
       simp [hFx, hwx]
     exact ⟨ξ0, hξ0, by rw [hFz, hW0', mul_zero]⟩
-  set d := (∫ x, F x ∂μ) / ∫ x, W x ∂μ with hd
+  set d := (∫ x, F x ∂μ) / ∫ x, W x ∂μ
   have hFd : ∫ x, F x ∂μ = d * ∫ x, W x ∂μ := (div_mul_cancel₀ _ hW0').symm
   by_contra hcon
-  push_neg at hcon
+  push Not at hcon
   have hmiss : ∀ ξ ∈ s, D ξ ≠ d := fun ξ hξ heq => hcon ξ hξ (by rw [hFd, heq])
-  have hsD : IsPreconnected (D '' s) := hs.isPreconnected.image D hD
-  rcases lt_or_gt_of_ne (hmiss ξ0 hξ0) with hlt | hgt
-  · -- all values of `D` on `s` lie below `d`
-    have hall : ∀ ξ ∈ s, D ξ < d := by
-      intro ξ hξ
-      rcases lt_or_gt_of_ne (hmiss ξ hξ) with h1 | h1
-      · exact h1
-      · exfalso
-        have hmem : d ∈ D '' s := hsD.Icc_subset ⟨ξ0, hξ0, rfl⟩ ⟨ξ, hξ, rfl⟩ ⟨hlt.le, h1.le⟩
-        obtain ⟨η, hη, hηd⟩ := hmem
-        exact hmiss η hη hηd
-    have hle : ∀ᵐ x ∂μ, F x ≤ d * W x := by
-      filter_upwards [h, hW0] with x hx hwx
-      obtain ⟨ξ, hξ, hFx⟩ := hx
-      rw [hFx]
-      exact mul_le_mul_of_nonneg_right (hall ξ hξ).le hwx
-    have hint : ∫ x, (d * W x - F x) ∂μ = 0 := by
-      rw [integral_sub (hW.const_mul d) hF, integral_const_mul, hFd, sub_self]
-    have hz : (fun x => d * W x - F x) =ᵐ[μ] 0 :=
-      (integral_eq_zero_iff_of_nonneg_ae (by filter_upwards [hle] with x hx; simpa using hx)
-        ((hW.const_mul d).sub hF)).mp hint
-    have hWz : W =ᵐ[μ] 0 := by
-      filter_upwards [h, hz, hW0] with x hx hzx hwx
-      obtain ⟨ξ, hξ, hFx⟩ := hx
-      simp only [Pi.zero_apply] at hzx ⊢
-      have hpos : 0 < d - D ξ := by linarith [hall ξ hξ]
-      have : (d - D ξ) * W x = 0 := by linarith [hFx, hzx]
-      exact (mul_eq_zero.mp this).resolve_left hpos.ne'
-    exact hW0' (integral_eq_zero_of_ae hWz)
-  · -- all values of `D` on `s` lie above `d`
-    have hall : ∀ ξ ∈ s, d < D ξ := by
-      intro ξ hξ
-      rcases lt_or_gt_of_ne (hmiss ξ hξ) with h1 | h1
-      · exfalso
-        have hmem : d ∈ D '' s := hsD.Icc_subset ⟨ξ, hξ, rfl⟩ ⟨ξ0, hξ0, rfl⟩ ⟨h1.le, hgt.le⟩
-        obtain ⟨η, hη, hηd⟩ := hmem
-        exact hmiss η hη hηd
-      · exact h1
-    have hle : ∀ᵐ x ∂μ, d * W x ≤ F x := by
-      filter_upwards [h, hW0] with x hx hwx
-      obtain ⟨ξ, hξ, hFx⟩ := hx
-      rw [hFx]
-      exact mul_le_mul_of_nonneg_right (hall ξ hξ).le hwx
-    have hint : ∫ x, (F x - d * W x) ∂μ = 0 := by
-      rw [integral_sub hF (hW.const_mul d), integral_const_mul, hFd, sub_self]
-    have hz : (fun x => F x - d * W x) =ᵐ[μ] 0 :=
-      (integral_eq_zero_iff_of_nonneg_ae (by filter_upwards [hle] with x hx; simpa using hx)
-        (hF.sub (hW.const_mul d))).mp hint
-    have hWz : W =ᵐ[μ] 0 := by
-      filter_upwards [h, hz, hW0] with x hx hzx hwx
-      obtain ⟨ξ, hξ, hFx⟩ := hx
-      simp only [Pi.zero_apply] at hzx ⊢
-      have hpos : 0 < D ξ - d := by linarith [hall ξ hξ]
-      have : (D ξ - d) * W x = 0 := by linarith [hFx, hzx]
-      exact (mul_eq_zero.mp this).resolve_left hpos.ne'
-    exact hW0' (integral_eq_zero_of_ae hWz)
+  -- `D(s)` is an interval missing `d`, so it lies on one side of `d`
+  have hside : ∀ ξ ∈ s, ∀ η ∈ s, D ξ < d → d < D η → False := fun ξ hξ η hη h₁ h₂ => by
+    obtain ⟨θ, hθ, hθd⟩ := (hs.isPreconnected.image D hD).Icc_subset ⟨ξ, hξ, rfl⟩ ⟨η, hη, rfl⟩
+      ⟨h₁.le, h₂.le⟩
+    exact hmiss θ hθ hθd
+  refine hW0' (integral_eq_zero_of_ae ?_)
+  rcases (hmiss ξ0 hξ0).lt_or_gt with hlt | hgt
+  · exact ae_eq_zero_of_forall_lt hF hW hW0 h
+      (fun ξ hξ => (hmiss ξ hξ).lt_or_gt.resolve_right (hside ξ0 hξ0 ξ hξ hlt)) hFd
+  · refine ae_eq_zero_of_forall_lt (D := -D) hF.neg hW hW0
+      (h.mono fun x ⟨ξ, hξ, hx⟩ => ⟨ξ, hξ, by simp [hx]⟩)
+      (fun ξ hξ => neg_lt_neg ((hmiss ξ hξ).lt_or_gt.resolve_left (hside ξ hξ ξ0 hξ0 · hgt)))
+      (d := -d) ?_
+    rw [Pi.neg_def, integral_neg, hFd, neg_mul]
 
-/-- **The integral mean value theorem for pointwise intermediate values, nonpositive weight**:
+/-- The integral mean value theorem for pointwise intermediate values, nonpositive weight:
 as `exists_integral_eq_mul_integral_of_ae_nonneg` with $W \le 0$ almost everywhere: for a
 measure $\mu$, integrable $F$ and $W$ with $W \le 0$ a.e., a connected $s \subseteq \mathbb{R}$
 and $D$ continuous on $s$, if for almost every $x$ there is $\xi_x \in s$ with
