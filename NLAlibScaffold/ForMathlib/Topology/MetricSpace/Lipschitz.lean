@@ -90,6 +90,33 @@ theorem abs_sum_mul_le_of_lipschitzOnWith {s : Finset ℝ} {a b : ℝ}
     (hf : LipschitzOnWith L f (Set.Icc a b)) (d : ℝ → ℝ) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ x ∈ s, |∑ y ∈ s with y ≤ x, d y| ≤ K) :
     |∑ x ∈ s, f x * d x| ≤ (|f b| + L * (b - a)) * K := by
-  sorry
+  rcases s.eq_empty_or_nonempty with rfl | hne
+  · simp only [Finset.sum_empty, abs_zero]
+    have hba : 0 ≤ b - a := sub_nonneg.mpr hab
+    have hL : (0 : ℝ) ≤ L := L.2
+    have hfb : 0 ≤ |f b| := abs_nonneg _
+    have : 0 ≤ L * (b - a) := mul_nonneg hL hba
+    have : 0 ≤ (|f b| + L * (b - a)) := by linarith
+    exact mul_nonneg this hK0
+  · have hb : b ∈ Set.Icc a b := ⟨hab, le_rfl⟩
+    have hmem : s.max' hne ∈ s := Finset.max'_mem s hne
+    have hT : |∑ x ∈ s, d x| ≤ K := by
+      have hfilt : s.filter (fun y => y ≤ s.max' hne) = s :=
+        Finset.filter_true_of_mem fun y hy => Finset.le_max' s y hy
+      have := hK _ hmem
+      rwa [hfilt] at this
+    have hmain := abs_sum_mul_sub_mul_sum_le_of_lipschitzOnWith
+      (t := b) (fun x hx => hs x hx) hab le_rfl hf d hK0 hK
+    have hbnd : |f b * ∑ x ∈ s, d x| ≤ |f b| * K := by
+      rw [abs_mul]
+      exact mul_le_mul_of_nonneg_left hT (abs_nonneg _)
+    have htri := abs_sub_abs_le_abs_sub (∑ x ∈ s, f x * d x) (f b * ∑ x ∈ s, d x)
+    have hLK : 0 ≤ L * (b - a) * K := by
+      have := L.2
+      have : 0 ≤ b - a := sub_nonneg.mpr hab
+      positivity
+    have hrhs : (|f b| + L * (b - a)) * K = |f b| * K + L * (b - a) * K := by ring
+    rw [hrhs]
+    linarith [abs_sub_comm (f b * ∑ x ∈ s, d x) (∑ x ∈ s, f x * d x)]
 
 end Finset
