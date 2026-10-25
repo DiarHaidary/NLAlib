@@ -815,6 +815,12 @@ maintainer before any proof is written. The note answers, with specifics:
    a merge) is flagged in the note with its intended home, and the stage report lists every flag
    still open. Reviews of notes and stage reports check placement explicitly (review list:
    [P10]).
+   **Scaffold imports** (maintainer, 2026-10-25): every scaffold file imports the scaffold files
+   whose declarations its `Proof:` lines name, as well as its NLAlib counterpart, so that each
+   planned proof elaborates where it is written (precedent: `docs/design/Estimation-SLQ.md`, Imports
+   by file). The note's file list gives each scaffold file's imports; the harness checks, before
+   dispatch, that every name a `Proof:` line cites elaborates in the file's import closure, and
+   reviews of notes check it (review list: [G3]).
 6. **Material.** Which files of the prototype library were read, what in them is reused (as
    mathematics to cover, as proof material), and what is deliberately not reproduced and why
    (twins, bundles, transport lemmas, local interfaces).

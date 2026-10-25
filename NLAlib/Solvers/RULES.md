@@ -136,6 +136,7 @@ and `docs/rules/DIGEST.md`.
 
 - **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [§8]
 - **G2** Every port-ledger target is declared. [§9], AGENTS.md
+- **G3** (review) A scaffold file imports the scaffold files whose declarations its `Proof:` lines name. [§8] item 5
 
 ### Names
 
