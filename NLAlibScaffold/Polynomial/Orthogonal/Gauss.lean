@@ -59,7 +59,45 @@ theorem IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add {μ : 
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]}
     (hp : p.degree < (s.card + m : ℕ)) :
     ∫ x, p.eval x ∂μ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * p.eval x := by
-  sorry
+  set w := Lagrange.nodal s id with hwdef
+  have hw : w.Monic := Lagrange.nodal_monic
+  have hsplit := modByMonic_add_div p w
+  have hmod : (p %ₘ w).degree < s.card := by
+    have := degree_modByMonic_lt p hw
+    rwa [Lagrange.degree_nodal] at this
+  have hdiv : (p /ₘ w).degree < m := by
+    by_cases hq : p /ₘ w = 0
+    · rw [hq, degree_zero]
+      exact WithBot.bot_lt_coe _
+    have hp0 : p ≠ 0 := by
+      rintro rfl
+      exact hq (zero_divByMonic w)
+    have hle : w.degree ≤ p.degree :=
+      not_lt.mp fun h => hq ((divByMonic_eq_zero_iff hw).mpr h)
+    have hle' : s.card ≤ p.natDegree := by
+      have := natDegree_le_natDegree hle
+      rwa [Lagrange.natDegree_nodal] at this
+    rw [degree_eq_natDegree hq, Nat.cast_lt, natDegree_divByMonic p hw, Lagrange.natDegree_nodal]
+    rw [degree_eq_natDegree hp0] at hp
+    have : p.natDegree < s.card + m := by exact_mod_cast hp
+    omega
+  have hint1 := integrable_eval_of_ae_mem_Icc hμ (p %ₘ w)
+  have hint2 := integrable_eval_of_ae_mem_Icc hμ (w * (p /ₘ w))
+  calc ∫ x, p.eval x ∂μ = ∫ x, ((p %ₘ w).eval x + (w * (p /ₘ w)).eval x) ∂μ := by
+        conv_lhs => rw [← hsplit]
+        simp only [eval_add]
+    _ = ∫ x, (p %ₘ w).eval x ∂μ := by
+        rw [integral_add hint1 hint2]
+        simp only [eval_mul]
+        rw [hs _ hdiv, add_zero]
+    _ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * (p %ₘ w).eval x :=
+        integral_eval_eq_sum_of_degree_lt hμ hmod
+    _ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * p.eval x := by
+        refine Finset.sum_congr rfl fun x hx => ?_
+        congr 1
+        conv_rhs => rw [← hsplit]
+        have h0 : w.eval x = 0 := Lagrange.eval_nodal_at_node (v := id) hx
+        rw [eval_add, eval_mul, h0, zero_mul, add_zero]
 
 section Finite
 
