@@ -384,8 +384,8 @@ $\lvert k\rvert \le \lvert n\rvert$, $\varepsilon > 0$, $p > 0$ and
 $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}\,\mathbf{Q}^{\mathsf{H}}$ with $\mathbf{Q}$
 an $n \times k$ Haar frame, the JL moment property holds with exponent $p$ and failure
 probability <!-- value subexponentialMomentBound {(4/\lvert k \rvert)} {(4/\lvert k \rvert)} p -->
-$$\delta = \frac{p(2(4/\lvert k \rvert))^{p/2}\Gamma(p/2)
-{}+ 2p(2(4/\lvert k \rvert))^{p}\Gamma(p)}{\varepsilon^p}\,,$$
+$$\delta = \frac{p(2(4/\lvert k \rvert))^{p/2}\Gamma(p/2) +
+2p(2(4/\lvert k \rvert))^{p}\Gamma(p)}{\varepsilon^p}\,,$$
 the numerator being `NLAlib.subexponentialMomentBound` at $v = b = 4/\lvert k\rvert$, the
 Gaussian's: the one-sided projection tails of a uniform unit vector
 (`NLAlib.measureReal_norm_conjTranspose_mulVec_sq_ge_mul_div_le_of_hasLaw_uniformSphereVector`,

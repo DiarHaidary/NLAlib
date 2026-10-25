@@ -198,8 +198,8 @@ theorem measureReal_eigenvalue_zero_sum_ge_le_bernstein_of_hasLaw_uniformOn_inje
 $\mathbf{X}_i$, $i \in n$, with $\sum_i \mathbf{X}_i = \mathbf{0}$ and
 $\mathbf{X}_i \preceq L\mathbf{I}$, $L > 0$, $m$ nonempty and a uniformly random injection
 $\iota : k \to n$,
-$$\mathbb{E}\,\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \le \sqrt{2v\log\lvert m\rvert}
-{}+ \frac{L\log\lvert m\rvert}{3}, \qquad
+$$\mathbb{E}\,\lambda_0\Bigl(\sum_j \mathbf{X}_{\iota(j)}\Bigr) \le \sqrt{2v\log\lvert m\rvert} +
+\frac{L\log\lvert m\rvert}{3}, \qquad
 v = \frac{\lvert k\rvert}{\lvert n\rvert}\Bigl\|\sum_i \mathbf{X}_i^2\Bigr\|_2\,.$$
 The mean form of
 `NLAlib.measureReal_eigenvalue_zero_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective`.

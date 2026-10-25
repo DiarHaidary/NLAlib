@@ -712,8 +712,8 @@ theorem hasJLMoment_of_hasLaw_gaussianMatrix [Nonempty k] (hG : HasLaw G (gaussi
 $\varepsilon > 0$, $p > 0$ and $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ with $\mathbf{G}$
 standard Gaussian, the JL moment property holds with exponent $p$ and failure
 probability <!-- value subexponentialMomentBound {(4/\lvert k \rvert)} {(4/\lvert k \rvert)} p -->
-$$\delta = \frac{p(2(4/\lvert k \rvert))^{p/2}\Gamma(p/2)
-{}+ 2p(2(4/\lvert k \rvert))^{p}\Gamma(p)}{\varepsilon^p}\,,$$
+$$\delta = \frac{p(2(4/\lvert k \rvert))^{p/2}\Gamma(p/2) +
+2p(2(4/\lvert k \rvert))^{p}\Gamma(p)}{\varepsilon^p}\,,$$
 the numerator being `NLAlib.subexponentialMomentBound` at $v = b = 4/\lvert k\rvert$: the
 Dasgupta–Gupta $\chi^2$ tails on both sides give the sub-exponential JL tail
 $2e^{-(\lvert k\rvert/8)\min(t^2, t)}$ at every $t > 0$
