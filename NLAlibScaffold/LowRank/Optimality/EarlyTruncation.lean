@@ -603,7 +603,47 @@ theorem one_le_mul_card_of_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le
       ∫ ω, frobNorm (A - earlyTruncatedRSVD A (X ω) 1) ^ 2 ∂μ ≤
         (1 + ε) * frobNorm (A - truncatedSVD A 1) ^ 2) :
     1 ≤ 10 ^ 4 * ε ^ 2 * Fintype.card l := by
-  sorry
+  set δ : ℝ := 1 / (4 * √(Fintype.card l : ℝ)) with hδ
+  set t : ℝ := √(Fintype.card l : ℝ) with ht
+  have hl' : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
+  have ht0 : 0 < t := Real.sqrt_pos.2 (by linarith)
+  have ht2 : t ^ 2 = Fintype.card l := Real.sq_sqrt (by linarith)
+  have hδpos : 0 < δ := by positivity
+  have ht10 : 10 ≤ t := by nlinarith
+  have hδ1 : δ ≤ 1 / 40 := by
+    rw [hδ]
+    exact div_le_div_of_nonneg_left (by norm_num) (by norm_num) (by linarith)
+  set s : ℝ := 1 - δ with hs
+  have hs0 : s ≠ 0 := by intro h0; linarith
+  have hE := le_integral_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq_of_hasLaw_gaussianMatrix hX hl
+  have hH := h (Matrix.diagonal ![1, s])
+  have hσ : 0 < singularValues (Matrix.diagonal ![(1 : ℝ), s]) 1 := by
+    rw [singularValues_pos_iff]
+    have hrank : 1 < (Matrix.diagonal ![(1 : ℝ), s]).rank := by
+      rw [Matrix.rank_diagonal]
+      have : ∀ i, ![(1 : ℝ), s] i ≠ 0 := by
+        intro i; fin_cases i <;> simp [hs0]
+      simp only [this, ne_eq, not_false_eq_true, Fintype.card_subtype_true]
+      simp
+    exact hrank
+  have hOPT : 0 < frobNorm (Matrix.diagonal ![(1 : ℝ), s] -
+      truncatedSVD (Matrix.diagonal ![(1 : ℝ), s]) 1) ^ 2 := by
+    rw [frobNorm_sub_truncatedSVD_sq]
+    have h1 : (1 : ℕ) ∈ Finset.Ico 1 (min (Fintype.card (Fin 2)) (Fintype.card (Fin 2))) := by
+      simp
+    exact lt_of_lt_of_le (pow_pos hσ 2)
+      (Finset.single_le_sum (f := fun i => singularValues (Matrix.diagonal ![(1 : ℝ), s]) i ^ 2)
+        (fun i _ => sq_nonneg _) h1)
+  have hc : 1 + 1 / (100 * t) ≤ 1 + ε := by
+    have hle := (hE.trans hH)
+    exact le_of_mul_le_mul_right hle hOPT
+  have hkey : 1 / (100 * t) ≤ ε := by linarith
+  have h1 : 1 ≤ 100 * t * ε := by
+    rw [div_le_iff₀ (by positivity)] at hkey
+    linarith
+  have h2 : 1 ≤ (100 * t * ε) ^ 2 := by
+    nlinarith
+  nlinarith [ht2]
 
 /-- **$O(k/\varepsilon)$ samples do not suffice for the early-truncated randomized SVD**: there are
 no constants $C, \varepsilon_0 > 0$ such that for every standard Gaussian $n \times \ell$ test
