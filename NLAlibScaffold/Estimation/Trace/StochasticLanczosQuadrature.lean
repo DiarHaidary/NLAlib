@@ -269,7 +269,14 @@ theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_isUniformApproxOn
       2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm (cfc f A) ^ 2))
           (Fintype.card m * τ / ((c : ℝ) * specNorm (cfc f A))))) := by
-  sorry
+  have := hind.isProbabilityMeasure
+  refine (measureReal_mono ?_).trans
+    (measureReal_abs_trace_sub_girardHutchinson_ge_le hind hsub hvar (cfc f A) hτ)
+  intro ω hω
+  simp only [Set.mem_ofPred_eq] at hω ⊢
+  have key := Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hA hs hp hε (X ω)
+  simp only [Real.norm_eq_abs] at key
+  linarith
 
 /-- **The tail of stochastic Lanczos quadrature for Lipschitz functions.** Let the entries of the
 real $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
