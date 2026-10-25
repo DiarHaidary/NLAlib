@@ -165,6 +165,10 @@ Proof: S, about 5 lines. `HasLaw.comp` of `map_sum_sq_pi_gaussianReal` (as
 theorem hasLaw_sum_sq_of_hasLaw_pi_gaussianReal {ι : Type*} [Fintype ι] [Nonempty ι]
     {g : Ω → ι → ℝ} (hg : HasLaw g (Measure.pi fun _ : ι => gaussianReal 0 1) μ) :
     HasLaw (fun ω => ∑ i, g ω i ^ 2) (gammaMeasure (Fintype.card ι / 2) (1 / 2)) μ := by
-  sorry
+  have hsum : Measurable fun x : ι → ℝ => ∑ i, x i ^ 2 := by fun_prop
+  have hY : HasLaw (fun x : ι → ℝ => ∑ i, x i ^ 2) (gammaMeasure (Fintype.card ι / 2) (1 / 2))
+      (Measure.pi fun _ : ι => gaussianReal 0 1) :=
+    ⟨hsum.aemeasurable, map_sum_sq_pi_gaussianReal⟩
+  exact hY.comp hg
 
 end ProbabilityTheory
