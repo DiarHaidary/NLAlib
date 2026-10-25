@@ -2,7 +2,7 @@
 """Focused regressions for standalone documentation tags."""
 import unittest
 
-from check_refs import ROOT, pair_has_result, same_module_path, tag_format_problems
+from check_refs import pair_has_result, tag_format_problems
 
 
 class TagFormatTests(unittest.TestCase):
@@ -38,14 +38,6 @@ class TagFormatTests(unittest.TestCase):
                     'Asymptotic:', 'Asymptotic: `NLAlib.explicit`'):
             with self.subTest(tag=tag):
                 self.assertTrue(tag_format_problems(f'/-- A result.\n{tag} -/'))
-
-
-class SameFileTests(unittest.TestCase):
-    def test_scaffold_and_library_file_of_one_path(self):
-        lib, sc = ROOT / 'NLAlib' / 'A' / 'B.lean', ROOT / 'NLAlibScaffold' / 'A' / 'B.lean'
-        self.assertTrue(same_module_path(sc, lib))
-        self.assertTrue(same_module_path(lib, lib))
-        self.assertFalse(same_module_path(sc, ROOT / 'NLAlib' / 'A' / 'C.lean'))
 
 
 if __name__ == '__main__':

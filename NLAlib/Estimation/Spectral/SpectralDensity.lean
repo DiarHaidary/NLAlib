@@ -41,8 +41,7 @@ measure, for SLQ (adding the Gauss error) and for the mass-normalised SLQ measur
 $\sqrt{\lvert n\rvert}\,\mathbf{u}_j$, $\mathbf{u}_j$ independent and uniform on the unit
 sphere, both measures are probability measures and the sharp Beta proxy gives the failure
 probability $2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)$, with no unknown constant.
-[ChenTrogdonUbaru2025]. Design: `docs/design/Estimation-SLQ.md` §§3.3–3.6. The asymptotic form of
-the sub-Gaussian Lipschitz tail stays in `NLAlibScaffold/Estimation/Spectral/SpectralDensity.lean`.
+[ChenTrogdonUbaru2025]. Design: `docs/design/Estimation-SLQ.md` §§3.3–3.6.
 
 ## Main definitions
 
@@ -68,8 +67,8 @@ the sub-Gaussian Lipschitz tail stays in `NLAlibScaffold/Estimation/Spectral/Spe
 * `NLAlib.measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le`:
   the Kolmogorov-distance tail.
 * `NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`:
-  SLQ approximates the spectral density uniformly in Lipschitz test functions; the
-  mass-normalised form follows it.
+  SLQ approximates the spectral density uniformly in Lipschitz test functions; its asymptotic
+  form and the mass-normalised form follow it.
 * The same with sphere probes: the tails at one set and at every eigenvalue, the Lipschitz tail,
   the sample size and its asymptotic form (the last section; the names are too long for this
   list).
@@ -849,6 +848,86 @@ theorem measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_sl
   have h3 := abs_sub_le (∫ x, f x ∂empiricalSpectralMeasure A)
     (∫ x, f x ∂probeSpectralMeasure A (X ω)) (∫ x, f x ∂slqMeasure A (X ω) (q + 1))
   nlinarith [mul_le_mul_of_nonneg_left hmass hJ]
+
+-- The declaration name, or a name in its docstring, exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **$O(c^2\log(\lvert n\rvert/\delta)/(\lvert n\rvert\tau^2))$ probes suffice for SLQ to
+approximate the spectral density, uniformly in Lipschitz test functions**: there is an absolute
+constant $C > 0$ such that the following holds. Let the entries of the real $n \times m$ test
+matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian moment generating
+function bound with variance proxy $c > 0$ and having second moment $1$; let $\mathbf{A}$ be real
+symmetric with spectrum in $[a, b]$, $a < b$; let $L \ge 0$, $q \in \mathbb{N}$,
+$0 < \tau \le 1$ and $0 < \delta \le 1$. If
+$m \ge C c^2\log(2\lvert n\rvert/\delta)/(\lvert n\rvert\tau^2)$, then except with probability
+at most $\delta$ every $f$ that is $L$-Lipschitz on $[a, b]$
+satisfies <!-- value jacksonApproximationConstant -->
+$$\Bigl\lvert\int f\,d\nu_{\mathbf{A}} - \int f\,d\,\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega},
+q + 1)\Bigr\rvert \le (\lvert f(b)\rvert + L(b - a))\tau +
+\frac{\pi L(b - a)}{2q + 3}(1 + \tau)\,,$$
+$\nu_{\mathbf{A}}$ the empirical spectral measure; the constant of the Gauss term is
+`jacksonApproximationConstant`. The constant $C$ comes before every dimension, matrix and
+parameter. With $\lvert n\rvert$ in the denominator, for large $n$ a single probe suffices.
+Proved from
+`NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`
+with $C = 196$. [ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check);
+there for probes uniform on the sphere.
+Asymptotic:
+NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le
+Result: spectral-density-lipschitz-tail -/
+theorem
+exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le :
+    ∃ C : ℝ, 0 < C ∧ ∀ {Ω n m : Type} [MeasurableSpace Ω] [Fintype n] [DecidableEq n]
+      [Fintype m] (μ : Measure Ω) (X : Ω → Matrix n m ℝ) (c : ℝ≥0)
+      (A : Matrix n n ℝ) (a b : ℝ) (L : ℝ≥0) (q : ℕ) (τ δ : ℝ), 0 < c →
+      iIndepFun (fun p : n × m => fun ω => X ω p.1 p.2) μ →
+      (∀ i j, HasSubgaussianMGF (fun ω => X ω i j) c μ) →
+      (∀ i j, ∫ ω, X ω i j ^ 2 ∂μ = 1) → A.IsHermitian → a < b →
+      spectrum ℝ A ⊆ Set.Icc a b → 0 < τ → τ ≤ 1 → 0 < δ → δ ≤ 1 →
+      C * (c : ℝ) ^ 2 * Real.log (2 * Fintype.card n / δ) / (Fintype.card n * τ ^ 2) ≤
+        Fintype.card m →
+      μ.real {ω | ∃ f : ℝ → ℝ, LipschitzOnWith L f (Set.Icc a b) ∧
+        (|f b| + L * (b - a)) * τ +
+          jacksonApproximationConstant * L * (b - a) / (2 * q + 3) * (1 + τ) <
+        |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂slqMeasure A (X ω) (q + 1)|} ≤ δ := by
+  refine ⟨196, by norm_num, ?_⟩
+  intro Ω n m _ _ _ _ μ X c A a b L q τ δ hc hind hsub hvar hA hab hs hτ hτ1 hδ hδ1 hsize
+  have := hind.isProbabilityMeasure
+  refine (measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le
+    hind hsub hvar hA hab hs L q hτ.le).trans ?_
+  rcases isEmpty_or_nonempty n with hn | hn
+  · simp only [Fintype.card_eq_zero, CharP.cast_eq_zero, mul_zero, zero_mul]
+    exact hδ.le
+  have hN : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr (Fintype.card_pos_iff.mpr hn)
+  have hlog : 0 < Real.log (2 * Fintype.card n / δ) := Real.log_pos (by
+    rw [one_lt_div hδ]; nlinarith [(Nat.one_le_cast (α := ℝ)).mpr (Fintype.card_pos_iff.mpr hn)])
+  rcases isEmpty_or_nonempty m with hm | hm
+  · exfalso
+    rw [Fintype.card_eq_zero (α := m), Nat.cast_zero] at hsize
+    have : 0 < 196 * (c : ℝ) ^ 2 * Real.log (2 * Fintype.card n / δ) /
+        (Fintype.card n * τ ^ 2) := by positivity
+    linarith
+  obtain ⟨i⟩ := hn
+  obtain ⟨j⟩ := hm
+  have hc1 : (1 : ℝ) ≤ c := hvar i j ▸ (hsub i j).integral_sq_le
+  have hc0 : (0 : ℝ) < c := by linarith
+  have hτc : τ ^ 2 / (c : ℝ) ^ 2 ≤ τ / c := by
+    rw [sq, sq, ← div_mul_div_comm]
+    exact mul_le_of_le_one_left (by positivity) ((div_le_one hc0).mpr (hτ1.trans hc1))
+  have hle : Real.log (2 * Fintype.card n / δ) ≤
+      hansonWrightConstant * (Fintype.card m * Fintype.card n * (τ ^ 2 / (c : ℝ) ^ 2)) := by
+    rw [div_le_iff₀ (by positivity)] at hsize
+    have hy : Real.log (2 * Fintype.card n / δ) ≤
+        1 / 196 * (Fintype.card m * Fintype.card n * (τ ^ 2 / (c : ℝ) ^ 2)) := by
+      rw [mul_div_assoc', mul_div_assoc', le_div_iff₀ (by positivity)]
+      linarith
+    exact hy.trans (by gcongr; exact le_hansonWrightConstant)
+  calc 2 * (Fintype.card n : ℝ) * Real.exp (-(hansonWrightConstant *
+        (Fintype.card m * Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) ≤
+      2 * Fintype.card n * Real.exp (-Real.log (2 * Fintype.card n / δ)) := by
+        rw [min_eq_left hτc]; gcongr
+    _ = δ := by
+        rw [Real.exp_neg, Real.exp_log (by positivity)]
+        field_simp
 
 /-- A Lipschitz function on $[a, b]$ is integrable against a finite measure carried by $[a, b]$. -/
 private theorem integrable_of_lipschitz_ae {ρ : Measure ℝ} [IsFiniteMeasure ρ] {a b : ℝ}
