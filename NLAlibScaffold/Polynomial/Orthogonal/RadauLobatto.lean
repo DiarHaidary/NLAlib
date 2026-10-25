@@ -847,7 +847,40 @@ Proof: S, about 15 lines. $\pi_k(c) \ne 0$ since the zeros of $\pi_k$ lie in $(a
 theorem IsMomentPosDef.mem_spectrum_radauJacobiMatrix {k : ℕ} (h : IsMomentPosDef μ (k + 1))
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) :
     c ∈ spectrum ℝ (radauJacobiMatrix μ c k) := by
-  sorry
+  have hcI : c ∉ Set.Ioo a b := by
+    rcases hc with rfl | rfl <;> simp
+  have hc0 : (orthogonalPolynomial μ k).eval c ≠ 0 := by
+    intro h0
+    have hmem : c ∈ gaussNodes μ k := by
+      unfold gaussNodes
+      rw [Multiset.mem_toFinset, Polynomial.mem_roots (monic_orthogonalPolynomial μ k).ne_zero]
+      exact h0
+    exact hcI (IsMomentPosDef.gaussNodes_subset_Ioo h hμ hmem)
+  have hpos : 0 < ∫ x, (1 : ℝ[X]).eval x ^ 2 ∂μ :=
+    h 1 one_ne_zero (by simp only [degree_one, Nat.cast_add, Nat.cast_one]; positivity)
+  set v : Fin (k + 1) → ℝ := fun i => (orthogonalPolynomial μ i).eval c /
+    √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ) with hv_def
+  have hv0 : v ≠ 0 := by
+    intro hz
+    have h0 := congrFun hz 0
+    have h0' : (orthogonalPolynomial μ 0).eval c /
+        √(∫ x, (orthogonalPolynomial μ 0).eval x ^ 2 ∂μ) = 0 := h0
+    rw [orthogonalPolynomial_zero] at h0'
+    simp only [eval_one, one_pow] at h0' hpos
+    rcases div_eq_zero_iff.mp h0' with h1 | h1
+    · simp at h1
+    · exact (Real.sqrt_pos.mpr hpos).ne' h1
+  have hmul : radauJacobiMatrix μ c k *ᵥ v = c • v :=
+    IsMomentPosDef.radauJacobiMatrix_mulVec_eq h hμ hc0
+  rw [spectrum.mem_iff]
+  intro hu
+  have hdet : (algebraMap ℝ (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) c -
+      radauJacobiMatrix μ c k).det = 0 := by
+    rw [← Matrix.exists_mulVec_eq_zero_iff]
+    refine ⟨v, hv0, ?_⟩
+    rw [Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
+      Matrix.one_mulVec, hmul, sub_self]
+  exact isUnit_iff_ne_zero.mp ((Matrix.isUnit_iff_isUnit_det _).mp hu) hdet
 
 /-- A banded matrix has zero powers off a band of width `i`. -/
 private theorem matrix_pow_apply_eq_zero_of_band {n : ℕ} (N : Matrix (Fin n) (Fin n) ℝ)
