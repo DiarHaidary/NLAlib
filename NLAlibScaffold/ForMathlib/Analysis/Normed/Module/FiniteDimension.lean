@@ -39,29 +39,17 @@ theorem exists_infDist_eq_dist {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] (S : Submodule 𝕜 E) [FiniteDimensional 𝕜 S]
     (x : E) : ∃ y ∈ S, Metric.infDist x (S : Set E) = dist x y := by
   have := FiniteDimensional.proper 𝕜 S
-  set K : Set S := Metric.closedBall 0 (2 * ‖x‖) with hK
-  have hKc : IsCompact K := isCompact_closedBall _ _
-  have hf : Continuous fun p : S => ‖x - (p : E)‖ := by fun_prop
-  obtain ⟨p, hpK, hpmin⟩ := hKc.exists_isMinOn ⟨0, by simp [hK]⟩ hf.continuousOn
-  have hglobal : ∀ q : S, ‖x - (p : E)‖ ≤ ‖x - (q : E)‖ := by
-    intro q
-    by_cases hq : q ∈ K
-    · exact hpmin hq
-    · have hq' : 2 * ‖x‖ < ‖(q : E)‖ := by
-        simp only [hK, Metric.mem_closedBall, dist_zero_right, not_le] at hq
-        exact hq
-      have h0 : ‖x - (p : E)‖ ≤ ‖x‖ := by
-        have := hpmin (show (0 : S) ∈ K from by simp [hK])
-        simpa using this
-      have h1 : ‖(q : E)‖ ≤ ‖x - (q : E)‖ + ‖x‖ := by
-        have := norm_sub_norm_le (q : E) x
-        rw [norm_sub_rev] at this
-        linarith [norm_sub_rev x (q : E)]
-      linarith
-  refine ⟨p, p.property, le_antisymm (Metric.infDist_le_dist_of_mem p.property) ?_⟩
-  refine (Metric.le_infDist ⟨0, S.zero_mem⟩).2 ?_
-  intro y hy
+  -- minimise `‖x - p‖` over the compact ball of radius `2‖x‖` in `S`; `0` is in the ball
+  obtain ⟨p, -, hpmin⟩ := (isCompact_closedBall (0 : S) (2 * ‖x‖)).exists_isMinOn ⟨0, by simp⟩
+    (by fun_prop : Continuous fun p : S => ‖x - (p : E)‖).continuousOn
+  have h0 : ‖x - (p : E)‖ ≤ ‖x‖ := by simpa using hpmin (show (0 : S) ∈ _ by simp)
+  refine ⟨p, p.2, le_antisymm (Metric.infDist_le_dist_of_mem p.2)
+    ((Metric.le_infDist ⟨0, S.zero_mem⟩).2 fun y hy => ?_)⟩
   rw [dist_eq_norm, dist_eq_norm]
-  exact hglobal ⟨y, hy⟩
+  by_cases hyK : (⟨y, hy⟩ : S) ∈ Metric.closedBall 0 (2 * ‖x‖)
+  · exact hpmin hyK
+  · -- outside the ball, `‖x - y‖ ≥ ‖y‖ - ‖x‖ > ‖x‖`
+    simp only [Metric.mem_closedBall, dist_zero_right, not_le] at hyK
+    linarith [norm_sub_norm_le y x, norm_sub_rev x y, show ‖(⟨y, hy⟩ : S)‖ = ‖y‖ from rfl]
 
 end Submodule
