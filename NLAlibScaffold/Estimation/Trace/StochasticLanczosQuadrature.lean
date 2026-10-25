@@ -162,6 +162,20 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn
           _ = 2 * ε * frobNorm Ω ^ 2 := by
               rw [frobNorm_sq_eq_sum_col, Finset.mul_sum]
 
+private theorem norm_quadForm_cfc_sub_integral_gaussQuadrature_le {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {a a' : ℝ} (haa : a < a') (hs : spectrum ℝ A ⊆ Set.Icc a a')
+    {f : ℝ → ℝ} {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a a')) (q : ℕ) (b : n → 𝕜) :
+    ‖quadForm (cfc f A) b - ((∫ x, f x ∂gaussQuadrature (spectralMeasure A b) (q + 1) : ℝ) : 𝕜)‖ ≤
+      jacksonApproximationConstant * L * (a' - a) / (2 * q + 3) * ‖WithLp.toLp 2 b‖ ^ 2 := by
+  have hH : (cfc f A).IsHermitian := cfc_predicate f A
+  have hre : quadForm (cfc f A) b = ((∫ x, f x ∂spectralMeasure A b : ℝ) : 𝕜) := by
+    rw [integral_spectralMeasure, hH.coe_re_quadForm]
+  have hbd := abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
+    (μ := spectralMeasure A b) (ae_mem_Icc_spectralMeasure A hs b) haa hf q
+  rw [hA.spectralMeasure_real_univ] at hbd
+  rw [hre, ← RCLike.ofReal_sub, RCLike.norm_ofReal]
+  exact hbd
+
 /-- **The error of stochastic Lanczos quadrature for Lipschitz functions**: for Hermitian
 $\mathbf{A}$ with spectrum in $[a, a']$, $a < a'$, $f$ $L$-Lipschitz on $[a, a']$, every test
 matrix $\mathbf{\Omega}$ with $m$ columns and every $q$, with $q + 1$ Lanczos steps per
@@ -189,7 +203,25 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_lipschitzOnWith
       ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
         jacksonApproximationConstant * L * (a' - a) / (2 * q + 3) *
           (frobNorm Ω ^ 2 / Fintype.card m) := by
-  sorry
+  have hsum : ‖∑ j, (quadForm (cfc f A) (fun i => Ω i j) -
+      ((∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) (q + 1) : ℝ) : 𝕜))‖ ≤
+      jacksonApproximationConstant * L * (a' - a) / (2 * q + 3) * frobNorm Ω ^ 2 := by
+    refine (norm_sum_le _ _).trans ((Finset.sum_le_sum fun j _ =>
+      norm_quadForm_cfc_sub_integral_gaussQuadrature_le hA haa hs hf q
+        (fun i => Ω i j)).trans_eq ?_)
+    rw [← Finset.mul_sum, frobNorm_sq_eq_sum_col]
+    rfl
+  have hsplit : (cfc f A).trace - slq A f Ω (q + 1) =
+      ((cfc f A).trace - girardHutchinson (cfc f A) Ω) +
+        (∑ j, (quadForm (cfc f A) (fun i => Ω i j) -
+          ((∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) (q + 1) : ℝ) : 𝕜))) /
+          (Fintype.card m : 𝕜) := by
+    simp only [slq, girardHutchinson_eq_sum, RCLike.ofReal_sum, Finset.sum_sub_distrib, sub_div]
+    ring
+  rw [hsplit]
+  refine (norm_add_le _ _).trans (add_le_add le_rfl ?_)
+  rw [norm_div, RCLike.norm_natCast, mul_div_assoc']
+  gcongr
 
 /-- **The error of stochastic Lanczos quadrature for analytic functions**: let $\mathbf{A}$ be
 Hermitian with spectrum in $[a, a']$, $a < a'$, and let $f$, transported to $[-1, 1]$ by the
