@@ -185,7 +185,43 @@ private theorem arnoldiMatrix_col_last_eq_of_lt_krylovGrade {A : Matrix n n 𝕜
     (arnoldiMatrix A b (j + 1)).col (Fin.last j) =
       (‖WithLp.toLp 2 (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b)‖⁻¹ : 𝕜) •
         (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) := by
-  sorry
+  obtain ⟨y, hy, hjy⟩ := exists_gramSchmidtR_smul_arnoldiMatrix_col_last A b j
+  obtain ⟨ρ, hρ0, hρ⟩ := RCLike.nonneg_iff_exists_ofReal.mp
+    (gramSchmidtR_apply_self_nonneg (krylovMatrix A b (j + 1)) (Fin.last j))
+  have hρne : ρ ≠ 0 := fun h0 =>
+    (not_le.mpr hj) (gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff.mp
+      (by rw [← hρ, h0, RCLike.ofReal_zero]))
+  rw [← hρ] at hjy
+  have hK := aeval_orthogonalPolynomial_mulVec_sub_pow_mulVec_mem_krylovSpace
+    (spectralMeasure A b) A b j
+  -- the difference $\rho\mathbf{q}_j - \pi_j(\mathbf{A})\mathbf{b}$ lies in $\mathcal{K}_j$
+  have hd : (ρ : 𝕜) • (arnoldiMatrix A b (j + 1)).col (Fin.last j) -
+      aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b ∈ krylovSpace A b j := by
+    have e : (ρ : 𝕜) • (arnoldiMatrix A b (j + 1)).col (Fin.last j) -
+        aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b =
+        -(y + (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b - A ^ j *ᵥ b)) := by
+      rw [hjy]; abel
+    rw [e]; exact Submodule.neg_mem _ (Submodule.add_mem _ hy hK)
+  -- so it is orthogonal to itself, hence zero
+  have h1 := hA.star_dotProduct_aeval_orthogonalPolynomial_mulVec_eq_zero_of_mem (b := b) hd
+  have h2 := star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem A b le_rfl hd
+  have h3 : star ((ρ : 𝕜) • (arnoldiMatrix A b (j + 1)).col (Fin.last j) -
+      aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) ⬝ᵥ
+      (arnoldiMatrix A b (j + 1)).col (Fin.last j) = 0 := by
+    have := congrArg star h2
+    rwa [Matrix.star_dotProduct, star_star, star_zero] at this
+  have h4 : star ((ρ : 𝕜) • (arnoldiMatrix A b (j + 1)).col (Fin.last j) -
+      aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) ⬝ᵥ
+      ((ρ : 𝕜) • (arnoldiMatrix A b (j + 1)).col (Fin.last j) -
+      aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) = 0 := by
+    rw [dotProduct_sub, h1, dotProduct_smul, h3, smul_zero, sub_zero]
+  have hv : (ρ : 𝕜) • (arnoldiMatrix A b (j + 1)).col (Fin.last j) =
+      aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b :=
+    sub_eq_zero.mp (dotProduct_star_self_eq_zero.mp h4)
+  -- normalise
+  rw [← hv, WithLp.toLp_smul, norm_smul, norm_arnoldiMatrix_col_last hj, mul_one,
+    RCLike.norm_ofReal, abs_of_nonneg hρ0, smul_smul, ← RCLike.ofReal_inv, ← RCLike.ofReal_mul,
+    inv_mul_cancel₀ hρne, RCLike.ofReal_one, one_smul]
 
 /-- **The Lanczos vectors are the orthogonal polynomials of the spectral measure**: for
 Hermitian $\mathbf{A}$, every $q$ and $j < q$, column $j$ of the canonical Lanczos basis is
