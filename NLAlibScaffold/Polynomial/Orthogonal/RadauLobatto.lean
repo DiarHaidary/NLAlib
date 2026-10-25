@@ -286,7 +286,48 @@ the nodes, and the weight is the mass $\mu\{x\} \ge 0$ (`integral_eval_basis_of_
 theorem integral_eval_basis_radauNodes_nonneg (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
     (hc : c = a ∨ c = b) (k : ℕ) {x : ℝ} (hx : x ∈ radauNodes μ c k) :
     0 ≤ ∫ t, (Lagrange.basis (radauNodes μ c k) id x).eval t ∂μ := by
-  sorry
+  have hρ : ∀ᵐ t ∂radauMeasure μ c, t ∈ Set.Icc a b := ae_mem_Icc_radauMeasure hμ c
+  have := isFiniteMeasure_radauMeasure hμ c
+  by_cases hp : IsMomentPosDef (radauMeasure μ c) k
+  · set ℓ := Lagrange.basis (radauNodes μ c k) id x with hℓ
+    have hcard := hp.card_radauNodes hμ hc
+    have hs := isOrthogonalPolynomial_nodal_radauNodes hμ hc hp
+    have hdeg : (ℓ ^ 2).degree < ((radauNodes μ c k).card + k : ℕ) := by
+      have hnd : ℓ.natDegree = k := by
+        rw [hℓ, Lagrange.natDegree_basis (Set.injOn_id _) hx, hcard]
+        omega
+      have h1 : (ℓ ^ 2).natDegree < (radauNodes μ c k).card + k := by
+        have := natDegree_pow_le (p := ℓ) (n := 2)
+        omega
+      exact degree_le_natDegree.trans_lt (by exact_mod_cast h1)
+    have h := hs.integral_eval_eq_sum_of_degree_lt_card_add hμ hdeg
+    simp only [eval_pow] at h
+    have key : ∫ t, ℓ.eval t ∂μ = ∫ t, ℓ.eval t ^ 2 ∂μ := by
+      rw [h, Finset.sum_eq_single x]
+      · have : ℓ.eval x = 1 := Lagrange.eval_basis_self (v := id) (Set.injOn_id _) hx
+        rw [this, one_pow, mul_one]
+      · intro y hy hyx
+        have : ℓ.eval y = 0 := Lagrange.eval_basis_of_ne (v := id) (Ne.symm hyx) hy
+        rw [this]
+        ring
+      · intro hx'
+        exact absurd hx hx'
+    rw [key]
+    exact integral_nonneg fun t => sq_nonneg _
+  · have hsq :
+        ∫ t, (orthogonalPolynomial (radauMeasure μ c) k).eval t ^ 2 ∂radauMeasure μ c = 0 := by
+      rcases k with _ | j
+      · exfalso
+        exact hp fun p hp0 hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp0))
+      · rw [isMomentPosDef_succ_iff hρ j, not_lt] at hp
+        rw [integral_orthogonalPolynomial_succ_sq hρ j,
+          le_antisymm hp (integral_nonneg fun t => sq_nonneg _), mul_zero]
+    have hself := radauQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ hsq
+    have hae := ae_mem_interpolatoryQuadrature μ (radauNodes μ c k)
+    unfold radauQuadrature at hself
+    rw [hself] at hae
+    rw [integral_eval_basis_of_ae_mem hae hx]
+    exact measureReal_nonneg
 
 /-- The Radau rule with the interpolatory weights: for a finite measure $\mu$ supported in
 $[a, b]$, $c \in \{a, b\}$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
