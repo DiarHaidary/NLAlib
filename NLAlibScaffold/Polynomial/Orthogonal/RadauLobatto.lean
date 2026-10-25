@@ -505,7 +505,24 @@ theorem lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     (h : ∫ x, (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂lobattoMeasure μ a b =
       0) :
     lobattoQuadrature μ a b k = μ := by
-  sorry
+  have := isFiniteMeasure_lobattoMeasure hμ
+  have hae : ∀ᵐ x ∂lobattoMeasure μ a b,
+      (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x = 0 :=
+    ae_eval_eq_zero_of_integral_sq_eq_zero (ae_mem_Icc_lobattoMeasure hμ) h
+  have hgauss : ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ gaussNodes (lobattoMeasure μ a b) k := by
+    filter_upwards [hae] with x hx
+    rwa [gaussNodes, Multiset.mem_toFinset,
+      mem_roots (monic_orthogonalPolynomial _ _).ne_zero]
+  have hcarry : ∀ᵐ x ∂μ, x ∈ lobattoNodes μ a b k := by
+    filter_upwards [(ae_withDensity_iff (by fun_prop)).mp hgauss] with x hx
+    by_cases hxab : x = a ∨ x = b
+    · rcases hxab with rfl | rfl <;> simp [lobattoNodes]
+    · have hne : ‖(x - a) * (x - b)‖ₑ ≠ 0 := by
+        simp only [ne_eq, enorm_eq_zero, mul_eq_zero, sub_eq_zero, not_or] at hxab ⊢
+        exact hxab
+      simp [lobattoNodes, hx hne]
+  unfold lobattoQuadrature
+  exact interpolatoryQuadrature_eq_self_of_ae_mem hcarry
 
 /-- **The Lobatto weights are nonnegative**: for a finite measure $\mu$ supported in $[a, b]$,
 $a < b$, and every $k$, the interpolatory weight $\int\ell_x\,d\mu$ of every Lobatto node $x$ is
