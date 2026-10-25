@@ -93,6 +93,16 @@ theorem abs_integral_sub_integral_le_of_lipschitzOnWith {μ ν : Measure ℝ}
     {f : ℝ → ℝ} {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a b)) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ x ∈ s, |μ.real (Set.Iic x) - ν.real (Set.Iic x)| ≤ K) :
     |∫ x, f x ∂μ - ∫ x, f x ∂ν| ≤ (|f b| + L * (b - a)) * K := by
-  sorry
+  rw [integral_eq_sum_measureReal_singleton_mul hμ f,
+    integral_eq_sum_measureReal_singleton_mul hν f, ← Finset.sum_sub_distrib]
+  have hterm : ∀ x ∈ s, μ.real {x} * f x - ν.real {x} * f x
+      = f x * (μ.real {x} - ν.real {x}) := fun x _ => by ring
+  rw [Finset.sum_congr rfl hterm]
+  refine Finset.abs_sum_mul_le_of_lipschitzOnWith hs hab hf (fun y => μ.real {y} - ν.real {y})
+    hK0 fun x hx => ?_
+  have h := hK x hx
+  simp only [Finset.sum_sub_distrib, ← measureReal_Iic_eq_sum hμ x,
+    ← measureReal_Iic_eq_sum hν x]
+  exact h
 
 end MeasureTheory
