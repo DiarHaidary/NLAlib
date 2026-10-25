@@ -2,6 +2,15 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Library layers follow the imports (2026-10-25)
+
+Branch `reorg/layers` (worktree `nlalib-reorg`), from `origin/main`. Maintainer decision on library
+organization, option (b): `Solvers/{Kaczmarz, SketchAndProject}.lean` moved to `Regression/`
+(modules `NLAlib.Regression.{Kaczmarz, SketchAndProject}`; no declaration renamed), `Solvers/` and
+its `RULES.md` deleted. CONTRIBUTING §2 and `check_rules.LAYER` now give Krylov 1, Probability 1.5,
+Regression 3.5 and Estimation 4.5, so each folder imports only lower layers; P1 also fails a
+top-level folder that has no layer, and a test keeps `LAYER` equal to the §2 table.
+
 ## Poly-Best best polynomial approximation: proofs (2026-10-25)
 
 Branch `cleanup/polybest` (worktree `nlalib-cleanup-polybest`), over `integrate/polybest` with

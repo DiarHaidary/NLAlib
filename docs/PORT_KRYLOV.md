@@ -498,6 +498,11 @@ the form of `specNorm_aeval_le_of_forall_mem_Icc`. $\kappa$ forms are corollarie
   (`docs/design/Regression-SketchPrecondition.md` §6). The i.i.d.-iterate lemma went to
   `ForMathlib/Probability/Independence/InfinitePi.lean` and `Probability/Law.lean`
   (`docs/design/Regression-Kaczmarz.md` §7).
+- Amendment (2026-10-25, maintainer decision on library organization): `Solvers/` is merged into
+  `Regression/` (Kaczmarz and sketch-and-project are `Regression/{Kaczmarz, SketchAndProject}.lean`);
+  later randomized solvers (sketched GMRES, Nyström PCG) go to `Regression/` too, or stay in Krylov
+  when deterministic. Layers now follow the imports (CONTRIBUTING §2): Krylov 1, Probability 1.5,
+  so `Probability/Measurability/Krylov.lean` imports Krylov and Krylov never imports Probability.
 
 ## 3. Decisions the orchestrator takes
 

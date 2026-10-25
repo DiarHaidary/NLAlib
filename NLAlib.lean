@@ -384,10 +384,12 @@ public import NLAlib.Regression.Embedding
 public import NLAlib.Regression.Gaussian
 public import NLAlib.Regression.Haar
 public import NLAlib.Regression.IterativeSketching
+public import NLAlib.Regression.Kaczmarz
 public import NLAlib.Regression.Oblique
 public import NLAlib.Regression.Oblivious
 public import NLAlib.Regression.SRHT
 public import NLAlib.Regression.SketchAndPrecondition
+public import NLAlib.Regression.SketchAndProject
 public import NLAlib.Regression.SketchAndSolve
 public import NLAlib.Regression.SubGaussian
 public import NLAlib.Sketching.Gaussian.Gaussian
@@ -412,5 +414,3 @@ public import NLAlib.Sketching.Sparse.CountSketchEmbedding
 public import NLAlib.Sketching.Structured.Flattening
 public import NLAlib.Sketching.Structured.SRHT
 public import NLAlib.Sketching.Structured.SRHTMultiplication
-public import NLAlib.Solvers.Kaczmarz
-public import NLAlib.Solvers.SketchAndProject
