@@ -339,7 +339,19 @@ most the sum (`abs_add_le`); `minimaxError_le_of_isUniformApproxOn` with `minima
 theorem minimaxError_add_le {f g : ℝ → ℝ} {s : Set ℝ} (hs : IsCompact s)
     (hf : ContinuousOn f s) (hg : ContinuousOn g s) (n : ℕ) :
     minimaxError (fun x => f x + g x) s n ≤ minimaxError f s n + minimaxError g s n := by
-  sorry
+  obtain ⟨p, hp, hpε⟩ := exists_degree_le_isUniformApproxOn_minimaxError hs hf n
+  obtain ⟨q, hq, hqε⟩ := exists_degree_le_isUniformApproxOn_minimaxError hs hg n
+  refine minimaxError_le_of_isUniformApproxOn (p := p + q)
+    ((degree_add_le _ _).trans (max_le hp hq))
+    (add_nonneg (minimaxError_nonneg _ _ _) (minimaxError_nonneg _ _ _)) ?_
+  intro x hx
+  have h1 := hpε x hx
+  have h2 := hqε x hx
+  simp only [Polynomial.eval_add]
+  calc |p.eval x + q.eval x - (f x + g x)|
+      = |(p.eval x - f x) + (q.eval x - g x)| := by ring_nf
+    _ ≤ |p.eval x - f x| + |q.eval x - g x| := abs_add_le _ _
+    _ ≤ _ := add_le_add h1 h2
 
 /-- **Affine invariance of the minimax error**: for $\alpha \ne 0$,
 $E_n\bigl(f(\alpha\,\cdot + \beta); \{t : \alpha t + \beta \in s\}\bigr) = E_n(f; s)$, for every
