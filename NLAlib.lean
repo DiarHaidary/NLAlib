@@ -42,6 +42,7 @@ public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
+public import NLAlib.ForMathlib.InformationTheory.TotalVariation
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
 public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
@@ -343,6 +344,7 @@ public import NLAlib.Probability.QuadraticForm.HansonWright
 public import NLAlib.Probability.QuadraticForm.HansonWright.LinearImage
 public import NLAlib.Probability.QuadraticForm.HansonWright.OffDiagonal
 public import NLAlib.Probability.QuadraticForm.Moments
+public import NLAlib.Probability.QueryModel.Basic
 public import NLAlib.Probability.SubExponential.Basic
 public import NLAlib.Probability.SubExponential.Tail
 public import NLAlib.Probability.SubGaussian.Basic
@@ -351,6 +353,7 @@ public import NLAlib.Probability.SubGaussian.Square
 public import NLAlib.Probability.SubGaussianVector.Basic
 public import NLAlib.Probability.SubGaussianVector.Norm
 public import NLAlib.Probability.Tail
+public import NLAlib.RandomMatrix.DeferredDecision
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.BlockTail

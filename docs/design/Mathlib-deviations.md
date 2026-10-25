@@ -543,6 +543,21 @@ optimality), `IsGradedKrylovBasis` and `arnoldiMatrix` (on Mathlib's `gramSchmid
 `gramSchmidtQ`), and the recurrences `lanczosState` and `cgState` are additions with no Mathlib
 counterpart. No numbered deviation is introduced.
 
+Lower bounds LB-A (2026-10-25, `docs/design/Probability-MatvecQueryModel.md`): `QueryAlgorithm`,
+a deterministic adaptive query algorithm as transcript functions (`query i` of the first `i`
+responses, `output` of all `q`), with `history`, `transcript`, `run`, `queries`, `queryMatrix`,
+`IsNonAdaptive`, `IsMeasurable`, `IsMeasurableFamily` (randomized algorithms as seeded families)
+and `gramSimulation`; Mathlib's nearest notions are Markov kernels with `Kernel.traj` and the
+decision-theory risks `bayesRisk`, `minimaxRisk` (`Mathlib/Probability/Decision`), which state
+randomized procedures as kernels; a bridge (an algorithm and a seed law give a kernel from inputs
+to outputs) is deferred until a consumer states a result in that API. `QueryAlgorithm.resample`
+(the matrix with its unqueried block replaced) has no counterpart. `InformationTheory.tvDist`,
+the total variation distance of two measures as a real supremum over measurable sets, is an
+addition next to Mathlib's `InformationTheory.klDiv`; Mathlib's
+`MeasureTheory.SignedMeasure.totalVariation` is the variation measure of one signed measure, and
+a bridge (for probability measures `tvDist μ ν` is half the total mass of the variation of
+`μ - ν` as a signed measure) is deferred. No numbered deviation is introduced.
+
 ## Used as Mathlib has them
 
 `Matrix.IsHermitian`, `Matrix.PosSemidef`, `Matrix.PosDef` and the Loewner order,
