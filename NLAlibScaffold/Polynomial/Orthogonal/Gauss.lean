@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Polynomial.Orthogonal.Gauss
-public import NLAlib.Polynomial.Approximation.MinimaxError
+public import NLAlibScaffold.Polynomial.Approximation.MinimaxError
 
 /-!
 # The Gauss rule and the minimax error: the theorems of stage Poly-Best
@@ -48,33 +48,10 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_continuousOn
   have hint : Integrable f μ := by
     have h := hf.integrableOn_Icc (μ := μ)
     rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
-  obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hf
-  -- the zero polynomial is a uniform approximation with error `C`, so the set is nonempty
-  have hne : {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ ((2 * k + 1 : ℕ) : WithBot ℕ) ∧
-      Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b) ε}.Nonempty :=
-    ⟨C, 0, by simp, fun x hx => by simpa [Real.dist_eq] using hC x hx⟩
-  have key : ∀ δ > 0, |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
-      2 * (minimaxError f (Set.Icc a b) (2 * k + 1) + δ) * μ.real Set.univ := by
-    intro δ hδ
-    have hlt0 : minimaxError f (Set.Icc a b) (2 * k + 1) < _ := lt_add_of_pos_right _ hδ
-    obtain ⟨ε, ⟨p, hp, hε⟩, hlt⟩ := exists_lt_of_csInf_lt hne hlt0
-    have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
-      hp.trans_lt (by exact_mod_cast (by omega : 2 * k + 1 < 2 * (k + 1)))
-    have h := abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn hμ hint hp' hε
-    have hm : 0 ≤ μ.real Set.univ := measureReal_nonneg
-    nlinarith [mul_le_mul_of_nonneg_right hlt.le hm]
-  refine le_of_forall_pos_le_add fun ε hε => ?_
-  have hm : 0 ≤ μ.real Set.univ := measureReal_nonneg
-  refine (key (ε / (2 * (μ.real Set.univ + 1))) (by positivity)).trans ?_
-  have h2 : 2 * (ε / (2 * (μ.real Set.univ + 1))) * μ.real Set.univ ≤ ε := by
-    have h3 : 2 * (ε / (2 * (μ.real Set.univ + 1))) * μ.real Set.univ =
-        ε * (μ.real Set.univ / (μ.real Set.univ + 1)) := by
-      have h0 : μ.real Set.univ + 1 ≠ 0 := by positivity
-      field_simp
-    have h4 : μ.real Set.univ / (μ.real Set.univ + 1) ≤ 1 := by
-      rw [div_le_one (by positivity)]; linarith
-    rw [h3]
-    nlinarith
-  linarith
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * k + 1)
+  have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * k + 1 < 2 * (k + 1)))
+  exact abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn hμ hint hp' hε
 
 end NLAlib
