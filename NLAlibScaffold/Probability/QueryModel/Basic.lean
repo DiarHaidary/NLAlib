@@ -247,7 +247,7 @@ Proof: S, two lines. `⟨fun j hj => halg.measurable_query j (by omega), measura
 (`QueryAlgorithm.truncate`). -/
 theorem IsMeasurable.truncate {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable) {i : ℕ}
     (hi : i ≤ q) : (alg.truncate i).IsMeasurable := by
-  sorry
+  exact ⟨fun j hj => halg.measurable_query j (by omega), measurable_const⟩
 
 end Measurable
 
