@@ -29,6 +29,8 @@ and tends to $0$ on an interval (Weierstrass).
 * `NLAlib.exists_degree_le_isUniformApproxOn_minimaxError`: a best approximant exists.
 * `NLAlib.isLeast_minimaxError`, `NLAlib.minimaxError_eq_infDist`: $E_n$ as a minimum and as
   Mathlib's distance to the restricted polynomials in `C(s, ℝ)`.
+* `NLAlib.degree_minimaxPoly_le`, `NLAlib.isUniformApproxOn_minimaxPoly`: the chosen best
+  approximation `NLAlib.minimaxPoly`.
 * `NLAlib.antitone_minimaxError`, `NLAlib.minimaxError_le_minimaxError_of_subset`,
   `NLAlib.minimaxError_add_eval`, `NLAlib.minimaxError_const_mul`, `NLAlib.minimaxError_add_le`:
   the algebra of $E_n$.
@@ -110,6 +112,28 @@ theorem minimaxError_eq_infDist {s : Set ℝ} [CompactSpace s] {f : ℝ → ℝ}
       ((degreeLE ℝ n).map (toContinuousMapOnAlgHom s).toLinearMap : Set C(s, ℝ)) := by
   sorry
 
+/-! ### The chosen best approximation -/
+
+/-- The chosen best approximation has degree at most $n$:
+$\deg(\mathrm{minimaxPoly}\ f\ s\ n) \le n$, for every $f$, $s$ and $n$ (the junk value is $0$).
+Proof: S, about 4 lines. Unfold `minimaxPoly`; `split_ifs`: the chosen polynomial's
+`h.choose_spec.1`, and `degree_zero` with `bot_le` for the junk value. -/
+theorem degree_minimaxPoly_le (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) :
+    (minimaxPoly f s n).degree ≤ n := by
+  sorry
+
+/-- **The chosen best approximation attains the minimax error**: for $s$ compact and $f$
+continuous on $s$, $\lvert f(x) - \mathrm{minimaxPoly}\ f\ s\ n\ (x) \rvert \le E_n(f; s)$ for
+all $x \in s$.
+Proof: S, about 4 lines. Unfold `minimaxPoly`; the condition holds by
+`exists_degree_le_isUniformApproxOn_minimaxError hs hf n`, so `dif_pos` and
+`h.choose_spec.2`. -/
+theorem isUniformApproxOn_minimaxPoly {f : ℝ → ℝ} {s : Set ℝ} (hs : IsCompact s)
+    (hf : ContinuousOn f s) (n : ℕ) :
+    Metric.IsUniformApproxOn (fun x => (minimaxPoly f s n).eval x) f s
+      (minimaxError f s n) := by
+  sorry
+
 /-! ### The algebra of the minimax error -/
 
 /-- The minimax error is antitone in the degree: for $s$ compact and $f$ continuous on $s$,
@@ -143,7 +167,7 @@ theorem minimaxError_add_eval (f : ℝ → ℝ) (s : Set ℝ) {n : ℕ} {q : ℝ
 
 /-- The minimax error is absolutely homogeneous: $E_n(cf; s) = \lvert c \rvert E_n(f; s)$, for
 every $c$, $f$, $s$ and $n$ (junk values included). [Rivlin1981, Ch. 1] (locator to check).
-Proof: S, about 20 lines. For $c = 0$ both sides are $0$ (`minimaxError_nonneg`, the zero
+Proof: M, about 20 lines. For $c = 0$ both sides are $0$ (`minimaxError_nonneg`, the zero
 polynomial). For $c \ne 0$ the set for $cf$ is $\lvert c \rvert$ times the set for $f$
 ($p \mapsto C c \cdot p$, `degree_C_mul`, `abs_mul`); `Real.sInf_smul_of_nonneg`; the empty and
 unbounded (empty $s$) cases give $0$ on both sides. -/

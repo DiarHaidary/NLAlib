@@ -1,7 +1,12 @@
 # Design note: best polynomial approximation (stage Poly-Best)
 
-Status: draft for the maintainer, 2026-10-25; skeleton written the same day (branch
-`design/polybest`, from `df3f025`). Not yet reviewed by Fable.
+Status: approved by the maintainer, 2026-10-25 (decision sheet `state/decisions/Poly-Best.json`:
+APPROVE (a); OQ1–OQ5 and OQ7 as recommended, OQ6 (b), against the recommendation, §10), after
+the Fable review (`~/nlalib-harness/reports/Review-Fable-PolyBest-Design.md`: approve; its two
+should items and the E7/E11 nits are applied here). Revised the same day on `design/polybest`,
+rebased onto `3b2c0fd`: the named best approximation `minimaxPoly` (OQ6 (b), §2.3) with four
+statements, E6 public, E7 split into three private lemmas, `Proof:` labels aligned with the
+targets.
 
 The minimax error $E_n(f; s)$, existence of a best uniform approximant, Chebyshev's
 equioscillation theorem (characterisation and uniqueness), de la Vallée Poussin's lower bound,
@@ -15,7 +20,7 @@ parallel); the two touch no common file except that both may add to
 `NLAlib/Polynomial/Orthogonal/Gauss.lean` (here one corollary, §3.4).
 
 Every signature in §3 is in the skeleton and elaborates: `lake build NLAlibScaffold` (with the two
-new `NLAlib` modules built under `--wfail`) gives 36 `sorry` warnings and nothing else;
+new `NLAlib` modules built under `--wfail`) gives 43 `sorry` warnings and nothing else;
 `scripts/check_rules.py --files` and `scripts/check_refs.py` pass on the new files. The
 extraction-based name check (`check_names.py`, N1–N18) was not run (it needs
 `explore_data.sh`); the names were chosen by hand against §4 and are listed for review in §9.
@@ -24,13 +29,13 @@ extraction-based name check (`check_names.py`, N1–N18) was not run (it needs
 
 | | |
 |---|---|
-| New definitions | `minimaxError f s n` (in `NLAlib`), the predicate `AlternatesOn g s k ε` (in `NLAlib`) |
+| New definitions | `minimaxError f s n`, the chosen best approximation `minimaxPoly f s n`, the predicate `AlternatesOn g s k ε` (all in `NLAlib`) |
 | New files | `Polynomial/Approximation/MinimaxError.lean`, `Polynomial/Approximation/Equioscillation.lean`; three ForMathlib files |
-| Statements | 36 sorried (S 23, M 11, L 2, H 0), in 12 scaffold files |
+| Statements | 43 sorried (S 28, M 14, L 1, H 0), in 12 scaffold files; 3 of them private (the E7 split) |
 | Glue | 8 corollaries in 7 existing files: Lanczos-FA, Lanczos quadrature, Gauss rule, SLQ (split and tail), Jackson, Bernstein ellipse, $1/x$ |
 | Prototype | `Polynomial/BestApproximation/{Basic,MinimaxError,Affine,AlternationLowerBound,EquioscillationCertificate,ExtremalSigns,Equioscillation,AlternatingInterpolant,BestInterpolant}` and three ForMathlib files: every L/M statement here has a proved prototype counterpart (§6) |
 | Mathlib overlap | none for the theory (searched, §7); reused: Weierstrass, `IsCompact.exists_isLeast`, Chebyshev `node`/`eval_T_real_node`, `Lagrange`, `eq_zero_of_degree_lt_of_eval_index_eq_zero` |
-| Open questions | 7 (§10), each with a recommendation |
+| Open questions | 7 (§10), all decided 2026-10-25: (a) except OQ6 (b) |
 
 Three choices carry the design:
 
@@ -57,7 +62,8 @@ In: the definition and basic algebra of $E_n(f; s)$; existence of a best approxi
 compact set; affine invariance and the change of interval to $[-1, 1]$; $E_n \to 0$ on an
 interval (Weierstrass); de la Vallée Poussin (on any set, any $f$); the equioscillation theorem on
 $[a, b]$ (sufficiency on any set, necessity on intervals), uniqueness, interpolation at $n + 1$
-interior points; the Chebyshev example $E_n(x^{n+1}; [-1, 1]) = 2^{-n}$; $E_n$ forms of
+interior points; the Chebyshev example $E_n(x^{n+1}; [-1, 1]) = 2^{-n}$; a named best approximation
+`minimaxPoly` (OQ6), canonical on intervals; $E_n$ forms of
 Jackson, Bernstein-ellipse and $1/x$ upper bounds; $E_n$ forms of the five Krylov/SLQ/Gauss
 bounds.
 
@@ -67,7 +73,7 @@ and the 30 `Lebesgue*`/`Interpolation*`/`Gap*` files: gap report row 6); the exp
 bounds ($E_n(1/x)$ exact, $\lvert x\rvert$, sign, $e^{-x}$: gap report rows 3 and 2's
 "prerequisite"); Remez; Haar spaces and equioscillation on general compact sets; complex-valued
 $f$ (Kolmogorov criterion); strong uniqueness and continuity of the best-approximation operator;
-odd/even symmetry of best approximants; a named best-approximation function (OQ6); the
+odd/even symmetry of best approximants; the
 `MatchesMoments` and spectral-density (Wasserstein) restatements.
 
 ## 2. Objects
@@ -111,6 +117,35 @@ trivial, and $E_n \ge 0$).
 §5.3 row:
 
 | alternation (equioscillation) | `AlternatesOn g s k ε`: `k` increasing points of `s`, a sign `σ = 1 ∨ σ = -1`, `ε ≤ σ * (-1) ^ i * g (x i)`; equioscillation of an error `f - p` is `AlternatesOn (fun x => f x - p.eval x) s (n + 2) ε` together with `Metric.IsUniformApproxOn (fun x => p.eval x) f s ε` | `alternatesOn_iff`; `AlternatesOn.exists_eq_of_abs_le`; Mathlib has none |
+
+### 2.3 `minimaxPoly` (in `NLAlib/Polynomial/Approximation/MinimaxError.lean`, written)
+
+Added on the maintainer's decision OQ6 (b) ("we may need to use this for hard constructions"):
+constructions such as Remez iterates, the Lebesgue-constant comparison $\lVert f - Lf\rVert \le
+(1 + \lVert L \rVert)E_n$ with $L$ applied to the best approximation, or a sequence of best
+approximants indexed by $n$, need "the" best approximation as a term, not an `obtain`.
+
+```lean
+open Classical in
+noncomputable def minimaxPoly (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) : ℝ[X] :=
+  if h : ∃ p : ℝ[X], p.degree ≤ n ∧
+      Metric.IsUniformApproxOn (fun x => p.eval x) f s (minimaxError f s n) then
+    h.choose
+  else 0
+```
+
+Arguments `f s n` in the order of `minimaxError` (the decision sheet's `minimaxPoly f a b n` is
+the interval case `minimaxPoly f (Set.Icc a b) n`): existence (B3) holds on every compact set,
+and only uniqueness needs the interval. The `dite` with junk value `0` (rather than
+`Classical.epsilon`) makes the degree bound B14 unconditional. The API is minimal: B14 (degree
+at most $n$, always), B15 (it attains $E_n$, for $s$ compact and $f$ continuous on $s$), E13 (it
+equioscillates on $[a, b]$, E7 applied), E14 (every best approximation on $[a, b]$ equals it,
+E9 applied). Interpolation (E10) and the certificate (E5) apply to it through B14/B15 in one
+line each and get no restatement.
+
+§5.3 row:
+
+| best approximation | `minimaxPoly f s n : ℝ[X]`, a chosen `p` with `p.degree ≤ n` and `Metric.IsUniformApproxOn (fun x => p.eval x) f s (minimaxError f s n)`; junk `0` when none exists; canonical on `Set.Icc a b`, `a < b`, `f` continuous (E14) | `degree_minimaxPoly_le`, `isUniformApproxOn_minimaxPoly`, `eq_minimaxPoly_of_isUniformApproxOn_minimaxError`; Mathlib has none |
 
 ## 3. Statement shapes
 
@@ -166,6 +201,8 @@ Hypotheses: theorems that need attainment take `(hs : IsCompact s) (hf : Continu
 | B11 | `minimaxError_comp_mul_add` | `α ≠ 0 → minimaxError (fun t => f (α * t + β)) ((fun t => α * t + β) ⁻¹' s) n = minimaxError f s n` | M |
 | B12 | `minimaxError_comp_Icc_neg_one_one` | `a < b → minimaxError (fun t => f (((b - a) * t + b + a) / 2)) (Set.Icc (-1) 1) n = minimaxError f (Set.Icc a b) n` | S |
 | B13 | `tendsto_minimaxError_atTop` | `ContinuousOn f (Set.Icc a b) → Tendsto (minimaxError f (Set.Icc a b)) atTop (𝓝 0)` | S |
+| B14 | `degree_minimaxPoly_le` | `(minimaxPoly f s n).degree ≤ n` | S |
+| B15 | `isUniformApproxOn_minimaxPoly` | `IsCompact s → ContinuousOn f s → IsUniformApproxOn (minimaxPoly f s n).eval f s (minimaxError f s n)` | S |
 
 Notes. B2 takes `0 ≤ ε` rather than `s.Nonempty`, like `residualMinimax_le`: it is the weaker
 requirement, and a consumer with nonempty `s` gets it from `hε.nonneg hs`. B5 takes a
@@ -185,21 +222,27 @@ on the partial application, which the argument order `f s n` makes possible.
 | E3 | `AlternatesOn.exists_le_abs_sub_eval` | `AlternatesOn (f - p) s (n + 2) ε → p.degree ≤ n → q.degree ≤ n → ∃ x ∈ s, ε ≤ |f x - q.eval x|` | M |
 | E4 | `AlternatesOn.le_minimaxError` | `AlternatesOn (f - p) s (n + 2) ε → p.degree ≤ n → IsUniformApproxOn p.eval f s η → ε ≤ minimaxError f s n` | S |
 | E5 | `AlternatesOn.minimaxError_eq` | `AlternatesOn (f - p) s (n + 2) ε → p.degree ≤ n → IsUniformApproxOn p.eval f s ε → minimaxError f s n = ε` | S |
-| E6 | `exists_degree_le_or_alternatesOn` (private) | sign-block induction, see below | L |
-| E7 | `alternatesOn_of_isUniformApproxOn_minimaxError` | `a < b → ContinuousOn f (Icc a b) → p.degree ≤ n → IsUniformApproxOn p.eval f (Icc a b) (minimaxError f (Icc a b) n) → AlternatesOn (f - p) (Icc a b) (n + 2) (minimaxError f (Icc a b) n)` | L |
+| E6 | `exists_degree_le_or_alternatesOn` | sign-block induction, see below | L |
+| E7a | `alternatesOn_Icc_zero_of_eq_zero` (private) | `a < b → (∀ x ∈ Icc a b, g x = 0) → AlternatesOn g (Icc a b) k 0` | S |
+| E7b | `exists_isLeast_abs_sub_eval_eq_minimaxError` (private) | best `p`, `0 < E_n` → `∃ c, IsLeast {x \| x ∈ Icc a b ∧ \|f x - p.eval x\| = E_n} c` | M |
+| E7c | `not_forall_mul_pos_of_isUniformApproxOn_minimaxError` (private) | best `p`, `0 < E_n`, `q.degree ≤ n` → `¬ ∀ x ∈ Icc a b, \|f x - p.eval x\| = E_n → 0 < (f x - p.eval x) * q.eval x` | M |
+| E7 | `alternatesOn_of_isUniformApproxOn_minimaxError` | `a < b → ContinuousOn f (Icc a b) → p.degree ≤ n → IsUniformApproxOn p.eval f (Icc a b) (minimaxError f (Icc a b) n) → AlternatesOn (f - p) (Icc a b) (n + 2) (minimaxError f (Icc a b) n)` | M |
 | E8 | `isUniformApproxOn_minimaxError_iff_exists_alternatesOn` | best `↔ ∃ ε, IsUniformApproxOn p.eval f (Icc a b) ε ∧ AlternatesOn (f - p) (Icc a b) (n + 2) ε` | S |
 | E9 | `eq_of_isUniformApproxOn_minimaxError` | two best approximants of degree at most `n` on `Icc a b` are equal | M |
 | E10 | `exists_eval_eq_of_isUniformApproxOn_minimaxError` | best `p` → `∃ t : Finset ℝ, t.card = n + 1 ∧ ↑t ⊆ Ioo a b ∧ ∀ x ∈ t, p.eval x = f x` | M |
 | E11 | `alternatesOn_eval_T_real` | `AlternatesOn (fun x => (T ℝ n).eval x) (Icc (-1) 1) (n + 1) 1` | M |
 | E12 | `minimaxError_pow_Icc_neg_one_one` | `minimaxError (fun x => x ^ (n + 1)) (Icc (-1) 1) n = (2 ^ n)⁻¹` | M |
+| E13 | `alternatesOn_minimaxPoly` | `a < b → ContinuousOn f (Icc a b) → AlternatesOn (f - minimaxPoly f (Icc a b) n) (Icc a b) (n + 2) (minimaxError f (Icc a b) n)` | S |
+| E14 | `eq_minimaxPoly_of_isUniformApproxOn_minimaxError` | `a < b → ContinuousOn f (Icc a b) → p.degree ≤ n → IsUniformApproxOn p.eval f (Icc a b) (minimaxError f (Icc a b) n) → p = minimaxPoly f (Icc a b) n` | S |
 
 (`f - p` abbreviates `fun x => f x - p.eval x` in the table.)
 
-E6, the induction (private: its extra clause "$e(a)q(x) > 0$ for $x \le a$" exists only to
-make the induction compose; a later weighted version would restate it):
+E6, the induction (public, review item 1: the compact-set version of E7 (OQ5) and the weighted
+version (§11) reuse it verbatim, and CONTRIBUTING §3 reserves `private` for proof-local helpers;
+its extra clause "$e(a)q(x) > 0$ for $x \le a$" is what makes the induction compose):
 
 ```lean
-private theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : ℝ}
+theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : ℝ}
     (he : ContinuousOn e (Set.Icc a b)) (hE : 0 < E) (hab : a ≤ b) (hea : |e a| = E) :
     (∃ q : ℝ[X], q.degree ≤ n ∧ (∀ x ∈ Set.Icc a b, |e x| = E → 0 < e x * q.eval x) ∧
       ∀ x ≤ a, 0 < e a * q.eval x) ∨
@@ -209,6 +252,11 @@ private theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a 
 The prototype states it for `Continuous e` on ℝ and extends $f$ by `IccExtendCM`; with
 `ContinuousOn` on $[a, b]$ (compactness of level sets by `ContinuousOn.preimage_isClosed_of_isClosed`)
 E7 needs no extension.
+
+E7 is about 110 lines in all (the prototype's 100 plus 30 for the zero branch, less the
+extension, plus the `‖g‖ = E` bridge of the pointwise interface; review item 4), so the split is
+planned: E7a (zero error), E7b (the least extremal point exists), E7c (the descent step through
+F2), each a private target directly above E7, and E7 itself about 25 lines.
 
 Why these shapes.
 
@@ -328,6 +376,7 @@ No flags (nothing placed away from its home).
 | E9 | `Equioscillation: eq_of_norm_sub_eq_minimaxError` | proof |
 | E10 | `AlternatingInterpolant: exists_interpolate_eq_of_alternation`; `BestInterpolant: exists_interpolate_eq_of_norm_sub_eq_minimaxError` | proof; `Finset` conclusion |
 | E11, E12 | none (prototype `Minimax.lean` has the monic minimax, already ported as Poly1) | new, from Mathlib's `node` and E5 |
+| `minimaxPoly`, B14, B15, E13, E14 | none (the prototype has no named best approximation) | new; one application of B3, E7, E9 each |
 
 Not reproduced: the `polynomialApproximationSpace` definition (inlined in B5; OQ1),
 `Basic`'s Lebesgue, rational and node-simplex definitions (out of scope), the aggregator
@@ -348,7 +397,7 @@ Used: `exists_polynomial_near_of_continuousOn` (`Topology/ContinuousMap/Weierstr
 `IsCompact.exists_infDist_eq_dist`, `IsClosed.exists_infDist_eq_dist` (the latter needs a proper
 ambient space, so F3 is new); `FiniteDimensional.proper` (F3); `Polynomial.toContinuousMapOnAlgHom`,
 `Polynomial.degreeLE`, `degreeLTEquiv` (B3, B5); `Polynomial.Chebyshev.node`,
-`eval_T_real_node`, `strictAntiOn_node`, `node_mem_Icc`, `abs_eval_T_real_le_one`
+`eval_T_real_node`, `node_lt`, `node_mem_Icc`, `abs_eval_T_real_le_one`
 (`Analysis/SpecialFunctions/Trigonometric/Chebyshev/{Extremal,RootsExtrema}`, E11, E12);
 `Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero`,
 `Polynomial.eq_of_degree_sub_lt_of_eval_index_eq`, `Lagrange.eq_interpolate_of_eval_eq`
@@ -374,10 +423,20 @@ follows `integral_const_mul` for `fun x => c * f x`. `minimaxError_add_eval` nam
 `q.eval`. `antitone_minimaxError` (N3 allows `antitone`). E3–E5 live in the `AlternatesOn`
 namespace (N9: the predicate is the first explicit argument). E7 and E9/E10 keep
 `_of_isUniformApproxOn_minimaxError` to say which uniform approximation is assumed.
-`alternatesOn_eval_T_real` follows Mathlib's `eval_T_real_…`. These should be confirmed by
+`alternatesOn_eval_T_real` follows Mathlib's `eval_T_real_…`. `minimaxPoly` pairs with
+`minimaxError` (Mathlib's `Polynomial` abbreviation `Poly` is not used for terms, so
+`minimaxPolynomial` was the alternative; the short form matches the decision sheet), and its
+lemmas are named by the projection (`degree_minimaxPoly_le` like `degree_X_le`) or by the
+conclusion `eq_minimaxPoly_of_…`. The three E7 helpers are private and named by their
+conclusions. These should be confirmed by
 `check_names.py` on the extraction before the first proof PR.
 
-## 10. Open questions for the maintainer
+## 10. Open questions for the maintainer (decided 2026-10-25)
+
+Decisions (`state/decisions/Poly-Best.json`): APPROVE (a); OQ1 (a); OQ2 (a); OQ3 (a); OQ4 (a);
+OQ5 (a); **OQ6 (b)**, against the recommendation, maintainer's comment "we may need to use this
+for hard constructions?"; OQ7 (a). The Fable review concurred with every (a). The questions are
+kept below as asked; each ends with the decision.
 
 **OQ1. The definition of $E_n$.** (a) `sInf` of the errors `ε` of degree-`n` polynomials,
 through `Metric.IsUniformApproxOn`, on a raw `f : ℝ → ℝ` and `s : Set ℝ`; theorems needing
@@ -386,39 +445,43 @@ attainment assume `IsCompact s`, `ContinuousOn f s` (recommended). (b) The `⨅ 
 polynomial has unbounded error (§2.1). (c) The prototype: `Metric.infDist` in `C(s, ℝ)`,
 `[CompactSpace s]`: the cleanest analysis, but every consumer has to build a continuous map from
 `f` and `hf` and convert `‖·‖` back to pointwise bounds; it is kept as the bridge B5.
-Recommendation (a): the consumers' shape, junk only where the true value is $+\infty$.
+Recommendation (a): the consumers' shape, junk only where the true value is $+\infty$. **Decided: (a).**
 
 **OQ2. Real or `RCLike` values.** (a) `f : ℝ → ℝ` only (recommended). (b) `f : ℝ → 𝕜` with
 `𝕜[X]`: existence and the algebra generalise, but equioscillation is false for complex values
 (the characterisation is Kolmogorov's criterion), and the consumers are real. Recommendation
 (a); a complex `minimaxError` is a later definition with a bridge, if a non-Hermitian consumer
-appears.
+appears. **Decided: (a).**
 
 **OQ3. Degree convention in the glue.** (a) `q + 1` Lanczos steps (Gauss points) with $E_q$ /
 $E_{2q+1}$, as the existing Lipschitz and analytic corollaries (recommended). (b) `q` steps with
 a hypothesis `n < q` (or `2 * n < …`) and $E_n$: more flexible, one more hypothesis. (c) `q`
 steps and $E_{q-1}$ with natural subtraction: wrong at `q = 0`. Recommendation (a).
+**Decided: (a).**
 
 **OQ4. The alternation predicate.** (a) One predicate `AlternatesOn g s k ε` with the sign
 $\sigma$ and a level (recommended). (b) No predicate: the prototype's raw tuples
 (`StrictMono v`, products `< 0`, `ε ≤ |…|`) in each statement, which CONTRIBUTING §5.4 forbids
 once repeated. (c) Two predicates (alternation; equioscillation with equalities). Recommendation
-(a): E2 gives the equalities, and the uniform half is the existing interface.
+(a): E2 gives the equalities, and the uniform half is the existing interface. **Decided: (a).**
 
 **OQ5. Domain of the necessity theorem.** (a) $[a, b]$, $a < b$, now; the general compact set
 with at least $n + 2$ points later, same name (recommended). (b) General compact sets now (an
 extra L for the gaps between components). Recommendation (a): no consumer needs more, and
-sufficiency and de la Vallée Poussin are already general.
+sufficiency and de la Vallée Poussin are already general. **Decided: (a)**, with E6 public so
+the compact-set version reuses it.
 
 **OQ6. A named best approximant.** (a) No definition; existence (B3) and uniqueness (E9) only
 (recommended). (b) `minimaxPoly f a b n : ℝ[X]` by choice, canonical on intervals by E9, with the
 API `degree_le`, `isUniformApproxOn`, `eq_of_…`. Recommendation (a) until a consumer (Remez,
-Lebesgue constants) needs to refer to "the" best approximation as data.
+Lebesgue constants) needs to refer to "the" best approximation as data. **Decided: (b)** ("we
+may need to use this for hard constructions?"): `minimaxPoly f s n` (§2.3) with B14, B15, E13,
+E14; on a general set, canonical on intervals.
 
 **OQ7. Names of the glue.** (a) `…_le_of_continuousOn`, by the distinguishing hypothesis like
 the siblings `…_of_lipschitzOnWith`, `…_of_differentiableOn` (recommended, N8/N9). (b)
 `…_le_minimaxError`, by the right-hand side, which says "the $E_n$ form" but breaks the family
-pattern. Recommendation (a); the docstrings say $E_n$ in the first sentence.
+pattern. Recommendation (a); the docstrings say $E_n$ in the first sentence. **Decided: (a).**
 
 ## 11. Deferred, with what each needs
 
@@ -437,14 +500,15 @@ pattern. Recommendation (a); the docstrings say $E_n$ in the first sentence.
 
 ## 12. Proof plan for dispatch
 
-36 targets (`~/nlalib-harness/pilot/polybest-targets.json`), waves by dependency:
+43 targets (`~/nlalib-harness/pilot/polybest-targets.json`), waves by dependency:
 
-* wave 0 (independent): F1, F2, F3, B1, B2, B8, B9, B11, E1, E2;
-* wave 1: B3 (F3), B12 (B11), B13 (B1, B2), E3 (F1);
-* wave 2: B4, B5, B6, B7, B10, G1–G8 (B3 or B2), E4 (E3), E6;
-* wave 3: E5 (E4, B2), E7 (E6, F2, E1, B2), E11;
-* wave 4: E8, E9, E10, E12.
+* wave 0 (independent): F1, F2, F3, B1, B2, B8, B9, B11, B14, E1, E2, E7a;
+* wave 1: B3 (F3), B12 (B11), B13 (B1, B2), E3 (F1), E7b (B2), E7c (F2, B2);
+* wave 2: B4, B5, B6, B7, B10, B15, G1–G8 (B3 or B2), E4 (E3), E6;
+* wave 3: E5 (E4, B2), E7 (E6, E7a–c, E1), E11;
+* wave 4: E8, E9, E10, E12, E13 (E7, B14, B15);
+* wave 5: E14 (E9, B14, B15).
 
-The two L rows (E6, E7) have complete prototype proofs (150 and 100 lines); their outlines cite
-them, and they are the rows for the Fable outline review. Everything else is S or M with a
-proved prototype counterpart or a direct Mathlib route.
+The L row (E6) has a complete prototype proof (150 lines) and starts on the stronger model; E7
+(prototype 100 lines plus the zero branch) is split into E7a–E7c and a 25-line assembly.
+Everything else is S or M with a proved prototype counterpart or a direct Mathlib route.

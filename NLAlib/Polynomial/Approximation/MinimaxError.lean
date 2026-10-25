@@ -21,6 +21,8 @@ scaffold until proved (`docs/design/Polynomial-BestApproximation.md`).
 ## Main definitions
 
 * `NLAlib.minimaxError`: $E_n(f; s)$.
+* `NLAlib.minimaxPoly`: a best approximation of degree at most $n$, chosen; on an interval, with
+  $f$ continuous, the best approximation.
 -/
 
 @[expose] public section
@@ -42,5 +44,18 @@ $s$, where the infimum is attained. [Trefethen2019, Ch. 10]; [Rivlin1981, Ch. 1]
 noncomputable def minimaxError (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) : ℝ :=
   sInf {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ n ∧
     Metric.IsUniformApproxOn (fun x => p.eval x) f s ε}
+
+open Classical in
+/-- A **best approximation** of $f$ on $s$ by real polynomials of degree at most $n$: some $p$
+with $\deg p \le n$ and $\lvert f(x) - p(x) \rvert \le E_n(f; s)$ for all $x \in s$, chosen.
+It exists for $s$ compact and $f$ continuous on $s$; on an interval $[a, b]$, $a < b$, it is the
+unique best approximation (`NLAlib.eq_minimaxPoly_of_isUniformApproxOn_minimaxError`), so the
+choice is canonical there. Junk value: $0$ when no best approximation of degree at most $n$
+exists. Its degree is at most $n$ in every case. [Trefethen2019, Ch. 10]; [Rivlin1981, Ch. 1]. -/
+noncomputable def minimaxPoly (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) : ℝ[X] :=
+  if h : ∃ p : ℝ[X], p.degree ≤ n ∧
+      Metric.IsUniformApproxOn (fun x => p.eval x) f s (minimaxError f s n) then
+    h.choose
+  else 0
 
 end NLAlib

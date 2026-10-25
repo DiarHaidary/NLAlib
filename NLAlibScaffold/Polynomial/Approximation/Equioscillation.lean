@@ -36,6 +36,9 @@ $E_n(x^{n + 1}; [-1, 1]) = 2^{-n}$.
   theorem.
 * `NLAlib.eq_of_isUniformApproxOn_minimaxError`: uniqueness.
 * `NLAlib.exists_eval_eq_of_isUniformApproxOn_minimaxError`: the best approximation interpolates.
+* `NLAlib.alternatesOn_minimaxPoly`, `NLAlib.eq_minimaxPoly_of_isUniformApproxOn_minimaxError`:
+  the chosen best approximation `NLAlib.minimaxPoly` equioscillates and is the best one.
+* `NLAlib.exists_degree_le_or_alternatesOn`: the sign-block lemma, for later strengthenings.
 * `NLAlib.alternatesOn_eval_T_real`, `NLAlib.minimaxError_pow_Icc_neg_one_one`: the Chebyshev
   example.
 -/
@@ -119,11 +122,15 @@ theorem AlternatesOn.minimaxError_eq {f : ℝ → ℝ} {s : Set ℝ} {n : ℕ} {
 
 /-! ### Chebyshev's equioscillation theorem -/
 
-/-- The sign-block induction behind the equioscillation theorem. Let $e$ be continuous on
-$[a, b]$, $E > 0$ and $\lvert e(a) \rvert = E$. Either some real $q$ of degree at most $n$ has
-$e(x)q(x) > 0$ at every $x \in [a, b]$ with $\lvert e(x) \rvert = E$, and $e(a)q(x) > 0$ for every
+/-- **The sign-block lemma** behind the equioscillation theorem. Let $e$ be continuous on
+$[a, b]$, $E > 0$ and $\lvert e(a) \rvert = E$. Either some real $q$ of degree at most $n$ has the
+sign of $e$ at its extremal points, $e(x)q(x) > 0$ at every $x \in [a, b]$ with
+$\lvert e(x) \rvert = E$, and the sign of $e(a)$ to the left of $a$, $e(a)q(x) > 0$ for every
 $x \le a$; or $e$ alternates at $n + 2$ points of $\{x \in [a, b] : \lvert e(x) \rvert = E\}$
-with level $E$.
+with level $E$. The second clause of the first alternative is what makes the induction on $n$
+compose; the lemma is public so that the equioscillation theorem on compact sets and its
+weighted form (`docs/design/Polynomial-BestApproximation.md`, §11) reuse it.
+[Trefethen2019, Theorem 10.1] (the perturbation argument there, locator to check).
 Proof: L, about 120 lines, by induction on $n$ generalising $a$. If $e$ never takes $-e(a)$ at
 an extremal point of $[a, b]$, the constant $q = e(a)$ works. Otherwise let $y$ be the least
 point of $[a, b]$ with $e(y) = -e(a)$ (compact level set, `IsCompact.exists_isLeast`), $u$ the
@@ -136,11 +143,61 @@ the $n + 2$ points (`Fin.cons`, `Fin.strictMono_cons`). The base case $n = 0$ is
 with $q$ constant and the pair $(a, y)$. Prototype:
 `NLAlib.exists_polynomial_extremal_sign_or_alternation`
 (`Polynomial/BestApproximation/ExtremalSigns`, 150 lines, proved). -/
-private theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : ℝ}
+theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : ℝ}
     (he : ContinuousOn e (Set.Icc a b)) (hE : 0 < E) (hab : a ≤ b) (hea : |e a| = E) :
     (∃ q : ℝ[X], q.degree ≤ n ∧ (∀ x ∈ Set.Icc a b, |e x| = E → 0 < e x * q.eval x) ∧
       ∀ x ≤ a, 0 < e a * q.eval x) ∨
     AlternatesOn e {x | x ∈ Set.Icc a b ∧ |e x| = E} (n + 2) E := by
+  sorry
+
+/-- An error that vanishes on $[a, b]$, $a < b$, alternates there at any number $k$ of points
+with level $0$: the zero-error case of the equioscillation theorem.
+Proof: S, about 20 lines. The equispaced points $x_i = a + (b - a)i/(k + 1)$ (strictly increasing,
+in $[a, b]$: `div_lt_div_of_pos_right`, `div_le_iff₀`; prototype
+`exists_equioscillation_of_norm_sub_eq_minimaxError`, zero branch), $\sigma = 1$, and
+$0 \le 1 \cdot (-1)^i \cdot 0$ by `hg`. -/
+private theorem alternatesOn_Icc_zero_of_eq_zero {g : ℝ → ℝ} {a b : ℝ} (hab : a < b) (k : ℕ)
+    (hg : ∀ x ∈ Set.Icc a b, g x = 0) : AlternatesOn g (Set.Icc a b) k 0 := by
+  sorry
+
+/-- A best approximation with positive error attains it: if $\deg p \le n$,
+$\lvert f - p \rvert \le E_n(f; [a, b])$ on $[a, b]$ and $E_n(f; [a, b]) > 0$, the extremal set
+$\{x \in [a, b] : \lvert f(x) - p(x) \rvert = E_n\}$ has a least element.
+Proof: M, about 25 lines. The extremal set is closed in the compact $[a, b]$
+(`ContinuousOn.preimage_isClosed_of_isClosed` with `(hf.sub p.continuousOn).abs`,
+`isClosed_singleton`), so `IsCompact.exists_isLeast` once it is nonempty. Nonempty: otherwise
+$\lvert f - p \rvert < E_n$ on $[a, b]$ (`hbest`, `lt_of_le_of_ne`); $[a, b]$ is nonempty (else
+$E_n = 0$: `Set.Icc_eq_empty`, `Real.sInf_univ`), so `IsCompact.exists_isMaxOn` gives
+$M = \max \lvert f - p \rvert < E_n$ and `minimaxError_le_of_isUniformApproxOn hp` with $M$
+contradicts it. -/
+private theorem exists_isLeast_abs_sub_eval_eq_minimaxError {f : ℝ → ℝ} {a b : ℝ}
+    (hf : ContinuousOn f (Set.Icc a b)) {n : ℕ} {p : ℝ[X]} (hp : p.degree ≤ n)
+    (hbest : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b)
+      (minimaxError f (Set.Icc a b) n))
+    (hE : 0 < minimaxError f (Set.Icc a b) n) :
+    ∃ c, IsLeast {x | x ∈ Set.Icc a b ∧ |f x - p.eval x| = minimaxError f (Set.Icc a b) n} c := by
+  sorry
+
+/-- The descent step: a best approximation $p$ with positive error admits no correction $q$ of
+degree at most $n$ with the sign of $f - p$ at every extremal point of $[a, b]$.
+Proof: M, about 45 lines. Suppose $q$ has the signs; $E := E_n > 0$. Restrict to
+`C(Set.Icc a b, ℝ)` (compact by `isCompact_Icc`): $g$ the restriction of $f - p$
+(`ContinuousOn.restrict`), $h :=$ `q.toContinuousMapOn (Set.Icc a b)`. Then
+$\lVert g \rVert = E$: $\le$ by `ContinuousMap.norm_le` and `hbest`; $\ge$ because
+`minimaxError_le_of_isUniformApproxOn hp` with $\lVert g \rVert$ (`ContinuousMap.norm_coe_le_norm`)
+gives $E \le \lVert g \rVert$. `ContinuousMap.exists_pos_norm_sub_smul_lt g h` (signs from the
+hypothesis at $|g x| = \lVert g \rVert$) gives $t > 0$ with $\lVert g - t h \rVert < E$; the
+polynomial $p + t q$ has degree at most $n$ (`degreeLE`, `Submodule.add_mem`, `smul_mem`) and
+error at most $\lVert g - t h \rVert$ on $[a, b]$ (`eval_add`, `eval_smul`, `ring`), so
+`minimaxError_le_of_isUniformApproxOn` gives $E \le \lVert g - t h \rVert < E$. Prototype: the
+left case of `NLAlib.exists_alternating_extrema_of_norm_sub_eq_minimaxError`. -/
+private theorem not_forall_mul_pos_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : ℝ}
+    (hf : ContinuousOn f (Set.Icc a b)) {n : ℕ} {p : ℝ[X]} (hp : p.degree ≤ n)
+    (hbest : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b)
+      (minimaxError f (Set.Icc a b) n))
+    (hE : 0 < minimaxError f (Set.Icc a b) n) {q : ℝ[X]} (hq : q.degree ≤ n) :
+    ¬ ∀ x ∈ Set.Icc a b, |f x - p.eval x| = minimaxError f (Set.Icc a b) n →
+      0 < (f x - p.eval x) * q.eval x := by
   sorry
 
 /-- **Chebyshev's equioscillation theorem, necessity.** Let $a < b$, $f$ continuous on
@@ -149,15 +206,15 @@ $\lvert f - p \rvert \le E_n(f; [a, b])$ on $[a, b]$ (a best approximation). The
 alternates on $[a, b]$ at $n + 2$ points with level $E_n(f; [a, b])$: it equioscillates
 (`AlternatesOn.exists_eq_of_abs_le`). [Trefethen2019, Theorem 10.1]; [Rivlin1981, Ch. 1]
 (locators to check).
-Proof: L, about 70 lines. If $E_n = 0$, any $n + 2$ equispaced points of $[a, b]$ with
-$\sigma = 1$ (the error vanishes). If $E = E_n > 0$, let $e = f - p$ and $c$ the least point of
-$[a, b]$ with $\lvert e(c) \rvert = E$ (it exists: otherwise $\lvert e \rvert < E$ everywhere and
-compactness gives a smaller uniform bound, contradicting `minimaxError_le_of_isUniformApproxOn`;
-use `IsCompact.exists_isMaxOn`). Apply `exists_degree_le_or_alternatesOn` at $c$: the
-alternation is the conclusion (`AlternatesOn.mono`); a sign-matching $q$ makes
-`ContinuousMap.exists_pos_norm_sub_smul_lt` (on `C(Set.Icc a b, ℝ)`, $e$ restricted) give
-$t > 0$ with $\lvert f - (p + tq) \rvert < E$ uniformly, contradicting
-`minimaxError_le_of_isUniformApproxOn`. Prototype:
+Proof: M, about 25 lines here, about 110 with the three private lemmas above it (the split is
+planned: zero case, attained extremal set, descent step). If $E_n = 0$, $f = p$ on $[a, b]$
+(`hbest`: `dist_le_zero`) and `alternatesOn_Icc_zero_of_eq_zero`. If $E = E_n > 0$
+(`minimaxError_nonneg`), `exists_isLeast_abs_sub_eval_eq_minimaxError` gives the least
+extremal point $c$. Apply `exists_degree_le_or_alternatesOn n` to $e = f - p$ on $[c, b]$
+(`(hf.sub p.continuousOn).mono (Set.Icc_subset_Icc_left _)`): the alternation is the
+conclusion by `AlternatesOn.mono` (the extremal set of $[c, b]$ lies in $[a, b]$, level $E$); a
+sign-matching $q$ has the sign of $e$ at every extremal point of $[a, b]$ (each is $\ge c$, by
+leastness), contradicting `not_forall_mul_pos_of_isUniformApproxOn_minimaxError`. Prototype:
 `NLAlib.exists_alternating_extrema_of_norm_sub_eq_minimaxError`
 (`Polynomial/BestApproximation/Equioscillation`, proved).
 Result: equioscillation -/
@@ -226,13 +283,40 @@ theorem exists_eval_eq_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b 
     ∃ t : Finset ℝ, t.card = n + 1 ∧ (t : Set ℝ) ⊆ Set.Ioo a b ∧ ∀ x ∈ t, p.eval x = f x := by
   sorry
 
+/-! ### The chosen best approximation on an interval -/
+
+/-- **The chosen best approximation equioscillates**: for $a < b$ and $f$ continuous on $[a, b]$,
+$f - \mathrm{minimaxPoly}\ f\ [a, b]\ n$ alternates on $[a, b]$ at $n + 2$ points with level
+$E_n(f; [a, b])$. [Trefethen2019, Theorem 10.1].
+Proof: S, about 3 lines. `alternatesOn_of_isUniformApproxOn_minimaxError` with
+`degree_minimaxPoly_le` and `isUniformApproxOn_minimaxPoly isCompact_Icc hf`.
+Result: equioscillation -/
+theorem alternatesOn_minimaxPoly {f : ℝ → ℝ} {a b : ℝ} (hab : a < b)
+    (hf : ContinuousOn f (Set.Icc a b)) (n : ℕ) :
+    AlternatesOn (fun x => f x - (minimaxPoly f (Set.Icc a b) n).eval x) (Set.Icc a b) (n + 2)
+      (minimaxError f (Set.Icc a b) n) := by
+  sorry
+
+/-- **Every best approximation is the chosen one**: for $a < b$, $f$ continuous on $[a, b]$ and
+$p$ a real polynomial of degree at most $n$ with $\lvert f - p \rvert \le E_n(f; [a, b])$ on
+$[a, b]$, $p = \mathrm{minimaxPoly}\ f\ [a, b]\ n$. [Trefethen2019, Theorem 10.1].
+Proof: S, about 3 lines. `eq_of_isUniformApproxOn_minimaxError` with `degree_minimaxPoly_le` and
+`isUniformApproxOn_minimaxPoly isCompact_Icc hf`.
+Result: best-approximation-uniqueness -/
+theorem eq_minimaxPoly_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : ℝ} (hab : a < b)
+    (hf : ContinuousOn f (Set.Icc a b)) {n : ℕ} {p : ℝ[X]} (hp : p.degree ≤ n)
+    (hbest : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b)
+      (minimaxError f (Set.Icc a b) n)) : p = minimaxPoly f (Set.Icc a b) n := by
+  sorry
+
 /-! ### The Chebyshev example -/
 
 /-- **$T_n$ alternates at $n + 1$ points**: the Chebyshev polynomial $T_n$ alternates on
 $[-1, 1]$ at $n + 1$ points with level $1$, at the extrema $\cos(j\pi/n)$ in increasing order.
 [Trefethen2019, Ch. 3].
-Proof: S, about 15 lines. The points $x_i = $ `Polynomial.Chebyshev.node n (n - i)`, increasing by
-Mathlib's `strictAntiOn_node`; `eval_T_real_node` gives $T_n(x_i) = (-1)^{n - i}$, so
+Proof: M, about 15 lines. The points $x_i = $ `Polynomial.Chebyshev.node n (n - i)`, strictly
+increasing by Mathlib's `node_lt` (`node_lt (hj : j ≤ n) (hij : i < j) : node n j < node n i`,
+with `Nat.sub_le` and `omega`); `eval_T_real_node` gives $T_n(x_i) = (-1)^{n - i}$, so
 $\sigma = (-1)^n$ (`pow_sub`, or parity cases); `node_mem_Icc`. The case $n = 0$ ($T_0 = 1$,
 one point) is covered by the same formula. -/
 theorem alternatesOn_eval_T_real (n : ℕ) :
@@ -244,7 +328,7 @@ polynomials of degree at most $n$ has error $E_n(x^{n + 1}; [-1, 1]) = 2^{-n}$, 
 $x^{n + 1} - 2^{-n}T_{n + 1}$; equivalently, $2^{-n}T_{n + 1}$ is the monic polynomial of degree
 $n + 1$ of least uniform norm on $[-1, 1]$. [GolubMeurant2010, §2.5.1, Theorem 2.15];
 [Trefethen2019, Ch. 10].
-Proof: S, about 20 lines. `AlternatesOn.minimaxError_eq` with $p = X^{n + 1} - 2^{-n}T_{n + 1}$,
+Proof: M, about 20 lines. `AlternatesOn.minimaxError_eq` with $p = X^{n + 1} - 2^{-n}T_{n + 1}$,
 of degree at most $n$ (`leadingCoeff_T`, `natDegree_T`, `degree_sub_lt`), error
 $2^{-n}T_{n + 1}$, bounded by $2^{-n}$ (`abs_eval_T_real_le_one`) and alternating by
 `alternatesOn_eval_T_real` scaled by $2^{-n} > 0$. Alternatively from
