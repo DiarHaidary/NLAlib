@@ -55,7 +55,23 @@ theorem re_slq_le_re_girardHutchinson_cfc_of_iteratedDeriv_nonneg {A : Matrix n 
     (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q) f x) (Ω : Matrix n m 𝕜) :
     RCLike.re (slq A f Ω q) ≤ RCLike.re (girardHutchinson (cfc f A) Ω) := by
-  sorry
+  have hslq : RCLike.re (slq A f Ω q) =
+      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) /
+        Fintype.card m := by
+    unfold slq
+    rw [div_eq_mul_inv, div_eq_mul_inv, ← RCLike.ofReal_natCast, ← RCLike.ofReal_inv,
+      RCLike.re_mul_ofReal, RCLike.ofReal_re]
+  have hgh : RCLike.re (girardHutchinson (cfc f A) Ω) =
+      (∑ j, RCLike.re (quadForm (cfc f A) fun i => Ω i j)) / Fintype.card m := by
+    rw [girardHutchinson_eq_sum, div_eq_mul_inv, div_eq_mul_inv, ← RCLike.ofReal_natCast,
+      ← RCLike.ofReal_inv, RCLike.re_mul_ofReal]
+    congr 1
+    exact map_sum RCLike.reLm _ _
+  rw [hslq, hgh]
+  refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
+  rw [← integral_spectralMeasure A (fun i => Ω i j) f]
+  exact integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
+    (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
 
 /-- **SLQ overestimates for $f$ with nonpositive derivative of order $2q$**: for
 $\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$), $a < a'$,
