@@ -184,8 +184,8 @@ theorem ae_mem_Icc_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k 
 the $k$-point Gauss rule has mass $\mu(\mathbb{R})$.
 Proof: S, about 5 lines. `(matchesMoments_gaussQuadrature hμ k).measureReal_univ_eq`, `.symm`. -/
 theorem gaussQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ} (hk : 0 < k) :
-    (gaussQuadrature μ k).real Set.univ = μ.real Set.univ := by
-  sorry
+    (gaussQuadrature μ k).real Set.univ = μ.real Set.univ :=
+  ((matchesMoments_gaussQuadrature hμ k).measureReal_univ_eq (by omega)).symm
 
 /-- The Gauss weights are positive: if a finite measure $\mu$ supported in $[a, b]$ is positive
 definite up to degree $k$, then the $k$-point Gauss rule gives every Gauss node positive mass.
