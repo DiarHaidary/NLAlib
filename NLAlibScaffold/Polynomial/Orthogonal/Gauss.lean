@@ -236,7 +236,16 @@ Result: gauss-quadrature-uniqueness -/
 theorem MatchesMoments.eq_gaussQuadrature [IsFiniteMeasure ν] {k : ℕ}
     (h : MatchesMoments μ ν (2 * k)) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {s : Finset ℝ}
     (hν : ∀ᵐ x ∂ν, x ∈ s) (hs : s.card ≤ k) : ν = gaussQuadrature μ k := by
-  sorry
+  have hM : MatchesMoments ν (gaussQuadrature μ k) (2 * k) :=
+    h.symm.trans (matchesMoments_gaussQuadrature hμ k)
+  have hνT : ∀ᵐ x ∂ν, x ∈ s ∪ gaussNodes μ k :=
+    hν.mono fun x hx => Finset.mem_union_left _ hx
+  have hGT : ∀ᵐ x ∂gaussQuadrature μ k, x ∈ s ∪ gaussNodes μ k := by
+    exact (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k)).mono fun x hx =>
+      Finset.mem_union_right _ hx
+  have hcard : (s ∪ gaussNodes μ k).card ≤ 2 * k :=
+    (Finset.card_union_le _ _).trans (by have := card_gaussNodes_le μ k; omega)
+  exact MatchesMoments.eq_of_ae_mem (hM.mono hcard) hνT hGT
 
 /-- **The Gauss-rule error from uniform approximation**: for a finite measure $\mu$ supported in
 $[a, b]$, $f$ integrable against $\mu$, and a real polynomial $p$ of degree less than $2k$ within
