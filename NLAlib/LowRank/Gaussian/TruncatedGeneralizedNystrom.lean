@@ -187,8 +187,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Ty
 /-- The joint rank event of the two test matrices: almost surely
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) =
 \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, for any law of $\mathbf{\Omega}$ independent of a
-standard Gaussian $\mathbf{\Psi}$, when every $\operatorname{rank}(\mathbf{A}\mathbf{x}) \le p$. -/
-private theorem ae_rank_conjTranspose_mul_mul_eq (A : Matrix m n ℝ)
+standard Gaussian $\mathbf{\Psi}$, when every $\operatorname{rank}(\mathbf{A}\mathbf{x}) \le p$.
+Proved without a literature source. -/
+theorem ae_rank_conjTranspose_mul_mul_eq (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ)
     (hr : ∀ x : Matrix n l ℝ, (A * x).rank ≤ Fintype.card p) :
     ∀ᵐ ω ∂μ, ((Ψ ω)ᴴ * (A * X ω)).rank = (A * X ω).rank := by

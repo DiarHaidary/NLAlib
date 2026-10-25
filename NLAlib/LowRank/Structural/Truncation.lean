@@ -49,7 +49,7 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
   (`NLAlib.Matrix.Factorizations.NystromOrder`).
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncatedSVD`,
   `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm`: truncated generalized
-  Nyström.
+  Nyström, from its core form `NLAlib.exists_core_generalizedNystrom`.
 * `NLAlib.truncatedSVD_rsvd_eq_rangeProjector_mul`,
   `NLAlib.singularValues_sub_truncatedSVD_rsvd_le_of_le`: the truncated randomized SVD is a
   projection of $\mathbf{A}$, and its error decreases with the rank.
@@ -331,17 +331,33 @@ _root_.Matrix.PosSemidef.nuclearNorm_sub_le_nuclearNorm_sub_truncatedSVD_nystrom
 
 /-! ### Truncated generalized Nyström -/
 
-/-- The core form of truncated generalized Nyström: in a basis $\mathbf{Q}$ of
-$\operatorname{range}(\mathbf{A}\mathbf{\Omega})$, the truncation is $\mathbf{Q}\mathbf{Y}$ with
-$\mathbf{Y}$ a best approximation of $\mathbf{Q}^{\mathsf{H}}\mathbf{A} + \mathbf{N}_0$, the error
-splits off $\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2$, and the core quantities have the
-basis-free values. -/
-private theorem exists_core_generalizedNystrom {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
+/-- The core form of truncated generalized Nyström: for $\mathbf{A} \in \Bbbk^{m \times n}$,
+$\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and $\mathbf{\Psi} \in \Bbbk^{m \times p}$ such that
+$\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}$ has the rank of $\mathbf{A}\mathbf{\Omega}$,
+and any $k$, there are an orthonormal basis $\mathbf{Q}$ of
+$\operatorname{range}(\mathbf{A}\mathbf{\Omega})$, a core noise $\mathbf{E}$ with
+$\mathbf{Q}\mathbf{E} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
+(\mathbf{A} - \mathbf{R})$, $\mathbf{R} = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$, and a best
+rank-$k$ approximation $\mathbf{Y}$ of $\mathbf{Q}^{\mathsf{H}}\mathbf{A} + \mathbf{E}$ with
+$$\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k =
+\mathbf{Q}\mathbf{Y}\,,\qquad
+\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
+\|_{\mathsf{F}}^2 = \|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2 +
+\|\mathbf{Q}^{\mathsf{H}}\mathbf{A} - \mathbf{Y}\|_{\mathsf{F}}^2\,;$$
+the core $\mathbf{Q}^{\mathsf{H}}\mathbf{A}$ has the truncation error of $\mathbf{R}$ and
+$\mathbf{E}$ the singular values of the core noise. For the choice `truncatedSVD` makes.
+Proved without a literature source. -/
+theorem exists_core_generalizedNystrom {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
     {Ψ : Matrix m p 𝕜} (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) (k : ℕ) :
-    ∃ C E Y : Matrix (Fin (A * Ω).rank) n 𝕜, IsBestRankApprox (C + E) k Y ∧
+    ∃ (Q : Matrix m (Fin (A * Ω).rank) 𝕜) (E Y : Matrix (Fin (A * Ω).rank) n 𝕜),
+      HasOrthonormalCols Q ∧ rangeProjector (A * Ω) = Q * Qᴴ ∧
+      Q * E = obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω) ∧
+      IsBestRankApprox (Qᴴ * A + E) k Y ∧
+      truncatedSVD (generalizedNystrom A Ω Ψ) k = Q * Y ∧
       frobNorm (A - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 =
-        frobNorm (A - rsvd A Ω) ^ 2 + frobNorm (C - Y) ^ 2 ∧
-      frobNorm (C - truncatedSVD C k) = frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) ∧
+        frobNorm (A - rsvd A Ω) ^ 2 + frobNorm (Qᴴ * A - Y) ^ 2 ∧
+      frobNorm (Qᴴ * A - truncatedSVD (Qᴴ * A) k) =
+        frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) ∧
       singularValues E = singularValues (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) := by
   classical
   obtain ⟨Q, hQ, hQY⟩ := exists_hasOrthonormalCols_range_eq (p := Fin (A * Ω).rank) (A * Ω)
@@ -356,10 +372,14 @@ private theorem exists_core_generalizedNystrom {A : Matrix m n 𝕜} {Ω : Matri
   have hX := hQ.sketchAndSolve_eq_add hΨQ A
   obtain ⟨N₀, hN₀⟩ : ∃ N₀, N₀ = sketchAndSolve Q Ψᴴ ((1 - Q * Qᴴ) * A) := ⟨_, rfl⟩
   rw [← hN₀] at hX
-  refine ⟨Qᴴ * A, N₀, Qᴴ * truncatedSVD (Q * (Qᴴ * A + N₀)) k,
-    hQ.isBestRankApprox_conjTranspose_mul_truncatedSVD _ k, ?_, ?_, ?_⟩
-  · have hT := (hQ.mul_conjTranspose_mul_truncatedSVD (Qᴴ * A + N₀) k).symm
-    rw [hG, hX]
+  have hQN : Q * N₀ = obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω) := by
+    rw [sub_rsvd, hP, ← obliqueProjector_eq_of_range_eq hΨQ hQY, ← mul_sketchAndSolve, hN₀]
+  have hT := (hQ.mul_conjTranspose_mul_truncatedSVD (Qᴴ * A + N₀) k).symm
+  refine ⟨Q, N₀, Qᴴ * truncatedSVD (Q * (Qᴴ * A + N₀)) k, hQ, hP, hQN,
+    hQ.isBestRankApprox_conjTranspose_mul_truncatedSVD _ k, ?_, ?_, ?_, ?_⟩
+  · rw [hG, hX]
+    exact hT
+  · rw [hG, hX]
     conv_lhs => rw [hT]
     rw [hQ.frobNorm_sub_mul_sq, sub_rsvd, hP]
   · have hr : rsvd A Ω = Q * (Qᴴ * A) := by
@@ -369,8 +389,7 @@ private theorem exists_core_generalizedNystrom {A : Matrix m n 𝕜} {Ω : Matri
     exact SymmetricGauge.matrixNorm_congr _ (funext fun i => by
       rw [singularValues_sub_truncatedSVD, singularValues_sub_truncatedSVD,
         hQ.singularValues_mul_left])
-  · rw [sub_rsvd, hP, ← obliqueProjector_eq_of_range_eq hΨQ hQY, ← mul_sketchAndSolve,
-      hQ.singularValues_mul_left, hN₀]
+  · rw [← hQN, hQ.singularValues_mul_left]
 
 /-- **The truncated generalized Nyström error, deterministic form.** For
 $\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
@@ -398,7 +417,7 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_frobNorm_truncate
         (frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) +
           2 * frobNorm
             (truncatedSVD (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) (2 * k))) ^ 2 := by
-  obtain ⟨C, E, Y, hY, hsplit, hC, hE⟩ := exists_core_generalizedNystrom h k
+  obtain ⟨Q, E, Y, -, -, -, hY, -, hsplit, hC, hE⟩ := exists_core_generalizedNystrom h k
   have hb := hY.frobNorm_sub_le_add_frobNorm_truncatedSVD
   have hEq : frobNorm (truncatedSVD E (2 * k)) =
       frobNorm (truncatedSVD (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) (2 * k)) := by
@@ -435,7 +454,7 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm
       frobNorm (A - rsvd A Ω) ^ 2 +
         (frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) +
           2 * √(2 * (k : ℝ)) * specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω))) ^ 2 := by
-  obtain ⟨C, E, Y, hY, hsplit, hC, hE⟩ := exists_core_generalizedNystrom h k
+  obtain ⟨Q, E, Y, -, -, -, hY, -, hsplit, hC, hE⟩ := exists_core_generalizedNystrom h k
   have hb := hY.frobNorm_sub_le_add_specNorm
   have hEq : specNorm E = specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) := by
     rw [← singularValues_zero_eq_specNorm, ← singularValues_zero_eq_specNorm, hE]
