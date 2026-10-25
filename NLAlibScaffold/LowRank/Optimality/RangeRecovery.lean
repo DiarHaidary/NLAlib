@@ -56,7 +56,7 @@ private lemma finrank_sup_span_singleton_of_notMem {K V : Type*} [DivisionRing K
   rw [hinf, finrank_bot, finrank_span_singleton hv0] at this
   omega
 
-/-- **Rank step of general position**: let $\mathbf{B} \in \Bbbk^{k \times d}$ preserve the rank
+/-- Rank step of general position: let $\mathbf{B} \in \Bbbk^{k \times d}$ preserve the rank
 of $\mathbf{U} \in \Bbbk^{d \times i}$, $\operatorname{rank}(\mathbf{B}\mathbf{U}) =
 \operatorname{rank}\mathbf{U}$, and append a column $\mathbf{x}$. If $\mathbf{x}$ lies in the
 column span of $\mathbf{U}$, or $\mathbf{B}\mathbf{x}$ does not lie in the column span of

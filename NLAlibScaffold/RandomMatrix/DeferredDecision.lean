@@ -63,7 +63,7 @@ private theorem twoSidedMulVec_add_mul_mul {𝕜 : Type*} [RCLike 𝕜] {E : Mat
   simp only [twoSidedMulVec, Matrix.add_mulVec, Matrix.conjTranspose_add, Matrix.conjTranspose_mul,
     hE.conjTranspose_eq, ← Matrix.mulVec_mulVec, hw, hu, Matrix.mulVec_zero, add_zero]
 
-/-- **The resampled matrix gives the same transcript**: an algorithm making `q` pair queries to
+/-- The resampled matrix gives the same transcript: an algorithm making `q` pair queries to
 `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, gets the same responses from
 `alg.resample X X'`, which differs from $\mathbf{X}$ only in the block
 $\mathbf{E}\mathbf{X}\mathbf{F}$ orthogonal to all left queries and all right queries.

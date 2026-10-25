@@ -30,7 +30,7 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n] {X : Ω → Matrix m n ℝ}
 
-/-- **A Gaussian matrix hits a point of a nonzero linear image with probability zero**: for a
+/-- A Gaussian matrix hits a point of a nonzero linear image with probability zero: for a
 standard Gaussian $\mathbf{X} \in \mathbb{R}^{m \times n}$, matrices
 $\mathbf{N} \ne \mathbf{0}$ and $\mathbf{F} \ne \mathbf{0}$ and any $\mathbf{C}$,
 $\mathbb{P}[\mathbf{N}\mathbf{X}\mathbf{F} = \mathbf{C}] = 0$.
