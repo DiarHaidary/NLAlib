@@ -1,0 +1,145 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.Polynomial.Orthogonal.Gauss
+public import NLAlibScaffold.ForMathlib.MeasureTheory.Integral.MeanValue
+public import NLAlibScaffold.Polynomial.Interpolation.Hermite
+public import NLAlibScaffold.Polynomial.Orthogonal.Zeros
+
+/-!
+# The Gauss-rule remainder: the theorems of stage KS8
+
+Statements for `NLAlib/Polynomial/Orthogonal/Gauss.lean` whose proofs are deferred
+(`docs/design/Polynomial-QuadratureRemainder.md`, G1–G5). An interpolatory rule whose nodal
+polynomial is orthogonal to the polynomials of degree less than $m$ is exact below degree
+$\lvert s\rvert + m$ (the Gauss case is $m = \lvert s\rvert$, Radau $m = \lvert s\rvert - 1$,
+Lobatto $m = \lvert s\rvert - 2$). For $f$ continuous on $[a, b]$ and $C^{2k}$ on $(a, b)$ the
+$k$-point Gauss rule has the remainder
+$$\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k) =
+\frac{f^{(2k)}(\xi)}{(2k)!}\int\pi_k^2\,d\mu\,,\qquad \xi \in (a, b)\,,$$
+so it is a lower bound when $f^{(2k)} \ge 0$ and an upper bound when $f^{(2k)} \le 0$.
+
+## Main results
+
+* `NLAlib.IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add`: the exactness
+  degree of an interpolatory rule.
+* `NLAlib.gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`: the terminating
+  case.
+* `NLAlib.exists_integral_sub_integral_gaussQuadrature_eq`: the Gauss remainder.
+* `NLAlib.integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg`,
+  `NLAlib.integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos`: one-sided bounds.
+-/
+
+@[expose] public section
+
+open MeasureTheory Polynomial
+
+namespace NLAlib
+
+/-- **The exactness degree of an interpolatory rule**: if the nodal polynomial of distinct real
+nodes $s$ is orthogonal in $L^2(\mu)$ to the polynomials of degree less than $m$, for a finite
+measure $\mu$ supported in $[a, b]$, then
+$$\int p\,d\mu = \sum_{x\in s}\Bigl(\int\ell_x\,d\mu\Bigr)p(x)$$
+for every real polynomial $p$ of degree less than $\lvert s\rvert + m$, $\ell_x$ the Lagrange
+basis polynomial of $x$. [Gautschi2004, Theorem 1.45] (locator to check); there as an
+equivalence for $m \le \lvert s\rvert$; here the direction used, for every $m$.
+Proof: M, about 35 lines. As `IsOrthogonalPolynomial.integral_eval_eq_sum` (the case
+$m = \lvert s\rvert$), with the degree bookkeeping generalised: $p = w(p /ₘ w) + p \% w$ for the
+monic nodal $w$ of degree $\lvert s\rvert$ (`modByMonic_add_div`), $\deg(p /ₘ w) < m$
+(`natDegree_divByMonic`), so its integral against $w$ vanishes by `hs`; the remainder has
+degree less than $\lvert s\rvert$ and is integrated exactly (the private
+`integral_eval_eq_sum_of_degree_lt`, to be made available or re-proved by
+`Lagrange.eq_interpolate`); $w$ vanishes at the nodes (`Lagrange.eval_nodal_at_node`). -/
+theorem IsOrthogonalPolynomial.integral_eval_eq_sum_of_degree_lt_card_add {μ : Measure ℝ}
+    {s : Finset ℝ} {m : ℕ} (hs : IsOrthogonalPolynomial μ m (Lagrange.nodal s id))
+    [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]}
+    (hp : p.degree < (s.card + m : ℕ)) :
+    ∫ x, p.eval x ∂μ = ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * p.eval x := by
+  sorry
+
+section Finite
+
+variable {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
+
+/-- The terminating case: if the orthogonal polynomial $\pi_k$ of a finite measure $\mu$
+supported in $[a, b]$ has norm $0$ in $L^2(\mu)$ ($\mu$ has at most $k$ support points), then
+the $k$-point Gauss rule of $\mu$ is $\mu$ itself.
+Proof: S, about 12 lines. `ae_eval_eq_zero_of_integral_sq_eq_zero` gives $\pi_k = 0$
+$\mu$-a.e., so $\mu$ is carried by the roots of the monic $\pi_k$, the Gauss nodes
+(`gaussNodes`, `Multiset.mem_toFinset`, `mem_roots`); then
+`interpolatoryQuadrature_eq_self_of_ae_mem`. -/
+theorem gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
+    (h : ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0) : gaussQuadrature μ k = μ := by
+  sorry
+
+/-- **The Gauss quadrature remainder**: for a finite measure $\mu$ supported in $[a, b]$,
+$a < b$, $k > 0$, and $f$ continuous on $[a, b]$ and $C^{2k}$ on $(a, b)$, there is
+$\xi \in (a, b)$ with
+$$\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k) =
+\frac{f^{(2k)}(\xi)}{(2k)!}\int\pi_k^2\,d\mu\,,$$
+$\pi_k$ the monic orthogonal polynomial of degree $k$. When $\mu$ has at most $k$ support
+points both sides are $0$. [Gautschi2004, Theorem 1.48]; [GolubMeurant2010, Ch. 6] (locators to
+check); there for $f \in C^{2k}[a, b]$.
+Proof: L, about 70 lines; the prototype proves the nondegenerate case
+(`NLAlib.exists_integral_sub_quadrature_eq_iteratedDeriv_mul_nodal_sq`,
+`NLAlib/Polynomial/Quadrature/GaussDerivativeRemainder.lean`). If
+$\int\pi_k^2\,d\mu = 0$: `gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`,
+both sides $0$, $\xi = (a + b)/2$. Otherwise $\mu$ is definite up to degree $k + 1$
+(`isMomentPosDef_succ_iff`), the Gauss nodes $G$ are $k$ distinct points of $(a, b)$
+(`IsMomentPosDef.card_gaussNodes`, `IsMomentPosDef.gaussNodes_subset_Ioo`) and
+$\pi_k = \prod_{x\in G}(X - x)$ (`IsMomentPosDef.nodal_gaussNodes`). Take $H$ of degree less
+than $2k$ with the values and first derivatives of $f$ on $G$
+(`exists_degree_lt_forall_iterate_derivative_eval_eq` for $m = G + G$). The rule is exact on
+$H$ and $H = f$ on $G$ (`matchesMoments_gaussQuadrature`, `integral_gaussQuadrature_eq_sum`), so
+the error is $\int(f - H)\,d\mu$. Pointwise `exists_sub_eval_eq_iteratedDeriv_mul` on
+$m = G + G$ gives $f - H = \frac{f^{(2k)}(\xi_x)}{(2k)!}\pi_k(x)^2$, and
+`exists_integral_eq_mul_integral_of_ae_nonneg` with $W = \pi_k^2$ and $s = (a, b)$ (the $2k$-th
+derivative is continuous there, from `hf'`) gives one $\xi$. Integrability:
+`ContinuousOn.integrableOn_Icc` and `integrable_eval_of_ae_mem_Icc`.
+Result: gauss-quadrature-remainder -/
+theorem exists_integral_sub_integral_gaussQuadrature_eq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    (hab : a < b) {k : ℕ} (hk : 0 < k) {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a b))
+    (hf' : ContDiffOn ℝ (2 * k : ℕ) f (Set.Ioo a b)) :
+    ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ k =
+      iteratedDeriv (2 * k) f ξ / (2 * k).factorial *
+        ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
+  sorry
+
+/-- **Gauss quadrature is a lower bound** for $f$ with nonnegative derivative of order $2k$: for
+a finite measure $\mu$ supported in $[a, b]$, $a < b$, $k > 0$, and $f$ continuous on $[a, b]$,
+$C^{2k}$ on $(a, b)$ with $f^{(2k)} \ge 0$ there,
+$$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) \le \int f\,d\mu\,.$$
+[Gautschi2004, Theorem 1.48]; [GolubMeurant2010, Ch. 6] (locators to check).
+Proof: S, about 8 lines. `exists_integral_sub_integral_gaussQuadrature_eq`; the right side is
+a product of $f^{(2k)}(\xi)/(2k)! \ge 0$ and $\int\pi_k^2\,d\mu \ge 0$ (`integral_nonneg`,
+`sq_nonneg`, `Nat.cast_nonneg`, `div_nonneg`); `sub_nonneg`. -/
+theorem integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) {k : ℕ} (hk : 0 < k) {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k : ℕ) f (Set.Ioo a b))
+    (hD : ∀ x ∈ Set.Ioo a b, 0 ≤ iteratedDeriv (2 * k) f x) :
+    ∫ x, f x ∂gaussQuadrature μ k ≤ ∫ x, f x ∂μ := by
+  sorry
+
+/-- **Gauss quadrature is an upper bound** for $f$ with nonpositive derivative of order $2k$:
+for a finite measure $\mu$ supported in $[a, b]$, $a < b$, $k > 0$, and $f$ continuous on
+$[a, b]$, $C^{2k}$ on $(a, b)$ with $f^{(2k)} \le 0$ there,
+$$\int f\,d\mu \le \int f\,d\,\mathsf{gaussQuadrature}(\mu, k)\,.$$
+[Gautschi2004, Theorem 1.48]; [GolubMeurant2010, Ch. 6] (locators to check).
+Proof: S, about 8 lines. As `integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg`,
+with `mul_nonpos_of_nonpos_of_nonneg` (or apply it to $-f$: `iteratedDeriv_neg`,
+`integral_neg`). -/
+theorem integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) {k : ℕ} (hk : 0 < k) {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k : ℕ) f (Set.Ioo a b))
+    (hD : ∀ x ∈ Set.Ioo a b, iteratedDeriv (2 * k) f x ≤ 0) :
+    ∫ x, f x ∂μ ≤ ∫ x, f x ∂gaussQuadrature μ k := by
+  sorry
+
+end Finite
+
+end NLAlib

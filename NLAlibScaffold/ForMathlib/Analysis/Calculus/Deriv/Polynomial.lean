@@ -1,0 +1,44 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import Mathlib.Analysis.Calculus.Deriv.Polynomial
+public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+
+/-!
+# Iterated derivatives of polynomial functions
+
+The iterated derivative of $x \mapsto p(x)$ is the evaluation of the iterated formal derivative
+of $p$: the bridge between the analytic jets of an interpolation remainder and the algebraic
+jets of the interpolant. Mathlib has the first derivative, `Polynomial.deriv`. Upstream candidate
+for `Mathlib.Analysis.Calculus.Deriv.Polynomial`, next to `Polynomial.deriv`.
+
+Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F2).
+
+## Main results
+
+* `Polynomial.iteratedDeriv`: $\frac{d^k}{dx^k}p(x) = p^{(k)}(x)$.
+-/
+
+@[expose] public section
+
+open Polynomial
+
+namespace Polynomial
+
+variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+
+/-- The iterated derivative of a polynomial function: for every polynomial $p$ over $\Bbbk$,
+every $k$ and every $x$, the $k$-th derivative of $x \mapsto p(x)$ at $x$ is $p^{(k)}(x)$, the
+$k$-th formal derivative evaluated at $x$.
+Proof: S, about 8 lines. Induction on $k$ generalising $p$: `iteratedDeriv_succ'`
+($\frac{d^{k+1}}{dx^{k+1}}g = \frac{d^k}{dx^k}g'$), `Polynomial.deriv` as a function equality
+(`funext`), `Function.iterate_succ_apply`. -/
+protected theorem iteratedDeriv (p : 𝕜[X]) (k : ℕ) (x : 𝕜) :
+    iteratedDeriv k (fun x => p.eval x) x = (derivative^[k] p).eval x := by
+  sorry
+
+end Polynomial

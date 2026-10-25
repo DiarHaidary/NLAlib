@@ -1,0 +1,42 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import Mathlib.Algebra.Polynomial.Derivative
+
+/-!
+# The top iterated derivative of a polynomial
+
+The $n$-th derivative of a polynomial of degree $n$ is the constant $n!$ times its leading
+coefficient. It is the step of every interpolation remainder that reads off the constant of a
+monic nodal polynomial. Upstream candidate for `Mathlib.Algebra.Polynomial.Derivative`.
+
+Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F1).
+
+## Main results
+
+* `Polynomial.iterate_derivative_natDegree`: $p^{(n)} = n!\,c_n$.
+-/
+
+@[expose] public section
+
+open Polynomial
+
+namespace Polynomial
+
+variable {R : Type*} [CommSemiring R]
+
+/-- The top derivative of a polynomial: for $p$ of degree $n$ with leading coefficient $c_n$,
+the $n$-th derivative of $p$ is the constant polynomial $n!\,c_n$.
+Proof: S, about 8 lines. `natDegree_iterate_derivative` bounds the degree by $0$, so
+`eq_C_of_natDegree_le_zero`; the constant is `coeff_iterate_derivative` at $0$ with
+`Nat.descFactorial_self` (prototype `eval_iterate_derivative_natDegree`,
+`NLAlib/ForMathlib/Algebra/Polynomial/Basic.lean`). -/
+theorem iterate_derivative_natDegree (p : R[X]) :
+    derivative^[p.natDegree] p = C ((p.natDegree.factorial : R) * p.leadingCoeff) := by
+  sorry
+
+end Polynomial
