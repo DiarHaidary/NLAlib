@@ -113,7 +113,14 @@ $\mu$-a.e., so $\mu$ is carried by the roots of the monic $\pi_k$, the Gauss nod
 theorem gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
     (h : ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0) : gaussQuadrature μ k = μ := by
-  sorry
+  have hzero := ae_eval_eq_zero_of_integral_sq_eq_zero hμ h
+  have hne : orthogonalPolynomial μ k ≠ 0 := (monic_orthogonalPolynomial μ k).ne_zero
+  unfold gaussQuadrature
+  refine interpolatoryQuadrature_eq_self_of_ae_mem ?_
+  filter_upwards [hzero] with x hx
+  unfold gaussNodes
+  rw [Multiset.mem_toFinset, mem_roots hne]
+  exact hx
 
 /-- **The Gauss quadrature remainder**: for a finite measure $\mu$ supported in $[a, b]$,
 $a < b$, $k > 0$, and $f$ continuous on $[a, b]$ and $C^{2k}$ on $(a, b)$, there is
