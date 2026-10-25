@@ -109,7 +109,19 @@ the step is `Fin.snoc` congruence with `alg.query i (history g i) = alg.query i 
 theorem transcript_eq_of_forall_apply_queries_eq (alg : QueryAlgorithm Q R q β) {f g : Q → R}
     (h : ∀ j, g (alg.queries (alg.transcript f) j) = f (alg.queries (alg.transcript f) j)) :
     alg.transcript g = alg.transcript f := by
-  sorry
+  have key : ∀ i, i ≤ q → alg.history g i = alg.history f i := by
+    intro i
+    induction i with
+    | zero => intro _; funext j; exact j.elim0
+    | succ i ih =>
+      intro hi
+      have hq : i < q := hi
+      have hgf := h ⟨i, hq⟩
+      rw [← queryAt_eq_queries_transcript alg f ⟨i, hq⟩] at hgf
+      unfold history
+      rw [ih (by omega)]
+      congr 1
+  exact key q le_rfl
 
 /-- **Indistinguishability of outputs**: if $g$ agrees with $f$ at every query the algorithm makes
 against $f$, the algorithm outputs the same value against both.
