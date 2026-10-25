@@ -100,7 +100,8 @@ the responses, so `queries` does not depend on the transcript.
 Proof: S, two lines. `funext j`; `h j j.isLt _ _`. -/
 theorem IsNonAdaptive.queries_eq {alg : QueryAlgorithm Q R q β} (h : alg.IsNonAdaptive)
     (τ τ' : Fin q → R) : alg.queries τ = alg.queries τ' := by
-  sorry
+  funext j
+  exact h j j.isLt _ _
 
 /-! ### Measurability -/
 
