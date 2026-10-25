@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Polynomial.Approximation.Inverse
-public import NLAlib.Polynomial.Approximation.MinimaxError
+public import NLAlibScaffold.Polynomial.Approximation.MinimaxError
 
 /-!
 # The minimax error of the inverse: the theorems of stage Poly-Best
@@ -42,17 +42,6 @@ theorem minimaxError_inv_le {a b : ℝ} (n : ℕ) (ha : 0 < a) (hab : a < b) :
   have hdeg : p.degree ≤ n := by
     have h : p.degree < ((n + 1 : ℕ) : WithBot ℕ) := hp
     exact Order.le_of_lt_succ (by exact_mod_cast h)
-  have hnonneg : (0 : ℝ) ≤ (2 / a) * ((√b - √a) / (√b + √a)) ^ (n + 1) := by
-    have h1 : √a ≤ √b := Real.sqrt_le_sqrt hab.le
-    have h2 : 0 ≤ √b - √a := sub_nonneg.mpr h1
-    have h3 : 0 < √b + √a := by
-      have := Real.sqrt_pos.mpr (ha.trans hab)
-      have := Real.sqrt_nonneg a
-      linarith
-    positivity
-  unfold minimaxError
-  refine csInf_le ⟨0, ?_⟩ ⟨p, hdeg, hε⟩
-  rintro ε' ⟨q, -, hq⟩
-  exact hq.nonneg (Set.nonempty_Icc.mpr hab.le)
+  exact minimaxError_le_of_isUniformApproxOn hdeg (hε.nonneg (Set.nonempty_Icc.mpr hab.le)) hε
 
 end NLAlib
