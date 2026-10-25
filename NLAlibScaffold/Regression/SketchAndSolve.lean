@@ -58,92 +58,6 @@ private theorem exists_compl_frames {s : Type*} [Fintype s] (X : Matrix m s ℝ)
   rw [← Matrix.mul_assoc, h₂, ← Matrix.mul_assoc,
     (isStarProjection_one_sub_rangeProjector X).mul_self]
 
-omit [Fintype m] [DecidableEq m] in
-/-- A weight costs at most its inverse's norm in the pseudoinverse: for invertible $\mathbf{R}$
-and $\mathbf{X}$ of full column rank, $\|(\mathbf{R}^{\mathsf{H}}\mathbf{X})^{+}\|_2^2 \le
-(\|\mathbf{R}^{-1}\|_2\|\mathbf{X}^{+}\|_2)^2 + 1$. -/
-private theorem specNorm_pinv_conjTranspose_mul_sq_le {p : Type*} [Fintype p] [DecidableEq p]
-    {R : Matrix p p ℝ} (hR : IsUnit R) {X : Matrix p r ℝ}
-    (hX : Function.Injective X.mulVec) :
-    specNorm (pinv (Rᴴ * X)) ^ 2 ≤ (specNorm R⁻¹ * specNorm (pinv X)) ^ 2 + 1 := by
-  classical
-  have hc : 0 < (specNorm R⁻¹ * specNorm (pinv X)) ^ 2 + 1 := by positivity
-  have hXN : X = R⁻¹ᴴ * (Rᴴ * X) := by
-    rw [← Matrix.mul_assoc, ← Matrix.conjTranspose_mul,
-      Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det R).mp hR),
-      Matrix.conjTranspose_one, Matrix.one_mul]
-  have h := specNorm_pinv_sq_le_inv_of_smul_one_le (A := Rᴴ * X) (inv_pos.mpr hc)
-    (smul_one_le_conjTranspose_mul_self_iff.mpr fun x => ?_)
-  · rwa [inv_inv] at h
-  have h1 := norm_le_specNorm_pinv_mul_norm_mulVec hX x
-  have h2 := norm_toLp_mulVec_le R⁻¹ᴴ ((Rᴴ * X) *ᵥ x)
-  rw [Matrix.mulVec_mulVec, ← hXN, specNorm_conjTranspose] at h2
-  have h3 : ‖WithLp.toLp 2 x‖ ≤
-      specNorm R⁻¹ * specNorm (pinv X) * ‖WithLp.toLp 2 ((Rᴴ * X) *ᵥ x)‖ := by
-    calc ‖WithLp.toLp 2 x‖ ≤ specNorm (pinv X) * ‖WithLp.toLp 2 (X *ᵥ x)‖ := h1
-      _ ≤ specNorm (pinv X) * (specNorm R⁻¹ * ‖WithLp.toLp 2 ((Rᴴ * X) *ᵥ x)‖) := by gcongr
-      _ = _ := by ring
-  rw [inv_mul_le_iff₀ hc]
-  have h4 := pow_le_pow_left₀ (norm_nonneg _) h3 2
-  nlinarith [sq_nonneg ‖WithLp.toLp 2 ((Rᴴ * X) *ᵥ x)‖]
-
-omit [DecidableEq m] in
-/-- The weighted Haar block is square integrable. -/
-private theorem integrable_frobNorm_pinv_conjTranspose_mul_mul_sq {p s a : Type*} [Fintype p]
-    [Fintype s] [Fintype a] [DecidableEq p] [DecidableEq r] [DecidableEq s]
-    {Q : Ω → Matrix m p ℝ} (hQ : HasLaw Q (haarFrame m p) μ)
-    (hpm : Fintype.card p ≤ Fintype.card m) {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ}
-    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
-    (hrp : Fintype.card r + 2 ≤ Fintype.card p) (B : Matrix s a ℝ) {R : Matrix p p ℝ}
-    (hR : IsUnit R) :
-    Integrable (fun ω => frobNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁)) * (Rᴴ * ((Q ω)ᴴ * V₂)) * B) ^ 2)
-      μ := by
-  have := hQ.isProbabilityMeasure
-  have hW : HasOrthonormalCols (V₁ᴴ)ᴴ := by rwa [Matrix.conjTranspose_conjTranspose]
-  have hint := integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame hQ hpm hW hrp
-  have hT : Measurable fun Q₀ : Matrix m p ℝ => Q₀ᴴ :=
-    continuous_id.matrix_conjTranspose.measurable
-  have hmeas : Measurable fun Q₀ : Matrix m p ℝ =>
-      frobNorm (pinv (Rᴴ * (Q₀ᴴ * V₁)) * (Rᴴ * (Q₀ᴴ * V₂)) * B) ^ 2 :=
-    (measurable_frobNorm.comp (((measurable_pinv.comp (measurable_const.matrix_mul
-      (hT.matrix_mul measurable_const))).matrix_mul (measurable_const.matrix_mul
-        (hT.matrix_mul measurable_const))).matrix_mul measurable_const)).pow_const 2
-  refine Integrable.mono'
-    (((hint.const_mul (specNorm R⁻¹ ^ 2)).add (integrable_const 1)).mul_const
-      (specNorm R ^ 2 * frobNorm B ^ 2))
-    (hmeas.comp_aemeasurable hQ.aemeasurable).aestronglyMeasurable ?_
-  filter_upwards [ae_specNorm_le_one_of_hasLaw_haarFrame hQ,
-    ae_rank_mul_eq_min_of_hasLaw_haarFrame V₁ᴴ hQ] with ω hω hrk
-  rw [Real.norm_of_nonneg (sq_nonneg _)]
-  have hX : (Q ω)ᴴ * V₁ = (V₁ᴴ * Q ω)ᴴ := by
-    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
-  have hinj : Function.Injective ((Q ω)ᴴ * V₁).mulVec := by
-    rw [mulVec_injective_iff_rank_eq, hX, Matrix.rank_conjTranspose, hrk,
-      Matrix.rank_conjTranspose, hV₁.rank_eq, min_eq_left (by omega)]
-  have hP := specNorm_pinv_conjTranspose_mul_sq_le hR hinj
-  have hPF : specNorm (pinv ((Q ω)ᴴ * V₁)) ≤ frobNorm (pinv (V₁ᴴ * Q ω)) := by
-    rw [hX, pinv_conjTranspose, ← frobNorm_conjTranspose]
-    exact specNorm_le_frobNorm _
-  have hY : specNorm (Rᴴ * ((Q ω)ᴴ * V₂)) ≤ specNorm R := by
-    refine (specNorm_mul_le _ _).trans ?_
-    rw [specNorm_conjTranspose]
-    refine mul_le_of_le_one_right (specNorm_nonneg _) ?_
-    rw [← specNorm_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
-    exact (hV₂.specNorm_conjTranspose_mul_le _).trans hω
-  have hF : frobNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁)) * (Rᴴ * ((Q ω)ᴴ * V₂)) * B) ≤
-      specNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁))) * specNorm (Rᴴ * ((Q ω)ᴴ * V₂)) * frobNorm B :=
-    (frobNorm_mul_le_specNorm_mul_frobNorm _ B).trans (by gcongr; exact specNorm_mul_le _ _)
-  have hP' : specNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁))) ^ 2 ≤
-      specNorm R⁻¹ ^ 2 * frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2 + 1 :=
-    hP.trans (by rw [mul_pow]; gcongr)
-  simp only [Pi.add_apply]
-  calc frobNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁)) * (Rᴴ * ((Q ω)ᴴ * V₂)) * B) ^ 2
-      ≤ (specNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁))) * specNorm (Rᴴ * ((Q ω)ᴴ * V₂)) *
-          frobNorm B) ^ 2 := pow_le_pow_left₀ (frobNorm_nonneg _) hF 2
-    _ = specNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁))) ^ 2 *
-          (specNorm (Rᴴ * ((Q ω)ᴴ * V₂)) ^ 2 * frobNorm B ^ 2) := by ring
-    _ ≤ _ := by gcongr
-
 /-- **A Haar rotation of the problem defeats every fixed sketch**: for a fixed sketch
 $\mathbf{\Omega}_0 \in \mathbb{R}^{m \times \ell}$ of full column rank, $\mathbf{A} \in
 \mathbb{R}^{m \times n}$
@@ -227,7 +141,8 @@ theorem le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame {
     conv_lhs => rw [← hE]
     simp only [S, Matrix.mul_assoc]
     rw [hE]
-  have hint := integrable_frobNorm_pinv_conjTranspose_mul_mul_sq hQ hlm hQ₁ hQ₂ hrp (Q₂ᴴ * E) hRp
+  have hint := integrable_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame hQ hlm hQ₁ hQ₂
+    hrp (Q₂ᴴ * E) hRp
   have hW2 := mul_le_integral_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame hQ hlm
     hQ₁ hQ₂ h₁₂ hrs hrp (Q₂ᴴ * E) hRp
   have hQE : frobNorm (Q₂ᴴ * E) = frobNorm E := by rw [← hQ₂.frobNorm_mul_left, hE]
@@ -260,38 +175,16 @@ theorem exists_hasOrthonormalCols_le_frobNorm_mul_sub_mul_sketchAndSolve_sq {r' 
       haarProjectionFactor (Fintype.card m) (Fintype.card l) A.rank *
           frobNorm ((1 - rangeProjector A) * B) ^ 2 ≤
         frobNorm (U * B - U * A * sketchAndSolve (U * A) Ω₀ᴴ (U * B)) ^ 2 := by
-  by_contra hcon
-  push Not at hcon
-  set c := haarProjectionFactor (Fintype.card m) (Fintype.card l) A.rank *
-    frobNorm ((1 - rangeProjector A) * B) ^ 2 with hc
-  set f : Matrix m m ℝ → ℝ := fun U =>
-    frobNorm (U * B - U * A * sketchAndSolve (U * A) Ω₀ᴴ (U * B)) ^ 2 with hf
   have hU := HasLaw.id (μ := haarFrame m m)
-  have hW : c ≤ ∫ U, f U ∂haarFrame m m :=
-    le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame hU hΩ₀ hA B
-  have hae : ∀ᵐ U ∂haarFrame m m, HasOrthonormalCols U :=
-    ae_hasOrthonormalCols_of_hasLaw_haarFrame hU le_rfl
-  have hlt : ∀ᵐ U ∂haarFrame m m, f U < c := hae.mono fun U hU' => hcon U hU'
-  have hc0 : 0 < c := by
-    have h1 := hcon 1 NLAlib.hasOrthonormalCols_one
-    have h2 : 0 ≤ f 1 := by simp only [hf]; positivity
-    linarith
-  have hint : Integrable f (haarFrame m m) := by
-    by_contra hni
-    rw [integral_undef hni] at hW
-    linarith
-  have hsub : ∫ U, (c - f U) ∂haarFrame m m = c - ∫ U, f U ∂haarFrame m m := by
-    rw [integral_sub (integrable_const c) hint, integral_const, probReal_univ, one_smul]
-  have hnn : 0 ≤ ∫ U, (c - f U) ∂haarFrame m m :=
-    integral_nonneg_of_ae (hlt.mono fun U h => sub_nonneg.2 h.le)
-  have hg0 : ∫ U, (c - f U) ∂haarFrame m m = 0 := by linarith
-  have heq := (integral_eq_zero_iff_of_nonneg_ae
-    (hlt.mono fun U h => sub_nonneg.2 h.le) (integrable_const c |>.sub hint)).1 hg0
-  have hfc : ∀ᵐ U ∂haarFrame m m, f U = c := heq.mono fun U h => by
-    simp only [Pi.zero_apply] at h
-    linarith
-  obtain ⟨U, h1, h2⟩ := (hlt.and hfc).exists
-  linarith
+  have hW := le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame hU hΩ₀ hA B
+  simp only [id] at hW
+  by_cases hint : Integrable (fun U : Matrix m m ℝ =>
+      frobNorm (U * B - U * A * sketchAndSolve (U * A) Ω₀ᴴ (U * B)) ^ 2) (haarFrame m m)
+  · obtain ⟨U, hU', hle⟩ := exists_notMem_null_integral_le hint
+      (ae_iff.mp (ae_hasOrthonormalCols_of_hasLaw_haarFrame hU le_rfl))
+    exact ⟨U, not_not.mp hU', hW.trans hle⟩
+  · rw [integral_undef hint] at hW
+    exact ⟨1, hasOrthonormalCols_one, hW.trans (sq_nonneg _)⟩
 
 /-- **No random sketch beats a random orthonormal one** (Epperly and Webber's minimax lower bound
 for sketch-and-solve): for a random sketch $\mathbf{\Omega} \in \mathbb{R}^{m \times \ell}$ of any
