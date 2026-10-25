@@ -75,7 +75,12 @@ theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_generaliz
     (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) (k : ℕ) :
     frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 ≤
       frobNorm (A - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 := by
-  sorry
+  obtain ⟨Q, E, Y, -, -, -, hY, -, hsplit, hC, -⟩ := exists_core_generalizedNystrom h k
+  have hEY : frobNorm (Qᴴ * A - truncatedSVD (Qᴴ * A) k) ≤ frobNorm (Qᴴ * A - Y) :=
+    frobNorm_sub_truncatedSVD_le_of_rank_le _ hY.rank_le
+  rw [hsplit, frobNorm_sub_truncatedSVD_rsvd_sq, ← hC]
+  have := pow_le_pow_left₀ (frobNorm_nonneg _) hEY 2
+  linarith
 
 /-- **The perturbed truncation with the next-$k$ tail**: for
 $\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
