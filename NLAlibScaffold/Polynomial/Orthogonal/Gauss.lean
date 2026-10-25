@@ -283,7 +283,18 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
     (hf : LipschitzOnWith L f (Set.Icc a b)) (k : ℕ) :
     |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
       jacksonApproximationConstant * L * (b - a) / (2 * k + 3) * μ.real Set.univ := by
-  sorry
+  have hint : Integrable f μ := by
+    have h := hf.continuousOn.integrableOn_Icc (μ := μ)
+    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * k + 1)
+  have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * k + 1 < 2 * (k + 1)))
+  have h := abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn hμ hint hp' hε
+  refine h.trans_eq ?_
+  push_cast
+  field_simp
+  ring
 
 end Finite
 
