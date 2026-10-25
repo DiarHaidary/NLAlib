@@ -82,6 +82,156 @@ theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_generaliz
   have := pow_le_pow_left₀ (frobNorm_nonneg _) hEY 2
   linarith
 
+/-- A best approximation is the projection of the target onto its own column space:
+$\mathbf{P}_{\mathbf{Y}}\mathbf{M} = \mathbf{Y}$. -/
+private theorem IsBestRankApprox.rangeProjector_self_mul {M Y : Matrix m n 𝕜} {k : ℕ}
+    (hY : IsBestRankApprox M k Y) : rangeProjector Y * M = Y := by
+  classical
+  have hsplit := (isStarProjection_rangeProjector Y).frobNorm_sq_eq_add (M - Y)
+  have e1 : rangeProjector Y * (M - Y) = rangeProjector Y * M - Y := by
+    rw [Matrix.mul_sub, rangeProjector_mul_self]
+  have e2 : (1 - rangeProjector Y) * (M - Y) = M - rangeProjector Y * M := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.sub_mul, Matrix.one_mul, Matrix.one_mul,
+      rangeProjector_mul_self, sub_self, sub_zero]
+  rw [e1, e2] at hsplit
+  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _) (hY.frobNorm_sub_le _
+    ((Matrix.rank_mul_le_left (rangeProjector Y) M).trans
+      (by rw [rank_rangeProjector]; exact hY.rank_le))) 2
+  have hsq : frobNorm (rangeProjector Y * M - Y) ^ 2 = 0 :=
+    le_antisymm (by linarith) (sq_nonneg _)
+  exact sub_eq_zero.mp (frobNorm_eq_zero_iff.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq))
+
+/-- The scalar step of the next-$k$ perturbed truncation. -/
+private theorem le_add_mul_of_le_two_mul {S a w u q γ s r e : ℝ} (hs : 0 ≤ s) (he : 0 ≤ e)
+    (hq : 0 ≤ q) (hr : 0 ≤ r) (hr2 : r ^ 2 = 2) (hqγ : q ≤ γ)
+    (h1 : S ≤ 2 * (r * s * u * e + w)) (h2 : S = a - q ^ 2 + w) (h3 : u ^ 2 = a + q ^ 2)
+    (hw : w ≤ s ^ 2 * e ^ 2) :
+    S ≤ 4 * s * e * γ + 12 * s ^ 2 * e ^ 2 := by
+  have hr3 : r ≤ 3 / 2 := by nlinarith
+  have hsq : (u - r * s * e) ^ 2 ≤ (2 * s * e + r * q) ^ 2 := by
+    have e1 : (u - r * s * e) ^ 2 = u ^ 2 - 2 * (r * s * u * e) + r ^ 2 * (s * e) ^ 2 := by ring
+    have e2 : (2 * s * e + r * q) ^ 2 =
+        4 * (s * e) ^ 2 + 4 * (r * s * e * q) + r ^ 2 * q ^ 2 := by ring
+    rw [e1, e2, hr2]
+    nlinarith [mul_nonneg (mul_nonneg (mul_nonneg hr hs) he) hq]
+  have hu' : u ≤ (r + 2) * s * e + r * q := by
+    nlinarith [(abs_le_of_sq_le_sq' hsq (by positivity)).2]
+  have hse : 0 ≤ r * s * e := by positivity
+  nlinarith [mul_le_mul_of_nonneg_left hu' hse, mul_le_mul_of_nonneg_left hqγ (mul_nonneg hs he),
+    mul_le_mul_of_nonneg_right hr3 (sq_nonneg (s * e))]
+
+/-- The optimality step of perturbed truncation: for any best rank-$k$ approximation
+$\mathbf{Y}$ of $\mathbf{C} + \mathbf{E}$,
+$$\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2 -
+\|\mathbf{C} - \llbracket\mathbf{C}\rrbracket_k\|_{\mathsf{F}}^2 \le
+2\langle\mathbf{Y} - \llbracket\mathbf{C}\rrbracket_k, \mathbf{E}\rangle_{\mathsf{F}}\,.$$ -/
+private theorem IsBestRankApprox.frobNorm_sub_sq_sub_le_two_mul_frobInner
+    {C E Y : Matrix m n 𝕜} {k : ℕ} (hY : IsBestRankApprox (C + E) k Y) :
+    frobNorm (C - Y) ^ 2 - frobNorm (C - truncatedSVD C k) ^ 2 ≤
+      2 * frobInner (Y - truncatedSVD C k) E := by
+  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _)
+    (hY.frobNorm_sub_le (truncatedSVD C k) (rank_truncatedSVD_le C k)) 2
+  have e1 : frobNorm (C - Y) ^ 2 =
+      frobNorm (C + E - Y) ^ 2 - 2 * frobInner (C + E - Y) E + frobNorm E ^ 2 := by
+    rw [← frobNorm_sub_sq, show C + E - Y - E = C - Y by abel]
+  have e2 : frobNorm (C + E - truncatedSVD C k) ^ 2 =
+      frobNorm (C - truncatedSVD C k) ^ 2 + 2 * frobInner (C - truncatedSVD C k) E +
+        frobNorm E ^ 2 := by
+    rw [← frobNorm_add_sq, show C - truncatedSVD C k + E = C + E - truncatedSVD C k by abel]
+  have e3 : frobInner (C - truncatedSVD C k) E - frobInner (C + E - Y) E =
+      frobInner (Y - truncatedSVD C k) E - frobNorm E ^ 2 := by
+    rw [← frobInner_self, ← frobInner_sub_left, ← frobInner_sub_left]
+    congr 1
+    abel
+  linarith
+
+/-- The next-$k$ perturbed truncation in core coordinates: for any best rank-$k$ approximation
+$\mathbf{Y}$ of $\mathbf{C} + \mathbf{E}$, with $\gamma_k =
+\|\llbracket\mathbf{C} - \llbracket\mathbf{C}\rrbracket_k\rrbracket_k\|_{\mathsf{F}}$,
+$$\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
+\|\mathbf{C} - \llbracket\mathbf{C}\rrbracket_k\|_{\mathsf{F}}^2 +
+4\sqrt{k}\,\|\mathbf{E}\|_2\,\gamma_k + 12k\,\|\mathbf{E}\|_2^2\,.$$ -/
+private theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm
+    {C E Y : Matrix m n 𝕜} {k : ℕ} (hY : IsBestRankApprox (C + E) k Y) :
+    frobNorm (C - Y) ^ 2 ≤ frobNorm (C - truncatedSVD C k) ^ 2 +
+      4 * √(k : ℝ) * specNorm E * frobNorm (truncatedSVD (C - truncatedSVD C k) k) +
+      12 * k * specNorm E ^ 2 := by
+  classical
+  set T := truncatedSVD C k with hT
+  set B₂ := C - T with hB₂
+  set P := rangeProjector Y with hPdef
+  have hP : IsStarProjection P := isStarProjection_rangeProjector Y
+  have hPY : P * (C + E) = Y := hY.rangeProjector_self_mul
+  have hY' : Y = P * C + P * E := by rw [← hPY, Matrix.mul_add]
+  have hrP : P.rank ≤ k := by rw [hPdef, rank_rangeProjector]; exact hY.rank_le
+  have hrT : T.rank ≤ k := rank_truncatedSVD_le C k
+  -- (D1) the optimality of `Y` against `T`
+  have hS : frobNorm (C - Y) ^ 2 - frobNorm B₂ ^ 2 ≤ 2 * frobInner (Y - T) E :=
+    hY.frobNorm_sub_sq_sub_le_two_mul_frobInner
+  -- (D2) the row spaces of `T` and `B₂` are orthogonal
+  have hTPB : frobInner T (P * B₂) = 0 := by
+    have hCQ : C * rangeProjector Tᴴ = T := mul_rangeProjector_conjTranspose_truncatedSVD C k
+    have hTQ : T * rangeProjector Tᴴ = T :=
+      calc T * rangeProjector Tᴴ = C * rangeProjector Tᴴ * rangeProjector Tᴴ := by
+            rw [hCQ]
+        _ = T := by rw [Matrix.mul_assoc, rangeProjector_mul_rangeProjector, hCQ]
+    have hBQ : B₂ * rangeProjector Tᴴ = 0 := by rw [hB₂, Matrix.sub_mul, hCQ, hTQ, sub_self]
+    nth_rw 1 [← hTQ]
+    rw [frobInner_mul_right, conjTranspose_rangeProjector, Matrix.mul_assoc, hBQ, Matrix.mul_zero,
+      frobInner_zero_right]
+  have hCY : frobNorm (C - Y) ^ 2 = frobNorm (T - P * T) ^ 2 +
+      (frobNorm B₂ ^ 2 - frobNorm (P * B₂) ^ 2) + frobNorm (P * E) ^ 2 := by
+    have h1 : C - Y = (C - P * C) - P * E := by rw [hY']; abel
+    have h0 : frobInner (C - P * C) (P * E) = 0 := by
+      rw [frobInner_comm, frobInner_mul_left, hP.conjTranspose_eq, Matrix.mul_sub,
+        ← Matrix.mul_assoc, hP.mul_self, sub_self, frobInner_zero_right]
+    have h2 : C - P * C = (T - P * T) + (B₂ - P * B₂) := by rw [hB₂, Matrix.mul_sub]; abel
+    have h3 : frobInner (T - P * T) (B₂ - P * B₂) = 0 := by
+      rw [hP.frobInner_sub_mul_sub_mul, frobInner_sub_left, frobInner_mul_left,
+        hP.conjTranspose_eq, hTPB, frobInner_truncatedSVD_sub C k, sub_zero]
+    have h4 := hP.frobNorm_sq_eq_add B₂
+    rw [Matrix.sub_mul, Matrix.one_mul] at h4
+    rw [h1, frobNorm_sub_sq_of_frobInner_eq_zero h0, h2, frobNorm_add_sq_of_frobInner_eq_zero h3]
+    linarith
+  have hD : frobNorm (P * C - T) ^ 2 = frobNorm (T - P * T) ^ 2 + frobNorm (P * B₂) ^ 2 := by
+    have h1 : P * C - T = P * B₂ - (T - P * T) := by rw [hB₂, Matrix.mul_sub]; abel
+    have h0 : frobInner (P * B₂) (T - P * T) = 0 := by
+      rw [frobInner_sub_right, frobInner_mul_left, frobInner_mul_left, hP.conjTranspose_eq,
+        ← Matrix.mul_assoc, hP.mul_self, sub_self]
+    rw [h1, frobNorm_sub_sq_of_frobInner_eq_zero h0]
+    ring
+  have hYT : frobInner (Y - T) E = frobInner (P * C - T) E + frobNorm (P * E) ^ 2 := by
+    rw [hY', show P * C + P * E - T = (P * C - T) + P * E by abel, frobInner_add_left,
+      ← frobInner_self, frobInner_mul_left P E (P * E), hP.conjTranspose_eq, ← Matrix.mul_assoc,
+      hP.mul_self, frobInner_comm (P * E) E]
+  -- the cross term sees rank `2k`, the noise term rank `k`
+  have hDE : frobInner (P * C - T) E ≤
+      √2 * √(k : ℝ) * frobNorm (P * C - T) * specNorm E := by
+    have hrank : (P * C - T).rank ≤ 2 * k := (Matrix.rank_sub_le _ _).trans
+      (by have := (Matrix.rank_mul_le_left P C).trans hrP; omega)
+    have h := frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le hrank E
+    rwa [Nat.cast_mul, Nat.cast_ofNat, Real.sqrt_mul zero_le_two] at h
+  have hw : frobNorm (P * E) ^ 2 ≤ √(k : ℝ) ^ 2 * specNorm E ^ 2 := by
+    rw [Real.sq_sqrt (Nat.cast_nonneg k)]
+    exact (frobNorm_sq_le_rank_mul_specNorm_sq _).trans (mul_le_mul
+      (by exact_mod_cast (Matrix.rank_mul_le_left P E).trans hrP)
+      (pow_le_pow_left₀ (specNorm_nonneg _) (hP.specNorm_mul_le E) 2) (sq_nonneg _)
+      (Nat.cast_nonneg k))
+  -- Ky Fan for the rank-`k` projector `P`
+  have hg : frobNorm (P * B₂) ≤ frobNorm (truncatedSVD B₂ k) := by
+    have h1 := frobInner_le_frobNorm_mul_frobNorm_truncatedSVD_of_rank_le
+      ((Matrix.rank_mul_le_left P B₂).trans hrP) B₂
+    have h2 : frobInner (P * B₂) B₂ = frobNorm (P * B₂) ^ 2 := by
+      rw [← frobInner_self, frobInner_mul_left P B₂ (P * B₂), frobInner_mul_left P B₂ B₂,
+        hP.conjTranspose_eq, ← Matrix.mul_assoc, hP.mul_self]
+    nlinarith [frobNorm_nonneg (P * B₂), frobNorm_nonneg (truncatedSVD B₂ k)]
+  have h := le_add_mul_of_le_two_mul (S := frobNorm (C - Y) ^ 2 - frobNorm B₂ ^ 2)
+    (a := frobNorm (T - P * T) ^ 2) (w := frobNorm (P * E) ^ 2) (Real.sqrt_nonneg (k : ℝ))
+    (specNorm_nonneg E) (frobNorm_nonneg _) (Real.sqrt_nonneg 2) (Real.sq_sqrt zero_le_two)
+    hg (by linarith) (by linarith) hD hw
+  rw [Real.sq_sqrt (Nat.cast_nonneg k)] at h
+  linarith
+
 /-- **The perturbed truncation with the next-$k$ tail**: for
 $\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
 $\mathbf{\Psi} \in \Bbbk^{m \times p}$ such that
@@ -130,7 +280,22 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm_mul_frob
         4 * √(k : ℝ) * specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) *
           frobNorm (truncatedSVD (rsvd A Ω - truncatedSVD (rsvd A Ω) k) k) +
         12 * k * specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) ^ 2 := by
-  sorry
+  obtain ⟨Q, E, Y, hQ, hP, -, hY, -, hsplit, hC, hE⟩ := exists_core_generalizedNystrom h k
+  have hEq : specNorm E = specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) := by
+    rw [← singularValues_zero_eq_specNorm, ← singularValues_zero_eq_specNorm, hE]
+  have hr : rsvd A Ω = Q * (Qᴴ * A) := by
+    change rangeProjector (A * Ω) * A = _
+    rw [hP, Matrix.mul_assoc]
+  have hγ : frobNorm (truncatedSVD (Qᴴ * A - truncatedSVD (Qᴴ * A) k) k) =
+      frobNorm (truncatedSVD (rsvd A Ω - truncatedSVD (rsvd A Ω) k) k) := by
+    rw [hr, ← lpGauge_two_matrixNorm, ← lpGauge_two_matrixNorm]
+    exact SymmetricGauge.matrixNorm_congr _ (funext fun i => by
+      rw [singularValues_truncatedSVD, singularValues_truncatedSVD,
+        singularValues_sub_truncatedSVD, singularValues_sub_truncatedSVD,
+        hQ.singularValues_mul_left])
+  have hb := hY.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm
+  rw [hsplit, frobNorm_sub_truncatedSVD_rsvd_sq, ← hγ, ← hC, ← hEq]
+  linarith
 
 /-- **The reverse perturbed truncation**: for $\mathbf{A} \in \Bbbk^{m \times n}$,
 $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and $\mathbf{\Psi} \in \Bbbk^{m \times p}$ such that
