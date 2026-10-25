@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Estimation.Spectral.SpectralDensity
+public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 
 /-!
 # Spectral density estimation: tails with independent sub-Gaussian entries
@@ -368,13 +369,6 @@ exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integ
         rw [Real.exp_neg, Real.exp_log (by positivity)]
         field_simp
 
-/-- A Lipschitz function on $[a, b]$ is integrable against a finite measure carried by $[a, b]$. -/
-private theorem integrable_of_lipschitz_ae {ρ : Measure ℝ} [IsFiniteMeasure ρ] {a b : ℝ}
-    (hρ : ∀ᵐ x ∂ρ, x ∈ Set.Icc a b) {f : ℝ → ℝ} {L : ℝ≥0}
-    (hf : LipschitzOnWith L f (Set.Icc a b)) : Integrable f ρ := by
-  have h := hf.continuousOn.integrableOn_Icc (μ := ρ)
-  rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hρ] at h
-
 /-- Scaling a measure by the inverse of the mass of the probe spectral measure. -/
 private theorem measureReal_inv_mass_smul (P R : Measure ℝ) (S : Set ℝ) :
     ((P Set.univ)⁻¹ • R).real S = (P.real Set.univ)⁻¹ * R.real S := by
@@ -430,11 +424,11 @@ private theorem abs_integral_empirical_sub_normalised_probe_le [Nonempty n]
       _ ≤ τ + 1 * τ := add_le_add (hK x (hfin.mem_toFinset.mp hx))
           (mul_le_mul hinv hM (abs_nonneg _) zero_le_one)
       _ = 2 * τ := by ring
-  have hfν := integrable_of_lipschitz_ae
-    ((hA.ae_mem_spectrum_empiricalSpectralMeasure).mono fun x hx => hs hx) hf
-  have hfρ := integrable_of_lipschitz_ae
+  have hfν := hf.continuousOn.integrable_of_ae_mem_Icc
+    ((hA.ae_mem_spectrum_empiricalSpectralMeasure).mono fun x hx => hs hx)
+  have hfρ := hf.continuousOn.integrable_of_ae_mem_Icc
     (Measure.ae_smul_measure (ae_mem_Icc_probeSpectralMeasure A hs Ω)
-      (probeSpectralMeasure A Ω Set.univ)⁻¹) hf
+      (probeSpectralMeasure A Ω Set.univ)⁻¹)
   have hg : LipschitzOnWith L (fun x => f x - f b) (Set.Icc a b) := by
     refine LipschitzOnWith.of_dist_le_mul fun x hx y hy => ?_
     simpa only [dist_sub_right] using hf.dist_le_mul x hx y hy
@@ -471,7 +465,8 @@ private theorem abs_integral_normalised_probe_sub_slq_le
   have hp' : p.degree < 2 * ((q + 1 : ℕ) : WithBot ℕ) :=
     hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
   have h := hmatch.abs_integral_sub_integral_le_of_isUniformApproxOn hPab hQab
-    (integrable_of_lipschitz_ae hPab hf) (integrable_of_lipschitz_ae hQab hf) hp' hε
+    (hf.continuousOn.integrable_of_ae_mem_Icc hPab) (hf.continuousOn.integrable_of_ae_mem_Icc hQab)
+    hp' hε
   rw [measureReal_inv_mass_smul_univ rfl hMpos, measureReal_inv_mass_smul_univ hQM hMpos] at h
   refine h.trans (le_of_eq ?_)
   push_cast

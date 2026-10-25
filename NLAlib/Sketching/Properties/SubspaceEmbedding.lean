@@ -148,9 +148,11 @@ private theorem forall_mem_range_iff [Fintype p] {U : Matrix n p 𝕜} {P : (n �
   simp only [LinearMap.mem_range, Matrix.mulVecLin_apply, forall_exists_index,
     forall_apply_eq_imp_iff]
 
-/-- Right multiplication of the subspace basis, lower half. -/
-private theorem isSubspaceInjection_mul_right [Fintype p] (h : IsSubspaceInjection S U a)
-    (C : Matrix p q 𝕜) : IsSubspaceInjection S (U * C) a := by
+/-- A subspace injection for $\operatorname{range}\mathbf{U}$ is one for
+$\operatorname{range}(\mathbf{U}\mathbf{C})$. -/
+theorem IsSubspaceInjection.mul_right [Fintype p] (h : IsSubspaceInjection S U a)
+    (C : Matrix p q 𝕜) :
+    IsSubspaceInjection S (U * C) a := by
   have h' := conjTranspose_mul_mul_le_conjTranspose_mul_mul h C
   have e₁ : (U * C)ᴴ * (U * C) = Cᴴ * (Uᴴ * U) * C := by
     simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
@@ -291,7 +293,7 @@ theorem IsSubspaceInjection.of_range_le [Fintype p] [Fintype q] (h : IsSubspaceI
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
     IsSubspaceInjection S V a := by
   obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hVU
-  exact isSubspaceInjection_mul_right h C
+  exact h.mul_right C
 
 /-- A subspace embedding for $\operatorname{range}\mathbf{U}$ is one for every subspace
 $\operatorname{range}\mathbf{V} \subseteq \operatorname{range}\mathbf{U}$. -/
@@ -299,21 +301,14 @@ theorem IsSubspaceEmbedding.of_range_le [Fintype p] [Fintype q] (h : IsSubspaceE
     (hVU : LinearMap.range V.mulVecLin ≤ LinearMap.range U.mulVecLin) :
     IsSubspaceEmbedding S V a b := by
   obtain ⟨C, rfl⟩ := range_le_iff_exists_mul.mp hVU
-  exact ⟨isSubspaceInjection_mul_right h.lower C, upper_mul_right h.upper C⟩
-
-/-- A subspace injection for $\operatorname{range}\mathbf{U}$ is one for
-$\operatorname{range}(\mathbf{U}\mathbf{C})$. -/
-theorem IsSubspaceInjection.mul_right [Fintype p] (h : IsSubspaceInjection S U a)
-    (C : Matrix p q 𝕜) :
-    IsSubspaceInjection S (U * C) a := by
-  exact isSubspaceInjection_mul_right h C
+  exact ⟨h.lower.mul_right C, upper_mul_right h.upper C⟩
 
 /-- A subspace embedding for $\operatorname{range}\mathbf{U}$ is one for
 $\operatorname{range}(\mathbf{U}\mathbf{C})$. -/
 theorem IsSubspaceEmbedding.mul_right [Fintype p] (h : IsSubspaceEmbedding S U a b)
     (C : Matrix p q 𝕜) :
     IsSubspaceEmbedding S (U * C) a b := by
-  exact ⟨isSubspaceInjection_mul_right h.lower C, upper_mul_right h.upper C⟩
+  exact ⟨h.lower.mul_right C, upper_mul_right h.upper C⟩
 
 /-- Scaling the sketch by $c$ scales the injection constant by $\lvert c \rvert^2$. -/
 theorem IsSubspaceInjection.smul (h : IsSubspaceInjection S U a) (c : 𝕜) :

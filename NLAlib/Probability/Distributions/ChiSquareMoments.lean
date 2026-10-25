@@ -43,23 +43,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
   {g : Ω → n → ℝ}
 
-/-- $\int_0^\infty y^q e^{-y^2/2} \, dy = 2^{(q+1)/2} \Gamma((q+1)/2) / 2$ for $q > -1$. -/
-private theorem integral_rpow_mul_exp_neg_sq_div_two {q : ℝ} (hq : -1 < q) :
-    ∫ y in Ioi (0 : ℝ), y ^ q * rexp (-y ^ 2 / 2) =
-      2 ^ ((q + 1) / 2) * (1 / 2) * Real.Gamma ((q + 1) / 2) := by
-  have h := integral_rpow_mul_exp_neg_mul_rpow (p := 2) (q := q) (b := 1 / 2)
-    (by norm_num) hq (by norm_num)
-  have hhalf : (1 / 2 : ℝ) ^ (-(q + 1) / 2) = 2 ^ ((q + 1) / 2) := by
-    rw [one_div, Real.inv_rpow (by norm_num), ← Real.rpow_neg (by norm_num)]
-    congr 1
-    ring
-  rw [hhalf] at h
-  rw [← h]
-  refine setIntegral_congr_fun measurableSet_Ioi fun y _ => ?_
-  rw [Real.rpow_two]
-  congr 2
-  ring
-
 /-- The radial integral
 $\int_0^\infty y^{d-1} e^{-y^2/2} (y^2)^s \, dy = 2^{d/2 + s} \Gamma(d/2 + s) / 2$ for $d \ge 1$
 and $s > -d/2$. -/

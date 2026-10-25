@@ -60,6 +60,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Co
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real

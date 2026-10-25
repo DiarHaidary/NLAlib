@@ -29,6 +29,7 @@ Upstream candidate: a new file `Mathlib/Probability/Distributions/ChiSquared.lea
 
 * `ProbabilityTheory.integral_comp_norm_pi_gaussianReal`: polar coordinates, the $\chi_d$
   density.
+* `ProbabilityTheory.integral_rpow_mul_exp_neg_sq_div_two`: the Gaussian radial integral.
 * `ProbabilityTheory.map_sum_sq_pi_gaussianReal`: the chi-square law, measure-level.
 * `ProbabilityTheory.hasLaw_sum_sq_of_hasLaw_pi_gaussianReal`: its `HasLaw` form.
 -/
@@ -109,24 +110,38 @@ private theorem integral_comp_norm_pi_gaussianReal_eq_mul [Nonempty ι] (φ : �
   simp only [e, integral_const_mul]
   ring
 
+/-- The Gaussian radial integral: for every real $q > -1$,
+$$\int_0^\infty y^q e^{-y^2/2}\,dy = \frac{2^{(q+1)/2}\,\Gamma((q+1)/2)}{2}\,.$$ -/
+theorem integral_rpow_mul_exp_neg_sq_div_two {q : ℝ} (hq : -1 < q) :
+    ∫ y in Ioi (0 : ℝ), y ^ q * rexp (-y ^ 2 / 2) =
+      2 ^ ((q + 1) / 2) * (1 / 2) * Real.Gamma ((q + 1) / 2) := by
+  have h := integral_rpow_mul_exp_neg_mul_rpow (p := 2) (q := q) (b := 1 / 2)
+    (by norm_num) hq (by norm_num)
+  have hhalf : (1 / 2 : ℝ) ^ (-(q + 1) / 2) = 2 ^ ((q + 1) / 2) := by
+    rw [one_div, Real.inv_rpow (by norm_num), ← Real.rpow_neg (by norm_num)]
+    congr 1
+    ring
+  rw [hhalf] at h
+  rw [← h]
+  refine setIntegral_congr_fun measurableSet_Ioi fun y _ => ?_
+  rw [Real.rpow_two]
+  congr 2
+  ring
+
 /-- The $\chi_d$ normalising constant:
 $\int_0^\infty y^{d-1} e^{-y^2/2}\,dy = 2^{d/2-1}\Gamma(d/2)$ for $d \ge 1$. -/
 private theorem integral_pow_mul_exp_neg_sq_div_two {d : ℕ} (hd : 1 ≤ d) :
     ∫ y in Ioi (0 : ℝ), y ^ (d - 1) * rexp (-y ^ 2 / 2) =
       2 ^ ((d : ℝ) / 2 - 1) * Real.Gamma ((d : ℝ) / 2) := by
   have hd' : (1 : ℝ) ≤ d := by exact_mod_cast hd
-  have h := integral_rpow_mul_exp_neg_mul_rpow (p := 2) (q := (d : ℝ) - 1) (b := 1 / 2)
-    (by norm_num) (by linarith) (by norm_num)
-  have hhalf : (1 / 2 : ℝ) ^ (-((d : ℝ) - 1 + 1) / 2) * (1 / 2) = 2 ^ ((d : ℝ) / 2 - 1) := by
-    rw [one_div, Real.inv_rpow (by norm_num), ← Real.rpow_neg (by norm_num),
-      Real.rpow_sub (by norm_num), Real.rpow_one]
-    ring_nf
-  rw [show ((d : ℝ) - 1 + 1) / 2 = (d : ℝ) / 2 by ring, hhalf] at h
-  rw [← h]
-  refine setIntegral_congr_fun measurableSet_Ioi fun y (hy : 0 < y) => ?_
   have hcast : ((d - 1 : ℕ) : ℝ) = (d : ℝ) - 1 := by rw [Nat.cast_sub hd, Nat.cast_one]
-  rw [← Real.rpow_natCast, hcast, Real.rpow_two]
-  congr 2
+  have h := integral_rpow_mul_exp_neg_sq_div_two (q := (d : ℝ) - 1) (by linarith)
+  rw [show ((d : ℝ) - 1 + 1) / 2 = (d : ℝ) / 2 by ring] at h
+  have e : ∫ y in Ioi (0 : ℝ), y ^ (d - 1) * rexp (-y ^ 2 / 2) =
+      ∫ y in Ioi (0 : ℝ), y ^ ((d : ℝ) - 1) * rexp (-y ^ 2 / 2) := by
+    refine setIntegral_congr_fun measurableSet_Ioi fun y _ => ?_
+    rw [← Real.rpow_natCast, hcast]
+  rw [e, h, Real.rpow_sub (by norm_num : (0 : ℝ) < 2), Real.rpow_one]
   ring
 
 /-- **Polar coordinates for a standard normal vector**: for $d = \lvert\iota\rvert \ge 1$
@@ -227,8 +242,9 @@ private theorem measureReal_sum_sq_mem_pi_gaussianReal {ι : Type*} [Fintype ι]
   ring
 
 /-- **The chi-square law**: for $\iota$ nonempty, under the product of $d = \lvert\iota\rvert$
-standard normal laws, $\sum_i x_i^2$ has law $\mathrm{Gamma}(d/2, 1/2)$ (shape $d/2$, rate
-$1/2$), the chi-square law $\chi^2_d$. For empty $\iota$ the sum is $0$ while
+standard normal laws, $\sum_i x_i^2$ has law
+$$\mathrm{Gamma}\Big(\frac{d}{2}, \frac{1}{2}\Big)$$
+(shape $d/2$, rate $1/2$), the chi-square law $\chi^2_d$. For empty $\iota$ the sum is $0$ while
 `gammaMeasure 0 (1 / 2)` is the zero measure.
 No printed source.
 Result: chi-square-law -/

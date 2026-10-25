@@ -740,14 +740,31 @@ theorem spectralMeasure_diagonal_sqrt_of_ae_mem {ν : Measure ℝ} [IsFiniteMeas
         rw [Real.norm_eq_abs, abs_of_nonneg (Real.sqrt_nonneg _),
           Real.sq_sqrt (measureReal_nonneg), ofReal_measureReal]
 
+/-- The real spectrum of a square matrix lies in a compact interval: for every square $\mathbf{A}$
+there are $a, a'$ with $\sigma(\mathbf{A}) \subseteq [a, a']$. -/
+theorem exists_spectrum_subset_Icc (A : Matrix n n 𝕜) :
+    ∃ a a' : ℝ, spectrum ℝ A ⊆ Set.Icc a a' := by
+  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
+  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
+  exact ⟨a, a', fun x hx => ⟨ha hx, ha' hx⟩⟩
+
 /-- Every spectral measure is carried by a compact interval: for every square $\mathbf{A}$ and
 every $\mathbf{b}$, $\mu_{\mathbf{A},\mathbf{b}}$-almost every $x$ lies in some $[a, a']$, the
 support hypothesis of the Polynomial layer (`ae_mem_Icc_spectralMeasure` with bounds of the
 finite spectrum). -/
 theorem exists_ae_mem_Icc_spectralMeasure (A : Matrix n n 𝕜) (b : n → 𝕜) :
     ∃ a a' : ℝ, ∀ᵐ x ∂spectralMeasure A b, x ∈ Set.Icc a a' := by
-  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
-  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
-  exact ⟨a, a', ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b⟩
+  obtain ⟨a, a', hs⟩ := exists_spectrum_subset_Icc A
+  exact ⟨a, a', ae_mem_Icc_spectralMeasure A hs b⟩
+
+/-- A Hermitian matrix has at most $\lvert n\rvert$ distinct eigenvalues. -/
+theorem _root_.Matrix.IsHermitian.ncard_spectrum_le {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) : (spectrum ℝ A).ncard ≤ Fintype.card n := by
+  rw [Set.ncard_eq_toFinset_card _ A.finite_real_spectrum]
+  have hfin : A.finite_real_spectrum.toFinset = Finset.univ.image hA.eigenvalues := by
+    ext x
+    simp [hA.spectrum_real_eq_range_eigenvalues]
+  rw [hfin]
+  exact Finset.card_image_le.trans_eq Finset.card_univ
 
 end NLAlib

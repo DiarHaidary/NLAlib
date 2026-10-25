@@ -396,8 +396,8 @@ private theorem card_spectrum_le_of_range_eq {Q : Matrix n r 𝕜} (hQ : HasOrth
   have hr : Fintype.card r = min q (krylovGrade A b) := by
     rw [← hQ.rank_eq, ← finrank_krylovSpace, ← hK]
     rfl
-  rw [hT.spectrum_real_eq_range_eigenvalues, ← hr, ← Nat.card_eq_fintype_card]
-  exact Finite.card_range_le _
+  rw [Nat.card_coe_set_eq, ← hr]
+  exact hT.ncard_spectrum_le
 
 /-- The number of distinct Ritz values as the cardinality of a finset listing them. -/
 private theorem card_eq_natCard_spectrum {B : Matrix r r 𝕜} {s : Finset ℝ}

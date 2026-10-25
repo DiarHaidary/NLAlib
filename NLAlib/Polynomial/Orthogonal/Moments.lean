@@ -9,6 +9,8 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Chebyshe
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
 public import Mathlib.MeasureTheory.Measure.Dirac
 public import Mathlib.RingTheory.Polynomial.Basic
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.MeasureTheory.Integral.IntegrableOn
 public import Mathlib.Topology.Algebra.Polynomial
@@ -102,11 +104,8 @@ theorem matchesMoments_iff_forall_mem_degreeLT : MatchesMoments μ ν N ↔
 
 /-- A real polynomial is integrable against a finite measure supported in $[a, b]$. -/
 theorem integrable_eval_of_ae_mem_Icc [IsFiniteMeasure μ] {a b : ℝ}
-    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (p : ℝ[X]) : Integrable (fun x => p.eval x) μ := by
-  obtain ⟨C, hC⟩ :=
-    isCompact_Icc.exists_bound_of_continuousOn (f := fun x => p.eval x) p.continuous.continuousOn
-  exact Integrable.of_bound p.continuous.aestronglyMeasurable C (by
-    filter_upwards [hμ] with x hx using hC x hx)
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (p : ℝ[X]) : Integrable (fun x => p.eval x) μ :=
+  p.continuous.continuousOn.integrable_of_ae_mem_Icc hμ
 
 /-- Moment matching is matching of the monomial moments: for finite $\mu$ and $\nu$
 supported in $[a, b]$, they match $N$ moments exactly when
@@ -216,13 +215,12 @@ by a finite set $s \subseteq \mathbb{R}$ and $x \in s$, $\int\ell_x\,d\mu = \mu\
 Lagrange basis polynomial of $x$ at $s$ (Mathlib's `Lagrange.basis s id x`). -/
 theorem integral_eval_basis_of_ae_mem [IsFiniteMeasure μ] {s : Finset ℝ} (hμ : ∀ᵐ t ∂μ, t ∈ s)
     {x : ℝ} (hx : x ∈ s) : ∫ t, (Lagrange.basis s id x).eval t ∂μ = μ.real {x} := by
-  have := setIntegral_finset s ((Lagrange.basis s id x).continuous.continuousOn
-    |>.integrableOn_compact (μ := μ) s.finite_toSet.isCompact)
-  rw [Measure.restrict_eq_self_of_ae_mem hμ] at this
-  rw [this, Finset.sum_eq_single_of_mem x hx,
-    show (Lagrange.basis s id x).eval x = 1 from Lagrange.eval_basis_self (Set.injOn_id _) hx,
-    smul_eq_mul, mul_one]
-  exact fun y hy hyx => smul_eq_zero_of_right _ (Lagrange.eval_basis_of_ne (v := id) hyx.symm hy)
+  rw [integral_eq_sum_measureReal_singleton_mul hμ _, Finset.sum_eq_single_of_mem x hx]
+  · rw [show (Lagrange.basis s id x).eval x = 1 from Lagrange.eval_basis_self (Set.injOn_id _) hx,
+      mul_one]
+  · intro y hy hyx
+    rw [show (Lagrange.basis s id x).eval y = 0 from
+        Lagrange.eval_basis_of_ne (v := id) hyx.symm hy, mul_zero]
 
 /-- Moment determinacy on a finite set: two finite measures $\mu$, $\nu$ carried by a finite
 set $s \subseteq \mathbb{R}$ that match their first $\lvert s\rvert$ moments are equal. No printed

@@ -176,8 +176,12 @@ theorem IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq {μ : Measure 
   · intro hx'
     exact absurd hx hx'
 
-/-- The integral against the Gauss rule (stated as `integral_interpolatoryQuadrature` below). -/
-private theorem integral_interpolatoryQuadrature_of_isOrthogonalPolynomial {μ : Measure ℝ}
+/-- The integral against the Gauss rule: if the nodal polynomial of $s$ is orthogonal in
+$L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite measure $\mu$
+supported in $[a, b]$, then for every $f : \mathbb{R} \to \mathbb{R}$ the integral of $f$ against
+the interpolatory rule at $s$ is $\sum_{x\in s}\bigl(\int\ell_x\,d\mu\bigr)f(x)$, $\ell_x$ the
+Lagrange basis polynomial of $x$; the truncation of the weights at $0$ does not act. -/
+theorem IsOrthogonalPolynomial.integral_interpolatoryQuadrature {μ : Measure ℝ}
     {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (f : ℝ → ℝ) :
     ∫ x, f x ∂interpolatoryQuadrature μ s =
@@ -201,20 +205,8 @@ theorem IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature {μ : Meas
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     MatchesMoments μ (interpolatoryQuadrature μ s) (2 * s.card) := by
   intro p hp
-  rw [integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ,
+  rw [hs.integral_interpolatoryQuadrature hμ,
     hs.integral_eval_eq_sum hμ (by exact_mod_cast hp)]
-
-/-- The integral against the Gauss rule: if the nodal polynomial of $s$ is orthogonal in
-$L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite measure $\mu$
-supported in $[a, b]$, then for every $f : \mathbb{R} \to \mathbb{R}$ the integral of $f$ against
-the interpolatory rule at $s$ is $\sum_{x\in s}\bigl(\int\ell_x\,d\mu\bigr)f(x)$, $\ell_x$ the
-Lagrange basis polynomial of $x$; the truncation of the weights at $0$ does not act. -/
-theorem IsOrthogonalPolynomial.integral_interpolatoryQuadrature {μ : Measure ℝ}
-    {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
-    [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (f : ℝ → ℝ) :
-    ∫ x, f x ∂interpolatoryQuadrature μ s =
-      ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * f x :=
-  integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ f
 
 /-! ### The canonical Gauss rule -/
 
@@ -256,11 +248,9 @@ $$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}w_x f(x)\,,$$
 with $G$ the Gauss nodes of order $k$ and $w_x$ the mass of the rule at $x$. No support
 hypothesis: the rule is a finite sum of Dirac masses. -/
 theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
-    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x := by
-  conv_lhs => rw [← Measure.restrict_eq_self_of_ae_mem (μ := gaussQuadrature μ k)
-    (s := gaussNodes μ k) (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k))]
-  rw [setIntegral_finset _ (integrable_gaussQuadrature μ k f).integrableOn]
-  simp only [smul_eq_mul]
+    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x :=
+  integral_eq_sum_measureReal_singleton_mul (μ := gaussQuadrature μ k)
+    (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k)) f
 
 /-! ### Finite measures with compact support -/
 
@@ -408,9 +398,7 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
     (hf : LipschitzOnWith L f (Set.Icc a b)) (k : ℕ) :
     |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
       jacksonApproximationConstant * L * (b - a) / (2 * k + 3) * μ.real Set.univ := by
-  have hint : Integrable f μ := by
-    have h := hf.continuousOn.integrableOn_Icc (μ := μ)
-    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
+  have hint : Integrable f μ := hf.continuousOn.integrable_of_ae_mem_Icc hμ
   obtain ⟨p, hp, hε⟩ :=
     exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * k + 1)
   have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
