@@ -510,6 +510,36 @@ _root_.Matrix.IsHermitian.abs_integral_probeSpectralMeasure_sub_integral_slqMeas
 
 /-! ### Tails with independent sub-Gaussian entries -/
 
+/-- The exponent of the Girard–Hutchinson tail dominates the exponent of the spectral tail: if
+$F^2 \le 1/N$ and $S \le 1/N$ with $F, S > 0$, then $M N \min(\tau^2/c^2, \tau/c)$ is at most
+$\min(M\tau^2/(c^2F^2), M\tau/(cS))$. -/
+private lemma card_mul_min_le_min_girardHutchinson {M N τ c F S : ℝ} (hM : 0 ≤ M) (hN : 0 < N)
+    (hc : 0 < c) (hτ : 0 ≤ τ) (hF : 0 < F) (hS : 0 < S) (hF2 : F ^ 2 ≤ 1 / N) (hS1 : S ≤ 1 / N) :
+    M * N * min (τ ^ 2 / c ^ 2) (τ / c) ≤ min (M * τ ^ 2 / (c ^ 2 * F ^ 2)) (M * τ / (c * S)) := by
+  have hNF : N * F ^ 2 ≤ 1 := by
+    calc N * F ^ 2 ≤ N * (1 / N) := mul_le_mul_of_nonneg_left hF2 hN.le
+      _ = 1 := by field_simp
+  have hNS : N * S ≤ 1 := by
+    calc N * S ≤ N * (1 / N) := mul_le_mul_of_nonneg_left hS1 hN.le
+      _ = 1 := by field_simp
+  refine le_min ?_ ?_
+  · rw [le_div_iff₀ (by positivity)]
+    calc M * N * min (τ ^ 2 / c ^ 2) (τ / c) * (c ^ 2 * F ^ 2)
+        ≤ M * N * (τ ^ 2 / c ^ 2) * (c ^ 2 * F ^ 2) := by
+          gcongr
+          exact min_le_left _ _
+      _ = M * τ ^ 2 * (N * F ^ 2) := by field_simp
+      _ ≤ M * τ ^ 2 * 1 := by gcongr
+      _ = M * τ ^ 2 := mul_one _
+  · rw [le_div_iff₀ (by positivity)]
+    calc M * N * min (τ ^ 2 / c ^ 2) (τ / c) * (c * S)
+        ≤ M * N * (τ / c) * (c * S) := by
+          gcongr
+          exact min_le_right _ _
+      _ = M * τ * (N * S) := by field_simp
+      _ ≤ M * τ * 1 := by gcongr
+      _ = M * τ := mul_one _
+
 /-- **The distribution of the probe spectral measure, at one set.** Let the entries of the real
 $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
 moment generating function bound with variance proxy $c$ (`HasSubgaussianMGF`) and having second
@@ -543,7 +573,66 @@ theorem measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_r
         (probeSpectralMeasure A (X ω)).real S|} ≤
       2 * Real.exp (-(hansonWrightConstant * (Fintype.card m * Fintype.card n *
         min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
-  sorry
+  have := hind.isProbabilityMeasure
+  set P : Matrix n n ℝ := cfc (S.indicator fun _ => (1 : ℝ)) A with hPdef
+  have hP : IsStarProjection P := isStarProjection_cfc_indicator A S
+  set B : Matrix n n ℝ := (1 / (Fintype.card n : ℝ)) • P with hBdef
+  have hset : {ω | τ ≤ |(empiricalSpectralMeasure A).real S -
+      (probeSpectralMeasure A (X ω)).real S|} =
+      {ω | τ ≤ |B.trace - girardHutchinson B (X ω)|} := by
+    ext ω
+    simp only [Set.mem_setOf_eq, hBdef, hPdef, hA.empiricalSpectralMeasure_real,
+      probeSpectralMeasure_real, girardHutchinson_smul, Matrix.trace_smul, smul_eq_mul,
+      RCLike.re_to_real]
+    ring_nf
+  rw [hset]
+  rcases eq_or_lt_of_le hτ with rfl | hτpos
+  · simp only [zero_pow two_ne_zero, zero_div, min_self, mul_zero, neg_zero, Real.exp_zero,
+      mul_one]
+    linarith [measureReal_le_one (μ := μ)
+      (s := {ω | (0:ℝ) ≤ |B.trace - girardHutchinson B (X ω)|})]
+  rcases eq_or_ne c 0 with rfl | hc
+  · simp only [NNReal.coe_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+      div_zero, min_self, mul_zero, neg_zero, Real.exp_zero, mul_one]
+    linarith [measureReal_le_one (μ := μ) (s := {ω | τ ≤ |B.trace - girardHutchinson B (X ω)|})]
+  have hc' : (0:ℝ) < c := NNReal.coe_pos.2 (pos_iff_ne_zero.2 hc)
+  by_cases hB : B = 0
+  · have hempty : {ω | τ ≤ |B.trace - girardHutchinson B (X ω)|} = ∅ := by
+      ext ω
+      simp [hB, girardHutchinson, not_le.2 hτpos]
+    rw [hempty, measureReal_empty]
+    positivity
+  have hN : (0:ℝ) < Fintype.card n := by
+    by_contra hN
+    apply hB
+    have h0 : (Fintype.card n : ℝ) = 0 := le_antisymm (not_lt.1 hN) (Nat.cast_nonneg _)
+    simp [hBdef, h0]
+  have hF : 0 < frobNorm B :=
+    lt_of_le_of_ne (frobNorm_nonneg _) (fun h => hB (frobNorm_eq_zero_iff.1 h.symm))
+  have hS : 0 < specNorm B :=
+    lt_of_le_of_ne (specNorm_nonneg _) (fun h => hB (specNorm_eq_zero_iff.1 h.symm))
+  have hF2 : frobNorm B ^ 2 ≤ 1 / (Fintype.card n : ℝ) := by
+    rw [hBdef, frobNorm_smul, mul_pow, hP.frobNorm_sq_eq_rank,
+      Real.norm_of_nonneg (by positivity)]
+    have hr : (P.rank : ℝ) ≤ Fintype.card n := by exact_mod_cast Matrix.rank_le_card_width P
+    have := mul_le_mul_of_nonneg_left hr (sq_nonneg (1 / (Fintype.card n : ℝ)))
+    calc (1 / (Fintype.card n : ℝ)) ^ 2 * (P.rank : ℝ) ≤ (1 / (Fintype.card n : ℝ)) ^ 2 *
+          (Fintype.card n : ℝ) := this
+      _ = 1 / (Fintype.card n : ℝ) := by field_simp
+  have hS1 : specNorm B ≤ 1 / (Fintype.card n : ℝ) := by
+    rw [hBdef, specNorm_smul, Real.norm_of_nonneg (by positivity)]
+    exact mul_le_of_le_one_right (by positivity) hP.specNorm_le_one
+  have hmin := card_mul_min_le_min_girardHutchinson (M := (Fintype.card m : ℝ))
+    (Nat.cast_nonneg _) hN hc' hτ hF hS hF2 hS1
+  calc μ.real {ω | τ ≤ |B.trace - girardHutchinson B (X ω)|}
+      ≤ 2 * Real.exp (-(hansonWrightConstant *
+          min ((Fintype.card m : ℝ) * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm B ^ 2))
+            ((Fintype.card m : ℝ) * τ / ((c : ℝ) * specNorm B)))) :=
+        measureReal_abs_trace_sub_girardHutchinson_ge_le hind hsub hvar B hτpos.le
+    _ ≤ 2 * Real.exp (-(hansonWrightConstant * ((Fintype.card m : ℝ) * Fintype.card n *
+          min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
+        gcongr
+        exact hansonWrightConstant_pos.le
 
 /-- **The Kolmogorov-distance tail of the probe spectral measure.** Let the entries of the real
 $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
