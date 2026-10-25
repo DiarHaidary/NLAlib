@@ -36,6 +36,29 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
+/-- The Radau Jacobi matrix is real symmetric: it differs from `jacobiMatrix` in one diagonal
+entry. -/
+private lemma radauJacobiMatrix_isHermitian (μ : Measure ℝ) (c : ℝ) (k : ℕ) :
+    (radauJacobiMatrix μ c k).IsHermitian := by
+  have hJ := isHermitian_jacobiMatrix μ (k + 1)
+  have hji : ∀ i j, jacobiMatrix μ (k + 1) j i = jacobiMatrix μ (k + 1) i j := fun i j => by
+    have := congrFun (congrFun hJ.eq j) i
+    simpa [Matrix.conjTranspose_apply] using this.symm
+  unfold radauJacobiMatrix
+  ext i j
+  by_cases hi : i = Fin.last k <;> by_cases hj : j = Fin.last k <;>
+    simp [Matrix.conjTranspose_apply, hi, hj, hji]
+
+/-- The spectral measure of a real Hermitian matrix at `√(μ(ℝ)) e₀`: its moments are
+`μ(ℝ)` times the `(0, 0)` entry of the polynomial in the matrix. -/
+private lemma integral_eval_spectralMeasure_e0 (μ : Measure ℝ) [IsFiniteMeasure μ] {m : ℕ}
+    {A : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} (hA : A.IsHermitian) (p : ℝ[X]) :
+    ∫ x, p.eval x ∂spectralMeasure A ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) =
+      μ.real Set.univ * aeval A p 0 0 := by
+  rw [hA.integral_eval_spectralMeasure, quadForm_def, Matrix.mulVec_smul,
+    Matrix.mulVec_single_one]
+  simp [dotProduct, Pi.single_apply, ← mul_assoc, Real.mul_self_sqrt measureReal_nonneg]
+
 /-- **Golub–Welsch for the Radau rule**: for a finite measure $\mu$ supported in $[a, b]$,
 positive definite up to degree $k + 1$, and $c \in \{a, b\}$, the Radau rule of $\mu$ with
 prescribed node $c$ and $k$ free nodes is the spectral measure of the Radau Jacobi matrix
@@ -60,7 +83,51 @@ theorem spectralMeasure_radauJacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) {k : ℕ} (h : IsMomentPosDef μ (k + 1)) :
     spectralMeasure (radauJacobiMatrix μ c k) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) =
       radauQuadrature μ c k := by
-  sorry
+  have hJh := radauJacobiMatrix_isHermitian μ c k
+  have hmom : MatchesMoments μ
+      (spectralMeasure (radauJacobiMatrix μ c k) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1))
+      (2 * k + 1) := by
+    intro p hp
+    have hdeg : p.natDegree ≤ 2 * k :=
+      Polynomial.natDegree_le_iff_degree_le.2 (Order.le_of_lt_succ (by exact_mod_cast hp))
+    have hentry : aeval (radauJacobiMatrix μ c k) p 0 0 = aeval (jacobiMatrix μ (k + 1)) p 0 0 := by
+      rw [aeval_eq_sum_range, aeval_eq_sum_range, Matrix.sum_apply, Matrix.sum_apply]
+      refine Finset.sum_congr rfl fun i hi => ?_
+      rw [Finset.mem_range] at hi
+      rw [Matrix.smul_apply, Matrix.smul_apply,
+        radauJacobiMatrix_pow_apply_zero_zero μ c (by omega : i ≤ 2 * k)]
+    have hchain : ∫ x, p.eval x ∂spectralMeasure (radauJacobiMatrix μ c k)
+        ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) =
+        ∫ x, p.eval x ∂gaussQuadrature μ (k + 1) := by
+      rw [integral_eval_spectralMeasure_e0 μ hJh p, hentry,
+        ← integral_eval_spectralMeasure_e0 μ (isHermitian_jacobiMatrix μ (k + 1)) p,
+        spectralMeasure_jacobiMatrix μ hμ k]
+    rw [hchain]
+    exact matchesMoments_gaussQuadrature hμ (k + 1) p
+      (lt_of_lt_of_le hp (by exact_mod_cast (by omega : 2 * k + 1 ≤ 2 * (k + 1))))
+  have hfin := (radauJacobiMatrix μ c k).finite_real_spectrum
+  have hspec : c ∈ spectrum ℝ (radauJacobiMatrix μ c k) := h.mem_spectrum_radauJacobiMatrix hμ hc
+  have hsub : hfin.toFinset ⊆ Finset.univ.image hJh.eigenvalues := by
+    intro x hx
+    rw [Set.Finite.mem_toFinset, hJh.spectrum_real_eq_range_eigenvalues] at hx
+    obtain ⟨i, rfl⟩ := hx
+    simp
+  have htot : hfin.toFinset.card ≤ k + 1 :=
+    ((Finset.card_le_card hsub).trans Finset.card_image_le).trans (by simp)
+  have hcard : (hfin.toFinset.erase c).card ≤ k := by
+    rw [Finset.card_erase_of_mem ((Set.Finite.mem_toFinset hfin).2 hspec)]
+    omega
+  have hsupp : ∀ᵐ x ∂spectralMeasure (radauJacobiMatrix μ c k)
+      ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1), x ∈ insert c (hfin.toFinset.erase c) := by
+    refine ae_iff.2 (measure_mono_null (fun x hx => ?_)
+      (spectralMeasure_compl_spectrum_eq_zero _ _))
+    intro hxs
+    apply hx
+    by_cases hxc : x = c
+    · exact Finset.mem_insert.2 (Or.inl hxc)
+    · exact Finset.mem_insert_of_mem
+        (Finset.mem_erase.2 ⟨hxc, (Set.Finite.mem_toFinset hfin).2 hxs⟩)
+  exact MatchesMoments.eq_radauQuadrature hmom hμ hc hsupp hcard
 
 /-- **The Radau quadrature of a quadratic form from the modified tridiagonal**: for Hermitian
 $\mathbf{A}$ with spectrum in $[a, a']$, $c \in \{a, a'\}$, $q + 1$ at most the grade of
