@@ -282,18 +282,16 @@ theorem _root_.Matrix.IsHermitian.lanczosState_beta {A : Matrix n n 𝕜}
         ‖WithLp.toLp 2 (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b)‖⁻¹ *
         ∫ x, (orthogonalPolynomial (spectralMeasure A b) (j + 1)).eval x ^ 2
           ∂spectralMeasure A b := by
-    have hstar : ∀ r : ℝ, star (r : 𝕜) = (r : 𝕜) := fun r => by simp
     simp only [star_smul, smul_dotProduct, Matrix.mulVec_smul, dotProduct_smul, hAP, hint,
-      smul_eq_mul, star_inv₀, hstar] at hβ
+      smul_eq_mul, star_inv₀, RCLike.star_def, RCLike.conj_ofReal] at hβ
     apply RCLike.ofReal_injective (K := 𝕜)
     rw [hβ]
     push_cast
     ring
   have hn1 := hA.norm_aeval_mulVec_sq b (orthogonalPolynomial (spectralMeasure A b) (j + 1))
   have hn0 := hA.norm_aeval_mulVec_sq b (orthogonalPolynomial (spectralMeasure A b) j)
-  have alg : ∀ x y : ℝ, x⁻¹ * y⁻¹ * x ^ 2 = x / y := by
-    intro x y
-    rcases eq_or_ne x 0 with rfl | hx <;> rcases eq_or_ne y 0 with rfl | hy <;> field_simp
+  have alg : ∀ x y : ℝ, x⁻¹ * y⁻¹ * x ^ 2 = x / y := fun x y => by
+    rw [sq, mul_right_comm, ← mul_assoc, inv_mul_mul_self, div_eq_mul_inv]
   simp only [jacobiBeta]
   rw [hβ', ← hn1, ← hn0, Real.sqrt_div' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _),
     Real.sqrt_sq (norm_nonneg _), alg]

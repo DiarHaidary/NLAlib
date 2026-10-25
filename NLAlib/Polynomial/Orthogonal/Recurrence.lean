@@ -274,16 +274,10 @@ theorem MatchesMoments.jacobiMatrix_eq {k : ℕ} (h : MatchesMoments μ ν (2 * 
 /-- The Jacobi matrix $\mathbf{J}_k(\mu)$ of every measure $\mu$ on $\mathbb{R}$ is symmetric. -/
 theorem isHermitian_jacobiMatrix (μ : Measure ℝ) (k : ℕ) : (jacobiMatrix μ k).IsHermitian := by
   refine Matrix.IsHermitian.ext fun i j => ?_
-  simp only [jacobiMatrix, Matrix.of_apply, star_trivial]
-  by_cases h : i = j
-  · subst h; rfl
-  · have hj : ¬(j = i) := fun hc => h hc.symm
-    by_cases h2 : (j : ℕ) = (i : ℕ) + 1
-    · have h3 : (i : ℕ) ≠ (j : ℕ) + 1 := by omega
-      rw [if_neg hj, if_neg h, if_pos h2, if_neg h3, if_pos h2]
-    · by_cases h3 : (i : ℕ) = (j : ℕ) + 1
-      · rw [if_neg hj, if_neg h2, if_pos h3, if_neg h, if_pos h3]
-      · rw [if_neg hj, if_neg h2, if_neg h3, if_neg h, if_neg h3, if_neg h2]
+  rcases eq_or_ne i j with rfl | h
+  · rfl
+  simp only [jacobiMatrix, Matrix.of_apply, star_trivial, h, h.symm, if_false]
+  split_ifs <;> first | omega | rfl
 
 end Algebra
 
@@ -440,27 +434,12 @@ $\deg r < d + 1$, then $r = c\,p + r'$ for a constant $c$ with $\deg r' < d$. -/
 private theorem exists_eq_C_mul_add_of_degree_lt {d : ℕ} {p r : ℝ[X]} (hp : p.Monic)
     (hpd : p.degree = (d : WithBot ℕ)) (hr : r.degree < (d + 1 : WithBot ℕ)) :
     ∃ (c : ℝ) (r' : ℝ[X]), r = C c * p + r' ∧ r'.degree < (d : WithBot ℕ) := by
-  have hmod : r %ₘ p + p * (r /ₘ p) = r := modByMonic_add_div r p
-  by_cases hq : r /ₘ p = 0
-  · rw [hq, mul_zero, add_zero] at hmod
-    refine ⟨0, r %ₘ p, ?_, ?_⟩
-    · simpa only [C_0, zero_mul, zero_add] using hmod.symm
-    · rw [← hpd]
-      exact degree_modByMonic_lt r hp
-  · have hle : p.degree ≤ r.degree := by
-      by_contra h
-      exact hq ((divByMonic_eq_zero_iff hp).2 (not_le.1 h))
-    have heq := degree_add_divByMonic hp hle
-    have hn : (r /ₘ p).natDegree = 0 := by
-      rw [hpd, degree_eq_natDegree hq, ← Nat.cast_add] at heq
-      have hlt : (d + (r /ₘ p).natDegree : ℕ) < d + 1 := by exact_mod_cast heq.trans_lt hr
-      omega
-    have hconst : r /ₘ p = C ((r /ₘ p).coeff 0) := eq_C_of_natDegree_le_zero (by omega)
-    refine ⟨(r /ₘ p).coeff 0, r %ₘ p, ?_, ?_⟩
-    · rw [hconst, mul_comm p (C _), add_comm] at hmod
-      exact hmod.symm
-    · rw [← hpd]
-      exact degree_modByMonic_lt r hp
+  have hn : (r /ₘ p).natDegree = 0 := by
+    rw [natDegree_divByMonic r hp, natDegree_eq_of_degree_eq_some hpd]
+    have : r.natDegree ≤ d := natDegree_le_iff_degree_le.mpr (Order.lt_succ_iff.mp hr)
+    omega
+  refine ⟨(r /ₘ p).coeff 0, r %ₘ p, ?_, hpd ▸ degree_modByMonic_lt r hp⟩
+  rw [← eq_C_of_natDegree_eq_zero hn, mul_comm, add_comm, modByMonic_add_div r p]
 
 /-- Step (d) of the orthogonality induction: if $\pi_{k+1}$ and $\pi_k$ are orthogonal to the
 lower degrees, so is $\pi_{k+2}$. -/
