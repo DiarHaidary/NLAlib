@@ -49,6 +49,98 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Ty
   [DecidableEq n] {ν : Measure (Matrix n l ℝ)} [IsProbabilityMeasure ν]
   [IsLeftUnitarilyInvariant ν]
 
+/-- The two-level diagonal $\operatorname{diag}(a\mathbf{I}_q, \mathbf{I}_d)$ of the hard
+instance. -/
+private abbrev twoLevel (q d : ℕ) (a : ℝ) : Matrix (Fin q ⊕ Fin d) (Fin q ⊕ Fin d) ℝ :=
+  Matrix.fromBlocks (a • (1 : Matrix (Fin q) (Fin q) ℝ)) 0 0
+    ((1 : ℝ) • (1 : Matrix (Fin d) (Fin d) ℝ))
+
+omit [Fintype n] [DecidableEq n] in
+/-- The two-level block diagonal as a diagonal matrix. -/
+private theorem twoLevel_eq_diagonal (q d : ℕ) (a : ℝ) :
+    twoLevel q d a = Matrix.diagonal (Sum.elim (fun _ => a) fun _ => 1) := by
+  rw [twoLevel, Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal,
+    Matrix.fromBlocks_diagonal]
+
+omit [Fintype m] [Fintype l] [Fintype p] [DecidableEq n] in
+/-- The hard instance $\mathbf{V}\operatorname{diag}(a\mathbf{I}_q, \mathbf{I}_d)
+\mathbf{V}^{\mathsf{H}}$ is positive semidefinite for $a \ge 0$. -/
+private theorem posSemidef_twoLevel {q d : ℕ} (V : Matrix n (Fin q ⊕ Fin d) ℝ) {a : ℝ}
+    (ha : 0 ≤ a) : (V * twoLevel q d a * Vᴴ).PosSemidef := by
+  refine Matrix.PosSemidef.mul_mul_conjTranspose_same ?_ V
+  rw [twoLevel_eq_diagonal]
+  exact Matrix.PosSemidef.diagonal fun i => by cases i <;> simp [ha]
+
+omit [Fintype m] [Fintype l] [Fintype p] [DecidableEq n] in
+/-- The hard instance has rank $q + d$ for $a > 0$. -/
+private theorem rank_twoLevel {q d : ℕ} {V : Matrix n (Fin q ⊕ Fin d) ℝ}
+    (hV : HasOrthonormalCols V) {a : ℝ} (ha : 0 < a) : (V * twoLevel q d a * Vᴴ).rank = q + d := by
+  have hDr : (twoLevel q d a).rank = q + d := by
+    rw [twoLevel_eq_diagonal, Matrix.rank_diagonal,
+      Fintype.card_congr (Equiv.subtypeUnivEquiv fun i => by cases i <;> simp [ha.ne']),
+      Fintype.card_sum, Fintype.card_fin, Fintype.card_fin]
+  refine le_antisymm (hDr ▸ (Matrix.rank_mul_le_left _ _).trans (Matrix.rank_mul_le_right _ _))
+    ?_
+  have h : Vᴴ * (V * twoLevel q d a * Vᴴ) * V = twoLevel q d a := by
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hV.conjTranspose_mul_self, Matrix.one_mul,
+      Matrix.mul_assoc, hV.conjTranspose_mul_self, Matrix.mul_one]
+  calc q + d = (Vᴴ * (V * twoLevel q d a * Vᴴ) * V).rank := by rw [h, hDr]
+    _ ≤ _ := (Matrix.rank_mul_le_left _ _).trans (Matrix.rank_mul_le_right _ _)
+
+omit [Fintype m] [Fintype l] [Fintype p] [DecidableEq n] in
+/-- The optimal rank-$q$ trace error of the hard instance is at most $d$. -/
+private theorem nuclearNorm_sub_truncatedSVD_twoLevel_le {q d : ℕ}
+    {V : Matrix n (Fin q ⊕ Fin d) ℝ} (hV : HasOrthonormalCols V) (a : ℝ) :
+    nuclearNorm (V * twoLevel q d a * Vᴴ - truncatedSVD (V * twoLevel q d a * Vᴴ) q) ≤ d := by
+  set B := V * Matrix.fromBlocks (a • (1 : Matrix (Fin q) (Fin q) ℝ)) 0 0 0 * Vᴴ
+  have hB : B.rank ≤ q := by
+    refine (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_mul_le_right _ _).trans ?_)
+    rw [Matrix.smul_one_eq_diagonal, ← Matrix.diagonal_zero, Matrix.fromBlocks_diagonal,
+      Matrix.rank_diagonal]
+    have hl : ∀ i : Fin q ⊕ Fin d, Sum.elim (fun _ => a) (fun _ => (0 : ℝ)) i ≠ 0 →
+        i.isLeft := by
+      rintro (i | i) hi <;> simp at hi ⊢
+    refine (Fintype.card_le_of_injective (fun i => i.1.getLeft (hl i.1 i.2)) ?_).trans_eq
+      (Fintype.card_fin q)
+    rintro ⟨i | i, hi⟩ ⟨j | j, hj⟩ h <;>
+      first | exact Subtype.ext (congrArg Sum.inl h) | simp at hi hj
+  have h := (lpGauge 1).matrixNorm_sub_truncatedSVD_le_of_rank_le (V * twoLevel q d a * Vᴴ) hB
+  rw [lpGauge_one_matrixNorm, lpGauge_one_matrixNorm] at h
+  refine h.trans (le_of_eq ?_)
+  have hsub : V * twoLevel q d a * Vᴴ - B =
+      V * Matrix.fromBlocks 0 0 0 ((1 : ℝ) • (1 : Matrix (Fin d) (Fin d) ℝ)) * Vᴴ := by
+    rw [← Matrix.sub_mul, ← Matrix.mul_sub, sub_eq_add_neg, Matrix.fromBlocks_neg,
+      Matrix.fromBlocks_add]
+    simp only [add_neg_cancel, neg_zero, add_zero]
+  rw [hsub, hV.nuclearNorm_mul_conjTranspose_right, hV.nuclearNorm_mul_left,
+    Matrix.PosSemidef.nuclearNorm_eq_re_trace ?_]
+  · simp [Matrix.trace_fromBlocks]
+  · rw [Matrix.smul_one_eq_diagonal, ← Matrix.diagonal_zero, Matrix.fromBlocks_diagonal]
+    exact Matrix.PosSemidef.diagonal fun i => by cases i <;> simp
+
+omit [Fintype m] [Fintype p] in
+/-- The expected Nyström error on the hard instance is the Gaussian one on the diagonal. -/
+private theorem integral_nuclearNorm_sub_nystrom_twoLevel (hX : HasLaw X ν μ)
+    (hXr : ∀ᵐ ω ∂μ, Function.Injective (X ω).mulVec) {q d : ℕ}
+    {V : Matrix n (Fin q ⊕ Fin d) ℝ} (hV : HasOrthonormalCols V) {a : ℝ} (ha : 0 ≤ a) :
+    ∫ ω, nuclearNorm (V * twoLevel q d a * Vᴴ - nystrom (V * twoLevel q d a * Vᴴ) (X ω)) ∂μ =
+      ∫ G, nuclearNorm (twoLevel q d a - nystrom (twoLevel q d a) (Vᴴ * G))
+        ∂(gaussianMatrix n l) := by
+  obtain ⟨S, hS⟩ : ∃ S : Matrix n n ℝ, ∀ G : Matrix n l ℝ,
+      nystrom (V * twoLevel q d a * Vᴴ) G = S * rangeProjector (S * G) * S :=
+    ⟨_, (posSemidef_twoLevel V ha).nystrom_eq⟩
+  have hg : Measurable fun P : Matrix n n ℝ => nuclearNorm (V * twoLevel q d a * Vᴴ - S * P * S) :=
+    continuous_nuclearNorm.measurable.comp (measurable_const.sub
+      ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
+  rw [integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant S hX hXr
+    (f := fun Y => nuclearNorm (V * twoLevel q d a * Vᴴ - nystrom (V * twoLevel q d a * Vᴴ) Y))
+    hg fun Y => by rw [hS]]
+  refine integral_congr_ae (ae_of_all _ fun G => ?_)
+  have h := nystrom_conjTranspose_mul_mul Vᴴ (twoLevel q d a) G
+  rw [Matrix.conjTranspose_conjTranspose] at h
+  simp only [h, ← Matrix.sub_mul, ← Matrix.mul_sub, hV.nuclearNorm_mul_conjTranspose_right,
+    hV.nuclearNorm_mul_left]
+
 /-- **Epperly and Webber's Nyström factor is sharp**: for a test matrix $\mathbf{X}$ with a left
 unitarily invariant law and full column rank almost surely, $q + 2 \le \ell \le r \le n$ and every
 $c$ below the factor, <!-- value rotationInvariantFactor r \ell q -->
@@ -86,97 +178,11 @@ theorem exists_lt_integral_nuclearNorm_sub_nystrom_of_isLeftUnitarilyInvariant
   set d := r - q with hd_def
   have hd : q + d = r := by omega
   have hd0 : (0 : ℝ) < d := by exact_mod_cast (show 0 < d by omega)
-  set ι : Fin q ⊕ Fin d → n := fun x => (Fintype.equivFin n).symm
-    (Sum.elim (fun i : Fin q => (⟨i, by omega⟩ : Fin (Fintype.card n)))
-      (fun j : Fin d => (⟨q + j, by omega⟩ : Fin (Fintype.card n))) x)
-  have hι : Function.Injective ι := by
-    intro x y h
-    have h' := (Fintype.equivFin n).symm.injective h
-    rcases x with x | x <;> rcases y with y | y <;>
-      simp only [Sum.elim_inl, Sum.elim_inr, Fin.mk.injEq] at h' <;>
-      first | (congr 1; exact Fin.ext (by omega)) | (exfalso; omega)
-  set V : Matrix n (Fin q ⊕ Fin d) ℝ := selectionMatrix ι
-  have hV : HasOrthonormalCols V := hasOrthonormalCols_selectionMatrix hι
-  set D : ℝ → Matrix (Fin q ⊕ Fin d) (Fin q ⊕ Fin d) ℝ := fun a =>
-    Matrix.fromBlocks (a • (1 : Matrix (Fin q) (Fin q) ℝ)) 0 0
-      ((1 : ℝ) • (1 : Matrix (Fin d) (Fin d) ℝ))
-  have hpsd : ∀ a : ℝ, 0 ≤ a → (V * D a * Vᴴ).PosSemidef := by
-    intro a ha
-    refine Matrix.PosSemidef.mul_mul_conjTranspose_same ?_ V
-    simp only [D]
-    rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal]
-    exact Matrix.PosSemidef.diagonal fun i => by cases i <;> simp [ha]
-  have hrank : ∀ a : ℝ, 0 < a → (V * D a * Vᴴ).rank = r := by
-    intro a ha
-    have hDr : (D a).rank = r := by
-      simp only [D]
-      rw [Matrix.smul_one_eq_diagonal, Matrix.smul_one_eq_diagonal, Matrix.fromBlocks_diagonal,
-        Matrix.rank_diagonal]
-      rw [Fintype.card_congr (Equiv.subtypeUnivEquiv fun i => by cases i <;> simp [ha.ne']),
-        Fintype.card_sum, Fintype.card_fin, Fintype.card_fin, hd]
-    refine le_antisymm (hDr ▸ (Matrix.rank_mul_le_left _ _).trans (Matrix.rank_mul_le_right _ _))
-      ?_
-    have h : Vᴴ * (V * D a * Vᴴ) * V = D a := by
-      rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hV.conjTranspose_mul_self, Matrix.one_mul,
-        Matrix.mul_assoc, hV.conjTranspose_mul_self, Matrix.mul_one]
-    calc r = (Vᴴ * (V * D a * Vᴴ) * V).rank := by rw [h, hDr]
-      _ ≤ _ := (Matrix.rank_mul_le_left _ _).trans (Matrix.rank_mul_le_right _ _)
-  have hNle : ∀ a : ℝ, 0 ≤ a →
-      nuclearNorm (V * D a * Vᴴ - truncatedSVD (V * D a * Vᴴ) q) ≤ d := by
-    intro a ha
-    set B := V * Matrix.fromBlocks (a • (1 : Matrix (Fin q) (Fin q) ℝ)) 0 0 0 * Vᴴ
-    have hB : B.rank ≤ q := by
-      refine (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_mul_le_right _ _).trans ?_)
-      rw [Matrix.smul_one_eq_diagonal, ← Matrix.diagonal_zero, Matrix.fromBlocks_diagonal,
-        Matrix.rank_diagonal]
-      have hl : ∀ i : Fin q ⊕ Fin d, Sum.elim (fun _ => a) (fun _ => (0 : ℝ)) i ≠ 0 →
-          i.isLeft := by
-        rintro (i | i) hi <;> simp at hi ⊢
-      refine (Fintype.card_le_of_injective (fun i => i.1.getLeft (hl i.1 i.2)) ?_).trans_eq
-        (Fintype.card_fin q)
-      rintro ⟨i | i, hi⟩ ⟨j | j, hj⟩ h <;>
-        first | exact Subtype.ext (congrArg Sum.inl h) | simp at hi hj
-    have h := (lpGauge 1).matrixNorm_sub_truncatedSVD_le_of_rank_le (V * D a * Vᴴ) hB
-    rw [lpGauge_one_matrixNorm, lpGauge_one_matrixNorm] at h
-    refine h.trans (le_of_eq ?_)
-    have hsub : V * D a * Vᴴ - B =
-        V * Matrix.fromBlocks 0 0 0 ((1 : ℝ) • (1 : Matrix (Fin d) (Fin d) ℝ)) * Vᴴ := by
-      rw [← Matrix.sub_mul, ← Matrix.mul_sub, sub_eq_add_neg, Matrix.fromBlocks_neg,
-        Matrix.fromBlocks_add]
-      simp only [add_neg_cancel, neg_zero, add_zero]
-    rw [hsub, hV.nuclearNorm_mul_conjTranspose_right, hV.nuclearNorm_mul_left]
-    rw [Matrix.PosSemidef.nuclearNorm_eq_re_trace ?_]
-    · simp [Matrix.trace_fromBlocks]
-    · rw [Matrix.smul_one_eq_diagonal, ← Matrix.diagonal_zero, Matrix.fromBlocks_diagonal]
-      exact Matrix.PosSemidef.diagonal fun i => by cases i <;> simp
-  have hNpos : ∀ a : ℝ, 0 < a →
-      0 < nuclearNorm (V * D a * Vᴴ - truncatedSVD (V * D a * Vᴴ) q) := by
-    intro a ha
-    refine (nuclearNorm_nonneg _).lt_of_ne fun h => ?_
-    have h' := sub_eq_zero.mp (nuclearNorm_eq_zero_iff.mp h.symm)
-    have := rank_truncatedSVD_le (V * D a * Vᴴ) q
-    rw [← h', hrank a ha] at this
-    omega
-  have hE : ∀ a : ℝ, 0 ≤ a → ∫ ω, nuclearNorm (V * D a * Vᴴ - nystrom (V * D a * Vᴴ) (X ω)) ∂μ =
-      ∫ G, nuclearNorm (D a - nystrom (D a) (Vᴴ * G)) ∂(gaussianMatrix n l) := by
-    intro a ha
-    obtain ⟨S, hS⟩ : ∃ S : Matrix n n ℝ, ∀ G : Matrix n l ℝ,
-        nystrom (V * D a * Vᴴ) G = S * rangeProjector (S * G) * S :=
-      ⟨_, (hpsd a ha).nystrom_eq⟩
-    have hg : Measurable fun P : Matrix n n ℝ => nuclearNorm (V * D a * Vᴴ - S * P * S) :=
-      continuous_nuclearNorm.measurable.comp (measurable_const.sub
-        ((measurable_const.matrix_mul measurable_id).matrix_mul measurable_const))
-    rw [integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant S hX hXr
-      (f := fun Y => nuclearNorm (V * D a * Vᴴ - nystrom (V * D a * Vᴴ) Y)) hg
-      fun Y => by rw [hS]]
-    refine integral_congr_ae (ae_of_all _ fun G => ?_)
-    have h := nystrom_conjTranspose_mul_mul Vᴴ (D a) G
-    rw [Matrix.conjTranspose_conjTranspose] at h
-    simp only [h, ← Matrix.sub_mul, ← Matrix.mul_sub, hV.nuclearNorm_mul_conjTranspose_right,
-      hV.nuclearNorm_mul_left]
+  obtain ⟨V, hV⟩ := exists_hasOrthonormalCols_of_card_le (n := n) (p := Fin q ⊕ Fin d) ℝ
+    (by simp only [Fintype.card_sum, Fintype.card_fin]; omega)
   have hY : HasLaw (fun G : Matrix n l ℝ => Vᴴ * G) (gaussianMatrix (Fin q ⊕ Fin d) l)
-      (gaussianMatrix n l) := by
-    exact hasLaw_const_mul_of_hasLaw_gaussianMatrix HasLaw.id
+      (gaussianMatrix n l) :=
+    hasLaw_const_mul_of_hasLaw_gaussianMatrix HasLaw.id
       (by rwa [Matrix.conjTranspose_conjTranspose])
   have hYr : ∀ᵐ G ∂(gaussianMatrix n l), Function.Injective (Vᴴ * G).mulVec := by
     filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hY] with G hG
@@ -186,29 +192,24 @@ theorem exists_lt_integral_nuclearNorm_sub_nystrom_of_isLeftUnitarilyInvariant
     hYr (by simp only [Fintype.card_fin]; exact hq) zero_le_one
   simp only [Fintype.card_fin, hd, one_mul] at hlim
   rcases lt_or_ge c 0 with hc0 | hc0
-  · refine ⟨V * D 1 * Vᴴ, hpsd 1 zero_le_one, hrank 1 one_pos, ?_⟩
-    refine (mul_neg_of_neg_of_pos hc0 (hNpos 1 one_pos)).trans_le ?_
-    exact integral_nonneg fun ω => nuclearNorm_nonneg _
+  · refine ⟨V * twoLevel q d 1 * Vᴴ, posSemidef_twoLevel V zero_le_one,
+      hd ▸ rank_twoLevel hV one_pos, ?_⟩
+    have hpos : 0 < nuclearNorm (V * twoLevel q d 1 * Vᴴ -
+        truncatedSVD (V * twoLevel q d 1 * Vᴴ) q) := by
+      refine (nuclearNorm_nonneg _).lt_of_ne fun h => ?_
+      have h' := sub_eq_zero.mp (nuclearNorm_eq_zero_iff.mp h.symm)
+      have := rank_truncatedSVD_le (V * twoLevel q d 1 * Vᴴ) q
+      rw [← h', rank_twoLevel hV one_pos] at this
+      omega
+    exact (mul_neg_of_neg_of_pos hc0 hpos).trans_le
+      (integral_nonneg fun ω => nuclearNorm_nonneg _)
   · obtain ⟨a, ha, ha1⟩ := ((hlim.eventually (lt_mem_nhds (mul_lt_mul_of_pos_right hc hd0))).and
       (Filter.eventually_ge_atTop 1)).exists
-    refine ⟨V * D a * Vᴴ, hpsd a (by linarith), hrank a (by linarith), ?_⟩
-    rw [hE a (by linarith)]
-    exact (mul_le_mul_of_nonneg_left (hNle a (by linarith)) hc0).trans_lt ha
-
-/-- An isometry from `Fin r` into `m` when `r ≤ card m`: a selection matrix. -/
-private theorem exists_hasOrthonormalCols_fin_of_le {m : Type*} [Fintype m] {r : ℕ}
-    (h : r ≤ Fintype.card m) : ∃ J : Matrix m (Fin r) ℝ, HasOrthonormalCols J := by
-  refine ⟨Matrix.of fun i j => if (Fintype.equivFin m i : ℕ) = j then 1 else 0, ?_⟩
-  ext j k
-  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.of_apply,
-    Matrix.one_apply, star_trivial, mul_ite, mul_one, mul_zero]
-  refine (Equiv.sum_comp (Fintype.equivFin m)
-    (fun x : Fin (Fintype.card m) => if (x : ℕ) = k then if (x : ℕ) = j then (1 : ℝ) else 0
-      else 0)).trans ?_
-  rw [Finset.sum_eq_single_of_mem (⟨k, lt_of_lt_of_le k.isLt h⟩ : Fin (Fintype.card m))
-    (Finset.mem_univ _)
-    (fun x _ hx => by have : (x : ℕ) ≠ k := fun e => hx (Fin.ext e); simp [this])]
-  by_cases hjk : j = k <;> simp [hjk, Fin.val_inj, eq_comm]
+    refine ⟨V * twoLevel q d a * Vᴴ, posSemidef_twoLevel V (by linarith),
+      hd ▸ rank_twoLevel hV (by linarith), ?_⟩
+    rw [integral_nuclearNorm_sub_nystrom_twoLevel hX hXr hV (by linarith)]
+    exact (mul_le_mul_of_nonneg_left (nuclearNorm_sub_truncatedSVD_twoLevel_le hV a) hc0).trans_lt
+      ha
 
 /-- **Epperly and Webber's randomized SVD factor is sharp**: for a test matrix $\mathbf{X}$ with a
 left unitarily invariant law and full column rank almost surely, $q + 2 \le \ell \le r$,
@@ -244,7 +245,7 @@ theorem exists_lt_integral_frobNorm_sub_rsvd_sq_of_isLeftUnitarilyInvariant
   obtain ⟨Z, hZ, hZP⟩ :=
     (isStarProjection_rangeProjector (CFC.sqrt H)).exists_hasOrthonormalCols_mul_conjTranspose_eq
       (p := Fin r) (by rw [rank_rangeProjector, hrS, Fintype.card_fin])
-  obtain ⟨J, hJ⟩ := exists_hasOrthonormalCols_fin_of_le hrm
+  obtain ⟨J, hJ⟩ := exists_hasOrthonormalCols_of_card_le (p := Fin r) ℝ (by simpa using hrm)
   have hAH : (J * (Zᴴ * CFC.sqrt H))ᴴ * (J * (Zᴴ * CFC.sqrt H)) = H := by
     have hZZ : Z * Zᴴ * CFC.sqrt H = CFC.sqrt H := by
       rw [hZP, rangeProjector_mul_self]
