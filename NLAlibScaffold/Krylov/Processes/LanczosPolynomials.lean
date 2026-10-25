@@ -238,7 +238,12 @@ theorem _root_.Matrix.IsHermitian.arnoldiMatrix_col_eq_smul_aeval_orthogonalPoly
     (arnoldiMatrix A b q).col j =
       (‖WithLp.toLp 2 (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b)‖⁻¹ : 𝕜) •
         (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) := by
-  sorry
+  rw [arnoldiMatrix_col_eq_col_last A b j]
+  rcases lt_or_ge (j : ℕ) (krylovGrade A b) with h | h
+  · exact arnoldiMatrix_col_last_eq_of_lt_krylovGrade hA h
+  · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h,
+      Matrix.IsHermitian.aeval_orthogonalPolynomial_mulVec_eq_zero_of_krylovGrade_le hA h,
+      smul_zero]
 
 /-- The diagonal Lanczos coefficient is the recurrence coefficient of the spectral measure: for
 Hermitian $\mathbf{A}$, every $\mathbf{b}$ and $j$, the coefficient $\alpha_j$ computed by the
