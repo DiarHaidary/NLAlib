@@ -472,7 +472,8 @@ Proof: S, about 3 lines. Unfold `run`, `transcript`, `gramSimulation`; `congrArg
 theorem run_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (X : Matrix d k 𝕜) :
     (alg.gramSimulation k).run (twoSidedMulVec X) = alg.run (X * Xᴴ).mulVec := by
-  sorry
+  unfold QueryAlgorithm.run QueryAlgorithm.transcript
+  exact congrArg alg.output (history_gramSimulation alg X q)
 
 /-- **The Gram simulation of a measurable algorithm is measurable.**
 Proof: S, about 10 lines. Each query map, for `j < 2 * q`, is a `dite` on the fixed index `j`;
