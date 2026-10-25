@@ -623,8 +623,9 @@ Result: best-approximation-uniqueness -/
 theorem eq_minimaxPoly_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : ℝ} (hab : a < b)
     (hf : ContinuousOn f (Set.Icc a b)) {n : ℕ} {p : ℝ[X]} (hp : p.degree ≤ n)
     (hbest : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b)
-      (minimaxError f (Set.Icc a b) n)) : p = minimaxPoly f (Set.Icc a b) n := by
-  sorry
+      (minimaxError f (Set.Icc a b) n)) : p = minimaxPoly f (Set.Icc a b) n :=
+  eq_of_isUniformApproxOn_minimaxError hab hf hp (degree_minimaxPoly_le f _ n) hbest
+    (isUniformApproxOn_minimaxPoly isCompact_Icc hf n)
 
 /-! ### The Chebyshev example -/
 
