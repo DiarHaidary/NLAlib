@@ -610,8 +610,9 @@ Result: equioscillation -/
 theorem alternatesOn_minimaxPoly {f : ℝ → ℝ} {a b : ℝ} (hab : a < b)
     (hf : ContinuousOn f (Set.Icc a b)) (n : ℕ) :
     AlternatesOn (fun x => f x - (minimaxPoly f (Set.Icc a b) n).eval x) (Set.Icc a b) (n + 2)
-      (minimaxError f (Set.Icc a b) n) := by
-  sorry
+      (minimaxError f (Set.Icc a b) n) :=
+  alternatesOn_of_isUniformApproxOn_minimaxError hab hf (degree_minimaxPoly_le f _ n)
+    (isUniformApproxOn_minimaxPoly isCompact_Icc hf n)
 
 /-- **Every best approximation is the chosen one**: for $a < b$, $f$ continuous on $[a, b]$ and
 $p$ a real polynomial of degree at most $n$ with $\lvert f - p \rvert \le E_n(f; [a, b])$ on
