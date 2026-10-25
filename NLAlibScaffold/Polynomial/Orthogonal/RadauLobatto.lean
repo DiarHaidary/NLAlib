@@ -351,7 +351,11 @@ $\int g\,d\,\mathsf{lobattoMeasure}(\mu, a, b) = \int\lvert(x - a)(x - b)\rvert\
 Proof: S, about 8 lines. As `integral_radauMeasure`. -/
 theorem integral_lobattoMeasure (μ : Measure ℝ) (a b : ℝ) (g : ℝ → ℝ) :
     ∫ x, g x ∂lobattoMeasure μ a b = ∫ x, |(x - a) * (x - b)| * g x ∂μ := by
-  sorry
+  unfold lobattoMeasure
+  rw [show (fun x : ℝ => ‖(x - a) * (x - b)‖ₑ) =
+      fun x => ((‖(x - a) * (x - b)‖₊ : NNReal) : ENNReal) from funext fun x => enorm_eq_nnnorm _,
+    integral_withDensity_eq_integral_smul (f := fun x : ℝ => ‖(x - a) * (x - b)‖₊) (by fun_prop)]
+  simp [NNReal.smul_def, Real.norm_eq_abs, abs_mul, smul_eq_mul, mul_comm]
 
 /-- The Lobatto modified measure of a finite measure supported in $[a, b]$ is finite.
 Proof: S, about 12 lines. As `isFiniteMeasure_radauMeasure`, with the bound
