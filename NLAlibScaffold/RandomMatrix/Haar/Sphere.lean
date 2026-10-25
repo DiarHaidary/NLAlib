@@ -93,7 +93,21 @@ private theorem norm_conjTranspose_mulVec_inv_norm_smul_sq_eq_div {p : Type*} [F
       (∑ i, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inl i) ^ 2) /
         (∑ i, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inl i) ^ 2 +
           ∑ j, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inr j) ^ 2) := by
-  sorry
+  classical
+  have hWn : HasOrthonormalCols (Matrix.fromCols V V')ᴴ :=
+    hVV'.conjTranspose_of_card_eq (by rw [Fintype.card_sum]; exact hcard.symm)
+  have hWl (i : k) : ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inl i) = (Vᴴ *ᵥ g) i := by
+    simp only [Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply, Matrix.fromCols_apply_inl]
+  have hG : ‖WithLp.toLp 2 g‖ ^ 2 = ∑ i, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inl i) ^ 2 +
+      ∑ j, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inr j) ^ 2 := by
+    rw [← Fintype.sum_sum_type (fun x => ((Matrix.fromCols V V')ᴴ *ᵥ g) x ^ 2),
+      ← hWn.norm_toLp_mulVec g, EuclideanSpace.real_norm_sq_eq]
+  have hV : ‖WithLp.toLp 2 (Vᴴ *ᵥ g)‖ ^ 2 =
+      ∑ i, ((Matrix.fromCols V V')ᴴ *ᵥ g) (Sum.inl i) ^ 2 := by
+    rw [EuclideanSpace.real_norm_sq_eq]
+    exact Finset.sum_congr rfl fun i _ => by rw [hWl]
+  rw [Matrix.mulVec_smul, WithLp.toLp_smul, norm_smul, mul_pow, norm_inv, norm_norm, inv_pow,
+    inv_mul_eq_div, hV, hG]
 
 /-! ### The Beta law -/
 
