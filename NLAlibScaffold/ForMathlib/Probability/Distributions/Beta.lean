@@ -182,7 +182,24 @@ private theorem hasDerivAt_rpow_mul_rpow_mul_exp {α β t x : ℝ} (hx : x ∈ I
     HasDerivAt (fun x => x ^ α * (1 - x) ^ β * Real.exp (t * x))
       (x ^ (α - 1) * (1 - x) ^ (β - 1) *
         ((α - (α + β) * x + t * x * (1 - x)) * Real.exp (t * x))) x := by
-  sorry
+  obtain ⟨hx0, hx1⟩ := hx
+  have hxne : x ≠ 0 := hx0.ne'
+  have hx1ne : (1 - x) ≠ 0 := by linarith
+  have hxpos : 0 < x := hx0
+  have hx1pos : 0 < 1 - x := by linarith
+  have h1 : HasDerivAt (fun x : ℝ => x ^ α) (α * x ^ (α - 1)) x :=
+    Real.hasDerivAt_rpow_const (Or.inl hxne)
+  have h2 := ((hasDerivAt_id' x).const_sub 1).rpow_const (p := β) (Or.inl hx1ne)
+  have h3 := ((hasDerivAt_id' x).const_mul t).exp
+  have h4 := (h1.mul h2).mul h3
+  refine h4.congr_deriv ?_
+  have e1 : x ^ α = x ^ (α - 1) * x := by
+    rw [← Real.rpow_add_one hxne]; ring_nf
+  have e2 : (1 - x) ^ β = (1 - x) ^ (β - 1) * (1 - x) := by
+    rw [← Real.rpow_add_one hx1ne]; ring_nf
+  simp only [Pi.mul_apply]
+  rw [e1, e2]
+  ring
 
 /-- For $\alpha, \beta > 0$ and real $t$, the derivative
 $x^{\alpha-1}(1-x)^{\beta-1}(\alpha - (\alpha+\beta)x + tx(1-x))e^{tx}$ is interval integrable
