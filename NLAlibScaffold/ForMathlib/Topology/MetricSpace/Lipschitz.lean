@@ -45,7 +45,37 @@ theorem abs_sum_mul_sub_mul_sum_le_of_lipschitzOnWith {s : Finset ℝ}
     {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a b)) (d : ℝ → ℝ) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ x ∈ s, |∑ y ∈ s with y ≤ x, d y| ≤ K) :
     |∑ x ∈ s, f x * d x - f t * ∑ x ∈ s, d x| ≤ L * (t - a) * K := by
-  sorry
+  induction s using Finset.induction_on_max generalizing t with
+  | empty => simp only [sum_empty, mul_zero, sub_zero, abs_zero]; positivity
+  | insert x₀ s' hlt ih =>
+    have hx₀ : x₀ ∉ s' := fun h => lt_irrefl _ (hlt x₀ h)
+    have hx₀t := hs x₀ (mem_insert_self _ _)
+    -- partial sums of `s'` below a point of `s'` are those of `insert x₀ s'`
+    have hfilt : ∀ x ∈ s', (insert x₀ s').filter (· ≤ x) = s'.filter (· ≤ x) := fun x hx => by
+      rw [filter_insert, if_neg (not_le.mpr (hlt x hx))]
+    have h1 := ih (t := x₀) (fun x hx => ⟨(hs x (mem_insert_of_mem hx)).1, (hlt x hx).le⟩)
+      hx₀t.1 (hx₀t.2.trans htb) fun x hx => by rw [← hfilt x hx]; exact hK x (mem_insert_of_mem hx)
+    have htot : (insert x₀ s').filter (· ≤ x₀) = insert x₀ s' :=
+      filter_true_of_mem fun x hx => by
+        rcases mem_insert.mp hx with rfl | hx
+        · exact le_rfl
+        · exact (hlt x hx).le
+    have h2 : |d x₀ + ∑ x ∈ s', d x| ≤ K := by
+      have := hK x₀ (mem_insert_self _ _)
+      rwa [htot, sum_insert hx₀] at this
+    have h3 : |f x₀ - f t| ≤ L * (t - x₀) := by
+      have := hf.dist_le_mul x₀ ⟨hx₀t.1, hx₀t.2.trans htb⟩ t ⟨hat, htb⟩
+      rwa [Real.dist_eq, Real.dist_eq, abs_sub_comm x₀, abs_of_nonneg (sub_nonneg.mpr hx₀t.2)]
+        at this
+    rw [sum_insert hx₀, sum_insert hx₀]
+    have heq : f x₀ * d x₀ + ∑ x ∈ s', f x * d x - f t * (d x₀ + ∑ x ∈ s', d x) =
+        (∑ x ∈ s', f x * d x - f x₀ * ∑ x ∈ s', d x) + (f x₀ - f t) * (d x₀ + ∑ x ∈ s', d x) := by
+      ring
+    rw [heq]
+    refine (abs_add_le _ _).trans ?_
+    rw [abs_mul]
+    have h4 := mul_le_mul h3 h2 (abs_nonneg _) (by have := sub_nonneg.mpr hx₀t.2; positivity)
+    nlinarith
 
 /-- Abel summation against a Lipschitz function, absolute form: if every point of the finite set
 $s$ lies in $[a, b]$, $a \le b$, $f$ is $L$-Lipschitz on $[a, b]$, $K \ge 0$, and every partial
