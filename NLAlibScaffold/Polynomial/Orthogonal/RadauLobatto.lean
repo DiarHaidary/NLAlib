@@ -78,7 +78,8 @@ Proof: S, about 4 lines. `withDensity_absolutelyContinuous` and `Measure.Absolut
 applied to `hμ`. -/
 theorem ae_mem_Icc_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (c : ℝ) :
     ∀ᵐ x ∂radauMeasure μ c, x ∈ Set.Icc a b := by
-  sorry
+  unfold radauMeasure
+  exact (withDensity_absolutelyContinuous μ _).ae_le hμ
 
 /-! ### Radau exactness -/
 
