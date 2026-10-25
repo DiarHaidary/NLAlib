@@ -509,7 +509,16 @@ theorem integral_radauQuadrature_le_integral_of_iteratedDeriv_nonneg
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * k + 1 : ℕ) f (Set.Ioo a b))
     (hD : ∀ x ∈ Set.Ioo a b, 0 ≤ iteratedDeriv (2 * k + 1) f x) :
     ∫ x, f x ∂radauQuadrature μ a k ≤ ∫ x, f x ∂μ := by
-  sorry
+  obtain ⟨ξ, hξ, h⟩ :=
+    exists_integral_sub_integral_radauQuadrature_eq hμ hab (Or.inl rfl) k hf hf'
+  have hW : 0 ≤ ∫ x, (x - a) * (orthogonalPolynomial (radauMeasure μ a) k).eval x ^ 2 ∂μ :=
+    integral_nonneg_of_ae (by
+      filter_upwards [hμ] with x hx
+      exact mul_nonneg (by linarith [hx.1]) (sq_nonneg _))
+  have hR : 0 ≤ iteratedDeriv (2 * k + 1) f ξ / (2 * k + 1).factorial *
+      ∫ x, (x - a) * (orthogonalPolynomial (radauMeasure μ a) k).eval x ^ 2 ∂μ :=
+    mul_nonneg (div_nonneg (hD ξ hξ) (Nat.cast_nonneg _)) hW
+  linarith
 
 /-- **The left Radau rule is an upper bound** for $f$ with nonpositive derivative of order
 $2k + 1$ (such as $x \mapsto x^{-1}$ on $[a, b]$, $a > 0$): for a finite measure $\mu$
