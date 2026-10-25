@@ -183,7 +183,14 @@ theorem HasOrthonormalCols.gaussQuadrature_succ_eq_sum {k : ℕ}
     (hJ : jacobiMatrix μ (k + 1) = U * Matrix.diagonal d * Uᴴ) :
     gaussQuadrature μ (k + 1) =
       ∑ i, ENNReal.ofReal (μ.real Set.univ * U 0 i ^ 2) • Measure.dirac (d i) := by
-  sorry
+  rw [← spectralMeasure_jacobiMatrix μ hμ k,
+    hU.spectralMeasure_eq_sum rfl (by simpa using hJ) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 3
+  rw [Matrix.mulVec_smul, Pi.smul_apply, smul_eq_mul, Matrix.mulVec_single_one]
+  simp only [Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.col_apply, Matrix.transpose_apply,
+    norm_mul, Real.norm_eq_abs]
+  rw [mul_pow, sq_abs, sq_abs, Real.sq_sqrt measureReal_nonneg]
 
 /-- **Golub–Welsch over any `RCLike` field**: for a finite measure $\mu$ supported in $[a, c]$
 and every $k$, the $(k+1)$-point Gauss rule of $\mu$ is the spectral measure of the Jacobi matrix
