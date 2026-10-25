@@ -1437,6 +1437,21 @@ exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integ
         L * (b - a) * τ + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
         |∫ x, f x ∂empiricalSpectralMeasure A -
           ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤ δ := by
-  sorry
+  refine ⟨1, one_pos, ?_⟩
+  intro Ω n m _ _ _ _ μ U A a b L q τ δ hind hU hA hab hs hτ hδ hm
+  have hm' : Real.log (2 * Fintype.card n / δ) / ((Fintype.card n + 2) * τ ^ 2) ≤
+      Fintype.card m := by
+    rcases le_or_gt (Real.log (2 * Fintype.card n / δ)) 0 with hl | hl
+    · exact (div_nonpos_of_nonpos_of_nonneg hl (by positivity)).trans (Nat.cast_nonneg _)
+    · rcases Nat.eq_zero_or_pos (Fintype.card n) with h0 | hpos
+      · simp [h0]
+      · have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr hpos
+        calc Real.log (2 * Fintype.card n / δ) / ((Fintype.card n + 2) * τ ^ 2)
+            ≤ Real.log (2 * Fintype.card n / δ) / (Fintype.card n * τ ^ 2) :=
+              div_le_div_of_nonneg_left hl.le (by positivity) (by gcongr; linarith)
+          _ = 1 * Real.log (2 * Fintype.card n / δ) / (Fintype.card n * τ ^ 2) := by ring
+          _ ≤ Fintype.card m := hm
+  exact measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector_of_log_div_le
+    hind hU hA hab hs L q hτ hδ hm'
 
 end NLAlib
