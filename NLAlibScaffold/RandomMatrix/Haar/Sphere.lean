@@ -147,7 +147,27 @@ theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
     (hk : 0 < Fintype.card k) (hkn : Fintype.card k < Fintype.card n) :
     HasLaw (fun ω => ‖WithLp.toLp 2 (Vᴴ *ᵥ u ω)‖ ^ 2)
       (betaMeasure (Fintype.card k / 2) (((Fintype.card n : ℝ) - Fintype.card k) / 2)) μ := by
-  sorry
+  obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_lt hkn
+  have hcard : Fintype.card k + Fintype.card (Fin (m + 1)) = Fintype.card n := by
+    simp only [Fintype.card_fin]; omega
+  obtain ⟨V', hW⟩ := hV.exists_fromCols hcard
+  have : Nonempty k := Fintype.card_pos_iff.mp hk
+  set W := Matrix.fromCols V V'
+  have hh : HasLaw (fun g => Wᴴ *ᵥ g) (gaussianVector (k ⊕ Fin (m + 1))) (gaussianVector n) :=
+    hasLaw_mulVec_of_hasLaw_gaussianVector HasLaw.id (by rwa [Matrix.conjTranspose_conjTranspose])
+  have hβ := hasLaw_div_add_of_hasLaw_gammaMeasure (by positivity) (by positivity)
+    (by norm_num) (hasLaw_sum_sq_inl_of_hasLaw_gaussianVector hh)
+    (hasLaw_sum_sq_inr_of_hasLaw_gaussianVector hh)
+    (indepFun_sum_sq_inl_sum_sq_inr_of_hasLaw_gaussianVector hh)
+  have hb : ((Fintype.card n : ℝ) - Fintype.card k) / 2 = (Fintype.card (Fin (m + 1)) : ℝ) / 2 := by
+    rw [← hcard]; push_cast; ring
+  rw [hb]
+  refine HasLaw.comp_of_hasLaw_comp (f := fun v => ‖WithLp.toLp 2 (Vᴴ *ᵥ v)‖ ^ 2)
+    (X := fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g) (P := gaussianVector n) ?_
+    ⟨measurable_inv_norm_smul.aemeasurable, rfl⟩ hu ?_
+  · fun_prop
+  · refine hβ.congr (Filter.Eventually.of_forall fun g => ?_)
+    exact norm_conjTranspose_mulVec_inv_norm_smul_sq_eq_div hW hcard g
 
 /-! ### The sharp sub-Gaussian tail -/
 
