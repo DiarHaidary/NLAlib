@@ -1022,6 +1022,25 @@ theorem lobattoQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (h
     (lobattoQuadrature μ a b k).real Set.univ = μ.real Set.univ :=
   ((matchesMoments_lobattoQuadrature hμ hab k).measureReal_univ_eq (by omega)).symm
 
+/-- The Lobatto interpolation multiset $\{a, b\} + G + G$, for $a < b$ and $G \subseteq (a, b)$,
+lies in $[a, b]$, and its repeated points lie in $(a, b)$. -/
+private theorem mem_Icc_and_mem_Ioo_of_one_lt_count_cons_cons {a b : ℝ} (hab : a < b)
+    {G : Finset ℝ} (hGI : (G : Set ℝ) ⊆ Set.Ioo a b) :
+    (∀ y ∈ a ::ₘ b ::ₘ (G.val + G.val), y ∈ Set.Icc a b) ∧
+      ∀ y ∈ a ::ₘ b ::ₘ (G.val + G.val),
+        1 < (a ::ₘ b ::ₘ (G.val + G.val)).count y → y ∈ Set.Ioo a b := by
+  have haG : a ∉ G := fun h => lt_irrefl a (hGI h).1
+  have hbG : b ∉ G := fun h => lt_irrefl b (hGI h).2
+  refine ⟨fun y hy => ?_, fun y hy hc => ?_⟩ <;>
+    simp only [Multiset.mem_cons, Multiset.mem_add, Finset.mem_val, or_self] at hy <;>
+    rcases hy with rfl | rfl | hy
+  · exact ⟨le_rfl, hab.le⟩
+  · exact ⟨hab.le, le_rfl⟩
+  · exact Set.Ioo_subset_Icc_self (hGI hy)
+  · simp [hab.ne, Multiset.count_eq_zero.mpr haG] at hc
+  · simp [hab.ne', Multiset.count_eq_zero.mpr hbG] at hc
+  · exact hGI hy
+
 /-- **The Gauss–Lobatto remainder**: for a finite measure $\mu$ supported in $[a, b]$, $a < b$,
 every $k$, and $f$ continuous on $[a, b]$ and $C^{2k+2}$ on $(a, b)$, there is $\xi \in (a, b)$
 with
@@ -1043,7 +1062,81 @@ theorem exists_integral_sub_integral_lobattoQuadrature_eq (hμ : ∀ᵐ x ∂μ,
     ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, f x ∂lobattoQuadrature μ a b k =
       iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial *
         ∫ x, (x - a) * (x - b) * (orthogonalPolynomial (lobattoMeasure μ a b) k).eval x ^ 2 ∂μ := by
-  sorry
+  set μ' := lobattoMeasure μ a b
+  have := isFiniteMeasure_lobattoMeasure hμ
+  have hμ'I := ae_mem_Icc_lobattoMeasure hμ
+  set π := orthogonalPolynomial μ' k
+  set W : ℝ → ℝ := fun x => (x - a) * (x - b) * π.eval x ^ 2 with hW
+  have hWint : Integrable W μ :=
+    (integrable_eval_of_ae_mem_Icc hμ ((X - C a) * (X - C b) * π ^ 2)).congr
+      (ae_of_all μ fun x => by simp [hW])
+  have hfint : Integrable f μ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
+    exact hf.integrableOn_Icc
+  by_cases hpd : IsMomentPosDef μ' (k + 1)
+  swap
+  · -- degenerate case: the rule is `μ` and the weight vanishes
+    have h0 : ∫ x, π.eval x ^ 2 ∂μ' = 0 := by
+      rw [isMomentPosDef_succ_iff hμ'I] at hpd
+      exact le_antisymm (not_lt.mp hpd) (integral_nonneg fun x => sq_nonneg _)
+    refine ⟨(a + b) / 2, ⟨by linarith, by linarith⟩, ?_⟩
+    have hW0 : ∫ x, W x ∂μ = 0 := by
+      rw [integral_lobattoMeasure] at h0
+      rw [integral_congr_ae (g := fun x => -(|(x - a) * (x - b)| * π.eval x ^ 2)), integral_neg,
+        h0, neg_zero]
+      filter_upwards [hμ] with x hx
+      rw [abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos (by linarith [hx.1]) (by linarith [hx.2]))]
+      simp only [hW]
+      ring
+    rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ h0, hW0]
+    ring
+  -- nondegenerate case: Hermite interpolation on `m = {a, b} + G + G`
+  set G := gaussNodes μ' k
+  have hGI : (G : Set ℝ) ⊆ Set.Ioo a b := hpd.gaussNodes_subset_Ioo hμ'I
+  have hGc : G.card = k := (hpd.mono k.le_succ).card_gaussNodes hμ'I
+  have hGπ : Lagrange.nodal G id = π := (hpd.mono k.le_succ).nodal_gaussNodes hμ'I
+  set m : Multiset ℝ := a ::ₘ b ::ₘ (G.val + G.val) with hm
+  have hmc : m.card = 2 * k + 2 := by
+    simp only [hm, Multiset.card_cons, Multiset.card_add, Finset.card_val, hGc]; ring
+  obtain ⟨hmem, hrep⟩ := mem_Icc_and_mem_Ioo_of_one_lt_count_cons_cons hab hGI
+  have hprod : ∀ x, ((m.map fun y => X - C y).prod).eval x = W x := by
+    intro x
+    have : (G.val.map fun y => X - C y).prod = π := by
+      rw [← hGπ, Lagrange.nodal]; rfl
+    simp only [hm, Multiset.map_cons, Multiset.prod_cons, Multiset.map_add, Multiset.prod_add,
+      this, hW, eval_mul, eval_sub, eval_X, eval_C]
+    ring
+  obtain ⟨H, hHdeg, hHjet⟩ :=
+    exists_degree_lt_forall_iterate_derivative_eval_eq m fun y j => iteratedDeriv j f y
+  have hHf : ∀ x ∈ lobattoNodes μ a b k, H.eval x = f x := by
+    intro x hx
+    have hxm : x ∈ m := by
+      simp only [lobattoNodes, Finset.mem_insert] at hx
+      simp only [hm, Multiset.mem_cons, Multiset.mem_add, Finset.mem_val, or_self]
+      exact hx
+    simpa using hHjet x hxm 0 (Multiset.count_pos.mpr hxm)
+  have hQ : ∫ x, f x ∂lobattoQuadrature μ a b k = ∫ x, H.eval x ∂μ := by
+    rw [matchesMoments_lobattoQuadrature hμ hab k H (by exact_mod_cast hmc ▸ hHdeg),
+      integral_lobattoQuadrature hμ hab k f, integral_lobattoQuadrature hμ hab k]
+    exact Finset.sum_congr rfl fun x hx => by rw [hHf x hx]
+  have hD : ContinuousOn (fun ξ => iteratedDeriv (2 * k + 2) f ξ / (2 * k + 2).factorial)
+      (Set.Ioo a b) :=
+    ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
+      fun x hx => (iteratedDerivWithin_of_isOpen isOpen_Ioo hx).symm).div_const _
+  obtain ⟨ξ, hξ, hint⟩ := exists_integral_eq_mul_integral_of_ae_nonpos
+    (hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)) hWint
+    (by
+      filter_upwards [hμ] with x hx
+      exact mul_nonpos_of_nonpos_of_nonneg
+        (mul_nonpos_of_nonneg_of_nonpos (by linarith [hx.1]) (by linarith [hx.2])) (sq_nonneg _))
+    (isConnected_Ioo hab) hD (by
+      filter_upwards [hμ] with x hx
+      obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul hab (by simp) hmem hrep hf
+        (hmc ▸ hf') (hmc ▸ hHdeg) hHjet hx
+      exact ⟨ξ, hξ, by rw [Pi.sub_apply, h, hprod, hmc]⟩)
+  refine ⟨ξ, hξ, ?_⟩
+  rw [hQ, ← integral_sub hfint (integrable_eval_of_ae_mem_Icc hμ H)]
+  exact hint
 
 /-- **The Lobatto rule is an upper bound** for $f$ with nonnegative derivative of order $2k + 2$:
 for a finite measure $\mu$ supported in $[a, b]$, $a < b$, every $k$, and $f$ continuous on
