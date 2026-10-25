@@ -376,6 +376,14 @@ theorem integral_integral_probeSpectralMeasure [Nonempty m] {X : Ω → Matrix n
 
 /-! ### Deterministic bounds over Lipschitz test functions -/
 
+private lemma isFiniteMeasure_empiricalSpectralMeasure_aux (A : Matrix n n 𝕜) :
+    IsFiniteMeasure (empiricalSpectralMeasure A) := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · unfold empiricalSpectralMeasure
+    simp only [Fintype.card_eq_zero, Finset.range_zero, Finset.sum_empty, smul_zero]
+    infer_instance
+  · infer_instance
+
 /-- **Distribution functions control Lipschitz test functions.** For Hermitian $\mathbf{A}$ with
 spectrum in $[a, b]$, $a \le b$, a test matrix $\mathbf{\Omega}$ and $\tau \ge 0$: if at every
 eigenvalue $x$ the distribution functions of $\nu_{\mathbf{A}}$ (the empirical spectral measure)
@@ -397,7 +405,16 @@ _root_.Matrix.IsHermitian.abs_integral_empiricalSpectralMeasure_sub_integral_pro
     {f : ℝ → ℝ} {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a b)) :
     |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂probeSpectralMeasure A Ω| ≤
       (|f b| + L * (b - a)) * τ := by
-  sorry
+  have := isFiniteMeasure_empiricalSpectralMeasure_aux A
+  exact MeasureTheory.abs_integral_sub_integral_le_of_lipschitzOnWith
+    (by
+      filter_upwards [hA.ae_mem_spectrum_empiricalSpectralMeasure] with x hx
+      exact A.finite_real_spectrum.mem_toFinset.2 hx)
+    (by
+      filter_upwards [ae_mem_spectrum_probeSpectralMeasure A Ω] with x hx
+      exact A.finite_real_spectrum.mem_toFinset.2 hx)
+    (fun x hx => hs (A.finite_real_spectrum.mem_toFinset.1 hx)) hab hf hτ
+    (fun x hx => hK x (A.finite_real_spectrum.mem_toFinset.1 hx))
 
 /-- **The Kolmogorov event controls the mass**: for Hermitian $\mathbf{A}$, $n$ nonempty, and a
 test matrix $\mathbf{\Omega}$: if at every eigenvalue the distribution functions of
