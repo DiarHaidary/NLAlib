@@ -82,6 +82,14 @@ theorem _root_.Matrix.IsHermitian.integral_radauQuadrature_spectralMeasure {A : 
     (b : n → 𝕜) {q : ℕ} (hq : q + 1 ≤ krylovGrade A b) (f : ℝ → ℝ) :
     ∫ x, f x ∂radauQuadrature (spectralMeasure A b) c q =
       ‖WithLp.toLp 2 b‖ ^ 2 * cfc f (radauJacobiMatrix (spectralMeasure A b) c q) 0 0 := by
-  sorry
+  have hmom : IsMomentPosDef (spectralMeasure A b) (q + 1) :=
+    (hA.isMomentPosDef_spectralMeasure_iff b (q + 1)).mpr hq
+  have hrad := spectralMeasure_radauJacobiMatrix (spectralMeasure A b) (a := a) (b := a')
+    (ae_mem_Icc_spectralMeasure A hs b) hc hmom
+  rw [← hrad, integral_spectralMeasure, quadForm_def, hA.spectralMeasure_real_univ b,
+    Real.sqrt_sq (norm_nonneg _), RCLike.re_to_real]
+  simp only [star_trivial, Matrix.mulVec_smul, dotProduct_smul, smul_dotProduct,
+    Matrix.mulVec_single_one, smul_eq_mul, single_dotProduct, Matrix.col_apply]
+  ring
 
 end NLAlib
