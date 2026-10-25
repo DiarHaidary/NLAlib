@@ -206,6 +206,29 @@ theorem spectralMeasure_map_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ]
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a c) (k : ℕ) :
     spectralMeasure ((jacobiMatrix μ (k + 1)).map (algebraMap ℝ 𝕜))
         ((√(μ.real Set.univ) : 𝕜) • Pi.single 0 1) = gaussQuadrature μ (k + 1) := by
-  sorry
+  have hJh : (jacobiMatrix μ (k + 1)).IsHermitian := isHermitian_jacobiMatrix μ (k + 1)
+  have hJ : jacobiMatrix μ (k + 1) =
+      (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) *
+        Matrix.diagonal hJh.eigenvalues *
+        (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)ᴴ := by
+    exact hJh.spectral_theorem
+  have hU := hasOrthonormalCols_iff_mem_unitaryGroup.2 hJh.eigenvectorUnitary.2
+  have hVU : HasOrthonormalCols
+      ((hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).map (algebraMap ℝ 𝕜)) := by
+    rw [hasOrthonormalCols_iff, ← Matrix.conjTranspose_map _ fun r => by simp, ← Matrix.map_mul,
+      hasOrthonormalCols_iff.mp hU, Matrix.map_one _ (map_zero _) (map_one _)]
+  have hA : (jacobiMatrix μ (k + 1)).map (algebraMap ℝ 𝕜) =
+      (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).map (algebraMap ℝ 𝕜) *
+        Matrix.diagonal (fun i => ((hJh.eigenvalues i : ℝ) : 𝕜)) *
+        (((hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)).map
+          (algebraMap ℝ 𝕜))ᴴ := by
+    conv_lhs => rw [hJ]
+    rw [← Matrix.conjTranspose_map _ fun r => by simp, Matrix.map_mul, Matrix.map_mul,
+      Matrix.diagonal_map (map_zero _)]
+  rw [hVU.spectralMeasure_eq_sum rfl hA, HasOrthonormalCols.gaussQuadrature_succ_eq_sum hU hμ hJ]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 3
+  simp [Matrix.mulVec_smul]
+  rw [mul_pow, sq_abs, sq_abs, Real.sq_sqrt measureReal_nonneg]
 
 end NLAlib
