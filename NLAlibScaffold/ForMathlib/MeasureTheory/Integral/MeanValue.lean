@@ -135,4 +135,9 @@ theorem exists_integral_eq_mul_integral_of_ae_nonpos {Ω : Type*} [MeasurableSpa
     (hW0 : ∀ᵐ x ∂μ, W x ≤ 0) {s : Set ℝ} (hs : IsConnected s) {D : ℝ → ℝ}
     (hD : ContinuousOn D s) (h : ∀ᵐ x ∂μ, ∃ ξ ∈ s, F x = D ξ * W x) :
     ∃ ξ ∈ s, ∫ x, F x ∂μ = D ξ * ∫ x, W x ∂μ := by
-  sorry
+  obtain ⟨ξ, hξ, hint⟩ := exists_integral_eq_mul_integral_of_ae_nonneg
+    hF.neg hW.neg (hW0.mono fun x hx => by simpa using hx) hs hD
+    (h.mono fun x ⟨ξ, hξ, hx⟩ => ⟨ξ, hξ, by simp [hx]⟩)
+  refine ⟨ξ, hξ, ?_⟩
+  simp only [Pi.neg_apply, integral_neg, mul_neg, neg_inj] at hint
+  exact hint
