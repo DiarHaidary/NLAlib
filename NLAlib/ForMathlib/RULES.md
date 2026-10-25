@@ -32,7 +32,7 @@ and `docs/rules/DIGEST.md`.
 
 ### Placement and layers
 
-- **P1** A module imports only its own layer and lower; Sketching never imports Regression. [§2]
+- **P1** A module imports only its own layer and lower (§2 table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation. [§2]
 - **P2** No file with imports only (no per-directory aggregator). [§2]
 - **P3** An `NLAlib` file never imports `NLAlibScaffold`. [§7]
 
@@ -139,6 +139,7 @@ and `docs/rules/DIGEST.md`.
 
 - **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [§8]
 - **G2** Every port-ledger target is declared. [§9], AGENTS.md
+- **G3** (review) A scaffold file imports the scaffold files whose declarations its `Proof:` lines name. [§8] item 5
 
 ### Names
 

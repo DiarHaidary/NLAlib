@@ -9,6 +9,7 @@ public import NLAlib.Polynomial.Approximation.AnalyticCoefficients
 public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
 public import Mathlib.Analysis.SpecificLimits.Normed
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # Geometric Chebyshev approximation on an open ellipse
@@ -21,6 +22,7 @@ same error on any nondegenerate real interval. No boundary regularity is assumed
 
 * `NLAlib.isUniformApproxOn_chebyshevTrunc_of_differentiableOn`: canonical uniform error.
 * `NLAlib.exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn`: affine interval transport.
+* `NLAlib.minimaxError_le_of_differentiableOn`: the Bernstein-ellipse bound on $E_N$.
 -/
 
 @[expose] public section
@@ -177,5 +179,23 @@ theorem exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn
     change dist ((q.comp s).eval (x : 𝕜)) (f x) ≤ _
     rw [eval_comp, he]
     simpa only [g, hi] using h
+
+/-- **Analytic functions and the minimax error.** On $[a, b]$, $a < b$, if the pullback
+$t \mapsto f(((b - a)t + b + a)/2)$ of a real $f$ extends to a function holomorphic and bounded by
+$M$ on the open Bernstein ellipse $E_\rho$, $\rho > 1$, then
+$$E_N(f; [a, b]) \le \frac{2M}{\rho^N(\rho - 1)}\,.$$
+[Trefethen2019, Theorem 8.2] (locator from the quarry), there on $[-1, 1]$ for the Chebyshev
+truncation.
+Result: bernstein-ellipse-approx -/
+theorem minimaxError_le_of_differentiableOn {f : ℝ → ℝ} {F : ℂ → ℂ} {a b ρ M : ℝ} (hab : a < b)
+    (hρ : 1 < ρ) (hFd : DifferentiableOn ℂ F (openBernsteinEllipse ρ))
+    (hM : Metric.IsUniformApproxOn F (fun _ => 0) (openBernsteinEllipse ρ) M)
+    (hExt : Set.EqOn (fun t : ℝ => ((f (((b - a) * t + b + a) / 2) : ℝ) : ℂ))
+      (fun t : ℝ => F t) (Set.Icc (-1 : ℝ) 1)) (N : ℕ) :
+    minimaxError f (Set.Icc a b) N ≤ 2 * M / (ρ ^ N * (ρ - 1)) := by
+  obtain ⟨p, hdeg, hp⟩ := exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn (𝕜 := ℝ)
+    (f := f) hab hρ hFd hM
+    (fun t ht => by rw [← hExt ht]; exact RCLike.toComplex_ofReal (𝕜 := ℝ) _) N
+  exact minimaxError_le_of_isUniformApproxOn hdeg (hp.nonneg (Set.nonempty_Icc.mpr hab.le)) hp
 
 end NLAlib

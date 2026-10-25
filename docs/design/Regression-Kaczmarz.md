@@ -803,6 +803,13 @@ identity), so layer 5 is a placement by topic, not by dependency, as CONTRIBUTIN
 topics together, that is a two-file move (D4, reversible). The design note keeps the requested file
 name.
 
+*Amendment (2026-10-25, maintainer decision on library organization, option (b)):* the two-file
+move was made. The files are `Regression/SketchAndProject.lean` and `Regression/Kaczmarz.lean`
+(modules `NLAlib.Regression.SketchAndProject`, `NLAlib.Regression.Kaczmarz`), and `Solvers/` is
+gone. Layer 5 was a placement by topic; finding Kaczmarz under "solvers" is now the explorer's job,
+and CONTRIBUTING §2 numbers the folders by their imports. No declaration was renamed (all are in
+`namespace NLAlib`). The `Solvers/` paths elsewhere in this note are historical.
+
 | File | New/grows | Content, in order | Lines | Imports |
 |---|---|---|---|---|
 | `ForMathlib/Probability/Independence/Basic.lean` | grows | `iIndepFun.indepFun_comp_of_dependsOn` | +40 | `Mathlib.Logic.Function.DependsOn` |

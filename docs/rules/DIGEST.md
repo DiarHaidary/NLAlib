@@ -15,7 +15,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - F7 No file-level `open Classical` or `open scoped Classical`.
 - F8 No file-level `noncomputable section`.
 - F9 No file-level `attribute [instance]`.
-- P1 A module imports only its own layer and lower; Sketching never imports Regression.
+- P1 A module imports only its own layer and lower (§2 table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation.
 - P2 No file with imports only (no per-directory aggregator).
 - P3 An `NLAlib` file never imports `NLAlibScaffold`.
 - P4 A ForMathlib statement uses no NLAlib vocabulary [ForMathlib only].

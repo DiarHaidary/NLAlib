@@ -326,6 +326,28 @@ class RuleTests(unittest.TestCase):
                 self.assertTrue(violations(rid, bad), f'{rid}: the bad fixture passes')
                 self.assertEqual([v.text() for v in violations(rid, good)], [], f'{rid}: the good fixture fails')
 
+    def test_layer_table_matches_contributing(self):
+        # CONTRIBUTING §2's layout block and check_rules.LAYER give each top-level folder one layer
+        import re
+        text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
+        block = text[text.index('## 2. Layout'):text.index('NLAlibScaffold/    same tree')]
+        table, folder = {}, None
+        for line in block.splitlines():
+            m = re.match(r'  (\w+)/', line)
+            folder = m.group(1) if m else folder
+            n = re.search(r'\(layer ([−-]?[\d.]+)\)\s*$', line)
+            if n and folder:
+                table[folder] = float(n.group(1).replace('−', '-'))
+        self.assertEqual(table, {k: float(v) for k, v in check_rules.LAYER.items()})
+
+    def test_p1_half_layers_and_unknown_folders(self):
+        imp = lambda me, th: {f'NLAlib/{me}/A.lean': lean(header=HDR + f'public import NLAlib.{th}.B\n\n')}
+        self.assertTrue(violations('P1', imp('Krylov', 'Probability')))
+        self.assertEqual(violations('P1', imp('Probability', 'Krylov')), [])
+        self.assertTrue(violations('P1', imp('LowRank', 'Estimation')))
+        self.assertEqual(violations('P1', imp('Estimation', 'LowRank')), [])
+        self.assertTrue(violations('P1', imp('Solvers', 'Matrix')))
+
     def test_import_all_names_the_module(self):
         # `import all X` imports X with its private bodies, not a module named `all`
         import leansrc
