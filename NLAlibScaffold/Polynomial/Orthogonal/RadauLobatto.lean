@@ -614,7 +614,34 @@ $(X - a)(X - b)\hat\pi_k$ and $(x - a)(x - b) = -\lvert(x - a)(x - b)\rvert$ on 
 theorem isOrthogonalPolynomial_nodal_lobattoNodes (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b)
     {k : ℕ} (h : IsMomentPosDef (lobattoMeasure μ a b) k) :
     IsOrthogonalPolynomial μ k (Lagrange.nodal (lobattoNodes μ a b k) id) := by
-  sorry
+  have := isFiniteMeasure_lobattoMeasure hμ
+  have hlob := ae_mem_Icc_lobattoMeasure hμ
+  have hb : b ∉ gaussNodes (lobattoMeasure μ a b) k :=
+    h.notMem_gaussNodes_lobattoMeasure hμ (Or.inr rfl)
+  have ha : a ∉ insert b (gaussNodes (lobattoMeasure μ a b) k) := by
+    rw [Finset.mem_insert, not_or]
+    exact ⟨hab.ne, h.notMem_gaussNodes_lobattoMeasure hμ (Or.inl rfl)⟩
+  have hnodal : Lagrange.nodal (lobattoNodes μ a b k) id =
+      (X - C a) * ((X - C b) * orthogonalPolynomial (lobattoMeasure μ a b) k) := by
+    unfold lobattoNodes
+    rw [Lagrange.nodal_insert_eq_nodal ha, Lagrange.nodal_insert_eq_nodal hb,
+      h.nodal_gaussNodes hlob]
+    simp only [id]
+  rw [hnodal]
+  intro r hr
+  have hint := isOrthogonalPolynomial_orthogonalPolynomial hlob k r hr
+  rw [integral_lobattoMeasure] at hint
+  have hae : ∀ᵐ x ∂μ,
+      ((X - C a) * ((X - C b) * orthogonalPolynomial (lobattoMeasure μ a b) k)).eval x * r.eval x =
+        -(|(x - a) * (x - b)| * ((orthogonalPolynomial (lobattoMeasure μ a b) k).eval x *
+          r.eval x)) := by
+    filter_upwards [hμ] with x hx
+    have h1 : 0 ≤ x - a := sub_nonneg.mpr hx.1
+    have h2 : x - b ≤ 0 := sub_nonpos.mpr hx.2
+    rw [abs_of_nonpos (mul_nonpos_of_nonneg_of_nonpos h1 h2)]
+    simp only [eval_mul, eval_sub, eval_X, eval_C]
+    ring
+  rw [integral_congr_ae hae, integral_neg, hint, neg_zero]
 
 /-- The terminating case of the Lobatto rule: if the orthogonal polynomial $\hat\pi_k$ of the
 Lobatto modified measure has norm $0$ there, for $\mu$ finite and supported in $[a, b]$, then
