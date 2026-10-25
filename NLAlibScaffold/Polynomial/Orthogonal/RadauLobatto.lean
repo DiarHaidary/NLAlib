@@ -538,6 +538,63 @@ theorem integral_lobattoQuadrature_le_integral_of_iteratedDeriv_nonpos
 
 /-! ### The Radau Jacobi matrix -/
 
+/-- A row of the Radau Jacobi matrix times a vector: the diagonal term and the two entries
+beside it. -/
+private theorem radauJacobiMatrix_mulVec_apply {k : ℕ} (μ : Measure ℝ) (c : ℝ)
+    (w : Fin (k + 1) → ℝ) (i : Fin (k + 1)) :
+    (radauJacobiMatrix μ c k *ᵥ w) i =
+      (if i = Fin.last k then radauJacobiAlpha μ c k else jacobiAlpha μ i) * w i +
+        (if h : 0 < (i : ℕ) then √(jacobiBeta μ i) * w ⟨i - 1, by omega⟩ else 0) +
+        (if h : (i : ℕ) < k then √(jacobiBeta μ (i + 1)) * w ⟨i + 1, by omega⟩ else 0) := by
+  obtain ⟨i, hi⟩ := i
+  have hterm : ∀ j : Fin (k + 1), radauJacobiMatrix μ c k ⟨i, hi⟩ j * w j =
+      (if j = ⟨i, hi⟩ then (if (⟨i, hi⟩ : Fin (k + 1)) = Fin.last k then radauJacobiAlpha μ c k
+          else jacobiAlpha μ i) * w j else 0) +
+        (if (j : ℕ) + 1 = i then √(jacobiBeta μ i) * w j else 0) +
+        (if i + 1 = (j : ℕ) then √(jacobiBeta μ j) * w j else 0) := by
+    intro j
+    obtain ⟨j, hj⟩ := j
+    unfold radauJacobiMatrix jacobiMatrix
+    simp only [Matrix.of_apply, Fin.ext_iff, Fin.val_last]
+    split_ifs <;> first | omega | (subst_vars; ring)
+  have hsub : ∑ x : Fin (k + 1), (if (x : ℕ) + 1 = i then √(jacobiBeta μ i) * w x else 0) =
+      if h : 0 < i then √(jacobiBeta μ i) * w ⟨i - 1, by omega⟩ else 0 := by
+    split_ifs with h0
+    · rw [Finset.sum_eq_single ⟨i - 1, by omega⟩]
+      · rw [if_pos (by dsimp only; omega)]
+      · intro x _ hx
+        rw [if_neg]
+        intro hxi
+        apply hx
+        ext
+        dsimp only
+        omega
+      · intro h; exact absurd (Finset.mem_univ _) h
+    · apply Finset.sum_eq_zero
+      intro x _
+      rw [if_neg]
+      omega
+  have hsup : ∑ x : Fin (k + 1), (if i + 1 = (x : ℕ) then √(jacobiBeta μ x) * w x else 0) =
+      if h : i < k then √(jacobiBeta μ (i + 1)) * w ⟨i + 1, by omega⟩ else 0 := by
+    split_ifs with h0
+    · rw [Finset.sum_eq_single ⟨i + 1, by omega⟩]
+      · rw [if_pos rfl]
+      · intro x _ hx
+        rw [if_neg]
+        intro hxi
+        apply hx
+        ext
+        dsimp only
+        omega
+      · intro h; exact absurd (Finset.mem_univ _) h
+    · apply Finset.sum_eq_zero
+      intro x _
+      rw [if_neg]
+      omega
+  simp only [Matrix.mulVec, dotProduct, hterm, Finset.sum_add_distrib, Finset.sum_ite_eq',
+    Finset.mem_univ, if_true]
+  rw [hsub, hsup]
+
 /-- **The prescribed node is an eigenvalue of the Radau Jacobi matrix**: if a finite measure
 $\mu$ supported in $[a, b]$ is positive definite up to degree $k + 1$ and $\pi_k(c) \ne 0$, then
 $\tilde{\mathbf{J}}\mathbf{v} = c\,\mathbf{v}$ for the Radau Jacobi matrix $\tilde{\mathbf{J}}$
@@ -556,7 +613,66 @@ theorem IsMomentPosDef.radauJacobiMatrix_mulVec_eq {k : ℕ} (h : IsMomentPosDef
         √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ)) =
       c • fun i : Fin (k + 1) => (orthogonalPolynomial μ i).eval c /
         √(∫ x, (orthogonalPolynomial μ i).eval x ^ 2 ∂μ) := by
-  sorry
+  have hN : ∀ j ≤ k, 0 < ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ := fun j hj =>
+    (isMomentPosDef_succ_iff hμ j).mp (h.mono (by omega))
+  have hs : ∀ j ≤ k, √(∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ) ≠ 0 := fun j hj =>
+    (Real.sqrt_pos.mpr (hN j hj)).ne'
+  have hsqrtβ : ∀ m, m + 1 ≤ k → √(jacobiBeta μ (m + 1)) =
+      √(∫ x, (orthogonalPolynomial μ (m + 1)).eval x ^ 2 ∂μ) /
+        √(∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ) := fun m _ => by
+    change √((∫ x, (orthogonalPolynomial μ (m + 1)).eval x ^ 2 ∂μ) /
+      ∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ) = _
+    exact Real.sqrt_div (integral_nonneg fun x => sq_nonneg _) _
+  have hβ : ∀ m, m + 1 ≤ k → jacobiBeta μ (m + 1) =
+      (√(∫ x, (orthogonalPolynomial μ (m + 1)).eval x ^ 2 ∂μ)) ^ 2 /
+        (√(∫ x, (orthogonalPolynomial μ m).eval x ^ 2 ∂μ)) ^ 2 := fun m _ => by
+    rw [Real.sq_sqrt (integral_nonneg fun x => sq_nonneg _),
+      Real.sq_sqrt (integral_nonneg fun x => sq_nonneg _)]
+    rfl
+  have hrec : ∀ m, (orthogonalPolynomial μ (m + 2)).eval c =
+      (c - jacobiAlpha μ (m + 1)) * (orthogonalPolynomial μ (m + 1)).eval c -
+        jacobiBeta μ (m + 1) * (orthogonalPolynomial μ m).eval c := fun m => by
+    rw [orthogonalPolynomial_add_two]
+    simp only [eval_sub, eval_mul, eval_X, eval_C]
+  funext i
+  rw [radauJacobiMatrix_mulVec_apply]
+  simp only [Pi.smul_apply, smul_eq_mul]
+  obtain ⟨i, hi⟩ := i
+  rcases Nat.lt_or_ge i k with hik | hik
+  · rw [if_neg (fun h' => by simp [Fin.ext_iff] at h'; omega), dif_pos hik]
+    dsimp only
+    rcases Nat.eq_zero_or_pos i with rfl | hi0
+    · have e0 : (orthogonalPolynomial μ 0).eval c = 1 := by rw [orthogonalPolynomial_zero]; simp
+      have e1 : (orthogonalPolynomial μ 1).eval c = c - jacobiAlpha μ 0 := by
+        rw [orthogonalPolynomial_one]; simp
+      have h0 := hs 0 (by omega)
+      have h1 := hs 1 (by omega)
+      rw [dif_neg (lt_irrefl 0), add_zero, hsqrtβ 0 hik, e0, e1]
+      field_simp
+      ring
+    · obtain ⟨m, rfl⟩ : ∃ m, i = m + 1 := ⟨i - 1, by omega⟩
+      rw [dif_pos (by omega : 0 < m + 1)]
+      simp only [Nat.add_sub_cancel]
+      have h0 := hs m (by omega)
+      have h1 := hs (m + 1) (by omega)
+      have h2 := hs (m + 1 + 1) hik
+      rw [hsqrtβ m (by omega), hsqrtβ (m + 1) hik, hrec m, hβ m (by omega)]
+      field_simp
+      ring
+  · have hik' : i = k := by omega
+    subst i
+    dsimp only
+    rw [if_pos (show (⟨k, hi⟩ : Fin (k + 1)) = Fin.last k from rfl), dif_neg (lt_irrefl _)]
+    rcases Nat.eq_zero_or_pos k with rfl | hk0
+    · simp [radauJacobiAlpha_zero]
+    · obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+      rw [dif_pos (by omega : 0 < m + 1)]
+      simp only [Nat.add_sub_cancel]
+      have h0 := hs m (by omega)
+      have h1 := hs (m + 1) (by omega)
+      rw [radauJacobiAlpha_succ, hsqrtβ m le_rfl, hβ m le_rfl]
+      field_simp
+      ring
 
 /-- The endpoint is an eigenvalue of the Radau Jacobi matrix: if a finite measure $\mu$ supported
 in $[a, b]$ is positive definite up to degree $k + 1$ and $c \in \{a, b\}$, then $c$ is in the
