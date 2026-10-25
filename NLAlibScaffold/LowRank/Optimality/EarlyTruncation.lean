@@ -672,7 +672,44 @@ theorem
       C * ((k : ℝ) / ε) ≤ Fintype.card l →
       ∫ ω, frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 ∂μ ≤
         (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  sorry
+  rintro ⟨C, ε₀, hC, hε₀, H⟩
+  set ε : ℝ := min ε₀ (min (1 / (10 ^ 5 * (C + 1))) (1 / 10 ^ 4)) with hε_def
+  have hεpos : 0 < ε := lt_min hε₀ (lt_min (by positivity) (by norm_num))
+  have hε₀le : ε ≤ ε₀ := min_le_left _ _
+  have hεle : ε ≤ 1 / (10 ^ 5 * (C + 1)) := (min_le_right _ _).trans (min_le_left _ _)
+  have hε4 : ε ≤ 1 / 10 ^ 4 := (min_le_right _ _).trans (min_le_right _ _)
+  set L : ℕ := ⌈max (C / ε) 100⌉₊ with hL
+  have hCL : C / ε ≤ (L : ℝ) := (le_max_left _ _).trans (Nat.le_ceil _)
+  have h100 : (100 : ℝ) ≤ L := (le_max_right _ _).trans (Nat.le_ceil _)
+  have hLlt : (L : ℝ) < max (C / ε) 100 + 1 :=
+    Nat.ceil_lt_add_one (le_max_of_le_right (by norm_num))
+  have hcard : Fintype.card (Fin L) = L := Fintype.card_fin L
+  have hX : HasLaw (id : Matrix (Fin 2) (Fin L) ℝ → Matrix (Fin 2) (Fin L) ℝ)
+      (gaussianMatrix (Fin 2) (Fin L)) (gaussianMatrix (Fin 2) (Fin L)) :=
+    ⟨aemeasurable_id, Measure.map_id⟩
+  have hcond : C * (((1 : ℕ) : ℝ) / ε) ≤ Fintype.card (Fin L) := by
+    rw [hcard, Nat.cast_one, mul_one_div]; exact hCL
+  have hbound : ∀ A : Matrix (Fin 2) (Fin 2) ℝ,
+      ∫ ω, frobNorm (A - earlyTruncatedRSVD A (id ω) 1) ^ 2 ∂(gaussianMatrix (Fin 2) (Fin L)) ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A 1) ^ 2 :=
+    fun A => H (gaussianMatrix (Fin 2) (Fin L)) A id 1 ε hX hεpos hε₀le hcond
+  have hl : 100 ≤ Fintype.card (Fin L) := by rw [hcard]; exact_mod_cast h100
+  have hone := one_le_mul_card_of_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le
+    hX hl hbound
+  rw [hcard] at hone
+  have hmax : max (C / ε) 100 ≤ C / ε + 100 :=
+    have hCε : 0 < C / ε := div_pos hC hεpos
+    max_le (by linarith) (by linarith)
+  have hLε : (L : ℝ) * ε < C + 101 * ε := by
+    have h1 : (L : ℝ) < C / ε + 101 := by linarith
+    have h2 := mul_lt_mul_of_pos_right h1 hεpos
+    rw [add_mul, div_mul_cancel₀ _ hεpos.ne'] at h2
+    linarith
+  have hεC : ε * (10 ^ 5 * (C + 1)) ≤ 1 := (le_div_iff₀ (by positivity)).mp hεle
+  have hεC' : ε * C ≤ 1 / 10 ^ 5 := by nlinarith
+  have key := mul_lt_mul_of_pos_left hLε (by positivity : (0 : ℝ) < 10 ^ 4 * ε)
+  have h5 : ε * ε ≤ ε * (1 / 10 ^ 4) := mul_le_mul_of_nonneg_left hε4 hεpos.le
+  nlinarith [key, h5, hεC', hone]
 
 /-! ### General $k$: the block instance -/
 
