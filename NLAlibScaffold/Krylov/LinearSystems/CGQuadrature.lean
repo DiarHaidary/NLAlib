@@ -100,13 +100,22 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_eq_integral_sub {A : Matr
       (xs - x₀) - cgIterate A (b - A *ᵥ x₀) 0 q by abel,
     quadForm_sub_eq_of_galerkin hH hd hgal, map_sub]
   congr 1
-  · have hsym : ∀ u v : n → 𝕜, star u ⬝ᵥ v = star (star v ⬝ᵥ u) := by
-      intro u v
-      simp [dotProduct, mul_comm]
-    rw [integral_spectralMeasure, ← hA.inv_eq_cfc, quadForm_def, hinv, hsym (xs - x₀)]
+  · rw [integral_spectralMeasure, ← hA.inv_eq_cfc, quadForm_def, hinv, Matrix.star_dotProduct]
     exact RCLike.conj_re _
   · rw [← hA.isHermitian.lanczosQuadrature_eq_gaussQuadrature, integral_lanczosQuadrature,
       hH.lanczosFA_inv_eq_cgIterate]
+
+/-- The hypotheses of the Radau bounds for $x \mapsto x^{-1}$ on $[a, a']$, $0 < a$: continuity,
+smoothness, and $(x^{-1})^{(2q+1)} = -(2q+1)!\,x^{-2q-2} \le 0$. -/
+private lemma inv_radau_hypotheses {a a' : ℝ} (ha : 0 < a) (q : ℕ) :
+    ContinuousOn (fun x : ℝ => x⁻¹) (Set.Icc a a') ∧
+      ContDiffOn ℝ (2 * q + 1 : ℕ) (fun x : ℝ => x⁻¹) (Set.Ioo a a') ∧
+      ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q + 1) (fun x : ℝ => x⁻¹) x ≤ 0 := by
+  refine ⟨continuousOn_inv₀.mono fun x hx => (ha.trans_le hx.1).ne',
+    (contDiffOn_inv (𝕜 := ℝ)).mono fun x hx => (ha.trans hx.1).ne', fun x hx => ?_⟩
+  rw [iteratedDeriv_eq_iterate, iter_deriv_inv', Odd.neg_one_pow ⟨q, rfl⟩, neg_one_mul]
+  simp only [neg_mul, neg_nonpos]
+  exact mul_nonneg (Nat.cast_nonneg _) (zpow_pos (ha.trans hx.1) _).le
 
 /-- **The Gauss–Radau upper bound on the CG error**: for positive definite $\mathbf{A}$ with
 spectrum in $[a, a']$, $0 < a < a'$, $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, every
@@ -132,17 +141,7 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_integral_radauQuadratu
     RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) ≤
       ∫ x, x⁻¹ ∂radauQuadrature (spectralMeasure A (b - A *ᵥ x₀)) a q -
         ∫ x, x⁻¹ ∂gaussQuadrature (spectralMeasure A (b - A *ᵥ x₀)) q := by
-  have hf : ContinuousOn (fun x : ℝ => x⁻¹) (Set.Icc a a') :=
-    continuousOn_inv₀.mono fun x hx => (ha.trans_le hx.1).ne'
-  have hf' : ContDiffOn ℝ (2 * q + 1 : ℕ) (fun x : ℝ => x⁻¹) (Set.Ioo a a') :=
-    (contDiffOn_inv (𝕜 := ℝ)).mono fun x hx => (ha.trans hx.1).ne'
-  have hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q + 1) (fun x : ℝ => x⁻¹) x ≤ 0 := by
-    intro x hx
-    have hx0 : (0 : ℝ) < x := ha.trans hx.1
-    have h1 : (0 : ℝ) < x ^ (-1 - ((2 * q + 1 : ℕ) : ℤ)) := zpow_pos hx0 _
-    have h2 : (0 : ℝ) < ((2 * q + 1).factorial : ℝ) := by positivity
-    rw [iteratedDeriv_eq_iterate, iter_deriv_inv', Odd.neg_one_pow ⟨q, rfl⟩]
-    nlinarith [mul_pos h2 h1]
+  obtain ⟨hf, hf', hD⟩ := inv_radau_hypotheses (a' := a') ha q
   have h := re_quadForm_cfc_le_integral_radauQuadrature_of_iteratedDeriv_nonpos hs haa' hf q hf' hD
     (b - A *ᵥ x₀)
   rw [Matrix.PosDef.re_quadForm_sub_cgIterate_eq_integral_sub hA hxs x₀ q]
@@ -168,19 +167,7 @@ theorem _root_.Matrix.PosDef.integral_radauQuadrature_sub_le_re_quadForm_sub_cgI
     ∫ x, x⁻¹ ∂radauQuadrature (spectralMeasure A (b - A *ᵥ x₀)) a' q -
         ∫ x, x⁻¹ ∂gaussQuadrature (spectralMeasure A (b - A *ᵥ x₀)) q ≤
       RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) := by
-  have hf : ContinuousOn (fun x : ℝ => x⁻¹) (Set.Icc a a') :=
-    continuousOn_inv₀.mono fun x hx => ne_of_gt (lt_of_lt_of_le ha hx.1)
-  have hf' : ContDiffOn ℝ (2 * q + 1 : ℕ) (fun x : ℝ => x⁻¹) (Set.Ioo a a') :=
-    contDiffOn_id.inv fun x hx => ne_of_gt (ha.trans hx.1)
-  have hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q + 1) (fun x : ℝ => x⁻¹) x ≤ 0 := by
-    intro x hx
-    have hx0 : 0 < x := ha.trans hx.1
-    rw [iteratedDeriv_eq_iterate, show (fun x : ℝ => x⁻¹) = Inv.inv from rfl, iter_deriv_inv]
-    have hodd : (-1 : ℝ) ^ (2 * q + 1) = -1 := by rw [pow_succ, pow_mul]; norm_num
-    rw [hodd]
-    have hpos : (0 : ℝ) < x ^ (-1 - ((2 * q + 1 : ℕ) : ℤ)) := zpow_pos hx0 _
-    have hfac : (0 : ℝ) < ((2 * q + 1).factorial : ℝ) := by positivity
-    nlinarith [mul_pos hfac hpos]
+  obtain ⟨hf, hf', hD⟩ := inv_radau_hypotheses (a' := a') ha q
   have h := integral_radauQuadrature_le_re_quadForm_cfc_of_iteratedDeriv_nonpos hs haa' hf q hf' hD
     (b - A *ᵥ x₀)
   have h2 := Matrix.PosDef.re_quadForm_sub_cgIterate_eq_integral_sub hA hxs x₀ q
