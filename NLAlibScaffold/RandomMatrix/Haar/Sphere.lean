@@ -256,6 +256,32 @@ measureReal_abs_sum_norm_conjTranspose_mulVec_sq_div_card_sub_div_card_ge_le_of_
     μ.real {ω | τ ≤ |(∑ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ u j ω)‖ ^ 2) / Fintype.card m -
         Fintype.card k / Fintype.card n|} ≤
       2 * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
-  sorry
+  have := hind.isProbabilityMeasure
+  rcases (Nat.cast_nonneg (α := ℝ) (Fintype.card m)).eq_or_lt with hm | hm
+  · rw [← hm]
+    simp only [zero_mul, neg_zero, Real.exp_zero, mul_one]
+    exact measureReal_le_one.trans (by norm_num)
+  have hg : ∀ j : m, Measurable fun x : n → ℝ =>
+      ‖WithLp.toLp 2 (Vᴴ *ᵥ x)‖ ^ 2 - (Fintype.card k / Fintype.card n : ℝ) := fun _ => by
+    fun_prop
+  have hs := HasSubgaussianMGF.sum_of_iIndepFun (hind.comp _ hg) (s := Finset.univ)
+    fun j _ => hasSubgaussianMGF_norm_conjTranspose_mulVec_sq_sub_of_hasLaw_uniformSphereVector
+      (hu j) hV
+  refine le_of_eq_of_le ?_ ((hs.measureReal_abs_ge_le (t := Fintype.card m * τ)
+    (by positivity)).trans_eq ?_)
+  · congr 1
+    ext ω
+    simp only [Set.mem_ofPred_eq, Function.comp_apply, Finset.sum_sub_distrib, Finset.sum_const,
+      Finset.card_univ, nsmul_eq_mul]
+    rw [show (∑ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ u j ω)‖ ^ 2) / (Fintype.card m : ℝ) -
+        Fintype.card k / Fintype.card n = ((∑ j, ‖WithLp.toLp 2 (Vᴴ *ᵥ u j ω)‖ ^ 2) -
+        Fintype.card m * (Fintype.card k / Fintype.card n)) / Fintype.card m by field_simp,
+      abs_div, abs_of_pos hm, le_div_iff₀ hm, mul_comm]
+  · rw [NNReal.coe_sum]
+    simp only [coe_nnnorm, Real.norm_of_nonneg (by positivity :
+      (0 : ℝ) ≤ 1 / (2 * (Fintype.card n + 2))), Finset.sum_const, Finset.card_univ,
+      nsmul_eq_mul]
+    congr 2
+    field_simp
 
 end NLAlib
