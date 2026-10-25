@@ -124,7 +124,38 @@ multiplicity at least $2$ (`le_rootMultiplicity_iff`) gives $\pi_k = (X - x)^2h$
 roots of $(X - x)h$, of card at most $k - 1$. -/
 theorem IsMomentPosDef.nodup_roots_orthogonalPolynomial {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : (orthogonalPolynomial μ k).roots.Nodup := by
-  sorry
+  rw [Multiset.nodup_iff_count_le_one]
+  intro x
+  rw [count_roots]
+  by_contra hlt
+  rw [not_le] at hlt
+  have hne : orthogonalPolynomial μ k ≠ 0 := (monic_orthogonalPolynomial μ k).ne_zero
+  obtain ⟨g, hg⟩ := (le_rootMultiplicity_iff hne).mp (by exact hlt : 2 ≤ _)
+  have hg0 : g ≠ 0 := by
+    rintro rfl
+    simp [hg] at hne
+  have hdeg : (orthogonalPolynomial μ k).natDegree = k := natDegree_orthogonalPolynomial μ k
+  have hdeg2 : (orthogonalPolynomial μ k).natDegree = 2 + g.natDegree := by
+    rw [hg, natDegree_mul (pow_ne_zero _ (X_sub_C_ne_zero x)) hg0, natDegree_pow,
+      natDegree_X_sub_C]
+  have hgk : g.natDegree < k := by omega
+  have hXg : (X - C x) * g ≠ 0 := mul_ne_zero (X_sub_C_ne_zero x) hg0
+  have hsq : orthogonalPolynomial μ k * g = ((X - C x) * g) ^ 2 := by rw [hg]; ring
+  have hdegg : g.degree < k :=
+    lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast hgk)
+  have hcard : ((X - C x) * g).roots.toFinset.card < k := by
+    have h1 := Multiset.toFinset_card_le ((X - C x) * g).roots
+    have h2 := card_roots' ((X - C x) * g)
+    have h3 : ((X - C x) * g).natDegree = 1 + g.natDegree := by
+      rw [natDegree_mul (X_sub_C_ne_zero x) hg0, natDegree_X_sub_C]
+    omega
+  refine IsMomentPosDef.false_of_ae_nonneg_mul h hμ
+    (isOrthogonalPolynomial_orthogonalPolynomial hμ k) hdegg
+    (ae_of_all _ fun y => ?_) hcard (fun y _ hy => ?_)
+  · rw [hsq, eval_pow]
+    exact sq_nonneg _
+  · rw [hsq, eval_pow, pow_eq_zero_iff two_ne_zero] at hy
+    exact Multiset.mem_toFinset.mpr ((mem_roots hXg).mpr hy)
 
 /-- The orthogonal polynomial is the nodal polynomial of the Gauss nodes: if $\mu$, finite and
 supported in $[a, b]$, is positive definite up to degree $k$, then
