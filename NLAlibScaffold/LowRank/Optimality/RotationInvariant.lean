@@ -296,7 +296,33 @@ theorem
     ∃ A : Matrix m n ℝ, A.rank = r ∧
       c * frobNorm (A - truncatedSVD A q) ^ 2 <
         ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ := by
-  sorry
+  classical
+  set g := gaussianProjectionFactor (Fintype.card l) (Fintype.card p) with hg_def
+  have hg0 : 0 < g := zero_lt_one.trans_le (one_le_gaussianProjectionFactor hlp)
+  have hc' : c / g < rotationInvariantFactor r (Fintype.card l) q := by
+    rw [div_lt_iff₀ hg0, mul_comm]
+    exact hc
+  obtain ⟨A, hA, hlt⟩ :=
+    exists_lt_integral_frobNorm_sub_rsvd_sq_of_isLeftUnitarilyInvariant hX hXr hq hlr hrm hrn hc'
+  have hrank : ∀ᵐ ω ∂μ, (A * X ω).rank = Fintype.card l := by
+    filter_upwards [ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant A hX hXr] with ω hω
+    rw [hω, hA, min_eq_right hlr]
+  have hr : ∀ᵐ ω ∂μ, (A * X ω).rank + 2 ≤ Fintype.card p :=
+    hrank.mono fun ω hω => by rw [hω]; exact hlp
+  have heq : ∫ ω, frobNorm (A - generalizedNystrom A (X ω) (Ψ ω)) ^ 2 ∂μ =
+      g * ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
+    rw [integral_frobNorm_sub_generalizedNystrom_sq_eq_integral_of_hasLaw_gaussianMatrix A
+      hX.aemeasurable hΨ hXΨ hr, ← integral_const_mul]
+    exact integral_congr_ae (hrank.mono fun ω hω => by
+      change gaussianProjectionFactor (A * X ω).rank (Fintype.card p) * _ = g * _
+      rw [hω])
+  refine ⟨A, hA, ?_⟩
+  rw [heq]
+  have hcg : c * frobNorm (A - truncatedSVD A q) ^ 2 =
+      g * (c / g * frobNorm (A - truncatedSVD A q) ^ 2) := by
+    field_simp
+  rw [hcg]
+  exact mul_lt_mul_of_pos_left hlt hg0
 
 -- A docstring line and the declaration name exceed 100 characters.
 set_option linter.style.longLine false in
