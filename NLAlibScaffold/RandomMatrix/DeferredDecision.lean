@@ -82,7 +82,34 @@ $(\mathbf{E}\mathbf{Z}\mathbf{F})^{\mathsf{H}}\mathbf{u}
 theorem transcript_resample [DecidableEq d] [DecidableEq k] {𝕜 : Type*} [RCLike 𝕜]
     (alg : QueryAlgorithm ((k → 𝕜) × (d → 𝕜)) ((d → 𝕜) × (k → 𝕜)) q β) (X X' : Matrix d k 𝕜) :
     alg.transcript (twoSidedMulVec (alg.resample X X')) = alg.transcript (twoSidedMulVec X) := by
-  sorry
+  set τ := alg.transcript (twoSidedMulVec X) with hτ
+  set P := rangeProjector (alg.rightQueryMatrix τ) with hP
+  set Q := rangeProjector (alg.leftQueryMatrix τ) with hQ
+  have hw : ∀ j, (alg.queries τ j).1 = alg.rightQueryMatrix τ *ᵥ Pi.single j 1 := by
+    intro j; ext r; simp [QueryAlgorithm.rightQueryMatrix]
+  have hu : ∀ j, (alg.queries τ j).2 = alg.leftQueryMatrix τ *ᵥ Pi.single j 1 := by
+    intro j; ext r; simp [QueryAlgorithm.leftQueryMatrix]
+  have hFw : ∀ j, (1 - P) *ᵥ (alg.queries τ j).1 = 0 := by
+    intro j
+    rw [hw j, Matrix.sub_mulVec, Matrix.one_mulVec, hP, rangeProjector_mulVec_mulVec, sub_self]
+  have hEu : ∀ j, (1 - Q) *ᵥ (alg.queries τ j).2 = 0 := by
+    intro j
+    rw [hu j, Matrix.sub_mulVec, Matrix.one_mulVec, hQ, rangeProjector_mulVec_mulVec, sub_self]
+  have hEh : (1 - Q)ᴴ = 1 - Q := by
+    rw [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hQ, conjTranspose_rangeProjector]
+  have hFh : (1 - P)ᴴ = 1 - P := by
+    rw [Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hP, conjTranspose_rangeProjector]
+  apply alg.transcript_eq_of_forall_apply_queries_eq
+  intro j
+  have h1 := hFw j
+  have h2 := hEu j
+  simp only [twoSidedMulVec, QueryAlgorithm.resample, ← hτ, ← hP, ← hQ, Prod.mk.injEq]
+  constructor
+  · simp only [Matrix.sub_mulVec, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, h1, Matrix.mulVec_zero,
+      add_zero, sub_zero]
+  · simp only [Matrix.conjTranspose_sub, Matrix.conjTranspose_add, Matrix.conjTranspose_mul,
+      Matrix.sub_mulVec, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, hEh, hFh, h2, Matrix.mulVec_zero,
+      add_zero, sub_zero]
 
 private theorem transcript_truncate_succ {Q R : Type*} (alg : QueryAlgorithm Q R q β) (f : Q → R)
     (i : ℕ) :
