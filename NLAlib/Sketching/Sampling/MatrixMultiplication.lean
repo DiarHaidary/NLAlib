@@ -644,10 +644,10 @@ private theorem mul_le_div_of_le_div_sq {K s x : ℝ} (hK : 0 < K) (h : s ≤ x 
 nonempty, weights $p$ summing to $1$ with $\|\mathbf{A}_i\|^2 \le a p_i$ and
 $\|\mathbf{B}_i\|^2 \le b p_i$ for every row $i$, $a, b \ge 0$, the row-sampling sketch
 $\mathbf{S}$ with $\lvert k\rvert$ i.i.d. rows drawn with probabilities $p$, and $t \ge 0$,
-$$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
-{}- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
-\exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(b\|\mathbf{A}\|_2^2, a\|\mathbf{B}\|_2^2)
-{}+ 2\sqrt{ab}\,t/3}\Bigr)\,.$$
+$$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
+\exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(b\|\mathbf{A}\|_2^2, a\|\mathbf{B}\|_2^2) +
+2\sqrt{ab}\,t/3}\Bigr)\,.$$
 Rectangular matrix Bernstein (`NLAlib.measureReal_specNorm_sum_ge_le_bernstein`) for the
 centred atoms. At $p_i \propto \|\mathbf{A}_i\|^2 + \|\mathbf{B}_i\|^2$ this is the stable-rank
 form. [MartinssonTropp2020, §7.3, Theorem 7.2]; [Tropp2015, §6.4] (locator of the corollary to
@@ -708,10 +708,10 @@ replacement**: for $k$ and $r$ nonempty, $\|\mathbf{A}_i\|^2 \le a/\lvert n\rver
 $\|\mathbf{B}_i\|^2 \le b/\lvert n\rvert$ for every row $i$, $a, b \ge 0$, the row-sampling sketch
 $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{P}^{\mathsf{H}}$ of $\lvert k\rvert$
 distinct uniformly sampled rows, and $t \ge 0$,
-$$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B}
-{}- \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
-\exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(b\|\mathbf{A}\|_2^2, a\|\mathbf{B}\|_2^2)
-{}+ 2\sqrt{ab}\,t/3}\Bigr)\,,$$
+$$\mathbb{P}\bigl[t \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
+\mathbf{A}^{\mathsf{H}}\mathbf{B}\|_2\bigr] \le (\lvert q\rvert + \lvert r\rvert)
+\exp\Bigl(-\frac{\lvert k\rvert t^2/2}{\max(b\|\mathbf{A}\|_2^2, a\|\mathbf{B}\|_2^2) +
+2\sqrt{ab}\,t/3}\Bigr)\,,$$
 the bound with replacement at uniform weights: matrix Bernstein without replacement
 (`NLAlib.measureReal_specNorm_sum_ge_le_bernstein_of_hasLaw_uniformOn_injective`) for the centred
 population $(\lvert n\rvert/\lvert k\rvert)\mathbf{A}_i^{\mathsf{H}}\mathbf{B}_i -

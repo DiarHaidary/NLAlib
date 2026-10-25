@@ -281,8 +281,8 @@ every $0 < \theta < 3/L$ the trace exponential is integrable with
 $$\mathbb{E}\operatorname{tr}e^{\theta\mathbf{Y}} \le
 \operatorname{tr}\exp\Bigl(\frac{\theta^2/2}{1 - L\theta/3}\,\mathbf{W}\Bigr)\,,$$
 then, $n$ nonempty,
-$$\mathbb{E}\,\lambda_0(\mathbf{Y}) \le \sqrt{2\|\mathbf{W}\|_2\log\lvert n\rvert}
-{}+ \frac{L\log\lvert n\rvert}{3}\,.$$
+$$\mathbb{E}\,\lambda_0(\mathbf{Y}) \le \sqrt{2\|\mathbf{W}\|_2\log\lvert n\rvert} +
+\frac{L\log\lvert n\rvert}{3}\,.$$
 The mean form of `NLAlib.measureReal_eigenvalue_zero_ge_le_bernstein_of_integral_le`.
 [Tropp2015, Theorem 6.6.1]. -/
 theorem integral_eigenvalue_zero_le_bernstein_of_integral_le [IsProbabilityMeasure μ]
