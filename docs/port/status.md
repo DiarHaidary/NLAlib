@@ -15,9 +15,10 @@ Analysis/Calculus/Deriv/MeanValue, MeasureTheory/Integral/Bochner/SumMeasure}.le
 is empty again. Statement change (maintainer, D18-FIX): the asymptotic form
 `exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`
 (D18) gains the hypothesis `0 < c`; without it, it is false for `m` empty and `c = 0`.
-The unused `hA` of `ae_mem_Icc_slqMeasure` and
-`matchesMoments_probeSpectralMeasure_slqMeasure` is kept and its linters silenced locally
-(decision UNUSED-HA pending). New imports: `NLAlib.ForMathlib.Probability.Distributions.Beta`
+Statement change (maintainer, UNUSED-HA): `Matrix.IsHermitian.ae_mem_Icc_slqMeasure` and
+`Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure` drop their unused `hA` and
+become `NLAlib.ae_mem_Icc_slqMeasure` and `NLAlib.matchesMoments_probeSpectralMeasure_slqMeasure`
+(T13, N18). New imports: `NLAlib.ForMathlib.Probability.Distributions.Beta`
 (Sphere), `NLAlib.ForMathlib.Probability.Distributions.ChiSquared` (ChiSquare),
 `Mathlib.Probability.HasLaw` (ChiSquared), `NLAlib.Estimation.Trace.GirardHutchinson`,
 `NLAlib.Polynomial.Approximation.AnalyticApproximation`, `NLAlib.Krylov.Functions.Quadrature`

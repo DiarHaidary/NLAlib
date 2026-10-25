@@ -58,7 +58,7 @@ probability $2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)$, with no unknown
   algorithm computes.
 * `NLAlib.probeSpectralMeasure_real`: the probe spectral measure of a set is a Girard–Hutchinson
   estimate.
-* `Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure`,
+* `NLAlib.matchesMoments_probeSpectralMeasure_slqMeasure`,
   `Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le`: moment matching and
   exactness.
 * `NLAlib.integral_integral_probeSpectralMeasure`: unbiasedness for isotropic probes.
@@ -289,16 +289,13 @@ theorem ae_mem_Icc_probeSpectralMeasure (A : Matrix n n 𝕜) {a a' : ℝ}
   filter_upwards [ae_mem_spectrum_probeSpectralMeasure A Ω] with x hx
   exact hs hx
 
--- hA is unused (compiler and environment linters); see decision UNUSED-HA
-set_option linter.unusedVariables false in
 /-- The SLQ spectral-density estimate lives in every interval containing the spectrum: for
-Hermitian $\mathbf{A}$ with spectrum in $[a, a']$, every test matrix $\mathbf{\Omega}$ and every
+$\mathbf{A}$ with spectrum in $[a, a']$, every test matrix $\mathbf{\Omega}$ and every
 $q$, almost every point of $\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega}, q)$ lies in
 $[a, a']$: the Ritz values lie between the extreme eigenvalues. -/
-@[nolint unusedArguments]
-theorem _root_.Matrix.IsHermitian.ae_mem_Icc_slqMeasure {A : Matrix n n 𝕜}
-    (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (Ω : Matrix n m 𝕜)
-    (q : ℕ) : ∀ᵐ x ∂slqMeasure A Ω q, x ∈ Set.Icc a a' := by
+theorem ae_mem_Icc_slqMeasure (A : Matrix n n 𝕜) {a a' : ℝ}
+    (hs : spectrum ℝ A ⊆ Set.Icc a a') (Ω : Matrix n m 𝕜) (q : ℕ) :
+    ∀ᵐ x ∂slqMeasure A Ω q, x ∈ Set.Icc a a' := by
   have hprobe : ∀ j, ∀ᵐ x ∂spectralMeasure A (fun i => Ω i j), x ∈ Set.Icc a a' :=
     fun j => ae_mem_Icc_spectralMeasure A hs _
   have hgauss : ∀ j, ∀ᵐ x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q,
@@ -322,9 +319,7 @@ private lemma _root_.Matrix.IsHermitian.card_toFinset_spectrum_le {A : Matrix n 
   rw [hfin]
   exact Finset.card_image_le.trans_eq Finset.card_univ
 
--- hA is unused (compiler and environment linters); see decision UNUSED-HA
-set_option linter.unusedVariables false in
-/-- **SLQ matches $2q$ moments of the probe spectral measure**: for Hermitian $\mathbf{A}$, every
+/-- **SLQ matches $2q$ moments of the probe spectral measure**: for every $\mathbf{A}$, every
 test matrix $\mathbf{\Omega}$ and every $q$,
 $\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega})$ and
 $\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega}, q)$ give every real polynomial of degree less
@@ -332,9 +327,8 @@ than $2q$ the same integral: each probe density matches $2q$ moments of its Gaus
 averages match. [Gautschi2004, Theorem 1.45]; [GolubMeurant2010, Ch. 6]; there for one measure,
 here probe by probe and averaged.
 Result: gauss-quadrature -/
-@[nolint unusedArguments]
-theorem _root_.Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure
-    {A : Matrix n n 𝕜} (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) (q : ℕ) :
+theorem matchesMoments_probeSpectralMeasure_slqMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜)
+    (q : ℕ) :
     MatchesMoments (probeSpectralMeasure A Ω) (slqMeasure A Ω q) (2 * q) := by
   obtain ⟨a, a', hs⟩ := exists_spectrum_subset_Icc A
   have hprobe : ∀ j, ∀ᵐ x ∂spectralMeasure A (fun i => Ω i j), x ∈ Set.Icc a a' :=
@@ -1010,7 +1004,7 @@ private theorem abs_integral_empirical_sub_normalised_probe_le [Nonempty n]
 /-- The normalised probe measure and the normalised SLQ measure differ, against Lipschitz test
 functions, by the Gauss-rule term: Jackson's polynomial and moment matching. -/
 private theorem abs_integral_normalised_probe_sub_slq_le
-    {A : Matrix n n ℝ} (hA : A.IsHermitian) {a b : ℝ} (hab : a < b)
+    {A : Matrix n n ℝ} {a b : ℝ} (hab : a < b)
     (hs : spectrum ℝ A ⊆ Set.Icc a b) (Ω : Matrix n m ℝ) (q : ℕ)
     (hMpos : 0 < (probeSpectralMeasure A Ω).real Set.univ)
     (hQM : (slqMeasure A Ω (q + 1)).real Set.univ = (probeSpectralMeasure A Ω).real Set.univ)
@@ -1018,14 +1012,14 @@ private theorem abs_integral_normalised_probe_sub_slq_le
     |∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω) -
       ∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1))| ≤
       jacksonApproximationConstant * L * (b - a) / (2 * q + 3) := by
-  have hmatch := (hA.matchesMoments_probeSpectralMeasure_slqMeasure Ω (q + 1)).smul
+  have hmatch := (matchesMoments_probeSpectralMeasure_slqMeasure A Ω (q + 1)).smul
     (probeSpectralMeasure A Ω Set.univ)⁻¹
   have hPne : probeSpectralMeasure A Ω Set.univ ≠ 0 := fun h => by
     simp [measureReal_def, h] at hMpos
   have := (slqMeasure A Ω (q + 1)).smul_finite (ENNReal.inv_ne_top.2 hPne)
   have hPab := Measure.ae_smul_measure (ae_mem_Icc_probeSpectralMeasure A hs Ω)
     (probeSpectralMeasure A Ω Set.univ)⁻¹
-  have hQab := Measure.ae_smul_measure (hA.ae_mem_Icc_slqMeasure hs Ω (q + 1))
+  have hQab := Measure.ae_smul_measure (ae_mem_Icc_slqMeasure A hs Ω (q + 1))
     (probeSpectralMeasure A Ω Set.univ)⁻¹
   obtain ⟨p, hp, hε⟩ :=
     exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * q + 1)
@@ -1062,13 +1056,13 @@ private theorem abs_integral_sub_integral_slq_le_of_hK
     Matrix.IsHermitian.abs_one_sub_probeSpectralMeasure_real_univ_le hA hK
   have hMpos : 0 < (probeSpectralMeasure A Ω).real Set.univ := by linarith [abs_le.mp hM]
   have hQM : (slqMeasure A Ω (q + 1)).real Set.univ = (probeSpectralMeasure A Ω).real Set.univ :=
-    ((hA.matchesMoments_probeSpectralMeasure_slqMeasure Ω (q + 1)).measureReal_univ_eq
+    ((matchesMoments_probeSpectralMeasure_slqMeasure A Ω (q + 1)).measureReal_univ_eq
       (by omega)).symm
   have hQP : slqMeasure A Ω (q + 1) Set.univ = probeSpectralMeasure A Ω Set.univ :=
     (ENNReal.toReal_eq_toReal_iff' (measure_ne_top _ _) (measure_ne_top _ _)).mp hQM
   rw [hQP]
   have h1 := abs_integral_empirical_sub_normalised_probe_le hA hab hs Ω hK hτ hMpos hf
-  have h2 := abs_integral_normalised_probe_sub_slq_le hA hab hs Ω q hMpos hQM hf
+  have h2 := abs_integral_normalised_probe_sub_slq_le hab hs Ω q hMpos hQM hf
   have h3 := abs_sub_le (∫ x, f x ∂empiricalSpectralMeasure A)
     (∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • probeSpectralMeasure A Ω))
     (∫ x, f x ∂((probeSpectralMeasure A Ω Set.univ)⁻¹ • slqMeasure A Ω (q + 1)))
