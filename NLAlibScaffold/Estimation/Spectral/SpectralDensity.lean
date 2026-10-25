@@ -472,7 +472,38 @@ _root_.Matrix.IsHermitian.abs_empiricalSpectralMeasure_real_Iic_sub_probeSpectra
       (probeSpectralMeasure A Ω).real (Set.Iic x)| ≤ τ) (x : ℝ) :
     |(empiricalSpectralMeasure A).real (Set.Iic x) -
       (probeSpectralMeasure A Ω).real (Set.Iic x)| ≤ τ := by
-  sorry
+  -- both measures live on the spectrum, so sets agreeing there have the same mass
+  have hcongr : ∀ (μ : Measure ℝ) (S T : Set ℝ), (∀ᵐ y ∂μ, y ∈ spectrum ℝ A) →
+      (∀ y ∈ spectrum ℝ A, y ∈ S ↔ y ∈ T) → μ.real S = μ.real T := by
+    intro μ S T hμ hST
+    refine MeasureTheory.measureReal_congr (Filter.eventuallyEq_set.2 ?_)
+    filter_upwards [hμ] with y hy
+    exact hST y hy
+  have hE : ∀ᵐ y ∂empiricalSpectralMeasure A, y ∈ spectrum ℝ A :=
+    hA.ae_mem_spectrum_empiricalSpectralMeasure
+  have hP : ∀ᵐ y ∂probeSpectralMeasure A Ω, y ∈ spectrum ℝ A :=
+    ae_mem_spectrum_probeSpectralMeasure A Ω
+  by_cases hex : ∃ y ∈ spectrum ℝ A, y ≤ x
+  · -- x' is the largest eigenvalue ≤ x; Iic x and Iic x' agree on the spectrum
+    set F := A.finite_real_spectrum.toFinset.filter (· ≤ x) with hF
+    have hne : F.Nonempty := by
+      obtain ⟨y, hy, hyx⟩ := hex
+      exact ⟨y, Finset.mem_filter.2 ⟨A.finite_real_spectrum.mem_toFinset.2 hy, hyx⟩⟩
+    have hmem := Finset.mem_filter.1 (F.max'_mem hne)
+    have hmax : ∀ y ∈ spectrum ℝ A, y ≤ x ↔ y ≤ F.max' hne := by
+      intro y hy
+      exact ⟨fun hyx => Finset.le_max' _ _
+          (Finset.mem_filter.2 ⟨A.finite_real_spectrum.mem_toFinset.2 hy, hyx⟩),
+        fun h => le_trans h hmem.2⟩
+    have hx' : F.max' hne ∈ spectrum ℝ A := A.finite_real_spectrum.mem_toFinset.1 hmem.1
+    rw [hcongr _ (Set.Iic x) (Set.Iic (F.max' hne)) hE (fun y hy => by simpa using hmax y hy),
+      hcongr _ (Set.Iic x) (Set.Iic (F.max' hne)) hP (fun y hy => by simpa using hmax y hy)]
+    exact hK _ hx'
+  · -- no eigenvalue is ≤ x: both masses of Iic x vanish
+    have hno : ∀ y ∈ spectrum ℝ A, y ∉ Set.Iic x := fun y hy h => hex ⟨y, hy, h⟩
+    rw [hcongr _ (Set.Iic x) ∅ hE (fun y hy => by simp [hno y hy]),
+      hcongr _ (Set.Iic x) ∅ hP (fun y hy => by simp [hno y hy])]
+    simpa using hτ
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
