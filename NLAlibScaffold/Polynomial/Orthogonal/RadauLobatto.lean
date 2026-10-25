@@ -908,7 +908,12 @@ theorem integral_lobattoQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (ha
     ∫ x, f x ∂lobattoQuadrature μ a b k =
       ∑ x ∈ lobattoNodes μ a b k,
         (∫ t, (Lagrange.basis (lobattoNodes μ a b k) id x).eval t ∂μ) * f x := by
-  sorry
+  unfold lobattoQuadrature interpolatoryQuadrature
+  rw [integral_finsetSum_measure fun x _ =>
+    (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  rw [integral_smul_measure, integral_dirac, smul_eq_mul,
+    ENNReal.toReal_ofReal (integral_eval_basis_lobattoNodes_nonneg hμ hab k hx)]
 
 /-- **Gauss–Lobatto quadrature**: for a finite measure $\mu$ supported in $[a, b]$, $a < b$, and
 every $k$, the Lobatto rule with $k$ free nodes matches the first $2k + 2$ moments of $\mu$: it
