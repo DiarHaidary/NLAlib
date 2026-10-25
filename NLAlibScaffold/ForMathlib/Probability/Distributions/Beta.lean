@@ -86,7 +86,12 @@ Proof: S, about 8 lines. `HasDerivAt.div` of `(hasDerivAt_id s).const_mul y` by
 `(hasDerivAt_id s).const_sub 1` with `sub_ne_zero.2 hs.symm`; `field_simp`, `ring`. -/
 private theorem hasDerivAt_mul_div_one_sub (y : ℝ) {s : ℝ} (hs : s ≠ 1) :
     HasDerivAt (fun s => y * s / (1 - s)) (y / (1 - s) ^ 2) s := by
-  sorry
+  have h1 : (1 - s) ≠ 0 := sub_ne_zero.2 hs.symm
+  have hd := HasDerivAt.div (c := fun x => y * x) (d := fun x => 1 - x)
+    ((hasDerivAt_id s).const_mul y) ((hasDerivAt_id s).const_sub 1) h1
+  refine hd.congr_deriv ?_
+  congr 1
+  ring
 
 /-- The inner substitution of the Gamma ratio: for measurable $F \ge 0$ and $y > 0$, putting
 $x = ys/(1-s)$,
