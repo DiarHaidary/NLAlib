@@ -131,7 +131,10 @@ theorem _root_.Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature {A : Matri
     (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) (q : ℕ) :
     slqMeasure A Ω q = ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹) •
       ∑ j, lanczosQuadrature A (fun i => Ω i j) q := by
-  sorry
+  unfold slqMeasure
+  congr 1
+  refine Finset.sum_congr rfl fun j _ => ?_
+  exact (hA.lanczosQuadrature_eq_gaussQuadrature _ q).symm
 
 /-! ### Distribution functions, masses and supports -/
 
