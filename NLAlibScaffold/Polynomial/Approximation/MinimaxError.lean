@@ -211,7 +211,10 @@ Proof: S, about 8 lines. A best approximant of degree $m$
 (`degree_le_of_le`); `minimaxError_le_of_isUniformApproxOn` with `minimaxError_nonneg`. -/
 theorem antitone_minimaxError {f : ℝ → ℝ} {s : Set ℝ} (hs : IsCompact s)
     (hf : ContinuousOn f s) : Antitone (minimaxError f s) := by
-  sorry
+  intro m n hmn
+  obtain ⟨p, hp, hpx⟩ := exists_degree_le_isUniformApproxOn_minimaxError hs hf m
+  exact minimaxError_le_of_isUniformApproxOn (hp.trans (by exact_mod_cast hmn))
+    (minimaxError_nonneg f s m) hpx
 
 /-- The minimax error is monotone in the set: for $t$ compact, $f$ continuous on $t$ and
 $s \subseteq t$, $E_n(f; s) \le E_n(f; t)$.
