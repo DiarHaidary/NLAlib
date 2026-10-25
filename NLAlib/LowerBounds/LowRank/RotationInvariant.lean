@@ -404,8 +404,9 @@ $$c < \Bigl(1 + \frac{\ell}{p - \ell - 1}\Bigr)
 there is $\mathbf{A} \in \mathbb{R}^{m \times n}$ of rank $r$ with
 $$c\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2 <
 \mathbb{E}\|\mathbf{A} - \mathsf{gn}(\mathbf{A}, \mathbf{X}, \mathbf{\Psi})\|_{\mathsf{F}}^2\,.$$
-So generalized Nyström needs $k' + \ell = \Theta(q/\varepsilon^2)$ for relative error
-$1 + \varepsilon$ (Epperly and Webber, §4.2). The matching upper bound is
+So with a Gaussian co-range the product of the two factors cannot be lowered. Epperly and
+Webber's §4.2 turns this into "$k' + \ell = \Theta(q/\varepsilon^2)$ samples"; that arithmetic over
+$\mathbb{R}$ is not proved here (design note §4, deferred). The matching upper bound is
 `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_isLeftUnitarilyInvariant_of_hasLaw_gaussianMatrix_of_rank_le`.
 [EpperlyWebber2026, Theorem 4.2(b)]; there for every full-rank pair of laws and an orthonormal
 co-range, here for a left unitarily invariant range law and a Gaussian co-range ($\gamma = 1$).
