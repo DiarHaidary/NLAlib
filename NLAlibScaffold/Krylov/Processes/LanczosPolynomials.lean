@@ -300,7 +300,57 @@ $\|\pi_{j+1}\|^2/(\|\pi_{j+1}\|\|\pi_j\|) = \sqrt{\beta_{j+1}}$ (`Real.sqrt_div'
 theorem _root_.Matrix.IsHermitian.lanczosState_beta {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
     (lanczosState A b (j + 1)).beta = √(jacobiBeta (spectralMeasure A b) (j + 1)) := by
-  sorry
+  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
+  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
+  have hμ : ∀ᵐ x ∂spectralMeasure A b, x ∈ Set.Icc a a' :=
+    ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b
+  have hT := congrFun (congrFun (hA.lanczosTridiagonal_eq b (j + 2)) ⟨j + 1, by omega⟩)
+    ⟨j, by omega⟩
+  have h1 := hA.arnoldiMatrix_col_eq_smul_aeval_orthogonalPolynomial_mulVec b
+    (⟨j + 1, by omega⟩ : Fin (j + 2))
+  have h0 := hA.arnoldiMatrix_col_eq_smul_aeval_orthogonalPolynomial_mulVec b
+    (⟨j, by omega⟩ : Fin (j + 2))
+  have hAP : A *ᵥ (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) =
+      aeval A (X * orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b := by
+    rw [aeval_mul, aeval_X, Matrix.mulVec_mulVec]
+  have hint : star (aeval A (orthogonalPolynomial (spectralMeasure A b) (j + 1)) *ᵥ b) ⬝ᵥ
+      (aeval A (X * orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b) =
+      ((∫ x, (orthogonalPolynomial (spectralMeasure A b) (j + 1)).eval x ^ 2
+        ∂spectralMeasure A b : ℝ) : 𝕜) := by
+    rw [hA.star_aeval_mulVec_dotProduct_aeval_mulVec,
+      ← integral_mul_orthogonalPolynomial_mul_orthogonalPolynomial_succ hμ j]
+    congr 2
+    funext x
+    simp only [eval_mul, eval_X]
+    ring
+  have hβ : ((lanczosState A b (j + 1)).beta : 𝕜) =
+      star ((arnoldiMatrix A b (j + 2)).col ⟨j + 1, by omega⟩) ⬝ᵥ
+        (A *ᵥ (arnoldiMatrix A b (j + 2)).col ⟨j, by omega⟩) := by
+    simp only [lanczosTridiagonal, Fin.ext_iff, Matrix.of_apply, Nat.add_eq_left, one_ne_zero,
+      ↓reduceIte] at hT
+    rw [Matrix.mul_assoc, conjTranspose_mul_apply] at hT
+    exact hT
+  rw [h1, h0] at hβ
+  have hβ' : (lanczosState A b (j + 1)).beta =
+      ‖WithLp.toLp 2 (aeval A (orthogonalPolynomial (spectralMeasure A b) (j + 1)) *ᵥ b)‖⁻¹ *
+        ‖WithLp.toLp 2 (aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b)‖⁻¹ *
+        ∫ x, (orthogonalPolynomial (spectralMeasure A b) (j + 1)).eval x ^ 2
+          ∂spectralMeasure A b := by
+    have hstar : ∀ r : ℝ, star (r : 𝕜) = (r : 𝕜) := fun r => by simp
+    simp only [star_smul, smul_dotProduct, Matrix.mulVec_smul, dotProduct_smul, hAP, hint,
+      smul_eq_mul, star_inv₀, hstar] at hβ
+    apply RCLike.ofReal_injective (K := 𝕜)
+    rw [hβ]
+    push_cast
+    ring
+  have hn1 := hA.norm_aeval_mulVec_sq b (orthogonalPolynomial (spectralMeasure A b) (j + 1))
+  have hn0 := hA.norm_aeval_mulVec_sq b (orthogonalPolynomial (spectralMeasure A b) j)
+  have alg : ∀ x y : ℝ, x⁻¹ * y⁻¹ * x ^ 2 = x / y := by
+    intro x y
+    rcases eq_or_ne x 0 with rfl | hx <;> rcases eq_or_ne y 0 with rfl | hy <;> field_simp
+  simp only [jacobiBeta]
+  rw [hβ', ← hn1, ← hn0, Real.sqrt_div' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _),
+    Real.sqrt_sq (norm_nonneg _), alg]
 
 /-- **The Lanczos tridiagonal is the Jacobi matrix of the spectral measure**: for Hermitian
 $\mathbf{A}$ and every $q$, the tridiagonal matrix of $q$ steps of the Lanczos recurrence from
