@@ -543,8 +543,9 @@ Proof: S, one line. `(QueryAlgorithm.rank_rightQueryMatrix_le_rightCount _ τ).t
 (QueryAlgorithm.rightCount_gramSimulation_le alg τ)`. -/
 theorem rank_rightQueryMatrix_gramSimulation_le
     (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) :
-    ((alg.gramSimulation k).rightQueryMatrix τ).rank ≤ q := by
-  sorry
+    ((alg.gramSimulation k).rightQueryMatrix τ).rank ≤ q :=
+  (QueryAlgorithm.rank_rightQueryMatrix_le_rightCount _ τ).trans
+    (QueryAlgorithm.rightCount_gramSimulation_le alg τ)
 
 end Gram
 
