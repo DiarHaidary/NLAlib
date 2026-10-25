@@ -72,6 +72,21 @@ theorem history_apply (alg : QueryAlgorithm Q R q β) (f : Q → R) (i : ℕ) (j
     · rw [history, Fin.snoc_castSucc, ih]
       rfl
 
+private theorem history_castLE_eq (alg : QueryAlgorithm Q R q β) (f : Q → R) :
+    ∀ (k i : ℕ) (h : i ≤ k) (l : Fin i), alg.history f k (Fin.castLE h l) = alg.history f i l
+  | 0, i, h, l => by
+    obtain rfl : i = 0 := Nat.le_zero.mp h
+    exact l.elim0
+  | k + 1, i, h, l => by
+    by_cases hik : i ≤ k
+    · have hc : Fin.castLE h l = Fin.castSucc (Fin.castLE hik l) := Fin.ext rfl
+      rw [hc]
+      simp only [history]
+      rw [Fin.snoc_castSucc]
+      exact history_castLE_eq alg f k i hik l
+    · obtain rfl : i = k + 1 := by omega
+      rfl
+
 /-- **The queries made are the queries of the transcript**: the `j`-th query of an algorithm run
 against $f$ is `queries` evaluated at its transcript.
 Proof: S, about 6 lines. Unfold `queries`, `queryAt`; `congr 1`, `funext l`; both sides are
@@ -79,7 +94,10 @@ $f(x_l)$ by `QueryAlgorithm.history_apply` (on the left `history f j`, on the ri
 `transcript f = history f q` at `Fin.castLE _ l`, whose value is `l`). -/
 theorem queryAt_eq_queries_transcript (alg : QueryAlgorithm Q R q β) (f : Q → R) (j : Fin q) :
     alg.queryAt f j = alg.queries (alg.transcript f) j := by
-  sorry
+  unfold queryAt queries transcript
+  congr 1
+  funext l
+  exact (history_castLE_eq alg f q j j.isLt.le l).symm
 
 /-- **Indistinguishability**: if a second oracle $g$ agrees with $f$ at every query the algorithm
 makes against $f$, then the algorithm makes the same queries against $g$ and gets the same
