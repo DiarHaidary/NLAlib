@@ -70,7 +70,19 @@ theorem AlternatesOn.exists_eq_of_abs_le {g : ℝ → ℝ} {s : Set ℝ} {k : �
     (h : AlternatesOn g s k ε) (hg : ∀ x ∈ s, |g x| ≤ ε) :
     ∃ x : Fin k → ℝ, StrictMono x ∧ (∀ i, x i ∈ s) ∧
       ∃ σ : ℝ, (σ = 1 ∨ σ = -1) ∧ ∀ i : Fin k, g (x i) = σ * (-1) ^ (i : ℕ) * ε := by
-  sorry
+  obtain ⟨x, hmono, hx, σ, hσ, hle⟩ := h
+  refine ⟨x, hmono, hx, σ, hσ, fun i => ?_⟩
+  have h2 : (-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ) = 1 := by
+    rw [← pow_add, ← two_mul, pow_mul]; norm_num
+  have hsq : (σ * (-1) ^ (i : ℕ)) * (σ * (-1) ^ (i : ℕ)) = 1 := by
+    rcases hσ with rfl | rfl <;> linear_combination h2
+  have habs : |σ * (-1) ^ (i : ℕ) * g (x i)| = |g (x i)| := by
+    rcases hσ with rfl | rfl <;> simp [abs_mul, abs_pow]
+  have hgi : |g (x i)| ≤ ε := hg _ (hx i)
+  have heq : σ * (-1) ^ (i : ℕ) * g (x i) = ε :=
+    le_antisymm ((le_abs_self _).trans (habs.le.trans hgi)) (hle i)
+  calc g (x i) = (σ * (-1) ^ (i : ℕ)) * (σ * (-1) ^ (i : ℕ)) * g (x i) := by rw [hsq, one_mul]
+    _ = σ * (-1) ^ (i : ℕ) * ε := by rw [mul_assoc, heq]
 
 /-! ### De la Vallée Poussin -/
 
