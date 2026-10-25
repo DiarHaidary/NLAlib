@@ -151,6 +151,20 @@ theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
 
 /-! ### The sharp sub-Gaussian tail -/
 
+/-- A variable that is almost surely $0$ is sub-Gaussian with any proxy. -/
+private lemma hasSubgaussianMGF_of_ae_eq_zero [IsProbabilityMeasure μ] {Y : Ω → ℝ} (c : ℝ≥0)
+    (hY : Y =ᵐ[μ] 0) : HasSubgaussianMGF Y c μ := by
+  refine ⟨fun t => ?_, fun t => ?_⟩
+  · refine (integrable_const (1 : ℝ)).congr ?_
+    filter_upwards [hY] with ω hω
+    simp [hω]
+  · calc mgf Y μ t = ∫ _ : Ω, (1 : ℝ) ∂μ := integral_congr_ae (by
+          filter_upwards [hY] with ω hω
+          simp [hω])
+      _ ≤ Real.exp (c * t ^ 2 / 2) := by
+          rw [integral_const, probReal_univ, smul_eq_mul, mul_one]
+          exact Real.one_le_exp (by positivity)
+
 /-- **Projections of a uniform unit vector are sub-Gaussian**: for $\mathbf{u}$ uniform on the
 unit sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`) and $\mathbf{V}$ with $k$
 orthonormal columns, any $0 \le k \le n$,
@@ -174,7 +188,49 @@ theorem hasSubgaussianMGF_norm_conjTranspose_mulVec_sq_sub_of_hasLaw_uniformSphe
     HasSubgaussianMGF
       (fun ω => ‖WithLp.toLp 2 (Vᴴ *ᵥ u ω)‖ ^ 2 - Fintype.card k / Fintype.card n)
       ‖1 / (2 * ((Fintype.card n : ℝ) + 2))‖₊ μ := by
-  sorry
+  classical
+  have : IsProbabilityMeasure μ := hu.isProbabilityMeasure
+  have hk : Fintype.card k ≤ Fintype.card n := hV.card_le
+  rcases Nat.eq_zero_or_pos (Fintype.card k) with h0 | hpos
+  · have he : IsEmpty k := Fintype.card_eq_zero_iff.mp h0
+    have hz : ∀ x : k → ℝ, ‖WithLp.toLp 2 x‖ = 0 := fun x => by
+      rw [show x = 0 from funext fun i => isEmptyElim i]
+      simp
+    refine hasSubgaussianMGF_of_ae_eq_zero _ (Filter.Eventually.of_forall fun ω => ?_)
+    simp [hz]
+  rcases hk.eq_or_lt with heq | hlt
+  · have hn : 0 < Fintype.card n := heq ▸ hpos
+    have : Nonempty n := Fintype.card_pos_iff.mp hn
+    have hVc : HasOrthonormalCols Vᴴ := hV.conjTranspose_of_card_eq heq.symm
+    have hae : ∀ᵐ ω ∂μ, ‖WithLp.toLp 2 (u ω)‖ = 1 :=
+      ae_of_ae_map hu.aemeasurable (by rw [hu.map_eq]; exact ae_norm_eq_one_uniformSphereVector)
+    refine hasSubgaussianMGF_of_ae_eq_zero _ ?_
+    filter_upwards [hae] with ω hω
+    have hn' : (Fintype.card n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hn.ne'
+    rw [Pi.zero_apply, hVc.norm_toLp_mulVec, hω, heq]
+    simp [hn']
+  · have hnpos : (0 : ℝ) < Fintype.card n := by exact_mod_cast hpos.trans hlt
+    have hX := hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector hu hV hpos hlt
+    have hα : (0 : ℝ) < Fintype.card k / 2 := half_pos (by exact_mod_cast hpos)
+    have hβ : (0 : ℝ) < ((Fintype.card n : ℝ) - Fintype.card k) / 2 :=
+      half_pos (sub_pos.mpr (by exact_mod_cast hlt))
+    have key := hasSubgaussianMGF_sub_div_of_hasLaw_betaMeasure hα hβ hX
+    have hab : (Fintype.card k : ℝ) / 2 + ((Fintype.card n : ℝ) - Fintype.card k) / 2 =
+        Fintype.card n / 2 := by ring
+    have hratio : (Fintype.card k : ℝ) / 2 /
+        ((Fintype.card k : ℝ) / 2 + ((Fintype.card n : ℝ) - Fintype.card k) / 2) =
+        Fintype.card k / Fintype.card n := by
+      rw [hab]
+      field_simp
+    have hprox : ‖1 / (4 * ((Fintype.card k : ℝ) / 2 +
+        ((Fintype.card n : ℝ) - Fintype.card k) / 2 + 1))‖₊ =
+        ‖1 / (2 * ((Fintype.card n : ℝ) + 2))‖₊ := by
+      rw [hab]
+      congr 1
+      field_simp
+      ring
+    rw [hratio, hprox] at key
+    exact key
 
 -- The declaration name exceeds 100 characters.
 set_option linter.style.longLine false in
