@@ -102,7 +102,8 @@ theorem HasOrthonormalCols.gaussNodes_spectralMeasure_eq {Q : Matrix n r 𝕜}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b)
     {s : Finset ℝ} (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
     gaussNodes (spectralMeasure A b) q = s := by
-  sorry
+  rw [gaussNodes, ← hQ.nodal_eq_orthogonalPolynomial hA hK hq hs, Lagrange.nodal]
+  simp [roots_prod_X_sub_C]
 
 /-- **Golub–Welsch**: for a finite measure $\mu$ supported in $[a, c]$ and every $k$, the
 $(k+1)$-point Gauss rule of $\mu$ is the spectral measure of its Jacobi matrix and
