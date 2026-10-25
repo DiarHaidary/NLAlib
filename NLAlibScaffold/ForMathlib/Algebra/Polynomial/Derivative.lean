@@ -37,6 +37,12 @@ Proof: S, about 8 lines. `natDegree_iterate_derivative` bounds the degree by $0$
 `NLAlib/ForMathlib/Algebra/Polynomial/Basic.lean`). -/
 theorem iterate_derivative_natDegree (p : R[X]) :
     derivative^[p.natDegree] p = C ((p.natDegree.factorial : R) * p.leadingCoeff) := by
-  sorry
+  have hdeg : (derivative^[p.natDegree] p).natDegree ≤ 0 := by
+    simpa using natDegree_iterate_derivative p p.natDegree
+  rw [eq_C_of_natDegree_le_zero hdeg]
+  congr 1
+  rw [coeff_iterate_derivative]
+  simp only [zero_add, Nat.descFactorial_self, nsmul_eq_mul]
+  rfl
 
 end Polynomial
