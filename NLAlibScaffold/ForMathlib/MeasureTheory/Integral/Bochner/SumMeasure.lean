@@ -43,7 +43,11 @@ Proof: S, about 15 lines. `Measure.restrict_eq_self_of_ae_mem` turns the integra
 theorem integral_eq_sum_measureReal_singleton_mul {μ : Measure ℝ}
     [IsFiniteMeasure μ] {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s) (f : ℝ → ℝ) :
     ∫ x, f x ∂μ = ∑ x ∈ s, μ.real {x} * f x := by
-  sorry
+  have hr : μ.restrict (s : Set ℝ) = μ :=
+    Measure.restrict_eq_self_of_ae_mem (by simpa using hμ)
+  conv_lhs => rw [← hr]
+  rw [setIntegral_finset s IntegrableOn.finset]
+  simp only [smul_eq_mul]
 
 /-- The distribution function of a finite measure carried by a finite set: if the finite measure
 $\mu$ on $\mathbb{R}$ is carried by the finite set $s$, then for every $x \in \mathbb{R}$,
@@ -55,7 +59,19 @@ Proof: S, about 20 lines. `measureReal_congr` with the ae-equality
 theorem measureReal_Iic_eq_sum {μ : Measure ℝ} [IsFiniteMeasure μ]
     {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s) (x : ℝ) :
     μ.real (Set.Iic x) = ∑ y ∈ s with y ≤ x, μ.real {y} := by
-  sorry
+  have hae : Set.Iic x =ᵐ[μ] ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ) := by
+    filter_upwards [hμ] with ω hω
+    apply propext
+    change ω ∈ Set.Iic x ↔ ω ∈ ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ)
+    simp only [Set.mem_Iic, Set.mem_iUnion, Finset.mem_filter, Set.mem_singleton_iff, exists_prop]
+    constructor
+    · intro h
+      exact ⟨ω, ⟨hω, h⟩, rfl⟩
+    · rintro ⟨y, ⟨_, hy⟩, rfl⟩
+      exact hy
+  rw [measureReal_congr hae,
+    measureReal_biUnion_finset (fun a _ b _ hab => Set.disjoint_singleton.2 hab)
+      (fun _ _ => measurableSet_singleton _) (fun _ _ => measure_ne_top _ _)]
 
 /-- **Lipschitz test functions against finitely supported measures.** If the finite measures
 $\mu$, $\nu$ on $\mathbb{R}$ are carried by a finite set $s \subseteq [a, b]$, $a \le b$, their
@@ -77,6 +93,16 @@ theorem abs_integral_sub_integral_le_of_lipschitzOnWith {μ ν : Measure ℝ}
     {f : ℝ → ℝ} {L : ℝ≥0} (hf : LipschitzOnWith L f (Set.Icc a b)) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : ∀ x ∈ s, |μ.real (Set.Iic x) - ν.real (Set.Iic x)| ≤ K) :
     |∫ x, f x ∂μ - ∫ x, f x ∂ν| ≤ (|f b| + L * (b - a)) * K := by
-  sorry
+  rw [integral_eq_sum_measureReal_singleton_mul hμ f,
+    integral_eq_sum_measureReal_singleton_mul hν f, ← Finset.sum_sub_distrib]
+  have hterm : ∀ x ∈ s, μ.real {x} * f x - ν.real {x} * f x
+      = f x * (μ.real {x} - ν.real {x}) := fun x _ => by ring
+  rw [Finset.sum_congr rfl hterm]
+  refine Finset.abs_sum_mul_le_of_lipschitzOnWith hs hab hf (fun y => μ.real {y} - ν.real {y})
+    hK0 fun x hx => ?_
+  have h := hK x hx
+  simp only [Finset.sum_sub_distrib, ← measureReal_Iic_eq_sum hμ x,
+    ← measureReal_Iic_eq_sum hν x]
+  exact h
 
 end MeasureTheory
