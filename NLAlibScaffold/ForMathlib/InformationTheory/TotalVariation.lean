@@ -40,6 +40,18 @@ theorem tvDist_nonneg (μ ν : Measure α) : 0 ≤ tvDist μ ν := by
   unfold tvDist
   exact Real.iSup_nonneg fun A => abs_nonneg _
 
+/-- The terms of the supremum defining `tvDist` are bounded, for finite measures. -/
+private theorem bddAbove_range_abs_sub (μ ν : Measure α) [IsFiniteMeasure μ]
+    [IsFiniteMeasure ν] :
+    BddAbove (Set.range fun A : {A : Set α // MeasurableSet A} => |μ.real A - ν.real A|) := by
+  refine ⟨μ.real Set.univ + ν.real Set.univ, ?_⟩
+  rintro _ ⟨A, rfl⟩
+  have hμ : μ.real A ≤ μ.real Set.univ := measureReal_mono (Set.subset_univ _)
+  have hν : ν.real A ≤ ν.real Set.univ := measureReal_mono (Set.subset_univ _)
+  rw [abs_sub_le_iff]
+  constructor <;> linarith [measureReal_nonneg (μ := μ) (s := A),
+    measureReal_nonneg (μ := ν) (s := A)]
+
 /-- **Data processing for total variation**: for finite measures and a measurable map $f$,
 $\mathrm{TV}(f_*\mu, f_*\nu) \le \mathrm{TV}(\mu, \nu)$. Applied to the transcript of a query
 algorithm, it bounds how well any output distinguishes two input laws.
@@ -50,23 +62,9 @@ $\lvert\mu(f^{-1}A) - \nu(f^{-1}A)\rvert$, at most `tvDist μ ν` by `le_ciSup` 
 (`measureReal_mono`, `abs_sub_le_iff`). -/
 theorem tvDist_map_le {μ ν : Measure α} [IsFiniteMeasure μ] [IsFiniteMeasure ν] {f : α → β}
     (hf : Measurable f) : tvDist (μ.map f) (ν.map f) ≤ tvDist μ ν := by
-  have hbdd : BddAbove (Set.range fun A : {A : Set α // MeasurableSet A} =>
-      |μ.real A - ν.real A|) := by
-    refine ⟨μ.real Set.univ + ν.real Set.univ, ?_⟩
-    rintro _ ⟨A, rfl⟩
-    have hμ : μ.real A ≤ μ.real Set.univ := measureReal_mono (Set.subset_univ _)
-    have hν : ν.real A ≤ ν.real Set.univ := measureReal_mono (Set.subset_univ _)
-    have hμ0 : 0 ≤ μ.real A := measureReal_nonneg
-    have hν0 : 0 ≤ ν.real A := measureReal_nonneg
-    rw [abs_sub_le_iff]
-    constructor <;> linarith
-  unfold tvDist
-  apply ciSup_le
-  rintro ⟨A, hA⟩
-  have hmap : ∀ m : Measure α, m.real (f ⁻¹' A) = (m.map f).real A := fun m => by
-    rw [measureReal_def, measureReal_def, Measure.map_apply hf hA]
-  rw [← hmap, ← hmap]
-  exact le_ciSup hbdd ⟨f ⁻¹' A, hf hA⟩
+  refine ciSup_le fun ⟨A, hA⟩ => ?_
+  rw [map_measureReal_apply hf hA, map_measureReal_apply hf hA]
+  exact le_ciSup (bddAbove_range_abs_sub μ ν) ⟨f ⁻¹' A, hf hA⟩
 
 /-- **Le Cam's two-point bound**: for probability measures $\mu$, $\nu$ and a measurable set
 $A$ (the region where a test decides $\nu$),
@@ -79,26 +77,10 @@ $1 - (\mu(A) + \nu(A^c)) = \nu(A) - \mu(A) \le \lvert\mu(A) - \nu(A)\rvert \le \
 theorem one_sub_tvDist_le_measureReal_add_measureReal_compl {μ ν : Measure α}
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] {A : Set α} (hA : MeasurableSet A) :
     1 - tvDist μ ν ≤ μ.real A + ν.real Aᶜ := by
-  unfold tvDist
-  have hbdd : BddAbove (Set.range fun B : {B : Set α // MeasurableSet B} =>
-      |μ.real B - ν.real B|) := by
-    refine ⟨2, ?_⟩
-    rintro _ ⟨B, rfl⟩
-    have h1 := measureReal_le_one (μ := μ) (s := B.1)
-    have h2 := measureReal_le_one (μ := ν) (s := B.1)
-    have h3 := measureReal_nonneg (μ := μ) (s := B.1)
-    have h4 := measureReal_nonneg (μ := ν) (s := B.1)
-    rw [abs_le]
-    constructor <;> linarith
-  have hle : |μ.real A - ν.real A| ≤ ⨆ B : {B : Set α // MeasurableSet B},
-      |μ.real B - ν.real B| :=
-    le_ciSup hbdd ⟨A, hA⟩
-  have hc : ν.real Aᶜ = 1 - ν.real A := by
-    rw [measureReal_compl hA, probReal_univ]
-  rw [hc]
-  have h5 := le_abs_self (ν.real A - μ.real A)
-  rw [abs_sub_comm] at hle
-  linarith
+  have hle : |μ.real A - ν.real A| ≤ tvDist μ ν :=
+    le_ciSup (bddAbove_range_abs_sub μ ν) ⟨A, hA⟩
+  rw [measureReal_compl hA, probReal_univ]
+  linarith [neg_abs_le (μ.real A - ν.real A)]
 
 /-- The logit minus $4x$ is monotone on $(0, 1)$. -/
 private lemma log_sub_log_one_sub_sub_le {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (hb : b < 1) :
@@ -221,7 +203,7 @@ theorem ofReal_two_mul_tvDist_sq_le_klDiv (μ ν : Measure α) [IsProbabilityMea
       rw [(measureReal_eq_zero_iff).mpr (hac ((measureReal_eq_zero_iff).mp hc))] at this
       replace this : μ.real A = 1 := by simp at this; linarith
       rw [this, h1]; simp [hK]
-    set g : α → Bool := fun x => decide (x ∈ A)
+    set g : α → Bool := fun x => (x ∈ A : Bool)
     have hg : Measurable g :=
       measurable_to_countable' fun b => by
         cases b <;> simp [g, Set.preimage, ← Set.compl_ofPred, hA.compl, hA]
