@@ -117,7 +117,13 @@ Proof: S, about 15 lines. `integral_smul_nnreal_measure`, `integral_finsetSum_me
 (`RCLike.div_re_ofReal`), `NNReal.coe_inv`, `NNReal.coe_mul`; `field_simp`. -/
 theorem integral_slqMeasure (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
     ∫ x, f x ∂slqMeasure A Ω q = RCLike.re (slq A f Ω q) / Fintype.card n := by
-  sorry
+  unfold slqMeasure slq
+  rw [integral_smul_nnreal_measure, integral_finsetSum_measure]
+  · rw [← RCLike.ofReal_natCast (Fintype.card m), ← RCLike.ofReal_div, RCLike.ofReal_re]
+    simp only [NNReal.smul_def, NNReal.coe_inv, NNReal.coe_mul, NNReal.coe_natCast, smul_eq_mul]
+    field_simp
+  · intro j _
+    exact integrable_gaussQuadrature _ _ _
 
 /-- **The SLQ measure is the average of the probes' Lanczos rules**: for Hermitian $\mathbf{A}$,
 every test matrix $\mathbf{\Omega}$ with columns $\boldsymbol{\omega}_j$ and every $q$,
