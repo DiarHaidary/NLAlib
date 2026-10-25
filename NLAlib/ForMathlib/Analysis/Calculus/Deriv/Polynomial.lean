@@ -20,7 +20,7 @@ Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F2).
 
 ## Main results
 
-* `Polynomial.iteratedDeriv`: $\frac{d^k}{dx^k}p(x) = p^{(k)}(x)$.
+* `Polynomial.iteratedDeriv`: $(d/dx)^k\,p(x) = p^{(k)}(x)$.
 -/
 
 @[expose] public section

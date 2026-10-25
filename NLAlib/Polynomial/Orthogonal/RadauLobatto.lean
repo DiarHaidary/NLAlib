@@ -30,10 +30,10 @@ $$\int f\,d\mu - \int f\,d\,\mathsf{radauQuadrature}(\mu, c, k) =
 \frac{f^{(2k+1)}(\xi)}{(2k+1)!}\int(x - c)\,\tilde\pi_k(x)^2\,d\mu(x)\,,$$
 $\tilde\pi_k$ the orthogonal polynomial of `radauMeasure μ c`. At $c = a$ the weight is
 nonnegative and at $c = b$ nonpositive, which gives the four one-sided bounds. For $a < b$ the
-Lobatto rule matches $2k + 2$ moments and has the remainder with
-$\frac{f^{(2k+2)}(\xi)}{(2k+2)!}\int(x - a)(x - b)\hat\pi_k(x)^2\,d\mu(x)$, nonpositive weight.
-The Radau Jacobi matrix has $c$ as an eigenvalue and the moments of the Jacobi matrix through
-degree $2k$. Design: `docs/design/Polynomial-QuadratureRemainder.md`.
+Lobatto rule matches $2k + 2$ moments, and its remainder is $f^{(2k+2)}(\xi)/(2k+2)!$ times
+$\int(x - a)(x - b)\hat\pi_k(x)^2\,d\mu(x)$, a nonpositive weight. The Radau Jacobi matrix
+has $c$ as an eigenvalue and the moments of the Jacobi matrix through degree $2k$.
+Design: `docs/design/Polynomial-QuadratureRemainder.md`.
 
 ## Main definitions
 
@@ -173,6 +173,7 @@ theorem isFiniteMeasure_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (
 set_option linter.unusedSectionVars false in
 /-- The Radau modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$ and every
 $c$, almost every point of `radauMeasure μ c` lies in $[a, b]$. -/
+@[nolint unusedArguments]
 theorem ae_mem_Icc_radauMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (c : ℝ) :
     ∀ᵐ x ∂radauMeasure μ c, x ∈ Set.Icc a b := by
   unfold radauMeasure
@@ -461,7 +462,7 @@ theorem MatchesMoments.eq_radauQuadrature [IsFiniteMeasure ν] {k : ℕ}
 /-! ### The Radau remainder and bounds -/
 
 /-- The last step of the Radau and Lobatto remainders: for $\mu$, finite and supported in
-$[a, b]$, if $f(x) - H(x) = \frac{f^{(n)}(\xi_x)}{n!}W(x)$ for every $x \in [a, b]$ and some
+$[a, b]$, if $f(x) - H(x) = f^{(n)}(\xi_x)W(x)/n!$ for every $x \in [a, b]$ and some
 $\xi_x \in (a, b)$, with $W$ integrable and of one sign, then one $\xi$ serves the integral. -/
 private theorem exists_integral_sub_integral_eval_eq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
     (hab : a < b) {n : ℕ} {f W : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a b))
@@ -657,6 +658,7 @@ theorem isFiniteMeasure_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
 set_option linter.unusedSectionVars false in
 /-- The Lobatto modified measure lives where $\mu$ does: for $\mu$ supported in $[a, b]$, almost
 every point of `lobattoMeasure μ a b` lies in $[a, b]$. -/
+@[nolint unusedArguments]
 theorem ae_mem_Icc_lobattoMeasure (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     ∀ᵐ x ∂lobattoMeasure μ a b, x ∈ Set.Icc a b :=
   (withDensity_absolutelyContinuous μ _).ae_le hμ

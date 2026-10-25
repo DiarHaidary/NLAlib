@@ -793,7 +793,7 @@ private lemma radauJacobiMatrix_isHermitian (μ : Measure ℝ) (c : ℝ) (k : �
 
 /-- The spectral measure of a real Hermitian matrix at `√(μ(ℝ)) e₀`: its moments are
 `μ(ℝ)` times the `(0, 0)` entry of the polynomial in the matrix. -/
-private lemma integral_eval_spectralMeasure_e0 (μ : Measure ℝ) [IsFiniteMeasure μ] {m : ℕ}
+private lemma integral_eval_spectralMeasure_e0 (μ : Measure ℝ) {m : ℕ}
     {A : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} (hA : A.IsHermitian) (p : ℝ[X]) :
     ∫ x, p.eval x ∂spectralMeasure A ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) =
       μ.real Set.univ * aeval A p 0 0 := by

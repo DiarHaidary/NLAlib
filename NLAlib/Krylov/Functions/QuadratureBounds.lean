@@ -19,7 +19,7 @@ $\mathbf{b}^{\mathsf{H}}f(\mathbf{A})\mathbf{b} = \int f\,d\mu_{\mathbf{A},\math
 
 * the Lanczos quadrature $\mathbf{b}^{\mathsf{H}}\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)$
   is a lower bound when $f^{(2q)} \ge 0$ and an upper bound when $f^{(2q)} \le 0$, with the error
-  $\frac{f^{(2q)}(\xi)}{(2q)!}\|\pi_q(\mathbf{A})\mathbf{b}\|^2$;
+  $f^{(2q)}(\xi)\,\|\pi_q(\mathbf{A})\mathbf{b}\|^2/(2q)!$;
 * the Radau rule with $q$ free nodes and prescribed node $a$ (resp. $a'$) is a lower (resp.
   upper) bound when $f^{(2q+1)} \ge 0$, and the other way round when $f^{(2q+1)} \le 0$;
 * the Lobatto rule with $q$ free nodes is an upper bound when $f^{(2q+2)} \ge 0$ and a lower bound

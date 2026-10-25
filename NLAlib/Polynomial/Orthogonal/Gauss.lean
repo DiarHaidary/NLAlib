@@ -480,7 +480,7 @@ theorem gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
 
 /-- The pointwise Hermite remainder at doubled nodes: for a nonempty finite set $G \subseteq (a, b)$
 and $H$ of degree less than $2\lvert G\rvert$ matching the values and first derivatives of $f$ on
-$G$, $f(x) - H(x) = \frac{f^{(2\lvert G\rvert)}(\xi)}{(2\lvert G\rvert)!}\omega_G(x)^2$. -/
+$G$, $f(x) - H(x) = f^{(2\lvert G\rvert)}(\xi)\,\omega_G(x)^2/(2\lvert G\rvert)!$. -/
 private theorem exists_sub_eval_eq_iteratedDeriv_mul_nodal_sq {a b : ℝ} (hab : a < b)
     {G : Finset ℝ} (hG : G.Nonempty) (hGab : (G : Set ℝ) ⊆ Set.Ioo a b) {f : ℝ → ℝ}
     (hf : ContinuousOn f (Set.Icc a b)) (hf' : ContDiffOn ℝ (2 * G.card : ℕ) f (Set.Ioo a b))
