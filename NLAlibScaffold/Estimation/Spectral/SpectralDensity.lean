@@ -1291,7 +1291,56 @@ measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_re
     μ.real {ω | ∃ x ∈ spectrum ℝ A, τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
         (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|} ≤
       2 * Fintype.card n * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
-  sorry
+  -- The real spectrum has at most `Fintype.card n` points.
+  have hcard : A.finite_real_spectrum.toFinset.card ≤ Fintype.card n := by
+    calc _ ≤ (Finset.univ.image hA.eigenvalues).card := by
+          refine Finset.card_le_card fun x hx => ?_
+          rw [Set.Finite.mem_toFinset, hA.spectrum_real_eq_range_eigenvalues] at hx
+          obtain ⟨i, rfl⟩ := hx
+          exact Finset.mem_image_of_mem _ (Finset.mem_univ i)
+      _ ≤ _ := Finset.card_image_le
+  have hpt := fun x =>
+    measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le_of_hasLaw_uniformSphereVector
+      hind hU hA (Set.Iic x) hτ
+  rcases isEmpty_or_nonempty m with hm | hm
+  · -- No columns: the event does not depend on `ω`, so it is one of the per-point events.
+    rcases Set.eq_empty_or_nonempty {ω | ∃ x ∈ spectrum ℝ A,
+        τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
+          (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|} with he | he
+    · rw [he, measureReal_empty]
+      positivity
+    obtain ⟨ω₀, x₀, hx₀, h₀⟩ := he
+    have hU' : ∀ ω, U ω = U ω₀ := fun ω => Subsingleton.elim _ _
+    have hn : (1 : ℝ) ≤ Fintype.card n := by
+      have := (Finset.card_pos.mpr ⟨x₀, (Set.Finite.mem_toFinset _).mpr hx₀⟩).trans_le
+        hcard
+      exact_mod_cast this
+    calc _ = μ.real {ω | τ ≤ |(empiricalSpectralMeasure A).real (Set.Iic x₀) -
+          (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x₀)|} := by
+          congr 1
+          ext ω
+          simp only [Set.mem_ofPred_eq, hU' ω]
+          exact ⟨fun _ => h₀.le, fun _ => ⟨x₀, hx₀, h₀⟩⟩
+      _ ≤ _ := hpt x₀
+      _ ≤ _ := mul_le_mul_of_nonneg_right (le_mul_of_one_le_right (by norm_num) hn)
+          (Real.exp_nonneg _)
+  have := (hU hm.some).isProbabilityMeasure
+  calc _ ≤ μ.real (⋃ x ∈ A.finite_real_spectrum.toFinset, {ω | τ ≤
+          |(empiricalSpectralMeasure A).real (Set.Iic x) -
+            (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|}) := by
+        refine measureReal_mono (fun ω ⟨x, hx, h⟩ => ?_) (measure_ne_top _ _)
+        simp only [Set.mem_iUnion, Set.mem_ofPred_eq, Set.Finite.mem_toFinset]
+        exact ⟨x, hx, h.le⟩
+    _ ≤ ∑ x ∈ A.finite_real_spectrum.toFinset, μ.real {ω | τ ≤
+          |(empiricalSpectralMeasure A).real (Set.Iic x) -
+            (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|} :=
+        measureReal_biUnion_finset_le _ _
+    _ ≤ A.finite_real_spectrum.toFinset.card •
+          (2 * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2))) :=
+        Finset.sum_le_card_nsmul _ _ _ fun x _ => hpt x
+    _ ≤ _ := by
+        rw [nsmul_eq_mul, ← mul_assoc, mul_comm (_ : ℝ) 2]
+        gcongr
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
