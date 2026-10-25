@@ -490,6 +490,11 @@ None of these was approved by the maintainer when it was made. Status is given p
 - `quadForm A x` for `star x ⬝ᵥ A *ᵥ x`; `hermitianPart A`
   (`hermitianPart_eq_selfAdjointPart`).
 - `complexify A` for `A.map RCLike.toComplex`.
+- `gaussianVector n` for `Measure.pi fun _ : n => gaussianReal 0 1`, an `abbrev` (so Mathlib's
+  `Measure.pi` and `gaussianReal` lemmas apply by `rfl`), where Mathlib names the standard
+  Gaussian `stdGaussian (EuclideanSpace ℝ n)`: the law lives on the library's vectors `n → ℝ`
+  (entry 5). Bridge: Mathlib's `map_pi_eq_stdGaussian` (the image under `WithLp.toLp 2` is
+  `stdGaussian`), through which `gaussianVector n` gets its `IsGaussian` instance.
 
 ## Additions where Mathlib has nothing
 
