@@ -133,7 +133,7 @@ private theorem exists_measurable_stabilizer {p : Type*} (V : Matrix n p ℝ) :
   refine ⟨c, inferInstance, inferInstance, R, hRm, fun o => ?_, fun o => ?_, fun T hT hTV => ?_⟩
   · simp only [hR]
     split_ifs with ho
-    exacts [hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hW ho, hasOrthonormalCols_one]
+    exacts [hW.hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose ho, hasOrthonormalCols_one]
   · simp only [hR]
     split_ifs
     · rw [Matrix.add_mul, Matrix.one_mul, Matrix.mul_assoc, hWV, Matrix.mul_zero, add_zero]
