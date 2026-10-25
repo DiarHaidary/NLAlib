@@ -541,7 +541,44 @@ theorem eq_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : ℝ} (hab 
       (minimaxError f (Set.Icc a b) n))
     (hqb : Metric.IsUniformApproxOn (fun x => q.eval x) f (Set.Icc a b)
       (minimaxError f (Set.Icc a b) n)) : p = q := by
-  sorry
+  have hdeg : ((1 / 2 : ℝ) • (p + q)).degree ≤ n :=
+    (Polynomial.degree_smul_le _ _).trans ((Polynomial.degree_add_le _ _).trans (max_le hp hq))
+  have hev : ∀ x, ((1 / 2 : ℝ) • (p + q)).eval x = 1 / 2 * (p.eval x + q.eval x) := by
+    intro x
+    simp only [Polynomial.eval_smul, Polynomial.eval_add, smul_eq_mul]
+  have hrb : Metric.IsUniformApproxOn (fun x => ((1 / 2 : ℝ) • (p + q)).eval x) f (Set.Icc a b)
+      (minimaxError f (Set.Icc a b) n) := by
+    intro x hx
+    change dist (((1 / 2 : ℝ) • (p + q)).eval x) (f x) ≤ _
+    have h1 : dist (p.eval x) (f x) ≤ minimaxError f (Set.Icc a b) n := hpb x hx
+    have h2 : dist (q.eval x) (f x) ≤ minimaxError f (Set.Icc a b) n := hqb x hx
+    rw [Real.dist_eq, abs_le] at h1 h2 ⊢
+    rw [hev x]
+    constructor <;> linarith [h1.1, h1.2, h2.1, h2.2]
+  have halt := alternatesOn_of_isUniformApproxOn_minimaxError hab hf hdeg hrb
+  have hb : ∀ x ∈ Set.Icc a b,
+      |f x - ((1 / 2 : ℝ) • (p + q)).eval x| ≤ minimaxError f (Set.Icc a b) n := by
+    intro x hx
+    rw [abs_sub_comm, ← Real.dist_eq]
+    exact hrb x hx
+  obtain ⟨x, hxm, hxmem, σ, hσ, hxeq⟩ := halt.exists_eq_of_abs_le hb
+  have hpq : ∀ i : Fin (n + 2), p.eval (x i) = q.eval (x i) := by
+    intro i
+    have hi : f (x i) - ((1 / 2 : ℝ) • (p + q)).eval (x i)
+        = σ * (-1) ^ (i : ℕ) * minimaxError f (Set.Icc a b) n := hxeq i
+    have h1 : dist (p.eval (x i)) (f (x i)) ≤ minimaxError f (Set.Icc a b) n :=
+      hpb (x i) (hxmem i)
+    have h2 : dist (q.eval (x i)) (f (x i)) ≤ minimaxError f (Set.Icc a b) n :=
+      hqb (x i) (hxmem i)
+    rw [Real.dist_eq, abs_le] at h1 h2
+    rw [hev] at hi
+    rcases hσ with rfl | rfl <;> rcases neg_one_pow_eq_or ℝ (i : ℕ) with h | h <;>
+      rw [h] at hi <;> linarith [h1.1, h1.2, h2.1, h2.2]
+  refine Polynomial.eq_of_degree_sub_lt_of_eval_index_eq Finset.univ
+    (fun i _ j _ hij => hxm.injective hij) ?_ (fun i _ => hpq i)
+  refine lt_of_le_of_lt ((Polynomial.degree_sub_le p q).trans (max_le hp hq)) ?_
+  rw [Finset.card_univ, Fintype.card_fin]
+  exact_mod_cast (by omega : n < n + 2)
 
 /-- **The best approximation interpolates**: for $a < b$, $f$ continuous on $[a, b]$ and $p$ a
 best approximation of degree at most $n$, there are $n + 1$ distinct points of $(a, b)$ at which
