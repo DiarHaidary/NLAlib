@@ -66,6 +66,53 @@ theorem identDistrib_mul_mul_of_hasLaw_gaussianMatrix {X X' : Ω → Matrix m n 
     (hF₂ : IsStarProjection F₂) (hE : E₁ * E₂ = E₂) (hF : F₁ * F₂ = F₂) :
     IdentDistrib (fun ω => E₁ * X ω * F₁)
       (fun ω => E₁ * X ω * F₁ - E₂ * X ω * F₂ + E₂ * X' ω * F₂) μ μ := by
-  sorry
+  classical
+  have := hX.isProbabilityMeasure
+  set P : Matrix (m × n) (m × n) ℝ := Matrix.kronecker E₂ F₂ᵀ with hPdef
+  have hPH : Pᴴ = P := by
+    have hF₂T : F₂ᵀ = F₂ := by
+      rw [← Matrix.conjTranspose_eq_transpose_of_trivial, ← Matrix.star_eq_conjTranspose,
+        hF₂.isSelfAdjoint.star_eq]
+    rw [hPdef, hF₂T, Matrix.kronecker, Matrix.conjTranspose_kronecker,
+      ← Matrix.star_eq_conjTranspose, ← Matrix.star_eq_conjTranspose, hE₂.isSelfAdjoint.star_eq,
+      hF₂.isSelfAdjoint.star_eq]
+  have hPP : P * P = P := by
+    rw [hPdef, Matrix.kronecker, ← Matrix.mul_kronecker_mul, ← Matrix.transpose_mul,
+      hE₂.isIdempotentElem.eq, hF₂.isIdempotentElem.eq]
+  have hA : HasOrthonormalCols (Matrix.fromCols (1 - P) P)ᴴ := by
+    rw [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose,
+      Matrix.conjTranspose_fromCols_eq_fromRows_conjTranspose, Matrix.fromCols_mul_fromRows,
+      Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hPH]
+    simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_one, Matrix.one_mul, hPP]
+    abel
+  -- the stacked pair `(X, X')`, flattened, is a standard Gaussian vector; swapping its
+  -- `E₂ ⬝ F₂` blocks is the coisometry `[1 - P, P]`, so `Y = X - E₂XF₂ + E₂X'F₂` is Gaussian
+  have hz : HasLaw (fun ω => (MeasurableEquiv.sumPiEquivProdPi fun _ : (m × n) ⊕ (m × n) => ℝ).symm
+      (Function.uncurry (X ω), Function.uncurry (X' ω))) (gaussianVector ((m × n) ⊕ (m × n))) μ :=
+    (measurePreserving_sumPiEquivProdPi fun _ : (m × n) ⊕ (m × n) => gaussianReal 0 1).symm
+      |>.fun_comp_hasLaw <| (indepFun_iff_hasLaw_prodMk_prod
+        (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
+        (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX')).1 (hXX'.comp
+        (MeasurableEquiv.curry m n ℝ).symm.measurable
+        (MeasurableEquiv.curry m n ℝ).symm.measurable)
+  have hY : HasLaw (fun ω => X ω - E₂ * X ω * F₂ + E₂ * X' ω * F₂) (gaussianMatrix m n) μ := by
+    refine hasLaw_gaussianMatrix_of_hasLaw_uncurry ?_
+    convert hasLaw_mulVec_of_hasLaw_gaussianVector hz hA using 2 with ω
+    change _ = (1 - P).fromCols P *ᵥ Sum.elim (Function.uncurry (X ω)) (Function.uncurry (X' ω))
+    rw [Matrix.fromCols_mulVec_sumElim, Matrix.sub_mulVec, Matrix.one_mulVec, hPdef,
+      Matrix.kronecker, ← uncurry_mul_mul, ← uncurry_mul_mul]
+    rfl
+  have hF' : F₂ * F₁ = F₂ := by
+    have h := congrArg star hF
+    rwa [star_mul, hF₁.isSelfAdjoint.star_eq, hF₂.isSelfAdjoint.star_eq] at h
+  have hfun : (fun ω => E₁ * X ω * F₁ - E₂ * X ω * F₂ + E₂ * X' ω * F₂) =
+      (fun M => E₁ * M * F₁) ∘ fun ω => X ω - E₂ * X ω * F₂ + E₂ * X' ω * F₂ := by
+    funext ω
+    simp only [Function.comp_apply, Matrix.add_mul, Matrix.sub_mul, Matrix.mul_add,
+      Matrix.mul_sub, ← Matrix.mul_assoc, hE]
+    simp only [Matrix.mul_assoc, hF']
+  rw [hfun]
+  exact (hX.identDistrib hY).comp
+    ((continuous_const.matrix_mul continuous_id).matrix_mul continuous_const).measurable
 
 end NLAlib
