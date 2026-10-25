@@ -182,7 +182,9 @@ Proof: S, about 5 lines. `Multiset.toFinset_card_of_nodup` with
 `IsMomentPosDef.card_roots_orthogonalPolynomial`. -/
 theorem IsMomentPosDef.card_gaussNodes {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : (gaussNodes μ k).card = k := by
-  sorry
+  unfold gaussNodes
+  rw [Multiset.toFinset_card_of_nodup (h.nodup_roots_orthogonalPolynomial hμ),
+    h.card_roots_orthogonalPolynomial hμ]
 
 /-- Shared step for `IsMomentPosDef.gaussNodes_subset_Icc`: if $\pi_k = (X - x)g$ with $\deg g < k$
 and $(t - x)c > 0$ on $[a, b]$, then $\mu$ (supported in $[a, b]$) is positive definite up to
