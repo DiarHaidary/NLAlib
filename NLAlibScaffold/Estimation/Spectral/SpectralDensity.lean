@@ -105,7 +105,15 @@ the real part of a division by a natural number (`RCLike.div_re_ofReal`, `map_di
 theorem integral_probeSpectralMeasure (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) :
     ∫ x, f x ∂probeSpectralMeasure A Ω =
       RCLike.re (girardHutchinson (cfc f A) Ω) / Fintype.card n := by
-  sorry
+  have hdiv : ∀ z : 𝕜, RCLike.re (z / (Fintype.card m : 𝕜)) = RCLike.re z / Fintype.card m :=
+    fun z => by rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal]
+  unfold probeSpectralMeasure
+  rw [integral_smul_nnreal_measure, integral_finsetSum_measure, girardHutchinson_eq_sum, hdiv,
+    map_sum]
+  · simp only [integral_spectralMeasure, NNReal.smul_def, smul_eq_mul, NNReal.coe_inv,
+      NNReal.coe_mul, NNReal.coe_natCast]
+    ring
+  · exact fun i _ => integrable_spectralMeasure _ _ _
 
 /-- The SLQ spectral-density estimate integrates every $f$ to the SLQ trace estimate divided by
 $\lvert n\rvert$: for every square $\mathbf{A}$, every $f : \mathbb{R} \to \mathbb{R}$, every
