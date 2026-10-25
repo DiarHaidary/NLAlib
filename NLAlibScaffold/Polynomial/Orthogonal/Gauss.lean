@@ -171,7 +171,13 @@ Proof: S, about 20 lines. `by_cases` on `IsMomentPosDef μ k`; definite:
 `hμ`. -/
 theorem ae_mem_Icc_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∀ᵐ x ∂gaussQuadrature μ k, x ∈ Set.Icc a b := by
-  sorry
+  by_cases h : IsMomentPosDef μ k
+  · unfold gaussQuadrature
+    filter_upwards [ae_mem_interpolatoryQuadrature μ (gaussNodes μ k)] with x hx
+    exact h.gaussNodes_subset_Icc hμ (Finset.mem_coe.mpr hx)
+  · unfold gaussQuadrature
+    rw [interpolatoryQuadrature_eq_self_of_ae_mem (ae_mem_gaussNodes_of_not_isMomentPosDef hμ h)]
+    exact hμ
 
 /-- The mass of the Gauss rule: for a finite measure $\mu$ supported in $[a, b]$ and $k > 0$,
 the $k$-point Gauss rule has mass $\mu(\mathbb{R})$.
