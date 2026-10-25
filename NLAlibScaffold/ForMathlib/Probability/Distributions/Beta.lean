@@ -306,7 +306,20 @@ exponential integrability for every $s$ from boundedness on the support
 then `hasDerivAt_integral_pow_mul_exp_real`. -/
 private theorem hasDerivAt_betaExpMoment {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (k : ℕ) (t : ℝ) :
     HasDerivAt (betaExpMoment α β k) (betaExpMoment α β (k + 1) t) t := by
-  sorry
+  have := isProbabilityMeasureBeta hα hβ
+  have hint : ∀ s : ℝ, Integrable (fun x : ℝ => Real.exp (s * x)) (betaMeasure α β) := by
+    intro s
+    refine Integrable.of_bound (Continuous.aestronglyMeasurable (by fun_prop)) (Real.exp |s|) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    rw [Real.norm_of_nonneg (Real.exp_pos _).le, Real.exp_le_exp]
+    nlinarith [abs_nonneg s, le_abs_self s, hx.1, hx.2, neg_abs_le s]
+  have huniv : interior (integrableExpSet id (betaMeasure α β)) = univ := by
+    have hall : integrableExpSet id (betaMeasure α β) = univ :=
+      Set.eq_univ_of_forall fun s => hint s
+    rw [hall, interior_univ]
+  have hmem : t ∈ interior (integrableExpSet id (betaMeasure α β)) := by
+    rw [huniv]; exact mem_univ t
+  exact hasDerivAt_integral_pow_mul_exp_real hmem k
 
 /-- The tilted mass is positive: for $\alpha, \beta > 0$ and real $t$,
 $\mathbb{E}\,e^{tX} > 0$ for $X \sim \mathrm{Beta}(\alpha, \beta)$.
