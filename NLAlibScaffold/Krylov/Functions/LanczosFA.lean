@@ -45,6 +45,28 @@ theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_continuous
     {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a a')) (b : n → 𝕜) (q : ℕ) :
     ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
       2 * minimaxError f (Set.Icc a a') q * ‖WithLp.toLp 2 b‖ := by
-  sorry
+  set S := {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ q ∧
+    Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a') ε}
+  -- every admissible error bounds the Lanczos-FA error
+  have key : ∀ ε ∈ S, ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
+      2 * ε * ‖WithLp.toLp 2 b‖ := by
+    rintro ε ⟨p, hp, hε⟩
+    exact hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs
+      (hp.trans_lt (by exact_mod_cast Nat.lt_succ_self q)) hε b
+  -- `S` is nonempty: `f` is bounded on the compact interval, so `p = 0` is admissible
+  obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hf
+  have hC0 : C ∈ S := ⟨0, by simp, fun x hx => by simpa [dist_zero_left] using hC x hx⟩
+  by_contra! hlt
+  have hb : 0 < ‖WithLp.toLp 2 b‖ := by
+    rcases (norm_nonneg (WithLp.toLp 2 b)).eq_or_lt with h | h
+    · have := key C hC0
+      rw [← h] at this hlt
+      linarith
+    · exact h
+  obtain ⟨ε, hεS, hε⟩ := exists_lt_of_csInf_lt ⟨C, hC0⟩ (show minimaxError f (Set.Icc a a') q <
+    ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ / (2 * ‖WithLp.toLp 2 b‖) by
+      rw [lt_div_iff₀ (by positivity)]; linarith)
+  rw [lt_div_iff₀ (by positivity)] at hε
+  linarith [key ε hεS]
 
 end NLAlib
