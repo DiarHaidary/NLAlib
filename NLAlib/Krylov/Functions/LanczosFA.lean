@@ -10,6 +10,7 @@ public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Polynomial.Approximation.AnalyticApproximation
 public import NLAlib.Polynomial.Approximation.Jackson
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # The Lanczos method for matrix functions
@@ -57,6 +58,8 @@ returns $\mathbf{0}$ (Mathlib's `cfc` of a non-self-adjoint element); Arnoldi-FA
   `Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate`: CG and shifted CG.
 * `Matrix.IsHermitian.lanczosFA_eq_cfc_mulVec_of_krylovGrade_le`: exact past the grade.
 * `Matrix.IsHermitian.lanczosFA_eq_lanczosMatrix`: the Lanczos recurrence computes it.
+* `Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_continuousOn`: the bound
+  $2E_q(f)\|\mathbf{b}\|$ after $q + 1$ steps.
 -/
 
 @[expose] public section
@@ -468,5 +471,21 @@ theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_lipschitzO
   have h := hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs hp' hε b
   refine h.trans_eq ?_
   field_simp
+
+/-- **Lanczos-FA and the minimax error**: for Hermitian $\mathbf{A}$ with spectrum in $[a, a']$
+and $f$ continuous on $[a, a']$, $q + 1$ steps of Lanczos-FA satisfy
+$$\|f(\mathbf{A})\mathbf{b} - \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\| \le
+2E_q(f; [a, a'])\|\mathbf{b}\|\,,$$
+$E_q$ the error of the best uniform approximation of $f$ on $[a, a']$ by polynomials of degree
+at most $q$ (`minimaxError`). [ChenPersson2026, (2)]; [Saad1992, §3]; there with $E_q$.
+Result: lanczos-fa-uniform-bound -/
+theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_continuousOn
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a')
+    {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a a')) (b : n → 𝕜) (q : ℕ) :
+    ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
+      2 * minimaxError f (Set.Icc a a') q * ‖WithLp.toLp 2 b‖ := by
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf q
+  exact hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs
+    (hp.trans_lt (by exact_mod_cast Nat.lt_succ_self q)) hε b
 
 end NLAlib

@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # Polynomial approximation of the inverse function
@@ -17,6 +18,7 @@ interval, with geometric decay in its allowed degree. No matrix or Krylov assump
 ## Main results
 
 * `NLAlib.exists_degree_lt_isUniformApproxOn_inv`: inverse approximation including degree zero.
+* `NLAlib.minimaxError_inv_le`: $E_n(x^{-1}; [a, b])$ decays like the CG rate.
 -/
 
 @[expose] public section
@@ -60,5 +62,20 @@ theorem exists_degree_lt_isUniformApproxOn_inv {a b : ℝ} (q : ℕ)
     _ ≤ (2 * ((√b - √a) / (√b + √a)) ^ q) / a :=
       div_le_div_of_nonneg_right hbound ha.le
     _ = (2 / a) * ((√b - √a) / (√b + √a)) ^ q := by ring
+
+/-- **The minimax error of the inverse**: for $0 < a < b$,
+$$E_n\bigl(x^{-1}; [a, b]\bigr) \le \frac2a
+\left(\frac{\sqrt b - \sqrt a}{\sqrt b + \sqrt a}\right)^{n + 1}\,.$$
+The matching lower bound (the exact value of $E_n(x^{-1})$) is deferred. A corollary of
+[Saad2003, Theorem 6.25 and proof of Theorem 6.29].
+Result: inverse-polynomial-approx -/
+theorem minimaxError_inv_le {a b : ℝ} (n : ℕ) (ha : 0 < a) (hab : a < b) :
+    minimaxError (fun x => x⁻¹) (Set.Icc a b) n ≤
+      (2 / a) * ((√b - √a) / (√b + √a)) ^ (n + 1) := by
+  obtain ⟨p, hp, hε⟩ := exists_degree_lt_isUniformApproxOn_inv (n + 1) ha hab
+  have hdeg : p.degree ≤ n := by
+    have h : p.degree < ((n + 1 : ℕ) : WithBot ℕ) := hp
+    exact Order.le_of_lt_succ (by exact_mod_cast h)
+  exact minimaxError_le_of_isUniformApproxOn hdeg (hε.nonneg (Set.nonempty_Icc.mpr hab.le)) hε
 
 end NLAlib

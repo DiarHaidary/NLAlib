@@ -11,6 +11,7 @@ public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 public import Mathlib.Topology.MetricSpace.Lipschitz
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # Constructive Jackson approximation
@@ -30,6 +31,7 @@ identifies this construction as the Rivlin/KPM kernel and analyzes sharper asymp
 * `norm_chebyshevCoeff_jacksonApprox_le`: damping contracts each coefficient.
 * `isUniformApproxOn_jacksonApprox_of_lipschitz`: constructive uniform approximation.
 * `exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith`: the same on an interval $[a, b]$.
+* `NLAlib.minimaxError_le_of_lipschitzOnWith`: Jackson's bound on $E_N(f; [a, b])$.
 -/
 
 @[expose] public section
@@ -414,5 +416,20 @@ theorem exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith
     have hK : (K : ℝ) = (b - a) / 2 := rfl
     rw [NNReal.coe_mul, hK]
     field_simp
+
+/-- **Jackson's theorem for the minimax error**: an $L$-Lipschitz real $f$ on $[a, b]$, $a < b$,
+satisfies <!-- value jacksonApproximationConstant -->
+$$E_N(f; [a, b]) \le \frac{\pi L(b - a)}{2(N + 2)}$$
+(the constant is `jacksonApproximationConstant`). [ChenTrogdonUbaru2022, Appendix C,
+Theorem 38]; there on $[-1, 1]$ with the factor $\pi^2/2$; [Rivlin1981, Ch. 1] (locator to
+check), the classical $E_N$ form.
+Result: jackson-lipschitz -/
+theorem minimaxError_le_of_lipschitzOnWith {f : ℝ → ℝ} {L : ℝ≥0} {a b : ℝ} (hab : a < b)
+    (hf : LipschitzOnWith L f (Set.Icc a b)) (N : ℕ) :
+    minimaxError f (Set.Icc a b) N ≤
+      jacksonApproximationConstant * L * (b - a) / (2 * (N + 2)) := by
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf N
+  simp only [RCLike.ofReal_real_eq_id, id] at hε
+  exact minimaxError_le_of_isUniformApproxOn hp (hε.nonneg (Set.nonempty_Icc.mpr hab.le)) hε
 
 end NLAlib

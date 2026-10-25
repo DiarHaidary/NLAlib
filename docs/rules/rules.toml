@@ -432,6 +432,16 @@ statement = '''Every port-ledger target is declared'''
 fix = '''Point the entry of docs/port/ledger.json at the current name (scripts/ledger_check.py)'''
 
 [[rule]]
+id = "G3"
+area = "design records"
+severity = "review"
+check = "none"
+scope = "library"
+section = "§8 item 5"
+statement = '''A scaffold file imports the scaffold files whose declarations its `Proof:` lines name'''
+fix = '''Add the import to the skeleton and the note's file list (the harness pre-dispatch check lists the missing names)'''
+
+[[rule]]
 id = "M1"
 area = "notation"
 severity = "error"
