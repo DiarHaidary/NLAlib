@@ -37,7 +37,7 @@ $$(1 - \theta)^2 (\mathbb{E} Z)^2 \le \mathbb{E} Z^2 \cdot
 \mathbb{P}\bigl[Z > \theta\,\mathbb{E} Z\bigr]\,.$$
 Both hypotheses on $\theta$ are needed: for $\theta < 0$ and a constant $Z > 0$ the left side
 exceeds $\mathbb{E}Z^2$, and for $\theta > 1$ the event is empty for a constant $Z$.
-[PaleyZygmund1932, Lemma 19] (locator to check); the product form avoids dividing by
+[PaleyZygmund1932] (locator to check); the product form avoids dividing by
 $\mathbb{E} Z^2$.
 Proof: S, about 25 lines. Split
 $\mathbb{E} Z = \mathbb{E}[Z \mathbf{1}_{Z \le \theta \mathbb{E}Z}] +

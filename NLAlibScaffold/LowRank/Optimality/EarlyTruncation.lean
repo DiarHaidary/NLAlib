@@ -7,6 +7,7 @@ module
 
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
 public import NLAlib.Probability.Distributions.ChiSquare
+public import NLAlib.RandomMatrix.Gaussian.FourthMoment
 public import NLAlibScaffold.ForMathlib.Probability.Moments.PaleyZygmund
 public import NLAlibScaffold.Probability.Distributions.ChiSquareMoments
 
@@ -75,8 +76,9 @@ $\|\mathbf{A}\|_{\mathsf{F}}^2 - \|\mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 = 1 + s
 \ge 1 - (1 - s^2) p_1$ (`sub_earlyTruncatedRSVD`, Pythagoras for an orthogonal projector). With
 $\mathbf{S}$ the swap permutation matrix, $\mathbf{S}\mathbf{P}\mathbf{S}$ is again an orthogonal
 projector of rank at most $1$, and $\mathbf{P}$ maximises $\|\mathbf{P}'\mathbf{Y}\|_{\mathsf{F}}$
-over those ($\mathbf{Y} = \mathbf{A}\mathbf{\Omega}$, Eckart–Young `frobNorm_sub_truncatedSVD_le`
-through `rangeProjector_truncatedSVD_mul`); the difference is
+over those ($\mathbf{Y} = \mathbf{A}\mathbf{\Omega}$, Eckart–Young
+`frobNorm_sub_truncatedSVD_le_of_rank_le` through `rangeProjector_truncatedSVD_mul`); the
+difference is
 $\operatorname{tr}((\mathbf{S}\mathbf{P}\mathbf{S} - \mathbf{P})\mathbf{Y}\mathbf{Y}^{\mathsf{T}})
 = (b - a)(p_1 - p_2)$ with $a = \|\mathbf{\omega}_1\|^2$, $b = s^2\|\mathbf{\omega}_2\|^2$. So
 $a < b$ forces $p_1 \le p_2$, hence $p_1 \le 1/2$. All on $2 \times 2$ matrices
@@ -128,11 +130,11 @@ relative error $1 + \varepsilon$ in expectation needs $\ell \ge 10^{-4}/\varepsi
 (`NLAlib.one_le_mul_card_of_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le`), matching the
 $\varepsilon^{-2}$ of
 `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`. The
-constant $1/100$ is safe, not sharp: the proof gives about $0.017$, and the excess on this instance
+constant $1/100$ is safe, not sharp: the proof gives about $0.0206$, and the excess on this instance
 is about $0.5/\sqrt{\ell}$ (research note OP1, §2).
 No printed source. New (research note OP1, §1).
 Proof: M, about 60 lines. Write $s = 1 - \delta$; the error is at least $s^2$ everywhere
-(Eckart–Young: `frobNorm_sub_truncatedSVD_le` for the rank-one `earlyTruncatedRSVD`,
+(Eckart–Young: `frobNorm_sub_truncatedSVD_le_of_rank_le` for the rank-one `earlyTruncatedRSVD`,
 `rank_earlyTruncatedRSVD_le`) and at least $s^2 + (1 - s^2)/2$ on the misranking event
 (`add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq`), whose probability is at least
 $1/12$ (`le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix`). Integrate the pointwise bound
@@ -217,7 +219,7 @@ The negation of the $\varepsilon^{-1}$ analogue of
 No printed source. New (research note OP1).
 Proof: S, about 30 lines. Given $C, \varepsilon_0$, take $k = 1$, $\mathbf{A}$ the
 $2 \times 2$ instance, $\Omega = $ `Matrix (Fin 2) (Fin L) ℝ` with $\mu = $ `gaussianMatrix` and
-$\mathbf{X} = \mathrm{id}$ (`HasLaw.id` or `hasLaw_id`), $\varepsilon$ small with
+$\mathbf{X} = \mathrm{id}$ (`ProbabilityTheory.HasLaw.id`), $\varepsilon$ small with
 $\max(C/\varepsilon, 100) + 1 < 10^{-4}/\varepsilon^2$ and $\varepsilon \le \varepsilon_0$, and
 $L = \lceil\max(C/\varepsilon, 100)\rceil$ (`Nat.le_ceil`); then
 `one_le_mul_card_of_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le` contradicts
@@ -240,7 +242,7 @@ $\mathbf{A} = \operatorname{diag}(\mathbf{I}_k, s\mathbf{I}_k)$ with $0 \le s \l
 $\mathbf{\Omega} = [\mathbf{\Omega}_1; \mathbf{\Omega}_2] \in \mathbb{R}^{2k \times \ell}$ with
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \ge k$, $\mathbf{P}$ the range projector of
 $\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$, $T = \operatorname{tr}\mathbf{P}_{22}$ its tail
-content, and $0 \le \theta \le \pi/2$: the error is at least $ks^2 + (1 - s^2)T$, and
+content, and any $\theta$: the error is at least $ks^2 + (1 - s^2)T$, and
 $$\begin{aligned}
 &T\bigl(s^2\|\mathbf{\Omega}_2\|_2^2 - \sigma_{k-1}(\mathbf{\Omega}_1)^2\bigr) +
 2s\,\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_2\sqrt{kT} \\
@@ -273,7 +275,7 @@ $\lambda_{\min}(\mathbf{W}_{11}) = \sigma_{k-1}(\mathbf{\Omega}_1)^2$. -/
 theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : ℕ} {s : ℝ}
     (hs0 : 0 ≤ s) (hs1 : s ≤ 1) {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ}
     (hA : A = Matrix.fromBlocks 1 0 0 (s • 1)) {Ω' : Matrix (Fin k ⊕ Fin k) l ℝ}
-    (hr : k ≤ (A * Ω').rank) {θ : ℝ} (hθ0 : 0 ≤ θ) (hθ1 : θ ≤ Real.pi / 2) {T : ℝ}
+    (hr : k ≤ (A * Ω').rank) (θ : ℝ) {T : ℝ}
     (hT : T = ∑ i : Fin k, rangeProjector (truncatedSVD (A * Ω') k) (Sum.inr i) (Sum.inr i)) :
     k * s ^ 2 + (1 - s ^ 2) * T ≤ frobNorm (A - earlyTruncatedRSVD A Ω' k) ^ 2 ∧
       2 * s * Real.sin θ * Real.cos θ * nuclearNorm (Ω'.toRows₁ * Ω'.toRows₂ᵀ) -
@@ -304,12 +306,22 @@ $\sigma_{k-1}(\mathbf{\Omega}_1) \ge \sqrt{\ell} - \tfrac54\sqrt{k}$
 `measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix`), (ii)
 $\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_2 \le 2.2\sqrt{k\ell}$
 (`measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix`), (iii)
-$\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2 \ge 0.9k^2\ell$ (Chebyshev with
-`integral_frobNorm_mul_mul_pow_four_le_of_hasLaw_gaussianMatrix`), so
+$\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2 \ge 0.9k^2\ell$ (Chebyshev
+conditionally on $\mathbf{\Omega}_2$, `ProbabilityTheory.IndepFun.measureReal_mem_le_add`: for fixed
+$\mathbf{\Omega}_2$ satisfying (i) and (iv), the conditional
+mean is $k\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$
+(`integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix`) and the conditional variance
+$2k\|\mathbf{\Omega}_2\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2 \le
+2k\|\mathbf{\Omega}_2\|_2^2\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$, from the exact
+`integral_frobNorm_mul_mul_pow_four_of_hasLaw_gaussianMatrix` with $\mathbf{A} = \mathbf{I}$,
+$\mathbf{B} = \mathbf{\Omega}_2^{\mathsf{T}}$; failure $O(1/k^2)$; the bound
+`integral_frobNorm_mul_mul_pow_four_le_of_hasLaw_gaussianMatrix` is too weak for Chebyshev), so
 $\|\cdot\|_* \ge \|\cdot\|_{\mathsf{F}}^2/\|\cdot\|_2 \ge 0.4k\sqrt{k\ell}$, (iv)
 $\lvert\|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 - \|\mathbf{\Omega}_2\|_{\mathsf{F}}^2\rvert \le
 0.01k\sqrt{k\ell}$ and
-$\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2 \le 1.01k\ell$ (Chebyshev on chi-square sums,
+$\lvert\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2 - k\ell\rvert \le 0.01k\ell$ (Chebyshev on chi-square
+sums, variance $2k\ell$ of $\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$, so $2k^3\ell$ of
+$k\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$;
 `integral_norm_sq_sub_norm_sq_sq_of_hasLaw_gaussianVector`), each failing with probability
 $O(1/k)$ or $O(e^{-ck})$ for $\ell \ge Ck$, so $\mathbb{P}[G] \ge 1/2$ for $k \ge K_0$.
 On $G$, `frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational` at $\theta = 1/4$ gives

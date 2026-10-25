@@ -61,10 +61,11 @@ $$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_
 both outputs lie in $\operatorname{range}(\mathbf{A}\mathbf{\Omega})$, and the truncated randomized
 SVD
 is the best rank-$k$ approximation there. For the choice `truncatedSVD` makes.
-Proof: S, about 15 lines. The core form (`exists_core_generalizedNystrom`, private: copy as a
-private helper) gives the error as $\|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2 +
-\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2$ with $\operatorname{rank}\mathbf{Y} \le k$; Eckart–Young
-(`frobNorm_sub_truncatedSVD_le`) and the third conjunct give
+Proof: S, about 15 lines. The core form (`exists_core_generalizedNystrom`) gives the error as
+$\|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2 + \|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2$ with
+$\mathbf{C} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$ and $\operatorname{rank}\mathbf{Y} \le k$;
+Eckart–Young (`frobNorm_sub_truncatedSVD_le_of_rank_le`) and the core's truncation-error conjunct
+give
 $\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}} \ge \|\mathbf{R} -
 \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}$;
 Pythagoras (`truncatedSVD_rsvd_eq_rangeProjector_mul`, `sub_rsvd`) splits
@@ -94,9 +95,9 @@ Since $\gamma_k \le \min(\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mat
 of `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm` (expanded), at the
 price of $12k$ for $8k$ in the noise term. For the choice `truncatedSVD` makes.
 No printed source. New (research note OP2, §2, D2, with the constants recomputed here).
-Proof: M, about 80 lines. Core form as in `exists_core_generalizedNystrom` (private in
-`NLAlib/LowRank/Structural/Truncation.lean`: copy its proof as a private helper, extended to
-return the basis $\mathbf{Q}$ with $\mathbf{N} = \mathbf{Q}\mathbf{E}$): the error is
+Proof: M, about 80 lines. Core form `exists_core_generalizedNystrom` (it returns the basis
+$\mathbf{Q}$ with $\mathbf{N} = \mathbf{Q}\mathbf{E}$ and
+$\llbracket\mathsf{gn}\rrbracket_k = \mathbf{Q}\mathbf{Y}$): the error is
 $\|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2 + \|\mathbf{B} - \mathbf{P}(\mathbf{B} +
 \mathbf{E})\|_{\mathsf{F}}^2$
 with $\mathbf{B} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$ and $\mathbf{P}$ the range projector of the

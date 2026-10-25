@@ -69,8 +69,7 @@ No printed source. New (research note OP2, §3, L1, there as a limit inferior; t
 Proof: H, about 200 lines. Write $\mathbf{R}_a = \mathsf{rsvd}(\mathbf{A}_a, \mathbf{\Omega})$,
 $\mathbf{N}_a$ the core noise and $g_a = \sigma_{k-1}(\mathbf{R}_a)^2 - \sigma_k(\mathbf{R}_a)^2$.
 (1) Pointwise, under the rank event
-(`ae_rank_conjTranspose_mul_mul_eq`-type, private in `TruncatedGeneralizedNystrom.lean`: re-derive
-from `ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix`), the error is at least
+(`ae_rank_conjTranspose_mul_mul_eq`), the error is at least
 $\|\mathbf{A}_a - \llbracket\mathbf{R}_a\rrbracket_k\|_{\mathsf{F}}^2 +
 \|\mathbf{P}\mathbf{N}_a\|_{\mathsf{F}}^2 - \min(\|\mathbf{P}\mathbf{N}_a\|_{\mathsf{F}}^2,
 \|\mathbf{N}_a\|_{\mathsf{F}}^4/g_a)$ (`le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq` when

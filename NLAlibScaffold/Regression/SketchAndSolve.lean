@@ -91,8 +91,8 @@ $$\Bigl(1 + \frac{m - \ell}{m - r}\cdot\frac{r}{\ell - r - 1}\Bigr)
 Proof: S, about 20 lines. Apply
 `le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame` on the probability space
 `haarFrame m m` with `U = id`; an integrable function exceeds its mean somewhere on a set of
-positive measure (`MeasureTheory.exists_not_mem_null_le_integral`, or by contradiction with
-`integral_mono_ae`), and almost every sample is orthogonal
+positive measure (`MeasureTheory.exists_notMem_null_integral_le`, with $N$ the null set of
+non-orthogonal samples), and almost every sample is orthogonal
 (`ae_hasOrthonormalCols_of_hasLaw_haarFrame`). -/
 theorem exists_hasOrthonormalCols_le_frobNorm_mul_sub_mul_sketchAndSolve_sq {r' : Type*}
     [Fintype r'] {Ω₀ : Matrix m l ℝ} (hΩ₀ : Ω₀.rank = Fintype.card l) {A : Matrix m n ℝ}

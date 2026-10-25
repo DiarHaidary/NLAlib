@@ -55,14 +55,17 @@ bound's pointwise bound $b\|(\mathbf{W}\mathbf{\Psi})^{+}\|_{\mathsf{F}}^2 + b(\
 (`HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom_le`), integrable by
 `integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame`, and it is also the pointwise limit.
 For the limit, a.s. $\mathbf{\Psi}_1 = \mathbf{W}\mathbf{\Psi}$ ($q \times \ell$) has full row rank
-(`ae_rank_mul_eq_min_of_hasLaw_haarFrame`); with $\mathbf{\Psi}_2$ the tail rows, the Schur
-complement form of the error for $a > b$ (EW (6.2), with
-$\mathbf{\Psi}_1^{\mathsf{H}}\mathbf{\Psi}_1 +
-\tfrac{b}{a-b}\mathbf{\Psi}_2^{\mathsf{H}}\mathbf{\Psi}_2$ inverted on the range); as $a \to \infty$
-it tends to $b(\lvert t\rvert - \ell) + b\|\mathbf{\Psi}_1^{+}\|_{\mathsf{F}}^2$ by
-continuity of the inverse at the invertible $\mathbf{\Psi}_1\mathbf{\Psi}_1^{\mathsf{H}}$ (avoid
-EW's QR route: write the limit directly in the dominator's form). The limit value is the upper
-bound's computation. -/
+(`ae_rank_mul_eq_min_of_hasLaw_haarFrame`). For $b > 0$ and $a > 0$ the error is exactly
+$b(\lvert t\rvert - \ell) + ab\operatorname{Re}\operatorname{tr}\bigl(b\mathbf{I} +
+(a-b)\mathbf{\Psi}_1\mathbf{\Psi}_1^{\mathsf{H}}\bigr)^{-1}$
+(`HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom`); since $ab(b\mathbf{I} +
+(a-b)\mathbf{K}\mathbf{K}^{\mathsf{H}})^{-1} = b\bigl((b/a)\mathbf{I} + (1 - b/a)
+\mathbf{K}\mathbf{K}^{\mathsf{H}}\bigr)^{-1}$ and $\mathbf{K}\mathbf{K}^{\mathsf{H}}$
+($\mathbf{K} = \mathbf{\Psi}_1$) is invertible, continuity of inversion gives the limit
+$b(\lvert t\rvert - \ell) + b\operatorname{tr}(\mathbf{K}\mathbf{K}^{\mathsf{H}})^{-1} =
+b(\lvert t\rvert - \ell) + b\|\mathbf{\Psi}_1^{+}\|_{\mathsf{F}}^2$, the dominator; no Schur
+or QR form is needed. For $b = 0$ the error is $0$ for $a > 0$ (both sides vanish). The limit
+value is the upper bound's computation. -/
 theorem tendsto_integral_nuclearNorm_fromBlocks_sub_nystrom_of_isLeftUnitarilyInvariant
     {s t : Type*} [Fintype s] [Fintype t] [DecidableEq s] [DecidableEq t]
     {ν' : Measure (Matrix (s ⊕ t) l ℝ)} [IsProbabilityMeasure ν'] [IsLeftUnitarilyInvariant ν']

@@ -1,7 +1,10 @@
 # Design note: lower bounds for specific low-rank estimators (stage S10)
 
-Status: draft for the maintainer, 2026-10-25, on `design/lb-estimators` (from `origin/main`
-`47b95ab`). Decision sheet: `~/nlalib-harness/state/decisions/S10.json`. Targets:
+Status: approved by the maintainer (all OQs (a)), 2026-10-25, on `design/lb-estimators` (rebased
+onto `origin/main` `59e1792`); revised after the Fable review
+(`~/nlalib-harness/reports/Review-Fable-S10-Design.md`: E8 import and exact fourth moment, W6
+pointwise limit through `HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom`, three outline
+names, OQ9 bibliography, E7 without hypotheses on $\theta$, OQ8 lemmas public). Decision sheet: `~/nlalib-harness/state/decisions/S10.json`. Targets:
 `~/nlalib-harness/pilot/s10-targets.json` (29 rows, outlines for every row).
 
 S10 proves lower bounds **for fixed estimators** (sketch-and-solve, randomized SVD, Nyström,
@@ -160,11 +163,13 @@ sketch's dominant frame:
   2s\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_2\sqrt{kT} \ge
   2s\sin\theta\cos\theta\,\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_* -
   \sin^2\theta(\|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 - s^2\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2)$
-  for $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \ge k$, $0 \le \theta \le \pi/2$. I checked
+  for $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \ge k$ and every $\theta$. I checked
   each step of OP1's derivation (the expansion of $f(\mathbf{U})$, $\operatorname{tr}(\mathbf{I} -
   \mathbf{U}_h\mathbf{U}_h^{\mathsf{T}}) = T$, the competitor and Ky Fan maximality). Two
-  conditions OP1 leaves implicit are hypotheses: $s \ge 0$ (cross term) and
-  $\sin\theta\cos\theta \ge 0$ (sign of the polar factor). *Degenerate:* $k = 0$ gives $0 \le 0$.
+  condition OP1 leaves implicit is a hypothesis: $s \ge 0$ (cross term). No condition on $\theta$
+  is needed: with $\mathbf{R}$ the polar factor the competitor's value is an identity for every
+  $\theta$ (Fable review; the draft's $0 \le \theta \le \pi/2$ was dropped, which strengthens the
+  statement). *Degenerate:* $k = 0$ gives $0 \le 0$.
 * **E8** (H) `exists_forall_le_integral_frobNorm_sub_earlyTruncatedRSVD_sq_of_hasLaw_gaussianMatrix`:
   $\exists\, c, C > 0, K_0$: for $k \ge K_0$, $\ell \ge Ck$,
   $(1 + c\sqrt{k/\ell})\mathrm{OPT}^2 \le \mathbb{E}\,\mathrm{err}$. **Why $k \ge K_0$:** OP1 §4
@@ -178,8 +183,13 @@ sketch's dominant frame:
   true as stated (proof complete at that level); for $2 \le k < K_0$ it is expected (numerics,
   OP1 §2(b)) but unproved (OQ3). One caveat for the prover: the variance of
   $\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2$ must be computed exactly
-  ($2k^2\ell^2 + O(k^3\ell)$); the library's fourth-moment bound may be loose by a constant, which
-  would break Chebyshev at the $10\%$ level.
+  ($2k^2\ell^2 + O(k^3\ell)$); the library's bound
+  `integral_frobNorm_mul_mul_pow_four_le_of_hasLaw_gaussianMatrix` gives only
+  $\mathrm{Var} \le 2\,\mathrm{mean}^2$, useless for Chebyshev. The outline uses the exact
+  `integral_frobNorm_mul_mul_pow_four_of_hasLaw_gaussianMatrix` conditionally on
+  $\mathbf{\Omega}_2$ ($\mathbf{A} = \mathbf{I}$, $\mathbf{B} = \mathbf{\Omega}_2^{\mathsf{T}}$:
+  conditional variance $2k\|\mathbf{\Omega}_2\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2$)
+  plus $\mathrm{Var}(k\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2) = 2k^3\ell$.
 
 ### 3.2 OP2: truncated generalized Nyström
 
@@ -302,7 +312,8 @@ for laws the library never instantiates.
   a.s., `MemLp Z 2`, $0 \le \theta \le 1$ (both bounds on $\theta$ necessary: constant $Z$
   counterexamples in the docstring; `MemLp Z 2` necessary since Bochner's junk $\mathbb{E}Z^2 = 0$
   would make it false). Product form, no division. Result id `paley-zygmund-inequality`; cited
-  [PaleyZygmund1932, Lemma 19], new bib entry, volume/pages/lemma to be checked (OQ9).
+  [PaleyZygmund1932] (locator to check), new bib entry: 28(2), 190–205, DOI verified; the lemma
+  number is unverified, and the companion note 28(3), 266–272 may hold the inequality (OQ9).
 * **X1**, **X2** (S) in `Probability/Distributions/ChiSquareMoments.lean`:
   $\mathbb{E}(\|\mathbf{g}\|^2 - \|\mathbf{h}\|^2)^2 = 4d$, $\mathbb{E}(\cdot)^4 = 48d^2 + 96d$ for
   independent standard Gaussian vectors. Checked by expanding with $\chi^2$ moments
@@ -356,11 +367,12 @@ its `Proof:` lines name (E2/E3 → PaleyZygmund, ChiSquareMoments; L1 → Struct
 Gaussian/TruncatedGeneralizedNystrom; W2 → NormBounds; W3–W5 → Blocks; W7–W10 →
 RotationInvariantFactor).
 
-Private library lemmas the proofs need: `exists_core_generalizedNystrom`
+Library lemmas the proofs need that were private: `exists_core_generalizedNystrom`
 (`Structural/Truncation.lean`, T1–T3) and `ae_rank_conjTranspose_mul_mul_eq`
-(`Gaussian/TruncatedGeneralizedNystrom.lean`, L1). A scaffold job cannot see them; the outlines say
-to copy them as private helpers (the dispatcher allows inserting private theorems). OQ8 proposes
-making the first public, extended to return the basis.
+(`Gaussian/TruncatedGeneralizedNystrom.lean`, L1). Per OQ8 (a) both are public on this branch
+before dispatch; the first is extended to return the basis $\mathbf{Q}$ with
+$\mathbf{N} = \mathbf{Q}\mathbf{E}$, $\mathbf{C} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$ and
+$\llbracket\mathsf{gn}\rrbracket_k = \mathbf{Q}\mathbf{Y}$.
 
 ## 7. Material
 
@@ -428,7 +440,9 @@ the basis $\mathbf{Q}$ with $\mathbf{N} = \mathbf{Q}\mathbf{E}$ (one PR before d
 T1–T3 jobs copy it. *Recommend:* make it public (three jobs reuse it; copies would be deleted as
 duplicates at clean-up).
 
-**OQ9 (Paley–Zygmund citation).** [PaleyZygmund1932, Lemma 19] ("On some series of functions (3)",
-Proc. Camb. Phil. Soc. 28) is from memory; volume, pages and lemma number unchecked. *Recommend:*
+**OQ9 (Paley–Zygmund citation).** [PaleyZygmund1932] ("On some series of functions (3)",
+Proc. Camb. Phil. Soc. 28(2), 190–205, 1932, DOI 10.1017/S0305004100010860: verified by the Fable
+review). The locator "Lemma 19" is unverified (marked "locator to check"); the companion note "A
+note on analytic functions in the unit circle", 28(3), 266–272 (1932), may be the source. *Recommend:*
 keep the entry with its "to be checked" note and verify at clean-up, or cite a textbook statement
 instead if the maintainer has one at hand.
