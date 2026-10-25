@@ -236,7 +236,10 @@ theorem isUniformApproxOn_minimaxPoly {f : ℝ → ℝ} {s : Set ℝ} (hs : IsCo
     (hf : ContinuousOn f s) (n : ℕ) :
     Metric.IsUniformApproxOn (fun x => (minimaxPoly f s n).eval x) f s
       (minimaxError f s n) := by
-  sorry
+  have h := exists_degree_le_isUniformApproxOn_minimaxError hs hf n
+  unfold minimaxPoly
+  rw [dif_pos h]
+  exact h.choose_spec.2
 
 /-! ### The algebra of the minimax error -/
 
