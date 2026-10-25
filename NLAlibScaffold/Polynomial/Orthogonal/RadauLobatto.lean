@@ -728,7 +728,26 @@ $[a, b]$.
 Proof: S, about 10 lines. As `ae_mem_Icc_radauQuadrature`. -/
 theorem ae_mem_Icc_lobattoQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) (k : ℕ) :
     ∀ᵐ x ∂lobattoQuadrature μ a b k, x ∈ Set.Icc a b := by
-  sorry
+  have := isFiniteMeasure_lobattoMeasure hμ
+  by_cases h : IsMomentPosDef (lobattoMeasure μ a b) k
+  · unfold lobattoQuadrature
+    filter_upwards [ae_mem_interpolatoryQuadrature μ (lobattoNodes μ a b k)] with x hx
+    unfold lobattoNodes at hx
+    simp only [Finset.mem_insert] at hx
+    rcases hx with rfl | rfl | hx
+    · exact ⟨le_rfl, hab.le⟩
+    · exact ⟨hab.le, le_rfl⟩
+    · exact h.gaussNodes_subset_Icc (ae_mem_Icc_lobattoMeasure hμ) (Finset.mem_coe.mpr hx)
+  · rw [lobattoQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero hμ ?_]
+    · exact hμ
+    cases k with
+    | zero =>
+      exfalso
+      exact h fun p hp hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp))
+    | succ j =>
+      rw [isMomentPosDef_succ_iff (ae_mem_Icc_lobattoMeasure hμ) j, not_lt] at h
+      rw [integral_orthogonalPolynomial_succ_sq (ae_mem_Icc_lobattoMeasure hμ) j,
+        le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
 
 /-- The mass of the Lobatto rule: for a finite measure $\mu$ supported in $[a, b]$, $a < b$,
 and every $k$, the Lobatto rule has mass $\mu(\mathbb{R})$.
