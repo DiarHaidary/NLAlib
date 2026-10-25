@@ -19,8 +19,9 @@ step and the Gaussian block bound) and
 `RandomMatrix/Haar/Blocks`, and the new `ForMathlib/Probability/Moments/PaleyZygmund.lean`. W6
 (Epperly–Webber Lemma 6.2) went to `LowerBounds/LowRank/RotationInvariant` rather than
 `LowRank/Gaussian/RotationInvariantFactor`, and W3–W5 to `LowerBounds/Regression` rather than
-`Regression/SketchAndSolve` (lower bounds live in `LowerBounds/`). The scaffold is empty again. No
-statement changed. New public helpers: `exists_hasOrthonormalCols_frames_range_compl` and
+`Regression/SketchAndSolve` (lower bounds live in `LowerBounds/`). The scaffold is empty again. One
+statement changed: E7 (`frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational`) drops
+its unused hypothesis `s ≤ 1` (a pure weakening; Fable review). New public helpers: `exists_hasOrthonormalCols_frames_range_compl` and
 `obliqueProjector_mul_one_sub_rangeProjector_mul_eq` (`Matrix/Subspaces/ObliqueProjector`; they
 replace the private `exists_compl_frames`/`obliqueProjector_mul_eq_frames` of
 `Regression/SketchAndSolve` and three S10 copies), `measurable_obliqueProjector_mul_sub_rsvd`

@@ -509,8 +509,8 @@ private theorem le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_isGoodBlock 
   set T := ∑ i : Fin k, rangeProjector (truncatedSVD (A * Ω') k) (Sum.inr i) (Sum.inr i) with hT
   have hT0 : 0 ≤ T := Finset.sum_nonneg fun i _ =>
     ((isStarProjection_rangeProjector (truncatedSVD (A * Ω') k)).posSemidef.diag_nonneg)
-  obtain ⟨hE1, hE2⟩ := frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational hs0 hs1
-    hA (le_rank_fromBlocks_mul hA (hd.trans h2)) (Real.arctan (1 / 40)) hT
+  obtain ⟨hE1, hE2⟩ := frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational hs0 hA
+    (le_rank_fromBlocks_mul hA (hd.trans h2)) (Real.arctan (1 / 40)) hT
   obtain ⟨hsc, hs2⟩ := sin_arctan_mul_cos_arctan_and_sin_arctan_sq
   set W := Ω'.toRows₁ * Ω'.toRows₂ᵀ with hW
   have hsx : u - 5 / 4 * v < singularValues Ω'.toRows₁ (k - 1) := by simpa using h2

@@ -343,7 +343,7 @@ private theorem sin_mul_cos_mul_nuclearNorm_sub_le_of_frobNorm_sq_le {k : ℕ} {
   linarith [hKF, hup, hca]
 
 /-- The tail content of the sketch's dominant frame controls the error, deterministic: for
-$\mathbf{A} = \operatorname{diag}(\mathbf{I}_k, s\mathbf{I}_k)$ with $0 \le s \le 1$, any
+$\mathbf{A} = \operatorname{diag}(\mathbf{I}_k, s\mathbf{I}_k)$ with $s \ge 0$, any
 $\mathbf{\Omega} = [\mathbf{\Omega}_1; \mathbf{\Omega}_2] \in \mathbb{R}^{2k \times \ell}$ with
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \ge k$, $\mathbf{P}$ the range projector of
 $\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$, $T = \operatorname{tr}\mathbf{P}_{22}$ its tail
@@ -357,7 +357,7 @@ s^2\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2\bigr)\,.
 \end{aligned}$$
 No printed source. New (research note OP1, §4 steps 1–3). -/
 theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : ℕ} {s : ℝ}
-    (hs0 : 0 ≤ s) (hs1 : s ≤ 1) {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ}
+    (hs0 : 0 ≤ s) {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ}
     (hA : A = Matrix.fromBlocks 1 0 0 (s • 1)) {Ω' : Matrix (Fin k ⊕ Fin k) l ℝ}
     (hr : k ≤ (A * Ω').rank) (θ : ℝ) {T : ℝ}
     (hT : T = ∑ i : Fin k, rangeProjector (truncatedSVD (A * Ω') k) (Sum.inr i) (Sum.inr i)) :
@@ -367,7 +367,6 @@ theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : �
         T * (s ^ 2 * specNorm Ω'.toRows₂ ^ 2 - singularValues Ω'.toRows₁ (k - 1) ^ 2) +
           2 * s * specNorm (Ω'.toRows₁ * Ω'.toRows₂ᵀ) * √(k * T) := by
   classical
-  have _ := hs1
   subst hA
   have hD : (Matrix.fromBlocks (1 : Matrix (Fin k) (Fin k) ℝ) 0 0 (s • 1)) =
       Matrix.diagonal (Sum.elim (fun _ : Fin k => (1 : ℝ)) (fun _ : Fin k => s)) := by
