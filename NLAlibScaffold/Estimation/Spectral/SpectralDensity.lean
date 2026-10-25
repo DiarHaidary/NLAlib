@@ -732,7 +732,24 @@ theorem measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMe
         (probeSpectralMeasure A (X ω)).real (Set.Iic x)|} ≤
       2 * Fintype.card n * Real.exp (-(hansonWrightConstant * (Fintype.card m *
         Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
-  sorry
+  have := hind.isProbabilityMeasure
+  -- union bound over the eigenvalues, indexed by `n`
+  calc _ ≤ μ.real (⋃ i ∈ (Finset.univ : Finset n), {ω | τ ≤
+          |(empiricalSpectralMeasure A).real (Set.Iic (hA.eigenvalues i)) -
+            (probeSpectralMeasure A (X ω)).real (Set.Iic (hA.eigenvalues i))|}) := by
+        refine measureReal_mono (fun ω ⟨x, hx, hlt⟩ => ?_) (measure_ne_top _ _)
+        obtain ⟨i, rfl⟩ := hA.spectrum_real_eq_range_eigenvalues ▸ hx
+        exact Set.mem_biUnion (Finset.mem_univ i) hlt.le
+    _ ≤ ∑ i : n, μ.real {ω | τ ≤
+          |(empiricalSpectralMeasure A).real (Set.Iic (hA.eigenvalues i)) -
+            (probeSpectralMeasure A (X ω)).real (Set.Iic (hA.eigenvalues i))|} :=
+        measureReal_biUnion_finset_le _ _
+    _ ≤ ∑ _i : n, 2 * Real.exp (-(hansonWrightConstant * (Fintype.card m *
+          Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) :=
+        Finset.sum_le_sum fun i _ =>
+          measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le
+            hind hsub hvar hA _ hτ
+    _ = _ := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]; ring
 
 /-- **The probe spectral measure approximates the spectral density, uniformly in Lipschitz test
 functions.** Let the entries of the real $n \times m$ test matrix $\mathbf{\Omega}$ be
