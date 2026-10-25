@@ -76,7 +76,19 @@ theorem HasOrthonormalCols.nodal_eq_orthogonalPolynomial {Q : Matrix n r 𝕜}
     (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b)
     {s : Finset ℝ} (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
     Lagrange.nodal s id = orthogonalPolynomial (spectralMeasure A b) q := by
-  sorry
+  have hpos : IsMomentPosDef (spectralMeasure A b) q :=
+    (hA.isMomentPosDef_spectralMeasure_iff b q).mpr hq
+  have hcard : s.card = q := by
+    have h := hQ.card_spectrum_conjTranspose_mul_mul_eq hA hK hq
+    rw [← hs] at h
+    simpa using h
+  obtain ⟨a, ha⟩ := (Matrix.finite_real_spectrum (A := A)).bddBelow
+  obtain ⟨c, hc⟩ := (Matrix.finite_real_spectrum (A := A)).bddAbove
+  have hsupp := ae_mem_Icc_spectralMeasure A (a := a) (a' := c)
+    (fun x hx => ⟨ha hx, hc hx⟩) b
+  refine hpos.eq_orthogonalPolynomial hsupp (Lagrange.nodal_monic) ?_ ?_
+  · rw [Lagrange.natDegree_nodal, hcard]
+  · exact hQ.isOrthogonalPolynomial_nodal hA hK hs
 
 /-- **The Ritz values are the Gauss nodes**: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
 orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at most the grade and
