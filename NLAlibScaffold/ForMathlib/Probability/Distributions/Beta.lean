@@ -771,7 +771,45 @@ Proof: M, about 30 lines. Exponential integrability from boundedness on the supp
 Result: beta-subgaussian -/
 theorem hasSubgaussianMGF_sub_div_betaMeasure {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) :
     HasSubgaussianMGF (fun x => x - α / (α + β)) ‖1 / (4 * (α + β + 1))‖₊ (betaMeasure α β) := by
-  sorry
+  have : IsProbabilityMeasure (betaMeasure α β) := isProbabilityMeasureBeta hα hβ
+  have hint : ∀ t : ℝ, Integrable (fun x : ℝ => Real.exp (t * x)) (betaMeasure α β) := by
+    intro t
+    refine Integrable.of_bound (by fun_prop) (Real.exp |t|) ?_
+    filter_upwards [ae_mem_Icc_betaMeasure α β] with x hx
+    rw [Real.norm_of_nonneg (Real.exp_pos _).le]
+    apply Real.exp_le_exp.mpr
+    nlinarith [mul_nonneg (abs_nonneg t) (sub_nonneg.2 hx.2),
+      mul_nonneg hx.1 (sub_nonneg.2 (le_abs_self t))]
+  have hcoe : ((‖1 / (4 * (α + β + 1))‖₊ : ℝ≥0) : ℝ) = 1 / (4 * (α + β + 1)) := by
+    rw [coe_nnnorm, Real.norm_eq_abs, abs_of_pos (by positivity)]
+  refine { integrable_exp_mul := fun t => ?_, mgf_le := fun t => ?_ }
+  · convert (hint t).const_mul (Real.exp (-(α / (α + β) * t))) using 1
+    funext x
+    change Real.exp (t * (x - α / (α + β))) = Real.exp (-(α / (α + β) * t)) * Real.exp (t * x)
+    rw [← Real.exp_add]
+    congr 1
+    ring
+  · have hmgf : mgf (fun x => x - α / (α + β)) (betaMeasure α β) t
+        = Real.exp (-(α / (α + β) * t)) * betaExpMoment α β 0 t := by
+      rw [mgf, betaExpMoment, ← integral_const_mul]
+      congr 1
+      funext x
+      change Real.exp (t * (x - α / (α + β))) =
+        Real.exp (-(α / (α + β) * t)) * (x ^ 0 * Real.exp (t * x))
+      rw [pow_zero, one_mul, ← Real.exp_add]
+      congr 1
+      ring
+    rw [hmgf, hcoe]
+    calc Real.exp (-(α / (α + β) * t)) * betaExpMoment α β 0 t
+        = Real.exp (Real.log (betaExpMoment α β 0 t) + -(α / (α + β) * t)) := by
+          rw [Real.exp_add, Real.exp_log (betaExpMoment_zero_pos hα hβ t)]
+          ring
+      _ ≤ Real.exp (1 / (4 * (α + β + 1)) * t ^ 2 / 2) := by
+          apply Real.exp_le_exp.mpr
+          have h8 : 1 / (4 * (α + β + 1)) * t ^ 2 / 2 = t ^ 2 / (8 * (α + β + 1)) := by
+            field_simp
+            ring
+          linarith [log_betaExpMoment_sub_le hα hβ t]
 
 /-- Beta laws are sub-Gaussian, `HasLaw` form: for $X \sim \mathrm{Beta}(\alpha, \beta)$ with
 $\alpha, \beta > 0$, $X - \alpha/(\alpha+\beta)$ satisfies the sub-Gaussian moment generating
