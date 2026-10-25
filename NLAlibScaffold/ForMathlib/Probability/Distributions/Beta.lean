@@ -750,7 +750,57 @@ t^2/(8(\alpha+\beta+1))$ has derivative $z$ (`HasDerivAt.log`, `hasDerivAt_betaE
 from `mul_sub_div_sub_div_nonpos`. -/
 private theorem log_betaExpMoment_sub_le {α β : ℝ} (hα : 0 < α) (hβ : 0 < β) (t : ℝ) :
     Real.log (betaExpMoment α β 0 t) - α / (α + β) * t ≤ t ^ 2 / (8 * (α + β + 1)) := by
-  sorry
+  have hpos := betaExpMoment_zero_pos hα hβ
+  have hzero : betaExpMoment α β 0 0 = 1 := by
+    have := isProbabilityMeasureBeta hα hβ
+    simp [betaExpMoment]
+  set g : ℝ → ℝ := fun s => Real.log (betaExpMoment α β 0 s) - α / (α + β) * s -
+    s ^ 2 / (8 * (α + β + 1)) with hg
+  have hg0 : g 0 = 0 := by simp [hg, hzero]
+  have hderiv : ∀ s, HasDerivAt g
+      (betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) - s / (4 * (α + β + 1))) s := by
+    intro s
+    have h1 := (hasDerivAt_betaExpMoment hα hβ 0 s).log (hpos s).ne'
+    have h2 := (hasDerivAt_id s).const_mul (α / (α + β))
+    have h3 := (hasDerivAt_pow 2 s).div_const (8 * (α + β + 1))
+    have key := (h1.sub h2).sub h3
+    have e : betaExpMoment α β 1 s / betaExpMoment α β 0 s - α / (α + β) -
+        s / (4 * (α + β + 1)) = betaExpMoment α β (0 + 1) s / betaExpMoment α β 0 s -
+        α / (α + β) * 1 - ↑2 * s ^ (2 - 1) / (8 * (α + β + 1)) := by
+      have hb : α + β ≠ 0 := ne_of_gt (by linarith)
+      have hb1 : α + β + 1 ≠ 0 := ne_of_gt (by linarith)
+      norm_num
+      field_simp
+      ring
+    rw [e]
+    exact key
+  have hcont : Continuous g := continuous_iff_continuousAt.2 fun s => (hderiv s).continuousAt
+  have hdiff : Differentiable ℝ g := fun s => (hderiv s).differentiableAt
+  rcases le_total 0 t with ht | ht
+  · have hanti : AntitoneOn g (Ici 0) := by
+      refine antitoneOn_of_deriv_nonpos (convex_Ici 0) hcont.continuousOn
+        hdiff.differentiableOn ?_
+      rw [interior_Ici]
+      intro s hs
+      rw [(hderiv s).deriv]
+      have := mul_sub_div_sub_div_nonpos hα hβ s
+      have hs' : 0 < s := hs
+      nlinarith
+    have := hanti (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 ht) ht
+    simp only [hg0] at this
+    linarith [this]
+  · have hmono : MonotoneOn g (Iic 0) := by
+      refine monotoneOn_of_deriv_nonneg (convex_Iic 0) hcont.continuousOn
+        hdiff.differentiableOn ?_
+      rw [interior_Iic]
+      intro s hs
+      rw [(hderiv s).deriv]
+      have := mul_sub_div_sub_div_nonpos hα hβ s
+      have hs' : s < 0 := hs
+      nlinarith
+    have := hmono (Set.mem_Iic.2 ht) (Set.mem_Iic.2 le_rfl) ht
+    simp only [hg0] at this
+    linarith [this]
 
 /-- **Beta laws are sub-Gaussian with proxy $1/(4(\alpha+\beta+1))$**: for
 $X \sim \mathrm{Beta}(\alpha, \beta)$ with $\alpha, \beta > 0$, the centred variable
