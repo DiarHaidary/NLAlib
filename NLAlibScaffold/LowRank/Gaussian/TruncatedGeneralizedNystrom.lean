@@ -400,6 +400,25 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_le_of_hasL
       gaussianProjectionFactor k (Fintype.card l) *
         (1 + k / ((Fintype.card p : ℝ) - Fintype.card l - 1)) *
           frobNorm (A - truncatedSVD A k) ^ 2 := by
-  sorry
+  have := hX.isProbabilityMeasure
+  have hc : 0 ≤ (k : ℝ) / ((Fintype.card p : ℝ) - Fintype.card l - 1) := by
+    apply div_nonneg (Nat.cast_nonneg _)
+    have : (Fintype.card l : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast hlp
+    linarith
+  have hI := integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_gaussianMatrix
+    A hX hΨ hXΨ (k := k) (by omega) hlp
+  have hmono : ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ ≤
+      ∫ ω, frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ :=
+    integral_mono (integrable_frobNorm_sub_rsvd_sq A hX.aemeasurable)
+      (integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hX.aemeasurable k) fun ω => by
+        rw [frobNorm_sub_truncatedSVD_rsvd_sq]
+        exact le_add_of_nonneg_right (sq_nonneg _)
+  have h2 := integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX (k := k)
+    (by omega)
+  have h3 := mul_le_mul_of_nonneg_left hmono hc
+  have h4 := mul_le_mul_of_nonneg_left h2 (by linarith : (0 : ℝ) ≤ 1 + k / ((Fintype.card p : ℝ) -
+    Fintype.card l - 1))
+  rw [hI]
+  nlinarith [h3, h4]
 
 end NLAlib
