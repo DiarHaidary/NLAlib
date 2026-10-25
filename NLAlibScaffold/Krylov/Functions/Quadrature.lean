@@ -44,6 +44,22 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n r : Type*} [Fintype n] [DecidableEq n] [Fintype r]
   [DecidableEq r]
 
+/-- At most $q$ Ritz values: the compression of a Hermitian matrix to an orthonormal basis of
+$\mathcal{K}_q$ has at most $\dim\mathcal{K}_q \le q$ distinct eigenvalues. -/
+private theorem card_spectrum_compression_le {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) :
+    Nat.card (spectrum ℝ (Qᴴ * A * Q)) ≤ q := by
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  have hr : Fintype.card r ≤ q := by
+    have h2 : Fintype.card r = min q (krylovGrade A b) := by
+      rw [← hQ.rank_eq, ← finrank_krylovSpace, ← hK]
+      rfl
+    rw [h2]
+    exact min_le_left _ _
+  rw [hT.spectrum_real_eq_range_eigenvalues]
+  exact (Finite.card_range_le _).trans (by rw [Nat.card_eq_fintype_card]; exact hr)
+
 /-- **Lanczos quadrature is the Gauss rule of the spectral measure**: for Hermitian
 $\mathbf{A}$ and every $q$,
 $\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)$ is the $q$-point Gauss rule of
@@ -59,7 +75,29 @@ Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
     lanczosQuadrature A b q = gaussQuadrature (spectralMeasure A b) q := by
-  sorry
+  classical
+  obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  have hfinT : (spectrum ℝ (Qᴴ * A * Q)).Finite := by
+    rw [hT.spectrum_eq_image_eigenvalue]
+    exact (Set.finite_Iio _).image _
+  have hfinA : (spectrum ℝ A).Finite := by
+    rw [hA.spectrum_eq_image_eigenvalue]
+    exact (Set.finite_Iio _).image _
+  obtain ⟨a, ha⟩ := hfinA.bddBelow
+  obtain ⟨c, hc⟩ := hfinA.bddAbove
+  have hsub : spectrum ℝ A ⊆ Set.Icc a c := fun x hx => ⟨ha hx, hc hx⟩
+  have hcard : hfinT.toFinset.card ≤ q := by
+    rw [← Set.ncard_eq_toFinset_card _ hfinT, ← Nat.card_coe_set_eq]
+    exact card_spectrum_compression_le hQ hA hK
+  have hν : ∀ᵐ x ∂lanczosQuadrature A b q, x ∈ hfinT.toFinset := by
+    rw [hQ.lanczosQuadrature_eq hK]
+    have hae : ∀ᵐ x ∂spectralMeasure (Qᴴ * A * Q) (Qᴴ *ᵥ b), x ∈ spectrum ℝ (Qᴴ * A * Q) :=
+      ae_iff.2 (spectralMeasure_compl_spectrum_eq_zero _ _)
+    filter_upwards [hae] with x hx
+    exact hfinT.mem_toFinset.2 hx
+  exact (hA.matchesMoments_lanczosQuadrature b q).eq_gaussQuadrature
+    (ae_mem_Icc_spectralMeasure A hsub b) hν hcard
 
 /-- **The Ritz values are the Gauss nodes** (nodal form): for Hermitian $\mathbf{A}$,
 $\mathbf{Q}$ with orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at
