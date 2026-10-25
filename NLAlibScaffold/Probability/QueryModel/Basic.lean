@@ -150,8 +150,8 @@ Proof: S, one line. `halg.measurable_output.comp (halg.measurable_transcript hO)
 (`QueryAlgorithm.IsMeasurable.measurable_transcript`). -/
 theorem IsMeasurable.measurable_run {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable)
     {O : M → Q → R} (hO : Measurable (Function.uncurry O)) :
-    Measurable fun x => alg.run (O x) := by
-  sorry
+    Measurable fun x => alg.run (O x) :=
+  halg.measurable_output.comp (halg.measurable_transcript hO)
 
 /-- **The query matrix is measurable in the transcript**, for a measurable algorithm with vector
 queries. This is what makes the projectors onto the query spans random matrices.
