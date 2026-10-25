@@ -129,33 +129,18 @@ theorem add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq {s : ℝ} (hs
   have hPY := rangeProjector_truncatedSVD_mul (diagonal ![1, s] * Ω') 1
   have hrank : (rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1)).rank ≤ 1 :=
     (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ 1)
-  generalize rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1) = P at hP hPY hrank ⊢
+  have htr : (rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1)).trace ≤ 1 := by
+    rw [trace_rangeProjector]
+    exact_mod_cast rank_truncatedSVD_le _ 1
+  generalize rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1) = P at hP hPY hrank htr ⊢
   have hsym : P 0 1 = P 1 0 := by
     have := congrFun (congrFun hP.isSelfAdjoint 0) 1
     simpa [Matrix.star_apply] using this.symm
   have hidem : P * P = P := hP.isIdempotentElem
   have e00 := congrFun (congrFun hidem 0) 0
-  have e01 := congrFun (congrFun hidem 0) 1
   have e11 := congrFun (congrFun hidem 1) 1
-  simp only [Matrix.mul_apply, Fin.sum_univ_two] at e00 e01 e11
-  have hdet : P 0 0 * P 1 1 - P 0 1 * P 1 0 = 0 := by
-    by_contra hne
-    have hu : IsUnit P := by
-      refine (Matrix.isUnit_iff_isUnit_det P).mpr (isUnit_iff_ne_zero.mpr ?_)
-      rwa [Matrix.det_fin_two]
-    have := Matrix.rank_of_isUnit P hu
-    rw [Fintype.card_fin] at this
-    omega
-  have hsum : P 0 0 + P 1 1 ≤ 1 := by
-    by_cases hx : P 0 1 = 0
-    · rw [hx] at e00 e11 hdet
-      have hp : P 0 0 * (P 0 0 - 1) = 0 := by linear_combination e00
-      have hq : P 1 1 * (P 1 1 - 1) = 0 := by linear_combination e11
-      rcases mul_eq_zero.mp hp with hp | hp <;> rcases mul_eq_zero.mp hq with hq | hq <;>
-        nlinarith
-    · have h1 : P 0 1 * (P 0 0 + P 1 1 - 1) = 0 := by linear_combination e01
-      have := (mul_eq_zero.mp h1).resolve_left hx
-      linarith
+  simp only [Matrix.mul_apply, Fin.sum_univ_two] at e00 e11
+  have hsum : P 0 0 + P 1 1 ≤ 1 := by rwa [Matrix.trace_fin_two] at htr
   obtain ⟨S, hS⟩ : ∃ S : Matrix (Fin 2) (Fin 2) ℝ, S = !![0, 1; 1, 0] := ⟨_, rfl⟩
   have hSS : S * S = 1 := by
     subst hS
@@ -187,15 +172,133 @@ theorem add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq {s : ℝ} (hs
     rw [frobNorm_sq_diagonal_mul_sub_eq s Ω' P hsym hidem,
       frobNorm_sq_diagonal_mul_sub_eq s Ω' (S * P * S) hsymS hidem', hP00, hP11, hP01] at hsq
     by_contra h
-    push_neg at h
+    push Not at h
     nlinarith [mul_pos (sub_pos.2 h) (sub_pos.2 hab)]
   have h1s : 0 ≤ 1 - s ^ 2 := by nlinarith
   have h12 : 0 ≤ 1 / 2 - P 0 0 := by linarith
   rw [frobNorm_sq_eq_sum_sq]
-  simp [Fin.sum_univ_two, Matrix.mul_apply, Matrix.diagonal_apply, Matrix.one_apply]
+  simp only [mul_diagonal, Matrix.sub_apply, Fin.sum_univ_two, Fin.isValue, cons_val_zero,
+    mul_one, cons_val_one, cons_val_fin_one, one_apply_eq, ne_eq, zero_ne_one, not_false_eq_true,
+    one_apply_ne, zero_sub, neg_mul, even_two, Even.neg_pow, one_ne_zero]
   rw [← hsym] at e00 e11 ⊢
   have hq : (0:ℝ) ≤ 1 - P 0 0 - P 1 1 := by linarith
   nlinarith [mul_nonneg h1s h12, mul_nonneg (sq_nonneg s) hq]
+
+/-- Paley–Zygmund for the squared difference $D = \|\mathbf{\omega}_1\|^2 - \|\mathbf{\omega}_2\|^2$
+of the two row energies: $9\ell^2 \le \mathbb{P}[D^2 > \ell]\,(48\ell^2 + 96\ell)$. -/
+private lemma le_measureReal_card_lt_sq_of_hasLaw_gaussianMatrix {X : Ω → Matrix (Fin 2) l ℝ}
+    (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ) (hl : 0 < Fintype.card l) :
+    9 * (Fintype.card l : ℝ) ^ 2 ≤
+      μ.real {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} *
+        (48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l) := by
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  have hℓ : (0 : ℝ) < Fintype.card l := by exact_mod_cast hl
+  have hind : IndepFun (fun ω => X ω 0) (fun ω => X ω 1) μ :=
+    hX.iIndepFun_eval.indepFun zero_ne_one
+  have hconv : ∀ ω, ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 =
+      ‖WithLp.toLp 2 (X ω 0)‖ ^ 2 - ‖WithLp.toLp 2 (X ω 1)‖ ^ 2 := fun ω => by
+    simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs]
+  have hI2 : ∫ ω, (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2 ∂μ = 4 * Fintype.card l := by
+    simp_rw [hconv]
+    exact integral_norm_sq_sub_norm_sq_sq_of_hasLaw_gaussianVector (hX.eval 0) (hX.eval 1) hind
+  have hI4 : ∫ ω, ((∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2) ^ 2 ∂μ =
+      48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by
+    simp_rw [← pow_mul, hconv]
+    exact integral_norm_sq_sub_norm_sq_pow_four_of_hasLaw_gaussianVector (hX.eval 0) (hX.eval 1)
+      hind
+  have hint : Integrable (fun ω => ((∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2) ^ 2) μ := by
+    by_contra h
+    rw [integral_undef h] at hI4
+    nlinarith
+  have hD : Measurable fun A : Matrix (Fin 2) l ℝ => (∑ j, A 0 j ^ 2 - ∑ j, A 1 j ^ 2) ^ 2 := by
+    fun_prop
+  have hPZ := sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt
+    (ae_of_all _ fun ω => sq_nonneg _)
+    ((memLp_two_iff_integrable_sq (hD.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable).2
+      hint) (θ := 1 / 4) (by norm_num) (by norm_num)
+  rw [hI2, hI4, show 1 / 4 * (4 * (Fintype.card l : ℝ)) = Fintype.card l by ring] at hPZ
+  nlinarith [hPZ]
+
+/-- The difference of the two row energies is symmetric: swapping the independent rows of a
+standard Gaussian matrix preserves its law. -/
+private lemma measureReal_lt_sub_eq_measureReal_sub_lt_neg {X : Ω → Matrix (Fin 2) l ℝ}
+    (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ) (t : ℝ) :
+    μ.real {ω | t < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} =
+      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -t} := by
+  have := hX.isProbabilityMeasure
+  have hG : AEMeasurable (fun ω => X ω 0) μ := (hX.eval 0).aemeasurable
+  have hH : AEMeasurable (fun ω => X ω 1) μ := (hX.eval 1).aemeasurable
+  have hlaw : μ.map (fun ω => (X ω 0, X ω 1)) = (gaussianVector l).prod (gaussianVector l) := by
+    rw [(indepFun_iff_map_prod_eq_prod_map_map hG hH).1 (hX.iIndepFun_eval.indepFun zero_ne_one),
+      (hX.eval 0).map_eq, (hX.eval 1).map_eq]
+  have hlaw' : μ.map (fun ω => (X ω 1, X ω 0)) = (gaussianVector l).prod (gaussianVector l) := by
+    rw [show (fun ω => (X ω 1, X ω 0)) = Prod.swap ∘ (fun ω => (X ω 0, X ω 1)) from rfl,
+      ← AEMeasurable.map_map_of_aemeasurable measurable_swap.aemeasurable (hG.prodMk hH), hlaw,
+      Measure.prod_swap]
+  have hS : MeasurableSet {p : (l → ℝ) × (l → ℝ) | t < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} :=
+    measurableSet_lt measurable_const (by fun_prop)
+  have e : {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -t} =
+      (fun ω => (X ω 1, X ω 0)) ⁻¹' {p | t < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} := by
+    ext ω
+    simp only [Set.mem_ofPred_eq, Set.mem_preimage]
+    constructor <;> intro h <;> linarith
+  rw [e, measureReal_def, measureReal_def, ← Measure.map_apply_of_aemeasurable (hH.prodMk hG) hS,
+    hlaw', ← hlaw, Measure.map_apply_of_aemeasurable (hG.prodMk hH) hS]
+  rfl
+
+/-- The head row loses by at least $\sqrt{\ell}$ with probability at least $1/11$: Paley–Zygmund
+and the symmetry of the difference. -/
+private lemma one_div_eleven_le_measureReal_sub_lt_neg_sqrt {X : Ω → Matrix (Fin 2) l ℝ}
+    (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ) (hl : 100 ≤ Fintype.card l) :
+    1 / 11 ≤ μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  have hℓ : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
+  have hPZ := le_measureReal_card_lt_sq_of_hasLaw_gaussianMatrix hX (by omega)
+  have hsub : {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} ⊆
+      {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} ∪
+        {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
+    intro ω hω
+    have h := Real.sqrt_lt_sqrt (Nat.cast_nonneg _) hω
+    rw [Real.sqrt_sq_eq_abs] at h
+    rcases lt_abs.mp h with h | h
+    · exact Or.inl h
+    · right
+      simp only [Set.mem_ofPred_eq]
+      linarith
+  have h2 := (measureReal_mono hsub (measure_ne_top μ _)).trans (measureReal_union_le _ _)
+  rw [measureReal_lt_sub_eq_measureReal_sub_lt_neg hX] at h2
+  have hA : 0 ≤ 48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by positivity
+  nlinarith [mul_le_mul_of_nonneg_right h2 hA]
+
+/-- The chi-square upper tail at twice the mean: $\mathbb{P}[\|\mathbf{g}\|^2 \ge 2\ell] \le 1/132$
+for a standard Gaussian vector with $\ell \ge 100$ entries. -/
+private lemma measureReal_two_mul_card_le_sum_sq_le {g : Ω → l → ℝ}
+    (hg : HasLaw g (gaussianVector l) μ) (hl : 100 ≤ Fintype.card l) :
+    μ.real {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, g ω j ^ 2} ≤ 1 / 132 := by
+  have hℓ : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
+  have hT := measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector hg (β := 2)
+    (by norm_num)
+  simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs] at hT
+  have hx : (Fintype.card l : ℝ) / 2 * (1 - 2 + Real.log 2) ≤ -15 := by
+    nlinarith [Real.log_two_lt_d9]
+  have h132 : (132 : ℝ) ≤ Real.exp 15 :=
+    calc (132 : ℝ) ≤ 2 ^ 15 := by norm_num
+      _ ≤ Real.exp 1 ^ 15 := by gcongr; linarith [Real.add_one_le_exp (1 : ℝ)]
+      _ = Real.exp 15 := by rw [← Real.exp_nat_mul]; norm_num
+  calc μ.real {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, g ω j ^ 2}
+      ≤ Real.exp ((Fintype.card l : ℝ) / 2 * (1 - 2 + Real.log 2)) := hT
+    _ ≤ Real.exp (-15) := Real.exp_le_exp.2 hx
+    _ = (Real.exp 15)⁻¹ := Real.exp_neg 15
+    _ ≤ 1 / 132 := by rw [one_div]; exact inv_anti₀ (by norm_num) h132
+
+/-- The arithmetic of the misranking event: $U - V < -t$ and $V < 2t^2$ give
+$U < (1 - 1/(4t))^2 V$. -/
+private lemma lt_one_sub_sq_mul_of_sub_lt_neg {U V t : ℝ} (ht : 0 < t) (hV : 0 ≤ V)
+    (h : U - V < -t) (hV2 : V < 2 * t ^ 2) : U < (1 - 1 / (4 * t)) ^ 2 * V := by
+  have hq : 1 / (4 * t) * V < t / 2 := by
+    rw [one_div_mul_eq_div, div_lt_iff₀ (by positivity)]
+    nlinarith
+  nlinarith [mul_nonneg (sq_nonneg (1 / (4 * t))) hV]
 
 /-- **The sketch misranks the two rows with constant probability**: for a standard Gaussian
 $2 \times \ell$ test matrix with rows $\mathbf{\omega}_1, \mathbf{\omega}_2$, $\ell \ge 100$ and
@@ -223,163 +326,21 @@ theorem le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix {X : Ω → Matrix (Fi
     (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ) (hl : 100 ≤ Fintype.card l) :
     1 / 12 ≤ μ.real {ω | ∑ j, X ω 0 j ^ 2 <
       (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2} := by
-  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
   have hℓ : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
-  have hrow0 : HasLaw (fun ω => X ω 0) (gaussianVector l) μ := hX.eval 0
-  have hrow1 : HasLaw (fun ω => X ω 1) (gaussianVector l) μ := hX.eval 1
-  have hind : IndepFun (fun ω => X ω 0) (fun ω => X ω 1) μ :=
-    hX.iIndepFun_eval.indepFun (show (0 : Fin 2) ≠ 1 by decide)
-  have hconvD : ∀ ω, ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 =
-      ‖WithLp.toLp 2 (X ω 0)‖ ^ 2 - ‖WithLp.toLp 2 (X ω 1)‖ ^ 2 := by
-    intro ω
-    simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs]
-  have hI2 : ∫ ω, (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2 ∂μ = 4 * Fintype.card l := by
-    simp_rw [hconvD]
-    exact integral_norm_sq_sub_norm_sq_sq_of_hasLaw_gaussianVector hrow0 hrow1 hind
-  have hI4 : ∫ ω, (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 4 ∂μ =
-      48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by
-    simp_rw [hconvD]
-    exact integral_norm_sq_sub_norm_sq_pow_four_of_hasLaw_gaussianVector hrow0 hrow1 hind
-  have hint4 : Integrable (fun ω => (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 4) μ := by
-    by_contra h
-    rw [integral_undef h] at hI4
-    nlinarith
-  have hPZ : μ.real {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} *
-      (48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l) ≥ 9 * (Fintype.card l : ℝ) ^ 2 := by
-    have hD : Continuous fun A : Matrix (Fin 2) l ℝ =>
-        (∑ j, A 0 j ^ 2 - ∑ j, A 1 j ^ 2) ^ 2 := by fun_prop
-    have hZ2 : MemLp (fun ω => (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2) 2 μ := by
-      refine (memLp_two_iff_integrable_sq
-        (hD.measurable.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable).2 ?_
-      refine hint4.congr (Filter.Eventually.of_forall fun ω => ?_)
-      simp only [Function.comp_apply]
-      ring
-    have hPZ0 := sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt (μ := μ)
-      (Z := fun ω => (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2)
-      (Filter.Eventually.of_forall fun ω => sq_nonneg _) hZ2 (θ := 1 / 4) (by norm_num)
-      (by norm_num)
-    have hZ4 : ∫ ω, ((∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2) ^ 2 ∂μ =
-        48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by
-      simp only [← pow_mul]
-      exact hI4
-    have hset : {ω | 1 / 4 * ∫ ω', (∑ j, X ω' 0 j ^ 2 - ∑ j, X ω' 1 j ^ 2) ^ 2 ∂μ <
-        (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} =
-        {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} := by
-      have hI : ∫ ω', (∑ j, X ω' 0 j ^ 2 - ∑ j, X ω' 1 j ^ 2) ^ 2 ∂μ = 4 * Fintype.card l := hI2
-      rw [hI]
-      congr 1
-      ext ω
-      constructor <;> intro h <;> linarith
-    rw [hset, hZ4, hI2] at hPZ0
-    nlinarith [hPZ0]
-  have hsymm : μ.real {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} =
-      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
-    have hG : AEMeasurable (fun ω => X ω 0) μ := hrow0.aemeasurable
-    have hH : AEMeasurable (fun ω => X ω 1) μ := hrow1.aemeasurable
-    have hpair : AEMeasurable (fun ω => (X ω 0, X ω 1)) μ := hG.prodMk hH
-    have hlaw : μ.map (fun ω => (X ω 0, X ω 1)) = (gaussianVector l).prod (gaussianVector l) := by
-      rw [(indepFun_iff_map_prod_eq_prod_map_map hG hH).1 hind, hrow0.map_eq, hrow1.map_eq]
-    have hlaw' : μ.map (fun ω => (X ω 1, X ω 0)) = (gaussianVector l).prod (gaussianVector l) := by
-      have e : (fun ω => (X ω 1, X ω 0)) = Prod.swap ∘ (fun ω => (X ω 0, X ω 1)) := rfl
-      rw [e, ← AEMeasurable.map_map_of_aemeasurable measurable_swap.aemeasurable hpair, hlaw,
-        Measure.prod_swap]
-    have hS : MeasurableSet {p : (l → ℝ) × (l → ℝ) |
-        √(Fintype.card l : ℝ) < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} :=
-      measurableSet_lt measurable_const (by fun_prop)
-    have e1 : {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} =
-        (fun ω => (X ω 0, X ω 1)) ⁻¹' {p : (l → ℝ) × (l → ℝ) |
-          √(Fintype.card l : ℝ) < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} := rfl
-    have e2 : {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} =
-        (fun ω => (X ω 1, X ω 0)) ⁻¹' {p : (l → ℝ) × (l → ℝ) |
-          √(Fintype.card l : ℝ) < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} := by
-      ext ω
-      simp only [Set.mem_setOf_eq, Set.mem_preimage]
-      constructor <;> intro h <;> linarith
-    rw [e1, e2, measureReal_def, measureReal_def,
-      ← Measure.map_apply_of_aemeasurable hpair hS,
-      ← Measure.map_apply_of_aemeasurable (hH.prodMk hG) hS, hlaw, hlaw']
-  have hsub : {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} ⊆
-      {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} ∪
-        {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
-    intro ω hω
-    simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢
-    have ht : √(Fintype.card l : ℝ) ^ 2 = Fintype.card l := Real.sq_sqrt (by positivity)
-    have htpos : 0 ≤ √(Fintype.card l : ℝ) := Real.sqrt_nonneg _
-    rcases le_or_gt 0 (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) with h | h
-    · left; nlinarith
-    · right; nlinarith
-  have hneg : 1 / 11 ≤
-      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
-    have hmono := measureReal_mono (μ := μ) hsub (measure_ne_top μ _)
-    have hun := measureReal_union_le (μ := μ)
-      {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2}
-      {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)}
-    rw [hsymm] at hun
-    have hA : 0 < 48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by positivity
-    by_contra hlt
-    push_neg at hlt
-    have h1 := mul_le_mul_of_nonneg_right (show μ.real _ ≤ 2 *
-      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} by linarith) hA.le
-    have h2 := mul_lt_mul_of_pos_right hlt hA
-    nlinarith
-  have htail : μ.real {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2} ≤ 1 / 132 := by
-    have hconv : ∀ ω, ‖WithLp.toLp 2 (X ω 1)‖ ^ 2 = ∑ j, X ω 1 j ^ 2 := by
-      intro ω
-      rw [EuclideanSpace.norm_sq_eq]
-      simp [Real.norm_eq_abs, sq_abs]
-    have hT := measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector hrow1 (β := 2)
-      (by norm_num)
-    simp only [hconv] at hT
-    have hlog := Real.log_two_lt_d9
-    have h5 : (6 : ℝ) ≤ Real.exp 5 := by linarith [Real.add_one_le_exp (5 : ℝ)]
-    have h15 : Real.exp 15 = Real.exp 5 ^ 3 := by rw [← Real.exp_nat_mul]; norm_num
-    have hx : (Fintype.card l : ℝ) / 2 * (1 - 2 + Real.log 2) ≤ -15 := by
-      have : (1 - 2 + Real.log 2) ≤ -(3 / 10) := by norm_num at hlog ⊢; linarith
-      nlinarith
-    have hexp := Real.exp_le_exp.2 hx
-    have h132 : (132 : ℝ) ≤ Real.exp 15 := by
-      rw [h15]; exact (by norm_num : (132 : ℝ) ≤ 6 ^ 3).trans (pow_le_pow_left₀ (by norm_num) h5 3)
-    have hneg15 : Real.exp (-15) ≤ 1 / 132 := by
-      calc Real.exp (-15) = (Real.exp 15)⁻¹ := Real.exp_neg 15
-        _ ≤ (132 : ℝ)⁻¹ := inv_anti₀ (by norm_num) h132
-        _ = 1 / 132 := by norm_num
-    linarith
   have hincl : {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} ⊆
       {ω | ∑ j, X ω 0 j ^ 2 < (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2} ∪
         {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2} := by
     intro ω hω
-    simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢
-    have hU : 0 ≤ ∑ j, X ω 0 j ^ 2 := Finset.sum_nonneg fun j _ => sq_nonneg _
-    have hV : 0 ≤ ∑ j, X ω 1 j ^ 2 := Finset.sum_nonneg fun j _ => sq_nonneg _
-    have ht : √(Fintype.card l : ℝ) ^ 2 = Fintype.card l := Real.sq_sqrt (by positivity)
-    have htpos : 0 < √(Fintype.card l : ℝ) := Real.sqrt_pos.2 (by linarith)
     by_cases hc : 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2
     · exact Or.inr hc
-    · left
-      push_neg at hc
-      have hqt : 1 / (4 * √(Fintype.card l : ℝ)) * √(Fintype.card l : ℝ) = 1 / 4 := by
-        field_simp
-      have hqpos : 0 < 1 / (4 * √(Fintype.card l : ℝ)) := by positivity
-      have h1 : 1 / (4 * √(Fintype.card l : ℝ)) * ∑ j, X ω 1 j ^ 2 ≤
-          1 / (4 * √(Fintype.card l : ℝ)) * (2 * √(Fintype.card l : ℝ) ^ 2) :=
-        mul_le_mul_of_nonneg_left (by rw [ht]; linarith) hqpos.le
-      have h2 : 1 / (4 * √(Fintype.card l : ℝ)) * (2 * √(Fintype.card l : ℝ) ^ 2) =
-          √(Fintype.card l : ℝ) / 2 := by
-        have : 1 / (4 * √(Fintype.card l : ℝ)) * (2 * √(Fintype.card l : ℝ) ^ 2) =
-            2 * √(Fintype.card l : ℝ) *
-              (1 / (4 * √(Fintype.card l : ℝ)) * √(Fintype.card l : ℝ)) := by
-          ring
-        rw [this, hqt]; ring
-      have h3 := mul_nonneg (sq_nonneg (1 / (4 * √(Fintype.card l : ℝ)))) hV
-      have key : (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2 =
-          ∑ j, X ω 1 j ^ 2 - (2 * (1 / (4 * √(Fintype.card l : ℝ))) -
-            (1 / (4 * √(Fintype.card l : ℝ))) ^ 2) * ∑ j, X ω 1 j ^ 2 := by ring
-      rw [key]
-      nlinarith [h1, h2, h3]
-  have h1 := measureReal_mono (μ := μ) hincl (measure_ne_top μ _)
-  have h2 := measureReal_union_le (μ := μ) {ω | ∑ j, X ω 0 j ^ 2 <
-    (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2}
-    {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2}
+    · refine Or.inl (lt_one_sub_sq_mul_of_sub_lt_neg (Real.sqrt_pos.2 (by linarith))
+        (Finset.sum_nonneg fun j _ => sq_nonneg _) hω ?_)
+      rw [Real.sq_sqrt (Nat.cast_nonneg _)]
+      linarith
+  have h1 := one_div_eleven_le_measureReal_sub_lt_neg_sqrt hX hl
+  have h2 := measureReal_two_mul_card_le_sum_sq_le (hX.eval 1) hl
+  have h3 := (measureReal_mono hincl (measure_ne_top μ _)).trans (measureReal_union_le _ _)
   linarith
 
 /-- The optimum of the $2 \times 2$ diagonal instance is $s^2$. -/
@@ -560,23 +521,11 @@ theorem
   have hs0 : 0 ≤ 1 - δ := by linarith
   have hs1 : 1 - δ ≤ 1 := by linarith
   have hsq : 0 < (1 - δ) ^ 2 := by nlinarith
-  have hOPT : frobNorm (Matrix.diagonal ![1, 1 - δ] -
-      truncatedSVD (Matrix.diagonal ![1, 1 - δ]) 1) ^ 2 ≤ (1 - δ) ^ 2 := by
-    have hrank : (Matrix.diagonal (![1, 0] : Fin 2 → ℝ)).rank ≤ 1 := by
-      rw [Matrix.rank_diagonal, Fintype.card_subtype, Finset.card_le_one]
-      intro a ha b hb
-      fin_cases a <;> fin_cases b <;> simp_all
-    have h := frobNorm_sub_truncatedSVD_le_of_rank_le (Matrix.diagonal ![1, 1 - δ]) hrank
-    have h2 := pow_le_pow_left₀ (frobNorm_nonneg _) h 2
-    rw [Matrix.diagonal_sub, frobNorm_diagonal_sq] at h2
-    simpa [Fin.sum_univ_two] using h2
   refine hE.trans (measureReal_mono fun ω hω => ?_)
   have hA := add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq (Ω' := X ω) (l := l)
     hs0 hs1 hω
   simp only [Set.mem_ofPred_eq] at hω ⊢
-  have h1 : (1 + ε) * frobNorm (Matrix.diagonal ![1, 1 - δ] -
-      truncatedSVD (Matrix.diagonal ![1, 1 - δ]) 1) ^ 2 ≤ (1 + ε) * (1 - δ) ^ 2 :=
-    mul_le_mul_of_nonneg_left hOPT (by linarith [neg_abs_le ε])
+  rw [frobNorm_sub_truncatedSVD_diagonal_one_sq hs0 hs1]
   have h2 : ε * (1 - δ) ^ 2 < δ * (1 - δ) ^ 2 :=
     mul_lt_mul_of_pos_right (lt_of_le_of_lt (le_abs_self ε) hεδ) hsq
   have h3 : δ * (1 - δ) ^ 2 ≤ (1 - (1 - δ) ^ 2) / 2 := by
@@ -603,46 +552,25 @@ theorem one_le_mul_card_of_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le
       ∫ ω, frobNorm (A - earlyTruncatedRSVD A (X ω) 1) ^ 2 ∂μ ≤
         (1 + ε) * frobNorm (A - truncatedSVD A 1) ^ 2) :
     1 ≤ 10 ^ 4 * ε ^ 2 * Fintype.card l := by
-  set δ : ℝ := 1 / (4 * √(Fintype.card l : ℝ)) with hδ
   set t : ℝ := √(Fintype.card l : ℝ) with ht
   have hl' : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
   have ht0 : 0 < t := Real.sqrt_pos.2 (by linarith)
   have ht2 : t ^ 2 = Fintype.card l := Real.sq_sqrt (by linarith)
-  have hδpos : 0 < δ := by positivity
   have ht10 : 10 ≤ t := by nlinarith
-  have hδ1 : δ ≤ 1 / 40 := by
-    rw [hδ]
-    exact div_le_div_of_nonneg_left (by norm_num) (by norm_num) (by linarith)
-  set s : ℝ := 1 - δ with hs
-  have hs0 : s ≠ 0 := by intro h0; linarith
+  have hδ : 1 / (4 * t) ≤ 1 / 40 :=
+    div_le_div_of_nonneg_left (by norm_num) (by norm_num) (by linarith)
+  have hδpos : 0 < 1 / (4 * t) := by positivity
+  set s : ℝ := 1 - 1 / (4 * t) with hs
+  have hs0 : 0 < s := by linarith
   have hE := le_integral_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq_of_hasLaw_gaussianMatrix hX hl
   have hH := h (Matrix.diagonal ![1, s])
-  have hσ : 0 < singularValues (Matrix.diagonal ![(1 : ℝ), s]) 1 := by
-    rw [singularValues_pos_iff]
-    have hrank : 1 < (Matrix.diagonal ![(1 : ℝ), s]).rank := by
-      rw [Matrix.rank_diagonal]
-      have : ∀ i, ![(1 : ℝ), s] i ≠ 0 := by
-        intro i; fin_cases i <;> simp [hs0]
-      simp only [this, ne_eq, not_false_eq_true, Fintype.card_subtype_true]
-      simp
-    exact hrank
-  have hOPT : 0 < frobNorm (Matrix.diagonal ![(1 : ℝ), s] -
-      truncatedSVD (Matrix.diagonal ![(1 : ℝ), s]) 1) ^ 2 := by
-    rw [frobNorm_sub_truncatedSVD_sq]
-    have h1 : (1 : ℕ) ∈ Finset.Ico 1 (min (Fintype.card (Fin 2)) (Fintype.card (Fin 2))) := by
-      simp
-    exact lt_of_lt_of_le (pow_pos hσ 2)
-      (Finset.single_le_sum (f := fun i => singularValues (Matrix.diagonal ![(1 : ℝ), s]) i ^ 2)
-        (fun i _ => sq_nonneg _) h1)
-  have hc : 1 + 1 / (100 * t) ≤ 1 + ε := by
-    have hle := (hE.trans hH)
-    exact le_of_mul_le_mul_right hle hOPT
-  have hkey : 1 / (100 * t) ≤ ε := by linarith
+  rw [frobNorm_sub_truncatedSVD_diagonal_one_sq hs0.le (by linarith)] at hE hH
+  have hkey : 1 / (100 * t) ≤ ε := by
+    have := le_of_mul_le_mul_right (hE.trans hH) (pow_pos hs0 2)
+    linarith
   have h1 : 1 ≤ 100 * t * ε := by
     rw [div_le_iff₀ (by positivity)] at hkey
     linarith
-  have h2 : 1 ≤ (100 * t * ε) ^ 2 := by
-    nlinarith
   nlinarith [ht2]
 
 /-- **$O(k/\varepsilon)$ samples do not suffice for the early-truncated randomized SVD**: there are
@@ -713,6 +641,11 @@ theorem
 
 /-! ### General $k$: the block instance -/
 
+/-- A real Frobenius norm squared is the trace of $\mathbf{A}\mathbf{A}^{\mathsf{T}}$. -/
+private theorem frobNorm_sq_eq_trace_mul_conjTranspose {m n : Type*} [Fintype m] [Fintype n]
+    (A : Matrix m n ℝ) : frobNorm A ^ 2 = (A * Aᴴ).trace := by
+  rw [frobNorm_sq_eq_re_trace, RCLike.re_to_real, Matrix.trace_mul_comm]
+
 /-- The two frame blocks carry the trace of the frame:
 $\operatorname{tr}\mathbf{U}_h\mathbf{U}_h^{\mathsf{H}} +
 \operatorname{tr}\mathbf{U}_t\mathbf{U}_t^{\mathsf{H}} = k$ for orthonormal $k$ columns. -/
@@ -727,32 +660,12 @@ private theorem trace_toRows_mul_conjTranspose_add {k : ℕ} {U : Matrix (Fin k 
     simp [Matrix.trace, Fintype.sum_sum_type, Matrix.mul_apply, Matrix.toRows₁, Matrix.toRows₂]
   rw [← h2, h1]
 
-/-- The Frobenius norm of a projector times a diagonal matrix:
-$\|\mathbf{P}\mathbf{D}\|_{\mathsf{F}}^2 = \sum_j d_j^2 \mathbf{P}_{jj}$ for a real star
-projection $\mathbf{P}$. -/
-private theorem frobNorm_mul_diagonal_sq_of_isStarProjection {n : Type*} [Fintype n]
-    [DecidableEq n] {P : Matrix n n ℝ} (hP : IsStarProjection P) (d : n → ℝ) :
-    frobNorm (P * Matrix.diagonal d) ^ 2 = ∑ j, d j ^ 2 * P j j := by
-  have hsym : ∀ x j, P x j = P j x := fun x j => by
-    have h := congrFun (congrFun hP.isHermitian.eq x) j
-    simpa [Matrix.conjTranspose_apply] using h.symm
-  have hcol : ∀ j, ∑ x, P x j ^ 2 = P j j := fun j => by
-    have h := congrFun (congrFun hP.mul_self j) j
-    rw [Matrix.mul_apply] at h
-    rw [← h]
-    exact Finset.sum_congr rfl fun x _ => by rw [hsym j x]; ring
-  rw [frobNorm_sq_eq_sum_sq]
-  simp only [Matrix.mul_diagonal, mul_pow]
-  rw [Finset.sum_comm]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [← hcol j, Finset.mul_sum]
-  exact Finset.sum_congr rfl fun x _ => by ring
-
 /-- The tail of the head block of a frame:
 $\|\mathbf{U}_h^{\mathsf{T}}\mathbf{\Omega}_1\|_{\mathsf{F}}^2
-\le \|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 - \sigma_{k-1}(\mathbf{\Omega}_1)^2 (k - \operatorname{tr}
-\mathbf{U}_h\mathbf{U}_h^{\mathsf{T}})$, from $\mathbf{I} - \mathbf{U}_h\mathbf{U}_h^{\mathsf{T}}
-\succeq 0$ and $\mathbf{\Omega}_1\mathbf{\Omega}_1^{\mathsf{T}} \succeq $\sigma_{k-1}^2 \mathbf{I}$. -/
+\le \|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 - \sigma_{k-1}(\mathbf{\Omega}_1)^2 T$ when
+$\operatorname{tr}\mathbf{U}_h\mathbf{U}_h^{\mathsf{T}} = k - T$, from
+$\mathbf{I} - \mathbf{U}_h\mathbf{U}_h^{\mathsf{T}} \succeq 0$ and
+$\mathbf{\Omega}_1\mathbf{\Omega}_1^{\mathsf{T}} \succeq \sigma_{k-1}^2 \mathbf{I}$. -/
 private theorem frobNorm_conjTranspose_mul_sq_le_of_posSemidef {k : ℕ} {l : Type*} [Fintype l]
     (Ω : Matrix (Fin k) l ℝ) (Uh : Matrix (Fin k) (Fin k) ℝ)
     (hPSD : (1 - Uh * Uhᴴ).PosSemidef) (T : ℝ) (hT : (Uh * Uhᴴ).trace = k - T) :
@@ -774,8 +687,7 @@ private theorem frobNorm_conjTranspose_mul_sq_le_of_posSemidef {k : ℕ} {l : Ty
     simp only [Matrix.mul_assoc]
     rw [Matrix.trace_mul_comm]
     simp only [← Matrix.mul_assoc, RCLike.re_to_real]
-  have e2: frobNorm Ω ^ 2 = (Ω * Ωᴴ).trace := by
-    rw [frobNorm_sq_eq_re_trace, RCLike.re_to_real, Matrix.trace_mul_comm]
+  have e2 := frobNorm_sq_eq_trace_mul_conjTranspose Ω
   simp only [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one,
     Matrix.trace_sub, Matrix.trace_smul, Matrix.trace_one, smul_eq_mul, hT, Fintype.card_fin]
     at htr e1 e2 ⊢
@@ -786,8 +698,8 @@ private theorem frobNorm_conjTranspose_mul_sq_le_of_posSemidef {k : ℕ} {l : Ty
 /-- A frame of the dominant $k$-dimensional range: $\mathbf{P}_{\llbracket \mathbf{Y}\rrbracket_k} =
 \mathbf{U}\mathbf{U}^{\mathsf{H}}$ with $\mathbf{U}$ having orthonormal columns, when
 $\operatorname{rank}\mathbf{Y} \ge k$. -/
-private theorem exists_orthonormalCols_rangeProjector_truncatedSVD {n l : Type*} [Fintype n]
-    [DecidableEq n] [Fintype l] (Y : Matrix n l ℝ) (k : ℕ) (hr : k ≤ Y.rank) :
+private theorem exists_hasOrthonormalCols_rangeProjector_truncatedSVD_eq {n l : Type*}
+    [Fintype n] [Fintype l] (Y : Matrix n l ℝ) (k : ℕ) (hr : k ≤ Y.rank) :
     ∃ U : Matrix n (Fin k) ℝ, HasOrthonormalCols U ∧
       rangeProjector (truncatedSVD Y k) = U * Uᴴ := by
   obtain ⟨U, hU, hrange⟩ := exists_hasOrthonormalCols_range_eq (truncatedSVD Y k) (p := Fin k)
@@ -796,19 +708,11 @@ private theorem exists_orthonormalCols_rangeProjector_truncatedSVD {n l : Type*}
   rw [← hU.rangeProjector_eq]
   exact rangeProjector_inj.mpr hrange.symm
 
-/-- The Gram matrix of a block column matrix splits into its two blocks:
-$\mathbf{V}^{\mathsf{H}}\mathbf{V} = \mathbf{V}_1^{\mathsf{H}}\mathbf{V}_1 +
-\mathbf{V}_2^{\mathsf{H}}\mathbf{V}_2$. -/
-private theorem conjTranspose_mul_self_eq_toRows {k : ℕ} (V : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ) :
-    Vᴴ * V = V.toRows₁ᴴ * V.toRows₁ + V.toRows₂ᴴ * V.toRows₂ := by
-  ext i j
-  simp [Matrix.mul_apply, Fintype.sum_sum_type, Matrix.toRows₁, Matrix.toRows₂]
-
 /-- The block form of $\mathbf{V}^{\mathsf{H}}\mathbf{D}\mathbf{\Omega}$ for the diagonal weight
 $\mathbf{D} = \operatorname{diag}(\mathbf{I}, s\mathbf{I})$:
 $\mathbf{V}^{\mathsf{H}}\mathbf{D}\mathbf{\Omega} = \mathbf{V}_1^{\mathsf{H}}\mathbf{\Omega}_1 +
 s\,\mathbf{V}_2^{\mathsf{H}}\mathbf{\Omega}_2$. -/
-private theorem conjTranspose_mul_diagonal_mul_eq_toRows {k : ℕ} {l : Type*} [Fintype l] (s : ℝ)
+private theorem conjTranspose_mul_diagonal_mul_eq_toRows {k : ℕ} {l : Type*} (s : ℝ)
     (V : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ) (Ω : Matrix (Fin k ⊕ Fin k) l ℝ) :
     Vᴴ * (Matrix.diagonal (Sum.elim (fun _ => (1 : ℝ)) (fun _ => s)) * Ω) =
       V.toRows₁ᴴ * Ω.toRows₁ + s • (V.toRows₂ᴴ * Ω.toRows₂) := by
@@ -886,22 +790,20 @@ private theorem frobNorm_diagonal_sub_mul_diagonal_sq {n : Type*} [Fintype n] [D
     {P : Matrix n n ℝ} (hP : IsStarProjection P) (d : n → ℝ) :
     frobNorm (Matrix.diagonal d - P * Matrix.diagonal d) ^ 2 =
       ∑ j, d j ^ 2 - ∑ j, d j ^ 2 * P j j := by
-  have h := hP.frobNorm_sq_eq_add (Matrix.diagonal d)
-  rw [frobNorm_mul_diagonal_sq_of_isStarProjection hP] at h
-  have e : Matrix.diagonal d - P * Matrix.diagonal d = (1 - P) * Matrix.diagonal d := by
-    rw [Matrix.sub_mul, Matrix.one_mul]
-  have hD : frobNorm (Matrix.diagonal d) ^ 2 = ∑ j, d j ^ 2 := by
-    rw [frobNorm_diagonal_sq]
-    simp [Real.norm_eq_abs, sq_abs]
-  rw [e]
-  linarith
+  rw [hP.frobNorm_sub_mul_sq_eq_sub_frobInner, frobNorm_diagonal_sq, frobInner_eq_sum_mul,
+    Matrix.diagonal_conjTranspose, Matrix.diagonal_mul_diagonal]
+  simp only [Real.norm_eq_abs, sq_abs, Matrix.diagonal_apply, mul_ite, mul_zero,
+    Finset.sum_ite_eq, Finset.mem_univ, if_true, Pi.star_apply, star_trivial]
+  congr 1
+  exact Finset.sum_congr rfl fun j _ => by ring
 
 /-- Ky Fan maximality of the truncated SVD, in the Frobenius norm: a projection onto $k$
 orthonormal columns captures at most the energy of the dominant $k$-frame of $\mathbf{Y}$. -/
 private theorem frobNorm_conjTranspose_mul_le_rangeProjector_truncatedSVD {n l : Type*}
-    [Fintype n] [DecidableEq n] [Fintype l] (Y : Matrix n l ℝ) (k : ℕ)
+    [Fintype n] [Fintype l] (Y : Matrix n l ℝ) (k : ℕ)
     {V : Matrix n (Fin k) ℝ} (hV : HasOrthonormalCols V) :
     frobNorm (Vᴴ * Y) ^ 2 ≤ frobNorm (rangeProjector (truncatedSVD Y k) * Y) ^ 2 := by
+  classical
   have hB : (V * (Vᴴ * Y)).rank ≤ k :=
     (Matrix.rank_mul_le_right _ _).trans ((Matrix.rank_mul_le_left _ _).trans
       (by simpa using Matrix.rank_le_card_height Vᴴ))
@@ -925,11 +827,11 @@ private theorem hasOrthonormalCols_fromRows_cos_sin {k : ℕ} {θ : ℝ}
     HasOrthonormalCols
       (Matrix.fromRows (Real.cos θ • (1 : Matrix (Fin k) (Fin k) ℝ)) (Real.sin θ • R)) := by
   unfold HasOrthonormalCols at hR ⊢
-  rw [conjTranspose_mul_self_eq_toRows, Matrix.toRows₁_fromRows, Matrix.toRows₂_fromRows]
+  rw [Matrix.conjTranspose_fromRows_eq_fromCols_conjTranspose, Matrix.fromCols_mul_fromRows]
   simp only [Matrix.conjTranspose_smul, Matrix.conjTranspose_one, star_trivial, Matrix.smul_mul,
     Matrix.mul_smul, Matrix.one_mul, smul_smul, hR, ← add_smul]
   have h : Real.cos θ * Real.cos θ + Real.sin θ * Real.sin θ = 1 := by
-    nlinarith [Real.sin_sq_add_cos_sq θ]
+    linear_combination Real.cos_sq_add_sin_sq θ
   rw [h, one_smul]
 
 /-- The Frobenius norm of the competitor's projected sketch:
@@ -945,24 +847,15 @@ private theorem frobNorm_fromRows_cos_sin_mul_diagonal_sq {k : ℕ} {l : Type*} 
       Real.cos θ ^ 2 * frobNorm Ω.toRows₁ ^ 2 +
         2 * (Real.cos θ * (s * Real.sin θ)) * frobInner Ω.toRows₁ (Rᴴ * Ω.toRows₂) +
         (s * Real.sin θ) ^ 2 * frobNorm Ω.toRows₂ ^ 2 := by
-  have hRH : HasOrthonormalCols Rᴴ := by
-    unfold HasOrthonormalCols at hR ⊢
-    rw [Matrix.conjTranspose_conjTranspose]
-    exact mul_eq_one_comm.mp hR
   rw [conjTranspose_mul_diagonal_mul_eq_toRows, Matrix.toRows₁_fromRows, Matrix.toRows₂_fromRows]
   have e : (Real.cos θ • (1 : Matrix (Fin k) (Fin k) ℝ))ᴴ * Ω.toRows₁ +
       s • ((Real.sin θ • R)ᴴ * Ω.toRows₂) =
       Real.cos θ • Ω.toRows₁ + (s * Real.sin θ) • (Rᴴ * Ω.toRows₂) := by
     simp only [Matrix.conjTranspose_smul, Matrix.conjTranspose_one, star_trivial, Matrix.smul_mul,
-      Matrix.one_mul, smul_smul, mul_comm, mul_assoc, mul_left_comm]
+      Matrix.one_mul, smul_smul]
   rw [e, frobNorm_add_sq, frobInner_smul_left, frobInner_smul_right, frobNorm_real_smul,
-    frobNorm_real_smul, hRH.frobNorm_mul_left, mul_pow, mul_pow, sq_abs, sq_abs]
+    frobNorm_real_smul, hR.conjTranspose.frobNorm_mul_left, mul_pow, mul_pow, sq_abs, sq_abs]
   ring
-
-/-- A real Frobenius norm squared is the trace of $\mathbf{A}\mathbf{A}^{\mathsf{T}}$. -/
-private theorem frobNorm_sq_eq_trace_mul_conjTranspose {m n : Type*} [Fintype m] [Fintype n]
-    (A : Matrix m n ℝ) : frobNorm A ^ 2 = (A * Aᴴ).trace := by
-  rw [frobNorm_sq_eq_re_trace, RCLike.re_to_real, Matrix.trace_mul_comm]
 
 /-- The upper bound on the frame energy: with $\mathbf{U}_h, \mathbf{U}_t$ the two blocks of a
 frame,
@@ -1095,13 +988,14 @@ theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : �
         T * (s ^ 2 * specNorm Ω'.toRows₂ ^ 2 - singularValues Ω'.toRows₁ (k - 1) ^ 2) +
           2 * s * specNorm (Ω'.toRows₁ * Ω'.toRows₂ᵀ) * √(k * T) := by
   classical
+  have _ := hs1
   subst hA
   have hD : (Matrix.fromBlocks (1 : Matrix (Fin k) (Fin k) ℝ) 0 0 (s • 1)) =
       Matrix.diagonal (Sum.elim (fun _ : Fin k => (1 : ℝ)) (fun _ : Fin k => s)) := by
     ext i j
     rcases i with i | i <;> rcases j with j | j <;> simp [Matrix.one_apply, Matrix.diagonal]
   rw [hD] at hr hT ⊢
-  obtain ⟨U, hU, hPU⟩ := exists_orthonormalCols_rangeProjector_truncatedSVD _ k hr
+  obtain ⟨U, hU, hPU⟩ := exists_hasOrthonormalCols_rangeProjector_truncatedSVD_eq _ k hr
   have hPSD : (1 - U.toRows₁ * U.toRows₁ᴴ).PosSemidef := by
     have hQ : IsStarProjection (1 - U * Uᴴ) := by
       rw [← hPU]
@@ -1125,28 +1019,21 @@ theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : �
     rw [hPU, Matrix.mul_assoc U, hU.frobNorm_mul_left] at hKF
     exact conjunct_two_of_frame hs0 Ω' hU hPSD hTU hR hcross hKF
 
-/-- The arithmetic of the block instance: the concentration bounds and the variational inequality
-at $\theta = \arctan(1/40)$ force the tail content $T \ge 10^{-7}k$ (with $v = \sqrt{k}$,
-$u = \sqrt{\ell}$). -/
-private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 0 < u)
-    (hv : 0 < v) (hvu : 100 * v ≤ u) (hs : s = 1 - v / (4 * u)) (hT : 0 ≤ T) (hpy0 : 0 ≤ py)
-    (hpy : py < u + 5 / 4 * v) (hsx : u - 5 / 4 * v < sx)
+/-- The left side of the variational inequality at $\theta = \arctan(1/40)$ is at least
+$0.0045\,v^3u$ under the concentration bounds (with $v = \sqrt{k}$, $u = \sqrt{\ell}$). -/
+private theorem le_variational_arith_lhs {u v s py b a F fx fy : ℝ} (hu : 0 < u) (hv : 0 < v)
+    (hvu : 100 * v ≤ u) (hs : s = 1 - v / (4 * u)) (hpy : py < u + 5 / 4 * v)
     (hfx : fx ≤ v ^ 2 * (u + 5 / 4 * v) ^ 2) (hfy : v ^ 2 * (u - 5 / 4 * v) ^ 2 ≤ fy)
-    (hF : 1 / 2 * (v ^ 2 * fy) < F) (hb0 : 0 ≤ b) (hb : b < 3 * v * py) (hab : F ≤ a * b)
-    (hE7 : 2 * s * (40 / 1601) * a - 1 / 1601 * (fx - s ^ 2 * fy) ≤
-      T * (s ^ 2 * py ^ 2 - sx ^ 2) + 2 * s * b * √(v ^ 2 * T)) :
-    1 / 10 ^ 7 * v ^ 2 ≤ T := by
+    (hF : 1 / 2 * (v ^ 2 * fy) < F) (hb0 : 0 ≤ b) (hb : b < 3 * v * py) (hab : F ≤ a * b) :
+    0.0045 * (v ^ 3 * u) ≤ 2 * s * (40 / 1601) * a - 1 / 1601 * (fx - s ^ 2 * fy) := by
   have huv : 0 < u * v := mul_pos hu hv
   set q := v / (4 * u) with hqdef
   have hq : q ≤ 1 / 400 := by
-    rw [hqdef, div_le_iff₀ (by positivity)]; linarith
+    rw [hqdef, div_le_iff₀ (by positivity)]
+    linarith
   have hq0 : 0 ≤ q := by positivity
   have hs0 : 399 / 400 ≤ s := by linarith
-  have hs1 : s ≤ 1 := by linarith
   have hd : 0 ≤ u - 5 / 4 * v := by linarith
-  have hsx2 : (u - 5 / 4 * v) ^ 2 ≤ sx ^ 2 := pow_le_pow_left₀ hd hsx.le 2
-  have hpy2 : py ^ 2 ≤ (u + 5 / 4 * v) ^ 2 := pow_le_pow_left₀ hpy0 hpy.le 2
-  have hvv : v * v ≤ v * (u / 100) := mul_le_mul_of_nonneg_left (by linarith) hv.le
   have huv' : u * v ≤ u * (u / 100) := mul_le_mul_of_nonneg_left (by linarith) hu.le
   have hd2 : 39 / 40 * u ^ 2 ≤ (u - 5 / 4 * v) ^ 2 := by
     have : (u - 5 / 4 * v) ^ 2 = u ^ 2 - 5 / 2 * (u * v) + 25 / 16 * v ^ 2 := by ring
@@ -1158,6 +1045,7 @@ private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 
     linarith
   have hbup : b < 3.0375 * (u * v) := by
     have := mul_lt_mul_of_pos_left hpy (by positivity : 0 < 3 * v)
+    have hvv : v * v ≤ v * (u / 100) := mul_le_mul_of_nonneg_left (by linarith) hv.le
     linarith
   have ha0 : 0 < a := by
     by_contra h
@@ -1180,13 +1068,46 @@ private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 
       mul_le_mul_of_nonneg_right hss (sq_nonneg _)
     have h3 : q * (u - 5 / 4 * v) ^ 2 ≤ q * u ^ 2 :=
       mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hd (by linarith) 2) hq0
-    have h4 : q * u ^ 2 = u * v / 4 := by rw [hqdef]; field_simp
+    have h4 : q * u ^ 2 = u * v / 4 := by
+      rw [hqdef]
+      field_simp
     have h5 := mul_le_mul_of_nonneg_left h2 (sq_nonneg v)
     have h6 := mul_le_mul_of_nonneg_left h3 (sq_nonneg v)
     rw [h4] at h6
     have h7 : v ^ 2 * (u + 5 / 4 * v) ^ 2 - v ^ 2 * (u - 5 / 4 * v) ^ 2 = 5 * (v ^ 3 * u) := by
       ring
     have h8 : v ^ 2 * (u * v / 4) = v ^ 3 * u / 4 := by ring
+    linarith
+  have := mul_le_mul hs0 halow' (by positivity) (by linarith)
+  have e : 2 * s * (40 / 1601) * a = 80 / 1601 * (s * a) := by ring
+  rw [e]
+  norm_num at this hD ⊢
+  linarith [(by positivity : 0 ≤ v ^ 3 * u)]
+
+/-- The arithmetic of the block instance: the concentration bounds and the variational inequality
+at $\theta = \arctan(1/40)$ force the tail content $T \ge 10^{-7}k$ (with $v = \sqrt{k}$,
+$u = \sqrt{\ell}$). -/
+private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 0 < u)
+    (hv : 0 < v) (hvu : 100 * v ≤ u) (hs : s = 1 - v / (4 * u)) (hT : 0 ≤ T) (hpy0 : 0 ≤ py)
+    (hpy : py < u + 5 / 4 * v) (hsx : u - 5 / 4 * v < sx)
+    (hfx : fx ≤ v ^ 2 * (u + 5 / 4 * v) ^ 2) (hfy : v ^ 2 * (u - 5 / 4 * v) ^ 2 ≤ fy)
+    (hF : 1 / 2 * (v ^ 2 * fy) < F) (hb0 : 0 ≤ b) (hb : b < 3 * v * py) (hab : F ≤ a * b)
+    (hE7 : 2 * s * (40 / 1601) * a - 1 / 1601 * (fx - s ^ 2 * fy) ≤
+      T * (s ^ 2 * py ^ 2 - sx ^ 2) + 2 * s * b * √(v ^ 2 * T)) :
+    1 / 10 ^ 7 * v ^ 2 ≤ T := by
+  have hR := le_variational_arith_lhs hu hv hvu hs hpy hfx hfy hF hb0 hb hab
+  have huv : 0 < u * v := mul_pos hu hv
+  have hq : v / (4 * u) ≤ 1 / 400 := by
+    rw [div_le_iff₀ (by positivity)]
+    linarith
+  have hq0 : 0 ≤ v / (4 * u) := by positivity
+  have hs1 : s ≤ 1 := by linarith
+  have hd : 0 ≤ u - 5 / 4 * v := by linarith
+  have hsx2 : (u - 5 / 4 * v) ^ 2 ≤ sx ^ 2 := pow_le_pow_left₀ hd hsx.le 2
+  have hpy2 : py ^ 2 ≤ (u + 5 / 4 * v) ^ 2 := pow_le_pow_left₀ hpy0 hpy.le 2
+  have hbup : b < 3.0375 * (u * v) := by
+    have := mul_lt_mul_of_pos_left hpy (by positivity : 0 < 3 * v)
+    have hvv : v * v ≤ v * (u / 100) := mul_le_mul_of_nonneg_left (by linarith) hv.le
     linarith
   set w := √(v ^ 2 * T) with hw
   have hw0 : 0 ≤ w := Real.sqrt_nonneg _
@@ -1200,12 +1121,6 @@ private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 
   have hL2 : 2 * s * b * w ≤ 2 * (3.0375 * (u * v)) * w := by
     have h1 : s * b ≤ b := mul_le_of_le_one_left hb0 hs1
     exact mul_le_mul_of_nonneg_right (by linarith) hw0
-  have hR : 0.0045 * (v ^ 3 * u) ≤ 2 * s * (40 / 1601) * a - 1 / 1601 * (fx - s ^ 2 * fy) := by
-    have := mul_le_mul hs0 halow' (by positivity) (by linarith)
-    have e : 2 * s * (40 / 1601) * a = 80 / 1601 * (s * a) := by ring
-    rw [e]
-    norm_num at this hD ⊢
-    linarith [(by positivity : 0 ≤ v ^ 3 * u)]
   have hkey : 0.0045 * v ^ 2 ≤ 5 * T + 6.075 * w := by
     refine le_of_mul_le_mul_left ?_ huv
     have : (u * v) * (0.0045 * v ^ 2) = 0.0045 * (v ^ 3 * u) := by ring
@@ -1220,6 +1135,21 @@ private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 
     have h3 := mul_lt_mul_of_pos_left hcon (by positivity : 0 < v ^ 2)
     nlinarith
   linarith
+
+/-- $100\sqrt{k} \le \sqrt{\ell}$ when $10^4 k \le \ell$. -/
+private lemma hundred_mul_sqrt_le_sqrt {x y : ℝ} (h : 10 ^ 4 * x ≤ y) : 100 * √x ≤ √y :=
+  calc 100 * √x = √(10 ^ 4 * x) := by
+        rw [Real.sqrt_mul (by norm_num), show (10 ^ 4 : ℝ) = 100 ^ 2 by norm_num,
+          Real.sqrt_sq (by norm_num)]
+    _ ≤ √y := Real.sqrt_le_sqrt h
+
+omit [Fintype l] in
+/-- Both row blocks of a measurable matrix-valued map are measurable. -/
+private lemma measurable_toRows {k : ℕ} {X : Ω → Matrix (Fin k ⊕ Fin k) l ℝ}
+    (hX : Measurable X) :
+    Measurable (fun ω => (X ω).toRows₁) ∧ Measurable (fun ω => (X ω).toRows₂) :=
+  ⟨Matrix.measurable_iff.2 fun i j => (Matrix.measurable_apply (Sum.inl i) j).comp hX,
+    Matrix.measurable_iff.2 fun i j => (Matrix.measurable_apply (Sum.inr i) j).comp hX⟩
 
 /-- The two row blocks of a standard Gaussian matrix are independent standard Gaussians. -/
 private theorem hasLaw_toRows_indepFun {k : ℕ} {X : Ω → Matrix (Fin k ⊕ Fin k) l ℝ}
@@ -1240,10 +1170,14 @@ private theorem hasLaw_toRows_indepFun {k : ℕ} {X : Ω → Matrix (Fin k ⊕ F
     simp
   have e1 : (fun ω => (X ω).toRows₁) =
       fun ω => (selectionMatrix Sum.inl : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ)ᴴ * X ω := by
-    funext ω; rw [conjTranspose_selectionMatrix_mul]; rfl
+    funext ω
+    rw [conjTranspose_selectionMatrix_mul]
+    rfl
   have e2 : (fun ω => (X ω).toRows₂) =
       fun ω => (selectionMatrix Sum.inr : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ)ᴴ * X ω := by
-    funext ω; rw [conjTranspose_selectionMatrix_mul]; rfl
+    funext ω
+    rw [conjTranspose_selectionMatrix_mul]
+    rfl
   rw [e1, e2]
   exact ⟨hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX h1,
     hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX h2,
@@ -1251,7 +1185,8 @@ private theorem hasLaw_toRows_indepFun {k : ℕ} {X : Ω → Matrix (Fin k ⊕ F
 
 /-- The extreme singular value tails of a $k \times \ell$ Gaussian at deviation
 $\sqrt{k}/4$. -/
-private theorem gaussian_tails {k : ℕ} (hk : 1 ≤ k) {Y : Ω → Matrix (Fin k) l ℝ}
+private theorem measureReal_specNorm_ge_le_and_singularValues_le_le {k : ℕ} (hk : 1 ≤ k)
+    {Y : Ω → Matrix (Fin k) l ℝ}
     (hY : HasLaw Y (gaussianMatrix (Fin k) l) μ) :
     μ.real {ω | √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ≤ specNorm (Y ω)} ≤
         Real.exp (-(k : ℝ) / 32) ∧
@@ -1274,7 +1209,6 @@ private theorem gaussian_tails {k : ℕ} (hk : 1 ≤ k) {Y : Ω → Matrix (Fin 
     refine (measureReal_mono fun ω hω => ?_).trans h
     simp only [Set.mem_ofPred_eq] at hω ⊢
     linarith
-
 
 /-- The section bound for the cross term at a fixed $\mathbf{y}$ of full row rank:
 Paley–Zygmund for $\|\mathbf{\Omega}_1\mathbf{y}^{\mathsf{T}}\|_{\mathsf{F}}^2$ and the Chevet
@@ -1351,39 +1285,82 @@ private theorem measureReal_section_le {k : ℕ} (hk : 1 ≤ k) {Y : Ω → Matr
   rw [hU]
   exact (measureReal_union_le _ _).trans (add_le_add hA hB)
 
+/-- The good event of the block instance: the extreme singular values of both row blocks lie
+within $\tfrac54\sqrt{k}$ of $\sqrt{\ell}$, and the cross product
+$\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}$ is large in the Frobenius norm and small in the
+spectral norm (in the form of the Paley–Zygmund and Chevet bounds of
+`measureReal_section_le`). -/
+private def IsGoodBlock {k : ℕ} (Ω' : Matrix (Fin k ⊕ Fin k) l ℝ) : Prop :=
+  specNorm Ω'.toRows₁ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ∧
+    √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues Ω'.toRows₁ᴴ (k - 1) ∧
+    specNorm Ω'.toRows₂ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ∧
+    √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues Ω'.toRows₂ᴴ (k - 1) ∧
+    1 / 2 * (frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) ^ 2 * frobNorm Ω'.toRows₂ᵀ ^ 2) <
+      frobNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * Ω'.toRows₁ * Ω'.toRows₂ᵀ) ^ 2 ∧
+    specNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * Ω'.toRows₁ * Ω'.toRows₂ᵀ) <
+      specNorm (1 : Matrix (Fin k) (Fin k) ℝ) * frobNorm Ω'.toRows₂ᵀ +
+        frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) * specNorm Ω'.toRows₂ᵀ +
+        √(k : ℝ) * specNorm Ω'.toRows₂ᵀ
+
+/-- The good event of a measurable test matrix is measurable. -/
+private lemma measurableSet_isGoodBlock {k : ℕ} {X : Ω → Matrix (Fin k ⊕ Fin k) l ℝ}
+    (hXm : Measurable X) : MeasurableSet {ω | IsGoodBlock (X ω)} := by
+  obtain ⟨hR1, hR2⟩ := measurable_toRows hXm
+  have hH : Measurable fun M : Matrix (Fin k) l ℝ => singularValues Mᴴ (k - 1) :=
+    ((continuous_singularValues _).comp continuous_id.matrix_conjTranspose).measurable
+  have hR2T : Measurable fun ω => (X ω).toRows₂ᵀ := hR2.matrix_transpose
+  have hW : Measurable fun ω =>
+      (1 : Matrix (Fin k) (Fin k) ℝ) * (X ω).toRows₁ * (X ω).toRows₂ᵀ :=
+    (measurable_const.matrix_mul hR1).matrix_mul hR2T
+  have m5 : Measurable fun ω => 1 / 2 * (frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) ^ 2 *
+      frobNorm (X ω).toRows₂ᵀ ^ 2) :=
+    (((measurable_frobNorm.comp hR2T).pow_const 2).const_mul _).const_mul _
+  have m6 : Measurable fun ω => specNorm (1 : Matrix (Fin k) (Fin k) ℝ) *
+      frobNorm (X ω).toRows₂ᵀ + frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) *
+      specNorm (X ω).toRows₂ᵀ + √(k : ℝ) * specNorm (X ω).toRows₂ᵀ :=
+    (((measurable_frobNorm.comp hR2T).const_mul _).add
+      ((measurable_specNorm.comp hR2T).const_mul _)).add
+      ((measurable_specNorm.comp hR2T).const_mul _)
+  exact (measurableSet_lt (measurable_specNorm.comp hR1) measurable_const).inter
+    ((measurableSet_lt measurable_const (hH.comp hR1)).inter
+    ((measurableSet_lt (measurable_specNorm.comp hR2) measurable_const).inter
+    ((measurableSet_lt measurable_const (hH.comp hR2)).inter
+    ((measurableSet_lt m5 ((measurable_frobNorm.comp hW).pow_const 2)).inter
+    (measurableSet_lt (measurable_specNorm.comp hW) m6)))))
+
+/-- A complement bound: if $S^{\mathsf{c}} \subseteq A \cup B \cup C$ then
+$\mathbb{P}[S] \ge 1 - \mathbb{P}[A] - \mathbb{P}[B] - \mathbb{P}[C]$. -/
+private lemma one_sub_le_measureReal_of_compl_subset [IsProbabilityMeasure μ] {S A B C : Set Ω}
+    (h : Sᶜ ⊆ A ∪ B ∪ C) : 1 - (μ.real A + μ.real B + μ.real C) ≤ μ.real S := by
+  have hu := measureReal_union_le (μ := μ) S Sᶜ
+  rw [Set.union_compl_self, probReal_univ] at hu
+  have h1 := measureReal_mono (μ := μ) h
+  have h2 := measureReal_union_le (μ := μ) (A ∪ B) C
+  have h3 := measureReal_union_le (μ := μ) A B
+  linarith
+
+/-- $e^{-x} \le 1/126$ for $x \ge 125$. -/
+private lemma exp_neg_le_one_div_of_le {x : ℝ} (hx : 125 ≤ x) : Real.exp (-x) ≤ 1 / 126 := by
+  rw [Real.exp_neg, inv_eq_one_div, div_le_div_iff₀ (Real.exp_pos x) (by norm_num)]
+  linarith [Real.add_one_le_exp x]
 
 /-- The good event of the block instance has probability at least $1/24$. -/
-private theorem le_measureReal_good_of_hasLaw_gaussianMatrix {k : ℕ} (hk : 4000 ≤ k)
+private theorem le_measureReal_isGoodBlock_of_hasLaw_gaussianMatrix {k : ℕ} (hk : 4000 ≤ k)
     (hl : (10 ^ 4 : ℝ) * k ≤ Fintype.card l)
     {X : Ω → Matrix (Fin k ⊕ Fin k) l ℝ} (hX : HasLaw X (gaussianMatrix (Fin k ⊕ Fin k) l) μ)
     (hXm : Measurable X) :
-    1 / 24 ≤ μ.real {ω |
-      specNorm (X ω).toRows₁ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ∧
-      √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues (X ω).toRows₁ᴴ (k - 1) ∧
-      specNorm (X ω).toRows₂ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ∧
-      √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues (X ω).toRows₂ᴴ (k - 1) ∧
-      1 / 2 * (frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) ^ 2 * frobNorm (X ω).toRows₂ᵀ ^ 2) <
-        frobNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * (X ω).toRows₁ * (X ω).toRows₂ᵀ) ^ 2 ∧
-      specNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * (X ω).toRows₁ * (X ω).toRows₂ᵀ) <
-        specNorm (1 : Matrix (Fin k) (Fin k) ℝ) * frobNorm (X ω).toRows₂ᵀ +
-          frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) * specNorm (X ω).toRows₂ᵀ +
-          √(k : ℝ) * specNorm (X ω).toRows₂ᵀ} := by
+    1 / 24 ≤ μ.real {ω | IsGoodBlock (X ω)} := by
   have := hX.isProbabilityMeasure
   obtain ⟨hY₁, hY₂, hind⟩ := hasLaw_toRows_indepFun hX
+  obtain ⟨hY₁m, hY₂m⟩ := measurable_toRows hXm
   have hk1 : 1 ≤ k := by omega
   have hK : (4000 : ℝ) ≤ k := by exact_mod_cast hk
-  have hY₁m : Measurable fun ω => (X ω).toRows₁ :=
-    Matrix.measurable_iff.2 fun i j => (Matrix.measurable_apply (Sum.inl i) j).comp hXm
-  have hY₂m : Measurable fun ω => (X ω).toRows₂ :=
-    Matrix.measurable_iff.2 fun i j => (Matrix.measurable_apply (Sum.inr i) j).comp hXm
   have hpos : 0 < √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) := by
-    have h1 : √((10 ^ 4 : ℝ) * k) ≤ √(Fintype.card l : ℝ) := Real.sqrt_le_sqrt hl
-    rw [Real.sqrt_mul (by norm_num), show √((10 ^ 4 : ℝ)) = 100 by
-      rw [show (10 ^ 4 : ℝ) = 100 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]] at h1
+    have := hundred_mul_sqrt_le_sqrt hl
     have : 0 < √(k : ℝ) := Real.sqrt_pos.2 (by linarith)
     linarith
-  obtain ⟨t1a, t1b⟩ := gaussian_tails hk1 hY₁
-  obtain ⟨t2a, t2b⟩ := gaussian_tails hk1 hY₂
+  obtain ⟨t1a, t1b⟩ := measureReal_specNorm_ge_le_and_singularValues_le_le hk1 hY₁
+  obtain ⟨t2a, t2b⟩ := measureReal_specNorm_ge_le_and_singularValues_le_le hk1 hY₂
   have hH : Measurable fun M : Matrix (Fin k) l ℝ => singularValues Mᴴ (k - 1) :=
     ((continuous_singularValues _).comp continuous_id.matrix_conjTranspose).measurable
   set G₂ : Set (Matrix (Fin k) l ℝ) := {y | specNorm y < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ)
@@ -1426,93 +1403,84 @@ private theorem le_measureReal_good_of_hasLaw_gaussianMatrix {k : ℕ} (hk : 400
         (add_le_add t2a t2b))
       simp only [hG₂, Set.mem_ofPred_eq, not_and_or, not_lt, Set.mem_union] at hω ⊢
       exact hω)
-  have he : ∀ x : ℝ, 125 ≤ x → Real.exp (-x) ≤ 1 / 126 := fun x hx => by
-    rw [Real.exp_neg, inv_eq_one_div, div_le_div_iff₀ (Real.exp_pos x) (by norm_num)]
-    linarith [Real.add_one_le_exp x]
   have he1 : Real.exp (-(k : ℝ) / 32) ≤ 1 / 126 := by
-    rw [neg_div]; exact he _ (by linarith)
+    rw [neg_div]
+    exact exp_neg_le_one_div_of_le (by linarith)
   have he2 : Real.exp (-(k : ℝ) / 2) ≤ 1 / 126 := by
-    rw [neg_div]; exact he _ (by linarith)
-  suffices h : ∀ S : Set Ω, Sᶜ ⊆
-      {ω | √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ≤ specNorm (X ω).toRows₁} ∪
-      {ω | singularValues (X ω).toRows₁ᴴ (k - 1) ≤ √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ)} ∪
-      {ω | ((X ω).toRows₁, (X ω).toRows₂) ∈ E} → 1 / 24 ≤ μ.real S by
-    refine h _ fun ω hω => ?_
-    simp only [hE, hG₂, Set.mem_compl_iff, Set.mem_union, Set.mem_ofPred_eq] at hω ⊢
-    by_contra hc
-    push Not at hc
-    exact hω ⟨hc.1.1, hc.1.2, hc.2.1.1, hc.2.1.2, hc.2.2.1, hc.2.2.2⟩
-  intro S hS
-  have hu : 1 ≤ μ.real S + μ.real Sᶜ := by
-    have := measureReal_union_le (μ := μ) S Sᶜ
-    rwa [Set.union_compl_self, probReal_univ] at this
-  have hc := (measureReal_mono hS).trans ((measureReal_union_le _ _).trans
-    (add_le_add ((measureReal_union_le _ _).trans (add_le_add t1a t1b)) hC))
+    rw [neg_div]
+    exact exp_neg_le_one_div_of_le (by linarith)
+  have hS := one_sub_le_measureReal_of_compl_subset (μ := μ) (S := {ω | IsGoodBlock (X ω)})
+    (A := {ω | √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ≤ specNorm (X ω).toRows₁})
+    (B := {ω | singularValues (X ω).toRows₁ᴴ (k - 1) ≤
+      √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ)})
+    (C := {ω | ((X ω).toRows₁, (X ω).toRows₂) ∈ E}) fun ω hω => by
+      simp only [IsGoodBlock, hE, hG₂, Set.mem_compl_iff, Set.mem_union, Set.mem_ofPred_eq]
+        at hω ⊢
+      by_contra hc
+      push Not at hc
+      exact hω ⟨hc.1.1, hc.1.2, hc.2.1.1, hc.2.1.2, hc.2.2.1, hc.2.2.2⟩
   linarith
 
+/-- The block instance has rank at least $k$ once the head block has full row rank. -/
+private lemma le_rank_fromBlocks_mul {k : ℕ} {s : ℝ} {Ω' : Matrix (Fin k ⊕ Fin k) l ℝ}
+    {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ} (hA : A = Matrix.fromBlocks 1 0 0 (s • 1))
+    (h : 0 < singularValues Ω'.toRows₁ᴴ (k - 1)) : k ≤ (A * Ω').rank := by
+  rw [singularValues_pos_iff, Matrix.rank_conjTranspose] at h
+  have e : (selectionMatrix Sum.inl : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ)ᴴ * (A * Ω') =
+      Ω'.toRows₁ := by
+    rw [conjTranspose_selectionMatrix_mul, hA]
+    ext i j
+    simp [Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, Matrix.toRows₁]
+  have := Matrix.rank_mul_le_right
+    (selectionMatrix Sum.inl : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ)ᴴ (A * Ω')
+  rw [e] at this
+  omega
+
+/-- The angle of the competitor frame: for $\theta = \arctan(1/40)$,
+$\sin\theta\cos\theta = 40/1601$ and $\sin^2\theta = 1/1601$. -/
+private lemma sin_arctan_mul_cos_arctan_and_sin_arctan_sq :
+    Real.sin (Real.arctan (1 / 40)) * Real.cos (Real.arctan (1 / 40)) = 40 / 1601 ∧
+      Real.sin (Real.arctan (1 / 40)) ^ 2 = 1 / 1601 := by
+  have hsq : √(1 + (1 / 40 : ℝ) ^ 2) * √(1 + (1 / 40 : ℝ) ^ 2) = 1 + (1 / 40 : ℝ) ^ 2 :=
+    Real.mul_self_sqrt (by positivity)
+  constructor
+  · rw [Real.sin_arctan, Real.cos_arctan, div_mul_div_comm, mul_one, hsq]
+    norm_num
+  · rw [Real.sin_arctan, div_pow, sq (√_), hsq]
+    norm_num
+
 /-- On the good event the error exceeds the optimum by $(1 - s^2)10^{-7}k$. -/
-private theorem le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_good {k : ℕ}
+private theorem le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_isGoodBlock {k : ℕ}
     (hk : 4000 ≤ k) (hl : (10 ^ 4 : ℝ) * k ≤ Fintype.card l) {Ω' : Matrix (Fin k ⊕ Fin k) l ℝ}
     {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ} {s : ℝ}
     (hs : s = 1 - √((k : ℝ) / Fintype.card l) / 4) (hA : A = Matrix.fromBlocks 1 0 0 (s • 1))
-    (h1 : specNorm Ω'.toRows₁ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ))
-    (h2 : √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues Ω'.toRows₁ᴴ (k - 1))
-    (h3 : specNorm Ω'.toRows₂ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ))
-    (h4 : √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues Ω'.toRows₂ᴴ (k - 1))
-    (h5 : 1 / 2 * (frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) ^ 2 * frobNorm Ω'.toRows₂ᵀ ^ 2) <
-        frobNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * Ω'.toRows₁ * Ω'.toRows₂ᵀ) ^ 2)
-    (h6 : specNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * Ω'.toRows₁ * Ω'.toRows₂ᵀ) <
-        specNorm (1 : Matrix (Fin k) (Fin k) ℝ) * frobNorm Ω'.toRows₂ᵀ +
-          frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) * specNorm Ω'.toRows₂ᵀ +
-          √(k : ℝ) * specNorm Ω'.toRows₂ᵀ) :
+    (hG : IsGoodBlock Ω') :
     k * s ^ 2 + (1 - s ^ 2) * (1 / 10 ^ 7 * k) ≤ frobNorm (A - earlyTruncatedRSVD A Ω' k) ^ 2 := by
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hG
   have : Nonempty (Fin k) := ⟨⟨0, by omega⟩⟩
   set u := √(Fintype.card l : ℝ) with hu
   set v := √(k : ℝ) with hv
   have hK : (4000 : ℝ) ≤ k := by exact_mod_cast hk
   have hv0 : 0 < v := Real.sqrt_pos.2 (by linarith)
   have hv2 : v ^ 2 = k := Real.sq_sqrt (by linarith)
-  have hvu : 100 * v ≤ u := by
-    have h := Real.sqrt_le_sqrt hl
-    rw [Real.sqrt_mul (by norm_num), show √((10 ^ 4 : ℝ)) = 100 by
-      rw [show (10 ^ 4 : ℝ) = 100 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]] at h
-    exact h
+  have hvu : 100 * v ≤ u := hundred_mul_sqrt_le_sqrt hl
   have hu0 : 0 < u := by linarith
   have hs' : s = 1 - v / (4 * u) := by
     rw [hs, Real.sqrt_div' _ (Nat.cast_nonneg _), ← hu, ← hv]
     field_simp
   have hq : v / (4 * u) ≤ 1 / 400 := by
-    rw [div_le_iff₀ (by positivity)]; linarith
+    rw [div_le_iff₀ (by positivity)]
+    linarith
   have hq0 : 0 ≤ v / (4 * u) := by positivity
   have hs0 : 0 ≤ s := by linarith
   have hs1 : s ≤ 1 := by linarith
   have hd : 0 < u - 5 / 4 * v := by linarith
-  -- rank
-  have hr : k ≤ (A * Ω').rank := by
-    have hpos := hd.trans h2
-    rw [singularValues_pos_iff, Matrix.rank_conjTranspose] at hpos
-    have e : (selectionMatrix Sum.inl : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ)ᴴ * (A * Ω') =
-        Ω'.toRows₁ := by
-      rw [conjTranspose_selectionMatrix_mul, hA]
-      ext i j
-      simp [Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, Matrix.toRows₁]
-    have := Matrix.rank_mul_le_right
-      (selectionMatrix Sum.inl : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ)ᴴ (A * Ω')
-    rw [e] at this
-    omega
   set T := ∑ i : Fin k, rangeProjector (truncatedSVD (A * Ω') k) (Sum.inr i) (Sum.inr i) with hT
   have hT0 : 0 ≤ T := Finset.sum_nonneg fun i _ =>
     ((isStarProjection_rangeProjector (truncatedSVD (A * Ω') k)).posSemidef.diag_nonneg)
   obtain ⟨hE1, hE2⟩ := frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational hs0 hs1
-    hA hr (Real.arctan (1 / 40)) hT
-  have hsq : √(1 + (1 / 40 : ℝ) ^ 2) * √(1 + (1 / 40 : ℝ) ^ 2) = 1 + (1 / 40 : ℝ) ^ 2 :=
-    Real.mul_self_sqrt (by positivity)
-  have hsc : Real.sin (Real.arctan (1 / 40)) * Real.cos (Real.arctan (1 / 40)) = 40 / 1601 := by
-    rw [Real.sin_arctan, Real.cos_arctan, div_mul_div_comm, mul_one, hsq]
-    norm_num
-  have hs2 : Real.sin (Real.arctan (1 / 40)) ^ 2 = 1 / 1601 := by
-    rw [Real.sin_arctan, div_pow, sq (√_), hsq]
-    norm_num
+    hA (le_rank_fromBlocks_mul hA (hd.trans h2)) (Real.arctan (1 / 40)) hT
+  obtain ⟨hsc, hs2⟩ := sin_arctan_mul_cos_arctan_and_sin_arctan_sq
   set W := Ω'.toRows₁ * Ω'.toRows₂ᵀ with hW
   have hsx : u - 5 / 4 * v < singularValues Ω'.toRows₁ (k - 1) := by simpa using h2
   have hfx : frobNorm Ω'.toRows₁ ^ 2 ≤ v ^ 2 * (u + 5 / 4 * v) ^ 2 := by
@@ -1556,6 +1524,26 @@ private theorem le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_good {k : �
   have := mul_le_mul_of_nonneg_left hTk h1s
   linarith only [this, hE1]
 
+/-- The optimum of the block instance is at most $ks^2$: compare with the head projector. -/
+private lemma frobNorm_fromBlocks_sub_truncatedSVD_sq_le {k : ℕ} {s : ℝ}
+    {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ} (hA : A = Matrix.fromBlocks 1 0 0 (s • 1)) :
+    frobNorm (A - truncatedSVD A k) ^ 2 ≤ k * s ^ 2 := by
+  set V : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ := selectionMatrix Sum.inl with hV
+  have hB : (V * Vᴴ).rank ≤ k :=
+    (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_le_card_width V).trans (by simp))
+  have hAB : A - V * Vᴴ =
+      Matrix.diagonal (Sum.elim (fun _ : Fin k => (0 : ℝ)) (fun _ : Fin k => s)) := by
+    ext i j
+    rw [hA, Matrix.sub_apply, Matrix.mul_apply]
+    simp only [hV, selectionMatrix_apply, Matrix.conjTranspose_apply, star_trivial]
+    rcases i with i | i <;> rcases j with j | j <;>
+      simp [Matrix.one_apply, Matrix.diagonal, eq_comm]
+  have hF : frobNorm (A - V * Vᴴ) ^ 2 = k * s ^ 2 := by
+    rw [hAB, frobNorm_diagonal_sq]
+    simp [Fintype.sum_sum_type, Real.norm_eq_abs, sq_abs]
+  rw [← hF]
+  exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_sub_truncatedSVD_le_of_rank_le _ hB) 2
+
 /-- **The early-truncated randomized SVD has excess $\Omega(\sqrt{k/\ell})$**: there are absolute
 constants $c, C > 0$ and $K_0$ such that for every $k \ge K_0$, a standard Gaussian
 $2k \times \ell$ test matrix $\mathbf{\Omega}$ with $\ell \ge Ck$, and
@@ -1566,9 +1554,9 @@ $$\Bigl(1 + c\sqrt{k/\ell}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\
 \|_{\mathsf{F}}^2\,.$$
 So relative error $1 + \varepsilon$ needs $\ell \ge c^2k/\varepsilon^2$: the $k$-dependence of
 the library's $900k/\varepsilon^2$ is also sharp. The constants are existential: the proof gives
-$c \approx 10^{-4}$ with large $C$, $K_0$ (Chebyshev-level concentration); numerically
+$c = 1/(96 \cdot 10^7)$, $C = 10^4$, $K_0 = 4000$; numerically
 $c \approx 0.2$ for every $k \ge 1$ (research note OP1, §2(b)). $k \ge K_0$ is where the proof's
-concentration events have probability at least $1/2$; for $2 \le k < K_0$ the statement is
+concentration events have probability at least $1/24$; for $2 \le k < K_0$ the statement is
 expected but not proved (design note, OQ3).
 No printed source. New (research note OP1, §4).
 Proof: H, about 300 lines. On the event $G$ where (i)
@@ -1625,98 +1613,42 @@ theorem
   set L : ℝ := (Fintype.card l : ℝ) with hLdef
   set r := √(K / L) with hr
   set s := 1 - r / 4 with hs
-  have hK : (4000 : ℝ) ≤ K := by rw [hKdef]; exact_mod_cast hk
+  have hK : (4000 : ℝ) ≤ K := by
+    rw [hKdef]
+    exact_mod_cast hk
   have hL0 : 0 < L := by linarith
   have hr0 : 0 ≤ r := Real.sqrt_nonneg _
   have hr1 : r ≤ 1 / 100 := by
     rw [hr, Real.sqrt_le_left (by norm_num), div_le_iff₀ hL0]
     linarith
-  set G := {ω | specNorm (X ω).toRows₁ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ∧
-      √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues (X ω).toRows₁ᴴ (k - 1) ∧
-      specNorm (X ω).toRows₂ < √(Fintype.card l : ℝ) + 5 / 4 * √(k : ℝ) ∧
-      √(Fintype.card l : ℝ) - 5 / 4 * √(k : ℝ) < singularValues (X ω).toRows₂ᴴ (k - 1) ∧
-      1 / 2 * (frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) ^ 2 * frobNorm (X ω).toRows₂ᵀ ^ 2) <
-        frobNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * (X ω).toRows₁ * (X ω).toRows₂ᵀ) ^ 2 ∧
-      specNorm ((1 : Matrix (Fin k) (Fin k) ℝ) * (X ω).toRows₁ * (X ω).toRows₂ᵀ) <
-        specNorm (1 : Matrix (Fin k) (Fin k) ℝ) * frobNorm (X ω).toRows₂ᵀ +
-          frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) * specNorm (X ω).toRows₂ᵀ +
-          √(k : ℝ) * specNorm (X ω).toRows₂ᵀ} with hGdef
-  have hG : 1 / 24 ≤ μ.real G := le_measureReal_good_of_hasLaw_gaussianMatrix hk hl hX hXm
-  have hGm : MeasurableSet G := by
-    have hR1 : Measurable fun ω => (X ω).toRows₁ :=
-      Matrix.measurable_iff.2 fun i j => (Matrix.measurable_apply (Sum.inl i) j).comp hXm
-    have hR2 : Measurable fun ω => (X ω).toRows₂ :=
-      Matrix.measurable_iff.2 fun i j => (Matrix.measurable_apply (Sum.inr i) j).comp hXm
-    have hH : Measurable fun M : Matrix (Fin k) l ℝ => singularValues Mᴴ (k - 1) :=
-      ((continuous_singularValues _).comp continuous_id.matrix_conjTranspose).measurable
-    have hR2T : Measurable fun ω => (X ω).toRows₂ᵀ := hR2.matrix_transpose
-    have hW : Measurable fun ω =>
-        (1 : Matrix (Fin k) (Fin k) ℝ) * (X ω).toRows₁ * (X ω).toRows₂ᵀ :=
-      (measurable_const.matrix_mul hR1).matrix_mul hR2T
-    have m5 : Measurable fun ω => 1 / 2 * (frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) ^ 2 *
-        frobNorm (X ω).toRows₂ᵀ ^ 2) :=
-      (((measurable_frobNorm.comp hR2T).pow_const 2).const_mul _).const_mul _
-    have m6 : Measurable fun ω => specNorm (1 : Matrix (Fin k) (Fin k) ℝ) *
-        frobNorm (X ω).toRows₂ᵀ + frobNorm (1 : Matrix (Fin k) (Fin k) ℝ) *
-        specNorm (X ω).toRows₂ᵀ + √(k : ℝ) * specNorm (X ω).toRows₂ᵀ :=
-      (((measurable_frobNorm.comp hR2T).const_mul _).add
-        ((measurable_specNorm.comp hR2T).const_mul _)).add
-        ((measurable_specNorm.comp hR2T).const_mul _)
-    exact (measurableSet_lt (measurable_specNorm.comp hR1) measurable_const).inter
-      ((measurableSet_lt measurable_const (hH.comp hR1)).inter
-      ((measurableSet_lt (measurable_specNorm.comp hR2) measurable_const).inter
-      ((measurableSet_lt measurable_const (hH.comp hR2)).inter
-      ((measurableSet_lt m5 ((measurable_frobNorm.comp hW).pow_const 2)).inter
-      (measurableSet_lt (measurable_specNorm.comp hW) m6)))))
+  set G := {ω | IsGoodBlock (X ω)}
+  have hG : 1 / 24 ≤ μ.real G := le_measureReal_isGoodBlock_of_hasLaw_gaussianMatrix hk hl hX hXm
+  have hGm : MeasurableSet G := measurableSet_isGoodBlock hXm
   set O := frobNorm (A - truncatedSVD A k) ^ 2 with hO
   set β := (1 - s ^ 2) * (1 / 10 ^ 7 * K) with hβ
-  have hopt : O ≤ K * s ^ 2 := by
-    set V : Matrix (Fin k ⊕ Fin k) (Fin k) ℝ := selectionMatrix Sum.inl with hV
-    have hB : (V * Vᴴ).rank ≤ k :=
-      (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_le_card_width V).trans (by simp))
-    have hVV : V * Vᴴ = Matrix.fromBlocks 1 0 0 0 := by
-      ext i j
-      rw [Matrix.mul_apply]
-      simp only [hV, selectionMatrix_apply, Matrix.conjTranspose_apply, star_trivial]
-      rcases i with i | i <;> rcases j with j | j <;> simp [Matrix.one_apply, eq_comm]
-    have hAB : A - V * Vᴴ = Matrix.fromBlocks 0 0 0 (s • 1) := by
-      rw [hA, hVV]
-      ext i j
-      rcases i with i | i <;> rcases j with j | j <;> simp
-    have hF : frobNorm (A - V * Vᴴ) ^ 2 = K * s ^ 2 := by
-      have hD : (Matrix.fromBlocks 0 0 0 (s • 1) : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ) =
-          Matrix.diagonal (Sum.elim (fun _ : Fin k => (0 : ℝ)) (fun _ : Fin k => s)) := by
-        ext i j
-        rcases i with i | i <;> rcases j with j | j <;> simp [Matrix.one_apply, Matrix.diagonal]
-      rw [hAB, hD, frobNorm_diagonal_sq]
-      simp [Fintype.sum_sum_type, Real.norm_eq_abs, sq_abs, hKdef]
-    rw [hO, ← hF]
-    exact pow_le_pow_left₀ (frobNorm_nonneg _) (frobNorm_sub_truncatedSVD_le_of_rank_le A hB) 2
+  have hopt : O ≤ K * s ^ 2 := frobNorm_fromBlocks_sub_truncatedSVD_sq_le hA
   have hlow : ∀ ω, O ≤ frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 := fun ω =>
     pow_le_pow_left₀ (frobNorm_nonneg _)
       (frobNorm_sub_truncatedSVD_le_of_rank_le A (rank_earlyTruncatedRSVD_le A (X ω) k)) 2
-  have hgood : ∀ ω ∈ G, K * s ^ 2 + β ≤ frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 :=
-    fun ω hω => le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_good hk hl hs hA hω.1
-      hω.2.1 hω.2.2.1 hω.2.2.2.1 hω.2.2.2.2.1 hω.2.2.2.2.2
   have hβ0 : 0 ≤ β := by
     have : s ^ 2 ≤ 1 := pow_le_one₀ (by linarith) (by linarith)
     have : 0 ≤ 1 - s ^ 2 := by linarith
     positivity
-  have hint := integrable_frobNorm_sub_earlyTruncatedRSVD_sq A hX.aemeasurable k
   have hmono : ∫ ω, (O + G.indicator (fun _ => β) ω) ∂μ ≤
       ∫ ω, frobNorm (A - earlyTruncatedRSVD A (X ω) k) ^ 2 ∂μ := by
-    refine integral_mono ((integrable_const _).add ((integrable_const β).indicator hGm)) hint
-      fun ω => ?_
+    refine integral_mono ((integrable_const _).add ((integrable_const β).indicator hGm))
+      (integrable_frobNorm_sub_earlyTruncatedRSVD_sq A hX.aemeasurable k) fun ω => ?_
     by_cases hω : ω ∈ G
     · simp only [Set.indicator_of_mem hω]
-      linarith [hgood ω hω]
+      linarith [le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_isGoodBlock hk hl hs hA hω]
     · simp only [Set.indicator_of_notMem hω, add_zero]
       exact hlow ω
   rw [integral_add (integrable_const _) ((integrable_const β).indicator hGm), integral_const,
     integral_indicator_const _ hGm, probReal_univ, one_smul, smul_eq_mul] at hmono
   refine le_trans ?_ hmono
   have h1s : r / 4 ≤ 1 - s ^ 2 := by
-    rw [hs]; nlinarith
+    rw [hs]
+    nlinarith
   have hO0 : 0 ≤ O := sq_nonneg _
   have hOK : O ≤ K := by nlinarith
   have hb : 1 / 24 * (r / 4 * (1 / 10 ^ 7 * K)) ≤ μ.real G * β := by
