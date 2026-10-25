@@ -165,7 +165,46 @@ theorem spectralMeasure_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ] {a 
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a c) (k : ℕ) :
     spectralMeasure (jacobiMatrix μ (k + 1)) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) =
       gaussQuadrature μ (k + 1) := by
-  sorry
+  set ν := gaussQuadrature μ (k + 1) with hνdef
+  have hν_mem : ∀ᵐ x ∂ν, x ∈ gaussNodes μ (k + 1) := ae_mem_interpolatoryQuadrature μ _
+  have hD : spectralMeasure (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+      (fun x => √(ν.real {(x : ℝ)})) = ν :=
+    spectralMeasure_diagonal_sqrt_of_ae_mem hν_mem
+  have hDh : (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ)).IsHermitian :=
+    Matrix.isHermitian_diagonal_of_self_adjoint _ (by funext x; rfl)
+  have hgauss : lanczosQuadrature (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+      (fun x => √(ν.real {(x : ℝ)})) (k + 1) = ν := by
+    rw [hDh.lanczosQuadrature_eq_gaussQuadrature, hD]
+    exact (MatchesMoments.eq_gaussQuadrature (MatchesMoments.refl ν _)
+      (ae_mem_Icc_gaussQuadrature hμ (k + 1)) hν_mem (card_gaussNodes_le μ (k + 1))).symm
+  have hT : lanczosTridiagonal (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+      (fun x => √(ν.real {(x : ℝ)})) (k + 1) = jacobiMatrix ν (k + 1) := by
+    rw [hDh.lanczosTridiagonal_eq_jacobiMatrix, hD]
+    simp
+  have hnorm : ‖WithLp.toLp 2 (fun x : gaussNodes μ (k + 1) => √(ν.real {(x : ℝ)}))‖ =
+      √(μ.real Set.univ) := by
+    have h1 := hDh.spectralMeasure_real_univ
+      (fun x : gaussNodes μ (k + 1) => √(ν.real {(x : ℝ)}))
+    have hmass : ν.real Set.univ = μ.real Set.univ := by
+      rw [hνdef]; exact gaussQuadrature_real_univ hμ (Nat.succ_pos k)
+    rw [hD, hmass] at h1
+    rw [h1, Real.sqrt_sq (norm_nonneg _)]
+  have hJ : jacobiMatrix μ (k + 1) = jacobiMatrix ν (k + 1) :=
+    MatchesMoments.jacobiMatrix_eq (matchesMoments_gaussQuadrature hμ (k + 1))
+  calc spectralMeasure (jacobiMatrix μ (k + 1)) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1)
+      = spectralMeasure (lanczosTridiagonal (Matrix.diagonal fun x : gaussNodes μ (k + 1) =>
+            (x : ℝ)) (fun x => √(ν.real {(x : ℝ)})) (k + 1))
+          ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) := by
+        rw [hJ, hT]
+    _ = spectralMeasure (lanczosTridiagonal (Matrix.diagonal fun x : gaussNodes μ (k + 1) =>
+            (x : ℝ)) (fun x => √(ν.real {(x : ℝ)})) (k + 1))
+          ((‖WithLp.toLp 2 (fun x : gaussNodes μ (k + 1) => √(ν.real {(x : ℝ)}))‖ : ℝ) •
+            Pi.single 0 1) := by
+        rw [hnorm]
+    _ = lanczosQuadrature (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+          (fun x => √(ν.real {(x : ℝ)})) (k + 1) :=
+        (hDh.lanczosQuadrature_succ_eq _ _).symm
+    _ = ν := hgauss
 
 /-- **Golub–Welsch, explicit form**: for a finite measure $\mu$ supported in $[a, c]$, every
 $k$, and an orthogonal diagonalisation
