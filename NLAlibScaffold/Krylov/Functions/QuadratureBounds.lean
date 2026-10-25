@@ -165,7 +165,9 @@ theorem integral_radauQuadrature_le_re_quadForm_cfc_of_iteratedDeriv_nonneg {A :
     (hf' : ContDiffOn ℝ (2 * q + 1 : ℕ) f (Set.Ioo a a'))
     (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q + 1) f x) (b : n → 𝕜) :
     ∫ x, f x ∂radauQuadrature (spectralMeasure A b) a q ≤ RCLike.re (quadForm (cfc f A) b) := by
-  sorry
+  rw [← integral_spectralMeasure A b f]
+  exact integral_radauQuadrature_le_integral_of_iteratedDeriv_nonneg
+    (ae_mem_Icc_spectralMeasure A hs b) haa' q hf hf' hD
 
 /-- **The left Radau rule is an upper bound** for $f$ with nonpositive derivative of order
 $2q + 1$: for $\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$),
