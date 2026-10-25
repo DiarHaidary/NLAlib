@@ -798,34 +798,13 @@ theorem measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_sl
         |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂slqMeasure A (X ω) (q + 1)|} ≤
       2 * Fintype.card n * Real.exp (-(hansonWrightConstant * (Fintype.card m *
         Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
-  set T := {ω | ∃ x ∈ spectrum ℝ A, τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
-    (probeSpectralMeasure A (X ω)).real (Set.Iic x)|}
-  have hT :=
-    measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le
-      hind hsub hvar hA hτ
-  rcases eq_or_ne (μ T) ∞ with hTtop | hTtop
-  · -- `μ` is not finite, so `n` or `m` is empty and the event does not depend on `ω`.
-    have hμ : μ Set.univ = ∞ := top_le_iff.mp (hTtop ▸ measure_mono (Set.subset_univ T))
-    have hsing : Subsingleton (Matrix n m ℝ) := by
-      rcases isEmpty_or_nonempty n with hn | ⟨⟨i⟩⟩
-      · infer_instance
-      rcases isEmpty_or_nonempty m with hm | ⟨⟨j⟩⟩
-      · infer_instance
-      have hint := (hsub i j).integrable_exp_mul 0
-      simp only [zero_mul, Real.exp_zero] at hint
-      have := (integrable_const_iff.mp hint).resolve_left one_ne_zero
-      exact absurd hμ (measure_ne_top μ _)
-    have key : ∀ S : Set Ω, (∀ ω ∈ S, ∀ ω', ω' ∈ S) → μ.real S = 0 := fun S hS => by
-      rcases S.eq_empty_or_nonempty with rfl | ⟨ω₀, h₀⟩
-      · exact measureReal_empty
-      · rw [Set.eq_univ_of_forall (hS ω₀ h₀), measureReal_def, hμ, ENNReal.toReal_top]
-    refine le_trans (le_of_eq (key _ fun ω hω ω' => ?_)) (hT.trans' measureReal_nonneg)
-    obtain ⟨f, hf, hlt⟩ := hω
-    exact ⟨f, hf, Subsingleton.elim (X ω) (X ω') ▸ hlt⟩
-  refine le_trans (measureReal_mono (fun ω hω => ?_) hTtop) hT
+  have := hind.isProbabilityMeasure
+  refine (measureReal_mono fun ω hω => ?_).trans
+    (measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le
+      hind hsub hvar hA hτ)
   obtain ⟨f, hf, hlt⟩ := hω
   by_contra hK
-  simp only [T, Set.mem_ofPred_eq, not_exists, not_and, not_lt] at hK
+  simp only [Set.mem_ofPred_eq, not_exists, not_and, not_lt] at hK
   have hmass : frobNorm (X ω) ^ 2 / (Fintype.card n * Fintype.card m) ≤ 1 + τ := by
     rcases isEmpty_or_nonempty n with hn | hn
     · simp only [Fintype.card_eq_zero, Nat.cast_zero, zero_mul, div_zero]
@@ -1217,29 +1196,7 @@ measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_re
   have hpt := fun x =>
     measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le_of_hasLaw_uniformSphereVector
       hind hU hA (Set.Iic x) hτ
-  rcases isEmpty_or_nonempty m with hm | hm
-  · -- No columns: the event does not depend on `ω`, so it is one of the per-point events.
-    rcases Set.eq_empty_or_nonempty {ω | ∃ x ∈ spectrum ℝ A,
-        τ < |(empiricalSpectralMeasure A).real (Set.Iic x) -
-          (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|} with he | he
-    · rw [he, measureReal_empty]
-      positivity
-    obtain ⟨ω₀, x₀, hx₀, h₀⟩ := he
-    have hU' : ∀ ω, U ω = U ω₀ := fun ω => Subsingleton.elim _ _
-    have hn : (1 : ℝ) ≤ Fintype.card n := by
-      have := (Finset.card_pos.mpr ⟨x₀, (Set.Finite.mem_toFinset _).mpr hx₀⟩).trans_le
-        hcard
-      exact_mod_cast this
-    calc _ = μ.real {ω | τ ≤ |(empiricalSpectralMeasure A).real (Set.Iic x₀) -
-          (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x₀)|} := by
-          congr 1
-          ext ω
-          simp only [Set.mem_ofPred_eq, hU' ω]
-          exact ⟨fun _ => h₀.le, fun _ => ⟨x₀, hx₀, h₀⟩⟩
-      _ ≤ _ := hpt x₀
-      _ ≤ _ := mul_le_mul_of_nonneg_right (le_mul_of_one_le_right (by norm_num) hn)
-          (Real.exp_nonneg _)
-  have := (hU hm.some).isProbabilityMeasure
+  have := hind.isProbabilityMeasure
   calc _ ≤ μ.real (⋃ x ∈ A.finite_real_spectrum.toFinset, {ω | τ ≤
           |(empiricalSpectralMeasure A).real (Set.Iic x) -
             (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real (Set.Iic x)|}) := by
