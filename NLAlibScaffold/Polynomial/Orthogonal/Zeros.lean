@@ -62,7 +62,7 @@ private theorem IsMomentPosDef.false_of_ae_nonneg_mul {k : ℕ} (h : IsMomentPos
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : IsOrthogonalPolynomial μ k p) {r : ℝ[X]}
     (hr : r.degree < k) (hnn : ∀ᵐ x ∂μ, 0 ≤ (p * r).eval x) {s : Finset ℝ} (hs : s.card < k)
     (hz : ∀ x ∈ Set.Icc a b, (p * r).eval x = 0 → x ∈ s) : False := by
-  have hint : ∫ x, (p * r).eval x ∂μ = 0 := by simpa using hp r hr
+  have hint : ∫ x, (p * r).eval x ∂μ = 0 := by simpa only [eval_mul] using hp r hr
   have hzero : ∀ᵐ x ∂μ, (p * r).eval x = 0 :=
     (integral_eq_zero_iff_of_nonneg_ae hnn (integrable_eval_of_ae_mem_Icc hμ _)).mp hint
   have hcar : ∀ᵐ x ∂μ, x ∈ s := (hμ.and hzero).mono fun x hx => hz x hx.1 hx.2
@@ -80,40 +80,27 @@ $s$ the roots of $R$; orthogonality from `isOrthogonalPolynomial_orthogonalPolyn
 Result: orthogonal-polynomial-zeros -/
 theorem IsMomentPosDef.card_roots_orthogonalPolynomial {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : Multiset.card (orthogonalPolynomial μ k).roots = k := by
-  set π := orthogonalPolynomial μ k with hπ
-  have hdeg : π.natDegree = k := natDegree_orthogonalPolynomial μ k
-  have hle : Multiset.card π.roots ≤ k := hdeg ▸ card_roots' π
-  refine hle.antisymm (not_lt.mp fun hlt => ?_)
+  set π := orthogonalPolynomial μ k
+  refine (natDegree_orthogonalPolynomial μ k ▸ card_roots' π).antisymm (not_lt.mp fun hlt => ?_)
+  -- $\pi_k = Rg$ with $R$ the product over the real roots and $g > 0$ root-free
   obtain ⟨g, hg, -, hg0⟩ := exists_prod_multiset_X_sub_C_mul π
   set R : ℝ[X] := (π.roots.map fun a => X - C a).prod with hR
   have hRm : R.Monic := monic_multisetProd_X_sub_C _
   have hgm : g.Monic := Monic.of_mul_monic_left hRm (hg ▸ monic_orthogonalPolynomial μ k)
-  have hgpos : ∀ x, 0 < g.eval x := fun x =>
-    zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg
-      (fun y hy => by
-        have := (mem_roots hgm.ne_zero).mpr hy
-        simp [hg0] at this)
-      (by rw [hgm.leadingCoeff]; exact zero_le_one)
-  have hRdeg : R.degree < k := by
-    rw [hR, degree_eq_natDegree hRm.ne_zero, natDegree_multiset_prod_X_sub_C_eq_card]
-    exact_mod_cast hlt
-  refine h.false_of_ae_nonneg_mul hμ (isOrthogonalPolynomial_orthogonalPolynomial hμ k) hRdeg
-    (Filter.Eventually.of_forall fun x => ?_) (s := R.roots.toFinset) ?_ ?_
-  · rw [← hπ, ← hg]
-    have : (R * g * R).eval x = (R.eval x) ^ 2 * g.eval x := by simp only [eval_mul]; ring
-    rw [this]
-    exact mul_nonneg (sq_nonneg _) (hgpos x).le
-  · refine (Multiset.toFinset_card_le _).trans_lt ?_
-    refine (card_roots' R).trans_lt ?_
-    rw [hR, natDegree_multiset_prod_X_sub_C_eq_card]
-    exact hlt
-  · intro x _ hx
-    rw [← hπ, ← hg] at hx
-    have : (R * g * R).eval x = (R.eval x) ^ 2 * g.eval x := by simp only [eval_mul]; ring
-    rw [this] at hx
-    rcases mul_eq_zero.mp hx with h0 | h0
-    · simpa [Multiset.mem_toFinset, mem_roots hRm.ne_zero] using pow_eq_zero_iff (two_ne_zero) |>.mp h0
-    · exact absurd h0 (hgpos x).ne'
+  have hgpos : ∀ x, 0 < g.eval x := fun x => zero_lt_eval_of_roots_lt_of_leadingCoeff_nonneg
+    (fun y hy => (Multiset.notMem_zero y (hg0 ▸ (mem_roots hgm.ne_zero).mpr hy)).elim)
+    (by rw [hgm.leadingCoeff]; exact zero_le_one)
+  have hRk : R.natDegree < k := by rwa [hR, natDegree_multiset_prod_X_sub_C_eq_card]
+  have he : ∀ x, (π * R).eval x = R.eval x ^ 2 * g.eval x := fun x => by
+    rw [← hg]
+    simp only [eval_mul]
+    ring
+  refine h.false_of_ae_nonneg_mul hμ (isOrthogonalPolynomial_orthogonalPolynomial hμ k)
+    (degree_le_natDegree.trans_lt (by exact_mod_cast hRk))
+    (ae_of_all _ fun x => he x ▸ mul_nonneg (sq_nonneg _) (hgpos x).le)
+    ((Multiset.toFinset_card_le R.roots).trans_lt ((card_roots' R).trans_lt hRk)) fun x _ hx => ?_
+  rw [he, mul_eq_zero, pow_eq_zero_iff two_ne_zero] at hx
+  exact Multiset.mem_toFinset.mpr ((mem_roots hRm.ne_zero).mpr (hx.resolve_right (hgpos x).ne'))
 
 /-- The zeros of the orthogonal polynomial are simple: if $\mu$, finite and supported in
 $[a, b]$, is positive definite up to degree $k$, then the real zeros of $\pi_k$ are distinct.
@@ -127,31 +114,23 @@ theorem IsMomentPosDef.nodup_roots_orthogonalPolynomial {k : ℕ} (h : IsMomentP
   rw [Multiset.nodup_iff_count_le_one]
   intro x
   rw [count_roots]
-  by_contra hlt
-  rw [not_le] at hlt
-  have hne : orthogonalPolynomial μ k ≠ 0 := (monic_orthogonalPolynomial μ k).ne_zero
-  obtain ⟨g, hg⟩ := (le_rootMultiplicity_iff hne).mp (by exact hlt : 2 ≤ _)
+  by_contra! hlt
+  -- a double zero $x$ gives $\pi_k = (X - x)^2g$, and $\pi_k g = ((X - x)g)^2 \ge 0$
+  have hne := (monic_orthogonalPolynomial μ k).ne_zero
+  obtain ⟨g, hg⟩ := (le_rootMultiplicity_iff hne).mp hlt
   have hg0 : g ≠ 0 := by
     rintro rfl
-    simp [hg] at hne
-  have hdeg : (orthogonalPolynomial μ k).natDegree = k := natDegree_orthogonalPolynomial μ k
-  have hdeg2 : (orthogonalPolynomial μ k).natDegree = 2 + g.natDegree := by
-    rw [hg, natDegree_mul (pow_ne_zero _ (X_sub_C_ne_zero x)) hg0, natDegree_pow,
-      natDegree_X_sub_C]
-  have hgk : g.natDegree < k := by omega
+    exact hne (by rw [hg, mul_zero])
   have hXg : (X - C x) * g ≠ 0 := mul_ne_zero (X_sub_C_ne_zero x) hg0
+  have hdeg : 2 + g.natDegree = k := by
+    rw [← natDegree_orthogonalPolynomial μ k, hg,
+      natDegree_mul (pow_ne_zero _ (X_sub_C_ne_zero x)) hg0, natDegree_pow, natDegree_X_sub_C]
   have hsq : orthogonalPolynomial μ k * g = ((X - C x) * g) ^ 2 := by rw [hg]; ring
-  have hdegg : g.degree < k :=
-    lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast hgk)
-  have hcard : ((X - C x) * g).roots.toFinset.card < k := by
-    have h1 := Multiset.toFinset_card_le ((X - C x) * g).roots
-    have h2 := card_roots' ((X - C x) * g)
-    have h3 : ((X - C x) * g).natDegree = 1 + g.natDegree := by
-      rw [natDegree_mul (X_sub_C_ne_zero x) hg0, natDegree_X_sub_C]
-    omega
-  refine IsMomentPosDef.false_of_ae_nonneg_mul h hμ
-    (isOrthogonalPolynomial_orthogonalPolynomial hμ k) hdegg
-    (ae_of_all _ fun y => ?_) hcard (fun y _ hy => ?_)
+  refine h.false_of_ae_nonneg_mul hμ (isOrthogonalPolynomial_orthogonalPolynomial hμ k)
+    (degree_le_natDegree.trans_lt (by exact_mod_cast (by omega : g.natDegree < k)))
+    (ae_of_all _ fun y => ?_) ((Multiset.toFinset_card_le _).trans_lt ((card_roots' _).trans_lt
+      (by rw [natDegree_mul (X_sub_C_ne_zero x) hg0, natDegree_X_sub_C]; omega)))
+    (fun y _ hy => ?_)
   · rw [hsq, eval_pow]
     exact sq_nonneg _
   · rw [hsq, eval_pow, pow_eq_zero_iff two_ne_zero] at hy
@@ -170,7 +149,7 @@ theorem IsMomentPosDef.nodal_gaussNodes {k : ℕ} (h : IsMomentPosDef μ k)
   rw [Lagrange.nodal_eq]
   have : (gaussNodes μ k).val = (orthogonalPolynomial μ k).roots := by
     simp only [gaussNodes, Multiset.toFinset_val, hnd.dedup]
-  simp only [Function.comp_def, id, Finset.prod_eq_multiset_prod, this]
+  simp only [id, Finset.prod_eq_multiset_prod, this]
   exact Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
     (monic_orthogonalPolynomial μ k) (by rw [h.card_roots_orthogonalPolynomial hμ,
       natDegree_orthogonalPolynomial])
@@ -186,37 +165,34 @@ theorem IsMomentPosDef.card_gaussNodes {k : ℕ} (h : IsMomentPosDef μ k)
   rw [Multiset.toFinset_card_of_nodup (h.nodup_roots_orthogonalPolynomial hμ),
     h.card_roots_orthogonalPolynomial hμ]
 
-/-- Shared step for `IsMomentPosDef.gaussNodes_subset_Icc`: if $\pi_k = (X - x)g$ with $\deg g < k$
-and $(t - x)c > 0$ on $[a, b]$, then $\mu$ (supported in $[a, b]$) is positive definite up to
-degree $k$ only if false: $\pi_k \cdot (c g) = (t-x)c\,g^2 \ge 0$ on $[a, b]$, and its zeros
-there are roots of $g$, fewer than $k$ of them. -/
-private theorem IsMomentPosDef.false_of_root_mul {k : ℕ} (h : IsMomentPosDef μ k)
-    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x c : ℝ} {g : ℝ[X]}
-    (hπ : orthogonalPolynomial μ k = (X - C x) * g) (hgk : g.natDegree < k) (hg : g ≠ 0)
+/-- Shared step for `IsMomentPosDef.gaussNodes_subset_Icc`: if $\pi_k(x) = 0$ and
+$(t - x)c > 0$ on $[a, b]$, then $\mu$ (supported in $[a, b]$) is positive definite up to
+degree $k$ only if false. With $\pi_k = (X - x)g$, $\pi_k \cdot (c g) = (t-x)c\,g^2 \ge 0$ on
+$[a, b]$, and its zeros there are roots of $g$, fewer than $k$ of them. -/
+private theorem IsMomentPosDef.false_of_isRoot {k : ℕ} (h : IsMomentPosDef μ k)
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x c : ℝ} (hx : (orthogonalPolynomial μ k).IsRoot x)
     (hc : c ≠ 0) (hsgn : ∀ t ∈ Set.Icc a b, 0 < (t - x) * c) : False := by
-  have hr : (C c * g).degree < k :=
-    (degree_C_mul hc).trans_lt ((degree_le_natDegree).trans_lt (by exact_mod_cast hgk))
-  have hnn : ∀ᵐ t ∂μ, 0 ≤ (orthogonalPolynomial μ k * (C c * g)).eval t := by
-    filter_upwards [hμ] with t ht
+  set g := orthogonalPolynomial μ k /ₘ (X - C x)
+  have hπ : orthogonalPolynomial μ k = (X - C x) * g := (mul_divByMonic_eq_iff_isRoot.mpr hx).symm
+  have hg : g ≠ 0 := fun hg0 =>
+    (monic_orthogonalPolynomial μ k).ne_zero (by rw [hπ, hg0, mul_zero])
+  have hgk : g.natDegree < k := by
+    have hdeg := natDegree_mul (X_sub_C_ne_zero x) hg
+    rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
+    omega
+  have he : ∀ t, (orthogonalPolynomial μ k * (C c * g)).eval t = (t - x) * c * g.eval t ^ 2 := by
+    intro t
     rw [hπ]
-    have := (hsgn t ht).le
     simp only [eval_mul, eval_sub, eval_X, eval_C]
-    nlinarith [mul_nonneg this (sq_nonneg (g.eval t))]
-  have hs : (g.roots.toFinset).card < k :=
-    (Multiset.toFinset_card_le _).trans_lt ((card_roots' g).trans_lt hgk)
+    ring
   refine h.false_of_ae_nonneg_mul hμ (isOrthogonalPolynomial_orthogonalPolynomial hμ k)
-    hr hnn hs ?_
-  · intro t ht hzero
-    rw [hπ] at hzero
-    simp only [eval_mul, eval_sub, eval_X, eval_C] at hzero
-    have hne := (hsgn t ht).ne'
-    have hg0 : g.eval t = 0 := by
-      have h1 : ((t - x) * c) * (g.eval t) ^ 2 = 0 := by linarith [hzero]
-      rcases mul_eq_zero.mp h1 with h2 | h2
-      · exact absurd h2 hne
-      · exact pow_eq_zero_iff (two_ne_zero) |>.mp h2
-    rw [Multiset.mem_toFinset]
-    exact (mem_roots hg).mpr hg0
+    ((degree_C_mul hc).trans_lt (degree_le_natDegree.trans_lt (by exact_mod_cast hgk))) ?_
+    ((Multiset.toFinset_card_le _).trans_lt ((card_roots' g).trans_lt hgk)) fun t ht hz => ?_
+  · filter_upwards [hμ] with t ht
+    rw [he]
+    exact mul_nonneg (hsgn t ht).le (sq_nonneg _)
+  · rw [he, mul_eq_zero, pow_eq_zero_iff two_ne_zero] at hz
+    exact Multiset.mem_toFinset.mpr ((mem_roots hg).mpr (hz.resolve_left (hsgn t ht).ne'))
 
 /-- The Gauss nodes lie in every interval carrying the measure: if $\mu$, finite and supported in
 $[a, b]$, is positive definite up to degree $k$, then every real zero of $\pi_k$ lies in
@@ -228,31 +204,13 @@ with $r = -h$. -/
 theorem IsMomentPosDef.gaussNodes_subset_Icc {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : (gaussNodes μ k : Set ℝ) ⊆ Set.Icc a b := by
   intro y hy
-  have hy' : y ∈ (orthogonalPolynomial μ k).roots := by
-    unfold gaussNodes at hy
-    rw [Finset.mem_coe, Multiset.mem_toFinset] at hy
-    exact hy
-  have hm := monic_orthogonalPolynomial μ k
-  have hroot : (orthogonalPolynomial μ k).IsRoot y := (mem_roots hm.ne_zero).mp hy'
-  -- Split off the factor `X - C y` and bound the degree of the cofactor.
-  have key : ∀ {c x : ℝ}, c ≠ 0 → (∀ t ∈ Set.Icc a b, 0 < (t - x) * c) →
-      (orthogonalPolynomial μ k).IsRoot x → False := by
-    intro c x hc hsgn hx
-    set g := orthogonalPolynomial μ k /ₘ (X - C x) with hgdef
-    have hπ : orthogonalPolynomial μ k = (X - C x) * g :=
-      (mul_divByMonic_eq_iff_isRoot.mpr hx).symm
-    have hg : g ≠ 0 := by
-      intro hg0
-      rw [hg0, mul_zero] at hπ
-      exact hm.ne_zero hπ
-    have hdeg := natDegree_mul (X_sub_C_ne_zero x) hg
-    rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
-    exact h.false_of_root_mul hμ hπ (by omega) hg hc hsgn
-  rcases lt_or_ge y a with hya | hya
-  · exact (key (c := 1) (x := y) one_ne_zero (fun t ht => by linarith [ht.1]) hroot).elim
-  rcases le_or_gt y b with hyb | hyb
-  · exact ⟨hya, hyb⟩
-  · exact (key (c := -1) (x := y) (by norm_num) (fun t ht => by linarith [ht.2]) hroot).elim
+  have hroot : (orthogonalPolynomial μ k).IsRoot y := by
+    rwa [Finset.mem_coe, gaussNodes, Multiset.mem_toFinset,
+      mem_roots (monic_orthogonalPolynomial μ k).ne_zero] at hy
+  exact ⟨le_of_not_gt fun hya =>
+      h.false_of_isRoot hμ hroot one_ne_zero fun t ht => by linarith [ht.1],
+    le_of_not_gt fun hyb =>
+      h.false_of_isRoot hμ hroot (neg_ne_zero.mpr one_ne_zero) fun t ht => by linarith [ht.2]⟩
 
 /-- The degenerate case: if $\mu$, finite and supported in $[a, b]$, is not positive definite up
 to degree $k$, then $\mu$ is carried by the Gauss nodes of order $k$, the zeros of $\pi_k$.
@@ -268,16 +226,12 @@ theorem ae_mem_gaussNodes_of_not_isMomentPosDef (hμ : ∀ᵐ x ∂μ, x ∈ Set
     exact h fun p hp hdeg => absurd hdeg (not_lt.mpr (zero_le_degree_iff.mpr hp))
   | succ j =>
     rw [isMomentPosDef_succ_iff hμ j, not_lt] at h
-    have hnorm : ∫ x, (orthogonalPolynomial μ j).eval x ^ 2 ∂μ = 0 :=
-      le_antisymm h (integral_nonneg fun x => sq_nonneg _)
     have hsq : ∫ x, (orthogonalPolynomial μ (j + 1)).eval x ^ 2 ∂μ = 0 := by
-      rw [integral_orthogonalPolynomial_succ_sq hμ j, hnorm, mul_zero]
-    have hne : orthogonalPolynomial μ (j + 1) ≠ 0 :=
-      (monic_orthogonalPolynomial μ (j + 1)).ne_zero
+      rw [integral_orthogonalPolynomial_succ_sq hμ j,
+        le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
     filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero hμ hsq] with x hx
-    unfold gaussNodes
-    rw [Multiset.mem_toFinset, mem_roots hne]
-    exact hx
+    rwa [gaussNodes, Multiset.mem_toFinset,
+      mem_roots (monic_orthogonalPolynomial μ (j + 1)).ne_zero]
 
 /-- The Gauss hypothesis holds for every order: for a finite measure $\mu$ supported in $[a, b]$
 and every $k$, the nodal polynomial of the Gauss nodes $G$ of order $k$ is orthogonal in
