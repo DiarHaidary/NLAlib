@@ -41,6 +41,12 @@ theorem minimaxError_le_of_differentiableOn {f : ℝ → ℝ} {F : ℂ → ℂ} 
     (hExt : Set.EqOn (fun t : ℝ => ((f (((b - a) * t + b + a) / 2) : ℝ) : ℂ))
       (fun t : ℝ => F t) (Set.Icc (-1 : ℝ) 1)) (N : ℕ) :
     minimaxError f (Set.Icc a b) N ≤ 2 * M / (ρ ^ N * (ρ - 1)) := by
-  sorry
+  obtain ⟨p, hdeg, hp⟩ := exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn (𝕜 := ℝ)
+    (f := f) hab hρ hFd hM
+    (fun t ht => by rw [← hExt ht]; exact RCLike.toComplex_ofReal (𝕜 := ℝ) _) N
+  have hne : (Set.Icc a b).Nonempty := Set.nonempty_Icc.mpr hab.le
+  refine csInf_le ⟨0, ?_⟩ ⟨p, hdeg, hp⟩
+  rintro ε ⟨q, -, hq⟩
+  exact hq.nonneg hne
 
 end NLAlib
