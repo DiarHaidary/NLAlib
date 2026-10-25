@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Matrix.Norms.Projector
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 
 /-!
@@ -40,13 +41,6 @@ private theorem pinv_mul_self_conjTranspose (A : Matrix l r 𝕜) :
     (pinv A * A)ᴴ = pinv A * A := by
   rw [pinv_mul]
   exact (isStarProjection_rangeProjector Aᴴ).conjTranspose_eq
-
-omit [DecidableEq l] in
-private theorem specNorm_le_one_of_isStarProjection {P : Matrix l l 𝕜} (hP : IsStarProjection P) :
-    specNorm P ≤ 1 := by
-  rw [specNorm_le_iff zero_le_one]
-  intro x
-  simpa using hP.norm_toLp_mulVec_le x
 
 /-- **Weighting does not shrink the pseudoinverse** (Epperly and Webber's "weighting hurts"): for
 $\mathbf{M} \in \Bbbk^{\ell \times r}$ and invertible $\mathbf{R} \in \Bbbk^{\ell \times \ell}$,
@@ -107,6 +101,6 @@ theorem frobNorm_pinv_le_frobNorm_pinv_conjTranspose_mul_mul_conjTranspose (M : 
   rw [key]
   exact (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
     (mul_le_of_le_one_right (frobNorm_nonneg _)
-      (specNorm_le_one_of_isStarProjection (isStarProjection_rangeProjector M)))
+      (isStarProjection_rangeProjector M).specNorm_le_one)
 
 end NLAlib
