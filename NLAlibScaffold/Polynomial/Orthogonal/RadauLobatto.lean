@@ -470,7 +470,64 @@ $t$, where the density does too), contradicting definiteness. -/
 theorem IsMomentPosDef.notMem_gaussNodes_lobattoMeasure {k : ℕ}
     (h : IsMomentPosDef (lobattoMeasure μ a b) k) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {t : ℝ}
     (ht : t = a ∨ t = b) : t ∉ gaussNodes (lobattoMeasure μ a b) k := by
-  sorry
+  have := isFiniteMeasure_lobattoMeasure hμ
+  intro hmem
+  have hπ0 := monic_orthogonalPolynomial (lobattoMeasure μ a b) k
+  have hroot : (orthogonalPolynomial (lobattoMeasure μ a b) k).IsRoot t := by
+    unfold gaussNodes at hmem
+    rwa [Multiset.mem_toFinset, mem_roots hπ0.ne_zero] at hmem
+  obtain ⟨r, hr⟩ : ∃ r, orthogonalPolynomial (lobattoMeasure μ a b) k = (X - C t) * r :=
+    ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hroot).symm⟩
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    exact hπ0.ne_zero (by simpa using hr)
+  have hdeg : r.degree < k := by
+    have hnat := natDegree_orthogonalPolynomial (lobattoMeasure μ a b) k
+    rw [hr, natDegree_mul (X_sub_C_ne_zero t) hr0, natDegree_X_sub_C] at hnat
+    exact (natDegree_lt_iff_degree_lt hr0).mp (by omega)
+  have hO := isOrthogonalPolynomial_orthogonalPolynomial (ae_mem_Icc_lobattoMeasure hμ) k r hdeg
+  have hpos := h r hr0 hdeg
+  rw [integral_lobattoMeasure] at hO
+  simp only [hr, eval_mul, eval_sub, eval_X, eval_C] at hO
+  have hO2 : ∫ x, (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2) ∂μ = 0 := by
+    convert hO using 2
+    funext x
+    ring
+  have hint : Integrable (fun x => (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2)) μ := by
+    refine (integrable_eval_of_ae_mem_Icc hμ
+      (-((X - C t) * ((X - C a) * (X - C b))) * (r * r))).congr ?_
+    filter_upwards [hμ] with x hx
+    have hab : (x - a) * (x - b) ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos (by linarith [hx.1]) (by linarith [hx.2])
+    simp only [eval_mul, eval_neg, eval_sub, eval_X, eval_C]
+    rw [abs_of_nonpos hab]
+    ring
+  have hz : ∀ᵐ x ∂μ, (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2) = 0 := by
+    obtain h' | h' := ht
+    · have hnn : ∀ᵐ x ∂μ, 0 ≤ (x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2) := by
+        filter_upwards [hμ] with x hx
+        exact mul_nonneg (by linarith [hx.1]) (mul_nonneg (abs_nonneg _) (sq_nonneg _))
+      exact (integral_eq_zero_iff_of_nonneg_ae hnn hint).mp hO2
+    · have hnn : ∀ᵐ x ∂μ, 0 ≤ -((x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2)) := by
+        filter_upwards [hμ] with x hx
+        have := mul_nonneg (by linarith [hx.2] : 0 ≤ t - x)
+          (mul_nonneg (abs_nonneg ((x - a) * (x - b))) (sq_nonneg (r.eval x)))
+        linarith
+      have hO3 : ∫ x, -((x - t) * (|(x - a) * (x - b)| * r.eval x ^ 2)) ∂μ = 0 := by
+        rw [integral_neg, hO2, neg_zero]
+      have := (integral_eq_zero_iff_of_nonneg_ae hnn hint.neg).mp hO3
+      filter_upwards [this] with x hx
+      simp only [Pi.zero_apply, neg_eq_zero] at hx
+      exact hx
+  have hq : ∀ᵐ x ∂μ, |(x - a) * (x - b)| * r.eval x ^ 2 = 0 := by
+    filter_upwards [hz, hμ] with x hx hxI
+    rcases mul_eq_zero.mp hx with h1 | h1
+    · have hxt : x = t := by linarith
+      rcases ht with h' | h' <;> simp [hxt, h']
+    · exact h1
+  have hint0 := integral_eq_zero_of_ae hq
+  have hνr := integral_lobattoMeasure μ a b (fun x => r.eval x ^ 2)
+  linarith
 
 /-- The number of Lobatto nodes: if $\mu$, finite and supported in $[a, b]$, $a < b$, has a
 Lobatto modified measure positive definite up to degree $k$, the Lobatto rule has $k + 2$
