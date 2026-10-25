@@ -39,6 +39,12 @@ Proof: S, about 8 lines. Induction on $k$ generalising $p$: `iteratedDeriv_succ'
 (`funext`), `Function.iterate_succ_apply`. -/
 protected theorem iteratedDeriv (p : 𝕜[X]) (k : ℕ) (x : 𝕜) :
     iteratedDeriv k (fun x => p.eval x) x = (derivative^[k] p).eval x := by
-  sorry
+  induction k generalizing p with
+  | zero => simp
+  | succ k ih =>
+    rw [iteratedDeriv_succ', Function.iterate_succ_apply]
+    have hf : deriv (fun x : 𝕜 => p.eval x) = fun x => (derivative p).eval x :=
+      funext fun y => Polynomial.deriv p
+    rw [hf, ih]
 
 end Polynomial
