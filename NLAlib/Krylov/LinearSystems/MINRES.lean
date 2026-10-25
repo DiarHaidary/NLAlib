@@ -271,7 +271,7 @@ theorem pminresIterate_sub_mem_krylovSpace (A M : Matrix n n 𝕜) (b x₀ : n �
   rw [pminresIterate, add_sub_cancel_left]
   exact galerkinInverse_mulVec_mem _ _ _
 
-/-- **No preconditioner is GMRES**, for every $\mathbf{A}$:
+/-- No preconditioner is GMRES, for every $\mathbf{A}$:
 $\mathsf{pminresIterate}(\mathbf{A}, \mathbf{I}, \mathbf{b}, \mathbf{x}_0, q) =
 \mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$, by
 `minResidualInverse_eq_galerkinInverse`. -/

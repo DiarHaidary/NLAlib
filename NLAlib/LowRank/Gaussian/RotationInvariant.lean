@@ -106,7 +106,7 @@ variable [DecidableEq n] {ν : Measure (Matrix n l ℝ)} [IsProbabilityMeasure �
 
 /-! ### Exact recovery -/
 
-/-- **A rotation-invariant sketch at least as wide as the rank recovers the matrix**: if
+/-- A rotation-invariant sketch at least as wide as the rank recovers the matrix: if
 $\operatorname{rank}\mathbf{A} \le \ell$, then $\mathsf{rsvd}(\mathbf{A}, \mathbf{X}) =
 \mathbf{A}$ almost surely, for a test matrix $\mathbf{X}$ with a left unitarily invariant law
 and full column rank almost surely. -/
@@ -468,7 +468,7 @@ theorem measureReal_matrixNorm_sub_nystrom_gt_le_of_isLeftUnitarilyInvariant
 
 end SymmetricGauge
 
-/-- **A rotation-invariant sketch at least as wide as the rank makes Nyström exact**: for
+/-- A rotation-invariant sketch at least as wide as the rank makes Nyström exact: for
 positive semidefinite $\mathbf{H}$ with $\operatorname{rank}\mathbf{H} \le \ell$ and a test matrix
 $\mathbf{X}$ with a left unitarily invariant law and full column rank almost surely,
 $\mathsf{nystrom}(\mathbf{H}, \mathbf{X}) = \mathbf{H}$ almost surely. -/

@@ -332,7 +332,7 @@ theorem measureReal_exists_leverageScore_mul_diagonal_gt_le_of_hasLaw_rademacher
     _ = Fintype.card n * Real.exp (-t) := by
         rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
-/-- **Flattening in $\delta$ form**: for a bounded orthonormal $\mathbf{F}$ with constant $\beta$,
+/-- Flattening in $\delta$ form: for a bounded orthonormal $\mathbf{F}$ with constant $\beta$,
 independent signs and $\delta > 0$, outside probability $\delta$ every leverage score of
 $\mathbf{F}\mathbf{D}\mathbf{U}$ is at most <!-- value srhtRowBound {\lvert n \rvert} r \delta -->
 $$\frac{\beta\,\bigl(r + 2\sqrt{r \log(\lvert n \rvert/\delta)} +

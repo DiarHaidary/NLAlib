@@ -203,7 +203,7 @@ theorem isProbabilityMeasure_srhtWithReplacement [Nonempty n] (F : Matrix n n �
     NNReal.sum_const_inv_card
   exact Measure.isProbabilityMeasure_map (measurable_srhtMatrix F).aemeasurable
 
-/-- **The SRHT law as signs times row sampling without replacement**: the pushforward of
+/-- The SRHT law as signs times row sampling without replacement: the pushforward of
 independent signs and the law `NLAlib.samplingSketchWithoutReplacement k n` by
 $(\boldsymbol{\xi}, \mathbf{P}) \mapsto \mathbf{P}\mathbf{F}\operatorname{diag}(\boldsymbol{\xi})$;
 the form the proofs use. -/
@@ -223,7 +223,7 @@ theorem srht_eq_map_prod (F : Matrix n n 𝕜) :
     Measure.map_map (measurable_mul_diagonal F) (measurable_id.prodMap hP)]
   rfl
 
-/-- **The SRHT law with replacement as signs times row sampling**: the pushforward of independent
+/-- The SRHT law with replacement as signs times row sampling: the pushforward of independent
 signs and the law `NLAlib.samplingSketch k` at uniform weights by
 $(\boldsymbol{\xi}, \mathbf{P}) \mapsto \mathbf{P}\mathbf{F}\operatorname{diag}(\boldsymbol{\xi})$;
 the form the proofs use. -/
@@ -244,7 +244,7 @@ theorem srhtWithReplacement_eq_map_prod (F : Matrix n n 𝕜) :
     Measure.map_map (measurable_mul_diagonal F) (measurable_id.prodMap hP)]
   rfl
 
-/-- **From the user's own signs and injection**: for independent signs $\boldsymbol{\xi}$ and a
+/-- From the user's own signs and injection: for independent signs $\boldsymbol{\xi}$ and a
 uniform injection $\iota : k \to n$, under any measurable space on `n` with measurable
 singletons, the sketch built from them has law `NLAlib.srht k F`. -/
 theorem hasLaw_srhtMatrix_of_hasLaw_uniformOn_injective [MeasurableSpace n]
@@ -256,7 +256,7 @@ theorem hasLaw_srhtMatrix_of_hasLaw_uniformOn_injective [MeasurableSpace n]
     (hind.comp (φ := id) (ψ := samplingSketchMatrix (𝕜 := 𝕜) fun _ : n => (Fintype.card n : ℝ≥0)⁻¹)
       measurable_id (measurable_of_countable _))
 
-/-- **From the user's own signs and indices**: for independent signs $\boldsymbol{\xi}$ and
+/-- From the user's own signs and indices: for independent signs $\boldsymbol{\xi}$ and
 independent i.i.d. uniform indices $\iota : k \to n$, under any measurable space on `n` with
 measurable singletons, the sketch built from them has law `NLAlib.srhtWithReplacement k F`. -/
 theorem hasLaw_srhtMatrix_of_hasLaw_pi [MeasurableSpace n] [MeasurableSingletonClass n]
@@ -747,7 +747,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le
   rw [hL, hexp]
   linarith [two_mul_mul_exp_le_of_samplingEmbeddingDim_le hLpos hε (half_pos hδ) hk]
 
-/-- **The SRHT OSE, asymptotic form**:
+/-- The SRHT OSE, asymptotic form:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
 SRHT to be an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$
 and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the
@@ -845,7 +845,7 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le [
   rw [hL, hexp]
   linarith [mul_exp_le_of_samplingInjectionDim_le hLpos hε (half_pos hδ) hk]
 
-/-- **The SRHT OSI, asymptotic form**:
+/-- The SRHT OSI, asymptotic form:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
 SRHT with $\lvert k \rvert \le \lvert n \rvert$ to be an oblivious subspace injection for dimension
 $d$ with constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$
@@ -905,7 +905,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_srhtWithReplacement_of_samplingEm
   rw [hL, hexp]
   linarith [two_mul_mul_exp_le_of_samplingEmbeddingDim_le hLpos hε (half_pos hδ) hk]
 
-/-- **The SRHT OSE with replacement, asymptotic form**:
+/-- The SRHT OSE with replacement, asymptotic form:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
 SRHT with replacement to be an oblivious subspace embedding for dimension $d$ with constants
 $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
@@ -970,7 +970,7 @@ theorem isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingIn
   rw [hL, hexp]
   linarith [mul_exp_le_of_samplingInjectionDim_le hLpos hε (half_pos hδ) hk]
 
-/-- **The SRHT OSI with replacement, asymptotic form**:
+/-- The SRHT OSI with replacement, asymptotic form:
 $O(\beta (d + \log(\lvert n \rvert/\delta)) \log(d/\delta)/\varepsilon^2)$ rows suffice for the
 SRHT with replacement to be an oblivious subspace injection for dimension $d$ with constant
 $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute

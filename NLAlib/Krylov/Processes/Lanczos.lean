@@ -74,7 +74,7 @@ structure IsGradedKrylovBasis (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ}
 
 variable {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} {Q : Matrix n (Fin q) 𝕜}
 
-/-- **Constructor**: orthonormal columns with column $j$ in $\mathcal{K}_{j+1}(\mathbf{A},
+/-- Constructor: orthonormal columns with column $j$ in $\mathcal{K}_{j+1}(\mathbf{A},
 \mathbf{b})$ form a graded Krylov basis. -/
 theorem HasOrthonormalCols.isGradedKrylovBasis_of_forall_col_mem (hQ : HasOrthonormalCols Q)
     (h : ∀ j : Fin q, Q.col j ∈ krylovSpace A b ((j : ℕ) + 1)) : IsGradedKrylovBasis A b Q := by
@@ -312,7 +312,7 @@ theorem arnoldiMatrix_col_last_mem_krylovSpace (A : Matrix n n 𝕜) (b : n → 
   rw [← range_arnoldiMatrix A b (j + 1)]
   exact ⟨Pi.single (Fin.last j) 1, by rw [Matrix.mulVecLin_apply, Matrix.mulVec_single_one]⟩
 
-/-- **The Gram–Schmidt recursion for the canonical columns** of
+/-- The Gram–Schmidt recursion for the canonical columns of
 $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 1)$:
 $r_j\mathbf{q}_j = \mathbf{A}^j\mathbf{b} - \mathbf{y}$ for some
 $\mathbf{y} \in \mathcal{K}_j(\mathbf{A}, \mathbf{b})$. -/
@@ -345,7 +345,7 @@ theorem star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem (A : Matrix n n �
     exact star_arnoldiMatrix_col_last_dotProduct_of_ne A b (by omega)
   rw [Matrix.mulVecLin_apply, Matrix.dotProduct_mulVec, h0, zero_dotProduct]
 
-/-- **The canonical compression is Hessenberg**, entrywise, for the last columns of
+/-- The canonical compression is Hessenberg, entrywise, for the last columns of
 $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, i + 1)$ and $\mathsf{arnoldiMatrix}(\mathbf{A},
 \mathbf{b}, j + 1)$: $\mathbf{q}_i^{\mathsf{H}}\mathbf{A}\mathbf{q}_j = 0$ for $j + 1 < i$, for
 every $\mathbf{A}$. -/
@@ -356,7 +356,7 @@ theorem star_arnoldiMatrix_col_last_dotProduct_mulVec_of_lt (A : Matrix n n 𝕜
   star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem A b (by omega : j + 1 + 1 ≤ i)
     (mulVec_mem_krylovSpace_succ (arnoldiMatrix_col_last_mem_krylovSpace A b j))
 
-/-- **The Gram–Schmidt coefficient vanishes exactly from the grade on**: $r_j = 0$ iff
+/-- The Gram–Schmidt coefficient vanishes exactly from the grade on: $r_j = 0$ iff
 $\nu \le j$. -/
 theorem gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff {A : Matrix n n 𝕜} {b : n → 𝕜}
     {j : ℕ} :
@@ -370,7 +370,7 @@ theorem gramSchmidtR_krylovMatrix_apply_last_eq_zero_iff {A : Matrix n n 𝕜} {
   · exact (gramSchmidtR_krylovMatrix_apply A b (Fin.last j) (Fin.last j)).trans
       (star_arnoldiMatrix_col_last_dotProduct_eq_zero_of_mem A b le_rfl h)
 
-/-- **The canonical column vanishes exactly from the grade on**: the last column of
+/-- The canonical column vanishes exactly from the grade on: the last column of
 $\mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, j + 1)$, $\mathbf{q}_j$, is $\mathbf{0}$ iff
 $\nu \le j$. -/
 theorem arnoldiMatrix_col_last_eq_zero_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {j : ℕ} :
@@ -463,7 +463,7 @@ theorem arnoldiMatrix_col_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (j : ℕ) 
     RCLike.norm_ofReal, abs_of_pos hc, smul_smul, ← RCLike.ofReal_inv, ← RCLike.ofReal_mul,
     inv_mul_cancel₀ hc.ne', RCLike.ofReal_one, one_smul]
 
-/-- **The rectangular Hessenberg matrix** $\underline{\mathbf{H}}_q =
+/-- The rectangular Hessenberg matrix $\underline{\mathbf{H}}_q =
 \mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_q$, with $\mathbf{Q}_m =
 \mathsf{arnoldiMatrix}(\mathbf{A}, \mathbf{b}, m)$, is the first $q$ columns of the square
 compression $\mathbf{Q}_{q+1}^{\mathsf{H}}\mathbf{A}\mathbf{Q}_{q+1}$, so the Lanczos tridiagonal

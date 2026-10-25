@@ -105,7 +105,7 @@ private theorem diagonal_mul_eq_mul_diagonal_of_eq {p q : Type*} [Fintype p] [Fi
       exact RCLike.ofReal_injective (mul_left_cancel₀ hW hij)
     rw [hde, mul_comm]
 
-/-- **$f(\mathbf{A})$ through a unitary diagonalisation.** If
+/-- $f(\mathbf{A})$ through a unitary diagonalisation: if
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}$ with $\mathbf{d}$
 real and $\mathbf{U}$ unitary, that is, with orthonormal columns and as many columns as rows, on
 any column index type, then
@@ -210,7 +210,7 @@ theorem _root_.Matrix.IsHermitian.cfc_mulVec_of_mulVec_eq_smul {A : Matrix n n �
 
 /-! ### Conjugation, relabelling and block sums -/
 
-/-- **$f$ commutes with unitary conjugation**:
+/-- $f$ commutes with unitary conjugation:
 $f(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}) = \mathbf{U} f(\mathbf{A}) \mathbf{U}^{\mathsf{H}}$
 for Hermitian $\mathbf{A}$ and $\mathbf{U}$ unitary, that is, with orthonormal columns and as many
 columns as rows, on any column index type.
@@ -254,7 +254,7 @@ theorem _root_.Matrix.IsHermitian.cfc_submatrix_equiv {A : Matrix n n 𝕜} (hA 
     _).injective) hr hA' f,
     hcfc f, hsub]
 
-/-- **$f$ of a block diagonal matrix** with Hermitian blocks $\mathbf{A}$, $\mathbf{B}$ is the
+/-- $f$ of a block diagonal matrix with Hermitian blocks $\mathbf{A}$, $\mathbf{B}$ is the
 block diagonal matrix of $f(\mathbf{A})$ and $f(\mathbf{B})$:
 $$f\left(\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}\right)
   = \begin{bmatrix} f(\mathbf{A}) & \mathbf{0} \\ \mathbf{0} & f(\mathbf{B}) \end{bmatrix} .$$
@@ -299,7 +299,7 @@ theorem _root_.Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁ {A : Matr
   funext i
   cases i <;> rfl
 
-/-- **$f$ of a block diagonal matrix** with Hermitian blocks $\mathbf{A}_i$ is the block diagonal
+/-- $f$ of a block diagonal matrix with Hermitian blocks $\mathbf{A}_i$ is the block diagonal
 matrix of the $f(\mathbf{A}_i)$; the version of `Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁`
 for a family of blocks of one size. -/
 theorem cfc_blockDiagonal {ι : Type*} [Fintype ι] [DecidableEq ι]
@@ -328,7 +328,7 @@ theorem cfc_blockDiagonal {ι : Type*} [Fintype ι] [DecidableEq ι]
     (HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose (hU i) (Fintype.card_fin _) (hAU i)
         f).symm)
 
-/-- **A function of a zero-padded compression**: for $\mathbf{U}$ with orthonormal columns
+/-- A function of a zero-padded compression: for $\mathbf{U}$ with orthonormal columns
 (not necessarily square) and Hermitian $\mathbf{T}$,
 $f(\mathbf{U}\mathbf{T}\mathbf{U}^{\mathsf{H}}) = \mathbf{U}f(\mathbf{T})\mathbf{U}^{\mathsf{H}}
 + f(0)(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})$: the padding contributes the eigenvalue
@@ -389,7 +389,7 @@ theorem spectrum_subset_Icc_of_le {A : Matrix n n 𝕜} {a b : ℝ}
       (hA.eigenvalue_le_eigenvalue (by omega) (by omega)),
     (hA.eigenvalue_le_eigenvalue (Nat.zero_le i) hi).trans (hA.le_smul_one_iff.mp h₂)⟩
 
-/-- **A lower spectral bound is a Loewner bound**: for Hermitian $\mathbf{A}$,
+/-- A lower spectral bound is a Loewner bound: for Hermitian $\mathbf{A}$,
 $a\mathbf{I} \preceq \mathbf{A}$ iff the real spectrum lies in $[a, \infty)$. The converse half
 of `spectrum_subset_Icc_of_le`, by Mathlib's `algebraMap_le_iff_le_spectrum`. -/
 theorem _root_.Matrix.IsHermitian.smul_one_le_iff_spectrum_subset_Ici {A : Matrix n n 𝕜}
@@ -397,7 +397,7 @@ theorem _root_.Matrix.IsHermitian.smul_one_le_iff_spectrum_subset_Ici {A : Matri
   rw [← Algebra.algebraMap_eq_smul_one]
   exact algebraMap_le_iff_le_spectrum (a := A) hA
 
-/-- **An upper spectral bound is a Loewner bound**: for Hermitian $\mathbf{A}$,
+/-- An upper spectral bound is a Loewner bound: for Hermitian $\mathbf{A}$,
 $\mathbf{A} \preceq b\mathbf{I}$ iff the real spectrum lies in $(-\infty, b]$, by Mathlib's
 `le_algebraMap_iff_spectrum_le`. -/
 theorem _root_.Matrix.IsHermitian.le_smul_one_iff_spectrum_subset_Iic {A : Matrix n n 𝕜}
@@ -405,7 +405,7 @@ theorem _root_.Matrix.IsHermitian.le_smul_one_iff_spectrum_subset_Iic {A : Matri
   rw [← Algebra.algebraMap_eq_smul_one]
   exact le_algebraMap_iff_spectrum_le (a := A) hA
 
-/-- **Ritz values lie in every interval containing the spectrum**: for Hermitian $\mathbf{A}$
+/-- Ritz values lie in every interval containing the spectrum: for Hermitian $\mathbf{A}$
 with spectrum in $[a, a']$ and $\mathbf{Q}$ with orthonormal columns, the spectrum of
 $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ lies in $[a, a']$. A zero-padded compression
 $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ has the extra
@@ -467,7 +467,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_cfc {A : Matrix n n 𝕜} (hA : A.IsH
   simp only [RCLike.ofReal_re]
   exact Fin.sum_univ_eq_sum_range (fun i => f (eigenvalue A i)) _
 
-/-- **Eigenvalues of $f(\mathbf{A})$ for a non-decreasing $f$**: for Hermitian $\mathbf{A}$ and
+/-- Eigenvalues of $f(\mathbf{A})$ for a non-decreasing $f$: for Hermitian $\mathbf{A}$ and
 $k < \lvert n \rvert$, $\lambda_k(f(\mathbf{A})) = f(\lambda_k(\mathbf{A}))$, when $f$ is monotone
 on a set containing the spectrum of $\mathbf{A}$.
 Port of `NLAlib.eigenvalues₀_cfc_of_antitone`, there with the hypothesis on the composite. -/
@@ -494,7 +494,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_cfc_of_antitoneOn {A : Matrix n n �
   have hneg : cfc f A = -cfc (fun x => -f x) A := by rw [cfc_neg, neg_neg]
   rw [hneg, eigenvalue_neg _ hkj, h, neg_neg]
 
-/-- **The quadratic form of $f(\mathbf{A})$** through a unitary diagonalisation
+/-- The quadratic form of $f(\mathbf{A})$ through a unitary diagonalisation
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}$, $\mathbf{d}$ real,
 with $\mathbf{U}$ having orthonormal columns and as many columns as rows, on any column index
 type:
@@ -559,7 +559,7 @@ private theorem abs_re_quadForm_cfc_le_aux {A : Matrix n n 𝕜} (hA : A.IsHermi
   rw [abs_mul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ ‖(Uᴴ *ᵥ x) i‖ ^ 2)]
   exact mul_le_mul_of_nonneg_right (h _ (hA.eigenvalue_mem_spectrum i.isLt)) (by positivity)
 
-/-- **The spectral norm of $f(\mathbf{A})$** is at most the largest $\lvert f \rvert$ on the
+/-- The spectral norm of $f(\mathbf{A})$ is at most the largest $\lvert f \rvert$ on the
 spectrum: for Hermitian $\mathbf{A}$, if $c \ge 0$ and $\lvert f(x) \rvert \le c$ for every $x$ in
 the spectrum of $\mathbf{A}$, then $\|f(\mathbf{A})\|_2 \le c$.
 Port of `NLAlib.specNorm_aeval_le`, there for polynomials over $\mathbb{R}$. -/
@@ -595,7 +595,8 @@ theorem _root_.Matrix.IsHermitian.norm_toLp_cfc_mulVec_sq {A : Matrix n n 𝕜}
 /-- **Cauchy–Schwarz for functions of one Hermitian matrix**: if
 $\lvert\varphi\rvert \le \lvert\psi\rvert\,\lvert\chi\rvert$ on the spectrum of $\mathbf{A}$,
 then $\lvert\mathbf{x}^{\mathsf{H}}\varphi(\mathbf{A})\mathbf{y}\rvert \le
-\|\psi(\mathbf{A})\mathbf{x}\|\,\|\chi(\mathbf{A})\mathbf{y}\|$. -/
+\|\psi(\mathbf{A})\mathbf{x}\|\,\|\chi(\mathbf{A})\mathbf{y}\|$.
+[HornJohnson2013, Theorem 5.1.4]; there for vectors (locator to check). -/
 theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {φ ψ χ : ℝ → ℝ} (h : ∀ x ∈ spectrum ℝ A, |φ x| ≤ |ψ x| * |χ x|)
     (x y : n → 𝕜) :
@@ -661,7 +662,7 @@ theorem _root_.Matrix.PosDef.inv_eq_cfc {A : Matrix n n 𝕜} (hA : A.PosDef) :
   rw [cfc_id' ℝ A hH] at h
   exact Matrix.inv_eq_left_inv h
 
-/-- **The pseudoinverse of a Hermitian matrix is a function of it**:
+/-- The pseudoinverse of a Hermitian matrix is a function of it:
 $\mathbf{A}^{+} = f(\mathbf{A})$ for $f(x) = x^{-1}$, $f(0) = 0$ (Lean's convention for
 $0^{-1}$). Generalises `Matrix.PosDef.inv_eq_cfc`. -/
 theorem _root_.Matrix.IsHermitian.cfc_inv_eq_pinv {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
@@ -724,7 +725,7 @@ theorem _root_.Matrix.PosDef.isUnit_sqrt {A : Matrix n n 𝕜} (hA : A.PosDef) :
 -- Stage B1a
 
 omit [DecidableEq m] in
-/-- **A function of a Hermitian matrix on an invariant frame**: if
+/-- A function of a Hermitian matrix on an invariant frame: if
 $\mathbf{A}\mathbf{W} = \mathbf{W}\operatorname{diag}(\mathbf{d})$ with $\mathbf{d}$ real, then
 $$f(\mathbf{A})\mathbf{W} = \mathbf{W}\operatorname{diag}(f(\mathbf{d}_i))\,,$$
 for any columns $\mathbf{W}$ (each nonzero column is an eigenvector, a zero column is mapped to

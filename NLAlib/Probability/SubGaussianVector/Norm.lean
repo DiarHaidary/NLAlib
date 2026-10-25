@@ -372,7 +372,7 @@ private theorem mgf_sum_mul_sq_sub_le (h : IsSubgaussianVector x c μ) {w : n �
         field_simp
         ring
 
-/-- **Weighted squares of a sub-Gaussian vector**, the diagonal Hsu–Kakade–Zhang tail: for a real
+/-- Weighted squares of a sub-Gaussian vector, the diagonal Hsu–Kakade–Zhang tail: for a real
 sub-Gaussian vector $\mathbf{x}$ with proxy $c \ne 0$, weights $0 \le w_i \le b$ not all zero, and
 $t \ge 0$,
 $$\mu\Bigl(\sum_i w_i \mathbf{x}_i^2 \ge c\,\Bigl(\sum_i w_i +
@@ -472,7 +472,7 @@ theorem measureReal_norm_mulVec_sq_ge_le {m : Type*} [Fintype m] {𝕜 : Type*} 
   rw [hsum]
   gcongr
 
-/-- **The upper tail of $\|\mathbf{x}\|^2$** for a real sub-Gaussian vector with proxy
+/-- The upper tail of $\|\mathbf{x}\|^2$ for a real sub-Gaussian vector with proxy
 $c \ne 0$: for $t \ge 0$, with $n = \lvert n\rvert$,
 $$\mu\bigl(\|\mathbf{x}\|^2 \ge c\,(n + 2\sqrt{n t} + 2t)\bigr) \le e^{-t}\,.$$
 Hsu, Kakade and Zhang 2012, Theorem 2.1 with $\mathbf{A} = \mathbf{I}$; for a standard Gaussian

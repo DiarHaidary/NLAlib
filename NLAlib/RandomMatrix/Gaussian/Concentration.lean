@@ -56,7 +56,8 @@ theorem integrable_comp_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix 
 /-- **Gaussian concentration** for a function of a Gaussian matrix that is $L$-Lipschitz for the
 Frobenius distance
 ($\lvert f(\mathbf{A}) - f(\mathbf{B}) \rvert \le L \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$):
-$f(\mathbf{G}) - \mathbb{E} f(\mathbf{G})$ is sub-Gaussian with proxy $L^2$. -/
+$f(\mathbf{G}) - \mathbb{E} f(\mathbf{G})$ is sub-Gaussian with proxy $L^2$.
+[Vershynin2018, Theorem 5.2.2] (locator to check). -/
 theorem hasSubgaussianMGF_sub_integral_of_hasLaw_gaussianMatrix
     (hX : HasLaw X (gaussianMatrix m n) μ) (hf : ∀ A B, |f A - f B| ≤ L * frobNorm (A - B)) :
     HasSubgaussianMGF (fun ω => f (X ω) - ∫ ω', f (X ω') ∂μ) (L ^ 2) μ := by

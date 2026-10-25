@@ -314,7 +314,7 @@ theorem HasLogSobolev.integrable_of_lipschitzWith [IsProbabilityMeasure ν]
   exact hfa.mono' hf.continuous.aestronglyMeasurable
     (ae_of_all _ fun x => (Real.norm_eq_abs _).le)
 
-/-- **Concentration from a logarithmic Sobolev inequality**: an $L$-Lipschitz function $f$ of a
+/-- Concentration from a logarithmic Sobolev inequality: an $L$-Lipschitz function $f$ of a
 probability law with a logarithmic Sobolev inequality with constant $c$ is sub-Gaussian about its
 mean with proxy $c L^2$ (Herbst's argument, after smoothing and truncating $f$). -/
 theorem HasLogSobolev.hasSubgaussianMGF_sub_integral [IsProbabilityMeasure ν]
@@ -444,7 +444,7 @@ private theorem sineTrunc_facts (hg : ContDiff ℝ 1 g) (hg2 : Integrable (fun x
     rw [Real.norm_of_nonneg (sq_nonneg _)]
     exact hdf x
 
-/-- **A logarithmic Sobolev inequality controls the entropy of every finite-energy function.** If
+/-- A logarithmic Sobolev inequality controls the entropy of every finite-energy function: if
 a probability law $\nu$ satisfies `HasLogSobolev ν c` and $g$ is $C^1$ with $g^2$ and
 $\|\nabla g\|^2$ integrable, then $g^2 \log g^2$ is integrable, so $\operatorname{Ent}_\nu(g^2)$
 is not a junk value. The proof applies the inequality to the bounded truncations
@@ -516,7 +516,7 @@ theorem HasLogSobolev.integrable_sq_mul_log_sq (h : HasLogSobolev ν c) (hg : Co
     (ae_of_all _ hF0)).1 (ne_top_of_le_ne_top ENNReal.ofReal_ne_top (hFatou.trans hLiminf))
   exact (hFi.sub (integrable_const (1 : ℝ))).congr (ae_of_all _ fun x => by simp)
 
-/-- **The logarithmic Sobolev inequality for finite-energy functions.** If a probability law
+/-- The logarithmic Sobolev inequality for finite-energy functions: if a probability law
 $\nu$ satisfies `HasLogSobolev ν c`, then
 $\operatorname{Ent}_\nu(g^2) \le 2c\, \mathbb{E}_\nu \|\nabla g\|^2$ for every $C^1$ function $g$
 with $g^2$ and $\|\nabla g\|^2$ integrable, not only for the bounded test functions of the

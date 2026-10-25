@@ -106,7 +106,7 @@ theorem HasOrthonormalCols.gmresIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthon
   rw [gmresIterate, hQ.minResidualInverse_eq hK A, Matrix.mulVec_mulVec]
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The GMRES residual is a projection residual**:
+/-- The GMRES residual is a projection residual:
 $\mathbf{b} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) =
 (\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{K}_q})\mathbf{r}_0$, for every $\mathbf{A}$. -/
 theorem sub_mulVec_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -161,7 +161,7 @@ theorem isMinOn_gmresIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : �
   rwa [e, e, add_sub_cancel] at h
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The residual norms do not increase**, for every $\mathbf{A}$: the residual of
+/-- The residual norms do not increase, for every $\mathbf{A}$: the residual of
 $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q + 1)$ is no larger than that of
 $\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$. -/
 theorem norm_sub_mulVec_gmresIterate_succ_le (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :

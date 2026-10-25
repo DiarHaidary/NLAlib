@@ -134,7 +134,7 @@ theorem rank_obliqueProjector (X : Matrix m r 𝕜) (S : Matrix k m 𝕜) :
       _ ≤ (S * obliqueProjector X S).rank := Matrix.rank_mul_le_left _ _
       _ ≤ (obliqueProjector X S).rank := Matrix.rank_mul_le_right _ _
 
-/-- **The oblique projector fixes its basis exactly under the rank hypothesis**:
+/-- The oblique projector fixes its basis exactly under the rank hypothesis:
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{X} = \mathbf{X}$ iff
 $\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$. -/
 theorem obliqueProjector_mul_self_iff :
@@ -152,7 +152,7 @@ theorem obliqueProjector_mul_self_iff :
           simp only [obliqueProjector, Matrix.mul_assoc]
       _ = X := by rw [pinv_mul, hP, ← pinv_mul, ← Matrix.mul_assoc, mul_pinv_mul_self]
 
-/-- **Exactness at low rank**: under the rank hypothesis
+/-- Exactness at low rank: under the rank hypothesis
 $\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}\mathbf{X}$, the oblique projector
 fixes every $\mathbf{B}$ with
 $\operatorname{range}\mathbf{B} \subseteq \operatorname{range}\mathbf{X}$:
@@ -176,7 +176,7 @@ theorem range_obliqueProjector (h : (S * X).rank = X.rank) :
   refine le_antisymm (range_obliqueProjector_le X S) ?_
   exact range_le_iff_exists_mul.mpr ⟨X, (obliqueProjector_mul_self_iff.mpr h).symm⟩
 
-/-- **Range invariance**: under the rank hypothesis $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ depends
+/-- Range invariance: under the rank hypothesis $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ depends
 on $\mathbf{X}$ only through its range,
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{S}} = \mathbf{\Pi}_{\mathbf{X}',\mathbf{S}}$ when
 $\operatorname{range}\mathbf{X} = \operatorname{range}\mathbf{X}'$, whatever the widths. Without the
@@ -232,7 +232,7 @@ theorem obliqueProjector_conjTranspose_self (X : Matrix m r 𝕜) :
     obliqueProjector X Xᴴ = rangeProjector X :=
   mul_pinv_conjTranspose_mul_self_mul_conjTranspose X
 
-/-- **Rescaling the sketch** does not change the projector:
+/-- Rescaling the sketch does not change the projector:
 $\mathbf{\Pi}_{\mathbf{X},c\mathbf{S}} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ for $c \ne 0$ (the
 normalisation of Gaussian sketches); a real scalar is the case `RCLike.real_smul_eq_coe_smul`. -/
 theorem obliqueProjector_smul_right (X : Matrix m r 𝕜) (S : Matrix k m 𝕜) {c : 𝕜} (hc : c ≠ 0) :
@@ -240,7 +240,7 @@ theorem obliqueProjector_smul_right (X : Matrix m r 𝕜) (S : Matrix k m 𝕜) 
   simp only [obliqueProjector, Matrix.smul_mul, Matrix.mul_smul, pinv_smul, smul_smul,
     mul_inv_cancel₀ hc, one_smul]
 
-/-- **The invertible case**: when $\mathbf{T}\mathbf{X}$ is invertible,
+/-- The invertible case: when $\mathbf{T}\mathbf{X}$ is invertible,
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{T}} = \mathbf{X}(\mathbf{T}\mathbf{X})^{-1}\mathbf{T}$; with
 $\mathbf{T} = \mathbf{Y}^{\mathsf{H}}$ this is the two-bases formula
 $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$. -/
@@ -255,7 +255,7 @@ theorem obliqueProjector_mul_eq_zero_of_mul_eq_zero {B : Matrix m n 𝕜} (X : M
     (h : S * B = 0) : obliqueProjector X S * B = 0 := by
   rw [obliqueProjector, Matrix.mul_assoc, h, Matrix.mul_zero]
 
-/-- **Equivariance under an isometry** $\mathbf{U}$ with
+/-- Equivariance under an isometry $\mathbf{U}$ with
 $\mathbf{U}^{\mathsf{H}}\mathbf{U} = \mathbf{I}$, for every basis and sketch,
 $$\mathbf{\Pi}_{\mathbf{U}\mathbf{X},\mathbf{S}\mathbf{U}^{\mathsf{H}}} =
 \mathbf{U}\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{U}^{\mathsf{H}}\,.$$ -/
@@ -267,7 +267,7 @@ theorem HasOrthonormalCols.obliqueProjector_mul_mul_conjTranspose [Fintype n] [D
   rw [obliqueProjector, obliqueProjector, e]
   simp only [Matrix.mul_assoc]
 
-/-- **Sketch invariance**: a factor with orthonormal columns on the left of the sketch does not
+/-- Sketch invariance: a factor with orthonormal columns on the left of the sketch does not
 change the projector,
 $\mathbf{\Pi}_{\mathbf{X},\mathbf{W}\mathbf{S}} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ for
 $\mathbf{W}^{\mathsf{H}}\mathbf{W} = \mathbf{I}$; for laws invariant under

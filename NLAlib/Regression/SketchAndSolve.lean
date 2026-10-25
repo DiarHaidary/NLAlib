@@ -319,7 +319,7 @@ private theorem three_mul_gaussianPinvSpecNormBound_sq_le {q p : â„•} (hq : 1 â‰
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The Gaussian sketch-and-solve excess is spectrally flat**: with
+/-- The Gaussian sketch-and-solve excess is spectrally flat: with
 $\mathbf{E} = (\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$, $q = \operatorname{rank}\mathbf{X}$
 and $4q \le p$,
 $$\mathbb{E}\|\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{E}\|_2^2 \le

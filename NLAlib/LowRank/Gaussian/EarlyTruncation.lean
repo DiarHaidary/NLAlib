@@ -355,7 +355,7 @@ theorem one_le_earlyTruncatedRSVDFactor {k l : ℕ} (h : 100 * k ≤ l) :
     positivity
   nlinarith
 
-/-- **The early-truncated randomized SVD factor at $\ell \ge 900k/\varepsilon^2$**: for $k \ge 1$
+/-- The early-truncated randomized SVD factor at $\ell \ge 900k/\varepsilon^2$: for $k \ge 1$
 and $0 < \varepsilon \le 1$, <!-- value earlyTruncatedRSVDFactor k \ell -->
 $$\frac{(1 + \sqrt{2k/\ell})\bigl((1 - \sqrt{k/\ell})^{-2} + 10/\sqrt{\ell}\bigr) +
 \frac{1}{4}\sqrt{k/\ell}\sqrt{1 + 2/(k \ell)}\sqrt{(1 - \sqrt{k/\ell})^{-8} +

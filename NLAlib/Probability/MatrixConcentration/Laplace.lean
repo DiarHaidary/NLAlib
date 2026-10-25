@@ -135,7 +135,8 @@ private theorem measureReal_le_exp_neg_mul_integral {f : Ω → ℝ} {s : Set Ω
 
 /-- **Jensen's inequality for the exponential**, in the form the Laplace transform method uses:
 for an integrable $Z$ and an integrable $f$ with $e^Z \le f$ almost surely,
-$e^{\mathbb{E} Z} \le \mathbb{E} f$. The integrability of $e^Z$ follows from the domination. -/
+$e^{\mathbb{E} Z} \le \mathbb{E} f$. The integrability of $e^Z$ follows from the domination.
+[Vershynin2018, §1.2] (locator to check). -/
 theorem exp_integral_le_integral {Z f : Ω → ℝ} (hZ : Integrable Z μ) (hf : Integrable f μ)
     (hle : ∀ᵐ ω ∂μ, Real.exp (Z ω) ≤ f ω) : Real.exp (∫ ω, Z ω ∂μ) ≤ ∫ ω, f ω ∂μ := by
   have hgi : Integrable (Real.exp ∘ Z) μ := by

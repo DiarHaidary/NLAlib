@@ -108,7 +108,7 @@ theorem planeRotation_mulVec_of_orthogonal [Fintype n] {u v x : n → 𝕜}
   rw [planeRotation_mulVec, hux, hvx, zero_smul, zero_smul, add_zero, sub_self, smul_zero,
     smul_zero, add_zero, add_zero]
 
-/-- **A plane rotation is unitary**, for orthonormal $\mathbf{u}$, $\mathbf{v}$ and
+/-- A plane rotation is unitary, for orthonormal $\mathbf{u}$, $\mathbf{v}$ and
 $c^2 + s^2 = 1$.
 Port of `NLAlib.hasOrthonormalCols_planeRotation`, there over $\mathbb{R}$. -/
 theorem hasOrthonormalCols_planeRotation [Fintype n] {u v : n → 𝕜}

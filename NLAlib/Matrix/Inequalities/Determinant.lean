@@ -355,7 +355,7 @@ theorem principalMinor_conjTranspose {R : Type*} [CommRing R] [StarRing R] (A : 
   rw [principalMinor, principalMinor, ← Matrix.det_conjTranspose, Matrix.conjTranspose_submatrix]
 
 omit [Fintype n] in
-/-- **A principal minor as the determinant of a submatrix along an injective map.** If $f$ is
+/-- A principal minor as the determinant of a submatrix along an injective map: if $f$ is
 injective with image the index set $s$, the determinant of the matrix with entries
 $\mathbf{A}_{f(i),f(j)}$ (`A.submatrix f f`) is the principal minor of $\mathbf{A}$ on $s$: a
 principal minor does not depend on how its index set is enumerated. -/

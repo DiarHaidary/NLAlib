@@ -274,7 +274,7 @@ theorem mgsArnoldiHessenberg_apply_succ_eq_zero_iff (A : Matrix n n 𝕜) (b : n
       arnoldiMatrix_col_succ A b j, smul_eq_zero, inv_eq_zero, RCLike.ofReal_eq_zero, norm_eq_zero,
     WithLp.toLp_eq_zero, or_self]
 
-/-- **The computed Hessenberg matrix past the grade**: for every $\mathbf{A}$, the entry
+/-- The computed Hessenberg matrix past the grade: for every $\mathbf{A}$, the entry
 $h_{a,c}$ of $\underline{\mathbf{H}}_q$ vanishes when $\nu \le a$ or $\nu \le c$, $\nu$ the
 grade: its rows and columns from $\nu$ on are zero. -/
 theorem mgsArnoldiHessenberg_apply_eq_zero_of_le (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ}
@@ -287,7 +287,7 @@ theorem mgsArnoldiHessenberg_apply_eq_zero_of_le (A : Matrix n n 𝕜) (b : n �
   · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h, star_zero, zero_dotProduct]
   · rw [arnoldiMatrix_col_last_eq_zero_iff.mpr h, Matrix.mulVec_zero, dotProduct_zero]
 
-/-- **Full column rank of the computed Hessenberg matrix**: for invertible $\mathbf{A}$,
+/-- Full column rank of the computed Hessenberg matrix: for invertible $\mathbf{A}$,
 $\underline{\mathbf{H}}_q$ has full column rank iff $q \le \nu$, the grade of $\mathbf{b}$. -/
 theorem injective_mulVec_mgsArnoldiHessenberg_iff {A : Matrix n n 𝕜} (hA : IsUnit A)
     (b : n → 𝕜) (q : ℕ) :

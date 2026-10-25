@@ -120,7 +120,7 @@ theorem IsObliviousSubspaceInjection.hasSubspaceInjection [DecidableEq n] [Finty
   rw [e]
   exact h.injection _ (by rwa [rank_rangeProjector])
 
-/-- **The OSE constructor**: for $\lvert p \rvert \le \lvert n \rvert$, a sketch that is a random
+/-- The OSE constructor: for $\lvert p \rvert \le \lvert n \rvert$, a sketch that is a random
 subspace embedding for every $\mathbf{U}$ with orthonormal columns indexed by $p$ is an OSE for
 dimension $\lvert p \rvert$. The constructor every sketching family uses. -/
 theorem IsObliviousSubspaceEmbedding.of_hasOrthonormalCols [IsFiniteMeasure μ] [Fintype p]
@@ -131,7 +131,7 @@ theorem IsObliviousSubspaceEmbedding.of_hasOrthonormalCols [IsFiniteMeasure μ] 
   obtain ⟨Q, hQ, hUQ⟩ := exists_hasOrthonormalCols_range_le U hU hp
   exact (h Q hQ).of_range_le hUQ
 
-/-- **The OSI constructor**: for $\lvert p \rvert \le \lvert n \rvert$, an isotropic sketch that is
+/-- The OSI constructor: for $\lvert p \rvert \le \lvert n \rvert$, an isotropic sketch that is
 a random subspace injection for every $\mathbf{U}$ with orthonormal columns indexed by $p$ is an
 OSI for dimension $\lvert p \rvert$. -/
 theorem IsObliviousSubspaceInjection.of_hasOrthonormalCols [IsFiniteMeasure μ] [DecidableEq n]
@@ -165,7 +165,7 @@ theorem IsObliviousSubspaceInjection.mono [IsFiniteMeasure μ] [DecidableEq n]
 
 /-! ### Transfer to an independent random subspace -/
 
-/-- **Transfer of an OSE to an independent random subspace**: if $\mathbf{V}$ is independent of
+/-- Transfer of an OSE to an independent random subspace: if $\mathbf{V}$ is independent of
 $\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to embed
 $\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. Fubini on the closed
 set of `NLAlib.isClosed_setOf_isSubspaceEmbedding`: the sections bound
@@ -182,7 +182,7 @@ theorem IsObliviousSubspaceEmbedding.measureReal_not_isSubspaceEmbedding_le_of_i
     (δ₂ := 0) ((measureReal_eq_zero_iff (measure_ne_top _ _)).2 (ae_iff.1 hrank)).le
   rwa [add_zero] at h'
 
-/-- **Transfer of an OSI to an independent random subspace**: if $\mathbf{V}$ is independent of
+/-- Transfer of an OSI to an independent random subspace: if $\mathbf{V}$ is independent of
 $\mathbf{S}$ and has rank at most $d$ almost surely, $\mathbf{S}(\omega)$ fails to inject
 $\operatorname{range}\mathbf{V}(\omega)$ with probability at most $\delta$. -/
 theorem IsObliviousSubspaceInjection.measureReal_not_isSubspaceInjection_le_of_indepFun
@@ -199,7 +199,7 @@ theorem IsObliviousSubspaceInjection.measureReal_not_isSubspaceInjection_le_of_i
 
 /-! ### Composition -/
 
-/-- **Composition of OSEs**: for independent OSEs $\mathbf{S}_2$ and $\mathbf{S}$ for the same
+/-- Composition of OSEs: for independent OSEs $\mathbf{S}_2$ and $\mathbf{S}$ for the same
 dimension, the constants $a_2, b_2$ of $\mathbf{S}_2$ nonnegative, $\mathbf{S}_2\mathbf{S}$ is an
 OSE with constants $a_2 a$, $b_2 b$ and failure probability $\delta_2 + \delta$. -/
 theorem IsObliviousSubspaceEmbedding.mul [IsProbabilityMeasure μ] {S₂ : Ω → Matrix l k 𝕜}
@@ -223,7 +223,7 @@ theorem IsObliviousSubspaceEmbedding.mul [IsProbabilityMeasure μ] {S₂ : Ω �
   rw [not_or, not_not, not_not] at hcon
   exact hω (hcon.1.mul hcon.2 ha₂ hb₂)
 
-/-- **Composition of OSIs**: for independent OSIs $\mathbf{S}_2$ and $\mathbf{S}$ for the same
+/-- Composition of OSIs: for independent OSIs $\mathbf{S}_2$ and $\mathbf{S}$ for the same
 dimension, the constant $a_2$ of $\mathbf{S}_2$ nonnegative, $\mathbf{S}_2\mathbf{S}$ is an OSI
 with constant $a_2 a$ and failure probability $\delta_2 + \delta$. -/
 theorem IsObliviousSubspaceInjection.mul [IsProbabilityMeasure μ] [DecidableEq n]

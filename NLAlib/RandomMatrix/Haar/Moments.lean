@@ -119,8 +119,8 @@ theorem integral_mul_mul_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [Deci
     rw [Matrix.trace_mul_comm, ← Matrix.mul_assoc, hasOrthonormalCols_iff.1 hω, Matrix.one_mul]
   rw [integral_congr_ae htr, integral_const, probReal_univ, one_smul]
 
-/-- **$\mathbb{E}[\mathbf{Q}\mathbf{Q}^{\mathsf{H}}] = (\lvert k \rvert / \lvert n \rvert) \,
-\mathbf{I}$**: the range projector of an $n \times k$ Haar frame,
+/-- $\mathbb{E}[\mathbf{Q}\mathbf{Q}^{\mathsf{H}}] = (\lvert k \rvert / \lvert n \rvert) \,
+\mathbf{I}$: the range projector of an $n \times k$ Haar frame,
 $\lvert k \rvert \le \lvert n \rvert$, is $\lvert k \rvert / \lvert n \rvert$ times the identity in
 mean (the case $\mathbf{B} = \mathbf{I}$ of `integral_mul_mul_conjTranspose_of_hasLaw_haarFrame`,
 stated because consumers rewrite with it). -/
@@ -222,7 +222,7 @@ theorem integral_apply_sq_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (ha
   classical
   simpa only [sq, if_true] using integral_apply_mul_apply_of_hasLaw_haarFrame hX hk i i j
 
-/-- **A rescaled column of a Haar frame is isotropic**:
+/-- A rescaled column of a Haar frame is isotropic:
 $\sqrt{\lvert n \rvert} \, \mathbf{Q}\mathbf{e}_j$ has second-moment matrix the identity, for an
 $n \times k$ Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$. It is what Hutchinson's
 estimator with sphere probes takes (`IsIsotropic`). -/
@@ -479,7 +479,7 @@ private theorem frobNorm_sq_and_trace_of_eq_mul_diagonal [DecidableEq n] {U : Ma
     RCLike.re_to_real]
   simp only [sq]
 
-/-- **The mean of a Haar compression**:
+/-- The mean of a Haar compression:
 $\mathbb{E}\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})
 = (\lvert k \rvert / \lvert n \rvert) \operatorname{tr} \mathbf{A}$ for an $n \times k$ Haar frame
 $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$, and any square $\mathbf{A}$: the trace of

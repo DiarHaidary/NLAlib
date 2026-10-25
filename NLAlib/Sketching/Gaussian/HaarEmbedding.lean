@@ -274,7 +274,7 @@ private theorem sqrt_card_pos_of_le [Nonempty p] (hk : Fintype.card k ≤ Fintyp
   have hK : 0 < √(Fintype.card k : ℝ) := by linarith
   exact ⟨hK, hK.trans_le (Real.sqrt_le_sqrt (Nat.cast_le.2 hk))⟩
 
-/-- **Haar subspace injection**: for $\mathbf{U}$ with orthonormal columns, the Haar sketch is a
+/-- Haar subspace injection: for $\mathbf{U}$ with orthonormal columns, the Haar sketch is a
 subspace injection for $\operatorname{range} \mathbf{U}$ with constant
 $$a_{\mathrm{H}} = \frac{(1 - (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2}
 {(1 + (\sqrt{\lvert k \rvert} + s)/\sqrt{\lvert n \rvert})^2}$$
@@ -472,7 +472,7 @@ private theorem measureReal_haarFrame_eq_gaussianMatrix [Finite p] {l : Type*} [
     (¬ C ≤ r • (Uᴴ * U - Uᴴ * rangeProjector M * U))
   rw [hM'.rangeProjector_eq]
 
-/-- **Haar subspace injection near $\lvert k \rvert = \lvert n \rvert$**: with $c$ the codimension,
+/-- Haar subspace injection near $\lvert k \rvert = \lvert n \rvert$: with $c$ the codimension,
 $\lvert k \rvert + c = \lvert n \rvert$, and $\mathbf{U}$ with orthonormal columns, the Haar sketch
 is a subspace injection for $\operatorname{range} \mathbf{U}$ with constant
 $$\frac{\lvert n \rvert}{\lvert k \rvert} \Bigl(1 - \frac{(\sqrt{c} + \sqrt{\lvert p \rvert} + t)^2}
@@ -783,7 +783,7 @@ private theorem jlDim_le_of_mul_le {d : ℕ} {K : ℝ} (hε : 0 < ε) (hε1 : ε
     (by nlinarith [Nat.cast_nonneg (α := ℝ) d, Real.log_nonneg (by norm_num : (1 : ℝ) ≤ 2)])
     (sq_nonneg ε)
 
-/-- **The Haar OSE, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+/-- The Haar OSE, asymptotic form: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
 the Haar sketch $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$,
 $\lvert k\rvert \le \lvert n\rvert$, to be an oblivious subspace embedding for dimension $d$ with
 constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$
@@ -803,7 +803,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_haarFrame :
   exact isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le hQ hkn hε (by linarith) hδ
     (jlDim_le_of_mul_le hε hε1 hδ hδ2 hk)
 
-/-- **The Haar OSI, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+/-- The Haar OSI, asymptotic form: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
 the Haar sketch $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$, $k$
 nonempty, $\lvert k\rvert \le \lvert n\rvert$, to be an oblivious subspace injection for
 dimension $d$ with constant $1 - \varepsilon$ and failure probability $\delta$, for

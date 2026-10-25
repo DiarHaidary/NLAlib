@@ -74,7 +74,7 @@ theorem hasLaw_rangeProjector_mul_of_hasLaw_haarFrame [DecidableEq k] {m : Type*
   funext G
   exact rangeProjector_mul_polarFactor A G
 
-/-- **Expectations transfer between Gaussian and Haar test matrices**: for any strongly
+/-- Expectations transfer between Gaussian and Haar test matrices: for any strongly
 measurable statistic $f$ of the range projector, with values in any real Banach space,
 $\mathbb{E} f(\mathbf{P}_{\mathbf{A}\mathbf{Q}}) = \mathbb{E} f(\mathbf{P}_{\mathbf{A}\mathbf{G}})$
 for a Haar frame $\mathbf{Q}$ and a standard Gaussian $\mathbf{G}$ on any two probability spaces. No
@@ -94,7 +94,7 @@ theorem integral_comp_rangeProjector_mul_of_hasLaw_haarFrame [DecidableEq k] {m 
   exact ((hasLaw_rangeProjector_mul_of_hasLaw_haarFrame A hX).integral_comp
     hf.aestronglyMeasurable).trans (hG'.integral_comp hf.aestronglyMeasurable).symm
 
-/-- **The rank of a Haar sketch**:
+/-- The rank of a Haar sketch:
 $\operatorname{rank}(\mathbf{A}\mathbf{Q}) = \min(\operatorname{rank} \mathbf{A}, \lvert k \rvert)$
 almost surely, for an $n \times k$ Haar frame $\mathbf{Q}$, in every shape. The Haar twin of
 `ae_rank_mul_eq_min_of_hasLaw_gaussianMatrix`. -/
@@ -141,7 +141,7 @@ theorem hasLaw_rangeProjector_mul_of_isLeftUnitarilyInvariant [DecidableEq n] {m
   simp only [rangeProjector_mul_polarFactor] at h
   exact h
 
-/-- **The rank of a rotation-invariant sketch**:
+/-- The rank of a rotation-invariant sketch:
 $\operatorname{rank}(\mathbf{A}\mathbf{X}) = \min(\operatorname{rank} \mathbf{A}, \lvert k \rvert)$
 almost surely, for $\mathbf{X}$ with a left unitarily invariant law and full column rank almost
 surely. The rotation-invariant twin of `ae_rank_mul_eq_min_of_hasLaw_haarFrame`, through the
@@ -157,7 +157,7 @@ theorem ae_rank_mul_eq_min_of_isLeftUnitarilyInvariant [DecidableEq n] {m : Type
   rw [← hω, ← rank_rangeProjector, ← rank_rangeProjector (A * polarFactor (X ω)),
     rangeProjector_mul_polarFactor]
 
-/-- **Expectations transfer from a rotation-invariant test matrix to the Gaussian**: if the law of
+/-- Expectations transfer from a rotation-invariant test matrix to the Gaussian: if the law of
 $\mathbf{X}$ is a left unitarily invariant probability measure and $\mathbf{X}$ has full column
 rank almost surely, then for every $f$ that factors through the range projector,
 $f(\mathbf{Y}) = g(\mathbf{P}_{\mathbf{A}\mathbf{Y}})$ with $g$ measurable,
@@ -176,7 +176,7 @@ theorem integral_eq_integral_gaussianMatrix_of_isLeftUnitarilyInvariant [Decidab
   simp only [hfg]
   exact h
 
-/-- **Tails transfer from a rotation-invariant test matrix to the Gaussian**: let
+/-- Tails transfer from a rotation-invariant test matrix to the Gaussian: let
 $\mathbf{A} \in \mathbb{R}^{m \times n}$ and let the random $\mathbf{X} \in \mathbb{R}^{n \times k}$
 have a law $\nu$ that is a left unitarily invariant probability measure
 (`IsLeftUnitarilyInvariant ν`) and full column rank almost surely. Then for every

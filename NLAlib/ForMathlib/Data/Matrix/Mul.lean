@@ -38,7 +38,7 @@ open scoped Matrix
 
 variable {R : Type*} [CommSemiring R] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- **Dot products of flattened outer products factor**:
+/-- Dot products of flattened outer products factor:
 $\sum_{(i,j)} (\mathbf{x}_i \mathbf{y}_j) (\mathbf{x}'_i \mathbf{y}'_j)
 = (\mathbf{x}^{\mathsf{T}}\mathbf{x}') (\mathbf{y}^{\mathsf{T}}\mathbf{y}')$. -/
 theorem dotProduct_mul_eq_mul_dotProduct (x x' : m → R) (y y' : n → R) :
@@ -49,7 +49,7 @@ theorem dotProduct_mul_eq_mul_dotProduct (x x' : m → R) (y y' : n → R) :
 
 namespace Matrix
 
-/-- **A bilinear form is a linear form of the entries**:
+/-- A bilinear form is a linear form of the entries:
 $\mathbf{x}^{\mathsf{T}}\mathbf{G}\mathbf{y}$ is the dot product of the flattened outer product
 $(\mathbf{x}_i \mathbf{y}_j)_{(i,j)}$ with the flattened matrix $(\mathbf{G}_{i,j})_{(i,j)}$
 (`Function.uncurry G`): $\mathbf{x}^{\mathsf{T}}\mathbf{G}\mathbf{y}
@@ -61,7 +61,7 @@ theorem dotProduct_mulVec_eq_dotProduct_uncurry (x : m → R) (G : Matrix m n R)
   change _ = _ * G i j
   ring
 
-/-- **A product through the leading columns**: if the columns of
+/-- A product through the leading columns: if the columns of
 $\mathbf{Q} \in R^{m \times q}$ from $k \le q$ on vanish, then
 $\mathbf{Q}\mathbf{y} = \mathbf{Q}_{:,<k}\,\mathbf{y}_{<k}$, the first $k$ columns of
 $\mathbf{Q}$ applied to the first $k$ entries of $\mathbf{y}$. -/

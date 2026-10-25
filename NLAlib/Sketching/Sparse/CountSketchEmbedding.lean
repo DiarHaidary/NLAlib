@@ -350,7 +350,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch :
     · nlinarith [(Nat.one_le_cast (α := ℝ)).2 hd]
   linarith
 
-/-- **CountSketch OSI, size form**: with <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
+/-- CountSketch OSI, size form: with <!-- value countSketchEmbeddingDim d \varepsilon \delta -->
 $\lvert k \rvert \ge (d^2 + d)/(\delta \varepsilon^2)$ rows
 (`NLAlib.countSketchEmbeddingDim d ε δ`), for
 $\varepsilon, \delta > 0$ and nonempty `k`, a CountSketch is an oblivious subspace injection for

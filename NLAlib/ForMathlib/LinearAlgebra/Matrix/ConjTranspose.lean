@@ -89,7 +89,7 @@ theorem conjTranspose_smul_mul_mul_smul {c : ℝ} (hc : 0 ≤ c) {S R : Matrix n
   simp only [Matrix.smul_mul, Matrix.mul_smul, _root_.smul_smul, Real.mul_self_sqrt hc,
     Matrix.mul_assoc]
 
-/-- **The split residual**: the residual of $\mathbf{C}\mathbf{y}$ for
+/-- The split residual: the residual of $\mathbf{C}\mathbf{y}$ for
 $\mathbf{A}\mathbf{x} = \mathbf{b}$, multiplied by $\mathbf{C}^{\mathsf{H}}$, is the residual of
 $\mathbf{y}$ for the congruent system
 $(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\mathbf{y} = \mathbf{C}^{\mathsf{H}}\mathbf{b}$:

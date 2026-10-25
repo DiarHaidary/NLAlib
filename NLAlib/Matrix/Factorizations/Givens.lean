@@ -176,7 +176,7 @@ theorem conjTranspose_givens (i j : n) (c s : 𝕜) :
     star_one, star_star, star_neg]
   module
 
-/-- **A Givens rotation is unitary** when $\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ and
+/-- A Givens rotation is unitary when $\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ and
 $i \ne j$.
 Port of `NLAlib.hasOrthonormalCols_givens`. -/
 theorem hasOrthonormalCols_givens {i j : n} (hij : i ≠ j) {c s : 𝕜}
@@ -202,7 +202,7 @@ theorem givens_mul_conjTranspose_self {i j : n} (hij : i ≠ j) {c s : 𝕜}
     (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1) : givens i j c s * (givens i j c s)ᴴ = 1 := by
   exact (hasOrthonormalCols_givens hij hcs).mul_conjTranspose_self
 
-/-- **The determinant of a Givens rotation** is $c \bar{c} + s \bar{s}$, for any $c$, $s$ and
+/-- The determinant of a Givens rotation is $c \bar{c} + s \bar{s}$, for any $c$, $s$ and
 $i \ne j$. -/
 theorem det_givens_eq_mul_star_add_mul_star {i j : n} (hij : i ≠ j) (c s : 𝕜) :
     (givens i j c s).det = c * star c + s * star s := by
@@ -234,7 +234,7 @@ theorem det_givens {i j : n} (hij : i ≠ j) {c s : 𝕜} (hcs : ‖c‖ ^ 2 + �
   rw [det_givens_eq_mul_star_add_mul_star hij, mul_comm c, mul_comm s]
   exact star_mul_self_add hcs
 
-/-- **Clearing an entry.** For every vector $\mathbf{x}$ and $i \ne j$ there is a unitary Givens
+/-- Clearing an entry: for every vector $\mathbf{x}$ and $i \ne j$ there is a unitary Givens
 rotation ($\lvert c \rvert^2 + \lvert s \rvert^2 = 1$) that sends coordinate $j$ to zero and
 coordinate $i$ to $\sqrt{\lvert \mathbf{x}_i \rvert^2 + \lvert \mathbf{x}_j \rvert^2}$.
 Port of `NLAlib.givensRotation_transpose_mulVec_apply_right` and `…_left`, there over
@@ -515,7 +515,7 @@ private theorem givensHessenbergStep_mul_apply_eq_zero_of_le {l : Type*}
     rw [givensHessenbergStep_mul_apply_of_ne W X hak.1 hak.2]
     exact hX a ha
 
-/-- **Givens QR keeps trailing zero rows**: if the rows of $\mathbf{H}$ from $r$ on vanish, so do
+/-- Givens QR keeps trailing zero rows: if the rows of $\mathbf{H}$ from $r$ on vanish, so do
 the rows from $r$ on of every state of its Givens QR, and so do the coordinates from $r$ on of every
 rotated vector $\mathbf{v}$ whose coordinates from $r$ on vanish. The rotation of step $r - 1$
 clears a zero entry, so its sine is zero. -/
@@ -541,7 +541,7 @@ theorem givensHessenbergState_apply_eq_zero_of_le {H : Matrix (Fin m) (Fin p) �
         (Matrix.of fun i (_ : Unit) => ((givensHessenbergState H k).1ᴴ *ᵥ v) i) ()
         (fun a ha => ih.2 a ha) a ha
 
-/-- **Givens QR keeps zero columns**: a column of $\mathbf{H}$ that vanishes vanishes in every
+/-- Givens QR keeps zero columns: a column of $\mathbf{H}$ that vanishes vanishes in every
 state of its Givens QR. -/
 theorem givensHessenbergState_snd_apply_eq_zero_of_col {H : Matrix (Fin m) (Fin p) 𝕜}
     {b : Fin p} (hH : ∀ a : Fin m, H a b = 0) (k : ℕ) (a : Fin m) :
@@ -553,7 +553,7 @@ theorem givensHessenbergState_snd_apply_eq_zero_of_col {H : Matrix (Fin m) (Fin 
       givensHessenbergStep_mul_apply_of_apply_eq_zero _ _ (fun a _ => ih a)]
     exact ih a
 
-/-- **Later steps leave the leading rows alone**: for $k \le j$, rows $a < k$ of the state after
+/-- Later steps leave the leading rows alone: for $k \le j$, rows $a < k$ of the state after
 $j$ steps are those after $k$ steps, and so are the coordinates $a < k$ of a rotated vector, since
 step $l$ acts on rows $l$ and $l + 1$ only. -/
 theorem givensHessenbergState_apply_of_lt (H : Matrix (Fin m) (Fin p) 𝕜) (v : Fin m → 𝕜)

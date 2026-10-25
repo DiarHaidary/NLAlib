@@ -111,7 +111,7 @@ theorem samplingMeasure_singleton (i : ι) : samplingMeasure p {i} = p i := by
     Measure.dirac_apply, smul_eq_mul, Set.indicator_apply, Set.mem_singleton_iff, Pi.one_apply,
     mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, if_true]
 
-/-- **Collision probability.** Two distinct coordinates of an i.i.d. sample from
+/-- Collision probability: two distinct coordinates of an i.i.d. sample from
 `NLAlib.samplingMeasure p`, with weights summing to $1$, agree with probability $\sum_r p_r^2$;
 at uniform weights $1/\lvert \iota \rvert$ this is $1/\lvert \iota \rvert$. The hash-collision
 step of CountSketch (`NLAlib.Sketching.Sparse.CountSketch`). -/

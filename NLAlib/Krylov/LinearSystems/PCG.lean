@@ -95,7 +95,7 @@ theorem pcgIterate_zero (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) : pcgItera
   have h := pcgIterate_sub_mem_krylovSpace A M b x₀ 0
   rwa [krylovSpace_zero, Submodule.mem_bot, sub_eq_zero] at h
 
-/-- **No preconditioner is CG**: $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{I}, \mathbf{b},
+/-- No preconditioner is CG: $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{I}, \mathbf{b},
 \mathbf{x}_0, q) = \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$. -/
 @[simp]
 theorem pcgIterate_one (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -114,7 +114,7 @@ theorem _root_.Matrix.PosDef.pcgIterate_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
     Matrix.mul_assoc]
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The Galerkin condition characterises PCG**: for positive definite $\mathbf{A}$, a vector
+/-- The Galerkin condition characterises PCG: for positive definite $\mathbf{A}$, a vector
 of $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{r}_0)$ whose residual is
 orthogonal to that space is the PCG iterate
 $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q)$. -/

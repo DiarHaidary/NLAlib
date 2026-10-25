@@ -76,7 +76,7 @@ theorem specNorm_pinv_sq (A : Matrix m n 𝕜) :
     specNorm (pinv A) ^ 2 = specNorm (pinv (Aᴴ * A)) := by
   rw [pinv_conjTranspose_mul_self, specNorm_mul_conjTranspose_self]
 
-/-- **A lower bound on the Gram matrix bounds the pseudoinverse.** If
+/-- A lower bound on the Gram matrix bounds the pseudoinverse: if
 $a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ with $0 < a$, then $\|\mathbf{A}^{+}\|_2^2
 \le a^{-1}$. With $\mathbf{A} = \mathbf{S}\mathbf{U}$ and $a = 1 - \varepsilon$ this is the bound on
 $(\mathbf{S}\mathbf{U})^{+}$ delivered by a subspace embedding. -/
@@ -92,7 +92,7 @@ theorem specNorm_pinv_sq_le_inv_of_smul_one_le [DecidableEq n] {A : Matrix m n �
   rw [le_inv_mul_iff₀ ha]
   exact h₁.trans (pow_le_pow_left₀ (norm_nonneg _) h₂ 2)
 
-/-- **The pseudoinverse bounds the vector below.** With full column rank,
+/-- The pseudoinverse bounds the vector below: with full column rank,
 $\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$.
 Port of `NLAlib.inv_specNorm_pinvL_sq_mul_dotProduct_le`, there over $\mathbb{R}$ in squared
 form. -/
@@ -112,7 +112,7 @@ theorem norm_le_specNorm_pinv_mul_norm_mulVec_of_mem_range (A : Matrix m n 𝕜)
   have h := norm_toLp_mulVec_le (pinv A) (A *ᵥ x)
   rwa [Matrix.mulVec_mulVec, pinv_mul, rangeProjector_mulVec_eq_self_iff.mpr hx] at h
 
-/-- **A lower Gram bound is a bound on the pseudoinverse.** With full column rank and $0 < a$,
+/-- A lower Gram bound is a bound on the pseudoinverse: with full column rank and $0 < a$,
 $a\mathbf{I} \preceq \mathbf{A}^{\mathsf{H}}\mathbf{A}$ exactly when $\|\mathbf{A}^{+}\|_2^2 \le
 a^{-1}$. -/
 theorem smul_one_le_conjTranspose_mul_self_iff_specNorm_pinv_sq_le [DecidableEq n]
@@ -125,7 +125,7 @@ theorem smul_one_le_conjTranspose_mul_self_iff_specNorm_pinv_sq_le [DecidableEq 
   have hx' := hx.trans (mul_le_mul_of_nonneg_right h (sq_nonneg _))
   rwa [le_inv_mul_iff₀ ha] at hx'
 
-/-- **The squared Frobenius norm of the pseudoinverse** is the sum of the inverse squared
+/-- The squared Frobenius norm of the pseudoinverse is the sum of the inverse squared
 nonzero singular values:
 $\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \sum_{k < \operatorname{rank} \mathbf{A}}
 \sigma_k(\mathbf{A})^{-2}$. -/

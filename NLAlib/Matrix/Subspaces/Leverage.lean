@@ -226,7 +226,7 @@ section Domination
 
 variable [Fintype r] {U : Matrix n r 𝕜} {p : n → ℝ≥0} {L : ℝ}
 
-/-- **Reduction to orthonormal columns.** Under the domination
+/-- Reduction to orthonormal columns: under the domination
 $\ell_i(\mathbf{U}) \le L p_i$ of the leverage scores of $\mathbf{U}$ (any shape and rank),
 there is a $\mathbf{Q}$ with $\operatorname{rank}\mathbf{U}$ orthonormal columns whose range
 contains that of $\mathbf{U}$ and whose rows inherit the domination,
@@ -252,7 +252,7 @@ theorem rank_le_of_leverageScore_le (hp : ∑ i, p i = 1)
     _ ≤ ∑ i, L * p i := Finset.sum_le_sum fun i _ => hdom i
     _ = L := by rw [← Finset.mul_sum, ← NNReal.coe_sum, hp, NNReal.coe_one, mul_one]
 
-/-- **Uniform weights, in the form of the sketch.** The domination
+/-- Uniform weights, in the form of the sketch: the domination
 $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ by uniform weights, as stated by uniform sampling
 with and without replacement and the SRHT, is the domination $\ell_i(\mathbf{U}) \le L p_i$ at
 the weights $p_i = 1/\lvert n \rvert$ of `NLAlib.samplingSketch`. -/

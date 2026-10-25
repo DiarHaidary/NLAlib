@@ -189,7 +189,7 @@ theorem samplingSketch_eq_map [MeasurableSpace n] [MeasurableSingletonClass n] (
   classical
   rw [samplingSketch_eq_sum_smul_dirac, map_pi_samplingMeasure_eq_sum]
 
-/-- **From the user's own indices**: if $\iota$ is a vector of $\lvert k \rvert$ i.i.d. indices
+/-- From the user's own indices: if $\iota$ is a vector of $\lvert k \rvert$ i.i.d. indices
 with law `NLAlib.samplingMeasure p`, the sketch built from it has law
 `NLAlib.samplingSketch k p`. -/
 theorem hasLaw_samplingSketchMatrix [MeasurableSpace n] [MeasurableSingletonClass n]
@@ -220,7 +220,7 @@ theorem samplingSketchMatrix_eq_diagonal_mul [DecidableEq k] (p : n → ℝ≥0)
     simp
   · simp [h, Ne.symm h]
 
-/-- **Distinct indices give orthogonal rows**: for an injective $\iota$, the rows of the sketch have
+/-- Distinct indices give orthogonal rows: for an injective $\iota$, the rows of the sketch have
 disjoint supports, so $\mathbf{S}\mathbf{S}^{\mathsf{H}}$ is diagonal with entries
 $(\lvert k \rvert \, p_{\iota(j)})^{-1}$ ($0$ where $p_{\iota(j)} = 0$). At uniform weights it is
 $(\lvert n \rvert / \lvert k \rvert) \mathbf{I}$, the partial isometry of row sampling without
@@ -250,7 +250,7 @@ private theorem samplingSketchMatrix_mul_apply {q' : Type*} (p : n → ℝ≥0) 
   simp [Matrix.mul_apply, samplingSketchMatrix, ite_mul, Finset.sum_ite_eq]
 
 omit [Fintype q] [Fintype r] in
-/-- **The Gram-atoms identity**: the sketched cross-Gram matrix
+/-- The Gram-atoms identity: the sketched cross-Gram matrix
 $(\mathbf{S}\mathbf{A})^{\mathsf{H}} (\mathbf{S}\mathbf{B})$ is the sum over the samples $j$ of
 the rank-one atoms
 $(\lvert k \rvert \, p_{\iota(j)})^{-1} \mathbf{a}_{\iota(j)}^{\mathsf{H}} \mathbf{b}_{\iota(j)}$,
@@ -679,7 +679,7 @@ theorem samplingInjectionDim_le (d : ℕ) (L ε δ : ℝ) :
     samplingInjectionDim d L ε δ ≤ 2 * L * Real.log (d / δ) / ε ^ 2 := by
   rw [samplingInjectionDim_def]
 
-/-- **Inverting the embedding tail at `NLAlib.samplingEmbeddingDim`**: for $L > 0$,
+/-- Inverting the embedding tail at `NLAlib.samplingEmbeddingDim`: for $L > 0$,
 $\varepsilon > 0$, $\delta > 0$ and <!-- value samplingEmbeddingDim d L \varepsilon \delta -->
 $K \ge 3 L \log(2d/\delta)/\varepsilon^2$ (`samplingEmbeddingDim d L ε δ`),
 $2 d \, e^{-\varepsilon^2 K / (3L)} \le \delta$. The step from the tails of row sampling (with or
@@ -699,7 +699,7 @@ theorem two_mul_mul_exp_le_of_samplingEmbeddingDim_le {d : ℕ} {K : ℝ} (hL : 
   rw [neg_mul, neg_div, Real.exp_neg, ← div_eq_mul_inv, div_le_iff₀ (Real.exp_pos _)]
   linarith
 
-/-- **Inverting the injection tail at `NLAlib.samplingInjectionDim`**: for $L > 0$,
+/-- Inverting the injection tail at `NLAlib.samplingInjectionDim`: for $L > 0$,
 $\varepsilon > 0$, $\delta > 0$ and <!-- value samplingInjectionDim d L \varepsilon \delta -->
 $K \ge 2 L \log(d/\delta)/\varepsilon^2$ (`samplingInjectionDim d L ε δ`),
 $d \, e^{-\varepsilon^2 K / (2L)} \le \delta$. -/
@@ -803,7 +803,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketch_of_samplingInjectionDim_le
   exact mul_exp_le_of_samplingInjectionDim_le
     ((Nat.cast_pos.2 hd).trans_le (rank_le_of_leverageScore_le hp hdom)) hε hδ hk
 
-/-- **The lower half, asymptotic form**: with $d = \operatorname{rank}\mathbf{U}$,
+/-- The lower half, asymptotic form: with $d = \operatorname{rank}\mathbf{U}$,
 $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row sampling under leverage domination
 $\ell_i(\mathbf{U}) \le L p_i$ to be a subspace injection for $\operatorname{range}\mathbf{U}$
 with constant $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ below an

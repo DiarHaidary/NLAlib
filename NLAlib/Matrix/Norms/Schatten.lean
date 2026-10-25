@@ -95,7 +95,7 @@ private theorem sum_range_singularValues_rpow (A : Matrix m n 𝕜) {t : ℝ} (h
     rw [(singularValues_eq_zero_iff A).mpr (not_lt.mp fun h => hi (Finset.mem_range.mpr h)),
       Real.zero_rpow ht]).symm
 
-/-- **The Schatten norm as a power sum.** For $0 < q < \infty$ and any $N$ at least the rank,
+/-- The Schatten norm as a power sum: for $0 < q < \infty$ and any $N$ at least the rank,
 $$\|\mathbf{A}\|_{S_q} = \Bigl(\sum_{i < N} \sigma_i(\mathbf{A})^q\Bigr)^{1/q}\,.$$
 Port of `NLAlib.schattenNormReal_eq_sum_range_rpow_of_min_le` and
 `NLAlib.schattenNormReal_eq_sum_rank_rpow`. -/
@@ -246,7 +246,7 @@ theorem schattenNorm_conjTranspose (q : ℝ≥0∞) (A : Matrix m n 𝕜) :
     schattenNorm q Aᴴ = schattenNorm q A := by
   exact schattenNorm_congr (singularValues_conjTranspose A) q
 
-/-- **The Schatten norm of a Gram matrix**:
+/-- The Schatten norm of a Gram matrix:
 $\|\mathbf{B}^{\mathsf{H}}\mathbf{B}\|_{S_q} = \|\mathbf{B}\|_{S_{2q}}^2$ for $q \ne 0$, since
 $\sigma_i(\mathbf{B}^{\mathsf{H}}\mathbf{B}) = \sigma_i(\mathbf{B})^2$. The case $q = 0$ is
 excluded: `schattenNorm 0` is the rank. -/

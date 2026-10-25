@@ -34,7 +34,7 @@ open scoped Topology
 variable {Ω E : Type*} {m mΩ : MeasurableSpace Ω} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [CompleteSpace E] {μ : Measure Ω}
 
-/-- **Conditional Jensen's inequality**
+/-- Conditional Jensen's inequality
 $\mathbb{E}[\varphi(f) \mid m] \le \varphi(\mathbb{E}[f \mid m])$ almost everywhere, for $\varphi$
 concave and continuous on a convex set $s$ that need not be closed, provided $f$ and
 $\varphi \circ f$ are integrable, and $f$ and its conditional mean lie in $s$ almost everywhere.

@@ -301,7 +301,7 @@ theorem _root_.Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom {H : Matri
   have h := nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom (CFC.sqrt H) Ω k
   rwa [hHF] at h
 
-/-- **The trace error of truncated Nyström under any choice of the truncation**: for positive
+/-- The trace error of truncated Nyström under any choice of the truncation: for positive
 semidefinite $\mathbf{H}$ and any best rank-$k$ approximation $\mathbf{Y}$ of
 $\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$,
 $$\|\mathbf{H} - \mathbf{Y}\|_* \le

@@ -124,7 +124,7 @@ theorem ae_specNorm_eq_of_hasLaw_haarFrame (hQ : HasLaw Q (haarFrame n k) μ)
   · rw [hω.specNorm_eq_one, mul_one]
 
 omit [Fintype p] in
-/-- **Gaussian transfer of the Haar Gram matrix**:
+/-- Gaussian transfer of the Haar Gram matrix:
 $(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})$ has the law of
 $(\lvert n \rvert / \lvert k \rvert) \, \mathbf{U}^{\mathsf{H}} \mathbf{P}_{\mathbf{G}} \mathbf{U}$,
 $\mathbf{P}_{\mathbf{G}}$ the range projector of an $n \times k$ standard Gaussian $\mathbf{G}$, for
@@ -153,7 +153,7 @@ theorem hasLaw_conjTranspose_mul_self_mul_of_hasLaw_haarFrame (hQ : HasLaw Q (ha
 /-! ### Deterministic halves -/
 
 omit [Fintype p] in
-/-- **The upper half of a Haar sketch is deterministic**: $(\mathbf{S}\mathbf{U})^{\mathsf{H}}
+/-- The upper half of a Haar sketch is deterministic: $(\mathbf{S}\mathbf{U})^{\mathsf{H}}
 (\mathbf{S}\mathbf{U}) \preceq (\lvert n \rvert / \lvert k \rvert)
 \, \mathbf{U}^{\mathsf{H}}\mathbf{U}$ almost surely, for every $\mathbf{U}$, every shape, with no
 parameter: $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} \preceq \mathbf{I}$ because $\|\mathbf{Q}\|_2 \le 1$
@@ -179,7 +179,7 @@ theorem ae_conjTranspose_mul_self_mul_le_smul_of_hasLaw_haarFrame
   exact h2.smul (by positivity)
 
 omit [Fintype p] in
-/-- **A square Haar sketch is an exact embedding**: for $\lvert k \rvert = \lvert n \rvert$,
+/-- A square Haar sketch is an exact embedding: for $\lvert k \rvert = \lvert n \rvert$,
 $\mathbf{S} = \mathbf{Q}^{\mathsf{H}}$ is orthogonal almost surely, so it is a subspace embedding
 for every $\operatorname{range} \mathbf{U}$ with constants $1$, $1$ and failure probability $0$. -/
 theorem hasSubspaceEmbedding_of_hasLaw_haarFrame_of_card_eq (hQ : HasLaw Q (haarFrame n k) μ)
@@ -320,7 +320,7 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_haarFrame
   exact pow_le_pow_left₀ (abs_nonneg _) (abs_le.2 ⟨by nlinarith [sq_nonneg ‖WithLp.toLp 2 x‖],
     by nlinarith [sq_nonneg ‖WithLp.toLp 2 x‖]⟩) 2
 
-/-- **The JL variance of a Haar sketch**:
+/-- The JL variance of a Haar sketch:
 $$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
 = \frac{2 (\lvert n \rvert - \lvert k \rvert)}
 {\lvert k \rvert (\lvert n \rvert + 2)} \|\mathbf{x}\|^4$$
@@ -545,7 +545,7 @@ theorem hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le (hQ : HasLaw Q (haarFrame 
   exact (hasJLProperty_of_hasLaw_haarFrame hQ hk hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk')
 
-/-- **Haar distributional JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice
+/-- Haar distributional JL, asymptotic form: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice
 for the Haar sketch to have the JL property with distortion $\varepsilon$ and failure probability
 $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
 dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_haarFrame_of_jlDim_le` with $C = 24$,

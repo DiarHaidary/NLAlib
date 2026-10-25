@@ -193,7 +193,7 @@ theorem gramSchmidtR_apply_self_nonneg (A : Matrix m n 𝕜) (j : n) : 0 ≤ gra
   rw [gramSchmidtR_apply_self]
   exact RCLike.ofReal_nonneg.mpr (norm_nonneg _)
 
-/-- **The classical Gram–Schmidt recursion**:
+/-- The classical Gram–Schmidt recursion:
 $\mathbf{R}_{j,j} \mathbf{q}_j = \mathbf{a}_j - \sum_{k < j} \mathbf{R}_{k,j} \mathbf{q}_k$, with
 $\mathbf{a}_j$, $\mathbf{q}_j$ the columns of $\mathbf{A}$, $\mathbf{Q}$.
 Port of `NLAlib.gramSchmidtResidual_eq_sum` and `NLAlib.norm_smul_gramSchmidtCol`. -/
@@ -206,7 +206,7 @@ theorem gramSchmidtR_apply_self_smul_col (A : Matrix m n 𝕜) (j : n) :
   simp only [gramSchmidtR_apply]
   exact h
 
-/-- **Gram–Schmidt factors the matrix**: $\mathbf{Q}\mathbf{R} = \mathbf{A}$, with no rank
+/-- Gram–Schmidt factors the matrix: $\mathbf{Q}\mathbf{R} = \mathbf{A}$, with no rank
 assumption.
 Port of `NLAlib.gramSchmidtQ_mul_gramSchmidtR`. -/
 theorem gramSchmidtQ_mul_gramSchmidtR (A : Matrix m n 𝕜) :
@@ -328,7 +328,7 @@ theorem HasOrthonormalCols.gramSchmidtR_mul_left {l : Type*} [Fintype l] [Decida
   rw [gramSchmidtR, HasOrthonormalCols.gramSchmidtQ_mul_left hW, hW.conjTranspose_mul_mul,
     gramSchmidtR]
 
-/-- **The Gram–Schmidt vectors span the column space**: $\operatorname{range}\mathbf{Q} =
+/-- The Gram–Schmidt vectors span the column space: $\operatorname{range}\mathbf{Q} =
 \operatorname{range}\mathbf{A}$ for $\mathbf{Q}$ = `gramSchmidtQ A`, with no rank assumption (the
 zero columns contribute nothing). -/
 theorem range_gramSchmidtQ (A : Matrix m n 𝕜) :
@@ -389,7 +389,7 @@ theorem gramSchmidtQ_mul_conjTranspose_gramSchmidtQ_mul_self (A : Matrix m n �
     exact (congrFun ((gramSchmidtQ_col_eq_zero_iff A j).mpr h) i).symm
   · rw [mul_one]
 
-/-- **The Gram–Schmidt matrix is a partial isometry onto the column space**:
+/-- The Gram–Schmidt matrix is a partial isometry onto the column space:
 $\mathbf{Q}\mathbf{Q}^{\mathsf{H}} = \mathbf{P}_{\mathbf{A}}$ for $\mathbf{Q}$ = `gramSchmidtQ A`,
 with no rank assumption. -/
 theorem gramSchmidtQ_mul_conjTranspose (A : Matrix m n 𝕜) :
@@ -405,7 +405,7 @@ theorem gramSchmidtQ_mul_conjTranspose (A : Matrix m n 𝕜) :
     · conv_lhs => rw [← hQ, ← Matrix.mul_assoc, Matrix.mulVecLin_mul]
       exact LinearMap.range_comp_le_range _ _
 
-/-- **Gram–Schmidt commutes with restriction to an initial segment of columns**: for an order
+/-- Gram–Schmidt commutes with restriction to an initial segment of columns: for an order
 embedding $e$ whose range is a lower set, the Gram–Schmidt matrix of the columns $e(j)$ of
 $\mathbf{A}$ consists of the columns $e(j)$ of the Gram–Schmidt matrix of $\mathbf{A}$. -/
 theorem gramSchmidtQ_submatrix {p : Type*} [Fintype p] [LinearOrder p] [LocallyFiniteOrderBot p]

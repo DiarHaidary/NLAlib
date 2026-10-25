@@ -261,7 +261,7 @@ private theorem exponent_two_weights_le {K N β : ℝ} (hKN : K ≤ N) (hβ : 0 
     · simp only [sub_self, zero_mul, add_zero]
       nlinarith [mul_nonneg hKN' (sub_nonneg.2 hc)]
 
-/-- **A Haar frame applied to a fixed unit vector**: for an $n \times k$ Haar frame $\mathbf{Q}$
+/-- A Haar frame applied to a fixed unit vector: for an $n \times k$ Haar frame $\mathbf{Q}$
 and a unit $\mathbf{x}$, $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ has the law of
 $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ for $\mathbf{u}$ uniform on the sphere and any $\mathbf{V}$ with
 orthonormal columns (`hV` gives $\lvert k \rvert \le \lvert n \rvert$). By left invariance
@@ -574,8 +574,8 @@ theorem ae_norm_eq_one_uniformSphereVector [Nonempty n] :
   simp only [WithLp.toLp_ofLp]
   exact norm_eq_of_mem_sphere x
 
-/-- **Sphere invariance: the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the
-frame's column type.** For $n$ nonempty and $\mathbf{u}$ uniform on the unit sphere of
+/-- Sphere invariance: the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the
+frame's column type: for $n$ nonempty and $\mathbf{u}$ uniform on the unit sphere of
 $\mathbb{R}^n$ and two $\mathbf{V}_1, \mathbf{V}_2$ with orthonormal columns indexed by the same
 $r$,
 $\mathbf{V}_1^{\mathsf{H}}\mathbf{u}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{u}$ have the same
@@ -717,7 +717,7 @@ theorem integrable_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVec
   have hF : Continuous fun w : n → ℝ => ‖WithLp.toLp 2 (Vᴴ *ᵥ w)‖ ^ 4 := by fun_prop
   exact (hu.integrable_comp_iff hF.aestronglyMeasurable).2 (integrable_of_continuous hF)
 
-/-- **The fourth moment of a projected uniform unit vector**: for $\mathbf{u}$ uniform on the
+/-- The fourth moment of a projected uniform unit vector: for $\mathbf{u}$ uniform on the
 unit sphere of $\mathbb{R}^n$, $n$ nonempty, and $\mathbf{V}$ with orthonormal columns,
 $$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4
 = \frac{\lvert k \rvert (\lvert k \rvert + 2)}{\lvert n \rvert (\lvert n \rvert + 2)} \,,$$

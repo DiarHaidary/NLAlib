@@ -73,7 +73,7 @@ theorem continuous_singularValues (k : ℕ) :
   exact continuous_of_abs_sub_le continuous_specNorm specNorm_zero fun A B =>
     abs_singularValues_sub_le_specNorm B A k
 
-/-- **The thin SVDs with sorted singular values form a closed set**: the triples
+/-- The thin SVDs with sorted singular values form a closed set: the triples
 $(\mathbf{A}, \mathbf{U}, \mathbf{V})$ with
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(\sigma_i(\mathbf{A}))_{i<r}\mathbf{V}^{\mathsf{H}}$ and
 orthonormal columns form a closed set, since the singular values are continuous. -/
@@ -145,7 +145,7 @@ private theorem SymmetricGauge.matrixNorm_sub_truncatedSVD_le_add (Φ : Symmetri
   have h := Φ.matrixNorm_add_le (A - B) (B - truncatedSVD B k)
   rwa [sub_add_sub_cancel] at h
 
-/-- **The optimal error of rank-$k$ approximation is $1$-Lipschitz** in every unitarily
+/-- The optimal error of rank-$k$ approximation is $1$-Lipschitz in every unitarily
 invariant norm:
 $$\bigl\lvert \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi}
 {} - \|\mathbf{B} - \llbracket \mathbf{B} \rrbracket_k\|_{\Phi} \bigr\rvert
@@ -191,7 +191,7 @@ theorem SymmetricGauge.continuous_matrixNorm_sub_truncatedSVD (Φ : SymmetricGau
 /-! ### Rank -/
 
 omit [Fintype m] in
-/-- **The matrices of rank at most $r$ form a closed set**: the rank is lower semicontinuous. -/
+/-- The matrices of rank at most $r$ form a closed set: the rank is lower semicontinuous. -/
 theorem isClosed_setOf_rank_le [Finite m] (r : ℕ) : IsClosed {A : Matrix m n 𝕜 | A.rank ≤ r} := by
   have := Fintype.ofFinite m
   have h : {A : Matrix m n 𝕜 | A.rank ≤ r} = (fun A => singularValues A r) ⁻¹' {0} := by
@@ -201,7 +201,7 @@ theorem isClosed_setOf_rank_le [Finite m] (r : ℕ) : IsClosed {A : Matrix m n �
   exact isClosed_singleton.preimage (continuous_singularValues r)
 
 omit [Fintype m] in
-/-- **The best approximations form a closed set**: the pairs $(\mathbf{C}, \mathbf{Y})$ with
+/-- The best approximations form a closed set: the pairs $(\mathbf{C}, \mathbf{Y})$ with
 $\mathbf{Y}$ a best approximation of $\mathbf{C}$ of rank at most $k$ form a closed set, so a
 limit of best approximations of convergent matrices is a best approximation of the limit. The
 truncated SVD itself is not continuous (it jumps at ties
@@ -221,7 +221,7 @@ theorem isClosed_setOf_isBestRankApprox [Fintype m] (k : ℕ) :
       (hc.comp continuous_fst))
 
 omit [Fintype m] in
-/-- **The matrices of rank at least $r$ form an open set**: a small perturbation does not lower
+/-- The matrices of rank at least $r$ form an open set: a small perturbation does not lower
 the rank. -/
 theorem isOpen_setOf_le_rank [Finite m] (r : ℕ) : IsOpen {A : Matrix m n 𝕜 | r ≤ A.rank} := by
   cases r with

@@ -76,7 +76,7 @@ class IsRightUnitarilyInvariant [DecidableEq k] (ν : Measure (Matrix n k 𝕜))
   map_mul_right_eq_self : ∀ V : Matrix k k 𝕜, HasOrthonormalCols V → ν.map (· * V) = ν
 
 omit [Fintype k] in
-/-- **Bridge to Mathlib's unitary group**: left unitary invariance is invariance under left
+/-- Bridge to Mathlib's unitary group: left unitary invariance is invariance under left
 multiplication by every element of `Matrix.unitaryGroup n 𝕜`. -/
 theorem isLeftUnitarilyInvariant_iff [DecidableEq n] {ν : Measure (Matrix n k 𝕜)} :
     IsLeftUnitarilyInvariant ν ↔
@@ -85,7 +85,7 @@ theorem isLeftUnitarilyInvariant_iff [DecidableEq n] {ν : Measure (Matrix n k �
     fun h => ⟨fun U hU => h ⟨U, hasOrthonormalCols_iff_mem_unitaryGroup.mp hU⟩⟩⟩
 
 omit [Fintype n] in
-/-- **Bridge to Mathlib's unitary group**: right unitary invariance is invariance under right
+/-- Bridge to Mathlib's unitary group: right unitary invariance is invariance under right
 multiplication by every element of `Matrix.unitaryGroup k 𝕜`. -/
 theorem isRightUnitarilyInvariant_iff [DecidableEq k] {ν : Measure (Matrix n k 𝕜)} :
     IsRightUnitarilyInvariant ν ↔
@@ -125,7 +125,7 @@ instance isRightUnitarilyInvariant_gaussianMatrix [DecidableEq k] :
 
 /-! ### Moments from invariance -/
 
-/-- **A left unitarily invariant random matrix has mean zero** (take $\mathbf{U} = -\mathbf{I}$).
+/-- A left unitarily invariant random matrix has mean zero (take $\mathbf{U} = -\mathbf{I}$).
 No integrability is needed: $\int (-\mathbf{X}) = -\int \mathbf{X}$ holds for the Bochner integral
 in every case. -/
 theorem integral_eq_zero_of_isLeftUnitarilyInvariant [DecidableEq n] [DecidableEq k]

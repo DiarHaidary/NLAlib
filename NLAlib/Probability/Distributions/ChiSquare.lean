@@ -79,7 +79,7 @@ private theorem integral_exp_mul_sq_gaussianReal {θ : ℝ} (hθ : 2 * θ < 1) :
   have : √(2 * π) ≠ 0 := by positivity
   field_simp
 
-/-- **The weighted Laplace transform of a Gaussian vector**: for a standard Gaussian vector
+/-- The weighted Laplace transform of a Gaussian vector: for a standard Gaussian vector
 $\mathbf{g}$ and weights with $\theta_i < 1/2$,
 $\mathbb{E} \exp(\sum_i \theta_i \mathbf{g}_i^2) = \prod_i (1 - 2\theta_i)^{-1/2}$, by independence
 of the coordinates. The equal-weight case is
@@ -329,7 +329,7 @@ theorem measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector
   simp only [← hd_def]
   field_simp
 
-/-- **Small-ball bound for $\chi^2$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
+/-- Small-ball bound for $\chi^2$: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and $u \ge 0$, $\mathbb{P}[\|\mathbf{g}\|^2 \le u] \le (e u / d)^{d/2}$.
 A corollary of the exact small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector` by

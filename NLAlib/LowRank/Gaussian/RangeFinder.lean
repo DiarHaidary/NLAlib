@@ -98,7 +98,7 @@ private theorem sub_mul_mul_pinv_eq_block {E : Matrix m n ℝ} {p q : Type*} [Fi
 
 /-! ### Exact recovery -/
 
-/-- **A Gaussian sketch at least as wide as the rank recovers the matrix**: if
+/-- A Gaussian sketch at least as wide as the rank recovers the matrix: if
 $\operatorname{rank}\mathbf{A} \le \ell$, then $\mathsf{rsvd}(\mathbf{A}, \mathbf{X}) =
 \mathbf{A}$ almost surely, for a standard Gaussian $n \times \ell$ test matrix $\mathbf{X}$. -/
 theorem ae_rsvd_eq_self_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)

@@ -88,7 +88,7 @@ theorem IsLU.submatrix_of_isLowerSet (h : IsLU A L U) {s : Finset n}
   rw [h.eq_mul]
   exact h.isUnitLowerTriangular.isLowerTriangular.submatrix_mul_of_isLowerSet U hs
 
-/-- **Principal minors on lower sets.** For an LU factorization
+/-- Principal minors on lower sets: for an LU factorization
 $\mathbf{A} = \mathbf{L}\mathbf{U}$ and a lower set $s$ of indices, the principal minor of
 $\mathbf{A}$ on $s$ is the product of the pivots $\mathbf{U}_{i,i}$, $i \in s$.
 Port of `NLAlib.IsLU.leadingMinor_eq_prod`, there for leading blocks of a matrix on `Fin`. -/
@@ -282,7 +282,7 @@ theorem eq_luLower_mul_luUpper {A : Matrix (Fin n) (Fin n) K}
     rw [hz, zero_add] at ht
     exact ht
 
-/-- **Elimination computes the LU factorization** when every pivot but the last is nonzero.
+/-- Elimination computes the LU factorization when every pivot but the last is nonzero.
 Port of `NLAlib.isLU_lu`. -/
 theorem isLU_luLower_luUpper {A : Matrix (Fin n) (Fin n) K}
     (h : ∀ i : Fin n, (i : ℕ) + 1 < n → luUpper A i i ≠ 0) :
@@ -308,8 +308,8 @@ theorem isLU_luLower_luUpper_of_forall_principalMinor_ne_zero {A : Matrix (Fin n
   rw [hset]
   exact h _
 
-/-- **Elimination runs without a zero pivot exactly when all leading principal minors are
-nonzero.** Port of `NLAlib.luSucceeds_iff_forall_leadingMinor_ne_zero`. -/
+/-- Elimination runs without a zero pivot exactly when all leading principal minors are
+nonzero. Port of `NLAlib.luSucceeds_iff_forall_leadingMinor_ne_zero`. -/
 theorem forall_luUpper_apply_self_ne_zero_iff (A : Matrix (Fin n) (Fin n) K) :
     (∀ i, luUpper A i i ≠ 0) ↔ ∀ i, principalMinor A (Finset.Iic i) ≠ 0 := by
   simp only [luUpper_apply_self]

@@ -144,7 +144,7 @@ private theorem integral_pow_mul_exp_neg_sq_div_two {d : ℕ} (hd : 1 ≤ d) :
   rw [e, h, Real.rpow_sub (by norm_num : (0 : ℝ) < 2), Real.rpow_one]
   ring
 
-/-- **Polar coordinates for a standard normal vector**: for $d = \lvert\iota\rvert \ge 1$
+/-- Polar coordinates for a standard normal vector: for $d = \lvert\iota\rvert \ge 1$
 independent standard normal coordinates $\mathbf{g}$ ($\iota$ nonempty) and every
 $\varphi : \mathbb{R} \to \mathbb{R}$,
 $$\mathbb{E}\,\varphi(\|\mathbf{g}\|) = \frac{1}{2^{d/2 - 1}\,\Gamma(d/2)}

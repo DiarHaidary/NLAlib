@@ -317,7 +317,7 @@ theorem exists_forall_integral_frobNorm_sub_generalizedNystrom_sq_le_of_hasLaw_g
         mul_le_mul hh hg (by linarith) (by linarith)
     _ ≤ 1 + ε := by nlinarith
 
-/-- **Gaussian test matrices at least as wide as the rank make generalized Nyström exact**: if
+/-- Gaussian test matrices at least as wide as the rank make generalized Nyström exact: if
 $\operatorname{rank}\mathbf{A} \le \min(\ell, p)$ then $\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \mathbf{\Psi}) = \mathbf{A}$ almost surely. No independence of the two test matrices is needed. -/
 theorem ae_generalizedNystrom_eq_self_of_hasLaw_gaussianMatrix (A : Matrix m n ℝ)

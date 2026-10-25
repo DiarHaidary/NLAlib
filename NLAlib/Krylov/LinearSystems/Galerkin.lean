@@ -189,7 +189,7 @@ theorem _root_.Matrix.PosDef.isMinOn_galerkinInverse_mulVec {A : Matrix n n 𝕜
   exact le_add_of_nonneg_right (hA.posSemidef.re_quadForm_nonneg _)
 
 omit [DecidableEq r] in
-/-- **Exactness**: if the solution lies in the column space, the Galerkin approximation
+/-- Exactness: if the solution lies in the column space, the Galerkin approximation
 $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})\,\mathbf{b}$ is the solution. -/
 theorem _root_.Matrix.PosDef.galerkinInverse_mulVec_eq_of_mem {A : Matrix n n 𝕜} (hA : A.PosDef)
     {X : Matrix n p 𝕜} {b xs : n → 𝕜} (hxs : A *ᵥ xs = b)

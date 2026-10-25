@@ -105,7 +105,7 @@ private theorem exists_eq_prod_X_sub_C {p : K[X]} (hp : p.Splits) (hm : p.Monic)
 theorem exists_isEigenvalueListing (A : Matrix n n ℂ) : ∃ d : n → ℂ, IsEigenvalueListing A d :=
   exists_eq_prod_X_sub_C (IsAlgClosed.splits _) A.charpoly_monic A.charpoly_natDegree_eq_dim
 
-/-- **Two listings of the eigenvalues differ by a relabelling**: if $\mathbf{a}$ and $\mathbf{b}$
+/-- Two listings of the eigenvalues differ by a relabelling: if $\mathbf{a}$ and $\mathbf{b}$
 both list the eigenvalues of $\mathbf{A}$, then $\mathbf{a}_i = \mathbf{b}_{e(i)}$ for a
 bijection $e$.
 Port of `NLAlib.exists_perm_eq_of_prod_X_sub_C_eq`, there over $\mathbb{C}$ on one index type. -/
@@ -269,7 +269,7 @@ private theorem inv_mul_mul_apply_of_mulVec_eq_smul {A S : Matrix n n K} (hS : I
   rw [h1, hA, Matrix.mulVec_smul, h2, Pi.smul_apply, Matrix.one_apply, smul_eq_mul, mul_ite,
     mul_one, mul_zero]
 
-/-- **Similar matrices have the same characteristic polynomial**: conjugation by a pair of
+/-- Similar matrices have the same characteristic polynomial: conjugation by a pair of
 mutually inverse matrices over a commutative ring preserves it. For a unit of the matrix ring
 this is Mathlib's `Matrix.charpoly_units_conj'`; here the similarity is given by the equation
 $\mathbf{S}'\mathbf{S} = \mathbf{I}$, as $\mathbf{S}^{-1}$ with `IsUnit S.det` or
@@ -279,7 +279,7 @@ theorem charpoly_mul_mul_of_mul_eq_one {R : Type*} [CommRing R] {S S' : Matrix n
   rw [Matrix.charpoly_mul_comm, ← Matrix.mul_assoc, mul_eq_one_comm.mp hS, Matrix.one_mul]
 
 omit [Fintype n] in
-/-- **Deflation, block form.** A matrix $\mathbf{M}$ whose column $i_0$ is $\alpha$ times a
+/-- Deflation, block form: a matrix $\mathbf{M}$ whose column $i_0$ is $\alpha$ times a
 coordinate vector is block upper triangular for the splitting of the indices into $i_0$ and the
 others: reindexed by `Equiv.sumCompl (· = i₀)` it is
 $\begin{bmatrix} \alpha & \mathbf{r} \\ \mathbf{0} & \mathbf{M}' \end{bmatrix}$ with

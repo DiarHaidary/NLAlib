@@ -69,7 +69,7 @@ theorem OperatorConvexOn.convexOn {s : Set ℝ} {f : ℝ → ℝ} (hf : Operator
   rw [hsum, cfc_algebraMap, cfc_algebraMap, cfc_algebraMap, hsum] at h
   exact algebraMap_le_algebraMap.mp h
 
-/-- **Operator convexity for matrices over any field and index type.** If $f$ is operator convex
+/-- Operator convexity for matrices over any field and index type: if $f$ is operator convex
 on $s$ and $\mathbf{A}$, $\mathbf{B}$ are Hermitian with spectra in $s$, then
 $f(a\mathbf{A} + b\mathbf{B}) \preceq a f(\mathbf{A}) + b f(\mathbf{B})$ for $a, b \ge 0$ with
 $a + b = 1$. -/

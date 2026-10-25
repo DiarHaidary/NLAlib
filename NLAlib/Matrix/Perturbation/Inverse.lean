@@ -204,7 +204,7 @@ theorem specNorm_inv_add_sub_inv_le_pseudoConditionNumber_mul {A E : Matrix n n 
 
 /-! ### Linear systems -/
 
-/-- **Forward error from the residual.** If $\mathbf{A}\mathbf{x} = \mathbf{b}$ with $\mathbf{A}$
+/-- Forward error from the residual: if $\mathbf{A}\mathbf{x} = \mathbf{b}$ with $\mathbf{A}$
 invertible, then for any $\mathbf{y}$,
 $\|\mathbf{x} - \mathbf{y}\| \le \|\mathbf{A}^{-1}\|_2 \|\mathbf{b} - \mathbf{A}\mathbf{y}\|$. -/
 theorem norm_sub_le_specNorm_inv_mul_norm_sub_mulVec {A : Matrix n n 𝕜} (hA : IsUnit A)

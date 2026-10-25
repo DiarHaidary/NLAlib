@@ -187,7 +187,8 @@ theorem norm_sub_mulVec_eq [DecidableEq m] (h : IsLeastSquaresSolution A b x) :
 $\mathbf{y}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{y}\|^2 = \|\mathbf{b} - \mathbf{A}\mathbf{x}\|^2 +
   \|\mathbf{A}(\mathbf{x} - \mathbf{y})\|^2\,.$$
-Port of `NLAlib.norm_sub_mulVec_sq_eq_add_of_transpose_mulVec_eq_zero`. -/
+Port of `NLAlib.norm_sub_mulVec_sq_eq_add_of_transpose_mulVec_eq_zero`.
+[GolubVanLoan2013, §5.3] (locator to check). -/
 theorem norm_sub_mulVec_sq_eq_add (h : IsLeastSquaresSolution A b x) (y : n → 𝕜) :
     ‖WithLp.toLp 2 (b - A *ᵥ y)‖ ^ 2 =
       ‖WithLp.toLp 2 (b - A *ᵥ x)‖ ^ 2 + ‖WithLp.toLp 2 (A *ᵥ (x - y))‖ ^ 2 := by
@@ -285,7 +286,7 @@ theorem exists_isLeastSquaresSolution (A : Matrix m n 𝕜) (b : m → 𝕜) :
     ∃ x, IsLeastSquaresSolution A b x := by
   exact ⟨pinv A *ᵥ b, isLeastSquaresSolution_pinv_mulVec A b⟩
 
-/-- **All least-squares solutions.** They are the pseudoinverse solution plus an element of the
+/-- All least-squares solutions: they are the pseudoinverse solution plus an element of the
 kernel of $\mathbf{A}$: $\mathbf{x}$ is a least-squares solution exactly when
 $\mathbf{x} = \mathbf{A}^{+}\mathbf{b} + (\mathbf{I} - \mathbf{A}^{+}\mathbf{A})\mathbf{z}$ for some
 $\mathbf{z}$. -/
@@ -314,7 +315,7 @@ theorem isLeastSquaresSolution_iff_eq_pinv_mulVec {A : Matrix m n 𝕜}
   · rintro rfl
     exact isLeastSquaresSolution_pinv_mulVec A b
 
-/-- **Uniqueness.** The least-squares problem has a unique solution, for one right-hand side
+/-- Uniqueness: the least-squares problem has a unique solution, for one right-hand side
 or equivalently for all, exactly when $\mathbf{A}$ has full column rank
 ($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective).
 Port of `NLAlib.existsUnique_isLeastSquaresSolution_iff`. -/
@@ -403,7 +404,7 @@ theorem HasOrthonormalCols.sketchAndSolve_eq_add [Fintype q] [DecidableEq m] [De
     sketchAndSolve Q S B = Qᴴ * B + sketchAndSolve Q S ((1 - Q * Qᴴ) * B) := by
   rw [sketchAndSolve_eq_pinv_mul_add h B, hQ.pinv_eq, hQ.rangeProjector_eq]
 
-/-- **Rescaling the sketch does not change the sketch-and-solve solution**:
+/-- Rescaling the sketch does not change the sketch-and-solve solution:
 $\mathsf{sketchAndSolve}(\mathbf{A}, c\mathbf{S}, \mathbf{B}) =
 \mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$ for $c \ne 0$, for instance the
 normalisations $\lvert k \rvert^{-1/2}\mathbf{G}$ and

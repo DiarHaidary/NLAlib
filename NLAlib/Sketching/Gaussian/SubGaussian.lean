@@ -635,7 +635,7 @@ theorem hasJLProperty_of_isSubgaussianVector_of_subgaussianJLDim_le
   simpa only [pow_zero, mul_one, Nat.cast_zero] using
     two_mul_twentyOne_pow_mul_exp_le (d := 0) hδ hL
 
-/-- **Sub-Gaussian JL, asymptotic form**: $O(c^2 \log(1/\delta)/\varepsilon^2)$ rows suffice for
+/-- Sub-Gaussian JL, asymptotic form: $O(c^2 \log(1/\delta)/\varepsilon^2)$ rows suffice for
 the sketch with independent isotropic rows, sub-Gaussian with proxy $c$, to have the JL property
 with distortion $\varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below
 absolute constants; the constants come before every dimension and the proxy. Proved from
@@ -880,7 +880,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_isSubgaussianVector :
       mul_nonneg (sq_nonneg (c : ℝ)) (Nat.cast_nonneg (α := ℝ) d),
       mul_nonneg (sq_nonneg (c : ℝ)) hl1]) (sq_nonneg ε)
 
-/-- **Sub-Gaussian OSI, sample-size form**: for a random $\mathbf{X}$ with $k$ independent,
+/-- Sub-Gaussian OSI, sample-size form: for a random $\mathbf{X}$ with $k$ independent,
 isotropic, sub-Gaussian rows with proxy $c$, $0 < \varepsilon \le 5c/4$, $\delta > 0$, $k$
 nonempty and at least <!-- value subgaussianEmbeddingDim c d \varepsilon \delta -->
 $25 c^2 (d \log 21 + \log(2/\delta))/(16 C \varepsilon^2)$ rows

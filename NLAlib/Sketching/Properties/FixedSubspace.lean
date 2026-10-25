@@ -90,7 +90,7 @@ theorem HasSubspaceEmbedding.hasSubspaceInjection [IsFiniteMeasure μ]
     (h : HasSubspaceEmbedding S U a b δ μ) : HasSubspaceInjection S U a δ μ := by
   exact (measureReal_mono (Set.ofPred_subset_ofPred.2 fun ω hω h' => hω h'.lower)).trans h
 
-/-- **Joining the halves**: a random subspace injection whose upper half fails with probability
+/-- Joining the halves: a random subspace injection whose upper half fails with probability
 at most $\delta'$ is a random subspace embedding with failure probability $\delta + \delta'$
 (union bound). -/
 theorem HasSubspaceInjection.hasSubspaceEmbedding (h : HasSubspaceInjection S U a δ μ)
@@ -106,7 +106,7 @@ theorem HasSubspaceInjection.hasSubspaceEmbedding (h : HasSubspaceInjection S U 
   rw [e]
   exact (measureReal_union_le _ _).trans (add_le_add h hb)
 
-/-- **From a Gram-error tail**: for $\mathbf{U}$ with orthonormal columns, a tail
+/-- From a Gram-error tail: for $\mathbf{U}$ with orthonormal columns, a tail
 $\mathbb{P}[\varepsilon \le \|(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U} -
 \mathbf{I}\|_2] \le \delta$ gives a random $\varepsilon$-embedding with failure probability
 $\delta$. The form matrix Chernoff and matrix Bernstein bounds produce. -/
@@ -120,7 +120,7 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_measureReal_le [IsFiniteMeasu
   exact hω ((hU.isSubspaceEmbedding_iff_specNorm_le
     ((specNorm_nonneg _).trans hlt.le)).2 hlt.le)
 
-/-- **From a smallest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail
+/-- From a smallest-singular-value tail: for $\mathbf{U}$ with orthonormal columns, a tail
 $\mathbb{P}[\sigma_{\min}(\mathbf{S}\mathbf{U})^2 \le a] \le \delta$ gives a random subspace
 injection with constant $a$; the smallest singular value is index $j$ with
 $j + 1 = \lvert p \rvert$. -/
@@ -132,7 +132,7 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_measureReal_le [IsFiniteMeasu
   rw [hU.isSubspaceInjection_iff_le_singularValues_sq hj, not_le] at hω
   exact hω.le
 
-/-- **From a largest-singular-value tail**: for $\mathbf{U}$ with orthonormal columns, a tail
+/-- From a largest-singular-value tail: for $\mathbf{U}$ with orthonormal columns, a tail
 $\mathbb{P}[b \le \sigma_0(\mathbf{S}\mathbf{U})^2] \le \delta$ gives the upper half
 $(\mathbf{S}\mathbf{U})^{\mathsf{H}}\mathbf{S}\mathbf{U}
 \preceq b\,\mathbf{U}^{\mathsf{H}}\mathbf{U}$ with failure probability $\delta$, the lower
@@ -150,7 +150,7 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_zero_of_measureReal_le [IsFinite
   rw [← singularValues_zero_eq_specNorm]
   exact (not_le.1 hlt).le
 
-/-- **The zero subspace**: every sketch is a subspace embedding, with any constants and any
+/-- The zero subspace: every sketch is a subspace embedding, with any constants and any
 failure probability $\delta \ge 0$, for a $\mathbf{U}$ of rank $0$ (the zero matrix, a matrix
 with no columns, or one with no rows); the failure event is empty. -/
 theorem hasSubspaceEmbedding_of_rank_eq_zero [Fintype p] (hU : U.rank = 0) (hδ : 0 ≤ δ) :

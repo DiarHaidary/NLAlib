@@ -238,7 +238,7 @@ theorem _root_.Matrix.PosSemidef.nystrom_le (hA : A.PosSemidef) (Ω : Matrix n l
   rw [Matrix.le_iff, hA.sub_nystrom_eq]
   exact Matrix.posSemidef_conjTranspose_mul_self _
 
-/-- **Nyström keeps the rank of the sketch**: for positive semidefinite $\mathbf{A}$ and every
+/-- Nyström keeps the rank of the sketch: for positive semidefinite $\mathbf{A}$ and every
 $\mathbf{\Omega}$, $\operatorname{rank}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$
 equals $\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$: the rank hypothesis of the oblique
 projector $\mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Omega}^{\mathsf{H}}}$. False for
@@ -260,7 +260,7 @@ theorem _root_.Matrix.PosSemidef.rank_conjTranspose_mul_mul (hA : A.PosSemidef)
   conv_lhs => rw [e2]
   exact Matrix.rank_mul_le_right _ _
 
-/-- **Exactness of Nyström at low rank**: for positive semidefinite $\mathbf{A}$ with
+/-- Exactness of Nyström at low rank: for positive semidefinite $\mathbf{A}$ with
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$,
 $\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega}) = \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.nystrom_eq_self_of_rank_eq (hA : A.PosSemidef)
@@ -292,7 +292,7 @@ end PosSemidef
 
 /-! ### Selection and equivariance -/
 
-/-- **The selection case**: the Nyström approximation
+/-- The selection case: the Nyström approximation
 $\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})$ along $\mathbf{\Omega}$ = `selectionMatrix e` is
 $\mathbf{A}_{:,e}(\mathbf{A}_{e,e})^{+}\mathbf{A}_{e,:}$, the matrix whose residual
 `Matrix.PosSemidef.sub_submatrix_mul_pinv_mul` and its neighbours study. Repeated indices are
@@ -315,7 +315,7 @@ theorem nystrom_conjTranspose_mul_mul [Fintype p] (B : Matrix p n 𝕜) (D : Mat
     (Ω : Matrix n l 𝕜) : nystrom (Bᴴ * D * B) Ω = Bᴴ * nystrom D (B * Ω) * B := by
   simp only [nystrom_def, Matrix.conjTranspose_mul, Matrix.mul_assoc]
 
-/-- **Equivariance of Nyström**: for $\mathbf{U}$ with orthonormal columns,
+/-- Equivariance of Nyström: for $\mathbf{U}$ with orthonormal columns,
 $$\mathsf{nystrom}(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}, \mathbf{U}\mathbf{\Omega}) =
 \mathbf{U}\,\mathsf{nystrom}(\mathbf{A}, \mathbf{\Omega})\mathbf{U}^{\mathsf{H}}\,,$$
 for every square $\mathbf{A}$. The instance $\mathbf{B} = \mathbf{U}^{\mathsf{H}}$ of

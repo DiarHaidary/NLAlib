@@ -144,7 +144,7 @@ theorem dotProduct_mul_conjTranspose_inv_mulVec_nonneg [Fintype m] [Fintype n] [
 
 /-! ### Scaled matrices -/
 
-/-- **A scaled matrix on a vector, row by row**: for
+/-- A scaled matrix on a vector, row by row: for
 $\mathbf{S} = \lvert k \rvert^{-1/2} \mathbf{A}$ with rows $\mathbf{A}_i$,
 $$\|\mathbf{S}\mathbf{x}\|^2 = \frac{1}{\lvert k \rvert} \sum_i
 \lvert \langle \mathbf{x}, \mathbf{A}_i \rangle \rvert^2 \,,$$
@@ -159,7 +159,7 @@ theorem norm_inv_sqrt_card_smul_mulVec_sq {k : Type*} [Fintype k] [Fintype n] (A
     EuclideanSpace.norm_sq_eq]
   simp only [Matrix.mulVec, dotProduct_comm (A _) x]
 
-/-- **The Gram matrix of a scaled conjugate transpose** on $\mathbf{U}$: with
+/-- The Gram matrix of a scaled conjugate transpose on $\mathbf{U}$: with
 $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert} \, \mathbf{M}^{\mathsf{H}}$,
 $(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U}) = (\lvert n \rvert / \lvert k \rvert)
 \, \mathbf{U}^{\mathsf{H}} (\mathbf{M}\mathbf{M}^{\mathsf{H}}) \mathbf{U}$. The Gram matrix of

@@ -268,7 +268,7 @@ theorem IsSubspaceEmbedding.mono (h : IsSubspaceEmbedding S U a b) (ha : a' ≤ 
     IsSubspaceEmbedding S U a' b' := by
   exact ⟨h.lower.mono ha, h.upper.trans (smul_gram_le_smul_gram U hb)⟩
 
-/-- **The upper constant of an embedding is positive**: if $\mathbf{S}$ is a subspace embedding
+/-- The upper constant of an embedding is positive: if $\mathbf{S}$ is a subspace embedding
 of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ (squared norms,
 $a\|\mathbf{y}\|^2 \le \|\mathbf{S}\mathbf{y}\|^2 \le b\|\mathbf{y}\|^2$ on the range),
 $\mathbf{A}$ has full column rank and at least one column, then $0 < b$. -/
@@ -336,7 +336,7 @@ theorem IsSubspaceEmbedding.smul_real (h : IsSubspaceEmbedding S U a b) (c : ℝ
   have h' := h.smul (c : 𝕜)
   rwa [RCLike.norm_ofReal, sq_abs, ← RCLike.real_smul_eq_coe_smul] at h'
 
-/-- **Composition of subspace injections**: if $\mathbf{S}$ injects
+/-- Composition of subspace injections: if $\mathbf{S}$ injects
 $\operatorname{range}\mathbf{U}$ with constant $a$ and $\mathbf{S}_2$ injects
 $\operatorname{range}(\mathbf{S}\mathbf{U})$ with constant $a_2 \ge 0$, then
 $\mathbf{S}_2\mathbf{S}$ injects $\operatorname{range}\mathbf{U}$ with constant $a_2 a$. -/
@@ -345,7 +345,7 @@ theorem IsSubspaceInjection.mul {S₂ : Matrix l k 𝕜} (h₂ : IsSubspaceInjec
   rw [IsSubspaceInjection, mul_smul, Matrix.mul_assoc S₂ S U]
   exact (smul_le_smul_of_nonneg h ha₂).trans h₂
 
-/-- **Composition of subspace embeddings**: if $\mathbf{S}$ embeds
+/-- Composition of subspace embeddings: if $\mathbf{S}$ embeds
 $\operatorname{range}\mathbf{U}$ with constants $a$, $b$ and $\mathbf{S}_2$ embeds
 $\operatorname{range}(\mathbf{S}\mathbf{U})$ with constants $a_2, b_2 \ge 0$, then
 $\mathbf{S}_2\mathbf{S}$ embeds $\operatorname{range}\mathbf{U}$ with constants $a_2 a$, $b_2 b$. -/
@@ -356,7 +356,7 @@ theorem IsSubspaceEmbedding.mul {S₂ : Matrix l k 𝕜} (h₂ : IsSubspaceEmbed
   rw [mul_smul, Matrix.mul_assoc S₂ S U]
   exact h₂.upper.trans (smul_le_smul_of_nonneg h.upper hb₂)
 
-/-- **A factor with orthonormal columns moves to the subspace**: for $\mathbf{B}$ with orthonormal
+/-- A factor with orthonormal columns moves to the subspace: for $\mathbf{B}$ with orthonormal
 columns, $\mathbf{A}\mathbf{B}$ is a subspace injection for $\operatorname{range}\mathbf{U}$ with
 constant $a$ exactly when $\mathbf{A}$ is one for $\operatorname{range}(\mathbf{B}\mathbf{U})$,
 since $(\mathbf{B}\mathbf{U})^{\mathsf{H}}\mathbf{B}\mathbf{U} =
@@ -368,7 +368,7 @@ theorem HasOrthonormalCols.isSubspaceInjection_mul_iff {m : Type*} [Fintype m] [
   rw [IsSubspaceInjection, IsSubspaceInjection, Matrix.mul_assoc A B U,
     hB.conjTranspose_mul_mul U U]
 
-/-- **A factor with orthonormal columns moves to the subspace**, the embedding form of
+/-- A factor with orthonormal columns moves to the subspace, the embedding form of
 `NLAlib.HasOrthonormalCols.isSubspaceInjection_mul_iff`. -/
 theorem HasOrthonormalCols.isSubspaceEmbedding_mul_iff {m : Type*} [Fintype m] [DecidableEq n]
     {A : Matrix k m 𝕜} {B : Matrix m n 𝕜} (hB : HasOrthonormalCols B) (U : Matrix n p 𝕜) :
@@ -413,7 +413,7 @@ theorem IsSubspaceInjection.injective_mulVec [Fintype p] (h : IsSubspaceInjectio
   rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec] at hz
   exact hU (h.injOn ha ⟨z₁, rfl⟩ ⟨z₂, rfl⟩ hz)
 
-/-- **A subspace injection keeps the rank**: for a positive constant,
+/-- A subspace injection keeps the rank: for a positive constant,
 $\operatorname{rank}(\mathbf{S}\mathbf{U}) = \operatorname{rank}\mathbf{U}$. This is the rank
 hypothesis of the oblique projector $\mathbf{\Pi}_{\mathbf{U},\mathbf{S}}$ (LowRank stage S0),
 so every statement about that projector applies under an injection. -/

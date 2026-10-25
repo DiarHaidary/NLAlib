@@ -72,7 +72,7 @@ theorem integrable_frobNorm_mul_mul_sq_of_isIsotropic
   simp only [frobNorm_mul_mul_eq]
   exact hX.integrable_norm_mulVec_sq _
 
-/-- **The second moment of a sketch with isotropic entries**: for fixed $\mathbf{S}$ and
+/-- The second moment of a sketch with isotropic entries: for fixed $\mathbf{S}$ and
 $\mathbf{T}$,
 $\mathbb{E} \|\mathbf{S}\mathbf{X}\mathbf{T}\|_{\mathsf{F}}^2
 = \|\mathbf{S}\|_{\mathsf{F}}^2 \|\mathbf{T}\|_{\mathsf{F}}^2$. -/
@@ -110,7 +110,7 @@ private theorem lintegral_frobNorm_mul_mul_sq_of_isIsotropic_of_indepFun (hX : H
       (S (Y ω)) (T (Y ω)))).trans (lintegral_congr fun ω => ?_)
   simp only [integral_frobNorm_mul_mul_sq_of_isIsotropic (X := fun x => x) hν]
 
-/-- **The second moment with independent random factors**: if $\mathbf{X}$ has an isotropic law
+/-- The second moment with independent random factors: if $\mathbf{X}$ has an isotropic law
 and is independent of $Y$, and $\mathbf{S}$, $\mathbf{T}$ are measurable, then
 $$\mathbb{E} \|\mathbf{S}(Y)\mathbf{X}\mathbf{T}(Y)\|_{\mathsf{F}}^2
 = \mathbb{E}\bigl[\|\mathbf{S}(Y)\|_{\mathsf{F}}^2 \|\mathbf{T}(Y)\|_{\mathsf{F}}^2\bigr] \,.$$
@@ -154,7 +154,7 @@ section Gaussian
 
 variable {X : Ω → Matrix m n ℝ}
 
-/-- **The second moment of a Gaussian sketch** (Halko, Martinsson and Tropp 2011,
+/-- The second moment of a Gaussian sketch (Halko, Martinsson and Tropp 2011,
 Proposition 10.1): for fixed $\mathbf{S}$ and $\mathbf{T}$,
 $\mathbb{E} \|\mathbf{S}\mathbf{G}\mathbf{T}\|_{\mathsf{F}}^2
 = \|\mathbf{S}\|_{\mathsf{F}}^2 \|\mathbf{T}\|_{\mathsf{F}}^2$. -/
@@ -217,7 +217,7 @@ theorem integrable_frobNorm_pow_four_of_hasLaw_gaussianMatrix
   (integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
     neg_card_prod_div_two_lt_two).congr (ae_of_all _ fun ω => (frobNorm_pow_four_eq (X ω)).symm)
 
-/-- **The fourth moment of the Frobenius norm of a Gaussian matrix**: for a standard Gaussian
+/-- The fourth moment of the Frobenius norm of a Gaussian matrix: for a standard Gaussian
 $m \times n$ matrix $\mathbf{G}$ and $d = \lvert m \rvert\lvert n \rvert$,
 $\mathbb{E}\|\mathbf{G}\|_{\mathsf{F}}^4 = d^2 + 2d$, the second moment of $\chi^2_d$
 (`NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector` at $s = 2$). -/

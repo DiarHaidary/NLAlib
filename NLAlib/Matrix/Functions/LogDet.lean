@@ -62,7 +62,7 @@ theorem _root_.Matrix.IsHermitian.re_det_cfc {A : Matrix n n 𝕜} (hA : A.IsHer
     ← Fin.prod_univ_eq_prod_range (fun i => f (eigenvalue A i)), ← Equiv.prod_comp e]
   exact Finset.prod_congr rfl fun i _ => (he i).symm
 
-/-- **The log-determinant is the trace of the logarithm**:
+/-- The log-determinant is the trace of the logarithm:
 $\log \det \mathbf{A} = \operatorname{tr} \log(\mathbf{A})$ for positive definite $\mathbf{A}$. -/
 theorem _root_.Matrix.PosDef.log_re_det_eq_re_trace_cfc_log {A : Matrix n n 𝕜} (hA : A.PosDef) :
     Real.log (RCLike.re A.det) = RCLike.re (cfc Real.log A).trace := by
@@ -76,7 +76,7 @@ theorem _root_.Matrix.IsHermitian.re_det_exp {A : Matrix n n 𝕜} (hA : A.IsHer
     RCLike.re (NormedSpace.exp A).det = Real.exp (RCLike.re A.trace) := by
   rw [hA.exp_eq_cfc, hA.re_det_cfc, hA.re_trace_eq_sum_range_eigenvalue, Real.exp_sum]
 
-/-- **The log-determinant is at most the trace**:
+/-- The log-determinant is at most the trace:
 $\log \det(\mathbf{I} + \mathbf{A}) \le \operatorname{tr} \mathbf{A}$ for positive semidefinite
 $\mathbf{A}$. This is the inequality behind the elliptical potential lemma and volume-based
 pivoting arguments. -/

@@ -69,7 +69,7 @@ noncomputable def singularValues (A : Matrix m n 𝕜) : ℕ → ℝ :=
     ((WithLp.linearEquiv 2 𝕜 (m → 𝕜)).symm.toLinearMap ∘ₗ A.mulVecLin ∘ₗ
       (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).toLinearMap))
 
-/-- **Bridge to Mathlib.** `singularValues A` is `LinearMap.singularValues` of
+/-- Bridge to Mathlib. `singularValues A` is `LinearMap.singularValues` of
 `Matrix.toEuclideanLin A`. Port of `NLAlib.singularValues_eq_linearMap`. -/
 theorem singularValues_eq_linearMap [DecidableEq n] (A : Matrix m n 𝕜) :
     singularValues A = ⇑(Matrix.toEuclideanLin A).singularValues :=
@@ -245,7 +245,7 @@ theorem singularValues_eq_zero {A : Matrix m n 𝕜} : singularValues A = 0 ↔ 
 
 /-! ### Norms -/
 
-/-- **The largest singular value is the spectral norm**: $\sigma_0(\mathbf{A}) = \|\mathbf{A}\|_2$.
+/-- The largest singular value is the spectral norm: $\sigma_0(\mathbf{A}) = \|\mathbf{A}\|_2$.
 Port of `NLAlib.singularValues_zero_eq_specNorm`. -/
 theorem singularValues_zero_eq_specNorm (A : Matrix m n 𝕜) : singularValues A 0 = specNorm A := by
   refine (sq_eq_sq₀ (singularValues_nonneg A 0) (specNorm_nonneg A)).mp ?_
@@ -489,7 +489,7 @@ theorem exists_submodule_singularValues_mul_norm_le (A : Matrix m n 𝕜) {k : �
 
 /-! ### The smallest singular value -/
 
-/-- **The smallest singular value bounds $\|\mathbf{A}\mathbf{x}\|$ from below.** For a matrix with
+/-- The smallest singular value bounds $\|\mathbf{A}\mathbf{x}\|$ from below: for a matrix with
 columns indexed by $n$ and $k + 1 = \lvert n \rvert$,
 $\sigma_k(\mathbf{A}) \|\mathbf{x}\| \le \|\mathbf{A}\mathbf{x}\|$ for every $\mathbf{x}$.
 Port of `NLAlib.singularValues_last_mul_norm_le`. -/
@@ -559,7 +559,7 @@ theorem _root_.Matrix.PosSemidef.singularValues_eq_eigenvalue {A : Matrix n n �
   · rw [eigenvalue_of_card_le _ (not_lt.mp hk), eigenvalue_of_card_le _ (not_lt.mp hk),
       zero_pow two_ne_zero]
 
-/-- **The singular values of the Gram matrix are the squared singular values**:
+/-- The singular values of the Gram matrix are the squared singular values:
 $\sigma_k(\mathbf{A}^{\mathsf{H}}\mathbf{A}) = \sigma_k(\mathbf{A})^2$ for every index $k$,
 the zero padding included. Mathlib's `LinearMap.singularValues` has no such statement. -/
 theorem singularValues_conjTranspose_mul_self (A : Matrix m n 𝕜) (k : ℕ) :

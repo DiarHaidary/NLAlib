@@ -274,7 +274,7 @@ noncomputable def residualMinimax (s : Set ℝ) (q : ℕ) : ℝ :=
 theorem residualMinimax_nonneg (s : Set ℝ) (q : ℕ) : 0 ≤ residualMinimax s q :=
   Real.iInf_nonneg fun _ => Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
 
-/-- **Every residual polynomial bounds the minimax value**: if $\deg p \le q$, $p(0) = 1$ and
+/-- Every residual polynomial bounds the minimax value: if $\deg p \le q$, $p(0) = 1$ and
 $\lvert p \rvert \le \eta$ on $s$ with $0 \le \eta$, then $\mathsf{residualMinimax}(s, q) \le
 \eta$. -/
 theorem residualMinimax_le {s : Set ℝ} {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1)
@@ -308,7 +308,7 @@ theorem residualMinimax_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
     obtain ⟨y, hy, rfl⟩ := hz
     exact hM ⟨y, hy, rfl⟩
 
-/-- **The Chebyshev value in $\kappa = a'/a$**: for $0 < a < a'$,
+/-- The Chebyshev value in $\kappa = a'/a$: for $0 < a < a'$,
 $$T_q\Bigl(\frac{a' + a}{a' - a}\Bigr)^{-1} = \frac{2\rho^q}{1 + \rho^{2q}} \,,\qquad
 \rho = \frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1} \,.$$ -/
 theorem inv_eval_T_real_eq_two_mul_pow_div {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
@@ -497,7 +497,7 @@ private lemma chebyshevResidual_arg_chebyshevExtremum {a a' : ℝ} (haa : a < a'
   field_simp
   ring
 
-/-- **The residual alternates at the extrema**: for $a < a'$ and $k \le q$,
+/-- The residual alternates at the extrema: for $a < a'$ and $k \le q$,
 $p_q(\xi_k) = (-1)^k T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$ for $p_q$ =
 `chebyshevResidual a a' q`. -/
 theorem eval_chebyshevResidual_chebyshevExtremum {a a' : ℝ} (haa : a < a')
@@ -563,7 +563,7 @@ private lemma eval_lagrangeBasis_chebyshevExtremum_zero {a a' : ℝ} (ha : 0 < a
   rw [chebyshevWeight, hℓ, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul,
     abs_of_nonneg (Finset.prod_nonneg fun j _ => abs_nonneg _)]
 
-/-- **The signed dual weights evaluate at $0$**: for $0 < a < a'$ and every $p \in \Bbbk[X]$ with
+/-- The signed dual weights evaluate at $0$: for $0 < a < a'$ and every $p \in \Bbbk[X]$ with
 $\deg p \le q$, $\sum_k (-1)^k\omega_k\,p(\xi_k) = p(0)$. -/
 theorem sum_neg_one_pow_mul_chebyshevWeight_mul_eval {𝕜 : Type*} [RCLike 𝕜] {a a' : ℝ}
     (ha : 0 < a) (haa : a < a') {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q) :
@@ -581,7 +581,7 @@ theorem sum_neg_one_pow_mul_chebyshevWeight_mul_eval {𝕜 : Type*} [RCLike 𝕜
   rw [eval_mul, eval_C, eval_lagrangeBasis_ofReal_zero,
     eval_lagrangeBasis_chebyshevExtremum_zero ha haa, mul_comm]
 
-/-- **The dual weights sum to the Chebyshev value**: for $0 < a < a'$,
+/-- The dual weights sum to the Chebyshev value: for $0 < a < a'$,
 $\sum_k \omega_k = T_q\bigl((a' + a)/(a' - a)\bigr)$. -/
 theorem sum_chebyshevWeight {a a' : ℝ} (ha : 0 < a) (haa : a < a') (q : ℕ) :
     ∑ k : Fin (q + 1), chebyshevWeight a a' q k = (T ℝ (q : ℤ)).eval ((a' + a) / (a' - a)) := by

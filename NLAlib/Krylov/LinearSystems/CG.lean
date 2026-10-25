@@ -98,7 +98,7 @@ theorem cgIterate_zero (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : cgIterate A
   have h := cgIterate_sub_mem_krylovSpace A b x₀ 0
   rwa [krylovSpace_zero, Submodule.mem_bot, sub_eq_zero] at h
 
-/-- **CG in any orthonormal basis of the Krylov space**, for every $\mathbf{A}$:
+/-- CG in any orthonormal basis of the Krylov space, for every $\mathbf{A}$:
 $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
 \mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})^{+}\mathbf{Q}^{\mathsf{H}}\mathbf{r}_0$. -/
 theorem HasOrthonormalCols.cgIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
@@ -520,7 +520,7 @@ theorem galerkinInverse_blockKrylovMatrix_replicateCol (A : Matrix n n 𝕜) (b 
   galerkinInverse_eq_of_range_eq A (blockKrylovSpace_replicateCol A b q)
 
 omit [Fintype r] [DecidableEq r] in
-/-- **Block CG with one column is CG**: the block Galerkin approximation
+/-- Block CG with one column is CG: the block Galerkin approximation
 $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{K}_q(\mathbf{A}, \mathbf{B}))\,\mathbf{B}$ at the
 one-column block $\mathbf{B} = [\mathbf{b}]$ is the column of the CG iterate from the zero start,
 $[\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{0}, q)]$. -/

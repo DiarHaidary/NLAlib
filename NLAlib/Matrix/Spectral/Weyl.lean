@@ -275,7 +275,7 @@ theorem _root_.Matrix.IsHermitian.eigengap_nonneg {A : Matrix n n 𝕜} (hA : A.
     (hk : k < Fintype.card n) : 0 ≤ eigengap A k := by
   exact sub_nonneg.mpr (hA.eigenvalue_le_eigenvalue (Nat.sub_le k 1) hk)
 
-/-- **Stability of the eigengap.** A Hermitian perturbation changes the gap by at most twice its
+/-- Stability of the eigengap: a Hermitian perturbation changes the gap by at most twice its
 spectral norm: for Hermitian $\mathbf{A}$, $\mathbf{B}$ and every $k$, writing $\delta_k$ for the
 eigengap `eigengap`,
 $\lvert \delta_k(\mathbf{A}) - \delta_k(\mathbf{B}) \rvert \le 2 \|\mathbf{A} - \mathbf{B}\|_2$. -/

@@ -48,7 +48,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 open scoped Classical in
-/-- **The eigenvalues of the absolute value are the singular values**:
+/-- The eigenvalues of the absolute value are the singular values:
 $\lambda_k((\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}) = \sigma_k(\mathbf{A})$ for
 $k < \lvert n \rvert$, the number of columns, both indexed from $0$ and non-increasing. -/
 theorem eigenvalue_sqrt_conjTranspose_mul_self (A : Matrix m n 𝕜) {k : ℕ}
@@ -96,7 +96,7 @@ theorem _root_.Matrix.PosSemidef.conjTranspose_sqrt_mul_sqrt {H : Matrix n n �
     CFC.sqrt_mul_sqrt_self H hH.nonneg]
 
 open scoped Classical in
-/-- **The singular values of the square root**: for positive semidefinite $\mathbf{H}$,
+/-- The singular values of the square root: for positive semidefinite $\mathbf{H}$,
 $\sigma_k(\mathbf{H}^{1/2})^2 = \sigma_k(\mathbf{H})$ at every index, the zero padding
 included. -/
 theorem _root_.Matrix.PosSemidef.singularValues_sqrt_sq {H : Matrix n n 𝕜}
@@ -104,7 +104,7 @@ theorem _root_.Matrix.PosSemidef.singularValues_sqrt_sq {H : Matrix n n 𝕜}
   rw [← singularValues_conjTranspose_mul_self, hH.conjTranspose_sqrt_mul_sqrt]
 
 open scoped Classical in
-/-- **The best Frobenius error of the square root**: for positive semidefinite $\mathbf{H}$,
+/-- The best Frobenius error of the square root: for positive semidefinite $\mathbf{H}$,
 $$\|\mathbf{H}^{1/2} - \llbracket\mathbf{H}^{1/2}\rrbracket_k\|_{\mathsf{F}}^2 =
 \|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*\,,$$
 both sides being $\sum_{i \ge k}\sigma_i(\mathbf{H})$. -/
@@ -144,7 +144,7 @@ theorem _root_.Matrix.PosSemidef.singularGapRatio_le_two_mul_singularGapRatio_sq
     rw [mul_div_assoc', div_le_div_iff₀ h2 h0]
     nlinarith [mul_nonneg (sub_nonneg.mpr hba) (sq_nonneg (a - b))]
 
-/-- **Schatten norms as traces**: for real $p > 0$,
+/-- Schatten norms as traces: for real $p > 0$,
 $$\|\mathbf{A}\|_{S_p}^p
   = \operatorname{Re} \operatorname{tr} (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{p/2},$$
 the power taken in the continuous functional calculus (the trace is real). -/

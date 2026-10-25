@@ -310,7 +310,7 @@ theorem hasCondMatrixMGFBound_of_condExp_eq_zero_of_le (hm : m ≤ mΩ) {X : Ω 
   exact h1.trans (Matrix.IsHermitian.one_add_le_exp ((IsSelfAdjoint.all c).smul h7))
 
 omit [IsProbabilityMeasure μ] in
-/-- **The bridge from Mathlib's conditionally sub-Gaussian scalars**: if $\gamma$ has a
+/-- The bridge from Mathlib's conditionally sub-Gaussian scalars: if $\gamma$ has a
 conditionally sub-Gaussian moment generating function with proxy $c$ (Mathlib's
 `HasCondSubgaussianMGF`, through the conditional expectation kernel) and $\mathbf{B}$ is a fixed
 Hermitian matrix, then $\gamma \mathbf{B}$ has the conditional matrix MGF bound

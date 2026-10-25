@@ -47,7 +47,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m p q : Type*} [Fintype m] [Fintype p] [F
 /-! ### Volume under a column exchange -/
 
 omit [Fintype q] in
-/-- **The Gram determinant of independent columns is positive**: the squared volume
+/-- The Gram determinant of independent columns is positive: the squared volume
 $\det(\mathbf{C}^{\mathsf{H}}\mathbf{C})$ of a matrix of full column rank is positive (its real
 part, as an element of the field). -/
 theorem re_det_conjTranspose_mul_self_pos [DecidableEq p] {C : Matrix m p 𝕜}
@@ -123,7 +123,7 @@ theorem re_det_conjTranspose_mul_self_updateCol [DecidableEq p] {C : Matrix m p 
     RCLike.re_ofReal_mul, RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow,
     RCLike.ofReal_re]
 
-/-- **The Gram determinant after appending a column**: the squared volume is multiplied by the
+/-- The Gram determinant after appending a column: the squared volume is multiplied by the
 squared distance of the new column $\mathbf{v}$ to the range of $\mathbf{C}$,
 $\|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{v}\|^2$, so that for
 $\mathbf{B} = \begin{bmatrix} \mathbf{C} & \mathbf{v} \end{bmatrix}$
@@ -222,7 +222,7 @@ private theorem one_le_sq_singularValues_mul_frobNorm_pinv_sq (C : Matrix m p �
         (mul_inv_cancel₀ hpos.ne').symm
     _ ≤ singularValues C i ^ 2 * frobNorm (pinv C) ^ 2 := by gcongr
 
-/-- **The selected columns capture the leading singular values**: for $\mathbf{C}$ of full
+/-- The selected columns capture the leading singular values: for $\mathbf{C}$ of full
 column rank, $\mathbf{C}^{\mathsf{H}}\mathbf{D} = \mathbf{0}$ and a budget
 $b \ge \|\mathbf{T}\|_{\mathsf{F}}^2 +
 \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$,
@@ -334,7 +334,7 @@ private theorem exists_submodule_sum_finrank [Finite q] (Y : Submodule 𝕜 (q �
   exact ⟨Y.comap tail, by rw [e.finrank_eq, Module.finrank_prod,
     Module.finrank_fintype_fun_eq_card], fun z hz => hz⟩
 
-/-- **The residual is no larger than the trailing singular values allow**: for $\mathbf{C}$ of
+/-- The residual is no larger than the trailing singular values allow: for $\mathbf{C}$ of
 full column rank, $\mathbf{C}^{\mathsf{H}}\mathbf{D} = \mathbf{0}$ and a budget
 $b \ge \|\mathbf{T}\|_{\mathsf{F}}^2 +
 \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$,

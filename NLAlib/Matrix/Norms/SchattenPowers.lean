@@ -64,7 +64,7 @@ theorem _root_.Matrix.IsHermitian.schattenNorm_two_mul_natCast_pow [DecidableEq 
     schattenNorm (2 * p) A ^ (2 * p) = RCLike.re (A ^ (2 * p)).trace := by
   rw [NLAlib.schattenNorm_two_mul_natCast_pow hp, hA.eq, ← pow_two, ← pow_mul]
 
-/-- **The moment bound for the spectral norm**: for a natural number $p \ne 0$,
+/-- The moment bound for the spectral norm: for a natural number $p \ne 0$,
 $\|\mathbf{A}\|_2^{2p} \le \operatorname{Re}
 \operatorname{tr}\bigl((\mathbf{A}^{\mathsf{H}}\mathbf{A})^p\bigr)$.
 -/

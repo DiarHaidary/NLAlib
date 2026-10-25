@@ -80,7 +80,7 @@ private theorem integral_norm_sq_rpow_gaussianVector {s : ℝ}
   have hG : 0 < Real.Gamma ((d : ℝ) / 2) := Real.Gamma_pos_of_pos (by positivity)
   field_simp
 
-/-- **Polar coordinates for a standard Gaussian vector**, the $\chi_d$ density: for a standard
+/-- Polar coordinates for a standard Gaussian vector, the $\chi_d$ density: for a standard
 Gaussian vector $\mathbf{g}$ of dimension $d = \lvert n \rvert \ge 1$ and measurable $\varphi$,
 $$\mathbb{E}\,\varphi(\|\mathbf{g}\|) = \frac{1}{2^{d/2 - 1}\,\Gamma(d/2)}
 \int_0^\infty y^{d-1} e^{-y^2/2} \varphi(y)\,dy\,.$$
@@ -122,7 +122,7 @@ theorem integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hg : HasLaw g (gaussia
     Real.Gamma_pos_of_pos (by have : 0 < Fintype.card n := Fintype.card_pos; positivity)
   positivity
 
-/-- **The real moments of $\chi^2_d$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
+/-- The real moments of $\chi^2_d$: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and real $s > -d/2$,
 $$\mathbb{E}(\|\mathbf{g}\|^2)^s = \frac{2^s \Gamma(d/2 + s)}{\Gamma(d/2)}\,.$$ -/
 theorem integral_norm_sq_rpow_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)

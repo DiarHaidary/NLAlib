@@ -55,7 +55,7 @@ theorem mul_singularValues_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l 
     rwa [eigenvalue_real_smul _ ha, ← singularValues_sq, ← singularValues_sq] at hk
   · exact (mul_nonpos_of_nonpos_of_nonneg ha.le (sq_nonneg _)).trans (sq_nonneg _)
 
-/-- **Singular values under an upper Gram bound.** If
+/-- Singular values under an upper Gram bound: if
 $\mathbf{B}^{\mathsf{H}}\mathbf{B} \preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}$ for a real $b$, then
 $\sigma_i(\mathbf{B})^2 \le b \sigma_i(\mathbf{A})^2$ for every $i$. -/
 theorem singularValues_sq_le_mul_of_le_smul {A : Matrix m n 𝕜} {B : Matrix l n 𝕜} {b : ℝ}
@@ -117,7 +117,7 @@ theorem specNorm_pinv_sq_le_of_smul_le {A : Matrix m n 𝕜} {B : Matrix l n �
     rw [specNorm_pinv A hk, specNorm_pinv B (hk.trans hr'.symm), inv_pow, inv_pow, ← mul_inv]
     exact inv_anti₀ (mul_pos ha (pow_pos hA 2)) hle
 
-/-- **The pseudo-condition number under comparable Gram matrices**: if
+/-- The pseudo-condition number under comparable Gram matrices: if
 $a \mathbf{A}^{\mathsf{H}}\mathbf{A} \preceq \mathbf{B}^{\mathsf{H}}\mathbf{B}
 \preceq b \mathbf{A}^{\mathsf{H}}\mathbf{A}$ with $0 < a$, then
 $\|\mathbf{B}\|_2 \|\mathbf{B}^{+}\|_2 \le \sqrt{b / a} \, \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$.

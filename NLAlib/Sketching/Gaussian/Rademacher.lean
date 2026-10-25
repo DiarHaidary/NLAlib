@@ -182,7 +182,7 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_rademacherMatrix
   simp only [Pi.sub_apply, ← Matrix.smul_mulVec, norm_inv_sqrt_card_smul_mulVec_sq,
     Real.norm_eq_abs, sq_abs, div_eq_inv_mul]
 
-/-- **Exact second moment of the sign-sketch distortion**: for $k$ nonempty,
+/-- Exact second moment of the sign-sketch distortion: for $k$ nonempty,
 $$\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2
 = \frac{2}{\lvert k \rvert} \Bigl(\|\mathbf{x}\|^4 - \sum_j \mathbf{x}_j^4\Bigr) \,,$$
 at most the Gaussian sketch's $2 \|\mathbf{x}\|^4/\lvert k \rvert$
@@ -300,7 +300,7 @@ theorem hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le
   exact (hasJLProperty_of_hasLaw_rademacherMatrix hX hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
 
-/-- **Sign-sketch JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for the
+/-- Sign-sketch JL, asymptotic form: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for the
 sign sketch to have the JL property with distortion $\varepsilon$ and failure probability
 $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
 dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_rademacherMatrix_of_jlDim_le` with
@@ -339,7 +339,7 @@ theorem isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix_of_jlDim_le
   refine (isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix hX d hε.le).mono le_rfl
     le_rfl le_rfl (two_mul_twentyOne_pow_mul_exp_le_of_jlDim_le hε hε3 hδ hk)
 
-/-- **Sign-sketch OSE, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice
+/-- Sign-sketch OSE, asymptotic form: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice
 for the sign sketch to be an oblivious subspace embedding for dimension $d$ with constants
 $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension. Proved from
@@ -374,7 +374,7 @@ theorem exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_rademacherMatrix :
     (by nlinarith [Nat.cast_nonneg (α := ℝ) d, Real.log_nonneg (by norm_num : (1 : ℝ) ≤ 2)])
     (sq_nonneg ε)
 
-/-- **Sign-sketch OSI, sample-size form**: for $0 < \varepsilon < 15/8$, $\delta > 0$, $k$
+/-- Sign-sketch OSI, sample-size form: for $0 < \varepsilon < 15/8$, $\delta > 0$, $k$
 nonempty and at least <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
 $\log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ rows
 (`jlDim (4ε/5) (δ/21^d)`),

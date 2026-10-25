@@ -113,8 +113,8 @@ theorem exists_finset_isCover_sphere_card_le (E : Type*) [NormedAddCommGroup E]
   · exact card_le_of_subset_sphere_of_isSeparated hε _ (by simpa using maximalSeparatedSet_subset)
       (by simpa using isSeparated_maximalSeparatedSet)
 
-/-- **A unit vector is within $\varepsilon$ of an $\varepsilon$-net of the sphere, in
-coordinates**: if $N$ is an $\varepsilon$-net of the unit sphere of `EuclideanSpace 𝕜 n` and
+/-- A unit vector is within $\varepsilon$ of an $\varepsilon$-net of the sphere, in
+coordinates: if $N$ is an $\varepsilon$-net of the unit sphere of `EuclideanSpace 𝕜 n` and
 $\mathbf{y}$ in `n → 𝕜` has Euclidean norm $1$, some $\mathbf{x} \in N$ has
 $\|\mathbf{y} - \mathbf{x}\| \le \varepsilon$. The coordinate form of
 `Metric.IsCover.subset_iUnion_closedBall`. -/

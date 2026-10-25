@@ -48,7 +48,7 @@ namespace NLAlib
 
 variable {K : Type*} [Field K] {𝕜 : Type*} [RCLike 𝕜] {n : Type*}
 
-/-- **A principal minor through an elimination step.** Eliminating a nonzero pivot
+/-- A principal minor through an elimination step: eliminating a nonzero pivot
 $\mathbf{A}_{t,t}$ with $t \in s$ factors the pivot out of the principal minor on $s$: what remains
 is the principal minor of the eliminated matrix on $s \setminus \{t\}$. -/
 theorem principalMinor_eq_apply_self_mul_principalMinor_eliminationStep [DecidableEq n]
@@ -133,7 +133,7 @@ theorem gaussState_eq_foldl (A : Matrix (Fin n) (Fin n) K) (k : ℕ) :
       rw [gaussState_succ_of_le A (not_lt.mp h), ih, List.take_of_length_le hk,
         List.take_of_length_le (hk.trans k.le_succ)]
 
-/-- **The telescoping identity of elimination**: $\mathbf{A}$ is the current state plus the
+/-- The telescoping identity of elimination: $\mathbf{A}$ is the current state plus the
 rank-one matrices removed so far,
 $$\mathbf{A} = \mathbf{A}^{(k)} + \sum_{j < \min(k, n)} \bigl(\mathbf{A}^{(j)}_{j,j}\bigr)^{-1}
   \mathbf{A}^{(j)}_{:,j} \mathbf{A}^{(j)}_{j,:}\,,$$
@@ -259,7 +259,7 @@ private theorem principalMinor_filter_lt_eq_prod (A : Matrix (Fin n) (Fin n) K) 
       principalMinor_singleton, filter_lt_succ h, Finset.prod_insert (notMem_filter_lt h),
       mul_comm]
 
-/-- **Pivots and leading principal minors.** While the earlier pivots are nonzero, the leading
+/-- Pivots and leading principal minors: while the earlier pivots are nonzero, the leading
 principal minor of order $i + 1$ is the product of the first $i + 1$ pivots
 $\mathbf{A}^{(l)}_{l,l}$, $l \le i$.
 Port of `NLAlib.leadingMinor_succ_eq_mul_leadingMinor_pivotSchur`, in closed form. -/
@@ -269,7 +269,7 @@ theorem principalMinor_Iic_eq_prod_gaussState (A : Matrix (Fin n) (Fin n) K) (i 
   rw [Iic_eq_filter_lt]
   exact principalMinor_filter_lt_eq_prod A i.2 fun l hl => hp l (Fin.lt_def.mpr (by omega))
 
-/-- **A pivot is the ratio of consecutive leading principal minors**, while the earlier pivots
+/-- A pivot is the ratio of consecutive leading principal minors, while the earlier pivots
 are nonzero: the pivot $\mathbf{A}^{(i)}_{i,i}$ times the leading principal minor of order $i$ is
 the leading principal minor of order $i + 1$. -/
 theorem gaussState_apply_self_mul_principalMinor_Iio (A : Matrix (Fin n) (Fin n) K) (i : Fin n)
@@ -279,8 +279,8 @@ theorem gaussState_apply_self_mul_principalMinor_Iio (A : Matrix (Fin n) (Fin n)
     principalMinor_filter_lt_eq_prod A i.2.le fun l hl => hp l (Fin.lt_def.mpr (by omega)),
     ← Iio_eq_filter_lt, ← Finset.Iio_insert, Finset.prod_insert Finset.notMem_Iio_self]
 
-/-- **The pivots up to $i$ are nonzero exactly when the leading principal minors up to order
-$i + 1$ are nonzero.** -/
+/-- The pivots up to $i$ are nonzero exactly when the leading principal minors up to order
+$i + 1$ are nonzero. -/
 theorem forall_gaussState_ne_zero_iff (A : Matrix (Fin n) (Fin n) K) (i : Fin n) :
     (∀ l : Fin n, l ≤ i → gaussState A l l l ≠ 0) ↔
       ∀ l : Fin n, l ≤ i → principalMinor A (Finset.Iic l) ≠ 0 := by

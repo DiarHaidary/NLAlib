@@ -320,7 +320,7 @@ section Random
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {δ : ℝ}
 
-/-- **Iterative sketching with a random embedding, any start**: if the random sketch $\mathbf{S}$
+/-- Iterative sketching with a random embedding, any start: if the random sketch $\mathbf{S}$
 is a subspace embedding of $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ in squared
 norms ($a\|\mathbf{v}\|^2 \le \|\mathbf{S}\mathbf{v}\|^2 \le b\|\mathbf{v}\|^2$ for
 $\mathbf{v} \in \operatorname{range}\mathbf{A}$) except with probability $\delta$, $\mathbf{A}$ has
@@ -344,7 +344,7 @@ theorem HasSubspaceEmbedding.measureReal_norm_mulVec_sub_iterativeSketching_sq_g
   intro hemb
   exact (not_le.mpr hω₁) (hemb.norm_mulVec_sub_iterativeSketching_sq_le ha hA hω hxs x₀ q)
 
-/-- **Damped iterative sketching with a random embedding, sketch-and-solve start**: if the random
+/-- Damped iterative sketching with a random embedding, sketch-and-solve start: if the random
 sketch $\mathbf{S}$ is a subspace embedding of $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with
 constants $1 \mp \varepsilon$ in squared norms ($(1 - \varepsilon)\|\mathbf{v}\|^2 \le
 \|\mathbf{S}\mathbf{v}\|^2 \le (1 + \varepsilon)\|\mathbf{v}\|^2$ on that range),

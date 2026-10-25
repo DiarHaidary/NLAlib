@@ -130,7 +130,7 @@ theorem givensHessenbergR_apply_eq_zero_of_add_two_lt {H : Matrix (Fin m) (Fin p
     (hij : (i : ℕ) + 2 < j) : givensHessenbergR H i j = 0 := by
   exact (givensHessenbergState_snd_apply_eq_zero_of_add_two_lt hH' p).1 i j hij
 
-/-- **Nonzero pivots exactly at full column rank**: for upper Hessenberg $\mathbf{H}$ with
+/-- Nonzero pivots exactly at full column rank: for upper Hessenberg $\mathbf{H}$ with
 $p \le m$, the diagonal of $\mathbf{R}$ has no zero iff $\mathbf{H}$ has full column rank. -/
 theorem forall_givensHessenbergR_apply_self_ne_zero_iff {H : Matrix (Fin m) (Fin p) 𝕜}
     (hH : IsUpperHessenberg H) (h : p ≤ m) :

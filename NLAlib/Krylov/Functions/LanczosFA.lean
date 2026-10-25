@@ -93,7 +93,7 @@ theorem compressedCfc_eq_of_range_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) {X 
     compressedCfc A f X = compressedCfc A f Y := by
   rw [compressedCfc, compressedCfc, rangeProjector_inj.mpr h]
 
-/-- **The compressed function in a partial isometry**, for every $\mathbf{A}$: for $\mathbf{Q}$
+/-- The compressed function in a partial isometry, for every $\mathbf{A}$: for $\mathbf{Q}$
 with $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$ (orthonormal columns, possibly
 with some zero columns, as `arnoldiMatrix` past the grade) spanning the column space of
 $\mathbf{X}$,

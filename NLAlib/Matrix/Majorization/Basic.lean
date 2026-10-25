@@ -195,7 +195,7 @@ theorem convexOn_sumLargest_abs (k : ℕ) :
     _ = a • sumLargest (fun i => |x i|) k + b • sumLargest (fun i => |y i|) k := by
         rw [sumLargest_smul ha, sumLargest_smul hb, smul_eq_mul, smul_eq_mul]
 
-/-- **Recognising the largest entries.** If an index set $t$ with $\min(k, \lvert \iota \rvert)$
+/-- Recognising the largest entries: if an index set $t$ with $\min(k, \lvert \iota \rvert)$
 elements carries entries that are all at least every entry outside it, the sum of the $k$ largest
 entries is the sum over $t$: $S_k(\mathbf{x}) = \sum_{i \in t} \mathbf{x}_i$. -/
 theorem sumLargest_eq_sum_of_forall_le {x : ι → ℝ} {t : Finset ι} {k : ℕ}
@@ -228,7 +228,7 @@ theorem sumLargest_eq_sum_of_antitone {N : ℕ} {a : Fin N → ℝ} (ha : Antito
   · simp only [Finset.mem_filter, Finset.mem_univ, true_and, not_lt] at hi hj
     exact Fin.le_def.mpr (hi.le.trans hj)
 
-/-- **Partial sums of a sorted sequence.** If a real sequence $f$ is non-increasing below $N$, the
+/-- Partial sums of a sorted sequence: if a real sequence $f$ is non-increasing below $N$, the
 sum of the $k$ largest of its first $N$ values is the partial sum
 $\sum_{i < \min(k, N)} f(i)$. This is the bridge between `sumLargest` and the $\mathbb{N}$-indexed
 eigenvalues and singular values. -/
@@ -345,7 +345,7 @@ theorem Majorized.sum_sub_sumLargest_le_sum {x y : ι → ℝ} (h : Majorized x 
     (Finset.sum_add_sum_compl s x).trans h.sum_eq
   linarith
 
-/-- **Majorization of sorted sequences is the family of partial-sum inequalities.** For real
+/-- Majorization of sorted sequences is the family of partial-sum inequalities: for real
 sequences $f$, $g$ non-increasing below $N$, weak majorization of their first $N$ values is
 $\sum_{i < k} f(i) \le \sum_{i < k} g(i)$ for all $k \le N$. -/
 theorem weaklyMajorized_fin_iff_sum_range_le {f g : ℕ → ℝ} {N : ℕ}
@@ -358,7 +358,7 @@ theorem weaklyMajorized_fin_iff_sum_range_le {f g : ℕ → ℝ} {N : ℕ}
   · rw [sumLargest_fin_eq_sum_range hf, sumLargest_fin_eq_sum_range hg]
     exact h _ (min_le_right k N)
 
-/-- **Weak majorization by a sorted sequence, tested on index sets.** If $f$ is non-increasing
+/-- Weak majorization by a sorted sequence, tested on index sets: if $f$ is non-increasing
 below $N$ and every sum of entries of $\mathbf{x}$ over an index set $S$ is at most the sum of the
 first $\lvert S \rvert$ values of $f$, then $\mathbf{x}$ is weakly majorized by the first $N$ values
 of $f$. The vector $\mathbf{x}$ need not be sorted. -/

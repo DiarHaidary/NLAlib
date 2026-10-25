@@ -116,7 +116,7 @@ theorem singularValues_sub_rsvd_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) 
   rw [sub_rsvd]
   exact singularValues_one_sub_rangeProjector_mul_le (A * Ω) A i
 
-/-- **The randomized SVD beats every approximation built from the sketch**, singular value by
+/-- The randomized SVD beats every approximation built from the sketch, singular value by
 singular value:
 $\sigma_i(\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})) \le
 \sigma_i(\mathbf{A} - \mathbf{A}\mathbf{\Omega}\mathbf{X})$ for every $\mathbf{X}$ and every $i$;
@@ -158,14 +158,14 @@ private theorem range_mul_eq_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l �
     LinearMap.range (A * Ω).mulVecLin = LinearMap.range A.mulVecLin :=
   Submodule.eq_of_le_of_finrank_eq (range_le_iff_exists_mul.mpr ⟨Ω, rfl⟩) h
 
-/-- **Exactness of the randomized SVD at low rank**: if
+/-- Exactness of the randomized SVD at low rank: if
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$ then
 $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega}) = \mathbf{A}$. -/
 theorem rsvd_eq_self_of_rank_eq {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜}
     (h : (A * Ω).rank = A.rank) : rsvd A Ω = A :=
   rangeProjector_mul_eq_self_iff.mpr (range_mul_eq_of_rank_eq h).ge
 
-/-- **Equivariance of the randomized SVD**: for $\mathbf{U}$, $\mathbf{V}$ with orthonormal columns,
+/-- Equivariance of the randomized SVD: for $\mathbf{U}$, $\mathbf{V}$ with orthonormal columns,
 the approximation of $\mathbf{U}\mathbf{A}\mathbf{V}^{\mathsf{H}}$ with the test matrix
 $\mathbf{V}\mathbf{\Omega}$ is
 $\mathbf{U}\,\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\,\mathbf{V}^{\mathsf{H}}$. This reduces
@@ -261,7 +261,7 @@ theorem frobNorm_sub_generalizedNystrom_sq {A : Matrix m n 𝕜}
   rw [sub_generalizedNystrom, sub_rsvd]
   exact frobNorm_one_sub_obliqueProjector_mul_sq h A
 
-/-- **Exactness of generalized Nyström at low rank**: if
+/-- Exactness of generalized Nyström at low rank: if
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) = \operatorname{rank}\mathbf{A}$ and
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega})$ equals
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, then
@@ -288,7 +288,7 @@ theorem generalizedNystrom_eq_mul_sketchAndSolve [Fintype q] {A : Matrix m n �
     generalizedNystrom A Ω Ψ = Q * sketchAndSolve Q Ψᴴ A := by
   rw [mul_sketchAndSolve, generalizedNystrom, obliqueProjector_eq_of_range_eq hΨ hQY.symm]
 
-/-- **Equivariance of generalized Nyström**: for $\mathbf{U}$, $\mathbf{V}$ with orthonormal
+/-- Equivariance of generalized Nyström: for $\mathbf{U}$, $\mathbf{V}$ with orthonormal
 columns,
 $$\mathsf{gn}(\mathbf{U}\mathbf{A}\mathbf{V}^{\mathsf{H}}, \mathbf{V}\mathbf{\Omega},
 \mathbf{U}\mathbf{\Psi}) = \mathbf{U}\,\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
@@ -398,8 +398,8 @@ theorem earlyTruncatedGeneralizedNystrom_of_rank_le {A : Matrix m n 𝕜} {Ω : 
     earlyTruncatedGeneralizedNystrom A Ω Ψ k = generalizedNystrom A Ω Ψ := by
   rw [earlyTruncatedGeneralizedNystrom, truncatedSVD_of_rank_le _ hk, generalizedNystrom]
 
-/-- **Early-truncated generalized Nyström error = early-truncated randomized SVD error +
-sketch-and-solve excess**, exactly, in squared Frobenius norm: with
+/-- Early-truncated generalized Nyström error = early-truncated randomized SVD error +
+sketch-and-solve excess, exactly, in squared Frobenius norm: with
 $\mathbf{X} = \llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ and
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{X}) = \operatorname{rank}\mathbf{X}$,
 $$\begin{aligned}

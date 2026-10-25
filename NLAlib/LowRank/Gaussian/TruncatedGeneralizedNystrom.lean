@@ -100,7 +100,7 @@ theorem one_le_truncatedGNFactor {k l p : ℕ} (h : 4 * k ≤ l) : 1 ≤ truncat
   have h2 : 0 ≤ 8 * k * ((25 * gaussianProjectionFactor k l + 484) / p) := by positivity
   linarith
 
-/-- **The explicit comparison of the truncated generalized Nyström factor**: for
+/-- The explicit comparison of the truncated generalized Nyström factor: for
 $0 < \varepsilon \le 1$, $6k \le \varepsilon\ell$ and
 $8000\,\ell \le \varepsilon p$, <!-- value truncatedGNFactor k \ell p -->
 $$1 + \frac{k}{\ell - k - 1} + 4\sqrt{\frac{2k}{p}\Bigl(25\Bigl(1 + \frac{k}{\ell - k - 1}

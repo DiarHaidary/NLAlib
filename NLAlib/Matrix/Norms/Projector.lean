@@ -114,7 +114,8 @@ theorem _root_.IsStarProjection.frobInner_mul_one_sub_mul [DecidableEq m] {P : M
 /-- **Pythagoras** for an orthogonal projector $\mathbf{P}$:
 $\|\mathbf{A}\|_{\mathsf{F}}^2 = \|\mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 +
 \|(\mathbf{I} - \mathbf{P})\mathbf{A}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.frobSq_eq_frobSq_proj_add_residual`. -/
+Port of `NLAlib.frobSq_eq_frobSq_proj_add_residual`.
+[TrefethenBau1997, Lecture 6] (locator to check). -/
 theorem _root_.IsStarProjection.frobNorm_sq_eq_add [DecidableEq m] {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (A : Matrix m n 𝕜) :
     frobNorm A ^ 2 = frobNorm (P * A) ^ 2 + frobNorm ((1 - P) * A) ^ 2 := by
@@ -142,7 +143,7 @@ theorem _root_.IsStarProjection.frobNorm_sub_mul_sq_eq_sub_frobInner {P : Matrix
   rw [← frobInner_self (X - P * X), hP.frobInner_sub_mul_sub_mul, frobInner_sub_left,
     frobInner_self, frobInner_mul_right]
 
-/-- **The head–tail split of a projection residual** for a frame $\mathbf{Z}$ and any
+/-- The head–tail split of a projection residual for a frame $\mathbf{Z}$ and any
 $\mathbf{P}$: with $\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$,
 $$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 =
 \|\mathbf{A}\mathbf{Z} - \mathbf{P}\mathbf{A}\mathbf{Z}\|_{\mathsf{F}}^2 +
@@ -248,7 +249,7 @@ theorem frobNorm_one_sub_rangeProjector_mul_sq_eq_add (Y : Matrix m p 𝕜) (A :
     ← Matrix.conjTranspose_sub, ← Matrix.conjTranspose_mul, frobNorm_conjTranspose,
     frobNorm_conjTranspose, frobNorm_conjTranspose] at h
 
-/-- **The exact error split.** For any coefficient matrix $\mathbf{X}$, the squared Frobenius
+/-- The exact error split: for any coefficient matrix $\mathbf{X}$, the squared Frobenius
 error of $\mathbf{B}\mathbf{X}$ as an approximation of $\mathbf{A}$ is the squared projection
 residual plus the squared error inside the range of $\mathbf{B}$:
 $$\|\mathbf{A} - \mathbf{B}\mathbf{X}\|_{\mathsf{F}}^2

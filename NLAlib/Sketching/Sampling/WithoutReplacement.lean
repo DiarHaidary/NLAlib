@@ -191,7 +191,7 @@ theorem samplingSketchWithoutReplacement_eq_map [MeasurableSpace n] [MeasurableS
   let _ : MeasurableSpace n := ⊤
   exact map_uniformOn_injective_apply _ hs
 
-/-- **From the user's own injection**: if $\iota$ is a uniformly random injection $k \to n$, the
+/-- From the user's own injection: if $\iota$ is a uniformly random injection $k \to n$, the
 sketch built from it at uniform weights has law `NLAlib.samplingSketchWithoutReplacement k n`. -/
 theorem hasLaw_samplingSketchMatrix_of_hasLaw_uniformOn_injective [MeasurableSpace n]
     [MeasurableSingletonClass n] {ι : Ω → k → n}
@@ -500,7 +500,7 @@ theorem hasSubspaceEmbedding_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
     hε
     hδ hk
 
-/-- **Row sampling without replacement, asymptotic form**: with
+/-- Row sampling without replacement, asymptotic form: with
 $d = \operatorname{rank}\mathbf{U}$, $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row
 sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ to
 be a subspace embedding for $\operatorname{range}\mathbf{U}$ with constants $1 \mp \varepsilon$
@@ -563,7 +563,7 @@ theorem hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement_of_sampl
   exact mul_exp_le_of_samplingInjectionDim_le (pos_of_leverageScore_le_mul_inv_card hdom hd) hε
     hδ hk
 
-/-- **The lower half without replacement, asymptotic form**: with
+/-- The lower half without replacement, asymptotic form: with
 $d = \operatorname{rank}\mathbf{U}$, $O(L \log(d/\delta)/\varepsilon^2)$ samples suffice for row
 sampling without replacement under the domination $\ell_i(\mathbf{U}) \le L / \lvert n \rvert$ to
 be a subspace injection for $\operatorname{range}\mathbf{U}$ with constant $1 - \varepsilon$ and

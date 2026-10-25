@@ -34,7 +34,7 @@ open MeasureTheory Set
 
 namespace Real
 
-/-- **Elementary lower bound for $\Gamma$**: $x^x e^{-x} \le \Gamma(x + 1)$ for $x \ge 0$,
+/-- Elementary lower bound for $\Gamma$: $x^x e^{-x} \le \Gamma(x + 1)$ for $x \ge 0$,
 equivalently $(x/e)^x \le \Gamma(x + 1)$. Euler's integral restricted to $[x, \infty)$, where
 $t^x \ge x^x$. -/
 theorem rpow_mul_exp_neg_le_Gamma_add_one {x : ℝ} (hx : 0 ≤ x) :

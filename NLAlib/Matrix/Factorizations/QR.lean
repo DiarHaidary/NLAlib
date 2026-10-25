@@ -151,7 +151,7 @@ theorem IsQR.apply_self_pos (h : IsQR A Q R) (hA : Function.Injective A.mulVec)
     (hd : ∀ i, 0 ≤ R i i) (i : n) : 0 < R i i := by
   exact (hd i).lt_of_ne' (h.injective_mulVec_iff.mp hA i)
 
-/-- **The pseudoinverse through QR**:
+/-- The pseudoinverse through QR:
 $\mathbf{A}^{+} = \mathbf{R}^{+}\mathbf{Q}^{\mathsf{H}}$, with no rank assumption. -/
 theorem IsQR.pinv_eq (h : IsQR A Q R) : pinv A = pinv R * Qᴴ := by
   classical
@@ -291,7 +291,7 @@ end
 
 /-! ### The full factorization -/
 
-/-- **The full QR factorization.** Every matrix indexed by `Fin m` and `Fin n` is a square
+/-- The full QR factorization: every matrix indexed by `Fin m` and `Fin n` is a square
 unitary matrix times an upper trapezoidal one.
 Port of `NLAlib.exists_isFullQR`, there over $\mathbb{R}$. -/
 theorem exists_hasOrthonormalCols_mul_isUpperTrapezoidal {m n : ℕ}
@@ -334,7 +334,7 @@ private theorem exists_star_mul_self_eq_one_and_nonneg (z : 𝕜) :
       rw [hval]
       exact RCLike.ofReal_nonneg.mpr (norm_nonneg _)
 
-/-- **The full QR factorization with nonnegative diagonal.** The upper trapezoidal factor of
+/-- The full QR factorization with nonnegative diagonal: the upper trapezoidal factor of
 `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal` can be chosen with nonnegative entries
 on its main diagonal. -/
 theorem exists_hasOrthonormalCols_mul_isUpperTrapezoidal_nonneg {m n : ℕ}
@@ -382,7 +382,7 @@ theorem HasOrthonormalCols.isQR_submatrix_castLE {m n : ℕ} {A : Matrix (Fin m)
   by_contra hkn
   exact hk ⟨⟨k, not_le.mp hkn⟩, Fin.ext rfl⟩
 
-/-- **A thin QR factorization extends to a full one**, the converse of
+/-- A thin QR factorization extends to a full one, the converse of
 `NLAlib.HasOrthonormalCols.isQR_submatrix_castLE`: for a thin QR factorization
 $\mathbf{A} = \mathbf{Q}\mathbf{R}$
 of an $m \times n$ matrix, $n \le m$, there are a square unitary $\mathbf{Q}'$ whose first $n$

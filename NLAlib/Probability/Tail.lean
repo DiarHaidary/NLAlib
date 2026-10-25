@@ -81,7 +81,7 @@ theorem measureReal_ge_le_integral_div {f : Ω → ℝ} (hf0 : 0 ≤ᵐ[μ] f) (
 /-- **Markov's inequality for a moment**:
 $\mu\{t \le \lvert X\rvert\} \le (\int \lvert X\rvert^p \, d\mu) / t^p$ for real $t, p > 0$. Every
 tail derived from a moment bound ends here. Integrability of $\lvert X\rvert^p$ is needed:
-otherwise its integral is $0$. -/
+otherwise its integral is $0$. [Vershynin2018, Proposition 1.2.4] (locator to check). -/
 theorem measureReal_abs_ge_le_integral_rpow_div {X : Ω → ℝ} {p : ℝ} (hp : 0 < p)
     (hX : Integrable (fun ω => |X ω| ^ p) μ) {t : ℝ} (ht : 0 < t) :
     μ.real {ω | t ≤ |X ω|} ≤ (∫ ω, |X ω| ^ p ∂μ) / t ^ p := by
@@ -120,7 +120,8 @@ with mean $m$ (and vanishes when $m = 0$), and on $G$ the event $E$ forces $t m 
 $t > 0$
 $$\mu(E) \le \delta + \frac{1}{t}\,.$$
 The common step of the subspace-injection tails (`NLAlib.Regression.Oblivious`) and
-the oblivious low-rank tails. -/
+the oblivious low-rank tails.
+[Vershynin2018, Proposition 1.2.4]; there without the failure event (locator to check). -/
 theorem measureReal_le_add_one_div [IsFiniteMeasure μ] {δ t : ℝ} {G E : Set Ω}
     (hG : μ.real Gᶜ ≤ δ) {M : Ω → ℝ} (hM0 : ∀ ω, 0 ≤ M ω) (hM : Integrable M μ) {m : ℝ}
     (hm : ∫ ω, M ω ∂μ = m) (hm0 : m = 0 → ∀ ω, M ω = 0) (ht : 0 < t)
@@ -201,7 +202,8 @@ theorem integrable_of_measureReal_ge_le [IsFiniteMeasure μ] {f : Ω → ℝ} (h
 $\mathbb{P}[t \le f] \le F(t)$ for all $t > a$, with $F$ integrable on $(a, \infty)$, then
 $$\mathbb{E} f \le a + \int_a^\infty F(t) \, dt\,.$$
 Applied to $f^p$, whose tail at $t$ is the tail of $f$ at $t^{1/p}$, it bounds the moments of $f$.
-Integrability of $f$ is `integrable_of_measureReal_ge_le`. -/
+Integrability of $f$ is `integrable_of_measureReal_ge_le`.
+[Vershynin2018, Lemma 1.2.1] (locator to check). -/
 theorem integral_le_of_measureReal_ge_le [IsProbabilityMeasure μ] {f : Ω → ℝ}
     (hf : AEMeasurable f μ) (hf0 : 0 ≤ᵐ[μ] f) {a : ℝ} {F : ℝ → ℝ}
     (hF : IntegrableOn F (Set.Ioi a)) (htail : ∀ t, a < t → μ.real {ω | t ≤ f ω} ≤ F t) :
@@ -567,7 +569,7 @@ theorem integrable_rpow_sum {ι : Type*} [Fintype ι] {Y : ι → Ω → ℝ} (h
 /-- **Weighted Jensen for a sum of nonnegative random variables**: for $r \ge 1$, if
 $\mathbb{E}[Y_i^r] \le w_i^r K$ for nonnegative weights $w_i$ summing to one, with $Y_i = 0$
 where $w_i = 0$, then $\mathbb{E}[(\sum_i Y_i)^r] \le K$. The sum is integrable by
-`NLAlib.integrable_rpow_sum`. -/
+`NLAlib.integrable_rpow_sum`. [Vershynin2018, §1.2] (locator to check). -/
 theorem integral_rpow_sum_le {ι : Type*} [Fintype ι] {Y : ι → Ω → ℝ}
     (hY0 : ∀ i ω, 0 ≤ Y i ω) {r : ℝ} (hr : 1 ≤ r)
     (hm : AEStronglyMeasurable (fun ω => (∑ i, Y i ω) ^ r) μ) {w : ι → ℝ} (hw0 : ∀ i, 0 ≤ w i)

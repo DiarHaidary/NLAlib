@@ -78,7 +78,7 @@ private theorem map_mulVec_gaussianVector [DecidableEq κ] {A : Matrix κ ι ℝ
     Measure.map_map (by fun_prop) (by fun_prop)] at h
   simpa only [Function.comp_def, WithLp.ofLp_toLp, Measure.map_id'] using h
 
-/-- **Coisometric images of a standard Gaussian vector**: if $\mathbf{A}$ has orthonormal rows
+/-- Coisometric images of a standard Gaussian vector: if $\mathbf{A}$ has orthonormal rows
 ($\mathbf{A}\mathbf{A}^{\mathsf{H}} = \mathbf{I}$), then $\mathbf{A}\mathbf{y}$ is a standard
 Gaussian vector whenever $\mathbf{y}$ is. For a square $\mathbf{A}$ this is the orthogonal
 invariance of the standard Gaussian law; for a wide $\mathbf{A}$ it says that orthonormal linear
@@ -95,7 +95,7 @@ end Vector
 variable {m n p q : Type*} [Fintype m] [Fintype n] [Fintype p] [Fintype q]
   {X : Ω → Matrix m n ℝ}
 
-/-- **Orthogonal invariance**: for $\mathbf{U}$ with orthonormal rows and $\mathbf{V}$ with
+/-- Orthogonal invariance: for $\mathbf{U}$ with orthonormal rows and $\mathbf{V}$ with
 orthonormal columns, $\mathbf{U}\mathbf{G}\mathbf{V}$ is a standard Gaussian matrix. -/
 theorem hasLaw_mul_mul_of_hasLaw_gaussianMatrix [DecidableEq p] [DecidableEq q]
     (hX : HasLaw X (gaussianMatrix m n) μ) {U : Matrix p m ℝ} (hU : HasOrthonormalCols Uᴴ)
@@ -178,7 +178,7 @@ theorem hasLaw_mulVec_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix m 
   exact hasLaw_col_of_hasLaw_gaussianMatrix (hasLaw_mul_const_of_hasLaw_gaussianMatrix hX hV) ()
 
 omit [Fintype p] [Fintype q] in
-/-- **Independence of orthogonal blocks**: for frames (matrices with orthonormal columns)
+/-- Independence of orthogonal blocks: for frames (matrices with orthonormal columns)
 $\mathbf{V}_1$ and $\mathbf{V}_2$ with $\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, the
 blocks $\mathbf{V}_1^{\mathsf{H}}\mathbf{G}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{G}$ are
 independent (and each is a standard Gaussian matrix, by

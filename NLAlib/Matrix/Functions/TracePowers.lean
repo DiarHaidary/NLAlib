@@ -48,7 +48,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### The overlap formula -/
 
-/-- **The overlap formula.** If
+/-- The overlap formula: if
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{a})\mathbf{U}^{\mathsf{H}}$ and
 $\mathbf{B} = \mathbf{V}\operatorname{diag}(\mathbf{b})\mathbf{V}^{\mathsf{H}}$ with $\mathbf{a}$,
 $\mathbf{b}$ real and $\mathbf{U}$, $\mathbf{V}$ unitary (orthonormal columns, as many columns as
@@ -176,8 +176,8 @@ private theorem pow_mul_pow_add_le {l k : ℕ} (h : Even (l + k)) (x y : ℝ) :
   rw [← h.pow_abs x, ← h.pow_abs y, pow_add, pow_add]
   linarith [h1 l k, h1 k l]
 
-/-- **The trace of
-$\mathbf{C}\operatorname{diag}(\mathbf{x})\mathbf{C}\operatorname{diag}(\mathbf{y})$**
+/-- The trace of
+$\mathbf{C}\operatorname{diag}(\mathbf{x})\mathbf{C}\operatorname{diag}(\mathbf{y})$
 for Hermitian $\mathbf{C}$ and real vectors $\mathbf{x}$, $\mathbf{y}$ is the weighted sum
 $$\operatorname{Re} \operatorname{tr}\bigl(\mathbf{C}\operatorname{diag}(\mathbf{x})\mathbf{C}
   \operatorname{diag}(\mathbf{y})\bigr)
