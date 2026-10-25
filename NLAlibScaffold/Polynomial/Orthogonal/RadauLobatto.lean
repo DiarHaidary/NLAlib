@@ -186,7 +186,10 @@ Proof: S, about 6 lines. `radauNodes`, `Finset.card_insert_of_notMem` with
 modified measure (`isFiniteMeasure_radauMeasure`, `ae_mem_Icc_radauMeasure`). -/
 theorem IsMomentPosDef.card_radauNodes {k : ℕ} (h : IsMomentPosDef (radauMeasure μ c) k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hc : c = a ∨ c = b) : (radauNodes μ c k).card = k + 1 := by
-  sorry
+  have := isFiniteMeasure_radauMeasure hμ c
+  unfold radauNodes
+  rw [Finset.card_insert_of_notMem (h.notMem_gaussNodes_radauMeasure hμ hc),
+    IsMomentPosDef.card_gaussNodes h (ae_mem_Icc_radauMeasure hμ c)]
 
 /-- **The Radau nodal polynomial is orthogonal**: if $\mu$, finite and supported in $[a, b]$,
 has a Radau modified measure at $c \in \{a, b\}$ positive definite up to degree $k$, then
