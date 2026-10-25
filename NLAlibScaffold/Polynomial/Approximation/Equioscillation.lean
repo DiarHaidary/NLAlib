@@ -255,7 +255,35 @@ private theorem exists_isLeast_abs_sub_eval_eq_minimaxError {f : ℝ → ℝ} {a
       (minimaxError f (Set.Icc a b) n))
     (hE : 0 < minimaxError f (Set.Icc a b) n) :
     ∃ c, IsLeast {x | x ∈ Set.Icc a b ∧ |f x - p.eval x| = minimaxError f (Set.Icc a b) n} c := by
-  sorry
+  have he : ContinuousOn (fun x => |f x - p.eval x|) (Set.Icc a b) :=
+    (hf.sub p.continuous.continuousOn).abs
+  have hK : IsClosed (Set.Icc a b ∩ (fun x => |f x - p.eval x|) ⁻¹'
+      {minimaxError f (Set.Icc a b) n}) :=
+    he.preimage_isClosed_of_isClosed isClosed_Icc isClosed_singleton
+  have hKc := isCompact_Icc.of_isClosed_subset hK Set.inter_subset_left
+  have hKne : (Set.Icc a b ∩ (fun x => |f x - p.eval x|) ⁻¹'
+      {minimaxError f (Set.Icc a b) n}).Nonempty := by
+    by_contra hne
+    have hIcc : (Set.Icc a b).Nonempty := by
+      by_contra h0
+      rw [Set.not_nonempty_iff_eq_empty] at h0
+      have h1 := minimaxError_le_of_isUniformApproxOn (f := f) (s := Set.Icc a b) hp
+        (le_refl (0:ℝ)) (fun x hx => by simp [h0] at hx)
+      linarith
+    have hle : ∀ x ∈ Set.Icc a b, |f x - p.eval x| ≤ minimaxError f (Set.Icc a b) n := by
+      intro x hx
+      have := hbest x hx
+      rwa [Real.dist_eq, abs_sub_comm] at this
+    have hlt : ∀ x ∈ Set.Icc a b, |f x - p.eval x| < minimaxError f (Set.Icc a b) n :=
+      fun x hx => lt_of_le_of_ne (hle x hx) (fun h => hne ⟨x, hx, h⟩)
+    obtain ⟨x₀, hx₀, hmax⟩ := isCompact_Icc.exists_isMaxOn hIcc he
+    have hmax' := isMaxOn_iff.mp hmax
+    have h2 := minimaxError_le_of_isUniformApproxOn (s := Set.Icc a b) hp
+      (abs_nonneg (f x₀ - p.eval x₀)) (fun x hx => by
+        rw [Real.dist_eq, abs_sub_comm]
+        exact hmax' x hx)
+    linarith [hlt x₀ hx₀]
+  exact hKc.exists_isLeast hKne
 
 /-- The descent step: a best approximation $p$ with positive error admits no correction $q$ of
 degree at most $n$ with the sign of $f - p$ at every extremal point of $[a, b]$.
