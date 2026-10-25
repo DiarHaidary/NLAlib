@@ -35,6 +35,8 @@ Proof: S, about 5 lines. Unfold `girardHutchinson`; `Matrix.mul_smul`, `Matrix.s
 `Matrix.trace_smul`, `smul_eq_mul`, `mul_div_assoc`. -/
 theorem girardHutchinson_smul (c : 𝕜) (B : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) :
     girardHutchinson (c • B) Ω = c * girardHutchinson B Ω := by
-  sorry
+  unfold girardHutchinson
+  simp only [Matrix.mul_smul, Matrix.smul_mul, Matrix.trace_smul, smul_eq_mul,
+    mul_div_assoc]
 
 end NLAlib
