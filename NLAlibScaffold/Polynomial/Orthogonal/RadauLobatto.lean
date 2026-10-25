@@ -570,7 +570,15 @@ Proof: S, about 8 lines. `lobattoNodes`, `Finset.card_insert_of_notMem` twice
 for the modified measure. -/
 theorem IsMomentPosDef.card_lobattoNodes {k : ℕ} (h : IsMomentPosDef (lobattoMeasure μ a b) k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) : (lobattoNodes μ a b k).card = k + 2 := by
-  sorry
+  have hb : b ∉ gaussNodes (lobattoMeasure μ a b) k :=
+    h.notMem_gaussNodes_lobattoMeasure hμ (Or.inr rfl)
+  have ha : a ∉ insert b (gaussNodes (lobattoMeasure μ a b) k) := by
+    rw [Finset.mem_insert, not_or]
+    exact ⟨hab.ne, h.notMem_gaussNodes_lobattoMeasure hμ (Or.inl rfl)⟩
+  have := isFiniteMeasure_lobattoMeasure hμ
+  unfold lobattoNodes
+  rw [Finset.card_insert_of_notMem ha, Finset.card_insert_of_notMem hb,
+    h.card_gaussNodes (ae_mem_Icc_lobattoMeasure hμ)]
 
 /-- **The Lobatto nodal polynomial is orthogonal**: if $\mu$, finite and supported in $[a, b]$,
 $a < b$, has a Lobatto modified measure positive definite up to degree $k$, then the nodal
