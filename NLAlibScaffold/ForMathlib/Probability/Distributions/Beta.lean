@@ -107,7 +107,45 @@ private theorem lintegral_Ioi_comp_div_add {F : ℝ → ℝ≥0∞} (hF : Measur
     ∫⁻ x in Ioi (0 : ℝ), F (x / (x + y)) * ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x))) =
       ∫⁻ s in Ioo (0 : ℝ) 1, F s * ENNReal.ofReal
         (y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s)))) := by
-  sorry
+  have hderiv : ∀ s ∈ Ioo (0 : ℝ) 1,
+      HasDerivWithinAt (fun s => y * s / (1 - s)) (y / (1 - s) ^ 2) (Ioo (0 : ℝ) 1) s :=
+    fun s hs => (hasDerivAt_mul_div_one_sub y (ne_of_lt hs.2)).hasDerivWithinAt
+  calc
+    _ = ∫⁻ x in (fun s => y * s / (1 - s)) '' Ioo (0 : ℝ) 1,
+          F (x / (x + y)) * ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x))) := by
+          rw [image_mul_div_one_sub_Ioo hy]
+    _ = ∫⁻ s in Ioo (0 : ℝ) 1, ENNReal.ofReal |y / (1 - s) ^ 2| *
+          (F ((y * s / (1 - s)) / ((y * s / (1 - s)) + y)) *
+            ENNReal.ofReal ((y * s / (1 - s)) ^ (a - 1) * Real.exp (-(r * (y * s / (1 - s)))))) :=
+          lintegral_image_eq_lintegral_abs_deriv_mul measurableSet_Ioo hderiv
+            (injOn_mul_div_one_sub y hy) _
+    _ = _ := by
+          refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+          have hs0 : 0 < s := hs.1
+          have hs1 : 0 < 1 - s := by linarith [hs.2]
+          have h1 : y * s / (1 - s) / (y * s / (1 - s) + y) = s := by
+            field_simp
+            ring
+          have hreal : y / (1 - s) ^ 2 * ((y * s / (1 - s)) ^ (a - 1) *
+              Real.exp (-(r * (y * s / (1 - s))))) =
+              y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s))) := by
+            have hw : (1 - s) ^ (a - 1) ≠ 0 := (Real.rpow_pos_of_pos hs1 _).ne'
+            have e : (1 - s) ^ (-a - 1) * (1 - s) ^ (a - 1) * (1 - s) ^ 2 = 1 := by
+              rw [← Real.rpow_add hs1, show -a - 1 + (a - 1) = -((2 : ℕ) : ℝ) by push_cast; ring,
+                Real.rpow_neg hs1.le, Real.rpow_natCast]
+              field_simp
+            rw [show -(r * (y * s / (1 - s))) = -(r * y * s / (1 - s)) by ring,
+              Real.div_rpow (by positivity) hs1.le, Real.mul_rpow hy.le hs0.le,
+              Real.rpow_sub_one hy.ne' a]
+            have hv' : (1 - s) ^ (-a - 1) * ((1 - s) ^ 2 * (1 - s) ^ (a - 1)) = 1 := by
+              linear_combination e
+            have hv : (1 - s) ^ (-a - 1) = ((1 - s) ^ 2 * (1 - s) ^ (a - 1))⁻¹ :=
+              eq_inv_of_mul_eq_one_left hv'
+            rw [hv]
+            field_simp
+          rw [h1, abs_of_pos (div_pos hy (pow_pos hs1 2)), ← mul_assoc,
+            mul_comm _ (F s), mul_assoc, ← ENNReal.ofReal_mul (div_pos hy (pow_pos hs1 2)).le,
+            hreal]
 
 /-- The Gamma-ratio integral after Tonelli: for measurable $F \ge 0$ and $a, b, r > 0$,
 $$\iint F\Bigl(\frac{x}{x+y}\Bigr)\gamma_{a,r}(x)\gamma_{b,r}(y)\,dx\,dy = \int_0^1 F(s)
