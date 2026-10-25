@@ -143,7 +143,12 @@ Proof: S, about 15 lines. `by_cases` on `IsMomentPosDef μ k`; definite:
 Result: gauss-quadrature -/
 theorem matchesMoments_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     MatchesMoments μ (gaussQuadrature μ k) (2 * k) := by
-  sorry
+  by_cases h : IsMomentPosDef μ k
+  · have := (isOrthogonalPolynomial_nodal_gaussNodes hμ k).matchesMoments_interpolatoryQuadrature hμ
+    rwa [h.card_gaussNodes hμ] at this
+  · unfold gaussQuadrature
+    rw [interpolatoryQuadrature_eq_self_of_ae_mem (ae_mem_gaussNodes_of_not_isMomentPosDef hμ h)]
+    exact MatchesMoments.refl _ _
 
 /-- The integral against the Gauss rule with the interpolatory weights: for a finite measure
 $\mu$ supported in $[a, b]$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
