@@ -152,6 +152,10 @@ theorem _root_.Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature {A : Matri
 
 /-! ### Distribution functions, masses and supports -/
 
+private lemma re_div_natCast_of_probe {𝕜 : Type*} [RCLike 𝕜] (z : 𝕜) (k : ℕ) :
+    RCLike.re (z / (k : 𝕜)) = RCLike.re z / k := by
+  rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal]
+
 /-- The probe spectral measure of every set is a Girard–Hutchinson estimate: for every square
 $\mathbf{A}$, every test matrix $\mathbf{\Omega}$ and every $S \subseteq \mathbb{R}$,
 $$\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega})(S) =
@@ -166,7 +170,14 @@ theorem probeSpectralMeasure_real (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) (
     (probeSpectralMeasure A Ω).real S =
       RCLike.re (girardHutchinson (cfc (S.indicator fun _ => (1 : ℝ)) A) Ω) /
         Fintype.card n := by
-  sorry
+  unfold probeSpectralMeasure
+  rw [measureReal_def, Measure.smul_apply, Measure.coe_finsetSum, Finset.sum_apply,
+    ENNReal.toReal_smul, ENNReal.toReal_sum (fun j _ => measure_ne_top _ _)]
+  simp only [← measureReal_def, spectralMeasure_real, girardHutchinson_eq_sum, Finset.sum_div,
+    map_sum]
+  simp only [re_div_natCast_of_probe, Finset.smul_sum, NNReal.smul_def, smul_eq_mul,
+    NNReal.coe_inv, NNReal.coe_mul, NNReal.coe_natCast]
+  exact Finset.sum_congr rfl fun j _ => by ring
 
 /-- The mass of the probe spectral measure: for Hermitian $\mathbf{A}$ and every test matrix
 $\mathbf{\Omega}$,
