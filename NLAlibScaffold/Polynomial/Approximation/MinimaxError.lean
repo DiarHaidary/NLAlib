@@ -159,7 +159,9 @@ theorem isLeast_minimaxError {f : ℝ → ℝ} {s : Set ℝ} (hs : IsCompact s) 
     (hf : ContinuousOn f s) (n : ℕ) :
     IsLeast {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ n ∧
       Metric.IsUniformApproxOn (fun x => p.eval x) f s ε} (minimaxError f s n) := by
-  sorry
+  refine ⟨exists_degree_le_isUniformApproxOn_minimaxError hs hf n, ?_⟩
+  rintro ε ⟨p, hp, hε⟩
+  exact minimaxError_le_of_isUniformApproxOn hp (hε.nonneg hne) hε
 
 /-- The bridge to Mathlib's distance: for compact $s$ and $g \in C(s, \mathbb{R})$ agreeing with
 $f$ on $s$, $E_n(f; s)$ is the distance in $C(s, \mathbb{R})$ from $g$ to the restrictions of the
