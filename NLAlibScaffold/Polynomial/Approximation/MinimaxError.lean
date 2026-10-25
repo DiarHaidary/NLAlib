@@ -74,7 +74,19 @@ Proof: S, about 8 lines. `csInf_le` with lower bound $0$ when $s$ is nonempty
 theorem minimaxError_le_of_isUniformApproxOn {f : ℝ → ℝ} {s : Set ℝ} {n : ℕ} {p : ℝ[X]}
     (hp : p.degree ≤ n) {ε : ℝ} (hε₀ : 0 ≤ ε)
     (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f s ε) : minimaxError f s n ≤ ε := by
-  sorry
+  rcases s.eq_empty_or_nonempty with rfl | hne
+  · have hbot : ¬ BddBelow {e : ℝ | ∃ q : ℝ[X], q.degree ≤ n ∧
+        Metric.IsUniformApproxOn (fun x => q.eval x) f ∅ e} := by
+      intro hb
+      obtain ⟨m, hm⟩ := hb
+      have hmem : m - 1 ∈ {e : ℝ | ∃ q : ℝ[X], q.degree ≤ n ∧
+          Metric.IsUniformApproxOn (fun x => q.eval x) f ∅ e} :=
+        ⟨p, hp, fun x hx => absurd hx (Set.notMem_empty x)⟩
+      linarith [hm hmem]
+    unfold minimaxError
+    rw [Real.sInf_of_not_bddBelow hbot]
+    exact hε₀
+  · exact csInf_le ⟨0, fun _ ⟨_, _, h⟩ => h.nonneg hne⟩ ⟨p, hp, hε⟩
 
 /-- **A best approximation exists**: for $s$ compact and $f$ continuous on $s$ there is a real
 polynomial $p$ of degree at most $n$ with $\lvert f(x) - p(x) \rvert \le E_n(f; s)$ on $s$.
